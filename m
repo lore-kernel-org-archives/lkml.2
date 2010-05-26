@@ -1,108 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759232Ab0EZL1f (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 May 2010 07:27:35 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:61573 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754432Ab0EZL1d (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 May 2010 07:27:33 -0400
-Date: Wed, 26 May 2010 07:27:27 -0400 (EDT)
-From: Mikulas Patocka <mpatocka@redhat.com>
-X-X-Sender: mpatocka@hs20-bc2-1.build.redhat.com
-To: "Justin P. Mattock" <justinmattock@gmail.com>
-cc: Dominik Brodowski <linux@dominikbrodowski.net>,
-       linux-kernel@vger.kernel.org
-Subject: Re: PCMCIA regression
-In-Reply-To: <4BFCCA52.3010102@gmail.com>
-Message-ID: <Pine.LNX.4.64.1005260726130.28795@hs20-bc2-1.build.redhat.com>
-References: <Pine.LNX.4.64.1005251619020.12278@hs20-bc2-1.build.redhat.com>
- <4BFCCA52.3010102@gmail.com>
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1759262Ab0EZL2j (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 May 2010 07:28:39 -0400
+Received: from 93-97-173-237.zone5.bethere.co.uk ([93.97.173.237]:60293 "EHLO
+	tim.rpsys.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757353Ab0EZL2i (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 May 2010 07:28:38 -0400
+Subject: Re: [PATCH] led-class: set permissions on max_brightness file to
+ 0444
+From: Richard Purdie <rpurdie@rpsys.net>
+To: Axel Lin <axel.lin@gmail.com>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>, John Lenz <lenz@cs.wisc.edu>
+In-Reply-To: <1274057308.9060.3.camel@mola>
+References: <1274057308.9060.3.camel@mola>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 26 May 2010 12:28:05 +0100
+Message-ID: <1274873285.16229.83.camel@rex>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-On Wed, 26 May 2010, Justin P. Mattock wrote:
-
-> On 05/25/2010 01:25 PM, Mikulas Patocka wrote:
-> > Hi
-> > 
-> > The commit a8408c17d0038b76a83affb1b56dc18fa1e7ed86 in Linux 2.6.34-rc6
-> > broke pcmcia for me. I use 3c574 network card in yenta socket on Armada
-> > 7400 laptop. My distribution is Debian lenny.
-> > 
-> > Reverting the test for "s->functions" in pccard_validate_cis makes the
-> > network card work again.
-> > 
-> > Mikulas
-> > 
-> > May 20 14:17:21 gerlinda vmunix: ------------[ cut here ]------------
-> > May 20 14:17:21 gerlinda vmunix: WARNING: at drivers/pcmcia/cistpl.c:1488
-> > pccard_validate_cis+0x287/0x2d0 [pcmcia]()
-> > May 20 14:17:21 gerlinda vmunix: Modules linked in: 3c574_cs ohci_hcd
-> > pcmcia rtc_cmos crc32 ide_cd_mod rtc_core usbcore rtc_lib yenta_socket
-> > cdrom psmouse pcspkr rsrc_nonstatic nls_base pcmcia_core unix
-> > May 20 14:17:21 gerlinda vmunix: Pid: 1486, comm: pccardd Not tainted
-> > 2.6.34-fast #15
-> > May 20 14:17:21 gerlinda vmunix: Call Trace:
-> > May 20 14:17:21 gerlinda vmunix:  [<cc95cc57>] ?
-> > pccard_validate_cis+0x287/0x2d0 [pcmcia]
-> > May 20 14:17:21 gerlinda vmunix:  [<cc95cc57>] ?
-> > pccard_validate_cis+0x287/0x2d0 [pcmcia]
-> > May 20 14:17:21 gerlinda vmunix:  [<c10207d6>] ?
-> > warn_slowpath_common+0x76/0xd0 May 20 14:17:21 gerlinda vmunix:
-> > [<cc95cc57>] ? pccard_validate_cis+0x287/0x2d0 [pcmcia]
-> > May 20 14:17:21 gerlinda vmunix:  [<c1020843>] ?
-> > warn_slowpath_null+0x13/0x20
-> > May 20 14:17:21 gerlinda vmunix:  [<cc95cc57>] ?
-> > pccard_validate_cis+0x287/0x2d0 [pcmcia]
-> > May 20 14:17:21 gerlinda vmunix:  [<cc83517a>] ?
-> > pcmcia_nonstatic_validate_mem+0xda/0x180 [rsrc_nonstatic]
-> > May 20 14:17:21 gerlinda vmunix:  [<c10ce0af>] ?
-> > sysfs_addrm_finish+0x7f/0xb0
-> > May 20 14:17:21 gerlinda vmunix:  [<cc9587c2>] ? pcmcia_card_add+0x72/0xf0
-> > [pcmcia]
-> > May 20 14:17:21 gerlinda vmunix:  [<c10f39e0>] ? kobject_release+0x0/0xa0
-> > May 20 14:17:21 gerlinda vmunix:  [<c10f44c9>] ? kref_put+0x29/0x60
-> > May 20 14:17:21 gerlinda vmunix:  [<cc9577cc>] ?
-> > pcmcia_card_remove+0x8c/0xa0 [pcmcia]
-> > May 20 14:17:21 gerlinda vmunix:  [<cc958a24>] ? pcmcia_requery+0x74/0x130
-> > [pcmcia]
-> > May 20 14:17:21 gerlinda vmunix:  [<c101af4e>] ? set_next_entity+0x2e/0x70
-> > May 20 14:17:21 gerlinda vmunix:  [<c101c500>] ?
-> > do_sched_setscheduler+0x90/0xa0May 20 14:17:21 gerlinda vmunix:
-> > [<c11c0883>] ? schedule+0x203/0x3c0
-> > May 20 14:17:21 gerlinda vmunix:  [<cc818109>] ? pccardd+0x219/0x470
-> > [pcmcia_core]
-> > May 20 14:17:21 gerlinda vmunix:  [<c11c095a>] ? schedule+0x2da/0x3c0
-> > May 20 14:17:21 gerlinda vmunix:  [<cc817ef0>] ? pccardd+0x0/0x470
-> > [pcmcia_core]May 20 14:17:21 gerlinda vmunix:  [<c1035124>] ?
-> > kthread+0x74/0x80
-> > May 20 14:17:21 gerlinda vmunix:  [<c10350b0>] ? kthread+0x0/0x80
-> > May 20 14:17:21 gerlinda vmunix:  [<c10030f6>] ?
-> > kernel_thread_helper+0x6/0x10
-> > May 20 14:17:21 gerlinda vmunix: ---[ end trace 256ec3e16d1d0f46 ]---
-> > 
-> > 
-> > 
-> > --
-> > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> > the body of a message to majordomo@vger.kernel.org
-> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> > Please read the FAQ at  http://www.tux.org/lkml/
-> > 
-> >    
+On Mon, 2010-05-17 at 08:48 +0800, Axel Lin wrote:
+> max_brightness is not writable, thus set permissions to 0444.
 > 
-> maybe this is similar:
+> Signed-off-by: Axel Lin <axel.lin@gmail.com>
+> ---
+>  drivers/leds/led-class.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
 > 
-> https://bugzilla.kernel.org/show_bug.cgi?id=16015
-> 
-> Justin P. Mattock
+> diff --git a/drivers/leds/led-class.c b/drivers/leds/led-class.c
+> index 69e7d86..2606600 100644
+> --- a/drivers/leds/led-class.c
+> +++ b/drivers/leds/led-class.c
+> @@ -74,7 +74,7 @@ static ssize_t led_max_brightness_show(struct device *dev,
+>  
+>  static struct device_attribute led_class_attrs[] = {
+>  	__ATTR(brightness, 0644, led_brightness_show, led_brightness_store),
+> -	__ATTR(max_brightness, 0644, led_max_brightness_show, NULL),
+> +	__ATTR(max_brightness, 0444, led_max_brightness_show, NULL),
+>  #ifdef CONFIG_LEDS_TRIGGERS
+>  	__ATTR(trigger, 0644, led_trigger_show, led_trigger_store),
+>  #endif
 
-No, it's different. The bug that I have is a code logic error, the 
-function pccard_validate_cis is called when it shouldn't be.
+Queued in the leds tree, thanks.
 
-Mikulas
+Richard
+
