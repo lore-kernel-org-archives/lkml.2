@@ -1,102 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757297Ab0EZRi6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 May 2010 13:38:58 -0400
-Received: from h5.dl5rb.org.uk ([81.2.74.5]:52301 "EHLO h5.dl5rb.org.uk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757138Ab0EZRi5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 May 2010 13:38:57 -0400
-Date: Wed, 26 May 2010 18:38:15 +0100
-From: Ralf Baechle <ralf@linux-mips.org>
-To: "Kevin D. Kissell" <kevink@paralogos.com>
-Cc: Julia Lawall <julia@diku.dk>, linux-mips@linux-mips.org,
-       linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org,
-       Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>
-Subject: Re: Affinity Automation (was Re: [PATCH 3/17] arch/mips/kernel: Add
- missing read_unlock)
-Message-ID: <20100526173815.GB17043@linux-mips.org>
-References: <Pine.LNX.4.64.1005261754390.23743@ask.diku.dk>
- <20100526163227.GA17043@linux-mips.org>
- <4BFD5A19.5030602@paralogos.com>
+	id S1757356Ab0EZRj1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 May 2010 13:39:27 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:52305 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757138Ab0EZRjZ convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 May 2010 13:39:25 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=jS4dG/yLJ3zX2eFueaX46W0pPqt0QVJqnCd0DHnCpIk+cwM68GjqO/IGAotf3yTBCW
+         sHW6kD8x7sLYzNtBhJfXEnQTIt5qmzHEDjj0J5mzHTOS/pQS21VvOFnlGbODnI3fm8Vi
+         dqW6wyjIzP+6SDL2u9edp+xfE1zAHJQE3qrJw=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4BFD5A19.5030602@paralogos.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
+In-Reply-To: <4BFC5330.5080907@sgi.com>
+References: <4BEAEF10.9040809@sgi.com> <4BEB0D5F.8070806@oracle.com>
+	 <4BEB1781.1080907@sgi.com> <4BEC6C94.2020100@sgi.com>
+	 <4BEC73B2.2020909@oracle.com> <4BEC7544.1080506@sgi.com>
+	 <4BEC8161.6050206@zytor.com> <4BFC5080.6030103@sgi.com>
+	 <4BFC5217.6060804@zytor.com> <4BFC5330.5080907@sgi.com>
+Date: Wed, 26 May 2010 10:39:24 -0700
+X-Google-Sender-Auth: T21YMBR9VzRO_zNtuBt9cOYhYrY
+Message-ID: <AANLkTilNXcS_KQTQ4ZwDt8RQqSrlWUH2R5W87g0vI4xG@mail.gmail.com>
+Subject: Re: [Patch 1/1] x86 efi: Fill all reserved memmap entries if 
+	add_efi_memmap specified.
+From: Yinghai Lu <yinghai@kernel.org>
+To: Mike Travis <travis@sgi.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
+       Thomas Gleixner <tglx@linutronix.de>, x86@kernel.org,
+       Suresh Siddha <suresh.b.siddha@intel.com>,
+       Rusty Russell <rusty@rustcorp.com.au>,
+       Jens Axboe <jens.axboe@oracle.com>, Jack Steiner <steiner@sgi.com>,
+       LKML <linux-kernel@vger.kernel.org>, jkosina@novell.com
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 26, 2010 at 10:27:53AM -0700, Kevin D. Kissell wrote:
-> Date:   Wed, 26 May 2010 10:27:53 -0700
-> From: "Kevin D. Kissell" <kevink@paralogos.com>
-> To: Ralf Baechle <ralf@linux-mips.org>
-> CC: Julia Lawall <julia@diku.dk>, linux-mips@linux-mips.org,
-> 	linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-> Subject: Affinity Automation (was Re: [PATCH 3/17] arch/mips/kernel: Add
->  missing
->  read_unlock)
-> Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-> 
-> Ralf Baechle wrote:
-> >Your patch appears correct - and mipsmt_sys_sched_setaffinity() even
-> >more broken than you thought.  It duplicates some code from kernel/sched.c
-> >and has gotten out of sync.
-> Yeah, that was inevitable.  Since the distribution of the previous
-> message seems to cover concerned developers outside the MIPS
-> community, let me make one final(?) plea to actually do this right.
-> 
-> The MIPS SMTC support for managing a single FPU context on a
-> processor with multiple integer TC contexts involves having the
-> system make automous, real time, decisions about scheduling
-> affinity.  It may be a first, but it can't possibly be the only
-> case, especially as we've started seeing more and more mainstream
-> multi-core, multi-thread designs.  System and chip resources are
-> going to be "closer" to one processor or another.  The current Linux
-> paradigm is that it's the responsibility of programs, or users, to
-> know what the optimal placement of processes should be for a given
-> system platform, and while it's absolutely appropriate to provide
-> that level of control for the cases where the user really does know
-> best, it's mildly insane to make that the only way that thread
-> placement can be optimized.  It's really the OS's job to match
-> demand to resources.
-> 
-> My contention years ago was, and remains, that it would be a bad
-> idea to burden the main scheduler loop with checks for two different
-> levels of affinity, system-automatic and user-specified.  It would
-> add non-trivially to the cache footprint and execution overhead of
-> thread dispatch, and there's no logical need for it.  So the model I
-> proposed, and implemented in the cloned affinity system calls for
-> SMTC, was that a *single* affinity mask continue to be used by the
-> scheduler, but that the per-thread data structures carry two:  The
-> one requested explicitly by the user, and the one actually used by
-> the scheduler.  The idea is that normally those two are the same,
-> but that the system - in the MIPS SMTC case, the FPU emulator - can
-> overlay its constraints with the user's constraints to come up with
-> an intersection-of-sets constraint that satisfies both (there was a
-> clause which prevents system affinity heuristics from restricting
-> the affinity mask to a null set of CPUs, though of course the user
-> can do that if he really wants to).
-> 
-> There's nothing particularly MIPS-specific about the problem or the
-> solution.  Most of the mechanisms should really be in
-> platform-independent code, so we don't get the drift of cloned
-> components.
-> 
-> I don't recall who owned the scheduler at the time, but whoever it
-> was was too busy dealing with mainstream processor problems to even
-> engage in a dialogue about this.  Is it time to raise the question
-> again?
+On Tue, May 25, 2010 at 3:46 PM, Mike Travis <travis@sgi.com> wrote:
+>
+>
+> H. Peter Anvin wrote:
+>>
+>> On 05/25/2010 03:34 PM, Mike Travis wrote:
+>>>
+>>> H. Peter Anvin wrote:
+>>>>
+>>>> On 05/13/2010 02:55 PM, Mike Travis wrote:
+>>>>>
+>>>>> I saw that too, and wondered why e820_saved did not
+>>>>> have the extra entries.   The comment indicates it
+>>>>> should.
+>>>>>
+>>>>> I'm on the system tonight and will investigate this
+>>>>> further.
+>>>>>
+>>>> e820_saved lacks the extra entries because they aren't being passed in
+>>>> from the bootloader, as they should, and instead you're using
+>>>> add_efi_memmap which is, as far as the kernel is concerned, a post-boot
+>>>> modification.
+>>>>
+>>>> That being said, add_efi_memmap does come from the firmware, and as such
+>>>> it would be legitimate for it to add them to e820_saved.
+>>>>
+>>>>        -hpa
+>>>
+>>> Did this last patch meet expectations?
+>>>
+>>> http://marc.info/?l=linux-kernel&m=127474230623061&w=4
+>>>
+>>
+>> I'm concerned about calling sanitize_e820_map() on e820_saved; it is
+>> supposed to reflect the raw data as reported by the source, and
+>> sanitizing it would corrupt that.
+>>
+>>        -hpa
+>
+> I wondered about that. Sanitize seems to remove adjacent
+> entries, etc. making the map smaller, but I couldn't detect
+> any real differences (though admittedly I didn't do a byte
+> by byte comparison.)
+>
+> But I'll submit another with that call removed.
 
-That was Ingo Molnar.  The scheduler is owned by these two guys:
+can you use updated boot loader instead?
 
-SCHEDULER
-M:      Ingo Molnar <mingo@elte.hu>
-M:      Peter Zijlstra <peterz@infradead.org>
-S:      Maintained
-F:      kernel/sched*
-F:      include/linux/sched.h
+Also we should drop add_efi_memmap if possible.
 
-I've added them to cc.
-
-  Ralf
+YH
