@@ -1,74 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933953Ab0EZKbT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 May 2010 06:31:19 -0400
-Received: from smtprelay02.ispgateway.de ([80.67.31.40]:56809 "EHLO
-	smtprelay02.ispgateway.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752952Ab0EZKbS (ORCPT
+	id S1757351Ab0EZKc2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 May 2010 06:32:28 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:63020 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751377Ab0EZKc0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 May 2010 06:31:18 -0400
-Message-ID: <4BFCF616.6060608@ladisch.de>
-Date: Wed, 26 May 2010 12:21:10 +0200
-From: Clemens Ladisch <clemens@ladisch.de>
-User-Agent: Thunderbird 2.0.0.24 (Windows/20100228)
+	Wed, 26 May 2010 06:32:26 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=pA80xg1aQlOIwiBu7/Q6Ts8f1AaZmkzauD2Y4YzD3wkxli6ZrN6G8g+lKIYmZHdfsO
+         094cki5CoB0ajxl9MTRhUafDrgaufX0pOyKvw7nB2kPh8l+1cd2Aq22M7lUa8hs64CDh
+         n0761cLXyNiDaM6yTHoBNIzuRK/UNuhhXioEU=
+Date: Wed, 26 May 2010 12:32:23 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Christoph Hellwig <hch@infradead.org>
+Cc: Li Zefan <lizf@cn.fujitsu.com>, Ingo Molnar <mingo@elte.hu>,
+       Steven Rostedt <rostedt@goodmis.org>,
+       Pekka Enberg <penberg@cs.helsinki.fi>,
+       Eduard - Gabriel Munteanu <eduard.munteanu@linux360.ro>,
+       LKML <linux-kernel@vger.kernel.org>, linux-mm@kvack.org
+Subject: Re: [PATCH] tracing: Remove kmemtrace ftrace plugin
+Message-ID: <20100526103222.GD5311@nowhere>
+References: <4BFCE849.7090804@cn.fujitsu.com> <20100526101617.GA14286@infradead.org> <20100526101837.GC5311@nowhere> <20100526102446.GA757@infradead.org>
 MIME-Version: 1.0
-To: Jesse Barnes <jbarnes@virtuousgeek.org>
-CC: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] PCI quirk: AMD 780: work around wrong vendor ID on APC bridge
 Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Df-Sender: linux-kernel@cl.domainfactory-kunde.de
+Content-Disposition: inline
+In-Reply-To: <20100526102446.GA757@infradead.org>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In all AMD 780 family northbridges, the vendor ID of the internal
-graphics PCI/PCI bridge reads not as AMD but as that of the mainboard
-vendor, because the hardware actually returns the value of the subsystem
-vendor ID (erratum 18).
+On Wed, May 26, 2010 at 06:24:46AM -0400, Christoph Hellwig wrote:
+> On Wed, May 26, 2010 at 12:18:38PM +0200, Frederic Weisbecker wrote:
+> > But does the userspace tool support them?
+> 
+> The blktrace userspace tool only uses the ioctl/debugfs code.
+> 
 
-We currently have additional quirk entries for Asus and Acer, but it is
-likely that we will encounter more systems with other vendor IDs.
 
-Since we do not know in advance all possible vendor IDs, a better way to
-find the device is to declare the quirk on the host bridge, whose ID is
-always correct, and use that device as a stepping stone to find the PCI/
-PCI bridge, if present.
+But which debugfs code? Nothing related to $(DEBUGFS)/tracing right?
 
-Signed-off-by: Clemens Ladisch <clemens@ladisch.de>
-
---- a/drivers/pci/quirks.c
-+++ b/drivers/pci/quirks.c
-@@ -2123,12 +2123,29 @@ static void __devinit quirk_disable_msi(
- 	}
- }
- DECLARE_PCI_FIXUP_FINAL(PCI_VENDOR_ID_AMD, PCI_DEVICE_ID_AMD_8131_BRIDGE, quirk_disable_msi);
--DECLARE_PCI_FIXUP_FINAL(PCI_VENDOR_ID_AMD, 0x9602, quirk_disable_msi);
--DECLARE_PCI_FIXUP_FINAL(PCI_VENDOR_ID_ASUSTEK, 0x9602, quirk_disable_msi);
--DECLARE_PCI_FIXUP_FINAL(PCI_VENDOR_ID_AI, 0x9602, quirk_disable_msi);
- DECLARE_PCI_FIXUP_FINAL(PCI_VENDOR_ID_VIA, 0xa238, quirk_disable_msi);
- DECLARE_PCI_FIXUP_FINAL(PCI_VENDOR_ID_ATI, 0x5a3f, quirk_disable_msi);
- 
-+/*
-+ * The APC bridge device in AMD 780 family northbridges has some random
-+ * OEM subsystem ID in its vendor ID register (erratum 18), so instead
-+ * we use the possible vendor/device IDs of the host bridge for the
-+ * declared quirk, and search for the APC bridge by slot number.
-+ */
-+static void __devinit quirk_amd_780_apc_msi(struct pci_dev *host_bridge)
-+{
-+	struct pci_dev *apc_bridge;
-+
-+	apc_bridge = pci_get_slot(host_bridge->bus, PCI_DEVFN(1, 0));
-+	if (apc_bridge) {
-+		if (apc_bridge->device == 0x9602)
-+			quirk_disable_msi(apc_bridge);
-+		pci_dev_put(apc_bridge);
-+	}
-+}
-+DECLARE_PCI_FIXUP_FINAL(PCI_VENDOR_ID_AMD, 0x9600, quirk_amd_780_apc_msi);
-+DECLARE_PCI_FIXUP_FINAL(PCI_VENDOR_ID_AMD, 0x9601, quirk_amd_780_apc_msi);
-+
- /* Go through the list of Hypertransport capabilities and
-  * return 1 if a HT MSI capability is found and enabled */
- static int __devinit msi_ht_cap_enabled(struct pci_dev *dev)
