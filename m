@@ -1,93 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756680Ab0EZRI4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 May 2010 13:08:56 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:45004 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751823Ab0EZRIy convert rfc822-to-8bit (ORCPT
+	id S1756868Ab0EZRJN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 May 2010 13:09:13 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:57370 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755391Ab0EZRJL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 May 2010 13:08:54 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:organization:to:subject:date:user-agent:cc:references
-         :in-reply-to:mime-version:message-id:content-type
-         :content-transfer-encoding;
-        b=KTwZZZGTWytLnFu6I5ANpXpmvnqldQk44ydAvf48sEu0hLbdEsS7gfzkLPV2MUmW/B
-         961PyDbYOu/4UANDUQ883MNrya6UZAZ4nRVZU7aTxXUZVdPOcOurG+GEjUvJ8d9akXjt
-         XktpB9jgOflnkjpkIw9dZPp+ofnJkK5HyRGS8=
-From: Marek Vasut <marek.vasut@gmail.com>
-Organization: Hack&Dev
-To: linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH 7/17] arch/arm/common: Add missing spin_unlock_irqrestore
-Date: Wed, 26 May 2010 19:07:06 +0200
-User-Agent: KMail/1.13.2 (Linux/2.6.33-2-amd64; KDE/4.4.2; x86_64; ; )
-Cc: Julia Lawall <julia@diku.dk>, Russell King <linux@arm.linux.org.uk>,
-       linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-References: <Pine.LNX.4.64.1005261756000.23743@ask.diku.dk>
-In-Reply-To: <Pine.LNX.4.64.1005261756000.23743@ask.diku.dk>
-MIME-Version: 1.0
-Message-Id: <201005261907.06198.marek.vasut@gmail.com>
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 8BIT
+	Wed, 26 May 2010 13:09:11 -0400
+Date: Wed, 26 May 2010 10:08:05 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: rostedt@goodmis.org
+Cc: monstr@monstr.eu, linux-kernel@vger.kernel.org, michal.simek@petalogix.com,
+       arnd@arndb.de, john.williams@petalogix.com, tglx@linutronix.de,
+       peter.fritzsche@gmx.de, anton@samba.org, mingo@elte.hu
+Subject: Re: [PATCH] asm-generic: Use raw_local_irq_save/restore instead
+ local_irq_save/restore
+Message-Id: <20100526100805.171b3c48.akpm@linux-foundation.org>
+In-Reply-To: <1274884963.22648.245.camel@gandalf.stny.rr.com>
+References: <1274863724-14906-1-git-send-email-monstr@monstr.eu>
+	<1274863724-14906-2-git-send-email-monstr@monstr.eu>
+	<1274884963.22648.245.camel@gandalf.stny.rr.com>
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dne St 26. května 2010 17:56:14 Julia Lawall napsal(a):
-> From: Julia Lawall <julia@diku.dk>
-> 
-> Add a spin_unlock_irqrestore missing on the error path.  Although the lock
-> is destroyed with the rest of the sachip structure in the function
-> __sa1111_remove, it still seems useful to restore the interrupt state.
-> 
-> The semantic match that finds this problem is as follows:
-> (http://coccinelle.lip6.fr/)
-> 
-> // <smpl>
-> @@
-> expression E1;
-> @@
-> 
-> * spin_lock_irqsave(E1,...);
->   <+... when != E1
->   if (...) {
->     ... when != E1
-> *   return ...;
->   }
->   ...+>
-> * spin_unlock_irqrestore(E1,...);
-> // </smpl>
-> 
-> Signed-off-by: Julia Lawall <julia@diku.dk>
-> 
-> ---
-> Perhaps the unlock is now too early?
-> 
->  arch/arm/common/sa1111.c |    1 +
->  1 file changed, 1 insertion(+)
-> 
-> diff --git a/arch/arm/common/sa1111.c b/arch/arm/common/sa1111.c
-> index a52a27c..59e38ff 100644
-> --- a/arch/arm/common/sa1111.c
-> +++ b/arch/arm/common/sa1111.c
-> @@ -959,6 +959,7 @@ static int sa1111_resume(struct platform_device *dev)
->  	 */
->  	id = sa1111_readl(sachip->base + SA1111_SKID);
->  	if ((id & SKID_ID_MASK) != SKID_SA1111_ID) {
-> +		spin_unlock_irqrestore(&sachip->lock, flags);
->  		__sa1111_remove(sachip);
->  		platform_set_drvdata(dev, NULL);
->  		kfree(save);
+On Wed, 26 May 2010 10:42:43 -0400 Steven Rostedt <rostedt@goodmis.org> wrote:
 
-Why are "readl"s protected by spinlock anyway ? Can't we just move the locking 
-past the code above ?
-
-I'm no sa1111 expert though, Russell ?
-
-Cheers
+> On Wed, 2010-05-26 at 10:48 +0200, monstr@monstr.eu wrote:
+> > From: Michal Simek <monstr@monstr.eu>
+> > 
+> > start/stop_critical_timing function for preemptirqsoff, preemptoff
+> > and irqsoff tracers contains atomic_inc and atomic_dec operations.
+> > 
+> > Atomic operations used local_irq_save/restore macros to ensure
+> > atomic access but they are traced by the same function which is causing
+> > recursion problem.
+> > 
+> > The reason is when these tracers are turn ON then local_irq_save/restore
+> > macros are changed in include/linux/irqflags.h to call trace_hardirqs_on/off
+> > which call start/stop_critical_timing.
+> > 
+> > Microblaze was affected because use generic atomic implementation.
+> > 
+> > Signed-off-by: Michal Simek <monstr@monstr.eu>
 > 
-> _______________________________________________
-> linux-arm-kernel mailing list
-> linux-arm-kernel@lists.infradead.org
-> http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
+> Acked-by: Steven Rostedt <rostedt@goodmis.org>
+> 
+
+Sighed-at-by: me.
+
+> > diff --git a/include/asm-generic/atomic.h b/include/asm-generic/atomic.h
+> > index 058129e..6c190fd 100644
+> > --- a/include/asm-generic/atomic.h
+> > +++ b/include/asm-generic/atomic.h
+> > @@ -57,11 +57,11 @@ static inline int atomic_add_return(int i, atomic_t *v)
+> >  	unsigned long flags;
+> >  	int temp;
+> >  
+> > -	local_irq_save(flags);
+> > +	raw_local_irq_save(flags);
+> >  	temp = v->counter;
+> >  	temp += i;
+> >  	v->counter = temp;
+> > -	local_irq_restore(flags);
+> > +	raw_local_irq_restore(flags);
+> >  
+> >  	return temp;
+> >  }
+
+If a developer looks at atomic_add_return() and asks himself "why did
+this use raw_local_irq_save()", the only way of answering that question
+is to go groveling through the git logs, which is a right PITA if
+you're trying to get some coding work done.
+
+Guys, any time you add code which is non-obvious at the raw C level, it
+*needs* a comment!
