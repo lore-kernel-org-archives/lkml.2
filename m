@@ -1,98 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934489Ab0EZLjo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 May 2010 07:39:44 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:36111 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933984Ab0EZLjn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 May 2010 07:39:43 -0400
-Date: Wed, 26 May 2010 13:39:42 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: =?ISO-8859-15?Q?Charles_Cl=E9ment?= <caratorn@gmail.com>
-Cc: Andreas Schwab <schwab@redhat.com>, devel@driverdev.osuosl.org,
-       Jassi Brar <jassisinghbrar@gmail.com>,
-       Greg Kroah-Hartman <gregkh@suse.de>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] staging: remove all code dependent on
- LINUX_VERSION_CODE
-In-Reply-To: <20100525180220.GA14127@fujitsu>
-Message-ID: <alpine.LNX.2.00.1005261339070.28092@pobox.suse.cz>
-References: <alpine.LNX.2.00.1005251200410.28092@pobox.suse.cz> <AANLkTik-k5lECpQtbsQy8DLJJ3DOPrAz_e5XPPMzgr2o@mail.gmail.com> <alpine.LNX.2.00.1005251355100.28092@pobox.suse.cz> <m3eih0dvyv.fsf@hase.home> <alpine.LNX.2.00.1005251414310.28092@pobox.suse.cz>
- <20100525180220.GA14127@fujitsu>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1757369Ab0EZLyP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 May 2010 07:54:15 -0400
+Received: from mail-px0-f174.google.com ([209.85.212.174]:43266 "EHLO
+	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752790Ab0EZLyN convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 May 2010 07:54:13 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type:content-transfer-encoding;
+        b=rSXeK/8O7boU4TcWQbhZCtWXsLcORaBbE9aFj3ZMqO04rWc6iZvYpoGzkRLzRM3pFv
+         cWhSQCbmX27zMFT9f3rF8nc95IYn4uy8fhipXejwt3qrI1VWNeIuOb+5d0H2te0hx+BV
+         9l4ouX+01LqZkLkgAN6JdEkJ/+/hI3U5GJDo4=
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=iso-8859-1
+In-Reply-To: <E1OHDru-0000Ge-Lr@pomaz-ex.szeredi.hu>
+References: <1274867768-3011-1-git-send-email-xiaosuo@gmail.com> 
+	<E1OHDru-0000Ge-Lr@pomaz-ex.szeredi.hu>
+From: Changli Gao <xiaosuo@gmail.com>
+Date: Wed, 26 May 2010 19:53:53 +0800
+Message-ID: <AANLkTildR17ccf4TAT0GavB6BoethCqg8BrqBPFu8s0N@mail.gmail.com>
+Subject: Re: [PATCH 2/3] splice: allow non-block splice only when in file is 
+	seekable
+To: Miklos Szeredi <miklos@szeredi.hu>
+Cc: viro@zeniv.linux.org.uk, linux-fsdevel@vger.kernel.org,
+       linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 25 May 2010, Charles Cl�ment wrote:
+On Wed, May 26, 2010 at 6:29 PM, Miklos Szeredi <miklos@szeredi.hu> wrote:
+> On Wed, 26 May 2010, Changli Gao wrote:
+>> allow non-block splice only when in file is seekable.
+>>
+>> do_splice_to() is split to two parts: read data from in file to spd, and move
+>> data from spd to pipe. If there isn't much space in pipe for the data in spd,
+>> and the splice is called with non-block flag, the data dropped due to non
+>> enough space in pipe will be lost forever when in file isn't seekable.
+>
+> This is a gratuitous ABI change.  I don't think we should hold the
+> hand of application writers,
 
-> Hello Jiri,
-> 
-> On Tue, May 25, 2010 at 02:16:50PM +0200, Jiri Kosina wrote:
-> > On Tue, 25 May 2010, Andreas Schwab wrote:
-> 
-> > diff --git a/drivers/staging/cxt1e1/pmcc4.h b/drivers/staging/cxt1e1/pmcc4.h
-> > index 26c1f0e..e288a0a 100644
-> > --- a/drivers/staging/cxt1e1/pmcc4.h
-> > +++ b/drivers/staging/cxt1e1/pmcc4.h
-> > @@ -117,12 +117,6 @@ extern      "C"
-> >  
-> >  #include "pmcc4_private.h"
-> >  
-> > -#if !(LINUX_VERSION_CODE < KERNEL_VERSION(2,5,0))
-> > -char       *get_hdlc_name (hdlc_device *);
-> > -
-> > -#endif
-> > -
-> > -
-> 
-> Shouldn't that declaration be kept?
+Yea, it is an ABI change. But without that, we'll fail user silently
+currently. Some fundamental change is needed to fix this issue fully,
+if you think it is a bug.
 
-Thanks for catching that.
+> maybe they _know_ the splice will not
+> block.
+>
 
-> > diff --git a/drivers/staging/rtl8192e/ieee80211/ieee80211_crypt_tkip.c b/drivers/staging/rtl8192e/ieee80211/ieee80211_crypt_tkip.c
-> > index 65f4889..14ca610 100644
-> > --- a/drivers/staging/rtl8192e/ieee80211/ieee80211_crypt_tkip.c
-> > +++ b/drivers/staging/rtl8192e/ieee80211/ieee80211_crypt_tkip.c
-> 
-> > @@ -886,32 +711,18 @@ static int ieee80211_tkip_set_key(void *key, int len, u8 *seq, void *priv)
-> >  {
-> >  	struct ieee80211_tkip_data *tkey = priv;
-> >  	int keyidx;
-> > -#if((LINUX_VERSION_CODE < KERNEL_VERSION(2,6,21)) && (!OPENSUSE_SLED))
-> > -	struct crypto_tfm *tfm = tkey->tx_tfm_michael;
-> > -	struct crypto_tfm *tfm2 = tkey->tx_tfm_arc4;
-> > -	struct crypto_tfm *tfm3 = tkey->rx_tfm_michael;
-> > -	struct crypto_tfm *tfm4 = tkey->rx_tfm_arc4;
-> > -#else
-> >  	struct crypto_hash *tfm = tkey->tx_tfm_michael;
-> >  	struct crypto_blkcipher *tfm2 = tkey->tx_tfm_arc4;
-> >  	struct crypto_hash *tfm3 = tkey->rx_tfm_michael;
-> >  	struct crypto_blkcipher *tfm4 = tkey->rx_tfm_arc4;
-> > -#endif
-> >  
-> >  	keyidx = tkey->key_idx;
-> >  	memset(tkey, 0, sizeof(*tkey));
-> >  	tkey->key_idx = keyidx;
-> > -#if((LINUX_VERSION_CODE < KERNEL_VERSION(2,6,21)) && (!OPENSUSE_SLED))
-> >  	tkey->tx_tfm_michael = tfm;
-> >  	tkey->tx_tfm_arc4 = tfm2;
-> >  	tkey->rx_tfm_michael = tfm3;
-> >  	tkey->rx_tfm_arc4 = tfm4;
-> > -#else
-> > -	tkey->tx_tfm_michael = tfm;
-> > -	tkey->tx_tfm_arc4 = tfm2;
-> > -	tkey->rx_tfm_michael = tfm3;
-> > -	tkey->rx_tfm_arc4 = tfm4;
-> > -#endif
-> 
-> In this block, it is not the same branch that are kept, don't you want
-> to keep the same ones?
-
-What difference do you see?
+If they know the splice won't block, why he specifies a non-block flag?
 
 -- 
-Jiri Kosina
-SUSE Labs, Novell Inc.
+Regards，
+Changli Gao(xiaosuo@gmail.com)
