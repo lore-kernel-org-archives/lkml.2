@@ -1,54 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934158Ab0EZGfi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 May 2010 02:35:38 -0400
-Received: from mailrelay006.isp.belgacom.be ([195.238.6.172]:5996 "EHLO
-	mailrelay006.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752574Ab0EZGfg (ORCPT
+	id S1753131Ab0EZGmG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 May 2010 02:42:06 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:60156 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752574Ab0EZGmC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 May 2010 02:35:36 -0400
-X-Belgacom-Dynamic: yes
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AvsEALdd/EtbstI2/2dsb2JhbACeGXK/aQ6FBQQ
-Date: Wed, 26 May 2010 08:35:34 +0200
-From: Wim Van Sebroeck <wim@iguana.be>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-       Wolfram Sang <w.sang@pengutronix.de>,
-       Linus <torvalds@linux-foundation.org>
-Subject: Re: linux-next: manual merge of the watchdog tree with Linus' tree
-Message-ID: <20100526063534.GI3972@infomag.iguana.be>
-References: <20100526133815.e62bacb8.sfr@canb.auug.org.au>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100526133815.e62bacb8.sfr@canb.auug.org.au>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	Wed, 26 May 2010 02:42:02 -0400
+Date: Tue, 25 May 2010 23:41:16 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Joakim Tjernlund <joakim.tjernlund@transmode.se>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-kernel@vger.kernel.org,
+       linux-next@vger.kernel.org, Linus <torvalds@linux-foundation.org>
+Subject: Re: linux-next: build warning in Linus'tree
+Message-Id: <20100525234116.71889c71.akpm@linux-foundation.org>
+In-Reply-To: <OFC00BDFAC.5596A841-ONC125772F.0022984D-C125772F.0023AF14@transmode.se>
+References: <20100526110506.f2f4f22c.sfr@canb.auug.org.au>
+	<20100525182040.f1882d0a.akpm@linux-foundation.org>
+	<20100526140900.5b091c16.sfr@canb.auug.org.au>
+	<OFC00BDFAC.5596A841-ONC125772F.0022984D-C125772F.0023AF14@transmode.se>
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Stephen,
+On Wed, 26 May 2010 08:29:45 +0200 Joakim Tjernlund <joakim.tjernlund@transmode.se> wrote:
 
-> These are two versions of the same patch.  I used the version from Linus'
-> tree - but I do need to ask what is the point of having a patch in
-> linux-next for two days and then submitting a different version of the
-> patch to Linus?  The changes are not insignificant. Both patches have the
-> same Author date and SOB etc lines.
+> Stephen Rothwell <sfr@canb.auug.org.au> wrote on 2010/05/26 06:09:00:
+> >
+> > Hi Andrew,
+> >
+> > On Tue, 25 May 2010 18:20:40 -0700 Andrew Morton <akpm@linux-foundation.org> wrote:
+> > >
+> > > hmpf.  Does this fix?
+> >
+> > No.
+> >
+> > The problem is that __LITTLE_ENDIAN is only defined in
+> > linux/byteorder/little_endian.h which is only included by little endian
+> > architectures ...
+> 
+> Ah, not sure how to fix this ATM. Perhaps best to revert
+>    crc32: use __BYTE_ORDER macro for endian detection
+> for now.
 
-The one that went to Linus is the correct one.
-I must apologise, I indeed fucked things up. I wasn't completely happy
-with Wolfram's patch, changed it, Wolfram pointed out some things that
-still could be improved and then we tested the final version, saw that
-everything was OK and much beter then what we had.
-And then I made the error to want to rush it in during this merge window
-still (due to the fact that we are allready reviewing this driver for a
-long time). So yes sorry, this was the wrong thing to do (well, not having
-a better driver in, but the way the testing should have been done and the
-correct process that should have been followed).
+yup.
 
-I will clean up the watchdog-next tree.
+> I suspect fixing this entails moving all endian tests to #if __BYTE_ORDER ...
+> and then always define both __LITTLE_ENDIAN and __BIG_ENDIAN
 
-Sorry again,
-Wim.
+Yes we can't define __LITTLE_ENDIAN to anything on big-endian without
+breaking lots of other things.
 
