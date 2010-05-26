@@ -1,72 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757160Ab0EZRP7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 May 2010 13:15:59 -0400
-Received: from mail-px0-f174.google.com ([209.85.212.174]:46467 "EHLO
-	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755396Ab0EZRP6 (ORCPT
+	id S933673Ab0EZRRv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 May 2010 13:17:51 -0400
+Received: from e28smtp08.in.ibm.com ([122.248.162.8]:54461 "EHLO
+	e28smtp08.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756849Ab0EZRRu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 May 2010 13:15:58 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=TGs1kygkUV2IBPECZA/RmcvDttP/bPNi+j7dblqQjYKeTDiawVok0gVLosfa6UFDFh
-         MLw+fN44iQwO4yILT9DL6EBTzA+ii1F8bmSeD2CObgGI5bVSL8wM9xAtAcRz2Trm5nt6
-         AvLe3CRLyVoDSqf5ZrciEukOlKlLl1pYCDzoI=
-Message-ID: <4BFD5754.4090006@gmail.com>
-Date: Wed, 26 May 2010 10:16:04 -0700
-From: "Justin P. Mattock" <justinmattock@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.4pre) Gecko/20091114 Lightning/1.0pre Thunderbird/3.0b4
+	Wed, 26 May 2010 13:17:50 -0400
+Date: Wed, 26 May 2010 22:47:42 +0530
+From: "K.Prasad" <prasad@linux.vnet.ibm.com>
+To: David Howells <dhowells@redhat.com>
+Cc: Millton Miller <miltonm@bga.com>, Michael Neuling <mikey@neuling.org>,
+       Benjamin Herrenschmidt <benh@au1.ibm.com>, shaggy@linux.vnet.ibm.com,
+       Frederic Weisbecker <fweisbec@gmail.com>,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       David Gibson <dwg@au1.ibm.com>,
+       "linuxppc-dev@ozlabs.org" <linuxppc-dev@ozlabs.org>,
+       Alan Stern <stern@rowland.harvard.edu>,
+       Paul Mackerras <paulus@samba.org>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Roland McGrath <roland@redhat.com>
+Subject: Re: [Patch 1/4] Allow arch-specific cleanup before breakpoint
+	unregistration
+Message-ID: <20100526171742.GA5563@in.ibm.com>
+Reply-To: prasad@linux.vnet.ibm.com
+References: <20100526065129.GA3746@in.ibm.com> <20100525083055.342788418@linux.vnet.ibm.com> <20100525091356.GB29003@in.ibm.com> <1274787559_8162@mail4.comsite.net> <4250.1274867681@redhat.com>
 MIME-Version: 1.0
-To: "Luis R. Rodriguez" <mcgrof@gmail.com>
-CC: ath9k-devel@venema.h4ckr.net, linux-kernel@vger.kernel.org,
-       mcgrog@gmail.com
-Subject: Re: [ath9k-devel] [PATCH]wireless:ath9k Fix ath_print in xmit.c
-References: <1274892555-10422-1-git-send-email-justinmattock@gmail.com> <AANLkTim1qNEXJB38p_MEQxfjhWRe1-kPfNFq3JL11qgl@mail.gmail.com>
-In-Reply-To: <AANLkTim1qNEXJB38p_MEQxfjhWRe1-kPfNFq3JL11qgl@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4250.1274867681@redhat.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/26/2010 10:05 AM, Luis R. Rodriguez wrote:
-> On Wed, May 26, 2010 at 9:49 AM, Justin P. Mattock
-> <justinmattock@gmail.com>  wrote:
->    
->> ath_print in xmit.c should say "Reseting hardware"
->> instead of Reaseting HAL!(since HAL is being fazed out).
->> dmesg shows:
->> [ 8660.899624] ath: Failed to stop TX DMA in 100 msec after killing last frame
->> [ 8660.899676] ath: Unable to stop TxDMA. Reset HAL!
->>
->>
->>   Signed-off-by: Justin P. Mattock<justinmattock@gmail.com>
->>
->> ---
->>   drivers/net/wireless/ath/ath9k/xmit.c |    2 +-
->>   1 files changed, 1 insertions(+), 1 deletions(-)
->>
->> diff --git a/drivers/net/wireless/ath/ath9k/xmit.c b/drivers/net/wireless/ath/ath9k/xmit.c
->> index 3db1917..2a0558e 100644
->> --- a/drivers/net/wireless/ath/ath9k/xmit.c
->> +++ b/drivers/net/wireless/ath/ath9k/xmit.c
->> @@ -1198,7 +1198,7 @@ void ath_drain_all_txq(struct ath_softc *sc, bool retry_tx)
->>                 int r;
->>
->>                 ath_print(common, ATH_DBG_FATAL,
->> -                         "Unable to stop TxDMA. Reset HAL!\n");
->> +                         "Unable to stop TxDMA. Reseting hardware!\n");
->>      
-> Thanks for the patch but you need to send this to John, cc linux-wireless.
->
->    Luis
->
->    
-alright resent with the other patch I had kicking around..
-(hopefully the right Cc's)
+On Wed, May 26, 2010 at 10:54:41AM +0100, David Howells wrote:
+> K.Prasad <prasad@linux.vnet.ibm.com> wrote:
+> 
+> > > My understanding is weak function definitions must appear in a different C
+> > > file than their call sites to work on some toolchains.
+> > > 
+> > 
+> > Atleast, there are quite a few precedents inside the Linux kernel for
+> > __weak functions being invoked from the file in which they are defined
+> > (arch_hwblk_init, arch_enable_nonboot_cpus_begin and hw_perf_disable to
+> > name a few).
+> > Moreover the online GCC docs haven't any such constraints mentioned.
+> 
+> I've seen problems in this area.  gcc sometimes inlines a weak function that's
+> in the same file as the call point.
+> 
 
-cheers,
+We've seen such behaviour even otherwise....even with noinline attribute
+in place. I'm not sure if this gcc fix
+(http://gcc.gnu.org/bugzilla/show_bug.cgi?id=16922) helped correct the
+behaviour, but the lesson has been to not trust a function to be
+inlined/remain non-inline consistently.
 
-Justin P. Mattock
+> David
+
+Thanks,
+K.Prasad
