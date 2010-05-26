@@ -1,100 +1,325 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755135Ab0EZPCO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 May 2010 11:02:14 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:43754 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753290Ab0EZPCN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 May 2010 11:02:13 -0400
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-To: Tejun Heo <tj@kernel.org>, davem@davemloft.net, jens.axboe@oracle.com
-cc: dhowells@redhat.com, linux-kernel@vger.kernel.org, torvalds@osdl.org
-Subject: Change to invalidate_bdev() may break emergency remount R/O
-Date: Wed, 26 May 2010 16:01:07 +0100
-Message-ID: <25328.1274886067@redhat.com>
+	id S1755420Ab0EZPDR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 May 2010 11:03:17 -0400
+Received: from av7-1-sn3.vrr.skanova.net ([81.228.9.181]:41651 "EHLO
+	av7-1-sn3.vrr.skanova.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754812Ab0EZPDQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 May 2010 11:03:16 -0400
+X-Greylist: delayed 1561 seconds by postgrey-1.27 at vger.kernel.org; Wed, 26 May 2010 11:03:15 EDT
+Subject: Re: [PATCH 1/2] media: Add timberdale video-in driver
+From: Richard =?ISO-8859-1?Q?R=F6jfors?= 
+	<richard.rojfors@pelagicore.com>
+To: Mauro Carvalho Chehab <mchehab@redhat.com>
+Cc: Linux Media Mailing List <linux-media@vger.kernel.org>,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       Douglas Schilling Landgraf <dougsland@gmail.com>,
+       Samuel Ortiz <sameo@linux.intel.com>,
+       "Williams, Dan J" <dan.j.williams@intel.com>
+In-Reply-To: <4BD46A0E.8030705@redhat.com>
+References: <1271435291.11641.45.camel@debian> <4BD45EB1.5020804@redhat.com>
+	 <4BD46753.9010807@pelagicore.com>  <4BD46A0E.8030705@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 26 May 2010 16:19:33 +0200
+Message-ID: <1274883573.12092.4.camel@debian>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.1.2 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Mauro,
 
-The following commit may be a problem for emergency_remount() [Alt+SysRq+U]:
+On Sun, 2010-04-25 at 13:13 -0300, Mauro Carvalho Chehab wrote:
+> > 
+> > 2.
+> > I tried using videobuf-dma-contig, but got poor performance. I can not
+> > really explain why, I though it's due to the fact that the contiguous
+> > buffer is allocated coherent -> no caching.
+> > I saw both gstreamer and mplayer perform very badly.
+> > The frame grabber requires the DMA transfer for a frame beeing started
+> > while the frame is decoded. When I tested using contigous buffers
+> > gstreamer sometimes was that slow that it sometimes missed to have a
+> > frame queued when a transfer was finished, so I got frame drops. Any
+> > other ideas of the poor performance? otherwise I would like to go for
+> > the double buffered solution.
+> 
+> The better is to fix videobuf-dma_contig to better work on your hardware.
+> It makes sense to add a flag to allow specifying if it should use coherent
+> or non-coherent memory for the dma buffer alloc/free calls.
+> 
 
-	commit fa4b9074cd8428958c2adf9dc0c831f46e27c193
-	Author: Tejun Heo <tj@kernel.org>
-	Date:   Sat May 15 20:09:27 2010 +0200
+I have verified the performance issue and it goes back to non cached coherent buffers.
+I did an update to the videobuf-dma-contig. I did it by adding another init function,
+which calls videobuf_queue_core_init with another set of qops.
+The other set uses the same functions as the uncached version, but a sync function
+is added, and the alloc_functions are different.
 
-	    buffer: make invalidate_bdev() drain all percpu LRU add caches
+What do you think?
 
-	    invalidate_bdev() should release all page cache pages which are clean
-	    and not being used; however, if some pages are still in the percpu LRU
-	    add caches on other cpus, those pages are considered in used and don't
-	    get released.  Fix it by calling lru_add_drain_all() before trying to
-	    invalidate pages.
+Signed-off-by: Richard Röjfors <richard.rojfors@pelagicore.com>
+---
+diff --git a/drivers/media/video/videobuf-dma-contig.c b/drivers/media/video/videobuf-dma-contig.c
+index dce4f3a..2fc923c 100644
+--- a/drivers/media/video/videobuf-dma-contig.c
++++ b/drivers/media/video/videobuf-dma-contig.c
+@@ -27,6 +27,7 @@ struct videobuf_dma_contig_memory {
+ 	u32 magic;
+ 	void *vaddr;
+ 	dma_addr_t dma_handle;
++	bool cached;
+ 	unsigned long size;
+ 	int is_userptr;
+ };
+@@ -38,6 +39,54 @@ struct videobuf_dma_contig_memory {
+ 		BUG();							    \
+ 	}
+ 
++static int __videobuf_dc_alloc(struct device *dev,
++	struct videobuf_dma_contig_memory *mem, unsigned long size)
++{
++	mem->size = size;
++	if (mem->cached) {
++		mem->vaddr = kmalloc(mem->size, GFP_KERNEL);
++		if (mem->vaddr) {
++			int err;
++
++			mem->dma_handle = dma_map_single(dev, mem->vaddr,
++				mem->size, DMA_FROM_DEVICE);
++			err = dma_mapping_error(dev, mem->dma_handle);
++			if (err) {
++				dev_err(dev, "dma_map_single failed\n");
++
++				kfree(mem->vaddr);
++				mem->vaddr = 0;
++				return err;
++			}
++		}
++	} else
++		mem->vaddr = dma_alloc_coherent(dev, mem->size,
++			&mem->dma_handle, GFP_KERNEL);
++
++	if (!mem->vaddr) {
++		dev_err(dev, "memory alloc size %ld failed\n",
++			mem->size);
++		return -ENOMEM;
++	}
++
++	dev_dbg(dev, "dma mapped data is at %p (%ld)\n", mem->vaddr, mem->size);
++
++	return 0;
++}
++
++static void __videobuf_dc_free(struct device *dev,
++	struct videobuf_dma_contig_memory *mem)
++{
++	if (mem->cached) {
++		dma_unmap_single(dev, mem->dma_handle, mem->size,
++			DMA_FROM_DEVICE);
++		kfree(mem->vaddr);
++	} else
++		dma_free_coherent(dev, mem->size, mem->vaddr, mem->dma_handle);
++
++	mem->vaddr = NULL;
++}
++
+ static void
+ videobuf_vm_open(struct vm_area_struct *vma)
+ {
+@@ -92,9 +141,7 @@ static void videobuf_vm_close(struct vm_area_struct *vma)
+ 				dev_dbg(map->q->dev, "buf[%d] freeing %p\n",
+ 					i, mem->vaddr);
+ 
+-				dma_free_coherent(q->dev, mem->size,
+-						  mem->vaddr, mem->dma_handle);
+-				mem->vaddr = NULL;
++				__videobuf_dc_free(q->dev, mem);
+ 			}
+ 
+ 			q->bufs[i]->map   = NULL;
+@@ -190,7 +237,7 @@ static int videobuf_dma_contig_user_get(struct videobuf_dma_contig_memory *mem,
+ 	return ret;
+ }
+ 
+-static void *__videobuf_alloc(size_t size)
++static void *__videobuf_alloc(size_t size, bool cached)
+ {
+ 	struct videobuf_dma_contig_memory *mem;
+ 	struct videobuf_buffer *vb;
+@@ -199,11 +246,22 @@ static void *__videobuf_alloc(size_t size)
+ 	if (vb) {
+ 		mem = vb->priv = ((char *)vb) + size;
+ 		mem->magic = MAGIC_DC_MEM;
++		mem->cached = cached;
+ 	}
+ 
+ 	return vb;
+ }
+ 
++static void *__videobuf_alloc_uncached(size_t size)
++{
++	return __videobuf_alloc(size, false);
++}
++
++static void *__videobuf_alloc_cached(size_t size)
++{
++	return __videobuf_alloc(size, true);
++}
++
+ static void *__videobuf_to_vmalloc(struct videobuf_buffer *buf)
+ {
+ 	struct videobuf_dma_contig_memory *mem = buf->priv;
+@@ -241,17 +299,8 @@ static int __videobuf_iolock(struct videobuf_queue *q,
+ 			return videobuf_dma_contig_user_get(mem, vb);
+ 
+ 		/* allocate memory for the read() method */
+-		mem->size = PAGE_ALIGN(vb->size);
+-		mem->vaddr = dma_alloc_coherent(q->dev, mem->size,
+-						&mem->dma_handle, GFP_KERNEL);
+-		if (!mem->vaddr) {
+-			dev_err(q->dev, "dma_alloc_coherent %ld failed\n",
+-					 mem->size);
++		if (__videobuf_dc_alloc(q->dev, mem, PAGE_ALIGN(vb->size)))
+ 			return -ENOMEM;
+-		}
+-
+-		dev_dbg(q->dev, "dma_alloc_coherent data is at %p (%ld)\n",
+-			mem->vaddr, mem->size);
+ 		break;
+ 	case V4L2_MEMORY_OVERLAY:
+ 	default:
+@@ -276,6 +325,20 @@ static int __videobuf_mmap_free(struct videobuf_queue *q)
+ 	return 0;
+ }
+ 
++static int __videobuf_sync(struct videobuf_queue *q,
++			   struct videobuf_buffer *buf)
++{
++	struct videobuf_dma_contig_memory *mem = buf->priv;
++	BUG_ON(!mem);
++	MAGIC_CHECK(mem->magic, MAGIC_DC_MEM);
++
++	dma_sync_single_for_cpu(q->dev, mem->dma_handle, mem->size,
++		DMA_FROM_DEVICE);
++
++    return 0;
++}
++
++
+ static int __videobuf_mmap_mapper(struct videobuf_queue *q,
+ 				  struct vm_area_struct *vma)
+ {
+@@ -321,30 +384,22 @@ static int __videobuf_mmap_mapper(struct videobuf_queue *q,
+ 	BUG_ON(!mem);
+ 	MAGIC_CHECK(mem->magic, MAGIC_DC_MEM);
+ 
+-	mem->size = PAGE_ALIGN(q->bufs[first]->bsize);
+-	mem->vaddr = dma_alloc_coherent(q->dev, mem->size,
+-					&mem->dma_handle, GFP_KERNEL);
+-	if (!mem->vaddr) {
+-		dev_err(q->dev, "dma_alloc_coherent size %ld failed\n",
+-			mem->size);
++	if (__videobuf_dc_alloc(q->dev, mem, PAGE_ALIGN(q->bufs[first]->bsize)))
+ 		goto error;
+-	}
+-	dev_dbg(q->dev, "dma_alloc_coherent data is at addr %p (size %ld)\n",
+-		mem->vaddr, mem->size);
+ 
+ 	/* Try to remap memory */
+ 
+ 	size = vma->vm_end - vma->vm_start;
+ 	size = (size < mem->size) ? size : mem->size;
+ 
+-	vma->vm_page_prot = pgprot_noncached(vma->vm_page_prot);
++	if (!mem->cached)
++		vma->vm_page_prot = pgprot_noncached(vma->vm_page_prot);
+ 	retval = remap_pfn_range(vma, vma->vm_start,
+ 				 mem->dma_handle >> PAGE_SHIFT,
+ 				 size, vma->vm_page_prot);
+ 	if (retval) {
+ 		dev_err(q->dev, "mmap: remap failed with error %d. ", retval);
+-		dma_free_coherent(q->dev, mem->size,
+-				  mem->vaddr, mem->dma_handle);
++		__videobuf_dc_free(q->dev, mem);
+ 		goto error;
+ 	}
+ 
+@@ -422,9 +477,22 @@ static int __videobuf_copy_stream(struct videobuf_queue *q,
+ static struct videobuf_qtype_ops qops = {
+ 	.magic        = MAGIC_QTYPE_OPS,
+ 
+-	.alloc        = __videobuf_alloc,
++	.alloc        = __videobuf_alloc_uncached,
++	.iolock       = __videobuf_iolock,
++	.mmap_free    = __videobuf_mmap_free,
++	.mmap_mapper  = __videobuf_mmap_mapper,
++	.video_copy_to_user = __videobuf_copy_to_user,
++	.copy_stream  = __videobuf_copy_stream,
++	.vmalloc      = __videobuf_to_vmalloc,
++};
++
++static struct videobuf_qtype_ops qops_cached = {
++	.magic        = MAGIC_QTYPE_OPS,
++
++	.alloc        = __videobuf_alloc_cached,
+ 	.iolock       = __videobuf_iolock,
+ 	.mmap_free    = __videobuf_mmap_free,
++	.sync         = __videobuf_sync,
+ 	.mmap_mapper  = __videobuf_mmap_mapper,
+ 	.video_copy_to_user = __videobuf_copy_to_user,
+ 	.copy_stream  = __videobuf_copy_stream,
+@@ -445,6 +513,20 @@ void videobuf_queue_dma_contig_init(struct videobuf_queue *q,
+ }
+ EXPORT_SYMBOL_GPL(videobuf_queue_dma_contig_init);
+ 
++void videobuf_queue_dma_contig_init_cached(struct videobuf_queue *q,
++				    const struct videobuf_queue_ops *ops,
++				    struct device *dev,
++				    spinlock_t *irqlock,
++				    enum v4l2_buf_type type,
++				    enum v4l2_field field,
++				    unsigned int msize,
++				    void *priv)
++{
++	videobuf_queue_core_init(q, ops, dev, irqlock, type, field, msize,
++				 priv, &qops_cached);
++}
++EXPORT_SYMBOL_GPL(videobuf_queue_dma_contig_init_cached);
++
+ dma_addr_t videobuf_to_dma_contig(struct videobuf_buffer *buf)
+ {
+ 	struct videobuf_dma_contig_memory *mem = buf->priv;
+@@ -481,9 +563,7 @@ void videobuf_dma_contig_free(struct videobuf_queue *q,
+ 		return;
+ 	}
+ 
+-	/* read() method */
+-	dma_free_coherent(q->dev, mem->size, mem->vaddr, mem->dma_handle);
+-	mem->vaddr = NULL;
++	__videobuf_dc_free(q->dev, mem);
+ }
+ EXPORT_SYMBOL_GPL(videobuf_dma_contig_free);
+ 
+diff --git a/include/media/videobuf-dma-contig.h b/include/media/videobuf-dma-contig.h
+index ebaa9bc..43b94cd 100644
+--- a/include/media/videobuf-dma-contig.h
++++ b/include/media/videobuf-dma-contig.h
+@@ -25,6 +25,15 @@ void videobuf_queue_dma_contig_init(struct videobuf_queue *q,
+ 				    unsigned int msize,
+ 				    void *priv);
+ 
++void videobuf_queue_dma_contig_init_cached(struct videobuf_queue *q,
++				    const struct videobuf_queue_ops *ops,
++				    struct device *dev,
++				    spinlock_t *irqlock,
++				    enum v4l2_buf_type type,
++				    enum v4l2_field field,
++				    unsigned int msize,
++				    void *priv);
++
+ dma_addr_t videobuf_to_dma_contig(struct videobuf_buffer *buf);
+ void videobuf_dma_contig_free(struct videobuf_queue *q,
+ 			      struct videobuf_buffer *buf);
 
-	    This problem was discovered while testing block automatic native
-	    capacity unlocking.  Null pages which were read before automatic
-	    unlocking didn't get released by invalidate_bdev() and ended up
-	    interfering with partition scan after unlocking.
-
-	    Signed-off-by: Tejun Heo <tj@kernel.org>
-	    Acked-by: David S. Miller <davem@davemloft.net>
-	    Signed-off-by: Jens Axboe <jens.axboe@oracle.com>
-
-The symptoms are a lockdep warning:
-
-SysRq : Emergency Remount R/O
-
-=============================================
-[ INFO: possible recursive locking detected ]
-2.6.34-cachefs #101
----------------------------------------------
-events/0/9 is trying to acquire lock:
- (events){+.+.+.}, at: [<ffffffff81042cf0>] flush_work+0x34/0xec
-
-but task is already holding lock:
- (events){+.+.+.}, at: [<ffffffff81042264>] worker_thread+0x19a/0x2e2
-
-other info that might help us debug this:
-3 locks held by events/0/9:
- #0:  (events){+.+.+.}, at: [<ffffffff81042264>] worker_thread+0x19a/0x2e2
- #1:  ((work)#3){+.+...}, at: [<ffffffff81042264>] worker_thread+0x19a/0x2e2
- #2:  (&type->s_umount_key#30){++++..}, at: [<ffffffff810b3fc8>] do_emergency_remount+0x54/0xda
-
-stack backtrace:
-Pid: 9, comm: events/0 Not tainted 2.6.34-cachefs #101
-Call Trace:
- [<ffffffff81054e80>] validate_chain+0x584/0xd23
- [<ffffffff81052ad4>] ? trace_hardirqs_off+0xd/0xf
- [<ffffffff8101c264>] ? flat_send_IPI_mask+0x74/0x86
- [<ffffffff81055ea8>] __lock_acquire+0x889/0x8fa
- [<ffffffff8102bcc9>] ? try_to_wake_up+0x23b/0x24d
- [<ffffffff8108fe45>] ? lru_add_drain_per_cpu+0x0/0xb
- [<ffffffff81055f70>] lock_acquire+0x57/0x6d
- [<ffffffff81042cf0>] ? flush_work+0x34/0xec
- [<ffffffff81042d1c>] flush_work+0x60/0xec
- [<ffffffff81042cf0>] ? flush_work+0x34/0xec
- [<ffffffff8108fbc1>] ? ____pagevec_lru_add+0x140/0x156
- [<ffffffff8108fe45>] ? lru_add_drain_per_cpu+0x0/0xb
- [<ffffffff8108fdc5>] ? lru_add_drain+0x3b/0x8f
- [<ffffffff81042eba>] schedule_on_each_cpu+0x112/0x152
- [<ffffffff8108fc5a>] lru_add_drain_all+0x10/0x12
- [<ffffffff810d509e>] invalidate_bdev+0x28/0x3a
- [<ffffffff810b3ef3>] do_remount_sb+0x129/0x14e
- [<ffffffff810b3ff3>] do_emergency_remount+0x7f/0xda
- [<ffffffff810422b9>] worker_thread+0x1ef/0x2e2
- [<ffffffff81042264>] ? worker_thread+0x19a/0x2e2
- [<ffffffff810b3f74>] ? do_emergency_remount+0x0/0xda
- [<ffffffff81045fcd>] ? autoremove_wake_function+0x0/0x34
- [<ffffffff810420ca>] ? worker_thread+0x0/0x2e2
- [<ffffffff81045be7>] kthread+0x7a/0x82
- [<ffffffff81002cd4>] kernel_thread_helper+0x4/0x10
- [<ffffffff813e2c3c>] ? restore_args+0x0/0x30
- [<ffffffff81045b6d>] ? kthread+0x0/0x82
- [<ffffffff81002cd0>] ? kernel_thread_helper+0x0/0x10
-Emergency Remount complete
-
-David
