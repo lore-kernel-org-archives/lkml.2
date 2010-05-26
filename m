@@ -1,96 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754805Ab0EZNDy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 May 2010 09:03:54 -0400
-Received: from ist.d-labs.de ([213.239.218.44]:41215 "EHLO mx01.d-labs.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753578Ab0EZNDx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 May 2010 09:03:53 -0400
-Date: Wed, 26 May 2010 15:03:48 +0200
-From: Florian Mickler <florian@mickler.org>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: felipe.balbi@nokia.com, Vitaly Wool <vitalywool@gmail.com>,
-       LKML <linux-kernel@vger.kernel.org>,
-       "Paul@smtp1.linux-foundation.org" <Paul@smtp1.linux-foundation.org>,
-       Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
-       Linux PM <linux-pm@lists.linux-foundation.org>
-Subject: Re: [linux-pm] [PATCH 0/8] Suspend block api (version 8)
-Message-ID: <20100526150348.54ea29c7@schatten.dmk.lab>
-In-Reply-To: <1274877689.27810.287.camel@twins>
-References: <87wrusvrqe.fsf@deeprootsystems.com>
-	<201005250138.16293.rjw@sisk.pl>
-	<1274863655.5882.4875.camel@twins>
-	<AANLkTinN6MKvCEhPkbYQRD2gu-mGXdNW9asRsTuKN3_Y@mail.gmail.com>
-	<1274867106.5882.5090.camel@twins>
-	<20100526120242.5c9b73ad@schatten.dmk.lab>
-	<AANLkTim4021cTnhVZrQpefq1MG-eEPOFLDRO-XDepHb4@mail.gmail.com>
-	<20100526133721.602633b2@schatten.dmk.lab>
-	<AANLkTikzgaOFdQKess4E-D86OLPOzxP3dWiDkU_UR0ri@mail.gmail.com>
-	<20100526142430.327ccbc4@schatten.dmk.lab>
-	<20100526122932.GB1990@nokia.com>
-	<20100526143323.7c6f8705@schatten.dmk.lab>
-	<1274877689.27810.287.camel@twins>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1754941Ab0EZNEf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 May 2010 09:04:35 -0400
+Received: from smtp.ctxuk.citrix.com ([62.200.22.115]:18012 "EHLO
+	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753578Ab0EZNEa (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 May 2010 09:04:30 -0400
+X-IronPort-AV: E=Sophos;i="4.53,304,1272844800"; 
+   d="scan'208";a="98964"
+Date: Wed, 26 May 2010 14:08:23 +0100
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball-desktop
+To: Jeremy Fitzhardinge <jeremy@goop.org>
+CC: Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+       Don Dutile <ddutile@redhat.com>
+Subject: Re: [PATCH 10/11] Support VIRQ_TIMER and pvclock on HVM
+In-Reply-To: <4BFC31F5.9040806@goop.org>
+Message-ID: <alpine.DEB.2.00.1005261342240.25605@kaball-desktop>
+References: <alpine.DEB.2.00.1005241615300.25605@kaball-desktop> <1274725657-1149-10-git-send-email-stefano.stabellini@eu.citrix.com> <4BFC31F5.9040806@goop.org>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: text/plain; charset="US-ASCII"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 26 May 2010 14:41:29 +0200
-Peter Zijlstra <peterz@infradead.org> wrote:
+On Tue, 25 May 2010, Jeremy Fitzhardinge wrote:
+> On 05/24/2010 11:27 AM, Stefano Stabellini wrote:
+> > Use the paravirtualized timer (VIRQ_TIMER) as timer and the
+> > paravirtualized clock (pvclock) as wallclock on HVM domains too.
+> >   
+> 
+> That's not quite correct.  There's the Xen clockevent driver, the Xen
+> clocksource, and a distinct-but-related Xen notion of wallclock time. 
+> In general, clocksources and wallclock don't have much direct
+> relationship to each other.
 
-> On Wed, 2010-05-26 at 14:33 +0200, Florian Mickler wrote:
-> > On Wed, 26 May 2010 15:29:32 +0300
-> > Felipe Balbi <felipe.balbi@nokia.com> wrote:
-> > 
-> > > hi,
-> > > 
-> > > On Wed, May 26, 2010 at 02:24:30PM +0200, ext Florian Mickler wrote:
-> > > >And if you have two kernels, one with which your device is dead after 1
-> > > >hour and one with which your device is dead after 10 hours. Which would
-> > > >you prefer? I mean really... this is ridiculous.
-> > > 
-> > > What I find ridiculous is the assumption that kernel should provide good 
-> > > power management even for badly written applications. They should work, 
-> > > of course, but there's no assumption that the kernel should cope with 
-> > > those applications and provide good battery usage on those cases.
-> > > 
-> > > You can install and run anything on the device, and they will work as 
-> > > they should (they will be scheduled and will be processed) but you can't 
-> > > expect the kernel to prevent that application from waking up the CPU 
-> > > every 10 ms simply because someone didn't think straight while writting 
-> > > the app.
-> > > 
-> > 
-> > But then someone at the user side has to know what he is doing. 
-> > 
-> > I fear, if you target mass market without central distribution
-> > channels, you can not assume that much.
+Let me rephrase it:
+
+use xen_vcpuop_clockevent instead of hpet and APIC timers as main
+clockevent device on all vcpus, use the xen wallclock time as wallclock
+instead of rtc and use xen_clocksource as clocksource.
+The pv clock algorithm needs to work correctly for the xen_clocksource
+and xen wallclock to be usable, only modern Xen versions offer a
+reliable pv clock in HVM guests (XENFEAT_hvm_safe_pvclock).
+
 > 
-> Provide the developers and users with tools. 
+> > Any interaction with emulated hardware is not very fast, so using the
+> > paravirtualized timer instead of the emulated hpet is defenitely a
+> >   
+> "definitely"
 > 
-> Notify the users that their phone is using power at an unadvised rate
-> due to proglet $foo.
+> > performance improvement.
+> >   
 > 
-> Also, if you can integrate into the development environment and provide
-> developers instant feedback on suckage of their app they can react and
-> fix before letting users run into the issue.
+> Are there accuracy/stability/precision improvements too?
 > 
 
-Yeah. And I personally agree with you there. But this is a policy
-decision that should not prevent android from doing it differently.
-The kernel can not win if it does not try to integrate any use of it.
-After all, we are a free comunity and if someone wants to use it their
-way, why not allow for it? (As long as it does not directly impact other
-uses)
+Using the hpet as clocksource means a VMEXIT every time we read/write to
+the hpet mmio addresses, pvclock give us a better rating without
+VMEXITs. Same goes for the xen wallclock and xen_vcpuop_clockevent.
 
-The best solution wins, but not by decision of some kernel
-development gatekeepers, but because it is superior. There are no clear
-markings of the better solution. Time will tell.
-
-Cheers,
-Flo
 
 
