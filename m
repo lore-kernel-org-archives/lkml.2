@@ -1,62 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756846Ab0EZP7A (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 May 2010 11:59:00 -0400
-Received: from mgw2.diku.dk ([130.225.96.92]:40779 "EHLO mgw2.diku.dk"
+	id S1756695Ab0EZP7M (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 May 2010 11:59:12 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:36068 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755399Ab0EZP66 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 May 2010 11:58:58 -0400
-Date: Wed, 26 May 2010 17:58:53 +0200 (CEST)
-From: Julia Lawall <julia@diku.dk>
-To: Mark Fasheh <mfasheh@suse.com>, Joel Becker <joel.becker@oracle.com>,
-       ocfs2-devel@oss.oracle.com, linux-kernel@vger.kernel.org,
-       kernel-janitors@vger.kernel.org
-Subject: [PATCH 15/17] fs/ocfs2/dlm: Add missing spin_unlock
-Message-ID: <Pine.LNX.4.64.1005261758290.23743@ask.diku.dk>
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1755399Ab0EZP7I (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 May 2010 11:59:08 -0400
+Subject: Re: [PATCH] do_generic_file_read: clear page errors when issuing a
+	fresh read of the page
+From: Larry Woodman <lwoodman@redhat.com>
+To: Rik van Riel <riel@redhat.com>
+Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+       linux-mm@kvack.org, jmoyer@redhat.com, torvalds@linux-foundation.org
+In-Reply-To: <20100526114940.49f51028@annuminas.surriel.com>
+References: <20100526114940.49f51028@annuminas.surriel.com>
+Content-Type: text/plain
+Date: Wed, 26 May 2010 12:02:52 -0400
+Message-Id: <1274889772.20515.103.camel@dhcp-100-19-198.bos.redhat.com>
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Julia Lawall <julia@diku.dk>
+On Wed, 2010-05-26 at 11:49 -0400, Rik van Riel wrote:
+> From: Jeff Moyer <jmoyer@redhat.com>
+> 
+> I/O errors can happen due to temporary failures, like multipath
+> errors or losing network contact with the iSCSI server. Because
+> of that, the VM will retry readpage on the page.
+> 
+> However, do_generic_file_read does not clear PG_error.  This
+> causes the system to be unable to actually use the data in the
+> page cache page, even if the subsequent readpage completes
+> successfully!
+> 
+> The function filemap_fault has had a ClearPageError before
+> readpage forever.  This patch simply adds the same to
+> do_generic_file_read.
+> 
+> Signed-off-by: Rik van Riel <riel@redhat.com>
+> Signed-off-by: Jeff Moyer <jmoyer@redhat.com>
+> ---
+>  mm/filemap.c |    6 ++++++
+>  1 file changed, 6 insertions(+)
+> 
+> Index: linux-2.6.34/mm/filemap.c
+> ===================================================================
+> --- linux-2.6.34.orig/mm/filemap.c
+> +++ linux-2.6.34/mm/filemap.c
+> @@ -1106,6 +1106,12 @@ page_not_up_to_date_locked:
+>  		}
+>  
+>  readpage:
+> +		/*
+> +		 * A previous I/O error may have been due to temporary
+> +		 * failures, eg. multipath errors.
+> +		 * PG_error will be set again if readpage fails.
+> +		 */
+> +		ClearPageError(page);
+>  		/* Start the actual read. The read will unlock the page. */
+>  		error = mapping->a_ops->readpage(filp, page);
+>  
+Acked-by: Larry Woodman <lwoodman@redhat.com>
 
-Add a spin_unlock missing on the error path.  Unlock as in the other code
-that leads to the leave label.
-
-The semantic match that finds this problem is as follows:
-(http://coccinelle.lip6.fr/)
-
-// <smpl>
-@@
-expression E1;
-@@
-
-* spin_lock(E1,...);
-  <+... when != E1
-  if (...) {
-    ... when != E1
-*   return ...;
-  }
-  ...+>
-* spin_unlock(E1,...);
-// </smpl>
-
-Signed-off-by: Julia Lawall <julia@diku.dk>
-
----
- fs/ocfs2/dlm/dlmdomain.c |    1 +
- 1 file changed, 1 insertion(+)
-
-diff --git a/fs/ocfs2/dlm/dlmdomain.c b/fs/ocfs2/dlm/dlmdomain.c
-index 6b5a492..2ccad86 100644
---- a/fs/ocfs2/dlm/dlmdomain.c
-+++ b/fs/ocfs2/dlm/dlmdomain.c
-@@ -1709,6 +1709,7 @@ retry:
- 		}
- 
- 		if (dlm_protocol_compare(&dlm->fs_locking_proto, fs_proto)) {
-+			spin_unlock(&dlm_domain_lock);
- 			mlog(ML_ERROR,
- 			     "Requested locking protocol version is not "
- 			     "compatible with already registered domain "
