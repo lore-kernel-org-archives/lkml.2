@@ -1,81 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757224Ab0EZXBo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 May 2010 19:01:44 -0400
-Received: from bld-mail12.adl6.internode.on.net ([150.101.137.97]:34568 "EHLO
-	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753367Ab0EZXBm (ORCPT
+	id S1757550Ab0EZXDM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 May 2010 19:03:12 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:51482 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753367Ab0EZXDK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 May 2010 19:01:42 -0400
-Date: Thu, 27 May 2010 09:01:29 +1000
-From: Dave Chinner <david@fromorbit.com>
-To: Nick Piggin <npiggin@suse.de>
-Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-       linux-mm@kvack.org, xfs@oss.sgi.com
-Subject: Re: [PATCH 1/5] inode: Make unused inode LRU per superblock
-Message-ID: <20100526230129.GA1395@dastard>
-References: <1274777588-21494-1-git-send-email-david@fromorbit.com>
- <1274777588-21494-2-git-send-email-david@fromorbit.com>
- <20100526161732.GC22536@laptop>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20100526161732.GC22536@laptop>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Wed, 26 May 2010 19:03:10 -0400
+Date: Wed, 26 May 2010 16:02:52 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: piotr@hosowicz.com, linux-kernel@vger.kernel.org,
+       Jens Axboe <jens.axboe@oracle.com>, Divyesh Shah <dpshah@google.com>
+Subject: Re: BUG: using smp_processor_id() in preemptible [00000000] code:
+ icedove-bin/5449
+Message-Id: <20100526160252.325f8357.akpm@linux-foundation.org>
+In-Reply-To: <1274777422.5882.591.camel@twins>
+References: <4BF9EC69.5030709@example.com>
+	<1274777422.5882.591.camel@twins>
+X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 27, 2010 at 02:17:33AM +1000, Nick Piggin wrote:
-> On Tue, May 25, 2010 at 06:53:04PM +1000, Dave Chinner wrote:
-> > From: Dave Chinner <dchinner@redhat.com>
-> > 
-> > The inode unused list is currently a global LRU. This does not match
-> > the other global filesystem cache - the dentry cache - which uses
-> > per-superblock LRU lists. Hence we have related filesystem object
-> > types using different LRU reclaimatin schemes.
+On Tue, 25 May 2010 10:50:22 +0200
+Peter Zijlstra <peterz@infradead.org> wrote:
+
+> On Mon, 2010-05-24 at 05:03 +0200, Piotr Hosowicz wrote:
+> > [  720.313607] BUG: using smp_processor_id() in preemptible [00000000] code: icedove-bin/5449
+> > [  720.313612] caller is native_sched_clock+0x3c/0x68
+> > [  720.313616] Pid: 5449, comm: icedove-bin Tainted: P            2.6.34-20100524-0407 #1
+> > [  720.313618] Call Trace:
+> > [  720.313624]  [<ffffffff811a533b>] debug_smp_processor_id+0xc7/0xe0
+> > [  720.313629]  [<ffffffff81009b87>] native_sched_clock+0x3c/0x68
+> > [  720.313634]  [<ffffffff81009a4d>] sched_clock+0x9/0xd
+> > [  720.313637]  [<ffffffff811823ec>] blk_rq_init+0x92/0x9d
+> > [  720.313641]  [<ffffffff81184227>] get_request+0x1bf/0x2c7
+> > [  720.313646]  [<ffffffff8118435c>] get_request_wait+0x2d/0x19d 
 > 
-> Is this an improvement I wonder? The dcache is using per sb lists
-> because it specifically requires sb traversal.
-
-Right - I originally implemented the per-sb dentry lists for
-scalability purposes. i.e. to avoid monopolising the dentry_lock
-during unmount looking for dentries on a specific sb and hanging the
-system for several minutes.
-
-However, the reason for doing this to the inode cache is not for
-scalability, it's because we have a tight relationship between the
-dentry and inode cacheѕ. That is, reclaim from the dentry LRU grows
-the inode LRU.  Like the registration of the shrinkers, this is kind
-of an implicit, undocumented behavour of the current shrinker
-implemenation.
-
-What this patch series does is take that implicit relationship and
-make it explicit.  It also allows other filesystem caches to tie
-into the relationship if they need to (e.g. the XFS inode cache).
-What it _doesn't do_ is change the macro level behaviour of the
-shrinkers...
-
-> What allocation/reclaim really wants (for good scalability and NUMA
-> characteristics) is per-zone lists for these things. It's easy to
-> convert a single list into per-zone lists.
+> This comes from wreckage in the blk tree..
+> 
 >
-> It is much harder to convert per-sb lists into per-sb x per-zone lists.
+>
+>
+> +unsigned long long local_clock(void)
+> +{
+> +	unsigned long long clock;
+> +	unsigned long flags;
+> +
+> +	local_irq_save(flags);
+> +	clock = sched_clock_cpu(smp_processor_id());
+> +	local_irq_restore(flags);
+> +
+> +	return clock;
+> +}
+> +
 
-No it's not. Just convert the s_{dentry,inode}_lru lists on each
-superblock and call the shrinker with a new zone mask field to pick
-the correct LRU. That's no harder than converting a global LRU.
-Anyway, you'd still have to do per-sb x per-zone lists for the dentry LRUs,
-so changing the inode cache to per-sb makes no difference.
+NAK NAK NAK NAK!  QAK!  HAK!  Crap code!  Stop adding undocumented
+interfaces.  Just stop it.  Now.  Geeze.
 
-However, this is a moot point because we don't have per-zone shrinker
-interfaces. That's an entirely separate discussion because of the
-macro-level behavioural changes it implies....
+How is anyone supposed to use this?  What are the semantics of this
+thing?  What are the units of its return value?  What is the base value
+of its return value?  Does it return different times on different CPUs?
+I assume so, otherwise why does sched_clock_cpu() exist?  <looks at
+the sched_clock_cpu() documentation, collapses in giggles>
 
-Cheers,
+Because if it does return different times on different CPUs then any
+and all of the sites which use it are going to need to cope with
+time-going-backwards and I'm not at all confident that they get this
+right.
 
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
+
+Also, all these interfaces use a random mixture of `u64' and `unsigned
+long long', but that's a far less serious problem.
+
