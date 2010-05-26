@@ -1,45 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759050Ab0EZKIN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 May 2010 06:08:13 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:51802 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751377Ab0EZKIL convert rfc822-to-8bit (ORCPT
+	id S933755Ab0EZKIw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 May 2010 06:08:52 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:59813 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751377Ab0EZKIv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 May 2010 06:08:11 -0400
-Subject: Re: [PATCH 0/8] Suspend block api (version 8)
-From: Peter Zijlstra <peterz@infradead.org>
-To: Florian Mickler <florian@mickler.org>
-Cc: Arve =?ISO-8859-1?Q?Hj=F8nnev=E5g?= <arve@android.com>,
-       "Rafael J. Wysocki" <rjw@sisk.pl>,
-       Kevin Hilman <khilman@deeprootsystems.com>, felipe.balbi@nokia.com,
-       Linux PM <linux-pm@lists.linux-foundation.org>,
-       LKML <linux-kernel@vger.kernel.org>,
-       Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
-       Tony Lindgren <tony@atomide.com>, Paul Walmsley <paul@pwsan.com>
-In-Reply-To: <20100526120242.5c9b73ad@schatten.dmk.lab>
-References: <1274482015-30899-1-git-send-email-arve@android.com>
-	 <201005242049.18920.rjw@sisk.pl> <87wrusvrqe.fsf@deeprootsystems.com>
-	 <201005250138.16293.rjw@sisk.pl> <1274863655.5882.4875.camel@twins>
-	 <AANLkTinN6MKvCEhPkbYQRD2gu-mGXdNW9asRsTuKN3_Y@mail.gmail.com>
-	 <1274867106.5882.5090.camel@twins>
-	 <20100526120242.5c9b73ad@schatten.dmk.lab>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Wed, 26 May 2010 12:08:04 +0200
-Message-ID: <1274868484.5882.5176.camel@twins>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	Wed, 26 May 2010 06:08:51 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=BUFeck67HO7sHpWJ8eIgwYQMuHl5Pa80ZEASQjnY75MYwqv+RoQXov+kKiQQvjJEuW
+         uI8Z/VrBjgA7IvKn9IkF+hgFgKQP6YE0EMsxRlYyAFOYXQ5OsFa5ex9PfmLDNDI9tgz8
+         tOBcM1zzc7ikAn7sHBUAMhOOs9Hly687k5Js4=
+Date: Wed, 26 May 2010 12:08:48 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>
+Cc: Paul Mackerras <paulus@samba.org>,
+       Arnaldo Carvalho de Melo <acme@infradead.org>,
+       Steven Rostedt <rostedt@goodmis.org>,
+       David Miller <davem@davemloft.net>, Paul Mundt <lethal@linux-sh.org>,
+       Will Deacon <will.deacon@arm.com>,
+       Deng-Cheng Zhu <dengcheng.zhu@gmail.com>,
+       LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 0/4] convert perf to local64_t
+Message-ID: <20100526100844.GB5311@nowhere>
+References: <20100521134205.781916350@chello.nl>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100521134205.781916350@chello.nl>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-05-26 at 12:02 +0200, Florian Mickler wrote:
-> The summary is: The device this kernel is running on dosn't want to
-> (or can) rely on userspace to save power. This is because it is an open
-> system, without an app-store or the like. Everyone can run what he
-> wants.
+On Fri, May 21, 2010 at 03:42:05PM +0200, Peter Zijlstra wrote:
+> These patches introduce local64_t.
 > 
-> So anything relying on (all) userspace solves a different problem.
+> Since perf_event:count is only modified cross-cpu when child-counters
+> feed back their changes on exit, and we can use a secondary variable
+> for that, we can convert perf to use local64_t instead of atomic64_t
+> and use instructions without buslock semantics.
+> 
+> The local64_t implementation uses local_t for 64 bits, since local_t is
+> of type long, for 32 bit it falls back to atomic64_t. Architectures can
+> provide their own implementation as usual.
 
-So what stops an application from grabbing a suspend blocker?
+
+It seems nobody disagrees with it. Can we give it a try?
+
+Thanks.
+
