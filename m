@@ -1,67 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759210Ab0E0DqS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 May 2010 23:46:18 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:36653 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757552Ab0E0DqQ (ORCPT
+	id S1750834Ab0E0EB3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 May 2010 00:01:29 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:37085 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750724Ab0E0EB1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 May 2010 23:46:16 -0400
-Date: Wed, 26 May 2010 20:45:22 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Rabin VINCENT <rabin.vincent@stericsson.com>
-Cc: Alessandro Zummo <a.zummo@towertech.it>,
-       "rtc-linux@googlegroups.com" <rtc-linux@googlegroups.com>,
-       Samuel Ortiz <sameo@linux.intel.com>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       STEricsson_nomadik_linux <STEricsson_nomadik_linux@list.st.com>,
-       Virupax SADASHIVPETIMATH 
-	<virupax.sadashivpetimath@stericsson.com>,
-       Linus WALLEIJ <linus.walleij@stericsson.com>,
-       Srinidhi KASAGAR <srinidhi.kasagar@stericsson.com>
-Subject: Re: [PATCH] rtc: AB8500 RTC driver
-Message-Id: <20100526204522.ff41994d.akpm@linux-foundation.org>
-In-Reply-To: <20100527031443.GA6926@bnru02.bnr.st.com>
-References: <1274453796-9141-1-git-send-email-rabin.vincent@stericsson.com>
-	<20100525135159.166d91c6.akpm@linux-foundation.org>
-	<20100526121150.GA17197@bnru02.bnr.st.com>
-	<20100526120904.00fe134c.akpm@linux-foundation.org>
-	<20100527031443.GA6926@bnru02.bnr.st.com>
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 27 May 2010 00:01:27 -0400
+Date: Thu, 27 May 2010 05:01:20 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Dave Chinner <david@fromorbit.com>
+Cc: Nick Piggin <npiggin@suse.de>, linux-kernel@vger.kernel.org,
+       linux-fsdevel@vger.kernel.org, linux-mm@kvack.org, xfs@oss.sgi.com
+Subject: Re: [PATCH 3/5 v2] superblock: introduce per-sb cache shrinker
+ infrastructure
+Message-ID: <20100527040120.GX31073@ZenIV.linux.org.uk>
+References: <1274777588-21494-1-git-send-email-david@fromorbit.com>
+ <1274777588-21494-4-git-send-email-david@fromorbit.com>
+ <20100526164116.GD22536@laptop>
+ <20100526231214.GB1395@dastard>
+ <20100527015335.GD1395@dastard>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100527015335.GD1395@dastard>
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 27 May 2010 08:44:44 +0530 Rabin VINCENT <rabin.vincent@stericsson.com> wrote:
-
-> On Wed, May 26, 2010 at 21:09:04 +0200, Andrew Morton wrote:
-> > > --- a/drivers/rtc/rtc-ab8500.c~rtc-ab8500-rtc-driver-update
-> > > +++ a/drivers/rtc/rtc-ab8500.c
-> > > @@ -46,16 +46,25 @@
-> > >  #define COUNTS_PER_SEC			(0xF000 / 60)
-> > >  #define AB8500_RTC_EPOCH		2000
-> > >  
-> > > +static const unsigned long ab8500_rtc_time_regs[] = {
-> > > +	AB8500_RTC_WATCH_TMIN_HI_REG, AB8500_RTC_WATCH_TMIN_MID_REG,
-> > > +	AB8500_RTC_WATCH_TMIN_LOW_REG, AB8500_RTC_WATCH_TSECHI_REG,
-> > > +	AB8500_RTC_WATCH_TSECMID_REG
-> > > +};
-> > > +
-> > > +static const unsigned long ab8500_rtc_alarm_regs[] = {
-> > > +	AB8500_RTC_ALRM_MIN_HI_REG, AB8500_RTC_ALRM_MIN_MID_REG,
-> > > +	AB8500_RTC_ALRM_MIN_LOW_REG
-> > > +};
+On Thu, May 27, 2010 at 11:53:35AM +1000, Dave Chinner wrote:
+> On Thu, May 27, 2010 at 09:12:14AM +1000, Dave Chinner wrote:
+> > On Thu, May 27, 2010 at 02:41:16AM +1000, Nick Piggin wrote:
+> ....
+> > > Nitpick but I prefer just the restart label wher it is previously. This
+> > > is moving setup for the next iteration into the "error" case.
 > > 
-> > Well, it wasn't necessary to move these into file-global scope.  It
-> > would be nicer to leave them in function scope, really.  I was just
-> > pointing out that the `static' was missing, although unnecessary due to
-> > compiler magic.
-> 
-> I know, but we moved them out to reduce code duplication because these
-> lists were used in multiple functions and were copy/pasted in them.
-> 
+> > Ok, will fix.
+> ....
+> > > Would you just elaborate on the lock order problem somewhere? (the
+> > > comment makes it look like we *could* take the mutex if we wanted
+> > > to).
+> > 
+> > The shrinker is unregistered in deactivate_locked_super() which is
+> > just before ->kill_sb is called. The sb->s_umount lock is held at
+> > this point. hence is the shrinker is operating, we will deadlock if
+> > we try to lock it like this:
+> > 
+> > 	unmount:			shrinker:
+> > 					down_read(&shrinker_lock);
+> > 	down_write(&sb->s_umount)
+> > 	unregister_shrinker()
+> > 	down_write(&shrinker_lock)
+> > 					prune_super()
+> > 					  down_read(&sb->s_umount);
+> > 					  (deadlock)
+> > 
+> > hence if we can't get the sb->s_umount lock in prune_super(), then
+> > the superblock must be being unmounted and the shrinker should abort
+> > as the ->kill_sb method will clean up everything after the shrinker
+> > is unregistered. Hence the down_read_trylock().
 
-Ah.  Good reason :)
+Um...  Maybe I'm dumb, but what's wrong with doing unregistration from
+deactivate_locked_super(), right after the call of ->kill_sb()?  At that
+point ->s_umount is already dropped, so we won't deadlock at all.
+Shrinker rwsem will make sure that all shrinkers-in-progress will run
+to completion, so we won't get a superblock freed under prune_super().
+I don't particulary mind down_try_read() in prune_super(), but why not
+make life obviously safer?
+
+Am I missing something here?
