@@ -1,157 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757942Ab0E0QYa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 May 2010 12:24:30 -0400
-Received: from e35.co.us.ibm.com ([32.97.110.153]:41631 "EHLO
-	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757205Ab0E0QY1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 May 2010 12:24:27 -0400
-Subject: Re: [PATCH 2/3] workqueue: Add an API to create a singlethread
- workqueue attached to the current task's cgroup
-From: Sridhar Samudrala <sri@us.ibm.com>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: "Michael S. Tsirkin" <mst@redhat.com>, netdev <netdev@vger.kernel.org>,
-       lkml <linux-kernel@vger.kernel.org>,
-       "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Dmitri Vorobiev <dmitri.vorobiev@movial.com>, Tejun Heo <tj@kernel.org>,
-       Jiri Kosina <jkosina@suse.cz>, Thomas Gleixner <tglx@linutronix.de>,
-       Ingo Molnar <mingo@elte.hu>, Andi Kleen <ak@linux.intel.com>
-In-Reply-To: <20100527124448.GA4241@redhat.com>
-References: <1274227491.2370.110.camel@w-sridhar.beaverton.ibm.com>
-	 <20100527091426.GA6308@redhat.com>  <20100527124448.GA4241@redhat.com>
-Content-Type: text/plain
-Date: Thu, 27 May 2010 09:24:18 -0700
-Message-Id: <1274977458.10161.11.camel@w-sridhar.beaverton.ibm.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.26.3 (2.26.3-1.fc11) 
-Content-Transfer-Encoding: 7bit
+	id S1757998Ab0E0QZU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 May 2010 12:25:20 -0400
+Received: from mgw2.diku.dk ([130.225.96.92]:36387 "EHLO mgw2.diku.dk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754228Ab0E0QZR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 May 2010 12:25:17 -0400
+Date: Thu, 27 May 2010 18:25:11 +0200 (CEST)
+From: Julia Lawall <julia@diku.dk>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: Mattia Dongili <malattia@linux.it>, Matthew Garrett <mjg@redhat.com>,
+       platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org,
+       kernel-janitors@vger.kernel.org
+Subject: Re: [PATCH 9/11] drivers/platform/x86: Eliminate a NULL pointer
+ dereference
+In-Reply-To: <201005270921.43049.dmitry.torokhov@gmail.com>
+Message-ID: <Pine.LNX.4.64.1005271824510.5422@ask.diku.dk>
+References: <Pine.LNX.4.64.1005271436460.5422@ask.diku.dk>
+ <201005270921.43049.dmitry.torokhov@gmail.com>
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-05-27 at 14:44 +0200, Oleg Nesterov wrote:
-> On 05/27, Michael S. Tsirkin wrote:
-> >
-> > On Tue, May 18, 2010 at 05:04:51PM -0700, Sridhar Samudrala wrote:
-> > > Add a new kernel API to create a singlethread workqueue and attach it's
-> > > task to current task's cgroup and cpumask.
-> > >
-> > > Signed-off-by: Sridhar Samudrala <sri@us.ibm.com>
-> >
-> > Could someone familiar with workqueue code please comment on whether
-> > this patch is suitable for 2.6.35?
-> >
-> > It is needed to fix the case where vhost user might cause a kernel
-> > thread to consume more CPU than allowed by the cgroup.
-> > Should I merge it through the vhost tree?
-> > Ack for this?
-> 
-> I don't understand the reasons for this patch, but this doesn't matter.
-> 
-> I don't really see any need to change workqueue.c,
-> 
-> > > +static struct task_struct *get_singlethread_wq_task(struct workqueue_struct *wq)
-> > > +{
-> > > +	return (per_cpu_ptr(wq->cpu_wq, singlethread_cpu))->thread;
-> > > +}
-> 
-> (Not sure this trivial static helper with the single caller makes sense, but
->  see below)
-> 
-> > > +/* Create a singlethread workqueue and attach it's task to the current task's
-> > > + * cgroup and set it's cpumask to the current task's cpumask.
-> > > + */
-> > > +struct workqueue_struct *create_singlethread_workqueue_in_current_cg(char *name)
-> > > +{
-> > > +	struct workqueue_struct *wq;
-> > > +	struct task_struct *task;
-> > > +	cpumask_var_t mask;
-> > > +
-> > > +	wq = create_singlethread_workqueue(name);
-> > > +	if (!wq)
-> > > +		goto out;
-> > > +
-> > > +	if (!alloc_cpumask_var(&mask, GFP_KERNEL))
-> > > +		goto err;
-> > > +			
-> > > +	if (sched_getaffinity(current->pid, mask))
-> > > +		goto err;
-> > > +
-> > > +	task = get_singlethread_wq_task(wq);
-> > > +	if (sched_setaffinity(task->pid, mask))
-> > > +		goto err;
-> > > +
-> > > +	if (cgroup_attach_task_current_cg(task))
-> > > +		goto err;
-> > > +out:	
-> > > +	return wq;
-> > > +err:
-> > > +	destroy_workqueue(wq);
-> > > +	wq = NULL;
-> > > +	goto out;
-> > > +}
-> 
-> Instead, cgroup.c (or whoever needs this) can do
-> 
-> 	struct move_struct {
-> 		struct work_struct work;
-> 		int ret;
-> 	};
-> 
-> 	static void move_func(struct work_struct *work)
-> 	{
-> 		struct move_struct *move = container_of(...);
-> 
-> 		if (cgroup_attach_task_current_cg(current))
+On Thu, 27 May 2010, Dmitry Torokhov wrote:
 
-We are trying to attach the task associated with workqueue to the
-current task's cgroup. So what we need is 
-   cgroup_attach_task_current_cg(wq->task);
+> On Thursday 27 May 2010 05:37:00 am Julia Lawall wrote:
+> > From: Julia Lawall <julia@diku.dk>
+> > 
+> > Give different error messages if device_enum is NULL or if its type field
+> > has the wrong value.
+> > 
+> > A simplified version of the semantic match that finds this problem is as
+> > follows: (http://coccinelle.lip6.fr/)
+> > 
+> > // <smpl>
+> > @r exists@
+> > expression E,E1;
+> > identifier f;
+> > statement S1,S2,S3;
+> > @@
+> > 
+> > if ((E == NULL && ...) || ...)
+> > {
+> >   ... when != if (...) S1 else S2
+> >       when != E = E1
+> > * E->f
+> >   ... when any
+> >   return ...;
+> > }
+> > else S3
+> > // </smpl>
+> > 
+> > Signed-off-by: Julia Lawall <julia@diku.dk>
+> > 
+> > ---
+> > This may be too much clutter for little benefit.  Other, perhaps less
+> > informative solutions are possible.
+> 
+> Verbosity should be OK but I think that mixing pr_xxx() and naked printks
+> in the same patch is not very nice.
 
-However there is no interface currently that exports the task associated
-with a workqueue. It is hidden in cpu_workqueue_struct and is only 
-accessible within workqueue.c.
+Oops, sorry about that.  I will change it.
+
+julia
 
 
-> 			ret = -EANY;
-> 	}
+> >  drivers/platform/x86/sony-laptop.c |    8 ++++++--
+> >  1 file changed, 6 insertions(+), 2 deletions(-)
+> > 
+> > diff --git a/drivers/platform/x86/sony-laptop.c
+> > b/drivers/platform/x86/sony-laptop.c index 1387c5f..9db8d2b 100644
+> > --- a/drivers/platform/x86/sony-laptop.c
+> > +++ b/drivers/platform/x86/sony-laptop.c
+> > @@ -1196,8 +1196,12 @@ static void sony_nc_rfkill_setup(struct acpi_device
+> > *device) }
+> > 
+> >  	device_enum = (union acpi_object *) buffer.pointer;
+> > -	if (!device_enum || device_enum->type != ACPI_TYPE_BUFFER) {
+> > -		printk(KERN_ERR "Invalid SN06 return object 0x%.2x\n",
+> > +	if (!device_enum) {
+> > +		pr_err("Invalid SN06 return object\n");
+> > +		goto out_no_enum;
+> > +	}
+> > +	if (device_enum->type != ACPI_TYPE_BUFFER) {
+> > +		printk(KERN_ERR "Invalid SN06 return object type 0x%.2x\n",
+> >  				device_enum->type);
+> >  		goto out_no_enum;
+> >  	}
 > 
-> 	static struct workqueue_struct *create_singlethread_workqueue_in_current_cg(char *name)
-> 	{
-> 		struct workqueue_struct *wq;
-> 		struct move_struct move = {
-> 			.work = __WORK_INITIALIZER(move_func);
-> 		};
+> Thanks.
 > 
-> 		wq = create_singlethread_workqueue(name);
-> 		if (!wq)
-> 			return NULL;
+> -- 
+> Dmitry
 > 
-> 		queue_work(&move.work);
-> 		flush_work(&move.work);
-> 
-> 		if (move.ret) {
-> 			destroy_workqueue(wq);
-> 			wq = NULL;
-> 		}
-> 
-> 		return wq;
-> 	}
-> 
-> Or. Just export wq_per_cpu() from workqueue.c (probably with a better name) and
-> use it like the patch does.
-This requires that struct cpu_workqueue_struct and struct
-workqueue_struct are made externally visible by moving them to
-kernel/workqueue.h.
-
-Instead what about adding the simple helper get_singlethread_wq_task()
-in workqueue.c and exporting it.
-I can add create_singlethread_workqueue_in_current_cg() to cgroup.c
-using this helper routine.
-
-Thanks
-Sridhar
-
-
