@@ -1,70 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932190Ab0E0X0b (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 May 2010 19:26:31 -0400
-Received: from dalsmrelay2.nai.com ([205.227.136.216]:22723 "HELO
-	dalsmrelay2.nai.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1756665Ab0E0X03 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 May 2010 19:26:29 -0400
-X-Greylist: delayed 621 seconds by postgrey-1.27 at vger.kernel.org; Thu, 27 May 2010 19:26:29 EDT
-Date: Fri, 28 May 2010 09:15:38 +1000
-From: David McCullough <david_mccullough@mcafee.com>
-To: microblaze-uclinux@itee.uq.edu.au
-CC: monstr@monstr.eu, linux-m32r@ml.linux-m32r.org, uclinux-dev@uclinux.org,
-       Yoshinori Sato <ysato@users.sourceforge.jp>,
-       Hirokazu Takata <takata@linux-m32r.org>, linux-kernel@vger.kernel.org,
-       David Howells <dhowells@redhat.com>, Paul Mundt <lethal@linux-sh.org>,
-       Greg Ungerer <gerg@uclinux.org>,
-       uclinux-dist-devel@blackfin.uclinux.org
-Subject: Re: [microblaze-uclinux] Re: [Uclinux-dist-devel] [PATCH 1/2 v2]
- FLAT: split the stack & data alignments
-Message-ID: <20100527231538.GA1615@mcafee.com>
-References: <1274815467-14584-1-git-send-email-vapier@gentoo.org>
- <1274863506-14168-1-git-send-email-vapier@gentoo.org>
- <4BFE2C3E.5090704@monstr.eu>
- <AANLkTinD5VI-piiv6CWnZMei4ARTLDF61r0O7wvddRDP@mail.gmail.com>
+	id S1758091Ab0E0X2B (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 May 2010 19:28:01 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:41387 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751644Ab0E0X2A (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 May 2010 19:28:00 -0400
+Date: Thu, 27 May 2010 16:22:32 -0700
+From: Greg KH <gregkh@suse.de>
+To: Haiyang Zhang <haiyangz@microsoft.com>
+Cc: "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>,
+       "'devel@driverdev.osuosl.org'" <devel@driverdev.osuosl.org>,
+       "'virtualization@lists.osdl.org'" <virtualization@lists.osdl.org>,
+       Hank Janssen <hjanssen@microsoft.com>
+Subject: Re: [PATCH 1/1] staging: hv: Fix race condition on IC channel
+ initialization (modified)
+Message-ID: <20100527232232.GA15341@suse.de>
+References: <1FB5E1D5CA062146B38059374562DF7266B8C4AC@TK5EX14MBXC128.redmond.corp.microsoft.com>
+ <20100526205134.GC7343@suse.de>
+ <1FB5E1D5CA062146B38059374562DF7266B8C72B@TK5EX14MBXC128.redmond.corp.microsoft.com>
+ <20100526214842.GA27908@suse.de>
+ <1FB5E1D5CA062146B38059374562DF7266B8C775@TK5EX14MBXC128.redmond.corp.microsoft.com>
+ <20100526223053.GA23521@suse.de>
+ <1FB5E1D5CA062146B38059374562DF7266B8C7C4@TK5EX14MBXC128.redmond.corp.microsoft.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <AANLkTinD5VI-piiv6CWnZMei4ARTLDF61r0O7wvddRDP@mail.gmail.com>
+In-Reply-To: <1FB5E1D5CA062146B38059374562DF7266B8C7C4@TK5EX14MBXC128.redmond.corp.microsoft.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
-X-OriginalArrivalTime: 27 May 2010 23:15:40.0884 (UTC) FILETIME=[86325940:01CAFDF2]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-Jivin Mike Frysinger lays it down ...
-> On Thu, May 27, 2010 at 04:24, Michal Simek wrote:
-> > Mike Frysinger wrote:
-> >> The stack and data have different alignment requirements, so don't force
-> >> them to wear the same shoe. ??Increase the data alignment to match that
-> >> which the elf2flt linker script has always been using: 0x20 bytes. ??Not
-> >> only does this bring the kernel loader in line with the toolchain, but
-> >> it also fixes a swath of gcc tests which try to force larger alignment
-> >> values but randomly fail when the FLAT loader fails to deliver.
-> >>
-> >> Signed-off-by: Mike Frysinger <vapier@gentoo.org>
-> >
-> > Solve the problem on Microblaze:
-> >
-> > Tested-by: Michal Simek <monstr@monstr.eu>
-> >
-> > Who will add it to mainline?
+On Wed, May 26, 2010 at 10:52:36PM +0000, Haiyang Zhang wrote:
+> > From: Greg KH [mailto:gregkh@suse.de]
+> > How about a lock!
+> > 
+> > What's so scary about a pretty little semaphore?  They are all cute and
+> > cuddley and don't bite anyone.  You should not be afraid to use them,
+> > they are here to do your bidding.
 > 
-> if we can get the misc nommu peeps to agree on this (looking mostly at
-> David [McCullough] and Greg), then akpm will most likely expedite the
-> merge.  i like to think they're the best FLAT experts out there ;).
+> No problem, we will add a lock here.
+> 
+> > > The VmbusChannelProcessOffer() is called from interrupt context, and
+> > > initialize the channels, wake up vmbus_init when all channels are
+> > > ready. If using local variable only, how to pass the channel ready
+> > > info to vmbus_init() which is in a different context?
+> > 
+> > No, I mean move the logic you added here, into the vmbus_init() call.
+> 
+> Do you mean:
+> Move the event creat/wait/free, which is currently in vmbus_init(),
+> into vmbus_bus_init() function.
 
-Did the latest patch include the changes Paul requested.
+Yes.
 
-It looks like it to me,  I've just been a bit distracted.  If so I'll send
-in an Ack.
+> hv_channle_ready will still be a global variable.
 
-Cheers,
-Davidm
+That's fine.
 
--- 
-David McCullough,      david_mccullough@mcafee.com,  Ph:+61 734352815
-McAfee - SnapGear      http://www.mcafee.com         http://www.uCdot.org
+> And, the wakeup call -- osd_WaitEventSet() --remains in
+> VmbusChannelProcessOffer() ?
+
+Yes.
+
+And as Jiri pointed out, this should be a simple completion.
+
+thanks,
+
+greg k-h
