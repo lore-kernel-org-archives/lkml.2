@@ -1,17 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755896Ab0E0Mdk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 May 2010 08:33:40 -0400
-Received: from mgw2.diku.dk ([130.225.96.92]:48516 "EHLO mgw2.diku.dk"
+	id S1756331Ab0E0Mdz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 May 2010 08:33:55 -0400
+Received: from mgw2.diku.dk ([130.225.96.92]:48521 "EHLO mgw2.diku.dk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750831Ab0E0Mdh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 May 2010 08:33:37 -0400
-Date: Thu, 27 May 2010 14:33:32 +0200 (CEST)
+	id S1756099Ab0E0Mdx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 May 2010 08:33:53 -0400
+Date: Thu, 27 May 2010 14:33:47 +0200 (CEST)
 From: Julia Lawall <julia@diku.dk>
-To: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+To: HighPoint Linux Team <linux@highpoint-tech.com>,
+       "James E.J. Bottomley" <James.Bottomley@suse.de>,
+       linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
        kernel-janitors@vger.kernel.org
-Subject: [PATCH 6/11] drivers/net: Eliminate a NULL pointer dereference
-Message-ID: <Pine.LNX.4.64.1005271433180.5422@ask.diku.dk>
+Subject: [PATCH 7/11] drivers/scsi: Eliminate a NULL pointer dereference
+Message-ID: <Pine.LNX.4.64.1005271433330.5422@ask.diku.dk>
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
@@ -20,7 +22,7 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Julia Lawall <julia@diku.dk>
 
-At the point of the print, dev is NULL.
+The end of the function is reachable both when host is and is not NULL.
 
 A simplified version of the semantic match that finds this problem is as
 follows: (http://coccinelle.lip6.fr/)
@@ -46,20 +48,22 @@ else S3
 Signed-off-by: Julia Lawall <julia@diku.dk>
 
 ---
- drivers/net/3c507.c |    3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+If it is a problem to use 0 when host is NULL, then the code could be fixed
+in another way.
 
-diff --git a/drivers/net/3c507.c b/drivers/net/3c507.c
-index 82eaf65..ea9b7a0 100644
---- a/drivers/net/3c507.c
-+++ b/drivers/net/3c507.c
-@@ -551,8 +551,7 @@ static irqreturn_t el16_interrupt(int irq, void *dev_id)
- 	void __iomem *shmem;
+ drivers/scsi/hptiop.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/scsi/hptiop.c b/drivers/scsi/hptiop.c
+index 645f7cd..0729f15 100644
+--- a/drivers/scsi/hptiop.c
++++ b/drivers/scsi/hptiop.c
+@@ -1157,7 +1157,7 @@ free_pci_regions:
+ disable_pci_device:
+ 	pci_disable_device(pcidev);
  
- 	if (dev == NULL) {
--		pr_err("%s: net_interrupt(): irq %d for unknown device.\n",
--			dev->name, irq);
-+		pr_err("net_interrupt(): irq %d for unknown device.\n", irq);
- 		return IRQ_NONE;
- 	}
+-	dprintk("scsi%d: hptiop_probe fail\n", host->host_no);
++	dprintk("scsi%d: hptiop_probe fail\n", host ? host->host_no : 0);
+ 	return -ENODEV;
+ }
  
