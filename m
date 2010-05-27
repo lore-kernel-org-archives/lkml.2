@@ -1,56 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752471Ab0E0FXo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 May 2010 01:23:44 -0400
-Received: from mail-gw0-f46.google.com ([74.125.83.46]:40743 "EHLO
-	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751949Ab0E0FXm convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 May 2010 01:23:42 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=arSZxszcIHoZ0NbTchoL89IYIUy7w+ZgnIMp4hOw94nVfXWosXDxHXu9RE/RjGOA8w
-         eldsqu9huVdoVnX/vUGBfGS6xN2qjxYUI2fWEJ887AO/hsALn23jTPL25qaptLM4zP6o
-         TuCtgoZJQXod4kCf5JZqBdeXkb4SEt0tSj848=
-MIME-Version: 1.0
-In-Reply-To: <20100527043123.GA5349@cr0.nay.redhat.com>
-References: <AANLkTik0PUKP3QLPRbb3nlh034_inmaeVbXy3q5_LQz-@mail.gmail.com>
-	<201005270213.42913.rjw@sisk.pl>
-	<AANLkTil180tPW4KoOaUBgXIm1Lf6O45_GKKlLx3CDcVh@mail.gmail.com>
-	<20100527043123.GA5349@cr0.nay.redhat.com>
-Date: Thu, 27 May 2010 10:53:41 +0530
-Message-ID: <AANLkTilZ99VsmLuYoLlYItYAMtQQq6zTOQ2iEAdEm7pk@mail.gmail.com>
-Subject: Re: config automatically switches from 32-bit to 64-bit for x86
-From: Jaswinder Singh Rajput <jaswinderlinux@gmail.com>
-To: =?ISO-8859-1?Q?Am=E9rico_Wang?= <xiyou.wangcong@gmail.com>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, Sam Ravnborg <sam@ravnborg.org>,
-       Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
-       "the arch/x86 maintainers" <x86@kernel.org>,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S932390Ab0E0FXy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 May 2010 01:23:54 -0400
+Received: from cnc.isely.net ([64.81.146.143]:50426 "EHLO cnc.isely.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752608Ab0E0FXw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 May 2010 01:23:52 -0400
+X-Greylist: delayed 330 seconds by postgrey-1.27 at vger.kernel.org; Thu, 27 May 2010 01:23:52 EDT
+Date: Thu, 27 May 2010 00:18:21 -0500 (CDT)
+From: Mike Isely <isely@isely.net>
+To: Julia Lawall <julia@diku.dk>
+cc: Mauro Carvalho Chehab <mchehab@infradead.org>, linux-media@vger.kernel.org,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       kernel-janitors@vger.kernel.org, Mike Isely at pobox <isely@pobox.com>
+Subject: Re: [PATCH 5/17] drivers/media/video/pvrusb2: Add missing
+ mutex_unlock
+In-Reply-To: <Pine.LNX.4.64.1005261755110.23743@ask.diku.dk>
+Message-ID: <alpine.DEB.1.10.1005270013020.19542@ivanova.isely.net>
+References: <Pine.LNX.4.64.1005261755110.23743@ask.diku.dk>
+User-Agent: Alpine 1.10 (DEB 962 2008-03-14)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 27, 2010 at 10:01 AM, Américo Wang <xiyou.wangcong@gmail.com> wrote:
-> On Thu, May 27, 2010 at 09:39:51AM +0530, Jaswinder Singh Rajput wrote:
->>
->>But I wonder then what is the point/use of CONFIG_X86_32 if compiler
->>is not listening to it.
->>
->>Logically compiler should set appropriate flags based on .config settings.
->>
->
-> It's not compiler, it's kbuild, kbuild tries to determine the arch
-> by 'uname -m'.
->
 
-Ahh, then kbuild is buggy, kbuild should check .config instead of
-'uname -m' and verify from user if it mismatches.
+I looked through my revision history and that bug has been there in the 
+driver source since at least May 2005, long before it was ever merged 
+into the kernel.  Wow, what a great catch.  Thanks!
 
-Thanks,
---
-Jaswinder Singh.
+Acked-By: Mike Isely <isely@pobox.com>
+
+  -Mike
+
+
+On Wed, 26 May 2010, Julia Lawall wrote:
+
+> From: Julia Lawall <julia@diku.dk>
+> 
+> Add a mutex_unlock missing on the error path.  In the other functions in
+> the same file the locks and unlocks of this mutex appear to be balanced,
+> so it would seem that the same should hold in this case.
+> 
+> The semantic match that finds this problem is as follows:
+> (http://coccinelle.lip6.fr/)
+> 
+> // <smpl>
+> @@
+> expression E1;
+> @@
+> 
+> * mutex_lock(E1,...);
+>   <+... when != E1
+>   if (...) {
+>     ... when != E1
+> *   return ...;
+>   }
+>   ...+>
+> * mutex_unlock(E1,...);
+> // </smpl>
+> 
+> Signed-off-by: Julia Lawall <julia@diku.dk>
+> 
+> ---
+>  drivers/media/video/pvrusb2/pvrusb2-ioread.c |    5 ++++-
+>  1 file changed, 4 insertions(+), 1 deletion(-)
+> 
+> diff --git a/drivers/media/video/pvrusb2/pvrusb2-ioread.c b/drivers/media/video/pvrusb2/pvrusb2-ioread.c
+> index b482478..bba6115 100644
+> --- a/drivers/media/video/pvrusb2/pvrusb2-ioread.c
+> +++ b/drivers/media/video/pvrusb2/pvrusb2-ioread.c
+> @@ -223,7 +223,10 @@ int pvr2_ioread_setup(struct pvr2_ioread *cp,struct pvr2_stream *sp)
+>  				   " pvr2_ioread_setup (setup) id=%p",cp);
+>  			pvr2_stream_kill(sp);
+>  			ret = pvr2_stream_set_buffer_count(sp,BUFFER_COUNT);
+> -			if (ret < 0) return ret;
+> +			if (ret < 0) {
+> +				mutex_unlock(&cp->mutex);
+> +				return ret;
+> +			}
+>  			for (idx = 0; idx < BUFFER_COUNT; idx++) {
+>  				bp = pvr2_stream_get_buffer(sp,idx);
+>  				pvr2_buffer_set_buffer(bp,
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
+
+-- 
+
+Mike Isely
+isely @ isely (dot) net
+PGP: 03 54 43 4D 75 E5 CC 92 71 16 01 E2 B5 F5 C1 E8
