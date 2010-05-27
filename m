@@ -1,55 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757844Ab0E0KXT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 May 2010 06:23:19 -0400
-Received: from tx2ehsobe004.messaging.microsoft.com ([65.55.88.14]:11531 "EHLO
-	TX2EHSOBE008.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757336Ab0E0KXR (ORCPT
+	id S1758572Ab0E0K3r (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 May 2010 06:29:47 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:44714 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757821Ab0E0K3p (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 May 2010 06:23:17 -0400
-X-SpamScore: -13
-X-BigFish: VPS-13(zz1432P98dNzz1202hzzz32i2a8h87h43h61h)
-X-Spam-TCS-SCL: 0:0
-X-FB-DOMAIN-IP-MATCH: fail
-X-WSS-ID: 0L32Q17-02-0VG-02
-X-M-MSG: 
-Date: Thu, 27 May 2010 12:19:58 +0200
-From: "Roedel, Joerg" <Joerg.Roedel@amd.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-CC: Avi Kivity <avi@qumranet.com>, Marcelo Tosatti <mtosatti@redhat.com>,
-       "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: linux-next: build warning after merge of the kvm tree
-Message-ID: <20100527101957.GT3266@amd.com>
-References: <20100527145307.0e6d537c.sfr@canb.auug.org.au>
+	Thu, 27 May 2010 06:29:45 -0400
+Date: Thu, 27 May 2010 12:29:17 +0200
+From: Wolfram Sang <w.sang@pengutronix.de>
+To: Nicolas Ferre <nicolas.ferre@atmel.com>
+Cc: Claudio Scordino <claudio@evidence.eu.com>,
+       Alan Cox <alan@lxorguk.ukuu.org.uk>, hskinnemoen@atmel.com,
+       linux@maxim.org.za,
+       linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+       Rick Bronson <rick@efn.org>, John Nicholls <john@thinlinx.com>,
+       Linux Kernel <linux-kernel@vger.kernel.org>,
+       Sebastian Heutling <Sebastian.Heutling@who-ing.de>,
+       Ryan Mallon <ryan@bluewatersys.com>,
+       michael trimarchi <michael@evidence.eu.com>, rmk@arm.linux.org.uk
+Subject: Re: [PATCH] atmel_serial: Atmel RS485 support v2
+Message-ID: <20100527102917.GB31253@pengutronix.de>
+References: <4BB053C4.7050700@evidence.eu.com> <4BB10304.6090006@bluewatersys.com> <4BB1BF49.2000609@evidence.eu.com> <4BB252E3.3030703@bluewatersys.com> <4BBD8C9D.3070401@evidence.eu.com> <20100408111310.524f7354@lxorguk.ukuu.org.uk> <4BBDD71D.1010700@evidence.eu.com> <4BFD1FB6.8050405@atmel.com> <4BFE2F38.8050200@evidence.eu.com> <4BFE41FD.2080804@atmel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="GID0FwUMdk1T2AWN"
 Content-Disposition: inline
-In-Reply-To: <20100527145307.0e6d537c.sfr@canb.auug.org.au>
-Organization: Advanced Micro Devices =?iso-8859-1?Q?GmbH?=
-	=?iso-8859-1?Q?=2C_Karl-Hammerschmidt-Str=2E_34=2C_85609_Dornach_bei_M=FC?=
-	=?iso-8859-1?Q?nchen=2C_Gesch=E4ftsf=FChrer=3A_Thomas_M=2E_McCoy=2C_Giuli?=
-	=?iso-8859-1?Q?ano_Meroni=2C_Andrew_Bowd=2C_Sitz=3A_Dornach=2C_Gemeinde_A?=
-	=?iso-8859-1?Q?schheim=2C_Landkreis_M=FCnchen=2C_Registergericht_M=FCnche?=
-	=?iso-8859-1?Q?n=2C?= HRB Nr. 43632
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Reverse-DNS: unknown
+In-Reply-To: <4BFE41FD.2080804@atmel.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
+X-SA-Exim-Mail-From: wsa@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 27, 2010 at 12:53:07AM -0400, Stephen Rothwell wrote:
-> After merging the kvm tree, today's linux-next build (x86_64 allmodconfig)
-> produced this warning:
-> 
-> arch/x86/kvm/svm.c: In function 'svm_handle_mce':
-> arch/x86/kvm/svm.c:1489: warning: unused variable 'kvm_run'
-> 
-> Introduced by commit 5c91e7b615f7b6b36f6ad32356bb786bed5b7764 ("KVM: SVM:
-> Implement workaround for Erratum 383").
 
-Fix for that is already posted and should be in the KVM tree soon.
+--GID0FwUMdk1T2AWN
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-	Joerg
+Hi Claudio,
 
+kudos for getting a RS485-implementation into the kernel! Very useful.
 
+> >     the latest version of the patch has been already merged in the
+> > latest Linus' git tree through Russell King's patchsystem=20
+
+Nitpick: Wasn't there some documentation promised after the final patch ;)
+
+Regards,
+
+   Wolfram
+
+--=20
+Pengutronix e.K.                           | Wolfram Sang                |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+
+--GID0FwUMdk1T2AWN
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+Content-Disposition: inline
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.9 (GNU/Linux)
+
+iEYEARECAAYFAkv+SX0ACgkQD27XaX1/VRs8owCguPFi6XCJfTM/Z64EgRs/usEr
+K5gAn15nWTBz1sMc9HulHKHfswKIPTfG
+=SavM
+-----END PGP SIGNATURE-----
+
+--GID0FwUMdk1T2AWN--
