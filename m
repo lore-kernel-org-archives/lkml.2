@@ -1,51 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932899Ab0E0Vp5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 May 2010 17:45:57 -0400
-Received: from sj-iport-5.cisco.com ([171.68.10.87]:55518 "EHLO
-	sj-iport-5.cisco.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932504Ab0E0Vpz (ORCPT
+	id S932896Ab0E0Vty (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 May 2010 17:49:54 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:56498 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S932723Ab0E0Vtw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 May 2010 17:45:55 -0400
-Authentication-Results: sj-iport-5.cisco.com; dkim=neutral (message not signed) header.i=none
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AvsEAG+F/kurR7Ht/2dsb2JhbACeJHGnR5oZhRMEg0I
-X-IronPort-AV: E=Sophos;i="4.53,313,1272844800"; 
-   d="scan'208";a="203921566"
-From: Roland Dreier <rdreier@cisco.com>
-To: Randy Dunlap <randy.dunlap@oracle.com>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
-       Ralph Campbell <ralph.campbell@qlogic.com>, linux-next@vger.kernel.org,
-       LKML <linux-kernel@vger.kernel.org>, linux-rdma@vger.kernel.org
-Subject: Re: linux-next: Tree for May 27 (infiniband: qib)
-References: <20100527152628.b23a14c6.sfr@canb.auug.org.au>
-	<20100527090503.d229dc53.randy.dunlap@oracle.com>
-X-Message-Flag: Warning: May contain useful information
-Date: Thu, 27 May 2010 14:45:48 -0700
-In-Reply-To: <20100527090503.d229dc53.randy.dunlap@oracle.com> (Randy Dunlap's
-	message of "Thu, 27 May 2010 09:05:03 -0700")
-Message-ID: <adaaarlvx0z.fsf@roland-alpha.cisco.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
+	Thu, 27 May 2010 17:49:52 -0400
+Date: Thu, 27 May 2010 17:49:51 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Thomas Gleixner <tglx@linutronix.de>
+cc: Matthew Garrett <mjg59@srcf.ucam.org>,
+       Peter Zijlstra <peterz@infradead.org>,
+       LKML <linux-kernel@vger.kernel.org>,
+       Florian Mickler <florian@mickler.org>, <felipe.balbi@nokia.com>,
+       Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
+       Linux PM <linux-pm@lists.linux-foundation.org>,
+       Alan Cox <alan@lxorguk.ukuu.org.uk>
+Subject: Re: [linux-pm] [PATCH 0/8] Suspend block api (version 8)
+In-Reply-To: <alpine.LFD.2.00.1005272332320.3478@localhost.localdomain>
+Message-ID: <Pine.LNX.4.44L0.1005271744130.3239-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
- > However, it looks like qib needs to handle DCA config in a way that
- > is similar to how it is handled in drivers/net/{myri10ge,igb,ixgbe}/
- > instead of assuming that DCA is enabled.
+On Thu, 27 May 2010, Thomas Gleixner wrote:
 
-Looks like we're just going to rip out DCA support for now.
+> > The two of you are talking at cross purposes.  Thomas is referring to 
+> > idle-based suspend and Matthew is talking about forced suspend.
+> 
+> Yes, and forced suspend to disk is the same as force suspend to disk,
+> which has both nothing to do with sensible resource management.
 
- > And please fix the linux-next 2010-may-25 reported qib problem:
- >   http://lkml.org/lkml/2010/5/25/321
+If I understand correctly, you are saying that all the untrusted 
+applications should run with QoS(NONE).  Then they could do whatever 
+they wanted without causing any interference.
 
-I think that should be fixed in my for-next branch already (at least I
-have a patch from Ralph called "IB/qib: Fix undefined symbol error when
-CONFIG_PCI_MSI=n" in there).
+And with idle-based power management (rather than forced suspend), 
+there would be no issue with wakeup events getting unduly delayed.
 
- - R.
--- 
-Roland Dreier <rolandd@cisco.com> || For corporate legal information go to:
-http://www.cisco.com/web/about/doing_business/legal/cri/index.html
+Unless one of those events was meant for an untrusted application.  Is 
+that the source of the difficulty?
+
+Alan Stern
+
