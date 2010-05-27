@@ -1,70 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755097Ab0E0NPe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 May 2010 09:15:34 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:38145 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750831Ab0E0NPd (ORCPT
+	id S1757026Ab0E0NPs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 May 2010 09:15:48 -0400
+Received: from ey-out-2122.google.com ([74.125.78.25]:56262 "EHLO
+	ey-out-2122.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756390Ab0E0NPo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 May 2010 09:15:33 -0400
+	Thu, 27 May 2010 09:15:44 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type;
-        b=mJe0vGo/jDRrtP4y2BvwfPcya74pddlk+dLNchLeP3Qy+Gji+KUrd8c+D+tadzqKHw
-         L7JvlEFnF9UpwXZ+F/YaDZxz5eh5Ex97KnqSFL4fSETwiQcoy5IZWve1BeEF2/ETL/Ue
-         JvytRQ5R7r387mXbgKkmkuwcKjfF22ny4lLPo=
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=dhOj/JV+++HwhYnU/OcvLJDefJ/kAMcpU3k1eMZs8sfq+GLylx+BjIF5mmmDURT1Xl
+         Lrhfr5LSS2DKeFJMIzuvwo/1vE96J4ruYz5uFdR8ayLKaDT8YWd1WqXnxKi2tvl5oYJW
+         tPFR3KlNn6Bxhp9aShAVnjcZivgewW8jjeHu8=
+Date: Thu, 27 May 2010 15:15:39 +0200
+From: Johan Hovold <jhovold@gmail.com>
+To: Julia Lawall <julia@diku.dk>
+Cc: Greg Kroah-Hartman <gregkh@suse.de>, linux-usb@vger.kernel.org,
+       linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
+Subject: Re: [PATCH 11/11] drivers/usb/serial: Eliminate a NULL pointer
+ dereference
+Message-ID: <20100527131539.GA26198@localhost>
+References: <Pine.LNX.4.64.1005271437200.5422@ask.diku.dk>
 MIME-Version: 1.0
-In-Reply-To: <20100527115716.76ce299a@linux.intel.com>
-References: <AANLkTikBrXROMvNKrhgxQ1jVh6aOsx3nIrNXTznXInV1@mail.gmail.com> 
-	<20100526151152.28deaa6c@linux.intel.com> <AANLkTikuzGazcBpSvqU73UAAIvcTgxTBsmWTr9bNCSjB@mail.gmail.com> 
-	<20100527115716.76ce299a@linux.intel.com>
-From: Frank Pan <frankpzh@gmail.com>
-Date: Thu, 27 May 2010 21:15:12 +0800
-Message-ID: <AANLkTikopvVRz063swM70j2l3Jig5ePJHdICO9CcDDrc@mail.gmail.com>
-Subject: Re: [PATCH 0/2] Enlarge the storage of chars in virtual terminal
-To: Alan Cox <alan@linux.intel.com>
-Cc: Gerardo Exequiel Pozzi <vmlinuz386@yahoo.com.ar>,
-       Kay Sievers <kay.sievers@vrfy.org>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Greg Kroah-Hartman <gregkh@suse.de>,
-       Catalin Marinas <catalin.marinas@arm.com>,
-       Daniel Mack <daniel@caiaq.de>, Tejun Heo <tj@kernel.org>,
-       Christoph Lameter <cl@linux-foundation.org>,
-       Jiri Slaby <jirislaby@gmail.com>, Jochen Hein <jochen@jochen.org>,
-       Johannes Weiner <hannes@cmpxchg.org>, Dave Airlie <airlied@redhat.com>,
-       Pekka Enberg <penberg@cs.helsinki.fi>,
-       Geert Uytterhoeven <geert@linux-m68k.org>,
-       LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <Pine.LNX.4.64.1005271437200.5422@ask.diku.dk>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Greetings,
+Hi Julia, 
 
-> It is a lot more. Things like arabic vowel handling for example, or
-> mixed direction text.
-> Pango does the job. Pango is the wheel.
-I may haven't represent my idea clearly. No one wishes that fbcon can
-do as good as pango. The important thing is, question marks have no
-information, but scripts which may have placement issues have as
-much information as the one rendered by pango.
+On Thu, May 27, 2010 at 02:37:39PM +0200, Julia Lawall wrote:
+> From: Julia Lawall <julia@diku.dk>
+> 
+> The assignment seems completely unnecessary if mos7840_port is NULL.
+> 
+[...]
+> ---
+>  drivers/usb/serial/mos7840.c |    1 -
+>  1 file changed, 1 deletion(-)
+> 
+> diff --git a/drivers/usb/serial/mos7840.c b/drivers/usb/serial/mos7840.c
+> index f8424d1..585b7e6 100644
+> --- a/drivers/usb/serial/mos7840.c
+> +++ b/drivers/usb/serial/mos7840.c
+> @@ -730,7 +730,6 @@ static void mos7840_bulk_in_callback(struct urb *urb)
+>  	mos7840_port = urb->context;
+>  	if (!mos7840_port) {
+>  		dbg("%s", "NULL mos7840_port pointer");
+> -		mos7840_port->read_urb_busy = false;
+>  		return;
+>  	}
 
-> Kernel code is unpageable, privileged and unable to doing things
-> trivially like dynamic font management. It's the wrong place for this
-> kind of stuff because doing fonts right and especially doing language
-> rendering right is *hard*.
-Umm... maybe use bitblit instead of render is better? The current
-mainline kernel already has features of font replacing, utf-8 decoding,
-and "wide" char identification. Plenty of utf-8 bitmap fonts disperse on
-the world, they just have more than 512 glyphs so vt cannot handle them,
-Trust me, It's nothing more than provide a larger storage.
+I stumbled over this one a couple of weeks ago. There a patch sitting in
+Greg's queue already:
 
-Thanks for reply.
+	http://thread.gmane.org/gmane.linux.usb.general/31668
 
--- 
-Frank Pan
-
-Computer Science and Technology
-Tsinghua University
+Thanks,
+Johan
