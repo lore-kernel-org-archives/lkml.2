@@ -1,54 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758110Ab0E0Q17 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 May 2010 12:27:59 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:21206 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758085Ab0E0Q15 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 May 2010 12:27:57 -0400
-MIME-Version: 1.0
-Message-ID: <04f8be9a-78ea-45fc-9a6f-c788ca10ea69@default>
-Date: Thu, 27 May 2010 09:26:13 -0700 (PDT)
-From: Dan Magenheimer <dan.magenheimer@oracle.com>
-To: dan.magenheimer@oracle.com, Venkatesh Pallipadi <venki@google.com>,
-       Len Brown <lenb@kernel.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org
-Subject: RE: tsc reliability for Intel Core 2 Duo "Conroe"
-References: <d1278473-1065-4607-98e0-67f2b985ec15@default
- AANLkTim1_8Rf0fPfycE92z5CAXpLXYga93A5qTxgXjqz@mail.gmail.com
- a20d4b76-5ba0-44cf-a26b-f58129377354@default>
-In-Reply-To: <a20d4b76-5ba0-44cf-a26b-f58129377354@default>
-X-Priority: 3
-X-Mailer: Oracle Beehive Extensions for Outlook 1.5.1.5.2  (401224) [OL
- 12.0.6514.5000]
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 8BIT
-X-Auth-Type: Internal IP
-X-Source-IP: rcsinet15.oracle.com [148.87.113.117]
-X-CT-RefId: str=0001.0A090206.4BFE9D80.016F:SCFMA4539811,ss=1,fgs=0
+	id S1758130Ab0E0Q2i (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 May 2010 12:28:38 -0400
+Received: from ist.d-labs.de ([213.239.218.44]:50870 "EHLO mx01.d-labs.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757571Ab0E0Q2h (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 May 2010 12:28:37 -0400
+Date: Thu, 27 May 2010 18:28:31 +0200
+From: Florian Mickler <florian@mickler.org>
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+       Matthew Garrett <mjg59@srcf.ucam.org>,
+       Arve =?ISO-8859-15?Q?Hj=F8nnev=E5g?= <arve@android.com>,
+       Vitaly Wool <vitalywool@gmail.com>, LKML <linux-kernel@vger.kernel.org>,
+       felipe.balbi@nokia.com,
+       Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
+       Linux PM <linux-pm@lists.linux-foundation.org>
+Subject: Re: [linux-pm] [PATCH 0/8] Suspend block api (version 8)
+Message-ID: <20100527182831.172215f6@schatten.dmk.lab>
+In-Reply-To: <20100527161054.203663ca@lxorguk.ukuu.org.uk>
+References: <20100526120242.5c9b73ad@schatten.dmk.lab>
+	<AANLkTim4021cTnhVZrQpefq1MG-eEPOFLDRO-XDepHb4@mail.gmail.com>
+	<20100526133721.602633b2@schatten.dmk.lab>
+	<AANLkTikzgaOFdQKess4E-D86OLPOzxP3dWiDkU_UR0ri@mail.gmail.com>
+	<20100526142430.327ccbc4@schatten.dmk.lab>
+	<20100526141612.3e2e0443@lxorguk.ukuu.org.uk>
+	<AANLkTin97MMu-XO_Lk-snefBWz2ymhS0Qi1y1RxLwdVA@mail.gmail.com>
+	<20100527003943.07c17f85@lxorguk.ukuu.org.uk>
+	<20100527140655.GA28048@srcf.ucam.org>
+	<1274970531.27810.5024.camel@twins>
+	<20100527143508.GA30117@srcf.ucam.org>
+	<1274971317.27810.5070.camel@twins>
+	<1274971437.27810.5078.camel@twins>
+	<20100527161054.203663ca@lxorguk.ukuu.org.uk>
+X-Mailer: Claws Mail 3.7.5 (GTK+ 2.18.9; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> After digging deeper, it appears that this processor is entering
-> C2 (as can be seen /sys/devices/system/cpu/cpu*/cpuidle/ output below)
-> despite the documentation I have, as well as this posting from Len:
-> http://forum.soft32.com/linux/ACPI-states-Conroe-ftopict339089.html
-> I wonder if C1E state is somehow incorrectly getting recorded as
-> C2 state?  Or maybe TSC doesn't stop in C2 (TSC is most certainly
-> not stopping), in which case the test in tsc_check_state() should
-> be againt ACPI_STATE_C2?
-> 
-> In any case, this appears to now be an ACPI C-state question
-> so thanks, Venki, for cc'ing Len... and tglx is off the hook :-)
-> 
-> Len, note that this box is an Intel SDP so if it is an odd
-> duck, please just let me know... though I think I may have
-> some Xen code to fix depending on the answer to the above.
+On Thu, 27 May 2010 16:10:54 +0100
+Alan Cox <alan@lxorguk.ukuu.org.uk> wrote:
 
-Never mind... it appears this box has a BIOS setting to enable/disable
-C2 that I didn't find in the documentation.  With C2 disabled,
-TSC is properly selected as the clocksource.
+> The reality is you need a sane, generic, race free way to express your
+> requirements (eg for hard RT) and ditto for constraining the expression
+> (for 'crapplications')
 
-Sorry for the noise.
+And the thing is, even a well written app can be a 'crapplication'
+depending on the context and mood of the user.
+
+cheers,
+Flo
