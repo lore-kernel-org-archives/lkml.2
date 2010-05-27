@@ -1,57 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756907Ab0E0Mzc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 May 2010 08:55:32 -0400
-Received: from khc.piap.pl ([195.187.100.11]:44956 "EHLO khc.piap.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753367Ab0E0Mza convert rfc822-to-8bit (ORCPT
+	id S1755247Ab0E0NAz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 May 2010 09:00:55 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:49004 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751063Ab0E0NAx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 May 2010 08:55:30 -0400
-X-Greylist: delayed 380 seconds by postgrey-1.27 at vger.kernel.org; Thu, 27 May 2010 08:55:30 EDT
-From: Krzysztof Halasa <khc@pm.waw.pl>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-arm-kernel@lists.infradead.org, lkml <linux-kernel@vger.kernel.org>
-Subject: [PULL REQ] IXP4xx (ARM): pull request
-Date: Thu, 27 May 2010 14:49:08 +0200
-Message-ID: <m37hmp33y3.fsf@intrepid.localdomain>
+	Thu, 27 May 2010 09:00:53 -0400
+Date: Thu, 27 May 2010 08:59:52 -0400
+From: Chris Mason <chris.mason@oracle.com>
+To: liubo <liubo2009@cn.fujitsu.com>
+Cc: Josef Bacik <josef@redhat.com>, linux-btrfs@vger.kernel.org,
+       linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 6/6] Btrfs: do aio_write instead of write
+Message-ID: <20100527125952.GQ3108@think>
+Mail-Followup-To: Chris Mason <chris.mason@oracle.com>,
+	liubo <liubo2009@cn.fujitsu.com>, Josef Bacik <josef@redhat.com>,
+	linux-btrfs@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+	linux-kernel@vger.kernel.org
+References: <1274461422-18433-1-git-send-email-josef@redhat.com>
+ <1274461422-18433-6-git-send-email-josef@redhat.com>
+ <4BFDE1CE.4030100@cn.fujitsu.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4BFDE1CE.4030100@cn.fujitsu.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Auth-Type: Internal IP
+X-Source-IP: acsinet15.oracle.com [141.146.126.227]
+X-CT-RefId: str=0001.0A090206.4BFE6CF6.01A6:SCFMA922111,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus,
+On Thu, May 27, 2010 at 11:06:54AM +0800, liubo wrote:
+> On 05/22/2010 01:03 AM, Josef Bacik wrote:
+> > In order for AIO to work, we need to implement aio_write.  This patch converts
+> > our btrfs_file_write to btrfs_aio_write.  I've tested this with xfstests and
+> > nothing broke, and the AIO stuff magically started working.  Thanks,
+> >
+> > Signed-off-by: Josef Bacik <josef@redhat.com>
+> >   
+> 
+> Hi, Josef,
+> 
+> I've tested your patch(May 22) with my tools, and one case triggered a bug
+> which made writev operation hang up, more information is followed.
+> 
+> - Steps to trigger it:
+>   # mount /dev/sda8 /home/btrfsdisk -o nodatacow
+>   # gcc direct-io.c -o direct-io
+>   # ./direct-io O_DIRECT writev /home/btrfsdisk/testrw 4M
 
-The following changes since Linus 2.6.34 are available in the git
-repository at:
+Thanks for sending along this test program and bug report.  We've fixed
+a few bugs in the O_DIRECT patches, and this is working now.
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/chris/linux-2.6.git ixp4xx
+The merged result is in the for-linus branch of the btrfs unstable tree.
 
-Krzysztof Hałasa (5):
-      IXP4xx: Prevent HSS transmitter lockup by disabling FRaMe signals.
-      IXP4xx: Fix ixp4xx_crypto little-endian operation.
-      IXP4xx: Make mdio_bus struct static in the Ethernet driver.
-      IXP4xx: Fix sparse warnings in I/O primitives.
-      IXP4xx: Fix LL debugging on little-endian CPU.
-
-Marc Zyngier (2) (support for a new platform):
-      ixp4xx: base support for Arcom Vulcan
-      ixp4xx/vulcan: add PCI support
-
- arch/arm/mach-ixp4xx/Kconfig                    |    8 +
- arch/arm/mach-ixp4xx/Makefile                   |    2 +
- arch/arm/mach-ixp4xx/include/mach/debug-macro.S |    2 +
- arch/arm/mach-ixp4xx/include/mach/io.h          |    6 +-
- arch/arm/mach-ixp4xx/vulcan-pci.c               |   73 +++++++
- arch/arm/mach-ixp4xx/vulcan-setup.c             |  246 +++++++++++++++++++++++
- drivers/crypto/ixp4xx_crypto.c                  |   21 ++
- drivers/net/arm/ixp4xx_eth.c                    |    2 +-
- drivers/net/wan/ixp4xx_hss.c                    |    2 +-
- 9 files changed, 357 insertions(+), 5 deletions(-)
- create mode 100644 arch/arm/mach-ixp4xx/vulcan-pci.c
- create mode 100644 arch/arm/mach-ixp4xx/vulcan-setup.c
-
-TIA.
--- 
-Krzysztof Halasa
+-chris
