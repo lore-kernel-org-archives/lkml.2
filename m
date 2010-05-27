@@ -1,109 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757634Ab0E0UjF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 May 2010 16:39:05 -0400
-Received: from cavan.codon.org.uk ([93.93.128.6]:51050 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750759Ab0E0UjC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 May 2010 16:39:02 -0400
-Date: Thu, 27 May 2010 21:38:43 +0100
-From: Matthew Garrett <mjg59@srcf.ucam.org>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>,
-       Arve =?iso-8859-1?B?SGr4bm5lduVn?= <arve@android.com>,
-       Florian Mickler <florian@mickler.org>,
-       Vitaly Wool <vitalywool@gmail.com>,
-       Peter Zijlstra <peterz@infradead.org>,
-       LKML <linux-kernel@vger.kernel.org>, Paul@smtp1.linux-foundation.org,
-       felipe.balbi@nokia.com,
-       Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
-       Linux PM <linux-pm@lists.linux-foundation.org>
-Subject: Re: [linux-pm] [PATCH 0/8] Suspend block api (version 8)
-Message-ID: <20100527203843.GA8395@srcf.ucam.org>
-References: <20100527155201.GA31937@srcf.ucam.org> <alpine.LFD.2.00.1005271808340.3032@localhost.localdomain> <20100527165931.GB1062@srcf.ucam.org> <alpine.LFD.2.00.1005271905000.3032@localhost.localdomain> <20100527172343.GB2468@srcf.ucam.org> <alpine.LFD.2.00.1005271930350.3032@localhost.localdomain> <20100527182633.GN3543@srcf.ucam.org> <alpine.LFD.2.00.1005272027560.3032@localhost.localdomain> <20100527190622.GB5703@srcf.ucam.org> <alpine.LFD.2.00.1005272207500.3032@localhost.localdomain>
+	id S1756721Ab0E0UnB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 May 2010 16:43:01 -0400
+Received: from cantor.suse.de ([195.135.220.2]:39444 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750744Ab0E0Um7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 May 2010 16:42:59 -0400
+Date: Thu, 27 May 2010 22:42:44 +0200
+From: Jan Kara <jack@suse.cz>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, linux-fsdevel@vger.kernel.org
+Subject: [PULL REQUEST] Quota mount handling and various fixes
+Message-ID: <20100527204244.GF3576@quack.suse.cz>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.LFD.2.00.1005272207500.3032@localhost.localdomain>
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 27, 2010 at 10:23:50PM +0200, Thomas Gleixner wrote:
-> On Thu, 27 May 2010, Matthew Garrett wrote:
-> > A wakeup event is defined as one that wakes the system - if a system 
-> > can't be woken by a specific event then it's impossible to lose it, 
-> > since it wasn't a wakeup event to begin with.
-> 
-> So where is the problem ?
 
-The problem is that, right now, if a wakeup event is received between 
-the point where userspace decides to start a suspend and userspace 
-actually starts a suspend, that event may not abort the suspend.
+  Hello Linus,
 
-> > Consider the case where the read() is non-blocking.
-> 
-> Which I consider in the same range as the application which does:
-> 
->       while (1);
+  this changeset contains Christoph's quota mount handling reorg series,
+removal of dead quota code from UDF, UFS, pohmelfs and a couple of fixes.
+The tree has now sustained some xfsqa runs for ext2, ext3, ext4, and
+reiserfs so hopefully no new bugs are introduced.
+  Could you please pull from
 
-Not at all. Depending on what it reads, it may follow some other path 
-where it sleeps. But, as I keep saying, if you don't want to support 
-that kind of code then all of this is massively easier.
+git://git.kernel.org/pub/scm/linux/kernel/git/jack/linux-fs-2.6.git for_linus
 
-> > What sets that flag, and how does it interact with an application that 
-> > never makes a blocking system call?
-> 
->   QoS(NONE) would be default policy for untrusted apps in the same way
->   as you'd refuse the usage of supsend blockers for untrusted apps.
->
->   while (1); is definitely not an application which should be granted
->   trusted rights, right ?
+  to get:
 
-No, but if that while (1) is draw_cows() then the user may want this to 
-run while their session is active and stop running while their session 
-is idle. So you only want it to be QoS(NONE) in the idle session case. 
-How do you change that state?
- 
-> > The numbers were earlier in the thread.
-> 
->   Numbers, yes. But I really give a sh*t about numbers w/o a detailed
->   explanation of the scenario which created those numbers. And if the
->   numbers boil down to: we handle the untrusted app which does "while
->   (1);" then they are absolutely useless.
+Christoph Hellwig (6):
+      quota: move remount handling into the filesystem
+      quota: kill the vfs_dq_off and vfs_dq_quota_on_remount wrappers
+      quota: move unmount handling into the filesystem
+      quota: drop remount argument to ->quota_on and ->quota_off
+      quota: explicitly set ->dq_op and ->s_qcop
+      quota: rename default quotactl methods to dquot_
 
-The tested case was a stock Android install with opportunistic suspend 
-enabled and one that just used runtime idle. The lowest power state 
-entered was the same on both.
+Dmitry Monakhov (2):
+      pohmelfs: Remove dead quota code
+      quota: Convert quota statistics to generic percpu_counter
 
-> > Yes, and I'd agree with this if anyone seemed to have any idea how to do 
-> > it right. But despite all the heat and noise in this thread, all we've 
-> > got is an expression that it should be handled by the scheduler (a 
-> > viewpoint I agree with) without any explanation of how to switch 
-> > policies in such a way that applications idle without losing wakeup 
-> > events.
-> 
-> Why in the world should they lose wakeup events ? If an app goes idle,
-> it goes idle because it is waiting for an event. There is no other
-> sane reason except for those apps which are untrusted and force
-> idled. And for those you agreed already the suspend blockers don't
-> solve anything as they are either not implemented or the app is not
-> trusted to use them.
->
-> So we are back to round one of the whole discussion:
-> 
->    Is it worth to create an utter mess in the kernel just to handle a
->    subset of crappy coded applications ?
-> 
-> And the answer stays the same: No, not at all.
+Jan Kara (5):
+      ocfs2: Fix use after free on remount read-only
+      udf: Remove dead quota code
+      ufs: Remove dead quota code
+      reiserfs: Fix resuming of quotas on remount read-write
+      quota: Fixup dquot_transfer
 
-You need suspend blockers to avoid losing wakeups in the explicit 
-suspend case even if you don't want to implement opportunistic suspend.
+Venkatesh Pallipadi (1):
+      ext3 uses rb_node = NULL; to zero rb_root.
 
+The diffstat is
+
+ drivers/staging/pohmelfs/inode.c |    8 --
+ fs/ext2/super.c                  |   20 ++++
+ fs/ext3/dir.c                    |    2 +-
+ fs/ext3/super.c                  |   38 +++++---
+ fs/ext4/super.c                  |   37 +++++---
+ fs/jfs/super.c                   |   16 +++
+ fs/ocfs2/super.c                 |   50 +++++------
+ fs/quota/dquot.c                 |  190 ++++++++++++++++----------------------
+ fs/quota/quota.c                 |    4 +-
+ fs/reiserfs/super.c              |   48 ++++++----
+ fs/super.c                       |   13 +--
+ fs/udf/balloc.c                  |   43 +--------
+ fs/udf/file.c                    |   26 +-----
+ fs/udf/ialloc.c                  |   21 +----
+ fs/udf/inode.c                   |    5 -
+ fs/udf/namei.c                   |   20 ----
+ fs/udf/super.c                   |   13 ++-
+ fs/udf/udfdecl.h                 |    1 -
+ fs/ufs/balloc.c                  |   24 -----
+ fs/ufs/file.c                    |    3 +-
+ fs/ufs/ialloc.c                  |   13 ---
+ fs/ufs/inode.c                   |    4 -
+ fs/ufs/namei.c                   |   16 ---
+ fs/ufs/super.c                   |  110 +----------------------
+ fs/ufs/truncate.c                |   10 --
+ include/linux/quota.h            |   20 +---
+ include/linux/quotaops.h         |   79 +++++++---------
+ 27 files changed, 274 insertions(+), 560 deletions(-)
+
+							Thanks
+								Honza
 -- 
-Matthew Garrett | mjg59@srcf.ucam.org
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
