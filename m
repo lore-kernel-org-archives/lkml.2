@@ -1,74 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759529Ab0E0SrQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 May 2010 14:47:16 -0400
-Received: from pqueuea.post.tele.dk ([193.162.153.9]:59171 "EHLO
-	pqueuea.post.tele.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759428Ab0E0SrP (ORCPT
+	id S933077Ab0E0SsP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 May 2010 14:48:15 -0400
+Received: from mail-pz0-f176.google.com ([209.85.222.176]:39724 "EHLO
+	mail-pz0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757930Ab0E0SsO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 May 2010 14:47:15 -0400
-Date: Thu, 27 May 2010 20:46:53 +0200
-From: Sam Ravnborg <sam@ravnborg.org>
-To: Christoph Hellwig <hch@infradead.org>
-Cc: Jaswinder Singh Rajput <jaswinderlinux@gmail.com>,
-       Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
-       the arch/x86 maintainers <x86@kernel.org>,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: config automatically switches from 32-bit to 64-bit for x86
-Message-ID: <20100527184653.GA11830@merkur.ravnborg.org>
-References: <AANLkTik0PUKP3QLPRbb3nlh034_inmaeVbXy3q5_LQz-@mail.gmail.com> <20100527154916.GA5585@infradead.org>
+	Thu, 27 May 2010 14:48:14 -0400
+Date: Thu, 27 May 2010 11:46:02 -0700
+From: Brandon Philips <brandon@ifup.org>
+To: Rusty Russell <rusty@rustcorp.com.au>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       LKML <linux-kernel@vger.kernel.org>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Jon Masters <jonathan@jonmasters.org>, Tejun Heo <htejun@gmail.com>,
+       Masami Hiramatsu <mhiramat@redhat.com>
+Subject: Re: [Regression] Crash in load_module() while freeing args
+Message-ID: <20100527184602.GF7351@jenkins.ifup.org>
+References: <201005252300.07739.rjw@sisk.pl>
+ <201005262127.26235.rusty@rustcorp.com.au>
+ <201005270056.25748.rjw@sisk.pl>
+ <201005271456.20003.rusty@rustcorp.com.au>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100527154916.GA5585@infradead.org>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <201005271456.20003.rusty@rustcorp.com.au>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 27, 2010 at 11:49:16AM -0400, Christoph Hellwig wrote:
-> On Thu, May 27, 2010 at 05:37:36AM +0530, Jaswinder Singh Rajput wrote:
-> > Hello,
+On 14:56 Thu 27 May 2010, Rusty Russell wrote:
+> On Thu, 27 May 2010 08:26:25 am Rafael J. Wysocki wrote:
+> > On Wednesday 26 May 2010, Rusty Russell wrote:
+> > > I suspect that the increased parallelism enabled by this patch uncovered this
+> > > bug.  Does this fix it?
 > > 
-> > I am trying to build 32 bit kernel image on 64-bit machine but after
-> > 'make menuconfig' it automatically switches 32-bit to 64-bit.
-> > 
-> > Is this a BUG or did intentionally.
+> > Since the commit has been reverted, do you still want me to test this patch?
+> > Quite frankly I'd prefer to test a complete replacement for that commit on top
+> > of current -git.
 > 
-> I think it's intentional, but I'm really annoyed by this behaviour.
+> OK, combo meal deal below, against Linus' latest.  I'd really appreciate
+> a report, since AFAIK you're the only one hitting it, and only when that
+> other (now reverted) patch was applied.
 
-The request when we did the merge of 32 and 64 bit was that we
-should continue to build 64bit kernels on 64 bit machines.
-And likewise for 32bit.
-Because this was what the users where used to.
+I tested this patch on my machine on top of Linus's latest and it
+fixes the issue. Without the patch and using Linus's latest I
+reproduce the original issue:
 
-We could simplify metters by defining new rules.
-As you suggest that uname on an intel box always resulted in ARCH=x86.
-But then people would complain why a 32 bit kernel is default when
-the box is 64 bit.
+[   60.836022] bnx2: gave up waiting for init of module libcrc32c.
+[   60.847997] bnx2: Unknown symbol crc32c
 
-Something like this:
-[The escape chars align nicely in the patched Makefile]
+Note: Again, since I don't have bnx2x hardware I forced bnx2.ko to
+depend on libcrc32c as bnx2x does:
+  http://ifup.org/~philips/review/bnx2-hack-to-use-libcrc32c.patch
 
-	Sam
+> As an side to Brandon: I can see how my patch fixed an explicit
+> request_module inside module_init (that's how I tested it).  I can't
+> see how we have a problem with an implicit dependency such as
+> bne2x->crc32.  Modules go into the live state without retaking the
+> lock.
 
-diff --git a/Makefile b/Makefile
-index ebc8225..e7f97a5 100644
---- a/Makefile
-+++ b/Makefile
-@@ -161,10 +161,11 @@ export srctree objtree VPATH
- # then ARCH is assigned, getting whatever value it gets normally, and 
- # SUBARCH is subsequently ignored.
- 
--SUBARCH := $(shell uname -m | sed -e s/i.86/i386/ -e s/sun4u/sparc64/ \
--				  -e s/arm.*/arm/ -e s/sa110/arm/ \
-+SUBARCH := $(shell uname -m | sed -e s/i.86/x86/ -e s/x86_64/x86/        \
-+				  -e s/sun4u/sparc64/                    \
-+				  -e s/arm.*/arm/ -e s/sa110/arm/        \
- 				  -e s/s390x/s390/ -e s/parisc64/parisc/ \
--				  -e s/ppc.*/powerpc/ -e s/mips.*/mips/ \
-+				  -e s/ppc.*/powerpc/ -e s/mips.*/mips/  \
- 				  -e s/sh[234].*/sh/ )
- 
- # Cross compiling and selecting different set of gcc/bin-utils
+libcrc32c is doing an explicit request_module inside of its
+module_init. Follow the call chain in libcrc32c_mod_init()
 
+libcrc32c_mod_init
+ crypto_alloc_shash
+  crypto_alloc_tfm
+   crypto_find_alg
+    crypto_alg_mod_lookup
+     crypto_larval_lookup
+      request_module
+
+Cheers,
+
+	Brandon
