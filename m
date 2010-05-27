@@ -1,225 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759421Ab0E0Rsg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 May 2010 13:48:36 -0400
-Received: from gir.skynet.ie ([193.1.99.77]:48835 "EHLO gir.skynet.ie"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756760Ab0E0Rsf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 May 2010 13:48:35 -0400
-Date: Thu, 27 May 2010 18:48:16 +0100
-From: Mel Gorman <mel@csn.ul.ie>
-To: Rik van Riel <riel@redhat.com>
-Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-       linux-mm@kvack.org, Andrea Arcangeli <aarcange@redhat.com>,
-       Minchan Kim <minchan.kim@gmail.com>,
-       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-       Lee Schermerhorn <Lee.Schermerhorn@hp.com>
-Subject: Re: [PATCH 4/5] always lock the root (oldest) anon_vma
-Message-ID: <20100527174816.GA10931@csn.ul.ie>
-References: <20100526153819.6e5cec0d@annuminas.surriel.com> <20100526154044.2769e707@annuminas.surriel.com>
+	id S1759398Ab0E0Ruu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 May 2010 13:50:50 -0400
+Received: from cavan.codon.org.uk ([93.93.128.6]:46673 "EHLO
+	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756760Ab0E0Rut (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 May 2010 13:50:49 -0400
+Date: Thu, 27 May 2010 18:50:30 +0100
+From: Matthew Garrett <mjg59@srcf.ucam.org>
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: Thomas Gleixner <tglx@linutronix.de>,
+       Arve =?iso-8859-1?B?SGr4bm5lduVn?= <arve@android.com>,
+       Florian Mickler <florian@mickler.org>,
+       Vitaly Wool <vitalywool@gmail.com>,
+       Peter Zijlstra <peterz@infradead.org>,
+       LKML <linux-kernel@vger.kernel.org>, Paul@smtp1.linux-foundation.org,
+       felipe.balbi@nokia.com,
+       Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
+       Linux PM <linux-pm@lists.linux-foundation.org>
+Subject: Re: [linux-pm] [PATCH 0/8] Suspend block api (version 8)
+Message-ID: <20100527175030.GA3543@srcf.ucam.org>
+References: <AANLkTin97MMu-XO_Lk-snefBWz2ymhS0Qi1y1RxLwdVA@mail.gmail.com> <20100527003943.07c17f85@lxorguk.ukuu.org.uk> <20100527140655.GA28048@srcf.ucam.org> <alpine.LFD.2.00.1005271642440.3032@localhost.localdomain> <20100527155201.GA31937@srcf.ucam.org> <alpine.LFD.2.00.1005271808340.3032@localhost.localdomain> <20100527165931.GB1062@srcf.ucam.org> <alpine.LFD.2.00.1005271905000.3032@localhost.localdomain> <20100527172343.GB2468@srcf.ucam.org> <20100527184918.3d090921@lxorguk.ukuu.org.uk>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100526154044.2769e707@annuminas.surriel.com>
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+In-Reply-To: <20100527184918.3d090921@lxorguk.ukuu.org.uk>
+User-Agent: Mutt/1.5.18 (2008-05-17)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 26, 2010 at 03:40:44PM -0400, Rik van Riel wrote:
-> Subject: always lock the root (oldest) anon_vma
+On Thu, May 27, 2010 at 06:49:18PM +0100, Alan Cox wrote:
+> > ACPI provides no guarantees about what level of hardware functionality 
+> > remains during S3. You don't have any useful ability to determine which 
+> > events will generate wakeups. And from a purely practical point of view, 
+> > since the latency is in the range of seconds, you'll never have a low 
+> > enough wakeup rate to hit it.
 > 
-> Always (and only) lock the root (oldest) anon_vma whenever we do something in an
-> anon_vma.  The recently introduced anon_vma scalability is due to the rmap code
-> scanning only the VMAs that need to be scanned.  Many common operations still
-> took the anon_vma lock on the root anon_vma, so always taking that lock is not
-> expected to introduce any scalability issues.
-> 
-> However, always taking the same lock does mean we only need to take one lock,
-> which means rmap_walk on pages from any anon_vma in the vma is excluded from
-> occurring during an munmap, expand_stack or other operation that needs to
-> exclude rmap_walk and similar functions.
-> 
-> Also add the proper locking to vma_adjust.
-> 
-> Signed-off-by: Rik van Riel <riel@redhat.com>
-> ---
-> v3:
->  - fix locking inversion in vma_adjust, spotted by Andrea
->  - mm_take_all locks needs to use the bitflag in the root anon_vma,
->    since that is the one that gets locked (Andrea Arcangeli)
-> v2:
->  - conditionally take the anon_vma lock in vma_adjust, like introduced
->    in 252c5f94d944487e9f50ece7942b0fbf659c5c31  (with a proper comment)
-> 
->  include/linux/rmap.h |    8 ++++----
->  mm/ksm.c             |    2 +-
->  mm/migrate.c         |    2 +-
->  mm/mmap.c            |   30 ++++++++++++++++++++++--------
->  4 files changed, 28 insertions(+), 14 deletions(-)
-> 
-> Index: linux-2.6.34/include/linux/rmap.h
-> ===================================================================
-> --- linux-2.6.34.orig/include/linux/rmap.h
-> +++ linux-2.6.34/include/linux/rmap.h
-> @@ -104,24 +104,24 @@ static inline void vma_lock_anon_vma(str
->  {
->  	struct anon_vma *anon_vma = vma->anon_vma;
->  	if (anon_vma)
-> -		spin_lock(&anon_vma->lock);
-> +		spin_lock(&anon_vma->root->lock);
->  }
->  
->  static inline void vma_unlock_anon_vma(struct vm_area_struct *vma)
->  {
->  	struct anon_vma *anon_vma = vma->anon_vma;
->  	if (anon_vma)
-> -		spin_unlock(&anon_vma->lock);
-> +		spin_unlock(&anon_vma->root->lock);
->  }
->  
->  static inline void anon_vma_lock(struct anon_vma *anon_vma)
->  {
-> -	spin_lock(&anon_vma->lock);
-> +	spin_lock(&anon_vma->root->lock);
->  }
->  
->  static inline void anon_vma_unlock(struct anon_vma *anon_vma)
->  {
-> -	spin_unlock(&anon_vma->lock);
-> +	spin_unlock(&anon_vma->root->lock);
->  }
->  
->  /*
-> Index: linux-2.6.34/mm/ksm.c
-> ===================================================================
-> --- linux-2.6.34.orig/mm/ksm.c
-> +++ linux-2.6.34/mm/ksm.c
-> @@ -325,7 +325,7 @@ static void drop_anon_vma(struct rmap_it
->  {
->  	struct anon_vma *anon_vma = rmap_item->anon_vma;
->  
-> -	if (atomic_dec_and_lock(&anon_vma->external_refcount, &anon_vma->lock)) {
-> +	if (atomic_dec_and_lock(&anon_vma->external_refcount, &anon_vma->root->lock)) {
->  		int empty = list_empty(&anon_vma->head);
->  		anon_vma_unlock(anon_vma);
->  		if (empty)
-> Index: linux-2.6.34/mm/mmap.c
-> ===================================================================
-> --- linux-2.6.34.orig/mm/mmap.c
-> +++ linux-2.6.34/mm/mmap.c
-> @@ -506,6 +506,7 @@ int vma_adjust(struct vm_area_struct *vm
->  	struct vm_area_struct *importer = NULL;
->  	struct address_space *mapping = NULL;
->  	struct prio_tree_root *root = NULL;
-> +	struct anon_vma *anon_vma = NULL;
->  	struct file *file = vma->vm_file;
->  	long adjust_next = 0;
->  	int remove_next = 0;
-> @@ -578,6 +579,17 @@ again:			remove_next = 1 + (end > next->
->  		}
->  	}
->  
-> +	/*
-> +	 * When changing only vma->vm_end, we don't really need anon_vma
-> +	 * lock. This is a fairly rare case by itself, but the anon_vma
-> +	 * lock may be shared between many sibling processes.  Skipping
-> +	 * the lock for brk adjustments makes a difference sometimes.
-> +	 */
+> So PCs with current ACPI don't get opportunistic suspend capability. It
+> probably won't be supported on the Commodore Amiga either - your point ?
 
-"sometimes" is a bit. We know when it makes a difference - for
-brk-intensive workloads e.g. aim7. It's only worth mentioning because
-git blame will no longer point to Lee's analysis in commit
-252c5f94d944487e9f50ece7942b0fbf659c5c31.
+Actually, the reverse - there's no terribly good way to make PCs work 
+with scheduler-based suspend, but there's no reason why they wouldn't 
+work with the current opportunistic suspend implementation.
 
-Whether you update it or not;
-
-Acked-by: Mel Gorman <mel@csn.ul.ie>
-
-> +	if (vma->anon_vma && (insert || importer || start != vma->vm_start)) {
-> +		anon_vma = vma->anon_vma;
-> +		anon_vma_lock(anon_vma);
-> +	}
-> +
->  	if (root) {
->  		flush_dcache_mmap_lock(mapping);
->  		vma_prio_tree_remove(vma, root);
-> @@ -617,6 +629,8 @@ again:			remove_next = 1 + (end > next->
->  		__insert_vm_struct(mm, insert);
->  	}
->  
-> +	if (anon_vma)
-> +		anon_vma_unlock(anon_vma);
->  	if (mapping)
->  		spin_unlock(&mapping->i_mmap_lock);
->  
-> @@ -2466,23 +2480,23 @@ static DEFINE_MUTEX(mm_all_locks_mutex);
->  
->  static void vm_lock_anon_vma(struct mm_struct *mm, struct anon_vma *anon_vma)
->  {
-> -	if (!test_bit(0, (unsigned long *) &anon_vma->head.next)) {
-> +	if (!test_bit(0, (unsigned long *) &anon_vma->root->head.next)) {
->  		/*
->  		 * The LSB of head.next can't change from under us
->  		 * because we hold the mm_all_locks_mutex.
->  		 */
-> -		spin_lock_nest_lock(&anon_vma->lock, &mm->mmap_sem);
-> +		spin_lock_nest_lock(&anon_vma->root->lock, &mm->mmap_sem);
->  		/*
->  		 * We can safely modify head.next after taking the
-> -		 * anon_vma->lock. If some other vma in this mm shares
-> +		 * anon_vma->root->lock. If some other vma in this mm shares
->  		 * the same anon_vma we won't take it again.
->  		 *
->  		 * No need of atomic instructions here, head.next
->  		 * can't change from under us thanks to the
-> -		 * anon_vma->lock.
-> +		 * anon_vma->root->lock.
->  		 */
->  		if (__test_and_set_bit(0, (unsigned long *)
-> -				       &anon_vma->head.next))
-> +				       &anon_vma->root->head.next))
->  			BUG();
->  	}
->  }
-> @@ -2573,7 +2587,7 @@ out_unlock:
->  
->  static void vm_unlock_anon_vma(struct anon_vma *anon_vma)
->  {
-> -	if (test_bit(0, (unsigned long *) &anon_vma->head.next)) {
-> +	if (test_bit(0, (unsigned long *) &anon_vma->root->head.next)) {
->  		/*
->  		 * The LSB of head.next can't change to 0 from under
->  		 * us because we hold the mm_all_locks_mutex.
-> @@ -2584,10 +2598,10 @@ static void vm_unlock_anon_vma(struct an
->  		 *
->  		 * No need of atomic instructions here, head.next
->  		 * can't change from under us until we release the
-> -		 * anon_vma->lock.
-> +		 * anon_vma->root->lock.
->  		 */
->  		if (!__test_and_clear_bit(0, (unsigned long *)
-> -					  &anon_vma->head.next))
-> +					  &anon_vma->root->head.next))
->  			BUG();
->  		anon_vma_unlock(anon_vma);
->  	}
-> Index: linux-2.6.34/mm/migrate.c
-> ===================================================================
-> --- linux-2.6.34.orig/mm/migrate.c
-> +++ linux-2.6.34/mm/migrate.c
-> @@ -682,7 +682,7 @@ skip_unmap:
->  rcu_unlock:
->  
->  	/* Drop an anon_vma reference if we took one */
-> -	if (anon_vma && atomic_dec_and_lock(&anon_vma->external_refcount, &anon_vma->lock)) {
-> +	if (anon_vma && atomic_dec_and_lock(&anon_vma->external_refcount, &anon_vma->root->lock)) {
->  		int empty = list_empty(&anon_vma->head);
->  		anon_vma_unlock(anon_vma);
->  		if (empty)
+> > Suspend blockers are the mechanism for the 
+> > driver to indicate whether the wakeup event has been handled. That's 
+> > what they're there for. The in-kernel ones don't paper over anything.
 > 
+> Semantically the in kernel blockers and the in kernel expression of
+> device driven constraints are the same thing except that instead of 
+> yes/no you replace the boolean with information.
+
+In some cases, not all. It may be a latency constraint (in which case 
+pm_qos is an appropriate mechanism), but instead it may be something 
+like "A key was pressed but never read" or "A network packet was 
+received but not delivered". These don't fit into the pm_qos model, but 
+it's state that you have to track.
 
 -- 
-Mel Gorman
-Part-time Phd Student                          Linux Technology Center
-University of Limerick                         IBM Dublin Software Lab
+Matthew Garrett | mjg59@srcf.ucam.org
