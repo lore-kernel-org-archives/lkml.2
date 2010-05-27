@@ -1,90 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932275Ab0E0RRn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 May 2010 13:17:43 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:25982 "EHLO mx1.redhat.com"
+	id S1759317Ab0E0RRz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 May 2010 13:17:55 -0400
+Received: from cantor.suse.de ([195.135.220.2]:33639 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759330Ab0E0RRj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 May 2010 13:17:39 -0400
-Date: Thu, 27 May 2010 19:15:30 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Roland McGrath <roland@redhat.com>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Andi Kleen <andi@firstfloor.org>, "H. Peter Anvin" <hpa@zytor.com>,
-       Richard Henderson <rth@twiddle.net>, wezhang@redhat.com,
-       linux-kernel@vger.kernel.org, Michael Kerrisk <mtk.manpages@gmail.com>,
-       William Cohen <wcohen@redhat.com>
-Subject: Re: [PATCH 1/3] sys_personality: validate personality before
-	set_personality()
-Message-ID: <20100527171530.GA18284@redhat.com>
-References: <20100525141720.GA2253@redhat.com> <20100525193348.83F1549A54@magilla.sf.frob.com> <20100526123622.GA26033@redhat.com> <20100526203105.59D7849A56@magilla.sf.frob.com> <20100527153522.GA13858@redhat.com> <20100527153548.GB13858@redhat.com> <alpine.LFD.2.00.1005270921540.3689@i5.linux-foundation.org>
+	id S1754371Ab0E0RRW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 May 2010 13:17:22 -0400
+Date: Thu, 27 May 2010 19:17:05 +0200
+From: Jan Kara <jack@suse.cz>
+To: Erik van der Kouwe <vdkouwe@cs.vu.nl>
+Cc: Jan Kara <jack@suse.cz>, Alexander Viro <viro@zeniv.linux.org.uk>,
+       linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+       Fam Zheng <famcool@gmail.com>
+Subject: Re: [PATCH] fs/minix: bugfix, number of indirect block ptrs per
+ block depends on block size
+Message-ID: <20100527171705.GC3576@quack.suse.cz>
+References: <4BFCF1EB.20709@cs.vu.nl>
+ <20100526215442.GB3316@quack.suse.cz>
+ <4BFEA7CD.6020703@cs.vu.nl>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.LFD.2.00.1005270921540.3689@i5.linux-foundation.org>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <4BFEA7CD.6020703@cs.vu.nl>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/27, Linus Torvalds wrote:
->
-> On Thu, 27 May 2010, Oleg Nesterov wrote:
-> >
-> > --- 34-rc1/kernel/exec_domain.c~1_CK_OVERFLOW_EARLIER	2009-04-06 00:03:42.000000000 +0200
-> > +++ 34-rc1/kernel/exec_domain.c	2010-05-27 15:15:12.000000000 +0200
-> > @@ -193,9 +193,9 @@ SYSCALL_DEFINE1(personality, u_long, per
-> >  	u_long old = current->personality;
-> >
-> >  	if (personality != 0xffffffff) {
-> > -		set_personality(personality);
-> > -		if (current->personality != personality)
-> > +		if ((unsigned int)personality != personality)
-> >  			return -EINVAL;
-> > +		set_personality(personality);
-> >  	}
->
-> I think this is total random noise. The whole type system is crazy - don't
-> just paper over it.
+On Thu 27-05-10 19:11:41, Erik van der Kouwe wrote:
+> Dear all,
+> 
+> >  Out of curiosity: Are you really using MINIX? The code is dead for a
+> >long time...
+> 
+> MINIX is very much alive, see http://www.minix3.org/.
+> 
+> I work in the team developing MINIX. Being able to exchange data
+> between Linux and MINIX is very useful for us and there is no other
+> filesystem that the two share. We have been aware of (and annoyed
+> by) this problem for a long time, but didn't know the cause (and
+> didn't have much time to check). Feiran is a GSoC student working on
+> our project and he found the issue when setting up his development
+> environment so then we decided to bring out a patch.
+  OK, I was more speaking about the Linux MINIX filesystem driver but it's
+good to know someone is still using it :) Thanks for education.
 
-Of course! I agree very much.
-
-> And if we decide that the field must fit in an unsigned int (reasonable),
-> then let's just ignore the top bits, and make it work right even if
-> somebody passes in an unsigned int!
-
-Certainly, this was my first thought.
-
-But I didn't dare to do this change because it is obviously user-visible,
-and while this is not very important, we should change the declaration
-of personality() in /usr/include/sys/personality.h
-
-> -SYSCALL_DEFINE1(personality, u_long, personality)
-> +SYSCALL_DEFINE1(personality, unsigned int, personality)
-
-Indeed!
-
-But. Suppose an application does personality(0xffffffff << 32) on x86_64.
-
-Before this patch we return -EINVAL (but wrongly change ->personality).
-After this patch this is equal to personality(0), right?
-
-If you think this is fine - I agree. In case we have a bug report we
-know who should be blamed ;)
-
-As for 2/3 - once again, I think this is user-space problem, but I
-can't explain this to the bug-reportes.
-
-> -	u_long old = current->personality;
-> +	unsigned int old = current->personality;
->
->  	if (personality != 0xffffffff) {
->  		set_personality(personality);
-> @@ -198,7 +198,7 @@ SYSCALL_DEFINE1(personality, u_long, personality)
->  			return -EINVAL;
-
-You can also remove this "return -EINVAL", this is no longer possible.
-
-Oleg.
-
+								Honza
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
