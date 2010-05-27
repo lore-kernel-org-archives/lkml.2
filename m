@@ -1,35 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932435Ab0E0XbA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 May 2010 19:31:00 -0400
-Received: from vms173011pub.verizon.net ([206.46.173.11]:38820 "EHLO
-	vms173011pub.verizon.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757240Ab0E0Xa7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 May 2010 19:30:59 -0400
-Date: Thu, 27 May 2010 19:30:47 -0400 (EDT)
-From: Len Brown <lenb@kernel.org>
-X-X-Sender: lenb@localhost.localdomain
-To: "Luck, Tony" <tony.luck@intel.com>
-Cc: "x86@kernel.org" <x86@kernel.org>,
-       "linux-pm@lists.linux-foundation.org" 
-	<linux-pm@lists.linux-foundation.org>,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH-v2 3/8] cpuidle: make cpuidle_curr_driver static
-In-reply-to: <987664A83D2D224EAE907B061CE93D5301135014D2@orsmsx505.amr.corp.intel.com>
-Message-id: <alpine.LFD.2.00.1005271930120.4127@localhost.localdomain>
-References: <1274928151-30919-1-git-send-email-lenb@kernel.org>
- <db2b1d371847edfdbba21f323b4fd4a480c8c5aa.1274926772.git.len.brown@intel.com>
- <alpine.LFD.2.00.1005270126000.4039@localhost.localdomain>
- <987664A83D2D224EAE907B061CE93D5301135014D2@orsmsx505.amr.corp.intel.com>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
-MIME-version: 1.0
-Content-type: TEXT/PLAIN; charset=US-ASCII
+	id S932490Ab0E0Xel (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 May 2010 19:34:41 -0400
+Received: from tundra.namei.org ([65.99.196.166]:33725 "EHLO tundra.namei.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757240Ab0E0Xei (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 May 2010 19:34:38 -0400
+Date: Fri, 28 May 2010 09:34:36 +1000 (EST)
+From: James Morris <jmorris@namei.org>
+To: Shaz <shazalive@gmail.com>
+cc: linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org
+Subject: Re: [PATCH] Correcting Kconfig for default security module
+In-Reply-To: <AANLkTil2oZOuDtAYyao-hM7oV2-QRrPXPRgwWtbTiKA4@mail.gmail.com>
+Message-ID: <alpine.LRH.2.00.1005280934050.4330@tundra.namei.org>
+References: <AANLkTil2oZOuDtAYyao-hM7oV2-QRrPXPRgwWtbTiKA4@mail.gmail.com>
+User-Agent: Alpine 2.00 (LRH 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> ...it builds and boots for me.
+On Fri, 28 May 2010, Shaz wrote:
 
-Thanks Tony, what would I do without you:-)
+> Dear James,
+> 
+> The following patch removes the confusion that if someone want to have
+> LSM as secondary and chooses DAC as the default. This will disable LSM
+> as discussed on SELinux mailing list.
 
+The correct list for posting security patches is the LSM list (cc'd).
+
+> 
+> ------------------------------------------------------------------------------------------------------------------------------------------------------------
+> 
+> diff -uNr linux-2.6.34/security/Kconfig linux-2.6.34-my/security/Kconfig
+> --- linux-2.6.34-orig/security/Kconfig	2010-05-17 02:17:36.000000000 +0500
+> +++ linux-2.6.34/security/Kconfig	2010-05-28 02:43:07.000000000 +0500
+> @@ -148,11 +148,10 @@
+>  	default DEFAULT_SECURITY_SELINUX if SECURITY_SELINUX
+>  	default DEFAULT_SECURITY_SMACK if SECURITY_SMACK
+>  	default DEFAULT_SECURITY_TOMOYO if SECURITY_TOMOYO
+> -	default DEFAULT_SECURITY_DAC
+> 
+>  	help
+>  	  Select the security module that will be used by default if the
+> -	  kernel parameter security= is not specified.
+> +	  kernel parameter security= is not specified. DAC stays as the default.
+> 
+>  	config DEFAULT_SECURITY_SELINUX
+>  		bool "SELinux" if SECURITY_SELINUX=y
+> @@ -163,9 +162,7 @@
+>  	config DEFAULT_SECURITY_TOMOYO
+>  		bool "TOMOYO" if SECURITY_TOMOYO=y
+> 
+> -	config DEFAULT_SECURITY_DAC
+> -		bool "Unix Discretionary Access Controls"
+> -
+> +	
+>  endchoice
+> 
+>  config DEFAULT_SECURITY
+> 
+> -- 
+> Shaz
+> 
+
+-- 
+James Morris
+<jmorris@namei.org>
