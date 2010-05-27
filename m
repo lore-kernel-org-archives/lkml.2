@@ -1,64 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933113Ab0E0LmI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 May 2010 07:42:08 -0400
-Received: from mga05.intel.com ([192.55.52.89]:5139 "EHLO
-	fmsmga101.fm.intel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755064Ab0E0LmG (ORCPT
+	id S933974Ab0E0LmS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 May 2010 07:42:18 -0400
+Received: from mail.gmx.net ([213.165.64.20]:44525 "HELO mail.gmx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S933281Ab0E0LmN convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 May 2010 07:42:06 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.53,311,1272870000"; 
-   d="scan'208";a="571031574"
-Date: Thu, 27 May 2010 11:57:16 +0100
-From: Alan Cox <alan@linux.intel.com>
-To: Frank Pan <frankpzh@gmail.com>
-Cc: Gerardo Exequiel Pozzi <vmlinuz386@yahoo.com.ar>,
-       Kay Sievers <kay.sievers@vrfy.org>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Greg Kroah-Hartman <gregkh@suse.de>,
-       Catalin Marinas <catalin.marinas@arm.com>,
-       Daniel Mack <daniel@caiaq.de>, Tejun Heo <tj@kernel.org>,
-       Christoph Lameter <cl@linux-foundation.org>,
-       Jiri Slaby <jirislaby@gmail.com>, Jochen Hein <jochen@jochen.org>,
-       Johannes Weiner <hannes@cmpxchg.org>, Dave Airlie <airlied@redhat.com>,
-       Pekka Enberg <penberg@cs.helsinki.fi>,
-       Geert Uytterhoeven <geert@linux-m68k.org>,
-       LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 0/2] Enlarge the storage of chars in virtual terminal
-Message-ID: <20100527115716.76ce299a@linux.intel.com>
-In-Reply-To: <AANLkTikuzGazcBpSvqU73UAAIvcTgxTBsmWTr9bNCSjB@mail.gmail.com>
-References: <AANLkTikBrXROMvNKrhgxQ1jVh6aOsx3nIrNXTznXInV1@mail.gmail.com>
-	<20100526151152.28deaa6c@linux.intel.com>
-	<AANLkTikuzGazcBpSvqU73UAAIvcTgxTBsmWTr9bNCSjB@mail.gmail.com>
-Organization: Intel
-X-Mailer: Claws Mail 3.7.5 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 27 May 2010 07:42:13 -0400
+X-Authenticated: #5108953
+X-Provags-ID: V01U2FsdGVkX18lxnI5ziUl5nYoGJ/nueEK1d3XBHZ4C4duezkjmK
+	32IUY81RFT2V0O
+From: Toralf =?iso-8859-1?q?F=F6rster?= <toralf.foerster@gmx.de>
+To: rostedt@goodmis.org
+Subject: [PATCH] streamline_config.pl: use references rather than copied data structures
+Date: Thu, 27 May 2010 13:42:08 +0200
+User-Agent: KMail/1.13.3 (Linux/2.6.34; KDE/4.4.3; i686; ; )
+Cc: zippel@linux-m68k.org, linux-kbuild@vger.kernel.org,
+       linux-kernel@vger.kernel.org
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 8BIT
+Message-Id: <201005271342.09066.toralf.foerster@gmx.de>
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Why is it complex?
+IMHO there's no need for a copy-by-value
 
-You'd have to take that up with the orthographers and historians
+Signed-off-by: Toralf Foerster <toralf.foerster@gmx.de>
+---
+ scripts/kconfig/streamline_config.pl |    6 +++---
+ 1 files changed, 3 insertions(+), 3 deletions(-)
 
-> IMHO Rendering non-western languages is nothing
-> more than rendering 2 ASCII chars. The current mainline kernel
+diff --git a/scripts/kconfig/streamline_config.pl 
+b/scripts/kconfig/streamline_config.pl
+index afbd54a..574e68f 100644
+--- a/scripts/kconfig/streamline_config.pl
++++ b/scripts/kconfig/streamline_config.pl
+@@ -406,14 +406,14 @@ close(CIN);
+ loop:
+ foreach my $module (keys(%modules)) {
+     if (defined($objects{$module})) {
+-       my @arr = @{$objects{$module}};
+-       foreach my $conf (@arr) {
++       my $arr = $objects{$module};
++       foreach my $conf (@{$arr}) {
+            if (defined($setconfigs{$conf})) {
+                next loop;
+            }
+        }
+        print STDERR "module $module did not have configs";
+-       foreach my $conf (@arr) {
++       foreach my $conf (@{$arr}) {
+            print STDERR " " , $conf;
+        }
+        print STDERR "\n";
+-- 
+1.6.4.4
 
-It is a lot more. Things like arabic vowel handling for example, or
-mixed direction text.
+-- 
+MfG/Sincerely
+Toralf Förster
 
-> IMHO A user space application doing such thing is just
-> re-implementation of virtual terminal support, without the 512
-> limitation. Why does we keeping re-inventing the wheel?
+pgp finger print: 7B1A 07F4 EC82 0F90 D4C2 8936 872A E508 7DB6 9DA3
 
-Pango does the job. Pango is the wheel.
-
-Kernel code is unpageable, privileged and unable to doing things
-trivially like dynamic font management. It's the wrong place for this
-kind of stuff because doing fonts right and especially doing language
-rendering right is *hard*.
-
-Alan
