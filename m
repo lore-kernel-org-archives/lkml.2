@@ -1,75 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757310Ab0E0QTi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 May 2010 12:19:38 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:58609 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754371Ab0E0QTh convert rfc822-to-8bit (ORCPT
+	id S1756763Ab0E0QUF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 May 2010 12:20:05 -0400
+Received: from cavan.codon.org.uk ([93.93.128.6]:44220 "EHLO
+	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751777Ab0E0QUB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 May 2010 12:19:37 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=qPSC/5xfxks9knFldQVAqDKOxleM6dkcBVywIc9a4CauwgH+To4AreQB64RCCxxiuQ
-         8mC/iErcC/Wfl2ODiuyd/HpYRl44D8UNiGEfh1AQXLJF2ZD4qhrAazgRyWwdMxT6M+Jn
-         IS9XuHxK0UamgZRKkdZUcN4fOB7uRvJ5Kxnxw=
+	Thu, 27 May 2010 12:20:01 -0400
+Date: Thu, 27 May 2010 17:19:43 +0100
+From: Matthew Garrett <mjg59@srcf.ucam.org>
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: Thomas Gleixner <tglx@linutronix.de>,
+       Arve =?iso-8859-1?B?SGr4bm5lduVn?= <arve@android.com>,
+       Florian Mickler <florian@mickler.org>,
+       Vitaly Wool <vitalywool@gmail.com>,
+       Peter Zijlstra <peterz@infradead.org>,
+       LKML <linux-kernel@vger.kernel.org>, Paul@smtp1.linux-foundation.org,
+       felipe.balbi@nokia.com,
+       Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
+       Linux PM <linux-pm@lists.linux-foundation.org>
+Subject: Re: [linux-pm] [PATCH 0/8] Suspend block api (version 8)
+Message-ID: <20100527161943.GA32764@srcf.ucam.org>
+References: <20100526133721.602633b2@schatten.dmk.lab> <AANLkTikzgaOFdQKess4E-D86OLPOzxP3dWiDkU_UR0ri@mail.gmail.com> <20100526142430.327ccbc4@schatten.dmk.lab> <20100526141612.3e2e0443@lxorguk.ukuu.org.uk> <AANLkTin97MMu-XO_Lk-snefBWz2ymhS0Qi1y1RxLwdVA@mail.gmail.com> <20100527003943.07c17f85@lxorguk.ukuu.org.uk> <20100527140655.GA28048@srcf.ucam.org> <alpine.LFD.2.00.1005271642440.3032@localhost.localdomain> <20100527155201.GA31937@srcf.ucam.org> <20100527171615.15a1fd3d@lxorguk.ukuu.org.uk>
 MIME-Version: 1.0
-In-Reply-To: <20100526223101.3f2dd7dd.rdunlap@xenotime.net>
-References: <AANLkTik0PUKP3QLPRbb3nlh034_inmaeVbXy3q5_LQz-@mail.gmail.com>
-	<201005270213.42913.rjw@sisk.pl>
-	<AANLkTil180tPW4KoOaUBgXIm1Lf6O45_GKKlLx3CDcVh@mail.gmail.com>
-	<20100527043123.GA5349@cr0.nay.redhat.com>
-	<20100526223101.3f2dd7dd.rdunlap@xenotime.net>
-Date: Thu, 27 May 2010 18:19:35 +0200
-X-Google-Sender-Auth: 7Ay8hgQc0nlpTsKc-FRpd9cGDIA
-Message-ID: <AANLkTik2ggnZYixbVPVDgQjUIsJVW-UQyItmR-soghc0@mail.gmail.com>
-Subject: Re: config automatically switches from 32-bit to 64-bit for x86
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Randy Dunlap <rdunlap@xenotime.net>
-Cc: =?UTF-8?Q?Am=C3=A9rico_Wang?= <xiyou.wangcong@gmail.com>,
-       Jaswinder Singh Rajput <jaswinderlinux@gmail.com>,
-       "Rafael J. Wysocki" <rjw@sisk.pl>, Sam Ravnborg <sam@ravnborg.org>,
-       Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
-       "the arch/x86 maintainers" <x86@kernel.org>,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100527171615.15a1fd3d@lxorguk.ukuu.org.uk>
+User-Agent: Mutt/1.5.18 (2008-05-17)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 27, 2010 at 07:31, Randy Dunlap <rdunlap@xenotime.net> wrote:
-> On Thu, 27 May 2010 12:31:23 +0800 Américo Wang wrote:
->> On Thu, May 27, 2010 at 09:39:51AM +0530, Jaswinder Singh Rajput wrote:
->> >On Thu, May 27, 2010 at 5:43 AM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
->> >> On Thursday 27 May 2010, Jaswinder Singh Rajput wrote:
->> >>> Hello,
->> >>>
->> >>> I am trying to build 32 bit kernel image on 64-bit machine but after
->> >>> 'make menuconfig' it automatically switches 32-bit to 64-bit.
->> >>
->> >> Try 'linux32 make menuconfig' and 'linux32 make'.
->> >>
->> >
->> >Yes, this works :-)
->>
->>
->> I think 'make ARCH=i386 menuconfig' also works.
->
-> Yes, that's what I use.  I wasn't familiar with the "linux32 make ..." usage.
+On Thu, May 27, 2010 at 05:16:15PM +0100, Alan Cox wrote:
 
-Doesn't the linux32 trick run the (possibly slower due to x86 register pressure)
-32-bit compiler instead of running the 64-bit compiler in -m32 mode?
+> I can't speak for Thomas, but I'm certainly not arguing that you don't
+> need something that looks more like the blocker side of the logic *in
+> kernel*, because there is stuff that you want to express which isn't tied
+> to the task.
 
-Gr{oetje,eeting}s,
+Sure, if you're not using opportunistic suspend then I don't think 
+there's any real need for the userspace side of this. The question is 
+how to implement something with the useful properties of opportunistic 
+suspend without without implementing something pretty much equivalent to 
+the userspace suspend blockers. I've sent another mail expressing why I 
+don't think your proposed QoS style behaviour provides that.
 
-						Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-							    -- Linus Torvalds
+-- 
+Matthew Garrett | mjg59@srcf.ucam.org
