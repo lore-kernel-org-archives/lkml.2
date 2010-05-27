@@ -1,111 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932464Ab0E0VSu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 May 2010 17:18:50 -0400
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:46007 "EHLO
-	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755439Ab0E0VSs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 May 2010 17:18:48 -0400
-Date: Thu, 27 May 2010 22:25:14 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Alan Stern <stern@rowland.harvard.edu>
-Cc: Thomas Gleixner <tglx@linutronix.de>,
-       Matthew Garrett <mjg59@srcf.ucam.org>,
-       Peter Zijlstra <peterz@infradead.org>,
-       LKML <linux-kernel@vger.kernel.org>,
-       Florian Mickler <florian@mickler.org>, <felipe.balbi@nokia.com>,
-       Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
-       Linux PM <linux-pm@lists.linux-foundation.org>
-Subject: Re: [linux-pm] [PATCH 0/8] Suspend block api (version 8)
-Message-ID: <20100527222514.0a1710bf@lxorguk.ukuu.org.uk>
-In-Reply-To: <Pine.LNX.4.44L0.1005271334560.3239-100000@iolanthe.rowland.org>
-References: <alpine.LFD.2.00.1005271905000.3032@localhost.localdomain>
-	<Pine.LNX.4.44L0.1005271334560.3239-100000@iolanthe.rowland.org>
-X-Mailer: Claws Mail 3.7.5 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1759213Ab0E0VVf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 May 2010 17:21:35 -0400
+Received: from hera.kernel.org ([140.211.167.34]:55059 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754875Ab0E0VVd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 May 2010 17:21:33 -0400
+Message-ID: <4BFEE216.2070807@kernel.org>
+Date: Thu, 27 May 2010 23:20:22 +0200
+From: Tejun Heo <tj@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.1.9) Gecko/20100317 Thunderbird/3.0.4
+MIME-Version: 1.0
+To: "Michael S. Tsirkin" <mst@redhat.com>
+CC: Oleg Nesterov <oleg@redhat.com>, Sridhar Samudrala <sri@us.ibm.com>,
+       netdev <netdev@vger.kernel.org>, lkml <linux-kernel@vger.kernel.org>,
+       "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Dmitri Vorobiev <dmitri.vorobiev@movial.com>,
+       Jiri Kosina <jkosina@suse.cz>, Thomas Gleixner <tglx@linutronix.de>,
+       Ingo Molnar <mingo@elte.hu>, Andi Kleen <ak@linux.intel.com>
+Subject: Re: [PATCH 2/3] workqueue: Add an API to create a singlethread	workqueue
+ attached to the current task's cgroup
+References: <1274227491.2370.110.camel@w-sridhar.beaverton.ibm.com> <20100527091426.GA6308@redhat.com> <20100527124448.GA4241@redhat.com> <20100527131254.GB7974@redhat.com> <4BFE9ABA.6030907@kernel.org> <20100527163954.GA21710@redhat.com> <4BFEA434.6080405@kernel.org> <20100527173207.GA21880@redhat.com>
+In-Reply-To: <20100527173207.GA21880@redhat.com>
+X-Enigmail-Version: 1.0.1
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Thu, 27 May 2010 21:20:25 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> That's the point -- suspend does not evaluate the system state 
-> correctly because it doesn't have the necessary information.  Suspend 
+Hello, Michael.
 
-The power management layer knows if the machine is idle, it has insight
-into when the next wakeups will occur.
+On 05/27/2010 07:32 PM, Michael S. Tsirkin wrote:
+> Well, this is why I proposed adding a new API for creating
+> workqueue within workqueue.c, rather than exposing the task
+> and attaching it to cgroups in our driver: so that workqueue
+> maintainers can fix the implementation if it ever changes.
+> 
+> And after all, it's an internal API, we can always change
+> it later if we need.
+...
+> Well, yes but we are using APIs like flush_work etc. These are very
+> handy.  It seems much easier than rolling our own queue on top of kthread.
 
-> blockers are a way of providing it that information.  They don't paper 
-> over the problem; they solve it.
+The thing is that this kind of one-off usage becomes problemetic when
+you're trying to change the implementation detail.  All current
+workqueue users don't care which thread they run on and they shouldn't
+as each work owns the context only for the duration the work is
+executing.  If this sort of fundamental guidelines are followed, the
+implementation can be improved in pretty much transparent way but when
+you start depending on specific implementation details, things become
+messy pretty quickly.
 
-I'm still unconvinced (see Thomas examples as a starter) and even if they
-did, the cure would be far worse than the disease.
+If this type of usage were more common, adding proper way to account
+work usage according to cgroups would make sense but that's not the
+case here and I removed the only exception case recently while trying
+to implement cmwq and if this is added.  So, this would be the only
+one which makes such extra assumptions in the whole kernel.  One way
+or the other, workqueue needs to be improved and I don't really think
+adding the single exception at this point is a good idea.
 
-The hardware world also shows how you handle suspend/resume event races
-cleanly and in turn how we can handle right from user to hardware.
+The thing I realized after stop_machine conversion was that there was
+no reason to use workqueue there at all.  There already are more than
+enough not-too-difficult synchronization constructs and if you're
+using a thread for dedicated purposes, code complexity isn't that
+different either way.  Plus, it would also be clearer that dedicated
+threads are required there for what reason.  So, I strongly suggest
+using a kthread.  If there are issues which are noticeably difficult
+to solve with kthread, we can definitely talk about that and think
+about things again.
 
-If you are dealing with a well behaved UI app then its event loop will
-just do
+Thank you.
 
-	if (message == UI_OFF) {
-		stop_background_stuff();
-		event_mask &= stuff;
-		send_reply(NIGHT_NIGHT);
-		continue;
-		/* Back to poll() */
-	}
-
-and power management does the rest. If an event wakes up the process
-before we get to suspend in kernel we will wake it back up. If the event
-gets in after pm decides to idle via suspend then it'll bounce through
-the kernel back to a kernel resume, or potentially through a full
-hardware/software suspend/resume bounce. You have one person who needs to
-track the sequence - that's however is the guy sending UI_ON/UI_OFF
-information and making the screen light up.
-
-If you are dealing with a badly behaved app then you can't win because it
-may not have the magic 'suspend blockers' or will do it wrong. You
-can constrain it (brute force SIGSTOP after it refuses to UI_OFF for a
-bit, or via nice or other QoS policy) but you can't assume it'll
-magically managge itself. It is "badly behaved" so by that very
-definition you can't assume it has correct magic goo in it. (Side note:
-the extra magic goo and complexity of such blockers makes it more likely
-the app will be buggy and thus 'badly behaved' !)
-
-You can pick up which tasks are stopping the suspend fairly easily at the
-moment via the ktrace interfaces. Maybe there is a case for making that
-tidier but powertop and the like already demonstrate you can track this.
-
-A cpu policy can obviously expose offenders itself directly to user
-space. That (and indeed people not responding to UI_OFF) then lets your
-phone do
-
-	<boop>
-	X is misbehaving
-	[Close it] [Allow this time] [Disable]
-
-and also to provide stats for each wakeup a policy manager can spot
-offenders (even those who are perhaps hard to see because they wake up a
-little bit every so often but just enough to mess up pm). In the x86
-world Arjan found a *lot* of that sort of stuff.
-
-Your policy manager can also act on it. The current policy manager is
-to fix app bugs and shows people up at conferences. I would imagine a
-google policy would be to collate misbehaving app reports at google.com
-and use them both to assist in 'educating' authors and in scoring app
-store stuff.
-
-As it is <boop> X is misbehaving is a powerful economic lever in a
-pretty dynamic and functioning software market.
-
-Google seem to be pretty good at statistical data, I can't believe
-battery advice for apps on the app stores and indeed a 'where did my
-battery go' pie chart are beyond their wit, or beyond the end user to
-figure out.
-
-There are a considerable number of people shipping power constrained
-Linux devices without suddenely desperately needing extra magic potions.
-Are they really all just that much smarter than Google ?
-
-Alan
+-- 
+tejun
