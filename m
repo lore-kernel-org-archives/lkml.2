@@ -1,66 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933524Ab0E0JVU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 May 2010 05:21:20 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:45429 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751946Ab0E0JVS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 May 2010 05:21:18 -0400
-Date: Thu, 27 May 2010 12:16:29 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Paul Menage <menage@google.com>
-Cc: Sridhar Samudrala <samudrala.sridhar@gmail.com>,
-       netdev <netdev@vger.kernel.org>,
-       "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+	id S933514Ab0E0JWd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 May 2010 05:22:33 -0400
+Received: from anchor-post-2.mail.demon.net ([195.173.77.133]:44689 "EHLO
+	anchor-post-2.mail.demon.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756732Ab0E0JWb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 May 2010 05:22:31 -0400
+Subject: [PATCH] gconfig: fix build failure on fedora 13
+From: Richard Kennedy <richard@rsk.demon.co.uk>
+To: Roman Zippel <zippel@linux-m68k.org>
+Cc: linux-kbuild <linux-kbuild@vger.kernel.org>,
        lkml <linux-kernel@vger.kernel.org>,
-       containers@lists.linux-foundation.org, lizf@cn.fujitsu.com,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Ben Blum <bblum@andrew.cmu.edu>,
-       KAMEZAWA Hiroyuki <kamezawa.hioryu@jp.fujitsu.com>
-Subject: Re: [PATCH 1/3] cgroups: Add an API to attach a task to current
-	task's cgroup
-Message-ID: <20100527091629.GB6308@redhat.com>
-References: <1274227488.2370.107.camel@w-sridhar.beaverton.ibm.com> <AANLkTinsrFoLVKDFM5pcKcL_6MvAzhR6IzbNmWKh3BDh@mail.gmail.com> <20100525165334.GA27307@redhat.com> <AANLkTilawCLv5_XlStsFdOdLh-dmlIR3aUTyrVS-JF_s@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTilawCLv5_XlStsFdOdLh-dmlIR3aUTyrVS-JF_s@mail.gmail.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+       Steven Rostedt <rostedt@goodmis.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 27 May 2010 10:22:28 +0100
+Message-ID: <1274952149.2210.12.camel@castor.rsk>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.1.2 (2.30.1.2-2.fc13) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 25, 2010 at 11:34:12AM -0700, Paul Menage wrote:
-> On Tue, May 25, 2010 at 9:53 AM, Michael S. Tsirkin <mst@redhat.com> wrote:
-> > On Thu, May 20, 2010 at 03:22:15PM -0700, Paul Menage wrote:
-> >> On Tue, May 18, 2010 at 5:04 PM, Sridhar Samudrala
-> >> <samudrala.sridhar@gmail.com> wrote:
-> >> > Add a new kernel API to attach a task to current task's cgroup
-> >> > in all the active hierarchies.
-> >> >
-> >> > Signed-off-by: Sridhar Samudrala <sri@us.ibm.com>
-> >>
-> >> Reviewed-by: Paul Menage <menage@google.com>
-> >>
-> >> It would be more efficient to just attach directly to current->cgroups
-> >> rather than potentially creating/destroying one css_set for each
-> >> hierarchy until we've completely converged on current->cgroups - but
-> >> that would require a bunch of refactoring of the guts of
-> >> cgroup_attach_task() to ensure that the right can_attach()/attach()
-> >> callbacks are made. That doesn't really seem worthwhile right now for
-> >> the initial use, that I imagine isn't going to be
-> >> performance-sensitive.
-> >>
-> >> Paul
-> >
-> > Is this patch suitable for 2.6.35?
-> 
-> Should be OK, yes.
-> 
-> Paul
+Making gconfig fails on fedora 13 as the linker cannot resolve dlsym.
+    
+Adding libdl to the link command fixes this.
+    
+make shows this error :-
+    /usr/bin/ld: scripts/kconfig/kconfig_load.o: undefined reference to symbol 'dlsym@@GLIBC_2.2.5'
+    /usr/bin/ld: note: 'dlsym@@GLIBC_2.2.5' is defined in DSO /lib64/libdl.so.2 so try adding it to the linker command line
+    /lib64/libdl.so.2: could not read symbols: Invalid operation
 
-So I'll add your Acked-by tag then, and merge through the vhost tree
-together with the patch that uses this.
+tested on x86_64 fedora 13.
 
--- 
-MST
+Signed-off-by: Richard Kennedy <richard@rsk.demon.co.uk>
+---
+patch against 2.6.34, built & tested on x86_64. 
+
+regards
+Richard
+
+diff --git a/scripts/kconfig/Makefile b/scripts/kconfig/Makefile
+index 186c466..9842611 100644
+--- a/scripts/kconfig/Makefile
++++ b/scripts/kconfig/Makefile
+@@ -208,7 +208,7 @@ HOSTCFLAGS_zconf.tab.o	:= -I$(src)
+ HOSTLOADLIBES_qconf	= $(KC_QT_LIBS) -ldl
+ HOSTCXXFLAGS_qconf.o	= $(KC_QT_CFLAGS) -D LKC_DIRECT_LINK
+ 
+-HOSTLOADLIBES_gconf	= `pkg-config --libs gtk+-2.0 gmodule-2.0 libglade-2.0`
++HOSTLOADLIBES_gconf	= `pkg-config --libs gtk+-2.0 gmodule-2.0 libglade-2.0` -ldl
+ HOSTCFLAGS_gconf.o	= `pkg-config --cflags gtk+-2.0 gmodule-2.0 libglade-2.0` \
+                           -D LKC_DIRECT_LINK
+ 
+
+
