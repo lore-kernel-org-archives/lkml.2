@@ -1,57 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755332Ab0E0NSU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 May 2010 09:18:20 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:51991 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750904Ab0E0NST (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 May 2010 09:18:19 -0400
-Date: Thu, 27 May 2010 16:12:54 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Sridhar Samudrala <sri@us.ibm.com>, netdev <netdev@vger.kernel.org>,
-       lkml <linux-kernel@vger.kernel.org>,
-       "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Dmitri Vorobiev <dmitri.vorobiev@movial.com>, Tejun Heo <tj@kernel.org>,
-       Jiri Kosina <jkosina@suse.cz>, Thomas Gleixner <tglx@linutronix.de>,
-       Ingo Molnar <mingo@elte.hu>, Andi Kleen <ak@linux.intel.com>
-Subject: Re: [PATCH 2/3] workqueue: Add an API to create a singlethread
-	workqueue attached to the current task's cgroup
-Message-ID: <20100527131254.GB7974@redhat.com>
-References: <1274227491.2370.110.camel@w-sridhar.beaverton.ibm.com> <20100527091426.GA6308@redhat.com> <20100527124448.GA4241@redhat.com>
+	id S1756746Ab0E0NUD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 May 2010 09:20:03 -0400
+Received: from mail-ew0-f216.google.com ([209.85.219.216]:47837 "EHLO
+	mail-ew0-f216.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753822Ab0E0NT7 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 May 2010 09:19:59 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=RiJv73M98wdo1koASTAbxqrK9zIswtvHu2lGonwyEUrbsC1zyzSreqGsaSN30OZ7UW
+         Y/ijT93d/oexXpW6pwlMbo9YQlMLMpkJe/ILKRQ067X6lVSPq9xbP46u4+KgFEhUTYyi
+         8c1qtAA5yv3GGIokOUW5FBAu7EOJ4glFQpd24=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100527124448.GA4241@redhat.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <E1OHcV6-0000oz-C5@pomaz-ex.szeredi.hu>
+References: <E1OHaLJ-0008VD-VJ@pomaz-ex.szeredi.hu>
+	<AANLkTilGlR297cl9yHF5n6e4eU7JflJwrpm3TrIe-rlo@mail.gmail.com>
+	<E1OHcV6-0000oz-C5@pomaz-ex.szeredi.hu>
+Date: Thu, 27 May 2010 16:19:57 +0300
+Message-ID: <AANLkTikrejgaNreRt2krs_djeFN-pmrEU5G-v08llao6@mail.gmail.com>
+Subject: Re: [PATCH 1/2] vfs: sanitize __d_path()
+From: Alexey Dobriyan <adobriyan@gmail.com>
+To: Miklos Szeredi <miklos@szeredi.hu>
+Cc: viro@zeniv.linux.org.uk, john.johansen@canonical.com,
+       penguin-kernel@i-love.sakura.ne.jp, linux-fsdevel@vger.kernel.org,
+       linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 27, 2010 at 02:44:48PM +0200, Oleg Nesterov wrote:
-> On 05/27, Michael S. Tsirkin wrote:
-> >
-> > On Tue, May 18, 2010 at 05:04:51PM -0700, Sridhar Samudrala wrote:
-> > > Add a new kernel API to create a singlethread workqueue and attach it's
-> > > task to current task's cgroup and cpumask.
-> > >
-> > > Signed-off-by: Sridhar Samudrala <sri@us.ibm.com>
-> >
-> > Could someone familiar with workqueue code please comment on whether
-> > this patch is suitable for 2.6.35?
-> >
-> > It is needed to fix the case where vhost user might cause a kernel
-> > thread to consume more CPU than allowed by the cgroup.
-> > Should I merge it through the vhost tree?
-> > Ack for this?
-> 
-> I don't understand the reasons for this patch, but this doesn't matter.
+On Thu, May 27, 2010 at 3:47 PM, Miklos Szeredi <miklos@szeredi.hu> wrote:
+> On Thu, 27 May 2010, Alexey Dobriyan wrote:
+>> On Thu, May 27, 2010 at 1:29 PM, Miklos Szeredi <miklos@szeredi.hu> wrote:
+>> > From: Miklos Szeredi <mszeredi@suse.cz>
+>> >
+>> > __d_path() no longer appends " (deleted)" to unlinked paths.  This is
+>> > moved into d_path() which is the only caller that cares.
+>>
+>> d_path() or equivalent should get "int *deleted" argument to distinguish
+>> really deleted files. Then users can decide if they care or not.
+>
+> Why can't they distinguish deleted files by just calling d_unlinked()?
 
-Depending on userspace application, driver can create a lot of work
-for a workqueue to handle. By making the workqueue thread
-belong in a cgroup, we make it possible to the CPU and other
-resources thus consumed.
+Why would they want to do it (which means taking locks again and
+potential incoherence)?
+The information is right there, ship it upwards:
 
--- 
-MST
++       if (deleted)
++               *deleted = 0;
+        spin_lock(&vfsmount_lock);
+        prepend(&end, &buflen, "\0", 1);
+-       if (d_unlinked(dentry) &&
+-               (prepend(&end, &buflen, " (deleted)", 10) != 0))
+-                       goto Elong;
++       if (d_unlinked(dentry) && deleted)
++               *deleted = 1;
+
+"(deleted)" as interface sucks, we can't change it,
+at least, let's make in-kernel interface correct.
