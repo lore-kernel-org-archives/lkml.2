@@ -1,92 +1,382 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932965Ab0E0VuH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 May 2010 17:50:07 -0400
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:44502 "EHLO
-	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S932723Ab0E0VuD (ORCPT
+	id S932907Ab0E0VvV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 May 2010 17:51:21 -0400
+Received: from mail.windriver.com ([147.11.1.11]:42213 "EHLO
+	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757893Ab0E0VvT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 May 2010 17:50:03 -0400
-Date: Thu, 27 May 2010 22:56:37 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Matthew Garrett <mjg59@srcf.ucam.org>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-       Thomas Gleixner <tglx@linutronix.de>,
-       Arve =?ISO-8859-14?B?SGr4bm5lduVn?= <arve@android.com>,
-       Florian Mickler <florian@mickler.org>,
-       Vitaly Wool <vitalywool@gmail.com>, LKML <linux-kernel@vger.kernel.org>,
-       Paul@smtp1.linux-foundation.org, felipe.balbi@nokia.com,
-       Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
-       Linux PM <linux-pm@lists.linux-foundation.org>
-Subject: Re: [linux-pm] [PATCH 0/8] Suspend block api (version 8)
-Message-ID: <20100527225637.57a336ad@lxorguk.ukuu.org.uk>
-In-Reply-To: <20100527213635.GA9916@srcf.ucam.org>
-References: <20100527155201.GA31937@srcf.ucam.org>
-	<20100527171615.15a1fd3d@lxorguk.ukuu.org.uk>
-	<20100527161943.GA32764@srcf.ucam.org>
-	<alpine.LFD.2.00.1005271901020.3032@localhost.localdomain>
-	<20100527170740.GA1980@srcf.ucam.org>
-	<1274980391.27810.5552.camel@twins>
-	<20100527171644.GA2468@srcf.ucam.org>
-	<1274980856.27810.5582.camel@twins>
-	<20100527172510.GC2468@srcf.ucam.org>
-	<20100527223751.7af3b5ee@lxorguk.ukuu.org.uk>
-	<20100527213635.GA9916@srcf.ucam.org>
-X-Mailer: Claws Mail 3.7.5 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 27 May 2010 17:51:19 -0400
+From: Jason Wessel <jason.wessel@windriver.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: linux-kernel@vger.kernel.org, Jason Wessel <jason.wessel@windriver.com>,
+       Frederic Weisbecker <fweisbec@gmail.com>,
+       Steven Rostedt <rostedt@goodmis.org>
+Subject: [PATCH] ftrace,kdb: Extend kdb to be able to dump the ftrace buffer
+Date: Thu, 27 May 2010 16:51:12 -0500
+Message-Id: <1274997072-30825-1-git-send-email-jason.wessel@windriver.com>
+X-Mailer: git-send-email 1.6.4.rc1
+X-OriginalArrivalTime: 27 May 2010 21:51:15.0088 (UTC) FILETIME=[BABF3900:01CAFDE6]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 27 May 2010 22:36:35 +0100
-Matthew Garrett <mjg59@srcf.ucam.org> wrote:
+Add in a helper function to allow the kdb shell to dump the ftrace
+buffer.
 
-> On Thu, May 27, 2010 at 10:37:51PM +0100, Alan Cox wrote:
-> > On Thu, 27 May 2010 18:25:10 +0100
-> > Matthew Garrett <mjg59@srcf.ucam.org> wrote:
-> > > How (and why) does the WoL (which may be *any* packet, not just a magic 
-> > > one) turn the screen back on?
-> > 
-> > Well on my laptop today it works like this
-> > 
-> > A WoL packet arrives
-> > The CPU resumes
-> > Depp process, chipset and laptop BIOS magic happens
-> > The kernel gets called
-> > The kernel lets interested people know a resume occurred
-> 
-> No it doesn't. The kernel continues executing anything that was on the 
+Modify trace.c to expose the capability to iterate over the ftrace
+buffer in a read only capacity.
 
-Would you like to come and watch my laptop resume ? With printk's if you
-want. You appear at this point to be arguing that bumble bees can't
-fly, while watching one.
+CC: Frederic Weisbecker <fweisbec@gmail.com>
+CC: Steven Rostedt <rostedt@goodmis.org>
+Signed-off-by: Jason Wessel <jason.wessel@windriver.com>
+---
+ kernel/trace/Makefile    |    5 ++
+ kernel/trace/trace.c     |   43 +++++++++--------
+ kernel/trace/trace.h     |   19 +++++++
+ kernel/trace/trace_kdb.c |  119 ++++++++++++++++++++++++++++++++++++++++++++++
+ 4 files changed, 165 insertions(+), 21 deletions(-)
+ create mode 100644 kernel/trace/trace_kdb.c
 
-> runqueue before the scheduler stopped. If you're using idle-based 
-> suspend then there's nothing on the runqueue - the application that 
-> should be scheduled because of the event is blocked on writing to the 
-> screen.
+diff --git a/kernel/trace/Makefile b/kernel/trace/Makefile
+index ffb1a5b..74ffb84 100644
+--- a/kernel/trace/Makefile
++++ b/kernel/trace/Makefile
+@@ -1,5 +1,7 @@
+ 
+ # Do not instrument the tracer itself:
++CFLAGS_trace_kdb.o += -O0
++CFLAGS_trace.o += -O0
+ 
+ ifdef CONFIG_FUNCTION_TRACER
+ ORIG_CFLAGS := $(KBUILD_CFLAGS)
+@@ -57,5 +59,8 @@ obj-$(CONFIG_EVENT_TRACING) += trace_events_filter.o
+ obj-$(CONFIG_KPROBE_EVENT) += trace_kprobe.o
+ obj-$(CONFIG_KSYM_TRACER) += trace_ksym.o
+ obj-$(CONFIG_EVENT_TRACING) += power-traces.o
++ifeq ($(CONFIG_TRACING),y)
++obj-$(CONFIG_KGDB_KDB) += trace_kdb.o
++endif
+ 
+ libftrace-y := ftrace.o
+diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
+index 8a76339..ce22b5b 100644
+--- a/kernel/trace/trace.c
++++ b/kernel/trace/trace.c
+@@ -101,10 +101,7 @@ static inline void ftrace_enable_cpu(void)
+ 	preempt_enable();
+ }
+ 
+-static cpumask_var_t __read_mostly	tracing_buffer_mask;
+-
+-#define for_each_tracing_cpu(cpu)	\
+-	for_each_cpu(cpu, tracing_buffer_mask)
++cpumask_var_t __read_mostly	tracing_buffer_mask;
+ 
+ /*
+  * ftrace_dump_on_oops - variable to dump ftrace buffer on oops
+@@ -1539,11 +1536,6 @@ int trace_vprintk(unsigned long ip, const char *fmt, va_list args)
+ }
+ EXPORT_SYMBOL_GPL(trace_vprintk);
+ 
+-enum trace_file_type {
+-	TRACE_FILE_LAT_FMT	= 1,
+-	TRACE_FILE_ANNOTATE	= 2,
+-};
+-
+ static void trace_iterator_increment(struct trace_iterator *iter)
+ {
+ 	/* Don't allow ftrace to trace into the ring buffers */
+@@ -1641,7 +1633,7 @@ struct trace_entry *trace_find_next_entry(struct trace_iterator *iter,
+ }
+ 
+ /* Find the next real entry, and increment the iterator to the next entry */
+-static void *find_next_entry_inc(struct trace_iterator *iter)
++void *trace_find_next_entry_inc(struct trace_iterator *iter)
+ {
+ 	iter->ent = __find_next_entry(iter, &iter->cpu,
+ 				      &iter->lost_events, &iter->ts);
+@@ -1676,19 +1668,19 @@ static void *s_next(struct seq_file *m, void *v, loff_t *pos)
+ 		return NULL;
+ 
+ 	if (iter->idx < 0)
+-		ent = find_next_entry_inc(iter);
++		ent = trace_find_next_entry_inc(iter);
+ 	else
+ 		ent = iter;
+ 
+ 	while (ent && iter->idx < i)
+-		ent = find_next_entry_inc(iter);
++		ent = trace_find_next_entry_inc(iter);
+ 
+ 	iter->pos = *pos;
+ 
+ 	return ent;
+ }
+ 
+-static void tracing_iter_reset(struct trace_iterator *iter, int cpu)
++void tracing_iter_reset(struct trace_iterator *iter, int cpu)
+ {
+ 	struct trace_array *tr = iter->tr;
+ 	struct ring_buffer_event *event;
+@@ -2048,7 +2040,7 @@ int trace_empty(struct trace_iterator *iter)
+ }
+ 
+ /*  Called with trace_event_read_lock() held. */
+-static enum print_line_t print_trace_line(struct trace_iterator *iter)
++enum print_line_t print_trace_line(struct trace_iterator *iter)
+ {
+ 	enum print_line_t ret;
+ 
+@@ -3210,7 +3202,7 @@ waitagain:
+ 
+ 	trace_event_read_lock();
+ 	trace_access_lock(iter->cpu_file);
+-	while (find_next_entry_inc(iter) != NULL) {
++	while (trace_find_next_entry_inc(iter) != NULL) {
+ 		enum print_line_t ret;
+ 		int len = iter->seq.len;
+ 
+@@ -3293,7 +3285,7 @@ tracing_fill_pipe_page(size_t rem, struct trace_iterator *iter)
+ 		if (ret != TRACE_TYPE_NO_CONSUME)
+ 			trace_consume(iter);
+ 		rem -= count;
+-		if (!find_next_entry_inc(iter))	{
++		if (!trace_find_next_entry_inc(iter))	{
+ 			rem = 0;
+ 			iter->ent = NULL;
+ 			break;
+@@ -3349,7 +3341,7 @@ static ssize_t tracing_splice_read_pipe(struct file *filp,
+ 	if (ret <= 0)
+ 		goto out_err;
+ 
+-	if (!iter->ent && !find_next_entry_inc(iter)) {
++	if (!iter->ent && !trace_find_next_entry_inc(iter)) {
+ 		ret = -EFAULT;
+ 		goto out_err;
+ 	}
+@@ -4419,7 +4411,7 @@ static struct notifier_block trace_die_notifier = {
+  */
+ #define KERN_TRACE		KERN_EMERG
+ 
+-static void
++void
+ trace_printk_seq(struct trace_seq *s)
+ {
+ 	/* Probably should print a warning here. */
+@@ -4434,6 +4426,13 @@ trace_printk_seq(struct trace_seq *s)
+ 	trace_seq_init(s);
+ }
+ 
++void trace_init_global_iter(struct trace_iterator *iter)
++{
++	iter->tr = &global_trace;
++	iter->trace = current_trace;
++	iter->cpu_file = TRACE_PIPE_ALL_CPU;
++}
++
+ static void
+ __ftrace_dump(bool disable_tracing, enum ftrace_dump_mode oops_dump_mode)
+ {
+@@ -4459,8 +4458,10 @@ __ftrace_dump(bool disable_tracing, enum ftrace_dump_mode oops_dump_mode)
+ 	if (disable_tracing)
+ 		ftrace_kill();
+ 
++	trace_init_global_iter(&iter);
++
+ 	for_each_tracing_cpu(cpu) {
+-		atomic_inc(&global_trace.data[cpu]->disabled);
++		atomic_inc(&iter.tr->data[cpu]->disabled);
+ 	}
+ 
+ 	old_userobj = trace_flags & TRACE_ITER_SYM_USEROBJ;
+@@ -4509,7 +4510,7 @@ __ftrace_dump(bool disable_tracing, enum ftrace_dump_mode oops_dump_mode)
+ 		iter.iter_flags |= TRACE_FILE_LAT_FMT;
+ 		iter.pos = -1;
+ 
+-		if (find_next_entry_inc(&iter) != NULL) {
++		if (trace_find_next_entry_inc(&iter) != NULL) {
+ 			int ret;
+ 
+ 			ret = print_trace_line(&iter);
+@@ -4531,7 +4532,7 @@ __ftrace_dump(bool disable_tracing, enum ftrace_dump_mode oops_dump_mode)
+ 		trace_flags |= old_userobj;
+ 
+ 		for_each_tracing_cpu(cpu) {
+-			atomic_dec(&global_trace.data[cpu]->disabled);
++			atomic_dec(&iter.tr->data[cpu]->disabled);
+ 		}
+ 		tracing_on();
+ 	}
+diff --git a/kernel/trace/trace.h b/kernel/trace/trace.h
+index d1ce0be..450b2c8 100644
+--- a/kernel/trace/trace.h
++++ b/kernel/trace/trace.h
+@@ -338,6 +338,14 @@ struct trace_entry *tracing_get_trace_entry(struct trace_array *tr,
+ struct trace_entry *trace_find_next_entry(struct trace_iterator *iter,
+ 					  int *ent_cpu, u64 *ent_ts);
+ 
++int trace_empty(struct trace_iterator *iter);
++
++void *trace_find_next_entry_inc(struct trace_iterator *iter);
++
++void trace_init_global_iter(struct trace_iterator *iter);
++
++void tracing_iter_reset(struct trace_iterator *iter, int cpu);
++
+ void default_wait_pipe(struct trace_iterator *iter);
+ void poll_wait_pipe(struct trace_iterator *iter);
+ 
+@@ -380,6 +388,15 @@ void tracing_start_sched_switch_record(void);
+ int register_tracer(struct tracer *type);
+ void unregister_tracer(struct tracer *type);
+ int is_tracing_stopped(void);
++enum trace_file_type {
++	TRACE_FILE_LAT_FMT	= 1,
++	TRACE_FILE_ANNOTATE	= 2,
++};
++
++extern cpumask_var_t __read_mostly tracing_buffer_mask;
++
++#define for_each_tracing_cpu(cpu)	\
++	for_each_cpu(cpu, tracing_buffer_mask)
+ 
+ extern int process_new_ksym_entry(char *ksymname, int op, unsigned long addr);
+ 
+@@ -471,6 +488,8 @@ trace_array_vprintk(struct trace_array *tr,
+ 		    unsigned long ip, const char *fmt, va_list args);
+ int trace_array_printk(struct trace_array *tr,
+ 		       unsigned long ip, const char *fmt, ...);
++void trace_printk_seq(struct trace_seq *s);
++enum print_line_t print_trace_line(struct trace_iterator *iter);
+ 
+ extern unsigned long trace_flags;
+ 
+diff --git a/kernel/trace/trace_kdb.c b/kernel/trace/trace_kdb.c
+new file mode 100644
+index 0000000..44cbda2
+--- /dev/null
++++ b/kernel/trace/trace_kdb.c
+@@ -0,0 +1,119 @@
++/*
++ * kdb helper for dumping the ftrace buffer
++ *
++ * Copyright (C) 2010 Jason Wessel <jason.wessel@windriver.com>
++ *
++ * ftrace_dump_buf based on ftrace_dump:
++ * Copyright (C) 2007-2008 Steven Rostedt <srostedt@redhat.com>
++ * Copyright (C) 2008 Ingo Molnar <mingo@redhat.com>
++ *
++ */
++#include <linux/init.h>
++#include <linux/kgdb.h>
++#include <linux/kdb.h>
++#include <linux/ftrace.h>
++
++#include "../debug/kdb/kdb_private.h"
++#include "trace.h"
++#include "trace_output.h"
++
++static void ftrace_dump_buf(int skip_lines)
++{
++	/* use static because iter can be a bit big for the stack */
++	static struct trace_iterator iter;
++	unsigned int old_userobj;
++	int cnt = 0, cpu;
++
++	trace_init_global_iter(&iter);
++
++	for_each_tracing_cpu(cpu) {
++		atomic_inc(&iter.tr->data[cpu]->disabled);
++	}
++
++	old_userobj = trace_flags;
++
++	/* don't look at user memory in panic mode */
++	trace_flags &= ~TRACE_ITER_SYM_USEROBJ;
++
++	kdb_printf("Dumping ftrace buffer:\n");
++
++	/* reset all but tr, trace, and overruns */
++	memset(&iter.seq, 0,
++		   sizeof(struct trace_iterator) -
++		   offsetof(struct trace_iterator, seq));
++	iter.iter_flags |= TRACE_FILE_LAT_FMT;
++	iter.pos = -1;
++
++	for_each_tracing_cpu(cpu) {
++		iter.buffer_iter[cpu] =
++			ring_buffer_read_prepare(iter.tr->buffer, cpu);
++		ring_buffer_read_start(iter.buffer_iter[cpu]);
++		tracing_iter_reset(&iter, cpu);
++	}
++
++	if (!trace_empty(&iter))
++		trace_find_next_entry_inc(&iter);
++	while (!trace_empty(&iter)) {
++		if (!cnt)
++			kdb_printf("---------------------------------\n");
++		cnt++;
++
++		if (trace_find_next_entry_inc(&iter) != NULL && !skip_lines)
++			print_trace_line(&iter);
++		if (!skip_lines)
++			trace_printk_seq(&iter.seq);
++		else
++			skip_lines--;
++		if (KDB_FLAG(CMD_INTERRUPT))
++			goto out;
++	}
++
++	if (!cnt)
++		kdb_printf("   (ftrace buffer empty)\n");
++	else
++		kdb_printf("---------------------------------\n");
++
++out:
++	trace_flags = old_userobj;
++
++	for_each_tracing_cpu(cpu) {
++		atomic_dec(&iter.tr->data[cpu]->disabled);
++	}
++
++	for_each_tracing_cpu(cpu)
++		if (iter.buffer_iter[cpu])
++			ring_buffer_read_finish(iter.buffer_iter[cpu]);
++}
++
++/*
++ * kdb_ftdump - Dump the ftrace log buffer
++ */
++static int kdb_ftdump(int argc, const char **argv)
++{
++	int skip_lines = 0;
++	char *cp;
++
++	if (argc > 1)
++		return KDB_ARGCOUNT;
++
++	if (argc) {
++		skip_lines = simple_strtol(argv[1], &cp, 0);
++		if (*cp)
++			skip_lines = 0;
++	}
++
++	kdb_trap_printk++;
++	ftrace_dump_buf(skip_lines);
++	kdb_trap_printk--;
++
++	return 0;
++}
++
++static __init int kdb_ftrace_register(void)
++{
++	kdb_register_repeat("ftdump", kdb_ftdump, "", "Dump ftrace log",
++			    0, KDB_REPEAT_NONE);
++	return 0;
++}
++
++late_initcall(kdb_ftrace_register);
+-- 
+1.6.3.3
 
-IFF its your bogus example
-IFF you don't have any task waiting for resume notifications (ie its not
-X)
-
-So take the PC desktop case and for simplicity sake lets assume the X
-application in question has either filled the socket (unlikely) or is mid
-query request so blocked on the socket.
-
-The important line then is
-
-'The kernel lets interested people know a resume occurred'
-
-Interesting people includes X
-X therefore ends up on the runqueue
-X gets the display back in order
-X completes processing the outstanding X request and replies
-The application continues
-
-If I was blocked on say serial output then the resume is going to wake
-the serial driver, which will transmit the queue, which will wake the app.
-
-Alan
