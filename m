@@ -1,70 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754457Ab0E0Gqh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 May 2010 02:46:37 -0400
-Received: from cantor.suse.de ([195.135.220.2]:41299 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750786Ab0E0Gqg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 May 2010 02:46:36 -0400
-Date: Thu, 27 May 2010 16:46:31 +1000
-From: Nick Piggin <npiggin@suse.de>
-To: Dave Chinner <david@fromorbit.com>
-Cc: Al Viro <viro@ZenIV.linux.org.uk>, linux-kernel@vger.kernel.org,
-       linux-fsdevel@vger.kernel.org, linux-mm@kvack.org, xfs@oss.sgi.com
-Subject: Re: [PATCH 3/5 v2] superblock: introduce per-sb cache shrinker
- infrastructure
-Message-ID: <20100527064631.GK22536@laptop>
-References: <1274777588-21494-1-git-send-email-david@fromorbit.com>
- <1274777588-21494-4-git-send-email-david@fromorbit.com>
- <20100526164116.GD22536@laptop>
- <20100526231214.GB1395@dastard>
- <20100527015335.GD1395@dastard>
- <20100527040120.GX31073@ZenIV.linux.org.uk>
- <20100527061751.GK12087@dastard>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100527061751.GK12087@dastard>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1755298Ab0E0Gqr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 May 2010 02:46:47 -0400
+Received: from casper.infradead.org ([85.118.1.10]:42649 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754752Ab0E0Gqo convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 May 2010 02:46:44 -0400
+Subject: Re: BUG: using smp_processor_id() in preemptible [00000000] code:
+ icedove-bin/5449
+From: Peter Zijlstra <peterz@infradead.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: piotr@hosowicz.com, linux-kernel@vger.kernel.org,
+       Jens Axboe <jens.axboe@oracle.com>, Divyesh Shah <dpshah@google.com>
+In-Reply-To: <20100526160252.325f8357.akpm@linux-foundation.org>
+References: <4BF9EC69.5030709@example.com> <1274777422.5882.591.camel@twins>
+	 <20100526160252.325f8357.akpm@linux-foundation.org>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Thu, 27 May 2010 08:46:38 +0200
+Message-ID: <1274942798.27810.3584.camel@twins>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 27, 2010 at 04:17:51PM +1000, Dave Chinner wrote:
-> On Thu, May 27, 2010 at 05:01:20AM +0100, Al Viro wrote:
-> > Um...  Maybe I'm dumb, but what's wrong with doing unregistration from
-> > deactivate_locked_super(), right after the call of ->kill_sb()?  At that
-> > point ->s_umount is already dropped, so we won't deadlock at all.
-> > Shrinker rwsem will make sure that all shrinkers-in-progress will run
-> > to completion, so we won't get a superblock freed under prune_super().
-> > I don't particulary mind down_try_read() in prune_super(), but why not
-> > make life obviously safer?
-> > 
-> > Am I missing something here?
-> 
-> I was worried about memory allocation in the ->kill_sb path
-> deadlocking on the s_umount lock if it enters reclaim. e.g.  XFS
-> inodes can still be dirty even after the VFS has disposed of them,
-> and writing them back can require page cache allocation for the
-> backing buffers. If allocation recurses back into the shrinker, we
-> can deadlock on the s_umount lock.  This doesn't seem like an XFS
-> specific problem, so I used a trylock to avoid that whole class of
-> problems (same way the current shrinkers do).
+On Wed, 2010-05-26 at 16:02 -0700, Andrew Morton wrote:
 
-If GFP_FS is set, we wouldn't touch the locks. It is a concern
-though, if __GFP_FS allocations were previously permitted under
-the exclusive lock.
+> How is anyone supposed to use this?  What are the semantics of this
+> thing?  What are the units of its return value?  What is the base value
+> of its return value?  Does it return different times on different CPUs?
+> I assume so, otherwise why does sched_clock_cpu() exist?  <looks at
+> the sched_clock_cpu() documentation, collapses in giggles>
 
- 
-> >From there, we can unregister the shrinker before calling ->kill_sb
-> as per above. That, in turn, means that the unmount
-> invalidate_inodes() vs shrinker race goes away and the iprune_sem is
-> not needed in the new prune_icache_sb() function.  I'm pretty sure
-> that I can now remove the iprune_sem, but I haven't written the
-> patch to do that yet.
+The point of the whole sched_clock_cpu() thing is to provide a fairly
+high resolution clock with bounded drift between cpus.
 
-I do really like that aspect of your patch. It's nice to have the
-shrinker always only operating against active supers. So I would
-be in favour of your current scheme.
+It also promises to be monotonic per cpu argument, that is,
+sched_clock_cpu(j) will, for a constant j always return a monotonic
+increasing timestamp.
+
+It doesn't make much promises about its base (although people tend to
+want it to start at 0 on boot, but the users really shouldn't care).
+
+sched_clock() doesn't promise either bounded drift between cpus nor
+monotonicity.
 
 
