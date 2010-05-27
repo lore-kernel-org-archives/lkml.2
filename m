@@ -1,68 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756305Ab0E0XtL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 May 2010 19:49:11 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:50476 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751644Ab0E0XtI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 May 2010 19:49:08 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Subject: Re: [linux-pm] [PATCH 0/8] Suspend block api (version 8)
-Date: Fri, 28 May 2010 01:50:24 +0200
-User-Agent: KMail/1.12.4 (Linux/2.6.34-rjw; KDE/4.3.5; x86_64; ; )
-Cc: Matthew Garrett <mjg59@srcf.ucam.org>,
-       Thomas Gleixner <tglx@linutronix.de>,
-       Arve =?iso-8859-1?q?Hj=F8nnev=E5g?= <arve@android.com>,
-       Florian Mickler <florian@mickler.org>,
-       Vitaly Wool <vitalywool@gmail.com>,
-       Peter Zijlstra <peterz@infradead.org>,
-       LKML <linux-kernel@vger.kernel.org>, Paul@smtp1.linux-foundation.org,
-       felipe.balbi@nokia.com,
-       Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
-       Linux PM <linux-pm@lists.linux-foundation.org>
-References: <20100527140655.GA28048@srcf.ucam.org> <201005272355.13222.rjw@sisk.pl> <20100527232043.784d5c72@lxorguk.ukuu.org.uk>
-In-Reply-To: <20100527232043.784d5c72@lxorguk.ukuu.org.uk>
+	id S1756708Ab0E0Xui (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 May 2010 19:50:38 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:46638 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753655Ab0E0Xuh convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 May 2010 19:50:37 -0400
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201005280150.24873.rjw@sisk.pl>
+In-Reply-To: <201005280143.01889.rjw@sisk.pl>
+References: <Pine.LNX.4.44L0.1005271303190.3239-100000@iolanthe.rowland.org>
+	<201005272315.28475.rjw@sisk.pl>
+	<alpine.LFD.2.00.1005272334040.3478@localhost.localdomain>
+	<201005280143.01889.rjw@sisk.pl>
+Date: Thu, 27 May 2010 16:50:36 -0700
+Message-ID: <AANLkTinTk6iCgfcY1QaZkCCapYjzbEYgGbSR4Ki75z0R@mail.gmail.com>
+Subject: Re: [linux-pm] [PATCH 0/8] Suspend block api (version 8)
+From: =?ISO-8859-1?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Thomas Gleixner <tglx@linutronix.de>,
+       Alan Stern <stern@rowland.harvard.edu>,
+       Felipe Balbi <felipe.balbi@nokia.com>,
+       Peter Zijlstra <peterz@infradead.org>,
+       "Paul@smtp1.linux-foundation.org" <Paul@smtp1.linux-foundation.org>,
+       LKML <linux-kernel@vger.kernel.org>,
+       Florian Mickler <florian@mickler.org>,
+       Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
+       Linux PM <linux-pm@lists.linux-foundation.org>,
+       Alan Cox <alan@lxorguk.ukuu.org.uk>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 28 May 2010, Alan Cox wrote:
-> On Thu, 27 May 2010 23:55:13 +0200
-> "Rafael J. Wysocki" <rjw@sisk.pl> wrote:
-> 
-> > On Thursday 27 May 2010, Alan Cox wrote:
-> > > > > If one works so does the other.
-> > > > 
-> > > > Not at all. The entire point of opportunistic suspend is that I don't 
-> > > > care is currently in TASK_RUNNABLE or has a timer that's due to expire 
-> > > > in 100msec - based on policy (through not having any held suspend 
-> > > > blockers), I'll go to sleep. That's easily possible on PCs.
-> > > 
-> > > Yes I appreciate what suspend blockers are trying to do. Now how does
-> > > that connect with my first sentence ?
-> > 
-> > I guess what Matthew wanted to say was that you couldn't use ACPI S3 as
-> > a very deep CPU idle state, because of the way wakeup sources are set up
-> > for it, while you could use it for aggressive power management with suspend
-> > blockers as proposed by Arve.
-> 
-> Which is a nonsense. Because the entire Gnome desktop and KDE, and
-> OpenOffice and Firefox and friends would need fitting out with
-> suspend blockers.
-> 
-> x86 hardware is moving to fix these problems (at least on handheld
-> devices initially). Look up the C6 power idle, and S0i1 and S0i3
-> standby states. I reckon the laptop folks can probably get the hardware
-> fixed well before anyone can convert the entire PC desktop to include
-> blockers.
+On Thu, May 27, 2010 at 4:43 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> On Thursday 27 May 2010, Thomas Gleixner wrote:
+>> On Thu, 27 May 2010, Rafael J. Wysocki wrote:
+>>
+>> > On Thursday 27 May 2010, Thomas Gleixner wrote:
+>> > > On Thu, 27 May 2010, Alan Stern wrote:
+>> > >
+>> > > > On Thu, 27 May 2010, Felipe Balbi wrote:
+>> > > >
+>> > > > > On Thu, May 27, 2010 at 05:06:23PM +0200, ext Alan Stern wrote:
+>> > > > > >If people don't mind, here is a greatly simplified summary of the
+>> > > > > >comments and objections I have seen so far on this thread:
+>> > > > > >
+>> > > > > >     The in-kernel suspend blocker implementation is okay, even
+>> > > > > >     beneficial.
+>> > > > >
+>> > > > > I disagree here. I believe expressing that as QoS is much better. Let
+>> > > > > the kernel decide which power state is better as long as I can say I
+>> > > > > need 100us IRQ latency or 100ms wakeup latency.
+>> > > >
+>> > > > Does this mean you believe "echo mem >/sys/power/state" is bad and
+>> > > > should be removed?  Or "echo disk >/sys/power/state"?  They pay no
+>> > >
+>> > > mem should be replaced by an idle suspend to ram mechanism
+>> >
+>> > Well, what about when I want the machine to suspend _regardless_ of whether
+>> > or not it's idle at the moment?  That actually happens quite often to me. :-)
+>>
+>> Fair enough. Let's agree on a non ambigous terminology then:
+>>
+>>      forced:
+>>
+>>            suspend which you enforce via user interaction, which
+>>            also implies that you risk losing wakeups depending on
+>>            the hardware properties
+>
+> OK
+>
+>>      opportunistic:
+>>
+>>            suspend driven from the idle context, which guarantees to
+>>            not lose wakeups. Provided only when the hardware does
+>>            provide the necessary capabilities.
+>
+> I can accept that definition, but this is not what "opportunistic" means in the
 
-To clarify, I'm not suggesting to spread suspend blockers all over the
-universe.
+Is there a difference between this new definition of opportunistic and
+idle? I assume suspend here means low a low power sleep state since it
+is impossible to initiate and abort Linux suspend from idle since
+initiating suspend will cause the system to become not idle.
 
-Rafael
+> Arve's changelogs.  What it means there is that he wants the system to suspend
+> even when it is not technically idle (like in the updatedb example I gave in a
+> previous message).  Suspend blockers are supposed to be a mechanism by which
+> the kernel and user space together may determine when to suspend (and it's
+> somewhat orthogonal to idle).
+>
+
+
+
+-- 
+Arve Hjønnevåg
