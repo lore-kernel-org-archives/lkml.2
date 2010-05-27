@@ -1,61 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759081Ab0E0LsA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 May 2010 07:48:00 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:56455 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754687Ab0E0Lr7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 May 2010 07:47:59 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=mime-version:in-reply-to:references:date:message-id:subject:from:to:
-	cc:content-type:x-system-of-record;
-	b=AKjuhjIpyekHbdR69QaBOXOgsqhVdyNqHDtvF0Z1eT8NXzM8V36br8gI8zVh5i/dc
-	hXy5zpu3B7RCxAGNZCvNA==
-MIME-Version: 1.0
-In-Reply-To: <1274959080.27810.4438.camel@twins>
-References: <1274733081-4623-1-git-send-email-walken@google.com>
-	<1274777239.5882.581.camel@twins>
-	<AANLkTikbeXjmRW4gqiy1Ss-Suce5gIM4xJ5o9Z81ZTQX@mail.gmail.com>
-	<1274779675.5882.684.camel@twins>
-	<20100527105948.GA20625@google.com>
-	<1274959080.27810.4438.camel@twins>
-Date: Thu, 27 May 2010 04:47:56 -0700
-Message-ID: <AANLkTinA3n2OE5k7ri1UeS0ysGzJycZWzgzMw_GwT-XR@mail.gmail.com>
-Subject: Re: [PATCH 00/11] V4: rwsem changes + down_read_critical() proposal
-From: Michel Lespinasse <walken@google.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-       David Howells <dhowells@redhat.com>, Ingo Molnar <mingo@elte.hu>,
-       Thomas Gleixner <tglx@linutronix.de>,
-       LKML <linux-kernel@vger.kernel.org>,
+	id S933841Ab0E0Lsg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 May 2010 07:48:36 -0400
+Received: from mgw1.diku.dk ([130.225.96.91]:49419 "EHLO mgw1.diku.dk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755421Ab0E0Lse (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 May 2010 07:48:34 -0400
+From: Nicolas Palix <npalix@diku.dk>
+To: Pekka Enberg <penberg@cs.helsinki.fi>
+Subject: Re: [PATCH 4/4] Add scripts/coccinelle/resource_size.cocci
+Date: Thu, 27 May 2010 13:48:30 +0200
+User-Agent: KMail/1.13.2 (Linux/2.6.32-22-generic; KDE/4.4.2; i686; ; )
+Cc: Randy Dunlap <rdunlap@xenotime.net>, Roland Dreier <rdreier@cisco.com>,
+       Joe Perches <joe@perches.com>,
        Andrew Morton <akpm@linux-foundation.org>,
-       Mike Waychison <mikew@google.com>,
-       Suleiman Souhlal <suleiman@google.com>, Ying Han <yinghan@google.com>
-Content-Type: text/plain; charset=ISO-8859-1
-X-System-Of-Record: true
+       "David S. Miller" <davem@davemloft.net>, Michal Marek <mmarek@suse.cz>,
+       Sam Ravnborg <sam@ravnborg.org>, Julia Lawall <julia@diku.dk>,
+       Gilles Muller <Gilles.Muller@lip6.fr>, linux-kernel@vger.kernel.org,
+       linux-kbuild@vger.kernel.org, cocci@diku.dk,
+       Wolfram Sang <w.sang@pengutronix.de>,
+       Kernel Janitors <kernel-janitors@vger.kernel.org>
+References: <1273508667-5152-1-git-send-email-npalix@diku.dk> <1273508667-5152-5-git-send-email-npalix@diku.dk> <o2y84144f021005100952z1a7e991dt21341fb8f7c76af@mail.gmail.com>
+In-Reply-To: <o2y84144f021005100952z1a7e991dt21341fb8f7c76af@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201005271348.31452.npalix@diku.dk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 27, 2010 at 4:18 AM, Peter Zijlstra <peterz@infradead.org> wrote:
-> On Thu, 2010-05-27 at 03:59 -0700, Michel Lespinasse wrote:
->> What about patches 1-7 which don't deal with the critical/atomic API;
->> can we agree to get these in before we we figure out what to do with
->> the the last 4 ?
->
-> patch 6 looks like it will break fairness, either that or the changelog
-> got me totally confused (already had to read it twice).
+On Monday 10 May 2010 18:52:10 Pekka Enberg wrote:
+> On Mon, May 10, 2010 at 7:24 PM, Nicolas Palix <npalix@diku.dk> wrote:
+> > @@ -0,0 +1,94 @@
+> > +///
+> > +/// Use resource_size function on resource object
+> > +/// instead of explicit computation.
+> > +///
+> > +//  Confidence: High
+> > +//  Copyright: (C) 2009, 2010 Nicolas Palix, DIKU.  GPLv2.
+> > +//  Copyright: (C) 2009, 2010 Julia Lawall, DIKU.  GPLv2.
+> > +//  Copyright: (C) 2009, 2010 Gilles Muller, INRIA/LiP6.  GPLv2.
+> > +//  URL: http://coccinelle.lip6.fr/
+> > +//  Options:
+> > +//
+> > +//  Keywords: resource_size
+> > +//  Version min: 2.6.27 resource_size
+> 
+> I guess we don't need this versioning in mainline?
+> 
 
-Hmmm. I must be bad at explaining this :)
-
-It avoids a situation where threads got blocked waiting for all active
-readers to release, but (due to a race condition when blocking) the
-first queued thread is also a reader. Letting that reader proceed in
-parallel with the currently active ones will not delay queued writers;
-they would have had to wait for the first queued reader to proceed
-anyway since they were queued behind it.
+It's indeed not essential for the mainline. It's however
+helpful to document the internal APIs and will help people
+who want to (back)port this patch series on other branches,
+potentially branches forked before 2.6.27 for instance.
 
 -- 
-Michel "Walken" Lespinasse
-A program is never fully debugged until the last user dies.
+Nicolas Palix
