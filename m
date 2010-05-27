@@ -1,61 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933127Ab0E0I7j (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 May 2010 04:59:39 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:49215 "EHLO
+	id S933148Ab0E0I7t (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 May 2010 04:59:49 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:52980 "EHLO
 	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932311Ab0E0I7h (ORCPT
+	with ESMTP id S932861Ab0E0I7h convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 27 May 2010 04:59:37 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:content-transfer-encoding
-         :in-reply-to:user-agent;
-        b=mynajdD7SYycDjuPZg96OzzRywjv1yEwZ1HOoXZ3kTt8/RVQpD33ioXHdfQVwqUil5
-         gdhkoP2gWyfFdw3HPRW6oFysRdL/tJhy/ymQEc+6sBZbGjkXovnWDJOVu7ZLCA2uhpdZ
-         x/h3Ive337AibBlMBQEGxOACR5k/pXVaKUTP8=
-Date: Thu, 27 May 2010 17:03:29 +0800
-From: =?utf-8?Q?Am=C3=A9rico?= Wang <xiyou.wangcong@gmail.com>
-To: Jaswinder Singh Rajput <jaswinderlinux@gmail.com>
-Cc: =?utf-8?Q?Am=C3=A9rico?= Wang <xiyou.wangcong@gmail.com>,
-       "Rafael J. Wysocki" <rjw@sisk.pl>, Sam Ravnborg <sam@ravnborg.org>,
-       Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
-       the arch/x86 maintainers <x86@kernel.org>,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: config automatically switches from 32-bit to 64-bit for x86
-Message-ID: <20100527090329.GF5349@cr0.nay.redhat.com>
-References: <AANLkTik0PUKP3QLPRbb3nlh034_inmaeVbXy3q5_LQz-@mail.gmail.com>
- <201005270213.42913.rjw@sisk.pl>
- <AANLkTil180tPW4KoOaUBgXIm1Lf6O45_GKKlLx3CDcVh@mail.gmail.com>
- <20100527043123.GA5349@cr0.nay.redhat.com>
- <AANLkTilZ99VsmLuYoLlYItYAMtQQq6zTOQ2iEAdEm7pk@mail.gmail.com>
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type:content-transfer-encoding;
+        b=OEFzd85Ulf0vekv2b7REq+W1yuJuCcMK7nG+lctMZKMfAPJ5uaadL3FOozXVyPUGWw
+         bqk3R+iMHGD+hhGGH0PMSmAGBY4U3Q6HHUZF/djReDB8heapJ0GgOAm6FCs9Qr2zj3nA
+         NFHzzTXkEml9mpP4IJbpuZQoVQ9EhHslZMcP0=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <AANLkTilZ99VsmLuYoLlYItYAMtQQq6zTOQ2iEAdEm7pk@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <4BFE1695.5000206@kernel.org>
+References: <AANLkTikBrXROMvNKrhgxQ1jVh6aOsx3nIrNXTznXInV1@mail.gmail.com> 
+	<20100526151152.28deaa6c@linux.intel.com> <AANLkTikuzGazcBpSvqU73UAAIvcTgxTBsmWTr9bNCSjB@mail.gmail.com> 
+	<4BFE1695.5000206@kernel.org>
+From: Frank Pan <frankpzh@gmail.com>
+Date: Thu, 27 May 2010 16:59:17 +0800
+Message-ID: <AANLkTik2MyWWogREK1DpXKeYrutr7skHQB7kzeg6DYvq@mail.gmail.com>
+Subject: Re: [PATCH 0/2] Enlarge the storage of chars in virtual terminal
+To: Tejun Heo <tj@kernel.org>
+Cc: Alan Cox <alan@linux.intel.com>,
+       Gerardo Exequiel Pozzi <vmlinuz386@yahoo.com.ar>,
+       Kay Sievers <kay.sievers@vrfy.org>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Greg Kroah-Hartman <gregkh@suse.de>,
+       Catalin Marinas <catalin.marinas@arm.com>,
+       Daniel Mack <daniel@caiaq.de>,
+       Christoph Lameter <cl@linux-foundation.org>,
+       Jiri Slaby <jirislaby@gmail.com>, Jochen Hein <jochen@jochen.org>,
+       Johannes Weiner <hannes@cmpxchg.org>, Dave Airlie <airlied@redhat.com>,
+       Pekka Enberg <penberg@cs.helsinki.fi>,
+       Geert Uytterhoeven <geert@linux-m68k.org>,
+       LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 27, 2010 at 10:53:41AM +0530, Jaswinder Singh Rajput wrote:
->On Thu, May 27, 2010 at 10:01 AM, Am√©rico Wang <xiyou.wangcong@gmail.com> wrote:
->> On Thu, May 27, 2010 at 09:39:51AM +0530, Jaswinder Singh Rajput wrote:
->>>
->>>But I wonder then what is the point/use of CONFIG_X86_32 if compiler
->>>is not listening to it.
->>>
->>>Logically compiler should set appropriate flags based on .config settings.
->>>
->>
->> It's not compiler, it's kbuild, kbuild tries to determine the arch
->> by 'uname -m'.
->>
->
->Ahh, then kbuild is buggy, kbuild should check .config instead of
->'uname -m' and verify from user if it mismatches.
->
+Greetings,
 
-Why? You didn't use 'make oldconfig', why shoud it check?
+> That's only true for CJK. †There are other scripts which are more
+> difficult to render properly. †e.g. In mixed English Arabic text,
+> English needs to be rendered left-to-right as usual while Arabic needs
+> to be rendered right-to-left. †Indic rendering is also known to be
+> very tricky. †Even on full desktop environment, only Gnome + Pango and
+> Visat/7 get everything right.
+
+You are right, I've missed a big count of languages.
+Nonetheless, the vt already identified several ranges in the unicode
+space, and made them 2 times wide as ASCII chars.
+My idea depends on this.
+
+OTOH, I think nobody expect the console can render scripts so nice
+as it written on a piece of paper. Compare with the console now,
+people seeing their home language scripts is better than seeing question
+marks(?). Although they may in wrong order, although the resolution
+is not enough for part of scripts, but one can see the content of
+a file, a web page, which is rendered into pages of question marks
+now.
+
+Yes, It's not so perfect, but it's much better than question marks.
+
+> And then, if you think about multilingual terminal, output is only one
+> half of the story. †You gotta be able to input something too and in
+> many scripts, input handling needs to interact constantly with
+> rendering, which means that the kernel will also need to supply input
+> framework, at which point I start to wonder whether the whole thing is
+> just too complicated.
+
+Agree. Input method is much complex than a data structure expanding.
+
+I don't know about other languages, but I bet the thing goes like:
+one press one or more keys, (choose the char he/she really want to, )?
+and commit an input.
+We need not to implement the whole thing inside kernel, a user space
+app can catch keyboard inputs and push unicode chars into the tty.
+The only change should be done in kernel is reserve a space on screen
+for the potential char choosing, which is really easy to do in any
+console drivers(report a smaller height/width).
+
+> What's the use case other than "I just want to use console"?
+
+Many times I type startx is just for checking time of a meeting
+(in a CJK web page, etc).
+Many times I've found emails in mutt with question marks, I must
+open a X and a terminal in X, and mutt in terminal in X.
+Is there anything worse?
+
+Thanks.
+
+-- 
+Frank Pan
+
+Computer Science and Technology
+Tsinghua University
