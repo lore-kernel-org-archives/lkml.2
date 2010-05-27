@@ -1,86 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755159Ab0E0Gtk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 May 2010 02:49:40 -0400
-Received: from mail-ew0-f216.google.com ([209.85.219.216]:60923 "EHLO
-	mail-ew0-f216.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753319Ab0E0Gti (ORCPT
+	id S1755467Ab0E0Gun (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 May 2010 02:50:43 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:60099 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753584Ab0E0Gum (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 May 2010 02:49:38 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=googlemail.com; s=gamma;
-        h=mime-version:reply-to:in-reply-to:references:from:date:message-id
-         :subject:to:cc:content-type;
-        b=tnOT3PHsjgpSM3Z1tBBhhp0qVWOsvpN2/kzL75kIG5oF/ua3OfaQvpPa2OHYFAC6k6
-         amTDcDYNjkfqCTUMbgZLWdhemJrhWEWoWLrDlJdEvTb/ueFSWi03qVydh6QcE1GyEPcs
-         cbJmqfMttjvSO8skPhqrTZjgRVTWd9nLfEo4E=
+	Thu, 27 May 2010 02:50:42 -0400
+Date: Thu, 27 May 2010 07:50:41 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Artem Bityutskiy <dedekind1@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Jens Axboe <jens.axboe@oracle.com>,
+       linux-fsdevel@vger.kernel.org
+Subject: Re: [PATCHv4 17/17] writeback: lessen sync_supers wakeup count
+Message-ID: <20100527065041.GA31073@ZenIV.linux.org.uk>
+References: <1274795352-3551-1-git-send-email-dedekind1@gmail.com>
+ <1274795352-3551-18-git-send-email-dedekind1@gmail.com>
 MIME-Version: 1.0
-Reply-To: mtk.manpages@gmail.com
-In-Reply-To: <20100524175649.GV23411@kernel.dk>
-References: <AANLkTinFOqDF0v_uMvkj4r8n4aX4xvpFvTi-9odUYa5F@mail.gmail.com> 
-	<20100523070917.GO23411@kernel.dk> <AANLkTimKFHQPi9kKhYYjRhMt0s5CDsBXmESQaH493hpR@mail.gmail.com> 
-	<20100523174706.GP23411@kernel.dk> <87632e846m.fsf@devron.myhome.or.jp> 
-	<AANLkTin42kucqLbErGA4GlGPZEIPQV2DFkiHkEVSYiI9@mail.gmail.com> 
-	<20100524070552.GR23411@kernel.dk> <AANLkTikogQtGpO9c94A7YSmP8zdyM8dZBrwJf1nwlR4j@mail.gmail.com> 
-	<20100524173551.GU23411@kernel.dk> <AANLkTimDJjHWKISxnLax3r200Db8OQp_lMKOx14ONgkS@mail.gmail.com> 
-	<20100524175649.GV23411@kernel.dk>
-From: Michael Kerrisk <mtk.manpages@googlemail.com>
-Date: Thu, 27 May 2010 08:49:16 +0200
-Message-ID: <AANLkTim_yrRZG6v1tMPgefeaaI-nUa35Q-mLQpuXWJ1p@mail.gmail.com>
-Subject: Re: [patch] pipe: add support for shrinking and growing pipes
-To: Jens Axboe <jens.axboe@oracle.com>
-Cc: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       Miklos Szeredi <miklos@szeredi.hu>, linux-fsdevel@vger.kernel.org,
-       linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1274795352-3551-18-git-send-email-dedekind1@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Jens,
+On Tue, May 25, 2010 at 04:49:12PM +0300, Artem Bityutskiy wrote:
+> From: Artem Bityutskiy <Artem.Bityutskiy@nokia.com>
+> 
+> The 'sync_supers' thread wakes up every 5 seconds (by default) and
+> writes back all super blocks. It keeps waking up even if there
+> are no dirty super-blocks. For many file-systems the superblock
+> becomes dirty very rarely, if ever, so 'sync_supers' does not do
+> anything most of the time.
+> 
+> This patch improves 'sync_supers' and makes sleep if all superblocks
+> are clean and there is nothing to do. This helps saving the power.
+> This optimization is important for small battery-powered devices.
 
-On Mon, May 24, 2010 at 7:56 PM, Jens Axboe <jens.axboe@oracle.com> wrote:
-> On Mon, May 24 2010, Michael Kerrisk wrote:
->> On Mon, May 24, 2010 at 7:35 PM, Jens Axboe <jens.axboe@oracle.com> wrote:
->> > On Mon, May 24 2010, Michael Kerrisk wrote:
->> >> > Right, that looks like a thinko.
->> >> >
->> >> > I'll submit a patch changing it to bytes and the agreed API and fix this
->> >> > -Eerror. Thanks for your comments and suggestions!
->> >>
->> >> Thanks. And of course you are welcome. (Please CC linux-api@vger on
->> >> this patche (and all patches that change the API/ABI.)
->> >
->> > The first change is this:
->> >
->> > http://git.kernel.dk/?p=linux-2.6-block.git;a=commit;h=0191f8697bbdfefcd36e7b8dc3eeddfe82893e4b
->> >
->> > and the one dealing with the pages vs bytes API is this:
->> >
->> > http://git.kernel.dk/?p=linux-2.6-block.git;a=commit;h=b9598db3401282bb27b4aef77e3eee12015f7f29
->> >
->> > Not tested yet, will do so before sending in of course.
->>
->> Eyeballing it quickly, these changes look right.
->
-> Good, thanks.
->
->> Do you have some test programs you can make available?
->
-> Actually I don't, I test it by modifying fio's splice engine to set/get
-> the pipe size and test the resulting transfers.
+> +void mark_sb_dirty(struct super_block *sb)
+> +{
+> +	sb->s_dirty = 1;
+> +
+> +	spin_lock(&supers_timer_lock);
+> +	if (!supers_timer_armed) {
+> +		bdi_arm_supers_timer();
+> +		supers_timer_armed = 1;
+> +	} else if (supers_timer_armed == -1)
+> +		supers_timer_armed = 1;
+> +	spin_unlock(&supers_timer_lock);
+> +}
+> +EXPORT_SYMBOL(mark_sb_dirty);
 
-An afterthought. Do there not also need to be fixes to the /proc
-interfaces. I don't think they were included in your revised patches.
+Ouch...   That turns a previously trivial operation into something
+much heavier; moreover, I'd rather see serious review of s_dirt
+uses.
 
-Cheers,
+Note, e.g., that in your series you've touched udf; it can set s_dirt
+until the cows come home, but without ->write_super() it'll be ignored
+by everything in VFS and fs/udf itself never looks at the damn thing.
 
-Michael
+A look around it shows fs/sysv, where we never clean the damn flag anymore
+for r/w mounts.  Yes, really (got broken a year ago, nobody noticed).
 
+Or, e.g., BFS - there we have ->write_super() mark the buffer_head that
+contains on-disk sb dirty, and the only place that sets ->s_dirt is doing
+that immediately after having marked the same bh dirty itself.  Interesting
+place, at that - bfs_fill_super() at r/w mount time...  Note that ->sync_fs()
+there does *not* wait for anything, which is not the right thing to do.
 
--- 
-Michael Kerrisk
-Linux man-pages maintainer; http://www.kernel.org/doc/man-pages/
-Author of "The Linux Programming Interface" http://blog.man7.org/
+IOW, this thing is a good topic for code review; I suspect that quite a few
+users might be gone as the result.
