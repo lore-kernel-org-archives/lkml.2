@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933457Ab0E0CnQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 May 2010 22:43:16 -0400
-Received: from vms173013pub.verizon.net ([206.46.173.13]:29421 "EHLO
-	vms173013pub.verizon.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933160Ab0E0Cmy (ORCPT
+	id S933466Ab0E0CnU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 May 2010 22:43:20 -0400
+Received: from vms173015pub.verizon.net ([206.46.173.15]:63403 "EHLO
+	vms173015pub.verizon.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932861Ab0E0CnM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 May 2010 22:42:54 -0400
+	Wed, 26 May 2010 22:43:12 -0400
 From: Len Brown <lenb@kernel.org>
 To: x86@kernel.org, linux-pm@lists.linux-foundation.org
 Cc: linux-kernel@vger.kernel.org, Len Brown <len.brown@intel.com>
-Subject: [PATCH 4/8] ACPI: allow a native cpuidle driver to displace ACPI
-Date: Wed, 26 May 2010 22:42:27 -0400
-Message-id: <c5e048dcef31b8c306995b7239a0cbd4511f9828.1274926772.git.len.brown@intel.com>
+Subject: [PATCH 3/8] cpuidle: make cpuidle_curr_driver static
+Date: Wed, 26 May 2010 22:42:26 -0400
+Message-id: <db2b1d371847edfdbba21f323b4fd4a480c8c5aa.1274926772.git.len.brown@intel.com>
 X-Mailer: git-send-email 1.7.1.231.gd0b16
 In-reply-to: <1274928151-30919-1-git-send-email-lenb@kernel.org>
 References: <1274928151-30919-1-git-send-email-lenb@kernel.org>
@@ -25,59 +25,154 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Len Brown <len.brown@intel.com>
 
-The ACPI driver would fail probe when it found that
-another driver had previously registered with cpuidle.
+cpuidle_register_driver() sets cpuidle_curr_driver
+cpuidle_unregister_driver() clears cpuidle_curr_driver
 
-But this is a natural situation, as a native hardware
-cpuidle driver should be able to bind instead of ACPI,
-and the ACPI processor driver should be able to handle
-yielding control of C-states while still handling
-P-states and T-states.
-
-Add a KERN_DEBUG line showing when acpi_idle
-does successfully register.
+We should't expose cpuidle_curr_driver to
+potential modification except via these interfaces.
+So make it static and create cpuidle_get_driver() to observe it.
 
 Signed-off-by: Len Brown <len.brown@intel.com>
 ---
- drivers/acpi/processor_driver.c |   11 ++++++-----
- 1 files changed, 6 insertions(+), 5 deletions(-)
+ drivers/cpuidle/cpuidle.c |   12 +++++++-----
+ drivers/cpuidle/cpuidle.h |    1 -
+ drivers/cpuidle/driver.c  |   11 ++++++++++-
+ drivers/cpuidle/sysfs.c   |    5 +++--
+ include/linux/cpuidle.h   |    1 +
+ 5 files changed, 21 insertions(+), 9 deletions(-)
 
-diff --git a/drivers/acpi/processor_driver.c b/drivers/acpi/processor_driver.c
-index 5675d97..deefa85 100644
---- a/drivers/acpi/processor_driver.c
-+++ b/drivers/acpi/processor_driver.c
-@@ -616,7 +616,8 @@ static int __cpuinit acpi_processor_add(struct acpi_device *device)
- 	acpi_processor_get_limit_info(pr);
+diff --git a/drivers/cpuidle/cpuidle.c b/drivers/cpuidle/cpuidle.c
+index 12fdd39..1994885 100644
+--- a/drivers/cpuidle/cpuidle.c
++++ b/drivers/cpuidle/cpuidle.c
+@@ -156,7 +156,7 @@ int cpuidle_enable_device(struct cpuidle_device *dev)
  
+ 	if (dev->enabled)
+ 		return 0;
+-	if (!cpuidle_curr_driver || !cpuidle_curr_governor)
++	if (!cpuidle_get_driver() || !cpuidle_curr_governor)
+ 		return -EIO;
+ 	if (!dev->state_count)
+ 		return -EINVAL;
+@@ -207,7 +207,7 @@ void cpuidle_disable_device(struct cpuidle_device *dev)
+ {
+ 	if (!dev->enabled)
+ 		return;
+-	if (!cpuidle_curr_driver || !cpuidle_curr_governor)
++	if (!cpuidle_get_driver() || !cpuidle_curr_governor)
+ 		return;
  
--	acpi_processor_power_init(pr, device);
-+	if (cpuidle_get_driver() == &acpi_idle_driver)
-+		acpi_processor_power_init(pr, device);
+ 	dev->enabled = 0;
+@@ -271,10 +271,11 @@ static int __cpuidle_register_device(struct cpuidle_device *dev)
+ {
+ 	int ret;
+ 	struct sys_device *sys_dev = get_cpu_sysdev((unsigned long)dev->cpu);
++	struct cpuidle_driver *cpuidle_driver = cpuidle_get_driver();
  
- 	pr->cdev = thermal_cooling_device_register("Processor", device,
- 						&processor_cooling_ops);
-@@ -920,9 +921,10 @@ static int __init acpi_processor_init(void)
- 	if (!acpi_processor_dir)
- 		return -ENOMEM;
- #endif
--	result = cpuidle_register_driver(&acpi_idle_driver);
--	if (result < 0)
--		goto out_proc;
+ 	if (!sys_dev)
+ 		return -EINVAL;
+-	if (!try_module_get(cpuidle_curr_driver->owner))
++	if (!try_module_get(cpuidle_driver->owner))
+ 		return -EINVAL;
+ 
+ 	init_completion(&dev->kobj_unregister);
+@@ -284,7 +285,7 @@ static int __cpuidle_register_device(struct cpuidle_device *dev)
+ 	per_cpu(cpuidle_devices, dev->cpu) = dev;
+ 	list_add(&dev->device_list, &cpuidle_detected_devices);
+ 	if ((ret = cpuidle_add_sysfs(sys_dev))) {
+-		module_put(cpuidle_curr_driver->owner);
++		module_put(cpuidle_driver->owner);
+ 		return ret;
+ 	}
+ 
+@@ -325,6 +326,7 @@ EXPORT_SYMBOL_GPL(cpuidle_register_device);
+ void cpuidle_unregister_device(struct cpuidle_device *dev)
+ {
+ 	struct sys_device *sys_dev = get_cpu_sysdev((unsigned long)dev->cpu);
++	struct cpuidle_driver *cpuidle_driver = cpuidle_get_driver();
+ 
+ 	if (dev->registered == 0)
+ 		return;
+@@ -340,7 +342,7 @@ void cpuidle_unregister_device(struct cpuidle_device *dev)
+ 
+ 	cpuidle_resume_and_unlock();
+ 
+-	module_put(cpuidle_curr_driver->owner);
++	module_put(cpuidle_driver->owner);
+ }
+ 
+ EXPORT_SYMBOL_GPL(cpuidle_unregister_device);
+diff --git a/drivers/cpuidle/cpuidle.h b/drivers/cpuidle/cpuidle.h
+index 9476ba3..33e50d5 100644
+--- a/drivers/cpuidle/cpuidle.h
++++ b/drivers/cpuidle/cpuidle.h
+@@ -9,7 +9,6 @@
+ 
+ /* For internal use only */
+ extern struct cpuidle_governor *cpuidle_curr_governor;
+-extern struct cpuidle_driver *cpuidle_curr_driver;
+ extern struct list_head cpuidle_governors;
+ extern struct list_head cpuidle_detected_devices;
+ extern struct mutex cpuidle_lock;
+diff --git a/drivers/cpuidle/driver.c b/drivers/cpuidle/driver.c
+index 30bcd44..b381d29 100644
+--- a/drivers/cpuidle/driver.c
++++ b/drivers/cpuidle/driver.c
+@@ -14,7 +14,7 @@
+ 
+ #include "cpuidle.h"
+ 
+-struct cpuidle_driver *cpuidle_curr_driver;
++static struct cpuidle_driver *cpuidle_curr_driver;
+ DEFINE_SPINLOCK(cpuidle_driver_lock);
+ 
+ /**
+@@ -40,6 +40,15 @@ int cpuidle_register_driver(struct cpuidle_driver *drv)
+ EXPORT_SYMBOL_GPL(cpuidle_register_driver);
+ 
+ /**
++ * cpuidle_get_driver - return the current driver
++ */
++struct cpuidle_driver *cpuidle_get_driver(void)
++{
++	return cpuidle_curr_driver;
++}
++EXPORT_SYMBOL_GPL(cpuidle_get_driver);
 +
-+	if (!cpuidle_register_driver(&acpi_idle_driver))
-+		printk(KERN_DEBUG "ACPI: %s registered with cpuidle\n",
-+			acpi_idle_driver.name);
++/**
+  * cpuidle_unregister_driver - unregisters a driver
+  * @drv: the driver
+  */
+diff --git a/drivers/cpuidle/sysfs.c b/drivers/cpuidle/sysfs.c
+index 0ba9c8b..0310ffa 100644
+--- a/drivers/cpuidle/sysfs.c
++++ b/drivers/cpuidle/sysfs.c
+@@ -47,10 +47,11 @@ static ssize_t show_current_driver(struct sysdev_class *class,
+ 				   char *buf)
+ {
+ 	ssize_t ret;
++	struct cpuidle_driver *cpuidle_driver = cpuidle_get_driver();
  
- 	result = acpi_bus_register_driver(&acpi_processor_driver);
- 	if (result < 0)
-@@ -941,7 +943,6 @@ static int __init acpi_processor_init(void)
- out_cpuidle:
- 	cpuidle_unregister_driver(&acpi_idle_driver);
+ 	spin_lock(&cpuidle_driver_lock);
+-	if (cpuidle_curr_driver)
+-		ret = sprintf(buf, "%s\n", cpuidle_curr_driver->name);
++	if (cpuidle_driver)
++		ret = sprintf(buf, "%s\n", cpuidle_driver->name);
+ 	else
+ 		ret = sprintf(buf, "none\n");
+ 	spin_unlock(&cpuidle_driver_lock);
+diff --git a/include/linux/cpuidle.h b/include/linux/cpuidle.h
+index 0fe1efe..5f539cf 100644
+--- a/include/linux/cpuidle.h
++++ b/include/linux/cpuidle.h
+@@ -125,6 +125,7 @@ struct cpuidle_driver {
+ #ifdef CONFIG_CPU_IDLE
  
--out_proc:
- #ifdef CONFIG_ACPI_PROCFS
- 	remove_proc_entry(ACPI_PROCESSOR_CLASS, acpi_root_dir);
- #endif
+ extern int cpuidle_register_driver(struct cpuidle_driver *drv);
++struct cpuidle_driver *cpuidle_get_driver(void);
+ extern void cpuidle_unregister_driver(struct cpuidle_driver *drv);
+ extern int cpuidle_register_device(struct cpuidle_device *dev);
+ extern void cpuidle_unregister_device(struct cpuidle_device *dev);
 -- 
 1.6.0.6
 
