@@ -1,90 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757853Ab0E0XIq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 May 2010 19:08:46 -0400
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:57390 "EHLO
-	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750852Ab0E0XIp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 May 2010 19:08:45 -0400
-Date: Fri, 28 May 2010 00:15:14 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-       Matthew Garrett <mjg59@srcf.ucam.org>,
+	id S1759268Ab0E0XI6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 May 2010 19:08:58 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:36889 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759019Ab0E0XIz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 May 2010 19:08:55 -0400
+Date: Thu, 27 May 2010 20:08:15 -0300
+From: Arnaldo Carvalho de Melo <acme@redhat.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Ingo Molnar <mingo@elte.hu>, Paul Mackerras <paulus@samba.org>,
+       linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+       Fr?d?ric Weisbecker <fweisbec@gmail.com>,
+       Steven Rostedt <rostedt@goodmis.org>,
        Thomas Gleixner <tglx@linutronix.de>,
-       Alan Stern <stern@rowland.harvard.edu>,
-       LKML <linux-kernel@vger.kernel.org>,
-       Florian Mickler <florian@mickler.org>, felipe.balbi@nokia.com,
-       Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
-       Linux PM <linux-pm@lists.linux-foundation.org>,
-       Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Subject: Re: [linux-pm] [PATCH 0/8] Suspend block api (version 8)
-Message-ID: <20100528001514.28e593ef@lxorguk.ukuu.org.uk>
-In-Reply-To: <201005280041.43553.rjw@sisk.pl>
-References: <Pine.LNX.4.44L0.1005271253240.3239-100000@iolanthe.rowland.org>
-	<20100527174019.GA3187@srcf.ucam.org>
-	<1274982447.27810.5684.camel@twins>
-	<201005280041.43553.rjw@sisk.pl>
-X-Mailer: Claws Mail 3.7.5 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+       Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [GIT PULL, v2] perf changes
+Message-ID: <20100527230815.GN9874@ghostprotocols.net>
+References: <20100524192531.GA15614@elte.hu>
+ <20100525002221.GA30395@drongo>
+ <20100525135200.GA21462@elte.hu>
+ <alpine.LFD.2.00.1005271533010.11382@i5.linux-foundation.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LFD.2.00.1005271533010.11382@i5.linux-foundation.org>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> The approach with user space power manager suggested by Dmitry and Alan Stern
-> may work, but it still assumes some kind of suspend blockers to be present in
-> the kernel.  If we reject that too, I wonder what approach Google is supposed
-> to use and still get the same battery life they get with suspend blockers.
+Em Thu, May 27, 2010 at 03:34:51PM -0700, Linus Torvalds escreveu:
+> 
+> 
+> On Tue, 25 May 2010, Ingo Molnar wrote:
+> >
+> >  75 files changed, 1847 insertions(+), 3147 deletions(-)
+> 
+> I was excited by this ("A code _reduction_! Will wonders never cease?"), 
+> but it turns out that all of the reduction was due to removing some unused 
+> utility functions from the user-level tools.
 
-I'm getting less convinced it needs suspend blockers at all for this case,
-assuming that you are willing to have a policy that is based on
+That was Ingo's forward looking investments, which I decided to take off
+the balance sheet not to get the IMF on our backs, glad you noticed the
+trick, never the less, it was at least a step on the right direction, I
+guess.
+ 
+> The actual kernel still grew:
+> 
+>  32 files changed, 1327 insertions(+), 964 deletions(-)
+> 
+> oh well. Merged anyway.
 
-- assuming apps play nicely
-- having the information to user space you need (who woke us, who blocked
-  us, events)
-- dealing with offenders primarily from user space using that information
+Thanks!
 
-I'm fairly happy about the following so far
+> 		Linus
 
-- we should have a common interface for seeing some pm events (like
-  duh ?) but it does need careful thought so the watcher doesn't change
-  the behaviour and break it. (Message "We are suspending", gosh someone
-  is running to receive the message, resume being the obvious case)
-
-- Suspend is (for many platforms) just a cotinuation down the power
-  chain. Demonstrated and implemented on ARM. Very much the direction of
-  S0i1/S0i3 on x86 MID devices. Proved by the fact it has been done and
-  made to work, and by reading the Moorestown PR.
-
-- Given a non forced (that is 'idle down') transition to a suspend level
-  we can implement a 'suspend as idle' on many embedded platforms in a
-  manner which is not racy at kernel level. Apparently implemented
-  already on ARM
-
-- Given a non forced transition to such a suspend level and the reporting
-  of certain events we can do a full user space managed graphical UI type
-  environment policy in a race free fashion
-
-- With notification of who caused a resume and maybe a bit of other
-  general stat gathering it is possible to identify and handle abuses of
-  power resource. Proved by the fact we can do this with powertop but
-  more elegance in the interfaces would be nice.
-
-I am not sure if a pm event is what is needed for this or a sum 'hardware
-triggered wake up' event.
-
-I accept that current ACPI based laptops probably couldn't make use of
-such a feature but I don't think this is important at the moment.
-
-A resource constraint model might help further in the ACPI case. It's
-useful for other stuff but it might well be a distraction and
-implementation detail in terms of the basic question about what is needed
-for something like Android.
-
-At this point the input of the Android team and the Nokia people would
-be rather more useful to me.
-
-Alan
+- Arnaldo
