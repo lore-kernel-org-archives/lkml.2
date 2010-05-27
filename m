@@ -1,56 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759247Ab0E0XCd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 May 2010 19:02:33 -0400
-Received: from netrider.rowland.org ([192.131.102.5]:53356 "HELO
-	netrider.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1755287Ab0E0XCb (ORCPT
+	id S932245Ab0E0XDP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 May 2010 19:03:15 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:45840 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757548Ab0E0XDJ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 May 2010 19:02:31 -0400
-Date: Thu, 27 May 2010 19:02:28 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@netrider.rowland.org
-To: Matthew Garrett <mjg59@srcf.ucam.org>
-cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, Peter Zijlstra <peterz@infradead.org>,
-       LKML <linux-kernel@vger.kernel.org>,
-       Florian Mickler <florian@mickler.org>,
-       Linux PM <linux-pm@lists.linux-foundation.org>,
-       Thomas Gleixner <tglx@linutronix.de>,
-       Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
-       <felipe.balbi@nokia.com>
-Subject: Re: [linux-pm] [PATCH 0/8] Suspend block api (version 8)
-In-Reply-To: <20100527223512.GA11364@srcf.ucam.org>
-Message-ID: <Pine.LNX.4.44L0.1005271853430.29316-100000@netrider.rowland.org>
+	Thu, 27 May 2010 19:03:09 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=FMNXNyTk5LK6mAbG22LxjIChG5Ov4krT2VNd2S36O9sLKZcZl86VfYLoFuVQ1/+uVC
+         fLW7P02sixRrNHAgncPr0wEqbiJFp6frT+ooD4qa/AfRp1bN1XVZ8nC72aQfBjm3d/RQ
+         2vObe1Gev9ewjPmWbWU4zgcF8+mY85lGPCY8c=
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <alpine.LFD.2.00.1005270956380.3689@i5.linux-foundation.org>
+References: <20100513075728.GF30110@core.coreip.homeip.net>
+	<alpine.LFD.2.00.1005130724280.3711@i5.linux-foundation.org>
+	<20100513160117.GB22238@core.coreip.homeip.net>
+	<alpine.LFD.2.00.1005130943460.3711@i5.linux-foundation.org>
+	<4BFE0FAB.9040009@gmail.com>
+	<alpine.LFD.2.00.1005270956380.3689@i5.linux-foundation.org>
+Date: Thu, 27 May 2010 17:03:08 -0600
+Message-ID: <AANLkTimkI2rLOO2vaPFBQUbzr5t0pAQGQ5R5noTOBp4K@mail.gmail.com>
+Subject: Re: [git pull] Input updates for 2.6.34-rc6
+From: Robert Hancock <hancockrwd@gmail.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       linux-input@vger.kernel.org, Bastien Nocera <hadess@hadess.net>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Matthew:
+On Thu, May 27, 2010 at 11:06 AM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
+>
+>
+> On Thu, 27 May 2010, Robert Hancock wrote:
+>>
+>> I don't think they did anything wrong in their BIOS, it's working exactly as
+>> the spec intended. There is no PS/2 controller, and the ACPI PnP tables do not
+>> list one.
+>
+> You seem to be unable to read.
+>
+> First off, there _is_ a PS2 controller. You can't get any normal Intel
+> chips without one, as far as I can tell. The lines may not be brought out,
+> but that's immaterial.
 
-Remind me why the idle/QOS power management approach won't work here.
+I believe the PS/2 controller is normally on the LPC SuperIO chip, not
+the chipset itself. It's entirely possible that Apple used a chip that
+didn't include any such controller at all. It's also possible they
+reused the IO ports normally assigned to it for something else (which
+would be a questionable decision, yes), which is why the machine blows
+up when the ports get probed.
 
-If the difficulty is untrusted apps preventing the system from being
-idle, why not assign them to QoS(NONE) as Thomas suggested?
+>
+> Secondly, even if there wasn't any - or the controller is actively
+> disabled, Linux handles that situation perfectly fine. The fact is, the
+> low ports (< 0x100) are reserved for motherboard devices, and Linux probes
+> the things fine.
+>
+> Thirdly, the thing is, PnP tables are incomplete. Always. They don't prove
+> a negative. Deal with it. It's a _fact_.
 
-If the difficulty is that some untrusted apps need to receive wakeup 
-events, why not just decree that this is not allowed?  It seems 
-reasonable that if you can't trust a program then you shouldn't allow 
-it to wake up the system.
+It's highly unlikely that they are incomplete in this respect, as
+since I mentioned, Windows would fail to recognize the PS/2 controller
+that people would expect to work, which would most likely get
+noticed..
 
-If the difficulty is that some trusted apps need to do CPU-burning
-things like drawing bouncing cows in the background, why not break
-these apps into two processes or threads?  One can be trusted and
-receive all the wakeup events, and the other can be untrusted and draw
-all the cows it likes.  We're only talking about trusted apps, most of
-which would be controlled by Google, so the conversion shouldn't be too
-hard.
+>
+> So Apple must have actively screwed things up. If you can't admit that,
+> it's your problem.
+>
+>> Long and the short of it is, it seems pretty safe to say that on any ACPI
+>> machine, if there's no PnP entry for PS/2 devices, the BIOS does not intend
+>> for the OS to use them.
+>
+> And your argument is pure and utter sh*t. I don't know why I even bother
+> replying to it, but I'll try one more time:
+>
+>  - BIOS writers are incompetent drug-addled morons. Your argument that
+>   "the BIOS does not intend for the OS to use them" is a totally idiotic
+>   argument, for the simple reason that it's not up to the BIOS writers,
+>   and even if it _was_ up to them, they always screw things up.
+>
+> The thing boils down to: we cannot trust the firmware anyway (this is a
+> simple _fact_, not some random opinion), and no, the BIOS writers do not
+> have some magic powers that allow them to determine how hardware should be
+> used.
 
-If the difficulty is that ACPI-based systems can't use idle/QOS PM
-effectively...  well, so be it.  We don't have to solve every problem
-in the world right away, and just now we're mainly concerned about
-helping the Android people.
+I think this is a case where it has to be trusted, because that's what
+Windows does. Experience has shown time and again that deviating from
+Windows behavior with these kinds of ACPI platform-related issues is
+fraught with problems, since hardware vendors test only with Windows.
+If Linux behaved the same as Windows here, and left the PS/2 IO ports
+alone since there was no PNP device defined for it, this problem
+presumably wouldn't have come up.
 
-Alan Stern
-
+Since many machines are moving towards no longer including legacy PS/2
+ports, this kind of thing seems likely to come up elsewhere..
