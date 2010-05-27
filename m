@@ -1,63 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933150Ab0E0EHn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 May 2010 00:07:43 -0400
-Received: from bld-mail17.adl2.internode.on.net ([150.101.137.102]:51929 "EHLO
-	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750827Ab0E0EHk (ORCPT
+	id S933262Ab0E0EJx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 May 2010 00:09:53 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:57788 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750827Ab0E0EJw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 May 2010 00:07:40 -0400
-Date: Thu, 27 May 2010 14:07:04 +1000
-From: Dave Chinner <david@fromorbit.com>
-To: Nick Piggin <npiggin@suse.de>
-Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-       linux-mm@kvack.org, xfs@oss.sgi.com
-Subject: Re: [PATCH 3/5] superblock: introduce per-sb cache shrinker
- infrastructure
-Message-ID: <20100527040704.GJ12087@dastard>
-References: <1274777588-21494-1-git-send-email-david@fromorbit.com>
- <1274777588-21494-4-git-send-email-david@fromorbit.com>
- <20100526164116.GD22536@laptop>
- <20100526231214.GB1395@dastard>
- <20100527021905.GG22536@laptop>
+	Thu, 27 May 2010 00:09:52 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=Gqzq36twvc76xa2KOFr3jQGElHjxUZwS6k3+VMdNkWETGB4zBN9XH+GIwd2ClZTExn
+         a8sDlQUh2aXIEdwvX8lXwLUINEVnbmV9HjMKJdbqNtjm8byZNEJAotNMWwBAAe//EORV
+         eYuR1w2ehXBMaEbG8k5ZtT2A2dAqfEfs2lsJw=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100527021905.GG22536@laptop>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <201005270213.42913.rjw@sisk.pl>
+References: <AANLkTik0PUKP3QLPRbb3nlh034_inmaeVbXy3q5_LQz-@mail.gmail.com>
+	<201005270213.42913.rjw@sisk.pl>
+Date: Thu, 27 May 2010 09:39:51 +0530
+Message-ID: <AANLkTil180tPW4KoOaUBgXIm1Lf6O45_GKKlLx3CDcVh@mail.gmail.com>
+Subject: Re: config automatically switches from 32-bit to 64-bit for x86
+From: Jaswinder Singh Rajput <jaswinderlinux@gmail.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Sam Ravnborg <sam@ravnborg.org>, Ingo Molnar <mingo@elte.hu>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       "the arch/x86 maintainers" <x86@kernel.org>,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 27, 2010 at 12:19:05PM +1000, Nick Piggin wrote:
-> On Thu, May 27, 2010 at 09:12:14AM +1000, Dave Chinner wrote:
-> > On Thu, May 27, 2010 at 02:41:16AM +1000, Nick Piggin wrote:
-> > > > +	count = ((sb->s_nr_dentry_unused + sb->s_nr_inodes_unused) / 100)
-> > > > +						* sysctl_vfs_cache_pressure;
-> > > 
-> > > Do you think truncating in the divisions is at all a problem? It
-> > > probably doesn't matter much I suppose.
-> > 
-> > Same code as currently exists. IIRC, the reasoning is that if we've
-> > got less that 100 objects to reclaim, then we're unlikely to be able
-> > to free up any memory from the caches, anyway.
-> 
-> Yeah, which is why I stop short of saying you should change it in
-> this patch.
-> 
-> But I think we should ensure things can get reclaimed eventually.
-> 100 objects could be 100 slabs, which could be anything from
-> half a meg to half a dozen. Multiplied by each of the caches.
-> Could be significant in small systems.
+Hello Rafael,
 
-True, but usually there are busy objects in the dentry and inode
-slabs, so it shouldn't be a significant issue. We can probably
-address such problems if they can be demonstrated to be an issue in
-a separate patch set....
+On Thu, May 27, 2010 at 5:43 AM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> On Thursday 27 May 2010, Jaswinder Singh Rajput wrote:
+>> Hello,
+>>
+>> I am trying to build 32 bit kernel image on 64-bit machine but after
+>> 'make menuconfig' it automatically switches 32-bit to 64-bit.
+>
+> Try 'linux32 make menuconfig' and 'linux32 make'.
+>
 
-Cheers,
+Yes, this works :-)
 
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
+But I wonder then what is the point/use of CONFIG_X86_32 if compiler
+is not listening to it.
+
+Logically compiler should set appropriate flags based on .config settings.
+
+Thanks,
+--
+Jaswinder Singh.
