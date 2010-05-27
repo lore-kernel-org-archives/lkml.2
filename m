@@ -1,60 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933188Ab0E0V7z (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 May 2010 17:59:55 -0400
-Received: from mail-pz0-f176.google.com ([209.85.222.176]:60881 "EHLO
-	mail-pz0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932994Ab0E0V7w convert rfc822-to-8bit (ORCPT
+	id S933174Ab0E0WAt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 May 2010 18:00:49 -0400
+Received: from mail.svr02.mucip.net ([83.170.6.69]:55588 "EHLO
+	mailout.mucip.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753285Ab0E0WAr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 May 2010 17:59:52 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=f7a1bHb2wT302mPk/h3Nb+6sy3k38bU2mAo7N60p//Kkrpx7Po7oTDmvOJ1qIYlE8y
-         bEx5ayidxlyHPLuKknH297j1ycrZHvlmb49pJe+6awnJOtYDKvxpSwD6N4jP3v4N/KoI
-         U9LnYtmb0MWxppFTpx7QtMA0xrwz4KDkXJqxE=
+	Thu, 27 May 2010 18:00:47 -0400
+X-Greylist: delayed 743 seconds by postgrey-1.27 at vger.kernel.org; Thu, 27 May 2010 18:00:46 EDT
+X-Submitted: to mailout.mucip.net (Postfix) with ESMTPSA id 38312496A
+Message-ID: <4BFEE8A2.30706@birkenwald.de>
+Date: Thu, 27 May 2010 23:48:18 +0200
+From: Bernhard Schmidt <berni@birkenwald.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.9) Gecko/20100423 Lightning/1.0b1 Thunderbird/3.0.4
 MIME-Version: 1.0
-In-Reply-To: <20100527193755.GA25484@flint.arm.linux.org.uk>
-References: <1274341759-13086-1-git-send-email-linus.walleij@stericsson.com>
-	<AANLkTikmdqceeWNYGm7ZTI64pixtkVWBbpWEtajZGHA1@mail.gmail.com>
-	<AANLkTikiW_yFOqRumd83sETURf-9sI7IfrCmbb5MRjrl@mail.gmail.com>
-	<20100527193755.GA25484@flint.arm.linux.org.uk>
-Date: Thu, 27 May 2010 14:59:51 -0700
-X-Google-Sender-Auth: CNwRTzwBQwzUVzYZtAqNQcgkkqs
-Message-ID: <AANLkTimtWrHzbklohUc43hSWPDfJs93YQoQe5Gz4tgUw@mail.gmail.com>
-Subject: Re: [PATCH] DMAENGINE: DMA40 U8500 platform configuration
-From: Dan Williams <dan.j.williams@intel.com>
-To: Russell King <rmk@arm.linux.org.uk>
-Cc: Linus Walleij <linus.walleij@stericsson.com>, linux-kernel@vger.kernel.org,
-       STEricsson_nomadik_linux@list.st.com
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: john stultz <johnstul@us.ibm.com>
+CC: linux-kernel@vger.kernel.org, kvm@vger.kernel.org
+Subject: Re: Clock jumps
+References: <loom.20100524T171038-56@post.gmane.org>	<20100525062100.GP22163@redhat.com>	<4BFD5616.6070302@cora.nwra.com>	<4D7E210A-4694-4B6E-B721-6024CE96ABC0@suse.de>	<htmdsk$9kn$1@dough.gmane.org> <AANLkTindrSuRdOI30l4P5XMuUVv3j7Zso9fMi1xREb3A@mail.gmail.com>
+In-Reply-To: <AANLkTindrSuRdOI30l4P5XMuUVv3j7Zso9fMi1xREb3A@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 27, 2010 at 12:37 PM, Russell King <rmk@arm.linux.org.uk> wrote:
-> On Wed, May 26, 2010 at 09:17:42AM -0700, Dan Williams wrote:
->> Requesting acked-by for:
->>
->> http://marc.info/?l=linux-kernel&m=127434177015990&w=2
->
-> Well...
->
->  +const static dma_addr_t dma40_tx_map[STEDMA40_NR_DEV] = {
->  +const static dma_addr_t dma40_rx_map[STEDMA40_NR_DEV] = {
+On 27.05.2010 21:08, john stultz wrote:
 
-Yeah, no need to initialize static data to 0, I'll fix that up before
-submitting.
+Hi John,
 
->
-> will provoke patches from the janitors.
->
-> Apart from that,
->
-> Acked-by: Russell King <rmk+kernel@arm.linux.org.uk>
+> I'd be very interested in hearing more about the host side issue. So
+> this happened with the same kernel that you were using before, with no
+> trouble?
 
-Thanks,
-Dan
+Correct.
+
+> Could you also send dmesg output from this boot? And if you can find
+> any older dmesg logs to compare with, send those too?
+
+See http://users.birkenwald.de/~berni/temp/dmesg-lenny and 
+http://users.birkenwald.de/~berni/temp/dmesg-squeeze . Although running 
+on the same kernel binary the initrd changed greatly when upgrading, so 
+ordering/timing between those two is off.
+
+Note that the dmesg output is captured right after boot. I think I 
+remember seeing a "TSC unstable" message pretty soon after boot, but I 
+might be mixing it up with my other AMD-based KVM server. I don't hold 
+normal (non-boot) logs that long, so I can't tell for sure.
+
+If you need any more info feel free to contact me.
+
+Bernhard
