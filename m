@@ -1,113 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756760Ab0E0VeU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 May 2010 17:34:20 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:45783 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754998Ab0E0VeR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 May 2010 17:34:17 -0400
-Date: Thu, 27 May 2010 14:33:41 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Dave Chinner <david@fromorbit.com>
-Cc: linux-kernel@vger.kernel.org, xfs@oss.sgi.com,
-       linux-fsdevel@vger.kernel.org, linux-ext4@vger.kernel.org,
-       tytso@mit.edu, jens.axboe@oracle.com
-Subject: Re: [PATCH 6/6] writeback: limit write_cache_pages integrity
- scanning to current EOF
-Message-Id: <20100527143341.d4258798.akpm@linux-foundation.org>
-In-Reply-To: <1274784852-30502-7-git-send-email-david@fromorbit.com>
-References: <1274784852-30502-1-git-send-email-david@fromorbit.com>
-	<1274784852-30502-7-git-send-email-david@fromorbit.com>
-X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S932732Ab0E0Ve3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 May 2010 17:34:29 -0400
+Received: from www.tglx.de ([62.245.132.106]:58059 "EHLO www.tglx.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755166Ab0E0VeZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 May 2010 17:34:25 -0400
+Date: Thu, 27 May 2010 23:33:32 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Alan Stern <stern@rowland.harvard.edu>
+cc: Matthew Garrett <mjg59@srcf.ucam.org>,
+       Peter Zijlstra <peterz@infradead.org>,
+       LKML <linux-kernel@vger.kernel.org>,
+       Florian Mickler <florian@mickler.org>, felipe.balbi@nokia.com,
+       Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
+       Linux PM <linux-pm@lists.linux-foundation.org>,
+       Alan Cox <alan@lxorguk.ukuu.org.uk>
+Subject: Re: [linux-pm] [PATCH 0/8] Suspend block api (version 8)
+In-Reply-To: <Pine.LNX.4.44L0.1005271724430.3239-100000@iolanthe.rowland.org>
+Message-ID: <alpine.LFD.2.00.1005272332320.3478@localhost.localdomain>
+References: <Pine.LNX.4.44L0.1005271724430.3239-100000@iolanthe.rowland.org>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 25 May 2010 20:54:12 +1000
-Dave Chinner <david@fromorbit.com> wrote:
+On Thu, 27 May 2010, Alan Stern wrote:
 
-> From: Dave Chinner <dchinner@redhat.com>
+> On Thu, 27 May 2010, Matthew Garrett wrote:
 > 
-> sync can currently take a really long time if a concurrent writer is
-> extending a file. The problem is that the dirty pages on the address
-> space grow in the same direction as write_cache_pages scans, so if
-> the writer keeps ahead of writeback, the writeback will not
-> terminate until the writer stops adding dirty pages.
-
-<looks at Jens>
-
-The really was a pretty basic bug.  It's writeback 101 to test that case :(
-
-> For a data integrity sync, we only need to write the pages dirty at
-> the time we start the writeback, so we can stop scanning once we get
-> to the page that was at the end of the file at the time the scan
-> started.
+> > On Thu, May 27, 2010 at 10:23:50PM +0200, Thomas Gleixner wrote:
+> > > On Thu, 27 May 2010, Matthew Garrett wrote:
+> > > > A wakeup event is defined as one that wakes the system - if a system 
+> > > > can't be woken by a specific event then it's impossible to lose it, 
+> > > > since it wasn't a wakeup event to begin with.
+> > > 
+> > > So where is the problem ?
+> > 
+> > The problem is that, right now, if a wakeup event is received between 
+> > the point where userspace decides to start a suspend and userspace 
+> > actually starts a suspend, that event may not abort the suspend.
 > 
-> This will prevent operations like copying a large file preventing
-> sync from completing as it will not write back pages that were
-> dirtied after the sync was started. This does not impact the
-> existing integrity guarantees, as any dirty page (old or new)
-> within the EOF range at the start of the scan will still be
-> captured.
-> 
-> Signed-off-by: Dave Chinner <dchinner@redhat.com>
-> ---
->  mm/page-writeback.c |   15 +++++++++++++++
->  1 files changed, 15 insertions(+), 0 deletions(-)
-> 
-> diff --git a/mm/page-writeback.c b/mm/page-writeback.c
-> index 0fe713d..c97e973 100644
-> --- a/mm/page-writeback.c
-> +++ b/mm/page-writeback.c
-> @@ -855,7 +855,22 @@ int write_cache_pages(struct address_space *mapping,
->  		if (wbc->range_start == 0 && wbc->range_end == LLONG_MAX)
->  			range_whole = 1;
->  		cycled = 1; /* ignore range_cyclic tests */
-> +
-> +		/*
-> +		 * If this is a data integrity sync, cap the writeback to the
-> +		 * current end of file. Any extension to the file that occurs
-> +		 * after this is a new write and we don't need to write those
-> +		 * pages out to fulfil our data integrity requirements. If we
-> +		 * try to write them out, we can get stuck in this scan until
-> +		 * the concurrent writer stops adding dirty pages and extending
-> +		 * EOF.
-> +		 */
-> +		if (wbc->sync_mode == WB_SYNC_ALL &&
-> +		    wbc->range_end == LLONG_MAX) {
-> +			end = i_size_read(mapping->host) >> PAGE_CACHE_SHIFT;
-> +		}
->  	}
-> +
+> The two of you are talking at cross purposes.  Thomas is referring to 
+> idle-based suspend and Matthew is talking about forced suspend.
 
-This is somewhat inefficient.  It's really trivial and fast to find the
-highest-index dirty page by walking straight down the
-PAGECACHE_TAG_DIRTY-tagged nodes.
+Yes, and forced suspend to disk is the same as force suspend to disk,
+which has both nothing to do with sensible resource management.
 
-However pagevec_lookup_tag(..., PAGECACHE_TAG_DIRTY) should do a pretty
-good job of skipping over the (millions of) pages between the (last
-dirty page before `end') and (`end').  So it _should_ be OK.  Some thought
-and runtime testing would be good.
+Thanks,
 
-
-
-That being said, I think the patch is insufficient.  If I create an
-enormous (possibly sparse) file with a 16TB hole (or a run of clean
-pages) in the middle and then start busily writing into that hole (run
-of clean pages), the problem will still occur.
-
-One obvious fix for that (a) would be to add another radix-tree tag and
-do two passes across the radix-tree.
-
-Another fix (b) would be to track the number of dirty pages per
-adddress_space, and only write that number of pages.
-
-Another fix would be to work out how the code handled this situation
-before we broke it, and restore that in some fashion.  I guess fix (b)
-above kinda does that.
-
-
+	tglx
