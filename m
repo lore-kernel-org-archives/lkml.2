@@ -1,65 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757438Ab0E0OcP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 May 2010 10:32:15 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:55023 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754518Ab0E0OcM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 May 2010 10:32:12 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=m/yj5qG6Xb/ljqharKfQlqoY1gGrBrSzNeFcleDSPGbCIHNCfZAJRtsaATGK/2WAqA
-         wgqLFMrgFqz0cAZzYI6S9q0GQU3yHnryMwNjobtMihbLpdsU7E+QclBUPQYS81r8e/TJ
-         xCascRzzm59Gvdfkj51ne8BoJv/mxC47JUyM4=
-Date: Thu, 27 May 2010 23:31:34 +0900
-From: Minchan Kim <minchan.kim@gmail.com>
-To: Rik van Riel <riel@redhat.com>
-Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-       linux-mm@kvack.org, Mel Gorman <mel@csn.ul.ie>,
-       Andrea Arcangeli <aarcange@redhat.com>,
-       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-       Lee Schermerhorn <Lee.Schermerhorn@hp.com>
-Subject: Re: [PATCH 5/5] extend KSM refcounts to the anon_vma root
-Message-ID: <20100527143134.GA9505@barrios-desktop>
-References: <20100526153819.6e5cec0d@annuminas.surriel.com>
- <20100526154124.04607d04@annuminas.surriel.com>
+	id S1757526Ab0E0OfL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 May 2010 10:35:11 -0400
+Received: from king.tilera.com ([72.1.168.226]:37263 "EHLO king.tilera.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755177Ab0E0OfJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 May 2010 10:35:09 -0400
+Message-ID: <4BFE831A.8050002@tilera.com>
+Date: Thu, 27 May 2010 10:35:06 -0400
+From: Chris Metcalf <cmetcalf@tilera.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.1.9) Gecko/20100317 Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100526154124.04607d04@annuminas.surriel.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Arnd Bergmann <arnd@arndb.de>
+CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       linux-arch@vger.kernel.org
+Subject: Re: [PATCH] arch/tile: new multi-core architecture for Linux
+References: <201005200543.o4K5hFRF006079@farm-0002.internal.tilera.com> <201005271041.30519.arnd@arndb.de> <4BFE73DF.5090107@tilera.com> <201005271611.47963.arnd@arndb.de>
+In-Reply-To: <201005271611.47963.arnd@arndb.de>
+X-Enigmail-Version: 1.0.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 27 May 2010 14:35:07.0717 (UTC) FILETIME=[CDC74750:01CAFDA9]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 26, 2010 at 03:41:24PM -0400, Rik van Riel wrote:
-> Subject: extend KSM refcounts to the anon_vma root
-> 
-> KSM reference counts can cause an anon_vma to exist after the processe
-> it belongs to have already exited.  Because the anon_vma lock now lives
-> in the root anon_vma, we need to ensure that the root anon_vma stays
-> around until after all the "child" anon_vmas have been freed.
-> 
-> The obvious way to do this is to have a "child" anon_vma take a
-> reference to the root in anon_vma_fork.  When the anon_vma is freed
-> at munmap or process exit, we drop the refcount in anon_vma_unlink
-> and possibly free the root anon_vma.
-> 
-> The KSM anon_vma reference count function also needs to be modified
-> to deal with the possibility of freeing 2 levels of anon_vma.  The
-> easiest way to do this is to break out the KSM magic and make it
-> generic.
-> 
-> When compiling without CONFIG_KSM, this code is compiled out.
-> 
-> Signed-off-by: Rik van Riel <riel@redhat.com>
-Reviewed-by: Minchan Kim <minchan.kim@gmail.com>
+On 5/27/2010 10:11 AM, Arnd Bergmann wrote:
+>>> > > I see. AFAICT, all other architectures don't need the wrapper in
+>>> > > the 32 bit native case because they define the syscall calling
+>>> > > conventions in libc such that they match what the kernel
+>>> > > expects for a 64 bit argument (typically split in two subsequent
+>>> > > argument slots). Would that work for you as well?
+>>>       
+>>
+>> > Yes, we could override this in libc.  My assumption was that it was
+>> > cleaner to do it in the kernel, since we support uclibc and glibc, and
+>> > doing it in the kernel meant only doing it in one place.
+>>     
+> That's not the way I meant. There are two options how (any) libc can
+> implement this:
+> 1. the calling conventions for user function calls and for kernel
+>    function calls are the same, so you don't need to do anything here.
+> 2. the calling conventions are different, so you already need a wrapper
+>    in user space for 64 bit arguments to split them up and you could
+>    to that in exactly the way that the kernel expects to be called.
+>   
 
-Now I understand this patch. 
-Thanks, Rik. 
+The issue is that libc support for 64-bit operands on 32-bit platforms
+tends to look like "syscall(foo64, arg1, LOW(arg2), HIGH(arg2))".  This
+naturally passes the arguments in consecutive registers, for a
+register-based calling convention like ours.  However, invoking
+"foo64(arg1, (u64)arg2)" passes the u64 argument in the next consecutive
+even/odd numbered pair of registers on our architecture.  Arguably this
+notion of register alignment isn't particularly helpful, but we opted to
+do it this way when we settled on the API.  The upshot is that to match
+this, userspace needs to do "syscall(foo64, arg1, dummy, LOW(arg2),
+HIGH(arg2))".  So we need to provide these dummy-argument versions of
+the syscall wrappers to all the libcs that we use (currently uclibc,
+glibc, and sometimes newlib).  Where the 64-bit argument falls naturally
+on an even register boundary we don't need to provide any kernel stub.
+
+Basically the scenario is your #2 above, but userspace already has an
+implementation of the user-space wrapper in the generic code, and I'm
+trying to avoid having to provide a tile-specific version of it.
+
+For reference, here's readahead() in glibc (overridden to be a pure
+syscall wrapper for 64-bit architectures):
+
+ssize_t
+__readahead (int fd, off64_t offset, size_t count)
+{
+  return INLINE_SYSCALL (readahead, 4, fd,
+                         __LONG_LONG_PAIR ((off_t) (offset >> 32),
+                                           (off_t) (offset & 0xffffffff)),
+                         count);
+}
+
+
 -- 
-Kind regards,
-Minchan Kim
+Chris Metcalf, Tilera Corp.
+http://www.tilera.com
+
+
