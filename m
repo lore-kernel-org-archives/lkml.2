@@ -1,68 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933974Ab0E0LmS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 May 2010 07:42:18 -0400
-Received: from mail.gmx.net ([213.165.64.20]:44525 "HELO mail.gmx.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S933281Ab0E0LmN convert rfc822-to-8bit (ORCPT
+	id S1758869Ab0E0LmZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 May 2010 07:42:25 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:65363 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933763Ab0E0LmQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 May 2010 07:42:13 -0400
-X-Authenticated: #5108953
-X-Provags-ID: V01U2FsdGVkX18lxnI5ziUl5nYoGJ/nueEK1d3XBHZ4C4duezkjmK
-	32IUY81RFT2V0O
-From: Toralf =?iso-8859-1?q?F=F6rster?= <toralf.foerster@gmx.de>
-To: rostedt@goodmis.org
-Subject: [PATCH] streamline_config.pl: use references rather than copied data structures
-Date: Thu, 27 May 2010 13:42:08 +0200
-User-Agent: KMail/1.13.3 (Linux/2.6.34; KDE/4.4.3; i686; ; )
-Cc: zippel@linux-m68k.org, linux-kbuild@vger.kernel.org,
-       linux-kernel@vger.kernel.org
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 8BIT
-Message-Id: <201005271342.09066.toralf.foerster@gmx.de>
-X-Y-GMX-Trusted: 0
+	Thu, 27 May 2010 07:42:16 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=ng+t3d1qNrMQWUEKimGxM0Hu53wG/1ObExDlmPvJiQ8WhmPToAakx6p3f07qhlpOvu
+         sUn/2KsjZKZHpBZDcYWWhntfL+4y0u/oeKybbCYSq7P8wBvhDk5p+FhaoRiBMQFHo50p
+         QRxG+sL0BV40QOtmpK1/yLqYdX0wr2Cp9UhCA=
+From: John Sheehan <john.d.sheehan@gmail.com>
+To: gregkh@suse.de, wfp5p@virginia.edu, julia@diku.dk, tj@kernel.org,
+       john.d.sheehan@gmail.com
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] Staging: comedi: fix code style errors in unioxx5.c
+Date: Thu, 27 May 2010 12:41:38 +0100
+Message-Id: <1274960498-29801-1-git-send-email-john.d.sheehan@gmail.com>
+X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-IMHO there's no need for a copy-by-value
+From: John Sheehan <john.d.sheehan@gmail.com>
 
-Signed-off-by: Toralf Foerster <toralf.foerster@gmx.de>
+A patch for unioxx5.c which fixes "trailing statements
+should be on next line" errors raised by the
+chechpatch.pl tool
+
+Signed-off-by: John Sheehan <john.d.sheehan@gmail.com>
 ---
- scripts/kconfig/streamline_config.pl |    6 +++---
- 1 files changed, 3 insertions(+), 3 deletions(-)
+ drivers/staging/comedi/drivers/unioxx5.c |    9 ++++++---
+ 1 files changed, 6 insertions(+), 3 deletions(-)
 
-diff --git a/scripts/kconfig/streamline_config.pl 
-b/scripts/kconfig/streamline_config.pl
-index afbd54a..574e68f 100644
---- a/scripts/kconfig/streamline_config.pl
-+++ b/scripts/kconfig/streamline_config.pl
-@@ -406,14 +406,14 @@ close(CIN);
- loop:
- foreach my $module (keys(%modules)) {
-     if (defined($objects{$module})) {
--       my @arr = @{$objects{$module}};
--       foreach my $conf (@arr) {
-+       my $arr = $objects{$module};
-+       foreach my $conf (@{$arr}) {
-            if (defined($setconfigs{$conf})) {
-                next loop;
-            }
-        }
-        print STDERR "module $module did not have configs";
--       foreach my $conf (@arr) {
-+       foreach my $conf (@{$arr}) {
-            print STDERR " " , $conf;
-        }
-        print STDERR "\n";
+diff --git a/drivers/staging/comedi/drivers/unioxx5.c b/drivers/staging/comedi/drivers/unioxx5.c
+index 16d4c9f..d5f6d75 100644
+--- a/drivers/staging/comedi/drivers/unioxx5.c
++++ b/drivers/staging/comedi/drivers/unioxx5.c
+@@ -302,7 +302,8 @@ static int __unioxx5_subdev_init(struct comedi_subdevice *subdev,
+ 		__unioxx5_analog_config(usp, i * 2);
+ 		outb(i + 1, subdev_iobase + 5);	/* sends channel number to card */
+ 		outb('H', subdev_iobase + 6);	/* requests EEPROM world */
+-		while (!(inb(subdev_iobase + 0) & TxBE)) ;	/* waits while writting will be allowed */
++		while (!(inb(subdev_iobase + 0) & TxBE))
++			;	/* waits while writting will be allowed */
+ 		outb(0, subdev_iobase + 6);
+ 
+ 		/* waits while reading of two bytes will be allowed */
+@@ -437,7 +438,8 @@ static int __unioxx5_analog_write(struct unioxx5_subd_priv *usp,
+ 
+ 	/* sending for bytes to module(one byte per cycle iteration) */
+ 	for (i = 0; i < 4; i++) {
+-		while (!((inb(usp->usp_iobase + 0)) & TxBE)) ;	/* waits while writting will be allowed */
++		while (!((inb(usp->usp_iobase + 0)) & TxBE))
++			;	/* waits while writting will be allowed */
+ 		outb(usp->usp_extra_data[module][i], usp->usp_iobase + 6);
+ 	}
+ 
+@@ -467,7 +469,8 @@ static int __unioxx5_analog_read(struct unioxx5_subd_priv *usp,
+ 	control = inb(usp->usp_iobase);	/* get control register byte */
+ 
+ 	/* waits while reading four bytes will be allowed */
+-	while (!((control = inb(usp->usp_iobase + 0)) & Rx4CA)) ;
++	while (!((control = inb(usp->usp_iobase + 0)) & Rx4CA))
++		;
+ 
+ 	/* if four bytes readding error occurs - return 0(false) */
+ 	if ((control & Rx4CA_ERR_MASK)) {
 -- 
-1.6.4.4
-
--- 
-MfG/Sincerely
-Toralf Förster
-
-pgp finger print: 7B1A 07F4 EC82 0F90 D4C2 8936 872A E508 7DB6 9DA3
+1.7.0.4
 
