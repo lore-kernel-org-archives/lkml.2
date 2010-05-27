@@ -1,51 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759317Ab0E0RRz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 May 2010 13:17:55 -0400
-Received: from cantor.suse.de ([195.135.220.2]:33639 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754371Ab0E0RRW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 May 2010 13:17:22 -0400
-Date: Thu, 27 May 2010 19:17:05 +0200
-From: Jan Kara <jack@suse.cz>
-To: Erik van der Kouwe <vdkouwe@cs.vu.nl>
-Cc: Jan Kara <jack@suse.cz>, Alexander Viro <viro@zeniv.linux.org.uk>,
-       linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-       Fam Zheng <famcool@gmail.com>
-Subject: Re: [PATCH] fs/minix: bugfix, number of indirect block ptrs per
- block depends on block size
-Message-ID: <20100527171705.GC3576@quack.suse.cz>
-References: <4BFCF1EB.20709@cs.vu.nl>
- <20100526215442.GB3316@quack.suse.cz>
- <4BFEA7CD.6020703@cs.vu.nl>
+	id S1759303Ab0E0RTq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 May 2010 13:19:46 -0400
+Received: from smtp.nokia.com ([192.100.122.233]:48870 "EHLO
+	mgw-mx06.nokia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754371Ab0E0RTo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 May 2010 13:19:44 -0400
+Date: Thu, 27 May 2010 20:18:33 +0300
+From: Felipe Balbi <felipe.balbi@nokia.com>
+To: ext Thomas Gleixner <tglx@linutronix.de>
+Cc: Matthew Garrett <mjg59@srcf.ucam.org>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
+       Arve =?iso-8859-1?B?SGr4bm5lduVn?= <arve@android.com>,
+       Florian Mickler <florian@mickler.org>,
+       Vitaly Wool <vitalywool@gmail.com>,
+       Peter Zijlstra <peterz@infradead.org>,
+       LKML <linux-kernel@vger.kernel.org>,
+       "Paul@smtp1.linux-foundation.org" <Paul@smtp1.linux-foundation.org>,
+       "Balbi Felipe (Nokia-D/Helsinki)" <felipe.balbi@nokia.com>,
+       Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
+       Linux PM <linux-pm@lists.linux-foundation.org>
+Subject: Re: [linux-pm] [PATCH 0/8] Suspend block api (version 8)
+Message-ID: <20100527171833.GD9625@nokia.com>
+Reply-To: felipe.balbi@nokia.com
+References: <20100526142430.327ccbc4@schatten.dmk.lab>
+ <20100526141612.3e2e0443@lxorguk.ukuu.org.uk>
+ <AANLkTin97MMu-XO_Lk-snefBWz2ymhS0Qi1y1RxLwdVA@mail.gmail.com>
+ <20100527003943.07c17f85@lxorguk.ukuu.org.uk>
+ <20100527140655.GA28048@srcf.ucam.org>
+ <alpine.LFD.2.00.1005271642440.3032@localhost.localdomain>
+ <20100527155201.GA31937@srcf.ucam.org>
+ <20100527171615.15a1fd3d@lxorguk.ukuu.org.uk>
+ <20100527161943.GA32764@srcf.ucam.org>
+ <alpine.LFD.2.00.1005271901020.3032@localhost.localdomain>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=us-ascii; format=flowed
 Content-Disposition: inline
-In-Reply-To: <4BFEA7CD.6020703@cs.vu.nl>
+In-Reply-To: <alpine.LFD.2.00.1005271901020.3032@localhost.localdomain>
 User-Agent: Mutt/1.5.20 (2009-06-14)
+X-OriginalArrivalTime: 27 May 2010 17:18:43.0609 (UTC) FILETIME=[A8818890:01CAFDC0]
+X-Nokia-AV: Clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu 27-05-10 19:11:41, Erik van der Kouwe wrote:
-> Dear all,
-> 
-> >  Out of curiosity: Are you really using MINIX? The code is dead for a
-> >long time...
-> 
-> MINIX is very much alive, see http://www.minix3.org/.
-> 
-> I work in the team developing MINIX. Being able to exchange data
-> between Linux and MINIX is very useful for us and there is no other
-> filesystem that the two share. We have been aware of (and annoyed
-> by) this problem for a long time, but didn't know the cause (and
-> didn't have much time to check). Feiran is a GSoC student working on
-> our project and he found the issue when setting up his development
-> environment so then we decided to bring out a patch.
-  OK, I was more speaking about the Linux MINIX filesystem driver but it's
-good to know someone is still using it :) Thanks for education.
+Hi,
 
-								Honza
+On Thu, May 27, 2010 at 07:04:38PM +0200, ext Thomas Gleixner wrote:
+>Opportunistic suspend is just a deep idle state, nothing else. If the
+>overall QoS requirements allow to enter that deep idle state then the
+>kernel goes there. Same decision as for all other idle states. You
+>don't need any user space blocker for this decision, just sensible QoS
+>information.
+
+agree completely with you. Adding virtual differences between power 
+states is a bad idea and causes unnecessary complication to the system. 
+If we have a generic way of describing desired latencies (irq, wakeup, 
+throughput, whatever), then the kernel should decide what's the best 
+power state for the current situation.
+
 -- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+balbi
+
+DefectiveByDesign.org
