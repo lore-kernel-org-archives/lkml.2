@@ -1,93 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756721Ab0E0UnB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 May 2010 16:43:01 -0400
-Received: from cantor.suse.de ([195.135.220.2]:39444 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750744Ab0E0Um7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 May 2010 16:42:59 -0400
-Date: Thu, 27 May 2010 22:42:44 +0200
-From: Jan Kara <jack@suse.cz>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, linux-fsdevel@vger.kernel.org
-Subject: [PULL REQUEST] Quota mount handling and various fixes
-Message-ID: <20100527204244.GF3576@quack.suse.cz>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1757047Ab0E0UrM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 May 2010 16:47:12 -0400
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:40540 "EHLO
+	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754592Ab0E0UrK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 May 2010 16:47:10 -0400
+Date: Thu, 27 May 2010 21:53:47 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Matthew Garrett <mjg59@srcf.ucam.org>
+Cc: Arve =?ISO-8859-14?B?SGr4bm5lduVn?= <arve@android.com>,
+       Florian Mickler <florian@mickler.org>,
+       Vitaly Wool <vitalywool@gmail.com>,
+       Peter Zijlstra <peterz@infradead.org>,
+       LKML <linux-kernel@vger.kernel.org>, Paul@smtp1.linux-foundation.org,
+       felipe.balbi@nokia.com,
+       Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
+       Linux PM <linux-pm@lists.linux-foundation.org>
+Subject: Re: [linux-pm] [PATCH 0/8] Suspend block api (version 8)
+Message-ID: <20100527215347.431c4934@lxorguk.ukuu.org.uk>
+In-Reply-To: <20100527201155.GB7449@srcf.ucam.org>
+References: <20100527160714.GB31937@srcf.ucam.org>
+	<20100527174131.18fd1c72@lxorguk.ukuu.org.uk>
+	<20100527165210.GA1062@srcf.ucam.org>
+	<20100527190204.14546caa@lxorguk.ukuu.org.uk>
+	<20100527181239.GF3543@srcf.ucam.org>
+	<20100527194840.5bca973f@lxorguk.ukuu.org.uk>
+	<20100527185658.GA5703@srcf.ucam.org>
+	<20100527202538.7d2d7f3c@lxorguk.ukuu.org.uk>
+	<20100527192926.GA6977@srcf.ucam.org>
+	<20100527205333.676ad65e@lxorguk.ukuu.org.uk>
+	<20100527201155.GB7449@srcf.ucam.org>
+X-Mailer: Claws Mail 3.7.5 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+> > The event was not lost.
+> 
+> Not lost, but not delivered. So you need your policy agent to send 
 
-  Hello Linus,
+it will be delivered next time the process wakes. It's not lost.
 
-  this changeset contains Christoph's quota mount handling reorg series,
-removal of dead quota code from UDF, UFS, pohmelfs and a couple of fixes.
-The tree has now sustained some xfsqa runs for ext2, ext3, ext4, and
-reiserfs so hopefully no new bugs are introduced.
-  Could you please pull from
+> SIGCONT when you receive any wakeup event, which either means proxying 
+> all your network traffic through your policy agent or having some 
+> mechanism for alerting the policy agent whenever you leave the deep idle 
+> state.
 
-git://git.kernel.org/pub/scm/linux/kernel/git/jack/linux-fs-2.6.git for_linus
+You didn't mention that requirement last time.
 
-  to get:
+> > > also the race of an application being in the middle of handling a wakeup 
+> > > event when you send it the signal.
+> > 
+> > sigmask()
+> 
+> Doesn't help - I may be hit by the signal between the poll() unblocking 
+> and me having the opportunity to call sigmask().
 
-Christoph Hellwig (6):
-      quota: move remount handling into the filesystem
-      quota: kill the vfs_dq_off and vfs_dq_quota_on_remount wrappers
-      quota: move unmount handling into the filesystem
-      quota: drop remount argument to ->quota_on and ->quota_off
-      quota: explicitly set ->dq_op and ->s_qcop
-      quota: rename default quotactl methods to dquot_
+ppoll(). This is all existing solved stuff.
 
-Dmitry Monakhov (2):
-      pohmelfs: Remove dead quota code
-      quota: Convert quota statistics to generic percpu_counter
-
-Jan Kara (5):
-      ocfs2: Fix use after free on remount read-only
-      udf: Remove dead quota code
-      ufs: Remove dead quota code
-      reiserfs: Fix resuming of quotas on remount read-write
-      quota: Fixup dquot_transfer
-
-Venkatesh Pallipadi (1):
-      ext3 uses rb_node = NULL; to zero rb_root.
-
-The diffstat is
-
- drivers/staging/pohmelfs/inode.c |    8 --
- fs/ext2/super.c                  |   20 ++++
- fs/ext3/dir.c                    |    2 +-
- fs/ext3/super.c                  |   38 +++++---
- fs/ext4/super.c                  |   37 +++++---
- fs/jfs/super.c                   |   16 +++
- fs/ocfs2/super.c                 |   50 +++++------
- fs/quota/dquot.c                 |  190 ++++++++++++++++----------------------
- fs/quota/quota.c                 |    4 +-
- fs/reiserfs/super.c              |   48 ++++++----
- fs/super.c                       |   13 +--
- fs/udf/balloc.c                  |   43 +--------
- fs/udf/file.c                    |   26 +-----
- fs/udf/ialloc.c                  |   21 +----
- fs/udf/inode.c                   |    5 -
- fs/udf/namei.c                   |   20 ----
- fs/udf/super.c                   |   13 ++-
- fs/udf/udfdecl.h                 |    1 -
- fs/ufs/balloc.c                  |   24 -----
- fs/ufs/file.c                    |    3 +-
- fs/ufs/ialloc.c                  |   13 ---
- fs/ufs/inode.c                   |    4 -
- fs/ufs/namei.c                   |   16 ---
- fs/ufs/super.c                   |  110 +----------------------
- fs/ufs/truncate.c                |   10 --
- include/linux/quota.h            |   20 +---
- include/linux/quotaops.h         |   79 +++++++---------
- 27 files changed, 274 insertions(+), 560 deletions(-)
-
-							Thanks
-								Honza
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+Alan
