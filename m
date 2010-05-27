@@ -1,68 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759360Ab0E0UMQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 May 2010 16:12:16 -0400
-Received: from cavan.codon.org.uk ([93.93.128.6]:50274 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753897Ab0E0UMO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 May 2010 16:12:14 -0400
-Date: Thu, 27 May 2010 21:11:56 +0100
-From: Matthew Garrett <mjg59@srcf.ucam.org>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: Arve =?iso-8859-1?B?SGr4bm5lduVn?= <arve@android.com>,
-       Florian Mickler <florian@mickler.org>,
-       Vitaly Wool <vitalywool@gmail.com>,
-       Peter Zijlstra <peterz@infradead.org>,
-       LKML <linux-kernel@vger.kernel.org>, Paul@smtp1.linux-foundation.org,
-       felipe.balbi@nokia.com,
-       Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
-       Linux PM <linux-pm@lists.linux-foundation.org>
-Subject: Re: [linux-pm] [PATCH 0/8] Suspend block api (version 8)
-Message-ID: <20100527201155.GB7449@srcf.ucam.org>
-References: <20100527160714.GB31937@srcf.ucam.org> <20100527174131.18fd1c72@lxorguk.ukuu.org.uk> <20100527165210.GA1062@srcf.ucam.org> <20100527190204.14546caa@lxorguk.ukuu.org.uk> <20100527181239.GF3543@srcf.ucam.org> <20100527194840.5bca973f@lxorguk.ukuu.org.uk> <20100527185658.GA5703@srcf.ucam.org> <20100527202538.7d2d7f3c@lxorguk.ukuu.org.uk> <20100527192926.GA6977@srcf.ucam.org> <20100527205333.676ad65e@lxorguk.ukuu.org.uk>
+	id S1759302Ab0E0UNP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 May 2010 16:13:15 -0400
+Received: from hera.kernel.org ([140.211.167.34]:48199 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756045Ab0E0UNM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 May 2010 16:13:12 -0400
+Date: Thu, 27 May 2010 20:12:54 GMT
+From: "tip-bot for H. Peter Anvin" <hpa@linux.intel.com>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
+       eric.dumazet@gmail.com, tglx@linutronix.de, hpa@linux.intel.com
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+       eric.dumazet@gmail.com, tglx@linutronix.de, hpa@linux.intel.com
+In-Reply-To: <4BF2FF82.7090005@zytor.com>
+References: <4BF2FF82.7090005@zytor.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/urgent] x86, cpufeature: Unbreak compile with gcc 3.x
+Message-ID: <tip-1ba4f22c426ba04b00fd717318d50620c621a0e1@git.kernel.org>
+Git-Commit-ID: 1ba4f22c426ba04b00fd717318d50620c621a0e1
+X-Mailer: tip-git-log-daemon
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-In-Reply-To: <20100527205333.676ad65e@lxorguk.ukuu.org.uk>
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Thu, 27 May 2010 20:12:55 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 27, 2010 at 08:53:33PM +0100, Alan Cox wrote:
-> On Thu, 27 May 2010 20:29:26 +0100
-> Matthew Garrett <mjg59@srcf.ucam.org> wrote:
-> > But wakeup events won't be delivered to STOPped processes, and there's 
-> 
-> Try the following
-> 
-> 	cat <pipe
-> 	kill -STOP catpid
-> 
-> 	echo "wombats are cool" > pipe
-> 	kill -CONT catpid
-> 
-> it will echo "wombats are cool"
-> 
-> The event was not lost.
+Commit-ID:  1ba4f22c426ba04b00fd717318d50620c621a0e1
+Gitweb:     http://git.kernel.org/tip/1ba4f22c426ba04b00fd717318d50620c621a0e1
+Author:     H. Peter Anvin <hpa@linux.intel.com>
+AuthorDate: Thu, 27 May 2010 12:02:00 -0700
+Committer:  H. Peter Anvin <hpa@linux.intel.com>
+CommitDate: Thu, 27 May 2010 12:02:00 -0700
 
-Not lost, but not delivered. So you need your policy agent to send 
-SIGCONT when you receive any wakeup event, which either means proxying 
-all your network traffic through your policy agent or having some 
-mechanism for alerting the policy agent whenever you leave the deep idle 
-state.
+x86, cpufeature: Unbreak compile with gcc 3.x
 
-> > also the race of an application being in the middle of handling a wakeup 
-> > event when you send it the signal.
-> 
-> sigmask()
+gcc 3 is too braindamaged to be able to compile static_cpu_has() --
+apparently it can't tell that a constant passed to an inline function
+is still a constant -- so if we're using gcc 3, just use the dynamic
+test.  This is bad for performance, but if you care about performance,
+don't use an ancient, known-to-optimize-poorly compiler.
 
-Doesn't help - I may be hit by the signal between the poll() unblocking 
-and me having the opportunity to call sigmask().
+Reported-and-tested-by: Eric Dumazet <eric.dumazet@gmail.com>
+LKML-Reference: <4BF2FF82.7090005@zytor.com>
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+---
+ arch/x86/include/asm/cpufeature.h |    7 +++++++
+ 1 files changed, 7 insertions(+), 0 deletions(-)
 
--- 
-Matthew Garrett | mjg59@srcf.ucam.org
+diff --git a/arch/x86/include/asm/cpufeature.h b/arch/x86/include/asm/cpufeature.h
+index dca9c54..4681459 100644
+--- a/arch/x86/include/asm/cpufeature.h
++++ b/arch/x86/include/asm/cpufeature.h
+@@ -332,6 +332,7 @@ static __always_inline __pure bool __static_cpu_has(u8 bit)
+ #endif
+ }
+ 
++#if __GNUC__ >= 4
+ #define static_cpu_has(bit)					\
+ (								\
+ 	__builtin_constant_p(boot_cpu_has(bit)) ?		\
+@@ -340,6 +341,12 @@ static __always_inline __pure bool __static_cpu_has(u8 bit)
+ 		__static_cpu_has(bit) :				\
+ 		boot_cpu_has(bit)				\
+ )
++#else
++/*
++ * gcc 3.x is too stupid to do the static test; fall back to dynamic.
++ */
++#define static_cpu_has(bit) boot_cpu_has(bit)
++#endif
+ 
+ #endif /* defined(__KERNEL__) && !defined(__ASSEMBLY__) */
+ 
