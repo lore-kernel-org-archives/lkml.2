@@ -1,67 +1,160 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933225Ab0E0WB5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 May 2010 18:01:57 -0400
-Received: from mail1.cray.com ([136.162.62.100]:47171 "EHLO mail1.cray.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933168Ab0E0WBz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 May 2010 18:01:55 -0400
-X-Greylist: delayed 4650 seconds by postgrey-1.27 at vger.kernel.org; Thu, 27 May 2010 18:01:52 EDT
-Message-ID: <4BFED954.8060807@cray.com>
-Date: Thu, 27 May 2010 13:43:00 -0700
-From: Doug Doan <dougd@cray.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100330 Fedora/3.0.4-1.fc12 Thunderbird/3.0.4
-MIME-Version: 1.0
-To: linux-mm@kvack.org
-CC: linux-kernel@vger.kernel.org, andi@firstfloor.org, lee.schermerhorn@hp.com,
-       rientjes@google.com, mel@csn.ul.ie, akpm@linux-foundation.org
-Subject: [PATCH] hugetlb: call mmu notifiers on hugepage cow
-Content-Type: multipart/mixed;
-	boundary="------------000008070908080203040308"
+	id S933251Ab0E0WDn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 May 2010 18:03:43 -0400
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:27201 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757345Ab0E0WDl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 May 2010 18:03:41 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,5995"; a="42641626"
+Subject: [GIT PULL] MSM serial driver update for 2.6.35
+From: Daniel Walker <dwalker@codeaurora.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 27 May 2010 15:03:39 -0700
+Message-ID: <1274997819.10998.44.camel@c-dwalke-linux.qualcomm.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---------------000008070908080203040308
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+Hi Linus,
 
-From: Doug Doan <dougd@cray.com>
+	Just one fix for our serial driver to get it working with MSM7x30,
+which was added this merge window.
 
-When a copy-on-write occurs, we take one of two paths in handle_mm_fault: 
-through handle_pte_fault for normal pages, or through hugetlb_fault for huge pages.
+Daniel
 
-In the normal page case, we eventually get to do_wp_page and call mmu notifiers 
-via ptep_clear_flush_notify. There is no callout to the mmmu notifiers in the 
-huge page case. This patch fixes that.
 
-Signed-off-by: Doug Doan <dougd@cray.com>
----
+The following changes since commit be1066bbcd443a65df312fdecea7e4959adedb45:
 
---------------000008070908080203040308
-Content-Type: text/plain; name="patch"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: attachment; filename="patch"
+  Merge git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/staging-2.6 (2010-04-30 10:16:55 -0700)
 
---- mm/hugetlb.c.orig	2010-05-27 13:07:58.569546314 -0700
-+++ mm/hugetlb.c	2010-05-26 14:41:06.449296524 -0700
-@@ -2345,11 +2345,17 @@ retry_avoidcopy:
- 	ptep = huge_pte_offset(mm, address & huge_page_mask(h));
- 	if (likely(pte_same(huge_ptep_get(ptep), pte))) {
- 		/* Break COW */
-+		mmu_notifier_invalidate_range_start(mm,
-+			address & huge_page_mask(h),
-+			(address & huge_page_mask(h)) + huge_page_size(h));
- 		huge_ptep_clear_flush(vma, address, ptep);
- 		set_huge_pte_at(mm, address, ptep,
- 				make_huge_pte(vma, new_page, 1));
- 		/* Make the old page be freed below */
- 		new_page = old_page;
-+		mmu_notifier_invalidate_range_end(mm,
-+			address & huge_page_mask(h),
-+			(address & huge_page_mask(h)) + huge_page_size(h));
- 	}
- 	page_cache_release(new_page);
- 	page_cache_release(old_page);
+are available in the git repository at:
 
---------------000008070908080203040308--
+  git://codeaurora.org/quic/kernel/dwalker/linux-msm.git msm-serial
+
+Abhijeet Dharmapurikar (1):
+      msm: serial: fix serial on MSM7x30
+
+ drivers/serial/msm_serial.c |   21 ++-------------
+ drivers/serial/msm_serial.h |   56 +++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 59 insertions(+), 18 deletions(-)
+
+diff --git a/drivers/serial/msm_serial.c b/drivers/serial/msm_serial.c
+index ecdc0fa..f8c816e 100644
+--- a/drivers/serial/msm_serial.c
++++ b/drivers/serial/msm_serial.c
+@@ -41,19 +41,6 @@ struct msm_port {
+ 	unsigned int		imr;
+ };
+ 
+-#define UART_TO_MSM(uart_port)	((struct msm_port *) uart_port)
+-
+-static inline void msm_write(struct uart_port *port, unsigned int val,
+-			     unsigned int off)
+-{
+-	__raw_writel(val, port->membase + off);
+-}
+-
+-static inline unsigned int msm_read(struct uart_port *port, unsigned int off)
+-{
+-	return __raw_readl(port->membase + off);
+-}
+-
+ static void msm_stop_tx(struct uart_port *port)
+ {
+ 	struct msm_port *msm_port = UART_TO_MSM(port);
+@@ -320,11 +307,7 @@ static void msm_init_clock(struct uart_port *port)
+ 	struct msm_port *msm_port = UART_TO_MSM(port);
+ 
+ 	clk_enable(msm_port->clk);
+-
+-	msm_write(port, 0xC0, UART_MREG);
+-	msm_write(port, 0xB2, UART_NREG);
+-	msm_write(port, 0x7D, UART_DREG);
+-	msm_write(port, 0x1C, UART_MNDREG);
++	msm_serial_set_mnd_regs(port);
+ }
+ 
+ static int msm_startup(struct uart_port *port)
+@@ -706,6 +689,8 @@ static int __init msm_serial_probe(struct platform_device *pdev)
+ 	if (unlikely(IS_ERR(msm_port->clk)))
+ 		return PTR_ERR(msm_port->clk);
+ 	port->uartclk = clk_get_rate(msm_port->clk);
++	printk(KERN_INFO "uartclk = %d\n", port->uartclk);
++
+ 
+ 	resource = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+ 	if (unlikely(!resource))
+diff --git a/drivers/serial/msm_serial.h b/drivers/serial/msm_serial.h
+index 689f1fa..f6ca9ca 100644
+--- a/drivers/serial/msm_serial.h
++++ b/drivers/serial/msm_serial.h
+@@ -114,4 +114,60 @@
+ #define UART_MISR	0x0010
+ #define UART_ISR	0x0014
+ 
++#define UART_TO_MSM(uart_port)	((struct msm_port *) uart_port)
++
++static inline
++void msm_write(struct uart_port *port, unsigned int val, unsigned int off)
++{
++	__raw_writel(val, port->membase + off);
++}
++
++static inline
++unsigned int msm_read(struct uart_port *port, unsigned int off)
++{
++	return __raw_readl(port->membase + off);
++}
++
++/*
++ * Setup the MND registers to use the TCXO clock.
++ */
++static inline void msm_serial_set_mnd_regs_tcxo(struct uart_port *port)
++{
++	msm_write(port, 0x06, UART_MREG);
++	msm_write(port, 0xF1, UART_NREG);
++	msm_write(port, 0x0F, UART_DREG);
++	msm_write(port, 0x1A, UART_MNDREG);
++}
++
++/*
++ * Setup the MND registers to use the TCXO clock divided by 4.
++ */
++static inline void msm_serial_set_mnd_regs_tcxoby4(struct uart_port *port)
++{
++	msm_write(port, 0x18, UART_MREG);
++	msm_write(port, 0xF6, UART_NREG);
++	msm_write(port, 0x0F, UART_DREG);
++	msm_write(port, 0x0A, UART_MNDREG);
++}
++
++static inline
++void msm_serial_set_mnd_regs_from_uartclk(struct uart_port *port)
++{
++	if (port->uartclk == 19200000)
++		msm_serial_set_mnd_regs_tcxo(port);
++	else
++		msm_serial_set_mnd_regs_tcxoby4(port);
++}
++
++/*
++ * TROUT has a specific defect that makes it report it's uartclk
++ * as 19.2Mhz (TCXO) when it's actually 4.8Mhz (TCXO/4). This special
++ * cases TROUT to use the right clock.
++ */
++#ifdef CONFIG_MACH_TROUT
++#define msm_serial_set_mnd_regs msm_serial_set_mnd_regs_tcxoby4
++#else
++#define msm_serial_set_mnd_regs msm_serial_set_mnd_regs_from_uartclk
++#endif
++
+ #endif	/* __DRIVERS_SERIAL_MSM_SERIAL_H */
+
+
