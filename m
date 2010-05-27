@@ -1,61 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756553Ab0E0Gv3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 May 2010 02:51:29 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:36200 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754176Ab0E0Gv1 (ORCPT
+	id S1755506Ab0E0Gv0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 May 2010 02:51:26 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:60738 "EHLO
+	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753584Ab0E0GvY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 May 2010 02:51:27 -0400
-Date: Wed, 26 May 2010 23:51:07 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: piotr@hosowicz.com, linux-kernel@vger.kernel.org,
-       Jens Axboe <jens.axboe@oracle.com>, Divyesh Shah <dpshah@google.com>
-Subject: Re: BUG: using smp_processor_id() in preemptible [00000000] code:
- icedove-bin/5449
-Message-Id: <20100526235107.77e66ce0.akpm@linux-foundation.org>
-In-Reply-To: <1274942798.27810.3584.camel@twins>
-References: <4BF9EC69.5030709@example.com>
-	<1274777422.5882.591.camel@twins>
-	<20100526160252.325f8357.akpm@linux-foundation.org>
-	<1274942798.27810.3584.camel@twins>
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 27 May 2010 02:51:24 -0400
+Date: Thu, 27 May 2010 02:51:29 -0400
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Paul Mundt <lethal@linux-sh.org>
+Cc: Sundar R IYER <sundar.iyer@stericsson.com>, Sundar <sunder.svit@gmail.com>,
+       Viresh KUMAR <viresh.kumar@st.com>,
+       Rajeev KUMAR <rajeev-dlh.kumar@st.com>,
+       Linus WALLEIJ <linus.walleij@stericsson.com>,
+       Armando VISCONTI <armando.visconti@st.com>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       Vipin KUMAR <vipin.kumar@st.com>, Shiraz HASHIM <shiraz.hashim@st.com>,
+       STEricsson_nomadik_linux <STEricsson_nomadik_linux@list.st.com>,
+       "linux-pm@lists.linux-foundation.org" 
+	<linux-pm@lists.linux-foundation.org>,
+       Magnus Damm <magnus.damm@gmail.com>
+Subject: Re: [linux-pm] Power Domain Framework
+Message-ID: <20100527065129.GA22419@opensource.wolfsonmicro.com>
+References: <CEE6BB42CAD6E947908279175AF8470A025A726240@EXDCVYMBSTM006.EQ1STM.local>
+ <1274131108.2698.161.camel@finisterre.wolfsonmicro.main>
+ <CEE6BB42CAD6E947908279175AF8470A025A72624A@EXDCVYMBSTM006.EQ1STM.local>
+ <1274134636.2698.170.camel@finisterre.wolfsonmicro.main>
+ <1274162450.17303.35.camel@bnru01>
+ <AANLkTinTdTp_X4lGtZ0hCaVJN5GmvI0tXR1RTRkRNkjN@mail.gmail.com>
+ <20100524033859.GB24480@opensource.wolfsonmicro.com>
+ <33A307AF30D7BF4F811B1568FE7A9B180B67C60C@EXDCVYMBSTM006.EQ1STM.local>
+ <20100526210728.GB19188@opensource.wolfsonmicro.com>
+ <20100527030059.GA30505@linux-sh.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100527030059.GA30505@linux-sh.org>
+X-Cookie: You will be awarded some great honor.
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 27 May 2010 08:46:38 +0200 Peter Zijlstra <peterz@infradead.org> wrote:
+On Thu, May 27, 2010 at 12:01:00PM +0900, Paul Mundt wrote:
 
-> On Wed, 2010-05-26 at 16:02 -0700, Andrew Morton wrote:
-> 
-> > How is anyone supposed to use this?  What are the semantics of this
-> > thing?  What are the units of its return value?  What is the base value
-> > of its return value?  Does it return different times on different CPUs?
-> > I assume so, otherwise why does sched_clock_cpu() exist?  <looks at
-> > the sched_clock_cpu() documentation, collapses in giggles>
-> 
-> The point of the whole sched_clock_cpu() thing is to provide a fairly
-> high resolution clock with bounded drift between cpus.
-> 
-> It also promises to be monotonic per cpu argument, that is,
-> sched_clock_cpu(j) will, for a constant j always return a monotonic
-> increasing timestamp.
-> 
-> It doesn't make much promises about its base (although people tend to
-> want it to start at 0 on boot, but the users really shouldn't care).
-> 
-> sched_clock() doesn't promise either bounded drift between cpus nor
-> monotonicity.
-> 
+> Having said that, building on top of the regulator API for these cases
+> wouldn't be that much work either, since it largely has all of the
+> infrastructure in place (ie, the static consumer case).
 
-OK, well please document these subtleties things in a very obvious place.
+On the other hand given that all you're really getting here is the
+enable/disable tracking it's also pretty easy to just copy.
 
-Right now the code is a landmine.  Some poor innocent drivers/foo/
-developer can use them and add fantastically subtle
-once-per-million-machine-year lockup-causing bugs which he'll never be
-able to diagnose.
+> > It's perfectly sensible for the power domain to be a regulator consumer,
+> > but having the individual consumer devices be regulator consumers seems
+> > non-obvious.
 
+> The common case on SH is that certain blocks are only available in
+> certain power domains, while the on/off control remains uniform (albeit
+> periodically ineffectual) regardless of state. We also don't have any
+> ability to regulate voltage outside of things like PCMCIA.
+
+That's also the case for the power domains on ARMs at the minute, though
+the bus control element is pretty common and sometimes gets rolled in to
+the operating modes since it's the same IP blocks that share the
+resources.
+
+> On/off control in this context is completely orthoganol from clock
+> control in that many peripherals without a specific input clock still
+> implement power gating in the same way as those that do (this is the case
+> for things like the L2 cache, TLB, breakpoint controller, etc). These are
+> presently handled through the clock API largely because there was really
+> no better fit for them at the time.
+
+Yup, that's pretty common.  The clocking stuff mostly comes into play
+when your operating points also include an element of control for the
+buses that the devices are hanging off - you end up doing DVFS for the
+blocks, normally over the full block rather tha individual blocks.  It's
+this stuff that usually has some crossover with regulators, though
+mostly as consumers.
