@@ -1,43 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932681Ab0E0VfX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 May 2010 17:35:23 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:50025 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755400Ab0E0VfV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 May 2010 17:35:21 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Peter Zijlstra <peterz@infradead.org>
-Subject: Re: [linux-pm] [PATCH 0/8] Suspend block api (version 8)
-Date: Thu, 27 May 2010 23:36:26 +0200
-User-Agent: KMail/1.12.4 (Linux/2.6.34-rjw; KDE/4.3.5; x86_64; ; )
-Cc: Alan Stern <stern@rowland.harvard.edu>,
-       Matthew Garrett <mjg59@srcf.ucam.org>,
-       LKML <linux-kernel@vger.kernel.org>,
-       Florian Mickler <florian@mickler.org>,
-       Linux PM <linux-pm@lists.linux-foundation.org>,
+	id S932718Ab0E0Vgz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 May 2010 17:36:55 -0400
+Received: from cavan.codon.org.uk ([93.93.128.6]:35973 "EHLO
+	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753154Ab0E0Vgx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 May 2010 17:36:53 -0400
+Date: Thu, 27 May 2010 22:36:35 +0100
+From: Matthew Garrett <mjg59@srcf.ucam.org>
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: Peter Zijlstra <peterz@infradead.org>,
        Thomas Gleixner <tglx@linutronix.de>,
+       Arve =?iso-8859-1?B?SGr4bm5lduVn?= <arve@android.com>,
+       Florian Mickler <florian@mickler.org>,
+       Vitaly Wool <vitalywool@gmail.com>, LKML <linux-kernel@vger.kernel.org>,
+       Paul@smtp1.linux-foundation.org, felipe.balbi@nokia.com,
        Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
-       felipe.balbi@nokia.com, Alan Cox <alan@lxorguk.ukuu.org.uk>
-References: <Pine.LNX.4.44L0.1005271329460.3239-100000@iolanthe.rowland.org> <1274981871.27810.5650.camel@twins>
-In-Reply-To: <1274981871.27810.5650.camel@twins>
+       Linux PM <linux-pm@lists.linux-foundation.org>
+Subject: Re: [linux-pm] [PATCH 0/8] Suspend block api (version 8)
+Message-ID: <20100527213635.GA9916@srcf.ucam.org>
+References: <20100527155201.GA31937@srcf.ucam.org> <20100527171615.15a1fd3d@lxorguk.ukuu.org.uk> <20100527161943.GA32764@srcf.ucam.org> <alpine.LFD.2.00.1005271901020.3032@localhost.localdomain> <20100527170740.GA1980@srcf.ucam.org> <1274980391.27810.5552.camel@twins> <20100527171644.GA2468@srcf.ucam.org> <1274980856.27810.5582.camel@twins> <20100527172510.GC2468@srcf.ucam.org> <20100527223751.7af3b5ee@lxorguk.ukuu.org.uk>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201005272336.26643.rjw@sisk.pl>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100527223751.7af3b5ee@lxorguk.ukuu.org.uk>
+User-Agent: Mutt/1.5.18 (2008-05-17)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 27 May 2010, Peter Zijlstra wrote:
-> On Thu, 2010-05-27 at 13:32 -0400, Alan Stern wrote:
+On Thu, May 27, 2010 at 10:37:51PM +0100, Alan Cox wrote:
+> On Thu, 27 May 2010 18:25:10 +0100
+> Matthew Garrett <mjg59@srcf.ucam.org> wrote:
+> > How (and why) does the WoL (which may be *any* packet, not just a magic 
+> > one) turn the screen back on?
 > 
-> > On some platforms (like those with ACPI), deeper power-savings are
-> > available by using forced suspend than by using idle. 
+> Well on my laptop today it works like this
 > 
-> Sounds like something that's fixable, doesn't it?
+> A WoL packet arrives
+> The CPU resumes
+> Depp process, chipset and laptop BIOS magic happens
+> The kernel gets called
+> The kernel lets interested people know a resume occurred
 
-The fix would probably have to involve rewriting the ACPI spec.
+No it doesn't. The kernel continues executing anything that was on the 
+runqueue before the scheduler stopped. If you're using idle-based 
+suspend then there's nothing on the runqueue - the application that 
+should be scheduled because of the event is blocked on writing to the 
+screen.
 
-Rafael
+-- 
+Matthew Garrett | mjg59@srcf.ucam.org
