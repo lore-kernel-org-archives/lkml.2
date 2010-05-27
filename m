@@ -1,99 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757883Ab0E0QVy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 May 2010 12:21:54 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:42142 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755434Ab0E0QVw (ORCPT
+	id S1757921Ab0E0QV5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 May 2010 12:21:57 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:56755 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757877Ab0E0QVy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 May 2010 12:21:52 -0400
+	Thu, 27 May 2010 12:21:54 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=from:to:subject:date:user-agent:cc:references:in-reply-to
-         :mime-version:content-type:content-transfer-encoding:message-id;
-        b=b53KSmPvnfu/UiuXbXXJXaK3VlRCrBENsngtRU2OLjuY3HhyDt0jN9lrLgNq0B5nFr
-         H7+2fbSkbQevGWgKOsqmP5mpwt65ZARwN2lFcsq+RXNol+iRycyZO0NPXt0Ie1QTdfU8
-         2fRmoU1wZI1HaO88vmiboavvszebXugqXgAC0=
+        h=date:from:to:cc:subject:message-id:mime-version:content-type
+         :content-disposition:user-agent;
+        b=w1K6xjhSrBpFQZkwQ/Pzzx0Yd0+17PCAlGUdJQcF8HJufrt57KwHzlDOeFFt8OrkUy
+         P8sPHjDatXlKvOy50rZ5Sh1NX0R6aRF64Ewv+tF7+CENERDvJ8emKOtkizOSSR9mBEtw
+         jpjrdcOfHzo6czk2+0VMLw6VnqfR9O3wPAmGM=
+Date: Thu, 27 May 2010 09:14:56 -0700
 From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Julia Lawall <julia@diku.dk>
-Subject: Re: [PATCH 9/11] drivers/platform/x86: Eliminate a NULL pointer dereference
-Date: Thu, 27 May 2010 09:21:42 -0700
-User-Agent: KMail/1.13.2 (Linux/2.6.32.12-115.fc12.x86_64; KDE/4.4.2; x86_64; ; )
-Cc: Mattia Dongili <malattia@linux.it>, Matthew Garrett <mjg@redhat.com>,
-       platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org,
-       kernel-janitors@vger.kernel.org
-References: <Pine.LNX.4.64.1005271436460.5422@ask.diku.dk>
-In-Reply-To: <Pine.LNX.4.64.1005271436460.5422@ask.diku.dk>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+       linux-input@vger.kernel.org
+Subject: [git pull] Input updates for 2.6.35-rc0
+Message-ID: <20100527161455.GA558@core.coreip.homeip.net>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201005270921.43049.dmitry.torokhov@gmail.com>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 27 May 2010 05:37:00 am Julia Lawall wrote:
-> From: Julia Lawall <julia@diku.dk>
-> 
-> Give different error messages if device_enum is NULL or if its type field
-> has the wrong value.
-> 
-> A simplified version of the semantic match that finds this problem is as
-> follows: (http://coccinelle.lip6.fr/)
-> 
-> // <smpl>
-> @r exists@
-> expression E,E1;
-> identifier f;
-> statement S1,S2,S3;
-> @@
-> 
-> if ((E == NULL && ...) || ...)
-> {
->   ... when != if (...) S1 else S2
->       when != E = E1
-> * E->f
->   ... when any
->   return ...;
-> }
-> else S3
-> // </smpl>
-> 
-> Signed-off-by: Julia Lawall <julia@diku.dk>
-> 
-> ---
-> This may be too much clutter for little benefit.  Other, perhaps less
-> informative solutions are possible.
+Hi Linus,
 
-Verbosity should be OK but I think that mixing pr_xxx() and naked printks
-in the same patch is not very nice.
+Please pull from:
 
-> 
->  drivers/platform/x86/sony-laptop.c |    8 ++++++--
->  1 file changed, 6 insertions(+), 2 deletions(-)
-> 
-> diff --git a/drivers/platform/x86/sony-laptop.c
-> b/drivers/platform/x86/sony-laptop.c index 1387c5f..9db8d2b 100644
-> --- a/drivers/platform/x86/sony-laptop.c
-> +++ b/drivers/platform/x86/sony-laptop.c
-> @@ -1196,8 +1196,12 @@ static void sony_nc_rfkill_setup(struct acpi_device
-> *device) }
-> 
->  	device_enum = (union acpi_object *) buffer.pointer;
-> -	if (!device_enum || device_enum->type != ACPI_TYPE_BUFFER) {
-> -		printk(KERN_ERR "Invalid SN06 return object 0x%.2x\n",
-> +	if (!device_enum) {
-> +		pr_err("Invalid SN06 return object\n");
-> +		goto out_no_enum;
-> +	}
-> +	if (device_enum->type != ACPI_TYPE_BUFFER) {
-> +		printk(KERN_ERR "Invalid SN06 return object type 0x%.2x\n",
->  				device_enum->type);
->  		goto out_no_enum;
->  	}
+	git://git.kernel.org/pub/scm/linux/kernel/git/dtor/input.git for-linus
+or
+	master.kernel.org:/pub/scm/linux/kernel/git/dtor/input.git for-linus
 
-Thanks.
+to receive some more updates for the input subsystem.
+
+Changelog:
+---------
+
+Daniel Mack (1):
+      Input: use ABS_CNT rather than (ABS_MAX + 1)
+
+Haojian Zhuang (1):
+      Input: enable onkey driver of max8925
+
+Kevin Hilman (1):
+      Input: ads7846 - return error on regulator_get() failure
+
+Ondrej Zary (1):
+      Input: usbtouchscreen - support bigger iNexio touchscreens
+
+Peter Ujfalusi (1):
+      Input: twl4030-vibra - correct the power down sequence
+
+
+Diffstat:
+--------
+
+ drivers/hid/hid-debug.c                    |    2 +-
+ drivers/input/joydev.c                     |   10 +-
+ drivers/input/misc/Kconfig                 |   10 ++
+ drivers/input/misc/Makefile                |    1 +
+ drivers/input/misc/max8925_onkey.c         |  148 ++++++++++++++++++++++++++++
+ drivers/input/misc/twl4030-vibra.c         |    2 +-
+ drivers/input/misc/uinput.c                |    4 +-
+ drivers/input/touchscreen/ads7846.c        |    4 +-
+ drivers/input/touchscreen/usbtouchscreen.c |    7 +-
+ include/linux/input.h                      |   12 +-
+ include/linux/joystick.h                   |    4 +-
+ include/linux/uinput.h                     |   10 +-
+ 12 files changed, 189 insertions(+), 25 deletions(-)
+ create mode 100644 drivers/input/misc/max8925_onkey.c
 
 -- 
 Dmitry
+
