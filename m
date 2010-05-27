@@ -1,72 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757242Ab0E0LCU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 May 2010 07:02:20 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:39254 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753608Ab0E0LCS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 May 2010 07:02:18 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=date:from:to:cc:subject:message-id:references:
-	mime-version:content-type:content-disposition:in-reply-to:user-agent:x-system-of-record;
-	b=TKgqcduv8qr6RNDkWyifhG/RktsqczYx6Y2qwHjU8Xae1WVJQQHbyizL/QRVZ3qLc
-	VrrMYijIOhW7dqXKAqeCA==
-Date: Thu, 27 May 2010 04:02:10 -0700
-From: Michel Lespinasse <walken@google.com>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       David Howells <dhowells@redhat.com>, Ingo Molnar <mingo@elte.hu>,
-       Thomas Gleixner <tglx@linutronix.de>,
-       LKML <linux-kernel@vger.kernel.org>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Mike Waychison <mikew@google.com>,
-       Suleiman Souhlal <suleiman@google.com>, Ying Han <yinghan@google.com>
-Subject: Re: [PATCH 00/11] V4: rwsem changes + down_read_critical() proposal
-Message-ID: <20100527110210.GB20625@google.com>
-References: <1274733081-4623-1-git-send-email-walken@google.com> <1274777239.5882.581.camel@twins> <AANLkTikbeXjmRW4gqiy1Ss-Suce5gIM4xJ5o9Z81ZTQX@mail.gmail.com> <1274779675.5882.684.camel@twins> <20100526102359.da18b89e.kamezawa.hiroyu@jp.fujitsu.com>
+	id S1758166Ab0E0LDQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 May 2010 07:03:16 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:13420 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753608Ab0E0LDO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 May 2010 07:03:14 -0400
+Date: Thu, 27 May 2010 13:58:49 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: David Miller <davem@davemloft.net>
+Cc: kvm@vger.kernel.org, virtualization@lists.osdl.org, netdev@vger.kernel.org,
+       linux-kernel@vger.kernel.org, jdike@linux.intel.com,
+       tklauser@distanz.ch
+Subject: [GIT PULL net-next-2.6] vhost-net cleanups
+Message-ID: <20100527105849.GA7590@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100526102359.da18b89e.kamezawa.hiroyu@jp.fujitsu.com>
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
-X-System-Of-Record: true
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 26, 2010 at 10:23:59AM +0900, KAMEZAWA Hiroyuki wrote:
-> On Tue, 25 May 2010 11:27:55 +0200
-> Peter Zijlstra <peterz@infradead.org> wrote:
-> > Also, do you really think doing something like:
-> > 
-> >         /*
-> >          * Check the vma index is within the range and do
-> >          * sequential scan until m_index.
-> >          */
-> >         vma = NULL;
-> >         if ((unsigned long)l < mm->map_count) {
-> >                 vma = mm->mmap;
-> >                 while (l-- && vma)
-> >                         vma = vma->vm_next;
-> >                 goto out;
-> >         }
-> > 
-> > with preemption disabled is a _good_ thing?
-> > 
-> > People were talking about raising our vma limit of 64k...
+David,
+The following tree is on top of net-next-2.6.
+Please merge it for 2.6.36.
+Thanks!
 
-All right, this is clearly a problem then.
+The following changes since commit 7a9b149212f3716c598afe973b6261fd58453b7a:
 
-> Hmm..can't we use something speculative lookup for reading maps ?
-> (as we played in several months ago...)
+  Merge git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/usb-2.6 (2010-05-20 21:26:12 -0700)
 
-Would you happen to have a link to that conversation / remember the
-subject line of the thread ?
+are available in the git repository at:
 
-Thanks,
+  git://git.kernel.org/pub/scm/linux/kernel/git/mst/vhost.git vhost-net-next
 
+Jeff Dike (1):
+      vhost-net: minor cleanup
+
+Michael S. Tsirkin (1):
+      vhost: whitespace fix
+
+Tobias Klauser (1):
+      vhost: Storage class should be before const qualifier
+
+ drivers/vhost/net.c   |   13 ++++++-------
+ drivers/vhost/vhost.c |    4 ++--
+ 2 files changed, 8 insertions(+), 9 deletions(-)
 -- 
-Michel "Walken" Lespinasse
-A program is never fully debugged until the last user dies.
+MST
