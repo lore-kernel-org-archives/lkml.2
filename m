@@ -1,79 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932544Ab0E0RYa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 May 2010 13:24:30 -0400
-Received: from www.tglx.de ([62.245.132.106]:41337 "EHLO www.tglx.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757893Ab0E0RY1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 May 2010 13:24:27 -0400
-Date: Thu, 27 May 2010 19:24:02 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Alan Stern <stern@rowland.harvard.edu>
-cc: Matthew Garrett <mjg59@srcf.ucam.org>,
-       Peter Zijlstra <peterz@infradead.org>, Paul@smtp1.linux-foundation.org,
-       LKML <linux-kernel@vger.kernel.org>,
-       Florian Mickler <florian@mickler.org>, felipe.balbi@nokia.com,
+	id S932505Ab0E0RZf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 May 2010 13:25:35 -0400
+Received: from cavan.codon.org.uk ([93.93.128.6]:50629 "EHLO
+	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754508Ab0E0RZe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 May 2010 13:25:34 -0400
+Date: Thu, 27 May 2010 18:25:10 +0100
+From: Matthew Garrett <mjg59@srcf.ucam.org>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
+       Arve =?iso-8859-1?B?SGr4bm5lduVn?= <arve@android.com>,
+       Florian Mickler <florian@mickler.org>,
+       Vitaly Wool <vitalywool@gmail.com>, LKML <linux-kernel@vger.kernel.org>,
+       Paul@smtp1.linux-foundation.org, felipe.balbi@nokia.com,
        Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
-       Linux PM <linux-pm@lists.linux-foundation.org>,
-       Alan Cox <alan@lxorguk.ukuu.org.uk>
+       Linux PM <linux-pm@lists.linux-foundation.org>
 Subject: Re: [linux-pm] [PATCH 0/8] Suspend block api (version 8)
-In-Reply-To: <Pine.LNX.4.44L0.1005271253240.3239-100000@iolanthe.rowland.org>
-Message-ID: <alpine.LFD.2.00.1005271915540.3032@localhost.localdomain>
-References: <Pine.LNX.4.44L0.1005271253240.3239-100000@iolanthe.rowland.org>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+Message-ID: <20100527172510.GC2468@srcf.ucam.org>
+References: <20100527140655.GA28048@srcf.ucam.org> <alpine.LFD.2.00.1005271642440.3032@localhost.localdomain> <20100527155201.GA31937@srcf.ucam.org> <20100527171615.15a1fd3d@lxorguk.ukuu.org.uk> <20100527161943.GA32764@srcf.ucam.org> <alpine.LFD.2.00.1005271901020.3032@localhost.localdomain> <20100527170740.GA1980@srcf.ucam.org> <1274980391.27810.5552.camel@twins> <20100527171644.GA2468@srcf.ucam.org> <1274980856.27810.5582.camel@twins>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1274980856.27810.5582.camel@twins>
+User-Agent: Mutt/1.5.18 (2008-05-17)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 27 May 2010, Alan Stern wrote:
+On Thu, May 27, 2010 at 07:20:56PM +0200, Peter Zijlstra wrote:
 
-> On Thu, 27 May 2010, Thomas Gleixner wrote:
+> Suppose X (or whatever windowing system) will block all clients that try
+> to draw when you switch off your screen.
 > 
-> > The whole notion of treating suspend to RAM any different than a plain
-> > idle C-State is wrong. It's not different at all. You just use a
-> > different mechanism which has longer takedown and wakeup latencies and
-> > requires to shut down stuff and setup extra wakeup sources.
-> 
-> This is where you are wrong.  Maybe not wrong in principle, but wrong 
-> in practice -- the kernel's present suspend-to-RAM (or just "suspend") 
-> implementation is _very_ different from C-states (or just "idle").
+> How would we not wake them when we do turn the screen back on and start
+> servicing the pending requests again?
 
-Holy bouncing cow. I damned good know that the current implementation
-is not doing that and that suspend is implemented in a totally
-different way. That does not mean that this is written in stone. We
-CAN change that and fix it to gain opportunistic suspend.
- 
-> The primary difference is that the kernel can be forced into suspend
-> even when the system isn't idle.  In particular, it may be in the
-> middle of processing a potential wakeup event -- and the current design
-> gives the PM core no way to know if that is so.  This is a weakness
-> that in-kernel suspend blockers fix.
+How (and why) does the WoL (which may be *any* packet, not just a magic 
+one) turn the screen back on?
 
-Oh no. They paper over a short coming. If there is a pending event,
-the kernel knows that. It just does not make use of this
-information. Blockers just paper over this by sprinkling
-do_not_suspend() calls all over the place. What a sensible solution.
-
-> With C-states this can't happen.  If the CPU goes into a deeper C-state 
-> then ipso facto it isn't busy processing anything, much less a wakeup 
-> event.
-
-And that's the whole point of doing the opportunistic suspend with the
-help of the scheduler.
-
-> Now maybe this difference is a bad thing, and the whole PM 
-> suspend/hibernate infrastructure should be rewritten.  But the fact, 
-> remains, that's how it works now.  And it can't be changed easily or 
-> quickly.
-
-So what you are saying is that we better paper over the shortcomings
-of our current implementation with do_not_suspend() code sprinkled all
-over the place instead of sitting down and making suspend from idle
-work. It's more or less trivial depending on the platform, but not
-rocket science.
-
-Thanks,
-
-	tglx
+-- 
+Matthew Garrett | mjg59@srcf.ucam.org
