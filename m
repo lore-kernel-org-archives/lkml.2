@@ -1,52 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754971Ab0E0NoY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 May 2010 09:44:24 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:45198 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750852Ab0E0NoW (ORCPT
+	id S1755349Ab0E0Npj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 May 2010 09:45:39 -0400
+Received: from fxip-0047f.externet.hu ([88.209.222.127]:41866 "EHLO
+	pomaz-ex.szeredi.hu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750827Ab0E0Nph (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 May 2010 09:44:22 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=Gno2DxBBF1HK+TMFbQlzk+uIOxDGnH51uxyxAZOTvF3sqgcVfpUsvOfjPw5DF4cXLP
-         cv9dqGzR7d9HTCj4zy9ZnKI5S004ez++1TUKI3eM1VxZ/AMuRbeelTl8MW9mDBah1CPv
-         fre8SqAG78zemrY/VRPSYLW9uTt42Qmu0Q32E=
-Date: Thu, 27 May 2010 22:44:13 +0900
-From: Minchan Kim <minchan.kim@gmail.com>
-To: Rik van Riel <riel@redhat.com>
-Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-       linux-mm@kvack.org, Mel Gorman <mel@csn.ul.ie>,
-       Andrea Arcangeli <aarcange@redhat.com>,
-       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-       Lee Schermerhorn <Lee.Schermerhorn@hp.com>
-Subject: Re: [PATCH 1/5] rename anon_vma_lock to vma_lock_anon_vma
-Message-ID: <20100527134413.GA2112@barrios-desktop>
-References: <20100526153819.6e5cec0d@annuminas.surriel.com>
- <20100526153853.55b72183@annuminas.surriel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100526153853.55b72183@annuminas.surriel.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Thu, 27 May 2010 09:45:37 -0400
+To: Alexey Dobriyan <adobriyan@gmail.com>
+CC: miklos@szeredi.hu, viro@zeniv.linux.org.uk, john.johansen@canonical.com,
+       penguin-kernel@i-love.sakura.ne.jp, linux-fsdevel@vger.kernel.org,
+       linux-kernel@vger.kernel.org
+In-reply-to: <AANLkTikrejgaNreRt2krs_djeFN-pmrEU5G-v08llao6@mail.gmail.com>
+	(message from Alexey Dobriyan on Thu, 27 May 2010 16:19:57 +0300)
+Subject: Re: [PATCH 1/2] vfs: sanitize __d_path()
+References: <E1OHaLJ-0008VD-VJ@pomaz-ex.szeredi.hu>
+	<AANLkTilGlR297cl9yHF5n6e4eU7JflJwrpm3TrIe-rlo@mail.gmail.com>
+	<E1OHcV6-0000oz-C5@pomaz-ex.szeredi.hu> <AANLkTikrejgaNreRt2krs_djeFN-pmrEU5G-v08llao6@mail.gmail.com>
+Message-Id: <E1OHdOm-00017x-G8@pomaz-ex.szeredi.hu>
+From: Miklos Szeredi <miklos@szeredi.hu>
+Date: Thu, 27 May 2010 15:45:24 +0200
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 26, 2010 at 03:38:53PM -0400, Rik van Riel wrote:
-> Subject: rename anon_vma_lock to vma_lock_anon_vma
+On Thu, 27 May 2010, Alexey Dobriyan wrote:
+> Why would they want to do it (which means taking locks again and
+> potential incoherence)?
+> The information is right there, ship it upwards:
 > 
-> Rename anon_vma_lock to vma_lock_anon_vma.  This matches the
-> naming style used in page_lock_anon_vma and will come in really
-> handy further down in this patch series.
+> +       if (deleted)
+> +               *deleted = 0;
+>         spin_lock(&vfsmount_lock);
+>         prepend(&end, &buflen, "\0", 1);
+> -       if (d_unlinked(dentry) &&
+> -               (prepend(&end, &buflen, " (deleted)", 10) != 0))
+> -                       goto Elong;
+> +       if (d_unlinked(dentry) && deleted)
+> +               *deleted = 1;
 > 
-> Signed-off-by: Rik van Riel <riel@redhat.com>
-> Acked-by: Mel Gorman <mel@csn.ul.ie>
-> Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Reviewed-by: Minchan Kim <minchan.kim@gmail.com>
+> "(deleted)" as interface sucks, we can't change it,
+> at least, let's make in-kernel interface correct.
+> 
 
--- 
-Kind regards,
-Minchan Kim
+Do you have any specific caller in mind?
+
+The above will just result in extra code in most callers.  Better have
+one function with does the old "(deleted)" thing, and one which
+doesn't.
+
+Thanks,
+Miklos
