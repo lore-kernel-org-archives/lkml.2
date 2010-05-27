@@ -1,39 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759129Ab0E0Ufw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 May 2010 16:35:52 -0400
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:56983
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758722Ab0E0Ufu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 May 2010 16:35:50 -0400
-Date: Thu, 27 May 2010 13:35:59 -0700 (PDT)
-Message-Id: <20100527.133559.193700421.davem@davemloft.net>
-To: fbl@sysclose.org
-Cc: amwang@redhat.com, linux-kernel@vger.kernel.org, mpm@selenic.com,
-       netdev@vger.kernel.org, bridge@lists.linux-foundation.org,
-       gospo@redhat.com, nhorman@tuxdriver.com, jmoyer@redhat.com,
-       shemminger@linux-foundation.org, bonding-devel@lists.sourceforge.net,
-       fubar@us.ibm.com
-Subject: Re: [v5 Patch 1/3] netpoll: add generic support for bridge and
- bonding devices
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20100527180545.GA2345@sysclose.org>
-References: <20100505081514.5157.83783.sendpatchset@localhost.localdomain>
-	<20100527180545.GA2345@sysclose.org>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	id S932618Ab0E0Ugm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 May 2010 16:36:42 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:22032 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759122Ab0E0Ugl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 May 2010 16:36:41 -0400
+Date: Thu, 27 May 2010 17:36:38 -0300
+From: Glauber Costa <glommer@redhat.com>
+To: Zachary Amsden <zamsden@redhat.com>
+Cc: Avi Kivity <avi@redhat.com>, kvm@vger.kernel.org,
+       linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Add Documentation/kvm/msr.txt
+Message-ID: <20100527203638.GH3445@mothafucka.localdomain>
+References: <1274897088-8587-1-git-send-email-glommer@redhat.com>
+ <4BFE2A2F.50209@redhat.com>
+ <20100527160248.GF3445@mothafucka.localdomain>
+ <4BFED258.40501@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4BFED258.40501@redhat.com>
+X-ChuckNorris: True
+User-Agent: Jack Bauer
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Flavio Leitner <fbl@sysclose.org>
-Date: Thu, 27 May 2010 15:05:45 -0300
+On Thu, May 27, 2010 at 10:13:12AM -1000, Zachary Amsden wrote:
+> On 05/27/2010 06:02 AM, Glauber Costa wrote:
+> >On Thu, May 27, 2010 at 11:15:43AM +0300, Avi Kivity wrote:
+> >>On 05/26/2010 09:04 PM, Glauber Costa wrote:
+> >>>This patch adds a file that documents the usage of KVM-specific
+> >>>MSRs.
+> >>>
+> >>Looks good.  A few comments:
+> >>
+> >>>+
+> >>>+Custom MSR list
+> >>>+--------
+> >>>+
+> >>>+The current supported Custom MSR list is:
+> >>>+
+> >>>+MSR_KVM_WALL_CLOCK:  0x11
+> >>>+
+> >>>+	data: physical address of a memory area.
+> >>Which must be in guest RAM (i.e., don't point it somewhere random
+> >>and expect the hypervisor to allocate it for you).
+> >>
+> >>Must be aligned to 4 bytes (we don't enforce it though).
+> >I don't see the reason for it.
+> >
+> >If this is a requirement, our own implementation
+> >is failing to meet it.
+> 
+> It's so the atomic write actually is atomic. 
+Which atomic write? This is the wallclock, we do no atomic writes for
+querying it. Not to confuse with system time (the other msr).
 
-> I did the following patch to discard the packet if it was IN_NETPOLL
-> and the read_lock() fails, so I could go ahead testing it:
+> Stating a 4 -byte
+> alignment requirement prevents the wall clock from crossing a page
+> boundary.
 
-This is disgusting, let's just disallow console output from such
-locations.  Defer them to a workqueue if their output is so critical.
+Yes, but why require it?
+
+reading the wallclock is not a hot path for anybody, is usually done
+just once, and crossing a page boundary here does not pose any correctness
+issue.
