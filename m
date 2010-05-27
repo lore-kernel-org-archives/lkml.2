@@ -1,129 +1,268 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753925Ab0E0Gn7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 May 2010 02:43:59 -0400
-Received: from mail-pz0-f176.google.com ([209.85.222.176]:54605 "EHLO
-	mail-pz0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752666Ab0E0Gn4 (ORCPT
+	id S1754834Ab0E0GoK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 May 2010 02:44:10 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:53150 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754176Ab0E0GoE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 May 2010 02:43:56 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=Y/heqYQj0raeCuMqi0cC0bKrZ5ZivpgSFCr6Ggg0DqWWBsWitA4faJ4LtZdYxbPckb
-         1PL1pO7D326rsneNT6MzYJBZdsyrphMV3m93Q6t08gNv4+ySY+T5tTCOdEg1lQZU81JL
-         rWQLgbmgbZvpJ5ZhUQTbOK0h4f4b3bS+06TD0=
-Date: Wed, 26 May 2010 23:43:47 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Robert Hancock <hancockrwd@gmail.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       linux-input@vger.kernel.org, Bastien Nocera <hadess@hadess.net>
-Subject: Re: [git pull] Input updates for 2.6.34-rc6
-Message-ID: <20100527064347.GA17625@core.coreip.homeip.net>
-References: <20100513075728.GF30110@core.coreip.homeip.net>
- <alpine.LFD.2.00.1005130724280.3711@i5.linux-foundation.org>
- <20100513160117.GB22238@core.coreip.homeip.net>
- <alpine.LFD.2.00.1005130943460.3711@i5.linux-foundation.org>
- <4BFE0FAB.9040009@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4BFE0FAB.9040009@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
+	Thu, 27 May 2010 02:44:04 -0400
+From: Luotao Fu <l.fu@pengutronix.de>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+       Marek Vasut <marek.vasut@gmail.com>
+Cc: Eric Miao <eric.y.miao@gmail.com>, linux-kernel@vger.kernel.org,
+       linux-input@vger.kernel.org, Luotao Fu <l.fu@pengutronix.de>
+Subject: [PATCH V2] matrix_keypad: add support for clustered irq
+Date: Thu, 27 May 2010 08:43:54 +0200
+Message-Id: <1274942634-31735-1-git-send-email-l.fu@pengutronix.de>
+X-Mailer: git-send-email 1.7.0
+In-Reply-To: <1274882226-19778-1-git-send-email-l.fu@pengutronix.de>
+References: <1274882226-19778-1-git-send-email-l.fu@pengutronix.de>
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
+X-SA-Exim-Mail-From: l.fu@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 27, 2010 at 12:22:35AM -0600, Robert Hancock wrote:
-> On 05/13/2010 10:54 AM, Linus Torvalds wrote:
-> >
-> >
-> >On Thu, 13 May 2010, Dmitry Torokhov wrote:
-> >>
-> >>Apple does proper thing in BIOS and omits keyboard and mouse PNP
-> >>devices, but because of other players we do not really trust PNP BIOS
-> >>and resort to banding on ports directly - there are cases when box has
-> >>mouse and/or keyboard but they are not present in BIOS. Damed if you do,
-> >>damned if you don't...
-> >
-> >Umm. No.
-> >
-> >PnP information _commonly_ doesn't inclure PS/2 ports, even when they
-> >exist. Lack of PnP information about the keyboard port means absolutely
-> >nothing, and anybody who tells you otherwise is totally and utterly wrong.
-> >
-> >So don't confuse this with PnP issues. That's a total red herring, and
-> >Apple is _not_at_all_ "doing the proper thing in the BIOS".
-> >
-> >Quite the reverse. Apple is very clearly doing something horribly _wrong_
-> >in their BIOS. Don't give them kudos for being incompetent morons.
-> 
-> I don't think they did anything wrong in their BIOS, it's working
-> exactly as the spec intended. There is no PS/2 controller, and the
-> ACPI PnP tables do not list one. I wouldn't argue that it was a good
-> decision of them to have the hardware somehow blow up if something
-> poked those ports anyway, but from a BIOS point of view they did the
-> right thing.
-> 
-> >
-> >Just google for
-> >
-> >	"Probing ports directly" "i8042 KBD port"
-> >
-> >and you'll get a lot of hits. That's not because those machines have wrong
-> >PnP tables - it's because fundamentally PNP is a joke, and on PC's what is
-> >much more important is "standard IO ports".
-> >
-> >For example, in that thread, Bastien is quoted:
-> >
-> >	>  In other words, on x86, if PNP and/or ACPI don't indicate any PS/2
-> >	>  controller exists, we randomly bang on the ports in the expectation
-> >	>  they'll be there anyway. This seems rather misguided.
-> >
-> >and all that tells me is that Bastien doesn't know what he is doing. It is
-> >_not_ "randomly bang" - it's called standard PC hardware.  And it's not
-> >"misguided" - it's very much correct and required, exactly because PnP
-> >itself is the misguided aborted fetus of a braindamaged mind.
-> 
-> I think that may have been me, actually, not Bastien. Misguided may
-> have been a too strong term, but in this case I think the PnP
-> information is quite trustable because Windows trusts it. Definitely
-> for the PS/2 mouse controller (quite likely the keyboard too), if
-> Windows is in ACPI mode and the PnP tables do not list it, it will
-> not detect or use it.
-> 
-> Now, many BIOSes seem to have have code (like an "auto" mode for the
-> PS/2 port, which may or may not be always set) which disables the
-> PnP entry if it doesn't detect a mouse or keyboard connected on
-> boot. If memory serves, this is because I think at least on some
-> versions, if Windows finds a controller but no mouse is responding
-> then it shows up with an error indication in Device Manager, which
-> tends to make people unhappy. This is likely what's responsible for
-> most of those cases where Linux detects devices after "probing ports
-> directly", because the BIOS hid the device but we were too "clever"
-> for it and found it anyway.
-> 
-> In fact on a lot of boards, Linux still detects the port even if set
-> as "disabled" in the BIOS, because all that does is disable the PnP
-> entry.
-> 
-> Long and the short of it is, it seems pretty safe to say that on any
-> ACPI machine, if there's no PnP entry for PS/2 devices, the BIOS
-> does not intend for the OS to use them. There may be cases where you
-> might want to try to locate ports anyway (maybe you really want to
-> hotplug a mouse in after boot, or you have an ancient KVM which
-> doesn't emulate a device presence on the non-selected machine), but
-> those seem like very much the exception rather than the rule.
->
+This one adds support of a combined irq source for the whole matrix keypad.
+This can be useful if all rows and columns of the keypad are e.g. connected
+to a GPIO expander, which only has one interrupt line for all events on
+every single GPIO.
 
-I would be much more happy if ACPI would add devices to the device tree
-even if they happen to be disabled. Then we could really trust DSDTs and
-not bang i8042 ports if the controller is truly not there (newer Dell
-servers, Apple, etc) but still woudl detect the controller just fine if
-BIOS decided to hide it from Windows.
+Signed-off-by: Luotao Fu <l.fu@pengutronix.de>
+---
+V2 Changes:
+* create separate functions for suspend/resume calls.
+* add bool flag to signal enable/disable state of all gpios.
+* add spinlock to suspend and resume callbacks.
 
+ drivers/input/keyboard/matrix_keypad.c |  138 ++++++++++++++++++++++++--------
+ include/linux/input/matrix_keypad.h    |    5 +
+ 2 files changed, 109 insertions(+), 34 deletions(-)
+
+diff --git a/drivers/input/keyboard/matrix_keypad.c b/drivers/input/keyboard/matrix_keypad.c
+index b443e08..99b7204 100644
+--- a/drivers/input/keyboard/matrix_keypad.c
++++ b/drivers/input/keyboard/matrix_keypad.c
+@@ -37,6 +37,7 @@ struct matrix_keypad {
+ 	spinlock_t lock;
+ 	bool scan_pending;
+ 	bool stopped;
++	bool gpio_all_disabled;
+ };
+ 
+ /*
+@@ -87,8 +88,12 @@ static void enable_row_irqs(struct matrix_keypad *keypad)
+ 	const struct matrix_keypad_platform_data *pdata = keypad->pdata;
+ 	int i;
+ 
+-	for (i = 0; i < pdata->num_row_gpios; i++)
+-		enable_irq(gpio_to_irq(pdata->row_gpios[i]));
++	if (pdata->clustered_irq > 0)
++		enable_irq(pdata->clustered_irq);
++	else {
++		for (i = 0; i < pdata->num_row_gpios; i++)
++			enable_irq(gpio_to_irq(pdata->row_gpios[i]));
++	}
+ }
+ 
+ static void disable_row_irqs(struct matrix_keypad *keypad)
+@@ -96,8 +101,12 @@ static void disable_row_irqs(struct matrix_keypad *keypad)
+ 	const struct matrix_keypad_platform_data *pdata = keypad->pdata;
+ 	int i;
+ 
+-	for (i = 0; i < pdata->num_row_gpios; i++)
+-		disable_irq_nosync(gpio_to_irq(pdata->row_gpios[i]));
++	if (pdata->clustered_irq > 0)
++		disable_irq_nosync(pdata->clustered_irq);
++	else {
++		for (i = 0; i < pdata->num_row_gpios; i++)
++			disable_irq_nosync(gpio_to_irq(pdata->row_gpios[i]));
++	}
+ }
+ 
+ /*
+@@ -216,25 +225,74 @@ static void matrix_keypad_stop(struct input_dev *dev)
+ }
+ 
+ #ifdef CONFIG_PM
+-static int matrix_keypad_suspend(struct device *dev)
++static inline void __suspend_keypad(struct matrix_keypad *keypad)
+ {
+-	struct platform_device *pdev = to_platform_device(dev);
+-	struct matrix_keypad *keypad = platform_get_drvdata(pdev);
+ 	const struct matrix_keypad_platform_data *pdata = keypad->pdata;
++	unsigned int cirq = pdata->clustered_irq;
++	unsigned int gpio;
++	unsigned long flags;
+ 	int i;
+ 
+-	matrix_keypad_stop(keypad->input_dev);
++	spin_lock_irqsave(&keypad->lock, flags);
+ 
+-	if (device_may_wakeup(&pdev->dev)) {
+-		for (i = 0; i < pdata->num_row_gpios; i++) {
+-			if (!test_bit(i, keypad->disabled_gpios)) {
+-				unsigned int gpio = pdata->row_gpios[i];
++	if (pdata->clustered_irq > 0) {
++		if (enable_irq_wake(cirq) == 0)
++			keypad->gpio_all_disabled = true;
+ 
+-				if (enable_irq_wake(gpio_to_irq(gpio)) == 0)
+-					__set_bit(i, keypad->disabled_gpios);
+-			}
++		goto out;
++	}
++
++	for (i = 0; i < pdata->num_row_gpios; i++) {
++		if (!test_bit(i, keypad->disabled_gpios)) {
++			gpio = pdata->row_gpios[i];
++
++			if (enable_irq_wake(gpio_to_irq(gpio)) == 0)
++				__set_bit(i, keypad->disabled_gpios);
++		}
++	}
++out:
++	spin_unlock_irqrestore(&keypad->lock, flags);
++}
++
++static inline void __resume_keypad(struct matrix_keypad *keypad)
++{
++	const struct matrix_keypad_platform_data *pdata = keypad->pdata;
++	unsigned int cirq = pdata->clustered_irq;
++	unsigned int gpio;
++	unsigned long flags;
++	int i;
++
++	spin_lock_irqsave(&keypad->lock, flags);
++
++	if (pdata->clustered_irq > 0) {
++		if (keypad->gpio_all_disabled) {
++			disable_irq_wake(cirq);
++			keypad->gpio_all_disabled = false;
++		}
++
++		goto out;
++	}
++
++	for (i = 0; i < pdata->num_row_gpios; i++) {
++		if (test_and_clear_bit(i, keypad->disabled_gpios)) {
++			gpio = pdata->row_gpios[i];
++			disable_irq_wake(gpio_to_irq(gpio));
+ 		}
+ 	}
++out:
++	spin_unlock_irqrestore(&keypad->lock, flags);
++
++}
++
++static int matrix_keypad_suspend(struct device *dev)
++{
++	struct platform_device *pdev = to_platform_device(dev);
++	struct matrix_keypad *keypad = platform_get_drvdata(pdev);
++
++	matrix_keypad_stop(keypad->input_dev);
++
++	if (device_may_wakeup(&pdev->dev))
++		__suspend_keypad(keypad);
+ 
+ 	return 0;
+ }
+@@ -246,15 +304,8 @@ static int matrix_keypad_resume(struct device *dev)
+ 	const struct matrix_keypad_platform_data *pdata = keypad->pdata;
+ 	int i;
+ 
+-	if (device_may_wakeup(&pdev->dev)) {
+-		for (i = 0; i < pdata->num_row_gpios; i++) {
+-			if (test_and_clear_bit(i, keypad->disabled_gpios)) {
+-				unsigned int gpio = pdata->row_gpios[i];
+-
+-				disable_irq_wake(gpio_to_irq(gpio));
+-			}
+-		}
+-	}
++	if (device_may_wakeup(&pdev->dev))
++		__resume_keypad(keypad);
+ 
+ 	matrix_keypad_start(keypad->input_dev);
+ 
+@@ -296,17 +347,31 @@ static int __devinit init_matrix_gpio(struct platform_device *pdev,
+ 		gpio_direction_input(pdata->row_gpios[i]);
+ 	}
+ 
+-	for (i = 0; i < pdata->num_row_gpios; i++) {
+-		err = request_irq(gpio_to_irq(pdata->row_gpios[i]),
++	if (pdata->clustered_irq > 0) {
++		err = request_irq(pdata->clustered_irq,
+ 				matrix_keypad_interrupt,
+-				IRQF_DISABLED |
+-				IRQF_TRIGGER_RISING | IRQF_TRIGGER_FALLING,
++				pdata->clustered_irq_flags,
+ 				"matrix-keypad", keypad);
+ 		if (err) {
+ 			dev_err(&pdev->dev,
+-				"Unable to acquire interrupt for GPIO line %i\n",
+-				pdata->row_gpios[i]);
+-			goto err_free_irqs;
++				"Unable to acquire clustered interrupt\n");
++			goto err_free_rows;
++		}
++	} else {
++		for (i = 0; i < pdata->num_row_gpios; i++) {
++			err = request_irq(gpio_to_irq(pdata->row_gpios[i]),
++					matrix_keypad_interrupt,
++					IRQF_DISABLED |
++					IRQF_TRIGGER_RISING |
++					IRQF_TRIGGER_FALLING,
++					"matrix-keypad", keypad);
++			if (err) {
++				dev_err(&pdev->dev,
++					"Unable to acquire interrupt "
++					"for GPIO line %i\n",
++					pdata->row_gpios[i]);
++				goto err_free_irqs;
++			}
+ 		}
+ 	}
+ 
+@@ -418,11 +483,16 @@ static int __devexit matrix_keypad_remove(struct platform_device *pdev)
+ 
+ 	device_init_wakeup(&pdev->dev, 0);
+ 
+-	for (i = 0; i < pdata->num_row_gpios; i++) {
+-		free_irq(gpio_to_irq(pdata->row_gpios[i]), keypad);
+-		gpio_free(pdata->row_gpios[i]);
++	if (pdata->clustered_irq > 0) {
++		free_irq(pdata->clustered_irq, keypad);
++	} else {
++		for (i = 0; i < pdata->num_row_gpios; i++)
++			free_irq(gpio_to_irq(pdata->row_gpios[i]), keypad);
+ 	}
+ 
++	for (i = 0; i < pdata->num_row_gpios; i++)
++		gpio_free(pdata->row_gpios[i]);
++
+ 	for (i = 0; i < pdata->num_col_gpios; i++)
+ 		gpio_free(pdata->col_gpios[i]);
+ 
+diff --git a/include/linux/input/matrix_keypad.h b/include/linux/input/matrix_keypad.h
+index c964cd7..8e8dc2e 100644
+--- a/include/linux/input/matrix_keypad.h
++++ b/include/linux/input/matrix_keypad.h
+@@ -63,6 +63,11 @@ struct matrix_keypad_platform_data {
+ 	/* key debounce interval in milli-second */
+ 	unsigned int	debounce_ms;
+ 
++	/* used if interrupts of all row/column GPIOs are bundled to one single
++	 * irq */
++	unsigned int	clustered_irq;
++	unsigned int	clustered_irq_flags;
++
+ 	bool		active_low;
+ 	bool		wakeup;
+ 	bool		no_autorepeat;
 -- 
-Dmitry
+1.7.0
+
