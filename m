@@ -1,58 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756145Ab0E0Ag7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 May 2010 20:36:59 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:24263 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751428Ab0E0Ag6 (ORCPT
+	id S1754140Ab0E0AqY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 May 2010 20:46:24 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:57917 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752422Ab0E0AqX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 May 2010 20:36:58 -0400
-Message-ID: <4BFDB60B.50106@oracle.com>
-Date: Wed, 26 May 2010 17:00:11 -0700
-From: Randy Dunlap <randy.dunlap@oracle.com>
-Organization: Oracle Linux Engineering
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.5) Gecko/20091209 Fedora/3.0-3.fc11 Thunderbird/3.0
+	Wed, 26 May 2010 20:46:23 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:organization:message-id:references
+         :in-reply-to:x-mailer:mime-version:content-type
+         :content-transfer-encoding;
+        b=ultLcnHvlzUCU/mrZdAbjpb8VwGc1QgZtXOQLRz4HOr2kKUBUQ6HOQHyS/bLvwCKFY
+         9NokFyt43tHwB7nGQbh2Cse+cEJRvKtYNlcKkxzf5seIaXth+KrAsxC0I2Z/olV7ElJW
+         MnxNBvpcQrxyWivWmSEPqbRrzNT5qRP5nJMdQ=
+From: Grant Coady <gcoady.lk@gmail.com>
+To: Greg KH <gregkh@suse.de>
+Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+       torvalds@linux-foundation.org, stable@kernel.org, lwn@lwn.net
+Subject: Re: Linux 2.6.27.47
+Date: Thu, 27 May 2010 10:46:10 +1000
+Organization: scattered
+Message-ID: <a5grv55iac7ds6euddo8db044474gpfnvi@4ax.com>
+References: <20100526222323.GA29493@kroah.com>
+In-Reply-To: <20100526222323.GA29493@kroah.com>
+X-Mailer: Forte Agent 6.00/32.1186
 MIME-Version: 1.0
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-CC: Michal Marek <mmarek@suse.cz>, linux-next@vger.kernel.org,
-       linux-kernel@vger.kernel.org, matt mooney <mfm@muteddisk.com>,
-       Kirill Smelkov <kirr@mns.spb.ru>
-Subject: Re: linux-next: manual merge of the kbuild tree with the kernel-doc
- tree
-References: <20100526115346.da5a02aa.sfr@canb.auug.org.au>	<4BFD42A6.6060206@oracle.com>	<20100527025020.da0c1bb7.sfr@canb.auug.org.au>	<20100526095606.beed820e.randy.dunlap@oracle.com> <20100527090923.c17a7ed4.sfr@canb.auug.org.au>
-In-Reply-To: <20100527090923.c17a7ed4.sfr@canb.auug.org.au>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
-X-Auth-Type: Internal IP
-X-Source-IP: acsinet15.oracle.com [141.146.126.227]
-X-CT-RefId: str=0001.0A090204.4BFDBE88.0115:SCFMA922111,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/26/10 16:09, Stephen Rothwell wrote:
-> Hi Randy,
-> 
-> On Wed, 26 May 2010 09:56:06 -0700 Randy Dunlap <randy.dunlap@oracle.com> wrote:
->>
->>> The kernel-doc tree is a quilt series :-(
->>
->> Yes.  and it's viewable without pulling/cloning.  ;)
-> 
-> Ah, I shouldn't reply to emails so late at night :-(
-> 
->>> You can, of course, see the above commit in the linux-next tree via
->>> gitweb on kernel.org.
->>
->> Thanks.  Michal, I droppped these 3 patches.  Please keep them in the
->> kbuild tree.
-> 
-> If anything, the kernel-doc patches should be kept as they are much more
-> extensive.  And the conflict was trivial.  The kbuild patch was just
-> fixing a typo (tey -> they).
+On Wed, 26 May 2010 15:23:23 -0700, you wrote:
 
-uh oh.  OK, thanks, I'll restore them.
+>I'm announcing the release of the 2.6.27.47 kernel.  All users of the
+>2.6.27 kernel series are very strongly encouraged to upgrade.
+>
+>The updated 2.6.27.y git tree can be found at:
+>        git://git.kernel.org/pub/scm/linux/kernel/git/stable/linux-2.6.27.y.git
+>and can be browsed at the normal kernel.org git web browser:
+>        http://git.kernel.org/?p=linux/kernel/git/stable/linux-2.6.27.y.git;a=summary
 
+Hi Greg,
+
+Thank you :)
+
+Grant.
 -- 
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+http://bugs.id.au/
