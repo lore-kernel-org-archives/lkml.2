@@ -1,19 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751697Ab0E0McQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 May 2010 08:32:16 -0400
-Received: from mgw2.diku.dk ([130.225.96.92]:48491 "EHLO mgw2.diku.dk"
+	id S1753670Ab0E0Mcc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 May 2010 08:32:32 -0400
+Received: from mgw2.diku.dk ([130.225.96.92]:48500 "EHLO mgw2.diku.dk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750852Ab0E0McO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 May 2010 08:32:14 -0400
-Date: Thu, 27 May 2010 14:32:09 +0200 (CEST)
+	id S1751869Ab0E0Mca (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 May 2010 08:32:30 -0400
+Date: Thu, 27 May 2010 14:32:24 +0200 (CEST)
 From: Julia Lawall <julia@diku.dk>
-To: Peter Berger <pberger@brimson.com>,
-       Al Borchers <alborchers@steinerpoint.com>,
-       Greg Kroah-Hartman <gregkh@suse.de>, linux-usb@vger.kernel.org,
-       linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-Subject: [PATCH 1/11] drivers/usb/serial: Eliminate a NULL pointer dereference
-Message-ID: <Pine.LNX.4.64.1005271431530.5422@ask.diku.dk>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+       Wim Van Sebroeck <wim@iguana.be>, linux-kernel@vger.kernel.org,
+       kernel-janitors@vger.kernel.org
+Subject: [PATCH 2/11] drivers/watchdog: Eliminate a NULL pointer dereference
+Message-ID: <Pine.LNX.4.64.1005271432100.5422@ask.diku.dk>
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
@@ -22,8 +21,7 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Julia Lawall <julia@diku.dk>
 
-If port is NULL, then the call to dev_err will dereference a value that is
-a small offset from NULL.
+At the point of the call to dev_err, wm8350 is NULL.
 
 A simplified version of the semantic match that finds this problem is as
 follows: (http://coccinelle.lip6.fr/)
@@ -49,20 +47,19 @@ else S3
 Signed-off-by: Julia Lawall <julia@diku.dk>
 
 ---
- drivers/usb/serial/digi_acceleport.c |    3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+ drivers/watchdog/wm8350_wdt.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/usb/serial/digi_acceleport.c b/drivers/usb/serial/digi_acceleport.c
-index 3edda3e..fd35f73 100644
---- a/drivers/usb/serial/digi_acceleport.c
-+++ b/drivers/usb/serial/digi_acceleport.c
-@@ -1239,8 +1239,7 @@ static void digi_write_bulk_callback(struct urb *urb)
+diff --git a/drivers/watchdog/wm8350_wdt.c b/drivers/watchdog/wm8350_wdt.c
+index 89dd7b0..b68d928 100644
+--- a/drivers/watchdog/wm8350_wdt.c
++++ b/drivers/watchdog/wm8350_wdt.c
+@@ -284,7 +284,7 @@ static int __devinit wm8350_wdt_probe(struct platform_device *pdev)
+ 	struct wm8350 *wm8350 = platform_get_drvdata(pdev);
  
- 	/* port and serial sanity check */
- 	if (port == NULL || (priv = usb_get_serial_port_data(port)) == NULL) {
--		dev_err(&port->dev,
--			"%s: port or port->private is NULL, status=%d\n",
-+		pr_err("%s: port or port->private is NULL, status=%d\n",
- 			__func__, status);
- 		return;
+ 	if (!wm8350) {
+-		dev_err(wm8350->dev, "No driver data supplied\n");
++		pr_err("No driver data supplied\n");
+ 		return -ENODEV;
  	}
+ 
