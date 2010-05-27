@@ -1,72 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932496Ab0E0VBQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 May 2010 17:01:16 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:51056 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932227Ab0E0VBO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 May 2010 17:01:14 -0400
-Date: Thu, 27 May 2010 23:01:12 +0200
-From: Wolfram Sang <w.sang@pengutronix.de>
-To: Robert Emanuele <rob@emanuele.us>
-Cc: Linus Walleij <linus.ml.walleij@gmail.com>,
-       linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-       linux-kernel@vger.kernel.org, linux-i2c@vger.kernel.org
-Subject: Re: Controlling Driver Load Order
-Message-ID: <20100527210112.GA5636@pengutronix.de>
-References: <AANLkTikzDvWakd7JW3DzTHinjS3dAlqzPx6K8V2qMDG7@mail.gmail.com> <AANLkTinkY8JYh44UOEPflBUDyQ2wat_AKShRjA3HPxrf@mail.gmail.com> <20100526235246.GA31068@pengutronix.de> <AANLkTikj8yGSK5Ovud_k8f6jWloojqDJmQ_H6pD_IFgM@mail.gmail.com> <20100527041358.GA14070@pengutronix.de> <AANLkTilKUfcYsPqr5kXlONJQAFCaE8D8U9ltQybIzCPu@mail.gmail.com>
+	id S1759165Ab0E0VCj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 May 2010 17:02:39 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:9033 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759066Ab0E0VCi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 May 2010 17:02:38 -0400
+Message-ID: <4BFEDDEB.9020700@redhat.com>
+Date: Thu, 27 May 2010 11:02:35 -1000
+From: Zachary Amsden <zamsden@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-3.fc13 Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="n8g4imXOkfNTN/H1"
-Content-Disposition: inline
-In-Reply-To: <AANLkTilKUfcYsPqr5kXlONJQAFCaE8D8U9ltQybIzCPu@mail.gmail.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
-X-SA-Exim-Mail-From: wsa@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+To: Glauber Costa <glommer@redhat.com>
+CC: Avi Kivity <avi@redhat.com>, kvm@vger.kernel.org,
+       linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Add Documentation/kvm/msr.txt
+References: <1274897088-8587-1-git-send-email-glommer@redhat.com> <4BFE2A2F.50209@redhat.com> <20100527160248.GF3445@mothafucka.localdomain> <4BFED258.40501@redhat.com> <20100527203638.GH3445@mothafucka.localdomain>
+In-Reply-To: <20100527203638.GH3445@mothafucka.localdomain>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 05/27/2010 10:36 AM, Glauber Costa wrote:
+> On Thu, May 27, 2010 at 10:13:12AM -1000, Zachary Amsden wrote:
+>    
+>> On 05/27/2010 06:02 AM, Glauber Costa wrote:
+>>      
+>>> On Thu, May 27, 2010 at 11:15:43AM +0300, Avi Kivity wrote:
+>>>        
+>>>> On 05/26/2010 09:04 PM, Glauber Costa wrote:
+>>>>          
+>>>>> This patch adds a file that documents the usage of KVM-specific
+>>>>> MSRs.
+>>>>>
+>>>>>            
+>>>> Looks good.  A few comments:
+>>>>
+>>>>          
+>>>>> +
+>>>>> +Custom MSR list
+>>>>> +--------
+>>>>> +
+>>>>> +The current supported Custom MSR list is:
+>>>>> +
+>>>>> +MSR_KVM_WALL_CLOCK:  0x11
+>>>>> +
+>>>>> +	data: physical address of a memory area.
+>>>>>            
+>>>> Which must be in guest RAM (i.e., don't point it somewhere random
+>>>> and expect the hypervisor to allocate it for you).
+>>>>
+>>>> Must be aligned to 4 bytes (we don't enforce it though).
+>>>>          
+>>> I don't see the reason for it.
+>>>
+>>> If this is a requirement, our own implementation
+>>> is failing to meet it.
+>>>        
+>> It's so the atomic write actually is atomic.
+>>      
+> Which atomic write? This is the wallclock, we do no atomic writes for
+> querying it. Not to confuse with system time (the other msr).
+>
+>    
+>> Stating a 4 -byte
+>> alignment requirement prevents the wall clock from crossing a page
+>> boundary.
+>>      
+> Yes, but why require it?
+>
+> reading the wallclock is not a hot path for anybody, is usually done
+> just once, and crossing a page boundary here does not pose any correctness
+> issue.
+>    
 
---n8g4imXOkfNTN/H1
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Little-endian non-atomic page crossing writes will write the small part 
+of the wallclock first, so another CPU may observe the following 
+wallclock sequence:
 
-> Anyway, I better understand the subsys_initcall now and applied that
-> to the i2c-gpio and my i2c chip driver.  That worked perfectly for my
+0x01ff .. 0x0100 .. 0x0200
 
-With chip-driver you mean the PMIC? Yes, that is probably needed there, too.
-Which driver is it?
+Big-endian writes also have similar failure:
 
-> issue.  I'd be happy to return a patch of this.  Would be this the
-> sort of thing that would benefit from a config option?  Something
+0x01ff .. 0x02ff .. 0x0200
 
-Nope, there is no bigger drawback to this and probably a number of useres
-wouldn't know what to select here. Just patch the module_init() away.
-
-Kind regards,
-
-   Wolfram
-
---=20
-Pengutronix e.K.                           | Wolfram Sang                |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-
---n8g4imXOkfNTN/H1
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-Content-Disposition: inline
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.9 (GNU/Linux)
-
-iEYEARECAAYFAkv+3ZgACgkQD27XaX1/VRv77wCfUg+zBpv7AVSx1Qwyi/QOdv+n
-sPoAn0EB/vt5dZk8V0z4FrwRZF+m+kgm
-=2QOx
------END PGP SIGNATURE-----
-
---n8g4imXOkfNTN/H1--
+This won't happen if there is a single instruction write of the wall 
+clock word.
