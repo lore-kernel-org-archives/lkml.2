@@ -1,168 +1,157 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932168Ab0E0Qqa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 May 2010 12:46:30 -0400
-Received: from www.tglx.de ([62.245.132.106]:48968 "EHLO www.tglx.de"
+	id S1758443Ab0E0QrH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 May 2010 12:47:07 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:47193 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757984Ab0E0Qq2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 May 2010 12:46:28 -0400
-Date: Thu, 27 May 2010 18:45:25 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Matthew Garrett <mjg59@srcf.ucam.org>
-cc: Alan Cox <alan@lxorguk.ukuu.org.uk>,
-       =?ISO-8859-15?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>,
-       Florian Mickler <florian@mickler.org>,
-       Vitaly Wool <vitalywool@gmail.com>,
-       Peter Zijlstra <peterz@infradead.org>,
-       LKML <linux-kernel@vger.kernel.org>, Paul@smtp1.linux-foundation.org,
-       felipe.balbi@nokia.com,
-       Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
-       Linux PM <linux-pm@lists.linux-foundation.org>
-Subject: Re: [linux-pm] [PATCH 0/8] Suspend block api (version 8)
-In-Reply-To: <20100527155201.GA31937@srcf.ucam.org>
-Message-ID: <alpine.LFD.2.00.1005271808340.3032@localhost.localdomain>
-References: <20100526120242.5c9b73ad@schatten.dmk.lab> <AANLkTim4021cTnhVZrQpefq1MG-eEPOFLDRO-XDepHb4@mail.gmail.com> <20100526133721.602633b2@schatten.dmk.lab> <AANLkTikzgaOFdQKess4E-D86OLPOzxP3dWiDkU_UR0ri@mail.gmail.com> <20100526142430.327ccbc4@schatten.dmk.lab>
- <20100526141612.3e2e0443@lxorguk.ukuu.org.uk> <AANLkTin97MMu-XO_Lk-snefBWz2ymhS0Qi1y1RxLwdVA@mail.gmail.com> <20100527003943.07c17f85@lxorguk.ukuu.org.uk> <20100527140655.GA28048@srcf.ucam.org> <alpine.LFD.2.00.1005271642440.3032@localhost.localdomain>
- <20100527155201.GA31937@srcf.ucam.org>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S1755012Ab0E0QrE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 May 2010 12:47:04 -0400
+Date: Thu, 27 May 2010 19:41:39 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Sridhar Samudrala <sri@us.ibm.com>
+Cc: Oleg Nesterov <oleg@redhat.com>, netdev <netdev@vger.kernel.org>,
+       lkml <linux-kernel@vger.kernel.org>,
+       "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Dmitri Vorobiev <dmitri.vorobiev@movial.com>, Tejun Heo <tj@kernel.org>,
+       Jiri Kosina <jkosina@suse.cz>, Thomas Gleixner <tglx@linutronix.de>,
+       Ingo Molnar <mingo@elte.hu>, Andi Kleen <ak@linux.intel.com>
+Subject: Re: [PATCH 2/3] workqueue: Add an API to create a singlethread
+	workqueue attached to the current task's cgroup
+Message-ID: <20100527164139.GB21710@redhat.com>
+References: <1274227491.2370.110.camel@w-sridhar.beaverton.ibm.com> <20100527091426.GA6308@redhat.com> <20100527124448.GA4241@redhat.com> <1274977458.10161.11.camel@w-sridhar.beaverton.ibm.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1274977458.10161.11.camel@w-sridhar.beaverton.ibm.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 27 May 2010, Matthew Garrett wrote:
-> On Thu, May 27, 2010 at 05:32:56PM +0200, Thomas Gleixner wrote:
-> > On Thu, 27 May 2010, Matthew Garrett wrote:
-> > > Now let's try this in the Android world. The user hits a key and the 
-> > > system wakes up. The input layer takes a suspend block. The application 
-> > > now draws all the cows it wants to, takes its own suspend block and 
-> > > reads the input device. This empties the queue and the kernel-level 
-> > > suspend block is released. The application then processes the event 
-> > > before releasing the suspend block. The event has been delivered and 
-> > > handled.
+On Thu, May 27, 2010 at 09:24:18AM -0700, Sridhar Samudrala wrote:
+> On Thu, 2010-05-27 at 14:44 +0200, Oleg Nesterov wrote:
+> > On 05/27, Michael S. Tsirkin wrote:
+> > >
+> > > On Tue, May 18, 2010 at 05:04:51PM -0700, Sridhar Samudrala wrote:
+> > > > Add a new kernel API to create a singlethread workqueue and attach it's
+> > > > task to current task's cgroup and cpumask.
+> > > >
+> > > > Signed-off-by: Sridhar Samudrala <sri@us.ibm.com>
+> > >
+> > > Could someone familiar with workqueue code please comment on whether
+> > > this patch is suitable for 2.6.35?
+> > >
+> > > It is needed to fix the case where vhost user might cause a kernel
+> > > thread to consume more CPU than allowed by the cgroup.
+> > > Should I merge it through the vhost tree?
+> > > Ack for this?
 > > 
-> > Thanks for providing this example:
+> > I don't understand the reasons for this patch, but this doesn't matter.
 > > 
-> >   1) It proves that suspend blockers are solely designed to encourage
-> >      people to code crap.
-> 
-> No. Suspend blockers are designed to ensure that suspend isn't racy with 
-> respect to wakeup events. The bit that mitigates badly written 
-> applications is the bit where the scheduler doesn't run any more.
-> 
-> If you're happy with a single badly written application being able to 
-> cripple your power management story, you don't need opportunistic 
-> suspend. But you still have complications when it comes to deciding to 
-> enter suspend at the same time as you receive a wakeup event.
-
-Wrong. Setting the QoS requirements of the badly written app to any
-latency will allow the kernel to suspend even if the crappy app is
-active.
-
-And again. I'm opposing the general chant that fixing crappy
-applications in the kernel is a good thing. It's the worst decision we
-could make.
- 
-> >      And you need to do that, because the user applications suspend
-> >      blocker magic is racy as hell. To work around that you sprinkle
-> >      your suspend blocker magic all over the kernel instead of telling
-> >      people how to solve the problem correctly.
-> 
-> What /is/ the correct way to solve this problem when entering explicit 
-> suspend states? How do you guarantee that an event has been delivered to 
-> userspace before transitioning into suspend? Now, this is a less 
-> interesting problem if you're not using opportunistic suspend, but it's 
-> still a problem.
-
-Holy crap. If an event happens _before_ we go into an idle state - and
-I see suspend as an deeper idle state - then we do not go there at all.
-
-The whole notion of treating suspend to RAM any different than a plain
-idle C-State is wrong. It's not different at all. You just use a
-different mechanism which has longer takedown and wakeup latencies and
-requires to shut down stuff and setup extra wakeup sources.
-
-And there is the whole problem. Switching from normal event delivery
-to those special wakeup sources. That needs to be engineered in any
-case carefuly and it does not matter whether you add suspend blockers
-or not.
- 
-> >      Simply because you move the cow drawing CPU time from the point
-> >      where the device wants to go into suspend to the point where the
-> >      user hits a key again. You even delay the reaction of your app to
-> >      the user input by the time it needs to finish drawing cows.
-> 
-> It's how application mainloops tend to work.
-
-So what's the f*cking point ? You draw exactly the same amount of
-power and still you are claiming that it's better or what ?
- 
-> > > You can't express that with resource limits or QoS constraints. If you 
-> > > want to deal with this kind of situation then, as far as I can tell, you 
-> > > need either suspend blockers or something so close to them that it makes 
-> > > no difference.
+> > I don't really see any need to change workqueue.c,
 > > 
-> > Wrong. If your application is interactive then you set the QoS
-> > requirement once to interactive and be done.
-> >
-> > So the correct point to make a power state decision is when the app
-> > waits for a key press. At this point the kernel can take several
-> > pathes:
+> > > > +static struct task_struct *get_singlethread_wq_task(struct workqueue_struct *wq)
+> > > > +{
+> > > > +	return (per_cpu_ptr(wq->cpu_wq, singlethread_cpu))->thread;
+> > > > +}
 > > 
-> >       1) Keep the system alive because the input device is in active
-> >        	 state and a key press is expected
+> > (Not sure this trivial static helper with the single caller makes sense, but
+> >  see below)
 > > 
-> >       2) Go into supsend because the input device is deactivated after
-> >       	 the screen lock kicked in.
+> > > > +/* Create a singlethread workqueue and attach it's task to the current task's
+> > > > + * cgroup and set it's cpumask to the current task's cpumask.
+> > > > + */
+> > > > +struct workqueue_struct *create_singlethread_workqueue_in_current_cg(char *name)
+> > > > +{
+> > > > +	struct workqueue_struct *wq;
+> > > > +	struct task_struct *task;
+> > > > +	cpumask_var_t mask;
+> > > > +
+> > > > +	wq = create_singlethread_workqueue(name);
+> > > > +	if (!wq)
+> > > > +		goto out;
+> > > > +
+> > > > +	if (!alloc_cpumask_var(&mask, GFP_KERNEL))
+> > > > +		goto err;
+> > > > +			
+> > > > +	if (sched_getaffinity(current->pid, mask))
+> > > > +		goto err;
+> > > > +
+> > > > +	task = get_singlethread_wq_task(wq);
+> > > > +	if (sched_setaffinity(task->pid, mask))
+> > > > +		goto err;
+> > > > +
+> > > > +	if (cgroup_attach_task_current_cg(task))
+> > > > +		goto err;
+> > > > +out:	
+> > > > +	return wq;
+> > > > +err:
+> > > > +	destroy_workqueue(wq);
+> > > > +	wq = NULL;
+> > > > +	goto out;
+> > > > +}
+> > 
+> > Instead, cgroup.c (or whoever needs this) can do
+> > 
+> > 	struct move_struct {
+> > 		struct work_struct work;
+> > 		int ret;
+> > 	};
+> > 
+> > 	static void move_func(struct work_struct *work)
+> > 	{
+> > 		struct move_struct *move = container_of(...);
+> > 
+> > 		if (cgroup_attach_task_current_cg(current))
 > 
-> That's no good. If the input device has been deactivated, how does the 
-> wakeup event get delivered to the application?
->  
-> > This behaves exactly the same way in terms of power consumption as
-> > your blocker example just without all the mess you are trying to
-> > create.
+> We are trying to attach the task associated with workqueue to the
+> current task's cgroup. So what we need is 
+>    cgroup_attach_task_current_cg(wq->task);
 > 
-> And means that wakeup events don't get delivered. That's a shortcoming.
+> However there is no interface currently that exports the task associated
+> with a workqueue. It is hidden in cpu_workqueue_struct and is only 
+> accessible within workqueue.c.
+> 
+> 
+> > 			ret = -EANY;
+> > 	}
+> > 
+> > 	static struct workqueue_struct *create_singlethread_workqueue_in_current_cg(char *name)
+> > 	{
+> > 		struct workqueue_struct *wq;
+> > 		struct move_struct move = {
+> > 			.work = __WORK_INITIALIZER(move_func);
+> > 		};
+> > 
+> > 		wq = create_singlethread_workqueue(name);
+> > 		if (!wq)
+> > 			return NULL;
+> > 
+> > 		queue_work(&move.work);
+> > 		flush_work(&move.work);
+> > 
+> > 		if (move.ret) {
+> > 			destroy_workqueue(wq);
+> > 			wq = NULL;
+> > 		}
+> > 
+> > 		return wq;
+> > 	}
+> > 
+> > Or. Just export wq_per_cpu() from workqueue.c (probably with a better name) and
+> > use it like the patch does.
+> This requires that struct cpu_workqueue_struct and struct
+> workqueue_struct are made externally visible by moving them to
+> kernel/workqueue.h.
+> 
+> Instead what about adding the simple helper get_singlethread_wq_task()
+> in workqueue.c and exporting it.
+> I can add create_singlethread_workqueue_in_current_cg() to cgroup.c
+> using this helper routine.
 
-That's utter nonsense. If we have a problem with missed wakeups then
-it needs to be fixed and not papered over with suspend blocker magic.
+Or to our driver, if that's more palatable.
 
-I'm starting to get really grumpy about the chant that suspend
-blockers are the only way to fix missed wakeups. That might be the
-only way you can think of with your pink android glasses on, but again
-this is not rocket science even if it does not fit into the current
-way the kernel handles the whole suspend mechanism.
-
-So if we really sit back and look at suspend as another idle state,
-then we have first off the same requirements for entering it as we
-have for any other idle state:
-
-     No running tasks (and we can solve the don't care task problem
-     nicely with QoS)
-
-Aside of that we need to bring devices into a quiescent state and
-setup the wakeup sources. That switch over needs to be done with and
-without suspend blockers in a careful way for each SoC
-implementation. 
-
-If the interrupt happens _BEFORE_ we switch over to the quiescent
-state, then we need to backout. If it happens after the switch then it
-goes into the nirwana if the suspend wakeup has not been set up
-correctly. If we have it setup correctly then we go into suspend just
-to come back immediately. There is nothing you can do about that with
-suspend blockers.
-
-So if the interrupt comes in before we switch then we have that
-information already today. We might not make use of it or just in a
-racy way, but that does not warrant to work around that problem with a
-big hammer approach.
-
-You can try to lull me into cozy suspend blocker acceptance as long as
-you want, but you better spend your time on either giving a coherent
-explanation why suspend blockers are necessary or looking at the
-underlying problem and fixing it in a technical correct way.
-
-Thanks,
-
-	tglx
+> Thanks
+> Sridhar
+> 
