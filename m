@@ -1,72 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932905Ab0E0VmT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 May 2010 17:42:19 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:40339 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757930Ab0E0VmQ (ORCPT
+	id S1759282Ab0E0Vmt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 May 2010 17:42:49 -0400
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:34293 "EHLO
+	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1757930Ab0E0Vms (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 May 2010 17:42:16 -0400
-Date: Thu, 27 May 2010 23:42:09 +0200
-From: Wolfram Sang <w.sang@pengutronix.de>
-To: Ryan Mallon <ryan@bluewatersys.com>
-Cc: Robert Emanuele <rob@emanuele.us>,
-       Linus Walleij <linus.ml.walleij@gmail.com>,
-       linux-kernel@vger.kernel.org,
-       linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-       linux-i2c@vger.kernel.org
-Subject: Re: Controlling Driver Load Order
-Message-ID: <20100527214209.GC5636@pengutronix.de>
-References: <AANLkTikzDvWakd7JW3DzTHinjS3dAlqzPx6K8V2qMDG7@mail.gmail.com> <AANLkTinkY8JYh44UOEPflBUDyQ2wat_AKShRjA3HPxrf@mail.gmail.com> <20100526235246.GA31068@pengutronix.de> <AANLkTikj8yGSK5Ovud_k8f6jWloojqDJmQ_H6pD_IFgM@mail.gmail.com> <20100527041358.GA14070@pengutronix.de> <AANLkTilKUfcYsPqr5kXlONJQAFCaE8D8U9ltQybIzCPu@mail.gmail.com> <4BFEDF6D.3090100@bluewatersys.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="1ccMZA6j1vT5UqiK"
-Content-Disposition: inline
-In-Reply-To: <4BFEDF6D.3090100@bluewatersys.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
-X-SA-Exim-Mail-From: wsa@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	Thu, 27 May 2010 17:42:48 -0400
+Date: Thu, 27 May 2010 22:49:49 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+       Alan Stern <stern@rowland.harvard.edu>,
+       Matthew Garrett <mjg59@srcf.ucam.org>,
+       LKML <linux-kernel@vger.kernel.org>,
+       Florian Mickler <florian@mickler.org>,
+       Linux PM <linux-pm@lists.linux-foundation.org>,
+       Thomas Gleixner <tglx@linutronix.de>,
+       Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
+       felipe.balbi@nokia.com
+Subject: Re: [linux-pm] [PATCH 0/8] Suspend block api (version 8)
+Message-ID: <20100527224949.4d561091@lxorguk.ukuu.org.uk>
+In-Reply-To: <201005272336.26643.rjw@sisk.pl>
+References: <Pine.LNX.4.44L0.1005271329460.3239-100000@iolanthe.rowland.org>
+	<1274981871.27810.5650.camel@twins>
+	<201005272336.26643.rjw@sisk.pl>
+X-Mailer: Claws Mail 3.7.5 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, 27 May 2010 23:36:26 +0200
+"Rafael J. Wysocki" <rjw@sisk.pl> wrote:
 
---1ccMZA6j1vT5UqiK
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+> On Thursday 27 May 2010, Peter Zijlstra wrote:
+> > On Thu, 2010-05-27 at 13:32 -0400, Alan Stern wrote:
+> > 
+> > > On some platforms (like those with ACPI), deeper power-savings are
+> > > available by using forced suspend than by using idle. 
+> > 
+> > Sounds like something that's fixable, doesn't it?
+> 
+> The fix would probably have to involve rewriting the ACPI spec.
 
+We are on about the fourth version of ACPI already. ACPI evolves and
+improves and extends. It's not an impossibility to sort that out if
+everyone in the x86 OS world starts thinking 'How come their ARM platform
+can do this'
 
-> Looks like this has already been done:
-> http://www.mail-archive.com/linux-i2c@vger.kernel.org/msg03056.html
+We are also on at least the second suspend/resume model in Linux. The
+first was 'isn't this APM stuff neat', the second is heavily oriented
+around ACPI ideas. And we already have SoC people moving into the third
+model and making it work on non-x6 ('suspend is not special').
 
-Always ask which kernel is used, sigh...
+I've not poked at the current desktop stuff enough to see if the
+gnome-power-manager and friends handle pushing the suspend button with
+dbus notifiers to apps. I guess it does.
 
->=20
-> There was a discussion a while back to make all of the embedded i2c
-> busses be subsys_initcall since i2c is often a system bus on embedded
-
-Oh, where was that? Can't recall (but couldn't recall that I acked the i2c-=
-gpio
-patch above as well ;))
-
---=20
-Pengutronix e.K.                           | Wolfram Sang                |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-
---1ccMZA6j1vT5UqiK
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-Content-Disposition: inline
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.9 (GNU/Linux)
-
-iEYEARECAAYFAkv+5zEACgkQD27XaX1/VRsK0wCgwJS6Sk3E5y/b68RobX0/k+Zj
-wzcAoMhiZ2z41KEzidAg8BI0i2/tt2jy
-=c37a
------END PGP SIGNATURE-----
-
---1ccMZA6j1vT5UqiK--
+Alan
