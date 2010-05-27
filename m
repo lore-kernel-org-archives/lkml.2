@@ -1,60 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755247Ab0E0NAz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 May 2010 09:00:55 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:49004 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751063Ab0E0NAx (ORCPT
+	id S1754844Ab0E0NHd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 May 2010 09:07:33 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:35461 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753658Ab0E0NHc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 May 2010 09:00:53 -0400
-Date: Thu, 27 May 2010 08:59:52 -0400
-From: Chris Mason <chris.mason@oracle.com>
-To: liubo <liubo2009@cn.fujitsu.com>
-Cc: Josef Bacik <josef@redhat.com>, linux-btrfs@vger.kernel.org,
-       linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 6/6] Btrfs: do aio_write instead of write
-Message-ID: <20100527125952.GQ3108@think>
-Mail-Followup-To: Chris Mason <chris.mason@oracle.com>,
-	liubo <liubo2009@cn.fujitsu.com>, Josef Bacik <josef@redhat.com>,
-	linux-btrfs@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-	linux-kernel@vger.kernel.org
-References: <1274461422-18433-1-git-send-email-josef@redhat.com>
- <1274461422-18433-6-git-send-email-josef@redhat.com>
- <4BFDE1CE.4030100@cn.fujitsu.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4BFDE1CE.4030100@cn.fujitsu.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Auth-Type: Internal IP
-X-Source-IP: acsinet15.oracle.com [141.146.126.227]
-X-CT-RefId: str=0001.0A090206.4BFE6CF6.01A6:SCFMA922111,ss=1,fgs=0
+	Thu, 27 May 2010 09:07:32 -0400
+X-Authority-Analysis: v=1.1 cv=EbJB9AiBqsyZPMVATYsj78CfMiBiOs+4P7kRKNQkfg0= c=1 sm=0 a=Dwj94tMcmnEA:10 a=UBIxAjGgU1YA:10 a=7U3hwN5JcxgA:10 a=Q9fys5e9bTEA:10 a=gMqfjgEr1zLu/65IO0LwxA==:17 a=RBmfiGd0y7SGjgJ4ix4A:9 a=GOAeUYFAfjmabHvmDI9awvAYEVEA:4 a=PUjeQqilurYA:10 a=_RhRFcbxBZMA:10 a=gMqfjgEr1zLu/65IO0LwxA==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.89.75
+Subject: Re: [PATCH] streamline_config.pl: use references rather than
+ copied data structures
+From: Steven Rostedt <rostedt@goodmis.org>
+Reply-To: rostedt@goodmis.org
+To: Toralf =?ISO-8859-1?Q?F=F6rster?= <toralf.foerster@gmx.de>
+Cc: zippel@linux-m68k.org, linux-kbuild@vger.kernel.org,
+       linux-kernel@vger.kernel.org
+In-Reply-To: <201005271342.09066.toralf.foerster@gmx.de>
+References: <201005271342.09066.toralf.foerster@gmx.de>
+Content-Type: text/plain; charset="ISO-8859-15"
+Organization: Kihon Technologies Inc.
+Date: Thu, 27 May 2010 09:07:29 -0400
+Message-ID: <1274965649.22648.263.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 27, 2010 at 11:06:54AM +0800, liubo wrote:
-> On 05/22/2010 01:03 AM, Josef Bacik wrote:
-> > In order for AIO to work, we need to implement aio_write.  This patch converts
-> > our btrfs_file_write to btrfs_aio_write.  I've tested this with xfstests and
-> > nothing broke, and the AIO stuff magically started working.  Thanks,
-> >
-> > Signed-off-by: Josef Bacik <josef@redhat.com>
-> >   
+On Thu, 2010-05-27 at 13:42 +0200, Toralf Förster wrote:
+> IMHO there's no need for a copy-by-value
 > 
-> Hi, Josef,
+
+Hi Toralf,
+
+I'm sorry but "Your Humble Opinion" is not rational to make changes.
+
+A change to the code must have a reason other than opinion. You must be
+able to show that there is actual benefit for a change, or at least
+explain it.
+
+Every time a change is made, there is potential for a new bug to be
+introduced (especially in Perl). So, unless there's actual need for a
+change, don't make one.
+
+This is not performance critical code. If you are fixing a bug, or
+adding a feature, then sure. But I really don't want changes that do
+nothing but skin the cat a different way.
+
+Thanks,
+
+-- Steve
+
+> Signed-off-by: Toralf Foerster <toralf.foerster@gmx.de>
+> ---
+>  scripts/kconfig/streamline_config.pl |    6 +++---
+>  1 files changed, 3 insertions(+), 3 deletions(-)
 > 
-> I've tested your patch(May 22) with my tools, and one case triggered a bug
-> which made writev operation hang up, more information is followed.
+> diff --git a/scripts/kconfig/streamline_config.pl 
+> b/scripts/kconfig/streamline_config.pl
+> index afbd54a..574e68f 100644
+> --- a/scripts/kconfig/streamline_config.pl
+> +++ b/scripts/kconfig/streamline_config.pl
+> @@ -406,14 +406,14 @@ close(CIN);
+>  loop:
+>  foreach my $module (keys(%modules)) {
+>      if (defined($objects{$module})) {
+> -       my @arr = @{$objects{$module}};
+> -       foreach my $conf (@arr) {
+> +       my $arr = $objects{$module};
+> +       foreach my $conf (@{$arr}) {
+>             if (defined($setconfigs{$conf})) {
+>                 next loop;
+>             }
+>         }
+>         print STDERR "module $module did not have configs";
+> -       foreach my $conf (@arr) {
+> +       foreach my $conf (@{$arr}) {
+>             print STDERR " " , $conf;
+>         }
+>         print STDERR "\n";
+> -- 
+> 1.6.4.4
 > 
-> - Steps to trigger it:
->   # mount /dev/sda8 /home/btrfsdisk -o nodatacow
->   # gcc direct-io.c -o direct-io
->   # ./direct-io O_DIRECT writev /home/btrfsdisk/testrw 4M
 
-Thanks for sending along this test program and bug report.  We've fixed
-a few bugs in the O_DIRECT patches, and this is working now.
 
-The merged result is in the for-linus branch of the btrfs unstable tree.
-
--chris
