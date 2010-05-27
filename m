@@ -1,78 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933077Ab0E0SsP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 May 2010 14:48:15 -0400
-Received: from mail-pz0-f176.google.com ([209.85.222.176]:39724 "EHLO
-	mail-pz0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757930Ab0E0SsO (ORCPT
+	id S1759500Ab0E0SuO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 May 2010 14:50:14 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:60731 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756656Ab0E0SuL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 May 2010 14:48:14 -0400
-Date: Thu, 27 May 2010 11:46:02 -0700
-From: Brandon Philips <brandon@ifup.org>
-To: Rusty Russell <rusty@rustcorp.com.au>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       LKML <linux-kernel@vger.kernel.org>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Jon Masters <jonathan@jonmasters.org>, Tejun Heo <htejun@gmail.com>,
-       Masami Hiramatsu <mhiramat@redhat.com>
-Subject: Re: [Regression] Crash in load_module() while freeing args
-Message-ID: <20100527184602.GF7351@jenkins.ifup.org>
-References: <201005252300.07739.rjw@sisk.pl>
- <201005262127.26235.rusty@rustcorp.com.au>
- <201005270056.25748.rjw@sisk.pl>
- <201005271456.20003.rusty@rustcorp.com.au>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201005271456.20003.rusty@rustcorp.com.au>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Thu, 27 May 2010 14:50:11 -0400
+X-Authority-Analysis: v=1.1 cv=WC2cwRI/KXdLNEmE8ivg2cmI8vFt6dWmaZdvaJ93QHU= c=1 sm=0 a=Dwj94tMcmnEA:10 a=UBIxAjGgU1YA:10 a=7U3hwN5JcxgA:10 a=Q9fys5e9bTEA:10 a=gMqfjgEr1zLu/65IO0LwxA==:17 a=_4JdDZT890xhelYK684A:9 a=HcTPAvR26G4G1iAMsVmppoXyNmIA:4 a=PUjeQqilurYA:10 a=gMqfjgEr1zLu/65IO0LwxA==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.89.75
+Subject: Re: [PATCH] streamline_config.pl: use references rather than
+ copied data structures
+From: Steven Rostedt <rostedt@goodmis.org>
+Reply-To: rostedt@goodmis.org
+To: Toralf =?ISO-8859-1?Q?F=F6rster?= <toralf.foerster@gmx.de>
+Cc: zippel@linux-m68k.org, linux-kbuild@vger.kernel.org,
+       linux-kernel@vger.kernel.org
+In-Reply-To: <201005271624.44746.toralf.foerster@gmx.de>
+References: <201005271342.09066.toralf.foerster@gmx.de>
+	 <1274965649.22648.263.camel@gandalf.stny.rr.com>
+	 <201005271624.44746.toralf.foerster@gmx.de>
+Content-Type: text/plain; charset="ISO-8859-15"
+Organization: Kihon Technologies Inc.
+Date: Thu, 27 May 2010 14:50:07 -0400
+Message-ID: <1274986207.22648.268.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 14:56 Thu 27 May 2010, Rusty Russell wrote:
-> On Thu, 27 May 2010 08:26:25 am Rafael J. Wysocki wrote:
-> > On Wednesday 26 May 2010, Rusty Russell wrote:
-> > > I suspect that the increased parallelism enabled by this patch uncovered this
-> > > bug.  Does this fix it?
-> > 
-> > Since the commit has been reverted, do you still want me to test this patch?
-> > Quite frankly I'd prefer to test a complete replacement for that commit on top
-> > of current -git.
+On Thu, 2010-05-27 at 16:24 +0200, Toralf Förster wrote:
+> Steven Rostedt wrote at 15:07:29
+> > On Thu, 2010-05-27 at 13:42 +0200, Toralf Förster wrote:
+
+> Understood and accepted.
 > 
-> OK, combo meal deal below, against Linus' latest.  I'd really appreciate
-> a report, since AFAIK you're the only one hitting it, and only when that
-> other (now reverted) patch was applied.
+> What's about the following 2 snippets (a trivial typo and an attempt to 
+> prevent a possible trap) ? :
+> 
 
-I tested this patch on my machine on top of Linus's latest and it
-fixes the issue. Without the patch and using Linus's latest I
-reproduce the original issue:
+OK, this is better :-)
 
-[   60.836022] bnx2: gave up waiting for init of module libcrc32c.
-[   60.847997] bnx2: Unknown symbol crc32c
+-- Steve
 
-Note: Again, since I don't have bnx2x hardware I forced bnx2.ko to
-depend on libcrc32c as bnx2x does:
-  http://ifup.org/~philips/review/bnx2-hack-to-use-libcrc32c.patch
+> 
+> diff --git a/scripts/kconfig/streamline_config.pl 
+> b/scripts/kconfig/streamline_config.pl
+> index afbd54a..3f54911 100644
+> --- a/scripts/kconfig/streamline_config.pl
+> +++ b/scripts/kconfig/streamline_config.pl
+> @@ -242,7 +242,7 @@ foreach my $makefile (@makefiles) {
+>             foreach my $obj (split /\s+/,$objs) {
+>                 $obj =~ s/-/_/g;
+>                 if ($obj =~ /(.*)\.o$/) {
+> -                   # Objects may bes enabled by more than one config.
+> +                   # Objects may be enabled by more than one config.
+>                     # Store configs in an array.
+>                     my @arr;
+> 
+> 
+> 
+> diff --git a/scripts/kconfig/streamline_config.pl 
+> b/scripts/kconfig/streamline_config.pl
+> index afbd54a..9726946 100644
+> --- a/scripts/kconfig/streamline_config.pl
+> +++ b/scripts/kconfig/streamline_config.pl
+> @@ -307,7 +307,7 @@ close (LIN);
+>  my %configs;
+>  foreach my $module (keys(%modules)) {
+>      if (defined($objects{$module})) {
+> -       @arr = @{$objects{$module}};
+> +       my @arr = @{$objects{$module}};
+>         foreach my $conf (@arr) {
+>             $configs{$conf} = $module;
+>         }
+> 
+> 
 
-> As an side to Brandon: I can see how my patch fixed an explicit
-> request_module inside module_init (that's how I tested it).  I can't
-> see how we have a problem with an implicit dependency such as
-> bne2x->crc32.  Modules go into the live state without retaking the
-> lock.
 
-libcrc32c is doing an explicit request_module inside of its
-module_init. Follow the call chain in libcrc32c_mod_init()
-
-libcrc32c_mod_init
- crypto_alloc_shash
-  crypto_alloc_tfm
-   crypto_find_alg
-    crypto_alg_mod_lookup
-     crypto_larval_lookup
-      request_module
-
-Cheers,
-
-	Brandon
