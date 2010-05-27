@@ -1,64 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758046Ab0E0Q1w (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 May 2010 12:27:52 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:37882 "EHLO
+	id S1758110Ab0E0Q17 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 May 2010 12:27:59 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:21206 "EHLO
 	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757856Ab0E0Q1v (ORCPT
-	<rfc822;<linux-kernel@vger.kernel.org>>);
-	Thu, 27 May 2010 12:27:51 -0400
-Date: Thu, 27 May 2010 12:26:56 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Bastian Blank <waldi@debian.org>, xen-devel@lists.xensource.com,
-       Jeremy Fitzhardinge <jeremy@goop.org>, linux-kernel@vger.kernel.org
-Subject: Re: [Xen-devel] [PATCH] Fix name of Xen event-channel device
-Message-ID: <20100527162656.GA6190@phenom.dumpdata.com>
-References: <20100526105144.GA28280@wavehammer.waldi.eu.org> <20100527073512.GA17135@wavehammer.waldi.eu.org> <20100527143104.GB6040@wavehammer.waldi.eu.org> <20100527150251.GD6040@wavehammer.waldi.eu.org>
+	with ESMTP id S1758085Ab0E0Q15 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 May 2010 12:27:57 -0400
 MIME-Version: 1.0
+Message-ID: <04f8be9a-78ea-45fc-9a6f-c788ca10ea69@default>
+Date: Thu, 27 May 2010 09:26:13 -0700 (PDT)
+From: Dan Magenheimer <dan.magenheimer@oracle.com>
+To: dan.magenheimer@oracle.com, Venkatesh Pallipadi <venki@google.com>,
+       Len Brown <lenb@kernel.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org
+Subject: RE: tsc reliability for Intel Core 2 Duo "Conroe"
+References: <d1278473-1065-4607-98e0-67f2b985ec15@default
+ AANLkTim1_8Rf0fPfycE92z5CAXpLXYga93A5qTxgXjqz@mail.gmail.com
+ a20d4b76-5ba0-44cf-a26b-f58129377354@default>
+In-Reply-To: <a20d4b76-5ba0-44cf-a26b-f58129377354@default>
+X-Priority: 3
+X-Mailer: Oracle Beehive Extensions for Outlook 1.5.1.5.2  (401224) [OL
+ 12.0.6514.5000]
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100527150251.GD6040@wavehammer.waldi.eu.org>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+Content-Transfer-Encoding: 8BIT
 X-Auth-Type: Internal IP
 X-Source-IP: rcsinet15.oracle.com [148.87.113.117]
-X-CT-RefId: str=0001.0A090201.4BFE9D7D.00DA:SCFMA4539811,ss=1,fgs=0
+X-CT-RefId: str=0001.0A090206.4BFE9D80.016F:SCFMA4539811,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 27, 2010 at 05:02:51PM +0200, Bastian Blank wrote:
-> The Xen event-channel device is named evtchn in the kernel but always
-> used as /dev/xen/evtchn in userspace. This patch fixes the name.
-
-Hey Bastian,
-
-Is this related to this bug:
-http://bugzilla.xensource.com/bugzilla/show_bug.cgi?id=1612 ?
-
-I saw it in some reference to the evtchn but wasn't sure if this is the
-same.
-
+> After digging deeper, it appears that this processor is entering
+> C2 (as can be seen /sys/devices/system/cpu/cpu*/cpuidle/ output below)
+> despite the documentation I have, as well as this posting from Len:
+> http://forum.soft32.com/linux/ACPI-states-Conroe-ftopict339089.html
+> I wonder if C1E state is somehow incorrectly getting recorded as
+> C2 state?  Or maybe TSC doesn't stop in C2 (TSC is most certainly
+> not stopping), in which case the test in tsc_check_state() should
+> be againt ACPI_STATE_C2?
 > 
-> Signed-off-by: Bastian Blank <waldi@debian.org>
+> In any case, this appears to now be an ACPI C-state question
+> so thanks, Venki, for cc'ing Len... and tglx is off the hook :-)
 > 
-> diff --git a/drivers/xen/evtchn.c b/drivers/xen/evtchn.c
-> index 66e185c..89cd743 100644
-> --- a/drivers/xen/evtchn.c
-> +++ b/drivers/xen/evtchn.c
-> @@ -471,7 +471,7 @@ static const struct file_operations evtchn_fops = {
->  
->  static struct miscdevice evtchn_miscdev = {
->  	.minor        = MISC_DYNAMIC_MINOR,
-> -	.name         = "evtchn",
-> +	.name         = "xen/evtchn",
->  	.fops         = &evtchn_fops,
->  };
->  static int __init evtchn_init(void)
-> -- 
-> Yes, it is written.  Good shall always destroy evil.
-> 		-- Sirah the Yang, "The Omega Glory", stardate unknown
-> 
-> _______________________________________________
-> Xen-devel mailing list
-> Xen-devel@lists.xensource.com
-> http://lists.xensource.com/xen-devel
+> Len, note that this box is an Intel SDP so if it is an odd
+> duck, please just let me know... though I think I may have
+> some Xen code to fix depending on the answer to the above.
+
+Never mind... it appears this box has a BIOS setting to enable/disable
+C2 that I didn't find in the documentation.  With C2 disabled,
+TSC is properly selected as the clocksource.
+
+Sorry for the noise.
