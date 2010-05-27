@@ -1,55 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757926Ab0E0Ov6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 May 2010 10:51:58 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:41156 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755921Ab0E0Ov5 (ORCPT
+	id S1757935Ab0E0OwX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 May 2010 10:52:23 -0400
+Received: from mailgw.tensilica.com ([65.119.96.134]:52441 "EHLO
+	mailgw.tensilica.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755683Ab0E0OwV convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 May 2010 10:51:57 -0400
-Date: Thu, 27 May 2010 11:51:42 -0300
-From: Arnaldo Carvalho de Melo <acme@infradead.org>
-To: Stephane Eranian <eranian@google.com>
-Cc: linux-kernel@vger.kernel.org, peterz@infradead.org, mingo@elte.hu,
-       paulus@samba.org, davem@davemloft.net, fweisbec@gmail.com,
-       perfmon2-devel@lists.sf.net, eranian@gmail.com
-Subject: Re: [PATCH] perf: fix use_browser infinite loop bug in annotate
-Message-ID: <20100527145142.GJ9874@ghostprotocols.net>
-References: <4bfe6b18.914ed80a.0573.4c6e@mx.google.com>
+	Thu, 27 May 2010 10:52:21 -0400
+From: Marc Gauthier <marc@tensilica.com>
+To: Arnd Bergmann <arnd@arndb.de>, Chris Metcalf <cmetcalf@tilera.com>
+CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>
+Date: Thu, 27 May 2010 07:52:03 -0700
+Subject: RE: [PATCH] arch/tile: new multi-core architecture for Linux
+Thread-Topic: [PATCH] arch/tile: new multi-core architecture for Linux
+Thread-Index: Acr9ptK5VDntjl3URLadggzvR0MwxAABAtDg
+Message-ID: <522C1DF17AF50042AD8AE87F7887BD3D01637144CA@exch.hq.tensilica.com>
+References: <201005200543.o4K5hFRF006079@farm-0002.internal.tilera.com>
+ <201005271041.30519.arnd@arndb.de> <4BFE73DF.5090107@tilera.com>
+ <201005271611.47963.arnd@arndb.de>
+In-Reply-To: <201005271611.47963.arnd@arndb.de>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <4bfe6b18.914ed80a.0573.4c6e@mx.google.com>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Thu, May 27, 2010 at 02:50:01PM +0200, Stephane Eranian escreveu:
-> This patch fixes an infinite loop problem with perf annotate when
-> the TUI is not used. When the perfconfig file is not found use_browser
-> remains at -1, when found and tui is disabled use_browser = 0. Thus the
-> correct test for TUI is use_browser > 0.
-> 
-> Signed-off-by: Stephane Eranian <eranian@google.com>
+linux-arch-owner@vger.kernel.org wrote:
+> On Thursday 27 May 2010, Chris Metcalf wrote:
+>> On 5/27/2010 4:41 AM, Arnd Bergmann wrote:
+>>>> Hmm, I didn't know about that.  Any information would be
+>>>> appreciated.  I guess you could synthesize something that looked
+>>>> like a signal purely in user-space?  But how would debuggers trap
+>>>> it?  I'm not sure how it would work without a system call.
+>>>
+>>> I think the C99 standard allows you to not implement SIGFPE at all
+>>> but instead rely on applications doing fetestexcept() etc.
+>>
+>> We use this not for the floating-point operations, but for integer
+>> divide-by-zero.  In principle we could use it for floating-point too,
+>> but we currently don't, since generally folks don't expect it there.
+>
+> Ah, I see. That probably makes a lot of sense to present as a signal
+> the way you do.
 
-Thanks, I'm applying this one and doing an audit of other uses, I know
-of one more case reported by Frédéric that was fixed in a similar way.
+FWIW, this can also be done using some recognizable illegal
+instruction sequence, if the architecture reserves some opcodes
+as always illegal.  This makes the division routine (typically part
+of libgcc) more independent of OS, which has some merit.
+The kernel illegal instruction handler needs to recognize this
+sequence and turn it into a SIGFPE instead of SIGILL.
 
-> diff --git a/tools/perf/builtin-annotate.c b/tools/perf/builtin-annotate.c
-> index 08278ed..96db524 100644
-> --- a/tools/perf/builtin-annotate.c
-> +++ b/tools/perf/builtin-annotate.c
-> @@ -343,7 +343,7 @@ find_next:
->  			continue;
->  		}
->  
-> -		if (use_browser) {
-> +		if (use_browser > 0) {
->  			key = hist_entry__tui_annotate(he);
->  			if (is_exit_key(key))
->  				break;
+The Xtensa architecture libgcc added this recently, but we haven't
+yet added the SIGILL=>SIGFPE code to the kernel.
+
+-Marc
