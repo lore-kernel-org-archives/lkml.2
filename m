@@ -1,102 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932179Ab0E0O6U (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 May 2010 10:58:20 -0400
-Received: from az33egw02.freescale.net ([192.88.158.103]:36491 "EHLO
-	az33egw02.freescale.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757208Ab0E0O6R (ORCPT
+	id S1757972Ab0E0O67 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 May 2010 10:58:59 -0400
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:60864 "EHLO
+	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1757208Ab0E0O64 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 May 2010 10:58:17 -0400
-From: Dinh.Nguyen@freescale.com
-To: linux-kernel@vger.kernel.org
-Cc: linux-arm-kernel@lists.infradead.org, s.hauer@pengutronix.de,
-       valentin.longchamp@epfl.ch, daniel@caiaq.de, grant.likely@secretlab.ca,
-       xiao-lizhang@freescale.com, Dinh Nguyen <Dinh.Nguyen@freescale.com>
-Subject: [PATCHv2 2.6.34 2/2] mx5: Register i2c on Freescale MX51 Babbage HW
-Date: Thu, 27 May 2010 09:57:49 -0500
-Message-Id: <1274972269-6946-2-git-send-email-Dinh.Nguyen@freescale.com>
-X-Mailer: git-send-email 1.6.0.4
-In-Reply-To: <1274972269-6946-1-git-send-email-Dinh.Nguyen@freescale.com>
-References: <1274972269-6946-1-git-send-email-Dinh.Nguyen@freescale.com>
+	Thu, 27 May 2010 10:58:56 -0400
+Date: Thu, 27 May 2010 16:05:43 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Matthew Garrett <mjg59@srcf.ucam.org>
+Cc: Arve =?ISO-8859-14?B?SGr4bm5lduVn?= <arve@android.com>,
+       Florian Mickler <florian@mickler.org>,
+       Vitaly Wool <vitalywool@gmail.com>,
+       Peter Zijlstra <peterz@infradead.org>,
+       LKML <linux-kernel@vger.kernel.org>, Paul@smtp1.linux-foundation.org,
+       felipe.balbi@nokia.com,
+       Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
+       Linux PM <linux-pm@lists.linux-foundation.org>
+Subject: Re: [linux-pm] [PATCH 0/8] Suspend block api (version 8)
+Message-ID: <20100527160543.2228fc17@lxorguk.ukuu.org.uk>
+In-Reply-To: <20100527140655.GA28048@srcf.ucam.org>
+References: <AANLkTinN6MKvCEhPkbYQRD2gu-mGXdNW9asRsTuKN3_Y@mail.gmail.com>
+	<1274867106.5882.5090.camel@twins>
+	<20100526120242.5c9b73ad@schatten.dmk.lab>
+	<AANLkTim4021cTnhVZrQpefq1MG-eEPOFLDRO-XDepHb4@mail.gmail.com>
+	<20100526133721.602633b2@schatten.dmk.lab>
+	<AANLkTikzgaOFdQKess4E-D86OLPOzxP3dWiDkU_UR0ri@mail.gmail.com>
+	<20100526142430.327ccbc4@schatten.dmk.lab>
+	<20100526141612.3e2e0443@lxorguk.ukuu.org.uk>
+	<AANLkTin97MMu-XO_Lk-snefBWz2ymhS0Qi1y1RxLwdVA@mail.gmail.com>
+	<20100527003943.07c17f85@lxorguk.ukuu.org.uk>
+	<20100527140655.GA28048@srcf.ucam.org>
+X-Mailer: Claws Mail 3.7.5 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Dinh Nguyen <Dinh.Nguyen@freescale.com>
+> Now, if the user is playing this game, you want it to be scheduled. If 
+> the user has put down their phone and the screen lock has kicked in, you 
+> don't want it to be scheduled. So we could imagine some sort of cgroup 
+> that contains untrusted tasks - when the session is active we set a flag 
 
-Add device registration and setup IOMUX pins in the mx51_babbage
-board feil.
+I would hope not, because I'd rather prefer my app that used the screen
+to get the chance to save important data on what it was doing
+irrespective of the screen blank:  "I have an elegant proof for this
+problem but my battery has gone flat"
 
-Signed-off-by: Dinh Nguyen <Dinh.Nguyen@freescale.com>
----
- arch/arm/mach-mx5/board-mx51_babbage.c |   26 ++++++++++++++++++++++++++
- 1 files changed, 26 insertions(+), 0 deletions(-)
+(and I imagine we can play that examples game forever given Ashby's law)
 
-diff --git a/arch/arm/mach-mx5/board-mx51_babbage.c b/arch/arm/mach-mx5/board-mx51_babbage.c
-index ed885f9..19cde68 100644
---- a/arch/arm/mach-mx5/board-mx51_babbage.c
-+++ b/arch/arm/mach-mx5/board-mx51_babbage.c
-@@ -12,6 +12,7 @@
- 
- #include <linux/init.h>
- #include <linux/platform_device.h>
-+#include <linux/i2c.h>
- #include <linux/gpio.h>
- #include <linux/delay.h>
- #include <linux/io.h>
-@@ -21,6 +22,7 @@
- #include <mach/hardware.h>
- #include <mach/imx-uart.h>
- #include <mach/iomux-mx51.h>
-+#include <mach/i2c.h>
- #include <mach/mxc_ehci.h>
- 
- #include <asm/irq.h>
-@@ -64,6 +66,18 @@ static struct pad_desc mx51babbage_pads[] = {
- 	MX51_PAD_EIM_D27__UART3_RTS,
- 	MX51_PAD_EIM_D24__UART3_CTS,
- 
-+	/* I2C1 */
-+	MX51_PAD_EIM_D16__I2C1_SDA,
-+	MX51_PAD_EIM_D19__I2C1_SCL,
-+
-+	/* I2C2 */
-+	MX51_PAD_KEY_COL4__I2C2_SCL,
-+	MX51_PAD_KEY_COL5__I2C2_SDA,
-+
-+	/* HSI2C */
-+	MX51_PAD_I2C1_CLK__HSI2C_CLK,
-+	MX51_PAD_I2C1_DAT__HSI2C_DAT,
-+
- 	/* USB HOST1 */
- 	MX51_PAD_USBH1_CLK__USBH1_CLK,
- 	MX51_PAD_USBH1_DIR__USBH1_DIR,
-@@ -99,6 +113,14 @@ static inline void mxc_init_imx_uart(void)
- }
- #endif /* SERIAL_IMX */
- 
-+static struct imxi2c_platform_data babbage_i2c_data = {
-+	.bitrate = 100000,
-+};
-+
-+static struct imxi2c_platform_data babbage_hsi2c_data = {
-+	.bitrate = 400000,
-+};
-+
- static int gpio_usbh1_active(void)
- {
- 	struct pad_desc usbh1stp_gpio = MX51_PAD_USBH1_STP__GPIO_1_27;
-@@ -230,6 +252,10 @@ static void __init mxc_board_init(void)
- 	mxc_init_imx_uart();
- 	platform_add_devices(devices, ARRAY_SIZE(devices));
- 
-+	mxc_register_device(&mxc_i2c_device0, &babbage_i2c_data);
-+	mxc_register_device(&mxc_i2c_device1, &babbage_i2c_data);
-+	mxc_register_device(&mxc_hsi2c_device, &babbage_hsi2c_data);
-+
- 	if (otg_mode_host)
- 		mxc_register_device(&mxc_usbdr_host_device, &dr_utmi_config);
- 	else {
--- 
-1.6.0.4
+> You can't express that with resource limits or QoS constraints. 
+
+I don't see why not. You just have to think about the problem from the
+right end. Start from "normality is well behaved applications" and
+progress to "but I can constrain bogus ones". 
+
+So what are the resource constraints/QoS constraints for your example:
+
+[Simplistically]
+
+1. App says 'I want to wakeup from events for me within 1 second'
+	(Because I like drawing cows at about that rate)
+2. App open driver for buttons
+3. App opens driver for screen
+
+   Driver for buttons goes 'humm, well I can trigger wakeup from all
+   power states so I need no restrictions'. Screen will vary by device a
+   lot.
+
+
+(I'll come back to the screen a bit more in a moment)
+
+So lets consider the same binary
+
+App runs on OLPC like h/w
+
+The pm code goes 'well I can suspend/resume in a second thats cool'
+The screen code goes 'Hey I've got OLPC like video so thats ok'
+The button driver can wake the system from suspend and queue an event
+
+
+App runs on Android like h/w
+
+The pm code goes 'well I can suspend/resume in a second thats cool'
+The screen code goes 'Gee the screen goes blank if I go below level X' so
+	I'll set a limit
+The button driver can wake the system from suspend and queue an event
+
+
+App runs on Android like h/w but not trusted
+
+The pm code goes 'well tough, you can't do that, I'll refuse you'
+	(Maybe user space wrapped by Android with a 'Cows wants to eat
+	your phone alive [Refuse] [This Time Only] [Always] UI
+	User hits refuse and Android duly assigns the code no guarantee
+	and a hard limit of no guarantee.
+
+The screen code goes 'tough'
+The button driver can wake the system etc
+
+Cows will get suspended for longer than one second whether it likes it or
+not
+
+App runs on a desktop PC
+
+The pm code goes 'well I can't do suspend/resume in 1 second, but I can
+do C6'
+The screen goes 'I need C6'
+The button driver goes 'I need C6'
+
+
+Same app in each case and a lot less syscalls. No pathalogical cases
+either - with suspend blockers you can get emergent synchronization
+patterns between applications where each app rarely blocks suspends but
+together their timings fall such that they never allow it. How do you
+propose to even detect that ?
+
+
+Ok now the screen
+
+If I write to an X server and the server doesn't wish to talk to me it
+ignores the stream and I block. This has been the case since the 1980s.
+
+What is the problem here - your device driver for the display can block
+tasks it doesn't want to use the display.
 
