@@ -1,72 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759424Ab0E0Rva (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 May 2010 13:51:30 -0400
-Received: from claw.goop.org ([74.207.240.146]:37785 "EHLO claw.goop.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759369Ab0E0Rv1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 May 2010 13:51:27 -0400
-Message-ID: <4BFEB11D.9080805@goop.org>
-Date: Thu, 27 May 2010 10:51:25 -0700
-From: Jeremy Fitzhardinge <jeremy@goop.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-2.fc12 Lightning/1.0b2pre Thunderbird/3.0.4
-MIME-Version: 1.0
-To: Ian Jackson <Ian.Jackson@eu.citrix.com>
-CC: Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-       "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-       Don Dutile <ddutile@redhat.com>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [Xen-devel] Re: [PATCH 11/11] Unplug emulated disks and nics
-References: <alpine.DEB.2.00.1005241615300.25605@kaball-desktop>	<1274725657-1149-11-git-send-email-stefano.stabellini@eu.citrix.com>	<4BFC3390.4060503@goop.org>	<alpine.DEB.2.00.1005261325110.25605@kaball-desktop>	<4BFD8BB0.90301@goop.org>	<m2n.s.1OHcBK-0018DA@chiark.greenend.org.uk> <19454.34430.471499.222290@mariner.uk.xensource.com>
-In-Reply-To: <19454.34430.471499.222290@mariner.uk.xensource.com>
-X-Enigmail-Version: 1.0.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S932897Ab0E0RwY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 May 2010 13:52:24 -0400
+Received: from casper.infradead.org ([85.118.1.10]:56986 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759331Ab0E0RwV convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 May 2010 13:52:21 -0400
+Subject: Re: [linux-pm] [PATCH 0/8] Suspend block api (version 8)
+From: Peter Zijlstra <peterz@infradead.org>
+To: Florian Mickler <florian@mickler.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>,
+       Matthew Garrett <mjg59@srcf.ucam.org>,
+       Alan Cox <alan@lxorguk.ukuu.org.uk>,
+       Arve =?ISO-8859-1?Q?Hj=F8nnev=E5g?= <arve@android.com>,
+       Vitaly Wool <vitalywool@gmail.com>, LKML <linux-kernel@vger.kernel.org>,
+       Paul@smtp1.linux-foundation.org, felipe.balbi@nokia.com,
+       Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
+       Linux PM <linux-pm@lists.linux-foundation.org>
+In-Reply-To: <20100527194241.52caaf37@schatten.dmk.lab>
+References: <20100526120242.5c9b73ad@schatten.dmk.lab>
+	 <AANLkTim4021cTnhVZrQpefq1MG-eEPOFLDRO-XDepHb4@mail.gmail.com>
+	 <20100526133721.602633b2@schatten.dmk.lab>
+	 <AANLkTikzgaOFdQKess4E-D86OLPOzxP3dWiDkU_UR0ri@mail.gmail.com>
+	 <20100526142430.327ccbc4@schatten.dmk.lab>
+	 <20100526141612.3e2e0443@lxorguk.ukuu.org.uk>
+	 <AANLkTin97MMu-XO_Lk-snefBWz2ymhS0Qi1y1RxLwdVA@mail.gmail.com>
+	 <20100527003943.07c17f85@lxorguk.ukuu.org.uk>
+	 <20100527140655.GA28048@srcf.ucam.org>
+	 <alpine.LFD.2.00.1005271642440.3032@localhost.localdomain>
+	 <20100527155201.GA31937@srcf.ucam.org>
+	 <alpine.LFD.2.00.1005271808340.3032@localhost.localdomain>
+	 <20100527192135.6c6543b3@schatten.dmk.lab>
+	 <1274981127.27810.5597.camel@twins>
+	 <20100527194241.52caaf37@schatten.dmk.lab>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Thu, 27 May 2010 19:52:09 +0200
+Message-ID: <1274982729.27810.5703.camel@twins>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/27/2010 07:49 AM, Ian Jackson wrote:
-> Stefano Stabellini writes ("[Xen-devel] Re: [PATCH 11/11] Unplug emulated disks and nics"):
->   
->> On Wed, 26 May 2010, Jeremy Fitzhardinge wrote:
->>     
->>> Wow, this interface is perverse.  It reuses the same IO port but changes
->>> function depending on the size of the IO?  Again, wow.
->>>       
->>  
->> Yeah, before you ask, I didn't write it :)
->>     
-> Yes, neither did I :-).  However, I did document it and now I also
-> maintain the "product number" registry.  Did you find the interface
-> spec ?  Enclosed below in case not.
->   
+On Thu, 2010-05-27 at 19:42 +0200, Florian Mickler wrote:
 
-Thanks.  We should probably start a Documentation/xen/ and put this in
-there as part of the patch.
+> If in the imaginery situation where userspace can aquire certain
+> wakeup-constraints and loose certain wakeup-constraints, then it could
+> be that the system enters suspend without empty runqueues. 
 
-> I hereby allocate you ("pvops PV-on-HVM Linux, upstream") product
-> number 3.  Does the kernel have a way to distinguish between upstream
-> and other versions ?  Eg, there's the kernel version name suffix
-> thingy if I remember rightly.  Perhaps we should allocate a different
-> number for "some pvops pv-on-hvm Linux with a nonempty kernel version
-> name suffix".  Please advise.
->
-> You are welcome to use whatever you like for the "build number".
-> Perhaps the best thing would a two-byte encoding of the kernel version
-> number if that is possible.  As the purpose is logging and
-> blacklisting, it's not that critical although it's better to reuse the
-> same number for excessively similar builds than to use a random scheme
-> which might generate accidental clashes between unrelated versions.
->   
+No. Wakeup constaints simply delay wakeups, not loose them.
 
-We could include 2 bytes of the HEAD changeset or something, with some
-risk of collision.  Or just choose a constant and stick with it until
-some interesting qualitative driver change makes it worthwhile bumping
-the version.
+If there's something runnable, we run it.
 
-I guess I can see some value in this info for recording in a log to do
-some diagnostics, but the whole blacklist concept seems highly dubious
-to me.  Some kind of feature negotiation makes a lot more sense to me...
+What could happen is that you try to program a timer every 5ms, but then
+QoS won't let you and errors the timer_create() or something. But then
+the app gets to deal with it.
 
-    J
+> > And as explained, you won't loose events if all the devices do a proper
+> > state transition. To quote:
+> 
+> I believe the problem beeing userspace frozen at an unopportune time.
+> So the wakeup event is processed (kernel-side) but userspace didn't
+> have time to reacquire the correct wakeup-constraint to process the
+> event.
+> 
+> I.e. the wakeup will be effectivly ignored.
+
+How so, event happens on hardware level, IRQ gets raised, CPU wakes up,
+handler gets run, handler generates a task wakeup, runqueue isn't empty,
+we run stuff.
+
+I'm not quite sure how to loose something there.
