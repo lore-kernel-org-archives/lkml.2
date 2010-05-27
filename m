@@ -1,70 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757950Ab0E0PCo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 May 2010 11:02:44 -0400
-Received: from buzzloop.caiaq.de ([212.112.241.133]:35710 "EHLO
-	buzzloop.caiaq.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756126Ab0E0PCn (ORCPT
+	id S1758002Ab0E0PCy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 May 2010 11:02:54 -0400
+Received: from moutng.kundenserver.de ([212.227.17.10]:57009 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754687Ab0E0PCv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 May 2010 11:02:43 -0400
-Date: Thu, 27 May 2010 17:02:38 +0200
-From: Daniel Mack <daniel@caiaq.de>
-To: Dinh.Nguyen@freescale.com
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-       s.hauer@pengutronix.de, valentin.longchamp@epfl.ch,
-       grant.likely@secretlab.ca, xiao-lizhang@freescale.com
-Subject: Re: [PATCHv2 2.6.34 1/2] mx5: Add i2c to Freescale MX51 Babbage HW
-Message-ID: <20100527150238.GH2695@buzzloop.caiaq.de>
-References: <1274972269-6946-1-git-send-email-Dinh.Nguyen@freescale.com>
+	Thu, 27 May 2010 11:02:51 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Chris Metcalf <cmetcalf@tilera.com>
+Subject: Re: [PATCH] arch/tile: new multi-core architecture for Linux
+Date: Thu, 27 May 2010 17:02:45 +0200
+User-Agent: KMail/1.12.2 (Linux/2.6.31-19-generic; KDE/4.3.2; x86_64; ; )
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       linux-arch@vger.kernel.org
+References: <201005200543.o4K5hFRF006079@farm-0002.internal.tilera.com> <201005271611.47963.arnd@arndb.de> <4BFE831A.8050002@tilera.com>
+In-Reply-To: <4BFE831A.8050002@tilera.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1274972269-6946-1-git-send-email-Dinh.Nguyen@freescale.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201005271702.45730.arnd@arndb.de>
+X-Provags-ID: V01U2FsdGVkX1/Qwf7+Vb0k2cEX7EtD0RkOujqqkNtkS9BTV5g
+ aI4ow037ieGLADyxUMIquLWUZZjobLsEHH0q3iujM/V6WARA2d
+ 9QXF8VU+nbtF+OQi8Kk7g==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 27, 2010 at 09:57:48AM -0500, Dinh.Nguyen@freescale.com wrote:
-> This patch adds I2C functionality to the Freescale MX51 Babbage HW.
-> The patch adds device structures, i2c board slave device defines,
-> IOMUX pin defines, and clocks.
+On Thursday 27 May 2010, Chris Metcalf wrote:
+> On 5/27/2010 10:11 AM, Arnd Bergmann wrote:
+>
+> The issue is that libc support for 64-bit operands on 32-bit platforms
+> tends to look like "syscall(foo64, arg1, LOW(arg2), HIGH(arg2))".  This
+> naturally passes the arguments in consecutive registers, for a
+> register-based calling convention like ours.  However, invoking
+> "foo64(arg1, (u64)arg2)" passes the u64 argument in the next consecutive
+> even/odd numbered pair of registers on our architecture.  Arguably this
+> notion of register alignment isn't particularly helpful, but we opted to
+> do it this way when we settled on the API.  The upshot is that to match
+> this, userspace needs to do "syscall(foo64, arg1, dummy, LOW(arg2),
+> HIGH(arg2))".  So we need to provide these dummy-argument versions of
+> the syscall wrappers to all the libcs that we use (currently uclibc,
+> glibc, and sometimes newlib).  Where the 64-bit argument falls naturally
+> on an even register boundary we don't need to provide any kernel stub.
+
+ok, makes sense. IIRC, the s390 architecture has the same requirement,
+probably some others as well.
+
+> Basically the scenario is your #2 above, but userspace already has an
+> implementation of the user-space wrapper in the generic code, and I'm
+> trying to avoid having to provide a tile-specific version of it.
 > 
-> Signed-off-by: Dinh Nguyen <Dinh.Nguyen@freescale.com>
-> ---
->  arch/arm/mach-mx5/clock-mx51.c              |   11 +++++
->  arch/arm/mach-mx5/devices.c                 |   58 +++++++++++++++++++++++++++
->  arch/arm/mach-mx5/devices.h                 |    3 +
->  arch/arm/plat-mxc/include/mach/iomux-mx51.h |   18 ++++++---
->  4 files changed, 84 insertions(+), 6 deletions(-)
+> For reference, here's readahead() in glibc (overridden to be a pure
+> syscall wrapper for 64-bit architectures):
 > 
+> ssize_t
+> __readahead (int fd, off64_t offset, size_t count)
+> {
+>   return INLINE_SYSCALL (readahead, 4, fd,
+>                          __LONG_LONG_PAIR ((off_t) (offset >> 32),
+>                                            (off_t) (offset & 0xffffffff)),
+>                          count);
+> }
 
-[...]
+Ok, I see. No objection to your kernel code then, we just need to
+figure out how to do that with the generic sys_call_table.
 
->  static struct resource usbotg_resources[] = {
-> diff --git a/arch/arm/mach-mx5/devices.h b/arch/arm/mach-mx5/devices.h
-> index 0494d6b..d0451bf 100644
-> --- a/arch/arm/mach-mx5/devices.h
-> +++ b/arch/arm/mach-mx5/devices.h
-> @@ -5,3 +5,6 @@ extern struct platform_device mxc_fec_device;
->  extern struct platform_device mxc_usbdr_host_device;
->  extern struct platform_device mxc_usbh1_device;
->  extern struct platform_device mxc_usbdr_udc_device;
-> +extern struct platform_device mxc_i2c_device0;
-> +extern struct platform_device mxc_i2c_device1;
-> +extern struct platform_device mxc_hsi2c_device;
-> diff --git a/arch/arm/plat-mxc/include/mach/iomux-mx51.h b/arch/arm/plat-mxc/include/mach/iomux-mx51.h
-> index ab0f95d..6ea6861 100644
-> --- a/arch/arm/plat-mxc/include/mach/iomux-mx51.h
-> +++ b/arch/arm/plat-mxc/include/mach/iomux-mx51.h
-> @@ -38,6 +38,8 @@ typedef enum iomux_config {
->  				PAD_CTL_SRE_FAST)
->  #define MX51_UART3_PAD_CTRL	(PAD_CTL_PKE | PAD_CTL_DSE_HIGH | \
->  				PAD_CTL_SRE_FAST)
-> +#define MX51_I2C_PAD_CTRL		(PAD_CTL_SRE_FAST | PAD_CTL_ODE | \
-> ++				PAD_CTL_DSE_HIGH | PAD_CTL_PUS_100K_UP | PAD_CTL_HYS)
-   ^
-I believe something went wrong here.
-
-Daniel
-
+	Arnd
