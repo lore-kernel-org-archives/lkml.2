@@ -1,62 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932447Ab0E0HjV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 May 2010 03:39:21 -0400
-Received: from sabe.cs.wisc.edu ([128.105.6.20]:46398 "EHLO sabe.cs.wisc.edu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750852Ab0E0HjT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 May 2010 03:39:19 -0400
-Message-ID: <4BFE2204.3020502@cs.wisc.edu>
-Date: Thu, 27 May 2010 02:40:52 -0500
-From: Mike Christie <michaelc@cs.wisc.edu>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-2.fc12 Thunderbird/3.0.4
+	id S1757414Ab0E0HmR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 May 2010 03:42:17 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:49688 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751000Ab0E0HmP convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 May 2010 03:42:15 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=jJ+yAHlzJSAO2B9NidOxlAbN3dC0ke0zHGyqGxkN4tIvSzVkK5k3+0IRHQfMHXsXRP
+         HfSCJ0QQ0lGp5CJ1jhuQ+XVuyO6HPniH7iHP2BSpD8BVfM3NtXoM5168BfJPpzQxI5il
+         wY+cSPQSYF9oa+kJpVBzr61m4jEBZf5hMWjxs=
 MIME-Version: 1.0
-To: open-iscsi@googlegroups.com
-CC: Rakesh Ranjan <rakesh@chelsio.com>, NETDEVML <netdev@vger.kernel.org>,
-       SCSIDEVML <linux-scsi@vger.kernel.org>,
-       LKML <linux-kernel@vger.kernel.org>, Karen Xie <kxie@chelsio.com>,
-       David Miller <davem@davemloft.net>,
-       James Bottomley <James.Bottomley@hansenpartnership.com>,
-       Anish Bhatt <anish@chelsio.com>, Rakesh Ranjan <rranjan@chelsio.com>
-Subject: Re: [PATCH 2/3] cxgb4i_v3: main driver files
-References: <1273944249-311-1-git-send-email-rakesh@chelsio.com> <1273944249-311-2-git-send-email-rakesh@chelsio.com> <1273944249-311-3-git-send-email-rakesh@chelsio.com> <4BFE2173.4050306@cs.wisc.edu>
-In-Reply-To: <4BFE2173.4050306@cs.wisc.edu>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <AANLkTin97MMu-XO_Lk-snefBWz2ymhS0Qi1y1RxLwdVA@mail.gmail.com>
+References: <1274482015-30899-1-git-send-email-arve@android.com>
+	<201005242049.18920.rjw@sisk.pl>
+	<87wrusvrqe.fsf@deeprootsystems.com>
+	<201005250138.16293.rjw@sisk.pl>
+	<1274863655.5882.4875.camel@twins>
+	<AANLkTinN6MKvCEhPkbYQRD2gu-mGXdNW9asRsTuKN3_Y@mail.gmail.com>
+	<1274867106.5882.5090.camel@twins>
+	<20100526120242.5c9b73ad@schatten.dmk.lab>
+	<AANLkTim4021cTnhVZrQpefq1MG-eEPOFLDRO-XDepHb4@mail.gmail.com>
+	<20100526133721.602633b2@schatten.dmk.lab>
+	<AANLkTikzgaOFdQKess4E-D86OLPOzxP3dWiDkU_UR0ri@mail.gmail.com>
+	<20100526142430.327ccbc4@schatten.dmk.lab>
+	<20100526141612.3e2e0443@lxorguk.ukuu.org.uk>
+	<AANLkTin97MMu-XO_Lk-snefBWz2ymhS0Qi1y1RxLwdVA@mail.gmail.com>
+Date: Thu, 27 May 2010 09:42:14 +0200
+Message-ID: <AANLkTimcPZTZYH4fDxX0xlLxMvtl87FDOEP_hdaztFYJ@mail.gmail.com>
+Subject: Re: [linux-pm] [PATCH 0/8] Suspend block api (version 8)
+From: Vitaly Wool <vitalywool@gmail.com>
+To: =?ISO-8859-1?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>
+Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, Florian Mickler <florian@mickler.org>,
+       Peter Zijlstra <peterz@infradead.org>,
+       LKML <linux-kernel@vger.kernel.org>, Paul@smtp1.linux-foundation.org,
+       felipe.balbi@nokia.com,
+       Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
+       Linux PM <linux-pm@lists.linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/27/2010 02:38 AM, Mike Christie wrote:
-> On 05/15/2010 12:24 PM, Rakesh Ranjan wrote:
->> From: Rakesh Ranjan<rranjan@chelsio.com>
+2010/5/27 Arve Hjønnevåg <arve@android.com>:
+> On Wed, May 26, 2010 at 6:16 AM, Alan Cox <alan@lxorguk.ukuu.org.uk> wrote:
+>>> Really, what are you getting at? Do you deny that there are programs,
+>>> that prevent a device from sleeping? (Just think of the bouncing
+>>> cows app)
+>>>
+>>> And if you have two kernels, one with which your device is dead after 1
+>>> hour and one with which your device is dead after 10 hours. Which would
+>>> you prefer? I mean really... this is ridiculous.
 >>
->>
->> Signed-off-by: Rakesh Ranjan<rakesh@chelsio.com>
->> ---
->> drivers/scsi/cxgb4i/cxgb4i.h | 101 ++
->> drivers/scsi/cxgb4i/cxgb4i_ddp.c | 678 +++++++++++++
->> drivers/scsi/cxgb4i/cxgb4i_ddp.h | 118 +++
->> drivers/scsi/cxgb4i/cxgb4i_offload.c | 1846
->> ++++++++++++++++++++++++++++++++++
->> drivers/scsi/cxgb4i/cxgb4i_offload.h | 91 ++
->> drivers/scsi/cxgb4i/cxgb4i_snic.c | 260 +++++
->> 6 files changed, 3094 insertions(+), 0 deletions(-)
->> create mode 100644 drivers/scsi/cxgb4i/cxgb4i.h
->> create mode 100644 drivers/scsi/cxgb4i/cxgb4i_ddp.c
->> create mode 100644 drivers/scsi/cxgb4i/cxgb4i_ddp.h
->> create mode 100644 drivers/scsi/cxgb4i/cxgb4i_offload.c
->> create mode 100644 drivers/scsi/cxgb4i/cxgb4i_offload.h
->> create mode 100644 drivers/scsi/cxgb4i/cxgb4i_snic.c
+>> The problem you have is that this is policy. If I have the device wired
+>> to a big screen and I want cows bouncing on it I'll be most upset if
+>> instead it suspends.
 >
->
->
-> Got some whitespace errors when applying.
->
-> warning: squelched 1 whitespace error
-> warning: 6 lines add whitespace errors.
->
->
+> We never suspend when the screen is on. If the screen is off, I would
+> not be upset if it suspends.
 
-Oh yeah, run sparse on the driver too. There are some warnings about 
-some functions should be static.
+That's /wrong/. What if you have an active download ongoing when the
+screen is off? This ugly simplistic approach is one of the worst
+things in Android.
+
+~Vitaly
