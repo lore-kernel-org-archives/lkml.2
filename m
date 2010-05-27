@@ -1,223 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932309Ab0E0U1Z (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 May 2010 16:27:25 -0400
-Received: from smtp.outflux.net ([198.145.64.163]:52459 "EHLO smtp.outflux.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756708Ab0E0U1Y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 May 2010 16:27:24 -0400
-X-Greylist: delayed 562 seconds by postgrey-1.27 at vger.kernel.org; Thu, 27 May 2010 16:27:23 EDT
-Date: Thu, 27 May 2010 13:16:35 -0700
-From: Kees Cook <kees.cook@canonical.com>
-To: linux-kernel@vger.kernel.org
-Cc: linux-security-module@vger.kernel.org, linux-doc@vger.kernel.org,
-       Randy Dunlap <rdunlap@xenotime.net>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Jiri Kosina <jkosina@suse.cz>, Dave Young <hidave.darkstar@gmail.com>,
-       Martin Schwidefsky <schwidefsky@de.ibm.com>,
-       James Morris <jmorris@namei.org>, Eric Paris <eparis@redhat.com>,
-       Serge Hallyn <serue@us.ibm.com>, David Howells <dhowells@redhat.com>,
-       Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-       "Eric W. Biederman" <ebiederm@xmission.com>,
-       Tim Gardner <tim.gardner@canonical.com>
-Subject: [PATCH] fs: block cross-uid sticky symlinks
-Message-ID: <20100527201635.GU6056@outflux.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-Organization: Canonical
-X-HELO: www.outflux.net
+	id S932624Ab0E0Ucx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 May 2010 16:32:53 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:47811 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932561Ab0E0Ucu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 May 2010 16:32:50 -0400
+Date: Thu, 27 May 2010 13:32:39 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Dave Chinner <david@fromorbit.com>
+Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+       linux-mm@kvack.org, xfs@oss.sgi.com
+Subject: Re: [PATCH 4/5] superblock: add filesystem shrinker operations
+Message-Id: <20100527133239.5d038d9c.akpm@linux-foundation.org>
+In-Reply-To: <1274777588-21494-5-git-send-email-david@fromorbit.com>
+References: <1274777588-21494-1-git-send-email-david@fromorbit.com>
+	<1274777588-21494-5-git-send-email-david@fromorbit.com>
+X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A long-standing class of security issues is the symlink-based
-time-of-check-time-of-use race, most commonly seen in world-writable
-directories like /tmp. The common method of exploitation of this flaw
-is to cross privilege boundaries when following a given symlink (i.e. a
-root process follows a symlink belonging to another user).  For a likely
-incomplete list of hundreds of examples across the years, please see:
-http://cve.mitre.org/cgi-bin/cvekey.cgi?keyword=/tmp
+On Tue, 25 May 2010 18:53:07 +1000
+Dave Chinner <david@fromorbit.com> wrote:
 
-The solution is to permit symlinks to only be followed when outside a sticky
-world-writable directory, or when the uid of the symlink and follower match,
-or when the directory owner matches the symlink's owner.
+> From: Dave Chinner <dchinner@redhat.com>
+> 
+> Now we have a per-superblock shrinker implementation, we can add a
+> filesystem specific callout to it to allow filesystem internal
+> caches to be shrunk by the superblock shrinker.
+> 
+> Rather than perpetuate the multipurpose shrinker callback API (i.e.
+> nr_to_scan == 0 meaning "tell me how many objects freeable in the
+> cache), two operations will be added. The first will return the
+> number of objects that are freeable, the second is the actual
+> shrinker call.
+> 
+>
+> ...
+>
+>  static int prune_super(struct shrinker *shrink, int nr_to_scan, gfp_t gfp_mask)
+>  {
+>  	struct super_block *sb;
+> -	int count;
+> +	int	fs_objects = 0;
+> +	int	total_objects;
+>  
+>  	sb = container_of(shrink, struct super_block, s_shrink);
+>  
+> @@ -63,22 +64,40 @@ static int prune_super(struct shrinker *shrink, int nr_to_scan, gfp_t gfp_mask)
+>  		return -1;
+>  	}
+>  
+> -	if (nr_to_scan) {
+> -		/* proportion the scan between the two cache__ */
+> -		int total;
+> -
+> -		total = sb->s_nr_dentry_unused + sb->s_nr_inodes_unused + 1;
+> -		count = (nr_to_scan * sb->s_nr_dentry_unused) / total;
+> +	if (sb->s_op && sb->s_op->nr_cached_objects)
+> +		fs_objects = sb->s_op->nr_cached_objects(sb);
+>  
+> -		/* prune dcache first as icache is pinned by it */
+> -		prune_dcache_sb(sb, count);
+> -		prune_icache_sb(sb, nr_to_scan - count);
+> +	total_objects = sb->s_nr_dentry_unused +
+> +			sb->s_nr_inodes_unused + fs_objects + 1;
+> +	if (nr_to_scan) {
+> +		int	dentries;
+> +		int	inodes;
+> +
+> +		/* proportion the scan between the cache__ */
+> +		dentries = (nr_to_scan * sb->s_nr_dentry_unused) /
+> +							total_objects;
+> +		inodes = (nr_to_scan * sb->s_nr_inodes_unused) /
+> +							total_objects;
+> +		if (fs_objects)
+> +			fs_objects = (nr_to_scan * fs_objects) /
+> +							total_objects;
+> +		/*
+> +		 * prune the dcache first as the icache is pinned by it, then
+> +		 * prune the icache, followed by the filesystem specific caches
+> +		 */
+> +		prune_dcache_sb(sb, dentries);
+> +		prune_icache_sb(sb, inodes);
+> +		if (sb->s_op && sb->s_op->free_cached_objects) {
 
-Some pointers to the history of earlier discussion that I could find:
+Under which circumstances is a NULL ->free_cached_objects valid?
 
- 1996 Aug, Zygo Blaxell
-  http://marc.info/?l=bugtraq&m=87602167419830&w=2
- 1996 Oct, Andrew Tridgell
-  http://lkml.indiana.edu/hypermail/linux/kernel/9610.2/0086.html
- 1997 Dec, Albert D Cahalan
-  http://lkml.org/lkml/1997/12/16/4
- 2005 Feb, Lorenzo Hernández García-Hierro
-  http://lkml.indiana.edu/hypermail/linux/kernel/0502.0/1896.html
+> +			sb->s_op->free_cached_objects(sb, fs_objects);
+> +			fs_objects = sb->s_op->nr_cached_objects(sb);
+> +		}
+> +		total_objects = sb->s_nr_dentry_unused +
+> +				sb->s_nr_inodes_unused + fs_objects;
+>  	}
 
-Past objections and rebuttals could be summarized as:
-
-- Violates POSIX.
-  - POSIX didn't consider this situation and it's not useful to follow
-    a broken specification at the cost of security.
-- Might break unknown applications that use this feature.
-   - Applications that break because of the change are easy to spot and
-     fix. Applications that are vulnerable to symlink ToCToU by not having
-     the change aren't.
-- Applications should just use mkstemp() or O_CREATE|O_EXCL.
-  - True, but applications are not perfect, and new software is written
-    all the time that makes these mistakes; blocking this flaw at the
-    kernel is a single solution to the entire class of vulnerability.
-
-This patch is based on the patch in Openwall and grsecurity.  I have
-added a sysctl to toggle the behavior back to the old handling via
-/proc/sys/fs/weak-sticky-symlinks, documentation, and a ratelimited
-warning.
-
-Signed-off-by: Kees Cook <kees.cook@canonical.com>
----
- Documentation/sysctl/kernel.txt |   16 ++++++++++++++++
- include/linux/security.h        |    1 +
- kernel/sysctl.c                 |   10 ++++++++++
- security/capability.c           |    6 ------
- security/commoncap.c            |   25 +++++++++++++++++++++++++
- 5 files changed, 52 insertions(+), 6 deletions(-)
-
-diff --git a/Documentation/sysctl/kernel.txt b/Documentation/sysctl/kernel.txt
-index 3894eaa..6b059f6 100644
---- a/Documentation/sysctl/kernel.txt
-+++ b/Documentation/sysctl/kernel.txt
-@@ -66,6 +66,7 @@ show up in /proc/sys/kernel:
- - threads-max
- - unknown_nmi_panic
- - version
-+- weak-sticky-symlinks
- 
- ==============================================================
- 
-@@ -526,3 +527,18 @@ A small number of systems do generate NMI's for bizarre random reasons such as
- power management so the default is off. That sysctl works like the existing
- panic controls already in that directory.
- 
-+==============================================================
-+
-+weak-sticky-symlinks:
-+
-+Following symlinks in world-writable sticky directories (like /tmp) can
-+be dangerous due to time-of-check-time-of-use races that frequently result
-+in security vulnerabilities.  By default, symlinks can only be followed in
-+sticky world-writable directories if the symlink and the follower's uid
-+match (or if the symlink is owned by the owner of the world-writable directory
-+itself).
-+
-+The default value is "0".  To disable this protection, setting a value of "1"
-+will allow symlinks in sticky world-writable directories to be followed by
-+anyone.
-+
-diff --git a/include/linux/security.h b/include/linux/security.h
-index 0c88191..a06d568 100644
---- a/include/linux/security.h
-+++ b/include/linux/security.h
-@@ -67,6 +67,7 @@ extern int cap_inode_setxattr(struct dentry *dentry, const char *name,
- extern int cap_inode_removexattr(struct dentry *dentry, const char *name);
- extern int cap_inode_need_killpriv(struct dentry *dentry);
- extern int cap_inode_killpriv(struct dentry *dentry);
-+extern int cap_inode_follow_link(struct dentry *dentry, struct nameidata *nd);
- extern int cap_file_mmap(struct file *file, unsigned long reqprot,
- 			 unsigned long prot, unsigned long flags,
- 			 unsigned long addr, unsigned long addr_only);
-diff --git a/kernel/sysctl.c b/kernel/sysctl.c
-index 997080f..bf2d68b 100644
---- a/kernel/sysctl.c
-+++ b/kernel/sysctl.c
-@@ -88,6 +88,7 @@ extern int sysctl_oom_dump_tasks;
- extern int max_threads;
- extern int core_uses_pid;
- extern int suid_dumpable;
-+extern int weak_sticky_symlinks;
- extern char core_pattern[];
- extern unsigned int core_pipe_limit;
- extern int pid_max;
-@@ -1463,6 +1464,15 @@ static struct ctl_table fs_table[] = {
- 		.extra1		= &zero,
- 		.extra2		= &two,
- 	},
-+	{
-+		.procname	= "weak-sticky-symlinks",
-+		.data		= &weak_sticky_symlinks,
-+		.maxlen		= sizeof(int),
-+		.mode		= 0644,
-+		.proc_handler	= proc_dointvec_minmax,
-+		.extra1		= &zero,
-+		.extra2		= &one,
-+	},
- #if defined(CONFIG_BINFMT_MISC) || defined(CONFIG_BINFMT_MISC_MODULE)
- 	{
- 		.procname	= "binfmt_misc",
-diff --git a/security/capability.c b/security/capability.c
-index 8168e3e..ff34291 100644
---- a/security/capability.c
-+++ b/security/capability.c
-@@ -169,12 +169,6 @@ static int cap_inode_readlink(struct dentry *dentry)
- 	return 0;
- }
- 
--static int cap_inode_follow_link(struct dentry *dentry,
--				 struct nameidata *nameidata)
--{
--	return 0;
--}
--
- static int cap_inode_permission(struct inode *inode, int mask)
- {
- 	return 0;
-diff --git a/security/commoncap.c b/security/commoncap.c
-index 4e01599..e7eb397 100644
---- a/security/commoncap.c
-+++ b/security/commoncap.c
-@@ -29,6 +29,9 @@
- #include <linux/securebits.h>
- #include <linux/syslog.h>
- 
-+/* sysctl for symlink permissions checking */
-+int weak_sticky_symlinks;
-+
- /*
-  * If a non-root user executes a setuid-root binary in
-  * !secure(SECURE_NOROOT) mode, then we raise capabilities.
-@@ -281,6 +284,28 @@ int cap_inode_killpriv(struct dentry *dentry)
- 	return inode->i_op->removexattr(dentry, XATTR_NAME_CAPS);
- }
- 
-+int cap_inode_follow_link(struct dentry *dentry,
-+			  struct nameidata *nameidata)
-+{
-+	const struct inode *parent = dentry->d_parent->d_inode;
-+	const struct inode *inode = dentry->d_inode;
-+	const struct cred *cred = current_cred();
-+
-+	if (weak_sticky_symlinks)
-+		return 0;
-+
-+	if (S_ISLNK(inode->i_mode) &&
-+	    (parent->i_mode & (S_ISVTX|S_IWOTH)) == (S_ISVTX|S_IWOTH) &&
-+	    parent->i_uid != inode->i_uid &&
-+	    cred->fsuid != inode->i_uid) {
-+		printk_ratelimited(KERN_NOTICE "non-matching-uid symlink "
-+			"following attempted in sticky-directory by "
-+			"%s (fsuid %d)\n", current->comm, cred->fsuid);
-+		return -EACCES;
-+	}
-+	return 0;
-+}
-+
- /*
-  * Calculate the new process capability sets from the capability sets attached
-  * to a file.
--- 
-1.7.0.4
+The return value from ->free_cached_objects() doesn't actually get
+used.  Instead the code calls ->nr_cached_objects() twice.
 
 
--- 
-Kees Cook
-Ubuntu Security Team
+> -	count = ((sb->s_nr_dentry_unused + sb->s_nr_inodes_unused) / 100)
+> -						* sysctl_vfs_cache_pressure;
+> +	total_objects = (total_objects / 100) * sysctl_vfs_cache_pressure;
+>  	up_read(&sb->s_umount);
+> -	return count;
+> +	return total_objects;
+>  }
+>  
+>  /**
+> diff --git a/include/linux/fs.h b/include/linux/fs.h
+> index 5bff2dc..efcdcc6 100644
+> --- a/include/linux/fs.h
+> +++ b/include/linux/fs.h
+> @@ -1590,6 +1590,17 @@ struct super_operations {
+>  	ssize_t (*quota_write)(struct super_block *, int, const char *, size_t, loff_t);
+>  #endif
+>  	int (*bdev_try_to_free_page)(struct super_block*, struct page*, gfp_t);
+> +
+> +	/*
+> +	 * memory shrinker operations.
+> +	 * ->nr_cached_objects() should return the number of freeable cached
+> +	 * objects the filesystem holds.
+> +	 * ->free_cache_objects() should attempt to free the number of cached
+> +	 * objects indicated. It should return how many objects it attempted to
+> +	 * free.
+> +	 */
+
+I'd have thought that ->free_cache_objects() would always return the
+number which it was passed.  Unless someone asked it to scan more
+objects than exist, perhaps.
+
+> +	int (*nr_cached_objects)(struct super_block *);
+> +	int (*free_cached_objects)(struct super_block *, int);
+>  };
+
