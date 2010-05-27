@@ -1,104 +1,179 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932763Ab0E0GG7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 May 2010 02:06:59 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:44118 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755251Ab0E0GG6 (ORCPT
+	id S1756272Ab0E0GKF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 May 2010 02:10:05 -0400
+Received: from stargate.chelsio.com ([67.207.112.58]:18663 "EHLO
+	stargate.chelsio.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754836Ab0E0GKC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 May 2010 02:06:58 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Message-ID: <4BFE0BE1.4040408@jp.fujitsu.com>
-Date: Thu, 27 May 2010 15:06:25 +0900
-From: Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.0; ja; rv:1.9.1.9) Gecko/20100317 Thunderbird/3.0.4
+	Thu, 27 May 2010 02:10:02 -0400
+Message-ID: <4BFE0BA5.70809@chelsio.com>
+Date: Thu, 27 May 2010 11:35:25 +0530
+From: Rakesh Ranjan <rranjan@chelsio.com>
+Organization: Chelsio Communications
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-2.fc12 Thunderbird/3.0.4
 MIME-Version: 1.0
-To: Huang Ying <ying.huang@intel.com>
-CC: Jin Dongming <jin.dongming@np.css.fujitsu.com>,
-       LKLM <linux-kernel@vger.kernel.org>, Andi Kleen <ak@linux.intel.com>
-Subject: Re: [Patch-next] Remove notify_die in do_machine_check functioin
-References: <4BFDDBA9.4010702@np.css.fujitsu.com> <1274930481.3444.258.camel@yhuang-dev.sh.intel.com>
-In-Reply-To: <1274930481.3444.258.camel@yhuang-dev.sh.intel.com>
-Content-Type: text/plain; charset=UTF-8
+To: Mike Christie <michaelc@cs.wisc.edu>
+CC: open-iscsi@googlegroups.com, Rakesh Ranjan <rakesh@chelsio.com>,
+       NETDEVML <netdev@vger.kernel.org>,
+       SCSIDEVML <linux-scsi@vger.kernel.org>,
+       LKML <linux-kernel@vger.kernel.org>, Karen Xie <kxie@chelsio.com>,
+       David Miller <davem@davemloft.net>,
+       James Bottomley <James.Bottomley@hansenpartnership.com>,
+       Anish Bhatt <anish@chelsio.com>
+Subject: Re: [PATCH 3/3] cxgb4i_v3: iscsi and libcxgbi library for handling
+ common part
+References: <1273944249-311-1-git-send-email-rakesh@chelsio.com> <1273944249-311-2-git-send-email-rakesh@chelsio.com> <1273944249-311-3-git-send-email-rakesh@chelsio.com> <1273944249-311-4-git-send-email-rakesh@chelsio.com> <4BFE0A3E.9020804@cs.wisc.edu>
+In-Reply-To: <4BFE0A3E.9020804@cs.wisc.edu>
+X-Enigmail-Version: 1.0.1
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 27 May 2010 06:08:57.0609 (UTC) FILETIME=[17C88F90:01CAFD63]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2010/05/27 12:21), Huang Ying wrote:
-> I have heard about that on some machine, some hardware error output pin
-> of chipset may be linked with some input pin of CPU which can cause MCE.
-> That is, MCE is used to report some chipset errors too. I think that is
-> why notify_die is called in do_machine_check. Simply removing notify_die
-> is not good for these machines.
+-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA512
 
-Hum, it sounds like "notify_die here is hook for proprietary chipset
-driver".  Anyone who have such machine and driver in real?
+On 05/27/2010 11:29 AM, Mike Christie wrote:
+> On 05/15/2010 12:24 PM, Rakesh Ranjan wrote:
+>> From: Rakesh Ranjan<rranjan@chelsio.com>
+>>
+>>
+>> Signed-off-by: Rakesh Ranjan<rakesh@chelsio.com>
+>> ---
+>>   drivers/scsi/cxgb4i/cxgb4i_iscsi.c |  617
+>> ++++++++++++++++++++++++++++++++++++
+>>   drivers/scsi/cxgb4i/libcxgbi.c     |  589
+>> ++++++++++++++++++++++++++++++++++
+>>   drivers/scsi/cxgb4i/libcxgbi.h     |  430 +++++++++++++++++++++++++
+> 
+> I think the patch had some whitespace/newline issues. When I did git-am
+> I got:
+> 
+> warning: squelched 1 whitespace error
+> warning: 6 lines add whitespace errors.
+> 
+> I think James can just fix up when he merges with git, but in the future
+> you might want to try a git-am on your patch before you send (git-am
+> --whitespace=fix will fix it up for you).
+> 
+> 
+> 
+>> +
+>> +int cxgbi_pdu_init(struct cxgbi_device *cdev)
+>> +{
+>> +    if (cdev->skb_tx_headroom>  (512 * MAX_SKB_FRAGS))
+>> +        cdev->skb_extra_headroom = cdev->skb_tx_headroom;
+>> +    cdev->pad_page = alloc_page(GFP_KERNEL);
+>> +    if (cdev->pad_page)
+>> +        return -ENOMEM;
+>> +    memset(page_address(cdev->pad_page), 0, PAGE_SIZE);
+>> +    return 0;
+>> +
+>> +    /*
+>> +    if (SKB_TX_HEADROOM>  (512 * MAX_SKB_FRAGS))
+>> +        skb_extra_headroom = SKB_TX_HEADROOM;
+>> +    pad_page = alloc_page(GFP_KERNEL);
+>> +    if (!pad_page)
+>> +        return -ENOMEM;
+>> +    memset(page_address(pad_page), 0, PAGE_SIZE);
+>> +    return 0;*/
+> 
+> Clean this up.
+> 
+>> +
+>> +void cxgbi_release_itt(struct iscsi_task *task, itt_t hdr_itt)
+>> +{
+>> +    struct scsi_cmnd *sc = task->sc;
+>> +    struct iscsi_tcp_conn *tcp_conn = task->conn->dd_data;
+>> +    struct cxgbi_conn *cconn = tcp_conn->dd_data;
+>> +    struct cxgbi_device *cdev = cconn->chba->cdev;
+>> +    struct cxgbi_tag_format *tformat =&cdev->tag_format;
+>> +    u32 tag = ntohl((__force u32)hdr_itt);
+>> +
+>> +    cxgbi_tag_debug("release tag 0x%x.\n", tag);
+>> +
+>> +    if (sc&&
+>> +        (scsi_bidi_cmnd(sc) ||
+>> +         sc->sc_data_direction == DMA_FROM_DEVICE)&&
+>> +            cxgbi_is_ddp_tag(tformat, tag))
+> 
+> The formatting is a little weird. I think you want each line to start in
+> the same column instead of each getting tabbed over.
+> 
+> 
+>> +
+>> +
+>> +int cxgbi_reserve_itt(struct iscsi_task *task, itt_t *hdr_itt)
+>> +{
+>> +    struct scsi_cmnd *sc = task->sc;
+>> +    struct iscsi_conn *conn = task->conn;
+>> +    struct iscsi_session *sess = conn->session;
+>> +    struct iscsi_tcp_conn *tcp_conn = conn->dd_data;
+>> +    struct cxgbi_conn *cconn = tcp_conn->dd_data;
+>> +    struct cxgbi_device *cdev = cconn->chba->cdev;
+>> +    struct cxgbi_tag_format *tformat =&cdev->tag_format;
+>> +    u32 sw_tag = (sess->age<<  cconn->task_idx_bits) | task->itt;
+>> +    u32 tag;
+>> +    int err = -EINVAL;
+>> +
+>> +    if (sc&&
+>> +        (scsi_bidi_cmnd(sc) ||
+>> +         sc->sc_data_direction == DMA_FROM_DEVICE)&&
+>> +            cxgbi_sw_tag_usable(tformat, sw_tag)) {
+> 
+> 
+> Same tabbing.
+> 
+> 
+>> +    volatile unsigned int state;
+> 
+> I did not get why this needed to be volatile (I see it is like this in
+> cxgb3i and I did not see why in there too).
+> 
+> 
+> 
+>> +
+>> +static inline void cxgbi_sock_hold(struct cxgbi_sock *csk)
+>> +{
+>> +    atomic_inc(&csk->refcnt);
+> 
+> 
+> We want people to use krefs instead of their own refcounting now.
+> 
+>> +
+>> +static inline void *cplhdr(struct sk_buff *skb)
+>> +{
+>> +    return skb->data;
+>> +}
+> 
+> 
+> Seems kinda useless.
 
-But if my understanding is correct the notify_die here will call all
-registered callbacks and let them process if "DIE_NMI" is an event
-what the callback really interested in.
+Hi Mike,
 
-Problems are (1) many callbacks will behave wrongly since they don't
-aware that DIE_NMI event can be posted from Machine Check, and (2)
-if the machine is not such special hardware it is just waste of time
-in critical context where quick page-poisoning might be required.
+Thanks for the review, will send you the updated patch.
 
-> Maybe we should fix the notifier user instead. Which notifier user
-> consumes the DIE_NMI notification?
+Regards
+Rakesh Ranjan
 
-What I found at a glance is:
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+Comment: Using GnuPG with Fedora - http://enigmail.mozdev.org/
 
-[arch/x86/kernel/cpu/perf_event.c]
-   1183 static int __kprobes
-   1184 perf_event_nmi_handler(struct notifier_block *self,
-   1185                          unsigned long cmd, void *__args)
-   1186 {
-   1187         struct die_args *args = __args;
-   1188         struct pt_regs *regs;
-   1189
-   1190         if (!atomic_read(&active_events))
-   1191                 return NOTIFY_DONE;
-   1192
-   1193         switch (cmd) {
-   1194         case DIE_NMI:
-   1195         case DIE_NMI_IPI:
-   1196                 break;
-   1197
-   1198         default:
-   1199                 return NOTIFY_DONE;
-   1200         }
-   1201
-   1202         regs = args->regs;
-   1203
-   1204         apic_write(APIC_LVTPC, APIC_DM_NMI);
-   1205         /*
-   1206          * Can't rely on the handled return value to say it was our NMI, two
-   1207          * events could trigger 'simultaneously' raising two back-to-back NMIs.
-   1208          *
-   1209          * If the first NMI handles both, the latter will be empty and daze
-   1210          * the CPU.
-   1211          */
-   1212         x86_pmu.handle_irq(regs);
-   1213
-   1214         return NOTIFY_STOP;
-   1215 }
-
-However I think fixing the notifier users is wrong direction.
-(At least I have no idea how many ISVs will be affected)
-
-One quick alternative is define "DIE_MCE" and use it instead, but
-if special hook like this is really required, I suppose we should
-invent some special interface for external plug-in like a chipset's
-LLHEH (low-level hardware error handler) etc., to allow additional
-platform-specific error handling in critical context.
-
-So I think simply removing it is good to start.
-If there are no complaints and no users in these days, we are done.
-Otherwise we will get fresh real requirement and will be able to do
-proper things.
-
-
-Thanks,
-H.Seto
-
+iQIcBAEBCgAGBQJL/guKAAoJEBqoHbxtDU4JFvQP/2uIWFmZo4nqcJ7xmEiBjnaq
+BeUfjbRGaiAImEM/6OuMIB/Fm9p9NGtW0GsZdqKYSdZBmgO1kWNT1onCZgVF4eW1
+Muikjo+I2wXGsWIt4ZqbZs722COC1oQHXpyulfh/6ONzeWJ3R8vos/TnCw256Wxj
+HL42jIO882JCImzmP/wmdPmDlTUI/Z0UEYbu0djy20yzESo2NDHq1PYYopyXIboH
+joJ/sZvK0jRYrRsDdq84XJ8CUv1yDE8m3NiMV8cV9JN1EwP/gzBrq0DXfFgpdEDU
++4/pfzzxJ5y/ekdZaSZdx9ke/n/vmamJCaQONaL2WfQaznogxqZypaoM/NRzfMlH
+40KY5lqajGRnm0aEBffn8uqBzEbopYpb1m+3mzt/vDtvdBRuSJqmcPbUandTNHLe
+cZQnn689GtWqJfoyVF/dfyubtAZFLu8VVZkFxx1e3UDEqVDUuwVEHXoXSt6K/SkB
+UnZI7hMUYSof+WI+UEV8DR4KMsRbE1cnvXGnsXTZOMhMsU3KoMielaGTgepAbxT7
+bLfaARiMwvU+vle5546uK8IuxjGH81nbUEy6R86OeS6Osv6PZFiGYP9yxjzkp4K7
+NWOTnVV9qTaPPTtN9SORINPXUXuI90JgIDbh9qnfDDKl2oj5HmwBpa7S3KmMxxlI
+eoAqa/9LLjrMVi5Wicv3
+=TOBq
+-----END PGP SIGNATURE-----
