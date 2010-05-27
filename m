@@ -1,98 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752546Ab0E0GSH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 May 2010 02:18:07 -0400
-Received: from bld-mail17.adl2.internode.on.net ([150.101.137.102]:58452 "EHLO
-	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751039Ab0E0GSE (ORCPT
+	id S1753294Ab0E0GWo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 May 2010 02:22:44 -0400
+Received: from mail-gw0-f46.google.com ([74.125.83.46]:36169 "EHLO
+	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750967Ab0E0GWm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 May 2010 02:18:04 -0400
-Date: Thu, 27 May 2010 16:17:51 +1000
-From: Dave Chinner <david@fromorbit.com>
-To: Al Viro <viro@ZenIV.linux.org.uk>
-Cc: Nick Piggin <npiggin@suse.de>, linux-kernel@vger.kernel.org,
-       linux-fsdevel@vger.kernel.org, linux-mm@kvack.org, xfs@oss.sgi.com
-Subject: Re: [PATCH 3/5 v2] superblock: introduce per-sb cache shrinker
- infrastructure
-Message-ID: <20100527061751.GK12087@dastard>
-References: <1274777588-21494-1-git-send-email-david@fromorbit.com>
- <1274777588-21494-4-git-send-email-david@fromorbit.com>
- <20100526164116.GD22536@laptop>
- <20100526231214.GB1395@dastard>
- <20100527015335.GD1395@dastard>
- <20100527040120.GX31073@ZenIV.linux.org.uk>
+	Thu, 27 May 2010 02:22:42 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=DfINcuBTHfrKCLhL52EY7NJ9GP16qeCUX1WaLmBhvtNmVHiI7cl37nWTDYJIN1wG9L
+         7PxUxfSw5u5Xk8UatA3wNAuEJL6MJeUULlDtr/nEY6jrShE8x9vj/gZ7gqFtFJTAzLCb
+         o6vkPIUksCPhj1Mr3nHf3BgjAa+pnfh8bWNIk=
+Message-ID: <4BFE0FAB.9040009@gmail.com>
+Date: Thu, 27 May 2010 00:22:35 -0600
+From: Robert Hancock <hancockrwd@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-3.fc13 Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100527040120.GX31073@ZenIV.linux.org.uk>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       linux-input@vger.kernel.org, Bastien Nocera <hadess@hadess.net>
+Subject: Re: [git pull] Input updates for 2.6.34-rc6
+References: <20100513075728.GF30110@core.coreip.homeip.net> <alpine.LFD.2.00.1005130724280.3711@i5.linux-foundation.org> <20100513160117.GB22238@core.coreip.homeip.net> <alpine.LFD.2.00.1005130943460.3711@i5.linux-foundation.org>
+In-Reply-To: <alpine.LFD.2.00.1005130943460.3711@i5.linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 27, 2010 at 05:01:20AM +0100, Al Viro wrote:
-> On Thu, May 27, 2010 at 11:53:35AM +1000, Dave Chinner wrote:
-> > On Thu, May 27, 2010 at 09:12:14AM +1000, Dave Chinner wrote:
-> > > On Thu, May 27, 2010 at 02:41:16AM +1000, Nick Piggin wrote:
-> > ....
-> > > > Nitpick but I prefer just the restart label wher it is previously. This
-> > > > is moving setup for the next iteration into the "error" case.
-> > > 
-> > > Ok, will fix.
-> > ....
-> > > > Would you just elaborate on the lock order problem somewhere? (the
-> > > > comment makes it look like we *could* take the mutex if we wanted
-> > > > to).
-> > > 
-> > > The shrinker is unregistered in deactivate_locked_super() which is
-> > > just before ->kill_sb is called. The sb->s_umount lock is held at
-> > > this point. hence is the shrinker is operating, we will deadlock if
-> > > we try to lock it like this:
-> > > 
-> > > 	unmount:			shrinker:
-> > > 					down_read(&shrinker_lock);
-> > > 	down_write(&sb->s_umount)
-> > > 	unregister_shrinker()
-> > > 	down_write(&shrinker_lock)
-> > > 					prune_super()
-> > > 					  down_read(&sb->s_umount);
-> > > 					  (deadlock)
-> > > 
-> > > hence if we can't get the sb->s_umount lock in prune_super(), then
-> > > the superblock must be being unmounted and the shrinker should abort
-> > > as the ->kill_sb method will clean up everything after the shrinker
-> > > is unregistered. Hence the down_read_trylock().
-> 
-> Um...  Maybe I'm dumb, but what's wrong with doing unregistration from
-> deactivate_locked_super(), right after the call of ->kill_sb()?  At that
-> point ->s_umount is already dropped, so we won't deadlock at all.
-> Shrinker rwsem will make sure that all shrinkers-in-progress will run
-> to completion, so we won't get a superblock freed under prune_super().
-> I don't particulary mind down_try_read() in prune_super(), but why not
-> make life obviously safer?
-> 
-> Am I missing something here?
+On 05/13/2010 10:54 AM, Linus Torvalds wrote:
+>
+>
+> On Thu, 13 May 2010, Dmitry Torokhov wrote:
+>>
+>> Apple does proper thing in BIOS and omits keyboard and mouse PNP
+>> devices, but because of other players we do not really trust PNP BIOS
+>> and resort to banding on ports directly - there are cases when box has
+>> mouse and/or keyboard but they are not present in BIOS. Damed if you do,
+>> damned if you don't...
+>
+> Umm. No.
+>
+> PnP information _commonly_ doesn't inclure PS/2 ports, even when they
+> exist. Lack of PnP information about the keyboard port means absolutely
+> nothing, and anybody who tells you otherwise is totally and utterly wrong.
+>
+> So don't confuse this with PnP issues. That's a total red herring, and
+> Apple is _not_at_all_ "doing the proper thing in the BIOS".
+>
+> Quite the reverse. Apple is very clearly doing something horribly _wrong_
+> in their BIOS. Don't give them kudos for being incompetent morons.
 
-I was worried about memory allocation in the ->kill_sb path
-deadlocking on the s_umount lock if it enters reclaim. e.g.  XFS
-inodes can still be dirty even after the VFS has disposed of them,
-and writing them back can require page cache allocation for the
-backing buffers. If allocation recurses back into the shrinker, we
-can deadlock on the s_umount lock.  This doesn't seem like an XFS
-specific problem, so I used a trylock to avoid that whole class of
-problems (same way the current shrinkers do).
+I don't think they did anything wrong in their BIOS, it's working 
+exactly as the spec intended. There is no PS/2 controller, and the ACPI 
+PnP tables do not list one. I wouldn't argue that it was a good decision 
+of them to have the hardware somehow blow up if something poked those 
+ports anyway, but from a BIOS point of view they did the right thing.
 
->From there, we can unregister the shrinker before calling ->kill_sb
-as per above. That, in turn, means that the unmount
-invalidate_inodes() vs shrinker race goes away and the iprune_sem is
-not needed in the new prune_icache_sb() function.  I'm pretty sure
-that I can now remove the iprune_sem, but I haven't written the
-patch to do that yet.
+>
+> Just google for
+>
+> 	"Probing ports directly" "i8042 KBD port"
+>
+> and you'll get a lot of hits. That's not because those machines have wrong
+> PnP tables - it's because fundamentally PNP is a joke, and on PC's what is
+> much more important is "standard IO ports".
+>
+> For example, in that thread, Bastien is quoted:
+>
+> 	>  In other words, on x86, if PNP and/or ACPI don't indicate any PS/2
+> 	>  controller exists, we randomly bang on the ports in the expectation
+> 	>  they'll be there anyway. This seems rather misguided.
+>
+> and all that tells me is that Bastien doesn't know what he is doing. It is
+> _not_ "randomly bang" - it's called standard PC hardware.  And it's not
+> "misguided" - it's very much correct and required, exactly because PnP
+> itself is the misguided aborted fetus of a braindamaged mind.
 
-Cheers,
+I think that may have been me, actually, not Bastien. Misguided may have 
+been a too strong term, but in this case I think the PnP information is 
+quite trustable because Windows trusts it. Definitely for the PS/2 mouse 
+controller (quite likely the keyboard too), if Windows is in ACPI mode 
+and the PnP tables do not list it, it will not detect or use it.
 
-Dave.
+Now, many BIOSes seem to have have code (like an "auto" mode for the 
+PS/2 port, which may or may not be always set) which disables the PnP 
+entry if it doesn't detect a mouse or keyboard connected on boot. If 
+memory serves, this is because I think at least on some versions, if 
+Windows finds a controller but no mouse is responding then it shows up 
+with an error indication in Device Manager, which tends to make people 
+unhappy. This is likely what's responsible for most of those cases where 
+Linux detects devices after "probing ports directly", because the BIOS 
+hid the device but we were too "clever" for it and found it anyway.
 
--- 
-Dave Chinner
-david@fromorbit.com
+In fact on a lot of boards, Linux still detects the port even if set as 
+"disabled" in the BIOS, because all that does is disable the PnP entry.
+
+Long and the short of it is, it seems pretty safe to say that on any 
+ACPI machine, if there's no PnP entry for PS/2 devices, the BIOS does 
+not intend for the OS to use them. There may be cases where you might 
+want to try to locate ports anyway (maybe you really want to hotplug a 
+mouse in after boot, or you have an ancient KVM which doesn't emulate a 
+device presence on the non-selected machine), but those seem like very 
+much the exception rather than the rule.
+
+>
+> We do not trust BIOS tables, because BIOS writers are invariably totally
+> incompetent crack-addicted monkeys. If they weren't, they wouldn't be BIOS
+> writers. QED. And in fact the Apple problem is an _example_ of this BIOS
+> writer incompetence, not some shining example of them doing something
+> right.
+>
+> 			Linus
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-input" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>
+
