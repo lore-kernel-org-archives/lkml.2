@@ -1,44 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932846Ab0E0RgT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 May 2010 13:36:19 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:42160 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S932802Ab0E0RgN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 May 2010 13:36:13 -0400
-Date: Thu, 27 May 2010 13:36:12 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Thomas Gleixner <tglx@linutronix.de>
-cc: Matthew Garrett <mjg59@srcf.ucam.org>,
-       Peter Zijlstra <peterz@infradead.org>,
-       LKML <linux-kernel@vger.kernel.org>,
-       Florian Mickler <florian@mickler.org>, <felipe.balbi@nokia.com>,
-       Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
-       Linux PM <linux-pm@lists.linux-foundation.org>,
-       Alan Cox <alan@lxorguk.ukuu.org.uk>
-Subject: Re: [linux-pm] [PATCH 0/8] Suspend block api (version 8)
-In-Reply-To: <alpine.LFD.2.00.1005271905000.3032@localhost.localdomain>
-Message-ID: <Pine.LNX.4.44L0.1005271334560.3239-100000@iolanthe.rowland.org>
+	id S932877Ab0E0Rg6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 May 2010 13:36:58 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:33279 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932786Ab0E0Rg4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 May 2010 13:36:56 -0400
+Date: Thu, 27 May 2010 20:32:07 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: Oleg Nesterov <oleg@redhat.com>, Sridhar Samudrala <sri@us.ibm.com>,
+       netdev <netdev@vger.kernel.org>, lkml <linux-kernel@vger.kernel.org>,
+       "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Dmitri Vorobiev <dmitri.vorobiev@movial.com>,
+       Jiri Kosina <jkosina@suse.cz>, Thomas Gleixner <tglx@linutronix.de>,
+       Ingo Molnar <mingo@elte.hu>, Andi Kleen <ak@linux.intel.com>
+Subject: Re: [PATCH 2/3] workqueue: Add an API to create a singlethread
+	workqueue attached to the current task's cgroup
+Message-ID: <20100527173207.GA21880@redhat.com>
+References: <1274227491.2370.110.camel@w-sridhar.beaverton.ibm.com> <20100527091426.GA6308@redhat.com> <20100527124448.GA4241@redhat.com> <20100527131254.GB7974@redhat.com> <4BFE9ABA.6030907@kernel.org> <20100527163954.GA21710@redhat.com> <4BFEA434.6080405@kernel.org>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4BFEA434.6080405@kernel.org>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 27 May 2010, Thomas Gleixner wrote:
+On Thu, May 27, 2010 at 06:56:20PM +0200, Tejun Heo wrote:
+> Hello,
+> 
+> On 05/27/2010 06:39 PM, Michael S. Tsirkin wrote:
+> >> Unless you're gonna convert every driver to use this
+> >> special kind of workqueue (and what happens when multiple tasks from
+> >> different cgroups share the driver?),
+> > 
+> > We'll then create a workqueue per task. Each workqueue will have the
+> > right cgroup. But we are not trying to selve the problem for
+> > every driver.
+> 
+> Ah... I see.  You're gonna use multiple workqueues.  Once concern that
+> I have is that this is abuse of workqueue interface to certain level
+> and depends on the implementation detail of workqueue rather than its
+> intended usage model.
 
-> Crap. Stop beating on those lost wakeup events. If we lose them then
-> the drivers are broken and do not handle the switch over correctly. Or
-> the suspend mechanism is broken as it does not evaluate the system
-> state correctly. Blockers are just papering over that w/o tackling the
-> real problem.
+Well, this is why I proposed adding a new API for creating
+workqueue within workqueue.c, rather than exposing the task
+and attaching it to cgroups in our driver: so that workqueue
+maintainers can fix the implementation if it ever changes.
 
-That's the point -- suspend does not evaluate the system state 
-correctly because it doesn't have the necessary information.  Suspend 
-blockers are a way of providing it that information.  They don't paper 
-over the problem; they solve it.
+And after all, it's an internal API, we can always change
+it later if we need.
 
-Alan Stern
+> stop_machine() was a similar case and in the
+> end it was better served by a different mechanism built on kthread
+> directly (cpu_stop).  Wouldn't it be cleaner to use kthread directly
+> for your case too?  You're basically trying to use workqueue as a
+> frontend to kthread, so...
+> 
+> Thanks.
 
+Well, yes but we are using APIs like flush_work etc. These are very
+handy.  It seems much easier than rolling our own queue on top of kthread.
+
+Makes sense?
+
+> -- 
+> tejun
