@@ -1,71 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932490Ab0E0Xel (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 May 2010 19:34:41 -0400
-Received: from tundra.namei.org ([65.99.196.166]:33725 "EHLO tundra.namei.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757240Ab0E0Xei (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 May 2010 19:34:38 -0400
-Date: Fri, 28 May 2010 09:34:36 +1000 (EST)
-From: James Morris <jmorris@namei.org>
-To: Shaz <shazalive@gmail.com>
-cc: linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org
-Subject: Re: [PATCH] Correcting Kconfig for default security module
-In-Reply-To: <AANLkTil2oZOuDtAYyao-hM7oV2-QRrPXPRgwWtbTiKA4@mail.gmail.com>
-Message-ID: <alpine.LRH.2.00.1005280934050.4330@tundra.namei.org>
-References: <AANLkTil2oZOuDtAYyao-hM7oV2-QRrPXPRgwWtbTiKA4@mail.gmail.com>
-User-Agent: Alpine 2.00 (LRH 1167 2008-08-23)
+	id S1759313Ab0E0Xgb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 May 2010 19:36:31 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:54599 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751644Ab0E0Xg3 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 May 2010 19:36:29 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <20100527181333.GA8297@core.coreip.homeip.net>
+References: <AANLkTikFwznonORd42piWZvBv3oqqSj9odC9Jaud8o3x@mail.gmail.com>
+	<Pine.LNX.4.44L0.1005262044001.6349-100000@netrider.rowland.org>
+	<AANLkTingAiO8dkwnInc993PTyA63rV-WRvBIRlB2ChXs@mail.gmail.com>
+	<20100527181333.GA8297@core.coreip.homeip.net>
+Date: Thu, 27 May 2010 16:36:28 -0700
+Message-ID: <AANLkTilu5us2sYmm_f422Z2gJ34ZmIF808yYRPXkLjme@mail.gmail.com>
+Subject: Re: [PATCH 1/8] PM: Opportunistic suspend support.
+From: =?ISO-8859-1?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: Alan Stern <stern@rowland.harvard.edu>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+       Linux-pm mailing list <linux-pm@lists.linux-foundation.org>,
+       Kernel development list <linux-kernel@vger.kernel.org>,
+       Len Brown <len.brown@intel.com>, Pavel Machek <pavel@ucw.cz>,
+       Randy Dunlap <rdunlap@xenotime.net>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Andi Kleen <ak@linux.intel.com>,
+       Cornelia Huck <cornelia.huck@de.ibm.com>, Tejun Heo <tj@kernel.org>,
+       Jesse Barnes <jbarnes@virtuousgeek.org>,
+       Nigel Cunningham <nigel@tuxonice.net>, Ming Lei <tom.leiming@gmail.com>,
+       Wu Fengguang <fengguang.wu@intel.com>,
+       Maxim Levitsky <maximlevitsky@gmail.com>, linux-doc@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 28 May 2010, Shaz wrote:
+2010/5/27 Dmitry Torokhov <dmitry.torokhov@gmail.com>:
+> On Wed, May 26, 2010 at 05:52:40PM -0700, Arve Hjønnevåg wrote:
+>> 2010/5/26 Alan Stern <stern@rowland.harvard.edu>:
+>> > On Wed, 26 May 2010, Arve Hjønnevåg wrote:
+>> >
+>> >> > I must be missing something.  In Arve's patch 1/8, if the system is in
+>> >> > opportunistic suspend, and a wakeup event occurs but no suspend
+>> >> > blockers get enabled by the handler, what causes the system to go back
+>> >> > into suspend after the event is handled?  Isn't that a loop of some
+>> >> > sort?
+>> >> >
+>> >>
+>> >> Yes it is a loop. I think what you are missing is that it only loops
+>> >> repeatedly if the driver that aborts suspend does not use a suspend
+>> >> blocker.
+>> >
+>> > You mean "the driver that handles the wakeup event".  I was asking what
+>> > happened if suspend succeeded and then a wakeup occurred.  But yes, if
+>> > a suspend blocker is used then its release causes another suspend
+>> > attempt, with no looping.
+>> >
+>> >> > And even if it isn't, so what?  What's wrong with looping behavior?
+>> >>
+>> >> It is a significant power drain.
+>> >
+>> > Not in the situation I was discussing.
+>> >
+>>
+>> If you meant it spend most of the time suspended, then I agree. It
+>> only wastes power when a driver blocks suspend by returning an error
+>> from its suspend hook and we are forced to loop doing no useful work.
+>>
+>
+> If driver refuses to suspend that means there are events that need
+> processing. I fail to see why it would be called "looping doing no
+> useful work".
 
-> Dear James,
-> 
-> The following patch removes the confusion that if someone want to have
-> LSM as secondary and chooses DAC as the default. This will disable LSM
-> as discussed on SELinux mailing list.
-
-The correct list for posting security patches is the LSM list (cc'd).
-
-> 
-> ------------------------------------------------------------------------------------------------------------------------------------------------------------
-> 
-> diff -uNr linux-2.6.34/security/Kconfig linux-2.6.34-my/security/Kconfig
-> --- linux-2.6.34-orig/security/Kconfig	2010-05-17 02:17:36.000000000 +0500
-> +++ linux-2.6.34/security/Kconfig	2010-05-28 02:43:07.000000000 +0500
-> @@ -148,11 +148,10 @@
->  	default DEFAULT_SECURITY_SELINUX if SECURITY_SELINUX
->  	default DEFAULT_SECURITY_SMACK if SECURITY_SMACK
->  	default DEFAULT_SECURITY_TOMOYO if SECURITY_TOMOYO
-> -	default DEFAULT_SECURITY_DAC
-> 
->  	help
->  	  Select the security module that will be used by default if the
-> -	  kernel parameter security= is not specified.
-> +	  kernel parameter security= is not specified. DAC stays as the default.
-> 
->  	config DEFAULT_SECURITY_SELINUX
->  		bool "SELinux" if SECURITY_SELINUX=y
-> @@ -163,9 +162,7 @@
->  	config DEFAULT_SECURITY_TOMOYO
->  		bool "TOMOYO" if SECURITY_TOMOYO=y
-> 
-> -	config DEFAULT_SECURITY_DAC
-> -		bool "Unix Discretionary Access Controls"
-> -
-> +	
->  endchoice
-> 
->  config DEFAULT_SECURITY
-> 
-> -- 
-> Shaz
-> 
+Because the useful work is done in another thread. All the loop does
+is check if the useful work has completed which most likely will slow
+down the useful work. Blocking suspend with a suspend blocker until
+the useful work is done is more efficient.
 
 -- 
-James Morris
-<jmorris@namei.org>
+Arve Hjønnevåg
