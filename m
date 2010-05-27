@@ -1,44 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932967Ab0E0WMP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 May 2010 18:12:15 -0400
-Received: from mail.svr02.mucip.net ([83.170.6.69]:56857 "EHLO
-	mailout.mucip.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753285Ab0E0WMN (ORCPT
+	id S933108Ab0E0WMr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 May 2010 18:12:47 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:50621 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757351Ab0E0WMq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 May 2010 18:12:13 -0400
-X-Submitted: to mailout.mucip.net (Postfix) with ESMTPSA id 292864969
-Message-ID: <4BFEEE3A.1010403@birkenwald.de>
-Date: Fri, 28 May 2010 00:12:10 +0200
-From: Bernhard Schmidt <berni@birkenwald.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.9) Gecko/20100423 Lightning/1.0b1 Thunderbird/3.0.4
+	Thu, 27 May 2010 18:12:46 -0400
+Date: Thu, 27 May 2010 23:12:28 +0100
+From: Russell King <rmk@arm.linux.org.uk>
+To: Dan Williams <dan.j.williams@intel.com>
+Cc: Linus Walleij <linus.walleij@stericsson.com>, linux-kernel@vger.kernel.org,
+       STEricsson_nomadik_linux@list.st.com
+Subject: Re: [PATCH] DMAENGINE: DMA40 U8500 platform configuration
+Message-ID: <20100527221228.GB25484@flint.arm.linux.org.uk>
+References: <1274341759-13086-1-git-send-email-linus.walleij@stericsson.com> <AANLkTikmdqceeWNYGm7ZTI64pixtkVWBbpWEtajZGHA1@mail.gmail.com> <AANLkTikiW_yFOqRumd83sETURf-9sI7IfrCmbb5MRjrl@mail.gmail.com> <20100527193755.GA25484@flint.arm.linux.org.uk> <AANLkTimtWrHzbklohUc43hSWPDfJs93YQoQe5Gz4tgUw@mail.gmail.com>
 MIME-Version: 1.0
-To: Zachary Amsden <zamsden@redhat.com>
-CC: kvm@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: Clock jumps
-References: <loom.20100524T171038-56@post.gmane.org> <20100525062100.GP22163@redhat.com> <4BFD5616.6070302@cora.nwra.com> <4D7E210A-4694-4B6E-B721-6024CE96ABC0@suse.de> <htmdsk$9kn$1@dough.gmane.org> <4BFEE9F3.8040200@redhat.com>
-In-Reply-To: <4BFEE9F3.8040200@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <AANLkTimtWrHzbklohUc43hSWPDfJs93YQoQe5Gz4tgUw@mail.gmail.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 27.05.2010 23:53, Zachary Amsden wrote:
+On Thu, May 27, 2010 at 02:59:51PM -0700, Dan Williams wrote:
+> On Thu, May 27, 2010 at 12:37 PM, Russell King <rmk@arm.linux.org.uk> wrote:
+> > On Wed, May 26, 2010 at 09:17:42AM -0700, Dan Williams wrote:
+> >> Requesting acked-by for:
+> >>
+> >> http://marc.info/?l=linux-kernel&m=127434177015990&w=2
+> >
+> > Well...
+> >
+> >  +const static dma_addr_t dma40_tx_map[STEDMA40_NR_DEV] = {
+> >  +const static dma_addr_t dma40_rx_map[STEDMA40_NR_DEV] = {
+> 
+> Yeah, no need to initialize static data to 0, I'll fix that up before
+> submitting.
 
-Hello Zachary,
+static const
 
-> I have server side fixes for this kvm-clock which seem to give me a
-> stable clock on this machine, but for true SMP stability, you will need
-> Glauber's guest side changes to kvmclock as well. It is impossible to
-> guarantee strictly monotonic clocksource across multiple CPUs when
-> frequency is dynamically changing (and also because of the C1E idle
-> problems).
+not
 
-Is all this relevant only when the host is on TSC? Because I have seen 
-these jumps when the host was on HPET and the guests were using kvm-clock.
+const static
 
-Anyway, can you send me both patches? I'd like to try it, but I have 
-completely lost track where the up-to-date patches are.
-
-Bernhard
+-- 
+Russell King
+ Linux kernel    2.6 ARM Linux   - http://www.arm.linux.org.uk/
+ maintainer of:
