@@ -1,65 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759324Ab0E0RR3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 May 2010 13:17:29 -0400
-Received: from smtp.nokia.com ([192.100.122.230]:39003 "EHLO
-	mgw-mx03.nokia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759278Ab0E0RRZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 May 2010 13:17:25 -0400
-Date: Thu, 27 May 2010 20:15:53 +0300
-From: Felipe Balbi <felipe.balbi@nokia.com>
-To: ext Alan Stern <stern@rowland.harvard.edu>
-Cc: "Balbi Felipe (Nokia-D/Helsinki)" <felipe.balbi@nokia.com>,
-       Thomas Gleixner <tglx@linutronix.de>,
-       Arve =?iso-8859-1?B?SGr4bm5lduVn?= <arve@android.com>,
-       Peter Zijlstra <peterz@infradead.org>,
-       "Paul@smtp1.linux-foundation.org" <Paul@smtp1.linux-foundation.org>,
-       LKML <linux-kernel@vger.kernel.org>,
-       Florian Mickler <florian@mickler.org>,
-       Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
-       Linux PM <linux-pm@lists.linux-foundation.org>,
-       Alan Cox <alan@lxorguk.ukuu.org.uk>
-Subject: Re: [linux-pm] [PATCH 0/8] Suspend block api (version 8)
-Message-ID: <20100527171553.GC9625@nokia.com>
-Reply-To: felipe.balbi@nokia.com
-References: <20100527162740.GA9625@nokia.com>
- <Pine.LNX.4.44L0.1005271303190.3239-100000@iolanthe.rowland.org>
+	id S932275Ab0E0RRn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 May 2010 13:17:43 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:25982 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759330Ab0E0RRj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 May 2010 13:17:39 -0400
+Date: Thu, 27 May 2010 19:15:30 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Roland McGrath <roland@redhat.com>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Andi Kleen <andi@firstfloor.org>, "H. Peter Anvin" <hpa@zytor.com>,
+       Richard Henderson <rth@twiddle.net>, wezhang@redhat.com,
+       linux-kernel@vger.kernel.org, Michael Kerrisk <mtk.manpages@gmail.com>,
+       William Cohen <wcohen@redhat.com>
+Subject: Re: [PATCH 1/3] sys_personality: validate personality before
+	set_personality()
+Message-ID: <20100527171530.GA18284@redhat.com>
+References: <20100525141720.GA2253@redhat.com> <20100525193348.83F1549A54@magilla.sf.frob.com> <20100526123622.GA26033@redhat.com> <20100526203105.59D7849A56@magilla.sf.frob.com> <20100527153522.GA13858@redhat.com> <20100527153548.GB13858@redhat.com> <alpine.LFD.2.00.1005270921540.3689@i5.linux-foundation.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii; format=flowed
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <Pine.LNX.4.44L0.1005271303190.3239-100000@iolanthe.rowland.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-OriginalArrivalTime: 27 May 2010 17:16:03.0173 (UTC) FILETIME=[48E0F150:01CAFDC0]
-X-Nokia-AV: Clean
+In-Reply-To: <alpine.LFD.2.00.1005270921540.3689@i5.linux-foundation.org>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 27, 2010 at 07:04:24PM +0200, ext Alan Stern wrote:
->On Thu, 27 May 2010, Felipe Balbi wrote:
+On 05/27, Linus Torvalds wrote:
 >
->> On Thu, May 27, 2010 at 05:06:23PM +0200, ext Alan Stern wrote:
->> >If people don't mind, here is a greatly simplified summary of the
->> >comments and objections I have seen so far on this thread:
->> >
->> >	The in-kernel suspend blocker implementation is okay, even
->> >	beneficial.
->>
->> I disagree here. I believe expressing that as QoS is much better. Let
->> the kernel decide which power state is better as long as I can say I
->> need 100us IRQ latency or 100ms wakeup latency.
+> On Thu, 27 May 2010, Oleg Nesterov wrote:
+> >
+> > --- 34-rc1/kernel/exec_domain.c~1_CK_OVERFLOW_EARLIER	2009-04-06 00:03:42.000000000 +0200
+> > +++ 34-rc1/kernel/exec_domain.c	2010-05-27 15:15:12.000000000 +0200
+> > @@ -193,9 +193,9 @@ SYSCALL_DEFINE1(personality, u_long, per
+> >  	u_long old = current->personality;
+> >
+> >  	if (personality != 0xffffffff) {
+> > -		set_personality(personality);
+> > -		if (current->personality != personality)
+> > +		if ((unsigned int)personality != personality)
+> >  			return -EINVAL;
+> > +		set_personality(personality);
+> >  	}
 >
->Does this mean you believe "echo mem >/sys/power/state" is bad and
->should be removed?  Or "echo disk >/sys/power/state"?  They pay no
->attention to latencies or other requirements.
+> I think this is total random noise. The whole type system is crazy - don't
+> just paper over it.
 
-no, not at all. I think they are also really useful. But I also think 
-in-kernel suspend blockers are unnecessary. I think runtime pm + cpuidle 
-+ cpufreq is well enough for all cases. We just need to give those three 
-information about desired latencies.
+Of course! I agree very much.
 
--- 
-balbi
+> And if we decide that the field must fit in an unsigned int (reasonable),
+> then let's just ignore the top bits, and make it work right even if
+> somebody passes in an unsigned int!
 
-DefectiveByDesign.org
+Certainly, this was my first thought.
+
+But I didn't dare to do this change because it is obviously user-visible,
+and while this is not very important, we should change the declaration
+of personality() in /usr/include/sys/personality.h
+
+> -SYSCALL_DEFINE1(personality, u_long, personality)
+> +SYSCALL_DEFINE1(personality, unsigned int, personality)
+
+Indeed!
+
+But. Suppose an application does personality(0xffffffff << 32) on x86_64.
+
+Before this patch we return -EINVAL (but wrongly change ->personality).
+After this patch this is equal to personality(0), right?
+
+If you think this is fine - I agree. In case we have a bug report we
+know who should be blamed ;)
+
+As for 2/3 - once again, I think this is user-space problem, but I
+can't explain this to the bug-reportes.
+
+> -	u_long old = current->personality;
+> +	unsigned int old = current->personality;
+>
+>  	if (personality != 0xffffffff) {
+>  		set_personality(personality);
+> @@ -198,7 +198,7 @@ SYSCALL_DEFINE1(personality, u_long, personality)
+>  			return -EINVAL;
+
+You can also remove this "return -EINVAL", this is no longer possible.
+
+Oleg.
+
