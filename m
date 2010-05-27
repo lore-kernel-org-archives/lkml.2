@@ -1,184 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934031Ab0E0KbE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 May 2010 06:31:04 -0400
-Received: from fxip-0047f.externet.hu ([88.209.222.127]:33696 "EHLO
-	pomaz-ex.szeredi.hu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932861Ab0E0KbA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 May 2010 06:31:00 -0400
-To: Al Viro <viro@ZenIV.linux.org.uk>
-CC: John Johansen <john.johansen@canonical.com>,
-       Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>,
-       linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-In-reply-to: <E1OHaLJ-0008VD-VJ@pomaz-ex.szeredi.hu> (message from Miklos
-	Szeredi on Thu, 27 May 2010 12:29:37 +0200)
-Subject: [PATCH 2/2] vfs: show unreachable paths in getcwd and proc
-References: <E1OHaLJ-0008VD-VJ@pomaz-ex.szeredi.hu>
-Message-Id: <E1OHaMV-0008WK-PQ@pomaz-ex.szeredi.hu>
-From: Miklos Szeredi <miklos@szeredi.hu>
-Date: Thu, 27 May 2010 12:30:51 +0200
+	id S934075Ab0E0KcZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 May 2010 06:32:25 -0400
+Received: from borg.medozas.de ([188.40.89.202]:43142 "EHLO borg.medozas.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933949Ab0E0KcY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 May 2010 06:32:24 -0400
+Date: Thu, 27 May 2010 12:32:22 +0200 (CEST)
+From: Jan Engelhardt <jengelh@medozas.de>
+To: Clemens Ladisch <clemens@ladisch.de>
+cc: Takashi Iwai <tiwai@suse.de>, alsa-devel@alsa-project.org,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [alsa-devel] No mixers on ATI RS780 Azalia
+In-Reply-To: <4BFD2901.20800@ladisch.de>
+Message-ID: <alpine.LSU.2.01.1005271230340.18087@obet.zrqbmnf.qr>
+References: <alpine.LSU.2.01.1005261303170.19406@obet.zrqbmnf.qr> <s5hmxvmzwwd.wl%tiwai@suse.de> <alpine.LSU.2.01.1005261413040.23865@obet.zrqbmnf.qr> <4BFD2901.20800@ladisch.de>
+User-Agent: Alpine 2.01 (LSU 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Miklos Szeredi <mszeredi@suse.cz>
 
-Prepend "(unreachable)" to path strings if the path is not reachable
-from the current root.
+On Wednesday 2010-05-26 15:58, Clemens Ladisch wrote:
+>Jan Engelhardt wrote:
+>> On Wednesday 2010-05-26 14:10, Takashi Iwai wrote:
+>>>> /proc/asound/cards:
+>>>>  0 [SB  ]: HDA-Intel - HDA ATI SB
+>>>>            HDA ATI SB at 0xf0500000 irq 16
+>>>>  1 [HDMI]: HDA-Intel - HDA ATI HDMI
+>>>>            HDA ATI HDMI at 0xf0110000 irq 19
+>>>> 
+>>>> The soundcard responsible for the internal speaker is the 01:05.1/"HDMI" 
+>>>> one.
+>>>
+>>>Hmm?  HDMI output as the "internal" speaker is abnormal.
+>> 
+>> The "SB" card has many more mixers (counting  10) and Windows XP also
+>> shows about that many for SB. But neither in Linux nor Windows does
+>> the SB card have any effect; I do have to turn the bars of the "HDMI"
+>> one.
+>> 
+>> Abnormal, well. It's (semi-)embedded, what did you expect.
+>
+>It is extremely unlike that your embedded device has separate chips to
+>decode the HDMI sound signal and then convert it to analog, when the
+>same is already available with the normal HDA device.
+>
+>Your alsa-info output shows that there is an ALC262 codec connected
+>to the "SB" device; this chip wouldn't have been put there if it didn't
+>have a function.
+>
+>Try unmuting and raising both the Master and Beep controls.
 
-Two places updated are
- - the return string from getcwd()
- - and symlinks under /proc/$PID.
-
-Other uses of d_path() are left unchanged (we know that some old
-software crashes if /proc/mounts is changed).
-
-Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
----
- fs/dcache.c            |   82 +++++++++++++++++++++++++++++++++++++++++--------
- fs/proc/base.c         |    2 -
- include/linux/dcache.h |    1 
- 3 files changed, 72 insertions(+), 13 deletions(-)
-
-Index: linux-2.6/fs/dcache.c
-===================================================================
---- linux-2.6.orig/fs/dcache.c	2010-05-27 12:22:21.000000000 +0200
-+++ linux-2.6/fs/dcache.c	2010-05-27 12:22:24.000000000 +0200
-@@ -1957,6 +1957,33 @@ int __d_path(const struct path *path, st
- 	return error;
- }
- 
-+static void current_root(struct path *root)
-+{
-+	read_lock(&current->fs->lock);
-+	*root = current->fs->root;
-+	path_get(root);
-+	read_unlock(&current->fs->lock);
-+}
-+
-+static int __d_path_with_deleted(const struct path *path, struct path *root,
-+				 char **buffer, int *buflen)
-+{
-+	int error;
-+
-+	prepend(buffer, buflen, "\0", 1);
-+	if (d_unlinked(path->dentry)) {
-+		error = prepend(buffer, buflen, " (deleted)", 10);
-+		if (error)
-+			return error;
-+	}
-+	return __d_path(path, root, buffer, buflen);
-+}
-+
-+static int prepend_unreachable(char **buffer, int *buflen)
-+{
-+	return prepend(buffer, buflen, "(unreachable)", 13);
-+}
-+
- /**
-  * d_path - return the path of a dentry
-  * @path: path to report
-@@ -1990,27 +2017,51 @@ char *d_path(const struct path *path, ch
- 	if (path->dentry->d_op && path->dentry->d_op->d_dname)
- 		return path->dentry->d_op->d_dname(path->dentry, buf, buflen);
- 
--	read_lock(&current->fs->lock);
--	root = current->fs->root;
--	path_get(&root);
--	read_unlock(&current->fs->lock);
-+	current_root(&root);
- 	spin_lock(&dcache_lock);
- 	ptr = buf + buflen;
--	prepend(&ptr, &buflen, "\0", 1);
--	if (d_unlinked(path->dentry)) {
--		error = prepend(&ptr, &buflen, " (deleted)", 10);
--		if (error)
--			goto out;
--	}
- 	tmp = root;
--	error = __d_path(path, &tmp, &ptr, &buflen);
--out:
-+	error = __d_path_with_deleted(path, &tmp, &ptr, &buflen);
- 	spin_unlock(&dcache_lock);
- 	path_put(&root);
- 	return error ? ERR_PTR(error) : ptr;
- }
- EXPORT_SYMBOL(d_path);
- 
-+/**
-+ * d_path_with_unreachable - return the path of a dentry
-+ * @path: path to report
-+ * @buf: buffer to return value in
-+ * @buflen: buffer length
-+ *
-+ * The difference from d_path() is that this prepends "(unreachable)"
-+ * to paths which are unreachable from the current process' root.
-+ */
-+char *d_path_with_unreachable(const struct path *path, char *buf, int buflen)
-+{
-+	char *ptr;
-+	struct path root;
-+	struct path tmp;
-+	int error;
-+
-+	if (path->dentry->d_op && path->dentry->d_op->d_dname)
-+		return path->dentry->d_op->d_dname(path->dentry, buf, buflen);
-+
-+	current_root(&root);
-+	spin_lock(&dcache_lock);
-+	ptr = buf + buflen;
-+	tmp = root;
-+	error = __d_path_with_deleted(path, &tmp, &ptr, &buflen);
-+	if (!error) {
-+		if (tmp.dentry != root.dentry || tmp.mnt != root.mnt)
-+			error = prepend_unreachable(&ptr, &buflen);
-+	}
-+
-+	spin_unlock(&dcache_lock);
-+	path_put(&root);
-+	return error ? ERR_PTR(error) : ptr;
-+}
-+
- /*
-  * Helper function for dentry_operations.d_dname() members
-  */
-@@ -2118,6 +2169,13 @@ SYSCALL_DEFINE2(getcwd, char __user *, b
- 		if (error)
- 			goto out;
- 
-+		/* Unreachable from current root */
-+		if (tmp.dentry != root.dentry || tmp.mnt != root.mnt) {
-+			error = prepend_unreachable(&cwd, &buflen);
-+			if (error)
-+				goto out;
-+		}
-+
- 		error = -ERANGE;
- 		len = PAGE_SIZE + page - cwd;
- 		if (len <= size) {
-Index: linux-2.6/include/linux/dcache.h
-===================================================================
---- linux-2.6.orig/include/linux/dcache.h	2010-05-27 12:13:48.000000000 +0200
-+++ linux-2.6/include/linux/dcache.h	2010-05-27 12:22:24.000000000 +0200
-@@ -315,6 +315,7 @@ extern char *dynamic_dname(struct dentry
- 
- extern int __d_path(const struct path *path, struct path *root, char **, int *);
- extern char *d_path(const struct path *, char *, int);
-+extern char *d_path_with_unreachable(const struct path *, char *, int);
- extern char *dentry_path(struct dentry *, char *, int);
- 
- /* Allocation counts.. */
-Index: linux-2.6/fs/proc/base.c
-===================================================================
---- linux-2.6.orig/fs/proc/base.c	2010-05-27 11:53:55.000000000 +0200
-+++ linux-2.6/fs/proc/base.c	2010-05-27 12:22:24.000000000 +0200
-@@ -1438,7 +1438,7 @@ static int do_proc_readlink(struct path
- 	if (!tmp)
- 		return -ENOMEM;
- 
--	pathname = d_path(path, tmp, PAGE_SIZE);
-+	pathname = d_path_with_unreachable(path, tmp, PAGE_SIZE);
- 	len = PTR_ERR(pathname);
- 	if (IS_ERR(pathname))
- 		goto out;
+I unmuted everything and bumped the sliders to 100% but that does not
+change a thing unfortunately; opening the right device (C1D3p) using
+the suggested `aplay -vv -Dhdmi:1` or `mplayer -ao
+alsa:device=hw=1.3` does not make any noise either.
