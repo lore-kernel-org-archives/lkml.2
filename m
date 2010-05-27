@@ -1,71 +1,191 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932877Ab0E0Rg6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 May 2010 13:36:58 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:33279 "EHLO mx1.redhat.com"
+	id S1759352Ab0E0RhU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 May 2010 13:37:20 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:53184 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932786Ab0E0Rg4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 May 2010 13:36:56 -0400
-Date: Thu, 27 May 2010 20:32:07 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: Oleg Nesterov <oleg@redhat.com>, Sridhar Samudrala <sri@us.ibm.com>,
-       netdev <netdev@vger.kernel.org>, lkml <linux-kernel@vger.kernel.org>,
-       "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Dmitri Vorobiev <dmitri.vorobiev@movial.com>,
-       Jiri Kosina <jkosina@suse.cz>, Thomas Gleixner <tglx@linutronix.de>,
-       Ingo Molnar <mingo@elte.hu>, Andi Kleen <ak@linux.intel.com>
-Subject: Re: [PATCH 2/3] workqueue: Add an API to create a singlethread
-	workqueue attached to the current task's cgroup
-Message-ID: <20100527173207.GA21880@redhat.com>
-References: <1274227491.2370.110.camel@w-sridhar.beaverton.ibm.com> <20100527091426.GA6308@redhat.com> <20100527124448.GA4241@redhat.com> <20100527131254.GB7974@redhat.com> <4BFE9ABA.6030907@kernel.org> <20100527163954.GA21710@redhat.com> <4BFEA434.6080405@kernel.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4BFEA434.6080405@kernel.org>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+	id S1758098Ab0E0RhO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 May 2010 13:37:14 -0400
+From: Glauber Costa <glommer@redhat.com>
+To: kvm@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, avi@redhat.com, zamsden@redhat.com
+Subject: [PATCH v3] Add Documentation/kvm/msr.txt
+Date: Thu, 27 May 2010 12:33:48 -0400
+Message-Id: <1274978028-9827-1-git-send-email-glommer@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 27, 2010 at 06:56:20PM +0200, Tejun Heo wrote:
-> Hello,
-> 
-> On 05/27/2010 06:39 PM, Michael S. Tsirkin wrote:
-> >> Unless you're gonna convert every driver to use this
-> >> special kind of workqueue (and what happens when multiple tasks from
-> >> different cgroups share the driver?),
-> > 
-> > We'll then create a workqueue per task. Each workqueue will have the
-> > right cgroup. But we are not trying to selve the problem for
-> > every driver.
-> 
-> Ah... I see.  You're gonna use multiple workqueues.  Once concern that
-> I have is that this is abuse of workqueue interface to certain level
-> and depends on the implementation detail of workqueue rather than its
-> intended usage model.
+This patch adds a file that documents the usage of KVM-specific
+MSRs.
 
-Well, this is why I proposed adding a new API for creating
-workqueue within workqueue.c, rather than exposing the task
-and attaching it to cgroups in our driver: so that workqueue
-maintainers can fix the implementation if it ever changes.
+[ v2: added comments from Randy ]
+[ v2: added comments from Avi ]
 
-And after all, it's an internal API, we can always change
-it later if we need.
+Signed-off-by: Glauber Costa <glommer@redhat.com>
+---
+ Documentation/kvm/msr.txt |  152 +++++++++++++++++++++++++++++++++++++++++++++
+ 1 files changed, 152 insertions(+), 0 deletions(-)
+ create mode 100644 Documentation/kvm/msr.txt
 
-> stop_machine() was a similar case and in the
-> end it was better served by a different mechanism built on kthread
-> directly (cpu_stop).  Wouldn't it be cleaner to use kthread directly
-> for your case too?  You're basically trying to use workqueue as a
-> frontend to kthread, so...
-> 
-> Thanks.
+diff --git a/Documentation/kvm/msr.txt b/Documentation/kvm/msr.txt
+new file mode 100644
+index 0000000..8cdcb6d
+--- /dev/null
++++ b/Documentation/kvm/msr.txt
+@@ -0,0 +1,152 @@
++KVM-specific MSRs.
++Glauber Costa <glommer@redhat.com>, Red Hat Inc, 2010
++=====================================================
++
++KVM makes use of some custom MSRs to service some requests.
++At present, this facility is only used by kvmclock.
++
++Custom MSRs have a range reserved for them, that goes from
++0x4b564d00 to 0x4b564dff. There are MSRs outside this area,
++but they are deprecated and their use is discouraged.
++
++Custom MSR list
++--------
++
++The current supported Custom MSR list is:
++
++MSR_KVM_WALL_CLOCK_NEW:   0x4b564d00
++
++	data: physical address of a memory area which must be in guest RAM.
++	This memory is expected to hold a copy of the following structure:
++
++	struct pvclock_wall_clock {
++		u32   version;
++		u32   sec;
++		u32   nsec;
++	} __attribute__((__packed__));
++
++	whose data will be filled in by the hypervisor. The hypervisor is only 
++	guaranteed to update this data at the moment of MSR write.
++	Users that want to reliably query this information more than once have
++	to write more than once to this MSR. Fields have the following meanings:
++
++		version: guest has to check version before and after grabbing
++		time information and check that they are both equal and even.
++		An odd version indicates an in-progress update.
++
++		sec: number of seconds for wallclock.
++
++		nsec: number of nanoseconds for wallclock.
++
++	Note that although MSRs are per-CPU entities, the effect of this
++	particular MSR is global.
++
++	Availability of this MSR must be checked via bit 3 in 0x4000001 cpuid
++	leaf prior to usage. 
++
++MSR_KVM_SYSTEM_TIME_NEW:  0x4b564d01
++
++	data: 4-byte aligned physical address of a memory area which must be in
++	guest RAM, plus an enable bit in bit 0. This memory is expected to hold
++	a copy of the following structure:
++
++	struct pvclock_vcpu_time_info {
++		u32   version;
++		u32   pad0;
++		u64   tsc_timestamp;
++		u64   system_time;
++		u32   tsc_to_system_mul;
++		s8    tsc_shift;
++		u8    flags;
++		u8    pad[2];
++	} __attribute__((__packed__)); /* 32 bytes */
++
++	whose data will be filled in by the hypervisor periodically. Only one
++	write, or registration, is needed for each VCPU. The interval between
++	updates of this structure is arbitrary and implementation-dependent.
++	The hypervisor may update this structure at any time it sees fit until
++	anything with bit0 == 0 is written to it.
++
++	Fields have the following meanings:
++
++		version: guest has to check version before and after grabbing
++		time information and check that they are both equal and even.
++		An odd version indicates an in-progress update.
++
++		tsc_timestamp: the tsc value at the current VCPU at the time
++		of the update of this structure. Guests can subtract this value
++		from current tsc to derive a notion of elapsed time since the
++		structure update.
++
++		system_time: a host notion of monotonic time, including sleep
++		time at the time this structure was last updated. Unit is
++		nanoseconds.
++
++		tsc_to_system_mul: a function of the tsc frequency. One has
++		to multiply any tsc-related quantity by this value to get
++		a value in nanoseconds, besides dividing by 2^tsc_shift
++
++		tsc_shift: cycle to nanosecond divider, as a power of two, to
++		allow for shift rights. One has to shift right any tsc-related
++		quantity by this value to get a value in nanoseconds, besides
++		multiplying by tsc_to_system_mul.
++
++		With this information, guests can derive per-CPU time by
++		doing:
++
++			time = (current_tsc - tsc_timestamp)
++			time = (time * tsc_to_system_mul) >> tsc_shift 
++			time = time + system_time
++
++		flags: bits in this field indicate extended capabilities
++		coordinated between the guest and the hypervisor. Availability
++		of specific flags has to be checked in 0x40000001 cpuid leaf.
++		Current flags are:
++
++		 flag bit   | cpuid bit    | meaning
++		-------------------------------------------------------------
++			    |	           | time measures taken across
++		     0      |	   24      | multiple cpus are guaranteed to
++			    |		   | be monotonic
++		-------------------------------------------------------------
++
++	Availability of this MSR must be checked via bit 3 in 0x4000001 cpuid
++	leaf prior to usage. 
++
++
++MSR_KVM_WALL_CLOCK:  0x11
++
++	data and functioning: same as MSR_KVM_WALL_CLOCK_NEW. Use that instead.
++
++	This MSR falls outside the reserved KVM range and may be removed in the
++	future. Its usage is deprecated.
++
++	Availability of this MSR must be checked via bit 0 in 0x4000001 cpuid
++	leaf prior to usage. 
++
++MSR_KVM_SYSTEM_TIME: 0x12
++
++	data and functioning: same as MSR_KVM_SYSTEM_TIME_NEW. Use that instead.
++
++	This MSR falls outside the reserved KVM range and may be removed in the
++	future. Its usage is deprecated.
++
++	Availability of this MSR must be checked via bit 0 in 0x4000001 cpuid
++	leaf prior to usage. 
++
++	The suggested algorithm for detecting kvmclock presence is then:
++
++		if (!kvm_para_available())    /* refer to cpuid.txt */
++			return NON_PRESENT;
++
++		flags = cpuid_eax(0x40000001);
++		if (flags & 3) {
++			msr_kvm_system_time = MSR_KVM_SYSTEM_TIME_NEW;
++			msr_kvm_wall_clock = MSR_KVM_WALL_CLOCK_NEW;
++			return PRESENT;
++		} else if (flags & 0) {
++			msr_kvm_system_time = MSR_KVM_SYSTEM_TIME;
++			msr_kvm_wall_clock = MSR_KVM_WALL_CLOCK;
++			return PRESENT;
++		} else
++			return NON_PRESENT;
+-- 
+1.6.2.2
 
-Well, yes but we are using APIs like flush_work etc. These are very
-handy.  It seems much easier than rolling our own queue on top of kthread.
-
-Makes sense?
-
-> -- 
-> tejun
