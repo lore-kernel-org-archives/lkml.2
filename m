@@ -1,58 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754767Ab0E0NyB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 May 2010 09:54:01 -0400
-Received: from mail-px0-f174.google.com ([209.85.212.174]:40456 "EHLO
+	id S1755041Ab0E0NzS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 May 2010 09:55:18 -0400
+Received: from mail-px0-f174.google.com ([209.85.212.174]:56543 "EHLO
 	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751203Ab0E0NyA convert rfc822-to-8bit (ORCPT
+	with ESMTP id S1752725Ab0E0NzQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 May 2010 09:54:00 -0400
+	Thu, 27 May 2010 09:55:16 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type:content-transfer-encoding;
-        b=nDbvNvcAcqsFo6NZBULcLYJlJMbhxLFn5z2hyY5HGrf8qWKfRqzX2gtGf1IRmHEdVy
-         AyhJd16T60JKNPrB6JiCYL7TBA66mzIIAkvPXZ/yIjeHMlDGcLhL1J6ro8DTy3aXqT65
-         qyji5Uz4XNYfPZ1+WNdJ3VKo9IylIY+8MYTuc=
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=fV83fTVwEsr0CJnULMDquVozKF6CQZVZ2btgCkK+QuXIyXgEywN4OTTMNWWrrhWC4h
+         c+oAMn6tgFC+nhecFfdI7TrMeWqLSQc1kSE/lT2hLgyCWaRMYiQ5CaRIKWNOkiCI7ZpO
+         HafvnTuWzajycT7gu/E45WbZC2i+Re2sXoTNU=
+Date: Thu, 27 May 2010 22:55:07 +0900
+From: Minchan Kim <minchan.kim@gmail.com>
+To: Rik van Riel <riel@redhat.com>
+Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+       linux-mm@kvack.org, Mel Gorman <mel@csn.ul.ie>,
+       Andrea Arcangeli <aarcange@redhat.com>,
+       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+       Lee Schermerhorn <Lee.Schermerhorn@hp.com>
+Subject: Re: [PATCH 4/5] always lock the root (oldest) anon_vma
+Message-ID: <20100527135356.GD2112@barrios-desktop>
+References: <20100526153819.6e5cec0d@annuminas.surriel.com>
+ <20100526154044.2769e707@annuminas.surriel.com>
 MIME-Version: 1.0
-In-Reply-To: <20100527134120.GA44150@dspnet.fr>
-References: <AANLkTikBrXROMvNKrhgxQ1jVh6aOsx3nIrNXTznXInV1@mail.gmail.com> 
-	<20100526151152.28deaa6c@linux.intel.com> <20100527134120.GA44150@dspnet.fr>
-From: Frank Pan <frankpzh@gmail.com>
-Date: Thu, 27 May 2010 21:46:11 +0800
-Message-ID: <AANLkTil790wLxA-phu_pevzXXx1m8U4sILq7rYFGE2FM@mail.gmail.com>
-Subject: Re: [PATCH 0/2] Enlarge the storage of chars in virtual terminal
-To: Olivier Galibert <galibert@pobox.com>
-Cc: Alan Cox <alan@linux.intel.com>,
-       Gerardo Exequiel Pozzi <vmlinuz386@yahoo.com.ar>,
-       Kay Sievers <kay.sievers@vrfy.org>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Greg Kroah-Hartman <gregkh@suse.de>,
-       Catalin Marinas <catalin.marinas@arm.com>,
-       Daniel Mack <daniel@caiaq.de>, Tejun Heo <tj@kernel.org>,
-       Christoph Lameter <cl@linux-foundation.org>,
-       Jiri Slaby <jirislaby@gmail.com>, Jochen Hein <jochen@jochen.org>,
-       Johannes Weiner <hannes@cmpxchg.org>, Dave Airlie <airlied@redhat.com>,
-       Pekka Enberg <penberg@cs.helsinki.fi>,
-       Geert Uytterhoeven <geert@linux-m68k.org>,
-       LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100526154044.2769e707@annuminas.surriel.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Greetings,
+On Wed, May 26, 2010 at 03:40:44PM -0400, Rik van Riel wrote:
+> Subject: always lock the root (oldest) anon_vma
+> 
+> Always (and only) lock the root (oldest) anon_vma whenever we do something in an
+> anon_vma.  The recently introduced anon_vma scalability is due to the rmap code
+> scanning only the VMAs that need to be scanned.  Many common operations still
+> took the anon_vma lock on the root anon_vma, so always taking that lock is not
+> expected to introduce any scalability issues.
+> 
+> However, always taking the same lock does mean we only need to take one lock,
+> which means rmap_walk on pages from any anon_vma in the vma is excluded from
+> occurring during an munmap, expand_stack or other operation that needs to
+> exclude rmap_walk and similar functions.
+> 
+> Also add the proper locking to vma_adjust.
+> 
+> Signed-off-by: Rik van Riel <riel@redhat.com>
+Reviewed-by: Minchan Kim <minchan.kim@gmail.com>
 
-> The Unicode book should be required reading for anyone who starts
-> talking about displaying utf-8/unicode text.  It's a *very*
-> interesting book with way more than code charts in it[1].
-You mean "The Unicode Standard, Version 5.0"?
-Oh such a hugh brick. :) What's it about? History?
-I'll read it tomorrow in the library.
+Nitpick:
 
+It would be better to modify comment about head of anon_vma in rmap.h, too.
+/*  
+ * NOTE: the LSB of the head.next is set by
+                   ->   root->hext.next 
 -- 
-Frank Pan
-
-Computer Science and Technology
-Tsinghua University
+Kind regards,
+Minchan Kim
