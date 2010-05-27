@@ -1,79 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934103Ab0E0Lmh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 May 2010 07:42:37 -0400
-Received: from mgw2.diku.dk ([130.225.96.92]:36853 "EHLO mgw2.diku.dk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759018Ab0E0Lm2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 May 2010 07:42:28 -0400
-From: Nicolas Palix <npalix@diku.dk>
-To: Julia Lawall <julia@diku.dk>
-Subject: Re: [PATCH 6/17] arch/x86/kernel: Add missing spin_unlock
-Date: Thu, 27 May 2010 13:42:25 +0200
-User-Agent: KMail/1.13.2 (Linux/2.6.32-22-generic; KDE/4.4.2; i686; ; )
-Cc: "Roedel, Joerg" <Joerg.Roedel@amd.com>,
-       Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-       "H. Peter Anvin" <hpa@zytor.com>, "x86@kernel.org" <x86@kernel.org>,
-       "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       "kernel-janitors@vger.kernel.org" <kernel-janitors@vger.kernel.org>
-References: <Pine.LNX.4.64.1005261755260.23743@ask.diku.dk> <20100527111136.GV3266@amd.com> <Pine.LNX.4.64.1005271317180.5422@ask.diku.dk>
-In-Reply-To: <Pine.LNX.4.64.1005271317180.5422@ask.diku.dk>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201005271342.25619.npalix@diku.dk>
+	id S1759018Ab0E0Lpb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 May 2010 07:45:31 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:38883 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755072Ab0E0Lpa convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 May 2010 07:45:30 -0400
+Subject: Re: [PATCH 00/11] V4: rwsem changes + down_read_critical() proposal
+From: Peter Zijlstra <peterz@infradead.org>
+To: Michel Lespinasse <walken@google.com>
+Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       David Howells <dhowells@redhat.com>, Ingo Molnar <mingo@elte.hu>,
+       Thomas Gleixner <tglx@linutronix.de>,
+       LKML <linux-kernel@vger.kernel.org>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Mike Waychison <mikew@google.com>,
+       Suleiman Souhlal <suleiman@google.com>, Ying Han <yinghan@google.com>
+In-Reply-To: <20100527110210.GB20625@google.com>
+References: <1274733081-4623-1-git-send-email-walken@google.com>
+	 <1274777239.5882.581.camel@twins>
+	 <AANLkTikbeXjmRW4gqiy1Ss-Suce5gIM4xJ5o9Z81ZTQX@mail.gmail.com>
+	 <1274779675.5882.684.camel@twins>
+	 <20100526102359.da18b89e.kamezawa.hiroyu@jp.fujitsu.com>
+	 <20100527110210.GB20625@google.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Thu, 27 May 2010 13:45:11 +0200
+Message-ID: <1274960711.27810.4521.camel@twins>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 27 May 2010 13:17:58 Julia Lawall wrote:
-> On Thu, 27 May 2010, Roedel, Joerg wrote:
+On Thu, 2010-05-27 at 04:02 -0700, Michel Lespinasse wrote:
+> > Hmm..can't we use something speculative lookup for reading maps ?
+> > (as we played in several months ago...)
 > 
-> > On Wed, May 26, 2010 at 11:55:59AM -0400, Julia Lawall wrote:
-> > > The semantic match that finds this problem is as follows:
-> > > (http://coccinelle.lip6.fr/)
-> > > 
-> > > // <smpl>
-> > > @@
-> > > expression E1;
-> > > @@
-> > > 
-> > > * spin_lock(E1,...);
-> > >   <+... when != E1
-> > >   if (...) {
-> > >     ... when != E1
-> > > *   return ...;
-> > >   }
-> > >   ...+>
-> > > * spin_unlock(E1,...);
-> > > // </smpl>
-> > 
-> > Btw, I think it would be great to have a collection of these semantic
-> > match scripts in the kernel repository together with a build target to
-> > run these scripts over the kernel sources (like the cscope target).
-> > Opinions?
-> 
-> We have submitted and received some feedback on an initial version of 
-> this, but I'm not completely sure of the current status.
+> Would you happen to have a link to that conversation / remember the
+> subject line of the thread ? 
 
-You can see the latest feedback we get at
-http://lkml.org/lkml/2010/5/10/257
+http://lkml.org/lkml/2009/12/24/153
 
-The initial submission and its comments are at
-http://lkml.org/lkml/2010/4/26/269
+My last series of patches lives here:
 
-> 
-> julia
-> --
-> To unsubscribe from this list: send the line "unsubscribe kernel-janitors" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
+http://programming.kicks-ass.net/kernel-patches/speculative-fault/
 
--- 
-Nicolas Palix
-Tel: (+33) 1 44 27 87 25
-Tel: (+33) 6 81 07 91 72
-Web: http://www.diku.dk/~npalix/
+
