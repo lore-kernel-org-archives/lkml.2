@@ -1,271 +1,200 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754854Ab0E0OCX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 May 2010 10:02:23 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:48051 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752061Ab0E0OCW (ORCPT
+	id S1755363Ab0E0OCf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 May 2010 10:02:35 -0400
+Received: from smtp125.sbc.mail.sp1.yahoo.com ([69.147.65.184]:33995 "HELO
+	smtp125.sbc.mail.sp1.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1755029Ab0E0OCc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 May 2010 10:02:22 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=v6jLa2W6/OqWihdj5HCI58NUN3zKggiKwknh3DncTHF7UlorQCZOi6tFrFvIDj27S6
-         ks1X8zaq2/yrLMI3w3yNu53FFKDTNMNXriPttkJTDv+5lZC7W8gccsYm8X2/eHNP1Siz
-         1nlzdesdJHA+9jdoj06iIH+TdSFaPUhsSEFpg=
-Date: Thu, 27 May 2010 23:02:12 +0900
-From: Minchan Kim <minchan.kim@gmail.com>
-To: Rik van Riel <riel@redhat.com>
-Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-       linux-mm@kvack.org, Mel Gorman <mel@csn.ul.ie>,
-       Andrea Arcangeli <aarcange@redhat.com>,
-       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-       Lee Schermerhorn <Lee.Schermerhorn@hp.com>
-Subject: Re: [PATCH 5/5] extend KSM refcounts to the anon_vma root
-Message-ID: <20100527140212.GE2112@barrios-desktop>
-References: <20100526153819.6e5cec0d@annuminas.surriel.com>
- <20100526154124.04607d04@annuminas.surriel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100526154124.04607d04@annuminas.surriel.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Thu, 27 May 2010 10:02:32 -0400
+X-Yahoo-SMTP: fzDSGlOswBCWnIOrNw7KwwK1j9PqyNbe5PtLKiS4dDU.UNl_t6bdEZu9tTLW
+X-YMail-OSG: F4pPJRIVM1lk7LU14S4fH77epAWICxf58mrzkOuIAZzxeIp1asJdDPRi1auP4rU6d_DGHDUcz4o7Fjh1M_Jv4qdGseHELX22YR6d45ZmuU9ETL9QRicGulXtH698GlTf_3MDaBUzehvk_pYJ4Yhs7iG_ciZHaH.sND6liCUz55MCrvdS7BfPQbdLH41XSqNquNryhvc3cYHwVSPItzYLVx.CKPlcomXsV724uROL.PdPmHgVR7Pguv3VbR7sgOlTiVGjM3LOea_AFu2FU4Q0wklRBMvABJq9cQz9S_l82GOYJqr9o1jGNIvYNahSiLisnu3TN9kY0XAla4DJxT.dZ0PjJPOTm4aJ6u0CAlX65SjmrmEl81HtDyX5SSG9SGajudhINu0PE_Q-
+X-Yahoo-Newman-Property: ymail-3
+Subject: TCM v4 and TCM_Loop tree+patches for scsi-misc.git
+From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+To: James Bottomley <James.Bottomley@suse.de>
+Cc: linux-scsi <linux-scsi@vger.kernel.org>,
+       LKML <linux-kernel@vger.kernel.org>, Hannes Reinecke <hare@suse.de>,
+       FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
+       Mike Christie <michaelc@cs.wisc.edu>,
+       Christoph Hellwig <hch@infradead.org>,
+       Joel Becker <joel.becker@oracle.com>, Joe Eykholt <jeykholt@cisco.com>,
+       Richard Sharpe <realrichardsharpe@gmail.com>,
+       "H. Peter Anvin" <hpa@zytor.com>
+Content-Type: text/plain
+Date: Thu, 27 May 2010 07:02:21 -0700
+Message-Id: <1274968941.16907.31.camel@haakon2.linux-iscsi.org>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.22.3.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 26, 2010 at 03:41:24PM -0400, Rik van Riel wrote:
-> Subject: extend KSM refcounts to the anon_vma root
-> 
-> KSM reference counts can cause an anon_vma to exist after the processe
-> it belongs to have already exited.  Because the anon_vma lock now lives
-> in the root anon_vma, we need to ensure that the root anon_vma stays
-> around until after all the "child" anon_vmas have been freed.
-> 
-> The obvious way to do this is to have a "child" anon_vma take a
-> reference to the root in anon_vma_fork.  When the anon_vma is freed
-> at munmap or process exit, we drop the refcount in anon_vma_unlink
-> and possibly free the root anon_vma.
-> 
-> The KSM anon_vma reference count function also needs to be modified
-> to deal with the possibility of freeing 2 levels of anon_vma.  The
-> easiest way to do this is to break out the KSM magic and make it
-> generic.
-> 
-> When compiling without CONFIG_KSM, this code is compiled out.
-Hi, Rik. 
+Good morning James,
 
-Hmm, I can understand this point. 
-Now, rmap code always depeneds on root anon_vma's lock. 
-I think it doesn't depends on KSM and MIGRATION.
+Following your instructions the TCM Core v4 infrastructure and TCM_Loop
+multi-fabric LLD code has been broken up from lio-core-2.6.git/lio-4.0
+to be reviewable rather than historical.  I have made these commits into
+a tree tracking your scsi-misc.git/master, that is available here:
 
-If we don't use KSM and MIGRATION and it is compiled out, 
-Can root's anon_vma disappear during rmap walking? 
-who prevent it?
+git://git.kernel.org/pub/scm/linux/kernel/git/nab/scsi-misc-2.6.git master
 
-What am I missing?
-> 
-> Signed-off-by: Rik van Riel <riel@redhat.com>
-> ---
-> v2:
->  - merge with -mm and the compaction code
->  - improve the anon_vma refcount comment in anon_vma_fork with the
->    refcount lifetime
-> 
->  include/linux/rmap.h |   15 +++++++++++++++
->  mm/ksm.c             |   17 ++++++-----------
->  mm/migrate.c         |   10 +++-------
->  mm/rmap.c            |   45 ++++++++++++++++++++++++++++++++++++++++++++-
->  4 files changed, 68 insertions(+), 19 deletions(-)
-> 
-> Index: linux-2.6.34/include/linux/rmap.h
-> ===================================================================
-> --- linux-2.6.34.orig/include/linux/rmap.h
-> +++ linux-2.6.34/include/linux/rmap.h
-> @@ -81,6 +81,13 @@ static inline int anonvma_external_refco
->  {
->  	return atomic_read(&anon_vma->external_refcount);
->  }
-> +
-> +static inline void get_anon_vma(struct anon_vma *anon_vma)
-> +{
-> +	atomic_inc(&anon_vma->external_refcount);
-> +}
-> +
-> +void drop_anon_vma(struct anon_vma *);
->  #else
->  static inline void anonvma_external_refcount_init(struct anon_vma *anon_vma)
->  {
-> @@ -90,6 +97,14 @@ static inline int anonvma_external_refco
->  {
->  	return 0;
->  }
-> +
-> +static inline void get_anon_vma(struct anon_vma *anon_vma)
-> +{
-> +}
-> +
-> +static inline void drop_anon_vma(struct anon_vma *anon_vma)
-> +{
-> +}
->  #endif /* CONFIG_KSM */
->  
->  static inline struct anon_vma *page_anon_vma(struct page *page)
-> Index: linux-2.6.34/mm/ksm.c
-> ===================================================================
-> --- linux-2.6.34.orig/mm/ksm.c
-> +++ linux-2.6.34/mm/ksm.c
-> @@ -318,19 +318,14 @@ static void hold_anon_vma(struct rmap_it
->  			  struct anon_vma *anon_vma)
->  {
->  	rmap_item->anon_vma = anon_vma;
-> -	atomic_inc(&anon_vma->external_refcount);
-> +	get_anon_vma(anon_vma);
->  }
->  
-> -static void drop_anon_vma(struct rmap_item *rmap_item)
-> +static void ksm_drop_anon_vma(struct rmap_item *rmap_item)
->  {
->  	struct anon_vma *anon_vma = rmap_item->anon_vma;
->  
-> -	if (atomic_dec_and_lock(&anon_vma->external_refcount, &anon_vma->root->lock)) {
-> -		int empty = list_empty(&anon_vma->head);
-> -		anon_vma_unlock(anon_vma);
-> -		if (empty)
-> -			anon_vma_free(anon_vma);
-> -	}
-> +	drop_anon_vma(anon_vma);
->  }
->  
->  /*
-> @@ -415,7 +410,7 @@ static void break_cow(struct rmap_item *
->  	 * It is not an accident that whenever we want to break COW
->  	 * to undo, we also need to drop a reference to the anon_vma.
->  	 */
-> -	drop_anon_vma(rmap_item);
-> +	ksm_drop_anon_vma(rmap_item);
->  
->  	down_read(&mm->mmap_sem);
->  	if (ksm_test_exit(mm))
-> @@ -470,7 +465,7 @@ static void remove_node_from_stable_tree
->  			ksm_pages_sharing--;
->  		else
->  			ksm_pages_shared--;
-> -		drop_anon_vma(rmap_item);
-> +		ksm_drop_anon_vma(rmap_item);
->  		rmap_item->address &= PAGE_MASK;
->  		cond_resched();
->  	}
-> @@ -558,7 +553,7 @@ static void remove_rmap_item_from_tree(s
->  		else
->  			ksm_pages_shared--;
->  
-> -		drop_anon_vma(rmap_item);
-> +		ksm_drop_anon_vma(rmap_item);
->  		rmap_item->address &= PAGE_MASK;
->  
->  	} else if (rmap_item->address & UNSTABLE_FLAG) {
-> Index: linux-2.6.34/mm/rmap.c
-> ===================================================================
-> --- linux-2.6.34.orig/mm/rmap.c
-> +++ linux-2.6.34/mm/rmap.c
-> @@ -235,6 +235,12 @@ int anon_vma_fork(struct vm_area_struct 
->  	 * lock any of the anon_vmas in this anon_vma tree.
->  	 */
->  	anon_vma->root = pvma->anon_vma->root;
-> +	/*
-> +	 * With KSM refcounts, an anon_vma can stay around longer than the
-> +	 * process it belongs to.  The root anon_vma needs to be pinned
-> +	 * until this anon_vma is freed, because the lock lives in the root.
-> +	 */
-> +	get_anon_vma(anon_vma->root);
->  	/* Mark this anon_vma as the one where our new (COWed) pages go. */
->  	vma->anon_vma = anon_vma;
->  	anon_vma_chain_link(vma, avc, anon_vma);
-> @@ -264,8 +270,11 @@ static void anon_vma_unlink(struct anon_
->  	empty = list_empty(&anon_vma->head) && !anonvma_external_refcount(anon_vma);
->  	anon_vma_unlock(anon_vma);
->  
-> -	if (empty)
-> +	if (empty) {
-> +		/* We no longer need the root anon_vma */
-> +		drop_anon_vma(anon_vma->root);
->  		anon_vma_free(anon_vma);
-> +	}
->  }
->  
->  void unlink_anon_vmas(struct vm_area_struct *vma)
-> @@ -1389,6 +1398,40 @@ int try_to_munlock(struct page *page)
->  		return try_to_unmap_file(page, TTU_MUNLOCK);
->  }
->  
-> +#if defined(CONFIG_KSM) || defined(CONFIG_MIGRATION)
-> +/*
-> + * Drop an anon_vma refcount, freeing the anon_vma and anon_vma->root
-> + * if necessary.  Be careful to do all the tests under the lock.  Once
-> + * we know we are the last user, nobody else can get a reference and we
-> + * can do the freeing without the lock.
-> + */
-> +void drop_anon_vma(struct anon_vma *anon_vma)
-> +{
-> +	if (atomic_dec_and_lock(&anon_vma->external_refcount, &anon_vma->root->lock)) {
-> +		struct anon_vma *root = anon_vma->root;
-> +		int empty = list_empty(&anon_vma->head);
-> +		int last_root_user = 0;
-> +		int root_empty = 0;
-> +
-> +		/*
-> +		 * The refcount on a non-root anon_vma got dropped.  Drop
-> +		 * the refcount on the root and check if we need to free it.
-> +		 */
-> +		if (empty && anon_vma != root) {
-> +			last_root_user = atomic_dec_and_test(&root->external_refcount);
-> +			root_empty = list_empty(&root->head);
-> +		}
-> +		anon_vma_unlock(anon_vma);
-> +
-> +		if (empty) {
-> +			anon_vma_free(anon_vma);
-> +			if (root_empty && last_root_user)
-> +				anon_vma_free(root);
-> +		}
-> +	}
-> +}
-> +#endif
-> +
->  #ifdef CONFIG_MIGRATION
->  /*
->   * rmap_walk() and its helpers rmap_walk_anon() and rmap_walk_file():
-> Index: linux-2.6.34/mm/migrate.c
-> ===================================================================
-> --- linux-2.6.34.orig/mm/migrate.c
-> +++ linux-2.6.34/mm/migrate.c
-> @@ -639,7 +639,7 @@ static int unmap_and_move(new_page_t get
->  			 * exist when the page is remapped later
->  			 */
->  			anon_vma = page_anon_vma(page);
-> -			atomic_inc(&anon_vma->external_refcount);
-> +			get_anon_vma(anon_vma);
->  		}
->  	}
->  
-> @@ -682,12 +682,8 @@ skip_unmap:
->  rcu_unlock:
->  
->  	/* Drop an anon_vma reference if we took one */
-> -	if (anon_vma && atomic_dec_and_lock(&anon_vma->external_refcount, &anon_vma->root->lock)) {
-> -		int empty = list_empty(&anon_vma->head);
-> -		anon_vma_unlock(anon_vma);
-> -		if (empty)
-> -			anon_vma_free(anon_vma);
-> -	}
-> +	if (anon_vma)
-> +		drop_anon_vma(anon_vma);
->  
->  	if (rcu_locked)
->  		rcu_read_unlock();
+The commits are also available as individual patches here:
 
--- 
-Kind regards,
-Minchan Kim
+http://www.kernel.org/pub/linux/kernel/people/nab/TCM-v4-patches-for-scsi-misc-v2.6.35-rc1/
+
+I would be happy to post the individual commits to linux-scsi/lkml again
+as the last review for v3 was in Sept 2009, but so far all v4 related
+patches have been posted with little feedback on linux-scsi.   Please
+let me know if you would like me to post this series again for review in
+it's entirety to linux-scsi and LKML, or if you have any other comments
+or questions.
+
+Best,
+
+--nab
+
+Nicholas Bellinger (23):
+  [SCSI]: Add missing SPC-4 CDB and MAINTENANCE_[IN,OUT] service action
+    definitions
+  [configfs]: Add struct configfs_item_operations->check_link() in
+    configfs_unlink()
+  [TCM]: Add ConfigFS extended macro set
+  [TCM]: Add v4 base data structures and struct target_core_fabric_ops
+  [TCM]: Add SPC-4 explict and implict Asymmetric Logical Unit Access
+    (ALUA)
+  [TCM]: Add core subsystem backstore configfs infrastructure
+  [TCM]: Add core fabric transport engine
+  [TCM]: Add HBA core infrastructure
+  [TCM]: Add device core infrastructure
+  [TCM]: Add target portal group infrastructure
+  [TCM]: Add SE object device infrastructure
+  [TCM]: Add SPC-4 compliant Persistent Reservations
+  [TCM]: Add Task Management infrastructure
+  [TCM]: Add UNIT_ATTENTION infrastructure support
+  [TCM]: Add support for SCSI MIB statistics
+  [TCM]: Add FILEIO subsystem plugin
+  [TCM]: Add IBLOCK subsystem plugin
+  [TCM]: Add PSCSI subsystem plugin
+  [TCM]: Add RAMDISK_DR and RAMDISK_MCP subsystem plugins
+  [TCM]: Add generic fabric independent configfs infrastructure
+  [TCM]: Add generic ProtoID and TransportID fabric handlers for SAS,
+    FC, and iSCSI
+  [TCM]: Add Kbuild and Kconfig and update drivers/
+  [TCM_Loop]: Add multi-fabric Linux/SCSI LLD fabric module
+
+ drivers/Kconfig                                |    2 +
+ drivers/Makefile                               |    1 +
+ drivers/target/Kbuild                          |   52 +
+ drivers/target/Kconfig                         |   57 +
+ drivers/target/target_core_alua.c              | 1990 ++++++
+ drivers/target/target_core_configfs.c          | 3351 ++++++++++
+ drivers/target/target_core_device.c            | 1632 +++++
+ drivers/target/target_core_fabric_configfs.c   |  971 +++
+ drivers/target/target_core_fabric_lib.c        |  456 ++
+ drivers/target/target_core_file.c              | 1090 ++++
+ drivers/target/target_core_hba.c               |  201 +
+ drivers/target/target_core_iblock.c            | 1058 +++
+ drivers/target/target_core_mib.c               | 1064 +++
+ drivers/target/target_core_plugin.c            |  326 +
+ drivers/target/target_core_pr.c                | 4248 ++++++++++++
+ drivers/target/target_core_pscsi.c             | 1849 ++++++
+ drivers/target/target_core_rd.c                | 1422 ++++
+ drivers/target/target_core_scdb.c              |  154 +
+ drivers/target/target_core_seobj.c             |  679 ++
+ drivers/target/target_core_tmr.c               |  401 ++
+ drivers/target/target_core_tpg.c               |  860 +++
+ drivers/target/target_core_transport.c         | 8234 ++++++++++++++++++++++++
+ drivers/target/target_core_ua.c                |  336 +
+ drivers/target/tcm_loop/Kbuild                 |   11 +
+ drivers/target/tcm_loop/Kconfig                |   13 +
+ drivers/target/tcm_loop/tcm_loop_configfs.c    |  678 ++
+ drivers/target/tcm_loop/tcm_loop_configfs.h    |    2 +
+ drivers/target/tcm_loop/tcm_loop_core.h        |   79 +
+ drivers/target/tcm_loop/tcm_loop_fabric.c      |  567 ++
+ drivers/target/tcm_loop/tcm_loop_fabric.h      |   45 +
+ drivers/target/tcm_loop/tcm_loop_fabric_scsi.c |  659 ++
+ drivers/target/tcm_loop/tcm_loop_fabric_scsi.h |   10 +
+ fs/configfs/symlink.c                          |   13 +
+ include/linux/configfs.h                       |    1 +
+ include/scsi/scsi.h                            |   24 +
+ include/target/configfs_macros.h               |  147 +
+ include/target/target_core_alua.h              |  134 +
+ include/target/target_core_base.h              | 1039 +++
+ include/target/target_core_configfs.h          |   84 +
+ include/target/target_core_device.h            |   85 +
+ include/target/target_core_fabric_configfs.h   |  106 +
+ include/target/target_core_fabric_lib.h        |   28 +
+ include/target/target_core_fabric_ops.h        |   89 +
+ include/target/target_core_file.h              |  223 +
+ include/target/target_core_hba.h               |   43 +
+ include/target/target_core_iblock.h            |  173 +
+ include/target/target_core_mib.h               |   56 +
+ include/target/target_core_plugin.h            |   73 +
+ include/target/target_core_pr.h                |   67 +
+ include/target/target_core_pscsi.h             |  202 +
+ include/target/target_core_rd.h                |  259 +
+ include/target/target_core_scdb.h              |   42 +
+ include/target/target_core_seobj.h             |  114 +
+ include/target/target_core_tmr.h               |   43 +
+ include/target/target_core_tpg.h               |   65 +
+ include/target/target_core_transport.h         |  557 ++
+ include/target/target_core_transport_plugin.h  |   67 +
+ include/target/target_core_ua.h                |   36 +
+ 58 files changed, 36268 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/target/Kbuild
+ create mode 100644 drivers/target/Kconfig
+ create mode 100644 drivers/target/target_core_alua.c
+ create mode 100644 drivers/target/target_core_configfs.c
+ create mode 100644 drivers/target/target_core_device.c
+ create mode 100644 drivers/target/target_core_fabric_configfs.c
+ create mode 100644 drivers/target/target_core_fabric_lib.c
+ create mode 100644 drivers/target/target_core_file.c
+ create mode 100644 drivers/target/target_core_hba.c
+ create mode 100644 drivers/target/target_core_iblock.c
+ create mode 100644 drivers/target/target_core_mib.c
+ create mode 100644 drivers/target/target_core_plugin.c
+ create mode 100644 drivers/target/target_core_pr.c
+ create mode 100644 drivers/target/target_core_pscsi.c
+ create mode 100644 drivers/target/target_core_rd.c
+ create mode 100644 drivers/target/target_core_scdb.c
+ create mode 100644 drivers/target/target_core_seobj.c
+ create mode 100644 drivers/target/target_core_tmr.c
+ create mode 100644 drivers/target/target_core_tpg.c
+ create mode 100644 drivers/target/target_core_transport.c
+ create mode 100644 drivers/target/target_core_ua.c
+ create mode 100644 drivers/target/tcm_loop/Kbuild
+ create mode 100644 drivers/target/tcm_loop/Kconfig
+ create mode 100644 drivers/target/tcm_loop/tcm_loop_configfs.c
+ create mode 100644 drivers/target/tcm_loop/tcm_loop_configfs.h
+ create mode 100644 drivers/target/tcm_loop/tcm_loop_core.h
+ create mode 100644 drivers/target/tcm_loop/tcm_loop_fabric.c
+ create mode 100644 drivers/target/tcm_loop/tcm_loop_fabric.h
+ create mode 100644 drivers/target/tcm_loop/tcm_loop_fabric_scsi.c
+ create mode 100644 drivers/target/tcm_loop/tcm_loop_fabric_scsi.h
+ create mode 100644 include/target/configfs_macros.h
+ create mode 100644 include/target/target_core_alua.h
+ create mode 100644 include/target/target_core_base.h
+ create mode 100644 include/target/target_core_configfs.h
+ create mode 100644 include/target/target_core_device.h
+ create mode 100644 include/target/target_core_fabric_configfs.h
+ create mode 100644 include/target/target_core_fabric_lib.h
+ create mode 100644 include/target/target_core_fabric_ops.h
+ create mode 100644 include/target/target_core_file.h
+ create mode 100644 include/target/target_core_hba.h
+ create mode 100644 include/target/target_core_iblock.h
+ create mode 100644 include/target/target_core_mib.h
+ create mode 100644 include/target/target_core_plugin.h
+ create mode 100644 include/target/target_core_pr.h
+ create mode 100644 include/target/target_core_pscsi.h
+ create mode 100644 include/target/target_core_rd.h
+ create mode 100644 include/target/target_core_scdb.h
+ create mode 100644 include/target/target_core_seobj.h
+ create mode 100644 include/target/target_core_tmr.h
+ create mode 100644 include/target/target_core_tpg.h
+ create mode 100644 include/target/target_core_transport.h
+ create mode 100644 include/target/target_core_transport_plugin.h
+ create mode 100644 include/target/target_core_ua.h
+
+
