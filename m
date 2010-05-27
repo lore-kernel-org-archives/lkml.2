@@ -1,56 +1,214 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758195Ab0E0P2y (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 May 2010 11:28:54 -0400
-Received: from enyo.dsw2k3.info ([195.71.86.239]:60742 "EHLO enyo.dsw2k3.info"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757933Ab0E0P2v (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 May 2010 11:28:51 -0400
-X-Greylist: delayed 549 seconds by postgrey-1.27 at vger.kernel.org; Thu, 27 May 2010 11:28:51 EDT
-Date: Thu, 27 May 2010 17:19:24 +0200
-From: Matthias Schniedermeyer <ms@citd.de>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Jaswinder Singh Rajput <jaswinderlinux@gmail.com>,
-       Sam Ravnborg <sam@ravnborg.org>, Ingo Molnar <mingo@elte.hu>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       the arch/x86 maintainers <x86@kernel.org>,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: config automatically switches from 32-bit to 64-bit for x86
-Message-ID: <20100527151924.GA1063@citd.de>
-References: <AANLkTik0PUKP3QLPRbb3nlh034_inmaeVbXy3q5_LQz-@mail.gmail.com> <201005270213.42913.rjw@sisk.pl>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201005270213.42913.rjw@sisk.pl>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+	id S932174Ab0E0P3q (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 May 2010 11:29:46 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:51093 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755344Ab0E0P3n convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 May 2010 11:29:43 -0400
+Subject: Re: [tip:x86/pat] rbtree: Add support for augmented rbtrees
+From: Peter Zijlstra <peterz@infradead.org>
+To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+       venkatesh.pallipadi@intel.com, suresh.b.siddha@intel.com,
+       tglx@linutronix.de
+Cc: linux-tip-commits@vger.kernel.org
+In-Reply-To: <tip-17d9ddc72fb8bba0d4f67868c9c612e472a594a9@git.kernel.org>
+References: <20100210232343.GA11465@linux-os.sc.intel.com>
+	 <tip-17d9ddc72fb8bba0d4f67868c9c612e472a594a9@git.kernel.org>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Thu, 27 May 2010 17:29:43 +0200
+Message-ID: <1274974183.27810.5233.camel@twins>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 27.05.2010 02:13, Rafael J. Wysocki wrote:
-> On Thursday 27 May 2010, Jaswinder Singh Rajput wrote:
-> > Hello,
-> > 
-> > I am trying to build 32 bit kernel image on 64-bit machine but after
-> > 'make menuconfig' it automatically switches 32-bit to 64-bit.
+On Fri, 2010-02-19 at 00:21 +0000, tip-bot for Pallipadi, Venkatesh
+wrote:
+> Commit-ID:  17d9ddc72fb8bba0d4f67868c9c612e472a594a9
+> Gitweb:     http://git.kernel.org/tip/17d9ddc72fb8bba0d4f67868c9c612e472a594a9
+> Author:     Pallipadi, Venkatesh <venkatesh.pallipadi@intel.com>
+> AuthorDate: Wed, 10 Feb 2010 15:23:44 -0800
+> Committer:  H. Peter Anvin <hpa@zytor.com>
+> CommitDate: Thu, 18 Feb 2010 15:40:56 -0800
 > 
-> Try 'linux32 make menuconfig' and 'linux32 make'.
+> rbtree: Add support for augmented rbtrees
+> 
+> Add support for augmented rbtrees in core rbtree code.
+> 
+> This will be used in subsequent patches, in x86 PAT code, which needs
+> interval trees to efficiently keep track of PAT ranges.
+> 
+> Signed-off-by: Venkatesh Pallipadi <venkatesh.pallipadi@intel.com>
+> LKML-Reference: <20100210232343.GA11465@linux-os.sc.intel.com>
+> Signed-off-by: Suresh Siddha <suresh.b.siddha@intel.com>
+> Signed-off-by: H. Peter Anvin <hpa@zytor.com>
 
-I personally use the third ARCH (i386 and x86_64 beeing the first two):
-make ARCH=x86
-that way the bitness isn't implied but an actual configuration-point.
-CONFIG_64BIT (The very first menu-point with menuconfig)
+> --- a/lib/rbtree.c
+> +++ b/lib/rbtree.c
+> @@ -44,6 +44,11 @@ static void __rb_rotate_left(struct rb_node *node, struct rb_root *root)
+>  	else
+>  		root->rb_node = right;
+>  	rb_set_parent(node, right);
+> +
+> +	if (root->augment_cb) {
+> +		root->augment_cb(node);
+> +		root->augment_cb(right);
+> +	}
+>  }
+>  
+>  static void __rb_rotate_right(struct rb_node *node, struct rb_root *root)
+> @@ -67,12 +72,20 @@ static void __rb_rotate_right(struct rb_node *node, struct rb_root *root)
+>  	else
+>  		root->rb_node = left;
+>  	rb_set_parent(node, left);
+> +
+> +	if (root->augment_cb) {
+> +		root->augment_cb(node);
+> +		root->augment_cb(left);
+> +	}
+>  }
+>  
 
-And i'm still wondering what the hell the problem is with ARCH=x86 that 
-prevents it from beeing the default.
+Did someone measure what these extra conditionals do to the scheduler?
 
+Also, I don't think you actually need this callback, you can augment
+externally like this ('borrowed' the idea from the BFQ code):
 
+full patch at:
+http://programming.kicks-ass.net/kernel-patches/sched_eevdf.patch
 
-Bis denn
-
--- 
-Real Programmers consider "what you see is what you get" to be just as 
-bad a concept in Text Editors as it is in women. No, the Real Programmer
-wants a "you asked for it, you got it" text editor -- complicated, 
-cryptic, powerful, unforgiving, dangerous.
-
++static inline struct sched_entity *se_of(struct rb_node *node)
++{
++	return rb_entry(node, struct sched_entity, run_node);
++}
++
++static inline s64 deadline_key(struct cfs_rq *cfs_rq, u64 deadline)
++{
++	return (s64)(deadline - cfs_rq->min_vruntime);
++}
++
++#define deadline_gt(cfs_rq, field, lse, rse)			\
++({ deadline_key(cfs_rq, lse->field) >				\
++   deadline_key(cfs_rq, rse->field); })
++
++static void update_min_deadline(struct cfs_rq *cfs_rq,
++				struct sched_entity *se, struct rb_node *node)
++{
++	if (node && deadline_gt(cfs_rq, min_deadline, se, se_of(node)))
++		se->min_deadline = se_of(node)->min_deadline;
++}
++
++/*
++ * se->min_deadline = min(se->deadline, left->min_deadline, right->min_deadline)
++ */
++static void update_node(struct cfs_rq *cfs_rq, struct rb_node *node)
++{
++	struct sched_entity *se = rb_entry(node, struct sched_entity, run_node);
++
++	se->min_deadline = se->deadline;
++	update_min_deadline(cfs_rq, se, node->rb_right);
++	update_min_deadline(cfs_rq, se, node->rb_left);
++}
++
++/*
++ * update min_deadline for all nodes that could have been affected by
++ * a rebalance pass up from @node
++ */
++static void update_tree(struct cfs_rq *cfs_rq, struct rb_node *node)
++{
++	struct rb_node *parent;
++
++up:
++	update_node(cfs_rq, node);
++	parent = rb_parent(node);
++	if (!parent)
++		return;
++
++	if (node == parent->rb_left && parent->rb_right)
++		update_node(cfs_rq, parent->rb_right);
++	else if (parent->rb_left)
++		update_node(cfs_rq, parent->rb_left);
++
++	node = parent;
++	goto up;
++}
++
++/*
++ * after inserting @se into the tree, update min_deadline to account for
++ * both the new deadline and any damage done by rebalance
++ */
++static void update_tree_enqueue(struct cfs_rq *cfs_rq, struct sched_entity *se)
++{
++	struct rb_node *node = &se->run_node;
++
++	if (node->rb_left)
++		node = node->rb_left;
++	else if (node->rb_right)
++		node = node->rb_right;
++
++	update_tree(cfs_rq, node);
++}
++
++/*
++ * before removing the node, find the deepest node on the rebalance path
++ * that will still be there after @se gets removed
++ */
++static struct rb_node *update_tree_dequeue_begin(struct sched_entity *se)
++{
++	struct rb_node *deepest;
++	struct rb_node *node = &se->run_node;
++
++	if (!node->rb_right && !node->rb_left)
++		deepest = rb_parent(node);
++	else if (!node->rb_right)
++		deepest = node->rb_left;
++	else if (!node->rb_left)
++		deepest = node->rb_right;
++	else {
++		deepest = rb_next(node);
++		if (deepest->rb_right)
++			deepest = deepest->rb_right;
++		else if (rb_parent(deepest) != node)
++			deepest = rb_parent(deepest);
++	}
++
++	return deepest;
++}
++
++/*
++ * now that the entity got removed, update min_deadline to undo the missing
++ * deadine and any rebalance damage
++ */
++static void update_tree_dequeue_end(struct cfs_rq *cfs_rq, struct rb_node *node)
++{
++	if (node)
++		update_tree(cfs_rq, node);
+ }
+ 
+ /*
+@@ -360,10 +578,14 @@ static void __enqueue_entity(struct cfs_
+ 
+ 	rb_link_node(&se->run_node, parent, link);
+ 	rb_insert_color(&se->run_node, &cfs_rq->tasks_timeline);
++
++	update_tree_enqueue(cfs_rq, se);
+ }
+ 
+ static void __dequeue_entity(struct cfs_rq *cfs_rq, struct sched_entity *se)
+ {
++	struct rb_node *node = update_tree_dequeue_begin(se);
++
+ 	if (cfs_rq->rb_leftmost == &se->run_node) {
+ 		struct rb_node *next_node;
+ 
+@@ -372,16 +594,145 @@ static void __dequeue_entity(struct cfs_
+ 	}
+ 
+ 	rb_erase(&se->run_node, &cfs_rq->tasks_timeline);
++	update_tree_dequeue_end(cfs_rq, node);
++	avg_vruntime_sub(cfs_rq, se);
+ }
