@@ -1,51 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757917Ab0E0OyH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 May 2010 10:54:07 -0400
-Received: from mail-px0-f174.google.com ([209.85.212.174]:60448 "EHLO
-	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757842Ab0E0OyE (ORCPT
+	id S932122Ab0E0Ozk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 May 2010 10:55:40 -0400
+Received: from out3.smtp.messagingengine.com ([66.111.4.27]:54757 "EHLO
+	out3.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755504Ab0E0Ozh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 May 2010 10:54:04 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=W2dpTfhqKF73FjnHOeEpxX+6717k6yZc/L+9rTUV90LGLF5JnpAcmvNKPGK/YmyjsL
-         RQkrKaojEPp7c9BFpd0O1CBxml5bmbn65O8VeLpyhdK9Kh8PcoZvzFoIQHFsCNSIkwLY
-         JriMEuhsBFbVjEnLngq5ZztYN785oE/+U1XAo=
-Date: Thu, 27 May 2010 22:59:11 +0800
-From: =?utf-8?Q?Am=C3=A9rico?= Wang <xiyou.wangcong@gmail.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: David Howells <dhowells@redhat.com>, davem@davemloft.net,
-       jens.axboe@oracle.com, linux-kernel@vger.kernel.org, torvalds@osdl.org,
-       viro@ZenIV.linux.org.uk, akpm@linux-foundation.org
-Subject: Re: [PATCH] fs: run emergency remount on dedicated workqueue
-Message-ID: <20100527145807.GB3600@hack>
-References: <25328.1274886067@redhat.com> <4BFE4203.5010803@kernel.org>
+	Thu, 27 May 2010 10:55:37 -0400
+X-Sasl-enc: yvJXId4nunzmCtYgT5H3UEmiRp+V+4J6jJ9daZPrXMXb 1274972136
+Message-ID: <4BFE87E6.7080701@ladisch.de>
+Date: Thu, 27 May 2010 16:55:34 +0200
+From: Clemens Ladisch <clemens@ladisch.de>
+User-Agent: Thunderbird 2.0.0.24 (Windows/20100228)
 MIME-Version: 1.0
+To: Robert Hancock <hancockrwd@gmail.com>
+CC: Jan Engelhardt <jengelh@medozas.de>, Takashi Iwai <tiwai@suse.de>,
+       alsa-devel@alsa-project.org,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: No mixers on ATI RS780 Azalia
+References: <alpine.LSU.2.01.1005261303170.19406@obet.zrqbmnf.qr>	<s5hmxvmzwwd.wl%tiwai@suse.de>	<alpine.LSU.2.01.1005261413040.23865@obet.zrqbmnf.qr>	<4BFD2901.20800@ladisch.de>	<alpine.LSU.2.01.1005271230340.18087@obet.zrqbmnf.qr>	<4BFE5AA1.7070103@ladisch.de> <alpine.LSU.2.01.1005271420320.29122@obet.zrqbmnf.qr> <4BFE8404.2000005@gmail.com>
+In-Reply-To: <4BFE8404.2000005@gmail.com>
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4BFE4203.5010803@kernel.org>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 27, 2010 at 11:57:23AM +0200, Tejun Heo wrote:
->Commit fa4b9074cd8428958c2adf9dc0c831f46e27c193 made s_umount depend
->on keventd; however, emergency remount schedules works to keventd
->which grabs s_umount creating a circular dependency.  Run emergency
->remount on a separate workqueue to break it.
->
+Robert Hancock wrote:
+> On 05/27/2010 06:34 AM, Jan Engelhardt wrote:
+>> On Thursday 2010-05-27 13:42, Clemens Ladisch wrote:
+>>> It is possible that an embedded device like this requires some custom
+>>> initialization.  Can you find out if the Windows driver is the standard
+>>> Microsoft driver or Samsung's?
+>>
+>> Looks like the Microsoft one:
+> 
+> Well, not Samsung, but it's not the Microsoft HDA driver either, it's 
+> using a Realtek driver.
+> 
+>> == "ATI HDMI Audio" ==
+>> ...
+>> C:\WINDOWS\system32\drivers\RtHDMI.sys
+>> 	Realtek, 5.10.0.5602 built by WinDDK
+
+Googling shows that this is the driver that AMD ships for its "ATI HDMI"
+devices.
+
+>> == "Realtek High Definition Audio" ==
+>> ...
+
+This also looks like the standard driver.
 
 
-I have a stupid question, why using workqueue instead of
-calling do_remount_sb() directly in emergency_remount()?
-Avoid blocking emergency_remount()?
+Apparently, this computer uses standard audio hardware; the culprit is
+probably the Linux radeon driver.
 
-Thanks.
 
--- 
-Live like a child, think like the god.
- 
+Regards,
+Clemens
