@@ -1,52 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757849Ab0E0K4o (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 May 2010 06:56:44 -0400
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:56200 "EHLO
-	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754992Ab0E0K4n (ORCPT
+	id S1757334Ab0E0LAA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 May 2010 07:00:00 -0400
+Received: from smtp-out.google.com ([74.125.121.35]:1819 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755005Ab0E0K76 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 May 2010 06:56:43 -0400
-Date: Thu, 27 May 2010 12:04:10 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Andi Kleen <ak@linux.intel.com>
-Cc: Huang Ying <ying.huang@intel.com>,
-       Jin Dongming <jin.dongming@np.css.fujitsu.com>,
-       LKLM <linux-kernel@vger.kernel.org>,
-       Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
-Subject: Re: [Patch-next] Remove notify_die in do_machine_check functioin
-Message-ID: <20100527120410.43a0e04c@lxorguk.ukuu.org.uk>
-In-Reply-To: <4BFE1735.9080806@linux.intel.com>
-References: <4BFDDBA9.4010702@np.css.fujitsu.com>
-	<1274930481.3444.258.camel@yhuang-dev.sh.intel.com>
-	<4BFE1735.9080806@linux.intel.com>
-X-Mailer: Claws Mail 3.7.5 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 27 May 2010 06:59:58 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=date:from:to:cc:subject:message-id:references:
+	mime-version:content-type:content-disposition:in-reply-to:user-agent:x-system-of-record;
+	b=RhMpqORAXRIEle8OXjFh6ss5KrhiDjb9CBJCIhLsN16hwlzNgrzf40ZEkCPlTb4wJ
+	TUDQe43W9vAbi3DlGNAzA==
+Date: Thu, 27 May 2010 03:59:48 -0700
+From: Michel Lespinasse <walken@google.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+       David Howells <dhowells@redhat.com>, Ingo Molnar <mingo@elte.hu>,
+       Thomas Gleixner <tglx@linutronix.de>,
+       LKML <linux-kernel@vger.kernel.org>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Mike Waychison <mikew@google.com>,
+       Suleiman Souhlal <suleiman@google.com>, Ying Han <yinghan@google.com>
+Subject: Re: [PATCH 00/11] V4: rwsem changes + down_read_critical() proposal
+Message-ID: <20100527105948.GA20625@google.com>
+References: <1274733081-4623-1-git-send-email-walken@google.com> <1274777239.5882.581.camel@twins> <AANLkTikbeXjmRW4gqiy1Ss-Suce5gIM4xJ5o9Z81ZTQX@mail.gmail.com> <1274779675.5882.684.camel@twins>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1274779675.5882.684.camel@twins>
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> In general deciding what to do on a MCE is rather complicated
-> and probably too much for any die handler.
+On Tue, May 25, 2010 at 11:27:55AM +0200, Peter Zijlstra wrote:
+> On Tue, 2010-05-25 at 02:12 -0700, Michel Lespinasse wrote:
+> > Yes, we do have patches trying to release the mmap_sem when a page
+> > fault for a file backed VMA blocks on accessing the corresponding
+> > file. We have not given up on these, and we intend to try submitting
+> > them again. However, these patches do *not* address the case of a page
+> > fault blocking while trying to get a free page (i.e. when you get
+> > under high memory pressure).
+> 
+> But I guess they could, right? Simply make the allocation under mmap_sem
+> be __GFP_HARDWALL|__GFP_HIGHMEM|__GFP_MOVABLE__GFP_NOWARN or
+> (GFP_HUGHUSER_MOVABLE & ~(__GFP_WAIT|__GFP_IO|__GFP_FS))|__GFP_NOWARN
+> 
+> and drop the mmap_sem when that fails.
 
-True enough
+It's not clear to me if this can lead to a clean uncontroversial solution.
+Doing this for file backed VMAs does not sound any harder in principle,
+but we could not get it past linus's NACK last time. I think it's worth
+exploring again, but I don't expect it to be so easy :)
 
-> But today we don't really need it. notify_die() is primarily for debuggers
-> of all kinds, and I never liked the idea to call a debugger on a machine
-> check.
+> > > I really don't like people tinkering with the lock implementations like
+> > > this. Nor do I like the naming, stats are in no way _critical_.
+> > 
+> > Critical here refers to the fact that you're not allowed to block
+> > while holding the unfairly acquired rwsem.
+> 
+> We usually call that atomic, your 0/n patch didn't explain any of that.
 
-That would be because you don't do driver work I suspect. If you are
-doing driver work then its extremely useful ending up in the debugger
-when you get an MCE because some random bit of hardware on the bus
-decided to throw a tantrum.
+Would replacing the 'critical' name with 'atomic' address your concern
+though, or would you remain fundamentally opposed to anything that involves
+an unfair acquire path ?
 
-This is particularly the case with AMD/ATI and AMD/Nvidia chipset systems
-which tend to throw this kind of error if you prod some of the chipset
-controllers (eg the Nvidia SATA) in them in just the wrong way.
+What about patches 1-7 which don't deal with the critical/atomic API;
+can we agree to get these in before we we figure out what to do with
+the the last 4 ?
 
-So NAK simply removing it. As a driver writer I want to end up in the
-debugger when this happens so I can work out what led up to the MCE.
-
-Alan
+-- 
+Michel "Walken" Lespinasse
+A program is never fully debugged until the last user dies.
