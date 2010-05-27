@@ -1,56 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933260Ab0E0WPJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 May 2010 18:15:09 -0400
-Received: from mail-ww0-f46.google.com ([74.125.82.46]:44181 "EHLO
-	mail-ww0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932993Ab0E0WPH (ORCPT
+	id S932993Ab0E0WRa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 May 2010 18:17:30 -0400
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:36571 "EHLO
+	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753285Ab0E0WR3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 May 2010 18:15:07 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=buuX3UJKJJ1TCmQatjj6ogyTaPfZW66RADeeBsoOGtdd65pPH86NYs9d4WUJ8slR4O
-         twP0ESlz+tm2MkZJ9eCJCMc7ef/hPk0QoEENGIwoJJLZvMxc78rPYmQOEC4HRbggoT+b
-         +NSed4zykg22ETzdv1apO5xYEUvMrJCYC+Ulo=
-Date: Fri, 28 May 2010 00:15:06 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: "K.Prasad" <prasad@linux.vnet.ibm.com>
-Cc: Chase Douglas <chase.douglas@canonical.com>,
-       Pekka Enberg <penberg@cs.helsinki.fi>,
-       Eduard - Gabriel Munteanu <eduard.munteanu@linux360.ro>,
-       Soeren Sandmann <sandmann@daimi.au.dk>,
-       Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@redhat.com>,
-       linux-kernel@vger.kernel.org, kernel-team@lists.ubuntu.com
-Subject: Re: Tracing configuration review
-Message-ID: <20100527221503.GD5390@nowhere>
-References: <1274815906.9757.83.camel@cndougla-ubuntu> <20100525201259.GA5370@nowhere> <1274821799.9346.17.camel@cndougla-ubuntu> <20100525230656.GD5370@nowhere> <20100527112044.GA2713@in.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100527112044.GA2713@in.ibm.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	Thu, 27 May 2010 18:17:29 -0400
+Date: Thu, 27 May 2010 23:23:57 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Matthew Garrett <mjg59@srcf.ucam.org>
+Cc: Alan Stern <stern@rowland.harvard.edu>,
+       Thomas Gleixner <tglx@linutronix.de>,
+       Peter Zijlstra <peterz@infradead.org>,
+       LKML <linux-kernel@vger.kernel.org>,
+       Florian Mickler <florian@mickler.org>, felipe.balbi@nokia.com,
+       Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
+       Linux PM <linux-pm@lists.linux-foundation.org>
+Subject: Re: [linux-pm] [PATCH 0/8] Suspend block api (version 8)
+Message-ID: <20100527232357.6d14fdb2@lxorguk.ukuu.org.uk>
+In-Reply-To: <20100527220949.GB10602@srcf.ucam.org>
+References: <20100527222514.0a1710bf@lxorguk.ukuu.org.uk>
+	<Pine.LNX.4.44L0.1005271730180.3239-100000@iolanthe.rowland.org>
+	<20100527230806.4deb6de3@lxorguk.ukuu.org.uk>
+	<20100527220949.GB10602@srcf.ucam.org>
+X-Mailer: Claws Mail 3.7.5 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 27, 2010 at 04:50:44PM +0530, K.Prasad wrote:
-> On Wed, May 26, 2010 at 01:06:57AM +0200, Frederic Weisbecker wrote:
-> > On Tue, May 25, 2010 at 05:09:59PM -0400, Chase Douglas wrote:
-> > > On Tue, 2010-05-25 at 22:13 +0200, Frederic Weisbecker wrote:
-> > > > On Tue, May 25, 2010 at 03:31:46PM -0400, Chase Douglas wrote:
+On Thu, 27 May 2010 23:09:49 +0100
+Matthew Garrett <mjg59@srcf.ucam.org> wrote:
+
+> On Thu, May 27, 2010 at 11:08:06PM +0100, Alan Cox wrote:
 > 
-> <snipped>
+> > This is I believe robust (and has been implemented on some non x86
+> > boxes). It depends on not forcing running tasks into suspend. That is the
+> > key.
 > 
-> > > > IMO, it is deprecated. The perf interface is much more powerful and flexible.
-> > > > Prasad, do you agree if I remove this ftrace plugin?
-> 
-> Sure, go ahead.
+> We've already established that ACPI systems require us to force running 
+> tasks into suspend. How do we avoid the race in that situation?
 
+Android phones do not have ACPI. Embedded platforms do not have ACPI. MID
+x86 devices do not have ACPI.
 
+I would imagine the existing laptops will handle power management limited
+by the functionality they have available. Just like any other piece of
+hardware.
 
-Great, I'll do that soon.
-
-Thanks.
-
+Alan
