@@ -1,89 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754844Ab0E0NHd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 May 2010 09:07:33 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:35461 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753658Ab0E0NHc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 May 2010 09:07:32 -0400
-X-Authority-Analysis: v=1.1 cv=EbJB9AiBqsyZPMVATYsj78CfMiBiOs+4P7kRKNQkfg0= c=1 sm=0 a=Dwj94tMcmnEA:10 a=UBIxAjGgU1YA:10 a=7U3hwN5JcxgA:10 a=Q9fys5e9bTEA:10 a=gMqfjgEr1zLu/65IO0LwxA==:17 a=RBmfiGd0y7SGjgJ4ix4A:9 a=GOAeUYFAfjmabHvmDI9awvAYEVEA:4 a=PUjeQqilurYA:10 a=_RhRFcbxBZMA:10 a=gMqfjgEr1zLu/65IO0LwxA==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.89.75
-Subject: Re: [PATCH] streamline_config.pl: use references rather than
- copied data structures
-From: Steven Rostedt <rostedt@goodmis.org>
-Reply-To: rostedt@goodmis.org
-To: Toralf =?ISO-8859-1?Q?F=F6rster?= <toralf.foerster@gmx.de>
-Cc: zippel@linux-m68k.org, linux-kbuild@vger.kernel.org,
-       linux-kernel@vger.kernel.org
-In-Reply-To: <201005271342.09066.toralf.foerster@gmx.de>
-References: <201005271342.09066.toralf.foerster@gmx.de>
-Content-Type: text/plain; charset="ISO-8859-15"
-Organization: Kihon Technologies Inc.
-Date: Thu, 27 May 2010 09:07:29 -0400
-Message-ID: <1274965649.22648.263.camel@gandalf.stny.rr.com>
+	id S1755033Ab0E0NIq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 May 2010 09:08:46 -0400
+Received: from 93-97-173-237.zone5.bethere.co.uk ([93.97.173.237]:59633 "EHLO
+	tim.rpsys.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753658Ab0E0NIo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 May 2010 09:08:44 -0400
+Subject: Re: linux-next: build failure after merge of the final tree (leds
+ tree related)
+From: Richard Purdie <rpurdie@rpsys.net>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+       linux-kernel@vger.kernel.org,
+       Bjarke Istrup Pedersen <gurligebis@gentoo.org>,
+       Randy Dunlap <randy.dunlap@oracle.com>,
+       Alessandro Zummo <a.zummo@towertech.it>,
+       Andrew Morton <akpm@linux-foundation.org>
+In-Reply-To: <1274960190.1931.429.camel@pasglop>
+References: <20100527151656.889b5977.sfr@canb.auug.org.au>
+	 <1274960190.1931.429.camel@pasglop>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 27 May 2010 14:07:24 +0100
+Message-ID: <1274965644.24079.1427.camel@rex>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 8bit
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-05-27 at 13:42 +0200, Toralf Förster wrote:
-> IMHO there's no need for a copy-by-value
+On Thu, 2010-05-27 at 21:36 +1000, Benjamin Herrenschmidt wrote:
+> On Thu, 2010-05-27 at 15:16 +1000, Stephen Rothwell wrote:
+> > Hi Richard,
+> > 
+> > After merging the final tree, today's linux-next build (powerpc
+> > allyesconfig) failed like this:
+> > 
+> > drivers/leds/leds-net5501.c:20:23: error: asm/geode.h: No such file or directory
+> > drivers/leds/leds-net5501.c: In function 'soekris_init':
+> > drivers/leds/leds-net5501.c:63: error: implicit declaration of function 'is_geode'
 > 
+> Looks like something is missing an ifdef CONFIG_X86 :-)
 
-Hi Toralf,
+Right, that driver/board is x86 only. I've pushed a fix.
 
-I'm sorry but "Your Humble Opinion" is not rational to make changes.
+> > Caused by commit 14e40f644b020d473415342461b7c62e3bb5e312 ("leds: Add LED
+> > driver for the Soekris net5501 board").  Presumably only tested on x86?
+> > 
+> > drivers/leds/leds-gpio.c: In function 'of_gpio_leds_probe':
+> > drivers/leds/leds-gpio.c:253: error: 'struct gpio_led' has no member named 'blinking'
+> > 
+> > Caused by commit 2146325df2c2640059a9e064890c30c6e259b458 ("leds:
+> > leds-gpio: Change blink_set callback to be able to turn off blinking").
 
-A change to the code must have a reason other than opinion. You must be
-able to show that there is actual benefit for a change, or at least
-explain it.
+This error looks like its from Ben's patch, probably when openfirmware
+is enabled. I've queued a fix for this too:
 
-Every time a change is made, there is potential for a new bug to be
-introduced (especially in Perl). So, unless there's actual need for a
-change, don't make one.
+http://git.o-hand.com/cgit.cgi/linux-rpurdie-leds/commit/?id=a4b4433c511cf4361bb0afabba69e16632002d32
 
-This is not performance critical code. If you are fixing a bug, or
-adding a feature, then sure. But I really don't want changes that do
-nothing but skin the cat a different way.
+Cheers,
 
-Thanks,
+Richard
 
--- Steve
-
-> Signed-off-by: Toralf Foerster <toralf.foerster@gmx.de>
-> ---
->  scripts/kconfig/streamline_config.pl |    6 +++---
->  1 files changed, 3 insertions(+), 3 deletions(-)
-> 
-> diff --git a/scripts/kconfig/streamline_config.pl 
-> b/scripts/kconfig/streamline_config.pl
-> index afbd54a..574e68f 100644
-> --- a/scripts/kconfig/streamline_config.pl
-> +++ b/scripts/kconfig/streamline_config.pl
-> @@ -406,14 +406,14 @@ close(CIN);
->  loop:
->  foreach my $module (keys(%modules)) {
->      if (defined($objects{$module})) {
-> -       my @arr = @{$objects{$module}};
-> -       foreach my $conf (@arr) {
-> +       my $arr = $objects{$module};
-> +       foreach my $conf (@{$arr}) {
->             if (defined($setconfigs{$conf})) {
->                 next loop;
->             }
->         }
->         print STDERR "module $module did not have configs";
-> -       foreach my $conf (@arr) {
-> +       foreach my $conf (@{$arr}) {
->             print STDERR " " , $conf;
->         }
->         print STDERR "\n";
-> -- 
-> 1.6.4.4
-> 
 
 
