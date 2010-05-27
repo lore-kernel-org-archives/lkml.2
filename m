@@ -1,92 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932960Ab0E0Rmy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 May 2010 13:42:54 -0400
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:41611 "EHLO
-	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S932921Ab0E0Rmu (ORCPT
+	id S932989Ab0E0RnA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 May 2010 13:43:00 -0400
+Received: from utopia.booyaka.com ([72.9.107.138]:49867 "EHLO
+	utopia.booyaka.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932967Ab0E0Rmz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 May 2010 13:42:50 -0400
-Date: Thu, 27 May 2010 18:49:18 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Matthew Garrett <mjg59@srcf.ucam.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>,
-       Arve =?ISO-8859-14?B?SGr4bm5l?= =?ISO-8859-14?B?duVn?= 
-	<arve@android.com>,
-       Florian Mickler <florian@mickler.org>,
-       Vitaly Wool <vitalywool@gmail.com>,
-       Peter Zijlstra <peterz@infradead.org>,
-       LKML <linux-kernel@vger.kernel.org>, Paul@smtp1.linux-foundation.org,
-       felipe.balbi@nokia.com,
-       Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
-       Linux PM <linux-pm@lists.linux-foundation.org>
-Subject: Re: [linux-pm] [PATCH 0/8] Suspend block api (version 8)
-Message-ID: <20100527184918.3d090921@lxorguk.ukuu.org.uk>
-In-Reply-To: <20100527172343.GB2468@srcf.ucam.org>
-References: <20100526142430.327ccbc4@schatten.dmk.lab>
-	<20100526141612.3e2e0443@lxorguk.ukuu.org.uk>
-	<AANLkTin97MMu-XO_Lk-snefBWz2ymhS0Qi1y1RxLwdVA@mail.gmail.com>
-	<20100527003943.07c17f85@lxorguk.ukuu.org.uk>
-	<20100527140655.GA28048@srcf.ucam.org>
-	<alpine.LFD.2.00.1005271642440.3032@localhost.localdomain>
-	<20100527155201.GA31937@srcf.ucam.org>
-	<alpine.LFD.2.00.1005271808340.3032@localhost.localdomain>
-	<20100527165931.GB1062@srcf.ucam.org>
-	<alpine.LFD.2.00.1005271905000.3032@localhost.localdomain>
-	<20100527172343.GB2468@srcf.ucam.org>
-X-Mailer: Claws Mail 3.7.5 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 27 May 2010 13:42:55 -0400
+Date: Thu, 27 May 2010 11:42:47 -0600 (MDT)
+From: Paul Walmsley <paul@booyaka.com>
+To: Majordomo-Owner@vger.kernel.org, linux-kernel-approval@vger.kernel.org
+cc: linux-kernel@vger.kernel.org
+Subject: E-mails from paul@pwsan.com not reaching
+ linux-kernel@vger.kernel.org?
+Message-ID: <alpine.DEB.2.00.1005271114500.29296@utopia.booyaka.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> What is a "Correctly implemented driver" in this case? One that receives 
-> a wakeup event and then prevents suspend being entered until userspace 
-> has acknowledged that event? Because that's what an in-kernel suspend 
-> blocker is.
 
-Kernel side maybe - but even then its a subset of expressing
-latency/lowest level requirements. That bit isn't really too contentious.
-You need a kernel object to hang a constraint off.
+Hello,
 
-> ACPI provides no guarantees about what level of hardware functionality 
-> remains during S3. You don't have any useful ability to determine which 
-> events will generate wakeups. And from a purely practical point of view, 
-> since the latency is in the range of seconds, you'll never have a low 
-> enough wakeup rate to hit it.
+For some reason, list postings from my other E-mail address, 
+paul@pwsan.com, are not reaching the linux-kernel@vger.kernel.org list.
 
-So PCs with current ACPI don't get opportunistic suspend capability. It
-probably won't be supported on the Commodore Amiga either - your point ?
-
-> Suspend blockers are the mechanism for the 
-> driver to indicate whether the wakeup event has been handled. That's 
-> what they're there for. The in-kernel ones don't paper over anything.
-
-Semantically the in kernel blockers and the in kernel expression of
-device driven constraints are the same thing except that instead of 
-yes/no you replace the boolean with information.
+The first did make it (listed below), but the rest have not.  Is there 
+anything on vger that might explain this?
 
 
-So we go from
+thanks for looking into it,
 
-	block_suspend() / unblock_suspend()
+- Paul
 
-to
-	add_pm_constraint(latency, level) 
-	remove_pm_constraint(latency, level);
+Wed, 12 May 2010 21:35:30 -0600
+http://lkml.org/lkml/2010/5/12/528
 
+Thu, 13 May 2010 13:01:33 -0600
+http://permalink.gmane.org/gmane.linux.power-management.general/18592
 
-And if Android choses to interpret that in its policy code as
+Fri, 14 May 2010 14:05:16 -0600 
+https://lists.linux-foundation.org/pipermail/linux-pm/2010-May/025533.html
 
-	if (latency > MAGIC)
-		suspend_is_cool();
-	else
-		suspend_isnt_cool();
+Fri, 14 May 2010 00:13:50 -0600
+http://permalink.gmane.org/gmane.linux.power-management.general/18657
 
-that's now isolated in droidspace policy
+Fri, 14 May 2010 00:27:56 -0600
+http://permalink.gmane.org/gmane.linux.power-management.general/18658
 
-Alan
+Fri, 14 May 2010 11:22:05 -0600
+https://lists.linux-foundation.org/pipermail/linux-pm/2010-May/025530.html
 
+Fri, 14 May 2010 11:39:39 -0600 
+https://lists.linux-foundation.org/pipermail/linux-pm/2010-May/025531.html
 
+Fri, 14 May 2010 14:02:04 -0600 
+https://lists.linux-foundation.org/pipermail/linux-pm/2010-May/025532.html
+
+Fri, 14 May 2010 14:20:43 -0600 
+https://lists.linux-foundation.org/pipermail/linux-pm/2010-May/025534.html
+
+Fri, 14 May 2010 14:27:25 -0600 
+https://lists.linux-foundation.org/pipermail/linux-pm/2010-May/025536.html
+
+Fri, 14 May 2010 14:36:42 -0600
+https://lists.linux-foundation.org/pipermail/linux-pm/2010-May/025535.html
+
+Fri, 14 May 2010 14:53:42 -0600 
+https://lists.linux-foundation.org/pipermail/linux-pm/2010-May/025537.html
+
+Mon, 17 May 2010 19:17:58 -0700
+https://lists.linux-foundation.org/pipermail/linux-pm/2010-May/025665.html
+
+Mon, 17 May 2010 19:26:28 -0700
+https://lists.linux-foundation.org/pipermail/linux-pm/2010-May/025666.html
+
+Mon, 17 May 2010 20:34:45 -0700  
+https://lists.linux-foundation.org/pipermail/linux-pm/2010-May/025670.html
+
+Wed, 19 May 2010 08:55:58 -0700
+https://lists.linux-foundation.org/pipermail/linux-pm/2010-May/025707.html
+
+Fri, 21 May 2010 09:51:58 -0700
+https://lists.linux-foundation.org/pipermail/linux-pm/2010-May/025738.html
+
+Fri, 21 May 2010 10:01:09 -0700
+https://lists.linux-foundation.org/pipermail/linux-pm/2010-May/025739.html
+
+Tue, 25 May 2010 02:41:12 -0700
+https://lists.linux-foundation.org/pipermail/linux-pm/2010-May/025778.html
