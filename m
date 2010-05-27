@@ -1,337 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755131Ab0E0OEh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 May 2010 10:04:37 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:9408 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752061Ab0E0OEf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 May 2010 10:04:35 -0400
-Date: Thu, 27 May 2010 16:59:45 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Avi Kivity <avi@redhat.com>
-Cc: Rusty Russell <rusty@rustcorp.com.au>, linux-kernel@vger.kernel.org,
-       virtualization@lists.linux-foundation.org, kvm@vger.kernel.org,
-       qemu-devel@nongnu.org
-Subject: Re: [PATCHv2-RFC 0/2] virtio: put last seen used index into ring
-	itself
-Message-ID: <20100527135945.GA8231@redhat.com>
-References: <cover.1274903328.git.mst@redhat.com> <4BFE6098.9010000@redhat.com>
+	id S1754275Ab0E0OHP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 May 2010 10:07:15 -0400
+Received: from cavan.codon.org.uk ([93.93.128.6]:60193 "EHLO
+	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753116Ab0E0OHN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 May 2010 10:07:13 -0400
+Date: Thu, 27 May 2010 15:06:55 +0100
+From: Matthew Garrett <mjg59@srcf.ucam.org>
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: Arve =?iso-8859-1?B?SGr4bm5lduVn?= <arve@android.com>,
+       Florian Mickler <florian@mickler.org>,
+       Vitaly Wool <vitalywool@gmail.com>,
+       Peter Zijlstra <peterz@infradead.org>,
+       LKML <linux-kernel@vger.kernel.org>, Paul@smtp1.linux-foundation.org,
+       felipe.balbi@nokia.com,
+       Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
+       Linux PM <linux-pm@lists.linux-foundation.org>
+Subject: Re: [linux-pm] [PATCH 0/8] Suspend block api (version 8)
+Message-ID: <20100527140655.GA28048@srcf.ucam.org>
+References: <AANLkTinN6MKvCEhPkbYQRD2gu-mGXdNW9asRsTuKN3_Y@mail.gmail.com> <1274867106.5882.5090.camel@twins> <20100526120242.5c9b73ad@schatten.dmk.lab> <AANLkTim4021cTnhVZrQpefq1MG-eEPOFLDRO-XDepHb4@mail.gmail.com> <20100526133721.602633b2@schatten.dmk.lab> <AANLkTikzgaOFdQKess4E-D86OLPOzxP3dWiDkU_UR0ri@mail.gmail.com> <20100526142430.327ccbc4@schatten.dmk.lab> <20100526141612.3e2e0443@lxorguk.ukuu.org.uk> <AANLkTin97MMu-XO_Lk-snefBWz2ymhS0Qi1y1RxLwdVA@mail.gmail.com> <20100527003943.07c17f85@lxorguk.ukuu.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4BFE6098.9010000@redhat.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <20100527003943.07c17f85@lxorguk.ukuu.org.uk>
+User-Agent: Mutt/1.5.18 (2008-05-17)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 27, 2010 at 03:07:52PM +0300, Avi Kivity wrote:
-> I missed the spec patch, can you repost it?
+On Thu, May 27, 2010 at 12:39:43AM +0100, Alan Cox wrote:
 
-Still work in progress, but here it is.
-Note I am still debating with myself whether we should split
-avail idx and flags into separate cache lines.
+> - Supporting Android needs well good
+> - Opportunistic suspend good
+> - Manner in which interface is expressed to userspace bad
+> - Latency constraint interface would be better
+> - Your existing behaviour can be implemented by a simplistic use of a
+>   latency constraint interface
+> - We can fix a pile of other directly connected things at the same time
+> - Implementation internals I care far less about because we can fix those
+>   later
+> - Suspend is just a power state
+> 
+> How does that fit your model and vision ?
 
-diff --git a/virtio-spec.lyx b/virtio-spec.lyx
-index ed35893..150e5a8 100644
---- a/virtio-spec.lyx
-+++ b/virtio-spec.lyx
-@@ -1803,6 +1803,36 @@ next
- \emph default
-  descriptor entry (modulo the ring size).
-  This starts at 0, and increases.
-+\change_inserted 0 1274966643
-+
-+\end_layout
-+
-+\begin_layout Standard
-+
-+\change_inserted 0 1274968378
-+When PUBLISH_USED feature flag has 
-+\emph on
-+not
-+\emph default
-+ been negotiated, the ring follows the 
-+\begin_inset Quotes eld
-+\end_inset
-+
-+flags
-+\begin_inset Quotes erd
-+\end_inset
-+
-+ and the 
-+\begin_inset Quotes eld
-+\end_inset
-+
-+idx
-+\begin_inset Quotes erd
-+\end_inset
-+
-+ fields:
-+\change_unchanged
-+
- \end_layout
- 
- \begin_layout Standard
-@@ -1845,7 +1875,134 @@ struct vring_avail {
- 
- \end_layout
- 
-+\begin_layout Standard
-+
-+\change_inserted 0 1274968432
-+\begin_inset CommandInset label
-+LatexCommand label
-+name "PUBLISH_USED-feature"
-+
-+\end_inset
-+
-+When PUBLISH_USED feature flag has been negotiated, the control structure
-+ including the 
-+\begin_inset Quotes eld
-+\end_inset
-+
-+flags and the 
-+\begin_inset Quotes eld
-+\end_inset
-+
-+idx
-+\begin_inset Quotes erd
-+\end_inset
-+
-+ fields follows the ring.
-+ This leaves the room for the 
-+\begin_inset Quotes eld
-+\end_inset
-+
-+last_seen_used_idx
-+\begin_inset Quotes erd
-+\end_inset
-+
-+ field, which indicates the most recent 
-+\begin_inset Quotes eld
-+\end_inset
-+
-+idx
-+\begin_inset Quotes erd
-+\end_inset
-+
-+ value observed by guest in the used ring (see 
-+\begin_inset CommandInset ref
-+LatexCommand ref
-+reference "sub:Used-Ring"
-+
-+\end_inset
-+
-+ below):
-+\end_layout
-+
-+\begin_layout Standard
-+
-+\change_inserted 0 1274967396
-+\begin_inset listings
-+inline false
-+status open
-+
-+\begin_layout Plain Layout
-+
-+\change_inserted 0 1274967404
-+
-+struct vring_avail {
-+\end_layout
-+
-+\begin_layout Plain Layout
-+
-+\change_inserted 0 1274967405
-+
-+   u16 ring[qsz]; /* qsz is the Queue Size field read from device */
-+\end_layout
-+
-+\begin_layout Plain Layout
-+
-+\change_inserted 0 1274967533
-+
-+#define VRING_AVAIL_F_NO_INTERRUPT      1
-+\end_layout
-+
-+\begin_layout Plain Layout
-+
-+\change_inserted 0 1274967533
-+
-+   u16 flags;
-+\end_layout
-+
-+\begin_layout Plain Layout
-+
-+\change_inserted 0 1274967533
-+
-+   u16 idx;
-+\end_layout
-+
-+\begin_layout Plain Layout
-+
-+\change_inserted 0 1274968345
-+
-+   u16 last_seen_used_idx;
-+\end_layout
-+
-+\begin_layout Plain Layout
-+
-+\change_inserted 0 1274967396
-+
-+}; 
-+\end_layout
-+
-+\end_inset
-+
-+
-+\end_layout
-+
-+\begin_layout Standard
-+
-+\change_inserted 0 1274967715
-+If the ring is large enough, the second layout maintains the control and
-+ ring structures on separate cache lines.
-+\end_layout
-+
- \begin_layout Subsection
-+
-+\change_inserted 0 1274968415
-+\begin_inset CommandInset label
-+LatexCommand label
-+name "sub:Used-Ring"
-+
-+\end_inset
-+
-+
-+\change_unchanged
- Used Ring
- \end_layout
- 
-@@ -2391,12 +2548,20 @@ status open
- 
- \begin_layout Plain Layout
- 
--while (vq->last_seen_used != vring->used.idx) {
-+while (vq->last_seen_used
-+\change_inserted 0 1274968316
-+_idx
-+\change_unchanged
-+ != vring->used.idx) {
- \end_layout
- 
- \begin_layout Plain Layout
- 
--    struct vring_used_elem *e = vring.used->ring[vq->last_seen_used%vsz];
-+    struct vring_used_elem *e = vring.used->ring[vq->last_seen_used
-+\change_inserted 0 1274968326
-+_idx
-+\change_unchanged
-+%vsz];
- \end_layout
- 
- \begin_layout Plain Layout
-@@ -2406,7 +2571,11 @@ while (vq->last_seen_used != vring->used.idx) {
- 
- \begin_layout Plain Layout
- 
--    vq->last_seen_used++;
-+    vq->last_seen_used
-+\change_inserted 0 1274968321
-+_idx
-+\change_unchanged
-+++;
- \end_layout
- 
- \begin_layout Plain Layout
-@@ -2419,6 +2588,13 @@ while (vq->last_seen_used != vring->used.idx) {
- 
- \end_layout
- 
-+\begin_layout Standard
-+
-+\change_inserted 0 1274968252
-+If PUBLISH_USED feature is negotiated, last_seen_used value should be published
-+ to the device in the avail ring.
-+\end_layout
-+
- \begin_layout Subsection
- Dealing With Configuration Changes
- \end_layout
-@@ -2986,6 +3162,47 @@ struct vring_avail {
- \begin_layout Plain Layout
- 
- };
-+\change_inserted 0 1274966477
-+
-+\end_layout
-+
-+\begin_layout Plain Layout
-+
-+\end_layout
-+
-+\begin_layout Plain Layout
-+
-+\change_inserted 0 1274966484
-+
-+struct vring_avail_ctrl {
-+\end_layout
-+
-+\begin_layout Plain Layout
-+
-+\change_inserted 0 1274966489
-+
-+        __u16 flags;
-+\end_layout
-+
-+\begin_layout Plain Layout
-+
-+\change_inserted 0 1274966494
-+
-+        __u16 idx;
-+\end_layout
-+
-+\begin_layout Plain Layout
-+
-+\change_inserted 0 1274966499
-+
-+        __u16 last_used_idx;
-+\end_layout
-+
-+\begin_layout Plain Layout
-+
-+\change_inserted 0 1274966474
-+
-+};
- \end_layout
- 
- \begin_layout Plain Layout
-@@ -3349,6 +3566,28 @@ reference "sub:Indirect-Descriptors"
- \end_inset
- 
- .
-+\change_inserted 0 1274967762
-+
-+\end_layout
-+
-+\begin_layout Description
-+
-+\change_inserted 0 1274967926
-+VIRTIO_F_RING_PUBLISH_USED
-+\begin_inset space ~
-+\end_inset
-+
-+(29) Negotiating this feature indicates that the avail ring layout includes
-+ the used index observed by driver, see
-+\begin_inset CommandInset ref
-+LatexCommand ref
-+reference "PUBLISH_USED-feature"
-+
-+\end_inset
-+
-+.
-+\change_unchanged
-+
- \end_layout
- 
- \begin_layout Description
+I don't entirely see how this works. In order to deal with poorly 
+written applications, it's necessary to (optionally, based on some 
+policy) ignore them when it comes to the scheduler. The problem is how 
+to implement the optional nature of this in a race-free manner. This is 
+obviously a pathological case, but imagine an application that does 
+something along the following lines:
+
+int input = open ("/dev/input", O_RDONLY|O_NONBLOCK);
+char foo;
+
+while (1) {
+	suspend_block();
+	if (read(input, &foo, 1) > 0) {
+		(do something)
+		suspend_unblock();
+	} else {
+		suspend_unblock();
+		(draw bouncing cows and clouds and tractor beams briefly)
+	}
+}
+
+Now, if the user is playing this game, you want it to be scheduled. If 
+the user has put down their phone and the screen lock has kicked in, you 
+don't want it to be scheduled. So we could imagine some sort of cgroup 
+that contains untrusted tasks - when the session is active we set a flag 
+one way which indicates to the scheduler that tasks in TASK_RUNNING 
+should be scheduled, and when the session is idle we set the flag the 
+other way and all processes in that cgroup get shifted to 
+TASK_INTERRUPTIBLE or something.
+
+Except that doesn't work. If the session goes idle in the middle of the 
+app drawing a frame, we'll stop the process and the task will never call 
+read(). So the user hits a key, we wake up, nothing shifts from 
+TASK_INTERRUPTIBLE into TASK_RUNNING, the key never gets read, we go 
+back to sleep. The event never gets delivered.
+
+Now let's try this in the Android world. The user hits a key and the 
+system wakes up. The input layer takes a suspend block. The application 
+now draws all the cows it wants to, takes its own suspend block and 
+reads the input device. This empties the queue and the kernel-level 
+suspend block is released. The application then processes the event 
+before releasing the suspend block. The event has been delivered and 
+handled.
+
+You can't express that with resource limits or QoS constraints. If you 
+want to deal with this kind of situation then, as far as I can tell, you 
+need either suspend blockers or something so close to them that it makes 
+no difference.
+
+-- 
+Matthew Garrett | mjg59@srcf.ucam.org
