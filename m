@@ -1,59 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757163Ab0E0NUh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 May 2010 09:20:37 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:7209 "EHLO mx1.redhat.com"
+	id S1755355Ab0E0N1n (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 May 2010 09:27:43 -0400
+Received: from www.tglx.de ([62.245.132.106]:47374 "EHLO www.tglx.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755345Ab0E0NUe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 May 2010 09:20:34 -0400
-Message-ID: <4BFE7199.7060609@redhat.com>
-Date: Thu, 27 May 2010 16:20:25 +0300
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100330 Fedora/3.0.4-1.fc12 Thunderbird/3.0.4
+	id S1754371Ab0E0N1m (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 May 2010 09:27:42 -0400
+Date: Thu, 27 May 2010 15:26:44 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+cc: Florian Mickler <florian@mickler.org>, Vitaly Wool <vitalywool@gmail.com>,
+       Peter Zijlstra <peterz@infradead.org>,
+       LKML <linux-kernel@vger.kernel.org>, felipe.balbi@nokia.com,
+       Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
+       Linux PM <linux-pm@lists.linux-foundation.org>
+Subject: Re: [linux-pm] [PATCH 0/8] Suspend block api (version 8)
+In-Reply-To: <20100526190204.5efe4d59@lxorguk.ukuu.org.uk>
+Message-ID: <alpine.LFD.2.00.1005271519460.3032@localhost.localdomain>
+References: <20100526171106.0e44a736@schatten.dmk.lab> <alpine.LFD.2.00.1005261829540.2995@localhost.localdomain> <20100526190204.5efe4d59@lxorguk.ukuu.org.uk>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-To: Julia Lawall <julia@diku.dk>
-CC: Marcelo Tosatti <mtosatti@redhat.com>,
-       Xiantao Zhang <xiantao.zhang@intel.com>,
-       Tony Luck <tony.luck@intel.com>, Fenghua Yu <fenghua.yu@intel.com>,
-       kvm@vger.kernel.org, kvm-ia64@vger.kernel.org,
-       linux-ia64@vger.kernel.org, linux-kernel@vger.kernel.org,
-       kernel-janitors@vger.kernel.org
-Subject: Re: [PATCH 10/17] arch/ia64/kvm: Add missing spin_unlock
-References: <Pine.LNX.4.64.1005261756490.23743@ask.diku.dk>
-In-Reply-To: <Pine.LNX.4.64.1005261756490.23743@ask.diku.dk>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/26/2010 06:57 PM, Julia Lawall wrote:
-> From: Julia Lawall<julia@diku.dk>
->
-> Add a spin_unlock missing on the error path.
->
-> The semantic match that finds this problem is as follows:
-> (http://coccinelle.lip6.fr/)
->
-> //<smpl>
-> @@
-> expression E1;
-> @@
->
-> * spin_lock(E1,...);
->    <+... when != E1
->    if (...) {
->      ... when != E1
-> *   return ...;
->    }
->    ...+>
-> * spin_unlock(E1,...);
-> //</smpl>
->
->    
+On Wed, 26 May 2010, Alan Cox wrote:
 
-Applied, thanks.
+> > The power efficiency of a mobile device is depending on a sane overall
+> > software stack and not on the ability to mitigate crappy software in
+> > some obscure way which is prone to malfunction and disappoint users.
+> 
+> Even if you believe the kernel should be containing junk the model that
+> works and is used for everything else is resource management. Not giving
+> various tasks the ability to override rules, otherwise you end up needing
+> suspend blocker blockers next week.
 
--- 
-error compiling committee.c: too many arguments to function
+We definitely will need them when we want to optimize the kernel
+resource management on a QoS based scheme, which is the only sensible
+way to go IMNSHO.
 
+> A model based on the idea that a task can set its desired wakeup
+> behaviour *subject to hard limits* (ie soft/hard process wakeup) works
+> both for the sane system where its elegantly managing hard RT, and for
+> the crud where you sandbox it to stop it making a nasty mess.
+
+Right, the base system can set sensible defaults for "verified" apps,
+which will work most of the time except for those which have special
+requirements and need a skilled coder anyway. And for the sandbox crud
+the sensible default can be "very long time" and allow the kernel to
+ignore them at will.
+
+> Do we even need a syscall or will adding RLIMIT_WAKEUP or similar do the
+> trick ?
+
+That might be a good starting point.
+
+Thanks,
+
+	tglx
