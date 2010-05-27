@@ -1,18 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753670Ab0E0Mcc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 May 2010 08:32:32 -0400
-Received: from mgw2.diku.dk ([130.225.96.92]:48500 "EHLO mgw2.diku.dk"
+	id S1754428Ab0E0Mcx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 May 2010 08:32:53 -0400
+Received: from mgw1.diku.dk ([130.225.96.91]:51744 "EHLO mgw1.diku.dk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751869Ab0E0Mca (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 May 2010 08:32:30 -0400
-Date: Thu, 27 May 2010 14:32:24 +0200 (CEST)
+	id S1751469Ab0E0Mcu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 May 2010 08:32:50 -0400
+Date: Thu, 27 May 2010 14:32:45 +0200 (CEST)
 From: Julia Lawall <julia@diku.dk>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-       Wim Van Sebroeck <wim@iguana.be>, linux-kernel@vger.kernel.org,
+To: "David S. Miller" <davem@davemloft.net>,
+       Grant Likely <grant.likely@secretlab.ca>, sparclinux@vger.kernel.org,
+       linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
        kernel-janitors@vger.kernel.org
-Subject: [PATCH 2/11] drivers/watchdog: Eliminate a NULL pointer dereference
-Message-ID: <Pine.LNX.4.64.1005271432100.5422@ask.diku.dk>
+Subject: [PATCH 3/11] arch/sparc/kernel: Eliminate what looks like a NULL
+ pointer dereference
+Message-ID: <Pine.LNX.4.64.1005271432250.5422@ask.diku.dk>
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
@@ -21,7 +23,8 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Julia Lawall <julia@diku.dk>
 
-At the point of the call to dev_err, wm8350 is NULL.
+At the point of the test, action cannot be NULL, as it has been dereferenced
+in the code just above.
 
 A simplified version of the semantic match that finds this problem is as
 follows: (http://coccinelle.lip6.fr/)
@@ -39,7 +42,6 @@ if ((E == NULL && ...) || ...)
       when != E = E1
 * E->f
   ... when any
-  return ...;
 }
 else S3
 // </smpl>
@@ -47,19 +49,19 @@ else S3
 Signed-off-by: Julia Lawall <julia@diku.dk>
 
 ---
- drivers/watchdog/wm8350_wdt.c |    2 +-
+ arch/sparc/kernel/sun4d_irq.c |    2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff --git a/drivers/watchdog/wm8350_wdt.c b/drivers/watchdog/wm8350_wdt.c
-index 89dd7b0..b68d928 100644
---- a/drivers/watchdog/wm8350_wdt.c
-+++ b/drivers/watchdog/wm8350_wdt.c
-@@ -284,7 +284,7 @@ static int __devinit wm8350_wdt_probe(struct platform_device *pdev)
- 	struct wm8350 *wm8350 = platform_get_drvdata(pdev);
- 
- 	if (!wm8350) {
--		dev_err(wm8350->dev, "No driver data supplied\n");
-+		pr_err("No driver data supplied\n");
- 		return -ENODEV;
+diff --git a/arch/sparc/kernel/sun4d_irq.c b/arch/sparc/kernel/sun4d_irq.c
+index ab036a7..e11b461 100644
+--- a/arch/sparc/kernel/sun4d_irq.c
++++ b/arch/sparc/kernel/sun4d_irq.c
+@@ -183,7 +183,7 @@ void sun4d_free_irq(unsigned int irq, void *dev_id)
+ 		goto out_unlock;
  	}
- 
+ 	
+-	if (action && tmp)
++	if (tmp)
+ 		tmp->next = action->next;
+ 	else
+ 		*actionp = action->next;
