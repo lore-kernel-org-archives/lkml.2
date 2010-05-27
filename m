@@ -1,200 +1,337 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755363Ab0E0OCf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 May 2010 10:02:35 -0400
-Received: from smtp125.sbc.mail.sp1.yahoo.com ([69.147.65.184]:33995 "HELO
-	smtp125.sbc.mail.sp1.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1755029Ab0E0OCc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 May 2010 10:02:32 -0400
-X-Yahoo-SMTP: fzDSGlOswBCWnIOrNw7KwwK1j9PqyNbe5PtLKiS4dDU.UNl_t6bdEZu9tTLW
-X-YMail-OSG: F4pPJRIVM1lk7LU14S4fH77epAWICxf58mrzkOuIAZzxeIp1asJdDPRi1auP4rU6d_DGHDUcz4o7Fjh1M_Jv4qdGseHELX22YR6d45ZmuU9ETL9QRicGulXtH698GlTf_3MDaBUzehvk_pYJ4Yhs7iG_ciZHaH.sND6liCUz55MCrvdS7BfPQbdLH41XSqNquNryhvc3cYHwVSPItzYLVx.CKPlcomXsV724uROL.PdPmHgVR7Pguv3VbR7sgOlTiVGjM3LOea_AFu2FU4Q0wklRBMvABJq9cQz9S_l82GOYJqr9o1jGNIvYNahSiLisnu3TN9kY0XAla4DJxT.dZ0PjJPOTm4aJ6u0CAlX65SjmrmEl81HtDyX5SSG9SGajudhINu0PE_Q-
-X-Yahoo-Newman-Property: ymail-3
-Subject: TCM v4 and TCM_Loop tree+patches for scsi-misc.git
-From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-To: James Bottomley <James.Bottomley@suse.de>
-Cc: linux-scsi <linux-scsi@vger.kernel.org>,
-       LKML <linux-kernel@vger.kernel.org>, Hannes Reinecke <hare@suse.de>,
-       FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-       Mike Christie <michaelc@cs.wisc.edu>,
-       Christoph Hellwig <hch@infradead.org>,
-       Joel Becker <joel.becker@oracle.com>, Joe Eykholt <jeykholt@cisco.com>,
-       Richard Sharpe <realrichardsharpe@gmail.com>,
-       "H. Peter Anvin" <hpa@zytor.com>
-Content-Type: text/plain
-Date: Thu, 27 May 2010 07:02:21 -0700
-Message-Id: <1274968941.16907.31.camel@haakon2.linux-iscsi.org>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.22.3.1 
-Content-Transfer-Encoding: 7bit
+	id S1755131Ab0E0OEh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 May 2010 10:04:37 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:9408 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752061Ab0E0OEf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 May 2010 10:04:35 -0400
+Date: Thu, 27 May 2010 16:59:45 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Avi Kivity <avi@redhat.com>
+Cc: Rusty Russell <rusty@rustcorp.com.au>, linux-kernel@vger.kernel.org,
+       virtualization@lists.linux-foundation.org, kvm@vger.kernel.org,
+       qemu-devel@nongnu.org
+Subject: Re: [PATCHv2-RFC 0/2] virtio: put last seen used index into ring
+	itself
+Message-ID: <20100527135945.GA8231@redhat.com>
+References: <cover.1274903328.git.mst@redhat.com> <4BFE6098.9010000@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4BFE6098.9010000@redhat.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Good morning James,
+On Thu, May 27, 2010 at 03:07:52PM +0300, Avi Kivity wrote:
+> I missed the spec patch, can you repost it?
 
-Following your instructions the TCM Core v4 infrastructure and TCM_Loop
-multi-fabric LLD code has been broken up from lio-core-2.6.git/lio-4.0
-to be reviewable rather than historical.  I have made these commits into
-a tree tracking your scsi-misc.git/master, that is available here:
+Still work in progress, but here it is.
+Note I am still debating with myself whether we should split
+avail idx and flags into separate cache lines.
 
-git://git.kernel.org/pub/scm/linux/kernel/git/nab/scsi-misc-2.6.git master
-
-The commits are also available as individual patches here:
-
-http://www.kernel.org/pub/linux/kernel/people/nab/TCM-v4-patches-for-scsi-misc-v2.6.35-rc1/
-
-I would be happy to post the individual commits to linux-scsi/lkml again
-as the last review for v3 was in Sept 2009, but so far all v4 related
-patches have been posted with little feedback on linux-scsi.   Please
-let me know if you would like me to post this series again for review in
-it's entirety to linux-scsi and LKML, or if you have any other comments
-or questions.
-
-Best,
-
---nab
-
-Nicholas Bellinger (23):
-  [SCSI]: Add missing SPC-4 CDB and MAINTENANCE_[IN,OUT] service action
-    definitions
-  [configfs]: Add struct configfs_item_operations->check_link() in
-    configfs_unlink()
-  [TCM]: Add ConfigFS extended macro set
-  [TCM]: Add v4 base data structures and struct target_core_fabric_ops
-  [TCM]: Add SPC-4 explict and implict Asymmetric Logical Unit Access
-    (ALUA)
-  [TCM]: Add core subsystem backstore configfs infrastructure
-  [TCM]: Add core fabric transport engine
-  [TCM]: Add HBA core infrastructure
-  [TCM]: Add device core infrastructure
-  [TCM]: Add target portal group infrastructure
-  [TCM]: Add SE object device infrastructure
-  [TCM]: Add SPC-4 compliant Persistent Reservations
-  [TCM]: Add Task Management infrastructure
-  [TCM]: Add UNIT_ATTENTION infrastructure support
-  [TCM]: Add support for SCSI MIB statistics
-  [TCM]: Add FILEIO subsystem plugin
-  [TCM]: Add IBLOCK subsystem plugin
-  [TCM]: Add PSCSI subsystem plugin
-  [TCM]: Add RAMDISK_DR and RAMDISK_MCP subsystem plugins
-  [TCM]: Add generic fabric independent configfs infrastructure
-  [TCM]: Add generic ProtoID and TransportID fabric handlers for SAS,
-    FC, and iSCSI
-  [TCM]: Add Kbuild and Kconfig and update drivers/
-  [TCM_Loop]: Add multi-fabric Linux/SCSI LLD fabric module
-
- drivers/Kconfig                                |    2 +
- drivers/Makefile                               |    1 +
- drivers/target/Kbuild                          |   52 +
- drivers/target/Kconfig                         |   57 +
- drivers/target/target_core_alua.c              | 1990 ++++++
- drivers/target/target_core_configfs.c          | 3351 ++++++++++
- drivers/target/target_core_device.c            | 1632 +++++
- drivers/target/target_core_fabric_configfs.c   |  971 +++
- drivers/target/target_core_fabric_lib.c        |  456 ++
- drivers/target/target_core_file.c              | 1090 ++++
- drivers/target/target_core_hba.c               |  201 +
- drivers/target/target_core_iblock.c            | 1058 +++
- drivers/target/target_core_mib.c               | 1064 +++
- drivers/target/target_core_plugin.c            |  326 +
- drivers/target/target_core_pr.c                | 4248 ++++++++++++
- drivers/target/target_core_pscsi.c             | 1849 ++++++
- drivers/target/target_core_rd.c                | 1422 ++++
- drivers/target/target_core_scdb.c              |  154 +
- drivers/target/target_core_seobj.c             |  679 ++
- drivers/target/target_core_tmr.c               |  401 ++
- drivers/target/target_core_tpg.c               |  860 +++
- drivers/target/target_core_transport.c         | 8234 ++++++++++++++++++++++++
- drivers/target/target_core_ua.c                |  336 +
- drivers/target/tcm_loop/Kbuild                 |   11 +
- drivers/target/tcm_loop/Kconfig                |   13 +
- drivers/target/tcm_loop/tcm_loop_configfs.c    |  678 ++
- drivers/target/tcm_loop/tcm_loop_configfs.h    |    2 +
- drivers/target/tcm_loop/tcm_loop_core.h        |   79 +
- drivers/target/tcm_loop/tcm_loop_fabric.c      |  567 ++
- drivers/target/tcm_loop/tcm_loop_fabric.h      |   45 +
- drivers/target/tcm_loop/tcm_loop_fabric_scsi.c |  659 ++
- drivers/target/tcm_loop/tcm_loop_fabric_scsi.h |   10 +
- fs/configfs/symlink.c                          |   13 +
- include/linux/configfs.h                       |    1 +
- include/scsi/scsi.h                            |   24 +
- include/target/configfs_macros.h               |  147 +
- include/target/target_core_alua.h              |  134 +
- include/target/target_core_base.h              | 1039 +++
- include/target/target_core_configfs.h          |   84 +
- include/target/target_core_device.h            |   85 +
- include/target/target_core_fabric_configfs.h   |  106 +
- include/target/target_core_fabric_lib.h        |   28 +
- include/target/target_core_fabric_ops.h        |   89 +
- include/target/target_core_file.h              |  223 +
- include/target/target_core_hba.h               |   43 +
- include/target/target_core_iblock.h            |  173 +
- include/target/target_core_mib.h               |   56 +
- include/target/target_core_plugin.h            |   73 +
- include/target/target_core_pr.h                |   67 +
- include/target/target_core_pscsi.h             |  202 +
- include/target/target_core_rd.h                |  259 +
- include/target/target_core_scdb.h              |   42 +
- include/target/target_core_seobj.h             |  114 +
- include/target/target_core_tmr.h               |   43 +
- include/target/target_core_tpg.h               |   65 +
- include/target/target_core_transport.h         |  557 ++
- include/target/target_core_transport_plugin.h  |   67 +
- include/target/target_core_ua.h                |   36 +
- 58 files changed, 36268 insertions(+), 0 deletions(-)
- create mode 100644 drivers/target/Kbuild
- create mode 100644 drivers/target/Kconfig
- create mode 100644 drivers/target/target_core_alua.c
- create mode 100644 drivers/target/target_core_configfs.c
- create mode 100644 drivers/target/target_core_device.c
- create mode 100644 drivers/target/target_core_fabric_configfs.c
- create mode 100644 drivers/target/target_core_fabric_lib.c
- create mode 100644 drivers/target/target_core_file.c
- create mode 100644 drivers/target/target_core_hba.c
- create mode 100644 drivers/target/target_core_iblock.c
- create mode 100644 drivers/target/target_core_mib.c
- create mode 100644 drivers/target/target_core_plugin.c
- create mode 100644 drivers/target/target_core_pr.c
- create mode 100644 drivers/target/target_core_pscsi.c
- create mode 100644 drivers/target/target_core_rd.c
- create mode 100644 drivers/target/target_core_scdb.c
- create mode 100644 drivers/target/target_core_seobj.c
- create mode 100644 drivers/target/target_core_tmr.c
- create mode 100644 drivers/target/target_core_tpg.c
- create mode 100644 drivers/target/target_core_transport.c
- create mode 100644 drivers/target/target_core_ua.c
- create mode 100644 drivers/target/tcm_loop/Kbuild
- create mode 100644 drivers/target/tcm_loop/Kconfig
- create mode 100644 drivers/target/tcm_loop/tcm_loop_configfs.c
- create mode 100644 drivers/target/tcm_loop/tcm_loop_configfs.h
- create mode 100644 drivers/target/tcm_loop/tcm_loop_core.h
- create mode 100644 drivers/target/tcm_loop/tcm_loop_fabric.c
- create mode 100644 drivers/target/tcm_loop/tcm_loop_fabric.h
- create mode 100644 drivers/target/tcm_loop/tcm_loop_fabric_scsi.c
- create mode 100644 drivers/target/tcm_loop/tcm_loop_fabric_scsi.h
- create mode 100644 include/target/configfs_macros.h
- create mode 100644 include/target/target_core_alua.h
- create mode 100644 include/target/target_core_base.h
- create mode 100644 include/target/target_core_configfs.h
- create mode 100644 include/target/target_core_device.h
- create mode 100644 include/target/target_core_fabric_configfs.h
- create mode 100644 include/target/target_core_fabric_lib.h
- create mode 100644 include/target/target_core_fabric_ops.h
- create mode 100644 include/target/target_core_file.h
- create mode 100644 include/target/target_core_hba.h
- create mode 100644 include/target/target_core_iblock.h
- create mode 100644 include/target/target_core_mib.h
- create mode 100644 include/target/target_core_plugin.h
- create mode 100644 include/target/target_core_pr.h
- create mode 100644 include/target/target_core_pscsi.h
- create mode 100644 include/target/target_core_rd.h
- create mode 100644 include/target/target_core_scdb.h
- create mode 100644 include/target/target_core_seobj.h
- create mode 100644 include/target/target_core_tmr.h
- create mode 100644 include/target/target_core_tpg.h
- create mode 100644 include/target/target_core_transport.h
- create mode 100644 include/target/target_core_transport_plugin.h
- create mode 100644 include/target/target_core_ua.h
-
-
+diff --git a/virtio-spec.lyx b/virtio-spec.lyx
+index ed35893..150e5a8 100644
+--- a/virtio-spec.lyx
++++ b/virtio-spec.lyx
+@@ -1803,6 +1803,36 @@ next
+ \emph default
+  descriptor entry (modulo the ring size).
+  This starts at 0, and increases.
++\change_inserted 0 1274966643
++
++\end_layout
++
++\begin_layout Standard
++
++\change_inserted 0 1274968378
++When PUBLISH_USED feature flag has 
++\emph on
++not
++\emph default
++ been negotiated, the ring follows the 
++\begin_inset Quotes eld
++\end_inset
++
++flags
++\begin_inset Quotes erd
++\end_inset
++
++ and the 
++\begin_inset Quotes eld
++\end_inset
++
++idx
++\begin_inset Quotes erd
++\end_inset
++
++ fields:
++\change_unchanged
++
+ \end_layout
+ 
+ \begin_layout Standard
+@@ -1845,7 +1875,134 @@ struct vring_avail {
+ 
+ \end_layout
+ 
++\begin_layout Standard
++
++\change_inserted 0 1274968432
++\begin_inset CommandInset label
++LatexCommand label
++name "PUBLISH_USED-feature"
++
++\end_inset
++
++When PUBLISH_USED feature flag has been negotiated, the control structure
++ including the 
++\begin_inset Quotes eld
++\end_inset
++
++flags and the 
++\begin_inset Quotes eld
++\end_inset
++
++idx
++\begin_inset Quotes erd
++\end_inset
++
++ fields follows the ring.
++ This leaves the room for the 
++\begin_inset Quotes eld
++\end_inset
++
++last_seen_used_idx
++\begin_inset Quotes erd
++\end_inset
++
++ field, which indicates the most recent 
++\begin_inset Quotes eld
++\end_inset
++
++idx
++\begin_inset Quotes erd
++\end_inset
++
++ value observed by guest in the used ring (see 
++\begin_inset CommandInset ref
++LatexCommand ref
++reference "sub:Used-Ring"
++
++\end_inset
++
++ below):
++\end_layout
++
++\begin_layout Standard
++
++\change_inserted 0 1274967396
++\begin_inset listings
++inline false
++status open
++
++\begin_layout Plain Layout
++
++\change_inserted 0 1274967404
++
++struct vring_avail {
++\end_layout
++
++\begin_layout Plain Layout
++
++\change_inserted 0 1274967405
++
++   u16 ring[qsz]; /* qsz is the Queue Size field read from device */
++\end_layout
++
++\begin_layout Plain Layout
++
++\change_inserted 0 1274967533
++
++#define VRING_AVAIL_F_NO_INTERRUPT      1
++\end_layout
++
++\begin_layout Plain Layout
++
++\change_inserted 0 1274967533
++
++   u16 flags;
++\end_layout
++
++\begin_layout Plain Layout
++
++\change_inserted 0 1274967533
++
++   u16 idx;
++\end_layout
++
++\begin_layout Plain Layout
++
++\change_inserted 0 1274968345
++
++   u16 last_seen_used_idx;
++\end_layout
++
++\begin_layout Plain Layout
++
++\change_inserted 0 1274967396
++
++}; 
++\end_layout
++
++\end_inset
++
++
++\end_layout
++
++\begin_layout Standard
++
++\change_inserted 0 1274967715
++If the ring is large enough, the second layout maintains the control and
++ ring structures on separate cache lines.
++\end_layout
++
+ \begin_layout Subsection
++
++\change_inserted 0 1274968415
++\begin_inset CommandInset label
++LatexCommand label
++name "sub:Used-Ring"
++
++\end_inset
++
++
++\change_unchanged
+ Used Ring
+ \end_layout
+ 
+@@ -2391,12 +2548,20 @@ status open
+ 
+ \begin_layout Plain Layout
+ 
+-while (vq->last_seen_used != vring->used.idx) {
++while (vq->last_seen_used
++\change_inserted 0 1274968316
++_idx
++\change_unchanged
++ != vring->used.idx) {
+ \end_layout
+ 
+ \begin_layout Plain Layout
+ 
+-    struct vring_used_elem *e = vring.used->ring[vq->last_seen_used%vsz];
++    struct vring_used_elem *e = vring.used->ring[vq->last_seen_used
++\change_inserted 0 1274968326
++_idx
++\change_unchanged
++%vsz];
+ \end_layout
+ 
+ \begin_layout Plain Layout
+@@ -2406,7 +2571,11 @@ while (vq->last_seen_used != vring->used.idx) {
+ 
+ \begin_layout Plain Layout
+ 
+-    vq->last_seen_used++;
++    vq->last_seen_used
++\change_inserted 0 1274968321
++_idx
++\change_unchanged
++++;
+ \end_layout
+ 
+ \begin_layout Plain Layout
+@@ -2419,6 +2588,13 @@ while (vq->last_seen_used != vring->used.idx) {
+ 
+ \end_layout
+ 
++\begin_layout Standard
++
++\change_inserted 0 1274968252
++If PUBLISH_USED feature is negotiated, last_seen_used value should be published
++ to the device in the avail ring.
++\end_layout
++
+ \begin_layout Subsection
+ Dealing With Configuration Changes
+ \end_layout
+@@ -2986,6 +3162,47 @@ struct vring_avail {
+ \begin_layout Plain Layout
+ 
+ };
++\change_inserted 0 1274966477
++
++\end_layout
++
++\begin_layout Plain Layout
++
++\end_layout
++
++\begin_layout Plain Layout
++
++\change_inserted 0 1274966484
++
++struct vring_avail_ctrl {
++\end_layout
++
++\begin_layout Plain Layout
++
++\change_inserted 0 1274966489
++
++        __u16 flags;
++\end_layout
++
++\begin_layout Plain Layout
++
++\change_inserted 0 1274966494
++
++        __u16 idx;
++\end_layout
++
++\begin_layout Plain Layout
++
++\change_inserted 0 1274966499
++
++        __u16 last_used_idx;
++\end_layout
++
++\begin_layout Plain Layout
++
++\change_inserted 0 1274966474
++
++};
+ \end_layout
+ 
+ \begin_layout Plain Layout
+@@ -3349,6 +3566,28 @@ reference "sub:Indirect-Descriptors"
+ \end_inset
+ 
+ .
++\change_inserted 0 1274967762
++
++\end_layout
++
++\begin_layout Description
++
++\change_inserted 0 1274967926
++VIRTIO_F_RING_PUBLISH_USED
++\begin_inset space ~
++\end_inset
++
++(29) Negotiating this feature indicates that the avail ring layout includes
++ the used index observed by driver, see
++\begin_inset CommandInset ref
++LatexCommand ref
++reference "PUBLISH_USED-feature"
++
++\end_inset
++
++.
++\change_unchanged
++
+ \end_layout
+ 
+ \begin_layout Description
