@@ -1,66 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757047Ab0E0UrM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 May 2010 16:47:12 -0400
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:40540 "EHLO
-	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754592Ab0E0UrK (ORCPT
+	id S932127Ab0E0Uvt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 May 2010 16:51:49 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:53643 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756656Ab0E0Uvs convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 May 2010 16:47:10 -0400
-Date: Thu, 27 May 2010 21:53:47 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Matthew Garrett <mjg59@srcf.ucam.org>
-Cc: Arve =?ISO-8859-14?B?SGr4bm5lduVn?= <arve@android.com>,
-       Florian Mickler <florian@mickler.org>,
-       Vitaly Wool <vitalywool@gmail.com>,
-       Peter Zijlstra <peterz@infradead.org>,
-       LKML <linux-kernel@vger.kernel.org>, Paul@smtp1.linux-foundation.org,
-       felipe.balbi@nokia.com,
-       Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
-       Linux PM <linux-pm@lists.linux-foundation.org>
-Subject: Re: [linux-pm] [PATCH 0/8] Suspend block api (version 8)
-Message-ID: <20100527215347.431c4934@lxorguk.ukuu.org.uk>
-In-Reply-To: <20100527201155.GB7449@srcf.ucam.org>
-References: <20100527160714.GB31937@srcf.ucam.org>
-	<20100527174131.18fd1c72@lxorguk.ukuu.org.uk>
-	<20100527165210.GA1062@srcf.ucam.org>
-	<20100527190204.14546caa@lxorguk.ukuu.org.uk>
-	<20100527181239.GF3543@srcf.ucam.org>
-	<20100527194840.5bca973f@lxorguk.ukuu.org.uk>
-	<20100527185658.GA5703@srcf.ucam.org>
-	<20100527202538.7d2d7f3c@lxorguk.ukuu.org.uk>
-	<20100527192926.GA6977@srcf.ucam.org>
-	<20100527205333.676ad65e@lxorguk.ukuu.org.uk>
-	<20100527201155.GB7449@srcf.ucam.org>
-X-Mailer: Claws Mail 3.7.5 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 27 May 2010 16:51:48 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=lxLZA7oDIF/V33kL/DB01MVP4QARfwK2qG5Dp0WMas3aChe0xrV8vz1DQOwrS99ADB
+         B17islL/rxLmYERUyzqmlccRGM9/w6ljPn0HJ8dOi3OQm4KrEEe5hAwBnre/zt0A+i6C
+         IRInmKF+313GiiAZ5rge0M5t6nKA4kSRAJX+Y=
+MIME-Version: 1.0
+In-Reply-To: <1274993083.7399.60.camel@moss-pluto.epoch.ncsc.mil>
+References: <AANLkTilavQK5qmG2B3wuWzfd2kqEK6EP54r3R7A99LI0@mail.gmail.com>
+	<1274988457.7399.48.camel@moss-pluto.epoch.ncsc.mil>
+	<AANLkTinNrewuTkyzLPalh-pUMZkvgGJfozB9Hl9YgOgi@mail.gmail.com>
+	<1274993083.7399.60.camel@moss-pluto.epoch.ncsc.mil>
+Date: Fri, 28 May 2010 01:51:47 +0500
+Message-ID: <AANLkTimeohrdZyYvzExhT6gRzpZKsWjSy-BIxmN1KIMN@mail.gmail.com>
+Subject: Fwd: Default security module feature of 2.6.34
+From: Shaz <shazalive@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: securityengineeringresearchgroup 
+	<securityengineeringresearchgroup@googlegroups.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > The event was not lost.
-> 
-> Not lost, but not delivered. So you need your policy agent to send 
+---------- Forwarded message ----------
+From: Stephen Smalley <sds@tycho.nsa.gov>
+Date: Fri, May 28, 2010 at 1:44 AM
+Subject: Re: Default security module feature of 2.6.34
+To: Shaz <shazalive@gmail.com>
+Cc: selinux <selinux@tycho.nsa.gov>
 
-it will be delivered next time the process wakes. It's not lost.
 
-> SIGCONT when you receive any wakeup event, which either means proxying 
-> all your network traffic through your policy agent or having some 
-> mechanism for alerting the policy agent whenever you leave the deep idle 
-> state.
+On Fri, 2010-05-28 at 01:28 +0500, Shaz wrote:
+> On Fri, May 28, 2010 at 12:27 AM, Stephen Smalley <sds@tycho.nsa.gov> wrote:
+> > On Thu, 2010-05-27 at 22:12 +0500, Shaz wrote:
+> >> Dear all,
+> >>
+> >> I saw the default security feature in linux-2.6.34 and wanted to know
+> >> what difference does it make to have linux DAC or selinux as the
+> >> default security module?
+> >
+> > It doesn't appear to change anything.  Not sure if that was the intent.
+> >
+> > The purpose of the option was to allow specification of what security
+> > module to enable at boot by default when multiple security modules are
+> > built into the kernel and no security= parameter was specified on the
+> > kernel command line.  Mostly useful for distributions who want to ship a
+> > single kernel that can support any security module and default to a
+> > particular one.  So for example you could compile SELinux, Smack, and
+> > TOMOYO into your kernel while defaulting to enabling TOMOYO at boot
+> > time, letting the user optionally select SELinux or Smack via the
+> > security= kernel parameter.
+> >
+> > I think the DAC setting was just to reflect the fact that if you don't
+> > enable anything else, you'll get DAC by default.  But to make that
+> > option actually select DAC-only at boot (i.e. not enable any of security
+> > modules), it would have to set the DEFAULT_SECURITY string to some
+> > non-empty string that doesn't match any security module name rather than
+> > to the empty string.
+>
+> If selinux is chosen at default then what would be the effect? Would
+> LSM be invoked before DAC checks? If not then this kernel
+> configuration scheme needs to be corrected.
 
-You didn't mention that requirement last time.
+No, it doesn't have anything to do with when the check is applied; it
+just affects which security module is enabled by default at boot if
+multiple security modules are built into your kernel.
+DEFAULT_SECURITY_DAC is likely meant to disable all security modules
+(DAC isn't a security module), falling back to only the default DAC
+logic.  In which case the Kconfig file does need to be fixed.
 
-> > > also the race of an application being in the middle of handling a wakeup 
-> > > event when you send it the signal.
-> > 
-> > sigmask()
-> 
-> Doesn't help - I may be hit by the signal between the poll() unblocking 
-> and me having the opportunity to call sigmask().
+--
+Stephen Smalley
+National Security Agency
 
-ppoll(). This is all existing solved stuff.
 
-Alan
+
+
+-- 
+Shaz
