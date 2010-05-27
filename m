@@ -1,160 +1,389 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933251Ab0E0WDn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 May 2010 18:03:43 -0400
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:27201 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757345Ab0E0WDl (ORCPT
+	id S933195Ab0E0WDm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 May 2010 18:03:42 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:40405 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753843Ab0E0WDk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 May 2010 18:03:41 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,5995"; a="42641626"
-Subject: [GIT PULL] MSM serial driver update for 2.6.35
-From: Daniel Walker <dwalker@codeaurora.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 27 May 2010 15:03:39 -0700
-Message-ID: <1274997819.10998.44.camel@c-dwalke-linux.qualcomm.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	Thu, 27 May 2010 18:03:40 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=bh+MN8ft/azFcEjCxKgR0NYM70bPyAMYA7Of1rY62ayQirICKZXIgcvWqnomceGt29
+         DHhJrq6JubcAqlr5ijTXTJkeXjpAZf48Ns/k/5tZuhHRR9N0j/izAtcl71kDwW0UVVkn
+         2Wac/qA4FQr5gtRxMZcPA1r7PqrJabYF2OljQ=
+Date: Fri, 28 May 2010 00:03:37 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+       LKML <linux-kernel@vger.kernel.org>, John Kacur <jkacur@redhat.com>,
+       Thomas Gleixner <tglx@linutronix.de>,
+       Frederic Lassabe <frederic.lassabe@gmail.com>,
+       Jesper Nilsson <jesper.nilsson@axis.com>,
+       Hans Verkuil <hverkuil@xs4all.nl>,
+       Tyler Hicks <tyhicks@linux.vnet.ibm.com>,
+       "H. Peter Anvin" <hpa@zytor.com>,
+       =?iso-8859-1?Q?J=F6rn?= Engel <joern@logfs.org>
+Subject: Re: [GIT PULL] Bkl ioctl pushdowns for 2.6.35-rc1
+Message-ID: <20100527220334.GC5390@nowhere>
+References: <1274547426-25937-1-git-send-regression-fweisbec@gmail.com> <201005272338.25049.arnd@arndb.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201005272338.25049.arnd@arndb.de>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On Thu, May 27, 2010 at 11:38:24PM +0200, Arnd Bergmann wrote:
+> On Saturday 22 May 2010 18:57:05 Frederic Weisbecker wrote:
+> > Please pull the bkl/ioctl branch that can be found at:
+> > 
+> > git://git.kernel.org/pub/scm/linux/kernel/git/frederic/random-tracing.git
+> > 	bkl/ioctl
+> > 
+> > There are still some pushdowns left, pending for tests or in discussion.
+> > I guess ioctl will die for the next merge window.
+> 
+> Let's take a look at the final patch in the meantime. I would suggest merging
+> the patch below once all users we care about are done.
+> 
+> Right now, what remains are these trivial users:
+> 
+> | arch/cris/arch-v10/drivers/ds1302.c
+> | arch/cris/arch-v10/drivers/gpio.c
+> | arch/cris/arch-v10/drivers/i2c.c
+> | arch/cris/arch-v10/drivers/pcf8563.c
+> | arch/cris/arch-v10/drivers/sync_serial.c
+> | arch/cris/arch-v32/drivers/cryptocop.c
+> | arch/cris/arch-v32/drivers/i2c.c
+> | arch/cris/arch-v32/drivers/mach-a3/gpio.c
+> | arch/cris/arch-v32/drivers/mach-fs/gpio.c
+> | arch/cris/arch-v32/drivers/pcf8563.c
+> | arch/cris/arch-v32/drivers/sync_serial.c
+> 
+> All queued in the cris maintainer tree, but no pull request
+> has been sent for 2.6.35 cris.
 
-	Just one fix for our serial driver to get it working with MSM7x30,
-which was added this merge window.
-
-Daniel
 
 
-The following changes since commit be1066bbcd443a65df312fdecea7e4959adedb45:
+Not all, I also have a part in my local tree (posted in my last batch):
 
-  Merge git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/staging-2.6 (2010-04-30 10:16:55 -0700)
+arch/cris/arch-v10/drivers/gpio.c         |   30 ++++++++++++++++++---------
+arch/cris/arch-v10/drivers/i2c.c          |   24 ++++++++++++++++-----
+arch/cris/arch-v10/drivers/sync_serial.c  |   32 +++++++++++++++++++---------
+arch/cris/arch-v32/drivers/cryptocop.c    |   24 ++++++++++++++++-----
+arch/cris/arch-v32/drivers/mach-a3/gpio.c |   28 +++++++++++++++++--------
+arch/cris/arch-v32/drivers/mach-fs/gpio.c |   29 +++++++++++++++++---------
+arch/cris/arch-v32/drivers/sync_serial.c  |   30 +++++++++++++++++++--------
 
-are available in the git repository at:
+I did not include it in the pull request because I hadn't yet the occasion
+to build-test it.
 
-  git://codeaurora.org/quic/kernel/dwalker/linux-msm.git msm-serial
+I'll do that and try to get this in the cris tree.
 
-Abhijeet Dharmapurikar (1):
-      msm: serial: fix serial on MSM7x30
 
- drivers/serial/msm_serial.c |   21 ++-------------
- drivers/serial/msm_serial.h |   56 +++++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 59 insertions(+), 18 deletions(-)
 
-diff --git a/drivers/serial/msm_serial.c b/drivers/serial/msm_serial.c
-index ecdc0fa..f8c816e 100644
---- a/drivers/serial/msm_serial.c
-+++ b/drivers/serial/msm_serial.c
-@@ -41,19 +41,6 @@ struct msm_port {
- 	unsigned int		imr;
- };
- 
--#define UART_TO_MSM(uart_port)	((struct msm_port *) uart_port)
--
--static inline void msm_write(struct uart_port *port, unsigned int val,
--			     unsigned int off)
--{
--	__raw_writel(val, port->membase + off);
--}
--
--static inline unsigned int msm_read(struct uart_port *port, unsigned int off)
--{
--	return __raw_readl(port->membase + off);
--}
--
- static void msm_stop_tx(struct uart_port *port)
- {
- 	struct msm_port *msm_port = UART_TO_MSM(port);
-@@ -320,11 +307,7 @@ static void msm_init_clock(struct uart_port *port)
- 	struct msm_port *msm_port = UART_TO_MSM(port);
- 
- 	clk_enable(msm_port->clk);
--
--	msm_write(port, 0xC0, UART_MREG);
--	msm_write(port, 0xB2, UART_NREG);
--	msm_write(port, 0x7D, UART_DREG);
--	msm_write(port, 0x1C, UART_MNDREG);
-+	msm_serial_set_mnd_regs(port);
- }
- 
- static int msm_startup(struct uart_port *port)
-@@ -706,6 +689,8 @@ static int __init msm_serial_probe(struct platform_device *pdev)
- 	if (unlikely(IS_ERR(msm_port->clk)))
- 		return PTR_ERR(msm_port->clk);
- 	port->uartclk = clk_get_rate(msm_port->clk);
-+	printk(KERN_INFO "uartclk = %d\n", port->uartclk);
-+
- 
- 	resource = platform_get_resource(pdev, IORESOURCE_MEM, 0);
- 	if (unlikely(!resource))
-diff --git a/drivers/serial/msm_serial.h b/drivers/serial/msm_serial.h
-index 689f1fa..f6ca9ca 100644
---- a/drivers/serial/msm_serial.h
-+++ b/drivers/serial/msm_serial.h
-@@ -114,4 +114,60 @@
- #define UART_MISR	0x0010
- #define UART_ISR	0x0014
- 
-+#define UART_TO_MSM(uart_port)	((struct msm_port *) uart_port)
-+
-+static inline
-+void msm_write(struct uart_port *port, unsigned int val, unsigned int off)
-+{
-+	__raw_writel(val, port->membase + off);
-+}
-+
-+static inline
-+unsigned int msm_read(struct uart_port *port, unsigned int off)
-+{
-+	return __raw_readl(port->membase + off);
-+}
-+
-+/*
-+ * Setup the MND registers to use the TCXO clock.
-+ */
-+static inline void msm_serial_set_mnd_regs_tcxo(struct uart_port *port)
-+{
-+	msm_write(port, 0x06, UART_MREG);
-+	msm_write(port, 0xF1, UART_NREG);
-+	msm_write(port, 0x0F, UART_DREG);
-+	msm_write(port, 0x1A, UART_MNDREG);
-+}
-+
-+/*
-+ * Setup the MND registers to use the TCXO clock divided by 4.
-+ */
-+static inline void msm_serial_set_mnd_regs_tcxoby4(struct uart_port *port)
-+{
-+	msm_write(port, 0x18, UART_MREG);
-+	msm_write(port, 0xF6, UART_NREG);
-+	msm_write(port, 0x0F, UART_DREG);
-+	msm_write(port, 0x0A, UART_MNDREG);
-+}
-+
-+static inline
-+void msm_serial_set_mnd_regs_from_uartclk(struct uart_port *port)
-+{
-+	if (port->uartclk == 19200000)
-+		msm_serial_set_mnd_regs_tcxo(port);
-+	else
-+		msm_serial_set_mnd_regs_tcxoby4(port);
-+}
-+
-+/*
-+ * TROUT has a specific defect that makes it report it's uartclk
-+ * as 19.2Mhz (TCXO) when it's actually 4.8Mhz (TCXO/4). This special
-+ * cases TROUT to use the right clock.
-+ */
-+#ifdef CONFIG_MACH_TROUT
-+#define msm_serial_set_mnd_regs msm_serial_set_mnd_regs_tcxoby4
-+#else
-+#define msm_serial_set_mnd_regs msm_serial_set_mnd_regs_from_uartclk
-+#endif
-+
- #endif	/* __DRIVERS_SERIAL_MSM_SERIAL_H */
+> 
+> | arch/ia64/kernel/perfmon.c
+> 
+> Not sure what happened to this patch. The ioctl function here
+> is basically empty, but the patch you did was not merged.
 
+
+
+Same problem here: I need to built test it before pushing for good.
+
+
+
+> | drivers/media/video/v4l2-dev.c
+> 
+> At least two patches exist, a simple one from me and a
+> more complete one from Frederic. Both have been Ack-ed
+> by Hans Verkuil, so one of them should just go in.
+
+
+Yeah, I guess it's too late to integrate the big v4l pushdown
+for this merge window.
+I'll ping Mauro once -rc1 is released.
+
+
+
+> | fs/autofs/root.c
+> 
+> A discussion came up on the naming of the function after
+> the patch, and another discussion on when to finally
+> kill this driver.
+
+
+
+But I won't wait for the driver to be removed though, so I'll
+fix the naming issue and queue it soon.
+
+
+
+> | fs/logfs/file.c
+> | fs/logfs/dir.c
+> 
+> Joern said he had this in his tree, but it was not
+> part of the pull request.
+
+
+At least it's there: 
+http://git.kernel.org/?p=linux/kernel/git/joern/logfs.git;a=commit;h=ddbb5dd99c40a695d5d75645b5a18bef394acb16
+
+
+
+
+> 
+> | fs/ecryptfs/file.c
+> 
+> Tyler wanted to take care of this one, it conflicted with
+> a bug fix he did. The bug fix should go in anyway, so we should
+> just do it the right way (removing the .ioctl version from there)
+> 
+> | sound/oss/dmasound/dmasound_core.c
+> | sound/oss/msnd_pinnacle.c
+> | sound/oss/au1550_ac97.c
+> | sound/oss/sh_dac_audio.c
+> | sound/oss/swarm_cs4297a.c
+> | sound/oss/vwsnd.c
+> 
+> The patches for this exist but are untested apparently.
+> A discussion came up on whether we should just kill oss
+
+
+
+Yeah.
+
+
+
+> 
+> 	Arnd
+> 
+> ---
+> [PATCH] Kill ioctl file operation
+> 
+> All instances of the .ioctl() file operation are gone now, so we can
+> remove the pointer itself along with the code accessing it.
+> 
+> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+
+
+
+I keep this close for 2.6.36
+
+Thanks.
+
+
+
+
+> ---
+> 
+>  Documentation/filesystems/Locking |    8 +-------
+>  Documentation/filesystems/vfs.txt |    6 +-----
+>  fs/bad_inode.c                    |    7 -------
+>  fs/compat_ioctl.c                 |    3 +--
+>  fs/ioctl.c                        |   18 ++++--------------
+>  fs/proc/inode.c                   |   17 ++++-------------
+>  include/linux/fs.h                |    5 ++---
+>  7 files changed, 13 insertions(+), 51 deletions(-)
+> 
+> diff --git a/Documentation/filesystems/Locking b/Documentation/filesystems/Locking
+> index 61c98f0..ea8e1d2 100644
+> --- a/Documentation/filesystems/Locking
+> +++ b/Documentation/filesystems/Locking
+> @@ -372,8 +372,6 @@ prototypes:
+>  	ssize_t (*aio_write) (struct kiocb *, const struct iovec *, unsigned long, loff_t);
+>  	int (*readdir) (struct file *, void *, filldir_t);
+>  	unsigned int (*poll) (struct file *, struct poll_table_struct *);
+> -	int (*ioctl) (struct inode *, struct file *, unsigned int,
+> -			unsigned long);
+>  	long (*unlocked_ioctl) (struct file *, unsigned int, unsigned long);
+>  	long (*compat_ioctl) (struct file *, unsigned int, unsigned long);
+>  	int (*mmap) (struct file *, struct vm_area_struct *);
+> @@ -407,8 +405,7 @@ write:			no
+>  aio_write:		no
+>  readdir: 		no
+>  poll:			no
+> -ioctl:			yes	(see below)
+> -unlocked_ioctl:		no	(see below)
+> +unlocked_ioctl:		no
+>  compat_ioctl:		no
+>  mmap:			no
+>  open:			no
+> @@ -451,9 +448,6 @@ move ->readdir() to inode_operations and use a separate method for directory
+>  anything that resembles union-mount we won't have a struct file for all
+>  components. And there are other reasons why the current interface is a mess...
+>  
+> -->ioctl() on regular files is superceded by the ->unlocked_ioctl() that
+> -doesn't take the BKL.
+> -
+>  ->read on directories probably must go away - we should just enforce -EISDIR
+>  in sys_read() and friends.
+>  
+> diff --git a/Documentation/filesystems/vfs.txt b/Documentation/filesystems/vfs.txt
+> index b668585..caa7989 100644
+> --- a/Documentation/filesystems/vfs.txt
+> +++ b/Documentation/filesystems/vfs.txt
+> @@ -722,7 +722,6 @@ struct file_operations {
+>  	ssize_t (*aio_write) (struct kiocb *, const struct iovec *, unsigned long, loff_t);
+>  	int (*readdir) (struct file *, void *, filldir_t);
+>  	unsigned int (*poll) (struct file *, struct poll_table_struct *);
+> -	int (*ioctl) (struct inode *, struct file *, unsigned int, unsigned long);
+>  	long (*unlocked_ioctl) (struct file *, unsigned int, unsigned long);
+>  	long (*compat_ioctl) (struct file *, unsigned int, unsigned long);
+>  	int (*mmap) (struct file *, struct vm_area_struct *);
+> @@ -763,10 +762,7 @@ otherwise noted.
+>  	activity on this file and (optionally) go to sleep until there
+>  	is activity. Called by the select(2) and poll(2) system calls
+>  
+> -  ioctl: called by the ioctl(2) system call
+> -
+> -  unlocked_ioctl: called by the ioctl(2) system call. Filesystems that do not
+> -  	require the BKL should use this method instead of the ioctl() above.
+> +  unlocked_ioctl: called by the ioctl(2) system call.
+>  
+>    compat_ioctl: called by the ioctl(2) system call when 32 bit system calls
+>   	 are used on 64 bit kernels.
+> diff --git a/fs/bad_inode.c b/fs/bad_inode.c
+> index a05287a..7cb2730 100644
+> --- a/fs/bad_inode.c
+> +++ b/fs/bad_inode.c
+> @@ -55,12 +55,6 @@ static unsigned int bad_file_poll(struct file *filp, poll_table *wait)
+>  	return POLLERR;
+>  }
+>  
+> -static int bad_file_ioctl (struct inode *inode, struct file *filp,
+> -			unsigned int cmd, unsigned long arg)
+> -{
+> -	return -EIO;
+> -}
+> -
+>  static long bad_file_unlocked_ioctl(struct file *file, unsigned cmd,
+>  			unsigned long arg)
+>  {
+> @@ -160,7 +154,6 @@ static const struct file_operations bad_file_ops =
+>  	.aio_write	= bad_file_aio_write,
+>  	.readdir	= bad_file_readdir,
+>  	.poll		= bad_file_poll,
+> -	.ioctl		= bad_file_ioctl,
+>  	.unlocked_ioctl	= bad_file_unlocked_ioctl,
+>  	.compat_ioctl	= bad_file_compat_ioctl,
+>  	.mmap		= bad_file_mmap,
+> diff --git a/fs/compat_ioctl.c b/fs/compat_ioctl.c
+> index 641640d..edf72e3 100644
+> --- a/fs/compat_ioctl.c
+> +++ b/fs/compat_ioctl.c
+> @@ -1729,8 +1729,7 @@ asmlinkage long compat_sys_ioctl(unsigned int fd, unsigned int cmd,
+>  				goto out_fput;
+>  		}
+>  
+> -		if (!filp->f_op ||
+> -		    (!filp->f_op->ioctl && !filp->f_op->unlocked_ioctl))
+> +		if (!filp->f_op || !filp->f_op->unlocked_ioctl)
+>  			goto do_ioctl;
+>  		break;
+>  	}
+> diff --git a/fs/ioctl.c b/fs/ioctl.c
+> index 2d140a7..f855ea4 100644
+> --- a/fs/ioctl.c
+> +++ b/fs/ioctl.c
+> @@ -29,7 +29,6 @@
+>   * @arg:	command-specific argument for ioctl
+>   *
+>   * Invokes filesystem specific ->unlocked_ioctl, if one exists; otherwise
+> - * invokes filesystem specific ->ioctl method.  If neither method exists,
+>   * returns -ENOTTY.
+>   *
+>   * Returns 0 on success, -errno on error.
+> @@ -39,21 +38,12 @@ static long vfs_ioctl(struct file *filp, unsigned int cmd,
+>  {
+>  	int error = -ENOTTY;
+>  
+> -	if (!filp->f_op)
+> +	if (!filp->f_op || !filp->f_op->unlocked_ioctl)
+>  		goto out;
+>  
+> -	if (filp->f_op->unlocked_ioctl) {
+> -		error = filp->f_op->unlocked_ioctl(filp, cmd, arg);
+> -		if (error == -ENOIOCTLCMD)
+> -			error = -EINVAL;
+> -		goto out;
+> -	} else if (filp->f_op->ioctl) {
+> -		lock_kernel();
+> -		error = filp->f_op->ioctl(filp->f_path.dentry->d_inode,
+> -					  filp, cmd, arg);
+> -		unlock_kernel();
+> -	}
+> -
+> +	error = filp->f_op->unlocked_ioctl(filp, cmd, arg);
+> +	if (error == -ENOIOCTLCMD)
+> +		error = -EINVAL;
+>   out:
+>  	return error;
+>  }
+> diff --git a/fs/proc/inode.c b/fs/proc/inode.c
+> index aea8502..041517c 100644
+> --- a/fs/proc/inode.c
+> +++ b/fs/proc/inode.c
+> @@ -214,8 +214,7 @@ static long proc_reg_unlocked_ioctl(struct file *file, unsigned int cmd, unsigne
+>  {
+>  	struct proc_dir_entry *pde = PDE(file->f_path.dentry->d_inode);
+>  	long rv = -ENOTTY;
+> -	long (*unlocked_ioctl)(struct file *, unsigned int, unsigned long);
+> -	int (*ioctl)(struct inode *, struct file *, unsigned int, unsigned long);
+> +	long (*ioctl)(struct file *, unsigned int, unsigned long);
+>  
+>  	spin_lock(&pde->pde_unload_lock);
+>  	if (!pde->proc_fops) {
+> @@ -223,19 +222,11 @@ static long proc_reg_unlocked_ioctl(struct file *file, unsigned int cmd, unsigne
+>  		return rv;
+>  	}
+>  	pde->pde_users++;
+> -	unlocked_ioctl = pde->proc_fops->unlocked_ioctl;
+> -	ioctl = pde->proc_fops->ioctl;
+> +	ioctl = pde->proc_fops->unlocked_ioctl;
+>  	spin_unlock(&pde->pde_unload_lock);
+>  
+> -	if (unlocked_ioctl) {
+> -		rv = unlocked_ioctl(file, cmd, arg);
+> -		if (rv == -ENOIOCTLCMD)
+> -			rv = -EINVAL;
+> -	} else if (ioctl) {
+> -		WARN_ONCE(1, "Procfs ioctl handlers must use unlocked_ioctl, "
+> -			  "%pf will be called without the Bkl held\n", ioctl);
+> -		rv = ioctl(file->f_path.dentry->d_inode, file, cmd, arg);
+> -	}
+> +	if (ioctl)
+> +		rv = ioctl(file, cmd, arg);
+>  
+>  	pde_users_dec(pde);
+>  	return rv;
+> diff --git a/include/linux/fs.h b/include/linux/fs.h
+> index 85e823a..a92f91c 100644
+> --- a/include/linux/fs.h
+> +++ b/include/linux/fs.h
+> @@ -1478,8 +1478,8 @@ struct block_device_operations;
+>  
+>  /*
+>   * NOTE:
+> - * read, write, poll, fsync, readv, writev, unlocked_ioctl and compat_ioctl
+> - * can be called without the big kernel lock held in all filesystems.
+> + * all file operations except setlease can be called without
+> + * the big kernel lock held in all filesystems.
+>   */
+>  struct file_operations {
+>  	struct module *owner;
+> @@ -1490,7 +1490,6 @@ struct file_operations {
+>  	ssize_t (*aio_write) (struct kiocb *, const struct iovec *, unsigned long, loff_t);
+>  	int (*readdir) (struct file *, void *, filldir_t);
+>  	unsigned int (*poll) (struct file *, struct poll_table_struct *);
+> -	int (*ioctl) (struct inode *, struct file *, unsigned int, unsigned long);
+>  	long (*unlocked_ioctl) (struct file *, unsigned int, unsigned long);
+>  	long (*compat_ioctl) (struct file *, unsigned int, unsigned long);
+>  	int (*mmap) (struct file *, struct vm_area_struct *);
 
