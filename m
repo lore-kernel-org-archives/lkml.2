@@ -1,135 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932220Ab0E0O7S (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 May 2010 10:59:18 -0400
-Received: from smtp.eu.citrix.com ([62.200.22.115]:43092 "EHLO
-	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757894Ab0E0O7O (ORCPT
+	id S1757950Ab0E0PCo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 May 2010 11:02:44 -0400
+Received: from buzzloop.caiaq.de ([212.112.241.133]:35710 "EHLO
+	buzzloop.caiaq.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756126Ab0E0PCn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 May 2010 10:59:14 -0400
-X-Greylist: delayed 578 seconds by postgrey-1.27 at vger.kernel.org; Thu, 27 May 2010 10:59:13 EDT
-X-IronPort-AV: E=Sophos;i="4.53,311,1272844800"; 
-   d="scan'208";a="123088"
+	Thu, 27 May 2010 11:02:43 -0400
+Date: Thu, 27 May 2010 17:02:38 +0200
+From: Daniel Mack <daniel@caiaq.de>
+To: Dinh.Nguyen@freescale.com
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+       s.hauer@pengutronix.de, valentin.longchamp@epfl.ch,
+       grant.likely@secretlab.ca, xiao-lizhang@freescale.com
+Subject: Re: [PATCHv2 2.6.34 1/2] mx5: Add i2c to Freescale MX51 Babbage HW
+Message-ID: <20100527150238.GH2695@buzzloop.caiaq.de>
+References: <1274972269-6946-1-git-send-email-Dinh.Nguyen@freescale.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-Message-ID: <19454.34430.471499.222290@mariner.uk.xensource.com>
-Date: Thu, 27 May 2010 15:49:34 +0100
-To: Jeremy Fitzhardinge <jeremy@goop.org>
-CC: Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-       "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-       Don Dutile <ddutile@redhat.com>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [Xen-devel] Re: [PATCH 11/11] Unplug emulated disks and nics
-Newsgroups: chiark.mail.xen.devel
-In-Reply-To: <m2n.s.1OHcBK-0018DA@chiark.greenend.org.uk>
-References: <alpine.DEB.2.00.1005241615300.25605@kaball-desktop>
-	<1274725657-1149-11-git-send-email-stefano.stabellini@eu.citrix.com>
-	<4BFC3390.4060503@goop.org>
-	<alpine.DEB.2.00.1005261325110.25605@kaball-desktop>
-	<4BFD8BB0.90301@goop.org>
-	<m2n.s.1OHcBK-0018DA@chiark.greenend.org.uk>
-X-Mailer: VM 8.0.9 under Emacs 21.4.1 (i486-pc-linux-gnu)
-From: Ian Jackson <Ian.Jackson@eu.citrix.com>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1274972269-6946-1-git-send-email-Dinh.Nguyen@freescale.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Stefano Stabellini writes ("[Xen-devel] Re: [PATCH 11/11] Unplug emulated disks and nics"):
-> On Wed, 26 May 2010, Jeremy Fitzhardinge wrote:
-> > Wow, this interface is perverse.  It reuses the same IO port but changes
-> > function depending on the size of the IO?  Again, wow.
->  
-> Yeah, before you ask, I didn't write it :)
+On Thu, May 27, 2010 at 09:57:48AM -0500, Dinh.Nguyen@freescale.com wrote:
+> This patch adds I2C functionality to the Freescale MX51 Babbage HW.
+> The patch adds device structures, i2c board slave device defines,
+> IOMUX pin defines, and clocks.
+> 
+> Signed-off-by: Dinh Nguyen <Dinh.Nguyen@freescale.com>
+> ---
+>  arch/arm/mach-mx5/clock-mx51.c              |   11 +++++
+>  arch/arm/mach-mx5/devices.c                 |   58 +++++++++++++++++++++++++++
+>  arch/arm/mach-mx5/devices.h                 |    3 +
+>  arch/arm/plat-mxc/include/mach/iomux-mx51.h |   18 ++++++---
+>  4 files changed, 84 insertions(+), 6 deletions(-)
+> 
 
-Yes, neither did I :-).  However, I did document it and now I also
-maintain the "product number" registry.  Did you find the interface
-spec ?  Enclosed below in case not.
+[...]
 
-I hereby allocate you ("pvops PV-on-HVM Linux, upstream") product
-number 3.  Does the kernel have a way to distinguish between upstream
-and other versions ?  Eg, there's the kernel version name suffix
-thingy if I remember rightly.  Perhaps we should allocate a different
-number for "some pvops pv-on-hvm Linux with a nonempty kernel version
-name suffix".  Please advise.
+>  static struct resource usbotg_resources[] = {
+> diff --git a/arch/arm/mach-mx5/devices.h b/arch/arm/mach-mx5/devices.h
+> index 0494d6b..d0451bf 100644
+> --- a/arch/arm/mach-mx5/devices.h
+> +++ b/arch/arm/mach-mx5/devices.h
+> @@ -5,3 +5,6 @@ extern struct platform_device mxc_fec_device;
+>  extern struct platform_device mxc_usbdr_host_device;
+>  extern struct platform_device mxc_usbh1_device;
+>  extern struct platform_device mxc_usbdr_udc_device;
+> +extern struct platform_device mxc_i2c_device0;
+> +extern struct platform_device mxc_i2c_device1;
+> +extern struct platform_device mxc_hsi2c_device;
+> diff --git a/arch/arm/plat-mxc/include/mach/iomux-mx51.h b/arch/arm/plat-mxc/include/mach/iomux-mx51.h
+> index ab0f95d..6ea6861 100644
+> --- a/arch/arm/plat-mxc/include/mach/iomux-mx51.h
+> +++ b/arch/arm/plat-mxc/include/mach/iomux-mx51.h
+> @@ -38,6 +38,8 @@ typedef enum iomux_config {
+>  				PAD_CTL_SRE_FAST)
+>  #define MX51_UART3_PAD_CTRL	(PAD_CTL_PKE | PAD_CTL_DSE_HIGH | \
+>  				PAD_CTL_SRE_FAST)
+> +#define MX51_I2C_PAD_CTRL		(PAD_CTL_SRE_FAST | PAD_CTL_ODE | \
+> ++				PAD_CTL_DSE_HIGH | PAD_CTL_PUS_100K_UP | PAD_CTL_HYS)
+   ^
+I believe something went wrong here.
 
-You are welcome to use whatever you like for the "build number".
-Perhaps the best thing would a two-byte encoding of the kernel version
-number if that is possible.  As the purpose is logging and
-blacklisting, it's not that critical although it's better to reuse the
-same number for excessively similar builds than to use a random scheme
-which might generate accidental clashes between unrelated versions.
+Daniel
 
-Ian.
-
-
-MAGIC IOPORT 0x10 PROTOCOL
-
-The protocol covers three basic things:
-
--- Disconnecting emulated devices.
--- Getting log messages out of the drivers and into dom0.
--- Allowing dom0 to block the loading of specific drivers.  This is
-   intended as a backwards-compatibility thing: if we discover a bug
-   in some old version of the drivers, then rather than working around
-   it in Xen, we have the option of just making those drivers fall
-   back to emulated mode.
-
-The current protocol works like this (from the point of view of
-drivers):
-
-1) When the drivers first come up, they check whether the unplug logic
-   is available by reading a two-byte magic number from IO port 0x10.
-   These should be 0x49d2.  If the magic number doesn't match, the
-   drivers don't do anything.
-
-2) The drivers read a one-byte protocol version from IO port 0x12.  If
-   this is 0, skip to 6.
-
-3) The drivers write a two-byte product number to IO port 0x12.  At
-   the moment, the only drivers using this protocol are our
-   closed-source ones, which use product number 1.
-
-4) The drivers write a four-byte build number to IO port 0x10.
-
-5) The drivers check the magic number by reading two bytes from 0x10
-   again.  If it's changed from 0x49d2 to 0xd249, the drivers are
-   blacklisted and should not load.
-
-6) The drivers write a two-byte bitmask of devices to unplug to IO
-   port 0x10.  The defined fields are:
-
-   1 -- All IDE disks (not including CD drives)
-   2 -- All emulated NICs
-   4 -- All IDE disks except for the primary master (not including CD
-	drives)
-
-   The relevant emulated devices then disappear from the relevant
-   buses.  For most guest operating systems, you want to do this
-   before device enumeration happens.
-
-...) Once the drivers have checked the magic number, they can send log
-     messages to qemu which will be logged to wherever qemu's logs go
-     (/var/log/xen/qemu-dm.log on normal Xen, dom0 syslog on
-     XenServer).  These messages are written to IO port 0x12 a byte at
-     a time, and are terminated by newlines.  There's a fairly
-     aggressive rate limiter on these messages, so they shouldn't be
-     used for anything even vaguely high-volume, but they're rather
-     useful for debugging and support.
-
-     It is still permitted for a driver to use this logging feature if
-     it is blacklisted, but ONLY if it has checked the magic number
-     and found it to be 0x49d2 or 0xd249.
-
-This isn't exactly a pretty protocol, but it does solve the problem.
-
-
-The blacklist is, from qemu's point of view, handled mostly through
-xenstore.  A driver version is considered to be blacklisted if
-/mh/driver-blacklist/{product_name}/{build_number} exists and is
-readable, where {build_number} is the build number from step 4 as a
-decimal number.  {product_name} is a string corresponding to the
-product number in step 3.
-
-The master registry of product names and numbers is in
-qemu-xen-unstable's xenstore.c.
