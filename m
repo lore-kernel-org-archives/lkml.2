@@ -1,64 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756300Ab0E0BEI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 May 2010 21:04:08 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:41884 "EHLO smtps.tip.net.au"
+	id S1756696Ab0E0BJy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 May 2010 21:09:54 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:2480 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754894Ab0E0BEF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 May 2010 21:04:05 -0400
-Date: Thu, 27 May 2010 11:03:57 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Randy Dunlap <randy.dunlap@oracle.com>
-Cc: Michal Marek <mmarek@suse.cz>, linux-next@vger.kernel.org,
-       linux-kernel@vger.kernel.org, matt mooney <mfm@muteddisk.com>,
-       Kirill Smelkov <kirr@mns.spb.ru>
-Subject: Re: linux-next: manual merge of the kbuild tree with the kernel-doc
- tree
-Message-Id: <20100527110357.f295d4ef.sfr@canb.auug.org.au>
-In-Reply-To: <4BFDB60B.50106@oracle.com>
-References: <20100526115346.da5a02aa.sfr@canb.auug.org.au>
-	<4BFD42A6.6060206@oracle.com>
-	<20100527025020.da0c1bb7.sfr@canb.auug.org.au>
-	<20100526095606.beed820e.randy.dunlap@oracle.com>
-	<20100527090923.c17a7ed4.sfr@canb.auug.org.au>
-	<4BFDB60B.50106@oracle.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Thu__27_May_2010_11_03_57_+1000_eGPyQp5XMuzAw6nt"
+	id S1755044Ab0E0BJx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 May 2010 21:09:53 -0400
+Message-ID: <4BFDC657.4040902@redhat.com>
+Date: Wed, 26 May 2010 15:09:43 -1000
+From: Zachary Amsden <zamsden@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-3.fc13 Thunderbird/3.0.4
+MIME-Version: 1.0
+To: linux-kernel@vger.kernel.org, kvm <kvm@vger.kernel.org>,
+       Avi Kivity <avi@redhat.com>, Joerg Roedel <joerg.roedel@amd.com>,
+       Sheng Yang <sheng@linux.intel.com>
+Subject: [PATCH] Fix SVM longmode guests
+Content-Type: multipart/mixed;
+ boundary="------------080309090600080008060508"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__27_May_2010_11_03_57_+1000_eGPyQp5XMuzAw6nt
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+This is a multi-part message in MIME format.
+--------------080309090600080008060508
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 
-Hi Randy,
+In recent testing, I discovered guests failed to boot on my AMD box.  
+Bisecting revealed an EFER related change caused the problem; here is 
+the fix.
 
-On Wed, 26 May 2010 17:00:11 -0700 Randy Dunlap <randy.dunlap@oracle.com> w=
-rote:
->
-> uh oh.  OK, thanks, I'll restore them.
-
-Thanks.  I picked them up.
-
---=20
 Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
 
---Signature=_Thu__27_May_2010_11_03_57_+1000_eGPyQp5XMuzAw6nt
-Content-Type: application/pgp-signature
+Zach
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
+--------------080309090600080008060508
+Content-Type: text/plain;
+ name="svm-lm-efer-fix.patch"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: attachment;
+ filename="svm-lm-efer-fix.patch"
 
-iEYEARECAAYFAkv9xP0ACgkQjjKRsyhoI8xqqwCgumCxh31aFE8nB7v8HsDRXwRh
-nZIAoIU4G9irwjLDch5PxQRW09tJl6gW
-=xN8P
------END PGP SIGNATURE-----
+Fix 64-bit guests on SVM.
 
---Signature=_Thu__27_May_2010_11_03_57_+1000_eGPyQp5XMuzAw6nt--
+Must set VCPU register to be the guest notion of EFER even if that
+setting is not valid on hardware.  This was masked by the set in
+set_efer until 7657fd5ace88e8092f5f3a84117e093d7b893f26 broke that.
+Fix is simply to set the VCPU register before stripping bits.
+
+Signed-off-by: Zachary Amsden <zamsden@redhat.com>
+
+diff --git a/arch/x86/kvm/svm.c b/arch/x86/kvm/svm.c
+index 100bd4b..a05b63f 100644
+--- a/arch/x86/kvm/svm.c
++++ b/arch/x86/kvm/svm.c
+@@ -285,11 +285,11 @@ static inline void flush_guest_tlb(struct kvm_vcpu *vcpu)
+ 
+ static void svm_set_efer(struct kvm_vcpu *vcpu, u64 efer)
+ {
++	vcpu->arch.efer = efer;
+ 	if (!npt_enabled && !(efer & EFER_LMA))
+ 		efer &= ~EFER_LME;
+ 
+ 	to_svm(vcpu)->vmcb->save.efer = efer | EFER_SVME;
+-	vcpu->arch.efer = efer;
+ }
+ 
+ static int is_external_interrupt(u32 info)
+
+--------------080309090600080008060508--
