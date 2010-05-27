@@ -1,53 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754805Ab0E0OJL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 May 2010 10:09:11 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:37406 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752666Ab0E0OJI (ORCPT
+	id S1755065Ab0E0OKP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 May 2010 10:10:15 -0400
+Received: from casper.infradead.org ([85.118.1.10]:41038 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751949Ab0E0OKN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 May 2010 10:09:08 -0400
-Date: Thu, 27 May 2010 10:09:06 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: =?ISO-8859-1?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>
-cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
-       Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-       Linux-pm mailing list <linux-pm@lists.linux-foundation.org>,
-       Kernel development list <linux-kernel@vger.kernel.org>,
-       Len Brown <len.brown@intel.com>, Pavel Machek <pavel@ucw.cz>,
-       Randy Dunlap <rdunlap@xenotime.net>,
+	Thu, 27 May 2010 10:10:13 -0400
+Date: Thu, 27 May 2010 07:12:05 -0700
+From: Arjan van de Ven <arjan@infradead.org>
+To: Michel Lespinasse <walken@google.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+       David Howells <dhowells@redhat.com>, Ingo Molnar <mingo@elte.hu>,
+       Thomas Gleixner <tglx@linutronix.de>,
+       LKML <linux-kernel@vger.kernel.org>,
        Andrew Morton <akpm@linux-foundation.org>,
-       Andi Kleen <ak@linux.intel.com>,
-       Cornelia Huck <cornelia.huck@de.ibm.com>, Tejun Heo <tj@kernel.org>,
-       Jesse Barnes <jbarnes@virtuousgeek.org>,
-       Nigel Cunningham <nigel@tuxonice.net>, Ming Lei <tom.leiming@gmail.com>,
-       Wu Fengguang <fengguang.wu@intel.com>,
-       Maxim Levitsky <maximlevitsky@gmail.com>, <linux-doc@vger.kernel.org>
-Subject: Re: [PATCH 1/8] PM: Opportunistic suspend support.
-In-Reply-To: <AANLkTingAiO8dkwnInc993PTyA63rV-WRvBIRlB2ChXs@mail.gmail.com>
-Message-ID: <Pine.LNX.4.44L0.1005271008230.3239-100000@iolanthe.rowland.org>
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+       Mike Waychison <mikew@google.com>,
+       Suleiman Souhlal <suleiman@google.com>, Ying Han <yinghan@google.com>
+Subject: Re: [PATCH 11/11] Use down_read_critical() for /proc/<pid>/exe and
+ /proc/<pid>/maps files
+Message-ID: <20100527071205.7095a541@infradead.org>
+In-Reply-To: <1274733081-4623-12-git-send-email-walken@google.com>
+References: <1274733081-4623-1-git-send-email-walken@google.com>
+	<1274733081-4623-12-git-send-email-walken@google.com>
+Organization: Intel
+X-Mailer: Claws Mail 3.7.5 (GTK+ 2.16.6; i586-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-SRS-Rewrite: SMTP reverse-path rewritten from <arjan@infradead.org> by casper.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 26 May 2010, Arve Hjønnevåg wrote:
+On Mon, 24 May 2010 13:31:21 -0700
+Michel Lespinasse <walken@google.com> wrote:
 
-> >> > And even if it isn't, so what?  What's wrong with looping behavior?
-> >>
-> >> It is a significant power drain.
-> >
-> > Not in the situation I was discussing.
-> >
+> This helps in the following situation:
+> - Thread A takes a page fault while reading or writing memory.
+>   do_page_fault() acquires the mmap_sem for read and blocks on disk
+>   (either reading the page from file, or hitting swap) for a long
+> time.
+> - Thread B does an mmap call and blocks trying to acquire the mmap_sem
+>   for write
+> - Thread C is a monitoring process trying to read every /proc/pid/maps
+>   in the system. This requires acquiring the mmap_sem for read.
+> Thread C blocks behind B, waiting for A to release the rwsem.  If
+> thread C could be allowed to run in parallel with A, it would
+> probably get done long before thread A's disk access completes, thus
+> not actually slowing down thread B.
 > 
-> If you meant it spend most of the time suspended, then I agree. It
-> only wastes power when a driver blocks suspend by returning an error
-> from its suspend hook and we are forced to loop doing no useful work.
+> Test results with down_read_critical_test (10 seconds):
 
-Exactly the same as the in-kernel opportunistic suspend implementation.
 
-Alan Stern
+this is a really bad idea btw
 
+we've had many issues in the past, when this was an unfair lock, that
+"top" or other similar things, caused basically a DoS......
+now any process that can get to /proc/<pid>/exe or maps, can do this in
+a tight enough loop so that the actual process will never get the lock
+for write. BAD IDEA ;-)
+
+
+-- 
+Arjan van de Ven 	Intel Open Source Technology Centre
+For development, discussion and tips for power savings, 
+visit http://www.lesswatts.org
