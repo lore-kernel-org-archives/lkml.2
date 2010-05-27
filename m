@@ -1,75 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754209Ab0E0WtO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 May 2010 18:49:14 -0400
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:48673 "EHLO
-	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750827Ab0E0WtN (ORCPT
+	id S1755161Ab0E0Wy3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 May 2010 18:54:29 -0400
+Received: from bld-mail14.adl6.internode.on.net ([150.101.137.99]:55637 "EHLO
+	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752579Ab0E0Wy1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 May 2010 18:49:13 -0400
-Date: Thu, 27 May 2010 23:55:46 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Matthew Garrett <mjg59@srcf.ucam.org>
-Cc: Alan Stern <stern@rowland.harvard.edu>,
-       Thomas Gleixner <tglx@linutronix.de>,
-       Peter Zijlstra <peterz@infradead.org>,
-       LKML <linux-kernel@vger.kernel.org>,
-       Florian Mickler <florian@mickler.org>, felipe.balbi@nokia.com,
-       Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
-       Linux PM <linux-pm@lists.linux-foundation.org>
-Subject: Re: [linux-pm] [PATCH 0/8] Suspend block api (version 8)
-Message-ID: <20100527235546.09f3ce8a@lxorguk.ukuu.org.uk>
-In-Reply-To: <20100527223605.GB11364@srcf.ucam.org>
-References: <20100527222514.0a1710bf@lxorguk.ukuu.org.uk>
-	<Pine.LNX.4.44L0.1005271730180.3239-100000@iolanthe.rowland.org>
-	<20100527230806.4deb6de3@lxorguk.ukuu.org.uk>
-	<20100527220949.GB10602@srcf.ucam.org>
-	<20100527232357.6d14fdb2@lxorguk.ukuu.org.uk>
-	<20100527223605.GB11364@srcf.ucam.org>
-X-Mailer: Claws Mail 3.7.5 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 27 May 2010 18:54:27 -0400
+Date: Fri, 28 May 2010 08:54:18 +1000
+From: Dave Chinner <david@fromorbit.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+       linux-mm@kvack.org, xfs@oss.sgi.com
+Subject: Re: [PATCH 1/5] inode: Make unused inode LRU per superblock
+Message-ID: <20100527225418.GP12087@dastard>
+References: <1274777588-21494-1-git-send-email-david@fromorbit.com>
+ <1274777588-21494-2-git-send-email-david@fromorbit.com>
+ <20100527133230.780be6c7.akpm@linux-foundation.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100527133230.780be6c7.akpm@linux-foundation.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 27 May 2010 23:36:05 +0100
-Matthew Garrett <mjg59@srcf.ucam.org> wrote:
-
-> On Thu, May 27, 2010 at 11:23:57PM +0100, Alan Cox wrote:
-> > On Thu, 27 May 2010 23:09:49 +0100
-> > Matthew Garrett <mjg59@srcf.ucam.org> wrote:
-> > 
-> > > On Thu, May 27, 2010 at 11:08:06PM +0100, Alan Cox wrote:
-> > > 
-> > > > This is I believe robust (and has been implemented on some non x86
-> > > > boxes). It depends on not forcing running tasks into suspend. That is the
-> > > > key.
-> > > 
-> > > We've already established that ACPI systems require us to force running 
-> > > tasks into suspend. How do we avoid the race in that situation?
-> > 
-> > Android phones do not have ACPI. Embedded platforms do not have ACPI. MID
-> > x86 devices do not have ACPI.
+On Thu, May 27, 2010 at 01:32:30PM -0700, Andrew Morton wrote:
+> On Tue, 25 May 2010 18:53:04 +1000
+> Dave Chinner <david@fromorbit.com> wrote:
 > 
-> It doesn't matter. Right now there's a race condition in terms of 
-> wakeup events on ACPI systems. What's your proposal for fixing that?
+> > From: Dave Chinner <dchinner@redhat.com>
+> > 
+> > The inode unused list is currently a global LRU. This does not match
+> > the other global filesystem cache - the dentry cache - which uses
+> > per-superblock LRU lists. Hence we have related filesystem object
+> > types using different LRU reclaimatin schemes.
+> > 
+> > To enable a per-superblock filesystem cache shrinker, both of these
+> > caches need to have per-sb unused object LRU lists. Hence this patch
+> > converts the global inode LRU to per-sb LRUs.
+> > 
+> > The patch only does rudimentary per-sb propotioning in the shrinker
+> > infrastructure, as this gets removed when the per-sb shrinker
+> > callouts are introduced later on.
+> > 
+> > ...
+> >
+> > +			list_move(&inode->i_list, &inode->i_sb->s_inode_lru);
+> 
+> It's a shape that s_inode_lru is still protected by inode_lock.  One
+> day we're going to get in trouble over that lock.  Migrating to a
+> per-sb lock would be logical and might help.
+> 
+> Did you look into this? 
 
-I see it as a different problem  - and one that seems to be minimally
-pressing to most users jduging by the amount of noise it hasn't caused in
-the past seven odd years.
+Yes, I have. Yes, it's possible.  It's solving a different problem,
+so I figured it can be done in a different patch set.
 
-This started because the Android people came to a meeting that was put
-together of various folks to try and sort of the big blockage in getting
-Android and Linux kernels back towards merging.
+> I expect we'd end up taking both inode_lock
+> and the new sb->lru_lock in several places, which wouldn't be of any
+> help, at least in the interim.  Long-term, the locking for
+> fs-writeback.c should move to the per-superblock one also, at which
+> time this problem largely goes away I think.  Unfortunately the
+> writeback inode lists got moved into the backing_dev_info, whcih messes
+> things up a bit.
 
-I am interested right now in finding a general solution to the Android
-case and the fact it looks very similar to the VM, hard RT, gamer and
-other related problems although we seem to have diverged from that logic.
+*nod*
 
-I dont think it particularly useful to go off on a mostly unrelated wild
-goose chase into ACPI land, especially one based on a premise of changing
-all the apps when the hardware will end up fixed faster.
+> 
+> >  	inodes_stat.nr_unused--;
+> > +	inode->i_sb->s_nr_inodes_unused--;
+> 
+> It's regrettable to be counting the same thing twice.  Did you look
+> into removing (or no longer using) inodes_stat.nr_unused?
 
-Alan
+Sort of. The complexity is the stats are userspace visible, so they
+can't just be removed. Replacing the current stats means that when
+they are read from /proc we would need to walk all the superblocks
+to aggregate them. The bit I haven't looked at yet is whether
+walking superblocks is allowed in a proc handler.
+
+So in the mean time, I just copied what was done for the
+dentry_stats. If it's ok to do this walk, then we can change both
+the dentry and inode stats at the same time.
+
+> > +		/* Now, we reclaim unused dentrins with fairness.
+> 
+> May as well fix the typo while we're there.
+> 
+> Please review all these comments to ensure that they are still accurate
+> and complete.
+
+Will do.
+
+Cheers,
+
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
