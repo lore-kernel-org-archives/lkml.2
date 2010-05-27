@@ -1,46 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932683Ab0E0Rck (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 May 2010 13:32:40 -0400
-Received: from cavan.codon.org.uk ([93.93.128.6]:36836 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932254Ab0E0Rch (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 May 2010 13:32:37 -0400
-Date: Thu, 27 May 2010 18:32:18 +0100
-From: Matthew Garrett <mjg59@srcf.ucam.org>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
-       Arve =?iso-8859-1?B?SGr4bm5lduVn?= <arve@android.com>,
-       Florian Mickler <florian@mickler.org>,
-       Vitaly Wool <vitalywool@gmail.com>, LKML <linux-kernel@vger.kernel.org>,
-       Paul@smtp1.linux-foundation.org, felipe.balbi@nokia.com,
-       Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
-       Linux PM <linux-pm@lists.linux-foundation.org>
-Subject: Re: [linux-pm] [PATCH 0/8] Suspend block api (version 8)
-Message-ID: <20100527173218.GF2468@srcf.ucam.org>
-References: <20100527155201.GA31937@srcf.ucam.org> <20100527171615.15a1fd3d@lxorguk.ukuu.org.uk> <20100527161943.GA32764@srcf.ucam.org> <alpine.LFD.2.00.1005271901020.3032@localhost.localdomain> <20100527170740.GA1980@srcf.ucam.org> <1274980391.27810.5552.camel@twins> <20100527171644.GA2468@srcf.ucam.org> <1274980856.27810.5582.camel@twins> <20100527172510.GC2468@srcf.ucam.org> <1274981288.27810.5609.camel@twins>
+	id S932749Ab0E0Rc6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 May 2010 13:32:58 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:30831 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932648Ab0E0Rcx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 May 2010 13:32:53 -0400
+Date: Thu, 27 May 2010 19:30:29 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Sridhar Samudrala <sri@us.ibm.com>
+Cc: "Michael S. Tsirkin" <mst@redhat.com>, netdev <netdev@vger.kernel.org>,
+       lkml <linux-kernel@vger.kernel.org>,
+       "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Dmitri Vorobiev <dmitri.vorobiev@movial.com>, Tejun Heo <tj@kernel.org>,
+       Jiri Kosina <jkosina@suse.cz>, Thomas Gleixner <tglx@linutronix.de>,
+       Ingo Molnar <mingo@elte.hu>, Andi Kleen <ak@linux.intel.com>
+Subject: Re: [PATCH 2/3] workqueue: Add an API to create a singlethread
+	workqueue attached to the current task's cgroup
+Message-ID: <20100527173029.GB18284@redhat.com>
+References: <1274227491.2370.110.camel@w-sridhar.beaverton.ibm.com> <20100527091426.GA6308@redhat.com> <20100527124448.GA4241@redhat.com> <1274977458.10161.11.camel@w-sridhar.beaverton.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1274981288.27810.5609.camel@twins>
+In-Reply-To: <1274977458.10161.11.camel@w-sridhar.beaverton.ibm.com>
 User-Agent: Mutt/1.5.18 (2008-05-17)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 27, 2010 at 07:28:08PM +0200, Peter Zijlstra wrote:
-> On Thu, 2010-05-27 at 18:25 +0100, Matthew Garrett wrote:
-> > How (and why) does the WoL (which may be *any* packet, not just a magic 
-> > one) turn the screen back on?
-> 
-> Why would you care about the screen for a network event?
+What I am actually worried about is Tejun's rework, I am not sure
+cmwq has the "this thread services that wq" property...
 
-Because the application that needs to handle the network packet is 
-currently blocked trying to draw something to the screen.
+On 05/27, Sridhar Samudrala wrote:
+>
+> On Thu, 2010-05-27 at 14:44 +0200, Oleg Nesterov wrote:
+> >
+> > Instead, cgroup.c (or whoever needs this) can do
+> >
+> > 	struct move_struct {
+> > 		struct work_struct work;
+> > 		int ret;
+> > 	};
+> >
+> > 	static void move_func(struct work_struct *work)
+> > 	{
+> > 		struct move_struct *move = container_of(...);
+> >
+> > 		if (cgroup_attach_task_current_cg(current))
+>
+> We are trying to attach the task associated with workqueue to the
+> current task's cgroup. So what we need is
+>    cgroup_attach_task_current_cg(wq->task);
 
--- 
-Matthew Garrett | mjg59@srcf.ucam.org
+I do not see cgroup_attach_task_current_cg() in Linus's tree and thus I do
+not now what exactly it does, and of course the code above is only template.
+
+But I think this is easy. Just add "struct cgroup *cgrp" into move_struct
+and then move_func() can do cgroup_attach_task(move->cgrp, current) ?
+
+> > Or. Just export wq_per_cpu() from workqueue.c (probably with a better name) and
+> > use it like the patch does.
+> This requires that struct cpu_workqueue_struct and struct
+> workqueue_struct are made externally visible by moving them to
+> kernel/workqueue.h.
+
+no, no,
+
+> Instead what about adding the simple helper get_singlethread_wq_task()
+> in workqueue.c and exporting it.
+
+Indeed, this is what I meant.
+
+But. I disagree with get_singlethread_wq_task(). If we add this helper,
+it should work with the multi-threaded wq's too, and needs the "int cpu"
+parameter, ignored when is_wq_single_threaded().
+
+So. Either rename wq_per_cpu() and export it (once again, I do not
+mean we should move the body to workqueue.h!), or create the new
+helper which just calls wq_per_cpu().
+
+> I can add create_singlethread_workqueue_in_current_cg() to cgroup.c
+> using this helper routine.
+
+Imho, this is better.
+
+But please note that it is possible to do without any changes in
+workqueue.[ch] afaics, see above.
+
+Oleg.
+
