@@ -1,37 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933110Ab0E0JJF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 May 2010 05:09:05 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:35310 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932400Ab0E0JJD (ORCPT
+	id S933153Ab0E0JNH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 May 2010 05:13:07 -0400
+Received: from mail.windriver.com ([147.11.1.11]:36439 "EHLO
+	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757778Ab0E0JNF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 May 2010 05:09:03 -0400
-Date: Thu, 27 May 2010 10:08:59 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Nick Piggin <npiggin@suse.de>
-Cc: Artem Bityutskiy <dedekind1@gmail.com>,
-       LKML <linux-kernel@vger.kernel.org>, Jens Axboe <jens.axboe@oracle.com>,
-       linux-fsdevel@vger.kernel.org
-Subject: Re: [PATCHv4 17/17] writeback: lessen sync_supers wakeup count
-Message-ID: <20100527090859.GB31073@ZenIV.linux.org.uk>
-References: <1274795352-3551-1-git-send-email-dedekind1@gmail.com>
- <1274795352-3551-18-git-send-email-dedekind1@gmail.com>
- <20100527065041.GA31073@ZenIV.linux.org.uk>
- <20100527072240.GM22536@laptop>
+	Thu, 27 May 2010 05:13:05 -0400
+Date: Thu, 27 May 2010 17:11:26 +0800
+From: Yong Zhang <yong.zhang@windriver.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>, monstr@monstr.eu,
+       linux-kernel@vger.kernel.org, michal.simek@petalogix.com, arnd@arndb.de,
+       john.williams@petalogix.com, tglx@linutronix.de, peter.fritzsche@gmx.de,
+       anton@samba.org, mingo@elte.hu,
+       Frederic Weisbecker <fweisbec@gmail.com>
+Subject: Re: [PATCH] asm-generic: Use raw_local_irq_save/restore instead
+ local_irq_save/restore
+Message-ID: <20100527091126.GB14906@windriver.com>
+Reply-To: Yong Zhang <yong.zhang@windriver.com>
+References: <1274863724-14906-1-git-send-email-monstr@monstr.eu>
+ <1274863724-14906-2-git-send-email-monstr@monstr.eu>
+ <1274884963.22648.245.camel@gandalf.stny.rr.com>
+ <20100526100805.171b3c48.akpm@linux-foundation.org>
+ <1274893911.22648.246.camel@gandalf.stny.rr.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20100527072240.GM22536@laptop>
-User-Agent: Mutt/1.5.20 (2009-08-17)
+In-Reply-To: <1274893911.22648.246.camel@gandalf.stny.rr.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-OriginalArrivalTime: 27 May 2010 09:11:29.0404 (UTC) FILETIME=[978FDBC0:01CAFD7C]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 27, 2010 at 05:22:40PM +1000, Nick Piggin wrote:
-> Yeah, we definitely don't want to add global cacheline writes in the
-> common case. Also I don't know why you do the strange -1 value. I
-> couldn't seem to find where you defined bdi_arm_supers_timer();
+On Wed, May 26, 2010 at 01:11:51PM -0400, Steven Rostedt wrote:
+> On Wed, 2010-05-26 at 10:08 -0700, Andrew Morton wrote:
+> 
+> > 
+> > If a developer looks at atomic_add_return() and asks himself "why did
+> > this use raw_local_irq_save()", the only way of answering that question
+> > is to go groveling through the git logs, which is a right PITA if
+> > you're trying to get some coding work done.
+> > 
+> > Guys, any time you add code which is non-obvious at the raw C level, it
+> > *needs* a comment!
+> 
+> Totally agree!  I've gotten pretty good at adding comments to changes
+> like this that I do. I need to get better at telling others to comment
+> their work ;-)
 
-bdi_arm_supers_timer() is in the mainline; basically, it's "schedule
-timer that'll wake sync_supers_tsk in $INTERVAL from now".
+Cc'ed Frederic Weisbecker
+
+Seems like this issue has been raised before:
+http://marc.info/?l=linux-kernel&m=126292794806169&w=2
+
+I'm afraid this patch will trigger lockdep warning if atomic_inc()
+is used in some locks.
