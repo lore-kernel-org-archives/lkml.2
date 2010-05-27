@@ -1,76 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759302Ab0E0UNP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 May 2010 16:13:15 -0400
-Received: from hera.kernel.org ([140.211.167.34]:48199 "EHLO hera.kernel.org"
+	id S932274Ab0E0UNS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 May 2010 16:13:18 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:24762 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756045Ab0E0UNM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 May 2010 16:13:12 -0400
-Date: Thu, 27 May 2010 20:12:54 GMT
-From: "tip-bot for H. Peter Anvin" <hpa@linux.intel.com>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-       eric.dumazet@gmail.com, tglx@linutronix.de, hpa@linux.intel.com
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-       eric.dumazet@gmail.com, tglx@linutronix.de, hpa@linux.intel.com
-In-Reply-To: <4BF2FF82.7090005@zytor.com>
-References: <4BF2FF82.7090005@zytor.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/urgent] x86, cpufeature: Unbreak compile with gcc 3.x
-Message-ID: <tip-1ba4f22c426ba04b00fd717318d50620c621a0e1@git.kernel.org>
-Git-Commit-ID: 1ba4f22c426ba04b00fd717318d50620c621a0e1
-X-Mailer: tip-git-log-daemon
+	id S1756045Ab0E0UNP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 May 2010 16:13:15 -0400
+Message-ID: <4BFED258.40501@redhat.com>
+Date: Thu, 27 May 2010 10:13:12 -1000
+From: Zachary Amsden <zamsden@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-3.fc13 Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Thu, 27 May 2010 20:12:55 +0000 (UTC)
+To: Glauber Costa <glommer@redhat.com>
+CC: Avi Kivity <avi@redhat.com>, kvm@vger.kernel.org,
+       linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Add Documentation/kvm/msr.txt
+References: <1274897088-8587-1-git-send-email-glommer@redhat.com> <4BFE2A2F.50209@redhat.com> <20100527160248.GF3445@mothafucka.localdomain>
+In-Reply-To: <20100527160248.GF3445@mothafucka.localdomain>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  1ba4f22c426ba04b00fd717318d50620c621a0e1
-Gitweb:     http://git.kernel.org/tip/1ba4f22c426ba04b00fd717318d50620c621a0e1
-Author:     H. Peter Anvin <hpa@linux.intel.com>
-AuthorDate: Thu, 27 May 2010 12:02:00 -0700
-Committer:  H. Peter Anvin <hpa@linux.intel.com>
-CommitDate: Thu, 27 May 2010 12:02:00 -0700
+On 05/27/2010 06:02 AM, Glauber Costa wrote:
+> On Thu, May 27, 2010 at 11:15:43AM +0300, Avi Kivity wrote:
+>    
+>> On 05/26/2010 09:04 PM, Glauber Costa wrote:
+>>      
+>>> This patch adds a file that documents the usage of KVM-specific
+>>> MSRs.
+>>>
+>>>        
+>> Looks good.  A few comments:
+>>
+>>      
+>>> +
+>>> +Custom MSR list
+>>> +--------
+>>> +
+>>> +The current supported Custom MSR list is:
+>>> +
+>>> +MSR_KVM_WALL_CLOCK:  0x11
+>>> +
+>>> +	data: physical address of a memory area.
+>>>        
+>> Which must be in guest RAM (i.e., don't point it somewhere random
+>> and expect the hypervisor to allocate it for you).
+>>
+>> Must be aligned to 4 bytes (we don't enforce it though).
+>>      
+> I don't see the reason for it.
+>
+> If this is a requirement, our own implementation
+> is failing to meet it.
+>    
 
-x86, cpufeature: Unbreak compile with gcc 3.x
+It's so the atomic write actually is atomic.  Stating a 4 -byte 
+alignment requirement prevents the wall clock from crossing a page boundary.
 
-gcc 3 is too braindamaged to be able to compile static_cpu_has() --
-apparently it can't tell that a constant passed to an inline function
-is still a constant -- so if we're using gcc 3, just use the dynamic
-test.  This is bad for performance, but if you care about performance,
-don't use an ancient, known-to-optimize-poorly compiler.
+Zach
 
-Reported-and-tested-by: Eric Dumazet <eric.dumazet@gmail.com>
-LKML-Reference: <4BF2FF82.7090005@zytor.com>
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
----
- arch/x86/include/asm/cpufeature.h |    7 +++++++
- 1 files changed, 7 insertions(+), 0 deletions(-)
-
-diff --git a/arch/x86/include/asm/cpufeature.h b/arch/x86/include/asm/cpufeature.h
-index dca9c54..4681459 100644
---- a/arch/x86/include/asm/cpufeature.h
-+++ b/arch/x86/include/asm/cpufeature.h
-@@ -332,6 +332,7 @@ static __always_inline __pure bool __static_cpu_has(u8 bit)
- #endif
- }
- 
-+#if __GNUC__ >= 4
- #define static_cpu_has(bit)					\
- (								\
- 	__builtin_constant_p(boot_cpu_has(bit)) ?		\
-@@ -340,6 +341,12 @@ static __always_inline __pure bool __static_cpu_has(u8 bit)
- 		__static_cpu_has(bit) :				\
- 		boot_cpu_has(bit)				\
- )
-+#else
-+/*
-+ * gcc 3.x is too stupid to do the static test; fall back to dynamic.
-+ */
-+#define static_cpu_has(bit) boot_cpu_has(bit)
-+#endif
- 
- #endif /* defined(__KERNEL__) && !defined(__ASSEMBLY__) */
- 
