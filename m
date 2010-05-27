@@ -1,488 +1,239 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758227Ab0E0WmJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 May 2010 18:42:09 -0400
-Received: from forward12.mail.yandex.net ([95.108.130.94]:51173 "EHLO
-	forward12.mail.yandex.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754113Ab0E0WmE (ORCPT
+	id S1757614Ab0E0WmH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 May 2010 18:42:07 -0400
+Received: from forward15.mail.yandex.net ([95.108.130.119]:40042 "EHLO
+	forward15.mail.yandex.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754493Ab0E0WmE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 27 May 2010 18:42:04 -0400
 From: Sergey Temerkhanov <temerkhanov@yandex.ru>
 Organization: Cifronic ZAO
-Subject: Kernel module and 2 programs for AIO cancellation testing
-Date: Fri, 28 May 2010 02:35:44 +0400
+To: "linux-aio" <linux-aio@kvack.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: [PATCHv2 3/3] [RFC] AIO: Change dprintk() statements to pr_debug()
+Date: Fri, 28 May 2010 02:35:35 +0400
 User-Agent: KMail/1.12.4 (Linux/2.6.34-40-desktop; KDE/4.3.5; x86_64; ; )
 MIME-Version: 1.0
-To: "linux-aio" <linux-aio@kvack.org>, LKML <linux-kernel@vger.kernel.org>
-Content-Type: Multipart/Mixed;
-  boundary="Boundary-00=_APv/Lqw0Miwi0ny"
-Message-Id: <201005280235.44683.temerkhanov@yandex.ru>
-X-Yandex-TimeMark: 1274999749
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201005280235.35843.temerkhanov@yandex.ru>
+X-Yandex-TimeMark: 1274999740
 X-Yandex-Spam: 1
-X-Yandex-Front: smtp14.mail.yandex.net
+X-Yandex-Front: smtp12.mail.yandex.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Boundary-00=_APv/Lqw0Miwi0ny
-Content-Type: text/plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-
-The attached files are respectively:
-  - a kernel module which implements 4 pseudo-devices with different
-    aio_read/aio_write methods:
-	- aiotest0 simply returns -EIOCBQUEUED;
-   	- aiotest1 sets ki_cancel method and returns -EIOCBQUEUED;
-	- aiotest2 sets KIF_CANCELLED flag and returns -EINTR;
-	- aiotest3 sets ki_cancel method and returns -EIOCBQUEUED after 1 second;
-
-  - a program test_aio.c which submits 1 AIO request and calls
-    io_destroy() after 1 second timeout
-  - a program test_aio.c which submits 1 AIO request and calls
-    io_cancel() on that request immediately.
-
--- 
-Regards, Sergey Temerkhanov,
-Cifronic ZAO
-
---Boundary-00=_APv/Lqw0Miwi0ny
-Content-Type: text/x-csrc;
-  charset="utf-8";
-  name="aio_tester.c"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: attachment;
-	filename="aio_tester.c"
-
-#include <linux/module.h>
-#include <linux/init.h>
-#include <linux/fs.h>
-#include <linux/sched.h>
-#include <linux/delay.h>
-#include <linux/device.h>
-#include <linux/cdev.h>
-#include <linux/slab.h>
-#include <linux/aio.h>
-
-
-#if 1
-#define dprintk(fmt...)	printk(fmt)
-#else
-#define dprintk(fmt...)
-#endif
-
-LIST_HEAD(aiotest_devs);
-
-static struct class *aiotest_class = NULL;
-
-int aiotest_major = 0;
-
-
-MODULE_AUTHOR("Sergey Temerkhanov");
-MODULE_DESCRIPTION("AIO tester module");
-MODULE_LICENSE("GPL");
-
-
-struct aiotest_dev {
-	struct list_head	list;
-	
-	wait_queue_head_t	waitq;
-	struct cdev		cdev;
-	atomic_t		opened;
-	int			index;
-
-	struct delayed_work	work;
-};
-
-#define AIOTEST_NUMDEVS 1
-
-//----------------------------------------------------------------------------
-static int aiotest_open(struct inode *inode, struct file *file)
-{
-	struct aiotest_dev *dev;
-	
-	dev = container_of(inode->i_cdev, struct aiotest_dev, cdev);
-
-	file->private_data = dev;
-
-	if (!file->private_data)
-		return -ENODEV;
-
-	if (atomic_read(&dev->opened))
-		return -EBUSY;
-
-	atomic_inc(&dev->opened);
-
-	return 0;
-}
-
-static int aiotest_release(struct inode *inode, struct file *file)
-{
-	struct aiotest_dev *dev;
-
-	dev = file->private_data;
-
-	if (!dev)
-		return -ENODEV;
-
-	atomic_dec(&dev->opened);
-
-	return 0;
-}
-
-int aiotest_cancel(struct kiocb* iocb, struct io_event* evt)
-{
-	printk("%s: %d: iocb: %p, iocb->ki_users: %d\n",
-	       __FUNCTION__, __LINE__, iocb, iocb->ki_users);
-	aio_put_req(iocb);
-
-	printk("%s: %d: iocb: %p, iocb->ki_users: %d\n",
-	       __FUNCTION__, __LINE__, iocb, iocb->ki_users);
-
-	return 0;
-}
-
-ssize_t aiotest_rw_ki_cancel(struct kiocb *iocb, const struct iovec* iov,
-		    unsigned long count, loff_t off)
-{
-	printk("%s: %d: iocb: %p, iocb->ki_users: %d\n",
-	       __FUNCTION__, __LINE__, iocb, iocb->ki_users);
-
-	iocb->ki_cancel = aiotest_cancel;
-
-	return -EIOCBQUEUED;
-}
-
-ssize_t aiotest_rw_nocancel(struct kiocb *iocb, const struct iovec* iov,
-				  unsigned long count, loff_t off)
-{
-	printk("%s: %d: iocb: %p, iocb->ki_users: %d\n",
-		__FUNCTION__, __LINE__, iocb, iocb->ki_users);
-
-	return -EIOCBQUEUED;
-}
-
-ssize_t aiotest_rw_setcancelled(struct kiocb *iocb, const struct iovec* iov,
-					unsigned long count, loff_t off)
-{
-	printk("%s: %d: iocb: %p, iocb->ki_users: %d\n",
-		__FUNCTION__, __LINE__, iocb, iocb->ki_users);
-
-	kiocbSetCancelled(iocb);
-	return -EINTR;
-}
-
-ssize_t aiotest_rw_delayed(struct kiocb *iocb, const struct iovec* iov,
-			unsigned long count, loff_t off)
-{
-	printk("%s: %d: iocb: %p, iocb->ki_users: %d\n",
-			__FUNCTION__, __LINE__, iocb, iocb->ki_users);
-
-	iocb->ki_cancel = aiotest_cancel;
-
-	schedule_timeout(HZ);
-	return -EIOCBQUEUED;
-}
-
-// ---------------------------------------------------------------------------
-static struct file_operations aiotest_fops_nocancel = {
-	.owner	   = THIS_MODULE,
-	.open	   = aiotest_open,
-	.release   = aiotest_release,
-	.aio_read  = aiotest_rw_nocancel,
-	.aio_write = aiotest_rw_nocancel,
-};
-
-static struct file_operations aiotest_fops_ki_cancel = {
-	.owner	   = THIS_MODULE,
-	.open	   = aiotest_open,
-	.release   = aiotest_release,
-	.aio_read  = aiotest_rw_ki_cancel,
-	.aio_write = aiotest_rw_ki_cancel,
-};
-
-static struct file_operations aiotest_fops_setcancelled = {
-	.owner	   = THIS_MODULE,
-	.open	   = aiotest_open,
-	.release   = aiotest_release,
-	.aio_read  = aiotest_rw_setcancelled,
-	.aio_write = aiotest_rw_setcancelled,
-};
-
-static struct file_operations aiotest_fops_delayed = {
-	.owner	   = THIS_MODULE,
-	.open	   = aiotest_open,
-	.release   = aiotest_release,
-	.aio_read  = aiotest_rw_delayed,
-	.aio_write = aiotest_rw_delayed,
-};
-
-
-static void aiotest_cleanup(struct aiotest_dev *dev)
-{
-	if (!dev) 
-		return;
-
-	device_destroy(aiotest_class, dev->cdev.dev);
-
-	cdev_del(&dev->cdev);
-
-	list_del(&dev->list);
-
-	kfree(dev);
-};
-
-static int init_aiotest_dev(int index, struct file_operations *fops)
-{
-	struct aiotest_dev *dev;
-	int res;
-
-	dev = kzalloc(sizeof(struct aiotest_dev), GFP_KERNEL);
-
-	if (!dev)
-		return -ENOMEM;
-
-	dev->index = index;
-
-	device_create(aiotest_class, NULL,
-			    MKDEV(aiotest_major, dev->index), NULL,
-			    "aiotest%d", index);
-
-	cdev_init(&dev->cdev, fops);
-	res = cdev_add(&dev->cdev, MKDEV(aiotest_major, dev->index), 1);
-
-	if (res) {
-		aiotest_cleanup(dev);
-		return res;
-	}
-
-	init_waitqueue_head(&dev->waitq);
-
-	atomic_set(&dev->opened, 0);
-
-	list_add_tail(&dev->list, &aiotest_devs);
-
-	return 0;
-}
-
-// ---------------------------------------------------------------------------
-
-static void __exit aiodrv_cleanup(void);
-
-static int __init aiodrv_init(void)
-{
-	dev_t device;
-	int res;
-
-	res = alloc_chrdev_region(&device, 0,
-				  AIOTEST_NUMDEVS, "aiotest");
-	aiotest_major = MAJOR(device);
-
-	if (res < 0) {
-		printk(KERN_ERR "Cannot get major number for aiotest\n");
-		return res;
-	}
-
-	aiotest_class = class_create(THIS_MODULE, "aiotest");
-
-	init_aiotest_dev(0, &aiotest_fops_nocancel);
-	init_aiotest_dev(1, &aiotest_fops_ki_cancel);
-	init_aiotest_dev(2, &aiotest_fops_setcancelled);
-	init_aiotest_dev(3, &aiotest_fops_delayed);
-
-	return 0;
-};
-
-static void __exit aiodrv_cleanup(void)
-{
-	struct aiotest_dev *dev, *next;
-
-	list_for_each_entry_safe(dev, next, &aiotest_devs, list) {
-		aiotest_cleanup(dev);
-	}
-
-	if (aiotest_class)
-		class_destroy(aiotest_class);
-
-	unregister_chrdev_region(MKDEV(aiotest_major, 0),
-				 AIOTEST_NUMDEVS);
-};
-
-
-module_init(aiodrv_init);
-module_exit(aiodrv_cleanup);
-
---Boundary-00=_APv/Lqw0Miwi0ny
-Content-Type: text/x-csrc;
-  charset="utf-8";
-  name="test_aio.c"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: attachment;
-	filename="test_aio.c"
-
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <sys/uio.h>
-#include <fcntl.h>
-#include <stdint.h>
-#include <unistd.h>
-#include <libaio.h>
-#include <stdlib.h>
-#include <stdio.h>
-
-#define ARRAY_SIZE(x) (sizeof(x) / sizeof((x)[0]))
-
-const char usage[] = "Usage: test_aio [filename]";
-
-int main(int argc, char *argv[])
-{
-	int res, i;
-	struct timespec tspec;
-
-	uint64_t data = 0xa5a5a5a5a5a5a5a5ULL;
-
-	unsigned int iocbs_num = 1;
-
-	struct iocb iocb_i[iocbs_num];
-	struct iocb *iocbs[iocbs_num];
-	struct io_event events[iocbs_num];
-	io_context_t io_ctx;
-
-	int fd;
-
-	if (argc < 2) {
-		fputs(usage, stderr);
-		exit(1);
-	}
-
-	for (i = 0; i < iocbs_num; i++)
-		iocbs[i] = &iocb_i[i];
-
-	fd = open(argv[1], O_RDWR | O_SYNC);
-
-	if (fd < 0) {
-		perror("open");
-		exit(1);
-	}
-
-	res = io_queue_init(iocbs_num, &io_ctx);
-
-	if (res != 0) {
-		fprintf(stderr, strerror(-res));
-		exit(1);
-	}
-
-	int num_io = 1;
-
-	io_prep_pread(iocbs[0], fd, &data, sizeof(data), 0);
-
-	res = io_submit(io_ctx, num_io, iocbs);
-
-	if (res != num_io) {
-		fprintf(stderr, strerror(-res));
-		exit(1);
-	}
-
-	tspec.tv_nsec = 0;
-	tspec.tv_sec = 1;
-
-	res = io_getevents(io_ctx, num_io, num_io, events, &tspec);
-
-	printf("io_getevents: %d", res);
-
-	io_queue_release(io_ctx);
-
-	close(fd);
-}
-
---Boundary-00=_APv/Lqw0Miwi0ny
-Content-Type: text/x-csrc;
-  charset="utf-8";
-  name="test_aio_cancel.c"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: attachment;
-	filename="test_aio_cancel.c"
-
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <sys/uio.h>
-#include <fcntl.h>
-#include <stdint.h>
-#include <unistd.h>
-#include <libaio.h>
-#include <stdlib.h>
-#include <stdio.h>
-
-#define ARRAY_SIZE(x) (sizeof(x) / sizeof((x)[0]))
-
-const char usage[] = "Usage: test_aio [filename]";
-
-int main(int argc, char *argv[])
-{
-	int res, i;
-	struct timespec tspec;
-
-	uint64_t data = 0xa5a5a5a5a5a5a5a5ULL;
-
-	unsigned int iocbs_num = 1;
-
-	struct iocb iocb_i[iocbs_num];
-	struct iocb *iocbs[iocbs_num];
-	struct io_event events[iocbs_num];
-	io_context_t io_ctx;
-
-	int fd;
-
-	if (argc < 2) {
-		fputs(usage, stderr);
-		exit(1);
-	}
-
-	for (i = 0; i < iocbs_num; i++)
-		iocbs[i] = &iocb_i[i];
-
-	fd = open(argv[1], O_RDWR | O_SYNC);
-
-	if (fd < 0) {
-		perror("open");
-		exit(1);
-	}
-
-	res = io_queue_init(iocbs_num, &io_ctx);
-
-	if (res != 0) {
-		fprintf(stderr, strerror(-res));
-		exit(1);
-	}
-
-	int num_io = 1;
-
-	io_prep_pread(iocbs[0], fd, &data, sizeof(data), 0);
-
-	res = io_submit(io_ctx, num_io, iocbs);
-
-	if (res != num_io) {
-		fprintf(stderr, strerror(-res));
-		exit(1);
-	}
-
-	res = io_cancel(io_ctx, iocbs[0], &events[0]);
-
-	printf("io_cancel: res = %d\n", res);
-
-	printf("events[0].res = %lu\n", events[0].res);
-	printf("events[0].res2 = %lu\n", events[0].res2);
-
-	tspec.tv_nsec = 0;
-	tspec.tv_sec = 1;
-
-	res = io_getevents(io_ctx, num_io, num_io, events, &tspec);
-
-	printf("io_getevents: %d", res);
-
-	io_queue_release(io_ctx);
-
-	close(fd);
-}
-
---Boundary-00=_APv/Lqw0Miwi0ny--
+Signed-off-by: Sergey Temerkhanov<temerkhanov@cifronik.ru>
+
+This patch changes dprintk() statements to pr_debug()
+and adds a few more debug info
+
+diff -r 7e2d9365813b fs/aio.c
+--- a/fs/aio.c	Fri May 07 18:07:22 2010 +0400
++++ b/fs/aio.c	Fri May 07 18:15:00 2010 +0400
+@@ -36,12 +36,6 @@
+ #include <asm/uaccess.h>
+ #include <asm/mmu_context.h>
+ 
+-#if DEBUG > 1
+-#define dprintk		printk
+-#else
+-#define dprintk(x...)	do { ; } while (0)
+-#endif
+-
+ /*------ sysctl variables----*/
+ static DEFINE_SPINLOCK(aio_nr_lock);
+ unsigned long aio_nr;		/* current system wide number of aio requests */
+@@ -130,7 +124,7 @@
+ 	}
+ 
+ 	info->mmap_size = nr_pages * PAGE_SIZE;
+-	dprintk("attempting mmap of %lu bytes\n", info->mmap_size);
++	pr_debug("attempting mmap of %lu bytes\n", info->mmap_size);
+ 	down_write(&ctx->mm->mmap_sem);
+ 	info->mmap_base = do_mmap(NULL, 0, info->mmap_size, 
+ 				  PROT_READ|PROT_WRITE, MAP_ANONYMOUS|MAP_PRIVATE,
+@@ -142,7 +136,7 @@
+ 		return -EAGAIN;
+ 	}
+ 
+-	dprintk("mmap address: 0x%08lx\n", info->mmap_base);
++	pr_debug("mmap address: 0x%08lx\n", info->mmap_base);
+ 	info->nr_pages = get_user_pages(current, ctx->mm,
+ 					info->mmap_base, nr_pages, 
+ 					1, 0, info->ring_pages, NULL);
+@@ -300,7 +294,7 @@
+ 	hlist_add_head_rcu(&ctx->list, &mm->ioctx_list);
+ 	spin_unlock(&mm->ioctx_lock);
+ 
+-	dprintk("aio: allocated ioctx %p[%ld]: mm=%p mask=0x%x\n",
++	pr_debug("aio: allocated ioctx %p[%ld]: mm=%p mask=0x%x\n",
+ 		ctx, ctx->user_id, current->mm, ctx->ring_info.nr);
+ 	return ctx;
+ 
+@@ -313,7 +307,7 @@
+ 	kmem_cache_free(kioctx_cachep, ctx);
+ 	ctx = ERR_PTR(-ENOMEM);
+ 
+-	dprintk("aio: error allocating ioctx %p\n", ctx);
++	pr_debug("aio: error allocating ioctx %p\n", ctx);
+ 	return ctx;
+ }
+ 
+@@ -468,6 +462,8 @@
+ 		kfree(req->ki_iovec);
+ 	kmem_cache_free(kiocb_cachep, req);
+ 	ctx->reqs_active--;
++	pr_debug("really_put_req: req(%p)->ki_users: %d\n",
++		 req, req->ki_users);
+ 
+ 	if (unlikely(!ctx->reqs_active && ctx->dead))
+ 		wake_up(&ctx->wait);
+@@ -503,12 +499,14 @@
+  */
+ static int __aio_put_req(struct kioctx *ctx, struct kiocb *req)
+ {
+-	dprintk(KERN_DEBUG "aio_put(%p): f_count=%ld\n",
++	pr_debug("aio_put(%p): f_count=%ld\n",
+ 		req, atomic_long_read(&req->ki_filp->f_count));
+ 
+ 	assert_spin_locked(&ctx->ctx_lock);
+ 
+ 	req->ki_users--;
++	pr_debug("__aio_put_req: req(%p)->ki_users: %d\n",
++		req, req->ki_users);
+ 	BUG_ON(req->ki_users < 0);
+ 	if (likely(req->ki_users))
+ 		return 0;
+@@ -774,6 +772,8 @@
+ 		 * Hold an extra reference while retrying i/o.
+ 		 */
+ 		iocb->ki_users++;       /* grab extra reference */
++		pr_debug("__aio_run_iocbs: iocb(%p)->ki_users: %d\n",
++				iocb, iocb->ki_users);
+ 		aio_run_iocb(iocb);
+ 		__aio_put_req(ctx, iocb);
+  	}
+@@ -957,6 +957,7 @@
+ 	 * cancelled requests don't get events, userland was given one
+ 	 * when the event got cancelled.
+ 	 */
++	pr_debug("kiocbIsCancelled(iocb): %d\n", kiocbIsCancelled(iocb));
+ 	if (kiocbIsCancelled(iocb))
+ 		goto put_rq;
+ 
+@@ -972,7 +973,7 @@
+ 	event->res = res;
+ 	event->res2 = res2;
+ 
+-	dprintk("aio_complete: %p[%lu]: %p: %p %Lx %lx %lx\n",
++	pr_debug("aio_complete: %p[%lu]: %p: %p %Lx %lx %lx\n",
+ 		ctx, tail, iocb, iocb->ki_obj.user, iocb->ki_user_data,
+ 		res, res2);
+ 
+@@ -1035,6 +1036,8 @@
+ 		kiocbSetCancelled(iocb);
+ 		if (cancel) {
+ 			iocb->ki_users++;
++			pr_debug("aio_cancel_all: iocb(%p)->ki_users: %d\n",
++					iocb, iocb->ki_users);
+ 			spin_unlock_irq(&ctx->ctx_lock);
+ 			cancel(iocb, &res);
+ 			spin_lock_irq(&ctx->ctx_lock);
+@@ -1058,7 +1061,7 @@
+ 	int ret = 0;
+ 
+ 	ring = kmap_atomic(info->ring_pages[0], KM_USER0);
+-	dprintk("in aio_read_evt h%lu t%lu m%lu\n",
++	pr_debug("in aio_read_evt h%lu t%lu m%lu\n",
+ 		 (unsigned long)ring->head, (unsigned long)ring->tail,
+ 		 (unsigned long)ring->nr);
+ 
+@@ -1081,7 +1084,7 @@
+ 
+ out:
+ 	kunmap_atomic(ring, KM_USER0);
+-	dprintk("leaving aio_read_evt: %d  h%lu t%lu\n", ret,
++	pr_debug("leaving aio_read_evt: %d  h%lu t%lu\n", ret,
+ 		 (unsigned long)ring->head, (unsigned long)ring->tail);
+ 	return ret;
+ }
+@@ -1147,13 +1150,13 @@
+ 		if (unlikely(ret <= 0))
+ 			break;
+ 
+-		dprintk("read event: %Lx %Lx %Lx %Lx\n",
++		pr_debug("read event: %Lx %Lx %Lx %Lx\n",
+ 			ent.data, ent.obj, ent.res, ent.res2);
+ 
+ 		/* Could we split the check in two? */
+ 		ret = -EFAULT;
+ 		if (unlikely(copy_to_user(event, &ent, sizeof(ent)))) {
+-			dprintk("aio: lost an event due to EFAULT.\n");
++			pr_debug("aio: lost an event due to EFAULT.\n");
+ 			break;
+ 		}
+ 		ret = 0;
+@@ -1188,6 +1191,7 @@
+ 	}
+ 
+ 	while (likely(i < nr)) {
++		pr_debug("aio: i: %d, nr: %ld\n", i, nr);
+ 		add_wait_queue_exclusive(&ctx->wait, &wait);
+ 		do {
+ 			set_task_state(tsk, TASK_INTERRUPTIBLE);
+@@ -1200,6 +1204,7 @@
+ 				ret = -EINVAL;
+ 				break;
+ 			}
++			pr_debug("aio: to.timed_out: %d\n", to.timed_out);
+ 			if (to.timed_out)	/* Only check after read evt */
+ 				break;
+ 			/* Try to only show up in io wait if there are ops
+@@ -1223,7 +1228,7 @@
+ 
+ 		ret = -EFAULT;
+ 		if (unlikely(copy_to_user(event, &ent, sizeof(ent)))) {
+-			dprintk("aio: lost an event due to EFAULT.\n");
++			pr_debug("aio: lost an event due to EFAULT.\n");
+ 			break;
+ 		}
+ 
+@@ -1254,7 +1259,7 @@
+ 	hlist_del_rcu(&ioctx->list);
+ 	spin_unlock(&mm->ioctx_lock);
+ 
+-	dprintk("aio_release(%p)\n", ioctx);
++	pr_debug("aio_release(%p)\n", ioctx);
+ 	if (likely(!was_dead))
+ 		put_ioctx(ioctx);	/* twice for the list */
+ 
+@@ -1543,7 +1548,7 @@
+ 			kiocb->ki_retry = aio_fsync;
+ 		break;
+ 	default:
+-		dprintk("EINVAL: io_submit: no operation provided\n");
++		pr_debug("EINVAL: io_submit: no operation provided\n");
+ 		ret = -EINVAL;
+ 	}
+ 
+@@ -1628,7 +1633,7 @@
+ 
+ 	ret = put_user(req->ki_key, &user_iocb->aio_key);
+ 	if (unlikely(ret)) {
+-		dprintk("EFAULT: aio_key\n");
++		pr_debug("EFAULT: aio_key\n");
+ 		goto out_put_req;
+ 	}
+ 
+@@ -1774,6 +1779,8 @@
+ 	if (kiocb && kiocb->ki_cancel) {
+ 		cancel = kiocb->ki_cancel;
+ 		kiocb->ki_users ++;
++		pr_debug("io_cancel: kiocb(%p)->ki_users: %d\n",
++				kiocb, kiocb->ki_users);
+ 		kiocbSetCancelled(kiocb);
+ 	} else
+ 		cancel = NULL;
