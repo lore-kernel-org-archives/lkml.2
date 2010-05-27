@@ -1,60 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932122Ab0E0Ozk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 May 2010 10:55:40 -0400
-Received: from out3.smtp.messagingengine.com ([66.111.4.27]:54757 "EHLO
-	out3.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755504Ab0E0Ozh (ORCPT
+	id S1757932Ab0E0O4R (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 May 2010 10:56:17 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:63097 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755504Ab0E0O4P (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 May 2010 10:55:37 -0400
-X-Sasl-enc: yvJXId4nunzmCtYgT5H3UEmiRp+V+4J6jJ9daZPrXMXb 1274972136
-Message-ID: <4BFE87E6.7080701@ladisch.de>
-Date: Thu, 27 May 2010 16:55:34 +0200
-From: Clemens Ladisch <clemens@ladisch.de>
-User-Agent: Thunderbird 2.0.0.24 (Windows/20100228)
+	Thu, 27 May 2010 10:56:15 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=KkgAll7yHnkZcdEoUhFuJi5VeTsY/H3tDPRtVs91DyiyhUXU2st8veYosAg/GMdSxA
+         aUxM6HOrS0LPRlA4htrf4++LCJgABsY+41lEChBL6UTh5oj3awQW5yGGf5dBwO6xgj2W
+         7WhkdzY0qbfsja3ubbXZsDlHXKsTI7Y22ZNK0=
+Date: Thu, 27 May 2010 23:01:22 +0800
+From: =?utf-8?Q?Am=C3=A9rico?= Wang <xiyou.wangcong@gmail.com>
+To: Richard Kennedy <richard@rsk.demon.co.uk>
+Cc: Roman Zippel <zippel@linux-m68k.org>,
+       linux-kbuild <linux-kbuild@vger.kernel.org>,
+       lkml <linux-kernel@vger.kernel.org>,
+       Steven Rostedt <rostedt@goodmis.org>
+Subject: Re: [PATCH] gconfig: fix build failure on fedora 13
+Message-ID: <20100527150122.GC3600@hack>
+References: <1274952149.2210.12.camel@castor.rsk>
 MIME-Version: 1.0
-To: Robert Hancock <hancockrwd@gmail.com>
-CC: Jan Engelhardt <jengelh@medozas.de>, Takashi Iwai <tiwai@suse.de>,
-       alsa-devel@alsa-project.org,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: No mixers on ATI RS780 Azalia
-References: <alpine.LSU.2.01.1005261303170.19406@obet.zrqbmnf.qr>	<s5hmxvmzwwd.wl%tiwai@suse.de>	<alpine.LSU.2.01.1005261413040.23865@obet.zrqbmnf.qr>	<4BFD2901.20800@ladisch.de>	<alpine.LSU.2.01.1005271230340.18087@obet.zrqbmnf.qr>	<4BFE5AA1.7070103@ladisch.de> <alpine.LSU.2.01.1005271420320.29122@obet.zrqbmnf.qr> <4BFE8404.2000005@gmail.com>
-In-Reply-To: <4BFE8404.2000005@gmail.com>
 Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+In-Reply-To: <1274952149.2210.12.camel@castor.rsk>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Robert Hancock wrote:
-> On 05/27/2010 06:34 AM, Jan Engelhardt wrote:
->> On Thursday 2010-05-27 13:42, Clemens Ladisch wrote:
->>> It is possible that an embedded device like this requires some custom
->>> initialization.  Can you find out if the Windows driver is the standard
->>> Microsoft driver or Samsung's?
->>
->> Looks like the Microsoft one:
+On Thu, May 27, 2010 at 10:22:28AM +0100, Richard Kennedy wrote:
+>Making gconfig fails on fedora 13 as the linker cannot resolve dlsym.
+>    
+>Adding libdl to the link command fixes this.
+>    
+>make shows this error :-
+>    /usr/bin/ld: scripts/kconfig/kconfig_load.o: undefined reference to symbol 'dlsym@@GLIBC_2.2.5'
+>    /usr/bin/ld: note: 'dlsym@@GLIBC_2.2.5' is defined in DSO /lib64/libdl.so.2 so try adding it to the linker command line
+>    /lib64/libdl.so.2: could not read symbols: Invalid operation
+>
+>tested on x86_64 fedora 13.
+>
+>Signed-off-by: Richard Kennedy <richard@rsk.demon.co.uk>
+
+Looks good to me.
+
+Reviewed-by: WANG Cong <xiyou.wangcong@gmail.com>
+
+Thanks.
+
+
+>---
+>patch against 2.6.34, built & tested on x86_64. 
+>
+>regards
+>Richard
+>
+>diff --git a/scripts/kconfig/Makefile b/scripts/kconfig/Makefile
+>index 186c466..9842611 100644
+>--- a/scripts/kconfig/Makefile
+>+++ b/scripts/kconfig/Makefile
+>@@ -208,7 +208,7 @@ HOSTCFLAGS_zconf.tab.o	:= -I$(src)
+> HOSTLOADLIBES_qconf	= $(KC_QT_LIBS) -ldl
+> HOSTCXXFLAGS_qconf.o	= $(KC_QT_CFLAGS) -D LKC_DIRECT_LINK
 > 
-> Well, not Samsung, but it's not the Microsoft HDA driver either, it's 
-> using a Realtek driver.
+>-HOSTLOADLIBES_gconf	= `pkg-config --libs gtk+-2.0 gmodule-2.0 libglade-2.0`
+>+HOSTLOADLIBES_gconf	= `pkg-config --libs gtk+-2.0 gmodule-2.0 libglade-2.0` -ldl
+> HOSTCFLAGS_gconf.o	= `pkg-config --cflags gtk+-2.0 gmodule-2.0 libglade-2.0` \
+>                           -D LKC_DIRECT_LINK
 > 
->> == "ATI HDMI Audio" ==
->> ...
->> C:\WINDOWS\system32\drivers\RtHDMI.sys
->> 	Realtek, 5.10.0.5602 built by WinDDK
+>
+>
+>--
+>To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+>the body of a message to majordomo@vger.kernel.org
+>More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>Please read the FAQ at  http://www.tux.org/lkml/
 
-Googling shows that this is the driver that AMD ships for its "ATI HDMI"
-devices.
-
->> == "Realtek High Definition Audio" ==
->> ...
-
-This also looks like the standard driver.
-
-
-Apparently, this computer uses standard audio hardware; the culprit is
-probably the Linux radeon driver.
-
-
-Regards,
-Clemens
+-- 
+Live like a child, think like the god.
+ 
