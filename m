@@ -1,56 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932554Ab0E0Ru7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 May 2010 13:50:59 -0400
-Received: from gir.skynet.ie ([193.1.99.77]:35847 "EHLO gir.skynet.ie"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759402Ab0E0Ru5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 May 2010 13:50:57 -0400
-Date: Thu, 27 May 2010 18:50:38 +0100
-From: Mel Gorman <mel@csn.ul.ie>
-To: Rik van Riel <riel@redhat.com>
-Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-       linux-mm@kvack.org, Andrea Arcangeli <aarcange@redhat.com>,
-       Minchan Kim <minchan.kim@gmail.com>,
-       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-       Lee Schermerhorn <Lee.Schermerhorn@hp.com>
-Subject: Re: [PATCH 5/5] extend KSM refcounts to the anon_vma root
-Message-ID: <20100527175038.GB10931@csn.ul.ie>
-References: <20100526153819.6e5cec0d@annuminas.surriel.com> <20100526154124.04607d04@annuminas.surriel.com>
+	id S932886Ab0E0RvH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 May 2010 13:51:07 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:38578 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932550Ab0E0RvA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 May 2010 13:51:00 -0400
+Date: Thu, 27 May 2010 10:47:22 -0700 (PDT)
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Chris Mason <chris.mason@oracle.com>
+cc: linux-btrfs@vger.kernel.org, linux-kernel <linux-kernel@vger.kernel.org>,
+       linux-fsdevel@vger.kernel.org
+Subject: Re: [GIT PULL] Btrfs updates
+In-Reply-To: <20100527173220.GG3835@think>
+Message-ID: <alpine.LFD.2.00.1005271036400.3689@i5.linux-foundation.org>
+References: <20100527151515.GA3835@think> <alpine.LFD.2.00.1005271014570.3689@i5.linux-foundation.org> <20100527173220.GG3835@think>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <20100526154124.04607d04@annuminas.surriel.com>
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 26, 2010 at 03:41:24PM -0400, Rik van Riel wrote:
-> Subject: extend KSM refcounts to the anon_vma root
-> 
-> KSM reference counts can cause an anon_vma to exist after the processe
-> it belongs to have already exited.  Because the anon_vma lock now lives
-> in the root anon_vma, we need to ensure that the root anon_vma stays
-> around until after all the "child" anon_vmas have been freed.
-> 
-> The obvious way to do this is to have a "child" anon_vma take a
-> reference to the root in anon_vma_fork.  When the anon_vma is freed
-> at munmap or process exit, we drop the refcount in anon_vma_unlink
-> and possibly free the root anon_vma.
-> 
-> The KSM anon_vma reference count function also needs to be modified
-> to deal with the possibility of freeing 2 levels of anon_vma.  The
-> easiest way to do this is to break out the KSM magic and make it
-> generic.
-> 
-> When compiling without CONFIG_KSM, this code is compiled out.
-> 
-> Signed-off-by: Rik van Riel <riel@redhat.com>
 
-Acked-by: Mel Gorman <mel@csn.ul.ie>
 
--- 
-Mel Gorman
-Part-time Phd Student                          Linux Technology Center
-University of Limerick                         IBM Dublin Software Lab
+On Thu, 27 May 2010, Chris Mason wrote:
+> 
+> # git diff v2.6.34 HEAD | diffstat
+
+That still has the potential to be wrong (but got the numbers I expected 
+this time). It will be wrong in several cases:
+
+ - "diffstat" has some random common prefix removal logic that I've never 
+   figured out the exact rules for.
+
+   You don't happen to see it, because you actually had changes outside of 
+   fs/btrfs (so there was no common prefix to worry about), but if 
+   everything had been inside fs/btrfs, then at least some versions of 
+   diffstat will just remove that whole thing as common, and talk about 
+   changes to 'ioctl.c' rather than 'fs/btrfs/ioctl.c'
+
+   (And no, I'm not entirely sure what triggers it. It might only happen 
+   for certain patterns and/or certain versions of diffstat, but it's a 
+   reason to avoid diffstat in general, or at least use "-p1" to make it 
+   reliable)
+
+ - it will do the wrong thing for renames and copies.
+
+ - it doesn't give the summary that pull-request does, which talks about 
+   new, deleted and file-mode-changed files.
+
+So just do
+
+	git diff --stat --summary -M v2.6.34..HEAD
+
+instead, which gets all the above cases right. Also, you don't even need 
+to remember where you started - you might as well use git to do that too, 
+and write it as (assuming you have an 'origin' branch that points to the 
+upstream tree):
+
+	git diff --stat --summary -M origin...HEAD
+
+(note the *three* dots: that says that you should diff against the common 
+ancestor, so git will just figure out where you started on its own).
+
+		Linus
