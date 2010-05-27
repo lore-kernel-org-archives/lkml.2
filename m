@@ -1,52 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756763Ab0E0QUF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 May 2010 12:20:05 -0400
-Received: from cavan.codon.org.uk ([93.93.128.6]:44220 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751777Ab0E0QUB (ORCPT
+	id S1757883Ab0E0QVy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 May 2010 12:21:54 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:42142 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755434Ab0E0QVw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 May 2010 12:20:01 -0400
-Date: Thu, 27 May 2010 17:19:43 +0100
-From: Matthew Garrett <mjg59@srcf.ucam.org>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: Thomas Gleixner <tglx@linutronix.de>,
-       Arve =?iso-8859-1?B?SGr4bm5lduVn?= <arve@android.com>,
-       Florian Mickler <florian@mickler.org>,
-       Vitaly Wool <vitalywool@gmail.com>,
-       Peter Zijlstra <peterz@infradead.org>,
-       LKML <linux-kernel@vger.kernel.org>, Paul@smtp1.linux-foundation.org,
-       felipe.balbi@nokia.com,
-       Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
-       Linux PM <linux-pm@lists.linux-foundation.org>
-Subject: Re: [linux-pm] [PATCH 0/8] Suspend block api (version 8)
-Message-ID: <20100527161943.GA32764@srcf.ucam.org>
-References: <20100526133721.602633b2@schatten.dmk.lab> <AANLkTikzgaOFdQKess4E-D86OLPOzxP3dWiDkU_UR0ri@mail.gmail.com> <20100526142430.327ccbc4@schatten.dmk.lab> <20100526141612.3e2e0443@lxorguk.ukuu.org.uk> <AANLkTin97MMu-XO_Lk-snefBWz2ymhS0Qi1y1RxLwdVA@mail.gmail.com> <20100527003943.07c17f85@lxorguk.ukuu.org.uk> <20100527140655.GA28048@srcf.ucam.org> <alpine.LFD.2.00.1005271642440.3032@localhost.localdomain> <20100527155201.GA31937@srcf.ucam.org> <20100527171615.15a1fd3d@lxorguk.ukuu.org.uk>
+	Thu, 27 May 2010 12:21:52 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:subject:date:user-agent:cc:references:in-reply-to
+         :mime-version:content-type:content-transfer-encoding:message-id;
+        b=b53KSmPvnfu/UiuXbXXJXaK3VlRCrBENsngtRU2OLjuY3HhyDt0jN9lrLgNq0B5nFr
+         H7+2fbSkbQevGWgKOsqmP5mpwt65ZARwN2lFcsq+RXNol+iRycyZO0NPXt0Ie1QTdfU8
+         2fRmoU1wZI1HaO88vmiboavvszebXugqXgAC0=
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Julia Lawall <julia@diku.dk>
+Subject: Re: [PATCH 9/11] drivers/platform/x86: Eliminate a NULL pointer dereference
+Date: Thu, 27 May 2010 09:21:42 -0700
+User-Agent: KMail/1.13.2 (Linux/2.6.32.12-115.fc12.x86_64; KDE/4.4.2; x86_64; ; )
+Cc: Mattia Dongili <malattia@linux.it>, Matthew Garrett <mjg@redhat.com>,
+       platform-driver-x86@vger.kernel.org, linux-kernel@vger.kernel.org,
+       kernel-janitors@vger.kernel.org
+References: <Pine.LNX.4.64.1005271436460.5422@ask.diku.dk>
+In-Reply-To: <Pine.LNX.4.64.1005271436460.5422@ask.diku.dk>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100527171615.15a1fd3d@lxorguk.ukuu.org.uk>
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201005270921.43049.dmitry.torokhov@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 27, 2010 at 05:16:15PM +0100, Alan Cox wrote:
+On Thursday 27 May 2010 05:37:00 am Julia Lawall wrote:
+> From: Julia Lawall <julia@diku.dk>
+> 
+> Give different error messages if device_enum is NULL or if its type field
+> has the wrong value.
+> 
+> A simplified version of the semantic match that finds this problem is as
+> follows: (http://coccinelle.lip6.fr/)
+> 
+> // <smpl>
+> @r exists@
+> expression E,E1;
+> identifier f;
+> statement S1,S2,S3;
+> @@
+> 
+> if ((E == NULL && ...) || ...)
+> {
+>   ... when != if (...) S1 else S2
+>       when != E = E1
+> * E->f
+>   ... when any
+>   return ...;
+> }
+> else S3
+> // </smpl>
+> 
+> Signed-off-by: Julia Lawall <julia@diku.dk>
+> 
+> ---
+> This may be too much clutter for little benefit.  Other, perhaps less
+> informative solutions are possible.
 
-> I can't speak for Thomas, but I'm certainly not arguing that you don't
-> need something that looks more like the blocker side of the logic *in
-> kernel*, because there is stuff that you want to express which isn't tied
-> to the task.
+Verbosity should be OK but I think that mixing pr_xxx() and naked printks
+in the same patch is not very nice.
 
-Sure, if you're not using opportunistic suspend then I don't think 
-there's any real need for the userspace side of this. The question is 
-how to implement something with the useful properties of opportunistic 
-suspend without without implementing something pretty much equivalent to 
-the userspace suspend blockers. I've sent another mail expressing why I 
-don't think your proposed QoS style behaviour provides that.
+> 
+>  drivers/platform/x86/sony-laptop.c |    8 ++++++--
+>  1 file changed, 6 insertions(+), 2 deletions(-)
+> 
+> diff --git a/drivers/platform/x86/sony-laptop.c
+> b/drivers/platform/x86/sony-laptop.c index 1387c5f..9db8d2b 100644
+> --- a/drivers/platform/x86/sony-laptop.c
+> +++ b/drivers/platform/x86/sony-laptop.c
+> @@ -1196,8 +1196,12 @@ static void sony_nc_rfkill_setup(struct acpi_device
+> *device) }
+> 
+>  	device_enum = (union acpi_object *) buffer.pointer;
+> -	if (!device_enum || device_enum->type != ACPI_TYPE_BUFFER) {
+> -		printk(KERN_ERR "Invalid SN06 return object 0x%.2x\n",
+> +	if (!device_enum) {
+> +		pr_err("Invalid SN06 return object\n");
+> +		goto out_no_enum;
+> +	}
+> +	if (device_enum->type != ACPI_TYPE_BUFFER) {
+> +		printk(KERN_ERR "Invalid SN06 return object type 0x%.2x\n",
+>  				device_enum->type);
+>  		goto out_no_enum;
+>  	}
+
+Thanks.
 
 -- 
-Matthew Garrett | mjg59@srcf.ucam.org
+Dmitry
