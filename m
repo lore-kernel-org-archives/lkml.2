@@ -1,69 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932233Ab0E0Q5Q (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 May 2010 12:57:16 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:21344 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754247Ab0E0Q5O (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 May 2010 12:57:14 -0400
-Date: Thu, 27 May 2010 09:55:46 -0700
-From: Randy Dunlap <randy.dunlap@oracle.com>
-To: Siarhei Liakh <sliakh.lkml@gmail.com>
-Cc: linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
-       linux-next@vger.kernel.org, Arjan van de Ven <arjan@infradead.org>,
-       James Morris <jmorris@namei.org>,
-       Andrew Morton <akpm@linux-foundation.org>, Andi Kleen <ak@muc.de>,
-       Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
-       Ingo Molnar <mingo@elte.hu>, Rusty Russell <rusty@rustcorp.com.au>,
-       Stephen Rothwell <sfr@canb.auug.org.au>, Dave Jones <davej@redhat.com>
-Subject: Re: [PATCH 2/4] [tip:x86/mm] Set first MB as RW+NX
-Message-Id: <20100527095546.bb1bb941.randy.dunlap@oracle.com>
-In-Reply-To: <AANLkTin1B96oeU50v0FPSJcVVFEKYos8-jM_i9eRiKxF@mail.gmail.com>
-References: <AANLkTin1B96oeU50v0FPSJcVVFEKYos8-jM_i9eRiKxF@mail.gmail.com>
-Organization: Oracle Linux Eng.
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S932431Ab0E0Q5t (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 May 2010 12:57:49 -0400
+Received: from hera.kernel.org ([140.211.167.34]:35418 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757964Ab0E0Q5r (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 May 2010 12:57:47 -0400
+Message-ID: <4BFEA434.6080405@kernel.org>
+Date: Thu, 27 May 2010 18:56:20 +0200
+From: Tejun Heo <tj@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.1.9) Gecko/20100317 Thunderbird/3.0.4
+MIME-Version: 1.0
+To: "Michael S. Tsirkin" <mst@redhat.com>
+CC: Oleg Nesterov <oleg@redhat.com>, Sridhar Samudrala <sri@us.ibm.com>,
+       netdev <netdev@vger.kernel.org>, lkml <linux-kernel@vger.kernel.org>,
+       "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Dmitri Vorobiev <dmitri.vorobiev@movial.com>,
+       Jiri Kosina <jkosina@suse.cz>, Thomas Gleixner <tglx@linutronix.de>,
+       Ingo Molnar <mingo@elte.hu>, Andi Kleen <ak@linux.intel.com>
+Subject: Re: [PATCH 2/3] workqueue: Add an API to create a singlethread	workqueue
+ attached to the current task's cgroup
+References: <1274227491.2370.110.camel@w-sridhar.beaverton.ibm.com> <20100527091426.GA6308@redhat.com> <20100527124448.GA4241@redhat.com> <20100527131254.GB7974@redhat.com> <4BFE9ABA.6030907@kernel.org> <20100527163954.GA21710@redhat.com>
+In-Reply-To: <20100527163954.GA21710@redhat.com>
+X-Enigmail-Version: 1.0.1
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Auth-Type: Internal IP
-X-Source-IP: rcsinet13.oracle.com [148.87.113.125]
-X-CT-RefId: str=0001.0A090207.4BFEA423.0080:SCFMA4539811,ss=1,fgs=0
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Thu, 27 May 2010 16:56:21 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Hello,
 
-
-On Thu, 27 May 2010 12:52:21 -0400 Siarhei Liakh wrote:
-
-> diff --git a/arch/x86/Kconfig.debug b/arch/x86/Kconfig.debug
-> index 4814d35..6dbcb6f 100644
-> --- a/arch/x86/Kconfig.debug
-> +++ b/arch/x86/Kconfig.debug
-> @@ -123,6 +123,17 @@ config DEBUG_NX_TEST
->          and the software setup of this feature.
->          If in doubt, say "N"
+On 05/27/2010 06:39 PM, Michael S. Tsirkin wrote:
+>> Unless you're gonna convert every driver to use this
+>> special kind of workqueue (and what happens when multiple tasks from
+>> different cgroups share the driver?),
 > 
-> +config DEBUG_SET_1ST_MB_RWNX
-> +       bool "Set 1st MB of kernel space mapping as RW+NX"
-> +       default n
-> +       depends on X86
-> +       ---help---
-> +         This option helps to catch unintended modifications/execution of
-> +         1st megabyte of kernel address space. Such protection may interfere
-> +         with run-time code patching and legacy BIOS services residing within
-> +         the 1st MB of physical address space.
-> +         If in doubt, say "N".
+> We'll then create a workqueue per task. Each workqueue will have the
+> right cgroup. But we are not trying to selve the problem for
+> every driver.
 
-Please spell out "first" instead of "1st" (all places in user-visible text).
+Ah... I see.  You're gonna use multiple workqueues.  Once concern that
+I have is that this is abuse of workqueue interface to certain level
+and depends on the implementation detail of workqueue rather than its
+intended usage model.  stop_machine() was a similar case and in the
+end it was better served by a different mechanism built on kthread
+directly (cpu_stop).  Wouldn't it be cleaner to use kthread directly
+for your case too?  You're basically trying to use workqueue as a
+frontend to kthread, so...
 
-and gmail is space-stuffing your patches (converting tabs to spaces).
-Not good.  Are you using the gmail web interface for patches?
-That won't work AFAIK.  You'll need to use a real mail client.
+Thanks.
 
-
----
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+-- 
+tejun
