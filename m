@@ -1,131 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758102Ab0E0PQI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 May 2010 11:16:08 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:47591 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753119Ab0E0PQG (ORCPT
+	id S1758052Ab0E0PVb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 May 2010 11:21:31 -0400
+Received: from moutng.kundenserver.de ([212.227.126.171]:51169 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757839Ab0E0PV2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 May 2010 11:16:06 -0400
-Date: Thu, 27 May 2010 11:15:15 -0400
-From: Chris Mason <chris.mason@oracle.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-       linux-btrfs@vger.kernel.org,
-       linux-kernel <linux-kernel@vger.kernel.org>,
-       linux-fsdevel@vger.kernel.org
-Subject: [GIT PULL] Btrfs updates
-Message-ID: <20100527151515.GA3835@think>
-Mail-Followup-To: Chris Mason <chris.mason@oracle.com>,
-	Linus Torvalds <torvalds@linux-foundation.org>,
-	linux-btrfs@vger.kernel.org,
-	linux-kernel <linux-kernel@vger.kernel.org>,
-	linux-fsdevel@vger.kernel.org
+	Thu, 27 May 2010 11:21:28 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Chris Metcalf <cmetcalf@tilera.com>
+Subject: Re: [PATCH] arch/tile: new multi-core architecture for Linux
+Date: Thu, 27 May 2010 17:20:36 +0200
+User-Agent: KMail/1.12.2 (Linux/2.6.31-19-generic; KDE/4.3.2; x86_64; ; )
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       linux-arch@vger.kernel.org
+References: <201005200543.o4K5hFRF006079@farm-0002.internal.tilera.com> <201005271702.45730.arnd@arndb.de> <4BFE8A12.2060606@tilera.com>
+In-Reply-To: <4BFE8A12.2060606@tilera.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Auth-Type: Internal IP
-X-Source-IP: rcsinet15.oracle.com [148.87.113.117]
-X-CT-RefId: str=0001.0A090203.4BFE8CAC.0087:SCFMA4539811,ss=1,fgs=0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201005271720.37069.arnd@arndb.de>
+X-Provags-ID: V01U2FsdGVkX186WJWVpEs/Ah4i5UghNwA7nvun5c2qEcHFJN+
+ 8CkzarXU3GLLif4nGGf5ls6PukGv4UE2a6w9Y7MMRfMYqoafBm
+ 3aG1wKLlWx5t3Ynac453A==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi everyone,
+On Thursday 27 May 2010, Chris Metcalf wrote:
+> That turns out to be fairly easy:
+> 
+> #undef __SYSCALL
+> #define __SYSCALL(nr, call) [nr] = (call),
+> 
+> #ifndef __tilegx__
+> #define sys_fadvise64 sys32_fadvise64
+> #define sys_fadvise64_64 sys32_fadvise64_64
+> #define sys_readahead sys32_readahead
+> #endif
+> 
+> void *sys_call_table[__NR_syscalls] = {
+>         [0 ... __NR_syscalls-1] = sys_ni_syscall,
+> #include <asm/unistd.h>
+> };
+> 
 
-The master branch of the btrfs-unstable tree:
+Ok. This does mean that you're no longer using a shared
+version of the sys_call_table.c file but your own one, but
+since the file so simple, that should not be a problem.
 
-git://git.kernel.org/pub/scm/linux/kernel/git/mason/btrfs-unstable.git master
+We can think about merging it when we have more architectures
+that need a hack like this, which might never happen.
 
-Has the first round of btrfs updates for 2.6.35-rc.  I still have some
-pending fixes and patches queued up from other people, but this pull
-request has the two major features for this release.
-
-First we've got a large ENOSPC improvement from Yan Zheng.  He hit on
-all the difficult corners including space balancing, drive management,
-fsync logging and many others.  This has been in the works for sometime
-and it has held up very well in testing.
-
-The second batch is O_DIRECT work from Josef Bacik.  We've had a few
-different iterations on ENOSPC floating on the btrfs list, and this one
-takes a much less complex road by hooking into the generic
-fs/direct-io.c code.  Josef added a hook for bio submission to
-fs/direct-io.c so that we could do proper block number transaction and
-properly do multi-device IO.
-
-There are small changes in here to fs/direct-io.c, mm/filemap.c and
-include/linux/fs.h.  These have been sent out for review a few times and
-commented on.  The filemap.c change allows O_DIRECT reads to fall back
-to buffered IO, which we need to support compression and do checksumming
-IOs < 1 page.
-
-My commits here are just integrating the two and fixing a few bugs in
-the result.
-
-Zheng Yan (13) commits (+4076/-2679):
-    Btrfs: Integrate metadata reservation with start_transaction (+678/-528)
-    Btrfs: Update metadata reservation for delayed allocation (+232/-415)
-    Btrfs: Shrink delay allocated space in a synchronized (+88/-121)
-    Btrfs: Introduce contexts for metadata reservation (+853/-385)
-    Btrfs: Link block groups of different raid types (+121/-55)
-    Btrfs: Metadata ENOSPC handling for balance (+1163/-747)
-    Btrfs: Metadata ENOSPC handling for tree log (+156/-128)
-    Btrfs: Metadata reservation for orphan inodes (+365/-66)
-    Btrfs: Pre-allocate space for data relocation (+92/-45)
-    Btrfs: Introduce global metadata reservation (+241/-76)
-    Btrfs: Fix block generation verification race (+1/-1)
-    Btrfs: Kill allocate_wait in space_info (+58/-76)
-    Btrfs: Kill init_btrfs_i() (+28/-36)
-
-Chris Mason (9) commits (+314/-80):
-    Btrfs: fix preallocation and nodatacow checks in O_DIRECT (+140/-16)
-    Btrfs: move O_DIRECT space reservation to btrfs_direct_IO (+8/-6)
-    Btrfs: don't walk around with task->state != TASK_RUNNING (+4/-3)
-    Btrfs: use async helpers for DIO write checksumming (+52/-17)
-    Btrfs: add more error checking to btrfs_dirty_inode (+13/-2)
-    Btrfs: avoid ENOSPC errors in btrfs_dirty_inode (+11/-3)
-    Btrfs: rework O_DIRECT enospc handling (+49/-30)
-    Btrfs: drop verbose enospc printk (+2/-0)
-    Btrfs: allow unaligned DIO (+35/-3)
-
-Josef Bacik (5) commits (+829/-134):
-    direct-io: add a hook for the fs to provide its own submit_bio function (+45/-8)
-    fs: allow short direct-io reads to be completed via buffered IO (+31/-5)
-    direct-io: do not merge logically non-contiguous requests (+18/-2)
-    Btrfs: add basic DIO read/write support (+631/-36)
-    Btrfs: do aio_write instead of write (+104/-83)
-
-Total: (27) commits
-
- fs/btrfs/extent-tree.c  | 2317 ++++++++++++++++++++++++++++--------------------
- fs/btrfs/relocation.c   | 1991 +++++++++++++++++++++++++----------------
- fs/btrfs/inode.c        | 1797 +++++++++++++++++++++++++++++--------
- fs/btrfs/file.c         |  304 +++---
- fs/btrfs/tree-log.c     |  241 +++-
- fs/btrfs/transaction.c  |  232 +++-
- fs/btrfs/ioctl.c        |  206 ++--
- fs/btrfs/disk-io.c      |  171 +--
- fs/btrfs/ctree.h        |  163 ++-
- fs/btrfs/ctree.c        |  109 +-
- fs/btrfs/delayed-ref.c  |  101 --
- fs/btrfs/extent_io.c    |   85 -
- fs/btrfs/ordered-data.c |   82 +
- fs/direct-io.c          |   62 +
- mm/filemap.c            |   36 
- fs/btrfs/super.c        |   30 
- fs/btrfs/file-item.c    |   28 
- fs/btrfs/inode-item.c   |   27 
- fs/btrfs/transaction.h  |   24 
- fs/btrfs/root-tree.c    |   23 
- fs/btrfs/volumes.c      |   17 
- fs/btrfs/extent_io.h    |   14 
- fs/btrfs/xattr.c        |   12 
- include/linux/fs.h      |   11 
- fs/btrfs/ordered-data.h |    9 
- fs/btrfs/tree-defrag.c  |    7 
- fs/btrfs/disk-io.h      |    4 
- fs/btrfs/delayed-ref.h  |    3 
- fs/btrfs/btrfs_inode.h  |    3 
- fs/btrfs/tree-log.h     |    2 
- fs/btrfs/async-thread.c |    1 
- 31 files changed, 5219 insertions(+), 2893 deletions(-)
+	Arnd
