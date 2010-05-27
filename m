@@ -1,93 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759390Ab0E0Rqk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 May 2010 13:46:40 -0400
-Received: from vms173015pub.verizon.net ([206.46.173.15]:57918 "EHLO
-	vms173015pub.verizon.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756620Ab0E0Rqi (ORCPT
+	id S1759405Ab0E0Rqs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 May 2010 13:46:48 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:41482 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759393Ab0E0Rqn convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 May 2010 13:46:38 -0400
-Date: Thu, 27 May 2010 13:46:35 -0400 (EDT)
-From: Len Brown <lenb@kernel.org>
-X-X-Sender: lenb@localhost.localdomain
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: sfi-devel@simplefirmware.org,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: [git pull request] SFI patches for 2.6.35-merge
-Message-id: <alpine.LFD.2.00.1005271343050.4127@localhost.localdomain>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
-MIME-version: 1.0
-Content-type: TEXT/PLAIN; charset=US-ASCII
+	Thu, 27 May 2010 13:46:43 -0400
+Subject: Re: [linux-pm] [PATCH 0/8] Suspend block api (version 8)
+From: Peter Zijlstra <peterz@infradead.org>
+To: Matthew Garrett <mjg59@srcf.ucam.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
+       Arve =?ISO-8859-1?Q?Hj=F8nnev=E5g?= <arve@android.com>,
+       Florian Mickler <florian@mickler.org>,
+       Vitaly Wool <vitalywool@gmail.com>, LKML <linux-kernel@vger.kernel.org>,
+       Paul@smtp1.linux-foundation.org, felipe.balbi@nokia.com,
+       Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
+       Linux PM <linux-pm@lists.linux-foundation.org>
+In-Reply-To: <20100527174140.GB3187@srcf.ucam.org>
+References: <20100527161943.GA32764@srcf.ucam.org>
+	 <alpine.LFD.2.00.1005271901020.3032@localhost.localdomain>
+	 <20100527170740.GA1980@srcf.ucam.org> <1274980391.27810.5552.camel@twins>
+	 <20100527171644.GA2468@srcf.ucam.org> <1274980856.27810.5582.camel@twins>
+	 <20100527172510.GC2468@srcf.ucam.org> <1274981288.27810.5609.camel@twins>
+	 <20100527173218.GF2468@srcf.ucam.org> <1274981750.27810.5641.camel@twins>
+	 <20100527174140.GB3187@srcf.ucam.org>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Thu, 27 May 2010 19:46:37 +0200
+Message-ID: <1274982397.27810.5679.camel@twins>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On Thu, 2010-05-27 at 18:41 +0100, Matthew Garrett wrote:
+> On Thu, May 27, 2010 at 07:35:50PM +0200, Peter Zijlstra wrote:
+> > On Thu, 2010-05-27 at 18:32 +0100, Matthew Garrett wrote:
+> > > On Thu, May 27, 2010 at 07:28:08PM +0200, Peter Zijlstra wrote:
+> > > > Why would you care about the screen for a network event?
+> > > 
+> > > Because the application that needs to handle the network packet is 
+> > > currently blocked trying to draw something to the screen.
+> > 
+> > Then that's an application bug right there, isn't it?
+> > 
+> > If should have listened to the window server telling its clients it was
+> > going to go away. Drawing after you get that is your own damn fault ;-)
+> 
+> How long do you wait for applications to respond that they've stopped 
+> drawing? What if the application is heavily in swap at the time?
 
-please pull from: 
+Since we're talking about a purely idle driven power saving, we wait
+until the cpu is idle.
 
-git://git.kernel.org/pub/scm/linux/kernel/git/lenb/linux-sfi-2.6.git sfi-release
-
-This will update the files shown below.
-
-thanks!
-Len Brown
-Intel Open Source Technology Center
-
-
-ps. individual patches are available on sfi-devel@simplefirmware.org
-and a consolidated plain patch is available here:
-http://ftp.kernel.org/pub/linux/kernel/people/lenb/sfi/patches/2.6.34/acpi-sfi-release-20100121-2.6.34.diff.gz
-
- Documentation/ABI/testing/sysfs-firmware-sfi |   15 ++++
- drivers/sfi/sfi_acpi.c                       |   41 ++++++++++
- drivers/sfi/sfi_core.c                       |  105 +++++++++++++++++++++++++-
- drivers/sfi/sfi_core.h                       |    8 ++
- include/linux/sfi.h                          |   24 ++++++-
- 5 files changed, 191 insertions(+), 2 deletions(-)
- create mode 100644 Documentation/ABI/testing/sysfs-firmware-sfi
-
-through these commits:
-
-Feng Tang (2):
-      SFI: add support for v0.81 spec
-      SFI: add sysfs interface for SFI tables.
-
-with this log:
-
-commit dce80a56268fffd6b5ea57b3f6ba3d027a68f05e
-Author: Feng Tang <feng.tang@intel.com>
-Date:   Wed May 26 11:28:08 2010 +0800
-
-    SFI: add sysfs interface for SFI tables.
-    
-    Analogous to ACPI's /sys/firmware/acpi/tables/...
-    
-    create /sys/firmware/sfi/tables/
-    
-    The tables are primariy for the kernel,
-    but sometimes it is useful for user-space to be
-    able to read them.
-    
-    Signed-off-by: Feng Tang <feng.tang@intel.com>
-    Signed-off-by: Len Brown <len.brown@intel.com>
-
-commit 5487ab4a5a71e955fef7094a0624df0542da91ef
-Author: Feng Tang <feng.tang@intel.com>
-Date:   Tue May 25 16:40:47 2010 +0800
-
-    SFI: add support for v0.81 spec
-    
-    There are 2 major changes from v0.81 to v0.7:
-    1. Consolidating the SPIB/I2CB tables into a new DEVS table,
-       which is more expandable and can support other bus types
-       than spi/i2c.
-    2. Creating a new GPIO table, which list all the GPIO pins
-       used in the platform.
-    
-    However, to avoid breaking current platforms who use SFI v0.7
-    version firmware, the definitions for SPIB/I2CB will still
-    be kept for a while
-    
-    Signed-off-by: Feng Tang <feng.tang@intel.com>
-    Signed-off-by: Len Brown <len.brown@intel.com>
+Note that it doesn't need to broadcast this, it could opt to reply with
+that message on the first drawing attempt after it goes away and block
+on the second.
