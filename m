@@ -1,66 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758005Ab0E0PHu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 May 2010 11:07:50 -0400
-Received: from casper.infradead.org ([85.118.1.10]:58156 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754222Ab0E0PHt convert rfc822-to-8bit (ORCPT
+	id S1758063Ab0E0PJS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 May 2010 11:09:18 -0400
+Received: from wavehammer.waldi.eu.org ([82.139.201.20]:45767 "EHLO
+	wavehammer.waldi.eu.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752789Ab0E0PJP convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 May 2010 11:07:49 -0400
-Subject: Re: [linux-pm] [PATCH 0/8] Suspend block api (version 8)
-From: Peter Zijlstra <peterz@infradead.org>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: Matthew Garrett <mjg59@srcf.ucam.org>,
-       Arve =?ISO-8859-1?Q?Hj=F8nnev=E5g?= <arve@android.com>,
-       Florian Mickler <florian@mickler.org>,
-       Vitaly Wool <vitalywool@gmail.com>, LKML <linux-kernel@vger.kernel.org>,
-       felipe.balbi@nokia.com,
-       Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
-       Linux PM <linux-pm@lists.linux-foundation.org>
-In-Reply-To: <20100527161054.203663ca@lxorguk.ukuu.org.uk>
-References: <20100526120242.5c9b73ad@schatten.dmk.lab>
-	 <AANLkTim4021cTnhVZrQpefq1MG-eEPOFLDRO-XDepHb4@mail.gmail.com>
-	 <20100526133721.602633b2@schatten.dmk.lab>
-	 <AANLkTikzgaOFdQKess4E-D86OLPOzxP3dWiDkU_UR0ri@mail.gmail.com>
-	 <20100526142430.327ccbc4@schatten.dmk.lab>
-	 <20100526141612.3e2e0443@lxorguk.ukuu.org.uk>
-	 <AANLkTin97MMu-XO_Lk-snefBWz2ymhS0Qi1y1RxLwdVA@mail.gmail.com>
-	 <20100527003943.07c17f85@lxorguk.ukuu.org.uk>
-	 <20100527140655.GA28048@srcf.ucam.org> <1274970531.27810.5024.camel@twins>
-	 <20100527143508.GA30117@srcf.ucam.org> <1274971317.27810.5070.camel@twins>
-	 <1274971437.27810.5078.camel@twins>
-	 <20100527161054.203663ca@lxorguk.ukuu.org.uk>
-Content-Type: text/plain; charset="UTF-8"
+	Thu, 27 May 2010 11:09:15 -0400
+X-Greylist: delayed 379 seconds by postgrey-1.27 at vger.kernel.org; Thu, 27 May 2010 11:09:14 EDT
+Date: Thu, 27 May 2010 17:02:51 +0200
+From: Bastian Blank <waldi@debian.org>
+To: xen-devel@lists.xensource.com, Jeremy Fitzhardinge <jeremy@goop.org>,
+       linux-kernel@vger.kernel.org
+Subject: [PATCH] Fix name of Xen event-channel device
+Message-ID: <20100527150251.GD6040@wavehammer.waldi.eu.org>
+Mail-Followup-To: Bastian Blank <waldi@debian.org>,
+	xen-devel@lists.xensource.com,
+	Jeremy Fitzhardinge <jeremy@goop.org>, linux-kernel@vger.kernel.org
+References: <20100526105144.GA28280@wavehammer.waldi.eu.org> <20100527073512.GA17135@wavehammer.waldi.eu.org> <20100527143104.GB6040@wavehammer.waldi.eu.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
 Content-Transfer-Encoding: 8BIT
-Date: Thu, 27 May 2010 17:07:40 +0200
-Message-ID: <1274972860.27810.5156.camel@twins>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+In-Reply-To: <20100527143104.GB6040@wavehammer.waldi.eu.org>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-05-27 at 16:10 +0100, Alan Cox wrote:
-> > > Heck, for all I care, simply SIGKILL the thing and report it once the
-> > > user starts looking at his screen again.
-> > 
-> > Provide incentive for Joe Clicker to improve his app, instead of cope
-> > with the shit he created.
-> 
-> That isn't helpful. But if you feel like that I suggest you run with your
-> memory management protection disabled, it's really on there to deal with
-> crap code and its giving the wrong incentives. Come to think of it
-> you might want to remove your seatbelts and any safety catches or airbags
-> - it only encourages carelessness.
-> 
-> The reality is you need a sane, generic, race free way to express your
-> requirements (eg for hard RT) and ditto for constraining the expression
-> (for 'crapplications')
-> 
-> Arguing that you don't need to do this isn't useful. Android has
-> demonstrated a need to do this. RT has a need to do some of this.
-> Virtualisation wants elements of this etc.
+The Xen event-channel device is named evtchn in the kernel but always
+used as /dev/xen/evtchn in userspace. This patch fixes the name.
 
-Sure, I fully agree with the task and per device QoS stuff. I'm just
-saying that its good to inform the user that some app is severely
-mis-behaving.
+Signed-off-by: Bastian Blank <waldi@debian.org>
+
+diff --git a/drivers/xen/evtchn.c b/drivers/xen/evtchn.c
+index 66e185c..89cd743 100644
+--- a/drivers/xen/evtchn.c
++++ b/drivers/xen/evtchn.c
+@@ -471,7 +471,7 @@ static const struct file_operations evtchn_fops = {
+ 
+ static struct miscdevice evtchn_miscdev = {
+ 	.minor        = MISC_DYNAMIC_MINOR,
+-	.name         = "evtchn",
++	.name         = "xen/evtchn",
+ 	.fops         = &evtchn_fops,
+ };
+ static int __init evtchn_init(void)
+-- 
+Yes, it is written.  Good shall always destroy evil.
+		-- Sirah the Yang, "The Omega Glory", stardate unknown
