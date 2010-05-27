@@ -1,190 +1,200 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932388Ab0E0Pom (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 May 2010 11:44:42 -0400
-Received: from cantor.suse.de ([195.135.220.2]:59292 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932128Ab0E0Pok (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 May 2010 11:44:40 -0400
-Date: Fri, 28 May 2010 01:44:36 +1000
-From: Nick Piggin <npiggin@suse.de>
-To: Artem Bityutskiy <dedekind1@gmail.com>
-Cc: Al Viro <viro@ZenIV.linux.org.uk>, LKML <linux-kernel@vger.kernel.org>,
-       Jens Axboe <jens.axboe@oracle.com>, linux-fsdevel@vger.kernel.org
-Subject: Re: [PATCHv4 17/17] writeback: lessen sync_supers wakeup count
-Message-ID: <20100527154435.GS22536@laptop>
-References: <1274795352-3551-1-git-send-email-dedekind1@gmail.com>
- <1274795352-3551-18-git-send-email-dedekind1@gmail.com>
- <20100527065041.GA31073@ZenIV.linux.org.uk>
- <20100527072240.GM22536@laptop>
- <1274957469.13159.20.camel@localhost>
- <20100527120737.GN22536@laptop>
- <1274973693.15516.67.camel@localhost>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1274973693.15516.67.camel@localhost>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S932448Ab0E0PpZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 May 2010 11:45:25 -0400
+Received: from az33egw02.freescale.net ([192.88.158.103]:44966 "EHLO
+	az33egw02.freescale.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932272Ab0E0PpW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 May 2010 11:45:22 -0400
+From: Dinh.Nguyen@freescale.com
+To: linux-kernel@vger.kernel.org
+Cc: linux-arm-kernel@lists.infradead.org, s.hauer@pengutronix.de,
+       valentin.longchamp@epfl.ch, daniel@caiaq.de, grant.likely@secretlab.ca,
+       xiao-lizhang@freescale.com, Dinh Nguyen <Dinh.Nguyen@freescale.com>
+Subject: [PATCHv3 2.6.34 1/2] mx5: Add i2c to Freescale MX51 Babbage HW
+Date: Thu, 27 May 2010 10:45:04 -0500
+Message-Id: <1274975105-8884-1-git-send-email-Dinh.Nguyen@freescale.com>
+X-Mailer: git-send-email 1.6.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 27, 2010 at 06:21:33PM +0300, Artem Bityutskiy wrote:
-> On Thu, 2010-05-27 at 22:07 +1000, Nick Piggin wrote:
-> > 1. sb->s_dirty = 1; /* store */
-> > 2. if (!supers_timer_armed) /* load */
-> > 3.   supers_timer_armed = 1; /* store */
-> > 
-> > and
-> > 
-> > A. supers_timer_armed = 0; /* store */
-> > B. if (sb->s_dirty) /* load */
-> > C.   sb->s_dirty = 0 /* store */
-> > 
-> > If these two sequences are executed, it must result in
-> > sb->s_dirty == 1 iff supers_timer_armed
-> > 
-> > * If 2 is executed before 1 is visible, then 2 may miss A before B sees 1.
-> > * If B is executed before A is visible, then B may miss 1 before 2 sees A.
-> > 
-> > So we need smp_mb() between 1/2 and A/B (I missed the 2nd one).
-> 
-> Yes, thanks for elaboration.
-> 
-> > How about something like this?
-> 
-> It looks good, many thanks! But I have few small notes.
-> 
-> > Index: linux-2.6/mm/backing-dev.c
-> > ===================================================================
-> > --- linux-2.6.orig/mm/backing-dev.c
-> > +++ linux-2.6/mm/backing-dev.c
-> > @@ -45,6 +45,7 @@ LIST_HEAD(bdi_pending_list);
-> >  
-> >  static struct task_struct *sync_supers_tsk;
-> >  static struct timer_list sync_supers_timer;
-> > +static unsigned long supers_dirty __read_mostly;
-> >  
-> >  static int bdi_sync_supers(void *);
-> >  static void sync_supers_timer_fn(unsigned long);
-> > @@ -251,7 +252,6 @@ static int __init default_bdi_init(void)
-> >  
-> >  	init_timer(&sync_supers_timer);
-> >  	setup_timer(&sync_supers_timer, sync_supers_timer_fn, 0);
-> > -	bdi_arm_supers_timer();
-> >  
-> >  	err = bdi_init(&default_backing_dev_info);
-> >  	if (!err)
-> > @@ -362,17 +362,28 @@ static int bdi_sync_supers(void *unused)
-> >  
-> >  	while (!kthread_should_stop()) {
-> >  		set_current_state(TASK_INTERRUPTIBLE);
-> > -		schedule();
-> > +		if (!supers_dirty)
-> > +			schedule();
-> > +		else
-> > +			__set_current_state(TASK_RUNNING);
-> 
-> I think this will change the behavior of 'sync_supers()' too much. ATM,
-> it makes only one SB pass, then sleeps, then another one, then sleeps.
-> And we should probably preserve this behavior. So I'd rather make it:
-> 
-> if (supers_dirty)
-> 	bdi_arm_supers_timer();
-> set_current_state(TASK_INTERRUPTIBLE);
-> schedule();
-> 
-> This way we will keep the behavior closer to the original.
+From: Dinh Nguyen <Dinh.Nguyen@freescale.com>
 
-Well your previous code had the same issue (ie. it could loop again
-in sync_supers). But fair point perhaps.
+This patch adds I2C functionality to the Freescale MX51 Babbage HW.
+The patch adds device structures, i2c board slave device defines,
+IOMUX pin defines, and clocks.
 
-But we cannot do the above, because again the timer might go off
-before we set current state. We'd lose the wakeup and never wake
-up again.
+Signed-off-by: Dinh Nguyen <Dinh.Nguyen@freescale.com>
+---
+ arch/arm/mach-mx5/clock-mx51.c              |   11 +++++
+ arch/arm/mach-mx5/devices.c                 |   58 +++++++++++++++++++++++++++
+ arch/arm/mach-mx5/devices.h                 |    3 +
+ arch/arm/plat-mxc/include/mach/iomux-mx51.h |   18 ++++++---
+ 4 files changed, 84 insertions(+), 6 deletions(-)
 
-Putting it inside set_current_state() should be OK. I suppose.
-
-
-> > +		supers_dirty = 0;
-> >  		/*
-> > -		 * Do this periodically, like kupdated() did before.
-> > +		 * supers_dirty store must be visible to mark_sb_dirty (below)
-> > +		 * before sync_supers runs (which loads sb->s_dirty).
-> >  		 */
-> 
-> Very minor, but the code tends to change quickly, and this note (below)
-> will probably become out-of-date soon.
-
-Oh sure, get rid of the "(below)"
-
+diff --git a/arch/arm/mach-mx5/clock-mx51.c b/arch/arm/mach-mx5/clock-mx51.c
+index d9f612d..fd24092 100644
+--- a/arch/arm/mach-mx5/clock-mx51.c
++++ b/arch/arm/mach-mx5/clock-mx51.c
+@@ -798,6 +798,14 @@ DEFINE_CLOCK(gpt_clk, 0, MXC_CCM_CCGR2, MXC_CCM_CCGRx_CG9_OFFSET,
+ DEFINE_CLOCK(gpt_ipg_clk, 0, MXC_CCM_CCGR2, MXC_CCM_CCGRx_CG10_OFFSET,
+ 	NULL,  NULL, &ipg_clk, NULL);
  
-> > +		smp_mb();
-> 
-> There is spin_lock(&sb_lock) in sync_supers(), so strictly speak this
-> 'smp_mb()' is not needed if we move supers_dirty = 0 into
-> 'sync_supers()' and add a comment that a mb is required, in case some
-> one modifies the code later?
-> 
-> Or this is not worth it?
-
-It's a bit tricky. spin_lock only gives an acquire barrier, which
-prevents CPU executing instructions inside the critical section
-before acquiring the lock. It actually allows stores to be deferred
-from becoming visible to other CPUs until inside the critical section.
-So the load of sb->s_dirty could indeed still happen before the
-store is seen.
-
-Locks do allow you to avoid thinking about barriers, but *only* when
-all memory accesses to all shared variables are inside the locks
-(or when a section has just a single access, which by definition don't
-need ordering with another access).
-
++/* I2C */
++DEFINE_CLOCK(i2c1_clk, 0, MXC_CCM_CCGR1, MXC_CCM_CCGRx_CG9_OFFSET,
++	NULL, NULL, &ipg_clk, NULL);
++DEFINE_CLOCK(i2c2_clk, 1, MXC_CCM_CCGR1, MXC_CCM_CCGRx_CG10_OFFSET,
++	NULL, NULL, &ipg_clk, NULL);
++DEFINE_CLOCK(hsi2c_clk, 0, MXC_CCM_CCGR1, MXC_CCM_CCGRx_CG11_OFFSET,
++	NULL, NULL, &ipg_clk, NULL);
++
+ /* FEC */
+ DEFINE_CLOCK(fec_clk, 0, MXC_CCM_CCGR2, MXC_CCM_CCGRx_CG12_OFFSET,
+ 	NULL,  NULL, &ipg_clk, NULL);
+@@ -815,6 +823,9 @@ static struct clk_lookup lookups[] = {
+ 	_REGISTER_CLOCK("imx-uart.2", NULL, uart3_clk)
+ 	_REGISTER_CLOCK(NULL, "gpt", gpt_clk)
+ 	_REGISTER_CLOCK("fec.0", NULL, fec_clk)
++	_REGISTER_CLOCK("imx-i2c.0", NULL, i2c1_clk)
++	_REGISTER_CLOCK("imx-i2c.1", NULL, i2c2_clk)
++	_REGISTER_CLOCK("imx-i2c.2", NULL, hsi2c_clk)
+ 	_REGISTER_CLOCK("mxc-ehci.0", "usb", usboh3_clk)
+ 	_REGISTER_CLOCK("mxc-ehci.0", "usb_ahb", ahb_clk)
+ 	_REGISTER_CLOCK("mxc-ehci.1", "usb", usboh3_clk)
+diff --git a/arch/arm/mach-mx5/devices.c b/arch/arm/mach-mx5/devices.c
+index 23850e6..922a70e 100644
+--- a/arch/arm/mach-mx5/devices.c
++++ b/arch/arm/mach-mx5/devices.c
+@@ -93,6 +93,64 @@ struct platform_device mxc_fec_device = {
+ 	.resource = mxc_fec_resources,
+ };
  
-> >  		sync_supers();
-> >  	}
-> >  
-> >  	return 0;
-> >  }
-> >  
-> > +static void sync_supers_timer_fn(unsigned long unused)
-> > +{
-> > +	wake_up_process(sync_supers_tsk);
-> > +}
-> > +
-> >  void bdi_arm_supers_timer(void)
-> >  {
-> >  	unsigned long next;
-> > @@ -384,9 +395,17 @@ void bdi_arm_supers_timer(void)
-> >  	mod_timer(&sync_supers_timer, round_jiffies_up(next));
-> >  }
-> >  
-> > -static void sync_supers_timer_fn(unsigned long unused)
-> > +void mark_sb_dirty(struct super_block *sb)
-> >  {
-> > -	wake_up_process(sync_supers_tsk);
-> > +	sb->s_dirty = 1;
-> > +	/*
-> > +	 * sb->s_dirty store must be visible to sync_supers (above) before we
-> > +	 * load supers_dirty in case we need to re-arm the timer.
-> > +	 */
-> Similar for the "(above)" note.
-
-Sure.
-
++static struct resource mxc_i2c0_resources[] = {
++	{
++		.start = MX51_I2C1_BASE_ADDR,
++		.end = MX51_I2C1_BASE_ADDR + SZ_4K - 1,
++		.flags = IORESOURCE_MEM,
++	}, {
++		.start = MX51_MXC_INT_I2C1,
++		.end = MX51_MXC_INT_I2C1,
++		.flags = IORESOURCE_IRQ,
++	},
++};
++
++struct platform_device mxc_i2c_device0 = {
++	.name = "imx-i2c",
++	.id = 0,
++	.num_resources = ARRAY_SIZE(mxc_i2c0_resources),
++	.resource = mxc_i2c0_resources,
++};
++
++static struct resource mxc_i2c1_resources[] = {
++	{
++		.start = MX51_I2C2_BASE_ADDR,
++		.end = MX51_I2C2_BASE_ADDR + SZ_4K - 1,
++		.flags = IORESOURCE_MEM,
++	}, {
++		.start = MX51_MXC_INT_I2C2,
++		.end = MX51_MXC_INT_I2C2,
++		.flags = IORESOURCE_IRQ,
++	},
++};
++
++struct platform_device mxc_i2c_device1 = {
++	.name = "imx-i2c",
++	.id = 1,
++	.num_resources = ARRAY_SIZE(mxc_i2c1_resources),
++	.resource = mxc_i2c1_resources,
++};
++
++static struct resource mxc_hsi2c_resources[] = {
++	{
++		.start = MX51_HSI2C_DMA_BASE_ADDR,
++		.end = MX51_HSI2C_DMA_BASE_ADDR + SZ_16K - 1,
++		.flags = IORESOURCE_MEM,
++	},
++	{
++		.start = MX51_MXC_INT_HS_I2C,
++		.end = MX51_MXC_INT_HS_I2C,
++		.flags = IORESOURCE_IRQ,
++	},
++};
++
++struct platform_device mxc_hsi2c_device = {
++	.name = "imx-i2c",
++	.id = 2,
++	.num_resources = ARRAY_SIZE(mxc_hsi2c_resources),
++	.resource = mxc_hsi2c_resources
++};
++
+ static u64 usb_dma_mask = DMA_BIT_MASK(32);
  
-> > +	smp_mb();
-> > +	if (likely(supers_dirty))
-> > +		return;
-> > +	supers_dirty = 1;
-> >  	bdi_arm_supers_timer();
-> >  }
-> 
-> Here is the with my modifications. 
-> 
-> BTW, do you want me to keep you to be the patch author, add your
-> signed-off-by and my original commit message?
-
-I'm not concerned. You contributed more to the idea+implementation,
-so record yourself as author.
+ static struct resource usbotg_resources[] = {
+diff --git a/arch/arm/mach-mx5/devices.h b/arch/arm/mach-mx5/devices.h
+index 0494d6b..d0451bf 100644
+--- a/arch/arm/mach-mx5/devices.h
++++ b/arch/arm/mach-mx5/devices.h
+@@ -5,3 +5,6 @@ extern struct platform_device mxc_fec_device;
+ extern struct platform_device mxc_usbdr_host_device;
+ extern struct platform_device mxc_usbh1_device;
+ extern struct platform_device mxc_usbdr_udc_device;
++extern struct platform_device mxc_i2c_device0;
++extern struct platform_device mxc_i2c_device1;
++extern struct platform_device mxc_hsi2c_device;
+diff --git a/arch/arm/plat-mxc/include/mach/iomux-mx51.h b/arch/arm/plat-mxc/include/mach/iomux-mx51.h
+index ab0f95d..38961c6 100644
+--- a/arch/arm/plat-mxc/include/mach/iomux-mx51.h
++++ b/arch/arm/plat-mxc/include/mach/iomux-mx51.h
+@@ -38,6 +38,8 @@ typedef enum iomux_config {
+ 				PAD_CTL_SRE_FAST)
+ #define MX51_UART3_PAD_CTRL	(PAD_CTL_PKE | PAD_CTL_DSE_HIGH | \
+ 				PAD_CTL_SRE_FAST)
++#define MX51_I2C_PAD_CTRL		(PAD_CTL_SRE_FAST | PAD_CTL_ODE | \
++				PAD_CTL_DSE_HIGH | PAD_CTL_PUS_100K_UP | PAD_CTL_HYS)
+ #define MX51_USBH1_PAD_CTRL	(PAD_CTL_SRE_FAST | PAD_CTL_DSE_HIGH | \
+ 				PAD_CTL_PUS_100K_UP | PAD_CTL_PUE | \
+ 				PAD_CTL_PKE | PAD_CTL_HYS)
+@@ -57,10 +59,12 @@ typedef enum iomux_config {
+ 
+ /*						PAD      MUX   ALT INPSE PATH PADCTRL */
+ 
+-#define MX51_PAD_GPIO_2_0__EIM_D16	IOMUX_PAD(0x3f0, 0x05c, 1, 0x0,   0, NO_PAD_CTRL)
++#define MX51_PAD_EIM_D16__I2C1_SDA	IOMUX_PAD(0x3f0, 0x05c, IOMUX_CONFIG_ALT4 | IOMUX_CONFIG_SION, \
++					0x09b4, 0, MX51_I2C_PAD_CTRL)
+ #define MX51_PAD_GPIO_2_1__EIM_D17	IOMUX_PAD(0x3f4, 0x060, 1, 0x0,   0, NO_PAD_CTRL)
+ #define MX51_PAD_GPIO_2_2__EIM_D18	IOMUX_PAD(0x3f8, 0x064, 1, 0x0,   0, NO_PAD_CTRL)
+-#define MX51_PAD_GPIO_2_3__EIM_D19	IOMUX_PAD(0x3fc, 0x068, 1, 0x0,   0, NO_PAD_CTRL)
++#define MX51_PAD_EIM_D19__I2C1_SCL	IOMUX_PAD(0x3fc, 0x068, IOMUX_CONFIG_ALT4 | IOMUX_CONFIG_SION, \
++					0x09b0, 0, MX51_I2C_PAD_CTRL)
+ #define MX51_PAD_GPIO_2_4__EIM_D20	IOMUX_PAD(0x400, 0x06c, 1, 0x0,   0, NO_PAD_CTRL)
+ #define MX51_PAD_GPIO_2_5__EIM_D21	IOMUX_PAD(0x404, 0x070, 1, 0x0,   0, NO_PAD_CTRL)
+ #define MX51_PAD_EIM_D21__GPIO_2_5	IOMUX_PAD(0x404, 0x070, IOMUX_CONFIG_ALT1, 0x0,   0, MX51_GPIO_PAD_CTRL)
+@@ -179,8 +183,8 @@ typedef enum iomux_config {
+ #define MX51_PAD_GPIO_4_14__CSI2_HSYNC	IOMUX_PAD(0x5E0, 0x1F0, 3, 0x0, 0, NO_PAD_CTRL)
+ #define MX51_PAD_GPIO_4_15__CSI2_PIXCLK	IOMUX_PAD(0x5E4, 0x1F4, 3, 0x0, 0, NO_PAD_CTRL)
+ #define MX51_PAD_CSI2_PKE0__CSI2_PKE0	IOMUX_PAD(0x81C, 0x0, 0, 0x0, 0, NO_PAD_CTRL)
+-#define MX51_PAD_GPIO_4_16__I2C1_CLK	IOMUX_PAD(0x5E8, 0x1F8, 3, 0x0, 0, NO_PAD_CTRL)
+-#define MX51_PAD_GPIO_4_17__I2C1_DAT	IOMUX_PAD(0x5EC, 0x1FC, 3, 0x0, 0, NO_PAD_CTRL)
++#define MX51_PAD_I2C1_CLK__HSI2C_CLK	IOMUX_PAD(0x5E8, 0x1F8, IOMUX_CONFIG_ALT0, 0x0, 0, NO_PAD_CTRL)
++#define MX51_PAD_I2C1_DAT__HSI2C_DAT	IOMUX_PAD(0x5EC, 0x1FC, IOMUX_CONFIG_ALT0, 0x0, 0, NO_PAD_CTRL)
+ #define MX51_PAD_GPIO_4_18__AUD3_BB_TXD	IOMUX_PAD(0x5F0, 0x200, 3, 0x0, 0, NO_PAD_CTRL)
+ #define MX51_PAD_GPIO_4_19__AUD3_BB_RXD	IOMUX_PAD(0x5F4, 0x204, 3, 0x0, 0, NO_PAD_CTRL)
+ #define MX51_PAD_GPIO_4_20__AUD3_BB_CK	IOMUX_PAD(0x5F8, 0x208, 3, 0x0, 0, NO_PAD_CTRL)
+@@ -213,8 +217,10 @@ typedef enum iomux_config {
+ #define MX51_PAD_KEY_COL1__KEY_COL1	IOMUX_PAD(0x650, 0x260, 0, 0x0, 0, NO_PAD_CTRL)
+ #define MX51_PAD_KEY_COL2__KEY_COL2	IOMUX_PAD(0x654, 0x264, 0, 0x0, 0, NO_PAD_CTRL)
+ #define MX51_PAD_KEY_COL3__KEY_COL3	IOMUX_PAD(0x658, 0x268, 0, 0x0, 0, NO_PAD_CTRL)
+-#define MX51_PAD_KEY_COL4__KEY_COL4	IOMUX_PAD(0x65C, 0x26C, 0, 0x0, 0, NO_PAD_CTRL)
+-#define MX51_PAD_KEY_COL5__KEY_COL5	IOMUX_PAD(0x660, 0x270, 0, 0x0, 0, NO_PAD_CTRL)
++#define MX51_PAD_KEY_COL4__I2C2_SCL	IOMUX_PAD(0x65C, 0x26C, IOMUX_CONFIG_ALT3 | IOMUX_CONFIG_SION, \
++					0x09b8, 1, MX51_I2C_PAD_CTRL)
++#define MX51_PAD_KEY_COL5__I2C2_SDA	IOMUX_PAD(0x660, 0x270, IOMUX_CONFIG_ALT3 | IOMUX_CONFIG_SION, \
++					0x09bc, 1, MX51_I2C_PAD_CTRL)
+ #define MX51_PAD_USBH1_CLK__USBH1_CLK	IOMUX_PAD(0x678, 0x278, IOMUX_CONFIG_ALT0, 0x0, 0, MX51_USBH1_PAD_CTRL)
+ #define MX51_PAD_USBH1_DIR__USBH1_DIR	IOMUX_PAD(0x67C, 0x27C, IOMUX_CONFIG_ALT0, 0x0, 0, MX51_USBH1_PAD_CTRL)
+ #define MX51_PAD_USBH1_STP__USBH1_STP	IOMUX_PAD(0x680, 0x280, IOMUX_CONFIG_ALT0, 0x0, 0, MX51_USBH1_PAD_CTRL)
+-- 
+1.6.0.4
 
