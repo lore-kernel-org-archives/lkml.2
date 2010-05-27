@@ -1,43 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757450Ab0E0QOA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 May 2010 12:14:00 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:33330 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755411Ab0E0QN7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 May 2010 12:13:59 -0400
-Date: Thu, 27 May 2010 12:13:47 -0400
-From: Christoph Hellwig <hch@infradead.org>
-To: Matthias Schniedermeyer <ms@citd.de>
-Cc: Christoph Hellwig <hch@infradead.org>,
-       Jaswinder Singh Rajput <jaswinderlinux@gmail.com>,
-       Sam Ravnborg <sam@ravnborg.org>, Ingo Molnar <mingo@elte.hu>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       the arch/x86 maintainers <x86@kernel.org>,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: config automatically switches from 32-bit to 64-bit for x86
-Message-ID: <20100527161347.GA5005@infradead.org>
-References: <AANLkTik0PUKP3QLPRbb3nlh034_inmaeVbXy3q5_LQz-@mail.gmail.com> <20100527154916.GA5585@infradead.org> <20100527161134.GA2690@citd.de>
+	id S1757707Ab0E0QRr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 May 2010 12:17:47 -0400
+Received: from hera.kernel.org ([140.211.167.34]:47926 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752754Ab0E0QRp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 May 2010 12:17:45 -0400
+Message-ID: <4BFE9ABA.6030907@kernel.org>
+Date: Thu, 27 May 2010 18:15:54 +0200
+From: Tejun Heo <tj@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.1.9) Gecko/20100317 Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100527161134.GA2690@citd.de>
-User-Agent: Mutt/1.5.19 (2009-01-05)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+To: "Michael S. Tsirkin" <mst@redhat.com>
+CC: Oleg Nesterov <oleg@redhat.com>, Sridhar Samudrala <sri@us.ibm.com>,
+       netdev <netdev@vger.kernel.org>, lkml <linux-kernel@vger.kernel.org>,
+       "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Dmitri Vorobiev <dmitri.vorobiev@movial.com>,
+       Jiri Kosina <jkosina@suse.cz>, Thomas Gleixner <tglx@linutronix.de>,
+       Ingo Molnar <mingo@elte.hu>, Andi Kleen <ak@linux.intel.com>
+Subject: Re: [PATCH 2/3] workqueue: Add an API to create a singlethread	workqueue
+ attached to the current task's cgroup
+References: <1274227491.2370.110.camel@w-sridhar.beaverton.ibm.com> <20100527091426.GA6308@redhat.com> <20100527124448.GA4241@redhat.com> <20100527131254.GB7974@redhat.com>
+In-Reply-To: <20100527131254.GB7974@redhat.com>
+X-Enigmail-Version: 1.0.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Thu, 27 May 2010 16:15:56 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 27, 2010 at 06:11:34PM +0200, Matthias Schniedermeyer wrote:
-> Just use ARCH=x86. That ARCH respects CONFIG_64BIT from .config and 
-> "CONFIG_64BIT" is a config-option (the very first in menuconfig)
+Hello,
 
-Which is an obsolute pain to type, even worse than doing a linux32 call
-first.  Really, a simple
+On 05/27/2010 03:12 PM, Michael S. Tsirkin wrote:
+>> I don't understand the reasons for this patch, but this doesn't matter.
+> 
+> Depending on userspace application, driver can create a lot of work
+> for a workqueue to handle. By making the workqueue thread
+> belong in a cgroup, we make it possible to the CPU and other
+> resources thus consumed.
 
-	make
+Hmmm.... I don't really get it.  The unit of scheduling in workqueue
+is a work.  Unless you're gonna convert every driver to use this
+special kind of workqueue (and what happens when multiple tasks from
+different cgroups share the driver?), I can't see how this is gonna be
+useful.  If you really wanna impose cgroup control on workqueue items,
+you'll have to do it per work item which might lead to the problem of
+priority inversion.  Can you please describe what you're trying to do
+in more detail?
 
-should default to do the right thing.
+Thank you.
 
+-- 
+tejun
