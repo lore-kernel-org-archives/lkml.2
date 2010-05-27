@@ -1,62 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759284Ab0E0RNv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 May 2010 13:13:51 -0400
-Received: from mgw2.diku.dk ([130.225.96.92]:38579 "EHLO mgw2.diku.dk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759250Ab0E0RNt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 May 2010 13:13:49 -0400
-Date: Thu, 27 May 2010 19:13:43 +0200 (CEST)
-From: Julia Lawall <julia@diku.dk>
-To: walter harms <wharms@bfs.de>
-Cc: Dan Carpenter <error27@gmail.com>,
-       HighPoint Linux Team <linux@highpoint-tech.com>,
-       "James E.J. Bottomley" <James.Bottomley@suse.de>,
-       linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
-       kernel-janitors@vger.kernel.org
-Subject: Re: [PATCH 7/11] drivers/scsi: Eliminate a NULL pointer dereference
-In-Reply-To: <4BFEA700.20603@bfs.de>
-Message-ID: <Pine.LNX.4.64.1005271911590.5422@ask.diku.dk>
-References: <Pine.LNX.4.64.1005271433330.5422@ask.diku.dk> <20100527165301.GU22515@bicker>
- <4BFEA700.20603@bfs.de>
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1759296Ab0E0ROF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 May 2010 13:14:05 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:40436 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754600Ab0E0ROA convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 May 2010 13:14:00 -0400
+Subject: Re: [linux-pm] [PATCH 0/8] Suspend block api (version 8)
+From: Peter Zijlstra <peterz@infradead.org>
+To: Alan Stern <stern@rowland.harvard.edu>
+Cc: Felipe Balbi <felipe.balbi@nokia.com>,
+       Thomas Gleixner <tglx@linutronix.de>,
+       Arve =?ISO-8859-1?Q?Hj=F8nnev=E5g?= <arve@android.com>,
+       "Paul@smtp1.linux-foundation.org" <Paul@smtp1.linux-foundation.org>,
+       LKML <linux-kernel@vger.kernel.org>,
+       Florian Mickler <florian@mickler.org>,
+       Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
+       Linux PM <linux-pm@lists.linux-foundation.org>,
+       Alan Cox <alan@lxorguk.ukuu.org.uk>
+In-Reply-To: <Pine.LNX.4.44L0.1005271303190.3239-100000@iolanthe.rowland.org>
+References: <Pine.LNX.4.44L0.1005271303190.3239-100000@iolanthe.rowland.org>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Thu, 27 May 2010 19:13:40 +0200
+Message-ID: <1274980420.27810.5557.camel@twins>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 27 May 2010, walter harms wrote:
-
+On Thu, 2010-05-27 at 13:04 -0400, Alan Stern wrote:
 > 
-> 
-> Dan Carpenter schrieb:
-> > On Thu, May 27, 2010 at 02:33:47PM +0200, Julia Lawall wrote:
-> >> If it is a problem to use 0 when host is NULL, then the code could be fixed
-> >> in another way.
-> >>
-> > 
-> > Yeah.  It seems like it would be better to give a clearly bogus number.
-> > I would have said -1 but "scsi-1" looks normal so maybe something like 
-> > 9999999?
-> > 
-> 
-> lets spend some bytes:
-> 
-> 	
-> 	if (host)
-> 		dprintk("scsi%d: hptiop_probe failed\n",host->host_no);
-> 	else
-> 		dprintk("scsi: no host, hptiop_probe failed\n");
+> Does this mean you believe "echo mem >/sys/power/state" is bad and
+> should be removed?  Or "echo disk >/sys/power/state"?  They pay no
+> attention to latencies or other requirements. 
 
-dprintk is defined in hptiop.h as:
+Those are a whole different beast, those are basically a quick-off
+button like thing. Forced suspend is conceptually a very different beast
+from power-saving a running system.
 
-#if 0
-#define dprintk(fmt, args...) do { printk(fmt, ##args); } while(0)
-#else
-#define dprintk(fmt, args...)
-#endif
 
-So unless someone adjusts the #if 0, there is no code.  I guess there is a 
-danger that adding such an if would actually generate some code?
-
-julia
