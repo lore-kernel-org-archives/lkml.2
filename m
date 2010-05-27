@@ -1,151 +1,168 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758230Ab0E0Qp2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 May 2010 12:45:28 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:59127 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758136Ab0E0QpY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 May 2010 12:45:24 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:date:message-id:subject:from:to:cc:content-type;
-        b=RLQHVbC3Fi13YAOtinryKqOKgs2/ij8upJUCoVaPQp5y6ZnlNvBnnCjAI4NRt/a+1v
-         gDfUaYNdFrsV9iJkk0yjTuQvIs66SJVUZbNICldfaqZv0cE9VDLf8z7yfVkRIgcgqeTq
-         Tb3PW4Tpijm/HUOfxDvivAniQz6qE4V9At6SY=
+	id S932168Ab0E0Qqa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 May 2010 12:46:30 -0400
+Received: from www.tglx.de ([62.245.132.106]:48968 "EHLO www.tglx.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757984Ab0E0Qq2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 May 2010 12:46:28 -0400
+Date: Thu, 27 May 2010 18:45:25 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Matthew Garrett <mjg59@srcf.ucam.org>
+cc: Alan Cox <alan@lxorguk.ukuu.org.uk>,
+       =?ISO-8859-15?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>,
+       Florian Mickler <florian@mickler.org>,
+       Vitaly Wool <vitalywool@gmail.com>,
+       Peter Zijlstra <peterz@infradead.org>,
+       LKML <linux-kernel@vger.kernel.org>, Paul@smtp1.linux-foundation.org,
+       felipe.balbi@nokia.com,
+       Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
+       Linux PM <linux-pm@lists.linux-foundation.org>
+Subject: Re: [linux-pm] [PATCH 0/8] Suspend block api (version 8)
+In-Reply-To: <20100527155201.GA31937@srcf.ucam.org>
+Message-ID: <alpine.LFD.2.00.1005271808340.3032@localhost.localdomain>
+References: <20100526120242.5c9b73ad@schatten.dmk.lab> <AANLkTim4021cTnhVZrQpefq1MG-eEPOFLDRO-XDepHb4@mail.gmail.com> <20100526133721.602633b2@schatten.dmk.lab> <AANLkTikzgaOFdQKess4E-D86OLPOzxP3dWiDkU_UR0ri@mail.gmail.com> <20100526142430.327ccbc4@schatten.dmk.lab>
+ <20100526141612.3e2e0443@lxorguk.ukuu.org.uk> <AANLkTin97MMu-XO_Lk-snefBWz2ymhS0Qi1y1RxLwdVA@mail.gmail.com> <20100527003943.07c17f85@lxorguk.ukuu.org.uk> <20100527140655.GA28048@srcf.ucam.org> <alpine.LFD.2.00.1005271642440.3032@localhost.localdomain>
+ <20100527155201.GA31937@srcf.ucam.org>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-Date: Thu, 27 May 2010 12:45:22 -0400
-Message-ID: <AANLkTilo5onZPVM2KQFHPaQxDOSfpYA6w2ugYpTc8MOM@mail.gmail.com>
-Subject: [PATCH 1/4] [x86/mm] Correcting improper large page preservation
-From: Siarhei Liakh <sliakh.lkml@gmail.com>
-To: linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
-       linux-next@vger.kernel.org
-Cc: Arjan van de Ven <arjan@infradead.org>, James Morris <jmorris@namei.org>,
-       Andrew Morton <akpm@linux-foundation.org>, Andi Kleen <ak@muc.de>,
-       Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
-       Ingo Molnar <mingo@elte.hu>, Rusty Russell <rusty@rustcorp.com.au>,
-       Stephen Rothwell <sfr@canb.auug.org.au>, Dave Jones <davej@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch fixes a bug in try_preserve_large_page() which may result
-in improper large page preservation and improper application of page
-attributes to the memory area outside of the original change request.
-More specifically, the problem manifests itself when set_memory_*() is
-called for several pages at the beginning of the large page and
-try_preserve_large_page() erroneously concludes that the change can be
-applied to whole large page.
-The fix consists of 3 parts:
-1. addition of "required" protection attributes in
-static_protections(), so .data and .bss can be guaranteed to stay "RW"
-2. static_protections() is now called for every small page within
-large page to determine compatibility of new protection attributes
-(instead of just small pages within the requested range).
-3. large page can be preserved only if attribute change is
-large-page-aligned and covers whole large page.
+On Thu, 27 May 2010, Matthew Garrett wrote:
+> On Thu, May 27, 2010 at 05:32:56PM +0200, Thomas Gleixner wrote:
+> > On Thu, 27 May 2010, Matthew Garrett wrote:
+> > > Now let's try this in the Android world. The user hits a key and the 
+> > > system wakes up. The input layer takes a suspend block. The application 
+> > > now draws all the cows it wants to, takes its own suspend block and 
+> > > reads the input device. This empties the queue and the kernel-level 
+> > > suspend block is released. The application then processes the event 
+> > > before releasing the suspend block. The event has been delivered and 
+> > > handled.
+> > 
+> > Thanks for providing this example:
+> > 
+> >   1) It proves that suspend blockers are solely designed to encourage
+> >      people to code crap.
+> 
+> No. Suspend blockers are designed to ensure that suspend isn't racy with 
+> respect to wakeup events. The bit that mitigates badly written 
+> applications is the bit where the scheduler doesn't run any more.
+> 
+> If you're happy with a single badly written application being able to 
+> cripple your power management story, you don't need opportunistic 
+> suspend. But you still have complications when it comes to deciding to 
+> enter suspend at the same time as you receive a wakeup event.
 
-V1:  try_preserve_large_page() patch for Linux 2.6.34-rc2
+Wrong. Setting the QoS requirements of the badly written app to any
+latency will allow the kernel to suspend even if the crappy app is
+active.
 
-Signed-off-by: Siarhei Liakh <sliakh.lkml@gmail.com>
-Signed-off-by: Xuxian Jiang <jiang@cs.ncsu.edu>
----
+And again. I'm opposing the general chant that fixing crappy
+applications in the kernel is a good thing. It's the worst decision we
+could make.
+ 
+> >      And you need to do that, because the user applications suspend
+> >      blocker magic is racy as hell. To work around that you sprinkle
+> >      your suspend blocker magic all over the kernel instead of telling
+> >      people how to solve the problem correctly.
+> 
+> What /is/ the correct way to solve this problem when entering explicit 
+> suspend states? How do you guarantee that an event has been delivered to 
+> userspace before transitioning into suspend? Now, this is a less 
+> interesting problem if you're not using opportunistic suspend, but it's 
+> still a problem.
 
-diff --git a/arch/x86/mm/pageattr.c b/arch/x86/mm/pageattr.c
-index cf07c26..6844675 100644
---- a/arch/x86/mm/pageattr.c
-+++ b/arch/x86/mm/pageattr.c
-@@ -255,6 +255,7 @@ static inline pgprot_t static_protections(pgprot_t
-prot, unsigned long address,
-                                  unsigned long pfn)
- {
-       pgprot_t forbidden = __pgprot(0);
-+       pgprot_t required = __pgprot(0);
+Holy crap. If an event happens _before_ we go into an idle state - and
+I see suspend as an deeper idle state - then we do not go there at all.
 
-       /*
-        * The BIOS area between 640k and 1Mb needs to be executable for
-@@ -278,6 +279,15 @@ static inline pgprot_t
-static_protections(pgprot_t prot, unsigned long address,
-       if (within(pfn, __pa((unsigned long)__start_rodata) >> PAGE_SHIFT,
-                  __pa((unsigned long)__end_rodata) >> PAGE_SHIFT))
-               pgprot_val(forbidden) |= _PAGE_RW;
-+       /*
-+        * .data and .bss should always be writable.
-+        */
-+       if ((within(pfn, __pa((unsigned long)_sdata) >> PAGE_SHIFT,
-+                  __pa((unsigned long)_edata) >> PAGE_SHIFT)) ||
-+           (within(pfn, __pa((unsigned long)__bss_start) >> PAGE_SHIFT,
-+                  __pa((unsigned long)__bss_stop) >> PAGE_SHIFT))) {
-+               pgprot_val(required) |= _PAGE_RW;
-+       }
+The whole notion of treating suspend to RAM any different than a plain
+idle C-State is wrong. It's not different at all. You just use a
+different mechanism which has longer takedown and wakeup latencies and
+requires to shut down stuff and setup extra wakeup sources.
 
- #if defined(CONFIG_X86_64) && defined(CONFIG_DEBUG_RODATA)
-       /*
-@@ -317,6 +327,7 @@ static inline pgprot_t static_protections(pgprot_t
-prot, unsigned long address,
- #endif
+And there is the whole problem. Switching from normal event delivery
+to those special wakeup sources. That needs to be engineered in any
+case carefuly and it does not matter whether you add suspend blockers
+or not.
+ 
+> >      Simply because you move the cow drawing CPU time from the point
+> >      where the device wants to go into suspend to the point where the
+> >      user hits a key again. You even delay the reaction of your app to
+> >      the user input by the time it needs to finish drawing cows.
+> 
+> It's how application mainloops tend to work.
 
-       prot = __pgprot(pgprot_val(prot) & ~pgprot_val(forbidden));
-+       prot = __pgprot(pgprot_val(prot) | pgprot_val(required));
+So what's the f*cking point ? You draw exactly the same amount of
+power and still you are claiming that it's better or what ?
+ 
+> > > You can't express that with resource limits or QoS constraints. If you 
+> > > want to deal with this kind of situation then, as far as I can tell, you 
+> > > need either suspend blockers or something so close to them that it makes 
+> > > no difference.
+> > 
+> > Wrong. If your application is interactive then you set the QoS
+> > requirement once to interactive and be done.
+> >
+> > So the correct point to make a power state decision is when the app
+> > waits for a key press. At this point the kernel can take several
+> > pathes:
+> > 
+> >       1) Keep the system alive because the input device is in active
+> >        	 state and a key press is expected
+> > 
+> >       2) Go into supsend because the input device is deactivated after
+> >       	 the screen lock kicked in.
+> 
+> That's no good. If the input device has been deactivated, how does the 
+> wakeup event get delivered to the application?
+>  
+> > This behaves exactly the same way in terms of power consumption as
+> > your blocker example just without all the mess you are trying to
+> > create.
+> 
+> And means that wakeup events don't get delivered. That's a shortcoming.
 
-       return prot;
- }
-@@ -393,7 +404,7 @@ try_preserve_large_page(pte_t *kpte, unsigned long address,
- {
-       unsigned long nextpage_addr, numpages, pmask, psize, flags, addr, pfn;
-       pte_t new_pte, old_pte, *tmp;
--       pgprot_t old_prot, new_prot;
-+       pgprot_t old_prot, new_prot, req_prot;
-       int i, do_split = 1;
-       unsigned int level;
+That's utter nonsense. If we have a problem with missed wakeups then
+it needs to be fixed and not papered over with suspend blocker magic.
 
-@@ -438,10 +449,10 @@ try_preserve_large_page(pte_t *kpte, unsigned
-long address,
-        * We are safe now. Check whether the new pgprot is the same:
-        */
-       old_pte = *kpte;
--       old_prot = new_prot = pte_pgprot(old_pte);
-+       old_prot = new_prot = req_prot = pte_pgprot(old_pte);
+I'm starting to get really grumpy about the chant that suspend
+blockers are the only way to fix missed wakeups. That might be the
+only way you can think of with your pink android glasses on, but again
+this is not rocket science even if it does not fit into the current
+way the kernel handles the whole suspend mechanism.
 
--       pgprot_val(new_prot) &= ~pgprot_val(cpa->mask_clr);
--       pgprot_val(new_prot) |= pgprot_val(cpa->mask_set);
-+       pgprot_val(req_prot) &= ~pgprot_val(cpa->mask_clr);
-+       pgprot_val(req_prot) |= pgprot_val(cpa->mask_set);
+So if we really sit back and look at suspend as another idle state,
+then we have first off the same requirements for entering it as we
+have for any other idle state:
 
-       /*
-        * old_pte points to the large page base address. So we need
-@@ -450,17 +461,17 @@ try_preserve_large_page(pte_t *kpte, unsigned
-long address,
-       pfn = pte_pfn(old_pte) + ((address & (psize - 1)) >> PAGE_SHIFT);
-       cpa->pfn = pfn;
+     No running tasks (and we can solve the don't care task problem
+     nicely with QoS)
 
--       new_prot = static_protections(new_prot, address, pfn);
-+       new_prot = static_protections(req_prot, address, pfn);
+Aside of that we need to bring devices into a quiescent state and
+setup the wakeup sources. That switch over needs to be done with and
+without suspend blockers in a careful way for each SoC
+implementation. 
 
-       /*
-        * We need to check the full range, whether
-        * static_protection() requires a different pgprot for one of
-        * the pages in the range we try to preserve:
-        */
--       addr = address + PAGE_SIZE;
--       pfn++;
--       for (i = 1; i < cpa->numpages; i++, addr += PAGE_SIZE, pfn++) {
--               pgprot_t chk_prot = static_protections(new_prot, addr, pfn);
-+       addr = address & pmask;
-+       pfn = pte_pfn(old_pte);
-+       for (i = 0; i < (psize >> PAGE_SHIFT); i++, addr += PAGE_SIZE, pfn++) {
-+               pgprot_t chk_prot = static_protections(req_prot, addr, pfn);
+If the interrupt happens _BEFORE_ we switch over to the quiescent
+state, then we need to backout. If it happens after the switch then it
+goes into the nirwana if the suspend wakeup has not been set up
+correctly. If we have it setup correctly then we go into suspend just
+to come back immediately. There is nothing you can do about that with
+suspend blockers.
 
-               if (pgprot_val(chk_prot) != pgprot_val(new_prot))
-                       goto out_unlock;
-@@ -483,7 +494,8 @@ try_preserve_large_page(pte_t *kpte, unsigned long address,
-        * that we limited the number of possible pages already to
-        * the number of pages in the large page.
-        */
--       if (address == (nextpage_addr - psize) && cpa->numpages == numpages) {
-+       if (address == (address & pmask) &&
-+               cpa->numpages == (psize >> PAGE_SHIFT)) {
-               /*
-                * The address is aligned and the number of pages
-                * covers the full page.
+So if the interrupt comes in before we switch then we have that
+information already today. We might not make use of it or just in a
+racy way, but that does not warrant to work around that problem with a
+big hammer approach.
+
+You can try to lull me into cozy suspend blocker acceptance as long as
+you want, but you better spend your time on either giving a coherent
+explanation why suspend blockers are necessary or looking at the
+underlying problem and fixing it in a technical correct way.
+
+Thanks,
+
+	tglx
