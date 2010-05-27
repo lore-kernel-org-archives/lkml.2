@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756953Ab0E0Mh2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 May 2010 08:37:28 -0400
-Received: from mgw1.diku.dk ([130.225.96.91]:52135 "EHLO mgw1.diku.dk"
+	id S1757089Ab0E0Mhr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 May 2010 08:37:47 -0400
+Received: from mgw2.diku.dk ([130.225.96.92]:43254 "EHLO mgw2.diku.dk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751086Ab0E0MhZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 May 2010 08:37:25 -0400
-Date: Thu, 27 May 2010 14:37:19 +0200 (CEST)
+	id S1752061Ab0E0Mhp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 May 2010 08:37:45 -0400
+Date: Thu, 27 May 2010 14:37:39 +0200 (CEST)
 From: Julia Lawall <julia@diku.dk>
-To: Greg Kroah-Hartman <gregkh@suse.de>, devel@driverdev.osuosl.org,
+To: Greg Kroah-Hartman <gregkh@suse.de>, linux-usb@vger.kernel.org,
        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-Subject: [PATCH 10/11] drivers/staging: Eliminate a NULL pointer dereference
-Message-ID: <Pine.LNX.4.64.1005271437010.5422@ask.diku.dk>
+Subject: [PATCH 11/11] drivers/usb/serial: Eliminate a NULL pointer dereference
+Message-ID: <Pine.LNX.4.64.1005271437200.5422@ask.diku.dk>
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
@@ -20,7 +20,7 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Julia Lawall <julia@diku.dk>
 
-Eliminate a NULL or near NULL pointer dereference.
+The assignment seems completely unnecessary if mos7840_port is NULL.
 
 A simplified version of the semantic match that finds this problem is as
 follows: (http://coccinelle.lip6.fr/)
@@ -46,36 +46,18 @@ else S3
 Signed-off-by: Julia Lawall <julia@diku.dk>
 
 ---
- drivers/staging/comedi/drivers/usbdux.c |    3 +--
- drivers/staging/dt3155/allocator.c      |    4 +---
- 2 files changed, 2 insertions(+), 5 deletions(-)
+ drivers/usb/serial/mos7840.c |    1 -
+ 1 file changed, 1 deletion(-)
 
-diff --git a/drivers/staging/dt3155/allocator.c b/drivers/staging/dt3155/allocator.c
-index bd5adbc..d33947b 100644
---- a/drivers/staging/dt3155/allocator.c
-+++ b/drivers/staging/dt3155/allocator.c
-@@ -176,9 +176,7 @@ int allocator_free_dma(unsigned long address)
- 	prev = ptr; ptr = ptr->next;
- 
- 	if (!ptr) {
--		printk(KERN_ERR ALL_MSG
--			"free_dma(0x%08lx) but add. not allocated\n",
--			ptr->address);
-+		pr_err(ALL_MSG "free_dma but add. not allocated\n");
- 		return -EINVAL;
+diff --git a/drivers/usb/serial/mos7840.c b/drivers/usb/serial/mos7840.c
+index f8424d1..585b7e6 100644
+--- a/drivers/usb/serial/mos7840.c
++++ b/drivers/usb/serial/mos7840.c
+@@ -730,7 +730,6 @@ static void mos7840_bulk_in_callback(struct urb *urb)
+ 	mos7840_port = urb->context;
+ 	if (!mos7840_port) {
+ 		dbg("%s", "NULL mos7840_port pointer");
+-		mos7840_port->read_urb_busy = false;
+ 		return;
  	}
- 	PDEBUGG("freeing: %08lx (%li) next %08lx\n", ptr->address, ptr->size,
-diff --git a/drivers/staging/comedi/drivers/usbdux.c b/drivers/staging/comedi/drivers/usbdux.c
-index 86f035d..27b4cb2 100644
---- a/drivers/staging/comedi/drivers/usbdux.c
-+++ b/drivers/staging/comedi/drivers/usbdux.c
-@@ -351,8 +351,7 @@ static int usbdux_ai_stop(struct usbduxsub *this_usbduxsub, int do_unlink)
- 	int ret = 0;
  
- 	if (!this_usbduxsub) {
--		dev_err(&this_usbduxsub->interface->dev,
--			"comedi?: usbdux_ai_stop: this_usbduxsub=NULL!\n");
-+		pr_err("comedi?: usbdux_ai_stop: this_usbduxsub=NULL!\n");
- 		return -EFAULT;
- 	}
- 	dev_dbg(&this_usbduxsub->interface->dev, "comedi: usbdux_ai_stop\n");
