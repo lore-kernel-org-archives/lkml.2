@@ -1,94 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933939Ab0E0JfG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 May 2010 05:35:06 -0400
-Received: from hera.kernel.org ([140.211.167.34]:55647 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756883Ab0E0JfD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 May 2010 05:35:03 -0400
-Message-ID: <4BFE3BB8.1030503@kernel.org>
-Date: Thu, 27 May 2010 11:30:32 +0200
-From: Tejun Heo <tj@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.1.9) Gecko/20100317 Thunderbird/3.0.4
-MIME-Version: 1.0
-To: Frank Pan <frankpzh@gmail.com>
-CC: Alan Cox <alan@linux.intel.com>,
-       Gerardo Exequiel Pozzi <vmlinuz386@yahoo.com.ar>,
-       Kay Sievers <kay.sievers@vrfy.org>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Greg Kroah-Hartman <gregkh@suse.de>,
-       Catalin Marinas <catalin.marinas@arm.com>,
-       Daniel Mack <daniel@caiaq.de>,
-       Christoph Lameter <cl@linux-foundation.org>,
-       Jiri Slaby <jirislaby@gmail.com>, Jochen Hein <jochen@jochen.org>,
-       Johannes Weiner <hannes@cmpxchg.org>, Dave Airlie <airlied@redhat.com>,
-       Pekka Enberg <penberg@cs.helsinki.fi>,
-       Geert Uytterhoeven <geert@linux-m68k.org>,
-       LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 0/2] Enlarge the storage of chars in virtual terminal
-References: <AANLkTikBrXROMvNKrhgxQ1jVh6aOsx3nIrNXTznXInV1@mail.gmail.com> 	<20100526151152.28deaa6c@linux.intel.com> <AANLkTikuzGazcBpSvqU73UAAIvcTgxTBsmWTr9bNCSjB@mail.gmail.com> 	<4BFE1695.5000206@kernel.org> <AANLkTik2MyWWogREK1DpXKeYrutr7skHQB7kzeg6DYvq@mail.gmail.com>
-In-Reply-To: <AANLkTik2MyWWogREK1DpXKeYrutr7skHQB7kzeg6DYvq@mail.gmail.com>
-X-Enigmail-Version: 1.0.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Thu, 27 May 2010 09:30:35 +0000 (UTC)
+	id S1757879Ab0E0Jj3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 May 2010 05:39:29 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:40886 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757378Ab0E0Jj1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 May 2010 05:39:27 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=nOXwvsXJlVx9zuhHcNLjH7K8vCIZQum3i6D89YmN1ckpjM2ItBbTRb5O3sOsU4aBiT
+         OrPIq3IVwh1zYcUOq9TL0Q/pqACDM5/xSW6FCejzjRhKAs1LXvKnyGqntd7MjIsNsfmA
+         fP2vwREBWcOE1lFIu+f1baDO2SX8yOzk4Ihuo=
+From: Mark <reodge@gmail.com>
+To: gregkh@suse.de
+Cc: Mark <reodge@gmail.com>, Bill Pemberton <wfp5p@virginia.edu>,
+       Dirk Hohndel <hohndel@infradead.org>,
+       Mithlesh Thukral <mithlesh@linsyssoft.com>, devel@driverdev.osuosl.org,
+       linux-kernel@vger.kernel.org
+Subject: [PATCH] Staging: comedi: Fixed long lines in gsc_hpdi.c
+Date: Thu, 27 May 2010 17:39:15 +0800
+Message-Id: <1274953155-7231-1-git-send-email-reodge@gmail.com>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+This patch fixes some long line lengths in gsc_hpdi.c as found by the
+checkpatch.pl tool
 
-On 05/27/2010 10:59 AM, Frank Pan wrote:
-> You are right, I've missed a big count of languages.
-> Nonetheless, the vt already identified several ranges in the unicode
-> space, and made them 2 times wide as ASCII chars.
-> My idea depends on this.
+Signed-off-by: Mark Rankilor <reodge@gmail.com>
+---
+ drivers/staging/comedi/drivers/gsc_hpdi.c |   30 +++++++++++++++++++---------
+ 1 files changed, 20 insertions(+), 10 deletions(-)
 
-Hmmm... I see.
-
->> And then, if you think about multilingual terminal, output is only one
->> half of the story.  You gotta be able to input something too and in
->> many scripts, input handling needs to interact constantly with
->> rendering, which means that the kernel will also need to supply input
->> framework, at which point I start to wonder whether the whole thing is
->> just too complicated.
-> 
-> Agree. Input method is much complex than a data structure expanding.
-> 
-> I don't know about other languages, but I bet the thing goes like:
-> one press one or more keys, (choose the char he/she really want to, )?
-> and commit an input.
-> We need not to implement the whole thing inside kernel, a user space
-> app can catch keyboard inputs and push unicode chars into the tty.
-> The only change should be done in kernel is reserve a space on screen
-> for the potential char choosing, which is really easy to do in any
-> console drivers(report a smaller height/width).
-
-I'm not an export on the issue but if I'm not mistaken it gets more
-complex than that.  It took quite some time to solve the problem
-properly even on full desktop envs.
-
->> What's the use case other than "I just want to use console"?
-> 
-> Many times I type startx is just for checking time of a meeting
-> (in a CJK web page, etc).
-> Many times I've found emails in mutt with question marks, I must
-> open a X and a terminal in X, and mutt in terminal in X.
-
-And other than yourself, how many would such users be?  What's your
-reason for not using X other than "console looks cooler"?  Even if you
-have some valid reason to not use X and absolutely have to have
-multilingual support, what prevents you from using fb based terminals
-like jfbterm which already works with input and all without
-introducing any i18n related complexities into kernel?  To me, it
-seems like low activiy on jfbterm seems to show the low demand for
-such feature.  So, just use X.
-
-> Is there anything worse?
-
-Sure, there are plenty of worse things.  :-)
-
-Thanks.
-
+diff --git a/drivers/staging/comedi/drivers/gsc_hpdi.c b/drivers/staging/comedi/drivers/gsc_hpdi.c
+index 51f12bf..17c4f1f 100644
+--- a/drivers/staging/comedi/drivers/gsc_hpdi.c
++++ b/drivers/staging/comedi/drivers/gsc_hpdi.c
+@@ -311,17 +311,25 @@ struct hpdi_private {
+ 	void *plx9080_iobase;
+ 	void *hpdi_iobase;
+ 	uint32_t *dio_buffer[NUM_DMA_BUFFERS];	/*  dma buffers */
+-	dma_addr_t dio_buffer_phys_addr[NUM_DMA_BUFFERS];	/*  physical addresses of dma buffers */
+-	struct plx_dma_desc *dma_desc;	/*  array of dma descriptors read by plx9080, allocated to get proper alignment */
+-	dma_addr_t dma_desc_phys_addr;	/*  physical address of dma descriptor array */
++	/* physical addresses of dma buffers */
++	dma_addr_t dio_buffer_phys_addr[NUM_DMA_BUFFERS];
++	/* array of dma descriptors read by plx9080, allocated to get proper
++	 * alignment */
++	struct plx_dma_desc *dma_desc;
++	/* physical address of dma descriptor array */
++	dma_addr_t dma_desc_phys_addr;
+ 	unsigned int num_dma_descriptors;
+-	uint32_t *desc_dio_buffer[NUM_DMA_DESCRIPTORS];	/*  pointer to start of buffers indexed by descriptor */
+-	volatile unsigned int dma_desc_index;	/*  index of the dma descriptor that is currently being used */
++	/* pointer to start of buffers indexed by descriptor */
++	uint32_t *desc_dio_buffer[NUM_DMA_DESCRIPTORS];
++	/* index of the dma descriptor that is currently being used */
++	volatile unsigned int dma_desc_index;
+ 	unsigned int tx_fifo_size;
+ 	unsigned int rx_fifo_size;
+ 	volatile unsigned long dio_count;
+-	volatile uint32_t bits[24];	/*  software copies of values written to hpdi registers */
+-	volatile unsigned int block_size;	/*  number of bytes at which to generate COMEDI_CB_BLOCK events */
++	/* software copies of values written to hpdi registers */
++	volatile uint32_t bits[24];
++	/* number of bytes at which to generate COMEDI_CB_BLOCK events */
++	volatile unsigned int block_size;
+ 	unsigned dio_config_output:1;
+ };
+ 
+@@ -570,7 +578,8 @@ static int hpdi_attach(struct comedi_device *dev, struct comedi_devconfig *it)
+ 		return -ENOMEM;
+ 
+ 	pcidev = NULL;
+-	for (i = 0; i < ARRAY_SIZE(hpdi_boards) && dev->board_ptr == NULL; i++) {
++	for (i = 0; i < ARRAY_SIZE(hpdi_boards) &&
++		    dev->board_ptr == NULL; i++) {
+ 		do {
+ 			pcidev = pci_get_subsys(PCI_VENDOR_ID_PLX,
+ 						hpdi_boards[i].device_id,
+@@ -618,7 +627,7 @@ static int hpdi_attach(struct comedi_device *dev, struct comedi_devconfig *it)
+ 	/*  remap, won't work with 2.0 kernels but who cares */
+ 	priv(dev)->plx9080_iobase = ioremap(priv(dev)->plx9080_phys_iobase,
+ 					    pci_resource_len(pcidev,
+-							     PLX9080_BADDRINDEX));
++					    PLX9080_BADDRINDEX));
+ 	priv(dev)->hpdi_iobase =
+ 	    ioremap(priv(dev)->hpdi_phys_iobase,
+ 		    pci_resource_len(pcidev, HPDI_BADDRINDEX));
+@@ -769,7 +778,8 @@ static int di_cmd_test(struct comedi_device *dev, struct comedi_subdevice *s,
+ 	if (err)
+ 		return 1;
+ 
+-	/* step 2: make sure trigger sources are unique and mutually compatible */
++	/* step 2: make sure trigger sources are unique and mutually
++	 * compatible */
+ 
+ 	/*  uniqueness check */
+ 	if (cmd->stop_src != TRIG_COUNT && cmd->stop_src != TRIG_NONE)
 -- 
-tejun
+1.7.1
+
