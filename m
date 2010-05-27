@@ -1,101 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754275Ab0E0OHP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 May 2010 10:07:15 -0400
-Received: from cavan.codon.org.uk ([93.93.128.6]:60193 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753116Ab0E0OHN (ORCPT
+	id S1754805Ab0E0OJL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 May 2010 10:09:11 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:37406 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752666Ab0E0OJI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 May 2010 10:07:13 -0400
-Date: Thu, 27 May 2010 15:06:55 +0100
-From: Matthew Garrett <mjg59@srcf.ucam.org>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: Arve =?iso-8859-1?B?SGr4bm5lduVn?= <arve@android.com>,
-       Florian Mickler <florian@mickler.org>,
-       Vitaly Wool <vitalywool@gmail.com>,
-       Peter Zijlstra <peterz@infradead.org>,
-       LKML <linux-kernel@vger.kernel.org>, Paul@smtp1.linux-foundation.org,
-       felipe.balbi@nokia.com,
-       Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
-       Linux PM <linux-pm@lists.linux-foundation.org>
-Subject: Re: [linux-pm] [PATCH 0/8] Suspend block api (version 8)
-Message-ID: <20100527140655.GA28048@srcf.ucam.org>
-References: <AANLkTinN6MKvCEhPkbYQRD2gu-mGXdNW9asRsTuKN3_Y@mail.gmail.com> <1274867106.5882.5090.camel@twins> <20100526120242.5c9b73ad@schatten.dmk.lab> <AANLkTim4021cTnhVZrQpefq1MG-eEPOFLDRO-XDepHb4@mail.gmail.com> <20100526133721.602633b2@schatten.dmk.lab> <AANLkTikzgaOFdQKess4E-D86OLPOzxP3dWiDkU_UR0ri@mail.gmail.com> <20100526142430.327ccbc4@schatten.dmk.lab> <20100526141612.3e2e0443@lxorguk.ukuu.org.uk> <AANLkTin97MMu-XO_Lk-snefBWz2ymhS0Qi1y1RxLwdVA@mail.gmail.com> <20100527003943.07c17f85@lxorguk.ukuu.org.uk>
+	Thu, 27 May 2010 10:09:08 -0400
+Date: Thu, 27 May 2010 10:09:06 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: =?ISO-8859-1?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>
+cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
+       Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+       Linux-pm mailing list <linux-pm@lists.linux-foundation.org>,
+       Kernel development list <linux-kernel@vger.kernel.org>,
+       Len Brown <len.brown@intel.com>, Pavel Machek <pavel@ucw.cz>,
+       Randy Dunlap <rdunlap@xenotime.net>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Andi Kleen <ak@linux.intel.com>,
+       Cornelia Huck <cornelia.huck@de.ibm.com>, Tejun Heo <tj@kernel.org>,
+       Jesse Barnes <jbarnes@virtuousgeek.org>,
+       Nigel Cunningham <nigel@tuxonice.net>, Ming Lei <tom.leiming@gmail.com>,
+       Wu Fengguang <fengguang.wu@intel.com>,
+       Maxim Levitsky <maximlevitsky@gmail.com>, <linux-doc@vger.kernel.org>
+Subject: Re: [PATCH 1/8] PM: Opportunistic suspend support.
+In-Reply-To: <AANLkTingAiO8dkwnInc993PTyA63rV-WRvBIRlB2ChXs@mail.gmail.com>
+Message-ID: <Pine.LNX.4.44L0.1005271008230.3239-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100527003943.07c17f85@lxorguk.ukuu.org.uk>
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+Content-Type: TEXT/PLAIN; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 27, 2010 at 12:39:43AM +0100, Alan Cox wrote:
+On Wed, 26 May 2010, Arve Hjønnevåg wrote:
 
-> - Supporting Android needs well good
-> - Opportunistic suspend good
-> - Manner in which interface is expressed to userspace bad
-> - Latency constraint interface would be better
-> - Your existing behaviour can be implemented by a simplistic use of a
->   latency constraint interface
-> - We can fix a pile of other directly connected things at the same time
-> - Implementation internals I care far less about because we can fix those
->   later
-> - Suspend is just a power state
+> >> > And even if it isn't, so what?  What's wrong with looping behavior?
+> >>
+> >> It is a significant power drain.
+> >
+> > Not in the situation I was discussing.
+> >
 > 
-> How does that fit your model and vision ?
+> If you meant it spend most of the time suspended, then I agree. It
+> only wastes power when a driver blocks suspend by returning an error
+> from its suspend hook and we are forced to loop doing no useful work.
 
-I don't entirely see how this works. In order to deal with poorly 
-written applications, it's necessary to (optionally, based on some 
-policy) ignore them when it comes to the scheduler. The problem is how 
-to implement the optional nature of this in a race-free manner. This is 
-obviously a pathological case, but imagine an application that does 
-something along the following lines:
+Exactly the same as the in-kernel opportunistic suspend implementation.
 
-int input = open ("/dev/input", O_RDONLY|O_NONBLOCK);
-char foo;
+Alan Stern
 
-while (1) {
-	suspend_block();
-	if (read(input, &foo, 1) > 0) {
-		(do something)
-		suspend_unblock();
-	} else {
-		suspend_unblock();
-		(draw bouncing cows and clouds and tractor beams briefly)
-	}
-}
-
-Now, if the user is playing this game, you want it to be scheduled. If 
-the user has put down their phone and the screen lock has kicked in, you 
-don't want it to be scheduled. So we could imagine some sort of cgroup 
-that contains untrusted tasks - when the session is active we set a flag 
-one way which indicates to the scheduler that tasks in TASK_RUNNING 
-should be scheduled, and when the session is idle we set the flag the 
-other way and all processes in that cgroup get shifted to 
-TASK_INTERRUPTIBLE or something.
-
-Except that doesn't work. If the session goes idle in the middle of the 
-app drawing a frame, we'll stop the process and the task will never call 
-read(). So the user hits a key, we wake up, nothing shifts from 
-TASK_INTERRUPTIBLE into TASK_RUNNING, the key never gets read, we go 
-back to sleep. The event never gets delivered.
-
-Now let's try this in the Android world. The user hits a key and the 
-system wakes up. The input layer takes a suspend block. The application 
-now draws all the cows it wants to, takes its own suspend block and 
-reads the input device. This empties the queue and the kernel-level 
-suspend block is released. The application then processes the event 
-before releasing the suspend block. The event has been delivered and 
-handled.
-
-You can't express that with resource limits or QoS constraints. If you 
-want to deal with this kind of situation then, as far as I can tell, you 
-need either suspend blockers or something so close to them that it makes 
-no difference.
-
--- 
-Matthew Garrett | mjg59@srcf.ucam.org
