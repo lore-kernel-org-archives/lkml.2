@@ -1,93 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932263Ab0E0Pf7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 May 2010 11:35:59 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:52235 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754998Ab0E0Pfz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 May 2010 11:35:55 -0400
-Date: Fri, 28 May 2010 01:35:49 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Richard Purdie <rpurdie@rpsys.net>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-       linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-       Bjarke Istrup Pedersen <gurligebis@gentoo.org>,
-       Randy Dunlap <randy.dunlap@oracle.com>,
-       Alessandro Zummo <a.zummo@towertech.it>,
-       Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: linux-next: build failure after merge of the final tree (leds
- tree related)
-Message-Id: <20100528013549.9c17f6e4.sfr@canb.auug.org.au>
-In-Reply-To: <1274965644.24079.1427.camel@rex>
-References: <20100527151656.889b5977.sfr@canb.auug.org.au>
-	<1274960190.1931.429.camel@pasglop>
-	<1274965644.24079.1427.camel@rex>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Fri__28_May_2010_01_35_49_+1000_bDQs/+J+I.acJ8gF"
+	id S932278Ab0E0Pgg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 May 2010 11:36:36 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:31067 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932077Ab0E0Pge (ORCPT
+	<rfc822;<linux-kernel@vger.kernel.org>>);
+	Thu, 27 May 2010 11:36:34 -0400
+Date: Thu, 27 May 2010 11:36:01 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       Jeremy Fitzhardinge <jeremy@goop.org>,
+       "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+       Don Dutile <ddutile@redhat.com>
+Subject: Re: [Xen-devel] [PATCH 04/11] Fix find_unbound_irq in presence of
+	ioapic irqs.
+Message-ID: <20100527153601.GC4342@phenom.dumpdata.com>
+References: <alpine.DEB.2.00.1005241615300.25605@kaball-desktop> <1274725657-1149-4-git-send-email-stefano.stabellini@eu.citrix.com> <20100526182649.GF5188@phenom.dumpdata.com> <alpine.DEB.2.00.1005271505200.25605@kaball-desktop>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.00.1005271505200.25605@kaball-desktop>
+User-Agent: Mutt/1.5.19 (2009-01-05)
+X-Auth-Type: Internal IP
+X-Source-IP: acsinet15.oracle.com [141.146.126.227]
+X-CT-RefId: str=0001.0A090208.4BFE9173.01DF:SCFMA922111,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Fri__28_May_2010_01_35_49_+1000_bDQs/+J+I.acJ8gF
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Thu, May 27, 2010 at 03:49:12PM +0100, Stefano Stabellini wrote:
+> On Wed, 26 May 2010, Konrad Rzeszutek Wilk wrote:
+> > On Mon, May 24, 2010 at 07:27:30PM +0100, Stefano Stabellini wrote:
+> > > Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+> > 
+> > Can you provide a more detailed description of why this is needed?
+> > 
+> 
+> We need it because we don't want to break the assumption that the first
+> 16 irqs are ISA irqs, and among the other irqs we actually want to be
+> sure they are available before using them.
 
-Hi Richard,
+Interesting. So with this commit: 482839e7 and bfbc226d
+where we try our best to allocate IRQs for Xen starting from high and
+then going down (so that when we are running in PV context with Xen PCI
+passthrough we can allocate IRQs for physical devices above IRQ 16 and
+not collide with Xen event channels), this would still work.
 
-On Thu, 27 May 2010 14:07:24 +0100 Richard Purdie <rpurdie@rpsys.net> wrote:
->
-> On Thu, 2010-05-27 at 21:36 +1000, Benjamin Herrenschmidt wrote:
-> > On Thu, 2010-05-27 at 15:16 +1000, Stephen Rothwell wrote:
-> > >=20
-> > > drivers/leds/leds-net5501.c:20:23: error: asm/geode.h: No such file o=
-r directory
-> > > drivers/leds/leds-net5501.c: In function 'soekris_init':
-> > > drivers/leds/leds-net5501.c:63: error: implicit declaration of functi=
-on 'is_geode'
-> >=20
-> > Looks like something is missing an ifdef CONFIG_X86 :-)
->=20
-> Right, that driver/board is x86 only. I've pushed a fix.
->=20
-> > > Caused by commit 14e40f644b020d473415342461b7c62e3bb5e312 ("leds: Add=
- LED
-> > > driver for the Soekris net5501 board").  Presumably only tested on x8=
-6?
-> > >=20
-> > > drivers/leds/leds-gpio.c: In function 'of_gpio_leds_probe':
-> > > drivers/leds/leds-gpio.c:253: error: 'struct gpio_led' has no member =
-named 'blinking'
-> > >=20
-> > > Caused by commit 2146325df2c2640059a9e064890c30c6e259b458 ("leds:
-> > > leds-gpio: Change blink_set callback to be able to turn off blinking"=
-).
->=20
-> This error looks like its from Ben's patch, probably when openfirmware
-> is enabled. I've queued a fix for this too:
->=20
-> http://git.o-hand.com/cgit.cgi/linux-rpurdie-leds/commit/?id=3Da4b4433c51=
-1cf4361bb0afabba69e16632002d32
+But we actually wouldn't test the availability of the first sixteen IRQ
+for a long time (or never).
 
-Great, thanks.
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
-
---Signature=_Fri__28_May_2010_01_35_49_+1000_bDQs/+J+I.acJ8gF
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iEYEARECAAYFAkv+kVUACgkQjjKRsyhoI8yjIACeNJIEQrup6F1uoLvJXj+Edk57
-tH4AoIKIUfDlNhRIdORFHMQUpnyeqEC8
-=vYRc
------END PGP SIGNATURE-----
-
---Signature=_Fri__28_May_2010_01_35_49_+1000_bDQs/+J+I.acJ8gF--
+> 
+> 
+> > > ---
+> > >  drivers/xen/events.c |   11 ++++++++++-
+> > >  1 files changed, 10 insertions(+), 1 deletions(-)
+> > > 
+> > > diff --git a/drivers/xen/events.c b/drivers/xen/events.c
+> > > index 8b68fc4..1356fa2 100644
+> > > --- a/drivers/xen/events.c
+> > > +++ b/drivers/xen/events.c
+> > > @@ -339,9 +339,18 @@ static int find_unbound_irq(void)
+> > >  	int irq;
+> > >  	struct irq_desc *desc;
+> > >  
+> > > -	for (irq = 0; irq < nr_irqs; irq++)
+> > > +	for (irq = 0; irq < nr_irqs; irq++) {
+> > > +		desc = irq_to_desc(irq);
+> > > +		/* only 0->15 have init'd desc; handle irq > 16 */
+> > > +		if (desc == NULL)
+> > > +			break;
+> > > +		if (desc->chip == &no_irq_chip)
+> > > +			break;
+> > > +		if (desc->chip != &xen_dynamic_chip)
+> > > +			continue;
+> > >  		if (irq_info[irq].type == IRQT_UNBOUND)
+> > >  			break;
+> > > +	}
+> > >  
+> > >  	if (irq == nr_irqs)
+> > >  		panic("No available IRQ to bind to: increase nr_irqs!\n");
+> > > -- 
+> > > 1.5.4.3
+> > > 
+> > > 
+> > > _______________________________________________
+> > > Xen-devel mailing list
+> > > Xen-devel@lists.xensource.com
+> > > http://lists.xensource.com/xen-devel
+> > 
