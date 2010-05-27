@@ -1,55 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758130Ab0E0Q2i (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 May 2010 12:28:38 -0400
-Received: from ist.d-labs.de ([213.239.218.44]:50870 "EHLO mx01.d-labs.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757571Ab0E0Q2h (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 May 2010 12:28:37 -0400
-Date: Thu, 27 May 2010 18:28:31 +0200
-From: Florian Mickler <florian@mickler.org>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-       Matthew Garrett <mjg59@srcf.ucam.org>,
-       Arve =?ISO-8859-15?Q?Hj=F8nnev=E5g?= <arve@android.com>,
-       Vitaly Wool <vitalywool@gmail.com>, LKML <linux-kernel@vger.kernel.org>,
-       felipe.balbi@nokia.com,
+	id S1758104Ab0E0Q32 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 May 2010 12:29:28 -0400
+Received: from smtp.nokia.com ([192.100.122.230]:28412 "EHLO
+	mgw-mx03.nokia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752666Ab0E0Q30 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 May 2010 12:29:26 -0400
+Date: Thu, 27 May 2010 19:27:40 +0300
+From: Felipe Balbi <felipe.balbi@nokia.com>
+To: ext Alan Stern <stern@rowland.harvard.edu>
+Cc: Thomas Gleixner <tglx@linutronix.de>,
+       Arve =?iso-8859-1?B?SGr4bm5lduVn?= <arve@android.com>,
+       Peter Zijlstra <peterz@infradead.org>,
+       "Paul@smtp1.linux-foundation.org" <Paul@smtp1.linux-foundation.org>,
+       LKML <linux-kernel@vger.kernel.org>,
+       Florian Mickler <florian@mickler.org>,
+       "Balbi Felipe (Nokia-D/Helsinki)" <felipe.balbi@nokia.com>,
        Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
-       Linux PM <linux-pm@lists.linux-foundation.org>
+       Linux PM <linux-pm@lists.linux-foundation.org>,
+       Alan Cox <alan@lxorguk.ukuu.org.uk>
 Subject: Re: [linux-pm] [PATCH 0/8] Suspend block api (version 8)
-Message-ID: <20100527182831.172215f6@schatten.dmk.lab>
-In-Reply-To: <20100527161054.203663ca@lxorguk.ukuu.org.uk>
-References: <20100526120242.5c9b73ad@schatten.dmk.lab>
-	<AANLkTim4021cTnhVZrQpefq1MG-eEPOFLDRO-XDepHb4@mail.gmail.com>
-	<20100526133721.602633b2@schatten.dmk.lab>
-	<AANLkTikzgaOFdQKess4E-D86OLPOzxP3dWiDkU_UR0ri@mail.gmail.com>
-	<20100526142430.327ccbc4@schatten.dmk.lab>
-	<20100526141612.3e2e0443@lxorguk.ukuu.org.uk>
-	<AANLkTin97MMu-XO_Lk-snefBWz2ymhS0Qi1y1RxLwdVA@mail.gmail.com>
-	<20100527003943.07c17f85@lxorguk.ukuu.org.uk>
-	<20100527140655.GA28048@srcf.ucam.org>
-	<1274970531.27810.5024.camel@twins>
-	<20100527143508.GA30117@srcf.ucam.org>
-	<1274971317.27810.5070.camel@twins>
-	<1274971437.27810.5078.camel@twins>
-	<20100527161054.203663ca@lxorguk.ukuu.org.uk>
-X-Mailer: Claws Mail 3.7.5 (GTK+ 2.18.9; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Message-ID: <20100527162740.GA9625@nokia.com>
+Reply-To: felipe.balbi@nokia.com
+References: <alpine.LFD.2.00.1005271545190.3032@localhost.localdomain>
+ <Pine.LNX.4.44L0.1005271053420.3239-100000@iolanthe.rowland.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii; format=flowed
+Content-Disposition: inline
+In-Reply-To: <Pine.LNX.4.44L0.1005271053420.3239-100000@iolanthe.rowland.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-OriginalArrivalTime: 27 May 2010 16:27:49.0301 (UTC) FILETIME=[8BFF1E50:01CAFDB9]
+X-Nokia-AV: Clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 27 May 2010 16:10:54 +0100
-Alan Cox <alan@lxorguk.ukuu.org.uk> wrote:
+On Thu, May 27, 2010 at 05:06:23PM +0200, ext Alan Stern wrote:
+>If people don't mind, here is a greatly simplified summary of the
+>comments and objections I have seen so far on this thread:
+>
+>	The in-kernel suspend blocker implementation is okay, even
+>	beneficial.
 
-> The reality is you need a sane, generic, race free way to express your
-> requirements (eg for hard RT) and ditto for constraining the expression
-> (for 'crapplications')
+I disagree here. I believe expressing that as QoS is much better. Let 
+the kernel decide which power state is better as long as I can say I 
+need 100us IRQ latency or 100ms wakeup latency.
 
-And the thing is, even a well written app can be a 'crapplication'
-depending on the context and mood of the user.
+-- 
+balbi
 
-cheers,
-Flo
+DefectiveByDesign.org
