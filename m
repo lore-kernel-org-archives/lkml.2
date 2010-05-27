@@ -1,66 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754049Ab0E0FyK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 May 2010 01:54:10 -0400
-Received: from vms173001pub.verizon.net ([206.46.173.1]:41504 "EHLO
-	vms173001pub.verizon.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751030Ab0E0FyI (ORCPT
+	id S1754243Ab0E0FzT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 May 2010 01:55:19 -0400
+Received: from mail-pz0-f176.google.com ([209.85.222.176]:61460 "EHLO
+	mail-pz0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751030Ab0E0FzR convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 May 2010 01:54:08 -0400
-Date: Thu, 27 May 2010 01:53:50 -0400 (EDT)
-From: Len Brown <lenb@kernel.org>
-X-X-Sender: lenb@localhost.localdomain
-To: x86@kernel.org, linux-pm@lists.linux-foundation.org
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       Milton Miller <miltonm@bga.com>, Peter Zijlstra <peterz@infradead.org>
-Subject: [PATCH-v2 5/8] sched: clarify commment for TS_POLLING
-In-reply-to: <4a831611847e8965ed5f3328e52fe8758115b951.1274926772.git.len.brown@intel.com>
-Message-id: <alpine.LFD.2.00.1005270152460.8496@localhost.localdomain>
-References: <1274928151-30919-1-git-send-email-lenb@kernel.org>
- <4a831611847e8965ed5f3328e52fe8758115b951.1274926772.git.len.brown@intel.com>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
-MIME-version: 1.0
-Content-type: TEXT/PLAIN; charset=US-ASCII
+	Thu, 27 May 2010 01:55:17 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=CDFIkP9FMCRSIDPvJvCN/Cs6iHufZjAlkqGit8G2VvtEz2ZA/Q9PY8FyHRbLT+/wkU
+         vzI8PWWkL4ZQsG3NEVaUWQ2PHhq25yWj8XBA1R597et/foYvtHU0Mj7vKUsxfbmNz9TT
+         s/RfsUU3Vcm0tea967sg7dYn0air1v6x10zD8=
+MIME-Version: 1.0
+In-Reply-To: <AANLkTindNIXjAcuGKsg_xBL9jaQ96wxD54xoZe2iPD5v@mail.gmail.com>
+References: <AANLkTindNIXjAcuGKsg_xBL9jaQ96wxD54xoZe2iPD5v@mail.gmail.com>
+Date: Thu, 27 May 2010 13:55:15 +0800
+Message-ID: <AANLkTimuTTH4C-O1CJHLK2XhBHWqx9pZg_aWF0jple0H@mail.gmail.com>
+Subject: Re: mylinux.list@gmail.com
+From: Haojian Zhuang <haojian.zhuang@gmail.com>
+To: linux_newbie good <mylinux.list@gmail.com>
+Cc: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Len Brown <len.brown@intel.com>
+On Thu, May 27, 2010 at 1:05 PM, linux_newbie good
+<mylinux.list@gmail.com> wrote:
+> Hi,
+>
+> My board has a MIPS based Processor and a micro-controller.  The
+> communication between these two interfaces is through an I2C bus. The
+> Linux driver for my I2C controller (i mean the one in MIPS processor)
+> has support for master transmitter and master receiver whereas I could
+> not find support for slave TX and slave RX modes. Do I need to write
+> my own functions for slave support? If so, what kind of changes need
+> to be done, for slave mode support? Is there any other sample driver
+> which can help ?
+>
+>
 
+Maybe you needn't write a slave I2C driver on MIPS side. It should
+based on your system requirement.
 
-TS_POLLING set tells the scheduler an idle_task will poll
-need_resched() to look for work.
+I suggest the solution in below may be easier.
 
-TS_POLLING clear tells resched_task() and wake_up_idle_cpu()
-that the remote CPU's idle_task is now sleeping in idle,
-and thus requires a reschedule interrupt notice work.
+++++++++++++++                             ++++++++++++
++ MIPS (Master)  + -----> I2C -----------> + MCU (Slave)  +
++                        +<----GPIO INT <----- +                     +
+++++++++++++++                             ++++++++++++
 
-Update the description of TS_POLLING to reflect how it works.
-"idle task polling need_resched, skip sending interrupt"
+Since MIPS is master, it can read/write data from slave directly.
+While MCU want to contact with MIPS, it can trigger INT first. Then
+MIPS can query MCU and feed its required.
 
-Wordsmithing-by: Milton Miller <miltonm@bga.com>
-Signed-off-by: Len Brown <len.brown@intel.com>
-Acked-by: Peter Zijlstra <peterz@infradead.org>
----
- arch/x86/include/asm/thread_info.h |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+Perhaps you may not choice this solution. You have to write slave
+driver on MIPS side and both master/slave driver on MCU side. You can
+refer to $LINUX/drivers/i2c/busses/i2c-pxa.c for reference. i2c-pxa
+driver supports both master and slave mode.
 
-diff --git a/arch/x86/include/asm/thread_info.h b/arch/x86/include/asm/thread_info.h
-index e0d2890..8121869 100644
---- a/arch/x86/include/asm/thread_info.h
-+++ b/arch/x86/include/asm/thread_info.h
-@@ -241,8 +241,8 @@ static inline struct thread_info *current_thread_info(void)
- #define TS_USEDFPU		0x0001	/* FPU was used by this task
- 					   this quantum (SMP) */
- #define TS_COMPAT		0x0002	/* 32bit syscall active (64BIT)*/
--#define TS_POLLING		0x0004	/* true if in idle loop
--					   and not sleeping */
-+#define TS_POLLING		0x0004	/* idle task polling need_resched,
-+					   skip sending interrupt */
- #define TS_RESTORE_SIGMASK	0x0008	/* restore signal mask in do_signal() */
- #define TS_XSAVE		0x0010	/* Use xsave/xrstor */
- 
--- 
-1.6.0.6
-
-
+Thanks
+Haojian
