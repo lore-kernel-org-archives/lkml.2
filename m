@@ -1,460 +1,324 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757533Ab0E0Ii0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 May 2010 04:38:26 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:45028 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751428Ab0E0IiY (ORCPT
+	id S1757717Ab0E0Ilu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 May 2010 04:41:50 -0400
+Received: from moutng.kundenserver.de ([212.227.126.171]:62801 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757082Ab0E0Ilq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 May 2010 04:38:24 -0400
-From: Bashlykov Arthur <madness@xakep.ru>
-To: gregkh@suse.de, wfp5p@virginia.edu
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-       Bashlykov Arthur <madness@xakep.ru>
-Subject: [PATCH 1/2] Staging: rtl8192su: ieee80211: fix brace coding style issue and other issues in ieee80211_softmac_wx.c Signed-off-by: Andrea Merello <andreamrl@tiscali.it>
-Date: Thu, 27 May 2010 12:38:14 +0400
-Message-Id: <1274949494-3660-1-git-send-email-madness@xakep.ru>
-X-Mailer: git-send-email 1.7.0.4
+	Thu, 27 May 2010 04:41:46 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Chris Metcalf <cmetcalf@tilera.com>
+Subject: Re: [PATCH] arch/tile: new multi-core architecture for Linux
+Date: Thu, 27 May 2010 10:41:30 +0200
+User-Agent: KMail/1.12.2 (Linux/2.6.31-19-generic; KDE/4.3.2; x86_64; ; )
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       linux-arch@vger.kernel.org
+References: <201005200543.o4K5hFRF006079@farm-0002.internal.tilera.com> <201005252345.15685.arnd@arndb.de> <4BFDC3D1.40708@tilera.com>
+In-Reply-To: <4BFDC3D1.40708@tilera.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201005271041.30519.arnd@arndb.de>
+X-Provags-ID: V01U2FsdGVkX18zH2YHdRPGdE6EFJm6IGAQyftvw08LaJJfaRx
+ BTGipZNkVwvl+UaAcd6nYBkDIaS5aCHjLmTvIoWR6vs9a8MX3/
+ tFJupdPmjdDypyv6XoBHQ==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
----
- .../rtl8192su/ieee80211/ieee80211_softmac_wx.c     |  149 +++++++++-----------
- 1 files changed, 70 insertions(+), 79 deletions(-)
+On Thursday 27 May 2010, Chris Metcalf wrote:
+> > Yes, that makes sense. You definitely want binary compatibility between
+> > 32 bit binaries from a native 32 bit system on TILE-Gx in the syscall
+> > interface.
+> >   
+> 
+> The thing is, the COMPAT layer on TILE-Gx is actually not providing
+> TILEPro compatibility, since the architectures are too different --
+> conceptually similar but with different opcode numbering, etc.  Instead
+> what it's doing is providing a 32-bit pointer ABI, to help porting
+> crufty old code (this is in fact the primary customer driver), or to
+> allow more compact representations of pointer-heavy data.
 
-diff --git a/drivers/staging/rtl8192su/ieee80211/ieee80211_softmac_wx.c b/drivers/staging/rtl8192su/ieee80211/ieee80211_softmac_wx.c
-index 9ded253..3e0527c 100644
---- a/drivers/staging/rtl8192su/ieee80211/ieee80211_softmac_wx.c
-+++ b/drivers/staging/rtl8192su/ieee80211/ieee80211_softmac_wx.c
-@@ -30,11 +30,11 @@ int ieee80211_wx_set_freq(struct ieee80211_device *ieee, struct iw_request_info
- 			     union iwreq_data *wrqu, char *b)
- {
- 	int ret;
--	struct iw_freq *fwrq = & wrqu->freq;
-+	struct iw_freq *fwrq = &wrqu->freq;
- 
- 	down(&ieee->wx_sem);
- 
--	if(ieee->iw_mode == IW_MODE_INFRA){
-+	if (ieee->iw_mode == IW_MODE_INFRA) {
- 		ret = -EOPNOTSUPP;
- 		goto out;
- 	}
-@@ -55,11 +55,11 @@ int ieee80211_wx_set_freq(struct ieee80211_device *ieee, struct iw_request_info
- 		}
- 	}
- 
--	if (fwrq->e > 0 || fwrq->m > 14 || fwrq->m < 1 ){
-+	if (fwrq->e > 0 || fwrq->m > 14 || fwrq->m < 1) {
- 		ret = -EOPNOTSUPP;
- 		goto out;
- 
--	}else { /* Set the channel */
-+	} else { /* Set the channel */
- 
- 		if (!(GET_DOT11D_INFO(ieee)->channel_map)[fwrq->m]) {
- 			ret = -EINVAL;
-@@ -68,8 +68,8 @@ int ieee80211_wx_set_freq(struct ieee80211_device *ieee, struct iw_request_info
- 		ieee->current_network.channel = fwrq->m;
- 		ieee->set_chan(ieee->dev, ieee->current_network.channel);
- 
--		if(ieee->iw_mode == IW_MODE_ADHOC || ieee->iw_mode == IW_MODE_MASTER)
--			if(ieee->state == IEEE80211_LINKED){
-+		if (ieee->iw_mode == IW_MODE_ADHOC || ieee->iw_mode == IW_MODE_MASTER)
-+			if (ieee->state == IEEE80211_LINKED) {
- 
- 			ieee80211_stop_send_beacons(ieee);
- 			ieee80211_start_send_beacons(ieee);
-@@ -87,15 +87,15 @@ int ieee80211_wx_get_freq(struct ieee80211_device *ieee,
- 			     struct iw_request_info *a,
- 			     union iwreq_data *wrqu, char *b)
- {
--	struct iw_freq *fwrq = & wrqu->freq;
-+	struct iw_freq *fwrq = &wrqu->freq;
- 
- 	if (ieee->current_network.channel == 0)
- 		return -1;
--	//NM 0.7.0 will not accept channel any more.
-+	/* NM 0.7.0 will not accept channel any more. */
- 	fwrq->m = ieee80211_wlan_frequencies[ieee->current_network.channel-1] * 100000;
- 	fwrq->e = 1;
--//	fwrq->m = ieee->current_network.channel;
--//	fwrq->e = 0;
-+	/* fwrq->m = ieee->current_network.channel; */
-+	/* fwrq->e = 0; */
- 
- 	return 0;
- }
-@@ -136,22 +136,22 @@ int ieee80211_wx_set_wap(struct ieee80211_device *ieee,
- {
- 
- 	int ret = 0;
--	u8 zero[] = {0,0,0,0,0,0};
-+	u8 zero[] = {0, 0, 0, 0, 0, 0};
- 	unsigned long flags;
- 
--	short ifup = ieee->proto_started;//dev->flags & IFF_UP;
-+	short ifup = ieee->proto_started; /* dev->flags & IFF_UP; */
- 	struct sockaddr *temp = (struct sockaddr *)awrq;
- 
- 	ieee->sync_scan_hurryup = 1;
- 
- 	down(&ieee->wx_sem);
- 	/* use ifconfig hw ether */
--	if (ieee->iw_mode == IW_MODE_MASTER){
-+	if (ieee->iw_mode == IW_MODE_MASTER) {
- 		ret = -1;
- 		goto out;
- 	}
- 
--	if (temp->sa_family != ARPHRD_ETHER){
-+	if (temp->sa_family != ARPHRD_ETHER) {
- 		ret = -EINVAL;
- 		goto out;
- 	}
-@@ -165,7 +165,7 @@ int ieee80211_wx_set_wap(struct ieee80211_device *ieee,
- 	spin_lock_irqsave(&ieee->lock, flags);
- 
- 	memcpy(ieee->current_network.bssid, temp->sa_data, ETH_ALEN);
--	ieee->wap_set = memcmp(temp->sa_data, zero,ETH_ALEN)!=0;
-+	ieee->wap_set = memcmp(temp->sa_data, zero, ETH_ALEN) != 0;
- 
- 	spin_unlock_irqrestore(&ieee->lock, flags);
- 
-@@ -176,9 +176,9 @@ out:
- 	return ret;
- }
- 
-- int ieee80211_wx_get_essid(struct ieee80211_device *ieee, struct iw_request_info *a,union iwreq_data *wrqu,char *b)
-+ int ieee80211_wx_get_essid(struct ieee80211_device *ieee, struct iw_request_info *a, union iwreq_data *wrqu, char *b)
- {
--	int len,ret = 0;
-+	int len, ret = 0;
- 	unsigned long flags;
- 
- 	if (ieee->iw_mode == IW_MODE_MONITOR)
-@@ -201,7 +201,7 @@ out:
- 	}
- 	len = ieee->current_network.ssid_len;
- 	wrqu->essid.length = len;
--	strncpy(b,ieee->current_network.ssid,len);
-+	strncpy(b, ieee->current_network.ssid, len);
- 	wrqu->essid.flags = 1;
- 
- out:
-@@ -219,7 +219,7 @@ int ieee80211_wx_set_rate(struct ieee80211_device *ieee,
- 	u32 target_rate = wrqu->bitrate.value;
- 
- 	ieee->rate = target_rate/100000;
--	//FIXME: we might want to limit rate also in management protocols.
-+	/* FIXME: we might want to limit rate also in management protocols. */
- 	return 0;
- }
- 
-@@ -230,13 +230,12 @@ int ieee80211_wx_get_rate(struct ieee80211_device *ieee,
- 			     union iwreq_data *wrqu, char *extra)
- {
- 	u32 tmp_rate = 0;
--	//printk("===>mode:%d, halfNmode:%d\n", ieee->mode, ieee->bHalfWirelessN24GMode);
-+	/* printk("===>mode:%d, halfNmode:%d\n", ieee->mode, ieee->bHalfWirelessN24GMode); */
- 	if (ieee->mode & (IEEE_A | IEEE_B | IEEE_G))
- 		tmp_rate = ieee->rate;
- 	else if (ieee->mode & IEEE_N_5G)
- 		tmp_rate = 580;
--	else if (ieee->mode & IEEE_N_24G)
--	{
-+	else if (ieee->mode & IEEE_N_24G) {
- 		if (ieee->GetHalfNmodeSupportByAPsHandler(ieee->dev))
- 			tmp_rate = HTHalfMcsToDataRate(ieee, 15);
- 		else
-@@ -254,8 +253,7 @@ int ieee80211_wx_set_rts(struct ieee80211_device *ieee,
- {
- 	if (wrqu->rts.disabled || !wrqu->rts.fixed)
- 		ieee->rts = DEFAULT_RTS_THRESHOLD;
--	else
--	{
-+	else {
- 		if (wrqu->rts.value < MIN_RTS_THRESHOLD ||
- 				wrqu->rts.value > MAX_RTS_THRESHOLD)
- 			return -EINVAL;
-@@ -284,16 +282,14 @@ int ieee80211_wx_set_mode(struct ieee80211_device *ieee, struct iw_request_info
- 	if (wrqu->mode == ieee->iw_mode)
- 		goto out;
- 
--	if (wrqu->mode == IW_MODE_MONITOR){
--
-+	if (wrqu->mode == IW_MODE_MONITOR)
- 		ieee->dev->type = ARPHRD_IEEE80211;
--	}else{
-+	} else {
- 		ieee->dev->type = ARPHRD_ETHER;
--	}
- 
--	if (!ieee->proto_started){
-+	if (!ieee->proto_started) {
- 		ieee->iw_mode = wrqu->mode;
--	}else{
-+	} else {
- 		ieee80211_stop_protocol(ieee);
- 		ieee->iw_mode = wrqu->mode;
- 		ieee80211_start_protocol(ieee);
-@@ -308,8 +304,8 @@ void ieee80211_wx_sync_scan_wq(struct work_struct *work)
- {
-         struct ieee80211_device *ieee = container_of(work, struct ieee80211_device, wx_sync_scan_wq);
- 	short chan;
--	HT_EXTCHNL_OFFSET chan_offset=0;
--	HT_CHANNEL_WIDTH bandwidth=0;
-+	HT_EXTCHNL_OFFSET chan_offset = 0;
-+	HT_CHANNEL_WIDTH bandwidth = 0;
- 	int b40M = 0;
- 	static int count = 0;
- 	chan = ieee->current_network.channel;
-@@ -322,9 +318,8 @@ void ieee80211_wx_sync_scan_wq(struct work_struct *work)
- 
- 	ieee->state = IEEE80211_LINKED_SCANNING;
- 	ieee->link_change(ieee->dev);
--	ieee->InitialGainHandler(ieee->dev,IG_Backup);
--	if (ieee->SetFwCmdHandler)
--	{
-+	ieee->InitialGainHandler(ieee->dev, IG_Backup);
-+	if (ieee->SetFwCmdHandler) {
- 		ieee->SetFwCmdHandler(ieee->dev, FW_CMD_DIG_HALT);
- 		ieee->SetFwCmdHandler(ieee->dev, FW_CMD_HIGH_PWR_DISABLE);
- 	}
-@@ -349,24 +344,22 @@ void ieee80211_wx_sync_scan_wq(struct work_struct *work)
- 		ieee->set_chan(ieee->dev, chan);
- 	}
- 
--	ieee->InitialGainHandler(ieee->dev,IG_Restore);
--	if (ieee->SetFwCmdHandler)
--	{
-+	ieee->InitialGainHandler(ieee->dev, IG_Restore);
-+	if (ieee->SetFwCmdHandler) {
- 		ieee->SetFwCmdHandler(ieee->dev, FW_CMD_DIG_RESUME);
- 		ieee->SetFwCmdHandler(ieee->dev, FW_CMD_HIGH_PWR_ENABLE);
- 	}
- 	ieee->state = IEEE80211_LINKED;
- 	ieee->link_change(ieee->dev);
--	// To prevent the immediately calling watch_dog after scan.
--	if(ieee->LinkDetectInfo.NumRecvBcnInPeriod==0||ieee->LinkDetectInfo.NumRecvDataInPeriod==0 )
--	{
-+	/* To prevent the immediately calling watch_dog after scan. */
-+	if (ieee->LinkDetectInfo.NumRecvBcnInPeriod == 0 || ieee->LinkDetectInfo.NumRecvDataInPeriod == 0) {
- 		ieee->LinkDetectInfo.NumRecvBcnInPeriod = 1;
--		ieee->LinkDetectInfo.NumRecvDataInPeriod= 1;
-+		ieee->LinkDetectInfo.NumRecvDataInPeriod = 1;
- 	}
- 	if (ieee->data_hard_resume)
- 		ieee->data_hard_resume(ieee->dev);
- 
--	if(ieee->iw_mode == IW_MODE_ADHOC || ieee->iw_mode == IW_MODE_MASTER)
-+	if (ieee->iw_mode == IW_MODE_ADHOC || ieee->iw_mode == IW_MODE_MASTER)
- 		ieee80211_start_send_beacons(ieee);
- 
- 	netif_carrier_on(ieee->dev);
-@@ -382,12 +375,12 @@ int ieee80211_wx_set_scan(struct ieee80211_device *ieee, struct iw_request_info
- 
- 	down(&ieee->wx_sem);
- 
--	if (ieee->iw_mode == IW_MODE_MONITOR || !(ieee->proto_started)){
-+	if (ieee->iw_mode == IW_MODE_MONITOR || !(ieee->proto_started)) {
- 		ret = -1;
- 		goto out;
- 	}
- 
--	if ( ieee->state == IEEE80211_LINKED){
-+	if (ieee->state == IEEE80211_LINKED) {
- 		queue_work(ieee->wq, &ieee->wx_sync_scan_wq);
- 		/* intentionally forget to up sem */
- 		return 0;
-@@ -403,7 +396,7 @@ int ieee80211_wx_set_essid(struct ieee80211_device *ieee,
- 			      union iwreq_data *wrqu, char *extra)
- {
- 
--	int ret=0,len;
-+	int ret = 0, len;
- 	short proto_started;
- 	unsigned long flags;
- 
-@@ -412,17 +405,17 @@ int ieee80211_wx_set_essid(struct ieee80211_device *ieee,
- 
- 	proto_started = ieee->proto_started;
- 
--	if (wrqu->essid.length > IW_ESSID_MAX_SIZE){
--		ret= -E2BIG;
-+	if (wrqu->essid.length > IW_ESSID_MAX_SIZE) {
-+		ret = -E2BIG;
- 		goto out;
- 	}
- 
--	if (ieee->iw_mode == IW_MODE_MONITOR){
--		ret= -1;
-+	if (ieee->iw_mode == IW_MODE_MONITOR) {
-+		ret = -1;
- 		goto out;
- 	}
- 
--	if(proto_started)
-+	if (proto_started)
- 		ieee80211_stop_protocol(ieee);
- 
- 
-@@ -432,13 +425,12 @@ int ieee80211_wx_set_essid(struct ieee80211_device *ieee,
- 	spin_lock_irqsave(&ieee->lock, flags);
- 
- 	if (wrqu->essid.flags && wrqu->essid.length) {
--		//first flush current network.ssid
-+		/* first flush current network.ssid */
- 		len = ((wrqu->essid.length-1) < IW_ESSID_MAX_SIZE) ? (wrqu->essid.length-1) : IW_ESSID_MAX_SIZE;
- 		strncpy(ieee->current_network.ssid, extra, len+1);
- 		ieee->current_network.ssid_len = len+1;
- 		ieee->ssid_set = 1;
--	}
--	else{
-+	} else {
- 		ieee->ssid_set = 0;
- 		ieee->current_network.ssid[0] = '\0';
- 		ieee->current_network.ssid_len = 0;
-@@ -471,7 +463,7 @@ out:
- 
- 	down(&ieee->wx_sem);
- 
--	if(enable)
-+	if (enable)
- 		ieee->raw_tx = 1;
- 	else
- 		ieee->raw_tx = 0;
-@@ -479,16 +471,15 @@ out:
- 	printk(KERN_INFO"raw TX is %s\n",
- 	      ieee->raw_tx ? "enabled" : "disabled");
- 
--	if(ieee->iw_mode == IW_MODE_MONITOR)
--	{
--		if(prev == 0 && ieee->raw_tx){
-+	if (ieee->iw_mode == IW_MODE_MONITOR) {
-+		if (prev == 0 && ieee->raw_tx) {
- 			if (ieee->data_hard_resume)
- 				ieee->data_hard_resume(ieee->dev);
- 
- 			netif_carrier_on(ieee->dev);
- 		}
- 
--		if(prev && ieee->raw_tx == 1)
-+		if (prev && ieee->raw_tx == 1)
- 			netif_carrier_off(ieee->dev);
- 	}
- 
-@@ -502,19 +493,19 @@ int ieee80211_wx_get_name(struct ieee80211_device *ieee,
- 			     union iwreq_data *wrqu, char *extra)
- {
- 	strlcpy(wrqu->name, "802.11", IFNAMSIZ);
--	if(ieee->modulation & IEEE80211_CCK_MODULATION){
-+	if (ieee->modulation & IEEE80211_CCK_MODULATION) {
- 		strlcat(wrqu->name, "b", IFNAMSIZ);
--		if(ieee->modulation & IEEE80211_OFDM_MODULATION)
-+		if (ieee->modulation & IEEE80211_OFDM_MODULATION)
- 			strlcat(wrqu->name, "/g", IFNAMSIZ);
--	}else if(ieee->modulation & IEEE80211_OFDM_MODULATION)
-+	} else if (ieee->modulation & IEEE80211_OFDM_MODULATION)
- 		strlcat(wrqu->name, "g", IFNAMSIZ);
- 	if (ieee->mode & (IEEE_N_24G | IEEE_N_5G))
- 		strlcat(wrqu->name, "/n", IFNAMSIZ);
- 
--	if((ieee->state == IEEE80211_LINKED) ||
-+	if ((ieee->state == IEEE80211_LINKED) ||
- 		(ieee->state == IEEE80211_LINKED_SCANNING))
- 		strlcat(wrqu->name, "  link", IFNAMSIZ);
--	else if(ieee->state != IEEE80211_NOLINK)
-+	else if (ieee->state != IEEE80211_NOLINK)
- 		strlcat(wrqu->name, " .....", IFNAMSIZ);
- 
- 
-@@ -529,33 +520,33 @@ int ieee80211_wx_set_power(struct ieee80211_device *ieee,
- {
- 	int ret = 0;
- #if 1
--	if(
-+	if {
- 		(!ieee->sta_wake_up) ||
--	//	(!ieee->ps_request_tx_ack) ||
-+	/*	(!ieee->ps_request_tx_ack) || */
- 		(!ieee->enter_sleep_state) ||
--		(!ieee->ps_is_queue_empty)){
-+		(!ieee->ps_is_queue_empty)) {
- 
--	//	printk("ERROR. PS mode is tryied to be use but driver missed a callback\n\n");
-+	/* printk("ERROR. PS mode is tryied to be use but driver missed a callback\n\n"); */
- 
- 		return -1;
- 	}
- #endif
- 	down(&ieee->wx_sem);
- 
--	if (wrqu->power.disabled){
-+	if (wrqu->power.disabled) {
- 		ieee->ps = IEEE80211_PS_DISABLED;
- 		goto exit;
- 	}
- 	if (wrqu->power.flags & IW_POWER_TIMEOUT) {
--		//ieee->ps_period = wrqu->power.value / 1000;
-+		/*ieee->ps_period = wrqu->power.value / 1000; */
- 		ieee->ps_timeout = wrqu->power.value / 1000;
- 	}
- 
- 	if (wrqu->power.flags & IW_POWER_PERIOD) {
- 
--		//ieee->ps_timeout = wrqu->power.value / 1000;
-+		/* ieee->ps_timeout = wrqu->power.value / 1000; */
- 		ieee->ps_period = wrqu->power.value / 1000;
--		//wrq->value / 1024;
-+		/* wrq->value / 1024; */
- 
- 	}
- 	switch (wrqu->power.flags & IW_POWER_MODE) {
-@@ -570,7 +561,7 @@ int ieee80211_wx_set_power(struct ieee80211_device *ieee,
- 		break;
- 
- 	case IW_POWER_ON:
--	//	ieee->ps = IEEE80211_PS_DISABLED;
-+	 /* ieee->ps = IEEE80211_PS_DISABLED; */
- 		break;
- 
- 	default:
-@@ -589,11 +580,11 @@ int ieee80211_wx_get_power(struct ieee80211_device *ieee,
- 				 struct iw_request_info *info,
- 				 union iwreq_data *wrqu, char *extra)
- {
--	int ret =0;
-+	int ret = 0;
- 
- 	down(&ieee->wx_sem);
- 
--	if(ieee->ps == IEEE80211_PS_DISABLED){
-+	if (ieee->ps == IEEE80211_PS_DISABLED) {
- 		wrqu->power.disabled = 1;
- 		goto exit;
- 	}
-@@ -604,15 +595,15 @@ int ieee80211_wx_get_power(struct ieee80211_device *ieee,
- 		wrqu->power.flags = IW_POWER_TIMEOUT;
- 		wrqu->power.value = ieee->ps_timeout * 1000;
- 	} else {
--//		ret = -EOPNOTSUPP;
--//		goto exit;
-+		/* ret = -EOPNOTSUPP; */
-+		/* goto exit; */
- 		wrqu->power.flags = IW_POWER_PERIOD;
- 		wrqu->power.value = ieee->ps_period * 1000;
--//ieee->current_network.dtim_period * ieee->current_network.beacon_interval * 1024;
-+/*ieee->current_network.dtim_period * ieee->current_network.beacon_interval * 1024; */
- 	}
- 
-        if ((ieee->ps & (IEEE80211_PS_MBCAST | IEEE80211_PS_UNICAST)) == (IEEE80211_PS_MBCAST | IEEE80211_PS_UNICAST))
--	   	wrqu->power.flags |= IW_POWER_ALL_R;
-+		wrqu->power.flags |= IW_POWER_ALL_R;
- 	else if (ieee->ps & IEEE80211_PS_MBCAST)
- 		wrqu->power.flags |= IW_POWER_MULTICAST_R;
- 	else
--- 
-1.7.0.4
+Ah, interesting. I don't think any architecture does it this way
+so far. IIRC, while alpha had some applications built in 32 bit
+mode in the early days, those were just using the 64 bit system
+calls directly.
 
+Then again, that probably required some rather ugly hacks to get
+the libc working, so since we have the compat code in kernel now,
+your approach is probably much better.
+
+Are you able to build 32 bit kernels for TILE-Gx as well? It's
+probably something you never really want to do for performance
+reasons, but I guess you could use that to verify that the
+ABI is really compatible.
+
+> > compat_sys_sendfile will not be needed with the asm-generic/unistd.h definitions,
+> > but I think you will still need a compat_sys_sendfile64, to which the same
+> > applies as to compat_sys_sched_rr_get_interval.
+> >   
+> 
+> I think it's the other way around: compat_sys_sendfile64() is just
+> sys_sendfile64(), but compat_sys_sendfile() needs to exist since it has
+> to write a 32-bit pointer back to userspace.
+
+Ah. I guess you're right about compat_sys_sendfile64 not being needed.
+Funny enough, parisc, powerpc, s390 and sparc all define it anyway, so
+it didn't occur to me that they don't actually need to.
+
+What I meant about compat_sys_sendfile is that you only define it if
+the 32 bit ABI contains a reference to sys_sendfile in the first
+place. With asm-generic/unistd.h, 32 bit uses always uses the sys_sendfile64
+kernel interface, while for 64 bit the two are identical, so we take
+the regular sys_sendfile.
+
+> >> +static int hardwall_ioctl(struct inode *inode, struct file *file,
+> >> +                      unsigned int a, unsigned long b)
+> >> +{
+> >> [...]
+> >>     
+> > The hardwall stuff looks like it is quite central to your architecture.
+> > Could you elaborate on what it does?
+> >   
+> It's not "central" but it is an important enabler for access to our
+> "user network".  This is a wormhole-routed mesh network (the UDN, or
+> user dynamic network) that connects all the cpus.  If a task affinitizes
+> itself to a single cpu (to avoid migration) and opens /dev/hardwall and
+> does an ioctl on it, it can associate the particular /dev/hardwall file
+> object with some non-overlapping subrectangle of the whole 8x8 chip (our
+> cpus are laid out as "tiles" in an 8x8 configuration).  It can then do
+> an "activate" ioctl to get access to that subrectangle of the UDN, from
+> that cpu.  Other threads in that process (or anyone who can share that
+> file object one way or another, e.g. fork or sendmsg) can then also do
+> an "activate" ioctl on that file object and also get access, and they
+> can then exchange messages with very low latency (register file to
+> register file in a handful of cycles) and high bandwidth (32 bits/cycle
+> or about 3GB/sec).
+>
+> The actual "hardwall" refers to the fact that cpus on the periphery of
+> the allocated subrectangle of cpus set up the router so that they will
+> get an interrupt if some cpu tries to send a message that would
+> terminate outside the set of allocated cpus.  Doing it this way means
+> several unrelated tasks could have separate message-passing arenas
+> (spatially dividing the chip) and whenever the last task holding a
+> reference to a hardwall file object exits, the OS can drain any messages
+> from the UDN and deallocate the subrectangle in question.
+>
+> > If it is as essential as it looks, I'd vote for promoting the interface
+> > from an ioctl based one to four real system calls (more if necessary).
+> >   
+> 
+> The notion of using a file descriptor as the "rights" object is pretty
+> central, so I think a character device will work out well.
+
+ok, I see. Now you could easily do this with system calls as well:
+Instead of the initial ioctl that associates the file descriptor
+with a rectangle, you can have a syscall that creates a rectangle
+and a file descriptor (using anon_inode_getfd) associated with it,
+and returns the fd to user space. This is similar to what we
+do for other system call interfaces that operate on their own fds.
+
+Another alternative might be to combine this with cpusets subsystem,
+which has a related functionality. I guess that would be the
+preferred way if you expect tile-gx to take over the world and
+have lots of applications written to it.
+For a niche product, the syscall or ioctl approach does seem
+simple enough, and it does not require other users of cpusets
+to learn about requirements of your rectangles.
+
+> > Note that the procfs file format is part of your ABI, and this looks
+> > relatively hard to parse, which may introduce bugs.
+> > For per-process information, it would be better to have a simpler
+> > file in each /proc/<pid>/directory. Would that work for you?
+> >   
+> 
+> Well, the hardwalls aren't exactly per-process anyway, and we don't in
+> practice use the ASCII output for anything much, so it may not matter
+> that they're not too parseable.  I may just look into making them more
+> parsable when I convert it to a /dev interface and leave it at that.
+
+On a chardev, a binary interface seems more appropriate than
+an text based one anyway, so you could add another ioctl for this.
+
+> I'm planning to defer this in any case, since the UDN interface, though
+> a nice-to-have, obviously isn't needed to run any standard C code.  I'll
+> make that part of a follow-up patch.
+
+ok
+
+> > Note that we're about to remove the .ioctl file operation and
+> > replace it with .unlocked_ioctl everywhere.
+> >   
+> 
+> OK, for now I'll ensure that we are locking everything internally
+> correctly. I believe we are already anyway.
+
+ok. Then please just use .unlocked_ioctl in new drivers.
+
+> > [hugevmap] Not used anywhere apparently. Can you explain what this is good for?
+> > Maybe leave it out for now, until you merge the code that needs it.
+> > I don't see anything obviously wrong with the implementation though.
+> >   
+> 
+> I'll omit it; we haven't used it yet.  The intent was to provide
+> guaranteed huge pages for TLB purposes to kernel drivers.  Currently we
+> just start with huge pages where possible, and fragment them if necessary.
+
+Ok. Do you use huge pages for backing the linear kernel mapping?
+Normally device drivers get huge pages for free in kmalloc and
+get_free_pages because all the memory is mapped using the largest
+page size anyway.
+
+> > +EXPORT_SYMBOL(inb);
+> >   
+> > If you just remove these definitions, you get a link error for any
+> > driver that tries to use these, which is probably more helpful than
+> > the panic.
+> >
+> > OTOH, are you sure that you can't just map the PIO calls to mmio functions
+> > like readb plus some fixed offset? On most non-x86 architectures, the PIO
+> > area of the PCI bus is just mapped to a memory range somewhere.
+> >   
+> 
+> I'll try to remove them and see if anything falls over.  We don't have
+> any memory-mapped addresses in the 32-bit architecture, though that
+> changes with the 64-bit architecture, which introduces IO mappings.  For
+> PCI we actually have to do a hypervisor transaction for reads or writes.
+
+Ok, then I assume that PIO would also be a hypervisor call, right?
+If you don't have MMIO on 32 bit, you might want to not define either
+PIO (inb, ...) no MMIO (readb, ...) calls there and disable
+CONFIG_HAVE_MMIO in Kconfig.
+ 
+> >> +SEQ_PROC_ENTRY(interrupts)
+> >> +static int proc_tile_interrupts_show(struct seq_file *sf, void *v)
+> >> +{
+> >> [...]
+> >>     
+> > Can you merge this with /proc/interrupts?
+> >   
+> 
+> It turns out /proc/interrupts is formatted the wrong way round if you
+> have 64 processors :-)  You want one row per cpu, not one column per cpu!
+
+Yes, interesting observation. I'm sure the Altix folks are suffering from
+this a lot.
+ 
+> Also, there are things listed that are not strictly IRQs in the normal
+> sense (things like TLB flushes and syscalls) which are still good for
+> assessing where latency glitches might be coming from on a particular cpu.
+
+That's fine, just look at what a current x86 kernel gives you (slightly
+cut):
+           CPU0       CPU1
+  0:   18764948     504980   IO-APIC-edge      timer
+  1:     228456       2572   IO-APIC-edge      i8042
+  9:    2632595      79544   IO-APIC-fasteoi   acpi
+ 12:    1094468      43409   IO-APIC-edge      i8042
+ 16:      82761       1455   IO-APIC-fasteoi   uhci_hcd:usb6, yenta, heci
+ 28:     908865      85857   PCI-MSI-edge      ahci
+ 29:       6421      11595   PCI-MSI-edge      eth0
+NMI:          0          0   Non-maskable interrupts
+LOC:    1987682    9057144   Local timer interrupts
+SPU:          0          0   Spurious interrupts
+CNT:          0          0   Performance counter interrupts
+PND:          0          0   Performance pending work
+RES:    3598785    3903513   Rescheduling interrupts
+CAL:       8848       5944   Function call interrupts
+TLB:      31467      18283   TLB shootdowns
+TRM:          0          0   Thermal event interrupts
+THR:          0          0   Threshold APIC interrupts
+MCE:          0          0   Machine check exceptions
+MCP:        354        346   Machine check polls
+ERR:          0
+MIS:          0
+
+Lots of things in there that fit your category.
+
+> > This seems to be read-only and coming from a kernel command
+> > line option, so I guess looking at /proc/cmdline would
+> > be a reasonable alternative.
+> >   
+> 
+> I always find that kind of painful, since you have to parse it exactly
+> as the kernel would to be sure you're getting it right; strstr() is only
+> a 99% solution.
+
+How about making it a module_param then? You can still see it
+in /sys/modules/*/parameters then, even if the code is builtin,
+but it won't be in the sysctl name space any more.
+ 
+> >> +SYSCALL_DEFINE3(raise_fpe, int, code, unsigned long, addr,
+> >> +            struct pt_regs *, regs)
+> >>     
+> > Does this need to be a system call? I thought we already had
+> > other architectures without floating point exceptions in hardware
+> > that don't need this.
+> >   
+> 
+> Hmm, I didn't know about that.  Any information would be appreciated.  I
+> guess you could synthesize something that looked like a signal purely in
+> user-space?  But how would debuggers trap it?  I'm not sure how it would
+> work without a system call.
+
+I think the C99 standard allows you to not implement SIGFPE at all but
+instead rely on applications doing fetestexcept() etc.
+
+> >> diff --git a/arch/tile/kernel/sys.c b/arch/tile/kernel/sys.c
+> >> [...]
+> >> +ssize_t sys32_readahead(int fd, u32 offset_lo, u32 offset_hi, u32 count)
+> >> +{
+> >> +    return sys_readahead(fd, ((loff_t)offset_hi << 32) | offset_lo, count);
+> >> +}
+> >> +
+> >>
+> >>     
+> > These seem to belong with the other similar functions in compat.c
+> >   
+> 
+> Except they're also used by the 32-bit platform where there is no compat
+> mode (the compat code DOES use them too, it's true).
+
+I see. AFAICT, all other architectures don't need the wrapper in
+the 32 bit native case because they define the syscall calling
+conventions in libc such that they match what the kernel
+expects for a 64 bit argument (typically split in two subsequent
+argument slots). Would that work for you as well?
+
+> > Just use the sys_mmap_pgoff system call directly, rather than
+> > defining your own wrappers. Since that syscall is newer than
+> > asm-generic/unistd.h, that file might need some changes,
+> > together with fixes to arch/score to make sure we don't break
+> > its ABI.
+> >   
+> 
+> It should be OK.  Their sys_mmap2() just tail-calls sys_mmap_pgoff()
+> anyway, so it should be possible to switch mmap2 in asm-generic/unistd.h
+> to be mmap_pgoff instead.  We'll need some user-space changes (our mmap2
+> is defined in 4KB units) but that's not hard.
+
+Hmm, I forgot about the page size. Actually the definition of sys_mmap2
+is to use 4KB units on all architectures except ia64, independent
+of the real page size. Maybe it's better to keep using sys_mmap/sys_mmap2
+after all but then use only one of the two (sys_mmap on 64 bit, sys_mmap2
+on 32 bit and compat).
+
+Either way should work though.
+
+> > It seems that this file fits in the same category as the
+> > backtrace code. Maybe move both away from arch/tile/kernel into a
+> > different directory?
+> >   
+> 
+> I'll think about it.  These are both basically disassembly-related, so
+> maybe an arch/tile/disasm directory with the tile_desc stuff and the
+> backtracer?  I'm not sure it's really worth moving out of
+> arch/tile/kernel though.
+
+Ok. If you leave them in the directory, just split them out into a separate
+patch on your next submission then.
+
+	Arnd
