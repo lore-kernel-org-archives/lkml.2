@@ -1,90 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757816Ab0E0OhA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 May 2010 10:37:00 -0400
-Received: from mail-pz0-f176.google.com ([209.85.222.176]:52980 "EHLO
-	mail-pz0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757707Ab0E0Og4 (ORCPT
+	id S1757759Ab0E0OmG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 May 2010 10:42:06 -0400
+Received: from casper.infradead.org ([85.118.1.10]:58568 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755407Ab0E0OmB convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 May 2010 10:36:56 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=ElhjhmbOz5limrQmwO427GsZ7r2q2FzXFpvX/KIAZN56jcZwjBcoRiM1p5S+TYP7Ac
-         Lgh/0igu8tNry8lMsg1NBEzhkVM/Ik+9lwUGKCprB98pofJEFbIUbV+2tvaG7f0sEWb3
-         bGR7M8WIoLUI60Scc/EmPUXsQYjqglaia4970=
-From: Changli Gao <xiaosuo@gmail.com>
-To: "David S. Miller" <davem@davemloft.net>
-Cc: Eric Dumazet <eric.dumazet@gmail.com>, linux-kernel@vger.kernel.org,
-       netdev@vger.kernel.org, Changli Gao <xiaosuo@gmail.com>
-Subject: [PATCH] skb: make skb_recycle_check() return a bool value
-Date: Thu, 27 May 2010 22:33:23 +0800
-Message-Id: <1274970803-8051-1-git-send-email-xiaosuo@gmail.com>
-X-Mailer: git-send-email 1.6.4.4
+	Thu, 27 May 2010 10:42:01 -0400
+Subject: Re: [linux-pm] [PATCH 0/8] Suspend block api (version 8)
+From: Peter Zijlstra <peterz@infradead.org>
+To: Matthew Garrett <mjg59@srcf.ucam.org>
+Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>,
+       Arve =?ISO-8859-1?Q?Hj=F8nnev=E5g?= <arve@android.com>,
+       Florian Mickler <florian@mickler.org>,
+       Vitaly Wool <vitalywool@gmail.com>, LKML <linux-kernel@vger.kernel.org>,
+       felipe.balbi@nokia.com,
+       Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
+       Linux PM <linux-pm@lists.linux-foundation.org>
+In-Reply-To: <20100527143508.GA30117@srcf.ucam.org>
+References: <20100526120242.5c9b73ad@schatten.dmk.lab>
+	 <AANLkTim4021cTnhVZrQpefq1MG-eEPOFLDRO-XDepHb4@mail.gmail.com>
+	 <20100526133721.602633b2@schatten.dmk.lab>
+	 <AANLkTikzgaOFdQKess4E-D86OLPOzxP3dWiDkU_UR0ri@mail.gmail.com>
+	 <20100526142430.327ccbc4@schatten.dmk.lab>
+	 <20100526141612.3e2e0443@lxorguk.ukuu.org.uk>
+	 <AANLkTin97MMu-XO_Lk-snefBWz2ymhS0Qi1y1RxLwdVA@mail.gmail.com>
+	 <20100527003943.07c17f85@lxorguk.ukuu.org.uk>
+	 <20100527140655.GA28048@srcf.ucam.org> <1274970531.27810.5024.camel@twins>
+	 <20100527143508.GA30117@srcf.ucam.org>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Thu, 27 May 2010 16:41:57 +0200
+Message-ID: <1274971317.27810.5070.camel@twins>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-make skb_recycle_check() return a bool value
+On Thu, 2010-05-27 at 15:35 +0100, Matthew Garrett wrote:
+> On Thu, May 27, 2010 at 04:28:51PM +0200, Peter Zijlstra wrote:
+> > On Thu, 2010-05-27 at 15:06 +0100, Matthew Garrett wrote:
+> > > one way which indicates to the scheduler that tasks in TASK_RUNNING 
+> > > should be scheduled, and when the session is idle we set the flag the 
+> > > other way and all processes in that cgroup get shifted to 
+> > > TASK_INTERRUPTIBLE or something.
+> > 
+> > What's wrong with simply making the phone beep loudly and displaying:
+> > bouncing cows is preventing your phone from sleeping!
+> 
+> Well, primarily that it's possible to design an implementation where it 
+> *doesn't* prevent your phone froms sleeping, but also because a given 
+> application may justifiably be preventing your phone from sleeping for a 
+> short while. What threshold do you use to determine the difference?
 
-make skb_recycle_check() return a bool value
+Whatever you want, why would the kernel care?
 
-Signed-off-by: Changli Gao <xiaosuo@gmail.com>
-----
- include/linux/skbuff.h |    2 +-
- net/core/skbuff.c      |   12 ++++++------
- 2 files changed, 7 insertions(+), 7 deletions(-)
-diff --git a/include/linux/skbuff.h b/include/linux/skbuff.h
-index 7cdfb4d..bf243fc 100644
---- a/include/linux/skbuff.h
-+++ b/include/linux/skbuff.h
-@@ -501,7 +501,7 @@ static inline struct sk_buff *alloc_skb_fclone(unsigned int size,
- 	return __alloc_skb(size, priority, 1, -1);
- }
- 
--extern int skb_recycle_check(struct sk_buff *skb, int skb_size);
-+extern bool skb_recycle_check(struct sk_buff *skb, int skb_size);
- 
- extern struct sk_buff *skb_morph(struct sk_buff *dst, struct sk_buff *src);
- extern struct sk_buff *skb_clone(struct sk_buff *skb,
-diff --git a/net/core/skbuff.c b/net/core/skbuff.c
-index c543dd2..d430876 100644
---- a/net/core/skbuff.c
-+++ b/net/core/skbuff.c
-@@ -482,22 +482,22 @@ EXPORT_SYMBOL(consume_skb);
-  *	reference count dropping and cleans up the skbuff as if it
-  *	just came from __alloc_skb().
-  */
--int skb_recycle_check(struct sk_buff *skb, int skb_size)
-+bool skb_recycle_check(struct sk_buff *skb, int skb_size)
- {
- 	struct skb_shared_info *shinfo;
- 
- 	if (irqs_disabled())
--		return 0;
-+		return false;
- 
- 	if (skb_is_nonlinear(skb) || skb->fclone != SKB_FCLONE_UNAVAILABLE)
--		return 0;
-+		return false;
- 
- 	skb_size = SKB_DATA_ALIGN(skb_size + NET_SKB_PAD);
- 	if (skb_end_pointer(skb) - skb->head < skb_size)
--		return 0;
-+		return false;
- 
- 	if (skb_shared(skb) || skb_cloned(skb))
--		return 0;
-+		return false;
- 
- 	skb_release_head_state(skb);
- 
-@@ -509,7 +509,7 @@ int skb_recycle_check(struct sk_buff *skb, int skb_size)
- 	skb->data = skb->head + NET_SKB_PAD;
- 	skb_reset_tail_pointer(skb);
- 
--	return 1;
-+	return true;
- }
- EXPORT_SYMBOL(skb_recycle_check);
- 
+You can create a whole resource management layer in userspace, with
+different privilidge/trust levels. Trusted apps may wake more than
+untrusted apps. Who cares.
+
+The thing is, you can easily detect what keeps your cpu from idling.
+What you do about it a pure userspace solution.
+
+You can use the QoS stuff to give hints, like don't wake me more than 5
+times a minute, if with those hints an app still doesn't meet whatever
+criteria are suitable for the current mode, yell at it. Or adjust its
+QoS parameters for it.
+
+Heck, for all I care, simply SIGKILL the thing and report it once the
+user starts looking at his screen again.
