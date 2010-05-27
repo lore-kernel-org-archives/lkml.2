@@ -1,60 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751346Ab0E0GRA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 May 2010 02:17:00 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:54158 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750819Ab0E0GQ7 (ORCPT
+	id S1752546Ab0E0GSH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 May 2010 02:18:07 -0400
+Received: from bld-mail17.adl2.internode.on.net ([150.101.137.102]:58452 "EHLO
+	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751039Ab0E0GSE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 May 2010 02:16:59 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:x-enigmail-version:content-type
-         :content-transfer-encoding;
-        b=cgCkKisoL+FCK9hqSod42+wlHX8u4LrcaSlS1ZbFXvI9fB2YKA0QwnMBTDIhljOF1W
-         b46/Wbn02JYpabmK9/5kjUgMwb8VW4v/OOjE7pY/ox+eCT7JXYUgKId+GQ5QuS6mgMAt
-         Nq96vgJFDUj5lOVGGFvcJfc/mtvhzKlZ7+lhA=
-Message-ID: <4BFE0E57.7050306@gmail.com>
-Date: Thu, 27 May 2010 08:16:55 +0200
-From: Jiri Slaby <jirislaby@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; cs-CZ; rv:1.9.2.4) Gecko/20100522 SUSE/3.1rc1-2.1 Thunderbird/3.1
+	Thu, 27 May 2010 02:18:04 -0400
+Date: Thu, 27 May 2010 16:17:51 +1000
+From: Dave Chinner <david@fromorbit.com>
+To: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: Nick Piggin <npiggin@suse.de>, linux-kernel@vger.kernel.org,
+       linux-fsdevel@vger.kernel.org, linux-mm@kvack.org, xfs@oss.sgi.com
+Subject: Re: [PATCH 3/5 v2] superblock: introduce per-sb cache shrinker
+ infrastructure
+Message-ID: <20100527061751.GK12087@dastard>
+References: <1274777588-21494-1-git-send-email-david@fromorbit.com>
+ <1274777588-21494-4-git-send-email-david@fromorbit.com>
+ <20100526164116.GD22536@laptop>
+ <20100526231214.GB1395@dastard>
+ <20100527015335.GD1395@dastard>
+ <20100527040120.GX31073@ZenIV.linux.org.uk>
 MIME-Version: 1.0
-To: Haiyang Zhang <haiyangz@microsoft.com>
-CC: Greg KH <gregkh@suse.de>,
-       "'devel@driverdev.osuosl.org'" <devel@driverdev.osuosl.org>,
-       "'virtualization@lists.osdl.org'" <virtualization@lists.osdl.org>,
-       "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/1] staging: hv: Fix race condition on IC channel initialization
- (modified)
-References: <1FB5E1D5CA062146B38059374562DF7266B8C4AC@TK5EX14MBXC128.redmond.corp.microsoft.com>	<20100526205134.GC7343@suse.de> <1FB5E1D5CA062146B38059374562DF7266B8C72B@TK5EX14MBXC128.redmond.corp.microsoft.com>
-In-Reply-To: <1FB5E1D5CA062146B38059374562DF7266B8C72B@TK5EX14MBXC128.redmond.corp.microsoft.com>
-X-Enigmail-Version: 1.0
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100527040120.GX31073@ZenIV.linux.org.uk>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/26/2010 11:25 PM, Haiyang Zhang wrote:
->> From: Greg KH [mailto:gregkh@suse.de]
->>> +			    VmbusChannelOpen(newChannel, 2 * PAGE_SIZE,
->>> +					     2 * PAGE_SIZE, NULL, 0,
->>> +					     hv_cb_utils[cnt].callback,
->>> +					     newChannel) == 0) {
->>> +				hv_cb_utils[cnt].channel = newChannel;
->>> +				mb();
->>
->> What is the mb() call for?  Why is it necessary?  (hint, if you need it,
->> something else is really wrong...)
+On Thu, May 27, 2010 at 05:01:20AM +0100, Al Viro wrote:
+> On Thu, May 27, 2010 at 11:53:35AM +1000, Dave Chinner wrote:
+> > On Thu, May 27, 2010 at 09:12:14AM +1000, Dave Chinner wrote:
+> > > On Thu, May 27, 2010 at 02:41:16AM +1000, Nick Piggin wrote:
+> > ....
+> > > > Nitpick but I prefer just the restart label wher it is previously. This
+> > > > is moving setup for the next iteration into the "error" case.
+> > > 
+> > > Ok, will fix.
+> > ....
+> > > > Would you just elaborate on the lock order problem somewhere? (the
+> > > > comment makes it look like we *could* take the mutex if we wanted
+> > > > to).
+> > > 
+> > > The shrinker is unregistered in deactivate_locked_super() which is
+> > > just before ->kill_sb is called. The sb->s_umount lock is held at
+> > > this point. hence is the shrinker is operating, we will deadlock if
+> > > we try to lock it like this:
+> > > 
+> > > 	unmount:			shrinker:
+> > > 					down_read(&shrinker_lock);
+> > > 	down_write(&sb->s_umount)
+> > > 	unregister_shrinker()
+> > > 	down_write(&shrinker_lock)
+> > > 					prune_super()
+> > > 					  down_read(&sb->s_umount);
+> > > 					  (deadlock)
+> > > 
+> > > hence if we can't get the sb->s_umount lock in prune_super(), then
+> > > the superblock must be being unmounted and the shrinker should abort
+> > > as the ->kill_sb method will clean up everything after the shrinker
+> > > is unregistered. Hence the down_read_trylock().
 > 
-> It ensures the channel assignment happens before the wakeup call: 
-> osd_WaitEventSet(ic_channel_ready), if the compiler optimization re-arrange 
-> the execution order. 
+> Um...  Maybe I'm dumb, but what's wrong with doing unregistration from
+> deactivate_locked_super(), right after the call of ->kill_sb()?  At that
+> point ->s_umount is already dropped, so we won't deadlock at all.
+> Shrinker rwsem will make sure that all shrinkers-in-progress will run
+> to completion, so we won't get a superblock freed under prune_super().
+> I don't particulary mind down_try_read() in prune_super(), but why not
+> make life obviously safer?
+> 
+> Am I missing something here?
 
-wake_up() is a barrier, you don't need the mb() there.
+I was worried about memory allocation in the ->kill_sb path
+deadlocking on the s_umount lock if it enters reclaim. e.g.  XFS
+inodes can still be dirty even after the VFS has disposed of them,
+and writing them back can require page cache allocation for the
+backing buffers. If allocation recurses back into the shrinker, we
+can deadlock on the s_umount lock.  This doesn't seem like an XFS
+specific problem, so I used a trylock to avoid that whole class of
+problems (same way the current shrinkers do).
 
-BTW osd_WaitEventSet et al. can be easily converted to completion.
+>From there, we can unregister the shrinker before calling ->kill_sb
+as per above. That, in turn, means that the unmount
+invalidate_inodes() vs shrinker race goes away and the iprune_sem is
+not needed in the new prune_icache_sb() function.  I'm pretty sure
+that I can now remove the iprune_sem, but I haven't written the
+patch to do that yet.
+
+Cheers,
+
+Dave.
 
 -- 
-js
+Dave Chinner
+david@fromorbit.com
