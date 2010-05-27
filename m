@@ -1,296 +1,192 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753707Ab0E0F0k (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 May 2010 01:26:40 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:34775 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753232Ab0E0F0h (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 May 2010 01:26:37 -0400
-Date: Thu, 27 May 2010 15:26:28 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: linux-next@vger.kernel.org
-Cc: LKML <linux-kernel@vger.kernel.org>
-Subject: linux-next: Tree for May 27
-Message-Id: <20100527152628.b23a14c6.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Thu__27_May_2010_15_26_28_+1000_RCBtEQO4dYmvPeMp"
+	id S1753426Ab0E0F15 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 May 2010 01:27:57 -0400
+Received: from vms173003pub.verizon.net ([206.46.173.3]:48983 "EHLO
+	vms173003pub.verizon.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752061Ab0E0F14 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 May 2010 01:27:56 -0400
+Date: Thu, 27 May 2010 01:27:46 -0400 (EDT)
+From: Len Brown <lenb@kernel.org>
+X-X-Sender: lenb@localhost.localdomain
+To: x86@kernel.org, linux-pm@lists.linux-foundation.org
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       tony.luck@intel.com
+Subject: [PATCH-v2 3/8] cpuidle: make cpuidle_curr_driver static
+In-reply-to: <db2b1d371847edfdbba21f323b4fd4a480c8c5aa.1274926772.git.len.brown@intel.com>
+Message-id: <alpine.LFD.2.00.1005270126000.4039@localhost.localdomain>
+References: <1274928151-30919-1-git-send-email-lenb@kernel.org>
+ <db2b1d371847edfdbba21f323b4fd4a480c8c5aa.1274926772.git.len.brown@intel.com>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+MIME-version: 1.0
+Content-type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__27_May_2010_15_26_28_+1000_RCBtEQO4dYmvPeMp
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+From: Len Brown <len.brown@intel.com>
 
-Hi all,
+cpuidle_register_driver() sets cpuidle_curr_driver
+cpuidle_unregister_driver() clears cpuidle_curr_driver
 
-We are in the merge window again.  I remind you all not to add stuff for
-2.6.36 to your linux-next trees until after 2.6.35-rc1.
+We should't expose cpuidle_curr_driver to
+potential modification except via these interfaces.
+So make it static and create cpuidle_get_driver() to observe it.
 
-Changes since 20100526:
+Signed-off-by: Len Brown <len.brown@intel.com>
+---
+Tony noticed that since IA64 builds with CONFIG_CPU_IDLE=n
+that we need an inline for the new cpuidle_get_driver() routine
+to make the ACPI driver build happy.
 
-My fixes tree contains:
-      v4l-dvb: update gfp/slab.h includes
-      arm: update gfp/slab.h includes
-      davinci: update gfp/slab.h includes
-      ocfs2: update gfp/slab.h includes
+ drivers/cpuidle/cpuidle.c |   12 +++++++-----
+ drivers/cpuidle/cpuidle.h |    1 -
+ drivers/cpuidle/driver.c  |   11 ++++++++++-
+ drivers/cpuidle/sysfs.c   |    5 +++--
+ include/linux/cpuidle.h   |    2 ++
+ 5 files changed, 22 insertions(+), 9 deletions(-)
 
-The driver-core.current tree lost its conflict.
+diff --git a/drivers/cpuidle/cpuidle.c b/drivers/cpuidle/cpuidle.c
+index 12fdd39..1994885 100644
+--- a/drivers/cpuidle/cpuidle.c
++++ b/drivers/cpuidle/cpuidle.c
+@@ -156,7 +156,7 @@ int cpuidle_enable_device(struct cpuidle_device *dev)
+ 
+ 	if (dev->enabled)
+ 		return 0;
+-	if (!cpuidle_curr_driver || !cpuidle_curr_governor)
++	if (!cpuidle_get_driver() || !cpuidle_curr_governor)
+ 		return -EIO;
+ 	if (!dev->state_count)
+ 		return -EINVAL;
+@@ -207,7 +207,7 @@ void cpuidle_disable_device(struct cpuidle_device *dev)
+ {
+ 	if (!dev->enabled)
+ 		return;
+-	if (!cpuidle_curr_driver || !cpuidle_curr_governor)
++	if (!cpuidle_get_driver() || !cpuidle_curr_governor)
+ 		return;
+ 
+ 	dev->enabled = 0;
+@@ -271,10 +271,11 @@ static int __cpuidle_register_device(struct cpuidle_device *dev)
+ {
+ 	int ret;
+ 	struct sys_device *sys_dev = get_cpu_sysdev((unsigned long)dev->cpu);
++	struct cpuidle_driver *cpuidle_driver = cpuidle_get_driver();
+ 
+ 	if (!sys_dev)
+ 		return -EINVAL;
+-	if (!try_module_get(cpuidle_curr_driver->owner))
++	if (!try_module_get(cpuidle_driver->owner))
+ 		return -EINVAL;
+ 
+ 	init_completion(&dev->kobj_unregister);
+@@ -284,7 +285,7 @@ static int __cpuidle_register_device(struct cpuidle_device *dev)
+ 	per_cpu(cpuidle_devices, dev->cpu) = dev;
+ 	list_add(&dev->device_list, &cpuidle_detected_devices);
+ 	if ((ret = cpuidle_add_sysfs(sys_dev))) {
+-		module_put(cpuidle_curr_driver->owner);
++		module_put(cpuidle_driver->owner);
+ 		return ret;
+ 	}
+ 
+@@ -325,6 +326,7 @@ EXPORT_SYMBOL_GPL(cpuidle_register_device);
+ void cpuidle_unregister_device(struct cpuidle_device *dev)
+ {
+ 	struct sys_device *sys_dev = get_cpu_sysdev((unsigned long)dev->cpu);
++	struct cpuidle_driver *cpuidle_driver = cpuidle_get_driver();
+ 
+ 	if (dev->registered == 0)
+ 		return;
+@@ -340,7 +342,7 @@ void cpuidle_unregister_device(struct cpuidle_device *dev)
+ 
+ 	cpuidle_resume_and_unlock();
+ 
+-	module_put(cpuidle_curr_driver->owner);
++	module_put(cpuidle_driver->owner);
+ }
+ 
+ EXPORT_SYMBOL_GPL(cpuidle_unregister_device);
+diff --git a/drivers/cpuidle/cpuidle.h b/drivers/cpuidle/cpuidle.h
+index 9476ba3..33e50d5 100644
+--- a/drivers/cpuidle/cpuidle.h
++++ b/drivers/cpuidle/cpuidle.h
+@@ -9,7 +9,6 @@
+ 
+ /* For internal use only */
+ extern struct cpuidle_governor *cpuidle_curr_governor;
+-extern struct cpuidle_driver *cpuidle_curr_driver;
+ extern struct list_head cpuidle_governors;
+ extern struct list_head cpuidle_detected_devices;
+ extern struct mutex cpuidle_lock;
+diff --git a/drivers/cpuidle/driver.c b/drivers/cpuidle/driver.c
+index 5b6fd0f..4a68d40 100644
+--- a/drivers/cpuidle/driver.c
++++ b/drivers/cpuidle/driver.c
+@@ -14,7 +14,7 @@
+ 
+ #include "cpuidle.h"
+ 
+-struct cpuidle_driver *cpuidle_curr_driver;
++static struct cpuidle_driver *cpuidle_curr_driver;
+ DEFINE_SPINLOCK(cpuidle_driver_lock);
+ 
+ /**
+@@ -40,6 +40,15 @@ int cpuidle_register_driver(struct cpuidle_driver *drv)
+ EXPORT_SYMBOL_GPL(cpuidle_register_driver);
+ 
+ /**
++ * cpuidle_get_driver - return the current driver
++ */
++struct cpuidle_driver *cpuidle_get_driver(void)
++{
++	return cpuidle_curr_driver;
++}
++EXPORT_SYMBOL_GPL(cpuidle_get_driver);
++
++/**
+  * cpuidle_unregister_driver - unregisters a driver
+  * @drv: the driver
+  */
+diff --git a/drivers/cpuidle/sysfs.c b/drivers/cpuidle/sysfs.c
+index 0ba9c8b..0310ffa 100644
+--- a/drivers/cpuidle/sysfs.c
++++ b/drivers/cpuidle/sysfs.c
+@@ -47,10 +47,11 @@ static ssize_t show_current_driver(struct sysdev_class *class,
+ 				   char *buf)
+ {
+ 	ssize_t ret;
++	struct cpuidle_driver *cpuidle_driver = cpuidle_get_driver();
+ 
+ 	spin_lock(&cpuidle_driver_lock);
+-	if (cpuidle_curr_driver)
+-		ret = sprintf(buf, "%s\n", cpuidle_curr_driver->name);
++	if (cpuidle_driver)
++		ret = sprintf(buf, "%s\n", cpuidle_driver->name);
+ 	else
+ 		ret = sprintf(buf, "none\n");
+ 	spin_unlock(&cpuidle_driver_lock);
+diff --git a/include/linux/cpuidle.h b/include/linux/cpuidle.h
+index 0fe1efe..ee27a1f 100644
+--- a/include/linux/cpuidle.h
++++ b/include/linux/cpuidle.h
+@@ -125,6 +125,7 @@ struct cpuidle_driver {
+ #ifdef CONFIG_CPU_IDLE
+ 
+ extern int cpuidle_register_driver(struct cpuidle_driver *drv);
++struct cpuidle_driver *cpuidle_get_driver(void);
+ extern void cpuidle_unregister_driver(struct cpuidle_driver *drv);
+ extern int cpuidle_register_device(struct cpuidle_device *dev);
+ extern void cpuidle_unregister_device(struct cpuidle_device *dev);
+@@ -138,6 +139,7 @@ extern void cpuidle_disable_device(struct cpuidle_device *dev);
+ 
+ static inline int cpuidle_register_driver(struct cpuidle_driver *drv)
+ {return -ENODEV;}
++static inline cpuidle_driver *cpuidle_get_driver(void) {return NULL;}
+ static inline void cpuidle_unregister_driver(struct cpuidle_driver *drv) { }
+ static inline int cpuidle_register_device(struct cpuidle_device *dev)
+ {return -ENODEV;}
+-- 
+1.6.0.6
 
-The fuse tree lost its build failure.
-
-The rr tree lost its conflicts.
-
-The leds tree gained 2 build failures so I used the version from
-next-20100526.
-
-The watchdog tree lost its conflict.
-
-----------------------------------------------------------------------------
-
-I have created today's linux-next tree at
-git://git.kernel.org/pub/scm/linux/kernel/git/next/linux-next.git
-(patches at http://www.kernel.org/pub/linux/kernel/v2.6/next/ ).  If you
-are tracking the linux-next tree using git, you should not use "git pull"
-to do so as that will try to merge the new linux-next release with the
-old one.  You should use "git fetch" as mentioned in the FAQ on the wiki
-(see below).
-
-You can see which trees have been included by looking in the Next/Trees
-file in the source.  There are also quilt-import.log and merge.log files
-in the Next directory.  Between each merge, the tree was built with
-a ppc64_defconfig for powerpc and an allmodconfig for x86_64. After the
-final fixups (if any), it is also built with powerpc allnoconfig (32 and
-64 bit), ppc44x_defconfig and allyesconfig (minus
-CONFIG_PROFILE_ALL_BRANCHES - this fails its final link) and i386, sparc
-and sparc64 defconfig. These builds also have
-CONFIG_ENABLE_WARN_DEPRECATED, CONFIG_ENABLE_MUST_CHECK and
-CONFIG_DEBUG_INFO disabled when necessary.
-
-Below is a summary of the state of the merge.
-
-We are up to 162 trees (counting Linus' and 22 trees of patches pending
-for Linus' tree), more are welcome (even if they are currently empty).
-Thanks to those who have contributed, and to those who haven't, please do.
-
-Status of my local build tests will be at
-http://kisskb.ellerman.id.au/linux-next .  If maintainers want to give
-advice about cross compilers/configs that work, we are always open to add
-more builds.
-
-Thanks to Jan Dittmer for adding the linux-next tree to his build tests
-at http://l4x.org/k/ , the guys at http://test.kernel.org/ and Randy
-Dunlap for doing many randconfig builds.
-
-There is a wiki covering stuff to do with linux-next at
-http://linux.f-seidel.de/linux-next/pmwiki/ .  Thanks to Frank Seidel.
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
-$ git checkout master
-$ git reset --hard stable
-Merging origin/master
-Merging fixes/fixes
-Merging arm-current/master
-Merging m68k-current/for-linus
-Merging powerpc-merge/merge
-Merging sparc-current/master
-Merging scsi-rc-fixes/master
-Merging net-current/master
-Merging sound-current/for-linus
-Merging pci-current/for-linus
-Merging wireless-current/master
-Merging kbuild-current/for-linus
-Merging quilt/driver-core.current
-Merging quilt/tty.current
-Merging quilt/usb.current
-Merging quilt/staging.current
-Merging cpufreq-current/fixes
-Merging input-current/for-linus
-Merging md-current/for-linus
-Merging audit-current/for-linus
-Merging crypto-current/master
-Merging ide-curent/master
-Merging dwmw2/master
-Merging gcl-current/merge
-Merging arm/devel
-Merging davinci/davinci-next
-Merging i.MX/for-next
-Merging msm/for-next
-Merging omap/for-next
-Merging pxa/for-next
-Merging samsung/next-samsung
-Merging avr32/avr32-arch
-Merging blackfin/for-linus
-Merging cris/for-next
-Merging ia64/test
-Merging m68k/for-next
-Merging m68knommu/for-next
-Merging microblaze/next
-Merging mips/mips-for-linux-next
-Merging parisc/next
-Merging powerpc/next
-Merging 4xx/next
-Merging 52xx-and-virtex/next
-CONFLICT (content): Merge conflict in drivers/serial/mpc52xx_uart.c
-Merging galak/next
-CONFLICT (content): Merge conflict in arch/powerpc/sysdev/fsl_msi.c
-Merging s390/features
-Merging sh/master
-Merging genesis/master
-CONFLICT (content): Merge conflict in include/linux/serial_sci.h
-Merging sparc/master
-Merging xtensa/master
-Merging ceph/for-next
-Merging cifs/master
-Merging configfs/linux-next
-Merging ecryptfs/next
-CONFLICT (content): Merge conflict in fs/ecryptfs/main.c
-Merging ext3/for_next
-Merging ext4/next
-CONFLICT (content): Merge conflict in fs/ext4/fsync.c
-CONFLICT (content): Merge conflict in fs/ext4/super.c
-Merging fatfs/master
-Merging fuse/for-next
-Merging gfs2/master
-Merging jfs/next
-Merging logfs/master
-Merging nfs/linux-next
-Merging nfsd/nfsd-next
-Merging nilfs2/for-next
-Merging ocfs2/linux-next
-Merging squashfs/master
-Merging udf/for_next
-Merging v9fs/for-next
-Merging ubifs/linux-next
-Merging xfs/master
-Merging vfs/for-next
-Merging pci/linux-next
-Merging hid/for-next
-Merging quilt/i2c
-Merging bjdooks-i2c/next-i2c
-CONFLICT (content): Merge conflict in arch/arm/plat-omap/i2c.c
-CONFLICT (content): Merge conflict in drivers/i2c/busses/i2c-cpm.c
-CONFLICT (content): Merge conflict in drivers/i2c/busses/i2c-mpc.c
-Merging quilt/jdelvare-hwmon
-Merging quilt/kernel-doc
-Merging v4l-dvb/master
-Merging kbuild/for-next
-CONFLICT (content): Merge conflict in Documentation/kbuild/makefiles.txt
-Merging kconfig/for-next
-Merging ide/master
-Merging libata/NEXT
-Merging infiniband/for-next
-Merging acpi/test
-Applying: acpi: update gfp/slab.h includes
-Merging ieee1394/for-next
-CONFLICT (content): Merge conflict in Documentation/feature-removal-schedul=
-e.txt
-Merging ubi/linux-next
-Merging kvm/linux-next
-Merging dlm/next
-Merging ibft/master
-Merging scsi/master
-Merging async_tx/next
-Merging net/master
-Merging wireless/master
-Merging mtd/master
-Merging crypto/master
-Merging sound/for-next
-Merging cpufreq/next
-Merging quilt/rr
-Merging mmc/next
-Merging input/next
-Merging lsm/for-next
-Merging block/for-next
-Merging quilt/device-mapper
-Merging embedded/master
-Merging firmware/master
-Merging pcmcia/master
-Merging battery/master
-Merging leds/for-mm
-$ git reset --hard HEAD^
-Merging refs/next/20100526/leds
-Merging backlight/for-mm
-Merging kgdb/kgdb-next
-Merging slab/for-next
-Merging uclinux/for-next
-Merging md/for-next
-Merging mfd/for-next
-CONFLICT (content): Merge conflict in drivers/dma/Makefile
-CONFLICT (add/add): Merge conflict in drivers/dma/timb_dma.c
-Merging hdlc/hdlc-next
-Merging drm/drm-next
-Merging viafb/viafb-next
-Merging voltage/for-next
-Merging security-testing/next
-Merging lblnet/master
-Merging agp/agp-next
-Merging uwb/for-upstream
-Merging watchdog/master
-Merging bdev/master
-Merging dwmw2-iommu/master
-Merging cputime/cputime
-Merging osd/linux-next
-Merging jc_docs/docs-next
-Merging nommu/master
-Merging trivial/for-next
-Merging audit/for-next
-Merging quilt/aoe
-Merging suspend/linux-next
-Merging bluetooth/master
-Merging fsnotify/for-next
-CONFLICT (delete/modify): fs/notify/inotify/inotify.c deleted in fsnotify/f=
-or-next and modified in HEAD. Version HEAD of fs/notify/inotify/inotify.c l=
-eft in tree.
-$ git rm -f fs/notify/inotify/inotify.c
-Applying: fsnotify: update gfp/slab.h includes
-Merging irda/for-next
-CONFLICT (content): Merge conflict in drivers/net/irda/irda-usb.c
-Merging drbd/for-jens
-Merging catalin/for-next
-Merging alacrity/linux-next
-Merging i7core_edac/linux_next
-Merging devicetree/next-devicetree
-Merging spi/next-spi
-Merging omap_dss2/for-next
-Merging tip/auto-latest
-CONFLICT (content): Merge conflict in Documentation/feature-removal-schedul=
-e.txt
-CONFLICT (content): Merge conflict in kernel/Makefile
-Merging edac-amd/for-next
-Merging oprofile/for-next
-Merging percpu/for-next
-Merging workqueues/for-next
-Merging sfi/sfi-test
-Merging asm-generic/next
-Merging hwpoison/hwpoison
-Merging sysctl/master
-Merging bkl-core/bkl/core
-Merging bkl-procfs/bkl/procfs
-Merging bkl-ioctl/bkl/ioctl
-Merging quilt/driver-core
-Merging quilt/tty
-Merging quilt/usb
-Merging staging-next/staging-next
-Merging slabh/slabh
-Merging scsi-post-merge/master
-
---Signature=_Thu__27_May_2010_15_26_28_+1000_RCBtEQO4dYmvPeMp
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iEYEARECAAYFAkv+AoQACgkQjjKRsyhoI8y4awCgjz6QR+4GQ+2fN4CJsyPbK5p+
-eVIAoJiLAmPBaqMe17kPOmb0rPqfcV3s
-=Ed6u
------END PGP SIGNATURE-----
-
---Signature=_Thu__27_May_2010_15_26_28_+1000_RCBtEQO4dYmvPeMp--
