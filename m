@@ -1,73 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757974Ab0E0LhW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 May 2010 07:37:22 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:36357 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757050Ab0E0LhU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 May 2010 07:37:20 -0400
-From: Marc Kleine-Budde <mkl@pengutronix.de>
-To: sha@pengutronix.de
-Cc: Marc Kleine-Budde <mkl@pengutronix.de>,
-       "Jean Delvare (PC drivers, core)" <khali@linux-fr.org>,
-       "Ben Dooks (embedded platforms)" <ben-linux@fluff.org>,
-       Richard Zhao <linuxzsc@gmail.com>, Wolfram Sang <w.sang@pengutronix.de>,
-       =?UTF-8?q?Uwe=20Kleine-K=C3=B6nig?= 
-	<u.kleine-koenig@pengutronix.de>,
-       Arnaud Patard <apatard@mandriva.com>, linux-i2c@vger.kernel.org,
-       linux-kernel@vger.kernel.org
-Subject: [PATCH] i2c-imx: do not allow interruptions when waiting for I2C to complete
-Date: Thu, 27 May 2010 13:36:27 +0200
-Message-Id: <1274960188-12601-1-git-send-email-mkl@pengutronix.de>
-X-Mailer: git-send-email 1.7.1
-X-SA-Exim-Connect-IP: 2001:6f8:1178:4:5054:ff:fe8d:eefb
-X-SA-Exim-Mail-From: mkl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	id S1758945Ab0E0Lhd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 May 2010 07:37:33 -0400
+Received: from gate.crashing.org ([63.228.1.57]:48703 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758637Ab0E0Lh1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 May 2010 07:37:27 -0400
+Subject: Re: linux-next: build failure after merge of the final tree (leds
+ tree related)
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Richard Purdie <rpurdie@rpsys.net>, linux-next@vger.kernel.org,
+       linux-kernel@vger.kernel.org,
+       Bjarke Istrup Pedersen <gurligebis@gentoo.org>,
+       Randy Dunlap <randy.dunlap@oracle.com>,
+       Alessandro Zummo <a.zummo@towertech.it>,
+       Andrew Morton <akpm@linux-foundation.org>
+In-Reply-To: <20100527151656.889b5977.sfr@canb.auug.org.au>
+References: <20100527151656.889b5977.sfr@canb.auug.org.au>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 27 May 2010 21:36:30 +1000
+Message-ID: <1274960190.1931.429.camel@pasglop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The i2c_imx_trx_complete() function is using
-wait_event_interruptible_timeout() to wait for the I2C controller to
-signal that it has completed an I2C bus operation. If the process that
-causes the I2C operation receives a signal, the wait will be
-interrupted, returning an error. It is better to let the I2C operation
-finished before handling the signal (i.e. returning into userspace).
+On Thu, 2010-05-27 at 15:16 +1000, Stephen Rothwell wrote:
+> Hi Richard,
+> 
+> After merging the final tree, today's linux-next build (powerpc
+> allyesconfig) failed like this:
+> 
+> drivers/leds/leds-net5501.c:20:23: error: asm/geode.h: No such file or directory
+> drivers/leds/leds-net5501.c: In function 'soekris_init':
+> drivers/leds/leds-net5501.c:63: error: implicit declaration of function 'is_geode'
 
-It is safe to use wait_event_timeout() instead, because the timeout
-will allow the process to exit if the I2C bus hangs. It's also better
-to allow the I2C operation to finish, because unacknowledged I2C
-operations can cause the I2C bus to hang.
+Looks like something is missing an ifdef CONFIG_X86 :-)
 
-Signed-off-by: Marc Kleine-Budde <mkl@pengutronix.de>
----
- drivers/i2c/busses/i2c-imx.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+Cheers,
+Ben.
 
-diff --git a/drivers/i2c/busses/i2c-imx.c b/drivers/i2c/busses/i2c-imx.c
-index d1ff940..d7051fe 100644
---- a/drivers/i2c/busses/i2c-imx.c
-+++ b/drivers/i2c/busses/i2c-imx.c
-@@ -161,7 +161,7 @@ static int i2c_imx_trx_complete(struct imx_i2c_struct *i2c_imx)
- {
- 	int result;
- 
--	result = wait_event_interruptible_timeout(i2c_imx->queue,
-+	result = wait_event_timeout(i2c_imx->queue,
- 		i2c_imx->i2csr & I2SR_IIF, HZ / 10);
- 
- 	if (unlikely(result < 0)) {
-@@ -295,7 +295,7 @@ static irqreturn_t i2c_imx_isr(int irq, void *dev_id)
- 		i2c_imx->i2csr = temp;
- 		temp &= ~I2SR_IIF;
- 		writeb(temp, i2c_imx->base + IMX_I2C_I2SR);
--		wake_up_interruptible(&i2c_imx->queue);
-+		wake_up(&i2c_imx->queue);
- 		return IRQ_HANDLED;
- 	}
- 
--- 
-1.7.1
+> Caused by commit 14e40f644b020d473415342461b7c62e3bb5e312 ("leds: Add LED
+> driver for the Soekris net5501 board").  Presumably only tested on x86?
+> 
+> drivers/leds/leds-gpio.c: In function 'of_gpio_leds_probe':
+> drivers/leds/leds-gpio.c:253: error: 'struct gpio_led' has no member named 'blinking'
+> 
+> Caused by commit 2146325df2c2640059a9e064890c30c6e259b458 ("leds:
+> leds-gpio: Change blink_set callback to be able to turn off blinking").
+> 
+> I have used the version of the leds tree from next-20100526 for today.
+
 
