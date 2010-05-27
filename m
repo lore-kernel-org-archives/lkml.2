@@ -1,51 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932552Ab0E0IFZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 May 2010 04:05:25 -0400
-Received: from lo.gmane.org ([80.91.229.12]:57660 "EHLO lo.gmane.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751978Ab0E0IFK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S932371Ab0E0IFV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 May 2010 04:05:21 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:39083 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751949Ab0E0IFK convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 27 May 2010 04:05:10 -0400
-X-Injected-Via-Gmane: http://gmane.org/
-To: linux-kernel@vger.kernel.org
-connect(): No such file or directory
-From: Florian Mickler <florian@mickler.org>
-Subject: Re: [PATCH 0/8] Suspend block api (version 6)
-Date: Thu, 27 May 2010 10:04:53 +0200
-Message-ID: <20100527100453.1d55c87e@schatten.dmk.lab>
-References: <CEE6BB42CAD6E947908279175AF8470A025A7D7DC4@EXDCVYMBSTM006.EQ1STM.local>
-	<Pine.LNX.4.44L0.1005261156130.1328-100000@iolanthe.rowland.org>
-	<CEE6BB42CAD6E947908279175AF8470A025A8206ED@EXDCVYMBSTM006.EQ1STM.local>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-Complaints-To: usenet@dough.gmane.org
-X-Gmane-NNTP-Posting-Host: f053210012.adsl.alicedsl.de
-In-Reply-To: <CEE6BB42CAD6E947908279175AF8470A025A8206ED@EXDCVYMBSTM006.EQ1STM.local>
-X-Newsreader: Claws Mail 3.7.5 (GTK+ 2.18.9; x86_64-pc-linux-gnu)
-Cc: linux-pm@lists.osdl.org, linux-input@vger.kernel.org,
-       linux-omap@vger.kernel.org
+MIME-Version: 1.0
+In-Reply-To: <AANLkTimcPZTZYH4fDxX0xlLxMvtl87FDOEP_hdaztFYJ@mail.gmail.com>
+References: <1274482015-30899-1-git-send-email-arve@android.com>
+	<201005242049.18920.rjw@sisk.pl>
+	<87wrusvrqe.fsf@deeprootsystems.com>
+	<201005250138.16293.rjw@sisk.pl>
+	<1274863655.5882.4875.camel@twins>
+	<AANLkTinN6MKvCEhPkbYQRD2gu-mGXdNW9asRsTuKN3_Y@mail.gmail.com>
+	<1274867106.5882.5090.camel@twins>
+	<20100526120242.5c9b73ad@schatten.dmk.lab>
+	<AANLkTim4021cTnhVZrQpefq1MG-eEPOFLDRO-XDepHb4@mail.gmail.com>
+	<20100526133721.602633b2@schatten.dmk.lab>
+	<AANLkTikzgaOFdQKess4E-D86OLPOzxP3dWiDkU_UR0ri@mail.gmail.com>
+	<20100526142430.327ccbc4@schatten.dmk.lab>
+	<20100526141612.3e2e0443@lxorguk.ukuu.org.uk>
+	<AANLkTin97MMu-XO_Lk-snefBWz2ymhS0Qi1y1RxLwdVA@mail.gmail.com>
+	<AANLkTimcPZTZYH4fDxX0xlLxMvtl87FDOEP_hdaztFYJ@mail.gmail.com>
+Date: Thu, 27 May 2010 01:05:08 -0700
+Message-ID: <AANLkTilVu_EFAIN5owarAh-2pDomVZUvLsO_XLP4ISTu@mail.gmail.com>
+Subject: Re: [linux-pm] [PATCH 0/8] Suspend block api (version 8)
+From: =?ISO-8859-1?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>
+To: Vitaly Wool <vitalywool@gmail.com>
+Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, Florian Mickler <florian@mickler.org>,
+       Peter Zijlstra <peterz@infradead.org>,
+       LKML <linux-kernel@vger.kernel.org>, Paul@smtp1.linux-foundation.org,
+       felipe.balbi@nokia.com,
+       Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
+       Linux PM <linux-pm@lists.linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 27 May 2010 09:46:51 +0200
-Linus WALLEIJ <linus.walleij@stericsson.com> wrote:
+2010/5/27 Vitaly Wool <vitalywool@gmail.com>:
+> 2010/5/27 Arve Hjønnevåg <arve@android.com>:
+>> On Wed, May 26, 2010 at 6:16 AM, Alan Cox <alan@lxorguk.ukuu.org.uk> wrote:
+>>>> Really, what are you getting at? Do you deny that there are programs,
+>>>> that prevent a device from sleeping? (Just think of the bouncing
+>>>> cows app)
+>>>>
+>>>> And if you have two kernels, one with which your device is dead after 1
+>>>> hour and one with which your device is dead after 10 hours. Which would
+>>>> you prefer? I mean really... this is ridiculous.
+>>>
+>>> The problem you have is that this is policy. If I have the device wired
+>>> to a big screen and I want cows bouncing on it I'll be most upset if
+>>> instead it suspends.
+>>
+>> We never suspend when the screen is on. If the screen is off, I would
+>> not be upset if it suspends.
+>
+> That's /wrong/. What if you have an active download ongoing when the
+> screen is off? This ugly simplistic approach is one of the worst
+> things in Android.
 
+On android we have code that blocks suspend while downloading. On
+non-android systems I have used if the download has not finished by
+the time the auto-sleep timeout kicks in, the system will suspend and
+the download halts.
 
-> If yes then OK, it's not totally elegant but if that is
-> where we have to go, I can live with it. There will likely
-> be people who implement for only one or the other semantic
-> behaviour, but we have worse things to cope with already.
-
-Alan Cox suggested, that this kind of explicit requirement definition
-might be necessary for all drivers anyway in the long run.
-
-That way, the semantic differences between those two cases would
-vanish. 
-
-Cheers,
-Flo
-
-
-
+-- 
+Arve Hjønnevåg
