@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932624Ab0E0Ucx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 May 2010 16:32:53 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:47811 "EHLO
+	id S932541Ab0E0Ucp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 May 2010 16:32:45 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:60163 "EHLO
 	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932561Ab0E0Ucu (ORCPT
+	by vger.kernel.org with ESMTP id S932256Ab0E0Ucm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 May 2010 16:32:50 -0400
-Date: Thu, 27 May 2010 13:32:39 -0700
+	Thu, 27 May 2010 16:32:42 -0400
+Date: Thu, 27 May 2010 13:32:34 -0700
 From: Andrew Morton <akpm@linux-foundation.org>
 To: Dave Chinner <david@fromorbit.com>
 Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
        linux-mm@kvack.org, xfs@oss.sgi.com
-Subject: Re: [PATCH 4/5] superblock: add filesystem shrinker operations
-Message-Id: <20100527133239.5d038d9c.akpm@linux-foundation.org>
-In-Reply-To: <1274777588-21494-5-git-send-email-david@fromorbit.com>
+Subject: Re: [PATCH 3/5] superblock: introduce per-sb cache shrinker
+ infrastructure
+Message-Id: <20100527133234.e0814239.akpm@linux-foundation.org>
+In-Reply-To: <1274777588-21494-4-git-send-email-david@fromorbit.com>
 References: <1274777588-21494-1-git-send-email-david@fromorbit.com>
-	<1274777588-21494-5-git-send-email-david@fromorbit.com>
+	<1274777588-21494-4-git-send-email-david@fromorbit.com>
 X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
@@ -25,116 +26,50 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 25 May 2010 18:53:07 +1000
+On Tue, 25 May 2010 18:53:06 +1000
 Dave Chinner <david@fromorbit.com> wrote:
 
 > From: Dave Chinner <dchinner@redhat.com>
 > 
-> Now we have a per-superblock shrinker implementation, we can add a
-> filesystem specific callout to it to allow filesystem internal
-> caches to be shrunk by the superblock shrinker.
+> With context based shrinkers, we can implement a per-superblock
+> shrinker that shrinks the caches attached to the superblock. We
+> currently have global shrinkers for the inode and dentry caches that
+> split up into per-superblock operations via a coarse proportioning
+> method that does not batch very well.  The global shrinkers also
+> have a dependency - dentries pin inodes - so we have to be very
+> careful about how we register the global shrinkers so that the
+> implicit call order is always correct.
 > 
-> Rather than perpetuate the multipurpose shrinker callback API (i.e.
-> nr_to_scan == 0 meaning "tell me how many objects freeable in the
-> cache), two operations will be added. The first will return the
-> number of objects that are freeable, the second is the actual
-> shrinker call.
+> With a per-sb shrinker callout, we can encode this dependency
+> directly into the per-sb shrinker, hence avoiding the need for
+> strictly ordering shrinker registrations. We also have no need for
+> any proportioning code for the shrinker subsystem already provides
+> this functionality across all shrinkers. Allowing the shrinker to
+> operate on a single superblock at a time means that we do less
+> superblock list traversals and locking and reclaim should batch more
+> effectively. This should result in less CPU overhead for reclaim and
+> potentially faster reclaim of items from each filesystem.
 > 
->
-> ...
->
->  static int prune_super(struct shrinker *shrink, int nr_to_scan, gfp_t gfp_mask)
->  {
->  	struct super_block *sb;
-> -	int count;
-> +	int	fs_objects = 0;
-> +	int	total_objects;
->  
->  	sb = container_of(shrink, struct super_block, s_shrink);
->  
-> @@ -63,22 +64,40 @@ static int prune_super(struct shrinker *shrink, int nr_to_scan, gfp_t gfp_mask)
->  		return -1;
->  	}
->  
-> -	if (nr_to_scan) {
-> -		/* proportion the scan between the two cache__ */
-> -		int total;
-> -
-> -		total = sb->s_nr_dentry_unused + sb->s_nr_inodes_unused + 1;
-> -		count = (nr_to_scan * sb->s_nr_dentry_unused) / total;
-> +	if (sb->s_op && sb->s_op->nr_cached_objects)
-> +		fs_objects = sb->s_op->nr_cached_objects(sb);
->  
-> -		/* prune dcache first as icache is pinned by it */
-> -		prune_dcache_sb(sb, count);
-> -		prune_icache_sb(sb, nr_to_scan - count);
-> +	total_objects = sb->s_nr_dentry_unused +
-> +			sb->s_nr_inodes_unused + fs_objects + 1;
-> +	if (nr_to_scan) {
-> +		int	dentries;
-> +		int	inodes;
-> +
-> +		/* proportion the scan between the cache__ */
-> +		dentries = (nr_to_scan * sb->s_nr_dentry_unused) /
-> +							total_objects;
-> +		inodes = (nr_to_scan * sb->s_nr_inodes_unused) /
-> +							total_objects;
-> +		if (fs_objects)
-> +			fs_objects = (nr_to_scan * fs_objects) /
-> +							total_objects;
-> +		/*
-> +		 * prune the dcache first as the icache is pinned by it, then
-> +		 * prune the icache, followed by the filesystem specific caches
-> +		 */
-> +		prune_dcache_sb(sb, dentries);
-> +		prune_icache_sb(sb, inodes);
-> +		if (sb->s_op && sb->s_op->free_cached_objects) {
 
-Under which circumstances is a NULL ->free_cached_objects valid?
+I go all tingly when a changelog contains the word "should".
 
-> +			sb->s_op->free_cached_objects(sb, fs_objects);
-> +			fs_objects = sb->s_op->nr_cached_objects(sb);
-> +		}
-> +		total_objects = sb->s_nr_dentry_unused +
-> +				sb->s_nr_inodes_unused + fs_objects;
->  	}
+OK, it _should_ do X.  But _does_ it actually do X?
 
-The return value from ->free_cached_objects() doesn't actually get
-used.  Instead the code calls ->nr_cached_objects() twice.
+>  fs/super.c         |   53 +++++++++++++++++++++
+>  include/linux/fs.h |    7 +++
+>  4 files changed, 88 insertions(+), 214 deletions(-)
+> 
+> diff --git a/fs/dcache.c b/fs/dcache.c
+> index dba6b6d..d7bd781 100644
+> --- a/fs/dcache.c
+> +++ b/fs/dcache.c
+> @@ -456,21 +456,16 @@ static void prune_one_dentry(struct dentry * dentry)
+>   * which flags are set. This means we don't need to maintain multiple
+>   * similar copies of this loop.
+>   */
+> -static void __shrink_dcache_sb(struct super_block *sb, int *count, int flags)
+> +static void __shrink_dcache_sb(struct super_block *sb, int count, int flags)
 
+Forgot to update the kerneldoc description of `count'.
 
-> -	count = ((sb->s_nr_dentry_unused + sb->s_nr_inodes_unused) / 100)
-> -						* sysctl_vfs_cache_pressure;
-> +	total_objects = (total_objects / 100) * sysctl_vfs_cache_pressure;
->  	up_read(&sb->s_umount);
-> -	return count;
-> +	return total_objects;
->  }
->  
->  /**
-> diff --git a/include/linux/fs.h b/include/linux/fs.h
-> index 5bff2dc..efcdcc6 100644
-> --- a/include/linux/fs.h
-> +++ b/include/linux/fs.h
-> @@ -1590,6 +1590,17 @@ struct super_operations {
->  	ssize_t (*quota_write)(struct super_block *, int, const char *, size_t, loff_t);
->  #endif
->  	int (*bdev_try_to_free_page)(struct super_block*, struct page*, gfp_t);
-> +
-> +	/*
-> +	 * memory shrinker operations.
-> +	 * ->nr_cached_objects() should return the number of freeable cached
-> +	 * objects the filesystem holds.
-> +	 * ->free_cache_objects() should attempt to free the number of cached
-> +	 * objects indicated. It should return how many objects it attempted to
-> +	 * free.
-> +	 */
-
-I'd have thought that ->free_cache_objects() would always return the
-number which it was passed.  Unless someone asked it to scan more
-objects than exist, perhaps.
-
-> +	int (*nr_cached_objects)(struct super_block *);
-> +	int (*free_cached_objects)(struct super_block *, int);
->  };
 
