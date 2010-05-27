@@ -1,50 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759525Ab0E0SoS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 May 2010 14:44:18 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:50345 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755166Ab0E0SoQ (ORCPT
+	id S935229Ab0E0SqF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 May 2010 14:46:05 -0400
+Received: from smtp-out003.kontent.com ([81.88.40.217]:34805 "EHLO
+	smtp-out003.kontent.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756133Ab0E0SqD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 May 2010 14:44:16 -0400
-To: Matthew Garrett <mjg59@srcf.ucam.org>
-Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, Peter Zijlstra <peterz@infradead.org>,
-       Thomas Gleixner <tglx@linutronix.de>,
-       Alan Stern <stern@rowland.harvard.edu>, Paul@smtp1.linux-foundation.org,
-       LKML <linux-kernel@vger.kernel.org>,
-       Florian Mickler <florian@mickler.org>, felipe.balbi@nokia.com,
-       Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
-       Linux PM <linux-pm@lists.linux-foundation.org>
-Subject: Re: [linux-pm] [PATCH 0/8] Suspend block api (version 8)
-References: <Pine.LNX.4.44L0.1005271253240.3239-100000@iolanthe.rowland.org>
-	<alpine.LFD.2.00.1005271915540.3032@localhost.localdomain>
-	<20100527173118.GE2468@srcf.ucam.org>
-	<1274981680.27810.5636.camel@twins>
-	<20100527174019.GA3187@srcf.ucam.org>
-	<20100527190515.08be091a@lxorguk.ukuu.org.uk>
-	<20100527181533.GH3543@srcf.ucam.org>
-From: Kevin Hilman <khilman@deeprootsystems.com>
-Organization: Deep Root Systems, LLC
-Date: Thu, 27 May 2010 11:44:13 -0700
-In-Reply-To: <20100527181533.GH3543@srcf.ucam.org> (Matthew Garrett's message of "Thu\, 27 May 2010 19\:15\:33 +0100")
-Message-ID: <87d3whi3r6.fsf@deeprootsystems.com>
-User-Agent: Gnus/5.11 (Gnus v5.11) Emacs/22.2 (gnu/linux)
+	Thu, 27 May 2010 14:46:03 -0400
+From: Oliver Neukum <oliver@neukum.org>
+To: Oskar Stenman <oskar@cetex.se>
+Subject: Re: eeepc_laptop - 1005PE webcam not working properly.
+Date: Thu, 27 May 2010 20:36:20 +0200
+User-Agent: KMail/1.12.4 (Linux/2.6.34-rc6-0.1-default; KDE/4.3.5; x86_64; ; )
+Cc: linux-kernel@vger.kernel.org
+References: <1274978602.10737.15.camel@oskar-laptop>
+In-Reply-To: <1274978602.10737.15.camel@oskar-laptop>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201005272036.20558.oliver@neukum.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Matthew Garrett <mjg59@srcf.ucam.org> writes:
+Am Donnerstag, 27. Mai 2010 18:43:22 schrieb Oskar Stenman:
+> It seems that eeepc_laptop kernel module wont recognize the webcam in my
+> 1005pe, so i can't power it down as easily as i would like it to be.
 
-> On Thu, May 27, 2010 at 07:05:15PM +0100, Alan Cox wrote:
->
->> I'd prefer we avoided mixing them up. Everyone seems fairly happy with
->> the current operator ordered suspend behaviour I believe ?
->
-> No. The current mechanism can lose wakeup events.
+Your camera is a USB video device. uvcvideo handles such devices,
+not eeepc_laptop.
 
-And the proposed solution (suspend blockers) does nothing to solve the
-loss of wakeup events during forced suspend.
-
-Kevin
+	Regards
+		Oliver
