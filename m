@@ -1,38 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758661Ab0E0QBU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 May 2010 12:01:20 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:41075 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753897Ab0E0QBS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 May 2010 12:01:18 -0400
-Date: Thu, 27 May 2010 17:01:14 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Jan Kara <jack@suse.cz>
-Cc: Erik van der Kouwe <vdkouwe@cs.vu.nl>, linux-fsdevel@vger.kernel.org,
-       linux-kernel@vger.kernel.org, Fam Zheng <famcool@gmail.com>
-Subject: Re: [PATCH] fs/minix: bugfix, number of indirect block ptrs per
- block depends on block size
-Message-ID: <20100527160114.GH31073@ZenIV.linux.org.uk>
-References: <4BFCF1EB.20709@cs.vu.nl>
- <20100526215442.GB3316@quack.suse.cz>
+	id S932460Ab0E0QCw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 May 2010 12:02:52 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:44363 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932132Ab0E0QCv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 May 2010 12:02:51 -0400
+Date: Thu, 27 May 2010 13:02:48 -0300
+From: Glauber Costa <glommer@redhat.com>
+To: Avi Kivity <avi@redhat.com>
+Cc: kvm@vger.kernel.org, linux-kernel@vger.kernel.org, zamsden@redhat.com
+Subject: Re: [PATCH] Add Documentation/kvm/msr.txt
+Message-ID: <20100527160248.GF3445@mothafucka.localdomain>
+References: <1274897088-8587-1-git-send-email-glommer@redhat.com>
+ <4BFE2A2F.50209@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100526215442.GB3316@quack.suse.cz>
-User-Agent: Mutt/1.5.20 (2009-08-17)
+In-Reply-To: <4BFE2A2F.50209@redhat.com>
+X-ChuckNorris: True
+User-Agent: Jack Bauer
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 26, 2010 at 11:54:43PM +0200, Jan Kara wrote:
-> > -	} else if ((block -= 7) < 256) {
-> > -		offsets[n++] = 7;
-> > +	} else if ((block -= DIRCOUNT) < INDIRCOUNT(sb)) {
->   This modification of 'block' in the if condition is a blatant violation
-> of the kernel coding style.
+On Thu, May 27, 2010 at 11:15:43AM +0300, Avi Kivity wrote:
+> On 05/26/2010 09:04 PM, Glauber Costa wrote:
+> >This patch adds a file that documents the usage of KVM-specific
+> >MSRs.
+> >
+> 
+> Looks good.  A few comments:
+> 
+> >+
+> >+Custom MSR list
+> >+--------
+> >+
+> >+The current supported Custom MSR list is:
+> >+
+> >+MSR_KVM_WALL_CLOCK:  0x11
+> >+
+> >+	data: physical address of a memory area.
+> 
+> Which must be in guest RAM (i.e., don't point it somewhere random
+> and expect the hypervisor to allocate it for you).
+> 
+> Must be aligned to 4 bytes (we don't enforce it though).
+I don't see the reason for it.
 
-The hell it is. [...said the guy who'd written it that way in the first place]
-It _is_ idiomatic C for that kind of thing ("we've got several adjacent ranges,
-find which one had we hit and how far from its start").
+If this is a requirement, our own implementation
+is failing to meet it.
+
+
