@@ -1,65 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756919Ab0E0Ns0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 May 2010 09:48:26 -0400
-Received: from 124x34x33x190.ap124.ftth.ucom.ne.jp ([124.34.33.190]:35294 "EHLO
-	master.linux-sh.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751978Ab0E0NsY (ORCPT
+	id S1757356Ab0E0Nsw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 May 2010 09:48:52 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:39024 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755871Ab0E0Nsu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 May 2010 09:48:24 -0400
-Date: Thu, 27 May 2010 22:48:10 +0900
-From: Paul Mundt <lethal@linux-sh.org>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: Chris Metcalf <cmetcalf@tilera.com>, Arnd Bergmann <arnd@arndb.de>,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       linux-arch@vger.kernel.org
-Subject: Re: [PATCH] arch/tile: new multi-core architecture for Linux
-Message-ID: <20100527134810.GA6407@linux-sh.org>
-References: <201005200543.o4K5hFRF006079@farm-0002.internal.tilera.com> <201005252345.15685.arnd@arndb.de> <4BFDC3D1.40708@tilera.com> <201005271041.30519.arnd@arndb.de> <4BFE73DF.5090107@tilera.com> <AANLkTinTjpx6GTRidb6mzJ7At2tDlm6VeKW5dBGZZQcc@mail.gmail.com>
+	Thu, 27 May 2010 09:48:50 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=gdCMKGhzG5H+GlHFiBOKnttH80NWtnz+aPWvaGowhmYkJqGjEaYbDceFEEkVMkoW3Q
+         +2NEcCBY7Uvyx9Xe24K1vgeEf0T+e0NtxeO7BRU4A9CpzRDIfBEywor/LrgOrg/8tRkJ
+         uuJoyV3GomDeK3Uj3cbfAtbkZXfuJy7m9NqoM=
+Date: Thu, 27 May 2010 22:48:41 +0900
+From: Minchan Kim <minchan.kim@gmail.com>
+To: Rik van Riel <riel@redhat.com>
+Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+       linux-mm@kvack.org, Mel Gorman <mel@csn.ul.ie>,
+       Andrea Arcangeli <aarcange@redhat.com>,
+       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+       Lee Schermerhorn <Lee.Schermerhorn@hp.com>
+Subject: Re: [PATCH 3/5] track the root (oldest) anon_vma
+Message-ID: <20100527134841.GC2112@barrios-desktop>
+References: <20100526153819.6e5cec0d@annuminas.surriel.com>
+ <20100526154010.3904df5c@annuminas.surriel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <AANLkTinTjpx6GTRidb6mzJ7At2tDlm6VeKW5dBGZZQcc@mail.gmail.com>
-User-Agent: Mutt/1.5.13 (2006-08-11)
+In-Reply-To: <20100526154010.3904df5c@annuminas.surriel.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 27, 2010 at 03:41:44PM +0200, Geert Uytterhoeven wrote:
-> On Thu, May 27, 2010 at 15:30, Chris Metcalf <cmetcalf@tilera.com> wrote:
-> > On 5/27/2010 4:41 AM, Arnd Bergmann wrote:
-> >> On Thursday 27 May 2010, Chris Metcalf wrote:
-> >>>> +EXPORT_SYMBOL(inb);
-> >>>>
-> >>>> If you just remove these definitions, you get a link error for any
-> >>>> driver that tries to use these, which is probably more helpful than
-> >>>> the panic.
-> >>>>
-> >>>> OTOH, are you sure that you can't just map the PIO calls to mmio functions
-> >>>> like readb plus some fixed offset? On most non-x86 architectures, the PIO
-> >>>> area of the PCI bus is just mapped to a memory range somewhere.
-> >>>>
-> >>>>
-> >>> I'll try to remove them and see if anything falls over. ??We don't have
-> >>> any memory-mapped addresses in the 32-bit architecture, though that
-> >>> changes with the 64-bit architecture, which introduces IO mappings. ??For
-> >>> PCI we actually have to do a hypervisor transaction for reads or writes.
-> >>>
-> >> Ok, then I assume that PIO would also be a hypervisor call, right?
-> >> If you don't have MMIO on 32 bit, you might want to not define either
-> >> PIO (inb, ...) no MMIO (readb, ...) calls there and disable
-> >> CONFIG_HAVE_MMIO in Kconfig.
-> >>
-> >
-> > We don't define CONFIG_HAVE_MMIO, but drivers certainly seem to use
-> > ioread/iowrite methods as well as inb/outb without guarding them with
-> > any particular tests, so we have to provide definitions of some kind for
-> > all of them. ??I'll confer with our PCI developer to see if we can clean
-> > up the set of definitions in io.h.
+On Wed, May 26, 2010 at 03:40:10PM -0400, Rik van Riel wrote:
+> Subject: track the root (oldest) anon_vma
 > 
-> It's CONFIG_NO_IOMEM (cfr. s390 and um), which is inverted and turned into
-> CONFIG_HAS_IOMEM, to be checked by drivers.
+> Track the root (oldest) anon_vma in each anon_vma tree.   Because we only
+> take the lock on the root anon_vma, we cannot use the lock on higher-up
+> anon_vmas to lock anything.  This makes it impossible to do an indirect
+> lookup of the root anon_vma, since the data structures could go away from
+> under us.
 > 
-Likewise for CONFIG_NO_IOPORT for disabling PIO, although you'll probably
-want to conditionalize this on PCI I/O.
+> However, a direct pointer is safe because the root anon_vma is always the
+> last one that gets freed on munmap or exit, by virtue of the same_vma list
+> order and unlink_anon_vmas walking the list forward.
+> 
+> Signed-off-by: Rik van Riel <riel@redhat.com>
+> Acked-by: Mel Gorman <mel@csn.ul.ie>
+> Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Reviewed-by: Minchan Kim <minchan.kim@gmail.com>
+
+Except below one minor type. 
+
+> ---
+>  include/linux/rmap.h |    1 +
+>  mm/rmap.c            |   18 ++++++++++++++++--
+>  2 files changed, 17 insertions(+), 2 deletions(-)
+> 
+> Index: linux-2.6.34/include/linux/rmap.h
+> ===================================================================
+> --- linux-2.6.34.orig/include/linux/rmap.h
+> +++ linux-2.6.34/include/linux/rmap.h
+> @@ -26,6 +26,7 @@
+>   */
+>  struct anon_vma {
+>  	spinlock_t lock;	/* Serialize access to vma list */
+> +	struct anon_vma *root;	/* Root of this anon_vma tree */
+>  #if defined(CONFIG_KSM) || defined(CONFIG_MIGRATION)
+>  
+>  	/*
+> Index: linux-2.6.34/mm/rmap.c
+> ===================================================================
+> --- linux-2.6.34.orig/mm/rmap.c
+> +++ linux-2.6.34/mm/rmap.c
+> @@ -132,6 +132,11 @@ int anon_vma_prepare(struct vm_area_stru
+>  			if (unlikely(!anon_vma))
+>  				goto out_enomem_free_avc;
+>  			allocated = anon_vma;
+> +			/*
+> +			 * This VMA had no anon_vma yet.  This anon_vma is
+> +			 * the root of any anon_vma tree that might form.
+> +			 */
+> +			anon_vma->root = anon_vma;
+>  		}
+>  
+>  		anon_vma_lock(anon_vma);
+> @@ -224,9 +229,15 @@ int anon_vma_fork(struct vm_area_struct 
+>  	avc = anon_vma_chain_alloc();
+>  	if (!avc)
+>  		goto out_error_free_anon_vma;
+> -	anon_vma_chain_link(vma, avc, anon_vma);
+> +
+> +	/*
+> +	 * The root anon_vm's spinlock is the lock actually used when we
+                    anon_vma's
+-- 
+Kind regards,
+Minchan Kim
