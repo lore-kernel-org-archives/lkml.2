@@ -1,73 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933164Ab0E0DVY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 May 2010 23:21:24 -0400
-Received: from mga01.intel.com ([192.55.52.88]:10111 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932807Ab0E0DVX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 May 2010 23:21:23 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.53,308,1272870000"; 
-   d="scan'208";a="570934097"
-Subject: Re: [Patch-next] Remove notify_die in do_machine_check functioin
-From: Huang Ying <ying.huang@intel.com>
-To: Jin Dongming <jin.dongming@np.css.fujitsu.com>
-Cc: LKLM <linux-kernel@vger.kernel.org>, Andi Kleen <ak@linux.intel.com>,
-       Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
-In-Reply-To: <4BFDDBA9.4010702@np.css.fujitsu.com>
-References: <4BFDDBA9.4010702@np.css.fujitsu.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 27 May 2010 11:21:21 +0800
-Message-ID: <1274930481.3444.258.camel@yhuang-dev.sh.intel.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	id S933178Ab0E0D0i (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 May 2010 23:26:38 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:36491 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932807Ab0E0D0h (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 May 2010 23:26:37 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=DqXR7CoOXvNUxitioAQZR7BAwQtadlrMFjuS98b+u8fKbKkEeRTlo9/WIW6mAL7mNF
+         /wkTP/XpWkW67zV7NnN03Ey0E0PvKvX1n8yBwaknPfHA1hhcqM3bd4STF3r2Pv/8JYeG
+         R62XDR7YIM6mpHzEeamuu4CFlJ9+Udy+9mlYI=
+From: Scott Kidder <scott.kidder11@gmail.com>
+To: jarod@redhat.com, adraham.manu@gmail.com, davilla@4pi.com
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+       Scott Kidder <scott.kidder11@gmail.com>
+Subject: [PATCH 2/2] Staging: crystalhd: removed kfree(NULL) checks
+Date: Wed, 26 May 2010 23:38:45 -0500
+Message-Id: <1274935125-8825-1-git-send-email-scott.kidder11@gmail.com>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-05-27 at 10:40 +0800, Jin Dongming wrote:
-> This patch fixes do_machine_check() failure caused by DIE_NMI.
-> 
-> I do MCE tests on my machine. When I inject Uncorrected Error(UE) into
-> kernel, the messages of test failure are always gotten. This problem
-> is caused by the notification of DIE_NMI in the front of do_machine_check().
-> Because there are some notifications used DIE_NMI, and when they finish their
-> own work and return NOTIFY_STOP as a result. The result makes
-> do_machine_check() return at that time.
-> 
-> So we decide to delete the notification of DIE_NMI. It is because when UE error
-> happens, if one of the cpu is down caused by the error of hook function of
-> DIE_NMI, the error type of UE may be different with the real one. For example,
-> 
->         CPU0                                  CPU1
-> UE      do_machine_check()                    do_machine_check()
->         |                                     |
->         cpu down(hook error of DIE_NMI)       cpu OK(no hook error of DIE_NMI)
->                                               |
->                                               wait CPU0 timeout
->                                               |
->                                               Fatal Error
->                                               (Timeout synchronizing machine
->                                                check over CPUs)
+Removed kfree(NULL checks) that were not necessary
 
-Fatal error will only occur if tolerant = 0, which is not the common
-case.
+Signed-off-by: Scott Kidder <scott.kidder11@gmail.com>
+---
+ drivers/staging/crystalhd/crystalhd_lnx.c |    9 +++------
+ 1 files changed, 3 insertions(+), 6 deletions(-)
 
-But I think the notify_die can be an issue here. For example UE is on
-CPU0, and the MCE is consumed by notify_die; MCE on CPU1 will detect
-nothing.
+diff --git a/drivers/staging/crystalhd/crystalhd_lnx.c b/drivers/staging/crystalhd/crystalhd_lnx.c
+index a4ec891..9d2805a 100644
+--- a/drivers/staging/crystalhd/crystalhd_lnx.c
++++ b/drivers/staging/crystalhd/crystalhd_lnx.c
+@@ -152,10 +152,8 @@ static int chd_dec_fetch_cdata(struct crystalhd_adp *adp, struct crystalhd_ioctl
+ 	if (rc) {
+ 		BCMLOG_ERR("failed to pull add_cdata sz:%x ua_off:%x\n",
+ 			   io->add_cdata_sz, (unsigned int)ua_off);
+-		if (io->add_cdata) {
+-			kfree(io->add_cdata);
+-			io->add_cdata = NULL;
+-		}
++		kfree(io->add_cdata);
++		io->add_cdata = NULL;
+ 		return -ENODATA;
+ 	}
 
-I have heard about that on some machine, some hardware error output pin
-of chipset may be linked with some input pin of CPU which can cause MCE.
-That is, MCE is used to report some chipset errors too. I think that is
-why notify_die is called in do_machine_check. Simply removing notify_die
-is not good for these machines.
+@@ -435,8 +433,7 @@ static void __devexit chd_dec_release_chdev(struct crystalhd_adp *adp)
+ 	/* Clear iodata pool.. */
+ 	do {
+ 		temp = chd_dec_alloc_iodata(adp, 0);
+-		if (temp)
+-			kfree(temp);
++		kfree(temp);
+ 	} while (temp);
 
-Maybe we should fix the notifier user instead. Which notifier user
-consumes the DIE_NMI notification?
-
-Best Regards,
-Huang Ying
-
+ 	crystalhd_delete_elem_pool(adp);
+--
+1.7.1
 
