@@ -1,85 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757491Ab0E0JN0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 May 2010 05:13:26 -0400
-Received: from esgaroth.petrovitsch.at ([78.47.184.11]:4467 "EHLO
-	esgaroth.petrovitsch.priv.at" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933166Ab0E0JNP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 May 2010 05:13:15 -0400
-X-DKIM: Sendmail DKIM Filter v2.8.3 unknown-host o4R8HErQ018669
-Subject: Re: [PATCH 1/8] PM: Opportunistic suspend support.
-From: Bernd Petrovitsch <bernd@petrovitsch.priv.at>
-To: James Bottomley <James.Bottomley@suse.de>
-Cc: Thomas Gleixner <tglx@linutronix.de>,
-       Peter Zijlstra <peterz@infradead.org>, Pavel Machek <pavel@ucw.cz>,
-       Pekka Enberg <penberg@cs.helsinki.fi>,
-       Arve Hj?nnev?g <arve@android.com>,
-       Florian Mickler <florian@mickler.org>,
-       "Rafael J. Wysocki" <rjw@sisk.pl>,
-       Alan Stern <stern@rowland.harvard.edu>,
-       Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-       Linux-pm mailing list <linux-pm@lists.linux-foundation.org>,
-       Kernel development list <linux-kernel@vger.kernel.org>,
-       Len Brown <len.brown@intel.com>, Randy Dunlap <rdunlap@xenotime.net>,
+	id S933461Ab0E0JTW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 May 2010 05:19:22 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:1026 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932881Ab0E0JTU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 May 2010 05:19:20 -0400
+Date: Thu, 27 May 2010 12:14:26 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Sridhar Samudrala <sri@us.ibm.com>
+Cc: netdev <netdev@vger.kernel.org>, lkml <linux-kernel@vger.kernel.org>,
+       "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
        Andrew Morton <akpm@linux-foundation.org>,
-       Andi Kleen <ak@linux.intel.com>,
-       Cornelia Huck <cornelia.huck@de.ibm.com>, Tejun Heo <tj@kernel.org>,
-       Jesse Barnes <jbarnes@virtuousgeek.org>,
-       Nigel Cunningham <nigel@tuxonice.net>, Ming Lei <tom.leiming@gmail.com>,
-       Wu Fengguang <fengguang.wu@intel.com>,
-       Maxim Levitsky <maximlevitsky@gmail.com>, linux-doc@vger.kernel.org,
-       Matthew Garrett <mjg59@srcf.ucam.org>, Greg KH <gregkh@suse.de>,
-       tytso@mit.edu
-In-Reply-To: <1274898180.4467.925.camel@mulgrave.site>
-References: <1274863342.5882.4850.camel@twins>
-	 <20100526112303.3fef15a4@schatten.dmk.lab>
-	 <1274866402.5882.5051.camel@twins>
-	 <AANLkTil9ZtMFxTfE6ITiFNOl4S1k3Lvdp5BPgGX7LJhw@mail.gmail.com>
-	 <1274868384.5882.5169.camel@twins>
-	 <AANLkTimHGpRAZklIwXu6wEbA3coKXJvCVLxj2twerkCw@mail.gmail.com>
-	 <1274869262.5882.5222.camel@twins>
-	 <AANLkTik9LINPmabJfVi0jfVs5sjVS_1l00WpnVTFEuLV@mail.gmail.com>
-	 <1274890736.4467.574.camel@mulgrave.site>
-	 <1274891308.1674.1766.camel@laptop>  <20100526165919.GB2089@elf.ucw.cz>
-	 <1274893309.1674.1773.camel@laptop>
-	 <1274894685.4467.758.camel@mulgrave.site>
-	 <alpine.LFD.2.00.1005261948290.2995@localhost.localdomain>
-	 <1274898180.4467.925.camel@mulgrave.site>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 27 May 2010 10:17:14 +0200
-Message-ID: <1274948234.14002.27.camel@thorin>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
-Content-Transfer-Encoding: 7bit
-X-DCC-wuwien-Metrics: esgaroth.petrovitsch.priv.at; whitelist
+       Dmitri Vorobiev <dmitri.vorobiev@movial.com>, Tejun Heo <tj@kernel.org>,
+       Jiri Kosina <jkosina@suse.cz>, Thomas Gleixner <tglx@linutronix.de>,
+       Oleg Nesterov <oleg@redhat.com>, Ingo Molnar <mingo@elte.hu>,
+       Andi Kleen <ak@linux.intel.com>
+Subject: Re: [PATCH 2/3] workqueue: Add an API to create a singlethread
+	workqueue attached to the current task's cgroup
+Message-ID: <20100527091426.GA6308@redhat.com>
+References: <1274227491.2370.110.camel@w-sridhar.beaverton.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1274227491.2370.110.camel@w-sridhar.beaverton.ibm.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mit, 2010-05-26 at 13:23 -0500, James Bottomley wrote:
-> On Wed, 2010-05-26 at 19:51 +0200, Thomas Gleixner wrote:
-[...]
-> > Darn, _we_ have to deal with that forever as it sets a crappy user
-> > space ABI in stone.
+On Tue, May 18, 2010 at 05:04:51PM -0700, Sridhar Samudrala wrote:
+> Add a new kernel API to create a singlethread workqueue and attach it's
+> task to current task's cgroup and cpumask.
 > 
-> I really don't see how it is ... the ABI comes with a switch that allows
-> it to be disabled, so only platforms wishing to use it have to support
-> it.  Even on those platforms that do support it, we can translate most
+> Signed-off-by: Sridhar Samudrala <sri@us.ibm.com>
 
-You completely missed the point: The crappy user interface - and
-interferences with pother subsystems - must be maintained for ages - and
-that is independent if one uses it or not. Even worse if it's not widely
-used.
+Could someone familiar with workqueue code please comment on whether
+this patch is suitable for 2.6.35?
 
-> of it into pm QoS stuff and if one day someone solves the rogue app
-> problem, we can migrate over.
+It is needed to fix the case where vhost user might cause a kernel
+thread to consume more CPU than allowed by the cgroup.
+Should I merge it through the vhost tree?
+Ack for this?
 
-If it's so important for Android and no one else, Android can carry it
-out of tree.
+Thanks!
 
-	Bernd
--- 
-Bernd Petrovitsch                  Email : bernd@petrovitsch.priv.at
-                     LUGA : http://www.luga.at
-
+> diff --git a/include/linux/workqueue.h b/include/linux/workqueue.h
+> index 9466e86..6d6f301 100644
+> --- a/include/linux/workqueue.h
+> +++ b/include/linux/workqueue.h
+> @@ -211,6 +211,7 @@ __create_workqueue_key(const char *name, int singlethread,
+>  #define create_freezeable_workqueue(name) __create_workqueue((name), 1, 1, 0)
+>  #define create_singlethread_workqueue(name) __create_workqueue((name), 1, 0, 0)
+>  
+> +extern struct workqueue_struct *create_singlethread_workqueue_in_current_cg(char *name); 
+>  extern void destroy_workqueue(struct workqueue_struct *wq);
+>  
+>  extern int queue_work(struct workqueue_struct *wq, struct work_struct *work);
+> diff --git a/kernel/workqueue.c b/kernel/workqueue.c
+> index 5bfb213..6ba226e 100644
+> --- a/kernel/workqueue.c
+> +++ b/kernel/workqueue.c
+> @@ -35,6 +35,7 @@
+>  #include <linux/lockdep.h>
+>  #define CREATE_TRACE_POINTS
+>  #include <trace/events/workqueue.h>
+> +#include <linux/cgroup.h>
+>  
+>  /*
+>   * The per-CPU workqueue (if single thread, we always use the first
+> @@ -193,6 +194,45 @@ static const struct cpumask *cpu_singlethread_map __read_mostly;
+>   */
+>  static cpumask_var_t cpu_populated_map __read_mostly;
+>  
+> +static struct task_struct *get_singlethread_wq_task(struct workqueue_struct *wq)
+> +{
+> +	return (per_cpu_ptr(wq->cpu_wq, singlethread_cpu))->thread;
+> +}
+> +
+> +/* Create a singlethread workqueue and attach it's task to the current task's
+> + * cgroup and set it's cpumask to the current task's cpumask.
+> + */
+> +struct workqueue_struct *create_singlethread_workqueue_in_current_cg(char *name)
+> +{
+> +	struct workqueue_struct *wq;
+> +	struct task_struct *task;
+> +	cpumask_var_t mask;
+> +
+> +	wq = create_singlethread_workqueue(name);
+> +	if (!wq)
+> +		goto out;
+> +
+> +	if (!alloc_cpumask_var(&mask, GFP_KERNEL))
+> +		goto err;
+> +			
+> +	if (sched_getaffinity(current->pid, mask))
+> +		goto err;
+> +
+> +	task = get_singlethread_wq_task(wq);
+> +	if (sched_setaffinity(task->pid, mask))
+> +		goto err;
+> +
+> +	if (cgroup_attach_task_current_cg(task))
+> +		goto err;
+> +out:	
+> +	return wq;
+> +err:
+> +	destroy_workqueue(wq);
+> +	wq = NULL;
+> +	goto out;
+> +}
+> +EXPORT_SYMBOL_GPL(create_singlethread_workqueue_in_current_cg);
+> +
+>  /* If it's single threaded, it isn't in the list of workqueues. */
+>  static inline int is_wq_single_threaded(struct workqueue_struct *wq)
+>  {
+> 	
