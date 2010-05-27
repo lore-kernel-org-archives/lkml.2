@@ -1,92 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935234Ab0E0SmA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 May 2010 14:42:00 -0400
-Received: from moutng.kundenserver.de ([212.227.17.8]:62495 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759505Ab0E0Sl6 (ORCPT
+	id S1759518Ab0E0SmU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 May 2010 14:42:20 -0400
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:54077 "EHLO
+	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1759494Ab0E0SmP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 May 2010 14:41:58 -0400
-Message-ID: <4BFEBCEF.8010201@vlnb.net>
-Date: Thu, 27 May 2010 22:41:51 +0400
-From: Vladislav Bolkhovitin <vst@vlnb.net>
-User-Agent: Thunderbird 2.0.0.23 (X11/20090825)
-MIME-Version: 1.0
-To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-CC: James Bottomley <James.Bottomley@suse.de>,
-       Christoph Hellwig <hch@infradead.org>,
-       FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-       Mike Christie <michaelc@cs.wisc.edu>,
-       Douglas Gilbert <dgilbert@interlog.com>,
-       Joe Eykholt <jeykholt@cisco.com>,
-       Richard Sharpe <realrichardsharpe@gmail.com>,
-       James Smart <James.Smart@Emulex.Com>, Jeff Garzik <jeff@garzik.org>,
-       Joel Becker <joel.becker@oracle.com>,
-       linux-scsi <linux-scsi@vger.kernel.org>,
-       LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC]: Mainline of TCM Core and TCM_Loop for v2.6.35
-References: <1274317792.30733.59.camel@haakon2.linux-iscsi.org>
-In-Reply-To: <1274317792.30733.59.camel@haakon2.linux-iscsi.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	Thu, 27 May 2010 14:42:15 -0400
+Date: Thu, 27 May 2010 19:48:40 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Matthew Garrett <mjg59@srcf.ucam.org>
+Cc: Arve =?ISO-8859-14?B?SGr4bm5lduVn?= <arve@android.com>,
+       Florian Mickler <florian@mickler.org>,
+       Vitaly Wool <vitalywool@gmail.com>,
+       Peter Zijlstra <peterz@infradead.org>,
+       LKML <linux-kernel@vger.kernel.org>, Paul@smtp1.linux-foundation.org,
+       felipe.balbi@nokia.com,
+       Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
+       Linux PM <linux-pm@lists.linux-foundation.org>
+Subject: Re: [linux-pm] [PATCH 0/8] Suspend block api (version 8)
+Message-ID: <20100527194840.5bca973f@lxorguk.ukuu.org.uk>
+In-Reply-To: <20100527181239.GF3543@srcf.ucam.org>
+References: <20100526142430.327ccbc4@schatten.dmk.lab>
+	<20100526141612.3e2e0443@lxorguk.ukuu.org.uk>
+	<AANLkTin97MMu-XO_Lk-snefBWz2ymhS0Qi1y1RxLwdVA@mail.gmail.com>
+	<20100527003943.07c17f85@lxorguk.ukuu.org.uk>
+	<20100527140655.GA28048@srcf.ucam.org>
+	<20100527160543.2228fc17@lxorguk.ukuu.org.uk>
+	<20100527160714.GB31937@srcf.ucam.org>
+	<20100527174131.18fd1c72@lxorguk.ukuu.org.uk>
+	<20100527165210.GA1062@srcf.ucam.org>
+	<20100527190204.14546caa@lxorguk.ukuu.org.uk>
+	<20100527181239.GF3543@srcf.ucam.org>
+X-Mailer: Claws Mail 3.7.5 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-Provags-ID: V01U2FsdGVkX1/23Ae7fZ0xrZNPj/mZ1GRRVICh6phEgL/ZKz+
- yESJFThUcGHgwWOyd/uXK8Kgls+kj6O44IL6aB2as9FluZNQBf
- 56P8eRbBSJZa4fOkBr54w==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Nicholas A. Bellinger, on 05/20/2010 05:09 AM wrote:
-> Greetings James and Co,
+> Yes, there's no problem so far. The question is how you guarantee that 
+> the application has had the opportunity to handle the packet.
+
+Because the application has said that it wants QoS guarantees. It wants
+to know that if the events it can receive occur it will wake up within
+the timescale.
+
+So it receives the event. It's now running, not idle so we won't suspend
+it.
+
+At some point in time it will become idle again _or_ the CPU limit will
+get it.
+
+
+If the app is not trusted then we might suspend it before it handles the
+packet. That is fine, it's not trusted and we will do that when we decide
+its in the system interest to suspend it anyway.
+
+You still don't lose the event because on resume the task will do its
+processing.
+
+
+> The application is a network monitoring app that renders server state 
+> via animated bouncing cows. The desired behaviour is that the 
+> application will cease to be scheduled if the session becomes idle 
+> (where idle is defined as the system having received no user input for 
+> 30 seconds) but that push notifications from the server still be 
+> received in order to allow the application to present the user with 
+> critical alerts.
+
+This is a bit confusing - does the screen come back on for such events,
+what constraints is the server operating under ? How does your code look
+- it's hard to imagine the examples you've given as being workable given
+they would block on network packet wait when a critical event occurs.
+Are you using poll or threads or what ?
+
+> Under Android:
 > 
-> I would like to formally request the inclusion of TCM Core v4 codebase
-> containing the fabric independent configfs infrastructure design and
-> TCM_Loop SCSI LLD fabric module supporting multi-fabric I_T Nexus and
-> Port emulation for SAS, FC and iSCSI into mainline for v2.6.35
+> User puts down phone. 30 seconds later the screen turns off and releases 
+> the last user-level suspend block. The phone enters suspend and the 
+> application is suspended. A network packet is received, causing the 
+> network driver to take a suspend block. The application finishes the 
+> frame it was drawing, takes its own suspend block and reads the network 
+> packet. In doing so the network driver releases its suspend block, but 
+> since userspace is holding one the phone stays awake. The application 
+> then handles the event as necessary, releases its suspend block and the 
+> phone goes to sleep again.
 > 
-> The plan is to push TCM Core and the TCM_Loop LLD module for use with
-> existing userspace applications into mainline first, and then focus on
-> extending the upstream fabric libraries (libiscsi, libfc, libsas) for
-> new and future TCM modules to support a common set of kernel-level
-> target mode infrastructure for HW and SW fabric engines once the main
-> target pieces are in place.
-> 
-> On the userspace fabric <-> kernel backstore side, the TCM_Loop fabric
-> module is currently running with full SPC-3 PR and ALUA support using
-> fabric-independent virtual SCSI target port emulation with the STGT
-> iSCSI userspace fabric code and SG_IO backstores.  TCM_Loop is also
-> being used with SG_IO for QEMU-KVM megasas HBA emulation into Linux and
-> MSFT x86 guests and is able to run at sustained 10 Gb/sec throughput
-> into KVM guest.
-> 
-> For the kernelspace fabric <-> userspace backstore side for v2.6.35, the
-> plan is to extend the existing drivers/scsi/scsi_tgt_[lib,if].c direct
-> mapped ring interface to the WIP kernel level TCM/STGT subsystem
-> backstore plugin mentioned in previously on linux-scsi.  This will allow
-> projects presenting a userspace block device to access existing TCM
-> kernel level target module fabric drivers.
+> I don't see how this behaviour can be emulated in your model.
 
-I've got 2 question and 1 note.
+User puts down phone. 30 seconds later the X server decides to turn the
+screen off and closes the device. This probalby releases the constraint
+held via the display driver not to suspend. Any further draw requests will
+block.
 
-1. Are there any evidences that TCM has any value over STGT? So far, 
-I've only read not supported words with once a reference to my effort on 
-completely unrelated project.
+System looks at the other tasks and sees they are idle and can sink to a
+low power state. Cows is either blocked on a packet receive or could even
+be blocked on writing to the display (or both if its a realistic example
+and using poll)
 
-2. Are there any users of this code using it in production to prove its 
-usability and stability? I mean, used not by RisingTide and its 
-customers, because on the RisingTide's web page it's clearly written 
-that their target software "partially available as the open-source LIO 
-Core target". So, all the RisingTide's experience isn't relevant for 
-this code. As we can see Linux-iSCSI.org development mailing list 
-(http://groups.google.com/group/linux-iscsi-target-dev?hl=en) has near 
-zero activity.
+Everyone is idle, we can sleep
 
-The note is that the idea to use the STGT's scsi_tgt_[lib,if].c direct 
-mapped ring interface to extend TCM in the user space and allow present 
-STGT's user space devices to work with TCM is unpractical, because the 
-STGT's interface and devices are built around SCSI target state machine 
-and memory management in the user space, while TCM has them both in the 
-kernel.
+The kernel looks at the constraints it has
+	- must not sink to a state below which network receive of packets
+	  fails
+	- must not sink below a state where whatever is needed for the
+	  critical alert code etc to do its stuff
+	- must not sink to a state which takes more than [constraint]
+	  seconds to get back out of
 
-Vlad
+It picks 'opportunistic suspend'
+It goes to sleep
+
+A packet arrives
+It wakes the hardware
+We are busy, we do not wish to suspend
+It processes the packet
+It wakes the user app
+It starts processing the packet
+[We are busy, we do not wish to suspend]
+
+Presumably your display server listens to waking back up and decides to
+re-activate the screen (your example is unclear and implies it carries on
+processing the extra frame in the dark which seems a bit silly ?
+
+I still don't see a problem. 
+
+I think your problem arises because you start from the basis that forcing
+suspend is special. As Thomas has said there are working implementations
+where suspend is an idle mode.
+
+The moment you discard that specific notion everything works, as it does
+today on other embedded platforms.
+
+Now what do you do if the app is burning too much processor time. That's
+a QoS question too. We've got cpu limits, we've got SIGXCPU, we don't
+have "cpu per second" type limits but that isn't hard to do either.
+
+Stop transitioning Run->Forced Suspend. If you've got stuff stuck running
+then deal with it by constraining it to go idle or by blowing it out of
+the water. PM will then do the rest.
 
