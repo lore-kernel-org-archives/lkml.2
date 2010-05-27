@@ -1,102 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759198Ab0E0XA5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 May 2010 19:00:57 -0400
-Received: from mga01.intel.com ([192.55.52.88]:27693 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757137Ab0E0XA4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 May 2010 19:00:56 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.53,313,1272870000"; 
-   d="scan'208";a="571215760"
-Subject: [GIT PULL] final dmaengine update for 2.6.35-rc1
-From: Dan Williams <dan.j.williams@intel.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-       Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>,
-       linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-       Linus Walleij <linus.walleij@stericsson.com>,
-       Jassi Brar <jassi.brar@samsung.com>,
-       STEricsson_nomadik_linux@list.st.com
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 27 May 2010 16:01:20 -0700
-Message-ID: <1275001280.21315.14.camel@dwillia2-linux>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
-Content-Transfer-Encoding: 7bit
+	id S932273Ab0E0XBS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 May 2010 19:01:18 -0400
+Received: from bld-mail18.adl2.internode.on.net ([150.101.137.103]:60045 "EHLO
+	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1757137Ab0E0XBQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 May 2010 19:01:16 -0400
+Date: Fri, 28 May 2010 09:01:04 +1000
+From: Dave Chinner <david@fromorbit.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+       linux-mm@kvack.org, xfs@oss.sgi.com
+Subject: Re: [PATCH 3/5] superblock: introduce per-sb cache shrinker
+ infrastructure
+Message-ID: <20100527230104.GQ12087@dastard>
+References: <1274777588-21494-1-git-send-email-david@fromorbit.com>
+ <1274777588-21494-4-git-send-email-david@fromorbit.com>
+ <20100527133234.e0814239.akpm@linux-foundation.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100527133234.e0814239.akpm@linux-foundation.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus, please pull from:
+On Thu, May 27, 2010 at 01:32:34PM -0700, Andrew Morton wrote:
+> On Tue, 25 May 2010 18:53:06 +1000
+> Dave Chinner <david@fromorbit.com> wrote:
+> 
+> > From: Dave Chinner <dchinner@redhat.com>
+> > 
+> > With context based shrinkers, we can implement a per-superblock
+> > shrinker that shrinks the caches attached to the superblock. We
+> > currently have global shrinkers for the inode and dentry caches that
+> > split up into per-superblock operations via a coarse proportioning
+> > method that does not batch very well.  The global shrinkers also
+> > have a dependency - dentries pin inodes - so we have to be very
+> > careful about how we register the global shrinkers so that the
+> > implicit call order is always correct.
+> > 
+> > With a per-sb shrinker callout, we can encode this dependency
+> > directly into the per-sb shrinker, hence avoiding the need for
+> > strictly ordering shrinker registrations. We also have no need for
+> > any proportioning code for the shrinker subsystem already provides
+> > this functionality across all shrinkers. Allowing the shrinker to
+> > operate on a single superblock at a time means that we do less
+> > superblock list traversals and locking and reclaim should batch more
+> > effectively. This should result in less CPU overhead for reclaim and
+> > potentially faster reclaim of items from each filesystem.
+> > 
+> 
+> I go all tingly when a changelog contains the word "should".
+> 
+> OK, it _should_ do X.  But _does_ it actually do X?
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/djbw/async_tx.git next
+As i said to Nick - the tests I ran showed an average improvement of
+5% but the accuracy of the benchmark was +/-10%. Hence it's hard to
+draw any conclusive results from that. It appears to be slightly
+faster on an otherwise idle system, but...
 
-1/ A new dma driver from Jassi that was dependent on patches that went
-in via the ARM tree.
+As it is, the XFS shrinker that gets integrated into this structure
+in a later patch peaks at a higher rate - 150k inodes/s vs 90k
+inodes/s with the current shrinker - but still it's hard to quantify
+qualitatively. I'm going to run more benchmarks to try to get better
+numbers.
 
-2/ A platform enabling patch for the dma40 driver that went in with my
-first pull request.  This was pending an acked-by from Russell.
+> >  fs/super.c         |   53 +++++++++++++++++++++
+> >  include/linux/fs.h |    7 +++
+> >  4 files changed, 88 insertions(+), 214 deletions(-)
+> > 
+> > diff --git a/fs/dcache.c b/fs/dcache.c
+> > index dba6b6d..d7bd781 100644
+> > --- a/fs/dcache.c
+> > +++ b/fs/dcache.c
+> > @@ -456,21 +456,16 @@ static void prune_one_dentry(struct dentry * dentry)
+> >   * which flags are set. This means we don't need to maintain multiple
+> >   * similar copies of this loop.
+> >   */
+> > -static void __shrink_dcache_sb(struct super_block *sb, int *count, int flags)
+> > +static void __shrink_dcache_sb(struct super_block *sb, int count, int flags)
+> 
+> Forgot to update the kerneldoc description of `count'.
 
-Both have been shaken out in -next, the dma40 patch had some recent
-janitorial fixups spotted by Russell.
+Will fix.
 
-Thanks,
-Dan
+Cheers,
 
-Jassi Brar (1):
-      DMA: PL330: Add dma api driver
-
-Linus Walleij (1):
-      DMAENGINE: DMA40 U8500 platform configuration
-
- arch/arm/mach-ux500/clock.c                    |    2 +-
- arch/arm/mach-ux500/cpu-db8500.c               |    4 +
- arch/arm/mach-ux500/devices-db8500.c           |  109 +++
- arch/arm/mach-ux500/include/mach/db8500-regs.h |   12 +
- arch/arm/mach-ux500/include/mach/devices.h     |    3 +
- arch/arm/mach-ux500/ste-dma40-db8500.h         |  154 +++++
- drivers/dma/Kconfig                            |    9 +
- drivers/dma/Makefile                           |    1 +
- drivers/dma/pl330.c                            |  866 ++++++++++++++++++++++++
- include/linux/amba/pl330.h                     |   45 ++
- 10 files changed, 1204 insertions(+), 1 deletions(-)
- create mode 100644 arch/arm/mach-ux500/ste-dma40-db8500.h
- create mode 100644 drivers/dma/pl330.c
- create mode 100644 include/linux/amba/pl330.h
-
-commit 7b8ddb06e54ad98edeb7951f317aee4d1feda9d6
-Author: Linus Walleij <linus.walleij@stericsson.com>
-Date:   Thu May 27 15:21:26 2010 -0700
-
-    DMAENGINE: DMA40 U8500 platform configuration
-    
-    This completes the DMA40 support with the platform-specific
-    configuration for U8500/DB8500.
-    
-    Signed-off-by: Linus Walleij <linus.walleij@stericsson.com>
-    Acked-by: Srinidhi Kasagar <srinidhi.kasagar@stericsson.com>
-    Reviewed-by: Alessandro Rubini <rubini@unipv.it>
-    Cc: STEricsson_nomadik_linux@list.st.com
-    Acked-by: Russell King <rmk+kernel@arm.linux.org.uk>
-    [fixed up dma40_{tx|rx}_map declaration/initialization]
-    Signed-off-by: Dan Williams <dan.j.williams@intel.com>
-
-commit b3040e40675ec2c43542331cd30d4ee3dae797e8
-Author: Jassi Brar <jassi.brar@samsung.com>
-Date:   Sun May 23 20:28:19 2010 -0700
-
-    DMA: PL330: Add dma api driver
-    
-    Add DMA Engine API driver for the PL330 DMAC.
-    This driver is supposed to be reusable by various
-    platforms that have one or more PL330 DMACs.
-    Atm, DMA_SLAVE and DMA_MEMCPY capabilities have been
-    implemented.
-    
-    Signed-off-by: Jassi Brar <jassi.brar@samsung.com>
-    Reviewed-by: Linus Walleij <linus.walleij@stericsson.com>
-    [dan.j.williams@intel.com: missing slab.h and ->device_control() fixups]
-    Signed-off-by: Dan Williams <dan.j.williams@intel.com>
-
-
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
