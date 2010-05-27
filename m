@@ -1,73 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755467Ab0E0Gun (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 May 2010 02:50:43 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:60099 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753584Ab0E0Gum (ORCPT
+	id S1756553Ab0E0Gv3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 May 2010 02:51:29 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:36200 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754176Ab0E0Gv1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 May 2010 02:50:42 -0400
-Date: Thu, 27 May 2010 07:50:41 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Artem Bityutskiy <dedekind1@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Jens Axboe <jens.axboe@oracle.com>,
-       linux-fsdevel@vger.kernel.org
-Subject: Re: [PATCHv4 17/17] writeback: lessen sync_supers wakeup count
-Message-ID: <20100527065041.GA31073@ZenIV.linux.org.uk>
-References: <1274795352-3551-1-git-send-email-dedekind1@gmail.com>
- <1274795352-3551-18-git-send-email-dedekind1@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1274795352-3551-18-git-send-email-dedekind1@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
+	Thu, 27 May 2010 02:51:27 -0400
+Date: Wed, 26 May 2010 23:51:07 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: piotr@hosowicz.com, linux-kernel@vger.kernel.org,
+       Jens Axboe <jens.axboe@oracle.com>, Divyesh Shah <dpshah@google.com>
+Subject: Re: BUG: using smp_processor_id() in preemptible [00000000] code:
+ icedove-bin/5449
+Message-Id: <20100526235107.77e66ce0.akpm@linux-foundation.org>
+In-Reply-To: <1274942798.27810.3584.camel@twins>
+References: <4BF9EC69.5030709@example.com>
+	<1274777422.5882.591.camel@twins>
+	<20100526160252.325f8357.akpm@linux-foundation.org>
+	<1274942798.27810.3584.camel@twins>
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 25, 2010 at 04:49:12PM +0300, Artem Bityutskiy wrote:
-> From: Artem Bityutskiy <Artem.Bityutskiy@nokia.com>
+On Thu, 27 May 2010 08:46:38 +0200 Peter Zijlstra <peterz@infradead.org> wrote:
+
+> On Wed, 2010-05-26 at 16:02 -0700, Andrew Morton wrote:
 > 
-> The 'sync_supers' thread wakes up every 5 seconds (by default) and
-> writes back all super blocks. It keeps waking up even if there
-> are no dirty super-blocks. For many file-systems the superblock
-> becomes dirty very rarely, if ever, so 'sync_supers' does not do
-> anything most of the time.
+> > How is anyone supposed to use this?  What are the semantics of this
+> > thing?  What are the units of its return value?  What is the base value
+> > of its return value?  Does it return different times on different CPUs?
+> > I assume so, otherwise why does sched_clock_cpu() exist?  <looks at
+> > the sched_clock_cpu() documentation, collapses in giggles>
 > 
-> This patch improves 'sync_supers' and makes sleep if all superblocks
-> are clean and there is nothing to do. This helps saving the power.
-> This optimization is important for small battery-powered devices.
+> The point of the whole sched_clock_cpu() thing is to provide a fairly
+> high resolution clock with bounded drift between cpus.
+> 
+> It also promises to be monotonic per cpu argument, that is,
+> sched_clock_cpu(j) will, for a constant j always return a monotonic
+> increasing timestamp.
+> 
+> It doesn't make much promises about its base (although people tend to
+> want it to start at 0 on boot, but the users really shouldn't care).
+> 
+> sched_clock() doesn't promise either bounded drift between cpus nor
+> monotonicity.
+> 
 
-> +void mark_sb_dirty(struct super_block *sb)
-> +{
-> +	sb->s_dirty = 1;
-> +
-> +	spin_lock(&supers_timer_lock);
-> +	if (!supers_timer_armed) {
-> +		bdi_arm_supers_timer();
-> +		supers_timer_armed = 1;
-> +	} else if (supers_timer_armed == -1)
-> +		supers_timer_armed = 1;
-> +	spin_unlock(&supers_timer_lock);
-> +}
-> +EXPORT_SYMBOL(mark_sb_dirty);
+OK, well please document these subtleties things in a very obvious place.
 
-Ouch...   That turns a previously trivial operation into something
-much heavier; moreover, I'd rather see serious review of s_dirt
-uses.
+Right now the code is a landmine.  Some poor innocent drivers/foo/
+developer can use them and add fantastically subtle
+once-per-million-machine-year lockup-causing bugs which he'll never be
+able to diagnose.
 
-Note, e.g., that in your series you've touched udf; it can set s_dirt
-until the cows come home, but without ->write_super() it'll be ignored
-by everything in VFS and fs/udf itself never looks at the damn thing.
-
-A look around it shows fs/sysv, where we never clean the damn flag anymore
-for r/w mounts.  Yes, really (got broken a year ago, nobody noticed).
-
-Or, e.g., BFS - there we have ->write_super() mark the buffer_head that
-contains on-disk sb dirty, and the only place that sets ->s_dirt is doing
-that immediately after having marked the same bh dirty itself.  Interesting
-place, at that - bfs_fill_super() at r/w mount time...  Note that ->sync_fs()
-there does *not* wait for anything, which is not the right thing to do.
-
-IOW, this thing is a good topic for code review; I suspect that quite a few
-users might be gone as the result.
