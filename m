@@ -1,160 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758208Ab0E0TV6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 May 2010 15:21:58 -0400
-Received: from mail.s1aas.com ([86.35.2.10]:40268 "EHLO enigma.wired-net.gr"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756693Ab0E0TV4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 May 2010 15:21:56 -0400
-From: nanakos@wired-net.gr
-To: gregkh@suse.de
-Cc: horms@verge.net.au, hsweeten@visionengravers.com, ss@aao.gov.au,
-       randy.dunlap@oracle.com, tj@kernel.org, linux-kernel@vger.kernel.org,
-       Nanakos Chrysostomos <nanakos@wired-net.gr>
-Subject: [PATCH] Staging: dt3155: dt3155_isr.c: Fix checkpatch.pl issues.
-Date: Thu, 27 May 2010 19:20:41 +0000
-Message-Id: <1274988042-7716-1-git-send-email-nanakos@wired-net.gr>
-X-Mailer: git-send-email 1.5.6.5
+	id S1759214Ab0E0TWh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 May 2010 15:22:37 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:34155 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1756665Ab0E0TWe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 May 2010 15:22:34 -0400
+Date: Thu, 27 May 2010 15:22:34 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Peter Zijlstra <peterz@infradead.org>
+cc: Matthew Garrett <mjg59@srcf.ucam.org>,
+       Thomas Gleixner <tglx@linutronix.de>,
+       LKML <linux-kernel@vger.kernel.org>,
+       Florian Mickler <florian@mickler.org>, <felipe.balbi@nokia.com>,
+       Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
+       Linux PM <linux-pm@lists.linux-foundation.org>,
+       Alan Cox <alan@lxorguk.ukuu.org.uk>
+Subject: Re: [linux-pm] [PATCH 0/8] Suspend block api (version 8)
+In-Reply-To: <1274982447.27810.5684.camel@twins>
+Message-ID: <Pine.LNX.4.44L0.1005271520070.3239-100000@iolanthe.rowland.org>
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Nanakos Chrysostomos <nanakos@wired-net.gr>
+On Thu, 27 May 2010, Peter Zijlstra wrote:
 
-Fix resolves checkpatch.pl issues.
+> On Thu, 2010-05-27 at 18:40 +0100, Matthew Garrett wrote:
+> > On Thu, May 27, 2010 at 07:34:40PM +0200, Peter Zijlstra wrote:
+> > > > we still need to be able to enter suspend while the system isn't idle.
+> > > 
+> > > _WHY_!?
+> > 
+> > Because if I'm running a kernel build in a tmpfs and I hit the sleep 
+> > key, I need to go to sleep. Blocking processes on driver access isn't 
+> > sufficient.
+> 
+> But that's a whole different issue. I agree that a forced suspend for
+> things like that make sense, just not for power managing a running
+> system.
 
-Signed-off-by: Nanakos Chrysostomos <nanakos@wired-net.gr>
----
- drivers/staging/dt3155/dt3155_isr.c |   47 +++++++++++++++++++---------------
- 1 files changed, 26 insertions(+), 21 deletions(-)
+Why not?  Or rather, why shouldn't it?
 
-diff --git a/drivers/staging/dt3155/dt3155_isr.c b/drivers/staging/dt3155/dt3155_isr.c
-index 33ddc9c..59b7bfd 100644
---- a/drivers/staging/dt3155/dt3155_isr.c
-+++ b/drivers/staging/dt3155/dt3155_isr.c
-@@ -153,10 +153,12 @@ void push_ready(int m, int index)
-  *****************************************************/
- static int get_tail(int m)
- {
--  return (dt3155_fbuffer[m]->ready_head -
--	   dt3155_fbuffer[m]->ready_len +
--	   dt3155_fbuffer[m]->nbuffers)%
--	  (dt3155_fbuffer[m]->nbuffers);
-+	int ncount;
-+	ncount = (dt3155_fbuffer[m]->ready_head -
-+			dt3155_fbuffer[m]->ready_len +
-+			dt3155_fbuffer[m]->nbuffers)%
-+		(dt3155_fbuffer[m]->nbuffers);
-+	return ncount;
- }
- 
- 
-@@ -191,23 +193,23 @@ void printques(int m)
- 
-   tail = get_tail(m);
- 
--  printk("\n R:");
-+  printk(KERN_INFO "\n R:");
-     for (index = tail; index != head; index++, index = index % (num)) {
- 	frame_index = dt3155_fbuffer[m]->ready_que[index];
- 	printk(" %d ", frame_index);
-     }
- 
--  printk("\n E:");
-+  printk(KERN_INFO "\n E:");
-     for (index = 0; index < dt3155_fbuffer[m]->empty_len; index++) {
- 	frame_index = dt3155_fbuffer[m]->empty_buffers[index];
- 	printk(" %d ", frame_index);
-     }
- 
-   frame_index = dt3155_fbuffer[m]->active_buf;
--  printk("\n A: %d", frame_index);
-+  printk(KERN_INFO "\n A: %d", frame_index);
- 
-   frame_index = dt3155_fbuffer[m]->locked_buf;
--  printk("\n L: %d\n", frame_index);
-+  printk(KERN_INFO "\n L: %d\n", frame_index);
- 
- }
- 
-@@ -263,19 +265,21 @@ void allocate_buffers(u32 *buf_addr, u32* total_size_kbs,
- #endif
-   size_kbs = full_size_kbs;
-   *buf_addr = 0;
--  printk("DT3155: We would like to get: %d KB\n", full_size_kbs);
--  printk("DT3155: ...but need at least: %d KB\n", min_size_kbs);
--  printk("DT3155: ...the allocator has: %d KB\n", allocator_max);
-+  printk(KERN_INFO "DT3155: We would like to get: %d KB\n", full_size_kbs);
-+  printk(KERN_INFO "DT3155: ...but need at least: %d KB\n", min_size_kbs);
-+  printk(KERN_INFO "DT3155: ...the allocator has: %d KB\n", allocator_max);
-   size_kbs = (full_size_kbs <= allocator_max ? full_size_kbs : allocator_max);
-     if (size_kbs > min_size_kbs) {
--	if ((*buf_addr = allocator_allocate_dma(size_kbs, GFP_KERNEL)) != 0) {
--		printk("DT3155:  Managed to allocate: %d KB\n", size_kbs);
-+		*buf_addr = allocator_allocate_dma(size_kbs, GFP_KERNEL);
-+	if (*buf_addr != 0) {
-+		printk(KERN_INFO "DT3155:  Managed to allocate: %d KB\n",
-+				size_kbs);
- 		*total_size_kbs = size_kbs;
- 		return;
- 	}
-     }
-   /* If we got here, the allocation failed */
--  printk("DT3155: Allocator failed!\n");
-+  printk(KERN_INFO "DT3155: Allocator failed!\n");
-   *buf_addr = 0;
-   *total_size_kbs = 0;
-   return;
-@@ -324,9 +328,9 @@ u32 dt3155_setup_buffers(u32 *allocatorAddr)
- 
-   /* allocate a large contiguous chunk of RAM */
-   allocate_buffers(&rambuff_addr, &rambuff_size, bufsize);
--  printk("DT3155: mem info\n");
--  printk("  - rambuf_addr = 0x%x\n", rambuff_addr);
--  printk("  - length (kb) = %u\n", rambuff_size);
-+  printk(KERN_INFO "DT3155: mem info\n");
-+  printk(KERN_INFO "  - rambuf_addr = 0x%x\n", rambuff_addr);
-+  printk(KERN_INFO "  - length (kb) = %u\n", rambuff_size);
-     if (rambuff_addr == 0) {
- 	printk(KERN_INFO
- 	    "DT3155: Error setup_buffers() allocator dma failed\n");
-@@ -339,7 +343,8 @@ u32 dt3155_setup_buffers(u32 *allocatorAddr)
-      are so we can give an equal number to each device */
-   rambuff_acm = rambuff_addr;
-     for (index = 0; index < MAXBUFFERS; index++) {
--	rambuff_acm = adjust_4MB(rambuff_acm, bufsize);/*avoid spanning 4MB bdry*/
-+	/*avoid spanning 4MB bdry*/
-+	rambuff_acm = adjust_4MB(rambuff_acm, bufsize);
- 	if (rambuff_acm + bufsize > rambuff_end)
- 		break;
- 	rambuff_acm += bufsize;
-@@ -347,7 +352,7 @@ u32 dt3155_setup_buffers(u32 *allocatorAddr)
-   /* Following line is OK, will waste buffers if index
-    * not evenly divisible by ndevices -NJC*/
-   numbufs = index / ndevices;
--  printk("  - numbufs = %u\n", numbufs);
-+  printk(KERN_INFO "  - numbufs = %u\n", numbufs);
-     if (numbufs < 2) {
- 	printk(KERN_INFO
- 	"DT3155: Error setup_buffers() couldn't allocate 2 bufs/board\n");
-@@ -367,7 +372,7 @@ u32 dt3155_setup_buffers(u32 *allocatorAddr)
- 		rambuff_acm = adjust_4MB(rambuff_acm, bufsize);
- 		if (rambuff_acm + bufsize > rambuff_end) {
- 			/* Should never happen */
--			printk("DT3155 PROGRAM ERROR (GCS)\n"
-+			printk(KERN_INFO "DT3155 PROGRAM ERROR (GCS)\n"
- 			"Error distributing allocated buffers\n");
- 			return -ENOMEM;
- 		}
-@@ -395,7 +400,7 @@ u32 dt3155_setup_buffers(u32 *allocatorAddr)
- 	/* setup the ready queue */
- 	dt3155_fbuffer[m]->ready_head = 0;
- 	dt3155_fbuffer[m]->ready_len = 0;
--	printk("Available buffers for device %d: %d\n",
-+	printk(KERN_INFO "Available buffers for device %d: %d\n",
- 	    m, dt3155_fbuffer[m]->nbuffers);
-     }
- 
--- 
-1.5.6.5
+> PC style hardware like that doesn't wake up from suspend for
+> funny things like a keypress either (good thing too).
+
+Yes it does.  If I close the lid of my laptop, wait a few seconds for 
+it to suspend, then open the lid (which does not wake it up), and hit a 
+key -- it wakes up.
+
+> Anyway all that already works (more or less), so I don't see the
+> problem.
+
+The "less" part is the problem.  It would be nice to have a forced 
+suspend mode that is more dicriminating: Instead of activating 
+immediately it would wait until all pending events were handled.
+
+Alan Stern
 
