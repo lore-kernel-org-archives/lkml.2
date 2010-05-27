@@ -1,81 +1,157 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757921Ab0E0QV5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 May 2010 12:21:57 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:56755 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757877Ab0E0QVy (ORCPT
+	id S1757942Ab0E0QYa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 May 2010 12:24:30 -0400
+Received: from e35.co.us.ibm.com ([32.97.110.153]:41631 "EHLO
+	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757205Ab0E0QY1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 May 2010 12:21:54 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:mime-version:content-type
-         :content-disposition:user-agent;
-        b=w1K6xjhSrBpFQZkwQ/Pzzx0Yd0+17PCAlGUdJQcF8HJufrt57KwHzlDOeFFt8OrkUy
-         P8sPHjDatXlKvOy50rZ5Sh1NX0R6aRF64Ewv+tF7+CENERDvJ8emKOtkizOSSR9mBEtw
-         jpjrdcOfHzo6czk2+0VMLw6VnqfR9O3wPAmGM=
-Date: Thu, 27 May 2010 09:14:56 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-       linux-input@vger.kernel.org
-Subject: [git pull] Input updates for 2.6.35-rc0
-Message-ID: <20100527161455.GA558@core.coreip.homeip.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-08-17)
+	Thu, 27 May 2010 12:24:27 -0400
+Subject: Re: [PATCH 2/3] workqueue: Add an API to create a singlethread
+ workqueue attached to the current task's cgroup
+From: Sridhar Samudrala <sri@us.ibm.com>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: "Michael S. Tsirkin" <mst@redhat.com>, netdev <netdev@vger.kernel.org>,
+       lkml <linux-kernel@vger.kernel.org>,
+       "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Dmitri Vorobiev <dmitri.vorobiev@movial.com>, Tejun Heo <tj@kernel.org>,
+       Jiri Kosina <jkosina@suse.cz>, Thomas Gleixner <tglx@linutronix.de>,
+       Ingo Molnar <mingo@elte.hu>, Andi Kleen <ak@linux.intel.com>
+In-Reply-To: <20100527124448.GA4241@redhat.com>
+References: <1274227491.2370.110.camel@w-sridhar.beaverton.ibm.com>
+	 <20100527091426.GA6308@redhat.com>  <20100527124448.GA4241@redhat.com>
+Content-Type: text/plain
+Date: Thu, 27 May 2010 09:24:18 -0700
+Message-Id: <1274977458.10161.11.camel@w-sridhar.beaverton.ibm.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.26.3 (2.26.3-1.fc11) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On Thu, 2010-05-27 at 14:44 +0200, Oleg Nesterov wrote:
+> On 05/27, Michael S. Tsirkin wrote:
+> >
+> > On Tue, May 18, 2010 at 05:04:51PM -0700, Sridhar Samudrala wrote:
+> > > Add a new kernel API to create a singlethread workqueue and attach it's
+> > > task to current task's cgroup and cpumask.
+> > >
+> > > Signed-off-by: Sridhar Samudrala <sri@us.ibm.com>
+> >
+> > Could someone familiar with workqueue code please comment on whether
+> > this patch is suitable for 2.6.35?
+> >
+> > It is needed to fix the case where vhost user might cause a kernel
+> > thread to consume more CPU than allowed by the cgroup.
+> > Should I merge it through the vhost tree?
+> > Ack for this?
+> 
+> I don't understand the reasons for this patch, but this doesn't matter.
+> 
+> I don't really see any need to change workqueue.c,
+> 
+> > > +static struct task_struct *get_singlethread_wq_task(struct workqueue_struct *wq)
+> > > +{
+> > > +	return (per_cpu_ptr(wq->cpu_wq, singlethread_cpu))->thread;
+> > > +}
+> 
+> (Not sure this trivial static helper with the single caller makes sense, but
+>  see below)
+> 
+> > > +/* Create a singlethread workqueue and attach it's task to the current task's
+> > > + * cgroup and set it's cpumask to the current task's cpumask.
+> > > + */
+> > > +struct workqueue_struct *create_singlethread_workqueue_in_current_cg(char *name)
+> > > +{
+> > > +	struct workqueue_struct *wq;
+> > > +	struct task_struct *task;
+> > > +	cpumask_var_t mask;
+> > > +
+> > > +	wq = create_singlethread_workqueue(name);
+> > > +	if (!wq)
+> > > +		goto out;
+> > > +
+> > > +	if (!alloc_cpumask_var(&mask, GFP_KERNEL))
+> > > +		goto err;
+> > > +			
+> > > +	if (sched_getaffinity(current->pid, mask))
+> > > +		goto err;
+> > > +
+> > > +	task = get_singlethread_wq_task(wq);
+> > > +	if (sched_setaffinity(task->pid, mask))
+> > > +		goto err;
+> > > +
+> > > +	if (cgroup_attach_task_current_cg(task))
+> > > +		goto err;
+> > > +out:	
+> > > +	return wq;
+> > > +err:
+> > > +	destroy_workqueue(wq);
+> > > +	wq = NULL;
+> > > +	goto out;
+> > > +}
+> 
+> Instead, cgroup.c (or whoever needs this) can do
+> 
+> 	struct move_struct {
+> 		struct work_struct work;
+> 		int ret;
+> 	};
+> 
+> 	static void move_func(struct work_struct *work)
+> 	{
+> 		struct move_struct *move = container_of(...);
+> 
+> 		if (cgroup_attach_task_current_cg(current))
 
-Please pull from:
+We are trying to attach the task associated with workqueue to the
+current task's cgroup. So what we need is 
+   cgroup_attach_task_current_cg(wq->task);
 
-	git://git.kernel.org/pub/scm/linux/kernel/git/dtor/input.git for-linus
-or
-	master.kernel.org:/pub/scm/linux/kernel/git/dtor/input.git for-linus
-
-to receive some more updates for the input subsystem.
-
-Changelog:
----------
-
-Daniel Mack (1):
-      Input: use ABS_CNT rather than (ABS_MAX + 1)
-
-Haojian Zhuang (1):
-      Input: enable onkey driver of max8925
-
-Kevin Hilman (1):
-      Input: ads7846 - return error on regulator_get() failure
-
-Ondrej Zary (1):
-      Input: usbtouchscreen - support bigger iNexio touchscreens
-
-Peter Ujfalusi (1):
-      Input: twl4030-vibra - correct the power down sequence
+However there is no interface currently that exports the task associated
+with a workqueue. It is hidden in cpu_workqueue_struct and is only 
+accessible within workqueue.c.
 
 
-Diffstat:
---------
+> 			ret = -EANY;
+> 	}
+> 
+> 	static struct workqueue_struct *create_singlethread_workqueue_in_current_cg(char *name)
+> 	{
+> 		struct workqueue_struct *wq;
+> 		struct move_struct move = {
+> 			.work = __WORK_INITIALIZER(move_func);
+> 		};
+> 
+> 		wq = create_singlethread_workqueue(name);
+> 		if (!wq)
+> 			return NULL;
+> 
+> 		queue_work(&move.work);
+> 		flush_work(&move.work);
+> 
+> 		if (move.ret) {
+> 			destroy_workqueue(wq);
+> 			wq = NULL;
+> 		}
+> 
+> 		return wq;
+> 	}
+> 
+> Or. Just export wq_per_cpu() from workqueue.c (probably with a better name) and
+> use it like the patch does.
+This requires that struct cpu_workqueue_struct and struct
+workqueue_struct are made externally visible by moving them to
+kernel/workqueue.h.
 
- drivers/hid/hid-debug.c                    |    2 +-
- drivers/input/joydev.c                     |   10 +-
- drivers/input/misc/Kconfig                 |   10 ++
- drivers/input/misc/Makefile                |    1 +
- drivers/input/misc/max8925_onkey.c         |  148 ++++++++++++++++++++++++++++
- drivers/input/misc/twl4030-vibra.c         |    2 +-
- drivers/input/misc/uinput.c                |    4 +-
- drivers/input/touchscreen/ads7846.c        |    4 +-
- drivers/input/touchscreen/usbtouchscreen.c |    7 +-
- include/linux/input.h                      |   12 +-
- include/linux/joystick.h                   |    4 +-
- include/linux/uinput.h                     |   10 +-
- 12 files changed, 189 insertions(+), 25 deletions(-)
- create mode 100644 drivers/input/misc/max8925_onkey.c
+Instead what about adding the simple helper get_singlethread_wq_task()
+in workqueue.c and exporting it.
+I can add create_singlethread_workqueue_in_current_cg() to cgroup.c
+using this helper routine.
 
--- 
-Dmitry
+Thanks
+Sridhar
+
 
