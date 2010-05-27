@@ -1,121 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756735Ab0E0Qej (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 May 2010 12:34:39 -0400
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:37593 "EHLO
-	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754206Ab0E0Qeh (ORCPT
+	id S1757516Ab0E0QfK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 May 2010 12:35:10 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:35059 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754875Ab0E0QfI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 May 2010 12:34:37 -0400
-Date: Thu, 27 May 2010 17:41:31 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Matthew Garrett <mjg59@srcf.ucam.org>
-Cc: Arve =?ISO-8859-14?B?SGr4bm5lduVn?= <arve@android.com>,
-       Florian Mickler <florian@mickler.org>,
-       Vitaly Wool <vitalywool@gmail.com>,
-       Peter Zijlstra <peterz@infradead.org>,
-       LKML <linux-kernel@vger.kernel.org>, Paul@smtp1.linux-foundation.org,
-       felipe.balbi@nokia.com,
-       Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
-       Linux PM <linux-pm@lists.linux-foundation.org>
-Subject: Re: [linux-pm] [PATCH 0/8] Suspend block api (version 8)
-Message-ID: <20100527174131.18fd1c72@lxorguk.ukuu.org.uk>
-In-Reply-To: <20100527160714.GB31937@srcf.ucam.org>
-References: <20100526120242.5c9b73ad@schatten.dmk.lab>
-	<AANLkTim4021cTnhVZrQpefq1MG-eEPOFLDRO-XDepHb4@mail.gmail.com>
-	<20100526133721.602633b2@schatten.dmk.lab>
-	<AANLkTikzgaOFdQKess4E-D86OLPOzxP3dWiDkU_UR0ri@mail.gmail.com>
-	<20100526142430.327ccbc4@schatten.dmk.lab>
-	<20100526141612.3e2e0443@lxorguk.ukuu.org.uk>
-	<AANLkTin97MMu-XO_Lk-snefBWz2ymhS0Qi1y1RxLwdVA@mail.gmail.com>
-	<20100527003943.07c17f85@lxorguk.ukuu.org.uk>
-	<20100527140655.GA28048@srcf.ucam.org>
-	<20100527160543.2228fc17@lxorguk.ukuu.org.uk>
-	<20100527160714.GB31937@srcf.ucam.org>
-X-Mailer: Claws Mail 3.7.5 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 27 May 2010 12:35:08 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=Ml4AH9ltMEVLeZX1RKj9HQ9SHCSGJP9k0nKEgj2bx9xKonc+SmWJEv12G7zEogIhQw
+         1bfH2xmPHtgXwr3IbsfdrSC7HJms/EXKxNTMo3DnWGB2FGOKDtsbCkq9f6AvLM30Hg26
+         bRy5yDMd+2Q8lujPD0j+vNBukyee3i0VMZCMU=
+MIME-Version: 1.0
+In-Reply-To: <20100527142848.GA23543@iveqy.com>
+References: <20100527100729.GA21454@iveqy.com>
+	<AANLkTinn7aEv0ueW4uRN06XdUbEltTfmjRXEABMRN-7e@mail.gmail.com>
+	<20100527142848.GA23543@iveqy.com>
+Date: Thu, 27 May 2010 19:35:05 +0300
+Message-ID: <AANLkTinZUTSADw44UJ2g98AFCzs15DVt6zqLYr61HEaS@mail.gmail.com>
+Subject: Re: hex_to_bin speedup
+From: Andy Shevchenko <andy.shevchenko@gmail.com>
+To: Fredrik Gustafsson <iveqy@iveqy.com>
+Cc: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by alpha.home.local id o4RGZpim021158
 
-On Thu, 27 May 2010 17:07:14 +0100
-Matthew Garrett <mjg59@srcf.ucam.org> wrote:
-
-> On Thu, May 27, 2010 at 04:05:43PM +0100, Alan Cox wrote:
-> > > Now, if the user is playing this game, you want it to be scheduled. If 
-> > > the user has put down their phone and the screen lock has kicked in, you 
-> > > don't want it to be scheduled. So we could imagine some sort of cgroup 
-> > > that contains untrusted tasks - when the session is active we set a flag 
-> > 
-> > I would hope not, because I'd rather prefer my app that used the screen
-> > to get the chance to save important data on what it was doing
-> > irrespective of the screen blank:  "I have an elegant proof for this
-> > problem but my battery has gone flat"
-> 
-> Perhaps set after callbacks are made. But given that the approach 
-> doesn't work anyway...
-
-Which approach doesn't work, and why ?
-
-> > What is the problem here - your device driver for the display can block
-> > tasks it doesn't want to use the display.
-> 
-> It's still racy. Going back to my example without any of the suspend 
-> blocking code, but using a network socket rather than an input device:
-> 
-> int input = socket(AF_INET, SOCK_STREAM|SOCK_NONBLOCK, 0);
-> char foo;
-> struct sockaddr addr;
-> connect (input, &addr, sizeof(addr))
-> while (1) {
->        if (read(input, &foo, 1) > 0) {
->                (do something)
->        } else {
->                (draw bouncing cows and clouds and tractor beams briefly)
->        }
-> }
-> 
-> A network packet arrives while we're drawing. Before we finish drawing, 
-> the policy timeout expires and the screen turns off.
-
-Which is correct for a badly behaved application. You said you wanted to
-constrain it. You've done so. Now I am not sure why such a "timeout"
-would expire in the example as the task is clearly busy when drawing, or
-is talking to someone else who is in turn busy. Someone somewhere is
-actually drawing be it a driver or app code.
-
-For a well behaved application you are drawing so you are running
-drawing stuff so why would you suspend. The app has said it has a
-latency constraint that suspend cannot meet, or has a device open that
-cannot meet the constraints in suspend.
-
-You also have the socket open so you can meaningfully extract resource
-constraint information from that fact.
-
-See it's not the read() that matters, it's the connect and the close. 
-
-If your policy for a well behaved application is 'thou shalt not
-suspend in a way that breaks its networking' then for a well behaving app
-once I connect the socket we cannot suspend that app until such point as
-the app closes the socket. At any other point we will break the
-connection. Whether that is desirable is a policy question and you get to
-pick how much you choose to trust an app and how you interpret the
-information in your cpufreq and suspend drivers.
-
-If you have wake-on-lan then the network stack might be smarter and
-choose to express itself as
-
-	'the constraint is C6 unless the input queue is empty in which
-	 case suspend is ok as I have WoL and my network routing is such
-	 that I can prove that interface will be used'
-
-In truth I doubt much hardware can make such an inference but some phones
-probably can. On the other hand for /dev/input/foo you can make the
-inference very nicely thank you.
-
-Again wake on lan information does not belong in the application !
+On Thu, May 27, 2010 at 5:28 PM, Fredrik Gustafsson <iveqy@iveqy.com> wrote:> I saw from the mailinglist that the initial patch suggested for this> function did not use tolower() but an if statement.Exactly, and there was a small discussion around it.
+> On Thu, May 27, 2010 at 02:22:30PM +0300, Andy Shevchenko wrote:>> To your test case:>>  - the data is not random (CPU cache hits distribution is differ to real)> I thought that because the best case senario was equal, only the worst> case was of interest. Of course you're right. I rewrote the testcase to> use random numbers instead.>>>  - the compiler call and parameters are not published (gcc -O2>> probably removes unused parts of code)> I didn't use any parameters at all. However with the improved benchmark> I tested both without and with -O2 and got different results. I'm not> qualified to judge what this can do for the kernel.>>>  - please, provide assembler excerpts to compare implementations> Please se [3]-[6]>> P.S. How come we don't CC the LKML?My fault. Return back to public.
+> --> iveqy>> [1] Benchmark results> $ gcc -O2 main.c && ./a.out> tolower() was faster 2657 times> if-statement was faster 2571 times> Equal fast 4772 timesSo, optimizer do the job for tolower(). Thus, nothing to worry about.
+> $ gcc  main.c && ./a.out> tolower() was faster 1532 times> if-statement was faster 8465 times> Equal fast 3 times>> [2] Benchmark source>> #include <sys/time.h>> #include <stdio.h>>> int hex_to_bin_if(char ch)> {>        if ((ch >= '0') && (ch <= '9'))>                return ch - '0';>        if ((ch >= 'a') && (ch <= 'f'))>                return ch - 'a' + 10;>        if ((ch >= 'A') && (ch <= 'F'))>                return ch - 'A' + 10;>        return -1;> }> int hex_to_bin_to(char ch)> {>        if ((ch >= '0') && (ch <= '9'))>                return ch - '0';>        ch = tolower(ch);>        if ((ch >= 'a') && (ch <= 'f'))>                return ch - 'a' + 10;>        return -1;> }> char bin_to_hex(int i)> {>        switch(i) {>                case 0:>                        return '0';>                case 1:>                        return '1';>                case 2:>                        return '2';>                case 3:>                        return '3';>                case 4:>                        return '4';>                case 5:>                        return '5';>                case 6:>                        return '6';>                case 7:>                        return '7';>                case 8:>                        return '8';>                case 9:>                        return '9';>                case 10:>                        return 'a';>                case 11:>                        return 'b';>                case 12:>                        return 'c';>                case 13:>                        return 'd';>                case 14:>                        return 'e';>                case 15:>                        return 'f';>                case 16:>                        return '0';>                case 17:>                        return '1';>                case 18:>                        return '2';>                case 19:>                        return '3';>                case 20:>                        return '4';>                case 21:>                        return '5';>                case 22:>                        return '6';>                case 23:>                        return '7';>                case 24:>                        return '8';>                case 25:>                        return '9';>                case 26:>                        return 'A';>                case 27:>                        return 'B';>                case 28:>                        return 'C';>                case 29:>                        return 'D';>                case 30:>                        return 'E';>                case 31:>                        return 'F';>        }> }> int main()> {>        // Needed variables>        struct timeval start, end;>        int i,itr,res,ran,j,won_if = 0, won_to = 0,equal = 0;>        itr = 10000;>        char c;>        time_t tif,tto,diff;>        unsigned int iseed = (unsigned int)time(NULL);>        srand(iseed);>>        for(j = 0; j < itr; j++) {>                // Test if-statement>                gettimeofday(&start,NULL);>                for(i = 0; i < itr; i++) {>                        ran = rand() % 32;>                        c = bin_to_hex(ran);>                        res = hex_to_bin_if(c);>                }>                gettimeofday(&end,NULL);>                tif = end.tv_usec - start.tv_usec;>>                // Test tolower()>                gettimeofday(&start,NULL);>                for(i = 0; i < itr; i++) {>                        ran = rand() % 32;>                        c = bin_to_hex(ran);>                        res = hex_to_bin_to(c);>                }>                gettimeofday(&end,NULL);>                tto = end.tv_usec - start.tv_usec;>>                // Calculate winner>                diff = tto - tif;>                if(diff == 0) {>                        equal++;>                } else if(tto - tif > 0) {>                        won_if++;>                } else {>                        diff *= -1;>                        won_to++;>                }>        }>        printf("tolower() was faster %d times\n",won_to);>        printf("if-statement was faster %d times\n",won_if);>        printf("Equal fast %d times\n",equal);> }> [3] Assembler code if-statement (gcc -S main.c)> hex_to_bin_if:>        pushl   %ebp>        movl    %esp, %ebp>        subl    $8, %esp>        movl    8(%ebp), %eax>        movb    %al, -4(%ebp)>        cmpb    $47, -4(%ebp)>        jle     .L2>        cmpb    $57, -4(%ebp)>        jg      .L2>        movsbl  -4(%ebp),%eax>        subl    $48, %eax>        movl    %eax, -8(%ebp)>        jmp     .L3> .L2:>        cmpb    $96, -4(%ebp)>        jle     .L4>        cmpb    $102, -4(%ebp)>        jg      .L4>        movsbl  -4(%ebp),%eax>        subl    $87, %eax>        movl    %eax, -8(%ebp)>        jmp     .L3> .L4:>        cmpb    $64, -4(%ebp)>        jle     .L5>        cmpb    $70, -4(%ebp)>        jg      .L5>        movsbl  -4(%ebp),%eax>        subl    $55, %eax>        movl    %eax, -8(%ebp)>        jmp     .L3> .L5:>        movl    $-1, -8(%ebp)> .L3:>        movl    -8(%ebp), %eax>        leave>        ret>        .size   hex_to_bin_if, .-hex_to_bin_if> .globl hex_to_bin_to>        .type   hex_to_bin_to, @function>> [4] Assembler code tolower() (gcc -S main.c)> hex_to_bin_to:>        pushl   %ebp>        movl    %esp, %ebp>        subl    $24, %esp>        movl    8(%ebp), %eax>        movb    %al, -4(%ebp)>        cmpb    $47, -4(%ebp)>        jle     .L8>        cmpb    $57, -4(%ebp)>        jg      .L8>        movsbl  -4(%ebp),%eax>        subl    $48, %eax>        movl    %eax, -8(%ebp)>        jmp     .L9> .L8:>        movsbl  -4(%ebp),%eax>        movl    %eax, (%esp)>        call    tolower>        movb    %al, -4(%ebp)>        cmpb    $96, -4(%ebp)>        jle     .L10>        cmpb    $102, -4(%ebp)>        jg      .L10>        movsbl  -4(%ebp),%eax>        subl    $87, %eax>        movl    %eax, -8(%ebp)>        jmp     .L9> .L10:>        movl    $-1, -8(%ebp)> .L9:>        movl    -8(%ebp), %eax>        leave>        ret>        .size   hex_to_bin_to, .-hex_to_bin_to>> [5] Assembler code if-statement (gcc -S -O2 main.c)> hex_to_bin_if:>        pushl   %ebp>        movl    %esp, %ebp>        movzbl  8(%ebp), %edx>        leal    -48(%edx), %eax>        cmpb    $9, %al>        jbe     .L8>        leal    -97(%edx), %eax>        cmpb    $5, %al>        ja      .L4>        movsbl  %dl,%eax>        leal    -87(%eax), %ecx> .L3:>        movl    %ecx, %eax>        popl    %ebp>        ret>        .p2align 4,,7>        .p2align 3> .L8:>        movsbl  %dl,%eax>        leal    -48(%eax), %ecx>        movl    %ecx, %eax>        popl    %ebp>        ret>        .p2align 4,,7>        .p2align 3> .L4:>        leal    -65(%edx), %eax>        movl    $-1, %ecx>        cmpb    $5, %al>        ja      .L3>        movsbl  %dl,%eax>        leal    -55(%eax), %ecx>        jmp     .L3>        .size   hex_to_bin_if, .-hex_to_bin_if>        .p2align 4,,15>> [6] Assembler code tolower() (gcc -S -O2 main.c)> hex_to_bin_to:>        pushl   %ebp>        movl    %esp, %ebp>        subl    $8, %esp>        movzbl  8(%ebp), %edx>        leal    -48(%edx), %eax>        cmpb    $9, %al>        ja      .L38>        movsbl  %dl,%eax>        leal    -48(%eax), %edx> .L39:>        movl    %edx, %eax>        leave>        ret>        .p2align 4,,7>        .p2align 3> .L38:>        movsbl  %dl,%eax>        movl    %eax, (%esp)>        call    tolower>        movl    $-1, %edx>        movl    %eax, %ecx>        leal    -97(%ecx), %eax>        cmpb    $5, %al>        ja      .L39>        movsbl  %cl,%eax>        leal    -87(%eax), %edx>        jmp     .L39>        .size   hex_to_bin_to, .-hex_to_bin_to>        .section        .rodata.str1.4,"aMS",@progbits,1>        .align 4>
 
 
-
+-- With Best Regards,Andy Shevchenko���{.n�+�������+%�����ݶ��w��{.n�+����{��G�����{ay�ʇڙ�,j��f���h��������z_�(�階�ݢj"���m������G������?����&���~��iO��z��v�^�m����������?�I�
