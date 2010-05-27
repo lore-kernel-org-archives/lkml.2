@@ -1,130 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757972Ab0E0O67 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 May 2010 10:58:59 -0400
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:60864 "EHLO
-	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1757208Ab0E0O64 (ORCPT
+	id S932220Ab0E0O7S (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 May 2010 10:59:18 -0400
+Received: from smtp.eu.citrix.com ([62.200.22.115]:43092 "EHLO
+	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757894Ab0E0O7O (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 May 2010 10:58:56 -0400
-Date: Thu, 27 May 2010 16:05:43 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Matthew Garrett <mjg59@srcf.ucam.org>
-Cc: Arve =?ISO-8859-14?B?SGr4bm5lduVn?= <arve@android.com>,
-       Florian Mickler <florian@mickler.org>,
-       Vitaly Wool <vitalywool@gmail.com>,
-       Peter Zijlstra <peterz@infradead.org>,
-       LKML <linux-kernel@vger.kernel.org>, Paul@smtp1.linux-foundation.org,
-       felipe.balbi@nokia.com,
-       Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
-       Linux PM <linux-pm@lists.linux-foundation.org>
-Subject: Re: [linux-pm] [PATCH 0/8] Suspend block api (version 8)
-Message-ID: <20100527160543.2228fc17@lxorguk.ukuu.org.uk>
-In-Reply-To: <20100527140655.GA28048@srcf.ucam.org>
-References: <AANLkTinN6MKvCEhPkbYQRD2gu-mGXdNW9asRsTuKN3_Y@mail.gmail.com>
-	<1274867106.5882.5090.camel@twins>
-	<20100526120242.5c9b73ad@schatten.dmk.lab>
-	<AANLkTim4021cTnhVZrQpefq1MG-eEPOFLDRO-XDepHb4@mail.gmail.com>
-	<20100526133721.602633b2@schatten.dmk.lab>
-	<AANLkTikzgaOFdQKess4E-D86OLPOzxP3dWiDkU_UR0ri@mail.gmail.com>
-	<20100526142430.327ccbc4@schatten.dmk.lab>
-	<20100526141612.3e2e0443@lxorguk.ukuu.org.uk>
-	<AANLkTin97MMu-XO_Lk-snefBWz2ymhS0Qi1y1RxLwdVA@mail.gmail.com>
-	<20100527003943.07c17f85@lxorguk.ukuu.org.uk>
-	<20100527140655.GA28048@srcf.ucam.org>
-X-Mailer: Claws Mail 3.7.5 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Thu, 27 May 2010 10:59:14 -0400
+X-Greylist: delayed 578 seconds by postgrey-1.27 at vger.kernel.org; Thu, 27 May 2010 10:59:13 EDT
+X-IronPort-AV: E=Sophos;i="4.53,311,1272844800"; 
+   d="scan'208";a="123088"
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 7bit
+Message-ID: <19454.34430.471499.222290@mariner.uk.xensource.com>
+Date: Thu, 27 May 2010 15:49:34 +0100
+To: Jeremy Fitzhardinge <jeremy@goop.org>
+CC: Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+       "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+       Don Dutile <ddutile@redhat.com>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: [Xen-devel] Re: [PATCH 11/11] Unplug emulated disks and nics
+Newsgroups: chiark.mail.xen.devel
+In-Reply-To: <m2n.s.1OHcBK-0018DA@chiark.greenend.org.uk>
+References: <alpine.DEB.2.00.1005241615300.25605@kaball-desktop>
+	<1274725657-1149-11-git-send-email-stefano.stabellini@eu.citrix.com>
+	<4BFC3390.4060503@goop.org>
+	<alpine.DEB.2.00.1005261325110.25605@kaball-desktop>
+	<4BFD8BB0.90301@goop.org>
+	<m2n.s.1OHcBK-0018DA@chiark.greenend.org.uk>
+X-Mailer: VM 8.0.9 under Emacs 21.4.1 (i486-pc-linux-gnu)
+From: Ian Jackson <Ian.Jackson@eu.citrix.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Now, if the user is playing this game, you want it to be scheduled. If 
-> the user has put down their phone and the screen lock has kicked in, you 
-> don't want it to be scheduled. So we could imagine some sort of cgroup 
-> that contains untrusted tasks - when the session is active we set a flag 
+Stefano Stabellini writes ("[Xen-devel] Re: [PATCH 11/11] Unplug emulated disks and nics"):
+> On Wed, 26 May 2010, Jeremy Fitzhardinge wrote:
+> > Wow, this interface is perverse.  It reuses the same IO port but changes
+> > function depending on the size of the IO?  Again, wow.
+>  
+> Yeah, before you ask, I didn't write it :)
 
-I would hope not, because I'd rather prefer my app that used the screen
-to get the chance to save important data on what it was doing
-irrespective of the screen blank:  "I have an elegant proof for this
-problem but my battery has gone flat"
+Yes, neither did I :-).  However, I did document it and now I also
+maintain the "product number" registry.  Did you find the interface
+spec ?  Enclosed below in case not.
 
-(and I imagine we can play that examples game forever given Ashby's law)
+I hereby allocate you ("pvops PV-on-HVM Linux, upstream") product
+number 3.  Does the kernel have a way to distinguish between upstream
+and other versions ?  Eg, there's the kernel version name suffix
+thingy if I remember rightly.  Perhaps we should allocate a different
+number for "some pvops pv-on-hvm Linux with a nonempty kernel version
+name suffix".  Please advise.
 
-> You can't express that with resource limits or QoS constraints. 
+You are welcome to use whatever you like for the "build number".
+Perhaps the best thing would a two-byte encoding of the kernel version
+number if that is possible.  As the purpose is logging and
+blacklisting, it's not that critical although it's better to reuse the
+same number for excessively similar builds than to use a random scheme
+which might generate accidental clashes between unrelated versions.
 
-I don't see why not. You just have to think about the problem from the
-right end. Start from "normality is well behaved applications" and
-progress to "but I can constrain bogus ones". 
-
-So what are the resource constraints/QoS constraints for your example:
-
-[Simplistically]
-
-1. App says 'I want to wakeup from events for me within 1 second'
-	(Because I like drawing cows at about that rate)
-2. App open driver for buttons
-3. App opens driver for screen
-
-   Driver for buttons goes 'humm, well I can trigger wakeup from all
-   power states so I need no restrictions'. Screen will vary by device a
-   lot.
+Ian.
 
 
-(I'll come back to the screen a bit more in a moment)
+MAGIC IOPORT 0x10 PROTOCOL
 
-So lets consider the same binary
+The protocol covers three basic things:
 
-App runs on OLPC like h/w
+-- Disconnecting emulated devices.
+-- Getting log messages out of the drivers and into dom0.
+-- Allowing dom0 to block the loading of specific drivers.  This is
+   intended as a backwards-compatibility thing: if we discover a bug
+   in some old version of the drivers, then rather than working around
+   it in Xen, we have the option of just making those drivers fall
+   back to emulated mode.
 
-The pm code goes 'well I can suspend/resume in a second thats cool'
-The screen code goes 'Hey I've got OLPC like video so thats ok'
-The button driver can wake the system from suspend and queue an event
+The current protocol works like this (from the point of view of
+drivers):
+
+1) When the drivers first come up, they check whether the unplug logic
+   is available by reading a two-byte magic number from IO port 0x10.
+   These should be 0x49d2.  If the magic number doesn't match, the
+   drivers don't do anything.
+
+2) The drivers read a one-byte protocol version from IO port 0x12.  If
+   this is 0, skip to 6.
+
+3) The drivers write a two-byte product number to IO port 0x12.  At
+   the moment, the only drivers using this protocol are our
+   closed-source ones, which use product number 1.
+
+4) The drivers write a four-byte build number to IO port 0x10.
+
+5) The drivers check the magic number by reading two bytes from 0x10
+   again.  If it's changed from 0x49d2 to 0xd249, the drivers are
+   blacklisted and should not load.
+
+6) The drivers write a two-byte bitmask of devices to unplug to IO
+   port 0x10.  The defined fields are:
+
+   1 -- All IDE disks (not including CD drives)
+   2 -- All emulated NICs
+   4 -- All IDE disks except for the primary master (not including CD
+	drives)
+
+   The relevant emulated devices then disappear from the relevant
+   buses.  For most guest operating systems, you want to do this
+   before device enumeration happens.
+
+...) Once the drivers have checked the magic number, they can send log
+     messages to qemu which will be logged to wherever qemu's logs go
+     (/var/log/xen/qemu-dm.log on normal Xen, dom0 syslog on
+     XenServer).  These messages are written to IO port 0x12 a byte at
+     a time, and are terminated by newlines.  There's a fairly
+     aggressive rate limiter on these messages, so they shouldn't be
+     used for anything even vaguely high-volume, but they're rather
+     useful for debugging and support.
+
+     It is still permitted for a driver to use this logging feature if
+     it is blacklisted, but ONLY if it has checked the magic number
+     and found it to be 0x49d2 or 0xd249.
+
+This isn't exactly a pretty protocol, but it does solve the problem.
 
 
-App runs on Android like h/w
+The blacklist is, from qemu's point of view, handled mostly through
+xenstore.  A driver version is considered to be blacklisted if
+/mh/driver-blacklist/{product_name}/{build_number} exists and is
+readable, where {build_number} is the build number from step 4 as a
+decimal number.  {product_name} is a string corresponding to the
+product number in step 3.
 
-The pm code goes 'well I can suspend/resume in a second thats cool'
-The screen code goes 'Gee the screen goes blank if I go below level X' so
-	I'll set a limit
-The button driver can wake the system from suspend and queue an event
-
-
-App runs on Android like h/w but not trusted
-
-The pm code goes 'well tough, you can't do that, I'll refuse you'
-	(Maybe user space wrapped by Android with a 'Cows wants to eat
-	your phone alive [Refuse] [This Time Only] [Always] UI
-	User hits refuse and Android duly assigns the code no guarantee
-	and a hard limit of no guarantee.
-
-The screen code goes 'tough'
-The button driver can wake the system etc
-
-Cows will get suspended for longer than one second whether it likes it or
-not
-
-App runs on a desktop PC
-
-The pm code goes 'well I can't do suspend/resume in 1 second, but I can
-do C6'
-The screen goes 'I need C6'
-The button driver goes 'I need C6'
-
-
-Same app in each case and a lot less syscalls. No pathalogical cases
-either - with suspend blockers you can get emergent synchronization
-patterns between applications where each app rarely blocks suspends but
-together their timings fall such that they never allow it. How do you
-propose to even detect that ?
-
-
-Ok now the screen
-
-If I write to an X server and the server doesn't wish to talk to me it
-ignores the stream and I block. This has been the case since the 1980s.
-
-What is the problem here - your device driver for the display can block
-tasks it doesn't want to use the display.
-
+The master registry of product names and numbers is in
+qemu-xen-unstable's xenstore.c.
