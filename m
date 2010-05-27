@@ -1,96 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757822Ab0E0OpN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 May 2010 10:45:13 -0400
-Received: from snt0-omc1-s28.snt0.hotmail.com ([65.55.90.39]:14872 "EHLO
-	snt0-omc1-s28.snt0.hotmail.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753608Ab0E0OpK (ORCPT
+	id S1757859Ab0E0Oqn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 May 2010 10:46:43 -0400
+Received: from mail-gw0-f46.google.com ([74.125.83.46]:53316 "EHLO
+	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753220Ab0E0Oql (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 May 2010 10:45:10 -0400
-X-Originating-IP: [94.195.177.167]
-X-Originating-Email: [johnkyr83@hotmail.com]
-Message-ID: <SNT111-DS950CCF6E91293F5E19DF3A7EA0@phx.gbl>
-From: "limp" <johnkyr83@hotmail.com>
-To: <linux-kernel@vger.kernel.org>
-Subject: Cannot remove IRQ0 or replace its handler after the system has been booted. 
-Date: Thu, 27 May 2010 15:44:48 +0100
+	Thu, 27 May 2010 10:46:41 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=ab45fjsORmuWcSyMoI2ttZT7UZhGdPjnZO5FaVvUDidneB8BRSdZ88AF7zLC0QEk9l
+         4/1ZZ3orEGl9EM5NQTlJZt5J7OipXyBWUYbkdMRQ7QLLycgjkk77Qke5Pqx1Hznxf49Q
+         aSJeNqAUq2HWWGBvNtTez2zEAWQEqncD33oYU=
+Message-ID: <4BFE8404.2000005@gmail.com>
+Date: Thu, 27 May 2010 08:39:00 -0600
+From: Robert Hancock <hancockrwd@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-3.fc13 Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+To: Jan Engelhardt <jengelh@medozas.de>
+CC: Clemens Ladisch <clemens@ladisch.de>, Takashi Iwai <tiwai@suse.de>,
+       alsa-devel@alsa-project.org,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: No mixers on ATI RS780 Azalia
+References: <alpine.LSU.2.01.1005261303170.19406@obet.zrqbmnf.qr>	<s5hmxvmzwwd.wl%tiwai@suse.de>	<alpine.LSU.2.01.1005261413040.23865@obet.zrqbmnf.qr>	<4BFD2901.20800@ladisch.de>	<alpine.LSU.2.01.1005271230340.18087@obet.zrqbmnf.qr>	<4BFE5AA1.7070103@ladisch.de> <alpine.LSU.2.01.1005271420320.29122@obet.zrqbmnf.qr>
+In-Reply-To: <alpine.LSU.2.01.1005271420320.29122@obet.zrqbmnf.qr>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-Index: Acr9qyfFcZcKonyMRReF5uVfmfT1ZA==
-Content-Language: en-gb
-X-OriginalArrivalTime: 27 May 2010 14:45:10.0271 (UTC) FILETIME=[34EDB8F0:01CAFDAB]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
+On 05/27/2010 06:34 AM, Jan Engelhardt wrote:
+>
+> On Thursday 2010-05-27 13:42, Clemens Ladisch wrote:
+>>>> Try unmuting and raising both the Master and Beep controls.
+>>>
+>>> I unmuted everything and bumped the sliders to 100% but that does not
+>>> change a thing unfortunately; opening the right device (C1D3p) ...
+>>
+>> Please do not assume that the "HDMI" device is the right one, since you
+>> never got either one to work in Linux.  You did try playing through
+>> the "SB" card, didn't you?
+>
+> Through all of them.
+>
+>> It is possible that an embedded device like this requires some custom
+>> initialization.  Can you find out if the Windows driver is the standard
+>> Microsoft driver or Samsung's?
+>
+> Looks like the Microsoft one:
 
-I am trying to replace the handler of IRQ0 (that is PIT timer) with my
-handler but I am having difficulties when I am trying to free IRQ0. At the
-time at which I am trying to do that, IRQ0 is not being used at all as LAPIC
-timer has been started (IRQ0 has been stalled) but the kernel hasn't freed
-it.
+Well, not Samsung, but it's not the Microsoft HDA driver either, it's 
+using a Realtek driver.
 
-After doing an investigation on the kernel source, I found out that no
-dev_id is being set for IRQ0, so I've setup my own dev_id for it and tried
-to remove it by writing a module that calls free_irq() using this dev_id as
-a second parameter like that: free_irq(0, IRQ0_dev);
-
-When I am inserting my module, I am getting that:
-
-[  210.784539] init_module() called
-[  210.785534] ------------[ cut here ]------------
-[  210.786522] kernel BUG at mm/slub.c:2929!
-[  210.786522] invalid opcode: 0000 [#1]
-[  210.786522] last sysfs file:
-[  210.786522] Modules linked in: request_irq(+) [last unloaded:
-hpet_per_smis]
-[  210.786522]
-[  210.786522] Pid: 782, comm: insmod Tainted: G        W  (2.6.31.6 #69)
-Bochs
-[  210.786522] EIP: 0060:[<c1084d64>] EFLAGS: 00010246 CPU: 0
-[  210.786522] EIP is at kfree+0x59/0xb3
-[  210.786522] EAX: c17d5540 EBX: dfff64e8 ECX: 00010000 EDX: 40000400
-[  210.786522] ESI: c162a364 EDI: c105317a EBP: debf7f74 ESP: debf7f68
-[  210.786522]  DS: 007b ES: 007b FS: 0000 GS: 0033 SS: 0068
-[  210.786522] Process insmod (pid: 782, ti=debf6000 task=de852b50
-task.ti=debf6000)
-[  210.786522] Stack:
-[  210.786522]  dfff64e8 00000000 dfff6033 debf7f7c c105317a debf7f84
-dfff6057 debf7f9c
-[  210.786522] <0> c1001133 00000000 dfff64e8 00000000 00000020 debf7fac
-c103f774 087c56e0
-[  210.786522] <0> bfe44f3a debf6000 c1002da5 087c56e0 00000b72 087c56c8
-bfe44f3a 00000020
-[  210.786522] Call Trace:
-[  210.786522]  [<dfff6033>] ? init_module+0x0/0x71 [request_irq]
-[  210.786522]  [<c105317a>] ? free_irq+0xd/0xf
-[  210.786522]  [<dfff6057>] ? init_module+0x24/0x71 [request_irq]
-[  210.786522]  [<c1001133>] ? do_one_initcall+0x4b/0x130
-[  210.786522]  [<c103f774>] ? sys_init_module+0xa7/0x1b7
-[  210.786522]  [<c1002da5>] ? syscall_call+0x7/0xb
-[  210.786522] Code: 10 76 7a 8d 86 00 00 00 40 c1 e8 0c c1 e0 05 03 05 d4
-65 78 c1 66 83 38 00 79 03 8b 40 0c 8b 10 84 d2 78 12 66 f7 c2 00 c0 75 04
-<0f> 0b eb fe e8 3d 73 fe ff eb 47 8b 55 04 8b 58 0c 9c 5f fa 3b
-[  210.786522] EIP: [<c1084d64>] kfree+0x59/0xb3 SS:ESP 0068:debf7f68
-[  210.786524] ---[ end trace 2516b27218338232 ]---
-Segmentation fault
-
-If I check /proc/interrupts after that, the devname of IRQ0 which was
-"timer" has been disappeared: 
-
-# cat /proc/interrupts
-           CPU0
-  0:      34455   IO-APIC-edge 
-
-Can anyone advise me on how to remove IRQ0 so that I can then call
-request_irq() to set it to use my handler?
-
-Thanks in advance.
- 
-P.S. please CC me.
-
--John K.
+>
+>
+>
+> System: Windows XP Embedded Version 2002 Service Pack 2
+>
+> Devices in Device Manager:
+>
+> == "ATI HDMI Audio" ==
+> Driver Provider: Realtek Semiconductor Corp.
+> Driver Date: 4/14/2008
+> Driver Version: 5.10.0.5602
+> not digitally signed
+>
+> Matching Device Id:
+> hdaudio\func_01&ven_1002&dev_791a
+>
+> consisting of:
+> C:\WINDOWS\RtkUpd.exe
+> 	Provider: Realtek Semiconductor Corp
+> 	File version: 2,7,0,9
+> C:\WINDOWS\system32\drivers\drmk.sys
+> 	Provider: Microsoft
+> 	Version: 5.1.2600.2180 (xpsp_sp2_rtm.040803-2158)
+> C:\WINDOWS\system32\drivers\ks.sys
+> 	Microsoft, 5.3.2600.2180 (xpsp..)
+> C:\WINDOWS\system32\drivers\portcls.sys
+> 	Microsoft, 5.1.2600.2180
+> C:\WINDOWS\system32\drivers\RtHDMI.sys
+> 	Realtek, 5.10.0.5602 built by WinDDK
+> C:\WINDOWS\system32\drivers\stream.sys
+> 	Microsoft,  5.3.2600.2180
+> C:\WINDOWS\system32\ksproxy.ax
+> 	Microsoft, 5.3.2600.2180
+> C:\WINDOWS\system32\ksuser.dll
+> 	Microsoft, 5.3.2600.2180
+> C:\WINDOWS\system32\wdmaud.drv
+> 	Microsoft, 5.1.2600.2180
+>
+> == "Realtek High Definition Audio" ==
+> Device Type: Sound, video and game controllers
+> Manufacturer: Realtek
+> Location: Location 65535 (Internal High Definition Audio
+>
+> Driver ProvideR: Realtek Semiconductor Corp.
+> Driver Date: 4/17/2008
+> Driver Version: 5.10.0.5605
+> not digitally signed
+>
+> Matching Device Id:
+> hdaudio\func_01&ven_10ec&dev_0262
+>
+> consisting of:
+> C:\WINDOWS\ALCMTR.EXE
+> 	Realtek, 1.6.0.2
+> C:\WINDOWS\ALCWZRD.EXE
+> 	Realtek, 1.1.0.36
+> C:\WINDOWS\MiCcal.exe
+> 	Realtek, 1.1.1.8
+> C:\WINDOWS\RTHDCPL.EXE
+> 	Realtek, 2.2.0.2
+> C:\WINDOWS\RTLCPL.EXE
+> 	Realtek, 1.0.1.65
+> C:\WINDOWS\RtlUpd.exe
+> 	Realtek, 2,7,0,9
+> C:\WINDOWS\SkyTel.exe
+> 	Realtek, 2.0.2.0
+> C:\WINDOWS\SOUNDMAN.EXE
+> 	Realtek, 1,0,0,30
+> C:\WINDOWS\system32\ALSNDMGR.CPL
+> 	Realtek, 1,0,0,10
+> C:\WINDOWS\system32\drivers\drmk.sys as above
+> C:\WINDOWS\system32\drivers\ks.sys
+> C:\WINDOWS\system32\drivers\portcls.sys
+> C:\WINDOWS\system32\drivers\RtkHDAud.sys
+> 	Realtek, 5.10.0.5605 built by WinDDK
+> C:\WINDOWS\system32\drivers\stream.sys
+> C:\WINDOWS\system32\ksproxy.ax
+> C:\WINDOWS\system32\ksuser.dll
+> C:\WINDOWS\system32\RTCOM\RTCOMDLL.dll
+> 	Provider: N/A, Version: 1,0,0,96
+> C:\WINDOWS\system32\RTCOM\RTLCPAPI.dll
+> 	N/A, 1,0,1,9
+> C:\WINDOWS\system32\RTSngMgr.CPL
+> 	Realtek, 1,0,1,0
+> C:\WINDOWS\system32\wdmaud.drv
 
