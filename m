@@ -1,69 +1,152 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755065Ab0E0OKP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 May 2010 10:10:15 -0400
-Received: from casper.infradead.org ([85.118.1.10]:41038 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751949Ab0E0OKN (ORCPT
+	id S1755490Ab0E0OLF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 May 2010 10:11:05 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:38669 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753378Ab0E0OLB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 May 2010 10:10:13 -0400
-Date: Thu, 27 May 2010 07:12:05 -0700
-From: Arjan van de Ven <arjan@infradead.org>
-To: Michel Lespinasse <walken@google.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-       David Howells <dhowells@redhat.com>, Ingo Molnar <mingo@elte.hu>,
-       Thomas Gleixner <tglx@linutronix.de>,
-       LKML <linux-kernel@vger.kernel.org>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Mike Waychison <mikew@google.com>,
-       Suleiman Souhlal <suleiman@google.com>, Ying Han <yinghan@google.com>
-Subject: Re: [PATCH 11/11] Use down_read_critical() for /proc/<pid>/exe and
- /proc/<pid>/maps files
-Message-ID: <20100527071205.7095a541@infradead.org>
-In-Reply-To: <1274733081-4623-12-git-send-email-walken@google.com>
-References: <1274733081-4623-1-git-send-email-walken@google.com>
-	<1274733081-4623-12-git-send-email-walken@google.com>
-Organization: Intel
-X-Mailer: Claws Mail 3.7.5 (GTK+ 2.16.6; i586-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-SRS-Rewrite: SMTP reverse-path rewritten from <arjan@infradead.org> by casper.infradead.org
-	See http://www.infradead.org/rpr.html
+	Thu, 27 May 2010 10:11:01 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=Lj5xdodinBjuRudnQqEkNLP9pbWLDBPk4hYMGfCoTcxg02ejOQBl16romygwPQwamn
+         uidEM7HFkuSO4mkhKVBynOguTDVy9ckrbqP8IFNHTUzECsz5t+DCCKMtRNxhZv9uX58a
+         KIeTZJDfoQ40rboewZwm7BJYb8EaqfipW4hi8=
+From: Changli Gao <xiaosuo@gmail.com>
+To: Alexander Viro <viro@zeniv.linux.org.uk>
+Cc: Matthew Wilcox <matthew@wil.cx>, linux-fsdevel@vger.kernel.org,
+       linux-kernel@vger.kernel.org, Changli Gao <xiaosuo@gmail.com>
+Subject: [PATCH] pipe: export size and blocks via system call fstat(2)
+Date: Thu, 27 May 2010 22:09:51 +0800
+Message-Id: <1274969391-3006-1-git-send-email-xiaosuo@gmail.com>
+X-Mailer: git-send-email 1.6.4.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 24 May 2010 13:31:21 -0700
-Michel Lespinasse <walken@google.com> wrote:
+export size and blocks via system call fstat(2)
 
-> This helps in the following situation:
-> - Thread A takes a page fault while reading or writing memory.
->   do_page_fault() acquires the mmap_sem for read and blocks on disk
->   (either reading the page from file, or hitting swap) for a long
-> time.
-> - Thread B does an mmap call and blocks trying to acquire the mmap_sem
->   for write
-> - Thread C is a monitoring process trying to read every /proc/pid/maps
->   in the system. This requires acquiring the mmap_sem for read.
-> Thread C blocks behind B, waiting for A to release the rwsem.  If
-> thread C could be allowed to run in parallel with A, it would
-> probably get done long before thread A's disk access completes, thus
-> not actually slowing down thread B.
-> 
-> Test results with down_read_critical_test (10 seconds):
+pipe or fifo doesn't support fstat(2). This patch makes it possible to check the
+amount of data buffered in a pipe or fifo, and the pages used to store this
+data via fstat(2).
 
-
-this is a really bad idea btw
-
-we've had many issues in the past, when this was an unfair lock, that
-"top" or other similar things, caused basically a DoS......
-now any process that can get to /proc/<pid>/exe or maps, can do this in
-a tight enough loop so that the actual process will never get the lock
-for write. BAD IDEA ;-)
-
-
--- 
-Arjan van de Ven 	Intel Open Source Technology Centre
-For development, discussion and tips for power savings, 
-visit http://www.lesswatts.org
+Signed-off-by: Changli Gao <xiaosuo@gmail.com>
+----
+ fs/inode.c         |    5 +++--
+ fs/pipe.c          |   51 ++++++++++++++++++++++++++++++++++++++++-----------
+ include/linux/fs.h |    1 +
+ 3 files changed, 44 insertions(+), 13 deletions(-)
+diff --git a/fs/inode.c b/fs/inode.c
+index 258ec22..850ff89 100644
+--- a/fs/inode.c
++++ b/fs/inode.c
+@@ -1598,9 +1598,10 @@ void init_special_inode(struct inode *inode, umode_t mode, dev_t rdev)
+ 	} else if (S_ISBLK(mode)) {
+ 		inode->i_fop = &def_blk_fops;
+ 		inode->i_rdev = rdev;
+-	} else if (S_ISFIFO(mode))
++	} else if (S_ISFIFO(mode)) {
++		inode->i_op = &pipe_iops;
+ 		inode->i_fop = &def_fifo_fops;
+-	else if (S_ISSOCK(mode))
++	} else if (S_ISSOCK(mode))
+ 		inode->i_fop = &bad_sock_fops;
+ 	else
+ 		printk(KERN_DEBUG "init_special_inode: bogus i_mode (%o) for"
+diff --git a/fs/pipe.c b/fs/pipe.c
+index 37ba29f..3961fcf 100644
+--- a/fs/pipe.c
++++ b/fs/pipe.c
+@@ -625,25 +625,33 @@ bad_pipe_w(struct file *filp, const char __user *buf, size_t count,
+ 	return -EBADF;
+ }
+ 
+-static long pipe_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
++static int __pipe_get_size(struct inode *inode)
+ {
+-	struct inode *inode = filp->f_path.dentry->d_inode;
+ 	struct pipe_inode_info *pipe;
+ 	int count, buf, nrbufs;
+ 
++	pipe = inode->i_pipe;
++	count = 0;
++	buf = pipe->curbuf;
++	nrbufs = pipe->nrbufs;
++	while (--nrbufs >= 0) {
++		count += pipe->bufs[buf].len;
++		buf = (buf+1) & (PIPE_BUFFERS-1);
++	}
++
++	return count;
++}
++
++static long pipe_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
++{
++	struct inode *inode = filp->f_path.dentry->d_inode;
++	int count;
++
+ 	switch (cmd) {
+ 		case FIONREAD:
+ 			mutex_lock(&inode->i_mutex);
+-			pipe = inode->i_pipe;
+-			count = 0;
+-			buf = pipe->curbuf;
+-			nrbufs = pipe->nrbufs;
+-			while (--nrbufs >= 0) {
+-				count += pipe->bufs[buf].len;
+-				buf = (buf+1) & (PIPE_BUFFERS-1);
+-			}
++			count = __pipe_get_size(inode);
+ 			mutex_unlock(&inode->i_mutex);
+-
+ 			return put_user(count, (int __user *)arg);
+ 		default:
+ 			return -EINVAL;
+@@ -934,6 +942,7 @@ static struct inode * get_pipe_inode(void)
+ 	inode->i_pipe = pipe;
+ 
+ 	pipe->readers = pipe->writers = 1;
++	inode->i_op = &pipe_iops;
+ 	inode->i_fop = &rdwr_pipefifo_fops;
+ 
+ 	/*
+@@ -1112,6 +1121,26 @@ static struct file_system_type pipe_fs_type = {
+ 	.kill_sb	= kill_anon_super,
+ };
+ 
++static int pipe_getattr(struct vfsmount *mnt, struct dentry *dentry,
++			struct kstat *stat)
++{
++	struct inode *inode = dentry->d_inode;
++
++	generic_fillattr(inode, stat);
++	mutex_lock(&inode->i_mutex);
++	if (inode->i_pipe) {
++		stat->blocks = inode->i_pipe->nrbufs * (PAGE_SIZE / 512);
++		stat->size = __pipe_get_size(inode);
++	}
++	mutex_unlock(&inode->i_mutex);
++
++	return 0;
++}
++
++const struct inode_operations pipe_iops = {
++	.getattr	= pipe_getattr,
++};
++
+ static int __init init_pipe_fs(void)
+ {
+ 	int err = register_filesystem(&pipe_fs_type);
+diff --git a/include/linux/fs.h b/include/linux/fs.h
+index eb86433..89103b9 100644
+--- a/include/linux/fs.h
++++ b/include/linux/fs.h
+@@ -1973,6 +1973,7 @@ extern const struct file_operations def_blk_fops;
+ extern const struct file_operations def_chr_fops;
+ extern const struct file_operations bad_sock_fops;
+ extern const struct file_operations def_fifo_fops;
++extern const struct inode_operations pipe_iops;
+ #ifdef CONFIG_BLOCK
+ extern int ioctl_by_bdev(struct block_device *, unsigned, unsigned long);
+ extern int blkdev_ioctl(struct block_device *, fmode_t, unsigned, unsigned long);
