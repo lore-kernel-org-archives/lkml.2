@@ -1,64 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754518Ab0E0QGJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 May 2010 12:06:09 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:59970 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752831Ab0E0QGG (ORCPT
+	id S1755093Ab0E0QHN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 May 2010 12:07:13 -0400
+Received: from smtp.nokia.com ([192.100.105.134]:48312 "EHLO
+	mgw-mx09.nokia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752831Ab0E0QHL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 May 2010 12:06:06 -0400
-Date: Thu, 27 May 2010 09:05:03 -0700
-From: Randy Dunlap <randy.dunlap@oracle.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>,
-       Ralph Campbell <ralph.campbell@qlogic.com>
-Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-       linux-rdma@vger.kernel.org
-Subject: Re: linux-next: Tree for May 27 (infiniband: qib)
-Message-Id: <20100527090503.d229dc53.randy.dunlap@oracle.com>
-In-Reply-To: <20100527152628.b23a14c6.sfr@canb.auug.org.au>
-References: <20100527152628.b23a14c6.sfr@canb.auug.org.au>
-Organization: Oracle Linux Eng.
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+	Thu, 27 May 2010 12:07:11 -0400
+Subject: Re: [PATCHv4 17/17] writeback: lessen sync_supers wakeup count
+From: Artem Bityutskiy <dedekind1@gmail.com>
+Reply-To: dedekind1@gmail.com
+To: Nick Piggin <npiggin@suse.de>
+Cc: Al Viro <viro@ZenIV.linux.org.uk>, LKML <linux-kernel@vger.kernel.org>,
+       Jens Axboe <jens.axboe@oracle.com>, linux-fsdevel@vger.kernel.org
+In-Reply-To: <20100527154435.GS22536@laptop>
+References: <1274795352-3551-1-git-send-email-dedekind1@gmail.com>
+	 <1274795352-3551-18-git-send-email-dedekind1@gmail.com>
+	 <20100527065041.GA31073@ZenIV.linux.org.uk> <20100527072240.GM22536@laptop>
+	 <1274957469.13159.20.camel@localhost> <20100527120737.GN22536@laptop>
+	 <1274973693.15516.67.camel@localhost>  <20100527154435.GS22536@laptop>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 27 May 2010 19:04:35 +0300
+Message-ID: <1274976275.15516.79.camel@localhost>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-Auth-Type: Internal IP
-X-Source-IP: acsinet15.oracle.com [141.146.126.227]
-X-CT-RefId: str=0001.0A090207.4BFE9869.01D0:SCFMA922111,ss=1,fgs=0
+X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
+Content-Transfer-Encoding: 8bit
+X-OriginalArrivalTime: 27 May 2010 16:06:09.0901 (UTC) FILETIME=[857E69D0:01CAFDB6]
+X-Nokia-AV: Clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 27 May 2010 15:26:28 +1000 Stephen Rothwell wrote:
-
-> Hi all,
+On Fri, 2010-05-28 at 01:44 +1000, Nick Piggin wrote:
+> > I think this will change the behavior of 'sync_supers()' too much. ATM,
+> > it makes only one SB pass, then sleeps, then another one, then sleeps.
+> > And we should probably preserve this behavior. So I'd rather make it:
+> > 
+> > if (supers_dirty)
+> > 	bdi_arm_supers_timer();
+> > set_current_state(TASK_INTERRUPTIBLE);
+> > schedule();
+> > 
+> > This way we will keep the behavior closer to the original.
 > 
-> We are in the merge window again.  I remind you all not to add stuff for
-> 2.6.36 to your linux-next trees until after 2.6.35-rc1.
+> Well your previous code had the same issue (ie. it could loop again
+> in sync_supers). But fair point perhaps.
+
+I think no, it either armed the timer of went to sleep, but it does not
+matter much :-)
+
+> But we cannot do the above, because again the timer might go off
+> before we set current state. We'd lose the wakeup and never wake
+> up again.
 > 
-> Changes since 20100526:
+> Putting it inside set_current_state() should be OK. I suppose.
 
+Oh, right!
 
-when CONFIG_INFINIBAND_QIB=y and CONFIG_DCA=m:
+> > There is spin_lock(&sb_lock) in sync_supers(), so strictly speak this
+> > 'smp_mb()' is not needed if we move supers_dirty = 0 into
+> > 'sync_supers()' and add a comment that a mb is required, in case some
+> > one modifies the code later?
+> > 
+> > Or this is not worth it?
+> 
+> It's a bit tricky. spin_lock only gives an acquire barrier, which
+> prevents CPU executing instructions inside the critical section
+> before acquiring the lock. It actually allows stores to be deferred
+> from becoming visible to other CPUs until inside the critical section.
+> So the load of sb->s_dirty could indeed still happen before the
+> store is seen.
+> 
+> Locks do allow you to avoid thinking about barriers, but *only* when
+> all memory accesses to all shared variables are inside the locks
+> (or when a section has just a single access, which by definition don't
+> need ordering with another access).
 
-drivers/built-in.o: In function `qib_update_sdma_dca':
-qib_iba7322.c:(.text+0x409219): undefined reference to `dca3_get_tag'
-drivers/built-in.o: In function `qib_update_rhdrq_dca':
-qib_iba7322.c:(.text+0x40a1f9): undefined reference to `dca3_get_tag'
-drivers/built-in.o: In function `qib_setup_7322_cleanup':
-qib_iba7322.c:(.text+0x40f91f): undefined reference to `dca_remove_requester'
-drivers/built-in.o: In function `qib_init_iba7322_funcs':
-(.text+0x419b6f): undefined reference to `dca_add_requester'
+Oh, ok. I need to read carefully Documentation/memory-barriers.txt.
 
+> > BTW, do you want me to keep you to be the patch author, add your
+> > signed-off-by and my original commit message?
+> 
+> I'm not concerned. You contributed more to the idea+implementation,
+> so record yourself as author.
 
-However, it looks like qib needs to handle DCA config in a way that
-is similar to how it is handled in drivers/net/{myri10ge,igb,ixgbe}/
-instead of assuming that DCA is enabled.
+Ok, but thank you a lot for helping!
 
+-- 
+Best Regards,
+Artem Bityutskiy (Артём Битюцкий)
 
-And please fix the linux-next 2010-may-25 reported qib problem:
-  http://lkml.org/lkml/2010/5/25/321
-
----
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
