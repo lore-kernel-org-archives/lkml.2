@@ -1,55 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759619Ab0E0UCd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 May 2010 16:02:33 -0400
-Received: from cavan.codon.org.uk ([93.93.128.6]:36649 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757117Ab0E0UCc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 May 2010 16:02:32 -0400
-Date: Thu, 27 May 2010 21:02:17 +0100
-From: Matthew Garrett <mjg59@srcf.ucam.org>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-       Alan Stern <stern@rowland.harvard.edu>,
-       Thomas Gleixner <tglx@linutronix.de>, Paul@smtp1.linux-foundation.org,
-       LKML <linux-kernel@vger.kernel.org>,
-       Florian Mickler <florian@mickler.org>, felipe.balbi@nokia.com,
-       Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
-       Linux PM <linux-pm@lists.linux-foundation.org>
-Subject: Re: [linux-pm] [PATCH 0/8] Suspend block api (version 8)
-Message-ID: <20100527200217.GA7449@srcf.ucam.org>
-References: <Pine.LNX.4.44L0.1005271344040.3239-100000@iolanthe.rowland.org> <1274982779.27810.5708.camel@twins> <20100527175719.GD3543@srcf.ucam.org> <1274983333.27810.5744.camel@twins> <20100527181433.GG3543@srcf.ucam.org> <20100527200313.5c532f2f@lxorguk.ukuu.org.uk> <20100527191302.GC5703@srcf.ucam.org> <20100527205009.391803b6@lxorguk.ukuu.org.uk>
+	id S1759638Ab0E0UDr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 May 2010 16:03:47 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:47647 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759355Ab0E0UDp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 May 2010 16:03:45 -0400
+Message-ID: <4BFECFEB.6040308@zytor.com>
+Date: Thu, 27 May 2010 13:02:51 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-2.fc12 Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100527205009.391803b6@lxorguk.ukuu.org.uk>
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+To: Oleg Nesterov <oleg@redhat.com>
+CC: Roland McGrath <roland@redhat.com>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Andi Kleen <andi@firstfloor.org>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       Richard Henderson <rth@twiddle.net>, wezhang@redhat.com,
+       linux-kernel@vger.kernel.org, Michael Kerrisk <mtk.manpages@gmail.com>,
+       William Cohen <wcohen@redhat.com>
+Subject: Re: [PATCH 2/3] sys_personality: make sure (int)personality >= 0
+References: <20100525141720.GA2253@redhat.com> <20100525193348.83F1549A54@magilla.sf.frob.com> <20100526123622.GA26033@redhat.com> <20100526203105.59D7849A56@magilla.sf.frob.com> <20100527153522.GA13858@redhat.com> <20100527153613.GC13858@redhat.com>
+In-Reply-To: <20100527153613.GC13858@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 27, 2010 at 08:50:09PM +0100, Alan Cox wrote:
-
-> So I guess if you are driving this rom user space (which I take it you
-> are given you talk about housekeeping)
+On 05/27/2010 08:36 AM, Oleg Nesterov wrote:
+> Not sure about this patch. The kernel/libc part is correct, but
+> since user-space declares "int personality(unsigned long persona)"
+> the current behaviour can confuse the (poor written) applications
+> even on 64-bit machines.
 > 
-> 	foreach app we need to suspend
-> 		kick app to suspend (signal)
-> 		(policy) kick harder if needed (SIGSTOP/bitch/shall I
-> 					kill it dialogue)
+> Consider:
+> 
+> 	personality(0xffffffff - 1);	// == (int)-2
+> 
+> 	...
+> 
+> 	int ret = personality(0);	// returns the old personality
+> 	if (ret < 0)
+> 		oops_we_cant_set_PER_LINUX(errno);
+> 
+> And, since libc correctly detects the successful return from syscall,
+> errno is random.
+> 
+> Change sys_personality() to ensure personality can not look like a
+> negative int. This disallows the MSB, it is not used for PER_ flags.
+> 
+> Suggested-by: Wenming Zhang <wezhang@redhat.com>
+> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
 
-This would need to be atomic, but in any case:
+I'm fine with this, even though it is indeed there to support extremely
+poorly written applications (error is specifially -1, not < 0).
 
-1) Policy decision is made
-2) Wakeup event is received by task
-3) Task gets stopped between receiving the event and handing it off to 
-policy agent
+However, since we almost certainly have enough brokenness in here, and
+since there definitely don't seem to be a whole lot of demand for new
+personality bits, I'm more than happy to waste bit 31 at not having to
+deal with it, ever.
 
-At which point you suspend when you should have remained awake.
+However, it would be better if we returned -EINVAL on attempts to set
+*any* of the reserved bits, not just bit 31.
 
--- 
-Matthew Garrett | mjg59@srcf.ucam.org
+	-hpa
