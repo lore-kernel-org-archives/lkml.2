@@ -1,38 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758008Ab0E0PPO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 May 2010 11:15:14 -0400
-Received: from mail-qy0-f183.google.com ([209.85.221.183]:36301 "EHLO
-	mail-qy0-f183.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751469Ab0E0PPL (ORCPT
+	id S1758102Ab0E0PQI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 May 2010 11:16:08 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:47591 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753119Ab0E0PQG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 May 2010 11:15:11 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type:content-transfer-encoding;
-        b=RSTUggMvjMxUwbJO4/PxpBkRKPbNu05TSYgULcqUEe9WpxsUj8OzkSdrFwB+WkezT0
-         nATtHW3A/ktetryaQ8wL5f7rz2wi9na8EiNso8p4x9GsjvEL9vczh8+pIqi8ZEaPr6qa
-         5EWB9xlyD9VfV8ocvlpN5QaIuQ+GKQ8KD29hY=
+	Thu, 27 May 2010 11:16:06 -0400
+Date: Thu, 27 May 2010 11:15:15 -0400
+From: Chris Mason <chris.mason@oracle.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+       linux-btrfs@vger.kernel.org,
+       linux-kernel <linux-kernel@vger.kernel.org>,
+       linux-fsdevel@vger.kernel.org
+Subject: [GIT PULL] Btrfs updates
+Message-ID: <20100527151515.GA3835@think>
+Mail-Followup-To: Chris Mason <chris.mason@oracle.com>,
+	Linus Torvalds <torvalds@linux-foundation.org>,
+	linux-btrfs@vger.kernel.org,
+	linux-kernel <linux-kernel@vger.kernel.org>,
+	linux-fsdevel@vger.kernel.org
 MIME-Version: 1.0
-In-Reply-To: <1274942634-31735-1-git-send-email-l.fu@pengutronix.de>
-References: <1274882226-19778-1-git-send-email-l.fu@pengutronix.de> 
-	<1274942634-31735-1-git-send-email-l.fu@pengutronix.de>
-From: Eric Miao <eric.y.miao@gmail.com>
-Date: Thu, 27 May 2010 23:14:50 +0800
-Message-ID: <AANLkTikzzqx0mJM6cjqdm_n8i3F4lCdaAf2xkpQ_havX@mail.gmail.com>
-Subject: Re: [PATCH V2] matrix_keypad: add support for clustered irq
-To: Luotao Fu <l.fu@pengutronix.de>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-       Marek Vasut <marek.vasut@gmail.com>, linux-kernel@vger.kernel.org,
-       linux-input@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Auth-Type: Internal IP
+X-Source-IP: rcsinet15.oracle.com [148.87.113.117]
+X-CT-RefId: str=0001.0A090203.4BFE8CAC.0087:SCFMA4539811,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by alpha.home.local id o4RFGBim020209
 
-On Thu, May 27, 2010 at 2:43 PM, Luotao Fu <l.fu@pengutronix.de> wrote:> This one adds support of a combined irq source for the whole matrix keypad.> This can be useful if all rows and columns of the keypad are e.g. connected> to a GPIO expander, which only has one interrupt line for all events on> every single GPIO.>> Signed-off-by: Luotao Fu <l.fu@pengutronix.de>
-I feel OK. Acked-by: Eric Miao <eric.y.miao@gmail.com>
-> ---> V2 Changes:> * create separate functions for suspend/resume calls.> * add bool flag to signal enable/disable state of all gpios.> * add spinlock to suspend and resume callbacks.>>  drivers/input/keyboard/matrix_keypad.c |  138 ++++++++++++++++++++++++-------->  include/linux/input/matrix_keypad.h    |    5 +>  2 files changed, 109 insertions(+), 34 deletions(-)>> diff --git a/drivers/input/keyboard/matrix_keypad.c b/drivers/input/keyboard/matrix_keypad.c> index b443e08..99b7204 100644> --- a/drivers/input/keyboard/matrix_keypad.c> +++ b/drivers/input/keyboard/matrix_keypad.c> @@ -37,6 +37,7 @@ struct matrix_keypad {>        spinlock_t lock;>        bool scan_pending;>        bool stopped;> +       bool gpio_all_disabled;>  };>>  /*> @@ -87,8 +88,12 @@ static void enable_row_irqs(struct matrix_keypad *keypad)>        const struct matrix_keypad_platform_data *pdata = keypad->pdata;>        int i;>> -       for (i = 0; i < pdata->num_row_gpios; i++)> -               enable_irq(gpio_to_irq(pdata->row_gpios[i]));> +       if (pdata->clustered_irq > 0)> +               enable_irq(pdata->clustered_irq);> +       else {> +               for (i = 0; i < pdata->num_row_gpios; i++)> +                       enable_irq(gpio_to_irq(pdata->row_gpios[i]));> +       }>  }>>  static void disable_row_irqs(struct matrix_keypad *keypad)> @@ -96,8 +101,12 @@ static void disable_row_irqs(struct matrix_keypad *keypad)>        const struct matrix_keypad_platform_data *pdata = keypad->pdata;>        int i;>> -       for (i = 0; i < pdata->num_row_gpios; i++)> -               disable_irq_nosync(gpio_to_irq(pdata->row_gpios[i]));> +       if (pdata->clustered_irq > 0)> +               disable_irq_nosync(pdata->clustered_irq);> +       else {> +               for (i = 0; i < pdata->num_row_gpios; i++)> +                       disable_irq_nosync(gpio_to_irq(pdata->row_gpios[i]));> +       }>  }>>  /*> @@ -216,25 +225,74 @@ static void matrix_keypad_stop(struct input_dev *dev)>  }>>  #ifdef CONFIG_PM> -static int matrix_keypad_suspend(struct device *dev)> +static inline void __suspend_keypad(struct matrix_keypad *keypad)>  {> -       struct platform_device *pdev = to_platform_device(dev);> -       struct matrix_keypad *keypad = platform_get_drvdata(pdev);>        const struct matrix_keypad_platform_data *pdata = keypad->pdata;> +       unsigned int cirq = pdata->clustered_irq;> +       unsigned int gpio;> +       unsigned long flags;>        int i;>> -       matrix_keypad_stop(keypad->input_dev);> +       spin_lock_irqsave(&keypad->lock, flags);>> -       if (device_may_wakeup(&pdev->dev)) {> -               for (i = 0; i < pdata->num_row_gpios; i++) {> -                       if (!test_bit(i, keypad->disabled_gpios)) {> -                               unsigned int gpio = pdata->row_gpios[i];> +       if (pdata->clustered_irq > 0) {> +               if (enable_irq_wake(cirq) == 0)> +                       keypad->gpio_all_disabled = true;>> -                               if (enable_irq_wake(gpio_to_irq(gpio)) == 0)> -                                       __set_bit(i, keypad->disabled_gpios);> -                       }> +               goto out;> +       }> +> +       for (i = 0; i < pdata->num_row_gpios; i++) {> +               if (!test_bit(i, keypad->disabled_gpios)) {> +                       gpio = pdata->row_gpios[i];> +> +                       if (enable_irq_wake(gpio_to_irq(gpio)) == 0)> +                               __set_bit(i, keypad->disabled_gpios);> +               }> +       }> +out:> +       spin_unlock_irqrestore(&keypad->lock, flags);> +}> +> +static inline void __resume_keypad(struct matrix_keypad *keypad)> +{> +       const struct matrix_keypad_platform_data *pdata = keypad->pdata;> +       unsigned int cirq = pdata->clustered_irq;> +       unsigned int gpio;> +       unsigned long flags;> +       int i;> +> +       spin_lock_irqsave(&keypad->lock, flags);> +> +       if (pdata->clustered_irq > 0) {> +               if (keypad->gpio_all_disabled) {> +                       disable_irq_wake(cirq);> +                       keypad->gpio_all_disabled = false;> +               }> +> +               goto out;> +       }> +> +       for (i = 0; i < pdata->num_row_gpios; i++) {> +               if (test_and_clear_bit(i, keypad->disabled_gpios)) {> +                       gpio = pdata->row_gpios[i];> +                       disable_irq_wake(gpio_to_irq(gpio));>                }>        }> +out:> +       spin_unlock_irqrestore(&keypad->lock, flags);> +> +}> +> +static int matrix_keypad_suspend(struct device *dev)> +{> +       struct platform_device *pdev = to_platform_device(dev);> +       struct matrix_keypad *keypad = platform_get_drvdata(pdev);> +> +       matrix_keypad_stop(keypad->input_dev);> +> +       if (device_may_wakeup(&pdev->dev))> +               __suspend_keypad(keypad);>>        return 0;>  }> @@ -246,15 +304,8 @@ static int matrix_keypad_resume(struct device *dev)>        const struct matrix_keypad_platform_data *pdata = keypad->pdata;>        int i;>> -       if (device_may_wakeup(&pdev->dev)) {> -               for (i = 0; i < pdata->num_row_gpios; i++) {> -                       if (test_and_clear_bit(i, keypad->disabled_gpios)) {> -                               unsigned int gpio = pdata->row_gpios[i];> -> -                               disable_irq_wake(gpio_to_irq(gpio));> -                       }> -               }> -       }> +       if (device_may_wakeup(&pdev->dev))> +               __resume_keypad(keypad);>>        matrix_keypad_start(keypad->input_dev);>> @@ -296,17 +347,31 @@ static int __devinit init_matrix_gpio(struct platform_device *pdev,>                gpio_direction_input(pdata->row_gpios[i]);>        }>> -       for (i = 0; i < pdata->num_row_gpios; i++) {> -               err = request_irq(gpio_to_irq(pdata->row_gpios[i]),> +       if (pdata->clustered_irq > 0) {> +               err = request_irq(pdata->clustered_irq,>                                matrix_keypad_interrupt,> -                               IRQF_DISABLED |> -                               IRQF_TRIGGER_RISING | IRQF_TRIGGER_FALLING,> +                               pdata->clustered_irq_flags,>                                "matrix-keypad", keypad);>                if (err) {>                        dev_err(&pdev->dev,> -                               "Unable to acquire interrupt for GPIO line %i\n",> -                               pdata->row_gpios[i]);> -                       goto err_free_irqs;> +                               "Unable to acquire clustered interrupt\n");> +                       goto err_free_rows;> +               }> +       } else {> +               for (i = 0; i < pdata->num_row_gpios; i++) {> +                       err = request_irq(gpio_to_irq(pdata->row_gpios[i]),> +                                       matrix_keypad_interrupt,> +                                       IRQF_DISABLED |> +                                       IRQF_TRIGGER_RISING |> +                                       IRQF_TRIGGER_FALLING,> +                                       "matrix-keypad", keypad);> +                       if (err) {> +                               dev_err(&pdev->dev,> +                                       "Unable to acquire interrupt "> +                                       "for GPIO line %i\n",> +                                       pdata->row_gpios[i]);> +                               goto err_free_irqs;> +                       }>                }>        }>> @@ -418,11 +483,16 @@ static int __devexit matrix_keypad_remove(struct platform_device *pdev)>>        device_init_wakeup(&pdev->dev, 0);>> -       for (i = 0; i < pdata->num_row_gpios; i++) {> -               free_irq(gpio_to_irq(pdata->row_gpios[i]), keypad);> -               gpio_free(pdata->row_gpios[i]);> +       if (pdata->clustered_irq > 0) {> +               free_irq(pdata->clustered_irq, keypad);> +       } else {> +               for (i = 0; i < pdata->num_row_gpios; i++)> +                       free_irq(gpio_to_irq(pdata->row_gpios[i]), keypad);>        }>> +       for (i = 0; i < pdata->num_row_gpios; i++)> +               gpio_free(pdata->row_gpios[i]);> +>        for (i = 0; i < pdata->num_col_gpios; i++)>                gpio_free(pdata->col_gpios[i]);>> diff --git a/include/linux/input/matrix_keypad.h b/include/linux/input/matrix_keypad.h> index c964cd7..8e8dc2e 100644> --- a/include/linux/input/matrix_keypad.h> +++ b/include/linux/input/matrix_keypad.h> @@ -63,6 +63,11 @@ struct matrix_keypad_platform_data {>        /* key debounce interval in milli-second */>        unsigned int    debounce_ms;>> +       /* used if interrupts of all row/column GPIOs are bundled to one single> +        * irq */> +       unsigned int    clustered_irq;> +       unsigned int    clustered_irq_flags;> +>        bool            active_low;>        bool            wakeup;>        bool            no_autorepeat;> --> 1.7.0>>���{.n�+�������+%�����ݶ��w��{.n�+����{��G�����{ay�ʇڙ�,j��f���h��������z_�(�階�ݢj"���m������G������?����&���~��iO��z��v�^�m����������?�I�
+Hi everyone,
+
+The master branch of the btrfs-unstable tree:
+
+git://git.kernel.org/pub/scm/linux/kernel/git/mason/btrfs-unstable.git master
+
+Has the first round of btrfs updates for 2.6.35-rc.  I still have some
+pending fixes and patches queued up from other people, but this pull
+request has the two major features for this release.
+
+First we've got a large ENOSPC improvement from Yan Zheng.  He hit on
+all the difficult corners including space balancing, drive management,
+fsync logging and many others.  This has been in the works for sometime
+and it has held up very well in testing.
+
+The second batch is O_DIRECT work from Josef Bacik.  We've had a few
+different iterations on ENOSPC floating on the btrfs list, and this one
+takes a much less complex road by hooking into the generic
+fs/direct-io.c code.  Josef added a hook for bio submission to
+fs/direct-io.c so that we could do proper block number transaction and
+properly do multi-device IO.
+
+There are small changes in here to fs/direct-io.c, mm/filemap.c and
+include/linux/fs.h.  These have been sent out for review a few times and
+commented on.  The filemap.c change allows O_DIRECT reads to fall back
+to buffered IO, which we need to support compression and do checksumming
+IOs < 1 page.
+
+My commits here are just integrating the two and fixing a few bugs in
+the result.
+
+Zheng Yan (13) commits (+4076/-2679):
+    Btrfs: Integrate metadata reservation with start_transaction (+678/-528)
+    Btrfs: Update metadata reservation for delayed allocation (+232/-415)
+    Btrfs: Shrink delay allocated space in a synchronized (+88/-121)
+    Btrfs: Introduce contexts for metadata reservation (+853/-385)
+    Btrfs: Link block groups of different raid types (+121/-55)
+    Btrfs: Metadata ENOSPC handling for balance (+1163/-747)
+    Btrfs: Metadata ENOSPC handling for tree log (+156/-128)
+    Btrfs: Metadata reservation for orphan inodes (+365/-66)
+    Btrfs: Pre-allocate space for data relocation (+92/-45)
+    Btrfs: Introduce global metadata reservation (+241/-76)
+    Btrfs: Fix block generation verification race (+1/-1)
+    Btrfs: Kill allocate_wait in space_info (+58/-76)
+    Btrfs: Kill init_btrfs_i() (+28/-36)
+
+Chris Mason (9) commits (+314/-80):
+    Btrfs: fix preallocation and nodatacow checks in O_DIRECT (+140/-16)
+    Btrfs: move O_DIRECT space reservation to btrfs_direct_IO (+8/-6)
+    Btrfs: don't walk around with task->state != TASK_RUNNING (+4/-3)
+    Btrfs: use async helpers for DIO write checksumming (+52/-17)
+    Btrfs: add more error checking to btrfs_dirty_inode (+13/-2)
+    Btrfs: avoid ENOSPC errors in btrfs_dirty_inode (+11/-3)
+    Btrfs: rework O_DIRECT enospc handling (+49/-30)
+    Btrfs: drop verbose enospc printk (+2/-0)
+    Btrfs: allow unaligned DIO (+35/-3)
+
+Josef Bacik (5) commits (+829/-134):
+    direct-io: add a hook for the fs to provide its own submit_bio function (+45/-8)
+    fs: allow short direct-io reads to be completed via buffered IO (+31/-5)
+    direct-io: do not merge logically non-contiguous requests (+18/-2)
+    Btrfs: add basic DIO read/write support (+631/-36)
+    Btrfs: do aio_write instead of write (+104/-83)
+
+Total: (27) commits
+
+ fs/btrfs/extent-tree.c  | 2317 ++++++++++++++++++++++++++++--------------------
+ fs/btrfs/relocation.c   | 1991 +++++++++++++++++++++++++----------------
+ fs/btrfs/inode.c        | 1797 +++++++++++++++++++++++++++++--------
+ fs/btrfs/file.c         |  304 +++---
+ fs/btrfs/tree-log.c     |  241 +++-
+ fs/btrfs/transaction.c  |  232 +++-
+ fs/btrfs/ioctl.c        |  206 ++--
+ fs/btrfs/disk-io.c      |  171 +--
+ fs/btrfs/ctree.h        |  163 ++-
+ fs/btrfs/ctree.c        |  109 +-
+ fs/btrfs/delayed-ref.c  |  101 --
+ fs/btrfs/extent_io.c    |   85 -
+ fs/btrfs/ordered-data.c |   82 +
+ fs/direct-io.c          |   62 +
+ mm/filemap.c            |   36 
+ fs/btrfs/super.c        |   30 
+ fs/btrfs/file-item.c    |   28 
+ fs/btrfs/inode-item.c   |   27 
+ fs/btrfs/transaction.h  |   24 
+ fs/btrfs/root-tree.c    |   23 
+ fs/btrfs/volumes.c      |   17 
+ fs/btrfs/extent_io.h    |   14 
+ fs/btrfs/xattr.c        |   12 
+ include/linux/fs.h      |   11 
+ fs/btrfs/ordered-data.h |    9 
+ fs/btrfs/tree-defrag.c  |    7 
+ fs/btrfs/disk-io.h      |    4 
+ fs/btrfs/delayed-ref.h  |    3 
+ fs/btrfs/btrfs_inode.h  |    3 
+ fs/btrfs/tree-log.h     |    2 
+ fs/btrfs/async-thread.c |    1 
+ 31 files changed, 5219 insertions(+), 2893 deletions(-)
