@@ -1,56 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933262Ab0E0EJx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 May 2010 00:09:53 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:57788 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750827Ab0E0EJw (ORCPT
+	id S933477Ab0E0EKD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 May 2010 00:10:03 -0400
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:45965
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751203Ab0E0EJ6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 May 2010 00:09:52 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=Gqzq36twvc76xa2KOFr3jQGElHjxUZwS6k3+VMdNkWETGB4zBN9XH+GIwd2ClZTExn
-         a8sDlQUh2aXIEdwvX8lXwLUINEVnbmV9HjMKJdbqNtjm8byZNEJAotNMWwBAAe//EORV
-         eYuR1w2ehXBMaEbG8k5ZtT2A2dAqfEfs2lsJw=
-MIME-Version: 1.0
-In-Reply-To: <201005270213.42913.rjw@sisk.pl>
-References: <AANLkTik0PUKP3QLPRbb3nlh034_inmaeVbXy3q5_LQz-@mail.gmail.com>
-	<201005270213.42913.rjw@sisk.pl>
-Date: Thu, 27 May 2010 09:39:51 +0530
-Message-ID: <AANLkTil180tPW4KoOaUBgXIm1Lf6O45_GKKlLx3CDcVh@mail.gmail.com>
-Subject: Re: config automatically switches from 32-bit to 64-bit for x86
-From: Jaswinder Singh Rajput <jaswinderlinux@gmail.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Sam Ravnborg <sam@ravnborg.org>, Ingo Molnar <mingo@elte.hu>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       "the arch/x86 maintainers" <x86@kernel.org>,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 27 May 2010 00:09:58 -0400
+Date: Wed, 26 May 2010 21:10:08 -0700 (PDT)
+Message-Id: <20100526.211008.116373263.davem@davemloft.net>
+To: julia@diku.dk
+Cc: ursula.braun@de.ibm.com, linux390@de.ibm.com, linux-s390@vger.kernel.org,
+       netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+       kernel-janitors@vger.kernel.org
+Subject: Re: [PATCH 9/17] net/iucv: Add missing spin_unlock
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <Pine.LNX.4.64.1005261756330.23743@ask.diku.dk>
+References: <Pine.LNX.4.64.1005261756330.23743@ask.diku.dk>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Rafael,
+From: Julia Lawall <julia@diku.dk>
+Date: Wed, 26 May 2010 17:56:48 +0200 (CEST)
 
-On Thu, May 27, 2010 at 5:43 AM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> On Thursday 27 May 2010, Jaswinder Singh Rajput wrote:
->> Hello,
->>
->> I am trying to build 32 bit kernel image on 64-bit machine but after
->> 'make menuconfig' it automatically switches 32-bit to 64-bit.
->
-> Try 'linux32 make menuconfig' and 'linux32 make'.
->
+> Add a spin_unlock missing on the error path.  There seems like no reason
+> why the lock should continue to be held if the kzalloc fail.
 
-Yes, this works :-)
-
-But I wonder then what is the point/use of CONFIG_X86_32 if compiler
-is not listening to it.
-
-Logically compiler should set appropriate flags based on .config settings.
-
-Thanks,
---
-Jaswinder Singh.
+Applied, thanks.
