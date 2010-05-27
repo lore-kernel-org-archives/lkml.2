@@ -1,77 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757335Ab0E0DBR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 May 2010 23:01:17 -0400
-Received: from 124x34x33x190.ap124.ftth.ucom.ne.jp ([124.34.33.190]:40496 "EHLO
-	master.linux-sh.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754089Ab0E0DBP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 May 2010 23:01:15 -0400
-Date: Thu, 27 May 2010 12:01:00 +0900
-From: Paul Mundt <lethal@linux-sh.org>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Sundar R IYER <sundar.iyer@stericsson.com>, Sundar <sunder.svit@gmail.com>,
-       Viresh KUMAR <viresh.kumar@st.com>,
-       Rajeev KUMAR <rajeev-dlh.kumar@st.com>,
-       Linus WALLEIJ <linus.walleij@stericsson.com>,
-       Armando VISCONTI <armando.visconti@st.com>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       Vipin KUMAR <vipin.kumar@st.com>, Shiraz HASHIM <shiraz.hashim@st.com>,
-       STEricsson_nomadik_linux <STEricsson_nomadik_linux@list.st.com>,
-       "linux-pm@lists.linux-foundation.org" 
-	<linux-pm@lists.linux-foundation.org>,
-       Magnus Damm <magnus.damm@gmail.com>
-Subject: Re: [linux-pm] Power Domain Framework
-Message-ID: <20100527030059.GA30505@linux-sh.org>
-References: <1274118332.17303.17.camel@bnru01> <CEE6BB42CAD6E947908279175AF8470A025A726240@EXDCVYMBSTM006.EQ1STM.local> <1274131108.2698.161.camel@finisterre.wolfsonmicro.main> <CEE6BB42CAD6E947908279175AF8470A025A72624A@EXDCVYMBSTM006.EQ1STM.local> <1274134636.2698.170.camel@finisterre.wolfsonmicro.main> <1274162450.17303.35.camel@bnru01> <AANLkTinTdTp_X4lGtZ0hCaVJN5GmvI0tXR1RTRkRNkjN@mail.gmail.com> <20100524033859.GB24480@opensource.wolfsonmicro.com> <33A307AF30D7BF4F811B1568FE7A9B180B67C60C@EXDCVYMBSTM006.EQ1STM.local> <20100526210728.GB19188@opensource.wolfsonmicro.com>
+	id S1757462Ab0E0DE0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 May 2010 23:04:26 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:50597 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1757023Ab0E0DEZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 May 2010 23:04:25 -0400
+Message-ID: <4BFDE1CE.4030100@cn.fujitsu.com>
+Date: Thu, 27 May 2010 11:06:54 +0800
+From: liubo <liubo2009@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1b3pre) Gecko/20090513 Fedora/3.0-2.3.beta2.fc11 Thunderbird/3.0b2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100526210728.GB19188@opensource.wolfsonmicro.com>
-User-Agent: Mutt/1.5.13 (2006-08-11)
+To: Josef Bacik <josef@redhat.com>
+CC: linux-btrfs@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+       linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 6/6] Btrfs: do aio_write instead of write
+References: <1274461422-18433-1-git-send-email-josef@redhat.com> <1274461422-18433-6-git-send-email-josef@redhat.com>
+In-Reply-To: <1274461422-18433-6-git-send-email-josef@redhat.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 26, 2010 at 05:07:28PM -0400, Mark Brown wrote:
-> On Wed, May 26, 2010 at 10:33:49AM +0200, Sundar R IYER wrote:
-> > >needs of the core regulator applications.  As I keep saying I'm just not
-> > >seeing much more overlap here with the regulator API than I do with the
-> > >clock API: it feels like you've got another use case which needs an API
-> > >with a similar structure and the reference counted enable and disable
-> > >calls but otherwise very little overlap.
-> 
-> > As I agreed earlier, its true about requirement. It is also true that the clock API can suffice.
-> > But what is essential here is: we are talking about regulators here.
-> > Why would we need to model a seemingly similar regulator as a clock?
-> 
-> You're missing the point here.  I'm not saying use the clock API, I'm
-> saying that it feels like you want a parallel API that's aimed at the
-> needs of operating points which mirrors the structure of the existing
-> clock and regulator APIs.
-> 
-We did something like this on SH with our hwblk API for dealing with
-module power gating, which forms the basis for our runtime PM
-implementation. In the SH case we simply have a set of registers that
-have on/off control over the bulk of the modules in any given CPU, and we
-associate that at the platform device level.
+On 05/22/2010 01:03 AM, Josef Bacik wrote:
+> In order for AIO to work, we need to implement aio_write.  This patch converts
+> our btrfs_file_write to btrfs_aio_write.  I've tested this with xfstests and
+> nothing broke, and the AIO stuff magically started working.  Thanks,
+>
+> Signed-off-by: Josef Bacik <josef@redhat.com>
+>   
 
-Having said that, building on top of the regulator API for these cases
-wouldn't be that much work either, since it largely has all of the
-infrastructure in place (ie, the static consumer case).
+Hi, Josef,
 
-> It's perfectly sensible for the power domain to be a regulator consumer,
-> but having the individual consumer devices be regulator consumers seems
-> non-obvious.
-> 
-The common case on SH is that certain blocks are only available in
-certain power domains, while the on/off control remains uniform (albeit
-periodically ineffectual) regardless of state. We also don't have any
-ability to regulate voltage outside of things like PCMCIA.
+I've tested your patch(May 22) with my tools, and one case triggered a bug
+which made writev operation hang up, more information is followed.
 
-On/off control in this context is completely orthoganol from clock
-control in that many peripherals without a specific input clock still
-implement power gating in the same way as those that do (this is the case
-for things like the L2 cache, TLB, breakpoint controller, etc). These are
-presently handled through the clock API largely because there was really
-no better fit for them at the time.
+- Steps to trigger it:
+  # mount /dev/sda8 /home/btrfsdisk -o nodatacow
+  # gcc direct-io.c -o direct-io
+  # ./direct-io O_DIRECT writev /home/btrfsdisk/testrw 4M
+
+then on another tty, after "dmesg"...
+
+[snip]
+device fsid f44b0879c75c0e99-1d4b28f2d5c503ae devid 1 transid 11177
+/dev/sda8
+btrfs: setting nodatacow
+INFO: task direct-io:1399 blocked for more than 120 seconds.
+"echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
+direct-io     D 0000000000000003     0  1399   1341 0x00000000
+ ffff880137c379c8 0000000000000082 ffff880137c379d8 ffffffff00000000
+ ffff880137c37fd8 ffff880139730000 0000000000015440 ffff880137c37fd8
+ 0000000000015440 0000000000015440 0000000000015440 0000000000015440
+Call Trace:
+ [<ffffffffa0119d4a>] wait_extent_bit+0xe3/0x163 [btrfs]
+ [<ffffffff8106651f>] ? autoremove_wake_function+0x0/0x39
+ [<ffffffffa0119e47>] lock_extent_bits+0x7d/0xa8 [btrfs]
+ [<ffffffffa0119e88>] lock_extent+0x16/0x18 [btrfs]
+ [<ffffffffa01025ce>] btrfs_direct_IO+0x8e/0x1be [btrfs]
+ [<ffffffff810c7301>] generic_file_direct_write+0xed/0x16d
+ [<ffffffffa010bb91>] btrfs_file_aio_write+0x2af/0x8d2 [btrfs]
+ [<ffffffff81100eae>] ? try_get_mem_cgroup_from_mm+0x39/0x49
+ [<ffffffffa010b8e2>] ? btrfs_file_aio_write+0x0/0x8d2 [btrfs]
+ [<ffffffff811063ed>] do_sync_readv_writev+0xc1/0x100
+ [<ffffffff81106120>] ? might_fault+0x21/0x23
+ [<ffffffff81106151>] ? copy_from_user+0x2f/0x31
+ [<ffffffff811c90ab>] ? security_file_permission+0x16/0x18
+ [<ffffffff81107145>] do_readv_writev+0xa7/0x127
+ [<ffffffff81107208>] vfs_writev+0x43/0x4e
+ [<ffffffff811072f8>] sys_writev+0x4a/0x93
+ [<ffffffff81009c32>] system_call_fastpath+0x16/0x1b
+
+
+So, can you figure out if anything in your patch leads to the bug?
