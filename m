@@ -1,44 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757856Ab0E0RL7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 May 2010 13:11:59 -0400
-Received: from hera.amn.nl ([213.189.22.5]:1554 "EHLO AMN.nl"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1754371Ab0E0RL6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 May 2010 13:11:58 -0400
-Message-ID: <4BFEA7CD.6020703@cs.vu.nl>
-Date: Thu, 27 May 2010 19:11:41 +0200
-From: Erik van der Kouwe <vdkouwe@cs.vu.nl>
-User-Agent: Thunderbird 2.0.0.24 (Windows/20100228)
+	id S1757988Ab0E0RNR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 May 2010 13:13:17 -0400
+Received: from wavehammer.waldi.eu.org ([82.139.201.20]:34945 "EHLO
+	wavehammer.waldi.eu.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751777Ab0E0RNP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 May 2010 13:13:15 -0400
+Date: Thu, 27 May 2010 19:13:13 +0200
+From: Bastian Blank <waldi@debian.org>
+To: Michael Tokarev <mjt@tls.msk.ru>
+Cc: xen-devel@lists.xensource.com, Jeremy Fitzhardinge <jeremy@goop.org>,
+       linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Fix name of Xen event-channel device
+Message-ID: <20100527171313.GB11358@wavehammer.waldi.eu.org>
+Mail-Followup-To: Bastian Blank <waldi@debian.org>,
+	Michael Tokarev <mjt@tls.msk.ru>, xen-devel@lists.xensource.com,
+	Jeremy Fitzhardinge <jeremy@goop.org>, linux-kernel@vger.kernel.org
+References: <20100526105144.GA28280@wavehammer.waldi.eu.org> <20100527073512.GA17135@wavehammer.waldi.eu.org> <20100527143104.GB6040@wavehammer.waldi.eu.org> <20100527150251.GD6040@wavehammer.waldi.eu.org> <4BFEA2DF.8080006@msgid.tls.msk.ru>
 MIME-Version: 1.0
-To: Jan Kara <jack@suse.cz>
-CC: Alexander Viro <viro@zeniv.linux.org.uk>, linux-fsdevel@vger.kernel.org,
-       linux-kernel@vger.kernel.org, Fam Zheng <famcool@gmail.com>
-Subject: Re: [PATCH] fs/minix: bugfix, number of indirect block ptrs per block
- depends on block size
-References: <4BFCF1EB.20709@cs.vu.nl> <20100526215442.GB3316@quack.suse.cz>
-In-Reply-To: <20100526215442.GB3316@quack.suse.cz>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-AMN-SPF: NONE
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <4BFEA2DF.8080006@msgid.tls.msk.ru>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear all,
+On Thu, May 27, 2010 at 08:50:39PM +0400, Michael Tokarev wrote:
+> Bastian Blank wrote:
+> > The Xen event-channel device is named evtchn in the kernel but always
+> > used as /dev/xen/evtchn in userspace. This patch fixes the name.
+> > 
+> > Signed-off-by: Bastian Blank <waldi@debian.org>
+> > 
+> > diff --git a/drivers/xen/evtchn.c b/drivers/xen/evtchn.c
+> > index 66e185c..89cd743 100644
+> > --- a/drivers/xen/evtchn.c
+> > +++ b/drivers/xen/evtchn.c
+> > @@ -471,7 +471,7 @@ static const struct file_operations evtchn_fops = {
+> >  
+> >  static struct miscdevice evtchn_miscdev = {
+> >  	.minor        = MISC_DYNAMIC_MINOR,
+> > -	.name         = "evtchn",
+> > +	.name         = "xen/evtchn",
+> 
+> Um.  Will existing userspace - esp. udev rules - continue
+> to work after this change?
 
->   Out of curiosity: Are you really using MINIX? The code is dead for a
-> long time...
+The udev rules will just not longer match, as they only rename the
+device, this is no problem. However libxc _will_ break, as it lacks
+proper error check in its own device creation routine.
 
-MINIX is very much alive, see http://www.minix3.org/.
+However there are not much possibilities here: this support will go away
+and it will annoy every user for some time.
 
-I work in the team developing MINIX. Being able to exchange data between 
-Linux and MINIX is very useful for us and there is no other filesystem 
-that the two share. We have been aware of (and annoyed by) this problem 
-for a long time, but didn't know the cause (and didn't have much time to 
-check). Feiran is a GSoC student working on our project and he found the 
-issue when setting up his development environment so then we decided to 
-bring out a patch.
+>                             Also, how about other xen-related
+> devices which are moved to /dev/xen in that same udev rules?
 
-With kind regards,
-Erik
+This is the only device currently supported by the vanilla kernel,
+everything else is in the Xen tree only.
+
+Bastian
+
+-- 
+Totally illogical, there was no chance.
+		-- Spock, "The Galileo Seven", stardate 2822.3
