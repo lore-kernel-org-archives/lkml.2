@@ -1,58 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757278Ab0E0Nql (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 May 2010 09:46:41 -0400
-Received: from wine.ocn.ne.jp ([122.1.235.145]:49488 "EHLO smtp.wine.ocn.ne.jp"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751949Ab0E0Nqj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 May 2010 09:46:39 -0400
-To: adobriyan@gmail.com, miklos@szeredi.hu
-Cc: viro@zeniv.linux.org.uk, john.johansen@canonical.com,
-       penguin-kernel@i-love.sakura.ne.jp, linux-fsdevel@vger.kernel.org,
-       linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] vfs: sanitize __d_path()
-From: Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>
-References: <E1OHaLJ-0008VD-VJ@pomaz-ex.szeredi.hu>
-	<AANLkTilGlR297cl9yHF5n6e4eU7JflJwrpm3TrIe-rlo@mail.gmail.com>
-	<E1OHcV6-0000oz-C5@pomaz-ex.szeredi.hu>
-	<AANLkTikrejgaNreRt2krs_djeFN-pmrEU5G-v08llao6@mail.gmail.com>
-In-Reply-To: <AANLkTikrejgaNreRt2krs_djeFN-pmrEU5G-v08llao6@mail.gmail.com>
-Message-Id: <201005272246.AFJ57327.SMFOOOLQFHVFtJ@I-love.SAKURA.ne.jp>
-X-Mailer: Winbiff [Version 2.51 PL2]
-X-Accept-Language: ja,en,zh
-Date: Thu, 27 May 2010 22:46:35 +0900
-Mime-Version: 1.0
+	id S1757371Ab0E0Nqr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 May 2010 09:46:47 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:52941 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757296Ab0E0Nqo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 May 2010 09:46:44 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=I+WoWscc3AvYUDJnrb4bwSUSE+hU+/xn/EaOFMZ0MYfrufrzm5bie4rSSpjuXYan53
+         cX3UwIUMBdvJ1GmL7NpenXEHfCoCu+l3LLVXh4D5ks5z5yTgY1xk+JtaSK0qbRXzRbKL
+         DyxByVaNoKFkrvDPAvTfWKfO2O4mjp7Ff9cHU=
+Date: Thu, 27 May 2010 22:46:31 +0900
+From: Minchan Kim <minchan.kim@gmail.com>
+To: Rik van Riel <riel@redhat.com>
+Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+       linux-mm@kvack.org, Mel Gorman <mel@csn.ul.ie>,
+       Andrea Arcangeli <aarcange@redhat.com>,
+       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+       Lee Schermerhorn <Lee.Schermerhorn@hp.com>
+Subject: Re: [PATCH 2/5] change direct call of spin_lock(anon_vma->lock) to
+ inline function
+Message-ID: <20100527134631.GB2112@barrios-desktop>
+References: <20100526153819.6e5cec0d@annuminas.surriel.com>
+ <20100526153926.1272945b@annuminas.surriel.com>
+MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100526153926.1272945b@annuminas.surriel.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Alexey Dobriyan wrote:
-> Why would they want to do it (which means taking locks again and
-> potential incoherence)?
-> The information is right there, ship it upwards:
+On Wed, May 26, 2010 at 03:39:26PM -0400, Rik van Riel wrote:
+> Subject: change direct call of spin_lock(anon_vma->lock) to inline function
 > 
-> +       if (deleted)
-> +               *deleted = 0;
->         spin_lock(&vfsmount_lock);
->         prepend(&end, &buflen, "\0", 1);
-> -       if (d_unlinked(dentry) &&
-> -               (prepend(&end, &buflen, " (deleted)", 10) != 0))
-> -                       goto Elong;
-> +       if (d_unlinked(dentry) && deleted)
-> +               *deleted = 1;
+> Subsitute a direct call of spin_lock(anon_vma->lock) with
+> an inline function doing exactly the same.
 > 
-> "(deleted)" as interface sucks, we can't change it,
-> at least, let's make in-kernel interface correct.
+> This makes it easier to do the substitution to the root
+> anon_vma lock in a following patch.
+> 
+> We will deal with the handful of special locks (nested,
+> dec_and_lock, etc) separately.
+> 
+> Signed-off-by: Rik van Riel <riel@redhat.com>
+> Acked-by: Mel Gorman <mel@csn.ul.ie>
+> Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Reviewed-by: Minchan Kim <minchan.kim@gmail.com>
 
-We don't need vfsmount_lock for d_unlinked(), do we?
-Then, I think we can do
-
-+	if (deleted)
-+		*deleted = d_unlinked(dentry);
- 	spin_lock(&vfsmount_lock);
--	prepend(&end, &buflen, "\0", 1);
-+	prepend(&end, &buflen, "", 1);
--	if (d_unlinked(dentry) &&
--	    (prepend(&end, &buflen, " (deleted)", 10) != 0))
--		goto Elong;
+-- 
+Kind regards,
+Minchan Kim
