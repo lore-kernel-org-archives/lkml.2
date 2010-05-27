@@ -1,103 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933202Ab0E0WBV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 May 2010 18:01:21 -0400
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:49451 "EHLO
-	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S933124Ab0E0WBT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 May 2010 18:01:19 -0400
-Date: Thu, 27 May 2010 23:08:06 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Alan Stern <stern@rowland.harvard.edu>
-Cc: Thomas Gleixner <tglx@linutronix.de>,
-       Matthew Garrett <mjg59@srcf.ucam.org>,
-       Peter Zijlstra <peterz@infradead.org>,
-       LKML <linux-kernel@vger.kernel.org>,
-       Florian Mickler <florian@mickler.org>, <felipe.balbi@nokia.com>,
-       Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
-       Linux PM <linux-pm@lists.linux-foundation.org>
-Subject: Re: [linux-pm] [PATCH 0/8] Suspend block api (version 8)
-Message-ID: <20100527230806.4deb6de3@lxorguk.ukuu.org.uk>
-In-Reply-To: <Pine.LNX.4.44L0.1005271730180.3239-100000@iolanthe.rowland.org>
-References: <20100527222514.0a1710bf@lxorguk.ukuu.org.uk>
-	<Pine.LNX.4.44L0.1005271730180.3239-100000@iolanthe.rowland.org>
-X-Mailer: Claws Mail 3.7.5 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S933225Ab0E0WB5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 May 2010 18:01:57 -0400
+Received: from mail1.cray.com ([136.162.62.100]:47171 "EHLO mail1.cray.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933168Ab0E0WBz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 May 2010 18:01:55 -0400
+X-Greylist: delayed 4650 seconds by postgrey-1.27 at vger.kernel.org; Thu, 27 May 2010 18:01:52 EDT
+Message-ID: <4BFED954.8060807@cray.com>
+Date: Thu, 27 May 2010 13:43:00 -0700
+From: Doug Doan <dougd@cray.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100330 Fedora/3.0.4-1.fc12 Thunderbird/3.0.4
+MIME-Version: 1.0
+To: linux-mm@kvack.org
+CC: linux-kernel@vger.kernel.org, andi@firstfloor.org, lee.schermerhorn@hp.com,
+       rientjes@google.com, mel@csn.ul.ie, akpm@linux-foundation.org
+Subject: [PATCH] hugetlb: call mmu notifiers on hugepage cow
+Content-Type: multipart/mixed;
+	boundary="------------000008070908080203040308"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 27 May 2010 17:38:03 -0400 (EDT)
-Alan Stern <stern@rowland.harvard.edu> wrote:
+--------------000008070908080203040308
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 
-> > and power management does the rest. If an event wakes up the process
-> > before we get to suspend in kernel we will wake it back up.
-> 
-> Okay, and the kernel never suspends.  We _are_ talking about a kind of
-> forced suspend, right?
+From: Doug Doan <dougd@cray.com>
 
-No ? We are talking about just letting power management solve the whole
-problem for us.
+When a copy-on-write occurs, we take one of two paths in handle_mm_fault: 
+through handle_pte_fault for normal pages, or through hugetlb_fault for huge pages.
 
-> >  If the event
-> > gets in after pm decides to idle via suspend then it'll bounce through
-> > the kernel back to a kernel resume,
-> 
-> No, it won't.  That's the problem suspend blockers were meant to solve.  
-> The event winds up sitting in a kernel queue, the PM core doesn't know
-> about it (that's what I meant above -- the PM core doesn't know as much
-> as you seem to think it does), and the suspend takes place regardless.
+In the normal page case, we eventually get to do_wp_page and call mmu notifiers 
+via ptep_clear_flush_notify. There is no callout to the mmmu notifiers in the 
+huge page case. This patch fixes that.
 
-No - because we are not forcing the suspend. The app must go idle. If you
-force the suspend of running processes then yes the entire thing goes
-castors up - which is why it's a bad idea to do so.
+Signed-off-by: Doug Doan <dougd@cray.com>
+---
 
-> > or potentially through a full
-> > hardware/software suspend/resume bounce.
-> 
-> It would be okay if that happened.  But once the event gets into the
-> kernel and the hardware IRQ source has turned off, there's nothing to
-> cause the resume.
+--------------000008070908080203040308
+Content-Type: text/plain; name="patch"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: attachment; filename="patch"
 
-Read the discussion about how the race is avoided at the hardware level.
-That race is I think not there and furthermore most drivers get it right
-already.
+--- mm/hugetlb.c.orig	2010-05-27 13:07:58.569546314 -0700
++++ mm/hugetlb.c	2010-05-26 14:41:06.449296524 -0700
+@@ -2345,11 +2345,17 @@ retry_avoidcopy:
+ 	ptep = huge_pte_offset(mm, address & huge_page_mask(h));
+ 	if (likely(pte_same(huge_ptep_get(ptep), pte))) {
+ 		/* Break COW */
++		mmu_notifier_invalidate_range_start(mm,
++			address & huge_page_mask(h),
++			(address & huge_page_mask(h)) + huge_page_size(h));
+ 		huge_ptep_clear_flush(vma, address, ptep);
+ 		set_huge_pte_at(mm, address, ptep,
+ 				make_huge_pte(vma, new_page, 1));
+ 		/* Make the old page be freed below */
+ 		new_page = old_page;
++		mmu_notifier_invalidate_range_end(mm,
++			address & huge_page_mask(h),
++			(address & huge_page_mask(h)) + huge_page_size(h));
+ 	}
+ 	page_cache_release(new_page);
+ 	page_cache_release(old_page);
 
-There are several cases
-
-1.	IRQ during app layer (ie policy in user space) asking
-		applications to go passive
-
-	- The event occurs, we undo the app layer policy, easy
-	  (or app wakes process and we let it fall through)
-
-2.	IRQ after the app layer quiesces its clients
-
-	- The task wakes, the app layer won't see it - the app layer
-	  allows suspend as an idle mode. Not a problem - the app is
-	  running the cpu policy manager will see this and not suspend
-	  until the app has been asleep for a bit. The app may well of
-	  course tell the UI layer 'hey I want you back on' and it take
-	  you back to the full on case.
-
-3.	IRQ after kernel suspend begins
-
-	- The driver will refuse the suspend, we don't suspend, we unwind
-	  the resume so far, the app wakes, we propogate stuff back up to
-	  user space whose policy manager unwinds its position
-
-4.	IRQ after driver has done its final checks
-
-	- Wake up lines are set
-	- We suspend
-	- We immediately get resumed
-	- We follow the full resume path
-
-This is I believe robust (and has been implemented on some non x86
-boxes). It depends on not forcing running tasks into suspend. That is the
-key.
-
-Alan
+--------------000008070908080203040308--
