@@ -1,76 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935049Ab0E0SfJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 May 2010 14:35:09 -0400
-Received: from lo.gmane.org ([80.91.229.12]:45758 "EHLO lo.gmane.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754941Ab0E0SfG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 May 2010 14:35:06 -0400
-X-Injected-Via-Gmane: http://gmane.org/
-To: linux-kernel@vger.kernel.org
-connect(): No such file or directory
-From: Bernhard Schmidt <berni@birkenwald.de>
-Subject: Re: Clock jumps
-Date: Thu, 27 May 2010 18:32:53 +0000 (UTC)
-Message-ID: <htmdsk$9kn$1@dough.gmane.org>
-References: <loom.20100524T171038-56@post.gmane.org>
- <20100525062100.GP22163@redhat.com> <4BFD5616.6070302@cora.nwra.com>
- <4D7E210A-4694-4B6E-B721-6024CE96ABC0@suse.de>
-X-Complaints-To: usenet@dough.gmane.org
-X-Gmane-NNTP-Posting-Host: ppp-88-217-27-146.dynamic.mnet-online.de
-User-Agent: slrn/pre1.0.0-18 (Linux)
-Cc: kvm@vger.kernel.org
+	id S935194Ab0E0SgA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 May 2010 14:36:00 -0400
+Received: from ip-70-38-54-39.static.privatedns.com ([70.38.54.39]:44827 "EHLO
+	ginevra.hungrycats.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S934601Ab0E0Sf6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 May 2010 14:35:58 -0400
+X-Envelope-Mail-From: vger-linux-omap-esightcorp@mailtoo.hungrycats.org
+X-Envelope-Mail-From: vger-linux-omap-esightcorp@mailtoo.hungrycats.org
+X-Envelope-Mail-From: vger-linux-omap-esightcorp@mailtoo.hungrycats.org
+X-Envelope-Mail-From: vger-linux-omap-esightcorp@mailtoo.hungrycats.org
+X-Envelope-Mail-From: vger-linux-omap-esightcorp@mailtoo.hungrycats.org
+X-Envelope-Mail-From: vger-linux-omap-esightcorp@mailtoo.hungrycats.org
+X-Envelope-Mail-From: vger-linux-omap-esightcorp@mailtoo.hungrycats.org
+X-Envelope-Mail-From: vger-linux-omap-esightcorp@mailtoo.hungrycats.org
+X-Envelope-Mail-From: vger-linux-omap-esightcorp@mailtoo.hungrycats.org
+X-Envelope-Mail-From: vger-linux-omap-esightcorp@mailtoo.hungrycats.org
+X-Envelope-Mail-From: vger-linux-omap-esightcorp@mailtoo.hungrycats.org
+X-Envelope-Mail-From: vger-linux-omap-esightcorp@mailtoo.hungrycats.org
+X-Envelope-Mail-From: vger-linux-omap-esightcorp@mailtoo.hungrycats.org
+Date: Thu, 27 May 2010 14:35:56 -0400
+From: Zygo Blaxell <vger-linux-omap-esightcorp@mailtoo.hungrycats.org>
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: Matthew Garrett <mjg59@srcf.ucam.org>,
+       Thomas Gleixner <tglx@linutronix.de>,
+       Arve =?iso-8859-1?B?SGr4bm5lduVn?= <arve@android.com>,
+       Florian Mickler <florian@mickler.org>,
+       Vitaly Wool <vitalywool@gmail.com>,
+       Peter Zijlstra <peterz@infradead.org>,
+       LKML <linux-kernel@vger.kernel.org>, Paul@smtp1.linux-foundation.org,
+       felipe.balbi@nokia.com,
+       Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
+       Linux PM <linux-pm@lists.linux-foundation.org>
+Subject: Re: [linux-pm] [PATCH 0/8] Suspend block api (version 8)
+Message-ID: <20100527183556.GB25663@gibbs.hungrycats.org>
+References: <20100526133721.602633b2@schatten.dmk.lab>
+ <AANLkTikzgaOFdQKess4E-D86OLPOzxP3dWiDkU_UR0ri@mail.gmail.com>
+ <20100526142430.327ccbc4@schatten.dmk.lab>
+ <20100526141612.3e2e0443@lxorguk.ukuu.org.uk>
+ <AANLkTin97MMu-XO_Lk-snefBWz2ymhS0Qi1y1RxLwdVA@mail.gmail.com>
+ <20100527003943.07c17f85@lxorguk.ukuu.org.uk>
+ <20100527140655.GA28048@srcf.ucam.org>
+ <alpine.LFD.2.00.1005271642440.3032@localhost.localdomain>
+ <20100527155201.GA31937@srcf.ucam.org>
+ <20100527171615.15a1fd3d@lxorguk.ukuu.org.uk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100527171615.15a1fd3d@lxorguk.ukuu.org.uk>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Alexander Graf <agraf@suse.de> wrote:
+On Thu, May 27, 2010 at 05:16:15PM +0100, Alan Cox wrote:
+> So you need
+> 
+> 	Userspace -> QoS guarantee expression, implied resource
+> 			expression via device use. *NO* knowledge of
+> 			device or platform in the application
 
-Hi,
+I have a pile of use cases where I want to turn off "implied resource
+expression via device use."  There are two orthogonal variables to
+consider:
 
-> Do you have ntpd running inside the guest? I have a bug report lying
-> around about 2.6.33 with kvm-clock jumping in time when ntpd is used:
-> https://bugzilla.novell.com/show_bug.cgi?id=582260
+1.  I'm drawing cows on the screen (or asking another process to do so
+on my behalf).
 
-I want to chime in here, I have a very similar problem, but not with
-ntpd in the guest.
+2.  I care whether anyone can actually see the cows, and I'm willing
+(or not) to burn power to make them visible.
 
-The host was a HP ProLiant DL320 G5p with a Dualcore Xeon3075. System
-was a Debian Lenny with a custom 2.6.33 host kernel and a custom
-qemu-kvm 0.11.0 .deb ported from Ubuntu. The host is synced with ntpd.
+Quite often, I'm drawing cows but I don't care about cow visibility,
+so I would tell PM to turn the display off when the PM framework is
+looking for ways to conserve power; however, if the animated cow is part
+of an alarm clock application, then I want the display on, powering it
+up if was previously turned off.
 
-The guests are various Debian Lenny/Squeeze VMs, with a custom kernel
-(2.6.33 at the moment) with kvm-clock. Exclusively amd64 guest
-kernels, but one system has i386 userland.
+A real-world example of this is a backup process on a file server.
+I'd like to tell the kernel that the backup process's CPU usage and
+disk I/O is *not* implied resource expression, and if there's no other
+processes using the CPU or disks, the kernel can just power down the
+drives or idle the CPU on a whim.  The backup process can hang until
+some other process comes along to wake the drives and CPU up again,
+and then the backups will run during the idle time while the drive
+is waiting for new requests from other processes.  Obviously if the
+backup process is trying to write dirty pages to a powered-down drive
+there will be problems (memory starvation and lost data come to mind),
+so I'd make sure I don't do that.
 
-With this setup once in a while (maybe every other week) one VM would
-have a sudden clock jump, 6-12 hours into the future. No kernel messages
-or other log entries than applications complaining about the clock jump
-after the fact. Other VMs were unaffected.
+I'd also like to change my mind about these sorts of things on the fly,
+without requiring hooks in the backup process itself.  I'm thinking
+of a syscall with PID, FD, mode bits (read/write?  iowait/runnable?),
+and policy (whether usage implies expression).
 
-Yesterday I did an upgrade to Debian Squeeze. This involved a new
-qemu-kvm (0.12.4), but not a new host kernel. I also upgraded the guest
-kernels from 2.6.33 to 2.6.33.4.
+I can express mostly the same things if "policy" was "maximum latency,"
+but not all.  Consider how you'd have to specify latencies to get hard
+disks that spin down when idle, spin up immediately if read requests are
+issued, but wait several minutes to spin up if write requests are issued.
+I can't specify that with a single latency value since it would result
+in either unacceptably large latencies in some cases, or the disks
+would never spin down.  I'd need a matrix with drive power states as
+rows and read/write operations as columns, either per process or per
+file descriptor.  Also something in user-space needs to know about the
+approximate value for hard disk spin-up times in order to set their PM
+QoS constraints high enough to be useful but also low enough to be useful.
 
-First of all, after the reboot the host clock was totally unreliable. I
-had a constant skew of up to five seconds per minute in the host clock,
-which of course affected the VMs as well.  This problem went away when I
-changed from tsc into hpet on the host. The host does CPU frequency
-scaling which is, as far as I know, known to affect TSC stability. I
-think I remember messages about tsc being unstable in earlier boots,
-maybe the detection did just not work this time.
-
-Worse, the clock jump issues in the guest appeared much more often than
-before. The higher loaded VMs did not survive ten minutes without
-jumping several hours ahead. 
-
-Situation has stabilized after setting clocksource hpet in the guest
-immediately after boot. So it seems kvm-clock has some issues here.
-
-I've seen a preliminary patch floating around on the ML by Zachary
-Amsden, but I haven't tried it yet. It talks of backward warps, but so
-far I've only seen forward warps (the VM time suddenly jumps into the 
-future), so it might be unrelated.
-
-Bernhard
+Well, maybe the last problem can be resolved by specifying QoS constraints
+in bands.  You'd have a QOS_OTHER band that applies to processes that
+haven't specified a constraint, and a QOS_EXPLICIT band that applies to
+those that have, and you'd be able to change all the QOS_OTHER processes
+at once.
 
