@@ -1,214 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932174Ab0E0P3q (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 May 2010 11:29:46 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:51093 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755344Ab0E0P3n convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 May 2010 11:29:43 -0400
-Subject: Re: [tip:x86/pat] rbtree: Add support for augmented rbtrees
-From: Peter Zijlstra <peterz@infradead.org>
-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-       venkatesh.pallipadi@intel.com, suresh.b.siddha@intel.com,
-       tglx@linutronix.de
-Cc: linux-tip-commits@vger.kernel.org
-In-Reply-To: <tip-17d9ddc72fb8bba0d4f67868c9c612e472a594a9@git.kernel.org>
-References: <20100210232343.GA11465@linux-os.sc.intel.com>
-	 <tip-17d9ddc72fb8bba0d4f67868c9c612e472a594a9@git.kernel.org>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Thu, 27 May 2010 17:29:43 +0200
-Message-ID: <1274974183.27810.5233.camel@twins>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	id S1758087Ab0E0Pdo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 May 2010 11:33:44 -0400
+Received: from www.tglx.de ([62.245.132.106]:58660 "EHLO www.tglx.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756665Ab0E0Pdn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 May 2010 11:33:43 -0400
+Date: Thu, 27 May 2010 17:32:56 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Matthew Garrett <mjg59@srcf.ucam.org>
+cc: Alan Cox <alan@lxorguk.ukuu.org.uk>,
+       =?ISO-8859-15?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>,
+       Florian Mickler <florian@mickler.org>,
+       Vitaly Wool <vitalywool@gmail.com>,
+       Peter Zijlstra <peterz@infradead.org>,
+       LKML <linux-kernel@vger.kernel.org>, Paul@smtp1.linux-foundation.org,
+       felipe.balbi@nokia.com,
+       Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
+       Linux PM <linux-pm@lists.linux-foundation.org>
+Subject: Re: [linux-pm] [PATCH 0/8] Suspend block api (version 8)
+In-Reply-To: <20100527140655.GA28048@srcf.ucam.org>
+Message-ID: <alpine.LFD.2.00.1005271642440.3032@localhost.localdomain>
+References: <AANLkTinN6MKvCEhPkbYQRD2gu-mGXdNW9asRsTuKN3_Y@mail.gmail.com> <1274867106.5882.5090.camel@twins> <20100526120242.5c9b73ad@schatten.dmk.lab> <AANLkTim4021cTnhVZrQpefq1MG-eEPOFLDRO-XDepHb4@mail.gmail.com> <20100526133721.602633b2@schatten.dmk.lab>
+ <AANLkTikzgaOFdQKess4E-D86OLPOzxP3dWiDkU_UR0ri@mail.gmail.com> <20100526142430.327ccbc4@schatten.dmk.lab> <20100526141612.3e2e0443@lxorguk.ukuu.org.uk> <AANLkTin97MMu-XO_Lk-snefBWz2ymhS0Qi1y1RxLwdVA@mail.gmail.com> <20100527003943.07c17f85@lxorguk.ukuu.org.uk>
+ <20100527140655.GA28048@srcf.ucam.org>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2010-02-19 at 00:21 +0000, tip-bot for Pallipadi, Venkatesh
-wrote:
-> Commit-ID:  17d9ddc72fb8bba0d4f67868c9c612e472a594a9
-> Gitweb:     http://git.kernel.org/tip/17d9ddc72fb8bba0d4f67868c9c612e472a594a9
-> Author:     Pallipadi, Venkatesh <venkatesh.pallipadi@intel.com>
-> AuthorDate: Wed, 10 Feb 2010 15:23:44 -0800
-> Committer:  H. Peter Anvin <hpa@zytor.com>
-> CommitDate: Thu, 18 Feb 2010 15:40:56 -0800
+On Thu, 27 May 2010, Matthew Garrett wrote:
+> On Thu, May 27, 2010 at 12:39:43AM +0100, Alan Cox wrote:
 > 
-> rbtree: Add support for augmented rbtrees
+> > - Supporting Android needs well good
+> > - Opportunistic suspend good
+> > - Manner in which interface is expressed to userspace bad
+> > - Latency constraint interface would be better
+> > - Your existing behaviour can be implemented by a simplistic use of a
+> >   latency constraint interface
+> > - We can fix a pile of other directly connected things at the same time
+> > - Implementation internals I care far less about because we can fix those
+> >   later
+> > - Suspend is just a power state
+> > 
+> > How does that fit your model and vision ?
 > 
-> Add support for augmented rbtrees in core rbtree code.
+> I don't entirely see how this works. In order to deal with poorly 
+> written applications, it's necessary to (optionally, based on some 
+> policy) ignore them when it comes to the scheduler. The problem is how 
+> to implement the optional nature of this in a race-free manner. This is 
+> obviously a pathological case, but imagine an application that does 
+> something along the following lines:
 > 
-> This will be used in subsequent patches, in x86 PAT code, which needs
-> interval trees to efficiently keep track of PAT ranges.
+> int input = open ("/dev/input", O_RDONLY|O_NONBLOCK);
+> char foo;
 > 
-> Signed-off-by: Venkatesh Pallipadi <venkatesh.pallipadi@intel.com>
-> LKML-Reference: <20100210232343.GA11465@linux-os.sc.intel.com>
-> Signed-off-by: Suresh Siddha <suresh.b.siddha@intel.com>
-> Signed-off-by: H. Peter Anvin <hpa@zytor.com>
+> while (1) {
+> 	suspend_block();
+> 	if (read(input, &foo, 1) > 0) {
+> 		(do something)
+> 		suspend_unblock();
+> 	} else {
+> 		suspend_unblock();
+> 		(draw bouncing cows and clouds and tractor beams briefly)
+> 	}
+> }
+> 
+> Now, if the user is playing this game, you want it to be scheduled. If 
+> the user has put down their phone and the screen lock has kicked in, you 
+> don't want it to be scheduled. So we could imagine some sort of cgroup 
+> that contains untrusted tasks - when the session is active we set a flag 
+> one way which indicates to the scheduler that tasks in TASK_RUNNING 
+> should be scheduled, and when the session is idle we set the flag the 
+> other way and all processes in that cgroup get shifted to 
+> TASK_INTERRUPTIBLE or something.
+> 
+> Except that doesn't work. If the session goes idle in the middle of the 
+> app drawing a frame, we'll stop the process and the task will never call 
+> read(). So the user hits a key, we wake up, nothing shifts from 
+> TASK_INTERRUPTIBLE into TASK_RUNNING, the key never gets read, we go 
+> back to sleep. The event never gets delivered.
+> 
+> Now let's try this in the Android world. The user hits a key and the 
+> system wakes up. The input layer takes a suspend block. The application 
+> now draws all the cows it wants to, takes its own suspend block and 
+> reads the input device. This empties the queue and the kernel-level 
+> suspend block is released. The application then processes the event 
+> before releasing the suspend block. The event has been delivered and 
+> handled.
 
-> --- a/lib/rbtree.c
-> +++ b/lib/rbtree.c
-> @@ -44,6 +44,11 @@ static void __rb_rotate_left(struct rb_node *node, struct rb_root *root)
->  	else
->  		root->rb_node = right;
->  	rb_set_parent(node, right);
-> +
-> +	if (root->augment_cb) {
-> +		root->augment_cb(node);
-> +		root->augment_cb(right);
-> +	}
->  }
->  
->  static void __rb_rotate_right(struct rb_node *node, struct rb_root *root)
-> @@ -67,12 +72,20 @@ static void __rb_rotate_right(struct rb_node *node, struct rb_root *root)
->  	else
->  		root->rb_node = left;
->  	rb_set_parent(node, left);
-> +
-> +	if (root->augment_cb) {
-> +		root->augment_cb(node);
-> +		root->augment_cb(left);
-> +	}
->  }
->  
+Thanks for providing this example:
 
-Did someone measure what these extra conditionals do to the scheduler?
+  1) It proves that suspend blockers are solely designed to encourage
+     people to code crap.
 
-Also, I don't think you actually need this callback, you can augment
-externally like this ('borrowed' the idea from the BFQ code):
+  2) It exposes the main conceptual problem of the approach:
 
-full patch at:
-http://programming.kicks-ass.net/kernel-patches/sched_eevdf.patch
+     The input layer in the kernel magically takes a suspend blocker
+     and releases it in an equally magic way just to allow the crappy
+     application to reach the point where it takes it's own suspend
+     blocker and can react on the user input.
+     
+     And you need to do that, because the user applications suspend
+     blocker magic is racy as hell. To work around that you sprinkle
+     your suspend blocker magic all over the kernel instead of telling
+     people how to solve the problem correctly.
 
-+static inline struct sched_entity *se_of(struct rb_node *node)
-+{
-+	return rb_entry(node, struct sched_entity, run_node);
-+}
-+
-+static inline s64 deadline_key(struct cfs_rq *cfs_rq, u64 deadline)
-+{
-+	return (s64)(deadline - cfs_rq->min_vruntime);
-+}
-+
-+#define deadline_gt(cfs_rq, field, lse, rse)			\
-+({ deadline_key(cfs_rq, lse->field) >				\
-+   deadline_key(cfs_rq, rse->field); })
-+
-+static void update_min_deadline(struct cfs_rq *cfs_rq,
-+				struct sched_entity *se, struct rb_node *node)
-+{
-+	if (node && deadline_gt(cfs_rq, min_deadline, se, se_of(node)))
-+		se->min_deadline = se_of(node)->min_deadline;
-+}
-+
-+/*
-+ * se->min_deadline = min(se->deadline, left->min_deadline, right->min_deadline)
-+ */
-+static void update_node(struct cfs_rq *cfs_rq, struct rb_node *node)
-+{
-+	struct sched_entity *se = rb_entry(node, struct sched_entity, run_node);
-+
-+	se->min_deadline = se->deadline;
-+	update_min_deadline(cfs_rq, se, node->rb_right);
-+	update_min_deadline(cfs_rq, se, node->rb_left);
-+}
-+
-+/*
-+ * update min_deadline for all nodes that could have been affected by
-+ * a rebalance pass up from @node
-+ */
-+static void update_tree(struct cfs_rq *cfs_rq, struct rb_node *node)
-+{
-+	struct rb_node *parent;
-+
-+up:
-+	update_node(cfs_rq, node);
-+	parent = rb_parent(node);
-+	if (!parent)
-+		return;
-+
-+	if (node == parent->rb_left && parent->rb_right)
-+		update_node(cfs_rq, parent->rb_right);
-+	else if (parent->rb_left)
-+		update_node(cfs_rq, parent->rb_left);
-+
-+	node = parent;
-+	goto up;
-+}
-+
-+/*
-+ * after inserting @se into the tree, update min_deadline to account for
-+ * both the new deadline and any damage done by rebalance
-+ */
-+static void update_tree_enqueue(struct cfs_rq *cfs_rq, struct sched_entity *se)
-+{
-+	struct rb_node *node = &se->run_node;
-+
-+	if (node->rb_left)
-+		node = node->rb_left;
-+	else if (node->rb_right)
-+		node = node->rb_right;
-+
-+	update_tree(cfs_rq, node);
-+}
-+
-+/*
-+ * before removing the node, find the deepest node on the rebalance path
-+ * that will still be there after @se gets removed
-+ */
-+static struct rb_node *update_tree_dequeue_begin(struct sched_entity *se)
-+{
-+	struct rb_node *deepest;
-+	struct rb_node *node = &se->run_node;
-+
-+	if (!node->rb_right && !node->rb_left)
-+		deepest = rb_parent(node);
-+	else if (!node->rb_right)
-+		deepest = node->rb_left;
-+	else if (!node->rb_left)
-+		deepest = node->rb_right;
-+	else {
-+		deepest = rb_next(node);
-+		if (deepest->rb_right)
-+			deepest = deepest->rb_right;
-+		else if (rb_parent(deepest) != node)
-+			deepest = rb_parent(deepest);
-+	}
-+
-+	return deepest;
-+}
-+
-+/*
-+ * now that the entity got removed, update min_deadline to undo the missing
-+ * deadine and any rebalance damage
-+ */
-+static void update_tree_dequeue_end(struct cfs_rq *cfs_rq, struct rb_node *node)
-+{
-+	if (node)
-+		update_tree(cfs_rq, node);
- }
+     And what are you achieving with this versus power saving ?
+
+     	 Exaclty _NOTHING_ ! 
+
+     Simply because you move the cow drawing CPU time from the point
+     where the device wants to go into suspend to the point where the
+     user hits a key again. You even delay the reaction of your app to
+     the user input by the time it needs to finish drawing cows.
  
- /*
-@@ -360,10 +578,14 @@ static void __enqueue_entity(struct cfs_
- 
- 	rb_link_node(&se->run_node, parent, link);
- 	rb_insert_color(&se->run_node, &cfs_rq->tasks_timeline);
-+
-+	update_tree_enqueue(cfs_rq, se);
- }
- 
- static void __dequeue_entity(struct cfs_rq *cfs_rq, struct sched_entity *se)
- {
-+	struct rb_node *node = update_tree_dequeue_begin(se);
-+
- 	if (cfs_rq->rb_leftmost == &se->run_node) {
- 		struct rb_node *next_node;
- 
-@@ -372,16 +594,145 @@ static void __dequeue_entity(struct cfs_
- 	}
- 
- 	rb_erase(&se->run_node, &cfs_rq->tasks_timeline);
-+	update_tree_dequeue_end(cfs_rq, node);
-+	avg_vruntime_sub(cfs_rq, se);
- }
+     So you need to come up with a way better example why you need
+     your blockers than with this prove of misconception.
+
+> You can't express that with resource limits or QoS constraints. If you 
+> want to deal with this kind of situation then, as far as I can tell, you 
+> need either suspend blockers or something so close to them that it makes 
+> no difference.
+
+Wrong. If your application is interactive then you set the QoS
+requirement once to interactive and be done.
+
+So the correct point to make a power state decision is when the app
+waits for a key press. At this point the kernel can take several
+pathes:
+
+      1) Keep the system alive because the input device is in active
+       	 state and a key press is expected
+
+      2) Go into supsend because the input device is deactivated after
+      	 the screen lock kicked in.
+
+This behaves exactly the same way in terms of power consumption as
+your blocker example just without all the mess you are trying to
+create.
+
+And it allows the kernel to use intermediate power saving methods
+(between idle and suspend) which might be available on some hardware.
+
+Thanks,
+
+	tglx
