@@ -1,57 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933377Ab0E0SBF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 May 2010 14:01:05 -0400
-Received: from andromeda.dapyr.net ([206.212.254.10]:57840 "EHLO
-	andromeda.dapyr.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933387Ab0E0SAz (ORCPT
+	id S1759430Ab0E0SEp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 May 2010 14:04:45 -0400
+Received: from mail-qy0-f183.google.com ([209.85.221.183]:61119 "EHLO
+	mail-qy0-f183.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759377Ab0E0SEj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 May 2010 14:00:55 -0400
-From: Konrad Rzeszutek Wilk <konrad@darnok.org>
-To: Peter Jones <pjones@redhat.com>
-Subject: Re: [PATCH] ibft: Use IBFT_SIGN instead of open-coding the search string.
-Date: Thu, 27 May 2010 13:59:59 -0400
-User-Agent: KMail/1.9.10
-Cc: Len Brown <lenb@kernel.org>, Konrad Rzeszutek Wilk <konrad@kernel.org>,
-       linux-kernel@vger.kernel.org, gpxe-devel@etherboot.org
-References: <4BEAB683.8040600@redhat.com> <1273674308-9366-1-git-send-email-pjones@redhat.com>
-In-Reply-To: <1273674308-9366-1-git-send-email-pjones@redhat.com>
+	Thu, 27 May 2010 14:04:39 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:date:from:to:cc:subject:message-id:mime-version:content-type
+         :content-disposition:content-transfer-encoding:user-agent;
+        b=xYgB/85Q8TisquXYsh0don7uVduPLxEQrTm1kR3QYUG21WVyyHiSSgsqIkk400mZes
+         ndPHE6aFlk0IgUMXaB6x20vA3tthvBXdVHMBFK53+qT33Ufqsc/UuU2yazS2zeVgQBC7
+         Osijse1hSckd1pCAKnGjtx0FdQgTn58Dk8Z9g=
+Date: Thu, 27 May 2010 15:04:31 -0300
+From: "Luis Claudio R. Goncalves" <lclaudio@uudg.org>
+To: linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Cc: Thomas Gleixner <tglx@linutronix.de>,
+       Peter Zijlstra <peterz@infradead.org>,
+       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+       David Rientjes <rientjes@google.com>, Oleg Nesterov <oleg@redhat.com>,
+       Mel Gorman <mel@csn.ul.ie>, williams@redhat.com
+Subject: [RFC] oom-kill: give the dying task a higher priority
+Message-ID: <20100527180431.GP13035@uudg.org>
 MIME-Version: 1.0
-Content-Type: text/plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-Message-Id: <201005271359.59974.konrad@darnok.org>
+Content-Transfer-Encoding: 8bit
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 12 May 2010 10:25:08 Peter Jones wrote:
-> We define IBFT_SIGN to "iBFT"; may as well use it.
->
+Hello,
 
-Len,
+Could you please review this patch?
 
-Were you OK with this patch? I was thinking to send to Linus a git-pull for 
-this (and the other patches referenced in this patchset).
+The idea behind it is quite simple: give the dying task a higher priority
+so that it can be scheduled sooner and die to free memory.
 
-> Signed-off-by: Peter Jones <pjones@redhat.com>
-> ---
->  drivers/firmware/iscsi_ibft_find.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
->
-> diff --git a/drivers/firmware/iscsi_ibft_find.c
-> b/drivers/firmware/iscsi_ibft_find.c index 82a7a15..2192456 100644
-> --- a/drivers/firmware/iscsi_ibft_find.c
-> +++ b/drivers/firmware/iscsi_ibft_find.c
-> @@ -100,7 +100,7 @@ unsigned long __init find_ibft_region(unsigned long
-> *sizep) if (!ibft_addr)
->  		acpi_table_parse(ACPI_SIG_IBFT, acpi_find_ibft);
->  	if (!ibft_addr)
-> -		acpi_table_parse("iBFT", acpi_find_ibft);
-> +		acpi_table_parse(IBFT_SIGN, acpi_find_ibft);
->  #endif /* CONFIG_ACPI */
->
->  	/* iBFT 1.03 section 1.4.3.1 mandates that UEFI machines will
 
+oom-kill: give the dying task a higher priority
+
+In a system under heavy load it was observed that even after the
+oom-killer selects a task to die, the task may take a long time to die.
+
+Right before sending a SIGKILL to the selected task the oom-killer
+increases the task priority so that it can exit quickly, freeing memory.
+That is accomplished by:
+
+        /*
+         * We give our sacrificial lamb high priority and access to
+         * all the memory it needs. That way it should be able to
+         * exit() and clear out its resources quickly...
+         */
+ 	p->rt.time_slice = HZ;
+ 	set_tsk_thread_flag(p, TIF_MEMDIE);
+
+It sounds plausible giving the dying task an even higher priority to be
+sure it will be scheduled sooner and free the desired memory.
+
+Signed-off-by: Luis Claudio R. Gonçalves <lclaudio@uudg.org>
+
+diff --git a/mm/oom_kill.c b/mm/oom_kill.c
+index b68e802..8047309 100644
+--- a/mm/oom_kill.c
++++ b/mm/oom_kill.c
+@@ -382,6 +382,8 @@ static void dump_header(struct task_struct *p, gfp_t gfp_mask, int order,
+  */
+ static void __oom_kill_task(struct task_struct *p, int verbose)
+ {
++	struct sched_param param;
++
+ 	if (is_global_init(p)) {
+ 		WARN_ON(1);
+ 		printk(KERN_WARNING "tried to kill init!\n");
+@@ -413,6 +415,8 @@ static void __oom_kill_task(struct task_struct *p, int verbose)
+ 	 */
+ 	p->rt.time_slice = HZ;
+ 	set_tsk_thread_flag(p, TIF_MEMDIE);
++	param.sched_priority = MAX_RT_PRIO-1;
++	sched_setscheduler(p, SCHED_FIFO, &param);
+ 
+ 	force_sig(SIGKILL, p);
+ }
+
+
+Thanks,
+Luis
+-- 
+[ Luis Claudio R. Goncalves                    Bass - Gospel - RT ]
+[ Fingerprint: 4FDD B8C4 3C59 34BD 8BE9  2696 7203 D980 A448 C8F8 ]
 
