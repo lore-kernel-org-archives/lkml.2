@@ -1,52 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932863Ab0E0RmB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 May 2010 13:42:01 -0400
-Received: from cavan.codon.org.uk ([93.93.128.6]:32910 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932611Ab0E0Rl6 (ORCPT
+	id S932903Ab0E0RmO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 May 2010 13:42:14 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:60633 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932611Ab0E0RmK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 May 2010 13:41:58 -0400
-Date: Thu, 27 May 2010 18:41:40 +0100
-From: Matthew Garrett <mjg59@srcf.ucam.org>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
-       Arve =?iso-8859-1?B?SGr4bm5lduVn?= <arve@android.com>,
-       Florian Mickler <florian@mickler.org>,
-       Vitaly Wool <vitalywool@gmail.com>, LKML <linux-kernel@vger.kernel.org>,
-       Paul@smtp1.linux-foundation.org, felipe.balbi@nokia.com,
-       Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
-       Linux PM <linux-pm@lists.linux-foundation.org>
-Subject: Re: [linux-pm] [PATCH 0/8] Suspend block api (version 8)
-Message-ID: <20100527174140.GB3187@srcf.ucam.org>
-References: <20100527161943.GA32764@srcf.ucam.org> <alpine.LFD.2.00.1005271901020.3032@localhost.localdomain> <20100527170740.GA1980@srcf.ucam.org> <1274980391.27810.5552.camel@twins> <20100527171644.GA2468@srcf.ucam.org> <1274980856.27810.5582.camel@twins> <20100527172510.GC2468@srcf.ucam.org> <1274981288.27810.5609.camel@twins> <20100527173218.GF2468@srcf.ucam.org> <1274981750.27810.5641.camel@twins>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1274981750.27810.5641.camel@twins>
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+	Thu, 27 May 2010 13:42:10 -0400
+Date: Thu, 27 May 2010 10:41:23 -0700
+From: Randy Dunlap <randy.dunlap@oracle.com>
+To: Glauber Costa <glommer@redhat.com>
+Cc: kvm@vger.kernel.org, linux-kernel@vger.kernel.org, avi@redhat.com,
+       zamsden@redhat.com
+Subject: Re: [PATCH v3] Add Documentation/kvm/msr.txt
+Message-Id: <20100527104123.5f937adc.randy.dunlap@oracle.com>
+In-Reply-To: <1274978028-9827-1-git-send-email-glommer@redhat.com>
+References: <1274978028-9827-1-git-send-email-glommer@redhat.com>
+Organization: Oracle Linux Eng.
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-Auth-Type: Internal IP
+X-Source-IP: acsinet15.oracle.com [141.146.126.227]
+X-CT-RefId: str=0001.0A090209.4BFEAEE8.00D6:SCFMA922111,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 27, 2010 at 07:35:50PM +0200, Peter Zijlstra wrote:
-> On Thu, 2010-05-27 at 18:32 +0100, Matthew Garrett wrote:
-> > On Thu, May 27, 2010 at 07:28:08PM +0200, Peter Zijlstra wrote:
-> > > Why would you care about the screen for a network event?
-> > 
-> > Because the application that needs to handle the network packet is 
-> > currently blocked trying to draw something to the screen.
-> 
-> Then that's an application bug right there, isn't it?
-> 
-> If should have listened to the window server telling its clients it was
-> going to go away. Drawing after you get that is your own damn fault ;-)
+On Thu, 27 May 2010 12:33:48 -0400 Glauber Costa wrote:
 
-How long do you wait for applications to respond that they've stopped 
-drawing? What if the application is heavily in swap at the time?
+> This patch adds a file that documents the usage of KVM-specific
+> MSRs.
+> 
+> [ v2: added comments from Randy ]
+> [ v2: added comments from Avi ]
+> 
+> Signed-off-by: Glauber Costa <glommer@redhat.com>
 
--- 
-Matthew Garrett | mjg59@srcf.ucam.org
+Reviewed-by: Randy Dunlap <randy.dunlap@oracle.com>
+
+
+> ---
+>  Documentation/kvm/msr.txt |  152 +++++++++++++++++++++++++++++++++++++++++++++
+>  1 files changed, 152 insertions(+), 0 deletions(-)
+>  create mode 100644 Documentation/kvm/msr.txt
+> 
+> diff --git a/Documentation/kvm/msr.txt b/Documentation/kvm/msr.txt
+> new file mode 100644
+> index 0000000..8cdcb6d
+> --- /dev/null
+> +++ b/Documentation/kvm/msr.txt
+> @@ -0,0 +1,152 @@
+> +KVM-specific MSRs.
+> +Glauber Costa <glommer@redhat.com>, Red Hat Inc, 2010
+> +=====================================================
+> +
+> +KVM makes use of some custom MSRs to service some requests.
+> +At present, this facility is only used by kvmclock.
+> +
+> +Custom MSRs have a range reserved for them, that goes from
+> +0x4b564d00 to 0x4b564dff. There are MSRs outside this area,
+> +but they are deprecated and their use is discouraged.
+> +
+> +Custom MSR list
+> +--------
+> +
+> +The current supported Custom MSR list is:
+> +
+> +MSR_KVM_WALL_CLOCK_NEW:   0x4b564d00
+> +
+> +	data: physical address of a memory area which must be in guest RAM.
+> +	This memory is expected to hold a copy of the following structure:
+> +
+> +	struct pvclock_wall_clock {
+> +		u32   version;
+> +		u32   sec;
+> +		u32   nsec;
+> +	} __attribute__((__packed__));
+> +
+> +	whose data will be filled in by the hypervisor. The hypervisor is only 
+> +	guaranteed to update this data at the moment of MSR write.
+> +	Users that want to reliably query this information more than once have
+
+	Users who want
+
+> +	to write more than once to this MSR. Fields have the following meanings:
+> +
+> +		version: guest has to check version before and after grabbing
+> +		time information and check that they are both equal and even.
+> +		An odd version indicates an in-progress update.
+> +
+> +		sec: number of seconds for wallclock.
+> +
+> +		nsec: number of nanoseconds for wallclock.
+
+
+Thanks.
+
+---
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
