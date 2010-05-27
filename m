@@ -1,37 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751515Ab0E0E3p (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 May 2010 00:29:45 -0400
-Received: from mail-gw0-f46.google.com ([74.125.83.46]:60185 "EHLO
-	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751269Ab0E0E3o (ORCPT
+	id S933468Ab0E0Efd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 May 2010 00:35:33 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:48768 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751305Ab0E0Efc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 May 2010 00:29:44 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type;
-        b=ULQ/E6BbKZCFNhaI2N/4F7g8jaQdocpq+RTMKLffccvEgu1F6FTmMjFDBH426whhA5
-         nBQMBC+dEYBmTfNeOrXuycctb+cU8DCpKxK1E9Az5Hd+YTZym9iZVz8TUeSGmLR/dp/f
-         FrXKOwppIyhBSwdaUkMgJ62msJch/7NNgTM0c=
+	Thu, 27 May 2010 00:35:32 -0400
+Date: Thu, 27 May 2010 05:35:31 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Erik van der Kouwe <vdkouwe@cs.vu.nl>
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+       Fam Zheng <famcool@gmail.com>
+Subject: Re: [PATCH] fs/minix: bugfix, number of indirect block ptrs per
+ block depends on block size
+Message-ID: <20100527043531.GY31073@ZenIV.linux.org.uk>
+References: <4BFCF1EB.20709@cs.vu.nl>
 MIME-Version: 1.0
-In-Reply-To: <1268066071-26711-1-git-send-email-vapier@gentoo.org>
-References: <1268066071-26711-1-git-send-email-vapier@gentoo.org>
-From: Mike Frysinger <vapier.adi@gmail.com>
-Date: Thu, 27 May 2010 00:29:23 -0400
-Message-ID: <AANLkTimaeOLsoh8bLXw1t8ElmvtARpRhgwbqyb5sViGI@mail.gmail.com>
-Subject: Re: [PATCH] asm-generic/io.h: add big endian versions of 
-	io{read,write}{16,32}
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Arnd Bergmann <arnd@arndb.de>, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4BFCF1EB.20709@cs.vu.nl>
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Mar 8, 2010 at 12:34, Mike Frysinger wrote:
-> The asm-generic/iomap.h provides these functions already, but the
-> non-generic fallback defines do not.
+On Wed, May 26, 2010 at 12:03:23PM +0200, Erik van der Kouwe wrote:
 
-Andrew: could you pick this up ?
--mike
+> +#define INDIRCOUNT(sb) ((sb)->s_blocksize / 4)
+
+ITYM (1 << ((sb)->s_blocksize_bits - 2))
+
+Give gcc at least a chance to turn the uses of that into shifts...
+Applied with such change.
