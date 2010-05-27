@@ -1,100 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933463Ab0E0EOE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 May 2010 00:14:04 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:57011 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750920Ab0E0EOA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 May 2010 00:14:00 -0400
-Date: Thu, 27 May 2010 06:13:58 +0200
-From: Wolfram Sang <w.sang@pengutronix.de>
-To: Robert Emanuele <rob@emanuele.us>
-Cc: Linus Walleij <linus.ml.walleij@gmail.com>,
-       linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-       linux-kernel@vger.kernel.org, linux-i2c@vger.kernel.org
-Subject: Re: Controlling Driver Load Order
-Message-ID: <20100527041358.GA14070@pengutronix.de>
-References: <AANLkTikzDvWakd7JW3DzTHinjS3dAlqzPx6K8V2qMDG7@mail.gmail.com> <AANLkTinkY8JYh44UOEPflBUDyQ2wat_AKShRjA3HPxrf@mail.gmail.com> <20100526235246.GA31068@pengutronix.de> <AANLkTikj8yGSK5Ovud_k8f6jWloojqDJmQ_H6pD_IFgM@mail.gmail.com>
+	id S933499Ab0E0EXi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 May 2010 00:23:38 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:35041 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750724Ab0E0EXh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 May 2010 00:23:37 -0400
+Date: Thu, 27 May 2010 14:23:32 +1000
+From: Nick Piggin <npiggin@suse.de>
+To: Dave Chinner <david@fromorbit.com>
+Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+       linux-mm@kvack.org, xfs@oss.sgi.com
+Subject: Re: [PATCH 1/5] inode: Make unused inode LRU per superblock
+Message-ID: <20100527042332.GH22536@laptop>
+References: <1274777588-21494-1-git-send-email-david@fromorbit.com>
+ <1274777588-21494-2-git-send-email-david@fromorbit.com>
+ <20100526161732.GC22536@laptop>
+ <20100526230129.GA1395@dastard>
+ <20100527020445.GF22536@laptop>
+ <20100527040210.GI12087@dastard>
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="pWyiEgJYm5f9v55/"
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <AANLkTikj8yGSK5Ovud_k8f6jWloojqDJmQ_H6pD_IFgM@mail.gmail.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
-X-SA-Exim-Mail-From: wsa@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20100527040210.GI12087@dastard>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, May 27, 2010 at 02:02:10PM +1000, Dave Chinner wrote:
+> On Thu, May 27, 2010 at 12:04:45PM +1000, Nick Piggin wrote:
+> > On Thu, May 27, 2010 at 09:01:29AM +1000, Dave Chinner wrote:
+> > > On Thu, May 27, 2010 at 02:17:33AM +1000, Nick Piggin wrote:
+> > > > On Tue, May 25, 2010 at 06:53:04PM +1000, Dave Chinner wrote:
+> > > > > From: Dave Chinner <dchinner@redhat.com>
+> > > > > 
+> > > > > The inode unused list is currently a global LRU. This does not match
+> > > > > the other global filesystem cache - the dentry cache - which uses
+> > > > > per-superblock LRU lists. Hence we have related filesystem object
+> > > > > types using different LRU reclaimatin schemes.
+> > > > 
+> > > > Is this an improvement I wonder? The dcache is using per sb lists
+> > > > because it specifically requires sb traversal.
+> > > 
+> > > Right - I originally implemented the per-sb dentry lists for
+> > > scalability purposes. i.e. to avoid monopolising the dentry_lock
+> > > during unmount looking for dentries on a specific sb and hanging the
+> > > system for several minutes.
+> > > 
+> > > However, the reason for doing this to the inode cache is not for
+> > > scalability, it's because we have a tight relationship between the
+> > > dentry and inode cacheѕ. That is, reclaim from the dentry LRU grows
+> > > the inode LRU.  Like the registration of the shrinkers, this is kind
+> > > of an implicit, undocumented behavour of the current shrinker
+> > > implemenation.
+> > 
+> > Right, that's why I wonder whether it is an improvement. It would
+> > be interesting to see some tests (showing at least parity).
+> 
+> I've done some testing showing parity. They've been along the lines
+> of:
+> 	- populate cache with 1m dentries + inodes
+> 	- run 'time echo 2 > /proc/sys/vm/drop_caches'
+> 
+> I've used different methods of populating the caches to have them
+> non-sequential in the LRU (i.e. trigger fragmentation), have dirty
+> backing inodes (e.g. the VFS inode clean, the xfs inode dirty
+> because transactions haven't completed), etc.
+> 
+> The variation on the test is around +-10%, with the per-sb shrinkers
+> averaging about 5% lower time to reclaim. This is within the error
+> margin of the test, so it's not really a conclusive win, but it is
+> certainly shows that it does not slow anything down. If you've got a
+> better way to test it, then I'm all ears....
 
---pWyiEgJYm5f9v55/
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
-
-On Wed, May 26, 2010 at 06:39:13PM -0700, Robert Emanuele wrote:
-
-> Still the framebuffer device would initialize first and it would lack
-> having the i2c chips it needs ready.  That is the order I'm trying to
-> straighten out.
-
-Understood. Our pointers were probably not precise enough, sorry. Please try
-this patch and give a Tested-by-tag if it solves your problems.
-
-=46rom: Wolfram Sang <w.sang@pengutronix.de>
-Date: Thu, 27 May 2010 06:03:48 +0200
-Subject: [PATCH] i2c-at91: use subsys_initcall() for early initialization
-
-I2C needs to be available early, so other subsystems can access it.
-
-Signed-off-by: Wolfram Sang <w.sang@pengutronix.de>
-Cc: Robert Emanuele <rob@emanuele.us>
-Cc: Ben Dooks <ben-linux@fluff.org>
----
-
- drivers/i2c/busses/i2c-at91.c |    3 +--
- 1 files changed, 1 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/i2c/busses/i2c-at91.c b/drivers/i2c/busses/i2c-at91.c
-index 305c075..bea5794 100644
---- a/drivers/i2c/busses/i2c-at91.c
-+++ b/drivers/i2c/busses/i2c-at91.c
-@@ -313,13 +313,12 @@ static int __init at91_i2c_init(void)
- {
- 	return platform_driver_register(&at91_i2c_driver);
- }
-+subsys_initcall(at91_i2c_init);
-=20
- static void __exit at91_i2c_exit(void)
- {
- 	platform_driver_unregister(&at91_i2c_driver);
- }
--
--module_init(at91_i2c_init);
- module_exit(at91_i2c_exit);
-=20
- MODULE_AUTHOR("Rick Bronson");
+I guess the problem is that inode LRU cache isn't very useful as
+long as there are dentries in the way (which is most of the time,
+isn't it?). I think nfsd will exercise them better? Dont know of
+any other cases.
 
 
---=20
-Pengutronix e.K.                           | Wolfram Sang                |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+> > Right, it just makes it harder to do. By much harder, I did mostly mean
+> > the extra memory overhead.
+> 
+> You've still got to allocate that extra memory on the per-sb dentry
+> LRUs so it's not really a valid argument.
 
---pWyiEgJYm5f9v55/
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-Content-Disposition: inline
+Well it would be per-zone, per-sb list, but I don't think that
+makes it an ivalid point.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.9 (GNU/Linux)
 
-iEYEARECAAYFAkv98YYACgkQD27XaX1/VRsvlwCffUOH2qAsWbaG2EmIf1Cl2H+I
-8P4AoInnCS69XCfq6wIFku1hUgeT8hlG
-=vGcD
------END PGP SIGNATURE-----
+> IOWs, if it's too much
+> memory for per-sb inode LRUs, then it's too much memory for the
+> per-sb dentry LRUs as well...
 
---pWyiEgJYm5f9v55/--
+Not about how much is too much, it's about more cost or memory
+usage for what benefit? I guess it isn't a lot more memory though.
+
+ 
+> > If there is *no* benefit from doing per-sb
+> > icache then I would question whether we should.
+> 
+> The same vague questions wondering about the benefit of per-sb
+> dentry LRUs were raised when I first proposed them years ago, and
+> look where we are now.
+
+To be fair that is because there were specific needs to do per-sb
+pruning. This isn't the case with icache.
+
+
+>  Besides, focussing on whether this one patch
+> is a benefit or not is really missing the point because it's the
+> benefits of this patchset as a whole that need to be considered....
+
+I would indeed like to focus on the benefits of the patchset as a
+whole. Leaving aside the xfs changes, it would be interesting to
+have at least a few numbers for dcache/icache heavy workloads.
+
+
