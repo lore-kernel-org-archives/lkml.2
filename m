@@ -1,113 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757843Ab0E0RHM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 May 2010 13:07:12 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:57327 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754889Ab0E0RHK convert rfc822-to-8bit (ORCPT
+	id S1757934Ab0E0RH7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 May 2010 13:07:59 -0400
+Received: from cavan.codon.org.uk ([93.93.128.6]:52017 "EHLO
+	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755034Ab0E0RH6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 May 2010 13:07:10 -0400
+	Thu, 27 May 2010 13:07:58 -0400
+Date: Thu, 27 May 2010 18:07:40 +0100
+From: Matthew Garrett <mjg59@srcf.ucam.org>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>,
+       Arve =?iso-8859-1?B?SGr4bm5lduVn?= <arve@android.com>,
+       Florian Mickler <florian@mickler.org>,
+       Vitaly Wool <vitalywool@gmail.com>,
+       Peter Zijlstra <peterz@infradead.org>,
+       LKML <linux-kernel@vger.kernel.org>, Paul@smtp1.linux-foundation.org,
+       felipe.balbi@nokia.com,
+       Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
+       Linux PM <linux-pm@lists.linux-foundation.org>
+Subject: Re: [linux-pm] [PATCH 0/8] Suspend block api (version 8)
+Message-ID: <20100527170740.GA1980@srcf.ucam.org>
+References: <20100526142430.327ccbc4@schatten.dmk.lab> <20100526141612.3e2e0443@lxorguk.ukuu.org.uk> <AANLkTin97MMu-XO_Lk-snefBWz2ymhS0Qi1y1RxLwdVA@mail.gmail.com> <20100527003943.07c17f85@lxorguk.ukuu.org.uk> <20100527140655.GA28048@srcf.ucam.org> <alpine.LFD.2.00.1005271642440.3032@localhost.localdomain> <20100527155201.GA31937@srcf.ucam.org> <20100527171615.15a1fd3d@lxorguk.ukuu.org.uk> <20100527161943.GA32764@srcf.ucam.org> <alpine.LFD.2.00.1005271901020.3032@localhost.localdomain>
 MIME-Version: 1.0
-X-Originating-IP: [174.31.27.127]
-In-Reply-To: <20100527041358.GA14070@pengutronix.de>
-References: <AANLkTikzDvWakd7JW3DzTHinjS3dAlqzPx6K8V2qMDG7@mail.gmail.com>
-	<AANLkTinkY8JYh44UOEPflBUDyQ2wat_AKShRjA3HPxrf@mail.gmail.com>
-	<20100526235246.GA31068@pengutronix.de>
-	<AANLkTikj8yGSK5Ovud_k8f6jWloojqDJmQ_H6pD_IFgM@mail.gmail.com>
-	<20100527041358.GA14070@pengutronix.de>
-Date: Thu, 27 May 2010 10:07:08 -0700
-Message-ID: <AANLkTilKUfcYsPqr5kXlONJQAFCaE8D8U9ltQybIzCPu@mail.gmail.com>
-Subject: Re: Controlling Driver Load Order
-From: Robert Emanuele <rob@emanuele.us>
-To: Wolfram Sang <w.sang@pengutronix.de>
-Cc: Linus Walleij <linus.ml.walleij@gmail.com>,
-       linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-       linux-kernel@vger.kernel.org, linux-i2c@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LFD.2.00.1005271901020.3032@localhost.localdomain>
+User-Agent: Mutt/1.5.18 (2008-05-17)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Wolfram,
+On Thu, May 27, 2010 at 07:04:38PM +0200, Thomas Gleixner wrote:
+> On Thu, 27 May 2010, Matthew Garrett wrote:
+> > Sure, if you're not using opportunistic suspend then I don't think 
+> > there's any real need for the userspace side of this. The question is 
+> > how to implement something with the useful properties of opportunistic 
+> > suspend without without implementing something pretty much equivalent to 
+> > the userspace suspend blockers. I've sent another mail expressing why I 
+> > don't think your proposed QoS style behaviour provides that.
+> 
+> Opportunistic suspend is just a deep idle state, nothing else.
 
-I am using the i2c-gpio.c driver, not the i2c-at91 driver.  The Atmel
-folks have expressed concerns over their i2c silicon and wrote a gpio
-version.
+No. The useful property of opportunistic suspend is that nothing gets 
+scheduled. That's fundamentally different to a deep idle state.
 
-Anyway, I better understand the subsys_initcall now and applied that
-to the i2c-gpio and my i2c chip driver.  That worked perfectly for my
-issue.  I'd be happy to return a patch of this.  Would be this the
-sort of thing that would benefit from a config option?  Something
-like:
+> Stop thinking about suspend as a special mechanism. It's not - except
+> for s2disk, which is an entirely different beast.
 
-#if defined(CONFIG_EARLY_i2C_GPIO)
-subsys_initcall(i2c_gpio_init);
-#else
-module_init(i2c_gpio_init);
-#endif
+On PCs, suspend has more in common with s2disk than it does C states.
 
-I appreciate your help and direction.
-
-Thank you,
-
-Rob
-
-On Wed, May 26, 2010 at 9:13 PM, Wolfram Sang <w.sang@pengutronix.de> wrote:
-> On Wed, May 26, 2010 at 06:39:13PM -0700, Robert Emanuele wrote:
->
->> Still the framebuffer device would initialize first and it would lack
->> having the i2c chips it needs ready.  That is the order I'm trying to
->> straighten out.
->
-> Understood. Our pointers were probably not precise enough, sorry. Please try
-> this patch and give a Tested-by-tag if it solves your problems.
->
-> From: Wolfram Sang <w.sang@pengutronix.de>
-> Date: Thu, 27 May 2010 06:03:48 +0200
-> Subject: [PATCH] i2c-at91: use subsys_initcall() for early initialization
->
-> I2C needs to be available early, so other subsystems can access it.
->
-> Signed-off-by: Wolfram Sang <w.sang@pengutronix.de>
-> Cc: Robert Emanuele <rob@emanuele.us>
-> Cc: Ben Dooks <ben-linux@fluff.org>
-> ---
->
->  drivers/i2c/busses/i2c-at91.c |    3 +--
->  1 files changed, 1 insertions(+), 2 deletions(-)
->
-> diff --git a/drivers/i2c/busses/i2c-at91.c b/drivers/i2c/busses/i2c-at91.c
-> index 305c075..bea5794 100644
-> --- a/drivers/i2c/busses/i2c-at91.c
-> +++ b/drivers/i2c/busses/i2c-at91.c
-> @@ -313,13 +313,12 @@ static int __init at91_i2c_init(void)
->  {
->        return platform_driver_register(&at91_i2c_driver);
->  }
-> +subsys_initcall(at91_i2c_init);
->
->  static void __exit at91_i2c_exit(void)
->  {
->        platform_driver_unregister(&at91_i2c_driver);
->  }
-> -
-> -module_init(at91_i2c_init);
->  module_exit(at91_i2c_exit);
->
->  MODULE_AUTHOR("Rick Bronson");
->
->
-> --
-> Pengutronix e.K.                           | Wolfram Sang                |
-> Industrial Linux Solutions                 | http://www.pengutronix.de/  |
->
-> -----BEGIN PGP SIGNATURE-----
-> Version: GnuPG v1.4.9 (GNU/Linux)
->
-> iEYEARECAAYFAkv98YYACgkQD27XaX1/VRsvlwCffUOH2qAsWbaG2EmIf1Cl2H+I
-> 8P4AoInnCS69XCfq6wIFku1hUgeT8hlG
-> =vGcD
-> -----END PGP SIGNATURE-----
->
->
+-- 
+Matthew Garrett | mjg59@srcf.ucam.org
