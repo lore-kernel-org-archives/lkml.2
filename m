@@ -1,100 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754982Ab0E0OYv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 May 2010 10:24:51 -0400
-Received: from mail.gmx.net ([213.165.64.20]:52535 "HELO mail.gmx.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1753220Ab0E0OYs convert rfc822-to-8bit (ORCPT
+	id S1756828Ab0E0O3D (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 May 2010 10:29:03 -0400
+Received: from casper.infradead.org ([85.118.1.10]:51466 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754371Ab0E0O27 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 May 2010 10:24:48 -0400
-X-Authenticated: #5108953
-X-Provags-ID: V01U2FsdGVkX1/tgPAVMC7tnPd3o0VTuig+hTvr1UlTVNdVPnBVeb
-	2e5CmzKhlcARSl
-From: Toralf =?iso-8859-1?q?F=F6rster?= <toralf.foerster@gmx.de>
-To: rostedt@goodmis.org
-Subject: Re: [PATCH] streamline_config.pl: use references rather than copied data structures
-Date: Thu, 27 May 2010 16:24:44 +0200
-User-Agent: KMail/1.13.3 (Linux/2.6.34; KDE/4.4.3; i686; ; )
-Cc: zippel@linux-m68k.org, linux-kbuild@vger.kernel.org,
-       linux-kernel@vger.kernel.org
-References: <201005271342.09066.toralf.foerster@gmx.de> <1274965649.22648.263.camel@gandalf.stny.rr.com>
-In-Reply-To: <1274965649.22648.263.camel@gandalf.stny.rr.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+	Thu, 27 May 2010 10:28:59 -0400
+Subject: Re: [linux-pm] [PATCH 0/8] Suspend block api (version 8)
+From: Peter Zijlstra <peterz@infradead.org>
+To: Matthew Garrett <mjg59@srcf.ucam.org>
+Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>,
+       Arve =?ISO-8859-1?Q?Hj=F8nnev=E5g?= <arve@android.com>,
+       Florian Mickler <florian@mickler.org>,
+       Vitaly Wool <vitalywool@gmail.com>, LKML <linux-kernel@vger.kernel.org>,
+       Paul@smtp1.linux-foundation.org, felipe.balbi@nokia.com,
+       Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
+       Linux PM <linux-pm@lists.linux-foundation.org>
+In-Reply-To: <20100527140655.GA28048@srcf.ucam.org>
+References: <AANLkTinN6MKvCEhPkbYQRD2gu-mGXdNW9asRsTuKN3_Y@mail.gmail.com>
+	 <1274867106.5882.5090.camel@twins>
+	 <20100526120242.5c9b73ad@schatten.dmk.lab>
+	 <AANLkTim4021cTnhVZrQpefq1MG-eEPOFLDRO-XDepHb4@mail.gmail.com>
+	 <20100526133721.602633b2@schatten.dmk.lab>
+	 <AANLkTikzgaOFdQKess4E-D86OLPOzxP3dWiDkU_UR0ri@mail.gmail.com>
+	 <20100526142430.327ccbc4@schatten.dmk.lab>
+	 <20100526141612.3e2e0443@lxorguk.ukuu.org.uk>
+	 <AANLkTin97MMu-XO_Lk-snefBWz2ymhS0Qi1y1RxLwdVA@mail.gmail.com>
+	 <20100527003943.07c17f85@lxorguk.ukuu.org.uk>
+	 <20100527140655.GA28048@srcf.ucam.org>
+Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 8BIT
-Message-Id: <201005271624.44746.toralf.foerster@gmx.de>
-X-Y-GMX-Trusted: 0
+Date: Thu, 27 May 2010 16:28:51 +0200
+Message-ID: <1274970531.27810.5024.camel@twins>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, 2010-05-27 at 15:06 +0100, Matthew Garrett wrote:
 
-Steven Rostedt wrote at 15:07:29
-> On Thu, 2010-05-27 at 13:42 +0200, Toralf Förster wrote:
-> > IMHO there's no need for a copy-by-value
+> I don't entirely see how this works. In order to deal with poorly 
+> written applications, it's necessary to (optionally, based on some 
+> policy) ignore them when it comes to the scheduler. The problem is how 
+> to implement the optional nature of this in a race-free manner. This is 
+> obviously a pathological case, but imagine an application that does 
+> something along the following lines:
 > 
-> Hi Toralf,
+> int input = open ("/dev/input", O_RDONLY|O_NONBLOCK);
+> char foo;
 > 
-> I'm sorry but "Your Humble Opinion" is not rational to make changes.
+> while (1) {
+> 	suspend_block();
+> 	if (read(input, &foo, 1) > 0) {
+> 		(do something)
+> 		suspend_unblock();
+> 	} else {
+> 		suspend_unblock();
+> 		(draw bouncing cows and clouds and tractor beams briefly)
+> 	}
+> }
 > 
-> A change to the code must have a reason other than opinion. You must be
-> able to show that there is actual benefit for a change, or at least
-> explain it.
-> 
-> Every time a change is made, there is potential for a new bug to be
-> introduced (especially in Perl). So, unless there's actual need for a
-> change, don't make one.
-> 
-> This is not performance critical code. If you are fixing a bug, or
-> adding a feature, then sure. But I really don't want changes that do
-> nothing but skin the cat a different way.
-> 
-> Thanks,
-> 
-> -- Steve
+> Now, if the user is playing this game, you want it to be scheduled. If 
+> the user has put down their phone and the screen lock has kicked in, you 
+> don't want it to be scheduled. So we could imagine some sort of cgroup 
+> that contains untrusted tasks - when the session is active we set a flag 
+> one way which indicates to the scheduler that tasks in TASK_RUNNING 
+> should be scheduled, and when the session is idle we set the flag the 
+> other way and all processes in that cgroup get shifted to 
+> TASK_INTERRUPTIBLE or something.
 
-Understood and accepted.
+What's wrong with simply making the phone beep loudly and displaying:
+bouncing cows is preventing your phone from sleeping!
 
-What's about the following 2 snippets (a trivial typo and an attempt to 
-prevent a possible trap) ? :
-
-
-diff --git a/scripts/kconfig/streamline_config.pl 
-b/scripts/kconfig/streamline_config.pl
-index afbd54a..3f54911 100644
---- a/scripts/kconfig/streamline_config.pl
-+++ b/scripts/kconfig/streamline_config.pl
-@@ -242,7 +242,7 @@ foreach my $makefile (@makefiles) {
-            foreach my $obj (split /\s+/,$objs) {
-                $obj =~ s/-/_/g;
-                if ($obj =~ /(.*)\.o$/) {
--                   # Objects may bes enabled by more than one config.
-+                   # Objects may be enabled by more than one config.
-                    # Store configs in an array.
-                    my @arr;
-
-
-
-diff --git a/scripts/kconfig/streamline_config.pl 
-b/scripts/kconfig/streamline_config.pl
-index afbd54a..9726946 100644
---- a/scripts/kconfig/streamline_config.pl
-+++ b/scripts/kconfig/streamline_config.pl
-@@ -307,7 +307,7 @@ close (LIN);
- my %configs;
- foreach my $module (keys(%modules)) {
-     if (defined($objects{$module})) {
--       @arr = @{$objects{$module}};
-+       my @arr = @{$objects{$module}};
-        foreach my $conf (@arr) {
-            $configs{$conf} = $module;
-        }
-
-
--- 
-MfG/Sincerely
-Toralf Förster
-
-pgp finger print: 7B1A 07F4 EC82 0F90 D4C2 8936 872A E508 7DB6 9DA3
 
