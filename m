@@ -1,74 +1,594 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757264Ab0E0Cl6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 May 2010 22:41:58 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:39997 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754017Ab0E0Cl5 (ORCPT
+	id S932342Ab0E0Cml (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 May 2010 22:42:41 -0400
+Received: from vms173019pub.verizon.net ([206.46.173.19]:37637 "EHLO
+	vms173019pub.verizon.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753101Ab0E0Cmj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 May 2010 22:41:57 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.4.0
-Message-ID: <4BFDDBA9.4010702@np.css.fujitsu.com>
-Date: Thu, 27 May 2010 11:40:41 +0900
-From: Jin Dongming <jin.dongming@np.css.fujitsu.com>
-User-Agent: Thunderbird 2.0.0.23 (Windows/20090812)
-MIME-Version: 1.0
-To: LKLM <linux-kernel@vger.kernel.org>
-CC: Andi Kleen <ak@linux.intel.com>, Huang Ying <ying.huang@intel.com>,
-       Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
-Subject: [Patch-next] Remove notify_die in do_machine_check functioin
-Content-Type: text/plain; charset=ISO-2022-JP
-Content-Transfer-Encoding: 7bit
+	Wed, 26 May 2010 22:42:39 -0400
+From: Len Brown <lenb@kernel.org>
+To: x86@kernel.org, linux-pm@lists.linux-foundation.org
+Cc: linux-kernel@vger.kernel.org, Len Brown <len.brown@intel.com>
+Subject: [PATCH 8/8] intel_idle: create a native cpuidle driver for select
+ intel processors
+Date: Wed, 26 May 2010 22:42:31 -0400
+Message-id: <198450ec1600d9a7f55270dd4d44d6b55bc5b184.1274926772.git.len.brown@intel.com>
+X-Mailer: git-send-email 1.7.1.231.gd0b16
+In-reply-to: <1274928151-30919-1-git-send-email-lenb@kernel.org>
+References: <1274928151-30919-1-git-send-email-lenb@kernel.org>
+In-reply-to: <e099975ca65a7f6ac7f8bc3fee84d3e03893aa31.1274926772.git.len.brown@intel.com>
+References: <e099975ca65a7f6ac7f8bc3fee84d3e03893aa31.1274926772.git.len.brown@intel.com>
+X-Patchwork-Hint: ignore
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch fixes do_machine_check() failure caused by DIE_NMI.
+From: Len Brown <len.brown@intel.com>
 
-I do MCE tests on my machine. When I inject Uncorrected Error(UE) into
-kernel, the messages of test failure are always gotten. This problem
-is caused by the notification of DIE_NMI in the front of do_machine_check().
-Because there are some notifications used DIE_NMI, and when they finish their
-own work and return NOTIFY_STOP as a result. The result makes
-do_machine_check() return at that time.
+This EXPERIMENTAL driver supersedes acpi_idle
+on modern Intel processors. (Nehalem and Atom Processors).
 
-So we decide to delete the notification of DIE_NMI. It is because when UE error
-happens, if one of the cpu is down caused by the error of hook function of
-DIE_NMI, the error type of UE may be different with the real one. For example,
+For CONFIG_INTEL_IDLE=y, intel_idle probes before acpi_idle,
+no matter if CONFIG_ACPI_PROCESSOR=y or =m.
 
-        CPU0                                  CPU1
-UE      do_machine_check()                    do_machine_check()
-        |                                     |
-        cpu down(hook error of DIE_NMI)       cpu OK(no hook error of DIE_NMI)
-                                              |
-                                              wait CPU0 timeout
-                                              |
-                                              Fatal Error
-                                              (Timeout synchronizing machine
-                                               check over CPUs)
+Boot with "intel_idle.max_cstate=0" to disable the driver
+and to fall back on ACPI.
 
-And I test this patch on x86_64. It works well.
+CONFIG_INTEL_IDLE=m is not recommended unless the system
+has a method to guarantee intel_idle loads before ACPI's
+processor_idle.
 
-Signed-off-by: Jin Dongming <jin.dongming@np.css.fujitsu.com>
-Signed-off-by: Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
+This driver does not yet know about cpu online/offline
+and thus will not yet play well with cpu-hotplug.
+
+Signed-off-by: Len Brown <len.brown@intel.com>
 ---
- arch/x86/kernel/cpu/mcheck/mce.c |    3 ---
- 1 files changed, 0 insertions(+), 3 deletions(-)
+ MAINTAINERS                     |    7 +
+ drivers/Makefile                |    2 +-
+ drivers/acpi/processor_driver.c |    6 +-
+ drivers/idle/Kconfig            |   11 +
+ drivers/idle/Makefile           |    1 +
+ drivers/idle/intel_idle.c       |  446 +++++++++++++++++++++++++++++++++++++++
+ 6 files changed, 471 insertions(+), 2 deletions(-)
+ create mode 100755 drivers/idle/intel_idle.c
 
-diff --git a/arch/x86/kernel/cpu/mcheck/mce.c b/arch/x86/kernel/cpu/mcheck/mce.c
-index 18cc425..5ed9df3 100644
---- a/arch/x86/kernel/cpu/mcheck/mce.c
-+++ b/arch/x86/kernel/cpu/mcheck/mce.c
-@@ -955,9 +955,6 @@ void do_machine_check(struct pt_regs *regs, long error_code)
+diff --git a/MAINTAINERS b/MAINTAINERS
+index d329b05..276e79b 100644
+--- a/MAINTAINERS
++++ b/MAINTAINERS
+@@ -2850,6 +2850,13 @@ T:	git git://git.kernel.org/pub/scm/linux/kernel/git/dtor/input.git
+ S:	Maintained
+ F:	drivers/input/
  
- 	percpu_inc(mce_exception_count);
++INTEL IDLE DRIVER
++M:	Len Brown <lenb@kernel.org>
++L:	linux-pm@lists.linux-foundation.org
++T:	git git://git.kernel.org/pub/scm/linux/kernel/git/lenb/linux-idle-2.6.git
++S:	Supported
++F:	drivers/idle/intel_idle.c
++
+ INTEL FRAMEBUFFER DRIVER (excluding 810 and 815)
+ M:	Maik Broemme <mbroemme@plusserver.de>
+ L:	linux-fbdev@vger.kernel.org
+diff --git a/drivers/Makefile b/drivers/Makefile
+index f42a030..91874e0 100644
+--- a/drivers/Makefile
++++ b/drivers/Makefile
+@@ -10,6 +10,7 @@ obj-$(CONFIG_PCI)		+= pci/
+ obj-$(CONFIG_PARISC)		+= parisc/
+ obj-$(CONFIG_RAPIDIO)		+= rapidio/
+ obj-y				+= video/
++obj-y				+= idle/
+ obj-$(CONFIG_ACPI)		+= acpi/
+ obj-$(CONFIG_SFI)		+= sfi/
+ # PnP must come after ACPI since it will eventually need to check if acpi
+@@ -91,7 +92,6 @@ obj-$(CONFIG_EISA)		+= eisa/
+ obj-y				+= lguest/
+ obj-$(CONFIG_CPU_FREQ)		+= cpufreq/
+ obj-$(CONFIG_CPU_IDLE)		+= cpuidle/
+-obj-y				+= idle/
+ obj-$(CONFIG_MMC)		+= mmc/
+ obj-$(CONFIG_MEMSTICK)		+= memstick/
+ obj-$(CONFIG_NEW_LEDS)		+= leds/
+diff --git a/drivers/acpi/processor_driver.c b/drivers/acpi/processor_driver.c
+index deefa85..b2a6d73 100644
+--- a/drivers/acpi/processor_driver.c
++++ b/drivers/acpi/processor_driver.c
+@@ -922,9 +922,13 @@ static int __init acpi_processor_init(void)
+ 		return -ENOMEM;
+ #endif
  
--	if (notify_die(DIE_NMI, "machine check", regs, error_code,
--			   18, SIGKILL) == NOTIFY_STOP)
--		goto out;
- 	if (!banks)
- 		goto out;
+-	if (!cpuidle_register_driver(&acpi_idle_driver))
++	if (!cpuidle_register_driver(&acpi_idle_driver)) {
+ 		printk(KERN_DEBUG "ACPI: %s registered with cpuidle\n",
+ 			acpi_idle_driver.name);
++	} else {
++                printk(KERN_DEBUG "ACPI: intel_idle yielding to %s",
++                        cpuidle_get_driver()->name);
++	}
  
+ 	result = acpi_bus_register_driver(&acpi_processor_driver);
+ 	if (result < 0)
+diff --git a/drivers/idle/Kconfig b/drivers/idle/Kconfig
+index f15e90a..fb5c518 100644
+--- a/drivers/idle/Kconfig
++++ b/drivers/idle/Kconfig
+@@ -1,3 +1,14 @@
++config INTEL_IDLE
++	tristate "Cpuidle Driver for Intel Processors"
++	depends on CPU_IDLE
++	depends on X86
++	depends on CPU_SUP_INTEL
++	depends on EXPERIMENTAL
++	help
++	  Enable intel_idle, a cpuidle driver that includes knowledge of
++	  native Intel hardware idle features.  The acpi_idle driver
++	  can be configured at the same time, in order to handle
++	  processors intel_idle does not support.
+ 
+ menu "Memory power savings"
+ depends on X86_64
+diff --git a/drivers/idle/Makefile b/drivers/idle/Makefile
+index 5f68fc3..23d295c 100644
+--- a/drivers/idle/Makefile
++++ b/drivers/idle/Makefile
+@@ -1,2 +1,3 @@
+ obj-$(CONFIG_I7300_IDLE)			+= i7300_idle.o
++obj-$(CONFIG_INTEL_IDLE)			+= intel_idle.o
+ 
+diff --git a/drivers/idle/intel_idle.c b/drivers/idle/intel_idle.c
+new file mode 100755
+index 0000000..12f31d9
+--- /dev/null
++++ b/drivers/idle/intel_idle.c
+@@ -0,0 +1,446 @@
++/*
++ * intel_idle.c - native hardware idle loop for modern Intel processors
++ *
++ * Copyright (c) 2010, Intel Corporation.
++ * Len Brown <len.brown@intel.com>
++ *
++ * This program is free software; you can redistribute it and/or modify it
++ * under the terms and conditions of the GNU General Public License,
++ * version 2, as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope it will be useful, but WITHOUT
++ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
++ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
++ * more details.
++ *
++ * You should have received a copy of the GNU General Public License along with
++ * this program; if not, write to the Free Software Foundation, Inc.,
++ * 51 Franklin St - Fifth Floor, Boston, MA 02110-1301 USA.
++ */
++
++/*
++ * intel_idle is a cpuidle driver that loads on specific Intel processors
++ * in lieu of the legacy ACPI processor_idle driver.  The intent is to
++ * make Linux more efficient on these processors, as intel_idle knows
++ * more than ACPI, as well as make Linux more immune to ACPI BIOS bugs.
++ */
++
++/*
++ * Design Assumptions
++ *
++ * All CPUs have same idle states as boot CPU
++ *
++ * Chipset BM_STS (bus master status) bit is a NOP
++ * 	for preventing entry into deep C-stats
++ */
++
++/*
++ * Known issues
++ *
++ * The driver currently initializes for_each_online_cpu() upon modprobe.
++ * It it unaware cpu online/offline and cpui hotplug
++ *
++ * ACPI has a .suspend hack to turn off deep c-statees during suspend
++ * to avoid complications with the lapic timer workaround
++ * will need to address that situation here too.
++ *
++ * There is currently no automatic probing/loading mechanism
++ * if the driver is built as a module.
++ */
++
++/*
++ * todo test
++ * test: build & run with acpi=off
++ * test: repeated load/unload
++ * test: suspend/resume vs timer workaround
++ */
++
++/*
++ * todo cpuidle
++ * 	cpuidle should supply the counters for each driver
++ * 	since they are private to cpuidle, not the driver
++ */
++
++
++/* un-comment DEBUG to enable pr_debug() statements */
++#define DEBUG
++
++#include <linux/kernel.h>
++#include <linux/cpuidle.h>
++#include <linux/clockchips.h>
++#include <linux/hrtimer.h>	/* ktime_get_real() */
++#include <trace/events/power.h>
++#include <linux/sched.h>
++
++#define INTEL_IDLE_VERSION "0.3"
++#define PREFIX "intel_idle: "
++
++#define MWAIT_SUBSTATE_MASK	(0xf)
++#define MWAIT_CSTATE_MASK	(0xf)
++#define MWAIT_SUBSTATE_SIZE	(4)
++#define MWAIT_MAX_NUM_CSTATES	8
++#define CPUID_MWAIT_LEAF (5)
++#define CPUID5_ECX_EXTENSIONS_SUPPORTED (0x1)
++#define CPUID5_ECX_INTERRUPT_BREAK	(0x2)
++
++#define mwait_hint_to_cstate(hint) ((((hint) >> MWAIT_SUBSTATE_SIZE) & MWAIT_CSTATE_MASK) + 1)
++#define lapic_timer_reliable(cstate) (lapic_timer_reliable_states & (1 << (cstate)))
++
++static struct cpuidle_driver intel_idle_driver = {
++	.name = "intel_idle",
++	.owner = THIS_MODULE,
++};
++static int max_cstate = MWAIT_MAX_NUM_CSTATES - 1;	/* intel_idle.max_cstate=0 disables driver */
++static int power_policy = 7; /* 0 = max perf; 15 = max powersave */
++
++static unsigned int substates;
++#define get_num_mwait_substates(cstate) ((substates >> ((cstate) * 4)) && 0xF)
++
++/* Reliable LAPIC Timer States, bit 1 for C1 etc.  */
++static unsigned int lapic_timer_reliable_states;
++
++static struct cpuidle_device *intel_idle_cpuidle_devices;
++static int intel_idle(struct cpuidle_device *dev, struct cpuidle_state *state);
++
++/*
++ * These attributes are be visible under
++ * /sys/devices/system/cpu/cpu.../cpuidle/state.../
++ *
++ * name 
++ * 	Hardware name of the state, from datasheet
++ * desc
++ * 	MWAIT param
++ * driver_data
++ * 	token passed to intel_idle()
++ * flags
++ * 	CPUIDLE_FLAG_TIME_VALID
++ * 		we return valid times in all states
++ * 	CPUIDLE_FLAG_SHALLOW
++ * 		lapic timer keeps running
++ * exit_latency
++ * 	[usec]
++ * power_usage
++ * 	mW (TBD)
++ * target_residency
++ * 	currently we multiply exit_latency by 4
++ * 	[usec]
++ * usage
++ * 	instance counter
++ * time
++ * 	residency counter [usec]
++ */
++
++static struct cpuidle_state *cpuidle_state_table;
++
++/*
++ * States are indexed by the cstate number,
++ * which is also the index into the MWAIT hint array.
++ * Thus C0 is a dummy.
++ */
++static struct cpuidle_state nehalem_cstates[MWAIT_MAX_NUM_CSTATES] = {
++	{ "", "", 0, 0, 0, 0, 0, 0, 0, 0},
++	{ "NHM-C1", "MWAIT 0x00", (void *) 0x00,
++		CPUIDLE_FLAG_TIME_VALID,
++		3, 1000, 6, 0, 0, &intel_idle },
++	{ "NHM-C3", "MWAIT 0x10", (void *) 0x10,
++		CPUIDLE_FLAG_TIME_VALID,
++		20, 500, 80, 0, 0, &intel_idle },
++	{ "NHM-C6", "MWAIT 0x20", (void *) 0x20,
++		CPUIDLE_FLAG_TIME_VALID,
++		200, 350, 800, 0, 0, &intel_idle },
++	{ "", "", 0, 0, 0, 0, 0, 0, 0, 0},
++	{ "", "", 0, 0, 0, 0, 0, 0, 0, 0},
++	{ "", "", 0, 0, 0, 0, 0, 0, 0, 0},
++	{ "", "", 0, 0, 0, 0, 0, 0, 0, 0}
++};
++
++static struct cpuidle_state atom_cstates[MWAIT_MAX_NUM_CSTATES] = {
++	{ "", "", 0, 0, 0, 0, 0, 0, 0, 0},
++	{ "ATM-C1", "MWAIT 0x00", (void *) 0x00,
++		CPUIDLE_FLAG_TIME_VALID,
++		1, 1000, 4, 0, 0, &intel_idle },
++	{ "ATM-C2", "MWAIT 0x10", (void *) 0x10,
++		CPUIDLE_FLAG_TIME_VALID,
++		20, 500, 80, 0, 0, &intel_idle },
++	{ "", "", 0, 0, 0, 0, 0, 0, 0, 0},
++	{ "ATM-C4", "MWAIT 0x30", (void *) 0x30,
++		CPUIDLE_FLAG_TIME_VALID,
++		100, 250, 400, 0, 0, &intel_idle },
++	{ "ATM-C6", "MWAIT 0x40", (void *) 0x40,
++		CPUIDLE_FLAG_TIME_VALID,
++		200, 150, 800, 0, 0, &intel_idle },
++	{ "", "", 0, 0, 0, 0, 0, 0, 0, 0},
++	{ "", "", 0, 0, 0, 0, 0, 0, 0, 0}
++};
++
++/*
++ * choose_substate()
++ *
++ * Run-time decision on which C-state substate to invoke
++ * If power_policy = 0, choose shallowest substate (0)
++ * If power_policy = 15, choose deepest substate
++ * If power_policy = middle, choose middle substate etc.
++ */
++static int choose_substate(int cstate)
++{
++	unsigned int num_substates;
++
++	power_policy &= 0xF;	/* valid range: 0-15 */
++	cstate &= 7;	/* valid range: 0-7 */
++
++	num_substates = get_num_mwait_substates(cstate);
++
++	if (num_substates <= 1)
++		return 0;
++	
++	return ((power_policy + (power_policy + 1) * (num_substates - 1)) / 16);
++}
++
++/**
++ * intel_idle
++ * @dev: cpuidle_device
++ * @state: cpuidle state
++ *
++ */
++static int intel_idle(struct cpuidle_device *dev, struct cpuidle_state *state)
++{
++	unsigned long ecx = 1; /* break on interrupt flag */
++	unsigned long eax = (unsigned long)cpuidle_get_statedata(state);
++	unsigned int cstate;
++	ktime_t kt_before, kt_after;
++	s64 usec_delta;
++	int cpu = smp_processor_id();
++
++	cstate = mwait_hint_to_cstate(eax);
++
++	eax = eax + choose_substate(cstate);
++
++	local_irq_disable();
++
++	if (!lapic_timer_reliable(cstate))
++		clockevents_notify(CLOCK_EVT_NOTIFY_BROADCAST_ENTER, &cpu); 
++
++	kt_before = ktime_get_real();
++
++	stop_critical_timings();
++#ifndef MODULE
++	trace_power_start(POWER_CSTATE, (eax >> 4) + 1);
++#endif
++	if (!need_resched()) {
++
++		__monitor((void *)&current_thread_info()->flags, 0, 0);
++		smp_mb();
++		if (!need_resched())
++			__mwait(eax, ecx);
++	}
++
++	start_critical_timings();
++
++	kt_after = ktime_get_real();
++	usec_delta = ktime_to_us(ktime_sub(kt_after, kt_before));
++
++	local_irq_enable();
++	
++	if (!lapic_timer_reliable(cstate))
++ 		clockevents_notify(CLOCK_EVT_NOTIFY_BROADCAST_EXIT, &cpu); 
++
++	return usec_delta;
++}
++
++
++/*
++ * intel_idle_probe()
++ */
++static int intel_idle_probe(void)
++{
++	unsigned int eax, ebx, ecx, edx;
++
++	if (max_cstate == 0) {
++		pr_debug(PREFIX "disabled\n" );
++		return -1;
++	}
++
++	if (boot_cpu_data.x86_vendor != X86_VENDOR_INTEL)
++		return -1;
++ 
++	if (!boot_cpu_has(X86_FEATURE_MWAIT))
++		return -1;
++
++	if (boot_cpu_data.cpuid_level < CPUID_MWAIT_LEAF)
++		return -1;
++
++	cpuid(CPUID_MWAIT_LEAF, &eax, &ebx, &ecx, &edx);
++
++	if (!(ecx & CPUID5_ECX_EXTENSIONS_SUPPORTED) ||
++		!(ecx & CPUID5_ECX_INTERRUPT_BREAK))
++			return -1;
++
++	pr_debug(PREFIX "MWAIT substates: 0x%x\n", edx);
++
++#ifdef DEBUG
++	if (substates == 0)	/* can over-ride via modparam */
++#endif
++		substates = edx;
++
++	/*
++ 	 * Bail out if non-stop TSC unavailable.
++ 	 * Nehalem and newer have it.
++ 	 *
++ 	 * Atom and Core2 will will require
++ 	 * mark_tsc_unstable("TSC halts in idle")
++ 	 * when have a state deeper than C1
++ 	 */
++	if (!boot_cpu_has(X86_FEATURE_NONSTOP_TSC))
++		return -1;
++
++	if (boot_cpu_has(X86_FEATURE_ARAT))	/* Always Reliable APIC Timer */
++		lapic_timer_reliable_states = 0xFFFFFFFF;
++
++	if (boot_cpu_data.x86 != 6)	/* family 6 */
++		return -1;
++
++	switch (boot_cpu_data.x86_model) {
++
++	case 0x1A:	/* Core i7, Xeon 5500 series */
++	case 0x1E:	/* Core i7 and i5 Processor - Lynnfield, Jasper Forest */
++	case 0x1F:	/* Core i7 and i5 Processor - Nehalem */
++	case 0x2E:	/* Nehalem-EX Xeon */
++		lapic_timer_reliable_states = (1 << 1);	 /* C1 */
++
++	case 0x25:	/* Westmere */
++	case 0x2C:	/* Westmere */
++
++		cpuidle_state_table = nehalem_cstates;
++		break;
++#ifdef notyet
++	case 0x1C:	/* 28 - Atom Processor */
++		cpuidle_state_table = atom_cstates;
++		break;
++#endif
++
++	case 0x17:	/* 23 - Core 2 Duo */
++		lapic_timer_reliable_states = (1 << 2) | (1 << 1); /* C2, C1 */
++
++	default:
++		pr_debug(PREFIX "does not run on family %d model %d\n",
++			boot_cpu_data.x86, boot_cpu_data.x86_model);
++		return -1;
++	}
++
++	pr_debug(PREFIX "v" INTEL_IDLE_VERSION
++		" model 0x%X\n", boot_cpu_data.x86_model);
++
++pr_debug(PREFIX "lapic_timer_reliable_states 0x%x\n", lapic_timer_reliable_states);
++	return 0;
++}
++
++/*
++ * intel_idle_cpuidle_devices_init()
++ * allocate, initialize, register cpuidle_devices
++ */
++static int intel_idle_cpuidle_devices_init(void)
++{
++	int i, cstate;
++	struct cpuidle_device *dev;
++
++	intel_idle_cpuidle_devices = alloc_percpu(struct cpuidle_device);
++	if (intel_idle_cpuidle_devices == NULL)
++		return -1;
++
++	for_each_online_cpu(i) {
++		dev = per_cpu_ptr(intel_idle_cpuidle_devices, i);
++
++		dev->state_count = 1;
++
++		for (cstate = 1; cstate < MWAIT_MAX_NUM_CSTATES; ++cstate) {
++			int num_substates;
++
++			if (cstate > max_cstate) {
++				printk(PREFIX "max_cstate %d exceeded", max_cstate);
++				break;
++			}
++
++			/* does the state exist in CPUID.MWAIT? */
++			num_substates = get_num_mwait_substates(cstate);
++			if (num_substates == 0)
++				continue;
++
++			/* does the state exist in the driver's table? */
++			if (cpuidle_state_table[cstate].name == NULL) {
++				pr_debug(PREFIX "unaware of model 0x%x MWAIT %x\
++					please contact lenb@kernel.org", boot_cpu_data.x86_model, cstate);
++				continue;
++			}
++			dev->states[dev->state_count] = cpuidle_state_table[cstate];	/* structure copy */
++			dev->state_count += 1;
++		}
++
++		dev->cpu = i;
++		if (cpuidle_register_device(dev)) {
++			pr_debug(PREFIX "cpuidle_register_device %d failed!\n", i);
++			free_percpu(intel_idle_cpuidle_devices);
++			return -EIO;
++		}
++	}
++
++	return 0;
++}
++
++/*
++ * intel_idle_cpuidle_devices_uninit()
++ * unregister, free cpuidle_devices
++ */
++static void intel_idle_cpuidle_devices_uninit(void)
++{
++	int i;
++	struct cpuidle_device *dev;
++
++	for_each_online_cpu(i) {
++		dev = per_cpu_ptr(intel_idle_cpuidle_devices, i);
++		cpuidle_unregister_device(dev);
++	}
++
++	free_percpu(intel_idle_cpuidle_devices);
++	return;
++}
++
++static int intel_idle_init(void) 
++{
++
++	if (intel_idle_probe())
++		return -1;
++
++	if (cpuidle_register_driver(&intel_idle_driver)) {
++		pr_debug(PREFIX "unable to register with cpuidle due to %s",
++			cpuidle_get_driver()->name);
++		return -1;
++	}
++
++	if (intel_idle_cpuidle_devices_init()) {
++		cpuidle_unregister_driver(&intel_idle_driver);
++		return -1;
++	}
++
++	return 0;	
++}
++
++static void __exit intel_idle_exit(void)
++{
++	intel_idle_cpuidle_devices_uninit();
++	cpuidle_unregister_driver(&intel_idle_driver);
++
++	return;
++}
++
++module_init(intel_idle_init);
++module_exit(intel_idle_exit);
++
++module_param(power_policy, int, 0644);
++module_param(max_cstate, int, 0444);
++#ifdef DEBUG
++module_param(substates, int, 0444);
++#endif
++
++MODULE_AUTHOR("Len Brown <len.brown@intel.com>");
++MODULE_DESCRIPTION("Cpuidle driver for Intel Hardware v" INTEL_IDLE_VERSION);
++MODULE_LICENSE("GPL");
 -- 
-1.7.0.3
+1.6.0.6
 
