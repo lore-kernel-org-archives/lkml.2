@@ -1,35 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933468Ab0E0Efd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 May 2010 00:35:33 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:48768 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751305Ab0E0Efc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 May 2010 00:35:32 -0400
-Date: Thu, 27 May 2010 05:35:31 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Erik van der Kouwe <vdkouwe@cs.vu.nl>
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-       Fam Zheng <famcool@gmail.com>
-Subject: Re: [PATCH] fs/minix: bugfix, number of indirect block ptrs per
- block depends on block size
-Message-ID: <20100527043531.GY31073@ZenIV.linux.org.uk>
-References: <4BFCF1EB.20709@cs.vu.nl>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4BFCF1EB.20709@cs.vu.nl>
-User-Agent: Mutt/1.5.20 (2009-08-17)
+	id S1751686Ab0E0ElW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 May 2010 00:41:22 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:47048 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751382Ab0E0ElU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 May 2010 00:41:20 -0400
+Date: Thu, 27 May 2010 14:41:11 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Len Brown <lenb@kernel.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: linux-next: build warnings after merge of the acpi tree
+Message-Id: <20100527144111.84b2e651.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Thu__27_May_2010_14_41_11_+1000_jD28dIZwBzXe1gFx"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 26, 2010 at 12:03:23PM +0200, Erik van der Kouwe wrote:
+--Signature=_Thu__27_May_2010_14_41_11_+1000_jD28dIZwBzXe1gFx
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> +#define INDIRCOUNT(sb) ((sb)->s_blocksize / 4)
+Hi Len,
 
-ITYM (1 << ((sb)->s_blocksize_bits - 2))
+After merging the acpi tree, today's linux-next build (x86_64 allmodconfig)
+produced these warnings:
 
-Give gcc at least a chance to turn the uses of that into shifts...
-Applied with such change.
+drivers/idle/intel_idle.c: In function 'intel_idle_cpuidle_devices_init':
+drivers/idle/intel_idle.c:324: warning: unused variable 'cstate'
+drivers/idle/intel_idle.c: At top level:
+drivers/idle/intel_idle.c:141: warning: 'atom_cstates' defined but not used
+
+Introduced by commit 7869a4e97e18b5c129ede0fca820d1ed3da8e18b
+("intel_idle: create a native cpuidle driver for select intel
+processors").
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
+
+--Signature=_Thu__27_May_2010_14_41_11_+1000_jD28dIZwBzXe1gFx
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iEYEARECAAYFAkv99+cACgkQjjKRsyhoI8xW6ACgvGexyJBnQ+AQXmuyocAxEPkc
+QvYAnAwg/7YSb8db1miUhqZR9/Dux/Fl
+=rPsm
+-----END PGP SIGNATURE-----
+
+--Signature=_Thu__27_May_2010_14_41_11_+1000_jD28dIZwBzXe1gFx--
