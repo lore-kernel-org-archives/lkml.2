@@ -1,61 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758620Ab0E0Uyw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 May 2010 16:54:52 -0400
-Received: from smtp-out.google.com ([74.125.121.35]:27201 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750968Ab0E0Uyv (ORCPT
+	id S1759020Ab0E0U4T (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 May 2010 16:56:19 -0400
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:60828 "EHLO
+	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1756891Ab0E0U4S (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 May 2010 16:54:51 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=mime-version:in-reply-to:references:date:message-id:subject:from:to:
-	cc:content-type:x-system-of-record;
-	b=OYoE4hoGNsn/uGRIGJGlkngFl/AilOXz1LKLoik/n/FWJ8aTuOhuSTz5WNBMcIBrM
-	0cLs5kjR1gLUd+dgRRIpQ==
-MIME-Version: 1.0
-In-Reply-To: <20100527184135.GL9874@ghostprotocols.net>
-References: <20100503203813.GA17886@sharma-home.net>
-	<1272919356.1642.154.camel@laptop>
-	<w2u850c51c31005031353x9be8ca7h90c244d64675ce3e@mail.gmail.com>
-	<1272964598.5605.133.camel@twins>
-	<20100505181612.GA5091@sharma-home.net>
-	<20100527184135.GL9874@ghostprotocols.net>
-Date: Thu, 27 May 2010 13:54:46 -0700
-Message-ID: <AANLkTim4UdMxxPkhHjVd_433Uk2QoVXBTy44KUlRBNSX@mail.gmail.com>
-Subject: Re: [PATCH] perf: implement recording/reporting per-cpu samples
-From: Arun Sharma <aruns@google.com>
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-Cc: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
-       mingo@elte.hu, paulus@samba.org, davem@davemloft.net,
-       fweisbec@gmail.com
-Content-Type: text/plain; charset=UTF-8
-X-System-Of-Record: true
+	Thu, 27 May 2010 16:56:18 -0400
+Date: Thu, 27 May 2010 22:03:14 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Matthew Garrett <mjg59@srcf.ucam.org>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+       Thomas Gleixner <tglx@linutronix.de>,
+       Arve =?ISO-8859-14?B?SGr4bm5lduVn?= <arve@android.com>,
+       Florian Mickler <florian@mickler.org>,
+       Vitaly Wool <vitalywool@gmail.com>, LKML <linux-kernel@vger.kernel.org>,
+       Paul@smtp1.linux-foundation.org, felipe.balbi@nokia.com,
+       Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
+       Linux PM <linux-pm@lists.linux-foundation.org>
+Subject: Re: [linux-pm] [PATCH 0/8] Suspend block api (version 8)
+Message-ID: <20100527220314.312d9e3c@lxorguk.ukuu.org.uk>
+In-Reply-To: <20100527175920.GE3543@srcf.ucam.org>
+References: <20100527171644.GA2468@srcf.ucam.org>
+	<1274980856.27810.5582.camel@twins>
+	<20100527172510.GC2468@srcf.ucam.org>
+	<1274981288.27810.5609.camel@twins>
+	<20100527173218.GF2468@srcf.ucam.org>
+	<1274981750.27810.5641.camel@twins>
+	<20100527174140.GB3187@srcf.ucam.org>
+	<1274982397.27810.5679.camel@twins>
+	<20100527175258.GB3543@srcf.ucam.org>
+	<1274982981.27810.5719.camel@twins>
+	<20100527175920.GE3543@srcf.ucam.org>
+X-Mailer: Claws Mail 3.7.5 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 27, 2010 at 11:41 AM, Arnaldo Carvalho de Melo
-<acme@ghostprotocols.net> wrote:
-> Em Wed, May 05, 2010 at 11:16:12AM -0700, Arun Sharma escreveu:
->> On Tue, May 04, 2010 at 11:16:38AM +0200, Peter Zijlstra wrote:
->> > > In a shared multi-core environment, users want to analyze why their
->> > > program was slow. In particular, if the code ran slower only on
->> > > certain CPUs due to interference from other programs or kernel
->> > > threads, they want to know that.
->> >
->> > But for that you use perf record -a, right? So you record all cpus
->> > allways -- otherwise there is no telling what was happening to make it
->> > go slow.
->>
->> The updated patch records the CPU only in the system_wide mode.
->
-> I think this should be done only if you'll actually need it, as in,
-> "cpu" is one of the sort keys, but that can be done as a followup patch,
-> but there is another thing I think you need to change, see below.
->
+On Thu, 27 May 2010 18:59:20 +0100
+Matthew Garrett <mjg59@srcf.ucam.org> wrote:
 
-How would you know if the user is going to sort by cpu at "perf record" time?
+> On Thu, May 27, 2010 at 07:56:21PM +0200, Peter Zijlstra wrote:
+> > On Thu, 2010-05-27 at 18:52 +0100, Matthew Garrett wrote:
+> > 
+> > > If that's what you're aiming for then you don't need to block 
+> > > applications on hardware access because they should all already have 
+> > > idled themselves.
+> > 
+> > Correct, a well behaved app would have. I thought we all agreed that
+> > well behaved apps weren't the problem?
+> 
+> Ok. So the existing badly-behaved application ignores your request and 
+> then gets blocked. And now it no longer responds to wakeup events. So 
+> you penalise well-behaved applications without providing any benefits to 
+> badly-behaved ones.
 
-Thanks for taking care of the second part.
+I don't see how you put the first two sentences together and get the
+final one.
 
- -Arun
+When you beat up badly behaved apps that doesn't penalise well behaved
+ones.
+
+Forcing "well behaved apps" to make hundreds of extra calls to a complex
+blocker interface that also requires tons of kernel code and requires the
+application know platform policy and be recompiled if it changes - now
+that is punishing well behaved apps.
+
+A well behaved app should just work using standard existing APIs because
+that is how all the standard current well behaved apps are written [1].
+
+Alan
+--
+[1] I'm dying to see the suspend blocker patch for evolution ;)
