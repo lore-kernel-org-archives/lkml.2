@@ -1,47 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932457Ab0E0Hn3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 May 2010 03:43:29 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:33195 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751206Ab0E0Hn2 (ORCPT
+	id S1757307Ab0E0Hyz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 May 2010 03:54:55 -0400
+Received: from exprod5og105.obsmtp.com ([64.18.0.180]:39322 "EHLO
+	exprod5og105.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755428Ab0E0Hyx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 May 2010 03:43:28 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=aL1XAF+R+TFfdDV9UTs3eTcvQ6fQgOPryuk8rR+gWESDFlC5vs9FgCdy/kbqinZp9f
-         UseNVF8BzVvZvB6GVudDSm1d5mdEI3LnWpAn5ET8i6yAvuMSc+G+rJMvrZ5bb8oYKy7A
-         rTrzSH1JBBEkqlYd1k8umyAynS+zYswzHUNvw=
+	Thu, 27 May 2010 03:54:53 -0400
+Message-ID: <4BFE2549.4000403@ge.com>
+Date: Thu, 27 May 2010 08:54:49 +0100
+From: Martyn Welch <martyn.welch@ge.com>
+User-Agent: Thunderbird 2.0.0.24 (X11/20100317)
 MIME-Version: 1.0
-In-Reply-To: <20100527071429.58fa81ac@schatten.dmk.lab>
-References: <20100526171106.0e44a736@schatten.dmk.lab>
-	<alpine.LFD.2.00.1005261829540.2995@localhost.localdomain>
-	<20100526215409.33296d94@schatten.dmk.lab>
-	<20100526230943.6f5e5b37@lxorguk.ukuu.org.uk>
-	<20100527071429.58fa81ac@schatten.dmk.lab>
-Date: Thu, 27 May 2010 09:43:23 +0200
-Message-ID: <AANLkTima8IBIudVATpv75UxriVYPMrzZhgA9g0ftwo4V@mail.gmail.com>
-Subject: Re: [linux-pm] [PATCH 0/8] Suspend block api (version 8)
-From: Vitaly Wool <vitalywool@gmail.com>
-To: Florian Mickler <florian@mickler.org>
-Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, Thomas Gleixner <tglx@linutronix.de>,
-       Peter Zijlstra <peterz@infradead.org>,
-       LKML <linux-kernel@vger.kernel.org>, felipe.balbi@nokia.com,
-       Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
-       Linux PM <linux-pm@lists.linux-foundation.org>
+To: Julia Lawall <julia@diku.dk>
+CC: Greg Kroah-Hartman <gregkh@suse.de>, devel@driverdev.osuosl.org,
+       linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
+Subject: Re: [PATCH 16/17] drivers/staging/vme/bridges: Add missing unlocks
+References: <Pine.LNX.4.64.1005261758540.23743@ask.diku.dk>
+In-Reply-To: <Pine.LNX.4.64.1005261758540.23743@ask.diku.dk>
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 27, 2010 at 7:14 AM, Florian Mickler <florian@mickler.org> wrote:
+Julia Lawall wrote:
+> From: Julia Lawall <julia@diku.dk>
+>
+> Add a spin_unlock and mutex_unlock missing on the error path.
+>
+> The semantic match that finds this problem is as follows:
+> (http://coccinelle.lip6.fr/)
+>
+> // <smpl>
+> @@
+> expression E1;
+> @@
+>
+> * spin_lock(E1,...);
+>   <+... when != E1
+>   if (...) {
+>     ... when != E1
+> *   return ...;
+>   }
+>   ...+>
+> * spin_unlock(E1,...);
+> // </smpl>
+>
+> Signed-off-by: Julia Lawall <julia@diku.dk>
+>   
 
-> I'm not interested in "abusing processes". I just think, this is in
-> limbo for too long already.
-> Just decide something. One way or the other. The world will continue.
+Good catch.
 
-Oh man, you rule the world eh? :)
+Signed-off-by: Martyn Welch <martyn.welch@ge.com>
 
-~Vitaly
+
+> ---
+>  drivers/staging/vme/bridges/vme_ca91cx42.c |    8 ++++++--
+>  1 file changed, 6 insertions(+), 2 deletions(-)
+>
+> diff --git a/drivers/staging/vme/bridges/vme_ca91cx42.c b/drivers/staging/vme/bridges/vme_ca91cx42.c
+> index 0c82eb4..f38f7b7 100644
+> --- a/drivers/staging/vme/bridges/vme_ca91cx42.c
+> +++ b/drivers/staging/vme/bridges/vme_ca91cx42.c
+> @@ -900,7 +900,8 @@ unsigned int ca91cx42_master_rmw(struct vme_master_resource *image,
+>  	/* Address must be 4-byte aligned */
+>  	if (pci_addr & 0x3) {
+>  		dev_err(dev, "RMW Address not 4-byte aligned\n");
+> -		return -EINVAL;
+> +		result = -EINVAL;
+> +		goto out;
+>  	}
+>  
+>  	/* Ensure RMW Disabled whilst configuring */
+> @@ -921,6 +922,7 @@ unsigned int ca91cx42_master_rmw(struct vme_master_resource *image,
+>  	/* Disable RMW */
+>  	iowrite32(0, bridge->base + SCYC_CTL);
+>  
+> +out:
+>  	spin_unlock(&(image->lock));
+>  
+>  	mutex_unlock(&(bridge->vme_rmw));
+> _______________________________________________
+> devel mailing list
+> devel@linuxdriverproject.org
+> http://driverdev.linuxdriverproject.org/mailman/listinfo/devel
+>   
+
+
+-- 
+Martyn Welch (Principal Software Engineer)   |   Registered in England and
+GE Intelligent Platforms                     |   Wales (3828642) at 100
+T +44(0)127322748                            |   Barbirolli Square, Manchester,
+E martyn.welch@ge.com                        |   M2 3AB  VAT:GB 927559189
+
