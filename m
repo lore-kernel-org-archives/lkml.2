@@ -1,116 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933055Ab0E0IZt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 May 2010 04:25:49 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:36810 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932431Ab0E0IZq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 May 2010 04:25:46 -0400
-Message-ID: <4BFE2C3E.5090704@monstr.eu>
-Date: Thu, 27 May 2010 10:24:30 +0200
-From: Michal Simek <monstr@monstr.eu>
-Reply-To: monstr@monstr.eu
-User-Agent: Thunderbird 2.0.0.22 (X11/20090625)
+	id S933063Ab0E0I0d (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 May 2010 04:26:33 -0400
+Received: from hera.kernel.org ([140.211.167.34]:33957 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750860Ab0E0I0b (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 May 2010 04:26:31 -0400
+Message-ID: <4BFE2C9D.6080909@kernel.org>
+Date: Thu, 27 May 2010 10:26:05 +0200
+From: Tejun Heo <tj@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.1.9) Gecko/20100317 Thunderbird/3.0.4
 MIME-Version: 1.0
-To: Mike Frysinger <vapier@gentoo.org>
-CC: uclinux-dev@uclinux.org, David Howells <dhowells@redhat.com>,
-       David McCullough <davidm@snapgear.com>, Greg Ungerer <gerg@uclinux.org>,
-       Paul Mundt <lethal@linux-sh.org>,
-       uclinux-dist-devel@blackfin.uclinux.org,
-       microblaze-uclinux@itee.uq.edu.au, linux-m32r@ml.linux-m32r.org,
-       Hirokazu Takata <takata@linux-m32r.org>, linux-kernel@vger.kernel.org,
-       Yoshinori Sato <ysato@users.sourceforge.jp>
-Subject: Re: [PATCH 1/2 v2] FLAT: split the stack & data alignments
-References: <1274815467-14584-1-git-send-email-vapier@gentoo.org> <1274863506-14168-1-git-send-email-vapier@gentoo.org>
-In-Reply-To: <1274863506-14168-1-git-send-email-vapier@gentoo.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Ingo Molnar <mingo@elte.hu>
+CC: peterz@infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCHSET sched/core] sched: prepare for cmwq
+References: <1273747705-7829-1-git-send-email-tj@kernel.org> <4BF1CD92.9030800@kernel.org> <4BF689DD.2090306@kernel.org> <20100523090544.GB25524@elte.hu> <4BF8F0A4.5060608@kernel.org> <20100523091306.GE25524@elte.hu> <4BF8F46A.1060407@kernel.org> <20100523102024.GA20869@elte.hu> <4BF902F3.7030405@kernel.org>
+In-Reply-To: <4BF902F3.7030405@kernel.org>
+X-Enigmail-Version: 1.0.1
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Thu, 27 May 2010 08:26:08 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Mike Frysinger wrote:
-> The stack and data have different alignment requirements, so don't force
-> them to wear the same shoe.  Increase the data alignment to match that
-> which the elf2flt linker script has always been using: 0x20 bytes.  Not
-> only does this bring the kernel loader in line with the toolchain, but
-> it also fixes a swath of gcc tests which try to force larger alignment
-> values but randomly fail when the FLAT loader fails to deliver.
+On 05/23/2010 12:26 PM, Tejun Heo wrote:
+> Hello, Ingo.
 > 
-> Signed-off-by: Mike Frysinger <vapier@gentoo.org>
-
-Solve the problem on Microblaze:
-
-Tested-by: Michal Simek <monstr@monstr.eu>
-
-Who will add it to mainline?
-
-Thanks,
-Michal
-
-> ---
-> v2
-> 	- split changes & document better
+> On 05/23/2010 12:20 PM, Ingo Molnar wrote:
+>> Not exclusive to btrfs of course, but IIRC one of the examples given
+>> in one of those threads was btrfs scalability, right?
 > 
->  fs/binfmt_flat.c |   23 +++++++++++++++--------
->  1 files changed, 15 insertions(+), 8 deletions(-)
+> Hmmm... I don't think so.  If btrfs ever was mentioned, it must have
+> been pretty tangential.  Nothing rings a bell to me.
 > 
-> diff --git a/fs/binfmt_flat.c b/fs/binfmt_flat.c
-> index 49566c1..b865622 100644
-> --- a/fs/binfmt_flat.c
-> +++ b/fs/binfmt_flat.c
-> @@ -56,15 +56,22 @@
->  #endif
->  
->  /*
-> - * User data (stack, data section and bss) needs to be aligned
-> - * for the same reasons as SLAB memory is, and to the same amount.
-> - * Avoid duplicating architecture specific code by using the same
-> - * macro as with SLAB allocation:
-> + * User data (data section and bss) needs to be aligned.
-> + * We pick 0x20 here because it is the max value elf2flt has always
-> + * used in producing FLAT files, and because it seems to be large
-> + * enough to make all the gcc alignment related tests happy.
-> + */
-> +#define FLAT_DATA_ALIGN	(0x20)
-> +
-> +/*
-> + * User data (stack) also needs to be aligned.
-> + * Here we can be a bit looser than the data sections since this
-> + * needs to only meet arch ABI requirements.
->   */
->  #ifdef ARCH_SLAB_MINALIGN
-> -#define FLAT_DATA_ALIGN	(ARCH_SLAB_MINALIGN)
-> +#define FLAT_STACK_ALIGN	(ARCH_SLAB_MINALIGN)
->  #else
-> -#define FLAT_DATA_ALIGN	(sizeof(void *))
-> +#define FLAT_STACK_ALIGN	(sizeof(void *))
->  #endif
->  
->  #define RELOC_FAILED 0xff00ff01		/* Relocation incorrect somewhere */
-> @@ -129,7 +136,7 @@ static unsigned long create_flat_tables(
->  
->  	sp = (unsigned long *)p;
->  	sp -= (envc + argc + 2) + 1 + (flat_argvp_envp_on_stack() ? 2 : 0);
-> -	sp = (unsigned long *) ((unsigned long)sp & -FLAT_DATA_ALIGN);
-> +	sp = (unsigned long *) ((unsigned long)sp & -FLAT_STACK_ALIGN);
->  	argv = sp + 1 + (flat_argvp_envp_on_stack() ? 2 : 0);
->  	envp = argv + (argc + 1);
->  
-> @@ -876,7 +883,7 @@ static int load_flat_binary(struct linux_binprm * bprm, struct pt_regs * regs)
->  	stack_len = TOP_OF_ARGS - bprm->p;             /* the strings */
->  	stack_len += (bprm->argc + 1) * sizeof(char *); /* the argv array */
->  	stack_len += (bprm->envc + 1) * sizeof(char *); /* the envp array */
-> -	stack_len += FLAT_DATA_ALIGN - 1;  /* reserve for upcoming alignment */
-> +	stack_len += FLAT_STACK_ALIGN - 1;  /* reserve for upcoming alignment */
->  	
->  	res = load_flat_file(bprm, &libinfo, 0, &stack_len);
->  	if (IS_ERR_VALUE(res))
+>> In case it's not obvious, i'm trying to find a tangible improvement
+>> to examine. No need to resend stuff, do you have a link to that old
+>> performance measurement by any chance?
+> 
+> Sure.
+> 
+>  http://thread.gmane.org/gmane.linux.kernel/939353
 
+Ingo, any update?
+
+Thanks.
 
 -- 
-Michal Simek, Ing. (M.Eng)
-w: www.monstr.eu p: +42-0-721842854
-Maintainer of Linux kernel 2.6 Microblaze Linux - http://www.monstr.eu/fdt/
-Microblaze U-BOOT custodian
+tejun
