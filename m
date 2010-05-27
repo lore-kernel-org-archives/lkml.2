@@ -1,66 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759398Ab0E0Ruu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 May 2010 13:50:50 -0400
-Received: from cavan.codon.org.uk ([93.93.128.6]:46673 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756760Ab0E0Rut (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 May 2010 13:50:49 -0400
-Date: Thu, 27 May 2010 18:50:30 +0100
-From: Matthew Garrett <mjg59@srcf.ucam.org>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: Thomas Gleixner <tglx@linutronix.de>,
-       Arve =?iso-8859-1?B?SGr4bm5lduVn?= <arve@android.com>,
-       Florian Mickler <florian@mickler.org>,
-       Vitaly Wool <vitalywool@gmail.com>,
-       Peter Zijlstra <peterz@infradead.org>,
-       LKML <linux-kernel@vger.kernel.org>, Paul@smtp1.linux-foundation.org,
-       felipe.balbi@nokia.com,
-       Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
-       Linux PM <linux-pm@lists.linux-foundation.org>
-Subject: Re: [linux-pm] [PATCH 0/8] Suspend block api (version 8)
-Message-ID: <20100527175030.GA3543@srcf.ucam.org>
-References: <AANLkTin97MMu-XO_Lk-snefBWz2ymhS0Qi1y1RxLwdVA@mail.gmail.com> <20100527003943.07c17f85@lxorguk.ukuu.org.uk> <20100527140655.GA28048@srcf.ucam.org> <alpine.LFD.2.00.1005271642440.3032@localhost.localdomain> <20100527155201.GA31937@srcf.ucam.org> <alpine.LFD.2.00.1005271808340.3032@localhost.localdomain> <20100527165931.GB1062@srcf.ucam.org> <alpine.LFD.2.00.1005271905000.3032@localhost.localdomain> <20100527172343.GB2468@srcf.ucam.org> <20100527184918.3d090921@lxorguk.ukuu.org.uk>
+	id S932554Ab0E0Ru7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 May 2010 13:50:59 -0400
+Received: from gir.skynet.ie ([193.1.99.77]:35847 "EHLO gir.skynet.ie"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759402Ab0E0Ru5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 May 2010 13:50:57 -0400
+Date: Thu, 27 May 2010 18:50:38 +0100
+From: Mel Gorman <mel@csn.ul.ie>
+To: Rik van Riel <riel@redhat.com>
+Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+       linux-mm@kvack.org, Andrea Arcangeli <aarcange@redhat.com>,
+       Minchan Kim <minchan.kim@gmail.com>,
+       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+       Lee Schermerhorn <Lee.Schermerhorn@hp.com>
+Subject: Re: [PATCH 5/5] extend KSM refcounts to the anon_vma root
+Message-ID: <20100527175038.GB10931@csn.ul.ie>
+References: <20100526153819.6e5cec0d@annuminas.surriel.com> <20100526154124.04607d04@annuminas.surriel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-15
 Content-Disposition: inline
-In-Reply-To: <20100527184918.3d090921@lxorguk.ukuu.org.uk>
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+In-Reply-To: <20100526154124.04607d04@annuminas.surriel.com>
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 27, 2010 at 06:49:18PM +0100, Alan Cox wrote:
-> > ACPI provides no guarantees about what level of hardware functionality 
-> > remains during S3. You don't have any useful ability to determine which 
-> > events will generate wakeups. And from a purely practical point of view, 
-> > since the latency is in the range of seconds, you'll never have a low 
-> > enough wakeup rate to hit it.
+On Wed, May 26, 2010 at 03:41:24PM -0400, Rik van Riel wrote:
+> Subject: extend KSM refcounts to the anon_vma root
 > 
-> So PCs with current ACPI don't get opportunistic suspend capability. It
-> probably won't be supported on the Commodore Amiga either - your point ?
-
-Actually, the reverse - there's no terribly good way to make PCs work 
-with scheduler-based suspend, but there's no reason why they wouldn't 
-work with the current opportunistic suspend implementation.
-
-> > Suspend blockers are the mechanism for the 
-> > driver to indicate whether the wakeup event has been handled. That's 
-> > what they're there for. The in-kernel ones don't paper over anything.
+> KSM reference counts can cause an anon_vma to exist after the processe
+> it belongs to have already exited.  Because the anon_vma lock now lives
+> in the root anon_vma, we need to ensure that the root anon_vma stays
+> around until after all the "child" anon_vmas have been freed.
 > 
-> Semantically the in kernel blockers and the in kernel expression of
-> device driven constraints are the same thing except that instead of 
-> yes/no you replace the boolean with information.
+> The obvious way to do this is to have a "child" anon_vma take a
+> reference to the root in anon_vma_fork.  When the anon_vma is freed
+> at munmap or process exit, we drop the refcount in anon_vma_unlink
+> and possibly free the root anon_vma.
+> 
+> The KSM anon_vma reference count function also needs to be modified
+> to deal with the possibility of freeing 2 levels of anon_vma.  The
+> easiest way to do this is to break out the KSM magic and make it
+> generic.
+> 
+> When compiling without CONFIG_KSM, this code is compiled out.
+> 
+> Signed-off-by: Rik van Riel <riel@redhat.com>
 
-In some cases, not all. It may be a latency constraint (in which case 
-pm_qos is an appropriate mechanism), but instead it may be something 
-like "A key was pressed but never read" or "A network packet was 
-received but not delivered". These don't fit into the pm_qos model, but 
-it's state that you have to track.
+Acked-by: Mel Gorman <mel@csn.ul.ie>
 
 -- 
-Matthew Garrett | mjg59@srcf.ucam.org
+Mel Gorman
+Part-time Phd Student                          Linux Technology Center
+University of Limerick                         IBM Dublin Software Lab
