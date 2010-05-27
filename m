@@ -1,143 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758461Ab0E0LUv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 May 2010 07:20:51 -0400
-Received: from e28smtp09.in.ibm.com ([122.248.162.9]:46388 "EHLO
-	e28smtp09.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754201Ab0E0LUt (ORCPT
+	id S1757974Ab0E0LhW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 May 2010 07:37:22 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:36357 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757050Ab0E0LhU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 May 2010 07:20:49 -0400
-Date: Thu, 27 May 2010 16:50:44 +0530
-From: "K.Prasad" <prasad@linux.vnet.ibm.com>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Chase Douglas <chase.douglas@canonical.com>,
-       Pekka Enberg <penberg@cs.helsinki.fi>,
-       Eduard - Gabriel Munteanu <eduard.munteanu@linux360.ro>,
-       Soeren Sandmann <sandmann@daimi.au.dk>,
-       Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@redhat.com>,
-       linux-kernel@vger.kernel.org, kernel-team@lists.ubuntu.com
-Subject: Re: Tracing configuration review
-Message-ID: <20100527112044.GA2713@in.ibm.com>
-Reply-To: prasad@linux.vnet.ibm.com
-References: <1274815906.9757.83.camel@cndougla-ubuntu>
- <20100525201259.GA5370@nowhere>
- <1274821799.9346.17.camel@cndougla-ubuntu>
- <20100525230656.GD5370@nowhere>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100525230656.GD5370@nowhere>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+	Thu, 27 May 2010 07:37:20 -0400
+From: Marc Kleine-Budde <mkl@pengutronix.de>
+To: sha@pengutronix.de
+Cc: Marc Kleine-Budde <mkl@pengutronix.de>,
+       "Jean Delvare (PC drivers, core)" <khali@linux-fr.org>,
+       "Ben Dooks (embedded platforms)" <ben-linux@fluff.org>,
+       Richard Zhao <linuxzsc@gmail.com>, Wolfram Sang <w.sang@pengutronix.de>,
+       =?UTF-8?q?Uwe=20Kleine-K=C3=B6nig?= 
+	<u.kleine-koenig@pengutronix.de>,
+       Arnaud Patard <apatard@mandriva.com>, linux-i2c@vger.kernel.org,
+       linux-kernel@vger.kernel.org
+Subject: [PATCH] i2c-imx: do not allow interruptions when waiting for I2C to complete
+Date: Thu, 27 May 2010 13:36:27 +0200
+Message-Id: <1274960188-12601-1-git-send-email-mkl@pengutronix.de>
+X-Mailer: git-send-email 1.7.1
+X-SA-Exim-Connect-IP: 2001:6f8:1178:4:5054:ff:fe8d:eefb
+X-SA-Exim-Mail-From: mkl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 26, 2010 at 01:06:57AM +0200, Frederic Weisbecker wrote:
-> On Tue, May 25, 2010 at 05:09:59PM -0400, Chase Douglas wrote:
-> > On Tue, 2010-05-25 at 22:13 +0200, Frederic Weisbecker wrote:
-> > > On Tue, May 25, 2010 at 03:31:46PM -0400, Chase Douglas wrote:
+The i2c_imx_trx_complete() function is using
+wait_event_interruptible_timeout() to wait for the I2C controller to
+signal that it has completed an I2C bus operation. If the process that
+causes the I2C operation receives a signal, the wait will be
+interrupted, returning an error. It is better to let the I2C operation
+finished before handling the signal (i.e. returning into userspace).
 
-<snipped>
+It is safe to use wait_event_timeout() instead, because the timeout
+will allow the process to exit if the I2C bus hangs. It's also better
+to allow the I2C operation to finish, because unacknowledged I2C
+operations can cause the I2C bus to hang.
 
-> > > IMO, it is deprecated. The perf interface is much more powerful and flexible.
-> > > Prasad, do you agree if I remove this ftrace plugin?
+Signed-off-by: Marc Kleine-Budde <mkl@pengutronix.de>
+---
+ drivers/i2c/busses/i2c-imx.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-Sure, go ahead.
+diff --git a/drivers/i2c/busses/i2c-imx.c b/drivers/i2c/busses/i2c-imx.c
+index d1ff940..d7051fe 100644
+--- a/drivers/i2c/busses/i2c-imx.c
++++ b/drivers/i2c/busses/i2c-imx.c
+@@ -161,7 +161,7 @@ static int i2c_imx_trx_complete(struct imx_i2c_struct *i2c_imx)
+ {
+ 	int result;
+ 
+-	result = wait_event_interruptible_timeout(i2c_imx->queue,
++	result = wait_event_timeout(i2c_imx->queue,
+ 		i2c_imx->i2csr & I2SR_IIF, HZ / 10);
+ 
+ 	if (unlikely(result < 0)) {
+@@ -295,7 +295,7 @@ static irqreturn_t i2c_imx_isr(int irq, void *dev_id)
+ 		i2c_imx->i2csr = temp;
+ 		temp &= ~I2SR_IIF;
+ 		writeb(temp, i2c_imx->base + IMX_I2C_I2SR);
+-		wake_up_interruptible(&i2c_imx->queue);
++		wake_up(&i2c_imx->queue);
+ 		return IRQ_HANDLED;
+ 	}
+ 
+-- 
+1.7.1
 
-> > 
-> > If there isn't any use in enabling it due to perf's features, then we
-> > can turn it off. However, if there's any use to be gained by this over
-> > perf's features, then I'd prefer to leave it on. Thoughts?
-> 
-> 
-> 
-> No, perf does much more:
-> 
-> - stacktraces recording
-> - "top" alike view with perf top
-> - stat with perf stat, etc...
-> - userspace memory accesses
-> 
-> 
-> Here is a quick example:
-> 
-> $ cat test.c
-> int var;
-> 
-> void func_c(void)
-> {
-> 	var++;
-> }
-> 
-> void func_b(void)
-> {
-> 	func_c();
-> }
-> 
-> 
-> void func_a(void)
-> {
-> 	func_c();
-> }
-> 
-> 
-> int main(int argc, char **argv)
-> {
-> 	int i;
-> 
-> 	for (i = 0; i < 1000; i++)
-> 		if (i % 2)
-> 			func_a();
-> 		else
-> 			func_b();
-> 
-> 	return 0;
-> }
-> //end test.c
-> 
-> $ gcc test.c -fno-omit-frame-pointer -o test
-> 
-> $ readelf -s test | grep var
->     74: 000000000060102c     4 OBJECT  GLOBAL DEFAULT   25 var
-> 
-> $ perf record -g -c 1 -e mem:0x000000000060102c:w ./test
-> [ perf record: Woken up 1 times to write data ]
-> [ perf record: Captured and wrote 0.069 MB perf.data (~3020 samples) ]
-> 
-> $ perf report
-> 
-> # Events: 1K cycles
-> #
-> # Overhead  Command      Shared Object  Symbol
-> # ........  .......  .................  ......
-> #
->     99.90%     test  test               [.] func_c
->                |
->                --- func_c
->                   |          
->                   |--49.95%-- func_a
->                   |          |          
->                   |          |--99.60%-- main
->                   |          |          __libc_start_main
->                   |           --0.40%-- [...]
->                   |          
->                   |--49.85%-- func_b
->                   |          main
->                   |          |          
->                   |          |--99.60%-- __libc_start_main
->                   |           --0.40%-- [...]
->                    --0.20%-- [...]
-> 
-> 
-> To sum up, there is nothing the ksym tracer does that perf can't.
-> 
-
-I second Frederic's opinion on this. 
-
-Thanks,
-K.Prasad
-
-> Well, may be perf doesn't offer the time ordered view of memory
-> accesses, I must confess. Although this is still something we can
-> easily provide if people want it.
-> 
