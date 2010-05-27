@@ -1,56 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757888Ab0E0KKe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 May 2010 06:10:34 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:58908 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751978Ab0E0KKd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 May 2010 06:10:33 -0400
-Message-ID: <4BFE4513.8090606@redhat.com>
-Date: Thu, 27 May 2010 13:10:27 +0300
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100330 Fedora/3.0.4-1.fc12 Thunderbird/3.0.4
+	id S1758154Ab0E0KNJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 May 2010 06:13:09 -0400
+Received: from mail-ew0-f216.google.com ([209.85.219.216]:34831 "EHLO
+	mail-ew0-f216.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751978Ab0E0KNG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 May 2010 06:13:06 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:date:from:to:subject:message-id:mime-version:content-type
+         :content-disposition:user-agent;
+        b=dY4gJdsm6M18xQ31WvvHD5Z1qPJvGMzycCCtt8m1VxA6hfeiwEhs+W1vK4BZ3VFzBz
+         aKmkX9IfL6NXRZqkdKnTKk2VxvVXi8zrh9K+x2JzehT+8iKTchr+psjM1vUP9tNiZLys
+         NEn5Z5vCo4vlU8A2/H4dqiUCyn+lemg6bVi5I=
+Date: Thu, 27 May 2010 12:07:29 +0200
+From: Fredrik Gustafsson <iveqy@iveqy.com>
+To: linux-kernel@vger.kernel.org
+Subject: hex_to_bin speedup
+Message-ID: <20100527100729.GA21454@iveqy.com>
 MIME-Version: 1.0
-To: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
-CC: Marcelo Tosatti <mtosatti@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-       KVM list <kvm@vger.kernel.org>
-Subject: Re: [PATCH 2/2] KVM: MMU: fix relaxing permission
-References: <4BFC8B0D.2060106@cn.fujitsu.com> <4BFC8B8C.7010402@cn.fujitsu.com>
-In-Reply-To: <4BFC8B8C.7010402@cn.fujitsu.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/26/2010 05:46 AM, Xiao Guangrong wrote:
-> There is a relaxing permission operation in set_spte():
->
-> if guest's CR0.WP is not set and R/W #PF occurs in supervisor-level,
-> the mapping path might set to writable, then user can allow to write.
->
-> @@ -1859,8 +1859,7 @@ static int set_spte(struct kvm_vcpu *vcpu, u64 *sptep,
->
->   	spte |= (u64)pfn<<  PAGE_SHIFT;
->
-> -	if ((pte_access&  ACC_WRITE_MASK)
-> -	    || (write_fault&&  !is_write_protection(vcpu)&&  !user_fault)) {
-> +	if (pte_access&  ACC_WRITE_MASK) {
->
->    
+Hi,
+I looked a bit at the newly added hex_to_bin function in lib/hexdump.c.
+I do believe this is a speedup (at least according to my benchmark[1]).
 
-The host always sets cr0.wp (in shadow mode) so we can write protect 
-page tables.  So when the guest clears cr0.wp, we emulate a gpte with 
-gpte.w=0 and gpte.u=1 in two ways:
+However in the comments to commit 
+903788892ea0fc7fcaf7e8e5fac9a77379fc215b you can read
+"[akpm@linux-foundation.org: use tolower(), saving 3 bytes, test the more common case first - it's quicker]"
 
-- spte.w=1, spte.u=0: this will allow the guest kernel to write but trap 
-on guest user access
-- spte.w=0, spte.u=1: allows guest user access but traps on guest kernel 
-writes
+I don't know the change that akpm has done, so I'm unsure if there's any
+problems that I miss with my patch.
 
-If the guest attempts an access that is currently disallowed, we switch 
-to the other spte encoding.
+--
+iveqy
 
--- 
-error compiling committee.c: too many arguments to function
+[1] Benchmark
 
+#include <sys/time.h>
+#include <stdio.h>
+
+int main()
+{
+	struct timeval start, end;
+	int i,itr;
+	itr = 100000;
+	char c = 'A';
+	time_t diff;
+	gettimeofday(&start,NULL);
+	for(i = 0; i < itr; i++) {
+		if((c >= 'A') && (c <= 'F')) {}
+	}
+	gettimeofday(&end,NULL);
+	diff = end.tv_usec - start.tv_usec;
+	printf("if-statement: %d ms\n",diff);
+	gettimeofday(&start,NULL);
+	for(i = 0; i < itr; i++) {
+		c = tolower(c);
+	}
+	gettimeofday(&end,NULL);
+	diff = end.tv_usec - start.tv_usec;
+	printf("tolower(): %d ms\n",diff);
+}
+
+[2] Patch
+
+This is faster (at least on i686).
+---
+ lib/hexdump.c |    3 ++-
+ 1 files changed, 2 insertions(+), 1 deletions(-)
+
+diff --git a/lib/hexdump.c b/lib/hexdump.c
+index 5d7a480..f01d11c 100644
+--- a/lib/hexdump.c
++++ b/lib/hexdump.c
+@@ -26,9 +26,10 @@ int hex_to_bin(char ch)
+ {
+ 	if ((ch >= '0') && (ch <= '9'))
+ 		return ch - '0';
+-	ch = tolower(ch);
+ 	if ((ch >= 'a') && (ch <= 'f'))
+ 		return ch - 'a' + 10;
++	if ((ch >= 'A') && (ch <= 'F'))
++		return ch - 'A' + 10;
+ 	return -1;
+ }
+ EXPORT_SYMBOL(hex_to_bin);
