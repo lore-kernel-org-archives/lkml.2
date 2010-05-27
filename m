@@ -1,117 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750913Ab0E0ECX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 May 2010 00:02:23 -0400
-Received: from bld-mail13.adl6.internode.on.net ([150.101.137.98]:52670 "EHLO
-	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750724Ab0E0ECV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 May 2010 00:02:21 -0400
-Date: Thu, 27 May 2010 14:02:10 +1000
-From: Dave Chinner <david@fromorbit.com>
-To: Nick Piggin <npiggin@suse.de>
-Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-       linux-mm@kvack.org, xfs@oss.sgi.com
-Subject: Re: [PATCH 1/5] inode: Make unused inode LRU per superblock
-Message-ID: <20100527040210.GI12087@dastard>
-References: <1274777588-21494-1-git-send-email-david@fromorbit.com>
- <1274777588-21494-2-git-send-email-david@fromorbit.com>
- <20100526161732.GC22536@laptop>
- <20100526230129.GA1395@dastard>
- <20100527020445.GF22536@laptop>
+	id S1750995Ab0E0EDr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 May 2010 00:03:47 -0400
+Received: from tango.tkos.co.il ([62.219.50.35]:45443 "EHLO tango.tkos.co.il"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750756Ab0E0EDq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 May 2010 00:03:46 -0400
+Date: Thu, 27 May 2010 07:03:29 +0300
+From: Baruch Siach <baruch@tkos.co.il>
+To: Thadeu Lima de Souza Cascardo <cascardo@holoscopio.com>
+Cc: linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+       Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>,
+       Sascha Hauer <s.hauer@pengutronix.de>
+Subject: Re: [PATCH] fbdev: fix frame buffer devices menu
+Message-ID: <20100527040329.GA14841@jasper.tkos.co.il>
+References: <1274896477-6832-1-git-send-email-cascardo@holoscopio.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
-In-Reply-To: <20100527020445.GF22536@laptop>
+In-Reply-To: <1274896477-6832-1-git-send-email-cascardo@holoscopio.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 27, 2010 at 12:04:45PM +1000, Nick Piggin wrote:
-> On Thu, May 27, 2010 at 09:01:29AM +1000, Dave Chinner wrote:
-> > On Thu, May 27, 2010 at 02:17:33AM +1000, Nick Piggin wrote:
-> > > On Tue, May 25, 2010 at 06:53:04PM +1000, Dave Chinner wrote:
-> > > > From: Dave Chinner <dchinner@redhat.com>
-> > > > 
-> > > > The inode unused list is currently a global LRU. This does not match
-> > > > the other global filesystem cache - the dentry cache - which uses
-> > > > per-superblock LRU lists. Hence we have related filesystem object
-> > > > types using different LRU reclaimatin schemes.
-> > > 
-> > > Is this an improvement I wonder? The dcache is using per sb lists
-> > > because it specifically requires sb traversal.
-> > 
-> > Right - I originally implemented the per-sb dentry lists for
-> > scalability purposes. i.e. to avoid monopolising the dentry_lock
-> > during unmount looking for dentries on a specific sb and hanging the
-> > system for several minutes.
-> > 
-> > However, the reason for doing this to the inode cache is not for
-> > scalability, it's because we have a tight relationship between the
-> > dentry and inode cacheÑ•. That is, reclaim from the dentry LRU grows
-> > the inode LRU.  Like the registration of the shrinkers, this is kind
-> > of an implicit, undocumented behavour of the current shrinker
-> > implemenation.
+On Wed, May 26, 2010 at 02:54:37PM -0300, Thadeu Lima de Souza Cascardo wrote:
+> Commit f601441916d1e19291d0b4f044b4a7551e2924d0 has inserted the symbol
+> HAVE_FB_IMX, which does not depend on FB after the menuconfig FB. This
+> breaks the menu, presenting most of the drivers outside of it, when
+> using menuconfig.
 > 
-> Right, that's why I wonder whether it is an improvement. It would
-> be interesting to see some tests (showing at least parity).
-
-I've done some testing showing parity. They've been along the lines
-of:
-	- populate cache with 1m dentries + inodes
-	- run 'time echo 2 > /proc/sys/vm/drop_caches'
-
-I've used different methods of populating the caches to have them
-non-sequential in the LRU (i.e. trigger fragmentation), have dirty
-backing inodes (e.g. the VFS inode clean, the xfs inode dirty
-because transactions haven't completed), etc.
-
-The variation on the test is around +-10%, with the per-sb shrinkers
-averaging about 5% lower time to reclaim. This is within the error
-margin of the test, so it's not really a conclusive win, but it is
-certainly shows that it does not slow anything down. If you've got a
-better way to test it, then I'm all ears....
-
-> > What this patch series does is take that implicit relationship and
-> > make it explicit.  It also allows other filesystem caches to tie
-> > into the relationship if they need to (e.g. the XFS inode cache).
-> > What it _doesn't do_ is change the macro level behaviour of the
-> > shrinkers...
-> > 
-> > > What allocation/reclaim really wants (for good scalability and NUMA
-> > > characteristics) is per-zone lists for these things. It's easy to
-> > > convert a single list into per-zone lists.
-> > >
-> > > It is much harder to convert per-sb lists into per-sb x per-zone lists.
-> > 
-> > No it's not. Just convert the s_{dentry,inode}_lru lists on each
-> > superblock and call the shrinker with a new zone mask field to pick
-> > the correct LRU. That's no harder than converting a global LRU.
-> > Anyway, you'd still have to do per-sb x per-zone lists for the dentry LRUs,
-> > so changing the inode cache to per-sb makes no difference.
+> Moving the symbol to the start of the file, just like HAVE_FB_ATMEL,
+> fixes the problem without breaking it for iMX25 configurations (tested
+> with ARCH=arm, no build).
 > 
-> Right, it just makes it harder to do. By much harder, I did mostly mean
-> the extra memory overhead.
+> Cc: Baruch Siach <baruch@tkos.co.il>
+> Cc: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
+> Cc: Sascha Hauer <s.hauer@pengutronix.de>
+> Signed-off-by: Thadeu Lima de Souza Cascardo <cascardo@holoscopio.com>
 
-You've still got to allocate that extra memory on the per-sb dentry
-LRUs so it's not really a valid argument. IOWs, if it's too much
-memory for per-sb inode LRUs, then it's too much memory for the
-per-sb dentry LRUs as well...
+Acked-by: Baruch Siach <baruch@tkos.co.il>
 
-> If there is *no* benefit from doing per-sb
-> icache then I would question whether we should.
+baruch
 
-The same vague questions wondering about the benefit of per-sb
-dentry LRUs were raised when I first proposed them years ago, and
-look where we are now.  Besides, focussing on whether this one patch
-is a benefit or not is really missing the point because it's the
-benefits of this patchset as a whole that need to be considered....
-
-Cheers,
-
-Dave.
 -- 
-Dave Chinner
-david@fromorbit.com
+                                                     ~. .~   Tk Open Systems
+=}------------------------------------------------ooO--U--Ooo------------{=
+   - baruch@tkos.co.il - tel: +972.2.679.5364, http://www.tkos.co.il -
