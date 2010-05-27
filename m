@@ -1,72 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934996Ab0E0S0x (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 May 2010 14:26:53 -0400
-Received: from cavan.codon.org.uk ([93.93.128.6]:41882 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932542Ab0E0S0v (ORCPT
+	id S935004Ab0E0S2Q (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 May 2010 14:28:16 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:58269 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755281Ab0E0S2P (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 May 2010 14:26:51 -0400
-Date: Thu, 27 May 2010 19:26:33 +0100
-From: Matthew Garrett <mjg59@srcf.ucam.org>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>,
-       Arve =?iso-8859-1?B?SGr4bm5lduVn?= <arve@android.com>,
-       Florian Mickler <florian@mickler.org>,
-       Vitaly Wool <vitalywool@gmail.com>,
-       Peter Zijlstra <peterz@infradead.org>,
-       LKML <linux-kernel@vger.kernel.org>, Paul@smtp1.linux-foundation.org,
-       felipe.balbi@nokia.com,
-       Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
-       Linux PM <linux-pm@lists.linux-foundation.org>
-Subject: Re: [linux-pm] [PATCH 0/8] Suspend block api (version 8)
-Message-ID: <20100527182633.GN3543@srcf.ucam.org>
-References: <AANLkTin97MMu-XO_Lk-snefBWz2ymhS0Qi1y1RxLwdVA@mail.gmail.com> <20100527003943.07c17f85@lxorguk.ukuu.org.uk> <20100527140655.GA28048@srcf.ucam.org> <alpine.LFD.2.00.1005271642440.3032@localhost.localdomain> <20100527155201.GA31937@srcf.ucam.org> <alpine.LFD.2.00.1005271808340.3032@localhost.localdomain> <20100527165931.GB1062@srcf.ucam.org> <alpine.LFD.2.00.1005271905000.3032@localhost.localdomain> <20100527172343.GB2468@srcf.ucam.org> <alpine.LFD.2.00.1005271930350.3032@localhost.localdomain>
+	Thu, 27 May 2010 14:28:15 -0400
+Date: Thu, 27 May 2010 15:28:00 -0300
+From: Arnaldo Carvalho de Melo <acme@infradead.org>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Arun Sharma <aruns@google.com>, linux-kernel@vger.kernel.org,
+       mingo@elte.hu, paulus@samba.org, davem@davemloft.net,
+       fweisbec@gmail.com
+Subject: Re: [PATCH] perf: implement recording/reporting per-cpu samples
+Message-ID: <20100527182800.GC6422@ghostprotocols.net>
+References: <20100503203813.GA17886@sharma-home.net> <1272919356.1642.154.camel@laptop> <w2u850c51c31005031353x9be8ca7h90c244d64675ce3e@mail.gmail.com> <1272964598.5605.133.camel@twins> <20100505181612.GA5091@sharma-home.net> <1274983723.27810.5772.camel@twins>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.LFD.2.00.1005271930350.3032@localhost.localdomain>
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+In-Reply-To: <1274983723.27810.5772.camel@twins>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.19 (2009-01-05)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 27, 2010 at 07:59:02PM +0200, Thomas Gleixner wrote:
-> On Thu, 27 May 2010, Matthew Garrett wrote:
-> > ACPI provides no guarantees about what level of hardware functionality 
-> > remains during S3. You don't have any useful ability to determine which 
-> > events will generate wakeups. And from a purely practical point of view, 
-> > since the latency is in the range of seconds, you'll never have a low 
-> > enough wakeup rate to hit it.
-> 
-> Right, it does not as of today. So we cannot use that on x86
-> hardware. Fine. That does not prevent us to implement it for
-> architectures which can do it. And if x86 comes to the point where it
-> can handle it as well we're going to use it. Where is the problem ? If
-> x86 cannot guarantee the wakeup sources it's not going to be used for
-> such devices. The kernel just does not provide the service for it, so
-> what ?
+Em Thu, May 27, 2010 at 08:08:43PM +0200, Peter Zijlstra escreveu:
+> Arnaldo, could you pick this up?
 
-We were talking about PCs. Suspend-as-c-state is already implemented for 
-OMAP.
-
-> So the only thing you are imposing to app writers is to use an
-> interface which solves nothing and does not save you any power at
-> all. 
-
-It's already been demonstrated that the Android approach saves power.
-
-> Runnable tasks and QoS guarantees are the indicators whether you can
-> go to opportunistic suspend or not. Everything else is just window
-> dressing.
-
-As I keep saying, this is all much less interesting if you don't care 
-about handling suboptimal applications. If you do care about them then 
-the Android approach works. Nobody has demonstrated a scheduler-based 
-one that does.
-
--- 
-Matthew Garrett | mjg59@srcf.ucam.org
+I'll review and merge it, thanks,
+ 
+- Arnaldo
