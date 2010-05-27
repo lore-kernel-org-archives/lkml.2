@@ -1,141 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932824Ab0E0IPv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 May 2010 04:15:51 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:37201 "EHLO mx1.redhat.com"
+	id S1757552Ab0E0IY5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 May 2010 04:24:57 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:8635 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751636Ab0E0IPt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 May 2010 04:15:49 -0400
-Message-ID: <4BFE2A2F.50209@redhat.com>
-Date: Thu, 27 May 2010 11:15:43 +0300
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100330 Fedora/3.0.4-1.fc12 Thunderbird/3.0.4
+	id S1750860Ab0E0IYy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 May 2010 04:24:54 -0400
+Date: Thu, 27 May 2010 11:20:25 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: "Xin, Xiaohui" <xiaohui.xin@intel.com>
+Cc: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+       "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       Herbert Xu <herbert@gondor.hengli.com.au>
+Subject: Re: issue about virtio-net driver to suppoprt vhost mergeable
+	buffer with zero-copy to support PS mode
+Message-ID: <20100527082025.GA5579@redhat.com>
+References: <F2E9EB7348B8264F86B6AB8151CE2D790B7958E740@shsmsx502.ccr.corp.intel.com>
 MIME-Version: 1.0
-To: Glauber Costa <glommer@redhat.com>
-CC: kvm@vger.kernel.org, linux-kernel@vger.kernel.org, zamsden@redhat.com
-Subject: Re: [PATCH] Add Documentation/kvm/msr.txt
-References: <1274897088-8587-1-git-send-email-glommer@redhat.com>
-In-Reply-To: <1274897088-8587-1-git-send-email-glommer@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <F2E9EB7348B8264F86B6AB8151CE2D790B7958E740@shsmsx502.ccr.corp.intel.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/26/2010 09:04 PM, Glauber Costa wrote:
-> This patch adds a file that documents the usage of KVM-specific
-> MSRs.
->
->    
+On Thu, May 27, 2010 at 09:21:02AM +0800, Xin, Xiaohui wrote:
+> Michael,
+> I'm now looking into the vhost mergeable buffer, and I tried to use it to support PS mode with zero-copy. And I found an issue there that I have to modify the guest virito-net driver.
+> 
+> When guest virtio-net driver submits mergeable buffers, it submits multiple pages outside. In zero-copy case, vhost cannot know which page is used to put header, and which page is used to put payload. Then vhost can only reserves 12 bytes for each page. That means, the page_offset of the payload DMAed into the guest buffer is always 12 bytes. But guest virtio-net driver always use offset 0 to put the data (See receive_mergeable()). That's where the zero-copy use mergeable buffer must modify.
+> 
+> Have I missed something here? And how do you think about it?
+> 
+> Thanks 
+> Xiaohui 
 
-Looks good.  A few comments:
+Maybe you can teach the hardware skip the first 12 bytes: qemu will
+call an ioctl telling hardware what the virtio header size is.
+This is how we plan to do it for tap.
 
-> +
-> +Custom MSR list
-> +--------
-> +
-> +The current supported Custom MSR list is:
-> +
-> +MSR_KVM_WALL_CLOCK:  0x11
-> +
-> +	data: physical address of a memory area.
-
-Which must be in guest RAM (i.e., don't point it somewhere random and 
-expect the hypervisor to allocate it for you).
-
-Must be aligned to 4 bytes (we don't enforce it though).
-
-> +
-> +MSR_KVM_SYSTEM_TIME: 0x12
-> +
-> +	data: physical address of a memory area. This memory is expected to
-> +	hold a copy of the following structure:
->    
-
-In guest RAM.  What are the alignment restrictions?  I don't think we 
-can restrict to less than 4 bytes without breaking guests retroactively.
-
-> +
-> +	struct pvclock_vcpu_time_info {
-> +		u32   version;
-> +		u32   pad0;
-> +		u64   tsc_timestamp;
-> +		u64   system_time;
-> +		u32   tsc_to_system_mul;
-> +		s8    tsc_shift;
-> +		u8    flags;
-> +		u8    pad[2];
-> +	} __attribute__((__packed__)); /* 32 bytes */
-> +
-> +	whose data will be filled in by the hypervisor periodically. Only one
-> +	write, or registration, is needed for each VCPU. The interval between
-> +	updates of this structure is arbitrary, and implementation-dependent.
-> +
-> +		version: guest has to check version before and after grabbing
-> +		time information, and check that they are both equal and even.
-> +		An odd version indicates an in-progress update.
-> +
-> +		tsc_timestamp: the tsc value at the current VCPU, at the time
-> +		of the update of this structure. Guests can subtract this value
-> +		from current tsc to derive a notion of elapsed time since the
-> +		structure update.
-> +
-> +		system_time: the current system time at the time this structure
-> +		was last updated. Unit is nanoseconds.
->    
-
-What is the baseline for system_time?  Guest boot?
-
-> +
-> +		tsc_to_system_mul: a function of the tsc frequency. One has
-> +		to multiply any tsc-related quantity by this value to get
-> +		a value in nanoseconds, besides dividing by 2^tsc_shift
-> +
-> +		tsc_shift: cycle to nanosecond divider, as a power of two, to
-> +		allow for shift rights. One has to shift right any tsc-related
-> +		quantity by this value to get a value in nanoseconds, besides
-> +		multiplying by tsc_to_system_mul.
->    
-
-Would be good to write down the formula for calculating time here.
-
-> +
-> +		flags: bits in this field indicate extended capabilities
-> +		coordinated between the guest and the hypervisor. Availability
-> +		of specific flags has to be checked in 0x40000001 cpuid leaf.
-> +		Refer to cpuid.txt for details.
->    
-
-Need to document bit 0 here for completeness.  cpuid.txt documents how 
-to discover it, here we document how to use it.
-
-> +
-> +	Availability of this MSR must be checked via bit 0 in 0x4000001 cpuid
-> +	leaf prior to usage.
-> +
-> +	This MSR falls outside the reserved KVM range, and may be removed in the
-> +	future. Its usage is deprecated.
-> +
-> +MSR_KVM_WALL_CLOCK_NEW:   0x4b564d00
-> +
-> +	data and functioning: same as MSR_KVM_WALL_CLOCK. Use this instead.
-> +
-> +	Availability of this MSR must be checked via bit 3 in 0x4000001 cpuid
-> +	leaf prior to usage.
-> +
-> +MSR_KVM_SYSTEM_TIME_NEW:  0x4b564d01
-> +
-> +	data and functioning: same as MSR_KVM_SYSTEM_TIME. Use this instead.
-> +
-> +	Availability of this MSR must be checked via bit 3 in 0x4000001 cpuid
-> +	leaf prior to usage.
-> +
->    
-
-Please detail the suggested algorithm for using the msrs (new then old).
-
-
+Alternatively, buffers can be used in any order.
+So we can have hardware use N buffers for the packet, and then
+have vhost put the header in buffer N+1.
 
 -- 
-error compiling committee.c: too many arguments to function
-
+MST
