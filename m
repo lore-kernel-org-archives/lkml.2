@@ -1,48 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935091Ab0E0SiW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 May 2010 14:38:22 -0400
-Received: from one.firstfloor.org ([213.235.205.2]:34032 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755166Ab0E0SiV (ORCPT
+	id S935108Ab0E0Sko (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 May 2010 14:40:44 -0400
+Received: from mga02.intel.com ([134.134.136.20]:59602 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759477Ab0E0Skn convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 May 2010 14:38:21 -0400
-To: Michael Tokarev <mjt@tls.msk.ru>
-Cc: Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: personality(ADDR_LIMIT_3GB) results in EFAULT
-From: Andi Kleen <andi@firstfloor.org>
-References: <4BFEA911.40600@msgid.tls.msk.ru>
-Date: Thu, 27 May 2010 20:38:19 +0200
-In-Reply-To: <4BFEA911.40600@msgid.tls.msk.ru> (Michael Tokarev's message of "Thu\, 27 May 2010 21\:17\:05 +0400")
-Message-ID: <874oht197o.fsf@basil.nowhere.org>
-User-Agent: Gnus/5.11 (Gnus v5.11) Emacs/22.3 (gnu/linux)
+	Thu, 27 May 2010 14:40:43 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.53,312,1272870000"; 
+   d="scan'208";a="521818420"
+From: "Luck, Tony" <tony.luck@intel.com>
+To: Len Brown <lenb@kernel.org>, "x86@kernel.org" <x86@kernel.org>,
+       "linux-pm@lists.linux-foundation.org" 
+	<linux-pm@lists.linux-foundation.org>
+CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Date: Thu, 27 May 2010 11:40:41 -0700
+Subject: RE: [PATCH-v2 3/8] cpuidle: make cpuidle_curr_driver static
+Thread-Topic: [PATCH-v2 3/8] cpuidle: make cpuidle_curr_driver static
+Thread-Index: Acr9XVqYFdWC6z2NRK++baskl94vdQAbLGCg
+Message-ID: <987664A83D2D224EAE907B061CE93D5301135014D2@orsmsx505.amr.corp.intel.com>
+References: <1274928151-30919-1-git-send-email-lenb@kernel.org>
+ <db2b1d371847edfdbba21f323b4fd4a480c8c5aa.1274926772.git.len.brown@intel.com>
+ <alpine.LFD.2.00.1005270126000.4039@localhost.localdomain>
+In-Reply-To: <alpine.LFD.2.00.1005270126000.4039@localhost.localdomain>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Michael Tokarev <mjt@tls.msk.ru> writes:
++static inline cpuidle_driver *cpuidle_get_driver(void) {return NULL;}
 
-> I noticed an.. interesting issue here.
->
-> Running a 32bit executable on a 64bit kernel,
-> and doing
->
->   personality(ADDR_LIMIT_3GB);
->
-> That call succedes, but any further execve()
-> and friends results in EFAULT, unless whole
-> argv[] and envp[] are copied to a malloc'ed
-> space.  alloca sometimes helps and sometimes
-> not.
+Close, but no cigar yet. You missed a "struct" keyword on this line.
+Add that, and it builds and boots for me.
 
-It worked when I wrote it originally.
-
-Sounds like a regression, perhaps related to
-b6a2fea39318e43fee84fa7b0b90d68bed92d2ba
-
-
--Andi
--- 
-ak@linux.intel.com -- Speaking for myself only.
+-Tony
