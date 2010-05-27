@@ -1,180 +1,296 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752838Ab0E0F02 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 May 2010 01:26:28 -0400
-Received: from ozlabs.org ([203.10.76.45]:59308 "EHLO ozlabs.org"
+	id S1753707Ab0E0F0k (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 May 2010 01:26:40 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:34775 "EHLO smtps.tip.net.au"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751039Ab0E0F00 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 May 2010 01:26:26 -0400
-From: Rusty Russell <rusty@rustcorp.com.au>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Subject: Re: [Regression] Crash in load_module() while freeing args
-Date: Thu, 27 May 2010 14:56:18 +0930
-User-Agent: KMail/1.13.2 (Linux/2.6.32-21-generic; KDE/4.4.2; i686; ; )
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-       LKML <linux-kernel@vger.kernel.org>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Brandon Philips <brandon@ifup.org>,
-       Jon Masters <jonathan@jonmasters.org>, Tejun Heo <htejun@gmail.com>,
-       Masami Hiramatsu <mhiramat@redhat.com>
-References: <201005252300.07739.rjw@sisk.pl> <201005262127.26235.rusty@rustcorp.com.au> <201005270056.25748.rjw@sisk.pl>
-In-Reply-To: <201005270056.25748.rjw@sisk.pl>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201005271456.20003.rusty@rustcorp.com.au>
+	id S1753232Ab0E0F0h (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 May 2010 01:26:37 -0400
+Date: Thu, 27 May 2010 15:26:28 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: linux-next@vger.kernel.org
+Cc: LKML <linux-kernel@vger.kernel.org>
+Subject: linux-next: Tree for May 27
+Message-Id: <20100527152628.b23a14c6.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Thu__27_May_2010_15_26_28_+1000_RCBtEQO4dYmvPeMp"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 27 May 2010 08:26:25 am Rafael J. Wysocki wrote:
-> On Wednesday 26 May 2010, Rusty Russell wrote:
-> > I suspect that the increased parallelism enabled by this patch uncovered this
-> > bug.  Does this fix it?
-> 
-> Since the commit has been reverted, do you still want me to test this patch?
-> Quite frankly I'd prefer to test a complete replacement for that commit on top
-> of current -git.
+--Signature=_Thu__27_May_2010_15_26_28_+1000_RCBtEQO4dYmvPeMp
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-OK, combo meal deal below, against Linus' latest.  I'd really appreciate
-a report, since AFAIK you're the only one hitting it, and only when that
-other (now reverted) patch was applied.
+Hi all,
 
-As an side to Brandon: I can see how my patch fixed an explicit request_module
-inside module_init (that's how I tested it).  I can't see how we have a
-problem with an implicit dependency such as bne2x->crc32.  Modules go into
-the live state without retaking the lock.  If you can still reproduce that
-now Linus has reverted, I'm afraid we need to dig deeper...
+We are in the merge window again.  I remind you all not to add stuff for
+2.6.36 to your linux-next trees until after 2.6.35-rc1.
 
-Thanks,
-Rusty.
+Changes since 20100526:
 
-diff --git a/kernel/module.c b/kernel/module.c
---- a/kernel/module.c
-+++ b/kernel/module.c
-@@ -563,33 +563,26 @@ int use_module(struct module *a, struct 
- 	struct module_use *use;
- 	int no_warn, err;
- 
--	if (b == NULL || already_uses(a, b)) return 1;
-+	if (b == NULL || already_uses(a, b))
-+		return 0;
- 
- 	/* If we're interrupted or time out, we fail. */
--	if (wait_event_interruptible_timeout(
--		    module_wq, (err = strong_try_module_get(b)) != -EBUSY,
--		    30 * HZ) <= 0) {
--		printk("%s: gave up waiting for init of module %s.\n",
--		       a->name, b->name);
--		return 0;
--	}
--
--	/* If strong_try_module_get() returned a different error, we fail. */
-+	err = strong_try_module_get(b);
- 	if (err)
--		return 0;
-+		return err;
- 
- 	DEBUGP("Allocating new usage for %s.\n", a->name);
- 	use = kmalloc(sizeof(*use), GFP_ATOMIC);
- 	if (!use) {
- 		printk("%s: out of memory loading\n", a->name);
- 		module_put(b);
--		return 0;
-+		return -ENOMEM;
- 	}
- 
- 	use->module_which_uses = a;
- 	list_add(&use->list, &b->modules_which_use_me);
- 	no_warn = sysfs_create_link(b->holders_dir, &a->mkobj.kobj, a->name);
--	return 1;
-+	return 0;
- }
- EXPORT_SYMBOL_GPL(use_module);
- 
-@@ -882,7 +875,7 @@ static inline void module_unload_free(st
- 
- int use_module(struct module *a, struct module *b)
- {
--	return strong_try_module_get(b) == 0;
-+	return strong_try_module_get(b);
- }
- EXPORT_SYMBOL_GPL(use_module);
- 
-@@ -1053,17 +1046,39 @@ static const struct kernel_symbol *resol
- 	struct module *owner;
- 	const struct kernel_symbol *sym;
- 	const unsigned long *crc;
--
-+	DEFINE_WAIT(wait);
-+	int err;
-+	long timeleft = 30 * HZ;
-+
-+again:
- 	sym = find_symbol(name, &owner, &crc,
- 			  !(mod->taints & (1 << TAINT_PROPRIETARY_MODULE)), true);
--	/* use_module can fail due to OOM,
--	   or module initialization or unloading */
--	if (sym) {
--		if (!check_version(sechdrs, versindex, name, mod, crc, owner)
--		    || !use_module(mod, owner))
--			sym = NULL;
-+	if (!sym)
-+		return NULL;
-+
-+	if (!check_version(sechdrs, versindex, name, mod, crc, owner))
-+		return NULL;
-+
-+	prepare_to_wait(&module_wq, &wait, TASK_INTERRUPTIBLE);
-+	err = use_module(mod, owner);
-+	if (likely(!err) || err != -EBUSY || signal_pending(current)) {
-+		finish_wait(&module_wq, &wait);
-+		return err ? NULL : sym;
- 	}
--	return sym;
-+
-+	/* Module is still loading.  Drop lock and wait. */
-+	mutex_unlock(&module_mutex);
-+	timeleft = schedule_timeout(timeleft);
-+	mutex_lock(&module_mutex);
-+	finish_wait(&module_wq, &wait);
-+
-+	/* Module might be gone entirely, or replaced.  Re-lookup. */
-+	if (timeleft)
-+		goto again;
-+
-+	printk(KERN_WARNING "%s: gave up waiting for init of module %s.\n",
-+	       mod->name, owner->name);
-+	return NULL;
- }
- 
- /*
-@@ -2014,6 +2029,7 @@ static noinline struct module *load_modu
- 	long err = 0;
- 	void *ptr = NULL; /* Stops spurious gcc warning */
- 	unsigned long symoffs, stroffs, *strmap;
-+	void __percpu *percpu;
- 
- 	mm_segment_t old_fs;
- 
-@@ -2158,6 +2174,8 @@ static noinline struct module *load_modu
- 			goto free_mod;
- 		sechdrs[pcpuindex].sh_flags &= ~(unsigned long)SHF_ALLOC;
- 	}
-+	/* Keep this around for failure path. */
-+	percpu = mod_percpu(mod);
- 
- 	/* Determine total sizes, and put offsets in sh_entsize.  For now
- 	   this is done generically; there doesn't appear to be any
-@@ -2463,7 +2481,7 @@ static noinline struct module *load_modu
- 	module_free(mod, mod->module_core);
- 	/* mod will be freed with core. Don't access it beyond this line! */
-  free_percpu:
--	percpu_modfree(mod);
-+	free_percpu(percpu);
-  free_mod:
- 	kfree(args);
- 	kfree(strmap);
+My fixes tree contains:
+      v4l-dvb: update gfp/slab.h includes
+      arm: update gfp/slab.h includes
+      davinci: update gfp/slab.h includes
+      ocfs2: update gfp/slab.h includes
 
+The driver-core.current tree lost its conflict.
 
+The fuse tree lost its build failure.
+
+The rr tree lost its conflicts.
+
+The leds tree gained 2 build failures so I used the version from
+next-20100526.
+
+The watchdog tree lost its conflict.
+
+----------------------------------------------------------------------------
+
+I have created today's linux-next tree at
+git://git.kernel.org/pub/scm/linux/kernel/git/next/linux-next.git
+(patches at http://www.kernel.org/pub/linux/kernel/v2.6/next/ ).  If you
+are tracking the linux-next tree using git, you should not use "git pull"
+to do so as that will try to merge the new linux-next release with the
+old one.  You should use "git fetch" as mentioned in the FAQ on the wiki
+(see below).
+
+You can see which trees have been included by looking in the Next/Trees
+file in the source.  There are also quilt-import.log and merge.log files
+in the Next directory.  Between each merge, the tree was built with
+a ppc64_defconfig for powerpc and an allmodconfig for x86_64. After the
+final fixups (if any), it is also built with powerpc allnoconfig (32 and
+64 bit), ppc44x_defconfig and allyesconfig (minus
+CONFIG_PROFILE_ALL_BRANCHES - this fails its final link) and i386, sparc
+and sparc64 defconfig. These builds also have
+CONFIG_ENABLE_WARN_DEPRECATED, CONFIG_ENABLE_MUST_CHECK and
+CONFIG_DEBUG_INFO disabled when necessary.
+
+Below is a summary of the state of the merge.
+
+We are up to 162 trees (counting Linus' and 22 trees of patches pending
+for Linus' tree), more are welcome (even if they are currently empty).
+Thanks to those who have contributed, and to those who haven't, please do.
+
+Status of my local build tests will be at
+http://kisskb.ellerman.id.au/linux-next .  If maintainers want to give
+advice about cross compilers/configs that work, we are always open to add
+more builds.
+
+Thanks to Jan Dittmer for adding the linux-next tree to his build tests
+at http://l4x.org/k/ , the guys at http://test.kernel.org/ and Randy
+Dunlap for doing many randconfig builds.
+
+There is a wiki covering stuff to do with linux-next at
+http://linux.f-seidel.de/linux-next/pmwiki/ .  Thanks to Frank Seidel.
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+$ git checkout master
+$ git reset --hard stable
+Merging origin/master
+Merging fixes/fixes
+Merging arm-current/master
+Merging m68k-current/for-linus
+Merging powerpc-merge/merge
+Merging sparc-current/master
+Merging scsi-rc-fixes/master
+Merging net-current/master
+Merging sound-current/for-linus
+Merging pci-current/for-linus
+Merging wireless-current/master
+Merging kbuild-current/for-linus
+Merging quilt/driver-core.current
+Merging quilt/tty.current
+Merging quilt/usb.current
+Merging quilt/staging.current
+Merging cpufreq-current/fixes
+Merging input-current/for-linus
+Merging md-current/for-linus
+Merging audit-current/for-linus
+Merging crypto-current/master
+Merging ide-curent/master
+Merging dwmw2/master
+Merging gcl-current/merge
+Merging arm/devel
+Merging davinci/davinci-next
+Merging i.MX/for-next
+Merging msm/for-next
+Merging omap/for-next
+Merging pxa/for-next
+Merging samsung/next-samsung
+Merging avr32/avr32-arch
+Merging blackfin/for-linus
+Merging cris/for-next
+Merging ia64/test
+Merging m68k/for-next
+Merging m68knommu/for-next
+Merging microblaze/next
+Merging mips/mips-for-linux-next
+Merging parisc/next
+Merging powerpc/next
+Merging 4xx/next
+Merging 52xx-and-virtex/next
+CONFLICT (content): Merge conflict in drivers/serial/mpc52xx_uart.c
+Merging galak/next
+CONFLICT (content): Merge conflict in arch/powerpc/sysdev/fsl_msi.c
+Merging s390/features
+Merging sh/master
+Merging genesis/master
+CONFLICT (content): Merge conflict in include/linux/serial_sci.h
+Merging sparc/master
+Merging xtensa/master
+Merging ceph/for-next
+Merging cifs/master
+Merging configfs/linux-next
+Merging ecryptfs/next
+CONFLICT (content): Merge conflict in fs/ecryptfs/main.c
+Merging ext3/for_next
+Merging ext4/next
+CONFLICT (content): Merge conflict in fs/ext4/fsync.c
+CONFLICT (content): Merge conflict in fs/ext4/super.c
+Merging fatfs/master
+Merging fuse/for-next
+Merging gfs2/master
+Merging jfs/next
+Merging logfs/master
+Merging nfs/linux-next
+Merging nfsd/nfsd-next
+Merging nilfs2/for-next
+Merging ocfs2/linux-next
+Merging squashfs/master
+Merging udf/for_next
+Merging v9fs/for-next
+Merging ubifs/linux-next
+Merging xfs/master
+Merging vfs/for-next
+Merging pci/linux-next
+Merging hid/for-next
+Merging quilt/i2c
+Merging bjdooks-i2c/next-i2c
+CONFLICT (content): Merge conflict in arch/arm/plat-omap/i2c.c
+CONFLICT (content): Merge conflict in drivers/i2c/busses/i2c-cpm.c
+CONFLICT (content): Merge conflict in drivers/i2c/busses/i2c-mpc.c
+Merging quilt/jdelvare-hwmon
+Merging quilt/kernel-doc
+Merging v4l-dvb/master
+Merging kbuild/for-next
+CONFLICT (content): Merge conflict in Documentation/kbuild/makefiles.txt
+Merging kconfig/for-next
+Merging ide/master
+Merging libata/NEXT
+Merging infiniband/for-next
+Merging acpi/test
+Applying: acpi: update gfp/slab.h includes
+Merging ieee1394/for-next
+CONFLICT (content): Merge conflict in Documentation/feature-removal-schedul=
+e.txt
+Merging ubi/linux-next
+Merging kvm/linux-next
+Merging dlm/next
+Merging ibft/master
+Merging scsi/master
+Merging async_tx/next
+Merging net/master
+Merging wireless/master
+Merging mtd/master
+Merging crypto/master
+Merging sound/for-next
+Merging cpufreq/next
+Merging quilt/rr
+Merging mmc/next
+Merging input/next
+Merging lsm/for-next
+Merging block/for-next
+Merging quilt/device-mapper
+Merging embedded/master
+Merging firmware/master
+Merging pcmcia/master
+Merging battery/master
+Merging leds/for-mm
+$ git reset --hard HEAD^
+Merging refs/next/20100526/leds
+Merging backlight/for-mm
+Merging kgdb/kgdb-next
+Merging slab/for-next
+Merging uclinux/for-next
+Merging md/for-next
+Merging mfd/for-next
+CONFLICT (content): Merge conflict in drivers/dma/Makefile
+CONFLICT (add/add): Merge conflict in drivers/dma/timb_dma.c
+Merging hdlc/hdlc-next
+Merging drm/drm-next
+Merging viafb/viafb-next
+Merging voltage/for-next
+Merging security-testing/next
+Merging lblnet/master
+Merging agp/agp-next
+Merging uwb/for-upstream
+Merging watchdog/master
+Merging bdev/master
+Merging dwmw2-iommu/master
+Merging cputime/cputime
+Merging osd/linux-next
+Merging jc_docs/docs-next
+Merging nommu/master
+Merging trivial/for-next
+Merging audit/for-next
+Merging quilt/aoe
+Merging suspend/linux-next
+Merging bluetooth/master
+Merging fsnotify/for-next
+CONFLICT (delete/modify): fs/notify/inotify/inotify.c deleted in fsnotify/f=
+or-next and modified in HEAD. Version HEAD of fs/notify/inotify/inotify.c l=
+eft in tree.
+$ git rm -f fs/notify/inotify/inotify.c
+Applying: fsnotify: update gfp/slab.h includes
+Merging irda/for-next
+CONFLICT (content): Merge conflict in drivers/net/irda/irda-usb.c
+Merging drbd/for-jens
+Merging catalin/for-next
+Merging alacrity/linux-next
+Merging i7core_edac/linux_next
+Merging devicetree/next-devicetree
+Merging spi/next-spi
+Merging omap_dss2/for-next
+Merging tip/auto-latest
+CONFLICT (content): Merge conflict in Documentation/feature-removal-schedul=
+e.txt
+CONFLICT (content): Merge conflict in kernel/Makefile
+Merging edac-amd/for-next
+Merging oprofile/for-next
+Merging percpu/for-next
+Merging workqueues/for-next
+Merging sfi/sfi-test
+Merging asm-generic/next
+Merging hwpoison/hwpoison
+Merging sysctl/master
+Merging bkl-core/bkl/core
+Merging bkl-procfs/bkl/procfs
+Merging bkl-ioctl/bkl/ioctl
+Merging quilt/driver-core
+Merging quilt/tty
+Merging quilt/usb
+Merging staging-next/staging-next
+Merging slabh/slabh
+Merging scsi-post-merge/master
+
+--Signature=_Thu__27_May_2010_15_26_28_+1000_RCBtEQO4dYmvPeMp
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iEYEARECAAYFAkv+AoQACgkQjjKRsyhoI8y4awCgjz6QR+4GQ+2fN4CJsyPbK5p+
+eVIAoJiLAmPBaqMe17kPOmb0rPqfcV3s
+=Ed6u
+-----END PGP SIGNATURE-----
+
+--Signature=_Thu__27_May_2010_15_26_28_+1000_RCBtEQO4dYmvPeMp--
