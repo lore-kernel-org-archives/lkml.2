@@ -1,20 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754428Ab0E0Mcx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 May 2010 08:32:53 -0400
-Received: from mgw1.diku.dk ([130.225.96.91]:51744 "EHLO mgw1.diku.dk"
+	id S1755107Ab0E0MdJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 May 2010 08:33:09 -0400
+Received: from mgw2.diku.dk ([130.225.96.92]:48506 "EHLO mgw2.diku.dk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751469Ab0E0Mcu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 May 2010 08:32:50 -0400
-Date: Thu, 27 May 2010 14:32:45 +0200 (CEST)
+	id S1754902Ab0E0MdF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 May 2010 08:33:05 -0400
+Date: Thu, 27 May 2010 14:33:00 +0200 (CEST)
 From: Julia Lawall <julia@diku.dk>
-To: "David S. Miller" <davem@davemloft.net>,
-       Grant Likely <grant.likely@secretlab.ca>, sparclinux@vger.kernel.org,
-       linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
+To: Jean-Paul Roubelat <jpr@f6fbb.org>, linux-hams@vger.kernel.org,
+       netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
        kernel-janitors@vger.kernel.org
-Subject: [PATCH 3/11] arch/sparc/kernel: Eliminate what looks like a NULL
- pointer dereference
-Message-ID: <Pine.LNX.4.64.1005271432250.5422@ask.diku.dk>
+Subject: [PATCH 4/11] drivers/net/hamradio: Eliminate a NULL pointer dereference
+Message-ID: <Pine.LNX.4.64.1005271432450.5422@ask.diku.dk>
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
@@ -23,8 +21,7 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Julia Lawall <julia@diku.dk>
 
-At the point of the test, action cannot be NULL, as it has been dereferenced
-in the code just above.
+At the point of the print, dev is NULL.
 
 A simplified version of the semantic match that finds this problem is as
 follows: (http://coccinelle.lip6.fr/)
@@ -42,6 +39,7 @@ if ((E == NULL && ...) || ...)
       when != E = E1
 * E->f
   ... when any
+  return ...;
 }
 else S3
 // </smpl>
@@ -49,19 +47,20 @@ else S3
 Signed-off-by: Julia Lawall <julia@diku.dk>
 
 ---
- arch/sparc/kernel/sun4d_irq.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/net/hamradio/yam.c |    3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
-diff --git a/arch/sparc/kernel/sun4d_irq.c b/arch/sparc/kernel/sun4d_irq.c
-index ab036a7..e11b461 100644
---- a/arch/sparc/kernel/sun4d_irq.c
-+++ b/arch/sparc/kernel/sun4d_irq.c
-@@ -183,7 +183,7 @@ void sun4d_free_irq(unsigned int irq, void *dev_id)
- 		goto out_unlock;
- 	}
- 	
--	if (action && tmp)
-+	if (tmp)
- 		tmp->next = action->next;
- 	else
- 		*actionp = action->next;
+diff --git a/drivers/net/hamradio/yam.c b/drivers/net/hamradio/yam.c
+index 694132e..4e7d1d0 100644
+--- a/drivers/net/hamradio/yam.c
++++ b/drivers/net/hamradio/yam.c
+@@ -1151,8 +1151,7 @@ static int __init yam_init_driver(void)
+ 		dev = alloc_netdev(sizeof(struct yam_port), name,
+ 				   yam_setup);
+ 		if (!dev) {
+-			printk(KERN_ERR "yam: cannot allocate net device %s\n",
+-			       dev->name);
++			pr_err("yam: cannot allocate net device\n");
+ 			err = -ENOMEM;
+ 			goto error;
+ 		}
