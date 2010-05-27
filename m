@@ -1,157 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758443Ab0E0QrH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 May 2010 12:47:07 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:47193 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755012Ab0E0QrE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 May 2010 12:47:04 -0400
-Date: Thu, 27 May 2010 19:41:39 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Sridhar Samudrala <sri@us.ibm.com>
-Cc: Oleg Nesterov <oleg@redhat.com>, netdev <netdev@vger.kernel.org>,
-       lkml <linux-kernel@vger.kernel.org>,
-       "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Dmitri Vorobiev <dmitri.vorobiev@movial.com>, Tejun Heo <tj@kernel.org>,
-       Jiri Kosina <jkosina@suse.cz>, Thomas Gleixner <tglx@linutronix.de>,
-       Ingo Molnar <mingo@elte.hu>, Andi Kleen <ak@linux.intel.com>
-Subject: Re: [PATCH 2/3] workqueue: Add an API to create a singlethread
-	workqueue attached to the current task's cgroup
-Message-ID: <20100527164139.GB21710@redhat.com>
-References: <1274227491.2370.110.camel@w-sridhar.beaverton.ibm.com> <20100527091426.GA6308@redhat.com> <20100527124448.GA4241@redhat.com> <1274977458.10161.11.camel@w-sridhar.beaverton.ibm.com>
+	id S1758796Ab0E0QtO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 May 2010 12:49:14 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:47879 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755276Ab0E0QtM convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 May 2010 12:49:12 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=JjKIypHzX1jLZHtj1VycX+5rNJ7L+l5YwDbSvLbwkka+APsEOJ3D18ng3K3eXInb7l
+         WPbKEt0XBIGyl2m2TLnEQHjwaDOaAMrU/fc/iUbtqQjP/B6cfXwbb/YBONBoqe0b4KVX
+         O+fNpaW7Z4vyPoZeZXOuyS5ocTQ+ElmbVFg1Q=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1274977458.10161.11.camel@w-sridhar.beaverton.ibm.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <AANLkTilo5onZPVM2KQFHPaQxDOSfpYA6w2ugYpTc8MOM@mail.gmail.com>
+References: <AANLkTilo5onZPVM2KQFHPaQxDOSfpYA6w2ugYpTc8MOM@mail.gmail.com>
+Date: Thu, 27 May 2010 12:49:10 -0400
+Message-ID: <AANLkTimd5JReMf86z9YwcbSNObqW6n6sY6_AnBq40A6V@mail.gmail.com>
+Subject: Re: [PATCH 1/4] [x86/mm] Correcting improper large page preservation
+From: Siarhei Liakh <sliakh.lkml@gmail.com>
+To: linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
+       linux-next@vger.kernel.org
+Cc: Arjan van de Ven <arjan@infradead.org>, James Morris <jmorris@namei.org>,
+       Andrew Morton <akpm@linux-foundation.org>, Andi Kleen <ak@muc.de>,
+       Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
+       Ingo Molnar <mingo@elte.hu>, Rusty Russell <rusty@rustcorp.com.au>,
+       Stephen Rothwell <sfr@canb.auug.org.au>, Dave Jones <davej@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 27, 2010 at 09:24:18AM -0700, Sridhar Samudrala wrote:
-> On Thu, 2010-05-27 at 14:44 +0200, Oleg Nesterov wrote:
-> > On 05/27, Michael S. Tsirkin wrote:
-> > >
-> > > On Tue, May 18, 2010 at 05:04:51PM -0700, Sridhar Samudrala wrote:
-> > > > Add a new kernel API to create a singlethread workqueue and attach it's
-> > > > task to current task's cgroup and cpumask.
-> > > >
-> > > > Signed-off-by: Sridhar Samudrala <sri@us.ibm.com>
-> > >
-> > > Could someone familiar with workqueue code please comment on whether
-> > > this patch is suitable for 2.6.35?
-> > >
-> > > It is needed to fix the case where vhost user might cause a kernel
-> > > thread to consume more CPU than allowed by the cgroup.
-> > > Should I merge it through the vhost tree?
-> > > Ack for this?
-> > 
-> > I don't understand the reasons for this patch, but this doesn't matter.
-> > 
-> > I don't really see any need to change workqueue.c,
-> > 
-> > > > +static struct task_struct *get_singlethread_wq_task(struct workqueue_struct *wq)
-> > > > +{
-> > > > +	return (per_cpu_ptr(wq->cpu_wq, singlethread_cpu))->thread;
-> > > > +}
-> > 
-> > (Not sure this trivial static helper with the single caller makes sense, but
-> >  see below)
-> > 
-> > > > +/* Create a singlethread workqueue and attach it's task to the current task's
-> > > > + * cgroup and set it's cpumask to the current task's cpumask.
-> > > > + */
-> > > > +struct workqueue_struct *create_singlethread_workqueue_in_current_cg(char *name)
-> > > > +{
-> > > > +	struct workqueue_struct *wq;
-> > > > +	struct task_struct *task;
-> > > > +	cpumask_var_t mask;
-> > > > +
-> > > > +	wq = create_singlethread_workqueue(name);
-> > > > +	if (!wq)
-> > > > +		goto out;
-> > > > +
-> > > > +	if (!alloc_cpumask_var(&mask, GFP_KERNEL))
-> > > > +		goto err;
-> > > > +			
-> > > > +	if (sched_getaffinity(current->pid, mask))
-> > > > +		goto err;
-> > > > +
-> > > > +	task = get_singlethread_wq_task(wq);
-> > > > +	if (sched_setaffinity(task->pid, mask))
-> > > > +		goto err;
-> > > > +
-> > > > +	if (cgroup_attach_task_current_cg(task))
-> > > > +		goto err;
-> > > > +out:	
-> > > > +	return wq;
-> > > > +err:
-> > > > +	destroy_workqueue(wq);
-> > > > +	wq = NULL;
-> > > > +	goto out;
-> > > > +}
-> > 
-> > Instead, cgroup.c (or whoever needs this) can do
-> > 
-> > 	struct move_struct {
-> > 		struct work_struct work;
-> > 		int ret;
-> > 	};
-> > 
-> > 	static void move_func(struct work_struct *work)
-> > 	{
-> > 		struct move_struct *move = container_of(...);
-> > 
-> > 		if (cgroup_attach_task_current_cg(current))
-> 
-> We are trying to attach the task associated with workqueue to the
-> current task's cgroup. So what we need is 
->    cgroup_attach_task_current_cg(wq->task);
-> 
-> However there is no interface currently that exports the task associated
-> with a workqueue. It is hidden in cpu_workqueue_struct and is only 
-> accessible within workqueue.c.
-> 
-> 
-> > 			ret = -EANY;
-> > 	}
-> > 
-> > 	static struct workqueue_struct *create_singlethread_workqueue_in_current_cg(char *name)
-> > 	{
-> > 		struct workqueue_struct *wq;
-> > 		struct move_struct move = {
-> > 			.work = __WORK_INITIALIZER(move_func);
-> > 		};
-> > 
-> > 		wq = create_singlethread_workqueue(name);
-> > 		if (!wq)
-> > 			return NULL;
-> > 
-> > 		queue_work(&move.work);
-> > 		flush_work(&move.work);
-> > 
-> > 		if (move.ret) {
-> > 			destroy_workqueue(wq);
-> > 			wq = NULL;
-> > 		}
-> > 
-> > 		return wq;
-> > 	}
-> > 
-> > Or. Just export wq_per_cpu() from workqueue.c (probably with a better name) and
-> > use it like the patch does.
-> This requires that struct cpu_workqueue_struct and struct
-> workqueue_struct are made externally visible by moving them to
-> kernel/workqueue.h.
-> 
-> Instead what about adding the simple helper get_singlethread_wq_task()
-> in workqueue.c and exporting it.
-> I can add create_singlethread_workqueue_in_current_cg() to cgroup.c
-> using this helper routine.
+On Thu, May 27, 2010 at 12:45 PM, Siarhei Liakh <sliakh.lkml@gmail.com> wrote:
+> This patch fixes a bug in try_preserve_large_page() which may result
+> in improper large page preservation and improper application of page
+> attributes to the memory area outside of the original change request.
+> More specifically, the problem manifests itself when set_memory_*() is
+> called for several pages at the beginning of the large page and
+[...]
+> V1:  try_preserve_large_page() patch for Linux 2.6.34-rc2
+>
+> Signed-off-by: Siarhei Liakh <sliakh.lkml@gmail.com>
+> Signed-off-by: Xuxian Jiang <jiang@cs.ncsu.edu>
+> ---
+>
+> diff --git a/arch/x86/mm/pageattr.c b/arch/x86/mm/pageattr.c
+> index cf07c26..6844675 100644
+> --- a/arch/x86/mm/pageattr.c
+> +++ b/arch/x86/mm/pageattr.c
+> @@ -255,6 +255,7 @@ static inline pgprot_t static_protections(pgprot_t
+[..]
+> +               cpa->numpages == (psize >> PAGE_SHIFT)) {
+>               /*
+>                * The address is aligned and the number of pages
+>                * covers the full page.
+>
 
-Or to our driver, if that's more palatable.
-
-> Thanks
-> Sridhar
-> 
+Please disregard this patch. Version 2 will be re-posted shortly.
+Sorry for mistake.
