@@ -1,51 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750995Ab0E0EDr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 May 2010 00:03:47 -0400
-Received: from tango.tkos.co.il ([62.219.50.35]:45443 "EHLO tango.tkos.co.il"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750756Ab0E0EDq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 May 2010 00:03:46 -0400
-Date: Thu, 27 May 2010 07:03:29 +0300
-From: Baruch Siach <baruch@tkos.co.il>
-To: Thadeu Lima de Souza Cascardo <cascardo@holoscopio.com>
-Cc: linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-       Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>,
-       Sascha Hauer <s.hauer@pengutronix.de>
-Subject: Re: [PATCH] fbdev: fix frame buffer devices menu
-Message-ID: <20100527040329.GA14841@jasper.tkos.co.il>
-References: <1274896477-6832-1-git-send-email-cascardo@holoscopio.com>
+	id S933150Ab0E0EHn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 May 2010 00:07:43 -0400
+Received: from bld-mail17.adl2.internode.on.net ([150.101.137.102]:51929 "EHLO
+	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1750827Ab0E0EHk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 May 2010 00:07:40 -0400
+Date: Thu, 27 May 2010 14:07:04 +1000
+From: Dave Chinner <david@fromorbit.com>
+To: Nick Piggin <npiggin@suse.de>
+Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+       linux-mm@kvack.org, xfs@oss.sgi.com
+Subject: Re: [PATCH 3/5] superblock: introduce per-sb cache shrinker
+ infrastructure
+Message-ID: <20100527040704.GJ12087@dastard>
+References: <1274777588-21494-1-git-send-email-david@fromorbit.com>
+ <1274777588-21494-4-git-send-email-david@fromorbit.com>
+ <20100526164116.GD22536@laptop>
+ <20100526231214.GB1395@dastard>
+ <20100527021905.GG22536@laptop>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1274896477-6832-1-git-send-email-cascardo@holoscopio.com>
+In-Reply-To: <20100527021905.GG22536@laptop>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 26, 2010 at 02:54:37PM -0300, Thadeu Lima de Souza Cascardo wrote:
-> Commit f601441916d1e19291d0b4f044b4a7551e2924d0 has inserted the symbol
-> HAVE_FB_IMX, which does not depend on FB after the menuconfig FB. This
-> breaks the menu, presenting most of the drivers outside of it, when
-> using menuconfig.
+On Thu, May 27, 2010 at 12:19:05PM +1000, Nick Piggin wrote:
+> On Thu, May 27, 2010 at 09:12:14AM +1000, Dave Chinner wrote:
+> > On Thu, May 27, 2010 at 02:41:16AM +1000, Nick Piggin wrote:
+> > > > +	count = ((sb->s_nr_dentry_unused + sb->s_nr_inodes_unused) / 100)
+> > > > +						* sysctl_vfs_cache_pressure;
+> > > 
+> > > Do you think truncating in the divisions is at all a problem? It
+> > > probably doesn't matter much I suppose.
+> > 
+> > Same code as currently exists. IIRC, the reasoning is that if we've
+> > got less that 100 objects to reclaim, then we're unlikely to be able
+> > to free up any memory from the caches, anyway.
 > 
-> Moving the symbol to the start of the file, just like HAVE_FB_ATMEL,
-> fixes the problem without breaking it for iMX25 configurations (tested
-> with ARCH=arm, no build).
+> Yeah, which is why I stop short of saying you should change it in
+> this patch.
 > 
-> Cc: Baruch Siach <baruch@tkos.co.il>
-> Cc: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
-> Cc: Sascha Hauer <s.hauer@pengutronix.de>
-> Signed-off-by: Thadeu Lima de Souza Cascardo <cascardo@holoscopio.com>
+> But I think we should ensure things can get reclaimed eventually.
+> 100 objects could be 100 slabs, which could be anything from
+> half a meg to half a dozen. Multiplied by each of the caches.
+> Could be significant in small systems.
 
-Acked-by: Baruch Siach <baruch@tkos.co.il>
+True, but usually there are busy objects in the dentry and inode
+slabs, so it shouldn't be a significant issue. We can probably
+address such problems if they can be demonstrated to be an issue in
+a separate patch set....
 
-baruch
+Cheers,
 
+Dave.
 -- 
-                                                     ~. .~   Tk Open Systems
-=}------------------------------------------------ooO--U--Ooo------------{=
-   - baruch@tkos.co.il - tel: +972.2.679.5364, http://www.tkos.co.il -
+Dave Chinner
+david@fromorbit.com
