@@ -1,75 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758869Ab0E0LmZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 May 2010 07:42:25 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:65363 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933763Ab0E0LmQ (ORCPT
+	id S934045Ab0E0Lme (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 May 2010 07:42:34 -0400
+Received: from out3.smtp.messagingengine.com ([66.111.4.27]:60858 "EHLO
+	out3.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1759050Ab0E0Lm2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 May 2010 07:42:16 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=ng+t3d1qNrMQWUEKimGxM0Hu53wG/1ObExDlmPvJiQ8WhmPToAakx6p3f07qhlpOvu
-         sUn/2KsjZKZHpBZDcYWWhntfL+4y0u/oeKybbCYSq7P8wBvhDk5p+FhaoRiBMQFHo50p
-         QRxG+sL0BV40QOtmpK1/yLqYdX0wr2Cp9UhCA=
-From: John Sheehan <john.d.sheehan@gmail.com>
-To: gregkh@suse.de, wfp5p@virginia.edu, julia@diku.dk, tj@kernel.org,
-       john.d.sheehan@gmail.com
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] Staging: comedi: fix code style errors in unioxx5.c
-Date: Thu, 27 May 2010 12:41:38 +0100
-Message-Id: <1274960498-29801-1-git-send-email-john.d.sheehan@gmail.com>
-X-Mailer: git-send-email 1.7.0.4
+	Thu, 27 May 2010 07:42:28 -0400
+X-Sasl-enc: Tmf2lFRN06vdrVDaw25mODoJ72gL0Iul/dgZvqK4WQbl 1274960547
+Message-ID: <4BFE5AA1.7070103@ladisch.de>
+Date: Thu, 27 May 2010 13:42:25 +0200
+From: Clemens Ladisch <clemens@ladisch.de>
+User-Agent: Thunderbird 2.0.0.24 (Windows/20100228)
+MIME-Version: 1.0
+To: Jan Engelhardt <jengelh@medozas.de>
+CC: Takashi Iwai <tiwai@suse.de>, alsa-devel@alsa-project.org,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [alsa-devel] No mixers on ATI RS780 Azalia
+References: <alpine.LSU.2.01.1005261303170.19406@obet.zrqbmnf.qr> <s5hmxvmzwwd.wl%tiwai@suse.de> <alpine.LSU.2.01.1005261413040.23865@obet.zrqbmnf.qr> <4BFD2901.20800@ladisch.de> <alpine.LSU.2.01.1005271230340.18087@obet.zrqbmnf.qr>
+In-Reply-To: <alpine.LSU.2.01.1005271230340.18087@obet.zrqbmnf.qr>
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: John Sheehan <john.d.sheehan@gmail.com>
+Jan Engelhardt wrote:
+> On Wednesday 2010-05-26 15:58, Clemens Ladisch wrote:
+> > Try unmuting and raising both the Master and Beep controls.
+> 
+> I unmuted everything and bumped the sliders to 100% but that does not
+> change a thing unfortunately; opening the right device (C1D3p) ...
 
-A patch for unioxx5.c which fixes "trailing statements
-should be on next line" errors raised by the
-chechpatch.pl tool
+Please do not assume that the "HDMI" device is the right one, since you
+never got either one to work in Linux.  You did try playing through
+the "SB" card, didn't you?
 
-Signed-off-by: John Sheehan <john.d.sheehan@gmail.com>
----
- drivers/staging/comedi/drivers/unioxx5.c |    9 ++++++---
- 1 files changed, 6 insertions(+), 3 deletions(-)
+It is possible that an embedded device like this requires some custom
+initialization.  Can you find out if the Windows driver is the standard
+Microsoft driver or Samsung's?
 
-diff --git a/drivers/staging/comedi/drivers/unioxx5.c b/drivers/staging/comedi/drivers/unioxx5.c
-index 16d4c9f..d5f6d75 100644
---- a/drivers/staging/comedi/drivers/unioxx5.c
-+++ b/drivers/staging/comedi/drivers/unioxx5.c
-@@ -302,7 +302,8 @@ static int __unioxx5_subdev_init(struct comedi_subdevice *subdev,
- 		__unioxx5_analog_config(usp, i * 2);
- 		outb(i + 1, subdev_iobase + 5);	/* sends channel number to card */
- 		outb('H', subdev_iobase + 6);	/* requests EEPROM world */
--		while (!(inb(subdev_iobase + 0) & TxBE)) ;	/* waits while writting will be allowed */
-+		while (!(inb(subdev_iobase + 0) & TxBE))
-+			;	/* waits while writting will be allowed */
- 		outb(0, subdev_iobase + 6);
- 
- 		/* waits while reading of two bytes will be allowed */
-@@ -437,7 +438,8 @@ static int __unioxx5_analog_write(struct unioxx5_subd_priv *usp,
- 
- 	/* sending for bytes to module(one byte per cycle iteration) */
- 	for (i = 0; i < 4; i++) {
--		while (!((inb(usp->usp_iobase + 0)) & TxBE)) ;	/* waits while writting will be allowed */
-+		while (!((inb(usp->usp_iobase + 0)) & TxBE))
-+			;	/* waits while writting will be allowed */
- 		outb(usp->usp_extra_data[module][i], usp->usp_iobase + 6);
- 	}
- 
-@@ -467,7 +469,8 @@ static int __unioxx5_analog_read(struct unioxx5_subd_priv *usp,
- 	control = inb(usp->usp_iobase);	/* get control register byte */
- 
- 	/* waits while reading four bytes will be allowed */
--	while (!((control = inb(usp->usp_iobase + 0)) & Rx4CA)) ;
-+	while (!((control = inb(usp->usp_iobase + 0)) & Rx4CA))
-+		;
- 
- 	/* if four bytes readding error occurs - return 0(false) */
- 	if ((control & Rx4CA_ERR_MASK)) {
--- 
-1.7.0.4
 
+Regards,
+Clemens
