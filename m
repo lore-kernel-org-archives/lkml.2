@@ -1,83 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759620Ab0E0T6r (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 May 2010 15:58:47 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:49673 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755488Ab0E0T6p convert rfc822-to-8bit (ORCPT
+	id S1759619Ab0E0UCd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 May 2010 16:02:33 -0400
+Received: from cavan.codon.org.uk ([93.93.128.6]:36649 "EHLO
+	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757117Ab0E0UCc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 May 2010 15:58:45 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Subject: Re: [PATCH 1/8] PM: Opportunistic suspend support.
-Date: Thu, 27 May 2010 22:00:09 +0200
-User-Agent: KMail/1.12.4 (Linux/2.6.34-rjw; KDE/4.3.5; x86_64; ; )
-Cc: Arve =?iso-8859-1?q?Hj=F8nnev=E5g?= <arve@android.com>,
+	Thu, 27 May 2010 16:02:32 -0400
+Date: Thu, 27 May 2010 21:02:17 +0100
+From: Matthew Garrett <mjg59@srcf.ucam.org>
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: Peter Zijlstra <peterz@infradead.org>,
        Alan Stern <stern@rowland.harvard.edu>,
-       "Linux-pm mailing list" <linux-pm@lists.linux-foundation.org>,
-       Kernel development list <linux-kernel@vger.kernel.org>,
-       Len Brown <len.brown@intel.com>, Pavel Machek <pavel@ucw.cz>,
-       Randy Dunlap <rdunlap@xenotime.net>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Andi Kleen <ak@linux.intel.com>,
-       Cornelia Huck <cornelia.huck@de.ibm.com>, Tejun Heo <tj@kernel.org>,
-       Jesse Barnes <jbarnes@virtuousgeek.org>,
-       Nigel Cunningham <nigel@tuxonice.net>, Ming Lei <tom.leiming@gmail.com>,
-       Wu Fengguang <fengguang.wu@intel.com>,
-       Maxim Levitsky <maximlevitsky@gmail.com>, linux-doc@vger.kernel.org
-References: <AANLkTikFwznonORd42piWZvBv3oqqSj9odC9Jaud8o3x@mail.gmail.com> <AANLkTingAiO8dkwnInc993PTyA63rV-WRvBIRlB2ChXs@mail.gmail.com> <20100527181333.GA8297@core.coreip.homeip.net>
-In-Reply-To: <20100527181333.GA8297@core.coreip.homeip.net>
+       Thomas Gleixner <tglx@linutronix.de>, Paul@smtp1.linux-foundation.org,
+       LKML <linux-kernel@vger.kernel.org>,
+       Florian Mickler <florian@mickler.org>, felipe.balbi@nokia.com,
+       Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
+       Linux PM <linux-pm@lists.linux-foundation.org>
+Subject: Re: [linux-pm] [PATCH 0/8] Suspend block api (version 8)
+Message-ID: <20100527200217.GA7449@srcf.ucam.org>
+References: <Pine.LNX.4.44L0.1005271344040.3239-100000@iolanthe.rowland.org> <1274982779.27810.5708.camel@twins> <20100527175719.GD3543@srcf.ucam.org> <1274983333.27810.5744.camel@twins> <20100527181433.GG3543@srcf.ucam.org> <20100527200313.5c532f2f@lxorguk.ukuu.org.uk> <20100527191302.GC5703@srcf.ucam.org> <20100527205009.391803b6@lxorguk.ukuu.org.uk>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 8BIT
-Message-Id: <201005272200.09679.rjw@sisk.pl>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100527205009.391803b6@lxorguk.ukuu.org.uk>
+User-Agent: Mutt/1.5.18 (2008-05-17)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 27 May 2010, Dmitry Torokhov wrote:
-> On Wed, May 26, 2010 at 05:52:40PM -0700, Arve Hjønnevåg wrote:
-> > 2010/5/26 Alan Stern <stern@rowland.harvard.edu>:
-> > > On Wed, 26 May 2010, Arve Hjønnevåg wrote:
-> > >
-> > >> > I must be missing something.  In Arve's patch 1/8, if the system is in
-> > >> > opportunistic suspend, and a wakeup event occurs but no suspend
-> > >> > blockers get enabled by the handler, what causes the system to go back
-> > >> > into suspend after the event is handled?  Isn't that a loop of some
-> > >> > sort?
-> > >> >
-> > >>
-> > >> Yes it is a loop. I think what you are missing is that it only loops
-> > >> repeatedly if the driver that aborts suspend does not use a suspend
-> > >> blocker.
-> > >
-> > > You mean "the driver that handles the wakeup event".  I was asking what
-> > > happened if suspend succeeded and then a wakeup occurred.  But yes, if
-> > > a suspend blocker is used then its release causes another suspend
-> > > attempt, with no looping.
-> > >
-> > >> > And even if it isn't, so what?  What's wrong with looping behavior?
-> > >>
-> > >> It is a significant power drain.
-> > >
-> > > Not in the situation I was discussing.
-> > >
-> > 
-> > If you meant it spend most of the time suspended, then I agree. It
-> > only wastes power when a driver blocks suspend by returning an error
-> > from its suspend hook and we are forced to loop doing no useful work.
-> > 
+On Thu, May 27, 2010 at 08:50:09PM +0100, Alan Cox wrote:
+
+> So I guess if you are driving this rom user space (which I take it you
+> are given you talk about housekeeping)
 > 
-> If driver refuses to suspend that means there are events that need
-> processing. I fail to see why it would be called "looping doing no
-> useful work".
+> 	foreach app we need to suspend
+> 		kick app to suspend (signal)
+> 		(policy) kick harder if needed (SIGSTOP/bitch/shall I
+> 					kill it dialogue)
 
-I guess Arve meant the case of events that didn't propagate to user space.
+This would need to be atomic, but in any case:
 
-Rafael
+1) Policy decision is made
+2) Wakeup event is received by task
+3) Task gets stopped between receiving the event and handing it off to 
+policy agent
 
+At which point you suspend when you should have remained awake.
 
-> 
-> 
-
+-- 
+Matthew Garrett | mjg59@srcf.ucam.org
