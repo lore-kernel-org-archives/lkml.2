@@ -1,66 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932485Ab0E0VIZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 May 2010 17:08:25 -0400
-Received: from cavan.codon.org.uk ([93.93.128.6]:52382 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755439Ab0E0VIY (ORCPT
+	id S1758121Ab0E0VJH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 May 2010 17:09:07 -0400
+Received: from mail.bluewatersys.com ([202.124.120.130]:35125 "EHLO
+	hayes.bluewaternz.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754592Ab0E0VJF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 May 2010 17:08:24 -0400
-Date: Thu, 27 May 2010 22:08:08 +0100
-From: Matthew Garrett <mjg59@srcf.ucam.org>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: Arve =?iso-8859-1?B?SGr4bm5lduVn?= <arve@android.com>,
-       Florian Mickler <florian@mickler.org>,
-       Vitaly Wool <vitalywool@gmail.com>,
-       Peter Zijlstra <peterz@infradead.org>,
-       LKML <linux-kernel@vger.kernel.org>, Paul@smtp1.linux-foundation.org,
-       felipe.balbi@nokia.com,
-       Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
-       Linux PM <linux-pm@lists.linux-foundation.org>
-Subject: Re: [linux-pm] [PATCH 0/8] Suspend block api (version 8)
-Message-ID: <20100527210808.GB8865@srcf.ucam.org>
-References: <20100527165210.GA1062@srcf.ucam.org> <20100527190204.14546caa@lxorguk.ukuu.org.uk> <20100527181239.GF3543@srcf.ucam.org> <20100527194840.5bca973f@lxorguk.ukuu.org.uk> <20100527185658.GA5703@srcf.ucam.org> <20100527202538.7d2d7f3c@lxorguk.ukuu.org.uk> <20100527192926.GA6977@srcf.ucam.org> <20100527205333.676ad65e@lxorguk.ukuu.org.uk> <20100527201155.GB7449@srcf.ucam.org> <20100527215347.431c4934@lxorguk.ukuu.org.uk>
+	Thu, 27 May 2010 17:09:05 -0400
+Message-ID: <4BFEDF6D.3090100@bluewatersys.com>
+Date: Fri, 28 May 2010 09:09:01 +1200
+From: Ryan Mallon <ryan@bluewatersys.com>
+User-Agent: Thunderbird 2.0.0.24 (X11/20100411)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100527215347.431c4934@lxorguk.ukuu.org.uk>
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+To: Robert Emanuele <rob@emanuele.us>
+CC: Wolfram Sang <w.sang@pengutronix.de>,
+       Linus Walleij <linus.ml.walleij@gmail.com>,
+       linux-kernel@vger.kernel.org,
+       linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+       linux-i2c@vger.kernel.org
+Subject: Re: Controlling Driver Load Order
+References: <AANLkTikzDvWakd7JW3DzTHinjS3dAlqzPx6K8V2qMDG7@mail.gmail.com>	<AANLkTinkY8JYh44UOEPflBUDyQ2wat_AKShRjA3HPxrf@mail.gmail.com>	<20100526235246.GA31068@pengutronix.de>	<AANLkTikj8yGSK5Ovud_k8f6jWloojqDJmQ_H6pD_IFgM@mail.gmail.com>	<20100527041358.GA14070@pengutronix.de> <AANLkTilKUfcYsPqr5kXlONJQAFCaE8D8U9ltQybIzCPu@mail.gmail.com>
+In-Reply-To: <AANLkTilKUfcYsPqr5kXlONJQAFCaE8D8U9ltQybIzCPu@mail.gmail.com>
+X-Enigmail-Version: 0.95.7
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 27, 2010 at 09:53:47PM +0100, Alan Cox wrote:
-> > Not lost, but not delivered. So you need your policy agent to send 
+Robert Emanuele wrote:
+> Hi Wolfram,
 > 
-> it will be delivered next time the process wakes. It's not lost.
+> I am using the i2c-gpio.c driver, not the i2c-at91 driver.  The Atmel
+> folks have expressed concerns over their i2c silicon and wrote a gpio
+> version.
 > 
-> > SIGCONT when you receive any wakeup event, which either means proxying 
-> > all your network traffic through your policy agent or having some 
-> > mechanism for alerting the policy agent whenever you leave the deep idle 
-> > state.
+> Anyway, I better understand the subsys_initcall now and applied that
+> to the i2c-gpio and my i2c chip driver.  That worked perfectly for my
+> issue.  I'd be happy to return a patch of this.  Would be this the
+> sort of thing that would benefit from a config option?  Something
+> like:
 > 
-> You didn't mention that requirement last time.
+> #if defined(CONFIG_EARLY_i2C_GPIO)
+> subsys_initcall(i2c_gpio_init);
+> #else
+> module_init(i2c_gpio_init);
+> #endif
 
-I thought it was pretty obvious that wakeup events had to actually be 
-delivered to the applications that are listening for them.
+Looks like this has already been done:
+http://www.mail-archive.com/linux-i2c@vger.kernel.org/msg03056.html
 
-> > > > also the race of an application being in the middle of handling a wakeup 
-> > > > event when you send it the signal.
-> > > 
-> > > sigmask()
-> > 
-> > Doesn't help - I may be hit by the signal between the poll() unblocking 
-> > and me having the opportunity to call sigmask().
-> 
-> ppoll(). This is all existing solved stuff.
+There was a discussion a while back to make all of the embedded i2c
+busses be subsys_initcall since i2c is often a system bus on embedded
+devices. Looks the i2c_gpio driver got missed the first time round.
 
-Isn't that the inverse of what we want? The application should default 
-to being SIGSTOPpable except in the case of it being in the process of 
-having a specific event delivered.
+~Ryan
 
 -- 
-Matthew Garrett | mjg59@srcf.ucam.org
+Bluewater Systems Ltd - ARM Technology Solution Centre
+
+Ryan Mallon         		5 Amuri Park, 404 Barbadoes St
+ryan@bluewatersys.com         	PO Box 13 889, Christchurch 8013
+http://www.bluewatersys.com	New Zealand
+Phone: +64 3 3779127		Freecall: Australia 1800 148 751
+Fax:   +64 3 3779135			  USA 1800 261 2934
