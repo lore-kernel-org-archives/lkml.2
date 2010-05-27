@@ -1,42 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757899Ab0E0Ou4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 May 2010 10:50:56 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:62826 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755683Ab0E0Ouz (ORCPT
+	id S1757926Ab0E0Ov6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 May 2010 10:51:58 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:41156 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755921Ab0E0Ov5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 May 2010 10:50:55 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=kHzJc+4afZT7CD5Fiov9w8ekbOLZZwOkB3XpmY+rLp4YN8RMHhlyQV/wlaA2NpAo7t
-         0qvTi6NInHSDTarWEt5c8vYOpETI0m5gFT01iXFnohf7BNisMwbaNSwZdjCpV9iAfLVX
-         NJWrq0qUYy8KaAzmCD3jLPTKMoztUusHyYzII=
-Date: Thu, 27 May 2010 18:52:49 +0400
-From: Denis Kirjanov <kirjanov@gmail.com>
-To: nanakos@wired-net.gr
-Cc: gregkh@suse.de, martyn.welch@ge.com, devel@driverdev.osuosl.org,
-       linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Staging: vme: devices: vme_user.c: Fix checkpatch.pl
- issues.
-Message-ID: <20100527145249.GA4344@coldcone>
-References: <1274964139-3924-1-git-send-email-nanakos@wired-net.gr>
+	Thu, 27 May 2010 10:51:57 -0400
+Date: Thu, 27 May 2010 11:51:42 -0300
+From: Arnaldo Carvalho de Melo <acme@infradead.org>
+To: Stephane Eranian <eranian@google.com>
+Cc: linux-kernel@vger.kernel.org, peterz@infradead.org, mingo@elte.hu,
+       paulus@samba.org, davem@davemloft.net, fweisbec@gmail.com,
+       perfmon2-devel@lists.sf.net, eranian@gmail.com
+Subject: Re: [PATCH] perf: fix use_browser infinite loop bug in annotate
+Message-ID: <20100527145142.GJ9874@ghostprotocols.net>
+References: <4bfe6b18.914ed80a.0573.4c6e@mx.google.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=koi8-r
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <1274964139-3924-1-git-send-email-nanakos@wired-net.gr>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <4bfe6b18.914ed80a.0573.4c6e@mx.google.com>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 27, 2010 at 12:42 +0000, nanakos@wired-net.gr wrote:
-> From: Nanakos Chrysostomos <nanakos@wired-net.gr>
+Em Thu, May 27, 2010 at 02:50:01PM +0200, Stephane Eranian escreveu:
+> This patch fixes an infinite loop problem with perf annotate when
+> the TUI is not used. When the perfconfig file is not found use_browser
+> remains at -1, when found and tui is disabled use_browser = 0. Thus the
+> correct test for TUI is use_browser > 0.
 > 
-> This patch resolves checkpatch.pl issues in the vme_user.c file.
-> 
-> Signed-off-by: Nanakos Chrysostomos <nanakos@wired-net.gr>
-> ---
-Looks fine, thanks
+> Signed-off-by: Stephane Eranian <eranian@google.com>
+
+Thanks, I'm applying this one and doing an audit of other uses, I know
+of one more case reported by Frédéric that was fixed in a similar way.
+
+> diff --git a/tools/perf/builtin-annotate.c b/tools/perf/builtin-annotate.c
+> index 08278ed..96db524 100644
+> --- a/tools/perf/builtin-annotate.c
+> +++ b/tools/perf/builtin-annotate.c
+> @@ -343,7 +343,7 @@ find_next:
+>  			continue;
+>  		}
+>  
+> -		if (use_browser) {
+> +		if (use_browser > 0) {
+>  			key = hist_entry__tui_annotate(he);
+>  			if (is_exit_key(key))
+>  				break;
