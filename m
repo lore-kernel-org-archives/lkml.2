@@ -1,44 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932510Ab0E0VD7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 May 2010 17:03:59 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:52424 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932175Ab0E0VD5 (ORCPT
+	id S1757497Ab0E0VG3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 May 2010 17:06:29 -0400
+Received: from cavan.codon.org.uk ([93.93.128.6]:52355 "EHLO
+	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754113Ab0E0VG2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 May 2010 17:03:57 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=vBV8EtS4aDeQSEQgbWZjyfo6jVlnFb3yqMgHVlHHE88xZvn+IuQymq1omhv2KF/rnv
-         IH72Pq6+rqkiQLV2fWjDSyCgBiXmo8oTGvL1a8jXntm4ZETtY6H5k/t+rwGRoXXgl2ST
-         jZphvytP50tf/WjK1fVs4TvP7y6uJ1Mi9RjTY=
-Message-ID: <4BFEDE4F.80604@gmail.com>
-Date: Thu, 27 May 2010 14:04:15 -0700
-From: "Justin P. Mattock" <justinmattock@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.4pre) Gecko/20091114 Lightning/1.0pre Thunderbird/3.0b4
+	Thu, 27 May 2010 17:06:28 -0400
+Date: Thu, 27 May 2010 22:06:09 +0100
+From: Matthew Garrett <mjg59@srcf.ucam.org>
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+       Thomas Gleixner <tglx@linutronix.de>,
+       Arve =?iso-8859-1?B?SGr4bm5lduVn?= <arve@android.com>,
+       Florian Mickler <florian@mickler.org>,
+       Vitaly Wool <vitalywool@gmail.com>, LKML <linux-kernel@vger.kernel.org>,
+       Paul@smtp1.linux-foundation.org, felipe.balbi@nokia.com,
+       Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
+       Linux PM <linux-pm@lists.linux-foundation.org>
+Subject: Re: [linux-pm] [PATCH 0/8] Suspend block api (version 8)
+Message-ID: <20100527210609.GA8865@srcf.ucam.org>
+References: <20100527172510.GC2468@srcf.ucam.org> <1274981288.27810.5609.camel@twins> <20100527173218.GF2468@srcf.ucam.org> <1274981750.27810.5641.camel@twins> <20100527174140.GB3187@srcf.ucam.org> <1274982397.27810.5679.camel@twins> <20100527175258.GB3543@srcf.ucam.org> <1274982981.27810.5719.camel@twins> <20100527175920.GE3543@srcf.ucam.org> <20100527220314.312d9e3c@lxorguk.ukuu.org.uk>
 MIME-Version: 1.0
-To: Roland Dreier <rdreier@cisco.com>
-CC: ath9k-devel@venema.h4ckr.net, mcgrog@gmail.com,
-       linux-kernel@vger.kernel.org
-Subject: Re: [PATCH]wireless:ath9k Fix ath_print in xmit.c
-References: <1274892555-10422-1-git-send-email-justinmattock@gmail.com> <adaeigxvz5j.fsf@roland-alpha.cisco.com>
-In-Reply-To: <adaeigxvz5j.fsf@roland-alpha.cisco.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100527220314.312d9e3c@lxorguk.ukuu.org.uk>
+User-Agent: Mutt/1.5.18 (2008-05-17)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/27/2010 01:59 PM, Roland Dreier wrote:
->   >  -			  "Unable to stop TxDMA. Reset HAL!\n");
->   >  +			  "Unable to stop TxDMA. Reseting hardware!\n");
->
-> I hate to mention it but the correct spelling is "resetting."
->    
-no.. mention it!!
-anyways the resend is here:
-http://thread.gmane.org/gmane.linux.kernel.wireless.general/51431
+On Thu, May 27, 2010 at 10:03:14PM +0100, Alan Cox wrote:
+> On Thu, 27 May 2010 18:59:20 +0100
+> Matthew Garrett <mjg59@srcf.ucam.org> wrote:
+> > Ok. So the existing badly-behaved application ignores your request and 
+> > then gets blocked. And now it no longer responds to wakeup events. So 
+> > you penalise well-behaved applications without providing any benefits to 
+> > badly-behaved ones.
+> 
+> I don't see how you put the first two sentences together and get the
+> final one.
+> 
+> When you beat up badly behaved apps that doesn't penalise well behaved
+> ones.
 
-Justin P. Mattock
+If you're going to block an app on drawing then you either need to 
+reenable drawing on wakeup or you need to have an interface for alerting 
+the app to the fact that drawing is about to block and it should get 
+back to its event loop. The first is suboptimal, the second penalises 
+well behaved apps.
+
+-- 
+Matthew Garrett | mjg59@srcf.ucam.org
