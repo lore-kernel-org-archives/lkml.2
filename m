@@ -1,30 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754456Ab0E0KlM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 May 2010 06:41:12 -0400
-Received: from mta03.eastlink.ca ([24.224.136.9]:55658 "EHLO mta03.eastlink.ca"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751740Ab0E0KlL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 May 2010 06:41:11 -0400
-MIME-version: 1.0
-Content-transfer-encoding: 7BIT
-Content-type: text/plain
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: Ar8EAJPp/UvOhDAYgWdsb2JhbACSCowQFQEBFiIity+JAoUTBI0M
-X-IronPort-AV: E=Sophos;i="4.53,310,1272855600";   d="scan'208";a="801462688"
-Message-id: <1274956856.4bfe4c3863ad1@webmail.xcelco.on.ca>
-Date: Thu, 27 May 2010 06:40:56 -0400
-From: CAMELOT <camelot98@xcelco.on.ca>
-Reply-to: mr.keith10@9.cn
-To: info@winning.com
-Subject: Congrat,891,934.000GBP has been awarded to you.
-User-Agent: Internet Messaging Program (IMP) 3.2.5
-X-Originating-IP: 117.55.241.57
+	id S1754908Ab0E0KrK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 May 2010 06:47:10 -0400
+Received: from fxip-0047f.externet.hu ([88.209.222.127]:32769 "EHLO
+	pomaz-ex.szeredi.hu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753608Ab0E0KrH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 May 2010 06:47:07 -0400
+To: torvalds@linux-foundation.org
+CC: akpm@linux-foundation.org, linux-kernel@vger.kernel.org
+Subject: [git pull] fuse: support splice() on fuse device
+Message-Id: <E1OHac4-0000AH-ED@pomaz-ex.szeredi.hu>
+From: Miklos Szeredi <miklos@szeredi.hu>
+Date: Thu, 27 May 2010 12:46:56 +0200
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Submit Name:Address:Age:Sex:Occupation:Tel and
-country.
+Linus,
 
+This series adds support for splice() on the fuse device, allowing
+userspace filesystem implementations to transfer data to/from the
+kernel with reduced number of memory copies.
 
+The only changes outside the fuse tree are addition of EXPORT_SYMBOLs.
+
+Please pull from:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/mszeredi/fuse.git for-linus
+
+Thanks,
+Miklos
+---
+
+Dan Carpenter (1):
+      fuse: remove unneeded variable
+
+Miklos Szeredi (8):
+      fuse: use get_user_pages_fast()
+      fuse: get page reference for readpages
+      fuse: support splice() writing to fuse device
+      mm: export lru_cache_add_*() to modules
+      mm: export remove_from_page_cache() to modules
+      fuse: allow splice to move pages
+      fuse: support splice() reading from fuse device
+      mm: export generic_pipe_buf_*() to modules
+
+---
+ fs/fuse/dev.c        |  527 +++++++++++++++++++++++++++++++++++++++++++-------
+ fs/fuse/file.c       |   39 +++--
+ fs/fuse/fuse_i.h     |    3 +
+ fs/pipe.c            |    6 +
+ include/linux/fuse.h |    5 +-
+ mm/filemap.c         |    1 +
+ mm/swap.c            |    1 +
+ 7 files changed, 500 insertions(+), 82 deletions(-)
