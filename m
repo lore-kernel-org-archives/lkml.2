@@ -1,98 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932390Ab0E0FXy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 May 2010 01:23:54 -0400
-Received: from cnc.isely.net ([64.81.146.143]:50426 "EHLO cnc.isely.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752608Ab0E0FXw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 May 2010 01:23:52 -0400
-X-Greylist: delayed 330 seconds by postgrey-1.27 at vger.kernel.org; Thu, 27 May 2010 01:23:52 EDT
-Date: Thu, 27 May 2010 00:18:21 -0500 (CDT)
-From: Mike Isely <isely@isely.net>
-To: Julia Lawall <julia@diku.dk>
-cc: Mauro Carvalho Chehab <mchehab@infradead.org>, linux-media@vger.kernel.org,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       kernel-janitors@vger.kernel.org, Mike Isely at pobox <isely@pobox.com>
-Subject: Re: [PATCH 5/17] drivers/media/video/pvrusb2: Add missing
- mutex_unlock
-In-Reply-To: <Pine.LNX.4.64.1005261755110.23743@ask.diku.dk>
-Message-ID: <alpine.DEB.1.10.1005270013020.19542@ivanova.isely.net>
-References: <Pine.LNX.4.64.1005261755110.23743@ask.diku.dk>
-User-Agent: Alpine 1.10 (DEB 962 2008-03-14)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	id S1752608Ab0E0FZc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 May 2010 01:25:32 -0400
+Received: from mail4.comsite.net ([205.238.176.238]:55429 "EHLO
+	mail4.comsite.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751039Ab0E0FZb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 May 2010 01:25:31 -0400
+X-Default-Received-SPF: pass (skip=forwardok (res=PASS)) x-ip-name=71.22.98.68;
+From: Milton Miller <miltonm@bga.com>
+To: Len Brown <len.brown@intel.com>
+X-Mailer: vi
+Cc: Peter Zijlstra <peterz@infradead.org>, <linux-acpi@vger.kernel.org>,
+       <linux-kernel@vger.kernel.org>
+In-Reply-To: <4a831611847e8965ed5f3328e52fe8758115b951.1274926772.git.len.brown@intel.com>
+References: <4a831611847e8965ed5f3328e52fe8758115b951.1274926772.git.len.brown@intel.com>
+	<1274928151-30919-1-git-send-email-lenb@kernel.org>
+	<e099975ca65a7f6ac7f8bc3fee84d3e03893aa31.1274926772.git.len.brown@intel.com>
+Date: Thu, 27 May 2010 00:25:29 -0500
+Subject: (No subject header)
+X-Originating-IP: 71.22.98.68
+Message-ID: <1274937929_9182@mail4.comsite.net>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-I looked through my revision history and that bug has been there in the 
-driver source since at least May 2005, long before it was ever merged 
-into the kernel.  Wow, what a great catch.  Thanks!
+[Hmm, why did this not appear in patchwork.kernel.org?  Now
+I have to guess a CC list.]
 
-Acked-By: Mike Isely <isely@pobox.com>
-
-  -Mike
-
-
-On Wed, 26 May 2010, Julia Lawall wrote:
-
-> From: Julia Lawall <julia@diku.dk>
+On Wed, 26 May 2010 around 22:43:50 -0400 (EDT), Len Brown wrote:
+> From: Len Brown <len.brown@intel.com>
 > 
-> Add a mutex_unlock missing on the error path.  In the other functions in
-> the same file the locks and unlocks of this mutex appear to be balanced,
-> so it would seem that the same should hold in this case.
-> 
-> The semantic match that finds this problem is as follows:
-> (http://coccinelle.lip6.fr/)
-> 
-> // <smpl>
-> @@
-> expression E1;
-> @@
-> 
-> * mutex_lock(E1,...);
->   <+... when != E1
->   if (...) {
->     ... when != E1
-> *   return ...;
->   }
->   ...+>
-> * mutex_unlock(E1,...);
-> // </smpl>
-> 
-> Signed-off-by: Julia Lawall <julia@diku.dk>
-> 
-> ---
->  drivers/media/video/pvrusb2/pvrusb2-ioread.c |    5 ++++-
->  1 file changed, 4 insertions(+), 1 deletion(-)
-> 
-> diff --git a/drivers/media/video/pvrusb2/pvrusb2-ioread.c b/drivers/media/video/pvrusb2/pvrusb2-ioread.c
-> index b482478..bba6115 100644
-> --- a/drivers/media/video/pvrusb2/pvrusb2-ioread.c
-> +++ b/drivers/media/video/pvrusb2/pvrusb2-ioread.c
-> @@ -223,7 +223,10 @@ int pvr2_ioread_setup(struct pvr2_ioread *cp,struct pvr2_stream *sp)
->  				   " pvr2_ioread_setup (setup) id=%p",cp);
->  			pvr2_stream_kill(sp);
->  			ret = pvr2_stream_set_buffer_count(sp,BUFFER_COUNT);
-> -			if (ret < 0) return ret;
-> +			if (ret < 0) {
-> +				mutex_unlock(&cp->mutex);
-> +				return ret;
-> +			}
->  			for (idx = 0; idx < BUFFER_COUNT; idx++) {
->  				bp = pvr2_stream_get_buffer(sp,idx);
->  				pvr2_buffer_set_buffer(bp,
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+> TS_POLLING set tells the scheduler a task will poll
+> need_resched() to look for work.
 > 
 
--- 
+True
 
-Mike Isely
-isely @ isely (dot) net
-PGP: 03 54 43 4D 75 E5 CC 92 71 16 01 E2 B5 F5 C1 E8
+> TS_POLLING clear tells resched_task() and wake_up_idle_cpu()
+> that the remote CPU is sleeping in idle, and thus requires
+> a reschedule interrupt to wake them to notice work.
+
+No, that only applies to the idle task.
+
+
+> 
+> Update the description of TS_POLLING to reflect how it works.
+> "cleared when sleeping in idle, requiring reschedule interrupt"
+
+That would imply its set for every normal task that is not in some
+kind of sleep state.
+
+
+> 
+> Signed-off-by: Len Brown <len.brown@intel.com>
+> Acked-by: Peter Zijlstra <peterz@infradead.org>
+
+> -#define TS_POLLING		0x0004	/* true if in idle loop
+> -					   and not sleeping */
+> +#define TS_POLLING		0x0004	/* clear when sleeping in idle
+> +					   requiring reschedule interrupt */
+
+How about "idle task polling need_resched, skip sending interrupt"?
+
+milton
