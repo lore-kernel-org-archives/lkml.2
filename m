@@ -1,65 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932211Ab0E0PDx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 May 2010 11:03:53 -0400
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:44544 "EHLO
-	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754687Ab0E0PDv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 May 2010 11:03:51 -0400
-Date: Thu, 27 May 2010 16:10:54 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Matthew Garrett <mjg59@srcf.ucam.org>,
-       Arve =?ISO-8859-14?B?SGr4bm5l?= =?ISO-8859-14?B?duVn?= 
-	<arve@android.com>,
-       Florian Mickler <florian@mickler.org>,
-       Vitaly Wool <vitalywool@gmail.com>, LKML <linux-kernel@vger.kernel.org>,
-       felipe.balbi@nokia.com,
-       Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
-       Linux PM <linux-pm@lists.linux-foundation.org>
-Subject: Re: [linux-pm] [PATCH 0/8] Suspend block api (version 8)
-Message-ID: <20100527161054.203663ca@lxorguk.ukuu.org.uk>
-In-Reply-To: <1274971437.27810.5078.camel@twins>
-References: <20100526120242.5c9b73ad@schatten.dmk.lab>
-	<AANLkTim4021cTnhVZrQpefq1MG-eEPOFLDRO-XDepHb4@mail.gmail.com>
-	<20100526133721.602633b2@schatten.dmk.lab>
-	<AANLkTikzgaOFdQKess4E-D86OLPOzxP3dWiDkU_UR0ri@mail.gmail.com>
-	<20100526142430.327ccbc4@schatten.dmk.lab>
-	<20100526141612.3e2e0443@lxorguk.ukuu.org.uk>
-	<AANLkTin97MMu-XO_Lk-snefBWz2ymhS0Qi1y1RxLwdVA@mail.gmail.com>
-	<20100527003943.07c17f85@lxorguk.ukuu.org.uk>
-	<20100527140655.GA28048@srcf.ucam.org>
-	<1274970531.27810.5024.camel@twins>
-	<20100527143508.GA30117@srcf.ucam.org>
-	<1274971317.27810.5070.camel@twins>
-	<1274971437.27810.5078.camel@twins>
-X-Mailer: Claws Mail 3.7.5 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1757992Ab0E0PEy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 May 2010 11:04:54 -0400
+Received: from king.tilera.com ([72.1.168.226]:37767 "EHLO king.tilera.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754687Ab0E0PEw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 May 2010 11:04:52 -0400
+Message-ID: <4BFE8A12.2060606@tilera.com>
+Date: Thu, 27 May 2010 11:04:50 -0400
+From: Chris Metcalf <cmetcalf@tilera.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.1.9) Gecko/20100317 Thunderbird/3.0.4
+MIME-Version: 1.0
+To: Arnd Bergmann <arnd@arndb.de>
+CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       linux-arch@vger.kernel.org
+Subject: Re: [PATCH] arch/tile: new multi-core architecture for Linux
+References: <201005200543.o4K5hFRF006079@farm-0002.internal.tilera.com> <201005271611.47963.arnd@arndb.de> <4BFE831A.8050002@tilera.com> <201005271702.45730.arnd@arndb.de>
+In-Reply-To: <201005271702.45730.arnd@arndb.de>
+X-Enigmail-Version: 1.0.1
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 27 May 2010 15:04:51.0154 (UTC) FILETIME=[F4CA2B20:01CAFDAD]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > Heck, for all I care, simply SIGKILL the thing and report it once the
-> > user starts looking at his screen again.
-> 
-> Provide incentive for Joe Clicker to improve his app, instead of cope
-> with the shit he created.
+On 5/27/2010 11:02 AM, Arnd Bergmann wrote:
+> Ok, I see. No objection to your kernel code then, we just need to
+> figure out how to do that with the generic sys_call_table.
+>   
 
-That isn't helpful. But if you feel like that I suggest you run with your
-memory management protection disabled, it's really on there to deal with
-crap code and its giving the wrong incentives. Come to think of it
-you might want to remove your seatbelts and any safety catches or airbags
-- it only encourages carelessness.
+That turns out to be fairly easy:
 
-The reality is you need a sane, generic, race free way to express your
-requirements (eg for hard RT) and ditto for constraining the expression
-(for 'crapplications')
+#undef __SYSCALL
+#define __SYSCALL(nr, call) [nr] = (call),
 
-Arguing that you don't need to do this isn't useful. Android has
-demonstrated a need to do this. RT has a need to do some of this.
-Virtualisation wants elements of this etc.
+#ifndef __tilegx__
+#define sys_fadvise64 sys32_fadvise64
+#define sys_fadvise64_64 sys32_fadvise64_64
+#define sys_readahead sys32_readahead
+#endif
 
-The question is how you do it right.
+void *sys_call_table[__NR_syscalls] = {
+	[0 ... __NR_syscalls-1] = sys_ni_syscall,
+#include <asm/unistd.h>
+};
+
+
+-- 
+Chris Metcalf, Tilera Corp.
+http://www.tilera.com
+
+
