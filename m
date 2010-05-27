@@ -1,62 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756888Ab0E0M0B (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 May 2010 08:26:01 -0400
-Received: from smtp.ctxuk.citrix.com ([62.200.22.115]:3073 "EHLO
-	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753611Ab0E0M0A (ORCPT
+	id S1754876Ab0E0Mai (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 May 2010 08:30:38 -0400
+Received: from ey-out-2122.google.com ([74.125.78.25]:5122 "EHLO
+	ey-out-2122.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752093Ab0E0Mag convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 May 2010 08:26:00 -0400
-X-IronPort-AV: E=Sophos;i="4.53,311,1272844800"; 
-   d="scan'208";a="119181"
-Date: Thu, 27 May 2010 13:29:59 +0100
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-X-X-Sender: sstabellini@kaball-desktop
-To: Jeremy Fitzhardinge <jeremy@goop.org>
-CC: Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-       Don Dutile <ddutile@redhat.com>
-Subject: Re: [PATCH 11/11] Unplug emulated disks and nics
-In-Reply-To: <4BFD8BB0.90301@goop.org>
-Message-ID: <alpine.DEB.2.00.1005271322010.25605@kaball-desktop>
-References: <alpine.DEB.2.00.1005241615300.25605@kaball-desktop> <1274725657-1149-11-git-send-email-stefano.stabellini@eu.citrix.com> <4BFC3390.4060503@goop.org> <alpine.DEB.2.00.1005261325110.25605@kaball-desktop> <4BFD8BB0.90301@goop.org>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Thu, 27 May 2010 08:30:36 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=S5Nh4IsJixMs8LpgH9/3F88mCAyK+JjpCdwUYckZJoAh2W2jxKKjSSKKGb7+YphTCY
+         GBjKK7K11g3lxxZ59KNJ6TpQ18VcLGTt9GyNr2ej749eNbUwdCEzdUg6lYkNiWllkh16
+         oalA1m8Qre+Q4OPumKydq6dXXGKeLN5ldq9A4=
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+In-Reply-To: <E1OHaLJ-0008VD-VJ@pomaz-ex.szeredi.hu>
+References: <E1OHaLJ-0008VD-VJ@pomaz-ex.szeredi.hu>
+Date: Thu, 27 May 2010 15:30:34 +0300
+Message-ID: <AANLkTilGlR297cl9yHF5n6e4eU7JflJwrpm3TrIe-rlo@mail.gmail.com>
+Subject: Re: [PATCH 1/2] vfs: sanitize __d_path()
+From: Alexey Dobriyan <adobriyan@gmail.com>
+To: Miklos Szeredi <miklos@szeredi.hu>
+Cc: Al Viro <viro@zeniv.linux.org.uk>,
+       John Johansen <john.johansen@canonical.com>,
+       Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>,
+       linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 26 May 2010, Jeremy Fitzhardinge wrote:
-> On 05/26/2010 05:27 AM, Stefano Stabellini wrote:
-> > It is needed for LINUX_VERSION_CODE, see below:
-> >
-> >   
-> >>> +
-> >>> +#define XEN_IOPORT_MAGIC_VAL 0x49d2
-> >>> +#define XEN_IOPORT_LINUX_PRODNUM 0xffff
-> >>> +#define XEN_IOPORT_LINUX_DRVVER  ((LINUX_VERSION_CODE << 8) + 0x0)
-> >>>       
-> 
-> Ah.  What's that for?  Does qemu change its behaviour depending on the
-> kernel version?  Ah, something to do with blacklisting.  But is the
-> Linux kernel version the most useful value here?  Shouldn't there be
-> some kind of separate version number?  And what's the blacklisting stuff
-> for anyway?
-> 
+On Thu, May 27, 2010 at 1:29 PM, Miklos Szeredi <miklos@szeredi.hu> wrote:
+> From: Miklos Szeredi <mszeredi@suse.cz>
+>
+> __d_path() no longer appends " (deleted)" to unlinked paths.  This is
+> moved into d_path() which is the only caller that cares.
 
-Well at the moment qemu doesn't actually change behaviour but as part of
-the protocol negotiation the pv drivers are supposed to communicate
-their version number to qemu. Also it is possible to blacklist a
-particular pv driver version in qemu even though I don't think it is
-actually used at the moment.
-Regarding what version number should we give to qemu, I guess we could
-have our own separate version number here, independent fron the linux
-version. I'll start from 1 then.
+d_path() or equivalent should get "int *deleted" argument to distinguish
+really deleted files. Then users can decide if they care or not.
 
-
-> Wow, this interface is perverse.  It reuses the same IO port but changes
-> function depending on the size of the IO?  Again, wow.
- 
-Yeah, before you ask, I didn't write it :)
+> If a global root is reached then __d_path() no longer prepends the
+> name of the root dentry.  This was needed by pseudo filesystems, but
+> the d_dname() method has superseded it.
