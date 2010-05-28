@@ -1,66 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933122Ab0E1Rjt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 May 2010 13:39:49 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:57933 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932946Ab0E1Rjl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 May 2010 13:39:41 -0400
-Date: Fri, 28 May 2010 10:37:31 -0700
-From: Dan Magenheimer <dan.magenheimer@oracle.com>
-To: chris.mason@oracle.com, viro@zeniv.linux.org.uk, akpm@linux-foundation.org,
-       adilger@sun.com, tytso@mit.edu, mfasheh@suse.com,
-       joel.becker@oracle.com, matthew@wil.cx, linux-btrfs@vger.kernel.org,
-       linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-       linux-ext4@vger.kernel.org, ocfs2-devel@oss.oracle.com,
-       linux-mm@kvack.org, ngupta@vflare.org, jeremy@goop.org,
-       JBeulich@novell.com, kurt.hackel@oracle.com, npiggin@suse.de,
-       dave.mccracken@oracle.com, riel@redhat.com, avi@redhat.com,
-       konrad.wilk@oracle.com, dan.magenheimer@oracle.com
-Subject: [PATCH V2 7/7] Cleancache (was Transcendent Memory): ocfs2 hook
-Message-ID: <20100528173731.GA20227@ca-server1.us.oracle.com>
+	id S933165Ab0E1Rjw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 May 2010 13:39:52 -0400
+Received: from king.tilera.com ([72.1.168.226]:7155 "EHLO king.tilera.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932912Ab0E1RiA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 May 2010 13:38:00 -0400
+Message-ID: <4BFFFF73.2040600@tilera.com>
+Date: Fri, 28 May 2010 13:37:55 -0400
+From: Chris Metcalf <cmetcalf@tilera.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.1.9) Gecko/20100317 Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.16 (2007-06-11)
-X-Auth-Type: Internal IP
-X-Source-IP: acsinet15.oracle.com [141.146.126.227]
-X-CT-RefId: str=0001.0A090209.4BFFFFAA.00BD:SCFMA922111,ss=1,fgs=0
+To: Thomas Gleixner <tglx@linutronix.de>
+CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: arch/tile
+References: <alpine.LFD.2.00.1005261601530.2995@localhost.localdomain>
+In-Reply-To: <alpine.LFD.2.00.1005261601530.2995@localhost.localdomain>
+X-Enigmail-Version: 1.0.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 28 May 2010 17:37:59.0202 (UTC) FILETIME=[83B4C820:01CAFE8C]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[PATCH V2 7/7] Cleancache (was Transcendent Memory): ocfs2 hook
+On 5/26/2010 10:05 AM, Thomas Gleixner wrote:
+>> We have an outstanding enhancement request in our bug tracking system to
+>> switch to using the Linux generic IRQs directly, and plan to implement
+>> it prior to our next major release.  But we haven't done it yet, and
+>> this code, though somewhat crufty, is reasonably stable.  I'm also not
+>> the primary maintainer of this particular piece of code, so I'd rather
+>> wait until that person frees up and have him do it, instead of trying to
+>> hack it myself.
+>>     
+>   It should be rather straight forward and can be efficiently done
+>   with the handle_simple_irq() handler AFAICS. So I'd prefer to see
+>   that fixed befor the code gets merged.
+>   
 
-Filesystems must explicitly enable cleancache.  Ocfs2 is
-currently the only user of the clustered filesystem
-interface but nevertheless, the cleancache hooks in the
-VFS layer are sufficient for ocfs2.
+OK, we have made changes to integrate to the Linux PERCPU IRQ mechanism,
+which most closely matches what our interrupt layer did.  You should see
+it a bit later when I post the revised diffs.
 
-Signed-off-by: Dan Magenheimer <dan.magenheimer@oracle.com>
-Acked-by: Joel Becker <joel.becker@oracle.com>
+Thanks!
 
-Diffstat:
- super.c                                  |    3 +++
- 1 file changed, 3 insertions(+)
+-- 
+Chris Metcalf, Tilera Corp.
+http://www.tilera.com
 
---- linux-2.6.34/fs/ocfs2/super.c	2010-05-16 15:17:36.000000000 -0600
-+++ linux-2.6.34-cleancache/fs/ocfs2/super.c	2010-05-24 12:14:44.000000000 -0600
-@@ -42,6 +42,7 @@
- #include <linux/seq_file.h>
- #include <linux/quotaops.h>
- #include <linux/smp_lock.h>
-+#include <linux/cleancache.h>
- 
- #define MLOG_MASK_PREFIX ML_SUPER
- #include <cluster/masklog.h>
-@@ -2233,6 +2234,8 @@ static int ocfs2_initialize_super(struct
- 		mlog_errno(status);
- 		goto bail;
- 	}
-+	sb->cleancache_poolid =
-+		cleancache_init_shared_fs((char *)&uuid_net_key, PAGE_SIZE);
- 
- bail:
- 	mlog_exit(status);
+
