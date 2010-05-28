@@ -1,115 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756918Ab0E1JHY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 May 2010 05:07:24 -0400
-Received: from www.tglx.de ([62.245.132.106]:42598 "EHLO www.tglx.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753542Ab0E1JHV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 May 2010 05:07:21 -0400
-Date: Fri, 28 May 2010 11:07:04 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-cc: Andrew Morton <akpm@linux-foundation.org>,
-       LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>
-Subject: [GIT pull] timer fixes for 2.6.35-rc1
-Message-ID: <alpine.LFD.2.00.1005281106120.3116@localhost.localdomain>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1757540Ab0E1JI3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 May 2010 05:08:29 -0400
+Received: from adelie.canonical.com ([91.189.90.139]:48293 "EHLO
+	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754001Ab0E1JIZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 May 2010 05:08:25 -0400
+From: Bryan Wu <bryan.wu@canonical.com>
+To: davem@davemloft.net, afleming@gmail.com
+Cc: s.hauer@pengutronix.de, gerg@uclinux.org, amit.kucheria@canonical.com,
+       netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] netdev/fec: fix ifconfig eth0 down hang issue
+Date: Fri, 28 May 2010 17:08:05 +0800
+Message-Id: <1275037685-14555-1-git-send-email-bryan.wu@canonical.com>
+X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus,
+BugLink: http://bugs.launchpad.net/bugs/559065
 
-Please pull the latest timers-fixes-for-linus git tree from:
+In fec open/close function, we need to use phy_connect and phy_disconnect
+operation before we start/stop phy. Otherwise it will cause system hang.
 
-   git://git.kernel.org/pub/scm/linux/kernel/git/tip/linux-2.6-tip.git timers-fixes-for-linus
+Only call fec_enet_mii_probe() in open function, because the first open
+action will cause NULL pointer error.
 
-Thanks,
+Signed-off-by: Bryan Wu <bryan.wu@canonical.com>
+---
+ drivers/net/fec.c |   28 ++++++++++++++++------------
+ 1 files changed, 16 insertions(+), 12 deletions(-)
 
-	tglx
-
------------------->
-Andrey Vagin (1):
-      posix_timer: Fix error path in timer_create
-
-Stanislaw Gruszka (1):
-      hrtimer: Avoid double seqlock
-
-Thomas Gleixner (2):
-      timers: Fix slack calculation really
-      timers: Move local variable into else section
-
-
- kernel/hrtimer.c      |    2 +-
- kernel/posix-timers.c |   11 ++++-------
- kernel/timer.c        |   10 +++++++---
- 3 files changed, 12 insertions(+), 11 deletions(-)
-
-diff --git a/kernel/hrtimer.c b/kernel/hrtimer.c
-index b9b134b..5c69e99 100644
---- a/kernel/hrtimer.c
-+++ b/kernel/hrtimer.c
-@@ -89,7 +89,7 @@ static void hrtimer_get_softirq_time(struct hrtimer_cpu_base *base)
+diff --git a/drivers/net/fec.c b/drivers/net/fec.c
+index 42d9ac9..cdc9376 100644
+--- a/drivers/net/fec.c
++++ b/drivers/net/fec.c
+@@ -679,6 +679,8 @@ static int fec_enet_mii_probe(struct net_device *dev)
+ 	struct phy_device *phy_dev = NULL;
+ 	int phy_addr;
  
- 	do {
- 		seq = read_seqbegin(&xtime_lock);
--		xts = current_kernel_time();
-+		xts = __current_kernel_time();
- 		tom = wall_to_monotonic;
- 	} while (read_seqretry(&xtime_lock, seq));
- 
-diff --git a/kernel/posix-timers.c b/kernel/posix-timers.c
-index 00d1fda..ad72342 100644
---- a/kernel/posix-timers.c
-+++ b/kernel/posix-timers.c
-@@ -559,14 +559,7 @@ SYSCALL_DEFINE3(timer_create, const clockid_t, which_clock,
- 	new_timer->it_id = (timer_t) new_timer_id;
- 	new_timer->it_clock = which_clock;
- 	new_timer->it_overrun = -1;
--	error = CLOCK_DISPATCH(which_clock, timer_create, (new_timer));
--	if (error)
--		goto out;
- 
--	/*
--	 * return the timer_id now.  The next step is hard to
--	 * back out if there is an error.
--	 */
- 	if (copy_to_user(created_timer_id,
- 			 &new_timer_id, sizeof (new_timer_id))) {
- 		error = -EFAULT;
-@@ -597,6 +590,10 @@ SYSCALL_DEFINE3(timer_create, const clockid_t, which_clock,
- 	new_timer->sigq->info.si_tid   = new_timer->it_id;
- 	new_timer->sigq->info.si_code  = SI_TIMER;
- 
-+	error = CLOCK_DISPATCH(which_clock, timer_create, (new_timer));
-+	if (error)
-+		goto out;
++	fep->phy_dev = NULL;
 +
- 	spin_lock_irq(&current->sighand->siglock);
- 	new_timer->it_signal = current->signal;
- 	list_add(&new_timer->list, &current->signal->posix_timers);
-diff --git a/kernel/timer.c b/kernel/timer.c
-index be394af..2211834 100644
---- a/kernel/timer.c
-+++ b/kernel/timer.c
-@@ -752,11 +752,15 @@ unsigned long apply_slack(struct timer_list *timer, unsigned long expires)
+ 	/* find the first phy */
+ 	for (phy_addr = 0; phy_addr < PHY_MAX_ADDR; phy_addr++) {
+ 		if (fep->mii_bus->phy_map[phy_addr]) {
+@@ -709,6 +711,11 @@ static int fec_enet_mii_probe(struct net_device *dev)
+ 	fep->link = 0;
+ 	fep->full_duplex = 0;
  
- 	expires_limit = expires;
++	printk(KERN_INFO "%s: Freescale FEC PHY driver [%s] "
++		"(mii_bus:phy_addr=%s, irq=%d)\n", dev->name,
++		fep->phy_dev->drv->name, dev_name(&fep->phy_dev->dev),
++		fep->phy_dev->irq);
++
+ 	return 0;
+ }
  
--	if (timer->slack > -1)
-+	if (timer->slack >= 0) {
- 		expires_limit = expires + timer->slack;
--	else if (time_after(expires, jiffies)) /* auto slack: use 0.4% */
--		expires_limit = expires + (expires - jiffies)/256;
-+	} else {
-+		unsigned long now = jiffies;
+@@ -754,13 +761,8 @@ static int fec_enet_mii_init(struct platform_device *pdev)
+ 	if (mdiobus_register(fep->mii_bus))
+ 		goto err_out_free_mdio_irq;
  
-+		/* No slack, if already expired else auto slack 0.4% */
-+		if (time_after(expires, now))
-+			expires_limit = expires + (expires - now)/256;
+-	if (fec_enet_mii_probe(dev) != 0)
+-		goto err_out_unregister_bus;
+-
+ 	return 0;
+ 
+-err_out_unregister_bus:
+-	mdiobus_unregister(fep->mii_bus);
+ err_out_free_mdio_irq:
+ 	kfree(fep->mii_bus->irq);
+ err_out_free_mdiobus:
+@@ -913,7 +915,12 @@ fec_enet_open(struct net_device *dev)
+ 	if (ret)
+ 		return ret;
+ 
+-	/* schedule a link state check */
++	/* Probe and connect to PHY when open the interface */
++	ret = fec_enet_mii_probe(dev);
++	if (ret) {
++		fec_enet_free_buffers(dev);
++		return ret;
 +	}
- 	mask = expires ^ expires_limit;
- 	if (mask == 0)
- 		return expires;
+ 	phy_start(fep->phy_dev);
+ 	netif_start_queue(dev);
+ 	fep->opened = 1;
+@@ -927,10 +934,12 @@ fec_enet_close(struct net_device *dev)
+ 
+ 	/* Don't know what to do yet. */
+ 	fep->opened = 0;
+-	phy_stop(fep->phy_dev);
+ 	netif_stop_queue(dev);
+ 	fec_stop(dev);
+ 
++	if (fep->phy_dev)
++		phy_disconnect(fep->phy_dev);
++
+         fec_enet_free_buffers(dev);
+ 
+ 	return 0;
+@@ -1294,11 +1303,6 @@ fec_probe(struct platform_device *pdev)
+ 	if (ret)
+ 		goto failed_register;
+ 
+-	printk(KERN_INFO "%s: Freescale FEC PHY driver [%s] "
+-		"(mii_bus:phy_addr=%s, irq=%d)\n", ndev->name,
+-		fep->phy_dev->drv->name, dev_name(&fep->phy_dev->dev),
+-		fep->phy_dev->irq);
+-
+ 	return 0;
+ 
+ failed_register:
+-- 
+1.7.0.4
+
