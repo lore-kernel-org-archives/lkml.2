@@ -1,62 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757418Ab0E1OU6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 May 2010 10:20:58 -0400
-Received: from e23smtp08.au.ibm.com ([202.81.31.141]:46455 "EHLO
-	e23smtp08.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755955Ab0E1OU4 (ORCPT
+	id S1757829Ab0E1OVq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 May 2010 10:21:46 -0400
+Received: from cavan.codon.org.uk ([93.93.128.6]:46044 "EHLO
+	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753229Ab0E1OVo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 May 2010 10:20:56 -0400
-Date: Fri, 28 May 2010 19:50:48 +0530
-From: Balbir Singh <balbir@linux.vnet.ibm.com>
-To: Minchan Kim <minchan.kim@gmail.com>
-Cc: "Luis Claudio R. Goncalves" <lclaudio@uudg.org>,
-       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-       Oleg Nesterov <oleg@redhat.com>, linux-kernel@vger.kernel.org,
-       linux-mm@kvack.org, Thomas Gleixner <tglx@linutronix.de>,
+	Fri, 28 May 2010 10:21:44 -0400
+Date: Fri, 28 May 2010 15:21:25 +0100
+From: Matthew Garrett <mjg59@srcf.ucam.org>
+To: Igor Stoppa <igor.stoppa@nokia.com>
+Cc: tytso@mit.edu, ext Brian Swetland <swetland@google.com>,
+       Alan Cox <alan@lxorguk.ukuu.org.uk>,
        Peter Zijlstra <peterz@infradead.org>,
-       David Rientjes <rientjes@google.com>, Mel Gorman <mel@csn.ul.ie>,
-       williams@redhat.com
-Subject: Re: [RFC] oom-kill: give the dying task a higher priority
-Message-ID: <20100528142048.GF5579@balbir.in.ibm.com>
-Reply-To: balbir@linux.vnet.ibm.com
-References: <20100528143605.7E2A.A69D9226@jp.fujitsu.com>
- <AANLkTikB-8Qu03VrA5Z0LMXM_alSV7SLqzl-MmiLmFGv@mail.gmail.com>
- <20100528145329.7E2D.A69D9226@jp.fujitsu.com>
- <20100528125305.GE11364@uudg.org>
- <20100528140623.GA11041@barrios-desktop>
+       LKML <linux-kernel@vger.kernel.org>,
+       Florian Mickler <florian@mickler.org>,
+       Linux PM <linux-pm@lists.linux-foundation.org>,
+       Thomas Gleixner <tglx@linutronix.de>,
+       Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
+       "Balbi Felipe (Nokia-D/Helsinki)" <felipe.balbi@nokia.com>
+Subject: Re: [linux-pm] [PATCH 0/8] Suspend block api (version 8)
+Message-ID: <20100528142124.GA26733@srcf.ucam.org>
+References: <20100527223605.GB11364@srcf.ucam.org> <20100527235546.09f3ce8a@lxorguk.ukuu.org.uk> <20100528043114.GC26177@thunk.org> <20100528103713.0a7952d9@lxorguk.ukuu.org.uk> <20100528114123.GA22947@srcf.ucam.org> <4BFFB681.1000105@nokia.com> <AANLkTim04ZfMcPHRB2D_bqcAuguaGwySH2b6repuYLkk@mail.gmail.com> <4BFFC5DF.5030504@nokia.com> <20100528133900.GG26177@thunk.org> <4BFFCFC7.7070302@nokia.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100528140623.GA11041@barrios-desktop>
-User-Agent: Mutt/1.5.20 (2009-08-17)
+In-Reply-To: <4BFFCFC7.7070302@nokia.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* MinChan Kim <minchan.kim@gmail.com> [2010-05-28 23:06:23]:
+On Fri, May 28, 2010 at 05:14:31PM +0300, Igor Stoppa wrote:
 
-> > I confess I failed to distinguish memcg OOM and system OOM and used "in
-> > case of OOM kill the selected task the faster you can" as the guideline.
-> > If the exit code path is short that shouldn't be a problem.
-> > 
-> > Maybe the right way to go would be giving the dying task the biggest
-> > priority inside that memcg to be sure that it will be the next process from
-> > that memcg to be scheduled. Would that be reasonable?
-> 
-> Hmm. I can't understand your point. 
-> What do you mean failing distinguish memcg and system OOM?
-> 
-> We already have been distinguish it by mem_cgroup_out_of_memory.
-> (but we have to enable CONFIG_CGROUP_MEM_RES_CTLR). 
-> So task selected in select_bad_process is one out of memcg's tasks when 
-> memcg have a memory pressure. 
+> I have seen very good proposals for saner solutions.
 >
+> Is that progress?
 
-We have a routine to help figure out if the task belongs to the memory
-cgroup that cause the OOM. The OOM entry from memory cgroup is
-different from a regular one. 
+The proposals so far involve either redefining the problem space or 
+being inherently racey. It may be that we can redefine the problem space 
+in such a way that everyone's happy, but it's not possible to do so by 
+fiat.
 
 -- 
-	Three Cheers,
-	Balbir
+Matthew Garrett | mjg59@srcf.ucam.org
