@@ -1,63 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756535Ab0E1IFq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 May 2010 04:05:46 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:59332 "EHLO mx2.mail.elte.hu"
+	id S1756743Ab0E1IHC (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 May 2010 04:07:02 -0400
+Received: from cantor.suse.de ([195.135.220.2]:55325 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755853Ab0E1IFm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 May 2010 04:05:42 -0400
-Date: Fri, 28 May 2010 10:05:31 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: David Miller <davem@davemloft.net>
-Cc: eric.dumazet@gmail.com, torvalds@linux-foundation.org, tglx@linutronix.de,
-       akpm@linux-foundation.org, netdev@vger.kernel.org,
+	id S1755991Ab0E1IGw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 May 2010 04:06:52 -0400
+From: Thomas Renninger <trenn@suse.de>
+Organization: SUSE Products GmbH
+To: Len Brown <lenb@kernel.org>
+Subject: Re: [linux-pm] idle-test patches queued for upstream
+Date: Fri, 28 May 2010 10:07:34 +0200
+User-Agent: KMail/1.13.3 (Linux/2.6.31.5-0.1-desktop; KDE/4.4.3; x86_64; ; )
+Cc: linux-pm@lists.linux-foundation.org, x86@kernel.org,
        linux-kernel@vger.kernel.org
-Subject: Re: boot crash in arp_error_report()
-Message-ID: <20100528080531.GA9893@elte.hu>
-References: <alpine.LFD.2.00.1005271213091.3689@i5.linux-foundation.org>
- <1274989637.2446.1.camel@edumazet-laptop>
- <1274991504.2446.13.camel@edumazet-laptop>
- <20100527.161011.104042698.davem@davemloft.net>
+References: <1274928151-30919-1-git-send-email-lenb@kernel.org> <201005271045.33500.trenn@suse.de> <alpine.LFD.2.00.1005272023510.24823@localhost.localdomain>
+In-Reply-To: <alpine.LFD.2.00.1005272023510.24823@localhost.localdomain>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100527.161011.104042698.davem@davemloft.net>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
-	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
-	[score: 0.0007]
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201005281007.34706.trenn@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* David Miller <davem@davemloft.net> wrote:
-
-> From: Eric Dumazet <eric.dumazet@gmail.com>
-> Date: Thu, 27 May 2010 22:18:24 +0200
+On Friday 28 May 2010 02:59:07 Len Brown wrote:
+> > > ... we think we can do better than ACPI.
 > 
-> > [PATCH] net: fix __neigh_event_send()
-> > 
-> > commit 7fee226ad23 (net: add a noref bit on skb dst) missed one spot
-> > where an skb is enqueued, with a possibly not refcounted dst entry.
-> > 
-> > __neigh_event_send() inserts skb into arp_queue, so we must make sure
-> > dst entry is refcounted, or dst entry can be freed by garbage collector
-> > after caller exits from rcu protected section.
-> > 
-> > Reported-by: Ingo Molnar <mingo@elte.hu>
-> > Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
+> > Why exactly? Is there any info missing in the ACPI tables?
+> > Or is this just to be more independent from OEMs?
 > 
-> Applied, thanks Eric.
+> ACPI has a few fundmental flaws here.  One is that it reports
+> exit latency instead of break-even power duration.
+> The other is that it requires a BIOS writer to
+> get the tables right.
+This is a general ACPI problem...
+ 
+> > Using ACPI table based C-states by default and using
+> > intel_idle.enable=1
+> > or similar for workarounds sounds safer.
+> > At least as long as the driver is experimental.
 > 
-> Ingo can we get a confirmation that this fixes the bootup crash?
+> I plan to remove the EXPERIMENTAL in 1 release.
+> 
+> > Does Windows use ACPI C-state info for idle?
 
-Sure, will let you know how it goes.
+> Yes, Windows uses ACPI.
+> On the Dell above, that is why Linux consumes 15% less idle power
+> and why Linux can take advantage of turbo mode and Windows can not.
+You always propageted to stay Windows compatible...
+Now we go the untested way.
+Let's see how much machines will break...
 
-Thanks,
+Thanks for clarifications,
 
-	Ingo
+    Thomas
