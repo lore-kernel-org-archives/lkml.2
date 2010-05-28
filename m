@@ -1,72 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758432Ab0E1OuF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 May 2010 10:50:05 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:49105 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1756906Ab0E1OuB (ORCPT
+	id S1758218Ab0E1Ow7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 May 2010 10:52:59 -0400
+Received: from mailout2.w1.samsung.com ([210.118.77.12]:29263 "EHLO
+	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750842Ab0E1Ow5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 May 2010 10:50:01 -0400
-Date: Fri, 28 May 2010 10:49:58 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Peter Zijlstra <peterz@infradead.org>
-cc: "Rafael J. Wysocki" <rjw@sisk.pl>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
-       Matthew Garrett <mjg59@srcf.ucam.org>,
-       Thomas Gleixner <tglx@linutronix.de>,
-       LKML <linux-kernel@vger.kernel.org>,
-       Florian Mickler <florian@mickler.org>, <felipe.balbi@nokia.com>,
-       Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
-       Linux PM <linux-pm@lists.linux-foundation.org>
-Subject: Re: [linux-pm] [PATCH 0/8] Suspend block api (version 8)
-In-Reply-To: <1275031197.32462.14.camel@laptop>
-Message-ID: <Pine.LNX.4.44L0.1005281045290.1939-100000@iolanthe.rowland.org>
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Fri, 28 May 2010 10:52:57 -0400
+Date: Fri, 28 May 2010 16:53:28 +0200
+From: Michal Nazarewicz <m.nazarewicz@samsung.com>
+Subject: [PATCHv2.1] USB: gadget: f_fs: use usb_string_ids_n()
+In-reply-to: <131cc4995ce27841167b6736acc52608c1bbe4b8.1275034701.git.mina86@mina86.com>
+To: linux-usb@vger.kernel.org
+Cc: David Brownell <dbrownell@users.sourceforge.net>,
+       Kyungmin Park <kyungmin.park@samsung.com>,
+       Marek Szyprowski <m.szyprowski@samsung.com>,
+       linux-kernel@vger.kernel.org
+Message-id: <54abfa6a4d85d26eebc9048ca2433c9f5141552e.1275057895.git.m.nazarewicz@samsung.com>
+MIME-version: 1.0
+X-Mailer: git-send-email 1.7.1
+Content-type: TEXT/PLAIN
+Content-transfer-encoding: 7BIT
+References: <cover.1275034701.git.mina86@mina86.com>
+ <dd6695f08a16b6e1269ea5c66bb16df4ba2d2e7b.1275034701.git.mina86@mina86.com>
+ <55e838d52a2b4e37372e16d4238a82421fed11d6.1275034701.git.mina86@mina86.com>
+ <e42e64aab3be6e8018f3b75f1f230ef7c3fbd481.1275034701.git.mina86@mina86.com>
+ <131cc4995ce27841167b6736acc52608c1bbe4b8.1275034701.git.mina86@mina86.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 28 May 2010, Peter Zijlstra wrote:
+Use usb_string_ids_n() function to simplify string ids
+registeration.
 
-> On Thu, 2010-05-27 at 20:59 -0400, Alan Stern wrote:
-> > On Fri, 28 May 2010, Rafael J. Wysocki wrote:
-> > 
-> > > > And the forced-suspend design relies on the fact that processes remain 
-> > > > frozen throughout.  If we leave some processes unfrozen and one of them 
-> > > > somehow becomes runnable, that means we have to abort the forced 
-> > > > suspend before the process is allowed to run.
-> > > 
-> > > We could avoid that if drivers could block tasks, but there are questions to
-> > > answer.  First off, how a driver is supposed to know when to block the task
-> > > using it and when to do its power management transparently for the task?
-> > > Second, how to intercept and block all possible interfaces that user space
-> > > can use to talk to drivers (how to intercept a task using mmapped device, for
-> > > example)?
-> > 
-> > We talked about this a few years ago and decided it was not feasible.  
-> > It would require substantial changes to every device driver.
-> 
-> But what if its the _right_ thing to do? We make changes to every device
-> driver out there on a regular basis. Also, why won't an incremental
-> process work? Add the interface with a fallback for drivers that haven't
-> implemented it and implement it for those drivers its most urgent (like
-> those in use on an Android phone).
+Signed-off-by: Michal Nazarewicz <m.nazarewicz@samsung.com>
+Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+---
+This fixes to silly bugs in my previous patch.  One was that first_id
+was unsigned should "first_id < 0" would be always false and in the
+"lang" loop I forgot to include ++lang.
 
-There is no reasonable fallback.  In fact, I seriously doubt that
-there's any way to carry this out at all, reasonable or not.  For
-example, how do you handle the situation where a user task gets an
-error because it accessed an mmapped address belonging to a device that
-has been suspended?
+ drivers/usb/gadget/f_fs.c |   29 +++++++++++------------------
+ 1 files changed, 11 insertions(+), 18 deletions(-)
 
-> Not doing the right thing simply because its a lot of work seems like a
-> fine way to let the kernel rot into an unmaintainable mess.
-
-Firstly, it's not at all clear that this _is_ the right thing.
-
-Secondly, when doing the right thing involves making invasive changes 
-to half the .c files in the kernel, people might stop to think that it 
-would add more bugs than it would solve problems.
-
-Alan Stern
+diff --git a/drivers/usb/gadget/f_fs.c b/drivers/usb/gadget/f_fs.c
+index 3fe120f..b7c4905 100644
+--- a/drivers/usb/gadget/f_fs.c
++++ b/drivers/usb/gadget/f_fs.c
+@@ -1377,7 +1377,8 @@ static void ffs_data_reset(struct ffs_data *ffs)
+ 
+ static int functionfs_bind(struct ffs_data *ffs, struct usb_composite_dev *cdev)
+ {
+-	unsigned i, count;
++	struct usb_gadget_strings **lang;
++	int first_id;
+ 
+ 	ENTER();
+ 
+@@ -1385,7 +1386,9 @@ static int functionfs_bind(struct ffs_data *ffs, struct usb_composite_dev *cdev)
+ 		 || test_and_set_bit(FFS_FL_BOUND, &ffs->flags)))
+ 		return -EBADFD;
+ 
+-	ffs_data_get(ffs);
++	first_id = usb_string_ids_n(cdev, ffs->strings_count);
++	if (unlikely(first_id < 0))
++		return first_id;
+ 
+ 	ffs->ep0req = usb_ep_alloc_request(cdev->gadget->ep0, GFP_KERNEL);
+ 	if (unlikely(!ffs->ep0req))
+@@ -1393,25 +1396,15 @@ static int functionfs_bind(struct ffs_data *ffs, struct usb_composite_dev *cdev)
+ 	ffs->ep0req->complete = ffs_ep0_complete;
+ 	ffs->ep0req->context = ffs;
+ 
+-	/* Get strings identifiers */
+-	for (count = ffs->strings_count, i = 0; i < count; ++i) {
+-		struct usb_gadget_strings **lang;
+-
+-		int id = usb_string_id(cdev);
+-		if (unlikely(id < 0)) {
+-			usb_ep_free_request(cdev->gadget->ep0, ffs->ep0req);
+-			ffs->ep0req = NULL;
+-			return id;
+-		}
+-
+-		lang = ffs->stringtabs;
+-		do {
+-			(*lang)->strings[i].id = id;
+-			++lang;
+-		} while (*lang);
++	for (lang = ffs->stringtabs; *lang; ++lang) {
++		struct usb_string *str = (*lang)->strings;
++		unsigned id = first_id;
++		for (; str->s; ++id, ++str)
++			str->id = id;
+ 	}
+ 
+ 	ffs->gadget = cdev->gadget;
++	ffs_data_get(ffs);
+ 	return 0;
+ }
+ 
+-- 
+1.7.1
 
