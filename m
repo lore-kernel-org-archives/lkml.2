@@ -1,93 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754984Ab0E1H2g (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 May 2010 03:28:36 -0400
-Received: from mx01.sz.bfs.de ([194.94.69.103]:54039 "EHLO mx01.sz.bfs.de"
+	id S1755715Ab0E1Hbm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 May 2010 03:31:42 -0400
+Received: from mgw1.diku.dk ([130.225.96.91]:59161 "EHLO mgw1.diku.dk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752775Ab0E1H2d (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 May 2010 03:28:33 -0400
-Message-ID: <4BFF709D.5040005@bfs.de>
-Date: Fri, 28 May 2010 09:28:29 +0200
-From: walter harms <wharms@bfs.de>
-Reply-To: wharms@bfs.de
-User-Agent: Thunderbird 2.0.0.24 (X11/20100302)
+	id S1752945Ab0E1Hbk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 May 2010 03:31:40 -0400
+Date: Fri, 28 May 2010 09:31:34 +0200 (CEST)
+From: Julia Lawall <julia@diku.dk>
+To: Wolfram Sang <w.sang@pengutronix.de>
+Cc: Joerg Roedel <joro@8bytes.org>, Nicolas Palix <npalix@diku.dk>,
+       Randy Dunlap <rdunlap@xenotime.net>, Roland Dreier <rdreier@cisco.com>,
+       Joe Perches <joe@perches.com>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       "David S. Miller" <davem@davemloft.net>, Michal Marek <mmarek@suse.cz>,
+       Sam Ravnborg <sam@ravnborg.org>, Gilles Muller <Gilles.Muller@lip6.fr>,
+       linux-kernel@vger.kernel.org, linux-kbuild@vger.kernel.org,
+       cocci@diku.dk, Kernel Janitors <kernel-janitors@vger.kernel.org>
+Subject: Re: [PATCH 0/4] Add a Coccinelle front-end script
+In-Reply-To: <20100528072504.GB3344@pengutronix.de>
+Message-ID: <Pine.LNX.4.64.1005280931230.9138@ask.diku.dk>
+References: <1273508667-5152-1-git-send-email-npalix@diku.dk>
+ <20100528070921.GK1237@8bytes.org> <20100528072504.GB3344@pengutronix.de>
 MIME-Version: 1.0
-To: Richard Hartmann <richih.mailinglist@gmail.com>
-CC: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-       linux-ppp@vger.kernel.org, erik_list@caneris.com
-Subject: Re: [Patch] fix packet loss and massive ping spikes with PPP 	multi-link
-References: <2d460de71003260850x7f90d04cy79ac853464108182@mail.gmail.com>	<AANLkTik_QdZN_nFoOVD3-1JTGN5oxRySCdV5_eDqvQve@mail.gmail.com>	<4BFBA3F2.2000301@bfs.de>	<AANLkTilnueP5HIfX03soMCYE93jubL000rpiOCN1xB2-@mail.gmail.com>	<4BFC0942.2030103@bfs.de> <AANLkTikeld4fbr9r1Sq0jhfkWxf0ZlwOsufUIRvb1rFH@mail.gmail.com>
-In-Reply-To: <AANLkTikeld4fbr9r1Sq0jhfkWxf0ZlwOsufUIRvb1rFH@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, 28 May 2010, Wolfram Sang wrote:
 
+> > Don't know how complex the coccinelle software itself is, but I think it
+> > would make sense to ship it with the kernel-sources too. That together
+> 
+> You can easily find out by browsing the homepage of coccinelle.
 
-Richard Hartmann schrieb:
-> ==It seems LKML & netdev were dropped from the To list, re-adding==
-> 
-> Hi Walter,
-> 
-> 
->>  if (ppp->rrsched % ppp->n_channels == i)
->>
->> since both do not change in that while() loop you can calculate in advance
->> perhaps ppp->rrsched %= ppp->n_channels before the while ?
->> (that would reduce my bad feels about variables that only increments also :)
-> 
-> rrsched and i do change when appropriate. As they are used as a cheap
-> way to get round robin, rrsched is not even initialized. One can argue
-> that this should be done, but as it literally does not matter where the
-> value starts counting....
-> 
+Over 100 000 lines of code.
 
-yep,
-the problem is that you will trigger a warning "variable uninitialised".
-And as programmer you are trained to spot such kind of code.
-in short you violated "the rule of least surprise", simply set it to 99
-and add a comment that the value does not matter because it is actualy a
-random seed.
-Basicly the same reason for the ppp->rrsched %= ppp->n_channels outside
-the loop. 1. people/compiler are happy because they see the variable
-is used. 2. no need to recalculate the if in a loop (never trust optimisers).
-
-/*
-perhaps rr_chanel is a better name ? round robin channel
-that would requiere the changes but explain what it actualy is
-*/
-
-
-
-> 
->> btw: you are doing  after loop() if(pch->chan == NULL) continue;
->> that means the else in the if below  if (pch->chan) should never be reached.
->> Or is it likely that some channel will be dropped (?) ?
-> 
-> Channels could be dropped and we need to guard against that.
-> 
-
-please add a comment about that. i can garantee you someone will spot it
-and remove either the pch->chan == NULL or the else.
-
-
-
-just my 2 cents,
-wh
-
-
-> 
->> btw: this is intentional ? looks strange
->>
->>        if(ppp_ml_noexplode) {
->> +       }
->> +       else {
-> 
-> Leftover from various printks for debugging reasons.
-> 
-> 
-> Thanks for your feedback,
-> Richard
-> 
+julia
