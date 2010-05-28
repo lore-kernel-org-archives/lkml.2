@@ -1,56 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755820Ab0E1NmA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 May 2010 09:42:00 -0400
-Received: from isrv.corpit.ru ([81.13.33.159]:36481 "EHLO isrv.corpit.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753471Ab0E1Nl7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 May 2010 09:41:59 -0400
-Message-ID: <4BFFC821.1020509@msgid.tls.msk.ru>
-Date: Fri, 28 May 2010 17:41:53 +0400
-From: Michael Tokarev <mjt@tls.msk.ru>
-User-Agent: Mozilla-Thunderbird 2.0.0.22 (X11/20090706)
+	id S1756649Ab0E1NnB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 May 2010 09:43:01 -0400
+Received: from smtp-out.google.com ([74.125.121.35]:63427 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755267Ab0E1Nm7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 May 2010 09:42:59 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=mime-version:in-reply-to:references:date:message-id:subject:from:to:
+	cc:content-type:x-system-of-record;
+	b=rW9Sf2kGNGgDLoPIO6J7e/l1j0dVBXb8IKvZOfyfetdGzQ6dNyQk5HjGUJ8D0VvYp
+	mZR4L9w12Xuyt6n+qWrlA==
 MIME-Version: 1.0
-To: Kay Sievers <kay.sievers@vrfy.org>
-CC: Bastian Blank <waldi@debian.org>, xen-devel@lists.xensource.com,
-       Jeremy Fitzhardinge <jeremy@goop.org>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Fix name of Xen event-channel device
-References: <20100526105144.GA28280@wavehammer.waldi.eu.org> 	<20100527073512.GA17135@wavehammer.waldi.eu.org> <20100527143104.GB6040@wavehammer.waldi.eu.org> 	<20100527150251.GD6040@wavehammer.waldi.eu.org> <4BFEA2DF.8080006@msgid.tls.msk.ru> 	<20100527171313.GB11358@wavehammer.waldi.eu.org> <AANLkTinmhitag1oTssXB_ICXIriubGLNBvltS-Fuc8Cg@mail.gmail.com>
-In-Reply-To: <AANLkTinmhitag1oTssXB_ICXIriubGLNBvltS-Fuc8Cg@mail.gmail.com>
-X-Enigmail-Version: 0.95.0
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20100528132925.GA2677@ucw.cz>
+References: <20100505202826.GB7450@linux.intel.com>
+	<Pine.LNX.4.44L0.1005051705200.1885-100000@iolanthe.rowland.org>
+	<z2ta55d774e1005051437heb584584q6afca0b4b254d5d0@mail.gmail.com>
+	<20100505234755.GI29604@atomide.com>
+	<20100506134015.GA23426@srcf.ucam.org>
+	<20100506170151.GA30928@atomide.com>
+	<20100506170956.GA28104@srcf.ucam.org>
+	<20100506171453.GC30928@atomide.com>
+	<20100506172201.GA28578@srcf.ucam.org>
+	<20100506173807.GD30928@atomide.com>
+	<20100528132925.GA2677@ucw.cz>
+Date: Fri, 28 May 2010 06:42:55 -0700
+Message-ID: <AANLkTimtBjrbtZDIP273kn4Xkhca-tq1bTet_MfmIvV9@mail.gmail.com>
+Subject: Re: [linux-pm] [PATCH 1/8] PM: Add suspend block api.
+From: Brian Swetland <swetland@google.com>
+To: Pavel Machek <pavel@ucw.cz>
+Cc: Tony Lindgren <tony@atomide.com>, Matthew Garrett <mjg@redhat.com>,
+       Len Brown <len.brown@intel.com>, markgross@thegnar.org,
+       linux-doc@vger.kernel.org,
+       Kernel development list <linux-kernel@vger.kernel.org>,
+       Jesse Barnes <jbarnes@virtuousgeek.org>,
+       Oleg Nesterov <oleg@redhat.com>, Tejun Heo <tj@kernel.org>,
+       Linux-pm mailing list <linux-pm@lists.linux-foundation.org>,
+       Wu Fengguang <fengguang.wu@intel.com>,
+       Andrew Morton <akpm@linux-foundation.org>
+Content-Type: text/plain; charset=UTF-8
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Kay Sievers wrote:
-> On Thu, May 27, 2010 at 19:13, Bastian Blank <waldi@debian.org> wrote:
-[]
->>>                             Also, how about other xen-related
->>> devices which are moved to /dev/xen in that same udev rules?
->> This is the only device currently supported by the vanilla kernel,
->> everything else is in the Xen tree only.
-> 
-> And naming of primary device nodes is no longer udev's task. All these
-> rules are removed from the default udev rules. These names must all
-> come from the kernel these days. Udev will log errors if udev rules
-> specify names which are not in sync with the kernel, so they can be
-> fixed in the kernel or in the rules.
+On Fri, May 28, 2010 at 6:29 AM, Pavel Machek <pavel@ucw.cz> wrote:
+> Hi!
+>
+>> > > Why would you need to constantly try to suspend in that case?
+>> >
+>> > Because otherwise you're awake for longer than you need to be.
+>>
+>> If your system is idle and your hardware supports off-while-idle,
+>> then that really does not matter. There's not much of a difference
+>> in power savings, we're already talking over 10 days on batteries
+>> with just off-while-idle on omaps.
+>
+> Makes me wish g1 was omap based... it looks like you have superior hw.
 
-Finally!...  It's been hashed and rehashed back when udevd were
-invented to replace devfs and we returned back to traditional
-kernel-generated names for a base.  Oh well...
+G1 will happily do 10 days idle (radio on) under typical network
+conditions (roughly 4-5mA draw at the battery average in paging mode)
+if you have data disabled and there's no reason for it to wake up,
+process events, chat on the data network etc.  It'll go 25-30 days in
+"airplane mode" (radio off) provided there are not excessive wakeups.
 
-That's, actually, _excellent_ news, something that bothered me
-for all these years since 2.4 kernel - that I don't have some
-devices in /dev (because they're named differently or moved to
-a subdir) which are mentioned in dmesg or sysfs.  Hooray!
+If you happen to be running a perfect userspace where every thread in
+every process is blocked on something, it'll hit the exact same power
+state out of idle.  If you have a less optimal userspace or random
+third party nonoptimal apps, this becomes much harder, of course.
+Which is why we do the wakelock thing.
 
-Will check for all sound (/dev/snd/), input (/dev/input/), usb
-(/dev/usb/) and oh, the famous tun (/dev/net/tun) devices - you
-intrigued me!.. ;)
+OMAP does have a lot of nice auto-clock-down features compared to some
+other SoCs, sometimes simplifying other parts of power management.
 
-Thanks!
-
-/mjt
+Brian
