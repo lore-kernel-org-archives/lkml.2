@@ -1,103 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751456Ab0E1EKV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 May 2010 00:10:21 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:60355 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750814Ab0E1EKS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 May 2010 00:10:18 -0400
-Message-ID: <4BFF4226.6080409@redhat.com>
-Date: Thu, 27 May 2010 18:10:14 -1000
-From: Zachary Amsden <zamsden@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-3.fc13 Thunderbird/3.0.4
+	id S1751231Ab0E1EQP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 May 2010 00:16:15 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:40749 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750712Ab0E1EQN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 May 2010 00:16:13 -0400
+Date: Thu, 27 May 2010 21:12:27 -0700 (PDT)
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Dave Airlie <airlied@gmail.com>
+cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+       Florian Ragwitz <rafl@debian.org>, Arjan Opmeer <arjan@opmeer.net>,
+       Eric Piel <eric.piel@tremplin-utc.net>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       linux-input@vger.kernel.org
+Subject: Re: [git pull] Input updates for 2.6.35-rc0
+In-Reply-To: <AANLkTiklv48cDWNqKlFfh5RVtxxNH8shH_JjDypPgeHA@mail.gmail.com>
+Message-ID: <alpine.LFD.2.00.1005272108210.11382@i5.linux-foundation.org>
+References: <20100520165243.GA20861@core.coreip.homeip.net> <alpine.LFD.2.00.1005271837050.11382@i5.linux-foundation.org> <AANLkTiklv48cDWNqKlFfh5RVtxxNH8shH_JjDypPgeHA@mail.gmail.com>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-To: Glauber Costa <glommer@redhat.com>
-CC: Avi Kivity <avi@redhat.com>, kvm@vger.kernel.org,
-       linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Add Documentation/kvm/msr.txt
-References: <1274897088-8587-1-git-send-email-glommer@redhat.com> <4BFE2A2F.50209@redhat.com> <20100527160248.GF3445@mothafucka.localdomain> <4BFED258.40501@redhat.com> <20100527203638.GH3445@mothafucka.localdomain> <4BFEDDEB.9020700@redhat.com> <20100528001057.GI3445@mothafucka.localdomain>
-In-Reply-To: <20100528001057.GI3445@mothafucka.localdomain>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/27/2010 02:10 PM, Glauber Costa wrote:
-> On Thu, May 27, 2010 at 11:02:35AM -1000, Zachary Amsden wrote:
->    
->> On 05/27/2010 10:36 AM, Glauber Costa wrote:
->>      
->>> On Thu, May 27, 2010 at 10:13:12AM -1000, Zachary Amsden wrote:
->>>        
->>>> On 05/27/2010 06:02 AM, Glauber Costa wrote:
->>>>          
->>>>> On Thu, May 27, 2010 at 11:15:43AM +0300, Avi Kivity wrote:
->>>>>            
->>>>>> On 05/26/2010 09:04 PM, Glauber Costa wrote:
->>>>>>              
->>>>>>> This patch adds a file that documents the usage of KVM-specific
->>>>>>> MSRs.
->>>>>>>
->>>>>>>                
->>>>>> Looks good.  A few comments:
->>>>>>
->>>>>>              
->>>>>>> +
->>>>>>> +Custom MSR list
->>>>>>> +--------
->>>>>>> +
->>>>>>> +The current supported Custom MSR list is:
->>>>>>> +
->>>>>>> +MSR_KVM_WALL_CLOCK:  0x11
->>>>>>> +
->>>>>>> +	data: physical address of a memory area.
->>>>>>>                
->>>>>> Which must be in guest RAM (i.e., don't point it somewhere random
->>>>>> and expect the hypervisor to allocate it for you).
->>>>>>
->>>>>> Must be aligned to 4 bytes (we don't enforce it though).
->>>>>>              
->>>>> I don't see the reason for it.
->>>>>
->>>>> If this is a requirement, our own implementation
->>>>> is failing to meet it.
->>>>>            
->>>> It's so the atomic write actually is atomic.
->>>>          
->>> Which atomic write? This is the wallclock, we do no atomic writes for
->>> querying it. Not to confuse with system time (the other msr).
->>>
->>>        
->>>> Stating a 4 -byte
->>>> alignment requirement prevents the wall clock from crossing a page
->>>> boundary.
->>>>          
->>> Yes, but why require it?
->>>
->>> reading the wallclock is not a hot path for anybody, is usually done
->>> just once, and crossing a page boundary here does not pose any correctness
->>> issue.
->>>        
->> Little-endian non-atomic page crossing writes will write the small
->> part of the wallclock first, so another CPU may observe the
->> following wallclock sequence:
->>
->> 0x01ff .. 0x0100 .. 0x0200
->>
->> Big-endian writes also have similar failure:
->>
->> 0x01ff .. 0x02ff .. 0x0200
->>
->> This won't happen if there is a single instruction write of the wall
->> clock word.
->>      
-> We already specify that users can only trust the value of the wallclock
-> after we have an even version field.
-> When we start the update, and during the time of all writes to it,
-> it is odd, and thus, invalid.
-> The ABI guarantees to the guest that we'll only bump version
-> after we're done updating.
->    
 
-I guess there is not a point.
+
+On Fri, 28 May 2010, Dave Airlie wrote:
+> 
+> Was this in GNOME?
+> 
+> Does System->Preferences->Mouse have a touchpad tab? do it have tapping off?
+
+Bingo! Yup, that turns a totally useless piece-of-crap touchpad into a 
+perfectly cromulent one!
+
+Too bad that the default behavior made it act so horribly bad. 
+
+		Linus
