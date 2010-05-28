@@ -1,64 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932424Ab0E1JrU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 May 2010 05:47:20 -0400
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:39195 "EHLO
-	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754763Ab0E1JrS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 May 2010 05:47:18 -0400
-Date: Fri, 28 May 2010 10:53:33 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: tytso@mit.edu
-Cc: Matthew Garrett <mjg59@srcf.ucam.org>,
-       Alan Stern <stern@rowland.harvard.edu>,
-       Thomas Gleixner <tglx@linutronix.de>,
-       Peter Zijlstra <peterz@infradead.org>,
-       LKML <linux-kernel@vger.kernel.org>,
-       Florian Mickler <florian@mickler.org>, felipe.balbi@nokia.com,
-       Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
-       Linux PM <linux-pm@lists.linux-foundation.org>
-Subject: Re: [linux-pm] [PATCH 0/8] Suspend block api (version 8)
-Message-ID: <20100528105333.40a1efbe@lxorguk.ukuu.org.uk>
-In-Reply-To: <20100528043114.GC26177@thunk.org>
-References: <20100527222514.0a1710bf@lxorguk.ukuu.org.uk>
-	<Pine.LNX.4.44L0.1005271730180.3239-100000@iolanthe.rowland.org>
-	<20100527230806.4deb6de3@lxorguk.ukuu.org.uk>
-	<20100527220949.GB10602@srcf.ucam.org>
-	<20100527232357.6d14fdb2@lxorguk.ukuu.org.uk>
-	<20100527223605.GB11364@srcf.ucam.org>
-	<20100527235546.09f3ce8a@lxorguk.ukuu.org.uk>
-	<20100528043114.GC26177@thunk.org>
-X-Mailer: Claws Mail 3.7.5 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1758221Ab0E1J5g (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 May 2010 05:57:36 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:19219 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754694Ab0E1J5e (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 May 2010 05:57:34 -0400
+Message-ID: <4BFF9366.5090103@redhat.com>
+Date: Fri, 28 May 2010 11:56:54 +0200
+From: Jes Sorensen <Jes.Sorensen@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-2.fc12 Lightning/1.0b2pre Thunderbird/3.0.4
+MIME-Version: 1.0
+To: "Michael S. Tsirkin" <mst@redhat.com>
+CC: Rusty Russell <rusty@rustcorp.com.au>, linux-kernel@vger.kernel.org,
+       virtualization@lists.linux-foundation.org, kvm@vger.kernel.org,
+       qemu-devel@nongnu.org
+Subject: Re: [PATCHv2-RFC 0/2] virtio: put last seen used index into ring
+ itself
+References: <cover.1274903328.git.mst@redhat.com>
+In-Reply-To: <cover.1274903328.git.mst@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ted
+On 05/26/10 21:50, Michael S. Tsirkin wrote:
+> Here's a rewrite of the original patch with a new layout.
+> I haven't tested it yet so no idea how this performs, but
+> I think this addresses the cache bounce issue raised by Avi.
+> Posting for early flames/comments.
+> 
+> Generally, the Host end of the virtio ring doesn't need to see where
+> Guest is up to in consuming the ring.  However, to completely understand
+> what's going on from the outside, this information must be exposed.
+> For example, host can reduce the number of interrupts by detecting
+> that the guest is currently handling previous buffers.
+> 
+> We add a feature bit so the guest can tell the host that it's writing
+> out the current value there, if it wants to use that.
+> 
+> This differs from original approach in that the used index
+> is put after avail index (they are typically written out together).
+> To avoid cache bounces on descriptor access,
+> and make future extensions easier, we put the ring itself at start of
+> page, and move the control after it.
 
-As a PS to the previous email the situation has I think more choices than
-you portray.
+Hi Michael,
 
-Given the need for various constraints imposed by drivers for things like
-RT it's entirely possible that a solution ends up being something like
+It looks pretty good to me, however one thing I have been thinking of
+while reading through it:
 
+Rather than storing a pointer within the ring struct, pointing into a
+position within the same struct. How about storing a byte offset instead
+and using a cast to get to the pointer position? That would avoid the
+pointer dereference, which is less effective cache wise and harder for
+the CPU to predict.
 
-Kernel proper:
-Turn suspend block kernel API into an expression of constraints (or
-				whatever else seems to work)
-Throw the user space in the bin
+Not sure whether it really matters performance wise, just a thought.
 
-Google:
-Use the constraints in a sledgehammer manner (hey it solves your problem
-			in that form so why not)
-Patch in a private user space API
-
-
-That makes things much much easier as we don't risk getting a horribly
-broken API into the kernel that is hard to remove, while hopefully
-meaning its rather easier for google to merge drivers and other code as
-well as to maintain a smaller patch set.
-
+Cheers,
+Jes
