@@ -1,60 +1,177 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758118Ab0E1CkN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 May 2010 22:40:13 -0400
-Received: from adelie.canonical.com ([91.189.90.139]:36800 "EHLO
-	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757756Ab0E1CkJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 May 2010 22:40:09 -0400
-Subject: Re: [PATCH 8/8] intel_idle: create a native cpuidle driver for
- select intel processors
-From: Chase Douglas <chase.douglas@canonical.com>
-To: Len Brown <lenb@kernel.org>
-Cc: x86@kernel.org, linux-pm@lists.linux-foundation.org,
-       linux-kernel@vger.kernel.org, Len Brown <len.brown@intel.com>
-In-Reply-To: <198450ec1600d9a7f55270dd4d44d6b55bc5b184.1274926772.git.len.brown@intel.com>
-References: <1274928151-30919-1-git-send-email-lenb@kernel.org>
-	 <198450ec1600d9a7f55270dd4d44d6b55bc5b184.1274926772.git.len.brown@intel.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 27 May 2010 22:32:13 -0400
-Message-ID: <1275013933.2312.7.camel@cndougla-ubuntu>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	id S1757887Ab0E1Cne (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 May 2010 22:43:34 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:56614 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755143Ab0E1Cnc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 May 2010 22:43:32 -0400
+Message-ID: <4BFF2EA5.9090008@redhat.com>
+Date: Fri, 28 May 2010 10:47:01 +0800
+From: Cong Wang <amwang@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100330 Shredder/3.0.4
+MIME-Version: 1.0
+To: Flavio Leitner <fbl@sysclose.org>
+CC: linux-kernel@vger.kernel.org, Matt Mackall <mpm@selenic.com>,
+       netdev@vger.kernel.org, bridge@lists.linux-foundation.org,
+       Andy Gospodarek <gospo@redhat.com>, Neil Horman <nhorman@tuxdriver.com>,
+       Jeff Moyer <jmoyer@redhat.com>,
+       Stephen Hemminger <shemminger@linux-foundation.org>,
+       bonding-devel@lists.sourceforge.net, Jay Vosburgh <fubar@us.ibm.com>,
+       David Miller <davem@davemloft.net>
+Subject: Re: [v5 Patch 1/3] netpoll: add generic support for bridge and bonding
+ devices
+References: <20100505081514.5157.83783.sendpatchset@localhost.localdomain> <20100527180545.GA2345@sysclose.org>
+In-Reply-To: <20100527180545.GA2345@sysclose.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-05-26 at 22:42 -0400, Len Brown wrote:
-> +static struct cpuidle_state atom_cstates[MWAIT_MAX_NUM_CSTATES] = {
-> +	{ "", "", 0, 0, 0, 0, 0, 0, 0, 0},
-> +	{ "ATM-C1", "MWAIT 0x00", (void *) 0x00,
-> +		CPUIDLE_FLAG_TIME_VALID,
-> +		1, 1000, 4, 0, 0, &intel_idle },
-> +	{ "ATM-C2", "MWAIT 0x10", (void *) 0x10,
-> +		CPUIDLE_FLAG_TIME_VALID,
-> +		20, 500, 80, 0, 0, &intel_idle },
-> +	{ "", "", 0, 0, 0, 0, 0, 0, 0, 0},
-> +	{ "ATM-C4", "MWAIT 0x30", (void *) 0x30,
-> +		CPUIDLE_FLAG_TIME_VALID,
-> +		100, 250, 400, 0, 0, &intel_idle },
-> +	{ "ATM-C6", "MWAIT 0x40", (void *) 0x40,
-> +		CPUIDLE_FLAG_TIME_VALID,
-> +		200, 150, 800, 0, 0, &intel_idle },
-> +	{ "", "", 0, 0, 0, 0, 0, 0, 0, 0},
-> +	{ "", "", 0, 0, 0, 0, 0, 0, 0, 0}
-> +};
+On 05/28/10 02:05, Flavio Leitner wrote:
+>
+> Hi guys!
+>
+> I finally could test this to see if an old problem reported on bugzilla[1] was
+> fixed now, but unfortunately it is still there.
+>
+> The ticket is private I guess, but basically the problem happens when bonding
+> driver tries to print something after it had taken the write_lock (monitor
+> functions, enslave/de-enslave), so the printk() will pass through netpoll, then
+> on bonding again which no matter what mode you use, it will try to read_lock()
+> the lock again. The result is a deadlock and the entire system hangs.
 
-I see that you have updated this code in your tree to disable C4 and C6
-on atom. This has piqued my curiosity. I've now seen 2 atom netbooks
-from different OEMs that hide C4 when you plug the power in. After the
-first machine I thought, "must be a BIOS/ACPI bug," but now I'm
-beginning to wonder if there's some issue with atom C4 states? That's
-beside the fact that I've not seen C6 on either machine at all. Do you
-have any insight?
 
-Thanks,
+This is true, I already fixed some similar issues.
 
--- Chase
+>
+> I manage to get a fresh backtrace with mode 1, see below:
+>
+>
+> [   93.167079] Call Trace:
+> [   93.167079]  [<ffffffff81034cf9>] warn_slowpath_common+0x77/0x8f
+> [   93.167079]  [<ffffffff81034d5e>] warn_slowpath_fmt+0x3c/0x3e
+> [   93.167079]  [<ffffffff81366aef>] ? _raw_read_trylock+0x11/0x4b
+> [   93.167079]  [<ffffffffa02a2c42>] ? bond_start_xmit+0x12b/0x401 [bonding]
+> ->  read_lock fails
+> [   93.167079]  [<ffffffffa02a2c9f>] bond_start_xmit+0x188/0x401 [bonding]
+> [   93.167079]  [<ffffffff81055b37>] ? trace_hardirqs_off+0xd/0xf
+> [   93.167079]  [<ffffffff812dfdb9>] netpoll_send_skb+0xbd/0x1f3
+> [   93.167079]  [<ffffffff812e00ed>] netpoll_send_udp+0x1fe/0x20d
+> [   93.167079]  [<ffffffffa02c017c>] write_msg+0x89/0xcd [netconsole]
+> [   93.167079]  [<ffffffff81034e65>] __call_console_drivers+0x67/0x79
+> [   93.167079]  [<ffffffff81034ed0>] _call_console_drivers+0x59/0x5d
+> [   93.167079]  [<ffffffff810352d3>] release_console_sem+0x121/0x1d7
+> [   93.167079]  [<ffffffff8103590a>] vprintk+0x35d/0x393
+> [   93.167079]  [<ffffffff8103f947>] ? add_timer+0x17/0x19
+> [   93.167079]  [<ffffffff81046ddf>] ? queue_delayed_work_on+0xa2/0xa9
+> [   93.167079]  [<ffffffff81363bb8>] printk+0x3c/0x44
+> [   93.167079]  [<ffffffffa02a3b17>] bond_select_active_slave+0x105/0x109 [bonding]
+> ->  write_locked
+> [   93.167079]  [<ffffffffa02a4798>] bond_mii_monitor+0x479/0x4ed [bonding]
+> [   93.167079]  [<ffffffff81046009>] worker_thread+0x1ef/0x2e2
+>
+> In this case, the message should be
+>      "bonding: bond0: making interface eth0 the new active one"
+
+
+Hmm, you triggered a warning here, let me check the source code
+and try to reproduce it here.
+
+>
+> I did the following patch to discard the packet if it was IN_NETPOLL
+> and the read_lock() fails, so I could go ahead testing it:
+>
+> diff --git a/drivers/net/bonding/bond_main.c b/drivers/net/bonding/bond_main.c
+> index 5e12462..a3b8bad 100644
+> --- a/drivers/net/bonding/bond_main.c
+> +++ b/drivers/net/bonding/bond_main.c
+> @@ -4258,8 +4258,19 @@ static int bond_xmit_activebackup(struct sk_buff *skb, struct net_device *bond_d
+>   	struct bonding *bond = netdev_priv(bond_dev);
+>   	int res = 1;
+>
+> -	read_lock(&bond->lock);
+> -	read_lock(&bond->curr_slave_lock);
+> +	if (read_trylock(&bond->lock) == 0&&
+> +		(bond_dev->flags&  IFF_IN_NETPOLL)) {
+> +			dev_kfree_skb(skb);
+> +			return NETDEV_TX_OK;
+> +	}
+> +
+> +	if (read_trylock(&bond->curr_slave_lock) == 0&&
+> +		(bond_dev->flags&  IFF_IN_NETPOLL)) {
+> +			read_unlock(&bond->lock);
+> +			dev_kfree_skb(skb);
+> +			return NETDEV_TX_OK;
+> +	}
+> +			
+>
+>   	if (!BOND_IS_OK(bond))
+>   		goto out;
+>
+
+
+This looks like a workaround, not a fix. :)
+
+>
+> and I found another problem.  The function netpoll_send_skb() checks
+> if the npinfo's queue length is zero and if it's not, it will queue
+> the packet to make sure it's in order and then schedule the thread
+> to run. Later, the thread wakes up running queue_process() which disables
+> interrupts before calling ndo_start_xmit().  However, dev_queue_xmit()
+> uses rcu_*_bh() and before return, it will enable the interrupts again,
+> spitting this:
+>
+> ------------[ cut here ]------------
+> WARNING: at kernel/softirq.c:143 local_bh_enable+0x3c/0x86()
+> Hardware name: Precision WorkStation 490
+> Modules linked in: netconsole bonding sunrpc ip6t_REJECT xt_tcpudp nf_conntrack_ipv6]
+> Pid: 17, comm: events/2 Not tainted 2.6.34-04700-gd938a70 #21
+> Call Trace:
+>   [<ffffffff810381d6>] warn_slowpath_common+0x77/0x8f
+>   [<ffffffff810381fd>] warn_slowpath_null+0xf/0x11
+>   [<ffffffff8103d691>] local_bh_enable+0x3c/0x86
+>   [<ffffffff812e4d85>] dev_queue_xmit+0x462/0x493
+>   [<ffffffffa018805f>] bond_dev_queue_xmit+0x1bd/0x1e3 [bonding]
+>   [<ffffffffa01881dd>] bond_start_xmit+0x158/0x37b [bonding]
+> ->  interrupts disabled
+>   [<ffffffff812f3fca>] queue_process+0x9d/0xf9
+>   [<ffffffff8104d022>] worker_thread+0x19d/0x224
+>   [<ffffffff812f3f2d>] ? queue_process+0x0/0xf9
+>   [<ffffffff81050819>] ? autoremove_wake_function+0x0/0x34
+>   [<ffffffff8104ce85>] ? worker_thread+0x0/0x224
+>   [<ffffffff8105040b>] kthread+0x7a/0x82
+>   [<ffffffff810036d4>] kernel_thread_helper+0x4/0x10
+>   [<ffffffff81050391>] ? kthread+0x0/0x82
+>   [<ffffffff810036d0>] ? kernel_thread_helper+0x0/0x10
+> ---[ end trace 74e3904503fdb632 ]---
+>
+> kernel/softirq.c:
+> 141 static inline void _local_bh_enable_ip(unsigned long ip)
+> 142 {
+> 143         WARN_ON_ONCE(in_irq() || irqs_disabled());
+> 144 #ifdef CONFIG_TRACE_IRQFLAGS
+> 145         local_irq_disable();
+> 146 #endif
+> 147         /*
+> 148          * Are softirqs going to be turned on now:
+> 149          */
+>
+>
+
+I am wondering if this was caused by the previous issue.
+
+
+> The git is updated up to:
+>    d938a70 be2net: increase POST timeout for EEH recovery
+>
+> Two slave interfaces, bonding mode 1, netconsole over bond0.
+>
+> [1] https://bugzilla.redhat.com/show_bug.cgi?id=248374#c5
+
+How did you reproduce this?
+I will check that BZ to see if I can find how to reproduce this.
+
+Thanks.
 
