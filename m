@@ -1,72 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932775Ab0E1KH2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 May 2010 06:07:28 -0400
-Received: from cantor.suse.de ([195.135.220.2]:58493 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754467Ab0E1KHZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 May 2010 06:07:25 -0400
-Date: Fri, 28 May 2010 20:07:19 +1000
-From: Nick Piggin <npiggin@suse.de>
-To: Dave Chinner <david@fromorbit.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-       linux-fsdevel@vger.kernel.org, linux-mm@kvack.org, xfs@oss.sgi.com
-Subject: Re: [PATCH 1/5] inode: Make unused inode LRU per superblock
-Message-ID: <20100528100719.GC22536@laptop>
-References: <1274777588-21494-1-git-send-email-david@fromorbit.com>
- <1274777588-21494-2-git-send-email-david@fromorbit.com>
- <20100527133230.780be6c7.akpm@linux-foundation.org>
- <20100527225418.GP12087@dastard>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100527225418.GP12087@dastard>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1758334Ab0E1KJY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 May 2010 06:09:24 -0400
+Received: from smtp-out.google.com ([74.125.121.35]:58590 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754467Ab0E1KJX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 May 2010 06:09:23 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=message-id:from:date:to:reply-to:cc:subject:x-system-of-record;
+	b=Zpqeu9GVDFGcq/7P2aXQT5ZX1Oeaj++Y4UkZHNIic41gbRc7FrZavVb7qTYJ/VTho
+	H0wwPrrF+xwxX+qk3F5jA==
+Message-ID: <4bff964c.e88cd80a.3106.7d31@mx.google.com>
+From: Stephane Eranian <eranian@google.com>
+Date: Fri, 28 May 2010 12:08:01 +0200
+To: linux-kernel@vger.kernel.org
+Reply-to: eranian@google.com
+Cc: peterz@infradead.org, mingo@elte.hu, paulus@samba.org, davem@davemloft.net,
+       fweisbec@gmail.com, acme@infradead.org, perfmon2-devel@lists.sf.net,
+       eranian@gmail.com, eranian@google.com, tzanussi@gmail.com
+Subject: [PATCH] perf: make perf report -D print sampled CPU
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 28, 2010 at 08:54:18AM +1000, Dave Chinner wrote:
-> On Thu, May 27, 2010 at 01:32:30PM -0700, Andrew Morton wrote:
-> > On Tue, 25 May 2010 18:53:04 +1000
-> > Dave Chinner <david@fromorbit.com> wrote:
-> > 
-> > > From: Dave Chinner <dchinner@redhat.com>
-> > > 
-> > > The inode unused list is currently a global LRU. This does not match
-> > > the other global filesystem cache - the dentry cache - which uses
-> > > per-superblock LRU lists. Hence we have related filesystem object
-> > > types using different LRU reclaimatin schemes.
-> > > 
-> > > To enable a per-superblock filesystem cache shrinker, both of these
-> > > caches need to have per-sb unused object LRU lists. Hence this patch
-> > > converts the global inode LRU to per-sb LRUs.
-> > > 
-> > > The patch only does rudimentary per-sb propotioning in the shrinker
-> > > infrastructure, as this gets removed when the per-sb shrinker
-> > > callouts are introduced later on.
-> > > 
-> > > ...
-> > >
-> > > +			list_move(&inode->i_list, &inode->i_sb->s_inode_lru);
-> > 
-> > It's a shape that s_inode_lru is still protected by inode_lock.  One
-> > day we're going to get in trouble over that lock.  Migrating to a
-> > per-sb lock would be logical and might help.
-> > 
-> > Did you look into this? 
-> 
-> Yes, I have. Yes, it's possible.  It's solving a different problem,
-> so I figured it can be done in a different patch set.
+It is useful to know on which CPU a sample was captured on.
+The information is captured with perf record -R but it was
+not printed out by perf report -D. This patch adds this.
 
-It almost all goes away in my inode lock splitup patches. Inode lru
-and dirty lists were the last things protected by the global lock
-there.
+When -R is not used, cpu is set to -1to indicate that
+the CPU is unknown (it is not captured).
 
-I am actually going to do per-zone lrus for these guys and per-zone
-locks (which is actually better than per-sb because it gives NUMA
-scalability within a single sb).
+Signed-off-by: Stephane Eranian <eranian@google.com>
 
-The dirty/writeback lists should probably be per-bdi locked.
-
-
+diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
+index 3592057..207da18 100644
+--- a/tools/perf/builtin-report.c
++++ b/tools/perf/builtin-report.c
+@@ -157,8 +157,9 @@ static int process_sample_event(event_t *event, struct perf_session *session)
+ 
+ 	event__parse_sample(event, session->sample_type, &data);
+ 
+-	dump_printf("(IP, %d): %d/%d: %#Lx period: %Ld\n", event->header.misc,
+-		    data.pid, data.tid, data.ip, data.period);
++	dump_printf("(IP, %d): %d/%d: %#Lx period: %Ld cpu:%d\n",
++		    event->header.misc, data.pid, data.tid, data.ip,
++		    data.period, data.cpu);
+ 
+ 	if (session->sample_type & PERF_SAMPLE_CALLCHAIN) {
+ 		unsigned int i;
+diff --git a/tools/perf/util/event.c b/tools/perf/util/event.c
+index 50771b5..58cb96b 100644
+--- a/tools/perf/util/event.c
++++ b/tools/perf/util/event.c
+@@ -770,7 +770,8 @@ int event__parse_sample(event_t *event, u64 type, struct sample_data *data)
+ 		u32 *p = (u32 *)array;
+ 		data->cpu = *p;
+ 		array++;
+-	}
++	} else
++		data->cpu = -1;
+ 
+ 	if (type & PERF_SAMPLE_PERIOD) {
+ 		data->period = *array;
