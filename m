@@ -1,48 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756033Ab0E1TpA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 May 2010 15:45:00 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:46388 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754081Ab0E1To5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 May 2010 15:44:57 -0400
-Date: Fri, 28 May 2010 21:43:02 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Mike Frysinger <vapier.adi@gmail.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-       Roland McGrath <roland@redhat.com>, linux-sh@vger.kernel.org,
-       uclinux-dist-devel@blackfin.uclinux.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/2] blackfin: ptrace mm/sram_list fixes
-Message-ID: <20100528194302.GA14140@redhat.com>
-References: <20100521183512.4477F40476@magilla.sf.frob.com> <20100522165320.GA19573@redhat.com> <25539.1274711817@redhat.com> <20100524151445.GA6393@redhat.com> <17134.1274778852@redhat.com> <20100525102345.GA23574@redhat.com> <AANLkTilT3D8c86LYK2DxcNpM2F3D8iCbgY_sfUg8h58p@mail.gmail.com> <20100526124006.GA28358@redhat.com> <20100527195544.GA25935@redhat.com> <AANLkTik5mWPysArnlyZKdnjUxNzyde8myKCbTvxJIj8G@mail.gmail.com>
+	id S1755600Ab0E1Tr5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 May 2010 15:47:57 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:42333 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752631Ab0E1Try (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 May 2010 15:47:54 -0400
+Date: Fri, 28 May 2010 20:47:53 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Sage Weil <sage@newdream.net>
+Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
+Subject: Re: [git pull] vfs pile, part 2
+Message-ID: <20100528194753.GL31073@ZenIV.linux.org.uk>
+References: <20100528155102.GK31073@ZenIV.linux.org.uk>
+ <Pine.LNX.4.64.1005281221090.27944@cobra.newdream.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <AANLkTik5mWPysArnlyZKdnjUxNzyde8myKCbTvxJIj8G@mail.gmail.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <Pine.LNX.4.64.1005281221090.27944@cobra.newdream.net>
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/27, Mike Frysinger wrote:
->
-> > BTW. Obviously sys_sram_alloc() can create multiple sram_list_struct
-> > nodes with the same ->addr (with or without this patch), I hope this
-> > is fine.
->
-> how so ?
+On Fri, May 28, 2010 at 12:27:51PM -0700, Sage Weil wrote:
+> Hi Al,
+> 
+> There are two patches
+> 
+>  1f24668c vfs: make real_lookup do dentry revalidation with i_mutex held
+>  982ddae4 vfs: clean up do_lookup()
+> 
+> that were in your for-next a few weeks back but aren't anymore (they're 
+> still in your autofs branch).  I just want to make sure those don't get 
+> lost if they're not going to make it upstream this time around?  I think 
+> they've been in vfs-2.6.git limbo for two release cycles now.
 
-OOPS. Of course it can't, I was wrong.
+My apologies, I thought you'd been Cc'd on the discussions with Ian concerning
+that stuff, but...
 
-> Blackfin is a nommu arch, so there should be no aliasing
-> issues.  each of the individual L1 sub-allocators manage a different
-> address range, and none of those should return an address that is
-> already in use.
+The bottom line: "autofs4: always use lookup for lookup" is needed for them
+and it had to be reverted since it'd been FUBAR.
 
-Yes, I greatly misunderstood this code, to the point I didn't notice
-where this "addr" actually comes from.
+Details: we really, *really* can not do things in ->d_revalidate() and count
+on ->lookup() to come and finish them.  Think for a minute and you'll see why -
+between these two calls we allocate a dentry to pass to ->lookup().  What
+happens if that allocation fails?
 
-Thanks for your explanation,
-
-Oleg.
-
+And without that patch your stuff breaks autofs4.  So it's waiting for the
+->d_revalidate() interface redesign.  Hopefully in the coming cycle...
