@@ -1,81 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758935Ab0E1PyH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 May 2010 11:54:07 -0400
-Received: from ist.d-labs.de ([213.239.218.44]:35768 "EHLO mx01.d-labs.de"
+	id S1758942Ab0E1Pzy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 May 2010 11:55:54 -0400
+Received: from hera.kernel.org ([140.211.167.34]:60739 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758892Ab0E1PyE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 May 2010 11:54:04 -0400
-Date: Fri, 28 May 2010 17:53:54 +0200
-From: Florian Mickler <florian@mickler.org>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>,
-       Arve =?ISO-8859-15?Q?Hj=F8nnev=E5?= =?ISO-8859-15?Q?g?= 
-	<arve@android.com>,
-       Matthew Garrett <mjg59@srcf.ucam.org>,
-       Alan Stern <stern@rowland.harvard.edu>,
-       Thomas Gleixner <tglx@linutronix.de>,
-       LKML <linux-kernel@vger.kernel.org>, felipe.balbi@nokia.com,
-       Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
-       Linux PM <linux-pm@lists.linux-foundation.org>
-Subject: Re: [linux-pm] [PATCH 0/8] Suspend block api (version 8)
-Message-ID: <20100528175354.7e6a73d1@schatten.dmk.lab>
-In-Reply-To: <1275058794.27810.9571.camel@twins>
-References: <20100527222514.0a1710bf@lxorguk.ukuu.org.uk>
-	<Pine.LNX.4.44L0.1005271730180.3239-100000@iolanthe.rowland.org>
-	<20100527230806.4deb6de3@lxorguk.ukuu.org.uk>
-	<20100527220949.GB10602@srcf.ucam.org>
-	<20100527232357.6d14fdb2@lxorguk.ukuu.org.uk>
-	<AANLkTil6Bo7qZltbLzHJjIDyruKHFQEURpe5LPJEpTws@mail.gmail.com>
-	<20100528101755.7b5f6b8a@lxorguk.ukuu.org.uk>
-	<AANLkTilYHKKmQePBGW3LVLjUZy7HXHQku2Iub-LWGBm6@mail.gmail.com>
-	<20100528132138.2d802d77@lxorguk.ukuu.org.uk>
-	<1275049836.1645.1.camel@laptop>
-	<20100528140236.3214929e@lxorguk.ukuu.org.uk>
-	<1275052817.1645.64.camel@laptop>
-	<1275058794.27810.9571.camel@twins>
-X-Mailer: Claws Mail 3.7.5 (GTK+ 2.18.9; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1758897Ab0E1Pzw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 May 2010 11:55:52 -0400
+Message-ID: <4BFFE742.2060205@kernel.org>
+Date: Fri, 28 May 2010 17:54:42 +0200
+From: Tejun Heo <tj@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.1.9) Gecko/20100317 Thunderbird/3.0.4
+MIME-Version: 1.0
+To: "Michael S. Tsirkin" <mst@redhat.com>
+CC: Oleg Nesterov <oleg@redhat.com>, Sridhar Samudrala <sri@us.ibm.com>,
+       netdev <netdev@vger.kernel.org>, lkml <linux-kernel@vger.kernel.org>,
+       "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Dmitri Vorobiev <dmitri.vorobiev@movial.com>,
+       Jiri Kosina <jkosina@suse.cz>, Thomas Gleixner <tglx@linutronix.de>,
+       Ingo Molnar <mingo@elte.hu>, Andi Kleen <ak@linux.intel.com>
+Subject: Re: [PATCH 2/3] workqueue: Add an API to create a singlethread	workqueue
+ attached to the current task's cgroup
+References: <1274227491.2370.110.camel@w-sridhar.beaverton.ibm.com> <20100527091426.GA6308@redhat.com> <20100527124448.GA4241@redhat.com> <20100527131254.GB7974@redhat.com> <4BFE9ABA.6030907@kernel.org> <20100527163954.GA21710@redhat.com> <4BFEA434.6080405@kernel.org> <20100527173207.GA21880@redhat.com> <4BFEE216.2070807@kernel.org> <20100528150830.GB21880@redhat.com>
+In-Reply-To: <20100528150830.GB21880@redhat.com>
+X-Enigmail-Version: 1.0.1
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 28 May 2010 15:54:45 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 28 May 2010 16:59:54 +0200
-Peter Zijlstra <peterz@infradead.org> wrote:
+Hello,
 
-> So lets look at the problem, we want to be frugal with power, this means
-> that the system as a whole should strive to do nothing. And we want to
-> enforce this as strict as possible.
+On 05/28/2010 05:08 PM, Michael S. Tsirkin wrote:
+> Well, we have create_singlethread_workqueue, right?
+> This is not very different ... is it?
+> 
+> Just copying structures and code from workqueue.c,
+> adding vhost_ in front of it will definitely work:
 
-An interesting thought might be to add the costs of staying in
-a state versus going to a lower power state into consideration. 
+Sure it will, but you'll probably be able to get away with much less.
 
-If the system is busy doing stuff it would need to do anyway (today
-stuff that is guarded/annotated by the suspend blockers) , the costs for
-not being in suspend have to be paid anyway. So it is opportune for
-processes to run. Even if they by themselves would not justify the
-system running. 
+> there is nothing magic about the workqueue library.
+> But this just involves cut and paste which might be best avoided.
 
-If instead nothing system-relevant has to be done, the costs of running
-anything non-relevant is the full amount of battery-life that could
-be saved by suspending + (some minor) running costs. 
+What I'm saying is that some magic needs to be added to workqueue and
+if you add this single(!) exception, it will have to be backed out
+pretty soon, so it would be better to do it properly now.
 
-Also if there is much work to do (many tasks) its more likely that it's
-good to do the work.
+> One final idea before we go the cut and paste way: how about
+> 'create_workqueue_from_task' that would get a thread and have workqueue
+> run there?
 
-something along the lines :
+You can currently depend on that implementation detail but it's not
+the workqueue interface is meant to do.  The single threadedness is
+there as execution ordering and concurrency specification and it
+doesn't (or rather won't) necessarily mean that a specific single
+thread is bound to certain workqueue.
 
-(amount of energy saved by being in suspend) / (number of tasks we
-would run if we werent suspended) *
-some_parameter_for_this_tasks_importance (which falls clearly into
-scheduler-territory)
+Can you please direct me to have a look at the code.  I'll be happy to
+do the conversion for you.
 
-And if this goes above some threshold we run it.
+Thanks.
 
-But this isn't easily done in a robust way.
-Also it complicates things. 
-
-Cheers,
-Flo
+-- 
+tejun
