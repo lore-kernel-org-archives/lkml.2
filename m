@@ -1,72 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756240Ab0E1IYw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 May 2010 04:24:52 -0400
-Received: from fallback.mail.elte.hu ([157.181.151.13]:37202 "EHLO
-	fallback.mail.elte.hu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754683Ab0E1IYt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 May 2010 04:24:49 -0400
-Date: Fri, 28 May 2010 10:24:40 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: David Miller <davem@davemloft.net>
-Cc: eric.dumazet@gmail.com, torvalds@linux-foundation.org, tglx@linutronix.de,
-       akpm@linux-foundation.org, netdev@vger.kernel.org,
+	id S1757263Ab0E1IZJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 May 2010 04:25:09 -0400
+Received: from mail.gmx.net ([213.165.64.20]:38767 "HELO mail.gmx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1756949Ab0E1IZC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 May 2010 04:25:02 -0400
+X-Authenticated: #5108953
+X-Provags-ID: V01U2FsdGVkX1//3wQhIHH/97tZfHQIMzLVOFNAqulWqGk6l6r1nB
+	dSrKk5iz+Nydlm
+From: Toralf Foerster <toralf.foerster@gmx.de>
+To: Steven Rostedt <rostedt@goodmis.org>
+Subject: [PATCH] streamline_config.pl: make a variable local
+Date: Fri, 28 May 2010 10:24:59 +0200
+User-Agent: KMail/1.13.3 (Linux/2.6.34; KDE/4.4.3; i686; ; )
+Cc: zippel@linux-m68k.org, linux-kbuild@vger.kernel.org,
        linux-kernel@vger.kernel.org
-Subject: Re: boot crash in arp_error_report()
-Message-ID: <20100528082440.GA4168@elte.hu>
-References: <alpine.LFD.2.00.1005271213091.3689@i5.linux-foundation.org>
- <1274989637.2446.1.camel@edumazet-laptop>
- <1274991504.2446.13.camel@edumazet-laptop>
- <20100527.161011.104042698.davem@davemloft.net>
- <20100528080531.GA9893@elte.hu>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100528080531.GA9893@elte.hu>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
-	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
-	[score: 0.0006]
+Content-Type: Text/Plain;
+  charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201005281025.00358.toralf.foerster@gmx.de>
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+to prevent a possible pitfall
 
-* Ingo Molnar <mingo@elte.hu> wrote:
+Signed-off-by: Toralf Foerster <toralf.foerster@gmx.de>
+---
+ scripts/kconfig/streamline_config.pl |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-> 
-> * David Miller <davem@davemloft.net> wrote:
-> 
-> > From: Eric Dumazet <eric.dumazet@gmail.com>
-> > Date: Thu, 27 May 2010 22:18:24 +0200
-> > 
-> > > [PATCH] net: fix __neigh_event_send()
-> > > 
-> > > commit 7fee226ad23 (net: add a noref bit on skb dst) missed one spot
-> > > where an skb is enqueued, with a possibly not refcounted dst entry.
-> > > 
-> > > __neigh_event_send() inserts skb into arp_queue, so we must make sure
-> > > dst entry is refcounted, or dst entry can be freed by garbage collector
-> > > after caller exits from rcu protected section.
-> > > 
-> > > Reported-by: Ingo Molnar <mingo@elte.hu>
-> > > Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
-> > 
-> > Applied, thanks Eric.
-> > 
-> > Ingo can we get a confirmation that this fixes the bootup crash?
-> 
-> Sure, will let you know how it goes.
+diff --git a/scripts/kconfig/streamline_config.pl b/scripts/kconfig/streamline_config.pl
+index afbd54a..9726946 100644
+--- a/scripts/kconfig/streamline_config.pl
++++ b/scripts/kconfig/streamline_config.pl
+@@ -307,7 +307,7 @@ close (LIN);
+ my %configs;
+ foreach my $module (keys(%modules)) {
+     if (defined($objects{$module})) {
+-       @arr = @{$objects{$module}};
++       my @arr = @{$objects{$module}};
+        foreach my $conf (@arr) {
+            $configs{$conf} = $module;
+        }
+-- 
+1.6.4.4
 
-Preliminary testing shows that Eric's patch solves the problem.
 
-Tested-by: Ingo Molnar <mingo@elte.hu>
+-- 
+MfG/Sincerely
+Toralf Foerster
 
-Thanks!
+pgp finger print: 7B1A 07F4 EC82 0F90 D4C2 8936 872A E508 7DB6 9DA3
 
-	Ingo
