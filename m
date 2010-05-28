@@ -1,69 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754096Ab0E1NDV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 May 2010 09:03:21 -0400
-Received: from smtp-out.google.com ([74.125.121.35]:48501 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751650Ab0E1NDU (ORCPT
+	id S1755036Ab0E1NHl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 May 2010 09:07:41 -0400
+Received: from smtp.nokia.com ([192.100.122.230]:44589 "EHLO
+	mgw-mx03.nokia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752110Ab0E1NHj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 May 2010 09:03:20 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=mime-version:in-reply-to:references:date:message-id:subject:from:to:
-	cc:content-type:x-system-of-record;
-	b=BcTxhJF8xO2+aaDuwg5s2qB8lgCuHOpdzVvIthmzDKttvszZfNPO3jxo09iRf69sR
-	hCkmP54FisaK1t8WkNWWg==
+	Fri, 28 May 2010 09:07:39 -0400
+Message-ID: <4BFFC55B.5050908@nokia.com>
+Date: Fri, 28 May 2010 16:30:03 +0300
+From: Igor Stoppa <igor.stoppa@nokia.com>
+User-Agent: Mozilla-Thunderbird 2.0.0.22 (X11/20091109)
 MIME-Version: 1.0
-In-Reply-To: <20100528125728.GP9874@ghostprotocols.net>
-References: <4bff964c.e88cd80a.3106.7d31@mx.google.com>
-	<20100528125728.GP9874@ghostprotocols.net>
-Date: Fri, 28 May 2010 15:03:15 +0200
-Message-ID: <AANLkTin33AdxO_yzRlZUTzoV9JtqaNqfYR2kXhOvke1P@mail.gmail.com>
-Subject: Re: [PATCH] perf: make perf report -D print sampled CPU
-From: Stephane Eranian <eranian@google.com>
-To: Arnaldo Carvalho de Melo <acme@infradead.org>
-Cc: linux-kernel@vger.kernel.org, peterz@infradead.org, mingo@elte.hu,
-       paulus@samba.org, davem@davemloft.net, fweisbec@gmail.com,
-       perfmon2-devel@lists.sf.net, eranian@gmail.com, tzanussi@gmail.com,
-       Arun Sharma <aruns@google.com>
-Content-Type: text/plain; charset=UTF-8
-X-System-Of-Record: true
+To: ext Theodore Tso <tytso@mit.edu>
+CC: Alan Cox <alan@lxorguk.ukuu.org.uk>, Peter Zijlstra <peterz@infradead.org>,
+       LKML <linux-kernel@vger.kernel.org>,
+       Florian Mickler <florian@mickler.org>,
+       Linux PM <linux-pm@lists.linux-foundation.org>,
+       Thomas Gleixner <tglx@linutronix.de>,
+       Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
+       "Balbi Felipe (Nokia-D/Helsinki)" <felipe.balbi@nokia.com>
+Subject: Re: [linux-pm] [PATCH 0/8] Suspend block api (version 8)
+References: <20100527222514.0a1710bf@lxorguk.ukuu.org.uk>	<Pine.LNX.4.44L0.1005271730180.3239-100000@iolanthe.rowland.org>	<20100527230806.4deb6de3@lxorguk.ukuu.org.uk>	<20100527220949.GB10602@srcf.ucam.org>	<20100527232357.6d14fdb2@lxorguk.ukuu.org.uk>	<20100527223605.GB11364@srcf.ucam.org>	<20100527235546.09f3ce8a@lxorguk.ukuu.org.uk>	<20100528043114.GC26177@thunk.org>	<20100528103713.0a7952d9@lxorguk.ukuu.org.uk> <06439EEF-9404-45DC-AB37-5CC0486CCF6C@mit.edu> <4BFFBBE6.50604@nokia.com> <67B0FE92-F943-470C-9B23-27BF3F7E81DB@mit.edu>
+In-Reply-To: <67B0FE92-F943-470C-9B23-27BF3F7E81DB@mit.edu>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 28 May 2010 13:06:55.0652 (UTC) FILETIME=[A5DFFE40:01CAFE66]
+X-Nokia-AV: Clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 28, 2010 at 2:57 PM, Arnaldo Carvalho de Melo
-<acme@infradead.org> wrote:
-> Em Fri, May 28, 2010 at 12:08:01PM +0200, Stephane Eranian escreveu:
->> It is useful to know on which CPU a sample was captured on.
->> The information is captured with perf record -R but it was
->> not printed out by perf report -D. This patch adds this.
->>
->> When -R is not used, cpu is set to -1to indicate that
->> the CPU is unknown (it is not captured).
->>
->> Signed-off-by: Stephane Eranian <eranian@google.com>
->
-> It conflicts with Arun's patch for sorting by CPU that I started playing with
-> yesterday, but in a good way, i.e. printing the CPU at that dump_printf spot
-> was one of the changs I made in Arun's patch as well.
->
-Yes, I realized that afterwards.
+ext Theodore Tso wrote:
 
-> [root@emilia linux-2.6-tip]# perf report -D | grep SAMPLE | head -6
-> 0x10240 [0x28]: PERF_RECORD_SAMPLE(IP, 1): 2 17252/17252: 0xffffffff81253362 period: 1894446
-> 0x10268 [0x28]: PERF_RECORD_SAMPLE(IP, 1): 2 17252/17252: 0xffffffff81253338 period: 1894446
-> 0x10290 [0x28]: PERF_RECORD_SAMPLE(IP, 1): 2 17252/17252: 0xffffffff8125300d period: 1905103
-> 0x102b8 [0x28]: PERF_RECORD_SAMPLE(IP, 1): 0 0/0: 0xffffffff8109117d period: 1838260
-> 0x102e0 [0x28]: PERF_RECORD_SAMPLE(IP, 1): 0 293/293: 0xffffffff8101ace6 period: 352697
-> 0x10308 [0x28]: PERF_RECORD_SAMPLE(IP, 1): 0 1763/1763: 0xffffffff8101ace6 period: 352697
-> [root@emilia linux-2.6-tip]#
 >
-> I added it just before the pid/tid but prefixing it with "cpu: " is as good as
-> doing it that way.
 >
-Fine. I think there needs to be some documenation explaining the structure
-of the line here. I had to dig into the code to understand it.
+> Well, yes, if the company strategy is to have a walled garden ala the Apple iPhone App store, life is much simpler.   
 
-> I'm applying both patches after some tests,
->
-Thanks.
+No, the strategy is to try to merge commercial and community needs.
+
+We do support signed repositories.
+
+The community has control on the public one.
+
+Members are encouraged to help by alpha/beta testing apps that are under 
+development.
+They even organize testing marathons.
+
+> But if the requirements mean that apps don't need preapproval, the requirements on the platform get harder.
+
+That's a wrong way to put it. By installing something on your phone you 
+_do_ approve it.
+
+>    I think the take-home here is we have a requirement that the platform behave well even without someone screening the applications for the "default SW repository".
+
+What it meant is totally different. Regardless how much effort you put 
+into twisting it.
+It means that different repositories provide different level of trust.
+
+As Debian user, I don't blame anybody other than myself is something 
+I've pulled from unstable or experimental breaks my system.
+Debian by default doesn't ship with either unstable or experimental enabled.
+
+And using suspend blockers doesn't really solve the problem of who to 
+trust to take the block and who not.
+
+Or we'll have to have suspend-blockers-blockers and so on ...
+
+Like it or not, QoS and resource management - in some form - are needed 
+to allow trusted application to provide valuable feedback, while 
+filtering requests from untrusted applications.
+
+You might want to add dynamic profiling and try to use some heuristic to 
+have the system doing runtime evaluation of good vs bad applications, 
+but still some discrimination mechanism will be required.
+
+
+igor
