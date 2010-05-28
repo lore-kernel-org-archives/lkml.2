@@ -1,48 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757582Ab0E1JOD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 May 2010 05:14:03 -0400
-Received: from one.firstfloor.org ([213.235.205.2]:53869 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753028Ab0E1JN7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 May 2010 05:13:59 -0400
-Date: Fri, 28 May 2010 11:13:54 +0200
-From: Andi Kleen <andi@firstfloor.org>
-To: TAMUKI Shoichi <tamuki@linet.gr.jp>
-Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
-       Anton Blanchard <anton@samba.org>, Andi Kleen <andi@firstfloor.org>,
-       Andy Green <andy@warmcat.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] panic: keep blinking in spite of long spin timer mode
-Message-ID: <20100528091354.GA16587@basil.fritz.box>
-References: <201005272156.AA00412@tamuki.linet.gr.jp>
+	id S1757500Ab0E1JPX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 May 2010 05:15:23 -0400
+Received: from 8bytes.org ([88.198.83.132]:43042 "EHLO 8bytes.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753028Ab0E1JPV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 May 2010 05:15:21 -0400
+Date: Fri, 28 May 2010 11:15:20 +0200
+From: Joerg Roedel <joro@8bytes.org>
+To: Julia Lawall <julia@diku.dk>
+Cc: Wolfram Sang <w.sang@pengutronix.de>, Nicolas Palix <npalix@diku.dk>,
+       Randy Dunlap <rdunlap@xenotime.net>, Roland Dreier <rdreier@cisco.com>,
+       Joe Perches <joe@perches.com>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       "David S. Miller" <davem@davemloft.net>, Michal Marek <mmarek@suse.cz>,
+       Sam Ravnborg <sam@ravnborg.org>, Gilles Muller <Gilles.Muller@lip6.fr>,
+       linux-kernel@vger.kernel.org, linux-kbuild@vger.kernel.org,
+       cocci@diku.dk, Kernel Janitors <kernel-janitors@vger.kernel.org>
+Subject: Re: [PATCH 0/4] Add a Coccinelle front-end script
+Message-ID: <20100528091520.GL1237@8bytes.org>
+References: <1273508667-5152-1-git-send-email-npalix@diku.dk> <20100528070921.GK1237@8bytes.org> <20100528072504.GB3344@pengutronix.de> <Pine.LNX.4.64.1005280931230.9138@ask.diku.dk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <201005272156.AA00412@tamuki.linet.gr.jp>
-User-Agent: Mutt/1.5.17 (2007-11-01)
+In-Reply-To: <Pine.LNX.4.64.1005280931230.9138@ask.diku.dk>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 28, 2010 at 06:56:45AM +0900, TAMUKI Shoichi wrote:
-> To keep panic_timeout accuracy when running under a hypervisor, the
-> current implementation only spins on long time (1 second) calls to
-> mdelay.  That brings a good effect, but we must give up blinking even
-> if we have a panic_blink.
+On Fri, May 28, 2010 at 09:31:34AM +0200, Julia Lawall wrote:
+> On Fri, 28 May 2010, Wolfram Sang wrote:
 > 
-> This patch keeps blinking in spite of long spin timer mode.
+> > > Don't know how complex the coccinelle software itself is, but I think it
+> > > would make sense to ship it with the kernel-sources too. That together
+> > 
+> > You can easily find out by browsing the homepage of coccinelle.
 > 
-> We now have new kernel parameter (panic_longspin) to enable long spin
-> timer mode when kernel panics.  This is to be used when running under
-> a hypervisor (default is disable).
+> Over 100 000 lines of code.
 
-Sorry I didn't understand the problem based on your description.
+I just noticed that distributions already ship it in their repositories.
+So this its okay to keep it outside the kernel sources.
 
-What exactly is the problem with the current code under your
-hypervisor? 
+	Joerg
 
-New parameters for this are probably not the right answer,
-who would figure out when to set them.
-
--Andi
