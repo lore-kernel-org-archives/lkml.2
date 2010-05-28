@@ -1,173 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755996Ab0E1JTY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 May 2010 05:19:24 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:55119 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753893Ab0E1JTW convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 May 2010 05:19:22 -0400
-MIME-Version: 1.0
-In-Reply-To: <20100528104415.1403541a@schatten.dmk.lab>
-References: <Pine.LNX.4.44L0.1005271253240.3239-100000@iolanthe.rowland.org>
-	<alpine.LFD.2.00.1005271915540.3032@localhost.localdomain>
-	<20100527173118.GE2468@srcf.ucam.org>
-	<alpine.LFD.2.00.1005271959450.3032@localhost.localdomain>
-	<20100528104415.1403541a@schatten.dmk.lab>
-Date: Fri, 28 May 2010 02:18:06 -0700
-Message-ID: <AANLkTikXtk-f41-z8gXfXLNLqgGVa0z4d-qgIvwljbR-@mail.gmail.com>
-Subject: Re: [linux-pm] [PATCH 0/8] Suspend block api (version 8)
-From: =?ISO-8859-1?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>
-To: Florian Mickler <florian@mickler.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>,
-       Matthew Garrett <mjg59@srcf.ucam.org>,
+	id S1757628Ab0E1JWO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 May 2010 05:22:14 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:58156 "EHLO mx2.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753893Ab0E1JWM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 May 2010 05:22:12 -0400
+Date: Fri, 28 May 2010 11:21:37 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Arve Hj?nnev?g <arve@android.com>
+Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, Matthew Garrett <mjg59@srcf.ucam.org>,
        Alan Stern <stern@rowland.harvard.edu>,
-       Peter Zijlstra <peterz@infradead.org>, Paul@smtp1.linux-foundation.org,
-       LKML <linux-kernel@vger.kernel.org>, felipe.balbi@nokia.com,
+       Thomas Gleixner <tglx@linutronix.de>,
+       Peter Zijlstra <peterz@infradead.org>,
+       LKML <linux-kernel@vger.kernel.org>,
+       Florian Mickler <florian@mickler.org>, felipe.balbi@nokia.com,
        Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
-       Linux PM <linux-pm@lists.linux-foundation.org>,
-       Alan Cox <alan@lxorguk.ukuu.org.uk>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+       Linux PM <linux-pm@lists.linux-foundation.org>
+Subject: resume latency QoS support, unify suspend/resume into idle states
+Message-ID: <20100528092137.GD24058@elte.hu>
+References: <20100527222514.0a1710bf@lxorguk.ukuu.org.uk>
+ <Pine.LNX.4.44L0.1005271730180.3239-100000@iolanthe.rowland.org>
+ <20100527230806.4deb6de3@lxorguk.ukuu.org.uk>
+ <20100527220949.GB10602@srcf.ucam.org>
+ <20100527232357.6d14fdb2@lxorguk.ukuu.org.uk>
+ <AANLkTil6Bo7qZltbLzHJjIDyruKHFQEURpe5LPJEpTws@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <AANLkTil6Bo7qZltbLzHJjIDyruKHFQEURpe5LPJEpTws@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -1.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-1.0 required=5.9 tests=BAYES_20 autolearn=no SpamAssassin version=3.2.5
+	-1.0 BAYES_20               BODY: Bayesian spam probability is 5 to 20%
+	[score: 0.0965]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 28, 2010 at 1:44 AM, Florian Mickler <florian@mickler.org> wrote:
-> On Thu, 27 May 2010 20:05:39 +0200 (CEST)
-> Thomas Gleixner <tglx@linutronix.de> wrote:
->
->> On Thu, 27 May 2010, Matthew Garrett wrote:
->>
->> > On Thu, May 27, 2010 at 07:24:02PM +0200, Thomas Gleixner wrote:
->> >
->> > > Oh no. They paper over a short coming. If there is a pending event,
->> > > the kernel knows that. It just does not make use of this
->> > > information. Blockers just paper over this by sprinkling
->> > > do_not_suspend() calls all over the place. What a sensible solution.
->> >
->> > Even if we could use suspend-via-deep-idle-state on PCs, we still need
->> > to be able to enter suspend while the system isn't idle. There's two
->> > ways to do that:
->> >
->> > 1) Force the system to be idle. Doing this race-free is difficult.
->> >
->> > 2) Enter suspend even though the system isn't idle. Since we can't rely
->> > on the scheduler, we need drivers to know whether userspace has consumed
->> > all wakeup events before allowing the transition to occur. Doing so
->> > requires either in-kernel suspend blockers or something that's almost
->> > identical.
->>
->> You're just not getting it. If user space has consumed the event is
->> not relevant at all.
->>
->> What's relevant is whether the app has processed the event and reacted
->> accordingly. That's all that matters.
->>
->> Emptying your input queue is just the wrong indicator.
->>
->> And as I explained several times now: It does _NOT_ matter when the
->> app goes back in to blocked/idle state. You have to spend the CPU
->> cycles and power for that anyway.
->>
->> And for the apps which do not use the user space blockers the queue
->> empty indicator is just bullshit, because after emptying the queue the
->> kernel can go into suspend w/o any guarantee that the event has been
->> processed.
->>
->> The whole concept sucks, as it does not solve anything. Burning power
->> now or in 100ms is the same thing power consumption wise.
->>
->> Thanks,
->>
->>       tglx
->
-> Thomas,
-> do you really have a problem with the actual concept? Or do you just
-> don't like the way it is done?
->
-> IMO, the whole concept is defining 2 modes of operation:
->
-> 1. user interacts with the device (at least one suspend block active)
-> 2. user doesn't interact with the device (zero suspend block active)
 
-That is a somewhat odd way of looking at it. Yes we have two modes of
-operation, but an active suspend blocker does not mean that the user
-is interacting with the device. The way we use it, the "main" suspend
-blocker is active when the user interacts with the device (controlled
-by writing to /sys/power/state). All other suspend blockers are used
-to prevent suspend when user space has decided that the user is not
-interacting with the device. This includes blocking suspend in the
-kernel on key events which means the user actually is interacting with
-the device, even if user-space has not realized it yet. For other
-events, like an incoming phone call, we block suspend and make some
-noise with the hope that the user will start interacting with the
-device.
+* Arve Hj?nnev?g <arve@android.com> wrote:
 
->
-> In case 1. the device wants _everything_ sheduled as normal (and save
-> maximum possible power, i.e. runtime pm with every technology available
-> now).
->
-> In case 2. we want nothing sheduled (and save maximum possible power,
-> i.e. suspend)
->
-OK.
+> On Thu, May 27, 2010 at 3:23 PM, Alan Cox <alan@lxorguk.ukuu.org.uk> wrote:
+> > On Thu, 27 May 2010 23:09:49 +0100
+> > Matthew Garrett <mjg59@srcf.ucam.org> wrote:
+> >
+> >> On Thu, May 27, 2010 at 11:08:06PM +0100, Alan Cox wrote:
+> >>
+> >> > This is I believe robust (and has been implemented on some non x86
+> >> > boxes). It depends on not forcing running tasks into suspend. That is the
+> >> > key.
+> >>
+> >> We've already established that ACPI systems require us to force running
+> >> tasks into suspend. How do we avoid the race in that situation?
+> >
+> > Android phones do not have ACPI. Embedded platforms do not have ACPI. MID 
+> > x86 devices do not have ACPI.
+> 
+> Android does not only run on phones. It is possible that no android devices 
+> have ACPI, but I don't know that for a fact. What I do know is that people 
+> want to run Android on x86 hardware and supporting suspend could be very 
+> benficial.
 
-> And now, every application and every kernel driver annotates (on behalve
-> of the user) if it (possibly) interacts with the user.
->
+(If there's a sane framework then we'll fix x86 to fit into it and will deal 
+with quirks.)
 
-Applications that interact with the user do not normally need to block
-suspend. The user interacting with the device blocks suspend (just
-like with your desktop screen saver). Not every kernel driver needs to
-be annotated either, only potential wakeup events need to be
-annotated.
+> > I would imagine the existing laptops will handle power management limited 
+> > by the functionality they have available. Just like any other piece of 
+> > hardware.
+> 
+> I think existing laptops (and desktops) can benefit from opportunistic 
+> suspend support. If opportunistic suspend is used for auto-sleep after 
+> inactivity instead of forced suspend, the user space suspend blocker api 
+> will allow an application to delay this auto sleep until for instance a 
+> download completes. This part could also be done with a user-space IPC call, 
+> but having a standard kernel interface for it may make it more common. A 
+> less common case, but more critical, is RTC alarms. I know my desktops can 
+> wakeup at a specific time by programming an RTC alarm, but without suspend 
+> blockers how do you ensure that the system does not suspend right after the 
+> alarm triggered? I have a system that wakes up at specific times requested 
+> by my DVR application, but I cannot use this system for anything else unless 
+> I manually turn off the DVR application's auto-sleep feature. With suspend 
+> blockers and something like the android alarm driver, I could use this 
+> system for more than one application that have scheduled tasks and it would 
+> be more usable for interactive applications.
 
-> (Is this really the problematic bit, that userspace is giving
-> the kernel hints? Or is it that the hints are called "blocker"?)
->
-> We can only enter mode 2, if _nothing_ (claims) to interact with the
-> user.
->
+I really like the level of detail and care that went into suspend-blockers, 
+and i think the Android solution is very mature in terms of functionality 
+offered to users.
 
-If nothing blocks suspend. The reason to block suspend does not have
-to be direct user interaction.
+In terms of bringing this depth of functionality and control to the upstream 
+kernel, what do you think about Alan's QoS scheme, described in:
 
-> To integrate this with the current way of doing things, i gathered it
-> needs to be implemented as an idle-state that does the suspend()-call?
->
+   <20100528001514.28e593ef@lxorguk.ukuu.org.uk>
 
-I think it is better no not confuse this with idle. Since initiating
-suspend will cause the system to become not-idle, I don't think is is
-beneficial to initiate suspend from idle.
+?
 
-> Attributes of the idle states could be smth like this:
->
-> c3
->        cost-to-transition-to-this-state: X
->        powersavings-per-time: Y
->        expected time we stay in this state: relative short, there is a
->                timer sheduled
->        suspend-blockers: ignored
->
-> suspend
->        cost-to-transition-to-this-state: depends, how much drivers to
->        suspend, how much processes to freeze, how much state to save
->        powersavings-per-time: Y
->        expected time we stay in this state: long, independent of
->                sheduled timers
->        suspend-blockers: must not be activated
->
->
-> Now all transitions and opportunistic suspend could be handled by the
-> same algorithms.
->
-> Would this work?
->
+It's in essence suspend-blockers on steroids. It consists of two main 
+components:
 
-I'm not sure what you mean.
+ - Unify the 'suspended' state into the regular chain of idle states, and
+   create a single, coherent and transparent way we handle system idleness.
 
+ - Give apps a QoS attribute that allows them to express how long they can
+   afford to wait for a wakeup. (A downloading app would set it to say 50msecs,
+   and thus the kernel would know it automatically which method of idleness is 
+   still achievable. If all currently running apps have a max(QoS) attribute 
+   of infinite, then the kernel can suspend for an unlimited amount of time.)
 
--- 
-Arve Hjønnevåg
+AFAICS, and i have read through your suspend-blocker usecases, this should 
+handle all the usecases you listed - and some more. (please yell if that's not 
+so)
+
+Suspend-blockers are equivalent to: 'app sets idle QoS latency to 0 msecs'.
+
+(And on x86, for BIOS/CPU combos that allow it we can implement this scheme 
+too.)
+
+Thoughts?
+
+	Ingo
