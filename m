@@ -1,71 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758396Ab0E1LL7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 May 2010 07:11:59 -0400
-Received: from fxip-0047f.externet.hu ([88.209.222.127]:55722 "EHLO
-	pomaz-ex.szeredi.hu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756961Ab0E1LL5 (ORCPT
+	id S932561Ab0E1LMV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 May 2010 07:12:21 -0400
+Received: from ch-smtp01.sth.basefarm.net ([80.76.149.212]:42732 "EHLO
+	ch-smtp01.sth.basefarm.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755971Ab0E1LMU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 May 2010 07:11:57 -0400
-To: Changli Gao <xiaosuo@gmail.com>
-CC: miklos@szeredi.hu, axboe@kernel.dk, viro@zeniv.linux.org.uk,
-       mszeredi@suse.cz, linux-fsdevel@vger.kernel.org,
-       linux-kernel@vger.kernel.org
-In-reply-to: <AANLkTikJMLiaUIVohTPy4DLF4XmWsy7LCx0bDheq2aHM@mail.gmail.com>
-	(message from Changli Gao on Fri, 28 May 2010 18:55:23 +0800)
-Subject: Re: [PATCH v2 4/4] splice: fix updating sd->pos wrongly
-References: <1274885083-15735-1-git-send-email-xiaosuo@gmail.com> 
-	<E1OHw5Q-00020q-Dk@pomaz-ex.szeredi.hu> <AANLkTill8Y1RNTzZ9BFmVHPxLyx7CZIL5okqUCRVrrmH@mail.gmail.com> 
-	<E1OHwZC-0002KS-EJ@pomaz-ex.szeredi.hu> <AANLkTikJMLiaUIVohTPy4DLF4XmWsy7LCx0bDheq2aHM@mail.gmail.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8bit
-Message-Id: <E1OHxTV-0002u1-Vo@pomaz-ex.szeredi.hu>
-From: Miklos Szeredi <miklos@szeredi.hu>
-Date: Fri, 28 May 2010 13:11:37 +0200
+	Fri, 28 May 2010 07:12:20 -0400
+Message-ID: <4BFFA4EF.4050401@euromail.se>
+Date: Fri, 28 May 2010 13:11:43 +0200
+From: Henrik Rydberg <rydberg@euromail.se>
+User-Agent: Thunderbird 2.0.0.24 (X11/20100411)
+MIME-Version: 1.0
+To: Stefani Seibold <stefani@seibold.net>
+CC: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
+       andi@firstfloor.org, gregkh@suse.de, alan@lxorguk.ukuu.org.uk,
+       tytso@mit.edu, iws@ovro.caltech.edu
+Subject: Re: really generic, type save and type definable.
+References: <1273654167-31067-1-git-send-email-stefani@seibold.net>	 <4BFF7418.8020607@euromail.se> <1275042747.23895.5.camel@wall-e.seibold.net>
+In-Reply-To: <1275042747.23895.5.camel@wall-e.seibold.net>
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: 83.248.196.134
+X-Scan-Result: No virus found in message 1OHxTm-0004Nb-4o.
+X-Scan-Signature: ch-smtp01.sth.basefarm.net 1OHxTm-0004Nb-4o b9c72917c035c38f2b283f0354f1c94e
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 28 May 2010, Changli Gao wrote:
-> On Fri, May 28, 2010 at 6:13 PM, Miklos Szeredi <miklos@szeredi.hu> wrote:
-> > On Fri, 28 May 2010, Changli Gao wrote:
-> >> On Fri, May 28, 2010 at 5:42 PM, Miklos Szeredi <miklos@szeredi.hu> wrote:
-> >> > On Wed, 26 May 2010, Changli Gao wrote:
-> >> >> fix updating sd->pos wrongly.
-> >> >>
-> >> >> In error path, we don't need to updating sd->pos, if the file isn't seekable.
-> >> >
-> >> > This patch is nonsense.  Why should we handle sd->pos != 0 case
-> >> > differently?
-> >> >
-> >>
-> >> If the in file isn't seekable, its splice_read won't update *ppos, so
-> >> in the error path, we'd better not change it too. Otherwise, some
-> >> assumption will go wrong.
-> >
-> > That may be true, but the patch is still nonsense.
-> >
-> > Look, your patch is updating/not updating sd->pos based on whether it
-> > is zero or not.  It will prevent updating the position for sockets,
-> > but it will also prevent updating the position for regular files if
-> > the position is zero, which is really not what we want.
+Stefani Seibold wrote:
+> Am Freitag, den 28.05.2010, 09:43 +0200 schrieb Henrik Rydberg:
+>> stefani@seibold.net wrote:
+>> [...]
+>>> The main goal was to provide an API which is very intuitive, save and easy
+>>> to use. So linux will get now a powerful fifo API which provides all what 
+>>> a developer needs. This will save in the future a lot of kernel space, since
+>>> there is no need to write an own implementation. Most of the device driver 
+>>> developers need a fifo, and also deep kernel development will gain benefit 
+>>> from this API.
+>> The meaning of the term "multiple readers" referred to in the header is somewhat
+>> ambiguous. It could in principle refer to concurrent reading of the same
+>> position, or concurrent reading from different positions. Imaginably, those
+>> cases also have different locking behavior.
+>>
+>> What happens if two fifos are initialized with the same memory buffer?
+>>
 > 
-> I think you misread my patch.
+> That would be a big nonsense! Tell me a real use case for such kind of
+> request...
 
-Right :)
+I am referring to a buffer where one thread writes data to the queue, and
+several other threads read the _same_ data from the queue. Such a queue would
+most likely have separate storage for the (buffer, head) on one hand, and the
+tails on the other hand. I was interested in whether anyone had put any thought
+into it, in particular with regard to a possible lock-less implementation.
 
->  Before checking the sd->pos, sd->pos
-> already is updated with the value returned by splice_read(), so if in
-> file is seekabble, sd->pos is non-zero when I checking it.
+I understand that it is not a good idea to use the same memory buffer in your
+kfifo implementation, I was merely suggesting the documentation say so as well.
 
-I see the logic now.  But it's really confusing, at least some
-comments would be needed.
+> 
+>> What about one-to-many and many-to-one cases? The input system and the logging
+>> facilities could serve as examples where such buffers would be useful.
+>>
+> 
+> There is no ne-to-many and many-to-one cases since the API will handle
+> this. You can not read more data then fit in the fifo, also u can not
+> write more data the fifo can handle.
 
-But I think it would be better not to try reusing sd->pos for reading,
-but supplying an "loff_t *read_ppos" to splice_direct_to_actor and
-leaving sd->pos alone (for the write side to use and update as
-necessary).
+I am not sure is this comment means "the API will not allow it", or if we simply
+got off on the wrong foot. If there is no interest in a one-to-many buffer, all
+is fine. Otherwise, this thread seems like an appropriate place for such a
+discussion, does it not?
 
-Thanks,
-Miklos
+Henrik
