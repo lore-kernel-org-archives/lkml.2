@@ -1,98 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753811Ab0E1S3L (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 May 2010 14:29:11 -0400
-Received: from hera.kernel.org ([140.211.167.34]:50540 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752627Ab0E1S3H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 May 2010 14:29:07 -0400
-Date: Fri, 28 May 2010 18:27:40 GMT
-From: tip-bot for Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-kernel@vger.kernel.org, anton@samba.org, hpa@zytor.com,
-       mingo@redhat.com, torvalds@linux-foundation.org,
-       linuxppc-dev@lists.ozlabs.org, peterz@infradead.org,
-       srostedt@redhat.com, tglx@linutronix.de, sfr@canb.auug.org.au,
-       mingo@elte.hu
-Reply-To: mingo@redhat.com, hpa@zytor.com, anton@samba.org,
-       linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-       peterz@infradead.org, linuxppc-dev@lists.ozlabs.org,
-       srostedt@redhat.com, sfr@canb.auug.org.au, tglx@linutronix.de,
-       mingo@elte.hu
-In-Reply-To: <20100528150842.d5a751ba.sfr@canb.auug.org.au>
-References: <20100528150842.d5a751ba.sfr@canb.auug.org.au>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/urgent] tracing, powerpc: Fix for tracepoint API change
-Message-ID: <tip-a578f4255763514dc9d0c4f2a60cf5b9323e0b6b@git.kernel.org>
-Git-Commit-ID: a578f4255763514dc9d0c4f2a60cf5b9323e0b6b
-X-Mailer: tip-git-log-daemon
+	id S1753869Ab0E1SbH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 May 2010 14:31:07 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:49116 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752627Ab0E1SbC convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 May 2010 14:31:02 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :content-type:content-transfer-encoding;
+        b=kHcUU8zQeIjWQ7Bxx2gQ25LxHjWdhTmHTf4GVt770Xq0gsfcmTxZdhe1EtevMLzvho
+         OhQWCsxG12LTkzAIAv4Oi+4FJSn7c2/+F37yIhWCY2RNLMLx0dKxg013WwxOzPftCwWf
+         0qqExL5LXzIrKPeqgqdykUejYOKCXCtGxape8=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 28 May 2010 18:27:42 +0000 (UTC)
+In-Reply-To: <1275022651.2446.35.camel@edumazet-laptop>
+References: <AANLkTinUsKL0kqAjRG95xcrqjWPUlNn1TPD21wIJjShS@mail.gmail.com>
+	<1275022651.2446.35.camel@edumazet-laptop>
+Date: Fri, 28 May 2010 12:31:00 -0600
+Message-ID: <AANLkTinROjXlrxl_vTAuTyAfj0bqPZiJJpBDa8lkc8IT@mail.gmail.com>
+Subject: Re: Question about SIOCGIFCONF
+From: Jeffrey Merkey <jeffmerkey@gmail.com>
+To: Eric Dumazet <eric.dumazet@gmail.com>, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  a578f4255763514dc9d0c4f2a60cf5b9323e0b6b
-Gitweb:     http://git.kernel.org/tip/a578f4255763514dc9d0c4f2a60cf5b9323e0b6b
-Author:     Stephen Rothwell <sfr@canb.auug.org.au>
-AuthorDate: Fri, 28 May 2010 15:08:42 +1000
-Committer:  Ingo Molnar <mingo@elte.hu>
-CommitDate: Fri, 28 May 2010 16:27:11 +0200
+Actually,  I verified last night it only returns interfaces which have
+been bound to an IP address.  It does not return any interfaces which
+are active but for which an IP address has not been bound.  So what I
+said is accurate.  it's fucking busted.
 
-tracing, powerpc: Fix for tracepoint API change
+/proc/net/dev returns ALL interfaces.  this ioctl does not.
 
-Commit 38516ab59fbc5b3bb278cf5e1fe2867c70cff32e "tracing: Let
-tracepoints have data passed to tracepoint callbacks" requires
-this fixup to the powerpc code.
+Jeff
 
-Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
-Acked-by: Steven Rostedt <srostedt@redhat.com>
-Cc: Linus <torvalds@linux-foundation.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: ppc-dev <linuxppc-dev@lists.ozlabs.org>
-Cc: paulus@samba.org
-Cc: Anton Blanchard ZZ <anton@samba.org>
-LKML-Reference: <20100528150842.d5a751ba.sfr@canb.auug.org.au>
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
----
- arch/powerpc/platforms/pseries/hvCall_inst.c |   10 +++++-----
- 1 files changed, 5 insertions(+), 5 deletions(-)
-
-diff --git a/arch/powerpc/platforms/pseries/hvCall_inst.c b/arch/powerpc/platforms/pseries/hvCall_inst.c
-index 1fefae7..e19ff02 100644
---- a/arch/powerpc/platforms/pseries/hvCall_inst.c
-+++ b/arch/powerpc/platforms/pseries/hvCall_inst.c
-@@ -102,7 +102,7 @@ static const struct file_operations hcall_inst_seq_fops = {
- #define CPU_NAME_BUF_SIZE	32
- 
- 
--static void probe_hcall_entry(unsigned long opcode, unsigned long *args)
-+static void probe_hcall_entry(void *ignored, unsigned long opcode, unsigned long *args)
- {
- 	struct hcall_stats *h;
- 
-@@ -114,7 +114,7 @@ static void probe_hcall_entry(unsigned long opcode, unsigned long *args)
- 	h->purr_start = mfspr(SPRN_PURR);
- }
- 
--static void probe_hcall_exit(unsigned long opcode, unsigned long retval,
-+static void probe_hcall_exit(void *ignored, unsigned long opcode, unsigned long retval,
- 			     unsigned long *retbuf)
- {
- 	struct hcall_stats *h;
-@@ -140,11 +140,11 @@ static int __init hcall_inst_init(void)
- 	if (!firmware_has_feature(FW_FEATURE_LPAR))
- 		return 0;
- 
--	if (register_trace_hcall_entry(probe_hcall_entry))
-+	if (register_trace_hcall_entry(probe_hcall_entry, NULL))
- 		return -EINVAL;
- 
--	if (register_trace_hcall_exit(probe_hcall_exit)) {
--		unregister_trace_hcall_entry(probe_hcall_entry);
-+	if (register_trace_hcall_exit(probe_hcall_exit, NULL)) {
-+		unregister_trace_hcall_entry(probe_hcall_entry, NULL);
- 		return -EINVAL;
- 	}
- 
+On Thu, May 27, 2010 at 10:57 PM, Eric Dumazet <eric.dumazet@gmail.com> wrote:
+> Le jeudi 27 mai 2010 à 21:02 -0600, Jeffrey Merkey a écrit :
+>> Why is SIOGICONF only instrumented to return a single interface lo for
+>> example.  I noticed that ifconfig always uses /proc/net/dev but the
+>> older SIOCGIFCONF ioctl seems to be busted.  Anyone have an
+>> explanation or is this just how the shit is these days or is the
+>> fucking thing broken (seems to be). ?
+>
+> Shit comes from you eyes maybe ?
+>
+> Correction : Shit comes from your eyes, definitely.
+>
+> Proof :
+>
+> # strace -o /tmp/STRACE ifconfig -a
+> # grep SIOCGIFCONF /tmp/STRACE
+> ioctl(4, SIOCGIFCONF, {120, {{"lo", {AF_INET, inet_addr("127.0.0.1")}},
+> {"wlan0", {AF_INET, inet_addr("192.168.1.21")}}, {"ppp0", {AF_INET,
+> inet_addr("10.150.51.210")}}}}) = 0
+>
+>
+> Part of ifconfig :
+>
+>    ifc.ifc_buf = NULL;
+>    for (;;) {
+>        ifc.ifc_len = sizeof(struct ifreq) * numreqs;
+>        ifc.ifc_buf = xrealloc(ifc.ifc_buf, ifc.ifc_len);
+>
+>        if (ioctl(skfd, SIOCGIFCONF, &ifc) < 0) {
+>            perror("SIOCGIFCONF");
+>            goto out;
+>        }
+>        if (ifc.ifc_len == sizeof(struct ifreq) * numreqs) {
+>            /* assume it overflowed and try again */
+>            numreqs += 10;
+>            continue;
+>        }
+>        break;
+>    }
+>
+> maybe numreqs should be firt initialized to 64, then doubled each
+> round...
+>
+>
+>
