@@ -1,73 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758416Ab0E1OpR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 May 2010 10:45:17 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:52836 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757976Ab0E1OpM (ORCPT
+	id S932669Ab0E1Or5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 May 2010 10:47:57 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:33944 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758336Ab0E1Orv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 May 2010 10:45:12 -0400
-Date: Fri, 28 May 2010 16:45:06 +0200
-From: Wolfram Sang <w.sang@pengutronix.de>
-To: Bryan Wu <bryan.wu@canonical.com>
-Cc: davem@davemloft.net, afleming@gmail.com, s.hauer@pengutronix.de,
-       gerg@uclinux.org, amit.kucheria@canonical.com, netdev@vger.kernel.org,
-       linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] netdev/fec: fix ifconfig eth0 down hang issue
-Message-ID: <20100528144506.GB13777@pengutronix.de>
-References: <1275037685-14555-1-git-send-email-bryan.wu@canonical.com>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="FkmkrVfFsRoUs1wW"
-Content-Disposition: inline
-In-Reply-To: <1275037685-14555-1-git-send-email-bryan.wu@canonical.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
-X-SA-Exim-Mail-From: wsa@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	Fri, 28 May 2010 10:47:51 -0400
+X-Authority-Analysis: v=1.1 cv=WC2cwRI/KXdLNEmE8ivg2cmI8vFt6dWmaZdvaJ93QHU= c=1 sm=0 a=-TyaHEymc8kA:10 a=Lw_SFsgOoS4A:10 a=GzHTLUccyWwA:10 a=gMqfjgEr1zLu/65IO0LwxA==:17 a=meVymXHHAAAA:8 a=j6Hn53hOalJE8Rg62-sA:9 a=83YuAiujeDqjHWw5IAmIFfd-vvAA:4 a=_RhRFcbxBZMA:10 a=jeBq3FmKZ4MA:10 a=gMqfjgEr1zLu/65IO0LwxA==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.89.75
+Message-Id: <20100528144749.296636799@goodmis.org>
+User-Agent: quilt/0.48-1
+Date: Fri, 28 May 2010 10:43:25 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: linux-kernel@vger.kernel.org
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+       Andrew Morton <akpm@linux-foundation.org>, linux-kbuild@vger.kernel.org,
+       Toralf Foerster <toralf.foerster@gmx.de>
+Subject: [PATCH 2/3] [PATCH 2/3] kconfig: Fix typo in comment in streamline_config.pl
+References: <20100528144323.232583082@goodmis.org>
+Content-Disposition: inline; filename=0002-kconfig-Fix-typo-in-comment-in-streamline_config.pl.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Toralf Foerster <toralf.foerster@gmx.de>
 
---FkmkrVfFsRoUs1wW
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Signed-off-by: Toralf Foerster <toralf.foerster@gmx.de>
+LKML-Reference: <201005281025.52753.toralf.foerster@gmx.de>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+---
+ scripts/kconfig/streamline_config.pl |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-On Fri, May 28, 2010 at 05:08:05PM +0800, Bryan Wu wrote:
-> BugLink: http://bugs.launchpad.net/bugs/559065
->=20
-> In fec open/close function, we need to use phy_connect and phy_disconnect
-> operation before we start/stop phy. Otherwise it will cause system hang.
->=20
-> Only call fec_enet_mii_probe() in open function, because the first open
-> action will cause NULL pointer error.
->=20
-> Signed-off-by: Bryan Wu <bryan.wu@canonical.com>
+diff --git a/scripts/kconfig/streamline_config.pl b/scripts/kconfig/streamline_config.pl
+index 9726946..2f8bde8 100644
+--- a/scripts/kconfig/streamline_config.pl
++++ b/scripts/kconfig/streamline_config.pl
+@@ -242,7 +242,7 @@ foreach my $makefile (@makefiles) {
+ 	    foreach my $obj (split /\s+/,$objs) {
+ 		$obj =~ s/-/_/g;
+ 		if ($obj =~ /(.*)\.o$/) {
+-		    # Objects may bes enabled by more than one config.
++		    # Objects may be enabled by more than one config.
+ 		    # Store configs in an array.
+ 		    my @arr;
+ 
+-- 
+1.7.0
 
-We use this patch for 1 month now and didn't encounter any flaws so far.
 
-Tested-by: Wolfram Sang <w.sang@pengutronix.de>
-
-Oops, too late... well, one for the comfortable feeling ;)
-
---=20
-Pengutronix e.K.                           | Wolfram Sang                |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-
---FkmkrVfFsRoUs1wW
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-Content-Disposition: inline
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.9 (GNU/Linux)
-
-iEYEARECAAYFAkv/1vIACgkQD27XaX1/VRts1wCdGd2G46UyGCSelOVlZd8wk4zW
-vVIAn3qc5kP5a2Ccaky4uQJZP25Ef1KN
-=pUk+
------END PGP SIGNATURE-----
-
---FkmkrVfFsRoUs1wW--
