@@ -1,54 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758642Ab0E1Pam (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 May 2010 11:30:42 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:37781 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1757373Ab0E1Pak (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 May 2010 11:30:40 -0400
-Date: Fri, 28 May 2010 11:30:40 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Peter Zijlstra <peterz@infradead.org>
-cc: Alan Cox <alan@lxorguk.ukuu.org.uk>,
-       Arve =?ISO-8859-1?Q?Hj=F8nnev=E5g?= <arve@android.com>,
-       Matthew Garrett <mjg59@srcf.ucam.org>,
-       Thomas Gleixner <tglx@linutronix.de>,
-       LKML <linux-kernel@vger.kernel.org>,
-       Florian Mickler <florian@mickler.org>, <felipe.balbi@nokia.com>,
-       Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
-       Linux PM <linux-pm@lists.linux-foundation.org>
-Subject: Re: [linux-pm] [PATCH 0/8] Suspend block api (version 8)
-In-Reply-To: <1275059924.27810.9640.camel@twins>
-Message-ID: <Pine.LNX.4.44L0.1005281128280.1939-100000@iolanthe.rowland.org>
+	id S1758680Ab0E1PcF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 May 2010 11:32:05 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:50649 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757373Ab0E1PcD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 May 2010 11:32:03 -0400
+From: Jeff Moyer <jmoyer@redhat.com>
+To: Heiko Carstens <heiko.carstens@de.ibm.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] fs/compat_rw_copy_check_uvector: add missing compat_ptr call
+References: <20100528114147.GB3686@osiris.boeblingen.de.ibm.com>
+X-PGP-KeyID: 1F78E1B4
+X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
+X-PCLoadLetter: What the f**k does that mean?
+Date: Fri, 28 May 2010 11:31:29 -0400
+In-Reply-To: <20100528114147.GB3686@osiris.boeblingen.de.ibm.com> (Heiko
+	Carstens's message of "Fri, 28 May 2010 13:41:47 +0200")
+Message-ID: <x49632811ri.fsf@segfault.boston.devel.redhat.com>
+User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 28 May 2010, Peter Zijlstra wrote:
+Heiko Carstens <heiko.carstens@de.ibm.com> writes:
 
-> On Fri, 2010-05-28 at 10:35 -0400, Alan Stern wrote:
-> >         The app is busy doing something else unimportant
-> >         We do into power save
-> >         Push a button, generate an IRQ
-> >         Come out of power save
-> >         No app to poke
-> >         * System goes back to sleep and eventually wakes up again
-> >         The app finishes what it was doing
-> >         The app sees there is a keystroke and marks itself important
-> >         ...
-> > 
-> > The * step is where trouble can occur. 
-> 
-> Only because you don't run runnable tasks. Please stop considering that
-> an option and these problems go away.
+> From: Heiko Carstens <heiko.carstens@de.ibm.com>
+>
+> A call to access_ok is missing a compat_ptr conversion. Introduced with
+> b83733639a494d5f42fa00a2506563fbd2d3015d "compat: factor out
+> compat_rw_copy_check_uvector from compat_do_readv_writev"
+>
+> fs/compat.c: In function 'compat_rw_copy_check_uvector':
+> fs/compat.c:629: warning: passing argument 1 of '__access_ok' makes pointer from integer without a cast
+>
+> Signed-off-by: Heiko Carstens <heiko.carstens@de.ibm.com>
 
-True.  If the untrusted apps can be segregated and forcibly stopped, 
-and if they don't need timely delivery of wakeup events, then there's 
-no problem.
+Thanks for catching this.  I'm ashamed I missed the compiler warning.
+:(
 
-Alan Stern
-
+Reviewed-by: Jeff Moyer <jmoyer@redhat.com>
