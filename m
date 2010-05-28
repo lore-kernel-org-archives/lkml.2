@@ -1,69 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758990Ab0E1QJJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 May 2010 12:09:09 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:58380 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753123Ab0E1QJF (ORCPT
+	id S932484Ab0E1QJv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 May 2010 12:09:51 -0400
+Received: from fallback1.mail.ru ([94.100.176.18]:41879 "EHLO
+	fallback1.mail.ru" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932277Ab0E1QJu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 May 2010 12:09:05 -0400
-Message-ID: <4BFFEA95.9040505@vflare.org>
-Date: Fri, 28 May 2010 21:38:53 +0530
-From: Nitin Gupta <ngupta@vflare.org>
-Reply-To: ngupta@vflare.org
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-3.fc13 Thunderbird/3.0.4
-MIME-Version: 1.0
-To: Greg KH <greg@kroah.com>
-CC: Pekka Enberg <penberg@cs.helsinki.fi>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Minchan Kim <minchan.kim@gmail.com>,
-       Hugh Dickins <hugh.dickins@tiscali.co.uk>, Cyp <cyp561@gmail.com>,
-       driverdev <devel@driverdev.osuosl.org>,
-       linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 0/3] zram: generic RAM based compressed R/W block devices
-References: <1274710685-2351-1-git-send-email-ngupta@vflare.org>
-In-Reply-To: <1274710685-2351-1-git-send-email-ngupta@vflare.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Fri, 28 May 2010 12:09:50 -0400
+From: =?koi8-r?Q?=E1=CC=C5=CB=D3=C1=CE=C4=D2_=ED=D5=D2=C1=DB=CF=D7?= 
+	<alex_mur_spb@mail.ru>
+To: Geert Uytterhoeven <geert@linux-m68k.org>,
+       Roman Zippel <zippel@linux-m68k.org>,
+       Alexandr Murashov <alex_mur_spb@mail.ru>
+Cc: linux-m68k@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: 0001-This-is-a-patch-to-the-gen-devlist.c-file-that-fixes.patch
+Mime-Version: 1.0
+X-Mailer: mPOP Web-Mail 2.19
+X-Originating-IP: [94.242.6.242]
+Date: Fri, 28 May 2010 18:13:39 +0400
+Reply-To: =?koi8-r?Q?=E1=CC=C5=CB=D3=C1=CE=C4=D2_=ED=D5=D2=C1=DB=CF=D7?= 
+	  <alex_mur_spb@mail.ru>
+Content-Type: multipart/mixed;
+	boundary="----o96dEpBi-hftgjQkk5vGFNJGs:1275056019"
+Message-Id: <E1OI0Jf-0003LU-00.alex_mur_spb-mail-ru@f10.mail.ru>
+X-Spam: Not detected
+X-Mras: Ok
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi All,
 
-On 05/24/2010 07:48 PM, Nitin Gupta wrote:
-> Creates RAM based block devices: /dev/zramX (X = 0, 1, ...).
-> Pages written to these disks are compressed and stored in memory
-> itself. These disks allow very fast I/O and compression provides
-> good amounts of memory savings.
-> 
-> This is enhancement over existing ramzswap driver which creates
-> virtual block devices (/dev/ramzswapX) which could be used only
-> as swap disks.
-> 
-> Now, with the ability to handle any kind of I/O request, zram
-> devices have lot more use cases:
->  - /tmp storage
->  - various caches under /var
->  - swap disks
->  - maybe even more! :)
-> 
-> Performance numbers can be found at:
-> http://code.google.com/p/compcache/wiki/zramperf
-> 
+------o96dEpBi-hftgjQkk5vGFNJGs:1275056019
+Content-Type: text/plain; charset=koi8-r
+Content-Transfer-Encoding: 8bit
 
-Any reviews/comments, please?
 
-I also performed iozone tests to stress zram:
-http://code.google.com/p/compcache/wiki/zramIOzone
 
-Note that the effect of pagecache could not be completely
-avoided, even when pagecache was dropped every 1 second.
-So, this iozone test should not be considered for speed
-measurements but as a stress test only. For speed tests,
-you can refer 'dd' test results included in changelog (patch 1).
+This is my first patch.Do not judge me harshly, I'm just learning.
 
-No errors were observed during either iozone or dd tests.
+------o96dEpBi-hftgjQkk5vGFNJGs:1275056019
+Content-Type: application/x-patch; name="0001-This-is-a-patch-to-the-gen-devlist.c-file-that-fixes.patch"
+Content-Disposition: attachment
+Content-Transfer-Encoding: base64
 
-Thanks,
-Nitin
+RnJvbSA2NGQ3ZDBjYjNmZTk1OGNjZGYyNzljNDVmNjgzMmYxZGY0MTIzOWM3IE1vbiBTZXAgMTcg
+MDA6MDA6MDAgMjAwMQpGcm9tOiA9P3V0Zi04P3E/PUQwPTlDPUQxPTgzPUQxPTgwPUQwPUIwPUQx
+PTg4PUQwPUJFPUQwPUIyPTIwPUQwPTkwPUQwPUJCPUQwPUI1PUQwPUJBPUQxPTgxPUQwPUIwPUQw
+PUJEPUQwPUI0PUQxPTgwPz0gPGFsZXhAYWxleC1kZXNrdG9wLihub25lKT4KRGF0ZTogRnJpLCAy
+OCBNYXkgMjAxMCAxNzowMjoxOSArMDQwMApTdWJqZWN0OiBbUEFUQ0hdIFRoaXMgaXMgYSBwYXRj
+aCB0byB0aGUgZ2VuLWRldmxpc3QuYyBmaWxlIHRoYXQgZml4ZXMgdXAgYSB3YXJuaW5ncyB3aXRo
+IHRoZSBsZW5ndGhzIG9mIGxpbmVzIGFuZCBlcnJvciB3aXRoIGludGVuZGVkIGxhYmVsIGZvdW5k
+IGJ5IHRoZSBjaGVja3BhdGNoLnBsCiBTaWduZWQtb2ZmLWJ5OiBBbGV4YW5kciBNdXJhc2hvdiA8
+YWxleF9tdXJfc3BiQG1haWwucnU+CgotLS0KIGRyaXZlcnMvem9ycm8vZ2VuLWRldmxpc3QuYyB8
+ICAgMzAgKysrKysrKysrKysrKysrKysrKy0tLS0tLS0tLS0tCiAxIGZpbGVzIGNoYW5nZWQsIDE5
+IGluc2VydGlvbnMoKyksIDExIGRlbGV0aW9ucygtKQoKZGlmZiAtLWdpdCBhL2RyaXZlcnMvem9y
+cm8vZ2VuLWRldmxpc3QuYyBiL2RyaXZlcnMvem9ycm8vZ2VuLWRldmxpc3QuYwppbmRleCAxNmZl
+MjA2Li5kYjA4ODk1IDEwMDY0NAotLS0gYS9kcml2ZXJzL3pvcnJvL2dlbi1kZXZsaXN0LmMKKysr
+IGIvZHJpdmVycy96b3Jyby9nZW4tZGV2bGlzdC5jCkBAIC00Myw3ICs0Myw3IEBAIG1haW4odm9p
+ZCkKIAogCXdoaWxlIChmZ2V0cyhsaW5lLCBzaXplb2YobGluZSktMSwgc3RkaW4pKSB7CiAJCWxp
+bm8rKzsKLQkJaWYgKChjID0gc3RyY2hyKGxpbmUsICdcbicpKSkKKwkJaWYgYyA9IHN0cmNocihs
+aW5lLCAnXG4nKQogCQkJKmMgPSAwOwogCQlpZiAoIWxpbmVbMF0gfHwgbGluZVswXSA9PSAnIycp
+CiAJCQljb250aW51ZTsKQEAgLTU0LDIwICs1NCwyNiBAQCBtYWluKHZvaWQpCiAJCQkJCWMgPSBs
+aW5lICsgNTsKIAkJCQkJd2hpbGUgKCpjID09ICcgJykKIAkJCQkJCSpjKysgPSAwOwotCQkJCQlp
+ZiAobWFudWZfbGVuICsgc3RybGVuKGMpICsgMSA+IE1BWF9OQU1FX1NJWkUpIHsKLQkJCQkJCS8q
+IFRvbyBsb25nLCB0cnkgY3V0dGluZyBvZmYgbG9uZyBkZXNjcmlwdGlvbiAqLworCQkJCQlpZiAo
+bWFudWZfbGVuICsgc3RybGVuKGMpICsgMVwKKwkJCQkJCQkgPiBNQVhfTkFNRV9TSVpFKSB7CiAJ
+CQkJCQlicmEgPSBzdHJjaHIoYywgJ1snKTsKLQkJCQkJCWlmIChicmEgJiYgYnJhID4gYyAmJiBi
+cmFbLTFdID09ICcgJykKKwkJCQkJCWlmIChicmEgJiYgYnJhID4gYyAmJiBicmFbLTFdXAorCQkJ
+CQkJCQkJPT0gJyAnKQogCQkJCQkJCWJyYVstMV0gPSAwOwotCQkJCQkJaWYgKG1hbnVmX2xlbiAr
+IHN0cmxlbihjKSArIDEgPiBNQVhfTkFNRV9TSVpFKSB7Ci0JCQkJCQkJZnByaW50ZihzdGRlcnIs
+ICJMaW5lICVkOiBQcm9kdWN0IG5hbWUgdG9vIGxvbmdcbiIsIGxpbm8pOworCQkJCQkJaWYgKG1h
+bnVmX2xlbiArIHN0cmxlbihjKSArIDFcCisJCQkJCQkJPiBNQVhfTkFNRV9TSVpFKSB7CisJCQkJ
+CQkJZnByaW50ZihzdGRlcnIsIFwKKwkJCQkiTGluZSAlZDogUHJvZHVjdCBuYW1lIHRvbyBsb25n
+XG4iLCBsaW5vKTsKIAkJCQkJCQlyZXR1cm4gMTsKIAkJCQkJCX0KIAkJCQkJfQotCQkJCQlmcHJp
+bnRmKGRldmYsICJcdFBST0RVQ1QoJXMsJXMsXCIiLCBtYW51ZiwgbGluZSsxKTsKKwkJCQkJZnBy
+aW50ZihkZXZmLCAiXHRQUk9EVUNUKCVzLCVzLFwiIixcCisJCQkJCQkJCW1hbnVmLCBsaW5lKzEp
+OwogCQkJCQlwcShkZXZmLCBjKTsKIAkJCQkJZnB1dHMoIlwiKVxuIiwgZGV2Zik7Ci0JCQkJfSBl
+bHNlIGdvdG8gZXJyOworCQkJCX0gZWxzZSB7CisJCQkJCWdvdG8gZXJyOworCQkJCQl9CiAJCQkJ
+YnJlYWs7CiAJCQlkZWZhdWx0OgogCQkJCWdvdG8gZXJyOwpAQCAtODIsNyArODgsOCBAQCBtYWlu
+KHZvaWQpCiAJCQlzdHJjcHkobWFudWYsIGxpbmUpOwogCQkJbWFudWZfbGVuID0gc3RybGVuKGMp
+OwogCQkJaWYgKG1hbnVmX2xlbiArIDI0ID4gTUFYX05BTUVfU0laRSkgewotCQkJCWZwcmludGYo
+c3RkZXJyLCAiTGluZSAlZDogbWFudWZhY3R1cmVyIG5hbWUgdG9vIGxvbmdcbiIsIGxpbm8pOwor
+CQkJCWZwcmludGYoc3RkZXJyLCAiTGluZSAlZDogbWFudWZhY3R1cmVyCVwKKwkJCQluYW1lIHRv
+byBsb25nXG4iLCBsaW5vKTsKIAkJCQlyZXR1cm4gMTsKIAkJCX0KIAkJCWZwcmludGYoZGV2Ziwg
+Ik1BTlVGKCVzLFwiIiwgbWFudWYpOwpAQCAtOTAsOCArOTcsOSBAQCBtYWluKHZvaWQpCiAJCQlm
+cHV0cygiXCIpXG4iLCBkZXZmKTsKIAkJCW1vZGUgPSAxOwogCQl9IGVsc2UgewotCQllcnI6Ci0J
+CQlmcHJpbnRmKHN0ZGVyciwgIkxpbmUgJWQ6IFN5bnRheCBlcnJvciBpbiBtb2RlICVkOiAlc1xu
+IiwgbGlubywgbW9kZSwgbGluZSk7CitlcnI6CisJCQlmcHJpbnRmKHN0ZGVyciwgIkxpbmUgJWQ6
+IFN5bnRheCBlcnJvciBpbiBtb2RlIFwKKwkJCSVkOiAlc1xuIiwgbGlubywgbW9kZSwgbGluZSk7
+CiAJCQlyZXR1cm4gMTsKIAkJfQogCX0KLS0gCjEuNi4zLjMKCg==
+
+------o96dEpBi-hftgjQkk5vGFNJGs:1275056019--
