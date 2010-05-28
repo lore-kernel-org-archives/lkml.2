@@ -1,65 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758210Ab0E1OW3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 May 2010 10:22:29 -0400
-Received: from 64.mail-out.ovh.net ([91.121.185.65]:57227 "HELO
-	64.mail-out.ovh.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1756647Ab0E1OW1 (ORCPT
+	id S1757096Ab0E1O0I (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 May 2010 10:26:08 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:60136 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750846Ab0E1O0F (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 May 2010 10:22:27 -0400
-Message-ID: <4BFFD19F.5020601@example.com>
-Date: Fri, 28 May 2010 16:22:23 +0200
-From: Piotr Hosowicz <piotr@hosowicz.com>
-Reply-To: piotr@hosowicz.com
-Organization: hosowicz.com
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100515 Icedove/3.0.4
-MIME-Version: 1.0
-To: piotr@hosowicz.com
-CC: Peter Zijlstra <peterz@infradead.org>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Jens Axboe <jens.axboe@oracle.com>, Divyesh Shah <dpshah@google.com>,
-       Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] sched_clock: Provide local_clock() and improve documentation
-References: <4BF9EC69.5030709@example.com> <1274777422.5882.591.camel@twins>	 <20100526160252.325f8357.akpm@linux-foundation.org>	 <1274942798.27810.3584.camel@twins>	 <20100526235107.77e66ce0.akpm@linux-foundation.org>	 <1274945751.27810.3765.camel@twins>	 <20100527113340.d4afb8fc.akpm@linux-foundation.org> <1275052414.1645.52.camel@laptop> <4BFFD008.4070909@example.com>
-In-Reply-To: <4BFFD008.4070909@example.com>
-Content-Type: text/plain; charset=ISO-8859-2; format=flowed
-Content-Transfer-Encoding: 8bit
-X-Ovh-Tracer-Id: 15105073150374080882
-X-Ovh-Remote: 83.24.90.132 (dni132.neoplus.adsl.tpnet.pl)
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-Spam-Check: DONE|U 0.5/N
+	Fri, 28 May 2010 10:26:05 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer:x-mailer-version;
+        b=xGJl81Sep3oggfopdukePpVAbMiYxy2HACucTpq5AbR9njrXBmEwWU6T+H8y8v3q4c
+         9aIIdg6egCREYT32VihoijFzRYmhGn4XBoI9oc7rdufLDTgRnX03iW7/Ut9UpctvgEMa
+         hig9eGIFSonnnJNURUHLCtQGsOQ/JKuqq7PYc=
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+       Frederic Weisbecker <fweisbec@gmail.com>,
+       Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
+       Steven Rostedt <rostedt@goodmis.org>
+Subject: [PATCH] tracing: Add task activate/deactivate tracepoints
+Date: Fri, 28 May 2010 16:26:02 +0200
+Message-Id: <1275056762-13130-1-git-send-regression-fweisbec@gmail.com>
+X-Mailer: git-send-regression
+X-Mailer-version: 0.1, "The maintainer couldn't reproduce after one week full time debugging" special version.
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 28.05.2010 16:15, Piotr Hosowicz wrote:
-> On 28.05.2010 15:13, Peter Zijlstra wrote:
->> On Thu, 2010-05-27 at 11:33 -0700, Andrew Morton wrote:
->>
->>> Cool, thanks. You didn't Cc a mailing list :(
->>
->> Oops, must have managed to wreck the CC list somewhere, restored LKML.
->>
->> How does the below look?
->
-> Earlier someone (you? I didn't write down) has published such a patch:
+We have various tracepoints that tell us when a task is going to
+be enqueued in a runqueue: fork, wakeup, migrate.
 
-(cut patch)
+But they don't always provide us the level of information necessary
+to know what is actually in which runqueue, precisely because the
+migrate event is only fired if the task is queued on another
+cpu than its previous one. So we don't always know where a waking up
+task goes.
 
-> Should I apply it first and then your today's patch or only the today's
-> patch?
+And moreover we don't have events that tells a task goes to sleep,
+and even that wouldn't cover every cases when a task is dequeued.
 
-Sorry, no question, today's patch must have been incorporated in the git 
-repo, I see it fails to apply again. And the earlier one also.
+So bring these two new tracepoints to get informations about the
+load of each runqueues.
 
-But what about commit f4b87dee9 - should I revert it before build?
+Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Steven Rostedt <rostedt@goodmis.org>
+---
+ include/trace/events/sched.h |   36 ++++++++++++++++++++++++++++++++++++
+ kernel/sched.c               |    2 ++
+ 2 files changed, 38 insertions(+), 0 deletions(-)
 
-Regards and sorry for the noise.
-
-Piotr Hosowicz
-
+diff --git a/include/trace/events/sched.h b/include/trace/events/sched.h
+index 4f733ec..f7f94af 100644
+--- a/include/trace/events/sched.h
++++ b/include/trace/events/sched.h
+@@ -185,6 +185,42 @@ TRACE_EVENT(sched_migrate_task,
+ 		  __entry->orig_cpu, __entry->dest_cpu)
+ );
+ 
++DECLARE_EVENT_CLASS(sched_activation_template,
++
++	TP_PROTO(struct task_struct *p, int cpu),
++
++	TP_ARGS(p, cpu),
++
++	TP_STRUCT__entry(
++		__field(	pid_t,	pid	)
++		__field(	int,	cpu	)
++	),
++
++	TP_fast_assign(
++		__entry->pid		= p->pid;
++		__entry->cpu		= cpu;
++	),
++
++	TP_printk("pid=%d cpu=%d", __entry->pid, __entry->cpu)
++);
++
++
++/*
++ * Tracepoint for activating a task, pulling it in a runqueue
++ */
++DEFINE_EVENT(sched_activation_template, sched_activate_task,
++	     TP_PROTO(struct task_struct *p, int cpu),
++	     TP_ARGS(p, cpu));
++
++
++/*
++ * Tracepoint for deactivating a task, pushing it out a runqueue
++ */
++DEFINE_EVENT(sched_activation_template, sched_deactivate_task,
++	     TP_PROTO(struct task_struct *p, int cpu),
++	     TP_ARGS(p, cpu));
++
++
+ DECLARE_EVENT_CLASS(sched_process_template,
+ 
+ 	TP_PROTO(struct task_struct *p),
+diff --git a/kernel/sched.c b/kernel/sched.c
+index 1d93cd0..8c0b90d 100644
+--- a/kernel/sched.c
++++ b/kernel/sched.c
+@@ -1904,6 +1904,7 @@ static void activate_task(struct rq *rq, struct task_struct *p, int flags)
+ 	if (task_contributes_to_load(p))
+ 		rq->nr_uninterruptible--;
+ 
++	trace_sched_activate_task(p, cpu_of(rq));
+ 	enqueue_task(rq, p, flags);
+ 	inc_nr_running(rq);
+ }
+@@ -1916,6 +1917,7 @@ static void deactivate_task(struct rq *rq, struct task_struct *p, int flags)
+ 	if (task_contributes_to_load(p))
+ 		rq->nr_uninterruptible++;
+ 
++	trace_sched_deactivate_task(p, cpu_of(rq));
+ 	dequeue_task(rq, p, flags);
+ 	dec_nr_running(rq);
+ }
 -- 
-- No wiesz, pijany i o trzeciej nad ranem wracasz do domu!?
-- A kto powiedzia³, ¿e wracam? Po gitarê tylko przyszed³em.
-NP: Mark Knopfler - Before Gas & TV
-NB: 2.6.34-20100527-2020-gitt-revtd
+1.6.2.3
+
