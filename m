@@ -1,112 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932528Ab0E1PNU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 May 2010 11:13:20 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:58889 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932160Ab0E1PNQ convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S932329Ab0E1PNS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 May 2010 11:13:18 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:39043 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754693Ab0E1PNQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 28 May 2010 11:13:16 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=mime-version:in-reply-to:references:date:message-id:subject:from:to:
-	cc:content-type:content-transfer-encoding:x-system-of-record;
-	b=sOzo1/sy8YUZsBZB8Tw1z+fwtJIN7JkyL8nXB51znD+RbaoS6GAhp50gHG8oxAyKH
-	/F0c0yFlSHT1VwvWWtLTA==
+Date: Fri, 28 May 2010 18:08:30 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: Oleg Nesterov <oleg@redhat.com>, Sridhar Samudrala <sri@us.ibm.com>,
+       netdev <netdev@vger.kernel.org>, lkml <linux-kernel@vger.kernel.org>,
+       "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Dmitri Vorobiev <dmitri.vorobiev@movial.com>,
+       Jiri Kosina <jkosina@suse.cz>, Thomas Gleixner <tglx@linutronix.de>,
+       Ingo Molnar <mingo@elte.hu>, Andi Kleen <ak@linux.intel.com>
+Subject: Re: [PATCH 2/3] workqueue: Add an API to create a singlethread
+	workqueue attached to the current task's cgroup
+Message-ID: <20100528150830.GB21880@redhat.com>
+References: <1274227491.2370.110.camel@w-sridhar.beaverton.ibm.com> <20100527091426.GA6308@redhat.com> <20100527124448.GA4241@redhat.com> <20100527131254.GB7974@redhat.com> <4BFE9ABA.6030907@kernel.org> <20100527163954.GA21710@redhat.com> <4BFEA434.6080405@kernel.org> <20100527173207.GA21880@redhat.com> <4BFEE216.2070807@kernel.org>
 MIME-Version: 1.0
-In-Reply-To: <20100528160628.7c121dab@lxorguk.ukuu.org.uk>
-References: <20100527223605.GB11364@srcf.ucam.org>
-	<20100527235546.09f3ce8a@lxorguk.ukuu.org.uk>
-	<20100528043114.GC26177@thunk.org>
-	<20100528103713.0a7952d9@lxorguk.ukuu.org.uk>
-	<20100528114123.GA22947@srcf.ucam.org>
-	<4BFFB681.1000105@nokia.com>
-	<AANLkTim04ZfMcPHRB2D_bqcAuguaGwySH2b6repuYLkk@mail.gmail.com>
-	<4BFFC5DF.5030504@nokia.com>
-	<20100528133900.GG26177@thunk.org>
-	<4BFFCFC7.7070302@nokia.com>
-	<20100528142124.GA26733@srcf.ucam.org>
-	<AANLkTilj6i7Qi-eh7e3WWeh4zxKALqr-0yhAvWKis52t@mail.gmail.com>
-	<20100528160628.7c121dab@lxorguk.ukuu.org.uk>
-Date: Fri, 28 May 2010 08:13:08 -0700
-Message-ID: <AANLkTin3suKfGBSfiDj0n8ztY8UiHzr4af_Cr0SPOevY@mail.gmail.com>
-Subject: Re: [linux-pm] [PATCH 0/8] Suspend block api (version 8)
-From: Brian Swetland <swetland@google.com>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: Matthew Garrett <mjg59@srcf.ucam.org>, Igor Stoppa <igor.stoppa@nokia.com>,
-       tytso@mit.edu, Peter Zijlstra <peterz@infradead.org>,
-       LKML <linux-kernel@vger.kernel.org>,
-       Florian Mickler <florian@mickler.org>,
-       Linux PM <linux-pm@lists.linux-foundation.org>,
-       Thomas Gleixner <tglx@linutronix.de>,
-       Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
-       "Balbi Felipe (Nokia-D/Helsinki)" <felipe.balbi@nokia.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4BFEE216.2070807@kernel.org>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 28, 2010 at 8:06 AM, Alan Cox <alan@lxorguk.ukuu.org.uk> wrote:
->> Arve points out that qos constraint objects could work (but not if
->> specifically tied to apps): http://lkml.org/lkml/2010/5/28/120 though
->> he suggests that "latency" constraints don't represent this as well as
->> "state" constraints.
->
-> With latency you have an "I don't give damn" latency in your model which
-> we could describe as infinite or "manyana" perhaps.
+On Thu, May 27, 2010 at 11:20:22PM +0200, Tejun Heo wrote:
+> Hello, Michael.
+> 
+> On 05/27/2010 07:32 PM, Michael S. Tsirkin wrote:
+> > Well, this is why I proposed adding a new API for creating
+> > workqueue within workqueue.c, rather than exposing the task
+> > and attaching it to cgroups in our driver: so that workqueue
+> > maintainers can fix the implementation if it ever changes.
+> > 
+> > And after all, it's an internal API, we can always change
+> > it later if we need.
+> ...
+> > Well, yes but we are using APIs like flush_work etc. These are very
+> > handy.  It seems much easier than rolling our own queue on top of kthread.
+> 
+> The thing is that this kind of one-off usage becomes problemetic when
+> you're trying to change the implementation detail.  All current
+> workqueue users don't care which thread they run on and they shouldn't
+> as each work owns the context only for the duration the work is
+> executing.  If this sort of fundamental guidelines are followed, the
+> implementation can be improved in pretty much transparent way but when
+> you start depending on specific implementation details, things become
+> messy pretty quickly.
+> 
+> If this type of usage were more common, adding proper way to account
+> work usage according to cgroups would make sense but that's not the
+> case here and I removed the only exception case recently while trying
+> to implement cmwq and if this is added.  So, this would be the only
+> one which makes such extra assumptions in the whole kernel.  One way
+> or the other, workqueue needs to be improved and I don't really think
+> adding the single exception at this point is a good idea.
+> 
+> The thing I realized after stop_machine conversion was that there was
+> no reason to use workqueue there at all.  There already are more than
+> enough not-too-difficult synchronization constructs and if you're
+> using a thread for dedicated purposes, code complexity isn't that
+> different either way.  Plus, it would also be clearer that dedicated
+> threads are required there for what reason.  So, I strongly suggest
+> using a kthread.  If there are issues which are noticeably difficult
+> to solve with kthread, we can definitely talk about that and think
+> about things again.
+> 
+> Thank you.
 
-I think Arve's concern was the representation of the "I care, but only
-a little" or "just low enough to ensure threads must run" level which
-is what suspend blockers would map to (low enough to ensure we
-shouldn't halt the world but not necessarily implying a hard latency
-constraint beyond that).
+Well, we have create_singlethread_workqueue, right?
+This is not very different ... is it?
 
->> Though if you look at it that way, then suspend_blockers become qos
->> constraint objects, but their implementation and usage remain pretty
->> much the same as we have now, which does not address Alan's concern
->> regarding code turning up in drivers, etc.  I'm not sure how you can
->> solve this problem (avoiding races around entering/exiting the suspend
->> or suspend-like state) without having a means for drivers to prevent
->> entry to that state.
->
-> I am much much less concerned about general expressions of constraint
-> appearing in drivers. One of my early mails gave a list of other
-> people/projects/problems that need them - from hard real time, to high
-> speed serial on low end embedded to virtualisation.
->
-> They fix a general problem in terms of a driver specific item. We end up
-> making changes around the tree but we make everyone happy not just
-> Android. Also we are isolating policy properly. The apps and drivers say
-> "I have these needs", the power manager figures out how to meet them.
+Just copying structures and code from workqueue.c,
+adding vhost_ in front of it will definitely work:
+there is nothing magic about the workqueue library.
+But this just involves cut and paste which might be best avoided.
+One final idea before we go the cut and paste way: how about
+'create_workqueue_from_task' that would get a thread and have workqueue
+run there?
 
-That makes sense -- and as I've mentioned elsewhere, we're really not
-super picky about naming -- if it turns out that
-wakelocks/suspendblockers were shorthand for "request a qos constraint
-that ensures that threads are running", we'll be able to get things
-done just as well as we do now.
-
-> Where it gets ugly is if you start trying to have drivers giving an app a
-> guarantee which the app then magically has to know to dispose of.
-
-Yeah -- which is something we've avoided in the existing model with
-overlapping wakelocks during handoff between domains.
-- input service is select()ing on input devices
-- when select() returns it grabs a wakelock, reads events, passes them
-on, releases the wakelock
-- the event subsystem can then safely drop its "should be running
-threads" constraint as soon as the last event is read because it has
-no queues for userspace to drain, but the overlapping wakelock
-prevents the system from immediately snapping back to sleep
-
-> If you are prepared to exclude untrusted apps from perfectly reliable
-> event reporting (ie from finger to application action) that doesn't seem
-> to be a neccessity anyway.
-
-Currently in the Android userpace only trusted (system) apps can
-directly obtain wakelocks -- arbitrary apps obtain them via rpc to a
-trusted system service (which ensures the app has been granted
-permission to do this and tracks usage for accountability to
-user/developer).
-
-Brian
+> -- 
+> tejun
