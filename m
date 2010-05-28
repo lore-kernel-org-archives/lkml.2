@@ -1,101 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757312Ab0E1OGe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 May 2010 10:06:34 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:45441 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754683Ab0E1OGc (ORCPT
+	id S1757385Ab0E1OH3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 May 2010 10:07:29 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:58622 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1754995Ab0E1OH2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 May 2010 10:06:32 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=ZVLzHDZV0U0mzFEy4+H3DbKKDkcTkHdNgJGGax8vAhHm+wgHX5gkCXD7uG/Ieg2d/+
-         ty2pzDAYsxfA4Swn+f1jNkPBZuE9V2N2cl3/dbNzZ8aai9ueSiCvltEbVr11HBU8jpNP
-         RJUYrcJwnHZNa8KDgbgMxiw8ltAyOsFVh7BkY=
-Date: Fri, 28 May 2010 23:06:23 +0900
-From: Minchan Kim <minchan.kim@gmail.com>
-To: "Luis Claudio R. Goncalves" <lclaudio@uudg.org>
-Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-       balbir@linux.vnet.ibm.com, Oleg Nesterov <oleg@redhat.com>,
-       linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+	Fri, 28 May 2010 10:07:28 -0400
+Date: Fri, 28 May 2010 10:07:26 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+cc: Arve =?ISO-8859-14?B?SGr4bm5lduVn?= <arve@android.com>,
+       "Rafael J. Wysocki" <rjw@sisk.pl>,
+       Matthew Garrett <mjg59@srcf.ucam.org>,
        Thomas Gleixner <tglx@linutronix.de>,
        Peter Zijlstra <peterz@infradead.org>,
-       David Rientjes <rientjes@google.com>, Mel Gorman <mel@csn.ul.ie>,
-       williams@redhat.com
-Subject: Re: [RFC] oom-kill: give the dying task a higher priority
-Message-ID: <20100528140623.GA11041@barrios-desktop>
-References: <20100528143605.7E2A.A69D9226@jp.fujitsu.com>
- <AANLkTikB-8Qu03VrA5Z0LMXM_alSV7SLqzl-MmiLmFGv@mail.gmail.com>
- <20100528145329.7E2D.A69D9226@jp.fujitsu.com>
- <20100528125305.GE11364@uudg.org>
+       LKML <linux-kernel@vger.kernel.org>,
+       Florian Mickler <florian@mickler.org>, <felipe.balbi@nokia.com>,
+       Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
+       Linux PM <linux-pm@lists.linux-foundation.org>
+Subject: Re: [linux-pm] [PATCH 0/8] Suspend block api (version 8)
+In-Reply-To: <20100528101755.7b5f6b8a@lxorguk.ukuu.org.uk>
+Message-ID: <Pine.LNX.4.44L0.1005281006410.1939-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100528125305.GE11364@uudg.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 28, 2010 at 09:53:05AM -0300, Luis Claudio R. Goncalves wrote:
-> On Fri, May 28, 2010 at 02:59:02PM +0900, KOSAKI Motohiro wrote:
-> | > RT Task
-> | > 
-> | > void non-RT-function()
-> | > {
-> | >    system call();
-> | >    buffer = malloc();
-> | >    memset(buffer);
-> | > }
-> | > /*
-> | >  * We make sure this function must be executed in some millisecond
-> | >  */
-> | > void RT-function()
-> | > {
-> | >    some calculation(); <- This doesn't have no dynamic characteristic
-> | > }
-> | > int main()
-> | > {
-> | >    non-RT-function();
-> | >    /* This function make sure RT-function cannot preempt by others */
-> | >    set_RT_max_high_priority();
-> | >    RT-function A();
-> | >    set_normal_priority();
-> | >    non-RT-function();
-> | > }
-> | > 
-> | > We don't want realtime in whole function of the task. What we want is
-> | > just RT-function A.
-> | > Of course, current Linux cannot make perfectly sure RT-functionA can
-> | > not preempt by others.
-> | > That's because some interrupt or exception happen. But RT-function A
-> | > doesn't related to any dynamic characteristic. What can justify to
-> | > preempt RT-function A by other processes?
-> | 
-> | As far as my observation, RT-function always have some syscall. because pure
-> | calculation doesn't need deterministic guarantee. But _if_ you are really
-> | using such priority design. I'm ok maximum NonRT priority instead maximum
-> | RT priority too.
+On Fri, 28 May 2010, Alan Cox wrote:
+
+> > Since I think we've now rejected the feature, do we have a clear picture about
+> > what the Android people should do _instead_ and yet keep the battery life they
+> > want?  Because I don't think telling "let them do what they want, who cares"
+> > is right.
 > 
-> I confess I failed to distinguish memcg OOM and system OOM and used "in
-> case of OOM kill the selected task the faster you can" as the guideline.
-> If the exit code path is short that shouldn't be a problem.
+> Today "idle" means "no task running"
 > 
-> Maybe the right way to go would be giving the dying task the biggest
-> priority inside that memcg to be sure that it will be the next process from
-> that memcg to be scheduled. Would that be reasonable?
+> If you are prepared to rephrase that as "no task that matters is running"
+> what would need to answer ?
+> 
+> - How do we define who matters: QoS ?
 
-Hmm. I can't understand your point. 
-What do you mean failing distinguish memcg and system OOM?
+Here are the deficiencies in the current PM-QOS implementation which 
+would need to be solved for Android's purposes:
 
-We already have been distinguish it by mem_cgroup_out_of_memory.
-(but we have to enable CONFIG_CGROUP_MEM_RES_CTLR). 
-So task selected in select_bad_process is one out of memcg's tasks when 
-memcg have a memory pressure. 
+	The system includes parameters for latency and throughput.
+	It does not include a parameter to describe whether timers
+	are enabled.  The presumption is that timers are always
+	enabled.
 
-Isn't it enough?
--- 
-Kind regards,
-Minchan Kim
+For example, the low-power state used by Android would be described as
+one in which the CPU does not run and timers are disabled, with some
+appropriate latencies and zero throughput.  On some platforms even some
+interrupt sources are disabled (those not marked as wakeup-enabled).
+
+	There's no way to indicate minimum system operating 
+	requirements.
+
+For example, we may know that work needs to be done without knowing 
+specifically which processes are going to carry out that work.  In such 
+cases we would like to require that the CPU continues to run at a 
+certain minimum speed so long as _any_ threads are runnable, even if 
+those threads don't have any QOS requirements of their own.
+
+Similarly, the requirement that timers be enabled is a system-wide sort 
+of thing, not necessarily applying to a particular thread (and in fact, 
+not all timers are associated with a thread anyway).
+
+	There's no way to boost the minimum system operating
+	requirements upon the arrival of an event.
+
+For example, when an input event enters the queue, it should be
+possible to prevent the system from entering its lowest power state
+until the event can be consumed by userspace.  Simply boosting the QOS
+requirements of the threads waiting on the input queue isn't good
+enough, because there may not be any such threads when the event occurs 
+(they may be busy doing something else).
+
+The matter of _which_ events should boost the system operating
+requirements is debatable.  In the Android proposal it is a fixed set:
+those events which enable a suspend blocker.  In theory it could
+instead be determined by requests from userspace, although I don't know
+how such requests would be expressed.
+
+
+Until these weaknesses are rectified, Android cannot use the PM-QOS 
+system or idle-time power management to satisfy its needs.  That's why 
+they have to resort to forced suspends.
+
+Can the PM-QOS framework be enhanced to include these considerations?  
+I don't see why not (but on the other hand, I know nothing about its
+internal workings).
+
+Alan Stern
+
