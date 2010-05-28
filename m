@@ -1,85 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932738Ab0E1Osq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 May 2010 10:48:46 -0400
-Received: from gir.skynet.ie ([193.1.99.77]:46605 "EHLO gir.skynet.ie"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932642Ab0E1Osn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 May 2010 10:48:43 -0400
-Date: Fri, 28 May 2010 15:48:24 +0100
-From: Mel Gorman <mel@csn.ul.ie>
-To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-       Andi Kleen <andi@firstfloor.org>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Wu Fengguang <fengguang.wu@intel.com>,
-       Andrea Arcangeli <aarcange@redhat.com>,
-       Larry Woodman <lwoodman@redhat.com>,
-       Lee Schermerhorn <Lee.Schermerhorn@hp.com>
-Subject: Re: [PATCH 2/8] hugetlb, rmap: add reverse mapping for hugepage
-Message-ID: <20100528144824.GD9774@csn.ul.ie>
-References: <1275006562-18946-1-git-send-email-n-horiguchi@ah.jp.nec.com> <1275006562-18946-3-git-send-email-n-horiguchi@ah.jp.nec.com>
+	id S1758432Ab0E1OuF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 May 2010 10:50:05 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:49105 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1756906Ab0E1OuB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 May 2010 10:50:01 -0400
+Date: Fri, 28 May 2010 10:49:58 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Peter Zijlstra <peterz@infradead.org>
+cc: "Rafael J. Wysocki" <rjw@sisk.pl>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
+       Matthew Garrett <mjg59@srcf.ucam.org>,
+       Thomas Gleixner <tglx@linutronix.de>,
+       LKML <linux-kernel@vger.kernel.org>,
+       Florian Mickler <florian@mickler.org>, <felipe.balbi@nokia.com>,
+       Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
+       Linux PM <linux-pm@lists.linux-foundation.org>
+Subject: Re: [linux-pm] [PATCH 0/8] Suspend block api (version 8)
+In-Reply-To: <1275031197.32462.14.camel@laptop>
+Message-ID: <Pine.LNX.4.44L0.1005281045290.1939-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <1275006562-18946-3-git-send-email-n-horiguchi@ah.jp.nec.com>
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 28, 2010 at 09:29:16AM +0900, Naoya Horiguchi wrote:
-> This patch adds reverse mapping feature for hugepage by introducing
-> mapcount for shared/private-mapped hugepage and anon_vma for
-> private-mapped hugepage.
-> 
-> While hugepage is not currently swappable, reverse mapping can be useful
-> for memory error handler.
-> 
-> Without this patch, memory error handler cannot identify processes
-> using the bad hugepage nor unmap it from them. That is:
-> - for shared hugepage:
->   we can collect processes using a hugepage through pagecache,
->   but can not unmap the hugepage because of the lack of mapcount.
-> - for privately mapped hugepage:
->   we can neither collect processes nor unmap the hugepage.
-> This patch solves these problems.
-> 
-> This patch include the bug fix given by commit 23be7468e8, so reverts it.
-> 
-> Dependency:
->   "hugetlb: move definition of is_vm_hugetlb_page() to hugepage_inline.h"
-> 
-> ChangeLog since May 24.
-> - create hugetlb_inline.h and move is_vm_hugetlb_index() in it.
-> - move functions setting up anon_vma for hugepage into mm/rmap.c.
-> 
-> ChangeLog since May 13.
-> - rebased to 2.6.34
-> - fix logic error (in case that private mapping and shared mapping coexist)
-> - move is_vm_hugetlb_page() into include/linux/mm.h to use this function
->   from linear_page_index()
-> - define and use linear_hugepage_index() instead of compound_order()
-> - use page_move_anon_rmap() in hugetlb_cow()
-> - copy exclusive switch of __set_page_anon_rmap() into hugepage counterpart.
-> - revert commit 24be7468 completely
-> 
-> Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-> Cc: Andi Kleen <andi@firstfloor.org>
-> Cc: Andrew Morton <akpm@linux-foundation.org>
-> Cc: Wu Fengguang <fengguang.wu@intel.com>
-> Cc: Mel Gorman <mel@csn.ul.ie>
-> Cc: Andrea Arcangeli <aarcange@redhat.com>
-> Cc: Larry Woodman <lwoodman@redhat.com>
-> Cc: Lee Schermerhorn <Lee.Schermerhorn@hp.com>
+On Fri, 28 May 2010, Peter Zijlstra wrote:
 
-Ok, I could find no other problems with the hugetlb side of things in the
-first two patches. I haven't looked at the hwpoison parts but I'm assuming
-Andi has looked at those already. Thanks
+> On Thu, 2010-05-27 at 20:59 -0400, Alan Stern wrote:
+> > On Fri, 28 May 2010, Rafael J. Wysocki wrote:
+> > 
+> > > > And the forced-suspend design relies on the fact that processes remain 
+> > > > frozen throughout.  If we leave some processes unfrozen and one of them 
+> > > > somehow becomes runnable, that means we have to abort the forced 
+> > > > suspend before the process is allowed to run.
+> > > 
+> > > We could avoid that if drivers could block tasks, but there are questions to
+> > > answer.  First off, how a driver is supposed to know when to block the task
+> > > using it and when to do its power management transparently for the task?
+> > > Second, how to intercept and block all possible interfaces that user space
+> > > can use to talk to drivers (how to intercept a task using mmapped device, for
+> > > example)?
+> > 
+> > We talked about this a few years ago and decided it was not feasible.  
+> > It would require substantial changes to every device driver.
+> 
+> But what if its the _right_ thing to do? We make changes to every device
+> driver out there on a regular basis. Also, why won't an incremental
+> process work? Add the interface with a fallback for drivers that haven't
+> implemented it and implement it for those drivers its most urgent (like
+> those in use on an Android phone).
 
-Acked-by: Mel Gorman <mel@csn.ul.ie>
+There is no reasonable fallback.  In fact, I seriously doubt that
+there's any way to carry this out at all, reasonable or not.  For
+example, how do you handle the situation where a user task gets an
+error because it accessed an mmapped address belonging to a device that
+has been suspended?
 
--- 
-Mel Gorman
-Part-time Phd Student                          Linux Technology Center
-University of Limerick                         IBM Dublin Software Lab
+> Not doing the right thing simply because its a lot of work seems like a
+> fine way to let the kernel rot into an unmaintainable mess.
+
+Firstly, it's not at all clear that this _is_ the right thing.
+
+Secondly, when doing the right thing involves making invasive changes 
+to half the .c files in the kernel, people might stop to think that it 
+would add more bugs than it would solve problems.
+
+Alan Stern
+
