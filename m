@@ -1,55 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755948Ab0E1Hpu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 May 2010 03:45:50 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:52037 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755476Ab0E1Hpt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 May 2010 03:45:49 -0400
-From: Thomas Renninger <trenn@suse.de>
-Organization: SUSE Products GmbH
-To: Len Brown <lenb@kernel.org>
-Subject: Re: [linux-pm] [PATCH 8/8] intel_idle: create a native cpuidle driver for select intel processors
-Date: Fri, 28 May 2010 09:46:32 +0200
-User-Agent: KMail/1.13.3 (Linux/2.6.31.5-0.1-desktop; KDE/4.4.3; x86_64; ; )
-Cc: linux-pm@lists.linux-foundation.org, x86@kernel.org,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       sfr@canb.auug.org.au
-References: <1274928151-30919-1-git-send-email-lenb@kernel.org> <201005271053.31087.trenn@suse.de> <alpine.LFD.2.00.1005272131400.24823@localhost.localdomain>
-In-Reply-To: <alpine.LFD.2.00.1005272131400.24823@localhost.localdomain>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+	id S1756066Ab0E1Hr0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 May 2010 03:47:26 -0400
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:60956
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755805Ab0E1HrX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 May 2010 03:47:23 -0400
+Date: Fri, 28 May 2010 00:47:32 -0700 (PDT)
+Message-Id: <20100528.004732.70206390.davem@davemloft.net>
+To: rshaffer@codeaurora.org
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3 0/3] Don't send SCO/eSCO request during a mode
+ change from sniff to active 
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1275016326-15795-1-git-send-email-rshaffer@codeaurora.org>
+References: <1275016326-15795-1-git-send-email-rshaffer@codeaurora.org>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
-Message-Id: <201005280946.32981.trenn@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 28 May 2010 03:44:16 Len Brown wrote:
-> On Thu, 27 May 2010, Thomas Renninger wrote:
-...
-> > > This driver does not yet know about cpu online/offline
-> > > and thus will not yet play well with cpu-hotplug.
-I thought this is also about soft on/offlining.
-> 
-> > What means does not play well yet, suspend or manually offlining a
-> > core will eventually (for sure?) hang the machine?
-> 
-> It means less power savings savings than optimal
-> for processors not present at module load time.
-Ok, not really sever...
-> 
-> > If this is known broken, should this already be spread through
-> > linux-next?
-> 
-> If you know somebody with a system that supports CPU hot-add
-> on one of the processors supported by intel_idle, and they
-> are willing to test linux-next, please have them contact me.
-Real CPU hotplug is broken with acpi processor driver as well,
-eventually it got addressed lately. Anyway, not sever...
 
-Thanks,
+Bluetooth patches should be sent to the linux-bluetooth@vger.kernel.org
+mailing list.  As per the following linux/MAINTAINERS entries:
 
-    Thomas
+BLUETOOTH DRIVERS
+M:	Marcel Holtmann <marcel@holtmann.org>
+L:	linux-bluetooth@vger.kernel.org
+W:	http://www.bluez.org/
+S:	Maintained
+F:	drivers/bluetooth/
+
+BLUETOOTH SUBSYSTEM
+M:	Marcel Holtmann <marcel@holtmann.org>
+L:	linux-bluetooth@vger.kernel.org
+W:	http://www.bluez.org/
+T:	git git://git.kernel.org/pub/scm/linux/kernel/git/holtmann/bluetooth-2.6.git
+S:	Maintained
+F:	net/bluetooth/
+F:	include/net/bluetooth/
 
