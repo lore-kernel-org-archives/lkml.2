@@ -1,101 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755819Ab0E1TOX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 May 2010 15:14:23 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:47399 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755237Ab0E1TOW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 May 2010 15:14:22 -0400
-Date: Fri, 28 May 2010 21:12:31 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Andrew Morton <akpm@linux-foundation.org>,
-       Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Roland McGrath <roland@redhat.com>, Andi Kleen <andi@firstfloor.org>,
-       "H. Peter Anvin" <hpa@zytor.com>, Richard Henderson <rth@twiddle.net>,
-       wezhang@redhat.com, linux-kernel@vger.kernel.org,
-       Michael Kerrisk <mtk.manpages@gmail.com>,
-       William Cohen <wcohen@redhat.com>
-Subject: [PATCH 2/2] remove the bogus checks in
-	sys_personality()->__set_personality() path
-Message-ID: <20100528191231.GD12090@redhat.com>
-References: <20100525141720.GA2253@redhat.com> <20100525193348.83F1549A54@magilla.sf.frob.com> <20100526123622.GA26033@redhat.com> <20100526203105.59D7849A56@magilla.sf.frob.com> <20100527153522.GA13858@redhat.com> <20100527153548.GB13858@redhat.com> <alpine.LFD.2.00.1005270921540.3689@i5.linux-foundation.org> <20100527171530.GA18284@redhat.com> <alpine.LFD.2.00.1005271048590.3689@i5.linux-foundation.org> <20100528191139.GB12090@redhat.com>
+	id S1755753Ab0E1TQt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 May 2010 15:16:49 -0400
+Received: from cobra.newdream.net ([66.33.216.30]:42019 "EHLO
+	cobra.newdream.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754783Ab0E1TQr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 May 2010 15:16:47 -0400
+Date: Fri, 28 May 2010 12:16:50 -0700 (PDT)
+From: Sage Weil <sage@newdream.net>
+To: linux-kernel@vger.kernel.org, mingo@elte.hu, peterz@infradead.org,
+       andreas.herrmann3@amd.com, tglx@linutronix.de, efault@gmx.de
+cc: akpm@linux-foundation.org
+Subject: Re: [PATCH] sched: add wait_for_completion_killable_timeout
+In-Reply-To: <Pine.LNX.4.64.1005241129500.1745@cobra.newdream.net>
+Message-ID: <Pine.LNX.4.64.1005281214390.2828@cobra.newdream.net>
+References: <Pine.LNX.4.64.1005241129500.1745@cobra.newdream.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100528191139.GB12090@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Cleanup, no functional changes.
+Hi-
 
-- __set_personality() always changes ->exec_domain/personality, the
-  special case when ->exec_domain remains the same buys nothing but
-  complicates the code. Unify both cases to simplify the code.
+Do I need an ACK on this, or should I just send this to Linus with the 
+Ceph fix?  It's a pretty trivial fixup.
 
-- The -EINVAL check in sys_personality() was never right. If we assume
-  that set_personality() can fail we should check the value it returns
-  instead of verifying that task->personality was actually changed.
+Thanks-
+sage
 
-  Remove it. Before the previous patch it was possible to hit this case
-  due to overflow problems, but this -EINVAL just indicated the kernel
-  bug.
 
-OTOH, probably it makes sense to change lookup_exec_domain() to return
-ERR_PTR() instead of default_exec_domain if the search in exec_domains
-list fails, and report this error to the user-space. But this means
-another user-space change, and we have in-kernel users which need fixes.
-For example, PER_OSF4 falls into PER_MASK for unkown reason and nobody
-cares to register this domain.
+On Mon, 24 May 2010, Sage Weil wrote:
 
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
----
-
- kernel/exec_domain.c |   22 +++++-----------------
- 1 file changed, 5 insertions(+), 17 deletions(-)
-
---- 34-rc1/kernel/exec_domain.c~2_CLEANUP	2010-05-28 18:23:25.000000000 +0200
-+++ 34-rc1/kernel/exec_domain.c	2010-05-28 20:07:48.000000000 +0200
-@@ -134,23 +134,14 @@ unregister:
- 	return 0;
- }
- 
--int
--__set_personality(unsigned int personality)
-+int __set_personality(unsigned int personality)
- {
--	struct exec_domain	*ep, *oep;
--
--	ep = lookup_exec_domain(personality);
--	if (ep == current_thread_info()->exec_domain) {
--		current->personality = personality;
--		module_put(ep->module);
--		return 0;
--	}
-+	struct exec_domain *oep = current_thread_info()->exec_domain;
- 
-+	current_thread_info()->exec_domain = lookup_exec_domain(personality);
- 	current->personality = personality;
--	oep = current_thread_info()->exec_domain;
--	current_thread_info()->exec_domain = ep;
--
- 	module_put(oep->module);
-+
- 	return 0;
- }
- 
-@@ -192,11 +183,8 @@ SYSCALL_DEFINE1(personality, unsigned in
- {
- 	unsigned int old = current->personality;
- 
--	if (personality != 0xffffffff) {
-+	if (personality != 0xffffffff)
- 		set_personality(personality);
--		if (current->personality != personality)
--			return -EINVAL;
--	}
- 
- 	return old;
- }
-
+> Hi guys,
+> 
+> I need this patch (or something similar) to fix an issue with the way Ceph 
+> is waiting for MDS requests to complete.  I'm assuming there's no specific 
+> reason the _killable_timeout variant was excluded?  Can this go into .35?
+> 
+> Thanks-
+> sage
+> 
+> ---
+> 
+> From 1ae82e511ba1664691380ea5c630a94eec370166 Mon Sep 17 00:00:00 2001
+> From: Sage Weil <sage@newdream.net>
+> Date: Mon, 24 May 2010 11:12:42 -0700
+> Subject: [PATCH] sched: add wait_for_completion_killable_timeout
+> 
+> Add missing _killable_timeout variant for wait_for_completion that will
+> return when a timeout expires or the task is killed.
+> 
+> CC: Ingo Molnar <mingo@elte.hu>
+> CC: Peter Zijlstra <peterz@infradead.org>
+> CC: Andreas Herrmann <andreas.herrmann3@amd.com>
+> CC: Thomas Gleixner <tglx@linutronix.de>
+> CC: Mike Galbraith <efault@gmx.de>
+> Signed-off-by: Sage Weil <sage@newdream.net>
+> ---
+>  include/linux/completion.h |    2 ++
+>  kernel/sched.c             |   17 +++++++++++++++++
+>  2 files changed, 19 insertions(+), 0 deletions(-)
+> 
+> diff --git a/include/linux/completion.h b/include/linux/completion.h
+> index 4a6b604..51e3145 100644
+> --- a/include/linux/completion.h
+> +++ b/include/linux/completion.h
+> @@ -83,6 +83,8 @@ extern unsigned long wait_for_completion_timeout(struct completion *x,
+>  						   unsigned long timeout);
+>  extern unsigned long wait_for_completion_interruptible_timeout(
+>  			struct completion *x, unsigned long timeout);
+> +extern unsigned long wait_for_completion_killable_timeout(
+> +			struct completion *x, unsigned long timeout);
+>  extern bool try_wait_for_completion(struct completion *x);
+>  extern bool completion_done(struct completion *x);
+>  
+> diff --git a/kernel/sched.c b/kernel/sched.c
+> index 3c2a54f..4d051c7 100644
+> --- a/kernel/sched.c
+> +++ b/kernel/sched.c
+> @@ -4161,6 +4161,23 @@ int __sched wait_for_completion_killable(struct completion *x)
+>  EXPORT_SYMBOL(wait_for_completion_killable);
+>  
+>  /**
+> + * wait_for_completion_killable_timeout: - waits for completion of a task (w/(to,killable))
+> + * @x:  holds the state of this particular completion
+> + * @timeout:  timeout value in jiffies
+> + *
+> + * This waits for either a completion of a specific task to be
+> + * signaled or for a specified timeout to expire. It can be
+> + * interrupted by a kill signal. The timeout is in jiffies.
+> + */
+> +unsigned long __sched
+> +wait_for_completion_killable_timeout(struct completion *x,
+> +				     unsigned long timeout)
+> +{
+> +	return wait_for_common(x, timeout, TASK_KILLABLE);
+> +}
+> +EXPORT_SYMBOL(wait_for_completion_killable_timeout);
+> +
+> +/**
+>   *	try_wait_for_completion - try to decrement a completion without blocking
+>   *	@x:	completion structure
+>   *
+> -- 
+> 1.7.0
+> 
+> 
