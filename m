@@ -1,69 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754803Ab0E1HDw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 May 2010 03:03:52 -0400
-Received: from vms173007pub.verizon.net ([206.46.173.7]:23566 "EHLO
-	vms173007pub.verizon.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754530Ab0E1HDp (ORCPT
+	id S1755494Ab0E1HEG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 May 2010 03:04:06 -0400
+Received: from vms173001pub.verizon.net ([206.46.173.1]:58850 "EHLO
+	vms173001pub.verizon.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755034Ab0E1HEA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 May 2010 03:03:45 -0400
+	Fri, 28 May 2010 03:04:00 -0400
 From: Len Brown <lenb@kernel.org>
 To: linux-pm@lists.linux-foundation.org
-Cc: linux-kernel@vger.kernel.org, Len Brown <len.brown@intel.com>,
-       Shaohua Li <shaohua.li@intel.com>
-Subject: [PATCH 6/8] acpi_pad: uses MONITOR/MWAIT,
- so it doesn't need to clear TS_POLLING
-Date: Fri, 28 May 2010 02:01:59 -0400
-Message-id: <a7d27c37533524e23bbdc9ba1d78e3241b7483ea.1275026041.git.len.brown@intel.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: idle patches for 2.6.35
+Date: Fri, 28 May 2010 02:01:53 -0400
+Message-id: <1275026521-30835-1-git-send-email-lenb@kernel.org>
 X-Mailer: git-send-email 1.7.1.231.gd0b16
-In-reply-to: <1275026521-30835-1-git-send-email-lenb@kernel.org>
-References: <1275026521-30835-1-git-send-email-lenb@kernel.org>
-In-reply-to: <6b2c676bf32be91f43215d5874c07c1becaba013.1275026041.git.len.brown@intel.com>
-References: <6b2c676bf32be91f43215d5874c07c1becaba013.1275026041.git.len.brown@intel.com>
-X-Patchwork-Hint: ignore
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Len Brown <len.brown@intel.com>
+This patch series responds to all the feedback I've received.
 
-api_pad exclusively uses MONITOR/MWAIT to sleep in idle,
-so it does not need the wakeup IPI during idle sleep
-that is provoked by clearing TS_POLLING.
+I believe that this series is useful enough and clean enough
+to merit inclusion upstream.
 
-Signed-off-by: Len Brown <len.brown@intel.com>
-Cc: Shaohua Li <shaohua.li@intel.com>
----
- drivers/acpi/acpi_pad.c |    9 ---------
- 1 files changed, 0 insertions(+), 9 deletions(-)
+Please look it over and try it out and let me know what I missed.
 
-diff --git a/drivers/acpi/acpi_pad.c b/drivers/acpi/acpi_pad.c
-index 6212213..7edf053 100644
---- a/drivers/acpi/acpi_pad.c
-+++ b/drivers/acpi/acpi_pad.c
-@@ -168,13 +168,6 @@ static int power_saving_thread(void *data)
- 
- 		do_sleep = 0;
- 
--		current_thread_info()->status &= ~TS_POLLING;
--		/*
--		 * TS_POLLING-cleared state must be visible before we test
--		 * NEED_RESCHED:
--		 */
--		smp_mb();
--
- 		expire_time = jiffies + HZ * (100 - idle_pct) / 100;
- 
- 		while (!need_resched()) {
-@@ -200,8 +193,6 @@ static int power_saving_thread(void *data)
- 			}
- 		}
- 
--		current_thread_info()->status |= TS_POLLING;
--
- 		/*
- 		 * current sched_rt has threshold for rt task running time.
- 		 * When a rt task uses 95% CPU time, the rt thread will be
--- 
-1.6.0.6
+thanks,
+Len Brown, Intel Open Source Technology Center
+
+ps.
+Note that you can get the patch series as a single patch here:
+http://ftp.kernel.org/pub/linux/kernel/people/lenb/idle/patches/2.6.34/idle-test-2.6.34.diff.gz
+
+or pull from this git branch
+git://git.kernel.org/pub/scm/linux/kernel/git/lenb/linux-idle-2.6.git idle-test
+
+Note that I updated the series "in place", changing git history.
+So if you previously pulled from idle-test, you'll want to
+discard that branch and create a new one based on 2.6.34.
 
