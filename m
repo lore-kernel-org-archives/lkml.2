@@ -1,74 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756074Ab0E1BoW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 May 2010 21:44:22 -0400
-Received: from vms173005pub.verizon.net ([206.46.173.5]:48334 "EHLO
-	vms173005pub.verizon.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754072Ab0E1BoU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 May 2010 21:44:20 -0400
-Date: Thu, 27 May 2010 21:44:16 -0400 (EDT)
-From: Len Brown <lenb@kernel.org>
-X-X-Sender: lenb@localhost.localdomain
-To: Thomas Renninger <trenn@suse.de>
-Cc: linux-pm@lists.linux-foundation.org, x86@kernel.org,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       sfr@canb.auug.org.au
-Subject: Re: [linux-pm] [PATCH 8/8] intel_idle: create a native cpuidle driver
- for select intel processors
-In-reply-to: <201005271053.31087.trenn@suse.de>
-Message-id: <alpine.LFD.2.00.1005272131400.24823@localhost.localdomain>
-References: <1274928151-30919-1-git-send-email-lenb@kernel.org>
- <198450ec1600d9a7f55270dd4d44d6b55bc5b184.1274926772.git.len.brown@intel.com>
- <201005271053.31087.trenn@suse.de>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
-MIME-version: 1.0
-Content-type: TEXT/PLAIN; charset=US-ASCII
+	id S1757011Ab0E1Bpx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 May 2010 21:45:53 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:45511 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755132Ab0E1Bpw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 May 2010 21:45:52 -0400
+Date: Fri, 28 May 2010 11:45:39 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+       Christoph Hellwig <hch@lst.de>, Josef Bacik <josef@redhat.com>,
+       Chris Mason <chris.mason@oracle.com>, Nick Piggin <npiggin@suse.de>
+Subject: linux-next: build failure after merge of the vfs tree
+Message-Id: <20100528114539.012ff1d2.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Fri__28_May_2010_11_45_39_+1000_kuciqvZGrw7rViBF"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 27 May 2010, Thomas Renninger wrote:
+--Signature=_Fri__28_May_2010_11_45_39_+1000_kuciqvZGrw7rViBF
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> On Thursday 27 May 2010 04:42:31 Len Brown wrote:
-> > From: Len Brown <len.brown@intel.com>
-> ... 
-> > CONFIG_INTEL_IDLE=m is not recommended unless the system
-> > has a method to guarantee intel_idle loads before ACPI's
-> > processor_idle.
+Hi Al,
 
-> Then it should better be declared bool instead of tristate until it
-> works.
+After merging the vfs tree, today's linux-next build (powerpc
+ppc64_defconfig) failed like this:
 
-intel_idle as a module works fine, and tristate should be retained.
+arch/powerpc/platforms/cell/spufs/file.c:1852: error: expected ';', ',' or =
+')' before 'int'
+arch/powerpc/platforms/cell/spufs/file.c:1871: error: 'spufs_mfc_fsync' und=
+eclared here (not in a function)
 
-If user-space chooses to load intel_idle before acpi processor,
-then it correctly handlees idle states and acpi
-correctly yields.  If user space gets them in the other order,
-then user-space gets what it asked for.
+Caused by commit 05b2fc7d1f1046fef1199e1a4d2f63df998ef3aa ("drop unused
+dentry argument to ->fsync").
 
-The fact that a typical desktop distro load acpi-cpufreq first,
-and that depends on the acpi processor driver should not prohibit
-intel_idle from being modular.
+My merge of the vfs tree was also bad because commit
+facd07b07d2a7988f5ce849558838cc953847637 ("direct-io: add a hook for the
+fs to provide its own submit_bio function") that entered Linus' tree in
+the past 24 hours changed the prototype of __blockdev_direct_IO() and
+that probably needs reflecting in the new __blockdev_direct_IO_newtrunc().
 
-Indeed, intel_idle has every right to be moduler on a system
-where CONFIG_ACPI=n...
+I have used the vfs tree from next-20100527 for today.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
 
-> > This driver does not yet know about cpu online/offline
-> > and thus will not yet play well with cpu-hotplug.
+--Signature=_Fri__28_May_2010_11_45_39_+1000_kuciqvZGrw7rViBF
+Content-Type: application/pgp-signature
 
-> What means does not play well yet, suspend or manually offlining a core 
-> will eventually (for sure?) hang the machine?
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
 
-It means less power savings savings than optimal
-for processors not present at module load time.
+iEYEARECAAYFAkv/IEMACgkQjjKRsyhoI8za/QCeJlrcHgy+s6ZvibMvaj+GJxc/
+ukwAnR4tcZoxLmEHH7kw0niiT0Pwvs51
+=ZJ63
+-----END PGP SIGNATURE-----
 
-> If this is known broken, should this already be spread through
-> linux-next?
-
-If you know somebody with a system that supports CPU hot-add
-on one of the processors supported by intel_idle, and they
-are willing to test linux-next, please have them contact me.
-
-thanks,
--Len Brown, Intel Open Source Technology Center
+--Signature=_Fri__28_May_2010_11_45_39_+1000_kuciqvZGrw7rViBF--
