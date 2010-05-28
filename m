@@ -1,171 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758388Ab0E1UaA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 May 2010 16:30:00 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:53989 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756549Ab0E1U37 (ORCPT
+	id S1757890Ab0E1Uhi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 May 2010 16:37:38 -0400
+Received: from g5t0007.atlanta.hp.com ([15.192.0.44]:4545 "EHLO
+	g5t0007.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751650Ab0E1Uhh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 May 2010 16:29:59 -0400
-Date: Fri, 28 May 2010 13:29:53 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Artem Bityutskiy <dedekind1@gmail.com>
-Cc: Al Viro <viro@ZenIV.linux.org.uk>, LKML <linux-kernel@vger.kernel.org>,
-       Jens Axboe <jens.axboe@oracle.com>, linux-fsdevel@vger.kernel.org
-Subject: Re: [PATCHv4 17/17] writeback: lessen sync_supers wakeup count
-Message-Id: <20100528132953.7af88c08.akpm@linux-foundation.org>
-In-Reply-To: <1274795352-3551-18-git-send-email-dedekind1@gmail.com>
-References: <1274795352-3551-1-git-send-email-dedekind1@gmail.com>
-	<1274795352-3551-18-git-send-email-dedekind1@gmail.com>
-X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
+	Fri, 28 May 2010 16:37:37 -0400
+Date: Fri, 28 May 2010 15:42:16 -0500
+From: Mike Miller <mike.miller@hp.com>
+To: Andrew Morton <akpm@linux-foundation.org>,
+       Jens Axboe <jens.axboe@oracle.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+       LKML-scsi <linux-scsi@vger.kernel.org>,
+       Steve Cameron <scameron@beardog.cce.hp.com>
+Subject: [PATCH 6/6] cciss: new controller support and bump driver version
+Message-ID: <20100528204216.GE6989@beardog.cce.hp.com>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 25 May 2010 16:49:12 +0300
-Artem Bityutskiy <dedekind1@gmail.com> wrote:
+Patch 6 of 6
+cciss: add new controller support
+This patch adds support for new controllers due out next year. HP must
+continue to support new controllers in older distros. All vendors require
+support be upstream. These controllers support only 16 commands in simple
+mode but can support up to 1024 in performant mode. See patch 5/6/
+We have no marketing names yet.
 
-> From: Artem Bityutskiy <Artem.Bityutskiy@nokia.com>
-> 
-> The 'sync_supers' thread wakes up every 5 seconds (by default) and
-> writes back all super blocks. It keeps waking up even if there
-> are no dirty super-blocks. For many file-systems the superblock
-> becomes dirty very rarely, if ever, so 'sync_supers' does not do
-> anything most of the time.
-> 
-> This patch improves 'sync_supers' and makes sleep if all superblocks
-> are clean and there is nothing to do. This helps saving the power.
-> This optimization is important for small battery-powered devices.
-> 
-> Signed-off-by: Artem Bityutskiy <Artem.Bityutskiy@nokia.com>
-> ---
->  include/linux/fs.h |    5 +----
->  mm/backing-dev.c   |   36 +++++++++++++++++++++++++++++++++++-
->  2 files changed, 36 insertions(+), 5 deletions(-)
-> 
-> diff --git a/include/linux/fs.h b/include/linux/fs.h
-> index c2ddeee..2d2560b 100644
-> --- a/include/linux/fs.h
-> +++ b/include/linux/fs.h
-> @@ -1786,10 +1786,7 @@ extern void simple_set_mnt(struct vfsmount *mnt, struct super_block *sb);
->   * Note, VFS does not provide any serialization for the super block clean/dirty
->   * state changes, file-systems should take care of this.
->   */
-> -static inline void mark_sb_dirty(struct super_block *sb)
-> -{
-> -	sb->s_dirty = 1;
-> -}
-> +void mark_sb_dirty(struct super_block *sb);
->  static inline void mark_sb_clean(struct super_block *sb)
->  {
->  	sb->s_dirty = 0;
-> diff --git a/mm/backing-dev.c b/mm/backing-dev.c
-> index 660a87a..14f3eb7 100644
-> --- a/mm/backing-dev.c
-> +++ b/mm/backing-dev.c
-> @@ -45,6 +45,8 @@ LIST_HEAD(bdi_pending_list);
->  
->  static struct task_struct *sync_supers_tsk;
->  static struct timer_list sync_supers_timer;
-> +static int supers_timer_armed;
+From: Mike Miller <mike.miller@hp.com>
+Cc: Stephen M. Cameron <scameron@beardog.cce.hp.com>
 
-This thing's a bit ugly.
+Signed-off-by: Mike Miller <mike.miller@hp.com>
+---
+ drivers/block/cciss.c |   20 ++++++++++++++------
+ 1 files changed, 14 insertions(+), 6 deletions(-)
 
-> +static DEFINE_SPINLOCK(supers_timer_lock);
->  
->  static int bdi_sync_supers(void *);
->  static void sync_supers_timer_fn(unsigned long);
-> @@ -355,6 +357,11 @@ static void bdi_flush_io(struct backing_dev_info *bdi)
->   * or we risk deadlocking on ->s_umount. The longer term solution would be
->   * to implement sync_supers_bdi() or similar and simply do it from the
->   * bdi writeback tasks individually.
-> + *
-> + * Historically this thread woke up periodically, regardless of whether
-> + * there was any dirty superblock. However, nowadays it is optimized to
-> + * wake up only when there is something to synchronize - this helps to save
-> + * power.
->   */
->  static int bdi_sync_supers(void *unused)
->  {
-> @@ -364,10 +371,24 @@ static int bdi_sync_supers(void *unused)
->  		set_current_state(TASK_INTERRUPTIBLE);
->  		schedule();
->  
-> +		spin_lock(&supers_timer_lock);
-> +		/* Indicate that 'sync_supers' is in progress */
-> +		supers_timer_armed = -1;
-> +		spin_unlock(&supers_timer_lock);
-> +
->  		/*
->  		 * Do this periodically, like kupdated() did before.
->  		 */
->  		sync_supers();
-> +
-> +		spin_lock(&supers_timer_lock);
-> +		if (supers_timer_armed == 1)
-> +			/* A super block was marked as dirty meanwhile */
-> +			bdi_arm_supers_timer();
-> +		else
-> +			/* No more dirty superblocks - we've synced'em all */
-> +			supers_timer_armed = 0;
-> +		spin_unlock(&supers_timer_lock);
->  	}
-
-I suspect the spinlock could be removed if you switched to bitops:
-test_and_set_bit(0, supers_timer_armed);
-
-Ahother possibility is to nuke supers_timer_armed() and use
-timer_pending(), mod_timer(), etc directly.
-
-
->  	return 0;
-> @@ -387,9 +408,22 @@ void bdi_arm_supers_timer(void)
->  static void sync_supers_timer_fn(unsigned long unused)
->  {
->  	wake_up_process(sync_supers_tsk);
-> -	bdi_arm_supers_timer();
->  }
->  
-> +void mark_sb_dirty(struct super_block *sb)
-> +{
-> +	sb->s_dirty = 1;
-> +
-> +	spin_lock(&supers_timer_lock);
-> +	if (!supers_timer_armed) {
-> +		bdi_arm_supers_timer();
-> +		supers_timer_armed = 1;
-> +	} else if (supers_timer_armed == -1)
-> +		supers_timer_armed = 1;
-> +	spin_unlock(&supers_timer_lock);
-> +}
-> +EXPORT_SYMBOL(mark_sb_dirty);
-
-This looks inefficient.  Could we not do
-
-void mark_sb_dirty(struct super_block *sb)
-{
-	sb->s_dirty = 1;
-
-	if (!supers_timer_armed) {
-		spin_lock(&supers_timer_lock);
-		if (!supers_timer_armed) {
-			bdi_arm_supers_timer();
-			supers_timer_armed = 1;
-		}
-	} else if (supers_timer_armed == -1)
-		spin_lock(&supers_timer_lock);
-		if (supers_timer_armed == -1)
-			supers_timer_armed = 1;
-		spin_unlock(&supers_timer_lock);
-	}
-}
-
-I didn't try very hard there, but you get the idea: examine the state
-before taking that expensive global spinlock, so we only end up taking
-the lock once per five seconds, rather than once per possible
-superblock dirtying.  That's like a six-orders-of-magnitude reduction
-in locking frequency, which is worth putting some effort into.
-
+diff --git a/drivers/block/cciss.c b/drivers/block/cciss.c
+index 08a2e61..5e215ff 100644
+--- a/drivers/block/cciss.c
++++ b/drivers/block/cciss.c
+@@ -56,16 +56,14 @@
+ #include <linux/kthread.h>
+ 
+ #define CCISS_DRIVER_VERSION(maj,min,submin) ((maj<<16)|(min<<8)|(submin))
+-#define DRIVER_NAME "HP CISS Driver (v 3.6.20)"
+-#define DRIVER_VERSION CCISS_DRIVER_VERSION(3, 6, 20)
++#define DRIVER_NAME "HP CISS Driver (v 3.6.26)"
++#define DRIVER_VERSION CCISS_DRIVER_VERSION(3, 6, 26)
+ 
+ /* Embedded module documentation macros - see modules.h */
+ MODULE_AUTHOR("Hewlett-Packard Company");
+ MODULE_DESCRIPTION("Driver for HP Smart Array Controllers");
+-MODULE_SUPPORTED_DEVICE("HP SA5i SA5i+ SA532 SA5300 SA5312 SA641 SA642 SA6400"
+-			" SA6i P600 P800 P400 P400i E200 E200i E500 P700m"
+-			" Smart Array G2 Series SAS/SATA Controllers");
+-MODULE_VERSION("3.6.20");
++MODULE_SUPPORTED_DEVICE("HP Smart Array Controllers");
++MODULE_VERSION("3.6.26");
+ MODULE_LICENSE("GPL");
+ 
+ static int cciss_allow_hpsa;
+@@ -107,6 +105,11 @@ static const struct pci_device_id cciss_pci_device_id[] = {
+ 	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSE,     0x103C, 0x3249},
+ 	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSE,     0x103C, 0x324A},
+ 	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSE,     0x103C, 0x324B},
++	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSE,     0x103C, 0x3250},
++	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSE,     0x103C, 0x3251},
++	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSE,     0x103C, 0x3252},
++	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSE,     0x103C, 0x3253},
++	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSE,     0x103C, 0x3254},
+ 	{0,}
+ };
+ 
+@@ -146,6 +149,11 @@ static struct board_type products[] = {
+ 	{0x3249103C, "Smart Array P812", &SA5_access},
+ 	{0x324A103C, "Smart Array P712m", &SA5_access},
+ 	{0x324B103C, "Smart Array P711m", &SA5_access},
++	{0x3250103C, "Smart Array", &SA5_access},
++	{0x3251103C, "Smart Array", &SA5_access},
++	{0x3252103C, "Smart Array", &SA5_access},
++	{0x3253103C, "Smart Array", &SA5_access},
++	{0x3254103C, "Smart Array", &SA5_access},
+ };
+ 
+ /* How long to wait (in milliseconds) for board to go into simple mode */
