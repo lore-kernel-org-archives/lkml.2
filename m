@@ -1,63 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755227Ab0E1HL1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 May 2010 03:11:27 -0400
-Received: from tx2ehsobe004.messaging.microsoft.com ([65.55.88.14]:32461 "EHLO
-	TX2EHSOBE008.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753911Ab0E1HLY (ORCPT
+	id S1755088Ab0E1HXX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 May 2010 03:23:23 -0400
+Received: from mailservice.tudelft.nl ([130.161.131.5]:52878 "EHLO
+	mailservice.tudelft.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752650Ab0E1HXS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 May 2010 03:11:24 -0400
-X-SpamScore: -18
-X-BigFish: VPS-18(zz119bM1432P98dNzz1202hzzz32i87h2a8h43h62h)
-X-Spam-TCS-SCL: 1:0
-X-FB-DOMAIN-IP-MATCH: fail
-X-WSS-ID: 0L34BYO-02-PY8-02
-X-M-MSG: 
-Date: Fri, 28 May 2010 09:11:15 +0200
-From: "Roedel, Joerg" <Joerg.Roedel@amd.com>
-To: Nicolas Palix <npalix@diku.dk>
-CC: Julia Lawall <julia@diku.dk>, Thomas Gleixner <tglx@linutronix.de>,
-       Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-       "x86@kernel.org" <x86@kernel.org>,
-       "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       "kernel-janitors@vger.kernel.org" <kernel-janitors@vger.kernel.org>
-Subject: Re: [PATCH 6/17] arch/x86/kernel: Add missing spin_unlock
-Message-ID: <20100528071114.GA3266@amd.com>
-References: <Pine.LNX.4.64.1005261755260.23743@ask.diku.dk>
- <20100527111136.GV3266@amd.com>
- <Pine.LNX.4.64.1005271317180.5422@ask.diku.dk>
- <201005271342.25619.npalix@diku.dk>
+	Fri, 28 May 2010 03:23:18 -0400
+X-Spam-Flag: NO
+X-Spam-Score: -22.589
+Message-ID: <4BFF6F5C.2040603@tremplin-utc.net>
+Date: Fri, 28 May 2010 09:23:08 +0200
+From: =?ISO-8859-1?Q?=C9ric_Piel?= <Eric.Piel@tremplin-utc.net>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.8.1.21) Gecko/20090319 Mandriva/2.0.0.21-1mdv2009.1 (2009.1) Thunderbird/2.0.0.21 Mnenhy/0.7.6.666
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <201005271342.25619.npalix@diku.dk>
-Organization: Advanced Micro Devices =?iso-8859-1?Q?GmbH?=
-	=?iso-8859-1?Q?=2C_Karl-Hammerschmidt-Str=2E_34=2C_85609_Dornach_bei_M=FC?=
-	=?iso-8859-1?Q?nchen=2C_Gesch=E4ftsf=FChrer=3A_Thomas_M=2E_McCoy=2C_Giuli?=
-	=?iso-8859-1?Q?ano_Meroni=2C_Andrew_Bowd=2C_Sitz=3A_Dornach=2C_Gemeinde_A?=
-	=?iso-8859-1?Q?schheim=2C_Landkreis_M=FCnchen=2C_Registergericht_M=FCnche?=
-	=?iso-8859-1?Q?n=2C?= HRB Nr. 43632
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Reverse-DNS: unknown
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: Dave Airlie <airlied@gmail.com>,
+       Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+       Florian Ragwitz <rafl@debian.org>, Arjan Opmeer <arjan@opmeer.net>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       linux-input@vger.kernel.org
+Subject: Re: [git pull] Input updates for 2.6.35-rc0
+References: <20100520165243.GA20861@core.coreip.homeip.net> <alpine.LFD.2.00.1005271837050.11382@i5.linux-foundation.org> <AANLkTiklv48cDWNqKlFfh5RVtxxNH8shH_JjDypPgeHA@mail.gmail.com> <alpine.LFD.2.00.1005272108210.11382@i5.linux-foundation.org>
+In-Reply-To: <alpine.LFD.2.00.1005272108210.11382@i5.linux-foundation.org>
+X-Enigmail-Version: 1.0.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 27, 2010 at 07:42:25AM -0400, Nicolas Palix wrote:
-> > We have submitted and received some feedback on an initial version of 
-> > this, but I'm not completely sure of the current status.
+Op 28-05-10 06:12, Linus Torvalds schreef:
 > 
-> You can see the latest feedback we get at
-> http://lkml.org/lkml/2010/5/10/257
 > 
-> The initial submission and its comments are at
-> http://lkml.org/lkml/2010/4/26/269
+> On Fri, 28 May 2010, Dave Airlie wrote:
+>>
+>> Was this in GNOME?
+>>
+>> Does System->Preferences->Mouse have a touchpad tab? do it have tapping off?
+> 
+> Bingo! Yup, that turns a totally useless piece-of-crap touchpad into a 
+> perfectly cromulent one!
+> 
+> Too bad that the default behavior made it act so horribly bad. 
+Hi,
+Good to hear it was just a userspace problem. Actually on my Mini 10, to
+get it with all the nice feature I have this in a script:
 
-I've also sent some feedback. Would be cool if you could work the
-feedback in and do a repost asking Andrew to take it. Would be cool to
-have this merged with 2.6.36.
+for DEVICE in "SynPS/2 Synaptics TouchPad" "ETPS/2 Elantech Touchpad"; do
+if xinput --list "$DEVICE" > /dev/null 2>/dev/null ; then
+xinput --set-prop "$DEVICE" "Synaptics Two-Finger Scrolling" 1 1
+xinput --set-prop "$DEVICE" "Synaptics Tap Action" 0 0 0 0 1 2 3
+xinput --set-prop "$DEVICE" "Synaptics Tap Move" 1000
+xinput --set-prop "$DEVICE" "Synaptics Edge Scrolling" 1 1 0
+xinput --set-prop "$DEVICE" "Synaptics Scrolling Distance" 100 100
+xinput --set-prop "$DEVICE" "Synaptics Circular Scrolling" 1
+xinput --set-prop "$DEVICE" "Synaptics Circular Scrolling Trigger" 3
+fi
+done
 
-	Joerg
 
+Currently, using the native mode, compared to the emulated imps/2, just
+gives you the circular scrolling and the horizontal two-finger scrolling
+(which is for me already enough to make it worth). However, once we
+fully understand the protocol, and more precisely, on which device to
+use one of the three sub-protocols, it should be able to also provide:
+ * gesture with three fingers (soon)
+ * palm detection thanks to touch width measurement (soon)
+ * pitch-to-zoom (needs userspace update, so not so soon)
 
+Cheers,
+Eric
