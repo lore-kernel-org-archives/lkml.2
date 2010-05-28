@@ -1,107 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932627Ab0E1PUG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 May 2010 11:20:06 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:61762 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932160Ab0E1PUB (ORCPT
+	id S932739Ab0E1PUW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 May 2010 11:20:22 -0400
+Received: from smtp.nokia.com ([192.100.122.233]:31461 "EHLO
+	mgw-mx06.nokia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932631Ab0E1PUS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 May 2010 11:20:01 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=from:to:cc:subject:date:message-id:x-mailer;
-	b=oU2CworMXTcgwhtnGjUhhAWSBnoNck8ovNlmJAKPIL7fjFZbqHLqOPnxffVFCBPrr
-	+U8r7YnKYnvVGVJH4OEeg==
-From: Greg Thelen <gthelen@google.com>
-To: Paul Menage <menage@google.com>,
-       "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-       Li Zefan <lizf@cn.fujitsu.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-       Ben Blum <bblum@andrew.cmu.edu>, containers@lists.linux-foundation.org,
-       linux-kernel@vger.kernel.org, Greg Thelen <gthelen@google.com>
-Subject: [PATCH] cgroup: alloc_css_id() increments hierarchy depth
-Date: Fri, 28 May 2010 08:16:21 -0700
-Message-Id: <1275059781-9831-1-git-send-email-gthelen@google.com>
-X-Mailer: git-send-email 1.7.0.1
+	Fri, 28 May 2010 11:20:18 -0400
+Message-ID: <4BFFD32B.5090105@nokia.com>
+Date: Fri, 28 May 2010 17:28:59 +0300
+From: Igor Stoppa <igor.stoppa@nokia.com>
+User-Agent: Mozilla-Thunderbird 2.0.0.22 (X11/20091109)
+MIME-Version: 1.0
+To: ext Alan Cox <alan@lxorguk.ukuu.org.uk>
+CC: Matthew Garrett <mjg59@srcf.ucam.org>, "tytso@mit.edu" <tytso@mit.edu>,
+       Peter Zijlstra <peterz@infradead.org>,
+       LKML <linux-kernel@vger.kernel.org>,
+       Florian Mickler <florian@mickler.org>,
+       Linux PM <linux-pm@lists.linux-foundation.org>,
+       Thomas Gleixner <tglx@linutronix.de>,
+       Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
+       "Balbi Felipe (Nokia-D/Helsinki)" <felipe.balbi@nokia.com>
+Subject: Re: [linux-pm] [PATCH 0/8] Suspend block api (version 8)
+References: <20100527222514.0a1710bf@lxorguk.ukuu.org.uk>	<Pine.LNX.4.44L0.1005271730180.3239-100000@iolanthe.rowland.org>	<20100527230806.4deb6de3@lxorguk.ukuu.org.uk>	<20100527220949.GB10602@srcf.ucam.org>	<20100527232357.6d14fdb2@lxorguk.ukuu.org.uk>	<20100527223605.GB11364@srcf.ucam.org>	<20100527235546.09f3ce8a@lxorguk.ukuu.org.uk>	<20100528043114.GC26177@thunk.org>	<20100528103713.0a7952d9@lxorguk.ukuu.org.uk>	<20100528114123.GA22947@srcf.ucam.org> <20100528145444.265d1853@lxorguk.ukuu.org.uk>
+In-Reply-To: <20100528145444.265d1853@lxorguk.ukuu.org.uk>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 28 May 2010 14:05:45.0584 (UTC) FILETIME=[DDE0DF00:01CAFE6E]
+X-Nokia-AV: Clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Child groups should have a greater depth than their parents.
-Prior to this change, the parent would incorrectly report zero
-memory usage for child cgroups when use_hierarchy is enabled.
+ext Alan Cox wrote:
 
-test script:
-  mount -t cgroup none /cgroups -o memory
-  cd /cgroups
-  mkdir cg1
+> Be that as it may the question of how you manage a naughty app is a good
+> one. Historically we've managed them for network abuse, memory abuse, cpu
+> use abuse, access rights, but not yet power.
+>
+> Whether that looks like
+>
+> 	setrlimit(pid, LIMIT_CHARGE, 150mWH);
+>
+> or
+> 	setrlimit(pid, LIMIT_POWER, 150mW);
+>
+> or something else is the question.
 
-  echo 1 > cg1/memory.use_hierarchy
-  mkdir cg1/cg11
+Either way, this will require a detailed model of the system in terms of 
+latency, throughput, current consumption and heat generation.
 
-  echo $$ > cg1/cg11/tasks
-  dd if=/dev/zero of=/tmp/foo bs=1M count=1
+Which can be provided only by the HW manufacturer.
 
-  echo
-  echo CHILD
-  grep cache cg1/cg11/memory.stat
+But, should such model be available (and we have some form of it for the 
+OMAP3 in N900), then it can be abstracted through generic interfaces, 
+which accept constraints and produce the selected target state 
+(typically a vector of states for each sub component).
 
-  echo
-  echo PARENT
-  grep cache cg1/memory.stat
-
-  echo $$ > tasks
-  rmdir cg1/cg11 cg1
-  cd /
-  umount /cgroups
-
-Using fae9c79, a recent patch that changed alloc_css_id() depth computation,
-the parent incorrectly reports zero usage:
-  root@ubuntu:~# ./test
-  1+0 records in
-  1+0 records out
-  1048576 bytes (1.0 MB) copied, 0.0151844 s, 69.1 MB/s
-
-  CHILD
-  cache 1048576
-  total_cache 1048576
-
-  PARENT
-  cache 0
-  total_cache 0
-
-With this patch, the parent correctly includes child usage:
-  root@ubuntu:~# ./test
-  1+0 records in
-  1+0 records out
-  1048576 bytes (1.0 MB) copied, 0.0136827 s, 76.6 MB/s
-
-  CHILD
-  cache 1052672
-  total_cache 1052672
-
-  PARENT
-  cache 0
-  total_cache 1052672
-
-Signed-off-by: Greg Thelen <gthelen@google.com>
----
- kernel/cgroup.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/kernel/cgroup.c b/kernel/cgroup.c
-index 422cb19..3ac6f5b 100644
---- a/kernel/cgroup.c
-+++ b/kernel/cgroup.c
-@@ -4598,7 +4598,7 @@ static int alloc_css_id(struct cgroup_subsys *ss, struct cgroup *parent,
- 	parent_css = parent->subsys[subsys_id];
- 	child_css = child->subsys[subsys_id];
- 	parent_id = parent_css->id;
--	depth = parent_id->depth;
-+	depth = parent_id->depth + 1;
- 
- 	child_id = get_new_cssid(ss, depth);
- 	if (IS_ERR(child_id))
--- 
-1.7.0.1
-
+igor
