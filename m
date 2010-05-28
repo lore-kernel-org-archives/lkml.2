@@ -1,148 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757229Ab0E1BX4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 May 2010 21:23:56 -0400
-Received: from bld-mail14.adl6.internode.on.net ([150.101.137.99]:44813 "EHLO
-	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754712Ab0E1BXy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 May 2010 21:23:54 -0400
-Date: Fri, 28 May 2010 11:23:38 +1000
-From: Dave Chinner <david@fromorbit.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, xfs@oss.sgi.com,
-       linux-fsdevel@vger.kernel.org, linux-ext4@vger.kernel.org,
-       tytso@mit.edu, jens.axboe@oracle.com
-Subject: Re: [PATCH 6/6] writeback: limit write_cache_pages integrity
- scanning to current EOF
-Message-ID: <20100528012338.GX12087@dastard>
-References: <1274784852-30502-1-git-send-email-david@fromorbit.com>
- <1274784852-30502-7-git-send-email-david@fromorbit.com>
- <20100527143341.d4258798.akpm@linux-foundation.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100527143341.d4258798.akpm@linux-foundation.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1757913Ab0E1Bb2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 May 2010 21:31:28 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:42804 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756193Ab0E1BbV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 May 2010 21:31:21 -0400
+Date: Fri, 28 May 2010 11:31:20 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+       Jan Kara <jack@suse.cz>, Christoph Hellwig <hch@lst.de>
+Subject: linux-next: manual merge of the vfs tree with the ext3 tree
+Message-Id: <20100528113120.b7fe818a.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 27, 2010 at 02:33:41PM -0700, Andrew Morton wrote:
-> On Tue, 25 May 2010 20:54:12 +1000
-> Dave Chinner <david@fromorbit.com> wrote:
-> 
-> > From: Dave Chinner <dchinner@redhat.com>
-> > 
-> > sync can currently take a really long time if a concurrent writer is
-> > extending a file. The problem is that the dirty pages on the address
-> > space grow in the same direction as write_cache_pages scans, so if
-> > the writer keeps ahead of writeback, the writeback will not
-> > terminate until the writer stops adding dirty pages.
-> 
-> <looks at Jens>
-> 
-> The really was a pretty basic bug.  It's writeback 101 to test that case :(
-> 
-> > For a data integrity sync, we only need to write the pages dirty at
-> > the time we start the writeback, so we can stop scanning once we get
-> > to the page that was at the end of the file at the time the scan
-> > started.
-> > 
-> > This will prevent operations like copying a large file preventing
-> > sync from completing as it will not write back pages that were
-> > dirtied after the sync was started. This does not impact the
-> > existing integrity guarantees, as any dirty page (old or new)
-> > within the EOF range at the start of the scan will still be
-> > captured.
-> > 
-> > Signed-off-by: Dave Chinner <dchinner@redhat.com>
-> > ---
-> >  mm/page-writeback.c |   15 +++++++++++++++
-> >  1 files changed, 15 insertions(+), 0 deletions(-)
-> > 
-> > diff --git a/mm/page-writeback.c b/mm/page-writeback.c
-> > index 0fe713d..c97e973 100644
-> > --- a/mm/page-writeback.c
-> > +++ b/mm/page-writeback.c
-> > @@ -855,7 +855,22 @@ int write_cache_pages(struct address_space *mapping,
-> >  		if (wbc->range_start == 0 && wbc->range_end == LLONG_MAX)
-> >  			range_whole = 1;
-> >  		cycled = 1; /* ignore range_cyclic tests */
-> > +
-> > +		/*
-> > +		 * If this is a data integrity sync, cap the writeback to the
-> > +		 * current end of file. Any extension to the file that occurs
-> > +		 * after this is a new write and we don't need to write those
-> > +		 * pages out to fulfil our data integrity requirements. If we
-> > +		 * try to write them out, we can get stuck in this scan until
-> > +		 * the concurrent writer stops adding dirty pages and extending
-> > +		 * EOF.
-> > +		 */
-> > +		if (wbc->sync_mode == WB_SYNC_ALL &&
-> > +		    wbc->range_end == LLONG_MAX) {
-> > +			end = i_size_read(mapping->host) >> PAGE_CACHE_SHIFT;
-> > +		}
-> >  	}
-> > +
-> 
-> This is somewhat inefficient.  It's really trivial and fast to find the
-> highest-index dirty page by walking straight down the
-> PAGECACHE_TAG_DIRTY-tagged nodes.
-> 
-> However pagevec_lookup_tag(..., PAGECACHE_TAG_DIRTY) should do a pretty
-> good job of skipping over the (millions of) pages between the (last
-> dirty page before `end') and (`end').  So it _should_ be OK.  Some thought
-> and runtime testing would be good.
+Hi Al,
 
-I've done plenty of testing here - the patch is part of my usual QA
-stack so it's probably run through XFSQA a few hundred times now.
+Today's linux-next merge of the vfs tree got a conflict in fs/ufs/file.c
+between commit 8f45c33decf62e1aaaa9411aae8fef6a38f95845 ("ufs: Remove
+dead quota code") from the ext3 tree and commit
+8f1edffdb5a76f205cf45070e1552ee8b2239a2b ("rename the generic fsync
+implementations") from the vfs tree.
 
-The behaviour w.r.t. writes into holes appears to be identical to
-the current behaviour (i.e. sync hangs until the write stops). I
-can't _see_ any difference in behaviour of increase in overhead, but
-we all know that this doesn't mean there isn't one.
-
-The test I ran to determine it's effectiveness against extending
-writes was running sync during an 8GB sequential write. It would
-hang every time until the write completes - typically around 50-60s
-- without this patch. With this patch sync returns within 3-4s every
-time.
-
-> That being said, I think the patch is insufficient.  If I create an
-> enormous (possibly sparse) file with a 16TB hole (or a run of clean
-> pages) in the middle and then start busily writing into that hole (run
-> of clean pages), the problem will still occur.
-
-Yes, that's already been pointed out. This doesn't attempt to
-address that problem because....
-
-> One obvious fix for that (a) would be to add another radix-tree tag and
-> do two passes across the radix-tree.
-
-.... we're still waiting for Jan's mark and sweep patch that does
-this to make progress. This patch is just a simple fix for the most
-common cause of the problem and might get into the tree sooner.
-
-Personally I see no problems with using a mark+sweep algorithm for
-this - IMO ensuring that data integrity requirements are met is more
-important than ultimate performance.
-
-> Another fix (b) would be to track the number of dirty pages per
-> adddress_space, and only write that number of pages.
-> 
-> Another fix would be to work out how the code handled this situation
-> before we broke it, and restore that in some fashion.  I guess fix (b)
-> above kinda does that.
-
-Yes, b) is similar to the old code, but like the old code it doesn't
-work for the data integrity case because it doesn't guarantee the
-correct pages are written out. This patch does for the append case,
-and a) guarantees it in all cases....
-
-Cheers,
-
-Dave.
+Just context changes.  I fixed it up (see below) and can carry the fix
+for a while.
 -- 
-Dave Chinner
-david@fromorbit.com
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+diff --cc fs/ufs/file.c
+index 73655c6,d4c30d1..0000000
+--- a/fs/ufs/file.c
++++ b/fs/ufs/file.c
+@@@ -40,7 -41,7 +40,7 @@@ const struct file_operations ufs_file_o
+  	.write		= do_sync_write,
+  	.aio_write	= generic_file_aio_write,
+  	.mmap		= generic_file_mmap,
+ -	.open           = dquot_file_open,
+ +	.open           = generic_file_open,
+- 	.fsync		= simple_fsync,
++ 	.fsync		= generic_file_fsync,
+  	.splice_read	= generic_file_splice_read,
+  };
