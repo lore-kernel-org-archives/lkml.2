@@ -1,63 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752036Ab0E1Edr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 May 2010 00:33:47 -0400
-Received: from e23smtp06.au.ibm.com ([202.81.31.148]:55081 "EHLO
-	e23smtp06.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751071Ab0E1Edq (ORCPT
+	id S1752319Ab0E1Ekb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 May 2010 00:40:31 -0400
+Received: from e37.co.us.ibm.com ([32.97.110.158]:56031 "EHLO
+	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750915Ab0E1Ek3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 May 2010 00:33:46 -0400
-Date: Fri, 28 May 2010 10:03:39 +0530
-From: Balbir Singh <balbir@linux.vnet.ibm.com>
-To: "Luis Claudio R. Goncalves" <lclaudio@uudg.org>
-Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-       Oleg Nesterov <oleg@redhat.com>, linux-kernel@vger.kernel.org,
-       linux-mm@kvack.org, Thomas Gleixner <tglx@linutronix.de>,
-       Peter Zijlstra <peterz@infradead.org>,
-       David Rientjes <rientjes@google.com>, Mel Gorman <mel@csn.ul.ie>,
-       williams@redhat.com
-Subject: Re: [RFC] oom-kill: give the dying task a higher priority
-Message-ID: <20100528043339.GZ3519@balbir.in.ibm.com>
-Reply-To: balbir@linux.vnet.ibm.com
-References: <20100527180431.GP13035@uudg.org>
- <20100527183319.GA22313@redhat.com>
- <20100528090357.7DFB.A69D9226@jp.fujitsu.com>
- <20100528035147.GD11364@uudg.org>
+	Fri, 28 May 2010 00:40:29 -0400
+Date: Thu, 27 May 2010 23:40:26 -0500
+From: "Serge E. Hallyn" <serue@us.ibm.com>
+To: Kees Cook <kees.cook@canonical.com>
+Cc: linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
+       linux-doc@vger.kernel.org, Randy Dunlap <rdunlap@xenotime.net>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Jiri Kosina <jkosina@suse.cz>, Dave Young <hidave.darkstar@gmail.com>,
+       Martin Schwidefsky <schwidefsky@de.ibm.com>,
+       James Morris <jmorris@namei.org>, Eric Paris <eparis@redhat.com>,
+       David Howells <dhowells@redhat.com>, Ingo Molnar <mingo@elte.hu>,
+       Peter Zijlstra <a.p.zijlstra@chello.nl>,
+       "Eric W. Biederman" <ebiederm@xmission.com>,
+       Tim Gardner <tim.gardner@canonical.com>
+Subject: Re: [PATCH] fs: block cross-uid sticky symlinks
+Message-ID: <20100528044026.GA13636@us.ibm.com>
+References: <20100527201635.GU6056@outflux.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100528035147.GD11364@uudg.org>
-User-Agent: Mutt/1.5.20 (2009-08-17)
+In-Reply-To: <20100527201635.GU6056@outflux.net>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Luis Claudio R. Goncalves <lclaudio@uudg.org> [2010-05-28 00:51:47]:
+Quoting Kees Cook (kees.cook@canonical.com):
+> A long-standing class of security issues is the symlink-based
+> time-of-check-time-of-use race, most commonly seen in world-writable
+> directories like /tmp. The common method of exploitation of this flaw
+> is to cross privilege boundaries when following a given symlink (i.e. a
+> root process follows a symlink belonging to another user).  For a likely
+> incomplete list of hundreds of examples across the years, please see:
+> http://cve.mitre.org/cgi-bin/cvekey.cgi?keyword=/tmp
 
-> @@ -382,6 +382,8 @@ static void dump_header(struct task_struct *p, gfp_t gfp_mask, int order,
->   */
->  static void __oom_kill_task(struct task_struct *p, int verbose)
->  {
-> +	struct sched_param param;
+That is quite a list :)
+
+> +int cap_inode_follow_link(struct dentry *dentry,
+> +			  struct nameidata *nameidata)
+> +{
+> +	const struct inode *parent = dentry->d_parent->d_inode;
+> +	const struct inode *inode = dentry->d_inode;
+> +	const struct cred *cred = current_cred();
 > +
->  	if (is_global_init(p)) {
->  		WARN_ON(1);
->  		printk(KERN_WARNING "tried to kill init!\n");
-> @@ -413,8 +415,9 @@ static void __oom_kill_task(struct task_struct *p, int verbose)
->  	 */
->  	p->rt.time_slice = HZ;
->  	set_tsk_thread_flag(p, TIF_MEMDIE);
-> -
->  	force_sig(SIGKILL, p);
-> +	param.sched_priority = MAX_RT_PRIO-1;
-> +	sched_setscheduler_nocheck(p, SCHED_FIFO, &param);
->  }
->
+> +	if (weak_sticky_symlinks)
+> +		return 0;
+> +
+> +	if (S_ISLNK(inode->i_mode) &&
 
-I would like to understand the visible benefits of this patch. Have
-you seen an OOM kill tasked really get bogged down. Should this task
-really be competing with other important tasks for run time?
+Q: is the S_ISLNK() check actually needed?
 
--- 
-	Three Cheers,
-	Balbir
+In either case:
+
+Acked-by: Serge E. Hallyn <serue@us.ibm.com>
+
+thanks,
+-serge
