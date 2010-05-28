@@ -1,36 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757452Ab0E1LqY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 May 2010 07:46:24 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:36918 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754553Ab0E1LqX (ORCPT
+	id S1756834Ab0E1Lxa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 May 2010 07:53:30 -0400
+Received: from mtagate6.de.ibm.com ([195.212.17.166]:34607 "EHLO
+	mtagate6.de.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754160Ab0E1Lx2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 May 2010 07:46:23 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:date:message-id:subject:from:to:cc:content-type;
-        b=VEQTAec/S4Sb3J+aAg0tvpaNTGy2F3jtrcAXsm8Zdz+ogVt8XFNnCEd+KmROvWLsU3
-         oTgdRGOdsq8KDLMzOWRsrNVCoYbMcPwk2mxXM2whkYX3k5l9kpGf2SQ4RKLjnDM2rJ8E
-         N6sqv1D4nErSCUarPmDpO1vp9QaMqXKojr+5g=
+	Fri, 28 May 2010 07:53:28 -0400
+Date: Fri, 28 May 2010 13:54:28 +0200
+From: Heiko Carstens <heiko.carstens@de.ibm.com>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: linux-kernel@vger.kernel.org, Luca Barbieri <luca@luca-barbieri.com>
+Subject: [PATCH] lib: add s390 to atomic64_dec_if_positive archs
+Message-ID: <20100528115428.GD3686@osiris.boeblingen.de.ibm.com>
 MIME-Version: 1.0
-Date: Fri, 28 May 2010 17:16:21 +0530
-Message-ID: <AANLkTil0b9y0PJd4_eUS-M16Ya3yt1i7xzaOaGmA_cZ2@mail.gmail.com>
-Subject: Drivers for USB,SATA and eMMC
-From: Jack <mylinux.list@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: mylinux.list@gmail.com
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I have a new IOH which is connected to an x86 core through PCIe. This
-IOH has SATA, USB and eMMC attached to it.. Do I need to write a
-controller driver (referring the IOH data sheet) for these interfaces,
-or does Linux provides any std. drivers for these interfaces. I am new
-to x86 stuffs.
-Could anyone guide me on this.?
+From: Heiko Carstens <heiko.carstens@de.ibm.com>
 
+Add s390 to list of architectures that have atomic64_dec_if_positive
+implemented so we get rid of this warning:
 
--Jack
+lib/atomic64_test.c:129:2: warning: #warning Please implement
+atomic64_dec_if_positive for your architecture, and add it to the IF above
+
+Signed-off-by: Heiko Carstens <heiko.carstens@de.ibm.com>
+Cc: Luca Barbieri <luca@luca-barbieri.com>
+---
+ lib/atomic64_test.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+--- a/lib/atomic64_test.c
++++ b/lib/atomic64_test.c
+@@ -112,7 +112,8 @@ static __init int test_atomic64(void)
+ 	r += one;
+ 	BUG_ON(v.counter != r);
+ 
+-#if defined(CONFIG_X86) || defined(CONFIG_MIPS) || defined(CONFIG_PPC) || defined(_ASM_GENERIC_ATOMIC64_H)
++#if defined(CONFIG_X86) || defined(CONFIG_MIPS) || defined(CONFIG_PPC) || \
++    defined(CONFIG_S390) || defined(_ASM_GENERIC_ATOMIC64_H)
+ 	INIT(onestwos);
+ 	BUG_ON(atomic64_dec_if_positive(&v) != (onestwos - 1));
+ 	r -= one;
