@@ -1,218 +1,184 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758902Ab0E1Upw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 May 2010 16:45:52 -0400
-Received: from vms173017pub.verizon.net ([206.46.173.17]:55370 "EHLO
-	vms173017pub.verizon.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756586Ab0E1Upu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 May 2010 16:45:50 -0400
-Date: Fri, 28 May 2010 16:45:33 -0400 (EDT)
-From: Len Brown <lenb@kernel.org>
-X-X-Sender: lenb@localhost.localdomain
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Linux Power Management List <linux-pm@lists.osdl.org>,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: [git pull request] idle patches for 2.6.35-merge
-Message-id: <alpine.LFD.2.00.1005281643400.4045@localhost.localdomain>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
-MIME-version: 1.0
-Content-type: TEXT/PLAIN; charset=US-ASCII
+	id S932173Ab0E1Uqu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 May 2010 16:46:50 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:54033 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756586Ab0E1Uqq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 May 2010 16:46:46 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Len Brown <lenb@kernel.org>
+Subject: [PATCH 2/2] ACPI / ACPICA: Allow GPEs to be force disabled via sysfs
+Date: Fri, 28 May 2010 22:47:43 +0200
+User-Agent: KMail/1.12.4 (Linux/2.6.34-rjw; KDE/4.3.5; x86_64; ; )
+Cc: ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+       LKML <linux-kernel@vger.kernel.org>,
+       Matthew Garrett <mjg59@srcf.ucam.org>,
+       "Moore, Robert" <robert.moore@intel.com>
+References: <201005282245.19382.rjw@sisk.pl>
+In-Reply-To: <201005282245.19382.rjw@sisk.pl>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201005282247.43261.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+After the GPE reference counting patches (commits
+9630bdd9b15d2f489c646d8bc04b60e53eb5ec78 and
+cbbc0de700e61d0cdc854d435dbc2ef148de0e00), the sysfs interface
+allowing user space to disable/enable GPEs doesn't work correctly,
+because a GPE disabled this way may be re-enabled shortly by
+acpi_ev_asynch_enable_gpe() if its bit is set in its register's
+enable_for_run mask.
 
-please pull from: 
+To fix this, introduce two new action values for acpi_set_gpe(),
+ACPI_GPE_FORCE_ENABLE and ACPI_GPE_FORCE_DISABLE, such that if
+acpi_set_gpe() is called with ACPI_GPE_FORCE_DISABLE, the GPE is
+force disabled and can only be re-enabled by calling acpi_set_gpe()
+with ACPI_GPE_FORCE_ENABLE.  Use these new values in the sysfs
+interface for disabling/enabling GPEs.
 
-git://git.kernel.org/pub/scm/linux/kernel/git/lenb/linux-idle-2.6.git idle-release
+Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
+---
+ drivers/acpi/acpica/evgpe.c    |    5 ++++-
+ drivers/acpi/acpica/evxfevnt.c |   24 ++++++++++++++++++++++++
+ drivers/acpi/system.c          |    6 ++++--
+ include/acpi/actypes.h         |   19 ++++++++++++-------
+ 4 files changed, 44 insertions(+), 10 deletions(-)
 
-The new intel_idle driver provides a method to use an optimized
-idle loop on machines without using ACPI.
+Index: linux-2.6/include/acpi/actypes.h
+===================================================================
+--- linux-2.6.orig/include/acpi/actypes.h
++++ linux-2.6/include/acpi/actypes.h
+@@ -668,6 +668,8 @@ typedef u32 acpi_event_status;
+ #define ACPI_GPE_ENABLE                 0
+ #define ACPI_GPE_DISABLE                1
+ #define ACPI_GPE_CHECK_AND_ENABLE       2
++#define ACPI_GPE_FORCE_ENABLE           3
++#define ACPI_GPE_FORCE_DISABLE          4
+ 
+ /* gpe_types for acpi_enable_gpe and acpi_disable_gpe */
+ 
+@@ -677,13 +679,14 @@ typedef u32 acpi_event_status;
+ 
+ /*
+  * GPE info flags - Per GPE
+- * +-------+---+-+-+
+- * |  7:4  |3:2|1|0|
+- * +-------+---+-+-+
+- *     |     |  | |
+- *     |     |  | +--- Interrupt type: edge or level triggered
+- *     |     |  +----- GPE can wake the system
+- *     |     +-------- Type of dispatch:to method, handler, or none
++ * +-------+-+---+-+-+
++ * |  7:5  |4|3:2|1|0|
++ * +-------+-+---+-+-+
++ *     |    |  |  | |
++ *     |    |  |  | +--- Interrupt type: edge or level triggered
++ *     |    |  |  +----- GPE can wake the system
++ *     |    |  +-------- Type of dispatch:to method, handler, or none
++ *     |    +----------- GPE has been forcibly disabled
+  *     +-------------- <Reserved>
+  */
+ #define ACPI_GPE_XRUPT_TYPE_MASK        (u8) 0x01
+@@ -697,6 +700,8 @@ typedef u32 acpi_event_status;
+ #define ACPI_GPE_DISPATCH_METHOD        (u8) 0x08
+ #define ACPI_GPE_DISPATCH_NOT_USED      (u8) 0x00
+ 
++#define ACPI_GPE_FORCE_DISABLED		(u8) 0x10
++
+ /*
+  * Flags for GPE and Lock interfaces
+  */
+Index: linux-2.6/drivers/acpi/acpica/evgpe.c
+===================================================================
+--- linux-2.6.orig/drivers/acpi/acpica/evgpe.c
++++ linux-2.6/drivers/acpi/acpica/evgpe.c
+@@ -417,7 +417,10 @@ static void acpi_ev_asynch_enable_gpe(vo
+ 	}
+ 
+ 	/* Enable this GPE */
+-	(void)acpi_hw_low_set_gpe(gpe_event_info, ACPI_GPE_CHECK_AND_ENABLE);
++	if (!(gpe_event_info->flags & ACPI_GPE_FORCE_DISABLED)) {
++		(void)acpi_hw_low_set_gpe(gpe_event_info,
++					  ACPI_GPE_CHECK_AND_ENABLE);
++	}
+ 	return_VOID;
+ }
+ 
+Index: linux-2.6/drivers/acpi/acpica/evxfevnt.c
+===================================================================
+--- linux-2.6.orig/drivers/acpi/acpica/evxfevnt.c
++++ linux-2.6/drivers/acpi/acpica/evxfevnt.c
+@@ -281,10 +281,24 @@ acpi_status acpi_set_gpe(acpi_handle gpe
+ 		status = acpi_clear_and_enable_gpe(gpe_event_info);
+ 		break;
+ 
++	case ACPI_GPE_FORCE_ENABLE:
++		status = acpi_clear_and_enable_gpe(gpe_event_info);
++		if (ACPI_SUCCESS(status)) {
++			gpe_event_info->flags &= ~(ACPI_GPE_FORCE_DISABLED);
++		}
++		break;
++
+ 	case ACPI_GPE_DISABLE:
+ 		status = acpi_hw_low_set_gpe(gpe_event_info, ACPI_GPE_DISABLE);
+ 		break;
+ 
++	case ACPI_GPE_FORCE_DISABLE:
++		status = acpi_hw_low_set_gpe(gpe_event_info, ACPI_GPE_DISABLE);
++		if (ACPI_SUCCESS(status)) {
++			gpe_event_info->flags |= ACPI_GPE_FORCE_DISABLED;
++		}
++		break;
++
+ 	default:
+ 		status = AE_BAD_PARAMETER;
+ 		break;
+@@ -337,6 +351,11 @@ acpi_status acpi_enable_gpe(acpi_handle 
+ 		goto unlock_and_exit;
+ 	}
+ 
++	if (gpe_event_info->flags & ACPI_GPE_FORCE_DISABLED) {
++		status = AE_ERROR;
++		goto unlock_and_exit;
++	}
++
+ 	if (gpe_type & ACPI_GPE_TYPE_RUNTIME) {
+ 		if (gpe_event_info->runtime_count == ACPI_UINT8_MAX) {
+ 			status = AE_LIMIT;	/* Too many references */
+@@ -426,6 +445,11 @@ acpi_status acpi_disable_gpe(acpi_handle
+ 		goto unlock_and_exit;
+ 	}
+ 
++	if (gpe_event_info->flags & ACPI_GPE_FORCE_DISABLED) {
++		status = AE_ERROR;
++		goto unlock_and_exit;
++	}
++
+ 	/* Hardware-disable a runtime GPE on removal of the last reference */
+ 
+ 	if (gpe_type & ACPI_GPE_TYPE_RUNTIME) {
+Index: linux-2.6/drivers/acpi/system.c
+===================================================================
+--- linux-2.6.orig/drivers/acpi/system.c
++++ linux-2.6/drivers/acpi/system.c
+@@ -388,10 +388,12 @@ static ssize_t counter_set(struct kobjec
+ 	if (index < num_gpes) {
+ 		if (!strcmp(buf, "disable\n") &&
+ 				(status & ACPI_EVENT_FLAG_ENABLED))
+-			result = acpi_set_gpe(handle, index, ACPI_GPE_DISABLE);
++			result = acpi_set_gpe(handle, index,
++						ACPI_GPE_FORCE_DISABLE);
+ 		else if (!strcmp(buf, "enable\n") &&
+ 				!(status & ACPI_EVENT_FLAG_ENABLED))
+-			result = acpi_set_gpe(handle, index, ACPI_GPE_ENABLE);
++			result = acpi_set_gpe(handle, index,
++						ACPI_GPE_FORCE_ENABLE);
+ 		else if (!strcmp(buf, "clear\n") &&
+ 				(status & ACPI_EVENT_FLAG_SET))
+ 			result = acpi_clear_gpe(handle, index);
 
-This will update the files shown below.
-
-thanks!
-Len Brown
-Intel Open Source Technology Center
-
-
-ps. individual patches are available on linux-pm@lists.linux-foundation.org
-and a consolidated plain patch is available here:
-http://ftp.kernel.org/pub/linux/kernel/people/lenb/idle/patches/2.6.34/idle-release-2.6.34.diff.gz
-
- MAINTAINERS                        |    7 +
- arch/x86/include/asm/thread_info.h |    4 +-
- drivers/Makefile                   |    2 +-
- drivers/acpi/acpi_pad.c            |    9 -
- drivers/acpi/processor_driver.c    |   15 +-
- drivers/acpi/processor_idle.c      |   28 ++-
- drivers/cpuidle/cpuidle.c          |   12 +-
- drivers/cpuidle/cpuidle.h          |    1 -
- drivers/cpuidle/driver.c           |   16 +-
- drivers/cpuidle/sysfs.c            |    5 +-
- drivers/idle/Kconfig               |   11 +
- drivers/idle/Makefile              |    1 +
- drivers/idle/intel_idle.c          |  461 ++++++++++++++++++++++++++++++++++++
- include/linux/cpuidle.h            |    8 +-
- 14 files changed, 538 insertions(+), 42 deletions(-)
- create mode 100755 drivers/idle/intel_idle.c
-
-through these commits:
-
-Len Brown (8):
-      cpuidle: fail to register if !CONFIG_CPU_IDLE
-      cpuidle: add cpuidle_unregister_driver() error check
-      cpuidle: make cpuidle_curr_driver static
-      ACPI: allow a native cpuidle driver to displace ACPI
-      sched: clarify commment for TS_POLLING
-      acpi_pad: uses MONITOR/MWAIT, so it doesn't need to clear TS_POLLING
-      ACPI: acpi_idle: touch TS_POLLING only in the non-MWAIT case
-      intel_idle: native hardware cpuidle driver for latest Intel processors
-
-with this log:
-
-commit 2671717265ae6e720a9ba5f13fbec3a718983b65
-Author: Len Brown <len.brown@intel.com>
-Date:   Mon Mar 8 14:07:30 2010 -0500
-
-    intel_idle: native hardware cpuidle driver for latest Intel processors
-    
-    This EXPERIMENTAL driver supersedes acpi_idle on
-    Intel Atom Processors, Intel Core i3/i5/i7 Processors
-    and associated Intel Xeon processors.
-    
-    It does not support the Intel Core2 processor or earlier.
-    
-    For kernels configured with ACPI, CONFIG_INTEL_IDLE=y
-    allows intel_idle to probe before the ACPI processor driver.
-    Booting with "intel_idle.max_cstate=0" disables intel_idle
-    and the system will fall back on ACPI's "acpi_idle".
-    
-    Typical Linux distributions load ACPI processor module early,
-    making CONFIG_INTEL_IDLE=m not easily useful on ACPI platforms.
-    
-    intel_idle probes all processors at module_init time.
-    Processors that are hot-added later will be limited
-    to using C1 in idle.
-    
-    Signed-off-by: Len Brown <len.brown@intel.com>
-
-commit 02cf4f9808382af7265cafc33dc86ec5875526aa
-Author: Len Brown <len.brown@intel.com>
-Date:   Mon May 24 14:27:44 2010 -0400
-
-    ACPI: acpi_idle: touch TS_POLLING only in the non-MWAIT case
-    
-    commit d306ebc28649b89877a22158fe0076f06cc46f60
-    (ACPI: Be in TS_POLLING state during mwait based C-state entry)
-    fixed an important power & performance issue where ACPI c2 and c3 C-states
-    were clearing TS_POLLING even when using MWAIT (ACPI_STATE_FFH).
-    That bug had been causing us to receive redundant scheduling interrups
-    when we had already been woken up by MONITOR/MWAIT.
-    
-    Following up on that...
-    
-    In the MWAIT case, we don't have to subsequently
-    check need_resched(), as that c heck was there
-    for the TS_POLLING-clearing case.
-    
-    Note that not only does the cpuidle calling function
-    already check need_resched() before calling us, the
-    low-level entry into monitor/mwait calls it twice --
-    guaranteeing that a write to the trigger address
-    can not go un-noticed.
-    
-    Also, in this case, we don't have to set TS_POLLING
-    when we wake, because we never cleared it.
-    
-    Signed-off-by: Len Brown <len.brown@intel.com>
-    Acked-by: Venkatesh Pallipadi <venki@google.com>
-
-commit a7d27c37533524e23bbdc9ba1d78e3241b7483ea
-Author: Len Brown <len.brown@intel.com>
-Date:   Mon May 24 11:41:00 2010 -0400
-
-    acpi_pad: uses MONITOR/MWAIT, so it doesn't need to clear TS_POLLING
-    
-    api_pad exclusively uses MONITOR/MWAIT to sleep in idle,
-    so it does not need the wakeup IPI during idle sleep
-    that is provoked by clearing TS_POLLING.
-    
-    Signed-off-by: Len Brown <len.brown@intel.com>
-    Cc: Shaohua Li <shaohua.li@intel.com>
-
-commit e45b7fa23097332508730123ac6d59227e7bd7f8
-Author: Len Brown <len.brown@intel.com>
-Date:   Mon May 24 11:34:36 2010 -0400
-
-    sched: clarify commment for TS_POLLING
-    
-    TS_POLLING set tells the scheduler an idle_task will poll
-    need_resched() to look for work.
-    
-    TS_POLLING clear tells resched_task() and wake_up_idle_cpu()
-    that the remote CPU's idle_task is now sleeping in idle,
-    and thus requires a reschedule interrupt notice work.
-    
-    Update the description of TS_POLLING to reflect how it works.
-    "idle task polling need_resched, skip sending interrupt"
-    
-    Wordsmithing-by: Milton Miller <miltonm@bga.com>
-    Signed-off-by: Len Brown <len.brown@intel.com>
-    Acked-by: Peter Zijlstra <peterz@infradead.org>
-
-commit 541adf7cd937b3895c7645406a9b060504df453b
-Author: Len Brown <len.brown@intel.com>
-Date:   Sat May 22 17:03:29 2010 -0400
-
-    ACPI: allow a native cpuidle driver to displace ACPI
-    
-    The ACPI driver would fail probe when it found that
-    another driver had previously registered with cpuidle.
-    
-    But this is a natural situation, as a native hardware
-    cpuidle driver should be able to bind instead of ACPI,
-    and the ACPI processor driver should be able to handle
-    yielding control of C-states while still handling
-    P-states and T-states.
-    
-    Add a KERN_DEBUG line showing when acpi_idle
-    does successfully register.
-    
-    Signed-off-by: Len Brown <len.brown@intel.com>
-
-commit 752138df0dc2daaae09379c754caeb08c97905dc
-Author: Len Brown <len.brown@intel.com>
-Date:   Sat May 22 16:57:26 2010 -0400
-
-    cpuidle: make cpuidle_curr_driver static
-    
-    cpuidle_register_driver() sets cpuidle_curr_driver
-    cpuidle_unregister_driver() clears cpuidle_curr_driver
-    
-    We should't expose cpuidle_curr_driver to
-    potential modification except via these interfaces.
-    So make it static and create cpuidle_get_driver() to observe it.
-    
-    Signed-off-by: Len Brown <len.brown@intel.com>
-
-commit c0d64cb031c21f163a0ec15cf10844bcf0ceedcf
-Author: Len Brown <len.brown@intel.com>
-Date:   Sat May 22 16:34:10 2010 -0400
-
-    cpuidle: add cpuidle_unregister_driver() error check
-    
-    Assure that cpuidle_unregister_driver() will not clobber
-    the registered driver if unregistered by somebody else.
-    
-    Signed-off-by: Len Brown <len.brown@intel.com>
-
-commit 6b2c676bf32be91f43215d5874c07c1becaba013
-Author: Len Brown <len.brown@intel.com>
-Date:   Tue May 11 16:50:52 2010 -0400
-
-    cpuidle: fail to register if !CONFIG_CPU_IDLE
-    
-    Signed-off-by: Len Brown <len.brown@intel.com>
