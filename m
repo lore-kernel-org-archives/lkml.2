@@ -1,57 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756938Ab0E1IZ5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 May 2010 04:25:57 -0400
-Received: from mail.gmx.net ([213.165.64.20]:40425 "HELO mail.gmx.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1754530Ab0E1IZz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 May 2010 04:25:55 -0400
-X-Authenticated: #5108953
-X-Provags-ID: V01U2FsdGVkX1+J/Yhl5MWJEQXuHhuYY2Zrd5FuDkllmpdrLGydiA
-	cJ/hRPrM606Vde
-From: Toralf Foerster <toralf.foerster@gmx.de>
-To: Steven Rostedt <rostedt@goodmis.org>
-Subject: [PATCH] kconfig/streamline_config.pl: trivial typo
-Date: Fri, 28 May 2010 10:25:52 +0200
-User-Agent: KMail/1.13.3 (Linux/2.6.34; KDE/4.4.3; i686; ; )
-Cc: zippel@linux-m68k.org, linux-kbuild@vger.kernel.org,
-       linux-kernel@vger.kernel.org
+	id S1757410Ab0E1I04 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 May 2010 04:26:56 -0400
+Received: from www.tglx.de ([62.245.132.106]:36350 "EHLO www.tglx.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753001Ab0E1I0x (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 May 2010 04:26:53 -0400
+Date: Fri, 28 May 2010 10:26:24 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Alan Stern <stern@rowland.harvard.edu>
+cc: Matthew Garrett <mjg59@srcf.ucam.org>,
+       Peter Zijlstra <peterz@infradead.org>,
+       LKML <linux-kernel@vger.kernel.org>,
+       Florian Mickler <florian@mickler.org>, felipe.balbi@nokia.com,
+       Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
+       Linux PM <linux-pm@lists.linux-foundation.org>,
+       Alan Cox <alan@lxorguk.ukuu.org.uk>
+Subject: Re: [linux-pm] [PATCH 0/8] Suspend block api (version 8)
+In-Reply-To: <Pine.LNX.4.44L0.1005271744130.3239-100000@iolanthe.rowland.org>
+Message-ID: <alpine.LFD.2.00.1005281024290.3116@localhost.localdomain>
+References: <Pine.LNX.4.44L0.1005271744130.3239-100000@iolanthe.rowland.org>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201005281025.52753.toralf.foerster@gmx.de>
-X-Y-GMX-Trusted: 0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, 27 May 2010, Alan Stern wrote:
 
-Signed-off-by: Toralf Foerster <toralf.foerster@gmx.de>
----
- scripts/kconfig/streamline_config.pl |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+> On Thu, 27 May 2010, Thomas Gleixner wrote:
+> 
+> > > The two of you are talking at cross purposes.  Thomas is referring to 
+> > > idle-based suspend and Matthew is talking about forced suspend.
+> > 
+> > Yes, and forced suspend to disk is the same as force suspend to disk,
+> > which has both nothing to do with sensible resource management.
+> 
+> If I understand correctly, you are saying that all the untrusted 
+> applications should run with QoS(NONE).  Then they could do whatever 
+> they wanted without causing any interference.
+> 
+> And with idle-based power management (rather than forced suspend), 
+> there would be no issue with wakeup events getting unduly delayed.
+> 
+> Unless one of those events was meant for an untrusted application.  Is 
+> that the source of the difficulty?
 
-diff --git a/scripts/kconfig/streamline_config.pl b/scripts/kconfig/streamline_config.pl
-index 9726946..2f8bde8 100644
---- a/scripts/kconfig/streamline_config.pl
-+++ b/scripts/kconfig/streamline_config.pl
-@@ -242,7 +242,7 @@ foreach my $makefile (@makefiles) {
-            foreach my $obj (split /\s+/,$objs) {
-                $obj =~ s/-/_/g;
-                if ($obj =~ /(.*)\.o$/) {
--                   # Objects may bes enabled by more than one config.
-+                   # Objects may be enabled by more than one config.
-                    # Store configs in an array.
-                    my @arr;
- 
--- 
-1.6.4.4
+Probably, but that's not solved by suspend blockers either as I
+explained several times now. Because those untrusted apps either lack
+blocker calls or are not allowed to use them, so the blocker does not
+help for those either.
 
+Thanks,
 
--- 
-MfG/Sincerely
-Toralf Foerster
-
-pgp finger print: 7B1A 07F4 EC82 0F90 D4C2 8936 872A E508 7DB6 9DA3
-
+	tglx
