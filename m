@@ -1,100 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756105Ab0E1Hw2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 May 2010 03:52:28 -0400
-Received: from mail-gw0-f46.google.com ([74.125.83.46]:49917 "EHLO
-	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754627Ab0E1Hw0 convert rfc822-to-8bit (ORCPT
+	id S1756242Ab0E1H4i (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 May 2010 03:56:38 -0400
+Received: from serv2.oss.ntt.co.jp ([222.151.198.100]:41586 "EHLO
+	serv2.oss.ntt.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754162Ab0E1H4g (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 May 2010 03:52:26 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=mHOAbKvuXnLBHAtn5f+Ubaar1ElrzwuutiU/RTvsNhJgecizVzlXXoeOlqSlR8xdj9
-         XVw1chSTfxXqrdfL7YsS/IYyRXpJeYCbEkO4djvH1APqPAitFIHGBSO13JAQ0yctzGXL
-         wlm1dNjp1aL7SnPc7TfwptuL6E+KG+oleyGNc=
-MIME-Version: 1.0
-In-Reply-To: <20100528145329.7E2D.A69D9226@jp.fujitsu.com>
-References: <20100528143605.7E2A.A69D9226@jp.fujitsu.com>
-	<AANLkTikB-8Qu03VrA5Z0LMXM_alSV7SLqzl-MmiLmFGv@mail.gmail.com>
-	<20100528145329.7E2D.A69D9226@jp.fujitsu.com>
-Date: Fri, 28 May 2010 16:52:23 +0900
-Message-ID: <AANLkTinLN0ex0uvwA_tohv7MSLHv8i8Mcr96va1C4Md-@mail.gmail.com>
-Subject: Re: [RFC] oom-kill: give the dying task a higher priority
-From: Minchan Kim <minchan.kim@gmail.com>
-To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: balbir@linux.vnet.ibm.com, "Luis Claudio R. Goncalves" <lclaudio@uudg.org>,
-       Oleg Nesterov <oleg@redhat.com>, linux-kernel@vger.kernel.org,
-       linux-mm@kvack.org, Thomas Gleixner <tglx@linutronix.de>,
-       Peter Zijlstra <peterz@infradead.org>,
-       David Rientjes <rientjes@google.com>, Mel Gorman <mel@csn.ul.ie>,
-       williams@redhat.com
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Fri, 28 May 2010 03:56:36 -0400
+Date: Fri, 28 May 2010 16:56:59 +0900
+From: Takuya Yoshikawa <yoshikawa.takuya@oss.ntt.co.jp>
+To: akpm@linux-foundation.org, viro@zeniv.linux.org.uk
+Cc: d.hatayama@jp.fujitsu.com, dhowells@redhat.com, vapier@gentoo.org,
+       lethal@linux-sh.org, takuya.yoshikawa@gmail.com,
+       linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] binfmt_elf_fdpic: fix clear_user() error handling
+Message-Id: <20100528165659.1e6fd136.yoshikawa.takuya@oss.ntt.co.jp>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 28, 2010 at 2:59 PM, KOSAKI Motohiro
-<kosaki.motohiro@jp.fujitsu.com> wrote:
->> RT Task
->>
->> void non-RT-function()
->> {
->>    system call();
->>    buffer = malloc();
->>    memset(buffer);
->> }
->> /*
->>  * We make sure this function must be executed in some millisecond
->>  */
->> void RT-function()
->> {
->>    some calculation(); <- This doesn't have no dynamic characteristic
->> }
->> int main()
->> {
->>    non-RT-function();
->>    /* This function make sure RT-function cannot preempt by others */
->>    set_RT_max_high_priority();
->>    RT-function A();
->>    set_normal_priority();
->>    non-RT-function();
->> }
->>
->> We don't want realtime in whole function of the task. What we want is
->> just RT-function A.
->> Of course, current Linux cannot make perfectly sure RT-functionA can
->> not preempt by others.
->> That's because some interrupt or exception happen. But RT-function A
->> doesn't related to any dynamic characteristic. What can justify to
->> preempt RT-function A by other processes?
->
-> As far as my observation, RT-function always have some syscall. because pure
-> calculation doesn't need deterministic guarantee. But _if_ you are really
-> using such priority design. I'm ok maximum NonRT priority instead maximum
-> RT priority too.
+Hi, I found some places in bin_elf_fdpic at which clear_user() is
+incorrectly handled, by chance, when I was trying to check how to
+use clear_user().
 
-Hmm. It's just example. but it would be not good exmaple.
-Let's change it with this.
+IIUC, the following commit was not correct.
 
-void RT-function()
-{
-     int result = some calculation(); <- This doesn't have no dynamic
-characteristic
-     *mmap_base = result; <-- mmap_base is mapped by GPIO device.
-}
+  commit ab4ad55512e95b68ca3e25516068e18874f89252
+  bin_elf_fdpic: check the return value of clear_user
 
-Could we allow preemption of this RT function due to other task's
-memory pressure?
-Of course, Linux is not Hard RT featured OS, I think. So I thinks it
-is a policy problem.
-If we think system memory pressure is more important than RT task and
-we _all_ agree such policy, we can allow it.
+Although I don't have an appropriate test box for this, I wrote a
+simple patch to fix this. So if this is worth fixing, please pick
+this up.
 
-But I don't hope it.
+Thanks,
+  Takuya
 
+===
+clear_user() returns the number of bytes, unsigned long, that could not
+be copied. So we should return -EFAULT rather than directly return the results.
+
+Without this patch, positive values may be passed to elf_fdpic_map_file() and
+the following error handlings do not function as expected.
+
+1.
+	ret = elf_fdpic_map_file_constdisp_on_uclinux(params, file, mm);
+	if (ret < 0)
+		return ret;
+2.
+	ret = elf_fdpic_map_file_by_direct_mmap(params, file, mm);
+	if (ret < 0)
+		return ret;
+
+Signed-off-by: Takuya Yoshikawa <yoshikawa.takuya@oss.ntt.co.jp>
+CC: Alexander Viro <viro@zeniv.linux.org.uk>
+CC: Andrew Morton <akpm@linux-foundation.org>
+CC: Daisuke HATAYAMA <d.hatayama@jp.fujitsu.com>
+CC: David Howells <dhowells@redhat.com>
+CC: Mike Frysinger <vapier@gentoo.org>
+CC: Paul Mundt <lethal@linux-sh.org>
+---
+ fs/binfmt_elf_fdpic.c |   26 +++++++++++---------------
+ 1 files changed, 11 insertions(+), 15 deletions(-)
+
+diff --git a/fs/binfmt_elf_fdpic.c b/fs/binfmt_elf_fdpic.c
+index 2c5f9a0..63039ed 100644
+--- a/fs/binfmt_elf_fdpic.c
++++ b/fs/binfmt_elf_fdpic.c
+@@ -990,10 +990,9 @@ static int elf_fdpic_map_file_constdisp_on_uclinux(
+ 
+ 		/* clear any space allocated but not loaded */
+ 		if (phdr->p_filesz < phdr->p_memsz) {
+-			ret = clear_user((void *) (seg->addr + phdr->p_filesz),
+-					 phdr->p_memsz - phdr->p_filesz);
+-			if (ret)
+-				return ret;
++			if (clear_user((void *) (seg->addr + phdr->p_filesz),
++				       phdr->p_memsz - phdr->p_filesz))
++				return -EFAULT;
+ 		}
+ 
+ 		if (mm) {
+@@ -1027,7 +1026,7 @@ static int elf_fdpic_map_file_by_direct_mmap(struct elf_fdpic_params *params,
+ 	struct elf32_fdpic_loadseg *seg;
+ 	struct elf32_phdr *phdr;
+ 	unsigned long load_addr, delta_vaddr;
+-	int loop, dvset, ret;
++	int loop, dvset;
+ 
+ 	load_addr = params->load_addr;
+ 	delta_vaddr = 0;
+@@ -1127,9 +1126,8 @@ static int elf_fdpic_map_file_by_direct_mmap(struct elf_fdpic_params *params,
+ 		 * PT_LOAD */
+ 		if (prot & PROT_WRITE && disp > 0) {
+ 			kdebug("clear[%d] ad=%lx sz=%lx", loop, maddr, disp);
+-			ret = clear_user((void __user *) maddr, disp);
+-			if (ret)
+-				return ret;
++			if (clear_user((void __user *) maddr, disp))
++				return -EFAULT;
+ 			maddr += disp;
+ 		}
+ 
+@@ -1164,19 +1162,17 @@ static int elf_fdpic_map_file_by_direct_mmap(struct elf_fdpic_params *params,
+ 		if (prot & PROT_WRITE && excess1 > 0) {
+ 			kdebug("clear[%d] ad=%lx sz=%lx",
+ 			       loop, maddr + phdr->p_filesz, excess1);
+-			ret = clear_user((void __user *) maddr + phdr->p_filesz,
+-					 excess1);
+-			if (ret)
+-				return ret;
++			if (clear_user((void __user *) maddr + phdr->p_filesz,
++				       excess1))
++				return -EFAULT;
+ 		}
+ 
+ #else
+ 		if (excess > 0) {
+ 			kdebug("clear[%d] ad=%lx sz=%lx",
+ 			       loop, maddr + phdr->p_filesz, excess);
+-			ret = clear_user((void *) maddr + phdr->p_filesz, excess);
+-			if (ret)
+-				return ret;
++			if (clear_user((void *) maddr + phdr->p_filesz, excess))
++				return -EFAULT;
+ 		}
+ #endif
+ 
 -- 
-Kind regards,
-Minchan Kim
+1.7.0.4
+
