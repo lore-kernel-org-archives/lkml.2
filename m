@@ -1,93 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754151Ab0E1AGy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 May 2010 20:06:54 -0400
-Received: from mail-px0-f174.google.com ([209.85.212.174]:58968 "EHLO
-	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752715Ab0E1AGw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 May 2010 20:06:52 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=FPWyrFiuyPEZld1ZPK4xOllrokYX+qeR3/CeV19J57JGSBjUDF9axatIhkApQR1p1/
-         jXr4wVlRpVN/tWtyOrPMo7G9mUTG76dOUB047LLKIx4OfSDv5fPK+AJIW7rUXoZXyOQr
-         PQgQ87ePZnzY2QLJp7a6HmrsDW7M/1OvdJ/DA=
-Date: Thu, 27 May 2010 17:06:47 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, Matthew Garrett <mjg59@srcf.ucam.org>,
-       Peter Zijlstra <peterz@infradead.org>,
-       Alan Stern <stern@rowland.harvard.edu>,
-       Thomas Gleixner <tglx@linutronix.de>, Paul@smtp1.linux-foundation.org,
-       LKML <linux-kernel@vger.kernel.org>,
-       Florian Mickler <florian@mickler.org>,
-       Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
-       Linux PM <linux-pm@lists.linux-foundation.org>
-Subject: Re: [linux-pm] [PATCH 0/8] Suspend block api (version 8)
-Message-ID: <20100528000647.GB8645@core.coreip.homeip.net>
-References: <Pine.LNX.4.44L0.1005271344040.3239-100000@iolanthe.rowland.org>
- <20100527181433.GG3543@srcf.ucam.org>
- <20100527200313.5c532f2f@lxorguk.ukuu.org.uk>
- <201005280110.17075.rjw@sisk.pl>
- <20100528005045.6ea5feba@lxorguk.ukuu.org.uk>
+	id S1754272Ab0E1AL1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 May 2010 20:11:27 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:49764 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750831Ab0E1ALZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 May 2010 20:11:25 -0400
+Date: Thu, 27 May 2010 21:10:57 -0300
+From: Glauber Costa <glommer@redhat.com>
+To: Zachary Amsden <zamsden@redhat.com>
+Cc: Avi Kivity <avi@redhat.com>, kvm@vger.kernel.org,
+       linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Add Documentation/kvm/msr.txt
+Message-ID: <20100528001057.GI3445@mothafucka.localdomain>
+References: <1274897088-8587-1-git-send-email-glommer@redhat.com>
+ <4BFE2A2F.50209@redhat.com>
+ <20100527160248.GF3445@mothafucka.localdomain>
+ <4BFED258.40501@redhat.com>
+ <20100527203638.GH3445@mothafucka.localdomain>
+ <4BFEDDEB.9020700@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100528005045.6ea5feba@lxorguk.ukuu.org.uk>
-User-Agent: Mutt/1.5.20 (2009-08-17)
+In-Reply-To: <4BFEDDEB.9020700@redhat.com>
+X-ChuckNorris: True
+User-Agent: Jack Bauer
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 28, 2010 at 12:50:45AM +0100, Alan Cox wrote:
-> > That's correct, but to me the Arve's goal is simply to maximize battery life
-> > and he found experimentally that the longest battery life is achieved if
-> > system suspend is used whenever the system doesn't need to be active (from its
-> > user's perspective).  This actually is different from "when the system is
-> > idle", because the system isn't idle, for example, when updatedb is running.
-> > However, from the user's perspective the updatedb process doesn't really need
-> > to run at this particular time, it can very well do it's job in parallel with
-> > the user typing or reading news.  So, the system may very well be suspended
-> > when updatedb is running.
+On Thu, May 27, 2010 at 11:02:35AM -1000, Zachary Amsden wrote:
+> On 05/27/2010 10:36 AM, Glauber Costa wrote:
+> >On Thu, May 27, 2010 at 10:13:12AM -1000, Zachary Amsden wrote:
+> >>On 05/27/2010 06:02 AM, Glauber Costa wrote:
+> >>>On Thu, May 27, 2010 at 11:15:43AM +0300, Avi Kivity wrote:
+> >>>>On 05/26/2010 09:04 PM, Glauber Costa wrote:
+> >>>>>This patch adds a file that documents the usage of KVM-specific
+> >>>>>MSRs.
+> >>>>>
+> >>>>Looks good.  A few comments:
+> >>>>
+> >>>>>+
+> >>>>>+Custom MSR list
+> >>>>>+--------
+> >>>>>+
+> >>>>>+The current supported Custom MSR list is:
+> >>>>>+
+> >>>>>+MSR_KVM_WALL_CLOCK:  0x11
+> >>>>>+
+> >>>>>+	data: physical address of a memory area.
+> >>>>Which must be in guest RAM (i.e., don't point it somewhere random
+> >>>>and expect the hypervisor to allocate it for you).
+> >>>>
+> >>>>Must be aligned to 4 bytes (we don't enforce it though).
+> >>>I don't see the reason for it.
+> >>>
+> >>>If this is a requirement, our own implementation
+> >>>is failing to meet it.
+> >>It's so the atomic write actually is atomic.
+> >Which atomic write? This is the wallclock, we do no atomic writes for
+> >querying it. Not to confuse with system time (the other msr).
+> >
+> >>Stating a 4 -byte
+> >>alignment requirement prevents the wall clock from crossing a page
+> >>boundary.
+> >Yes, but why require it?
+> >
+> >reading the wallclock is not a hot path for anybody, is usually done
+> >just once, and crossing a page boundary here does not pose any correctness
+> >issue.
 > 
-> This is where the original questions around QoS came in
+> Little-endian non-atomic page crossing writes will write the small
+> part of the wallclock first, so another CPU may observe the
+> following wallclock sequence:
 > 
-> > Since I think we've now rejected the feature, do we have a clear picture about
-> > what the Android people should do _instead_ and yet keep the battery life they
-> > want?  Because I don't think telling "let them do what they want, who cares"
-> > is right.
+> 0x01ff .. 0x0100 .. 0x0200
 > 
-> Today "idle" means "no task running"
+> Big-endian writes also have similar failure:
 > 
-> If you are prepared to rephrase that as "no task that matters is running"
-> what would need to answer ?
+> 0x01ff .. 0x02ff .. 0x0200
 > 
-> - How do we define who matters: QoS ?
-> 
-> - Can you describe "idle" in terms of QoS without then breaking the
->   reliable wakeup for an event (and do you need to ?)
-> 
-> 	Could this for example look like
-> 
-> 	Set QoS of 'user apps' to QS_NONE
-> 	Button pushed
-> 	Button driver sets QoS of app it wakes to QS_ABOVESUSPEND
-> 
-> 	That would I think solve the reliable wakeup case although
-> 	drivers raising a QoS parameter is a bit unusual in the kernel.
-> 	That would at least however be specific to a few Android drivers
-> 	and maybe a tiny amount of shared driver stuff so probably not
-> 	unacceptable. (wake_up_pri(&queue, priority); isn't going to
-> 	kill anyone is it - especially if it usually ignores the
-> 	priority argument)
+> This won't happen if there is a single instruction write of the wall
+> clock word.
 
-That should probably go into higher levels, not in individual drivers,
-so we should be able to limit spreading of wake_up_pri() or whatever
-throughout the tree.  This particular case should be probably handled by
-evdev raising QoS of the user that is opened particular
-/dev/input/eventX.
+We already specify that users can only trust the value of the wallclock
+after we have an even version field.
+When we start the update, and during the time of all writes to it,
+it is odd, and thus, invalid.
+The ABI guarantees to the guest that we'll only bump version
+after we're done updating.
 
--- 
-Dmitry
+So why bother?
