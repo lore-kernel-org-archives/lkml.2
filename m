@@ -1,56 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758941Ab0E1U6x (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 May 2010 16:58:53 -0400
-Received: from mgw1.diku.dk ([130.225.96.91]:35878 "EHLO mgw1.diku.dk"
+	id S1758961Ab0E1VAb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 May 2010 17:00:31 -0400
+Received: from gir.skynet.ie ([193.1.99.77]:58458 "EHLO gir.skynet.ie"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758709Ab0E1U6v (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 May 2010 16:58:51 -0400
-Date: Fri, 28 May 2010 22:58:46 +0200 (CEST)
-From: Julia Lawall <julia@diku.dk>
-To: Samuel Ortiz <sameo@linux.intel.com>, linux-kernel@vger.kernel.org,
-       kernel-janitors@vger.kernel.org
-Subject: [PATCH] drivers/mfd: kzalloc doesn't return ERR_PTR
-Message-ID: <Pine.LNX.4.64.1005282258050.27908@ask.diku.dk>
+	id S1758863Ab0E1VAa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 May 2010 17:00:30 -0400
+Date: Fri, 28 May 2010 22:00:11 +0100 (IST)
+From: Dave Airlie <airlied@linux.ie>
+X-X-Sender: airlied@skynet.skynet.ie
+To: torvalds@linux-foundation.org
+cc: dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org
+Subject: [git pull] drm brown paper bag
+Message-ID: <alpine.DEB.2.00.1005282158290.12937@skynet.skynet.ie>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Julia Lawall <julia@diku.dk>
 
-Use !x rather than IS_ERR(x) to test the result of kzalloc.
+Hi Linus,
 
-The semantic patch that makes this change is as follows:
-(http://coccinelle.lip6.fr/)
+I messed up this commit in 2.6.34, this is the urgent fix.
 
-// <smpl>
-@@
-expression x,E;
-@@
+Dave.
 
-x = \(kmalloc\|kzalloc\|kcalloc\)(...)
-... when != x = E
-- IS_ERR(x)
-+ !x
-// </smpl>
+The following changes since commit 2101d6f7ac791e87a274371a07a408f74e40ec49:
+  Jiri Slaby (1):
+        agp: amd64, fix pci reference leaks
 
-Signed-off-by: Julia Lawall <julia@diku.dk>
+are available in the git repository at:
 
----
- drivers/mfd/abx500-core.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+  ssh://master.kernel.org/pub/scm/linux/kernel/git/airlied/drm-2.6.git drm-linus
 
-diff -u -p a/drivers/mfd/abx500-core.c b/drivers/mfd/abx500-core.c
---- a/drivers/mfd/abx500-core.c
-+++ b/drivers/mfd/abx500-core.c
-@@ -36,7 +36,7 @@ int abx500_register_ops(struct device *d
- 	struct abx500_device_entry *dev_entry;
- 
- 	dev_entry = kzalloc(sizeof(struct abx500_device_entry), GFP_KERNEL);
--	if (IS_ERR(dev_entry)) {
-+	if (!dev_entry) {
- 		dev_err(dev, "register_ops kzalloc failed");
- 		return -ENOMEM;
- 	}
+Dave Airlie (1):
+      drm/radeon: fix the r100/r200 ums block 0 page fix
+
+ drivers/gpu/drm/radeon/radeon_state.c |    5 +++--
+ 1 files changed, 3 insertions(+), 2 deletions(-)
