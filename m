@@ -1,71 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758305Ab0E1KAz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 May 2010 06:00:55 -0400
-Received: from mail-pz0-f176.google.com ([209.85.222.176]:45029 "EHLO
-	mail-pz0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758172Ab0E1KAx convert rfc822-to-8bit (ORCPT
+	id S1758326Ab0E1KCP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 May 2010 06:02:15 -0400
+Received: from mailout2.w1.samsung.com ([210.118.77.12]:65148 "EHLO
+	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755261Ab0E1KCJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 May 2010 06:00:53 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type:content-transfer-encoding;
-        b=yG3GFI9keATUeOYYgUM66/1ilrEhHb+p4hsjgqZv0DCOrxWoAC0mMfn+AMnoEisQjl
-         5aqF/Fi7qg56XXOlYeEjcpjgaw7pduzvA2/lQ22XpbOO5SOM/QCAe4aQsrGd/mXM5OoL
-         Cq9c8zL7emfOSekvIhP88LYHTSp2kyoEJLS6Y=
-MIME-Version: 1.0
-In-Reply-To: <E1OHw5Q-00020q-Dk@pomaz-ex.szeredi.hu>
-References: <1274885083-15735-1-git-send-email-xiaosuo@gmail.com> 
-	<E1OHw5Q-00020q-Dk@pomaz-ex.szeredi.hu>
-From: Changli Gao <xiaosuo@gmail.com>
-Date: Fri, 28 May 2010 18:00:32 +0800
-Message-ID: <AANLkTill8Y1RNTzZ9BFmVHPxLyx7CZIL5okqUCRVrrmH@mail.gmail.com>
-Subject: Re: [PATCH v2 4/4] splice: fix updating sd->pos wrongly
-To: Miklos Szeredi <miklos@szeredi.hu>
-Cc: axboe@kernel.dk, viro@zeniv.linux.org.uk, mszeredi@suse.cz,
-       linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Fri, 28 May 2010 06:02:09 -0400
+Date: Fri, 28 May 2010 12:02:25 +0200
+From: Michal Nazarewicz <m.nazarewicz@samsung.com>
+Subject: [PATCHv2 0/7] Several improvements to USB gadgets
+To: linux-usb@vger.kernel.org
+Cc: David Brownell <dbrownell@users.sourceforge.net>,
+       Kyungmin Park <kyungmin.park@samsung.com>,
+       Marek Szyprowski <m.szyprowski@samsung.com>,
+       linux-kernel@vger.kernel.org
+Message-id: <cover.1275034701.git.mina86@mina86.com>
+MIME-version: 1.0
+X-Mailer: git-send-email 1.7.1
+Content-type: TEXT/PLAIN; CHARSET=EUC-KR
+Content-transfer-encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 28, 2010 at 5:42 PM, Miklos Szeredi <miklos@szeredi.hu> wrote:
-> On Wed, 26 May 2010, Changli Gao wrote:
->> fix updating sd->pos wrongly.
->>
->> In error path, we don't need to updating sd->pos, if the file isn't seekable.
->
-> This patch is nonsense.  Why should we handle sd->pos != 0 case
-> differently?
->
+Hello everyone,
 
-If the in file isn't seekable, its splice_read won't update *ppos, so
-in the error path, we'd better not change it too. Otherwise, some
-assumption will go wrong.
-
-ssize_t tcp_splice_read(struct socket *sock, loff_t *ppos,
-                        struct pipe_inode_info *pipe, size_t len,
-                        unsigned int flags)
-{
-        struct sock *sk = sock->sk;
-        struct tcp_splice_state tss = {
-                .pipe = pipe,
-                .len = len,
-                .flags = flags,
-        };
-        long timeo;
-        ssize_t spliced;
-        int ret;
-
-        /*
-         * We can't seek on a socket input
-         */
-        if (unlikely(*ppos))
-                return -ESPIPE;
+I'm resending my earlier patchsets with two changes.
 
 
--- 
-Regards，
-Changli Gao(xiaosuo@gmail.com)
+First of all, there was a tiny coding style bug in one of the patches
+(reported by Sergei Shtylyov).
+
+
+Second of all, David has shown some concerns about overcomplicating
+the g_multi driver by introducing several Kconfig options.  I assumed
+he knows better and so excluded this particular patch from the set.
+
+The other patch modifying the g_multi is however legitimate in my
+opinion as it clears the code and fixes some section mismatch
+warnings.
+
+
+The whole patchset introduces several improvements to USB gadgets,
+functions, etc.:
+
+
+Michal Nazarewicz (7):
+  USB: gadget: g_mass_storage: static data instead of dynamic
+    allocation
+
+A micro optimisation preventing a kmalloc call() which would otherwise
+be always called at the very beginning for the same area size.
+
+This was submitted previously but Greg did not included it in his
+quilt tree (unless I overlooked something) so I'll posting it again
+for completeness.  Sorry if that creates confusion.
+
+In my opinion this is worth including as it simplifies the code a bit
+and removes the call to kmalloc/kfree (hidden in fsg_common_init)
+which in my opinion is a good thing as well.
+
+Note, that the next patch won't apply without this one -- conflict is
+trivial to solve though.
+
+
+  USB: gadget: f_mass_storage: fsg_add() renamed to fsg_bind_config()
+  USB: gadget: f_fs: functionfs_add() renamed to
+    functionfs_bind_config()
+
+All other functions use foo_bind_config() to add function to USB
+configuration so changed the names for mass storage and FunctionFS as
+well.
+
+The inconstancy apparent in multifunction gadgets stroke me for quite
+some time now.  I was always reluctant to submit patch thinking that
+it would be just stupid name change but finally couldn't stand it. ;)
+
+In case of mass storage the old (fsg_add()) function is still
+available but marked deprecated.  In case of FFS the old
+(functionfs_add()) function has been removed.
+
+
+  USB: gadget: composite: usb_string_ids_*() functions added
+  USB: gadget: f_fs: use usb_string_ids_n()
+
+usb_string_ids_n() and usb_string_ids_tab() functions added for batch
+sting IDs requests.
+
+  USB: gadget: g_multi: code clean up and refactoring
+  USB: gadget: g_multi: added documentation and INF files
+
+g_multi clean up, fixes, etc.  Also, the last patch includes a bit of
+documentation for g_multi and an INF file tested with Windows XP SP3.
+Hopefully, someone will find it useful.
+
+
+ Documentation/usb/gadget_multi.txt        |  160 ++++++++++++++++++
+ Documentation/usb/gadget_multi_rndis.inf  |  200 ++++++++++++++++++++++
+ Documentation/usb/gadget_multi_serial.inf |   44 +++++
+ drivers/usb/gadget/Kconfig                |    1 +
+ drivers/usb/gadget/composite.c            |   67 +++++++-
+ drivers/usb/gadget/f_fs.c                 |   36 ++---
+ drivers/usb/gadget/f_mass_storage.c       |   13 +-
+ drivers/usb/gadget/g_ffs.c                |    2 +-
+ drivers/usb/gadget/mass_storage.c         |   13 +-
+ drivers/usb/gadget/multi.c                |  262 ++++++++++++++++-------------
+ include/linux/usb/composite.h             |    4 +
+ include/linux/usb/functionfs.h            |    6 +-
+ 12 files changed, 656 insertions(+), 152 deletions(-)
+ create mode 100644 Documentation/usb/gadget_multi.txt
+ create mode 100644 Documentation/usb/gadget_multi_rndis.inf
+ create mode 100644 Documentation/usb/gadget_multi_serial.inf
+
+--
+Best regards,                                        _     _
+| Humble Liege of Serenely Enlightened Majesty of  o' \,=./ `o
+| Computer Science,  Michał "mina86" Nazarewicz       (o o)
++----[mina86*mina86.com]---[mina86*jabber.org]----ooO--(_)--Ooo--
