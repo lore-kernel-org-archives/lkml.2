@@ -1,132 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754718Ab0E1A14 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 May 2010 20:27:56 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:37791 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754354Ab0E1A1z (ORCPT
+	id S1754611Ab0E1Aax (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 May 2010 20:30:53 -0400
+Received: from bld-mail14.adl6.internode.on.net ([150.101.137.99]:49784 "EHLO
+	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751905Ab0E1Aaw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 May 2010 20:27:55 -0400
-X-Authority-Analysis: v=1.1 cv=muTmBHIsIIrvj5np50lvqqEF3x9MmSj/zDSU9q1ni6E= c=1 sm=0 a=ins4zMs19JUA:10 a=uEzv4HemXiYA:10 a=7U3hwN5JcxgA:10 a=Q9fys5e9bTEA:10 a=gMqfjgEr1zLu/65IO0LwxA==:17 a=pGLkceISAAAA:8 a=meVymXHHAAAA:8 a=t7CeM3EgAAAA:8 a=Mb5HO21E1NDS6Nk59MoA:9 a=pXJvQ7u7EOxi69O8JhoA:7 a=qe5kZtBdsNVDBzOPIqEjluC19hMA:4 a=PUjeQqilurYA:10 a=MSl-tDqOz04A:10 a=jeBq3FmKZ4MA:10 a=2e6ZYRoF4I4A:10 a=gMqfjgEr1zLu/65IO0LwxA==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.89.75
-Subject: Re: [PATCH] ftrace,kdb: Allow dumping a specific cpu's buffer with
- ftdump
-From: Steven Rostedt <rostedt@goodmis.org>
-Reply-To: rostedt@goodmis.org
-To: Jason Wessel <jason.wessel@windriver.com>
-Cc: linux-kernel@vger.kernel.org, Frederic Weisbecker <fweisbec@gmail.com>
-In-Reply-To: <1275002073-16516-1-git-send-email-jason.wessel@windriver.com>
-References: <1275002073-16516-1-git-send-email-jason.wessel@windriver.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-Organization: Kihon Technologies Inc.
-Date: Thu, 27 May 2010 20:27:52 -0400
-Message-ID: <1275006472.22648.558.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	Thu, 27 May 2010 20:30:52 -0400
+Date: Fri, 28 May 2010 10:30:41 +1000
+From: Dave Chinner <david@fromorbit.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+       linux-mm@kvack.org, xfs@oss.sgi.com
+Subject: Re: [PATCH 0/5] Per superblock shrinkers V2
+Message-ID: <20100528003041.GR12087@dastard>
+References: <1274777588-21494-1-git-send-email-david@fromorbit.com>
+ <20100527133223.efa4740a.akpm@linux-foundation.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20100527133223.efa4740a.akpm@linux-foundation.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-05-27 at 18:14 -0500, Jason Wessel wrote:
-> In systems with more than one processor it is desriable to look at the
-> per cpu trace buffers.
+On Thu, May 27, 2010 at 01:32:23PM -0700, Andrew Morton wrote:
+> On Tue, 25 May 2010 18:53:03 +1000
+> Dave Chinner <david@fromorbit.com> wrote:
 > 
-> CC: Frederic Weisbecker <fweisbec@gmail.com>
-
-> CC: Steven Rostedt <rostedt@goodmis.org>
-
-Acked-by: Steven Rostedt <rostedt@goodmis.org>
-
--- Steve
-
-
-> Signed-off-by: Jason Wessel <jason.wessel@windriver.com>
-> ---
->  kernel/trace/trace_kdb.c |   37 +++++++++++++++++++++++++++----------
->  1 files changed, 27 insertions(+), 10 deletions(-)
+> > This series reworks the filesystem shrinkers. We currently have a
+> > set of issues with the current filesystem shrinkers:
+> > 
+> >         1. There is an dependency between dentry and inode cache
+> >            shrinking that is only implicitly defined by the order of
+> >            shrinker registration.
+> >         2. The shrinkers need to walk the superblock list and pin
+> >            the superblock to avoid unmount races with the sb going
+> >            away.
+> >         3. The dentry cache uses per-superblock LRUs and proportions
+> >            reclaim between all the superblocks which means we are
+> >            doing breadth based reclaim. This means we touch every
+> >            superblock for every shrinker call, and may only reclaim
+> >            a single dentry at a time from a given superblock.
+> >         4. The inode cache has a global LRU, so it has different
+> >            reclaim patterns to the dentry cache, despite the fact
+> >            that the dentry cache is generally the only thing that
+> >            pins inodes in memory.
+> >         5. Filesystems need to register their own shrinkers for
+> >            caches and can't co-ordinate them with the dentry and
+> >            inode cache shrinkers.
 > 
-> diff --git a/kernel/trace/trace_kdb.c b/kernel/trace/trace_kdb.c
-> index 44cbda2..7b8ecd7 100644
-> --- a/kernel/trace/trace_kdb.c
-> +++ b/kernel/trace/trace_kdb.c
-> @@ -17,7 +17,7 @@
->  #include "trace.h"
->  #include "trace_output.h"
->  
-> -static void ftrace_dump_buf(int skip_lines)
-> +static void ftrace_dump_buf(int skip_lines, long cpu_file)
->  {
->  	/* use static because iter can be a bit big for the stack */
->  	static struct trace_iterator iter;
-> @@ -44,13 +44,20 @@ static void ftrace_dump_buf(int skip_lines)
->  	iter.iter_flags |= TRACE_FILE_LAT_FMT;
->  	iter.pos = -1;
->  
-> -	for_each_tracing_cpu(cpu) {
-> -		iter.buffer_iter[cpu] =
-> +	if (cpu_file == TRACE_PIPE_ALL_CPU) {
-> +		for_each_tracing_cpu(cpu) {
-> +			iter.buffer_iter[cpu] =
->  			ring_buffer_read_prepare(iter.tr->buffer, cpu);
-> -		ring_buffer_read_start(iter.buffer_iter[cpu]);
-> -		tracing_iter_reset(&iter, cpu);
-> +			ring_buffer_read_start(iter.buffer_iter[cpu]);
-> +			tracing_iter_reset(&iter, cpu);
-> +		}
-> +	} else {
-> +		iter.cpu_file = cpu_file;
-> +		iter.buffer_iter[cpu_file] =
-> +			ring_buffer_read_prepare(iter.tr->buffer, cpu_file);
-> +		ring_buffer_read_start(iter.buffer_iter[cpu_file]);
-> +		tracing_iter_reset(&iter, cpu_file);
->  	}
-> -
->  	if (!trace_empty(&iter))
->  		trace_find_next_entry_inc(&iter);
->  	while (!trace_empty(&iter)) {
-> @@ -91,9 +98,10 @@ out:
->  static int kdb_ftdump(int argc, const char **argv)
->  {
->  	int skip_lines = 0;
-> +	long cpu_file;
->  	char *cp;
->  
-> -	if (argc > 1)
-> +	if (argc > 2)
->  		return KDB_ARGCOUNT;
->  
->  	if (argc) {
-> @@ -102,8 +110,17 @@ static int kdb_ftdump(int argc, const char **argv)
->  			skip_lines = 0;
->  	}
->  
-> +	if (argc == 2) {
-> +		cpu_file = simple_strtol(argv[2], &cp, 0);
-> +		if (*cp || cpu_file >= NR_CPUS || cpu_file < 0 ||
-> +		    !cpu_online(cpu_file))
-> +			return KDB_BADINT;
-> +	} else {
-> +		cpu_file = TRACE_PIPE_ALL_CPU;
-> +	}
-> +
->  	kdb_trap_printk++;
-> -	ftrace_dump_buf(skip_lines);
-> +	ftrace_dump_buf(skip_lines, cpu_file);
->  	kdb_trap_printk--;
->  
->  	return 0;
-> @@ -111,8 +128,8 @@ static int kdb_ftdump(int argc, const char **argv)
->  
->  static __init int kdb_ftrace_register(void)
->  {
-> -	kdb_register_repeat("ftdump", kdb_ftdump, "", "Dump ftrace log",
-> -			    0, KDB_REPEAT_NONE);
-> +	kdb_register_repeat("ftdump", kdb_ftdump, "[skip_#lines] [cpu]",
-> +			    "Dump ftrace log", 0, KDB_REPEAT_NONE);
->  	return 0;
->  }
->  
+> Nice description, but...  it never actually told us what the benefit of
+> the changes are. 
 
+The first patch I wrote was a small patch to introduce context to
+the shrinker callback and a per­XFS filesystem shrinker to solve OOM
+probelms introduced by background reclaim of XFS inodes.  It was
+simple, it worked but Nick refused to allow it because of #1 listed
+above. He wanted some <handwaves> guarantee that context based
+shrinkers would not break the implicit registration dependency
+between the dentry and inode cache shrinkers.
 
+We needed a fix for 2.6.34 for XFS, so I was forced to write a
+global shrinker which is what introduced all the lockdep problems.
+XFS does not have global inode caches, and the lock required to
+manage the list of XFs mounts were what caused all the new lockdep
+problems.  There's also other lockdep false positive problems w/ XFS
+and shrinkers (e.g. iprune_sem and the unmount path) that need to be
+fixed.
+
+That's what this patchset tries to address. It results in simpler
+code, less code, removal of implicit, undocumented dependencies,
+less locking shenanegans, no superblock list traversals, provides
+filesystems with hooks for cache reclaim without needing shrinker
+registration and fixes all the all the false positive lockdep
+problems XFS has with the current shrinker infrastructure.
+
+If this is all too much, then I'm quite happy to go back to just the
+context based shrinker patch and leave everything else alone - the
+context based shrinkers are the change we *really* need.  Everything
+else in this set of changes is just trying to address objections
+raised (that I still don't really understand) against that simple
+change.
+
+> Presumably some undescribed workload had some
+> undescribed user-visible problem.
+
+$ find . -inum 11111
+
+on a filesystem with more inodes in it than can be held in memory
+caused OOM panics.
+
+Cheers,
+
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
