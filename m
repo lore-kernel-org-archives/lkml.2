@@ -1,53 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758344Ab0E1OmF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 May 2010 10:42:05 -0400
-Received: from cavan.codon.org.uk ([93.93.128.6]:44108 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758251Ab0E1OmB (ORCPT
+	id S1758391Ab0E1On2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 May 2010 10:43:28 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:59705 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758181Ab0E1On1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 May 2010 10:42:01 -0400
-Date: Fri, 28 May 2010 15:41:39 +0100
-From: Matthew Garrett <mjg59@srcf.ucam.org>
-To: Brian Swetland <swetland@google.com>
-Cc: Igor Stoppa <igor.stoppa@nokia.com>, tytso@mit.edu,
-       Alan Cox <alan@lxorguk.ukuu.org.uk>,
-       Peter Zijlstra <peterz@infradead.org>,
-       LKML <linux-kernel@vger.kernel.org>,
-       Florian Mickler <florian@mickler.org>,
-       Linux PM <linux-pm@lists.linux-foundation.org>,
-       Thomas Gleixner <tglx@linutronix.de>,
-       Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
-       "Balbi Felipe (Nokia-D/Helsinki)" <felipe.balbi@nokia.com>
-Subject: Re: [linux-pm] [PATCH 0/8] Suspend block api (version 8)
-Message-ID: <20100528144139.GA27140@srcf.ucam.org>
-References: <20100528043114.GC26177@thunk.org> <20100528103713.0a7952d9@lxorguk.ukuu.org.uk> <20100528114123.GA22947@srcf.ucam.org> <4BFFB681.1000105@nokia.com> <AANLkTim04ZfMcPHRB2D_bqcAuguaGwySH2b6repuYLkk@mail.gmail.com> <4BFFC5DF.5030504@nokia.com> <20100528133900.GG26177@thunk.org> <4BFFCFC7.7070302@nokia.com> <20100528142124.GA26733@srcf.ucam.org> <AANLkTilj6i7Qi-eh7e3WWeh4zxKALqr-0yhAvWKis52t@mail.gmail.com>
+	Fri, 28 May 2010 10:43:27 -0400
+Date: Fri, 28 May 2010 11:43:09 -0300
+From: Arnaldo Carvalho de Melo <acme@infradead.org>
+To: Stephane Eranian <eranian@google.com>
+Cc: linux-kernel@vger.kernel.org, peterz@infradead.org, mingo@elte.hu,
+       paulus@samba.org, davem@davemloft.net, fweisbec@gmail.com,
+       perfmon2-devel@lists.sf.net, eranian@gmail.com, tzanussi@gmail.com,
+       Arun Sharma <aruns@google.com>
+Subject: Re: [PATCH] perf: make perf report -D print sampled CPU
+Message-ID: <20100528144309.GR9874@ghostprotocols.net>
+References: <4bff964c.e88cd80a.3106.7d31@mx.google.com>
+ <20100528125728.GP9874@ghostprotocols.net>
+ <AANLkTin33AdxO_yzRlZUTzoV9JtqaNqfYR2kXhOvke1P@mail.gmail.com>
+ <20100528133709.GQ9874@ghostprotocols.net>
+ <AANLkTimxlVIhN4NRYMTOmerX7mChalevmLunsZNuKVea@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <AANLkTilj6i7Qi-eh7e3WWeh4zxKALqr-0yhAvWKis52t@mail.gmail.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+In-Reply-To: <AANLkTimxlVIhN4NRYMTOmerX7mChalevmLunsZNuKVea@mail.gmail.com>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 28, 2010 at 07:29:27AM -0700, Brian Swetland wrote:
+Em Fri, May 28, 2010 at 03:44:31PM +0200, Stephane Eranian escreveu:
+> On Fri, May 28, 2010 at 3:37 PM, Arnaldo Carvalho de Melo
+> <acme@infradead.org> wrote:
+> > Em Fri, May 28, 2010 at 03:03:15PM +0200, Stephane Eranian escreveu:
+> >> On Fri, May 28, 2010 at 2:57 PM, Arnaldo Carvalho de Melo
+> >> <acme@infradead.org> wrote:
+> >> > Em Fri, May 28, 2010 at 12:08:01PM +0200, Stephane Eranian escreveu:
+> >> Fine. I think there needs to be some documenation explaining the structure
+> >> of the line here. I had to dig into the code to understand it.
+> >
+> > Right, this so far is as ad-hoc as it can be :-)
+> >
+> > One idea that is in my TODO list is to generate some XML format people
+> > say that oprofile produces and there is also some other format that a
+> > valgrind tool uses that should be supported.
 
-> I need to think more about the cgroups approach, but I'm pretty sure
-> it still suffers from wakeup race situations, and due to the
-> complexity of userspace (at least ours), I suspect it would risk
-> livelock/deadlock/priority-inversion style issues due to interaction
-> between different processes in different groups.
+> I think for a lot of people what matter is that the format be easily parseable
+> by Python/Perl scripts. XML may be fine too.
 
-I think the cgroups approach works if you assume that applications that 
-consume wakeup events can be trusted to otherwise be good citizens. 
-Everything that has no direct interest in wakeup events (except the 
-generic Android userspace) can be frozen, and you can use the scheduler 
-to make everything else Just Work. That's a rather big if, but you've 
-got a better idea of the state of the Android app base than I do.
+Agreed, I mentioned the existing formats because they may be good enough
+and would allow us to take advantage of existing tools that process
+them.
+ 
+> > I also plan to have it in a spreadsheet TUI widget, allowing lots of
+> > navigation gimmicks to help in debugging, like a popup that offers
+> > the list of mmaps for the thread where the sample below the cursor
+> > happened, etc.
 
--- 
-Matthew Garrett | mjg59@srcf.ucam.org
+> You may get tons of data. Not sure you could manage interactively.
+
+Right, it wouldn't support all cases, but I'm working on new TUI widgets
+that try hard not to create several layers of data structures to browse
+the perf.data file, i.e. filtering shouldn't traverse all the entries,
+just set variables that will be inspected when we move to a different
+page, etc.
+
+- Arnaldo
