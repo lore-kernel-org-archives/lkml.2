@@ -1,77 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932243Ab0E1DMa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 May 2010 23:12:30 -0400
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:14927 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757492Ab0E1DMR (ORCPT
+	id S1759151Ab0E1DMh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 May 2010 23:12:37 -0400
+Received: from casper.infradead.org ([85.118.1.10]:58769 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758888Ab0E1DMT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 May 2010 23:12:17 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,5995"; a="42664045"
-X-IronPort-AV: E=Sophos;i="4.53,315,1272870000"; 
-   d="scan'208";a="72693472"
-From: Ron Shaffer <rshaffer@codeaurora.org>
-To: linux-kernel@vger.kernel.org
-Cc: Ron Shaffer <rshaffer@codeaurora.org>
-Subject: [PATCH 1/3] Bluetooth: Remove extraneous white space
-Date: Thu, 27 May 2010 23:12:04 -0400
-Message-Id: <1275016326-15795-2-git-send-email-rshaffer@codeaurora.org>
-X-Mailer: git-send-email 1.7.0.2
-In-Reply-To: <1275016326-15795-1-git-send-email-rshaffer@codeaurora.org>
-References: <1275016326-15795-1-git-send-email-rshaffer@codeaurora.org>
+	Thu, 27 May 2010 23:12:19 -0400
+Date: Thu, 27 May 2010 20:14:39 -0700
+From: Arjan van de Ven <arjan@infradead.org>
+To: Igor Stoppa <igor.stoppa@nokia.com>
+Cc: Kevin Hilman <khilman@deeprootsystems.com>, Brown <len.brown@intel.com>,
+       "x86@kernel.org" <x86@kernel.org>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       "Len@smtp1.linux-foundation.org" <Len@smtp1.linux-foundation.org>,
+       "linux-pm@lists.linux-foundation.org" 
+	<linux-pm@lists.linux-foundation.org>
+Subject: Re: [linux-pm] [PATCH 8/8] intel_idle: create a native cpuidle
+ driver for select intel processors
+Message-ID: <20100527201439.6d0fd169@infradead.org>
+In-Reply-To: <4BFE86D4.60602@nokia.com>
+References: <1274928151-30919-1-git-send-email-lenb@kernel.org>
+	<e099975ca65a7f6ac7f8bc3fee84d3e03893aa31.1274926772.git.len.brown@intel.com>
+	<198450ec1600d9a7f55270dd4d44d6b55bc5b184.1274926772.git.len.brown@intel.com>
+	<87ljb5l9d5.fsf@deeprootsystems.com>
+	<20100527072207.2e783b1e@infradead.org>
+	<4BFE86D4.60602@nokia.com>
+Organization: Intel
+X-Mailer: Claws Mail 3.7.5 (GTK+ 2.16.6; i586-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-SRS-Rewrite: SMTP reverse-path rewritten from <arjan@infradead.org> by casper.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Deleted extraneous white space from the end of several lines
+On Thu, 27 May 2010 17:51:00 +0300
+Igor Stoppa <igor.stoppa@nokia.com> wrote:
 
-Signed-off-by: Ron Shaffer <rshaffer@codeaurora.org>
----
- include/net/bluetooth/hci_core.h |   14 +++++++-------
- 1 files changed, 7 insertions(+), 7 deletions(-)
+> Hi,
+> 
+> 
+> ext Arjan van de Ven wrote:
+> 
+> > it's really inconvenient to have such drivers hidden in the
+> > architecture code; it's much more convenient for cpuidle developers
+> > if they're all in one place.
+> >   
+> 
+> why?
 
-diff --git a/include/net/bluetooth/hci_core.h b/include/net/bluetooth/hci_core.h
-index e42f6ed..4a664e6 100644
---- a/include/net/bluetooth/hci_core.h
-+++ b/include/net/bluetooth/hci_core.h
-@@ -1,4 +1,4 @@
--/* 
-+/*
-    BlueZ - Bluetooth protocol stack for Linux
-    Copyright (C) 2000-2001 Qualcomm Incorporated
- 
-@@ -12,13 +12,13 @@
-    OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-    FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT OF THIRD PARTY RIGHTS.
-    IN NO EVENT SHALL THE COPYRIGHT HOLDER(S) AND AUTHOR(S) BE LIABLE FOR ANY
--   CLAIM, OR ANY SPECIAL INDIRECT OR CONSEQUENTIAL DAMAGES, OR ANY DAMAGES 
--   WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN 
--   ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF 
-+   CLAIM, OR ANY SPECIAL INDIRECT OR CONSEQUENTIAL DAMAGES, OR ANY DAMAGES
-+   WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
-+   ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
- 
--   ALL LIABILITY, INCLUDING LIABILITY FOR INFRINGEMENT OF ANY PATENTS, 
--   COPYRIGHTS, TRADEMARKS OR OTHER RIGHTS, RELATING TO USE OF THIS 
-+   ALL LIABILITY, INCLUDING LIABILITY FOR INFRINGEMENT OF ANY PATENTS,
-+   COPYRIGHTS, TRADEMARKS OR OTHER RIGHTS, RELATING TO USE OF THIS
-    SOFTWARE IS DISCLAIMED.
- */
- 
-@@ -380,7 +380,7 @@ static inline void __hci_dev_put(struct hci_dev *d)
- }
- 
- static inline void hci_dev_put(struct hci_dev *d)
--{ 
-+{
- 	__hci_dev_put(d);
- 	module_put(d->owner);
- }
--- 
-1.7.0.2
+because you have all the users of your API in one place.
 
---
-Ron Shaffer
-Qualcomm Innocation Center, Inc.
-Qualcomm Innocation Center, Inc. is a member of Code Aurora Forum
