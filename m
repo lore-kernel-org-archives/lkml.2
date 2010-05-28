@@ -1,165 +1,273 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758353Ab0E1LHc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 May 2010 07:07:32 -0400
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:46158
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756191Ab0E1LHa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 May 2010 07:07:30 -0400
-Date: Fri, 28 May 2010 04:07:39 -0700 (PDT)
-Message-Id: <20100528.040739.212703844.davem@davemloft.net>
-To: torvalds@linux-foundation.org
-CC: akpm@linux-foundation.org, netdev@vger.kernel.org,
-       linux-kernel@vger.kernel.org
-Subject: [GIT] Networking
-From: David Miller <davem@davemloft.net>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	id S1758361Ab0E1LIG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 May 2010 07:08:06 -0400
+Received: from mail.itcs.ro ([86.35.2.10]:47035 "EHLO enigma.wired-net.gr"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751126Ab0E1LIC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 May 2010 07:08:02 -0400
+Date: Fri, 28 May 2010 11:07:34 +0000
+From: Nanakos Chrysostomos <nanakos@wired-net.gr>
+To: Martyn Welch <martyn.welch@ge.com>
+Cc: nanakos@wired-net.gr, gregkh@suse.de, arthur.benilov@iba-group.com,
+       tj@kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Staging: vme: devices: vme_user.c: Fix checkpatch.pl
+	issues.
+Message-ID: <20100528110734.GA4208@limpeloula>
+References: <1275044085-4169-1-git-send-email-nanakos@wired-net.gr> <4BFFA2CA.7060100@ge.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <4BFFA2CA.7060100@ge.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+You are welcome.
 
-Several fixes including the one for the bootup failure Ingo reported
-yesterday:
-
-1) Network cgroup needs to initialize classid properly when module
-   is absent, fix from Herbert Xu.
-
-2) GRO packets unconditionally dropped in ipv6 forwarding path, oops,
-   also from Herbert Xu.
-
-3) {un,}lock_sock_bh() is busted, it needs to properly arbitrate
-   between user context lockers and async ones.  From Eric Dumazet.
-
-   Fixes sk->sk_forward_alloc WARN_ON() reported by Anton Blanchard.
-
-4) When __neigh_event_send() does __skb_queue_tail() it needs to force
-   a reference to the skb->dst using skb_dst_force().  Fix from Eric
-   Dumazet.
-
-   Fixes a bootup failure reported by Ingo Molnar.
-
-5) Several "if (x == NULL) x->foo" style NULL deref fixes from Julia
-   Lawall.
-
-6) Broadcom CNIC driver memory context init fix from Michael Chan.
-
-7) FEC driver hangs on interface down because of improper PHY
-   programming, fix from Bryan Wu.
-
-8) Two vf_port/vfinfo netlink bug fixes from Scott Feldman:
-   a) vf_port dump overruns netlink SKBs
-   b) vfinfo blobs are sized incorrectly
-
-9) Increase be2net POST timeout for EEH recovery, from Sathya Perla.
-
-10) be2net ended up with the erroneous:
-
-	while (...) {
-	} while (...);
-
-    after some recent changes, fix.  From Sarveshwar Bandi.
-
-11) Array index limit check in __ip{,6}mr_fill_mroute() is off by one,
-    fix from Dan Carpenter.
-
-12) ll_temac fixes (interrupt validity fix, checksum offloading bugs)
-    from Brian Hill.
-
-13) IUCV protocol fails to release spinlock on memory allocation
-    failure, from Julia Lawall.
-
-14) VHOST fixes via Michael S. Tsirkin:
-    a) vhost_set_ring index check is off by one, from Krishna Kumar.
-    b) VHOST makes user copy return value checks wrongly, from Takuya Yoshikawa.
-    c) leak on memory_access_ok() failure, also from Takuya Yoshikawa.
-
-15) New netfilter xt_tee module needs to use skb_dst_drop() instead of
-    the now verbotten dst_release(skb_dst(skb)).  From Eric Dumazet.
-
-Please pull, thanks a lot!
-
-The following changes since commit 63a6440326e4cd01d6a663069208a0e68e9b833f:
-  Linus Torvalds (1):
-        Merge git://git.kernel.org/.../pkl/squashfs-linus
-
-are available in the git repository at:
-
-  master.kernel.org:/pub/scm/linux/kernel/git/davem/net-2.6.git master
-
-Brian Hill (2):
-      net: ll_temac: fix interrupt bug when interrupt 0 is used
-      net: ll_temac: fix checksum offload logic
-
-Bryan Wu (1):
-      netdev/fec: fix ifconfig eth0 down hang issue
-
-Dan Carpenter (2):
-      ipmr: off by one in __ipmr_fill_mroute()
-      sctp: dubious bitfields in sctp_transport
-
-Eric Dumazet (3):
-      net: fix lock_sock_bh/unlock_sock_bh
-      net: fix __neigh_event_send()
-      xt_tee: use skb_dst_drop()
-
-Herbert Xu (2):
-      cls_cgroup: Initialise classid when module is absent
-      ipv6: Add GSO support on forwarding path
-
-Julia Lawall (3):
-      net/iucv: Add missing spin_unlock
-      drivers/net/hamradio: Eliminate a NULL pointer dereference
-      drivers/net: Eliminate a NULL pointer dereference
-
-Krishna Kumar (1):
-      vhost: Fix host panic if ioctl called with wrong index
-
-Michael Chan (1):
-      cnic: Fix context memory init. on 5709.
-
-Sarveshwar Bandi (1):
-      be2net: Patch removes redundant while statement in loop.
-
-Sathya Perla (1):
-      be2net: increase POST timeout for EEH recovery
-
-Scott Feldman (2):
-      netlink: bug fix: don't overrun skbs on vf_port dump
-      netlink: bug fix: wrong size was calculated for vfinfo list blob
-
-Takuya Yoshikawa (3):
-      vhost: fix to check the return value of copy_to/from_user() correctly
-      vhost-net: fix to check the return value of copy_to/from_user() correctly
-      vhost: fix the memory leak which will happen when memory_access_ok fails
-
- drivers/net/3c507.c         |    3 +-
- drivers/net/benet/be_cmds.c |    2 +-
- drivers/net/benet/be_main.c |    2 +-
- drivers/net/cnic.c          |   10 ++----
- drivers/net/cnic_if.h       |    4 +-
- drivers/net/fec.c           |   28 ++++++++------
- drivers/net/hamradio/yam.c  |    3 +-
- drivers/net/ll_temac.h      |    5 +++
- drivers/net/ll_temac_main.c |   84 ++++++++++++++++++++++++++++++-------------
- drivers/vhost/net.c         |   14 ++++----
- drivers/vhost/vhost.c       |   57 ++++++++++++++++-------------
- include/net/cls_cgroup.h    |    2 +-
- include/net/sctp/structs.h  |    2 +-
- include/net/sock.h          |   20 +++++++---
- net/core/datagram.c         |    6 ++-
- net/core/neighbour.c        |    1 +
- net/core/rtnetlink.c        |   26 ++++++++------
- net/core/sock.c             |   33 +++++++++++++++++
- net/ipv4/ipmr.c             |    2 +-
- net/ipv4/udp.c              |   14 ++++---
- net/ipv6/ip6_output.c       |    2 +-
- net/ipv6/ip6mr.c            |    2 +-
- net/ipv6/udp.c              |    5 ++-
- net/iucv/af_iucv.c          |    2 +-
- net/netfilter/xt_TEE.c      |    4 +-
- 25 files changed, 214 insertions(+), 119 deletions(-)
+On Fri, May 28, 2010 at 12:02:34PM +0100, Martyn Welch wrote:
+> nanakos@wired-net.gr wrote:
+> > From: Nanakos Chrysostomos <nanakos@wired-net.gr>
+> >
+> > Fix resolves checkpatch.pl issues for vme_user.c file.
+> >
+> > Signed-off-by: Nanakos Chrysostomos <nanakos@wired-net.gr>
+> >   
+> Thanks,
+> 
+> Signed-off-by: Martyn Welch <martyn.welch@ge.com>
+> 
+> > ---
+> >  drivers/staging/vme/devices/vme_user.c |   92 +++++++++++++++----------------
+> >  1 files changed, 45 insertions(+), 47 deletions(-)
+> >
+> > diff --git a/drivers/staging/vme/devices/vme_user.c b/drivers/staging/vme/devices/vme_user.c
+> > index bc16fc0..326991c 100644
+> > --- a/drivers/staging/vme/devices/vme_user.c
+> > +++ b/drivers/staging/vme/devices/vme_user.c
+> > @@ -34,8 +34,8 @@
+> >  #include <linux/smp_lock.h>
+> >  #include <linux/types.h>
+> >  
+> > -#include <asm/io.h>
+> > -#include <asm/uaccess.h>
+> > +#include <linux/io.h>
+> > +#include <linux/uaccess.h>
+> >  
+> >  #include "../vme.h"
+> >  #include "vme_user.h"
+> > @@ -48,19 +48,19 @@ static int bus_num;
+> >  /* Currently Documentation/devices.txt defines the following for VME:
+> >   *
+> >   * 221 char	VME bus
+> > - * 		  0 = /dev/bus/vme/m0		First master image
+> > - * 		  1 = /dev/bus/vme/m1		Second master image
+> > - * 		  2 = /dev/bus/vme/m2		Third master image
+> > - * 		  3 = /dev/bus/vme/m3		Fourth master image
+> > - * 		  4 = /dev/bus/vme/s0		First slave image
+> > - * 		  5 = /dev/bus/vme/s1		Second slave image
+> > - * 		  6 = /dev/bus/vme/s2		Third slave image
+> > - * 		  7 = /dev/bus/vme/s3		Fourth slave image
+> > - * 		  8 = /dev/bus/vme/ctl		Control
+> > + *		  0 = /dev/bus/vme/m0		First master image
+> > + *		  1 = /dev/bus/vme/m1		Second master image
+> > + *		  2 = /dev/bus/vme/m2		Third master image
+> > + *		  3 = /dev/bus/vme/m3		Fourth master image
+> > + *		  4 = /dev/bus/vme/s0		First slave image
+> > + *		  5 = /dev/bus/vme/s1		Second slave image
+> > + *		  6 = /dev/bus/vme/s2		Third slave image
+> > + *		  7 = /dev/bus/vme/s3		Fourth slave image
+> > + *		  8 = /dev/bus/vme/ctl		Control
+> >   *
+> > - * 		It is expected that all VME bus drivers will use the
+> > - * 		same interface.  For interface documentation see
+> > - * 		http://www.vmelinux.org/.
+> > + *		It is expected that all VME bus drivers will use the
+> > + *		same interface.  For interface documentation see
+> > + *		http://www.vmelinux.org/.
+> >   *
+> >   * However the VME driver at http://www.vmelinux.org/ is rather old and doesn't
+> >   * even support the tsi148 chipset (which has 8 master and 8 slave windows).
+> > @@ -137,12 +137,12 @@ static int __init vme_user_probe(struct device *, int, int);
+> >  static int __exit vme_user_remove(struct device *, int, int);
+> >  
+> >  static struct file_operations vme_user_fops = {
+> > -        .open = vme_user_open,
+> > -        .release = vme_user_release,
+> > -        .read = vme_user_read,
+> > -        .write = vme_user_write,
+> > -        .llseek = vme_user_llseek,
+> > -        .unlocked_ioctl = vme_user_unlocked_ioctl,
+> > +	.open = vme_user_open,
+> > +	.release = vme_user_release,
+> > +	.read = vme_user_read,
+> > +	.write = vme_user_write,
+> > +	.llseek = vme_user_llseek,
+> > +	.unlocked_ioctl = vme_user_unlocked_ioctl,
+> >  };
+> >  
+> >  
+> > @@ -151,13 +151,13 @@ static struct file_operations vme_user_fops = {
+> >   */
+> >  static void reset_counters(void)
+> >  {
+> > -        statistics.reads = 0;
+> > -        statistics.writes = 0;
+> > -        statistics.ioctls = 0;
+> > -        statistics.irqs = 0;
+> > -        statistics.berrs = 0;
+> > -        statistics.dmaErrors = 0;
+> > -        statistics.timeouts = 0;
+> > +	statistics.reads = 0;
+> > +	statistics.writes = 0;
+> > +	statistics.ioctls = 0;
+> > +	statistics.irqs = 0;
+> > +	statistics.berrs = 0;
+> > +	statistics.dmaErrors = 0;
+> > +	statistics.timeouts = 0;
+> >  }
+> >  
+> >  static int vme_user_open(struct inode *inode, struct file *file)
+> > @@ -216,21 +216,20 @@ static ssize_t resource_to_user(int minor, char __user *buf, size_t count,
+> >  		/* We copy to kernel buffer */
+> >  		copied = vme_master_read(image[minor].resource,
+> >  			image[minor].kern_buf, count, *ppos);
+> > -		if (copied < 0) {
+> > +		if (copied < 0)
+> >  			return (int)copied;
+> > -		}
+> >  
+> >  		retval = __copy_to_user(buf, image[minor].kern_buf,
+> >  			(unsigned long)copied);
+> >  		if (retval != 0) {
+> >  			copied = (copied - retval);
+> > -			printk("User copy failed\n");
+> > +			printk(KERN_INFO "User copy failed\n");
+> >  			return -EINVAL;
+> >  		}
+> >  
+> >  	} else {
+> >  		/* XXX Need to write this */
+> > -		printk("Currently don't support large transfers\n");
+> > +		printk(KERN_INFO "Currently don't support large transfers\n");
+> >  		/* Map in pages from userspace */
+> >  
+> >  		/* Call vme_master_read to do the transfer */
+> > @@ -264,7 +263,7 @@ static ssize_t resource_from_user(unsigned int minor, const char *buf,
+> >  			image[minor].kern_buf, copied, *ppos);
+> >  	} else {
+> >  		/* XXX Need to write this */
+> > -		printk("Currently don't support large transfers\n");
+> > +		printk(KERN_INFO "Currently don't support large transfers\n");
+> >  		/* Map in pages from userspace */
+> >  
+> >  		/* Call vme_master_write to do the transfer */
+> > @@ -313,7 +312,7 @@ static ssize_t buffer_from_user(unsigned int minor, const char *buf,
+> >  }
+> >  
+> >  static ssize_t vme_user_read(struct file *file, char *buf, size_t count,
+> > -			loff_t * ppos)
+> > +			loff_t *ppos)
+> >  {
+> >  	unsigned int minor = MINOR(file->f_dentry->d_inode->i_rdev);
+> >  	ssize_t retval;
+> > @@ -337,7 +336,7 @@ static ssize_t vme_user_read(struct file *file, char *buf, size_t count,
+> >  	else
+> >  		okcount = count;
+> >  
+> > -	switch (type[minor]){
+> > +	switch (type[minor]) {
+> >  	case MASTER_MINOR:
+> >  		retval = resource_to_user(minor, buf, okcount, ppos);
+> >  		break;
+> > @@ -380,7 +379,7 @@ static ssize_t vme_user_write(struct file *file, const char *buf, size_t count,
+> >  	else
+> >  		okcount = count;
+> >  
+> > -	switch (type[minor]){
+> > +	switch (type[minor]) {
+> >  	case MASTER_MINOR:
+> >  		retval = resource_from_user(minor, buf, okcount, ppos);
+> >  		break;
+> > @@ -571,7 +570,7 @@ vme_user_unlocked_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
+> >  /*
+> >   * Unallocate a previously allocated buffer
+> >   */
+> > -static void buf_unalloc (int num)
+> > +static void buf_unalloc(int num)
+> >  {
+> >  	if (image[num].kern_buf) {
+> >  #ifdef VME_DEBUG
+> > @@ -594,8 +593,8 @@ static void buf_unalloc (int num)
+> >  }
+> >  
+> >  static struct vme_driver vme_user_driver = {
+> > -        .name = driver_name,
+> > -        .probe = vme_user_probe,
+> > +	.name = driver_name,
+> > +	.probe = vme_user_probe,
+> >  	.remove = vme_user_remove,
+> >  };
+> >  
+> > @@ -770,16 +769,16 @@ static int __init vme_user_probe(struct device *dev, int cur_bus, int cur_slot)
+> >  	}
+> >  
+> >  	/* Add sysfs Entries */
+> > -	for (i=0; i<VME_DEVS; i++) {
+> > +	for (i = 0; i < VME_DEVS; i++) {
+> >  		switch (type[i]) {
+> >  		case MASTER_MINOR:
+> > -			sprintf(name,"bus/vme/m%%d");
+> > +			sprintf(name, "bus/vme/m%%d");
+> >  			break;
+> >  		case CONTROL_MINOR:
+> > -			sprintf(name,"bus/vme/ctl");
+> > +			sprintf(name, "bus/vme/ctl");
+> >  			break;
+> >  		case SLAVE_MINOR:
+> > -			sprintf(name,"bus/vme/s%%d");
+> > +			sprintf(name, "bus/vme/s%%d");
+> >  			break;
+> >  		default:
+> >  			err = -EINVAL;
+> > @@ -790,9 +789,9 @@ static int __init vme_user_probe(struct device *dev, int cur_bus, int cur_slot)
+> >  		image[i].device =
+> >  			device_create(vme_user_sysfs_class, NULL,
+> >  				MKDEV(VME_MAJOR, i), NULL, name,
+> > -				(type[i] == SLAVE_MINOR)? i - (MASTER_MAX + 1) : i);
+> > +				(type[i] == SLAVE_MINOR) ? i - (MASTER_MAX + 1) : i);
+> >  		if (IS_ERR(image[i].device)) {
+> > -			printk("%s: Error creating sysfs device\n",
+> > +			printk(KERN_INFO "%s: Error creating sysfs device\n",
+> >  				driver_name);
+> >  			err = PTR_ERR(image[i].device);
+> >  			goto err_sysfs;
+> > @@ -804,7 +803,7 @@ static int __init vme_user_probe(struct device *dev, int cur_bus, int cur_slot)
+> >  	/* Ensure counter set correcty to destroy all sysfs devices */
+> >  	i = VME_DEVS;
+> >  err_sysfs:
+> > -	while (i > 0){
+> > +	while (i > 0) {
+> >  		i--;
+> >  		device_destroy(vme_user_sysfs_class, MKDEV(VME_MAJOR, i));
+> >  	}
+> > @@ -845,9 +844,8 @@ static int __exit vme_user_remove(struct device *dev, int cur_bus, int cur_slot)
+> >  	int i;
+> >  
+> >  	/* Remove sysfs Entries */
+> > -	for(i=0; i<VME_DEVS; i++) {
+> > +	for (i = 0; i < VME_DEVS; i++)
+> >  		device_destroy(vme_user_sysfs_class, MKDEV(VME_MAJOR, i));
+> > -	}
+> >  	class_destroy(vme_user_sysfs_class);
+> >  
+> >  	for (i = MASTER_MINOR; i < (MASTER_MAX + 1); i++)
+> >   
+> 
+> 
+> -- 
+> Martyn Welch (Principal Software Engineer)   |   Registered in England and
+> GE Intelligent Platforms                     |   Wales (3828642) at 100
+> T +44(0)127322748                            |   Barbirolli Square, Manchester,
+> E martyn.welch@ge.com                        |   M2 3AB  VAT:GB 927559189
