@@ -1,65 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932575Ab0E1VU0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 May 2010 17:20:26 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:35449 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753434Ab0E1VUX (ORCPT
+	id S1759221Ab0E1VYS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 May 2010 17:24:18 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:20967 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752888Ab0E1VYP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 May 2010 17:20:23 -0400
-Date: Fri, 28 May 2010 14:17:55 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Al Viro <viro@ZenIV.linux.org.uk>
-Cc: Artem Bityutskiy <dedekind1@gmail.com>,
-       LKML <linux-kernel@vger.kernel.org>, Jens Axboe <jens.axboe@oracle.com>,
-       linux-fsdevel@vger.kernel.org, Roman Zippel <zippel@linux-m68k.org>,
-       "Tigran A. Aivazian" <tigran@aivazian.fsnet.co.uk>,
-       Chris Mason <chris.mason@oracle.com>,
-       Boaz Harrosh <bharrosh@panasas.com>, linux-ext4@vger.kernel.org,
-       "Theodore Ts'o" <tytso@mit.edu>,
-       OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>,
-       David Woodhouse <dwmw2@infradead.org>, reiserfs-devel@vger.kernel.org,
-       Jan Kara <jack@suse.cz>, Evgeniy Dushistov <dushistov@mail.ru>
-Subject: Re: [PATCHv4 01/17] VFS: introduce helpers for the s_dirty flag
-Message-Id: <20100528141755.42958d81.akpm@linux-foundation.org>
-In-Reply-To: <20100528211432.GM31073@ZenIV.linux.org.uk>
-References: <1274795352-3551-1-git-send-email-dedekind1@gmail.com>
-	<1274795352-3551-2-git-send-email-dedekind1@gmail.com>
-	<20100528132318.0783675a.akpm@linux-foundation.org>
-	<20100528211432.GM31073@ZenIV.linux.org.uk>
-X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Fri, 28 May 2010 17:24:15 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=mime-version:in-reply-to:references:date:message-id:subject:from:to:
+	cc:content-type:x-system-of-record;
+	b=uD5RZXfW6hXfaXs1qnxjk/smZAaySe8hyUNqH1e/TrLc+48pXgsjxV92x91KiOXmT
+	A7rI7Cw3OD89U96/Scwnw==
+MIME-Version: 1.0
+In-Reply-To: <alpine.LFD.2.00.1005281351380.4045@localhost.localdomain>
+References: <6b2c676bf32be91f43215d5874c07c1becaba013.1275026041.git.len.brown@intel.com>
+	<1275026521-30835-1-git-send-email-lenb@kernel.org>
+	<c4716a7a5639fd8f82dc6f2046b127e65a3851c5.1275026041.git.len.brown@intel.com>
+	<AANLkTikRUyXMcIkqc3dRCtLPkKBOwOeyy_j1iILHeypj@mail.gmail.com>
+	<alpine.LFD.2.00.1005281351380.4045@localhost.localdomain>
+Date: Fri, 28 May 2010 14:24:11 -0700
+Message-ID: <AANLkTikL7DZUhen_QaVPJ2FYoL8Xqfv8kQm3WU6iKtGt@mail.gmail.com>
+Subject: Re: [PATCH 7/8] ACPI: acpi_idle: touch TS_POLLING only in the 
+	non-MWAIT case
+From: Venkatesh Pallipadi <venki@google.com>
+To: Len Brown <lenb@kernel.org>
+Cc: linux-pm@lists.linux-foundation.org,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 28 May 2010 22:14:32 +0100
-Al Viro <viro@ZenIV.linux.org.uk> wrote:
+On Fri, May 28, 2010 at 10:59 AM, Len Brown <lenb@kernel.org> wrote:
+> On Fri, 28 May 2010, Venkatesh Pallipadi wrote:
+>
+>> On Thu, May 27, 2010 at 11:02 PM, Len Brown <lenb@kernel.org> wrote:
+>> > From: Len Brown <len.brown@intel.com>
+>> >
+>> > commit d306ebc28649b89877a22158fe0076f06cc46f60
+>> > (ACPI: Be in TS_POLLING state during mwait based C-state entry)
+>> > fixed an important power & performance issue where ACPI c2 and c3 C-states
+>> > were clearing TS_POLLING even when using MWAIT (ACPI_STATE_FFH).
+>> > That bug had been causing us to receive redundant scheduling interrups
+>> > when we had already been woken up by MONITOR/MWAIT.
+>> >
+>> > Following up on that...
+>> >
+>> > In the MWAIT case, we don't have to subsequently
+>> > check need_resched(), as that c heck was there
+>> > for the TS_POLLING-clearing case.
+>> >
+>> > Note that not only does the cpuidle calling function
+>> > already check need_resched() before calling us, the
+>> > low-level entry into monitor/mwait calls it twice --
+>> > guaranteeing that a write to the trigger address
+>> > can not go un-noticed.
+>>
+>> Ack this part of the change.
+>>
+>> > Also, in this case, we don't have to set TS_POLLING
+>> > when we wake, because we never cleared it.
+>>
+>> I thought about this part of the change while working on the original
+>> patch. But decided to leave the set to be done unconditionally as in
+>> this case we are replacing "one write" by either "one read and one
+>> jump" or "one read and one write" and I am not sure we gain much by
+>> that.
+>
+> I don't know if the write is more expensive than the read and branch.
+> In the scheme of things, these things are free and it is the IO
+> accesses and locks in the idle path that take time.
+>
 
-> On Fri, May 28, 2010 at 01:23:18PM -0700, Andrew Morton wrote:
-> 
-> > A more conventional and superior naming scheme is
-> > subsystemid_specific_function_identifier().  eg, bio_add_page() instead
-> > of add_page_to_bio().
-> > 
-> > So these want to be sb_mark_dirty(), etc.
-> > 
-> > Being very old code written by very yound people, the VFS kinda ignores
-> > that convention, but it doesn't hurt to use it for new code.
-> > 
-> > Feel free to ignore me if that's too much of a PITA ;)
-> 
-> The real issue is that it's almost certainly an overdesign.  Let's
-> get rid of the bogus uses first and figure out what's happening in
-> what remains, OK?
-
-That would be good.
-
-> I have no problems with doing such wrappers, but if we touch every
-> place using ->s_dirt anyway, let's at least take a good look at them.
-
-When adding wrappers we should also rename ->s_dirt (say, to __s_dirt)
-to catch out any unconverted code.
-
+Acked-by: Venkatesh Pallipadi <venki@google.com>
