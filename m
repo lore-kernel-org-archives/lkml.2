@@ -1,66 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755718Ab0E1Tn3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 May 2010 15:43:29 -0400
-Received: from relay3.sgi.com ([192.48.152.1]:57501 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753937Ab0E1Tn0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 May 2010 15:43:26 -0400
-Date: Fri, 28 May 2010 14:43:35 -0500
-From: Cliff Wickman <cpw@sgi.com>
-To: Greg KH <gregkh@suse.de>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, linux-kernel@vger.kernel.org,
-       mingo@elte.hu
-Subject: Re: [PATCH V3] x86, UV: BAU performance and error recovery
-Message-ID: <20100528194334.GA7707@sgi.com>
-References: <E1OHzgl-0000Pj-6o@eag09.americas.sgi.com> <4BFFEFA1.1020307@zytor.com> <20100528164725.GA29208@suse.de>
+	id S1756033Ab0E1TpA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 May 2010 15:45:00 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:46388 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754081Ab0E1To5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 May 2010 15:44:57 -0400
+Date: Fri, 28 May 2010 21:43:02 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Mike Frysinger <vapier.adi@gmail.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+       Roland McGrath <roland@redhat.com>, linux-sh@vger.kernel.org,
+       uclinux-dist-devel@blackfin.uclinux.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/2] blackfin: ptrace mm/sram_list fixes
+Message-ID: <20100528194302.GA14140@redhat.com>
+References: <20100521183512.4477F40476@magilla.sf.frob.com> <20100522165320.GA19573@redhat.com> <25539.1274711817@redhat.com> <20100524151445.GA6393@redhat.com> <17134.1274778852@redhat.com> <20100525102345.GA23574@redhat.com> <AANLkTilT3D8c86LYK2DxcNpM2F3D8iCbgY_sfUg8h58p@mail.gmail.com> <20100526124006.GA28358@redhat.com> <20100527195544.GA25935@redhat.com> <AANLkTik5mWPysArnlyZKdnjUxNzyde8myKCbTvxJIj8G@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100528164725.GA29208@suse.de>
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+In-Reply-To: <AANLkTik5mWPysArnlyZKdnjUxNzyde8myKCbTvxJIj8G@mail.gmail.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 05/27, Mike Frysinger wrote:
+>
+> > BTW. Obviously sys_sram_alloc() can create multiple sram_list_struct
+> > nodes with the same ->addr (with or without this patch), I hope this
+> > is fine.
+>
+> how so ?
 
-On Fri, May 28, 2010 at 09:47:25AM -0700, Greg KH wrote:
-> On Fri, May 28, 2010 at 09:30:25AM -0700, H. Peter Anvin wrote:
-> > On 05/28/2010 06:33 AM, Cliff Wickman wrote:
-> > > - adds modification of tuning variables through /proc/sgi_uv
-> > 
-> > Adding new directories in /proc for a proprietary architecture is
-> > frowned upon, to put it mildly.  At the very least try to find a place
-> > in sysfs for it.
-> > 
-> > [Cc: gregkh in order to find a place in sysfs]
-> 
-> Hm, what type of files are you needing here?  Do they corrispond with
-> any specific hardware devices?  If so, just put them on the hardware
-> devices in sysfs.
-> 
-> thanks,
-> 
-> greg k-h
+OOPS. Of course it can't, I was wrong.
 
-There is an SGI-specific directory in sysfs: /sys/firmware/sgi_uv
-though the tuning variables for the handling of the hardware Broadcast
-Assist Unit don't fit there very logically.  
+> Blackfin is a nommu arch, so there should be no aliasing
+> issues.  each of the individual L1 sub-allocators manage a different
+> address range, and none of those should return an address that is
+> already in use.
 
-The BAU's statistics are already displayed through the UV-only
-/proc/sgi_uv/ptc_statistics.  This was deemed necessary because of the
-potentially very large size of that file --- it is still true that a /sys file
-is limited to one page, is it not?  We wanted to minimize the overhead
-of the monitoring tools that read those statistics.
-And the BAU tuning is related to those statistics.  That's why I chose
-to put them along side, in /proc/sgi_uv/bau_tunables.
-Even though it is a very small file.
+Yes, I greatly misunderstood this code, to the point I didn't notice
+where this "addr" actually comes from.
 
-Does that logic hold any water?
+Thanks for your explanation,
 
--Cliff
--- 
-Cliff Wickman
-SGI
-cpw@sgi.com
-(651) 683-3824
+Oleg.
+
