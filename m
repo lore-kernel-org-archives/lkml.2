@@ -1,86 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932876Ab0E1R3L (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 May 2010 13:29:11 -0400
-Received: from www.telegraphics.com.au ([204.15.192.19]:47970 "EHLO
-	mail.telegraphics.com.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932381Ab0E1R3H (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 May 2010 13:29:07 -0400
-Date: Sat, 29 May 2010 03:29:01 +1000 (EST)
-From: Finn Thain <fthain@telegraphics.com.au>
-To: David Miller <davem@davemloft.net>
-cc: joe@perches.com, p_gortmaker@yahoo.com, netdev@vger.kernel.org,
-       linux-kernel@vger.kernel.org, linux-m68k@vger.kernel.org
-Subject: [PATCH] mac8390: change an error return code and some cleanup, take
- 4
-In-Reply-To: <20100421.163041.158540277.davem@davemloft.net>
-Message-ID: <alpine.OSX.2.00.1005290255580.691@localhost>
-References: <alpine.OSX.2.00.1004161403160.271@localhost> <alpine.OSX.2.00.1004162347390.271@localhost> <alpine.OSX.2.00.1004171258330.358@localhost> <20100421.163041.158540277.davem@davemloft.net>
-User-Agent: Alpine 2.00 (OSX 1167 2008-08-23)
+	id S1757376Ab0E1Red (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 May 2010 13:34:33 -0400
+Received: from gir.skynet.ie ([193.1.99.77]:39182 "EHLO gir.skynet.ie"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753584Ab0E1Rec (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 May 2010 13:34:32 -0400
+Date: Fri, 28 May 2010 18:34:13 +0100
+From: Mel Gorman <mel@csn.ul.ie>
+To: Doug Doan <dougd@cray.com>
+Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       "andi@firstfloor.org" <andi@firstfloor.org>,
+       "lee.schermerhorn@hp.com" <lee.schermerhorn@hp.com>,
+       "rientjes@google.com" <rientjes@google.com>,
+       "akpm@linux-foundation.org" <akpm@linux-foundation.org>
+Subject: Re: [PATCH] hugetlb: call mmu notifiers on hugepage cow
+Message-ID: <20100528173413.GF9774@csn.ul.ie>
+References: <4BFED954.8060807@cray.com> <20100528095946.GB9774@csn.ul.ie> <4BFFF1DF.3020501@cray.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <4BFFF1DF.3020501@cray.com>
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, May 28, 2010 at 09:39:59AM -0700, Doug Doan wrote:
+> On 05/28/2010 02:59 AM, Mel Gorman wrote:
+>> On Thu, May 27, 2010 at 01:43:00PM -0700, Doug Doan wrote:
+>>> From: Doug Doan<dougd@cray.com>
+>>>
+>>> When a copy-on-write occurs, we take one of two paths in handle_mm_fault:
+>>> through handle_pte_fault for normal pages, or through hugetlb_fault for
+>>> huge pages.
+>>>
+>>> In the normal page case, we eventually get to do_wp_page and call mmu
+>>> notifiers via ptep_clear_flush_notify. There is no callout to the mmmu
+>>> notifiers in the huge page case. This patch fixes that.
+>>>
+>>> Signed-off-by: Doug Doan<dougd@cray.com>
+>>> ---
+>>
+>>> --- mm/hugetlb.c.orig	2010-05-27 13:07:58.569546314 -0700
+>>> +++ mm/hugetlb.c	2010-05-26 14:41:06.449296524 -0700
+>>> @@ -2345,11 +2345,17 @@ retry_avoidcopy:
+>>>   	ptep = huge_pte_offset(mm, address&  huge_page_mask(h));
+>>>   	if (likely(pte_same(huge_ptep_get(ptep), pte))) {
+>>>   		/* Break COW */
+>>> +		mmu_notifier_invalidate_range_start(mm,
+>>> +			address&  huge_page_mask(h),
+>>> +			(address&  huge_page_mask(h)) + huge_page_size(h));
+>>
+>> Should the address not already be aligned?
+>
+> I'm not seeing where the address was aligned before this point. The code 
+> just above aligns it:
+>
+>    	ptep = huge_pte_offset(mm, address&  huge_page_mask(h));
+>    	if (likely(pte_same(huge_ptep_get(ptep), pte))) {
+>    		/* Break COW */
+>
 
-Propagate the request_irq() return code. Also promote the log level of the 
-failure message. Likewise some other KERN_INFO messages.
+I'm sorry. You're right. I was looking at the copy_huge_page which was
+not aligning the address. It should be but it's ultimately harmless as
+the parameter is discarded.
 
-Signed-off-by: Finn Thain <fthain@telegraphics.com.au>
+Acked-by: Mel Gorman <mel@csn.ul.ie>
 
-Index: linux-2.6.34/drivers/net/mac8390.c
-===================================================================
---- linux-2.6.34.orig/drivers/net/mac8390.c	2010-05-28 00:27:30.000000000 +1000
-+++ linux-2.6.34/drivers/net/mac8390.c	2010-05-28 00:27:32.000000000 +1000
-@@ -556,7 +556,7 @@ static int __init mac8390_initdev(struct
- 	case MAC8390_APPLE:
- 		switch (mac8390_testio(dev->mem_start)) {
- 		case ACCESS_UNKNOWN:
--			pr_info("Don't know how to access card memory!\n");
-+			pr_err("Don't know how to access card memory!\n");
- 			return -ENODEV;
- 			break;
- 
-@@ -643,10 +643,13 @@ static int __init mac8390_initdev(struct
- 
- static int mac8390_open(struct net_device *dev)
- {
-+	int err;
-+
- 	__ei_open(dev);
--	if (request_irq(dev->irq, __ei_interrupt, 0, "8390 Ethernet", dev)) {
--		pr_info("%s: unable to get IRQ %d.\n", dev->name, dev->irq);
--		return -EAGAIN;
-+	err = request_irq(dev->irq, __ei_interrupt, 0, "8390 Ethernet", dev);
-+	if (err) {
-+		pr_err("%s: unable to get IRQ %d\n", dev->name, dev->irq);
-+		return err;
- 	}
- 	return 0;
- }
-@@ -662,7 +665,7 @@ static void mac8390_no_reset(struct net_
- {
- 	ei_status.txing = 0;
- 	if (ei_debug > 1)
--		pr_info("reset not supported\n");
-+		printk(KERN_DEBUG pr_fmt("reset not supported\n"));
- 	return;
- }
- 
-@@ -670,7 +673,7 @@ static void interlan_reset(struct net_de
- {
- 	unsigned char *target = nubus_slot_addr(IRQ2SLOT(dev->irq));
- 	if (ei_debug > 1)
--		pr_info("Need to reset the NS8390 t=%lu...", jiffies);
-+		printk(KERN_DEBUG pr_fmt("Need to reset the NS8390 t=%lu..."), jiffies);
- 	ei_status.txing = 0;
- 	target[0xC0000] = 0;
- 	if (ei_debug > 1)
-@@ -871,5 +874,3 @@ static void word_memcpy_fromcard(void *t
- 	while (count--)
- 		*to++ = *from++;
- }
--
--
+>> Otherwise, I don't see any problem.
+>>
+>>>   		huge_ptep_clear_flush(vma, address, ptep);
+>>>   		set_huge_pte_at(mm, address, ptep,
+>>>   				make_huge_pte(vma, new_page, 1));
+>>>   		/* Make the old page be freed below */
+>>>   		new_page = old_page;
+>>> +		mmu_notifier_invalidate_range_end(mm,
+>>> +			address&  huge_page_mask(h),
+>>> +			(address&  huge_page_mask(h)) + huge_page_size(h));
+>>>   	}
+>>>   	page_cache_release(new_page);
+>>>   	page_cache_release(old_page);
+>>
+>>
+>
+
+-- 
+Mel Gorman
+Part-time Phd Student                          Linux Technology Center
+University of Limerick                         IBM Dublin Software Lab
