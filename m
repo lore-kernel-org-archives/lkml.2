@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757574Ab0E1AeA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 May 2010 20:34:00 -0400
-Received: from TYO202.gate.nec.co.jp ([202.32.8.206]:47194 "EHLO
+	id S1757720Ab0E1AeF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 May 2010 20:34:05 -0400
+Received: from TYO202.gate.nec.co.jp ([202.32.8.206]:47203 "EHLO
 	tyo202.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755400Ab0E1AdA (ORCPT
+	with ESMTP id S1756074Ab0E1AdC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 May 2010 20:33:00 -0400
+	Thu, 27 May 2010 20:33:02 -0400
 From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
 To: linux-mm@kvack.org
 Cc: linux-kernel@vger.kernel.org, Andi Kleen <andi@firstfloor.org>,
        Andrew Morton <akpm@linux-foundation.org>,
        Wu Fengguang <fengguang.wu@intel.com>, Mel Gorman <mel@csn.ul.ie>
-Subject: [PATCH 4/8] HWPOISON, hugetlb: set/clear PG_hwpoison bits on hugepage
-Date: Fri, 28 May 2010 09:29:18 +0900
-Message-Id: <1275006562-18946-5-git-send-email-n-horiguchi@ah.jp.nec.com>
+Subject: [PATCH 1/8] hugetlb: move definition of is_vm_hugetlb_page() to hugepage_inline.h
+Date: Fri, 28 May 2010 09:29:15 +0900
+Message-Id: <1275006562-18946-2-git-send-email-n-horiguchi@ah.jp.nec.com>
 X-Mailer: git-send-email 1.7.0
 In-Reply-To: <1275006562-18946-1-git-send-email-n-horiguchi@ah.jp.nec.com>
 References: <1275006562-18946-1-git-send-email-n-horiguchi@ah.jp.nec.com>
@@ -22,86 +22,95 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-To avoid race condition between concurrent memory errors on identified
-hugepage, we atomically test and set PG_hwpoison bit on the head page.
-All pages in the error hugepage are considered as hwpoisoned
-for now, so set and clear all PG_hwpoison bits in the hugepage
-with page lock of the head page held.
-
-Dependency:
-  "HWPOISON, hugetlb: enable error handling path for hugepage"
+is_vm_hugetlb_page() is a widely used inline function to insert hooks
+into hugetlb code.
+But we can't use it in pagemap.h because of circular dependency of
+the header files. This patch removes this limitation.
 
 Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Cc: Andi Kleen <andi@firstfloor.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Wu Fengguang <fengguang.wu@intel.com>
 ---
- mm/memory-failure.c |   38 ++++++++++++++++++++++++++++++++++++++
- 1 files changed, 38 insertions(+), 0 deletions(-)
+ include/linux/hugetlb.h        |   11 +----------
+ include/linux/hugetlb_inline.h |   22 ++++++++++++++++++++++
+ include/linux/pagemap.h        |    1 +
+ 3 files changed, 24 insertions(+), 10 deletions(-)
+ create mode 100644 include/linux/hugetlb_inline.h
 
-diff --git v2.6.34/mm/memory-failure.c v2.6.34/mm/memory-failure.c
-index 1ec68c8..fee648b 100644
---- v2.6.34/mm/memory-failure.c
-+++ v2.6.34/mm/memory-failure.c
-@@ -920,6 +920,22 @@ static int hwpoison_user_mappings(struct page *p, unsigned long pfn,
- 	return ret;
+diff --git v2.6.34/include/linux/hugetlb.h v2.6.34/include/linux/hugetlb.h
+index 78b4bc6..d47a7c4 100644
+--- v2.6.34/include/linux/hugetlb.h
++++ v2.6.34/include/linux/hugetlb.h
+@@ -2,6 +2,7 @@
+ #define _LINUX_HUGETLB_H
+ 
+ #include <linux/fs.h>
++#include <linux/hugetlb_inline.h>
+ 
+ struct ctl_table;
+ struct user_struct;
+@@ -14,11 +15,6 @@ struct user_struct;
+ 
+ int PageHuge(struct page *page);
+ 
+-static inline int is_vm_hugetlb_page(struct vm_area_struct *vma)
+-{
+-	return vma->vm_flags & VM_HUGETLB;
+-}
+-
+ void reset_vma_resv_huge_pages(struct vm_area_struct *vma);
+ int hugetlb_sysctl_handler(struct ctl_table *, int, void __user *, size_t *, loff_t *);
+ int hugetlb_overcommit_handler(struct ctl_table *, int, void __user *, size_t *, loff_t *);
+@@ -77,11 +73,6 @@ static inline int PageHuge(struct page *page)
+ 	return 0;
  }
  
-+static void set_page_hwpoison_huge_page(struct page *hpage)
-+{
-+	int i;
-+	int nr_pages = 1 << compound_order(hpage);
-+	for (i = 0; i < nr_pages; i++)
-+		SetPageHWPoison(hpage + i);
-+}
-+
-+static void clear_page_hwpoison_huge_page(struct page *hpage)
-+{
-+	int i;
-+	int nr_pages = 1 << compound_order(hpage);
-+	for (i = 0; i < nr_pages; i++)
-+		ClearPageHWPoison(hpage + i);
-+}
-+
- int __memory_failure(unsigned long pfn, int trapno, int flags)
+-static inline int is_vm_hugetlb_page(struct vm_area_struct *vma)
+-{
+-	return 0;
+-}
+-
+ static inline void reset_vma_resv_huge_pages(struct vm_area_struct *vma)
  {
- 	struct page_state *ps;
-@@ -1014,6 +1030,26 @@ int __memory_failure(unsigned long pfn, int trapno, int flags)
- 		return 0;
- 	}
- 
-+	/*
-+	 * For error on the tail page, we should set PG_hwpoison
-+	 * on the head page to show that the hugepage is hwpoisoned
-+	 */
-+	if (PageTail(p) && TestSetPageHWPoison(hpage)) {
-+		action_result(pfn, "hugepage already hardware poisoned",
-+				IGNORED);
-+		unlock_page(hpage);
-+		put_page(hpage);
-+		return 0;
-+	}
-+	/*
-+	 * Set PG_hwpoison on all pages in an error hugepage,
-+	 * because containment is done in hugepage unit for now.
-+	 * Since we have done TestSetPageHWPoison() for the head page with
-+	 * page lock held, we can safely set PG_hwpoison bits on tail pages.
-+	 */
-+	if (PageHuge(p))
-+		set_page_hwpoison_huge_page(hpage);
+ }
+diff --git v2.6.34/include/linux/hugetlb_inline.h v2.6.34/include/linux/hugetlb_inline.h
+new file mode 100644
+index 0000000..cf00b6d
+--- /dev/null
++++ v2.6.34/include/linux/hugetlb_inline.h
+@@ -0,0 +1,22 @@
++#ifndef _LINUX_HUGETLB_INLINE_H
++#define _LINUX_HUGETLB_INLINE_H 1
 +
- 	wait_on_page_writeback(p);
++#ifdef CONFIG_HUGETLBFS
++
++#include <linux/mm.h>
++
++static inline int is_vm_hugetlb_page(struct vm_area_struct *vma)
++{
++	return vma->vm_flags & VM_HUGETLB;
++}
++
++#else
++
++static inline int is_vm_hugetlb_page(struct vm_area_struct *vma)
++{
++	return 0;
++}
++
++#endif
++
++#endif
+diff --git v2.6.34/include/linux/pagemap.h v2.6.34/include/linux/pagemap.h
+index 3c62ed4..b2bd2ba 100644
+--- v2.6.34/include/linux/pagemap.h
++++ v2.6.34/include/linux/pagemap.h
+@@ -13,6 +13,7 @@
+ #include <linux/gfp.h>
+ #include <linux/bitops.h>
+ #include <linux/hardirq.h> /* for in_interrupt() */
++#include <linux/hugetlb_inline.h>
  
- 	/*
-@@ -1118,6 +1154,8 @@ int unpoison_memory(unsigned long pfn)
- 		atomic_long_dec(&mce_bad_pages);
- 		freeit = 1;
- 	}
-+	if (PageHuge(p))
-+		clear_page_hwpoison_huge_page(page);
- 	unlock_page(page);
- 
- 	put_page(page);
+ /*
+  * Bits in mapping->flags.  The lower __GFP_BITS_SHIFT bits are the page
 -- 
 1.7.0
 
