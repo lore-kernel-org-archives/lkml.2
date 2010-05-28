@@ -1,68 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758638Ab0E1UFS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 May 2010 16:05:18 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:43640 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756599Ab0E1UFM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 May 2010 16:05:12 -0400
-Message-ID: <4C0021DC.60608@zytor.com>
-Date: Fri, 28 May 2010 13:04:44 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-2.fc12 Thunderbird/3.0.4
+	id S1758477Ab0E1UGN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 May 2010 16:06:13 -0400
+Received: from bosmailout10.eigbox.net ([66.96.184.10]:51033 "EHLO
+	bosmailout10.eigbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756599Ab0E1UGI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 May 2010 16:06:08 -0400
+X-EN-OrigOutIP: 10.20.18.16
+X-EN-IMPSID: P7YG1e0010LoEWa017YGGM
+Message-ID: <4C001888.8020006@jaysonking.com>
+Date: Fri, 28 May 2010 14:24:56 -0500
+From: "Jayson R. King" <dev@jaysonking.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.8) Gecko/20100301 Fedora/3.0.3-1.fc11 Thunderbird/3.0.3
 MIME-Version: 1.0
-To: Mike Travis <travis@sgi.com>
-CC: Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
-       x86@kernel.org, Jesse Barnes <jbarnes@virtuousgeek.org>,
-       Bjorn Helgaas <bjorn.helgaas@hp.com>,
-       Jacob Pan <jacob.jun.pan@intel.com>, Tejun Heo <tj@kernel.org>,
-       Mike Habeck <habeck@sgi.com>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [Patch 1/1] x86 pci: Add option to not assign BAR's if not already
- assigned
-References: <4BEAF008.9030805@sgi.com> <4BFFF517.6040401@sgi.com> <4BFFF6B8.30005@zytor.com> <4BFFF8F8.1070502@sgi.com>
-In-Reply-To: <4BFFF8F8.1070502@sgi.com>
-Content-Type: text/plain; charset=UTF-8
+To: Stable team <stable@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+       Greg Kroah-Hartman <gregkh@suse.de>
+CC: "Theodore Ts'o" <tytso@mit.edu>,
+       "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+       Dave Chinner <david@fromorbit.com>,
+       Ext4 Developers List <linux-ext4@vger.kernel.org>,
+       "Jayson R. King" <dev@jaysonking.com>,
+       Kay Diederichs <Kay.Diederichs@uni-konstanz.de>
+Subject: [PATCH 2.6.27.y 0/3] ext4 fixes
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
+X-EN-UserInfo: 06af1bc540adb20c3d2d7097199478a6:08dd1976e651f6e3791fbe97eaa5f898
+X-EN-AuthUser: jaysonking@jaysonking.com
+X-EN-OrigIP: 68.93.139.172
+X-EN-OrigHost: unknown
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/28/2010 10:10 AM, Mike Travis wrote:
-> 
-> 
-> H. Peter Anvin wrote:
->> On 05/28/2010 09:53 AM, Mike Travis wrote:
->>> Any further consideration for this patch, or has it been rejected?
->>
->> Well, it's really up to Jesse, but as far as I can see, this patch is a
->> net loss of functionality and doesn't actually add anything.  Without
->> this patch, some resources that were not assigned by BIOS will be
->> unreachable.  With this patch, *all* resources that were not assigned by
->> BIOS will be unreachable...
->>
->> 	-hpa
->>
-> 
-> Apparently you're missing the point of the patch?  The patch is needed
-> because BIOS is purposely not assigning I/O BAR's to devices that won't
-> use them, freeing up the resource for devices that do need them.  Where
-> is the "all" resources that are not reachable?
-> 
+Greetings,
 
-No, the patch isn't needed for those.
+This is a second try at sending ext4 fixes to 2.6.27.y, including an
+important deadlock fix from kernel bugzilla #12579. The patches were
+dropped the first time because they depended on a vfs patch which was
+recently found to be broken on mainline. Now, the vfs patch is not
+included in this set, only ext4 patches.
 
-Without your patch:
+Here are the three patches I'm proposing for inclusion in 2.6.27.y:
 
-- Devices assigned by BIOS remain assigned;
-- Devices not assigned by BIOS get assigned until address space
-  exhausted.
+Theodore Ts'o (1):
+      ext4: Use our own write_cache_pages()
 
-With your patch:
+Aneesh Kumar K.V (2):
+      ext4: Fix file fragmentation during large file write.
+      ext4: Implement range_cyclic in ext4_da_writepages instead of write_cache_pages
 
-- Devices assigned by BIOS remain assigned;
-- Devices not assigned by BIOS never get assigned at all.
+They will be posted as replies to this message.
 
-What am I missing here?
+I have made some changes to the first two patches to adapt them for the
+current 2.6.27.47 tree. The changes are detailed between brackets above
+my signed-off line for each.
 
-	-hpa
+Jayson
+
 
