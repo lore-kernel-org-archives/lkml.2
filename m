@@ -1,41 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932428Ab0E1QNN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 May 2010 12:13:13 -0400
-Received: from cantor.suse.de ([195.135.220.2]:41304 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753463Ab0E1QNL convert rfc822-to-8bit (ORCPT
+	id S932684Ab0E1QSc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 May 2010 12:18:32 -0400
+Received: from mx1.univ-lille2.fr ([194.254.117.4]:33071 "EHLO
+	smtp.univ-lille2.fr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932160Ab0E1QSa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 May 2010 12:13:11 -0400
-From: Oliver Neukum <oneukum@suse.de>
-Organization: SUSE
-To: =?utf-8?b?0JDQu9C10LrRgdCw0L3QtNGAINCc0YPRgNCw0YjQvtCy?= 
-	<alex_mur_spb@mail.ru>
-Subject: Re: 0001-This-is-a-patch-to-the-gen-devlist.c-file-that-fixes.patch
-Date: Fri, 28 May 2010 18:13:16 +0200
-User-Agent: KMail/1.12.4 (Linux/2.6.34-rc6-0.1-default; KDE/4.3.5; x86_64; ; )
-Cc: Geert Uytterhoeven <geert@linux-m68k.org>,
-       Roman Zippel <zippel@linux-m68k.org>, linux-m68k@vger.kernel.org,
-       linux-kernel@vger.kernel.org
-References: <E1OI0Jf-0003LU-00.alex_mur_spb-mail-ru@f10.mail.ru>
-In-Reply-To: <E1OI0Jf-0003LU-00.alex_mur_spb-mail-ru@f10.mail.ru>
+	Fri, 28 May 2010 12:18:30 -0400
+X-Greylist: delayed 483 seconds by postgrey-1.27 at vger.kernel.org; Fri, 28 May 2010 12:18:30 EDT
+Message-ID: <682717d63f4562ffb21ebc514ff37aab.squirrel@webmail.univ-lille2.fr>
+Date: Fri, 28 May 2010 18:10:14 +0200
+Subject: 
+From: "Western Union" <info@mail.com>
+Reply-To: western_uniondepartments@w.cn
+User-Agent: SquirrelMail/1.4.18
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 8BIT
-Message-Id: <201005281813.16612.oneukum@suse.de>
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Priority: 3 (Normal)
+Importance: Normal
+To: undisclosed-recipients:;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Freitag, 28. Mai 2010 16:13:39 schrieb Александр Мурашов:
-> 
-> This is my first patch.Do not judge me harshly, I'm just learning.
+Good day,
 
-I am afraid the first segment creates invalid C.
+My working partner has helped me to send your
+first payment of US$7,500 to you as
+instructed by Mr. David Cameron and will
+keep sending you US$7,500 twice a week until
+the payment of (US$360,000) is completed
+within six months and here is the information
+below:
 
-In addition, even the rules of coding style have to be applied
-with some common sense.  Otherwise the result is basically unreadable.
+MONEY TRANSFER CONTROL NUMBER (MTCN):
+841-116-3297
 
-	Regards
-		Oliver
+SENDER'S NAME: Mr.Alexander Onyibor
+AMOUNT: US$7,500
+
+To track your funds forward Western Union
+Money Transfer agent your Full Names and
+Mobile Number via Email to:
+
+Mr Gary Moore
+E-mail:western_uniondepartments@w.cn
+D/L: +44 (0) 702 403 4679
+
+Please direct all enquiring to:
+western_uniondepartments@w.cn
+
+Best Regards,
+Mrs. Larisa Alexander.
+
+
