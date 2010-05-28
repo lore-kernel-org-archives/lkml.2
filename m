@@ -1,273 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758361Ab0E1LIG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 May 2010 07:08:06 -0400
-Received: from mail.itcs.ro ([86.35.2.10]:47035 "EHLO enigma.wired-net.gr"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751126Ab0E1LIC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 May 2010 07:08:02 -0400
-Date: Fri, 28 May 2010 11:07:34 +0000
-From: Nanakos Chrysostomos <nanakos@wired-net.gr>
-To: Martyn Welch <martyn.welch@ge.com>
-Cc: nanakos@wired-net.gr, gregkh@suse.de, arthur.benilov@iba-group.com,
-       tj@kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Staging: vme: devices: vme_user.c: Fix checkpatch.pl
-	issues.
-Message-ID: <20100528110734.GA4208@limpeloula>
-References: <1275044085-4169-1-git-send-email-nanakos@wired-net.gr> <4BFFA2CA.7060100@ge.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <4BFFA2CA.7060100@ge.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1758347Ab0E1LJf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 May 2010 07:09:35 -0400
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:39313 "EHLO
+	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1756196Ab0E1LJd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 May 2010 07:09:33 -0400
+Date: Fri, 28 May 2010 12:16:36 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Arve =?ISO-8859-14?B?SGr4bm5lduVn?= <arve@android.com>
+Cc: Matthew Garrett <mjg59@srcf.ucam.org>,
+       Alan Stern <stern@rowland.harvard.edu>,
+       Thomas Gleixner <tglx@linutronix.de>,
+       Peter Zijlstra <peterz@infradead.org>,
+       LKML <linux-kernel@vger.kernel.org>,
+       Florian Mickler <florian@mickler.org>, felipe.balbi@nokia.com,
+       Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
+       Linux PM <linux-pm@lists.linux-foundation.org>
+Subject: Re: [linux-pm] [PATCH 0/8] Suspend block api (version 8)
+Message-ID: <20100528121636.34be17ad@lxorguk.ukuu.org.uk>
+In-Reply-To: <AANLkTilYHKKmQePBGW3LVLjUZy7HXHQku2Iub-LWGBm6@mail.gmail.com>
+References: <20100527222514.0a1710bf@lxorguk.ukuu.org.uk>
+	<Pine.LNX.4.44L0.1005271730180.3239-100000@iolanthe.rowland.org>
+	<20100527230806.4deb6de3@lxorguk.ukuu.org.uk>
+	<20100527220949.GB10602@srcf.ucam.org>
+	<20100527232357.6d14fdb2@lxorguk.ukuu.org.uk>
+	<AANLkTil6Bo7qZltbLzHJjIDyruKHFQEURpe5LPJEpTws@mail.gmail.com>
+	<20100528101755.7b5f6b8a@lxorguk.ukuu.org.uk>
+	<AANLkTilYHKKmQePBGW3LVLjUZy7HXHQku2Iub-LWGBm6@mail.gmail.com>
+X-Mailer: Claws Mail 3.7.5 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-You are welcome.
+> > My laptop behaves in
+> > that way if for example the battery is almost flat. Your suspend blocker
+> > would cause me to lose all my work with a flat battery. This is another
+> > example of why the application must not be the policy manager.
+> >
+> 
+> You can still force suspend when the battery gets low.
 
-On Fri, May 28, 2010 at 12:02:34PM +0100, Martyn Welch wrote:
-> nanakos@wired-net.gr wrote:
-> > From: Nanakos Chrysostomos <nanakos@wired-net.gr>
+So now we need suspend blocker blockers - as I predicted.
+
+> > In the normal case in the PC world outside of corner cases like flat
+> > batteries the answer is really simple. The laptop suspend to RAM
+> > on idle intervals set in the BIOS and the like are sufficient that
+> > progress will have been made before it considers going back to sleep
+> > again. Right now its about ten seconds in each direction plus other costs
+> > (wear on LCD backlight, disc parking etc).
 > >
-> > Fix resolves checkpatch.pl issues for vme_user.c file.
-> >
-> > Signed-off-by: Nanakos Chrysostomos <nanakos@wired-net.gr>
-> >   
-> Thanks,
 > 
-> Signed-off-by: Martyn Welch <martyn.welch@ge.com>
-> 
-> > ---
-> >  drivers/staging/vme/devices/vme_user.c |   92 +++++++++++++++----------------
-> >  1 files changed, 45 insertions(+), 47 deletions(-)
-> >
-> > diff --git a/drivers/staging/vme/devices/vme_user.c b/drivers/staging/vme/devices/vme_user.c
-> > index bc16fc0..326991c 100644
-> > --- a/drivers/staging/vme/devices/vme_user.c
-> > +++ b/drivers/staging/vme/devices/vme_user.c
-> > @@ -34,8 +34,8 @@
-> >  #include <linux/smp_lock.h>
-> >  #include <linux/types.h>
-> >  
-> > -#include <asm/io.h>
-> > -#include <asm/uaccess.h>
-> > +#include <linux/io.h>
-> > +#include <linux/uaccess.h>
-> >  
-> >  #include "../vme.h"
-> >  #include "vme_user.h"
-> > @@ -48,19 +48,19 @@ static int bus_num;
-> >  /* Currently Documentation/devices.txt defines the following for VME:
-> >   *
-> >   * 221 char	VME bus
-> > - * 		  0 = /dev/bus/vme/m0		First master image
-> > - * 		  1 = /dev/bus/vme/m1		Second master image
-> > - * 		  2 = /dev/bus/vme/m2		Third master image
-> > - * 		  3 = /dev/bus/vme/m3		Fourth master image
-> > - * 		  4 = /dev/bus/vme/s0		First slave image
-> > - * 		  5 = /dev/bus/vme/s1		Second slave image
-> > - * 		  6 = /dev/bus/vme/s2		Third slave image
-> > - * 		  7 = /dev/bus/vme/s3		Fourth slave image
-> > - * 		  8 = /dev/bus/vme/ctl		Control
-> > + *		  0 = /dev/bus/vme/m0		First master image
-> > + *		  1 = /dev/bus/vme/m1		Second master image
-> > + *		  2 = /dev/bus/vme/m2		Third master image
-> > + *		  3 = /dev/bus/vme/m3		Fourth master image
-> > + *		  4 = /dev/bus/vme/s0		First slave image
-> > + *		  5 = /dev/bus/vme/s1		Second slave image
-> > + *		  6 = /dev/bus/vme/s2		Third slave image
-> > + *		  7 = /dev/bus/vme/s3		Fourth slave image
-> > + *		  8 = /dev/bus/vme/ctl		Control
-> >   *
-> > - * 		It is expected that all VME bus drivers will use the
-> > - * 		same interface.  For interface documentation see
-> > - * 		http://www.vmelinux.org/.
-> > + *		It is expected that all VME bus drivers will use the
-> > + *		same interface.  For interface documentation see
-> > + *		http://www.vmelinux.org/.
-> >   *
-> >   * However the VME driver at http://www.vmelinux.org/ is rather old and doesn't
-> >   * even support the tsi148 chipset (which has 8 master and 8 slave windows).
-> > @@ -137,12 +137,12 @@ static int __init vme_user_probe(struct device *, int, int);
-> >  static int __exit vme_user_remove(struct device *, int, int);
-> >  
-> >  static struct file_operations vme_user_fops = {
-> > -        .open = vme_user_open,
-> > -        .release = vme_user_release,
-> > -        .read = vme_user_read,
-> > -        .write = vme_user_write,
-> > -        .llseek = vme_user_llseek,
-> > -        .unlocked_ioctl = vme_user_unlocked_ioctl,
-> > +	.open = vme_user_open,
-> > +	.release = vme_user_release,
-> > +	.read = vme_user_read,
-> > +	.write = vme_user_write,
-> > +	.llseek = vme_user_llseek,
-> > +	.unlocked_ioctl = vme_user_unlocked_ioctl,
-> >  };
-> >  
-> >  
-> > @@ -151,13 +151,13 @@ static struct file_operations vme_user_fops = {
-> >   */
-> >  static void reset_counters(void)
-> >  {
-> > -        statistics.reads = 0;
-> > -        statistics.writes = 0;
-> > -        statistics.ioctls = 0;
-> > -        statistics.irqs = 0;
-> > -        statistics.berrs = 0;
-> > -        statistics.dmaErrors = 0;
-> > -        statistics.timeouts = 0;
-> > +	statistics.reads = 0;
-> > +	statistics.writes = 0;
-> > +	statistics.ioctls = 0;
-> > +	statistics.irqs = 0;
-> > +	statistics.berrs = 0;
-> > +	statistics.dmaErrors = 0;
-> > +	statistics.timeouts = 0;
-> >  }
-> >  
-> >  static int vme_user_open(struct inode *inode, struct file *file)
-> > @@ -216,21 +216,20 @@ static ssize_t resource_to_user(int minor, char __user *buf, size_t count,
-> >  		/* We copy to kernel buffer */
-> >  		copied = vme_master_read(image[minor].resource,
-> >  			image[minor].kern_buf, count, *ppos);
-> > -		if (copied < 0) {
-> > +		if (copied < 0)
-> >  			return (int)copied;
-> > -		}
-> >  
-> >  		retval = __copy_to_user(buf, image[minor].kern_buf,
-> >  			(unsigned long)copied);
-> >  		if (retval != 0) {
-> >  			copied = (copied - retval);
-> > -			printk("User copy failed\n");
-> > +			printk(KERN_INFO "User copy failed\n");
-> >  			return -EINVAL;
-> >  		}
-> >  
-> >  	} else {
-> >  		/* XXX Need to write this */
-> > -		printk("Currently don't support large transfers\n");
-> > +		printk(KERN_INFO "Currently don't support large transfers\n");
-> >  		/* Map in pages from userspace */
-> >  
-> >  		/* Call vme_master_read to do the transfer */
-> > @@ -264,7 +263,7 @@ static ssize_t resource_from_user(unsigned int minor, const char *buf,
-> >  			image[minor].kern_buf, copied, *ppos);
-> >  	} else {
-> >  		/* XXX Need to write this */
-> > -		printk("Currently don't support large transfers\n");
-> > +		printk(KERN_INFO "Currently don't support large transfers\n");
-> >  		/* Map in pages from userspace */
-> >  
-> >  		/* Call vme_master_write to do the transfer */
-> > @@ -313,7 +312,7 @@ static ssize_t buffer_from_user(unsigned int minor, const char *buf,
-> >  }
-> >  
-> >  static ssize_t vme_user_read(struct file *file, char *buf, size_t count,
-> > -			loff_t * ppos)
-> > +			loff_t *ppos)
-> >  {
-> >  	unsigned int minor = MINOR(file->f_dentry->d_inode->i_rdev);
-> >  	ssize_t retval;
-> > @@ -337,7 +336,7 @@ static ssize_t vme_user_read(struct file *file, char *buf, size_t count,
-> >  	else
-> >  		okcount = count;
-> >  
-> > -	switch (type[minor]){
-> > +	switch (type[minor]) {
-> >  	case MASTER_MINOR:
-> >  		retval = resource_to_user(minor, buf, okcount, ppos);
-> >  		break;
-> > @@ -380,7 +379,7 @@ static ssize_t vme_user_write(struct file *file, const char *buf, size_t count,
-> >  	else
-> >  		okcount = count;
-> >  
-> > -	switch (type[minor]){
-> > +	switch (type[minor]) {
-> >  	case MASTER_MINOR:
-> >  		retval = resource_from_user(minor, buf, okcount, ppos);
-> >  		break;
-> > @@ -571,7 +570,7 @@ vme_user_unlocked_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
-> >  /*
-> >   * Unallocate a previously allocated buffer
-> >   */
-> > -static void buf_unalloc (int num)
-> > +static void buf_unalloc(int num)
-> >  {
-> >  	if (image[num].kern_buf) {
-> >  #ifdef VME_DEBUG
-> > @@ -594,8 +593,8 @@ static void buf_unalloc (int num)
-> >  }
-> >  
-> >  static struct vme_driver vme_user_driver = {
-> > -        .name = driver_name,
-> > -        .probe = vme_user_probe,
-> > +	.name = driver_name,
-> > +	.probe = vme_user_probe,
-> >  	.remove = vme_user_remove,
-> >  };
-> >  
-> > @@ -770,16 +769,16 @@ static int __init vme_user_probe(struct device *dev, int cur_bus, int cur_slot)
-> >  	}
-> >  
-> >  	/* Add sysfs Entries */
-> > -	for (i=0; i<VME_DEVS; i++) {
-> > +	for (i = 0; i < VME_DEVS; i++) {
-> >  		switch (type[i]) {
-> >  		case MASTER_MINOR:
-> > -			sprintf(name,"bus/vme/m%%d");
-> > +			sprintf(name, "bus/vme/m%%d");
-> >  			break;
-> >  		case CONTROL_MINOR:
-> > -			sprintf(name,"bus/vme/ctl");
-> > +			sprintf(name, "bus/vme/ctl");
-> >  			break;
-> >  		case SLAVE_MINOR:
-> > -			sprintf(name,"bus/vme/s%%d");
-> > +			sprintf(name, "bus/vme/s%%d");
-> >  			break;
-> >  		default:
-> >  			err = -EINVAL;
-> > @@ -790,9 +789,9 @@ static int __init vme_user_probe(struct device *dev, int cur_bus, int cur_slot)
-> >  		image[i].device =
-> >  			device_create(vme_user_sysfs_class, NULL,
-> >  				MKDEV(VME_MAJOR, i), NULL, name,
-> > -				(type[i] == SLAVE_MINOR)? i - (MASTER_MAX + 1) : i);
-> > +				(type[i] == SLAVE_MINOR) ? i - (MASTER_MAX + 1) : i);
-> >  		if (IS_ERR(image[i].device)) {
-> > -			printk("%s: Error creating sysfs device\n",
-> > +			printk(KERN_INFO "%s: Error creating sysfs device\n",
-> >  				driver_name);
-> >  			err = PTR_ERR(image[i].device);
-> >  			goto err_sysfs;
-> > @@ -804,7 +803,7 @@ static int __init vme_user_probe(struct device *dev, int cur_bus, int cur_slot)
-> >  	/* Ensure counter set correcty to destroy all sysfs devices */
-> >  	i = VME_DEVS;
-> >  err_sysfs:
-> > -	while (i > 0){
-> > +	while (i > 0) {
-> >  		i--;
-> >  		device_destroy(vme_user_sysfs_class, MKDEV(VME_MAJOR, i));
-> >  	}
-> > @@ -845,9 +844,8 @@ static int __exit vme_user_remove(struct device *dev, int cur_bus, int cur_slot)
-> >  	int i;
-> >  
-> >  	/* Remove sysfs Entries */
-> > -	for(i=0; i<VME_DEVS; i++) {
-> > +	for (i = 0; i < VME_DEVS; i++)
-> >  		device_destroy(vme_user_sysfs_class, MKDEV(VME_MAJOR, i));
-> > -	}
-> >  	class_destroy(vme_user_sysfs_class);
-> >  
-> >  	for (i = MASTER_MINOR; i < (MASTER_MAX + 1); i++)
-> >   
-> 
-> 
-> -- 
-> Martyn Welch (Principal Software Engineer)   |   Registered in England and
-> GE Intelligent Platforms                     |   Wales (3828642) at 100
-> T +44(0)127322748                            |   Barbirolli Square, Manchester,
-> E martyn.welch@ge.com                        |   M2 3AB  VAT:GB 927559189
+> I'm not sure what you are trying to say here. Are you saying your
+> laptop enters S3 from idle?
+
+If I have an alarm set on my laptop it will wake up when the alarm goes
+off. Once it has woken up it will not go back to suspend (except for
+something libe a battery event) until a timeout has elapsed that began
+when the laptop woke up.
+
+This in the laptop work solves the problem of making progress. On a
+laptop power budget, with laptop constraints on suspend (both physical
+cycle limits of hardware and performance) this works fine.
+
+If I suspend/resume my laptop every time I have a 30 second idle gap I
+will need a new laptop much sooner than makes me happy.
+
+I don't claim this is true for a typical mobile phone obviously.
+
+Alan
