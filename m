@@ -1,118 +1,165 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758011Ab0E1LGB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 May 2010 07:06:01 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:53119 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751339Ab0E1LF7 convert rfc822-to-8bit (ORCPT
+	id S1758353Ab0E1LHc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 May 2010 07:07:32 -0400
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:46158
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756191Ab0E1LHa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 May 2010 07:05:59 -0400
-MIME-Version: 1.0
-In-Reply-To: <20100528120445.245c7075@lxorguk.ukuu.org.uk>
-References: <Pine.LNX.4.44L0.1005271344040.3239-100000@iolanthe.rowland.org>
-	<20100527181433.GG3543@srcf.ucam.org>
-	<20100527200313.5c532f2f@lxorguk.ukuu.org.uk>
-	<201005280110.17075.rjw@sisk.pl>
-	<20100528005045.6ea5feba@lxorguk.ukuu.org.uk>
-	<AANLkTimqvMuMpB5E3tj58OtlRc-7mVaec-9EHAegywg7@mail.gmail.com>
-	<20100528120445.245c7075@lxorguk.ukuu.org.uk>
-Date: Fri, 28 May 2010 04:05:51 -0700
-Message-ID: <AANLkTim3CnUbovWTnN2OET76eLPMAeIVrEtEjkH_r1uL@mail.gmail.com>
-Subject: Re: [linux-pm] [PATCH 0/8] Suspend block api (version 8)
-From: =?ISO-8859-1?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, Matthew Garrett <mjg59@srcf.ucam.org>,
-       Peter Zijlstra <peterz@infradead.org>,
-       Alan Stern <stern@rowland.harvard.edu>,
-       Thomas Gleixner <tglx@linutronix.de>, Paul@smtp1.linux-foundation.org,
-       LKML <linux-kernel@vger.kernel.org>,
-       Florian Mickler <florian@mickler.org>,
-       Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
-       Linux PM <linux-pm@lists.linux-foundation.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Fri, 28 May 2010 07:07:30 -0400
+Date: Fri, 28 May 2010 04:07:39 -0700 (PDT)
+Message-Id: <20100528.040739.212703844.davem@davemloft.net>
+To: torvalds@linux-foundation.org
+CC: akpm@linux-foundation.org, netdev@vger.kernel.org,
+       linux-kernel@vger.kernel.org
+Subject: [GIT] Networking
+From: David Miller <davem@davemloft.net>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2010/5/28 Alan Cox <alan@lxorguk.ukuu.org.uk>:
->> This is a much harder question to answer that what we need to use
->> opportunistic suspend. The question we ask is more like this: "Is all
->> important work complete?". In the simplest case these can be the same,
->
-> I don't believe you can answer that question without telepathy and a
-> crystal ball.
->
-But we have answered this question.
 
-> The application doesn't know because it has no idea how to balance
-> conflicting resource demands or to infer the users requirements and
-> wishes. Most apps will misbehave anyway.
->
-> The OS doesn't know because it cannot tell what the app wants
->
-> So at best you have a heuristic.
->
->> What happens if the user presses the button right before you set QoS
->> of 'user apps' to  QS_NONE?
->
-> Read down a paragraph.
->
->> To me it looks like this solution would result in this sequence which
->> may ignore the button press:
->>         Button pushed
->>         Button driver sets QoS of app it wakes to QS_ABOVESUSPEND
->>         Set QoS of 'user apps' to QS_NONE
->>
->>
->> >        That would I think solve the reliable wakeup case although
->> >        drivers raising a QoS parameter is a bit unusual in the kernel.
->> >        That would at least however be specific to a few Android drivers
->> >        and maybe a tiny amount of shared driver stuff so probably not
->> >        unacceptable. (wake_up_pri(&queue, priority); isn't going to
->> >        kill anyone is it - especially if it usually ignores the
->> >        priority argument)
->>
->> Why is "wake_up_pri(&queue, priority)" more acceptable than "suspend_block(..."?
->
-> We keep it kernel side
-> It expresses policy and wishes rather than enforcing a behaviour.
->
-> What for example does "suspend_block" mean on a virtual machine ?
->
-> I would prefer "priority" was some kind of resource constraint model
-> instead but I'm just trying to think how to be absolutely minimally
-> invasible at this point.
->
->> What happens if the button press happend before this line:
->> >        count2 = tasks to QS_NONE | QS_NOTCHANGED
->> >        Screen off
->> >                                        Button Press
->> >                                        task to QS_ABOVESUSPEND
->> >        count = tasks that are QS_NOTCHANGED to QS_NONE
->> >
->> >        if (count != count2) {
->> >                Stuff happened ... rethink
->> >        }
->> >
->> > That is still a bit weird and wonderful but all the logic is in the right
->> > places. The special magic remains in the Android policy code and in the
->> > kernel specifics for Android.
->> >
->> > Thoughts ?
->>
->> I don't think it works. Also, it does not seem much less invasive than
->> suspend blockers.
->
-> "I don't think it works" isn't that helpful. I don't think it works
-> because .. would help me a lot more.
+Several fixes including the one for the bootup failure Ingo reported
+yesterday:
 
-Did you miss this:
->> What happens if the button press happend before this line:
->> >        count2 = tasks to QS_NONE | QS_NOTCHANGED
+1) Network cgroup needs to initialize classid properly when module
+   is absent, fix from Herbert Xu.
 
-As far as I can tell this is the same race I described where you just
-told me to read down a paragraph.
+2) GRO packets unconditionally dropped in ipv6 forwarding path, oops,
+   also from Herbert Xu.
 
--- 
-Arve Hjønnevåg
+3) {un,}lock_sock_bh() is busted, it needs to properly arbitrate
+   between user context lockers and async ones.  From Eric Dumazet.
+
+   Fixes sk->sk_forward_alloc WARN_ON() reported by Anton Blanchard.
+
+4) When __neigh_event_send() does __skb_queue_tail() it needs to force
+   a reference to the skb->dst using skb_dst_force().  Fix from Eric
+   Dumazet.
+
+   Fixes a bootup failure reported by Ingo Molnar.
+
+5) Several "if (x == NULL) x->foo" style NULL deref fixes from Julia
+   Lawall.
+
+6) Broadcom CNIC driver memory context init fix from Michael Chan.
+
+7) FEC driver hangs on interface down because of improper PHY
+   programming, fix from Bryan Wu.
+
+8) Two vf_port/vfinfo netlink bug fixes from Scott Feldman:
+   a) vf_port dump overruns netlink SKBs
+   b) vfinfo blobs are sized incorrectly
+
+9) Increase be2net POST timeout for EEH recovery, from Sathya Perla.
+
+10) be2net ended up with the erroneous:
+
+	while (...) {
+	} while (...);
+
+    after some recent changes, fix.  From Sarveshwar Bandi.
+
+11) Array index limit check in __ip{,6}mr_fill_mroute() is off by one,
+    fix from Dan Carpenter.
+
+12) ll_temac fixes (interrupt validity fix, checksum offloading bugs)
+    from Brian Hill.
+
+13) IUCV protocol fails to release spinlock on memory allocation
+    failure, from Julia Lawall.
+
+14) VHOST fixes via Michael S. Tsirkin:
+    a) vhost_set_ring index check is off by one, from Krishna Kumar.
+    b) VHOST makes user copy return value checks wrongly, from Takuya Yoshikawa.
+    c) leak on memory_access_ok() failure, also from Takuya Yoshikawa.
+
+15) New netfilter xt_tee module needs to use skb_dst_drop() instead of
+    the now verbotten dst_release(skb_dst(skb)).  From Eric Dumazet.
+
+Please pull, thanks a lot!
+
+The following changes since commit 63a6440326e4cd01d6a663069208a0e68e9b833f:
+  Linus Torvalds (1):
+        Merge git://git.kernel.org/.../pkl/squashfs-linus
+
+are available in the git repository at:
+
+  master.kernel.org:/pub/scm/linux/kernel/git/davem/net-2.6.git master
+
+Brian Hill (2):
+      net: ll_temac: fix interrupt bug when interrupt 0 is used
+      net: ll_temac: fix checksum offload logic
+
+Bryan Wu (1):
+      netdev/fec: fix ifconfig eth0 down hang issue
+
+Dan Carpenter (2):
+      ipmr: off by one in __ipmr_fill_mroute()
+      sctp: dubious bitfields in sctp_transport
+
+Eric Dumazet (3):
+      net: fix lock_sock_bh/unlock_sock_bh
+      net: fix __neigh_event_send()
+      xt_tee: use skb_dst_drop()
+
+Herbert Xu (2):
+      cls_cgroup: Initialise classid when module is absent
+      ipv6: Add GSO support on forwarding path
+
+Julia Lawall (3):
+      net/iucv: Add missing spin_unlock
+      drivers/net/hamradio: Eliminate a NULL pointer dereference
+      drivers/net: Eliminate a NULL pointer dereference
+
+Krishna Kumar (1):
+      vhost: Fix host panic if ioctl called with wrong index
+
+Michael Chan (1):
+      cnic: Fix context memory init. on 5709.
+
+Sarveshwar Bandi (1):
+      be2net: Patch removes redundant while statement in loop.
+
+Sathya Perla (1):
+      be2net: increase POST timeout for EEH recovery
+
+Scott Feldman (2):
+      netlink: bug fix: don't overrun skbs on vf_port dump
+      netlink: bug fix: wrong size was calculated for vfinfo list blob
+
+Takuya Yoshikawa (3):
+      vhost: fix to check the return value of copy_to/from_user() correctly
+      vhost-net: fix to check the return value of copy_to/from_user() correctly
+      vhost: fix the memory leak which will happen when memory_access_ok fails
+
+ drivers/net/3c507.c         |    3 +-
+ drivers/net/benet/be_cmds.c |    2 +-
+ drivers/net/benet/be_main.c |    2 +-
+ drivers/net/cnic.c          |   10 ++----
+ drivers/net/cnic_if.h       |    4 +-
+ drivers/net/fec.c           |   28 ++++++++------
+ drivers/net/hamradio/yam.c  |    3 +-
+ drivers/net/ll_temac.h      |    5 +++
+ drivers/net/ll_temac_main.c |   84 ++++++++++++++++++++++++++++++-------------
+ drivers/vhost/net.c         |   14 ++++----
+ drivers/vhost/vhost.c       |   57 ++++++++++++++++-------------
+ include/net/cls_cgroup.h    |    2 +-
+ include/net/sctp/structs.h  |    2 +-
+ include/net/sock.h          |   20 +++++++---
+ net/core/datagram.c         |    6 ++-
+ net/core/neighbour.c        |    1 +
+ net/core/rtnetlink.c        |   26 ++++++++------
+ net/core/sock.c             |   33 +++++++++++++++++
+ net/ipv4/ipmr.c             |    2 +-
+ net/ipv4/udp.c              |   14 ++++---
+ net/ipv6/ip6_output.c       |    2 +-
+ net/ipv6/ip6mr.c            |    2 +-
+ net/ipv6/udp.c              |    5 ++-
+ net/iucv/af_iucv.c          |    2 +-
+ net/netfilter/xt_TEE.c      |    4 +-
+ 25 files changed, 214 insertions(+), 119 deletions(-)
