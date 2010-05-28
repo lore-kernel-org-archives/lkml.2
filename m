@@ -1,93 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756848Ab0E1INF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 May 2010 04:13:05 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:1545 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754684Ab0E1INA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 May 2010 04:13:00 -0400
-Message-ID: <4BFF7BE2.6020503@redhat.com>
-Date: Fri, 28 May 2010 16:16:34 +0800
-From: Cong Wang <amwang@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100330 Shredder/3.0.4
+	id S1756965Ab0E1IO5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 May 2010 04:14:57 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:58845 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756011Ab0E1IOx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 May 2010 04:14:53 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:date:message-id:subject:from:to:cc:content-type;
+        b=RjPk96sJhKd3NOUxAXtTbub9ZL3OMFpVm2ar5X8GPU1eUsWz9P9SD5G5koeaQCOEHX
+         ve5QT4DPUfwTuYDiJFnbGhazU9q2CTNLr8j/4Cp5f+7kR6VRVO3SvxfXx97qSaJYzGYf
+         /ymZuN1dAWctLQ3Tg7UvNWSCd0lAc8CVm5DX4=
 MIME-Version: 1.0
-To: Flavio Leitner <fbl@sysclose.org>
-CC: linux-kernel@vger.kernel.org, Matt Mackall <mpm@selenic.com>,
-       netdev@vger.kernel.org, bridge@lists.linux-foundation.org,
-       Andy Gospodarek <gospo@redhat.com>, Neil Horman <nhorman@tuxdriver.com>,
-       Jeff Moyer <jmoyer@redhat.com>,
-       Stephen Hemminger <shemminger@linux-foundation.org>,
-       bonding-devel@lists.sourceforge.net, Jay Vosburgh <fubar@us.ibm.com>,
-       David Miller <davem@davemloft.net>
-Subject: Re: [v5 Patch 1/3] netpoll: add generic support for bridge and bonding
- devices
-References: <20100505081514.5157.83783.sendpatchset@localhost.localdomain> <20100527180545.GA2345@sysclose.org>
-In-Reply-To: <20100527180545.GA2345@sysclose.org>
-Content-Type: multipart/mixed;
- boundary="------------050607000507050808060501"
+Date: Fri, 28 May 2010 13:44:51 +0530
+Message-ID: <AANLkTikrEE-7RzlhetBrF8RXNtPToGe-girXu4HfoNS4@mail.gmail.com>
+Subject: Re: I2c slave support
+From: Jack <mylinux.list@gmail.com>
+To: "Justin P. Mattock" <justinmattock@gmail.com>
+Cc: Haojian Zhuang <haojian.zhuang@gmail.com>, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a multi-part message in MIME format.
---------------050607000507050808060501
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Extremely sorry, May be I left the subject field blank.
 
-On 05/28/10 02:05, Flavio Leitner wrote:
+On Fri, May 28, 2010 at 10:39 AM, Justin P. Mattock
+<justinmattock@gmail.com> wrote:
+> On 05/27/2010 10:01 PM, Jack wrote:
 >
-> Hi guys!
+> Hi,
+> Thanks,
 >
-> I finally could test this to see if an old problem reported on bugzilla[1] was
-> fixed now, but unfortunately it is still there.
+> First solution needs additional GPIO pins, I have used all the pins.
+> I'm going with the other solution, writing slave driver on the MIPS side.
+> The MIPS provides an interrupt vector for the I2C bus.
 >
-> The ticket is private I guess, but basically the problem happens when bonding
-> driver tries to print something after it had taken the write_lock (monitor
-> functions, enslave/de-enslave), so the printk() will pass through netpoll, then
-> on bonding again which no matter what mode you use, it will try to read_lock()
-> the lock again. The result is a deadlock and the entire system hangs.
+> Regards,
+> Jack
+> .
 >
-
-Does the attached patch fix this hang?
-
-Thanks!
-
------------------------>
-
-We should notify netconsole that bond is changing its slaves
-when we use active-backup mode.
-
-Signed-off-by: WANG Cong <amwang@redhat.com>
-
-----
-
-
---------------050607000507050808060501
-Content-Type: text/x-patch;
- name="drivers-net-bonding-fix-activebackup-deadlock.diff"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: attachment;
- filename="drivers-net-bonding-fix-activebackup-deadlock.diff"
-
-diff --git a/drivers/net/bonding/bond_main.c b/drivers/net/bonding/bond_main.c
-index 5e12462..9494c02 100644
---- a/drivers/net/bonding/bond_main.c
-+++ b/drivers/net/bonding/bond_main.c
-@@ -1199,6 +1199,7 @@ void bond_select_active_slave(struct bonding *bond)
- 
- 	best_slave = bond_find_best_slave(bond);
- 	if (best_slave != bond->curr_active_slave) {
-+		netdev_bonding_change(bond->dev, NETDEV_BONDING_DESLAVE);
- 		bond_change_active_slave(bond, best_slave);
- 		rv = bond_set_carrier(bond);
- 		if (!rv)
-@@ -2154,6 +2155,7 @@ static int bond_ioctl_change_active(struct net_device *bond_dev, struct net_devi
- 	    (old_active) &&
- 	    (new_active->link == BOND_LINK_UP) &&
- 	    IS_UP(new_active->dev)) {
-+		netdev_bonding_change(bond->dev, NETDEV_BONDING_DESLAVE);
- 		write_lock_bh(&bond->curr_slave_lock);
- 		bond_change_active_slave(bond, new_active);
- 		write_unlock_bh(&bond->curr_slave_lock);
-
---------------050607000507050808060501--
+>
+> On Thu, May 27, 2010 at 11:25 AM, Haojian Zhuang
+> <haojian.zhuang@gmail.com> wrote:
+>
+>
+> On Thu, May 27, 2010 at 1:05 PM, linux_newbie good
+> <mylinux.list@gmail.com> wrote:
+>
+>
+> Hi,
+>
+> My board has a MIPS based Processor and a micro-controller.  The
+> communication between these two interfaces is through an I2C bus. The
+> Linux driver for my I2C controller (i mean the one in MIPS processor)
+> has support for master transmitter and master receiver whereas I could
+> not find support for slave TX and slave RX modes. Do I need to write
+> my own functions for slave support? If so, what kind of changes need
+> to be done, for slave mode support? Is there any other sample driver
+> which can help ?
+>
+>
+>
+>
+> Maybe you needn't write a slave I2C driver on MIPS side. It should
+> based on your system requirement.
+>
+> I suggest the solution in below may be easier.
+>
+> ++++++++++++++                             ++++++++++++
+> + MIPS (Master)  + -----> I2C -----------> + MCU (Slave)  +
+> +                        +<----GPIO INT <----- +                     +
+> ++++++++++++++                             ++++++++++++
+>
+> Since MIPS is master, it can read/write data from slave directly.
+> While MCU want to contact with MIPS, it can trigger INT first. Then
+> MIPS can query MCU and feed its required.
+>
+> Perhaps you may not choice this solution. You have to write slave
+> driver on MIPS side and both master/slave driver on MCU side. You can
+> refer to $LINUX/drivers/i2c/busses/i2c-pxa.c for reference. i2c-pxa
+> driver supports both master and slave mode.
+>
+> Thanks
+> Haojian
+>
+>
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+>
+>
+>
+> change of subject: this morning xorg with their list was having
+> issues with the subject line showing peoples e-mails
+> and now I see something similar here.
+> i.g. Re: mylinux.list@gmail.com
+> (is it me or am I seeing things?)
+>
+> Justin P. Mattock
+>
