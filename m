@@ -1,78 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932356Ab0E1QlX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 May 2010 12:41:23 -0400
-Received: from mail1.cray.com ([136.162.62.100]:52840 "EHLO mail1.cray.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754999Ab0E1QlW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 May 2010 12:41:22 -0400
-Message-ID: <4BFFF1DF.3020501@cray.com>
-Date: Fri, 28 May 2010 09:39:59 -0700
-From: Doug Doan <dougd@cray.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100423 Thunderbird/3.0.4
+	id S1758838Ab0E1Qmz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 May 2010 12:42:55 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:54065 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754304Ab0E1Qmx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 May 2010 12:42:53 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=ImxqsBbnLLYwEMyKJ9JxpdyJAG1TTfmoZMXck85U532W06JQ6iDJeYngD5mLeTf5Rm
+         o1bHChT9M1ZwqBNVRdqYYB+VsRTlo3RFUNrO3c+YhdNEtb7EYmSuJoCBEvohfmtzgLoR
+         Z1HN78YKcoN7454PrxYEWr6A6SoobcI5yxBMQ=
 MIME-Version: 1.0
-To: Mel Gorman <mel@csn.ul.ie>
-CC: "linux-mm@kvack.org" <linux-mm@kvack.org>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       "andi@firstfloor.org" <andi@firstfloor.org>,
-       "lee.schermerhorn@hp.com" <lee.schermerhorn@hp.com>,
-       "rientjes@google.com" <rientjes@google.com>,
-       "akpm@linux-foundation.org" <akpm@linux-foundation.org>
-Subject: Re: [PATCH] hugetlb: call mmu notifiers on hugepage cow
-References: <4BFED954.8060807@cray.com> <20100528095946.GB9774@csn.ul.ie>
-In-Reply-To: <20100528095946.GB9774@csn.ul.ie>
-Content-Type: text/plain; charset="ISO-8859-15"; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20100526123443.GB8905@stefan-thinkpad.transitives.com>
+References: <20100526123443.GB8905@stefan-thinkpad.transitives.com>
+Date: Fri, 28 May 2010 17:42:51 +0100
+Message-ID: <AANLkTil8BiuzrmacV7Lpx1wES0EvLSiVmcfwtSY6Zis2@mail.gmail.com>
+Subject: Re: Perf trace event parse errors for KVM events
+From: Stefan Hajnoczi <stefanha@gmail.com>
+To: linux-perf-users@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
+       Frederic Weisbecker <fweisbec@gmail.com>,
+       Steven Rostedt <rostedt@goodmis.org>,
+       Marcelo Tosatti <mtosatti@redhat.com>, Avi Kivity <avi@redhat.com>,
+       Peter Zijlstra <a.p.zijlstra@chello.nl>,
+       Stefan Hajnoczi <stefanha@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/28/2010 02:59 AM, Mel Gorman wrote:
-> On Thu, May 27, 2010 at 01:43:00PM -0700, Doug Doan wrote:
->> From: Doug Doan<dougd@cray.com>
->>
->> When a copy-on-write occurs, we take one of two paths in handle_mm_fault:
->> through handle_pte_fault for normal pages, or through hugetlb_fault for
->> huge pages.
->>
->> In the normal page case, we eventually get to do_wp_page and call mmu
->> notifiers via ptep_clear_flush_notify. There is no callout to the mmmu
->> notifiers in the huge page case. This patch fixes that.
->>
->> Signed-off-by: Doug Doan<dougd@cray.com>
->> ---
->
->> --- mm/hugetlb.c.orig	2010-05-27 13:07:58.569546314 -0700
->> +++ mm/hugetlb.c	2010-05-26 14:41:06.449296524 -0700
->> @@ -2345,11 +2345,17 @@ retry_avoidcopy:
->>   	ptep = huge_pte_offset(mm, address&  huge_page_mask(h));
->>   	if (likely(pte_same(huge_ptep_get(ptep), pte))) {
->>   		/* Break COW */
->> +		mmu_notifier_invalidate_range_start(mm,
->> +			address&  huge_page_mask(h),
->> +			(address&  huge_page_mask(h)) + huge_page_size(h));
->
-> Should the address not already be aligned?
+I get parse errors when using Steven Rostedt's trace-cmd tool, too.
 
-I'm not seeing where the address was aligned before this point. The code just 
-above aligns it:
+Any ideas what is going on here?  I can provide more info (e.g. trace
+files) if necessary.
 
-    	ptep = huge_pte_offset(mm, address&  huge_page_mask(h));
-    	if (likely(pte_same(huge_ptep_get(ptep), pte))) {
-    		/* Break COW */
-
-> Otherwise, I don't see any problem.
->
->>   		huge_ptep_clear_flush(vma, address, ptep);
->>   		set_huge_pte_at(mm, address, ptep,
->>   				make_huge_pte(vma, new_page, 1));
->>   		/* Make the old page be freed below */
->>   		new_page = old_page;
->> +		mmu_notifier_invalidate_range_end(mm,
->> +			address&  huge_page_mask(h),
->> +			(address&  huge_page_mask(h)) + huge_page_size(h));
->>   	}
->>   	page_cache_release(new_page);
->>   	page_cache_release(old_page);
->
->
+Stefan
