@@ -1,84 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757421Ab0E1O3g (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 May 2010 10:29:36 -0400
-Received: from smtp-out.google.com ([74.125.121.35]:13234 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750916Ab0E1O3e (ORCPT
+	id S1757475Ab0E1Ocy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 May 2010 10:32:54 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:36836 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750842Ab0E1Ocw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 May 2010 10:29:34 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=mime-version:in-reply-to:references:date:message-id:subject:from:to:
-	cc:content-type:x-system-of-record;
-	b=d/R4kJTNv6dt3VwmP3YK15E7btwEHNm+LdrFIGrSfdMR0FW9G9wY4EJiBc1+zHd4G
-	8Vmpqq8j41FotBaTrXCsg==
+	Fri, 28 May 2010 10:32:52 -0400
+Date: Fri, 28 May 2010 07:28:38 -0700 (PDT)
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Peter Hutterer <peter.hutterer@who-t.net>
+cc: Dave Airlie <airlied@gmail.com>,
+       Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+       Florian Ragwitz <rafl@debian.org>, Arjan Opmeer <arjan@opmeer.net>,
+       Eric Piel <eric.piel@tremplin-utc.net>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       linux-input@vger.kernel.org
+Subject: Re: [git pull] Input updates for 2.6.35-rc0
+In-Reply-To: <20100528061957.GA19624@quokka.bne.redhat.com>
+Message-ID: <alpine.LFD.2.00.1005280724550.11382@i5.linux-foundation.org>
+References: <20100520165243.GA20861@core.coreip.homeip.net> <alpine.LFD.2.00.1005271837050.11382@i5.linux-foundation.org> <AANLkTiklv48cDWNqKlFfh5RVtxxNH8shH_JjDypPgeHA@mail.gmail.com> <alpine.LFD.2.00.1005272108210.11382@i5.linux-foundation.org>
+ <AANLkTinPt49coLNjPqJSSxDP8zTmnjbKuIP1NuQFvwL-@mail.gmail.com> <20100528061957.GA19624@quokka.bne.redhat.com>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-In-Reply-To: <20100528142124.GA26733@srcf.ucam.org>
-References: <20100527223605.GB11364@srcf.ucam.org>
-	<20100527235546.09f3ce8a@lxorguk.ukuu.org.uk>
-	<20100528043114.GC26177@thunk.org>
-	<20100528103713.0a7952d9@lxorguk.ukuu.org.uk>
-	<20100528114123.GA22947@srcf.ucam.org>
-	<4BFFB681.1000105@nokia.com>
-	<AANLkTim04ZfMcPHRB2D_bqcAuguaGwySH2b6repuYLkk@mail.gmail.com>
-	<4BFFC5DF.5030504@nokia.com>
-	<20100528133900.GG26177@thunk.org>
-	<4BFFCFC7.7070302@nokia.com>
-	<20100528142124.GA26733@srcf.ucam.org>
-Date: Fri, 28 May 2010 07:29:27 -0700
-Message-ID: <AANLkTilj6i7Qi-eh7e3WWeh4zxKALqr-0yhAvWKis52t@mail.gmail.com>
-Subject: Re: [linux-pm] [PATCH 0/8] Suspend block api (version 8)
-From: Brian Swetland <swetland@google.com>
-To: Matthew Garrett <mjg59@srcf.ucam.org>
-Cc: Igor Stoppa <igor.stoppa@nokia.com>, tytso@mit.edu,
-       Alan Cox <alan@lxorguk.ukuu.org.uk>,
-       Peter Zijlstra <peterz@infradead.org>,
-       LKML <linux-kernel@vger.kernel.org>,
-       Florian Mickler <florian@mickler.org>,
-       Linux PM <linux-pm@lists.linux-foundation.org>,
-       Thomas Gleixner <tglx@linutronix.de>,
-       Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
-       "Balbi Felipe (Nokia-D/Helsinki)" <felipe.balbi@nokia.com>
-Content-Type: text/plain; charset=UTF-8
-X-System-Of-Record: true
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 28, 2010 at 7:21 AM, Matthew Garrett <mjg59@srcf.ucam.org> wrote:
-> On Fri, May 28, 2010 at 05:14:31PM +0300, Igor Stoppa wrote:
->
->> I have seen very good proposals for saner solutions.
->>
->> Is that progress?
->
-> The proposals so far involve either redefining the problem space or
-> being inherently racey. It may be that we can redefine the problem space
-> in such a way that everyone's happy, but it's not possible to do so by
-> fiat.
 
-I think the suggestion that has the closet fit with what we're trying
-to accomplish is Ingo's (or perhaps Ingo's explanation of Alan's):
-http://lkml.org/lkml/2010/5/28/106 where it's implemented as a
-constraint of some sort.
 
-Arve points out that qos constraint objects could work (but not if
-specifically tied to apps): http://lkml.org/lkml/2010/5/28/120 though
-he suggests that "latency" constraints don't represent this as well as
-"state" constraints.
+On Fri, 28 May 2010, Peter Hutterer wrote:
+> 
+> Default behaviour is tapping on for no-button touchpads (like the ones on
+> the apples) and tapping off for everything else.
 
-Though if you look at it that way, then suspend_blockers become qos
-constraint objects, but their implementation and usage remain pretty
-much the same as we have now, which does not address Alan's concern
-regarding code turning up in drivers, etc.  I'm not sure how you can
-solve this problem (avoiding races around entering/exiting the suspend
-or suspend-like state) without having a means for drivers to prevent
-entry to that state.
+It may well be a good default when the buttons are physically separate 
+(like on a lot of touchpads). But when the bottom of the touchpad itself 
+is the button (ie the touchpad has a rocker, and you have to press down on 
+the touchpad itself), the buttons technically _exist_, but they are 
+basically useless.
 
-I need to think more about the cgroups approach, but I'm pretty sure
-it still suffers from wakeup race situations, and due to the
-complexity of userspace (at least ours), I suspect it would risk
-livelock/deadlock/priority-inversion style issues due to interaction
-between different processes in different groups.
+That Dell machine got a lot of bad reviews for its horribe touchpad, and I 
+used to not understand why people disliked the touchpad so much - it 
+didn't feel horrible to me. But now I wonder if Windows has the same 
+logic, and reviewers - like me - hadn't realized to enable the tap 
+feature.
 
-Brian
+			Linus
