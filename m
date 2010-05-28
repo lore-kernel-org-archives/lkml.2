@@ -1,70 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754677Ab0E1Neu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 May 2010 09:34:50 -0400
-Received: from www.tglx.de ([62.245.132.106]:47453 "EHLO www.tglx.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753076Ab0E1Nes (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 May 2010 09:34:48 -0400
-Date: Fri, 28 May 2010 15:34:25 +0200
-From: "Hans J. Koch" <hjk@linutronix.de>
-To: Marc Kleine-Budde <mkl@pengutronix.de>
-Cc: sha@pengutronix.de, Sascha Hauer <kernel@pengutronix.de>,
-       Russell King <linux@arm.linux.org.uk>,
-       Vladimir Zapolskiy <vzapolskiy@gmail.com>,
-       Juergen Beisert <j.beisert@pengutronix.de>,
-       Alberto Panizzo <maramaopercheseimorto@gmail.com>,
-       Wolfram Sang <w.sang@pengutronix.de>,
-       Fabio Estevam <fabio.estevam@freescale.com>,
-       Valentin Longchamp <valentin.longchamp@epfl.ch>,
-       linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 4/4] mx35: add flexcan devices
-Message-ID: <20100528133424.GA2001@bluebox.local>
-References: <1275046938-8465-1-git-send-email-mkl@pengutronix.de>
- <1275046938-8465-5-git-send-email-mkl@pengutronix.de>
+	id S1755547Ab0E1NhW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 May 2010 09:37:22 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:38769 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753178Ab0E1NhV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 May 2010 09:37:21 -0400
+Date: Fri, 28 May 2010 10:37:09 -0300
+From: Arnaldo Carvalho de Melo <acme@infradead.org>
+To: Stephane Eranian <eranian@google.com>
+Cc: linux-kernel@vger.kernel.org, peterz@infradead.org, mingo@elte.hu,
+       paulus@samba.org, davem@davemloft.net, fweisbec@gmail.com,
+       perfmon2-devel@lists.sf.net, eranian@gmail.com, tzanussi@gmail.com,
+       Arun Sharma <aruns@google.com>
+Subject: Re: [PATCH] perf: make perf report -D print sampled CPU
+Message-ID: <20100528133709.GQ9874@ghostprotocols.net>
+References: <4bff964c.e88cd80a.3106.7d31@mx.google.com>
+ <20100528125728.GP9874@ghostprotocols.net>
+ <AANLkTin33AdxO_yzRlZUTzoV9JtqaNqfYR2kXhOvke1P@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1275046938-8465-5-git-send-email-mkl@pengutronix.de>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <AANLkTin33AdxO_yzRlZUTzoV9JtqaNqfYR2kXhOvke1P@mail.gmail.com>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 28, 2010 at 01:42:18PM +0200, Marc Kleine-Budde wrote:
-> Signed-off-by: Marc Kleine-Budde <mkl@pengutronix.de>
-> ---
->  arch/arm/mach-mx3/devices.c |   40 ++++++++++++++++++++++++++++++++++++++++
->  arch/arm/mach-mx3/devices.h |    2 ++
->  2 files changed, 42 insertions(+), 0 deletions(-)
-> 
-> diff --git a/arch/arm/mach-mx3/devices.c b/arch/arm/mach-mx3/devices.c
-> index db7acd6..0e1e20b 100644
-> --- a/arch/arm/mach-mx3/devices.c
-> +++ b/arch/arm/mach-mx3/devices.c
-> @@ -127,6 +127,46 @@ struct platform_device mxc_uart_device4 = {
->  };
->  #endif /* CONFIG_ARCH_MX31 */
->  
-> +#ifdef CONFIG_ARCH_MX35
-> +static struct resource mxc_can_1_resources[] = {
-> +	{
-> +		.start	= 0x53fe4000,
-> +		.end	= 0x53fe7fff,
-> +		.flags	= IORESOURCE_MEM,
-> +	}, {
-> +		.start	= 43,
-> +		.end	= 43,
-> +		.flags	= IORESOURCE_IRQ,
-> +	}
-> +};
-> +
-> +struct platform_device mxc_can_device0 = {
-> +	.name = "flexcan",
+Em Fri, May 28, 2010 at 03:03:15PM +0200, Stephane Eranian escreveu:
+> On Fri, May 28, 2010 at 2:57 PM, Arnaldo Carvalho de Melo
+> <acme@infradead.org> wrote:
+> > Em Fri, May 28, 2010 at 12:08:01PM +0200, Stephane Eranian escreveu:
+> >> When -R is not used, cpu is set to -1to indicate that
+> >> the CPU is unknown (it is not captured).
 
-Did you also post the flexcan driver itself somewhere? I've got such a device
-on my desk right now, and would be willing to test that. I've made some tests
-with Sascha's old version, but it's not really satisfying...
+> > It conflicts with Arun's patch for sorting by CPU that I started playing with
+> > yesterday, but in a good way, i.e. printing the CPU at that dump_printf spot
+> > was one of the changs I made in Arun's patch as well.
 
-Thanks,
-Hans
+> Yes, I realized that afterwards.
+
+> > [root@emilia linux-2.6-tip]# perf report -D | grep SAMPLE | head -6
+> > 0x10240 [0x28]: PERF_RECORD_SAMPLE(IP, 1): 2 17252/17252: 0xffffffff81253362 period: 1894446
+> > 0x10268 [0x28]: PERF_RECORD_SAMPLE(IP, 1): 2 17252/17252: 0xffffffff81253338 period: 1894446
+> > 0x10290 [0x28]: PERF_RECORD_SAMPLE(IP, 1): 2 17252/17252: 0xffffffff8125300d period: 1905103
+> > 0x102b8 [0x28]: PERF_RECORD_SAMPLE(IP, 1): 0 0/0: 0xffffffff8109117d period: 1838260
+> > 0x102e0 [0x28]: PERF_RECORD_SAMPLE(IP, 1): 0 293/293: 0xffffffff8101ace6 period: 352697
+> > 0x10308 [0x28]: PERF_RECORD_SAMPLE(IP, 1): 0 1763/1763: 0xffffffff8101ace6 period: 352697
+> > [root@emilia linux-2.6-tip]#
+
+> > I added it just before the pid/tid but prefixing it with "cpu: " is as good as
+> > doing it that way.
+
+> Fine. I think there needs to be some documenation explaining the structure
+> of the line here. I had to dig into the code to understand it.
+
+Right, this so far is as ad-hoc as it can be :-)
+
+One idea that is in my TODO list is to generate some XML format people
+say that oprofile produces and there is also some other format that a
+valgrind tool uses that should be supported.
+
+I also plan to have it in a spreadsheet TUI widget, allowing lots of
+navigation gimmicks to help in debugging, like a popup that offers the
+list of mmaps for the thread where the sample below the cursor happened,
+etc.
+
+- Arnaldo
