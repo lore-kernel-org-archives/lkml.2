@@ -1,105 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758164Ab0E1OdV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 May 2010 10:33:21 -0400
-Received: from fallback.mail.elte.hu ([157.181.151.13]:60162 "EHLO
-	fallback.mail.elte.hu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750996Ab0E1OdU (ORCPT
+	id S1757819Ab0E1Ofv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 May 2010 10:35:51 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:42892 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751973Ab0E1Ofu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 May 2010 10:33:20 -0400
-Date: Fri, 28 May 2010 16:33:11 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Borislav Petkov <bp@alien8.de>, Frederic Weisbecker <fweisbec@gmail.com>,
-       Steven Rostedt <rostedt@goodmis.org>,
-       Arnaldo Carvalho de Melo <acme@redhat.com>,
-       Lin Ming <ming.m.lin@intel.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] perf: Add persistent events
-Message-ID: <20100528143311.GB9710@elte.hu>
-References: <1274554806-28216-1-git-send-email-bp@alien8.de>
- <1274554806-28216-2-git-send-email-bp@alien8.de>
- <1274638513.1674.1727.camel@laptop>
- <20100523183353.GB1408@liondog.tnic>
- <1274640047.1674.1731.camel@laptop>
- <20100523185411.GA5608@liondog.tnic>
- <1274642601.1674.1755.camel@laptop>
- <20100525073246.GA6085@liondog.tnic>
- <1274799588.5882.1572.camel@twins>
+	Fri, 28 May 2010 10:35:50 -0400
+Date: Fri, 28 May 2010 10:35:47 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+cc: Arve =?ISO-8859-14?B?SGr4bm5lduVn?= <arve@android.com>,
+       Matthew Garrett <mjg59@srcf.ucam.org>,
+       Thomas Gleixner <tglx@linutronix.de>,
+       Peter Zijlstra <peterz@infradead.org>,
+       LKML <linux-kernel@vger.kernel.org>,
+       Florian Mickler <florian@mickler.org>, <felipe.balbi@nokia.com>,
+       Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
+       Linux PM <linux-pm@lists.linux-foundation.org>
+Subject: Re: [linux-pm] [PATCH 0/8] Suspend block api (version 8)
+In-Reply-To: <20100528132138.2d802d77@lxorguk.ukuu.org.uk>
+Message-ID: <Pine.LNX.4.44L0.1005281029500.1939-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1274799588.5882.1572.camel@twins>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
-	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
-	[score: 0.0000]
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, 28 May 2010, Alan Cox wrote:
 
-* Peter Zijlstra <peterz@infradead.org> wrote:
-
-> On Tue, 2010-05-25 at 09:32 +0200, Borislav Petkov wrote:
-> > From: Peter Zijlstra <peterz@infradead.org>
-> > Date: Sun, May 23, 2010 at 09:23:21PM +0200
-> > 
-> > > Either we add some notifier thing, or we simply add an explicit call in
-> > > the init sequence after the perf_event subsystem is running. I would
-> > > suggest we start with some explicit call, and take it from there.
-> > 
-> > Ok, this couldn't be more straightforward. So I looked at the init
-> > sequence we do when booting wrt to perf/ftrace initialization:
-> > 
-> > start_kernel
-> > ...
-> > |-> sched_init
-> >     |-> perf_event_init
-> > ...
-> > |-> ftrace_init
-> > rest_init
-> > kernel_init
-> > |-> do_pre_smp_initcalls
-> > |...
-> > |-> smp_int
-> > |-> do_basic_setup
-> >     |-> do_initcalls
-> > 
-> > and one of the convenient places after both perf is initialized and
-> > ftrace has enumerated the tracepoints is do_initcalls() (It cannot be an
-> > early_initcall since at that time we're not running SMP yet and we want
-> > the MCE event per cpu.)
-> > 
-> > So I added a core_initcall that registers the mce perf event. This makes
-> > it more or less a persistent event without any changes to the perf_event
-> > subsystem. I guess this should work - at least it builds here, will give
-> > it a run later.
-> > 
-> > As a further enhancement, the init-function should read out all the
-> > logged mce events which survived the warm reboot and those which happen
-> > between mce init and the actual event registration so that perf can
-> > postprocess those too at a more convenient time.
+> If I push the button we get an IRQ
+> We come out of power save
+> The app gets poked
+> The app may be unimportant but the IRQ means we have a new timeout of
+>     some form to run down to idle
+> The app marks itself important
+> The app stays awake for 60 seconds rsyncing your email
+> The app marks itself unimportant
+> Time elapses
+> We return to suspend
 > 
-> Right, so that looks good. Now the interesting part is twofold:
 > 
->  1) expose these perf_events to userspace, since they're now created
->     in kernel, there is no user-space access point to them. One way
->     way would be to extend the perf syscall to allow attaching to an
->     existing instance (but that would limit us to a single instance per
->     'attr'), or create some /debug or /sys iteration of all such events.
+> If you are absolutely utterly paranoid about it you need the button
+> driver to mark the task it wakes back as important rather than rely on
+> time for response like everyone else. That specific bit is uggglly but
+> worst case its just a google private patch to a few drivers. I understand
+> why Android wants it. The narrower the gap between 'we are doing nothing,
+> sit in lowest CPU on state' and 'we are off' the better the battery life
+> and the more hittable the condition.
 
-Yeah.
+That "private patch to a few drivers" is almost exactly what suspend
+blockers are.  Given that much of this discussion has revolved around 
+whether suspend blockers are accptable in the kernel, I don't think you 
+should shrug them off quite so easily.
 
->  2) get these things a buffer, perf_events as created don't actually
->     have an output buffer, normally that is created at mmap() time, but
->     since you cannot mmap() a kernel side event, it doesn't get to have
->     a buffer. This could be done by extracting perf_mmap_data_alloc()
->     into a sensible interface.
+Also, you have forgotten about the case where there is no app waiting 
+to get poked:
 
-#2 could be a new syscall: sys_create_ring_buffer or so?
+	The app is busy doing something else unimportant
+	We do into power save
+	Push a button, generate an IRQ
+	Come out of power save
+	No app to poke
+	* System goes back to sleep and eventually wakes up again
+	The app finishes what it was doing
+	The app sees there is a keystroke and marks itself important
+	...
 
-	Ingo
+The * step is where trouble can occur.
+
+Alan Stern
+
