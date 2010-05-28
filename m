@@ -1,83 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753665Ab0E1G1R (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 May 2010 02:27:17 -0400
-Received: from e23smtp01.au.ibm.com ([202.81.31.143]:59860 "EHLO
-	e23smtp01.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753076Ab0E1G1O (ORCPT
+	id S1753545Ab0E1GgY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 May 2010 02:36:24 -0400
+Received: from rex.securecomputing.com ([203.24.151.4]:55717 "EHLO
+	cyberguard.com.au" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752807Ab0E1GgX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 May 2010 02:27:14 -0400
-Date: Fri, 28 May 2010 11:57:01 +0530
-From: Balbir Singh <balbir@linux.vnet.ibm.com>
-To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: "Luis Claudio R. Goncalves" <lclaudio@uudg.org>,
-       Oleg Nesterov <oleg@redhat.com>, linux-kernel@vger.kernel.org,
-       linux-mm@kvack.org, Thomas Gleixner <tglx@linutronix.de>,
-       Peter Zijlstra <peterz@infradead.org>,
-       David Rientjes <rientjes@google.com>, Mel Gorman <mel@csn.ul.ie>,
-       williams@redhat.com
-Subject: Re: [RFC] oom-kill: give the dying task a higher priority
-Message-ID: <20100528062701.GA3519@balbir.in.ibm.com>
-Reply-To: balbir@linux.vnet.ibm.com
-References: <20100528035147.GD11364@uudg.org>
- <20100528043339.GZ3519@balbir.in.ibm.com>
- <20100528134133.7E24.A69D9226@jp.fujitsu.com>
+	Fri, 28 May 2010 02:36:23 -0400
+Message-ID: <4BFF6515.6090504@snapgear.com>
+Date: Fri, 28 May 2010 16:39:17 +1000
+From: Greg Ungerer <gerg@snapgear.com>
+User-Agent: Thunderbird 2.0.0.24 (X11/20100411)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-In-Reply-To: <20100528134133.7E24.A69D9226@jp.fujitsu.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
+To: Mike Frysinger <vapier@gentoo.org>
+CC: uclinux-dev@uclinux.org, David Howells <dhowells@redhat.com>,
+       David McCullough <davidm@snapgear.com>, Greg Ungerer <gerg@uclinux.org>,
+       Paul Mundt <lethal@linux-sh.org>,
+       uclinux-dist-devel@blackfin.uclinux.org,
+       microblaze-uclinux@itee.uq.edu.au, Michal Simek <monstr@monstr.eu>,
+       linux-m32r@ml.linux-m32r.org, Hirokazu Takata <takata@linux-m32r.org>,
+       linux-kernel@vger.kernel.org,
+       Yoshinori Sato <ysato@users.sourceforge.jp>
+Subject: Re: [PATCH 2/2 v2] FLAT: tweak default stack alignment
+References: <1274815467-14584-1-git-send-email-vapier@gentoo.org> <1274863506-14168-2-git-send-email-vapier@gentoo.org>
+In-Reply-To: <1274863506-14168-2-git-send-email-vapier@gentoo.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com> [2010-05-28 13:46:53]:
-
-> > * Luis Claudio R. Goncalves <lclaudio@uudg.org> [2010-05-28 00:51:47]:
-> > 
-> > > @@ -382,6 +382,8 @@ static void dump_header(struct task_struct *p, gfp_t gfp_mask, int order,
-> > >   */
-> > >  static void __oom_kill_task(struct task_struct *p, int verbose)
-> > >  {
-> > > +	struct sched_param param;
-> > > +
-> > >  	if (is_global_init(p)) {
-> > >  		WARN_ON(1);
-> > >  		printk(KERN_WARNING "tried to kill init!\n");
-> > > @@ -413,8 +415,9 @@ static void __oom_kill_task(struct task_struct *p, int verbose)
-> > >  	 */
-> > >  	p->rt.time_slice = HZ;
-> > >  	set_tsk_thread_flag(p, TIF_MEMDIE);
-> > > -
-> > >  	force_sig(SIGKILL, p);
-> > > +	param.sched_priority = MAX_RT_PRIO-1;
-> > > +	sched_setscheduler_nocheck(p, SCHED_FIFO, &param);
-> > >  }
-> > >
-> > 
-> > I would like to understand the visible benefits of this patch. Have
-> > you seen an OOM kill tasked really get bogged down. Should this task
-> > really be competing with other important tasks for run time?
+Mike Frysinger wrote:
+> The recent commit 1f0ce8b3dd667dca7 which moved the ARCH_SLAB_MINALIGN
+> default into the global header inadvertently broke FLAT for a bunch of
+> systems.  Blackfin systems now fail on any FLAT exec with:
+> Unable to read code+data+bss, errno 14
+> When your /init is a FLAT binary, obviously this can be annoying ;).
 > 
-> What you mean important? Until OOM victim task exit completely, the system have no memory.
-> all of important task can't do anything.
+> This stems from the alignment usage in the FLAT loader.  The behavior
+> before was that FLAT would default to ARCH_SLAB_MINALIGN only if it was
+> defined, and this was only defined by arches when they wanted a larger
+> alignment value.  Otherwise it'd default to pointer alignment.  Arguably,
+> this is kind of hokey that the FLAT is semi-abusing defines it shouldn't.
 > 
-> In almost kernel subsystems, automatically priority boost is really bad idea because
-> it may break RT task's deterministic behavior. but OOM is one of exception. The deterministic
-> was alread broken by memory starvation.
->
+> But let's ignore that and simply ignore min alignment values of 0.
+> 
+> Signed-off-by: Mike Frysinger <vapier@gentoo.org>
 
-I am still not convinced, specially if we are running under mem
-cgroup. Even setting SCHED_FIFO does not help, you could have other
-things like cpusets that might restrict the CPUs you can run on, or
-any other policy and we could end up contending anyway with other
-SCHED_FIFO tasks.
- 
-> That's the reason I acked it.
+Acked-by: Greg Ungerer <gerg@uclinux.org>
 
-If we could show faster recovery from OOM or anything else, I would be
-more convinced.
+
+
+> ---
+> v2
+> 	- split changes & document better
+> 
+>  fs/binfmt_flat.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+> 
+> diff --git a/fs/binfmt_flat.c b/fs/binfmt_flat.c
+> index b865622..4959a0a 100644
+> --- a/fs/binfmt_flat.c
+> +++ b/fs/binfmt_flat.c
+> @@ -68,7 +68,7 @@
+>   * Here we can be a bit looser than the data sections since this
+>   * needs to only meet arch ABI requirements.
+>   */
+> -#ifdef ARCH_SLAB_MINALIGN
+> +#if defined(ARCH_SLAB_MINALIGN) && ARCH_SLAB_MINALIGN != 0
+>  #define FLAT_STACK_ALIGN	(ARCH_SLAB_MINALIGN)
+>  #else
+>  #define FLAT_STACK_ALIGN	(sizeof(void *))
+
 
 -- 
-	Three Cheers,
-	Balbir
+------------------------------------------------------------------------
+Greg Ungerer  --  Principal Engineer        EMAIL:     gerg@snapgear.com
+SnapGear Group, McAfee                      PHONE:       +61 7 3435 2888
+8 Gardner Close                             FAX:         +61 7 3217 5323
+Milton, QLD, 4064, Australia                WEB: http://www.SnapGear.com
