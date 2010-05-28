@@ -1,27 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757290Ab0E1Lmu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 May 2010 07:42:50 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:56427 "EHLO
+	id S1757411Ab0E1Lm6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 May 2010 07:42:58 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:56430 "EHLO
 	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755638Ab0E1Lms (ORCPT
+	with ESMTP id S1757363Ab0E1Lmz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 May 2010 07:42:48 -0400
+	Fri, 28 May 2010 07:42:55 -0400
 From: Marc Kleine-Budde <mkl@pengutronix.de>
 To: sha@pengutronix.de
-Cc: Marc Kleine-Budde <mkl@pengutronix.de>,
+Cc: Sascha Hauer <s.hauer@pengutronix.de>,
+       Marc Kleine-Budde <mkl@pengutronix.de>,
        Sascha Hauer <kernel@pengutronix.de>,
-       Russell King <linux@arm.linux.org.uk>,
-       Vladimir Zapolskiy <vzapolskiy@gmail.com>,
-       Juergen Beisert <j.beisert@pengutronix.de>,
-       Alberto Panizzo <maramaopercheseimorto@gmail.com>,
-       Wolfram Sang <w.sang@pengutronix.de>,
-       Fabio Estevam <fabio.estevam@freescale.com>,
-       Valentin Longchamp <valentin.longchamp@epfl.ch>,
-       linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 4/4] mx35: add flexcan devices
-Date: Fri, 28 May 2010 13:42:18 +0200
-Message-Id: <1275046938-8465-5-git-send-email-mkl@pengutronix.de>
+       Russell King <linux@arm.linux.org.uk>, Baruch Siach <baruch@tkos.co.il>,
+       H Hartley Sweeten <hsweeten@visionengravers.com>,
+       Eric Miao <eric.y.miao@gmail.com>, linux-arm-kernel@lists.infradead.org,
+       linux-kernel@vger.kernel.org
+Subject: [PATCH 1/4] mx25: flexcan clock support
+Date: Fri, 28 May 2010 13:42:15 +0200
+Message-Id: <1275046938-8465-2-git-send-email-mkl@pengutronix.de>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1275046938-8465-1-git-send-email-mkl@pengutronix.de>
 References: <1275046938-8465-1-git-send-email-mkl@pengutronix.de>
@@ -33,73 +30,36 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Sascha Hauer <s.hauer@pengutronix.de>
+
+Signed-off-by: Sascha Hauer <s.hauer@pengutronix.de>
 Signed-off-by: Marc Kleine-Budde <mkl@pengutronix.de>
 ---
- arch/arm/mach-mx3/devices.c |   40 ++++++++++++++++++++++++++++++++++++++++
- arch/arm/mach-mx3/devices.h |    2 ++
- 2 files changed, 42 insertions(+), 0 deletions(-)
+ arch/arm/mach-mx25/clock.c |    4 ++++
+ 1 files changed, 4 insertions(+), 0 deletions(-)
 
-diff --git a/arch/arm/mach-mx3/devices.c b/arch/arm/mach-mx3/devices.c
-index db7acd6..0e1e20b 100644
---- a/arch/arm/mach-mx3/devices.c
-+++ b/arch/arm/mach-mx3/devices.c
-@@ -127,6 +127,46 @@ struct platform_device mxc_uart_device4 = {
- };
- #endif /* CONFIG_ARCH_MX31 */
+diff --git a/arch/arm/mach-mx25/clock.c b/arch/arm/mach-mx25/clock.c
+index 1550149..158a29b 100644
+--- a/arch/arm/mach-mx25/clock.c
++++ b/arch/arm/mach-mx25/clock.c
+@@ -191,6 +191,8 @@ DEFINE_CLOCK(i2c_clk,	 0, CCM_CGCR0,  6, get_rate_i2c, NULL, NULL);
+ DEFINE_CLOCK(fec_clk,	 0, CCM_CGCR1, 15, get_rate_ipg, NULL, &fec_ahb_clk);
+ DEFINE_CLOCK(dryice_clk, 0, CCM_CGCR1,  8, get_rate_ipg, NULL, NULL);
+ DEFINE_CLOCK(lcdc_clk,	 0, CCM_CGCR1, 29, get_rate_lcdc, NULL, &lcdc_per_clk);
++DEFINE_CLOCK(can1_clk,	 0, CCM_CGCR1,  2, get_rate_ipg, NULL, NULL);
++DEFINE_CLOCK(can2_clk,	 0, CCM_CGCR1,  3, get_rate_ipg, NULL, NULL);
  
-+#ifdef CONFIG_ARCH_MX35
-+static struct resource mxc_can_1_resources[] = {
-+	{
-+		.start	= 0x53fe4000,
-+		.end	= 0x53fe7fff,
-+		.flags	= IORESOURCE_MEM,
-+	}, {
-+		.start	= 43,
-+		.end	= 43,
-+		.flags	= IORESOURCE_IRQ,
-+	}
-+};
-+
-+struct platform_device mxc_can_device0 = {
-+	.name = "flexcan",
-+	.id = 0,
-+	.num_resources = ARRAY_SIZE(mxc_can_1_resources),
-+	.resource = mxc_can_1_resources,
-+};
-+
-+static struct resource mxc_can_2_resources[] = {
-+	{
-+		.start	= 0x53fe8000,
-+		.end	= 0x53feffff,
-+		.flags	= IORESOURCE_MEM,
-+	}, {
-+		.start	= 44,
-+		.end	= 44,
-+		.flags	= IORESOURCE_IRQ,
-+	}
-+};
-+
-+struct platform_device mxc_can_device1 = {
-+	.name = "flexcan",
-+	.id = 1,
-+	.num_resources = ARRAY_SIZE(mxc_can_2_resources),
-+	.resource = mxc_can_2_resources,
-+};
-+#endif /* CONFIG_ARCH_MX35 */
-+
- /* GPIO port description */
- static struct mxc_gpio_port imx_gpio_ports[] = {
- 	{
-diff --git a/arch/arm/mach-mx3/devices.h b/arch/arm/mach-mx3/devices.h
-index 2c3c864..f600d09 100644
---- a/arch/arm/mach-mx3/devices.h
-+++ b/arch/arm/mach-mx3/devices.h
-@@ -29,3 +29,5 @@ extern struct platform_device imx_ssi_device1;
- extern struct platform_device imx_wdt_device0;
- extern struct platform_device imx_rtc_device0;
- extern struct platform_device imx_kpp_device;
-+extern struct platform_device mxc_can_device0;
-+extern struct platform_device mxc_can_device1;
+ #define _REGISTER_CLOCK(d, n, c)	\
+ 	{				\
+@@ -225,6 +227,8 @@ static struct clk_lookup lookups[] = {
+ 	_REGISTER_CLOCK("fec.0", NULL, fec_clk)
+ 	_REGISTER_CLOCK("imxdi_rtc.0", NULL, dryice_clk)
+ 	_REGISTER_CLOCK("imx-fb.0", NULL, lcdc_clk)
++	_REGISTER_CLOCK("flexcan.0", NULL, can1_clk)
++	_REGISTER_CLOCK("flexcan.1", NULL, can2_clk)
+ };
+ 
+ int __init mx25_clocks_init(void)
 -- 
 1.7.1
 
