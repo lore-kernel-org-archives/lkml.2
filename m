@@ -1,79 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756779Ab0E1Noi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 May 2010 09:44:38 -0400
-Received: from smtp-out.google.com ([74.125.121.35]:1536 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755739Ab0E1Nog (ORCPT
+	id S1756728Ab0E1Npi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 May 2010 09:45:38 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:42420 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755739Ab0E1Nph (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 May 2010 09:44:36 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=mime-version:in-reply-to:references:date:message-id:subject:from:to:
-	cc:content-type:x-system-of-record;
-	b=wi4LYWMIJIIaTtzBtvK425ZSk8oAVzw9uHp/0xU79As44g4aFNNgz5dS2JKB0/PWR
-	2QKZSXDlBMaCj/AKqfXvQ==
+	Fri, 28 May 2010 09:45:37 -0400
+Message-ID: <4BFFC8EE.8060501@pengutronix.de>
+Date: Fri, 28 May 2010 15:45:18 +0200
+From: Marc Kleine-Budde <mkl@pengutronix.de>
+Organization: Pengutronix
+User-Agent: Thunderbird 2.0.0.24 (X11/20100317)
 MIME-Version: 1.0
-In-Reply-To: <20100528133709.GQ9874@ghostprotocols.net>
-References: <4bff964c.e88cd80a.3106.7d31@mx.google.com>
-	<20100528125728.GP9874@ghostprotocols.net>
-	<AANLkTin33AdxO_yzRlZUTzoV9JtqaNqfYR2kXhOvke1P@mail.gmail.com>
-	<20100528133709.GQ9874@ghostprotocols.net>
-Date: Fri, 28 May 2010 15:44:31 +0200
-Message-ID: <AANLkTimxlVIhN4NRYMTOmerX7mChalevmLunsZNuKVea@mail.gmail.com>
-Subject: Re: [PATCH] perf: make perf report -D print sampled CPU
-From: Stephane Eranian <eranian@google.com>
-To: Arnaldo Carvalho de Melo <acme@infradead.org>
-Cc: linux-kernel@vger.kernel.org, peterz@infradead.org, mingo@elte.hu,
-       paulus@samba.org, davem@davemloft.net, fweisbec@gmail.com,
-       perfmon2-devel@lists.sf.net, eranian@gmail.com, tzanussi@gmail.com,
-       Arun Sharma <aruns@google.com>
-Content-Type: text/plain; charset=UTF-8
-X-System-Of-Record: true
+To: "Hans J. Koch" <hjk@linutronix.de>
+CC: sha@pengutronix.de, Sascha Hauer <kernel@pengutronix.de>,
+       Russell King <linux@arm.linux.org.uk>,
+       Vladimir Zapolskiy <vzapolskiy@gmail.com>,
+       Juergen Beisert <j.beisert@pengutronix.de>,
+       Alberto Panizzo <maramaopercheseimorto@gmail.com>,
+       Wolfram Sang <w.sang@pengutronix.de>,
+       Fabio Estevam <fabio.estevam@freescale.com>,
+       Valentin Longchamp <valentin.longchamp@epfl.ch>,
+       linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 4/4] mx35: add flexcan devices
+References: <1275046938-8465-1-git-send-email-mkl@pengutronix.de> <1275046938-8465-5-git-send-email-mkl@pengutronix.de> <20100528133424.GA2001@bluebox.local>
+In-Reply-To: <20100528133424.GA2001@bluebox.local>
+X-Enigmail-Version: 0.95.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+ protocol="application/pgp-signature";
+ boundary="------------enig167BB2E0BB9A935043A0C6E4"
+X-SA-Exim-Connect-IP: 2001:6f8:1178:4:5054:ff:fe8d:eefb
+X-SA-Exim-Mail-From: mkl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 28, 2010 at 3:37 PM, Arnaldo Carvalho de Melo
-<acme@infradead.org> wrote:
-> Em Fri, May 28, 2010 at 03:03:15PM +0200, Stephane Eranian escreveu:
->> On Fri, May 28, 2010 at 2:57 PM, Arnaldo Carvalho de Melo
->> <acme@infradead.org> wrote:
->> > Em Fri, May 28, 2010 at 12:08:01PM +0200, Stephane Eranian escreveu:
->> >> When -R is not used, cpu is set to -1to indicate that
->> >> the CPU is unknown (it is not captured).
->
->> > It conflicts with Arun's patch for sorting by CPU that I started playing with
->> > yesterday, but in a good way, i.e. printing the CPU at that dump_printf spot
->> > was one of the changs I made in Arun's patch as well.
->
->> Yes, I realized that afterwards.
->
->> > [root@emilia linux-2.6-tip]# perf report -D | grep SAMPLE | head -6
->> > 0x10240 [0x28]: PERF_RECORD_SAMPLE(IP, 1): 2 17252/17252: 0xffffffff81253362 period: 1894446
->> > 0x10268 [0x28]: PERF_RECORD_SAMPLE(IP, 1): 2 17252/17252: 0xffffffff81253338 period: 1894446
->> > 0x10290 [0x28]: PERF_RECORD_SAMPLE(IP, 1): 2 17252/17252: 0xffffffff8125300d period: 1905103
->> > 0x102b8 [0x28]: PERF_RECORD_SAMPLE(IP, 1): 0 0/0: 0xffffffff8109117d period: 1838260
->> > 0x102e0 [0x28]: PERF_RECORD_SAMPLE(IP, 1): 0 293/293: 0xffffffff8101ace6 period: 352697
->> > 0x10308 [0x28]: PERF_RECORD_SAMPLE(IP, 1): 0 1763/1763: 0xffffffff8101ace6 period: 352697
->> > [root@emilia linux-2.6-tip]#
->
->> > I added it just before the pid/tid but prefixing it with "cpu: " is as good as
->> > doing it that way.
->
->> Fine. I think there needs to be some documenation explaining the structure
->> of the line here. I had to dig into the code to understand it.
->
-> Right, this so far is as ad-hoc as it can be :-)
->
-> One idea that is in my TODO list is to generate some XML format people
-> say that oprofile produces and there is also some other format that a
-> valgrind tool uses that should be supported.
->
-I think for a lot of people what matter is that the format be easily parseable
-by Python/Perl scripts. XML may be fine too.
+This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
+--------------enig167BB2E0BB9A935043A0C6E4
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-> I also plan to have it in a spreadsheet TUI widget, allowing lots of
-> navigation gimmicks to help in debugging, like a popup that offers the
-> list of mmaps for the thread where the sample below the cursor happened,
-> etc.
-You may get tons of data. Not sure you could manage interactively.
+Hans J. Koch wrote:
+> On Fri, May 28, 2010 at 01:42:18PM +0200, Marc Kleine-Budde wrote:
+>> Signed-off-by: Marc Kleine-Budde <mkl@pengutronix.de>
+>> ---
+>>  arch/arm/mach-mx3/devices.c |   40 ++++++++++++++++++++++++++++++++++=
+++++++
+>>  arch/arm/mach-mx3/devices.h |    2 ++
+>>  2 files changed, 42 insertions(+), 0 deletions(-)
+>>
+>> diff --git a/arch/arm/mach-mx3/devices.c b/arch/arm/mach-mx3/devices.c=
+
+>> index db7acd6..0e1e20b 100644
+>> --- a/arch/arm/mach-mx3/devices.c
+>> +++ b/arch/arm/mach-mx3/devices.c
+>> @@ -127,6 +127,46 @@ struct platform_device mxc_uart_device4 =3D {
+>>  };
+>>  #endif /* CONFIG_ARCH_MX31 */
+>> =20
+>> +#ifdef CONFIG_ARCH_MX35
+>> +static struct resource mxc_can_1_resources[] =3D {
+>> +	{
+>> +		.start	=3D 0x53fe4000,
+>> +		.end	=3D 0x53fe7fff,
+>> +		.flags	=3D IORESOURCE_MEM,
+>> +	}, {
+>> +		.start	=3D 43,
+>> +		.end	=3D 43,
+>> +		.flags	=3D IORESOURCE_IRQ,
+>> +	}
+>> +};
+>> +
+>> +struct platform_device mxc_can_device0 =3D {
+>> +	.name =3D "flexcan",
+>=20
+> Did you also post the flexcan driver itself somewhere? I've got such a =
+device
+> on my desk right now, and would be willing to test that. I've made some=
+ tests
+> with Sascha's old version, but it's not really satisfying...
+
+It's not yet posted, I'm currently restructuring the driver with regards
+to the set_bittiming and control mode discussion on the socketcan ML.
+
+cheers, Marc
+
+--=20
+Pengutronix e.K.                  | Marc Kleine-Budde           |
+Industrial Linux Solutions        | Phone: +49-231-2826-924     |
+Vertretung West/Dortmund          | Fax:   +49-5121-206917-5555 |
+Amtsgericht Hildesheim, HRA 2686  | http://www.pengutronix.de   |
+
+
+--------------enig167BB2E0BB9A935043A0C6E4
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: OpenPGP digital signature
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.9 (GNU/Linux)
+Comment: Using GnuPG with Mozilla - http://enigmail.mozdev.org
+
+iEYEARECAAYFAkv/yPMACgkQjTAFq1RaXHNF7ACfewI4r4qmjtcdh3d075H0oyez
+uLMAnjyqg5qmEQGid8nH/KQrFRCnx4Yq
+=tNst
+-----END PGP SIGNATURE-----
+
+--------------enig167BB2E0BB9A935043A0C6E4--
