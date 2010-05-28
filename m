@@ -1,48 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756016Ab0E1HpK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 May 2010 03:45:10 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:49587 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755805Ab0E1HpG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 May 2010 03:45:06 -0400
-Date: Fri, 28 May 2010 03:45:00 -0400
-From: Christoph Hellwig <hch@infradead.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Dave Chinner <david@fromorbit.com>, linux-kernel@vger.kernel.org,
-       xfs@oss.sgi.com, linux-fsdevel@vger.kernel.org,
-       linux-ext4@vger.kernel.org, tytso@mit.edu, jens.axboe@oracle.com
-Subject: Re: [PATCH 1/6] writeback: initial tracing support
-Message-ID: <20100528074500.GA14151@infradead.org>
-References: <1274784852-30502-1-git-send-email-david@fromorbit.com> <1274784852-30502-2-git-send-email-david@fromorbit.com> <20100527143233.836b2c47.akpm@linux-foundation.org>
+	id S1755948Ab0E1Hpu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 May 2010 03:45:50 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:52037 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755476Ab0E1Hpt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 May 2010 03:45:49 -0400
+From: Thomas Renninger <trenn@suse.de>
+Organization: SUSE Products GmbH
+To: Len Brown <lenb@kernel.org>
+Subject: Re: [linux-pm] [PATCH 8/8] intel_idle: create a native cpuidle driver for select intel processors
+Date: Fri, 28 May 2010 09:46:32 +0200
+User-Agent: KMail/1.13.3 (Linux/2.6.31.5-0.1-desktop; KDE/4.4.3; x86_64; ; )
+Cc: linux-pm@lists.linux-foundation.org, x86@kernel.org,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       sfr@canb.auug.org.au
+References: <1274928151-30919-1-git-send-email-lenb@kernel.org> <201005271053.31087.trenn@suse.de> <alpine.LFD.2.00.1005272131400.24823@localhost.localdomain>
+In-Reply-To: <alpine.LFD.2.00.1005272131400.24823@localhost.localdomain>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100527143233.836b2c47.akpm@linux-foundation.org>
-User-Agent: Mutt/1.5.19 (2009-01-05)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201005280946.32981.trenn@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 27, 2010 at 02:32:33PM -0700, Andrew Morton wrote:
-> > +#define inode_to_bdi(inode)	((inode)->i_mapping->backing_dev_info)
+On Friday 28 May 2010 03:44:16 Len Brown wrote:
+> On Thu, 27 May 2010, Thomas Renninger wrote:
+...
+> > > This driver does not yet know about cpu online/offline
+> > > and thus will not yet play well with cpu-hotplug.
+I thought this is also about soft on/offlining.
 > 
-> Could/should be implemented in C.
+> > What means does not play well yet, suspend or manually offlining a
+> > core will eventually (for sure?) hang the machine?
 > 
-> > +/*
-> > + * We don't actually have pdflush, but this one is exported though /proc...
-> > + */
-> > +int nr_pdflush_threads;
+> It means less power savings savings than optimal
+> for processors not present at module load time.
+Ok, not really sever...
 > 
-> So this is always zero now?
+> > If this is known broken, should this already be spread through
+> > linux-next?
 > 
-> We don't want to keep it forever.  Add a
-> printk_once("nr_pdflush_threads is deprecated") when someone reads it,
-> remove it in 2014.
+> If you know somebody with a system that supports CPU hot-add
+> on one of the processors supported by intel_idle, and they
+> are willing to test linux-next, please have them contact me.
+Real CPU hotplug is broken with acpi processor driver as well,
+eventually it got addressed lately. Anyway, not sever...
 
-These two lines are just moved down a bit by the patch, I think any
-cleanups should be left to separate patches.
+Thanks,
+
+    Thomas
 
