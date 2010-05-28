@@ -1,64 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759105Ab0E1Rn4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 May 2010 13:43:56 -0400
-Received: from vms173009pub.verizon.net ([206.46.173.9]:63262 "EHLO
-	vms173009pub.verizon.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756739Ab0E1Rny (ORCPT
+	id S933095Ab0E1RoJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 May 2010 13:44:09 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:37607 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932842Ab0E1RoE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 May 2010 13:43:54 -0400
-Date: Fri, 28 May 2010 13:43:35 -0400 (EDT)
-From: Len Brown <lenb@kernel.org>
-X-X-Sender: lenb@localhost.localdomain
-To: Chase Douglas <chase.douglas@canonical.com>
-Cc: x86@kernel.org, linux-pm@lists.linux-foundation.org,
-       linux-kernel@vger.kernel.org, Len Brown <len.brown@intel.com>
-Subject: Re: [PATCH 8/8] intel_idle: create a native cpuidle driver for select
- intel processors
-In-reply-to: <1275059380.5612.60.camel@cndougla-ubuntu>
-Message-id: <alpine.LFD.2.00.1005281343060.4045@localhost.localdomain>
-References: <1274928151-30919-1-git-send-email-lenb@kernel.org>
- <198450ec1600d9a7f55270dd4d44d6b55bc5b184.1274926772.git.len.brown@intel.com>
- <1275013933.2312.7.camel@cndougla-ubuntu>
- <alpine.LFD.2.00.1005272359510.24823@localhost.localdomain>
- <1275059380.5612.60.camel@cndougla-ubuntu>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
-MIME-version: 1.0
-Content-type: TEXT/PLAIN; charset=US-ASCII
+	Fri, 28 May 2010 13:44:04 -0400
+Date: Fri, 28 May 2010 10:41:41 -0700
+From: Dan Magenheimer <dan.magenheimer@oracle.com>
+To: linux-kernel@vger.kernel.org, linux-mm@kvack.org, jeremy@goop.org,
+       hugh.dickins@tiscali.co.uk, ngupta@vflare.org, JBeulich@novell.com,
+       chris.mason@oracle.com, kurt.hackel@oracle.com,
+       dave.mccracken@oracle.com, npiggin@suse.de, akpm@linux-foundation.org,
+       riel@redhat.com, avi@redhat.com, pavel@ucw.cz, konrad.wilk@oracle.com,
+       dan.magenheimer@oracle.com
+Subject: [PATCH V2 4/4] Frontswap (was Transcendent Memory): config files
+Message-ID: <20100528174141.GA28278@ca-server1.us.oracle.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.16 (2007-06-11)
+X-Auth-Type: Internal IP
+X-Source-IP: acsinet15.oracle.com [141.146.126.227]
+X-CT-RefId: str=0001.0A090204.4C0000AB.006F:SCFMA922111,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 28 May 2010, Chase Douglas wrote:
+[PATCH V2 4/4] Frontswap (was Transcendent Memory): config files
 
-> On Fri, 2010-05-28 at 00:16 -0400, Len Brown wrote:
-> > > I see that you have updated this code in your tree to disable C4 and C6
-> > > on atom. This has piqued my curiosity. I've now seen 2 atom netbooks
-> > > from different OEMs that hide C4 when you plug the power in. After the
-> > > first machine I thought, "must be a BIOS/ACPI bug," but now I'm
-> > > beginning to wonder if there's some issue with atom C4 states? That's
-> > > beside the fact that I've not seen C6 on either machine at all. Do you
-> > > have any insight?
-> > 
-> > The reasoning behind ACPI taking deep C-states away
-> > when on AC is the assumption that users on AC
-> > care more about low latency and high performance
-> > than they care about power savings, heat, and noise.
-> 
-> Maybe they forgot that a netbook is still a *lap*top when they did this,
-> cause I can't keep mine on my lap when it's plugged in :). The CPU idles
-> at 60 centigrade when powered on, and drops to a manageable 30-ish
-> centigrade when running on battery.
-> 
-> > So my intent is to give Linux control over this decision,
-> > via PM_QOS or otherwise.  At the moment C4 is commented out
-> > because when i first tested it failed the lapic timer workaround.
-> 
-> I am looking forward to testing out these changes on my netbook once
-> this issue get sorted out!
+Frontswap config defaults to on as the hooks devolve to
+pointer-compare-to-NULL if no frontswap backend is provided.
 
-Atom C4 works in the current driver in the git tree -- test it now!
+Signed-off-by: Dan Magenheimer <dan.magenheimer@oracle.com>
 
-cheers,
--Len
+Diffstat:
+ Kconfig                                  |   16 ++++++++++++++++
+ Makefile                                 |    1 +
+ 2 files changed, 17 insertions(+)
 
+--- linux-2.6.34/mm/Makefile	2010-05-16 15:17:36.000000000 -0600
++++ linux-2.6.34-frontswap/mm/Makefile	2010-05-21 12:59:10.000000000 -0600
+@@ -17,6 +17,7 @@ obj-y += init-mm.o
+ 
+ obj-$(CONFIG_BOUNCE)	+= bounce.o
+ obj-$(CONFIG_SWAP)	+= page_io.o swap_state.o swapfile.o thrash.o
++obj-$(CONFIG_FRONTSWAP)	+= frontswap.o
+ obj-$(CONFIG_HAS_DMA)	+= dmapool.o
+ obj-$(CONFIG_HUGETLBFS)	+= hugetlb.o
+ obj-$(CONFIG_NUMA) 	+= mempolicy.o
+--- linux-2.6.34/mm/Kconfig	2010-05-16 15:17:36.000000000 -0600
++++ linux-2.6.34-frontswap/mm/Kconfig	2010-05-21 12:59:10.000000000 -0600
+@@ -287,3 +287,19 @@ config NOMMU_INITIAL_TRIM_EXCESS
+ 	  of 1 says that all excess pages should be trimmed.
+ 
+ 	  See Documentation/nommu-mmap.txt for more information.
++
++config FRONTSWAP
++	bool "Enable frontswap pseudo-RAM driver to cache swap pages"
++	default y
++	help
++ 	  Frontswap is so named because it can be thought of as the opposite of
++ 	  a "backing" store for a swap device.  The storage is assumed to be
++ 	  a synchronous concurrency-safe page-oriented pseudo-RAM device (such
++	  as Xen's Transcendent Memory, aka "tmem") which is not directly
++	  accessible or addressable by the kernel and is of unknown (and
++	  possibly time-varying) size.  When a pseudo-RAM device is available,
++	  a signficant swap I/O reduction may be achieved.  When none is
++	  available, all frontswap calls are reduced to a single pointer-
++	  compare-against-NULL resulting in a negligible performance hit.
++
++	  If unsure, say Y to enable frontswap.
