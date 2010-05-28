@@ -1,77 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753350Ab0E1R7b (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 May 2010 13:59:31 -0400
-Received: from vms173005pub.verizon.net ([206.46.173.5]:60051 "EHLO
-	vms173005pub.verizon.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751121Ab0E1R73 (ORCPT
+	id S1752907Ab0E1SBk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 May 2010 14:01:40 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:54126 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751638Ab0E1SBg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 May 2010 13:59:29 -0400
-Date: Fri, 28 May 2010 13:59:18 -0400 (EDT)
-From: Len Brown <lenb@kernel.org>
-X-X-Sender: lenb@localhost.localdomain
-To: Venkatesh Pallipadi <venki@google.com>
-Cc: linux-pm@lists.linux-foundation.org,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 7/8] ACPI: acpi_idle: touch TS_POLLING only in the
- non-MWAIT case
-In-reply-to: <AANLkTikRUyXMcIkqc3dRCtLPkKBOwOeyy_j1iILHeypj@mail.gmail.com>
-Message-id: <alpine.LFD.2.00.1005281351380.4045@localhost.localdomain>
-References: <6b2c676bf32be91f43215d5874c07c1becaba013.1275026041.git.len.brown@intel.com>
- <1275026521-30835-1-git-send-email-lenb@kernel.org>
- <c4716a7a5639fd8f82dc6f2046b127e65a3851c5.1275026041.git.len.brown@intel.com>
- <AANLkTikRUyXMcIkqc3dRCtLPkKBOwOeyy_j1iILHeypj@mail.gmail.com>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
-MIME-version: 1.0
-Content-type: TEXT/PLAIN; charset=US-ASCII
+	Fri, 28 May 2010 14:01:36 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=i+3WaicMIudncXxHPgC0ck4dRP5YNAt9zl4fT9yttW0/Hf9fvWg0P8sxEjJETRxCJP
+         LJkTlKEFA9cKocpLuyRUmiuXP6ZDiRsHzlpfS4MwsrgqcA4VrNNMkEXjE1bIvnxKzvoy
+         l87AtFYB2wRj9yUMtIL7xnnjv6T+8TnSFyLe8=
+Date: Fri, 28 May 2010 11:01:03 -0700
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Thomas Renninger <trenn@suse.de>
+Cc: linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
+       linux-input@vger.kernel.org, Angelo Arrifano <miknix@gmail.com>
+Subject: Re: [RFC PATCH] Quickstart Button ACPI driver to serve PNP0C32 ACPI
+ devices
+Message-ID: <20100528180103.GA2905@core.coreip.homeip.net>
+References: <201005281940.09925.trenn@suse.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201005281940.09925.trenn@suse.de>
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 28 May 2010, Venkatesh Pallipadi wrote:
-
-> On Thu, May 27, 2010 at 11:02 PM, Len Brown <lenb@kernel.org> wrote:
-> > From: Len Brown <len.brown@intel.com>
-> >
-> > commit d306ebc28649b89877a22158fe0076f06cc46f60
-> > (ACPI: Be in TS_POLLING state during mwait based C-state entry)
-> > fixed an important power & performance issue where ACPI c2 and c3 C-states
-> > were clearing TS_POLLING even when using MWAIT (ACPI_STATE_FFH).
-> > That bug had been causing us to receive redundant scheduling interrups
-> > when we had already been woken up by MONITOR/MWAIT.
-> >
-> > Following up on that...
-> >
-> > In the MWAIT case, we don't have to subsequently
-> > check need_resched(), as that c heck was there
-> > for the TS_POLLING-clearing case.
-> >
-> > Note that not only does the cpuidle calling function
-> > already check need_resched() before calling us, the
-> > low-level entry into monitor/mwait calls it twice --
-> > guaranteeing that a write to the trigger address
-> > can not go un-noticed.
+On Fri, May 28, 2010 at 07:40:09PM +0200, Thomas Renninger wrote:
+> Hi,
 > 
-> Ack this part of the change.
+> if you have a recent Microsoft Office format reader you find some
+> documentation here:
+> http://www.microsoft.com/whdc/system/platform/firmware/DirAppLaunch.mspx	
 > 
-> > Also, in this case, we don't have to set TS_POLLING
-> > when we wake, because we never cleared it.
+> I finally got it converted and these should be readable in OpenOffice as well:
+> ftp.suse.com/pub/people/trenn/hotstart_quickstart_docu
 > 
-> I thought about this part of the change while working on the original
-> patch. But decided to leave the set to be done unconditionally as in
-> this case we are replacing "one write" by either "one read and one
-> jump" or "one read and one write" and I am not sure we gain much by
-> that.
+> The idea of these buttons is that they are undefined from BIOS/kernel
+> point of view. Userspace has to map a functionality to them.
+> Therefore the idea to modify the input event keycode via sysfs file.
 
-I don't know if the write is more expensive than the read and branch.
-In the scheme of things, these things are free and it is the IO
-accesses and locks in the idle path that take time.
+What s wrong with using EVIOCSKEYCODE to adjust the mapping. Note that
+the issue of handlers not re-binding after keymap change should be
+solved regardless.
 
-But when I saw this code fragment incorrectly copied into
-the new sfi_idle driver, I decided it was time to change it
-to make logical sense to the reader.
+> There should be 2 situations that perfectly are triggered via userspace:
+>    - DMI match (or similar) and assign the correct buttons on the known
+>      machine. I know that hal could do this rather well and had dmi
+>      tables pre-defined. AFAIK hal is already obsolete? What userspace
+>      tools/lists would be best to ask?
 
-thanks,
--Len Brown, Intel Open Source Technology Center
+udev/hal remap keys on laptop keyboards, they should have facilities to
+do that here as well.
 
+> 
+>    - If the button is undefined, a higher level userspace X application
+>      could ask the user to set it to something useful. For this to
+>      happen the usage id has to be passed somehow through the input
+>      layer. Not sure how realistic such an implementation is and what
+>      is still needed in X to make this happen.
 
+Yes, KEY_UNKNOWN is expected to cause such behavior.
+
+-- 
+Dmitry
