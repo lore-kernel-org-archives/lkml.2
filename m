@@ -1,134 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753982Ab0E1GqI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 May 2010 02:46:08 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:59093 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1752143Ab0E1GqD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 May 2010 02:46:03 -0400
-Message-ID: <4BFF66CC.4050204@cn.fujitsu.com>
-Date: Fri, 28 May 2010 14:46:36 +0800
-From: Lai Jiangshan <laijs@cn.fujitsu.com>
-User-Agent: Thunderbird 2.0.0.6 (Windows/20070728)
+	id S1753940Ab0E1HBB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 May 2010 03:01:01 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:53249 "EHLO mx2.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752175Ab0E1HBA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 May 2010 03:01:00 -0400
+Date: Fri, 28 May 2010 09:00:26 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Paul Mackerras <paulus@samba.org>, linux-kernel@vger.kernel.org,
+       Peter Zijlstra <a.p.zijlstra@chello.nl>,
+       Arnaldo Carvalho de Melo <acme@redhat.com>,
+       Fr?d?ric Weisbecker <fweisbec@gmail.com>,
+       Steven Rostedt <rostedt@goodmis.org>,
+       Thomas Gleixner <tglx@linutronix.de>,
+       Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [GIT PULL, v2] perf changes
+Message-ID: <20100528070026.GA31058@elte.hu>
+References: <20100524192531.GA15614@elte.hu>
+ <20100525002221.GA30395@drongo>
+ <20100525135200.GA21462@elte.hu>
+ <alpine.LFD.2.00.1005271533010.11382@i5.linux-foundation.org>
 MIME-Version: 1.0
-To: Izik Eidus <ieidus@redhat.com>, Andrea Arcangeli <aarcange@redhat.com>,
-       Chris Wright <chrisw@redhat.com>,
-       Hugh Dickins <hugh.dickins@tiscali.co.uk>,
-       LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH] ksm: cleanup for mm_slots_hash
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LFD.2.00.1005271533010.11382@i5.linux-foundation.org>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: 1.0
+X-ELTE-SpamLevel: s
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=1.0 required=5.9 tests=BAYES_50 autolearn=no SpamAssassin version=3.2.5
+	1.0 BAYES_50               BODY: Bayesian spam probability is 40 to 60%
+	[score: 0.4993]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-Use compile-allocated memory instead of dynamic allocated
-memory for mm_slots_hash.
+* Linus Torvalds <torvalds@linux-foundation.org> wrote:
 
-Use hash_ptr() instead divisions for bucket calculation.
+> On Tue, 25 May 2010, Ingo Molnar wrote:
+> >
+> >  75 files changed, 1847 insertions(+), 3147 deletions(-)
+> 
+> I was excited by this ("A code _reduction_! Will wonders never cease?"), but 
+> it turns out that all of the reduction was due to removing some unused 
+> utility functions from the user-level tools.
 
-Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
----
-diff --git a/mm/ksm.c b/mm/ksm.c
-index 8cdfc2a..81b379e 100644
---- a/mm/ksm.c
-+++ b/mm/ksm.c
-@@ -33,6 +33,7 @@
- #include <linux/mmu_notifier.h>
- #include <linux/swap.h>
- #include <linux/ksm.h>
-+#include <linux/hash.h>
- 
- #include <asm/tlbflush.h>
- #include "internal.h"
-@@ -153,8 +154,9 @@ struct rmap_item {
- static struct rb_root root_stable_tree = RB_ROOT;
- static struct rb_root root_unstable_tree = RB_ROOT;
- 
--#define MM_SLOTS_HASH_HEADS 1024
--static struct hlist_head *mm_slots_hash;
-+#define MM_SLOTS_HASH_SHIFT 10
-+#define MM_SLOTS_HASH_HEADS (1 << MM_SLOTS_HASH_SHIFT)
-+static struct hlist_head mm_slots_hash[MM_SLOTS_HASH_HEADS];
- 
- static struct mm_slot ksm_mm_head = {
- 	.mm_list = LIST_HEAD_INIT(ksm_mm_head.mm_list),
-@@ -269,28 +271,13 @@ static inline void free_mm_slot(struct mm_slot *mm_slot)
- 	kmem_cache_free(mm_slot_cache, mm_slot);
- }
- 
--static int __init mm_slots_hash_init(void)
--{
--	mm_slots_hash = kzalloc(MM_SLOTS_HASH_HEADS * sizeof(struct hlist_head),
--				GFP_KERNEL);
--	if (!mm_slots_hash)
--		return -ENOMEM;
--	return 0;
--}
--
--static void __init mm_slots_hash_free(void)
--{
--	kfree(mm_slots_hash);
--}
--
- static struct mm_slot *get_mm_slot(struct mm_struct *mm)
- {
- 	struct mm_slot *mm_slot;
- 	struct hlist_head *bucket;
- 	struct hlist_node *node;
- 
--	bucket = &mm_slots_hash[((unsigned long)mm / sizeof(struct mm_struct))
--				% MM_SLOTS_HASH_HEADS];
-+	bucket = &mm_slots_hash[hash_ptr(mm, MM_SLOTS_HASH_SHIFT)];
- 	hlist_for_each_entry(mm_slot, node, bucket, link) {
- 		if (mm == mm_slot->mm)
- 			return mm_slot;
-@@ -303,8 +290,7 @@ static void insert_to_mm_slots_hash(struct mm_struct *mm,
- {
- 	struct hlist_head *bucket;
- 
--	bucket = &mm_slots_hash[((unsigned long)mm / sizeof(struct mm_struct))
--				% MM_SLOTS_HASH_HEADS];
-+	bucket = &mm_slots_hash[hash_ptr(mm, MM_SLOTS_HASH_SHIFT)];
- 	mm_slot->mm = mm;
- 	hlist_add_head(&mm_slot->link, bucket);
- }
-@@ -1943,15 +1929,11 @@ static int __init ksm_init(void)
- 	if (err)
- 		goto out;
- 
--	err = mm_slots_hash_init();
--	if (err)
--		goto out_free1;
--
- 	ksm_thread = kthread_run(ksm_scan_thread, NULL, "ksmd");
- 	if (IS_ERR(ksm_thread)) {
- 		printk(KERN_ERR "ksm: creating kthread failed\n");
- 		err = PTR_ERR(ksm_thread);
--		goto out_free2;
-+		goto out_free;
- 	}
- 
- #ifdef CONFIG_SYSFS
-@@ -1959,7 +1941,7 @@ static int __init ksm_init(void)
- 	if (err) {
- 		printk(KERN_ERR "ksm: register sysfs failed\n");
- 		kthread_stop(ksm_thread);
--		goto out_free2;
-+		goto out_free;
- 	}
- #else
- 	ksm_run = KSM_RUN_MERGE;	/* no way for user to start it */
-@@ -1975,9 +1957,7 @@ static int __init ksm_init(void)
- #endif
- 	return 0;
- 
--out_free2:
--	mm_slots_hash_free();
--out_free1:
-+out_free:
- 	ksm_slab_free();
- out:
- 	return err;
+Simple things first and maybe it turns into a habit!
 
+> The actual kernel still grew:
+>
+>  32 files changed, 1327 insertions(+), 964 deletions(-)
+>
+> oh well. Merged anyway.
+
+Hey, while i have to admit to being a member of the infinitely large group of 
+kernel developers working hard to ensure that the kernel's size follows 
+Moore's Law - this time i beg to differ, as we _did_ manage to shrink the 
+kernel! ;-)
+
+Here's the before/after vmlinux comparison:
+
+ (x86 defconfig, 64-bit): vmlinux: 
+
+                       text      data      bss       dec      hex  filename
+                    .......................................................
+ cad719d (before):  8441843   1281100   983876  10706819   a35f83   vmlinux
+ c5617b2 ( after):  8417488   1277724   983876  10679088   a2f330   vmlinux
+                    .......................................................
+                    -24.35K    -3.37K
+                     -0.28%    -0.26%
+
+Ob'Suggestion: we could help debloating efforts by officially declaring to 
+take provably-debloating patches up to -rc4? (with a vmlinux comparison 
+mandated in the changelog or such)
+
+Debloating patches tend to reduce complexity, and hence are more 
+regression-resistent. (They are also rare, so it's not like we would be 
+risking a flood of patches.)
+
+That would be a clever way to redirect the creative energies of kernel 
+developers who are otherwise bored by -rc1's legendary stability and always 
+try to sneak further features upstream post -rc1.
+
+Such a policy would mean that while the merge window for bloating patches is a 
+strict ~1.5 weeks, the merge window for debloating patches would be a generous 
+~1.5 months.
+
+Maybe such a mild hint would help propagate the idea some more.
+
+Dunno - just an idea,
+
+	Ingo
