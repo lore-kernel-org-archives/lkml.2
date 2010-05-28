@@ -1,156 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759070Ab0E1D2g (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 May 2010 23:28:36 -0400
-Received: from mail-pz0-f176.google.com ([209.85.222.176]:43360 "EHLO
-	mail-pz0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756734Ab0E1D2e (ORCPT
+	id S1758840Ab0E1Dv5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 May 2010 23:51:57 -0400
+Received: from mail-qy0-f183.google.com ([209.85.221.183]:33096 "EHLO
+	mail-qy0-f183.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755030Ab0E1Dv4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 May 2010 23:28:34 -0400
+	Thu, 27 May 2010 23:51:56 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=subject:from:to:cc:content-type:date:message-id:mime-version
-         :x-mailer:content-transfer-encoding;
-        b=pX1kZB/tpHUAZixiXlW90yyvzsYbanjRIsR3SgHQVi1LCjtxtTu2/rD06P04zXSZPA
-         QvDkM56E1vepcnp56TzfY9yw62HpIj1F9gmmxkvGO7kQACybnNd/uoC33+Ng5lhkOIL2
-         rOfODODNTDk/G62/8UqoShfgUio8cP+lcXkOU=
-Subject: [PATCH] cdc-acm: fix resource reclaim in error path of acm_probe
-From: Axel Lin <axel.lin@gmail.com>
-To: linux-kernel <linux-kernel@vger.kernel.org>
-Cc: Oliver Neukum <oliver@neukum.name>, Greg Kroah-Hartman <gregkh@suse.de>,
-       Alan Cox <alan@linux.intel.com>,
-       Francesco Lavra <francescolavra@interfree.it>,
-       Julian Calaby <julian.calaby@gmail.com>, linux-usb@vger.kernel.org
-Content-Type: text/plain
-Date: Fri, 28 May 2010 11:28:31 +0800
-Message-Id: <1275017311.11371.2.camel@mola>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.22.3.1 
-Content-Transfer-Encoding: 7bit
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:content-transfer-encoding
+         :in-reply-to:user-agent;
+        b=v70FYP2pN6WtNWuxrNEGM6Emo8DLtHigjnwJrq8TRuc2pYgbXEbHD/vDSiDbY7Fmya
+         gDjqghXXX6iF6QSBmbye2rDC1vMYdzlzBpMCY0nMWxfA+CyW2BwgadtjpLvNjoXGoVd9
+         QHTlPgDEJsRyYaiTZiEdZ88w0VYLDRj4ab0Vc=
+Date: Fri, 28 May 2010 00:51:47 -0300
+From: "Luis Claudio R. Goncalves" <lclaudio@uudg.org>
+To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: Oleg Nesterov <oleg@redhat.com>, linux-kernel@vger.kernel.org,
+       linux-mm@kvack.org, Thomas Gleixner <tglx@linutronix.de>,
+       Peter Zijlstra <peterz@infradead.org>,
+       David Rientjes <rientjes@google.com>, Mel Gorman <mel@csn.ul.ie>,
+       williams@redhat.com
+Subject: Re: [RFC] oom-kill: give the dying task a higher priority
+Message-ID: <20100528035147.GD11364@uudg.org>
+References: <20100527180431.GP13035@uudg.org>
+ <20100527183319.GA22313@redhat.com>
+ <20100528090357.7DFB.A69D9226@jp.fujitsu.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20100528090357.7DFB.A69D9226@jp.fujitsu.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch fixes resource reclaim in error path of acm_probe:
-1. In the case of "out of memory (write urbs usb_alloc_urb)",
-usb_alloc_urb may fail in any iteration of the for loop.
-Current implementation does not properly free allocated snd->urb.
-2. In the case of device_create_file(&intf->dev,&dev_attr_iCountryCodeRelDate)
-fail, acm->country_codes is kfreed. As a result, device_remove_file for
-dev_attr_wCountryCodes will not be executed in acm_disconnect.
-3. This patch also improves the error handling by only reclaim successfully
-allocated resources instead of iterate over all entries in the for loop.
+On Fri, May 28, 2010 at 11:54:07AM +0900, KOSAKI Motohiro wrote:
+| Hi Luis,
+| 
+| > On 05/27, Luis Claudio R. Goncalves wrote:
+| > >
+| > > It sounds plausible giving the dying task an even higher priority to be
+| > > sure it will be scheduled sooner and free the desired memory.
+| > 
+| > As usual, I can't really comment the changes in oom logic, just minor
+| > nits...
+| > 
+| > > @@ -413,6 +415,8 @@ static void __oom_kill_task(struct task_struct *p, int verbose)
+| > >  	 */
+| > >  	p->rt.time_slice = HZ;
+| > >  	set_tsk_thread_flag(p, TIF_MEMDIE);
+| > > +	param.sched_priority = MAX_RT_PRIO-1;
+| > > +	sched_setscheduler(p, SCHED_FIFO, &param);
+| > >
+| > >  	force_sig(SIGKILL, p);
+| > 
+| > Probably sched_setscheduler_nocheck() makes more sense.
+| > 
+| > Minor, but perhaps it would be a bit better to send SIGKILL first,
+| > then raise its prio.
+| 
+| I have no objection too. but I don't think Oleg's pointed thing is minor.
+| Please send updated patch.
+| 
+| Thanks.
 
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
----
- drivers/usb/class/cdc-acm.c |   40 +++++++++++++++++++++++-----------------
- 1 files changed, 23 insertions(+), 17 deletions(-)
+This version of the patch addresses the suggestions from Oleg Nesterov and
+Kosaki Motohiro.
 
-diff --git a/drivers/usb/class/cdc-acm.c b/drivers/usb/class/cdc-acm.c
-index 0c2f14f..e215b9a 100644
---- a/drivers/usb/class/cdc-acm.c
-+++ b/drivers/usb/class/cdc-acm.c
-@@ -950,8 +950,9 @@ static int acm_probe(struct usb_interface *intf,
- 	int data_interface_num;
- 	unsigned long quirks;
- 	int num_rx_buf;
--	int i;
-+	int i, j, k;
- 	int combined_interfaces = 0;
-+	int retval;
+Thanks again for reviewing the patch.
+
+oom-kill: give the dying task a higher priority (v2)
+
+In a system under heavy load it was observed that even after the
+oom-killer selects a task to die, the task may take a long time to die.
+
+Right before sending a SIGKILL to the task selected by the oom-killer
+this task has it's priority increased so that it can exit() exit soon,
+freeing memory. That is accomplished by:
+
+        /*
+         * We give our sacrificial lamb high priority and access to
+         * all the memory it needs. That way it should be able to
+         * exit() and clear out its resources quickly...
+         */
+ 	p->rt.time_slice = HZ;
+ 	set_tsk_thread_flag(p, TIF_MEMDIE);
+
+It sounds plausible giving the dying task an even higher priority to be
+sure it will be scheduled sooner and free the desired memory. Oleg Nesterov
+pointed out it would be interesting sending the signal before increasing
+the task priority.
+
+Signed-off-by: Luis Claudio R. Gonçalves <lclaudio@uudg.org>
+
+diff --git a/mm/oom_kill.c b/mm/oom_kill.c
+index b68e802..d352b3e 100644
+--- a/mm/oom_kill.c
++++ b/mm/oom_kill.c
+@@ -382,6 +382,8 @@ static void dump_header(struct task_struct *p, gfp_t gfp_mask, int order,
+  */
+ static void __oom_kill_task(struct task_struct *p, int verbose)
+ {
++	struct sched_param param;
++
+ 	if (is_global_init(p)) {
+ 		WARN_ON(1);
+ 		printk(KERN_WARNING "tried to kill init!\n");
+@@ -413,8 +415,9 @@ static void __oom_kill_task(struct task_struct *p, int verbose)
+ 	 */
+ 	p->rt.time_slice = HZ;
+ 	set_tsk_thread_flag(p, TIF_MEMDIE);
+-
+ 	force_sig(SIGKILL, p);
++	param.sched_priority = MAX_RT_PRIO-1;
++	sched_setscheduler_nocheck(p, SCHED_FIFO, &param);
+ }
  
- 	/* normal quirks */
- 	quirks = (unsigned long)id->driver_info;
-@@ -1201,14 +1202,14 @@ made_compressed_probe:
- 		if (rcv->urb == NULL) {
- 			dev_dbg(&intf->dev,
- 				"out of memory (read urbs usb_alloc_urb)\n");
--			goto alloc_fail7;
-+			goto alloc_fail6;
- 		}
- 
- 		rcv->urb->transfer_flags |= URB_NO_TRANSFER_DMA_MAP;
- 		rcv->instance = acm;
- 	}
--	for (i = 0; i < num_rx_buf; i++) {
--		struct acm_rb *rb = &(acm->rb[i]);
-+	for (j = 0; j < num_rx_buf; j++) {
-+		struct acm_rb *rb = &(acm->rb[j]);
- 
- 		rb->base = usb_alloc_coherent(acm->dev, readsize,
- 				GFP_KERNEL, &rb->dma);
-@@ -1218,14 +1219,14 @@ made_compressed_probe:
- 			goto alloc_fail7;
- 		}
- 	}
--	for (i = 0; i < ACM_NW; i++) {
--		struct acm_wb *snd = &(acm->wb[i]);
-+	for (k = 0; k < ACM_NW; k++) {
-+		struct acm_wb *snd = &(acm->wb[k]);
- 
- 		snd->urb = usb_alloc_urb(0, GFP_KERNEL);
- 		if (snd->urb == NULL) {
- 			dev_dbg(&intf->dev,
- 				"out of memory (write urbs usb_alloc_urb)");
--			goto alloc_fail7;
-+			goto alloc_fail8;
- 		}
- 
- 		if (usb_endpoint_xfer_int(epwrite))
-@@ -1242,8 +1243,8 @@ made_compressed_probe:
- 
- 	usb_set_intfdata(intf, acm);
- 
--	i = device_create_file(&intf->dev, &dev_attr_bmCapabilities);
--	if (i < 0)
-+	retval = device_create_file(&intf->dev, &dev_attr_bmCapabilities);
-+	if (retval < 0)
- 		goto alloc_fail8;
- 
- 	if (cfd) { /* export the country data */
-@@ -1255,15 +1256,17 @@ made_compressed_probe:
- 							cfd->bLength - 4);
- 		acm->country_rel_date = cfd->iCountryCodeRelDate;
- 
--		i = device_create_file(&intf->dev, &dev_attr_wCountryCodes);
--		if (i < 0) {
-+		retval = device_create_file(&intf->dev,
-+						&dev_attr_wCountryCodes);
-+		if (retval < 0) {
- 			kfree(acm->country_codes);
- 			goto skip_countries;
- 		}
- 
--		i = device_create_file(&intf->dev,
-+		retval = device_create_file(&intf->dev,
- 						&dev_attr_iCountryCodeRelDate);
--		if (i < 0) {
-+		if (retval < 0) {
-+			device_remove_file(&intf->dev, &dev_attr_wCountryCodes);
- 			kfree(acm->country_codes);
- 			goto skip_countries;
- 		}
-@@ -1296,11 +1299,14 @@ skip_countries:
- 
- 	return 0;
- alloc_fail8:
--	for (i = 0; i < ACM_NW; i++)
--		usb_free_urb(acm->wb[i].urb);
-+	while (--k >= 0)
-+		usb_free_urb(acm->wb[k].urb);
- alloc_fail7:
--	acm_read_buffers_free(acm);
--	for (i = 0; i < num_rx_buf; i++)
-+	while (--j >= 0)
-+		usb_free_coherent(acm->dev, readsize, acm->rb[j].base,
-+					acm->rb[j].dma);
-+alloc_fail6:
-+	while (--i >= 0)
- 		usb_free_urb(acm->ru[i].urb);
- 	usb_free_urb(acm->ctrlurb);
- alloc_fail5:
+ static int oom_kill_task(struct task_struct *p)
 -- 
-1.5.4.3
-
-
+[ Luis Claudio R. Goncalves                    Bass - Gospel - RT ]
+[ Fingerprint: 4FDD B8C4 3C59 34BD 8BE9  2696 7203 D980 A448 C8F8 ]
 
