@@ -1,15 +1,16 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757628Ab0E1JWO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 May 2010 05:22:14 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:58156 "EHLO mx2.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753893Ab0E1JWM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 May 2010 05:22:12 -0400
-Date: Fri, 28 May 2010 11:21:37 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Arve Hj?nnev?g <arve@android.com>
-Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, Matthew Garrett <mjg59@srcf.ucam.org>,
+	id S1757806Ab0E1Jaq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 May 2010 05:30:46 -0400
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:49243 "EHLO
+	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753930Ab0E1Jao (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 May 2010 05:30:44 -0400
+Date: Fri, 28 May 2010 10:37:13 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: tytso@mit.edu
+Cc: Matthew Garrett <mjg59@srcf.ucam.org>,
        Alan Stern <stern@rowland.harvard.edu>,
        Thomas Gleixner <tglx@linutronix.de>,
        Peter Zijlstra <peterz@infradead.org>,
@@ -17,109 +18,91 @@ Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, Matthew Garrett <mjg59@srcf.ucam.org>,
        Florian Mickler <florian@mickler.org>, felipe.balbi@nokia.com,
        Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
        Linux PM <linux-pm@lists.linux-foundation.org>
-Subject: resume latency QoS support, unify suspend/resume into idle states
-Message-ID: <20100528092137.GD24058@elte.hu>
+Subject: Re: [linux-pm] [PATCH 0/8] Suspend block api (version 8)
+Message-ID: <20100528103713.0a7952d9@lxorguk.ukuu.org.uk>
+In-Reply-To: <20100528043114.GC26177@thunk.org>
 References: <20100527222514.0a1710bf@lxorguk.ukuu.org.uk>
- <Pine.LNX.4.44L0.1005271730180.3239-100000@iolanthe.rowland.org>
- <20100527230806.4deb6de3@lxorguk.ukuu.org.uk>
- <20100527220949.GB10602@srcf.ucam.org>
- <20100527232357.6d14fdb2@lxorguk.ukuu.org.uk>
- <AANLkTil6Bo7qZltbLzHJjIDyruKHFQEURpe5LPJEpTws@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTil6Bo7qZltbLzHJjIDyruKHFQEURpe5LPJEpTws@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -1.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-1.0 required=5.9 tests=BAYES_20 autolearn=no SpamAssassin version=3.2.5
-	-1.0 BAYES_20               BODY: Bayesian spam probability is 5 to 20%
-	[score: 0.0965]
+	<Pine.LNX.4.44L0.1005271730180.3239-100000@iolanthe.rowland.org>
+	<20100527230806.4deb6de3@lxorguk.ukuu.org.uk>
+	<20100527220949.GB10602@srcf.ucam.org>
+	<20100527232357.6d14fdb2@lxorguk.ukuu.org.uk>
+	<20100527223605.GB11364@srcf.ucam.org>
+	<20100527235546.09f3ce8a@lxorguk.ukuu.org.uk>
+	<20100528043114.GC26177@thunk.org>
+X-Mailer: Claws Mail 3.7.5 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+> Keep in mind, though, that a solution which is acceptable for Android
+> has to include making sure that crappy applications don't cause the
 
-* Arve Hj?nnev?g <arve@android.com> wrote:
+Ted if you are speaking for Android do you think you should post from a
+google address or with a google .sig ?
 
-> On Thu, May 27, 2010 at 3:23 PM, Alan Cox <alan@lxorguk.ukuu.org.uk> wrote:
-> > On Thu, 27 May 2010 23:09:49 +0100
-> > Matthew Garrett <mjg59@srcf.ucam.org> wrote:
-> >
-> >> On Thu, May 27, 2010 at 11:08:06PM +0100, Alan Cox wrote:
-> >>
-> >> > This is I believe robust (and has been implemented on some non x86
-> >> > boxes). It depends on not forcing running tasks into suspend. That is the
-> >> > key.
-> >>
-> >> We've already established that ACPI systems require us to force running
-> >> tasks into suspend. How do we avoid the race in that situation?
-> >
-> > Android phones do not have ACPI. Embedded platforms do not have ACPI. MID 
-> > x86 devices do not have ACPI.
-> 
-> Android does not only run on phones. It is possible that no android devices 
-> have ACPI, but I don't know that for a fact. What I do know is that people 
-> want to run Android on x86 hardware and supporting suspend could be very 
-> benficial.
+> battery to get drained.  There seem to be some people who seem
+> adamently against this requirement.  From the Android folks'
+> perspective, this is part of what is required to have an open app
+> store, as opposed to one where each application has to be carefully
+> screened and approved ala the Apple iPhone App Store.
 
-(If there's a sane framework then we'll fix x86 to fit into it and will deal 
-with quirks.)
+The other vendors appear to be managing nicely without magic blockers. I
+conjecture therefore there are other solutions.
 
-> > I would imagine the existing laptops will handle power management limited 
-> > by the functionality they have available. Just like any other piece of 
-> > hardware.
-> 
-> I think existing laptops (and desktops) can benefit from opportunistic 
-> suspend support. If opportunistic suspend is used for auto-sleep after 
-> inactivity instead of forced suspend, the user space suspend blocker api 
-> will allow an application to delay this auto sleep until for instance a 
-> download completes. This part could also be done with a user-space IPC call, 
-> but having a standard kernel interface for it may make it more common. A 
-> less common case, but more critical, is RTC alarms. I know my desktops can 
-> wakeup at a specific time by programming an RTC alarm, but without suspend 
-> blockers how do you ensure that the system does not suspend right after the 
-> alarm triggered? I have a system that wakes up at specific times requested 
-> by my DVR application, but I cannot use this system for anything else unless 
-> I manually turn off the DVR application's auto-sleep feature. With suspend 
-> blockers and something like the android alarm driver, I could use this 
-> system for more than one application that have scheduled tasks and it would 
-> be more usable for interactive applications.
+> We need to agree on the requirements up front, because otherwise this
+> is going to be a waste of everyone's time.
 
-I really like the level of detail and care that went into suspend-blockers, 
-and i think the Android solution is very mature in terms of functionality 
-offered to users.
+This is why I am trying to understand the problem properly.
 
-In terms of bringing this depth of functionality and control to the upstream 
-kernel, what do you think about Alan's QoS scheme, described in:
+> And if we can't get agreement on requirements, I'd suggest appealing
+> this whole thing to Linus.  Either he'll agree to the requirements
+> and/or the existing implementation, in which case we can move on with
 
-   <20100528001514.28e593ef@lxorguk.ukuu.org.uk>
+The existing implementation has been comprehensively rejected by half the
+x86 maintainers and scheduler people to start with. That's a fairly big
+'No'.
 
-?
+> our lives, or he'll say no, in which case it will be blately obvious
+> that it was Linux developer community who rejected the Android
+> approach, despite a fairly large amount of effort trying to get
+> something that satisfies *all* of the various LKML developers who have
 
-It's in essence suspend-blockers on steroids. It consists of two main 
-components:
+Ted save the politicing and blame mongering for management meetings
+please.
 
- - Unify the 'suspended' state into the regular chain of idle states, and
-   create a single, coherent and transparent way we handle system idleness.
+If we don't have a solution it means that between us we couldn't find a
+viable solution. Maybe there isn't one, maybe we missed it. It's as much
+'google rejects kernel approach' as 'kernel rejects google approach' and
+more importantly its actually 'we (cumulative) were not smart enough
+between us to figure it out'
 
- - Give apps a QoS attribute that allows them to express how long they can
-   afford to wait for a wakeup. (A downloading app would set it to say 50msecs,
-   and thus the kernel would know it automatically which method of idleness is 
-   still achievable. If all currently running apps have a max(QoS) attribute 
-   of infinite, then the kernel can suspend for an unlimited amount of time.)
+> P.S.  Keep in mind how this looks from an outsider's perspective; an
+> embedded manufacturer spends a fairly large amount of time answering
+> one set of review comments, and a few weeks later, more people pop up,
+> and make a much deeper set of complaints, and request that the current
+> implementation be completely thrown out and that someone new be
+> designed from scratch --- and the new design isn't even going to meet
+> all of the requirements that the embedded manufacturer thought were
+> necessary.  Is it any wonder a number of embedded developers have
+> decided it's Just Too Hard to Work With the LKML?
 
-AFAICS, and i have read through your suspend-blocker usecases, this should 
-handle all the usecases you listed - and some more. (please yell if that's not 
-so)
+In some cases it is easier to do stuff yourself than work with others.
+One of the conditions of working in a public space is that you do so
+without harming others. This is why in much of the western world you can
+drive a car around your own land without a licence but must have one to
+drive on a public road. This is why a restuarant must meet different food
+standards to a home kitchen. This is why the kernel standards are higher
+than what you go off and do in private.
 
-Suspend-blockers are equivalent to: 'app sets idle QoS latency to 0 msecs'.
+Android is a very unique and extremely narrow environment. If it really
+is special enough to need its own kernel fork it isn't the first case for
+that and it's not a problem. The GPL is quite happy to encourage this.
+Time will then answer the questions because in 3 years time either every
+non Google phone will be kicking butt without suspend blockers, or every
+phone vendor using Linux with a traditional user space will be demanding
+them.
 
-(And on x86, for BIOS/CPU combos that allow it we can implement this scheme 
-too.)
-
-Thoughts?
-
-	Ingo
+Alan
