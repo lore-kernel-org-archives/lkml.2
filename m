@@ -1,52 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758803Ab0E1UPB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 May 2010 16:15:01 -0400
-Received: from adelie.canonical.com ([91.189.90.139]:44360 "EHLO
-	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758423Ab0E1UPA (ORCPT
+	id S1758770Ab0E1UYI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 May 2010 16:24:08 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:42772 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753660Ab0E1UYD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 May 2010 16:15:00 -0400
-Subject: Re: [PATCH 8/8] intel_idle: create a native cpuidle driver for
- select intel processors
-From: Chase Douglas <chase.douglas@canonical.com>
-To: Len Brown <lenb@kernel.org>
-Cc: x86@kernel.org, linux-pm@lists.linux-foundation.org,
-       linux-kernel@vger.kernel.org, Len Brown <len.brown@intel.com>
-In-Reply-To: <1275076262.12653.7.camel@cndougla-ubuntu>
-References: <1274928151-30919-1-git-send-email-lenb@kernel.org>
-	 <198450ec1600d9a7f55270dd4d44d6b55bc5b184.1274926772.git.len.brown@intel.com>
-	 <1275013933.2312.7.camel@cndougla-ubuntu>
-	 <alpine.LFD.2.00.1005272359510.24823@localhost.localdomain>
-	 <1275059380.5612.60.camel@cndougla-ubuntu>
-	 <alpine.LFD.2.00.1005281343060.4045@localhost.localdomain>
-	 <1275076262.12653.7.camel@cndougla-ubuntu>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 28 May 2010 16:14:52 -0400
-Message-ID: <1275077692.12653.13.camel@cndougla-ubuntu>
+	Fri, 28 May 2010 16:24:03 -0400
+Date: Fri, 28 May 2010 13:23:18 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Artem Bityutskiy <dedekind1@gmail.com>
+Cc: Al Viro <viro@ZenIV.linux.org.uk>, LKML <linux-kernel@vger.kernel.org>,
+       Jens Axboe <jens.axboe@oracle.com>, linux-fsdevel@vger.kernel.org,
+       Roman Zippel <zippel@linux-m68k.org>,
+       "Tigran A. Aivazian" <tigran@aivazian.fsnet.co.uk>,
+       Chris Mason <chris.mason@oracle.com>,
+       Boaz Harrosh <bharrosh@panasas.com>, linux-ext4@vger.kernel.org,
+       "Theodore Ts'o" <tytso@mit.edu>,
+       OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>,
+       David Woodhouse <dwmw2@infradead.org>, reiserfs-devel@vger.kernel.org,
+       Jan Kara <jack@suse.cz>, Evgeniy Dushistov <dushistov@mail.ru>
+Subject: Re: [PATCHv4 01/17] VFS: introduce helpers for the s_dirty flag
+Message-Id: <20100528132318.0783675a.akpm@linux-foundation.org>
+In-Reply-To: <1274795352-3551-2-git-send-email-dedekind1@gmail.com>
+References: <1274795352-3551-1-git-send-email-dedekind1@gmail.com>
+	<1274795352-3551-2-git-send-email-dedekind1@gmail.com>
+X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2010-05-28 at 15:51 -0400, Chase Douglas wrote:
-> On Fri, 2010-05-28 at 13:43 -0400, Len Brown wrote:
-> > Atom C4 works in the current driver in the git tree -- test it now!
+On Tue, 25 May 2010 16:48:56 +0300
+Artem Bityutskiy <dedekind1@gmail.com> wrote:
+
+> From: Artem Bityutskiy <Artem.Bityutskiy@nokia.com>
 > 
-> Sadly, it seems this isn't helping much. My netbook still idles at ~60
-> centigrade on and off power. I will verify that before this change I was
-> able to idle cooler when off power just to be sure.
+> This patch introduces 3 new VFS helpers: 'mark_sb_dirty()',
+> 'mark_sb_clean()', and 'is_sb_dirty()'. The helpers simply
+> set 'sb->s_dirt' or test 'sb->s_dirt'. The plan is to make
+> every FS use these helpers instead of manipulating the
+> 'sb->s_dirt' flag directly.
+> 
+> Ultimately, this change is a preparation for the periodic
+> superblock synchronization optimization which is about
+> preventing the "sync_supers" kernel thread from waking up
+> even if there is nothing to synchronize.
+> 
+> This patch also makes VFS use the new helpers.
 
-Well, now I seem unable to reproduce the lower temperatures at all... I
-tried the same kernel without your patches and mostly got the same
-temperatures. I tried the Ubuntu 10.04 LTS 2.6.32 based kernel and it
-was two or three centigrade cooler, but not the tens of centigrade
-cooler I remembered. I also can't see a big change anymore when power is
-plugged in or not. Maybe it was all a matter of usage in different
-environments making me think it was related to being plugged into power
-or not. Oy vey...
+Patchset generally looks good to me.  But I don't like the names :(
 
--- Chase
+> +static inline void mark_sb_dirty(struct super_block *sb)
+> +{
+> +	sb->s_dirt = 1;
+> +}
+> +static inline void mark_sb_clean(struct super_block *sb)
+> +{
+> +	sb->s_dirt = 0;
+> +}
+> +static inline int is_sb_dirty(struct super_block *sb)
+> +{
+> +	return sb->s_dirt;
+> +}
 
+A more conventional and superior naming scheme is
+subsystemid_specific_function_identifier().  eg, bio_add_page() instead
+of add_page_to_bio().
+
+So these want to be sb_mark_dirty(), etc.
+
+Being very old code written by very yound people, the VFS kinda ignores
+that convention, but it doesn't hurt to use it for new code.
+
+Feel free to ignore me if that's too much of a PITA ;)
