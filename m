@@ -1,64 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755034Ab0E1HEW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 May 2010 03:04:22 -0400
-Received: from 8bytes.org ([88.198.83.132]:53828 "EHLO 8bytes.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755227Ab0E1HED (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 May 2010 03:04:03 -0400
-Date: Fri, 28 May 2010 09:04:01 +0200
-From: Joerg Roedel <joro@8bytes.org>
-To: =?iso-8859-1?Q?Am=E9rico?= Wang <xiyou.wangcong@gmail.com>
-Cc: Nicolas Palix <npalix@diku.dk>, Randy Dunlap <rdunlap@xenotime.net>,
-       Roland Dreier <rdreier@cisco.com>, Joe Perches <joe@perches.com>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       "David S. Miller" <davem@davemloft.net>, Michal Marek <mmarek@suse.cz>,
-       Sam Ravnborg <sam@ravnborg.org>, Julia Lawall <julia@diku.dk>,
-       Gilles Muller <Gilles.Muller@lip6.fr>, linux-kernel@vger.kernel.org,
-       linux-kbuild@vger.kernel.org, cocci@diku.dk,
-       Wolfram Sang <w.sang@pengutronix.de>,
-       Kernel Janitors <kernel-janitors@vger.kernel.org>
-Subject: Re: [PATCH 1/4] Add targets to use the Coccinelle checker
-Message-ID: <20100528070401.GJ1237@8bytes.org>
-References: <1273508667-5152-1-git-send-email-npalix@diku.dk> <1273508667-5152-2-git-send-email-npalix@diku.dk> <20100512064230.GC5718@cr0.nay.redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20100512064230.GC5718@cr0.nay.redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1754666Ab0E1HDv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 May 2010 03:03:51 -0400
+Received: from vms173005pub.verizon.net ([206.46.173.5]:34402 "EHLO
+	vms173005pub.verizon.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754550Ab0E1HDp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 May 2010 03:03:45 -0400
+From: Len Brown <lenb@kernel.org>
+To: linux-pm@lists.linux-foundation.org
+Cc: linux-kernel@vger.kernel.org, Len Brown <len.brown@intel.com>
+Subject: [PATCH 5/8] sched: clarify commment for TS_POLLING
+Date: Fri, 28 May 2010 02:01:58 -0400
+Message-id: <e45b7fa23097332508730123ac6d59227e7bd7f8.1275026041.git.len.brown@intel.com>
+X-Mailer: git-send-email 1.7.1.231.gd0b16
+In-reply-to: <1275026521-30835-1-git-send-email-lenb@kernel.org>
+References: <1275026521-30835-1-git-send-email-lenb@kernel.org>
+In-reply-to: <6b2c676bf32be91f43215d5874c07c1becaba013.1275026041.git.len.brown@intel.com>
+References: <6b2c676bf32be91f43215d5874c07c1becaba013.1275026041.git.len.brown@intel.com>
+X-Patchwork-Hint: ignore
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 12, 2010 at 02:42:30PM +0800, Américo Wang wrote:
-> On Mon, May 10, 2010 at 06:24:24PM +0200, Nicolas Palix wrote:
-> >Four targets are added. Each one generates a different
-> >output kind: context, patch, org, report.
-> >Every SmPL file in 'scripts/coccinelle' is given to the spatch frontend
-> >(located in the 'scripts' directory), and applied to the entire
-> >source tree.
-> >
-> >Signed-off-by: Nicolas Palix <npalix@diku.dk>
-> >Signed-off-by: Julia Lawall <julia@diku.dk>
-> 
-> This is great!
+From: Len Brown <len.brown@intel.com>
 
-Totally agreed.
+TS_POLLING set tells the scheduler an idle_task will poll
+need_resched() to look for work.
 
-> I would like to see coccinelle to be integrated with kbuild, but the
-> name 'coccicheck' is really confusing, how about 'sema_check'? Which
-> means 'semantic check'.
+TS_POLLING clear tells resched_task() and wake_up_idle_cpu()
+that the remote CPU's idle_task is now sleeping in idle,
+and thus requires a reschedule interrupt notice work.
 
-I think its okay to keep coccicheck because its the name of the tool
-called. We do the same with 'make cscope'.
-But since I am a bit lazy I would prefer a shorter name, probably just
-'make cocci'?
+Update the description of TS_POLLING to reflect how it works.
+"idle task polling need_resched, skip sending interrupt"
 
-> Or we can use something like for sparse, i.e. 'make C=1' etc..
+Wordsmithing-by: Milton Miller <miltonm@bga.com>
+Signed-off-by: Len Brown <len.brown@intel.com>
+Acked-by: Peter Zijlstra <peterz@infradead.org>
+---
+ arch/x86/include/asm/thread_info.h |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-Yes, this would also make sense. As a developer I could add this and
-only the code I changed is checked.
-
-	Joerg
+diff --git a/arch/x86/include/asm/thread_info.h b/arch/x86/include/asm/thread_info.h
+index e0d2890..8121869 100644
+--- a/arch/x86/include/asm/thread_info.h
++++ b/arch/x86/include/asm/thread_info.h
+@@ -241,8 +241,8 @@ static inline struct thread_info *current_thread_info(void)
+ #define TS_USEDFPU		0x0001	/* FPU was used by this task
+ 					   this quantum (SMP) */
+ #define TS_COMPAT		0x0002	/* 32bit syscall active (64BIT)*/
+-#define TS_POLLING		0x0004	/* true if in idle loop
+-					   and not sleeping */
++#define TS_POLLING		0x0004	/* idle task polling need_resched,
++					   skip sending interrupt */
+ #define TS_RESTORE_SIGMASK	0x0008	/* restore signal mask in do_signal() */
+ #define TS_XSAVE		0x0010	/* Use xsave/xrstor */
+ 
+-- 
+1.6.0.6
 
