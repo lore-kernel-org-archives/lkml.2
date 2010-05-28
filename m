@@ -1,98 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757385Ab0E1OH3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 May 2010 10:07:29 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:58622 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1754995Ab0E1OH2 (ORCPT
+	id S1757122Ab0E1OOG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 May 2010 10:14:06 -0400
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:45184 "EHLO
+	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1755739Ab0E1OOC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 May 2010 10:07:28 -0400
-Date: Fri, 28 May 2010 10:07:26 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-cc: Arve =?ISO-8859-14?B?SGr4bm5lduVn?= <arve@android.com>,
-       "Rafael J. Wysocki" <rjw@sisk.pl>,
-       Matthew Garrett <mjg59@srcf.ucam.org>,
-       Thomas Gleixner <tglx@linutronix.de>,
-       Peter Zijlstra <peterz@infradead.org>,
+	Fri, 28 May 2010 10:14:02 -0400
+Date: Fri, 28 May 2010 15:20:37 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Brian Swetland <swetland@google.com>
+Cc: Igor Stoppa <igor.stoppa@nokia.com>,
+       ext Matthew Garrett <mjg59@srcf.ucam.org>,
+       "tytso@mit.edu" <tytso@mit.edu>, Peter Zijlstra <peterz@infradead.org>,
        LKML <linux-kernel@vger.kernel.org>,
-       Florian Mickler <florian@mickler.org>, <felipe.balbi@nokia.com>,
+       Florian Mickler <florian@mickler.org>,
+       Linux PM <linux-pm@lists.linux-foundation.org>,
+       Thomas Gleixner <tglx@linutronix.de>,
        Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
-       Linux PM <linux-pm@lists.linux-foundation.org>
+       "Balbi Felipe (Nokia-D/Helsinki)" <felipe.balbi@nokia.com>
 Subject: Re: [linux-pm] [PATCH 0/8] Suspend block api (version 8)
-In-Reply-To: <20100528101755.7b5f6b8a@lxorguk.ukuu.org.uk>
-Message-ID: <Pine.LNX.4.44L0.1005281006410.1939-100000@iolanthe.rowland.org>
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Message-ID: <20100528152037.2568f2fb@lxorguk.ukuu.org.uk>
+In-Reply-To: <AANLkTikKGeGHHL6AYC7uBuT7Zihj7lozfidWQ8zRHwab@mail.gmail.com>
+References: <20100527222514.0a1710bf@lxorguk.ukuu.org.uk>
+	<Pine.LNX.4.44L0.1005271730180.3239-100000@iolanthe.rowland.org>
+	<20100527230806.4deb6de3@lxorguk.ukuu.org.uk>
+	<20100527220949.GB10602@srcf.ucam.org>
+	<20100527232357.6d14fdb2@lxorguk.ukuu.org.uk>
+	<20100527223605.GB11364@srcf.ucam.org>
+	<20100527235546.09f3ce8a@lxorguk.ukuu.org.uk>
+	<20100528043114.GC26177@thunk.org>
+	<20100528103713.0a7952d9@lxorguk.ukuu.org.uk>
+	<20100528114123.GA22947@srcf.ucam.org>
+	<4BFFB681.1000105@nokia.com>
+	<AANLkTim04ZfMcPHRB2D_bqcAuguaGwySH2b6repuYLkk@mail.gmail.com>
+	<4BFFC5DF.5030504@nokia.com>
+	<AANLkTikKGeGHHL6AYC7uBuT7Zihj7lozfidWQ8zRHwab@mail.gmail.com>
+X-Mailer: Claws Mail 3.7.5 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 28 May 2010, Alan Cox wrote:
-
-> > Since I think we've now rejected the feature, do we have a clear picture about
-> > what the Android people should do _instead_ and yet keep the battery life they
-> > want?  Because I don't think telling "let them do what they want, who cares"
-> > is right.
+> > That's very good. But if it is done in a conceptually flawed way, some
+> > better solution should be considered for upstream merge.
 > 
-> Today "idle" means "no task running"
-> 
-> If you are prepared to rephrase that as "no task that matters is running"
-> what would need to answer ?
-> 
-> - How do we define who matters: QoS ?
+> How is it flawed?  Serious question.
 
-Here are the deficiencies in the current PM-QOS implementation which 
-would need to be solved for Android's purposes:
+- It means changing drivers and quite a few apps
+- It doesn't solve the problem of rogue apps if they end up owning locks
+- It puts the deep knowledge of the platform in the applications
+- It gives the apps control of the action taken not policy indication
+- It doesn't resolve the problem of synchronization of take/releases
+  stopping any suspend
+- The kernel parts are not generically useful, merely effective for
+  solving a specific problem right now - even things like VM migration
+  to/from phones seems to break it
+- It inverts the whole logic the kernel is following and trend it is
+  following that suspend is simply a very deep idle (with implementations
+  merged)
 
-	The system includes parameters for latency and throughput.
-	It does not include a parameter to describe whether timers
-	are enabled.  The presumption is that timers are always
-	enabled.
+If it was a localised turd I wouldn't worry. There are plenty df deep
+unmentionables hidden away enirely in platform specific code that deal
+with everything from stoned hardware engineers to crazed software stack
+implementations.
 
-For example, the low-power state used by Android would be described as
-one in which the CPU does not run and timers are disabled, with some
-appropriate latencies and zero throughput.  On some platforms even some
-interrupt sources are disabled (those not marked as wakeup-enabled).
+Here is a question back the other way perhaps
 
-	There's no way to indicate minimum system operating 
-	requirements.
+- If the existing kerne was almostl entirely read only, or you had to pay
+  a large fee per line of code changed outside your own driver how would
+  you implement the wakelock/suspend blocker API ?
 
-For example, we may know that work needs to be done without knowing 
-specifically which processes are going to carry out that work.  In such 
-cases we would like to require that the CPU continues to run at a 
-certain minimum speed so long as _any_ threads are runnable, even if 
-those threads don't have any QOS requirements of their own.
+Because if you take the path that 'we want wakelockers' that is
+essentially the question you have to answer. How do you merge it so that
+nobody outside of your driver and maybe a spot of arch code knows about
+it. You are permitted a couple of sneaky substitions of core function
+bits in headers.
 
-Similarly, the requirement that timers be enabled is a system-wide sort 
-of thing, not necessarily applying to a particular thread (and in fact, 
-not all timers are associated with a thread anyway).
+Right now bits are going to leak out over the kernel which is the cause of
+friction. At the point it's invisible to everyone else they cease to be
+stakeholders so you don't have keep them happy. You've only got a couple
+in your patches but its painfully obvious from Matthew and your comments
+you'll end up needing a ton more and these will get everywhere as Android
+grows hardware platforms and CPU support as phones become more featureful
+and PC like. The moment a phone grows a USB base station with hub for
+example the entire USB stack becomes burdened with them. Matthew has
+already indicated networking needs them. Good luck with Dave Miller on
+that.
 
-	There's no way to boost the minimum system operating
-	requirements upon the arrival of an event.
+I'm asking questions to look for generalised approaches, or even better
+doing it without new kernel stuff in the first place, but it's not the
+only way.
 
-For example, when an input event enters the queue, it should be
-possible to prevent the system from entering its lowest power state
-until the event can be consumed by userspace.  Simply boosting the QOS
-requirements of the threads waiting on the input queue isn't good
-enough, because there may not be any such threads when the event occurs 
-(they may be busy doing something else).
-
-The matter of _which_ events should boost the system operating
-requirements is debatable.  In the Android proposal it is a fixed set:
-those events which enable a suspend blocker.  In theory it could
-instead be determined by requests from userspace, although I don't know
-how such requests would be expressed.
-
-
-Until these weaknesses are rectified, Android cannot use the PM-QOS 
-system or idle-time power management to satisfy its needs.  That's why 
-they have to resort to forced suspends.
-
-Can the PM-QOS framework be enhanced to include these considerations?  
-I don't see why not (but on the other hand, I know nothing about its
-internal workings).
-
-Alan Stern
-
+Alan
