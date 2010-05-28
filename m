@@ -1,92 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754728Ab0E1N1J (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 May 2010 09:27:09 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:15114 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753604Ab0E1N1H (ORCPT
+	id S1754636Ab0E1N3h (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 May 2010 09:29:37 -0400
+Received: from ksp.mff.cuni.cz ([195.113.26.206]:47712 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752210Ab0E1N3g (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 May 2010 09:27:07 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=mime-version:in-reply-to:references:date:message-id:subject:from:to:
-	cc:content-type:x-system-of-record;
-	b=rt5RCjt0R1Vwvp5I+8gJlQUMVyTUUegDv/hPBYH/EflsWRp8QBdCHd7qm+bEXooG0
-	xahJVhC5AzsAJleD5bJjA==
+	Fri, 28 May 2010 09:29:36 -0400
+Date: Fri, 28 May 2010 15:29:25 +0200
+From: Pavel Machek <pavel@ucw.cz>
+To: Tony Lindgren <tony@atomide.com>
+Cc: Matthew Garrett <mjg@redhat.com>, Len Brown <len.brown@intel.com>,
+       markgross@thegnar.org, Brian Swetland <swetland@google.com>,
+       linux-doc@vger.kernel.org,
+       Kernel development list <linux-kernel@vger.kernel.org>,
+       Jesse Barnes <jbarnes@virtuousgeek.org>,
+       Oleg Nesterov <oleg@redhat.com>, Tejun Heo <tj@kernel.org>,
+       Linux-pm mailing list <linux-pm@lists.linux-foundation.org>,
+       Wu Fengguang <fengguang.wu@intel.com>,
+       Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [linux-pm] [PATCH 1/8] PM: Add suspend block api.
+Message-ID: <20100528132925.GA2677@ucw.cz>
+References: <20100505202826.GB7450@linux.intel.com>
+ <Pine.LNX.4.44L0.1005051705200.1885-100000@iolanthe.rowland.org>
+ <z2ta55d774e1005051437heb584584q6afca0b4b254d5d0@mail.gmail.com>
+ <20100505234755.GI29604@atomide.com>
+ <20100506134015.GA23426@srcf.ucam.org>
+ <20100506170151.GA30928@atomide.com>
+ <20100506170956.GA28104@srcf.ucam.org>
+ <20100506171453.GC30928@atomide.com>
+ <20100506172201.GA28578@srcf.ucam.org>
+ <20100506173807.GD30928@atomide.com>
 MIME-Version: 1.0
-In-Reply-To: <4BFFC5DF.5030504@nokia.com>
-References: <20100527222514.0a1710bf@lxorguk.ukuu.org.uk>
-	<Pine.LNX.4.44L0.1005271730180.3239-100000@iolanthe.rowland.org>
-	<20100527230806.4deb6de3@lxorguk.ukuu.org.uk>
-	<20100527220949.GB10602@srcf.ucam.org>
-	<20100527232357.6d14fdb2@lxorguk.ukuu.org.uk>
-	<20100527223605.GB11364@srcf.ucam.org>
-	<20100527235546.09f3ce8a@lxorguk.ukuu.org.uk>
-	<20100528043114.GC26177@thunk.org>
-	<20100528103713.0a7952d9@lxorguk.ukuu.org.uk>
-	<20100528114123.GA22947@srcf.ucam.org>
-	<4BFFB681.1000105@nokia.com>
-	<AANLkTim04ZfMcPHRB2D_bqcAuguaGwySH2b6repuYLkk@mail.gmail.com>
-	<4BFFC5DF.5030504@nokia.com>
-Date: Fri, 28 May 2010 06:27:00 -0700
-Message-ID: <AANLkTikKGeGHHL6AYC7uBuT7Zihj7lozfidWQ8zRHwab@mail.gmail.com>
-Subject: Re: [linux-pm] [PATCH 0/8] Suspend block api (version 8)
-From: Brian Swetland <swetland@google.com>
-To: Igor Stoppa <igor.stoppa@nokia.com>
-Cc: ext Matthew Garrett <mjg59@srcf.ucam.org>,
-       Alan Cox <alan@lxorguk.ukuu.org.uk>, "tytso@mit.edu" <tytso@mit.edu>,
-       Peter Zijlstra <peterz@infradead.org>,
-       LKML <linux-kernel@vger.kernel.org>,
-       Florian Mickler <florian@mickler.org>,
-       Linux PM <linux-pm@lists.linux-foundation.org>,
-       Thomas Gleixner <tglx@linutronix.de>,
-       Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
-       "Balbi Felipe (Nokia-D/Helsinki)" <felipe.balbi@nokia.com>
-Content-Type: text/plain; charset=UTF-8
-X-System-Of-Record: true
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100506173807.GD30928@atomide.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 28, 2010 at 6:32 AM, Igor Stoppa <igor.stoppa@nokia.com> wrote:
->
-> What I consider plain wrong i to claim that since there are this many units
-> out, some code should be merged.
+Hi!
 
-I've never suggested that we should get a get-out-of-code-review-free
-card or be automatically merged based on shipping volume.
+> > > Why would you need to constantly try to suspend in that case?
+> > 
+> > Because otherwise you're awake for longer than you need to be.
+> 
+> If your system is idle and your hardware supports off-while-idle,
+> then that really does not matter. There's not much of a difference
+> in power savings, we're already talking over 10 days on batteries
+> with just off-while-idle on omaps.
 
-Hell, I never thought we should even bother trying to merge wakelocks
-upstream, because I assumed that they'd be hated for not being the
-linux way (tm).  Greg KH and others have spent a bunch of time
-shouting at me (or Google) that we should be doing this, and here we
-are giving it a go.  At this point we've spent more engineering time
-on revising this one patchset (10 revisions to address various rounds
-of feedback) and discussion of it than we have on rebasing our working
-kernel trees to roughly every other linux release from 2.6.16 to
-2.6.32 (which became much easier after switching to git).
+Makes me wish g1 was omap based... it looks like you have superior hw.
 
-> A company needs to cut corners sometimes when making a product but this
-> should not affect upstream code.
-
-I will disagree that wakelocks are "cutting corners" (we certainly
-have some corner cutting code in our trees, because yeah, ship is
-compromise, but I don't believe wakelocks are an example).  They're a
-real solution for real problems faced on real devices.  Obviously not
-a solution that everyone here likes, and maybe they'll never end up in
-mainline as a result, but so far I haven't seen a counter proposed
-solution that seems to solve the same problem, avoid races, and be
-simpler/cleaner (at least to my eyes).
-
->> I am quite willing to state that on both MSM and OMAP based Android
->> platforms, we've found that the suspend blocker model allows us to
->> obtain a lower average power draw than if we don't use it -- Mike Chan
->> provided some numbers earlier in another thread in the trivial device
->> idle case, the win is of course much larger in the case of several
->> poorly behaved apps being active.
->
-> That's very good. But if it is done in a conceptually flawed way, some
-> better solution should be considered for upstream merge.
-
-How is it flawed?  Serious question.
-
-Brian
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
