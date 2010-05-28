@@ -1,87 +1,365 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755364Ab0E1NJp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 May 2010 09:09:45 -0400
-Received: from smtp.nokia.com ([192.100.122.230]:44983 "EHLO
-	mgw-mx03.nokia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753471Ab0E1NJl (ORCPT
+	id S1753798Ab0E1NNk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 May 2010 09:13:40 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:43267 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751375Ab0E1NNi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 May 2010 09:09:41 -0400
-Message-ID: <4BFFC5DF.5030504@nokia.com>
-Date: Fri, 28 May 2010 16:32:15 +0300
-From: Igor Stoppa <igor.stoppa@nokia.com>
-User-Agent: Mozilla-Thunderbird 2.0.0.22 (X11/20091109)
-MIME-Version: 1.0
-To: ext Brian Swetland <swetland@google.com>
-CC: ext Matthew Garrett <mjg59@srcf.ucam.org>,
-       Alan Cox <alan@lxorguk.ukuu.org.uk>, "tytso@mit.edu" <tytso@mit.edu>,
-       Peter Zijlstra <peterz@infradead.org>,
-       LKML <linux-kernel@vger.kernel.org>,
-       Florian Mickler <florian@mickler.org>,
-       Linux PM <linux-pm@lists.linux-foundation.org>,
-       Thomas Gleixner <tglx@linutronix.de>,
-       Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
-       "Balbi Felipe (Nokia-D/Helsinki)" <felipe.balbi@nokia.com>
-Subject: Re: [linux-pm] [PATCH 0/8] Suspend block api (version 8)
-References: <20100527222514.0a1710bf@lxorguk.ukuu.org.uk>	<Pine.LNX.4.44L0.1005271730180.3239-100000@iolanthe.rowland.org>	<20100527230806.4deb6de3@lxorguk.ukuu.org.uk>	<20100527220949.GB10602@srcf.ucam.org>	<20100527232357.6d14fdb2@lxorguk.ukuu.org.uk>	<20100527223605.GB11364@srcf.ucam.org>	<20100527235546.09f3ce8a@lxorguk.ukuu.org.uk>	<20100528043114.GC26177@thunk.org>	<20100528103713.0a7952d9@lxorguk.ukuu.org.uk>	<20100528114123.GA22947@srcf.ucam.org>	<4BFFB681.1000105@nokia.com> <AANLkTim04ZfMcPHRB2D_bqcAuguaGwySH2b6repuYLkk@mail.gmail.com>
-In-Reply-To: <AANLkTim04ZfMcPHRB2D_bqcAuguaGwySH2b6repuYLkk@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+	Fri, 28 May 2010 09:13:38 -0400
+Subject: Re: [PATCH] sched_clock: Provide local_clock() and improve
+ documentation
+From: Peter Zijlstra <peterz@infradead.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Jens Axboe <jens.axboe@oracle.com>, Divyesh Shah <dpshah@google.com>,
+       Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>
+In-Reply-To: <20100527113340.d4afb8fc.akpm@linux-foundation.org>
+References: <4BF9EC69.5030709@example.com> <1274777422.5882.591.camel@twins>
+	 <20100526160252.325f8357.akpm@linux-foundation.org>
+	 <1274942798.27810.3584.camel@twins>
+	 <20100526235107.77e66ce0.akpm@linux-foundation.org>
+	 <1274945751.27810.3765.camel@twins>
+	 <20100527113340.d4afb8fc.akpm@linux-foundation.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 28 May 2010 15:13:34 +0200
+Message-ID: <1275052414.1645.52.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 28 May 2010 13:09:05.0509 (UTC) FILETIME=[F3469950:01CAFE66]
-X-Nokia-AV: Clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ext Brian Swetland wrote:
+On Thu, 2010-05-27 at 11:33 -0700, Andrew Morton wrote:
 
-> At a certain point, if one side of the argument is using "N900 / OMAP3
-> works just fine as is" (which has certainly been the case stated by a
-> number of folks throughout these discussions), I think it's a little
-> unrealistic to express shock that somebody argues the opposing point.
->   
-The problem lies in the definition of the goal and means to achieve it.
-We do rely on repositories to discriminate on the quality of applications.
-As I stated some are accessible and run by our community.
+> Cool, thanks.  You didn't Cc a mailing list :(
 
-So, in this scenario, it works well enough.
+Oops, must have managed to wreck the CC list somewhere, restored LKML.
 
-> I've personally avoided commenting on specific power management issues
-> or properties of competitive platforms because it can easily be viewed
-> as rather rude or unprofessional.  (though in theory we all could
-> benefit from any improvements to the kernel regarding power
-> management, no?).
->   
+How does the below look?
 
-What I consider plain wrong i to claim that since there are this many 
-units out, some code should be merged.
-A company needs to cut corners sometimes when making a product but this 
-should not affect upstream code.
-> I am quite willing to state that on both MSM and OMAP based Android
-> platforms, we've found that the suspend blocker model allows us to
-> obtain a lower average power draw than if we don't use it -- Mike Chan
-> provided some numbers earlier in another thread in the trivial device
-> idle case, the win is of course much larger in the case of several
-> poorly behaved apps being active.
->   
 
-That's very good. But if it is done in a conceptually flawed way, some 
-better solution should be considered for upstream merge.
+---
+Subject: sched_clock: Add local_clock() and improve documentation
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Date: Tue May 25 10:48:51 CEST 2010
 
-[snip]
-> A reality of a mass market device with a completely open and
-> unrestricted application development and distribution ecosystem is
-> that there will be plenty of non-optimal apps available to users
-> (Sturgeon's Law applies everywhere, after all).  Worse yet, many of
-> these non-optimal apps may be beloved by users for various reasons.  I
-> think there's value in trying to do the best you can power-wise even
-> in the face of such horrible foes as the dreaded Bouncing Cows App
-> that Matthew is fond of citing as an example.
+For people who otherwise get to write: cpu_clock(smp_processor_id()),
+there is now: local_clock().
 
-Sure.
+Also, as per suggestion from Andrew, provide some documentation on
+the various clock interfaces, and minimize the unsigned long long vs
+u64 mess.
 
-I simply disagree on the methods proposed (suspend_blockers) and some of 
-the rationale used for promoting them (volume of otherwise unsupported 
-units).
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+---
+ arch/parisc/kernel/ftrace.c |    4 -
+ include/linux/sched.h       |   37 +++++++++--------
+ kernel/lockdep.c            |    2 
+ kernel/perf_event.c         |    2 
+ kernel/rcutorture.c         |    3 -
+ kernel/sched.c              |    2 
+ kernel/sched_clock.c        |   95 +++++++++++++++++++++++++++++++++++++++-----
+ kernel/trace/trace_clock.c  |    2 
+ 8 files changed, 113 insertions(+), 34 deletions(-)
 
-igor
+Index: linux-2.6/arch/parisc/kernel/ftrace.c
+===================================================================
+--- linux-2.6.orig/arch/parisc/kernel/ftrace.c
++++ linux-2.6/arch/parisc/kernel/ftrace.c
+@@ -82,7 +82,7 @@ unsigned long ftrace_return_to_handler(u
+ 	unsigned long ret;
+ 
+ 	pop_return_trace(&trace, &ret);
+-	trace.rettime = cpu_clock(raw_smp_processor_id());
++	trace.rettime = local_clock();
+ 	ftrace_graph_return(&trace);
+ 
+ 	if (unlikely(!ret)) {
+@@ -126,7 +126,7 @@ void prepare_ftrace_return(unsigned long
+ 		return;
+ 	}
+ 
+-	calltime = cpu_clock(raw_smp_processor_id());
++	calltime = local_clock();
+ 
+ 	if (push_return_trace(old, calltime,
+ 				self_addr, &trace.depth) == -EBUSY) {
+Index: linux-2.6/include/linux/sched.h
+===================================================================
+--- linux-2.6.orig/include/linux/sched.h
++++ linux-2.6/include/linux/sched.h
+@@ -1785,20 +1785,23 @@ static inline int set_cpus_allowed(struc
+ #endif
+ 
+ /*
+- * Architectures can set this to 1 if they have specified
+- * CONFIG_HAVE_UNSTABLE_SCHED_CLOCK in their arch Kconfig,
+- * but then during bootup it turns out that sched_clock()
+- * is reliable after all:
++ * Do not use outside of architecture code which knows its limitations.
++ *
++ * sched_clock() has no promise of monotonicity or bounded drift between
++ * CPUs, use (which you should not) requires disabling IRQs.
++ *
++ * Please use one of the three interfaces below.
+  */
+-#ifdef CONFIG_HAVE_UNSTABLE_SCHED_CLOCK
+-extern int sched_clock_stable;
+-#endif
+-
+-/* ftrace calls sched_clock() directly */
+ extern unsigned long long notrace sched_clock(void);
++/*
++ * See the comment in kernel/sched_clock.c
++ */
++extern u64 cpu_clock(int cpu);
++extern u64 local_clock(void);
++extern u64 sched_clock_cpu(int cpu);
++
+ 
+ extern void sched_clock_init(void);
+-extern u64 sched_clock_cpu(int cpu);
+ 
+ #ifndef CONFIG_HAVE_UNSTABLE_SCHED_CLOCK
+ static inline void sched_clock_tick(void)
+@@ -1813,17 +1816,19 @@ static inline void sched_clock_idle_wake
+ {
+ }
+ #else
++/*
++ * Architectures can set this to 1 if they have specified
++ * CONFIG_HAVE_UNSTABLE_SCHED_CLOCK in their arch Kconfig,
++ * but then during bootup it turns out that sched_clock()
++ * is reliable after all:
++ */
++extern int sched_clock_stable;
++
+ extern void sched_clock_tick(void);
+ extern void sched_clock_idle_sleep_event(void);
+ extern void sched_clock_idle_wakeup_event(u64 delta_ns);
+ #endif
+ 
+-/*
+- * For kernel-internal use: high-speed (but slightly incorrect) per-cpu
+- * clock constructed from sched_clock():
+- */
+-extern unsigned long long cpu_clock(int cpu);
+-
+ extern unsigned long long
+ task_sched_runtime(struct task_struct *task);
+ extern unsigned long long thread_group_sched_runtime(struct task_struct *task);
+Index: linux-2.6/kernel/lockdep.c
+===================================================================
+--- linux-2.6.orig/kernel/lockdep.c
++++ linux-2.6/kernel/lockdep.c
+@@ -146,7 +146,7 @@ static DEFINE_PER_CPU(struct lock_class_
+ 
+ static inline u64 lockstat_clock(void)
+ {
+-	return cpu_clock(smp_processor_id());
++	return local_clock();
+ }
+ 
+ static int lock_point(unsigned long points[], unsigned long ip)
+Index: linux-2.6/kernel/perf_event.c
+===================================================================
+--- linux-2.6.orig/kernel/perf_event.c
++++ linux-2.6/kernel/perf_event.c
+@@ -214,7 +214,7 @@ static void perf_unpin_context(struct pe
+ 
+ static inline u64 perf_clock(void)
+ {
+-	return cpu_clock(raw_smp_processor_id());
++	return local_clock();
+ }
+ 
+ /*
+Index: linux-2.6/kernel/rcutorture.c
+===================================================================
+--- linux-2.6.orig/kernel/rcutorture.c
++++ linux-2.6/kernel/rcutorture.c
+@@ -239,8 +239,7 @@ static unsigned long
+ rcu_random(struct rcu_random_state *rrsp)
+ {
+ 	if (--rrsp->rrs_count < 0) {
+-		rrsp->rrs_state +=
+-			(unsigned long)cpu_clock(raw_smp_processor_id());
++		rrsp->rrs_state += (unsigned long)local_clock();
+ 		rrsp->rrs_count = RCU_RANDOM_REFRESH;
+ 	}
+ 	rrsp->rrs_state = rrsp->rrs_state * RCU_RANDOM_MULT + RCU_RANDOM_ADD;
+Index: linux-2.6/kernel/sched.c
+===================================================================
+--- linux-2.6.orig/kernel/sched.c
++++ linux-2.6/kernel/sched.c
+@@ -1671,7 +1671,7 @@ static void update_shares(struct sched_d
+ 	if (root_task_group_empty())
+ 		return;
+ 
+-	now = cpu_clock(raw_smp_processor_id());
++	now = local_clock();
+ 	elapsed = now - sd->last_update;
+ 
+ 	if (elapsed >= (s64)(u64)sysctl_sched_shares_ratelimit) {
+Index: linux-2.6/kernel/sched_clock.c
+===================================================================
+--- linux-2.6.orig/kernel/sched_clock.c
++++ linux-2.6/kernel/sched_clock.c
+@@ -10,19 +10,55 @@
+  *   Ingo Molnar <mingo@redhat.com>
+  *   Guillaume Chazarain <guichaz@gmail.com>
+  *
+- * Create a semi stable clock from a mixture of other events, including:
+- *  - gtod
++ *
++ * What:
++ *
++ * cpu_clock(i) provides a fast (execution time) high resolution
++ * clock with bounded drift between CPUs. The value of cpu_clock(i)
++ * is monotonic for constant i. The timestamp returned is in nanoseconds.
++ *
++ * ************************* BIG FAT WARNING **************************
++ * * when comparing cpu_clock(i) to cpu_clock(j) for i != j, time can *
++ * * go backwards !!                                                  *
++ * ********************************************************************
++ *
++ * There is no strict promise about the base, although it tends to start
++ * at 0 on boot (but people really shouldn't rely on that).
++ *
++ * cpu_clock(i)       -- can be used from any context, including NMI.
++ * sched_clock_cpu(i) -- must be used with local IRQs disabled (implied by NMI)
++ * local_clock()      -- is cpu_clock() on the current cpu.
++ *
++ * How:
++ *
++ * The implementation either uses sched_clock() when
++ * !CONFIG_HAVE_UNSTABLE_SCHED_CLOCK, which means in that case the
++ * sched_clock() is assumed to provide these properties (mostly it means
++ * the architecture provides a globally synchronized highres time source).
++ *
++ * Otherwise it tries to create a semi stable clock from a mixture of other
++ * clocks, including:
++ *
++ *  - GTOD (clock monotomic)
+  *  - sched_clock()
+  *  - explicit idle events
+  *
+- * We use gtod as base and the unstable clock deltas. The deltas are filtered,
+- * making it monotonic and keeping it within an expected window.
++ * We use GTOD as base and use sched_clock() deltas to improve resolution. The
++ * deltas are filtered to provide monotonicity and keeping it within an
++ * expected window.
+  *
+  * Furthermore, explicit sleep and wakeup hooks allow us to account for time
+  * that is otherwise invisible (TSC gets stopped).
+  *
+- * The clock: sched_clock_cpu() is monotonic per cpu, and should be somewhat
+- * consistent between cpus (never more than 2 jiffies difference).
++ *
++ * Notes:
++ *
++ * The !IRQ-safetly of sched_clock() and sched_clock_cpu() comes from things
++ * like cpufreq interrupts that can change the base clock (TSC) multiplier
++ * and cause funny jumps in time -- although the filtering provided by
++ * sched_clock_cpu() should mitigate serious artifacts we cannot rely on it
++ * in general since for !CONFIG_HAVE_UNSTABLE_SCHED_CLOCK we fully rely on
++ * sched_clock().
+  */
+ #include <linux/spinlock.h>
+ #include <linux/hardirq.h>
+@@ -170,6 +206,11 @@ again:
+ 	return val;
+ }
+ 
++/*
++ * Similar to cpu_clock(), but requires local IRQs to be disabled.
++ *
++ * See cpu_clock().
++ */
+ u64 sched_clock_cpu(int cpu)
+ {
+ 	struct sched_clock_data *scd;
+@@ -237,9 +278,19 @@ void sched_clock_idle_wakeup_event(u64 d
+ }
+ EXPORT_SYMBOL_GPL(sched_clock_idle_wakeup_event);
+ 
+-unsigned long long cpu_clock(int cpu)
++/*
++ * As outlined at the top, provides a fast, high resolution, nanosecond
++ * time source that is monotonic per cpu argument and has bounded drift
++ * between cpus.
++ *
++ * ************************* BIG FAT WARNING **************************
++ * * when comparing cpu_clock(i) to cpu_clock(j) for i != j, time can *
++ * * go backwards !!                                                  *
++ * ********************************************************************
++ */
++u64 cpu_clock(int cpu)
+ {
+-	unsigned long long clock;
++	u64 clock;
+ 	unsigned long flags;
+ 
+ 	local_irq_save(flags);
+@@ -249,6 +300,25 @@ unsigned long long cpu_clock(int cpu)
+ 	return clock;
+ }
+ 
++/*
++ * Similar to cpu_clock() for the current cpu. Time will only be observed
++ * to be monotonic if care is taken to only compare timestampt taken on the
++ * same CPU.
++ *
++ * See cpu_clock().
++ */
++u64 local_clock(void)
++{
++	u64 clock;
++	unsigned long flags;
++
++	local_irq_save(flags);
++	clock = sched_clock_cpu(smp_processor_id());
++	local_irq_restore(flags);
++
++	return clock;
++}
++
+ #else /* CONFIG_HAVE_UNSTABLE_SCHED_CLOCK */
+ 
+ void sched_clock_init(void)
+@@ -264,12 +334,17 @@ u64 sched_clock_cpu(int cpu)
+ 	return sched_clock();
+ }
+ 
+-
+-unsigned long long cpu_clock(int cpu)
++u64 cpu_clock(int cpu)
+ {
+ 	return sched_clock_cpu(cpu);
+ }
+ 
++u64 local_clock(void)
++{
++	return sched_clock_cpu(0);
++}
++
+ #endif /* CONFIG_HAVE_UNSTABLE_SCHED_CLOCK */
+ 
+ EXPORT_SYMBOL_GPL(cpu_clock);
++EXPORT_SYMBOL_GPL(local_clock);
+Index: linux-2.6/kernel/trace/trace_clock.c
+===================================================================
+--- linux-2.6.orig/kernel/trace/trace_clock.c
++++ linux-2.6/kernel/trace/trace_clock.c
+@@ -56,7 +56,7 @@ u64 notrace trace_clock_local(void)
+  */
+ u64 notrace trace_clock(void)
+ {
+-	return cpu_clock(raw_smp_processor_id());
++	return local_clock();
+ }
+ 
+ 
+
+
