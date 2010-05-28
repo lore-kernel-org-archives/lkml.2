@@ -1,37 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932396Ab0E1JnV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 May 2010 05:43:21 -0400
-Received: from relay.atmel.no ([80.232.32.139]:59400 "EHLO relay.atmel.no"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757864Ab0E1JnT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 May 2010 05:43:19 -0400
-Date: Fri, 28 May 2010 11:42:45 +0200
-From: Haavard Skinnemoen <haavard.skinnemoen@atmel.com>
-To: Nicolas Ferre <nicolas.ferre@atmel.com>
-Cc: Claudio Scordino <claudio@evidence.eu.com>,
-       Alan Cox <alan@lxorguk.ukuu.org.uk>, linux@maxim.org.za,
-       linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-       Rick Bronson <rick@efn.org>, John Nicholls <john@thinlinx.com>,
-       Linux Kernel <linux-kernel@vger.kernel.org>,
-       Sebastian Heutling <Sebastian.Heutling@who-ing.de>,
-       Ryan Mallon <ryan@bluewatersys.com>,
-       michael trimarchi <michael@evidence.eu.com>, rmk@arm.linux.org.uk
-Subject: Re: [PATCH] atmel_serial: Atmel RS485 support v2
-Message-ID: <20100528114245.3d030692@hskinnemoen-d830>
-In-Reply-To: <4BFE41FD.2080804@atmel.com>
-References: <4BB053C4.7050700@evidence.eu.com>
-	<4BB10304.6090006@bluewatersys.com>
-	<4BB1BF49.2000609@evidence.eu.com>
-	<4BB252E3.3030703@bluewatersys.com>
-	<4BBD8C9D.3070401@evidence.eu.com>
-	<20100408111310.524f7354@lxorguk.ukuu.org.uk>
-	<4BBDD71D.1010700@evidence.eu.com>
-	<4BFD1FB6.8050405@atmel.com>
-	<4BFE2F38.8050200@evidence.eu.com>
-	<4BFE41FD.2080804@atmel.com>
-Organization: Atmel
-X-Mailer: Claws Mail 3.7.4 (GTK+ 2.20.0; x86_64-pc-linux-gnu)
+	id S932424Ab0E1JrU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 May 2010 05:47:20 -0400
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:39195 "EHLO
+	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754763Ab0E1JrS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 May 2010 05:47:18 -0400
+Date: Fri, 28 May 2010 10:53:33 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: tytso@mit.edu
+Cc: Matthew Garrett <mjg59@srcf.ucam.org>,
+       Alan Stern <stern@rowland.harvard.edu>,
+       Thomas Gleixner <tglx@linutronix.de>,
+       Peter Zijlstra <peterz@infradead.org>,
+       LKML <linux-kernel@vger.kernel.org>,
+       Florian Mickler <florian@mickler.org>, felipe.balbi@nokia.com,
+       Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
+       Linux PM <linux-pm@lists.linux-foundation.org>
+Subject: Re: [linux-pm] [PATCH 0/8] Suspend block api (version 8)
+Message-ID: <20100528105333.40a1efbe@lxorguk.ukuu.org.uk>
+In-Reply-To: <20100528043114.GC26177@thunk.org>
+References: <20100527222514.0a1710bf@lxorguk.ukuu.org.uk>
+	<Pine.LNX.4.44L0.1005271730180.3239-100000@iolanthe.rowland.org>
+	<20100527230806.4deb6de3@lxorguk.ukuu.org.uk>
+	<20100527220949.GB10602@srcf.ucam.org>
+	<20100527232357.6d14fdb2@lxorguk.ukuu.org.uk>
+	<20100527223605.GB11364@srcf.ucam.org>
+	<20100527235546.09f3ce8a@lxorguk.ukuu.org.uk>
+	<20100528043114.GC26177@thunk.org>
+X-Mailer: Claws Mail 3.7.5 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
@@ -39,18 +37,28 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Nicolas Ferre <nicolas.ferre@atmel.com> wrote:
-> > (the maintainer of the driver never answered to emails...).  
-> 
-> I was supposed to take over its maintainance one year ago but did not
-> find time to do it. My fault here also...
+Ted
 
-My fault too...I should really try harder to respond to e-mails. I was
-planning to give it a spin and send it upstream, but I never found the
-time.
+As a PS to the previous email the situation has I think more choices than
+you portray.
 
-Nicolas, is it ok if I send a patch to update MAINTAINERS? That way,
-you'll receive these patches and questions about them by e-mail rather
-than me.
+Given the need for various constraints imposed by drivers for things like
+RT it's entirely possible that a solution ends up being something like
 
-Haavard
+
+Kernel proper:
+Turn suspend block kernel API into an expression of constraints (or
+				whatever else seems to work)
+Throw the user space in the bin
+
+Google:
+Use the constraints in a sledgehammer manner (hey it solves your problem
+			in that form so why not)
+Patch in a private user space API
+
+
+That makes things much much easier as we don't risk getting a horribly
+broken API into the kernel that is hard to remove, while hopefully
+meaning its rather easier for google to merge drivers and other code as
+well as to maintain a smaller patch set.
+
