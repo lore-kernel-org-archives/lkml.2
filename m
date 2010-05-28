@@ -1,72 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755400Ab0E1BMD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 May 2010 21:12:03 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:62401 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752919Ab0E1BL7 convert rfc822-to-8bit (ORCPT
+	id S1756977Ab0E1BMc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 May 2010 21:12:32 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:53394 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752919Ab0E1BMa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 May 2010 21:11:59 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=x+Y9P9xxxP1mCThdu2Ub3CUNNg47PZXR+ImdeDaiI2tJBFL6KxN596KrUeo7oVccuE
-         qksf1i9KfZNrNz/lp1vKWFIGraa3n1E0g89NZnJgXzGb1wDhz0nkoCfSYwcMt0DePzpS
-         wa/aQenUAiJ6CDJ4B0tGj273O1cyqzCdxBRi8=
+	Thu, 27 May 2010 21:12:30 -0400
+Date: Thu, 27 May 2010 18:09:17 -0700 (PDT)
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+cc: Andrew Morton <akpm@linux-foundation.org>, linux-next@vger.kernel.org,
+       linux-kernel@vger.kernel.org, Jack Steiner <steiner@sgi.com>,
+       Lee Schermerhorn <lee.schermerhorn@hp.com>
+Subject: Re: linux-next: build failure in Linus' tree
+In-Reply-To: <20100528105719.a356ba4f.sfr@canb.auug.org.au>
+Message-ID: <alpine.LFD.2.00.1005271807470.11382@i5.linux-foundation.org>
+References: <20100528105719.a356ba4f.sfr@canb.auug.org.au>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-In-Reply-To: <AANLkTikPB3hD4EkvI9x1KPOWIU-HADLWDHi5jqij-oqs@mail.gmail.com>
-References: <1274341759-13086-1-git-send-email-linus.walleij@stericsson.com>
-	<AANLkTikmdqceeWNYGm7ZTI64pixtkVWBbpWEtajZGHA1@mail.gmail.com>
-	<AANLkTikiW_yFOqRumd83sETURf-9sI7IfrCmbb5MRjrl@mail.gmail.com>
-	<20100527193755.GA25484@flint.arm.linux.org.uk>
-	<AANLkTimtWrHzbklohUc43hSWPDfJs93YQoQe5Gz4tgUw@mail.gmail.com>
-	<20100527221228.GB25484@flint.arm.linux.org.uk>
-	<AANLkTikPB3hD4EkvI9x1KPOWIU-HADLWDHi5jqij-oqs@mail.gmail.com>
-Date: Fri, 28 May 2010 03:11:58 +0200
-Message-ID: <AANLkTinoMmz05KweBJQJ4Tr2cRNTp_SY6NOuX1GRzEcK@mail.gmail.com>
-Subject: Re: [PATCH] DMAENGINE: DMA40 U8500 platform configuration
-From: Linus Walleij <linus.ml.walleij@gmail.com>
-To: Dan Williams <dan.j.williams@intel.com>
-Cc: Russell King <rmk@arm.linux.org.uk>,
-       Linus Walleij <linus.walleij@stericsson.com>,
-       linux-kernel@vger.kernel.org, STEricsson_nomadik_linux@list.st.com
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2010/5/28 Dan Williams <dan.j.williams@intel.com>:
-> On Thu, May 27, 2010 at 3:12 PM, Russell King <rmk@arm.linux.org.uk> wrote:
->> On Thu, May 27, 2010 at 02:59:51PM -0700, Dan Williams wrote:
->>> On Thu, May 27, 2010 at 12:37 PM, Russell King <rmk@arm.linux.org.uk> wrote:
->>> > On Wed, May 26, 2010 at 09:17:42AM -0700, Dan Williams wrote:
->>> >> Requesting acked-by for:
->>> >>
->>> >> http://marc.info/?l=linux-kernel&m=127434177015990&w=2
->>> >
->>> > Well...
->>> >
->>> >  +const static dma_addr_t dma40_tx_map[STEDMA40_NR_DEV] = {
->>> >  +const static dma_addr_t dma40_rx_map[STEDMA40_NR_DEV] = {
->>>
->>> Yeah, no need to initialize static data to 0, I'll fix that up before
->>> submitting.
->>
->> static const
->>
->> not
->>
->> const static
->>
->
-> Ah thanks, I was going to check into that and got distracted by the
-> zero initializers...
->
-> Also fixed up.
 
-Thanks for fixing this Dan, appreciated!
 
-Yours,
-Linus Walleij
+On Fri, 28 May 2010, Stephen Rothwell wrote:
+> 
+> Caused by commit 0ac0c0d0f837c499afd02a802f9cf52d3027fa3b ("cpusets:
+> randomize node rotor used in cpuset_mem_spread_node()").
+> 
+> This commit assumes that __node_random() exists if (MAX_NUMNODES > 1) and
+> uses it if CONFIG_CPUSETS is set, but only creates it for x86 ...  there
+> is at least one other architecture where those conditions are true.
+
+Yeah, looking at that, it seems totally idiotic.
+
+Why is that "__node_random()" in x86 code at all? There is absolutely 
+nothing x86 about it that I can tell. And now I have an ia64 merge that 
+just duplicates that moronic function.
+
+		Linus
