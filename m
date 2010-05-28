@@ -1,87 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932471Ab0E1VOh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 May 2010 17:14:37 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:48827 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752932Ab0E1VOf (ORCPT
+	id S932682Ab0E1VOp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 May 2010 17:14:45 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:54895 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752932Ab0E1VOk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 May 2010 17:14:35 -0400
-Date: Fri, 28 May 2010 14:09:08 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Borislav Petkov <borislav.petkov@amd.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
-       Thomas Gleixner <tglx@linutronix.de>,
-       LKML <linux-kernel@vger.kernel.org>, x86 <x86@kernel.org>
-Subject: Re: [PATCH] powernow-k8: Fix section mismatch
-Message-Id: <20100528140908.057f2348.akpm@linux-foundation.org>
-In-Reply-To: <20100525152858.GA24836@aftab>
-References: <20100525152858.GA24836@aftab>
-X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Fri, 28 May 2010 17:14:40 -0400
+Date: Fri, 28 May 2010 22:14:32 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Artem Bityutskiy <dedekind1@gmail.com>,
+       LKML <linux-kernel@vger.kernel.org>, Jens Axboe <jens.axboe@oracle.com>,
+       linux-fsdevel@vger.kernel.org, Roman Zippel <zippel@linux-m68k.org>,
+       "Tigran A. Aivazian" <tigran@aivazian.fsnet.co.uk>,
+       Chris Mason <chris.mason@oracle.com>,
+       Boaz Harrosh <bharrosh@panasas.com>, linux-ext4@vger.kernel.org,
+       "Theodore Ts'o" <tytso@mit.edu>,
+       OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>,
+       David Woodhouse <dwmw2@infradead.org>, reiserfs-devel@vger.kernel.org,
+       Jan Kara <jack@suse.cz>, Evgeniy Dushistov <dushistov@mail.ru>
+Subject: Re: [PATCHv4 01/17] VFS: introduce helpers for the s_dirty flag
+Message-ID: <20100528211432.GM31073@ZenIV.linux.org.uk>
+References: <1274795352-3551-1-git-send-email-dedekind1@gmail.com>
+ <1274795352-3551-2-git-send-email-dedekind1@gmail.com>
+ <20100528132318.0783675a.akpm@linux-foundation.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100528132318.0783675a.akpm@linux-foundation.org>
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 25 May 2010 17:28:58 +0200
-Borislav Petkov <borislav.petkov@amd.com> wrote:
+On Fri, May 28, 2010 at 01:23:18PM -0700, Andrew Morton wrote:
 
-> Fix the following warning:
+> A more conventional and superior naming scheme is
+> subsystemid_specific_function_identifier().  eg, bio_add_page() instead
+> of add_page_to_bio().
 > 
-> "WARNING: arch/x86/kernel/built-in.o(.exit.text+0x72):
-> Section mismatch in reference from the function powernowk8_exit() to the variable .cpuinit.data:cpb_nb
+> So these want to be sb_mark_dirty(), etc.
 > 
-> The function __exit powernowk8_exit() references a variable
-> __cpuinitdata cpb_nb. This is often seen when error handling in the exit
-> function uses functionality in the init path. The fix is often to remove
-> the __cpuinitdata annotation of cpb_nb so it may be used outside an init
-> section."
+> Being very old code written by very yound people, the VFS kinda ignores
+> that convention, but it doesn't hurt to use it for new code.
 > 
-> Cc: <stable@kernel.org>
-> Reported-by: H. Peter Anvin <hpa@zytor.com>
-> Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
-> ---
->  arch/x86/kernel/cpu/cpufreq/powernow-k8.c |    6 +++---
->  1 files changed, 3 insertions(+), 3 deletions(-)
-> 
-> diff --git a/arch/x86/kernel/cpu/cpufreq/powernow-k8.c b/arch/x86/kernel/cpu/cpufreq/powernow-k8.c
-> index 6f3dc8f..7ec2123 100644
-> --- a/arch/x86/kernel/cpu/cpufreq/powernow-k8.c
-> +++ b/arch/x86/kernel/cpu/cpufreq/powernow-k8.c
-> @@ -1497,8 +1497,8 @@ static struct cpufreq_driver cpufreq_amd64_driver = {
->   * simply keep the boost-disable flag in sync with the current global
->   * state.
->   */
-> -static int __cpuinit cpb_notify(struct notifier_block *nb, unsigned long action,
-> -				void *hcpu)
-> +static int cpb_notify(struct notifier_block *nb, unsigned long action,
-> +		      void *hcpu)
->  {
->  	unsigned cpu = (long)hcpu;
->  	u32 lo, hi;
-> @@ -1528,7 +1528,7 @@ static int __cpuinit cpb_notify(struct notifier_block *nb, unsigned long action,
->  	return NOTIFY_OK;
->  }
->  
-> -static struct notifier_block __cpuinitdata cpb_nb = {
-> +static struct notifier_block cpb_nb = {
->  	.notifier_call		= cpb_notify,
->  };
+> Feel free to ignore me if that's too much of a PITA ;)
 
-I _think_ this is notabug.  If CONFIG_HOTPLUG_CPU=y, this code/data
-doesn't get discarded.  If CONFIG_HOTPLUG_CPU=n,
-[un]register_cpu_notifier() is a no-op.
+The real issue is that it's almost certainly an overdesign.  Let's
+get rid of the bogus uses first and figure out what's happening in
+what remains, OK?
 
-But apparently the build system _did_ detect such a reference, so
-what's going on?  Maybe I'm confused again.
+I have no problems with doing such wrappers, but if we touch every
+place using ->s_dirt anyway, let's at least take a good look at them.
 
-
-This code needs work.  It should use hotcpu_notifier() rather than
-diving down into the lower-level register_cpu_notifier().  If this is
-done then linker magic will cause all the hotplug-specific code to be
-omitted from vmlinux if CONFIG_HOTPLUG_CPU=n, and I suppose it will fix
-the above warning.
-
-
+I'm mostly OK with what had emerged for the final patch in series,
+but...
