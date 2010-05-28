@@ -1,54 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932698Ab0E1PIt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 May 2010 11:08:49 -0400
-Received: from casper.infradead.org ([85.118.1.10]:50757 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932135Ab0E1PIs convert rfc822-to-8bit (ORCPT
+	id S932796Ab0E1PJx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 May 2010 11:09:53 -0400
+Received: from adelie.canonical.com ([91.189.90.139]:49590 "EHLO
+	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932135Ab0E1PJv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 May 2010 11:08:48 -0400
-Subject: Re: [PATCH] sched_clock: Provide local_clock() and improve
- documentation
-From: Peter Zijlstra <peterz@infradead.org>
-To: Johannes Stezenbach <js@sig21.net>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-       Jens Axboe <jens.axboe@oracle.com>, Divyesh Shah <dpshah@google.com>,
-       Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>
-In-Reply-To: <20100528134233.GA28190@sig21.net>
-References: <4BF9EC69.5030709@example.com> <1274777422.5882.591.camel@twins>
-	 <20100526160252.325f8357.akpm@linux-foundation.org>
-	 <1274942798.27810.3584.camel@twins>
-	 <20100526235107.77e66ce0.akpm@linux-foundation.org>
-	 <1274945751.27810.3765.camel@twins>
-	 <20100527113340.d4afb8fc.akpm@linux-foundation.org>
-	 <1275052414.1645.52.camel@laptop>  <20100528134233.GA28190@sig21.net>
+	Fri, 28 May 2010 11:09:51 -0400
+Subject: Re: [PATCH 8/8] intel_idle: create a native cpuidle driver for
+ select intel processors
+From: Chase Douglas <chase.douglas@canonical.com>
+To: Len Brown <lenb@kernel.org>
+Cc: x86@kernel.org, linux-pm@lists.linux-foundation.org,
+       linux-kernel@vger.kernel.org, Len Brown <len.brown@intel.com>
+In-Reply-To: <alpine.LFD.2.00.1005272359510.24823@localhost.localdomain>
+References: <1274928151-30919-1-git-send-email-lenb@kernel.org>
+	 <198450ec1600d9a7f55270dd4d44d6b55bc5b184.1274926772.git.len.brown@intel.com>
+	 <1275013933.2312.7.camel@cndougla-ubuntu>
+	 <alpine.LFD.2.00.1005272359510.24823@localhost.localdomain>
 Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Fri, 28 May 2010 17:08:32 +0200
-Message-ID: <1275059312.27810.9600.camel@twins>
+Date: Fri, 28 May 2010 11:09:40 -0400
+Message-ID: <1275059380.5612.60.camel@cndougla-ubuntu>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2010-05-28 at 15:42 +0200, Johannes Stezenbach wrote:
-> On Fri, May 28, 2010 at 03:13:34PM +0200, Peter Zijlstra wrote:
-> > + * The !IRQ-safetly of sched_clock() and sched_clock_cpu() comes from things
+On Fri, 2010-05-28 at 00:16 -0400, Len Brown wrote:
+> > I see that you have updated this code in your tree to disable C4 and C6
+> > on atom. This has piqued my curiosity. I've now seen 2 atom netbooks
+> > from different OEMs that hide C4 when you plug the power in. After the
+> > first machine I thought, "must be a BIOS/ACPI bug," but now I'm
+> > beginning to wonder if there's some issue with atom C4 states? That's
+> > beside the fact that I've not seen C6 on either machine at all. Do you
+> > have any insight?
 > 
-> typo                ^
-> 
-> Thank you for adding documentation.  I have one additional
-> question regarding wrapping of sched_clock().  I know it is
-> used for timestamps in ftrace and printk, so it's desirable
-> that it never wraps.  But on several embedded systems
-> it wraps after a few hours.  Bug or just a minor flaw?
-> If someone knows it would be nice to get that documented, too.
+> The reasoning behind ACPI taking deep C-states away
+> when on AC is the assumption that users on AC
+> care more about low latency and high performance
+> than they care about power savings, heat, and noise.
 
-The scheduler assumes it wraps at u64, however since we mostly use it to
-compute a time deltas it mostly works, even when it wraps sooner, its
-just that we get large jumps once in a while when it does wraps, due to
-(s64)(new - old) not ending up being a proper s64.
+Maybe they forgot that a netbook is still a *lap*top when they did this,
+cause I can't keep mine on my lap when it's plugged in :). The CPU idles
+at 60 centigrade when powered on, and drops to a manageable 30-ish
+centigrade when running on battery.
 
-If you have CONFIG_HAVE_UNSTABLE_SCHED_CLOCK, these jumps will be
-filtered out and polished over.
+> So my intent is to give Linux control over this decision,
+> via PM_QOS or otherwise.  At the moment C4 is commented out
+> because when i first tested it failed the lapic timer workaround.
+
+I am looking forward to testing out these changes on my netbook once
+this issue get sorted out!
+
+-- Chase
+
