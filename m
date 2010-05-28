@@ -1,77 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754261Ab0E1WMd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 May 2010 18:12:33 -0400
-Received: from s12.ALPHA-c2.vectant.ne.jp ([222.230.51.12]:52764 "EHLO
-	s12.ALPHA-c2.vectant.ne.jp" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753864Ab0E1WMb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 May 2010 18:12:31 -0400
-Message-Id: <201005282211.AA00413@tamuki.linet.gr.jp>
-From: TAMUKI Shoichi <tamuki@linet.gr.jp>
-Date: Sat, 29 May 2010 07:11:06 +0900
-To: Andi Kleen <andi@firstfloor.org>
-Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
-       Anton Blanchard <anton@samba.org>, Andy Green <andy@warmcat.com>,
-       TAMUKI Shoichi <tamuki@linet.gr.jp>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] panic: keep blinking in spite of long spin timer mode
-In-Reply-To: <20100528091354.GA16587@basil.fritz.box>
-References: <20100528091354.GA16587@basil.fritz.box>
+	id S1754380Ab0E1WQv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 May 2010 18:16:51 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:54301 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752212Ab0E1WQt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 May 2010 18:16:49 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Peter Zijlstra <peterz@infradead.org>
+Subject: Re: [linux-pm] [PATCH 0/8] Suspend block api (version 8)
+Date: Sat, 29 May 2010 00:18:14 +0200
+User-Agent: KMail/1.12.4 (Linux/2.6.34-rjw; KDE/4.3.5; x86_64; ; )
+Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, Matthew Garrett <mjg59@srcf.ucam.org>,
+       Alan Stern <stern@rowland.harvard.edu>,
+       Thomas Gleixner <tglx@linutronix.de>, Paul@smtp1.linux-foundation.org,
+       LKML <linux-kernel@vger.kernel.org>,
+       Florian Mickler <florian@mickler.org>,
+       Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
+       Linux PM <linux-pm@lists.linux-foundation.org>
+References: <Pine.LNX.4.44L0.1005271344040.3239-100000@iolanthe.rowland.org> <20100528005045.6ea5feba@lxorguk.ukuu.org.uk> <1275031797.32462.18.camel@laptop>
+In-Reply-To: <1275031797.32462.18.camel@laptop>
 MIME-Version: 1.0
-X-Mailer: AL-Mail32 Version 1.13
-Content-Type: text/plain; charset=us-ascii
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201005290018.14832.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
-
-On Fri, May 28, 2010 at 11:13:54 +0200, Andi Kleen wrote:
-> > To keep panic_timeout accuracy when running under a hypervisor, the
-> > current implementation only spins on long time (1 second) calls to
-> > mdelay.  That brings a good effect, but we must give up blinking even
-> > if we have a panic_blink.
+On Friday 28 May 2010, Peter Zijlstra wrote:
+> On Fri, 2010-05-28 at 00:50 +0100, Alan Cox wrote:
+> > Today "idle" means "no task running"
 > > 
-> > This patch keeps blinking in spite of long spin timer mode.
-> > 
-> > We now have new kernel parameter (panic_longspin) to enable long spin
-> > timer mode when kernel panics.  This is to be used when running under
-> > a hypervisor (default is disable).
+> > If you are prepared to rephrase that as "no task that matters is running"
+> > what would need to answer ?
 > 
-> Sorry I didn't understand the problem based on your description.
+> I'm not sure we need or want to go there.
 > 
-> What exactly is the problem with the current code under your
-> hypervisor?
+> Why not simply let upatedb block on its IO because its QoS policy tells
+> us that its IO priority is idle. Therefore it will not avoid the IO
+> device from going idle and indefinitely delaying servicing requests.
 > 
-> New parameters for this are probably not the right answer,
-> who would figure out when to set them.
+> When updatedb blocks, the runqueue becomes empty and we gain goodness.
+> 
+> Or are we talking about the same thing?
 
-Sorry for my poor explanation.
+There may be apps that don't actually do I/O that we may want to be treated
+that way too.
 
-As Anton Blanchard wrote, who posted "[PATCH] panic: Fix panic_timeout
-accuracy when running on a hypervisor", he had had some complaints
-about panic_timeout being wildly innacurate on shared processor PowerPC
-partitions (a 3 minute panic_timeout taking 30 minutes).
+Consider the following scenario.  I have a purely computational task that's
+running on my laptop in the background (say it's a folding@home or something
+similar), but I only want it to run when (a) the box is on AC power and (b)
+when user interface is "active" (the latter would have to be defined precisely,
+but for the purpose of this thought experiment let's assume we have such a
+definition).  Then, I'd only like it to be regarded as runnable if (a) and (b)
+both happen at the same time, but it can't block on I/O.
 
-The fact is we loop on mdelay(1) and with a 1ms in 10ms hypervisor
-timeslice each of these will take 10ms (i.e. 10x) longer.  To avoid
-this, it had been changed to do 1 second mdelays if we don't have a
-panic_blink.
-
-The problem is the keyboard LEDs don't blink at all on that situation.
-
-Therefore, I changed to call panic_blink_enter() between every mdelay.
-The default time calls to mdelay is 1ms.  If the kernel parameter
-panic_longspin is set to true, it will be switched to 240ms and the
-maximum speed of blinking will be automatically limited slower due to
-the granularity of the blinking time.
-
-It is complicated to change the speed of panic blink that the indi-
-vidual drivers do.
-
-This is the reason why the place to control blinking has been moved
-from panic_blink() (i.e. gta02_panic_blink() or i8042_panic_blink()
-for now) to panic_blink_enter().
-
-Regards,
-TAMUKI Shoichi
+Thanks,
+Rafael
