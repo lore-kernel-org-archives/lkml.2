@@ -1,77 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758938Ab0E1P5T (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 May 2010 11:57:19 -0400
-Received: from s15228384.onlinehome-server.info ([87.106.30.177]:52994 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757609Ab0E1P5R (ORCPT
+	id S1758990Ab0E1QJJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 May 2010 12:09:09 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:58380 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753123Ab0E1QJF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 May 2010 11:57:17 -0400
-Date: Fri, 28 May 2010 17:57:20 +0200
-From: Borislav Petkov <bp@amd64.org>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Ingo Molnar <mingo@elte.hu>, Borislav Petkov <bp@alien8.de>,
-       Frederic Weisbecker <fweisbec@gmail.com>,
-       Steven Rostedt <rostedt@goodmis.org>,
-       Arnaldo Carvalho de Melo <acme@redhat.com>,
-       Lin Ming <ming.m.lin@intel.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] perf: Add persistent events
-Message-ID: <20100528155719.GA10141@kryptos.osrc.amd.com>
-References: <1274554806-28216-2-git-send-email-bp@alien8.de>
- <1274638513.1674.1727.camel@laptop>
- <20100523183353.GB1408@liondog.tnic>
- <1274640047.1674.1731.camel@laptop>
- <20100523185411.GA5608@liondog.tnic>
- <1274642601.1674.1755.camel@laptop>
- <20100525073246.GA6085@liondog.tnic>
- <1274799588.5882.1572.camel@twins>
- <20100528143311.GB9710@elte.hu>
- <1275059860.27810.9635.camel@twins>
+	Fri, 28 May 2010 12:09:05 -0400
+Message-ID: <4BFFEA95.9040505@vflare.org>
+Date: Fri, 28 May 2010 21:38:53 +0530
+From: Nitin Gupta <ngupta@vflare.org>
+Reply-To: ngupta@vflare.org
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-3.fc13 Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1275059860.27810.9635.camel@twins>
-Organization: Advanced Micro Devices =?iso-8859-1?Q?GmbH?=
-	=?iso-8859-1?Q?=2C_Karl-Hammerschmidt-Str=2E_34=2C_85609_Dornach_bei_M=FC?=
-	=?iso-8859-1?Q?nchen=2C_Gesch=E4ftsf=FChrer=3A_Thomas_M=2E_McCoy=2C_Giuli?=
-	=?iso-8859-1?Q?ano_Meroni=2C_Andrew_Bowd=2C_Sitz=3A_Dornach=2C_Gemeinde_A?=
-	=?iso-8859-1?Q?schheim=2C_Landkreis_M=FCnchen=2C_Registergericht_M=FCnche?=
-	=?iso-8859-1?Q?n=2C?= HRB Nr. 43632
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Greg KH <greg@kroah.com>
+CC: Pekka Enberg <penberg@cs.helsinki.fi>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Minchan Kim <minchan.kim@gmail.com>,
+       Hugh Dickins <hugh.dickins@tiscali.co.uk>, Cyp <cyp561@gmail.com>,
+       driverdev <devel@driverdev.osuosl.org>,
+       linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 0/3] zram: generic RAM based compressed R/W block devices
+References: <1274710685-2351-1-git-send-email-ngupta@vflare.org>
+In-Reply-To: <1274710685-2351-1-git-send-email-ngupta@vflare.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Peter Zijlstra <peterz@infradead.org>
-Date: Fri, May 28, 2010 at 05:17:40PM +0200
+Hi All,
 
-> On Fri, 2010-05-28 at 16:33 +0200, Ingo Molnar wrote:
+On 05/24/2010 07:48 PM, Nitin Gupta wrote:
+> Creates RAM based block devices: /dev/zramX (X = 0, 1, ...).
+> Pages written to these disks are compressed and stored in memory
+> itself. These disks allow very fast I/O and compression provides
+> good amounts of memory savings.
 > 
-> > >  2) get these things a buffer, perf_events as created don't actually
-> > >     have an output buffer, normally that is created at mmap() time, but
-> > >     since you cannot mmap() a kernel side event, it doesn't get to have
-> > >     a buffer. This could be done by extracting perf_mmap_data_alloc()
-> > >     into a sensible interface.
-> > 
-> > #2 could be a new syscall: sys_create_ring_buffer or so?
+> This is enhancement over existing ramzswap driver which creates
+> virtual block devices (/dev/ramzswapX) which could be used only
+> as swap disks.
 > 
-> No, they need a buffer in-kernel, syscalls aren't the ideal tool for
-> that :-)
+> Now, with the ability to handle any kind of I/O request, zram
+> devices have lot more use cases:
+>  - /tmp storage
+>  - various caches under /var
+>  - swap disks
+>  - maybe even more! :)
+> 
+> Performance numbers can be found at:
+> http://code.google.com/p/compcache/wiki/zramperf
+> 
 
-Yeah, I need a per-cpu buffer ready at event registration/enable time,
-maybe even have perf_event_create_kernel_counter() take care of that
-buffer allocation with a flag or similar prior to enabling the event...
+Any reviews/comments, please?
 
-> I've got patches refactoring the whole buffer stuff to make it more a
-> self-contained entity.
+I also performed iozone tests to stress zram:
+http://code.google.com/p/compcache/wiki/zramIOzone
 
-Can I see those when you're done so that I can base my stuff on top?
+Note that the effect of pagecache could not be completely
+avoided, even when pagecache was dropped every 1 second.
+So, this iozone test should not be considered for speed
+measurements but as a stress test only. For speed tests,
+you can refer 'dd' test results included in changelog (patch 1).
 
-Thanks.
+No errors were observed during either iozone or dd tests.
 
--- 
-Regards/Gruss,
-Boris.
-
-Operating Systems Research Center
-Advanced Micro Devices, Inc.
+Thanks,
+Nitin
