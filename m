@@ -1,58 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756743Ab0E1IHC (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 May 2010 04:07:02 -0400
-Received: from cantor.suse.de ([195.135.220.2]:55325 "EHLO mx1.suse.de"
+	id S1756848Ab0E1INF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 May 2010 04:13:05 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:1545 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755991Ab0E1IGw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 May 2010 04:06:52 -0400
-From: Thomas Renninger <trenn@suse.de>
-Organization: SUSE Products GmbH
-To: Len Brown <lenb@kernel.org>
-Subject: Re: [linux-pm] idle-test patches queued for upstream
-Date: Fri, 28 May 2010 10:07:34 +0200
-User-Agent: KMail/1.13.3 (Linux/2.6.31.5-0.1-desktop; KDE/4.4.3; x86_64; ; )
-Cc: linux-pm@lists.linux-foundation.org, x86@kernel.org,
-       linux-kernel@vger.kernel.org
-References: <1274928151-30919-1-git-send-email-lenb@kernel.org> <201005271045.33500.trenn@suse.de> <alpine.LFD.2.00.1005272023510.24823@localhost.localdomain>
-In-Reply-To: <alpine.LFD.2.00.1005272023510.24823@localhost.localdomain>
+	id S1754684Ab0E1INA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 May 2010 04:13:00 -0400
+Message-ID: <4BFF7BE2.6020503@redhat.com>
+Date: Fri, 28 May 2010 16:16:34 +0800
+From: Cong Wang <amwang@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100330 Shredder/3.0.4
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201005281007.34706.trenn@suse.de>
+To: Flavio Leitner <fbl@sysclose.org>
+CC: linux-kernel@vger.kernel.org, Matt Mackall <mpm@selenic.com>,
+       netdev@vger.kernel.org, bridge@lists.linux-foundation.org,
+       Andy Gospodarek <gospo@redhat.com>, Neil Horman <nhorman@tuxdriver.com>,
+       Jeff Moyer <jmoyer@redhat.com>,
+       Stephen Hemminger <shemminger@linux-foundation.org>,
+       bonding-devel@lists.sourceforge.net, Jay Vosburgh <fubar@us.ibm.com>,
+       David Miller <davem@davemloft.net>
+Subject: Re: [v5 Patch 1/3] netpoll: add generic support for bridge and bonding
+ devices
+References: <20100505081514.5157.83783.sendpatchset@localhost.localdomain> <20100527180545.GA2345@sysclose.org>
+In-Reply-To: <20100527180545.GA2345@sysclose.org>
+Content-Type: multipart/mixed;
+ boundary="------------050607000507050808060501"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 28 May 2010 02:59:07 Len Brown wrote:
-> > > ... we think we can do better than ACPI.
-> 
-> > Why exactly? Is there any info missing in the ACPI tables?
-> > Or is this just to be more independent from OEMs?
-> 
-> ACPI has a few fundmental flaws here.  One is that it reports
-> exit latency instead of break-even power duration.
-> The other is that it requires a BIOS writer to
-> get the tables right.
-This is a general ACPI problem...
+This is a multi-part message in MIME format.
+--------------050607000507050808060501
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+
+On 05/28/10 02:05, Flavio Leitner wrote:
+>
+> Hi guys!
+>
+> I finally could test this to see if an old problem reported on bugzilla[1] was
+> fixed now, but unfortunately it is still there.
+>
+> The ticket is private I guess, but basically the problem happens when bonding
+> driver tries to print something after it had taken the write_lock (monitor
+> functions, enslave/de-enslave), so the printk() will pass through netpoll, then
+> on bonding again which no matter what mode you use, it will try to read_lock()
+> the lock again. The result is a deadlock and the entire system hangs.
+>
+
+Does the attached patch fix this hang?
+
+Thanks!
+
+----------------------->
+
+We should notify netconsole that bond is changing its slaves
+when we use active-backup mode.
+
+Signed-off-by: WANG Cong <amwang@redhat.com>
+
+----
+
+
+--------------050607000507050808060501
+Content-Type: text/x-patch;
+ name="drivers-net-bonding-fix-activebackup-deadlock.diff"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: attachment;
+ filename="drivers-net-bonding-fix-activebackup-deadlock.diff"
+
+diff --git a/drivers/net/bonding/bond_main.c b/drivers/net/bonding/bond_main.c
+index 5e12462..9494c02 100644
+--- a/drivers/net/bonding/bond_main.c
++++ b/drivers/net/bonding/bond_main.c
+@@ -1199,6 +1199,7 @@ void bond_select_active_slave(struct bonding *bond)
  
-> > Using ACPI table based C-states by default and using
-> > intel_idle.enable=1
-> > or similar for workarounds sounds safer.
-> > At least as long as the driver is experimental.
-> 
-> I plan to remove the EXPERIMENTAL in 1 release.
-> 
-> > Does Windows use ACPI C-state info for idle?
+ 	best_slave = bond_find_best_slave(bond);
+ 	if (best_slave != bond->curr_active_slave) {
++		netdev_bonding_change(bond->dev, NETDEV_BONDING_DESLAVE);
+ 		bond_change_active_slave(bond, best_slave);
+ 		rv = bond_set_carrier(bond);
+ 		if (!rv)
+@@ -2154,6 +2155,7 @@ static int bond_ioctl_change_active(struct net_device *bond_dev, struct net_devi
+ 	    (old_active) &&
+ 	    (new_active->link == BOND_LINK_UP) &&
+ 	    IS_UP(new_active->dev)) {
++		netdev_bonding_change(bond->dev, NETDEV_BONDING_DESLAVE);
+ 		write_lock_bh(&bond->curr_slave_lock);
+ 		bond_change_active_slave(bond, new_active);
+ 		write_unlock_bh(&bond->curr_slave_lock);
 
-> Yes, Windows uses ACPI.
-> On the Dell above, that is why Linux consumes 15% less idle power
-> and why Linux can take advantage of turbo mode and Windows can not.
-You always propageted to stay Windows compatible...
-Now we go the untested way.
-Let's see how much machines will break...
-
-Thanks for clarifications,
-
-    Thomas
+--------------050607000507050808060501--
