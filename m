@@ -1,116 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758329Ab0E1P2v (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 May 2010 11:28:51 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:59892 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756053Ab0E1P2t (ORCPT
+	id S1758642Ab0E1Pam (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 May 2010 11:30:42 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:37781 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1757373Ab0E1Pak (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 May 2010 11:28:49 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=g1XPGoo/ePIhc3D1oykP7eh5l7BVmGyQseGTjixrqTRFaoUG1VlzizBssINmCkIn5L
-         Ly2HUFHtPQeaewMELdN+lIOypI9CQoyHUb6urUjT3lJ3gOJ5momIJ2TEYGUm0N0msSbl
-         yyG4C49qBSSgP8Vy7/QMetslvvHpKEccAoEno=
-Date: Fri, 28 May 2010 12:28:42 -0300
-From: "Luis Claudio R. Goncalves" <lclaudio@uudg.org>
-To: Minchan Kim <minchan.kim@gmail.com>
-Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-       balbir@linux.vnet.ibm.com, Oleg Nesterov <oleg@redhat.com>,
-       linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+	Fri, 28 May 2010 11:30:40 -0400
+Date: Fri, 28 May 2010 11:30:40 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Peter Zijlstra <peterz@infradead.org>
+cc: Alan Cox <alan@lxorguk.ukuu.org.uk>,
+       Arve =?ISO-8859-1?Q?Hj=F8nnev=E5g?= <arve@android.com>,
+       Matthew Garrett <mjg59@srcf.ucam.org>,
        Thomas Gleixner <tglx@linutronix.de>,
-       Peter Zijlstra <peterz@infradead.org>,
-       David Rientjes <rientjes@google.com>, Mel Gorman <mel@csn.ul.ie>,
-       williams@redhat.com
-Subject: Re: [RFC] oom-kill: give the dying task a higher priority
-Message-ID: <20100528152842.GH11364@uudg.org>
-References: <20100528143605.7E2A.A69D9226@jp.fujitsu.com>
- <AANLkTikB-8Qu03VrA5Z0LMXM_alSV7SLqzl-MmiLmFGv@mail.gmail.com>
- <20100528145329.7E2D.A69D9226@jp.fujitsu.com>
- <20100528125305.GE11364@uudg.org>
- <20100528140623.GA11041@barrios-desktop>
- <20100528143617.GF11364@uudg.org>
- <20100528151249.GB12035@barrios-desktop>
+       LKML <linux-kernel@vger.kernel.org>,
+       Florian Mickler <florian@mickler.org>, <felipe.balbi@nokia.com>,
+       Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
+       Linux PM <linux-pm@lists.linux-foundation.org>
+Subject: Re: [linux-pm] [PATCH 0/8] Suspend block api (version 8)
+In-Reply-To: <1275059924.27810.9640.camel@twins>
+Message-ID: <Pine.LNX.4.44L0.1005281128280.1939-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100528151249.GB12035@barrios-desktop>
-User-Agent: Mutt/1.5.20 (2009-08-17)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, May 29, 2010 at 12:12:49AM +0900, Minchan Kim wrote:
-| On Fri, May 28, 2010 at 11:36:17AM -0300, Luis Claudio R. Goncalves wrote:
-| > On Fri, May 28, 2010 at 11:06:23PM +0900, Minchan Kim wrote:
-| > | On Fri, May 28, 2010 at 09:53:05AM -0300, Luis Claudio R. Goncalves wrote:
-| > | > On Fri, May 28, 2010 at 02:59:02PM +0900, KOSAKI Motohiro wrote:
-| > ...
-| > | > | As far as my observation, RT-function always have some syscall. because pure
-| > | > | calculation doesn't need deterministic guarantee. But _if_ you are really
-| > | > | using such priority design. I'm ok maximum NonRT priority instead maximum
-| > | > | RT priority too.
-| > | > 
-| > | > I confess I failed to distinguish memcg OOM and system OOM and used "in
-| > | > case of OOM kill the selected task the faster you can" as the guideline.
-| > | > If the exit code path is short that shouldn't be a problem.
-| > | > 
-| > | > Maybe the right way to go would be giving the dying task the biggest
-| > | > priority inside that memcg to be sure that it will be the next process from
-| > | > that memcg to be scheduled. Would that be reasonable?
-| > | 
-| > | Hmm. I can't understand your point. 
-| > | What do you mean failing distinguish memcg and system OOM?
-| > | 
-| > | We already have been distinguish it by mem_cgroup_out_of_memory.
-| > | (but we have to enable CONFIG_CGROUP_MEM_RES_CTLR). 
-| > | So task selected in select_bad_process is one out of memcg's tasks when 
-| > | memcg have a memory pressure. 
-| > 
-| > The approach of giving the highest priority to the dying task makes sense
-| > in a system wide OOM situation. I though that would also be good for the
-| > memcg OOM case.
-| > 
-| > After Balbir Singh's comment, I understand that in a memcg OOM the dying
-| > task should have a priority just above the priority of the main task of
-| > that memcg, in order to avoid interfering in the rest of the system.
-| > 
-| > That is the point where I failed to distinguish between memcg and system OOM.
-| > 
-| > Should I pursue that new idea of looking for the right priority inside the
-| > memcg or is it overkill? I really don't have a clear view of the impact of
-| > a memcg OOM on system performance - don't know if it is better to solve the
-| > issue sooner (highest RT priority) or leave it to be solved later (highest
-| > prio on the memcg). I have the impression the general case points to the
-| > simpler solution.
-| 
-| I think highest RT proirity ins't good solution.
-| As I mentiond, Some RT functions don't want to be preempted by other processes
-| which cause memory pressure. It makes RT task broken.
+On Fri, 28 May 2010, Peter Zijlstra wrote:
 
-For the RT case, if you reached a system OOM situation, your determinism has
-already been hurt. If the memcg OOM happens on the same memcg your RT task
-is - what will probably be the case most of time - again, the determinism
-has deteriorated. For both these cases, giving the dying task SCHED_FIFO
-MAX_RT_PRIO-1 means a faster recovery.
+> On Fri, 2010-05-28 at 10:35 -0400, Alan Stern wrote:
+> >         The app is busy doing something else unimportant
+> >         We do into power save
+> >         Push a button, generate an IRQ
+> >         Come out of power save
+> >         No app to poke
+> >         * System goes back to sleep and eventually wakes up again
+> >         The app finishes what it was doing
+> >         The app sees there is a keystroke and marks itself important
+> >         ...
+> > 
+> > The * step is where trouble can occur. 
+> 
+> Only because you don't run runnable tasks. Please stop considering that
+> an option and these problems go away.
 
-I don't know what is the system-wide latency effect of a memcg OOM, if any,
-or if it would affect an RT task running on another memcg. That is the case
-where a more careful priority selection could be necessary.
- 
-| On the other hand, normal processes don't have a requirement of RT.
-| But it isn't a big problem that it lost little time slice, I think. 
-| So how about raising max normal priority? 
-| but I am not sure this is right solution.
-| Let's listen other's opinion. 
-| I believe Peter have a good idea.
+True.  If the untrusted apps can be segregated and forcibly stopped, 
+and if they don't need timely delivery of wakeup events, then there's 
+no problem.
 
-Thanks again for helping to discuss this idea.
-
-Luis
--- 
-[ Luis Claudio R. Goncalves                    Bass - Gospel - RT ]
-[ Fingerprint: 4FDD B8C4 3C59 34BD 8BE9  2696 7203 D980 A448 C8F8 ]
+Alan Stern
 
