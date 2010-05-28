@@ -1,55 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932834Ab0E1R2r (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 May 2010 13:28:47 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:32976 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755474Ab0E1R2p (ORCPT
+	id S932876Ab0E1R3L (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 May 2010 13:29:11 -0400
+Received: from www.telegraphics.com.au ([204.15.192.19]:47970 "EHLO
+	mail.telegraphics.com.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932381Ab0E1R3H (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 May 2010 13:28:45 -0400
-Subject: Re: [PATCH 8/8] intel_idle: create a native cpuidle driver for
- select intel processors
-From: Kevin Hilman <khilman@deeprootsystems.com>
-To: Len Brown <lenb@kernel.org>
-Cc: Arjan van de Ven <arjan@infradead.org>, x86@kernel.org,
-       linux-pm@lists.linux-foundation.org,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-In-Reply-To: <alpine.LFD.2.00.1005272009490.24823@localhost.localdomain>
-References: <1274928151-30919-1-git-send-email-lenb@kernel.org>
-	 <e099975ca65a7f6ac7f8bc3fee84d3e03893aa31.1274926772.git.len.brown@intel.com>
-	 <198450ec1600d9a7f55270dd4d44d6b55bc5b184.1274926772.git.len.brown@intel.com>
-	 <87ljb5l9d5.fsf@deeprootsystems.com>
-	 <20100527072207.2e783b1e@infradead.org>
-	 <87ocg1jts7.fsf@deeprootsystems.com>
-	 <alpine.LFD.2.00.1005272009490.24823@localhost.localdomain>
-Content-Type: text/plain; charset="UTF-8"
-Organization: Deep Root Systems, LLC
-Date: Fri, 28 May 2010 10:28:30 -0700
-Message-ID: <1275067710.4507.194.camel@localhost>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.1 
-Content-Transfer-Encoding: 7bit
+	Fri, 28 May 2010 13:29:07 -0400
+Date: Sat, 29 May 2010 03:29:01 +1000 (EST)
+From: Finn Thain <fthain@telegraphics.com.au>
+To: David Miller <davem@davemloft.net>
+cc: joe@perches.com, p_gortmaker@yahoo.com, netdev@vger.kernel.org,
+       linux-kernel@vger.kernel.org, linux-m68k@vger.kernel.org
+Subject: [PATCH] mac8390: change an error return code and some cleanup, take
+ 4
+In-Reply-To: <20100421.163041.158540277.davem@davemloft.net>
+Message-ID: <alpine.OSX.2.00.1005290255580.691@localhost>
+References: <alpine.OSX.2.00.1004161403160.271@localhost> <alpine.OSX.2.00.1004162347390.271@localhost> <alpine.OSX.2.00.1004171258330.358@localhost> <20100421.163041.158540277.davem@davemloft.net>
+User-Agent: Alpine 2.00 (OSX 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-05-27 at 20:22 -0400, Len Brown wrote:
-> > >> >  drivers/idle/intel_idle.c       |  446
-> 
-> > >> Any reason this arch-specific driver needs to be in drivers/idle
-> > >> instead of under a platform specific dir like arch/x86?
-> 
-> > To me that would be much less convenient as I expect to maintain my
-> > platform-specific CPUidle driver along with the rest of my
-> > platform-specific code.
-> 
-> I guess the reason is conveneince of the maintainer (me).
 
-OK, fair enough.
+Propagate the request_irq() return code. Also promote the log level of the 
+failure message. Likewise some other KERN_INFO messages.
 
-At least that makes more sense to me than "keeping all users in one
-place."
+Signed-off-by: Finn Thain <fthain@telegraphics.com.au>
 
-Kevin
-
-
+Index: linux-2.6.34/drivers/net/mac8390.c
+===================================================================
+--- linux-2.6.34.orig/drivers/net/mac8390.c	2010-05-28 00:27:30.000000000 +1000
++++ linux-2.6.34/drivers/net/mac8390.c	2010-05-28 00:27:32.000000000 +1000
+@@ -556,7 +556,7 @@ static int __init mac8390_initdev(struct
+ 	case MAC8390_APPLE:
+ 		switch (mac8390_testio(dev->mem_start)) {
+ 		case ACCESS_UNKNOWN:
+-			pr_info("Don't know how to access card memory!\n");
++			pr_err("Don't know how to access card memory!\n");
+ 			return -ENODEV;
+ 			break;
+ 
+@@ -643,10 +643,13 @@ static int __init mac8390_initdev(struct
+ 
+ static int mac8390_open(struct net_device *dev)
+ {
++	int err;
++
+ 	__ei_open(dev);
+-	if (request_irq(dev->irq, __ei_interrupt, 0, "8390 Ethernet", dev)) {
+-		pr_info("%s: unable to get IRQ %d.\n", dev->name, dev->irq);
+-		return -EAGAIN;
++	err = request_irq(dev->irq, __ei_interrupt, 0, "8390 Ethernet", dev);
++	if (err) {
++		pr_err("%s: unable to get IRQ %d\n", dev->name, dev->irq);
++		return err;
+ 	}
+ 	return 0;
+ }
+@@ -662,7 +665,7 @@ static void mac8390_no_reset(struct net_
+ {
+ 	ei_status.txing = 0;
+ 	if (ei_debug > 1)
+-		pr_info("reset not supported\n");
++		printk(KERN_DEBUG pr_fmt("reset not supported\n"));
+ 	return;
+ }
+ 
+@@ -670,7 +673,7 @@ static void interlan_reset(struct net_de
+ {
+ 	unsigned char *target = nubus_slot_addr(IRQ2SLOT(dev->irq));
+ 	if (ei_debug > 1)
+-		pr_info("Need to reset the NS8390 t=%lu...", jiffies);
++		printk(KERN_DEBUG pr_fmt("Need to reset the NS8390 t=%lu..."), jiffies);
+ 	ei_status.txing = 0;
+ 	target[0xC0000] = 0;
+ 	if (ei_debug > 1)
+@@ -871,5 +874,3 @@ static void word_memcpy_fromcard(void *t
+ 	while (count--)
+ 		*to++ = *from++;
+ }
+-
+-
