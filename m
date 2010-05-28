@@ -1,119 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755287Ab0E1MwU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 May 2010 08:52:20 -0400
-Received: from smtp-out.google.com ([74.125.121.35]:45116 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754677Ab0E1MwP (ORCPT
+	id S1754694Ab0E1MxT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 May 2010 08:53:19 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:50045 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754043Ab0E1MxR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 May 2010 08:52:15 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=mime-version:in-reply-to:references:date:message-id:subject:from:to:
-	cc:content-type:x-system-of-record;
-	b=CDaMpAru5JWUUUutSEC3QlY7KN0x3Bcs2JHicr2OJmCM0+4NDecRv7Zk0CICTt8iE
-	sfnWx2xLt65t5lGSEYBGA==
-MIME-Version: 1.0
-In-Reply-To: <4BFFB681.1000105@nokia.com>
-References: <20100527222514.0a1710bf@lxorguk.ukuu.org.uk>
-	<Pine.LNX.4.44L0.1005271730180.3239-100000@iolanthe.rowland.org>
-	<20100527230806.4deb6de3@lxorguk.ukuu.org.uk>
-	<20100527220949.GB10602@srcf.ucam.org>
-	<20100527232357.6d14fdb2@lxorguk.ukuu.org.uk>
-	<20100527223605.GB11364@srcf.ucam.org>
-	<20100527235546.09f3ce8a@lxorguk.ukuu.org.uk>
-	<20100528043114.GC26177@thunk.org>
-	<20100528103713.0a7952d9@lxorguk.ukuu.org.uk>
-	<20100528114123.GA22947@srcf.ucam.org>
-	<4BFFB681.1000105@nokia.com>
-Date: Fri, 28 May 2010 05:52:04 -0700
-Message-ID: <AANLkTim04ZfMcPHRB2D_bqcAuguaGwySH2b6repuYLkk@mail.gmail.com>
-Subject: Re: [linux-pm] [PATCH 0/8] Suspend block api (version 8)
-From: Brian Swetland <swetland@google.com>
-To: Igor Stoppa <igor.stoppa@nokia.com>
-Cc: ext Matthew Garrett <mjg59@srcf.ucam.org>,
-       Alan Cox <alan@lxorguk.ukuu.org.uk>, "tytso@mit.edu" <tytso@mit.edu>,
+	Fri, 28 May 2010 08:53:17 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=IfchjwGYFZp4h8WUkEN7i6bVnuWtglvMC5dkRGEim0i5ujGcZ18bvqYoMHyug0UqAP
+         TFJWXLnS0CNZDRcbrtxIKPMat5mTQHqiJPlbcBiQHsk4oKi12eFjuPK2qez9BFR09+/9
+         HYd5PhwXOkrpcy6IvCJ5ROLSM3EeRqt1wWLSI=
+Date: Fri, 28 May 2010 09:53:05 -0300
+From: "Luis Claudio R. Goncalves" <lclaudio@uudg.org>
+To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: Minchan Kim <minchan.kim@gmail.com>, balbir@linux.vnet.ibm.com,
+       Oleg Nesterov <oleg@redhat.com>, linux-kernel@vger.kernel.org,
+       linux-mm@kvack.org, Thomas Gleixner <tglx@linutronix.de>,
        Peter Zijlstra <peterz@infradead.org>,
-       LKML <linux-kernel@vger.kernel.org>,
-       Florian Mickler <florian@mickler.org>,
-       Linux PM <linux-pm@lists.linux-foundation.org>,
-       Thomas Gleixner <tglx@linutronix.de>,
-       Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
-       "Balbi Felipe (Nokia-D/Helsinki)" <felipe.balbi@nokia.com>
-Content-Type: text/plain; charset=UTF-8
-X-System-Of-Record: true
+       David Rientjes <rientjes@google.com>, Mel Gorman <mel@csn.ul.ie>,
+       williams@redhat.com
+Subject: Re: [RFC] oom-kill: give the dying task a higher priority
+Message-ID: <20100528125305.GE11364@uudg.org>
+References: <20100528143605.7E2A.A69D9226@jp.fujitsu.com>
+ <AANLkTikB-8Qu03VrA5Z0LMXM_alSV7SLqzl-MmiLmFGv@mail.gmail.com>
+ <20100528145329.7E2D.A69D9226@jp.fujitsu.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100528145329.7E2D.A69D9226@jp.fujitsu.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 28, 2010 at 5:26 AM, Igor Stoppa <igor.stoppa@nokia.com> wrote:
-> ext Matthew Garrett wrote:
->> On Fri, May 28, 2010 at 10:37:13AM +0100, Alan Cox wrote:
->>> The other vendors appear to be managing nicely without magic blockers. I
->>> conjecture therefore there are other solutions.
->>
->> Actually, no. A badly behaved application will kill the N900's battery
->> life. Nobody else has "managed nicely" - they've just made life harder for
->> application developers and users, which may have something to do with the
->> relative levels of market adoption of Maemo and Android. I'm not aware of
->> any form of resource management framework in MeeGo either, so as far as I
->> know it'll have exactly the same problem.
->
-> It's true that a braindead app can kill the battery.
->
-> However we provide a version of powertop that is tailored to the N900, there
-> is a nokia energy profiler meant to give graphical representation of the
-> battery current, there is htop available and you can even get the processor
-> activity visualized on the leftmost and rightmost keyboard backlight LEDS,
-> when in RD mode and with screen blanked.
->
-> I would advice you to not start debating on company strategies, this is not
-> the right place.
+On Fri, May 28, 2010 at 02:59:02PM +0900, KOSAKI Motohiro wrote:
+| > RT Task
+| > 
+| > void non-RT-function()
+| > {
+| >    system call();
+| >    buffer = malloc();
+| >    memset(buffer);
+| > }
+| > /*
+| >  * We make sure this function must be executed in some millisecond
+| >  */
+| > void RT-function()
+| > {
+| >    some calculation(); <- This doesn't have no dynamic characteristic
+| > }
+| > int main()
+| > {
+| >    non-RT-function();
+| >    /* This function make sure RT-function cannot preempt by others */
+| >    set_RT_max_high_priority();
+| >    RT-function A();
+| >    set_normal_priority();
+| >    non-RT-function();
+| > }
+| > 
+| > We don't want realtime in whole function of the task. What we want is
+| > just RT-function A.
+| > Of course, current Linux cannot make perfectly sure RT-functionA can
+| > not preempt by others.
+| > That's because some interrupt or exception happen. But RT-function A
+| > doesn't related to any dynamic characteristic. What can justify to
+| > preempt RT-function A by other processes?
+| 
+| As far as my observation, RT-function always have some syscall. because pure
+| calculation doesn't need deterministic guarantee. But _if_ you are really
+| using such priority design. I'm ok maximum NonRT priority instead maximum
+| RT priority too.
 
-At a certain point, if one side of the argument is using "N900 / OMAP3
-works just fine as is" (which has certainly been the case stated by a
-number of folks throughout these discussions), I think it's a little
-unrealistic to express shock that somebody argues the opposing point.
+I confess I failed to distinguish memcg OOM and system OOM and used "in
+case of OOM kill the selected task the faster you can" as the guideline.
+If the exit code path is short that shouldn't be a problem.
 
-I've personally avoided commenting on specific power management issues
-or properties of competitive platforms because it can easily be viewed
-as rather rude or unprofessional.  (though in theory we all could
-benefit from any improvements to the kernel regarding power
-management, no?).
+Maybe the right way to go would be giving the dying task the biggest
+priority inside that memcg to be sure that it will be the next process from
+that memcg to be scheduled. Would that be reasonable?
 
-I am quite willing to state that on both MSM and OMAP based Android
-platforms, we've found that the suspend blocker model allows us to
-obtain a lower average power draw than if we don't use it -- Mike Chan
-provided some numbers earlier in another thread in the trivial device
-idle case, the win is of course much larger in the case of several
-poorly behaved apps being active.
+| Luis, NonRT high priority break your use case? and if yes, can you please
+| explain the reason?
 
-I do think that everyone involved agrees that it is beneficial to
-educate users and developers in hopes that users will understand that
-some apps are non-optimal and developers will be encouraged to write
-better apps.
+Most of my tests are in the realtime land, usually with premmpt_rt kernels.
+In this case, an RT priority will be usually necessary. But that is not the
+general case and I agree that a smoother (but not slower) solution could be
+devised by just increasing the dying process'priority to be high enough for
+the process set (memcg) it belongs to.
 
-I think we also all agree that striving to obtain the lowest power
-state at all times through cpu frequency scaling, runtime pm, drivers
-that aggressively clock/power down when idle, etc is a worthy goal.
-Some have argued that suspend blockers may deter further development
-in these areas, but I think this is unlikely -- power usage while the
-device is active and the user is interacting with it is just as
-critical as when it's not being used interactively.  We (Android)
-certainly pursue aggressive low power optimization in both states.
+What is the impact of a memcg OOM for the system as a whole? That should be
+factored in the equation too.
 
-There appears to be some disagreement in terms of what one should do
-in the face of poorly behaved applications.  The Android approach has
-been to both gather as much data as possible for education of user and
-developer and to mitigate the impact of poorly written apps on
-endusers, goals which are aided by the suspend blocker model.
+Luis
+-- 
+[ Luis Claudio R. Goncalves                    Bass - Gospel - RT ]
+[ Fingerprint: 4FDD B8C4 3C59 34BD 8BE9  2696 7203 D980 A448 C8F8 ]
 
-A reality of a mass market device with a completely open and
-unrestricted application development and distribution ecosystem is
-that there will be plenty of non-optimal apps available to users
-(Sturgeon's Law applies everywhere, after all).  Worse yet, many of
-these non-optimal apps may be beloved by users for various reasons.  I
-think there's value in trying to do the best you can power-wise even
-in the face of such horrible foes as the dreaded Bouncing Cows App
-that Matthew is fond of citing as an example.
-
-Brian
