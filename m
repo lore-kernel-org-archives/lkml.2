@@ -1,78 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932079Ab0E1FKf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 May 2010 01:10:35 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:60326 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751415Ab0E1FKc (ORCPT
+	id S1753898Ab0E1FPy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 May 2010 01:15:54 -0400
+Received: from casper.infradead.org ([85.118.1.10]:55897 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751126Ab0E1FPw convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 May 2010 01:10:32 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=xcFURsvj6uhOCPLkPHbPlUHacH3BZ8uFGU2M3TMUNXNEp5GuzSRBIa+iw6yk1WNRi9
-         k56cMlSbNX2VIAXrY5e9A6+RCK6Dj+KCrOnOSo9wW5HfV6pyYhpL0R99zJ6b+qPd/Nh/
-         t8N1Hheq8xNLJYSW2Nth9AIP7C8i0Q6A3xzgQ=
-Date: Thu, 27 May 2010 22:10:20 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Robert Hancock <hancockrwd@gmail.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
-       Bastien Nocera <hadess@hadess.net>
-Subject: Re: [git pull] Input updates for 2.6.34-rc6
-Message-ID: <20100528051020.GC2663@core.coreip.homeip.net>
-References: <20100513075728.GF30110@core.coreip.homeip.net>
- <alpine.LFD.2.00.1005130724280.3711@i5.linux-foundation.org>
- <20100513160117.GB22238@core.coreip.homeip.net>
- <alpine.LFD.2.00.1005130943460.3711@i5.linux-foundation.org>
- <4BFE0FAB.9040009@gmail.com>
- <alpine.LFD.2.00.1005270956380.3689@i5.linux-foundation.org>
- <AANLkTimkI2rLOO2vaPFBQUbzr5t0pAQGQ5R5noTOBp4K@mail.gmail.com>
- <alpine.LFD.2.00.1005271744410.11382@i5.linux-foundation.org>
- <4B59D6F4-825C-4851-929F-DCA28A343B23@gmail.com>
- <4BFF4120.7030501@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4BFF4120.7030501@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
+	Fri, 28 May 2010 01:15:52 -0400
+Subject: Re: [linux-pm] [PATCH 0/8] Suspend block api (version 8)
+From: Peter Zijlstra <peterz@infradead.org>
+To: Alan Stern <stern@rowland.harvard.edu>
+Cc: Matthew Garrett <mjg59@srcf.ucam.org>, Paul@smtp1.linux-foundation.org,
+       LKML <linux-kernel@vger.kernel.org>,
+       Florian Mickler <florian@mickler.org>,
+       Linux PM <linux-pm@lists.linux-foundation.org>,
+       Thomas Gleixner <tglx@linutronix.de>,
+       Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
+       felipe.balbi@nokia.com, Alan Cox <alan@lxorguk.ukuu.org.uk>
+In-Reply-To: <Pine.LNX.4.44L0.1005271517170.3239-100000@iolanthe.rowland.org>
+References: <Pine.LNX.4.44L0.1005271517170.3239-100000@iolanthe.rowland.org>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Fri, 28 May 2010 07:15:42 +0200
+Message-ID: <1275023742.27810.7782.camel@twins>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 27, 2010 at 10:05:52PM -0600, Robert Hancock wrote:
-> On 05/27/2010 07:03 PM, Dmitry Torokhov wrote:
-> >On May 27, 2010, at 5:46 PM, Linus Torvalds
-> ><torvalds@linux-foundation.org> wrote:
-> >
-> >>
-> >>
-> >>On Thu, 27 May 2010, Robert Hancock wrote:
-> >>>
-> >>>It's highly unlikely that they are incomplete in this respect, as
-> >>>since I mentioned, Windows would fail to recognize the PS/2 controller
-> >>>that people would expect to work, which would most likely get
-> >>>noticed..
-> >>
-> >>Did you miss the part where I actually quoted my own modern Core i5
-> >>machine that _does_ have a keyboard controller, and _does_ have a
-> >>keyboard
-> >>port, and that does _not_ mention them in the PnP tables?
-> >
-> >Except that it _does_. But _our_ ACPI implementation drops all inactive
-> >devices so our PNP layer does not see your mouse and keyboard ports.
+On Thu, 2010-05-27 at 15:19 -0400, Alan Stern wrote:
+> On Thu, 27 May 2010, Peter Zijlstra wrote:
 > 
-> That's likely true - 
+> > I still don't see how blocking applications will cause missed wakeups in
+> > anything but a buggy application at worst, and even those will
+> > eventually get the event when they unblock.
+> > 
+> > What seems to be the confusion?
+> 
+> During forced suspend, applications are block because they are frozen.
+> 
+> When an event occurs, the application is notified somehow.  But it 
+> can't respond because it is frozen.  Hence the event remains sitting in 
+> a kernel queue and the system goes ahead and suspends anyway.  The 
+> application doesn't get thawed until the system wakes up at some 
+> indefinite time in the future.
 
-This was not a guess - I have seen DSDT from Linus' box.
-
-That is why I said I'd be happy applying Metthew's patch if our ACPI did
-not drop inactive devices - it would leave Apple and newer boxes alone
-while still allowing plugging in keyboard/mouse in boxes that do have
-i8042 even if BIOS decided to hide it from Windows.
-
--- 
-Dmitry
+If the kernel is awake to put things in queues, we're clearly not
+suspended and userspace is running ?!
