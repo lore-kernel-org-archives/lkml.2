@@ -1,51 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758970Ab0E1RKY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 May 2010 13:10:24 -0400
-Received: from relay3.sgi.com ([192.48.152.1]:54956 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1758916Ab0E1RKX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 May 2010 13:10:23 -0400
-Message-ID: <4BFFF8F8.1070502@sgi.com>
-Date: Fri, 28 May 2010 10:10:16 -0700
-From: Mike Travis <travis@sgi.com>
-User-Agent: Thunderbird 2.0.0.23 (X11/20090817)
-MIME-Version: 1.0
-To: "H. Peter Anvin" <hpa@zytor.com>
-CC: Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
-       x86@kernel.org, Jesse Barnes <jbarnes@virtuousgeek.org>,
-       Bjorn Helgaas <bjorn.helgaas@hp.com>,
-       Jacob Pan <jacob.jun.pan@intel.com>, Tejun Heo <tj@kernel.org>,
-       Mike Habeck <habeck@sgi.com>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [Patch 1/1] x86 pci: Add option to not assign BAR's if not already
- assigned
-References: <4BEAF008.9030805@sgi.com> <4BFFF517.6040401@sgi.com> <4BFFF6B8.30005@zytor.com>
-In-Reply-To: <4BFFF6B8.30005@zytor.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+	id S932571Ab0E1RNQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 May 2010 13:13:16 -0400
+Received: from esgaroth.petrovitsch.at ([78.47.184.11]:3998 "EHLO
+	esgaroth.petrovitsch.priv.at" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932236Ab0E1RNO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 May 2010 13:13:14 -0400
+X-DKIM: Sendmail DKIM Filter v2.8.3 unknown-host o4SHCMAn031360
+Subject: Re: [linux-pm] [PATCH 0/8] Suspend block api (version 8)
+From: Bernd Petrovitsch <bernd@petrovitsch.priv.at>
+To: Matthew Garrett <mjg59@srcf.ucam.org>
+Cc: Alan Stern <stern@rowland.harvard.edu>,
+       Alan Cox <alan@lxorguk.ukuu.org.uk>,
+       Peter Zijlstra <peterz@infradead.org>,
+       LKML <linux-kernel@vger.kernel.org>,
+       Florian Mickler <florian@mickler.org>, felipe.balbi@nokia.com,
+       Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
+       Linux PM <linux-pm@lists.linux-foundation.org>
+In-Reply-To: <20100528114504.GB22947@srcf.ucam.org>
+References: <20100527210808.GB8865@srcf.ucam.org>
+	 <Pine.LNX.4.44L0.1005271723200.3239-100000@iolanthe.rowland.org>
+	 <20100527212852.GA9859@srcf.ucam.org> <1275040988.20005.29.camel@thorin>
+	 <20100528114504.GB22947@srcf.ucam.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 28 May 2010 19:12:21 +0200
+Message-ID: <1275066741.20005.127.camel@thorin>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
 Content-Transfer-Encoding: 7bit
+X-DCC-wuwien-Metrics: esgaroth.petrovitsch.priv.at; whitelist
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-H. Peter Anvin wrote:
-> On 05/28/2010 09:53 AM, Mike Travis wrote:
->> Any further consideration for this patch, or has it been rejected?
+On Fre, 2010-05-28 at 12:45 +0100, Matthew Garrett wrote:
+> On Fri, May 28, 2010 at 12:03:08PM +0200, Bernd Petrovitsch wrote:
+> > On Don, 2010-05-27 at 22:28 +0100, Matthew Garrett wrote:
+> > > At the point where you're rewriting the application you can just make it 
+> > > adhere to our current behavioural standards anyway.
+> > 
+> > Thank you for confirming that the so-called "feature" is just there to
+> > make apps work in some area that are crappy anyways - and God knows in
+> > which other areas they are crappy too.
 > 
-> Well, it's really up to Jesse, but as far as I can see, this patch is a
-> net loss of functionality and doesn't actually add anything.  Without
-> this patch, some resources that were not assigned by BIOS will be
-> unreachable.  With this patch, *all* resources that were not assigned by
-> BIOS will be unreachable...
-> 
-> 	-hpa
-> 
+> Kind of like memory protection, really. Or preemptive multitasking. Or 
+> many things that the kernel does to prevent badly written applications 
+> from interfering with other applications or the user's experience.
 
-Apparently you're missing the point of the patch?  The patch is needed
-because BIOS is purposely not assigning I/O BAR's to devices that won't
-use them, freeing up the resource for devices that do need them.  Where
-is the "all" resources that are not reachable?
+With the main difference that their semantics and API is defined by the
+lower layer so that the lower layer can make useful - for the
+multitasking part - scheduling decisions.
+There were other forms of multitasking before preemptive multitasking -
+coroutines (e.g. in Win-3.x quite late in IT history) and the like.
+So why not simply skip one step in evolution and go more directly to a
+useful solution?
 
-Thanks,
-Mike
+	Bernd
+-- 
+Bernd Petrovitsch                  Email : bernd@petrovitsch.priv.at
+                     LUGA : http://www.luga.at
+
