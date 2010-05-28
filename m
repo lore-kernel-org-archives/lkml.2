@@ -1,91 +1,152 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757890Ab0E1Uhi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 May 2010 16:37:38 -0400
-Received: from g5t0007.atlanta.hp.com ([15.192.0.44]:4545 "EHLO
-	g5t0007.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751650Ab0E1Uhh (ORCPT
+	id S1758900Ab0E1Umr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 May 2010 16:42:47 -0400
+Received: from caiajhbdcahe.dreamhost.com ([208.97.132.74]:44834 "EHLO
+	homiemail-a13.g.dreamhost.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1756766Ab0E1Umj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 May 2010 16:37:37 -0400
-Date: Fri, 28 May 2010 15:42:16 -0500
-From: Mike Miller <mike.miller@hp.com>
-To: Andrew Morton <akpm@linux-foundation.org>,
-       Jens Axboe <jens.axboe@oracle.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-       LKML-scsi <linux-scsi@vger.kernel.org>,
-       Steve Cameron <scameron@beardog.cce.hp.com>
-Subject: [PATCH 6/6] cciss: new controller support and bump driver version
-Message-ID: <20100528204216.GE6989@beardog.cce.hp.com>
-Mime-Version: 1.0
+	Fri, 28 May 2010 16:42:39 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws; d=sysclose.org; h=date:from:to:cc
+	:subject:message-id:references:mime-version:content-type:
+	in-reply-to; q=dns; s=sysclose.org; b=TnxocAwIfTGInES8VH8So4cxvg
+	Q/S6NjygcYZa5FqH1woVV7U1UkJKCxaO1X0SYcCc+Vms2tsg23/dn6YoVh0EQvtg
+	iV8kTM16nHmczJkpGq8x054wAxc5YX9EUe0ILPc4WvjwPXu1s3m07DyvDPtDwK3Y
+	TDqFZuenbfQ8XCDIo=
+Date: Fri, 28 May 2010 17:42:29 -0300
+From: Flavio Leitner <fbl@sysclose.org>
+To: Cong Wang <amwang@redhat.com>
+Cc: linux-kernel@vger.kernel.org, Matt Mackall <mpm@selenic.com>,
+       netdev@vger.kernel.org, bridge@lists.linux-foundation.org,
+       Andy Gospodarek <gospo@redhat.com>, Neil Horman <nhorman@tuxdriver.com>,
+       Jeff Moyer <jmoyer@redhat.com>,
+       Stephen Hemminger <shemminger@linux-foundation.org>,
+       bonding-devel@lists.sourceforge.net, Jay Vosburgh <fubar@us.ibm.com>,
+       David Miller <davem@davemloft.net>
+Subject: Re: [v5 Patch 1/3] netpoll: add generic support for bridge and
+ bonding devices
+Message-ID: <20100528204229.GD2345@sysclose.org>
+References: <20100505081514.5157.83783.sendpatchset@localhost.localdomain>
+ <20100527180545.GA2345@sysclose.org>
+ <4BFF7BE2.6020503@redhat.com>
+MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.4.2.2i
+In-Reply-To: <4BFF7BE2.6020503@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Patch 6 of 6
-cciss: add new controller support
-This patch adds support for new controllers due out next year. HP must
-continue to support new controllers in older distros. All vendors require
-support be upstream. These controllers support only 16 commands in simple
-mode but can support up to 1024 in performant mode. See patch 5/6/
-We have no marketing names yet.
+On Fri, May 28, 2010 at 04:16:34PM +0800, Cong Wang wrote:
+> On 05/28/10 02:05, Flavio Leitner wrote:
+> >
+> >Hi guys!
+> >
+> >I finally could test this to see if an old problem reported on bugzilla[1] was
+> >fixed now, but unfortunately it is still there.
+> >
+> >The ticket is private I guess, but basically the problem happens when bonding
+> >driver tries to print something after it had taken the write_lock (monitor
+> >functions, enslave/de-enslave), so the printk() will pass through netpoll, then
+> >on bonding again which no matter what mode you use, it will try to read_lock()
+> >the lock again. The result is a deadlock and the entire system hangs.
+> >
+> 
+> Does the attached patch fix this hang?
 
-From: Mike Miller <mike.miller@hp.com>
-Cc: Stephen M. Cameron <scameron@beardog.cce.hp.com>
+I got another issue now:
 
-Signed-off-by: Mike Miller <mike.miller@hp.com>
----
- drivers/block/cciss.c |   20 ++++++++++++++------
- 1 files changed, 14 insertions(+), 6 deletions(-)
+[   89.523062] bonding: bond0: enslaving eth0 as a backup interface with a down link.
+[   89.580746] bonding: bond0: enslaving eth2 as a backup interface with a down link.
+[   91.198527] e1000: eth2 NIC Link is Up 100 Mbps Half Duplex, Flow Control: None
+[   91.238245] bonding: bond0: link status definitely up for interface eth2.
 
-diff --git a/drivers/block/cciss.c b/drivers/block/cciss.c
-index 08a2e61..5e215ff 100644
---- a/drivers/block/cciss.c
-+++ b/drivers/block/cciss.c
-@@ -56,16 +56,14 @@
- #include <linux/kthread.h>
- 
- #define CCISS_DRIVER_VERSION(maj,min,submin) ((maj<<16)|(min<<8)|(submin))
--#define DRIVER_NAME "HP CISS Driver (v 3.6.20)"
--#define DRIVER_VERSION CCISS_DRIVER_VERSION(3, 6, 20)
-+#define DRIVER_NAME "HP CISS Driver (v 3.6.26)"
-+#define DRIVER_VERSION CCISS_DRIVER_VERSION(3, 6, 26)
- 
- /* Embedded module documentation macros - see modules.h */
- MODULE_AUTHOR("Hewlett-Packard Company");
- MODULE_DESCRIPTION("Driver for HP Smart Array Controllers");
--MODULE_SUPPORTED_DEVICE("HP SA5i SA5i+ SA532 SA5300 SA5312 SA641 SA642 SA6400"
--			" SA6i P600 P800 P400 P400i E200 E200i E500 P700m"
--			" Smart Array G2 Series SAS/SATA Controllers");
--MODULE_VERSION("3.6.20");
-+MODULE_SUPPORTED_DEVICE("HP Smart Array Controllers");
-+MODULE_VERSION("3.6.26");
- MODULE_LICENSE("GPL");
- 
- static int cciss_allow_hpsa;
-@@ -107,6 +105,11 @@ static const struct pci_device_id cciss_pci_device_id[] = {
- 	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSE,     0x103C, 0x3249},
- 	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSE,     0x103C, 0x324A},
- 	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSE,     0x103C, 0x324B},
-+	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSE,     0x103C, 0x3250},
-+	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSE,     0x103C, 0x3251},
-+	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSE,     0x103C, 0x3252},
-+	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSE,     0x103C, 0x3253},
-+	{PCI_VENDOR_ID_HP,     PCI_DEVICE_ID_HP_CISSE,     0x103C, 0x3254},
- 	{0,}
- };
- 
-@@ -146,6 +149,11 @@ static struct board_type products[] = {
- 	{0x3249103C, "Smart Array P812", &SA5_access},
- 	{0x324A103C, "Smart Array P712m", &SA5_access},
- 	{0x324B103C, "Smart Array P711m", &SA5_access},
-+	{0x3250103C, "Smart Array", &SA5_access},
-+	{0x3251103C, "Smart Array", &SA5_access},
-+	{0x3252103C, "Smart Array", &SA5_access},
-+	{0x3253103C, "Smart Array", &SA5_access},
-+	{0x3254103C, "Smart Array", &SA5_access},
- };
- 
- /* How long to wait (in milliseconds) for board to go into simple mode */
+[   91.245381] BUG: scheduling while atomic: bond0/2716/0x10000100
+[   91.251565] 5 locks held by bond0/2716:
+[   91.255663]  #0:  ((bond_dev->name)){+.+.+.}, at: [<ffffffff81045fb4>] worker_thread+0x19a/0x2e2
+[   91.265179]  #1:  ((&(&bond->mii_work)->work)){+.+.+.}, at: [<ffffffff81045fb4>] worker_thread+0x19a/0x2e2
+[   91.275554]  #2:  (rtnl_mutex){+.+.+.}, at: [<ffffffff812daf38>] rtnl_lock+0x12/0x14
+[   91.284018]  #3:  (&bond->lock){++.+.+}, at: [<ffffffffa029e06a>] bond_mii_monitor+0x2a2/0x4ed [bonding]
+[   91.294230]  #4:  (&bond->curr_slave_lock){+...+.}, at: [<ffffffffa029e239>] bond_mii_monitor+0x471/0x4ed [bonding]
+[   91.305387] Modules linked in: bonding sunrpc ip6t_REJECT xt_tcpudp nf_conntrack_ipv6 xt_state nf_conntrack ip6table_filter ip6_tables x_tables ipv6 dm_mirror dm_region_hash dm_log dm_multipath uinput snd_hda_codec_idt snd_hda_intel snd_hda_codec snd_hwdep snd_seq snd_seq_device snd_pcm ppdev parport_pc parport rtc_cmos snd_timer tg3 snd ide_cd_mod i5000_edac i2c_i801 libphy rtc_core rtc_lib edac_core pcspkr e1000 dcdbas uhci_hcd tulip shpchp i2c_core cdrom serio_raw soundcore sg snd_page_alloc raid0 sd_mod button [last unloaded: mperf]
+[   91.357735] Pid: 2716, comm: bond0 Not tainted 2.6.34-04700-gd938a70-dirty #36
+[   91.371112] Call Trace:
+[   91.373825]  [<ffffffff81056002>] ? __debug_show_held_locks+0x22/0x24
+[   91.380530]  [<ffffffff8102e4a2>] __schedule_bug+0x6d/0x72
+[   91.386284]  [<ffffffff81363f6e>] schedule+0xc9/0x791
+[   91.391600]  [<ffffffff81032540>] __cond_resched+0x25/0x30
+[   91.397350]  [<ffffffff81364757>] _cond_resched+0x27/0x32
+[   91.403013]  [<ffffffff810ab243>] kmem_cache_alloc+0x2b/0xac
+[   91.408936]  [<ffffffff812c61fd>] skb_clone+0x42/0x5d
+[   91.414253]  [<ffffffff812ec696>] netlink_broadcast+0x192/0x369
+[   91.420436]  [<ffffffff812ecdc3>] nlmsg_notify+0x43/0x89
+[   91.426012]  [<ffffffff812dabc7>] rtnl_notify+0x2b/0x2d
+[   91.431501]  [<ffffffff812dacbc>] rtmsg_ifinfo+0xf3/0x118
+[   91.437165]  [<ffffffff812dad0c>] rtnetlink_event+0x2b/0x2f
+[   91.443003]  [<ffffffff81369fe4>] notifier_call_chain+0x32/0x5e
+[   91.449188]  [<ffffffff8104d618>] raw_notifier_call_chain+0xf/0x11
+[   91.455634]  [<ffffffff812cfc73>] call_netdevice_notifiers+0x45/0x4a
+[   91.462253]  [<ffffffff812d04f7>] netdev_bonding_change+0x12/0x14
+[   91.468614]  [<ffffffffa029d589>] bond_select_active_slave+0xe8/0x123 [bonding]
+[   91.476408]  [<ffffffffa029e241>] bond_mii_monitor+0x479/0x4ed [bonding]
+[   91.483375]  [<ffffffff81046009>] worker_thread+0x1ef/0x2e2
+[   91.489212]  [<ffffffff81045fb4>] ? worker_thread+0x19a/0x2e2
+[   91.495227]  [<ffffffffa029ddc8>] ? bond_mii_monitor+0x0/0x4ed [bonding]
+[   91.502192]  [<ffffffff81049c71>] ? autoremove_wake_function+0x0/0x34
+[   91.508897]  [<ffffffff81045e1a>] ? worker_thread+0x0/0x2e2
+[   91.514734]  [<ffffffff810498bb>] kthread+0x7a/0x82
+[   91.519878]  [<ffffffff81003714>] kernel_thread_helper+0x4/0x10
+[   91.526060]  [<ffffffff81366ffc>] ? restore_args+0x0/0x30
+[   91.531723]  [<ffffffff81049841>] ? kthread+0x0/0x82
+[   91.536953]  [<ffffffff81003710>] ? kernel_thread_helper+0x0/0x10
+[   91.543343] bonding: bond0: making interface eth2 the new active one.
+[   91.550554] bonding: bond0: first active interface up!
+[   91.556859] ADDRCONF(NETDEV_CHANGE): bond0: link becomes ready
+
+
+No other patch applied. Just started netconsole over bonding, so no need
+to pull the cable from slaves. Reproduced twice, one I got the
+backtrace above, and on the other one the system hangs completely 
+after the BUG: scheduling message.
+
+fbl
+
+
+> 
+> Thanks!
+> 
+> ----------------------->
+> 
+> We should notify netconsole that bond is changing its slaves
+> when we use active-backup mode.
+> 
+> Signed-off-by: WANG Cong <amwang@redhat.com>
+> 
+> ----
+> 
+
+> diff --git a/drivers/net/bonding/bond_main.c b/drivers/net/bonding/bond_main.c
+> index 5e12462..9494c02 100644
+> --- a/drivers/net/bonding/bond_main.c
+> +++ b/drivers/net/bonding/bond_main.c
+> @@ -1199,6 +1199,7 @@ void bond_select_active_slave(struct bonding *bond)
+>  
+>  	best_slave = bond_find_best_slave(bond);
+>  	if (best_slave != bond->curr_active_slave) {
+> +		netdev_bonding_change(bond->dev, NETDEV_BONDING_DESLAVE);
+>  		bond_change_active_slave(bond, best_slave);
+>  		rv = bond_set_carrier(bond);
+>  		if (!rv)
+> @@ -2154,6 +2155,7 @@ static int bond_ioctl_change_active(struct net_device *bond_dev, struct net_devi
+>  	    (old_active) &&
+>  	    (new_active->link == BOND_LINK_UP) &&
+>  	    IS_UP(new_active->dev)) {
+> +		netdev_bonding_change(bond->dev, NETDEV_BONDING_DESLAVE);
+>  		write_lock_bh(&bond->curr_slave_lock);
+>  		bond_change_active_slave(bond, new_active);
+>  		write_unlock_bh(&bond->curr_slave_lock);
+
+
+-- 
+Flavio
