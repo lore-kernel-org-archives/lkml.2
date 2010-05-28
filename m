@@ -1,75 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932561Ab0E1LMV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 May 2010 07:12:21 -0400
-Received: from ch-smtp01.sth.basefarm.net ([80.76.149.212]:42732 "EHLO
-	ch-smtp01.sth.basefarm.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755971Ab0E1LMU (ORCPT
+	id S1757712Ab0E1LVD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 May 2010 07:21:03 -0400
+Received: from mail-pz0-f176.google.com ([209.85.222.176]:62852 "EHLO
+	mail-pz0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751303Ab0E1LVA convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 May 2010 07:12:20 -0400
-Message-ID: <4BFFA4EF.4050401@euromail.se>
-Date: Fri, 28 May 2010 13:11:43 +0200
-From: Henrik Rydberg <rydberg@euromail.se>
-User-Agent: Thunderbird 2.0.0.24 (X11/20100411)
+	Fri, 28 May 2010 07:21:00 -0400
 MIME-Version: 1.0
-To: Stefani Seibold <stefani@seibold.net>
-CC: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
-       andi@firstfloor.org, gregkh@suse.de, alan@lxorguk.ukuu.org.uk,
-       tytso@mit.edu, iws@ovro.caltech.edu
-Subject: Re: really generic, type save and type definable.
-References: <1273654167-31067-1-git-send-email-stefani@seibold.net>	 <4BFF7418.8020607@euromail.se> <1275042747.23895.5.camel@wall-e.seibold.net>
-In-Reply-To: <1275042747.23895.5.camel@wall-e.seibold.net>
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: 83.248.196.134
-X-Scan-Result: No virus found in message 1OHxTm-0004Nb-4o.
-X-Scan-Signature: ch-smtp01.sth.basefarm.net 1OHxTm-0004Nb-4o b9c72917c035c38f2b283f0354f1c94e
+In-Reply-To: <20100528121636.34be17ad@lxorguk.ukuu.org.uk>
+References: <20100527222514.0a1710bf@lxorguk.ukuu.org.uk>
+	<Pine.LNX.4.44L0.1005271730180.3239-100000@iolanthe.rowland.org>
+	<20100527230806.4deb6de3@lxorguk.ukuu.org.uk>
+	<20100527220949.GB10602@srcf.ucam.org>
+	<20100527232357.6d14fdb2@lxorguk.ukuu.org.uk>
+	<AANLkTil6Bo7qZltbLzHJjIDyruKHFQEURpe5LPJEpTws@mail.gmail.com>
+	<20100528101755.7b5f6b8a@lxorguk.ukuu.org.uk>
+	<AANLkTilYHKKmQePBGW3LVLjUZy7HXHQku2Iub-LWGBm6@mail.gmail.com>
+	<20100528121636.34be17ad@lxorguk.ukuu.org.uk>
+Date: Fri, 28 May 2010 04:20:58 -0700
+Message-ID: <AANLkTinVs-YfxCHm7Zees9oq_NYySqI6UFtX57JlsLy-@mail.gmail.com>
+Subject: Re: [linux-pm] [PATCH 0/8] Suspend block api (version 8)
+From: =?ISO-8859-1?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: Matthew Garrett <mjg59@srcf.ucam.org>,
+       Alan Stern <stern@rowland.harvard.edu>,
+       Thomas Gleixner <tglx@linutronix.de>,
+       Peter Zijlstra <peterz@infradead.org>,
+       LKML <linux-kernel@vger.kernel.org>,
+       Florian Mickler <florian@mickler.org>, felipe.balbi@nokia.com,
+       Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
+       Linux PM <linux-pm@lists.linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Stefani Seibold wrote:
-> Am Freitag, den 28.05.2010, 09:43 +0200 schrieb Henrik Rydberg:
->> stefani@seibold.net wrote:
->> [...]
->>> The main goal was to provide an API which is very intuitive, save and easy
->>> to use. So linux will get now a powerful fifo API which provides all what 
->>> a developer needs. This will save in the future a lot of kernel space, since
->>> there is no need to write an own implementation. Most of the device driver 
->>> developers need a fifo, and also deep kernel development will gain benefit 
->>> from this API.
->> The meaning of the term "multiple readers" referred to in the header is somewhat
->> ambiguous. It could in principle refer to concurrent reading of the same
->> position, or concurrent reading from different positions. Imaginably, those
->> cases also have different locking behavior.
+2010/5/28 Alan Cox <alan@lxorguk.ukuu.org.uk>:
+>> > My laptop behaves in
+>> > that way if for example the battery is almost flat. Your suspend blocker
+>> > would cause me to lose all my work with a flat battery. This is another
+>> > example of why the application must not be the policy manager.
+>> >
 >>
->> What happens if two fifos are initialized with the same memory buffer?
+>> You can still force suspend when the battery gets low.
+>
+> So now we need suspend blocker blockers - as I predicted.
+
+Forced suspend is still supported. No new API is needed if you really
+want to force suspend.
+
+>
+>> > In the normal case in the PC world outside of corner cases like flat
+>> > batteries the answer is really simple. The laptop suspend to RAM
+>> > on idle intervals set in the BIOS and the like are sufficient that
+>> > progress will have been made before it considers going back to sleep
+>> > again. Right now its about ten seconds in each direction plus other costs
+>> > (wear on LCD backlight, disc parking etc).
+>> >
 >>
-> 
-> That would be a big nonsense! Tell me a real use case for such kind of
-> request...
+>> I'm not sure what you are trying to say here. Are you saying your
+>> laptop enters S3 from idle?
+>
+> If I have an alarm set on my laptop it will wake up when the alarm goes
+> off. Once it has woken up it will not go back to suspend (except for
+> something libe a battery event) until a timeout has elapsed that began
+> when the laptop woke up.
+>
 
-I am referring to a buffer where one thread writes data to the queue, and
-several other threads read the _same_ data from the queue. Such a queue would
-most likely have separate storage for the (buffer, head) on one hand, and the
-tails on the other hand. I was interested in whether anyone had put any thought
-into it, in particular with regard to a possible lock-less implementation.
+I think you are missing the point. It works fine if the alarm caused
+the wakeup, but if you had just used your system and your inactivity
+timeout expired just as your alarm goes off, the alarm will not wake
+the system, nor does it prevent it from suspending.
 
-I understand that it is not a good idea to use the same memory buffer in your
-kfifo implementation, I was merely suggesting the documentation say so as well.
+> This in the laptop work solves the problem of making progress. On a
+> laptop power budget, with laptop constraints on suspend (both physical
+> cycle limits of hardware and performance) this works fine.
+>
+> If I suspend/resume my laptop every time I have a 30 second idle gap I
+> will need a new laptop much sooner than makes me happy.
+>
 
-> 
->> What about one-to-many and many-to-one cases? The input system and the logging
->> facilities could serve as examples where such buffers would be useful.
->>
-> 
-> There is no ne-to-many and many-to-one cases since the API will handle
-> this. You can not read more data then fit in the fifo, also u can not
-> write more data the fifo can handle.
+Then don't set your inactivity timeout to 30 seconds. I don't see how
+this is relevant.
 
-I am not sure is this comment means "the API will not allow it", or if we simply
-got off on the wrong foot. If there is no interest in a one-to-many buffer, all
-is fine. Otherwise, this thread seems like an appropriate place for such a
-discussion, does it not?
+> I don't claim this is true for a typical mobile phone obviously.
+>
+The only difference on the phone is that we have way more wakeup
+events which makes the race conditions more visible. The race exist on
+your laptop as well.
 
-Henrik
+-- 
+Arve Hjønnevåg
