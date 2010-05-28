@@ -1,43 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758937Ab0E1RHg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 May 2010 13:07:36 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:49370 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754843Ab0E1RHe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 May 2010 13:07:34 -0400
+	id S1758970Ab0E1RKY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 May 2010 13:10:24 -0400
+Received: from relay3.sgi.com ([192.48.152.1]:54956 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1758916Ab0E1RKX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 May 2010 13:10:23 -0400
+Message-ID: <4BFFF8F8.1070502@sgi.com>
+Date: Fri, 28 May 2010 10:10:16 -0700
+From: Mike Travis <travis@sgi.com>
+User-Agent: Thunderbird 2.0.0.23 (X11/20090817)
 MIME-Version: 1.0
-In-Reply-To: <4BFF2A33.8060504@signal11.us>
-References: <4BFAC0B0.2060701@signal11.us> <AANLkTikDHib2QiQ51cJztYGxORojxo5PEwOGXvS5vCJ1@mail.gmail.com> 
-	<4BFF2A33.8060504@signal11.us>
-From: Kay Sievers <kay.sievers@vrfy.org>
-Date: Fri, 28 May 2010 19:07:15 +0200
-Message-ID: <AANLkTimb1N3zQCBbWQAq4u4YwcLYhyXdtOWfPt00REPR@mail.gmail.com>
-Subject: Re: [RFC] User Guide for Sysfs and libudev
-To: Alan Ott <alan@signal11.us>
-Cc: linux-kernel@vger.kernel.org, linux-input@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+To: "H. Peter Anvin" <hpa@zytor.com>
+CC: Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+       x86@kernel.org, Jesse Barnes <jbarnes@virtuousgeek.org>,
+       Bjorn Helgaas <bjorn.helgaas@hp.com>,
+       Jacob Pan <jacob.jun.pan@intel.com>, Tejun Heo <tj@kernel.org>,
+       Mike Habeck <habeck@sgi.com>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [Patch 1/1] x86 pci: Add option to not assign BAR's if not already
+ assigned
+References: <4BEAF008.9030805@sgi.com> <4BFFF517.6040401@sgi.com> <4BFFF6B8.30005@zytor.com>
+In-Reply-To: <4BFFF6B8.30005@zytor.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 28, 2010 at 04:28, Alan Ott <alan@signal11.us> wrote:
-> Also, would you please give me some text which describes the "online"
-> and "offline" events? What types of devices do these come from? Are
-> there any other types of events which are not listed?
 
-Nothing really. They would not be added today. It's from the time
-everybody added their favorite stuff to sysfs, and nobody had a real
-idea in which direction the stuff was supposed to go. :)
 
-We only need "add"/"remove" and "move" for renames or re-parenting,
-and "change" when stuff changes.
+H. Peter Anvin wrote:
+> On 05/28/2010 09:53 AM, Mike Travis wrote:
+>> Any further consideration for this patch, or has it been rejected?
+> 
+> Well, it's really up to Jesse, but as far as I can see, this patch is a
+> net loss of functionality and doesn't actually add anything.  Without
+> this patch, some resources that were not assigned by BIOS will be
+> unreachable.  With this patch, *all* resources that were not assigned by
+> BIOS will be unreachable...
+> 
+> 	-hpa
+> 
 
-The "online"/"offline" are not useful at all, and ideally should just
-use "change" for their state and pass the state with variables or
-sysfs files.
+Apparently you're missing the point of the patch?  The patch is needed
+because BIOS is purposely not assigning I/O BAR's to devices that won't
+use them, freeing up the resource for devices that do need them.  Where
+is the "all" resources that are not reachable?
 
-No new subsystem should ever use these events.
-
-Kay
+Thanks,
+Mike
