@@ -1,59 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758399Ab0E1RgN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 May 2010 13:36:13 -0400
-Received: from tx2ehsobe003.messaging.microsoft.com ([65.55.88.13]:22705 "EHLO
-	TX2EHSOBE005.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753485Ab0E1RgL (ORCPT
+	id S932836Ab0E1RhP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 May 2010 13:37:15 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:54254 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755474Ab0E1RhL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 May 2010 13:36:11 -0400
-X-SpamScore: -22
-X-BigFish: VPS-22(zz1432P98dN936eM62a3Lzz1202hzzz32i2a8h43h61h)
-X-Spam-TCS-SCL: 0:0
-X-WSS-ID: 0L354VW-01-KRC-02
-X-M-MSG: 
-Date: Fri, 28 May 2010 19:35:55 +0200
-From: Robert Richter <robert.richter@amd.com>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-CC: Peter Zijlstra <a.p.zijlstra@chello.nl>,
-       Stephane Eranian <eranian@google.com>, Ingo Molnar <mingo@elte.hu>,
-       Arnaldo Carvalho de Melo <acme@infradead.org>,
-       Paul Mackerras <paulus@samba.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC PATCH] perf: align raw sample data on 64-bit boundaries
-Message-ID: <20100528173555.GP21799@erda.amd.com>
-References: <1271190201-25705-1-git-send-email-robert.richter@amd.com>
- <1271190201-25705-13-git-send-email-robert.richter@amd.com>
- <n2wbd4cb8901004190519m9c939c26wbe49701fdfd2379a@mail.gmail.com>
- <20100518151227.GJ21799@erda.amd.com>
- <20100519073908.GE5704@nowhere>
- <20100519093100.GL21799@erda.amd.com>
- <20100524212459.GA9707@nowhere>
+	Fri, 28 May 2010 13:37:11 -0400
+Date: Fri, 28 May 2010 10:35:30 -0700
+From: Dan Magenheimer <dan.magenheimer@oracle.com>
+To: chris.mason@oracle.com, viro@zeniv.linux.org.uk, akpm@linux-foundation.org,
+       adilger@sun.com, tytso@mit.edu, mfasheh@suse.com,
+       joel.becker@oracle.com, matthew@wil.cx, linux-btrfs@vger.kernel.org,
+       linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+       linux-ext4@vger.kernel.org, ocfs2-devel@oss.oracle.com,
+       linux-mm@kvack.org, ngupta@vflare.org, jeremy@goop.org,
+       JBeulich@novell.com, kurt.hackel@oracle.com, npiggin@suse.de,
+       dave.mccracken@oracle.com, riel@redhat.com, avi@redhat.com,
+       konrad.wilk@oracle.com, dan.magenheimer@oracle.com
+Subject: [PATCH V2 1/7] Cleancache (was Transcendent Memory):
+	cleancache_poolid in superblock
+Message-ID: <20100528173530.GA12186@ca-server1.us.oracle.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100524212459.GA9707@nowhere>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Reverse-DNS: unknown
+User-Agent: Mutt/1.5.16 (2007-06-11)
+X-Auth-Type: Internal IP
+X-Source-IP: rcsinet15.oracle.com [148.87.113.117]
+X-CT-RefId: str=0001.0A090209.4BFFFF15.0052:SCFMA4539811,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 24.05.10 17:25:01, Frederic Weisbecker wrote:
-> It doesn't duplicate much code paths, we only have a few corner cases to
-> plug in. And more importantly, that would be temporary if we schedule the
-> older PERF_SAMPLE_RAW in, say, three releases from now.
-> 
-> This ensures an easy forward compatibility (older perf tools -> newer kernel).
-> But the backward compatibility is less easy (newer perf tools -> older kernel)
-> as it means we need to test dynamically if we have PERF_SAMPLE_RAW_ALIGNED,
-> otherwise we need to fall back to using the older one.
+[PATCH V2 1/7] Cleancache (was Transcendent Memory): cleancache_poolid in superblock
 
-Frederic, I will send an updated version with PERF_SAMPLE_RAW_ALIGNED.
+Add cleancache_poolid to superblock structure... not tied
+to CONFIG_CLEANCACHE so as to avoid unnecessary clutter.
 
--Robert
+Signed-off-by: Dan Magenheimer <dan.magenheimer@oracle.com>
 
--- 
-Advanced Micro Devices, Inc.
-Operating System Research Center
-email: robert.richter@amd.com
+Diffstat:
+ fs.h                                     |    5 +++++
+ 1 file changed, 5 insertions(+)
 
+--- linux-2.6.34/include/linux/fs.h	2010-05-16 15:17:36.000000000 -0600
++++ linux-2.6.34-cleancache/include/linux/fs.h	2010-05-24 12:14:44.000000000 -0600
+@@ -1383,6 +1383,11 @@ struct super_block {
+ 	 * generic_show_options()
+ 	 */
+ 	char *s_options;
++
++	/*
++	 * Saved pool identifier for cleancache (-1 means none)
++	 */
++	int cleancache_poolid;
+ };
+ 
+ extern struct timespec current_fs_time(struct super_block *sb);
