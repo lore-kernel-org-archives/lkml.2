@@ -1,45 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759258Ab0E1Vhf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 May 2010 17:37:35 -0400
-Received: from dns.hsps.tpc.edu.tw ([163.20.58.1]:58682 "EHLO
-	dns.hsps.tpc.edu.tw" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753103Ab0E1Vhd (ORCPT
+	id S1759291Ab0E1Vi2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 May 2010 17:38:28 -0400
+Received: from science.horizon.com ([71.41.210.146]:44813 "HELO
+	science.horizon.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1757253Ab0E1Vi0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 May 2010 17:37:33 -0400
-X-Greylist: delayed 2258 seconds by postgrey-1.27 at vger.kernel.org; Fri, 28 May 2010 17:37:33 EDT
-From: "Email Administrator" <info@mailalert.com>
-Reply-To: alert.upgrading@live.hk
-Subject: Email Admin Warning Alert !!!
-Date: Sat, 29 May 2010 04:46:25 +0800
-Message-Id: <20100528204625.M79835@mailalert.com>
-X-Mailer: OpenWebMail 2.52 20060502
-X-OriginatingIP: 41.138.188.230 (e60708)
-MIME-Version: 1.0
-Content-Type: text/plain;
-	charset=iso-8859-1
-To: undisclosed-recipients:;
-X-NetStation-Status: PASS
-X-NetStation-SPAM: 0.00/5.00-8.00
+	Fri, 28 May 2010 17:38:26 -0400
+Date: 28 May 2010 17:38:21 -0400
+Message-ID: <20100528213821.4351.qmail@science.horizon.com>
+From: "George Spelvin" <linux@horizon.com>
+To: andy.shevchenko@gmail.com, iveqy@iveqy.com
+Subject: Re: hex_to_bin speedup
+Cc: linux@horizon.com, linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear subscribers.
+1) First of all, I'd worry about code size far more than speed.
+   this is not fast-path code.
+2) Second, given that you're already doing a range test,
+   the fastest way to perform a tolower() is "c |= 0x20".
 
-This message is from the Email Administrator  IT Service to all our email 
-account subscribers.You are to provide to us the below information to 
-revalidate your account due to spam and to upgrade the new 2010 spam version. 
+Generally it's something like:
+int hex_to_bin(char ch)
+{
+	ch -= '0';
+	if ((unsigned char)ch <= 9)
+		return ch;
+	ch |= 0x20;
+	ch -= 'a' - '0';
+	if ((unsigned char)ch <= 6)
+		return ch+10
+	return -1;
+}
 
-Notice:Your  Email account will be expired after a week, if you do not 
-revalidate or update your account. Please do co-operate with us so we can 
-serve you better, contact the adminstrator!!**** 
 
-User Name: 
-Password: 
-Confirm Your Password:
-Alternative Email :
+that produces the even smaller code:
+hex_to_bin_or:
+        movb    4(%esp), %dl
+        subl    $48, %edx
+        cmpb    $9, %dl
+        movsbl  %dl,%eax
+        jbe     .L10
+        orl     $32, %edx
+        orl     $-1, %eax
+        subl    $49, %edx
+        cmpb    $6, %dl
+        ja      .L10
+        movsbl  %dl,%eax
+        addl    $10, %eax
+.L10:
+        ret
 
-Thank You. 
-Email Administrator 
-Warning Code :ID67565434.
