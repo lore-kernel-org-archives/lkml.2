@@ -1,58 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753328Ab0E1GQW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 May 2010 02:16:22 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:63588 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752110Ab0E1GQV convert rfc822-to-8bit (ORCPT
+	id S1752795Ab0E1GU0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 May 2010 02:20:26 -0400
+Received: from leo.clearchain.com ([199.73.29.74]:40629 "EHLO
+	mail.clearchain.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751245Ab0E1GUZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 May 2010 02:16:21 -0400
+	Fri, 28 May 2010 02:20:25 -0400
+Date: Fri, 28 May 2010 16:19:57 +1000
+From: Peter Hutterer <peter.hutterer@who-t.net>
+To: Dave Airlie <airlied@gmail.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+       Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+       Florian Ragwitz <rafl@debian.org>, Arjan Opmeer <arjan@opmeer.net>,
+       Eric Piel <eric.piel@tremplin-utc.net>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       linux-input@vger.kernel.org
+Subject: Re: [git pull] Input updates for 2.6.35-rc0
+Message-ID: <20100528061957.GA19624@quokka.bne.redhat.com>
+References: <20100520165243.GA20861@core.coreip.homeip.net>
+ <alpine.LFD.2.00.1005271837050.11382@i5.linux-foundation.org>
+ <AANLkTiklv48cDWNqKlFfh5RVtxxNH8shH_JjDypPgeHA@mail.gmail.com>
+ <alpine.LFD.2.00.1005272108210.11382@i5.linux-foundation.org>
+ <AANLkTinPt49coLNjPqJSSxDP8zTmnjbKuIP1NuQFvwL-@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <1275023742.27810.7782.camel@twins>
-References: <Pine.LNX.4.44L0.1005271517170.3239-100000@iolanthe.rowland.org>
-	<1275023742.27810.7782.camel@twins>
-Date: Thu, 27 May 2010 23:16:17 -0700
-Message-ID: <AANLkTilIRYGuxxI9ytsFxCkPtJ4RDoOV6suYI5eFA1Oq@mail.gmail.com>
-Subject: Re: [linux-pm] [PATCH 0/8] Suspend block api (version 8)
-From: =?ISO-8859-1?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Alan Stern <stern@rowland.harvard.edu>, Paul@smtp1.linux-foundation.org,
-       LKML <linux-kernel@vger.kernel.org>,
-       Florian Mickler <florian@mickler.org>,
-       Alan Cox <alan@lxorguk.ukuu.org.uk>,
-       Linux PM <linux-pm@lists.linux-foundation.org>,
-       Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
-       Thomas Gleixner <tglx@linutronix.de>, felipe.balbi@nokia.com
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <AANLkTinPt49coLNjPqJSSxDP8zTmnjbKuIP1NuQFvwL-@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-12-10)
+X-Greylist: Sender is SPF-compliant, not delayed by milter-greylist-4.0.1 (mail.clearchain.com [127.0.0.1]); Fri, 28 May 2010 15:50:00 +0930 (CST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 27, 2010 at 10:15 PM, Peter Zijlstra <peterz@infradead.org> wrote:
-> On Thu, 2010-05-27 at 15:19 -0400, Alan Stern wrote:
->> On Thu, 27 May 2010, Peter Zijlstra wrote:
->>
->> > I still don't see how blocking applications will cause missed wakeups in
->> > anything but a buggy application at worst, and even those will
->> > eventually get the event when they unblock.
->> >
->> > What seems to be the confusion?
->>
->> During forced suspend, applications are block because they are frozen.
->>
->> When an event occurs, the application is notified somehow.  But it
->> can't respond because it is frozen.  Hence the event remains sitting in
->> a kernel queue and the system goes ahead and suspends anyway.  The
->> application doesn't get thawed until the system wakes up at some
->> indefinite time in the future.
->
-> If the kernel is awake to put things in queues, we're clearly not
-> suspended and userspace is running ?!
+On Fri, May 28, 2010 at 03:44:18PM +1000, Dave Airlie wrote:
+> On Fri, May 28, 2010 at 2:12 PM, Linus Torvalds
+> <torvalds@linux-foundation.org> wrote:
+> >
+> >
+> > On Fri, 28 May 2010, Dave Airlie wrote:
+> >>
+> >> Was this in GNOME?
+> >>
+> >> Does System->Preferences->Mouse have a touchpad tab? do it have tapping off?
+> >
+> > Bingo! Yup, that turns a totally useless piece-of-crap touchpad into a
+> > perfectly cromulent one!
+> >
+> > Too bad that the default behavior made it act so horribly bad.
+> >
+> 
+> I've cc'ed Peter, but I think thats the GNOME default behaviour, which
+> might make sense for older style touchpads, but maybe not for these newer
+> the touchpad is a button type.
 
-Suspend is not an atomic operation. User space is frozen before
-freezable kernel threads both of these happen before drivers are
-suspended.
+Default behaviour is tapping on for no-button touchpads (like the ones on
+the apples) and tapping off for everything else. <insert flamewar here>
+If you're suggesting to change the defaults, I think you're best off just
+filing a GNOME bug - the number of multi-finger tap-capable touchpads has
+increased enough in the last years that this default is worth rethinking.
 
--- 
-Arve Hjønnevåg
+For the rest - please leave the touchpad in touchpad mode, because while the
+emulation may look nice if you like tapping, it removes a lot of the other
+configuration features that the driver can otherwise provide (edge
+scrolling, multifinger scrolling, clickfinger, to name just a few).
+
+Cheers,
+  Peter
