@@ -1,54 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757667Ab0E1OSU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 May 2010 10:18:20 -0400
-Received: from smtp.nokia.com ([192.100.122.233]:28138 "EHLO
-	mgw-mx06.nokia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755788Ab0E1OSS (ORCPT
+	id S1757418Ab0E1OU6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 May 2010 10:20:58 -0400
+Received: from e23smtp08.au.ibm.com ([202.81.31.141]:46455 "EHLO
+	e23smtp08.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755955Ab0E1OU4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 May 2010 10:18:18 -0400
-Message-ID: <4BFFCFC7.7070302@nokia.com>
-Date: Fri, 28 May 2010 17:14:31 +0300
-From: Igor Stoppa <igor.stoppa@nokia.com>
-User-Agent: Mozilla-Thunderbird 2.0.0.22 (X11/20091109)
-MIME-Version: 1.0
-To: tytso@mit.edu, Igor Stoppa <igor.stoppa@nokia.com>,
-       ext Brian Swetland <swetland@google.com>,
-       ext Matthew Garrett <mjg59@srcf.ucam.org>,
-       Alan Cox <alan@lxorguk.ukuu.org.uk>,
+	Fri, 28 May 2010 10:20:56 -0400
+Date: Fri, 28 May 2010 19:50:48 +0530
+From: Balbir Singh <balbir@linux.vnet.ibm.com>
+To: Minchan Kim <minchan.kim@gmail.com>
+Cc: "Luis Claudio R. Goncalves" <lclaudio@uudg.org>,
+       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+       Oleg Nesterov <oleg@redhat.com>, linux-kernel@vger.kernel.org,
+       linux-mm@kvack.org, Thomas Gleixner <tglx@linutronix.de>,
        Peter Zijlstra <peterz@infradead.org>,
-       LKML <linux-kernel@vger.kernel.org>,
-       Florian Mickler <florian@mickler.org>,
-       Linux PM <linux-pm@lists.linux-foundation.org>,
-       Thomas Gleixner <tglx@linutronix.de>,
-       Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
-       "Balbi Felipe (Nokia-D/Helsinki)" <felipe.balbi@nokia.com>
-Subject: Re: [linux-pm] [PATCH 0/8] Suspend block api (version 8)
-References: <20100527220949.GB10602@srcf.ucam.org> <20100527232357.6d14fdb2@lxorguk.ukuu.org.uk> <20100527223605.GB11364@srcf.ucam.org> <20100527235546.09f3ce8a@lxorguk.ukuu.org.uk> <20100528043114.GC26177@thunk.org> <20100528103713.0a7952d9@lxorguk.ukuu.org.uk> <20100528114123.GA22947@srcf.ucam.org> <4BFFB681.1000105@nokia.com> <AANLkTim04ZfMcPHRB2D_bqcAuguaGwySH2b6repuYLkk@mail.gmail.com> <4BFFC5DF.5030504@nokia.com> <20100528133900.GG26177@thunk.org>
-In-Reply-To: <20100528133900.GG26177@thunk.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 28 May 2010 13:51:24.0213 (UTC) FILETIME=[DC761650:01CAFE6C]
-X-Nokia-AV: Clean
+       David Rientjes <rientjes@google.com>, Mel Gorman <mel@csn.ul.ie>,
+       williams@redhat.com
+Subject: Re: [RFC] oom-kill: give the dying task a higher priority
+Message-ID: <20100528142048.GF5579@balbir.in.ibm.com>
+Reply-To: balbir@linux.vnet.ibm.com
+References: <20100528143605.7E2A.A69D9226@jp.fujitsu.com>
+ <AANLkTikB-8Qu03VrA5Z0LMXM_alSV7SLqzl-MmiLmFGv@mail.gmail.com>
+ <20100528145329.7E2D.A69D9226@jp.fujitsu.com>
+ <20100528125305.GE11364@uudg.org>
+ <20100528140623.GA11041@barrios-desktop>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+In-Reply-To: <20100528140623.GA11041@barrios-desktop>
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ext tytso@mit.edu wrote:
+* MinChan Kim <minchan.kim@gmail.com> [2010-05-28 23:06:23]:
 
-> Linus will disagree with you there.  Linus *has* merged code on the
-> basis that it is shipping in distributions, regardless of the fact
-> that some developers objected to it.  Sometimes "perfect" should not
-> be the enemy of "good enough" shipping code.
->   
+> > I confess I failed to distinguish memcg OOM and system OOM and used "in
+> > case of OOM kill the selected task the faster you can" as the guideline.
+> > If the exit code path is short that shouldn't be a problem.
+> > 
+> > Maybe the right way to go would be giving the dying task the biggest
+> > priority inside that memcg to be sure that it will be the next process from
+> > that memcg to be scheduled. Would that be reasonable?
+> 
+> Hmm. I can't understand your point. 
+> What do you mean failing distinguish memcg and system OOM?
+> 
+> We already have been distinguish it by mem_cgroup_out_of_memory.
+> (but we have to enable CONFIG_CGROUP_MEM_RES_CTLR). 
+> So task selected in select_bad_process is one out of memcg's tasks when 
+> memcg have a memory pressure. 
+>
 
-"good enough" is very subjective, in this case
+We have a routine to help figure out if the task belongs to the memory
+cgroup that cause the OOM. The OOM entry from memory cgroup is
+different from a regular one. 
 
-> If everyone agrees we're making progress, and we can let this 100+
-> mail thread keep going.
-
-I have seen very good proposals for saner solutions.
-
-Is that progress?
-
-igor
+-- 
+	Three Cheers,
+	Balbir
