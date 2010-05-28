@@ -1,102 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932677Ab0E1KDd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 May 2010 06:03:33 -0400
-Received: from mailout1.w1.samsung.com ([210.118.77.11]:17640 "EHLO
-	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758229Ab0E1KCK (ORCPT
+	id S932507Ab0E1KEN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 May 2010 06:04:13 -0400
+Received: from esgaroth.petrovitsch.at ([78.47.184.11]:5296 "EHLO
+	esgaroth.petrovitsch.priv.at" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932135Ab0E1KEI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 May 2010 06:02:10 -0400
-Date: Fri, 28 May 2010 12:02:30 +0200
-From: Michal Nazarewicz <m.nazarewicz@samsung.com>
-Subject: [PATCHv2 5/7] USB: gadget: f_fs: use usb_string_ids_n()
-In-reply-to: <87f7cc131d4f19eb5a0baf22cf9ce5ea2c739bb8.1275034701.git.mina86@mina86.com>
-To: linux-usb@vger.kernel.org
-Cc: David Brownell <dbrownell@users.sourceforge.net>,
-       Kyungmin Park <kyungmin.park@samsung.com>,
-       Marek Szyprowski <m.szyprowski@samsung.com>,
-       linux-kernel@vger.kernel.org
-Message-id: <131cc4995ce27841167b6736acc52608c1bbe4b8.1275034701.git.mina86@mina86.com>
-MIME-version: 1.0
-X-Mailer: git-send-email 1.7.1
-Content-type: TEXT/PLAIN
-Content-transfer-encoding: 7BIT
-References: <cover.1275034701.git.mina86@mina86.com>
- <dd6695f08a16b6e1269ea5c66bb16df4ba2d2e7b.1275034701.git.mina86@mina86.com>
- <55e838d52a2b4e37372e16d4238a82421fed11d6.1275034701.git.mina86@mina86.com>
- <e42e64aab3be6e8018f3b75f1f230ef7c3fbd481.1275034701.git.mina86@mina86.com>
- <87f7cc131d4f19eb5a0baf22cf9ce5ea2c739bb8.1275034701.git.mina86@mina86.com>
+	Fri, 28 May 2010 06:04:08 -0400
+X-DKIM: Sendmail DKIM Filter v2.8.3 unknown-host o4SA38eQ029525
+Subject: Re: [linux-pm] [PATCH 0/8] Suspend block api (version 8)
+From: Bernd Petrovitsch <bernd@petrovitsch.priv.at>
+To: Matthew Garrett <mjg59@srcf.ucam.org>
+Cc: Alan Stern <stern@rowland.harvard.edu>,
+       Alan Cox <alan@lxorguk.ukuu.org.uk>,
+       Peter Zijlstra <peterz@infradead.org>,
+       LKML <linux-kernel@vger.kernel.org>,
+       Florian Mickler <florian@mickler.org>, felipe.balbi@nokia.com,
+       Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
+       Linux PM <linux-pm@lists.linux-foundation.org>
+In-Reply-To: <20100527212852.GA9859@srcf.ucam.org>
+References: <20100527210808.GB8865@srcf.ucam.org>
+	 <Pine.LNX.4.44L0.1005271723200.3239-100000@iolanthe.rowland.org>
+	 <20100527212852.GA9859@srcf.ucam.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 28 May 2010 12:03:08 +0200
+Message-ID: <1275040988.20005.29.camel@thorin>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
+Content-Transfer-Encoding: 7bit
+X-DCC-x.dcc-servers-Metrics: esgaroth.petrovitsch.priv.at; whitelist
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use usb_string_ids_n() function to simplify string ids
-registeration.
+On Don, 2010-05-27 at 22:28 +0100, Matthew Garrett wrote:
+> On Thu, May 27, 2010 at 05:24:28PM -0400, Alan Stern wrote:
+> 
+> > Would it help to divide the application into two processes, one of 
+> > which receives events and the other does the drawing?
+> 
+> At the point where you're rewriting the application you can just make it 
+> adhere to our current behavioural standards anyway.
 
-Signed-off-by: Michal Nazarewicz <m.nazarewicz@samsung.com>
-Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
----
- drivers/usb/gadget/f_fs.c |   30 ++++++++++++------------------
- 1 files changed, 12 insertions(+), 18 deletions(-)
+Thank you for confirming that the so-called "feature" is just there to
+make apps work in some area that are crappy anyways - and God knows in
+which other areas they are crappy too.
 
-diff --git a/drivers/usb/gadget/f_fs.c b/drivers/usb/gadget/f_fs.c
-index 3fe120f..b121aa1 100644
---- a/drivers/usb/gadget/f_fs.c
-+++ b/drivers/usb/gadget/f_fs.c
-@@ -1377,7 +1377,8 @@ static void ffs_data_reset(struct ffs_data *ffs)
- 
- static int functionfs_bind(struct ffs_data *ffs, struct usb_composite_dev *cdev)
- {
--	unsigned i, count;
-+	struct usb_gadget_strings **lang;
-+	unsigned first_id;
- 
- 	ENTER();
- 
-@@ -1385,7 +1386,9 @@ static int functionfs_bind(struct ffs_data *ffs, struct usb_composite_dev *cdev)
- 		 || test_and_set_bit(FFS_FL_BOUND, &ffs->flags)))
- 		return -EBADFD;
- 
--	ffs_data_get(ffs);
-+	first_id = usb_string_ids_n(cdev, ffs->strings_count);
-+	if (unlikely(first_id < 0))
-+		return first_id;
- 
- 	ffs->ep0req = usb_ep_alloc_request(cdev->gadget->ep0, GFP_KERNEL);
- 	if (unlikely(!ffs->ep0req))
-@@ -1393,25 +1396,16 @@ static int functionfs_bind(struct ffs_data *ffs, struct usb_composite_dev *cdev)
- 	ffs->ep0req->complete = ffs_ep0_complete;
- 	ffs->ep0req->context = ffs;
- 
--	/* Get strings identifiers */
--	for (count = ffs->strings_count, i = 0; i < count; ++i) {
--		struct usb_gadget_strings **lang;
--
--		int id = usb_string_id(cdev);
--		if (unlikely(id < 0)) {
--			usb_ep_free_request(cdev->gadget->ep0, ffs->ep0req);
--			ffs->ep0req = NULL;
--			return id;
--		}
--
--		lang = ffs->stringtabs;
--		do {
--			(*lang)->strings[i].id = id;
--			++lang;
--		} while (*lang);
-+	lang = ffs->stringtabs;
-+	while (*lang) {
-+		struct usb_string *str = (*lang)->strings;
-+		int id = first_id;
-+		for (; str->s; ++id, ++str)
-+			str->id = id;
- 	}
- 
- 	ffs->gadget = cdev->gadget;
-+	ffs_data_get(ffs);
- 	return 0;
- }
- 
+SCNR,
+	Bernd
 -- 
-1.7.1
+Bernd Petrovitsch                  Email : bernd@petrovitsch.priv.at
+                     LUGA : http://www.luga.at
 
