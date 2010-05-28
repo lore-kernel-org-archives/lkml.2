@@ -1,48 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932662Ab0E1RVo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 May 2010 13:21:44 -0400
-Received: from www.telegraphics.com.au ([204.15.192.19]:47843 "EHLO
-	mail.telegraphics.com.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755474Ab0E1RVm (ORCPT
+	id S932525Ab0E1RYy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 May 2010 13:24:54 -0400
+Received: from cavan.codon.org.uk ([93.93.128.6]:41352 "EHLO
+	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755192Ab0E1RYx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 May 2010 13:21:42 -0400
-Date: Sat, 29 May 2010 03:21:35 +1000 (EST)
-From: Finn Thain <fthain@telegraphics.com.au>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-cc: Joe Perches <joe@perches.com>, "David S. Miller" <davem@davemloft.net>,
-       netdev@vger.kernel.org,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       Linux/m68k <linux-m68k@vger.kernel.org>
-Subject: Re: [PATCH] net: mac8390 - Sort out memory/MMIO accesses and casts
- (was: Re: drivers/net/mac8390.c: Remove useless memcpy casting)
-In-Reply-To: <AANLkTikexlmuunBQ-ydNaD8fkKcLmrsfJSEgvyMJdNqU@mail.gmail.com>
-Message-ID: <alpine.OSX.2.00.1005290312230.691@localhost>
-References: <l2k10f740e81004151234t3004275az36e7873493067a8a@mail.gmail.com>  <alpine.OSX.2.00.1004161206300.271@localhost> <AANLkTikexlmuunBQ-ydNaD8fkKcLmrsfJSEgvyMJdNqU@mail.gmail.com>
-User-Agent: Alpine 2.00 (OSX 1167 2008-08-23)
+	Fri, 28 May 2010 13:24:53 -0400
+Date: Fri, 28 May 2010 18:24:33 +0100
+From: Matthew Garrett <mjg59@srcf.ucam.org>
+To: Axel Lin <axel.lin@gmail.com>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>,
+       Sujith Thomas <sujith.thomas@intel.com>,
+       Zhang Rui <rui.zhang@intel.com>, Len Brown <len.brown@intel.com>,
+       platform-driver-x86@vger.kernel.org
+Subject: Re: [PATCH] intel_menlow: fix memory leaks in error path
+Message-ID: <20100528172433.GB30936@srcf.ucam.org>
+References: <1274433033.21567.2.camel@mola>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1274433033.21567.2.camel@mola>
+User-Agent: Mutt/1.5.18 (2008-05-17)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Applied, thanks.
 
-On Sun, 23 May 2010, Geert Uytterhoeven wrote:
-
-> >> But here's a better solution. I do not have the hardware to test it, 
-> >> though. Finn, does it {look OK,work}?
-> >
-> > It looks fine. I can't test it right now, but I will do so when I get 
-> > the opportunity.
-> 
-> Any news from the test front?
-
-This is commit ba0f916ca7ac79356e2ed32a85c3aa8255b104e7, right?
-If so, it tests OK here.
-
-Finn
-
-> 
-> Gr{oetje,eeting}s,
-> 
-> 						Geert
+-- 
+Matthew Garrett | mjg59@srcf.ucam.org
