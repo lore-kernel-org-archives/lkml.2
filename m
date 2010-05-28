@@ -1,113 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754594Ab0E1MwH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 May 2010 08:52:07 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:42958 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753412Ab0E1MwD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 May 2010 08:52:03 -0400
-Subject: Re: linux-next: build failure after merge of the final tree
- (linus' tree related)
-From: Steven Rostedt <srostedt@redhat.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-       Linus <torvalds@linux-foundation.org>,
-       Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-       "H. Peter Anvin" <hpa@zytor.com>, Peter Zijlstra <peterz@infradead.org>,
-       ppc-dev <linuxppc-dev@lists.ozlabs.org>, paulus@samba.org,
-       Anton Blanchard ZZ <anton@samba.org>
-In-Reply-To: <20100528150842.d5a751ba.sfr@canb.auug.org.au>
-References: <20100528150842.d5a751ba.sfr@canb.auug.org.au>
-Content-Type: text/plain
-Organization: Red Hat
-Date: Fri, 28 May 2010 08:50:57 -0400
-Message-Id: <1275051057.13426.46.camel@localhost.localdomain>
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1755287Ab0E1MwU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 May 2010 08:52:20 -0400
+Received: from smtp-out.google.com ([74.125.121.35]:45116 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754677Ab0E1MwP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 May 2010 08:52:15 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=mime-version:in-reply-to:references:date:message-id:subject:from:to:
+	cc:content-type:x-system-of-record;
+	b=CDaMpAru5JWUUUutSEC3QlY7KN0x3Bcs2JHicr2OJmCM0+4NDecRv7Zk0CICTt8iE
+	sfnWx2xLt65t5lGSEYBGA==
+MIME-Version: 1.0
+In-Reply-To: <4BFFB681.1000105@nokia.com>
+References: <20100527222514.0a1710bf@lxorguk.ukuu.org.uk>
+	<Pine.LNX.4.44L0.1005271730180.3239-100000@iolanthe.rowland.org>
+	<20100527230806.4deb6de3@lxorguk.ukuu.org.uk>
+	<20100527220949.GB10602@srcf.ucam.org>
+	<20100527232357.6d14fdb2@lxorguk.ukuu.org.uk>
+	<20100527223605.GB11364@srcf.ucam.org>
+	<20100527235546.09f3ce8a@lxorguk.ukuu.org.uk>
+	<20100528043114.GC26177@thunk.org>
+	<20100528103713.0a7952d9@lxorguk.ukuu.org.uk>
+	<20100528114123.GA22947@srcf.ucam.org>
+	<4BFFB681.1000105@nokia.com>
+Date: Fri, 28 May 2010 05:52:04 -0700
+Message-ID: <AANLkTim04ZfMcPHRB2D_bqcAuguaGwySH2b6repuYLkk@mail.gmail.com>
+Subject: Re: [linux-pm] [PATCH 0/8] Suspend block api (version 8)
+From: Brian Swetland <swetland@google.com>
+To: Igor Stoppa <igor.stoppa@nokia.com>
+Cc: ext Matthew Garrett <mjg59@srcf.ucam.org>,
+       Alan Cox <alan@lxorguk.ukuu.org.uk>, "tytso@mit.edu" <tytso@mit.edu>,
+       Peter Zijlstra <peterz@infradead.org>,
+       LKML <linux-kernel@vger.kernel.org>,
+       Florian Mickler <florian@mickler.org>,
+       Linux PM <linux-pm@lists.linux-foundation.org>,
+       Thomas Gleixner <tglx@linutronix.de>,
+       Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
+       "Balbi Felipe (Nokia-D/Helsinki)" <felipe.balbi@nokia.com>
+Content-Type: text/plain; charset=UTF-8
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2010-05-28 at 15:08 +1000, Stephen Rothwell wrote:
-> Hi Steven,
-> 
-> After merging the final tree, today's linux-next build (powerpc allyesconfig) failed like this:
-> 
-> arch/powerpc/platforms/pseries/hvCall_inst.c: In function 'hcall_inst_init':
-> arch/powerpc/platforms/pseries/hvCall_inst.c:143: warning: passing argument 1 of 'register_trace_hcall_entry' from incompatible pointer type
-> arch/powerpc/include/asm/trace.h:100: note: expected 'void (*)(void *, long unsigned int,  long unsigned int *)' but argument is of type 'void (*)(long unsigned int,  long unsigned int *)'
-> arch/powerpc/platforms/pseries/hvCall_inst.c:143: error: too few arguments to function 'register_trace_hcall_entry'
-> arch/powerpc/platforms/pseries/hvCall_inst.c:146: warning: passing argument 1 of 'register_trace_hcall_exit' from incompatible pointer type
-> arch/powerpc/include/asm/trace.h:122: note: expected 'void (*)(void *, long unsigned int,  long unsigned int,  long unsigned int *)' but argument is of type 'void (*)(long unsigned int,  long unsigned int,  long unsigned int *)'
-> arch/powerpc/platforms/pseries/hvCall_inst.c:146: error: too few arguments to function 'register_trace_hcall_exit'
-> arch/powerpc/platforms/pseries/hvCall_inst.c:147: warning: passing argument 1 of 'unregister_trace_hcall_entry' from incompatible pointer type
-> arch/powerpc/include/asm/trace.h:100: note: expected 'void (*)(void *, long unsigned int,  long unsigned int *)' but argument is of type 'void (*)(long unsigned int,  long unsigned int *)'
-> arch/powerpc/platforms/pseries/hvCall_inst.c:147: error: too few arguments to function 'unregister_trace_hcall_entry'
-> 
-> Probably caused by commit 38516ab59fbc5b3bb278cf5e1fe2867c70cff32e
-> ("tracing: Let tracepoints have data passed to tracepoint callbacks").
-> 
-> I applied this patch which builds (but may be incorrect).
-> 
+On Fri, May 28, 2010 at 5:26 AM, Igor Stoppa <igor.stoppa@nokia.com> wrote:
+> ext Matthew Garrett wrote:
+>> On Fri, May 28, 2010 at 10:37:13AM +0100, Alan Cox wrote:
+>>> The other vendors appear to be managing nicely without magic blockers. I
+>>> conjecture therefore there are other solutions.
+>>
+>> Actually, no. A badly behaved application will kill the N900's battery
+>> life. Nobody else has "managed nicely" - they've just made life harder for
+>> application developers and users, which may have something to do with the
+>> relative levels of market adoption of Maemo and Android. I'm not aware of
+>> any form of resource management framework in MeeGo either, so as far as I
+>> know it'll have exactly the same problem.
+>
+> It's true that a braindead app can kill the battery.
+>
+> However we provide a version of powertop that is tailored to the N900, there
+> is a nokia energy profiler meant to give graphical representation of the
+> battery current, there is htop available and you can even get the processor
+> activity visualized on the leftmost and rightmost keyboard backlight LEDS,
+> when in RD mode and with screen blanked.
+>
+> I would advice you to not start debating on company strategies, this is not
+> the right place.
 
-Looks good to me.
+At a certain point, if one side of the argument is using "N900 / OMAP3
+works just fine as is" (which has certainly been the case stated by a
+number of folks throughout these discussions), I think it's a little
+unrealistic to express shock that somebody argues the opposing point.
 
-Acked-by: Steven Rostedt <rostedt@goodmis.org>
+I've personally avoided commenting on specific power management issues
+or properties of competitive platforms because it can easily be viewed
+as rather rude or unprofessional.  (though in theory we all could
+benefit from any improvements to the kernel regarding power
+management, no?).
 
--- Steve
+I am quite willing to state that on both MSM and OMAP based Android
+platforms, we've found that the suspend blocker model allows us to
+obtain a lower average power draw than if we don't use it -- Mike Chan
+provided some numbers earlier in another thread in the trivial device
+idle case, the win is of course much larger in the case of several
+poorly behaved apps being active.
 
-> From: Stephen Rothwell <sfr@canb.auug.org.au>
-> Date: Fri, 28 May 2010 15:05:00 +1000
-> Subject: [PATCH] tracing: fix for tracepoint API change
-> 
-> Commit 38516ab59fbc5b3bb278cf5e1fe2867c70cff32e "tracing: Let tracepoints
-> have data passed to tracepoint callbacks" requires this fixup to the
-> powerpc code.
-> 
-> Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
-> ---
->  arch/powerpc/platforms/pseries/hvCall_inst.c |   10 +++++-----
->  1 files changed, 5 insertions(+), 5 deletions(-)
-> 
-> diff --git a/arch/powerpc/platforms/pseries/hvCall_inst.c b/arch/powerpc/platforms/pseries/hvCall_inst.c
-> index 1fefae7..e19ff02 100644
-> --- a/arch/powerpc/platforms/pseries/hvCall_inst.c
-> +++ b/arch/powerpc/platforms/pseries/hvCall_inst.c
-> @@ -102,7 +102,7 @@ static const struct file_operations hcall_inst_seq_fops = {
->  #define CPU_NAME_BUF_SIZE	32
->  
-> 
-> -static void probe_hcall_entry(unsigned long opcode, unsigned long *args)
-> +static void probe_hcall_entry(void *ignored, unsigned long opcode, unsigned long *args)
->  {
->  	struct hcall_stats *h;
->  
-> @@ -114,7 +114,7 @@ static void probe_hcall_entry(unsigned long opcode, unsigned long *args)
->  	h->purr_start = mfspr(SPRN_PURR);
->  }
->  
-> -static void probe_hcall_exit(unsigned long opcode, unsigned long retval,
-> +static void probe_hcall_exit(void *ignored, unsigned long opcode, unsigned long retval,
->  			     unsigned long *retbuf)
->  {
->  	struct hcall_stats *h;
-> @@ -140,11 +140,11 @@ static int __init hcall_inst_init(void)
->  	if (!firmware_has_feature(FW_FEATURE_LPAR))
->  		return 0;
->  
-> -	if (register_trace_hcall_entry(probe_hcall_entry))
-> +	if (register_trace_hcall_entry(probe_hcall_entry, NULL))
->  		return -EINVAL;
->  
-> -	if (register_trace_hcall_exit(probe_hcall_exit)) {
-> -		unregister_trace_hcall_entry(probe_hcall_entry);
-> +	if (register_trace_hcall_exit(probe_hcall_exit, NULL)) {
-> +		unregister_trace_hcall_entry(probe_hcall_entry, NULL);
->  		return -EINVAL;
->  	}
->  
-> -- 
-> 1.7.1
-> 
-> 
+I do think that everyone involved agrees that it is beneficial to
+educate users and developers in hopes that users will understand that
+some apps are non-optimal and developers will be encouraged to write
+better apps.
 
+I think we also all agree that striving to obtain the lowest power
+state at all times through cpu frequency scaling, runtime pm, drivers
+that aggressively clock/power down when idle, etc is a worthy goal.
+Some have argued that suspend blockers may deter further development
+in these areas, but I think this is unlikely -- power usage while the
+device is active and the user is interacting with it is just as
+critical as when it's not being used interactively.  We (Android)
+certainly pursue aggressive low power optimization in both states.
+
+There appears to be some disagreement in terms of what one should do
+in the face of poorly behaved applications.  The Android approach has
+been to both gather as much data as possible for education of user and
+developer and to mitigate the impact of poorly written apps on
+endusers, goals which are aided by the suspend blocker model.
+
+A reality of a mass market device with a completely open and
+unrestricted application development and distribution ecosystem is
+that there will be plenty of non-optimal apps available to users
+(Sturgeon's Law applies everywhere, after all).  Worse yet, many of
+these non-optimal apps may be beloved by users for various reasons.  I
+think there's value in trying to do the best you can power-wise even
+in the face of such horrible foes as the dreaded Bouncing Cows App
+that Matthew is fond of citing as an example.
+
+Brian
