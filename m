@@ -1,117 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755270Ab0E1HED (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 May 2010 03:04:03 -0400
-Received: from ist.d-labs.de ([213.239.218.44]:43160 "EHLO mx01.d-labs.de"
+	id S1755034Ab0E1HEW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 May 2010 03:04:22 -0400
+Received: from 8bytes.org ([88.198.83.132]:53828 "EHLO 8bytes.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754827Ab0E1HD5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 May 2010 03:03:57 -0400
-Date: Fri, 28 May 2010 09:03:49 +0200
-From: Florian Mickler <florian@mickler.org>
-To: Ben Gamari <bgamari.foss@gmail.com>
-Cc: Vitaly Wool <vitalywool@gmail.com>, Peter Zijlstra <peterz@infradead.org>,
-       LKML <linux-kernel@vger.kernel.org>, Paul@smtp1.linux-foundation.org,
-       felipe.balbi@nokia.com,
-       Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
-       Linux PM <linux-pm@lists.linux-foundation.org>
-Subject: Re: [linux-pm] [PATCH 0/8] Suspend block api (version 8)
-Message-ID: <20100528090349.64112e8a@schatten.dmk.lab>
-In-Reply-To: <877hmon5em.fsf@gmail.com>
-References: <1274482015-30899-1-git-send-email-arve@android.com>
-	<201005242049.18920.rjw@sisk.pl>
-	<87wrusvrqe.fsf@deeprootsystems.com>
-	<201005250138.16293.rjw@sisk.pl>
-	<1274863655.5882.4875.camel@twins>
-	<AANLkTinN6MKvCEhPkbYQRD2gu-mGXdNW9asRsTuKN3_Y@mail.gmail.com>
-	<1274867106.5882.5090.camel@twins>
-	<20100526120242.5c9b73ad@schatten.dmk.lab>
-	<AANLkTim4021cTnhVZrQpefq1MG-eEPOFLDRO-XDepHb4@mail.gmail.com>
-	<20100526133721.602633b2@schatten.dmk.lab>
-	<AANLkTikzgaOFdQKess4E-D86OLPOzxP3dWiDkU_UR0ri@mail.gmail.com>
-	<20100526142430.327ccbc4@schatten.dmk.lab>
-	<877hmon5em.fsf@gmail.com>
-X-Mailer: Claws Mail 3.7.5 (GTK+ 2.18.9; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1755227Ab0E1HED (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 May 2010 03:04:03 -0400
+Date: Fri, 28 May 2010 09:04:01 +0200
+From: Joerg Roedel <joro@8bytes.org>
+To: =?iso-8859-1?Q?Am=E9rico?= Wang <xiyou.wangcong@gmail.com>
+Cc: Nicolas Palix <npalix@diku.dk>, Randy Dunlap <rdunlap@xenotime.net>,
+       Roland Dreier <rdreier@cisco.com>, Joe Perches <joe@perches.com>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       "David S. Miller" <davem@davemloft.net>, Michal Marek <mmarek@suse.cz>,
+       Sam Ravnborg <sam@ravnborg.org>, Julia Lawall <julia@diku.dk>,
+       Gilles Muller <Gilles.Muller@lip6.fr>, linux-kernel@vger.kernel.org,
+       linux-kbuild@vger.kernel.org, cocci@diku.dk,
+       Wolfram Sang <w.sang@pengutronix.de>,
+       Kernel Janitors <kernel-janitors@vger.kernel.org>
+Subject: Re: [PATCH 1/4] Add targets to use the Coccinelle checker
+Message-ID: <20100528070401.GJ1237@8bytes.org>
+References: <1273508667-5152-1-git-send-email-npalix@diku.dk> <1273508667-5152-2-git-send-email-npalix@diku.dk> <20100512064230.GC5718@cr0.nay.redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20100512064230.GC5718@cr0.nay.redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 27 May 2010 22:09:37 -0400
-Ben Gamari <bgamari.foss@gmail.com> wrote:
-
-> On Wed, 26 May 2010 14:24:30 +0200, Florian Mickler <florian@mickler.org> wrote:
-> > Because he is using a robust kernel that provides suspend blockers and
-> > is preventing the vampire from sucking power? 
-> > 
-> Suspend blockers are only a flawed and indirect way to keep the vampire
-> from sucking.
+On Wed, May 12, 2010 at 02:42:30PM +0800, Américo Wang wrote:
+> On Mon, May 10, 2010 at 06:24:24PM +0200, Nicolas Palix wrote:
+> >Four targets are added. Each one generates a different
+> >output kind: context, patch, org, report.
+> >Every SmPL file in 'scripts/coccinelle' is given to the spatch frontend
+> >(located in the 'scripts' directory), and applied to the entire
+> >source tree.
+> >
+> >Signed-off-by: Nicolas Palix <npalix@diku.dk>
+> >Signed-off-by: Julia Lawall <julia@diku.dk>
 > 
+> This is great!
 
+Totally agreed.
 
+> I would like to see coccinelle to be integrated with kbuild, but the
+> name 'coccicheck' is really confusing, how about 'sema_check'? Which
+> means 'semantic check'.
 
-> > Most users don't even grasp the simple concept of different "programs".
-> > They just have a device and click here and there and are happy. 
-> > 
-> > Really, what are you getting at? Do you deny that there are programs,
-> > that prevent a device from sleeping? (Just think of the bouncing
-> > cows app)
-> 
-> He's getting at the fact that there are much better ways to deal with
-> this problem. The issue here is that we seem to be expected to swallow
-> whatever Google throws at us, regardless of the quality of the
-> solution. It seems like the best argument we have for merging is "we
-> couldn't think of anything better and we need it yesterday." This might be
-> a good enough reason for shipping, but it certainly doesn't satisfy the
-> requirements for merging.
+I think its okay to keep coccicheck because its the name of the tool
+called. We do the same with 'make cscope'.
+But since I am a bit lazy I would prefer a shorter name, probably just
+'make cocci'?
 
-I don't disagree on the quality. But I don't think it is because of the
-patches, but because of how the kernel is architectured in that area
-(suspend not being an idle state).
+> Or we can use something like for sparse, i.e. 'make C=1' etc..
 
-Look, probably suspend needs to be integrated into the idle states and
-used from there. I could imagine a cost-specification for idle states:
+Yes, this would also make sense. As a developer I could add this and
+only the code I changed is checked.
 
-c3
-	cost-to-transition-to-this-state: X 
-	powersavings-per-time: Y
-	expected time we stay in this state: relative short, there is a
-	timer sheduled
-	suspend-blockers: ignored
+	Joerg
 
-suspend 
-	cost-to-transition-to-this-state: depends, how much drivers to
-	suspend, how much processes to freeze, ...
-	powersavings-per-time: Y
-	expected time we stay in this state: long, independent of
-	sheduled timers
-	suspend-blockers: need not be activated
-
-Now, a governor could compute if it is ok, to enter suspend or only
-wait for idle-c3. And maybe it would never transition from idle-c3 to
-suspend but only from c1. because the cost to enter suspend would mean
-it just has to go to c1 anyway.
-
-what do ya think?
-
-> > And if you have two kernels, one with which your device is dead after 1
-> > hour and one with which your device is dead after 10 hours. Which would
-> > you prefer? I mean really... this is ridiculous. 
-> 
-> It is absolutely not. If you want to keep power usage down, then
-> implement real resource management in the scheduler. Suspend blockers
-> are nothing but a clunky and ineffective means of resource allocation.
-> As has been pointed out in this thread, there are much better ways of
-> dealing with this problem.
-> 
-> - Ben
-
-I think this has to be independently to the scheduler, because as soon
-as the user interacts with the phone, everything needs to be scheduled.
-even the stuff that doesn't directly interact with the user.
-as soon as _nothing_ interacts with the user, the phone does schedule
-_nothing_ anymore.
-
-Cheers,
-Flo
