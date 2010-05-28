@@ -1,62 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758624Ab0E1POX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 May 2010 11:14:23 -0400
-Received: from adelie.canonical.com ([91.189.90.139]:47473 "EHLO
-	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751748Ab0E1POV (ORCPT
+	id S1758674Ab0E1POf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 May 2010 11:14:35 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:47176 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1758639Ab0E1POd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 May 2010 11:14:21 -0400
-Message-ID: <4BFFDDAC.7000909@canonical.com>
-Date: Fri, 28 May 2010 23:13:48 +0800
-From: Bryan Wu <bryan.wu@canonical.com>
-Reply-To: bryan.wu@canonical.com
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100423 Thunderbird/3.0.4
+	Fri, 28 May 2010 11:14:33 -0400
+Date: Fri, 28 May 2010 11:14:32 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Peter Zijlstra <peterz@infradead.org>
+cc: Alan Cox <alan@lxorguk.ukuu.org.uk>,
+       Arve =?ISO-8859-1?Q?Hj=F8nnev=E5g?= <arve@android.com>,
+       Matthew Garrett <mjg59@srcf.ucam.org>,
+       Thomas Gleixner <tglx@linutronix.de>,
+       LKML <linux-kernel@vger.kernel.org>,
+       Florian Mickler <florian@mickler.org>, <felipe.balbi@nokia.com>,
+       Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
+       Linux PM <linux-pm@lists.linux-foundation.org>
+Subject: Re: [linux-pm] [PATCH 0/8] Suspend block api (version 8)
+In-Reply-To: <1275058794.27810.9571.camel@twins>
+Message-ID: <Pine.LNX.4.44L0.1005281110340.1939-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-To: Wolfram Sang <w.sang@pengutronix.de>
-CC: davem@davemloft.net, afleming@gmail.com, s.hauer@pengutronix.de,
-       gerg@uclinux.org, amit.kucheria@canonical.com, netdev@vger.kernel.org,
-       linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] netdev/fec: fix ifconfig eth0 down hang issue
-References: <1275037685-14555-1-git-send-email-bryan.wu@canonical.com> <20100528144506.GB13777@pengutronix.de>
-In-Reply-To: <20100528144506.GB13777@pengutronix.de>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/28/2010 10:45 PM, Wolfram Sang wrote:
-> On Fri, May 28, 2010 at 05:08:05PM +0800, Bryan Wu wrote:
->> BugLink: http://bugs.launchpad.net/bugs/559065
->>
->> In fec open/close function, we need to use phy_connect and phy_disconnect
->> operation before we start/stop phy. Otherwise it will cause system hang.
->>
->> Only call fec_enet_mii_probe() in open function, because the first open
->> action will cause NULL pointer error.
->>
->> Signed-off-by: Bryan Wu <bryan.wu@canonical.com>
-> 
-> We use this patch for 1 month now and didn't encounter any flaws so far.
-> 
-> Tested-by: Wolfram Sang <w.sang@pengutronix.de>
-> 
-> Oops, too late... well, one for the comfortable feeling ;)
-> 
+On Fri, 28 May 2010, Peter Zijlstra wrote:
 
-Thanks a lot, Wolfram. You are real helpful here.
-Because my babbage board has broken for several weeks, I don't have hardware to
-test my FEC patches.
+> It seems most of the problems the suspend-blockers are trying to solve
+> are due to the fact of not running runnable tasks.
 
-The performance drop issue still hangs in my brain. As soon as I have a new
-patch, could you please help to test? Or do you guys found any performance drop
-solution on your hardware? IIRC, you reported similar issue as us.
+That is only partially correct.
 
-Best regards,
--- 
-Bryan Wu <bryan.wu@canonical.com>
-Kernel Developer    +86.138-1617-6545 Mobile
-Ubuntu Kernel Team | Hardware Enablement Team
-Canonical Ltd.      www.canonical.com
-Ubuntu - Linux for human beings | www.ubuntu.com
+If Android were using idle-time PM and not forced suspend, then yes -- 
+not running runnable tasks would be a big problem.
+
+But as it stands, with forced suspend the problem is to avoid delays in
+processing wakeup events.  That's what suspend blockers are meant to
+solve.  The same problem would occur with idle-time PM if you don't run
+all runnable tasks, and it would need a similar solution.
+
+Alan Stern
+
