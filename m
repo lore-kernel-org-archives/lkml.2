@@ -1,50 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753873Ab0E1Se2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 May 2010 14:34:28 -0400
-Received: from mvp.visionpro.com ([63.91.95.2]:2152 "EHLO
-	mvpexchange120.machinevisionproducts.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751678Ab0E1Se1 convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 May 2010 14:34:27 -0400
-User-Agent: Microsoft-Entourage/12.24.0.100205
-Date: Fri, 28 May 2010 11:34:25 -0700
-Subject: Slow Disk I/O
-From: "Brian D. McGrew" <brian@visionpro.com>
-To: <linux-kernel@vger.kernel.org>
-Message-ID: <C8255AC1.18B68%brian@visionpro.com>
-Thread-Topic: Slow Disk I/O
-Thread-Index: Acr+lGXMpv9Xq7EQPUO6EkQ0K1VVzQ==
-Mime-version: 1.0
-Content-type: text/plain;
-	charset="ISO-8859-1"
-Content-transfer-encoding: 8BIT
+	id S1753917Ab0E1SkQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 May 2010 14:40:16 -0400
+Received: from smtp.outflux.net ([198.145.64.163]:43770 "EHLO smtp.outflux.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751121Ab0E1SkM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 May 2010 14:40:12 -0400
+Date: Fri, 28 May 2010 11:39:20 -0700
+From: Kees Cook <kees.cook@canonical.com>
+To: "Serge E. Hallyn" <serue@us.ibm.com>
+Cc: linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
+       linux-doc@vger.kernel.org, Randy Dunlap <rdunlap@xenotime.net>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Jiri Kosina <jkosina@suse.cz>, Dave Young <hidave.darkstar@gmail.com>,
+       Martin Schwidefsky <schwidefsky@de.ibm.com>,
+       James Morris <jmorris@namei.org>, Eric Paris <eparis@redhat.com>,
+       David Howells <dhowells@redhat.com>, Ingo Molnar <mingo@elte.hu>,
+       Peter Zijlstra <a.p.zijlstra@chello.nl>,
+       "Eric W. Biederman" <ebiederm@xmission.com>,
+       Tim Gardner <tim.gardner@canonical.com>
+Subject: Re: [PATCH] fs: block cross-uid sticky symlinks
+Message-ID: <20100528183920.GJ6056@outflux.net>
+References: <20100527201635.GU6056@outflux.net>
+ <20100528044026.GA13636@us.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100528044026.GA13636@us.ibm.com>
+Organization: Canonical
+X-HELO: www.outflux.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Good morning All!
+Hi,
 
-I¹m running CentOS 5.4 x86_64 on a Dell T5500 with 3GB || 12GB or RAM. I¹m
-running a 2.6.18-128.el5 kernel.  There is a 500GB SATA drive connected to
-the onboard SATA controller.  I can reproduce this problem with CentOS 5.4
-i386 on the Dell T5500, T5400 and Optiplex 740¹s.
+On Thu, May 27, 2010 at 11:40:26PM -0500, Serge E. Hallyn wrote:
+> > +	if (S_ISLNK(inode->i_mode) &&
+> 
+> Q: is the S_ISLNK() check actually needed?
 
-So now, on to the problem...  In our software, we¹re reading in 5MP image
-files in the neighborhood of 500 to 1500 files at a time.  Just a simple
-for() loop, open, read, close...  Nothing fancy...
+I guess not -- I would imagine this function would never be called if it
+wasn't true, and the caller would probably run into bigger problems first
+anyway.  I will drop this test.
 
-When I have 3GB of RAM in the system, life is good.. Each read takes 8 to
-10ms...  This is a good thing!
+Thanks,
 
-If I bump the memory up to 12GB, all of the reads are now taking 150 to
-200ms.
+-Kees
 
-My default, va.swappines to set to 60...  If I decrease this number, the
-problem gets much worse.  If I up va.swappines to 100, the problem gets a
-little better, but not a whole lot.
-
-What should I be looking at???
-
--b
-
+-- 
+Kees Cook
+Ubuntu Security Team
