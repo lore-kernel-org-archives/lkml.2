@@ -1,78 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750880Ab0E1EF6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 May 2010 00:05:58 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:64510 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750701Ab0E1EF4 (ORCPT
+	id S1751111Ab0E1EJ2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 May 2010 00:09:28 -0400
+Received: from mail-yw0-f198.google.com ([209.85.211.198]:34936 "EHLO
+	mail-yw0-f198.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750814Ab0E1EJ1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 May 2010 00:05:56 -0400
+	Fri, 28 May 2010 00:09:27 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=kpYrZ8vqE7gQYjWmRbbGZiKCN8RsrYylEEAaCh2xT8V0c+1JMYr0Kn46qRNhJhIe6T
-         cHYScXbgQf5zdU83l/AqLOO44AagElXiM73GMRXPtJ2CeqE8+rbjBsQ4LoQaE64H31qe
-         n3zVLO4AA4vkbl3VtMGF/BKseO7U+1qJIDBv4=
-Message-ID: <4BFF4120.7030501@gmail.com>
-Date: Thu, 27 May 2010 22:05:52 -0600
-From: Robert Hancock <hancockrwd@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-3.fc13 Thunderbird/3.0.4
-MIME-Version: 1.0
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-CC: Linus Torvalds <torvalds@linux-foundation.org>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
-       Bastien Nocera <hadess@hadess.net>
-Subject: Re: [git pull] Input updates for 2.6.34-rc6
-References: <20100513075728.GF30110@core.coreip.homeip.net> <alpine.LFD.2.00.1005130724280.3711@i5.linux-foundation.org> <20100513160117.GB22238@core.coreip.homeip.net> <alpine.LFD.2.00.1005130943460.3711@i5.linux-foundation.org> <4BFE0FAB.9040009@gmail.com> <alpine.LFD.2.00.1005270956380.3689@i5.linux-foundation.org> <AANLkTimkI2rLOO2vaPFBQUbzr5t0pAQGQ5R5noTOBp4K@mail.gmail.com> <alpine.LFD.2.00.1005271744410.11382@i5.linux-foundation.org> <4B59D6F4-825C-4851-929F-DCA28A343B23@gmail.com>
-In-Reply-To: <4B59D6F4-825C-4851-929F-DCA28A343B23@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=FgQaVRakpnyLPL2WLyiy7wgPskgdATL7NvImngHEt5bnScUOyNvd02vzTy6+H5Qyek
+         42bHsRym7ehM0cUnpVp4ZQBThXBMAr1jNTmtXaIaa5YR12e/juCmL1P00eiHv/mHMRtb
+         mDVd8eiXSffJvW+eO7AyIUyznXAvx4fEpdIKc=
+From: Scott Kidder <scott.kidder11@gmail.com>
+To: gregkh@suse.de, mchehab@redhat.com, laurent.pinchart@ideasonboard.com,
+       palash.bandyopahdyay@conexant.com
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+       Scott Kidder <scott.kidder11@gmail.com>
+Subject: [PATCH] Staging: cx25821: added KERN_ facility levels
+Date: Fri, 28 May 2010 00:21:51 -0500
+Message-Id: <1275024111-10322-1-git-send-email-scott.kidder11@gmail.com>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/27/2010 07:03 PM, Dmitry Torokhov wrote:
-> On May 27, 2010, at 5:46 PM, Linus Torvalds
-> <torvalds@linux-foundation.org> wrote:
->
->>
->>
->> On Thu, 27 May 2010, Robert Hancock wrote:
->>>
->>> It's highly unlikely that they are incomplete in this respect, as
->>> since I mentioned, Windows would fail to recognize the PS/2 controller
->>> that people would expect to work, which would most likely get
->>> noticed..
->>
->> Did you miss the part where I actually quoted my own modern Core i5
->> machine that _does_ have a keyboard controller, and _does_ have a
->> keyboard
->> port, and that does _not_ mention them in the PnP tables?
->
-> Except that it _does_. But _our_ ACPI implementation drops all inactive
-> devices so our PNP layer does not see your mouse and keyboard ports.
+Fixed issues found by checkpatch.pl including adding KERN_
+facility levels to printk() calls and C99 comments.
 
-That's likely true - my machine works similarly, it doesn't list any 
-keyboard or mouse controller in PnP and Windows doesn't see them if no 
-device is plugged in at boot. The PnP devices for them are still 
-defined, but they are marked as disabled (the _STA method in the DSDT 
-returns 0). So we could likely detect that case and say "hey, the device 
-is there, just turned off, maybe we should try and see if it works 
-anyway". Whereas if the device is not there at all, we'd likely be 
-better off leaving it alone, by default anyway.
+Signed-off-by: Scott Kidder <scott.kidder11@gmail.com>
+---
+ drivers/staging/cx25821/cx25821-audups11.c |   25 ++++++++++---------------
+ 1 files changed, 10 insertions(+), 15 deletions(-)
 
->
->
->>
->>> I think this is a case where it has to be trusted, because that's what
->>> Windows does.
->>
->> The thing is, Windows isn't used for things like headless machines. Which
->> we went over extensively in the thread. There's a _reason_ why Linux
->> probes the dang thing.
->
->
+diff --git a/drivers/staging/cx25821/cx25821-audups11.c b/drivers/staging/cx25821/cx25821-audups11.c
+index e49ead9..8debde1 100644
+--- a/drivers/staging/cx25821/cx25821-audups11.c
++++ b/drivers/staging/cx25821/cx25821-audups11.c
+@@ -82,9 +82,8 @@ static void buffer_queue(struct videobuf_queue *vq, struct videobuf_buffer *vb)
+ 		}
+ 	}
+ 
+-	if (list_empty(&q->active)) {
++	if (list_empty(&q->active))
+ 		dprintk(2, "active queue empty!\n");
+-	}
+ }
+ 
+ static struct videobuf_queue_ops cx25821_video_qops = {
+@@ -101,7 +100,7 @@ static int video_open(struct file *file)
+ 	struct cx25821_fh *fh;
+ 	enum v4l2_buf_type type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+ 
+-	printk("open dev=%s type=%s\n", video_device_node_name(vdev),
++	printk(KERN_INFO "open dev=%s type=%s\n", video_device_node_name(vdev),
+ 		v4l2_type_names[type]);
+ 
+ 	/* allocate + initialize per filehandle data */
+@@ -139,7 +138,7 @@ static int video_open(struct file *file)
+ }
+ 
+ static ssize_t video_read(struct file *file, char __user * data, size_t count,
+-			  loff_t * ppos)
++			  loff_t *ppos)
+ {
+ 	struct cx25821_fh *fh = file->private_data;
+ 
+@@ -187,8 +186,8 @@ static int video_release(struct file *file)
+ 	struct cx25821_fh *fh = file->private_data;
+ 	struct cx25821_dev *dev = fh->dev;
+ 
+-	//stop the risc engine and fifo
+-	//cx_write(channel11->dma_ctl, 0);
++	/* stop the risc engine and fifo */
++	/* cx_write(channel11->dma_ctl, 0); */
+ 
+ 	/* stop video capture */
+ 	if (cx25821_res_check(fh, RESOURCE_VIDEO11)) {
+@@ -216,17 +215,14 @@ static int vidioc_streamon(struct file *file, void *priv, enum v4l2_buf_type i)
+ 	struct cx25821_fh *fh = priv;
+ 	struct cx25821_dev *dev = fh->dev;
+ 
+-	if (unlikely(fh->type != V4L2_BUF_TYPE_VIDEO_CAPTURE)) {
++	if (unlikely(fh->type != V4L2_BUF_TYPE_VIDEO_CAPTURE))
+ 		return -EINVAL;
+-	}
+ 
+-	if (unlikely(i != fh->type)) {
++	if (unlikely(i != fh->type))
+ 		return -EINVAL;
+-	}
+ 
+-	if (unlikely(!cx25821_res_get(dev, fh, cx25821_get_resource(fh, RESOURCE_VIDEO11)))) {
++	if (unlikely(!cx25821_res_get(dev, fh, cx25821_get_resource(fh, RESOURCE_VIDEO11))))
+ 		return -EBUSY;
+-	}
+ 
+ 	return videobuf_streamon(get_queue(fh));
+ }
+@@ -297,9 +293,8 @@ static long video_ioctl_upstream11(struct file *file, unsigned int cmd,
+ 
+ 	command = data_from_user->command;
+ 
+-	if (command != UPSTREAM_START_AUDIO && command != UPSTREAM_STOP_AUDIO) {
++	if (command != UPSTREAM_START_AUDIO && command != UPSTREAM_STOP_AUDIO)
+ 		return 0;
+-	}
+ 
+ 	dev->input_filename = data_from_user->input_filename;
+ 	dev->input_audiofilename = data_from_user->input_filename;
+@@ -357,7 +352,7 @@ static int vidioc_s_ctrl(struct file *file, void *priv,
+ 	return 0;
+ }
+ 
+-// exported stuff
++/* exported stuff */
+ static const struct v4l2_file_operations video_fops = {
+ 	.owner = THIS_MODULE,
+ 	.open = video_open,
+-- 
+1.7.1
 
