@@ -1,80 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753652Ab0E1SZ7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 May 2010 14:25:59 -0400
-Received: from cavan.codon.org.uk ([93.93.128.6]:57066 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752151Ab0E1SZz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 May 2010 14:25:55 -0400
-Date: Fri, 28 May 2010 19:25:49 +0100
-From: Matthew Garrett <mjg59@srcf.ucam.org>
-To: torvalds@linux-foundation.org
-Cc: linux-kernel@vger.kernel.org, platform-driver-x86@vger.kernel.org
-Subject: [GIT PULL] x86 platform driver updates for 2.6.35
-Message-ID: <20100528182549.GA32694@srcf.ucam.org>
+	id S1753811Ab0E1S3L (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 May 2010 14:29:11 -0400
+Received: from hera.kernel.org ([140.211.167.34]:50540 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752627Ab0E1S3H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 May 2010 14:29:07 -0400
+Date: Fri, 28 May 2010 18:27:40 GMT
+From: tip-bot for Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-kernel@vger.kernel.org, anton@samba.org, hpa@zytor.com,
+       mingo@redhat.com, torvalds@linux-foundation.org,
+       linuxppc-dev@lists.ozlabs.org, peterz@infradead.org,
+       srostedt@redhat.com, tglx@linutronix.de, sfr@canb.auug.org.au,
+       mingo@elte.hu
+Reply-To: mingo@redhat.com, hpa@zytor.com, anton@samba.org,
+       linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+       peterz@infradead.org, linuxppc-dev@lists.ozlabs.org,
+       srostedt@redhat.com, sfr@canb.auug.org.au, tglx@linutronix.de,
+       mingo@elte.hu
+In-Reply-To: <20100528150842.d5a751ba.sfr@canb.auug.org.au>
+References: <20100528150842.d5a751ba.sfr@canb.auug.org.au>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/urgent] tracing, powerpc: Fix for tracepoint API change
+Message-ID: <tip-a578f4255763514dc9d0c4f2a60cf5b9323e0b6b@git.kernel.org>
+Git-Commit-ID: a578f4255763514dc9d0c4f2a60cf5b9323e0b6b
+X-Mailer: tip-git-log-daemon
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 28 May 2010 18:27:42 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+Commit-ID:  a578f4255763514dc9d0c4f2a60cf5b9323e0b6b
+Gitweb:     http://git.kernel.org/tip/a578f4255763514dc9d0c4f2a60cf5b9323e0b6b
+Author:     Stephen Rothwell <sfr@canb.auug.org.au>
+AuthorDate: Fri, 28 May 2010 15:08:42 +1000
+Committer:  Ingo Molnar <mingo@elte.hu>
+CommitDate: Fri, 28 May 2010 16:27:11 +0200
 
-The hp-wmi update looks large but is mostly code cleanup with no 
-functional change. The rest is obvious fixes plus Jesse's IPS driver for 
-power saving on recent Intel.
+tracing, powerpc: Fix for tracepoint API change
 
-The following changes since commit 9dda696f0de87a2e5cfabb147e28c76b7d3c6846:
-  Linus Torvalds (1):
-        Merge branch 'release' of git://git.kernel.org/.../aegl/linux-2.6
+Commit 38516ab59fbc5b3bb278cf5e1fe2867c70cff32e "tracing: Let
+tracepoints have data passed to tracepoint callbacks" requires
+this fixup to the powerpc code.
 
-are available in the git repository at:
+Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
+Acked-by: Steven Rostedt <srostedt@redhat.com>
+Cc: Linus <torvalds@linux-foundation.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: ppc-dev <linuxppc-dev@lists.ozlabs.org>
+Cc: paulus@samba.org
+Cc: Anton Blanchard ZZ <anton@samba.org>
+LKML-Reference: <20100528150842.d5a751ba.sfr@canb.auug.org.au>
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
+---
+ arch/powerpc/platforms/pseries/hvCall_inst.c |   10 +++++-----
+ 1 files changed, 5 insertions(+), 5 deletions(-)
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/mjg59/platform-drivers-x86.git for_linus
-
-Axel Lin (1):
-      intel_menlow: fix memory leaks in error path
-
-Jesse Barnes (3):
-      timer: add on-stack deferrable timer interfaces
-      x86 platform driver: intelligent power sharing driver
-      IPS driver: add GPU busy and turbo checking
-
-Julia Lawall (1):
-      drivers/platform/x86: Eliminate a NULL pointer dereference
-
-Randy Dunlap (1):
-      platform/x86: msi-laptop depends on SERIO_I8042
-
-Thadeu Lima de Souza Cascardo (1):
-      classmate-laptop: depends on RFKILL or RFKILL=n
-
-Thomas Renninger (7):
-      x86 platform drivers: hp-wmi Reorder event id processing
-      x86 platform drivers: hp-wmi Catch and log unkown event and key codes correctly
-      x86 platform drivers: hp-wmi Use consistent prefix string for messages.
-      x86 platform drivers: hp-wmi Add media key 0x20e8
-      x86 platform drivers: hp-wmi Set placeholder for unimplemented events
-      x86 platform drivers: hp-wmi fix buffer size depending on ACPI version
-      X86 platform: hp-wmi Better match the HP WMI query interface
-
- drivers/platform/x86/Kconfig        |   12 +
- drivers/platform/x86/Makefile       |    1 +
- drivers/platform/x86/hp-wmi.c       |  234 ++++--
- drivers/platform/x86/intel_ips.c    | 1659 +++++++++++++++++++++++++++++++++++
- drivers/platform/x86/intel_menlow.c |   33 +-
- drivers/platform/x86/sony-laptop.c  |   10 +-
- include/drm/i915_drm.h              |    9 +
- include/linux/timer.h               |   15 +
- kernel/timer.c                      |   13 +
- 9 files changed, 1920 insertions(+), 66 deletions(-)
- create mode 100644 drivers/platform/x86/intel_ips.c
-
--- 
-Matthew Garrett | mjg59@srcf.ucam.org
+diff --git a/arch/powerpc/platforms/pseries/hvCall_inst.c b/arch/powerpc/platforms/pseries/hvCall_inst.c
+index 1fefae7..e19ff02 100644
+--- a/arch/powerpc/platforms/pseries/hvCall_inst.c
++++ b/arch/powerpc/platforms/pseries/hvCall_inst.c
+@@ -102,7 +102,7 @@ static const struct file_operations hcall_inst_seq_fops = {
+ #define CPU_NAME_BUF_SIZE	32
+ 
+ 
+-static void probe_hcall_entry(unsigned long opcode, unsigned long *args)
++static void probe_hcall_entry(void *ignored, unsigned long opcode, unsigned long *args)
+ {
+ 	struct hcall_stats *h;
+ 
+@@ -114,7 +114,7 @@ static void probe_hcall_entry(unsigned long opcode, unsigned long *args)
+ 	h->purr_start = mfspr(SPRN_PURR);
+ }
+ 
+-static void probe_hcall_exit(unsigned long opcode, unsigned long retval,
++static void probe_hcall_exit(void *ignored, unsigned long opcode, unsigned long retval,
+ 			     unsigned long *retbuf)
+ {
+ 	struct hcall_stats *h;
+@@ -140,11 +140,11 @@ static int __init hcall_inst_init(void)
+ 	if (!firmware_has_feature(FW_FEATURE_LPAR))
+ 		return 0;
+ 
+-	if (register_trace_hcall_entry(probe_hcall_entry))
++	if (register_trace_hcall_entry(probe_hcall_entry, NULL))
+ 		return -EINVAL;
+ 
+-	if (register_trace_hcall_exit(probe_hcall_exit)) {
+-		unregister_trace_hcall_entry(probe_hcall_entry);
++	if (register_trace_hcall_exit(probe_hcall_exit, NULL)) {
++		unregister_trace_hcall_entry(probe_hcall_entry, NULL);
+ 		return -EINVAL;
+ 	}
+ 
