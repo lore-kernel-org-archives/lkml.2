@@ -1,103 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754501Ab0E1AMJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 May 2010 20:12:09 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:38529 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752789Ab0E1AMG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 May 2010 20:12:06 -0400
-Date: Fri, 28 May 2010 10:11:57 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Richard Purdie <rpurdie@rpsys.net>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-       linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-       Bjarke Istrup Pedersen <gurligebis@gentoo.org>,
-       Randy Dunlap <randy.dunlap@oracle.com>,
-       Alessandro Zummo <a.zummo@towertech.it>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Linus <torvalds@linux-foundation.org>
-Subject: Re: linux-next: build failure after merge of the final tree (leds
- tree related)
-Message-Id: <20100528101157.aff693f4.sfr@canb.auug.org.au>
-In-Reply-To: <20100528013549.9c17f6e4.sfr@canb.auug.org.au>
-References: <20100527151656.889b5977.sfr@canb.auug.org.au>
-	<1274960190.1931.429.camel@pasglop>
-	<1274965644.24079.1427.camel@rex>
-	<20100528013549.9c17f6e4.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Fri__28_May_2010_10_11_57_+1000_DRU.9I=QVd1dE=u9"
+	id S1754458Ab0E1AR5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 May 2010 20:17:57 -0400
+Received: from [61.177.137.56] ([61.177.137.56]:41365 "HELO mail.semico.com.cn"
+	rhost-flags-FAIL-FAIL-OK-FAIL) by vger.kernel.org with SMTP
+	id S1750831Ab0E1AR4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 May 2010 20:17:56 -0400
+Message-ID: <001501cafdfb$35e37c40$3701a8c0@wxintech.com>
+From: "zhanglx" <zhanglx@semico.com.cn>
+To: "Anca Emanuel" <anca.emanuel@gmail.com>
+Cc: "linux-kernel" <linux-kernel@vger.kernel.org>
+References: <AANLkTil8KvSojByVejgcPHIlVn9QOYmmCAfQwpb4XT5E@mail.gmail.com> <20100525165152.1ecfadd4@notabene.brown> <017601cafbd9$30924dd0$3701a8c0@wxintech.com> <20100525172218.79e3d325@notabene.brown> <01a101cafbdd$6fa10c10$3701a8c0@wxintech.com> <AANLkTikFzNjBS_jPhIwJEQlip6CsBSOECvAXXzHr-IbO@mail.gmail.com>
+Subject: Re: The Future of the Linux Kernel
+Date: Fri, 28 May 2010 08:17:51 +0800
+MIME-Version: 1.0
+Content-Type: text/plain;
+	charset="iso-8859-1"
+X-Priority: 3
+X-MSMail-Priority: Normal
+X-Mailer: Microsoft Outlook Express 6.00.2900.3138
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2900.3198
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by alpha.home.local id o4S0I7im026257
 
---Signature=_Fri__28_May_2010_10_11_57_+1000_DRU.9I=QVd1dE=u9
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Thanks, I try to open it but failed. perhaps it can not be opened in China. 
 
-Hi Richard,
+----- Original Message ----- 
+From: "Anca Emanuel" <anca.emanuel@gmail.com>
+To: "zhanglx" <zhanglx@semico.com.cn>
+Cc: "linux-kernel" <linux-kernel@vger.kernel.org>
+Sent: Tuesday, May 25, 2010 3:52 PM
+Subject: Re: The Future of the Linux Kernel
 
-On Fri, 28 May 2010 01:35:49 +1000 Stephen Rothwell <sfr@canb.auug.org.au> =
-wrote:
->
-> On Thu, 27 May 2010 14:07:24 +0100 Richard Purdie <rpurdie@rpsys.net> wro=
-te:
-> >
-> > On Thu, 2010-05-27 at 21:36 +1000, Benjamin Herrenschmidt wrote:
-> > > On Thu, 2010-05-27 at 15:16 +1000, Stephen Rothwell wrote:
-> > > >=20
-> > > > drivers/leds/leds-net5501.c:20:23: error: asm/geode.h: No such file=
- or directory
-> > > > drivers/leds/leds-net5501.c: In function 'soekris_init':
-> > > > drivers/leds/leds-net5501.c:63: error: implicit declaration of func=
-tion 'is_geode'
-> > >=20
-> > > Looks like something is missing an ifdef CONFIG_X86 :-)
-> >=20
-> > Right, that driver/board is x86 only. I've pushed a fix.
-> >=20
-> > > > Caused by commit 14e40f644b020d473415342461b7c62e3bb5e312 ("leds: A=
-dd LED
-> > > > driver for the Soekris net5501 board").  Presumably only tested on =
-x86?
-> > > >=20
-> > > > drivers/leds/leds-gpio.c: In function 'of_gpio_leds_probe':
-> > > > drivers/leds/leds-gpio.c:253: error: 'struct gpio_led' has no membe=
-r named 'blinking'
-> > > >=20
-> > > > Caused by commit 2146325df2c2640059a9e064890c30c6e259b458 ("leds:
-> > > > leds-gpio: Change blink_set callback to be able to turn off blinkin=
-g").
-> >=20
-> > This error looks like its from Ben's patch, probably when openfirmware
-> > is enabled. I've queued a fix for this too:
-> >=20
-> > http://git.o-hand.com/cgit.cgi/linux-rpurdie-leds/commit/?id=3Da4b4433c=
-511cf4361bb0afabba69e16632002d32
->=20
-> Great, thanks.
 
-Except, of course, Linus has merged the broken tree without the fixes :-(
-
-Oh, well.
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
-
---Signature=_Fri__28_May_2010_10_11_57_+1000_DRU.9I=QVd1dE=u9
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iEYEARECAAYFAkv/Ck0ACgkQjjKRsyhoI8xsVACgkmjaK/3shBd59NDcMQYcMlTb
-qREAniVTEVXyP51txfKoBfbyfZWxl9Ww
-=+7j+
------END PGP SIGNATURE-----
-
---Signature=_Fri__28_May_2010_10_11_57_+1000_DRU.9I=QVd1dE=u9--
+> On Tue, May 25, 2010 at 10:39 AM, zhanglx <zhanglx@semico.com.cn> wrote:
+>> I will not say interest or no interest on Linux kernel. I just want to know how it runs on earth because a lot of talent people working on it. :)
+>>
+>> I do not know how to submit patches. Is it processed by GIT tool?
+> 
+> Here: http://www.youtube.com/watch?v=LLBrBBImJt4 is a tutorial by Gregÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
