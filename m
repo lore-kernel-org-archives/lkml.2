@@ -1,55 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759291Ab0E1Vi2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 May 2010 17:38:28 -0400
-Received: from science.horizon.com ([71.41.210.146]:44813 "HELO
-	science.horizon.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1757253Ab0E1Vi0 (ORCPT
+	id S1759321Ab0E1Vkg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 May 2010 17:40:36 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:49573 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753494Ab0E1Vkd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 May 2010 17:38:26 -0400
-Date: 28 May 2010 17:38:21 -0400
-Message-ID: <20100528213821.4351.qmail@science.horizon.com>
-From: "George Spelvin" <linux@horizon.com>
-To: andy.shevchenko@gmail.com, iveqy@iveqy.com
-Subject: Re: hex_to_bin speedup
-Cc: linux@horizon.com, linux-kernel@vger.kernel.org
+	Fri, 28 May 2010 17:40:33 -0400
+Date: Fri, 28 May 2010 14:40:27 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: =?UTF-8?Q?Micha=C5=82_Miros=C5=82aw?= <mirq-linux@rere.qmqm.pl>
+Cc: linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [RFC] [PATCH 1/2] mmc: split mmc_sd_init_card()
+Message-Id: <20100528144027.3c868841.akpm@linux-foundation.org>
+In-Reply-To: <1-1000-12432-1274803827-7569@rere.qmqm.pl>
+References: <1-1000-12432-1274803827-7569@rere.qmqm.pl>
+X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-1) First of all, I'd worry about code size far more than speed.
-   this is not fast-path code.
-2) Second, given that you're already doing a range test,
-   the fastest way to perform a tolower() is "c |= 0x20".
+On Tue, 25 May 2010 18:10:28 +0200 (CEST)
+Micha__ Miros__aw <mirq-linux@rere.qmqm.pl> wrote:
 
-Generally it's something like:
-int hex_to_bin(char ch)
-{
-	ch -= '0';
-	if ((unsigned char)ch <= 9)
-		return ch;
-	ch |= 0x20;
-	ch -= 'a' - '0';
-	if ((unsigned char)ch <= 6)
-		return ch+10
-	return -1;
-}
+> This is needed to avoid code duplication in SD-combo support.
 
+hm.  Perhaps you could have told us a bit more about it than this.
 
-that produces the even smaller code:
-hex_to_bin_or:
-        movb    4(%esp), %dl
-        subl    $48, %edx
-        cmpb    $9, %dl
-        movsbl  %dl,%eax
-        jbe     .L10
-        orl     $32, %edx
-        orl     $-1, %eax
-        subl    $49, %edx
-        cmpb    $6, %dl
-        ja      .L10
-        movsbl  %dl,%eax
-        addl    $10, %eax
-.L10:
-        ret
+> +int mmc_sd_get_cid(struct mmc_host *host, u32 ocr, u32 *cid)
+> +int mmc_sd_get_csd(struct mmc_host *host, struct mmc_card *card)
+> +int mmc_sd_setup_card(struct mmc_host *host, struct mmc_card *card,
+> +unsigned mmc_sd_get_max_clock(struct mmc_card *card)
+> +void mmc_sd_go_highspeed(struct mmc_card *card)
+
+These are global symbols, but they are not exported to (other) modules.
+That's odd.  I'd have expected to see them either `static' or
+EXPORT_MODULE()d.
+
+I'll take the lack of a signed-off-by: and the "RFC" as signal to not
+apply these patches.
 
