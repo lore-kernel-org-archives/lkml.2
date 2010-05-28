@@ -1,59 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758618Ab0E1Pfx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 May 2010 11:35:53 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:54686 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751691Ab0E1Pfv (ORCPT
+	id S1758886Ab0E1Pph (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 May 2010 11:45:37 -0400
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:18669 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757609Ab0E1Ppg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 May 2010 11:35:51 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=BAOKHsIR+2rlZcKhj/h1Mpoks+DwCPaohiR0EBCq17wR+WD7tddm6DIkJGO1zZvqU1
-         k3XItfgq+rPtju3SoR4EkKedaoYSJ0xvE96jxlTaj5yoCIfx2knh+MplKHtejzSDINJo
-         TlZEZVDW/xarxBBeHpieyfzjFqQJ5g2qMWLcE=
+	Fri, 28 May 2010 11:45:36 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,5995"; a="42710470"
+Message-ID: <4BFFE51B.3080504@codeaurora.org>
+Date: Fri, 28 May 2010 10:45:31 -0500
+From: Ron Shaffer <rshaffer@codeaurora.org>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.1.9) Gecko/20100317 Thunderbird/3.0.4
 MIME-Version: 1.0
-In-Reply-To: <1275060103.27810.9651.camel@twins>
-References: <20100528143605.7E2A.A69D9226@jp.fujitsu.com>
-	<AANLkTikB-8Qu03VrA5Z0LMXM_alSV7SLqzl-MmiLmFGv@mail.gmail.com>
-	<20100528145329.7E2D.A69D9226@jp.fujitsu.com>
-	<20100528125305.GE11364@uudg.org>
-	<20100528140623.GA11041@barrios-desktop>
-	<20100528143617.GF11364@uudg.org>
-	<20100528151249.GB12035@barrios-desktop>
-	<1275060103.27810.9651.camel@twins>
-Date: Sat, 29 May 2010 00:35:50 +0900
-Message-ID: <AANLkTinoTgYfywq1S6UV-n7npzk4xyQZ2PMT5LDkaBCQ@mail.gmail.com>
-Subject: Re: [RFC] oom-kill: give the dying task a higher priority
-From: Minchan Kim <minchan.kim@gmail.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: "Luis Claudio R. Goncalves" <lclaudio@uudg.org>,
-       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-       balbir@linux.vnet.ibm.com, Oleg Nesterov <oleg@redhat.com>,
-       linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-       Thomas Gleixner <tglx@linutronix.de>,
-       David Rientjes <rientjes@google.com>, Mel Gorman <mel@csn.ul.ie>,
-       williams@redhat.com
-Content-Type: text/plain; charset=UTF-8
+To: David Miller <davem@davemloft.net>
+CC: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3 0/3] Don't send SCO/eSCO request during a mode change
+ from sniff to active
+References: <1275016326-15795-1-git-send-email-rshaffer@codeaurora.org> <20100528.004732.70206390.davem@davemloft.net>
+In-Reply-To: <20100528.004732.70206390.davem@davemloft.net>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, May 29, 2010 at 12:21 AM, Peter Zijlstra <peterz@infradead.org> wrote:
-> On Sat, 2010-05-29 at 00:12 +0900, Minchan Kim wrote:
->> I think highest RT proirity ins't good solution.
->> As I mentiond, Some RT functions don't want to be preempted by other processes
->> which cause memory pressure. It makes RT task broken.
->
-> All the patches I've seen use MAX_RT_PRIO-1, which is actually FIFO-1,
-> which is the lowest RT priority.
+David:
 
-Stupid me. I confused that until now.
-That's exactly what I want.
+> 
+> Bluetooth patches should be sent to the linux-bluetooth@vger.kernel.org
+> mailing list.  As per the following linux/MAINTAINERS entries:
+> 
+> BLUETOOTH DRIVERS
+> M:	Marcel Holtmann <marcel@holtmann.org>
+> L:	linux-bluetooth@vger.kernel.org
+> W:	http://www.bluez.org/
+> S:	Maintained
+> F:	drivers/bluetooth/
+> 
+> BLUETOOTH SUBSYSTEM
+> M:	Marcel Holtmann <marcel@holtmann.org>
+> L:	linux-bluetooth@vger.kernel.org
+> W:	http://www.bluez.org/
+> T:	git git://git.kernel.org/pub/scm/linux/kernel/git/holtmann/bluetooth-2.6.git
+> S:	Maintained
+> F:	net/bluetooth/
+> F:	include/net/bluetooth/
+> 
 
+Yes. My apologizes. In a daze, I inappropriately gave the incorrect list for my To:
+address.
+
+Sorry for the inconvenience, and thanks for the reminder.
 
 -- 
-Kind regards,
-Minchan Kim
+Ron Shaffer
+Qualcomm Innovation Center, Inc.
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum
