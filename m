@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756278Ab0E1AdD (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 May 2010 20:33:03 -0400
-Received: from TYO201.gate.nec.co.jp ([202.32.8.193]:58641 "EHLO
-	tyo201.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754815Ab0E1Ac6 (ORCPT
+	id S1756903Ab0E1AdK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 May 2010 20:33:10 -0400
+Received: from TYO202.gate.nec.co.jp ([202.32.8.206]:47210 "EHLO
+	tyo202.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756133Ab0E1AdC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 May 2010 20:32:58 -0400
+	Thu, 27 May 2010 20:33:02 -0400
 From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
 To: linux-mm@kvack.org
 Cc: linux-kernel@vger.kernel.org, Andi Kleen <andi@firstfloor.org>,
        Andrew Morton <akpm@linux-foundation.org>,
        Wu Fengguang <fengguang.wu@intel.com>, Mel Gorman <mel@csn.ul.ie>
-Subject: [PATCH 8/8] HWPOISON, hugetlb: support hwpoison injection for hugepage
-Date: Fri, 28 May 2010 09:29:22 +0900
-Message-Id: <1275006562-18946-9-git-send-email-n-horiguchi@ah.jp.nec.com>
+Subject: [PATCH 3/8] HWPOISON, hugetlb: enable error handling path for hugepage
+Date: Fri, 28 May 2010 09:29:17 +0900
+Message-Id: <1275006562-18946-4-git-send-email-n-horiguchi@ah.jp.nec.com>
 X-Mailer: git-send-email 1.7.0
 In-Reply-To: <1275006562-18946-1-git-send-email-n-horiguchi@ah.jp.nec.com>
 References: <1275006562-18946-1-git-send-email-n-horiguchi@ah.jp.nec.com>
@@ -22,74 +22,170 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch enables hwpoison injection through debug/hwpoison interfaces,
-with which we can test memory error handling for free or reserved
-hugepages (which cannot be tested by madvise() injector).
+This patch just enables handling path. Real containing and
+recovering operation will be implemented in following patches.
+
+Dependency:
+  "hugetlb, rmap: add reverse mapping for hugepage."
 
 Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
 Cc: Andi Kleen <andi@firstfloor.org>
 Cc: Andrew Morton <akpm@linux-foundation.org>
 Cc: Wu Fengguang <fengguang.wu@intel.com>
 ---
- mm/hwpoison-inject.c |   15 +++++++++------
- 1 files changed, 9 insertions(+), 6 deletions(-)
+ mm/memory-failure.c |   39 ++++++++++++++++++++++-----------------
+ 1 files changed, 22 insertions(+), 17 deletions(-)
 
-diff --git v2.6.34/mm/hwpoison-inject.c v2.6.34/mm/hwpoison-inject.c
-index 10ea719..0948f10 100644
---- v2.6.34/mm/hwpoison-inject.c
-+++ v2.6.34/mm/hwpoison-inject.c
-@@ -5,6 +5,7 @@
- #include <linux/mm.h>
- #include <linux/swap.h>
- #include <linux/pagemap.h>
+diff --git v2.6.34/mm/memory-failure.c v2.6.34/mm/memory-failure.c
+index 620b0b4..1ec68c8 100644
+--- v2.6.34/mm/memory-failure.c
++++ v2.6.34/mm/memory-failure.c
+@@ -45,6 +45,7 @@
+ #include <linux/page-isolation.h>
+ #include <linux/suspend.h>
+ #include <linux/slab.h>
 +#include <linux/hugetlb.h>
  #include "internal.h"
  
- static struct dentry *hwpoison_dir;
-@@ -13,6 +14,7 @@ static int hwpoison_inject(void *data, u64 val)
+ int sysctl_memory_failure_early_kill __read_mostly = 0;
+@@ -837,6 +838,7 @@ static int hwpoison_user_mappings(struct page *p, unsigned long pfn,
+ 	int ret;
+ 	int i;
+ 	int kill = 1;
++	struct page *hpage = compound_head(p);
+ 
+ 	if (PageReserved(p) || PageSlab(p))
+ 		return SWAP_SUCCESS;
+@@ -845,10 +847,10 @@ static int hwpoison_user_mappings(struct page *p, unsigned long pfn,
+ 	 * This check implies we don't kill processes if their pages
+ 	 * are in the swap cache early. Those are always late kills.
+ 	 */
+-	if (!page_mapped(p))
++	if (!page_mapped(hpage))
+ 		return SWAP_SUCCESS;
+ 
+-	if (PageCompound(p) || PageKsm(p))
++	if (PageKsm(p))
+ 		return SWAP_FAIL;
+ 
+ 	if (PageSwapCache(p)) {
+@@ -863,10 +865,11 @@ static int hwpoison_user_mappings(struct page *p, unsigned long pfn,
+ 	 * XXX: the dirty test could be racy: set_page_dirty() may not always
+ 	 * be called inside page lock (it's recommended but not enforced).
+ 	 */
+-	mapping = page_mapping(p);
+-	if (!PageDirty(p) && mapping && mapping_cap_writeback_dirty(mapping)) {
+-		if (page_mkclean(p)) {
+-			SetPageDirty(p);
++	mapping = page_mapping(hpage);
++	if (!PageDirty(hpage) && mapping &&
++	    mapping_cap_writeback_dirty(mapping)) {
++		if (page_mkclean(hpage)) {
++			SetPageDirty(hpage);
+ 		} else {
+ 			kill = 0;
+ 			ttu |= TTU_IGNORE_HWPOISON;
+@@ -885,14 +888,14 @@ static int hwpoison_user_mappings(struct page *p, unsigned long pfn,
+ 	 * there's nothing that can be done.
+ 	 */
+ 	if (kill)
+-		collect_procs(p, &tokill);
++		collect_procs(hpage, &tokill);
+ 
+ 	/*
+ 	 * try_to_unmap can fail temporarily due to races.
+ 	 * Try a few times (RED-PEN better strategy?)
+ 	 */
+ 	for (i = 0; i < N_UNMAP_TRIES; i++) {
+-		ret = try_to_unmap(p, ttu);
++		ret = try_to_unmap(hpage, ttu);
+ 		if (ret == SWAP_SUCCESS)
+ 			break;
+ 		pr_debug("MCE %#lx: try_to_unmap retry needed %d\n", pfn,  ret);
+@@ -900,7 +903,7 @@ static int hwpoison_user_mappings(struct page *p, unsigned long pfn,
+ 
+ 	if (ret != SWAP_SUCCESS)
+ 		printk(KERN_ERR "MCE %#lx: failed to unmap page (mapcount=%d)\n",
+-				pfn, page_mapcount(p));
++				pfn, page_mapcount(hpage));
+ 
+ 	/*
+ 	 * Now that the dirty bit has been propagated to the
+@@ -911,7 +914,7 @@ static int hwpoison_user_mappings(struct page *p, unsigned long pfn,
+ 	 * use a more force-full uncatchable kill to prevent
+ 	 * any accesses to the poisoned memory.
+ 	 */
+-	kill_procs_ao(&tokill, !!PageDirty(p), trapno,
++	kill_procs_ao(&tokill, !!PageDirty(hpage), trapno,
+ 		      ret != SWAP_SUCCESS, pfn);
+ 
+ 	return ret;
+@@ -921,6 +924,7 @@ int __memory_failure(unsigned long pfn, int trapno, int flags)
  {
- 	unsigned long pfn = val;
+ 	struct page_state *ps;
  	struct page *p;
 +	struct page *hpage;
- 	int err;
+ 	int res;
  
- 	if (!capable(CAP_SYS_ADMIN))
-@@ -24,18 +26,19 @@ static int hwpoison_inject(void *data, u64 val)
- 		return -ENXIO;
+ 	if (!sysctl_memory_failure_recovery)
+@@ -934,6 +938,7 @@ int __memory_failure(unsigned long pfn, int trapno, int flags)
+ 	}
  
  	p = pfn_to_page(pfn);
 +	hpage = compound_head(p);
- 	/*
- 	 * This implies unable to support free buddy pages.
- 	 */
--	if (!get_page_unless_zero(p))
-+	if (!get_page_unless_zero(hpage))
+ 	if (TestSetPageHWPoison(p)) {
+ 		printk(KERN_ERR "MCE %#lx: already hardware poisoned\n", pfn);
  		return 0;
- 
+@@ -953,7 +958,7 @@ int __memory_failure(unsigned long pfn, int trapno, int flags)
+ 	 * that may make page_freeze_refs()/page_unfreeze_refs() mismatch.
+ 	 */
+ 	if (!(flags & MF_COUNT_INCREASED) &&
+-		!get_page_unless_zero(compound_head(p))) {
++		!get_page_unless_zero(hpage)) {
+ 		if (is_free_buddy_page(p)) {
+ 			action_result(pfn, "free buddy", DELAYED);
+ 			return 0;
+@@ -971,9 +976,9 @@ int __memory_failure(unsigned long pfn, int trapno, int flags)
+ 	 * The check (unnecessarily) ignores LRU pages being isolated and
+ 	 * walked by the page reclaim code, however that's not a big loss.
+ 	 */
 -	if (!PageLRU(p))
 +	if (!PageLRU(p) && !PageHuge(p))
  		shake_page(p, 0);
- 	/*
- 	 * This implies unable to support non-LRU pages.
+-	if (!PageLRU(p)) {
++	if (!PageLRU(p) && !PageHuge(p)) {
+ 		/*
+ 		 * shake_page could have turned it free.
+ 		 */
+@@ -991,7 +996,7 @@ int __memory_failure(unsigned long pfn, int trapno, int flags)
+ 	 * It's very difficult to mess with pages currently under IO
+ 	 * and in many cases impossible, so we just avoid it here.
  	 */
--	if (!PageLRU(p))
-+	if (!PageLRU(p) && !PageHuge(p))
- 		return 0;
+-	lock_page_nosync(p);
++	lock_page_nosync(hpage);
  
  	/*
-@@ -44,9 +47,9 @@ static int hwpoison_inject(void *data, u64 val)
- 	 * We temporarily take page lock for try_get_mem_cgroup_from_page().
- 	 * __memory_failure() will redo the check reliably inside page lock.
- 	 */
--	lock_page(p);
--	err = hwpoison_filter(p);
+ 	 * unpoison always clear PG_hwpoison inside page lock
+@@ -1004,8 +1009,8 @@ int __memory_failure(unsigned long pfn, int trapno, int flags)
+ 	if (hwpoison_filter(p)) {
+ 		if (TestClearPageHWPoison(p))
+ 			atomic_long_dec(&mce_bad_pages);
+-		unlock_page(p);
+-		put_page(p);
++		unlock_page(hpage);
++		put_page(hpage);
+ 		return 0;
+ 	}
+ 
+@@ -1038,7 +1043,7 @@ int __memory_failure(unsigned long pfn, int trapno, int flags)
+ 		}
+ 	}
+ out:
 -	unlock_page(p);
-+	lock_page(hpage);
-+	err = hwpoison_filter(hpage);
 +	unlock_page(hpage);
- 	if (err)
- 		return 0;
- 
+ 	return res;
+ }
+ EXPORT_SYMBOL_GPL(__memory_failure);
 -- 
 1.7.0
 
