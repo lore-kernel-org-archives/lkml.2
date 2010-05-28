@@ -1,25 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758882Ab0E1PcS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 May 2010 11:32:18 -0400
-Received: from mail-ww0-f46.google.com ([74.125.82.46]:62418 "EHLO
+	id S1758576Ab0E1Pdu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 May 2010 11:33:50 -0400
+Received: from mail-ww0-f46.google.com ([74.125.82.46]:60719 "EHLO
 	mail-ww0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758576Ab0E1PcO (ORCPT
+	with ESMTP id S1756739Ab0E1Pdt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 May 2010 11:32:14 -0400
+	Fri, 28 May 2010 11:33:49 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=from:to:cc:subject:date:message-id:x-mailer;
-        b=mzafu6HbXcNiDmCrvgTYDoqoX9I9lpiNyLlLcaYc5pHwiSdL0v7twd2V3mee2mGGGU
-         wjSoGii7NpK5vFx+RQ9Gg2Sj6tgxa/IVbxb70LqDxRBs1WbjPZAUOiVWPi+R+E0+apKh
-         6gDrSRhNrhuqhF/bkOYE/hEQelPXnEqVNzXVE=
+        b=DNonx3NofVTeRqBuMAZxK5Lw2fOox5gTzIewV0IVh4qbFdSl8MoGbWI91YjzUc/lQY
+         a5JqO0X/YC3ZIPiMQ/kLa+i9ezJyKeZeg+cpmSvyP7itw8hH6Ccr3YqyciDj2cF2gekJ
+         Oz9f2waLJoMVQ8pFaVsOdA2Xi6jeBVQ/IAEKI=
 From: John Sheehan <john.d.sheehan@gmail.com>
 To: gregkh@suse.de, wfp5p@virginia.edu, roel.kluin@gmail.com, jkosina@suse.cz,
        john.d.sheehan@gmail.com
 Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 1/2] Staging: comedi: fix code style errors in s626.c
-Date: Fri, 28 May 2010 16:31:28 +0100
-Message-Id: <1275060688-18454-1-git-send-email-john.d.sheehan@gmail.com>
+Subject: [PATCH 2/2] Staging: comedi: fix code warnings in s626.c
+Date: Fri, 28 May 2010 16:33:25 +0100
+Message-Id: <1275060805-18489-1-git-send-email-john.d.sheehan@gmail.com>
 X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,199 +27,176 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: John Sheehan <john.d.sheehan@gmail.com>
 
-A patch for s626.c to fix errors reported by
-checkpatch.pl tool, namely,
-code indent should use tabs where possible
-"foo * bar" should be "foo *bar"
-trailing statements should be on next line
+A patch for s626.c to fix some of the warnings
+reported by the checkpatch.pl tool, namely,
+printk() should include KERN_ facility level
+unnecessary whitespace before a quoted newline
 
 Signed-off-by: John Sheehan <john.d.sheehan@gmail.com>
 ---
- drivers/staging/comedi/drivers/s626.c |   67 +++++++++++++++++++--------------
- 1 files changed, 39 insertions(+), 28 deletions(-)
+ drivers/staging/comedi/drivers/s626.c |   38 ++++++++++++++++----------------
+ 1 files changed, 19 insertions(+), 19 deletions(-)
 
 diff --git a/drivers/staging/comedi/drivers/s626.c b/drivers/staging/comedi/drivers/s626.c
-index a3cc933..83e1bb1 100644
+index 83e1bb1..b63325c 100644
 --- a/drivers/staging/comedi/drivers/s626.c
 +++ b/drivers/staging/comedi/drivers/s626.c
-@@ -60,10 +60,10 @@ INSN_CONFIG instructions:
-    insn.insn=INSN_CONFIG;   //configuration instruction
-    insn.n=1;                //number of operation (must be 1)
-    insn.data=&initialvalue; //initial value loaded into encoder
--                            //during configuration
-+							//during configuration
-    insn.subdev=5;           //encoder subdevice
-    insn.chanspec=CR_PACK(encoder_channel,0,AREF_OTHER); //encoder_channel
--                                                        //to configure
-+														//to configure
+@@ -543,13 +543,13 @@ static int s626_attach(struct comedi_device *dev, struct comedi_devconfig *it)
+ 	devpriv->pdev = pdev;
  
-    comedi_do_insn(cf,&insn); //executing configuration
- */
-@@ -263,7 +263,7 @@ static int s626_enc_insn_write(struct comedi_device *dev,
- 			       struct comedi_subdevice *s,
- 			       struct comedi_insn *insn, unsigned int *data);
- static int s626_ns_to_timer(int *nanosec, int round_mode);
--static int s626_ai_load_polllist(uint8_t * ppl, struct comedi_cmd *cmd);
-+static int s626_ai_load_polllist(uint8_t *ppl, struct comedi_cmd *cmd);
- static int s626_ai_inttrig(struct comedi_device *dev,
- 			   struct comedi_subdevice *s, unsigned int trignum);
- static irqreturn_t s626_irq_handler(int irq, void *d);
-@@ -294,16 +294,16 @@ static void CloseDMAB(struct comedi_device *dev, struct bufferDMA *pdma,
- /*  COUNTER OBJECT ------------------------------------------------ */
- struct enc_private {
- 	/*  Pointers to functions that differ for A and B counters: */
--	uint16_t(*GetEnable) (struct comedi_device * dev, struct enc_private *);	/* Return clock enable. */
--	uint16_t(*GetIntSrc) (struct comedi_device * dev, struct enc_private *);	/* Return interrupt source. */
--	uint16_t(*GetLoadTrig) (struct comedi_device * dev, struct enc_private *);	/* Return preload trigger source. */
--	uint16_t(*GetMode) (struct comedi_device * dev, struct enc_private *);	/* Return standardized operating mode. */
--	void (*PulseIndex) (struct comedi_device * dev, struct enc_private *);	/* Generate soft index strobe. */
--	void (*SetEnable) (struct comedi_device * dev, struct enc_private *, uint16_t enab);	/* Program clock enable. */
--	void (*SetIntSrc) (struct comedi_device * dev, struct enc_private *, uint16_t IntSource);	/* Program interrupt source. */
--	void (*SetLoadTrig) (struct comedi_device * dev, struct enc_private *, uint16_t Trig);	/* Program preload trigger source. */
--	void (*SetMode) (struct comedi_device * dev, struct enc_private *, uint16_t Setup, uint16_t DisableIntSrc);	/* Program standardized operating mode. */
--	void (*ResetCapFlags) (struct comedi_device * dev, struct enc_private *);	/* Reset event capture flags. */
-+	uint16_t(*GetEnable) (struct comedi_device *dev, struct enc_private *);	/* Return clock enable. */
-+	uint16_t(*GetIntSrc) (struct comedi_device *dev, struct enc_private *);	/* Return interrupt source. */
-+	uint16_t(*GetLoadTrig) (struct comedi_device *dev, struct enc_private *);	/* Return preload trigger source. */
-+	uint16_t(*GetMode) (struct comedi_device *dev, struct enc_private *);	/* Return standardized operating mode. */
-+	void (*PulseIndex) (struct comedi_device *dev, struct enc_private *);	/* Generate soft index strobe. */
-+	void (*SetEnable) (struct comedi_device *dev, struct enc_private *, uint16_t enab);	/* Program clock enable. */
-+	void (*SetIntSrc) (struct comedi_device *dev, struct enc_private *, uint16_t IntSource);	/* Program interrupt source. */
-+	void (*SetLoadTrig) (struct comedi_device *dev, struct enc_private *, uint16_t Trig);	/* Program preload trigger source. */
-+	void (*SetMode) (struct comedi_device *dev, struct enc_private *, uint16_t Setup, uint16_t DisableIntSrc);	/* Program standardized operating mode. */
-+	void (*ResetCapFlags) (struct comedi_device *dev, struct enc_private *);	/* Reset event capture flags. */
+ 	if (pdev == NULL) {
+-		printk("s626_attach: Board not present!!!\n");
++		printk(KERN_ERR "s626_attach: Board not present!!!\n");
+ 		return -ENODEV;
+ 	}
  
- 	uint16_t MyCRA;		/*    Address of CRA register. */
- 	uint16_t MyCRB;		/*    Address of CRB register. */
-@@ -779,7 +779,8 @@ static int s626_attach(struct comedi_device *dev, struct comedi_devconfig *it)
- 		/*  Write I2C control: abort any I2C activity. */
- 		MC_ENABLE(P_MC2, MC2_UPLD_IIC);
- 		/*  Invoke command  upload */
--		while ((RR7146(P_MC2) & MC2_UPLD_IIC) == 0) ;
-+		while ((RR7146(P_MC2) & MC2_UPLD_IIC) == 0)
-+			;
- 		/*  and wait for upload to complete. */
+ 	result = comedi_pci_enable(pdev, "s626");
+ 	if (result < 0) {
+-		printk("s626_attach: comedi_pci_enable fails\n");
++		printk(KERN_ERR "s626_attach: comedi_pci_enable fails\n");
+ 		return -ENODEV;
+ 	}
+ 	devpriv->got_regions = 1;
+@@ -558,7 +558,7 @@ static int s626_attach(struct comedi_device *dev, struct comedi_devconfig *it)
  
- 		/* Per SAA7146 data sheet, write to STATUS reg twice to
-@@ -788,7 +789,8 @@ static int s626_attach(struct comedi_device *dev, struct comedi_devconfig *it)
- 			WR7146(P_I2CSTAT, I2C_CLKSEL);
- 			/*  Write I2C control: reset  error flags. */
- 			MC_ENABLE(P_MC2, MC2_UPLD_IIC);	/*  Invoke command upload */
--			while (!MC_TEST(P_MC2, MC2_UPLD_IIC)) ;
-+			while (!MC_TEST(P_MC2, MC2_UPLD_IIC))
-+				;
- 			/* and wait for upload to complete. */
+ 	devpriv->base_addr = ioremap(resourceStart, SIZEOF_ADDRESS_SPACE);
+ 	if (devpriv->base_addr == NULL) {
+-		printk("s626_attach: IOREMAP failed\n");
++		printk(KERN_ERR "s626_attach: IOREMAP failed\n");
+ 		return -ENODEV;
+ 	}
+ 
+@@ -579,7 +579,7 @@ static int s626_attach(struct comedi_device *dev, struct comedi_devconfig *it)
+ 		    pci_alloc_consistent(devpriv->pdev, DMABUF_SIZE, &appdma);
+ 
+ 		if (devpriv->ANABuf.LogicalBase == NULL) {
+-			printk("s626_attach: DMA Memory mapping error\n");
++			printk(KERN_ERR "s626_attach: DMA Memory mapping error\n");
+ 			return -ENOMEM;
  		}
  
-@@ -1651,7 +1653,8 @@ static int s626_ai_insn_read(struct comedi_device *dev,
- 		/*  shift into FB BUFFER 1 register. */
+@@ -596,7 +596,7 @@ static int s626_attach(struct comedi_device *dev, struct comedi_devconfig *it)
+ 		    pci_alloc_consistent(devpriv->pdev, DMABUF_SIZE, &appdma);
  
- 		/*  Wait for ADC done. */
--		while (!(RR7146(P_PSR) & PSR_GPIO2)) ;
-+		while (!(RR7146(P_PSR) & PSR_GPIO2))
-+			;
+ 		if (devpriv->RPSBuf.LogicalBase == NULL) {
+-			printk("s626_attach: DMA Memory mapping error\n");
++			printk(KERN_ERR "s626_attach: DMA Memory mapping error\n");
+ 			return -ENOMEM;
+ 		}
  
- 		/*  Fetch ADC data. */
- 		if (n != 0)
-@@ -1683,7 +1686,8 @@ static int s626_ai_insn_read(struct comedi_device *dev,
- 	/*  Wait for the data to arrive in FB BUFFER 1 register. */
+@@ -622,18 +622,18 @@ static int s626_attach(struct comedi_device *dev, struct comedi_devconfig *it)
  
- 	/*  Wait for ADC done. */
--	while (!(RR7146(P_PSR) & PSR_GPIO2)) ;
-+	while (!(RR7146(P_PSR) & PSR_GPIO2))
-+		;
+ 	/* set up interrupt handler */
+ 	if (dev->irq == 0) {
+-		printk(" unknown irq (bad)\n");
++		printk(KERN_ERR " unknown irq (bad)\n");
+ 	} else {
+ 		ret = request_irq(dev->irq, s626_irq_handler, IRQF_SHARED,
+ 				  "s626", dev);
  
- 	/*  Fetch ADC data from audio interface's input shift register. */
- 
-@@ -1696,7 +1700,7 @@ static int s626_ai_insn_read(struct comedi_device *dev,
- 	return n;
- }
- 
--static int s626_ai_load_polllist(uint8_t * ppl, struct comedi_cmd *cmd)
-+static int s626_ai_load_polllist(uint8_t *ppl, struct comedi_cmd *cmd)
- {
- 
- 	int n;
-@@ -2425,8 +2429,7 @@ static void s626_timer_load(struct comedi_device *dev, struct enc_private *k,
- static uint8_t trimchan[] = { 10, 9, 8, 3, 2, 7, 6, 1, 0, 5, 4 };
- 
- /*  TrimDac LogicalChan-to-EepromAdrs mapping table. */
--static uint8_t trimadrs[] =
--    { 0x40, 0x41, 0x42, 0x50, 0x51, 0x52, 0x53, 0x60, 0x61, 0x62, 0x63 };
-+static uint8_t trimadrs[] = { 0x40, 0x41, 0x42, 0x50, 0x51, 0x52, 0x53, 0x60, 0x61, 0x62, 0x63 };
- 
- static void LoadTrimDACs(struct comedi_device *dev)
- {
-@@ -2524,10 +2527,12 @@ static uint32_t I2Chandshake(struct comedi_device *dev, uint32_t val)
- 	/*  upload confirmation. */
- 
- 	MC_ENABLE(P_MC2, MC2_UPLD_IIC);
--	while (!MC_TEST(P_MC2, MC2_UPLD_IIC)) ;
-+	while (!MC_TEST(P_MC2, MC2_UPLD_IIC))
-+		;
- 
- 	/*  Wait until I2C bus transfer is finished or an error occurs. */
--	while ((RR7146(P_I2CCTRL) & (I2C_BUSY | I2C_ERR)) == I2C_BUSY) ;
-+	while ((RR7146(P_I2CCTRL) & (I2C_BUSY | I2C_ERR)) == I2C_BUSY)
-+		;
- 
- 	/*  Return non-zero if I2C error occured. */
- 	return RR7146(P_I2CCTRL) & I2C_ERR;
-@@ -2641,7 +2646,8 @@ static void SendDAC(struct comedi_device *dev, uint32_t val)
- 	 * Done by polling the DMAC enable flag; this flag is automatically
- 	 * cleared when the transfer has finished.
- 	 */
--	while ((RR7146(P_MC1) & MC1_A2OUT) != 0) ;
-+	while ((RR7146(P_MC1) & MC1_A2OUT) != 0)
-+		;
- 
- 	/* START THE OUTPUT STREAM TO THE TARGET DAC -------------------- */
- 
-@@ -2658,7 +2664,8 @@ static void SendDAC(struct comedi_device *dev, uint32_t val)
- 	 * finished transferring the DAC's data DWORD from the output FIFO
- 	 * to the output buffer register.
- 	 */
--	while ((RR7146(P_SSR) & SSR_AF2_OUT) == 0) ;
-+	while ((RR7146(P_SSR) & SSR_AF2_OUT) == 0)
-+		;
- 
- 	/* Set up to trap execution at slot 0 when the TSL sequencer cycles
- 	 * back to slot 0 after executing the EOS in slot 5.  Also,
-@@ -2694,7 +2701,8 @@ static void SendDAC(struct comedi_device *dev, uint32_t val)
- 		 * from 0xFF to 0x00, which slot 0 causes to happen by shifting
- 		 * out/in on SD2 the 0x00 that is always referenced by slot 5.
- 		 */
--		while ((RR7146(P_FB_BUFFER2) & 0xFF000000) != 0) ;
-+		while ((RR7146(P_FB_BUFFER2) & 0xFF000000) != 0)
-+			;
+ 		if (ret < 0) {
+-			printk(" irq not available\n");
++			printk(KERN_ERR " irq not available\n");
+ 			dev->irq = 0;
+ 		}
  	}
- 	/* Either (1) we were too late setting the slot 0 trap; the TSL
- 	 * sequencer restarted slot 0 before we could set the EOS trap flag,
-@@ -2710,7 +2718,8 @@ static void SendDAC(struct comedi_device *dev, uint32_t val)
- 	 * the next DAC write.  This is detected when FB_BUFFER2 MSB changes
- 	 * from 0x00 to 0xFF.
- 	 */
--	while ((RR7146(P_FB_BUFFER2) & 0xFF000000) == 0) ;
-+	while ((RR7146(P_FB_BUFFER2) & 0xFF000000) == 0)
-+		;
+ 
+-	DEBUG("s626_attach: -- it opts  %d,%d -- \n",
++	DEBUG("s626_attach: -- it opts  %d,%d --\n",
+ 	      it->options[0], it->options[1]);
+ 
+ 	s = dev->subdevices + 0;
+@@ -1515,7 +1515,7 @@ void ResetADC(struct comedi_device *dev, uint8_t * ppl)
+ 			break;	/*  Exit poll list processing loop. */
+ 		}
+ 	}
+-	DEBUG("ResetADC: ADC items %d \n", devpriv->AdcItems);
++	DEBUG("ResetADC: ADC items %d\n", devpriv->AdcItems);
+ 
+ 	/* VERSION 2.01 CHANGE: DELAY CHANGED FROM 250NS to 2US.  Allow the
+ 	 * ADC to stabilize for 2 microseconds before starting the final
+@@ -1576,7 +1576,7 @@ static int s626_ai_insn_config(struct comedi_device *dev,
+ /*   register uint8_t	i; */
+ /*   register int32_t	*readaddr; */
+ 
+-/*   DEBUG("as626_ai_rinsn: ai_rinsn enter \n");  */
++/*   DEBUG("as626_ai_rinsn: ai_rinsn enter\n");  */
+ 
+ /*   Trigger ADC scan loop start by setting RPS Signal 0. */
+ /*   MC_ENABLE( P_MC2, MC2_ADC_RPS ); */
+@@ -1593,11 +1593,11 @@ static int s626_ai_insn_config(struct comedi_device *dev,
+ /*  Convert ADC data to 16-bit integer values and copy to application buffer. */
+ /*   for ( i = 0; i < devpriv->AdcItems; i++ ) { */
+ /*     *data = s626_ai_reg_to_uint( *readaddr++ ); */
+-/*     DEBUG("s626_ai_rinsn: data %d \n",*data); */
++/*     DEBUG("s626_ai_rinsn: data %d\n",*data); */
+ /*     data++; */
+ /*   } */
+ 
+-/*   DEBUG("s626_ai_rinsn: ai_rinsn escape \n"); */
++/*   DEBUG("s626_ai_rinsn: ai_rinsn escape\n"); */
+ /*   return i; */
+ /* } */
+ 
+@@ -1747,7 +1747,7 @@ static int s626_ai_cmd(struct comedi_device *dev, struct comedi_subdevice *s)
+ 	DEBUG("s626_ai_cmd: entering command function\n");
+ 
+ 	if (devpriv->ai_cmd_running) {
+-		printk("s626_ai_cmd: Another ai_cmd is running %d\n",
++		printk(KERN_ERR "s626_ai_cmd: Another ai_cmd is running %d\n",
+ 		       dev->minor);
+ 		return -EBUSY;
+ 	}
+@@ -2151,7 +2151,7 @@ static void s626_dio_init(struct comedi_device *dev)
+ 		DEBIwrite(dev, diopriv->WRDOut, 0);	/*  Program all outputs */
+ 		/*  to inactive state. */
+ 	}
+-	DEBUG("s626_dio_init: DIO initialized \n");
++	DEBUG("s626_dio_init: DIO initialized\n");
  }
  
- static void WriteMISC2(struct comedi_device *dev, uint16_t NewImage)
-@@ -2749,10 +2758,12 @@ static void DEBItransfer(struct comedi_device *dev)
+ /* DIO devices are slightly special.  Although it is possible to
+@@ -2350,7 +2350,7 @@ static int s626_enc_insn_read(struct comedi_device *dev,
+ 	int n;
+ 	struct enc_private *k = &encpriv[CR_CHAN(insn->chanspec)];
  
- 	/*  Wait for completion of upload from shadow RAM to DEBI control */
- 	/*  register. */
--	while (!MC_TEST(P_MC2, MC2_UPLD_DEBI)) ;
-+	while (!MC_TEST(P_MC2, MC2_UPLD_DEBI))
-+		;
+-	DEBUG("s626_enc_insn_read: encoder read channel %d \n",
++	DEBUG("s626_enc_insn_read: encoder read channel %d\n",
+ 	      CR_CHAN(insn->chanspec));
  
- 	/*  Wait until DEBI transfer is done. */
--	while (RR7146(P_PSR) & PSR_DEBI_S) ;
-+	while (RR7146(P_PSR) & PSR_DEBI_S)
-+		;
+ 	for (n = 0; n < insn->n; n++)
+@@ -2368,7 +2368,7 @@ static int s626_enc_insn_write(struct comedi_device *dev,
+ 
+ 	struct enc_private *k = &encpriv[CR_CHAN(insn->chanspec)];
+ 
+-	DEBUG("s626_enc_insn_write: encoder write channel %d \n",
++	DEBUG("s626_enc_insn_write: encoder write channel %d\n",
+ 	      CR_CHAN(insn->chanspec));
+ 
+ 	/*  Set the preload register */
+@@ -3110,12 +3110,12 @@ static uint16_t GetEnable_B(struct comedi_device *dev, struct enc_private *k)
+ static void SetLatchSource(struct comedi_device *dev, struct enc_private *k,
+ 			   uint16_t value)
+ {
+-	DEBUG("SetLatchSource: SetLatchSource enter 3550 \n");
++	DEBUG("SetLatchSource: SetLatchSource enter 3550\n");
+ 	DEBIreplace(dev, k->MyCRB,
+ 		    (uint16_t) (~(CRBMSK_INTCTRL | CRBMSK_LATCHSRC)),
+ 		    (uint16_t) (value << CRBBIT_LATCHSRC));
+ 
+-	DEBUG("SetLatchSource: SetLatchSource exit \n");
++	DEBUG("SetLatchSource: SetLatchSource exit\n");
  }
  
- /*  Write a value to a gate array register. */
+ /*
+@@ -3328,6 +3328,6 @@ static void CountersInit(struct comedi_device *dev)
+ 		k->ResetCapFlags(dev, k);
+ 		k->SetEnable(dev, k, CLKENAB_ALWAYS);
+ 	}
+-	DEBUG("CountersInit: counters initialized \n");
++	DEBUG("CountersInit: counters initialized\n");
+ 
+ }
 -- 
 1.7.0.4
 
