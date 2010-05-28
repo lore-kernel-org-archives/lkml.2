@@ -1,136 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932706Ab0E1KEP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 May 2010 06:04:15 -0400
-Received: from gir.skynet.ie ([193.1.99.77]:53092 "EHLO gir.skynet.ie"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755620Ab0E1KEJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 May 2010 06:04:09 -0400
-Date: Fri, 28 May 2010 11:03:50 +0100
-From: Mel Gorman <mel@csn.ul.ie>
-To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-       Andi Kleen <andi@firstfloor.org>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Wu Fengguang <fengguang.wu@intel.com>
-Subject: Re: [PATCH 1/8] hugetlb: move definition of is_vm_hugetlb_page()
-	to hugepage_inline.h
-Message-ID: <20100528100350.GC9774@csn.ul.ie>
-References: <1275006562-18946-1-git-send-email-n-horiguchi@ah.jp.nec.com> <1275006562-18946-2-git-send-email-n-horiguchi@ah.jp.nec.com>
+	id S932748Ab0E1KGk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 May 2010 06:06:40 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:57160 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758318Ab0E1KGi convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 May 2010 06:06:38 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type:content-transfer-encoding;
+        b=jW54XDpRpU9GYZdpYm59u4WztNvTpY3A82CiW7rEHFO+eKoIJ6yQa3FPkRAhVqImCl
+         C5anB/JGDBJZSW2G7mrUA0+OZJq7ZRiPjaI4jnn/YKvm55thWIs6tPG+rUH4HtFH6SBH
+         AzB/zVHjfMmyFYVD9UdMTp6S6FCD2fY0ex3eo=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <1275006562-18946-2-git-send-email-n-horiguchi@ah.jp.nec.com>
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+In-Reply-To: <E1OHw3d-0001yr-Ag@pomaz-ex.szeredi.hu>
+References: <1274885054-15698-1-git-send-email-xiaosuo@gmail.com> 
+	<E1OHw3d-0001yr-Ag@pomaz-ex.szeredi.hu>
+From: Changli Gao <xiaosuo@gmail.com>
+Date: Fri, 28 May 2010 18:06:18 +0800
+Message-ID: <AANLkTimzsHAxha3vQxeFn5pF5BmYZ8nLawSG2YU3eujZ@mail.gmail.com>
+Subject: Re: [PATCH v2 3/4]: sendfile: remove flags paramter of 
+	do_splice_direct()
+To: Miklos Szeredi <miklos@szeredi.hu>
+Cc: axboe@kernel.dk, viro@zeniv.linux.org.uk, matthew@wil.cx, mszeredi@suse.cz,
+       linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 28, 2010 at 09:29:15AM +0900, Naoya Horiguchi wrote:
-> is_vm_hugetlb_page() is a widely used inline function to insert hooks
-> into hugetlb code.
-> But we can't use it in pagemap.h because of circular dependency of
-> the header files. This patch removes this limitation.
-> 
-> Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-> ---
->  include/linux/hugetlb.h        |   11 +----------
->  include/linux/hugetlb_inline.h |   22 ++++++++++++++++++++++
->  include/linux/pagemap.h        |    1 +
->  3 files changed, 24 insertions(+), 10 deletions(-)
->  create mode 100644 include/linux/hugetlb_inline.h
-> 
-> diff --git v2.6.34/include/linux/hugetlb.h v2.6.34/include/linux/hugetlb.h
-> index 78b4bc6..d47a7c4 100644
-> --- v2.6.34/include/linux/hugetlb.h
-> +++ v2.6.34/include/linux/hugetlb.h
-> @@ -2,6 +2,7 @@
->  #define _LINUX_HUGETLB_H
->  
->  #include <linux/fs.h>
-> +#include <linux/hugetlb_inline.h>
->  
->  struct ctl_table;
->  struct user_struct;
-> @@ -14,11 +15,6 @@ struct user_struct;
->  
->  int PageHuge(struct page *page);
->  
-> -static inline int is_vm_hugetlb_page(struct vm_area_struct *vma)
-> -{
-> -	return vma->vm_flags & VM_HUGETLB;
-> -}
-> -
->  void reset_vma_resv_huge_pages(struct vm_area_struct *vma);
->  int hugetlb_sysctl_handler(struct ctl_table *, int, void __user *, size_t *, loff_t *);
->  int hugetlb_overcommit_handler(struct ctl_table *, int, void __user *, size_t *, loff_t *);
-> @@ -77,11 +73,6 @@ static inline int PageHuge(struct page *page)
->  	return 0;
->  }
->  
-> -static inline int is_vm_hugetlb_page(struct vm_area_struct *vma)
-> -{
-> -	return 0;
-> -}
-> -
->  static inline void reset_vma_resv_huge_pages(struct vm_area_struct *vma)
->  {
->  }
-> diff --git v2.6.34/include/linux/hugetlb_inline.h v2.6.34/include/linux/hugetlb_inline.h
-> new file mode 100644
-> index 0000000..cf00b6d
-> --- /dev/null
-> +++ v2.6.34/include/linux/hugetlb_inline.h
-> @@ -0,0 +1,22 @@
-> +#ifndef _LINUX_HUGETLB_INLINE_H
-> +#define _LINUX_HUGETLB_INLINE_H 1
-> +
+On Fri, May 28, 2010 at 5:40 PM, Miklos Szeredi <miklos@szeredi.hu> wrote:
+> On Wed, 26 May 2010, Changli Gao wrote:
+>> remove flags paramter of do_splice_direct().
+>>
+>> the flags parameter of do_splice_direct() doesn't mean non-block read of
+>> in file,
+>
+> Actually, it does.  Look at the SPLICE_F_NONBLOCK usage in
+> __generic_splice_file_read().
+>
 
-Just #define __LINUX_HUGETLB_INLINE_H is fine. No need for the 1
-
-> +#ifdef CONFIG_HUGETLBFS
-> +
-
-Should be CONFIG_HUGETLB_PAGE
-
-With those corrections;
-
-Acked-by: Mel Gorman <mel@csn.ul.ie>
-
-> +#include <linux/mm.h>
-> +
-> +static inline int is_vm_hugetlb_page(struct vm_area_struct *vma)
-> +{
-> +	return vma->vm_flags & VM_HUGETLB;
-> +}
-> +
-> +#else
-> +
-> +static inline int is_vm_hugetlb_page(struct vm_area_struct *vma)
-> +{
-> +	return 0;
-> +}
-> +
-> +#endif
-> +
-> +#endif
-> diff --git v2.6.34/include/linux/pagemap.h v2.6.34/include/linux/pagemap.h
-> index 3c62ed4..b2bd2ba 100644
-> --- v2.6.34/include/linux/pagemap.h
-> +++ v2.6.34/include/linux/pagemap.h
-> @@ -13,6 +13,7 @@
->  #include <linux/gfp.h>
->  #include <linux/bitops.h>
->  #include <linux/hardirq.h> /* for in_interrupt() */
-> +#include <linux/hugetlb_inline.h>
->  
->  /*
->   * Bits in mapping->flags.  The lower __GFP_BITS_SHIFT bits are the page
-> -- 
-> 1.7.0
-> 
+Oh, I checked the code again. You're right. However, why don't we
+check the flags of in file instead in __generic_file_splice_read()?
 
 -- 
-Mel Gorman
-Part-time Phd Student                          Linux Technology Center
-University of Limerick                         IBM Dublin Software Lab
+Regards，
+Changli Gao(xiaosuo@gmail.com)
