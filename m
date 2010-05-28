@@ -1,37 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756207Ab0E1HsX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 May 2010 03:48:23 -0400
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:60959
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755277Ab0E1HsS (ORCPT
+	id S1756105Ab0E1Hw2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 May 2010 03:52:28 -0400
+Received: from mail-gw0-f46.google.com ([74.125.83.46]:49917 "EHLO
+	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754627Ab0E1Hw0 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 May 2010 03:48:18 -0400
-Date: Fri, 28 May 2010 00:48:28 -0700 (PDT)
-Message-Id: <20100528.004828.232759432.davem@davemloft.net>
-To: bryan.wu@canonical.com
-Cc: afleming@gmail.com, s.hauer@pengutronix.de, gerg@uclinux.org,
-       amit.kucheria@canonical.com, netdev@vger.kernel.org,
-       linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] netdev/fec: fix ifconfig eth0 down hang issue
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <4BFF5412.1030303@canonical.com>
-References: <1273199239-11057-1-git-send-email-bryan.wu@canonical.com>
-	<1273199239-11057-3-git-send-email-bryan.wu@canonical.com>
-	<4BFF5412.1030303@canonical.com>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	Fri, 28 May 2010 03:52:26 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=mHOAbKvuXnLBHAtn5f+Ubaar1ElrzwuutiU/RTvsNhJgecizVzlXXoeOlqSlR8xdj9
+         XVw1chSTfxXqrdfL7YsS/IYyRXpJeYCbEkO4djvH1APqPAitFIHGBSO13JAQ0yctzGXL
+         wlm1dNjp1aL7SnPc7TfwptuL6E+KG+oleyGNc=
+MIME-Version: 1.0
+In-Reply-To: <20100528145329.7E2D.A69D9226@jp.fujitsu.com>
+References: <20100528143605.7E2A.A69D9226@jp.fujitsu.com>
+	<AANLkTikB-8Qu03VrA5Z0LMXM_alSV7SLqzl-MmiLmFGv@mail.gmail.com>
+	<20100528145329.7E2D.A69D9226@jp.fujitsu.com>
+Date: Fri, 28 May 2010 16:52:23 +0900
+Message-ID: <AANLkTinLN0ex0uvwA_tohv7MSLHv8i8Mcr96va1C4Md-@mail.gmail.com>
+Subject: Re: [RFC] oom-kill: give the dying task a higher priority
+From: Minchan Kim <minchan.kim@gmail.com>
+To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: balbir@linux.vnet.ibm.com, "Luis Claudio R. Goncalves" <lclaudio@uudg.org>,
+       Oleg Nesterov <oleg@redhat.com>, linux-kernel@vger.kernel.org,
+       linux-mm@kvack.org, Thomas Gleixner <tglx@linutronix.de>,
+       Peter Zijlstra <peterz@infradead.org>,
+       David Rientjes <rientjes@google.com>, Mel Gorman <mel@csn.ul.ie>,
+       williams@redhat.com
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Bryan Wu <bryan.wu@canonical.com>
-Date: Fri, 28 May 2010 13:26:42 +0800
+On Fri, May 28, 2010 at 2:59 PM, KOSAKI Motohiro
+<kosaki.motohiro@jp.fujitsu.com> wrote:
+>> RT Task
+>>
+>> void non-RT-function()
+>> {
+>>    system call();
+>>    buffer = malloc();
+>>    memset(buffer);
+>> }
+>> /*
+>>  * We make sure this function must be executed in some millisecond
+>>  */
+>> void RT-function()
+>> {
+>>    some calculation(); <- This doesn't have no dynamic characteristic
+>> }
+>> int main()
+>> {
+>>    non-RT-function();
+>>    /* This function make sure RT-function cannot preempt by others */
+>>    set_RT_max_high_priority();
+>>    RT-function A();
+>>    set_normal_priority();
+>>    non-RT-function();
+>> }
+>>
+>> We don't want realtime in whole function of the task. What we want is
+>> just RT-function A.
+>> Of course, current Linux cannot make perfectly sure RT-functionA can
+>> not preempt by others.
+>> That's because some interrupt or exception happen. But RT-function A
+>> doesn't related to any dynamic characteristic. What can justify to
+>> preempt RT-function A by other processes?
+>
+> As far as my observation, RT-function always have some syscall. because pure
+> calculation doesn't need deterministic guarantee. But _if_ you are really
+> using such priority design. I'm ok maximum NonRT priority instead maximum
+> RT priority too.
 
-> Since this patch is for another bug and doesn't depend on my first one patch.
-> Could you please review this?
+Hmm. It's just example. but it would be not good exmaple.
+Let's change it with this.
 
-Resubmit it as a formal, new, seperate patch submission and it will
-get looked at.
+void RT-function()
+{
+     int result = some calculation(); <- This doesn't have no dynamic
+characteristic
+     *mmap_base = result; <-- mmap_base is mapped by GPIO device.
+}
+
+Could we allow preemption of this RT function due to other task's
+memory pressure?
+Of course, Linux is not Hard RT featured OS, I think. So I thinks it
+is a policy problem.
+If we think system memory pressure is more important than RT task and
+we _all_ agree such policy, we can allow it.
+
+But I don't hope it.
+
+-- 
+Kind regards,
+Minchan Kim
