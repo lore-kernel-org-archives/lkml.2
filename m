@@ -1,131 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757790Ab0E1AeK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 May 2010 20:34:10 -0400
-Received: from TYO201.gate.nec.co.jp ([202.32.8.193]:58655 "EHLO
-	tyo201.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755428Ab0E1AdA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 May 2010 20:33:00 -0400
-From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-To: linux-mm@kvack.org
-Cc: linux-kernel@vger.kernel.org, Andi Kleen <andi@firstfloor.org>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Wu Fengguang <fengguang.wu@intel.com>, Mel Gorman <mel@csn.ul.ie>
-Subject: [PATCH 6/8] HWPOISON, hugetlb: isolate corrupted hugepage
-Date: Fri, 28 May 2010 09:29:20 +0900
-Message-Id: <1275006562-18946-7-git-send-email-n-horiguchi@ah.jp.nec.com>
-X-Mailer: git-send-email 1.7.0
-In-Reply-To: <1275006562-18946-1-git-send-email-n-horiguchi@ah.jp.nec.com>
-References: <1275006562-18946-1-git-send-email-n-horiguchi@ah.jp.nec.com>
+	id S1754815Ab0E1AiR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 May 2010 20:38:17 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:50621 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751905Ab0E1AiP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 May 2010 20:38:15 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Subject: Re: [linux-pm] [PATCH 0/8] Suspend block api (version 8)
+Date: Fri, 28 May 2010 02:39:14 +0200
+User-Agent: KMail/1.12.4 (Linux/2.6.34-rjw; KDE/4.3.5; x86_64; ; )
+Cc: Matthew Garrett <mjg59@srcf.ucam.org>,
+       Peter Zijlstra <peterz@infradead.org>,
+       Alan Stern <stern@rowland.harvard.edu>,
+       Thomas Gleixner <tglx@linutronix.de>, Paul@smtp1.linux-foundation.org,
+       LKML <linux-kernel@vger.kernel.org>,
+       Florian Mickler <florian@mickler.org>,
+       Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
+       Linux PM <linux-pm@lists.linux-foundation.org>,
+       Arve =?iso-8859-1?q?Hj=F8nnev=E5g?= <arve@android.com>,
+       Brian Swetland <swetland@google.com>
+References: <Pine.LNX.4.44L0.1005271344040.3239-100000@iolanthe.rowland.org> <201005280110.17075.rjw@sisk.pl> <20100528005045.6ea5feba@lxorguk.ukuu.org.uk>
+In-Reply-To: <20100528005045.6ea5feba@lxorguk.ukuu.org.uk>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201005280239.14819.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If error hugepage is not in-use, we can fully recovery from error
-by dequeuing it from freelist, so return RECOVERY.
-Otherwise whether or not we can recovery depends on user processes,
-so return DELAYED.
+On Friday 28 May 2010, Alan Cox wrote:
+> > That's correct, but to me the Arve's goal is simply to maximize battery life
+> > and he found experimentally that the longest battery life is achieved if
+> > system suspend is used whenever the system doesn't need to be active (from its
+> > user's perspective).  This actually is different from "when the system is
+> > idle", because the system isn't idle, for example, when updatedb is running.
+> > However, from the user's perspective the updatedb process doesn't really need
+> > to run at this particular time, it can very well do it's job in parallel with
+> > the user typing or reading news.  So, the system may very well be suspended
+> > when updatedb is running.
+> 
+> This is where the original questions around QoS came in
+> 
+> > Since I think we've now rejected the feature, do we have a clear picture about
+> > what the Android people should do _instead_ and yet keep the battery life they
+> > want?  Because I don't think telling "let them do what they want, who cares"
+> > is right.
+> 
+> Today "idle" means "no task running"
+> 
+> If you are prepared to rephrase that as "no task that matters is running"
+> what would need to answer ?
+> 
+> - How do we define who matters: QoS ?
 
-Dependency:
-  "HWPOISON, hugetlb: enable error handling path for hugepage"
+That's reasonable IMO.
 
-Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Cc: Andi Kleen <andi@firstfloor.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Wu Fengguang <fengguang.wu@intel.com>
----
- include/linux/hugetlb.h |    2 ++
- mm/hugetlb.c            |   16 ++++++++++++++++
- mm/memory-failure.c     |   28 ++++++++++++++++++++--------
- 3 files changed, 38 insertions(+), 8 deletions(-)
+> - Can you describe "idle" in terms of QoS without then breaking the
+>   reliable wakeup for an event (and do you need to ?)
+> 
+> 	Could this for example look like
+> 
+> 	Set QoS of 'user apps' to QS_NONE
+> 	Button pushed
+> 	Button driver sets QoS of app it wakes to QS_ABOVESUSPEND
+> 
+> 	That would I think solve the reliable wakeup case although
+> 	drivers raising a QoS parameter is a bit unusual in the kernel.
+> 	That would at least however be specific to a few Android drivers
+> 	and maybe a tiny amount of shared driver stuff so probably not
+> 	unacceptable. (wake_up_pri(&queue, priority); isn't going to
+> 	kill anyone is it - especially if it usually ignores the
+> 	priority argument)
+> 
+> 	I am curious Thomas how that would tie in with PI in the RT
+> 	world, it's effectively inheriting priority from the users finger.
+> 
+> - Would a model where the UI side behaviour looked like
+> 
+> 	Timeout
+> 	Screen Off
+> 	Set QoS of 'user apps' to QS_NONE
+> 
+> 	Event
+> 	[Some chain of activity]
+> 	Screen On
+> 	Set QoS of 'user apps' to QS_ABOVESUSPEND
+> 
+>   do the job combined with the ability to see who is stopping us dropping
+>   to suspend so user space can take action. This could be a data table
+>   from the Android cpu manager provided to Android specific policy in
+>   whoever owns the display.
+> 
+> 
+> If so how do we fix the UI policy code doing
+> 
+> 	Screen Off
+> 					Button Press
+> 					task to QS_ABOVESUSPEND
+> 	task to QS_NONE
+> 
+> without touching the app userspace code
+> 
+> 
+> Perhaps
+> 
+> 	count2 = tasks to QS_NONE | QS_NOTCHANGED
+> 	Screen off
+> 					Button Press
+> 					task to QS_ABOVESUSPEND
+> 	count = tasks that are QS_NOTCHANGED to QS_NONE
+> 
+> 	if (count != count2) {
+> 		Stuff happened ... rethink
+> 	}
+> 
+> That is still a bit weird and wonderful but all the logic is in the right
+> places. The special magic remains in the Android policy code and in the
+> kernel specifics for Android.
+> 
+> Thoughts ?
 
-diff --git v2.6.34/include/linux/hugetlb.h v2.6.34/include/linux/hugetlb.h
-index e688fd8..f479700 100644
---- v2.6.34/include/linux/hugetlb.h
-+++ v2.6.34/include/linux/hugetlb.h
-@@ -43,6 +43,7 @@ int hugetlb_reserve_pages(struct inode *inode, long from, long to,
- 						struct vm_area_struct *vma,
- 						int acctflags);
- void hugetlb_unreserve_pages(struct inode *inode, long offset, long freed);
-+void __isolate_hwpoisoned_huge_page(struct page *page);
- 
- extern unsigned long hugepages_treat_as_movable;
- extern const unsigned long hugetlb_zero, hugetlb_infinity;
-@@ -100,6 +101,7 @@ static inline void hugetlb_report_meminfo(struct seq_file *m)
- #define hugetlb_free_pgd_range(tlb, addr, end, floor, ceiling) ({BUG(); 0; })
- #define hugetlb_fault(mm, vma, addr, flags)	({ BUG(); 0; })
- #define huge_pte_offset(mm, address)	0
-+#define __isolate_hwpoisoned_huge_page(page)	0
- 
- #define hugetlb_change_protection(vma, address, end, newprot)
- 
-diff --git v2.6.34/mm/hugetlb.c v2.6.34/mm/hugetlb.c
-index b1aa0d8..aaba3cc 100644
---- v2.6.34/mm/hugetlb.c
-+++ v2.6.34/mm/hugetlb.c
-@@ -2821,3 +2821,19 @@ void hugetlb_unreserve_pages(struct inode *inode, long offset, long freed)
- 	hugetlb_put_quota(inode->i_mapping, (chg - freed));
- 	hugetlb_acct_memory(h, -(chg - freed));
- }
-+
-+/*
-+ * This function is called from memory failure code.
-+ * Assume the caller holds page lock of the head page.
-+ */
-+void __isolate_hwpoisoned_huge_page(struct page *hpage)
-+{
-+	struct hstate *h = page_hstate(hpage);
-+	int nid = page_to_nid(hpage);
-+
-+	spin_lock(&hugetlb_lock);
-+	list_del(&hpage->lru);
-+	h->free_huge_pages--;
-+	h->free_huge_pages_node[nid]--;
-+	spin_unlock(&hugetlb_lock);
-+}
-diff --git v2.6.34/mm/memory-failure.c v2.6.34/mm/memory-failure.c
-index 473f15a..d0b420a 100644
---- v2.6.34/mm/memory-failure.c
-+++ v2.6.34/mm/memory-failure.c
-@@ -690,17 +690,29 @@ static int me_swapcache_clean(struct page *p, unsigned long pfn)
- /*
-  * Huge pages. Needs work.
-  * Issues:
-- * No rmap support so we cannot find the original mapper. In theory could walk
-- * all MMs and look for the mappings, but that would be non atomic and racy.
-- * Need rmap for hugepages for this. Alternatively we could employ a heuristic,
-- * like just walking the current process and hoping it has it mapped (that
-- * should be usually true for the common "shared database cache" case)
-- * Should handle free huge pages and dequeue them too, but this needs to
-- * handle huge page accounting correctly.
-+ * - Error on hugepage is contained in hugepage unit (not in raw page unit.)
-+ *   To narrow down kill region to one page, we need to break up pmd.
-+ * - To support soft-offlining for hugepage, we need to support hugepage
-+ *   migration.
-  */
- static int me_huge_page(struct page *p, unsigned long pfn)
- {
--	return FAILED;
-+	struct page *hpage = compound_head(p);
-+	/*
-+	 * We can safely recover from error on free or reserved (i.e.
-+	 * not in-use) hugepage by dequeuing it from freelist.
-+	 * To check whether a hugepage is in-use or not, we can't use
-+	 * page->lru because it can be used in other hugepage operations,
-+	 * such as __unmap_hugepage_range() and gather_surplus_pages().
-+	 * So instead we use page_mapping() and PageAnon().
-+	 * We assume that this function is called with page lock held,
-+	 * so there is no race between isolation and mapping/unmapping.
-+	 */
-+	if (!(page_mapping(hpage) || PageAnon(hpage))) {
-+		__isolate_hwpoisoned_huge_page(hpage);
-+		return RECOVERED;
-+	}
-+	return DELAYED;
- }
- 
- /*
--- 
-1.7.0
+Hmm.  How do we prevent the "non-relevant" tasks from being scheduled
+once we've decided to go for power saving?
 
+Rafael
