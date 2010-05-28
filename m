@@ -1,49 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757423Ab0E1Lp4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 May 2010 07:45:56 -0400
-Received: from mtagate3.de.ibm.com ([195.212.17.163]:33651 "EHLO
-	mtagate3.de.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754553Ab0E1Lpy (ORCPT
+	id S1757452Ab0E1LqY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 May 2010 07:46:24 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:36918 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754553Ab0E1LqX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 May 2010 07:45:54 -0400
-Date: Fri, 28 May 2010 13:46:54 +0200
-From: Heiko Carstens <heiko.carstens@de.ibm.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, Marco Stornelli <marco.stornelli@gmail.com>
-Subject: [PATCH] ramoops: add HAS_IOMEM dependency
-Message-ID: <20100528114654.GC3686@osiris.boeblingen.de.ibm.com>
+	Fri, 28 May 2010 07:46:23 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:date:message-id:subject:from:to:cc:content-type;
+        b=VEQTAec/S4Sb3J+aAg0tvpaNTGy2F3jtrcAXsm8Zdz+ogVt8XFNnCEd+KmROvWLsU3
+         oTgdRGOdsq8KDLMzOWRsrNVCoYbMcPwk2mxXM2whkYX3k5l9kpGf2SQ4RKLjnDM2rJ8E
+         N6sqv1D4nErSCUarPmDpO1vp9QaMqXKojr+5g=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Date: Fri, 28 May 2010 17:16:21 +0530
+Message-ID: <AANLkTil0b9y0PJd4_eUS-M16Ya3yt1i7xzaOaGmA_cZ2@mail.gmail.com>
+Subject: Drivers for USB,SATA and eMMC
+From: Jack <mylinux.list@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: mylinux.list@gmail.com
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Heiko Carstens <heiko.carstens@de.ibm.com>
+I have a new IOH which is connected to an x86 core through PCIe. This
+IOH has SATA, USB and eMMC attached to it.. Do I need to write a
+controller driver (referring the IOH data sheet) for these interfaces,
+or does Linux provides any std. drivers for these interfaces. I am new
+to x86 stuffs.
+Could anyone guide me on this.?
 
-The driver fails to compile on s390:
 
-drivers/char/ramoops.c: In function 'ramoops_init':
-drivers/char/ramoops.c:122: error: implicit declaration of function 'ioremap'
-
-Since we won't make use of the driver anyway on s390 just let it
-depend on HAS_IOMEM.
-
-Signed-off-by: Heiko Carstens <heiko.carstens@de.ibm.com>
-Cc: Marco Stornelli <marco.stornelli@gmail.com>
----
- drivers/char/Kconfig |    1 +
- 1 file changed, 1 insertion(+)
-
---- a/drivers/char/Kconfig
-+++ b/drivers/char/Kconfig
-@@ -1123,6 +1123,7 @@ source "drivers/s390/char/Kconfig"
- 
- config RAMOOPS
- 	tristate "Log panic/oops to a RAM buffer"
-+	depends on HAS_IOMEM
- 	default n
- 	help
- 	  This enables panic and oops messages to be logged to a circular
+-Jack
