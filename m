@@ -1,30 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758770Ab0E1UYI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 May 2010 16:24:08 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:42772 "EHLO
+	id S1758388Ab0E1UaA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 May 2010 16:30:00 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:53989 "EHLO
 	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753660Ab0E1UYD (ORCPT
+	by vger.kernel.org with ESMTP id S1756549Ab0E1U37 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 May 2010 16:24:03 -0400
-Date: Fri, 28 May 2010 13:23:18 -0700
+	Fri, 28 May 2010 16:29:59 -0400
+Date: Fri, 28 May 2010 13:29:53 -0700
 From: Andrew Morton <akpm@linux-foundation.org>
 To: Artem Bityutskiy <dedekind1@gmail.com>
 Cc: Al Viro <viro@ZenIV.linux.org.uk>, LKML <linux-kernel@vger.kernel.org>,
-       Jens Axboe <jens.axboe@oracle.com>, linux-fsdevel@vger.kernel.org,
-       Roman Zippel <zippel@linux-m68k.org>,
-       "Tigran A. Aivazian" <tigran@aivazian.fsnet.co.uk>,
-       Chris Mason <chris.mason@oracle.com>,
-       Boaz Harrosh <bharrosh@panasas.com>, linux-ext4@vger.kernel.org,
-       "Theodore Ts'o" <tytso@mit.edu>,
-       OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>,
-       David Woodhouse <dwmw2@infradead.org>, reiserfs-devel@vger.kernel.org,
-       Jan Kara <jack@suse.cz>, Evgeniy Dushistov <dushistov@mail.ru>
-Subject: Re: [PATCHv4 01/17] VFS: introduce helpers for the s_dirty flag
-Message-Id: <20100528132318.0783675a.akpm@linux-foundation.org>
-In-Reply-To: <1274795352-3551-2-git-send-email-dedekind1@gmail.com>
+       Jens Axboe <jens.axboe@oracle.com>, linux-fsdevel@vger.kernel.org
+Subject: Re: [PATCHv4 17/17] writeback: lessen sync_supers wakeup count
+Message-Id: <20100528132953.7af88c08.akpm@linux-foundation.org>
+In-Reply-To: <1274795352-3551-18-git-send-email-dedekind1@gmail.com>
 References: <1274795352-3551-1-git-send-email-dedekind1@gmail.com>
-	<1274795352-3551-2-git-send-email-dedekind1@gmail.com>
+	<1274795352-3551-18-git-send-email-dedekind1@gmail.com>
 X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
@@ -33,46 +25,147 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 25 May 2010 16:48:56 +0300
+On Tue, 25 May 2010 16:49:12 +0300
 Artem Bityutskiy <dedekind1@gmail.com> wrote:
 
 > From: Artem Bityutskiy <Artem.Bityutskiy@nokia.com>
 > 
-> This patch introduces 3 new VFS helpers: 'mark_sb_dirty()',
-> 'mark_sb_clean()', and 'is_sb_dirty()'. The helpers simply
-> set 'sb->s_dirt' or test 'sb->s_dirt'. The plan is to make
-> every FS use these helpers instead of manipulating the
-> 'sb->s_dirt' flag directly.
+> The 'sync_supers' thread wakes up every 5 seconds (by default) and
+> writes back all super blocks. It keeps waking up even if there
+> are no dirty super-blocks. For many file-systems the superblock
+> becomes dirty very rarely, if ever, so 'sync_supers' does not do
+> anything most of the time.
 > 
-> Ultimately, this change is a preparation for the periodic
-> superblock synchronization optimization which is about
-> preventing the "sync_supers" kernel thread from waking up
-> even if there is nothing to synchronize.
+> This patch improves 'sync_supers' and makes sleep if all superblocks
+> are clean and there is nothing to do. This helps saving the power.
+> This optimization is important for small battery-powered devices.
 > 
-> This patch also makes VFS use the new helpers.
+> Signed-off-by: Artem Bityutskiy <Artem.Bityutskiy@nokia.com>
+> ---
+>  include/linux/fs.h |    5 +----
+>  mm/backing-dev.c   |   36 +++++++++++++++++++++++++++++++++++-
+>  2 files changed, 36 insertions(+), 5 deletions(-)
+> 
+> diff --git a/include/linux/fs.h b/include/linux/fs.h
+> index c2ddeee..2d2560b 100644
+> --- a/include/linux/fs.h
+> +++ b/include/linux/fs.h
+> @@ -1786,10 +1786,7 @@ extern void simple_set_mnt(struct vfsmount *mnt, struct super_block *sb);
+>   * Note, VFS does not provide any serialization for the super block clean/dirty
+>   * state changes, file-systems should take care of this.
+>   */
+> -static inline void mark_sb_dirty(struct super_block *sb)
+> -{
+> -	sb->s_dirty = 1;
+> -}
+> +void mark_sb_dirty(struct super_block *sb);
+>  static inline void mark_sb_clean(struct super_block *sb)
+>  {
+>  	sb->s_dirty = 0;
+> diff --git a/mm/backing-dev.c b/mm/backing-dev.c
+> index 660a87a..14f3eb7 100644
+> --- a/mm/backing-dev.c
+> +++ b/mm/backing-dev.c
+> @@ -45,6 +45,8 @@ LIST_HEAD(bdi_pending_list);
+>  
+>  static struct task_struct *sync_supers_tsk;
+>  static struct timer_list sync_supers_timer;
+> +static int supers_timer_armed;
 
-Patchset generally looks good to me.  But I don't like the names :(
+This thing's a bit ugly.
 
-> +static inline void mark_sb_dirty(struct super_block *sb)
+> +static DEFINE_SPINLOCK(supers_timer_lock);
+>  
+>  static int bdi_sync_supers(void *);
+>  static void sync_supers_timer_fn(unsigned long);
+> @@ -355,6 +357,11 @@ static void bdi_flush_io(struct backing_dev_info *bdi)
+>   * or we risk deadlocking on ->s_umount. The longer term solution would be
+>   * to implement sync_supers_bdi() or similar and simply do it from the
+>   * bdi writeback tasks individually.
+> + *
+> + * Historically this thread woke up periodically, regardless of whether
+> + * there was any dirty superblock. However, nowadays it is optimized to
+> + * wake up only when there is something to synchronize - this helps to save
+> + * power.
+>   */
+>  static int bdi_sync_supers(void *unused)
+>  {
+> @@ -364,10 +371,24 @@ static int bdi_sync_supers(void *unused)
+>  		set_current_state(TASK_INTERRUPTIBLE);
+>  		schedule();
+>  
+> +		spin_lock(&supers_timer_lock);
+> +		/* Indicate that 'sync_supers' is in progress */
+> +		supers_timer_armed = -1;
+> +		spin_unlock(&supers_timer_lock);
+> +
+>  		/*
+>  		 * Do this periodically, like kupdated() did before.
+>  		 */
+>  		sync_supers();
+> +
+> +		spin_lock(&supers_timer_lock);
+> +		if (supers_timer_armed == 1)
+> +			/* A super block was marked as dirty meanwhile */
+> +			bdi_arm_supers_timer();
+> +		else
+> +			/* No more dirty superblocks - we've synced'em all */
+> +			supers_timer_armed = 0;
+> +		spin_unlock(&supers_timer_lock);
+>  	}
+
+I suspect the spinlock could be removed if you switched to bitops:
+test_and_set_bit(0, supers_timer_armed);
+
+Ahother possibility is to nuke supers_timer_armed() and use
+timer_pending(), mod_timer(), etc directly.
+
+
+>  	return 0;
+> @@ -387,9 +408,22 @@ void bdi_arm_supers_timer(void)
+>  static void sync_supers_timer_fn(unsigned long unused)
+>  {
+>  	wake_up_process(sync_supers_tsk);
+> -	bdi_arm_supers_timer();
+>  }
+>  
+> +void mark_sb_dirty(struct super_block *sb)
 > +{
-> +	sb->s_dirt = 1;
+> +	sb->s_dirty = 1;
+> +
+> +	spin_lock(&supers_timer_lock);
+> +	if (!supers_timer_armed) {
+> +		bdi_arm_supers_timer();
+> +		supers_timer_armed = 1;
+> +	} else if (supers_timer_armed == -1)
+> +		supers_timer_armed = 1;
+> +	spin_unlock(&supers_timer_lock);
 > +}
-> +static inline void mark_sb_clean(struct super_block *sb)
-> +{
-> +	sb->s_dirt = 0;
-> +}
-> +static inline int is_sb_dirty(struct super_block *sb)
-> +{
-> +	return sb->s_dirt;
-> +}
+> +EXPORT_SYMBOL(mark_sb_dirty);
 
-A more conventional and superior naming scheme is
-subsystemid_specific_function_identifier().  eg, bio_add_page() instead
-of add_page_to_bio().
+This looks inefficient.  Could we not do
 
-So these want to be sb_mark_dirty(), etc.
+void mark_sb_dirty(struct super_block *sb)
+{
+	sb->s_dirty = 1;
 
-Being very old code written by very yound people, the VFS kinda ignores
-that convention, but it doesn't hurt to use it for new code.
+	if (!supers_timer_armed) {
+		spin_lock(&supers_timer_lock);
+		if (!supers_timer_armed) {
+			bdi_arm_supers_timer();
+			supers_timer_armed = 1;
+		}
+	} else if (supers_timer_armed == -1)
+		spin_lock(&supers_timer_lock);
+		if (supers_timer_armed == -1)
+			supers_timer_armed = 1;
+		spin_unlock(&supers_timer_lock);
+	}
+}
 
-Feel free to ignore me if that's too much of a PITA ;)
+I didn't try very hard there, but you get the idea: examine the state
+before taking that expensive global spinlock, so we only end up taking
+the lock once per five seconds, rather than once per possible
+superblock dirtying.  That's like a six-orders-of-magnitude reduction
+in locking frequency, which is worth putting some effort into.
+
