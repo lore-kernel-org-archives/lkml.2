@@ -1,67 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757011Ab0E1Bpx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 May 2010 21:45:53 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:45511 "EHLO smtps.tip.net.au"
+	id S1755885Ab0E1Bse (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 May 2010 21:48:34 -0400
+Received: from mail.pr.hu ([87.242.0.5]:37142 "EHLO mail.pr.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755132Ab0E1Bpw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 May 2010 21:45:52 -0400
-Date: Fri, 28 May 2010 11:45:39 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Al Viro <viro@ZenIV.linux.org.uk>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-       Christoph Hellwig <hch@lst.de>, Josef Bacik <josef@redhat.com>,
-       Chris Mason <chris.mason@oracle.com>, Nick Piggin <npiggin@suse.de>
-Subject: linux-next: build failure after merge of the vfs tree
-Message-Id: <20100528114539.012ff1d2.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Fri__28_May_2010_11_45_39_+1000_kuciqvZGrw7rViBF"
+	id S1754072Ab0E1Bsd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 May 2010 21:48:33 -0400
+X-Greylist: delayed 4910 seconds by postgrey-1.27 at vger.kernel.org; Thu, 27 May 2010 21:48:32 EDT
+Message-ID: <3c1313dd00377de02080f1cc0a0684ef.squirrel@mail.pr.hu>
+Date: Fri, 28 May 2010 02:19:56 +0200 (CEST)
+Subject: Western Union Alert!
+From: "Western Union Annex" <support@westernunion.com>
+Reply-To: westernunnoff@live.hk
+User-Agent: SquirrelMail/1.4.15
+MIME-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Priority: 3 (Normal)
+Importance: Normal
+X-Spam-Score: 4.5 (++++)
+X-Spam-Report: Spam detection software, running on the system "Mail-2", has
+	identified this incoming email as possible spam.  The original message
+	has been attached to this so you can view it (if it isn't spam) or label
+	similar future email.  If you have any questions, see
+	the administrator of that system for details.
+	Content preview:  How are you today? I write to inform you that we have already
+	sent you $5,000.00USD through Western union as we have been given the mandate
+	to transfer your full compensation payment of $800,000.00USD via western
+	union by our Government. [...] 
+	Content analysis details:   (4.5 points, 5.0 required)
+	pts rule name              description
+	---- ---------------------- --------------------------------------------------
+	-0.2 ALL_TRUSTED            Passed through trusted hosts only via SMTP
+	1.3 MISSING_HEADERS        Missing To: header
+	0.0 BAYES_50               BODY: Bayesian spam probability is 40 to 60%
+	[score: 0.5000]
+	3.0 SARE_FORGED_WESTERN    SARE_FORGED_WESTERN
+	0.4 AWL                    AWL: From: address is in the auto white-list
+X-Scan-Signature: 00247148ec76130c8a78f769f9282e76
+X-Spam-Tracer: backend.mail.pr.hu 4.5 20100528001959Z
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Fri__28_May_2010_11_45_39_+1000_kuciqvZGrw7rViBF
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
 
-Hi Al,
 
-After merging the vfs tree, today's linux-next build (powerpc
-ppc64_defconfig) failed like this:
 
-arch/powerpc/platforms/cell/spufs/file.c:1852: error: expected ';', ',' or =
-')' before 'int'
-arch/powerpc/platforms/cell/spufs/file.c:1871: error: 'spufs_mfc_fsync' und=
-eclared here (not in a function)
+How are you today?
 
-Caused by commit 05b2fc7d1f1046fef1199e1a4d2f63df998ef3aa ("drop unused
-dentry argument to ->fsync").
+   I write to inform you that we have already sent you $5,000.00USD
+through Western union as we have been given the mandate to transfer
+your full compensation payment of $800,000.00USD via western union by
+our Government.
 
-My merge of the vfs tree was also bad because commit
-facd07b07d2a7988f5ce849558838cc953847637 ("direct-io: add a hook for the
-fs to provide its own submit_bio function") that entered Linus' tree in
-the past 24 hours changed the prototype of __blockdev_direct_IO() and
-that probably needs reflecting in the new __blockdev_direct_IO_newtrunc().
+  I would have requested for your phone number to give you the information
+through phone but internet hackers were many. So i decided to email you
+the MTCN and sender name so that you can pick up this $5,000.00USD to
+enable us send another $5,000.00USD by tomorrow as you know we will be
+sending you only $5,000.00USD per day. Please pick up this information
+and run to any western union in your country to pick up the $5,000.00USD
+and send us email back to send you another payment tomorrow.
 
-I have used the vfs tree from next-20100527 for today.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
+Mr Felix James
+Tell: +234-806-206-0647
 
---Signature=_Fri__28_May_2010_11_45_39_+1000_kuciqvZGrw7rViBF
-Content-Type: application/pgp-signature
+Call or email me once you picked up this $5,000.00USD today.
+Here is the western union information to pick up the $5000.00USD,
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
+MTCN : 8411163297
+Sender's Name: ALEXANDER
+Last Name: ONYIBOR
+Country: Nigeria
+Question: Honest
+Answer:Trust
+Amount: $5,000.00USD
 
-iEYEARECAAYFAkv/IEMACgkQjjKRsyhoI8za/QCeJlrcHgy+s6ZvibMvaj+GJxc/
-ukwAnR4tcZoxLmEHH7kw0niiT0Pwvs51
-=ZJ63
------END PGP SIGNATURE-----
+You can track your payment online at website www.westernunion.com
+for confirmation purpose.
 
---Signature=_Fri__28_May_2010_11_45_39_+1000_kuciqvZGrw7rViBF--
+I am waiting for your call once you pick up $5,000.00USD,
+
+Thanks
+Mr Felix James
+
