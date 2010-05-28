@@ -1,81 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758491Ab0E1CrX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 May 2010 22:47:23 -0400
-Received: from mail-px0-f174.google.com ([209.85.212.174]:52542 "EHLO
-	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755257Ab0E1CrV convert rfc822-to-8bit (ORCPT
+	id S1758657Ab0E1Cvc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 May 2010 22:51:32 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:57747 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757365Ab0E1Cva (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 May 2010 22:47:21 -0400
+	Thu, 27 May 2010 22:51:30 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+To: Mel Gorman <mel@csn.ul.ie>
+Subject: Re: [PATCH 07/10] vmscan: Remove unnecessary temporary variables in shrink_zone()
+Cc: kosaki.motohiro@jp.fujitsu.com, Johannes Weiner <hannes@cmpxchg.org>,
+       linux-mm@kvack.org, linux-fsdevel@vger.kernel.org,
+       linux-kernel@vger.kernel.org, Chris Mason <chris.mason@oracle.com>,
+       Dave Chinner <david@fromorbit.com>, Andi Kleen <andi@firstfloor.org>
+In-Reply-To: <20100526112143.GM29038@csn.ul.ie>
+References: <20100416230332.GH20640@cmpxchg.org> <20100526112143.GM29038@csn.ul.ie>
+Message-Id: <20100528114003.7E1B.A69D9226@jp.fujitsu.com>
 MIME-Version: 1.0
-In-Reply-To: <20100527232357.6d14fdb2@lxorguk.ukuu.org.uk>
-References: <20100527222514.0a1710bf@lxorguk.ukuu.org.uk>
-	<Pine.LNX.4.44L0.1005271730180.3239-100000@iolanthe.rowland.org>
-	<20100527230806.4deb6de3@lxorguk.ukuu.org.uk>
-	<20100527220949.GB10602@srcf.ucam.org>
-	<20100527232357.6d14fdb2@lxorguk.ukuu.org.uk>
-Date: Thu, 27 May 2010 19:47:18 -0700
-Message-ID: <AANLkTil6Bo7qZltbLzHJjIDyruKHFQEURpe5LPJEpTws@mail.gmail.com>
-Subject: Re: [linux-pm] [PATCH 0/8] Suspend block api (version 8)
-From: =?ISO-8859-1?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: Matthew Garrett <mjg59@srcf.ucam.org>,
-       Alan Stern <stern@rowland.harvard.edu>,
-       Thomas Gleixner <tglx@linutronix.de>,
-       Peter Zijlstra <peterz@infradead.org>,
-       LKML <linux-kernel@vger.kernel.org>,
-       Florian Mickler <florian@mickler.org>, felipe.balbi@nokia.com,
-       Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
-       Linux PM <linux-pm@lists.linux-foundation.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="US-ASCII"
+Content-Transfer-Encoding: 7bit
+X-Mailer: Becky! ver. 2.50.07 [ja]
+Date: Fri, 28 May 2010 11:51:27 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 27, 2010 at 3:23 PM, Alan Cox <alan@lxorguk.ukuu.org.uk> wrote:
-> On Thu, 27 May 2010 23:09:49 +0100
-> Matthew Garrett <mjg59@srcf.ucam.org> wrote:
->
->> On Thu, May 27, 2010 at 11:08:06PM +0100, Alan Cox wrote:
->>
->> > This is I believe robust (and has been implemented on some non x86
->> > boxes). It depends on not forcing running tasks into suspend. That is the
->> > key.
->>
->> We've already established that ACPI systems require us to force running
->> tasks into suspend. How do we avoid the race in that situation?
->
-> Android phones do not have ACPI. Embedded platforms do not have ACPI. MID
-> x86 devices do not have ACPI.
->
+> On Sat, Apr 17, 2010 at 01:03:32AM +0200, Johannes Weiner wrote:
+> > On Fri, Apr 16, 2010 at 11:51:26AM +0900, KOSAKI Motohiro wrote:
+> > > > Two variables are declared that are unnecessary in shrink_zone() as they
+> > > > already exist int the scan_control. Remove them
+> > > > 
+> > > > Signed-off-by: Mel Gorman <mel@csn.ul.ie>
+> > > 
+> > > ok.
+> > > 	Reviewed-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+> > 
+> > You confuse me, you added the local variables yourself in 01dbe5c9
+> > for performance reasons.  Doesn't that still hold?
+> 
+> To avoid a potential regression, I've dropped the patch.
 
-Android does not only run on phones. It is possible that no android
-devices have ACPI, but I don't know that for a fact. What I do know is
-that people want to run Android on x86 hardware and supporting suspend
-could be very benficial.
+I'm ok either.
 
-> I would imagine the existing laptops will handle power management limited
-> by the functionality they have available. Just like any other piece of
-> hardware.
+Commit 01dbe5c9 issue was only observed on ia64. so it's not important.
+But at making 01dbe5c9 time, I didn't realized this stack overflow issue.
+So, I thought "Oh, It's no risk. should go!".
 
-I think existing laptops (and desktops) can benefit from opportunistic
-suspend support. If opportunistic suspend is used for auto-sleep after
-inactivity instead of forced suspend, the user space suspend blocker
-api will allow an application to delay this auto sleep until for
-instance a download completes. This part could also be done with a
-user-space IPC call, but having a standard kernel interface for it may
-make it more common. A less common case, but more critical, is RTC
-alarms. I know my desktops can wakeup at a specific time by
-programming an RTC alarm, but without suspend blockers how do you
-ensure that the system does not suspend right after the alarm
-triggered? I have a system that wakes up at specific times requested
-by my DVR application, but I cannot use this system for anything else
-unless I manually turn off the DVR application's auto-sleep feature.
-With suspend blockers and something like the android alarm driver, I
-could use this system for more than one application that have
-scheduled tasks and it would be more usable for interactive
-applications.
+but if stack reducing is important, I'm ok to drop this one.
 
--- 
-Arve Hjønnevåg
+
