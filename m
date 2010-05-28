@@ -1,62 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754422Ab0E1AXI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 May 2010 20:23:08 -0400
-Received: from vms173007pub.verizon.net ([206.46.173.7]:36888 "EHLO
-	vms173007pub.verizon.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752927Ab0E1AXG (ORCPT
+	id S1754718Ab0E1A14 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 May 2010 20:27:56 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:37791 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754354Ab0E1A1z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 May 2010 20:23:06 -0400
-Date: Thu, 27 May 2010 20:22:46 -0400 (EDT)
-From: Len Brown <lenb@kernel.org>
-X-X-Sender: lenb@localhost.localdomain
-To: Kevin Hilman <khilman@deeprootsystems.com>
-Cc: Arjan van de Ven <arjan@infradead.org>, x86@kernel.org,
-       linux-pm@lists.linux-foundation.org,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 8/8] intel_idle: create a native cpuidle driver for select
- intel processors
-In-reply-to: <87ocg1jts7.fsf@deeprootsystems.com>
-Message-id: <alpine.LFD.2.00.1005272009490.24823@localhost.localdomain>
-References: <1274928151-30919-1-git-send-email-lenb@kernel.org>
- <e099975ca65a7f6ac7f8bc3fee84d3e03893aa31.1274926772.git.len.brown@intel.com>
- <198450ec1600d9a7f55270dd4d44d6b55bc5b184.1274926772.git.len.brown@intel.com>
- <87ljb5l9d5.fsf@deeprootsystems.com> <20100527072207.2e783b1e@infradead.org>
- <87ocg1jts7.fsf@deeprootsystems.com>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
-MIME-version: 1.0
-Content-type: TEXT/PLAIN; charset=US-ASCII
+	Thu, 27 May 2010 20:27:55 -0400
+X-Authority-Analysis: v=1.1 cv=muTmBHIsIIrvj5np50lvqqEF3x9MmSj/zDSU9q1ni6E= c=1 sm=0 a=ins4zMs19JUA:10 a=uEzv4HemXiYA:10 a=7U3hwN5JcxgA:10 a=Q9fys5e9bTEA:10 a=gMqfjgEr1zLu/65IO0LwxA==:17 a=pGLkceISAAAA:8 a=meVymXHHAAAA:8 a=t7CeM3EgAAAA:8 a=Mb5HO21E1NDS6Nk59MoA:9 a=pXJvQ7u7EOxi69O8JhoA:7 a=qe5kZtBdsNVDBzOPIqEjluC19hMA:4 a=PUjeQqilurYA:10 a=MSl-tDqOz04A:10 a=jeBq3FmKZ4MA:10 a=2e6ZYRoF4I4A:10 a=gMqfjgEr1zLu/65IO0LwxA==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.89.75
+Subject: Re: [PATCH] ftrace,kdb: Allow dumping a specific cpu's buffer with
+ ftdump
+From: Steven Rostedt <rostedt@goodmis.org>
+Reply-To: rostedt@goodmis.org
+To: Jason Wessel <jason.wessel@windriver.com>
+Cc: linux-kernel@vger.kernel.org, Frederic Weisbecker <fweisbec@gmail.com>
+In-Reply-To: <1275002073-16516-1-git-send-email-jason.wessel@windriver.com>
+References: <1275002073-16516-1-git-send-email-jason.wessel@windriver.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+Organization: Kihon Technologies Inc.
+Date: Thu, 27 May 2010 20:27:52 -0400
+Message-ID: <1275006472.22648.558.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, 2010-05-27 at 18:14 -0500, Jason Wessel wrote:
+> In systems with more than one processor it is desriable to look at the
+> per cpu trace buffers.
+> 
+> CC: Frederic Weisbecker <fweisbec@gmail.com>
 
-> >> >  drivers/idle/intel_idle.c       |  446
+> CC: Steven Rostedt <rostedt@goodmis.org>
 
-> >> Any reason this arch-specific driver needs to be in drivers/idle
-> >> instead of under a platform specific dir like arch/x86?
+Acked-by: Steven Rostedt <rostedt@goodmis.org>
 
-> To me that would be much less convenient as I expect to maintain my
-> platform-specific CPUidle driver along with the rest of my
-> platform-specific code.
+-- Steve
 
-I guess the reason is conveneince of the maintainer (me).
 
-A good case could be made to put this driver under
-drivers/cpuidle/, arch/x86/, drivers/platform/x86/,
-as well as drivers/idle/ -- and maybe someplace else
-that I didn't think of.
+> Signed-off-by: Jason Wessel <jason.wessel@windriver.com>
+> ---
+>  kernel/trace/trace_kdb.c |   37 +++++++++++++++++++++++++++----------
+>  1 files changed, 27 insertions(+), 10 deletions(-)
+> 
+> diff --git a/kernel/trace/trace_kdb.c b/kernel/trace/trace_kdb.c
+> index 44cbda2..7b8ecd7 100644
+> --- a/kernel/trace/trace_kdb.c
+> +++ b/kernel/trace/trace_kdb.c
+> @@ -17,7 +17,7 @@
+>  #include "trace.h"
+>  #include "trace_output.h"
+>  
+> -static void ftrace_dump_buf(int skip_lines)
+> +static void ftrace_dump_buf(int skip_lines, long cpu_file)
+>  {
+>  	/* use static because iter can be a bit big for the stack */
+>  	static struct trace_iterator iter;
+> @@ -44,13 +44,20 @@ static void ftrace_dump_buf(int skip_lines)
+>  	iter.iter_flags |= TRACE_FILE_LAT_FMT;
+>  	iter.pos = -1;
+>  
+> -	for_each_tracing_cpu(cpu) {
+> -		iter.buffer_iter[cpu] =
+> +	if (cpu_file == TRACE_PIPE_ALL_CPU) {
+> +		for_each_tracing_cpu(cpu) {
+> +			iter.buffer_iter[cpu] =
+>  			ring_buffer_read_prepare(iter.tr->buffer, cpu);
+> -		ring_buffer_read_start(iter.buffer_iter[cpu]);
+> -		tracing_iter_reset(&iter, cpu);
+> +			ring_buffer_read_start(iter.buffer_iter[cpu]);
+> +			tracing_iter_reset(&iter, cpu);
+> +		}
+> +	} else {
+> +		iter.cpu_file = cpu_file;
+> +		iter.buffer_iter[cpu_file] =
+> +			ring_buffer_read_prepare(iter.tr->buffer, cpu_file);
+> +		ring_buffer_read_start(iter.buffer_iter[cpu_file]);
+> +		tracing_iter_reset(&iter, cpu_file);
+>  	}
+> -
+>  	if (!trace_empty(&iter))
+>  		trace_find_next_entry_inc(&iter);
+>  	while (!trace_empty(&iter)) {
+> @@ -91,9 +98,10 @@ out:
+>  static int kdb_ftdump(int argc, const char **argv)
+>  {
+>  	int skip_lines = 0;
+> +	long cpu_file;
+>  	char *cp;
+>  
+> -	if (argc > 1)
+> +	if (argc > 2)
+>  		return KDB_ARGCOUNT;
+>  
+>  	if (argc) {
+> @@ -102,8 +110,17 @@ static int kdb_ftdump(int argc, const char **argv)
+>  			skip_lines = 0;
+>  	}
+>  
+> +	if (argc == 2) {
+> +		cpu_file = simple_strtol(argv[2], &cp, 0);
+> +		if (*cp || cpu_file >= NR_CPUS || cpu_file < 0 ||
+> +		    !cpu_online(cpu_file))
+> +			return KDB_BADINT;
+> +	} else {
+> +		cpu_file = TRACE_PIPE_ALL_CPU;
+> +	}
+> +
+>  	kdb_trap_printk++;
+> -	ftrace_dump_buf(skip_lines);
+> +	ftrace_dump_buf(skip_lines, cpu_file);
+>  	kdb_trap_printk--;
+>  
+>  	return 0;
+> @@ -111,8 +128,8 @@ static int kdb_ftdump(int argc, const char **argv)
+>  
+>  static __init int kdb_ftrace_register(void)
+>  {
+> -	kdb_register_repeat("ftdump", kdb_ftdump, "", "Dump ftrace log",
+> -			    0, KDB_REPEAT_NONE);
+> +	kdb_register_repeat("ftdump", kdb_ftdump, "[skip_#lines] [cpu]",
+> +			    "Dump ftrace log", 0, KDB_REPEAT_NONE);
+>  	return 0;
+>  }
+>  
 
-Maybe if I maintained all of arch/x86/, then I'd naturally
-propose putting it someplace under arch/x86/.  But like i7300_idle,
-it runs on only a sub-set of x86 boxes, so it seemed to
-make sense to put it with i7300_idle.
 
-BTW. There is an sfi_idle driver in the pipeline as well
-with the same naming issue.  It is x86 specific, sfi-specific,
-and cpuidle-specific -- so a case could be made to put it in
-arch/x86/, drivers/sfi/, drivers/cpuidle/ -- but it will
-just as likely land in drivers/idle/.
-
-cheers,
-Len Brown, Intel Open Source Technology Center
