@@ -1,66 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758334Ab0E1KJY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 May 2010 06:09:24 -0400
-Received: from smtp-out.google.com ([74.125.121.35]:58590 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754467Ab0E1KJX (ORCPT
+	id S1758339Ab0E1KNG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 May 2010 06:13:06 -0400
+Received: from fogou.chygwyn.com ([195.171.2.24]:38160 "EHLO fogou.chygwyn.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758147Ab0E1KNE convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 May 2010 06:09:23 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=message-id:from:date:to:reply-to:cc:subject:x-system-of-record;
-	b=Zpqeu9GVDFGcq/7P2aXQT5ZX1Oeaj++Y4UkZHNIic41gbRc7FrZavVb7qTYJ/VTho
-	H0wwPrrF+xwxX+qk3F5jA==
-Message-ID: <4bff964c.e88cd80a.3106.7d31@mx.google.com>
-From: Stephane Eranian <eranian@google.com>
-Date: Fri, 28 May 2010 12:08:01 +0200
-To: linux-kernel@vger.kernel.org
-Reply-to: eranian@google.com
-Cc: peterz@infradead.org, mingo@elte.hu, paulus@samba.org, davem@davemloft.net,
-       fweisbec@gmail.com, acme@infradead.org, perfmon2-devel@lists.sf.net,
-       eranian@gmail.com, eranian@google.com, tzanussi@gmail.com
-Subject: [PATCH] perf: make perf report -D print sampled CPU
-X-System-Of-Record: true
+	Fri, 28 May 2010 06:13:04 -0400
+X-Greylist: delayed 3205 seconds by postgrey-1.27 at vger.kernel.org; Fri, 28 May 2010 06:13:04 EDT
+Subject: Re: Question about SIOCGIFCONF
+From: Steven Whitehouse <steve@chygwyn.com>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: Jeffrey Merkey <jeffmerkey@gmail.com>,
+       linux-kernel <linux-kernel@vger.kernel.org>
+In-Reply-To: <1275022651.2446.35.camel@edumazet-laptop>
+References: <AANLkTinUsKL0kqAjRG95xcrqjWPUlNn1TPD21wIJjShS@mail.gmail.com>
+	 <1275022651.2446.35.camel@edumazet-laptop>
+Content-Type: text/plain; charset="UTF-8"
+Organization: ChyGwyn Limited
+Date: Fri, 28 May 2010 10:22:19 +0100
+Message-ID: <1275038539.2364.20.camel@localhost>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
+Content-Transfer-Encoding: 8BIT
+X-Spam-Score: -1.4 (-)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It is useful to know on which CPU a sample was captured on.
-The information is captured with perf record -R but it was
-not printed out by perf report -D. This patch adds this.
+Hi,
 
-When -R is not used, cpu is set to -1to indicate that
-the CPU is unknown (it is not captured).
+On Fri, 2010-05-28 at 06:57 +0200, Eric Dumazet wrote:
+> Le jeudi 27 mai 2010 à 21:02 -0600, Jeffrey Merkey a écrit :
+> > Why is SIOGICONF only instrumented to return a single interface lo for
+> > example.  I noticed that ifconfig always uses /proc/net/dev but the
+> > older SIOCGIFCONF ioctl seems to be busted.  Anyone have an
+> > explanation or is this just how the shit is these days or is the
+> > fucking thing broken (seems to be). ?
+> 
+> Shit comes from you eyes maybe ?
+> 
+> Correction : Shit comes from your eyes, definitely.
+> 
+> Proof :
+> 
+> # strace -o /tmp/STRACE ifconfig -a
+> # grep SIOCGIFCONF /tmp/STRACE
+> ioctl(4, SIOCGIFCONF, {120, {{"lo", {AF_INET, inet_addr("127.0.0.1")}},
+> {"wlan0", {AF_INET, inet_addr("192.168.1.21")}}, {"ppp0", {AF_INET,
+> inet_addr("10.150.51.210")}}}}) = 0
+> 
+> 
+> Part of ifconfig :
+> 
+>     ifc.ifc_buf = NULL;
+>     for (;;) {
+>         ifc.ifc_len = sizeof(struct ifreq) * numreqs;
+>         ifc.ifc_buf = xrealloc(ifc.ifc_buf, ifc.ifc_len);
+> 
+>         if (ioctl(skfd, SIOCGIFCONF, &ifc) < 0) {
+>             perror("SIOCGIFCONF");
+>             goto out;
+>         }
+>         if (ifc.ifc_len == sizeof(struct ifreq) * numreqs) {
+>             /* assume it overflowed and try again */
+>             numreqs += 10;
+>             continue;
+>         }
+>         break;
+>     }
+> 
+> maybe numreqs should be firt initialized to 64, then doubled each
+> round...
+> 
 
-Signed-off-by: Stephane Eranian <eranian@google.com>
+Yes, except that this will fail if you add a protocol that is not known
+about by ifconfig and it has a struct sockaddr which is larger than the
+16 bytes allowed for in the ifreq. There used to be a DECnet
+implementation of this ioctl() but we had to get rid of it because it
+broke every single SIOCGFICONF using program (including ifconfig) on the
+system for that reason.
 
-diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
-index 3592057..207da18 100644
---- a/tools/perf/builtin-report.c
-+++ b/tools/perf/builtin-report.c
-@@ -157,8 +157,9 @@ static int process_sample_event(event_t *event, struct perf_session *session)
- 
- 	event__parse_sample(event, session->sample_type, &data);
- 
--	dump_printf("(IP, %d): %d/%d: %#Lx period: %Ld\n", event->header.misc,
--		    data.pid, data.tid, data.ip, data.period);
-+	dump_printf("(IP, %d): %d/%d: %#Lx period: %Ld cpu:%d\n",
-+		    event->header.misc, data.pid, data.tid, data.ip,
-+		    data.period, data.cpu);
- 
- 	if (session->sample_type & PERF_SAMPLE_CALLCHAIN) {
- 		unsigned int i;
-diff --git a/tools/perf/util/event.c b/tools/perf/util/event.c
-index 50771b5..58cb96b 100644
---- a/tools/perf/util/event.c
-+++ b/tools/perf/util/event.c
-@@ -770,7 +770,8 @@ int event__parse_sample(event_t *event, u64 type, struct sample_data *data)
- 		u32 *p = (u32 *)array;
- 		data->cpu = *p;
- 		array++;
--	}
-+	} else
-+		data->cpu = -1;
- 
- 	if (type & PERF_SAMPLE_PERIOD) {
- 		data->period = *array;
+This is partly historical. Some systems have a struct sockaddr which
+includes a length parameter which means that you can always parse the
+returned values, even if they are larger than 16 bytes and the protocol
+is unknown. Linux does not have this length field, so you have to know
+in advance a full list of all protocols which have sockaddr's greater
+than 16 bytes in length in order to parse the results.
+
+The upshot of all that is that it is much better to use rtnetlink, as
+per iproute2 instead of this ioctl which is obsolete for most purposes.
+A quick grep through the code suggests that ipv4 is the only protocol
+which implements this ioctl currently,
+
+Steve.
+
+
