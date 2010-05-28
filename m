@@ -1,108 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754765Ab0E1TFb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 May 2010 15:05:31 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:63795 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754635Ab0E1TF1 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 May 2010 15:05:27 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :content-type:content-transfer-encoding;
-        b=Ba/7L2Vw4IB38GSn1YSBu1o5oxN1ncvT6P6PbUjhCL60Xrs+WRO/OFpI9fxTsvjUO8
-         i0OBQcjz1yYkeZZT4Feu6rhuEDvjKdm32lynhEG86tLsqeWoricl79zRRZPQmrFu0nN/
-         tQNNAUDUVh90IcOM5lPgOuL9gVVLYWo2nrgBo=
+	id S1754846Ab0E1TFq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 May 2010 15:05:46 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:65107 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754695Ab0E1TFo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 May 2010 15:05:44 -0400
+Date: Fri, 28 May 2010 21:03:44 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Roland McGrath <roland@redhat.com>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Andi Kleen <andi@firstfloor.org>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       Richard Henderson <rth@twiddle.net>, wezhang@redhat.com,
+       linux-kernel@vger.kernel.org, Michael Kerrisk <mtk.manpages@gmail.com>,
+       William Cohen <wcohen@redhat.com>
+Subject: Re: [PATCH 2/3] sys_personality: make sure (int)personality >= 0
+Message-ID: <20100528190344.GA12090@redhat.com>
+References: <20100525141720.GA2253@redhat.com> <20100525193348.83F1549A54@magilla.sf.frob.com> <20100526123622.GA26033@redhat.com> <20100526203105.59D7849A56@magilla.sf.frob.com> <20100527153522.GA13858@redhat.com> <20100527153613.GC13858@redhat.com> <4BFECFEB.6040308@zytor.com>
 MIME-Version: 1.0
-In-Reply-To: <AANLkTin8zU1enOG-SiAaHhdqtNtqW_L1qNGEA9oKFJxz@mail.gmail.com>
-References: <AANLkTinUsKL0kqAjRG95xcrqjWPUlNn1TPD21wIJjShS@mail.gmail.com>
-	<1275022651.2446.35.camel@edumazet-laptop>
-	<AANLkTinROjXlrxl_vTAuTyAfj0bqPZiJJpBDa8lkc8IT@mail.gmail.com>
-	<AANLkTin8zU1enOG-SiAaHhdqtNtqW_L1qNGEA9oKFJxz@mail.gmail.com>
-Date: Fri, 28 May 2010 13:05:25 -0600
-Message-ID: <AANLkTin5RRIrSwenr1wCuJlEvydVD9_d3U2ZLitSXigs@mail.gmail.com>
-Subject: Re: Question about SIOCGIFCONF
-From: Jeffrey Merkey <jeffmerkey@gmail.com>
-To: Eric Dumazet <eric.dumazet@gmail.com>, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4BFECFEB.6040308@zytor.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The code in question is net-tools/lib/interface.c function
-if_readproc() and associated routines.  Looks like a hole.
+On 05/27, H. Peter Anvin wrote:
+>
+> On 05/27/2010 08:36 AM, Oleg Nesterov wrote:
+> >
+> > Change sys_personality() to ensure personality can not look like a
+> > negative int. This disallows the MSB, it is not used for PER_ flags.
+> >
+> I'm fine with this, even though it is indeed there to support extremely
+> poorly written applications (error is specifially -1, not < 0).
 
-Jeff
+Completely agreed. I never liked this patch, just tried to discuss this
+"problem" and report either ACK or NACK back to bugzilla.
 
-On Fri, May 28, 2010 at 1:02 PM, Jeffrey Merkey <jeffmerkey@gmail.com> wrote:
-> Review of the net-tools source code for IFCONFIG indicates that when
-> /proc is not loaded and/or /proc/net/dev is not available, IFCONFIG
-> will attempt to use this ioctl to determine which interfaces are
-> present in the system.  Since the ioctl will not report unbound
-> interfaces which are active, IFCONFIG will not properly report or
-> detect network adapters which are unbound.  This seems to be a hole,
-> although most of the time I assume /proc will always be mounted.
-> Someone should review this and make a decision as to whether or not
-> this could be a problem.  At any rate, it does not work as advertised.
+Now I dislike it even more. I am not going to resend it, but I added
+the fat note to the patch-v2 I am sending.
+
+> However, since we almost certainly have enough brokenness in here, and
+> since there definitely don't seem to be a whole lot of demand for new
+> personality bits, I'm more than happy to waste bit 31 at not having to
+> deal with it, ever.
 >
-> Jeff
->
-> On Fri, May 28, 2010 at 12:31 PM, Jeffrey Merkey <jeffmerkey@gmail.com> wrote:
->> Actually,  I verified last night it only returns interfaces which have
->> been bound to an IP address.  It does not return any interfaces which
->> are active but for which an IP address has not been bound.  So what I
->> said is accurate.  it's fucking busted.
->>
->> /proc/net/dev returns ALL interfaces.  this ioctl does not.
->>
->> Jeff
->>
->> On Thu, May 27, 2010 at 10:57 PM, Eric Dumazet <eric.dumazet@gmail.com> wrote:
->>> Le jeudi 27 mai 2010 à 21:02 -0600, Jeffrey Merkey a écrit :
->>>> Why is SIOGICONF only instrumented to return a single interface lo for
->>>> example.  I noticed that ifconfig always uses /proc/net/dev but the
->>>> older SIOCGIFCONF ioctl seems to be busted.  Anyone have an
->>>> explanation or is this just how the shit is these days or is the
->>>> fucking thing broken (seems to be). ?
->>>
->>> Shit comes from you eyes maybe ?
->>>
->>> Correction : Shit comes from your eyes, definitely.
->>>
->>> Proof :
->>>
->>> # strace -o /tmp/STRACE ifconfig -a
->>> # grep SIOCGIFCONF /tmp/STRACE
->>> ioctl(4, SIOCGIFCONF, {120, {{"lo", {AF_INET, inet_addr("127.0.0.1")}},
->>> {"wlan0", {AF_INET, inet_addr("192.168.1.21")}}, {"ppp0", {AF_INET,
->>> inet_addr("10.150.51.210")}}}}) = 0
->>>
->>>
->>> Part of ifconfig :
->>>
->>>    ifc.ifc_buf = NULL;
->>>    for (;;) {
->>>        ifc.ifc_len = sizeof(struct ifreq) * numreqs;
->>>        ifc.ifc_buf = xrealloc(ifc.ifc_buf, ifc.ifc_len);
->>>
->>>        if (ioctl(skfd, SIOCGIFCONF, &ifc) < 0) {
->>>            perror("SIOCGIFCONF");
->>>            goto out;
->>>        }
->>>        if (ifc.ifc_len == sizeof(struct ifreq) * numreqs) {
->>>            /* assume it overflowed and try again */
->>>            numreqs += 10;
->>>            continue;
->>>        }
->>>        break;
->>>    }
->>>
->>> maybe numreqs should be firt initialized to 64, then doubled each
->>> round...
->>>
->>>
->>>
->>
->
+> However, it would be better if we returned -EINVAL on attempts to set
+> *any* of the reserved bits, not just bit 31.
+
+If only I knew what is the supposed behaviour of sys_personality ;)
+
+Another reason to forget this patch but add the "right" check if needed.
+
+Oleg.
+
