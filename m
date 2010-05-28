@@ -1,48 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756325Ab0E1Llp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 May 2010 07:41:45 -0400
-Received: from cavan.codon.org.uk ([93.93.128.6]:53697 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754527Ab0E1Llo (ORCPT
+	id S1756819Ab0E1Lmq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 May 2010 07:42:46 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:56425 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755638Ab0E1Lmo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 May 2010 07:41:44 -0400
-Date: Fri, 28 May 2010 12:41:23 +0100
-From: Matthew Garrett <mjg59@srcf.ucam.org>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: tytso@mit.edu, Alan Stern <stern@rowland.harvard.edu>,
-       Thomas Gleixner <tglx@linutronix.de>,
-       Peter Zijlstra <peterz@infradead.org>,
-       LKML <linux-kernel@vger.kernel.org>,
-       Florian Mickler <florian@mickler.org>, felipe.balbi@nokia.com,
-       Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
-       Linux PM <linux-pm@lists.linux-foundation.org>
-Subject: Re: [linux-pm] [PATCH 0/8] Suspend block api (version 8)
-Message-ID: <20100528114123.GA22947@srcf.ucam.org>
-References: <20100527222514.0a1710bf@lxorguk.ukuu.org.uk> <Pine.LNX.4.44L0.1005271730180.3239-100000@iolanthe.rowland.org> <20100527230806.4deb6de3@lxorguk.ukuu.org.uk> <20100527220949.GB10602@srcf.ucam.org> <20100527232357.6d14fdb2@lxorguk.ukuu.org.uk> <20100527223605.GB11364@srcf.ucam.org> <20100527235546.09f3ce8a@lxorguk.ukuu.org.uk> <20100528043114.GC26177@thunk.org> <20100528103713.0a7952d9@lxorguk.ukuu.org.uk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100528103713.0a7952d9@lxorguk.ukuu.org.uk>
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+	Fri, 28 May 2010 07:42:44 -0400
+From: Marc Kleine-Budde <mkl@pengutronix.de>
+To: sha@pengutronix.de
+Cc: Sascha Hauer <s.hauer@pengutronix.de>,
+       Marc Kleine-Budde <mkl@pengutronix.de>,
+       Sascha Hauer <kernel@pengutronix.de>,
+       Russell King <linux@arm.linux.org.uk>, Baruch Siach <baruch@tkos.co.il>,
+       Wolfram Sang <w.sang@pengutronix.de>,
+       Juergen Beisert <jbe@pengutronix.de>,
+       linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 2/4] mx25: Add flexcan devices
+Date: Fri, 28 May 2010 13:42:16 +0200
+Message-Id: <1275046938-8465-3-git-send-email-mkl@pengutronix.de>
+X-Mailer: git-send-email 1.7.1
+In-Reply-To: <1275046938-8465-1-git-send-email-mkl@pengutronix.de>
+References: <1275046938-8465-1-git-send-email-mkl@pengutronix.de>
+X-SA-Exim-Connect-IP: 2001:6f8:1178:4:5054:ff:fe8d:eefb
+X-SA-Exim-Mail-From: mkl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 28, 2010 at 10:37:13AM +0100, Alan Cox wrote:
+From: Sascha Hauer <s.hauer@pengutronix.de>
 
-> The other vendors appear to be managing nicely without magic blockers. I
-> conjecture therefore there are other solutions.
+Signed-off-by: Sascha Hauer <s.hauer@pengutronix.de>
+Signed-off-by: Marc Kleine-Budde <mkl@pengutronix.de>
+---
+ arch/arm/mach-mx25/devices.c |   38 ++++++++++++++++++++++++++++++++++++++
+ arch/arm/mach-mx25/devices.h |    2 ++
+ 2 files changed, 40 insertions(+), 0 deletions(-)
 
-Actually, no. A badly behaved application will kill the N900's battery 
-life. Nobody else has "managed nicely" - they've just made life harder 
-for application developers and users, which may have something to do 
-with the relative levels of market adoption of Maemo and Android. I'm 
-not aware of any form of resource management framework in MeeGo either, 
-so as far as I know it'll have exactly the same problem.
-
+diff --git a/arch/arm/mach-mx25/devices.c b/arch/arm/mach-mx25/devices.c
+index 3a405fa..e8b320b 100644
+--- a/arch/arm/mach-mx25/devices.c
++++ b/arch/arm/mach-mx25/devices.c
+@@ -390,6 +390,44 @@ struct platform_device mxc_i2c_device2 = {
+ 	.resource = mxc_i2c_3_resources,
+ };
+ 
++static struct resource mxc_can_1_resources[] = {
++	{
++		.start	= 0x43f88000,
++		.end	= 0x43f8bfff,
++		.flags	= IORESOURCE_MEM,
++	}, {
++		.start	= 43,
++		.end	= 43,
++		.flags	= IORESOURCE_IRQ,
++	}
++};
++
++struct platform_device mxc_can_device0 = {
++	.name = "flexcan",
++	.id = 0,
++	.num_resources = ARRAY_SIZE(mxc_can_1_resources),
++	.resource = mxc_can_1_resources,
++};
++
++static struct resource mxc_can_2_resources[] = {
++	{
++		.start	= 0x43f8c000,
++		.end	= 0x43f8ffff,
++		.flags	= IORESOURCE_MEM,
++	}, {
++		.start	= 44,
++		.end	= 44,
++		.flags	= IORESOURCE_IRQ,
++	}
++};
++
++struct platform_device mxc_can_device1 = {
++	.name = "flexcan",
++	.id = 1,
++	.num_resources = ARRAY_SIZE(mxc_can_2_resources),
++	.resource = mxc_can_2_resources,
++};
++
+ static struct mxc_gpio_port imx_gpio_ports[] = {
+ 	{
+ 		.chip.label = "gpio-0",
+diff --git a/arch/arm/mach-mx25/devices.h b/arch/arm/mach-mx25/devices.h
+index cee12c0..e3267d6 100644
+--- a/arch/arm/mach-mx25/devices.h
++++ b/arch/arm/mach-mx25/devices.h
+@@ -22,3 +22,5 @@ extern struct platform_device mxc_nand_device;
+ extern struct platform_device mx25_rtc_device;
+ extern struct platform_device mx25_fb_device;
+ extern struct platform_device mxc_wdt;
++extern struct platform_device mxc_can_device0;
++extern struct platform_device mxc_can_device1;
 -- 
-Matthew Garrett | mjg59@srcf.ucam.org
+1.7.1
+
