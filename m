@@ -1,75 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753096Ab0E1E5i (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 May 2010 00:57:38 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:50868 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751071Ab0E1E5h (ORCPT
+	id S1753619Ab0E1E6L (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 May 2010 00:58:11 -0400
+Received: from mail-yw0-f198.google.com ([209.85.211.198]:46578 "EHLO
+	mail-yw0-f198.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751158Ab0E1E6I convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 May 2010 00:57:37 -0400
+	Fri, 28 May 2010 00:58:08 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=LXRI6JoLxcAaCNYOqvShc3I8KDiaT0B8D1WmOAqxoO66KdiMx+rTA/m0sPRLQJJkD3
-         Txha8oRGE8ESqPZ60HCetpLtce3U2f94D4c29/v2/s+eSjTOZKyNpOXsAfMGzOgoAJpr
-         pMUHzq6D8d2JeqDxp1kmfKFk0x8DLqA732jZE=
-Subject: Re: Question about SIOCGIFCONF
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Jeffrey Merkey <jeffmerkey@gmail.com>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>
-In-Reply-To: <AANLkTinUsKL0kqAjRG95xcrqjWPUlNn1TPD21wIJjShS@mail.gmail.com>
-References: <AANLkTinUsKL0kqAjRG95xcrqjWPUlNn1TPD21wIJjShS@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 28 May 2010 06:57:31 +0200
-Message-ID: <1275022651.2446.35.camel@edumazet-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 8bit
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type:content-transfer-encoding;
+        b=kU63rkRTZWGkiIeHuZMFGZTQr6vWU3GpfDGQH8rDzy0MYzf/AT3UVIA2SyZT06EKon
+         N6Bxs0MR9cjc25Xu42n0v7ntW92Bl/OCdjYFd4LdKwFxQLDAp2iEhKz8bW2joI0nUtGZ
+         AOpO0cHAWnUp9MRaIAfkC8+KL5Z0vdlL9tQrU=
+MIME-Version: 1.0
+In-Reply-To: <20100527231538.GA1615@mcafee.com>
+References: <1274815467-14584-1-git-send-email-vapier@gentoo.org> 
+	<1274863506-14168-1-git-send-email-vapier@gentoo.org> <4BFE2C3E.5090704@monstr.eu> 
+	<AANLkTinD5VI-piiv6CWnZMei4ARTLDF61r0O7wvddRDP@mail.gmail.com> 
+	<20100527231538.GA1615@mcafee.com>
+From: Mike Frysinger <vapier.adi@gmail.com>
+Date: Fri, 28 May 2010 00:57:46 -0400
+Message-ID: <AANLkTilwG3e_hUVl3ZbRUUxUCGoPR-1b-Yn-xF2m8_Rd@mail.gmail.com>
+Subject: Re: [microblaze-uclinux] Re: [Uclinux-dist-devel] [PATCH 1/2 v2] 
+	FLAT: split the stack & data alignments
+To: David McCullough <david_mccullough@mcafee.com>
+Cc: microblaze-uclinux@itee.uq.edu.au, monstr@monstr.eu,
+       linux-m32r@ml.linux-m32r.org, uclinux-dev@uclinux.org,
+       Yoshinori Sato <ysato@users.sourceforge.jp>,
+       Hirokazu Takata <takata@linux-m32r.org>, linux-kernel@vger.kernel.org,
+       David Howells <dhowells@redhat.com>, Paul Mundt <lethal@linux-sh.org>,
+       Greg Ungerer <gerg@uclinux.org>,
+       uclinux-dist-devel@blackfin.uclinux.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le jeudi 27 mai 2010 à 21:02 -0600, Jeffrey Merkey a écrit :
-> Why is SIOGICONF only instrumented to return a single interface lo for
-> example.  I noticed that ifconfig always uses /proc/net/dev but the
-> older SIOCGIFCONF ioctl seems to be busted.  Anyone have an
-> explanation or is this just how the shit is these days or is the
-> fucking thing broken (seems to be). ?
+On Thu, May 27, 2010 at 19:15, David McCullough wrote:
+> Jivin Mike Frysinger lays it down ...
+>> On Thu, May 27, 2010 at 04:24, Michal Simek wrote:
+>> > Mike Frysinger wrote:
+>> >> The stack and data have different alignment requirements, so don't force
+>> >> them to wear the same shoe. ??Increase the data alignment to match that
+>> >> which the elf2flt linker script has always been using: 0x20 bytes. ??Not
+>> >> only does this bring the kernel loader in line with the toolchain, but
+>> >> it also fixes a swath of gcc tests which try to force larger alignment
+>> >> values but randomly fail when the FLAT loader fails to deliver.
+>> >
+>> > Solve the problem on Microblaze:
+>> >
+>> > Tested-by: Michal Simek <monstr@monstr.eu>
+>> >
+>> > Who will add it to mainline?
+>>
+>> if we can get the misc nommu peeps to agree on this (looking mostly at
+>> David [McCullough] and Greg), then akpm will most likely expedite the
+>> merge.  i like to think they're the best FLAT experts out there ;).
+>
+> Did the latest patch include the changes Paul requested.
+>
+> It looks like it to me,  I've just been a bit distracted.  If so I'll send
+> in an Ack.
 
-Shit comes from you eyes maybe ?
-
-Correction : Shit comes from your eyes, definitely.
-
-Proof :
-
-# strace -o /tmp/STRACE ifconfig -a
-# grep SIOCGIFCONF /tmp/STRACE
-ioctl(4, SIOCGIFCONF, {120, {{"lo", {AF_INET, inet_addr("127.0.0.1")}},
-{"wlan0", {AF_INET, inet_addr("192.168.1.21")}}, {"ppp0", {AF_INET,
-inet_addr("10.150.51.210")}}}}) = 0
-
-
-Part of ifconfig :
-
-    ifc.ifc_buf = NULL;
-    for (;;) {
-        ifc.ifc_len = sizeof(struct ifreq) * numreqs;
-        ifc.ifc_buf = xrealloc(ifc.ifc_buf, ifc.ifc_len);
-
-        if (ioctl(skfd, SIOCGIFCONF, &ifc) < 0) {
-            perror("SIOCGIFCONF");
-            goto out;
-        }
-        if (ifc.ifc_len == sizeof(struct ifreq) * numreqs) {
-            /* assume it overflowed and try again */
-            numreqs += 10;
-            continue;
-        }
-        break;
-    }
-
-maybe numreqs should be firt initialized to 64, then doubled each
-round...
-
-
+i dont want to rush you or something ... the patches need to be in
+before 2.6.35 is released (since trouble started with a patched added
+to 2.6.35 merge window), so if you want to review things a bit more,
+it should be OK ..
+-mike
