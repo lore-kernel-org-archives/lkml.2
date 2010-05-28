@@ -1,46 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754891Ab0E1AoN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 May 2010 20:44:13 -0400
-Received: from casper.infradead.org ([85.118.1.10]:43985 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752919Ab0E1AoL (ORCPT
+	id S1756562Ab0E1Aoh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 May 2010 20:44:37 -0400
+Received: from bld-mail14.adl6.internode.on.net ([150.101.137.99]:56452 "EHLO
+	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754260Ab0E1Aof (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 May 2010 20:44:11 -0400
-Date: Thu, 27 May 2010 21:43:28 -0300
-From: Arnaldo Carvalho de Melo <acme@infradead.org>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-       Ingo Molnar <mingo@elte.hu>, Paul Mackerras <paulus@samba.org>,
-       linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-       Fr?d?ric Weisbecker <fweisbec@gmail.com>,
-       Thomas Gleixner <tglx@linutronix.de>,
-       Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [GIT PULL, v2] perf changes
-Message-ID: <20100528004328.GD6422@ghostprotocols.net>
-References: <20100524192531.GA15614@elte.hu> <20100525002221.GA30395@drongo> <20100525135200.GA21462@elte.hu> <alpine.LFD.2.00.1005271533010.11382@i5.linux-foundation.org> <1275006757.22648.567.camel@gandalf.stny.rr.com>
+	Thu, 27 May 2010 20:44:35 -0400
+Date: Fri, 28 May 2010 10:44:16 +1000
+From: Dave Chinner <david@fromorbit.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, xfs@oss.sgi.com,
+       linux-fsdevel@vger.kernel.org, linux-ext4@vger.kernel.org,
+       tytso@mit.edu, jens.axboe@oracle.com
+Subject: Re: [PATCH 1/6] writeback: initial tracing support
+Message-ID: <20100528004416.GV12087@dastard>
+References: <1274784852-30502-1-git-send-email-david@fromorbit.com>
+ <1274784852-30502-2-git-send-email-david@fromorbit.com>
+ <20100527143233.836b2c47.akpm@linux-foundation.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1275006757.22648.567.camel@gandalf.stny.rr.com>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.19 (2009-01-05)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
-	See http://www.infradead.org/rpr.html
+In-Reply-To: <20100527143233.836b2c47.akpm@linux-foundation.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Thu, May 27, 2010 at 08:32:37PM -0400, Steven Rostedt escreveu:
-> On Thu, 2010-05-27 at 15:34 -0700, Linus Torvalds wrote:
+On Thu, May 27, 2010 at 02:32:33PM -0700, Andrew Morton wrote:
+> On Tue, 25 May 2010 20:54:07 +1000
+> Dave Chinner <david@fromorbit.com> wrote:
 > 
-> > The actual kernel still grew:
+> > From: From: Jens Axboe <jens.axboe@oracle.com>
 > > 
-> >  32 files changed, 1327 insertions(+), 964 deletions(-)
+> > Trace queue/sched/exec parts of the writeback loop.
 > 
-> Well, if it's any consolation, that patch pull did include my 100K
-> reduction in trace events.
+> It would be most useful if this patchset's description provided sample
+> tracing output, so we can see what the patch is actually providing us.
 
-Bah, these investors, who would believe in them? :-P
+This is just a forward port of Jen's patch. I guess I'll have to
+clean it up some more...
 
-- Arnaldo
+> 
+> > -#define inode_to_bdi(inode)	((inode)->i_mapping->backing_dev_info)
+> > -
+> > -/*
+> > - * We don't actually have pdflush, but this one is exported though /proc...
+> > - */
+> > -int nr_pdflush_threads;
+> > -
+> >  /*
+> >   * Passed into wb_writeback(), essentially a subset of writeback_control
+> >   */
+> > @@ -63,6 +57,16 @@ struct bdi_work {
+> >  	unsigned long state;		/* flag bits, see WS_* */
+> >  };
+> >  
+> > +#define CREATE_TRACE_POINTS
+> > +#include <trace/events/writeback.h>
+> > +
+> > +#define inode_to_bdi(inode)	((inode)->i_mapping->backing_dev_info)
+> 
+> Could/should be implemented in C.
+
+OK.
+
+> 
+> > +/*
+> > + * We don't actually have pdflush, but this one is exported though /proc...
+> > + */
+> > +int nr_pdflush_threads;
+> 
+> So this is always zero now?
+
+I guess so. I'd forgotten that this was in the original patch....
+
+> We don't want to keep it forever.  Add a
+> printk_once("nr_pdflush_threads is deprecated") when someone reads it,
+> remove it in 2014.
+
+OK.
+
+> > --- /dev/null
+> > +++ b/include/trace/events/writeback.h
+> > @@ -0,0 +1,171 @@
+> > +#undef TRACE_SYSTEM
+> > +#define TRACE_SYSTEM writeback
+> > +
+> > +#if !defined(_TRACE_WRITEBACK_H) || defined(TRACE_HEADER_MULTI_READ)
+> 
+> Seems wrong.  If you define TRACE_HEADER_MULTI_READ then include this
+> header twice, things explode.  Which negates the purpose of
+> _TRACE_WRITEBACK_H.
+
+Every other trace event header does this, so if it's wrong then the
+same mistake is in at least 30 files now. I don't know enough about
+the tracing code to know why this is done, and I'm not keen to
+address such a mistake here...
+
+Cheers,
+
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
