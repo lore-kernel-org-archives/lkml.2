@@ -1,48 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757378Ab0E1Bvu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 May 2010 21:51:50 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:57802 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755132Ab0E1Bvs (ORCPT
+	id S1756404Ab0E1B4y (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 May 2010 21:56:54 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:47041 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754072Ab0E1B4w (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 May 2010 21:51:48 -0400
-Date: Fri, 28 May 2010 02:51:45 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-       Christoph Hellwig <hch@lst.de>, Josef Bacik <josef@redhat.com>,
-       Chris Mason <chris.mason@oracle.com>, Nick Piggin <npiggin@suse.de>
-Subject: Re: linux-next: build failure after merge of the vfs tree
-Message-ID: <20100528015145.GI31073@ZenIV.linux.org.uk>
-References: <20100528114539.012ff1d2.sfr@canb.auug.org.au>
+	Thu, 27 May 2010 21:56:52 -0400
+Date: Thu, 27 May 2010 18:53:20 -0700 (PDT)
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+       Florian Ragwitz <rafl@debian.org>, Arjan Opmeer <arjan@opmeer.net>,
+       Eric Piel <eric.piel@tremplin-utc.net>
+cc: Andrew Morton <akpm@linux-foundation.org>,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       linux-input@vger.kernel.org
+Subject: Re: [git pull] Input updates for 2.6.35-rc0
+In-Reply-To: <20100520165243.GA20861@core.coreip.homeip.net>
+Message-ID: <alpine.LFD.2.00.1005271837050.11382@i5.linux-foundation.org>
+References: <20100520165243.GA20861@core.coreip.homeip.net>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100528114539.012ff1d2.sfr@canb.auug.org.au>
-User-Agent: Mutt/1.5.20 (2009-08-17)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 28, 2010 at 11:45:39AM +1000, Stephen Rothwell wrote:
-> Hi Al,
+
+
+On Thu, 20 May 2010, Dmitry Torokhov wrote:
 > 
-> After merging the vfs tree, today's linux-next build (powerpc
-> ppc64_defconfig) failed like this:
-> 
-> arch/powerpc/platforms/cell/spufs/file.c:1852: error: expected ';', ',' or ')' before 'int'
-> arch/powerpc/platforms/cell/spufs/file.c:1871: error: 'spufs_mfc_fsync' undeclared here (not in a function)
+> Dmitry Torokhov (17):
+>       Input: elantech - enforce common prefix on messages
+>       Input: elantech - relax signature checks
 
-Tpyo in fsync patch (missing comma in line 1852 there)
+These two commits (I _think_ - I didn't actually bisect it) seem to result 
+in a Dell Inspiron bootup message changing from:
 
-> Caused by commit 05b2fc7d1f1046fef1199e1a4d2f63df998ef3aa ("drop unused
-> dentry argument to ->fsync").
- 
-> My merge of the vfs tree was also bad because commit
-> facd07b07d2a7988f5ce849558838cc953847637 ("direct-io: add a hook for the
-> fs to provide its own submit_bio function") that entered Linus' tree in
-> the past 24 hours changed the prototype of __blockdev_direct_IO() and
-> that probably needs reflecting in the new __blockdev_direct_IO_newtrunc().
+	input: ImPS/2 Logitech Wheel Mouse as /devices/platform/i8042/serio1/input/input5
 
-OK, I'll rebase that stuff.
+to
+
+	elantech: assuming hardware version 2, firmware version 4.3.1
+	elantech: Synaptics capabilities query result 0x08, 0x18, 0x0c.
+	input: ETPS/2 Elantech Touchpad as /devices/platform/i8042/serio1/input/input5
+
+and the end result is a total disaster. In the words of my daughter, whose 
+laptop this is:
+
+	Subject: Computer=awful
+
+	I am not able to click by tapping, I actually have to press down.. It's
+	really frustrating and I want it fixed.
+
+and having tested it, I have to agree. It's beyond awful. It's absolutely 
+disgusting, and the touchpad went from "quite usable" (with tapping, 
+double-tapping, scroll-wheel on the right side etc) to "totally unusable". 
+The buttons you have to press (since tapping doesn't work) are on the 
+touch-pad itself, and it's basically a total pain.
+
+The scroll-wheel emulation still seems to work, but tapping has gone away. 
+I'm reading the docs, and they say that you can do magic things with the 
+raw registers, but if I'm looking at the register contents they seem to 
+say that tapping _is_ enabled. It just doesn't work.
+
+So it would seem that the "non-native" PS/2 emulation of that thing is way 
+better than the native driver, and we should _not_ try to treat it as a 
+touchpad. We're better off leaving it in ImPS/2 mode.
+
+		Linus
