@@ -1,52 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932831Ab0E1R2R (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 May 2010 13:28:17 -0400
-Received: from king.tilera.com ([72.1.168.226]:7030 "EHLO king.tilera.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757376Ab0E1R2P (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 May 2010 13:28:15 -0400
-Message-ID: <4BFFFD2B.8050402@tilera.com>
-Date: Fri, 28 May 2010 13:28:11 -0400
-From: Chris Metcalf <cmetcalf@tilera.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.1.9) Gecko/20100317 Thunderbird/3.0.4
-MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>
-CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       linux-arch@vger.kernel.org
-Subject: Re: [PATCH] arch/tile: new multi-core architecture for Linux
-References: <201005200543.o4K5hFRF006079@farm-0002.internal.tilera.com> <201005252345.15685.arnd@arndb.de> <4BFFF330.4080509@tilera.com> <201005281916.12999.arnd@arndb.de>
-In-Reply-To: <201005281916.12999.arnd@arndb.de>
-X-Enigmail-Version: 1.0.1
-Content-Type: text/plain; charset=ISO-8859-1
+	id S932862Ab0E1R2Y (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 May 2010 13:28:24 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:32976 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755474Ab0E1R2V (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 May 2010 13:28:21 -0400
+Subject: Re: [linux-pm] [PATCH 8/8] intel_idle: create a native cpuidle
+ driver for select intel processors
+From: Kevin Hilman <khilman@deeprootsystems.com>
+To: Arjan van de Ven <arjan@infradead.org>
+Cc: Igor Stoppa <igor.stoppa@nokia.com>, Brown <len.brown@intel.com>,
+       "x86@kernel.org" <x86@kernel.org>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       "Len@smtp1.linux-foundation.org" <Len@smtp1.linux-foundation.org>,
+       "linux-pm@lists.linux-foundation.org" 
+	<linux-pm@lists.linux-foundation.org>
+In-Reply-To: <20100527201439.6d0fd169@infradead.org>
+References: <1274928151-30919-1-git-send-email-lenb@kernel.org>
+	 <e099975ca65a7f6ac7f8bc3fee84d3e03893aa31.1274926772.git.len.brown@intel.com>
+	 <198450ec1600d9a7f55270dd4d44d6b55bc5b184.1274926772.git.len.brown@intel.com>
+	 <87ljb5l9d5.fsf@deeprootsystems.com>
+	 <20100527072207.2e783b1e@infradead.org> <4BFE86D4.60602@nokia.com>
+	 <20100527201439.6d0fd169@infradead.org>
+Content-Type: text/plain; charset="UTF-8"
+Organization: Deep Root Systems, LLC
+Date: Fri, 28 May 2010 10:27:32 -0700
+Message-ID: <1275067652.4507.192.camel@localhost>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.1 
 Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 28 May 2010 17:28:13.0911 (UTC) FILETIME=[26D87670:01CAFE8B]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 5/28/2010 1:16 PM, Arnd Bergmann wrote:
-> On Friday 28 May 2010, Chris Metcalf wrote:
->   
->> I looked at where inb() and friends are used, and although we can get
->> close to not requiring them for tile, it's not quite there, and will
->> need some further discussions on the various lists to clean up enough
->> for our purposes.  There are three problems that surface when I try to
->> remove the inb family:
->>
->> 1. The ide-io-std.c file sets up the default_tp_ops, which we override
->> in our IDE driver, but we still have to build this file, and it contains
->> calls to inb, etc.
->>     
-> It's only needed in the IDE layer though and will go away once you
-> move to an ATA driver, right?
->   
+On Thu, 2010-05-27 at 20:14 -0700, Arjan van de Ven wrote:
+> On Thu, 27 May 2010 17:51:00 +0300
+> Igor Stoppa <igor.stoppa@nokia.com> wrote:
+> 
+> > Hi,
+> > 
+> > 
+> > ext Arjan van de Ven wrote:
+> > 
+> > > it's really inconvenient to have such drivers hidden in the
+> > > architecture code; it's much more convenient for cpuidle developers
+> > > if they're all in one place.
+> > >   
+> > 
+> > why?
+> 
+> because you have all the users of your API in one place.
+> 
 
-That sounds plausible, though I haven't looked at what's involved with
-this yet.
+That's a rather x86-centric definition of "all".
 
--- 
-Chris Metcalf, Tilera Corp.
-http://www.tilera.com
+Are you suggesting we move all the embedded SoC specific CPUidle drivers
+to drivers/idle as well?
+
+Kevin
 
 
