@@ -1,126 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754225Ab0E2CwJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 May 2010 22:52:09 -0400
-Received: from mail-pz0-f204.google.com ([209.85.222.204]:59782 "EHLO
-	mail-pz0-f204.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751264Ab0E2CwF (ORCPT
+	id S1754789Ab0E2Cwg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 May 2010 22:52:36 -0400
+Received: from bosmailout19.eigbox.net ([66.96.184.19]:47454 "EHLO
+	bosmailout19.eigbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751264Ab0E2Cwc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 May 2010 22:52:05 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:reply-to:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=wbzTCmP48GkYRWiVqRiJerbjhKDVPp9k7S3V7cHnKfB3JZKzRm2ffb3zfJUyr/U/wX
-         UYZ1EJT4O9x4oVLHEkoK8eAowe8yMFruak0QxLyX/UHkfeUPsY2v5ofK0qjBynDxcPHv
-         /C4HcHjBoMtPV2VevF0IBIqfFE1aBf1INmXbA=
-Date: Fri, 28 May 2010 19:52:15 -0700
-From: mark gross <640e9920@gmail.com>
-To: Neil Brown <neilb@suse.de>
-Cc: Matthew Garrett <mjg59@srcf.ucam.org>, Greg KH <gregkh@suse.de>,
-       linux-doc@vger.kernel.org, Peter Zijlstra <peterz@infradead.org>,
-       Jesse Barnes <jbarnes@virtuousgeek.org>,
-       Andi Kleen <ak@linux.intel.com>,
-       Linux-pm mailing list <linux-pm@lists.linux-foundation.org>,
-       Len Brown <len.brown@intel.com>,
-       James Bottomley <James.Bottomley@suse.de>, tytso@mit.edu,
-       Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-       Kernel development list <linux-kernel@vger.kernel.org>,
-       Tejun Heo <tj@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
-       Wu Fengguang <fengguang.wu@intel.com>
-Subject: Re: [linux-pm] [PATCH 1/8] PM: Opportunistic suspend support.
-Message-ID: <20100529025215.GB11600@gvim.org>
-Reply-To: markgross@thegnar.org
-References: <Pine.LNX.4.44L0.1005251647530.1634-100000@iolanthe.rowland.org>
- <201005252344.37639.rjw@sisk.pl>
- <AANLkTimL5rU5lALezEZVCwdcZL85tVahhsTibdpq9s-Y@mail.gmail.com>
- <1274863342.5882.4850.camel@twins>
- <1274863987.5882.4892.camel@twins>
- <20100526124929.GA32580@srcf.ucam.org>
- <1274878665.27810.354.camel@twins>
- <20100526132051.GA1834@srcf.ucam.org>
- <20100527172354.43e46cef@notabene.brown>
+	Fri, 28 May 2010 22:52:32 -0400
+X-Greylist: delayed 1876 seconds by postgrey-1.27 at vger.kernel.org; Fri, 28 May 2010 22:52:32 EDT
+X-EN-OrigOutIP: 10.20.18.11
+X-EN-IMPSID: PEMD1e0010EKspE01EMD48
+Message-ID: <4C007A0F.6020304@jaysonking.com>
+Date: Fri, 28 May 2010 21:21:03 -0500
+From: "Jayson R. King" <dev@jaysonking.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.8) Gecko/20100301 Fedora/3.0.3-1.fc11 Thunderbird/3.0.3
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100527172354.43e46cef@notabene.brown>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: tytso@mit.edu
+CC: "Jayson R. King" <dev@jaysonking.com>, Stable team <stable@kernel.org>,
+       LKML <linux-kernel@vger.kernel.org>,
+       Greg Kroah-Hartman <gregkh@suse.de>,
+       "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+       Dave Chinner <david@fromorbit.com>,
+       Ext4 Developers List <linux-ext4@vger.kernel.org>,
+       Kay Diederichs <Kay.Diederichs@uni-konstanz.de>
+Subject: Re: [PATCH 2.6.27.y 1/3] ext4: Use our own write_cache_pages()
+References: <4C001888.8020006@jaysonking.com> <4C0018E1.5060007@jaysonking.com> <20100529004913.GL26177@thunk.org> <4C0070D8.8060500@jaysonking.com>
+In-Reply-To: <4C0070D8.8060500@jaysonking.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-EN-UserInfo: 06af1bc540adb20c3d2d7097199478a6:08dd1976e651f6e3791fbe97eaa5f898
+X-EN-AuthUser: jaysonking@jaysonking.com
+X-EN-OrigIP: 68.93.139.172
+X-EN-OrigHost: unknown
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 27, 2010 at 05:23:54PM +1000, Neil Brown wrote:
-> On Wed, 26 May 2010 14:20:51 +0100
-> Matthew Garrett <mjg59@srcf.ucam.org> wrote:
-> 
-> > On Wed, May 26, 2010 at 02:57:45PM +0200, Peter Zijlstra wrote:
-> > 
-> > > I fail to see why. In both cases the woken userspace will contact a
-> > > central governing task, either the kernel or the userspace suspend
-> > > manager, and inform it there is work to be done, and please don't
-> > > suspend now.
-> > 
-> > Thinking about this, you're right - we don't have to wait, but that does 
-> > result in another problem. Imagine we get two wakeup events 
-> > approximately simultaneously. In the kernel-level universe the kernel 
-> > knows when both have been handled. In the user-level universe, we may 
-> > have one task schedule, bump the count, handle the event, drop the count 
-> > and then we attempt a suspend again because the second event handler 
-> > hasn't had an opportunity to run yet. We'll then attempt a suspend and 
-> > immediately bounce back up. That's kind of wasteful, although it'd be 
-> > somewhat mitigated by checking that right at the top of suspend entry 
-> > and returning -EAGAIN or similar.
-> > 
-> 
-> (I'm coming a little late to this party, so excuse me if I say something that
-> has already been covered however...)
-> 
-> The above triggers a sequence of thoughts which (When they settled down) look
-> a bit like this.
-> 
-> At the hardware level, there is a thing that we could call a "suspend
-> blocker".  It is an interrupt (presumably level-triggered) that causes the
-> processor to come out of suspend, or not to go into it.
-> 
-> Maybe it makes sense to export a similar thing from the kernel to user-space.
-> When any event happens that would wake the device (and drivers need to know
-> about these already), it would present something to user-space to say that
-> the event happened.
-> 
-> When user-space processes the event, it clears the event indicator.
+On 05/28/2010 08:41 PM, Jayson R. King wrote:
+> On 05/28/2010 07:49 PM, tytso@mit.edu wrote:
+>> This doesn't fix a bug; it's to make it easy for Dave Chinner to make
+>> some changes to fix XFS's performance and to undo some ext4-specific
+>> changes to write_cache_pages(). I'm not sure there's a good reason to
+>> backport this to 2.6.27.y....
+>
+> The difference is that, 2.6.27's write_cache_pages() in page-writeback.c
+> still updates wbc->nr_to_write, since the patch which changed that
+> behavior was dropped from .27-rc2 due to the XFS regression it causes on
+> mainline.
 
-we did I proposed making the suspend enabling a oneshot type of thing
-and all sorts of weak arguments came spewing forth.  I honestly couldn't
-tell if I was reading valid input or fanboy BS.
+I meant, it was dropped from .27.47-rc2 stable. Sorry for any confusion.
 
---mgross
-
-
-> 
-> When there are no more current event indicators, userspace is allowed to
-> request a suspend.  Obviously this could fail as an event could happen at any
-> moment, but the same is true when the kernel asks the device to suspend, an
-> interrupt might happen immediately to stop it.  But in either case an event
-> will be reported.  So when userspace requests a suspend and it fails, it
-> will see events reported and so will wait for them to be handled.
-> 
-> I imagine a sysfs directory with files that appear when events are pending.
-> We could have some separate mechanism for user-space processes to request
-> that the suspend-daemon not suspend.  Then it suspends whenever there are no
-> pending requests from user-space or from the kernel.
-> 
-> The advantage of this model of suspend-blockers is that it is a close
-> analogue for something that already exists in hardware so it isn't really
-> creating new concepts, just giving the Linux virtual-machine features that
-> have proved themselves in physical machines.
-> 
-> The cost is that any wake-up event needs to not only be handled, but also
-> explicitly acknowledged by clearing the relevant suspend-blocker (i.e.
-> removing the file from sysfs, or whatever interface was ultimately chosen).
-> I'm hoping that isn't a big cost.
-> 
-> NeilBrown
-> _______________________________________________
-> linux-pm mailing list
-> linux-pm@lists.linux-foundation.org
-> https://lists.linux-foundation.org/mailman/listinfo/linux-pm
+> ext4 appears to want the behavior of write_cache_pages which
+> does not update wbc->nr_to_write. This write_cache_pages_da() does what
+> ext4 wants, without introducing the XFS regression. So I believe it is
+> needed.
+>
+> Did I mis-judge?
+>
+> Rgds,
+>
+> Jayson
+>
