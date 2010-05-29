@@ -1,72 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755119Ab0E2Ato (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 May 2010 20:49:44 -0400
-Received: from thunk.org ([69.25.196.29]:43669 "EHLO thunker.thunk.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751442Ab0E2Atl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 May 2010 20:49:41 -0400
-Date: Fri, 28 May 2010 20:49:13 -0400
-From: tytso@mit.edu
-To: "Jayson R. King" <dev@jaysonking.com>
-Cc: Stable team <stable@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-       Greg Kroah-Hartman <gregkh@suse.de>,
-       "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-       Dave Chinner <david@fromorbit.com>,
-       Ext4 Developers List <linux-ext4@vger.kernel.org>,
-       Kay Diederichs <Kay.Diederichs@uni-konstanz.de>
-Subject: Re: [PATCH 2.6.27.y 1/3] ext4: Use our own write_cache_pages()
-Message-ID: <20100529004913.GL26177@thunk.org>
-Mail-Followup-To: tytso@mit.edu, "Jayson R. King" <dev@jaysonking.com>,
-	Stable team <stable@kernel.org>,
-	LKML <linux-kernel@vger.kernel.org>,
-	Greg Kroah-Hartman <gregkh@suse.de>,
-	"Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-	Dave Chinner <david@fromorbit.com>,
-	Ext4 Developers List <linux-ext4@vger.kernel.org>,
-	Kay Diederichs <Kay.Diederichs@uni-konstanz.de>
-References: <4C001888.8020006@jaysonking.com>
- <4C0018E1.5060007@jaysonking.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4C0018E1.5060007@jaysonking.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on thunker.thunk.org); SAEximRunCond expanded to false
+	id S1755657Ab0E2BB3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 May 2010 21:01:29 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:57944 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754097Ab0E2BB0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 May 2010 21:01:26 -0400
+X-Authority-Analysis: v=1.1 cv=EbJB9AiBqsyZPMVATYsj78CfMiBiOs+4P7kRKNQkfg0= c=1 sm=0 a=9Iazo0IoXQQA:10 a=yQWWgrYGNuUA:10 a=7U3hwN5JcxgA:10 a=Q9fys5e9bTEA:10 a=gMqfjgEr1zLu/65IO0LwxA==:17 a=3ndwz-Ti1iAv6WISMi0A:9 a=W6HHTXRjgkDE3RnQHKnRE0RGDBUA:4 a=PUjeQqilurYA:10 a=0kPLrQdw3YYA:10 a=EeVtCjB_Kj1sCrb3:21 a=cCgeKfN588VDJe5k:21 a=gMqfjgEr1zLu/65IO0LwxA==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.89.75
+Subject: [BUG] kacpi_notify goes into an infinite loop (luckly it calls
+ cond_resched)
+From: Steven Rostedt <rostedt@goodmis.org>
+Reply-To: rostedt@goodmis.org
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: Thomas Renninger <trenn@suse.de>, clarkt@cnsp.com,
+       Zhang Rui <rui.zhang@intel.com>, Len Brown <len.brown@intel.com>,
+       Andrew Morton <akpm@linux-foundation.org>
+Content-Type: text/plain; charset="ISO-8859-15"
+Organization: Kihon Technologies Inc.
+Date: Fri, 28 May 2010 21:01:22 -0400
+Message-ID: <1275094882.22648.607.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 28, 2010 at 02:26:25PM -0500, Jayson R. King wrote:
-> From: Theodore Ts'o <tytso@mit.edu>
-> Date: Sun May 16 18:00:00 2010 -0400
-> Subject: ext4: Use our own write_cache_pages()
-> 
-> commit 8e48dcfbd7c0892b4cfd064d682cc4c95a29df32 upstream.
-> 
-> Make a copy of write_cache_pages() for the benefit of
-> ext4_da_writepages().  This allows us to simplify the code some, and
-> will allow us to further customize the code in future patches.
-> 
-> There are some nasty hacks in write_cache_pages(), which Linus has
-> (correctly) characterized as vile.  I've just copied it into
-> write_cache_pages_da(), without trying to clean those bits up lest I
-> break something in the ext4's delalloc implementation, which is a bit
-> fragile right now.  This will allow Dave Chinner to clean up
-> write_cache_pages() in mm/page-writeback.c, without worrying about
-> breaking ext4.  Eventually write_cache_pages_da() will go away when I
-> rewrite ext4's delayed allocation and create a general
-> ext4_writepages() which is used for all of ext4's writeback.  Until
-> now this is the lowest risk way to clean up the core
-> write_cache_pages() function.
-> 
-> Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
+I just replaced Windows with F12 on my wife's computer, to have nothing
+but issues. But anyway, one of the issues I had on this box was in
+vanilla linux kernel 2.6.34 (all the fedora kernels had other issues),
+the kacpi_notify would go into an infinite loop.
 
-This doesn't fix a bug; it's to make it easy for Dave Chinner to make
-some changes to fix XFS's performance and to undo some ext4-specific
-changes to write_cache_pages().  I'm not sure there's a good reason to
-backport this to 2.6.27.y....
+I debugged it a bit with ftrace and saw that the kacpi_notify workqueue
+was constantly requeuing itself (thanks to the workqueue trace events).
 
-					- Ted
+I bisected this, and it came down to this change:
+
+commit fa80945269f312bc609e8384302f58b03c916e12
+Author: Thomas Renninger <trenn@suse.de>
+Date:   Sat Feb 20 11:44:27 2010 +0100
+
+    ACPI thermal: Don't invalidate thermal zone if critical trip point is bad
+
+
+I checked out 2.6.34 again, and reverted this patch, and the problem
+went away.
+
+The box is an old Compaq Presario that I bought in 2003 or 2004.
+
+-- Steve
+
+
