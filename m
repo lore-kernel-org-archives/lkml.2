@@ -1,56 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755657Ab0E2BB3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 May 2010 21:01:29 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:57944 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754097Ab0E2BB0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 May 2010 21:01:26 -0400
-X-Authority-Analysis: v=1.1 cv=EbJB9AiBqsyZPMVATYsj78CfMiBiOs+4P7kRKNQkfg0= c=1 sm=0 a=9Iazo0IoXQQA:10 a=yQWWgrYGNuUA:10 a=7U3hwN5JcxgA:10 a=Q9fys5e9bTEA:10 a=gMqfjgEr1zLu/65IO0LwxA==:17 a=3ndwz-Ti1iAv6WISMi0A:9 a=W6HHTXRjgkDE3RnQHKnRE0RGDBUA:4 a=PUjeQqilurYA:10 a=0kPLrQdw3YYA:10 a=EeVtCjB_Kj1sCrb3:21 a=cCgeKfN588VDJe5k:21 a=gMqfjgEr1zLu/65IO0LwxA==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.89.75
-Subject: [BUG] kacpi_notify goes into an infinite loop (luckly it calls
- cond_resched)
-From: Steven Rostedt <rostedt@goodmis.org>
-Reply-To: rostedt@goodmis.org
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Thomas Renninger <trenn@suse.de>, clarkt@cnsp.com,
-       Zhang Rui <rui.zhang@intel.com>, Len Brown <len.brown@intel.com>,
-       Andrew Morton <akpm@linux-foundation.org>
-Content-Type: text/plain; charset="ISO-8859-15"
-Organization: Kihon Technologies Inc.
-Date: Fri, 28 May 2010 21:01:22 -0400
-Message-ID: <1275094882.22648.607.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	id S1755788Ab0E2BHN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 May 2010 21:07:13 -0400
+Received: from thunk.org ([69.25.196.29]:36616 "EHLO thunker.thunk.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754783Ab0E2BHJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 May 2010 21:07:09 -0400
+Date: Fri, 28 May 2010 21:06:57 -0400
+From: tytso@mit.edu
+To: "Jayson R. King" <dev@jaysonking.com>
+Cc: Stable team <stable@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+       Greg Kroah-Hartman <gregkh@suse.de>,
+       "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+       Dave Chinner <david@fromorbit.com>,
+       Ext4 Developers List <linux-ext4@vger.kernel.org>,
+       Kay Diederichs <Kay.Diederichs@uni-konstanz.de>
+Subject: Re: [PATCH 2.6.27.y 2/3] ext4: Fix file fragmentation during large
+ file write.
+Message-ID: <20100529010657.GM26177@thunk.org>
+Mail-Followup-To: tytso@mit.edu, "Jayson R. King" <dev@jaysonking.com>,
+	Stable team <stable@kernel.org>,
+	LKML <linux-kernel@vger.kernel.org>,
+	Greg Kroah-Hartman <gregkh@suse.de>,
+	"Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+	Dave Chinner <david@fromorbit.com>,
+	Ext4 Developers List <linux-ext4@vger.kernel.org>,
+	Kay Diederichs <Kay.Diederichs@uni-konstanz.de>
+References: <4C001888.8020006@jaysonking.com>
+ <4C001901.1070207@jaysonking.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4C001901.1070207@jaysonking.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on thunker.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I just replaced Windows with F12 on my wife's computer, to have nothing
-but issues. But anyway, one of the issues I had on this box was in
-vanilla linux kernel 2.6.34 (all the fedora kernels had other issues),
-the kacpi_notify would go into an infinite loop.
+On Fri, May 28, 2010 at 02:26:57PM -0500, Jayson R. King wrote:
+> From: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
+> Date: Thu Oct 16 10:10:36 2008 -0400
+> Subject: ext4: Fix file fragmentation during large file write.
+> 
+> commit 22208dedbd7626e5fc4339c417f8d24cc21f79d7 upstream.
+> 
+> The range_cyclic writeback mode uses the address_space writeback_index
+> as the start index for writeback.  With delayed allocation we were
+> updating writeback_index wrongly resulting in highly fragmented file.
+> This patch reduces the number of extents reduced from 4000 to 27 for a
+> 3GB file.
 
-I debugged it a bit with ftrace and saw that the kacpi_notify workqueue
-was constantly requeuing itself (thanks to the workqueue trace events).
+This isn't a critical bug fix either.  I don't really care a whole
+lot, since I don't plan to support ext4 with all of these patches but
+if you haven't been doing a full set of testing with these patches,
+I'd be very concerned about whether ext4 would be stable after
+applying this patch series.
 
-I bisected this, and it came down to this change:
+What sort of testing _have_ you done?
 
-commit fa80945269f312bc609e8384302f58b03c916e12
-Author: Thomas Renninger <trenn@suse.de>
-Date:   Sat Feb 20 11:44:27 2010 +0100
-
-    ACPI thermal: Don't invalidate thermal zone if critical trip point is bad
-
-
-I checked out 2.6.34 again, and reverted this patch, and the problem
-went away.
-
-The box is an old Compaq Presario that I bought in 2003 or 2004.
-
--- Steve
-
+						- Ted
 
