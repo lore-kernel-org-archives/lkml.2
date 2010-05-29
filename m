@@ -1,63 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754789Ab0E2Cwg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 May 2010 22:52:36 -0400
-Received: from bosmailout19.eigbox.net ([66.96.184.19]:47454 "EHLO
-	bosmailout19.eigbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751264Ab0E2Cwc (ORCPT
+	id S1754599Ab0E2DKe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 May 2010 23:10:34 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:47662 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751264Ab0E2DKa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 May 2010 22:52:32 -0400
-X-Greylist: delayed 1876 seconds by postgrey-1.27 at vger.kernel.org; Fri, 28 May 2010 22:52:32 EDT
-X-EN-OrigOutIP: 10.20.18.11
-X-EN-IMPSID: PEMD1e0010EKspE01EMD48
-Message-ID: <4C007A0F.6020304@jaysonking.com>
-Date: Fri, 28 May 2010 21:21:03 -0500
-From: "Jayson R. King" <dev@jaysonking.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.8) Gecko/20100301 Fedora/3.0.3-1.fc11 Thunderbird/3.0.3
-MIME-Version: 1.0
-To: tytso@mit.edu
-CC: "Jayson R. King" <dev@jaysonking.com>, Stable team <stable@kernel.org>,
+	Fri, 28 May 2010 23:10:30 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:reply-to:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=IEPbayRBd1TgbAc1dCsgzIVUNXzpeJNrNyxGd35cNH0coWkjlaxIevagWH8AKREk8G
+         qeeJYFj55vKHj6zjb6Q/gWu+uazBfaQcy1d9CRptiY5JG4Ynx8l9R56Iw16wGSi1IPgd
+         noMB1NjDmCsq5wszdqi7EvPCTBP7pi4xNxVgc=
+Date: Fri, 28 May 2010 20:10:38 -0700
+From: mark gross <640e9920@gmail.com>
+To: Alan Stern <stern@rowland.harvard.edu>
+Cc: Thomas Gleixner <tglx@linutronix.de>,
+       Peter Zijlstra <peterz@infradead.org>, Paul@smtp1.linux-foundation.org,
        LKML <linux-kernel@vger.kernel.org>,
-       Greg Kroah-Hartman <gregkh@suse.de>,
-       "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-       Dave Chinner <david@fromorbit.com>,
-       Ext4 Developers List <linux-ext4@vger.kernel.org>,
-       Kay Diederichs <Kay.Diederichs@uni-konstanz.de>
-Subject: Re: [PATCH 2.6.27.y 1/3] ext4: Use our own write_cache_pages()
-References: <4C001888.8020006@jaysonking.com> <4C0018E1.5060007@jaysonking.com> <20100529004913.GL26177@thunk.org> <4C0070D8.8060500@jaysonking.com>
-In-Reply-To: <4C0070D8.8060500@jaysonking.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-EN-UserInfo: 06af1bc540adb20c3d2d7097199478a6:08dd1976e651f6e3791fbe97eaa5f898
-X-EN-AuthUser: jaysonking@jaysonking.com
-X-EN-OrigIP: 68.93.139.172
-X-EN-OrigHost: unknown
+       Florian Mickler <florian@mickler.org>, felipe.balbi@nokia.com,
+       Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
+       Linux PM <linux-pm@lists.linux-foundation.org>,
+       Alan Cox <alan@lxorguk.ukuu.org.uk>
+Subject: Re: [linux-pm] [PATCH 0/8] Suspend block api (version 8)
+Message-ID: <20100529031038.GD11600@gvim.org>
+Reply-To: markgross@thegnar.org
+References: <alpine.LFD.2.00.1005271545190.3032@localhost.localdomain>
+ <Pine.LNX.4.44L0.1005271053420.3239-100000@iolanthe.rowland.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <Pine.LNX.4.44L0.1005271053420.3239-100000@iolanthe.rowland.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/28/2010 08:41 PM, Jayson R. King wrote:
-> On 05/28/2010 07:49 PM, tytso@mit.edu wrote:
->> This doesn't fix a bug; it's to make it easy for Dave Chinner to make
->> some changes to fix XFS's performance and to undo some ext4-specific
->> changes to write_cache_pages(). I'm not sure there's a good reason to
->> backport this to 2.6.27.y....
->
-> The difference is that, 2.6.27's write_cache_pages() in page-writeback.c
-> still updates wbc->nr_to_write, since the patch which changed that
-> behavior was dropped from .27-rc2 due to the XFS regression it causes on
-> mainline.
+On Thu, May 27, 2010 at 11:06:23AM -0400, Alan Stern wrote:
+> If people don't mind, here is a greatly simplified summary of the 
+> comments and objections I have seen so far on this thread:
+> 
+> 	The in-kernel suspend blocker implementation is okay, even
+> 	beneficial.
 
-I meant, it was dropped from .27.47-rc2 stable. Sorry for any confusion.
+Only if they only block.  You get into trouble when the in kernel
+un-block opperation triggers an implicit suspend. 
 
-> ext4 appears to want the behavior of write_cache_pages which
-> does not update wbc->nr_to_write. This write_cache_pages_da() does what
-> ext4 wants, without introducing the XFS regression. So I believe it is
-> needed.
->
-> Did I mis-judge?
->
-> Rgds,
->
-> Jayson
->
+
+> 
+> 	Opportunistic suspends are okay.
+> 
+> 	The proposed userspace API is too Android-specific.
+> 
+> 	More kernel mechanisms are needed for expressing processes'
+> 	latency requirements.
+
+True.
+
+--mgross
+
+> 
+> The last one is obviously a longer-term issue, so let's ignore it for
+> now.  That leaves as the only point of contention the userspace
+> suspend-blocker API.
+> 
+> The proposal I made a couple of days ago removes this API and leaves
+> the other things (i.e., the in-kernel suspend blockers and
+> opportunistic suspend) intact.  In place of the userspace
+> kernel-blocker API, Android would have to implement a power manager
+> process that would essentially juggle all the latency requirements in
+> userspace.
+> 
+> Communication between the power manager process and the kernel would be 
+> limited to adding a new "opportunistic" entry to /sys/power/state -- 
+> something which could well be useful in its own right.  Even if this 
+> API turns out not to be good, it's simple enough that it could be 
+> removed pretty easily.
+> 
+> This answers Alan Cox's (and other's) desire not to implement a 
+> questionable or special-purpose API.  And it also answers Thomas's 
+> desire to make scheduling decisions based on latency requirements 
+> (although the answer is simply to punt all these decisions out of the 
+> kernel and into userspace -- which is reasonable for now since the 
+> alternative would require a long-term kernel development effort).
+> 
+> Indeed, having a power manager thread may well turn out to be a useful
+> thing -- but even if it doesn't, this scheme minimizes the damage while
+> still allowing the Android platform to use a vanilla kernel with only
+> limited modifications to their userspace.
+> 
+> Alan Stern
+> 
+> _______________________________________________
+> linux-pm mailing list
+> linux-pm@lists.linux-foundation.org
+> https://lists.linux-foundation.org/mailman/listinfo/linux-pm
