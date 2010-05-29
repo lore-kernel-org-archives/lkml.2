@@ -1,47 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757432Ab0E2OtA (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 29 May 2010 10:49:00 -0400
-Received: from ch-smtp02.sth.basefarm.net ([80.76.149.213]:43533 "EHLO
-	ch-smtp02.sth.basefarm.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756634Ab0E2Os5 (ORCPT
+	id S1757460Ab0E2PC5 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 29 May 2010 11:02:57 -0400
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:34001 "EHLO
+	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1755826Ab0E2PCz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 29 May 2010 10:48:57 -0400
-Message-ID: <4C012946.5030806@euromail.se>
-Date: Sat, 29 May 2010 16:48:38 +0200
-From: Henrik Rydberg <rydberg@euromail.se>
-User-Agent: Thunderbird 2.0.0.24 (X11/20100411)
-MIME-Version: 1.0
-To: Jean Delvare <khali@linux-fr.org>
-CC: Christopher Heiny <cheiny@synaptics.com>,
-       Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-       Linux Kernel <linux-kernel@vger.kernel.org>,
-       Linux Input <linux-input@vger.kernel.org>,
-       Allie Xiong <axiong@synaptics.com>,
-       William Manson <wmanson@synaptics.com>
-Subject: Re: [RFC PATCH 0/1] input/touchscreen: Synaptics Touchscreen Driver
-References: <1275092980-29208-1-git-send-email-cheiny@synaptics.com>	<4C00C84E.9020700@euromail.se> <20100529120155.476a87d5@hyperion.delvare>
-In-Reply-To: <20100529120155.476a87d5@hyperion.delvare>
-Content-Type: text/plain; charset=ISO-8859-1
+	Sat, 29 May 2010 11:02:55 -0400
+Date: Sat, 29 May 2010 16:09:15 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Brian Swetland <swetland@google.com>
+Cc: Alan Stern <stern@rowland.harvard.edu>,
+       Florian Mickler <florian@mickler.org>,
+       Peter Zijlstra <peterz@infradead.org>,
+       "Rafael J. Wysocki" <rjw@sisk.pl>,
+       Linux PM <linux-pm@lists.linux-foundation.org>,
+       Arve =?ISO-8859-14?B?SGr4bm5lduVn?= <arve@android.com>,
+       Matthew Garrett <mjg59@srcf.ucam.org>,
+       Thomas Gleixner <tglx@linutronix.de>,
+       LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>
+Subject: Re: [linux-pm] [PATCH 0/8] Suspend block api (version 8)
+Message-ID: <20100529160915.051ab19f@lxorguk.ukuu.org.uk>
+In-Reply-To: <AANLkTimyLsldXoZ_egjybwS9kE_OcxsOuZwC0F-C2HjY@mail.gmail.com>
+References: <20100529131810.5bb51bdd@schatten.dmk.lab>
+	<Pine.LNX.4.44L0.1005290941060.30763-100000@netrider.rowland.org>
+	<AANLkTimyLsldXoZ_egjybwS9kE_OcxsOuZwC0F-C2HjY@mail.gmail.com>
+X-Mailer: Claws Mail 3.7.5 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: 83.248.196.134
-X-Scan-Result: No virus found in message 1OINLF-0003yQ-7o.
-X-Scan-Signature: ch-smtp02.sth.basefarm.net 1OINLF-0003yQ-7o a21a61cb584a8e6aa9be63e71138a35d
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Jean Delvare wrote:
-> On Sat, 29 May 2010 09:54:54 +0200, Henrik Rydberg wrote:
->> Christopher Heiny wrote:
->>> This patch adds an initial driver supporting Synaptics ClearPad
->>> touchscreens that use the RMI4 protocol, as defined here:
->> Did the actual patch go astray? I cannot find it on the mailing lists.
-> 
-> I received it, at least. It was pretty large, maybe got filtered out on
-> some lists because of this.
-> 
+> Could we have write(powerstate_fd, "qos",3) block until all
+> QOS_EVENTUALLY constraints are lifted or the system successfully
+> suspends and resumes or a signal arrives?
 
-Yes, probably. Got it via mail, thank you Christopher.
+Yes - and you can then use alarm() or similar to do timeouts (or write
+the timeout to the fd ?)
 
-Henrik
