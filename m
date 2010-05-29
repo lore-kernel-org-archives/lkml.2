@@ -1,74 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755394Ab0E2IDk (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 29 May 2010 04:03:40 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:53998 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753184Ab0E2IDf (ORCPT
+	id S1755791Ab0E2IEC (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 29 May 2010 04:04:02 -0400
+Received: from mail-ww0-f46.google.com ([74.125.82.46]:50772 "EHLO
+	mail-ww0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753818Ab0E2IDt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 29 May 2010 04:03:35 -0400
+	Sat, 29 May 2010 04:03:49 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=subject:from:reply-to:to:cc:in-reply-to:references:content-type
-         :date:message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=svk5mRCWLQ1jk4I4mQdCTYSFtKp2OUXdKgjzU22w6PADqQPuJleyeXZj1GjmHeZMor
-         bn8J9Cjx6Eqj6li9vvCT6/PpJ4sc7B4ffxECB/tP814uKBN/3V9w5Yoaz3Zy/6i0nL1D
-         txxc4uNkhfM7NMS6mc5u4+Q6dfXmD+TCAJUvc=
-Subject: Re: [PATCHv4 17/17] writeback: lessen sync_supers wakeup count
-From: Artem Bityutskiy <dedekind1@gmail.com>
-Reply-To: dedekind1@gmail.com
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Al Viro <viro@ZenIV.linux.org.uk>, LKML <linux-kernel@vger.kernel.org>,
-       Jens Axboe <jens.axboe@oracle.com>, linux-fsdevel@vger.kernel.org
-In-Reply-To: <20100528132953.7af88c08.akpm@linux-foundation.org>
-References: <1274795352-3551-1-git-send-email-dedekind1@gmail.com>
-	 <1274795352-3551-18-git-send-email-dedekind1@gmail.com>
-	 <20100528132953.7af88c08.akpm@linux-foundation.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Sat, 29 May 2010 11:03:30 +0300
-Message-Id: <1275120210.2668.11.camel@localhost.localdomain>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.26.3 (2.26.3-1.fc11) 
-Content-Transfer-Encoding: 8bit
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
+        b=QSJ74X9iX4x5ZJp9VlEuZy52KqSijeURyN0Y3QbLexa9Y7KU/orgHkTVcrwDvDu63x
+         8f0v1RYFLW0bw+QAnucWYcPxqdKi76FZE09h8bdvYd2I6s+jzOvJBOPBTqZ79JZHGsS0
+         9R43xrGYMF6TOOpTVZ70YsWdjIys5k/+nJ0LM=
+MIME-Version: 1.0
+In-Reply-To: <alpine.OSX.2.00.1005290312230.691@localhost>
+References: <l2k10f740e81004151234t3004275az36e7873493067a8a@mail.gmail.com>
+	<alpine.OSX.2.00.1004161206300.271@localhost>
+	<AANLkTikexlmuunBQ-ydNaD8fkKcLmrsfJSEgvyMJdNqU@mail.gmail.com>
+	<alpine.OSX.2.00.1005290312230.691@localhost>
+Date: Sat, 29 May 2010 10:03:47 +0200
+X-Google-Sender-Auth: DgQ_NriXTLRNlx9wmiLmFozcyYk
+Message-ID: <AANLkTilLXOSb2P_m4uUubmJar2VMFXizzpa_mQ1j8GPz@mail.gmail.com>
+Subject: Re: [PATCH] net: mac8390 - Sort out memory/MMIO accesses and casts 
+	(was: Re: drivers/net/mac8390.c: Remove useless memcpy casting)
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Finn Thain <fthain@telegraphics.com.au>
+Cc: Joe Perches <joe@perches.com>, "David S. Miller" <davem@davemloft.net>,
+       netdev@vger.kernel.org,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       "Linux/m68k" <linux-m68k@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2010-05-28 at 13:29 -0700, Andrew Morton wrote:
-> void mark_sb_dirty(struct super_block *sb)
-> {
-> 	sb->s_dirty = 1;
-> 
-> 	if (!supers_timer_armed) {
-> 		spin_lock(&supers_timer_lock);
-> 		if (!supers_timer_armed) {
-> 			bdi_arm_supers_timer();
-> 			supers_timer_armed = 1;
-> 		}
-> 	} else if (supers_timer_armed == -1)
-> 		spin_lock(&supers_timer_lock);
-> 		if (supers_timer_armed == -1)
-> 			supers_timer_armed = 1;
-> 		spin_unlock(&supers_timer_lock);
-> 	}
-> }
-> 
-> I didn't try very hard there, but you get the idea: examine the state
-> before taking that expensive global spinlock, so we only end up taking
-> the lock once per five seconds, rather than once per possible
-> superblock dirtying.  That's like a six-orders-of-magnitude reduction
-> in locking frequency, which is worth putting some effort into.
+On Fri, May 28, 2010 at 19:21, Finn Thain <fthain@telegraphics.com.au> wrote:
+> On Sun, 23 May 2010, Geert Uytterhoeven wrote:
+>> >> But here's a better solution. I do not have the hardware to test it,
+>> >> though. Finn, does it {look OK,work}?
+>> >
+>> > It looks fine. I can't test it right now, but I will do so when I get
+>> > the opportunity.
+>>
+>> Any news from the test front?
+>
+> This is commit ba0f916ca7ac79356e2ed32a85c3aa8255b104e7, right?
 
-Andrew, thanks for review!
+Yep.
 
-I just did not consider spinlock to be expensive because I thought that
-marking superblock as dirty is a relatively rare operation. And my small
-experiments kind of confirmed that.
+> If so, it tests OK here.
 
-But  Nick suggested a good locking scheme which uses only smp_mb() in
-this thread, which I am going to stick with.
+Thanks for testing!
 
--- 
-Best Regards,
-Artem Bityutskiy (Артём Битюцкий)
+Gr{oetje,eeting}s,
 
+						Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+							    -- Linus Torvalds
