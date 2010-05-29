@@ -1,41 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754322Ab0E2Hzu (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 29 May 2010 03:55:50 -0400
-Received: from ch-smtp01.sth.basefarm.net ([80.76.149.212]:47938 "EHLO
-	ch-smtp01.sth.basefarm.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753018Ab0E2Hzs (ORCPT
+	id S1754873Ab0E2H7j (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 29 May 2010 03:59:39 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:50182 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753818Ab0E2H7f (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 29 May 2010 03:55:48 -0400
-Message-ID: <4C00C84E.9020700@euromail.se>
-Date: Sat, 29 May 2010 09:54:54 +0200
-From: Henrik Rydberg <rydberg@euromail.se>
-User-Agent: Thunderbird 2.0.0.24 (X11/20100411)
-MIME-Version: 1.0
-To: Christopher Heiny <cheiny@synaptics.com>
-CC: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-       Jean Delvare <khali@linux-fr.org>,
-       Linux Kernel <linux-kernel@vger.kernel.org>,
-       Linux Input <linux-input@vger.kernel.org>,
-       Allie Xiong <axiong@synaptics.com>,
-       William Manson <wmanson@synaptics.com>
-Subject: Re: [RFC PATCH 0/1] input/touchscreen: Synaptics Touchscreen Driver
-References: <1275092980-29208-1-git-send-email-cheiny@synaptics.com>
-In-Reply-To: <1275092980-29208-1-git-send-email-cheiny@synaptics.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: 83.248.196.134
-X-Scan-Result: No virus found in message 1OIGsh-0005Z1-4n.
-X-Scan-Signature: ch-smtp01.sth.basefarm.net 1OIGsh-0005Z1-4n a89346b286857ab20c8a9f62009c803d
+	Sat, 29 May 2010 03:59:35 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:reply-to:to:cc:in-reply-to:references:content-type
+         :date:message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=UIZgw4fiw7CDfTW7yvkOasquxiFEorg/IJD153hxqeHWjClZEXPLSg4sBvAD2Yp9wM
+         0guKW7K0Pk4K7Rx2LvnKxpXl/QflK3AGZxcRfV6HIO9zV1jRab6roAzgeaMDeeIjsWpr
+         0TW+tl0HE/F8IMv2WXpdeptfNNF19uHi3rjDg=
+Subject: Re: [PATCHv4 01/17] VFS: introduce helpers for the s_dirty flag
+From: Artem Bityutskiy <dedekind1@gmail.com>
+Reply-To: dedekind1@gmail.com
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Al Viro <viro@ZenIV.linux.org.uk>, LKML <linux-kernel@vger.kernel.org>,
+       Jens Axboe <jens.axboe@oracle.com>, linux-fsdevel@vger.kernel.org,
+       Roman Zippel <zippel@linux-m68k.org>,
+       "Tigran A. Aivazian" <tigran@aivazian.fsnet.co.uk>,
+       Chris Mason <chris.mason@oracle.com>,
+       Boaz Harrosh <bharrosh@panasas.com>, linux-ext4@vger.kernel.org,
+       "Theodore Ts'o" <tytso@mit.edu>,
+       OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>,
+       David Woodhouse <dwmw2@infradead.org>, reiserfs-devel@vger.kernel.org,
+       Jan Kara <jack@suse.cz>, Evgeniy Dushistov <dushistov@mail.ru>
+In-Reply-To: <20100528132318.0783675a.akpm@linux-foundation.org>
+References: <1274795352-3551-1-git-send-email-dedekind1@gmail.com>
+	 <1274795352-3551-2-git-send-email-dedekind1@gmail.com>
+	 <20100528132318.0783675a.akpm@linux-foundation.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Sat, 29 May 2010 10:59:28 +0300
+Message-Id: <1275119968.2668.7.camel@localhost.localdomain>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.26.3 (2.26.3-1.fc11) 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Christopher Heiny wrote:
-> This patch adds an initial driver supporting Synaptics ClearPad
-> touchscreens that use the RMI4 protocol, as defined here:
+On Fri, 2010-05-28 at 13:23 -0700, Andrew Morton wrote:
+> > +static inline void mark_sb_dirty(struct super_block *sb)
+> > +{
+> > +	sb->s_dirt = 1;
+> > +}
+> > +static inline void mark_sb_clean(struct super_block *sb)
+> > +{
+> > +	sb->s_dirt = 0;
+> > +}
+> > +static inline int is_sb_dirty(struct super_block *sb)
+> > +{
+> > +	return sb->s_dirt;
+> > +}
+> 
+> A more conventional and superior naming scheme is
+> subsystemid_specific_function_identifier().  eg, bio_add_page() instead
+> of add_page_to_bio().
+> 
+> So these want to be sb_mark_dirty(), etc.
+> 
+> Being very old code written by very yound people, the VFS kinda ignores
+> that convention, but it doesn't hurt to use it for new code.
+> 
+> Feel free to ignore me if that's too much of a PITA ;)
 
-Did the actual patch go astray? I cannot find it on the mailing lists.
+Sure I'll re-name them, thanks!
 
-Henrik
+-- 
+Best Regards,
+Artem Bityutskiy (Артём Битюцкий)
 
