@@ -1,47 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756070Ab0E2JHS (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 29 May 2010 05:07:18 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:40254 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753409Ab0E2JHL (ORCPT
+	id S1755758Ab0E2JQA (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 29 May 2010 05:16:00 -0400
+Received: from mail-px0-f174.google.com ([209.85.212.174]:34658 "EHLO
+	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752255Ab0E2JP5 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 29 May 2010 05:07:11 -0400
-Date: Sat, 29 May 2010 05:07:08 -0400
-From: Christoph Hellwig <hch@infradead.org>
-To: Al Viro <viro@ZenIV.linux.org.uk>
-Cc: Sage Weil <sage@newdream.net>, linux-kernel@vger.kernel.org,
-       linux-fsdevel@vger.kernel.org
-Subject: Re: [git pull] vfs pile, part 2
-Message-ID: <20100529090708.GA20606@infradead.org>
-References: <20100528155102.GK31073@ZenIV.linux.org.uk> <Pine.LNX.4.64.1005281221090.27944@cobra.newdream.net> <20100528194753.GL31073@ZenIV.linux.org.uk>
+	Sat, 29 May 2010 05:15:57 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:reply-to:in-reply-to:references:from:date:message-id
+         :subject:to:cc:content-type:content-transfer-encoding;
+        b=RWDSM8xx07zExHPKtyCSbot9Du7RaM4ms86BS5u0oEKIb6jB90E+RThIPbE+wxt6Vh
+         rMrJDtMdz7BCJp4JOn0G/PG68s5V9bker8jnBL0ldcQwBWiY8VKYsT8pMvQ6gVtrCa7+
+         Yis1IzRrqMpmTF0WUjwdjYey4wclZ2cmor6uU=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100528194753.GL31073@ZenIV.linux.org.uk>
-User-Agent: Mutt/1.5.19 (2009-01-05)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+Reply-To: axel.lin@gmail.com
+In-Reply-To: <201005280745.06299.oneukum@suse.de>
+References: <1275017311.11371.2.camel@mola> <201005280745.06299.oneukum@suse.de>
+From: Axel Lin <axel.lin@gmail.com>
+Date: Sat, 29 May 2010 17:15:37 +0800
+Message-ID: <AANLkTin9wWWz_P9coqeIwux1js4-2YYjtTvRQktCfZCc@mail.gmail.com>
+Subject: Re: [PATCH] cdc-acm: fix resource reclaim in error path of acm_probe
+To: Oliver Neukum <oneukum@suse.de>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>,
+       Oliver Neukum <oliver@neukum.name>, Greg Kroah-Hartman <gregkh@suse.de>,
+       Alan Cox <alan@linux.intel.com>,
+       Francesco Lavra <francescolavra@interfree.it>,
+       Julian Calaby <julian.calaby@gmail.com>, linux-usb@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 28, 2010 at 08:47:53PM +0100, Al Viro wrote:
-> My apologies, I thought you'd been Cc'd on the discussions with Ian concerning
-> that stuff, but...
-> 
-> The bottom line: "autofs4: always use lookup for lookup" is needed for them
-> and it had to be reverted since it'd been FUBAR.
-> 
-> Details: we really, *really* can not do things in ->d_revalidate() and count
-> on ->lookup() to come and finish them.  Think for a minute and you'll see why -
-> between these two calls we allocate a dentry to pass to ->lookup().  What
-> happens if that allocation fails?
-> 
-> And without that patch your stuff breaks autofs4.  So it's waiting for the
-> ->d_revalidate() interface redesign.  Hopefully in the coming cycle...
+2010/5/28 Oliver Neukum <oneukum@suse.de>:
+> Am Freitag, 28. Mai 2010 05:28:31 schrieb Axel Lin:
+>> This patch fixes resource reclaim in error path of acm_probe:
+>> 1. In the case of "out of memory (write urbs usb_alloc_urb)",
+>> usb_alloc_urb may fail in any iteration of the for loop.
+>> Current implementation does not properly free allocated snd->urb.
+>
+> Yes.
+>
+>> 2. In the case of device_create_file(&intf->dev,&dev_attr_iCountryCodeRelDate)
+>> fail, acm->country_codes is kfreed. As a result, device_remove_file for
+>> dev_attr_wCountryCodes will not be executed in acm_disconnect.
+>
+> Yes.
+>
+>> 3. This patch also improves the error handling by only reclaim successfully
+>> allocated resources instead of iterate over all entries in the for loop.
+>
+> Please don't do that. Simplicity and correctness are the only goals designing
+> error handling.
 
-In addition to that autofs also needs either major surgery or to be
-dropped.  If we want to do the latter we'd be better of to strongly
-deprecate it now.
+OK. I will send a revised version for bug fixes only.
+Thanks for the review.
 
+Axel
+
+>
+>        Regards
+>                Oliver
+>
