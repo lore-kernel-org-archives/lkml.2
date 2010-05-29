@@ -1,61 +1,169 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757518Ab0E2PMH (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 29 May 2010 11:12:07 -0400
-Received: from smtp-out.google.com ([74.125.121.35]:32131 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757447Ab0E2PMB convert rfc822-to-8bit (ORCPT
+	id S1757386Ab0E2PnO (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 29 May 2010 11:43:14 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:58602 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754998Ab0E2PnI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 29 May 2010 11:12:01 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=mime-version:in-reply-to:references:date:message-id:subject:from:to:
-	cc:content-type:content-transfer-encoding:x-system-of-record;
-	b=JMmvTAHa5ZwwUtM/IHG2bMqcDYwNdRF/Ns7wvv95VSq8kLvQW2VBbk+DPsADjiBFw
-	vaWiYZ/Ghl4Ozn7Ei5Vaw==
-MIME-Version: 1.0
-In-Reply-To: <Pine.LNX.4.44L0.1005291056490.31946-100000@netrider.rowland.org>
-References: <AANLkTimyLsldXoZ_egjybwS9kE_OcxsOuZwC0F-C2HjY@mail.gmail.com>
-	<Pine.LNX.4.44L0.1005291056490.31946-100000@netrider.rowland.org>
-Date: Sat, 29 May 2010 08:11:58 -0700
-Message-ID: <AANLkTim7LMG0kcYwmcL9AcdR5-GgcCyb2ZagJhGyt2_e@mail.gmail.com>
-Subject: Re: [linux-pm] [PATCH 0/8] Suspend block api (version 8)
-From: Brian Swetland <swetland@google.com>
-To: Alan Stern <stern@rowland.harvard.edu>
-Cc: Florian Mickler <florian@mickler.org>,
-       Peter Zijlstra <peterz@infradead.org>,
-       "Rafael J. Wysocki" <rjw@sisk.pl>,
-       Linux PM <linux-pm@lists.linux-foundation.org>,
-       =?UTF-8?B?QXJ2ZSBIasO4bm5ldsOlZw==?= <arve@android.com>,
-       Alan Cox <alan@lxorguk.ukuu.org.uk>,
-       Matthew Garrett <mjg59@srcf.ucam.org>,
-       Thomas Gleixner <tglx@linutronix.de>,
-       LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+	Sat, 29 May 2010 11:43:08 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=o+l6SeZzuYJ7po4WwbAI1yT1qOzQ0/dPC5joWD3mgKa8c8VNzr14swxcBrBjh50C36
+         7qKMIq6O8b0D/FcWtV4XMkR635c4WpKFn9PP+m8lc0Wj23jfSDYVFEhnl2fgIjA+MnMV
+         +HBl1uXVd6xUfnNLeUHgI6bkAjDpbHnevt0JU=
+From: Pierre Tardy <tardyp@gmail.com>
+To: Tom Zanussi <tzanussi@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+       Frederic Weisbecker <fweisbec@gmail.com>,
+       Linux Kernel <linux-kernel@vger.kernel.org>
+Cc: Pierre Tardy <tardyp@gmail.com>
+Subject: [PATCH] trace-event-python: give field dict to unhandled callback
+Date: Sat, 29 May 2010 17:42:34 +0200
+Message-Id: <1275147754-3037-1-git-send-email-tardyp@gmail.com>
+X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, May 29, 2010 at 8:03 AM, Alan Stern <stern@rowland.harvard.edu> wrote:
-> On Sat, 29 May 2010, Brian Swetland wrote:
->> On Sat, May 29, 2010 at 7:10 AM, Alan Stern <stern@rowland.harvard.edu> wrote:
->> > If no such constraints are active, the QoS-based suspend blocks in an
->> > interruptible wait until the number of active QOS_EVENTUALLY
->> > constraints drops to 0.  When that happens, it carries out a normal
->> > suspend-to-RAM -- except that it checks along the way to make sure that
->> > no new QoS constraints are activated while the suspend is in progress.
->> > If they are, the PM core backs out and fails the QoS-based suspend.
->>
->> The issue with this approach is that if userspace wants to suspend
->> while a driver is holding a QOS_EVENTUALLY constraint, it's basically
->> going to spin constantly writing "qos" and failing.
->
-> No, no.  If userspace wants to suspend while a driver is holding a
-> QOS_EVENTUALLY constraint, the user process blocks in an interruptible
-> wait state as described in the first paragraph above.
+trace_unhandled() callback does not allow to access event fields, this
+patch resolves the problem.
 
-Oops -- I misread the first paragraph.  The behavior you described is
-indeed what I would want.
+It can also been used as a more pythonic and flexible way for script
+writters to demux event types
 
-Brian
+This will for example greatly simplify pytimechart event demux.
+
+Signed-off-by: Pierre Tardy <tardyp@gmail.com>
+---
+ tools/perf/scripts/python/check-perf-trace.py      |    3 +-
+ .../util/scripting-engines/trace-event-python.c    |   51 +++++++++++++------
+ 2 files changed, 36 insertions(+), 18 deletions(-)
+
+diff --git a/tools/perf/scripts/python/check-perf-trace.py b/tools/perf/scripts/python/check-perf-trace.py
+index 964d934..d9f7893 100644
+--- a/tools/perf/scripts/python/check-perf-trace.py
++++ b/tools/perf/scripts/python/check-perf-trace.py
+@@ -51,8 +51,7 @@ def kmem__kmalloc(event_name, context, common_cpu,
+ 
+ 		flag_str("kmem__kmalloc", "gfp_flags", gfp_flags)),
+ 
+-def trace_unhandled(event_name, context, common_cpu, common_secs, common_nsecs,
+-		common_pid, common_comm):
++def trace_unhandled(event_name, context, event_fields_dict):
+     try:
+         unhandled[event_name] += 1
+     except TypeError:
+diff --git a/tools/perf/util/scripting-engines/trace-event-python.c b/tools/perf/util/scripting-engines/trace-event-python.c
+index 81f39ca..db7c18a 100644
+--- a/tools/perf/util/scripting-engines/trace-event-python.c
++++ b/tools/perf/util/scripting-engines/trace-event-python.c
+@@ -208,7 +208,7 @@ static void python_process_event(int cpu, void *data,
+ 				 int size __unused,
+ 				 unsigned long long nsecs, char *comm)
+ {
+-	PyObject *handler, *retval, *context, *t, *obj;
++	PyObject *handler, *retval, *context, *t, *obj, *dict = NULL;
+ 	static char handler_name[256];
+ 	struct format_field *field;
+ 	unsigned long long val;
+@@ -232,6 +232,14 @@ static void python_process_event(int cpu, void *data,
+ 
+ 	sprintf(handler_name, "%s__%s", event->system, event->name);
+ 
++	handler = PyDict_GetItemString(main_dict, handler_name);
++	if (handler && !PyCallable_Check(handler))
++		handler = NULL;
++	if (!handler) {
++		dict = PyDict_New();
++		if (!dict)
++			Py_FatalError("couldn't create Python dict");
++	}
+ 	s = nsecs / NSECS_PER_SEC;
+ 	ns = nsecs - s * NSECS_PER_SEC;
+ 
+@@ -242,12 +250,20 @@ static void python_process_event(int cpu, void *data,
+ 	PyTuple_SetItem(t, n++, PyString_FromString(handler_name));
+ 	PyTuple_SetItem(t, n++,
+ 			PyCObject_FromVoidPtr(scripting_context, NULL));
+-	PyTuple_SetItem(t, n++, PyInt_FromLong(cpu));
+-	PyTuple_SetItem(t, n++, PyInt_FromLong(s));
+-	PyTuple_SetItem(t, n++, PyInt_FromLong(ns));
+-	PyTuple_SetItem(t, n++, PyInt_FromLong(pid));
+-	PyTuple_SetItem(t, n++, PyString_FromString(comm));
+ 
++	if (handler) {
++		PyTuple_SetItem(t, n++, PyInt_FromLong(cpu));
++		PyTuple_SetItem(t, n++, PyInt_FromLong(s));
++		PyTuple_SetItem(t, n++, PyInt_FromLong(ns));
++		PyTuple_SetItem(t, n++, PyInt_FromLong(pid));
++		PyTuple_SetItem(t, n++, PyString_FromString(comm));
++	} else {
++		PyDict_SetItemString(dict, "common_cpu", PyInt_FromLong(cpu));
++		PyDict_SetItemString(dict, "common_s", PyInt_FromLong(s));
++		PyDict_SetItemString(dict, "common_ns", PyInt_FromLong(ns));
++		PyDict_SetItemString(dict, "common_pid", PyInt_FromLong(pid));
++		PyDict_SetItemString(dict, "common_comm", PyString_FromString(comm));
++	}
+ 	for (field = event->format.fields; field; field = field->next) {
+ 		if (field->flags & FIELD_IS_STRING) {
+ 			int offset;
+@@ -272,22 +288,25 @@ static void python_process_event(int cpu, void *data,
+ 					obj = PyLong_FromUnsignedLongLong(val);
+ 			}
+ 		}
+-		PyTuple_SetItem(t, n++, obj);
++		if (handler)
++			PyTuple_SetItem(t, n++, obj);
++		else
++			PyDict_SetItemString(dict, field->name, obj);
++
+ 	}
++	if (!handler)
++		PyTuple_SetItem(t, n++, dict);
+ 
+ 	if (_PyTuple_Resize(&t, n) == -1)
+ 		Py_FatalError("error resizing Python tuple");
+ 
+-	handler = PyDict_GetItemString(main_dict, handler_name);
+-	if (handler && PyCallable_Check(handler)) {
++	if (handler) {
+ 		retval = PyObject_CallObject(handler, t);
+ 		if (retval == NULL)
+ 			handler_call_die(handler_name);
+ 	} else {
+ 		handler = PyDict_GetItemString(main_dict, "trace_unhandled");
+ 		if (handler && PyCallable_Check(handler)) {
+-			if (_PyTuple_Resize(&t, N_COMMON_FIELDS) == -1)
+-				Py_FatalError("error resizing Python tuple");
+ 
+ 			retval = PyObject_CallObject(handler, t);
+ 			if (retval == NULL)
+@@ -296,6 +315,8 @@ static void python_process_event(int cpu, void *data,
+ 	}
+ 
+ 	Py_DECREF(t);
++	if (!handler)
++		Py_DECREF(dict);
+ }
+ 
+ static int run_start_sub(void)
+@@ -548,12 +569,10 @@ static int python_generate_script(const char *outfile)
+ 	}
+ 
+ 	fprintf(ofp, "def trace_unhandled(event_name, context, "
+-		"common_cpu, common_secs, common_nsecs,\n\t\t"
+-		"common_pid, common_comm):\n");
++		"event_fields_dict):\n");
+ 
+-	fprintf(ofp, "\t\tprint_header(event_name, common_cpu, "
+-		"common_secs, common_nsecs,\n\t\tcommon_pid, "
+-		"common_comm)\n\n");
++	fprintf(ofp, "\t\tprint ' '.join(['%%s=%%s'%%(k,str(v))"
++		"for k,v in sorted(event_fields_dict.items())])\n\n");
+ 
+ 	fprintf(ofp, "def print_header("
+ 		"event_name, cpu, secs, nsecs, pid, comm):\n"
+-- 
+1.7.0.4
+
