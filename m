@@ -1,13865 +1,3098 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756551Ab0E2Df0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 May 2010 23:35:26 -0400
+	id S1756920Ab0E2Dfi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 May 2010 23:35:38 -0400
 Received: from king.tilera.com ([72.1.168.226]:16063 "EHLO king.tilera.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755906Ab0E2DeU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 May 2010 23:34:20 -0400
-Message-Id: <201005290334.o4T3YCnR029961@farm-0002.internal.tilera.com>
+	id S1755391Ab0E2Deu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 May 2010 23:34:50 -0400
+Message-Id: <201005290334.o4T3YMsn029979@farm-0002.internal.tilera.com>
 In-Reply-To: <201005200543.o4K5hFRF006079@farm-0002.internal.tilera.com>
 References: <201005200543.o4K5hFRF006079@farm-0002.internal.tilera.com>
 From: Chris Metcalf <cmetcalf@tilera.com>
-Date: Fri, 28 May 2010 23:11:02 -0400
-Subject: [PATCH 5/8] arch/tile: the kernel/tile-desc_32.c file.
+Date: Fri, 28 May 2010 23:16:48 -0400
+Subject: [PATCH 7/8] arch/tile: lib/ directory.
 To: linux-kernel@vger.kernel.org
 Cc: linux-arch@vger.kernel.org, torvalds@linux-foundation.org
-X-OriginalArrivalTime: 29 May 2010 03:34:12.0390 (UTC) FILETIME=[CE301460:01CAFEDF]
+X-OriginalArrivalTime: 29 May 2010 03:34:22.0827 (UTC) FILETIME=[D468A3B0:01CAFEDF]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This file is large and fairly uninteresting to read, so is in
-a separate commit.  It provides backtracing and single-step support.
-
 Signed-off-by: Chris Metcalf <cmetcalf@tilera.com>
 ---
- arch/tile/kernel/tile-desc_32.c |13826 +++++++++++++++++++++++++++++++++++++++
- 1 files changed, 13826 insertions(+), 0 deletions(-)
- create mode 100644 arch/tile/kernel/tile-desc_32.c
+ arch/tile/lib/Makefile              |   16 +
+ arch/tile/lib/__invalidate_icache.S |  106 ++++++
+ arch/tile/lib/atomic_32.c           |  347 +++++++++++++++++++
+ arch/tile/lib/atomic_asm_32.S       |  197 +++++++++++
+ arch/tile/lib/checksum.c            |  102 ++++++
+ arch/tile/lib/cpumask.c             |   51 +++
+ arch/tile/lib/delay.c               |   34 ++
+ arch/tile/lib/exports.c             |   78 +++++
+ arch/tile/lib/mb_incoherent.S       |   34 ++
+ arch/tile/lib/memchr_32.c           |   68 ++++
+ arch/tile/lib/memcpy_32.S           |  628 +++++++++++++++++++++++++++++++++++
+ arch/tile/lib/memcpy_tile64.c       |  271 +++++++++++++++
+ arch/tile/lib/memmove_32.c          |   63 ++++
+ arch/tile/lib/memset_32.c           |  274 +++++++++++++++
+ arch/tile/lib/spinlock_32.c         |  221 ++++++++++++
+ arch/tile/lib/spinlock_common.h     |   64 ++++
+ arch/tile/lib/strchr_32.c           |   66 ++++
+ arch/tile/lib/strlen_32.c           |   36 ++
+ arch/tile/lib/uaccess.c             |   31 ++
+ arch/tile/lib/usercopy_32.S         |  223 +++++++++++++
+ 20 files changed, 2910 insertions(+), 0 deletions(-)
+ create mode 100644 arch/tile/lib/Makefile
+ create mode 100644 arch/tile/lib/__invalidate_icache.S
+ create mode 100644 arch/tile/lib/atomic_32.c
+ create mode 100644 arch/tile/lib/atomic_asm_32.S
+ create mode 100644 arch/tile/lib/checksum.c
+ create mode 100644 arch/tile/lib/cpumask.c
+ create mode 100644 arch/tile/lib/delay.c
+ create mode 100644 arch/tile/lib/exports.c
+ create mode 100644 arch/tile/lib/mb_incoherent.S
+ create mode 100644 arch/tile/lib/memchr_32.c
+ create mode 100644 arch/tile/lib/memcpy_32.S
+ create mode 100644 arch/tile/lib/memcpy_tile64.c
+ create mode 100644 arch/tile/lib/memmove_32.c
+ create mode 100644 arch/tile/lib/memset_32.c
+ create mode 100644 arch/tile/lib/spinlock_32.c
+ create mode 100644 arch/tile/lib/spinlock_common.h
+ create mode 100644 arch/tile/lib/strchr_32.c
+ create mode 100644 arch/tile/lib/strlen_32.c
+ create mode 100644 arch/tile/lib/uaccess.c
+ create mode 100644 arch/tile/lib/usercopy_32.S
 
-diff --git a/arch/tile/kernel/tile-desc_32.c b/arch/tile/kernel/tile-desc_32.c
+diff --git a/arch/tile/lib/Makefile b/arch/tile/lib/Makefile
 new file mode 100644
-index 0000000..3b78369
+index 0000000..ea9c209
 --- /dev/null
-+++ b/arch/tile/kernel/tile-desc_32.c
-@@ -0,0 +1,13826 @@
-+/* Define to include "bfd.h" and get actual BFD relocations below. */
-+/* #define WANT_BFD_RELOCS */
++++ b/arch/tile/lib/Makefile
+@@ -0,0 +1,16 @@
++#
++# Makefile for TILE-specific library files..
++#
 +
-+#ifdef WANT_BFD_RELOCS
-+#include "bfd.h"
-+#define MAYBE_BFD_RELOC(X) (X)
++lib-y = checksum.o cpumask.o delay.o __invalidate_icache.o \
++	mb_incoherent.o uaccess.o \
++	memcpy_$(BITS).o memchr_$(BITS).o memmove_$(BITS).o memset_$(BITS).o \
++	strchr_$(BITS).o strlen_$(BITS).o
++
++ifneq ($(CONFIG_TILEGX),y)
++lib-y += atomic_32.o atomic_asm_32.o memcpy_tile64.o
++endif
++
++lib-$(CONFIG_SMP) += spinlock_$(BITS).o usercopy_$(BITS).o
++
++obj-$(CONFIG_MODULES) += exports.o
+diff --git a/arch/tile/lib/__invalidate_icache.S b/arch/tile/lib/__invalidate_icache.S
+new file mode 100644
+index 0000000..92e7050
+--- /dev/null
++++ b/arch/tile/lib/__invalidate_icache.S
+@@ -0,0 +1,106 @@
++/*
++ * Copyright 2010 Tilera Corporation. All Rights Reserved.
++ *
++ *   This program is free software; you can redistribute it and/or
++ *   modify it under the terms of the GNU General Public License
++ *   as published by the Free Software Foundation, version 2.
++ *
++ *   This program is distributed in the hope that it will be useful, but
++ *   WITHOUT ANY WARRANTY; without even the implied warranty of
++ *   MERCHANTABILITY OR FITNESS FOR A PARTICULAR PURPOSE, GOOD TITLE or
++ *   NON INFRINGEMENT.  See the GNU General Public License for
++ *   more details.
++ * A routine for synchronizing the instruction and data caches.
++ * Useful for self-modifying code.
++ *
++ * r0 holds the buffer address
++ * r1 holds the size in bytes
++ */
++
++#include <arch/chip.h>
++#include <feedback.h>
++
++#if defined(__NEWLIB__) || defined(__BME__)
++#include <sys/page.h>
 +#else
-+#define MAYBE_BFD_RELOC(X) -1
++#include <asm/page.h>
 +#endif
 +
-+/* Special registers. */
-+#define TREG_LR 55
-+#define TREG_SN 56
-+#define TREG_ZERO 63
++#ifdef __tilegx__
++/* Share code among Tile family chips but adjust opcodes appropriately. */
++#define slt cmpltu
++#define bbst blbst
++#define bnezt bnzt
++#endif
 +
-+/* FIXME: Rename this. */
-+#include <asm/opcode-tile.h>
++#if defined(__tilegx__) && __SIZEOF_POINTER__ == 4
++/* Force 32-bit ops so pointers wrap around appropriately. */
++#define ADD_PTR addx
++#define ADDI_PTR addxi
++#else
++#define ADD_PTR add
++#define ADDI_PTR addi
++#endif
 +
++        .section .text.__invalidate_icache, "ax"
++        .global __invalidate_icache
++        .type __invalidate_icache,@function
++        .hidden __invalidate_icache
++        .align 8
++__invalidate_icache:
++        FEEDBACK_ENTER(__invalidate_icache)
++        {
++         ADD_PTR r1, r0, r1       /* end of buffer */
++         blez r1, .Lexit      /* skip out if size <= 0 */
++        }
++        {
++         ADDI_PTR r1, r1, -1      /* point to last byte to flush */
++         andi r0, r0, -CHIP_L1I_LINE_SIZE()  /* align to cache-line size */
++        }
++        {
++         andi r1, r1, -CHIP_L1I_LINE_SIZE()  /* last cache line to flush */
++         mf
++        }
++#if CHIP_L1I_CACHE_SIZE() > PAGE_SIZE
++        {
++         moveli r4, CHIP_L1I_CACHE_SIZE() / PAGE_SIZE  /* loop counter */
++         move r2, r0          /* remember starting address */
++        }
++#endif
++        drain
++	{
++         slt r3, r0, r1       /* set up loop invariant */
++#if CHIP_L1I_CACHE_SIZE() > PAGE_SIZE
++	 moveli r6, PAGE_SIZE
++#endif
++	}
++.Lentry:
++        {
++         icoh r0
++         ADDI_PTR r0, r0, CHIP_L1I_LINE_SIZE()   /* advance buffer */
++        }
++        {
++         slt r3, r0, r1       /* check if buffer < buffer + size */
++         bbst r3, .Lentry     /* loop if buffer < buffer + size */
++        }
++#if CHIP_L1I_CACHE_SIZE() > PAGE_SIZE
++        {
++         ADD_PTR r2, r2, r6
++         ADD_PTR r1, r1, r6
++        }
++	{
++         move r0, r2
++         addi r4, r4, -1
++	}
++	{
++         slt r3, r0, r1        /* set up loop invariant */
++         bnezt r4, .Lentry
++	}
++#endif
++        drain
++.Lexit:
++        jrp lr
 +
-+const struct tile_opcode tile_opcodes[394] =
-+{
-+ { "bpt", TILE_OPC_BPT, 0x2 /* pipes */, 0 /* num_operands */,
-+    TREG_ZERO, /* implicitly_written_register */
-+    0, /* can_bundle */
-+    {
-+      /* operands */
-+      { 0, },
-+      {  },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0ULL,
-+      0xfbffffff80000000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      -1ULL,
-+      0x400b3cae00000000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "info", TILE_OPC_INFO, 0xf /* pipes */, 1 /* num_operands */,
-+    TREG_ZERO, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 0 },
-+      { 1 },
-+      { 2 },
-+      { 3 },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ff00fffULL,
-+      0xfff807ff80000000ULL,
-+      0x8000000078000fffULL,
-+      0xf80007ff80000000ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x0000000050100fffULL,
-+      0x302007ff80000000ULL,
-+      0x8000000050000fffULL,
-+      0xc00007ff80000000ULL,
-+      -1ULL
-+    }
-+  },
-+  { "infol", TILE_OPC_INFOL, 0x3 /* pipes */, 1 /* num_operands */,
-+    TREG_ZERO, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 4 },
-+      { 5 },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x8000000070000fffULL,
-+      0xf80007ff80000000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x0000000030000fffULL,
-+      0x200007ff80000000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "j", TILE_OPC_J, 0x2 /* pipes */, 1 /* num_operands */,
-+    TREG_ZERO, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 0, },
-+      { 6 },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0ULL,
-+      0xf000000000000000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      -1ULL,
-+      0x5000000000000000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "jal", TILE_OPC_JAL, 0x2 /* pipes */, 1 /* num_operands */,
-+    TREG_LR, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 0, },
-+      { 6 },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0ULL,
-+      0xf000000000000000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      -1ULL,
-+      0x6000000000000000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "move", TILE_OPC_MOVE, 0xf /* pipes */, 2 /* num_operands */,
-+    TREG_ZERO, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 7, 8 },
-+      { 9, 10 },
-+      { 11, 12 },
-+      { 13, 14 },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ffff000ULL,
-+      0xfffff80000000000ULL,
-+      0x80000000780ff000ULL,
-+      0xf807f80000000000ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x0000000000cff000ULL,
-+      0x0833f80000000000ULL,
-+      0x80000000180bf000ULL,
-+      0x9805f80000000000ULL,
-+      -1ULL
-+    }
-+  },
-+  { "move.sn", TILE_OPC_MOVE_SN, 0x3 /* pipes */, 2 /* num_operands */,
-+    TREG_SN, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 7, 8 },
-+      { 9, 10 },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ffff000ULL,
-+      0xfffff80000000000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x0000000008cff000ULL,
-+      0x0c33f80000000000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "movei", TILE_OPC_MOVEI, 0xf /* pipes */, 2 /* num_operands */,
-+    TREG_ZERO, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 7, 0 },
-+      { 9, 1 },
-+      { 11, 2 },
-+      { 13, 3 },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ff00fc0ULL,
-+      0xfff807e000000000ULL,
-+      0x8000000078000fc0ULL,
-+      0xf80007e000000000ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x0000000040800fc0ULL,
-+      0x305807e000000000ULL,
-+      0x8000000058000fc0ULL,
-+      0xc80007e000000000ULL,
-+      -1ULL
-+    }
-+  },
-+  { "movei.sn", TILE_OPC_MOVEI_SN, 0x3 /* pipes */, 2 /* num_operands */,
-+    TREG_SN, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 7, 0 },
-+      { 9, 1 },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ff00fc0ULL,
-+      0xfff807e000000000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x0000000048800fc0ULL,
-+      0x345807e000000000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "moveli", TILE_OPC_MOVELI, 0x3 /* pipes */, 2 /* num_operands */,
-+    TREG_ZERO, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 7, 4 },
-+      { 9, 5 },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x8000000070000fc0ULL,
-+      0xf80007e000000000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x0000000020000fc0ULL,
-+      0x180007e000000000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "moveli.sn", TILE_OPC_MOVELI_SN, 0x3 /* pipes */, 2 /* num_operands */,
-+    TREG_SN, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 7, 4 },
-+      { 9, 5 },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x8000000070000fc0ULL,
-+      0xf80007e000000000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x0000000010000fc0ULL,
-+      0x100007e000000000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "movelis", TILE_OPC_MOVELIS, 0x3 /* pipes */, 2 /* num_operands */,
-+    TREG_SN, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 7, 4 },
-+      { 9, 5 },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x8000000070000fc0ULL,
-+      0xf80007e000000000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x0000000010000fc0ULL,
-+      0x100007e000000000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "prefetch", TILE_OPC_PREFETCH, 0x12 /* pipes */, 1 /* num_operands */,
-+    TREG_ZERO, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 0, },
-+      { 10 },
-+      { 0, },
-+      { 0, },
-+      { 15 }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0ULL,
-+      0xfffff81f80000000ULL,
-+      0ULL,
-+      0ULL,
-+      0x8700000003f00000ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      -1ULL,
-+      0x400b501f80000000ULL,
-+      -1ULL,
-+      -1ULL,
-+      0x8000000003f00000ULL
-+    }
-+  },
-+  { "add", TILE_OPC_ADD, 0xf /* pipes */, 3 /* num_operands */,
-+    TREG_ZERO, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 7, 8, 16 },
-+      { 9, 10, 17 },
-+      { 11, 12, 18 },
-+      { 13, 14, 19 },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ffc0000ULL,
-+      0xfffe000000000000ULL,
-+      0x80000000780c0000ULL,
-+      0xf806000000000000ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x00000000000c0000ULL,
-+      0x0806000000000000ULL,
-+      0x8000000008000000ULL,
-+      0x8800000000000000ULL,
-+      -1ULL
-+    }
-+  },
-+  { "add.sn", TILE_OPC_ADD_SN, 0x3 /* pipes */, 3 /* num_operands */,
-+    TREG_SN, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 7, 8, 16 },
-+      { 9, 10, 17 },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ffc0000ULL,
-+      0xfffe000000000000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x00000000080c0000ULL,
-+      0x0c06000000000000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "addb", TILE_OPC_ADDB, 0x3 /* pipes */, 3 /* num_operands */,
-+    TREG_ZERO, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 7, 8, 16 },
-+      { 9, 10, 17 },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ffc0000ULL,
-+      0xfffe000000000000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x0000000000040000ULL,
-+      0x0802000000000000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "addb.sn", TILE_OPC_ADDB_SN, 0x3 /* pipes */, 3 /* num_operands */,
-+    TREG_SN, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 7, 8, 16 },
-+      { 9, 10, 17 },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ffc0000ULL,
-+      0xfffe000000000000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x0000000008040000ULL,
-+      0x0c02000000000000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "addbs_u", TILE_OPC_ADDBS_U, 0x3 /* pipes */, 3 /* num_operands */,
-+    TREG_ZERO, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 7, 8, 16 },
-+      { 9, 10, 17 },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ffc0000ULL,
-+      0xfffe000000000000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x0000000001880000ULL,
-+      0x0888000000000000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "addbs_u.sn", TILE_OPC_ADDBS_U_SN, 0x3 /* pipes */, 3 /* num_operands */,
-+    TREG_SN, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 7, 8, 16 },
-+      { 9, 10, 17 },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ffc0000ULL,
-+      0xfffe000000000000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x0000000009880000ULL,
-+      0x0c88000000000000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "addh", TILE_OPC_ADDH, 0x3 /* pipes */, 3 /* num_operands */,
-+    TREG_ZERO, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 7, 8, 16 },
-+      { 9, 10, 17 },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ffc0000ULL,
-+      0xfffe000000000000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x0000000000080000ULL,
-+      0x0804000000000000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "addh.sn", TILE_OPC_ADDH_SN, 0x3 /* pipes */, 3 /* num_operands */,
-+    TREG_SN, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 7, 8, 16 },
-+      { 9, 10, 17 },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ffc0000ULL,
-+      0xfffe000000000000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x0000000008080000ULL,
-+      0x0c04000000000000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "addhs", TILE_OPC_ADDHS, 0x3 /* pipes */, 3 /* num_operands */,
-+    TREG_ZERO, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 7, 8, 16 },
-+      { 9, 10, 17 },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ffc0000ULL,
-+      0xfffe000000000000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x00000000018c0000ULL,
-+      0x088a000000000000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "addhs.sn", TILE_OPC_ADDHS_SN, 0x3 /* pipes */, 3 /* num_operands */,
-+    TREG_SN, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 7, 8, 16 },
-+      { 9, 10, 17 },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ffc0000ULL,
-+      0xfffe000000000000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x00000000098c0000ULL,
-+      0x0c8a000000000000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "addi", TILE_OPC_ADDI, 0xf /* pipes */, 3 /* num_operands */,
-+    TREG_ZERO, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 7, 8, 0 },
-+      { 9, 10, 1 },
-+      { 11, 12, 2 },
-+      { 13, 14, 3 },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ff00000ULL,
-+      0xfff8000000000000ULL,
-+      0x8000000078000000ULL,
-+      0xf800000000000000ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x0000000040300000ULL,
-+      0x3018000000000000ULL,
-+      0x8000000048000000ULL,
-+      0xb800000000000000ULL,
-+      -1ULL
-+    }
-+  },
-+  { "addi.sn", TILE_OPC_ADDI_SN, 0x3 /* pipes */, 3 /* num_operands */,
-+    TREG_SN, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 7, 8, 0 },
-+      { 9, 10, 1 },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ff00000ULL,
-+      0xfff8000000000000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x0000000048300000ULL,
-+      0x3418000000000000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "addib", TILE_OPC_ADDIB, 0x3 /* pipes */, 3 /* num_operands */,
-+    TREG_ZERO, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 7, 8, 0 },
-+      { 9, 10, 1 },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ff00000ULL,
-+      0xfff8000000000000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x0000000040100000ULL,
-+      0x3008000000000000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "addib.sn", TILE_OPC_ADDIB_SN, 0x3 /* pipes */, 3 /* num_operands */,
-+    TREG_SN, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 7, 8, 0 },
-+      { 9, 10, 1 },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ff00000ULL,
-+      0xfff8000000000000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x0000000048100000ULL,
-+      0x3408000000000000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "addih", TILE_OPC_ADDIH, 0x3 /* pipes */, 3 /* num_operands */,
-+    TREG_ZERO, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 7, 8, 0 },
-+      { 9, 10, 1 },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ff00000ULL,
-+      0xfff8000000000000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x0000000040200000ULL,
-+      0x3010000000000000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "addih.sn", TILE_OPC_ADDIH_SN, 0x3 /* pipes */, 3 /* num_operands */,
-+    TREG_SN, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 7, 8, 0 },
-+      { 9, 10, 1 },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ff00000ULL,
-+      0xfff8000000000000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x0000000048200000ULL,
-+      0x3410000000000000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "addli", TILE_OPC_ADDLI, 0x3 /* pipes */, 3 /* num_operands */,
-+    TREG_ZERO, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 7, 8, 4 },
-+      { 9, 10, 5 },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x8000000070000000ULL,
-+      0xf800000000000000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x0000000020000000ULL,
-+      0x1800000000000000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "addli.sn", TILE_OPC_ADDLI_SN, 0x3 /* pipes */, 3 /* num_operands */,
-+    TREG_SN, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 7, 8, 4 },
-+      { 9, 10, 5 },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x8000000070000000ULL,
-+      0xf800000000000000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x0000000010000000ULL,
-+      0x1000000000000000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "addlis", TILE_OPC_ADDLIS, 0x3 /* pipes */, 3 /* num_operands */,
-+    TREG_SN, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 7, 8, 4 },
-+      { 9, 10, 5 },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x8000000070000000ULL,
-+      0xf800000000000000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x0000000010000000ULL,
-+      0x1000000000000000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "adds", TILE_OPC_ADDS, 0x3 /* pipes */, 3 /* num_operands */,
-+    TREG_ZERO, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 7, 8, 16 },
-+      { 9, 10, 17 },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ffc0000ULL,
-+      0xfffe000000000000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x0000000001800000ULL,
-+      0x0884000000000000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "adds.sn", TILE_OPC_ADDS_SN, 0x3 /* pipes */, 3 /* num_operands */,
-+    TREG_SN, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 7, 8, 16 },
-+      { 9, 10, 17 },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ffc0000ULL,
-+      0xfffe000000000000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x0000000009800000ULL,
-+      0x0c84000000000000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "adiffb_u", TILE_OPC_ADIFFB_U, 0x1 /* pipes */, 3 /* num_operands */,
-+    TREG_ZERO, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 7, 8, 16 },
-+      { 0, },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ffc0000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x0000000000100000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "adiffb_u.sn", TILE_OPC_ADIFFB_U_SN, 0x1 /* pipes */, 3 /* num_operands */,
-+    TREG_SN, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 7, 8, 16 },
-+      { 0, },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ffc0000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x0000000008100000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "adiffh", TILE_OPC_ADIFFH, 0x1 /* pipes */, 3 /* num_operands */,
-+    TREG_ZERO, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 7, 8, 16 },
-+      { 0, },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ffc0000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x0000000000140000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "adiffh.sn", TILE_OPC_ADIFFH_SN, 0x1 /* pipes */, 3 /* num_operands */,
-+    TREG_SN, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 7, 8, 16 },
-+      { 0, },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ffc0000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x0000000008140000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "and", TILE_OPC_AND, 0xf /* pipes */, 3 /* num_operands */,
-+    TREG_ZERO, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 7, 8, 16 },
-+      { 9, 10, 17 },
-+      { 11, 12, 18 },
-+      { 13, 14, 19 },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ffc0000ULL,
-+      0xfffe000000000000ULL,
-+      0x80000000780c0000ULL,
-+      0xf806000000000000ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x0000000000180000ULL,
-+      0x0808000000000000ULL,
-+      0x8000000018000000ULL,
-+      0x9800000000000000ULL,
-+      -1ULL
-+    }
-+  },
-+  { "and.sn", TILE_OPC_AND_SN, 0x3 /* pipes */, 3 /* num_operands */,
-+    TREG_SN, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 7, 8, 16 },
-+      { 9, 10, 17 },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ffc0000ULL,
-+      0xfffe000000000000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x0000000008180000ULL,
-+      0x0c08000000000000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "andi", TILE_OPC_ANDI, 0xf /* pipes */, 3 /* num_operands */,
-+    TREG_ZERO, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 7, 8, 0 },
-+      { 9, 10, 1 },
-+      { 11, 12, 2 },
-+      { 13, 14, 3 },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ff00000ULL,
-+      0xfff8000000000000ULL,
-+      0x8000000078000000ULL,
-+      0xf800000000000000ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x0000000050100000ULL,
-+      0x3020000000000000ULL,
-+      0x8000000050000000ULL,
-+      0xc000000000000000ULL,
-+      -1ULL
-+    }
-+  },
-+  { "andi.sn", TILE_OPC_ANDI_SN, 0x3 /* pipes */, 3 /* num_operands */,
-+    TREG_SN, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 7, 8, 0 },
-+      { 9, 10, 1 },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ff00000ULL,
-+      0xfff8000000000000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x0000000058100000ULL,
-+      0x3420000000000000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "auli", TILE_OPC_AULI, 0x3 /* pipes */, 3 /* num_operands */,
-+    TREG_ZERO, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 7, 8, 4 },
-+      { 9, 10, 5 },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x8000000070000000ULL,
-+      0xf800000000000000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x0000000030000000ULL,
-+      0x2000000000000000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "avgb_u", TILE_OPC_AVGB_U, 0x1 /* pipes */, 3 /* num_operands */,
-+    TREG_ZERO, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 7, 8, 16 },
-+      { 0, },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ffc0000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x00000000001c0000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "avgb_u.sn", TILE_OPC_AVGB_U_SN, 0x1 /* pipes */, 3 /* num_operands */,
-+    TREG_SN, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 7, 8, 16 },
-+      { 0, },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ffc0000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x00000000081c0000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "avgh", TILE_OPC_AVGH, 0x1 /* pipes */, 3 /* num_operands */,
-+    TREG_ZERO, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 7, 8, 16 },
-+      { 0, },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ffc0000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x0000000000200000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "avgh.sn", TILE_OPC_AVGH_SN, 0x1 /* pipes */, 3 /* num_operands */,
-+    TREG_SN, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 7, 8, 16 },
-+      { 0, },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ffc0000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x0000000008200000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "bbns", TILE_OPC_BBNS, 0x2 /* pipes */, 2 /* num_operands */,
-+    TREG_ZERO, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 0, },
-+      { 10, 20 },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0ULL,
-+      0xfc00000780000000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      -1ULL,
-+      0x2800000700000000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "bbns.sn", TILE_OPC_BBNS_SN, 0x2 /* pipes */, 2 /* num_operands */,
-+    TREG_SN, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 0, },
-+      { 10, 20 },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0ULL,
-+      0xfc00000780000000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      -1ULL,
-+      0x2c00000700000000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "bbnst", TILE_OPC_BBNST, 0x2 /* pipes */, 2 /* num_operands */,
-+    TREG_ZERO, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 0, },
-+      { 10, 20 },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0ULL,
-+      0xfc00000780000000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      -1ULL,
-+      0x2800000780000000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "bbnst.sn", TILE_OPC_BBNST_SN, 0x2 /* pipes */, 2 /* num_operands */,
-+    TREG_SN, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 0, },
-+      { 10, 20 },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0ULL,
-+      0xfc00000780000000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      -1ULL,
-+      0x2c00000780000000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "bbs", TILE_OPC_BBS, 0x2 /* pipes */, 2 /* num_operands */,
-+    TREG_ZERO, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 0, },
-+      { 10, 20 },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0ULL,
-+      0xfc00000780000000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      -1ULL,
-+      0x2800000600000000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "bbs.sn", TILE_OPC_BBS_SN, 0x2 /* pipes */, 2 /* num_operands */,
-+    TREG_SN, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 0, },
-+      { 10, 20 },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0ULL,
-+      0xfc00000780000000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      -1ULL,
-+      0x2c00000600000000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "bbst", TILE_OPC_BBST, 0x2 /* pipes */, 2 /* num_operands */,
-+    TREG_ZERO, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 0, },
-+      { 10, 20 },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0ULL,
-+      0xfc00000780000000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      -1ULL,
-+      0x2800000680000000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "bbst.sn", TILE_OPC_BBST_SN, 0x2 /* pipes */, 2 /* num_operands */,
-+    TREG_SN, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 0, },
-+      { 10, 20 },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0ULL,
-+      0xfc00000780000000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      -1ULL,
-+      0x2c00000680000000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "bgez", TILE_OPC_BGEZ, 0x2 /* pipes */, 2 /* num_operands */,
-+    TREG_ZERO, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 0, },
-+      { 10, 20 },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0ULL,
-+      0xfc00000780000000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      -1ULL,
-+      0x2800000300000000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "bgez.sn", TILE_OPC_BGEZ_SN, 0x2 /* pipes */, 2 /* num_operands */,
-+    TREG_SN, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 0, },
-+      { 10, 20 },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0ULL,
-+      0xfc00000780000000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      -1ULL,
-+      0x2c00000300000000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "bgezt", TILE_OPC_BGEZT, 0x2 /* pipes */, 2 /* num_operands */,
-+    TREG_ZERO, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 0, },
-+      { 10, 20 },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0ULL,
-+      0xfc00000780000000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      -1ULL,
-+      0x2800000380000000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "bgezt.sn", TILE_OPC_BGEZT_SN, 0x2 /* pipes */, 2 /* num_operands */,
-+    TREG_SN, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 0, },
-+      { 10, 20 },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0ULL,
-+      0xfc00000780000000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      -1ULL,
-+      0x2c00000380000000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "bgz", TILE_OPC_BGZ, 0x2 /* pipes */, 2 /* num_operands */,
-+    TREG_ZERO, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 0, },
-+      { 10, 20 },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0ULL,
-+      0xfc00000780000000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      -1ULL,
-+      0x2800000200000000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "bgz.sn", TILE_OPC_BGZ_SN, 0x2 /* pipes */, 2 /* num_operands */,
-+    TREG_SN, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 0, },
-+      { 10, 20 },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0ULL,
-+      0xfc00000780000000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      -1ULL,
-+      0x2c00000200000000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "bgzt", TILE_OPC_BGZT, 0x2 /* pipes */, 2 /* num_operands */,
-+    TREG_ZERO, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 0, },
-+      { 10, 20 },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0ULL,
-+      0xfc00000780000000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      -1ULL,
-+      0x2800000280000000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "bgzt.sn", TILE_OPC_BGZT_SN, 0x2 /* pipes */, 2 /* num_operands */,
-+    TREG_SN, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 0, },
-+      { 10, 20 },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0ULL,
-+      0xfc00000780000000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      -1ULL,
-+      0x2c00000280000000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "bitx", TILE_OPC_BITX, 0x5 /* pipes */, 2 /* num_operands */,
-+    TREG_ZERO, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 7, 8 },
-+      { 0, },
-+      { 11, 12 },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ffff000ULL,
-+      0ULL,
-+      0x80000000780ff000ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x0000000070161000ULL,
-+      -1ULL,
-+      0x80000000680a1000ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "bitx.sn", TILE_OPC_BITX_SN, 0x1 /* pipes */, 2 /* num_operands */,
-+    TREG_SN, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 7, 8 },
-+      { 0, },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ffff000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x0000000078161000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "blez", TILE_OPC_BLEZ, 0x2 /* pipes */, 2 /* num_operands */,
-+    TREG_ZERO, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 0, },
-+      { 10, 20 },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0ULL,
-+      0xfc00000780000000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      -1ULL,
-+      0x2800000500000000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "blez.sn", TILE_OPC_BLEZ_SN, 0x2 /* pipes */, 2 /* num_operands */,
-+    TREG_SN, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 0, },
-+      { 10, 20 },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0ULL,
-+      0xfc00000780000000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      -1ULL,
-+      0x2c00000500000000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "blezt", TILE_OPC_BLEZT, 0x2 /* pipes */, 2 /* num_operands */,
-+    TREG_ZERO, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 0, },
-+      { 10, 20 },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0ULL,
-+      0xfc00000780000000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      -1ULL,
-+      0x2800000580000000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "blezt.sn", TILE_OPC_BLEZT_SN, 0x2 /* pipes */, 2 /* num_operands */,
-+    TREG_SN, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 0, },
-+      { 10, 20 },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0ULL,
-+      0xfc00000780000000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      -1ULL,
-+      0x2c00000580000000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "blz", TILE_OPC_BLZ, 0x2 /* pipes */, 2 /* num_operands */,
-+    TREG_ZERO, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 0, },
-+      { 10, 20 },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0ULL,
-+      0xfc00000780000000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      -1ULL,
-+      0x2800000400000000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "blz.sn", TILE_OPC_BLZ_SN, 0x2 /* pipes */, 2 /* num_operands */,
-+    TREG_SN, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 0, },
-+      { 10, 20 },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0ULL,
-+      0xfc00000780000000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      -1ULL,
-+      0x2c00000400000000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "blzt", TILE_OPC_BLZT, 0x2 /* pipes */, 2 /* num_operands */,
-+    TREG_ZERO, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 0, },
-+      { 10, 20 },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0ULL,
-+      0xfc00000780000000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      -1ULL,
-+      0x2800000480000000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "blzt.sn", TILE_OPC_BLZT_SN, 0x2 /* pipes */, 2 /* num_operands */,
-+    TREG_SN, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 0, },
-+      { 10, 20 },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0ULL,
-+      0xfc00000780000000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      -1ULL,
-+      0x2c00000480000000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "bnz", TILE_OPC_BNZ, 0x2 /* pipes */, 2 /* num_operands */,
-+    TREG_ZERO, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 0, },
-+      { 10, 20 },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0ULL,
-+      0xfc00000780000000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      -1ULL,
-+      0x2800000100000000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "bnz.sn", TILE_OPC_BNZ_SN, 0x2 /* pipes */, 2 /* num_operands */,
-+    TREG_SN, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 0, },
-+      { 10, 20 },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0ULL,
-+      0xfc00000780000000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      -1ULL,
-+      0x2c00000100000000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "bnzt", TILE_OPC_BNZT, 0x2 /* pipes */, 2 /* num_operands */,
-+    TREG_ZERO, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 0, },
-+      { 10, 20 },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0ULL,
-+      0xfc00000780000000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      -1ULL,
-+      0x2800000180000000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "bnzt.sn", TILE_OPC_BNZT_SN, 0x2 /* pipes */, 2 /* num_operands */,
-+    TREG_SN, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 0, },
-+      { 10, 20 },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0ULL,
-+      0xfc00000780000000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      -1ULL,
-+      0x2c00000180000000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "bytex", TILE_OPC_BYTEX, 0x5 /* pipes */, 2 /* num_operands */,
-+    TREG_ZERO, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 7, 8 },
-+      { 0, },
-+      { 11, 12 },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ffff000ULL,
-+      0ULL,
-+      0x80000000780ff000ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x0000000070162000ULL,
-+      -1ULL,
-+      0x80000000680a2000ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "bytex.sn", TILE_OPC_BYTEX_SN, 0x1 /* pipes */, 2 /* num_operands */,
-+    TREG_SN, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 7, 8 },
-+      { 0, },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ffff000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x0000000078162000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "bz", TILE_OPC_BZ, 0x2 /* pipes */, 2 /* num_operands */,
-+    TREG_ZERO, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 0, },
-+      { 10, 20 },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0ULL,
-+      0xfc00000780000000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      -1ULL,
-+      0x2800000000000000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "bz.sn", TILE_OPC_BZ_SN, 0x2 /* pipes */, 2 /* num_operands */,
-+    TREG_SN, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 0, },
-+      { 10, 20 },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0ULL,
-+      0xfc00000780000000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      -1ULL,
-+      0x2c00000000000000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "bzt", TILE_OPC_BZT, 0x2 /* pipes */, 2 /* num_operands */,
-+    TREG_ZERO, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 0, },
-+      { 10, 20 },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0ULL,
-+      0xfc00000780000000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      -1ULL,
-+      0x2800000080000000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "bzt.sn", TILE_OPC_BZT_SN, 0x2 /* pipes */, 2 /* num_operands */,
-+    TREG_SN, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 0, },
-+      { 10, 20 },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0ULL,
-+      0xfc00000780000000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      -1ULL,
-+      0x2c00000080000000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "clz", TILE_OPC_CLZ, 0x5 /* pipes */, 2 /* num_operands */,
-+    TREG_ZERO, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 7, 8 },
-+      { 0, },
-+      { 11, 12 },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ffff000ULL,
-+      0ULL,
-+      0x80000000780ff000ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x0000000070163000ULL,
-+      -1ULL,
-+      0x80000000680a3000ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "clz.sn", TILE_OPC_CLZ_SN, 0x1 /* pipes */, 2 /* num_operands */,
-+    TREG_SN, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 7, 8 },
-+      { 0, },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ffff000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x0000000078163000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "crc32_32", TILE_OPC_CRC32_32, 0x1 /* pipes */, 3 /* num_operands */,
-+    TREG_ZERO, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 7, 8, 16 },
-+      { 0, },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ffc0000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x0000000000240000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "crc32_32.sn", TILE_OPC_CRC32_32_SN, 0x1 /* pipes */, 3 /* num_operands */,
-+    TREG_SN, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 7, 8, 16 },
-+      { 0, },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ffc0000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x0000000008240000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "crc32_8", TILE_OPC_CRC32_8, 0x1 /* pipes */, 3 /* num_operands */,
-+    TREG_ZERO, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 7, 8, 16 },
-+      { 0, },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ffc0000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x0000000000280000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "crc32_8.sn", TILE_OPC_CRC32_8_SN, 0x1 /* pipes */, 3 /* num_operands */,
-+    TREG_SN, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 7, 8, 16 },
-+      { 0, },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ffc0000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x0000000008280000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "ctz", TILE_OPC_CTZ, 0x5 /* pipes */, 2 /* num_operands */,
-+    TREG_ZERO, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 7, 8 },
-+      { 0, },
-+      { 11, 12 },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ffff000ULL,
-+      0ULL,
-+      0x80000000780ff000ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x0000000070164000ULL,
-+      -1ULL,
-+      0x80000000680a4000ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "ctz.sn", TILE_OPC_CTZ_SN, 0x1 /* pipes */, 2 /* num_operands */,
-+    TREG_SN, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 7, 8 },
-+      { 0, },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ffff000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x0000000078164000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "drain", TILE_OPC_DRAIN, 0x2 /* pipes */, 0 /* num_operands */,
-+    TREG_ZERO, /* implicitly_written_register */
-+    0, /* can_bundle */
-+    {
-+      /* operands */
-+      { 0, },
-+      {  },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0ULL,
-+      0xfbfff80000000000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      -1ULL,
-+      0x400b080000000000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "dtlbpr", TILE_OPC_DTLBPR, 0x2 /* pipes */, 1 /* num_operands */,
-+    TREG_ZERO, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 0, },
-+      { 10 },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0ULL,
-+      0xfbfff80000000000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      -1ULL,
-+      0x400b100000000000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "dword_align", TILE_OPC_DWORD_ALIGN, 0x1 /* pipes */, 3 /* num_operands */,
-+    TREG_ZERO, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 21, 8, 16 },
-+      { 0, },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ffc0000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x00000000017c0000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "dword_align.sn", TILE_OPC_DWORD_ALIGN_SN, 0x1 /* pipes */, 3 /* num_operands */,
-+    TREG_SN, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 21, 8, 16 },
-+      { 0, },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ffc0000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x00000000097c0000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "finv", TILE_OPC_FINV, 0x2 /* pipes */, 1 /* num_operands */,
-+    TREG_ZERO, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 0, },
-+      { 10 },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0ULL,
-+      0xfbfff80000000000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      -1ULL,
-+      0x400b180000000000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "flush", TILE_OPC_FLUSH, 0x2 /* pipes */, 1 /* num_operands */,
-+    TREG_ZERO, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 0, },
-+      { 10 },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0ULL,
-+      0xfbfff80000000000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      -1ULL,
-+      0x400b200000000000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "fnop", TILE_OPC_FNOP, 0xf /* pipes */, 0 /* num_operands */,
-+    TREG_ZERO, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      {  },
-+      {  },
-+      {  },
-+      {  },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x8000000077fff000ULL,
-+      0xfbfff80000000000ULL,
-+      0x80000000780ff000ULL,
-+      0xf807f80000000000ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x0000000070165000ULL,
-+      0x400b280000000000ULL,
-+      0x80000000680a5000ULL,
-+      0xd805080000000000ULL,
-+      -1ULL
-+    }
-+  },
-+  { "icoh", TILE_OPC_ICOH, 0x2 /* pipes */, 1 /* num_operands */,
-+    TREG_ZERO, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 0, },
-+      { 10 },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0ULL,
-+      0xfbfff80000000000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      -1ULL,
-+      0x400b300000000000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "ill", TILE_OPC_ILL, 0xa /* pipes */, 0 /* num_operands */,
-+    TREG_ZERO, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 0, },
-+      {  },
-+      { 0, },
-+      {  },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0ULL,
-+      0xfbfff80000000000ULL,
-+      0ULL,
-+      0xf807f80000000000ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      -1ULL,
-+      0x400b380000000000ULL,
-+      -1ULL,
-+      0xd805100000000000ULL,
-+      -1ULL
-+    }
-+  },
-+  { "inthb", TILE_OPC_INTHB, 0x3 /* pipes */, 3 /* num_operands */,
-+    TREG_ZERO, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 7, 8, 16 },
-+      { 9, 10, 17 },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ffc0000ULL,
-+      0xfffe000000000000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x00000000002c0000ULL,
-+      0x080a000000000000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "inthb.sn", TILE_OPC_INTHB_SN, 0x3 /* pipes */, 3 /* num_operands */,
-+    TREG_SN, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 7, 8, 16 },
-+      { 9, 10, 17 },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ffc0000ULL,
-+      0xfffe000000000000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x00000000082c0000ULL,
-+      0x0c0a000000000000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "inthh", TILE_OPC_INTHH, 0x3 /* pipes */, 3 /* num_operands */,
-+    TREG_ZERO, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 7, 8, 16 },
-+      { 9, 10, 17 },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ffc0000ULL,
-+      0xfffe000000000000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x0000000000300000ULL,
-+      0x080c000000000000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "inthh.sn", TILE_OPC_INTHH_SN, 0x3 /* pipes */, 3 /* num_operands */,
-+    TREG_SN, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 7, 8, 16 },
-+      { 9, 10, 17 },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ffc0000ULL,
-+      0xfffe000000000000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x0000000008300000ULL,
-+      0x0c0c000000000000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "intlb", TILE_OPC_INTLB, 0x3 /* pipes */, 3 /* num_operands */,
-+    TREG_ZERO, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 7, 8, 16 },
-+      { 9, 10, 17 },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ffc0000ULL,
-+      0xfffe000000000000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x0000000000340000ULL,
-+      0x080e000000000000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "intlb.sn", TILE_OPC_INTLB_SN, 0x3 /* pipes */, 3 /* num_operands */,
-+    TREG_SN, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 7, 8, 16 },
-+      { 9, 10, 17 },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ffc0000ULL,
-+      0xfffe000000000000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x0000000008340000ULL,
-+      0x0c0e000000000000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "intlh", TILE_OPC_INTLH, 0x3 /* pipes */, 3 /* num_operands */,
-+    TREG_ZERO, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 7, 8, 16 },
-+      { 9, 10, 17 },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ffc0000ULL,
-+      0xfffe000000000000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x0000000000380000ULL,
-+      0x0810000000000000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "intlh.sn", TILE_OPC_INTLH_SN, 0x3 /* pipes */, 3 /* num_operands */,
-+    TREG_SN, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 7, 8, 16 },
-+      { 9, 10, 17 },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ffc0000ULL,
-+      0xfffe000000000000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x0000000008380000ULL,
-+      0x0c10000000000000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "inv", TILE_OPC_INV, 0x2 /* pipes */, 1 /* num_operands */,
-+    TREG_ZERO, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 0, },
-+      { 10 },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0ULL,
-+      0xfbfff80000000000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      -1ULL,
-+      0x400b400000000000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "iret", TILE_OPC_IRET, 0x2 /* pipes */, 0 /* num_operands */,
-+    TREG_ZERO, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 0, },
-+      {  },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0ULL,
-+      0xfbfff80000000000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      -1ULL,
-+      0x400b480000000000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "jalb", TILE_OPC_JALB, 0x2 /* pipes */, 1 /* num_operands */,
-+    TREG_LR, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 0, },
-+      { 22 },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0ULL,
-+      0xf800000000000000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      -1ULL,
-+      0x6800000000000000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "jalf", TILE_OPC_JALF, 0x2 /* pipes */, 1 /* num_operands */,
-+    TREG_LR, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 0, },
-+      { 22 },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0ULL,
-+      0xf800000000000000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      -1ULL,
-+      0x6000000000000000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "jalr", TILE_OPC_JALR, 0x2 /* pipes */, 1 /* num_operands */,
-+    TREG_LR, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 0, },
-+      { 10 },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0ULL,
-+      0xfbfe000000000000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      -1ULL,
-+      0x0814000000000000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "jalrp", TILE_OPC_JALRP, 0x2 /* pipes */, 1 /* num_operands */,
-+    TREG_LR, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 0, },
-+      { 10 },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0ULL,
-+      0xfbfe000000000000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      -1ULL,
-+      0x0812000000000000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "jb", TILE_OPC_JB, 0x2 /* pipes */, 1 /* num_operands */,
-+    TREG_ZERO, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 0, },
-+      { 22 },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0ULL,
-+      0xf800000000000000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      -1ULL,
-+      0x5800000000000000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "jf", TILE_OPC_JF, 0x2 /* pipes */, 1 /* num_operands */,
-+    TREG_ZERO, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 0, },
-+      { 22 },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0ULL,
-+      0xf800000000000000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      -1ULL,
-+      0x5000000000000000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "jr", TILE_OPC_JR, 0x2 /* pipes */, 1 /* num_operands */,
-+    TREG_ZERO, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 0, },
-+      { 10 },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0ULL,
-+      0xfbfe000000000000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      -1ULL,
-+      0x0818000000000000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "jrp", TILE_OPC_JRP, 0x2 /* pipes */, 1 /* num_operands */,
-+    TREG_ZERO, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 0, },
-+      { 10 },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0ULL,
-+      0xfbfe000000000000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      -1ULL,
-+      0x0816000000000000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "lb", TILE_OPC_LB, 0x12 /* pipes */, 2 /* num_operands */,
-+    TREG_ZERO, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 0, },
-+      { 9, 10 },
-+      { 0, },
-+      { 0, },
-+      { 23, 15 }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0ULL,
-+      0xfffff80000000000ULL,
-+      0ULL,
-+      0ULL,
-+      0x8700000000000000ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      -1ULL,
-+      0x400b500000000000ULL,
-+      -1ULL,
-+      -1ULL,
-+      0x8000000000000000ULL
-+    }
-+  },
-+  { "lb.sn", TILE_OPC_LB_SN, 0x2 /* pipes */, 2 /* num_operands */,
-+    TREG_SN, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 0, },
-+      { 9, 10 },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0ULL,
-+      0xfffff80000000000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      -1ULL,
-+      0x440b500000000000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "lb_u", TILE_OPC_LB_U, 0x12 /* pipes */, 2 /* num_operands */,
-+    TREG_ZERO, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 0, },
-+      { 9, 10 },
-+      { 0, },
-+      { 0, },
-+      { 23, 15 }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0ULL,
-+      0xfffff80000000000ULL,
-+      0ULL,
-+      0ULL,
-+      0x8700000000000000ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      -1ULL,
-+      0x400b580000000000ULL,
-+      -1ULL,
-+      -1ULL,
-+      0x8100000000000000ULL
-+    }
-+  },
-+  { "lb_u.sn", TILE_OPC_LB_U_SN, 0x2 /* pipes */, 2 /* num_operands */,
-+    TREG_SN, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 0, },
-+      { 9, 10 },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0ULL,
-+      0xfffff80000000000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      -1ULL,
-+      0x440b580000000000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "lbadd", TILE_OPC_LBADD, 0x2 /* pipes */, 3 /* num_operands */,
-+    TREG_ZERO, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 0, },
-+      { 9, 24, 1 },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0ULL,
-+      0xfff8000000000000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      -1ULL,
-+      0x30b0000000000000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "lbadd.sn", TILE_OPC_LBADD_SN, 0x2 /* pipes */, 3 /* num_operands */,
-+    TREG_SN, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 0, },
-+      { 9, 24, 1 },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0ULL,
-+      0xfff8000000000000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      -1ULL,
-+      0x34b0000000000000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "lbadd_u", TILE_OPC_LBADD_U, 0x2 /* pipes */, 3 /* num_operands */,
-+    TREG_ZERO, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 0, },
-+      { 9, 24, 1 },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0ULL,
-+      0xfff8000000000000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      -1ULL,
-+      0x30b8000000000000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "lbadd_u.sn", TILE_OPC_LBADD_U_SN, 0x2 /* pipes */, 3 /* num_operands */,
-+    TREG_SN, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 0, },
-+      { 9, 24, 1 },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0ULL,
-+      0xfff8000000000000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      -1ULL,
-+      0x34b8000000000000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "lh", TILE_OPC_LH, 0x12 /* pipes */, 2 /* num_operands */,
-+    TREG_ZERO, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 0, },
-+      { 9, 10 },
-+      { 0, },
-+      { 0, },
-+      { 23, 15 }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0ULL,
-+      0xfffff80000000000ULL,
-+      0ULL,
-+      0ULL,
-+      0x8700000000000000ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      -1ULL,
-+      0x400b600000000000ULL,
-+      -1ULL,
-+      -1ULL,
-+      0x8200000000000000ULL
-+    }
-+  },
-+  { "lh.sn", TILE_OPC_LH_SN, 0x2 /* pipes */, 2 /* num_operands */,
-+    TREG_SN, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 0, },
-+      { 9, 10 },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0ULL,
-+      0xfffff80000000000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      -1ULL,
-+      0x440b600000000000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "lh_u", TILE_OPC_LH_U, 0x12 /* pipes */, 2 /* num_operands */,
-+    TREG_ZERO, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 0, },
-+      { 9, 10 },
-+      { 0, },
-+      { 0, },
-+      { 23, 15 }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0ULL,
-+      0xfffff80000000000ULL,
-+      0ULL,
-+      0ULL,
-+      0x8700000000000000ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      -1ULL,
-+      0x400b680000000000ULL,
-+      -1ULL,
-+      -1ULL,
-+      0x8300000000000000ULL
-+    }
-+  },
-+  { "lh_u.sn", TILE_OPC_LH_U_SN, 0x2 /* pipes */, 2 /* num_operands */,
-+    TREG_SN, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 0, },
-+      { 9, 10 },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0ULL,
-+      0xfffff80000000000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      -1ULL,
-+      0x440b680000000000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "lhadd", TILE_OPC_LHADD, 0x2 /* pipes */, 3 /* num_operands */,
-+    TREG_ZERO, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 0, },
-+      { 9, 24, 1 },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0ULL,
-+      0xfff8000000000000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      -1ULL,
-+      0x30c0000000000000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "lhadd.sn", TILE_OPC_LHADD_SN, 0x2 /* pipes */, 3 /* num_operands */,
-+    TREG_SN, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 0, },
-+      { 9, 24, 1 },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0ULL,
-+      0xfff8000000000000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      -1ULL,
-+      0x34c0000000000000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "lhadd_u", TILE_OPC_LHADD_U, 0x2 /* pipes */, 3 /* num_operands */,
-+    TREG_ZERO, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 0, },
-+      { 9, 24, 1 },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0ULL,
-+      0xfff8000000000000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      -1ULL,
-+      0x30c8000000000000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "lhadd_u.sn", TILE_OPC_LHADD_U_SN, 0x2 /* pipes */, 3 /* num_operands */,
-+    TREG_SN, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 0, },
-+      { 9, 24, 1 },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0ULL,
-+      0xfff8000000000000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      -1ULL,
-+      0x34c8000000000000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "lnk", TILE_OPC_LNK, 0x2 /* pipes */, 1 /* num_operands */,
-+    TREG_ZERO, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 0, },
-+      { 9 },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0ULL,
-+      0xfffe000000000000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      -1ULL,
-+      0x081a000000000000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "lnk.sn", TILE_OPC_LNK_SN, 0x2 /* pipes */, 1 /* num_operands */,
-+    TREG_SN, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 0, },
-+      { 9 },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0ULL,
-+      0xfffe000000000000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      -1ULL,
-+      0x0c1a000000000000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "lw", TILE_OPC_LW, 0x12 /* pipes */, 2 /* num_operands */,
-+    TREG_ZERO, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 0, },
-+      { 9, 10 },
-+      { 0, },
-+      { 0, },
-+      { 23, 15 }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0ULL,
-+      0xfffff80000000000ULL,
-+      0ULL,
-+      0ULL,
-+      0x8700000000000000ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      -1ULL,
-+      0x400b700000000000ULL,
-+      -1ULL,
-+      -1ULL,
-+      0x8400000000000000ULL
-+    }
-+  },
-+  { "lw.sn", TILE_OPC_LW_SN, 0x2 /* pipes */, 2 /* num_operands */,
-+    TREG_SN, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 0, },
-+      { 9, 10 },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0ULL,
-+      0xfffff80000000000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      -1ULL,
-+      0x440b700000000000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "lw_na", TILE_OPC_LW_NA, 0x2 /* pipes */, 2 /* num_operands */,
-+    TREG_ZERO, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 0, },
-+      { 9, 10 },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0ULL,
-+      0xfffff80000000000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      -1ULL,
-+      0x400bc00000000000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "lw_na.sn", TILE_OPC_LW_NA_SN, 0x2 /* pipes */, 2 /* num_operands */,
-+    TREG_SN, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 0, },
-+      { 9, 10 },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0ULL,
-+      0xfffff80000000000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      -1ULL,
-+      0x440bc00000000000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "lwadd", TILE_OPC_LWADD, 0x2 /* pipes */, 3 /* num_operands */,
-+    TREG_ZERO, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 0, },
-+      { 9, 24, 1 },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0ULL,
-+      0xfff8000000000000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      -1ULL,
-+      0x30d0000000000000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "lwadd.sn", TILE_OPC_LWADD_SN, 0x2 /* pipes */, 3 /* num_operands */,
-+    TREG_SN, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 0, },
-+      { 9, 24, 1 },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0ULL,
-+      0xfff8000000000000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      -1ULL,
-+      0x34d0000000000000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "lwadd_na", TILE_OPC_LWADD_NA, 0x2 /* pipes */, 3 /* num_operands */,
-+    TREG_ZERO, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 0, },
-+      { 9, 24, 1 },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0ULL,
-+      0xfff8000000000000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      -1ULL,
-+      0x30d8000000000000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "lwadd_na.sn", TILE_OPC_LWADD_NA_SN, 0x2 /* pipes */, 3 /* num_operands */,
-+    TREG_SN, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 0, },
-+      { 9, 24, 1 },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0ULL,
-+      0xfff8000000000000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      -1ULL,
-+      0x34d8000000000000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "maxb_u", TILE_OPC_MAXB_U, 0x3 /* pipes */, 3 /* num_operands */,
-+    TREG_ZERO, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 7, 8, 16 },
-+      { 9, 10, 17 },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ffc0000ULL,
-+      0xfffe000000000000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x00000000003c0000ULL,
-+      0x081c000000000000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "maxb_u.sn", TILE_OPC_MAXB_U_SN, 0x3 /* pipes */, 3 /* num_operands */,
-+    TREG_SN, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 7, 8, 16 },
-+      { 9, 10, 17 },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ffc0000ULL,
-+      0xfffe000000000000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x00000000083c0000ULL,
-+      0x0c1c000000000000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "maxh", TILE_OPC_MAXH, 0x3 /* pipes */, 3 /* num_operands */,
-+    TREG_ZERO, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 7, 8, 16 },
-+      { 9, 10, 17 },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ffc0000ULL,
-+      0xfffe000000000000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x0000000000400000ULL,
-+      0x081e000000000000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "maxh.sn", TILE_OPC_MAXH_SN, 0x3 /* pipes */, 3 /* num_operands */,
-+    TREG_SN, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 7, 8, 16 },
-+      { 9, 10, 17 },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ffc0000ULL,
-+      0xfffe000000000000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x0000000008400000ULL,
-+      0x0c1e000000000000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "maxib_u", TILE_OPC_MAXIB_U, 0x3 /* pipes */, 3 /* num_operands */,
-+    TREG_ZERO, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 7, 8, 0 },
-+      { 9, 10, 1 },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ff00000ULL,
-+      0xfff8000000000000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x0000000040400000ULL,
-+      0x3028000000000000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "maxib_u.sn", TILE_OPC_MAXIB_U_SN, 0x3 /* pipes */, 3 /* num_operands */,
-+    TREG_SN, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 7, 8, 0 },
-+      { 9, 10, 1 },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ff00000ULL,
-+      0xfff8000000000000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x0000000048400000ULL,
-+      0x3428000000000000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "maxih", TILE_OPC_MAXIH, 0x3 /* pipes */, 3 /* num_operands */,
-+    TREG_ZERO, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 7, 8, 0 },
-+      { 9, 10, 1 },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ff00000ULL,
-+      0xfff8000000000000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x0000000040500000ULL,
-+      0x3030000000000000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "maxih.sn", TILE_OPC_MAXIH_SN, 0x3 /* pipes */, 3 /* num_operands */,
-+    TREG_SN, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 7, 8, 0 },
-+      { 9, 10, 1 },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ff00000ULL,
-+      0xfff8000000000000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x0000000048500000ULL,
-+      0x3430000000000000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "mf", TILE_OPC_MF, 0x2 /* pipes */, 0 /* num_operands */,
-+    TREG_ZERO, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 0, },
-+      {  },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0ULL,
-+      0xfbfff80000000000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      -1ULL,
-+      0x400b780000000000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "mfspr", TILE_OPC_MFSPR, 0x2 /* pipes */, 2 /* num_operands */,
-+    TREG_ZERO, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 0, },
-+      { 9, 25 },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0ULL,
-+      0xfbf8000000000000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      -1ULL,
-+      0x3038000000000000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "minb_u", TILE_OPC_MINB_U, 0x3 /* pipes */, 3 /* num_operands */,
-+    TREG_ZERO, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 7, 8, 16 },
-+      { 9, 10, 17 },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ffc0000ULL,
-+      0xfffe000000000000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x0000000000440000ULL,
-+      0x0820000000000000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "minb_u.sn", TILE_OPC_MINB_U_SN, 0x3 /* pipes */, 3 /* num_operands */,
-+    TREG_SN, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 7, 8, 16 },
-+      { 9, 10, 17 },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ffc0000ULL,
-+      0xfffe000000000000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x0000000008440000ULL,
-+      0x0c20000000000000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "minh", TILE_OPC_MINH, 0x3 /* pipes */, 3 /* num_operands */,
-+    TREG_ZERO, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 7, 8, 16 },
-+      { 9, 10, 17 },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ffc0000ULL,
-+      0xfffe000000000000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x0000000000480000ULL,
-+      0x0822000000000000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "minh.sn", TILE_OPC_MINH_SN, 0x3 /* pipes */, 3 /* num_operands */,
-+    TREG_SN, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 7, 8, 16 },
-+      { 9, 10, 17 },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ffc0000ULL,
-+      0xfffe000000000000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x0000000008480000ULL,
-+      0x0c22000000000000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "minib_u", TILE_OPC_MINIB_U, 0x3 /* pipes */, 3 /* num_operands */,
-+    TREG_ZERO, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 7, 8, 0 },
-+      { 9, 10, 1 },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ff00000ULL,
-+      0xfff8000000000000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x0000000040600000ULL,
-+      0x3040000000000000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "minib_u.sn", TILE_OPC_MINIB_U_SN, 0x3 /* pipes */, 3 /* num_operands */,
-+    TREG_SN, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 7, 8, 0 },
-+      { 9, 10, 1 },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ff00000ULL,
-+      0xfff8000000000000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x0000000048600000ULL,
-+      0x3440000000000000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "minih", TILE_OPC_MINIH, 0x3 /* pipes */, 3 /* num_operands */,
-+    TREG_ZERO, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 7, 8, 0 },
-+      { 9, 10, 1 },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ff00000ULL,
-+      0xfff8000000000000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x0000000040700000ULL,
-+      0x3048000000000000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "minih.sn", TILE_OPC_MINIH_SN, 0x3 /* pipes */, 3 /* num_operands */,
-+    TREG_SN, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 7, 8, 0 },
-+      { 9, 10, 1 },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ff00000ULL,
-+      0xfff8000000000000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x0000000048700000ULL,
-+      0x3448000000000000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "mm", TILE_OPC_MM, 0x3 /* pipes */, 5 /* num_operands */,
-+    TREG_ZERO, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 7, 8, 16, 26, 27 },
-+      { 9, 10, 17, 28, 29 },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x8000000070000000ULL,
-+      0xf800000000000000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x0000000060000000ULL,
-+      0x3800000000000000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "mnz", TILE_OPC_MNZ, 0xf /* pipes */, 3 /* num_operands */,
-+    TREG_ZERO, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 7, 8, 16 },
-+      { 9, 10, 17 },
-+      { 11, 12, 18 },
-+      { 13, 14, 19 },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ffc0000ULL,
-+      0xfffe000000000000ULL,
-+      0x80000000780c0000ULL,
-+      0xf806000000000000ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x0000000000540000ULL,
-+      0x0828000000000000ULL,
-+      0x8000000010000000ULL,
-+      0x9002000000000000ULL,
-+      -1ULL
-+    }
-+  },
-+  { "mnz.sn", TILE_OPC_MNZ_SN, 0x3 /* pipes */, 3 /* num_operands */,
-+    TREG_SN, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 7, 8, 16 },
-+      { 9, 10, 17 },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ffc0000ULL,
-+      0xfffe000000000000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x0000000008540000ULL,
-+      0x0c28000000000000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "mnzb", TILE_OPC_MNZB, 0x3 /* pipes */, 3 /* num_operands */,
-+    TREG_ZERO, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 7, 8, 16 },
-+      { 9, 10, 17 },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ffc0000ULL,
-+      0xfffe000000000000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x00000000004c0000ULL,
-+      0x0824000000000000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "mnzb.sn", TILE_OPC_MNZB_SN, 0x3 /* pipes */, 3 /* num_operands */,
-+    TREG_SN, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 7, 8, 16 },
-+      { 9, 10, 17 },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ffc0000ULL,
-+      0xfffe000000000000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x00000000084c0000ULL,
-+      0x0c24000000000000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "mnzh", TILE_OPC_MNZH, 0x3 /* pipes */, 3 /* num_operands */,
-+    TREG_ZERO, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 7, 8, 16 },
-+      { 9, 10, 17 },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ffc0000ULL,
-+      0xfffe000000000000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x0000000000500000ULL,
-+      0x0826000000000000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "mnzh.sn", TILE_OPC_MNZH_SN, 0x3 /* pipes */, 3 /* num_operands */,
-+    TREG_SN, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 7, 8, 16 },
-+      { 9, 10, 17 },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ffc0000ULL,
-+      0xfffe000000000000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x0000000008500000ULL,
-+      0x0c26000000000000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "mtspr", TILE_OPC_MTSPR, 0x2 /* pipes */, 2 /* num_operands */,
-+    TREG_ZERO, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 0, },
-+      { 30, 10 },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0ULL,
-+      0xfbf8000000000000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      -1ULL,
-+      0x3050000000000000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "mulhh_ss", TILE_OPC_MULHH_SS, 0x5 /* pipes */, 3 /* num_operands */,
-+    TREG_ZERO, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 7, 8, 16 },
-+      { 0, },
-+      { 11, 12, 18 },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ffc0000ULL,
-+      0ULL,
-+      0x80000000780c0000ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x0000000000680000ULL,
-+      -1ULL,
-+      0x8000000038000000ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "mulhh_ss.sn", TILE_OPC_MULHH_SS_SN, 0x1 /* pipes */, 3 /* num_operands */,
-+    TREG_SN, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 7, 8, 16 },
-+      { 0, },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ffc0000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x0000000008680000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "mulhh_su", TILE_OPC_MULHH_SU, 0x1 /* pipes */, 3 /* num_operands */,
-+    TREG_ZERO, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 7, 8, 16 },
-+      { 0, },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ffc0000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x00000000006c0000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "mulhh_su.sn", TILE_OPC_MULHH_SU_SN, 0x1 /* pipes */, 3 /* num_operands */,
-+    TREG_SN, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 7, 8, 16 },
-+      { 0, },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ffc0000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x00000000086c0000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "mulhh_uu", TILE_OPC_MULHH_UU, 0x5 /* pipes */, 3 /* num_operands */,
-+    TREG_ZERO, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 7, 8, 16 },
-+      { 0, },
-+      { 11, 12, 18 },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ffc0000ULL,
-+      0ULL,
-+      0x80000000780c0000ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x0000000000700000ULL,
-+      -1ULL,
-+      0x8000000038040000ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "mulhh_uu.sn", TILE_OPC_MULHH_UU_SN, 0x1 /* pipes */, 3 /* num_operands */,
-+    TREG_SN, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 7, 8, 16 },
-+      { 0, },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ffc0000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x0000000008700000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "mulhha_ss", TILE_OPC_MULHHA_SS, 0x5 /* pipes */, 3 /* num_operands */,
-+    TREG_ZERO, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 21, 8, 16 },
-+      { 0, },
-+      { 31, 12, 18 },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ffc0000ULL,
-+      0ULL,
-+      0x80000000780c0000ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x0000000000580000ULL,
-+      -1ULL,
-+      0x8000000040000000ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "mulhha_ss.sn", TILE_OPC_MULHHA_SS_SN, 0x1 /* pipes */, 3 /* num_operands */,
-+    TREG_SN, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 21, 8, 16 },
-+      { 0, },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ffc0000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x0000000008580000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "mulhha_su", TILE_OPC_MULHHA_SU, 0x1 /* pipes */, 3 /* num_operands */,
-+    TREG_ZERO, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 21, 8, 16 },
-+      { 0, },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ffc0000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x00000000005c0000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "mulhha_su.sn", TILE_OPC_MULHHA_SU_SN, 0x1 /* pipes */, 3 /* num_operands */,
-+    TREG_SN, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 21, 8, 16 },
-+      { 0, },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ffc0000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x00000000085c0000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "mulhha_uu", TILE_OPC_MULHHA_UU, 0x5 /* pipes */, 3 /* num_operands */,
-+    TREG_ZERO, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 21, 8, 16 },
-+      { 0, },
-+      { 31, 12, 18 },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ffc0000ULL,
-+      0ULL,
-+      0x80000000780c0000ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x0000000000600000ULL,
-+      -1ULL,
-+      0x8000000040040000ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "mulhha_uu.sn", TILE_OPC_MULHHA_UU_SN, 0x1 /* pipes */, 3 /* num_operands */,
-+    TREG_SN, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 21, 8, 16 },
-+      { 0, },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ffc0000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x0000000008600000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "mulhhsa_uu", TILE_OPC_MULHHSA_UU, 0x1 /* pipes */, 3 /* num_operands */,
-+    TREG_ZERO, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 21, 8, 16 },
-+      { 0, },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ffc0000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x0000000000640000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "mulhhsa_uu.sn", TILE_OPC_MULHHSA_UU_SN, 0x1 /* pipes */, 3 /* num_operands */,
-+    TREG_SN, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 21, 8, 16 },
-+      { 0, },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ffc0000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x0000000008640000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "mulhl_ss", TILE_OPC_MULHL_SS, 0x1 /* pipes */, 3 /* num_operands */,
-+    TREG_ZERO, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 7, 8, 16 },
-+      { 0, },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ffc0000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x0000000000880000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "mulhl_ss.sn", TILE_OPC_MULHL_SS_SN, 0x1 /* pipes */, 3 /* num_operands */,
-+    TREG_SN, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 7, 8, 16 },
-+      { 0, },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ffc0000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x0000000008880000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "mulhl_su", TILE_OPC_MULHL_SU, 0x1 /* pipes */, 3 /* num_operands */,
-+    TREG_ZERO, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 7, 8, 16 },
-+      { 0, },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ffc0000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x00000000008c0000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "mulhl_su.sn", TILE_OPC_MULHL_SU_SN, 0x1 /* pipes */, 3 /* num_operands */,
-+    TREG_SN, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 7, 8, 16 },
-+      { 0, },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ffc0000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x00000000088c0000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "mulhl_us", TILE_OPC_MULHL_US, 0x1 /* pipes */, 3 /* num_operands */,
-+    TREG_ZERO, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 7, 8, 16 },
-+      { 0, },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ffc0000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x0000000000900000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "mulhl_us.sn", TILE_OPC_MULHL_US_SN, 0x1 /* pipes */, 3 /* num_operands */,
-+    TREG_SN, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 7, 8, 16 },
-+      { 0, },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ffc0000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x0000000008900000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "mulhl_uu", TILE_OPC_MULHL_UU, 0x1 /* pipes */, 3 /* num_operands */,
-+    TREG_ZERO, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 7, 8, 16 },
-+      { 0, },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ffc0000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x0000000000940000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "mulhl_uu.sn", TILE_OPC_MULHL_UU_SN, 0x1 /* pipes */, 3 /* num_operands */,
-+    TREG_SN, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 7, 8, 16 },
-+      { 0, },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ffc0000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x0000000008940000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "mulhla_ss", TILE_OPC_MULHLA_SS, 0x1 /* pipes */, 3 /* num_operands */,
-+    TREG_ZERO, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 21, 8, 16 },
-+      { 0, },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ffc0000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x0000000000740000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "mulhla_ss.sn", TILE_OPC_MULHLA_SS_SN, 0x1 /* pipes */, 3 /* num_operands */,
-+    TREG_SN, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 21, 8, 16 },
-+      { 0, },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ffc0000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x0000000008740000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "mulhla_su", TILE_OPC_MULHLA_SU, 0x1 /* pipes */, 3 /* num_operands */,
-+    TREG_ZERO, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 21, 8, 16 },
-+      { 0, },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ffc0000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x0000000000780000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "mulhla_su.sn", TILE_OPC_MULHLA_SU_SN, 0x1 /* pipes */, 3 /* num_operands */,
-+    TREG_SN, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 21, 8, 16 },
-+      { 0, },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ffc0000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x0000000008780000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "mulhla_us", TILE_OPC_MULHLA_US, 0x1 /* pipes */, 3 /* num_operands */,
-+    TREG_ZERO, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 21, 8, 16 },
-+      { 0, },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ffc0000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x00000000007c0000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "mulhla_us.sn", TILE_OPC_MULHLA_US_SN, 0x1 /* pipes */, 3 /* num_operands */,
-+    TREG_SN, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 21, 8, 16 },
-+      { 0, },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ffc0000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x00000000087c0000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "mulhla_uu", TILE_OPC_MULHLA_UU, 0x1 /* pipes */, 3 /* num_operands */,
-+    TREG_ZERO, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 21, 8, 16 },
-+      { 0, },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ffc0000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x0000000000800000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "mulhla_uu.sn", TILE_OPC_MULHLA_UU_SN, 0x1 /* pipes */, 3 /* num_operands */,
-+    TREG_SN, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 21, 8, 16 },
-+      { 0, },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ffc0000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x0000000008800000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "mulhlsa_uu", TILE_OPC_MULHLSA_UU, 0x5 /* pipes */, 3 /* num_operands */,
-+    TREG_ZERO, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 21, 8, 16 },
-+      { 0, },
-+      { 31, 12, 18 },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ffc0000ULL,
-+      0ULL,
-+      0x80000000780c0000ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x0000000000840000ULL,
-+      -1ULL,
-+      0x8000000030000000ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "mulhlsa_uu.sn", TILE_OPC_MULHLSA_UU_SN, 0x1 /* pipes */, 3 /* num_operands */,
-+    TREG_SN, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 21, 8, 16 },
-+      { 0, },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ffc0000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x0000000008840000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "mulll_ss", TILE_OPC_MULLL_SS, 0x5 /* pipes */, 3 /* num_operands */,
-+    TREG_ZERO, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 7, 8, 16 },
-+      { 0, },
-+      { 11, 12, 18 },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ffc0000ULL,
-+      0ULL,
-+      0x80000000780c0000ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x0000000000a80000ULL,
-+      -1ULL,
-+      0x8000000038080000ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "mulll_ss.sn", TILE_OPC_MULLL_SS_SN, 0x1 /* pipes */, 3 /* num_operands */,
-+    TREG_SN, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 7, 8, 16 },
-+      { 0, },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ffc0000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x0000000008a80000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "mulll_su", TILE_OPC_MULLL_SU, 0x1 /* pipes */, 3 /* num_operands */,
-+    TREG_ZERO, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 7, 8, 16 },
-+      { 0, },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ffc0000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x0000000000ac0000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "mulll_su.sn", TILE_OPC_MULLL_SU_SN, 0x1 /* pipes */, 3 /* num_operands */,
-+    TREG_SN, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 7, 8, 16 },
-+      { 0, },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ffc0000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x0000000008ac0000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "mulll_uu", TILE_OPC_MULLL_UU, 0x5 /* pipes */, 3 /* num_operands */,
-+    TREG_ZERO, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 7, 8, 16 },
-+      { 0, },
-+      { 11, 12, 18 },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ffc0000ULL,
-+      0ULL,
-+      0x80000000780c0000ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x0000000000b00000ULL,
-+      -1ULL,
-+      0x80000000380c0000ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "mulll_uu.sn", TILE_OPC_MULLL_UU_SN, 0x1 /* pipes */, 3 /* num_operands */,
-+    TREG_SN, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 7, 8, 16 },
-+      { 0, },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ffc0000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x0000000008b00000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "mullla_ss", TILE_OPC_MULLLA_SS, 0x5 /* pipes */, 3 /* num_operands */,
-+    TREG_ZERO, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 21, 8, 16 },
-+      { 0, },
-+      { 31, 12, 18 },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ffc0000ULL,
-+      0ULL,
-+      0x80000000780c0000ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x0000000000980000ULL,
-+      -1ULL,
-+      0x8000000040080000ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "mullla_ss.sn", TILE_OPC_MULLLA_SS_SN, 0x1 /* pipes */, 3 /* num_operands */,
-+    TREG_SN, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 21, 8, 16 },
-+      { 0, },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ffc0000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x0000000008980000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "mullla_su", TILE_OPC_MULLLA_SU, 0x1 /* pipes */, 3 /* num_operands */,
-+    TREG_ZERO, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 21, 8, 16 },
-+      { 0, },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ffc0000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x00000000009c0000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "mullla_su.sn", TILE_OPC_MULLLA_SU_SN, 0x1 /* pipes */, 3 /* num_operands */,
-+    TREG_SN, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 21, 8, 16 },
-+      { 0, },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ffc0000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x00000000089c0000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "mullla_uu", TILE_OPC_MULLLA_UU, 0x5 /* pipes */, 3 /* num_operands */,
-+    TREG_ZERO, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 21, 8, 16 },
-+      { 0, },
-+      { 31, 12, 18 },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ffc0000ULL,
-+      0ULL,
-+      0x80000000780c0000ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x0000000000a00000ULL,
-+      -1ULL,
-+      0x80000000400c0000ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "mullla_uu.sn", TILE_OPC_MULLLA_UU_SN, 0x1 /* pipes */, 3 /* num_operands */,
-+    TREG_SN, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 21, 8, 16 },
-+      { 0, },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ffc0000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x0000000008a00000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "mulllsa_uu", TILE_OPC_MULLLSA_UU, 0x1 /* pipes */, 3 /* num_operands */,
-+    TREG_ZERO, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 21, 8, 16 },
-+      { 0, },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ffc0000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x0000000000a40000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "mulllsa_uu.sn", TILE_OPC_MULLLSA_UU_SN, 0x1 /* pipes */, 3 /* num_operands */,
-+    TREG_SN, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 21, 8, 16 },
-+      { 0, },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ffc0000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x0000000008a40000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "mvnz", TILE_OPC_MVNZ, 0x5 /* pipes */, 3 /* num_operands */,
-+    TREG_ZERO, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 21, 8, 16 },
-+      { 0, },
-+      { 31, 12, 18 },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ffc0000ULL,
-+      0ULL,
-+      0x80000000780c0000ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x0000000000b40000ULL,
-+      -1ULL,
-+      0x8000000010040000ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "mvnz.sn", TILE_OPC_MVNZ_SN, 0x1 /* pipes */, 3 /* num_operands */,
-+    TREG_SN, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 21, 8, 16 },
-+      { 0, },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ffc0000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x0000000008b40000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "mvz", TILE_OPC_MVZ, 0x5 /* pipes */, 3 /* num_operands */,
-+    TREG_ZERO, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 21, 8, 16 },
-+      { 0, },
-+      { 31, 12, 18 },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ffc0000ULL,
-+      0ULL,
-+      0x80000000780c0000ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x0000000000b80000ULL,
-+      -1ULL,
-+      0x8000000010080000ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "mvz.sn", TILE_OPC_MVZ_SN, 0x1 /* pipes */, 3 /* num_operands */,
-+    TREG_SN, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 21, 8, 16 },
-+      { 0, },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ffc0000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x0000000008b80000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "mz", TILE_OPC_MZ, 0xf /* pipes */, 3 /* num_operands */,
-+    TREG_ZERO, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 7, 8, 16 },
-+      { 9, 10, 17 },
-+      { 11, 12, 18 },
-+      { 13, 14, 19 },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ffc0000ULL,
-+      0xfffe000000000000ULL,
-+      0x80000000780c0000ULL,
-+      0xf806000000000000ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x0000000000c40000ULL,
-+      0x082e000000000000ULL,
-+      0x80000000100c0000ULL,
-+      0x9004000000000000ULL,
-+      -1ULL
-+    }
-+  },
-+  { "mz.sn", TILE_OPC_MZ_SN, 0x3 /* pipes */, 3 /* num_operands */,
-+    TREG_SN, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 7, 8, 16 },
-+      { 9, 10, 17 },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ffc0000ULL,
-+      0xfffe000000000000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x0000000008c40000ULL,
-+      0x0c2e000000000000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "mzb", TILE_OPC_MZB, 0x3 /* pipes */, 3 /* num_operands */,
-+    TREG_ZERO, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 7, 8, 16 },
-+      { 9, 10, 17 },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ffc0000ULL,
-+      0xfffe000000000000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x0000000000bc0000ULL,
-+      0x082a000000000000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "mzb.sn", TILE_OPC_MZB_SN, 0x3 /* pipes */, 3 /* num_operands */,
-+    TREG_SN, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 7, 8, 16 },
-+      { 9, 10, 17 },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ffc0000ULL,
-+      0xfffe000000000000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x0000000008bc0000ULL,
-+      0x0c2a000000000000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "mzh", TILE_OPC_MZH, 0x3 /* pipes */, 3 /* num_operands */,
-+    TREG_ZERO, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 7, 8, 16 },
-+      { 9, 10, 17 },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ffc0000ULL,
-+      0xfffe000000000000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x0000000000c00000ULL,
-+      0x082c000000000000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "mzh.sn", TILE_OPC_MZH_SN, 0x3 /* pipes */, 3 /* num_operands */,
-+    TREG_SN, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 7, 8, 16 },
-+      { 9, 10, 17 },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ffc0000ULL,
-+      0xfffe000000000000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x0000000008c00000ULL,
-+      0x0c2c000000000000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "nap", TILE_OPC_NAP, 0x2 /* pipes */, 0 /* num_operands */,
-+    TREG_ZERO, /* implicitly_written_register */
-+    0, /* can_bundle */
-+    {
-+      /* operands */
-+      { 0, },
-+      {  },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0ULL,
-+      0xfbfff80000000000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      -1ULL,
-+      0x400b800000000000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "nop", TILE_OPC_NOP, 0xf /* pipes */, 0 /* num_operands */,
-+    TREG_ZERO, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      {  },
-+      {  },
-+      {  },
-+      {  },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x8000000077fff000ULL,
-+      0xfbfff80000000000ULL,
-+      0x80000000780ff000ULL,
-+      0xf807f80000000000ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x0000000070166000ULL,
-+      0x400b880000000000ULL,
-+      0x80000000680a6000ULL,
-+      0xd805180000000000ULL,
-+      -1ULL
-+    }
-+  },
-+  { "nor", TILE_OPC_NOR, 0xf /* pipes */, 3 /* num_operands */,
-+    TREG_ZERO, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 7, 8, 16 },
-+      { 9, 10, 17 },
-+      { 11, 12, 18 },
-+      { 13, 14, 19 },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ffc0000ULL,
-+      0xfffe000000000000ULL,
-+      0x80000000780c0000ULL,
-+      0xf806000000000000ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x0000000000c80000ULL,
-+      0x0830000000000000ULL,
-+      0x8000000018040000ULL,
-+      0x9802000000000000ULL,
-+      -1ULL
-+    }
-+  },
-+  { "nor.sn", TILE_OPC_NOR_SN, 0x3 /* pipes */, 3 /* num_operands */,
-+    TREG_SN, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 7, 8, 16 },
-+      { 9, 10, 17 },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ffc0000ULL,
-+      0xfffe000000000000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x0000000008c80000ULL,
-+      0x0c30000000000000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "or", TILE_OPC_OR, 0xf /* pipes */, 3 /* num_operands */,
-+    TREG_ZERO, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 7, 8, 16 },
-+      { 9, 10, 17 },
-+      { 11, 12, 18 },
-+      { 13, 14, 19 },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ffc0000ULL,
-+      0xfffe000000000000ULL,
-+      0x80000000780c0000ULL,
-+      0xf806000000000000ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x0000000000cc0000ULL,
-+      0x0832000000000000ULL,
-+      0x8000000018080000ULL,
-+      0x9804000000000000ULL,
-+      -1ULL
-+    }
-+  },
-+  { "or.sn", TILE_OPC_OR_SN, 0x3 /* pipes */, 3 /* num_operands */,
-+    TREG_SN, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 7, 8, 16 },
-+      { 9, 10, 17 },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ffc0000ULL,
-+      0xfffe000000000000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x0000000008cc0000ULL,
-+      0x0c32000000000000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "ori", TILE_OPC_ORI, 0xf /* pipes */, 3 /* num_operands */,
-+    TREG_ZERO, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 7, 8, 0 },
-+      { 9, 10, 1 },
-+      { 11, 12, 2 },
-+      { 13, 14, 3 },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ff00000ULL,
-+      0xfff8000000000000ULL,
-+      0x8000000078000000ULL,
-+      0xf800000000000000ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x0000000040800000ULL,
-+      0x3058000000000000ULL,
-+      0x8000000058000000ULL,
-+      0xc800000000000000ULL,
-+      -1ULL
-+    }
-+  },
-+  { "ori.sn", TILE_OPC_ORI_SN, 0x3 /* pipes */, 3 /* num_operands */,
-+    TREG_SN, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 7, 8, 0 },
-+      { 9, 10, 1 },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ff00000ULL,
-+      0xfff8000000000000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x0000000048800000ULL,
-+      0x3458000000000000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "packbs_u", TILE_OPC_PACKBS_U, 0x3 /* pipes */, 3 /* num_operands */,
-+    TREG_ZERO, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 7, 8, 16 },
-+      { 9, 10, 17 },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ffc0000ULL,
-+      0xfffe000000000000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x00000000019c0000ULL,
-+      0x0892000000000000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "packbs_u.sn", TILE_OPC_PACKBS_U_SN, 0x3 /* pipes */, 3 /* num_operands */,
-+    TREG_SN, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 7, 8, 16 },
-+      { 9, 10, 17 },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ffc0000ULL,
-+      0xfffe000000000000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x00000000099c0000ULL,
-+      0x0c92000000000000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "packhb", TILE_OPC_PACKHB, 0x3 /* pipes */, 3 /* num_operands */,
-+    TREG_ZERO, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 7, 8, 16 },
-+      { 9, 10, 17 },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ffc0000ULL,
-+      0xfffe000000000000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x0000000000d00000ULL,
-+      0x0834000000000000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "packhb.sn", TILE_OPC_PACKHB_SN, 0x3 /* pipes */, 3 /* num_operands */,
-+    TREG_SN, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 7, 8, 16 },
-+      { 9, 10, 17 },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ffc0000ULL,
-+      0xfffe000000000000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x0000000008d00000ULL,
-+      0x0c34000000000000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "packhs", TILE_OPC_PACKHS, 0x3 /* pipes */, 3 /* num_operands */,
-+    TREG_ZERO, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 7, 8, 16 },
-+      { 9, 10, 17 },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ffc0000ULL,
-+      0xfffe000000000000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x0000000001980000ULL,
-+      0x0890000000000000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "packhs.sn", TILE_OPC_PACKHS_SN, 0x3 /* pipes */, 3 /* num_operands */,
-+    TREG_SN, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 7, 8, 16 },
-+      { 9, 10, 17 },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ffc0000ULL,
-+      0xfffe000000000000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x0000000009980000ULL,
-+      0x0c90000000000000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "packlb", TILE_OPC_PACKLB, 0x3 /* pipes */, 3 /* num_operands */,
-+    TREG_ZERO, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 7, 8, 16 },
-+      { 9, 10, 17 },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ffc0000ULL,
-+      0xfffe000000000000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x0000000000d40000ULL,
-+      0x0836000000000000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "packlb.sn", TILE_OPC_PACKLB_SN, 0x3 /* pipes */, 3 /* num_operands */,
-+    TREG_SN, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 7, 8, 16 },
-+      { 9, 10, 17 },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ffc0000ULL,
-+      0xfffe000000000000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x0000000008d40000ULL,
-+      0x0c36000000000000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "pcnt", TILE_OPC_PCNT, 0x5 /* pipes */, 2 /* num_operands */,
-+    TREG_ZERO, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 7, 8 },
-+      { 0, },
-+      { 11, 12 },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ffff000ULL,
-+      0ULL,
-+      0x80000000780ff000ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x0000000070167000ULL,
-+      -1ULL,
-+      0x80000000680a7000ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "pcnt.sn", TILE_OPC_PCNT_SN, 0x1 /* pipes */, 2 /* num_operands */,
-+    TREG_SN, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 7, 8 },
-+      { 0, },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ffff000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x0000000078167000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "rl", TILE_OPC_RL, 0xf /* pipes */, 3 /* num_operands */,
-+    TREG_ZERO, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 7, 8, 16 },
-+      { 9, 10, 17 },
-+      { 11, 12, 18 },
-+      { 13, 14, 19 },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ffc0000ULL,
-+      0xfffe000000000000ULL,
-+      0x80000000780c0000ULL,
-+      0xf806000000000000ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x0000000000d80000ULL,
-+      0x0838000000000000ULL,
-+      0x8000000020000000ULL,
-+      0xa000000000000000ULL,
-+      -1ULL
-+    }
-+  },
-+  { "rl.sn", TILE_OPC_RL_SN, 0x3 /* pipes */, 3 /* num_operands */,
-+    TREG_SN, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 7, 8, 16 },
-+      { 9, 10, 17 },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ffc0000ULL,
-+      0xfffe000000000000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x0000000008d80000ULL,
-+      0x0c38000000000000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "rli", TILE_OPC_RLI, 0xf /* pipes */, 3 /* num_operands */,
-+    TREG_ZERO, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 7, 8, 32 },
-+      { 9, 10, 33 },
-+      { 11, 12, 34 },
-+      { 13, 14, 35 },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ffe0000ULL,
-+      0xffff000000000000ULL,
-+      0x80000000780e0000ULL,
-+      0xf807000000000000ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x0000000070020000ULL,
-+      0x4001000000000000ULL,
-+      0x8000000068020000ULL,
-+      0xd801000000000000ULL,
-+      -1ULL
-+    }
-+  },
-+  { "rli.sn", TILE_OPC_RLI_SN, 0x3 /* pipes */, 3 /* num_operands */,
-+    TREG_SN, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 7, 8, 32 },
-+      { 9, 10, 33 },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ffe0000ULL,
-+      0xffff000000000000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x0000000078020000ULL,
-+      0x4401000000000000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "s1a", TILE_OPC_S1A, 0xf /* pipes */, 3 /* num_operands */,
-+    TREG_ZERO, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 7, 8, 16 },
-+      { 9, 10, 17 },
-+      { 11, 12, 18 },
-+      { 13, 14, 19 },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ffc0000ULL,
-+      0xfffe000000000000ULL,
-+      0x80000000780c0000ULL,
-+      0xf806000000000000ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x0000000000dc0000ULL,
-+      0x083a000000000000ULL,
-+      0x8000000008040000ULL,
-+      0x8802000000000000ULL,
-+      -1ULL
-+    }
-+  },
-+  { "s1a.sn", TILE_OPC_S1A_SN, 0x3 /* pipes */, 3 /* num_operands */,
-+    TREG_SN, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 7, 8, 16 },
-+      { 9, 10, 17 },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ffc0000ULL,
-+      0xfffe000000000000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x0000000008dc0000ULL,
-+      0x0c3a000000000000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "s2a", TILE_OPC_S2A, 0xf /* pipes */, 3 /* num_operands */,
-+    TREG_ZERO, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 7, 8, 16 },
-+      { 9, 10, 17 },
-+      { 11, 12, 18 },
-+      { 13, 14, 19 },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ffc0000ULL,
-+      0xfffe000000000000ULL,
-+      0x80000000780c0000ULL,
-+      0xf806000000000000ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x0000000000e00000ULL,
-+      0x083c000000000000ULL,
-+      0x8000000008080000ULL,
-+      0x8804000000000000ULL,
-+      -1ULL
-+    }
-+  },
-+  { "s2a.sn", TILE_OPC_S2A_SN, 0x3 /* pipes */, 3 /* num_operands */,
-+    TREG_SN, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 7, 8, 16 },
-+      { 9, 10, 17 },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ffc0000ULL,
-+      0xfffe000000000000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x0000000008e00000ULL,
-+      0x0c3c000000000000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "s3a", TILE_OPC_S3A, 0xf /* pipes */, 3 /* num_operands */,
-+    TREG_ZERO, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 7, 8, 16 },
-+      { 9, 10, 17 },
-+      { 11, 12, 18 },
-+      { 13, 14, 19 },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ffc0000ULL,
-+      0xfffe000000000000ULL,
-+      0x80000000780c0000ULL,
-+      0xf806000000000000ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x0000000000e40000ULL,
-+      0x083e000000000000ULL,
-+      0x8000000030040000ULL,
-+      0xb002000000000000ULL,
-+      -1ULL
-+    }
-+  },
-+  { "s3a.sn", TILE_OPC_S3A_SN, 0x3 /* pipes */, 3 /* num_operands */,
-+    TREG_SN, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 7, 8, 16 },
-+      { 9, 10, 17 },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ffc0000ULL,
-+      0xfffe000000000000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x0000000008e40000ULL,
-+      0x0c3e000000000000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "sadab_u", TILE_OPC_SADAB_U, 0x1 /* pipes */, 3 /* num_operands */,
-+    TREG_ZERO, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 21, 8, 16 },
-+      { 0, },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ffc0000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x0000000000e80000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "sadab_u.sn", TILE_OPC_SADAB_U_SN, 0x1 /* pipes */, 3 /* num_operands */,
-+    TREG_SN, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 21, 8, 16 },
-+      { 0, },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ffc0000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x0000000008e80000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "sadah", TILE_OPC_SADAH, 0x1 /* pipes */, 3 /* num_operands */,
-+    TREG_ZERO, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 21, 8, 16 },
-+      { 0, },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ffc0000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x0000000000ec0000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "sadah.sn", TILE_OPC_SADAH_SN, 0x1 /* pipes */, 3 /* num_operands */,
-+    TREG_SN, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 21, 8, 16 },
-+      { 0, },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ffc0000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x0000000008ec0000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "sadah_u", TILE_OPC_SADAH_U, 0x1 /* pipes */, 3 /* num_operands */,
-+    TREG_ZERO, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 21, 8, 16 },
-+      { 0, },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ffc0000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x0000000000f00000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "sadah_u.sn", TILE_OPC_SADAH_U_SN, 0x1 /* pipes */, 3 /* num_operands */,
-+    TREG_SN, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 21, 8, 16 },
-+      { 0, },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ffc0000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x0000000008f00000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "sadb_u", TILE_OPC_SADB_U, 0x1 /* pipes */, 3 /* num_operands */,
-+    TREG_ZERO, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 7, 8, 16 },
-+      { 0, },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ffc0000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x0000000000f40000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "sadb_u.sn", TILE_OPC_SADB_U_SN, 0x1 /* pipes */, 3 /* num_operands */,
-+    TREG_SN, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 7, 8, 16 },
-+      { 0, },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ffc0000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x0000000008f40000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "sadh", TILE_OPC_SADH, 0x1 /* pipes */, 3 /* num_operands */,
-+    TREG_ZERO, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 7, 8, 16 },
-+      { 0, },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ffc0000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x0000000000f80000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "sadh.sn", TILE_OPC_SADH_SN, 0x1 /* pipes */, 3 /* num_operands */,
-+    TREG_SN, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 7, 8, 16 },
-+      { 0, },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ffc0000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x0000000008f80000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "sadh_u", TILE_OPC_SADH_U, 0x1 /* pipes */, 3 /* num_operands */,
-+    TREG_ZERO, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 7, 8, 16 },
-+      { 0, },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ffc0000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x0000000000fc0000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "sadh_u.sn", TILE_OPC_SADH_U_SN, 0x1 /* pipes */, 3 /* num_operands */,
-+    TREG_SN, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 7, 8, 16 },
-+      { 0, },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ffc0000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x0000000008fc0000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "sb", TILE_OPC_SB, 0x12 /* pipes */, 2 /* num_operands */,
-+    TREG_ZERO, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 0, },
-+      { 10, 17 },
-+      { 0, },
-+      { 0, },
-+      { 15, 36 }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0ULL,
-+      0xfbfe000000000000ULL,
-+      0ULL,
-+      0ULL,
-+      0x8700000000000000ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      -1ULL,
-+      0x0840000000000000ULL,
-+      -1ULL,
-+      -1ULL,
-+      0x8500000000000000ULL
-+    }
-+  },
-+  { "sbadd", TILE_OPC_SBADD, 0x2 /* pipes */, 3 /* num_operands */,
-+    TREG_ZERO, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 0, },
-+      { 24, 17, 37 },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0ULL,
-+      0xfbf8000000000000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      -1ULL,
-+      0x30e0000000000000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "seq", TILE_OPC_SEQ, 0xf /* pipes */, 3 /* num_operands */,
-+    TREG_ZERO, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 7, 8, 16 },
-+      { 9, 10, 17 },
-+      { 11, 12, 18 },
-+      { 13, 14, 19 },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ffc0000ULL,
-+      0xfffe000000000000ULL,
-+      0x80000000780c0000ULL,
-+      0xf806000000000000ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x0000000001080000ULL,
-+      0x0846000000000000ULL,
-+      0x8000000030080000ULL,
-+      0xb004000000000000ULL,
-+      -1ULL
-+    }
-+  },
-+  { "seq.sn", TILE_OPC_SEQ_SN, 0x3 /* pipes */, 3 /* num_operands */,
-+    TREG_SN, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 7, 8, 16 },
-+      { 9, 10, 17 },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ffc0000ULL,
-+      0xfffe000000000000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x0000000009080000ULL,
-+      0x0c46000000000000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "seqb", TILE_OPC_SEQB, 0x3 /* pipes */, 3 /* num_operands */,
-+    TREG_ZERO, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 7, 8, 16 },
-+      { 9, 10, 17 },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ffc0000ULL,
-+      0xfffe000000000000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x0000000001000000ULL,
-+      0x0842000000000000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "seqb.sn", TILE_OPC_SEQB_SN, 0x3 /* pipes */, 3 /* num_operands */,
-+    TREG_SN, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 7, 8, 16 },
-+      { 9, 10, 17 },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ffc0000ULL,
-+      0xfffe000000000000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x0000000009000000ULL,
-+      0x0c42000000000000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "seqh", TILE_OPC_SEQH, 0x3 /* pipes */, 3 /* num_operands */,
-+    TREG_ZERO, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 7, 8, 16 },
-+      { 9, 10, 17 },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ffc0000ULL,
-+      0xfffe000000000000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x0000000001040000ULL,
-+      0x0844000000000000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "seqh.sn", TILE_OPC_SEQH_SN, 0x3 /* pipes */, 3 /* num_operands */,
-+    TREG_SN, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 7, 8, 16 },
-+      { 9, 10, 17 },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ffc0000ULL,
-+      0xfffe000000000000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x0000000009040000ULL,
-+      0x0c44000000000000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "seqi", TILE_OPC_SEQI, 0xf /* pipes */, 3 /* num_operands */,
-+    TREG_ZERO, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 7, 8, 0 },
-+      { 9, 10, 1 },
-+      { 11, 12, 2 },
-+      { 13, 14, 3 },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ff00000ULL,
-+      0xfff8000000000000ULL,
-+      0x8000000078000000ULL,
-+      0xf800000000000000ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x0000000040b00000ULL,
-+      0x3070000000000000ULL,
-+      0x8000000060000000ULL,
-+      0xd000000000000000ULL,
-+      -1ULL
-+    }
-+  },
-+  { "seqi.sn", TILE_OPC_SEQI_SN, 0x3 /* pipes */, 3 /* num_operands */,
-+    TREG_SN, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 7, 8, 0 },
-+      { 9, 10, 1 },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ff00000ULL,
-+      0xfff8000000000000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x0000000048b00000ULL,
-+      0x3470000000000000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "seqib", TILE_OPC_SEQIB, 0x3 /* pipes */, 3 /* num_operands */,
-+    TREG_ZERO, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 7, 8, 0 },
-+      { 9, 10, 1 },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ff00000ULL,
-+      0xfff8000000000000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x0000000040900000ULL,
-+      0x3060000000000000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "seqib.sn", TILE_OPC_SEQIB_SN, 0x3 /* pipes */, 3 /* num_operands */,
-+    TREG_SN, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 7, 8, 0 },
-+      { 9, 10, 1 },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ff00000ULL,
-+      0xfff8000000000000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x0000000048900000ULL,
-+      0x3460000000000000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "seqih", TILE_OPC_SEQIH, 0x3 /* pipes */, 3 /* num_operands */,
-+    TREG_ZERO, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 7, 8, 0 },
-+      { 9, 10, 1 },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ff00000ULL,
-+      0xfff8000000000000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x0000000040a00000ULL,
-+      0x3068000000000000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "seqih.sn", TILE_OPC_SEQIH_SN, 0x3 /* pipes */, 3 /* num_operands */,
-+    TREG_SN, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 7, 8, 0 },
-+      { 9, 10, 1 },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ff00000ULL,
-+      0xfff8000000000000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x0000000048a00000ULL,
-+      0x3468000000000000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "sh", TILE_OPC_SH, 0x12 /* pipes */, 2 /* num_operands */,
-+    TREG_ZERO, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 0, },
-+      { 10, 17 },
-+      { 0, },
-+      { 0, },
-+      { 15, 36 }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0ULL,
-+      0xfbfe000000000000ULL,
-+      0ULL,
-+      0ULL,
-+      0x8700000000000000ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      -1ULL,
-+      0x0854000000000000ULL,
-+      -1ULL,
-+      -1ULL,
-+      0x8600000000000000ULL
-+    }
-+  },
-+  { "shadd", TILE_OPC_SHADD, 0x2 /* pipes */, 3 /* num_operands */,
-+    TREG_ZERO, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 0, },
-+      { 24, 17, 37 },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0ULL,
-+      0xfbf8000000000000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      -1ULL,
-+      0x30e8000000000000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "shl", TILE_OPC_SHL, 0xf /* pipes */, 3 /* num_operands */,
-+    TREG_ZERO, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 7, 8, 16 },
-+      { 9, 10, 17 },
-+      { 11, 12, 18 },
-+      { 13, 14, 19 },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ffc0000ULL,
-+      0xfffe000000000000ULL,
-+      0x80000000780c0000ULL,
-+      0xf806000000000000ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x0000000001140000ULL,
-+      0x084c000000000000ULL,
-+      0x8000000020040000ULL,
-+      0xa002000000000000ULL,
-+      -1ULL
-+    }
-+  },
-+  { "shl.sn", TILE_OPC_SHL_SN, 0x3 /* pipes */, 3 /* num_operands */,
-+    TREG_SN, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 7, 8, 16 },
-+      { 9, 10, 17 },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ffc0000ULL,
-+      0xfffe000000000000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x0000000009140000ULL,
-+      0x0c4c000000000000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "shlb", TILE_OPC_SHLB, 0x3 /* pipes */, 3 /* num_operands */,
-+    TREG_ZERO, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 7, 8, 16 },
-+      { 9, 10, 17 },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ffc0000ULL,
-+      0xfffe000000000000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x00000000010c0000ULL,
-+      0x0848000000000000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "shlb.sn", TILE_OPC_SHLB_SN, 0x3 /* pipes */, 3 /* num_operands */,
-+    TREG_SN, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 7, 8, 16 },
-+      { 9, 10, 17 },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ffc0000ULL,
-+      0xfffe000000000000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x00000000090c0000ULL,
-+      0x0c48000000000000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "shlh", TILE_OPC_SHLH, 0x3 /* pipes */, 3 /* num_operands */,
-+    TREG_ZERO, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 7, 8, 16 },
-+      { 9, 10, 17 },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ffc0000ULL,
-+      0xfffe000000000000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x0000000001100000ULL,
-+      0x084a000000000000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "shlh.sn", TILE_OPC_SHLH_SN, 0x3 /* pipes */, 3 /* num_operands */,
-+    TREG_SN, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 7, 8, 16 },
-+      { 9, 10, 17 },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ffc0000ULL,
-+      0xfffe000000000000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x0000000009100000ULL,
-+      0x0c4a000000000000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "shli", TILE_OPC_SHLI, 0xf /* pipes */, 3 /* num_operands */,
-+    TREG_ZERO, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 7, 8, 32 },
-+      { 9, 10, 33 },
-+      { 11, 12, 34 },
-+      { 13, 14, 35 },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ffe0000ULL,
-+      0xffff000000000000ULL,
-+      0x80000000780e0000ULL,
-+      0xf807000000000000ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x0000000070080000ULL,
-+      0x4004000000000000ULL,
-+      0x8000000068040000ULL,
-+      0xd802000000000000ULL,
-+      -1ULL
-+    }
-+  },
-+  { "shli.sn", TILE_OPC_SHLI_SN, 0x3 /* pipes */, 3 /* num_operands */,
-+    TREG_SN, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 7, 8, 32 },
-+      { 9, 10, 33 },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ffe0000ULL,
-+      0xffff000000000000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x0000000078080000ULL,
-+      0x4404000000000000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "shlib", TILE_OPC_SHLIB, 0x3 /* pipes */, 3 /* num_operands */,
-+    TREG_ZERO, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 7, 8, 32 },
-+      { 9, 10, 33 },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ffe0000ULL,
-+      0xffff000000000000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x0000000070040000ULL,
-+      0x4002000000000000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "shlib.sn", TILE_OPC_SHLIB_SN, 0x3 /* pipes */, 3 /* num_operands */,
-+    TREG_SN, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 7, 8, 32 },
-+      { 9, 10, 33 },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ffe0000ULL,
-+      0xffff000000000000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x0000000078040000ULL,
-+      0x4402000000000000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "shlih", TILE_OPC_SHLIH, 0x3 /* pipes */, 3 /* num_operands */,
-+    TREG_ZERO, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 7, 8, 32 },
-+      { 9, 10, 33 },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ffe0000ULL,
-+      0xffff000000000000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x0000000070060000ULL,
-+      0x4003000000000000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "shlih.sn", TILE_OPC_SHLIH_SN, 0x3 /* pipes */, 3 /* num_operands */,
-+    TREG_SN, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 7, 8, 32 },
-+      { 9, 10, 33 },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ffe0000ULL,
-+      0xffff000000000000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x0000000078060000ULL,
-+      0x4403000000000000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "shr", TILE_OPC_SHR, 0xf /* pipes */, 3 /* num_operands */,
-+    TREG_ZERO, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 7, 8, 16 },
-+      { 9, 10, 17 },
-+      { 11, 12, 18 },
-+      { 13, 14, 19 },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ffc0000ULL,
-+      0xfffe000000000000ULL,
-+      0x80000000780c0000ULL,
-+      0xf806000000000000ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x0000000001200000ULL,
-+      0x0852000000000000ULL,
-+      0x8000000020080000ULL,
-+      0xa004000000000000ULL,
-+      -1ULL
-+    }
-+  },
-+  { "shr.sn", TILE_OPC_SHR_SN, 0x3 /* pipes */, 3 /* num_operands */,
-+    TREG_SN, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 7, 8, 16 },
-+      { 9, 10, 17 },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ffc0000ULL,
-+      0xfffe000000000000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x0000000009200000ULL,
-+      0x0c52000000000000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "shrb", TILE_OPC_SHRB, 0x3 /* pipes */, 3 /* num_operands */,
-+    TREG_ZERO, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 7, 8, 16 },
-+      { 9, 10, 17 },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ffc0000ULL,
-+      0xfffe000000000000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x0000000001180000ULL,
-+      0x084e000000000000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "shrb.sn", TILE_OPC_SHRB_SN, 0x3 /* pipes */, 3 /* num_operands */,
-+    TREG_SN, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 7, 8, 16 },
-+      { 9, 10, 17 },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ffc0000ULL,
-+      0xfffe000000000000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x0000000009180000ULL,
-+      0x0c4e000000000000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "shrh", TILE_OPC_SHRH, 0x3 /* pipes */, 3 /* num_operands */,
-+    TREG_ZERO, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 7, 8, 16 },
-+      { 9, 10, 17 },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ffc0000ULL,
-+      0xfffe000000000000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x00000000011c0000ULL,
-+      0x0850000000000000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "shrh.sn", TILE_OPC_SHRH_SN, 0x3 /* pipes */, 3 /* num_operands */,
-+    TREG_SN, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 7, 8, 16 },
-+      { 9, 10, 17 },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ffc0000ULL,
-+      0xfffe000000000000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x00000000091c0000ULL,
-+      0x0c50000000000000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "shri", TILE_OPC_SHRI, 0xf /* pipes */, 3 /* num_operands */,
-+    TREG_ZERO, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 7, 8, 32 },
-+      { 9, 10, 33 },
-+      { 11, 12, 34 },
-+      { 13, 14, 35 },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ffe0000ULL,
-+      0xffff000000000000ULL,
-+      0x80000000780e0000ULL,
-+      0xf807000000000000ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x00000000700e0000ULL,
-+      0x4007000000000000ULL,
-+      0x8000000068060000ULL,
-+      0xd803000000000000ULL,
-+      -1ULL
-+    }
-+  },
-+  { "shri.sn", TILE_OPC_SHRI_SN, 0x3 /* pipes */, 3 /* num_operands */,
-+    TREG_SN, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 7, 8, 32 },
-+      { 9, 10, 33 },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ffe0000ULL,
-+      0xffff000000000000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x00000000780e0000ULL,
-+      0x4407000000000000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "shrib", TILE_OPC_SHRIB, 0x3 /* pipes */, 3 /* num_operands */,
-+    TREG_ZERO, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 7, 8, 32 },
-+      { 9, 10, 33 },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ffe0000ULL,
-+      0xffff000000000000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x00000000700a0000ULL,
-+      0x4005000000000000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "shrib.sn", TILE_OPC_SHRIB_SN, 0x3 /* pipes */, 3 /* num_operands */,
-+    TREG_SN, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 7, 8, 32 },
-+      { 9, 10, 33 },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ffe0000ULL,
-+      0xffff000000000000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x00000000780a0000ULL,
-+      0x4405000000000000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "shrih", TILE_OPC_SHRIH, 0x3 /* pipes */, 3 /* num_operands */,
-+    TREG_ZERO, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 7, 8, 32 },
-+      { 9, 10, 33 },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ffe0000ULL,
-+      0xffff000000000000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x00000000700c0000ULL,
-+      0x4006000000000000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "shrih.sn", TILE_OPC_SHRIH_SN, 0x3 /* pipes */, 3 /* num_operands */,
-+    TREG_SN, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 7, 8, 32 },
-+      { 9, 10, 33 },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ffe0000ULL,
-+      0xffff000000000000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x00000000780c0000ULL,
-+      0x4406000000000000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "slt", TILE_OPC_SLT, 0xf /* pipes */, 3 /* num_operands */,
-+    TREG_ZERO, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 7, 8, 16 },
-+      { 9, 10, 17 },
-+      { 11, 12, 18 },
-+      { 13, 14, 19 },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ffc0000ULL,
-+      0xfffe000000000000ULL,
-+      0x80000000780c0000ULL,
-+      0xf806000000000000ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x00000000014c0000ULL,
-+      0x086a000000000000ULL,
-+      0x8000000028080000ULL,
-+      0xa804000000000000ULL,
-+      -1ULL
-+    }
-+  },
-+  { "slt.sn", TILE_OPC_SLT_SN, 0x3 /* pipes */, 3 /* num_operands */,
-+    TREG_SN, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 7, 8, 16 },
-+      { 9, 10, 17 },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ffc0000ULL,
-+      0xfffe000000000000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x00000000094c0000ULL,
-+      0x0c6a000000000000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "slt_u", TILE_OPC_SLT_U, 0xf /* pipes */, 3 /* num_operands */,
-+    TREG_ZERO, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 7, 8, 16 },
-+      { 9, 10, 17 },
-+      { 11, 12, 18 },
-+      { 13, 14, 19 },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ffc0000ULL,
-+      0xfffe000000000000ULL,
-+      0x80000000780c0000ULL,
-+      0xf806000000000000ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x0000000001500000ULL,
-+      0x086c000000000000ULL,
-+      0x80000000280c0000ULL,
-+      0xa806000000000000ULL,
-+      -1ULL
-+    }
-+  },
-+  { "slt_u.sn", TILE_OPC_SLT_U_SN, 0x3 /* pipes */, 3 /* num_operands */,
-+    TREG_SN, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 7, 8, 16 },
-+      { 9, 10, 17 },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ffc0000ULL,
-+      0xfffe000000000000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x0000000009500000ULL,
-+      0x0c6c000000000000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "sltb", TILE_OPC_SLTB, 0x3 /* pipes */, 3 /* num_operands */,
-+    TREG_ZERO, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 7, 8, 16 },
-+      { 9, 10, 17 },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ffc0000ULL,
-+      0xfffe000000000000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x0000000001240000ULL,
-+      0x0856000000000000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "sltb.sn", TILE_OPC_SLTB_SN, 0x3 /* pipes */, 3 /* num_operands */,
-+    TREG_SN, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 7, 8, 16 },
-+      { 9, 10, 17 },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ffc0000ULL,
-+      0xfffe000000000000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x0000000009240000ULL,
-+      0x0c56000000000000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "sltb_u", TILE_OPC_SLTB_U, 0x3 /* pipes */, 3 /* num_operands */,
-+    TREG_ZERO, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 7, 8, 16 },
-+      { 9, 10, 17 },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ffc0000ULL,
-+      0xfffe000000000000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x0000000001280000ULL,
-+      0x0858000000000000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "sltb_u.sn", TILE_OPC_SLTB_U_SN, 0x3 /* pipes */, 3 /* num_operands */,
-+    TREG_SN, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 7, 8, 16 },
-+      { 9, 10, 17 },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ffc0000ULL,
-+      0xfffe000000000000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x0000000009280000ULL,
-+      0x0c58000000000000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "slte", TILE_OPC_SLTE, 0xf /* pipes */, 3 /* num_operands */,
-+    TREG_ZERO, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 7, 8, 16 },
-+      { 9, 10, 17 },
-+      { 11, 12, 18 },
-+      { 13, 14, 19 },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ffc0000ULL,
-+      0xfffe000000000000ULL,
-+      0x80000000780c0000ULL,
-+      0xf806000000000000ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x00000000013c0000ULL,
-+      0x0862000000000000ULL,
-+      0x8000000028000000ULL,
-+      0xa800000000000000ULL,
-+      -1ULL
-+    }
-+  },
-+  { "slte.sn", TILE_OPC_SLTE_SN, 0x3 /* pipes */, 3 /* num_operands */,
-+    TREG_SN, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 7, 8, 16 },
-+      { 9, 10, 17 },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ffc0000ULL,
-+      0xfffe000000000000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x00000000093c0000ULL,
-+      0x0c62000000000000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "slte_u", TILE_OPC_SLTE_U, 0xf /* pipes */, 3 /* num_operands */,
-+    TREG_ZERO, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 7, 8, 16 },
-+      { 9, 10, 17 },
-+      { 11, 12, 18 },
-+      { 13, 14, 19 },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ffc0000ULL,
-+      0xfffe000000000000ULL,
-+      0x80000000780c0000ULL,
-+      0xf806000000000000ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x0000000001400000ULL,
-+      0x0864000000000000ULL,
-+      0x8000000028040000ULL,
-+      0xa802000000000000ULL,
-+      -1ULL
-+    }
-+  },
-+  { "slte_u.sn", TILE_OPC_SLTE_U_SN, 0x3 /* pipes */, 3 /* num_operands */,
-+    TREG_SN, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 7, 8, 16 },
-+      { 9, 10, 17 },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ffc0000ULL,
-+      0xfffe000000000000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x0000000009400000ULL,
-+      0x0c64000000000000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "slteb", TILE_OPC_SLTEB, 0x3 /* pipes */, 3 /* num_operands */,
-+    TREG_ZERO, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 7, 8, 16 },
-+      { 9, 10, 17 },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ffc0000ULL,
-+      0xfffe000000000000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x00000000012c0000ULL,
-+      0x085a000000000000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "slteb.sn", TILE_OPC_SLTEB_SN, 0x3 /* pipes */, 3 /* num_operands */,
-+    TREG_SN, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 7, 8, 16 },
-+      { 9, 10, 17 },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ffc0000ULL,
-+      0xfffe000000000000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x00000000092c0000ULL,
-+      0x0c5a000000000000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "slteb_u", TILE_OPC_SLTEB_U, 0x3 /* pipes */, 3 /* num_operands */,
-+    TREG_ZERO, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 7, 8, 16 },
-+      { 9, 10, 17 },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ffc0000ULL,
-+      0xfffe000000000000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x0000000001300000ULL,
-+      0x085c000000000000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "slteb_u.sn", TILE_OPC_SLTEB_U_SN, 0x3 /* pipes */, 3 /* num_operands */,
-+    TREG_SN, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 7, 8, 16 },
-+      { 9, 10, 17 },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ffc0000ULL,
-+      0xfffe000000000000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x0000000009300000ULL,
-+      0x0c5c000000000000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "slteh", TILE_OPC_SLTEH, 0x3 /* pipes */, 3 /* num_operands */,
-+    TREG_ZERO, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 7, 8, 16 },
-+      { 9, 10, 17 },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ffc0000ULL,
-+      0xfffe000000000000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x0000000001340000ULL,
-+      0x085e000000000000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "slteh.sn", TILE_OPC_SLTEH_SN, 0x3 /* pipes */, 3 /* num_operands */,
-+    TREG_SN, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 7, 8, 16 },
-+      { 9, 10, 17 },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ffc0000ULL,
-+      0xfffe000000000000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x0000000009340000ULL,
-+      0x0c5e000000000000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "slteh_u", TILE_OPC_SLTEH_U, 0x3 /* pipes */, 3 /* num_operands */,
-+    TREG_ZERO, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 7, 8, 16 },
-+      { 9, 10, 17 },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ffc0000ULL,
-+      0xfffe000000000000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x0000000001380000ULL,
-+      0x0860000000000000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "slteh_u.sn", TILE_OPC_SLTEH_U_SN, 0x3 /* pipes */, 3 /* num_operands */,
-+    TREG_SN, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 7, 8, 16 },
-+      { 9, 10, 17 },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ffc0000ULL,
-+      0xfffe000000000000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x0000000009380000ULL,
-+      0x0c60000000000000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "slth", TILE_OPC_SLTH, 0x3 /* pipes */, 3 /* num_operands */,
-+    TREG_ZERO, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 7, 8, 16 },
-+      { 9, 10, 17 },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ffc0000ULL,
-+      0xfffe000000000000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x0000000001440000ULL,
-+      0x0866000000000000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "slth.sn", TILE_OPC_SLTH_SN, 0x3 /* pipes */, 3 /* num_operands */,
-+    TREG_SN, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 7, 8, 16 },
-+      { 9, 10, 17 },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ffc0000ULL,
-+      0xfffe000000000000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x0000000009440000ULL,
-+      0x0c66000000000000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "slth_u", TILE_OPC_SLTH_U, 0x3 /* pipes */, 3 /* num_operands */,
-+    TREG_ZERO, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 7, 8, 16 },
-+      { 9, 10, 17 },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ffc0000ULL,
-+      0xfffe000000000000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x0000000001480000ULL,
-+      0x0868000000000000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "slth_u.sn", TILE_OPC_SLTH_U_SN, 0x3 /* pipes */, 3 /* num_operands */,
-+    TREG_SN, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 7, 8, 16 },
-+      { 9, 10, 17 },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ffc0000ULL,
-+      0xfffe000000000000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x0000000009480000ULL,
-+      0x0c68000000000000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "slti", TILE_OPC_SLTI, 0xf /* pipes */, 3 /* num_operands */,
-+    TREG_ZERO, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 7, 8, 0 },
-+      { 9, 10, 1 },
-+      { 11, 12, 2 },
-+      { 13, 14, 3 },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ff00000ULL,
-+      0xfff8000000000000ULL,
-+      0x8000000078000000ULL,
-+      0xf800000000000000ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x0000000041000000ULL,
-+      0x3098000000000000ULL,
-+      0x8000000070000000ULL,
-+      0xe000000000000000ULL,
-+      -1ULL
-+    }
-+  },
-+  { "slti.sn", TILE_OPC_SLTI_SN, 0x3 /* pipes */, 3 /* num_operands */,
-+    TREG_SN, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 7, 8, 0 },
-+      { 9, 10, 1 },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ff00000ULL,
-+      0xfff8000000000000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x0000000049000000ULL,
-+      0x3498000000000000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "slti_u", TILE_OPC_SLTI_U, 0xf /* pipes */, 3 /* num_operands */,
-+    TREG_ZERO, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 7, 8, 0 },
-+      { 9, 10, 1 },
-+      { 11, 12, 2 },
-+      { 13, 14, 3 },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ff00000ULL,
-+      0xfff8000000000000ULL,
-+      0x8000000078000000ULL,
-+      0xf800000000000000ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x0000000041100000ULL,
-+      0x30a0000000000000ULL,
-+      0x8000000078000000ULL,
-+      0xe800000000000000ULL,
-+      -1ULL
-+    }
-+  },
-+  { "slti_u.sn", TILE_OPC_SLTI_U_SN, 0x3 /* pipes */, 3 /* num_operands */,
-+    TREG_SN, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 7, 8, 0 },
-+      { 9, 10, 1 },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ff00000ULL,
-+      0xfff8000000000000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x0000000049100000ULL,
-+      0x34a0000000000000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "sltib", TILE_OPC_SLTIB, 0x3 /* pipes */, 3 /* num_operands */,
-+    TREG_ZERO, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 7, 8, 0 },
-+      { 9, 10, 1 },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ff00000ULL,
-+      0xfff8000000000000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x0000000040c00000ULL,
-+      0x3078000000000000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "sltib.sn", TILE_OPC_SLTIB_SN, 0x3 /* pipes */, 3 /* num_operands */,
-+    TREG_SN, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 7, 8, 0 },
-+      { 9, 10, 1 },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ff00000ULL,
-+      0xfff8000000000000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x0000000048c00000ULL,
-+      0x3478000000000000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "sltib_u", TILE_OPC_SLTIB_U, 0x3 /* pipes */, 3 /* num_operands */,
-+    TREG_ZERO, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 7, 8, 0 },
-+      { 9, 10, 1 },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ff00000ULL,
-+      0xfff8000000000000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x0000000040d00000ULL,
-+      0x3080000000000000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "sltib_u.sn", TILE_OPC_SLTIB_U_SN, 0x3 /* pipes */, 3 /* num_operands */,
-+    TREG_SN, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 7, 8, 0 },
-+      { 9, 10, 1 },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ff00000ULL,
-+      0xfff8000000000000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x0000000048d00000ULL,
-+      0x3480000000000000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "sltih", TILE_OPC_SLTIH, 0x3 /* pipes */, 3 /* num_operands */,
-+    TREG_ZERO, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 7, 8, 0 },
-+      { 9, 10, 1 },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ff00000ULL,
-+      0xfff8000000000000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x0000000040e00000ULL,
-+      0x3088000000000000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "sltih.sn", TILE_OPC_SLTIH_SN, 0x3 /* pipes */, 3 /* num_operands */,
-+    TREG_SN, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 7, 8, 0 },
-+      { 9, 10, 1 },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ff00000ULL,
-+      0xfff8000000000000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x0000000048e00000ULL,
-+      0x3488000000000000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "sltih_u", TILE_OPC_SLTIH_U, 0x3 /* pipes */, 3 /* num_operands */,
-+    TREG_ZERO, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 7, 8, 0 },
-+      { 9, 10, 1 },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ff00000ULL,
-+      0xfff8000000000000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x0000000040f00000ULL,
-+      0x3090000000000000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "sltih_u.sn", TILE_OPC_SLTIH_U_SN, 0x3 /* pipes */, 3 /* num_operands */,
-+    TREG_SN, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 7, 8, 0 },
-+      { 9, 10, 1 },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ff00000ULL,
-+      0xfff8000000000000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x0000000048f00000ULL,
-+      0x3490000000000000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "sne", TILE_OPC_SNE, 0xf /* pipes */, 3 /* num_operands */,
-+    TREG_ZERO, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 7, 8, 16 },
-+      { 9, 10, 17 },
-+      { 11, 12, 18 },
-+      { 13, 14, 19 },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ffc0000ULL,
-+      0xfffe000000000000ULL,
-+      0x80000000780c0000ULL,
-+      0xf806000000000000ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x00000000015c0000ULL,
-+      0x0872000000000000ULL,
-+      0x80000000300c0000ULL,
-+      0xb006000000000000ULL,
-+      -1ULL
-+    }
-+  },
-+  { "sne.sn", TILE_OPC_SNE_SN, 0x3 /* pipes */, 3 /* num_operands */,
-+    TREG_SN, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 7, 8, 16 },
-+      { 9, 10, 17 },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ffc0000ULL,
-+      0xfffe000000000000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x00000000095c0000ULL,
-+      0x0c72000000000000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "sneb", TILE_OPC_SNEB, 0x3 /* pipes */, 3 /* num_operands */,
-+    TREG_ZERO, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 7, 8, 16 },
-+      { 9, 10, 17 },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ffc0000ULL,
-+      0xfffe000000000000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x0000000001540000ULL,
-+      0x086e000000000000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "sneb.sn", TILE_OPC_SNEB_SN, 0x3 /* pipes */, 3 /* num_operands */,
-+    TREG_SN, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 7, 8, 16 },
-+      { 9, 10, 17 },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ffc0000ULL,
-+      0xfffe000000000000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x0000000009540000ULL,
-+      0x0c6e000000000000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "sneh", TILE_OPC_SNEH, 0x3 /* pipes */, 3 /* num_operands */,
-+    TREG_ZERO, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 7, 8, 16 },
-+      { 9, 10, 17 },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ffc0000ULL,
-+      0xfffe000000000000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x0000000001580000ULL,
-+      0x0870000000000000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "sneh.sn", TILE_OPC_SNEH_SN, 0x3 /* pipes */, 3 /* num_operands */,
-+    TREG_SN, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 7, 8, 16 },
-+      { 9, 10, 17 },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ffc0000ULL,
-+      0xfffe000000000000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x0000000009580000ULL,
-+      0x0c70000000000000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "sra", TILE_OPC_SRA, 0xf /* pipes */, 3 /* num_operands */,
-+    TREG_ZERO, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 7, 8, 16 },
-+      { 9, 10, 17 },
-+      { 11, 12, 18 },
-+      { 13, 14, 19 },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ffc0000ULL,
-+      0xfffe000000000000ULL,
-+      0x80000000780c0000ULL,
-+      0xf806000000000000ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x0000000001680000ULL,
-+      0x0878000000000000ULL,
-+      0x80000000200c0000ULL,
-+      0xa006000000000000ULL,
-+      -1ULL
-+    }
-+  },
-+  { "sra.sn", TILE_OPC_SRA_SN, 0x3 /* pipes */, 3 /* num_operands */,
-+    TREG_SN, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 7, 8, 16 },
-+      { 9, 10, 17 },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ffc0000ULL,
-+      0xfffe000000000000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x0000000009680000ULL,
-+      0x0c78000000000000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "srab", TILE_OPC_SRAB, 0x3 /* pipes */, 3 /* num_operands */,
-+    TREG_ZERO, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 7, 8, 16 },
-+      { 9, 10, 17 },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ffc0000ULL,
-+      0xfffe000000000000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x0000000001600000ULL,
-+      0x0874000000000000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "srab.sn", TILE_OPC_SRAB_SN, 0x3 /* pipes */, 3 /* num_operands */,
-+    TREG_SN, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 7, 8, 16 },
-+      { 9, 10, 17 },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ffc0000ULL,
-+      0xfffe000000000000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x0000000009600000ULL,
-+      0x0c74000000000000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "srah", TILE_OPC_SRAH, 0x3 /* pipes */, 3 /* num_operands */,
-+    TREG_ZERO, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 7, 8, 16 },
-+      { 9, 10, 17 },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ffc0000ULL,
-+      0xfffe000000000000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x0000000001640000ULL,
-+      0x0876000000000000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "srah.sn", TILE_OPC_SRAH_SN, 0x3 /* pipes */, 3 /* num_operands */,
-+    TREG_SN, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 7, 8, 16 },
-+      { 9, 10, 17 },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ffc0000ULL,
-+      0xfffe000000000000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x0000000009640000ULL,
-+      0x0c76000000000000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "srai", TILE_OPC_SRAI, 0xf /* pipes */, 3 /* num_operands */,
-+    TREG_ZERO, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 7, 8, 32 },
-+      { 9, 10, 33 },
-+      { 11, 12, 34 },
-+      { 13, 14, 35 },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ffe0000ULL,
-+      0xffff000000000000ULL,
-+      0x80000000780e0000ULL,
-+      0xf807000000000000ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x0000000070140000ULL,
-+      0x400a000000000000ULL,
-+      0x8000000068080000ULL,
-+      0xd804000000000000ULL,
-+      -1ULL
-+    }
-+  },
-+  { "srai.sn", TILE_OPC_SRAI_SN, 0x3 /* pipes */, 3 /* num_operands */,
-+    TREG_SN, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 7, 8, 32 },
-+      { 9, 10, 33 },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ffe0000ULL,
-+      0xffff000000000000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x0000000078140000ULL,
-+      0x440a000000000000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "sraib", TILE_OPC_SRAIB, 0x3 /* pipes */, 3 /* num_operands */,
-+    TREG_ZERO, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 7, 8, 32 },
-+      { 9, 10, 33 },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ffe0000ULL,
-+      0xffff000000000000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x0000000070100000ULL,
-+      0x4008000000000000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "sraib.sn", TILE_OPC_SRAIB_SN, 0x3 /* pipes */, 3 /* num_operands */,
-+    TREG_SN, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 7, 8, 32 },
-+      { 9, 10, 33 },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ffe0000ULL,
-+      0xffff000000000000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x0000000078100000ULL,
-+      0x4408000000000000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "sraih", TILE_OPC_SRAIH, 0x3 /* pipes */, 3 /* num_operands */,
-+    TREG_ZERO, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 7, 8, 32 },
-+      { 9, 10, 33 },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ffe0000ULL,
-+      0xffff000000000000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x0000000070120000ULL,
-+      0x4009000000000000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "sraih.sn", TILE_OPC_SRAIH_SN, 0x3 /* pipes */, 3 /* num_operands */,
-+    TREG_SN, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 7, 8, 32 },
-+      { 9, 10, 33 },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ffe0000ULL,
-+      0xffff000000000000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x0000000078120000ULL,
-+      0x4409000000000000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "sub", TILE_OPC_SUB, 0xf /* pipes */, 3 /* num_operands */,
-+    TREG_ZERO, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 7, 8, 16 },
-+      { 9, 10, 17 },
-+      { 11, 12, 18 },
-+      { 13, 14, 19 },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ffc0000ULL,
-+      0xfffe000000000000ULL,
-+      0x80000000780c0000ULL,
-+      0xf806000000000000ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x0000000001740000ULL,
-+      0x087e000000000000ULL,
-+      0x80000000080c0000ULL,
-+      0x8806000000000000ULL,
-+      -1ULL
-+    }
-+  },
-+  { "sub.sn", TILE_OPC_SUB_SN, 0x3 /* pipes */, 3 /* num_operands */,
-+    TREG_SN, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 7, 8, 16 },
-+      { 9, 10, 17 },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ffc0000ULL,
-+      0xfffe000000000000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x0000000009740000ULL,
-+      0x0c7e000000000000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "subb", TILE_OPC_SUBB, 0x3 /* pipes */, 3 /* num_operands */,
-+    TREG_ZERO, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 7, 8, 16 },
-+      { 9, 10, 17 },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ffc0000ULL,
-+      0xfffe000000000000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x00000000016c0000ULL,
-+      0x087a000000000000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "subb.sn", TILE_OPC_SUBB_SN, 0x3 /* pipes */, 3 /* num_operands */,
-+    TREG_SN, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 7, 8, 16 },
-+      { 9, 10, 17 },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ffc0000ULL,
-+      0xfffe000000000000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x00000000096c0000ULL,
-+      0x0c7a000000000000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "subbs_u", TILE_OPC_SUBBS_U, 0x3 /* pipes */, 3 /* num_operands */,
-+    TREG_ZERO, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 7, 8, 16 },
-+      { 9, 10, 17 },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ffc0000ULL,
-+      0xfffe000000000000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x0000000001900000ULL,
-+      0x088c000000000000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "subbs_u.sn", TILE_OPC_SUBBS_U_SN, 0x3 /* pipes */, 3 /* num_operands */,
-+    TREG_SN, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 7, 8, 16 },
-+      { 9, 10, 17 },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ffc0000ULL,
-+      0xfffe000000000000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x0000000009900000ULL,
-+      0x0c8c000000000000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "subh", TILE_OPC_SUBH, 0x3 /* pipes */, 3 /* num_operands */,
-+    TREG_ZERO, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 7, 8, 16 },
-+      { 9, 10, 17 },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ffc0000ULL,
-+      0xfffe000000000000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x0000000001700000ULL,
-+      0x087c000000000000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "subh.sn", TILE_OPC_SUBH_SN, 0x3 /* pipes */, 3 /* num_operands */,
-+    TREG_SN, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 7, 8, 16 },
-+      { 9, 10, 17 },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ffc0000ULL,
-+      0xfffe000000000000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x0000000009700000ULL,
-+      0x0c7c000000000000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "subhs", TILE_OPC_SUBHS, 0x3 /* pipes */, 3 /* num_operands */,
-+    TREG_ZERO, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 7, 8, 16 },
-+      { 9, 10, 17 },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ffc0000ULL,
-+      0xfffe000000000000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x0000000001940000ULL,
-+      0x088e000000000000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "subhs.sn", TILE_OPC_SUBHS_SN, 0x3 /* pipes */, 3 /* num_operands */,
-+    TREG_SN, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 7, 8, 16 },
-+      { 9, 10, 17 },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ffc0000ULL,
-+      0xfffe000000000000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x0000000009940000ULL,
-+      0x0c8e000000000000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "subs", TILE_OPC_SUBS, 0x3 /* pipes */, 3 /* num_operands */,
-+    TREG_ZERO, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 7, 8, 16 },
-+      { 9, 10, 17 },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ffc0000ULL,
-+      0xfffe000000000000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x0000000001840000ULL,
-+      0x0886000000000000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "subs.sn", TILE_OPC_SUBS_SN, 0x3 /* pipes */, 3 /* num_operands */,
-+    TREG_SN, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 7, 8, 16 },
-+      { 9, 10, 17 },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ffc0000ULL,
-+      0xfffe000000000000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x0000000009840000ULL,
-+      0x0c86000000000000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "sw", TILE_OPC_SW, 0x12 /* pipes */, 2 /* num_operands */,
-+    TREG_ZERO, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 0, },
-+      { 10, 17 },
-+      { 0, },
-+      { 0, },
-+      { 15, 36 }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0ULL,
-+      0xfbfe000000000000ULL,
-+      0ULL,
-+      0ULL,
-+      0x8700000000000000ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      -1ULL,
-+      0x0880000000000000ULL,
-+      -1ULL,
-+      -1ULL,
-+      0x8700000000000000ULL
-+    }
-+  },
-+  { "swadd", TILE_OPC_SWADD, 0x2 /* pipes */, 3 /* num_operands */,
-+    TREG_ZERO, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 0, },
-+      { 24, 17, 37 },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0ULL,
-+      0xfbf8000000000000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      -1ULL,
-+      0x30f0000000000000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "swint0", TILE_OPC_SWINT0, 0x2 /* pipes */, 0 /* num_operands */,
-+    TREG_ZERO, /* implicitly_written_register */
-+    0, /* can_bundle */
-+    {
-+      /* operands */
-+      { 0, },
-+      {  },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0ULL,
-+      0xfbfff80000000000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      -1ULL,
-+      0x400b900000000000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "swint1", TILE_OPC_SWINT1, 0x2 /* pipes */, 0 /* num_operands */,
-+    TREG_ZERO, /* implicitly_written_register */
-+    0, /* can_bundle */
-+    {
-+      /* operands */
-+      { 0, },
-+      {  },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0ULL,
-+      0xfbfff80000000000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      -1ULL,
-+      0x400b980000000000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "swint2", TILE_OPC_SWINT2, 0x2 /* pipes */, 0 /* num_operands */,
-+    TREG_ZERO, /* implicitly_written_register */
-+    0, /* can_bundle */
-+    {
-+      /* operands */
-+      { 0, },
-+      {  },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0ULL,
-+      0xfbfff80000000000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      -1ULL,
-+      0x400ba00000000000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "swint3", TILE_OPC_SWINT3, 0x2 /* pipes */, 0 /* num_operands */,
-+    TREG_ZERO, /* implicitly_written_register */
-+    0, /* can_bundle */
-+    {
-+      /* operands */
-+      { 0, },
-+      {  },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0ULL,
-+      0xfbfff80000000000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      -1ULL,
-+      0x400ba80000000000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "tblidxb0", TILE_OPC_TBLIDXB0, 0x5 /* pipes */, 2 /* num_operands */,
-+    TREG_ZERO, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 21, 8 },
-+      { 0, },
-+      { 31, 12 },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ffff000ULL,
-+      0ULL,
-+      0x80000000780ff000ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x0000000070168000ULL,
-+      -1ULL,
-+      0x80000000680a8000ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "tblidxb0.sn", TILE_OPC_TBLIDXB0_SN, 0x1 /* pipes */, 2 /* num_operands */,
-+    TREG_SN, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 21, 8 },
-+      { 0, },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ffff000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x0000000078168000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "tblidxb1", TILE_OPC_TBLIDXB1, 0x5 /* pipes */, 2 /* num_operands */,
-+    TREG_ZERO, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 21, 8 },
-+      { 0, },
-+      { 31, 12 },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ffff000ULL,
-+      0ULL,
-+      0x80000000780ff000ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x0000000070169000ULL,
-+      -1ULL,
-+      0x80000000680a9000ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "tblidxb1.sn", TILE_OPC_TBLIDXB1_SN, 0x1 /* pipes */, 2 /* num_operands */,
-+    TREG_SN, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 21, 8 },
-+      { 0, },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ffff000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x0000000078169000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "tblidxb2", TILE_OPC_TBLIDXB2, 0x5 /* pipes */, 2 /* num_operands */,
-+    TREG_ZERO, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 21, 8 },
-+      { 0, },
-+      { 31, 12 },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ffff000ULL,
-+      0ULL,
-+      0x80000000780ff000ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x000000007016a000ULL,
-+      -1ULL,
-+      0x80000000680aa000ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "tblidxb2.sn", TILE_OPC_TBLIDXB2_SN, 0x1 /* pipes */, 2 /* num_operands */,
-+    TREG_SN, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 21, 8 },
-+      { 0, },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ffff000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x000000007816a000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "tblidxb3", TILE_OPC_TBLIDXB3, 0x5 /* pipes */, 2 /* num_operands */,
-+    TREG_ZERO, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 21, 8 },
-+      { 0, },
-+      { 31, 12 },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ffff000ULL,
-+      0ULL,
-+      0x80000000780ff000ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x000000007016b000ULL,
-+      -1ULL,
-+      0x80000000680ab000ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "tblidxb3.sn", TILE_OPC_TBLIDXB3_SN, 0x1 /* pipes */, 2 /* num_operands */,
-+    TREG_SN, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 21, 8 },
-+      { 0, },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ffff000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x000000007816b000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "tns", TILE_OPC_TNS, 0x2 /* pipes */, 2 /* num_operands */,
-+    TREG_ZERO, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 0, },
-+      { 9, 10 },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0ULL,
-+      0xfffff80000000000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      -1ULL,
-+      0x400bb00000000000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "tns.sn", TILE_OPC_TNS_SN, 0x2 /* pipes */, 2 /* num_operands */,
-+    TREG_SN, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 0, },
-+      { 9, 10 },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0ULL,
-+      0xfffff80000000000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      -1ULL,
-+      0x440bb00000000000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "wh64", TILE_OPC_WH64, 0x2 /* pipes */, 1 /* num_operands */,
-+    TREG_ZERO, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 0, },
-+      { 10 },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0ULL,
-+      0xfbfff80000000000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      -1ULL,
-+      0x400bb80000000000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "xor", TILE_OPC_XOR, 0xf /* pipes */, 3 /* num_operands */,
-+    TREG_ZERO, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 7, 8, 16 },
-+      { 9, 10, 17 },
-+      { 11, 12, 18 },
-+      { 13, 14, 19 },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ffc0000ULL,
-+      0xfffe000000000000ULL,
-+      0x80000000780c0000ULL,
-+      0xf806000000000000ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x0000000001780000ULL,
-+      0x0882000000000000ULL,
-+      0x80000000180c0000ULL,
-+      0x9806000000000000ULL,
-+      -1ULL
-+    }
-+  },
-+  { "xor.sn", TILE_OPC_XOR_SN, 0x3 /* pipes */, 3 /* num_operands */,
-+    TREG_SN, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 7, 8, 16 },
-+      { 9, 10, 17 },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ffc0000ULL,
-+      0xfffe000000000000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x0000000009780000ULL,
-+      0x0c82000000000000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "xori", TILE_OPC_XORI, 0x3 /* pipes */, 3 /* num_operands */,
-+    TREG_ZERO, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 7, 8, 0 },
-+      { 9, 10, 1 },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ff00000ULL,
-+      0xfff8000000000000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x0000000050200000ULL,
-+      0x30a8000000000000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { "xori.sn", TILE_OPC_XORI_SN, 0x3 /* pipes */, 3 /* num_operands */,
-+    TREG_SN, /* implicitly_written_register */
-+    1, /* can_bundle */
-+    {
-+      /* operands */
-+      { 7, 8, 0 },
-+      { 9, 10, 1 },
-+      { 0, },
-+      { 0, },
-+      { 0, }
-+    },
-+    {
-+      /* fixed_bit_masks */
-+      0x800000007ff00000ULL,
-+      0xfff8000000000000ULL,
-+      0ULL,
-+      0ULL,
-+      0ULL
-+    },
-+    {
-+      /* fixed_bit_values */
-+      0x0000000058200000ULL,
-+      0x34a8000000000000ULL,
-+      -1ULL,
-+      -1ULL,
-+      -1ULL
-+    }
-+  },
-+  { 0, TILE_OPC_NONE, 0, 0, 0, TREG_ZERO, { { 0, } }, { 0, }, { 0, }
-+  }
-+};
-+#define BITFIELD(start, size) ((start) | (((1 << (size)) - 1) << 6))
-+#define CHILD(array_index) (TILE_OPC_NONE + (array_index))
-+
-+static const unsigned short decode_X0_fsm[1153] =
-+{
-+  BITFIELD(22, 9) /* index 0 */,
-+  CHILD(513), CHILD(530), CHILD(547), CHILD(564), CHILD(596), CHILD(613),
-+  CHILD(630), TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE,
-+  TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE,
-+  TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE,
-+  TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE,
-+  TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE,
-+  TILE_OPC_NONE, CHILD(663), CHILD(680), CHILD(697), CHILD(714), CHILD(746),
-+  CHILD(763), CHILD(780), TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE,
-+  TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE,
-+  TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE,
-+  TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE,
-+  TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE,
-+  TILE_OPC_NONE, TILE_OPC_NONE, CHILD(813), CHILD(813), CHILD(813),
-+  CHILD(813), CHILD(813), CHILD(813), CHILD(813), CHILD(813), CHILD(813),
-+  CHILD(813), CHILD(813), CHILD(813), CHILD(813), CHILD(813), CHILD(813),
-+  CHILD(813), CHILD(813), CHILD(813), CHILD(813), CHILD(813), CHILD(813),
-+  CHILD(813), CHILD(813), CHILD(813), CHILD(813), CHILD(813), CHILD(813),
-+  CHILD(813), CHILD(813), CHILD(813), CHILD(813), CHILD(813), CHILD(813),
-+  CHILD(813), CHILD(813), CHILD(813), CHILD(813), CHILD(813), CHILD(813),
-+  CHILD(813), CHILD(813), CHILD(813), CHILD(813), CHILD(813), CHILD(813),
-+  CHILD(813), CHILD(813), CHILD(813), CHILD(813), CHILD(813), CHILD(813),
-+  CHILD(813), CHILD(813), CHILD(813), CHILD(813), CHILD(813), CHILD(813),
-+  CHILD(813), CHILD(813), CHILD(813), CHILD(813), CHILD(813), CHILD(813),
-+  CHILD(813), CHILD(828), CHILD(828), CHILD(828), CHILD(828), CHILD(828),
-+  CHILD(828), CHILD(828), CHILD(828), CHILD(828), CHILD(828), CHILD(828),
-+  CHILD(828), CHILD(828), CHILD(828), CHILD(828), CHILD(828), CHILD(828),
-+  CHILD(828), CHILD(828), CHILD(828), CHILD(828), CHILD(828), CHILD(828),
-+  CHILD(828), CHILD(828), CHILD(828), CHILD(828), CHILD(828), CHILD(828),
-+  CHILD(828), CHILD(828), CHILD(828), CHILD(828), CHILD(828), CHILD(828),
-+  CHILD(828), CHILD(828), CHILD(828), CHILD(828), CHILD(828), CHILD(828),
-+  CHILD(828), CHILD(828), CHILD(828), CHILD(828), CHILD(828), CHILD(828),
-+  CHILD(828), CHILD(828), CHILD(828), CHILD(828), CHILD(828), CHILD(828),
-+  CHILD(828), CHILD(828), CHILD(828), CHILD(828), CHILD(828), CHILD(828),
-+  CHILD(828), CHILD(828), CHILD(828), CHILD(828), CHILD(828), CHILD(843),
-+  CHILD(843), CHILD(843), CHILD(843), CHILD(843), CHILD(843), CHILD(843),
-+  CHILD(843), CHILD(843), CHILD(843), CHILD(843), CHILD(843), CHILD(843),
-+  CHILD(843), CHILD(843), CHILD(843), CHILD(843), CHILD(843), CHILD(843),
-+  CHILD(843), CHILD(843), CHILD(843), CHILD(843), CHILD(843), CHILD(843),
-+  CHILD(843), CHILD(843), CHILD(843), CHILD(843), CHILD(843), CHILD(843),
-+  CHILD(843), CHILD(843), CHILD(843), CHILD(843), CHILD(843), CHILD(843),
-+  CHILD(843), CHILD(843), CHILD(843), CHILD(843), CHILD(843), CHILD(843),
-+  CHILD(843), CHILD(843), CHILD(843), CHILD(843), CHILD(843), CHILD(843),
-+  CHILD(843), CHILD(843), CHILD(843), CHILD(843), CHILD(843), CHILD(843),
-+  CHILD(843), CHILD(843), CHILD(843), CHILD(843), CHILD(843), CHILD(843),
-+  CHILD(843), CHILD(843), CHILD(843), CHILD(873), CHILD(878), CHILD(883),
-+  CHILD(903), CHILD(908), TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE,
-+  TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE,
-+  TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE,
-+  TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE,
-+  TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE,
-+  TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, CHILD(913),
-+  CHILD(918), CHILD(923), CHILD(943), CHILD(948), TILE_OPC_NONE,
-+  TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE,
-+  TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE,
-+  TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE,
-+  TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE,
-+  TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE,
-+  TILE_OPC_NONE, CHILD(953), TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE,
-+  TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE,
-+  TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE,
-+  TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE,
-+  TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE,
-+  TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE,
-+  TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, CHILD(988), TILE_OPC_NONE,
-+  TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE,
-+  TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE,
-+  TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE,
-+  TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE,
-+  TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE,
-+  TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE,
-+  TILE_OPC_MM, TILE_OPC_MM, TILE_OPC_MM, TILE_OPC_MM, TILE_OPC_MM,
-+  TILE_OPC_MM, TILE_OPC_MM, TILE_OPC_MM, TILE_OPC_MM, TILE_OPC_MM,
-+  TILE_OPC_MM, TILE_OPC_MM, TILE_OPC_MM, TILE_OPC_MM, TILE_OPC_MM,
-+  TILE_OPC_MM, TILE_OPC_MM, TILE_OPC_MM, TILE_OPC_MM, TILE_OPC_MM,
-+  TILE_OPC_MM, TILE_OPC_MM, TILE_OPC_MM, TILE_OPC_MM, TILE_OPC_MM,
-+  TILE_OPC_MM, TILE_OPC_MM, TILE_OPC_MM, TILE_OPC_MM, TILE_OPC_MM,
-+  TILE_OPC_MM, TILE_OPC_MM, TILE_OPC_MM, TILE_OPC_MM, TILE_OPC_MM,
-+  TILE_OPC_MM, TILE_OPC_MM, TILE_OPC_MM, TILE_OPC_MM, TILE_OPC_MM,
-+  TILE_OPC_MM, TILE_OPC_MM, TILE_OPC_MM, TILE_OPC_MM, TILE_OPC_MM,
-+  TILE_OPC_MM, TILE_OPC_MM, TILE_OPC_MM, TILE_OPC_MM, TILE_OPC_MM,
-+  TILE_OPC_MM, TILE_OPC_MM, TILE_OPC_MM, TILE_OPC_MM, TILE_OPC_MM,
-+  TILE_OPC_MM, TILE_OPC_MM, TILE_OPC_MM, TILE_OPC_MM, TILE_OPC_MM,
-+  TILE_OPC_MM, TILE_OPC_MM, TILE_OPC_MM, TILE_OPC_MM, CHILD(993),
-+  TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE,
-+  TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE,
-+  TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE,
-+  TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE,
-+  TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE,
-+  TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE,
-+  TILE_OPC_NONE, CHILD(1076), TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE,
-+  TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE,
-+  TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE,
-+  TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE,
-+  TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE,
-+  TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE,
-+  TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE,
-+  BITFIELD(18, 4) /* index 513 */,
-+  TILE_OPC_NONE, TILE_OPC_ADDB, TILE_OPC_ADDH, TILE_OPC_ADD,
-+  TILE_OPC_ADIFFB_U, TILE_OPC_ADIFFH, TILE_OPC_AND, TILE_OPC_AVGB_U,
-+  TILE_OPC_AVGH, TILE_OPC_CRC32_32, TILE_OPC_CRC32_8, TILE_OPC_INTHB,
-+  TILE_OPC_INTHH, TILE_OPC_INTLB, TILE_OPC_INTLH, TILE_OPC_MAXB_U,
-+  BITFIELD(18, 4) /* index 530 */,
-+  TILE_OPC_MAXH, TILE_OPC_MINB_U, TILE_OPC_MINH, TILE_OPC_MNZB, TILE_OPC_MNZH,
-+  TILE_OPC_MNZ, TILE_OPC_MULHHA_SS, TILE_OPC_MULHHA_SU, TILE_OPC_MULHHA_UU,
-+  TILE_OPC_MULHHSA_UU, TILE_OPC_MULHH_SS, TILE_OPC_MULHH_SU,
-+  TILE_OPC_MULHH_UU, TILE_OPC_MULHLA_SS, TILE_OPC_MULHLA_SU,
-+  TILE_OPC_MULHLA_US,
-+  BITFIELD(18, 4) /* index 547 */,
-+  TILE_OPC_MULHLA_UU, TILE_OPC_MULHLSA_UU, TILE_OPC_MULHL_SS,
-+  TILE_OPC_MULHL_SU, TILE_OPC_MULHL_US, TILE_OPC_MULHL_UU, TILE_OPC_MULLLA_SS,
-+  TILE_OPC_MULLLA_SU, TILE_OPC_MULLLA_UU, TILE_OPC_MULLLSA_UU,
-+  TILE_OPC_MULLL_SS, TILE_OPC_MULLL_SU, TILE_OPC_MULLL_UU, TILE_OPC_MVNZ,
-+  TILE_OPC_MVZ, TILE_OPC_MZB,
-+  BITFIELD(18, 4) /* index 564 */,
-+  TILE_OPC_MZH, TILE_OPC_MZ, TILE_OPC_NOR, CHILD(581), TILE_OPC_PACKHB,
-+  TILE_OPC_PACKLB, TILE_OPC_RL, TILE_OPC_S1A, TILE_OPC_S2A, TILE_OPC_S3A,
-+  TILE_OPC_SADAB_U, TILE_OPC_SADAH, TILE_OPC_SADAH_U, TILE_OPC_SADB_U,
-+  TILE_OPC_SADH, TILE_OPC_SADH_U,
-+  BITFIELD(12, 2) /* index 581 */,
-+  TILE_OPC_OR, TILE_OPC_OR, TILE_OPC_OR, CHILD(586),
-+  BITFIELD(14, 2) /* index 586 */,
-+  TILE_OPC_OR, TILE_OPC_OR, TILE_OPC_OR, CHILD(591),
-+  BITFIELD(16, 2) /* index 591 */,
-+  TILE_OPC_OR, TILE_OPC_OR, TILE_OPC_OR, TILE_OPC_MOVE,
-+  BITFIELD(18, 4) /* index 596 */,
-+  TILE_OPC_SEQB, TILE_OPC_SEQH, TILE_OPC_SEQ, TILE_OPC_SHLB, TILE_OPC_SHLH,
-+  TILE_OPC_SHL, TILE_OPC_SHRB, TILE_OPC_SHRH, TILE_OPC_SHR, TILE_OPC_SLTB,
-+  TILE_OPC_SLTB_U, TILE_OPC_SLTEB, TILE_OPC_SLTEB_U, TILE_OPC_SLTEH,
-+  TILE_OPC_SLTEH_U, TILE_OPC_SLTE,
-+  BITFIELD(18, 4) /* index 613 */,
-+  TILE_OPC_SLTE_U, TILE_OPC_SLTH, TILE_OPC_SLTH_U, TILE_OPC_SLT,
-+  TILE_OPC_SLT_U, TILE_OPC_SNEB, TILE_OPC_SNEH, TILE_OPC_SNE, TILE_OPC_SRAB,
-+  TILE_OPC_SRAH, TILE_OPC_SRA, TILE_OPC_SUBB, TILE_OPC_SUBH, TILE_OPC_SUB,
-+  TILE_OPC_XOR, TILE_OPC_DWORD_ALIGN,
-+  BITFIELD(18, 3) /* index 630 */,
-+  CHILD(639), CHILD(642), CHILD(645), CHILD(648), CHILD(651), CHILD(654),
-+  CHILD(657), CHILD(660),
-+  BITFIELD(21, 1) /* index 639 */,
-+  TILE_OPC_ADDS, TILE_OPC_NONE,
-+  BITFIELD(21, 1) /* index 642 */,
-+  TILE_OPC_SUBS, TILE_OPC_NONE,
-+  BITFIELD(21, 1) /* index 645 */,
-+  TILE_OPC_ADDBS_U, TILE_OPC_NONE,
-+  BITFIELD(21, 1) /* index 648 */,
-+  TILE_OPC_ADDHS, TILE_OPC_NONE,
-+  BITFIELD(21, 1) /* index 651 */,
-+  TILE_OPC_SUBBS_U, TILE_OPC_NONE,
-+  BITFIELD(21, 1) /* index 654 */,
-+  TILE_OPC_SUBHS, TILE_OPC_NONE,
-+  BITFIELD(21, 1) /* index 657 */,
-+  TILE_OPC_PACKHS, TILE_OPC_NONE,
-+  BITFIELD(21, 1) /* index 660 */,
-+  TILE_OPC_PACKBS_U, TILE_OPC_NONE,
-+  BITFIELD(18, 4) /* index 663 */,
-+  TILE_OPC_NONE, TILE_OPC_ADDB_SN, TILE_OPC_ADDH_SN, TILE_OPC_ADD_SN,
-+  TILE_OPC_ADIFFB_U_SN, TILE_OPC_ADIFFH_SN, TILE_OPC_AND_SN,
-+  TILE_OPC_AVGB_U_SN, TILE_OPC_AVGH_SN, TILE_OPC_CRC32_32_SN,
-+  TILE_OPC_CRC32_8_SN, TILE_OPC_INTHB_SN, TILE_OPC_INTHH_SN,
-+  TILE_OPC_INTLB_SN, TILE_OPC_INTLH_SN, TILE_OPC_MAXB_U_SN,
-+  BITFIELD(18, 4) /* index 680 */,
-+  TILE_OPC_MAXH_SN, TILE_OPC_MINB_U_SN, TILE_OPC_MINH_SN, TILE_OPC_MNZB_SN,
-+  TILE_OPC_MNZH_SN, TILE_OPC_MNZ_SN, TILE_OPC_MULHHA_SS_SN,
-+  TILE_OPC_MULHHA_SU_SN, TILE_OPC_MULHHA_UU_SN, TILE_OPC_MULHHSA_UU_SN,
-+  TILE_OPC_MULHH_SS_SN, TILE_OPC_MULHH_SU_SN, TILE_OPC_MULHH_UU_SN,
-+  TILE_OPC_MULHLA_SS_SN, TILE_OPC_MULHLA_SU_SN, TILE_OPC_MULHLA_US_SN,
-+  BITFIELD(18, 4) /* index 697 */,
-+  TILE_OPC_MULHLA_UU_SN, TILE_OPC_MULHLSA_UU_SN, TILE_OPC_MULHL_SS_SN,
-+  TILE_OPC_MULHL_SU_SN, TILE_OPC_MULHL_US_SN, TILE_OPC_MULHL_UU_SN,
-+  TILE_OPC_MULLLA_SS_SN, TILE_OPC_MULLLA_SU_SN, TILE_OPC_MULLLA_UU_SN,
-+  TILE_OPC_MULLLSA_UU_SN, TILE_OPC_MULLL_SS_SN, TILE_OPC_MULLL_SU_SN,
-+  TILE_OPC_MULLL_UU_SN, TILE_OPC_MVNZ_SN, TILE_OPC_MVZ_SN, TILE_OPC_MZB_SN,
-+  BITFIELD(18, 4) /* index 714 */,
-+  TILE_OPC_MZH_SN, TILE_OPC_MZ_SN, TILE_OPC_NOR_SN, CHILD(731),
-+  TILE_OPC_PACKHB_SN, TILE_OPC_PACKLB_SN, TILE_OPC_RL_SN, TILE_OPC_S1A_SN,
-+  TILE_OPC_S2A_SN, TILE_OPC_S3A_SN, TILE_OPC_SADAB_U_SN, TILE_OPC_SADAH_SN,
-+  TILE_OPC_SADAH_U_SN, TILE_OPC_SADB_U_SN, TILE_OPC_SADH_SN,
-+  TILE_OPC_SADH_U_SN,
-+  BITFIELD(12, 2) /* index 731 */,
-+  TILE_OPC_OR_SN, TILE_OPC_OR_SN, TILE_OPC_OR_SN, CHILD(736),
-+  BITFIELD(14, 2) /* index 736 */,
-+  TILE_OPC_OR_SN, TILE_OPC_OR_SN, TILE_OPC_OR_SN, CHILD(741),
-+  BITFIELD(16, 2) /* index 741 */,
-+  TILE_OPC_OR_SN, TILE_OPC_OR_SN, TILE_OPC_OR_SN, TILE_OPC_MOVE_SN,
-+  BITFIELD(18, 4) /* index 746 */,
-+  TILE_OPC_SEQB_SN, TILE_OPC_SEQH_SN, TILE_OPC_SEQ_SN, TILE_OPC_SHLB_SN,
-+  TILE_OPC_SHLH_SN, TILE_OPC_SHL_SN, TILE_OPC_SHRB_SN, TILE_OPC_SHRH_SN,
-+  TILE_OPC_SHR_SN, TILE_OPC_SLTB_SN, TILE_OPC_SLTB_U_SN, TILE_OPC_SLTEB_SN,
-+  TILE_OPC_SLTEB_U_SN, TILE_OPC_SLTEH_SN, TILE_OPC_SLTEH_U_SN,
-+  TILE_OPC_SLTE_SN,
-+  BITFIELD(18, 4) /* index 763 */,
-+  TILE_OPC_SLTE_U_SN, TILE_OPC_SLTH_SN, TILE_OPC_SLTH_U_SN, TILE_OPC_SLT_SN,
-+  TILE_OPC_SLT_U_SN, TILE_OPC_SNEB_SN, TILE_OPC_SNEH_SN, TILE_OPC_SNE_SN,
-+  TILE_OPC_SRAB_SN, TILE_OPC_SRAH_SN, TILE_OPC_SRA_SN, TILE_OPC_SUBB_SN,
-+  TILE_OPC_SUBH_SN, TILE_OPC_SUB_SN, TILE_OPC_XOR_SN, TILE_OPC_DWORD_ALIGN_SN,
-+  BITFIELD(18, 3) /* index 780 */,
-+  CHILD(789), CHILD(792), CHILD(795), CHILD(798), CHILD(801), CHILD(804),
-+  CHILD(807), CHILD(810),
-+  BITFIELD(21, 1) /* index 789 */,
-+  TILE_OPC_ADDS_SN, TILE_OPC_NONE,
-+  BITFIELD(21, 1) /* index 792 */,
-+  TILE_OPC_SUBS_SN, TILE_OPC_NONE,
-+  BITFIELD(21, 1) /* index 795 */,
-+  TILE_OPC_ADDBS_U_SN, TILE_OPC_NONE,
-+  BITFIELD(21, 1) /* index 798 */,
-+  TILE_OPC_ADDHS_SN, TILE_OPC_NONE,
-+  BITFIELD(21, 1) /* index 801 */,
-+  TILE_OPC_SUBBS_U_SN, TILE_OPC_NONE,
-+  BITFIELD(21, 1) /* index 804 */,
-+  TILE_OPC_SUBHS_SN, TILE_OPC_NONE,
-+  BITFIELD(21, 1) /* index 807 */,
-+  TILE_OPC_PACKHS_SN, TILE_OPC_NONE,
-+  BITFIELD(21, 1) /* index 810 */,
-+  TILE_OPC_PACKBS_U_SN, TILE_OPC_NONE,
-+  BITFIELD(6, 2) /* index 813 */,
-+  TILE_OPC_ADDLI_SN, TILE_OPC_ADDLI_SN, TILE_OPC_ADDLI_SN, CHILD(818),
-+  BITFIELD(8, 2) /* index 818 */,
-+  TILE_OPC_ADDLI_SN, TILE_OPC_ADDLI_SN, TILE_OPC_ADDLI_SN, CHILD(823),
-+  BITFIELD(10, 2) /* index 823 */,
-+  TILE_OPC_ADDLI_SN, TILE_OPC_ADDLI_SN, TILE_OPC_ADDLI_SN, TILE_OPC_MOVELI_SN,
-+  BITFIELD(6, 2) /* index 828 */,
-+  TILE_OPC_ADDLI, TILE_OPC_ADDLI, TILE_OPC_ADDLI, CHILD(833),
-+  BITFIELD(8, 2) /* index 833 */,
-+  TILE_OPC_ADDLI, TILE_OPC_ADDLI, TILE_OPC_ADDLI, CHILD(838),
-+  BITFIELD(10, 2) /* index 838 */,
-+  TILE_OPC_ADDLI, TILE_OPC_ADDLI, TILE_OPC_ADDLI, TILE_OPC_MOVELI,
-+  BITFIELD(0, 2) /* index 843 */,
-+  TILE_OPC_AULI, TILE_OPC_AULI, TILE_OPC_AULI, CHILD(848),
-+  BITFIELD(2, 2) /* index 848 */,
-+  TILE_OPC_AULI, TILE_OPC_AULI, TILE_OPC_AULI, CHILD(853),
-+  BITFIELD(4, 2) /* index 853 */,
-+  TILE_OPC_AULI, TILE_OPC_AULI, TILE_OPC_AULI, CHILD(858),
-+  BITFIELD(6, 2) /* index 858 */,
-+  TILE_OPC_AULI, TILE_OPC_AULI, TILE_OPC_AULI, CHILD(863),
-+  BITFIELD(8, 2) /* index 863 */,
-+  TILE_OPC_AULI, TILE_OPC_AULI, TILE_OPC_AULI, CHILD(868),
-+  BITFIELD(10, 2) /* index 868 */,
-+  TILE_OPC_AULI, TILE_OPC_AULI, TILE_OPC_AULI, TILE_OPC_INFOL,
-+  BITFIELD(20, 2) /* index 873 */,
-+  TILE_OPC_NONE, TILE_OPC_ADDIB, TILE_OPC_ADDIH, TILE_OPC_ADDI,
-+  BITFIELD(20, 2) /* index 878 */,
-+  TILE_OPC_MAXIB_U, TILE_OPC_MAXIH, TILE_OPC_MINIB_U, TILE_OPC_MINIH,
-+  BITFIELD(20, 2) /* index 883 */,
-+  CHILD(888), TILE_OPC_SEQIB, TILE_OPC_SEQIH, TILE_OPC_SEQI,
-+  BITFIELD(6, 2) /* index 888 */,
-+  TILE_OPC_ORI, TILE_OPC_ORI, TILE_OPC_ORI, CHILD(893),
-+  BITFIELD(8, 2) /* index 893 */,
-+  TILE_OPC_ORI, TILE_OPC_ORI, TILE_OPC_ORI, CHILD(898),
-+  BITFIELD(10, 2) /* index 898 */,
-+  TILE_OPC_ORI, TILE_OPC_ORI, TILE_OPC_ORI, TILE_OPC_MOVEI,
-+  BITFIELD(20, 2) /* index 903 */,
-+  TILE_OPC_SLTIB, TILE_OPC_SLTIB_U, TILE_OPC_SLTIH, TILE_OPC_SLTIH_U,
-+  BITFIELD(20, 2) /* index 908 */,
-+  TILE_OPC_SLTI, TILE_OPC_SLTI_U, TILE_OPC_NONE, TILE_OPC_NONE,
-+  BITFIELD(20, 2) /* index 913 */,
-+  TILE_OPC_NONE, TILE_OPC_ADDIB_SN, TILE_OPC_ADDIH_SN, TILE_OPC_ADDI_SN,
-+  BITFIELD(20, 2) /* index 918 */,
-+  TILE_OPC_MAXIB_U_SN, TILE_OPC_MAXIH_SN, TILE_OPC_MINIB_U_SN,
-+  TILE_OPC_MINIH_SN,
-+  BITFIELD(20, 2) /* index 923 */,
-+  CHILD(928), TILE_OPC_SEQIB_SN, TILE_OPC_SEQIH_SN, TILE_OPC_SEQI_SN,
-+  BITFIELD(6, 2) /* index 928 */,
-+  TILE_OPC_ORI_SN, TILE_OPC_ORI_SN, TILE_OPC_ORI_SN, CHILD(933),
-+  BITFIELD(8, 2) /* index 933 */,
-+  TILE_OPC_ORI_SN, TILE_OPC_ORI_SN, TILE_OPC_ORI_SN, CHILD(938),
-+  BITFIELD(10, 2) /* index 938 */,
-+  TILE_OPC_ORI_SN, TILE_OPC_ORI_SN, TILE_OPC_ORI_SN, TILE_OPC_MOVEI_SN,
-+  BITFIELD(20, 2) /* index 943 */,
-+  TILE_OPC_SLTIB_SN, TILE_OPC_SLTIB_U_SN, TILE_OPC_SLTIH_SN,
-+  TILE_OPC_SLTIH_U_SN,
-+  BITFIELD(20, 2) /* index 948 */,
-+  TILE_OPC_SLTI_SN, TILE_OPC_SLTI_U_SN, TILE_OPC_NONE, TILE_OPC_NONE,
-+  BITFIELD(20, 2) /* index 953 */,
-+  TILE_OPC_NONE, CHILD(958), TILE_OPC_XORI, TILE_OPC_NONE,
-+  BITFIELD(0, 2) /* index 958 */,
-+  TILE_OPC_ANDI, TILE_OPC_ANDI, TILE_OPC_ANDI, CHILD(963),
-+  BITFIELD(2, 2) /* index 963 */,
-+  TILE_OPC_ANDI, TILE_OPC_ANDI, TILE_OPC_ANDI, CHILD(968),
-+  BITFIELD(4, 2) /* index 968 */,
-+  TILE_OPC_ANDI, TILE_OPC_ANDI, TILE_OPC_ANDI, CHILD(973),
-+  BITFIELD(6, 2) /* index 973 */,
-+  TILE_OPC_ANDI, TILE_OPC_ANDI, TILE_OPC_ANDI, CHILD(978),
-+  BITFIELD(8, 2) /* index 978 */,
-+  TILE_OPC_ANDI, TILE_OPC_ANDI, TILE_OPC_ANDI, CHILD(983),
-+  BITFIELD(10, 2) /* index 983 */,
-+  TILE_OPC_ANDI, TILE_OPC_ANDI, TILE_OPC_ANDI, TILE_OPC_INFO,
-+  BITFIELD(20, 2) /* index 988 */,
-+  TILE_OPC_NONE, TILE_OPC_ANDI_SN, TILE_OPC_XORI_SN, TILE_OPC_NONE,
-+  BITFIELD(17, 5) /* index 993 */,
-+  TILE_OPC_NONE, TILE_OPC_RLI, TILE_OPC_SHLIB, TILE_OPC_SHLIH, TILE_OPC_SHLI,
-+  TILE_OPC_SHRIB, TILE_OPC_SHRIH, TILE_OPC_SHRI, TILE_OPC_SRAIB,
-+  TILE_OPC_SRAIH, TILE_OPC_SRAI, CHILD(1026), TILE_OPC_NONE, TILE_OPC_NONE,
-+  TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE,
-+  TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE,
-+  TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE,
-+  TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE,
-+  BITFIELD(12, 4) /* index 1026 */,
-+  TILE_OPC_NONE, CHILD(1043), CHILD(1046), CHILD(1049), CHILD(1052),
-+  CHILD(1055), CHILD(1058), CHILD(1061), CHILD(1064), CHILD(1067),
-+  CHILD(1070), CHILD(1073), TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE,
-+  TILE_OPC_NONE,
-+  BITFIELD(16, 1) /* index 1043 */,
-+  TILE_OPC_BITX, TILE_OPC_NONE,
-+  BITFIELD(16, 1) /* index 1046 */,
-+  TILE_OPC_BYTEX, TILE_OPC_NONE,
-+  BITFIELD(16, 1) /* index 1049 */,
-+  TILE_OPC_CLZ, TILE_OPC_NONE,
-+  BITFIELD(16, 1) /* index 1052 */,
-+  TILE_OPC_CTZ, TILE_OPC_NONE,
-+  BITFIELD(16, 1) /* index 1055 */,
-+  TILE_OPC_FNOP, TILE_OPC_NONE,
-+  BITFIELD(16, 1) /* index 1058 */,
-+  TILE_OPC_NOP, TILE_OPC_NONE,
-+  BITFIELD(16, 1) /* index 1061 */,
-+  TILE_OPC_PCNT, TILE_OPC_NONE,
-+  BITFIELD(16, 1) /* index 1064 */,
-+  TILE_OPC_TBLIDXB0, TILE_OPC_NONE,
-+  BITFIELD(16, 1) /* index 1067 */,
-+  TILE_OPC_TBLIDXB1, TILE_OPC_NONE,
-+  BITFIELD(16, 1) /* index 1070 */,
-+  TILE_OPC_TBLIDXB2, TILE_OPC_NONE,
-+  BITFIELD(16, 1) /* index 1073 */,
-+  TILE_OPC_TBLIDXB3, TILE_OPC_NONE,
-+  BITFIELD(17, 5) /* index 1076 */,
-+  TILE_OPC_NONE, TILE_OPC_RLI_SN, TILE_OPC_SHLIB_SN, TILE_OPC_SHLIH_SN,
-+  TILE_OPC_SHLI_SN, TILE_OPC_SHRIB_SN, TILE_OPC_SHRIH_SN, TILE_OPC_SHRI_SN,
-+  TILE_OPC_SRAIB_SN, TILE_OPC_SRAIH_SN, TILE_OPC_SRAI_SN, CHILD(1109),
-+  TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE,
-+  TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE,
-+  TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE,
-+  TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE,
-+  BITFIELD(12, 4) /* index 1109 */,
-+  TILE_OPC_NONE, CHILD(1126), CHILD(1129), CHILD(1132), CHILD(1135),
-+  CHILD(1055), CHILD(1058), CHILD(1138), CHILD(1141), CHILD(1144),
-+  CHILD(1147), CHILD(1150), TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE,
-+  TILE_OPC_NONE,
-+  BITFIELD(16, 1) /* index 1126 */,
-+  TILE_OPC_BITX_SN, TILE_OPC_NONE,
-+  BITFIELD(16, 1) /* index 1129 */,
-+  TILE_OPC_BYTEX_SN, TILE_OPC_NONE,
-+  BITFIELD(16, 1) /* index 1132 */,
-+  TILE_OPC_CLZ_SN, TILE_OPC_NONE,
-+  BITFIELD(16, 1) /* index 1135 */,
-+  TILE_OPC_CTZ_SN, TILE_OPC_NONE,
-+  BITFIELD(16, 1) /* index 1138 */,
-+  TILE_OPC_PCNT_SN, TILE_OPC_NONE,
-+  BITFIELD(16, 1) /* index 1141 */,
-+  TILE_OPC_TBLIDXB0_SN, TILE_OPC_NONE,
-+  BITFIELD(16, 1) /* index 1144 */,
-+  TILE_OPC_TBLIDXB1_SN, TILE_OPC_NONE,
-+  BITFIELD(16, 1) /* index 1147 */,
-+  TILE_OPC_TBLIDXB2_SN, TILE_OPC_NONE,
-+  BITFIELD(16, 1) /* index 1150 */,
-+  TILE_OPC_TBLIDXB3_SN, TILE_OPC_NONE,
-+};
-+
-+static const unsigned short decode_X1_fsm[1509] =
-+{
-+  BITFIELD(54, 9) /* index 0 */,
-+  TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE,
-+  TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE,
-+  TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE,
-+  TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE,
-+  TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE,
-+  TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE,
-+  TILE_OPC_NONE, TILE_OPC_NONE, CHILD(513), CHILD(561), CHILD(594),
-+  TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE,
-+  TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE,
-+  TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, CHILD(641), CHILD(689),
-+  CHILD(722), TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE,
-+  TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE,
-+  TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, CHILD(766),
-+  CHILD(766), CHILD(766), CHILD(766), CHILD(766), CHILD(766), CHILD(766),
-+  CHILD(766), CHILD(766), CHILD(766), CHILD(766), CHILD(766), CHILD(766),
-+  CHILD(766), CHILD(766), CHILD(766), CHILD(766), CHILD(766), CHILD(766),
-+  CHILD(766), CHILD(766), CHILD(766), CHILD(766), CHILD(766), CHILD(766),
-+  CHILD(766), CHILD(766), CHILD(766), CHILD(766), CHILD(766), CHILD(766),
-+  CHILD(766), CHILD(781), CHILD(781), CHILD(781), CHILD(781), CHILD(781),
-+  CHILD(781), CHILD(781), CHILD(781), CHILD(781), CHILD(781), CHILD(781),
-+  CHILD(781), CHILD(781), CHILD(781), CHILD(781), CHILD(781), CHILD(781),
-+  CHILD(781), CHILD(781), CHILD(781), CHILD(781), CHILD(781), CHILD(781),
-+  CHILD(781), CHILD(781), CHILD(781), CHILD(781), CHILD(781), CHILD(781),
-+  CHILD(781), CHILD(781), CHILD(781), CHILD(796), CHILD(796), CHILD(796),
-+  CHILD(796), CHILD(796), CHILD(796), CHILD(796), CHILD(796), CHILD(796),
-+  CHILD(796), CHILD(796), CHILD(796), CHILD(796), CHILD(796), CHILD(796),
-+  CHILD(796), CHILD(796), CHILD(796), CHILD(796), CHILD(796), CHILD(796),
-+  CHILD(796), CHILD(796), CHILD(796), CHILD(796), CHILD(796), CHILD(796),
-+  CHILD(796), CHILD(796), CHILD(796), CHILD(796), CHILD(796), CHILD(826),
-+  CHILD(826), CHILD(826), CHILD(826), CHILD(826), CHILD(826), CHILD(826),
-+  CHILD(826), CHILD(826), CHILD(826), CHILD(826), CHILD(826), CHILD(826),
-+  CHILD(826), CHILD(826), CHILD(826), CHILD(843), CHILD(843), CHILD(843),
-+  CHILD(843), CHILD(843), CHILD(843), CHILD(843), CHILD(843), CHILD(843),
-+  CHILD(843), CHILD(843), CHILD(843), CHILD(843), CHILD(843), CHILD(843),
-+  CHILD(843), CHILD(860), CHILD(899), CHILD(923), CHILD(932), TILE_OPC_NONE,
-+  TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE,
-+  TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE,
-+  TILE_OPC_NONE, CHILD(941), CHILD(950), CHILD(974), CHILD(983),
-+  TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE,
-+  TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE,
-+  TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_MM, TILE_OPC_MM, TILE_OPC_MM,
-+  TILE_OPC_MM, TILE_OPC_MM, TILE_OPC_MM, TILE_OPC_MM, TILE_OPC_MM,
-+  TILE_OPC_MM, TILE_OPC_MM, TILE_OPC_MM, TILE_OPC_MM, TILE_OPC_MM,
-+  TILE_OPC_MM, TILE_OPC_MM, TILE_OPC_MM, TILE_OPC_MM, TILE_OPC_MM,
-+  TILE_OPC_MM, TILE_OPC_MM, TILE_OPC_MM, TILE_OPC_MM, TILE_OPC_MM,
-+  TILE_OPC_MM, TILE_OPC_MM, TILE_OPC_MM, TILE_OPC_MM, TILE_OPC_MM,
-+  TILE_OPC_MM, TILE_OPC_MM, TILE_OPC_MM, TILE_OPC_MM, CHILD(992),
-+  TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE,
-+  TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE,
-+  TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE,
-+  CHILD(1303), TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE,
-+  TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE,
-+  TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE,
-+  TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE,
-+  TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE,
-+  TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE,
-+  TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE,
-+  TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE,
-+  TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE,
-+  TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_J, TILE_OPC_J,
-+  TILE_OPC_J, TILE_OPC_J, TILE_OPC_J, TILE_OPC_J, TILE_OPC_J, TILE_OPC_J,
-+  TILE_OPC_J, TILE_OPC_J, TILE_OPC_J, TILE_OPC_J, TILE_OPC_J, TILE_OPC_J,
-+  TILE_OPC_J, TILE_OPC_J, TILE_OPC_J, TILE_OPC_J, TILE_OPC_J, TILE_OPC_J,
-+  TILE_OPC_J, TILE_OPC_J, TILE_OPC_J, TILE_OPC_J, TILE_OPC_J, TILE_OPC_J,
-+  TILE_OPC_J, TILE_OPC_J, TILE_OPC_J, TILE_OPC_J, TILE_OPC_J, TILE_OPC_J,
-+  TILE_OPC_J, TILE_OPC_J, TILE_OPC_J, TILE_OPC_J, TILE_OPC_J, TILE_OPC_J,
-+  TILE_OPC_J, TILE_OPC_J, TILE_OPC_J, TILE_OPC_J, TILE_OPC_J, TILE_OPC_J,
-+  TILE_OPC_J, TILE_OPC_J, TILE_OPC_J, TILE_OPC_J, TILE_OPC_J, TILE_OPC_J,
-+  TILE_OPC_J, TILE_OPC_J, TILE_OPC_J, TILE_OPC_J, TILE_OPC_J, TILE_OPC_J,
-+  TILE_OPC_J, TILE_OPC_J, TILE_OPC_J, TILE_OPC_J, TILE_OPC_J, TILE_OPC_J,
-+  TILE_OPC_J, TILE_OPC_J, TILE_OPC_JAL, TILE_OPC_JAL, TILE_OPC_JAL,
-+  TILE_OPC_JAL, TILE_OPC_JAL, TILE_OPC_JAL, TILE_OPC_JAL, TILE_OPC_JAL,
-+  TILE_OPC_JAL, TILE_OPC_JAL, TILE_OPC_JAL, TILE_OPC_JAL, TILE_OPC_JAL,
-+  TILE_OPC_JAL, TILE_OPC_JAL, TILE_OPC_JAL, TILE_OPC_JAL, TILE_OPC_JAL,
-+  TILE_OPC_JAL, TILE_OPC_JAL, TILE_OPC_JAL, TILE_OPC_JAL, TILE_OPC_JAL,
-+  TILE_OPC_JAL, TILE_OPC_JAL, TILE_OPC_JAL, TILE_OPC_JAL, TILE_OPC_JAL,
-+  TILE_OPC_JAL, TILE_OPC_JAL, TILE_OPC_JAL, TILE_OPC_JAL, TILE_OPC_JAL,
-+  TILE_OPC_JAL, TILE_OPC_JAL, TILE_OPC_JAL, TILE_OPC_JAL, TILE_OPC_JAL,
-+  TILE_OPC_JAL, TILE_OPC_JAL, TILE_OPC_JAL, TILE_OPC_JAL, TILE_OPC_JAL,
-+  TILE_OPC_JAL, TILE_OPC_JAL, TILE_OPC_JAL, TILE_OPC_JAL, TILE_OPC_JAL,
-+  TILE_OPC_JAL, TILE_OPC_JAL, TILE_OPC_JAL, TILE_OPC_JAL, TILE_OPC_JAL,
-+  TILE_OPC_JAL, TILE_OPC_JAL, TILE_OPC_JAL, TILE_OPC_JAL, TILE_OPC_JAL,
-+  TILE_OPC_JAL, TILE_OPC_JAL, TILE_OPC_JAL, TILE_OPC_JAL, TILE_OPC_JAL,
-+  TILE_OPC_JAL, TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE,
-+  TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE,
-+  TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE,
-+  TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE,
-+  TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE,
-+  TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE,
-+  TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE,
-+  TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE,
-+  TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE,
-+  TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE,
-+  TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE,
-+  TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE,
-+  TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE,
-+  BITFIELD(49, 5) /* index 513 */,
-+  TILE_OPC_NONE, TILE_OPC_ADDB, TILE_OPC_ADDH, TILE_OPC_ADD, TILE_OPC_AND,
-+  TILE_OPC_INTHB, TILE_OPC_INTHH, TILE_OPC_INTLB, TILE_OPC_INTLH,
-+  TILE_OPC_JALRP, TILE_OPC_JALR, TILE_OPC_JRP, TILE_OPC_JR, TILE_OPC_LNK,
-+  TILE_OPC_MAXB_U, TILE_OPC_MAXH, TILE_OPC_MINB_U, TILE_OPC_MINH,
-+  TILE_OPC_MNZB, TILE_OPC_MNZH, TILE_OPC_MNZ, TILE_OPC_MZB, TILE_OPC_MZH,
-+  TILE_OPC_MZ, TILE_OPC_NOR, CHILD(546), TILE_OPC_PACKHB, TILE_OPC_PACKLB,
-+  TILE_OPC_RL, TILE_OPC_S1A, TILE_OPC_S2A, TILE_OPC_S3A,
-+  BITFIELD(43, 2) /* index 546 */,
-+  TILE_OPC_OR, TILE_OPC_OR, TILE_OPC_OR, CHILD(551),
-+  BITFIELD(45, 2) /* index 551 */,
-+  TILE_OPC_OR, TILE_OPC_OR, TILE_OPC_OR, CHILD(556),
-+  BITFIELD(47, 2) /* index 556 */,
-+  TILE_OPC_OR, TILE_OPC_OR, TILE_OPC_OR, TILE_OPC_MOVE,
-+  BITFIELD(49, 5) /* index 561 */,
-+  TILE_OPC_SB, TILE_OPC_SEQB, TILE_OPC_SEQH, TILE_OPC_SEQ, TILE_OPC_SHLB,
-+  TILE_OPC_SHLH, TILE_OPC_SHL, TILE_OPC_SHRB, TILE_OPC_SHRH, TILE_OPC_SHR,
-+  TILE_OPC_SH, TILE_OPC_SLTB, TILE_OPC_SLTB_U, TILE_OPC_SLTEB,
-+  TILE_OPC_SLTEB_U, TILE_OPC_SLTEH, TILE_OPC_SLTEH_U, TILE_OPC_SLTE,
-+  TILE_OPC_SLTE_U, TILE_OPC_SLTH, TILE_OPC_SLTH_U, TILE_OPC_SLT,
-+  TILE_OPC_SLT_U, TILE_OPC_SNEB, TILE_OPC_SNEH, TILE_OPC_SNE, TILE_OPC_SRAB,
-+  TILE_OPC_SRAH, TILE_OPC_SRA, TILE_OPC_SUBB, TILE_OPC_SUBH, TILE_OPC_SUB,
-+  BITFIELD(49, 4) /* index 594 */,
-+  CHILD(611), CHILD(614), CHILD(617), CHILD(620), CHILD(623), CHILD(626),
-+  CHILD(629), CHILD(632), CHILD(635), CHILD(638), TILE_OPC_NONE,
-+  TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE,
-+  BITFIELD(53, 1) /* index 611 */,
-+  TILE_OPC_SW, TILE_OPC_NONE,
-+  BITFIELD(53, 1) /* index 614 */,
-+  TILE_OPC_XOR, TILE_OPC_NONE,
-+  BITFIELD(53, 1) /* index 617 */,
-+  TILE_OPC_ADDS, TILE_OPC_NONE,
-+  BITFIELD(53, 1) /* index 620 */,
-+  TILE_OPC_SUBS, TILE_OPC_NONE,
-+  BITFIELD(53, 1) /* index 623 */,
-+  TILE_OPC_ADDBS_U, TILE_OPC_NONE,
-+  BITFIELD(53, 1) /* index 626 */,
-+  TILE_OPC_ADDHS, TILE_OPC_NONE,
-+  BITFIELD(53, 1) /* index 629 */,
-+  TILE_OPC_SUBBS_U, TILE_OPC_NONE,
-+  BITFIELD(53, 1) /* index 632 */,
-+  TILE_OPC_SUBHS, TILE_OPC_NONE,
-+  BITFIELD(53, 1) /* index 635 */,
-+  TILE_OPC_PACKHS, TILE_OPC_NONE,
-+  BITFIELD(53, 1) /* index 638 */,
-+  TILE_OPC_PACKBS_U, TILE_OPC_NONE,
-+  BITFIELD(49, 5) /* index 641 */,
-+  TILE_OPC_NONE, TILE_OPC_ADDB_SN, TILE_OPC_ADDH_SN, TILE_OPC_ADD_SN,
-+  TILE_OPC_AND_SN, TILE_OPC_INTHB_SN, TILE_OPC_INTHH_SN, TILE_OPC_INTLB_SN,
-+  TILE_OPC_INTLH_SN, TILE_OPC_JALRP, TILE_OPC_JALR, TILE_OPC_JRP, TILE_OPC_JR,
-+  TILE_OPC_LNK_SN, TILE_OPC_MAXB_U_SN, TILE_OPC_MAXH_SN, TILE_OPC_MINB_U_SN,
-+  TILE_OPC_MINH_SN, TILE_OPC_MNZB_SN, TILE_OPC_MNZH_SN, TILE_OPC_MNZ_SN,
-+  TILE_OPC_MZB_SN, TILE_OPC_MZH_SN, TILE_OPC_MZ_SN, TILE_OPC_NOR_SN,
-+  CHILD(674), TILE_OPC_PACKHB_SN, TILE_OPC_PACKLB_SN, TILE_OPC_RL_SN,
-+  TILE_OPC_S1A_SN, TILE_OPC_S2A_SN, TILE_OPC_S3A_SN,
-+  BITFIELD(43, 2) /* index 674 */,
-+  TILE_OPC_OR_SN, TILE_OPC_OR_SN, TILE_OPC_OR_SN, CHILD(679),
-+  BITFIELD(45, 2) /* index 679 */,
-+  TILE_OPC_OR_SN, TILE_OPC_OR_SN, TILE_OPC_OR_SN, CHILD(684),
-+  BITFIELD(47, 2) /* index 684 */,
-+  TILE_OPC_OR_SN, TILE_OPC_OR_SN, TILE_OPC_OR_SN, TILE_OPC_MOVE_SN,
-+  BITFIELD(49, 5) /* index 689 */,
-+  TILE_OPC_SB, TILE_OPC_SEQB_SN, TILE_OPC_SEQH_SN, TILE_OPC_SEQ_SN,
-+  TILE_OPC_SHLB_SN, TILE_OPC_SHLH_SN, TILE_OPC_SHL_SN, TILE_OPC_SHRB_SN,
-+  TILE_OPC_SHRH_SN, TILE_OPC_SHR_SN, TILE_OPC_SH, TILE_OPC_SLTB_SN,
-+  TILE_OPC_SLTB_U_SN, TILE_OPC_SLTEB_SN, TILE_OPC_SLTEB_U_SN,
-+  TILE_OPC_SLTEH_SN, TILE_OPC_SLTEH_U_SN, TILE_OPC_SLTE_SN,
-+  TILE_OPC_SLTE_U_SN, TILE_OPC_SLTH_SN, TILE_OPC_SLTH_U_SN, TILE_OPC_SLT_SN,
-+  TILE_OPC_SLT_U_SN, TILE_OPC_SNEB_SN, TILE_OPC_SNEH_SN, TILE_OPC_SNE_SN,
-+  TILE_OPC_SRAB_SN, TILE_OPC_SRAH_SN, TILE_OPC_SRA_SN, TILE_OPC_SUBB_SN,
-+  TILE_OPC_SUBH_SN, TILE_OPC_SUB_SN,
-+  BITFIELD(49, 4) /* index 722 */,
-+  CHILD(611), CHILD(739), CHILD(742), CHILD(745), CHILD(748), CHILD(751),
-+  CHILD(754), CHILD(757), CHILD(760), CHILD(763), TILE_OPC_NONE,
-+  TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE,
-+  BITFIELD(53, 1) /* index 739 */,
-+  TILE_OPC_XOR_SN, TILE_OPC_NONE,
-+  BITFIELD(53, 1) /* index 742 */,
-+  TILE_OPC_ADDS_SN, TILE_OPC_NONE,
-+  BITFIELD(53, 1) /* index 745 */,
-+  TILE_OPC_SUBS_SN, TILE_OPC_NONE,
-+  BITFIELD(53, 1) /* index 748 */,
-+  TILE_OPC_ADDBS_U_SN, TILE_OPC_NONE,
-+  BITFIELD(53, 1) /* index 751 */,
-+  TILE_OPC_ADDHS_SN, TILE_OPC_NONE,
-+  BITFIELD(53, 1) /* index 754 */,
-+  TILE_OPC_SUBBS_U_SN, TILE_OPC_NONE,
-+  BITFIELD(53, 1) /* index 757 */,
-+  TILE_OPC_SUBHS_SN, TILE_OPC_NONE,
-+  BITFIELD(53, 1) /* index 760 */,
-+  TILE_OPC_PACKHS_SN, TILE_OPC_NONE,
-+  BITFIELD(53, 1) /* index 763 */,
-+  TILE_OPC_PACKBS_U_SN, TILE_OPC_NONE,
-+  BITFIELD(37, 2) /* index 766 */,
-+  TILE_OPC_ADDLI_SN, TILE_OPC_ADDLI_SN, TILE_OPC_ADDLI_SN, CHILD(771),
-+  BITFIELD(39, 2) /* index 771 */,
-+  TILE_OPC_ADDLI_SN, TILE_OPC_ADDLI_SN, TILE_OPC_ADDLI_SN, CHILD(776),
-+  BITFIELD(41, 2) /* index 776 */,
-+  TILE_OPC_ADDLI_SN, TILE_OPC_ADDLI_SN, TILE_OPC_ADDLI_SN, TILE_OPC_MOVELI_SN,
-+  BITFIELD(37, 2) /* index 781 */,
-+  TILE_OPC_ADDLI, TILE_OPC_ADDLI, TILE_OPC_ADDLI, CHILD(786),
-+  BITFIELD(39, 2) /* index 786 */,
-+  TILE_OPC_ADDLI, TILE_OPC_ADDLI, TILE_OPC_ADDLI, CHILD(791),
-+  BITFIELD(41, 2) /* index 791 */,
-+  TILE_OPC_ADDLI, TILE_OPC_ADDLI, TILE_OPC_ADDLI, TILE_OPC_MOVELI,
-+  BITFIELD(31, 2) /* index 796 */,
-+  TILE_OPC_AULI, TILE_OPC_AULI, TILE_OPC_AULI, CHILD(801),
-+  BITFIELD(33, 2) /* index 801 */,
-+  TILE_OPC_AULI, TILE_OPC_AULI, TILE_OPC_AULI, CHILD(806),
-+  BITFIELD(35, 2) /* index 806 */,
-+  TILE_OPC_AULI, TILE_OPC_AULI, TILE_OPC_AULI, CHILD(811),
-+  BITFIELD(37, 2) /* index 811 */,
-+  TILE_OPC_AULI, TILE_OPC_AULI, TILE_OPC_AULI, CHILD(816),
-+  BITFIELD(39, 2) /* index 816 */,
-+  TILE_OPC_AULI, TILE_OPC_AULI, TILE_OPC_AULI, CHILD(821),
-+  BITFIELD(41, 2) /* index 821 */,
-+  TILE_OPC_AULI, TILE_OPC_AULI, TILE_OPC_AULI, TILE_OPC_INFOL,
-+  BITFIELD(31, 4) /* index 826 */,
-+  TILE_OPC_BZ, TILE_OPC_BZT, TILE_OPC_BNZ, TILE_OPC_BNZT, TILE_OPC_BGZ,
-+  TILE_OPC_BGZT, TILE_OPC_BGEZ, TILE_OPC_BGEZT, TILE_OPC_BLZ, TILE_OPC_BLZT,
-+  TILE_OPC_BLEZ, TILE_OPC_BLEZT, TILE_OPC_BBS, TILE_OPC_BBST, TILE_OPC_BBNS,
-+  TILE_OPC_BBNST,
-+  BITFIELD(31, 4) /* index 843 */,
-+  TILE_OPC_BZ_SN, TILE_OPC_BZT_SN, TILE_OPC_BNZ_SN, TILE_OPC_BNZT_SN,
-+  TILE_OPC_BGZ_SN, TILE_OPC_BGZT_SN, TILE_OPC_BGEZ_SN, TILE_OPC_BGEZT_SN,
-+  TILE_OPC_BLZ_SN, TILE_OPC_BLZT_SN, TILE_OPC_BLEZ_SN, TILE_OPC_BLEZT_SN,
-+  TILE_OPC_BBS_SN, TILE_OPC_BBST_SN, TILE_OPC_BBNS_SN, TILE_OPC_BBNST_SN,
-+  BITFIELD(51, 3) /* index 860 */,
-+  TILE_OPC_NONE, TILE_OPC_ADDIB, TILE_OPC_ADDIH, TILE_OPC_ADDI, CHILD(869),
-+  TILE_OPC_MAXIB_U, TILE_OPC_MAXIH, TILE_OPC_MFSPR,
-+  BITFIELD(31, 2) /* index 869 */,
-+  TILE_OPC_ANDI, TILE_OPC_ANDI, TILE_OPC_ANDI, CHILD(874),
-+  BITFIELD(33, 2) /* index 874 */,
-+  TILE_OPC_ANDI, TILE_OPC_ANDI, TILE_OPC_ANDI, CHILD(879),
-+  BITFIELD(35, 2) /* index 879 */,
-+  TILE_OPC_ANDI, TILE_OPC_ANDI, TILE_OPC_ANDI, CHILD(884),
-+  BITFIELD(37, 2) /* index 884 */,
-+  TILE_OPC_ANDI, TILE_OPC_ANDI, TILE_OPC_ANDI, CHILD(889),
-+  BITFIELD(39, 2) /* index 889 */,
-+  TILE_OPC_ANDI, TILE_OPC_ANDI, TILE_OPC_ANDI, CHILD(894),
-+  BITFIELD(41, 2) /* index 894 */,
-+  TILE_OPC_ANDI, TILE_OPC_ANDI, TILE_OPC_ANDI, TILE_OPC_INFO,
-+  BITFIELD(51, 3) /* index 899 */,
-+  TILE_OPC_MINIB_U, TILE_OPC_MINIH, TILE_OPC_MTSPR, CHILD(908),
-+  TILE_OPC_SEQIB, TILE_OPC_SEQIH, TILE_OPC_SEQI, TILE_OPC_SLTIB,
-+  BITFIELD(37, 2) /* index 908 */,
-+  TILE_OPC_ORI, TILE_OPC_ORI, TILE_OPC_ORI, CHILD(913),
-+  BITFIELD(39, 2) /* index 913 */,
-+  TILE_OPC_ORI, TILE_OPC_ORI, TILE_OPC_ORI, CHILD(918),
-+  BITFIELD(41, 2) /* index 918 */,
-+  TILE_OPC_ORI, TILE_OPC_ORI, TILE_OPC_ORI, TILE_OPC_MOVEI,
-+  BITFIELD(51, 3) /* index 923 */,
-+  TILE_OPC_SLTIB_U, TILE_OPC_SLTIH, TILE_OPC_SLTIH_U, TILE_OPC_SLTI,
-+  TILE_OPC_SLTI_U, TILE_OPC_XORI, TILE_OPC_LBADD, TILE_OPC_LBADD_U,
-+  BITFIELD(51, 3) /* index 932 */,
-+  TILE_OPC_LHADD, TILE_OPC_LHADD_U, TILE_OPC_LWADD, TILE_OPC_LWADD_NA,
-+  TILE_OPC_SBADD, TILE_OPC_SHADD, TILE_OPC_SWADD, TILE_OPC_NONE,
-+  BITFIELD(51, 3) /* index 941 */,
-+  TILE_OPC_NONE, TILE_OPC_ADDIB_SN, TILE_OPC_ADDIH_SN, TILE_OPC_ADDI_SN,
-+  TILE_OPC_ANDI_SN, TILE_OPC_MAXIB_U_SN, TILE_OPC_MAXIH_SN, TILE_OPC_MFSPR,
-+  BITFIELD(51, 3) /* index 950 */,
-+  TILE_OPC_MINIB_U_SN, TILE_OPC_MINIH_SN, TILE_OPC_MTSPR, CHILD(959),
-+  TILE_OPC_SEQIB_SN, TILE_OPC_SEQIH_SN, TILE_OPC_SEQI_SN, TILE_OPC_SLTIB_SN,
-+  BITFIELD(37, 2) /* index 959 */,
-+  TILE_OPC_ORI_SN, TILE_OPC_ORI_SN, TILE_OPC_ORI_SN, CHILD(964),
-+  BITFIELD(39, 2) /* index 964 */,
-+  TILE_OPC_ORI_SN, TILE_OPC_ORI_SN, TILE_OPC_ORI_SN, CHILD(969),
-+  BITFIELD(41, 2) /* index 969 */,
-+  TILE_OPC_ORI_SN, TILE_OPC_ORI_SN, TILE_OPC_ORI_SN, TILE_OPC_MOVEI_SN,
-+  BITFIELD(51, 3) /* index 974 */,
-+  TILE_OPC_SLTIB_U_SN, TILE_OPC_SLTIH_SN, TILE_OPC_SLTIH_U_SN,
-+  TILE_OPC_SLTI_SN, TILE_OPC_SLTI_U_SN, TILE_OPC_XORI_SN, TILE_OPC_LBADD_SN,
-+  TILE_OPC_LBADD_U_SN,
-+  BITFIELD(51, 3) /* index 983 */,
-+  TILE_OPC_LHADD_SN, TILE_OPC_LHADD_U_SN, TILE_OPC_LWADD_SN,
-+  TILE_OPC_LWADD_NA_SN, TILE_OPC_SBADD, TILE_OPC_SHADD, TILE_OPC_SWADD,
-+  TILE_OPC_NONE,
-+  BITFIELD(46, 7) /* index 992 */,
-+  TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, CHILD(1121),
-+  CHILD(1121), CHILD(1121), CHILD(1121), CHILD(1124), CHILD(1124),
-+  CHILD(1124), CHILD(1124), CHILD(1127), CHILD(1127), CHILD(1127),
-+  CHILD(1127), CHILD(1130), CHILD(1130), CHILD(1130), CHILD(1130),
-+  CHILD(1133), CHILD(1133), CHILD(1133), CHILD(1133), CHILD(1136),
-+  CHILD(1136), CHILD(1136), CHILD(1136), CHILD(1139), CHILD(1139),
-+  CHILD(1139), CHILD(1139), CHILD(1142), CHILD(1142), CHILD(1142),
-+  CHILD(1142), CHILD(1145), CHILD(1145), CHILD(1145), CHILD(1145),
-+  CHILD(1148), CHILD(1148), CHILD(1148), CHILD(1148), CHILD(1151),
-+  CHILD(1211), CHILD(1259), CHILD(1292), TILE_OPC_NONE, TILE_OPC_NONE,
-+  TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE,
-+  TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE,
-+  TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE,
-+  TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE,
-+  TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE,
-+  TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE,
-+  TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE,
-+  TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE,
-+  TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE,
-+  TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE,
-+  TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE,
-+  TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE,
-+  TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE,
-+  TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE,
-+  TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE,
-+  TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE,
-+  BITFIELD(53, 1) /* index 1121 */,
-+  TILE_OPC_RLI, TILE_OPC_NONE,
-+  BITFIELD(53, 1) /* index 1124 */,
-+  TILE_OPC_SHLIB, TILE_OPC_NONE,
-+  BITFIELD(53, 1) /* index 1127 */,
-+  TILE_OPC_SHLIH, TILE_OPC_NONE,
-+  BITFIELD(53, 1) /* index 1130 */,
-+  TILE_OPC_SHLI, TILE_OPC_NONE,
-+  BITFIELD(53, 1) /* index 1133 */,
-+  TILE_OPC_SHRIB, TILE_OPC_NONE,
-+  BITFIELD(53, 1) /* index 1136 */,
-+  TILE_OPC_SHRIH, TILE_OPC_NONE,
-+  BITFIELD(53, 1) /* index 1139 */,
-+  TILE_OPC_SHRI, TILE_OPC_NONE,
-+  BITFIELD(53, 1) /* index 1142 */,
-+  TILE_OPC_SRAIB, TILE_OPC_NONE,
-+  BITFIELD(53, 1) /* index 1145 */,
-+  TILE_OPC_SRAIH, TILE_OPC_NONE,
-+  BITFIELD(53, 1) /* index 1148 */,
-+  TILE_OPC_SRAI, TILE_OPC_NONE,
-+  BITFIELD(43, 3) /* index 1151 */,
-+  TILE_OPC_NONE, CHILD(1160), CHILD(1163), CHILD(1166), CHILD(1169),
-+  CHILD(1172), CHILD(1175), CHILD(1178),
-+  BITFIELD(53, 1) /* index 1160 */,
-+  TILE_OPC_DRAIN, TILE_OPC_NONE,
-+  BITFIELD(53, 1) /* index 1163 */,
-+  TILE_OPC_DTLBPR, TILE_OPC_NONE,
-+  BITFIELD(53, 1) /* index 1166 */,
-+  TILE_OPC_FINV, TILE_OPC_NONE,
-+  BITFIELD(53, 1) /* index 1169 */,
-+  TILE_OPC_FLUSH, TILE_OPC_NONE,
-+  BITFIELD(53, 1) /* index 1172 */,
-+  TILE_OPC_FNOP, TILE_OPC_NONE,
-+  BITFIELD(53, 1) /* index 1175 */,
-+  TILE_OPC_ICOH, TILE_OPC_NONE,
-+  BITFIELD(53, 1) /* index 1178 */,
-+  CHILD(1181), TILE_OPC_NONE,
-+  BITFIELD(31, 2) /* index 1181 */,
-+  CHILD(1186), TILE_OPC_ILL, TILE_OPC_ILL, TILE_OPC_ILL,
-+  BITFIELD(33, 2) /* index 1186 */,
-+  TILE_OPC_ILL, TILE_OPC_ILL, TILE_OPC_ILL, CHILD(1191),
-+  BITFIELD(35, 2) /* index 1191 */,
-+  TILE_OPC_ILL, CHILD(1196), TILE_OPC_ILL, TILE_OPC_ILL,
-+  BITFIELD(37, 2) /* index 1196 */,
-+  TILE_OPC_ILL, CHILD(1201), TILE_OPC_ILL, TILE_OPC_ILL,
-+  BITFIELD(39, 2) /* index 1201 */,
-+  TILE_OPC_ILL, CHILD(1206), TILE_OPC_ILL, TILE_OPC_ILL,
-+  BITFIELD(41, 2) /* index 1206 */,
-+  TILE_OPC_ILL, TILE_OPC_ILL, TILE_OPC_BPT, TILE_OPC_ILL,
-+  BITFIELD(43, 3) /* index 1211 */,
-+  CHILD(1220), CHILD(1223), CHILD(1226), CHILD(1244), CHILD(1247),
-+  CHILD(1250), CHILD(1253), CHILD(1256),
-+  BITFIELD(53, 1) /* index 1220 */,
-+  TILE_OPC_INV, TILE_OPC_NONE,
-+  BITFIELD(53, 1) /* index 1223 */,
-+  TILE_OPC_IRET, TILE_OPC_NONE,
-+  BITFIELD(53, 1) /* index 1226 */,
-+  CHILD(1229), TILE_OPC_NONE,
-+  BITFIELD(31, 2) /* index 1229 */,
-+  TILE_OPC_LB, TILE_OPC_LB, TILE_OPC_LB, CHILD(1234),
-+  BITFIELD(33, 2) /* index 1234 */,
-+  TILE_OPC_LB, TILE_OPC_LB, TILE_OPC_LB, CHILD(1239),
-+  BITFIELD(35, 2) /* index 1239 */,
-+  TILE_OPC_LB, TILE_OPC_LB, TILE_OPC_LB, TILE_OPC_PREFETCH,
-+  BITFIELD(53, 1) /* index 1244 */,
-+  TILE_OPC_LB_U, TILE_OPC_NONE,
-+  BITFIELD(53, 1) /* index 1247 */,
-+  TILE_OPC_LH, TILE_OPC_NONE,
-+  BITFIELD(53, 1) /* index 1250 */,
-+  TILE_OPC_LH_U, TILE_OPC_NONE,
-+  BITFIELD(53, 1) /* index 1253 */,
-+  TILE_OPC_LW, TILE_OPC_NONE,
-+  BITFIELD(53, 1) /* index 1256 */,
-+  TILE_OPC_MF, TILE_OPC_NONE,
-+  BITFIELD(43, 3) /* index 1259 */,
-+  CHILD(1268), CHILD(1271), CHILD(1274), CHILD(1277), CHILD(1280),
-+  CHILD(1283), CHILD(1286), CHILD(1289),
-+  BITFIELD(53, 1) /* index 1268 */,
-+  TILE_OPC_NAP, TILE_OPC_NONE,
-+  BITFIELD(53, 1) /* index 1271 */,
-+  TILE_OPC_NOP, TILE_OPC_NONE,
-+  BITFIELD(53, 1) /* index 1274 */,
-+  TILE_OPC_SWINT0, TILE_OPC_NONE,
-+  BITFIELD(53, 1) /* index 1277 */,
-+  TILE_OPC_SWINT1, TILE_OPC_NONE,
-+  BITFIELD(53, 1) /* index 1280 */,
-+  TILE_OPC_SWINT2, TILE_OPC_NONE,
-+  BITFIELD(53, 1) /* index 1283 */,
-+  TILE_OPC_SWINT3, TILE_OPC_NONE,
-+  BITFIELD(53, 1) /* index 1286 */,
-+  TILE_OPC_TNS, TILE_OPC_NONE,
-+  BITFIELD(53, 1) /* index 1289 */,
-+  TILE_OPC_WH64, TILE_OPC_NONE,
-+  BITFIELD(43, 2) /* index 1292 */,
-+  CHILD(1297), TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE,
-+  BITFIELD(45, 1) /* index 1297 */,
-+  CHILD(1300), TILE_OPC_NONE,
-+  BITFIELD(53, 1) /* index 1300 */,
-+  TILE_OPC_LW_NA, TILE_OPC_NONE,
-+  BITFIELD(46, 7) /* index 1303 */,
-+  TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, CHILD(1432),
-+  CHILD(1432), CHILD(1432), CHILD(1432), CHILD(1435), CHILD(1435),
-+  CHILD(1435), CHILD(1435), CHILD(1438), CHILD(1438), CHILD(1438),
-+  CHILD(1438), CHILD(1441), CHILD(1441), CHILD(1441), CHILD(1441),
-+  CHILD(1444), CHILD(1444), CHILD(1444), CHILD(1444), CHILD(1447),
-+  CHILD(1447), CHILD(1447), CHILD(1447), CHILD(1450), CHILD(1450),
-+  CHILD(1450), CHILD(1450), CHILD(1453), CHILD(1453), CHILD(1453),
-+  CHILD(1453), CHILD(1456), CHILD(1456), CHILD(1456), CHILD(1456),
-+  CHILD(1459), CHILD(1459), CHILD(1459), CHILD(1459), CHILD(1151),
-+  CHILD(1462), CHILD(1486), CHILD(1498), TILE_OPC_NONE, TILE_OPC_NONE,
-+  TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE,
-+  TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE,
-+  TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE,
-+  TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE,
-+  TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE,
-+  TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE,
-+  TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE,
-+  TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE,
-+  TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE,
-+  TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE,
-+  TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE,
-+  TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE,
-+  TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE,
-+  TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE,
-+  TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE,
-+  TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE,
-+  BITFIELD(53, 1) /* index 1432 */,
-+  TILE_OPC_RLI_SN, TILE_OPC_NONE,
-+  BITFIELD(53, 1) /* index 1435 */,
-+  TILE_OPC_SHLIB_SN, TILE_OPC_NONE,
-+  BITFIELD(53, 1) /* index 1438 */,
-+  TILE_OPC_SHLIH_SN, TILE_OPC_NONE,
-+  BITFIELD(53, 1) /* index 1441 */,
-+  TILE_OPC_SHLI_SN, TILE_OPC_NONE,
-+  BITFIELD(53, 1) /* index 1444 */,
-+  TILE_OPC_SHRIB_SN, TILE_OPC_NONE,
-+  BITFIELD(53, 1) /* index 1447 */,
-+  TILE_OPC_SHRIH_SN, TILE_OPC_NONE,
-+  BITFIELD(53, 1) /* index 1450 */,
-+  TILE_OPC_SHRI_SN, TILE_OPC_NONE,
-+  BITFIELD(53, 1) /* index 1453 */,
-+  TILE_OPC_SRAIB_SN, TILE_OPC_NONE,
-+  BITFIELD(53, 1) /* index 1456 */,
-+  TILE_OPC_SRAIH_SN, TILE_OPC_NONE,
-+  BITFIELD(53, 1) /* index 1459 */,
-+  TILE_OPC_SRAI_SN, TILE_OPC_NONE,
-+  BITFIELD(43, 3) /* index 1462 */,
-+  CHILD(1220), CHILD(1223), CHILD(1471), CHILD(1474), CHILD(1477),
-+  CHILD(1480), CHILD(1483), CHILD(1256),
-+  BITFIELD(53, 1) /* index 1471 */,
-+  TILE_OPC_LB_SN, TILE_OPC_NONE,
-+  BITFIELD(53, 1) /* index 1474 */,
-+  TILE_OPC_LB_U_SN, TILE_OPC_NONE,
-+  BITFIELD(53, 1) /* index 1477 */,
-+  TILE_OPC_LH_SN, TILE_OPC_NONE,
-+  BITFIELD(53, 1) /* index 1480 */,
-+  TILE_OPC_LH_U_SN, TILE_OPC_NONE,
-+  BITFIELD(53, 1) /* index 1483 */,
-+  TILE_OPC_LW_SN, TILE_OPC_NONE,
-+  BITFIELD(43, 3) /* index 1486 */,
-+  CHILD(1268), CHILD(1271), CHILD(1274), CHILD(1277), CHILD(1280),
-+  CHILD(1283), CHILD(1495), CHILD(1289),
-+  BITFIELD(53, 1) /* index 1495 */,
-+  TILE_OPC_TNS_SN, TILE_OPC_NONE,
-+  BITFIELD(43, 2) /* index 1498 */,
-+  CHILD(1503), TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE,
-+  BITFIELD(45, 1) /* index 1503 */,
-+  CHILD(1506), TILE_OPC_NONE,
-+  BITFIELD(53, 1) /* index 1506 */,
-+  TILE_OPC_LW_NA_SN, TILE_OPC_NONE,
-+};
-+
-+static const unsigned short decode_Y0_fsm[168] =
-+{
-+  BITFIELD(27, 4) /* index 0 */,
-+  TILE_OPC_NONE, CHILD(17), CHILD(22), CHILD(27), CHILD(47), CHILD(52),
-+  CHILD(57), CHILD(62), CHILD(67), TILE_OPC_ADDI, CHILD(72), CHILD(102),
-+  TILE_OPC_SEQI, CHILD(117), TILE_OPC_SLTI, TILE_OPC_SLTI_U,
-+  BITFIELD(18, 2) /* index 17 */,
-+  TILE_OPC_ADD, TILE_OPC_S1A, TILE_OPC_S2A, TILE_OPC_SUB,
-+  BITFIELD(18, 2) /* index 22 */,
-+  TILE_OPC_MNZ, TILE_OPC_MVNZ, TILE_OPC_MVZ, TILE_OPC_MZ,
-+  BITFIELD(18, 2) /* index 27 */,
-+  TILE_OPC_AND, TILE_OPC_NOR, CHILD(32), TILE_OPC_XOR,
-+  BITFIELD(12, 2) /* index 32 */,
-+  TILE_OPC_OR, TILE_OPC_OR, TILE_OPC_OR, CHILD(37),
-+  BITFIELD(14, 2) /* index 37 */,
-+  TILE_OPC_OR, TILE_OPC_OR, TILE_OPC_OR, CHILD(42),
-+  BITFIELD(16, 2) /* index 42 */,
-+  TILE_OPC_OR, TILE_OPC_OR, TILE_OPC_OR, TILE_OPC_MOVE,
-+  BITFIELD(18, 2) /* index 47 */,
-+  TILE_OPC_RL, TILE_OPC_SHL, TILE_OPC_SHR, TILE_OPC_SRA,
-+  BITFIELD(18, 2) /* index 52 */,
-+  TILE_OPC_SLTE, TILE_OPC_SLTE_U, TILE_OPC_SLT, TILE_OPC_SLT_U,
-+  BITFIELD(18, 2) /* index 57 */,
-+  TILE_OPC_MULHLSA_UU, TILE_OPC_S3A, TILE_OPC_SEQ, TILE_OPC_SNE,
-+  BITFIELD(18, 2) /* index 62 */,
-+  TILE_OPC_MULHH_SS, TILE_OPC_MULHH_UU, TILE_OPC_MULLL_SS, TILE_OPC_MULLL_UU,
-+  BITFIELD(18, 2) /* index 67 */,
-+  TILE_OPC_MULHHA_SS, TILE_OPC_MULHHA_UU, TILE_OPC_MULLLA_SS,
-+  TILE_OPC_MULLLA_UU,
-+  BITFIELD(0, 2) /* index 72 */,
-+  TILE_OPC_ANDI, TILE_OPC_ANDI, TILE_OPC_ANDI, CHILD(77),
-+  BITFIELD(2, 2) /* index 77 */,
-+  TILE_OPC_ANDI, TILE_OPC_ANDI, TILE_OPC_ANDI, CHILD(82),
-+  BITFIELD(4, 2) /* index 82 */,
-+  TILE_OPC_ANDI, TILE_OPC_ANDI, TILE_OPC_ANDI, CHILD(87),
-+  BITFIELD(6, 2) /* index 87 */,
-+  TILE_OPC_ANDI, TILE_OPC_ANDI, TILE_OPC_ANDI, CHILD(92),
-+  BITFIELD(8, 2) /* index 92 */,
-+  TILE_OPC_ANDI, TILE_OPC_ANDI, TILE_OPC_ANDI, CHILD(97),
-+  BITFIELD(10, 2) /* index 97 */,
-+  TILE_OPC_ANDI, TILE_OPC_ANDI, TILE_OPC_ANDI, TILE_OPC_INFO,
-+  BITFIELD(6, 2) /* index 102 */,
-+  TILE_OPC_ORI, TILE_OPC_ORI, TILE_OPC_ORI, CHILD(107),
-+  BITFIELD(8, 2) /* index 107 */,
-+  TILE_OPC_ORI, TILE_OPC_ORI, TILE_OPC_ORI, CHILD(112),
-+  BITFIELD(10, 2) /* index 112 */,
-+  TILE_OPC_ORI, TILE_OPC_ORI, TILE_OPC_ORI, TILE_OPC_MOVEI,
-+  BITFIELD(15, 5) /* index 117 */,
-+  TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_RLI,
-+  TILE_OPC_RLI, TILE_OPC_RLI, TILE_OPC_RLI, TILE_OPC_SHLI, TILE_OPC_SHLI,
-+  TILE_OPC_SHLI, TILE_OPC_SHLI, TILE_OPC_SHRI, TILE_OPC_SHRI, TILE_OPC_SHRI,
-+  TILE_OPC_SHRI, TILE_OPC_SRAI, TILE_OPC_SRAI, TILE_OPC_SRAI, TILE_OPC_SRAI,
-+  CHILD(150), CHILD(159), TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE,
-+  TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE,
-+  TILE_OPC_NONE, TILE_OPC_NONE,
-+  BITFIELD(12, 3) /* index 150 */,
-+  TILE_OPC_NONE, TILE_OPC_BITX, TILE_OPC_BYTEX, TILE_OPC_CLZ, TILE_OPC_CTZ,
-+  TILE_OPC_FNOP, TILE_OPC_NOP, TILE_OPC_PCNT,
-+  BITFIELD(12, 3) /* index 159 */,
-+  TILE_OPC_TBLIDXB0, TILE_OPC_TBLIDXB1, TILE_OPC_TBLIDXB2, TILE_OPC_TBLIDXB3,
-+  TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE,
-+};
-+
-+static const unsigned short decode_Y1_fsm[140] =
-+{
-+  BITFIELD(59, 4) /* index 0 */,
-+  TILE_OPC_NONE, CHILD(17), CHILD(22), CHILD(27), CHILD(47), CHILD(52),
-+  CHILD(57), TILE_OPC_ADDI, CHILD(62), CHILD(92), TILE_OPC_SEQI, CHILD(107),
-+  TILE_OPC_SLTI, TILE_OPC_SLTI_U, TILE_OPC_NONE, TILE_OPC_NONE,
-+  BITFIELD(49, 2) /* index 17 */,
-+  TILE_OPC_ADD, TILE_OPC_S1A, TILE_OPC_S2A, TILE_OPC_SUB,
-+  BITFIELD(49, 2) /* index 22 */,
-+  TILE_OPC_NONE, TILE_OPC_MNZ, TILE_OPC_MZ, TILE_OPC_NONE,
-+  BITFIELD(49, 2) /* index 27 */,
-+  TILE_OPC_AND, TILE_OPC_NOR, CHILD(32), TILE_OPC_XOR,
-+  BITFIELD(43, 2) /* index 32 */,
-+  TILE_OPC_OR, TILE_OPC_OR, TILE_OPC_OR, CHILD(37),
-+  BITFIELD(45, 2) /* index 37 */,
-+  TILE_OPC_OR, TILE_OPC_OR, TILE_OPC_OR, CHILD(42),
-+  BITFIELD(47, 2) /* index 42 */,
-+  TILE_OPC_OR, TILE_OPC_OR, TILE_OPC_OR, TILE_OPC_MOVE,
-+  BITFIELD(49, 2) /* index 47 */,
-+  TILE_OPC_RL, TILE_OPC_SHL, TILE_OPC_SHR, TILE_OPC_SRA,
-+  BITFIELD(49, 2) /* index 52 */,
-+  TILE_OPC_SLTE, TILE_OPC_SLTE_U, TILE_OPC_SLT, TILE_OPC_SLT_U,
-+  BITFIELD(49, 2) /* index 57 */,
-+  TILE_OPC_NONE, TILE_OPC_S3A, TILE_OPC_SEQ, TILE_OPC_SNE,
-+  BITFIELD(31, 2) /* index 62 */,
-+  TILE_OPC_ANDI, TILE_OPC_ANDI, TILE_OPC_ANDI, CHILD(67),
-+  BITFIELD(33, 2) /* index 67 */,
-+  TILE_OPC_ANDI, TILE_OPC_ANDI, TILE_OPC_ANDI, CHILD(72),
-+  BITFIELD(35, 2) /* index 72 */,
-+  TILE_OPC_ANDI, TILE_OPC_ANDI, TILE_OPC_ANDI, CHILD(77),
-+  BITFIELD(37, 2) /* index 77 */,
-+  TILE_OPC_ANDI, TILE_OPC_ANDI, TILE_OPC_ANDI, CHILD(82),
-+  BITFIELD(39, 2) /* index 82 */,
-+  TILE_OPC_ANDI, TILE_OPC_ANDI, TILE_OPC_ANDI, CHILD(87),
-+  BITFIELD(41, 2) /* index 87 */,
-+  TILE_OPC_ANDI, TILE_OPC_ANDI, TILE_OPC_ANDI, TILE_OPC_INFO,
-+  BITFIELD(37, 2) /* index 92 */,
-+  TILE_OPC_ORI, TILE_OPC_ORI, TILE_OPC_ORI, CHILD(97),
-+  BITFIELD(39, 2) /* index 97 */,
-+  TILE_OPC_ORI, TILE_OPC_ORI, TILE_OPC_ORI, CHILD(102),
-+  BITFIELD(41, 2) /* index 102 */,
-+  TILE_OPC_ORI, TILE_OPC_ORI, TILE_OPC_ORI, TILE_OPC_MOVEI,
-+  BITFIELD(48, 3) /* index 107 */,
-+  TILE_OPC_NONE, TILE_OPC_RLI, TILE_OPC_SHLI, TILE_OPC_SHRI, TILE_OPC_SRAI,
-+  CHILD(116), TILE_OPC_NONE, TILE_OPC_NONE,
-+  BITFIELD(43, 3) /* index 116 */,
-+  TILE_OPC_NONE, CHILD(125), CHILD(130), CHILD(135), TILE_OPC_NONE,
-+  TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE,
-+  BITFIELD(46, 2) /* index 125 */,
-+  TILE_OPC_FNOP, TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE,
-+  BITFIELD(46, 2) /* index 130 */,
-+  TILE_OPC_ILL, TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE,
-+  BITFIELD(46, 2) /* index 135 */,
-+  TILE_OPC_NOP, TILE_OPC_NONE, TILE_OPC_NONE, TILE_OPC_NONE,
-+};
-+
-+static const unsigned short decode_Y2_fsm[24] =
-+{
-+  BITFIELD(56, 3) /* index 0 */,
-+  CHILD(9), TILE_OPC_LB_U, TILE_OPC_LH, TILE_OPC_LH_U, TILE_OPC_LW,
-+  TILE_OPC_SB, TILE_OPC_SH, TILE_OPC_SW,
-+  BITFIELD(20, 2) /* index 9 */,
-+  TILE_OPC_LB, TILE_OPC_LB, TILE_OPC_LB, CHILD(14),
-+  BITFIELD(22, 2) /* index 14 */,
-+  TILE_OPC_LB, TILE_OPC_LB, TILE_OPC_LB, CHILD(19),
-+  BITFIELD(24, 2) /* index 19 */,
-+  TILE_OPC_LB, TILE_OPC_LB, TILE_OPC_LB, TILE_OPC_PREFETCH,
-+};
-+
-+#undef BITFIELD
-+#undef CHILD
-+const unsigned short * const
-+tile_bundle_decoder_fsms[TILE_NUM_PIPELINE_ENCODINGS] =
-+{
-+  decode_X0_fsm,
-+  decode_X1_fsm,
-+  decode_Y0_fsm,
-+  decode_Y1_fsm,
-+  decode_Y2_fsm
-+};
-+const struct tile_sn_opcode tile_sn_opcodes[23] =
-+{
-+ { "bz", TILE_SN_OPC_BZ,
-+    1 /* num_operands */,
-+    /* operands */
-+    { 38 },
-+    /* fixed_bit_mask */
-+    0xfc00,
-+    /* fixed_bit_value */
-+    0xe000
-+  },
-+  { "bnz", TILE_SN_OPC_BNZ,
-+    1 /* num_operands */,
-+    /* operands */
-+    { 38 },
-+    /* fixed_bit_mask */
-+    0xfc00,
-+    /* fixed_bit_value */
-+    0xe400
-+  },
-+  { "jrr", TILE_SN_OPC_JRR,
-+    1 /* num_operands */,
-+    /* operands */
-+    { 39 },
-+    /* fixed_bit_mask */
-+    0xff00,
-+    /* fixed_bit_value */
-+    0x0600
-+  },
-+  { "fnop", TILE_SN_OPC_FNOP,
-+    0 /* num_operands */,
-+    /* operands */
-+    { 0, },
-+    /* fixed_bit_mask */
-+    0xffff,
-+    /* fixed_bit_value */
-+    0x0003
-+  },
-+  { "blz", TILE_SN_OPC_BLZ,
-+    1 /* num_operands */,
-+    /* operands */
-+    { 38 },
-+    /* fixed_bit_mask */
-+    0xfc00,
-+    /* fixed_bit_value */
-+    0xf000
-+  },
-+  { "nop", TILE_SN_OPC_NOP,
-+    0 /* num_operands */,
-+    /* operands */
-+    { 0, },
-+    /* fixed_bit_mask */
-+    0xffff,
-+    /* fixed_bit_value */
-+    0x0002
-+  },
-+  { "movei", TILE_SN_OPC_MOVEI,
-+    1 /* num_operands */,
-+    /* operands */
-+    { 40 },
-+    /* fixed_bit_mask */
-+    0xff00,
-+    /* fixed_bit_value */
-+    0x0400
-+  },
-+  { "move", TILE_SN_OPC_MOVE,
-+    2 /* num_operands */,
-+    /* operands */
-+    { 41, 42 },
-+    /* fixed_bit_mask */
-+    0xfff0,
-+    /* fixed_bit_value */
-+    0x0080
-+  },
-+  { "bgez", TILE_SN_OPC_BGEZ,
-+    1 /* num_operands */,
-+    /* operands */
-+    { 38 },
-+    /* fixed_bit_mask */
-+    0xfc00,
-+    /* fixed_bit_value */
-+    0xf400
-+  },
-+  { "jr", TILE_SN_OPC_JR,
-+    1 /* num_operands */,
-+    /* operands */
-+    { 42 },
-+    /* fixed_bit_mask */
-+    0xfff0,
-+    /* fixed_bit_value */
-+    0x0040
-+  },
-+  { "blez", TILE_SN_OPC_BLEZ,
-+    1 /* num_operands */,
-+    /* operands */
-+    { 38 },
-+    /* fixed_bit_mask */
-+    0xfc00,
-+    /* fixed_bit_value */
-+    0xec00
-+  },
-+  { "bbns", TILE_SN_OPC_BBNS,
-+    1 /* num_operands */,
-+    /* operands */
-+    { 38 },
-+    /* fixed_bit_mask */
-+    0xfc00,
-+    /* fixed_bit_value */
-+    0xfc00
-+  },
-+  { "jalrr", TILE_SN_OPC_JALRR,
-+    1 /* num_operands */,
-+    /* operands */
-+    { 39 },
-+    /* fixed_bit_mask */
-+    0xff00,
-+    /* fixed_bit_value */
-+    0x0700
-+  },
-+  { "bpt", TILE_SN_OPC_BPT,
-+    0 /* num_operands */,
-+    /* operands */
-+    { 0, },
-+    /* fixed_bit_mask */
-+    0xffff,
-+    /* fixed_bit_value */
-+    0x0001
-+  },
-+  { "jalr", TILE_SN_OPC_JALR,
-+    1 /* num_operands */,
-+    /* operands */
-+    { 42 },
-+    /* fixed_bit_mask */
-+    0xfff0,
-+    /* fixed_bit_value */
-+    0x0050
-+  },
-+  { "shr1", TILE_SN_OPC_SHR1,
-+    2 /* num_operands */,
-+    /* operands */
-+    { 41, 42 },
-+    /* fixed_bit_mask */
-+    0xfff0,
-+    /* fixed_bit_value */
-+    0x0090
-+  },
-+  { "bgz", TILE_SN_OPC_BGZ,
-+    1 /* num_operands */,
-+    /* operands */
-+    { 38 },
-+    /* fixed_bit_mask */
-+    0xfc00,
-+    /* fixed_bit_value */
-+    0xe800
-+  },
-+  { "bbs", TILE_SN_OPC_BBS,
-+    1 /* num_operands */,
-+    /* operands */
-+    { 38 },
-+    /* fixed_bit_mask */
-+    0xfc00,
-+    /* fixed_bit_value */
-+    0xf800
-+  },
-+  { "shl8ii", TILE_SN_OPC_SHL8II,
-+    1 /* num_operands */,
-+    /* operands */
-+    { 39 },
-+    /* fixed_bit_mask */
-+    0xff00,
-+    /* fixed_bit_value */
-+    0x0300
-+  },
-+  { "addi", TILE_SN_OPC_ADDI,
-+    1 /* num_operands */,
-+    /* operands */
-+    { 40 },
-+    /* fixed_bit_mask */
-+    0xff00,
-+    /* fixed_bit_value */
-+    0x0500
-+  },
-+  { "halt", TILE_SN_OPC_HALT,
-+    0 /* num_operands */,
-+    /* operands */
-+    { 0, },
-+    /* fixed_bit_mask */
-+    0xffff,
-+    /* fixed_bit_value */
-+    0x0000
-+  },
-+  { "route", TILE_SN_OPC_ROUTE, 0, { 0, }, 0, 0,
-+  },
-+  { 0, TILE_SN_OPC_NONE, 0, { 0, }, 0, 0,
-+  }
-+};
-+const unsigned char tile_sn_route_encode[6 * 6 * 6] =
-+{
-+  0xdf,
-+  0xde,
-+  0xdd,
-+  0xdc,
-+  0xdb,
-+  0xda,
-+  0xb9,
-+  0xb8,
-+  0xa1,
-+  0xa0,
-+  0x11,
-+  0x10,
-+  0x9f,
-+  0x9e,
-+  0x9d,
-+  0x9c,
-+  0x9b,
-+  0x9a,
-+  0x79,
-+  0x78,
-+  0x61,
-+  0x60,
-+  0xb,
-+  0xa,
-+  0x5f,
-+  0x5e,
-+  0x5d,
-+  0x5c,
-+  0x5b,
-+  0x5a,
-+  0x1f,
-+  0x1e,
-+  0x1d,
-+  0x1c,
-+  0x1b,
-+  0x1a,
-+  0xd7,
-+  0xd6,
-+  0xd5,
-+  0xd4,
-+  0xd3,
-+  0xd2,
-+  0xa7,
-+  0xa6,
-+  0xb1,
-+  0xb0,
-+  0x13,
-+  0x12,
-+  0x97,
-+  0x96,
-+  0x95,
-+  0x94,
-+  0x93,
-+  0x92,
-+  0x67,
-+  0x66,
-+  0x71,
-+  0x70,
-+  0x9,
-+  0x8,
-+  0x57,
-+  0x56,
-+  0x55,
-+  0x54,
-+  0x53,
-+  0x52,
-+  0x17,
-+  0x16,
-+  0x15,
-+  0x14,
-+  0x19,
-+  0x18,
-+  0xcf,
-+  0xce,
-+  0xcd,
-+  0xcc,
-+  0xcb,
-+  0xca,
-+  0xaf,
-+  0xae,
-+  0xad,
-+  0xac,
-+  0xab,
-+  0xaa,
-+  0x8f,
-+  0x8e,
-+  0x8d,
-+  0x8c,
-+  0x8b,
-+  0x8a,
-+  0x6f,
-+  0x6e,
-+  0x6d,
-+  0x6c,
-+  0x6b,
-+  0x6a,
-+  0x4f,
-+  0x4e,
-+  0x4d,
-+  0x4c,
-+  0x4b,
-+  0x4a,
-+  0x2f,
-+  0x2e,
-+  0x2d,
-+  0x2c,
-+  0x2b,
-+  0x2a,
-+  0xc9,
-+  0xc8,
-+  0xc5,
-+  0xc4,
-+  0xc3,
-+  0xc2,
-+  0xa9,
-+  0xa8,
-+  0xa5,
-+  0xa4,
-+  0xa3,
-+  0xa2,
-+  0x89,
-+  0x88,
-+  0x85,
-+  0x84,
-+  0x83,
-+  0x82,
-+  0x69,
-+  0x68,
-+  0x65,
-+  0x64,
-+  0x63,
-+  0x62,
-+  0x47,
-+  0x46,
-+  0x45,
-+  0x44,
-+  0x43,
-+  0x42,
-+  0x27,
-+  0x26,
-+  0x25,
-+  0x24,
-+  0x23,
-+  0x22,
-+  0xd9,
-+  0xd8,
-+  0xc1,
-+  0xc0,
-+  0x3b,
-+  0x3a,
-+  0xbf,
-+  0xbe,
-+  0xbd,
-+  0xbc,
-+  0xbb,
-+  0xba,
-+  0x99,
-+  0x98,
-+  0x81,
-+  0x80,
-+  0x31,
-+  0x30,
-+  0x7f,
-+  0x7e,
-+  0x7d,
-+  0x7c,
-+  0x7b,
-+  0x7a,
-+  0x59,
-+  0x58,
-+  0x3d,
-+  0x3c,
-+  0x49,
-+  0x48,
-+  0xf,
-+  0xe,
-+  0xd,
-+  0xc,
-+  0x29,
-+  0x28,
-+  0xc7,
-+  0xc6,
-+  0xd1,
-+  0xd0,
-+  0x39,
-+  0x38,
-+  0xb7,
-+  0xb6,
-+  0xb5,
-+  0xb4,
-+  0xb3,
-+  0xb2,
-+  0x87,
-+  0x86,
-+  0x91,
-+  0x90,
-+  0x33,
-+  0x32,
-+  0x77,
-+  0x76,
-+  0x75,
-+  0x74,
-+  0x73,
-+  0x72,
-+  0x3f,
-+  0x3e,
-+  0x51,
-+  0x50,
-+  0x41,
-+  0x40,
-+  0x37,
-+  0x36,
-+  0x35,
-+  0x34,
-+  0x21,
-+  0x20
-+};
-+
-+const signed char tile_sn_route_decode[256][3] =
-+{
-+  { -1, -1, -1 },
-+  { -1, -1, -1 },
-+  { -1, -1, -1 },
-+  { -1, -1, -1 },
-+  { -1, -1, -1 },
-+  { -1, -1, -1 },
-+  { -1, -1, -1 },
-+  { -1, -1, -1 },
-+  { 5, 3, 1 },
-+  { 4, 3, 1 },
-+  { 5, 3, 0 },
-+  { 4, 3, 0 },
-+  { 3, 5, 4 },
-+  { 2, 5, 4 },
-+  { 1, 5, 4 },
-+  { 0, 5, 4 },
-+  { 5, 1, 0 },
-+  { 4, 1, 0 },
-+  { 5, 1, 1 },
-+  { 4, 1, 1 },
-+  { 3, 5, 1 },
-+  { 2, 5, 1 },
-+  { 1, 5, 1 },
-+  { 0, 5, 1 },
-+  { 5, 5, 1 },
-+  { 4, 5, 1 },
-+  { 5, 5, 0 },
-+  { 4, 5, 0 },
-+  { 3, 5, 0 },
-+  { 2, 5, 0 },
-+  { 1, 5, 0 },
-+  { 0, 5, 0 },
-+  { 5, 5, 5 },
-+  { 4, 5, 5 },
-+  { 5, 5, 3 },
-+  { 4, 5, 3 },
-+  { 3, 5, 3 },
-+  { 2, 5, 3 },
-+  { 1, 5, 3 },
-+  { 0, 5, 3 },
-+  { 5, 5, 4 },
-+  { 4, 5, 4 },
-+  { 5, 5, 2 },
-+  { 4, 5, 2 },
-+  { 3, 5, 2 },
-+  { 2, 5, 2 },
-+  { 1, 5, 2 },
-+  { 0, 5, 2 },
-+  { 5, 2, 4 },
-+  { 4, 2, 4 },
-+  { 5, 2, 5 },
-+  { 4, 2, 5 },
-+  { 3, 5, 5 },
-+  { 2, 5, 5 },
-+  { 1, 5, 5 },
-+  { 0, 5, 5 },
-+  { 5, 0, 5 },
-+  { 4, 0, 5 },
-+  { 5, 0, 4 },
-+  { 4, 0, 4 },
-+  { 3, 4, 4 },
-+  { 2, 4, 4 },
-+  { 1, 4, 5 },
-+  { 0, 4, 5 },
-+  { 5, 4, 5 },
-+  { 4, 4, 5 },
-+  { 5, 4, 3 },
-+  { 4, 4, 3 },
-+  { 3, 4, 3 },
-+  { 2, 4, 3 },
-+  { 1, 4, 3 },
-+  { 0, 4, 3 },
-+  { 5, 4, 4 },
-+  { 4, 4, 4 },
-+  { 5, 4, 2 },
-+  { 4, 4, 2 },
-+  { 3, 4, 2 },
-+  { 2, 4, 2 },
-+  { 1, 4, 2 },
-+  { 0, 4, 2 },
-+  { 3, 4, 5 },
-+  { 2, 4, 5 },
-+  { 5, 4, 1 },
-+  { 4, 4, 1 },
-+  { 3, 4, 1 },
-+  { 2, 4, 1 },
-+  { 1, 4, 1 },
-+  { 0, 4, 1 },
-+  { 1, 4, 4 },
-+  { 0, 4, 4 },
-+  { 5, 4, 0 },
-+  { 4, 4, 0 },
-+  { 3, 4, 0 },
-+  { 2, 4, 0 },
-+  { 1, 4, 0 },
-+  { 0, 4, 0 },
-+  { 3, 3, 0 },
-+  { 2, 3, 0 },
-+  { 5, 3, 3 },
-+  { 4, 3, 3 },
-+  { 3, 3, 3 },
-+  { 2, 3, 3 },
-+  { 1, 3, 1 },
-+  { 0, 3, 1 },
-+  { 1, 3, 3 },
-+  { 0, 3, 3 },
-+  { 5, 3, 2 },
-+  { 4, 3, 2 },
-+  { 3, 3, 2 },
-+  { 2, 3, 2 },
-+  { 1, 3, 2 },
-+  { 0, 3, 2 },
-+  { 3, 3, 1 },
-+  { 2, 3, 1 },
-+  { 5, 3, 5 },
-+  { 4, 3, 5 },
-+  { 3, 3, 5 },
-+  { 2, 3, 5 },
-+  { 1, 3, 5 },
-+  { 0, 3, 5 },
-+  { 1, 3, 0 },
-+  { 0, 3, 0 },
-+  { 5, 3, 4 },
-+  { 4, 3, 4 },
-+  { 3, 3, 4 },
-+  { 2, 3, 4 },
-+  { 1, 3, 4 },
-+  { 0, 3, 4 },
-+  { 3, 2, 4 },
-+  { 2, 2, 4 },
-+  { 5, 2, 3 },
-+  { 4, 2, 3 },
-+  { 3, 2, 3 },
-+  { 2, 2, 3 },
-+  { 1, 2, 5 },
-+  { 0, 2, 5 },
-+  { 1, 2, 3 },
-+  { 0, 2, 3 },
-+  { 5, 2, 2 },
-+  { 4, 2, 2 },
-+  { 3, 2, 2 },
-+  { 2, 2, 2 },
-+  { 1, 2, 2 },
-+  { 0, 2, 2 },
-+  { 3, 2, 5 },
-+  { 2, 2, 5 },
-+  { 5, 2, 1 },
-+  { 4, 2, 1 },
-+  { 3, 2, 1 },
-+  { 2, 2, 1 },
-+  { 1, 2, 1 },
-+  { 0, 2, 1 },
-+  { 1, 2, 4 },
-+  { 0, 2, 4 },
-+  { 5, 2, 0 },
-+  { 4, 2, 0 },
-+  { 3, 2, 0 },
-+  { 2, 2, 0 },
-+  { 1, 2, 0 },
-+  { 0, 2, 0 },
-+  { 3, 1, 0 },
-+  { 2, 1, 0 },
-+  { 5, 1, 3 },
-+  { 4, 1, 3 },
-+  { 3, 1, 3 },
-+  { 2, 1, 3 },
-+  { 1, 1, 1 },
-+  { 0, 1, 1 },
-+  { 1, 1, 3 },
-+  { 0, 1, 3 },
-+  { 5, 1, 2 },
-+  { 4, 1, 2 },
-+  { 3, 1, 2 },
-+  { 2, 1, 2 },
-+  { 1, 1, 2 },
-+  { 0, 1, 2 },
-+  { 3, 1, 1 },
-+  { 2, 1, 1 },
-+  { 5, 1, 5 },
-+  { 4, 1, 5 },
-+  { 3, 1, 5 },
-+  { 2, 1, 5 },
-+  { 1, 1, 5 },
-+  { 0, 1, 5 },
-+  { 1, 1, 0 },
-+  { 0, 1, 0 },
-+  { 5, 1, 4 },
-+  { 4, 1, 4 },
-+  { 3, 1, 4 },
-+  { 2, 1, 4 },
-+  { 1, 1, 4 },
-+  { 0, 1, 4 },
-+  { 3, 0, 4 },
-+  { 2, 0, 4 },
-+  { 5, 0, 3 },
-+  { 4, 0, 3 },
-+  { 3, 0, 3 },
-+  { 2, 0, 3 },
-+  { 1, 0, 5 },
-+  { 0, 0, 5 },
-+  { 1, 0, 3 },
-+  { 0, 0, 3 },
-+  { 5, 0, 2 },
-+  { 4, 0, 2 },
-+  { 3, 0, 2 },
-+  { 2, 0, 2 },
-+  { 1, 0, 2 },
-+  { 0, 0, 2 },
-+  { 3, 0, 5 },
-+  { 2, 0, 5 },
-+  { 5, 0, 1 },
-+  { 4, 0, 1 },
-+  { 3, 0, 1 },
-+  { 2, 0, 1 },
-+  { 1, 0, 1 },
-+  { 0, 0, 1 },
-+  { 1, 0, 4 },
-+  { 0, 0, 4 },
-+  { 5, 0, 0 },
-+  { 4, 0, 0 },
-+  { 3, 0, 0 },
-+  { 2, 0, 0 },
-+  { 1, 0, 0 },
-+  { 0, 0, 0 },
-+  { -1, -1, -1 },
-+  { -1, -1, -1 },
-+  { -1, -1, -1 },
-+  { -1, -1, -1 },
-+  { -1, -1, -1 },
-+  { -1, -1, -1 },
-+  { -1, -1, -1 },
-+  { -1, -1, -1 },
-+  { -1, -1, -1 },
-+  { -1, -1, -1 },
-+  { -1, -1, -1 },
-+  { -1, -1, -1 },
-+  { -1, -1, -1 },
-+  { -1, -1, -1 },
-+  { -1, -1, -1 },
-+  { -1, -1, -1 },
-+  { -1, -1, -1 },
-+  { -1, -1, -1 },
-+  { -1, -1, -1 },
-+  { -1, -1, -1 },
-+  { -1, -1, -1 },
-+  { -1, -1, -1 },
-+  { -1, -1, -1 },
-+  { -1, -1, -1 },
-+  { -1, -1, -1 },
-+  { -1, -1, -1 },
-+  { -1, -1, -1 },
-+  { -1, -1, -1 },
-+  { -1, -1, -1 },
-+  { -1, -1, -1 },
-+  { -1, -1, -1 },
-+  { -1, -1, -1 }
-+};
-+
-+const char tile_sn_direction_names[6][5] =
-+{
-+  "w",
-+  "c",
-+  "acc",
-+  "n",
-+  "e",
-+  "s"
-+};
-+
-+const signed char tile_sn_dest_map[6][6] = {
-+  { -1, 3, 4, 5, 1, 2 } /* val -> w */,
-+  { -1, 3, 4, 5, 0, 2 } /* val -> c */,
-+  { -1, 3, 4, 5, 0, 1 } /* val -> acc */,
-+  { -1, 4, 5, 0, 1, 2 } /* val -> n */,
-+  { -1, 3, 5, 0, 1, 2 } /* val -> e */,
-+  { -1, 3, 4, 0, 1, 2 } /* val -> s */
-+};
-+
-+const struct tile_operand tile_operands[43] =
-+{
-+  {
-+    TILE_OP_TYPE_IMMEDIATE, /* type */
-+    MAYBE_BFD_RELOC(BFD_RELOC_TILE_IMM8_X0), /* default_reloc */
-+    8, /* num_bits */
-+    1, /* is_signed */
-+    0, /* is_src_reg */
-+    0, /* is_dest_reg */
-+    0, /* is_pc_relative */
-+    0, /* rightshift */
-+    create_Imm8_X0, /* insert */
-+    get_Imm8_X0  /* extract */
-+  },
-+  {
-+    TILE_OP_TYPE_IMMEDIATE, /* type */
-+    MAYBE_BFD_RELOC(BFD_RELOC_TILE_IMM8_X1), /* default_reloc */
-+    8, /* num_bits */
-+    1, /* is_signed */
-+    0, /* is_src_reg */
-+    0, /* is_dest_reg */
-+    0, /* is_pc_relative */
-+    0, /* rightshift */
-+    create_Imm8_X1, /* insert */
-+    get_Imm8_X1  /* extract */
-+  },
-+  {
-+    TILE_OP_TYPE_IMMEDIATE, /* type */
-+    MAYBE_BFD_RELOC(BFD_RELOC_TILE_IMM8_Y0), /* default_reloc */
-+    8, /* num_bits */
-+    1, /* is_signed */
-+    0, /* is_src_reg */
-+    0, /* is_dest_reg */
-+    0, /* is_pc_relative */
-+    0, /* rightshift */
-+    create_Imm8_Y0, /* insert */
-+    get_Imm8_Y0  /* extract */
-+  },
-+  {
-+    TILE_OP_TYPE_IMMEDIATE, /* type */
-+    MAYBE_BFD_RELOC(BFD_RELOC_TILE_IMM8_Y1), /* default_reloc */
-+    8, /* num_bits */
-+    1, /* is_signed */
-+    0, /* is_src_reg */
-+    0, /* is_dest_reg */
-+    0, /* is_pc_relative */
-+    0, /* rightshift */
-+    create_Imm8_Y1, /* insert */
-+    get_Imm8_Y1  /* extract */
-+  },
-+  {
-+    TILE_OP_TYPE_IMMEDIATE, /* type */
-+    MAYBE_BFD_RELOC(BFD_RELOC_TILE_IMM16_X0), /* default_reloc */
-+    16, /* num_bits */
-+    1, /* is_signed */
-+    0, /* is_src_reg */
-+    0, /* is_dest_reg */
-+    0, /* is_pc_relative */
-+    0, /* rightshift */
-+    create_Imm16_X0, /* insert */
-+    get_Imm16_X0  /* extract */
-+  },
-+  {
-+    TILE_OP_TYPE_IMMEDIATE, /* type */
-+    MAYBE_BFD_RELOC(BFD_RELOC_TILE_IMM16_X1), /* default_reloc */
-+    16, /* num_bits */
-+    1, /* is_signed */
-+    0, /* is_src_reg */
-+    0, /* is_dest_reg */
-+    0, /* is_pc_relative */
-+    0, /* rightshift */
-+    create_Imm16_X1, /* insert */
-+    get_Imm16_X1  /* extract */
-+  },
-+  {
-+    TILE_OP_TYPE_ADDRESS, /* type */
-+    MAYBE_BFD_RELOC(BFD_RELOC_TILE_JOFFLONG_X1), /* default_reloc */
-+    29, /* num_bits */
-+    1, /* is_signed */
-+    0, /* is_src_reg */
-+    0, /* is_dest_reg */
-+    1, /* is_pc_relative */
-+    TILE_LOG2_BUNDLE_ALIGNMENT_IN_BYTES, /* rightshift */
-+    create_JOffLong_X1, /* insert */
-+    get_JOffLong_X1  /* extract */
-+  },
-+  {
-+    TILE_OP_TYPE_REGISTER, /* type */
-+    MAYBE_BFD_RELOC(BFD_RELOC_NONE), /* default_reloc */
-+    6, /* num_bits */
-+    0, /* is_signed */
-+    0, /* is_src_reg */
-+    1, /* is_dest_reg */
-+    0, /* is_pc_relative */
-+    0, /* rightshift */
-+    create_Dest_X0, /* insert */
-+    get_Dest_X0  /* extract */
-+  },
-+  {
-+    TILE_OP_TYPE_REGISTER, /* type */
-+    MAYBE_BFD_RELOC(BFD_RELOC_NONE), /* default_reloc */
-+    6, /* num_bits */
-+    0, /* is_signed */
-+    1, /* is_src_reg */
-+    0, /* is_dest_reg */
-+    0, /* is_pc_relative */
-+    0, /* rightshift */
-+    create_SrcA_X0, /* insert */
-+    get_SrcA_X0  /* extract */
-+  },
-+  {
-+    TILE_OP_TYPE_REGISTER, /* type */
-+    MAYBE_BFD_RELOC(BFD_RELOC_NONE), /* default_reloc */
-+    6, /* num_bits */
-+    0, /* is_signed */
-+    0, /* is_src_reg */
-+    1, /* is_dest_reg */
-+    0, /* is_pc_relative */
-+    0, /* rightshift */
-+    create_Dest_X1, /* insert */
-+    get_Dest_X1  /* extract */
-+  },
-+  {
-+    TILE_OP_TYPE_REGISTER, /* type */
-+    MAYBE_BFD_RELOC(BFD_RELOC_NONE), /* default_reloc */
-+    6, /* num_bits */
-+    0, /* is_signed */
-+    1, /* is_src_reg */
-+    0, /* is_dest_reg */
-+    0, /* is_pc_relative */
-+    0, /* rightshift */
-+    create_SrcA_X1, /* insert */
-+    get_SrcA_X1  /* extract */
-+  },
-+  {
-+    TILE_OP_TYPE_REGISTER, /* type */
-+    MAYBE_BFD_RELOC(BFD_RELOC_NONE), /* default_reloc */
-+    6, /* num_bits */
-+    0, /* is_signed */
-+    0, /* is_src_reg */
-+    1, /* is_dest_reg */
-+    0, /* is_pc_relative */
-+    0, /* rightshift */
-+    create_Dest_Y0, /* insert */
-+    get_Dest_Y0  /* extract */
-+  },
-+  {
-+    TILE_OP_TYPE_REGISTER, /* type */
-+    MAYBE_BFD_RELOC(BFD_RELOC_NONE), /* default_reloc */
-+    6, /* num_bits */
-+    0, /* is_signed */
-+    1, /* is_src_reg */
-+    0, /* is_dest_reg */
-+    0, /* is_pc_relative */
-+    0, /* rightshift */
-+    create_SrcA_Y0, /* insert */
-+    get_SrcA_Y0  /* extract */
-+  },
-+  {
-+    TILE_OP_TYPE_REGISTER, /* type */
-+    MAYBE_BFD_RELOC(BFD_RELOC_NONE), /* default_reloc */
-+    6, /* num_bits */
-+    0, /* is_signed */
-+    0, /* is_src_reg */
-+    1, /* is_dest_reg */
-+    0, /* is_pc_relative */
-+    0, /* rightshift */
-+    create_Dest_Y1, /* insert */
-+    get_Dest_Y1  /* extract */
-+  },
-+  {
-+    TILE_OP_TYPE_REGISTER, /* type */
-+    MAYBE_BFD_RELOC(BFD_RELOC_NONE), /* default_reloc */
-+    6, /* num_bits */
-+    0, /* is_signed */
-+    1, /* is_src_reg */
-+    0, /* is_dest_reg */
-+    0, /* is_pc_relative */
-+    0, /* rightshift */
-+    create_SrcA_Y1, /* insert */
-+    get_SrcA_Y1  /* extract */
-+  },
-+  {
-+    TILE_OP_TYPE_REGISTER, /* type */
-+    MAYBE_BFD_RELOC(BFD_RELOC_NONE), /* default_reloc */
-+    6, /* num_bits */
-+    0, /* is_signed */
-+    1, /* is_src_reg */
-+    0, /* is_dest_reg */
-+    0, /* is_pc_relative */
-+    0, /* rightshift */
-+    create_SrcA_Y2, /* insert */
-+    get_SrcA_Y2  /* extract */
-+  },
-+  {
-+    TILE_OP_TYPE_REGISTER, /* type */
-+    MAYBE_BFD_RELOC(BFD_RELOC_NONE), /* default_reloc */
-+    6, /* num_bits */
-+    0, /* is_signed */
-+    1, /* is_src_reg */
-+    0, /* is_dest_reg */
-+    0, /* is_pc_relative */
-+    0, /* rightshift */
-+    create_SrcB_X0, /* insert */
-+    get_SrcB_X0  /* extract */
-+  },
-+  {
-+    TILE_OP_TYPE_REGISTER, /* type */
-+    MAYBE_BFD_RELOC(BFD_RELOC_NONE), /* default_reloc */
-+    6, /* num_bits */
-+    0, /* is_signed */
-+    1, /* is_src_reg */
-+    0, /* is_dest_reg */
-+    0, /* is_pc_relative */
-+    0, /* rightshift */
-+    create_SrcB_X1, /* insert */
-+    get_SrcB_X1  /* extract */
-+  },
-+  {
-+    TILE_OP_TYPE_REGISTER, /* type */
-+    MAYBE_BFD_RELOC(BFD_RELOC_NONE), /* default_reloc */
-+    6, /* num_bits */
-+    0, /* is_signed */
-+    1, /* is_src_reg */
-+    0, /* is_dest_reg */
-+    0, /* is_pc_relative */
-+    0, /* rightshift */
-+    create_SrcB_Y0, /* insert */
-+    get_SrcB_Y0  /* extract */
-+  },
-+  {
-+    TILE_OP_TYPE_REGISTER, /* type */
-+    MAYBE_BFD_RELOC(BFD_RELOC_NONE), /* default_reloc */
-+    6, /* num_bits */
-+    0, /* is_signed */
-+    1, /* is_src_reg */
-+    0, /* is_dest_reg */
-+    0, /* is_pc_relative */
-+    0, /* rightshift */
-+    create_SrcB_Y1, /* insert */
-+    get_SrcB_Y1  /* extract */
-+  },
-+  {
-+    TILE_OP_TYPE_ADDRESS, /* type */
-+    MAYBE_BFD_RELOC(BFD_RELOC_TILE_BROFF_X1), /* default_reloc */
-+    17, /* num_bits */
-+    1, /* is_signed */
-+    0, /* is_src_reg */
-+    0, /* is_dest_reg */
-+    1, /* is_pc_relative */
-+    TILE_LOG2_BUNDLE_ALIGNMENT_IN_BYTES, /* rightshift */
-+    create_BrOff_X1, /* insert */
-+    get_BrOff_X1  /* extract */
-+  },
-+  {
-+    TILE_OP_TYPE_REGISTER, /* type */
-+    MAYBE_BFD_RELOC(BFD_RELOC_NONE), /* default_reloc */
-+    6, /* num_bits */
-+    0, /* is_signed */
-+    1, /* is_src_reg */
-+    1, /* is_dest_reg */
-+    0, /* is_pc_relative */
-+    0, /* rightshift */
-+    create_Dest_X0, /* insert */
-+    get_Dest_X0  /* extract */
-+  },
-+  {
-+    TILE_OP_TYPE_ADDRESS, /* type */
-+    MAYBE_BFD_RELOC(BFD_RELOC_NONE), /* default_reloc */
-+    28, /* num_bits */
-+    1, /* is_signed */
-+    0, /* is_src_reg */
-+    0, /* is_dest_reg */
-+    1, /* is_pc_relative */
-+    TILE_LOG2_BUNDLE_ALIGNMENT_IN_BYTES, /* rightshift */
-+    create_JOff_X1, /* insert */
-+    get_JOff_X1  /* extract */
-+  },
-+  {
-+    TILE_OP_TYPE_REGISTER, /* type */
-+    MAYBE_BFD_RELOC(BFD_RELOC_NONE), /* default_reloc */
-+    6, /* num_bits */
-+    0, /* is_signed */
-+    0, /* is_src_reg */
-+    1, /* is_dest_reg */
-+    0, /* is_pc_relative */
-+    0, /* rightshift */
-+    create_SrcBDest_Y2, /* insert */
-+    get_SrcBDest_Y2  /* extract */
-+  },
-+  {
-+    TILE_OP_TYPE_REGISTER, /* type */
-+    MAYBE_BFD_RELOC(BFD_RELOC_NONE), /* default_reloc */
-+    6, /* num_bits */
-+    0, /* is_signed */
-+    1, /* is_src_reg */
-+    1, /* is_dest_reg */
-+    0, /* is_pc_relative */
-+    0, /* rightshift */
-+    create_SrcA_X1, /* insert */
-+    get_SrcA_X1  /* extract */
-+  },
-+  {
-+    TILE_OP_TYPE_SPR, /* type */
-+    MAYBE_BFD_RELOC(BFD_RELOC_TILE_MF_IMM15_X1), /* default_reloc */
-+    15, /* num_bits */
-+    0, /* is_signed */
-+    0, /* is_src_reg */
-+    0, /* is_dest_reg */
-+    0, /* is_pc_relative */
-+    0, /* rightshift */
-+    create_MF_Imm15_X1, /* insert */
-+    get_MF_Imm15_X1  /* extract */
-+  },
-+  {
-+    TILE_OP_TYPE_IMMEDIATE, /* type */
-+    MAYBE_BFD_RELOC(BFD_RELOC_TILE_MMSTART_X0), /* default_reloc */
-+    5, /* num_bits */
-+    0, /* is_signed */
-+    0, /* is_src_reg */
-+    0, /* is_dest_reg */
-+    0, /* is_pc_relative */
-+    0, /* rightshift */
-+    create_MMStart_X0, /* insert */
-+    get_MMStart_X0  /* extract */
-+  },
-+  {
-+    TILE_OP_TYPE_IMMEDIATE, /* type */
-+    MAYBE_BFD_RELOC(BFD_RELOC_TILE_MMEND_X0), /* default_reloc */
-+    5, /* num_bits */
-+    0, /* is_signed */
-+    0, /* is_src_reg */
-+    0, /* is_dest_reg */
-+    0, /* is_pc_relative */
-+    0, /* rightshift */
-+    create_MMEnd_X0, /* insert */
-+    get_MMEnd_X0  /* extract */
-+  },
-+  {
-+    TILE_OP_TYPE_IMMEDIATE, /* type */
-+    MAYBE_BFD_RELOC(BFD_RELOC_TILE_MMSTART_X1), /* default_reloc */
-+    5, /* num_bits */
-+    0, /* is_signed */
-+    0, /* is_src_reg */
-+    0, /* is_dest_reg */
-+    0, /* is_pc_relative */
-+    0, /* rightshift */
-+    create_MMStart_X1, /* insert */
-+    get_MMStart_X1  /* extract */
-+  },
-+  {
-+    TILE_OP_TYPE_IMMEDIATE, /* type */
-+    MAYBE_BFD_RELOC(BFD_RELOC_TILE_MMEND_X1), /* default_reloc */
-+    5, /* num_bits */
-+    0, /* is_signed */
-+    0, /* is_src_reg */
-+    0, /* is_dest_reg */
-+    0, /* is_pc_relative */
-+    0, /* rightshift */
-+    create_MMEnd_X1, /* insert */
-+    get_MMEnd_X1  /* extract */
-+  },
-+  {
-+    TILE_OP_TYPE_SPR, /* type */
-+    MAYBE_BFD_RELOC(BFD_RELOC_TILE_MT_IMM15_X1), /* default_reloc */
-+    15, /* num_bits */
-+    0, /* is_signed */
-+    0, /* is_src_reg */
-+    0, /* is_dest_reg */
-+    0, /* is_pc_relative */
-+    0, /* rightshift */
-+    create_MT_Imm15_X1, /* insert */
-+    get_MT_Imm15_X1  /* extract */
-+  },
-+  {
-+    TILE_OP_TYPE_REGISTER, /* type */
-+    MAYBE_BFD_RELOC(BFD_RELOC_NONE), /* default_reloc */
-+    6, /* num_bits */
-+    0, /* is_signed */
-+    1, /* is_src_reg */
-+    1, /* is_dest_reg */
-+    0, /* is_pc_relative */
-+    0, /* rightshift */
-+    create_Dest_Y0, /* insert */
-+    get_Dest_Y0  /* extract */
-+  },
-+  {
-+    TILE_OP_TYPE_IMMEDIATE, /* type */
-+    MAYBE_BFD_RELOC(BFD_RELOC_TILE_SHAMT_X0), /* default_reloc */
-+    5, /* num_bits */
-+    0, /* is_signed */
-+    0, /* is_src_reg */
-+    0, /* is_dest_reg */
-+    0, /* is_pc_relative */
-+    0, /* rightshift */
-+    create_ShAmt_X0, /* insert */
-+    get_ShAmt_X0  /* extract */
-+  },
-+  {
-+    TILE_OP_TYPE_IMMEDIATE, /* type */
-+    MAYBE_BFD_RELOC(BFD_RELOC_TILE_SHAMT_X1), /* default_reloc */
-+    5, /* num_bits */
-+    0, /* is_signed */
-+    0, /* is_src_reg */
-+    0, /* is_dest_reg */
-+    0, /* is_pc_relative */
-+    0, /* rightshift */
-+    create_ShAmt_X1, /* insert */
-+    get_ShAmt_X1  /* extract */
-+  },
-+  {
-+    TILE_OP_TYPE_IMMEDIATE, /* type */
-+    MAYBE_BFD_RELOC(BFD_RELOC_TILE_SHAMT_Y0), /* default_reloc */
-+    5, /* num_bits */
-+    0, /* is_signed */
-+    0, /* is_src_reg */
-+    0, /* is_dest_reg */
-+    0, /* is_pc_relative */
-+    0, /* rightshift */
-+    create_ShAmt_Y0, /* insert */
-+    get_ShAmt_Y0  /* extract */
-+  },
-+  {
-+    TILE_OP_TYPE_IMMEDIATE, /* type */
-+    MAYBE_BFD_RELOC(BFD_RELOC_TILE_SHAMT_Y1), /* default_reloc */
-+    5, /* num_bits */
-+    0, /* is_signed */
-+    0, /* is_src_reg */
-+    0, /* is_dest_reg */
-+    0, /* is_pc_relative */
-+    0, /* rightshift */
-+    create_ShAmt_Y1, /* insert */
-+    get_ShAmt_Y1  /* extract */
-+  },
-+  {
-+    TILE_OP_TYPE_REGISTER, /* type */
-+    MAYBE_BFD_RELOC(BFD_RELOC_NONE), /* default_reloc */
-+    6, /* num_bits */
-+    0, /* is_signed */
-+    1, /* is_src_reg */
-+    0, /* is_dest_reg */
-+    0, /* is_pc_relative */
-+    0, /* rightshift */
-+    create_SrcBDest_Y2, /* insert */
-+    get_SrcBDest_Y2  /* extract */
-+  },
-+  {
-+    TILE_OP_TYPE_IMMEDIATE, /* type */
-+    MAYBE_BFD_RELOC(BFD_RELOC_NONE), /* default_reloc */
-+    8, /* num_bits */
-+    1, /* is_signed */
-+    0, /* is_src_reg */
-+    0, /* is_dest_reg */
-+    0, /* is_pc_relative */
-+    0, /* rightshift */
-+    create_Dest_Imm8_X1, /* insert */
-+    get_Dest_Imm8_X1  /* extract */
-+  },
-+  {
-+    TILE_OP_TYPE_ADDRESS, /* type */
-+    MAYBE_BFD_RELOC(BFD_RELOC_TILE_SN_BROFF), /* default_reloc */
-+    10, /* num_bits */
-+    1, /* is_signed */
-+    0, /* is_src_reg */
-+    0, /* is_dest_reg */
-+    1, /* is_pc_relative */
-+    TILE_LOG2_SN_INSTRUCTION_SIZE_IN_BYTES, /* rightshift */
-+    create_BrOff_SN, /* insert */
-+    get_BrOff_SN  /* extract */
-+  },
-+  {
-+    TILE_OP_TYPE_IMMEDIATE, /* type */
-+    MAYBE_BFD_RELOC(BFD_RELOC_TILE_SN_UIMM8), /* default_reloc */
-+    8, /* num_bits */
-+    0, /* is_signed */
-+    0, /* is_src_reg */
-+    0, /* is_dest_reg */
-+    0, /* is_pc_relative */
-+    0, /* rightshift */
-+    create_Imm8_SN, /* insert */
-+    get_Imm8_SN  /* extract */
-+  },
-+  {
-+    TILE_OP_TYPE_IMMEDIATE, /* type */
-+    MAYBE_BFD_RELOC(BFD_RELOC_TILE_SN_IMM8), /* default_reloc */
-+    8, /* num_bits */
-+    1, /* is_signed */
-+    0, /* is_src_reg */
-+    0, /* is_dest_reg */
-+    0, /* is_pc_relative */
-+    0, /* rightshift */
-+    create_Imm8_SN, /* insert */
-+    get_Imm8_SN  /* extract */
-+  },
-+  {
-+    TILE_OP_TYPE_REGISTER, /* type */
-+    MAYBE_BFD_RELOC(BFD_RELOC_NONE), /* default_reloc */
-+    2, /* num_bits */
-+    0, /* is_signed */
-+    0, /* is_src_reg */
-+    1, /* is_dest_reg */
-+    0, /* is_pc_relative */
-+    0, /* rightshift */
-+    create_Dest_SN, /* insert */
-+    get_Dest_SN  /* extract */
-+  },
-+  {
-+    TILE_OP_TYPE_REGISTER, /* type */
-+    MAYBE_BFD_RELOC(BFD_RELOC_NONE), /* default_reloc */
-+    2, /* num_bits */
-+    0, /* is_signed */
-+    1, /* is_src_reg */
-+    0, /* is_dest_reg */
-+    0, /* is_pc_relative */
-+    0, /* rightshift */
-+    create_Src_SN, /* insert */
-+    get_Src_SN  /* extract */
-+  }
-+};
-+
-+const struct tile_spr tile_sprs[] = {
-+  { 0, "MPL_ITLB_MISS_SET_0" },
-+  { 1, "MPL_ITLB_MISS_SET_1" },
-+  { 2, "MPL_ITLB_MISS_SET_2" },
-+  { 3, "MPL_ITLB_MISS_SET_3" },
-+  { 4, "MPL_ITLB_MISS" },
-+  { 256, "ITLB_CURRENT_0" },
-+  { 257, "ITLB_CURRENT_1" },
-+  { 258, "ITLB_CURRENT_2" },
-+  { 259, "ITLB_CURRENT_3" },
-+  { 260, "ITLB_INDEX" },
-+  { 261, "ITLB_MATCH_0" },
-+  { 262, "ITLB_PR" },
-+  { 263, "NUMBER_ITLB" },
-+  { 264, "REPLACEMENT_ITLB" },
-+  { 265, "WIRED_ITLB" },
-+  { 266, "ITLB_PERF" },
-+  { 512, "MPL_MEM_ERROR_SET_0" },
-+  { 513, "MPL_MEM_ERROR_SET_1" },
-+  { 514, "MPL_MEM_ERROR_SET_2" },
-+  { 515, "MPL_MEM_ERROR_SET_3" },
-+  { 516, "MPL_MEM_ERROR" },
-+  { 517, "L1_I_ERROR" },
-+  { 518, "MEM_ERROR_CBOX_ADDR" },
-+  { 519, "MEM_ERROR_CBOX_STATUS" },
-+  { 520, "MEM_ERROR_ENABLE" },
-+  { 521, "MEM_ERROR_MBOX_ADDR" },
-+  { 522, "MEM_ERROR_MBOX_STATUS" },
-+  { 523, "SNIC_ERROR_LOG_STATUS" },
-+  { 524, "SNIC_ERROR_LOG_VA" },
-+  { 525, "XDN_DEMUX_ERROR" },
-+  { 1024, "MPL_ILL_SET_0" },
-+  { 1025, "MPL_ILL_SET_1" },
-+  { 1026, "MPL_ILL_SET_2" },
-+  { 1027, "MPL_ILL_SET_3" },
-+  { 1028, "MPL_ILL" },
-+  { 1536, "MPL_GPV_SET_0" },
-+  { 1537, "MPL_GPV_SET_1" },
-+  { 1538, "MPL_GPV_SET_2" },
-+  { 1539, "MPL_GPV_SET_3" },
-+  { 1540, "MPL_GPV" },
-+  { 1541, "GPV_REASON" },
-+  { 2048, "MPL_SN_ACCESS_SET_0" },
-+  { 2049, "MPL_SN_ACCESS_SET_1" },
-+  { 2050, "MPL_SN_ACCESS_SET_2" },
-+  { 2051, "MPL_SN_ACCESS_SET_3" },
-+  { 2052, "MPL_SN_ACCESS" },
-+  { 2053, "SNCTL" },
-+  { 2054, "SNFIFO_DATA" },
-+  { 2055, "SNFIFO_SEL" },
-+  { 2056, "SNIC_INVADDR" },
-+  { 2057, "SNISTATE" },
-+  { 2058, "SNOSTATE" },
-+  { 2059, "SNPC" },
-+  { 2060, "SNSTATIC" },
-+  { 2304, "SN_DATA_AVAIL" },
-+  { 2560, "MPL_IDN_ACCESS_SET_0" },
-+  { 2561, "MPL_IDN_ACCESS_SET_1" },
-+  { 2562, "MPL_IDN_ACCESS_SET_2" },
-+  { 2563, "MPL_IDN_ACCESS_SET_3" },
-+  { 2564, "MPL_IDN_ACCESS" },
-+  { 2565, "IDN_DEMUX_CA_COUNT" },
-+  { 2566, "IDN_DEMUX_COUNT_0" },
-+  { 2567, "IDN_DEMUX_COUNT_1" },
-+  { 2568, "IDN_DEMUX_CTL" },
-+  { 2569, "IDN_DEMUX_CURR_TAG" },
-+  { 2570, "IDN_DEMUX_QUEUE_SEL" },
-+  { 2571, "IDN_DEMUX_STATUS" },
-+  { 2572, "IDN_DEMUX_WRITE_FIFO" },
-+  { 2573, "IDN_DEMUX_WRITE_QUEUE" },
-+  { 2574, "IDN_PENDING" },
-+  { 2575, "IDN_SP_FIFO_DATA" },
-+  { 2576, "IDN_SP_FIFO_SEL" },
-+  { 2577, "IDN_SP_FREEZE" },
-+  { 2578, "IDN_SP_STATE" },
-+  { 2579, "IDN_TAG_0" },
-+  { 2580, "IDN_TAG_1" },
-+  { 2581, "IDN_TAG_VALID" },
-+  { 2582, "IDN_TILE_COORD" },
-+  { 2816, "IDN_CA_DATA" },
-+  { 2817, "IDN_CA_REM" },
-+  { 2818, "IDN_CA_TAG" },
-+  { 2819, "IDN_DATA_AVAIL" },
-+  { 3072, "MPL_UDN_ACCESS_SET_0" },
-+  { 3073, "MPL_UDN_ACCESS_SET_1" },
-+  { 3074, "MPL_UDN_ACCESS_SET_2" },
-+  { 3075, "MPL_UDN_ACCESS_SET_3" },
-+  { 3076, "MPL_UDN_ACCESS" },
-+  { 3077, "UDN_DEMUX_CA_COUNT" },
-+  { 3078, "UDN_DEMUX_COUNT_0" },
-+  { 3079, "UDN_DEMUX_COUNT_1" },
-+  { 3080, "UDN_DEMUX_COUNT_2" },
-+  { 3081, "UDN_DEMUX_COUNT_3" },
-+  { 3082, "UDN_DEMUX_CTL" },
-+  { 3083, "UDN_DEMUX_CURR_TAG" },
-+  { 3084, "UDN_DEMUX_QUEUE_SEL" },
-+  { 3085, "UDN_DEMUX_STATUS" },
-+  { 3086, "UDN_DEMUX_WRITE_FIFO" },
-+  { 3087, "UDN_DEMUX_WRITE_QUEUE" },
-+  { 3088, "UDN_PENDING" },
-+  { 3089, "UDN_SP_FIFO_DATA" },
-+  { 3090, "UDN_SP_FIFO_SEL" },
-+  { 3091, "UDN_SP_FREEZE" },
-+  { 3092, "UDN_SP_STATE" },
-+  { 3093, "UDN_TAG_0" },
-+  { 3094, "UDN_TAG_1" },
-+  { 3095, "UDN_TAG_2" },
-+  { 3096, "UDN_TAG_3" },
-+  { 3097, "UDN_TAG_VALID" },
-+  { 3098, "UDN_TILE_COORD" },
-+  { 3328, "UDN_CA_DATA" },
-+  { 3329, "UDN_CA_REM" },
-+  { 3330, "UDN_CA_TAG" },
-+  { 3331, "UDN_DATA_AVAIL" },
-+  { 3584, "MPL_IDN_REFILL_SET_0" },
-+  { 3585, "MPL_IDN_REFILL_SET_1" },
-+  { 3586, "MPL_IDN_REFILL_SET_2" },
-+  { 3587, "MPL_IDN_REFILL_SET_3" },
-+  { 3588, "MPL_IDN_REFILL" },
-+  { 3589, "IDN_REFILL_EN" },
-+  { 4096, "MPL_UDN_REFILL_SET_0" },
-+  { 4097, "MPL_UDN_REFILL_SET_1" },
-+  { 4098, "MPL_UDN_REFILL_SET_2" },
-+  { 4099, "MPL_UDN_REFILL_SET_3" },
-+  { 4100, "MPL_UDN_REFILL" },
-+  { 4101, "UDN_REFILL_EN" },
-+  { 4608, "MPL_IDN_COMPLETE_SET_0" },
-+  { 4609, "MPL_IDN_COMPLETE_SET_1" },
-+  { 4610, "MPL_IDN_COMPLETE_SET_2" },
-+  { 4611, "MPL_IDN_COMPLETE_SET_3" },
-+  { 4612, "MPL_IDN_COMPLETE" },
-+  { 4613, "IDN_REMAINING" },
-+  { 5120, "MPL_UDN_COMPLETE_SET_0" },
-+  { 5121, "MPL_UDN_COMPLETE_SET_1" },
-+  { 5122, "MPL_UDN_COMPLETE_SET_2" },
-+  { 5123, "MPL_UDN_COMPLETE_SET_3" },
-+  { 5124, "MPL_UDN_COMPLETE" },
-+  { 5125, "UDN_REMAINING" },
-+  { 5632, "MPL_SWINT_3_SET_0" },
-+  { 5633, "MPL_SWINT_3_SET_1" },
-+  { 5634, "MPL_SWINT_3_SET_2" },
-+  { 5635, "MPL_SWINT_3_SET_3" },
-+  { 5636, "MPL_SWINT_3" },
-+  { 6144, "MPL_SWINT_2_SET_0" },
-+  { 6145, "MPL_SWINT_2_SET_1" },
-+  { 6146, "MPL_SWINT_2_SET_2" },
-+  { 6147, "MPL_SWINT_2_SET_3" },
-+  { 6148, "MPL_SWINT_2" },
-+  { 6656, "MPL_SWINT_1_SET_0" },
-+  { 6657, "MPL_SWINT_1_SET_1" },
-+  { 6658, "MPL_SWINT_1_SET_2" },
-+  { 6659, "MPL_SWINT_1_SET_3" },
-+  { 6660, "MPL_SWINT_1" },
-+  { 7168, "MPL_SWINT_0_SET_0" },
-+  { 7169, "MPL_SWINT_0_SET_1" },
-+  { 7170, "MPL_SWINT_0_SET_2" },
-+  { 7171, "MPL_SWINT_0_SET_3" },
-+  { 7172, "MPL_SWINT_0" },
-+  { 7680, "MPL_UNALIGN_DATA_SET_0" },
-+  { 7681, "MPL_UNALIGN_DATA_SET_1" },
-+  { 7682, "MPL_UNALIGN_DATA_SET_2" },
-+  { 7683, "MPL_UNALIGN_DATA_SET_3" },
-+  { 7684, "MPL_UNALIGN_DATA" },
-+  { 8192, "MPL_DTLB_MISS_SET_0" },
-+  { 8193, "MPL_DTLB_MISS_SET_1" },
-+  { 8194, "MPL_DTLB_MISS_SET_2" },
-+  { 8195, "MPL_DTLB_MISS_SET_3" },
-+  { 8196, "MPL_DTLB_MISS" },
-+  { 8448, "AER_0" },
-+  { 8449, "AER_1" },
-+  { 8450, "DTLB_BAD_ADDR" },
-+  { 8451, "DTLB_BAD_ADDR_REASON" },
-+  { 8452, "DTLB_CURRENT_0" },
-+  { 8453, "DTLB_CURRENT_1" },
-+  { 8454, "DTLB_CURRENT_2" },
-+  { 8455, "DTLB_CURRENT_3" },
-+  { 8456, "DTLB_INDEX" },
-+  { 8457, "DTLB_MATCH_0" },
-+  { 8458, "NUMBER_DTLB" },
-+  { 8459, "PHYSICAL_MEMORY_MODE" },
-+  { 8460, "REPLACEMENT_DTLB" },
-+  { 8461, "WIRED_DTLB" },
-+  { 8462, "CACHE_RED_WAY_OVERRIDDEN" },
-+  { 8463, "DTLB_PERF" },
-+  { 8704, "MPL_DTLB_ACCESS_SET_0" },
-+  { 8705, "MPL_DTLB_ACCESS_SET_1" },
-+  { 8706, "MPL_DTLB_ACCESS_SET_2" },
-+  { 8707, "MPL_DTLB_ACCESS_SET_3" },
-+  { 8708, "MPL_DTLB_ACCESS" },
-+  { 9216, "MPL_DMATLB_MISS_SET_0" },
-+  { 9217, "MPL_DMATLB_MISS_SET_1" },
-+  { 9218, "MPL_DMATLB_MISS_SET_2" },
-+  { 9219, "MPL_DMATLB_MISS_SET_3" },
-+  { 9220, "MPL_DMATLB_MISS" },
-+  { 9472, "DMA_BAD_ADDR" },
-+  { 9473, "DMA_STATUS" },
-+  { 9728, "MPL_DMATLB_ACCESS_SET_0" },
-+  { 9729, "MPL_DMATLB_ACCESS_SET_1" },
-+  { 9730, "MPL_DMATLB_ACCESS_SET_2" },
-+  { 9731, "MPL_DMATLB_ACCESS_SET_3" },
-+  { 9732, "MPL_DMATLB_ACCESS" },
-+  { 10240, "MPL_SNITLB_MISS_SET_0" },
-+  { 10241, "MPL_SNITLB_MISS_SET_1" },
-+  { 10242, "MPL_SNITLB_MISS_SET_2" },
-+  { 10243, "MPL_SNITLB_MISS_SET_3" },
-+  { 10244, "MPL_SNITLB_MISS" },
-+  { 10245, "NUMBER_SNITLB" },
-+  { 10246, "REPLACEMENT_SNITLB" },
-+  { 10247, "SNITLB_CURRENT_0" },
-+  { 10248, "SNITLB_CURRENT_1" },
-+  { 10249, "SNITLB_CURRENT_2" },
-+  { 10250, "SNITLB_CURRENT_3" },
-+  { 10251, "SNITLB_INDEX" },
-+  { 10252, "SNITLB_MATCH_0" },
-+  { 10253, "SNITLB_PR" },
-+  { 10254, "WIRED_SNITLB" },
-+  { 10255, "SNITLB_STATUS" },
-+  { 10752, "MPL_SN_NOTIFY_SET_0" },
-+  { 10753, "MPL_SN_NOTIFY_SET_1" },
-+  { 10754, "MPL_SN_NOTIFY_SET_2" },
-+  { 10755, "MPL_SN_NOTIFY_SET_3" },
-+  { 10756, "MPL_SN_NOTIFY" },
-+  { 10757, "SN_NOTIFY_STATUS" },
-+  { 11264, "MPL_SN_FIREWALL_SET_0" },
-+  { 11265, "MPL_SN_FIREWALL_SET_1" },
-+  { 11266, "MPL_SN_FIREWALL_SET_2" },
-+  { 11267, "MPL_SN_FIREWALL_SET_3" },
-+  { 11268, "MPL_SN_FIREWALL" },
-+  { 11269, "SN_DIRECTION_PROTECT" },
-+  { 11776, "MPL_IDN_FIREWALL_SET_0" },
-+  { 11777, "MPL_IDN_FIREWALL_SET_1" },
-+  { 11778, "MPL_IDN_FIREWALL_SET_2" },
-+  { 11779, "MPL_IDN_FIREWALL_SET_3" },
-+  { 11780, "MPL_IDN_FIREWALL" },
-+  { 11781, "IDN_DIRECTION_PROTECT" },
-+  { 12288, "MPL_UDN_FIREWALL_SET_0" },
-+  { 12289, "MPL_UDN_FIREWALL_SET_1" },
-+  { 12290, "MPL_UDN_FIREWALL_SET_2" },
-+  { 12291, "MPL_UDN_FIREWALL_SET_3" },
-+  { 12292, "MPL_UDN_FIREWALL" },
-+  { 12293, "UDN_DIRECTION_PROTECT" },
-+  { 12800, "MPL_TILE_TIMER_SET_0" },
-+  { 12801, "MPL_TILE_TIMER_SET_1" },
-+  { 12802, "MPL_TILE_TIMER_SET_2" },
-+  { 12803, "MPL_TILE_TIMER_SET_3" },
-+  { 12804, "MPL_TILE_TIMER" },
-+  { 12805, "TILE_TIMER_CONTROL" },
-+  { 13312, "MPL_IDN_TIMER_SET_0" },
-+  { 13313, "MPL_IDN_TIMER_SET_1" },
-+  { 13314, "MPL_IDN_TIMER_SET_2" },
-+  { 13315, "MPL_IDN_TIMER_SET_3" },
-+  { 13316, "MPL_IDN_TIMER" },
-+  { 13317, "IDN_DEADLOCK_COUNT" },
-+  { 13318, "IDN_DEADLOCK_TIMEOUT" },
-+  { 13824, "MPL_UDN_TIMER_SET_0" },
-+  { 13825, "MPL_UDN_TIMER_SET_1" },
-+  { 13826, "MPL_UDN_TIMER_SET_2" },
-+  { 13827, "MPL_UDN_TIMER_SET_3" },
-+  { 13828, "MPL_UDN_TIMER" },
-+  { 13829, "UDN_DEADLOCK_COUNT" },
-+  { 13830, "UDN_DEADLOCK_TIMEOUT" },
-+  { 14336, "MPL_DMA_NOTIFY_SET_0" },
-+  { 14337, "MPL_DMA_NOTIFY_SET_1" },
-+  { 14338, "MPL_DMA_NOTIFY_SET_2" },
-+  { 14339, "MPL_DMA_NOTIFY_SET_3" },
-+  { 14340, "MPL_DMA_NOTIFY" },
-+  { 14592, "DMA_BYTE" },
-+  { 14593, "DMA_CHUNK_SIZE" },
-+  { 14594, "DMA_CTR" },
-+  { 14595, "DMA_DST_ADDR" },
-+  { 14596, "DMA_DST_CHUNK_ADDR" },
-+  { 14597, "DMA_SRC_ADDR" },
-+  { 14598, "DMA_SRC_CHUNK_ADDR" },
-+  { 14599, "DMA_STRIDE" },
-+  { 14600, "DMA_USER_STATUS" },
-+  { 14848, "MPL_IDN_CA_SET_0" },
-+  { 14849, "MPL_IDN_CA_SET_1" },
-+  { 14850, "MPL_IDN_CA_SET_2" },
-+  { 14851, "MPL_IDN_CA_SET_3" },
-+  { 14852, "MPL_IDN_CA" },
-+  { 15360, "MPL_UDN_CA_SET_0" },
-+  { 15361, "MPL_UDN_CA_SET_1" },
-+  { 15362, "MPL_UDN_CA_SET_2" },
-+  { 15363, "MPL_UDN_CA_SET_3" },
-+  { 15364, "MPL_UDN_CA" },
-+  { 15872, "MPL_IDN_AVAIL_SET_0" },
-+  { 15873, "MPL_IDN_AVAIL_SET_1" },
-+  { 15874, "MPL_IDN_AVAIL_SET_2" },
-+  { 15875, "MPL_IDN_AVAIL_SET_3" },
-+  { 15876, "MPL_IDN_AVAIL" },
-+  { 15877, "IDN_AVAIL_EN" },
-+  { 16384, "MPL_UDN_AVAIL_SET_0" },
-+  { 16385, "MPL_UDN_AVAIL_SET_1" },
-+  { 16386, "MPL_UDN_AVAIL_SET_2" },
-+  { 16387, "MPL_UDN_AVAIL_SET_3" },
-+  { 16388, "MPL_UDN_AVAIL" },
-+  { 16389, "UDN_AVAIL_EN" },
-+  { 16896, "MPL_PERF_COUNT_SET_0" },
-+  { 16897, "MPL_PERF_COUNT_SET_1" },
-+  { 16898, "MPL_PERF_COUNT_SET_2" },
-+  { 16899, "MPL_PERF_COUNT_SET_3" },
-+  { 16900, "MPL_PERF_COUNT" },
-+  { 16901, "PERF_COUNT_0" },
-+  { 16902, "PERF_COUNT_1" },
-+  { 16903, "PERF_COUNT_CTL" },
-+  { 16904, "PERF_COUNT_STS" },
-+  { 16905, "WATCH_CTL" },
-+  { 16906, "WATCH_MASK" },
-+  { 16907, "WATCH_VAL" },
-+  { 16912, "PERF_COUNT_DN_CTL" },
-+  { 17408, "MPL_INTCTRL_3_SET_0" },
-+  { 17409, "MPL_INTCTRL_3_SET_1" },
-+  { 17410, "MPL_INTCTRL_3_SET_2" },
-+  { 17411, "MPL_INTCTRL_3_SET_3" },
-+  { 17412, "MPL_INTCTRL_3" },
-+  { 17413, "EX_CONTEXT_3_0" },
-+  { 17414, "EX_CONTEXT_3_1" },
-+  { 17415, "INTERRUPT_MASK_3_0" },
-+  { 17416, "INTERRUPT_MASK_3_1" },
-+  { 17417, "INTERRUPT_MASK_RESET_3_0" },
-+  { 17418, "INTERRUPT_MASK_RESET_3_1" },
-+  { 17419, "INTERRUPT_MASK_SET_3_0" },
-+  { 17420, "INTERRUPT_MASK_SET_3_1" },
-+  { 17432, "INTCTRL_3_STATUS" },
-+  { 17664, "SYSTEM_SAVE_3_0" },
-+  { 17665, "SYSTEM_SAVE_3_1" },
-+  { 17666, "SYSTEM_SAVE_3_2" },
-+  { 17667, "SYSTEM_SAVE_3_3" },
-+  { 17920, "MPL_INTCTRL_2_SET_0" },
-+  { 17921, "MPL_INTCTRL_2_SET_1" },
-+  { 17922, "MPL_INTCTRL_2_SET_2" },
-+  { 17923, "MPL_INTCTRL_2_SET_3" },
-+  { 17924, "MPL_INTCTRL_2" },
-+  { 17925, "EX_CONTEXT_2_0" },
-+  { 17926, "EX_CONTEXT_2_1" },
-+  { 17927, "INTCTRL_2_STATUS" },
-+  { 17928, "INTERRUPT_MASK_2_0" },
-+  { 17929, "INTERRUPT_MASK_2_1" },
-+  { 17930, "INTERRUPT_MASK_RESET_2_0" },
-+  { 17931, "INTERRUPT_MASK_RESET_2_1" },
-+  { 17932, "INTERRUPT_MASK_SET_2_0" },
-+  { 17933, "INTERRUPT_MASK_SET_2_1" },
-+  { 18176, "SYSTEM_SAVE_2_0" },
-+  { 18177, "SYSTEM_SAVE_2_1" },
-+  { 18178, "SYSTEM_SAVE_2_2" },
-+  { 18179, "SYSTEM_SAVE_2_3" },
-+  { 18432, "MPL_INTCTRL_1_SET_0" },
-+  { 18433, "MPL_INTCTRL_1_SET_1" },
-+  { 18434, "MPL_INTCTRL_1_SET_2" },
-+  { 18435, "MPL_INTCTRL_1_SET_3" },
-+  { 18436, "MPL_INTCTRL_1" },
-+  { 18437, "EX_CONTEXT_1_0" },
-+  { 18438, "EX_CONTEXT_1_1" },
-+  { 18439, "INTCTRL_1_STATUS" },
-+  { 18440, "INTCTRL_3_STATUS_REV0" },
-+  { 18441, "INTERRUPT_MASK_1_0" },
-+  { 18442, "INTERRUPT_MASK_1_1" },
-+  { 18443, "INTERRUPT_MASK_RESET_1_0" },
-+  { 18444, "INTERRUPT_MASK_RESET_1_1" },
-+  { 18445, "INTERRUPT_MASK_SET_1_0" },
-+  { 18446, "INTERRUPT_MASK_SET_1_1" },
-+  { 18688, "SYSTEM_SAVE_1_0" },
-+  { 18689, "SYSTEM_SAVE_1_1" },
-+  { 18690, "SYSTEM_SAVE_1_2" },
-+  { 18691, "SYSTEM_SAVE_1_3" },
-+  { 18944, "MPL_INTCTRL_0_SET_0" },
-+  { 18945, "MPL_INTCTRL_0_SET_1" },
-+  { 18946, "MPL_INTCTRL_0_SET_2" },
-+  { 18947, "MPL_INTCTRL_0_SET_3" },
-+  { 18948, "MPL_INTCTRL_0" },
-+  { 18949, "EX_CONTEXT_0_0" },
-+  { 18950, "EX_CONTEXT_0_1" },
-+  { 18951, "INTCTRL_0_STATUS" },
-+  { 18952, "INTERRUPT_MASK_0_0" },
-+  { 18953, "INTERRUPT_MASK_0_1" },
-+  { 18954, "INTERRUPT_MASK_RESET_0_0" },
-+  { 18955, "INTERRUPT_MASK_RESET_0_1" },
-+  { 18956, "INTERRUPT_MASK_SET_0_0" },
-+  { 18957, "INTERRUPT_MASK_SET_0_1" },
-+  { 19200, "SYSTEM_SAVE_0_0" },
-+  { 19201, "SYSTEM_SAVE_0_1" },
-+  { 19202, "SYSTEM_SAVE_0_2" },
-+  { 19203, "SYSTEM_SAVE_0_3" },
-+  { 19456, "MPL_BOOT_ACCESS_SET_0" },
-+  { 19457, "MPL_BOOT_ACCESS_SET_1" },
-+  { 19458, "MPL_BOOT_ACCESS_SET_2" },
-+  { 19459, "MPL_BOOT_ACCESS_SET_3" },
-+  { 19460, "MPL_BOOT_ACCESS" },
-+  { 19461, "CBOX_CACHEASRAM_CONFIG" },
-+  { 19462, "CBOX_CACHE_CONFIG" },
-+  { 19463, "CBOX_MMAP_0" },
-+  { 19464, "CBOX_MMAP_1" },
-+  { 19465, "CBOX_MMAP_2" },
-+  { 19466, "CBOX_MMAP_3" },
-+  { 19467, "CBOX_MSR" },
-+  { 19468, "CBOX_SRC_ID" },
-+  { 19469, "CYCLE_HIGH_MODIFY" },
-+  { 19470, "CYCLE_LOW_MODIFY" },
-+  { 19471, "DIAG_BCST_CTL" },
-+  { 19472, "DIAG_BCST_MASK" },
-+  { 19473, "DIAG_BCST_TRIGGER" },
-+  { 19474, "DIAG_MUX_CTL" },
-+  { 19475, "DIAG_TRACE_CTL" },
-+  { 19476, "DIAG_TRACE_STS" },
-+  { 19477, "IDN_DEMUX_BUF_THRESH" },
-+  { 19478, "SBOX_CONFIG" },
-+  { 19479, "TILE_COORD" },
-+  { 19480, "UDN_DEMUX_BUF_THRESH" },
-+  { 19481, "CBOX_HOME_MAP_ADDR" },
-+  { 19482, "CBOX_HOME_MAP_DATA" },
-+  { 19483, "CBOX_MSR1" },
-+  { 19484, "BIG_ENDIAN_CONFIG" },
-+  { 19485, "MEM_STRIPE_CONFIG" },
-+  { 19486, "DIAG_TRACE_WAY" },
-+  { 19487, "VDN_SNOOP_SHIM_CTL" },
-+  { 19488, "PERF_COUNT_PLS" },
-+  { 19489, "DIAG_TRACE_DATA" },
-+  { 19712, "I_AER_0" },
-+  { 19713, "I_AER_1" },
-+  { 19714, "I_PHYSICAL_MEMORY_MODE" },
-+  { 19968, "MPL_WORLD_ACCESS_SET_0" },
-+  { 19969, "MPL_WORLD_ACCESS_SET_1" },
-+  { 19970, "MPL_WORLD_ACCESS_SET_2" },
-+  { 19971, "MPL_WORLD_ACCESS_SET_3" },
-+  { 19972, "MPL_WORLD_ACCESS" },
-+  { 19973, "SIM_SOCKET" },
-+  { 19974, "CYCLE_HIGH" },
-+  { 19975, "CYCLE_LOW" },
-+  { 19976, "DONE" },
-+  { 19977, "FAIL" },
-+  { 19978, "INTERRUPT_CRITICAL_SECTION" },
-+  { 19979, "PASS" },
-+  { 19980, "SIM_CONTROL" },
-+  { 19981, "EVENT_BEGIN" },
-+  { 19982, "EVENT_END" },
-+  { 19983, "TILE_WRITE_PENDING" },
-+  { 19984, "TILE_RTF_HWM" },
-+  { 20224, "PROC_STATUS" },
-+  { 20225, "STATUS_SATURATE" },
-+  { 20480, "MPL_I_ASID_SET_0" },
-+  { 20481, "MPL_I_ASID_SET_1" },
-+  { 20482, "MPL_I_ASID_SET_2" },
-+  { 20483, "MPL_I_ASID_SET_3" },
-+  { 20484, "MPL_I_ASID" },
-+  { 20485, "I_ASID" },
-+  { 20992, "MPL_D_ASID_SET_0" },
-+  { 20993, "MPL_D_ASID_SET_1" },
-+  { 20994, "MPL_D_ASID_SET_2" },
-+  { 20995, "MPL_D_ASID_SET_3" },
-+  { 20996, "MPL_D_ASID" },
-+  { 20997, "D_ASID" },
-+  { 21504, "MPL_DMA_ASID_SET_0" },
-+  { 21505, "MPL_DMA_ASID_SET_1" },
-+  { 21506, "MPL_DMA_ASID_SET_2" },
-+  { 21507, "MPL_DMA_ASID_SET_3" },
-+  { 21508, "MPL_DMA_ASID" },
-+  { 21509, "DMA_ASID" },
-+  { 22016, "MPL_SNI_ASID_SET_0" },
-+  { 22017, "MPL_SNI_ASID_SET_1" },
-+  { 22018, "MPL_SNI_ASID_SET_2" },
-+  { 22019, "MPL_SNI_ASID_SET_3" },
-+  { 22020, "MPL_SNI_ASID" },
-+  { 22021, "SNI_ASID" },
-+  { 22528, "MPL_DMA_CPL_SET_0" },
-+  { 22529, "MPL_DMA_CPL_SET_1" },
-+  { 22530, "MPL_DMA_CPL_SET_2" },
-+  { 22531, "MPL_DMA_CPL_SET_3" },
-+  { 22532, "MPL_DMA_CPL" },
-+  { 23040, "MPL_SN_CPL_SET_0" },
-+  { 23041, "MPL_SN_CPL_SET_1" },
-+  { 23042, "MPL_SN_CPL_SET_2" },
-+  { 23043, "MPL_SN_CPL_SET_3" },
-+  { 23044, "MPL_SN_CPL" },
-+  { 23552, "MPL_DOUBLE_FAULT_SET_0" },
-+  { 23553, "MPL_DOUBLE_FAULT_SET_1" },
-+  { 23554, "MPL_DOUBLE_FAULT_SET_2" },
-+  { 23555, "MPL_DOUBLE_FAULT_SET_3" },
-+  { 23556, "MPL_DOUBLE_FAULT" },
-+  { 23557, "LAST_INTERRUPT_REASON" },
-+  { 24064, "MPL_SN_STATIC_ACCESS_SET_0" },
-+  { 24065, "MPL_SN_STATIC_ACCESS_SET_1" },
-+  { 24066, "MPL_SN_STATIC_ACCESS_SET_2" },
-+  { 24067, "MPL_SN_STATIC_ACCESS_SET_3" },
-+  { 24068, "MPL_SN_STATIC_ACCESS" },
-+  { 24069, "SN_STATIC_CTL" },
-+  { 24070, "SN_STATIC_FIFO_DATA" },
-+  { 24071, "SN_STATIC_FIFO_SEL" },
-+  { 24073, "SN_STATIC_ISTATE" },
-+  { 24074, "SN_STATIC_OSTATE" },
-+  { 24076, "SN_STATIC_STATIC" },
-+  { 24320, "SN_STATIC_DATA_AVAIL" },
-+  { 24576, "MPL_AUX_PERF_COUNT_SET_0" },
-+  { 24577, "MPL_AUX_PERF_COUNT_SET_1" },
-+  { 24578, "MPL_AUX_PERF_COUNT_SET_2" },
-+  { 24579, "MPL_AUX_PERF_COUNT_SET_3" },
-+  { 24580, "MPL_AUX_PERF_COUNT" },
-+  { 24581, "AUX_PERF_COUNT_0" },
-+  { 24582, "AUX_PERF_COUNT_1" },
-+  { 24583, "AUX_PERF_COUNT_CTL" },
-+  { 24584, "AUX_PERF_COUNT_STS" },
-+};
-+
-+const int tile_num_sprs = 499;
-+
-+
-+
-+
-+/* Canonical name of each register. */
-+const char *const tile_register_names[] =
-+{
-+  "r0",   "r1",  "r2",  "r3",  "r4",  "r5",  "r6",  "r7",
-+  "r8",   "r9",  "r10", "r11", "r12", "r13", "r14", "r15",
-+  "r16",  "r17", "r18", "r19", "r20", "r21", "r22", "r23",
-+  "r24",  "r25", "r26", "r27", "r28", "r29", "r30", "r31",
-+  "r32",  "r33", "r34", "r35", "r36", "r37", "r38", "r39",
-+  "r40",  "r41", "r42", "r43", "r44", "r45", "r46", "r47",
-+  "r48",  "r49", "r50", "r51", "r52", "tp",  "sp",  "lr",
-+  "sn",  "idn0", "idn1", "udn0", "udn1", "udn2", "udn3", "zero"
-+};
-+
-+
-+/* Given a set of bundle bits and the lookup FSM for a specific pipe,
-+ * returns which instruction the bundle contains in that pipe.
++.Lend___invalidate_icache:
++        .size __invalidate_icache, \
++		.Lend___invalidate_icache - __invalidate_icache
+diff --git a/arch/tile/lib/atomic_32.c b/arch/tile/lib/atomic_32.c
+new file mode 100644
+index 0000000..be1e8ac
+--- /dev/null
++++ b/arch/tile/lib/atomic_32.c
+@@ -0,0 +1,347 @@
++/*
++ * Copyright 2010 Tilera Corporation. All Rights Reserved.
++ *
++ *   This program is free software; you can redistribute it and/or
++ *   modify it under the terms of the GNU General Public License
++ *   as published by the Free Software Foundation, version 2.
++ *
++ *   This program is distributed in the hope that it will be useful, but
++ *   WITHOUT ANY WARRANTY; without even the implied warranty of
++ *   MERCHANTABILITY OR FITNESS FOR A PARTICULAR PURPOSE, GOOD TITLE or
++ *   NON INFRINGEMENT.  See the GNU General Public License for
++ *   more details.
 + */
-+static const struct tile_opcode *
-+find_opcode(tile_bundle_bits bits, const unsigned short *table)
++
++#include <linux/cache.h>
++#include <linux/delay.h>
++#include <linux/uaccess.h>
++#include <linux/module.h>
++#include <linux/mm.h>
++#include <asm/atomic.h>
++#include <arch/chip.h>
++
++/* The routines in atomic_asm.S are private, so we only declare them here. */
++extern struct __get_user __atomic_cmpxchg(volatile int *p,
++					  int *lock, int o, int n);
++extern struct __get_user __atomic_xchg(volatile int *p, int *lock, int n);
++extern struct __get_user __atomic_xchg_add(volatile int *p, int *lock, int n);
++extern struct __get_user __atomic_xchg_add_unless(volatile int *p,
++						  int *lock, int o, int n);
++extern struct __get_user __atomic_or(volatile int *p, int *lock, int n);
++extern struct __get_user __atomic_andn(volatile int *p, int *lock, int n);
++extern struct __get_user __atomic_xor(volatile int *p, int *lock, int n);
++
++extern u64 __atomic64_cmpxchg(volatile u64 *p, int *lock, u64 o, u64 n);
++extern u64 __atomic64_xchg(volatile u64 *p, int *lock, u64 n);
++extern u64 __atomic64_xchg_add(volatile u64 *p, int *lock, u64 n);
++extern u64 __atomic64_xchg_add_unless(volatile u64 *p,
++				      int *lock, u64 o, u64 n);
++
++
++/* See <asm/atomic.h> */
++#if ATOMIC_LOCKS_FOUND_VIA_TABLE()
++
++/*
++ * A block of memory containing locks for atomic ops. Each instance of this
++ * struct will be homed on a different CPU.
++ */
++struct atomic_locks_on_cpu {
++	int lock[ATOMIC_HASH_L2_SIZE];
++} __attribute__((aligned(ATOMIC_HASH_L2_SIZE * 4)));
++
++static DEFINE_PER_CPU(struct atomic_locks_on_cpu, atomic_lock_pool);
++
++/* The locks we'll use until __init_atomic_per_cpu is called. */
++static struct atomic_locks_on_cpu __initdata initial_atomic_locks;
++
++/* Hash into this vector to get a pointer to lock for the given atomic. */
++struct atomic_locks_on_cpu *atomic_lock_ptr[ATOMIC_HASH_L1_SIZE]
++	__write_once = {
++	[0 ... ATOMIC_HASH_L1_SIZE-1] (&initial_atomic_locks)
++};
++
++#else /* ATOMIC_LOCKS_FOUND_VIA_TABLE() */
++
++/* This page is remapped on startup to be hash-for-home. */
++int atomic_locks[PAGE_SIZE / sizeof(int) /* Only ATOMIC_HASH_SIZE is used */]
++  __attribute__((aligned(PAGE_SIZE), section(".bss.page_aligned")));
++
++#endif /* ATOMIC_LOCKS_FOUND_VIA_TABLE() */
++
++static inline int *__atomic_hashed_lock(volatile void *v)
 +{
-+  int index = 0;
++	/* NOTE: this code must match "sys_cmpxchg" in kernel/intvec.S */
++#if ATOMIC_LOCKS_FOUND_VIA_TABLE()
++	unsigned long i =
++		(unsigned long) v & ((PAGE_SIZE-1) & -sizeof(long long));
++	unsigned long n = __insn_crc32_32(0, i);
 +
-+  while (1)
-+  {
-+    unsigned short bitspec = table[index];
-+    unsigned int bitfield =
-+      ((unsigned int)(bits >> (bitspec & 63))) & (bitspec >> 6);
++	/* Grab high bits for L1 index. */
++	unsigned long l1_index = n >> ((sizeof(n) * 8) - ATOMIC_HASH_L1_SHIFT);
++	/* Grab low bits for L2 index. */
++	unsigned long l2_index = n & (ATOMIC_HASH_L2_SIZE - 1);
 +
-+    unsigned short next = table[index + 1 + bitfield];
-+    if (next <= TILE_OPC_NONE)
-+      return &tile_opcodes[next];
++	return &atomic_lock_ptr[l1_index]->lock[l2_index];
++#else
++	/*
++	 * Use bits [3, 3 + ATOMIC_HASH_SHIFT) as the lock index.
++	 * Using mm works here because atomic_locks is page aligned.
++	 */
++	unsigned long ptr = __insn_mm((unsigned long)v >> 1,
++				      (unsigned long)atomic_locks,
++				      2, (ATOMIC_HASH_SHIFT + 2) - 1);
++	return (int *)ptr;
++#endif
++}
 +
-+    index = next - TILE_OPC_NONE;
-+  }
++#ifdef CONFIG_SMP
++/* Return whether the passed pointer is a valid atomic lock pointer. */
++static int is_atomic_lock(int *p)
++{
++#if ATOMIC_LOCKS_FOUND_VIA_TABLE()
++	int i;
++	for (i = 0; i < ATOMIC_HASH_L1_SIZE; ++i) {
++
++		if (p >= &atomic_lock_ptr[i]->lock[0] &&
++		    p < &atomic_lock_ptr[i]->lock[ATOMIC_HASH_L2_SIZE]) {
++			return 1;
++		}
++	}
++	return 0;
++#else
++	return p >= &atomic_locks[0] && p < &atomic_locks[ATOMIC_HASH_SIZE];
++#endif
++}
++
++void __atomic_fault_unlock(int *irqlock_word)
++{
++	BUG_ON(!is_atomic_lock(irqlock_word));
++	BUG_ON(*irqlock_word != 1);
++	*irqlock_word = 0;
++}
++
++#endif /* CONFIG_SMP */
++
++static inline int *__atomic_setup(volatile void *v)
++{
++	/* Issue a load to the target to bring it into cache. */
++	*(volatile int *)v;
++	return __atomic_hashed_lock(v);
++}
++
++int _atomic_xchg(atomic_t *v, int n)
++{
++	return __atomic_xchg(&v->counter, __atomic_setup(v), n).val;
++}
++EXPORT_SYMBOL(_atomic_xchg);
++
++int _atomic_xchg_add(atomic_t *v, int i)
++{
++	return __atomic_xchg_add(&v->counter, __atomic_setup(v), i).val;
++}
++EXPORT_SYMBOL(_atomic_xchg_add);
++
++int _atomic_xchg_add_unless(atomic_t *v, int a, int u)
++{
++	/*
++	 * Note: argument order is switched here since it is easier
++	 * to use the first argument consistently as the "old value"
++	 * in the assembly, as is done for _atomic_cmpxchg().
++	 */
++	return __atomic_xchg_add_unless(&v->counter, __atomic_setup(v), u, a)
++		.val;
++}
++EXPORT_SYMBOL(_atomic_xchg_add_unless);
++
++int _atomic_cmpxchg(atomic_t *v, int o, int n)
++{
++	return __atomic_cmpxchg(&v->counter, __atomic_setup(v), o, n).val;
++}
++EXPORT_SYMBOL(_atomic_cmpxchg);
++
++unsigned long _atomic_or(volatile unsigned long *p, unsigned long mask)
++{
++	return __atomic_or((int *)p, __atomic_setup(p), mask).val;
++}
++EXPORT_SYMBOL(_atomic_or);
++
++unsigned long _atomic_andn(volatile unsigned long *p, unsigned long mask)
++{
++	return __atomic_andn((int *)p, __atomic_setup(p), mask).val;
++}
++EXPORT_SYMBOL(_atomic_andn);
++
++unsigned long _atomic_xor(volatile unsigned long *p, unsigned long mask)
++{
++	return __atomic_xor((int *)p, __atomic_setup(p), mask).val;
++}
++EXPORT_SYMBOL(_atomic_xor);
++
++
++u64 _atomic64_xchg(atomic64_t *v, u64 n)
++{
++	return __atomic64_xchg(&v->counter, __atomic_setup(v), n);
++}
++EXPORT_SYMBOL(_atomic64_xchg);
++
++u64 _atomic64_xchg_add(atomic64_t *v, u64 i)
++{
++	return __atomic64_xchg_add(&v->counter, __atomic_setup(v), i);
++}
++EXPORT_SYMBOL(_atomic64_xchg_add);
++
++u64 _atomic64_xchg_add_unless(atomic64_t *v, u64 a, u64 u)
++{
++	/*
++	 * Note: argument order is switched here since it is easier
++	 * to use the first argument consistently as the "old value"
++	 * in the assembly, as is done for _atomic_cmpxchg().
++	 */
++	return __atomic64_xchg_add_unless(&v->counter, __atomic_setup(v),
++					  u, a);
++}
++EXPORT_SYMBOL(_atomic64_xchg_add_unless);
++
++u64 _atomic64_cmpxchg(atomic64_t *v, u64 o, u64 n)
++{
++	return __atomic64_cmpxchg(&v->counter, __atomic_setup(v), o, n);
++}
++EXPORT_SYMBOL(_atomic64_cmpxchg);
++
++
++static inline int *__futex_setup(__user int *v)
++{
++	/*
++	 * Issue a prefetch to the counter to bring it into cache.
++	 * As for __atomic_setup, but we can't do a read into the L1
++	 * since it might fault; instead we do a prefetch into the L2.
++	 */
++	__insn_prefetch(v);
++	return __atomic_hashed_lock(v);
++}
++
++struct __get_user futex_set(int *v, int i)
++{
++	return __atomic_xchg(v, __futex_setup(v), i);
++}
++
++struct __get_user futex_add(int *v, int n)
++{
++	return __atomic_xchg_add(v, __futex_setup(v), n);
++}
++
++struct __get_user futex_or(int *v, int n)
++{
++	return __atomic_or(v, __futex_setup(v), n);
++}
++
++struct __get_user futex_andn(int *v, int n)
++{
++	return __atomic_andn(v, __futex_setup(v), n);
++}
++
++struct __get_user futex_xor(int *v, int n)
++{
++	return __atomic_xor(v, __futex_setup(v), n);
++}
++
++struct __get_user futex_cmpxchg(int *v, int o, int n)
++{
++	return __atomic_cmpxchg(v, __futex_setup(v), o, n);
++}
++
++/*
++ * If any of the atomic or futex routines hit a bad address (not in
++ * the page tables at kernel PL) this routine is called.  The futex
++ * routines are never used on kernel space, and the normal atomics and
++ * bitops are never used on user space.  So a fault on kernel space
++ * must be fatal, but a fault on userspace is a futex fault and we
++ * need to return -EFAULT.  Note that the context this routine is
++ * invoked in is the context of the "_atomic_xxx()" routines called
++ * by the functions in this file.
++ */
++struct __get_user __atomic_bad_address(int *addr)
++{
++	if (unlikely(!access_ok(VERIFY_WRITE, addr, sizeof(int))))
++		panic("Bad address used for kernel atomic op: %p\n", addr);
++	return (struct __get_user) { .err = -EFAULT };
 +}
 +
 +
-+int
-+parse_insn_tile(tile_bundle_bits bits,
-+                unsigned int pc,
-+                struct tile_decoded_instruction
-+                decoded[TILE_MAX_INSTRUCTIONS_PER_BUNDLE])
++#if CHIP_HAS_CBOX_HOME_MAP()
++static int __init noatomichash(char *str)
 +{
-+  int num_instructions = 0;
-+  int pipe;
-+
-+  int min_pipe, max_pipe;
-+  if ((bits & TILE_BUNDLE_Y_ENCODING_MASK) == 0)
-+  {
-+    min_pipe = TILE_PIPELINE_X0;
-+    max_pipe = TILE_PIPELINE_X1;
-+  }
-+  else
-+  {
-+    min_pipe = TILE_PIPELINE_Y0;
-+    max_pipe = TILE_PIPELINE_Y2;
-+  }
-+
-+  /* For each pipe, find an instruction that fits. */
-+  for (pipe = min_pipe; pipe <= max_pipe; pipe++)
-+  {
-+    const struct tile_opcode *opc;
-+    struct tile_decoded_instruction *d;
-+    int i;
-+
-+    d = &decoded[num_instructions++];
-+    opc = find_opcode (bits, tile_bundle_decoder_fsms[pipe]);
-+    d->opcode = opc;
-+
-+    /* Decode each operand, sign extending, etc. as appropriate. */
-+    for (i = 0; i < opc->num_operands; i++)
-+    {
-+      const struct tile_operand *op =
-+        &tile_operands[opc->operands[pipe][i]];
-+      int opval = op->extract (bits);
-+      if (op->is_signed)
-+      {
-+        /* Sign-extend the operand. */
-+        int shift = (int)((sizeof(int) * 8) - op->num_bits);
-+        opval = (opval << shift) >> shift;
-+      }
-+
-+      /* Adjust PC-relative scaled branch offsets. */
-+      if (op->type == TILE_OP_TYPE_ADDRESS)
-+      {
-+        opval *= TILE_BUNDLE_SIZE_IN_BYTES;
-+        opval += (int)pc;
-+      }
-+
-+      /* Record the final value. */
-+      d->operands[i] = op;
-+      d->operand_values[i] = opval;
-+    }
-+  }
-+
-+  return num_instructions;
++	printk("noatomichash is deprecated.\n");
++	return 1;
 +}
++__setup("noatomichash", noatomichash);
++#endif
++
++void __init __init_atomic_per_cpu(void)
++{
++#if ATOMIC_LOCKS_FOUND_VIA_TABLE()
++
++	unsigned int i;
++	int actual_cpu;
++
++	/*
++	 * Before this is called from setup, we just have one lock for
++	 * all atomic objects/operations.  Here we replace the
++	 * elements of atomic_lock_ptr so that they point at per_cpu
++	 * integers.  This seemingly over-complex approach stems from
++	 * the fact that DEFINE_PER_CPU defines an entry for each cpu
++	 * in the grid, not each cpu from 0..ATOMIC_HASH_SIZE-1.  But
++	 * for efficient hashing of atomics to their locks we want a
++	 * compile time constant power of 2 for the size of this
++	 * table, so we use ATOMIC_HASH_SIZE.
++	 *
++	 * Here we populate atomic_lock_ptr from the per cpu
++	 * atomic_lock_pool, interspersing by actual cpu so that
++	 * subsequent elements are homed on consecutive cpus.
++	 */
++
++	actual_cpu = cpumask_first(cpu_possible_mask);
++
++	for (i = 0; i < ATOMIC_HASH_L1_SIZE; ++i) {
++		/*
++		 * Preincrement to slightly bias against using cpu 0,
++		 * which has plenty of stuff homed on it already.
++		 */
++		actual_cpu = cpumask_next(actual_cpu, cpu_possible_mask);
++		if (actual_cpu >= nr_cpu_ids)
++			actual_cpu = cpumask_first(cpu_possible_mask);
++
++		atomic_lock_ptr[i] = &per_cpu(atomic_lock_pool, actual_cpu);
++	}
++
++#else /* ATOMIC_LOCKS_FOUND_VIA_TABLE() */
++
++	/* Validate power-of-two and "bigger than cpus" assumption */
++	BUG_ON(ATOMIC_HASH_SIZE & (ATOMIC_HASH_SIZE-1));
++	BUG_ON(ATOMIC_HASH_SIZE < nr_cpu_ids);
++
++	/*
++	 * On TILEPro we prefer to use a single hash-for-home
++	 * page, since this means atomic operations are less
++	 * likely to encounter a TLB fault and thus should
++	 * in general perform faster.  You may wish to disable
++	 * this in situations where few hash-for-home tiles
++	 * are configured.
++	 */
++	BUG_ON((unsigned long)atomic_locks % PAGE_SIZE != 0);
++
++	/* The locks must all fit on one page. */
++	BUG_ON(ATOMIC_HASH_SIZE * sizeof(int) > PAGE_SIZE);
++
++	/*
++	 * We use the page offset of the atomic value's address as
++	 * an index into atomic_locks, excluding the low 3 bits.
++	 * That should not produce more indices than ATOMIC_HASH_SIZE.
++	 */
++	BUG_ON((PAGE_SIZE >> 3) > ATOMIC_HASH_SIZE);
++
++#endif /* ATOMIC_LOCKS_FOUND_VIA_TABLE() */
++
++	/* The futex code makes this assumption, so we validate it here. */
++	BUG_ON(sizeof(atomic_t) != sizeof(int));
++}
+diff --git a/arch/tile/lib/atomic_asm_32.S b/arch/tile/lib/atomic_asm_32.S
+new file mode 100644
+index 0000000..c0d0585
+--- /dev/null
++++ b/arch/tile/lib/atomic_asm_32.S
+@@ -0,0 +1,197 @@
++/*
++ * Copyright 2010 Tilera Corporation. All Rights Reserved.
++ *
++ *   This program is free software; you can redistribute it and/or
++ *   modify it under the terms of the GNU General Public License
++ *   as published by the Free Software Foundation, version 2.
++ *
++ *   This program is distributed in the hope that it will be useful, but
++ *   WITHOUT ANY WARRANTY; without even the implied warranty of
++ *   MERCHANTABILITY OR FITNESS FOR A PARTICULAR PURPOSE, GOOD TITLE or
++ *   NON INFRINGEMENT.  See the GNU General Public License for
++ *   more details.
++ *
++ * Support routines for atomic operations.  Each function takes:
++ *
++ * r0: address to manipulate
++ * r1: pointer to atomic lock guarding this operation (for FUTEX_LOCK_REG)
++ * r2: new value to write, or for cmpxchg/add_unless, value to compare against
++ * r3: (cmpxchg/xchg_add_unless) new value to write or add;
++ *     (atomic64 ops) high word of value to write
++ * r4/r5: (cmpxchg64/add_unless64) new value to write or add
++ *
++ * The 32-bit routines return a "struct __get_user" so that the futex code
++ * has an opportunity to return -EFAULT to the user if needed.
++ * The 64-bit routines just return a "long long" with the value,
++ * since they are only used from kernel space and don't expect to fault.
++ * Support for 16-bit ops is included in the framework but we don't provide
++ * any (x86_64 has an atomic_inc_short(), so we might want to some day).
++ *
++ * Note that the caller is advised to issue a suitable L1 or L2
++ * prefetch on the address being manipulated to avoid extra stalls.
++ * In addition, the hot path is on two icache lines, and we start with
++ * a jump to the second line to make sure they are both in cache so
++ * that we never stall waiting on icache fill while holding the lock.
++ * (This doesn't work out with most 64-bit ops, since they consume
++ * too many bundles, so may take an extra i-cache stall.)
++ *
++ * These routines set the INTERRUPT_CRITICAL_SECTION bit, just
++ * like sys_cmpxchg(), so that NMIs like PERF_COUNT will not interrupt
++ * the code, just page faults.
++ *
++ * If the load or store faults in a way that can be directly fixed in
++ * the do_page_fault_ics() handler (e.g. a vmalloc reference) we fix it
++ * directly, return to the instruction that faulted, and retry it.
++ *
++ * If the load or store faults in a way that potentially requires us
++ * to release the atomic lock, then retry (e.g. a migrating PTE), we
++ * reset the PC in do_page_fault_ics() to the "tns" instruction so
++ * that on return we will reacquire the lock and restart the op.  We
++ * are somewhat overloading the exception_table_entry notion by doing
++ * this, since those entries are not normally used for migrating PTEs.
++ *
++ * If the main page fault handler discovers a bad address, it will see
++ * the PC pointing to the "tns" instruction (due to the earlier
++ * exception_table_entry processing in do_page_fault_ics), and
++ * re-reset the PC to the fault handler, atomic_bad_address(), which
++ * effectively takes over from the atomic op and can either return a
++ * bad "struct __get_user" (for user addresses) or can just panic (for
++ * bad kernel addresses).
++ *
++ * Note that if the value we would store is the same as what we
++ * loaded, we bypass the load.  Other platforms with true atomics can
++ * make the guarantee that a non-atomic __clear_bit(), for example,
++ * can safely race with an atomic test_and_set_bit(); this example is
++ * from bit_spinlock.h in slub_lock() / slub_unlock().  We can't do
++ * that on Tile since the "atomic" op is really just a
++ * read/modify/write, and can race with the non-atomic
++ * read/modify/write.  However, if we can short-circuit the write when
++ * it is not needed, in the atomic case, we avoid the race.
++ */
++
++#include <linux/linkage.h>
++#include <asm/atomic.h>
++#include <asm/page.h>
++#include <asm/processor.h>
++
++	.section .text.atomic,"ax"
++ENTRY(__start_atomic_asm_code)
++
++	.macro  atomic_op, name, bitwidth, body
++	.align  64
++STD_ENTRY_SECTION(__atomic\name, .text.atomic)
++	{
++	 movei  r24, 1
++	 j      4f		/* branch to second cache line */
++	}
++1:	{
++	 .ifc \bitwidth,16
++	 lh     r22, r0
++	 .else
++	 lw     r22, r0
++	 addi   r23, r0, 4
++	 .endif
++	}
++	.ifc \bitwidth,64
++	lw      r23, r23
++	.endif
++	\body /* set r24, and r25 if 64-bit */
++	{
++	 seq    r26, r22, r24
++	 seq    r27, r23, r25
++	}
++	.ifc \bitwidth,64
++	bbnst   r27, 2f
++	.endif
++	bbs     r26, 3f		/* skip write-back if it's the same value */
++2:	{
++	 .ifc \bitwidth,16
++	 sh     r0, r24
++	 .else
++	 sw     r0, r24
++	 addi   r23, r0, 4
++	 .endif
++	}
++	.ifc \bitwidth,64
++	sw      r23, r25
++	.endif
++	mf
++3:	{
++	 move   r0, r22
++	 .ifc \bitwidth,64
++	 move   r1, r23
++	 .else
++	 move   r1, zero
++	 .endif
++	 sw     ATOMIC_LOCK_REG_NAME, zero
++	}
++	mtspr   INTERRUPT_CRITICAL_SECTION, zero
++	jrp     lr
++4:	{
++	 move   ATOMIC_LOCK_REG_NAME, r1
++	 mtspr  INTERRUPT_CRITICAL_SECTION, r24
++	}
++#ifndef CONFIG_SMP
++	j       1b		/* no atomic locks */
++#else
++	{
++	 tns    r21, ATOMIC_LOCK_REG_NAME
++	 moveli r23, 2048       /* maximum backoff time in cycles */
++	}
++	{
++	 bzt    r21, 1b		/* branch if lock acquired */
++	 moveli r25, 32         /* starting backoff time in cycles */
++	}
++5:	mtspr   INTERRUPT_CRITICAL_SECTION, zero
++	mfspr   r26, CYCLE_LOW  /* get start point for this backoff */
++6:	mfspr   r22, CYCLE_LOW  /* test to see if we've backed off enough */
++	sub     r22, r22, r26
++	slt     r22, r22, r25
++	bbst    r22, 6b
++	{
++	 mtspr  INTERRUPT_CRITICAL_SECTION, r24
++	 shli   r25, r25, 1     /* double the backoff; retry the tns */
++	}
++	{
++	 tns    r21, ATOMIC_LOCK_REG_NAME
++	 slt    r26, r23, r25   /* is the proposed backoff too big? */
++	}
++	{
++	 bzt    r21, 1b		/* branch if lock acquired */
++	 mvnz   r25, r26, r23
++	}
++	j       5b
++#endif
++	STD_ENDPROC(__atomic\name)
++	.ifc \bitwidth,32
++	.pushsection __ex_table,"a"
++	.word   1b, __atomic\name
++	.word   2b, __atomic\name
++	.word   __atomic\name, __atomic_bad_address
++	.popsection
++	.endif
++	.endm
++
++atomic_op _cmpxchg, 32, "seq r26, r22, r2; { bbns r26, 3f; move r24, r3 }"
++atomic_op _xchg, 32, "move r24, r2"
++atomic_op _xchg_add, 32, "add r24, r22, r2"
++atomic_op _xchg_add_unless, 32, \
++	"sne r26, r22, r2; { bbns r26, 3f; add r24, r22, r3 }"
++atomic_op _or, 32, "or r24, r22, r2"
++atomic_op _andn, 32, "nor r2, r2, zero; and r24, r22, r2"
++atomic_op _xor, 32, "xor r24, r22, r2"
++
++atomic_op 64_cmpxchg, 64, "{ seq r26, r22, r2; seq r27, r23, r3 }; \
++	{ bbns r26, 3f; move r24, r4 }; { bbns r27, 3f; move r25, r5 }"
++atomic_op 64_xchg, 64, "{ move r24, r2; move r25, r3 }"
++atomic_op 64_xchg_add, 64, "{ add r24, r22, r2; add r25, r23, r3 }; \
++	slt_u r26, r24, r22; add r25, r25, r26"
++atomic_op 64_xchg_add_unless, 64, \
++	"{ sne r26, r22, r2; sne r27, r23, r3 }; \
++	{ bbns r26, 3f; add r24, r22, r4 }; \
++	{ bbns r27, 3f; add r25, r23, r5 }; \
++	slt_u r26, r24, r22; add r25, r25, r26"
++
++	jrp     lr              /* happy backtracer */
++
++ENTRY(__end_atomic_asm_code)
+diff --git a/arch/tile/lib/checksum.c b/arch/tile/lib/checksum.c
+new file mode 100644
+index 0000000..e4bab5b
+--- /dev/null
++++ b/arch/tile/lib/checksum.c
+@@ -0,0 +1,102 @@
++/*
++ * Copyright 2010 Tilera Corporation. All Rights Reserved.
++ *
++ *   This program is free software; you can redistribute it and/or
++ *   modify it under the terms of the GNU General Public License
++ *   as published by the Free Software Foundation, version 2.
++ *
++ *   This program is distributed in the hope that it will be useful, but
++ *   WITHOUT ANY WARRANTY; without even the implied warranty of
++ *   MERCHANTABILITY OR FITNESS FOR A PARTICULAR PURPOSE, GOOD TITLE or
++ *   NON INFRINGEMENT.  See the GNU General Public License for
++ *   more details.
++ * Support code for the main lib/checksum.c.
++ */
++
++#include <net/checksum.h>
++#include <linux/module.h>
++
++static inline unsigned int longto16(unsigned long x)
++{
++	unsigned long ret;
++#ifdef __tilegx__
++	ret = __insn_v2sadu(x, 0);
++	ret = __insn_v2sadu(ret, 0);
++#else
++	ret = __insn_sadh_u(x, 0);
++	ret = __insn_sadh_u(ret, 0);
++#endif
++	return ret;
++}
++
++__wsum do_csum(const unsigned char *buff, int len)
++{
++	int odd, count;
++	unsigned long result = 0;
++
++	if (len <= 0)
++		goto out;
++	odd = 1 & (unsigned long) buff;
++	if (odd) {
++		result = (*buff << 8);
++		len--;
++		buff++;
++	}
++	count = len >> 1;		/* nr of 16-bit words.. */
++	if (count) {
++		if (2 & (unsigned long) buff) {
++			result += *(const unsigned short *)buff;
++			count--;
++			len -= 2;
++			buff += 2;
++		}
++		count >>= 1;		/* nr of 32-bit words.. */
++		if (count) {
++#ifdef __tilegx__
++			if (4 & (unsigned long) buff) {
++				unsigned int w = *(const unsigned int *)buff;
++				result = __insn_v2sadau(result, w, 0);
++				count--;
++				len -= 4;
++				buff += 4;
++			}
++			count >>= 1;		/* nr of 64-bit words.. */
++#endif
++
++			/*
++			 * This algorithm could wrap around for very
++			 * large buffers, but those should be impossible.
++			 */
++			BUG_ON(count >= 65530);
++
++			while (count) {
++				unsigned long w = *(const unsigned long *)buff;
++				count--;
++				buff += sizeof(w);
++#ifdef __tilegx__
++				result = __insn_v2sadau(result, w, 0);
++#else
++				result = __insn_sadah_u(result, w, 0);
++#endif
++			}
++#ifdef __tilegx__
++			if (len & 4) {
++				unsigned int w = *(const unsigned int *)buff;
++				result = __insn_v2sadau(result, w, 0);
++				buff += 4;
++			}
++#endif
++		}
++		if (len & 2) {
++			result += *(const unsigned short *) buff;
++			buff += 2;
++		}
++	}
++	if (len & 1)
++		result += *buff;
++	result = longto16(result);
++	if (odd)
++		result = swab16(result);
++out:
++	return result;
++}
+diff --git a/arch/tile/lib/cpumask.c b/arch/tile/lib/cpumask.c
+new file mode 100644
+index 0000000..af745b3
+--- /dev/null
++++ b/arch/tile/lib/cpumask.c
+@@ -0,0 +1,51 @@
++/*
++ * Copyright 2010 Tilera Corporation. All Rights Reserved.
++ *
++ *   This program is free software; you can redistribute it and/or
++ *   modify it under the terms of the GNU General Public License
++ *   as published by the Free Software Foundation, version 2.
++ *
++ *   This program is distributed in the hope that it will be useful, but
++ *   WITHOUT ANY WARRANTY; without even the implied warranty of
++ *   MERCHANTABILITY OR FITNESS FOR A PARTICULAR PURPOSE, GOOD TITLE or
++ *   NON INFRINGEMENT.  See the GNU General Public License for
++ *   more details.
++ */
++
++#include <linux/cpumask.h>
++#include <linux/ctype.h>
++#include <linux/errno.h>
++
++/*
++ * Allow cropping out bits beyond the end of the array.
++ * Move to "lib" directory if more clients want to use this routine.
++ */
++int bitmap_parselist_crop(const char *bp, unsigned long *maskp, int nmaskbits)
++{
++	unsigned a, b;
++
++	bitmap_zero(maskp, nmaskbits);
++	do {
++		if (!isdigit(*bp))
++			return -EINVAL;
++		a = simple_strtoul(bp, (char **)&bp, 10);
++		b = a;
++		if (*bp == '-') {
++			bp++;
++			if (!isdigit(*bp))
++				return -EINVAL;
++			b = simple_strtoul(bp, (char **)&bp, 10);
++		}
++		if (!(a <= b))
++			return -EINVAL;
++		if (b >= nmaskbits)
++			b = nmaskbits-1;
++		while (a <= b) {
++			set_bit(a, maskp);
++			a++;
++		}
++		if (*bp == ',')
++			bp++;
++	} while (*bp != '\0' && *bp != '\n');
++	return 0;
++}
+diff --git a/arch/tile/lib/delay.c b/arch/tile/lib/delay.c
+new file mode 100644
+index 0000000..5801b03
+--- /dev/null
++++ b/arch/tile/lib/delay.c
+@@ -0,0 +1,34 @@
++/*
++ * Copyright 2010 Tilera Corporation. All Rights Reserved.
++ *
++ *   This program is free software; you can redistribute it and/or
++ *   modify it under the terms of the GNU General Public License
++ *   as published by the Free Software Foundation, version 2.
++ *
++ *   This program is distributed in the hope that it will be useful, but
++ *   WITHOUT ANY WARRANTY; without even the implied warranty of
++ *   MERCHANTABILITY OR FITNESS FOR A PARTICULAR PURPOSE, GOOD TITLE or
++ *   NON INFRINGEMENT.  See the GNU General Public License for
++ *   more details.
++ */
++
++#include <linux/module.h>
++#include <linux/delay.h>
++#include <linux/thread_info.h>
++#include <asm/fixmap.h>
++#include <hv/hypervisor.h>
++
++void __udelay(unsigned long usecs)
++{
++	hv_nanosleep(usecs * 1000);
++}
++EXPORT_SYMBOL(__udelay);
++
++void __ndelay(unsigned long nsecs)
++{
++	hv_nanosleep(nsecs);
++}
++EXPORT_SYMBOL(__ndelay);
++
++/* FIXME: should be declared in a header somewhere. */
++EXPORT_SYMBOL(__delay);
+diff --git a/arch/tile/lib/exports.c b/arch/tile/lib/exports.c
+new file mode 100644
+index 0000000..af8e70e
+--- /dev/null
++++ b/arch/tile/lib/exports.c
+@@ -0,0 +1,78 @@
++/*
++ * Copyright 2010 Tilera Corporation. All Rights Reserved.
++ *
++ *   This program is free software; you can redistribute it and/or
++ *   modify it under the terms of the GNU General Public License
++ *   as published by the Free Software Foundation, version 2.
++ *
++ *   This program is distributed in the hope that it will be useful, but
++ *   WITHOUT ANY WARRANTY; without even the implied warranty of
++ *   MERCHANTABILITY OR FITNESS FOR A PARTICULAR PURPOSE, GOOD TITLE or
++ *   NON INFRINGEMENT.  See the GNU General Public License for
++ *   more details.
++ *
++ * Exports from assembler code and from libtile-cc.
++ */
++
++#include <linux/module.h>
++
++/* arch/tile/lib/usercopy.S */
++#include <linux/uaccess.h>
++EXPORT_SYMBOL(__get_user_1);
++EXPORT_SYMBOL(__get_user_2);
++EXPORT_SYMBOL(__get_user_4);
++EXPORT_SYMBOL(__put_user_1);
++EXPORT_SYMBOL(__put_user_2);
++EXPORT_SYMBOL(__put_user_4);
++EXPORT_SYMBOL(__put_user_8);
++EXPORT_SYMBOL(strnlen_user_asm);
++EXPORT_SYMBOL(strncpy_from_user_asm);
++EXPORT_SYMBOL(clear_user_asm);
++
++/* arch/tile/kernel/entry.S */
++#include <linux/kernel.h>
++#include <asm/processor.h>
++EXPORT_SYMBOL(current_text_addr);
++EXPORT_SYMBOL(dump_stack);
++
++/* arch/tile/lib/__memcpy.S */
++/* NOTE: on TILE64, these symbols appear in arch/tile/lib/memcpy_tile64.c */
++EXPORT_SYMBOL(memcpy);
++EXPORT_SYMBOL(__copy_to_user_inatomic);
++EXPORT_SYMBOL(__copy_from_user_inatomic);
++EXPORT_SYMBOL(__copy_from_user_zeroing);
++
++/* hypervisor glue */
++#include <hv/hypervisor.h>
++EXPORT_SYMBOL(hv_dev_open);
++EXPORT_SYMBOL(hv_dev_pread);
++EXPORT_SYMBOL(hv_dev_pwrite);
++EXPORT_SYMBOL(hv_dev_close);
++
++/* -ltile-cc */
++uint32_t __udivsi3(uint32_t dividend, uint32_t divisor);
++EXPORT_SYMBOL(__udivsi3);
++int32_t __divsi3(int32_t dividend, int32_t divisor);
++EXPORT_SYMBOL(__divsi3);
++uint64_t __udivdi3(uint64_t dividend, uint64_t divisor);
++EXPORT_SYMBOL(__udivdi3);
++int64_t __divdi3(int64_t dividend, int64_t divisor);
++EXPORT_SYMBOL(__divdi3);
++uint32_t __umodsi3(uint32_t dividend, uint32_t divisor);
++EXPORT_SYMBOL(__umodsi3);
++int32_t __modsi3(int32_t dividend, int32_t divisor);
++EXPORT_SYMBOL(__modsi3);
++uint64_t __umoddi3(uint64_t dividend, uint64_t divisor);
++EXPORT_SYMBOL(__umoddi3);
++int64_t __moddi3(int64_t dividend, int64_t divisor);
++EXPORT_SYMBOL(__moddi3);
++#ifndef __tilegx__
++uint64_t __ll_mul(uint64_t n0, uint64_t n1);
++EXPORT_SYMBOL(__ll_mul);
++#endif
++#ifndef __tilegx__
++int64_t __muldi3(int64_t, int64_t);
++EXPORT_SYMBOL(__muldi3);
++uint64_t __lshrdi3(uint64_t, unsigned int);
++EXPORT_SYMBOL(__lshrdi3);
++#endif
+diff --git a/arch/tile/lib/mb_incoherent.S b/arch/tile/lib/mb_incoherent.S
+new file mode 100644
+index 0000000..989ad7b
+--- /dev/null
++++ b/arch/tile/lib/mb_incoherent.S
+@@ -0,0 +1,34 @@
++/*
++ * Copyright 2010 Tilera Corporation. All Rights Reserved.
++ *
++ *   This program is free software; you can redistribute it and/or
++ *   modify it under the terms of the GNU General Public License
++ *   as published by the Free Software Foundation, version 2.
++ *
++ *   This program is distributed in the hope that it will be useful, but
++ *   WITHOUT ANY WARRANTY; without even the implied warranty of
++ *   MERCHANTABILITY OR FITNESS FOR A PARTICULAR PURPOSE, GOOD TITLE or
++ *   NON INFRINGEMENT.  See the GNU General Public License for
++ *   more details.
++ *
++ * Assembly code for invoking the HV's fence_incoherent syscall.
++ */
++
++#include <linux/linkage.h>
++#include <hv/syscall_public.h>
++#include <arch/abi.h>
++#include <arch/chip.h>
++
++#if !CHIP_HAS_MF_WAITS_FOR_VICTIMS()
++
++/*
++ * Invoke the hypervisor's fence_incoherent syscall, which guarantees
++ * that all victims for cachelines homed on this tile have reached memory.
++ */
++STD_ENTRY(__mb_incoherent)
++	moveli TREG_SYSCALL_NR_NAME, HV_SYS_fence_incoherent
++	swint2
++	jrp lr
++	STD_ENDPROC(__mb_incoherent)
++
++#endif
+diff --git a/arch/tile/lib/memchr_32.c b/arch/tile/lib/memchr_32.c
+new file mode 100644
+index 0000000..6235283
+--- /dev/null
++++ b/arch/tile/lib/memchr_32.c
+@@ -0,0 +1,68 @@
++/*
++ * Copyright 2010 Tilera Corporation. All Rights Reserved.
++ *
++ *   This program is free software; you can redistribute it and/or
++ *   modify it under the terms of the GNU General Public License
++ *   as published by the Free Software Foundation, version 2.
++ *
++ *   This program is distributed in the hope that it will be useful, but
++ *   WITHOUT ANY WARRANTY; without even the implied warranty of
++ *   MERCHANTABILITY OR FITNESS FOR A PARTICULAR PURPOSE, GOOD TITLE or
++ *   NON INFRINGEMENT.  See the GNU General Public License for
++ *   more details.
++ */
++
++#include <linux/types.h>
++#include <linux/string.h>
++#include <linux/module.h>
++
++void *memchr(const void *s, int c, size_t n)
++{
++	/* Get an aligned pointer. */
++	const uintptr_t s_int = (uintptr_t) s;
++	const uint32_t *p = (const uint32_t *)(s_int & -4);
++
++	/* Create four copies of the byte for which we are looking. */
++	const uint32_t goal = 0x01010101 * (uint8_t) c;
++
++	/* Read the first word, but munge it so that bytes before the array
++	 * will not match goal.
++	 *
++	 * Note that this shift count expression works because we know
++	 * shift counts are taken mod 32.
++	 */
++	const uint32_t before_mask = (1 << (s_int << 3)) - 1;
++	uint32_t v = (*p | before_mask) ^ (goal & before_mask);
++
++	/* Compute the address of the last byte. */
++	const char *const last_byte_ptr = (const char *)s + n - 1;
++
++	/* Compute the address of the word containing the last byte. */
++	const uint32_t *const last_word_ptr =
++	    (const uint32_t *)((uintptr_t) last_byte_ptr & -4);
++
++	uint32_t bits;
++	char *ret;
++
++	if (__builtin_expect(n == 0, 0)) {
++		/* Don't dereference any memory if the array is empty. */
++		return NULL;
++	}
++
++	while ((bits = __insn_seqb(v, goal)) == 0) {
++		if (__builtin_expect(p == last_word_ptr, 0)) {
++			/* We already read the last word in the array,
++			 * so give up.
++			 */
++			return NULL;
++		}
++		v = *++p;
++	}
++
++	/* We found a match, but it might be in a byte past the end
++	 * of the array.
++	 */
++	ret = ((char *)p) + (__insn_ctz(bits) >> 3);
++	return (ret <= last_byte_ptr) ? ret : NULL;
++}
++EXPORT_SYMBOL(memchr);
+diff --git a/arch/tile/lib/memcpy_32.S b/arch/tile/lib/memcpy_32.S
+new file mode 100644
+index 0000000..f92984b
+--- /dev/null
++++ b/arch/tile/lib/memcpy_32.S
+@@ -0,0 +1,628 @@
++/*
++ * Copyright 2010 Tilera Corporation. All Rights Reserved.
++ *
++ *   This program is free software; you can redistribute it and/or
++ *   modify it under the terms of the GNU General Public License
++ *   as published by the Free Software Foundation, version 2.
++ *
++ *   This program is distributed in the hope that it will be useful, but
++ *   WITHOUT ANY WARRANTY; without even the implied warranty of
++ *   MERCHANTABILITY OR FITNESS FOR A PARTICULAR PURPOSE, GOOD TITLE or
++ *   NON INFRINGEMENT.  See the GNU General Public License for
++ *   more details.
++ *
++ * This file shares the implementation of the userspace memcpy and
++ * the kernel's memcpy, copy_to_user and copy_from_user.
++ */
++
++#include <arch/chip.h>
++
++#if CHIP_HAS_WH64() || defined(MEMCPY_TEST_WH64)
++#define MEMCPY_USE_WH64
++#endif
++
++
++#include <linux/linkage.h>
++
++/* On TILE64, we wrap these functions via arch/tile/lib/memcpy_tile64.c */
++#if !CHIP_HAS_COHERENT_LOCAL_CACHE()
++#define memcpy __memcpy_asm
++#define __copy_to_user_inatomic __copy_to_user_inatomic_asm
++#define __copy_from_user_inatomic __copy_from_user_inatomic_asm
++#define __copy_from_user_zeroing __copy_from_user_zeroing_asm
++#endif
++
++#define IS_MEMCPY	  0
++#define IS_COPY_FROM_USER  1
++#define IS_COPY_FROM_USER_ZEROING  2
++#define IS_COPY_TO_USER   -1
++
++	.section .text.memcpy_common, "ax"
++	.align 64
++
++/* Use this to preface each bundle that can cause an exception so
++ * the kernel can clean up properly. The special cleanup code should
++ * not use these, since it knows what it is doing.
++ */
++#define EX \
++	.pushsection __ex_table, "a"; \
++	.word 9f, memcpy_common_fixup; \
++	.popsection; \
++	9
++
++
++/* __copy_from_user_inatomic takes the kernel target address in r0,
++ * the user source in r1, and the bytes to copy in r2.
++ * It returns the number of uncopiable bytes (hopefully zero) in r0.
++ */
++ENTRY(__copy_from_user_inatomic)
++.type __copy_from_user_inatomic, @function
++        FEEDBACK_ENTER_EXPLICIT(__copy_from_user_inatomic, \
++	  .text.memcpy_common, \
++          .Lend_memcpy_common - __copy_from_user_inatomic)
++	{ movei r29, IS_COPY_FROM_USER; j memcpy_common }
++	.size __copy_from_user_inatomic, . - __copy_from_user_inatomic
++
++/* __copy_from_user_zeroing is like __copy_from_user_inatomic, but
++ * any uncopiable bytes are zeroed in the target.
++ */
++ENTRY(__copy_from_user_zeroing)
++.type __copy_from_user_zeroing, @function
++        FEEDBACK_REENTER(__copy_from_user_inatomic)
++	{ movei r29, IS_COPY_FROM_USER_ZEROING; j memcpy_common }
++	.size __copy_from_user_zeroing, . - __copy_from_user_zeroing
++
++/* __copy_to_user_inatomic takes the user target address in r0,
++ * the kernel source in r1, and the bytes to copy in r2.
++ * It returns the number of uncopiable bytes (hopefully zero) in r0.
++ */
++ENTRY(__copy_to_user_inatomic)
++.type __copy_to_user_inatomic, @function
++        FEEDBACK_REENTER(__copy_from_user_inatomic)
++	{ movei r29, IS_COPY_TO_USER; j memcpy_common }
++	.size __copy_to_user_inatomic, . - __copy_to_user_inatomic
++
++ENTRY(memcpy)
++.type memcpy, @function
++        FEEDBACK_REENTER(__copy_from_user_inatomic)
++	{ movei r29, IS_MEMCPY }
++	.size memcpy, . - memcpy
++	/* Fall through */
++
++	.type memcpy_common, @function
++memcpy_common:
++	/* On entry, r29 holds one of the IS_* macro values from above. */
++
++
++	/* r0 is the dest, r1 is the source, r2 is the size. */
++
++	/* Save aside original dest so we can return it at the end. */
++	{ sw sp, lr; move r23, r0; or r4, r0, r1 }
++
++	/* Check for an empty size. */
++	{ bz r2, .Ldone; andi r4, r4, 3 }
++
++	/* Save aside original values in case of a fault. */
++	{ move r24, r1; move r25, r2 }
++	move r27, lr
++
++	/* Check for an unaligned source or dest. */
++	{ bnz r4, .Lcopy_unaligned_maybe_many; addli r4, r2, -256 }
++
++.Lcheck_aligned_copy_size:
++	/* If we are copying < 256 bytes, branch to simple case. */
++	{ blzt r4, .Lcopy_8_check; slti_u r8, r2, 8 }
++
++	/* Copying >= 256 bytes, so jump to complex prefetching loop. */
++	{ andi r6, r1, 63; j .Lcopy_many }
++
++/*
++ *
++ * Aligned 4 byte at a time copy loop
++ *
++ */
++
++.Lcopy_8_loop:
++	/* Copy two words at a time to hide load latency. */
++EX:	{ lw r3, r1; addi r1, r1, 4; slti_u r8, r2, 16 }
++EX:	{ lw r4, r1; addi r1, r1, 4 }
++EX:	{ sw r0, r3; addi r0, r0, 4; addi r2, r2, -4 }
++EX:	{ sw r0, r4; addi r0, r0, 4; addi r2, r2, -4 }
++.Lcopy_8_check:
++	{ bzt r8, .Lcopy_8_loop; slti_u r4, r2, 4 }
++
++	/* Copy odd leftover word, if any. */
++	{ bnzt r4, .Lcheck_odd_stragglers }
++EX:	{ lw r3, r1; addi r1, r1, 4 }
++EX:	{ sw r0, r3; addi r0, r0, 4; addi r2, r2, -4 }
++
++.Lcheck_odd_stragglers:
++	{ bnz r2, .Lcopy_unaligned_few }
++
++.Ldone:
++	/* For memcpy return original dest address, else zero. */
++	{ mz r0, r29, r23; jrp lr }
++
++
++/*
++ *
++ * Prefetching multiple cache line copy handler (for large transfers).
++ *
++ */
++
++	/* Copy words until r1 is cache-line-aligned. */
++.Lalign_loop:
++EX:	{ lw r3, r1; addi r1, r1, 4 }
++	{ andi r6, r1, 63 }
++EX:	{ sw r0, r3; addi r0, r0, 4; addi r2, r2, -4 }
++.Lcopy_many:
++	{ bnzt r6, .Lalign_loop; addi r9, r0, 63 }
++
++	{ addi r3, r1, 60; andi r9, r9, -64 }
++
++#ifdef MEMCPY_USE_WH64
++        /* No need to prefetch dst, we'll just do the wh64
++         * right before we copy a line.
++	 */
++#endif
++
++EX:	{ lw r5, r3; addi r3, r3, 64; movei r4, 1 }
++        /* Intentionally stall for a few cycles to leave L2 cache alone. */
++        { bnzt zero, .; move r27, lr }
++EX:	{ lw r6, r3; addi r3, r3, 64 }
++        /* Intentionally stall for a few cycles to leave L2 cache alone. */
++        { bnzt zero, . }
++EX:	{ lw r7, r3; addi r3, r3, 64 }
++#ifndef MEMCPY_USE_WH64
++        /* Prefetch the dest */
++        /* Intentionally stall for a few cycles to leave L2 cache alone. */
++        { bnzt zero, . }
++        /* Use a real load to cause a TLB miss if necessary.  We aren't using
++         * r28, so this should be fine.
++         */
++EX:	{ lw r28, r9; addi r9, r9, 64 }
++        /* Intentionally stall for a few cycles to leave L2 cache alone. */
++        { bnzt zero, . }
++        { prefetch r9; addi r9, r9, 64 }
++        /* Intentionally stall for a few cycles to leave L2 cache alone. */
++        { bnzt zero, . }
++        { prefetch r9; addi r9, r9, 64 }
++#endif
++        /* Intentionally stall for a few cycles to leave L2 cache alone. */
++        { bz zero, .Lbig_loop2 }
++
++	/* On entry to this loop:
++	 * - r0 points to the start of dst line 0
++	 * - r1 points to start of src line 0
++	 * - r2 >= (256 - 60), only the first time the loop trips.
++	 * - r3 contains r1 + 128 + 60    [pointer to end of source line 2]
++	 *   This is our prefetch address. When we get near the end
++	 *   rather than prefetching off the end this is changed to point
++	 *   to some "safe" recently loaded address.
++	 * - r5 contains *(r1 + 60)       [i.e. last word of source line 0]
++	 * - r6 contains *(r1 + 64 + 60)  [i.e. last word of source line 1]
++         * - r9 contains ((r0 + 63) & -64)
++	 *     [start of next dst cache line.]
++	 */
++
++.Lbig_loop:
++	{ jal .Lcopy_line2; add r15, r1, r2 }
++
++.Lbig_loop2:
++	/* Copy line 0, first stalling until r5 is ready. */
++EX:	{ move r12, r5; lw r16, r1 }
++	{ bz r4, .Lcopy_8_check; slti_u r8, r2, 8 }
++        /* Prefetch several lines ahead. */
++EX:	{ lw r5, r3; addi r3, r3, 64 }
++        { jal .Lcopy_line }
++
++	/* Copy line 1, first stalling until r6 is ready. */
++EX:	{ move r12, r6; lw r16, r1 }
++	{ bz r4, .Lcopy_8_check; slti_u r8, r2, 8 }
++        /* Prefetch several lines ahead. */
++EX:	{ lw r6, r3; addi r3, r3, 64 }
++	{ jal .Lcopy_line }
++
++	/* Copy line 2, first stalling until r7 is ready. */
++EX:	{ move r12, r7; lw r16, r1 }
++	{ bz r4, .Lcopy_8_check; slti_u r8, r2, 8 }
++        /* Prefetch several lines ahead. */
++EX:	{ lw r7, r3; addi r3, r3, 64 }
++        /* Use up a caches-busy cycle by jumping back to the top of the
++         * loop. Might as well get it out of the way now.
++         */
++        { j .Lbig_loop }
++
++
++	/* On entry:
++	 * - r0 points to the destination line.
++	 * - r1 points to the source line.
++         * - r3 is the next prefetch address.
++	 * - r9 holds the last address used for wh64.
++	 * - r12 = WORD_15
++         * - r16 = WORD_0.
++         * - r17 == r1 + 16.
++         * - r27 holds saved lr to restore.
++	 *
++	 * On exit:
++	 * - r0 is incremented by 64.
++	 * - r1 is incremented by 64, unless that would point to a word
++         *   beyond the end of the source array, in which case it is redirected
++         *   to point to an arbitrary word already in the cache.
++	 * - r2 is decremented by 64.
++         * - r3 is unchanged, unless it points to a word beyond the
++         *   end of the source array, in which case it is redirected
++         *   to point to an arbitrary word already in the cache.
++         *   Redirecting is OK since if we are that close to the end
++         *   of the array we will not come back to this subroutine
++         *   and use the contents of the prefetched address.
++	 * - r4 is nonzero iff r2 >= 64.
++         * - r9 is incremented by 64, unless it points beyond the
++         *   end of the last full destination cache line, in which
++         *   case it is redirected to a "safe address" that can be
++         *   clobbered (sp - 64)
++	 * - lr contains the value in r27.
++	 */
++
++/* r26 unused */
++
++.Lcopy_line:
++        /* TODO: when r3 goes past the end, we would like to redirect it
++         * to prefetch the last partial cache line (if any) just once, for the
++         * benefit of the final cleanup loop. But we don't want to
++         * prefetch that line more than once, or subsequent prefetches
++         * will go into the RTF. But then .Lbig_loop should unconditionally
++         * branch to top of loop to execute final prefetch, and its
++         * nop should become a conditional branch.
++         */
++
++        /* We need two non-memory cycles here to cover the resources
++         * used by the loads initiated by the caller.
++         */
++        { add r15, r1, r2 }
++.Lcopy_line2:
++        { slt_u r13, r3, r15; addi r17, r1, 16 }
++
++        /* NOTE: this will stall for one cycle as L1 is busy. */
++
++        /* Fill second L1D line. */
++EX:	{ lw r17, r17; addi r1, r1, 48; mvz r3, r13, r1 } /* r17 = WORD_4 */
++
++#ifdef MEMCPY_TEST_WH64
++        /* Issue a fake wh64 that clobbers the destination words
++         * with random garbage, for testing.
++         */
++	{ movei r19, 64; crc32_32 r10, r2, r9 }
++.Lwh64_test_loop:
++EX:	{ sw r9, r10; addi r9, r9, 4; addi r19, r19, -4 }
++        { bnzt r19, .Lwh64_test_loop; crc32_32 r10, r10, r19 }
++#elif CHIP_HAS_WH64()
++        /* Prepare destination line for writing. */
++EX:	{ wh64 r9; addi r9, r9, 64 }
++#else
++        /* Prefetch dest line */
++	{ prefetch r9; addi r9, r9, 64 }
++#endif
++        /* Load seven words that are L1D hits to cover wh64 L2 usage. */
++
++        /* Load the three remaining words from the last L1D line, which
++         * we know has already filled the L1D.
++         */
++EX:	{ lw r4, r1;  addi r1, r1, 4;   addi r20, r1, 16 }   /* r4 = WORD_12 */
++EX:	{ lw r8, r1;  addi r1, r1, 4;   slt_u r13, r20, r15 }/* r8 = WORD_13 */
++EX:	{ lw r11, r1; addi r1, r1, -52; mvz r20, r13, r1 }  /* r11 = WORD_14 */
++
++        /* Load the three remaining words from the first L1D line, first
++         * stalling until it has filled by "looking at" r16.
++         */
++EX:	{ lw r13, r1; addi r1, r1, 4; move zero, r16 }   /* r13 = WORD_1 */
++EX:	{ lw r14, r1; addi r1, r1, 4 }                   /* r14 = WORD_2 */
++EX:	{ lw r15, r1; addi r1, r1, 8; addi r10, r0, 60 } /* r15 = WORD_3 */
++
++        /* Load second word from the second L1D line, first
++         * stalling until it has filled by "looking at" r17.
++         */
++EX:	{ lw r19, r1; addi r1, r1, 4; move zero, r17 }  /* r19 = WORD_5 */
++
++        /* Store last word to the destination line, potentially dirtying it
++         * for the first time, which keeps the L2 busy for two cycles.
++         */
++EX:	{ sw r10, r12 }                                 /* store(WORD_15) */
++
++        /* Use two L1D hits to cover the sw L2 access above. */
++EX:	{ lw r10, r1; addi r1, r1, 4 }                  /* r10 = WORD_6 */
++EX:	{ lw r12, r1; addi r1, r1, 4 }                  /* r12 = WORD_7 */
++
++        /* Fill third L1D line. */
++EX:	{ lw r18, r1; addi r1, r1, 4 }                  /* r18 = WORD_8 */
++
++        /* Store first L1D line. */
++EX:	{ sw r0, r16; addi r0, r0, 4; add r16, r0, r2 } /* store(WORD_0) */
++EX:	{ sw r0, r13; addi r0, r0, 4; andi r16, r16, -64 } /* store(WORD_1) */
++EX:	{ sw r0, r14; addi r0, r0, 4; slt_u r16, r9, r16 } /* store(WORD_2) */
++#ifdef MEMCPY_USE_WH64
++EX:	{ sw r0, r15; addi r0, r0, 4; addi r13, sp, -64 } /* store(WORD_3) */
++#else
++        /* Back up the r9 to a cache line we are already storing to
++	 * if it gets past the end of the dest vector.  Strictly speaking,
++	 * we don't need to back up to the start of a cache line, but it's free
++	 * and tidy, so why not?
++         */
++EX:	{ sw r0, r15; addi r0, r0, 4; andi r13, r0, -64 } /* store(WORD_3) */
++#endif
++        /* Store second L1D line. */
++EX:	{ sw r0, r17; addi r0, r0, 4; mvz r9, r16, r13 }/* store(WORD_4) */
++EX:	{ sw r0, r19; addi r0, r0, 4 }                  /* store(WORD_5) */
++EX:	{ sw r0, r10; addi r0, r0, 4 }                  /* store(WORD_6) */
++EX:	{ sw r0, r12; addi r0, r0, 4 }                  /* store(WORD_7) */
++
++EX:	{ lw r13, r1; addi r1, r1, 4; move zero, r18 }  /* r13 = WORD_9 */
++EX:	{ lw r14, r1; addi r1, r1, 4 }                  /* r14 = WORD_10 */
++EX:	{ lw r15, r1; move r1, r20   }                  /* r15 = WORD_11 */
++
++        /* Store third L1D line. */
++EX:	{ sw r0, r18; addi r0, r0, 4 }                  /* store(WORD_8) */
++EX:	{ sw r0, r13; addi r0, r0, 4 }                  /* store(WORD_9) */
++EX:	{ sw r0, r14; addi r0, r0, 4 }                  /* store(WORD_10) */
++EX:	{ sw r0, r15; addi r0, r0, 4 }                  /* store(WORD_11) */
++
++        /* Store rest of fourth L1D line. */
++EX:	{ sw r0, r4;  addi r0, r0, 4 }                  /* store(WORD_12) */
++        {
++EX:	sw r0, r8                                       /* store(WORD_13) */
++        addi r0, r0, 4
++	/* Will r2 be > 64 after we subtract 64 below? */
++        shri r4, r2, 7
++        }
++        {
++EX:	sw r0, r11                                      /* store(WORD_14) */
++        addi r0, r0, 8
++        /* Record 64 bytes successfully copied. */
++        addi r2, r2, -64
++        }
++
++	{ jrp lr; move lr, r27 }
++
++        /* Convey to the backtrace library that the stack frame is size
++	 * zero, and the real return address is on the stack rather than
++	 * in 'lr'.
++	 */
++	{ info 8 }
++
++	.align 64
++.Lcopy_unaligned_maybe_many:
++	/* Skip the setup overhead if we aren't copying many bytes. */
++	{ slti_u r8, r2, 20; sub r4, zero, r0 }
++	{ bnzt r8, .Lcopy_unaligned_few; andi r4, r4, 3 }
++	{ bz r4, .Ldest_is_word_aligned; add r18, r1, r2 }
++
++/*
++ *
++ * unaligned 4 byte at a time copy handler.
++ *
++ */
++
++	/* Copy single bytes until r0 == 0 mod 4, so we can store words. */
++.Lalign_dest_loop:
++EX:	{ lb_u r3, r1; addi r1, r1, 1; addi r4, r4, -1 }
++EX:	{ sb r0, r3;   addi r0, r0, 1; addi r2, r2, -1 }
++	{ bnzt r4, .Lalign_dest_loop; andi r3, r1, 3 }
++
++	/* If source and dest are now *both* aligned, do an aligned copy. */
++	{ bz r3, .Lcheck_aligned_copy_size; addli r4, r2, -256 }
++
++.Ldest_is_word_aligned:
++
++#if CHIP_HAS_DWORD_ALIGN()
++EX:	{ andi r8, r0, 63; lwadd_na r6, r1, 4}
++	{ slti_u r9, r2, 64; bz r8, .Ldest_is_L2_line_aligned }
++
++	/* This copies unaligned words until either there are fewer
++	 * than 4 bytes left to copy, or until the destination pointer
++	 * is cache-aligned, whichever comes first.
++	 *
++	 * On entry:
++	 * - r0 is the next store address.
++	 * - r1 points 4 bytes past the load address corresponding to r0.
++	 * - r2 >= 4
++	 * - r6 is the next aligned word loaded.
++	 */
++.Lcopy_unaligned_src_words:
++EX:	{ lwadd_na r7, r1, 4; slti_u r8, r2, 4 + 4 }
++	/* stall */
++	{ dword_align r6, r7, r1; slti_u r9, r2, 64 + 4 }
++EX:	{ swadd r0, r6, 4; addi r2, r2, -4 }
++	{ bnz r8, .Lcleanup_unaligned_words; andi r8, r0, 63 }
++	{ bnzt r8, .Lcopy_unaligned_src_words; move r6, r7 }
++
++	/* On entry:
++	 * - r0 is the next store address.
++	 * - r1 points 4 bytes past the load address corresponding to r0.
++	 * - r2 >= 4 (# of bytes left to store).
++	 * - r6 is the next aligned src word value.
++	 * - r9 = (r2 < 64U).
++	 * - r18 points one byte past the end of source memory.
++	 */
++.Ldest_is_L2_line_aligned:
++
++	{
++	/* Not a full cache line remains. */
++	bnz r9, .Lcleanup_unaligned_words
++	move r7, r6
++	}
++
++	/* r2 >= 64 */
++
++	/* Kick off two prefetches, but don't go past the end. */
++	{ addi r3, r1, 63 - 4; addi r8, r1, 64 + 63 - 4 }
++	{ prefetch r3; move r3, r8; slt_u r8, r8, r18 }
++	{ mvz r3, r8, r1; addi r8, r3, 64 }
++	{ prefetch r3; move r3, r8; slt_u r8, r8, r18 }
++	{ mvz r3, r8, r1; movei r17, 0 }
++
++.Lcopy_unaligned_line:
++	/* Prefetch another line. */
++	{ prefetch r3; addi r15, r1, 60; addi r3, r3, 64 }
++	/* Fire off a load of the last word we are about to copy. */
++EX:	{ lw_na r15, r15; slt_u r8, r3, r18 }
++
++EX:	{ mvz r3, r8, r1; wh64 r0 }
++
++	/* This loop runs twice.
++	 *
++	 * On entry:
++	 * - r17 is even before the first iteration, and odd before
++	 *   the second.  It is incremented inside the loop.  Encountering
++	 *   an even value at the end of the loop makes it stop.
++	 */
++.Lcopy_half_an_unaligned_line:
++EX:	{
++	/* Stall until the last byte is ready. In the steady state this
++	 * guarantees all words to load below will be in the L2 cache, which
++	 * avoids shunting the loads to the RTF.
++	 */
++	move zero, r15
++	lwadd_na r7, r1, 16
++	}
++EX:	{ lwadd_na r11, r1, 12 }
++EX:	{ lwadd_na r14, r1, -24 }
++EX:	{ lwadd_na r8, r1, 4 }
++EX:	{ lwadd_na r9, r1, 4 }
++EX:	{
++	lwadd_na r10, r1, 8
++	/* r16 = (r2 < 64), after we subtract 32 from r2 below. */
++	slti_u r16, r2, 64 + 32
++	}
++EX:	{ lwadd_na r12, r1, 4; addi r17, r17, 1 }
++EX:	{ lwadd_na r13, r1, 8; dword_align r6, r7, r1 }
++EX:	{ swadd r0, r6,  4; dword_align r7,  r8,  r1 }
++EX:	{ swadd r0, r7,  4; dword_align r8,  r9,  r1 }
++EX:	{ swadd r0, r8,  4; dword_align r9,  r10, r1 }
++EX:	{ swadd r0, r9,  4; dword_align r10, r11, r1 }
++EX:	{ swadd r0, r10, 4; dword_align r11, r12, r1 }
++EX:	{ swadd r0, r11, 4; dword_align r12, r13, r1 }
++EX:	{ swadd r0, r12, 4; dword_align r13, r14, r1 }
++EX:	{ swadd r0, r13, 4; addi r2, r2, -32 }
++	{ move r6, r14; bbst r17, .Lcopy_half_an_unaligned_line }
++
++	{ bzt r16, .Lcopy_unaligned_line; move r7, r6 }
++
++	/* On entry:
++	 * - r0 is the next store address.
++	 * - r1 points 4 bytes past the load address corresponding to r0.
++	 * - r2 >= 0 (# of bytes left to store).
++	 * - r7 is the next aligned src word value.
++	 */
++.Lcleanup_unaligned_words:
++	/* Handle any trailing bytes. */
++	{ bz r2, .Lcopy_unaligned_done; slti_u r8, r2, 4 }
++	{ bzt r8, .Lcopy_unaligned_src_words; move r6, r7 }
++
++	/* Move r1 back to the point where it corresponds to r0. */
++	{ addi r1, r1, -4 }
++
++#else /* !CHIP_HAS_DWORD_ALIGN() */
++
++	/* Compute right/left shift counts and load initial source words. */
++	{ andi r5, r1, -4; andi r3, r1, 3 }
++EX:	{ lw r6, r5; addi r5, r5, 4; shli r3, r3, 3 }
++EX:	{ lw r7, r5; addi r5, r5, 4; sub r4, zero, r3 }
++
++	/* Load and store one word at a time, using shifts and ORs
++	 * to correct for the misaligned src.
++	 */
++.Lcopy_unaligned_src_loop:
++	{ shr r6, r6, r3; shl r8, r7, r4 }
++EX:	{ lw r7, r5; or r8, r8, r6; move r6, r7 }
++EX:	{ sw r0, r8; addi r0, r0, 4; addi r2, r2, -4 }
++	{ addi r5, r5, 4; slti_u r8, r2, 8 }
++	{ bzt r8, .Lcopy_unaligned_src_loop; addi r1, r1, 4 }
++
++	{ bz r2, .Lcopy_unaligned_done }
++#endif /* !CHIP_HAS_DWORD_ALIGN() */
++
++	/* Fall through */
++
++/*
++ *
++ * 1 byte at a time copy handler.
++ *
++ */
++
++.Lcopy_unaligned_few:
++EX:	{ lb_u r3, r1; addi r1, r1, 1 }
++EX:	{ sb r0, r3;   addi r0, r0, 1; addi r2, r2, -1 }
++	{ bnzt r2, .Lcopy_unaligned_few }
++
++.Lcopy_unaligned_done:
++
++	/* For memcpy return original dest address, else zero. */
++	{ mz r0, r29, r23; jrp lr }
++
++.Lend_memcpy_common:
++	.size memcpy_common, .Lend_memcpy_common - memcpy_common
++
++	.section .fixup,"ax"
++memcpy_common_fixup:
++	.type memcpy_common_fixup, @function
++
++	/* Skip any bytes we already successfully copied.
++	 * r2 (num remaining) is correct, but r0 (dst) and r1 (src)
++	 * may not be quite right because of unrolling and prefetching.
++	 * So we need to recompute their values as the address just
++	 * after the last byte we are sure was successfully loaded and
++	 * then stored.
++	 */
++
++	/* Determine how many bytes we successfully copied. */
++	{ sub r3, r25, r2 }
++
++	/* Add this to the original r0 and r1 to get their new values. */
++	{ add r0, r23, r3; add r1, r24, r3 }
++
++	{ bzt r29, memcpy_fixup_loop }
++	{ blzt r29, copy_to_user_fixup_loop }
++
++copy_from_user_fixup_loop:
++	/* Try copying the rest one byte at a time, expecting a load fault. */
++.Lcfu:	{ lb_u r3, r1; addi r1, r1, 1 }
++	{ sb r0, r3; addi r0, r0, 1; addi r2, r2, -1 }
++	{ bnzt r2, copy_from_user_fixup_loop }
++
++.Lcopy_from_user_fixup_zero_remainder:
++	{ bbs r29, 2f }  /* low bit set means IS_COPY_FROM_USER */
++	/* byte-at-a-time loop faulted, so zero the rest. */
++	{ move r3, r2; bz r2, 2f /* should be impossible, but handle it. */ }
++1:      { sb r0, zero; addi r0, r0, 1; addi r3, r3, -1 }
++	{ bnzt r3, 1b }
++2:	move lr, r27
++	{ move r0, r2; jrp lr }
++
++copy_to_user_fixup_loop:
++	/* Try copying the rest one byte at a time, expecting a store fault. */
++	{ lb_u r3, r1; addi r1, r1, 1 }
++.Lctu:	{ sb r0, r3; addi r0, r0, 1; addi r2, r2, -1 }
++	{ bnzt r2, copy_to_user_fixup_loop }
++.Lcopy_to_user_fixup_done:
++	move lr, r27
++	{ move r0, r2; jrp lr }
++
++memcpy_fixup_loop:
++	/* Try copying the rest one byte at a time. We expect a disastrous
++	 * fault to happen since we are in fixup code, but let it happen.
++	 */
++	{ lb_u r3, r1; addi r1, r1, 1 }
++	{ sb r0, r3; addi r0, r0, 1; addi r2, r2, -1 }
++	{ bnzt r2, memcpy_fixup_loop }
++	/* This should be unreachable, we should have faulted again.
++	 * But be paranoid and handle it in case some interrupt changed
++	 * the TLB or something.
++	 */
++	move lr, r27
++	{ move r0, r23; jrp lr }
++
++	.size memcpy_common_fixup, . - memcpy_common_fixup
++
++	.section __ex_table,"a"
++	.word .Lcfu, .Lcopy_from_user_fixup_zero_remainder
++	.word .Lctu, .Lcopy_to_user_fixup_done
+diff --git a/arch/tile/lib/memcpy_tile64.c b/arch/tile/lib/memcpy_tile64.c
+new file mode 100644
+index 0000000..4f00473
+--- /dev/null
++++ b/arch/tile/lib/memcpy_tile64.c
+@@ -0,0 +1,271 @@
++/*
++ * Copyright 2010 Tilera Corporation. All Rights Reserved.
++ *
++ *   This program is free software; you can redistribute it and/or
++ *   modify it under the terms of the GNU General Public License
++ *   as published by the Free Software Foundation, version 2.
++ *
++ *   This program is distributed in the hope that it will be useful, but
++ *   WITHOUT ANY WARRANTY; without even the implied warranty of
++ *   MERCHANTABILITY OR FITNESS FOR A PARTICULAR PURPOSE, GOOD TITLE or
++ *   NON INFRINGEMENT.  See the GNU General Public License for
++ *   more details.
++ */
++
++#include <linux/string.h>
++#include <linux/smp.h>
++#include <linux/module.h>
++#include <linux/uaccess.h>
++#include <asm/fixmap.h>
++#include <asm/kmap_types.h>
++#include <asm/tlbflush.h>
++#include <hv/hypervisor.h>
++#include <arch/chip.h>
++
++
++#if !CHIP_HAS_COHERENT_LOCAL_CACHE()
++
++/* Defined in memcpy.S */
++extern unsigned long __memcpy_asm(void *to, const void *from, unsigned long n);
++extern unsigned long __copy_to_user_inatomic_asm(
++	void __user *to, const void *from, unsigned long n);
++extern unsigned long __copy_from_user_inatomic_asm(
++	void *to, const void __user *from, unsigned long n);
++extern unsigned long __copy_from_user_zeroing_asm(
++	void *to, const void __user *from, unsigned long n);
++
++typedef unsigned long (*memcpy_t)(void *, const void *, unsigned long);
++
++/* Size above which to consider TLB games for performance */
++#define LARGE_COPY_CUTOFF 2048
++
++/* Communicate to the simulator what we are trying to do. */
++#define sim_allow_multiple_caching(b) \
++  __insn_mtspr(SPR_SIM_CONTROL, \
++   SIM_CONTROL_ALLOW_MULTIPLE_CACHING | ((b) << _SIM_CONTROL_OPERATOR_BITS))
++
++/*
++ * Copy memory by briefly enabling incoherent cacheline-at-a-time mode.
++ *
++ * We set up our own source and destination PTEs that we fully control.
++ * This is the only way to guarantee that we don't race with another
++ * thread that is modifying the PTE; we can't afford to try the
++ * copy_{to,from}_user() technique of catching the interrupt, since
++ * we must run with interrupts disabled to avoid the risk of some
++ * other code seeing the incoherent data in our cache.  (Recall that
++ * our cache is indexed by PA, so even if the other code doesn't use
++ * our KM_MEMCPY virtual addresses, they'll still hit in cache using
++ * the normal VAs that aren't supposed to hit in cache.)
++ */
++static void memcpy_multicache(void *dest, const void *source,
++			      pte_t dst_pte, pte_t src_pte, int len)
++{
++	int idx, i;
++	unsigned long flags, newsrc, newdst, endsrc;
++	pmd_t *pmdp;
++	pte_t *ptep;
++	int cpu = get_cpu();
++
++	/*
++	 * Disable interrupts so that we don't recurse into memcpy()
++	 * in an interrupt handler, nor accidentally reference
++	 * the PA of the source from an interrupt routine.  Also
++	 * notify the simulator that we're playing games so we don't
++	 * generate spurious coherency warnings.
++	 */
++	local_irq_save(flags);
++	sim_allow_multiple_caching(1);
++
++	/* Set up the new dest mapping */
++	idx = FIX_KMAP_BEGIN + (KM_TYPE_NR * cpu) + KM_MEMCPY0;
++	newdst = __fix_to_virt(idx) + ((unsigned long)dest & (PAGE_SIZE-1));
++	pmdp = pmd_offset(pud_offset(pgd_offset_k(newdst), newdst), newdst);
++	ptep = pte_offset_kernel(pmdp, newdst);
++	if (pte_val(*ptep) != pte_val(dst_pte)) {
++		set_pte(ptep, dst_pte);
++		local_flush_tlb_page(NULL, newdst, PAGE_SIZE);
++	}
++
++	/* Set up the new source mapping */
++	idx += (KM_MEMCPY0 - KM_MEMCPY1);
++	src_pte = hv_pte_set_nc(src_pte);
++	src_pte = hv_pte_clear_writable(src_pte);  /* be paranoid */
++	newsrc = __fix_to_virt(idx) + ((unsigned long)source & (PAGE_SIZE-1));
++	pmdp = pmd_offset(pud_offset(pgd_offset_k(newsrc), newsrc), newsrc);
++	ptep = pte_offset_kernel(pmdp, newsrc);
++	*ptep = src_pte;   /* set_pte() would be confused by this */
++	local_flush_tlb_page(NULL, newsrc, PAGE_SIZE);
++
++	/* Actually move the data. */
++	__memcpy_asm((void *)newdst, (const void *)newsrc, len);
++
++	/*
++	 * Remap the source as locally-cached and not OLOC'ed so that
++	 * we can inval without also invaling the remote cpu's cache.
++	 * This also avoids known errata with inv'ing cacheable oloc data.
++	 */
++	src_pte = hv_pte_set_mode(src_pte, HV_PTE_MODE_CACHE_NO_L3);
++	src_pte = hv_pte_set_writable(src_pte); /* need write access for inv */
++	*ptep = src_pte;   /* set_pte() would be confused by this */
++	local_flush_tlb_page(NULL, newsrc, PAGE_SIZE);
++
++	/*
++	 * Do the actual invalidation, covering the full L2 cache line
++	 * at the end since __memcpy_asm() is somewhat aggressive.
++	 */
++	__inv_buffer((void *)newsrc, len);
++
++	/*
++	 * We're done: notify the simulator that all is back to normal,
++	 * and re-enable interrupts and pre-emption.
++	 */
++	sim_allow_multiple_caching(0);
++	local_irq_restore(flags);
++	put_cpu_no_resched();
++}
++
++/*
++ * Identify large copies from remotely-cached memory, and copy them
++ * via memcpy_multicache() if they look good, otherwise fall back
++ * to the particular kind of copying passed as the memcpy_t function.
++ */
++static unsigned long fast_copy(void *dest, const void *source, int len,
++			       memcpy_t func)
++{
++	/*
++	 * Check if it's big enough to bother with.  We may end up doing a
++	 * small copy via TLB manipulation if we're near a page boundary,
++	 * but presumably we'll make it up when we hit the second page.
++	 */
++	while (len >= LARGE_COPY_CUTOFF) {
++		int copy_size, bytes_left_on_page;
++		pte_t *src_ptep, *dst_ptep;
++		pte_t src_pte, dst_pte;
++		struct page *src_page, *dst_page;
++
++		/* Is the source page oloc'ed to a remote cpu? */
++retry_source:
++		src_ptep = virt_to_pte(current->mm, (unsigned long)source);
++		if (src_ptep == NULL)
++			break;
++		src_pte = *src_ptep;
++		if (!hv_pte_get_present(src_pte) ||
++		    !hv_pte_get_readable(src_pte) ||
++		    hv_pte_get_mode(src_pte) != HV_PTE_MODE_CACHE_TILE_L3)
++			break;
++		if (get_remote_cache_cpu(src_pte) == smp_processor_id())
++			break;
++		src_page = pfn_to_page(hv_pte_get_pfn(src_pte));
++		get_page(src_page);
++		if (pte_val(src_pte) != pte_val(*src_ptep)) {
++			put_page(src_page);
++			goto retry_source;
++		}
++		if (pte_huge(src_pte)) {
++			/* Adjust the PTE to correspond to a small page */
++			int pfn = hv_pte_get_pfn(src_pte);
++			pfn += (((unsigned long)source & (HPAGE_SIZE-1))
++				>> PAGE_SHIFT);
++			src_pte = pfn_pte(pfn, src_pte);
++			src_pte = pte_mksmall(src_pte);
++		}
++
++		/* Is the destination page writable? */
++retry_dest:
++		dst_ptep = virt_to_pte(current->mm, (unsigned long)dest);
++		if (dst_ptep == NULL) {
++			put_page(src_page);
++			break;
++		}
++		dst_pte = *dst_ptep;
++		if (!hv_pte_get_present(dst_pte) ||
++		    !hv_pte_get_writable(dst_pte)) {
++			put_page(src_page);
++			break;
++		}
++		dst_page = pfn_to_page(hv_pte_get_pfn(dst_pte));
++		if (dst_page == src_page) {
++			/*
++			 * Source and dest are on the same page; this
++			 * potentially exposes us to incoherence if any
++			 * part of src and dest overlap on a cache line.
++			 * Just give up rather than trying to be precise.
++			 */
++			put_page(src_page);
++			break;
++		}
++		get_page(dst_page);
++		if (pte_val(dst_pte) != pte_val(*dst_ptep)) {
++			put_page(dst_page);
++			goto retry_dest;
++		}
++		if (pte_huge(dst_pte)) {
++			/* Adjust the PTE to correspond to a small page */
++			int pfn = hv_pte_get_pfn(dst_pte);
++			pfn += (((unsigned long)dest & (HPAGE_SIZE-1))
++				>> PAGE_SHIFT);
++			dst_pte = pfn_pte(pfn, dst_pte);
++			dst_pte = pte_mksmall(dst_pte);
++		}
++
++		/* All looks good: create a cachable PTE and copy from it */
++		copy_size = len;
++		bytes_left_on_page =
++			PAGE_SIZE - (((int)source) & (PAGE_SIZE-1));
++		if (copy_size > bytes_left_on_page)
++			copy_size = bytes_left_on_page;
++		bytes_left_on_page =
++			PAGE_SIZE - (((int)dest) & (PAGE_SIZE-1));
++		if (copy_size > bytes_left_on_page)
++			copy_size = bytes_left_on_page;
++		memcpy_multicache(dest, source, dst_pte, src_pte, copy_size);
++
++		/* Release the pages */
++		put_page(dst_page);
++		put_page(src_page);
++
++		/* Continue on the next page */
++		dest += copy_size;
++		source += copy_size;
++		len -= copy_size;
++	}
++
++	return func(dest, source, len);
++}
++
++void *memcpy(void *to, const void *from, __kernel_size_t n)
++{
++	if (n < LARGE_COPY_CUTOFF)
++		return (void *)__memcpy_asm(to, from, n);
++	else
++		return (void *)fast_copy(to, from, n, __memcpy_asm);
++}
++
++unsigned long __copy_to_user_inatomic(void __user *to, const void *from,
++				      unsigned long n)
++{
++	if (n < LARGE_COPY_CUTOFF)
++		return __copy_to_user_inatomic_asm(to, from, n);
++	else
++		return fast_copy(to, from, n, __copy_to_user_inatomic_asm);
++}
++
++unsigned long __copy_from_user_inatomic(void *to, const void __user *from,
++					unsigned long n)
++{
++	if (n < LARGE_COPY_CUTOFF)
++		return __copy_from_user_inatomic_asm(to, from, n);
++	else
++		return fast_copy(to, from, n, __copy_from_user_inatomic_asm);
++}
++
++unsigned long __copy_from_user_zeroing(void *to, const void __user *from,
++				       unsigned long n)
++{
++	if (n < LARGE_COPY_CUTOFF)
++		return __copy_from_user_zeroing_asm(to, from, n);
++	else
++		return fast_copy(to, from, n, __copy_from_user_zeroing_asm);
++}
++
++#endif /* !CHIP_HAS_COHERENT_LOCAL_CACHE() */
+diff --git a/arch/tile/lib/memmove_32.c b/arch/tile/lib/memmove_32.c
+new file mode 100644
+index 0000000..f09d8c4
+--- /dev/null
++++ b/arch/tile/lib/memmove_32.c
+@@ -0,0 +1,63 @@
++/*
++ * Copyright 2010 Tilera Corporation. All Rights Reserved.
++ *
++ *   This program is free software; you can redistribute it and/or
++ *   modify it under the terms of the GNU General Public License
++ *   as published by the Free Software Foundation, version 2.
++ *
++ *   This program is distributed in the hope that it will be useful, but
++ *   WITHOUT ANY WARRANTY; without even the implied warranty of
++ *   MERCHANTABILITY OR FITNESS FOR A PARTICULAR PURPOSE, GOOD TITLE or
++ *   NON INFRINGEMENT.  See the GNU General Public License for
++ *   more details.
++ */
++
++#include <linux/types.h>
++#include <linux/string.h>
++#include <linux/module.h>
++
++void *memmove(void *dest, const void *src, size_t n)
++{
++	if ((const char *)src >= (char *)dest + n
++	    || (char *)dest >= (const char *)src + n) {
++		/* We found no overlap, so let memcpy do all the heavy
++		 * lifting (prefetching, etc.)
++		 */
++		return memcpy(dest, src, n);
++	}
++
++	if (n != 0) {
++		const uint8_t *in;
++		uint8_t x;
++		uint8_t *out;
++		int stride;
++
++		if (src < dest) {
++			/* copy backwards */
++			in = (const uint8_t *)src + n - 1;
++			out = (uint8_t *)dest + n - 1;
++			stride = -1;
++		} else {
++			/* copy forwards */
++			in = (const uint8_t *)src;
++			out = (uint8_t *)dest;
++			stride = 1;
++                }
++
++		/* Manually software-pipeline this loop. */
++		x = *in;
++		in += stride;
++
++		while (--n != 0) {
++			*out = x;
++			out += stride;
++			x = *in;
++			in += stride;
++		}
++
++		*out = x;
++	}
++
++	return dest;
++}
++EXPORT_SYMBOL(memmove);
+diff --git a/arch/tile/lib/memset_32.c b/arch/tile/lib/memset_32.c
+new file mode 100644
+index 0000000..8593bc8
+--- /dev/null
++++ b/arch/tile/lib/memset_32.c
+@@ -0,0 +1,274 @@
++/*
++ * Copyright 2010 Tilera Corporation. All Rights Reserved.
++ *
++ *   This program is free software; you can redistribute it and/or
++ *   modify it under the terms of the GNU General Public License
++ *   as published by the Free Software Foundation, version 2.
++ *
++ *   This program is distributed in the hope that it will be useful, but
++ *   WITHOUT ANY WARRANTY; without even the implied warranty of
++ *   MERCHANTABILITY OR FITNESS FOR A PARTICULAR PURPOSE, GOOD TITLE or
++ *   NON INFRINGEMENT.  See the GNU General Public License for
++ *   more details.
++ */
++
++#include <arch/chip.h>
++
++#include <linux/types.h>
++#include <linux/string.h>
++#include <linux/module.h>
++
++
++void *memset(void *s, int c, size_t n)
++{
++	uint32_t *out32;
++	int n32;
++	uint32_t v16, v32;
++	uint8_t *out8 = s;
++#if !CHIP_HAS_WH64()
++	int ahead32;
++#else
++	int to_align32;
++#endif
++
++	/* Experimentation shows that a trivial tight loop is a win up until
++	 * around a size of 20, where writing a word at a time starts to win.
++	 */
++#define BYTE_CUTOFF 20
++
++#if BYTE_CUTOFF < 3
++	/* This must be at least at least this big, or some code later
++	 * on doesn't work.
++	 */
++#error "BYTE_CUTOFF is too small"
++#endif
++
++	if (n < BYTE_CUTOFF) {
++		/* Strangely, this turns out to be the tightest way to
++		 * write this loop.
++		 */
++		if (n != 0) {
++			do {
++				/* Strangely, combining these into one line
++				 * performs worse.
++				 */
++				*out8 = c;
++				out8++;
++			} while (--n != 0);
++		}
++
++		return s;
++	}
++
++#if !CHIP_HAS_WH64()
++	/* Use a spare issue slot to start prefetching the first cache
++	 * line early. This instruction is free as the store can be buried
++	 * in otherwise idle issue slots doing ALU ops.
++	 */
++	__insn_prefetch(out8);
++
++	/* We prefetch the end so that a short memset that spans two cache
++	 * lines gets some prefetching benefit. Again we believe this is free
++	 * to issue.
++	 */
++	__insn_prefetch(&out8[n - 1]);
++#endif /* !CHIP_HAS_WH64() */
++
++
++	/* Align 'out8'. We know n >= 3 so this won't write past the end. */
++	while (((uintptr_t) out8 & 3) != 0) {
++		*out8++ = c;
++		--n;
++	}
++
++	/* Align 'n'. */
++	while (n & 3)
++		out8[--n] = c;
++
++	out32 = (uint32_t *) out8;
++	n32 = n >> 2;
++
++	/* Tile input byte out to 32 bits. */
++	v16 = __insn_intlb(c, c);
++	v32 = __insn_intlh(v16, v16);
++
++	/* This must be at least 8 or the following loop doesn't work. */
++#define CACHE_LINE_SIZE_IN_WORDS (CHIP_L2_LINE_SIZE() / 4)
++
++#if !CHIP_HAS_WH64()
++
++	ahead32 = CACHE_LINE_SIZE_IN_WORDS;
++
++	/* We already prefetched the first and last cache lines, so
++	 * we only need to do more prefetching if we are storing
++	 * to more than two cache lines.
++	 */
++	if (n32 > CACHE_LINE_SIZE_IN_WORDS * 2) {
++		int i;
++
++		/* Prefetch the next several cache lines.
++		 * This is the setup code for the software-pipelined
++		 * loop below.
++		 */
++#define MAX_PREFETCH 5
++		ahead32 = n32 & -CACHE_LINE_SIZE_IN_WORDS;
++		if (ahead32 > MAX_PREFETCH * CACHE_LINE_SIZE_IN_WORDS)
++			ahead32 = MAX_PREFETCH * CACHE_LINE_SIZE_IN_WORDS;
++
++		for (i = CACHE_LINE_SIZE_IN_WORDS;
++		     i < ahead32; i += CACHE_LINE_SIZE_IN_WORDS)
++			__insn_prefetch(&out32[i]);
++	}
++
++	if (n32 > ahead32) {
++		while (1) {
++			int j;
++
++			/* Prefetch by reading one word several cache lines
++			 * ahead.  Since loads are non-blocking this will
++			 * cause the full cache line to be read while we are
++			 * finishing earlier cache lines.  Using a store
++			 * here causes microarchitectural performance
++			 * problems where a victimizing store miss goes to
++			 * the head of the retry FIFO and locks the pipe for
++			 * a few cycles.  So a few subsequent stores in this
++			 * loop go into the retry FIFO, and then later
++			 * stores see other stores to the same cache line
++			 * are already in the retry FIFO and themselves go
++			 * into the retry FIFO, filling it up and grinding
++			 * to a halt waiting for the original miss to be
++			 * satisfied.
++			 */
++			__insn_prefetch(&out32[ahead32]);
++
++#if 1
++#if CACHE_LINE_SIZE_IN_WORDS % 4 != 0
++#error "Unhandled CACHE_LINE_SIZE_IN_WORDS"
++#endif
++
++			n32 -= CACHE_LINE_SIZE_IN_WORDS;
++
++			/* Save icache space by only partially unrolling
++			 * this loop.
++			 */
++			for (j = CACHE_LINE_SIZE_IN_WORDS / 4; j > 0; j--) {
++				*out32++ = v32;
++				*out32++ = v32;
++				*out32++ = v32;
++				*out32++ = v32;
++			}
++#else
++			/* Unfortunately, due to a code generator flaw this
++			 * allocates a separate register for each of these
++			 * stores, which requires a large number of spills,
++			 * which makes this procedure enormously bigger
++			 * (something like 70%)
++			 */
++			*out32++ = v32;
++			*out32++ = v32;
++			*out32++ = v32;
++			*out32++ = v32;
++			*out32++ = v32;
++			*out32++ = v32;
++			*out32++ = v32;
++			*out32++ = v32;
++			*out32++ = v32;
++			*out32++ = v32;
++			*out32++ = v32;
++			*out32++ = v32;
++			*out32++ = v32;
++			*out32++ = v32;
++			*out32++ = v32;
++			n32 -= 16;
++#endif
++
++			/* To save compiled code size, reuse this loop even
++			 * when we run out of prefetching to do by dropping
++			 * ahead32 down.
++			 */
++			if (n32 <= ahead32) {
++				/* Not even a full cache line left,
++				 * so stop now.
++				 */
++				if (n32 < CACHE_LINE_SIZE_IN_WORDS)
++					break;
++
++				/* Choose a small enough value that we don't
++				 * prefetch past the end.  There's no sense
++				 * in touching cache lines we don't have to.
++				 */
++				ahead32 = CACHE_LINE_SIZE_IN_WORDS - 1;
++			}
++		}
++	}
++
++#else /* CHIP_HAS_WH64() */
++
++	/* Determine how many words we need to emit before the 'out32'
++	 * pointer becomes aligned modulo the cache line size.
++	 */
++	to_align32 =
++		(-((uintptr_t)out32 >> 2)) & (CACHE_LINE_SIZE_IN_WORDS - 1);
++
++	/* Only bother aligning and using wh64 if there is at least
++	 * one full cache line to process.  This check also prevents
++	 * overrunning the end of the buffer with alignment words.
++	 */
++	if (to_align32 <= n32 - CACHE_LINE_SIZE_IN_WORDS) {
++		int lines_left;
++
++		/* Align out32 mod the cache line size so we can use wh64. */
++		n32 -= to_align32;
++		for (; to_align32 != 0; to_align32--) {
++			*out32 = v32;
++			out32++;
++		}
++
++		/* Use unsigned divide to turn this into a right shift. */
++		lines_left = (unsigned)n32 / CACHE_LINE_SIZE_IN_WORDS;
++
++		do {
++			/* Only wh64 a few lines at a time, so we don't
++			 * exceed the maximum number of victim lines.
++			 */
++			int x = ((lines_left < CHIP_MAX_OUTSTANDING_VICTIMS())
++				  ? lines_left
++				  : CHIP_MAX_OUTSTANDING_VICTIMS());
++			uint32_t *wh = out32;
++			int i = x;
++			int j;
++
++			lines_left -= x;
++
++			do {
++				__insn_wh64(wh);
++				wh += CACHE_LINE_SIZE_IN_WORDS;
++			} while (--i);
++
++			for (j = x * (CACHE_LINE_SIZE_IN_WORDS / 4); j != 0; j--) {
++				*out32++ = v32;
++				*out32++ = v32;
++				*out32++ = v32;
++				*out32++ = v32;
++			}
++		} while (lines_left != 0);
++
++		/* We processed all full lines above, so only this many
++		 * words remain to be processed.
++		 */
++		n32 &= CACHE_LINE_SIZE_IN_WORDS - 1;
++	}
++
++#endif /* CHIP_HAS_WH64() */
++
++	/* Now handle any leftover values. */
++	if (n32 != 0) {
++		do {
++			*out32 = v32;
++			out32++;
++		} while (--n32 != 0);
++	}
++
++	return s;
++}
++EXPORT_SYMBOL(memset);
+diff --git a/arch/tile/lib/spinlock_32.c b/arch/tile/lib/spinlock_32.c
+new file mode 100644
+index 0000000..485e24d
+--- /dev/null
++++ b/arch/tile/lib/spinlock_32.c
+@@ -0,0 +1,221 @@
++/*
++ * Copyright 2010 Tilera Corporation. All Rights Reserved.
++ *
++ *   This program is free software; you can redistribute it and/or
++ *   modify it under the terms of the GNU General Public License
++ *   as published by the Free Software Foundation, version 2.
++ *
++ *   This program is distributed in the hope that it will be useful, but
++ *   WITHOUT ANY WARRANTY; without even the implied warranty of
++ *   MERCHANTABILITY OR FITNESS FOR A PARTICULAR PURPOSE, GOOD TITLE or
++ *   NON INFRINGEMENT.  See the GNU General Public License for
++ *   more details.
++ */
++
++#include <linux/spinlock.h>
++#include <linux/module.h>
++#include <asm/processor.h>
++
++#include "spinlock_common.h"
++
++void arch_spin_lock(arch_spinlock_t *lock)
++{
++	int my_ticket;
++	int iterations = 0;
++	int delta;
++
++	while ((my_ticket = __insn_tns((void *)&lock->next_ticket)) & 1)
++		delay_backoff(iterations++);
++
++	/* Increment the next ticket number, implicitly releasing tns lock. */
++	lock->next_ticket = my_ticket + TICKET_QUANTUM;
++
++	/* Wait until it's our turn. */
++	while ((delta = my_ticket - lock->current_ticket) != 0)
++		relax((128 / CYCLES_PER_RELAX_LOOP) * delta);
++}
++EXPORT_SYMBOL(arch_spin_lock);
++
++int arch_spin_trylock(arch_spinlock_t *lock)
++{
++	/*
++	 * Grab a ticket; no need to retry if it's busy, we'll just
++	 * treat that the same as "locked", since someone else
++	 * will lock it momentarily anyway.
++	 */
++	int my_ticket = __insn_tns((void *)&lock->next_ticket);
++
++	if (my_ticket == lock->current_ticket) {
++		/* Not currently locked, so lock it by keeping this ticket. */
++		lock->next_ticket = my_ticket + TICKET_QUANTUM;
++		/* Success! */
++		return 1;
++	}
++
++	if (!(my_ticket & 1)) {
++		/* Release next_ticket. */
++		lock->next_ticket = my_ticket;
++	}
++
++	return 0;
++}
++EXPORT_SYMBOL(arch_spin_trylock);
++
++void arch_spin_unlock_wait(arch_spinlock_t *lock)
++{
++	u32 iterations = 0;
++	while (arch_spin_is_locked(lock))
++		delay_backoff(iterations++);
++}
++EXPORT_SYMBOL(arch_spin_unlock_wait);
++
++/*
++ * The low byte is always reserved to be the marker for a "tns" operation
++ * since the low bit is set to "1" by a tns.  The next seven bits are
++ * zeroes.  The next byte holds the "next" writer value, i.e. the ticket
++ * available for the next task that wants to write.  The third byte holds
++ * the current writer value, i.e. the writer who holds the current ticket.
++ * If current == next == 0, there are no interested writers.
++ */
++#define WR_NEXT_SHIFT   _WR_NEXT_SHIFT
++#define WR_CURR_SHIFT   _WR_CURR_SHIFT
++#define WR_WIDTH        _WR_WIDTH
++#define WR_MASK         ((1 << WR_WIDTH) - 1)
++
++/*
++ * The last eight bits hold the active reader count.  This has to be
++ * zero before a writer can start to write.
++ */
++#define RD_COUNT_SHIFT  _RD_COUNT_SHIFT
++#define RD_COUNT_WIDTH  _RD_COUNT_WIDTH
++#define RD_COUNT_MASK   ((1 << RD_COUNT_WIDTH) - 1)
++
++
++/* Lock the word, spinning until there are no tns-ers. */
++static inline u32 get_rwlock(arch_rwlock_t *rwlock)
++{
++	u32 iterations = 0;
++	for (;;) {
++		u32 val = __insn_tns((int *)&rwlock->lock);
++		if (unlikely(val & 1)) {
++			delay_backoff(iterations++);
++			continue;
++		}
++		return val;
++	}
++}
++
++int arch_read_trylock_slow(arch_rwlock_t *rwlock)
++{
++	u32 val = get_rwlock(rwlock);
++	int locked = (val << RD_COUNT_WIDTH) == 0;
++	rwlock->lock = val + (locked << RD_COUNT_SHIFT);
++	return locked;
++}
++EXPORT_SYMBOL(arch_read_trylock_slow);
++
++void arch_read_unlock_slow(arch_rwlock_t *rwlock)
++{
++	u32 val = get_rwlock(rwlock);
++	rwlock->lock = val - (1 << RD_COUNT_SHIFT);
++}
++EXPORT_SYMBOL(arch_read_unlock_slow);
++
++void arch_write_unlock_slow(arch_rwlock_t *rwlock, u32 val)
++{
++	u32 eq, mask = 1 << WR_CURR_SHIFT;
++	while (unlikely(val & 1)) {
++		/* Limited backoff since we are the highest-priority task. */
++		relax(4);
++		val = __insn_tns((int *)&rwlock->lock);
++	}
++	val = __insn_addb(val, mask);
++	eq = __insn_seqb(val, val << (WR_CURR_SHIFT - WR_NEXT_SHIFT));
++	val = __insn_mz(eq & mask, val);
++	rwlock->lock = val;
++}
++EXPORT_SYMBOL(arch_write_unlock_slow);
++
++/*
++ * We spin until everything but the reader bits (which are in the high
++ * part of the word) are zero, i.e. no active or waiting writers, no tns.
++ *
++ * ISSUE: This approach can permanently starve readers.  A reader who sees
++ * a writer could instead take a ticket lock (just like a writer would),
++ * and atomically enter read mode (with 1 reader) when it gets the ticket.
++ * This way both readers and writers will always make forward progress
++ * in a finite time.
++ */
++void arch_read_lock_slow(arch_rwlock_t *rwlock, u32 val)
++{
++	u32 iterations = 0;
++	do {
++		if (!(val & 1))
++			rwlock->lock = val;
++		delay_backoff(iterations++);
++		val = __insn_tns((int *)&rwlock->lock);
++	} while ((val << RD_COUNT_WIDTH) != 0);
++	rwlock->lock = val + (1 << RD_COUNT_SHIFT);
++}
++EXPORT_SYMBOL(arch_read_lock_slow);
++
++void arch_write_lock_slow(arch_rwlock_t *rwlock, u32 val)
++{
++	/*
++	 * The trailing underscore on this variable (and curr_ below)
++	 * reminds us that the high bits are garbage; we mask them out
++	 * when we compare them.
++	 */
++	u32 my_ticket_;
++
++	/* Take out the next ticket; this will also stop would-be readers. */
++	if (val & 1)
++		val = get_rwlock(rwlock);
++	rwlock->lock = __insn_addb(val, 1 << WR_NEXT_SHIFT);
++
++	/* Extract my ticket value from the original word. */
++	my_ticket_ = val >> WR_NEXT_SHIFT;
++
++	/*
++	 * Wait until the "current" field matches our ticket, and
++	 * there are no remaining readers.
++	 */
++	for (;;) {
++		u32 curr_ = val >> WR_CURR_SHIFT;
++		u32 readers = val >> RD_COUNT_SHIFT;
++		u32 delta = ((my_ticket_ - curr_) & WR_MASK) + !!readers;
++		if (likely(delta == 0))
++			break;
++
++		/* Delay based on how many lock-holders are still out there. */
++		relax((256 / CYCLES_PER_RELAX_LOOP) * delta);
++
++		/*
++		 * Get a non-tns value to check; we don't need to tns
++		 * it ourselves.  Since we're not tns'ing, we retry
++		 * more rapidly to get a valid value.
++		 */
++		while ((val = rwlock->lock) & 1)
++			relax(4);
++	}
++}
++EXPORT_SYMBOL(arch_write_lock_slow);
++
++int __tns_atomic_acquire(atomic_t *lock)
++{
++	int ret;
++	u32 iterations = 0;
++
++	BUG_ON(__insn_mfspr(SPR_INTERRUPT_CRITICAL_SECTION));
++	__insn_mtspr(SPR_INTERRUPT_CRITICAL_SECTION, 1);
++
++	while ((ret = __insn_tns((void *)&lock->counter)) == 1)
++		delay_backoff(iterations++);
++	return ret;
++}
++
++void __tns_atomic_release(atomic_t *p, int v)
++{
++	p->counter = v;
++	__insn_mtspr(SPR_INTERRUPT_CRITICAL_SECTION, 0);
++}
+diff --git a/arch/tile/lib/spinlock_common.h b/arch/tile/lib/spinlock_common.h
+new file mode 100644
+index 0000000..8dffebd
+--- /dev/null
++++ b/arch/tile/lib/spinlock_common.h
+@@ -0,0 +1,64 @@
++/*
++ * Copyright 2010 Tilera Corporation. All Rights Reserved.
++ *
++ *   This program is free software; you can redistribute it and/or
++ *   modify it under the terms of the GNU General Public License
++ *   as published by the Free Software Foundation, version 2.
++ *
++ *   This program is distributed in the hope that it will be useful, but
++ *   WITHOUT ANY WARRANTY; without even the implied warranty of
++ *   MERCHANTABILITY OR FITNESS FOR A PARTICULAR PURPOSE, GOOD TITLE or
++ *   NON INFRINGEMENT.  See the GNU General Public License for
++ *   more details.
++ * This file is included into spinlock_32.c or _64.c.
++ */
++
++/*
++ * The mfspr in __spinlock_relax() is 5 or 6 cycles plus 2 for loop
++ * overhead.
++ */
++#ifdef __tilegx__
++#define CYCLES_PER_RELAX_LOOP 7
++#else
++#define CYCLES_PER_RELAX_LOOP 8
++#endif
++
++/*
++ * Idle the core for CYCLES_PER_RELAX_LOOP * iterations cycles.
++ */
++static inline void
++relax(int iterations)
++{
++	for (/*above*/; iterations > 0; iterations--)
++		__insn_mfspr(SPR_PASS);
++	barrier();
++}
++
++/* Perform bounded exponential backoff.*/
++void delay_backoff(int iterations)
++{
++	u32 exponent, loops;
++
++	/*
++	 * 2^exponent is how many times we go around the loop,
++	 * which takes 8 cycles.  We want to start with a 16- to 31-cycle
++	 * loop, so we need to go around minimum 2 = 2^1 times, so we
++	 * bias the original value up by 1.
++	 */
++	exponent = iterations + 1;
++
++	/*
++	 * Don't allow exponent to exceed 7, so we have 128 loops,
++	 * or 1,024 (to 2,047) cycles, as our maximum.
++	 */
++	if (exponent > 8)
++		exponent = 8;
++
++	loops = 1 << exponent;
++
++	/* Add a randomness factor so two cpus never get in lock step. */
++	loops += __insn_crc32_32(stack_pointer, get_cycles_low()) &
++		(loops - 1);
++
++	relax(1 << exponent);
++}
+diff --git a/arch/tile/lib/strchr_32.c b/arch/tile/lib/strchr_32.c
+new file mode 100644
+index 0000000..c94e6f7
+--- /dev/null
++++ b/arch/tile/lib/strchr_32.c
+@@ -0,0 +1,66 @@
++/*
++ * Copyright 2010 Tilera Corporation. All Rights Reserved.
++ *
++ *   This program is free software; you can redistribute it and/or
++ *   modify it under the terms of the GNU General Public License
++ *   as published by the Free Software Foundation, version 2.
++ *
++ *   This program is distributed in the hope that it will be useful, but
++ *   WITHOUT ANY WARRANTY; without even the implied warranty of
++ *   MERCHANTABILITY OR FITNESS FOR A PARTICULAR PURPOSE, GOOD TITLE or
++ *   NON INFRINGEMENT.  See the GNU General Public License for
++ *   more details.
++ */
++
++#include <linux/types.h>
++#include <linux/string.h>
++#include <linux/module.h>
++
++#undef strchr
++
++char *strchr(const char *s, int c)
++{
++	int z, g;
++
++	/* Get an aligned pointer. */
++	const uintptr_t s_int = (uintptr_t) s;
++	const uint32_t *p = (const uint32_t *)(s_int & -4);
++
++	/* Create four copies of the byte for which we are looking. */
++	const uint32_t goal = 0x01010101 * (uint8_t) c;
++
++	/* Read the first aligned word, but force bytes before the string to
++	 * match neither zero nor goal (we make sure the high bit of each
++	 * byte is 1, and the low 7 bits are all the opposite of the goal
++	 * byte).
++	 *
++	 * Note that this shift count expression works because we know shift
++	 * counts are taken mod 32.
++	 */
++	const uint32_t before_mask = (1 << (s_int << 3)) - 1;
++	uint32_t v = (*p | before_mask) ^ (goal & __insn_shrib(before_mask, 1));
++
++	uint32_t zero_matches, goal_matches;
++	while (1) {
++		/* Look for a terminating '\0'. */
++		zero_matches = __insn_seqb(v, 0);
++
++		/* Look for the goal byte. */
++		goal_matches = __insn_seqb(v, goal);
++
++		if (__builtin_expect(zero_matches | goal_matches, 0))
++			break;
++
++		v = *++p;
++	}
++
++	z = __insn_ctz(zero_matches);
++	g = __insn_ctz(goal_matches);
++
++	/* If we found c before '\0' we got a match. Note that if c == '\0'
++	 * then g == z, and we correctly return the address of the '\0'
++	 * rather than NULL.
++	 */
++	return (g <= z) ? ((char *)p) + (g >> 3) : NULL;
++}
++EXPORT_SYMBOL(strchr);
+diff --git a/arch/tile/lib/strlen_32.c b/arch/tile/lib/strlen_32.c
+new file mode 100644
+index 0000000..f26f88e
+--- /dev/null
++++ b/arch/tile/lib/strlen_32.c
+@@ -0,0 +1,36 @@
++/*
++ * Copyright 2010 Tilera Corporation. All Rights Reserved.
++ *
++ *   This program is free software; you can redistribute it and/or
++ *   modify it under the terms of the GNU General Public License
++ *   as published by the Free Software Foundation, version 2.
++ *
++ *   This program is distributed in the hope that it will be useful, but
++ *   WITHOUT ANY WARRANTY; without even the implied warranty of
++ *   MERCHANTABILITY OR FITNESS FOR A PARTICULAR PURPOSE, GOOD TITLE or
++ *   NON INFRINGEMENT.  See the GNU General Public License for
++ *   more details.
++ */
++
++#include <linux/types.h>
++#include <linux/string.h>
++#include <linux/module.h>
++
++size_t strlen(const char *s)
++{
++	/* Get an aligned pointer. */
++	const uintptr_t s_int = (uintptr_t) s;
++	const uint32_t *p = (const uint32_t *)(s_int & -4);
++
++	/* Read the first word, but force bytes before the string to be nonzero.
++	 * This expression works because we know shift counts are taken mod 32.
++	 */
++	uint32_t v = *p | ((1 << (s_int << 3)) - 1);
++
++	uint32_t bits;
++	while ((bits = __insn_seqb(v, 0)) == 0)
++		v = *++p;
++
++	return ((const char *)p) + (__insn_ctz(bits) >> 3) - s;
++}
++EXPORT_SYMBOL(strlen);
+diff --git a/arch/tile/lib/uaccess.c b/arch/tile/lib/uaccess.c
+new file mode 100644
+index 0000000..9ae1825
+--- /dev/null
++++ b/arch/tile/lib/uaccess.c
+@@ -0,0 +1,31 @@
++/*
++ * Copyright 2010 Tilera Corporation. All Rights Reserved.
++ *
++ *   This program is free software; you can redistribute it and/or
++ *   modify it under the terms of the GNU General Public License
++ *   as published by the Free Software Foundation, version 2.
++ *
++ *   This program is distributed in the hope that it will be useful, but
++ *   WITHOUT ANY WARRANTY; without even the implied warranty of
++ *   MERCHANTABILITY OR FITNESS FOR A PARTICULAR PURPOSE, GOOD TITLE or
++ *   NON INFRINGEMENT.  See the GNU General Public License for
++ *   more details.
++ */
++
++#include <linux/uaccess.h>
++#include <linux/module.h>
++
++int __range_ok(unsigned long addr, unsigned long size)
++{
++	unsigned long limit = current_thread_info()->addr_limit.seg;
++	__chk_user_ptr(addr);
++	return !((addr < limit && size <= limit - addr) ||
++		 is_arch_mappable_range(addr, size));
++}
++EXPORT_SYMBOL(__range_ok);
++
++void copy_from_user_overflow(void)
++{
++       WARN(1, "Buffer overflow detected!\n");
++}
++EXPORT_SYMBOL(copy_from_user_overflow);
+diff --git a/arch/tile/lib/usercopy_32.S b/arch/tile/lib/usercopy_32.S
+new file mode 100644
+index 0000000..979f76d
+--- /dev/null
++++ b/arch/tile/lib/usercopy_32.S
+@@ -0,0 +1,223 @@
++/*
++ * Copyright 2010 Tilera Corporation. All Rights Reserved.
++ *
++ *   This program is free software; you can redistribute it and/or
++ *   modify it under the terms of the GNU General Public License
++ *   as published by the Free Software Foundation, version 2.
++ *
++ *   This program is distributed in the hope that it will be useful, but
++ *   WITHOUT ANY WARRANTY; without even the implied warranty of
++ *   MERCHANTABILITY OR FITNESS FOR A PARTICULAR PURPOSE, GOOD TITLE or
++ *   NON INFRINGEMENT.  See the GNU General Public License for
++ *   more details.
++ */
++
++#include <linux/linkage.h>
++#include <asm/errno.h>
++#include <asm/cache.h>
++#include <arch/chip.h>
++
++/* Access user memory, but use MMU to avoid propagating kernel exceptions. */
++
++	.pushsection .fixup,"ax"
++
++get_user_fault:
++	{ move r0, zero; move r1, zero }
++	{ movei r2, -EFAULT; jrp lr }
++	ENDPROC(get_user_fault)
++
++put_user_fault:
++	{ movei r0, -EFAULT; jrp lr }
++	ENDPROC(put_user_fault)
++
++	.popsection
++
++/*
++ * __get_user_N functions take a pointer in r0, and return 0 in r2
++ * on success, with the value in r0; or else -EFAULT in r2.
++ */
++#define __get_user_N(bytes, LOAD) \
++	STD_ENTRY(__get_user_##bytes); \
++1:	{ LOAD r0, r0; move r1, zero; move r2, zero }; \
++	jrp lr; \
++	STD_ENDPROC(__get_user_##bytes); \
++	.pushsection __ex_table,"a"; \
++	.word 1b, get_user_fault; \
++	.popsection
++
++__get_user_N(1, lb_u)
++__get_user_N(2, lh_u)
++__get_user_N(4, lw)
++
++/*
++ * __get_user_8 takes a pointer in r0, and returns 0 in r2
++ * on success, with the value in r0/r1; or else -EFAULT in r2.
++ */
++	STD_ENTRY(__get_user_8);
++1:	{ lw r0, r0; addi r1, r0, 4 };
++2:	{ lw r1, r1; move r2, zero };
++	jrp lr;
++	STD_ENDPROC(__get_user_8);
++	.pushsection __ex_table,"a";
++	.word 1b, get_user_fault;
++	.word 2b, get_user_fault;
++	.popsection
++
++/*
++ * __put_user_N functions take a value in r0 and a pointer in r1,
++ * and return 0 in r0 on success or -EFAULT on failure.
++ */
++#define __put_user_N(bytes, STORE) \
++	STD_ENTRY(__put_user_##bytes); \
++1:	{ STORE r1, r0; move r0, zero }; \
++	jrp lr; \
++	STD_ENDPROC(__put_user_##bytes); \
++	.pushsection __ex_table,"a"; \
++	.word 1b, put_user_fault; \
++	.popsection
++
++__put_user_N(1, sb)
++__put_user_N(2, sh)
++__put_user_N(4, sw)
++
++/*
++ * __put_user_8 takes a value in r0/r1 and a pointer in r2,
++ * and returns 0 in r0 on success or -EFAULT on failure.
++ */
++STD_ENTRY(__put_user_8)
++1:      { sw r2, r0; addi r2, r2, 4 }
++2:      { sw r2, r1; move r0, zero }
++	jrp lr
++	STD_ENDPROC(__put_user_8)
++	.pushsection __ex_table,"a"
++	.word 1b, put_user_fault
++	.word 2b, put_user_fault
++	.popsection
++
++
++/*
++ * strnlen_user_asm takes the pointer in r0, and the length bound in r1.
++ * It returns the length, including the terminating NUL, or zero on exception.
++ * If length is greater than the bound, returns one plus the bound.
++ */
++STD_ENTRY(strnlen_user_asm)
++	{ bz r1, 2f; addi r3, r0, -1 }  /* bias down to include NUL */
++1:      { lb_u r4, r0; addi r1, r1, -1 }
++	bz r4, 2f
++	{ bnzt r1, 1b; addi r0, r0, 1 }
++2:      { sub r0, r0, r3; jrp lr }
++	STD_ENDPROC(strnlen_user_asm)
++	.pushsection .fixup,"ax"
++strnlen_user_fault:
++	{ move r0, zero; jrp lr }
++	ENDPROC(strnlen_user_fault)
++	.section __ex_table,"a"
++	.word 1b, strnlen_user_fault
++	.popsection
++
++/*
++ * strncpy_from_user_asm takes the kernel target pointer in r0,
++ * the userspace source pointer in r1, and the length bound (including
++ * the trailing NUL) in r2.  On success, it returns the string length
++ * (not including the trailing NUL), or -EFAULT on failure.
++ */
++STD_ENTRY(strncpy_from_user_asm)
++	{ bz r2, 2f; move r3, r0 }
++1:      { lb_u r4, r1; addi r1, r1, 1; addi r2, r2, -1 }
++	{ sb r0, r4; addi r0, r0, 1 }
++	bz r2, 2f
++	bnzt r4, 1b
++	addi r0, r0, -1   /* don't count the trailing NUL */
++2:      { sub r0, r0, r3; jrp lr }
++	STD_ENDPROC(strncpy_from_user_asm)
++	.pushsection .fixup,"ax"
++strncpy_from_user_fault:
++	{ movei r0, -EFAULT; jrp lr }
++	ENDPROC(strncpy_from_user_fault)
++	.section __ex_table,"a"
++	.word 1b, strncpy_from_user_fault
++	.popsection
++
++/*
++ * clear_user_asm takes the user target address in r0 and the
++ * number of bytes to zero in r1.
++ * It returns the number of uncopiable bytes (hopefully zero) in r0.
++ * Note that we don't use a separate .fixup section here since we fall
++ * through into the "fixup" code as the last straight-line bundle anyway.
++ */
++STD_ENTRY(clear_user_asm)
++	{ bz r1, 2f; or r2, r0, r1 }
++	andi r2, r2, 3
++	bzt r2, .Lclear_aligned_user_asm
++1:      { sb r0, zero; addi r0, r0, 1; addi r1, r1, -1 }
++	bnzt r1, 1b
++2:      { move r0, r1; jrp lr }
++	.pushsection __ex_table,"a"
++	.word 1b, 2b
++	.popsection
++
++.Lclear_aligned_user_asm:
++1:      { sw r0, zero; addi r0, r0, 4; addi r1, r1, -4 }
++	bnzt r1, 1b
++2:      { move r0, r1; jrp lr }
++	STD_ENDPROC(clear_user_asm)
++	.pushsection __ex_table,"a"
++	.word 1b, 2b
++	.popsection
++
++/*
++ * flush_user_asm takes the user target address in r0 and the
++ * number of bytes to flush in r1.
++ * It returns the number of unflushable bytes (hopefully zero) in r0.
++ */
++STD_ENTRY(flush_user_asm)
++	bz r1, 2f
++	{ movei r2, L2_CACHE_BYTES; add r1, r0, r1 }
++	{ sub r2, zero, r2; addi r1, r1, L2_CACHE_BYTES-1 }
++	{ and r0, r0, r2; and r1, r1, r2 }
++	{ sub r1, r1, r0 }
++1:      { flush r0; addi r1, r1, -CHIP_FLUSH_STRIDE() }
++	{ addi r0, r0, CHIP_FLUSH_STRIDE(); bnzt r1, 1b }
++2:      { move r0, r1; jrp lr }
++	STD_ENDPROC(flush_user_asm)
++	.pushsection __ex_table,"a"
++	.word 1b, 2b
++	.popsection
++
++/*
++ * inv_user_asm takes the user target address in r0 and the
++ * number of bytes to invalidate in r1.
++ * It returns the number of not inv'able bytes (hopefully zero) in r0.
++ */
++STD_ENTRY(inv_user_asm)
++	bz r1, 2f
++	{ movei r2, L2_CACHE_BYTES; add r1, r0, r1 }
++	{ sub r2, zero, r2; addi r1, r1, L2_CACHE_BYTES-1 }
++	{ and r0, r0, r2; and r1, r1, r2 }
++	{ sub r1, r1, r0 }
++1:      { inv r0; addi r1, r1, -CHIP_INV_STRIDE() }
++	{ addi r0, r0, CHIP_INV_STRIDE(); bnzt r1, 1b }
++2:      { move r0, r1; jrp lr }
++	STD_ENDPROC(inv_user_asm)
++	.pushsection __ex_table,"a"
++	.word 1b, 2b
++	.popsection
++
++/*
++ * finv_user_asm takes the user target address in r0 and the
++ * number of bytes to flush-invalidate in r1.
++ * It returns the number of not finv'able bytes (hopefully zero) in r0.
++ */
++STD_ENTRY(finv_user_asm)
++	bz r1, 2f
++	{ movei r2, L2_CACHE_BYTES; add r1, r0, r1 }
++	{ sub r2, zero, r2; addi r1, r1, L2_CACHE_BYTES-1 }
++	{ and r0, r0, r2; and r1, r1, r2 }
++	{ sub r1, r1, r0 }
++1:      { finv r0; addi r1, r1, -CHIP_FINV_STRIDE() }
++	{ addi r0, r0, CHIP_FINV_STRIDE(); bnzt r1, 1b }
++2:      { move r0, r1; jrp lr }
++	STD_ENDPROC(finv_user_asm)
++	.pushsection __ex_table,"a"
++	.word 1b, 2b
++	.popsection
 -- 
 1.6.5.2
 
