@@ -1,169 +1,156 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757386Ab0E2PnO (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 29 May 2010 11:43:14 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:58602 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754998Ab0E2PnI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 29 May 2010 11:43:08 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=o+l6SeZzuYJ7po4WwbAI1yT1qOzQ0/dPC5joWD3mgKa8c8VNzr14swxcBrBjh50C36
-         7qKMIq6O8b0D/FcWtV4XMkR635c4WpKFn9PP+m8lc0Wj23jfSDYVFEhnl2fgIjA+MnMV
-         +HBl1uXVd6xUfnNLeUHgI6bkAjDpbHnevt0JU=
-From: Pierre Tardy <tardyp@gmail.com>
-To: Tom Zanussi <tzanussi@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-       Frederic Weisbecker <fweisbec@gmail.com>,
-       Linux Kernel <linux-kernel@vger.kernel.org>
-Cc: Pierre Tardy <tardyp@gmail.com>
-Subject: [PATCH] trace-event-python: give field dict to unhandled callback
-Date: Sat, 29 May 2010 17:42:34 +0200
-Message-Id: <1275147754-3037-1-git-send-email-tardyp@gmail.com>
-X-Mailer: git-send-email 1.7.0.4
+	id S1757592Ab0E2QKf (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 29 May 2010 12:10:35 -0400
+Received: from cantor.suse.de ([195.135.220.2]:45812 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756867Ab0E2QKb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 29 May 2010 12:10:31 -0400
+Subject: Re: [linux-pm] [PATCH 0/8] Suspend block api (version 8)
+From: James Bottomley <James.Bottomley@suse.de>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Arve =?ISO-8859-1?Q?Hj=F8nnev=E5g?= <arve@android.com>, tytso@mit.edu,
+       LKML <linux-kernel@vger.kernel.org>,
+       Florian Mickler <florian@mickler.org>,
+       Linux PM <linux-pm@lists.linux-foundation.org>,
+       Thomas Gleixner <tglx@linutronix.de>,
+       Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
+       felipe.balbi@nokia.com, Alan Cox <alan@lxorguk.ukuu.org.uk>
+In-Reply-To: <1275120618.27810.12699.camel@twins>
+References: <20100527222514.0a1710bf@lxorguk.ukuu.org.uk>
+	 <Pine.LNX.4.44L0.1005271730180.3239-100000@iolanthe.rowland.org>
+	 <20100527230806.4deb6de3@lxorguk.ukuu.org.uk>
+	 <20100527220949.GB10602@srcf.ucam.org>
+	 <20100527232357.6d14fdb2@lxorguk.ukuu.org.uk>
+	 <20100527223605.GB11364@srcf.ucam.org>
+	 <20100527235546.09f3ce8a@lxorguk.ukuu.org.uk>
+	 <20100528043114.GC26177@thunk.org> <1275030704.32462.11.camel@laptop>
+	 <AANLkTikEtlbkT4Ws3H2YGt_9QC46B5dr-b1oxJOcG4GN@mail.gmail.com>
+	 <1275120618.27810.12699.camel@twins>
+Content-Type: text/plain; charset="UTF-8"
+Date: Sat, 29 May 2010 11:10:18 -0500
+Message-ID: <1275149418.4503.128.camel@mulgrave.site>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.2 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-trace_unhandled() callback does not allow to access event fields, this
-patch resolves the problem.
+On Sat, 2010-05-29 at 10:10 +0200, Peter Zijlstra wrote:
+> On Fri, 2010-05-28 at 17:43 -0700, Arve Hjønnevåg wrote:
+> > On Fri, May 28, 2010 at 12:11 AM, Peter Zijlstra <peterz@infradead.org> wrote:
+> > > On Fri, 2010-05-28 at 00:31 -0400, tytso@mit.edu wrote:
+> > >> Keep in mind, though, that a solution which is acceptable for Android
+> > >> has to include making sure that crappy applications don't cause the
+> > >> battery to get drained.  There seem to be some people who seem
+> > >> adamently against this requirement.
+> > >
+> > > Again, Alan, Thomas and myself don't argue against that, what we do
+> > > however argue against is suspend running apps as a form of power
+> > > management.
+> > >
+> > 
+> > You seem to argue that android is not allowed to use suspend because
+> > the hardware we have shipped on can enter the same power state from
+> > idle. From my point of view, since we need to support suspend on some
+> > hardware we should be allowed to leverage this solution on the better
+> > hardware platforms as well if it improves our battery life.
+> 
+> Correct, I strongly oppose using suspend. Not running runnable tasks is
+> not a sane solution.
 
-It can also been used as a more pythonic and flexible way for script
-writters to demux event types
+Look, this is getting into the realms of a pointless semantic quibble.
+The problem is that untrusted tasks need to be forcibly suspended when
+they have no legitimate work to do and the user hasn't authorised them
+to continue even if the scheduler sees them as runnable.  Whether that's
+achieved by suspending the entire system or forcibly idling the tasks
+(using blocking states or freezers or something) so the scheduler can
+suspend from idle is something to be discussed, but the net result is
+that we have to stop a certain set of tasks in such a way that they can
+still receive certain external events ... semantically, this is
+equivalent to not running runnable tasks in my book. (Perhaps this whole
+thing is because the word runnable means different things ... I'm
+thinking a task that would consume power ... are you thinking in the
+scheduler R state?)
 
-This will for example greatly simplify pytimechart event demux.
+Realistically, the main thing we need to do is stop timers posted
+against the task (which is likely polling in a main loop, that being the
+usual form of easy to write but power crazy app behaviour) from waking
+the task and bringing the system out of suspend (whether from idle or
+forced).
 
-Signed-off-by: Pierre Tardy <tardyp@gmail.com>
----
- tools/perf/scripts/python/check-perf-trace.py      |    3 +-
- .../util/scripting-engines/trace-event-python.c    |   51 +++++++++++++------
- 2 files changed, 36 insertions(+), 18 deletions(-)
+> If current hardware can't cope, too friggin bad, get better hardware.
+> 
+> But the truth is, all your OMAP phones really can deal with it.
 
-diff --git a/tools/perf/scripts/python/check-perf-trace.py b/tools/perf/scripts/python/check-perf-trace.py
-index 964d934..d9f7893 100644
---- a/tools/perf/scripts/python/check-perf-trace.py
-+++ b/tools/perf/scripts/python/check-perf-trace.py
-@@ -51,8 +51,7 @@ def kmem__kmalloc(event_name, context, common_cpu,
- 
- 		flag_str("kmem__kmalloc", "gfp_flags", gfp_flags)),
- 
--def trace_unhandled(event_name, context, common_cpu, common_secs, common_nsecs,
--		common_pid, common_comm):
-+def trace_unhandled(event_name, context, event_fields_dict):
-     try:
-         unhandled[event_name] += 1
-     except TypeError:
-diff --git a/tools/perf/util/scripting-engines/trace-event-python.c b/tools/perf/util/scripting-engines/trace-event-python.c
-index 81f39ca..db7c18a 100644
---- a/tools/perf/util/scripting-engines/trace-event-python.c
-+++ b/tools/perf/util/scripting-engines/trace-event-python.c
-@@ -208,7 +208,7 @@ static void python_process_event(int cpu, void *data,
- 				 int size __unused,
- 				 unsigned long long nsecs, char *comm)
- {
--	PyObject *handler, *retval, *context, *t, *obj;
-+	PyObject *handler, *retval, *context, *t, *obj, *dict = NULL;
- 	static char handler_name[256];
- 	struct format_field *field;
- 	unsigned long long val;
-@@ -232,6 +232,14 @@ static void python_process_event(int cpu, void *data,
- 
- 	sprintf(handler_name, "%s__%s", event->system, event->name);
- 
-+	handler = PyDict_GetItemString(main_dict, handler_name);
-+	if (handler && !PyCallable_Check(handler))
-+		handler = NULL;
-+	if (!handler) {
-+		dict = PyDict_New();
-+		if (!dict)
-+			Py_FatalError("couldn't create Python dict");
-+	}
- 	s = nsecs / NSECS_PER_SEC;
- 	ns = nsecs - s * NSECS_PER_SEC;
- 
-@@ -242,12 +250,20 @@ static void python_process_event(int cpu, void *data,
- 	PyTuple_SetItem(t, n++, PyString_FromString(handler_name));
- 	PyTuple_SetItem(t, n++,
- 			PyCObject_FromVoidPtr(scripting_context, NULL));
--	PyTuple_SetItem(t, n++, PyInt_FromLong(cpu));
--	PyTuple_SetItem(t, n++, PyInt_FromLong(s));
--	PyTuple_SetItem(t, n++, PyInt_FromLong(ns));
--	PyTuple_SetItem(t, n++, PyInt_FromLong(pid));
--	PyTuple_SetItem(t, n++, PyString_FromString(comm));
- 
-+	if (handler) {
-+		PyTuple_SetItem(t, n++, PyInt_FromLong(cpu));
-+		PyTuple_SetItem(t, n++, PyInt_FromLong(s));
-+		PyTuple_SetItem(t, n++, PyInt_FromLong(ns));
-+		PyTuple_SetItem(t, n++, PyInt_FromLong(pid));
-+		PyTuple_SetItem(t, n++, PyString_FromString(comm));
-+	} else {
-+		PyDict_SetItemString(dict, "common_cpu", PyInt_FromLong(cpu));
-+		PyDict_SetItemString(dict, "common_s", PyInt_FromLong(s));
-+		PyDict_SetItemString(dict, "common_ns", PyInt_FromLong(ns));
-+		PyDict_SetItemString(dict, "common_pid", PyInt_FromLong(pid));
-+		PyDict_SetItemString(dict, "common_comm", PyString_FromString(comm));
-+	}
- 	for (field = event->format.fields; field; field = field->next) {
- 		if (field->flags & FIELD_IS_STRING) {
- 			int offset;
-@@ -272,22 +288,25 @@ static void python_process_event(int cpu, void *data,
- 					obj = PyLong_FromUnsignedLongLong(val);
- 			}
- 		}
--		PyTuple_SetItem(t, n++, obj);
-+		if (handler)
-+			PyTuple_SetItem(t, n++, obj);
-+		else
-+			PyDict_SetItemString(dict, field->name, obj);
-+
- 	}
-+	if (!handler)
-+		PyTuple_SetItem(t, n++, dict);
- 
- 	if (_PyTuple_Resize(&t, n) == -1)
- 		Py_FatalError("error resizing Python tuple");
- 
--	handler = PyDict_GetItemString(main_dict, handler_name);
--	if (handler && PyCallable_Check(handler)) {
-+	if (handler) {
- 		retval = PyObject_CallObject(handler, t);
- 		if (retval == NULL)
- 			handler_call_die(handler_name);
- 	} else {
- 		handler = PyDict_GetItemString(main_dict, "trace_unhandled");
- 		if (handler && PyCallable_Check(handler)) {
--			if (_PyTuple_Resize(&t, N_COMMON_FIELDS) == -1)
--				Py_FatalError("error resizing Python tuple");
- 
- 			retval = PyObject_CallObject(handler, t);
- 			if (retval == NULL)
-@@ -296,6 +315,8 @@ static void python_process_event(int cpu, void *data,
- 	}
- 
- 	Py_DECREF(t);
-+	if (!handler)
-+		Py_DECREF(dict);
- }
- 
- static int run_start_sub(void)
-@@ -548,12 +569,10 @@ static int python_generate_script(const char *outfile)
- 	}
- 
- 	fprintf(ofp, "def trace_unhandled(event_name, context, "
--		"common_cpu, common_secs, common_nsecs,\n\t\t"
--		"common_pid, common_comm):\n");
-+		"event_fields_dict):\n");
- 
--	fprintf(ofp, "\t\tprint_header(event_name, common_cpu, "
--		"common_secs, common_nsecs,\n\t\tcommon_pid, "
--		"common_comm)\n\n");
-+	fprintf(ofp, "\t\tprint ' '.join(['%%s=%%s'%%(k,str(v))"
-+		"for k,v in sorted(event_fields_dict.items())])\n\n");
- 
- 	fprintf(ofp, "def print_header("
- 		"event_name, cpu, secs, nsecs, pid, comm):\n"
--- 
-1.7.0.4
+That's rubbish and you know it.  We do software workarounds for hardware
+problems all the time ... try doing a git grep -i errata in arch x86, or
+imagine a USB subsystem that only supported sane standards conforming
+devices: that would have an almost zero intersect with the current USB
+device market.
+
+The job of the kernel is to accommodate hardware as best it can ...
+sometimes it might not be able to, but most of the time it does a pretty
+good job.
+
+The facts are that C states and S states are different and are entered
+differently.  For some omap hardware, the power consumption in the
+lowest C state (with all the ancillary power control) is the same as S3,
+that's fine, suspend from idle works as well as suspend to ram modulo
+bad apps. For quite a lot of MSM hardware, the lowest C state power
+consumption is quite a bit above S3.  It's not acceptable to tell those
+people "tough, your battery runs out in 30 minutes because you bought
+the wrong hardware".  We have to figure out how to get to S3 ... whether
+this is from idle or some other mechanism is again a discussion point,
+but not doing it is not an option.
+
+> > I have not seen any suggestions for how to deal with all our
+> > interprocess dependencies when pausing a subset of processes. Without
+> > a solution to that we can only pause a subset of the processes we want
+> > to pause.
+> 
+> Do not 'pause' processes and you don't have the problem, make them stop
+> on their own accord or kill them if they dont listen.. who cares about
+> ill-behaved apps anyway?
+> 
+> But really, if you want a more detailed answer, you need to provide more
+> detail on these problems.
+> 
+> If you want to allow an untrusted app to provide a dependency for a
+> trusted app, you've lost and I don't care.
+> 
+> Trusted apps should be well behaved, otherwise there really is no point.
+> 
+> > These solutions do not allow us to use suspend. They may get us closer
+> > to the power consumption we get from suspend on the good hardware or
+> > even surpass it, but we still need suspend on some hardware, and we
+> > would get event better results by using these solutions in addition to
+> > suspend compared to using them instead of suspend.
+> 
+> Not using suspend is exactly the point. As Alan has argued, propagating
+> suspend blockers up into all regions of userspace will take much longer
+> than fixing the hardware.
+
+Strange, that's not what I heard as the possible solution.  I thought he
+was advocating expressing the kernel side of suspend blockers as QoS
+constraints.  Once we have QoS constraints correctly done in the kernel,
+userspace still has to express its requirements.  If the requirements
+are static, then they can be done from policy files or in some other
+static way but if they're dynamic, they'll still have to be in the
+applications ... in about the same places the android wakelocks are.
+
+> You got to realize this is about Linux as a whole, I really don't care
+> one whit about the specific Android case. We want a solution that is
+> generic enough to solve the power consumption problem and makes sense on
+> future hardware.
+
+I don't think anyone disagrees with this. As long as we find a long term
+solution that satisfies the android case, everyone will be happy.
+
+> The only abstraction that really makes sense in that view is idle
+> states.
+
+James
+
 
