@@ -1,74 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756851Ab0EaQ3k (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 May 2010 12:29:40 -0400
-Received: from va3ehsobe005.messaging.microsoft.com ([216.32.180.15]:30890
-	"EHLO VA3EHSOBE005.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1756409Ab0EaQ3i (ORCPT
+	id S1755420Ab0EaQd7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 May 2010 12:33:59 -0400
+Received: from casper.infradead.org ([85.118.1.10]:53743 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754491Ab0EaQd6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 May 2010 12:29:38 -0400
-X-SpamScore: -13
-X-BigFish: VPS-13(zz1432P98dNzz1202hzzz32i2a8h43h62h)
-X-Spam-TCS-SCL: 1:0
-X-WSS-ID: 0L3ALT3-01-L4L-02
-X-M-MSG: 
-Date: Mon, 31 May 2010 18:29:38 +0200
-From: Borislav Petkov <borislav.petkov@amd.com>
-To: Jeff Dike <jdike@addtoit.com>
-CC: Borislav Petkov <bp@alien8.de>, "H. Peter Anvin" <hpa@zytor.com>,
-       Geert Uytterhoeven <geert@linux-m68k.org>,
-       Toralf =?iso-8859-1?Q?F=F6rster?= <toralf.foerster@gmx.de>,
-       "user-mode-linux-devel@lists.sourceforge.net" 
-	<user-mode-linux-devel@lists.sourceforge.net>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] x86, hweight: Fix UML boot crash
-Message-ID: <20100531162938.GA6574@aftab>
-References: <201005271944.09541.toralf.foerster@gmx.de>
- <AANLkTimKwxYxM_PExplIDK1WPTQ9e_-CHn5SnIvfjfUg@mail.gmail.com>
- <20100530150214.GA1565@liondog.tnic>
- <201005301728.25976.toralf.foerster@gmx.de>
- <20100530170346.GC1565@liondog.tnic>
- <4C02B020.2040103@zytor.com>
- <20100530193956.GA2498@liondog.tnic>
- <20100531023212.GA22673@c-98-229-117-200.hsd1.ma.comcast.net>
- <20100531135132.GA4915@aftab>
- <20100531155619.GA29244@c-98-229-117-200.hsd1.ma.comcast.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <20100531155619.GA29244@c-98-229-117-200.hsd1.ma.comcast.net>
-Organization: Advanced Micro Devices =?iso-8859-1?Q?GmbH?=
-	=?iso-8859-1?Q?=2C_Einsteinring_24=2C_85609_Dornach_bei_M=FCnchen=2C_Gesc?=
-	=?iso-8859-1?Q?h=E4ftsf=FChrer=3A_Thomas_M=2E_McCoy=2C_Giuliano_Meroni=2C?=
-	=?iso-8859-1?Q?_Andrew_Bowd=2C_Sitz=3A_Dornach=2C_Gemeinde_Aschheim=2C_La?=
-	=?iso-8859-1?Q?ndkreis_M=FCnchen=2C_Registergericht_M=FCnchen?=
-	=?iso-8859-1?Q?=2C?= HRB Nr. 43632
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Reverse-DNS: unknown
+	Mon, 31 May 2010 12:33:58 -0400
+Subject: Re: [linux-pm] [PATCH 0/8] Suspend block api (version 8)
+From: Peter Zijlstra <peterz@infradead.org>
+To: James Bottomley <James.Bottomley@suse.de>
+Cc: Arve =?ISO-8859-1?Q?Hj=F8nnev=E5g?= <arve@android.com>, tytso@mit.edu,
+       LKML <linux-kernel@vger.kernel.org>,
+       Florian Mickler <florian@mickler.org>,
+       Linux PM <linux-pm@lists.linux-foundation.org>,
+       Thomas Gleixner <tglx@linutronix.de>,
+       Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
+       felipe.balbi@nokia.com, Alan Cox <alan@lxorguk.ukuu.org.uk>
+In-Reply-To: <1275149418.4503.128.camel@mulgrave.site>
+References: <20100527222514.0a1710bf@lxorguk.ukuu.org.uk>
+	 <Pine.LNX.4.44L0.1005271730180.3239-100000@iolanthe.rowland.org>
+	 <20100527230806.4deb6de3@lxorguk.ukuu.org.uk>
+	 <20100527220949.GB10602@srcf.ucam.org>
+	 <20100527232357.6d14fdb2@lxorguk.ukuu.org.uk>
+	 <20100527223605.GB11364@srcf.ucam.org>
+	 <20100527235546.09f3ce8a@lxorguk.ukuu.org.uk>
+	 <20100528043114.GC26177@thunk.org> <1275030704.32462.11.camel@laptop>
+	 <AANLkTikEtlbkT4Ws3H2YGt_9QC46B5dr-b1oxJOcG4GN@mail.gmail.com>
+	 <1275120618.27810.12699.camel@twins>
+	 <1275149418.4503.128.camel@mulgrave.site>
+Content-Type: text/plain; charset="UTF-8"
+Date: Sat, 29 May 2010 20:12:14 +0200
+Message-ID: <1275156734.1645.496.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jeff Dike <jdike@addtoit.com>
-Date: Mon, May 31, 2010 at 11:56:19AM -0400
-
-> On Mon, May 31, 2010 at 03:51:32PM +0200, Borislav Petkov wrote:
-> > <arch/x86/include/asm/bitops.h> includes <asm/arch_hweight.h> which are
-> > the optimized variants.
+On Sat, 2010-05-29 at 11:10 -0500, James Bottomley wrote:
+> > Correct, I strongly oppose using suspend. Not running runnable tasks is
+> > not a sane solution.
 > 
-> But how does UML get to arch/x86/include/asm/bitops.h in the first place?
-> 
-> It must go through an arch/um/include/asm/something.h (where something
-> might be bitops) first, right?
+> Look, this is getting into the realms of a pointless semantic quibble.
+> The problem is that untrusted tasks need to be forcibly suspended when
+> they have no legitimate work to do and the user hasn't authorised them
+> to continue even if the scheduler sees them as runnable.  Whether that's
+> achieved by suspending the entire system or forcibly idling the tasks
+> (using blocking states or freezers or something) so the scheduler can
+> suspend from idle is something to be discussed,
 
-Right, look at one of those dependencies file (for example,
-arch/um/kernel/.ptrace.o.cmd) for a _very_ long inclusion chain which
-contains <arch/x86/include/asm/arch_hweight.h> at some point.
+So what happens if you task is CPU bound and gets suspended and is
+holding a resource (lock, whatever) that is required by someone else
+that didn't get suspended?
 
--- 
-Regards/Gruss,
-Boris.
+That's the classic inversion problem, and is caused by not running
+runnable tasks.
 
-Operating Systems Research Center
-Advanced Micro Devices, Inc.
+>  but the net result is
+> that we have to stop a certain set of tasks in such a way that they can
+> still receive certain external events ... semantically, this is
+> equivalent to not running runnable tasks in my book.
+
+Why would be care about external events? Clearly these apps are ill
+behaved, otherwise they would have listened to the environment telling
+them to idle.
+
+Why would you try to let buggy apps work as intended instead of break
+them as hard as possible? Such policy promotes crappy code since people
+get away with it.
+
+>  (Perhaps this whole
+> thing is because the word runnable means different things ... I'm
+> thinking a task that would consume power ... are you thinking in the
+> scheduler R state?)
+
+Clearly I mean TASK_RUNNABLE, if not that the scheduler doesn't care.
+
+> Realistically, the main thing we need to do is stop timers posted
+> against the task (which is likely polling in a main loop, that being the
+> usual form of easy to write but power crazy app behaviour) from waking
+> the task and bringing the system out of suspend (whether from idle or
+> forced).
+
+Sure, that same main loop will probably receive a message along the
+lines of, 'hey, screen is off, we ought to go sleep'. If after that it
+doesn't listen, and more serious messages don't get responded to, simply
+kill the thing.
+
+Again, there is no reason what so ever to tolerate broken apps, it only
+promotes crappy apps.
+
+
 
