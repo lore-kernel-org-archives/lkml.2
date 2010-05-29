@@ -1,57 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756158Ab0E2OSN (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 29 May 2010 10:18:13 -0400
-Received: from mail-pz0-f204.google.com ([209.85.222.204]:53315 "EHLO
-	mail-pz0-f204.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751684Ab0E2OSM convert rfc822-to-8bit (ORCPT
+	id S1756786Ab0E2OVU (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 29 May 2010 10:21:20 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:55128 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754918Ab0E2OVT convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 29 May 2010 10:18:12 -0400
+	Sat, 29 May 2010 10:21:19 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :content-type:content-transfer-encoding;
-        b=nfeF+su16cFq4ZKOvM2kQEcc7nUindTNpmElyJn8e2FjNsLxg4EFuZ5Bhu2ir2I8Or
-         T66C2qV9ILlb/n8iaMZnPzHA6RTq13eWgLLn3zbjwDpeYDie80gk/JYQN6/TO0Yqo371
-         A9v03xFI8Ovttyn9RJg6nJ0tCJntFJSv6Mohg=
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=S+a4pLXh9t/HROh/9rcT0YZGfuyHqyPNNJEhh3pTP+FAz6sXzM/R64+mmHPf6nr00c
+         ZslWY7d2M3pS7uaFWYgTbESFSVAvfyUhbtbWEimC6WSE8IgM7D9i634kICtCRGmWxKq+
+         D3533tV8I8e+i7R0g9RSHxbQ0617uxTUHt8gU=
 MIME-Version: 1.0
-In-Reply-To: <20100529134625.GC25092@liondog.tnic>
-References: <1275095926-18345-1-git-send-email-xiaosuo@gmail.com> 
-	<20100529121019.GA25092@liondog.tnic> <AANLkTimtX4HSql73IEAwOBqC2-R25713IgfihGR-fQm9@mail.gmail.com> 
-	<20100529134625.GC25092@liondog.tnic>
-From: Changli Gao <xiaosuo@gmail.com>
-Date: Sat, 29 May 2010 22:17:50 +0800
-Message-ID: <AANLkTik7jSq4Gh5sWd8vEA5tF7yqxaA7EGZQ_Qp5byk4@mail.gmail.com>
-Subject: Re: [PATCH 1/2] fs: optimize mpage_readpage()
-To: Borislav Petkov <bp@alien8.de>, Changli Gao <xiaosuo@gmail.com>,
-       Alexander Viro <viro@zeniv.linux.org.uk>, linux-fsdevel@vger.kernel.org,
-       linux-kernel@vger.kernel.org
+In-Reply-To: <4BFC7269.3070309@lougher.demon.co.uk>
+References: <4BFC7269.3070309@lougher.demon.co.uk>
+Date: Sat, 29 May 2010 16:21:17 +0200
+X-Google-Sender-Auth: 59Wz5u0C-kce-Du37YzTuy8Lf6I
+Message-ID: <AANLkTilWjRvjl5M_4lenw3aMI57eDYjOV96k3KmxrNwB@mail.gmail.com>
+Subject: Re: [GIT PULL] Squashfs updates for 2.6.35
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Phillip Lougher <phillip@lougher.demon.co.uk>
+Cc: Linux Kernel Development <linux-kernel@vger.kernel.org>,
+       Stephen Hemminger <shemminger@vyatta.com>
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, May 29, 2010 at 9:46 PM, Borislav Petkov <bp@alien8.de> wrote:
-> From: Changli Gao <xiaosuo@gmail.com>
-> Date: Sat, May 29, 2010 at 09:26:47PM +0800
->
->> Did the compiler warning appear after applying my patch? It doesn't
->> happen when I testing it.
->
-> yep, using gcc (Debian 4.4.4-2) 4.4.4 here.
->
->> And I don't pass bio to do_mpage_readpage(), but I pass NULL instead.
->
-> True, but you still need that bio pointer so you might just as well set
-> it to NULL as the original code does.
->
+On Wed, May 26, 2010 at 02:59, Phillip Lougher
+<phillip@lougher.demon.co.uk> wrote:
+> Stephen Hemminger (2):
+>      squashfs: xattr fix sparse warnings
 
-I'm using gcc 4.4.3(Gentoo). It's strange. on that line, bio is only
-used as left value. Maybe it is a compiler bug, or you didn't apply my
-patch properly.
+Interestingly, this one introduced a new compiler warning:
 
+fs/squashfs/xattr.c:37: warning: ‘squashfs_xattr_handler’ declared
+inline after being called
+fs/squashfs/xattr.c:37: warning: previous declaration of
+‘squashfs_xattr_handler’ was here
 
--- 
-Regards，
-Changli Gao(xiaosuo@gmail.com)
+as the actual function is still marked inline at line 298.
+
+Gr{oetje,eeting}s,
+
+						Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+							    -- Linus Torvalds
