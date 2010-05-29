@@ -1,49 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757003Ab0E2OXN (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 29 May 2010 10:23:13 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:60684 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756047Ab0E2OXJ (ORCPT
+	id S1757291Ab0E2OXS (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 29 May 2010 10:23:18 -0400
+Received: from mail-px0-f174.google.com ([209.85.212.174]:54220 "EHLO
+	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757085Ab0E2OXO convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 29 May 2010 10:23:09 -0400
+	Sat, 29 May 2010 10:23:14 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
-        b=ecUxGsLWI/UFwkgAx+XldEUybOyDwcDwih+Vw2YwiQQtzHg5BpUpJItb7AAygppTTf
-         plMvyEOKs/5rI9ccHnJpPI0ijcKn+H2+CTJA5fz/Jw0nIqPanOm0ZfgQPXc+EZ257mFi
-         7n6nLCyGu4AY+XHI6Nob+cL0Wl1+1iwmFeIjo=
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type:content-transfer-encoding;
+        b=YmUAY9RAkjvlJmWEYNMYgL4YX5d8P7EWfcXAIOxAJ0/N7o00A0cbRWJtLgbASnI9oV
+         +1dhVJcU1ghzj43z57wEtzEgasN6RJSCjvUyRG/FlQW4tGCkVn+YPRY+Zw7G9QVhK7q0
+         Gktock/KyhPmwGGYsWOEk76r0j3g/vdvogUXQ=
 MIME-Version: 1.0
-In-Reply-To: <4BF19A03.1060506@lougher.demon.co.uk>
-References: <4BF19A03.1060506@lougher.demon.co.uk>
-Date: Sat, 29 May 2010 16:23:06 +0200
-X-Google-Sender-Auth: m9C37Lt23auw8WJONHeED6h7wDI
-Message-ID: <AANLkTilk3j8yrvgykjY_UvteafFF4c2TMe3QTYiOV2_-@mail.gmail.com>
-Subject: Re: [PATCH 4/4] squashfs: add xattr support configure option
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Phillip Lougher <phillip@lougher.demon.co.uk>
-Cc: linux-fsdevel@vger.kernel.org,
-       Linux Kernel Development <linux-kernel@vger.kernel.org>
+In-Reply-To: <20100529140901.GD3106@shareable.org>
+References: <1274885083-15735-1-git-send-email-xiaosuo@gmail.com> 
+	<E1OHw5Q-00020q-Dk@pomaz-ex.szeredi.hu> <AANLkTill8Y1RNTzZ9BFmVHPxLyx7CZIL5okqUCRVrrmH@mail.gmail.com> 
+	<E1OHwZC-0002KS-EJ@pomaz-ex.szeredi.hu> <AANLkTikJMLiaUIVohTPy4DLF4XmWsy7LCx0bDheq2aHM@mail.gmail.com> 
+	<20100529140901.GD3106@shareable.org>
+From: Changli Gao <xiaosuo@gmail.com>
+Date: Sat, 29 May 2010 22:22:54 +0800
+Message-ID: <AANLkTikycDykLRPnRZFAbdIszTOMDVFoX4DGiLcCvSqd@mail.gmail.com>
+Subject: Re: [PATCH v2 4/4] splice: fix updating sd->pos wrongly
+To: Jamie Lokier <jamie@shareable.org>
+Cc: Miklos Szeredi <miklos@szeredi.hu>, axboe@kernel.dk,
+       viro@zeniv.linux.org.uk, mszeredi@suse.cz,
+       linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 17, 2010 at 21:33, Phillip Lougher
-<phillip@lougher.demon.co.uk> wrote:
-> +config SQUASHFS_XATTRS
+On Sat, May 29, 2010 at 10:09 PM, Jamie Lokier <jamie@shareable.org> wrote:
+>
+> Not true if the "file" is /dev/mem or /dev/kmem.  The starting offset
+> can be negative, so can end at zero.
+>
+> It's an obscure case and I don't know if you can sendfile from
+> /dev/{,k}mem anyway :-) but illustrates why sd->pos != 0 is dubious.
+>
 
-Sorry for not noticing before, but all other file systems use "<fs>_XATTR", not
-"<fs>_XATTRS". Just for consistency...
+So the safe way is checking if splice_read() updates pos or not, isn't it?
 
-Gr{oetje,eeting}s,
+if (sd->pos != prev_pos)
+    sd->pos = prev_pos + ret;
 
-						Geert
 
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-							    -- Linus Torvalds
+-- 
+Regards，
+Changli Gao(xiaosuo@gmail.com)
