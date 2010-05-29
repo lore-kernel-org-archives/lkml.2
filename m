@@ -1,68 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755060Ab0E2Kbf (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 29 May 2010 06:31:35 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:65335 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751663Ab0E2Kbd (ORCPT
+	id S1755796Ab0E2Kmt (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 29 May 2010 06:42:49 -0400
+Received: from casper.infradead.org ([85.118.1.10]:51286 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753018Ab0E2Kms convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 29 May 2010 06:31:33 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:date:message-id:subject:from:to:content-type;
-        b=pwyCm+iluUNeKOEZP3F5pMX/Lxexguo0Rs2XZ1DDyoG66pa8q4JO6O3uSMO5wVkIkb
-         99SsekGRc4VIVNHMmNXpi2U5qP4Einlr86xCYM6scudKyg7eKkInSPTtadyN0iutTPid
-         L7/vkLj0yGxFmVMb1okTv0DvohP6mjY0MDmlg=
-MIME-Version: 1.0
-Date: Sat, 29 May 2010 06:31:32 -0400
-Message-ID: <AANLkTimDfbJkAuoK1-asvk8Ub9C9QBkK5RkzLR3ilJUY@mail.gmail.com>
-Subject: Re: [PATCH v21 011/100] eclone (11/11): Document sys_eclone
-From: Albert Cahalan <acahalan@gmail.com>
-To: linux-kernel <linux-kernel@vger.kernel.org>, sukadev@linux.vnet.ibm.com,
-       randy.dunlap@oracle.com, linuxppc-dev@lists.ozlabs.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Sat, 29 May 2010 06:42:48 -0400
+Subject: Re: [linux-pm] [PATCH 0/8] Suspend block api (version 8)
+From: Peter Zijlstra <peterz@infradead.org>
+To: Florian Mickler <florian@mickler.org>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
+       Linux PM <linux-pm@lists.linux-foundation.org>,
+       Arve =?ISO-8859-1?Q?Hj=F8nnev=E5g?= <arve@android.com>,
+       Alan Cox <alan@lxorguk.ukuu.org.uk>,
+       Matthew Garrett <mjg59@srcf.ucam.org>,
+       Alan Stern <stern@rowland.harvard.edu>,
+       Thomas Gleixner <tglx@linutronix.de>, Paul@smtp1.linux-foundation.org,
+       LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>
+In-Reply-To: <20100529110426.077cba47@schatten.dmk.lab>
+References: <Pine.LNX.4.44L0.1005271344040.3239-100000@iolanthe.rowland.org>
+	 <AANLkTimqvMuMpB5E3tj58OtlRc-7mVaec-9EHAegywg7@mail.gmail.com>
+	 <1275032623.32462.30.camel@laptop> <201005290011.32543.rjw@sisk.pl>
+	 <20100529110426.077cba47@schatten.dmk.lab>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Sat, 29 May 2010 12:42:37 +0200
+Message-ID: <1275129757.27810.13205.camel@twins>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sukadev Bhattiprolu writes:
+On Sat, 2010-05-29 at 11:04 +0200, Florian Mickler wrote:
+> On Sat, 29 May 2010 00:11:32 +0200
+> "Rafael J. Wysocki" <rjw@sisk.pl> wrote:
+> 
+> > 
+> > Having reconsidered the suspend blockers idea I came to the conclusion that
+> > in fact it was a workaround for three different problems.
+> 
+> But it is also a change of paradigm. The scheduler should strive to
+> have the system idle as long as possible to conserve battery. And
+> everything that does not serve the purpose of the device has to be
+> considered as not worth running, except if there are other
+> purpose-fullfilling tasks to run anyway.
 
-> Randy Dunlap [randy.dunlap at oracle.com] wrote:
->>> base of the region allocated for stack. These architectures
->>> must pass in the size of the stack-region in ->child_stack_size.
->>
->>                               stack region
->>
->> Seems unfortunate that different architectures use
->> the fields differently.
->
-> Yes and no. The field still has a single purpose, just that
-> some architectures may not need it. We enforce that if unused
-> on an architecture, the field must be 0. It looked like
-> the easiest way to keep the API common across architectures.
+No the purpose of the scheduler is to run tasks when they are runnable.
+Not to second guess whatever caused them to become runnable.
 
-Yuck. You're forcing userspace to have #ifdef messes or,
-more likely, just not work on all architectures. There is
-no reason to have field usage vary by architecture. The
-original clone syscall was not designed with ia64 and hppa
-in mind, and has been causing trouble ever since. Let's not
-perpetuate the problem.
+If you start to randomly not run tasks, the inversion chaos that ensues
+is terrible. You can apply the regular means of alleviating that and
+that entails adding *-inheritance to all blockable resources. The -rt
+patch set is doing that in part.
 
-Given code like this:   stack_base = malloc(stack_size);
-stack_base and stack_size are what the kernel needs.
+You really need to make applications not want to run and block on their
+own volition (in a resource free point) and otherwise make them block on
+something forcefully and disregard any malfunctioning that would result
+from that, and in extreme cases terminate (releasing all resources).
 
-I suspect that you chose the defective method for some reason
-related to restarting processes that were created with the
-older system calls. I can't say most of us even care, but in
-that broken-already case your process restarter can make up
-some numbers that will work. (for i386, the base could be the
-lowest address in the vma in which %esp lies, or even address 0)
+But really Android shouldn't even need kernel support to do all this,
+since its hosted on this massive middle-ware that intercepts everything,
+called a Java Virtual Machine.
 
-A related issue is that stack allocation and deallocation can
-be quite painful: it is difficult (some assembly required) to
-free one's own stack, and impossible if one is already dead.
-We could use a flag to let the kernel handle allocation, with
-the stack getting freed just after any ptracer gets a last look.
-This issue is especially troublesome for me because the syscall
-essentially requires per-thread memory to work; it is currently
-extremely difficult to use the syscall in code which lacks that.
+Now, all I'm interested in is providing interfaces from the kernel where
+needed, so that userspace can be optimally frugal with power usage, and
+can monitor/contain badly behaving tasks.
+
+If Android is so set in its ways that they don't want to adopt (like
+saying Android requires suspend for power management) then they can go
+their own merry way and I'm not interested anymore (it would be a shame
+though).
+
+
