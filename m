@@ -1,90 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756171Ab0E2LT4 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 29 May 2010 07:19:56 -0400
-Received: from pfepb.post.tele.dk ([195.41.46.236]:45150 "EHLO
-	pfepb.post.tele.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754090Ab0E2LTz (ORCPT
+	id S1756197Ab0E2LXK (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 29 May 2010 07:23:10 -0400
+Received: from webmail01.domeneshop.no ([194.63.248.8]:41870 "EHLO
+	webmail01.domeneshop.no" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755230Ab0E2LXG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 29 May 2010 07:19:55 -0400
-X-Greylist: delayed 145978 seconds by postgrey-1.27 at vger.kernel.org; Sat, 29 May 2010 07:19:54 EDT
-Date: Sat, 29 May 2010 13:19:51 +0200
-From: Sam Ravnborg <sam@ravnborg.org>
-To: Jaswinder Singh Rajput <jaswinderlinux@gmail.com>
-Cc: Christoph Hellwig <hch@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       the arch/x86 maintainers <x86@kernel.org>,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: config automatically switches from 32-bit to 64-bit for x86
-Message-ID: <20100529111951.GB31550@merkur.ravnborg.org>
-References: <AANLkTik0PUKP3QLPRbb3nlh034_inmaeVbXy3q5_LQz-@mail.gmail.com> <20100527154916.GA5585@infradead.org> <20100527184653.GA11830@merkur.ravnborg.org> <AANLkTikkZGdf8-WnHQu4dY6WiXH7d0Raak0j-82hrvAA@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+	Sat, 29 May 2010 07:23:06 -0400
+X-Greylist: delayed 376 seconds by postgrey-1.27 at vger.kernel.org; Sat, 29 May 2010 07:23:06 EDT
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <AANLkTikkZGdf8-WnHQu4dY6WiXH7d0Raak0j-82hrvAA@mail.gmail.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Transfer-Encoding: binary
+Content-Type: text/plain; charset="iso-8859-1"
+MIME-Version: 1.0
+X-Mailer: MIME::Lite 3.01 (F2.74; T1.18; A1.74; B3.07; Q3.07)
+From: uwaysi.bin.kareem@paradoxuncreated.com
+To: linux-kernel@vger.kernel.org
+Subject: linux-kernel@vger.kernel.org
+Date: Sat, 29 May 2010 13:22:57 +0200
+X-Remote-Address: 91.186.70.220
+X-User-Agent: Opera/9.63 (Windows NT 5.1; U; en) Presto/2.1.1
+X-Mailer: Domeneshop webmail 1.07 (2008-04-23)
+X-Moam-Version: 0.93
+Message-Id: <E1OIK81-0005ME-8H@webmail01.domeneshop.no>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 28, 2010 at 03:37:00AM +0530, Jaswinder Singh Rajput wrote:
-> Hello Sam,
-> 
-> On Fri, May 28, 2010 at 12:16 AM, Sam Ravnborg <sam@ravnborg.org> wrote:
-> > On Thu, May 27, 2010 at 11:49:16AM -0400, Christoph Hellwig wrote:
-> >> On Thu, May 27, 2010 at 05:37:36AM +0530, Jaswinder Singh Rajput wrote:
-> >> > Hello,
-> >> >
-> >> > I am trying to build 32 bit kernel image on 64-bit machine but after
-> >> > 'make menuconfig' it automatically switches 32-bit to 64-bit.
-> >> >
-> >> > Is this a BUG or did intentionally.
-> >>
-> >> I think it's intentional, but I'm really annoyed by this behaviour.
-> >
-> > The request when we did the merge of 32 and 64 bit was that we
-> > should continue to build 64bit kernels on 64 bit machines.
-> > And likewise for 32bit.
-> > Because this was what the users where used to.
-> >
-> > We could simplify metters by defining new rules.
-> > As you suggest that uname on an intel box always resulted in ARCH=x86.
-> > But then people would complain why a 32 bit kernel is default when
-> > the box is 64 bit.
-> >
-> > Something like this:
-> > [The escape chars align nicely in the patched Makefile]
-> >
-> >        Sam
-> >
-> > diff --git a/Makefile b/Makefile
-> > index ebc8225..e7f97a5 100644
-> > --- a/Makefile
-> > +++ b/Makefile
-> > @@ -161,10 +161,11 @@ export srctree objtree VPATH
-> >  # then ARCH is assigned, getting whatever value it gets normally, and
-> >  # SUBARCH is subsequently ignored.
-> >
-> > -SUBARCH := $(shell uname -m | sed -e s/i.86/i386/ -e s/sun4u/sparc64/ \
-> > -                                 -e s/arm.*/arm/ -e s/sa110/arm/ \
-> > +SUBARCH := $(shell uname -m | sed -e s/i.86/x86/ -e s/x86_64/x86/        \
-> > +                                 -e s/sun4u/sparc64/                    \
-> > +                                 -e s/arm.*/arm/ -e s/sa110/arm/        \
-> >                                  -e s/s390x/s390/ -e s/parisc64/parisc/ \
-> > -                                 -e s/ppc.*/powerpc/ -e s/mips.*/mips/ \
-> > +                                 -e s/ppc.*/powerpc/ -e s/mips.*/mips/  \
-> >                                  -e s/sh[234].*/sh/ )
-> >
-> >  # Cross compiling and selecting different set of gcc/bin-utils
-> >
-> >
-> 
-> Thanks, this patch fixes the issue. Now 'make menuconfig' is following .config.
 
-If you think this is the right way to do things you can take it up
-with the x86 maintainers.
+Hmm, yes. Some typos there. Alhamdulillah (Praised Be God), for the correction. I do not have a good spellingchecker installed at the moment, and english is not my native language.
 
-Although the patch touches only a generic file this is x86 specific.
+The patch is still very interesting though, I have also tried it on 2.6.34, where jitter is somewhat lower than 2.6.33.
+For users of opengl-application, it is purely a benefit to increase the interrupt timer, and I have noticed no performance degradation (with opengl-applications) by doing so.
 
-	Sam
+If the patch should not be working with future versions of the kernel, a simple edit of linuxkernel/kernel/Kconfig.hz, replacing 1000 with 3956 should do.
+
+
+Randy Dunlap: Hi, What CPU architectures or platforms did you test this on? Were any other kernel changes needed?
+
+Tested only on my Core2 duo. No other changes needed.
+
+
+Valdis Kletnieks: Why 3956, and why better than 1000:
+
+As stated the exact value 3956, fits a profile of "where the human senses register the most information".
+
+
+The value may still iterate, as I am trying it on different kernels, and patches. However 3956 have been used here for a few months, without being changed.
+
+As I am working out a few tweaks to reduce jitter, sporadic and more regular, I may also change the value.
+
+However I think there is not so much more I can do, ATM, to reduce or change jitter behaviour. I have made a little script that changes some scheduling types, and installed a minimal linux-OS, for personal use, where I am optimizing it for my own senses, and therefore yours. :) Enjoy the fruits of this labour, if you want to be playing opengl games at it's best, (and particulary now, that the halflife series, is likely to come to linux. ! :)  - Much more enjoyable than anything running under closed source OS's, that's for sure. Overcommercialism subjecting man to inferior products, and so forth.
+
+Peace Be With You
+- Uwaysi.
+
