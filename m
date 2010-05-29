@@ -1,330 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756879Ab0E2WRX (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 29 May 2010 18:17:23 -0400
-Received: from t21.t-2.net ([84.255.209.100]:50762 "EHLO t21.t-2.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755595Ab0E2WRV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 29 May 2010 18:17:21 -0400
+	id S1757133Ab0E2WqO (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 29 May 2010 18:46:14 -0400
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:52251 "EHLO
+	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1756984Ab0E2WqK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 29 May 2010 18:46:10 -0400
+Date: Sat, 29 May 2010 23:54:02 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Samo Pogacnik <samo_pogacnik@t-2.net>
+Cc: linux-embedded <linux-embedded@vger.kernel.org>,
+       linux kernel <linux-kernel@vger.kernel.org>,
+       Randy Dunlap <rdunlap@xenotime.net>
 Subject: Re: [PATCH] detour TTY driver
-From: Samo Pogacnik <samo_pogacnik@t-2.net>
-To: linux-embedded <linux-embedded@vger.kernel.org>
-Cc: linux kernel <linux-kernel@vger.kernel.org>,
-       Randy Dunlap <rdunlap@xenotime.net>,
-       Alan Cox <alan@lxorguk.ukuu.org.uk>
-In-Reply-To: <1273918658.2341.17.camel@itpsd6lap>
+Message-ID: <20100529235402.296406d9@lxorguk.ukuu.org.uk>
+In-Reply-To: <1275171436.2122.29.camel@itpsd6lap>
 References: <1273918658.2341.17.camel@itpsd6lap>
-Content-Type: text/plain
-Date: Sun, 30 May 2010 00:17:16 +0200
-Message-Id: <1275171436.2122.29.camel@itpsd6lap>
+	<1275171436.2122.29.camel@itpsd6lap>
+X-Mailer: Claws Mail 3.7.5 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.26.3 (2.26.3-1.fc11) 
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-SGG-UMAMSID: 20100529221718Z3810t21.t-2.net 1OIULG-0000zS-EB
-X-SGG-RESULT: 20100529221718Z3810t21.t-2.net C1:OK E1:OK MX1:OK BL:OK SPF:off  CT:Unknown CM: SIP:84.255.254.67 SMF:samo_pogacnik@t-2.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 15 May 2010 12:17:00 +0200 Samo Pogacnik wrote:
-> Hi,
-> 
-> Here is the initial suggestion for a simple detour TTY driver, which
-> provides the ability to write user messages through printk. This allows
-> user output to be inlined with kernel output. Together with printk
-> time-stamping enabled, a detailed boot sequence analyses is possible.
-> Additionally, console logs could have been stored through the same
-> mechanism as kernel messages and does not require the system logger to
-> be started very/too soon.
-> 
-Hi again,
+> Randy, Alan: Would you be so kind to comment on usability and
+> acceptability of this tty driver approach? Thanks.
 
-This version of patch provides the ability to initially redirect console
-to "detour TTY" (on driver initialization), if "detour" boot command
-line option is set. 
+Not sure the naming is ideal (detour what where, simply calling it
+'/dev/ttyprintk' might be clearer - but this is detail
 
-best regards, Samo
+> +void set_console_detour(void)
+> +{
+> +	console_detour = 1;
+> +}
+> +EXPORT_SYMBOL(set_console_detour);
 
-p.s.
-Randy, Alan: Would you be so kind to comment on usability and
-acceptability of this tty driver approach? Thanks.
+module parameters can be set compiled in with modulename.option=foo so
+there are easier ways to do that.
 
----
-Signed-off-by: Samo Pogacnik <samo_pogacnik@t-2.net>
-diff --git a_linux/Documentation/devices.txt b_linux/Documentation/devices.txt
-index 53d64d3..f889097 100644
---- a_linux/Documentation/devices.txt
-+++ b_linux/Documentation/devices.txt
-@@ -239,6 +239,7 @@ Your cooperation is appreciated.
- 		  0 = /dev/tty		Current TTY device
- 		  1 = /dev/console	System console
- 		  2 = /dev/ptmx		PTY master multiplex
-+		  3 = /dev/detour	Detour via printk TTY device
- 		 64 = /dev/cua0		Callout device for ttyS0
- 		    ...
- 		255 = /dev/cua191	Callout device for ttyS191
-diff --git a_linux/Documentation/kernel-parameters.txt b_linux/Documentation/kernel-parameters.txt
-index 839b21b..1fd9f09 100644
---- a_linux/Documentation/kernel-parameters.txt
-+++ b_linux/Documentation/kernel-parameters.txt
-@@ -623,6 +623,8 @@ and is between 256 and 4096 characters. It is defined in the file
- 			Defaults to the default architecture's huge page size
- 			if not specified.
- 
-+	detour		[KNL] Initial console redirect via detour tty.
-+
- 	dhash_entries=	[KNL]
- 			Set number of hash buckets for dentry cache.
- 
-diff --git a_linux/drivers/char/Kconfig b_linux/drivers/char/Kconfig
-index 3141dd3..f81781d 100644
---- a_linux/drivers/char/Kconfig
-+++ b_linux/drivers/char/Kconfig
-@@ -485,6 +485,21 @@ config LEGACY_PTY_COUNT
- 	  When not in use, each legacy PTY occupies 12 bytes on 32-bit
- 	  architectures and 24 bytes on 64-bit architectures.
- 
-+config DETOUR_TTY
-+	bool "TTY driver to detour user output via printk"
-+	default n
-+	---help---
-+	  If you say Y here, the support for writing user messages (i.e.
-+	  console messages) via printk is available.
-+
-+	  The feature is useful to inline user messages with kernel
-+	  messages.
-+	  In order to use this feature, you should output user messages
-+	  to /dev/detour. By setting boot command line option "detour",
-+	  the console is initially redirected to detour TTY.
-+
-+	  If unsure, say N.
-+
- config BRIQ_PANEL
- 	tristate 'Total Impact briQ front panel driver'
- 	depends on PPC_CHRP
-diff --git a_linux/drivers/char/Makefile b_linux/drivers/char/Makefile
-index f957edf..b84db55 100644
---- a_linux/drivers/char/Makefile
-+++ b_linux/drivers/char/Makefile
-@@ -11,6 +11,7 @@ obj-y	 += mem.o random.o tty_io.o n_tty.o tty_ioctl.o tty_ldisc.o tty_buffer.o t
- 
- obj-$(CONFIG_LEGACY_PTYS)	+= pty.o
- obj-$(CONFIG_UNIX98_PTYS)	+= pty.o
-+obj-$(CONFIG_DETOUR_TTY)	+= dty.o
- obj-y				+= misc.o
- obj-$(CONFIG_VT)		+= vt_ioctl.o vc_screen.o selection.o keyboard.o
- obj-$(CONFIG_BFIN_JTAG_COMM)	+= bfin_jtag_comm.o
-diff --git a_linux/drivers/char/dty.c b_linux/drivers/char/dty.c
-new file mode 100644
-index 0000000..4c9018f
---- /dev/null
-+++ b_linux/drivers/char/dty.c
-@@ -0,0 +1,183 @@
-+/*
-+ *  linux/drivers/char/detour.c
-+ *
-+ *  Copyright (C) 2010  Samo Pogacnik
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the smems of the GNU General Public License as published by
-+ * the Free Software Foundation; version 2 of the License.
-+ */
-+
-+/*
-+ * This pseudo device allows user to make printk messages. It is possible
-+ * to store "console" messages inline with kernel messages for better analyses
-+ * of the boot process, for example.
-+ */
-+
-+#include <linux/security.h>
-+#include <linux/device.h>
-+#include <linux/tty.h>
-+
-+static int console_detour;
-+static struct tty_driver *dty_driver;
-+
-+/*
-+ * Set console_detour to 1.
-+ */
-+void set_console_detour(void)
-+{
-+	console_detour = 1;
-+}
-+EXPORT_SYMBOL(set_console_detour);
-+
-+/*
-+ * Our simple preformatting:
-+ * - every cr is replaced by '^'nl combination
-+ * - every non cr or nl ended write is padded with '\'nl combination
-+ * - adds a detour source tag in front of each line
-+ *
-+ * This is useful for logging purposes (kind of a logging ldisc?).
-+ */
-+static const char *detour_tag = "[D] ";
-+#define DETOUR_STR_SIZE 508
-+
-+static void detour_printk(const unsigned char *buf, int count)
-+{
-+	static char tmp[DETOUR_STR_SIZE + 4];
-+	static int curr;
-+	int i;
-+
-+	for (i = 0; i < count; i++) {
-+		tmp[curr] = buf[i];
-+		if (curr < DETOUR_STR_SIZE) {
-+			switch (buf[i]) {
-+			case '\r':
-+				tmp[curr] = '^';
-+				tmp[curr + 1] = '\n';
-+				tmp[curr + 2] = '\0';
-+				printk(KERN_INFO "%s%s", detour_tag, tmp);
-+				curr = 0;
-+				if (buf[i + 1] == '\n')
-+					i++;
-+				break;
-+			case '\n':
-+				tmp[curr + 1] = '\0';
-+				printk(KERN_INFO "%s%s", detour_tag, tmp);
-+				curr = 0;
-+				break;
-+			default:
-+				curr++;
-+			}
-+		} else {
-+			/* end of tmp buffer reached: cut the message in two */
-+			tmp[curr + 1] = '\\';
-+			tmp[curr + 2] = '\n';
-+			tmp[curr + 3] = '\0';
-+			printk(KERN_INFO "%s%s", detour_tag, tmp);
-+			curr = 0;
-+		}
-+	}
-+	if (curr > 0) {
-+		/* non nl or cr terminated message */
-+		tmp[curr + 0] = '\\';
-+		tmp[curr + 1] = '\n';
-+		tmp[curr + 2] = '\0';
-+		printk(KERN_INFO "%s%s", detour_tag, tmp);
-+		curr = 0;
-+	}
-+}
-+
-+/*
-+ *	Dummy tty ops open for succesfull terminal device open.
-+ */
-+static int dty_open(struct tty_struct *tty, struct file *filp)
-+{
-+	return 0;
-+}
-+
-+/*
-+ *	File ops (not tty ops) write avoids ldisc inserting additional CRs.
-+ *	We simply throw this to our preformatter, which calls printk.
-+ */
-+static ssize_t detour_write(struct file *file, const char __user *buf,
-+	size_t count, loff_t *ppos)
-+{
-+	detour_printk(buf, count);
-+	return count;
-+}
-+
-+static const struct tty_operations dty_ops = {
-+	.open = dty_open,
-+};
-+
-+static struct file_operations detour_fops;
-+static void initial_console_redirect(void);
-+
-+static int __init dty_init(void)
-+{
-+	dty_driver = alloc_tty_driver(1);
-+	if (!dty_driver)
-+		panic("Couldn't allocate pty driver");
-+
-+	dty_driver->owner = THIS_MODULE;
-+	dty_driver->driver_name = "dty";
-+	dty_driver->name = "detour";
-+	dty_driver->major = TTYAUX_MAJOR;
-+	dty_driver->minor_start = 3;
-+	dty_driver->num = 1;
-+	dty_driver->type = TTY_DRIVER_TYPE_CONSOLE;
-+	dty_driver->init_termios = tty_std_termios;
-+	dty_driver->flags = TTY_DRIVER_RESET_TERMIOS | TTY_DRIVER_REAL_RAW |
-+		TTY_DRIVER_DYNAMIC_DEV;
-+	tty_set_operations(dty_driver, &dty_ops);
-+
-+	if (tty_register_driver(dty_driver))
-+		panic("Couldn't register dty driver");
-+
-+	/* register our fops write function */
-+	tty_default_fops(&detour_fops);
-+	detour_fops.write = detour_write;
-+
-+	cdev_init(&dty_driver->cdev, &detour_fops);
-+
-+	/* create our unnumbered device */
-+	device_create(tty_class, NULL, MKDEV(TTYAUX_MAJOR, 3), NULL,
-+		dty_driver->name);
-+
-+	if (console_detour > 0)
-+		initial_console_redirect();
-+
-+	return 0;
-+}
-+module_init(dty_init);
-+
-+/*
-+ * Support for internal handling of console redirection via detour.
-+ */
-+static struct file detour_file;
-+static struct inode detour_inode;
-+static struct dentry detour_dentry;
-+
-+static void initial_console_redirect(void)
-+{
-+	long ret;
-+
-+	/* re-register our fops write function */
-+	detour_fops.write = detour_write;
-+
-+	detour_file.f_dentry = &detour_dentry;
-+	detour_file.f_dentry->d_inode = &detour_inode;
-+	detour_file.f_op = &detour_fops;
-+	detour_file.f_mode |= FMODE_WRITE;
-+	security_file_alloc(&detour_file);
-+	INIT_LIST_HEAD(&detour_file.f_u.fu_list);
-+
-+	detour_inode.i_rdev = MKDEV(TTYAUX_MAJOR, 3);
-+	security_inode_alloc(&detour_inode);
-+	INIT_LIST_HEAD(&detour_inode.inotify_watches);
-+
-+	ret = detour_fops.open(&detour_inode, &detour_file);
-+	printk(KERN_INFO "detour_fops.open() returned %ld\n", ret);
-+	ret = detour_fops.unlocked_ioctl(&detour_file, TIOCCONS, 0);
-+	printk(KERN_INFO "detour_fops.ioctl() returned %ld\n", ret);
-+}
-diff --git a_linux/init/main.c b_linux/init/main.c
-index 5c85402..be9dee9 100644
---- a_linux/init/main.c
-+++ b_linux/init/main.c
-@@ -263,6 +263,18 @@ static int __init loglevel(char *str)
- 
- early_param("loglevel", loglevel);
- 
-+#ifdef CONFIG_DETOUR_TTY
-+extern void set_console_detour(void);
-+
-+static int __init detour(char *str)
-+{
-+	set_console_detour();
-+	return 0;
-+}
-+
-+early_param("detour", detour);
-+#endif
-+
- /*
-  * Unknown boot options get handed to init, unless they look like
-  * unused parameters (modprobe will find them in /proc/cmdline).
+> + * Our simple preformatting:
+> + * - every cr is replaced by '^'nl combination
+> + * - every non cr or nl ended write is padded with '\'nl combination
+> + * - adds a detour source tag in front of each line
 
+This seems to make it more ambiguous
+
+
+> +/*
+> + *	Dummy tty ops open for succesfull terminal device open.
+> + */
+> +static int dty_open(struct tty_struct *tty, struct file *filp)
+> +{
+> +	return 0;
+
+The kernel really expects posix behaviour but I'm not sure how much it
+really matters in this case. Fixing that isn't hard though (use tty_port
+helpers and basically no supporting functions)
+
+
+> +	/* register our fops write function */
+> +	tty_default_fops(&detour_fops);
+> +	detour_fops.write = detour_write;
+
+No. The behaviour of a tty is very precisely defined by the standards and
+stomping over things you shouldn't is not good at all. Remember your tty
+sets its own initial termios settings so you can set those to give the
+initial behaviour you want. You need the tty layer here in your case
+anyway as you don't have sufficient locking otherwise !
+
+Also I'd provide a write_room method which always answers 'lots'
+
+Do you need a recursion check. Suppose I open this device and capture
+printk console messages to it ? Alternatively maybe you need an ioctl
+handler to trap that case and reject it as a stupidity filter (or both ?)
+
+> +	cdev_init(&dty_driver->cdev, &detour_fops);
+> +
+> +	/* create our unnumbered device */
+> +	device_create(tty_class, NULL, MKDEV(TTYAUX_MAJOR, 3), NULL,
+> +		dty_driver->name);
+
+These need to check for failures.
+
+
+> +static void initial_console_redirect(void)
+> +{
+> +	long ret;
+> +
+> +	/* re-register our fops write function */
+> +	detour_fops.write = detour_write;
+> +
+> +	detour_file.f_dentry = &detour_dentry;
+> +	detour_file.f_dentry->d_inode = &detour_inode;
+> +	detour_file.f_op = &detour_fops;
+> +	detour_file.f_mode |= FMODE_WRITE;
+> +	security_file_alloc(&detour_file);
+> +	INIT_LIST_HEAD(&detour_file.f_u.fu_list);
+> +
+> +	detour_inode.i_rdev = MKDEV(TTYAUX_MAJOR, 3);
+> +	security_inode_alloc(&detour_inode);
+> +	INIT_LIST_HEAD(&detour_inode.inotify_watches);
+> +
+> +	ret = detour_fops.open(&detour_inode, &detour_file);
+> +	printk(KERN_INFO "detour_fops.open() returned %ld\n", ret);
+> +	ret = detour_fops.unlocked_ioctl(&detour_file, TIOCCONS, 0);
+> +	printk(KERN_INFO "detour_fops.ioctl() returned %ld\n", ret);
+> +}
+
+Bletch.. I'm really opposed to this kind of hackery. Fix your userspace a
+tiny bit.
+
+So
+- Write only tty that uses printk: Looks good to me, implementation
+  quibbles only
+- Magic kernel hacks to shuffle things around in the initial console
+  logic - hideous. I still really think you need to fix your userspace
 
