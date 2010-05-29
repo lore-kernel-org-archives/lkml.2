@@ -1,80 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756212Ab0E2NTq (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 29 May 2010 09:19:46 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:52893 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755449Ab0E2NTl (ORCPT
+	id S1755512Ab0E2N1N (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 29 May 2010 09:27:13 -0400
+Received: from mail-px0-f174.google.com ([209.85.212.174]:57565 "EHLO
+	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752929Ab0E2N1I convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 29 May 2010 09:19:41 -0400
-X-Authority-Analysis: v=1.1 cv=WC2cwRI/KXdLNEmE8ivg2cmI8vFt6dWmaZdvaJ93QHU= c=1 sm=0 a=PjWTFMnUE30A:10 a=0qYQvVkOOIcA:10 a=7U3hwN5JcxgA:10 a=Q9fys5e9bTEA:10 a=gMqfjgEr1zLu/65IO0LwxA==:17 a=23XsJ7uutmLIwl2UcYgA:9 a=HzwmlPrqjGwKzqmlLrYA:7 a=flhqLhW7V6fB4dyT7cUjMr3KWB0A:4 a=PUjeQqilurYA:10 a=gMqfjgEr1zLu/65IO0LwxA==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.89.75
-Subject: Re: Perf trace event parse errors for KVM events
-From: Steven Rostedt <rostedt@goodmis.org>
-Reply-To: rostedt@goodmis.org
-To: Avi Kivity <avi@redhat.com>
-Cc: Stefan Hajnoczi <stefanha@gmail.com>, linux-perf-users@vger.kernel.org,
-       linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
-       Frederic Weisbecker <fweisbec@gmail.com>,
-       Marcelo Tosatti <mtosatti@redhat.com>,
-       Peter Zijlstra <a.p.zijlstra@chello.nl>,
-       Stefan Hajnoczi <stefanha@linux.vnet.ibm.com>
-In-Reply-To: <4C00FF9B.9000107@redhat.com>
-References: <20100526123443.GB8905@stefan-thinkpad.transitives.com>
-	 <AANLkTil8BiuzrmacV7Lpx1wES0EvLSiVmcfwtSY6Zis2@mail.gmail.com>
-	 <1275083157.22648.593.camel@gandalf.stny.rr.com>
-	 <4C00FF9B.9000107@redhat.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-Organization: Kihon Technologies Inc.
-Date: Sat, 29 May 2010 09:19:37 -0400
-Message-ID: <1275139177.22648.610.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	Sat, 29 May 2010 09:27:08 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :content-type:content-transfer-encoding;
+        b=AaPLIqgAnsluwlAMuADcIxsRgPV2aaj3H7O23Zwvor2sWD9/WcFnohrNltvB5OFRCU
+         sQ0P8YUWiFBLWQ0hDG146rtLXR/I5b8VoK4gPfbn94Sj7H+TCzRFLxQhd4WZmCE/CWYi
+         i0ZvDjwY2X2wuyZRPkF/ApAY4LyrVpzR9dWr8=
+MIME-Version: 1.0
+In-Reply-To: <20100529121019.GA25092@liondog.tnic>
+References: <1275095926-18345-1-git-send-email-xiaosuo@gmail.com> 
+	<20100529121019.GA25092@liondog.tnic>
+From: Changli Gao <xiaosuo@gmail.com>
+Date: Sat, 29 May 2010 21:26:47 +0800
+Message-ID: <AANLkTimtX4HSql73IEAwOBqC2-R25713IgfihGR-fQm9@mail.gmail.com>
+Subject: Re: [PATCH 1/2] fs: optimize mpage_readpage()
+To: Borislav Petkov <bp@alien8.de>, Changli Gao <xiaosuo@gmail.com>,
+       Alexander Viro <viro@zeniv.linux.org.uk>, linux-fsdevel@vger.kernel.org,
+       linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2010-05-29 at 14:50 +0300, Avi Kivity wrote:
-> On 05/29/2010 12:45 AM, Steven Rostedt wrote:
-> > On Fri, 2010-05-28 at 17:42 +0100, Stefan Hajnoczi wrote:
-> >    
-> >> I get parse errors when using Steven Rostedt's trace-cmd tool, too.
-> >>
-> >> Any ideas what is going on here?  I can provide more info (e.g. trace
-> >> files) if necessary.
-> >>      
-> > Does trace-cmd fail on the same tracepoints? Have you checkout the
-> > latest code?.
-> >
-> > I do know it fails on some of the KVM tracerpoints since the formatting
-> > they use is obnoxious.
-> >
-> >    
-> 
-> Isn't there a binary trace for this?
-> 
+On Sat, May 29, 2010 at 8:10 PM, Borislav Petkov <bp@alien8.de> wrote:
+> From: Changli Gao <xiaosuo@gmail.com>
+> Date: Sat, May 29, 2010 at 09:18:46AM +0800
+>
+>> optimize mpage_readpage()
+>>
+>> we don't need to initialize bio, and pass it to do_mpage_readpage() as
+>> parameter, as it is returned by do_mpage_readpage().
+>>
+>> Signed-off-by: Changli Gao <xiaosuo@gmail.com>
+>> ----
+>>  fs/mpage.c |    4 ++--
+>>  1 file changed, 2 insertions(+), 2 deletions(-)
+>> diff --git a/fs/mpage.c b/fs/mpage.c
+>> index fd56ca2..94ff0d1 100644
+>> --- a/fs/mpage.c
+>> +++ b/fs/mpage.c
+>> @@ -409,14 +409,14 @@ EXPORT_SYMBOL(mpage_readpages);
+>>   */
+>>  int mpage_readpage(struct page *page, get_block_t get_block)
+>>  {
+>> -     struct bio *bio = NULL;
+>> +     struct bio *bio;
+>>       sector_t last_block_in_bio = 0;
+>>       struct buffer_head map_bh;
+>>       unsigned long first_logical_block = 0;
+>>
+>>       map_bh.b_state = 0;
+>>       map_bh.b_size = 0;
+>> -     bio = do_mpage_readpage(bio, page, 1, &last_block_in_bio,
+>> +     bio = do_mpage_readpage(NULL, page, 1, &last_block_in_bio,
+>>                       &map_bh, &first_logical_block, get_block);
+>>       if (bio)
+>>               mpage_bio_submit(READ, bio);
+>
+> Nope, I don't think that's a good idea.
+>
+> On the one hand, this is a trick to shut up gcc:
+>
+> fs/mpage.c: In function ‘mpage_readpage’:
+> fs/mpage.c:419: warning: ‘bio’ is used uninitialized in this function
+>
+> and, on the other hand, make sure bio is NULL and not some random stack
+> value since bio is explicitly checked for NULL in do_mpage_readpage().
+>
 
-The pretty printing from the kernel handles this fine. But there's
-pressure to pass the format to userspace in binary and have the tool
-parse it. Currently it uses the print fmt to figure out how to parse.
+Did the compiler warning appear after applying my patch? It doesn't
+happen when I testing it.  And I don't pass bio to
+do_mpage_readpage(), but I pass NULL instead.
 
-Using one of the examples that Stefan showed:
-
-kvmmmu/kvm_mmu_get_page: print fmt: "%s %s", ({ const char *ret =
-p->buffer + p->len; static const char *access_str[] = { "---", "--x",
-"w--", "w-x", "-u-", "-ux", "wu-", "wux" }; union kvm_mmu_page_role
-role; role.word = REC->role; trace_seq_printf(p, "sp gfn %llx %u%s q%u%s
-%s%s" " %snxe root %u %s%c", REC->gfn, role.level, role.cr4_pae ? "
-pae" : "", role.quadrant, role.direct ? " direct" : "",
-access_str[role.access], role.invalid ? " invalid" : "", role.nxe ? "" :
-"!", REC->root_count, REC->unsync ? "unsync" : "sync", 0); ret; }),
-REC->created ? "new" : "existing"
-
-
-You need a full C parser/interpreter to understand the above.
-
--- Steve
-
-
+-- 
+Regards，
+Changli Gao(xiaosuo@gmail.com)
