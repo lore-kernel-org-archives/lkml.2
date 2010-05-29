@@ -1,74 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757643Ab0E2QgO (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 29 May 2010 12:36:14 -0400
-Received: from kroah.org ([198.145.64.141]:56687 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757348Ab0E2QgK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 29 May 2010 12:36:10 -0400
-Date: Sat, 29 May 2010 09:36:00 -0700
-From: Greg KH <greg@kroah.com>
-To: Nitin Gupta <ngupta@vflare.org>
-Cc: Pekka Enberg <penberg@cs.helsinki.fi>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Minchan Kim <minchan.kim@gmail.com>,
-       Hugh Dickins <hugh.dickins@tiscali.co.uk>, Cyp <cyp561@gmail.com>,
-       driverdev <devel@driverdev.osuosl.org>,
-       linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 0/3] zram: generic RAM based compressed R/W block
- devices
-Message-ID: <20100529163600.GA5473@kroah.com>
-References: <1274710685-2351-1-git-send-email-ngupta@vflare.org>
- <4BFFEA95.9040505@vflare.org>
- <20100528162657.GA28781@kroah.com>
- <4C006C11.7030309@vflare.org>
+	id S1753541Ab0E2QrA (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 29 May 2010 12:47:00 -0400
+Received: from mail-ww0-f46.google.com ([74.125.82.46]:45342 "EHLO
+	mail-ww0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751411Ab0E2Qq5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 29 May 2010 12:46:57 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=googlemail.com; s=gamma;
+        h=mime-version:reply-to:date:message-id:subject:from:to:cc
+         :content-type;
+        b=p7XoD+TQczVp3wZ28QpsqlDDWYiBvvHCsVsofRZfK8bryDgs+tfi/WpPjM/7Q5hpyw
+         2IqqDIaqiiMFM0+ijNcgTtzIzrxTJR2B+zvkb3LCkfYUCZ+UKNzORbSzp8+imzDF4LxC
+         5YUOZj1FIxug2AXskNo6UgBeyNMUQ4apRVyxc=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4C006C11.7030309@vflare.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Reply-To: sedat.dilek@gmail.com
+Date: Sat, 29 May 2010 18:46:54 +0200
+Message-ID: <AANLkTilvD_UjUCxN3iag1kp-D8R25P_Gh_cAjwB70BCD@mail.gmail.com>
+Subject: Re: [git head f4b87dee9] BUG: using smp_processor_id() in preemptible 
+	(VFS-related)
+From: Sedat Dilek <sedat.dilek@googlemail.com>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
+       Andrew Morton <akpm@linux-foundation.org>, Jan Kara <jack@suse.cz>,
+       dmonakhov@openvz.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, May 29, 2010 at 06:51:21AM +0530, Nitin Gupta wrote:
-> On 05/28/2010 09:56 PM, Greg KH wrote:
-> > On Fri, May 28, 2010 at 09:38:53PM +0530, Nitin Gupta wrote:
-> >> Hi All,
-> >>
-> >> On 05/24/2010 07:48 PM, Nitin Gupta wrote:
-> >>> Creates RAM based block devices: /dev/zramX (X = 0, 1, ...).
-> >>> Pages written to these disks are compressed and stored in memory
-> >>> itself. These disks allow very fast I/O and compression provides
-> >>> good amounts of memory savings.
-> >>>
-> >>> This is enhancement over existing ramzswap driver which creates
-> >>> virtual block devices (/dev/ramzswapX) which could be used only
-> >>> as swap disks.
-> >>>
-> >>> Now, with the ability to handle any kind of I/O request, zram
-> >>> devices have lot more use cases:
-> >>>  - /tmp storage
-> >>>  - various caches under /var
-> >>>  - swap disks
-> >>>  - maybe even more! :)
-> >>>
-> >>> Performance numbers can be found at:
-> >>> http://code.google.com/p/compcache/wiki/zramperf
-> >>>
-> >>
-> >> Any reviews/comments, please?
-> > 
-> > We are all busy with the .35-rc1 merge work at the moment, sorry.
-> > 
-> 
-> Thanks for your reply.
-> 
-> Ok, in the meantime, I will further test it and keep building upon it.
-> When rc1 workload is over, I think all this can be merged in linux-next?
+Regression should be fixed by (see pull-request in [1]):
 
-Yes, I think so.  It is in my queue to do so.
+commit f32764bd2bbb6ea003c158b1d276b4dc9f900348
+"quota: Convert quota statistics to generic percpu_counter"
 
-thanks,
+The patch is still pending in linux-fs-2.6/for_linus GIT tree and it's
+not accepted in upstream, yet.
 
-greg k-h
+- Sedat -
+
+[1] http://lkml.org/lkml/2010/5/27/499
+[2] http://git.kernel.org/?p=linux/kernel/git/jack/linux-fs-2.6.git;a=commit;h=f32764bd2bbb6ea003c158b1d276b4dc9f900348
