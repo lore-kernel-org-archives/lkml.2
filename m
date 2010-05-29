@@ -1,101 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757591Ab0E2QU1 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 29 May 2010 12:20:27 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:42187 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757387Ab0E2QUZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 29 May 2010 12:20:25 -0400
-X-Authority-Analysis: v=1.1 cv=EbJB9AiBqsyZPMVATYsj78CfMiBiOs+4P7kRKNQkfg0= c=1 sm=0 a=2iQPwODrlvMA:10 a=hO-oPbc3tlwA:10 a=7U3hwN5JcxgA:10 a=Q9fys5e9bTEA:10 a=gMqfjgEr1zLu/65IO0LwxA==:17 a=pGLkceISAAAA:8 a=bnIpihOkyyCsO-PpGCEA:9 a=kHG0JlIdYjSq_g47VkQA:7 a=ugg1a3XjorRPC_zp4bYmLD4swBsA:4 a=PUjeQqilurYA:10 a=MSl-tDqOz04A:10 a=gMqfjgEr1zLu/65IO0LwxA==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.89.75
-Subject: Re: [PATCH v2 3/4]: sendfile: remove flags paramter of 
- do_splice_direct()
-From: Steven Rostedt <rostedt@goodmis.org>
-Reply-To: rostedt@goodmis.org
-To: Changli Gao <xiaosuo@gmail.com>
-Cc: Miklos Szeredi <miklos@szeredi.hu>, axboe@kernel.dk,
-       Al Viro <viro@zeniv.linux.org.uk>, mszeredi@suse.cz,
-       linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       Eric Dumazet <eric.dumazet@gmail.com>,
-       Frederic Weisbecker <fweisbec@gmail.com>,
-       Ingo Molnar <mingo@redhat.com>
-In-Reply-To: <AANLkTimCXzrXcfwbCy5MZ3D40WBnGbF6Kbj6egTSjk2s@mail.gmail.com>
-References: <1274885054-15698-1-git-send-email-xiaosuo@gmail.com>
-	 <E1OHw3d-0001yr-Ag@pomaz-ex.szeredi.hu>
-	 <AANLkTimzsHAxha3vQxeFn5pF5BmYZ8nLawSG2YU3eujZ@mail.gmail.com>
-	 <AANLkTimCXzrXcfwbCy5MZ3D40WBnGbF6Kbj6egTSjk2s@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-Organization: Kihon Technologies Inc.
-Date: Sat, 29 May 2010 12:20:19 -0400
-Message-ID: <1275150019.22648.615.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	id S1757643Ab0E2QgO (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 29 May 2010 12:36:14 -0400
+Received: from kroah.org ([198.145.64.141]:56687 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757348Ab0E2QgK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 29 May 2010 12:36:10 -0400
+Date: Sat, 29 May 2010 09:36:00 -0700
+From: Greg KH <greg@kroah.com>
+To: Nitin Gupta <ngupta@vflare.org>
+Cc: Pekka Enberg <penberg@cs.helsinki.fi>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Minchan Kim <minchan.kim@gmail.com>,
+       Hugh Dickins <hugh.dickins@tiscali.co.uk>, Cyp <cyp561@gmail.com>,
+       driverdev <devel@driverdev.osuosl.org>,
+       linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 0/3] zram: generic RAM based compressed R/W block
+ devices
+Message-ID: <20100529163600.GA5473@kroah.com>
+References: <1274710685-2351-1-git-send-email-ngupta@vflare.org>
+ <4BFFEA95.9040505@vflare.org>
+ <20100528162657.GA28781@kroah.com>
+ <4C006C11.7030309@vflare.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4C006C11.7030309@vflare.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[ Removed matthew@wil.cx since I'm getting errors in sending to that address ]
-
-
-On Sat, 2010-05-29 at 09:59 +0800, Changli Gao wrote:
-> On Fri, May 28, 2010 at 6:06 PM, Changli Gao <xiaosuo@gmail.com> wrote:
-> > On Fri, May 28, 2010 at 5:40 PM, Miklos Szeredi <miklos@szeredi.hu> wrote:
-> >> On Wed, 26 May 2010, Changli Gao wrote:
-> >>> remove flags paramter of do_splice_direct().
+On Sat, May 29, 2010 at 06:51:21AM +0530, Nitin Gupta wrote:
+> On 05/28/2010 09:56 PM, Greg KH wrote:
+> > On Fri, May 28, 2010 at 09:38:53PM +0530, Nitin Gupta wrote:
+> >> Hi All,
+> >>
+> >> On 05/24/2010 07:48 PM, Nitin Gupta wrote:
+> >>> Creates RAM based block devices: /dev/zramX (X = 0, 1, ...).
+> >>> Pages written to these disks are compressed and stored in memory
+> >>> itself. These disks allow very fast I/O and compression provides
+> >>> good amounts of memory savings.
 > >>>
-> >>> the flags parameter of do_splice_direct() doesn't mean non-block read of
-> >>> in file,
+> >>> This is enhancement over existing ramzswap driver which creates
+> >>> virtual block devices (/dev/ramzswapX) which could be used only
+> >>> as swap disks.
+> >>>
+> >>> Now, with the ability to handle any kind of I/O request, zram
+> >>> devices have lot more use cases:
+> >>>  - /tmp storage
+> >>>  - various caches under /var
+> >>>  - swap disks
+> >>>  - maybe even more! :)
+> >>>
+> >>> Performance numbers can be found at:
+> >>> http://code.google.com/p/compcache/wiki/zramperf
+> >>>
 > >>
-> >> Actually, it does.  Look at the SPLICE_F_NONBLOCK usage in
-> >> __generic_splice_file_read().
-> >>
-> >
-> > Oh, I checked the code again. You're right. However, why don't we
-> > check the flags of in file instead in __generic_file_splice_read()?
-> >
+> >> Any reviews/comments, please?
+> > 
+> > We are all busy with the .35-rc1 merge work at the moment, sorry.
+> > 
 > 
-> I am afraid that __generic_file_splice_read() should not use SPLICE_F_NONBLOCK.
+> Thanks for your reply.
 > 
-> Here is the comment from the commit 42324c62704365d6a3e89138dea55909d2f26afe :
-> 
-> <<EOF
-> Linus introduced  SPLICE_F_NONBLOCK in commit
-> 29e350944fdc2dfca102500790d8ad6d6ff4f69d
-> (splice: add SPLICE_F_NONBLOCK flag )
-> 
->   It doesn't make the splice itself necessarily nonblocking (because the
->   actual file descriptors that are spliced from/to may block unless they
->   have the O_NONBLOCK flag set), but it makes the splice pipe operations
->   nonblocking.
-> 
-> Linus intention was clear : let SPLICE_F_NONBLOCK control the splice
-> pipe mode only
-> EOF
-> 
-> And I have greped the whole code:
-> 
+> Ok, in the meantime, I will further test it and keep building upon it.
+> When rc1 workload is over, I think all this can be merged in linux-next?
 
+Yes, I think so.  It is in my queue to do so.
 
-> kernel/trace/trace.c:           if (flags & SPLICE_F_NONBLOCK)
-> 
-> besides the __generic_file_splice_read(), there are two users: relay
-> and trace. I believe they all misuse this flag.
-> 
+thanks,
 
-
-The trace splice never blocks anyway. Since we have no good method to
-wake up a waiter. That is, we never know if it is safe to call wakeup,
-because a tracepoint may be in a section where the rq lock is held.
-
-The only thing that passing SPLICE_F_NONBLOCK does in that code is to
-return -EAGAIN when there is nothing in the buffer. Otherwise, it
-returns 0.
-
--- Steve
-
-
-
+greg k-h
