@@ -1,121 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751440Ab0E2FKk (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 29 May 2010 01:10:40 -0400
-Received: from misc-148-66-126-238.pool.starband.net ([148.66.126.238]:60820
-	"EHLO archaeopteryx.synaptics.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751195Ab0E2FKf (ORCPT
+	id S1751567Ab0E2FjT (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 29 May 2010 01:39:19 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:55914 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750960Ab0E2FjR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 29 May 2010 01:10:35 -0400
-X-Greylist: delayed 3673 seconds by postgrey-1.27 at vger.kernel.org; Sat, 29 May 2010 01:09:28 EDT
-From: Christopher Heiny <cheiny@synaptics.com>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: Jean Delvare <khali@linux-fr.org>,
-       Linux Kernel <linux-kernel@vger.kernel.org>,
-       Linux Input <linux-input@vger.kernel.org>,
-       Christopher Heiny <cheiny@synaptics.com>,
-       Allie Xiong <axiong@synaptics.com>,
-       William Manson <wmanson@synaptics.com>,
-       Joerie de Gram <j.de.gram@gmail.com>
-Subject: [RFC PATCH 0/1] input/touchscreen: Synaptics Touchscreen Driver
-Date: Fri, 28 May 2010 17:29:39 -0700
-Message-Id: <1275092980-29208-1-git-send-email-cheiny@synaptics.com>
-X-Mailer: git-send-email 1.6.6.1
+	Sat, 29 May 2010 01:39:17 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=do3K9rCbZMex72oGSOp8qCOyCDz823v7kVUEYerpv9OwzcWrbZ/Phvj0/rlZe7ej2g
+         JCPX2JhYcBmpUtCdOr6UZ1+oJZ4i+Kojk+C5PYuSNNCtL/xxpHyKwUkYPDZMgjz4272j
+         WOsBjqivhRlQiENcJzY+x0GgguZhetRC0qhKk=
+Subject: Re: [PATCH 2/2] hwmon: (coretemp) Get TjMax value from MSR
+From: Maxim Levitsky <maximlevitsky@gmail.com>
+To: Huaxu Wan <huaxu.wan@linux.intel.com>
+Cc: linux-kernel@vger.kernel.org, lm-sensors@lm-sensors.org,
+       huaxu.wan@intel.com, khali@linux-fr.org
+In-Reply-To: <20100507095945.GB12190@owl>
+References: <20100507095945.GB12190@owl>
+Content-Type: text/plain; charset="UTF-8"
+Date: Sat, 29 May 2010 08:39:11 +0300
+Message-ID: <1275111551.3427.4.camel@maxim-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds an initial driver supporting Synaptics ClearPad
-touchscreens that use the RMI4 protocol, as defined here:
+On Fri, 2010-05-07 at 17:59 +0800, Huaxu Wan wrote: 
+> The MSR IA32_TEMPERATURE_TARGET contains the TjMax value in the newer
+> processers.
 
-http://www.synaptics.com/sites/default/files/511-000136-01_revA.pdf
+I know that TjMax on my system is 85, and now coretemp reports wrong
+temperatures.
+First of all BIOS using stupid tricks actualy reports CPU temperature
+through ACPI, and assuming it was correct TjMax is 85.
+It also shuts down the system if I 'lie' to it that cpu temperature is
+85C.
 
+Coretemp was working correctly in 2.6.34
 
-This patch addresses most of the feedback relating to our previous submissions.
-Of particular interest are I2C changes based on feedback from Jean Delvare.
+cat /proc/cpuinfo
 
-Any feedback not acted on (such as creation of an 'rmi' bus on the kernel
-bus architecture) are captured as TODOs in the code, and will be implemented
-in a future submission. Also, we've done a lot of reformatting in order
-to make checkpatch happy (down to just a few line length warnings and a couple
-of macro formatting issues).
+processor	: 0
+vendor_id	: GenuineIntel
+cpu family	: 6
+model		: 15
+model name	: Intel(R) Core(TM)2 Duo CPU     T5450  @ 1.66GHz
+stepping	: 13
+cpu MHz		: 1667.000
+cache size	: 2048 KB
+physical id	: 0
+siblings	: 2
+core id		: 0
+cpu cores	: 2
+apicid		: 0
+initial apicid	: 0
+fpu		: yes
+fpu_exception	: yes
+cpuid level	: 10
+wp		: yes
+flags		: fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat pse36 clflush dts acpi mmx fxsr sse sse2 ss ht tm pbe syscall nx lm constant_tsc arch_perfmon pebs bts rep_good aperfmperf pni dtes64 monitor ds_cpl est tm2 ssse3 cx16 xtpr pdcm lahf_lm
+bogomips	: 3324.70
+clflush size	: 64
+cache_alignment	: 64
+address sizes	: 36 bits physical, 48 bits virtual
+power management:
 
-This patch builds for the Omap Zoom2 platform in our development environment,
-but I cannot guarantee that it will build for you.  We're working on making
-sure it builds generically, and feedback relating to that will be greatly
-appreciated (special thanks to Joerie de Gram for his previous feedback
-on this).
-
-
-This version of the driver does not support all features of the RMI4
-protocol yet.  We felt it more important to start with a solid
-implementation of the basic functionality, and then build on that base
-to support additional features (such as gestures, proximity detection,
-capacitive buttons, and so on).
-
-Additionally, as this is our team's first venture into the wonderful
-world of kernel submissions, we figured it was important to start out
-initially with a fairly simple codebase, just in case we're doing
-something horribly wrong.
-
-
-The significant files in this version of the driver are:
-    rmi_core.c
-        Implements the basic core of the RMI4 protocol
-        including self-discovery of RMI4 functions.  This
-        also implements RMI4 function 0x01, which provides
-        generic device control.
-    rmi_function_11.c
-        Implements basic RMI4 function 0x11 (2D sensor)
-        features, including multitouch up to 10 fingers.
-    rmi_app_touchpad.c
-        The major driver functions (mod_init, mod_exit,
-        and so on).
-An additional file is included, but will eventually be changed/dropped
-    rmi_i2c_gta01.c
-        Provides platform setup for development.  This will
-        be replaced in the future by a generic approach to
-        specifying platform parameters.
-More detailed descriptions can be found in each file's comments.
-
-We chose to use multiple source files because it makes it easy to add
-support for additional RMI4 functions with minimal impact to existing
-functions.  Additionally, this supports future changes to the
-configuration to allow you to compile in only those RMI4 functions that
-you need for your particular device.
-
-
-There are two existing drivers for similar Synaptics devices in the
-current kernel tree (excluding the PS/2 touchpad driver).  These are:
-
-./linux-2.6/drivers/input/mouse/synaptics_i2c.c
-      A driver for the Exeda 15mm touchpad, written by Mike Rapoport
-      <mike@compulab.co.il> and Igor Grinberg <grinberg@compulab.co.il>
-
-./linux-2.6/drivers/staging/dream/synaptics_i2c_rmi.c
-      A driver for the HTC Dream ClearPad, written by Arve Hjønnevåg
-      <arve@android.com>
-
-We have not extended these drivers for a couple of reasons.  First, the
-two drivers are specific to particular Synaptics products, and it is our
-desire to produce a general solution that takes advantage of the 'self
-describing' features of products that use the RMI protocol.
-
-Second, and more importantly, is that the existing drivers are written
-for an older version of the RMI protocol (aka RMI3) that is being
-retired in favor of a more recent and substantially changed version (aka
-RMI4).  Most currently shipping Synaptics ClearPads speak the RMI4
-protocol, and it will be Synaptics protocol of choice going forward.  In
-almost all respects, RMI4 is not backward compatible with RMI3, making
-it impractical to support both versions in the same driver.
+processor	: 1
+vendor_id	: GenuineIntel
+cpu family	: 6
+model		: 15
+model name	: Intel(R) Core(TM)2 Duo CPU     T5450  @ 1.66GHz
+stepping	: 13
+cpu MHz		: 1667.000
+cache size	: 2048 KB
+physical id	: 0
+siblings	: 2
+core id		: 1
+cpu cores	: 2
+apicid		: 1
+initial apicid	: 1
+fpu		: yes
+fpu_exception	: yes
+cpuid level	: 10
+wp		: yes
+flags		: fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat pse36 clflush dts acpi mmx fxsr sse sse2 ss ht tm pbe syscall nx lm constant_tsc arch_perfmon pebs bts rep_good aperfmperf pni dtes64 monitor ds_cpl est tm2 ssse3 cx16 xtpr pdcm lahf_lm
+bogomips	: 3324.99
+clflush size	: 64
+cache_alignment	: 64
+address sizes	: 36 bits physical, 48 bits virtual
+power management:
 
 
-Comments and other feedback on this driver are welcomed.
+Best regards,
+	Maxim Levitsky
 
-Bill Manson
-Allie Xiong
-Christopher Heiny
-
-
-
----
