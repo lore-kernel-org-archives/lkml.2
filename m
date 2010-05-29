@@ -1,95 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753837Ab0E2B7W (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 May 2010 21:59:22 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:60104 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751921Ab0E2B7U convert rfc822-to-8bit (ORCPT
+	id S1754110Ab0E2COK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 May 2010 22:14:10 -0400
+Received: from bosmailout08.eigbox.net ([66.96.189.8]:51472 "EHLO
+	bosmailout08.eigbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752244Ab0E2COI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 May 2010 21:59:20 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type:content-transfer-encoding;
-        b=QbPXRyPPIHtjs2/HNNHHmJ7/STg1VgztZ/i8geUcOALdzq154r7RMKiQXrgelgV3lF
-         FMGL0N88daYvGizjYQo6zFASiGAYbvMVjp2/9cwnBDJdNyiBiDsLi5ZfryXAYbBjUke8
-         yD+KFkusxVO+nLKMOLuv84oaLYJ7jOwGAL0Oo=
+	Fri, 28 May 2010 22:14:08 -0400
+X-Greylist: delayed 1925 seconds by postgrey-1.27 at vger.kernel.org; Fri, 28 May 2010 22:14:08 EDT
+X-EN-OrigOutIP: 10.20.18.3
+X-EN-IMPSID: PDhx1e00503yW7601DhxDn
+Message-ID: <4C0070D8.8060500@jaysonking.com>
+Date: Fri, 28 May 2010 20:41:44 -0500
+From: "Jayson R. King" <dev@jaysonking.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.8) Gecko/20100301 Fedora/3.0.3-1.fc11 Thunderbird/3.0.3
 MIME-Version: 1.0
-In-Reply-To: <AANLkTimzsHAxha3vQxeFn5pF5BmYZ8nLawSG2YU3eujZ@mail.gmail.com>
-References: <1274885054-15698-1-git-send-email-xiaosuo@gmail.com> 
-	<E1OHw3d-0001yr-Ag@pomaz-ex.szeredi.hu> <AANLkTimzsHAxha3vQxeFn5pF5BmYZ8nLawSG2YU3eujZ@mail.gmail.com>
-From: Changli Gao <xiaosuo@gmail.com>
-Date: Sat, 29 May 2010 09:59:00 +0800
-Message-ID: <AANLkTimCXzrXcfwbCy5MZ3D40WBnGbF6Kbj6egTSjk2s@mail.gmail.com>
-Subject: Re: [PATCH v2 3/4]: sendfile: remove flags paramter of 
-	do_splice_direct()
-To: Miklos Szeredi <miklos@szeredi.hu>
-Cc: axboe@kernel.dk, viro@zeniv.linux.org.uk, matthew@wil.cx, mszeredi@suse.cz,
-       linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       Eric Dumazet <eric.dumazet@gmail.com>,
-       Steven Rostedt <rostedt@goodmis.org>,
-       Frederic Weisbecker <fweisbec@gmail.com>,
-       Ingo Molnar <mingo@redhat.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+To: tytso@mit.edu
+CC: "Jayson R. King" <dev@jaysonking.com>, Stable team <stable@kernel.org>,
+       LKML <linux-kernel@vger.kernel.org>,
+       Greg Kroah-Hartman <gregkh@suse.de>,
+       "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+       Dave Chinner <david@fromorbit.com>,
+       Ext4 Developers List <linux-ext4@vger.kernel.org>,
+       Kay Diederichs <Kay.Diederichs@uni-konstanz.de>
+Subject: Re: [PATCH 2.6.27.y 1/3] ext4: Use our own write_cache_pages()
+References: <4C001888.8020006@jaysonking.com> <4C0018E1.5060007@jaysonking.com> <20100529004913.GL26177@thunk.org>
+In-Reply-To: <20100529004913.GL26177@thunk.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-EN-UserInfo: 06af1bc540adb20c3d2d7097199478a6:08dd1976e651f6e3791fbe97eaa5f898
+X-EN-AuthUser: jaysonking@jaysonking.com
+X-EN-OrigIP: 68.93.139.172
+X-EN-OrigHost: unknown
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 28, 2010 at 6:06 PM, Changli Gao <xiaosuo@gmail.com> wrote:
-> On Fri, May 28, 2010 at 5:40 PM, Miklos Szeredi <miklos@szeredi.hu> wrote:
->> On Wed, 26 May 2010, Changli Gao wrote:
->>> remove flags paramter of do_splice_direct().
->>>
->>> the flags parameter of do_splice_direct() doesn't mean non-block read of
->>> in file,
->>
->> Actually, it does.  Look at the SPLICE_F_NONBLOCK usage in
->> __generic_splice_file_read().
->>
->
-> Oh, I checked the code again. You're right. However, why don't we
-> check the flags of in file instead in __generic_file_splice_read()?
->
+On 05/28/2010 07:49 PM, tytso@mit.edu wrote:
+> This doesn't fix a bug; it's to make it easy for Dave Chinner to make
+> some changes to fix XFS's performance and to undo some ext4-specific
+> changes to write_cache_pages().  I'm not sure there's a good reason to
+> backport this to 2.6.27.y....
 
-I am afraid that __generic_file_splice_read() should not use SPLICE_F_NONBLOCK.
+The difference is that, 2.6.27's write_cache_pages() in page-writeback.c 
+still updates wbc->nr_to_write, since the patch which changed that 
+behavior was dropped from .27-rc2 due to the XFS regression it causes on 
+mainline. ext4 appears to want the behavior of write_cache_pages which 
+does not update wbc->nr_to_write. This write_cache_pages_da() does what 
+ext4 wants, without introducing the XFS regression. So I believe it is 
+needed.
 
-Here is the comment from the commit 42324c62704365d6a3e89138dea55909d2f26afe :
+Did I mis-judge?
 
-<<EOF
-Linus introduced  SPLICE_F_NONBLOCK in commit
-29e350944fdc2dfca102500790d8ad6d6ff4f69d
-(splice: add SPLICE_F_NONBLOCK flag )
+Rgds,
 
-  It doesn't make the splice itself necessarily nonblocking (because the
-  actual file descriptors that are spliced from/to may block unless they
-  have the O_NONBLOCK flag set), but it makes the splice pipe operations
-  nonblocking.
-
-Linus intention was clear : let SPLICE_F_NONBLOCK control the splice
-pipe mode only
-EOF
-
-And I have greped the whole code:
-
-fs/splice.c:            if (spd->flags & SPLICE_F_NONBLOCK) {
-fs/splice.c:                    if (flags & SPLICE_F_NONBLOCK) {
-fs/splice.c:            if (sd->flags & SPLICE_F_NONBLOCK)
-fs/splice.c:                    if (flags & SPLICE_F_NONBLOCK) {
-fs/splice.c:            if (flags & SPLICE_F_NONBLOCK) {
-fs/splice.c:                    if (flags & SPLICE_F_NONBLOCK) {
-fs/splice.c:    if (!ret && ipipe->waiting_writers && (flags &
-SPLICE_F_NONBLOCK))
-fs/splice.c: * applicable one is SPLICE_F_NONBLOCK.
-include/linux/splice.h:#define SPLICE_F_NONBLOCK (0x02) /* don't block
-on the pipe splicing (but */
-kernel/relay.c:                 if (flags & SPLICE_F_NONBLOCK)
-kernel/trace/trace.c:           if (flags & SPLICE_F_NONBLOCK)
-
-besides the __generic_file_splice_read(), there are two users: relay
-and trace. I believe they all misuse this flag.
-
--- 
-Regards，
-Changli Gao(xiaosuo@gmail.com)
+Jayson
