@@ -1,69 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755480Ab0E2AKg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 May 2010 20:10:36 -0400
-Received: from cantor.suse.de ([195.135.220.2]:54880 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754698Ab0E2AKb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 May 2010 20:10:31 -0400
-Date: Fri, 28 May 2010 17:05:26 -0700
-From: Greg KH <gregkh@suse.de>
-To: Cliff Wickman <cpw@sgi.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, linux-kernel@vger.kernel.org,
-       mingo@elte.hu
-Subject: Re: [PATCH V3] x86, UV: BAU performance and error recovery
-Message-ID: <20100529000526.GA30938@suse.de>
-References: <E1OHzgl-0000Pj-6o@eag09.americas.sgi.com>
- <4BFFEFA1.1020307@zytor.com>
- <20100528164725.GA29208@suse.de>
- <20100528194334.GA7707@sgi.com>
- <20100528222321.GC25513@suse.de>
- <20100528233623.GA11356@sgi.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100528233623.GA11356@sgi.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1754698Ab0E2Aga (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 May 2010 20:36:30 -0400
+Received: from casper.infradead.org ([85.118.1.10]:46076 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751442Ab0E2Ag3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 May 2010 20:36:29 -0400
+Date: Fri, 28 May 2010 17:38:52 -0700
+From: Arjan van de Ven <arjan@infradead.org>
+To: Kevin Hilman <khilman@deeprootsystems.com>
+Cc: Igor Stoppa <igor.stoppa@nokia.com>, Brown <len.brown@intel.com>,
+       "x86@kernel.org" <x86@kernel.org>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       "Len@smtp1.linux-foundation.org" <Len@smtp1.linux-foundation.org>,
+       "linux-pm@lists.linux-foundation.org" 
+	<linux-pm@lists.linux-foundation.org>
+Subject: Re: [linux-pm] [PATCH 8/8] intel_idle: create a native cpuidle
+ driver for select intel processors
+Message-ID: <20100528173852.0b8389df@infradead.org>
+In-Reply-To: <1275067652.4507.192.camel@localhost>
+References: <1274928151-30919-1-git-send-email-lenb@kernel.org>
+	<e099975ca65a7f6ac7f8bc3fee84d3e03893aa31.1274926772.git.len.brown@intel.com>
+	<198450ec1600d9a7f55270dd4d44d6b55bc5b184.1274926772.git.len.brown@intel.com>
+	<87ljb5l9d5.fsf@deeprootsystems.com>
+	<20100527072207.2e783b1e@infradead.org>
+	<4BFE86D4.60602@nokia.com>
+	<20100527201439.6d0fd169@infradead.org>
+	<1275067652.4507.192.camel@localhost>
+Organization: Intel
+X-Mailer: Claws Mail 3.7.5 (GTK+ 2.16.6; i586-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-SRS-Rewrite: SMTP reverse-path rewritten from <arjan@infradead.org> by casper.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 28, 2010 at 06:36:23PM -0500, Cliff Wickman wrote:
-> /proc/sgi_uv/bau_tunables would be a read/write file to display and change
-> nine threshold and delay values for tuning the BAU driver.
+On Fri, 28 May 2010 10:27:32 -0700
+Kevin Hilman <khilman@deeprootsystems.com> wrote:
+
+> On Thu, 2010-05-27 at 20:14 -0700, Arjan van de Ven wrote:
+> > On Thu, 27 May 2010 17:51:00 +0300
+> > Igor Stoppa <igor.stoppa@nokia.com> wrote:
+> > 
+> > > Hi,
+> > > 
+> > > 
+> > > ext Arjan van de Ven wrote:
+> > > 
+> > > > it's really inconvenient to have such drivers hidden in the
+> > > > architecture code; it's much more convenient for cpuidle
+> > > > developers if they're all in one place.
+> > > >   
+> > > 
+> > > why?
+> > 
+> > because you have all the users of your API in one place.
+> > 
 > 
-> I like debugfs, except that a distro may not build the kernel with it
-> configured on.  The tunables should be available as administrative
-> options on a customer kernel, not just as a development tool.
+> That's a rather x86-centric definition of "all".
+> 
+> Are you suggesting we move all the embedded SoC specific CPUidle
+> drivers to drivers/idle as well?
 
-All distros have debugfs turned on now, and mounted, due to the perf
-interface there, as well as a lot of other good debug information that
-is present.
+yes.
 
-So you don't have to worry about that.
 
-> And in our case the distros are already building with other such writable
-> options in /proc/sgi_uv.  We'd like to postpone a wholesale move of such
-> options (assuming there will be some better place) and stay with the existing
-> location for this release.
 
-So because some distro took a non-upstream patch, you want upstream to
-accept the patch despite it being the incorrect place to put such a
-file?  Heh, you might want to rethink that...
-
-> I know we (the community) would like to move non-process info out of /proc.
-
-Yes.  We also don't want new files added there that are not dealing with
-processes.
-
-> It seems to me that we need a similar filesystem for large and/or 
-> administrative files.  That's my perspective.
-
-I do not know of any other such "large administrative" file that needs
-to be added to the system at such a time, becides this one, do you?
-
-So please, just put it in debugfs.
-
-thanks,
-
-greg k-h
+-- 
+Arjan van de Ven 	Intel Open Source Technology Centre
+For development, discussion and tips for power savings, 
+visit http://www.lesswatts.org
