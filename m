@@ -1,106 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757613Ab0E2QTy (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 29 May 2010 12:19:54 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:41887 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757429Ab0E2QTv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 29 May 2010 12:19:51 -0400
-Subject: Re: [linux-pm] [PATCH 0/8] Suspend block api (version 8)
-From: James Bottomley <James.Bottomley@suse.de>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Florian Mickler <florian@mickler.org>, Ingo Molnar <mingo@elte.hu>,
-       Paul@smtp1.linux-foundation.org, LKML <linux-kernel@vger.kernel.org>,
-       Linux PM <linux-pm@lists.linux-foundation.org>,
-       Thomas Gleixner <tglx@linutronix.de>,
-       Alan Cox <alan@lxorguk.ukuu.org.uk>
-In-Reply-To: <1275129757.27810.13205.camel@twins>
-References: <Pine.LNX.4.44L0.1005271344040.3239-100000@iolanthe.rowland.org>
-	 <AANLkTimqvMuMpB5E3tj58OtlRc-7mVaec-9EHAegywg7@mail.gmail.com>
-	 <1275032623.32462.30.camel@laptop> <201005290011.32543.rjw@sisk.pl>
-	 <20100529110426.077cba47@schatten.dmk.lab>
-	 <1275129757.27810.13205.camel@twins>
-Content-Type: text/plain; charset="UTF-8"
-Date: Sat, 29 May 2010 11:19:43 -0500
-Message-ID: <1275149983.4503.138.camel@mulgrave.site>
+	id S1757591Ab0E2QU1 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 29 May 2010 12:20:27 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:42187 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757387Ab0E2QUZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 29 May 2010 12:20:25 -0400
+X-Authority-Analysis: v=1.1 cv=EbJB9AiBqsyZPMVATYsj78CfMiBiOs+4P7kRKNQkfg0= c=1 sm=0 a=2iQPwODrlvMA:10 a=hO-oPbc3tlwA:10 a=7U3hwN5JcxgA:10 a=Q9fys5e9bTEA:10 a=gMqfjgEr1zLu/65IO0LwxA==:17 a=pGLkceISAAAA:8 a=bnIpihOkyyCsO-PpGCEA:9 a=kHG0JlIdYjSq_g47VkQA:7 a=ugg1a3XjorRPC_zp4bYmLD4swBsA:4 a=PUjeQqilurYA:10 a=MSl-tDqOz04A:10 a=gMqfjgEr1zLu/65IO0LwxA==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.89.75
+Subject: Re: [PATCH v2 3/4]: sendfile: remove flags paramter of 
+ do_splice_direct()
+From: Steven Rostedt <rostedt@goodmis.org>
+Reply-To: rostedt@goodmis.org
+To: Changli Gao <xiaosuo@gmail.com>
+Cc: Miklos Szeredi <miklos@szeredi.hu>, axboe@kernel.dk,
+       Al Viro <viro@zeniv.linux.org.uk>, mszeredi@suse.cz,
+       linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       Eric Dumazet <eric.dumazet@gmail.com>,
+       Frederic Weisbecker <fweisbec@gmail.com>,
+       Ingo Molnar <mingo@redhat.com>
+In-Reply-To: <AANLkTimCXzrXcfwbCy5MZ3D40WBnGbF6Kbj6egTSjk2s@mail.gmail.com>
+References: <1274885054-15698-1-git-send-email-xiaosuo@gmail.com>
+	 <E1OHw3d-0001yr-Ag@pomaz-ex.szeredi.hu>
+	 <AANLkTimzsHAxha3vQxeFn5pF5BmYZ8nLawSG2YU3eujZ@mail.gmail.com>
+	 <AANLkTimCXzrXcfwbCy5MZ3D40WBnGbF6Kbj6egTSjk2s@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+Organization: Kihon Technologies Inc.
+Date: Sat, 29 May 2010 12:20:19 -0400
+Message-ID: <1275150019.22648.615.camel@gandalf.stny.rr.com>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.28.2 
+X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2010-05-29 at 12:42 +0200, Peter Zijlstra wrote:
-> On Sat, 2010-05-29 at 11:04 +0200, Florian Mickler wrote:
-> > On Sat, 29 May 2010 00:11:32 +0200
-> > "Rafael J. Wysocki" <rjw@sisk.pl> wrote:
-> > 
-> > > 
-> > > Having reconsidered the suspend blockers idea I came to the conclusion that
-> > > in fact it was a workaround for three different problems.
-> > 
-> > But it is also a change of paradigm. The scheduler should strive to
-> > have the system idle as long as possible to conserve battery. And
-> > everything that does not serve the purpose of the device has to be
-> > considered as not worth running, except if there are other
-> > purpose-fullfilling tasks to run anyway.
+[ Removed matthew@wil.cx since I'm getting errors in sending to that address ]
+
+
+On Sat, 2010-05-29 at 09:59 +0800, Changli Gao wrote:
+> On Fri, May 28, 2010 at 6:06 PM, Changli Gao <xiaosuo@gmail.com> wrote:
+> > On Fri, May 28, 2010 at 5:40 PM, Miklos Szeredi <miklos@szeredi.hu> wrote:
+> >> On Wed, 26 May 2010, Changli Gao wrote:
+> >>> remove flags paramter of do_splice_direct().
+> >>>
+> >>> the flags parameter of do_splice_direct() doesn't mean non-block read of
+> >>> in file,
+> >>
+> >> Actually, it does.  Look at the SPLICE_F_NONBLOCK usage in
+> >> __generic_splice_file_read().
+> >>
+> >
+> > Oh, I checked the code again. You're right. However, why don't we
+> > check the flags of in file instead in __generic_file_splice_read()?
+> >
 > 
-> No the purpose of the scheduler is to run tasks when they are runnable.
-> Not to second guess whatever caused them to become runnable.
-
-I still think there is a semantic issue here ... see other email.
-
-> If you start to randomly not run tasks, the inversion chaos that ensues
-> is terrible.
-
-As a sweeping statement, I disagree because you're explicitly saying we
-can't solve the actual problem.  If you're saying the scheduler
-shouldn't do this and something external has to make the tasks idle
-somehow first, I agree.
-
->  You can apply the regular means of alleviating that and
-> that entails adding *-inheritance to all blockable resources. The -rt
-> patch set is doing that in part.
-
-So as a mechanism for idling tasks, this looks possible.  I don't like
-it from a theoretical viewpoint because it can't idle cpu bound tasks.
-I'd like a solution that solved all of the problem, not just all except
-stuff we think probably won't happen on a phone because experience tells
-me that partial solutions eventually turn up gotchas down the road.
-
-> You really need to make applications not want to run and block on their
-> own volition (in a resource free point) and otherwise make them block on
-> something forcefully and disregard any malfunctioning that would result
-> from that, and in extreme cases terminate (releasing all resources).
+> I am afraid that __generic_file_splice_read() should not use SPLICE_F_NONBLOCK.
 > 
-> But really Android shouldn't even need kernel support to do all this,
-> since its hosted on this massive middle-ware that intercepts everything,
-> called a Java Virtual Machine.
+> Here is the comment from the commit 42324c62704365d6a3e89138dea55909d2f26afe :
+> 
+> <<EOF
+> Linus introduced  SPLICE_F_NONBLOCK in commit
+> 29e350944fdc2dfca102500790d8ad6d6ff4f69d
+> (splice: add SPLICE_F_NONBLOCK flag )
+> 
+>   It doesn't make the splice itself necessarily nonblocking (because the
+>   actual file descriptors that are spliced from/to may block unless they
+>   have the O_NONBLOCK flag set), but it makes the splice pipe operations
+>   nonblocking.
+> 
+> Linus intention was clear : let SPLICE_F_NONBLOCK control the splice
+> pipe mode only
+> EOF
+> 
+> And I have greped the whole code:
+> 
 
-The timers for a polling main loop have to be stopped ... this isn't
-possible with the current interface today, therefore we have to have
-kernel changes in some form.
 
-> Now, all I'm interested in is providing interfaces from the kernel where
-> needed, so that userspace can be optimally frugal with power usage, and
-> can monitor/contain badly behaving tasks.
+> kernel/trace/trace.c:           if (flags & SPLICE_F_NONBLOCK)
+> 
+> besides the __generic_file_splice_read(), there are two users: relay
+> and trace. I believe they all misuse this flag.
+> 
 
-So, that sounds like the goal of just about everyone on the thread.
 
-> If Android is so set in its ways that they don't want to adopt (like
-> saying Android requires suspend for power management) then they can go
-> their own merry way and I'm not interested anymore (it would be a shame
-> though).
+The trace splice never blocks anyway. Since we have no good method to
+wake up a waiter. That is, we never know if it is safe to call wakeup,
+because a tracepoint may be in a section where the rq lock is held.
 
-They haven't actually said this.  They've said they've implemented
-opportunistic suspend because it solves two problems: power savings for
-devices whose C states don't go as low as S3 and forced idling of tasks.
-Their main goal is extending battery life per charge, and what I've
-heard them say is any solution that does this is fine ... as long as the
-life per charge is as good as (or preferably better than) their current
-implementation ... I don't think that's unreasonable, and I think it
-might be achievable with some of the ideas in this thread.
+The only thing that passing SPLICE_F_NONBLOCK does in that code is to
+return -EAGAIN when there is nothing in the buffer. Otherwise, it
+returns 0.
 
-James
+-- Steve
+
 
 
