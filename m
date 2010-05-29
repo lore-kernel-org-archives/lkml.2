@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755463Ab0EaQeH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 May 2010 12:34:07 -0400
-Received: from casper.infradead.org ([85.118.1.10]:53751 "EHLO
+	id S1756890Ab0EaQeK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 May 2010 12:34:10 -0400
+Received: from casper.infradead.org ([85.118.1.10]:53759 "EHLO
 	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754491Ab0EaQeA (ORCPT
+	with ESMTP id S1755481Ab0EaQeD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 May 2010 12:34:00 -0400
+	Mon, 31 May 2010 12:34:03 -0400
 Subject: Re: [linux-pm] [PATCH 0/8] Suspend block api (version 8)
 From: Peter Zijlstra <peterz@infradead.org>
 To: James Bottomley <James.Bottomley@suse.de>
@@ -30,8 +30,8 @@ References: <20100527222514.0a1710bf@lxorguk.ukuu.org.uk>
 	 <1275120618.27810.12699.camel@twins>
 	 <1275149418.4503.128.camel@mulgrave.site>
 Content-Type: text/plain; charset="UTF-8"
-Date: Sat, 29 May 2010 20:12:15 +0200
-Message-ID: <1275156735.1645.497.camel@laptop>
+Date: Sat, 29 May 2010 20:12:16 +0200
+Message-ID: <1275156736.1645.498.camel@laptop>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
@@ -40,42 +40,14 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 On Sat, 2010-05-29 at 11:10 -0500, James Bottomley wrote:
-> > If current hardware can't cope, too friggin bad, get better hardware.
-> > 
-> > But the truth is, all your OMAP phones really can deal with it.
+> > Not using suspend is exactly the point. As Alan has argued, propagating
+> > suspend blockers up into all regions of userspace will take much longer
+> > than fixing the hardware.
 > 
-> That's rubbish and you know it.  We do software workarounds for hardware
-> problems all the time ... try doing a git grep -i errata in arch x86, or
-> imagine a USB subsystem that only supported sane standards conforming
-> devices: that would have an almost zero intersect with the current USB
-> device market.
-> 
-> The job of the kernel is to accommodate hardware as best it can ...
-> sometimes it might not be able to, but most of the time it does a pretty
-> good job.
+> Strange, that's not what I heard as the possible solution.  
 
-Sure, and if x86 could wake from S3 on a keypress/mouse movement etc..
-you could use S3 as idle state.. not sure people would love the
-wakeup-latency, but that's a QoS matter.
+<20100527232043.784d5c72@lxorguk.ukuu.org.uk>
+<20100528101755.7b5f6b8a@lxorguk.ukuu.org.uk>
 
-But if there simply are no suitable wakeup sources from an idle state
-(S3 really is nothing more than a hardware idle state) then it might not
-be suitable for transparent idle modes and no amount of software hackery
-will solve that.
 
-So what I'm saying is, if your hardware can't generate the needed wakeup
-events, the auto-suspend stuff won't work either. If it can it can be
-implemented as a regular idle mode.
-
-> The facts are that C states and S states are different and are entered
-> differently.  For some omap hardware, the power consumption in the
-> lowest C state (with all the ancillary power control) is the same as S3,
-> that's fine, suspend from idle works as well as suspend to ram modulo
-> bad apps. For quite a lot of MSM hardware, the lowest C state power
-> consumption is quite a bit above S3. 
-
-Wth is MSM?
-
-But really, why can't existing hardware get shipped with existing hacks,
-and for future hardware that does behave we have a proper solution?
 
