@@ -1,69 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756845Ab0E2XdI (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 29 May 2010 19:33:08 -0400
-Received: from t21.t-2.net ([84.255.209.100]:39118 "EHLO t21.t-2.net"
+	id S1756921Ab0E2Xi0 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 29 May 2010 19:38:26 -0400
+Received: from local.xorcom.com ([62.90.10.53]:52308 "EHLO local.xorcom.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756161Ab0E2XdG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 29 May 2010 19:33:06 -0400
-Subject: Re: [PATCH] detour TTY driver
-From: Samo Pogacnik <samo_pogacnik@t-2.net>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: linux-embedded <linux-embedded@vger.kernel.org>,
-       linux kernel <linux-kernel@vger.kernel.org>,
-       Randy Dunlap <rdunlap@xenotime.net>, Al Viro <viro@ZenIV.linux.org.uk>
-In-Reply-To: <20100529235402.296406d9@lxorguk.ukuu.org.uk>
-References: <1273918658.2341.17.camel@itpsd6lap>
-	 <1275171436.2122.29.camel@itpsd6lap>
-	 <20100529235402.296406d9@lxorguk.ukuu.org.uk>
-Content-Type: text/plain
-Date: Sun, 30 May 2010 01:33:03 +0200
-Message-Id: <1275175983.2122.42.camel@itpsd6lap>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.26.3 (2.26.3-1.fc11) 
-Content-Transfer-Encoding: 7bit
-X-SGG-UMAMSID: 20100529233304Z22116t21.t-2.net 1OIVWa-0005ki-KS
-X-SGG-RESULT: 20100529233304Z22116t21.t-2.net C1:OK E1:OK MX1:OK BL:OK SPF:off  CT:Unknown CM: SIP:84.255.254.67 SMF:samo_pogacnik@t-2.net
+	id S1756072Ab0E2XiZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 29 May 2010 19:38:25 -0400
+X-Greylist: delayed 516 seconds by postgrey-1.27 at vger.kernel.org; Sat, 29 May 2010 19:38:24 EDT
+Date: Sun, 30 May 2010 02:29:46 +0300
+From: Tzafrir Cohen <tzafrir.cohen@xorcom.com>
+To: netdev@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH] Exclude DAHDI devices from being probed by netjet
+Message-ID: <20100529232946.GA1748@xorcom.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+X-Forced-Service: Sadly Using Gmail [tm]
+Organization: Xorcom*
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > +static void initial_console_redirect(void)
-> > +{
-> > +	long ret;
-> > +
-> > +	/* re-register our fops write function */
-> > +	detour_fops.write = detour_write;
-> > +
-> > +	detour_file.f_dentry = &detour_dentry;
-> > +	detour_file.f_dentry->d_inode = &detour_inode;
-> > +	detour_file.f_op = &detour_fops;
-> > +	detour_file.f_mode |= FMODE_WRITE;
-> > +	security_file_alloc(&detour_file);
-> > +	INIT_LIST_HEAD(&detour_file.f_u.fu_list);
-> > +
-> > +	detour_inode.i_rdev = MKDEV(TTYAUX_MAJOR, 3);
-> > +	security_inode_alloc(&detour_inode);
-> > +	INIT_LIST_HEAD(&detour_inode.inotify_watches);
-> > +
-> > +	ret = detour_fops.open(&detour_inode, &detour_file);
-> > +	printk(KERN_INFO "detour_fops.open() returned %ld\n", ret);
-> > +	ret = detour_fops.unlocked_ioctl(&detour_file, TIOCCONS, 0);
-> > +	printk(KERN_INFO "detour_fops.ioctl() returned %ld\n", ret);
-> > +}
-> 
-> Bletch.. I'm really opposed to this kind of hackery. Fix your userspace a
-> tiny bit.
-> 
-> So
-> - Write only tty that uses printk: Looks good to me, implementation
->   quibbles only
-> - Magic kernel hacks to shuffle things around in the initial console
->   logic - hideous. I still really think you need to fix your userspace
-> 
+Many early Zaptel / DAHDI devices were based on the same Netjet PCI
+chipset. However they are not the ISDN BRI adapters the netjet driver
+expects to driver.
 
-Thank you for all comments. I'll try to follow them (might take some
-time) and i'll remove the internal console redirection magic for sure. 
+The patch excludes devices based solely on sub-vendor ID. It seems that
+all of those drivers probe for that, and I don't have a better way to
+check what are the exact sub-product IDs.
 
-regards, Samo
+Notes:
+1. It seems that the same change need also be applied to some hisax
+   (i4l) drivers.
+2. I don't have more precise data than the PCI ID tables in the drivers.
+   Does this run the risk of excluding some actual Netjet ISDN cards?
+3. A more informative failure message may help (if one is actually needed).
+4. The MAINTAINERS file lists the git tree
+   git://git.kernel.org/pub/scm/linux/kernel/git/kkeil/isdn-2.6.git but
+   it does not seem to exist.
 
+Signed-off-by: Tzafrir Cohen <tzafrir.cohen@xorcom.com>
+---
+ drivers/isdn/hardware/mISDN/netjet.c |   30 +++++++++++++++++++++++++++---
+ 1 files changed, 27 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/isdn/hardware/mISDN/netjet.c b/drivers/isdn/hardware/mISDN/netjet.c
+index 0a3553d..42dded4 100644
+--- a/drivers/isdn/hardware/mISDN/netjet.c
++++ b/drivers/isdn/hardware/mISDN/netjet.c
+@@ -1060,9 +1060,33 @@ nj_probe(struct pci_dev *pdev, const struct pci_device_id *ent)
+ 	int cfg;
+ 	struct tiger_hw *card;
+ 
+-	if (pdev->subsystem_vendor == 0x8086 &&
+-	    pdev->subsystem_device == 0x0003) {
+-		pr_notice("Netjet: Digium X100P/X101P not handled\n");
++	switch (pdev->subsystem_vendor) {
++	/* Fall-through */
++	case 0x2151: /* Yeastart YSTDM8xx (ystdm8xx) */
++	case 0xe16b: /* Zapata Project PCI-Radio (pciradio) */
++	case 0x6159: /* Digium Wildcard T100/E100 (wct1xxp) */
++	case 0x71fe: /* Digium Wildcard TE110P (wcte1xp) */
++	case 0x795e: /* Digium Wildcard TE110P (wcte1xp) */
++	case 0x797e: /* Digium Wildcard TE110P (wcte1xp) */
++	case 0x79de: /* Digium Wildcard TE110P (wcte1xp) */
++	case 0x79df: /* Digium Wildcard TE110P (wcte1xp) */
++	case 0x8084: /* Digium Wildcard X101P clone (wcfxo) */
++	case 0x8085: /* Digium Wildcard X101P (wcfxo) */
++	case 0x8086: /* Digium Wildcard X101P clone (wcfxo) */
++	case 0x8087: /* Digium Wildcard X101P clone (wcfxo) */
++	case 0xa800: /* Digium Wildcard TDM400P Rev H (wctdm) */
++	case 0xa801: /* Digium Wildcard TDM400P Rev H (wctdm) */
++	case 0xa8fd: /* Digium Wildcard TDM400P Rev H (wctdm) */
++	case 0xa901: /* Digium Wildcard TDM400P Rev H (wctdm) */
++	case 0xa908: /* Digium Wildcard TDM400P Rev H (wctdm) */
++	case 0xa9fd: /* Digium Wildcard TDM400P Rev H (wctdm) */
++	case 0xb100: /* Digium Wildcard TDM400P Rev E/F (wctdm) */
++	case 0xb118: /* Digium Wildcard TDM400P Rev I (wctdm) */
++	case 0xb119: /* Digium Wildcard TDM400P Rev I (wctdm) */
++	case 0xb1d9: /* Digium Wildcard TDM400P Rev I (wctdm) */
++	case 0xa159: /* Digium Wildcard S400P Prototype (wctdm) */
++	case 0xe159: /* Digium Wildcard S400P Prototype (wctdm) */
++		pr_notice("Netjet: DAHDI device not supported.\n");
+ 		return -ENODEV;
+ 	}
+ 
+-- 
+1.7.1
+
+
+-- 
+               Tzafrir Cohen
+icq#16849755              jabber:tzafrir.cohen@xorcom.com
++972-50-7952406           mailto:tzafrir.cohen@xorcom.com
+http://www.xorcom.com  iax:guest@local.xorcom.com/tzafrir
