@@ -1,61 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754395Ab0E2Bjt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 May 2010 21:39:49 -0400
-Received: from casper.infradead.org ([85.118.1.10]:43355 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751012Ab0E2Bjr (ORCPT
+	id S1753837Ab0E2B7W (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 May 2010 21:59:22 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:60104 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751921Ab0E2B7U convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 May 2010 21:39:47 -0400
-Date: Fri, 28 May 2010 18:42:13 -0700
-From: Arjan van de Ven <arjan@infradead.org>
-To: Thomas Renninger <trenn@suse.de>
-Cc: davej@redhat.com, linux-kernel@vger.kernel.org,
-       robert.schoene@tu-dresden.de, cpufreq@vger.kernel.org,
-       linux-perf-users@vger.kernel.org, linux-trace-users@vger.kernel.org,
-       x86@kernel.org, akpm@linux-foundation.org
-Subject: Re: [PATCH] x86 cpufreq: Make trace_power_frequency cpufreq driver
- independent
-Message-ID: <20100528184213.76c09515@infradead.org>
-In-Reply-To: <1274791199-12335-1-git-send-email-trenn@suse.de>
-References: <1274791199-12335-1-git-send-email-trenn@suse.de>
-Organization: Intel
-X-Mailer: Claws Mail 3.7.5 (GTK+ 2.16.6; i586-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-SRS-Rewrite: SMTP reverse-path rewritten from <arjan@infradead.org> by casper.infradead.org
-	See http://www.infradead.org/rpr.html
+	Fri, 28 May 2010 21:59:20 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type:content-transfer-encoding;
+        b=QbPXRyPPIHtjs2/HNNHHmJ7/STg1VgztZ/i8geUcOALdzq154r7RMKiQXrgelgV3lF
+         FMGL0N88daYvGizjYQo6zFASiGAYbvMVjp2/9cwnBDJdNyiBiDsLi5ZfryXAYbBjUke8
+         yD+KFkusxVO+nLKMOLuv84oaLYJ7jOwGAL0Oo=
+MIME-Version: 1.0
+In-Reply-To: <AANLkTimzsHAxha3vQxeFn5pF5BmYZ8nLawSG2YU3eujZ@mail.gmail.com>
+References: <1274885054-15698-1-git-send-email-xiaosuo@gmail.com> 
+	<E1OHw3d-0001yr-Ag@pomaz-ex.szeredi.hu> <AANLkTimzsHAxha3vQxeFn5pF5BmYZ8nLawSG2YU3eujZ@mail.gmail.com>
+From: Changli Gao <xiaosuo@gmail.com>
+Date: Sat, 29 May 2010 09:59:00 +0800
+Message-ID: <AANLkTimCXzrXcfwbCy5MZ3D40WBnGbF6Kbj6egTSjk2s@mail.gmail.com>
+Subject: Re: [PATCH v2 3/4]: sendfile: remove flags paramter of 
+	do_splice_direct()
+To: Miklos Szeredi <miklos@szeredi.hu>
+Cc: axboe@kernel.dk, viro@zeniv.linux.org.uk, matthew@wil.cx, mszeredi@suse.cz,
+       linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       Eric Dumazet <eric.dumazet@gmail.com>,
+       Steven Rostedt <rostedt@goodmis.org>,
+       Frederic Weisbecker <fweisbec@gmail.com>,
+       Ingo Molnar <mingo@redhat.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 25 May 2010 14:39:59 +0200
-Thomas Renninger <trenn@suse.de> wrote:
+On Fri, May 28, 2010 at 6:06 PM, Changli Gao <xiaosuo@gmail.com> wrote:
+> On Fri, May 28, 2010 at 5:40 PM, Miklos Szeredi <miklos@szeredi.hu> wrote:
+>> On Wed, 26 May 2010, Changli Gao wrote:
+>>> remove flags paramter of do_splice_direct().
+>>>
+>>> the flags parameter of do_splice_direct() doesn't mean non-block read of
+>>> in file,
+>>
+>> Actually, it does.  Look at the SPLICE_F_NONBLOCK usage in
+>> __generic_splice_file_read().
+>>
+>
+> Oh, I checked the code again. You're right. However, why don't we
+> check the flags of in file instead in __generic_file_splice_read()?
+>
 
-> and fix the broken case if a core's frequency depends on others.
-> 
-> trace_power_frequency was only implemented in a rather ungeneric way
-> in acpi-cpufreq driver's target() function only.
-> -> Move the call to trace_power_frequency to
->    cpufreq.c:cpufreq_notify_transition() where CPUFREQ_POSTCHANGE
->    notifier is triggered.
->    This will support power frequency tracing by all cpufreq drivers
-> 
-> trace_power_frequency did not trace frequency changes correctly when
-> the userspace governor was used or when CPU cores' frequency depend
-> on each other.
-> -> Moving this into the CPUFREQ_POSTCHANGE notifier and pass the cpu
->    which gets switched automatically fixes this.
+I am afraid that __generic_file_splice_read() should not use SPLICE_F_NONBLOCK.
 
+Here is the comment from the commit 42324c62704365d6a3e89138dea55909d2f26afe :
 
-while I'm no great fan of having a second field in the perf structure
-for the cpu... I can see that Thomas has a use case where this solves
-his issue...
+<<EOF
+Linus introduced  SPLICE_F_NONBLOCK in commit
+29e350944fdc2dfca102500790d8ad6d6ff4f69d
+(splice: add SPLICE_F_NONBLOCK flag )
 
-Acked-by: Arjan van de Ven <arjan@linux.intel.com>
+  It doesn't make the splice itself necessarily nonblocking (because the
+  actual file descriptors that are spliced from/to may block unless they
+  have the O_NONBLOCK flag set), but it makes the splice pipe operations
+  nonblocking.
+
+Linus intention was clear : let SPLICE_F_NONBLOCK control the splice
+pipe mode only
+EOF
+
+And I have greped the whole code:
+
+fs/splice.c:            if (spd->flags & SPLICE_F_NONBLOCK) {
+fs/splice.c:                    if (flags & SPLICE_F_NONBLOCK) {
+fs/splice.c:            if (sd->flags & SPLICE_F_NONBLOCK)
+fs/splice.c:                    if (flags & SPLICE_F_NONBLOCK) {
+fs/splice.c:            if (flags & SPLICE_F_NONBLOCK) {
+fs/splice.c:                    if (flags & SPLICE_F_NONBLOCK) {
+fs/splice.c:    if (!ret && ipipe->waiting_writers && (flags &
+SPLICE_F_NONBLOCK))
+fs/splice.c: * applicable one is SPLICE_F_NONBLOCK.
+include/linux/splice.h:#define SPLICE_F_NONBLOCK (0x02) /* don't block
+on the pipe splicing (but */
+kernel/relay.c:                 if (flags & SPLICE_F_NONBLOCK)
+kernel/trace/trace.c:           if (flags & SPLICE_F_NONBLOCK)
+
+besides the __generic_file_splice_read(), there are two users: relay
+and trace. I believe they all misuse this flag.
 
 -- 
-Arjan van de Ven 	Intel Open Source Technology Centre
-For development, discussion and tips for power savings, 
-visit http://www.lesswatts.org
+Regards，
+Changli Gao(xiaosuo@gmail.com)
