@@ -1,50 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756786Ab0E2OVU (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 29 May 2010 10:21:20 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:55128 "EHLO
+	id S1757003Ab0E2OXN (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 29 May 2010 10:23:13 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:60684 "EHLO
 	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754918Ab0E2OVT convert rfc822-to-8bit (ORCPT
+	with ESMTP id S1756047Ab0E2OXJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 29 May 2010 10:21:19 -0400
+	Sat, 29 May 2010 10:23:09 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=S+a4pLXh9t/HROh/9rcT0YZGfuyHqyPNNJEhh3pTP+FAz6sXzM/R64+mmHPf6nr00c
-         ZslWY7d2M3pS7uaFWYgTbESFSVAvfyUhbtbWEimC6WSE8IgM7D9i634kICtCRGmWxKq+
-         D3533tV8I8e+i7R0g9RSHxbQ0617uxTUHt8gU=
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
+        b=ecUxGsLWI/UFwkgAx+XldEUybOyDwcDwih+Vw2YwiQQtzHg5BpUpJItb7AAygppTTf
+         plMvyEOKs/5rI9ccHnJpPI0ijcKn+H2+CTJA5fz/Jw0nIqPanOm0ZfgQPXc+EZ257mFi
+         7n6nLCyGu4AY+XHI6Nob+cL0Wl1+1iwmFeIjo=
 MIME-Version: 1.0
-In-Reply-To: <4BFC7269.3070309@lougher.demon.co.uk>
-References: <4BFC7269.3070309@lougher.demon.co.uk>
-Date: Sat, 29 May 2010 16:21:17 +0200
-X-Google-Sender-Auth: 59Wz5u0C-kce-Du37YzTuy8Lf6I
-Message-ID: <AANLkTilWjRvjl5M_4lenw3aMI57eDYjOV96k3KmxrNwB@mail.gmail.com>
-Subject: Re: [GIT PULL] Squashfs updates for 2.6.35
+In-Reply-To: <4BF19A03.1060506@lougher.demon.co.uk>
+References: <4BF19A03.1060506@lougher.demon.co.uk>
+Date: Sat, 29 May 2010 16:23:06 +0200
+X-Google-Sender-Auth: m9C37Lt23auw8WJONHeED6h7wDI
+Message-ID: <AANLkTilk3j8yrvgykjY_UvteafFF4c2TMe3QTYiOV2_-@mail.gmail.com>
+Subject: Re: [PATCH 4/4] squashfs: add xattr support configure option
 From: Geert Uytterhoeven <geert@linux-m68k.org>
 To: Phillip Lougher <phillip@lougher.demon.co.uk>
-Cc: Linux Kernel Development <linux-kernel@vger.kernel.org>,
-       Stephen Hemminger <shemminger@vyatta.com>
+Cc: linux-fsdevel@vger.kernel.org,
+       Linux Kernel Development <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 26, 2010 at 02:59, Phillip Lougher
+On Mon, May 17, 2010 at 21:33, Phillip Lougher
 <phillip@lougher.demon.co.uk> wrote:
-> Stephen Hemminger (2):
->      squashfs: xattr fix sparse warnings
+> +config SQUASHFS_XATTRS
 
-Interestingly, this one introduced a new compiler warning:
-
-fs/squashfs/xattr.c:37: warning: ‘squashfs_xattr_handler’ declared
-inline after being called
-fs/squashfs/xattr.c:37: warning: previous declaration of
-‘squashfs_xattr_handler’ was here
-
-as the actual function is still marked inline at line 298.
+Sorry for not noticing before, but all other file systems use "<fs>_XATTR", not
+"<fs>_XATTRS". Just for consistency...
 
 Gr{oetje,eeting}s,
 
