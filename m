@@ -1,145 +1,330 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756818Ab0E2WNy (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 29 May 2010 18:13:54 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:49373 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755595Ab0E2WNw convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 29 May 2010 18:13:52 -0400
-MIME-Version: 1.0
-In-Reply-To: <Pine.LNX.4.44L0.1005290941060.30763-100000@netrider.rowland.org>
-References: <20100529131810.5bb51bdd@schatten.dmk.lab>
-	<Pine.LNX.4.44L0.1005290941060.30763-100000@netrider.rowland.org>
-Date: Sat, 29 May 2010 15:13:51 -0700
-Message-ID: <AANLkTik_4ezDAQoAQjkpEgwD9SLKeOjDzy2H7T2v6uCP@mail.gmail.com>
-Subject: Re: [linux-pm] [PATCH 0/8] Suspend block api (version 8)
-From: =?ISO-8859-1?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>
-To: Alan Stern <stern@rowland.harvard.edu>
-Cc: Florian Mickler <florian@mickler.org>,
-       Peter Zijlstra <peterz@infradead.org>,
-       "Rafael J. Wysocki" <rjw@sisk.pl>,
-       Linux PM <linux-pm@lists.linux-foundation.org>,
-       Brian Swetland <swetland@google.com>,
-       Alan Cox <alan@lxorguk.ukuu.org.uk>,
-       Matthew Garrett <mjg59@srcf.ucam.org>,
-       Thomas Gleixner <tglx@linutronix.de>,
-       LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1756879Ab0E2WRX (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 29 May 2010 18:17:23 -0400
+Received: from t21.t-2.net ([84.255.209.100]:50762 "EHLO t21.t-2.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755595Ab0E2WRV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 29 May 2010 18:17:21 -0400
+Subject: Re: [PATCH] detour TTY driver
+From: Samo Pogacnik <samo_pogacnik@t-2.net>
+To: linux-embedded <linux-embedded@vger.kernel.org>
+Cc: linux kernel <linux-kernel@vger.kernel.org>,
+       Randy Dunlap <rdunlap@xenotime.net>,
+       Alan Cox <alan@lxorguk.ukuu.org.uk>
+In-Reply-To: <1273918658.2341.17.camel@itpsd6lap>
+References: <1273918658.2341.17.camel@itpsd6lap>
+Content-Type: text/plain
+Date: Sun, 30 May 2010 00:17:16 +0200
+Message-Id: <1275171436.2122.29.camel@itpsd6lap>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.26.3 (2.26.3-1.fc11) 
+Content-Transfer-Encoding: 7bit
+X-SGG-UMAMSID: 20100529221718Z3810t21.t-2.net 1OIULG-0000zS-EB
+X-SGG-RESULT: 20100529221718Z3810t21.t-2.net C1:OK E1:OK MX1:OK BL:OK SPF:off  CT:Unknown CM: SIP:84.255.254.67 SMF:samo_pogacnik@t-2.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, May 29, 2010 at 7:10 AM, Alan Stern <stern@rowland.harvard.edu> wrote:
-> On Sat, 29 May 2010, Florian Mickler wrote:
->
->> On Sat, 29 May 2010 12:42:37 +0200
->> Peter Zijlstra <peterz@infradead.org> wrote:
->
->> > Now, all I'm interested in is providing interfaces from the kernel where
->> > needed, so that userspace can be optimally frugal with power usage, and
->> > can monitor/contain badly behaving tasks.
->> >
->>
->> I think this is a sensible approach.
->
-> Here is an attempt to satisfy everyone as much as possible.  But first
-> an explicit disclaimer: When I say "suspend", I mean it as in
-> "suspend-to-RAM"; i.e., a forced suspend and not a cpuidle mode.
->
-> In place of in-kernel suspend blockers, there will be a new type of QoS
-> constraint -- call it QOS_EVENTUALLY.  It's a very weak constraint,
-> compatible with all cpuidle modes in which runnable threads are allowed
-> to run (which is all of them), but not compatible with suspend.
->
-This sound just like another API rename. It will work, but given that
-suspend blockers was the name least objectionable last time around,
-I'm not sure what this would solve.
+On Sat, 15 May 2010 12:17:00 +0200 Samo Pogacnik wrote:
+> Hi,
+> 
+> Here is the initial suggestion for a simple detour TTY driver, which
+> provides the ability to write user messages through printk. This allows
+> user output to be inlined with kernel output. Together with printk
+> time-stamping enabled, a detailed boot sequence analyses is possible.
+> Additionally, console logs could have been stored through the same
+> mechanism as kernel messages and does not require the system logger to
+> be started very/too soon.
+> 
+Hi again,
 
-> The Android people want debugging and accountability.  So in the most
-> objectionable part of this proposal, we add a new way of registering
-> QoS constraints: monitored constraints.  The "monitored" implies that:
->
->        The constraint has a name, which can be used for debugging
->        and accounting;
->
->        The kernel maintains statistics on the constraint's use and
->        makes them available to userspace; and
->
->        The PM core is notified whenever the number of active monitored
->        constraints drops to 0.
->
-> There is no /sys/power/policy file.  In place of opportunistic suspend,
-> we have "QoS-based suspend".  This is initiated by userspace writing
-> "qos" to /sys/power/state, and it is very much like suspend-to-RAM.
+This version of patch provides the ability to initially redirect console
+to "detour TTY" (on driver initialization), if "detour" boot command
+line option is set. 
 
-Why do you want to tie it to a specific state?
+best regards, Samo
 
-> However a QoS-based suspend fails immediately if there are any active
+p.s.
+Randy, Alan: Would you be so kind to comment on usability and
+acceptability of this tty driver approach? Thanks.
 
-Fail or block? Your next paragraph said that it blocks for
-QOS_EVENTUALLY, but if normal constraints fail, you are still stuck in
-a retry loop.
+---
+Signed-off-by: Samo Pogacnik <samo_pogacnik@t-2.net>
+diff --git a_linux/Documentation/devices.txt b_linux/Documentation/devices.txt
+index 53d64d3..f889097 100644
+--- a_linux/Documentation/devices.txt
++++ b_linux/Documentation/devices.txt
+@@ -239,6 +239,7 @@ Your cooperation is appreciated.
+ 		  0 = /dev/tty		Current TTY device
+ 		  1 = /dev/console	System console
+ 		  2 = /dev/ptmx		PTY master multiplex
++		  3 = /dev/detour	Detour via printk TTY device
+ 		 64 = /dev/cua0		Callout device for ttyS0
+ 		    ...
+ 		255 = /dev/cua191	Callout device for ttyS191
+diff --git a_linux/Documentation/kernel-parameters.txt b_linux/Documentation/kernel-parameters.txt
+index 839b21b..1fd9f09 100644
+--- a_linux/Documentation/kernel-parameters.txt
++++ b_linux/Documentation/kernel-parameters.txt
+@@ -623,6 +623,8 @@ and is between 256 and 4096 characters. It is defined in the file
+ 			Defaults to the default architecture's huge page size
+ 			if not specified.
+ 
++	detour		[KNL] Initial console redirect via detour tty.
++
+ 	dhash_entries=	[KNL]
+ 			Set number of hash buckets for dentry cache.
+ 
+diff --git a_linux/drivers/char/Kconfig b_linux/drivers/char/Kconfig
+index 3141dd3..f81781d 100644
+--- a_linux/drivers/char/Kconfig
++++ b_linux/drivers/char/Kconfig
+@@ -485,6 +485,21 @@ config LEGACY_PTY_COUNT
+ 	  When not in use, each legacy PTY occupies 12 bytes on 32-bit
+ 	  architectures and 24 bytes on 64-bit architectures.
+ 
++config DETOUR_TTY
++	bool "TTY driver to detour user output via printk"
++	default n
++	---help---
++	  If you say Y here, the support for writing user messages (i.e.
++	  console messages) via printk is available.
++
++	  The feature is useful to inline user messages with kernel
++	  messages.
++	  In order to use this feature, you should output user messages
++	  to /dev/detour. By setting boot command line option "detour",
++	  the console is initially redirected to detour TTY.
++
++	  If unsure, say N.
++
+ config BRIQ_PANEL
+ 	tristate 'Total Impact briQ front panel driver'
+ 	depends on PPC_CHRP
+diff --git a_linux/drivers/char/Makefile b_linux/drivers/char/Makefile
+index f957edf..b84db55 100644
+--- a_linux/drivers/char/Makefile
++++ b_linux/drivers/char/Makefile
+@@ -11,6 +11,7 @@ obj-y	 += mem.o random.o tty_io.o n_tty.o tty_ioctl.o tty_ldisc.o tty_buffer.o t
+ 
+ obj-$(CONFIG_LEGACY_PTYS)	+= pty.o
+ obj-$(CONFIG_UNIX98_PTYS)	+= pty.o
++obj-$(CONFIG_DETOUR_TTY)	+= dty.o
+ obj-y				+= misc.o
+ obj-$(CONFIG_VT)		+= vt_ioctl.o vc_screen.o selection.o keyboard.o
+ obj-$(CONFIG_BFIN_JTAG_COMM)	+= bfin_jtag_comm.o
+diff --git a_linux/drivers/char/dty.c b_linux/drivers/char/dty.c
+new file mode 100644
+index 0000000..4c9018f
+--- /dev/null
++++ b_linux/drivers/char/dty.c
+@@ -0,0 +1,183 @@
++/*
++ *  linux/drivers/char/detour.c
++ *
++ *  Copyright (C) 2010  Samo Pogacnik
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the smems of the GNU General Public License as published by
++ * the Free Software Foundation; version 2 of the License.
++ */
++
++/*
++ * This pseudo device allows user to make printk messages. It is possible
++ * to store "console" messages inline with kernel messages for better analyses
++ * of the boot process, for example.
++ */
++
++#include <linux/security.h>
++#include <linux/device.h>
++#include <linux/tty.h>
++
++static int console_detour;
++static struct tty_driver *dty_driver;
++
++/*
++ * Set console_detour to 1.
++ */
++void set_console_detour(void)
++{
++	console_detour = 1;
++}
++EXPORT_SYMBOL(set_console_detour);
++
++/*
++ * Our simple preformatting:
++ * - every cr is replaced by '^'nl combination
++ * - every non cr or nl ended write is padded with '\'nl combination
++ * - adds a detour source tag in front of each line
++ *
++ * This is useful for logging purposes (kind of a logging ldisc?).
++ */
++static const char *detour_tag = "[D] ";
++#define DETOUR_STR_SIZE 508
++
++static void detour_printk(const unsigned char *buf, int count)
++{
++	static char tmp[DETOUR_STR_SIZE + 4];
++	static int curr;
++	int i;
++
++	for (i = 0; i < count; i++) {
++		tmp[curr] = buf[i];
++		if (curr < DETOUR_STR_SIZE) {
++			switch (buf[i]) {
++			case '\r':
++				tmp[curr] = '^';
++				tmp[curr + 1] = '\n';
++				tmp[curr + 2] = '\0';
++				printk(KERN_INFO "%s%s", detour_tag, tmp);
++				curr = 0;
++				if (buf[i + 1] == '\n')
++					i++;
++				break;
++			case '\n':
++				tmp[curr + 1] = '\0';
++				printk(KERN_INFO "%s%s", detour_tag, tmp);
++				curr = 0;
++				break;
++			default:
++				curr++;
++			}
++		} else {
++			/* end of tmp buffer reached: cut the message in two */
++			tmp[curr + 1] = '\\';
++			tmp[curr + 2] = '\n';
++			tmp[curr + 3] = '\0';
++			printk(KERN_INFO "%s%s", detour_tag, tmp);
++			curr = 0;
++		}
++	}
++	if (curr > 0) {
++		/* non nl or cr terminated message */
++		tmp[curr + 0] = '\\';
++		tmp[curr + 1] = '\n';
++		tmp[curr + 2] = '\0';
++		printk(KERN_INFO "%s%s", detour_tag, tmp);
++		curr = 0;
++	}
++}
++
++/*
++ *	Dummy tty ops open for succesfull terminal device open.
++ */
++static int dty_open(struct tty_struct *tty, struct file *filp)
++{
++	return 0;
++}
++
++/*
++ *	File ops (not tty ops) write avoids ldisc inserting additional CRs.
++ *	We simply throw this to our preformatter, which calls printk.
++ */
++static ssize_t detour_write(struct file *file, const char __user *buf,
++	size_t count, loff_t *ppos)
++{
++	detour_printk(buf, count);
++	return count;
++}
++
++static const struct tty_operations dty_ops = {
++	.open = dty_open,
++};
++
++static struct file_operations detour_fops;
++static void initial_console_redirect(void);
++
++static int __init dty_init(void)
++{
++	dty_driver = alloc_tty_driver(1);
++	if (!dty_driver)
++		panic("Couldn't allocate pty driver");
++
++	dty_driver->owner = THIS_MODULE;
++	dty_driver->driver_name = "dty";
++	dty_driver->name = "detour";
++	dty_driver->major = TTYAUX_MAJOR;
++	dty_driver->minor_start = 3;
++	dty_driver->num = 1;
++	dty_driver->type = TTY_DRIVER_TYPE_CONSOLE;
++	dty_driver->init_termios = tty_std_termios;
++	dty_driver->flags = TTY_DRIVER_RESET_TERMIOS | TTY_DRIVER_REAL_RAW |
++		TTY_DRIVER_DYNAMIC_DEV;
++	tty_set_operations(dty_driver, &dty_ops);
++
++	if (tty_register_driver(dty_driver))
++		panic("Couldn't register dty driver");
++
++	/* register our fops write function */
++	tty_default_fops(&detour_fops);
++	detour_fops.write = detour_write;
++
++	cdev_init(&dty_driver->cdev, &detour_fops);
++
++	/* create our unnumbered device */
++	device_create(tty_class, NULL, MKDEV(TTYAUX_MAJOR, 3), NULL,
++		dty_driver->name);
++
++	if (console_detour > 0)
++		initial_console_redirect();
++
++	return 0;
++}
++module_init(dty_init);
++
++/*
++ * Support for internal handling of console redirection via detour.
++ */
++static struct file detour_file;
++static struct inode detour_inode;
++static struct dentry detour_dentry;
++
++static void initial_console_redirect(void)
++{
++	long ret;
++
++	/* re-register our fops write function */
++	detour_fops.write = detour_write;
++
++	detour_file.f_dentry = &detour_dentry;
++	detour_file.f_dentry->d_inode = &detour_inode;
++	detour_file.f_op = &detour_fops;
++	detour_file.f_mode |= FMODE_WRITE;
++	security_file_alloc(&detour_file);
++	INIT_LIST_HEAD(&detour_file.f_u.fu_list);
++
++	detour_inode.i_rdev = MKDEV(TTYAUX_MAJOR, 3);
++	security_inode_alloc(&detour_inode);
++	INIT_LIST_HEAD(&detour_inode.inotify_watches);
++
++	ret = detour_fops.open(&detour_inode, &detour_file);
++	printk(KERN_INFO "detour_fops.open() returned %ld\n", ret);
++	ret = detour_fops.unlocked_ioctl(&detour_file, TIOCCONS, 0);
++	printk(KERN_INFO "detour_fops.ioctl() returned %ld\n", ret);
++}
+diff --git a_linux/init/main.c b_linux/init/main.c
+index 5c85402..be9dee9 100644
+--- a_linux/init/main.c
++++ b_linux/init/main.c
+@@ -263,6 +263,18 @@ static int __init loglevel(char *str)
+ 
+ early_param("loglevel", loglevel);
+ 
++#ifdef CONFIG_DETOUR_TTY
++extern void set_console_detour(void);
++
++static int __init detour(char *str)
++{
++	set_console_detour();
++	return 0;
++}
++
++early_param("detour", detour);
++#endif
++
+ /*
+  * Unknown boot options get handed to init, unless they look like
+  * unused parameters (modprobe will find them in /proc/cmdline).
 
-> normal QoS constraints incompatible with system suspend, in other
-> words, any constraints requiring a throughput > 0 or an interrupt
-> latency shorter than the time required for a suspend-to-RAM/resume
-> cycle.
->
-> If no such constraints are active, the QoS-based suspend blocks in an
-> interruptible wait until the number of active QOS_EVENTUALLY
 
-How do you implement this?
-
-> constraints drops to 0.  When that happens, it carries out a normal
-> suspend-to-RAM -- except that it checks along the way to make sure that
-> no new QoS constraints are activated while the suspend is in progress.
-> If they are, the PM core backs out and fails the QoS-based suspend.
->
-> Userspace suspend blockers don't exist at all, as far as the kernel is
-> concerned.  In their place, the Android runs a power-manager program
-> that receives IPC requests from other processes when they need to
-> prevent the system from suspending or allow it to suspend.  The power
-> manager's main loop looks like this:
->
->        for (;;) {
->                while (any IPC requests remain)
->                        handle them;
->                if (any processes need to prevent suspend)
->                        sleep;
->                else
->                        write "qos" to /sys/power/state;
->        }
->
-> The idea is that receipt of a new IPC request will cause a signal to be
-> sent, interrupting the sleep or the "qos" write.
-
-What happen if the signal is right before (or even right after)
-calling write "qos". How does the signal handler stop the write?
-
->
-> There remains a question as to which kernel drivers should create
-> monitored QOS_EVENTUALLY constraints.  Perhaps userspace could be
-> allowed to specify this (I don't know how).  In any case, this is a
-> relatively minor point.
->
-> The advantages of this scheme are that this does everything the Android
-> people need, and it does it in a way that's entirely compatible with
-> pure QoS/cpuidle-based power management.  It even starts along the path
-> of making suspend-to-RAM just another kind of dynamic power state.
->
-> If people such as Peter still want to complain that using
-> suspend-to-RAM in Android phones isn't a good way to do power
-> management, that's okay -- it's the designers' decision to program
-> their phones the way they want.  At least the kernel can give them the
-> ability to do so in a way that doesn't compromise everybody else.
->
-> Alan Stern
->
->
-
-
-
--- 
-Arve Hjønnevåg
