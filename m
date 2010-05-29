@@ -1,41 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757121Ab0E2Nn0 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 29 May 2010 09:43:26 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:52280 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754629Ab0E2NnW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 29 May 2010 09:43:22 -0400
-Date: Sat, 29 May 2010 15:43:17 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Changli Gao <xiaosuo@gmail.com>
-Cc: Alexander Viro <viro@zeniv.linux.org.uk>, linux-fsdevel@vger.kernel.org,
-       linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] fs: optimize mpage_bio_submit()
-Message-ID: <20100529134317.GB28370@liondog.tnic>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	Changli Gao <xiaosuo@gmail.com>,
-	Alexander Viro <viro@zeniv.linux.org.uk>,
-	linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-References: <1275095966-18382-1-git-send-email-xiaosuo@gmail.com>
- <20100529124735.GB25092@liondog.tnic>
- <AANLkTinwjNpAg6y3n1ZzAtPIv-sJE_P7WjbzzrRRCBVD@mail.gmail.com>
+	id S1757193Ab0E2Npu (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 29 May 2010 09:45:50 -0400
+Received: from moutng.kundenserver.de ([212.227.126.187]:57731 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755221Ab0E2Npt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 29 May 2010 09:45:49 -0400
+Message-ID: <00ec246f$40327$1c5f6151193519@regina>
+Reply-To: "Sam L. Carl" <mail@traffictractor.com>
+From: "Sam L. Carl" <mail@traffictractor.com>
+To: linux-kernel@vger.kernel.org
+Subject: RE: Hey, Opt In Email Lists Give Away!
+Date: Sat, 29 May 2010 14:45:46 +0100
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <AANLkTinwjNpAg6y3n1ZzAtPIv-sJE_P7WjbzzrRRCBVD@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain
+Content-Transfer-Encoding: 7bit
+X-Priority: 3
+X-MSMail-Priority: Normal
+X-Mailer: My e-mail client v1.0
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2900.3028
+X-Provags-ID: V01U2FsdGVkX1/eHOjfv0fRcnrPPHTaRX41Bus+g/e9BglB6Yp
+ vesoPDM069ggGF4j1Z/7flnhbnLbadDOB+KqrwhpRjkNwEQa5l
+ t5VmNkbcQgpgjWC4uPlyjWnyHnFquwv
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Changli Gao <xiaosuo@gmail.com>
-Date: Sat, May 29, 2010 at 09:33:02PM +0800
+Hey, 
 
-> Compiler is smarter than I thought.
+You have to check this out if your a webmaster. http://www.traffictractor.com is giving away thousands of opt in emails. 
 
-Not as much as we would like to though :)
+This is huge! Everyone is talking about it now. With these opt in email addresses you can do so much. It takes years and a lot of money to build a list from scratch but now you have the chance to grab a massive list.
 
--- 
-Regards/Gruss,
-    Boris.
+Use it for ezine, email, autoresponders, they will bring your website a huge amount of power, traffic and sales. 
+
+You have to check it out at http://www.traffictractor.com
+
+All the best,
+Sam L. Carl
+
