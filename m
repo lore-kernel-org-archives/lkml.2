@@ -1,102 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754246Ab0E2IKa (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 29 May 2010 04:10:30 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:42349 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750800Ab0E2IKY convert rfc822-to-8bit (ORCPT
+	id S1755264Ab0E2IMC (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 29 May 2010 04:12:02 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:65261 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751141Ab0E2IL4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 29 May 2010 04:10:24 -0400
-Subject: Re: [linux-pm] [PATCH 0/8] Suspend block api (version 8)
-From: Peter Zijlstra <peterz@infradead.org>
-To: Arve =?ISO-8859-1?Q?Hj=F8nnev=E5g?= <arve@android.com>
-Cc: tytso@mit.edu, Alan Cox <alan@lxorguk.ukuu.org.uk>,
-       Matthew Garrett <mjg59@srcf.ucam.org>,
-       Alan Stern <stern@rowland.harvard.edu>,
-       Thomas Gleixner <tglx@linutronix.de>,
-       LKML <linux-kernel@vger.kernel.org>,
-       Florian Mickler <florian@mickler.org>, felipe.balbi@nokia.com,
-       Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
-       Linux PM <linux-pm@lists.linux-foundation.org>
-In-Reply-To: <AANLkTikEtlbkT4Ws3H2YGt_9QC46B5dr-b1oxJOcG4GN@mail.gmail.com>
-References: <20100527222514.0a1710bf@lxorguk.ukuu.org.uk>
-	 <Pine.LNX.4.44L0.1005271730180.3239-100000@iolanthe.rowland.org>
-	 <20100527230806.4deb6de3@lxorguk.ukuu.org.uk>
-	 <20100527220949.GB10602@srcf.ucam.org>
-	 <20100527232357.6d14fdb2@lxorguk.ukuu.org.uk>
-	 <20100527223605.GB11364@srcf.ucam.org>
-	 <20100527235546.09f3ce8a@lxorguk.ukuu.org.uk>
-	 <20100528043114.GC26177@thunk.org> <1275030704.32462.11.camel@laptop>
-	 <AANLkTikEtlbkT4Ws3H2YGt_9QC46B5dr-b1oxJOcG4GN@mail.gmail.com>
+	Sat, 29 May 2010 04:11:56 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:reply-to:to:cc:in-reply-to:references:content-type
+         :date:message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=bjcLC5H5V7bkBkXD5+HwmYGG1TZC3OoZ/OGT/7tIll9+njZnzxkyuMH4skqBKA1UNr
+         t6xkN7q4SL8ail8n6gSvG8WTPst1g07PcGO693CesJzgGB0RoXdrzAwugnBbnaIDmljN
+         aNbcL3GrD6BGSu3mWDGGSYNMVeGXN7qGMVk4s=
+Subject: Re: [PATCHv4 01/17] VFS: introduce helpers for the s_dirty flag
+From: Artem Bityutskiy <dedekind1@gmail.com>
+Reply-To: dedekind1@gmail.com
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Al Viro <viro@ZenIV.linux.org.uk>, LKML <linux-kernel@vger.kernel.org>,
+       Jens Axboe <jens.axboe@oracle.com>, linux-fsdevel@vger.kernel.org,
+       Roman Zippel <zippel@linux-m68k.org>,
+       "Tigran A. Aivazian" <tigran@aivazian.fsnet.co.uk>,
+       Chris Mason <chris.mason@oracle.com>,
+       Boaz Harrosh <bharrosh@panasas.com>, linux-ext4@vger.kernel.org,
+       "Theodore Ts'o" <tytso@mit.edu>,
+       OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>,
+       David Woodhouse <dwmw2@infradead.org>, reiserfs-devel@vger.kernel.org,
+       Jan Kara <jack@suse.cz>, Evgeniy Dushistov <dushistov@mail.ru>
+In-Reply-To: <20100528141755.42958d81.akpm@linux-foundation.org>
+References: <1274795352-3551-1-git-send-email-dedekind1@gmail.com>
+	 <1274795352-3551-2-git-send-email-dedekind1@gmail.com>
+	 <20100528132318.0783675a.akpm@linux-foundation.org>
+	 <20100528211432.GM31073@ZenIV.linux.org.uk>
+	 <20100528141755.42958d81.akpm@linux-foundation.org>
 Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Sat, 29 May 2010 10:10:18 +0200
-Message-ID: <1275120618.27810.12699.camel@twins>
+Date: Sat, 29 May 2010 11:11:50 +0300
+Message-Id: <1275120710.2668.20.camel@localhost.localdomain>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+X-Mailer: Evolution 2.26.3 (2.26.3-1.fc11) 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2010-05-28 at 17:43 -0700, Arve Hjønnevåg wrote:
-> On Fri, May 28, 2010 at 12:11 AM, Peter Zijlstra <peterz@infradead.org> wrote:
-> > On Fri, 2010-05-28 at 00:31 -0400, tytso@mit.edu wrote:
-> >> Keep in mind, though, that a solution which is acceptable for Android
-> >> has to include making sure that crappy applications don't cause the
-> >> battery to get drained.  There seem to be some people who seem
-> >> adamently against this requirement.
-> >
-> > Again, Alan, Thomas and myself don't argue against that, what we do
-> > however argue against is suspend running apps as a form of power
-> > management.
-> >
+On Fri, 2010-05-28 at 14:17 -0700, Andrew Morton wrote:
+> On Fri, 28 May 2010 22:14:32 +0100
+> Al Viro <viro@ZenIV.linux.org.uk> wrote:
 > 
-> You seem to argue that android is not allowed to use suspend because
-> the hardware we have shipped on can enter the same power state from
-> idle. From my point of view, since we need to support suspend on some
-> hardware we should be allowed to leverage this solution on the better
-> hardware platforms as well if it improves our battery life.
+> > On Fri, May 28, 2010 at 01:23:18PM -0700, Andrew Morton wrote:
+> > 
+> > > A more conventional and superior naming scheme is
+> > > subsystemid_specific_function_identifier().  eg, bio_add_page() instead
+> > > of add_page_to_bio().
+> > > 
+> > > So these want to be sb_mark_dirty(), etc.
+> > > 
+> > > Being very old code written by very yound people, the VFS kinda ignores
+> > > that convention, but it doesn't hurt to use it for new code.
+> > > 
+> > > Feel free to ignore me if that's too much of a PITA ;)
+> > 
+> > The real issue is that it's almost certainly an overdesign.  Let's
+> > get rid of the bogus uses first and figure out what's happening in
+> > what remains, OK?
+> 
+> That would be good.
 
-Correct, I strongly oppose using suspend. Not running runnable tasks is
-not a sane solution.
+Yes, I just mechanically introduced the wrappers to all FS-es. But as
+per Al's request, I am going to try looking at how FSwe use it and
+validate the usage. It'll take some time as this stuff is my background
+task. Will see.
 
-If current hardware can't cope, too friggin bad, get better hardware.
+> > I have no problems with doing such wrappers, but if we touch every
+> > place using ->s_dirt anyway, let's at least take a good look at them.
+> 
+> When adding wrappers we should also rename ->s_dirt (say, to __s_dirt)
+> to catch out any unconverted code.
 
-But the truth is, all your OMAP phones really can deal with it.
+Right, I did this in the following patch:
+	[PATCHv4 16/17] VFS: rename s_dirt to s_dirty
 
-> I have not seen any suggestions for how to deal with all our
-> interprocess dependencies when pausing a subset of processes. Without
-> a solution to that we can only pause a subset of the processes we want
-> to pause.
+I thought that adding a leading '_' is not very neat, so added 'y' at
+the end.
 
-Do not 'pause' processes and you don't have the problem, make them stop
-on their own accord or kill them if they dont listen.. who cares about
-ill-behaved apps anyway?
-
-But really, if you want a more detailed answer, you need to provide more
-detail on these problems.
-
-If you want to allow an untrusted app to provide a dependency for a
-trusted app, you've lost and I don't care.
-
-Trusted apps should be well behaved, otherwise there really is no point.
-
-> These solutions do not allow us to use suspend. They may get us closer
-> to the power consumption we get from suspend on the good hardware or
-> even surpass it, but we still need suspend on some hardware, and we
-> would get event better results by using these solutions in addition to
-> suspend compared to using them instead of suspend.
-
-Not using suspend is exactly the point. As Alan has argued, propagating
-suspend blockers up into all regions of userspace will take much longer
-than fixing the hardware.
-
-You got to realize this is about Linux as a whole, I really don't care
-one whit about the specific Android case. We want a solution that is
-generic enough to solve the power consumption problem and makes sense on
-future hardware.
-
-The only abstraction that really makes sense in that view is idle
-states.
-
+-- 
+Best Regards,
+Artem Bityutskiy (Артём Битюцкий)
 
