@@ -1,98 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756921Ab0E2Xi0 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 29 May 2010 19:38:26 -0400
-Received: from local.xorcom.com ([62.90.10.53]:52308 "EHLO local.xorcom.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756072Ab0E2XiZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 29 May 2010 19:38:25 -0400
-X-Greylist: delayed 516 seconds by postgrey-1.27 at vger.kernel.org; Sat, 29 May 2010 19:38:24 EDT
-Date: Sun, 30 May 2010 02:29:46 +0300
-From: Tzafrir Cohen <tzafrir.cohen@xorcom.com>
-To: netdev@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH] Exclude DAHDI devices from being probed by netjet
-Message-ID: <20100529232946.GA1748@xorcom.com>
+	id S1756971Ab0E2X6w (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 29 May 2010 19:58:52 -0400
+Received: from mail-pz0-f204.google.com ([209.85.222.204]:54819 "EHLO
+	mail-pz0-f204.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756794Ab0E2X6u convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 29 May 2010 19:58:50 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type:content-transfer-encoding;
+        b=UC9jznUlDIzryyZ91xumU5KDVL+XrVeMFvIN2xFbrCBlFFkl166E0GBp0zgC/gxgcD
+         arsjjaqFkxVdoaHMugoJApkYfxwQdYLsTBg9fLhRnNp9DGX48XjEInzxhMvDliYD+HUu
+         hMFCF/kn+c9ROJhyWBV00/cEL8exLd2DBX2kY=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-X-Forced-Service: Sadly Using Gmail [tm]
-Organization: Xorcom*
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <1275150019.22648.615.camel@gandalf.stny.rr.com>
+References: <1274885054-15698-1-git-send-email-xiaosuo@gmail.com> 
+	<E1OHw3d-0001yr-Ag@pomaz-ex.szeredi.hu> <AANLkTimzsHAxha3vQxeFn5pF5BmYZ8nLawSG2YU3eujZ@mail.gmail.com> 
+	<AANLkTimCXzrXcfwbCy5MZ3D40WBnGbF6Kbj6egTSjk2s@mail.gmail.com> 
+	<1275150019.22648.615.camel@gandalf.stny.rr.com>
+From: Changli Gao <xiaosuo@gmail.com>
+Date: Sun, 30 May 2010 07:58:30 +0800
+Message-ID: <AANLkTim6tj4OKnLGW2dDIsvAmeU6b9Qsi6IZKdvlKHV2@mail.gmail.com>
+Subject: Re: [PATCH v2 3/4]: sendfile: remove flags paramter of 
+	do_splice_direct()
+To: rostedt@goodmis.org
+Cc: Miklos Szeredi <miklos@szeredi.hu>, axboe@kernel.dk,
+       Al Viro <viro@zeniv.linux.org.uk>, mszeredi@suse.cz,
+       linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       Eric Dumazet <eric.dumazet@gmail.com>,
+       Frederic Weisbecker <fweisbec@gmail.com>,
+       Ingo Molnar <mingo@redhat.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Many early Zaptel / DAHDI devices were based on the same Netjet PCI
-chipset. However they are not the ISDN BRI adapters the netjet driver
-expects to driver.
+On Sun, May 30, 2010 at 12:20 AM, Steven Rostedt <rostedt@goodmis.org> wrote:
+> [ Removed matthew@wil.cx since I'm getting errors in sending to that address ]
+>
+>
+> On Sat, 2010-05-29 at 09:59 +0800, Changli Gao wrote:
+>> On Fri, May 28, 2010 at 6:06 PM, Changli Gao <xiaosuo@gmail.com> wrote:
+>> > On Fri, May 28, 2010 at 5:40 PM, Miklos Szeredi <miklos@szeredi.hu> wrote:
+>> >> On Wed, 26 May 2010, Changli Gao wrote:
+>> >>> remove flags paramter of do_splice_direct().
+>> >>>
+>> >>> the flags parameter of do_splice_direct() doesn't mean non-block read of
+>> >>> in file,
+>> >>
+>> >> Actually, it does.  Look at the SPLICE_F_NONBLOCK usage in
+>> >> __generic_splice_file_read().
+>> >>
+>> >
+>> > Oh, I checked the code again. You're right. However, why don't we
+>> > check the flags of in file instead in __generic_file_splice_read()?
+>> >
+>>
+>> I am afraid that __generic_file_splice_read() should not use SPLICE_F_NONBLOCK.
+>>
+>> Here is the comment from the commit 42324c62704365d6a3e89138dea55909d2f26afe :
+>>
+>> <<EOF
+>> Linus introduced  SPLICE_F_NONBLOCK in commit
+>> 29e350944fdc2dfca102500790d8ad6d6ff4f69d
+>> (splice: add SPLICE_F_NONBLOCK flag )
+>>
+>>   It doesn't make the splice itself necessarily nonblocking (because the
+>>   actual file descriptors that are spliced from/to may block unless they
+>>   have the O_NONBLOCK flag set), but it makes the splice pipe operations
+>>   nonblocking.
+>>
+>> Linus intention was clear : let SPLICE_F_NONBLOCK control the splice
+>> pipe mode only
+>> EOF
+>>
+>> And I have greped the whole code:
+>>
+>
+>
+>> kernel/trace/trace.c:           if (flags & SPLICE_F_NONBLOCK)
+>>
+>> besides the __generic_file_splice_read(), there are two users: relay
+>> and trace. I believe they all misuse this flag.
+>>
+>
+>
+> The trace splice never blocks anyway. Since we have no good method to
+> wake up a waiter. That is, we never know if it is safe to call wakeup,
+> because a tracepoint may be in a section where the rq lock is held.
+>
+> The only thing that passing SPLICE_F_NONBLOCK does in that code is to
+> return -EAGAIN when there is nothing in the buffer. Otherwise, it
+> returns 0.
+>
 
-The patch excludes devices based solely on sub-vendor ID. It seems that
-all of those drivers probe for that, and I don't have a better way to
-check what are the exact sub-product IDs.
-
-Notes:
-1. It seems that the same change need also be applied to some hisax
-   (i4l) drivers.
-2. I don't have more precise data than the PCI ID tables in the drivers.
-   Does this run the risk of excluding some actual Netjet ISDN cards?
-3. A more informative failure message may help (if one is actually needed).
-4. The MAINTAINERS file lists the git tree
-   git://git.kernel.org/pub/scm/linux/kernel/git/kkeil/isdn-2.6.git but
-   it does not seem to exist.
-
-Signed-off-by: Tzafrir Cohen <tzafrir.cohen@xorcom.com>
----
- drivers/isdn/hardware/mISDN/netjet.c |   30 +++++++++++++++++++++++++++---
- 1 files changed, 27 insertions(+), 3 deletions(-)
-
-diff --git a/drivers/isdn/hardware/mISDN/netjet.c b/drivers/isdn/hardware/mISDN/netjet.c
-index 0a3553d..42dded4 100644
---- a/drivers/isdn/hardware/mISDN/netjet.c
-+++ b/drivers/isdn/hardware/mISDN/netjet.c
-@@ -1060,9 +1060,33 @@ nj_probe(struct pci_dev *pdev, const struct pci_device_id *ent)
- 	int cfg;
- 	struct tiger_hw *card;
- 
--	if (pdev->subsystem_vendor == 0x8086 &&
--	    pdev->subsystem_device == 0x0003) {
--		pr_notice("Netjet: Digium X100P/X101P not handled\n");
-+	switch (pdev->subsystem_vendor) {
-+	/* Fall-through */
-+	case 0x2151: /* Yeastart YSTDM8xx (ystdm8xx) */
-+	case 0xe16b: /* Zapata Project PCI-Radio (pciradio) */
-+	case 0x6159: /* Digium Wildcard T100/E100 (wct1xxp) */
-+	case 0x71fe: /* Digium Wildcard TE110P (wcte1xp) */
-+	case 0x795e: /* Digium Wildcard TE110P (wcte1xp) */
-+	case 0x797e: /* Digium Wildcard TE110P (wcte1xp) */
-+	case 0x79de: /* Digium Wildcard TE110P (wcte1xp) */
-+	case 0x79df: /* Digium Wildcard TE110P (wcte1xp) */
-+	case 0x8084: /* Digium Wildcard X101P clone (wcfxo) */
-+	case 0x8085: /* Digium Wildcard X101P (wcfxo) */
-+	case 0x8086: /* Digium Wildcard X101P clone (wcfxo) */
-+	case 0x8087: /* Digium Wildcard X101P clone (wcfxo) */
-+	case 0xa800: /* Digium Wildcard TDM400P Rev H (wctdm) */
-+	case 0xa801: /* Digium Wildcard TDM400P Rev H (wctdm) */
-+	case 0xa8fd: /* Digium Wildcard TDM400P Rev H (wctdm) */
-+	case 0xa901: /* Digium Wildcard TDM400P Rev H (wctdm) */
-+	case 0xa908: /* Digium Wildcard TDM400P Rev H (wctdm) */
-+	case 0xa9fd: /* Digium Wildcard TDM400P Rev H (wctdm) */
-+	case 0xb100: /* Digium Wildcard TDM400P Rev E/F (wctdm) */
-+	case 0xb118: /* Digium Wildcard TDM400P Rev I (wctdm) */
-+	case 0xb119: /* Digium Wildcard TDM400P Rev I (wctdm) */
-+	case 0xb1d9: /* Digium Wildcard TDM400P Rev I (wctdm) */
-+	case 0xa159: /* Digium Wildcard S400P Prototype (wctdm) */
-+	case 0xe159: /* Digium Wildcard S400P Prototype (wctdm) */
-+		pr_notice("Netjet: DAHDI device not supported.\n");
- 		return -ENODEV;
- 	}
- 
--- 
-1.7.1
+But why not use (file->f_flags & O_NONBLOCK) instead, as
+tracing_splice_read_pipe() does?
 
 
 -- 
-               Tzafrir Cohen
-icq#16849755              jabber:tzafrir.cohen@xorcom.com
-+972-50-7952406           mailto:tzafrir.cohen@xorcom.com
-http://www.xorcom.com  iax:guest@local.xorcom.com/tzafrir
+Regards，
+Changli Gao(xiaosuo@gmail.com)
