@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755420Ab0EaQd7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 May 2010 12:33:59 -0400
-Received: from casper.infradead.org ([85.118.1.10]:53743 "EHLO
+	id S1755463Ab0EaQeH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 May 2010 12:34:07 -0400
+Received: from casper.infradead.org ([85.118.1.10]:53751 "EHLO
 	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754491Ab0EaQd6 (ORCPT
+	with ESMTP id S1754491Ab0EaQeA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 May 2010 12:33:58 -0400
+	Mon, 31 May 2010 12:34:00 -0400
 Subject: Re: [linux-pm] [PATCH 0/8] Suspend block api (version 8)
 From: Peter Zijlstra <peterz@infradead.org>
 To: James Bottomley <James.Bottomley@suse.de>
@@ -30,8 +30,8 @@ References: <20100527222514.0a1710bf@lxorguk.ukuu.org.uk>
 	 <1275120618.27810.12699.camel@twins>
 	 <1275149418.4503.128.camel@mulgrave.site>
 Content-Type: text/plain; charset="UTF-8"
-Date: Sat, 29 May 2010 20:12:14 +0200
-Message-ID: <1275156734.1645.496.camel@laptop>
+Date: Sat, 29 May 2010 20:12:15 +0200
+Message-ID: <1275156735.1645.497.camel@laptop>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
@@ -40,57 +40,42 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 On Sat, 2010-05-29 at 11:10 -0500, James Bottomley wrote:
-> > Correct, I strongly oppose using suspend. Not running runnable tasks is
-> > not a sane solution.
+> > If current hardware can't cope, too friggin bad, get better hardware.
+> > 
+> > But the truth is, all your OMAP phones really can deal with it.
 > 
-> Look, this is getting into the realms of a pointless semantic quibble.
-> The problem is that untrusted tasks need to be forcibly suspended when
-> they have no legitimate work to do and the user hasn't authorised them
-> to continue even if the scheduler sees them as runnable.  Whether that's
-> achieved by suspending the entire system or forcibly idling the tasks
-> (using blocking states or freezers or something) so the scheduler can
-> suspend from idle is something to be discussed,
+> That's rubbish and you know it.  We do software workarounds for hardware
+> problems all the time ... try doing a git grep -i errata in arch x86, or
+> imagine a USB subsystem that only supported sane standards conforming
+> devices: that would have an almost zero intersect with the current USB
+> device market.
+> 
+> The job of the kernel is to accommodate hardware as best it can ...
+> sometimes it might not be able to, but most of the time it does a pretty
+> good job.
 
-So what happens if you task is CPU bound and gets suspended and is
-holding a resource (lock, whatever) that is required by someone else
-that didn't get suspended?
+Sure, and if x86 could wake from S3 on a keypress/mouse movement etc..
+you could use S3 as idle state.. not sure people would love the
+wakeup-latency, but that's a QoS matter.
 
-That's the classic inversion problem, and is caused by not running
-runnable tasks.
+But if there simply are no suitable wakeup sources from an idle state
+(S3 really is nothing more than a hardware idle state) then it might not
+be suitable for transparent idle modes and no amount of software hackery
+will solve that.
 
->  but the net result is
-> that we have to stop a certain set of tasks in such a way that they can
-> still receive certain external events ... semantically, this is
-> equivalent to not running runnable tasks in my book.
+So what I'm saying is, if your hardware can't generate the needed wakeup
+events, the auto-suspend stuff won't work either. If it can it can be
+implemented as a regular idle mode.
 
-Why would be care about external events? Clearly these apps are ill
-behaved, otherwise they would have listened to the environment telling
-them to idle.
+> The facts are that C states and S states are different and are entered
+> differently.  For some omap hardware, the power consumption in the
+> lowest C state (with all the ancillary power control) is the same as S3,
+> that's fine, suspend from idle works as well as suspend to ram modulo
+> bad apps. For quite a lot of MSM hardware, the lowest C state power
+> consumption is quite a bit above S3. 
 
-Why would you try to let buggy apps work as intended instead of break
-them as hard as possible? Such policy promotes crappy code since people
-get away with it.
+Wth is MSM?
 
->  (Perhaps this whole
-> thing is because the word runnable means different things ... I'm
-> thinking a task that would consume power ... are you thinking in the
-> scheduler R state?)
-
-Clearly I mean TASK_RUNNABLE, if not that the scheduler doesn't care.
-
-> Realistically, the main thing we need to do is stop timers posted
-> against the task (which is likely polling in a main loop, that being the
-> usual form of easy to write but power crazy app behaviour) from waking
-> the task and bringing the system out of suspend (whether from idle or
-> forced).
-
-Sure, that same main loop will probably receive a message along the
-lines of, 'hey, screen is off, we ought to go sleep'. If after that it
-doesn't listen, and more serious messages don't get responded to, simply
-kill the thing.
-
-Again, there is no reason what so ever to tolerate broken apps, it only
-promotes crappy apps.
-
-
+But really, why can't existing hardware get shipped with existing hacks,
+and for future hardware that does behave we have a proper solution?
 
