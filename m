@@ -1,77 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756557Ab0E2MK0 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 29 May 2010 08:10:26 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:57610 "EHLO mail.skyhub.de"
+	id S1756703Ab0E2MQj (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 29 May 2010 08:16:39 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:14100 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756254Ab0E2MKZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 29 May 2010 08:10:25 -0400
-Date: Sat, 29 May 2010 14:10:19 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Changli Gao <xiaosuo@gmail.com>
-Cc: Alexander Viro <viro@zeniv.linux.org.uk>, linux-fsdevel@vger.kernel.org,
-       linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] fs: optimize mpage_readpage()
-Message-ID: <20100529121019.GA25092@liondog.tnic>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	Changli Gao <xiaosuo@gmail.com>,
-	Alexander Viro <viro@zeniv.linux.org.uk>,
-	linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-References: <1275095926-18345-1-git-send-email-xiaosuo@gmail.com>
+	id S1756447Ab0E2MQh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 29 May 2010 08:16:37 -0400
+Message-ID: <4C01058B.8020808@redhat.com>
+Date: Sat, 29 May 2010 15:16:11 +0300
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-3.fc13 Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1275095926-18345-1-git-send-email-xiaosuo@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Arnd Bergmann <arnd@arndb.de>
+CC: Tom Lyon <pugs@cisco.com>, linux-kernel@vger.kernel.org,
+       kvm@vger.kernel.org, chrisw@sous-sol.org, joro@8bytes.org,
+       hjk@linutronix.de, mst@redhat.com, gregkh@suse.de, aafabbri@cisco.com,
+       scofeldm@cisco.com
+Subject: Re: [PATCH] VFIO driver: Non-privileged user level PCI drivers
+References: <4c004cba.Z/2Hpd7reetFaFC5%pugs@cisco.com> <201005291355.11727.arnd@arndb.de>
+In-Reply-To: <201005291355.11727.arnd@arndb.de>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Changli Gao <xiaosuo@gmail.com>
-Date: Sat, May 29, 2010 at 09:18:46AM +0800
+On 05/29/2010 02:55 PM, Arnd Bergmann wrote:
+> On Saturday 29 May 2010, Tom Lyon wrote:
+>    
+>> +/*
+>> + * Structure for DMA mapping of user buffers
+>> + * vaddr, dmaaddr, and size must all be page aligned
+>> + * buffer may only be larger than 1 page if (a) there is
+>> + * an iommu in the system, or (b) buffer is part of a huge page
+>> + */
+>> +struct vfio_dma_map {
+>> +       __u64   vaddr;          /* process virtual addr */
+>> +       __u64   dmaaddr;        /* desired and/or returned dma address */
+>> +       __u64   size;           /* size in bytes */
+>> +       int     rdwr;           /* bool: 0 for r/o; 1 for r/w */
+>> +};
+>>      
+> Please add a 32 bit padding word at the end of this, otherwise the
+> size of the data structure is incompatible between 32 x86 applications
+> and 64 bit kernels.
+>    
 
-> optimize mpage_readpage()
-> 
-> we don't need to initialize bio, and pass it to do_mpage_readpage() as
-> parameter, as it is returned by do_mpage_readpage().
-> 
-> Signed-off-by: Changli Gao <xiaosuo@gmail.com>
-> ----
->  fs/mpage.c |    4 ++--
->  1 file changed, 2 insertions(+), 2 deletions(-)
-> diff --git a/fs/mpage.c b/fs/mpage.c
-> index fd56ca2..94ff0d1 100644
-> --- a/fs/mpage.c
-> +++ b/fs/mpage.c
-> @@ -409,14 +409,14 @@ EXPORT_SYMBOL(mpage_readpages);
->   */
->  int mpage_readpage(struct page *page, get_block_t get_block)
->  {
-> -	struct bio *bio = NULL;
-> +	struct bio *bio;
->  	sector_t last_block_in_bio = 0;
->  	struct buffer_head map_bh;
->  	unsigned long first_logical_block = 0;
->  
->  	map_bh.b_state = 0;
->  	map_bh.b_size = 0;
-> -	bio = do_mpage_readpage(bio, page, 1, &last_block_in_bio,
-> +	bio = do_mpage_readpage(NULL, page, 1, &last_block_in_bio,
->  			&map_bh, &first_logical_block, get_block);
->  	if (bio)
->  		mpage_bio_submit(READ, bio);
+Might as well call it 'flags' and reserve a bit more space (keeping 
+64-bit aligned size) for future expansion.
 
-Nope, I don't think that's a good idea.
-
-On the one hand, this is a trick to shut up gcc:
-
-fs/mpage.c: In function ‘mpage_readpage’:
-fs/mpage.c:419: warning: ‘bio’ is used uninitialized in this function
-
-and, on the other hand, make sure bio is NULL and not some random stack
-value since bio is explicitly checked for NULL in do_mpage_readpage().
+rdwr can be folded into it.
 
 -- 
-Regards/Gruss,
-    Boris.
+I have a truly marvellous patch that fixes the bug which this
+signature is too narrow to contain.
+
