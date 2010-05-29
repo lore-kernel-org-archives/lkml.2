@@ -1,62 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755110Ab0E2Dxp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 May 2010 23:53:45 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:63664 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751288Ab0E2Dxn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 May 2010 23:53:43 -0400
-Date: Sat, 29 May 2010 00:53:14 -0300
-From: Mauro Carvalho Chehab <mchehab@redhat.com>
-To: Daniel Mack <daniel@caiaq.de>,
-       Patrick Boettcher <pboettcher@kernellabs.com>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, linux-kernel@vger.kernel.org,
-       Wolfram Sang <w.sang@pengutronix.de>, Jiri Slaby <jslaby@suse.cz>,
-       Devin Heitmueller <dheitmueller@kernellabs.com>,
-       linux-media@vger.kernel.org
-Subject: Re: [PATCH] drivers/media/dvb/dvb-usb/dib0700: CodingStyle fixes
-Message-ID: <20100529005314.3cea43d8@pedra>
-In-Reply-To: <20100524160215.GN30801@buzzloop.caiaq.de>
-References: <AANLkTimSMLPf697B831bEyiSaeKgcOlKPmnu-0EXuqtX@mail.gmail.com>
-	<1274714585-20544-1-git-send-email-daniel@caiaq.de>
-	<20100524155624.GA3182@core.coreip.homeip.net>
-	<20100524160215.GN30801@buzzloop.caiaq.de>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1754328Ab0E2D7P (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 May 2010 23:59:15 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:52197 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751288Ab0E2D7N convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 May 2010 23:59:13 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+To: "Luis Claudio R. Goncalves" <lclaudio@uudg.org>
+Subject: Re: [RFC] oom-kill: give the dying task a higher priority
+Cc: kosaki.motohiro@jp.fujitsu.com, Minchan Kim <minchan.kim@gmail.com>,
+       balbir@linux.vnet.ibm.com, Oleg Nesterov <oleg@redhat.com>,
+       linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+       Thomas Gleixner <tglx@linutronix.de>,
+       Peter Zijlstra <peterz@infradead.org>,
+       David Rientjes <rientjes@google.com>, Mel Gorman <mel@csn.ul.ie>,
+       williams@redhat.com
+In-Reply-To: <20100528164826.GJ11364@uudg.org>
+References: <20100528154549.GC12035@barrios-desktop> <20100528164826.GJ11364@uudg.org>
+Message-Id: <20100529125136.62CA.A69D9226@jp.fujitsu.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Becky! ver. 2.50.07 [ja]
+Date: Sat, 29 May 2010 12:59:09 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Mon, 24 May 2010 18:02:15 +0200
-Daniel Mack <daniel@caiaq.de> escreveu:
+Hi
 
-> On Mon, May 24, 2010 at 08:56:24AM -0700, Dmitry Torokhov wrote:
-> > On Mon, May 24, 2010 at 05:23:05PM +0200, Daniel Mack wrote:
-> > > Signed-off-by: Daniel Mack <daniel@caiaq.de>
-> > > Cc: Wolfram Sang <w.sang@pengutronix.de>
-> > > Cc: Mauro Carvalho Chehab <mchehab@infradead.org>
-> > > Cc: Jiri Slaby <jslaby@suse.cz>
-> > > Cc: Dmitry Torokhov <dtor@mail.ru>
-> > > Cc: Devin Heitmueller <dheitmueller@kernellabs.com>
-> > > Cc: linux-media@vger.kernel.org
-> > 
-> > Not sure how I got on the list but chnages look good to me.
+> oom-killer: give the dying task rt priority (v3)
 > 
-> get_maintainer.pl :)
+> Give the dying task RT priority so that it can be scheduled quickly and die,
+> freeing needed memory.
+> 
+> Signed-off-by: Luis Claudio R. Gonçalves <lgoncalv@redhat.com>
 
-It did a very bad work in this case... It selected a random set of people,
-but it forgot to add the email of the low level driver... 
-This driver is maintained by Patrick (c/c). My name is also ok (as I am the
-subsystem maintainer), but instead of c/c me, you can just copy
-linux-media@vger.kernel.org, since I work directly with the patchwork
-queue associated with the public ML.
+Almostly acceptable to me. but I have two requests, 
 
-Patrick,
+- need 1) force_sig() 2)sched_setscheduler() order as Oleg mentioned
+- don't boost priority if it's in mem_cgroup_out_of_memory()
 
-Could you please review this patch and another one sent by Daniel at the ML?
+Can you accept this? if not, can you please explain the reason?
 
--- 
+Thanks.
 
-Cheers,
-Mauro
+> 
+> diff --git a/mm/oom_kill.c b/mm/oom_kill.c
+> index 84bbba2..2b0204f 100644
+> --- a/mm/oom_kill.c
+> +++ b/mm/oom_kill.c
+> @@ -266,6 +266,8 @@ static struct task_struct *select_bad_process(unsigned long *ppoints)
+>   */
+>  static void __oom_kill_task(struct task_struct *p, int verbose)
+>  {
+> +	struct sched_param param;
+> +
+>  	if (is_global_init(p)) {
+>  		WARN_ON(1);
+>  		printk(KERN_WARNING "tried to kill init!\n");
+> @@ -288,6 +290,8 @@ static void __oom_kill_task(struct task_struct *p, int verbose)
+>  	 * exit() and clear out its resources quickly...
+>  	 */
+>  	p->time_slice = HZ;
+> +	param.sched_priority = MAX_RT_PRIO-10;
+> +	sched_setscheduler(p, SCHED_FIFO, &param);
+>  	set_tsk_thread_flag(p, TIF_MEMDIE);
+>  
+>  	force_sig(SIGKILL, p);
+> -- 
+> [ Luis Claudio R. Goncalves                    Bass - Gospel - RT ]
+> [ Fingerprint: 4FDD B8C4 3C59 34BD 8BE9  2696 7203 D980 A448 C8F8 ]
+> 
+
+
+
