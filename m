@@ -1,65 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755788Ab0E2BHN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 28 May 2010 21:07:13 -0400
-Received: from thunk.org ([69.25.196.29]:36616 "EHLO thunker.thunk.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754783Ab0E2BHJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 28 May 2010 21:07:09 -0400
-Date: Fri, 28 May 2010 21:06:57 -0400
-From: tytso@mit.edu
-To: "Jayson R. King" <dev@jaysonking.com>
-Cc: Stable team <stable@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-       Greg Kroah-Hartman <gregkh@suse.de>,
-       "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-       Dave Chinner <david@fromorbit.com>,
-       Ext4 Developers List <linux-ext4@vger.kernel.org>,
-       Kay Diederichs <Kay.Diederichs@uni-konstanz.de>
-Subject: Re: [PATCH 2.6.27.y 2/3] ext4: Fix file fragmentation during large
- file write.
-Message-ID: <20100529010657.GM26177@thunk.org>
-Mail-Followup-To: tytso@mit.edu, "Jayson R. King" <dev@jaysonking.com>,
-	Stable team <stable@kernel.org>,
-	LKML <linux-kernel@vger.kernel.org>,
-	Greg Kroah-Hartman <gregkh@suse.de>,
-	"Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-	Dave Chinner <david@fromorbit.com>,
-	Ext4 Developers List <linux-ext4@vger.kernel.org>,
-	Kay Diederichs <Kay.Diederichs@uni-konstanz.de>
-References: <4C001888.8020006@jaysonking.com>
- <4C001901.1070207@jaysonking.com>
+	id S1756243Ab0E2BL0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 28 May 2010 21:11:26 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:49194 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756079Ab0E2BLW convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 28 May 2010 21:11:22 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4C001901.1070207@jaysonking.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on thunker.thunk.org); SAEximRunCond expanded to false
+In-Reply-To: <201005290024.22915.rjw@sisk.pl>
+References: <Pine.LNX.4.44L0.1005271253240.3239-100000@iolanthe.rowland.org>
+	<20100528104415.1403541a@schatten.dmk.lab>
+	<AANLkTikXtk-f41-z8gXfXLNLqgGVa0z4d-qgIvwljbR-@mail.gmail.com>
+	<201005290024.22915.rjw@sisk.pl>
+Date: Fri, 28 May 2010 18:11:22 -0700
+Message-ID: <AANLkTimM7O_k8KVSfMgsB8b_EKQEz0vpYu6pxjedsTcJ@mail.gmail.com>
+Subject: Re: [linux-pm] [PATCH 0/8] Suspend block api (version 8)
+From: =?ISO-8859-1?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Florian Mickler <florian@mickler.org>,
+       Thomas Gleixner <tglx@linutronix.de>,
+       Matthew Garrett <mjg59@srcf.ucam.org>,
+       Alan Stern <stern@rowland.harvard.edu>,
+       Peter Zijlstra <peterz@infradead.org>, Paul@smtp1.linux-foundation.org,
+       LKML <linux-kernel@vger.kernel.org>, felipe.balbi@nokia.com,
+       Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
+       Linux PM <linux-pm@lists.linux-foundation.org>,
+       Alan Cox <alan@lxorguk.ukuu.org.uk>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 28, 2010 at 02:26:57PM -0500, Jayson R. King wrote:
-> From: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
-> Date: Thu Oct 16 10:10:36 2008 -0400
-> Subject: ext4: Fix file fragmentation during large file write.
-> 
-> commit 22208dedbd7626e5fc4339c417f8d24cc21f79d7 upstream.
-> 
-> The range_cyclic writeback mode uses the address_space writeback_index
-> as the start index for writeback.  With delayed allocation we were
-> updating writeback_index wrongly resulting in highly fragmented file.
-> This patch reduces the number of extents reduced from 4000 to 27 for a
-> 3GB file.
+2010/5/28 Rafael J. Wysocki <rjw@sisk.pl>:
+> On Friday 28 May 2010, Arve Hjønnevåg wrote:
+>> On Fri, May 28, 2010 at 1:44 AM, Florian Mickler <florian@mickler.org> wrote:
+>> > On Thu, 27 May 2010 20:05:39 +0200 (CEST)
+>> > Thomas Gleixner <tglx@linutronix.de> wrote:
+> ...
+>> > To integrate this with the current way of doing things, i gathered it
+>> > needs to be implemented as an idle-state that does the suspend()-call?
+>> >
+>>
+>> I think it is better no not confuse this with idle. Since initiating
+>> suspend will cause the system to become not-idle, I don't think is is
+>> beneficial to initiate suspend from idle.
+>
+> It is, if the following two conditions hold simultaneously:
+>
+> (a) Doing full system suspend is ultimately going to bring you more energy
+>    savings than the (presumably lowest) idle state you're currently in.
+>
+> (b) You anticipate that the system will stay idle for a considerably long time
+>    such that it's worth suspending.
+>
 
-This isn't a critical bug fix either.  I don't really care a whole
-lot, since I don't plan to support ext4 with all of these patches but
-if you haven't been doing a full set of testing with these patches,
-I'd be very concerned about whether ext4 would be stable after
-applying this patch series.
+I still don't think this matters. If you are waiting for in interrupt
+that cannot wake you up from suspend, then idle is not an indicator
+that it is safe to enter suspend. I also don't think you can avoid any
+user-space suspend blockers by delaying suspend until the system goes
+idle since any page fault could cause it to go idle. Therefore I don't
+see a benefit in delaying suspend until idle when the last suspend
+blocker is released (it would only mask possible race conditions).
 
-What sort of testing _have_ you done?
-
-						- Ted
-
+-- 
+Arve Hjønnevåg
