@@ -1,271 +1,222 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755725Ab0E2R0i (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 29 May 2010 13:26:38 -0400
-Received: from moutng.kundenserver.de ([212.227.126.187]:61266 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754585Ab0E2R0g (ORCPT
+	id S1754974Ab0E2SYV (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 29 May 2010 14:24:21 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:44901 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751932Ab0E2SYU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 29 May 2010 13:26:36 -0400
-Message-ID: <4C014E4F.90206@vlnb.net>
-Date: Sat, 29 May 2010 21:26:39 +0400
-From: Vladislav Bolkhovitin <vst@vlnb.net>
-User-Agent: Thunderbird 2.0.0.23 (X11/20090825)
+	Sat, 29 May 2010 14:24:20 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:mime-version:content-type
+         :content-disposition:user-agent;
+        b=b2OGYdJSOId6AMvqxqxBEHeEcs7B5rk7wglf00sEn6BY0NrsPyv3rQIxKYTy/Dbjqz
+         /hZI4Ksz8lo201ZNaM9Un5cRWdZtK4H5h7XltO7RHUJKooL8bqdvpMqP//Y4V5+C+paF
+         1xS376Sf5yPpPyxjhIjaaajTKhHamuMCMs9C4=
+Date: Sat, 29 May 2010 22:24:09 +0400
+From: Cyrill Gorcunov <gorcunov@gmail.com>
+To: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+       =?iso-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>,
+       Robert Richter <robert.richter@amd.com>,
+       Arnaldo Carvalho de Melo <acme@redhat.com>
+Cc: LKML <linux-kernel@vger.kernel.org>
+Subject: [RFC] perf, x86: Segregate PMU workaraunds into x86_pmu_quirk_ops
+	structure
+Message-ID: <20100529182409.GJ5322@lenovo>
 MIME-Version: 1.0
-To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-CC: James Bottomley <James.Bottomley@suse.de>,
-       Christoph Hellwig <hch@infradead.org>,
-       FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-       Mike Christie <michaelc@cs.wisc.edu>,
-       Douglas Gilbert <dgilbert@interlog.com>,
-       Joe Eykholt <jeykholt@cisco.com>,
-       Richard Sharpe <realrichardsharpe@gmail.com>,
-       James Smart <James.Smart@Emulex.Com>, Jeff Garzik <jeff@garzik.org>,
-       Joel Becker <joel.becker@oracle.com>,
-       linux-scsi <linux-scsi@vger.kernel.org>,
-       LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC]: Mainline of TCM Core and TCM_Loop for v2.6.35
-References: <1274317792.30733.59.camel@haakon2.linux-iscsi.org>	 <4BFEBCEF.8010201@vlnb.net> <1275012084.9661.66.camel@haakon2.linux-iscsi.org>
-In-Reply-To: <1275012084.9661.66.camel@haakon2.linux-iscsi.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Provags-ID: V01U2FsdGVkX1+7Yw9IeIRjv44GyMqCaTW+SUG81Im6/rI/IQq
- 7O3pXF7lLGc7i8H3gnBq8I2FhejMgIxqFaMZPSUMoQpjVcXOqo
- CHrOmjby0TPvhhUq0SXWw==
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Nicholas A. Bellinger, on 05/28/2010 06:01 AM wrote:
-> On Thu, 2010-05-27 at 22:41 +0400, Vladislav Bolkhovitin wrote:
->> Nicholas A. Bellinger, on 05/20/2010 05:09 AM wrote:
->>> Greetings James and Co,
->>>
->>> I would like to formally request the inclusion of TCM Core v4 codebase
->>> containing the fabric independent configfs infrastructure design and
->>> TCM_Loop SCSI LLD fabric module supporting multi-fabric I_T Nexus and
->>> Port emulation for SAS, FC and iSCSI into mainline for v2.6.35
->>>
->>> The plan is to push TCM Core and the TCM_Loop LLD module for use with
->>> existing userspace applications into mainline first, and then focus on
->>> extending the upstream fabric libraries (libiscsi, libfc, libsas) for
->>> new and future TCM modules to support a common set of kernel-level
->>> target mode infrastructure for HW and SW fabric engines once the main
->>> target pieces are in place.
->>>
->>> On the userspace fabric <-> kernel backstore side, the TCM_Loop fabric
->>> module is currently running with full SPC-3 PR and ALUA support using
->>> fabric-independent virtual SCSI target port emulation with the STGT
->>> iSCSI userspace fabric code and SG_IO backstores.  TCM_Loop is also
->>> being used with SG_IO for QEMU-KVM megasas HBA emulation into Linux and
->>> MSFT x86 guests and is able to run at sustained 10 Gb/sec throughput
->>> into KVM guest.
->>>
->>> For the kernelspace fabric <-> userspace backstore side for v2.6.35, the
->>> plan is to extend the existing drivers/scsi/scsi_tgt_[lib,if].c direct
->>> mapped ring interface to the WIP kernel level TCM/STGT subsystem
->>> backstore plugin mentioned in previously on linux-scsi.  This will allow
->>> projects presenting a userspace block device to access existing TCM
->>> kernel level target module fabric drivers.
->> I've got 2 question and 1 note.
->>
->> 1. Are there any evidences that TCM has any value over STGT?
-> 
-> TCM provides a HBA / device model for kernel level backstores with SPC-4
-> PR and ALUA logic on top of mainline Linux storage subsystems.  The TCM
-> v4 design also provides a fabric independent control plane using a set
-> of generic struct config_groups and fabric context dependent
-> CONFIGFS_EATTR() based macros that allow for rapid development of new,
-> conversion of existing, and extention of existing TCM fabric modules.
-> 
-> When used in combination with STGT userspace fabric modules and SG_IO
-> backstore (tgt.git:usr/iscsi/ for example) and TCM_Loop Port and Nexus
-> emulation, it allows any kernel level TCM backstore and associated SPC-4
-> PR and ALUA logic to be made accessable to STGT fabric module code
-> running in userspace.
-> 
-> Also, STGT currently does not contain the ability to run in SCSI LLD
-> mode so it is not possible to access kernel level target functionality
-> inside of a QEMU-KVM guest using virtio or the new megasas HBA
-> emulation.  Using the TCM_Loop fabric module it is now possible to
-> access TCM fabric independent SPC-4 logic into the virtualized guest
-> with any hypervisor (kvm, xen, vmw) that properly supports scsi-generic
-> and some manner of HBA emulation.
+Hi,
 
-All the above can be implemented in STGT. Considering that they were 
-only recently added in TCM, why they were not added in STGT instead?
+I would appreciate comments/complains on the following patch. The idea is to implement
+PMU quirks with minimal impact. At the moment two quirks are addressed -
+PEBS disabling on Clovertown and P4 performance counter double write.
+PEBS disabling already was there only moved to x86_pmu_quirk_ops. Note
+that I didn't use pointer to the structure intensionally but embed it into
+x86_pmu, if the structure grow we will need to use a pointer to the structure.
 
->> So far, 
->> I've only read not supported words with once a reference to my effort on 
->> completely unrelated project.
-> 
-> I have no idea what you are talking about here.  As mentioned in my
-> original email, my efforts for mainling TCM have been to extend and
-> complement STGT.  In open source you have to build upon what already
-> exists upstream and move forward.
+Comments, complains please? Perhaps there is some idea which allow
+to handle this all more gentle?
 
-This sounds very attractive, but not practical. Because of fundamental 
-architectural differences, you'd end up with 2 separate somehow coupled 
-subsystems doing the same things by 2 different interfaces. Definitely, 
-this ugly end result would not be something which everybody liked and 
-expected.
+	-- Cyrill
+---
+perf, x86: Segregate PMU workaraunds into x86_pmu_quirk_ops structure
 
->> 2. Are there any users of this code using it in production to prove its 
->> usability and stability? I mean, used not by RisingTide and its 
->> customers, because on the RisingTide's web page it's clearly written 
->> that their target software "partially available as the open-source LIO 
->> Core target".
-> libs
-> Wrong.  We (RisingTide) validate and maintain a backport tree of TCM and
-> LIO kernel code for our customers who do not necessarly run on bleeding
-> edge kernels.
+This allow us to handle both Clovertown and Netburst quirks in
+a general fashion.
 
-Year, you are making from the "partially available" the "fully 
-available" code.
+Signed-off-by: Cyrill Gorcunov <gorcunov@gmail.com>
+---
+ arch/x86/kernel/cpu/perf_event.c       |   18 ++++++++--
+ arch/x86/kernel/cpu/perf_event_intel.c |   55 ++++++++++++++++++---------------
+ arch/x86/kernel/cpu/perf_event_p4.c    |   21 ++++++++++++
+ 3 files changed, 64 insertions(+), 30 deletions(-)
 
-> Also just FYI, here in North America you can go into almost any major
-> electronics store and purchase a storage server from multiple different
-> vendors containing TCM/LIO code directly from lio-core-2.6.git/master.
-
-Names, please.
-
-Do you mean Netgear 
-(http://old.nabble.com/Re%3A-Invalid-module-format---no-symbol-version-formodule_layout-p27116634.html)?
-
-Anyway, it is apparent that open source LIO/TCM you are pushing has none 
-or very few production users and there are no signs it is changing. 
-Users prefer alternative solutions.
-
-Moreover, I have not seen any positive reference about production usage 
-of LIO/TCM anywhere, the only reference I've seen so far was the above 
-negative feedback about the Netgear experience.
-
-> But you should really understand that the 'who is using what' has never
-> been a strong agruement for mainline acceptance of any project.
-
-Size of the users base has always been one of the main arguments.
-
->>  As we can see Linux-iSCSI.org development mailing list 
->> (http://groups.google.com/group/linux-iscsi-target-dev?hl=en) has near 
->> zero activity.
-> 
-> Wrong again.  The LIO-devel list contains series after series of
-> bisectable commits that are posted in a human readable and reviewable
-> manner.  All of the interesting commits related to the v4 configfs
-> design and port of LIO-Target, TCM_FC, and TCM_Loop fabric modules have
-> been posted to linux-scsi over the last months as well.
-
-Year, you are the one making traffic there.
-
->> The note is that the idea to use the STGT's scsi_tgt_[lib,if].c direct 
->> mapped ring interface to extend TCM in the user space and allow present 
->> STGT's user space devices to work with TCM is unpractical, because the 
->> STGT's interface and devices are built around SCSI target state machine 
->> and memory management in the user space, while TCM has them both in the 
->> kernel.
-> 
-> I think you are misunderstanding what the TCM STGT backstore subsystem
-> plugin at lio-core-2.6.git/drivers/target/target_core_stgt.c is supposed
-> to do, and what I have proposed with the second area of TCM and STGT
-> compatibility.
-
-Nicholas,
-
-I have been working in area of SCSI targets since 2003, I have created 
-the best OSS SCSI target subsystem which is widely used and getting 
-better and better every day. I am one of few people among recipients of 
-this thread who has sufficient knowledge and experience to be able see 
-the whole picture and be able to evaluate quality and consequences of 
-the code and architectural decisions in this area. (Even deep experience 
-in SCSI initiator side development is not quite sufficient for that, 
-because SCSI initiator and target sides solve completely different tasks 
-[1].) If something isn't clear for me, I can simply look in the source 
-code and quickly find out the answers.
-
-<MOANING ON>
-
-Actually, I'd prefer to stay away from all those TCM discussions and let 
-somebody similarly skillful to judge. But, since there is no such person 
-appearing, I have to participate myself to explain the real state of 
-things and let people judge based on _facts_, not the marketing stuff 
-you are too often presenting. So far too much of what you have written 
-after closer examinations turned out to be a misleading half-truth as in 
-this particular case, where the end result isn't going to be what 
-everybody would expect hearing about "TCM and STGT compatibility" or as 
-it was before with "1 to many" pass-through which only sometimes "1 to 
-many", otherwise not enforced "1 to 1", welcoming data corruption, or 
-even before with Persistent Reservations which worked as expected only 
-with a single connected initiator, etc.. I have to explain everybody for 
-who it isn't obvious what is true and what is NOT true in your 
-"half-truth". Competition is a good thing, but without all those 
-undercover dirty marketing games which I'm really tired. They are 
-disgusting.
-
-<MOANING OFF>
-
-> We will be extending the scsi_tgt_[lib,if].c mapped ring interface to
-> allow TCM to access userspace backstores transparently with existing
-> kernel level TCM fabric modules, and using the generic configfs fabric
-> module infrastructure in target_core_fabric_configfs.c for the port and
-> I_T nexus control plane just as you would with any TCM backstore
-> subsystem today.
-> 
-> Again, in open source you have to build upon what already exists and
-> move forward.  The original STGT kernel <-> userspace ring abstraction
-> and logic in drivers/scsi/scsi_tgt_lib.c:scsi_tgt_queue_command() ->
-> scsi_tgt_uspace_send_cmd() is already going to do the vast majority of
-> what is required for handling fabric I/O processing and I_T Nexus and
-> Port management in kernel space with a userspace backstore.  It is
-> really just a matter of allowing the STGT ring request to optionally be
-> sent out to userspace as a standalone LUN instead of as a target port.
-
-You'd end up in one of 2 options:
-
-1. You'd make TCM to pass-through requests from its target drivers 
-("fabric modules" in your terminology) directly to the STGT core in the 
-user space bypassing TCM's internal memory management and target state 
-machine, i.e. effectively make them behave as STGT target drivers. As 
-the result, we would have 2 separate interfaces (TCM and STGT) doing the 
-same thing as well as 2 sets of target drivers and 2 sets of backend 
-handlers from each interface. That apparently wouldn't be a Linux's way 
-of doing things. It wouldn't be moving forward, it would be moving in 
-the maintenance hell.
-
-2. You'd just throw away existing STGT messages and add new ones. Then 
-add in STGT a big "TCM compatibility" level to make STGT and it's 
-backend be able to use the new messages and work with new model with 
-memory management and target state machine in the kernel. Obviously, it 
-would be even uglier than (1).
-
-But it's an Open Source, so you can do whatever you want. Show us the 
-code and we will see. My intention is only to _warn_ people that they 
-shouldn't count on your (marketing) plans, because there are fundamental 
-reasons preventing them be implemented in an acceptable way.
-
-Also I should note that the decision to extend the fabric libraries by 
-additional target mode specific routines is a very bad move. I already 
-covered this topic in http://lkml.org/lkml/2008/12/10/245. In short, 
-SCSI initiator and target sides share nearly nothing in the processing 
-code [2], so they should be separated to keep different things 
-separately, as a good design practice required, not to heap them 
-altogether as it's currently done and you are going to continue. Good 
-example of how it is already done is NFS client (fs/nfs/) and server 
-(fs/nfsd/), which share only few ACL processing routines in fs/nfs_common/.
-
-Vlad
-
-[1] SCSI initiator and target are a client and a server correspondingly, 
-where one is generating requests and parsing responses, another one 
-parsing requests and generating responses, so they have very few in 
-common. Like apache (server) and links/firefox (client), or sendmail 
-(server) and mutt/thunderbird (client).
-
-[2] Initiator and target modes share only (1) constants, (2) low level 
-memory processing and mapping routines. Both of them already separated 
-out in the headers and the block subsystem. In case if a hardware 
-supports both initiator and target modes at the same time, the target 
-mode support should be done as an add-on through a set of hooks exported 
-by the corresponding initiator module for the hardware to allow the 
-target add-on to process target mode commands from the hardware. This 
-way code for both modes would be clearly separated and it would allow to 
-load the target mode add-on only when it is needed.
+Index: linux-2.6.git/arch/x86/kernel/cpu/perf_event.c
+=====================================================================
+--- linux-2.6.git.orig/arch/x86/kernel/cpu/perf_event.c
++++ linux-2.6.git/arch/x86/kernel/cpu/perf_event.c
+@@ -185,6 +185,11 @@ union perf_capabilities {
+ 	u64	capabilities;
+ };
+ 
++struct x86_pmu_quirk_ops {
++	void		(*pmu_init)(void);
++	void		(*perfctr_write)(unsigned long addr, u64 value);
++};
++
+ /*
+  * struct x86_pmu - generic x86 pmu
+  */
+@@ -218,7 +223,8 @@ struct x86_pmu {
+ 	void		(*put_event_constraints)(struct cpu_hw_events *cpuc,
+ 						 struct perf_event *event);
+ 	struct event_constraint *event_constraints;
+-	void		(*quirks)(void);
++
++	struct x86_pmu_quirk_ops quirks;
+ 
+ 	int		(*cpu_prepare)(int cpu);
+ 	void		(*cpu_starting)(int cpu);
+@@ -924,7 +930,11 @@ x86_perf_event_set_period(struct perf_ev
+ 	 */
+ 	atomic64_set(&hwc->prev_count, (u64)-left);
+ 
+-	wrmsrl(hwc->event_base + idx,
++	if (x86_pmu.quirks.perfctr_write)
++		x86_pmu.quirks.perfctr_write(hwc->event_base + idx,
++				(u64)(-left) & x86_pmu.cntval_mask);
++	else
++		wrmsrl(hwc->event_base + idx,
+ 			(u64)(-left) & x86_pmu.cntval_mask);
+ 
+ 	perf_event_update_userpage(event);
+@@ -1316,8 +1326,8 @@ void __init init_hw_perf_events(void)
+ 
+ 	pr_cont("%s PMU driver.\n", x86_pmu.name);
+ 
+-	if (x86_pmu.quirks)
+-		x86_pmu.quirks();
++	if (x86_pmu.quirks.pmu_init)
++		x86_pmu.quirks.pmu_init();
+ 
+ 	if (x86_pmu.num_counters > X86_PMC_MAX_GENERIC) {
+ 		WARN(1, KERN_ERR "hw perf events %d > max(%d), clipping!",
+Index: linux-2.6.git/arch/x86/kernel/cpu/perf_event_intel.c
+=====================================================================
+--- linux-2.6.git.orig/arch/x86/kernel/cpu/perf_event_intel.c
++++ linux-2.6.git/arch/x86/kernel/cpu/perf_event_intel.c
+@@ -822,6 +822,36 @@ static void intel_pmu_cpu_dying(int cpu)
+ 	fini_debug_store_on_cpu(cpu);
+ }
+ 
++static void intel_clovertown_pmu_init(void)
++{
++	/*
++	 * PEBS is unreliable due to:
++	 *
++	 *   AJ67  - PEBS may experience CPL leaks
++	 *   AJ68  - PEBS PMI may be delayed by one event
++	 *   AJ69  - GLOBAL_STATUS[62] will only be set when DEBUGCTL[12]
++	 *   AJ106 - FREEZE_LBRS_ON_PMI doesn't work in combination with PEBS
++	 *
++	 * AJ67 could be worked around by restricting the OS/USR flags.
++	 * AJ69 could be worked around by setting PMU_FREEZE_ON_PMI.
++	 *
++	 * AJ106 could possibly be worked around by not allowing LBR
++	 *       usage from PEBS, including the fixup.
++	 * AJ68  could possibly be worked around by always programming
++	 * 	 a pebs_event_reset[0] value and coping with the lost events.
++	 *
++	 * But taken together it might just make sense to not enable PEBS on
++	 * these chips.
++	 */
++	printk(KERN_WARNING "PEBS disabled due to CPU errata.\n");
++	x86_pmu.pebs = 0;
++	x86_pmu.pebs_constraints = NULL;
++}
++
++static __initconst const struct x86_pmu_quirk_ops intel_clovertown_quirks = {
++	.pmu_init = intel_clovertown_pmu_init,
++};
++
+ static __initconst const struct x86_pmu intel_pmu = {
+ 	.name			= "Intel",
+ 	.handle_irq		= intel_pmu_handle_irq,
+@@ -848,31 +878,6 @@ static __initconst const struct x86_pmu 
+ 	.cpu_dying		= intel_pmu_cpu_dying,
+ };
+ 
+-static void intel_clovertown_quirks(void)
+-{
+-	/*
+-	 * PEBS is unreliable due to:
+-	 *
+-	 *   AJ67  - PEBS may experience CPL leaks
+-	 *   AJ68  - PEBS PMI may be delayed by one event
+-	 *   AJ69  - GLOBAL_STATUS[62] will only be set when DEBUGCTL[12]
+-	 *   AJ106 - FREEZE_LBRS_ON_PMI doesn't work in combination with PEBS
+-	 *
+-	 * AJ67 could be worked around by restricting the OS/USR flags.
+-	 * AJ69 could be worked around by setting PMU_FREEZE_ON_PMI.
+-	 *
+-	 * AJ106 could possibly be worked around by not allowing LBR
+-	 *       usage from PEBS, including the fixup.
+-	 * AJ68  could possibly be worked around by always programming
+-	 * 	 a pebs_event_reset[0] value and coping with the lost events.
+-	 *
+-	 * But taken together it might just make sense to not enable PEBS on
+-	 * these chips.
+-	 */
+-	printk(KERN_WARNING "PEBS disabled due to CPU errata.\n");
+-	x86_pmu.pebs = 0;
+-	x86_pmu.pebs_constraints = NULL;
+-}
+ 
+ static __init int intel_pmu_init(void)
+ {
+Index: linux-2.6.git/arch/x86/kernel/cpu/perf_event_p4.c
+=====================================================================
+--- linux-2.6.git.orig/arch/x86/kernel/cpu/perf_event_p4.c
++++ linux-2.6.git/arch/x86/kernel/cpu/perf_event_p4.c
+@@ -804,6 +804,24 @@ done:
+ 	return num ? -ENOSPC : 0;
+ }
+ 
++/*
++ * This handles errata N15 in intel doc 249199-029,
++ * the counter may not be updated correctly on write
++ * so we repeat write operation twice to do the trick
++ * (the official workaround didn't work)
++ *
++ * the former idea is taken from OProfile code
++ */
++static void p4_perfctr_write(unsigned long addr, u64 value)
++{
++	wrmsrl(addr, value);
++	wrmsrl(addr, value);
++}
++
++static __initconst const struct x86_pmu_quirk_ops p4_pmu_quirks = {
++	.perfctr_write = p4_perfctr_write,
++};
++
+ static __initconst const struct x86_pmu p4_pmu = {
+ 	.name			= "Netburst P4/Xeon",
+ 	.handle_irq		= p4_pmu_handle_irq,
+@@ -850,7 +868,8 @@ static __init int p4_pmu_init(void)
+ 
+ 	pr_cont("Netburst events, ");
+ 
+-	x86_pmu = p4_pmu;
++	x86_pmu		= p4_pmu;
++	x86_pmu.quirks	= p4_pmu_quirks;
+ 
+ 	return 0;
+ }
