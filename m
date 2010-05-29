@@ -1,47 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757320Ab0E2Nqa (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 29 May 2010 09:46:30 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:34826 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756158Ab0E2Nq2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 29 May 2010 09:46:28 -0400
-Date: Sat, 29 May 2010 15:46:25 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Changli Gao <xiaosuo@gmail.com>
-Cc: Alexander Viro <viro@zeniv.linux.org.uk>, linux-fsdevel@vger.kernel.org,
-       linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] fs: optimize mpage_readpage()
-Message-ID: <20100529134625.GC25092@liondog.tnic>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	Changli Gao <xiaosuo@gmail.com>,
-	Alexander Viro <viro@zeniv.linux.org.uk>,
-	linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-References: <1275095926-18345-1-git-send-email-xiaosuo@gmail.com>
- <20100529121019.GA25092@liondog.tnic>
- <AANLkTimtX4HSql73IEAwOBqC2-R25713IgfihGR-fQm9@mail.gmail.com>
+	id S1753508Ab0E2Nxh (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 29 May 2010 09:53:37 -0400
+Received: from casper.infradead.org ([85.118.1.10]:43714 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751198Ab0E2Nxf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 29 May 2010 09:53:35 -0400
+From: Arnaldo Carvalho de Melo <acme@infradead.org>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: linux-kernel@vger.kernel.org, Stephane Eranian <eranian@google.com>,
+       "David S. Miller" <davem@davemloft.net>,
+       =?utf-8?q?Fr=C3=A9d=C3=A9ric=20Weisbecker?= <fweisbec@gmail.com>,
+       Ingo Molnar <mingo@elte.hu>, Paul Mackerras <paulus@samba.org>,
+       Peter Zijlstra <peterz@infradead.org>, Tom Zanussi <tzanussi@gmail.com>,
+       Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: [PATCH 1/3] perf report: Make -D print sampled CPU
+Date: Sat, 29 May 2010 10:53:18 -0300
+Message-Id: <1275141200-25374-2-git-send-email-acme@infradead.org>
+X-Mailer: git-send-email 1.6.2.5
+In-Reply-To: <1275141200-25374-1-git-send-email-acme@infradead.org>
+References: <1275141200-25374-1-git-send-email-acme@infradead.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <AANLkTimtX4HSql73IEAwOBqC2-R25713IgfihGR-fQm9@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Transfer-Encoding: 8bit
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Changli Gao <xiaosuo@gmail.com>
-Date: Sat, May 29, 2010 at 09:26:47PM +0800
+From: Stephane Eranian <eranian@google.com>
 
-> Did the compiler warning appear after applying my patch? It doesn't
-> happen when I testing it.
+It is useful to know on which CPU a sample was captured on.
+The information is captured with perf record -R but it was
+not printed out by perf report -D. This patch adds this.
 
-yep, using gcc (Debian 4.4.4-2) 4.4.4 here.
+When -R is not used, cpu is set to -1to indicate that
+the CPU is unknown (it is not captured).
 
-> And I don't pass bio to do_mpage_readpage(), but I pass NULL instead.
+Cc: David S. Miller <davem@davemloft.net>
+Cc: Frédéric Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Tom Zanussi <tzanussi@gmail.com>
+LKML-Reference: <4bff964c.e88cd80a.3106.7d31@mx.google.com>
+Signed-off-by: Stephane Eranian <eranian@google.com>
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ tools/perf/builtin-report.c |    5 +++--
+ tools/perf/util/event.c     |    3 ++-
+ 2 files changed, 5 insertions(+), 3 deletions(-)
 
-True, but you still need that bio pointer so you might just as well set
-it to NULL as the original code does.
-
+diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
+index 3592057..207da18 100644
+--- a/tools/perf/builtin-report.c
++++ b/tools/perf/builtin-report.c
+@@ -157,8 +157,9 @@ static int process_sample_event(event_t *event, struct perf_session *session)
+ 
+ 	event__parse_sample(event, session->sample_type, &data);
+ 
+-	dump_printf("(IP, %d): %d/%d: %#Lx period: %Ld\n", event->header.misc,
+-		    data.pid, data.tid, data.ip, data.period);
++	dump_printf("(IP, %d): %d/%d: %#Lx period: %Ld cpu:%d\n",
++		    event->header.misc, data.pid, data.tid, data.ip,
++		    data.period, data.cpu);
+ 
+ 	if (session->sample_type & PERF_SAMPLE_CALLCHAIN) {
+ 		unsigned int i;
+diff --git a/tools/perf/util/event.c b/tools/perf/util/event.c
+index 50771b5..58cb96b 100644
+--- a/tools/perf/util/event.c
++++ b/tools/perf/util/event.c
+@@ -770,7 +770,8 @@ int event__parse_sample(event_t *event, u64 type, struct sample_data *data)
+ 		u32 *p = (u32 *)array;
+ 		data->cpu = *p;
+ 		array++;
+-	}
++	} else
++		data->cpu = -1;
+ 
+ 	if (type & PERF_SAMPLE_PERIOD) {
+ 		data->period = *array;
 -- 
-Regards/Gruss,
-    Boris.
+1.6.2.5
+
