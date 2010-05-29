@@ -1,84 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756778Ab0E2Vz0 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 29 May 2010 17:55:26 -0400
-Received: from mail-pz0-f204.google.com ([209.85.222.204]:59905 "EHLO
-	mail-pz0-f204.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755931Ab0E2VzZ convert rfc822-to-8bit (ORCPT
+	id S1756818Ab0E2WNy (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 29 May 2010 18:13:54 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:49373 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755595Ab0E2WNw convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 29 May 2010 17:55:25 -0400
+	Sat, 29 May 2010 18:13:52 -0400
 MIME-Version: 1.0
-In-Reply-To: <201005292227.15479.rjw@sisk.pl>
-References: <Pine.LNX.4.44L0.1005271253240.3239-100000@iolanthe.rowland.org>
-	<201005290024.22915.rjw@sisk.pl>
-	<AANLkTimM7O_k8KVSfMgsB8b_EKQEz0vpYu6pxjedsTcJ@mail.gmail.com>
-	<201005292227.15479.rjw@sisk.pl>
-Date: Sat, 29 May 2010 14:55:24 -0700
-Message-ID: <AANLkTim6zsho4RSrseJostaOJe9lL4VNRKA3vDGJWJhK@mail.gmail.com>
+In-Reply-To: <Pine.LNX.4.44L0.1005290941060.30763-100000@netrider.rowland.org>
+References: <20100529131810.5bb51bdd@schatten.dmk.lab>
+	<Pine.LNX.4.44L0.1005290941060.30763-100000@netrider.rowland.org>
+Date: Sat, 29 May 2010 15:13:51 -0700
+Message-ID: <AANLkTik_4ezDAQoAQjkpEgwD9SLKeOjDzy2H7T2v6uCP@mail.gmail.com>
 Subject: Re: [linux-pm] [PATCH 0/8] Suspend block api (version 8)
 From: =?ISO-8859-1?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Alan Stern <stern@rowland.harvard.edu>
 Cc: Florian Mickler <florian@mickler.org>,
-       Thomas Gleixner <tglx@linutronix.de>,
-       Matthew Garrett <mjg59@srcf.ucam.org>,
-       Alan Stern <stern@rowland.harvard.edu>,
-       Peter Zijlstra <peterz@infradead.org>, Paul@smtp1.linux-foundation.org,
-       LKML <linux-kernel@vger.kernel.org>, felipe.balbi@nokia.com,
-       Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
+       Peter Zijlstra <peterz@infradead.org>,
+       "Rafael J. Wysocki" <rjw@sisk.pl>,
        Linux PM <linux-pm@lists.linux-foundation.org>,
-       Alan Cox <alan@lxorguk.ukuu.org.uk>
+       Brian Swetland <swetland@google.com>,
+       Alan Cox <alan@lxorguk.ukuu.org.uk>,
+       Matthew Garrett <mjg59@srcf.ucam.org>,
+       Thomas Gleixner <tglx@linutronix.de>,
+       LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2010/5/29 Rafael J. Wysocki <rjw@sisk.pl>:
-> On Saturday 29 May 2010, Arve Hjønnevåg wrote:
->> 2010/5/28 Rafael J. Wysocki <rjw@sisk.pl>:
->> > On Friday 28 May 2010, Arve Hjønnevåg wrote:
->> >> On Fri, May 28, 2010 at 1:44 AM, Florian Mickler <florian@mickler.org> wrote:
->> >> > On Thu, 27 May 2010 20:05:39 +0200 (CEST)
->> >> > Thomas Gleixner <tglx@linutronix.de> wrote:
->> > ...
->> >> > To integrate this with the current way of doing things, i gathered it
->> >> > needs to be implemented as an idle-state that does the suspend()-call?
->> >> >
->> >>
->> >> I think it is better no not confuse this with idle. Since initiating
->> >> suspend will cause the system to become not-idle, I don't think is is
->> >> beneficial to initiate suspend from idle.
->> >
->> > It is, if the following two conditions hold simultaneously:
->> >
->> > (a) Doing full system suspend is ultimately going to bring you more energy
->> >    savings than the (presumably lowest) idle state you're currently in.
->> >
->> > (b) You anticipate that the system will stay idle for a considerably long time
->> >    such that it's worth suspending.
+On Sat, May 29, 2010 at 7:10 AM, Alan Stern <stern@rowland.harvard.edu> wrote:
+> On Sat, 29 May 2010, Florian Mickler wrote:
+>
+>> On Sat, 29 May 2010 12:42:37 +0200
+>> Peter Zijlstra <peterz@infradead.org> wrote:
+>
+>> > Now, all I'm interested in is providing interfaces from the kernel where
+>> > needed, so that userspace can be optimally frugal with power usage, and
+>> > can monitor/contain badly behaving tasks.
 >> >
 >>
->> I still don't think this matters. If you are waiting for in interrupt
->> that cannot wake you up from suspend, then idle is not an indicator
->> that it is safe to enter suspend. I also don't think you can avoid any
->> user-space suspend blockers by delaying suspend until the system goes
->> idle since any page fault could cause it to go idle. Therefore I don't
->> see a benefit in delaying suspend until idle when the last suspend
->> blocker is released (it would only mask possible race conditions).
+>> I think this is a sensible approach.
 >
-> I wasn't referring to suspend blockers, but to the idea of initiating full
-> system suspend from idle, which I still think makes sense.  If you are
-> waiting for an interrupt that cannot wake you from suspend, then
-> _obviously_ suspend should not be started.  However, if you're not waiting for
-> such an interrupt and the (a) and (b) above hold, it makes sense to start
-> suspend from idle.
+> Here is an attempt to satisfy everyone as much as possible.  But first
+> an explicit disclaimer: When I say "suspend", I mean it as in
+> "suspend-to-RAM"; i.e., a forced suspend and not a cpuidle mode.
+>
+> In place of in-kernel suspend blockers, there will be a new type of QoS
+> constraint -- call it QOS_EVENTUALLY.  It's a very weak constraint,
+> compatible with all cpuidle modes in which runnable threads are allowed
+> to run (which is all of them), but not compatible with suspend.
+>
+This sound just like another API rename. It will work, but given that
+suspend blockers was the name least objectionable last time around,
+I'm not sure what this would solve.
+
+> The Android people want debugging and accountability.  So in the most
+> objectionable part of this proposal, we add a new way of registering
+> QoS constraints: monitored constraints.  The "monitored" implies that:
+>
+>        The constraint has a name, which can be used for debugging
+>        and accounting;
+>
+>        The kernel maintains statistics on the constraint's use and
+>        makes them available to userspace; and
+>
+>        The PM core is notified whenever the number of active monitored
+>        constraints drops to 0.
+>
+> There is no /sys/power/policy file.  In place of opportunistic suspend,
+> we have "QoS-based suspend".  This is initiated by userspace writing
+> "qos" to /sys/power/state, and it is very much like suspend-to-RAM.
+
+Why do you want to tie it to a specific state?
+
+> However a QoS-based suspend fails immediately if there are any active
+
+Fail or block? Your next paragraph said that it blocks for
+QOS_EVENTUALLY, but if normal constraints fail, you are still stuck in
+a retry loop.
+
+> normal QoS constraints incompatible with system suspend, in other
+> words, any constraints requiring a throughput > 0 or an interrupt
+> latency shorter than the time required for a suspend-to-RAM/resume
+> cycle.
+>
+> If no such constraints are active, the QoS-based suspend blocks in an
+> interruptible wait until the number of active QOS_EVENTUALLY
+
+How do you implement this?
+
+> constraints drops to 0.  When that happens, it carries out a normal
+> suspend-to-RAM -- except that it checks along the way to make sure that
+> no new QoS constraints are activated while the suspend is in progress.
+> If they are, the PM core backs out and fails the QoS-based suspend.
+>
+> Userspace suspend blockers don't exist at all, as far as the kernel is
+> concerned.  In their place, the Android runs a power-manager program
+> that receives IPC requests from other processes when they need to
+> prevent the system from suspending or allow it to suspend.  The power
+> manager's main loop looks like this:
+>
+>        for (;;) {
+>                while (any IPC requests remain)
+>                        handle them;
+>                if (any processes need to prevent suspend)
+>                        sleep;
+>                else
+>                        write "qos" to /sys/power/state;
+>        }
+>
+> The idea is that receipt of a new IPC request will cause a signal to be
+> sent, interrupting the sleep or the "qos" write.
+
+What happen if the signal is right before (or even right after)
+calling write "qos". How does the signal handler stop the write?
+
+>
+> There remains a question as to which kernel drivers should create
+> monitored QOS_EVENTUALLY constraints.  Perhaps userspace could be
+> allowed to specify this (I don't know how).  In any case, this is a
+> relatively minor point.
+>
+> The advantages of this scheme are that this does everything the Android
+> people need, and it does it in a way that's entirely compatible with
+> pure QoS/cpuidle-based power management.  It even starts along the path
+> of making suspend-to-RAM just another kind of dynamic power state.
+>
+> If people such as Peter still want to complain that using
+> suspend-to-RAM in Android phones isn't a good way to do power
+> management, that's okay -- it's the designers' decision to program
+> their phones the way they want.  At least the kernel can give them the
+> ability to do so in a way that doesn't compromise everybody else.
+>
+> Alan Stern
+>
 >
 
-What about timers? When you suspend timers stop (otherwise it is just
-a deep-idle mode), and this could cause problems. Some drivers rely on
-timers if the hardware does not have a completion interrupt. It is not
-uncommon to see send command x then wait 200ms in a some hardware
-specs.
+
 
 -- 
 Arve Hjønnevåg
