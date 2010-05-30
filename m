@@ -1,56 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754772Ab0E3PcZ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 May 2010 11:32:25 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:56358 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752600Ab0E3PcY (ORCPT
+	id S1754917Ab0E3PeV (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 May 2010 11:34:21 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:39863 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754521Ab0E3PeT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 30 May 2010 11:32:24 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:cc:subject:references
-         :in-reply-to:x-enigmail-version:content-type
-         :content-transfer-encoding;
-        b=kmIa0UHJf6qvBtZzK/tC9CFVyuL7YHO/01j/yxV0YWTHrh6b1fTnGcn0qjkOLVD+tN
-         egb96S07tpGRVig7qGhWqxXg2caOrQlH06Nicm1RDo+1WswexfQDLpRENg8+JJ+NHdAv
-         6iJpeCYwlZAYyIcQZtfMzkRDakAMdXJ/so89Y=
-Message-ID: <4C0284FF.4080707@gmail.com>
-Date: Sun, 30 May 2010 17:32:15 +0200
-From: Jiri Slaby <jirislaby@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; cs-CZ; rv:1.9.2.4) Gecko/20100522 SUSE/3.1rc1-2.1 Thunderbird/3.1
-MIME-Version: 1.0
-CC: Richard Zidlicky <rz@linux-m68k.org>, linux-kernel@vger.kernel.org,
-       linux-media@vger.kernel.org
-Subject: Re: schedule inside spin_lock_irqsave?
-References: <20100530145240.GA21559@linux-m68k.org> <4C028336.8030704@gmail.com>
-In-Reply-To: <4C028336.8030704@gmail.com>
-X-Enigmail-Version: 1.0
-Content-Type: text/plain; charset=ISO-8859-1
+	Sun, 30 May 2010 11:34:19 -0400
+X-Authority-Analysis: v=1.1 cv=WC2cwRI/KXdLNEmE8ivg2cmI8vFt6dWmaZdvaJ93QHU= c=1 sm=0 a=PjWTFMnUE30A:10 a=0qYQvVkOOIcA:10 a=7U3hwN5JcxgA:10 a=Q9fys5e9bTEA:10 a=gMqfjgEr1zLu/65IO0LwxA==:17 a=uxnuuD7PqwD2Kl0nwZIA:9 a=Mim128DOxl5aIivq8LwA:7 a=xuMK44m7uZR8Dw7znGI-pJcDKpwA:4 a=PUjeQqilurYA:10 a=gMqfjgEr1zLu/65IO0LwxA==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.89.75
+Subject: Re: Perf trace event parse errors for KVM events
+From: Steven Rostedt <rostedt@goodmis.org>
+Reply-To: rostedt@goodmis.org
+To: Avi Kivity <avi@redhat.com>
+Cc: Stefan Hajnoczi <stefanha@gmail.com>, linux-perf-users@vger.kernel.org,
+       linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
+       Frederic Weisbecker <fweisbec@gmail.com>,
+       Marcelo Tosatti <mtosatti@redhat.com>,
+       Peter Zijlstra <a.p.zijlstra@chello.nl>,
+       Stefan Hajnoczi <stefanha@linux.vnet.ibm.com>,
+       Johannes Berg <johannes.berg@intel.com>,
+       Darren Hart <darren@dvhart.com>
+In-Reply-To: <4C027131.2010309@redhat.com>
+References: <20100526123443.GB8905@stefan-thinkpad.transitives.com>
+	 <AANLkTil8BiuzrmacV7Lpx1wES0EvLSiVmcfwtSY6Zis2@mail.gmail.com>
+	 <1275083157.22648.593.camel@gandalf.stny.rr.com>
+	 <4C00FF9B.9000107@redhat.com>
+	 <1275139177.22648.610.camel@gandalf.stny.rr.com>
+	 <4C021D7E.1060705@redhat.com>
+	 <1275228182.15884.1.camel@gandalf.stny.rr.com>
+	 <4C027131.2010309@redhat.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+Organization: Kihon Technologies Inc.
+Date: Sun, 30 May 2010 11:34:16 -0400
+Message-ID: <1275233656.15884.4.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
-To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/30/2010 05:24 PM, Jiri Slaby wrote:
-> struct smscore_buffer_t *get_entry(void)
-> {
->   struct smscore_buffer_t *cb = NULL;
->   spin_lock_irqsave(&coredev->bufferslock, flags);
->   if (!list_empty(&coredev->buffers)) {
->     cb = (struct smscore_buffer_t *) coredev->buffers.next;
+On Sun, 2010-05-30 at 17:07 +0300, Avi Kivity wrote:
+> On 05/30/2010 05:03 PM, Steven Rostedt wrote:
+> >
+> >> Right.  The tools can fall back to %x/%s based on the structure
+> >> descriptor if they can't parse the format string.
+> >>
+> >>      
+> > trace-cmd has plugin support to override how to read the format and
+> > print it out. It now has the ability to write those plugins in python.
+> >    
+> 
+> Cool.  May make sense to use simpler formatting in the kernel, and use 
+> trace-cmd plugins for the complicated cases.
+> 
+> It does raise issues with ABIs.  Can trace-cmd read plugins from 
+> /lib/modules/*?  We can then distribute the plugins with the kernel.
+> 
 
-Looking at the smscore_buffer_t definition, this is really ugly since it
-relies on entry being the first in the structure. It should be
-list_first_entry(&coredev->buffers, ...) instead, cast-less.
+We probably could do that. Perhaps if we can port the python code to
+perf, then it would work for both. Then the plugins could be just python
+scripts, (or binary .so modules) and have a tools/plugins dir?
 
->     list_del(&cb->entry);
->   }
->   spin_unlock_irqrestore(&coredev->bufferslock, flags);
->   return cb;
-> }
+The python part probably would be easier to port, since the .so modules
+are a bit more specific to trace-cmd.
+
+-- Steve
 
 
--- 
-js
