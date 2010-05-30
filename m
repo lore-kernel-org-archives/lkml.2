@@ -1,122 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754156Ab0E3Nta (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 May 2010 09:49:30 -0400
-Received: from mgw2.diku.dk ([130.225.96.92]:49163 "EHLO mgw2.diku.dk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752983Ab0E3Nt2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 30 May 2010 09:49:28 -0400
-Date: Sun, 30 May 2010 15:49:22 +0200 (CEST)
-From: Julia Lawall <julia@diku.dk>
-To: Adaptec OEM Raid Solutions <aacraid@adaptec.com>,
-       "James E.J. Bottomley" <James.Bottomley@suse.de>,
-       linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
-       kernel-janitors@vger.kernel.org
-Subject: [PATCH 1/2] drivers/scsi: Use GFP_ATOMIC when a lock is held
-Message-ID: <Pine.LNX.4.64.1005301549030.15938@ask.diku.dk>
+	id S1754245Ab0E3NwN (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 May 2010 09:52:13 -0400
+Received: from col0-omc3-s6.col0.hotmail.com ([65.55.34.144]:44736 "EHLO
+	col0-omc3-s6.col0.hotmail.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753309Ab0E3NwL convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 30 May 2010 09:52:11 -0400
+Message-ID: <COL116-W2944FC5A891172B1FECD52DAED0@phx.gbl>
+X-Originating-IP: [84.216.39.104]
+From: Peter Hallberg <hallberg68@hotmail.com>
+To: <tytso@mit.edu>
+CC: <linux-kernel@vger.kernel.org>
+Subject: RE: What happened to mount option "noextents"
+Date: Sun, 30 May 2010 15:52:10 +0200
+Importance: Normal
+In-Reply-To: <20100530123248.GO26177@thunk.org>
+References: <COL116-W195C862FD57AC7C2144804DAED0@phx.gbl>,<20100530123248.GO26177@thunk.org>
+Content-Type: text/plain; charset="iso-8859-1"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-OriginalArrivalTime: 30 May 2010 13:52:10.0706 (UTC) FILETIME=[4CFFDB20:01CAFFFF]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Julia Lawall <julia@diku.dk>
 
-The function adpt_i2o_post_wait is called from several places, in some of
-which, such as adpt_abort, a lock may be held.
+> Basically, since we couldn't think of a good use case where the mount
+> options made sense, and ext4 has way too many mount options already, we
+> decided to remove them.
 
-The functions adpt_i2o_reparse_lct and adpt_i2o_lct_get are called from
-several places, including adpt_rescan where a lock may be held.
+The ext2/3 Windows driver doesn't support extents yet so one common use would be to do a mount -o remount,noextents and make a dir and copy the files you want to read from Windows to it. I think mount -o remount is something that is well known, if you use tune2fs you would need to do research before you know if the change starts working right a way or after a reboot or if it is valid only until reboot or is static, with mount -o remount there is no risk that you forget to set the flag back to the right value.
 
-The semantic patch that makes this change is as follows:
-(http://coccinelle.lip6.fr/)
+Also when I tryed tune2fs as you said, I got the following error message:
 
-// <smpl>
-@gfp exists@
-identifier fn;
-position p;
-@@
+peter@sanna:~$ sudo tune2fs -O ^extents /dev/mapper/sannavg-home
+tune2fs 1.41.4 (27-Jan-2009)
+Clearing filesystem feature 'extent' not supported.
+peter@sanna:~$ 
 
-fn(...) {
- ... when != spin_unlock_irqrestore
-     when any
- GFP_KERNEL@p
- ... when any
-}
-
-@locked@
-identifier gfp.fn;
-@@
-
-spin_lock_irqsave(...)
-...  when != spin_unlock_irqrestore
-fn(...)
-
-@depends on locked@
-position gfp.p;
-@@
-
-- GFP_KERNEL@p
-+ GFP_ATOMIC
-// </smpl>
-
-Signed-off-by: Julia Lawall <julia@diku.dk>
-
----
- drivers/scsi/dpt_i2o.c |   15 ++++++++++-----
- 1 file changed, 10 insertions(+), 5 deletions(-)
-
-diff --git a/drivers/scsi/dpt_i2o.c b/drivers/scsi/dpt_i2o.c
-index b0c576f..4df589a 100644
---- a/drivers/scsi/dpt_i2o.c
-+++ b/drivers/scsi/dpt_i2o.c
-@@ -1290,7 +1290,7 @@ static int adpt_i2o_post_wait(adpt_hba* pHba, u32* msg, int len, int timeout)
- 	ulong flags = 0;
- 	struct adpt_i2o_post_wait_data *p1, *p2;
- 	struct adpt_i2o_post_wait_data *wait_data =
--		kmalloc(sizeof(struct adpt_i2o_post_wait_data),GFP_KERNEL);
-+		kmalloc(sizeof(struct adpt_i2o_post_wait_data), GFP_ATOMIC);
- 	DECLARE_WAITQUEUE(wait, current);
- 
- 	if (!wait_data)
-@@ -2651,7 +2651,8 @@ static s32 adpt_i2o_reparse_lct(adpt_hba* pHba)
- 				pDev = pDev->next_lun;
- 			}
- 			if(!pDev ) { // Something new add it
--				d = kmalloc(sizeof(struct i2o_device), GFP_KERNEL);
-+				d = kmalloc(sizeof(struct i2o_device),
-+					    GFP_ATOMIC);
- 				if(d==NULL)
- 				{
- 					printk(KERN_CRIT "Out of memory for I2O device data.\n");
-@@ -2673,7 +2674,9 @@ static s32 adpt_i2o_reparse_lct(adpt_hba* pHba)
- 				}
- 				pDev = pHba->channel[bus_no].device[scsi_id];	
- 				if( pDev == NULL){
--					pDev =  kzalloc(sizeof(struct adpt_device),GFP_KERNEL);
-+					pDev =
-+					  kzalloc(sizeof(struct adpt_device),
-+						  GFP_ATOMIC);
- 					if(pDev == NULL) {
- 						return -ENOMEM;
- 					}
-@@ -2682,7 +2685,9 @@ static s32 adpt_i2o_reparse_lct(adpt_hba* pHba)
- 					while (pDev->next_lun) {
- 						pDev = pDev->next_lun;
- 					}
--					pDev = pDev->next_lun = kzalloc(sizeof(struct adpt_device),GFP_KERNEL);
-+					pDev = pDev->next_lun =
-+					  kzalloc(sizeof(struct adpt_device),
-+						  GFP_ATOMIC);
- 					if(pDev == NULL) {
- 						return -ENOMEM;
- 					}
-@@ -3127,7 +3132,7 @@ static int adpt_i2o_lct_get(adpt_hba* pHba)
- 		if (pHba->lct == NULL) {
- 			pHba->lct = dma_alloc_coherent(&pHba->pDev->dev,
- 					pHba->lct_size, &pHba->lct_pa,
--					GFP_KERNEL);
-+					GFP_ATOMIC);
- 			if(pHba->lct == NULL) {
- 				printk(KERN_CRIT "%s: Lct Get failed. Out of memory.\n",
- 					pHba->name);
+ 		 	   		  
+_________________________________________________________________
+Klicka här!
+http://new.windowslivemobile.msn.com/SE-SE/windows-live-hotmail/default.aspx
