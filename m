@@ -1,192 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754931Ab0E3UcI (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 May 2010 16:32:08 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:56394 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754086Ab0E3UcG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 30 May 2010 16:32:06 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:reply-to:references:mime-version
-         :content-type:content-disposition:content-transfer-encoding
-         :in-reply-to:user-agent;
-        b=mJTA+qNww887dQ6I6xeM302dfS8DZ2xGa00Nfr7BBdDZt2PaaFwDsUuVnO6jXu3ZIx
-         5C8wJB1joQWCA409PzVuHYHBxghJ1JbFZ8oYmPPjVsEPLM/86OqRHkPPUlLEB/G4La/Z
-         +e/We0d4cGu1Nok0+3IobMJdFvMDHeogDMvCM=
-Date: Sun, 30 May 2010 13:32:17 -0700
-From: mark gross <640e9920@gmail.com>
-To: Neil Brown <neilb@suse.de>
-Cc: Arve =?iso-8859-1?B?SGr4bm5lduVn?= <arve@android.com>,
-       markgross@thegnar.org, Matthew Garrett <mjg59@srcf.ucam.org>,
-       Greg KH <gregkh@suse.de>, linux-doc@vger.kernel.org,
-       Peter Zijlstra <peterz@infradead.org>,
-       Jesse Barnes <jbarnes@virtuousgeek.org>,
-       Andi Kleen <ak@linux.intel.com>,
-       Linux-pm mailing list <linux-pm@lists.linux-foundation.org>,
-       Len Brown <len.brown@intel.com>,
-       James Bottomley <James.Bottomley@suse.de>, tytso@mit.edu,
-       Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-       Kernel development list <linux-kernel@vger.kernel.org>,
-       Tejun Heo <tj@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
-       Wu Fengguang <fengguang.wu@intel.com>
-Subject: Re: [linux-pm] [PATCH 1/8] PM: Opportunistic suspend support.
-Message-ID: <20100530203217.GD25545@gvim.org>
-Reply-To: markgross@thegnar.org
-References: <AANLkTimL5rU5lALezEZVCwdcZL85tVahhsTibdpq9s-Y@mail.gmail.com>
- <1274863342.5882.4850.camel@twins>
- <1274863987.5882.4892.camel@twins>
- <20100526124929.GA32580@srcf.ucam.org>
- <1274878665.27810.354.camel@twins>
- <20100526132051.GA1834@srcf.ucam.org>
- <20100527172354.43e46cef@notabene.brown>
- <20100529025215.GB11600@gvim.org>
- <AANLkTimVhC3X68uN3krrkkAAAK4a4D5yTK1V8i_x_Vfy@mail.gmail.com>
- <20100530180846.408e50be@notabene.brown>
+	id S1754815Ab0E3Uu0 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 May 2010 16:50:26 -0400
+Received: from mgw2.diku.dk ([130.225.96.92]:36415 "EHLO mgw2.diku.dk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754127Ab0E3UuY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 30 May 2010 16:50:24 -0400
+Date: Sun, 30 May 2010 22:50:16 +0200 (CEST)
+From: Julia Lawall <julia@diku.dk>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: "David S. Miller" <davem@davemloft.net>,
+       Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
+       "Pekka Savola (ipv6)" <pekkas@netcore.fi>,
+       James Morris <jmorris@namei.org>,
+       Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
+       Patrick McHardy <kaber@trash.net>, netdev@vger.kernel.org,
+       linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
+Subject: Re: Subject: [PATCH] net/ipv6: Use GFP_ATOMIC when a lock is held
+In-Reply-To: <1275250288.2472.21.camel@edumazet-laptop>
+Message-ID: <Pine.LNX.4.64.1005302248500.19253@ask.diku.dk>
+References: <Pine.LNX.4.64.1005302147310.19253@ask.diku.dk>
+ <1275250288.2472.21.camel@edumazet-laptop>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20100530180846.408e50be@notabene.brown>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: MULTIPART/MIXED; BOUNDARY="-511516320-1925940719-1275252616=:19253"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, May 30, 2010 at 06:08:46PM +1000, Neil Brown wrote:
-> On Fri, 28 May 2010 21:04:53 -0700
-> Arve Hjønnevåg <arve@android.com> wrote:
-> 
-> > On Fri, May 28, 2010 at 7:52 PM, mark gross <640e9920@gmail.com> wrote:
-> > > On Thu, May 27, 2010 at 05:23:54PM +1000, Neil Brown wrote:
-> > >> On Wed, 26 May 2010 14:20:51 +0100
-> > >> Matthew Garrett <mjg59@srcf.ucam.org> wrote:
-> > >>
-> > >> > On Wed, May 26, 2010 at 02:57:45PM +0200, Peter Zijlstra wrote:
-> > >> >
-> > >> > > I fail to see why. In both cases the woken userspace will contact a
-> > >> > > central governing task, either the kernel or the userspace suspend
-> > >> > > manager, and inform it there is work to be done, and please don't
-> > >> > > suspend now.
-> > >> >
-> > >> > Thinking about this, you're right - we don't have to wait, but that does
-> > >> > result in another problem. Imagine we get two wakeup events
-> > >> > approximately simultaneously. In the kernel-level universe the kernel
-> > >> > knows when both have been handled. In the user-level universe, we may
-> > >> > have one task schedule, bump the count, handle the event, drop the count
-> > >> > and then we attempt a suspend again because the second event handler
-> > >> > hasn't had an opportunity to run yet. We'll then attempt a suspend and
-> > >> > immediately bounce back up. That's kind of wasteful, although it'd be
-> > >> > somewhat mitigated by checking that right at the top of suspend entry
-> > >> > and returning -EAGAIN or similar.
-> > >> >
-> > >>
-> > >> (I'm coming a little late to this party, so excuse me if I say something that
-> > >> has already been covered however...)
-> > >>
-> > >> The above triggers a sequence of thoughts which (When they settled down) look
-> > >> a bit like this.
-> > >>
-> > >> At the hardware level, there is a thing that we could call a "suspend
-> > >> blocker".  It is an interrupt (presumably level-triggered) that causes the
-> > >> processor to come out of suspend, or not to go into it.
-> > >>
-> > >> Maybe it makes sense to export a similar thing from the kernel to user-space.
-> > >> When any event happens that would wake the device (and drivers need to know
-> > >> about these already), it would present something to user-space to say that
-> > >> the event happened.
-> > >>
-> > >> When user-space processes the event, it clears the event indicator.
-> > >
-> > > we did I proposed making the suspend enabling a oneshot type of thing
-> > > and all sorts of weak arguments came spewing forth.  I honestly couldn't
-> > > tell if I was reading valid input or fanboy BS.
-> > >
+  This message is in MIME format.  The first part should be readable text,
+  while the remaining parts are likely unreadable without MIME-aware tools.
+
+---511516320-1925940719-1275252616=:19253
+Content-Type: TEXT/PLAIN; charset=iso-8859-1
+Content-Transfer-Encoding: 8BIT
+
+On Sun, 30 May 2010, Eric Dumazet wrote:
+
+> Le dimanche 30 mai 2010 à 21:48 +0200, Julia Lawall a écrit :
+> > From: Julia Lawall <julia@diku.dk>
 > > 
-> > Can you be more specific? If you are talking about only letting
-> > drivers abort suspend, not block it, then the main argument against
-> > that is that you are forcing user-space to poll until the driver stops
-> > aborting suspend (which according to people arguing against us using
-> > suspend would make the power-manager a "bad" process). Or are you
-> > talking about blocking the request from user-space until all other
-> > suspend-blockers have been released and then doing a single suspend
-> > cycle before returning. This would not be as bad, but it would force
-> > the user-space power manager to be multi-threaded since it now would
-> > have way to cancel the request. Either way, what problem are you
-> > trying to solve by making it a one-shot request?
+> > A spin lock is taken near the beginning of the enclosing function.
 > > 
-
-Sorry about missing Avr's email, I've been fighting with getting my
-email forwarding working right.
-
-The problems I want to solve with the one-shot styled interface are:
-
-1) of having to sprinkle suspend blocking sections from isr up to
-usermode and get them right.
-
-2) provide a platform / architecture independent framework supporting
-other low power modes.
-
-I've just posted a patch that expresses what I was trying to express.
-Its hard to take design over email without tossing code back and forth.
-It's my turn to toss some code.
-
-
-
+> > The semantic patch that makes this change is as follows:
+> > (http://coccinelle.lip6.fr/)
+> > 
+> > // <smpl>
+> > @@
+> > @@
+> > 
+> > spin_lock(...)
+> > ... when != spin_unlock(...)
+> > -GFP_KERNEL
+> > +GFP_ATOMIC
+> > // </smpl>
+> > 
+> > Signed-off-by: Julia Lawall <julia@diku.dk>
+> > 
+> > ---
+> >  net/ipv6/sit.c |    2 +-
+> >  1 file changed, 1 insertion(+), 1 deletion(-)
+> > 
+> > diff -u -p a/net/ipv6/sit.c b/net/ipv6/sit.c
+> > --- a/net/ipv6/sit.c
+> > +++ b/net/ipv6/sit.c
+> > @@ -358,7 +358,7 @@ ipip6_tunnel_add_prl(struct ip_tunnel *t
+> >  		goto out;
+> >  	}
+> >  
+> > -	p = kzalloc(sizeof(struct ip_tunnel_prl_entry), GFP_KERNEL);
+> > +	p = kzalloc(sizeof(struct ip_tunnel_prl_entry), GFP_ATOMIC);
+> >  	if (!p) {
+> >  		err = -ENOBUFS;
+> >  		goto out;
 > 
-> Simply aborting the suspend cannot work as you rightly say - the suspend
-> daemon would then spin until other user-space processes get into action.
+> Nice catch, but what about allocating this outside of the locked
+> section ?
 
-Not if you have sensible event messaging to the user-space processes.
-I've posted a patch that attempts to add some messaging.
+I think the proposed patch does not work, because the for loop overwrites 
+p.  That use of p looks like it is completely local to the for loop, so 
+perhaps a new variable p1 could be added to be used there?
 
-> Simply blocking while there are any unhandled 'wakeup events' - then aborting
-> if there were any - is how I think it should work.  However as it
-> doesn't work that way now I don't think it is safe to make it work that way
-> unconditionally.  If we did we could find that existing configurations always
-> block suspend indefinitely with would clearly be a regression.
-> 
-> I think we still need some sort of "suspend_prepare".  This would have two
-> particular effects.
-> 1/ it sets the start time for interpreting the word "were" above.  i.e. the
->   suspend would abort of there were any unhandled wakeup events since the
->   "suspend_prepare" was issued.
-> 2/ It would allow unhandled wakeup events to abort the suspend.  If no
->   suspend_prepare had been issued, then only "new" wakeup events would
->   be allowed to abort the suspend (i.e. the old racy version of suspend).
-> 
-> So the suspend daemon does:
-> 
->    wait for there to be no user-space suspend blocks
->    issue suspend_prepare
->    check there are still no suspend blocks
->    if there are, loop (possibly issue suspend_abort if needed)
->    issue suspend request
->    loop
-> 
-> processes that handle wakeup events would
-> 
->    poll for event to be available
->    request suspend-block
->    consume event
->    release suspend-block
->    loop
+julia
 
-In my mind I'm thinking of something like:
-	attempt low power entry (suspend)
-	if blocked, get -EBUSY back
-		select on block_file until block is released
-		retry suspend
-	else // entered low power and exited
-		read wake_event
-		do something with event; typically wait a bit and loop.
-
---mgross
-
+> diff --git a/net/ipv6/sit.c b/net/ipv6/sit.c
+> index e51e650..ff3dd84 100644
+> --- a/net/ipv6/sit.c
+> +++ b/net/ipv6/sit.c
+> @@ -340,6 +340,10 @@ ipip6_tunnel_add_prl(struct ip_tunnel *t, struct ip_tunnel_prl *a, int chg)
+>  	if (a->addr == htonl(INADDR_ANY))
+>  		return -EINVAL;
+>  
+> +	p = kzalloc(sizeof(struct ip_tunnel_prl_entry), GFP_KERNEL);
+> +	if (!p)
+> +		return -ENOBUFS;
+> +
+>  	spin_lock(&ipip6_prl_lock);
+>  
+>  	for (p = t->prl; p; p = p->next) {
+> @@ -358,19 +362,16 @@ ipip6_tunnel_add_prl(struct ip_tunnel *t, struct ip_tunnel_prl *a, int chg)
+>  		goto out;
+>  	}
+>  
+> -	p = kzalloc(sizeof(struct ip_tunnel_prl_entry), GFP_KERNEL);
+> -	if (!p) {
+> -		err = -ENOBUFS;
+> -		goto out;
+> -	}
+>  
+>  	p->next = t->prl;
+>  	p->addr = a->addr;
+>  	p->flags = a->flags;
+>  	t->prl_count++;
+>  	rcu_assign_pointer(t->prl, p);
+> +	p = NULL;
+>  out:
+>  	spin_unlock(&ipip6_prl_lock);
+> +	kfree(p);
+>  	return err;
+>  }
+>  
 > 
-> (where consuming the event would quite possibly cause some other
-> suspend-block to become active - e.g. it might request that the display
-> be unlocked which would block suspends for a time).
 > 
-> NeilBrown
+> --
+> To unsubscribe from this list: send the line "unsubscribe kernel-janitors" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
+---511516320-1925940719-1275252616=:19253--
