@@ -1,64 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754657Ab0E3O6V (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 May 2010 10:58:21 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:31667 "EHLO mx1.redhat.com"
+	id S1754726Ab0E3PCV (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 May 2010 11:02:21 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:53289 "EHLO mail.skyhub.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754389Ab0E3O6T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 30 May 2010 10:58:19 -0400
-Date: Sun, 30 May 2010 17:53:09 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Avi Kivity <avi@redhat.com>
-Cc: Tom Lyon <pugs@cisco.com>, linux-kernel@vger.kernel.org,
-       kvm@vger.kernel.org, chrisw@sous-sol.org, joro@8bytes.org,
-       hjk@linutronix.de, gregkh@suse.de, aafabbri@cisco.com,
-       scofeldm@cisco.com
-Subject: Re: [PATCH] VFIO driver: Non-privileged user level PCI drivers
-Message-ID: <20100530145309.GO27611@redhat.com>
-References: <4c004cba.Z/2Hpd7reetFaFC5%pugs@cisco.com> <20100530121944.GH27611@redhat.com> <4C025999.7080706@redhat.com> <20100530124949.GI27611@redhat.com> <4C0261C1.9090204@redhat.com> <20100530130332.GM27611@redhat.com> <4C026497.8070901@redhat.com>
+	id S1754521Ab0E3PCT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 30 May 2010 11:02:19 -0400
+Date: Sun, 30 May 2010 17:02:14 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: Toralf =?utf-8?Q?F=C3=B6rster?= <toralf.foerster@gmx.de>,
+       Borislav Petkov <borislav.petkov@amd.com>,
+       "H. Peter Anvin" <hpa@zytor.com>,
+       user-mode-linux-devel@lists.sourceforge.net,
+       linux-kernel@vger.kernel.org
+Subject: Re: current git kernel crashes UML system during boot
+Message-ID: <20100530150214.GA1565@liondog.tnic>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	Geert Uytterhoeven <geert@linux-m68k.org>,
+	Toralf =?utf-8?Q?F=C3=B6rster?= <toralf.foerster@gmx.de>,
+	Borislav Petkov <borislav.petkov@amd.com>,
+	"H. Peter Anvin" <hpa@zytor.com>,
+	user-mode-linux-devel@lists.sourceforge.net,
+	linux-kernel@vger.kernel.org
+References: <201005271944.09541.toralf.foerster@gmx.de>
+ <AANLkTimYeMO_fc8C5MQedwF646_au4lvEbXkBPmQSxb9@mail.gmail.com>
+ <AANLkTimKwxYxM_PExplIDK1WPTQ9e_-CHn5SnIvfjfUg@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <4C026497.8070901@redhat.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <AANLkTimKwxYxM_PExplIDK1WPTQ9e_-CHn5SnIvfjfUg@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, May 30, 2010 at 04:13:59PM +0300, Avi Kivity wrote:
-> On 05/30/2010 04:03 PM, Michael S. Tsirkin wrote:
->>
->>    
->>>>>> IMO this was because this driver does two things: programming iommu and
->>>>>> handling interrupts. uio does interrupt handling.
->>>>>> We could have moved iommu / DMA programming to
->>>>>> a separate driver, and have uio work with it.
->>>>>> This would solve limitation of the current driver
->>>>>> that is needs an iommu domain per device.
->>>>>>
->>>>>>
->>>>>>            
->>>>> How do we enforce security then?  We need to ensure that unprivileged
->>>>> users can only use the device with an iommu.
->>>>>
->>>>>          
->>>> Force assigning to iommu before we allow any other operation?
->>>>
->>>>        
->>> That means the driver must be aware of the iommu.
->>>      
->> The userspace driver? Yes. And It is a good thing to be explicit
->> there anyway, since this lets userspace map a non-contigious
->> virtual address list into a contiguous bus address range.
->>    
->
-> No, the kernel driver.  It cannot allow userspace to enable bus  
-> mastering unless it knows the iommu is enabled for the device and remaps  
-> dma to user pages.
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+Date: Sun, May 30, 2010 at 01:57:05PM +0200
 
-So what I suggested is failing any kind of access until iommu
-is assigned.
+> On Sun, May 30, 2010 at 13:39, Geert Uytterhoeven <geert@linux-m68k.org> wrote:
+> > 2010/5/27 Toralf Förster <toralf.foerster@gmx.de>:
+> >> I bisected it to this :
+> 
+> > After fixing the missing/superfluous slab inclusion issues, I bisected
+> > it further to
+> >
+> > commit d61931d89be506372d01a90d1755f6d0a9fafe2d
+> > Author: Borislav Petkov <borislav.petkov@amd.com>
+> > Date:   Fri Mar 5 17:34:46 2010 +0100
+> >
+> >    x86: Add optimized popcnt variants
+> >
+> >    Add support for the hardware version of the Hamming weight function,
+> >    popcnt, present in CPUs which advertize it under CPUID, Function
+> >    0x0000_0001_ECX[23]. On CPUs which don't support it, we fallback to the
+> >    default lib/hweight.c sw versions.
+> >
+> >    A synthetic benchmark comparing popcnt with __sw_hweight64 showed almost
+> >    a 3x speedup on a F10h machine.
+> >
+> >    Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
+> >    LKML-Reference: <20100318112015.GC11152@aftab>
+> >    Signed-off-by: H. Peter Anvin <hpa@zytor.com>
+> >
+> > I reverted that commit on top of current mainline (and fixed up the
+> > conflicts), and now
+> > it boots again.
+> 
+> I tried adding
+> 
+> config ARCH_HWEIGHT_CFLAGS
+>         string
+>         default "-fcall-saved-ecx -fcall-saved-edx" if !64_BIT
+>         default "-fcall-saved-rdi -fcall-saved-rsi -fcall-saved-rdx
+> -fcall-saved-rcx -fcall-saved-r8 -fcall-saved-r9 -fcall-saved-r10
+> -fcall-saved-r11" if 64_BIT
+> 
+> to arch/um/Kconfig.x86. Now it got a bit further, but it still crashes:
 
->
-> -- 
-> error compiling committee.c: too many arguments to function
+Ok, this is a kinda stab in the dark but from what I could decypher
+from the include hell, one possible fix should be if UML didn't include
+<arch/x86/include/asm/arch_hweight.h> but use the software hweight
+version only.
+
+Can you guys check whether the following fixes the issue?
+
+Thanks.
+
+--
+diff --git a/arch/x86/include/asm/bitops.h b/arch/x86/include/asm/bitops.h
+index 545776e..c9dad12 100644
+--- a/arch/x86/include/asm/bitops.h
++++ b/arch/x86/include/asm/bitops.h
+@@ -444,7 +444,11 @@ static inline int fls(int x)
+ 
+ #define ARCH_HAS_FAST_MULTIPLIER 1
+ 
++#ifdef CONFIG_UML
++#include <asm-generic/bitops/arch_hweight.h>
++#else
+ #include <asm/arch_hweight.h>
++#endif
+ 
+ #include <asm-generic/bitops/const_hweight.h>
+ 
+
+-- 
+Regards/Gruss,
+    Boris.
