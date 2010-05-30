@@ -1,85 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754855Ab0E3Pnv (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 May 2010 11:43:51 -0400
-Received: from netrider.rowland.org ([192.131.102.5]:55642 "HELO
-	netrider.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752749Ab0E3Pnu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 30 May 2010 11:43:50 -0400
-Date: Sun, 30 May 2010 11:43:50 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@netrider.rowland.org
-To: =?ISO-8859-1?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>
-cc: Peter Zijlstra <peterz@infradead.org>,
-       Brian Swetland <swetland@google.com>, Ingo Molnar <mingo@elte.hu>,
-       LKML <linux-kernel@vger.kernel.org>,
-       Florian Mickler <florian@mickler.org>,
-       Linux PM <linux-pm@lists.linux-foundation.org>,
-       Thomas Gleixner <tglx@linutronix.de>,
-       Alan Cox <alan@lxorguk.ukuu.org.uk>
-Subject: Re: [linux-pm] [PATCH 0/8] Suspend block api (version 8)
-In-Reply-To: <Pine.LNX.4.44L0.1005292026080.6300-100000@netrider.rowland.org>
-Message-ID: <Pine.LNX.4.44L0.1005301134530.19555-100000@netrider.rowland.org>
+	id S1754888Ab0E3Pqc (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 May 2010 11:46:32 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:45463 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752749Ab0E3Pqa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 30 May 2010 11:46:30 -0400
+Date: Sun, 30 May 2010 17:46:27 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: Toralf =?utf-8?Q?F=C3=B6rster?= <toralf.foerster@gmx.de>,
+       Borislav Petkov <borislav.petkov@amd.com>,
+       "H. Peter Anvin" <hpa@zytor.com>,
+       user-mode-linux-devel@lists.sourceforge.net,
+       linux-kernel@vger.kernel.org
+Subject: Re: current git kernel crashes UML system during boot
+Message-ID: <20100530154627.GB1565@liondog.tnic>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	Geert Uytterhoeven <geert@linux-m68k.org>,
+	Toralf =?utf-8?Q?F=C3=B6rster?= <toralf.foerster@gmx.de>,
+	Borislav Petkov <borislav.petkov@amd.com>,
+	"H. Peter Anvin" <hpa@zytor.com>,
+	user-mode-linux-devel@lists.sourceforge.net,
+	linux-kernel@vger.kernel.org
+References: <201005271944.09541.toralf.foerster@gmx.de>
+ <AANLkTimYeMO_fc8C5MQedwF646_au4lvEbXkBPmQSxb9@mail.gmail.com>
+ <AANLkTimKwxYxM_PExplIDK1WPTQ9e_-CHn5SnIvfjfUg@mail.gmail.com>
+ <20100530150214.GA1565@liondog.tnic>
+ <AANLkTimo-kuzlyQvraLnYBZKlGQHr23ZiMeWmTaj4Yea@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <AANLkTimo-kuzlyQvraLnYBZKlGQHr23ZiMeWmTaj4Yea@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 29 May 2010, Alan Stern wrote:
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+Date: Sun, May 30, 2010 at 05:18:21PM +0200
 
-> On Sat, 29 May 2010, Arve Hjønnevåg wrote:
-
-> > >        for (;;) {
-> > >                while (any IPC requests remain)
-> > >                        handle them;
-> > >                if (any processes need to prevent suspend)
-> > >                        sleep;
-> > >                else
-> > >                        write "qos" to /sys/power/state;
-> > >        }
-> > >
-> > > The idea is that receipt of a new IPC request will cause a signal to be
-> > > sent, interrupting the sleep or the "qos" write.
-> > 
-> > What happen if the signal is right before (or even right after)
-> > calling write "qos". How does the signal handler stop the write?
+> Works, thanks!
 > 
-> You're right, this is a serious problem.  The process would have to
-> give the kernel a signal mask to be used during the wait, as in ppoll
-> or pselect.  There ought to be a way to do this or something
-> equivalent.
+> BTW, if you want to check yourself:
+> 
+>     make ARCH=um defconfig
+>     make ACH=um
+>     ./linux
+> 
+> If it panics because it cannot mount the root file system, it works.
 
-Okay, here's a possible solution:
+Cool, thank you both for testing. I'll add your Tested-by:'s.
 
-	char arg[20];
-
-	signal_handler()
-	{
-		arg[0] = 0;
-	}
-
-
-	In the main loop:
-
-	...
-	mask signals;
-	if (we decide to start a QoS-based suspend) {
-		strcpy(arg, "qos");
-		unmask signals;
-		write arg to /sys/power/state;
-	}
-
-It's hacky but I think it will work.
-
-A more straightforward approach is to give processes the ability to 
-register their own QoS constraints.  This could be done via a custom 
-driver as Brian suggested or by adding a new system call as Alan Cox 
-suggested.  Then the power manager could be split into two threads, one 
-of which handles IPC requests and manages QoS constraints, while the 
-other repeatedly attempts to initiate QoS-based suspends.
-
-Alan Stern
-
+-- 
+Regards/Gruss,
+    Boris.
