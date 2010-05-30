@@ -1,60 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753898Ab0E3TsM (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 May 2010 15:48:12 -0400
-Received: from mgw1.diku.dk ([130.225.96.91]:58059 "EHLO mgw1.diku.dk"
+	id S1754166Ab0E3Tsz (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 May 2010 15:48:55 -0400
+Received: from troy.hostgo.com ([64.62.143.130]:52960 "EHLO troy.hostgo.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752803Ab0E3TsK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 30 May 2010 15:48:10 -0400
-Date: Sun, 30 May 2010 21:48:03 +0200 (CEST)
-From: Julia Lawall <julia@diku.dk>
-To: "David S. Miller" <davem@davemloft.net>,
-       Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
-       "Pekka Savola (ipv6)" <pekkas@netcore.fi>,
-       James Morris <jmorris@namei.org>,
-       Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
-       Patrick McHardy <kaber@trash.net>, netdev@vger.kernel.org,
-       linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-Subject: Subject: [PATCH] net/ipv6: Use GFP_ATOMIC when a lock is held
-Message-ID: <Pine.LNX.4.64.1005302147310.19253@ask.diku.dk>
+	id S1753695Ab0E3Tsx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 30 May 2010 15:48:53 -0400
+From: Thomas Fjellstrom <tfjellstrom@strangesoft.net>
+To: linux-kernel@vger.kernel.org
+Subject: Re: via 8237 sata errors
+Date: Sun, 30 May 2010 13:48:49 -0600
+User-Agent: KMail/1.13.3 (Linux/2.6.33-2-amd64; KDE/4.4.3; x86_64; ; )
+Cc: Robert Hancock <hancockrwd@gmail.com>, linux-ide@vger.kernel.org
+References: <201005292046.06344.tfjellstrom@strangesoft.net> <201005301333.51149.tfjellstrom@strangesoft.net> <AANLkTilSg8KZc2ZNobxQUnU105ADOeyxTAvJ3vFvbqEC@mail.gmail.com>
+In-Reply-To: <AANLkTilSg8KZc2ZNobxQUnU105ADOeyxTAvJ3vFvbqEC@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201005301348.50004.tfjellstrom@strangesoft.net>
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - troy.hostgo.com
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - strangesoft.net
+X-Source: 
+X-Source-Args: 
+X-Source-Dir: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Julia Lawall <julia@diku.dk>
+On May 30, 2010, Robert Hancock wrote:
+> On Sun, May 30, 2010 at 1:33 PM, Thomas Fjellstrom
+> 
+> <tfjellstrom@strangesoft.net> wrote:
+> > On May 30, 2010, Thomas Fjellstrom wrote:
+> >> On May 30, 2010, Robert Hancock wrote:
+> >> > On 05/29/2010 08:46 PM, Thomas Fjellstrom wrote:
+> >> > > I'm getting a rather nasty set of messages from dmesg when trying
+> >> > > to use a couple SATA II WD 2TB Green drives with an older system
+> >> > > (via 8237 based). They seem to work fine on a newer p35 based
+> >> > > system.
+> >> > 
+> >> > ..
+> >> > 
+> >> > > [  283.308963] ata2.00: exception Emask 0x0 SAct 0x0 SErr 0x0
+> >> > > action 0x0 [  283.309007] ata2.00: BMDMA stat 0x4
+> >> > > [  283.309045] ata2.00: failed command: READ DMA
+> >> > > [  283.309089] ata2.00: cmd c8/00:08:08:08:30/00:00:00:00:00/e0
+> >> > > tag 0 dma 4096 in [  283.309091]          res
+> >> > > 41/04:00:08:08:30/00:00:00:00:00/e0 Emask 0x1 (device error) [
+> >> > > 283.309171] ata2.00: status: { DRDY ERR }
+> >> > > [  283.309207] ata2.00: error: { ABRT }
+> >> > > [  283.324886] ata2.00: configured for UDMA/133
+> >> > > [  283.324904] ata2: EH complete
+> >> > 
+> >> > It's not really clear why the drive is returning command aborted on
+> >> > a read, there's no other error bits to indicate an uncorrectable
+> >> > error or a CRC error. Is it only the one drive that's giving the
+> >> > errors?
+> >> 
+> >> I'm not entirely sure if its the same drive each time. I can make sure
+> >> today. The fun part is it works fine in a different machine. Where as
+> >> it will start erroring out like that almost right away in the via
+> >> based machine. When its doing that, its also making some fairly scary
+> >> (for a hard drive) noises, but since it doesn't do that in the p35
+> >> machine I'm really hoping it isn't the drive.
+> > 
+> > I've started up a dd on each drive, just for kicks, and reading from
+> > both of them at the same time seems to work fine on the via chipset.
+> > Given this little tid-bit, it seems its only once md-raid is setup on
+> > the drives does one of them freak out.
+> 
+> If the problem happens mostly when both drives are in use then it
+> could be a power supply issue. Some drives are rather sensitive to
+> power fluctuations. You could try and move the drives to separate
+> power cables if they're on the same one, or maybe the power supply's
+> just not up to snuff.
 
-A spin lock is taken near the beginning of the enclosing function.
+I'll give that a shot too. But I have dd running on both drives right now 
+(dd if=/dev/sdX of=/dev/null), and its running fine. I'm also going to run 
+some other tests, see if maybe there isn't a ram problem, it could be the 
+cause.
 
-The semantic patch that makes this change is as follows:
-(http://coccinelle.lip6.fr/)
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel"
+> in the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
-// <smpl>
-@@
-@@
 
-spin_lock(...)
-... when != spin_unlock(...)
--GFP_KERNEL
-+GFP_ATOMIC
-// </smpl>
-
-Signed-off-by: Julia Lawall <julia@diku.dk>
-
----
- net/ipv6/sit.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff -u -p a/net/ipv6/sit.c b/net/ipv6/sit.c
---- a/net/ipv6/sit.c
-+++ b/net/ipv6/sit.c
-@@ -358,7 +358,7 @@ ipip6_tunnel_add_prl(struct ip_tunnel *t
- 		goto out;
- 	}
- 
--	p = kzalloc(sizeof(struct ip_tunnel_prl_entry), GFP_KERNEL);
-+	p = kzalloc(sizeof(struct ip_tunnel_prl_entry), GFP_ATOMIC);
- 	if (!p) {
- 		err = -ENOBUFS;
- 		goto out;
+-- 
+Thomas Fjellstrom
+tfjellstrom@strangesoft.net
