@@ -1,73 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753467Ab0E3S5q (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 May 2010 14:57:46 -0400
-Received: from troy.hostgo.com ([64.62.143.130]:48439 "EHLO troy.hostgo.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752575Ab0E3S5o (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 30 May 2010 14:57:44 -0400
-From: Thomas Fjellstrom <tfjellstrom@strangesoft.net>
-To: linux-kernel@vger.kernel.org
-Subject: Re: via 8237 sata errors
-Date: Sun, 30 May 2010 12:57:31 -0600
-User-Agent: KMail/1.13.3 (Linux/2.6.33-2-amd64; KDE/4.4.3; x86_64; ; )
-Cc: Robert Hancock <hancockrwd@gmail.com>, linux-ide@vger.kernel.org
-References: <201005292046.06344.tfjellstrom@strangesoft.net> <4C02B104.4010900@gmail.com>
-In-Reply-To: <4C02B104.4010900@gmail.com>
+	id S1753212Ab0E3TEe (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 May 2010 15:04:34 -0400
+Received: from einhorn.in-berlin.de ([192.109.42.8]:59263 "EHLO
+	einhorn.in-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752206Ab0E3TEd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 30 May 2010 15:04:33 -0400
+X-Envelope-From: stefanr@s5r6.in-berlin.de
+Message-ID: <4C02B483.9080802@s5r6.in-berlin.de>
+Date: Sun, 30 May 2010 20:54:59 +0200
+From: Stefan Richter <stefanr@s5r6.in-berlin.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.8.1.23) Gecko/20100415 SeaMonkey/1.1.18
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+To: linux1394-devel@lists.sourceforge.net
+CC: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] firewire: core: check for 1394a compliant IRM,	fix inaccessibility
+ of Sony camcorder
+References: <AANLkTimIFRbKWYjFd56acxT2A6nnH6l3-7Q_UyORnonW@mail.gmail.com>	<4C017477.8000008@s5r6.in-berlin.de>	<4C0284E7.3050803@s5r6.in-berlin.de>	<tkrat.740b506673ccbf6d@s5r6.in-berlin.de> <htu993$60f$1@dough.gmane.org>
+In-Reply-To: <htu993$60f$1@dough.gmane.org>
+X-Enigmail-Version: 0.96.0
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Message-Id: <201005301257.31839.tfjellstrom@strangesoft.net>
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - troy.hostgo.com
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - strangesoft.net
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On May 30, 2010, Robert Hancock wrote:
-> On 05/29/2010 08:46 PM, Thomas Fjellstrom wrote:
-> > I'm getting a rather nasty set of messages from dmesg when trying to
-> > use a couple SATA II WD 2TB Green drives with an older system (via
-> > 8237 based). They seem to work fine on a newer p35 based system.
+H.S. wrote:
+> Stefan Richter wrote:
+> <SNIP>
+>> The patch was generated against the latest kernel sources but is
+>> applicable with harmless line offsets to the 2.6.32.y stable kernel
+>> series too.  Hence it should be applicable to Debian's 2.6.32 sources as
+>> well.
+>>
+>> H. S., could you please test this?
 > 
-> ..
-> 
-> > [  283.308963] ata2.00: exception Emask 0x0 SAct 0x0 SErr 0x0 action
-> > 0x0 [  283.309007] ata2.00: BMDMA stat 0x4
-> > [  283.309045] ata2.00: failed command: READ DMA
-> > [  283.309089] ata2.00: cmd c8/00:08:08:08:30/00:00:00:00:00/e0 tag 0
-> > dma 4096 in [  283.309091]          res
-> > 41/04:00:08:08:30/00:00:00:00:00/e0 Emask 0x1 (device error) [ 
-> > 283.309171] ata2.00: status: { DRDY ERR }
-> > [  283.309207] ata2.00: error: { ABRT }
-> > [  283.324886] ata2.00: configured for UDMA/133
-> > [  283.324904] ata2: EH complete
-> 
-> It's not really clear why the drive is returning command aborted on a
-> read, there's no other error bits to indicate an uncorrectable error or
-> a CRC error. Is it only the one drive that's giving the errors?
+> Yes, I can give it a shot. Please pardon this basic question, should I
+> be downloading the vanilla kernel source, patching it, compiling it and
+> then testing it?
 
-I'm not entirely sure if its the same drive each time. I can make sure 
-today. The fun part is it works fine in a different machine. Where as it 
-will start erroring out like that almost right away in the via based 
-machine. When its doing that, its also making some fairly scary (for a hard 
-drive) noises, but since it doesn't do that in the p35 machine I'm really 
-hoping it isn't the drive.
+Either this or the sources of the Debian kernel that you are currently
+running.  The latter may perhaps be preferable for an easier switch
+between distributed kernel and patched kernel.
 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel"
-> in the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+> Or is there a precompiled binary available for download
+> (i368 or amd64) with this patch included?
 
+Alas not.
+(I could build such a package if I had Debian myself, but I don't.)
 
+> I admit I have never patched
+> and compiled a kernel before for testing a patch. I have, however,
+> compiled kernels numerous times quite a while ago (just for learning
+> objectives).
+
+OK; the patching as additional step is going to be the easiest one.
+
+A quick web search turned up the following pointers for using a custom
+kernel on Debian:
+http://www.debian.org/doc/FAQ/ch-kernel.en.html
+http://www.debian.org/releases/stable/i386/ch08s06.html.en
+(I hope the described method provides an already configured kernel
+source tree with Debian's configuration as baseline.)
+
+Before you start compilation, save the email with the patch somewhere,
+change into the top-level directory of the kernel sources, and apply the
+patch with "patch -p1 < /the/path/to/the/email".
 -- 
-Thomas Fjellstrom
-tfjellstrom@strangesoft.net
+Stefan Richter
+-=====-==-=- -=-= ====-
+http://arcgraph.de/sr/
