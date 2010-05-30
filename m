@@ -1,82 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752337Ab0E3LeV (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 May 2010 07:34:21 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:41931 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751208Ab0E3LeT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 30 May 2010 07:34:19 -0400
-Date: Sun, 30 May 2010 14:29:25 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: Oleg Nesterov <oleg@redhat.com>, Sridhar Samudrala <sri@us.ibm.com>,
-       netdev <netdev@vger.kernel.org>, lkml <linux-kernel@vger.kernel.org>,
-       "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Dmitri Vorobiev <dmitri.vorobiev@movial.com>,
-       Jiri Kosina <jkosina@suse.cz>, Thomas Gleixner <tglx@linutronix.de>,
-       Ingo Molnar <mingo@elte.hu>, Andi Kleen <ak@linux.intel.com>
-Subject: Re: [PATCH 2/3] workqueue: Add an API to create a singlethread
-	workqueue attached to the current task's cgroup
-Message-ID: <20100530112925.GB27611@redhat.com>
-References: <20100527091426.GA6308@redhat.com> <20100527124448.GA4241@redhat.com> <20100527131254.GB7974@redhat.com> <4BFE9ABA.6030907@kernel.org> <20100527163954.GA21710@redhat.com> <4BFEA434.6080405@kernel.org> <20100527173207.GA21880@redhat.com> <4BFEE216.2070807@kernel.org> <20100528150830.GB21880@redhat.com> <4BFFE742.2060205@kernel.org>
+	id S1752257Ab0E3LjP (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 May 2010 07:39:15 -0400
+Received: from mail-ww0-f46.google.com ([74.125.82.46]:60965 "EHLO
+	mail-ww0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750946Ab0E3LjO convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 30 May 2010 07:39:14 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=Jaja+EPLbquT370n9FPwurnVn/O4weECZiPkZLXqvT7Oh2jAE73BX42TFQaINcKQQ+
+         RU2VTmvnPdSoB2VXMDyuO/gf/8DZ32YelUbt5KWvHBo25XSKXSNQcSHOu7h7R3thg9mX
+         +t0EPqyut2STxJ2k71sWU0lTdTEiReQaftTAs=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4BFFE742.2060205@kernel.org>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <201005271944.09541.toralf.foerster@gmx.de>
+References: <201005271944.09541.toralf.foerster@gmx.de>
+Date: Sun, 30 May 2010 13:39:12 +0200
+X-Google-Sender-Auth: nIJClWuVNCqXYbFFG9HIr-D6Sf4
+Message-ID: <AANLkTimYeMO_fc8C5MQedwF646_au4lvEbXkBPmQSxb9@mail.gmail.com>
+Subject: Re: current git kernel crashes UML system during boot
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: =?UTF-8?Q?Toralf_F=C3=B6rster?= <toralf.foerster@gmx.de>,
+       Borislav Petkov <borislav.petkov@amd.com>,
+       "H. Peter Anvin" <hpa@zytor.com>
+Cc: user-mode-linux-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 28, 2010 at 05:54:42PM +0200, Tejun Heo wrote:
-> Hello,
-> 
-> On 05/28/2010 05:08 PM, Michael S. Tsirkin wrote:
-> > Well, we have create_singlethread_workqueue, right?
-> > This is not very different ... is it?
-> > 
-> > Just copying structures and code from workqueue.c,
-> > adding vhost_ in front of it will definitely work:
-> 
-> Sure it will, but you'll probably be able to get away with much less.
-> 
-> > there is nothing magic about the workqueue library.
-> > But this just involves cut and paste which might be best avoided.
-> 
-> What I'm saying is that some magic needs to be added to workqueue and
-> if you add this single(!) exception, it will have to be backed out
-> pretty soon, so it would be better to do it properly now.
-> 
-> > One final idea before we go the cut and paste way: how about
-> > 'create_workqueue_from_task' that would get a thread and have workqueue
-> > run there?
-> 
-> You can currently depend on that implementation detail but it's not
-> the workqueue interface is meant to do.  The single threadedness is
-> there as execution ordering and concurrency specification and it
-> doesn't (or rather won't) necessarily mean that a specific single
-> thread is bound to certain workqueue.
-> 
-> Can you please direct me to have a look at the code.  I'll be happy to
-> do the conversion for you.
+2010/5/27 Toralf Förster <toralf.foerster@gmx.de>:
+> I bisected it to this :
+>
+> There are only 'skip'ped commits left to test.
+> The first bad commit could be any of:
+> 4677d4a53e0d565742277e8913e91c821453e63e
+> d61931d89be506372d01a90d1755f6d0a9fafe2d
+> 1527bc8b928dd1399c3d3467dd47d9ede210978a
+> c59bd5688299cddb71183e156e7a3c1409b90df2
+> cb41838bbc4403f7270a94b93a9a0d9fc9c2e7ea
+> We cannot bisect more!
 
-Great, thanks! The code in question is in drivers/vhost/vhost.c
-It is used from drivers/vhost/net.c
+For me it crashes even earlier:
 
-On top of this, we have patchset from Sridhar Samudrala,
-titled '0/3 Make vhost multi-threaded and associate each thread to its
-guest's cgroup':
+ayla$ ./linux
+Core dump limits :
+	soft - 0
+	hard - NONE
+Checking that ptrace can change system call numbers...OK
+Checking syscall emulation patch for ptrace...OK
+Checking advanced syscall emulation patch for ptrace...OK
+Checking for tmpfs mount on /dev/shm...OK
+Checking PROT_EXEC mmap in /dev/shm/...OK
+Checking for the skas3 patch in the host:
+  - /proc/mm...not found: No such file or directory
+  - PTRACE_FAULTINFO...not found
+  - PTRACE_LDT...not found
+UML running in SKAS0 mode
+Adding 21749760 bytes to physical memory to account for exec-shield gap
+Aborted
+ayla$
 
-cgroups: Add an API to attach a task to current task's cgroup
-workqueue: Add an API to create a singlethread workqueue attached to the
-current task's cgroup
-vhost: make it more scalable by creating a vhost thread per device
+After fixing the missing/superfluous slab inclusion issues, I bisected
+it further to
 
-I have bounced the last three your way.
+commit d61931d89be506372d01a90d1755f6d0a9fafe2d
+Author: Borislav Petkov <borislav.petkov@amd.com>
+Date:   Fri Mar 5 17:34:46 2010 +0100
 
+    x86: Add optimized popcnt variants
 
-> Thanks.
-> 
-> -- 
-> tejun
+    Add support for the hardware version of the Hamming weight function,
+    popcnt, present in CPUs which advertize it under CPUID, Function
+    0x0000_0001_ECX[23]. On CPUs which don't support it, we fallback to the
+    default lib/hweight.c sw versions.
+
+    A synthetic benchmark comparing popcnt with __sw_hweight64 showed almost
+    a 3x speedup on a F10h machine.
+
+    Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
+    LKML-Reference: <20100318112015.GC11152@aftab>
+    Signed-off-by: H. Peter Anvin <hpa@zytor.com>
+
+I reverted that commit on top of current mainline (and fixed up the
+conflicts), and now
+it boots again.
+
+CPU is:
+
+processor	: 0
+vendor_id	: GenuineIntel
+cpu family	: 6
+model		: 23
+model name	: Intel(R) Core(TM)2 Quad  CPU   Q8200  @ 2.33GHz
+stepping	: 7
+cpu MHz		: 2003.000
+cache size	: 2048 KB
+physical id	: 0
+siblings	: 4
+core id		: 0
+cpu cores	: 4
+apicid		: 0
+initial apicid	: 0
+fpu		: yes
+fpu_exception	: yes
+cpuid level	: 10
+wp		: yes
+flags		: fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov
+pat pse36 clflush dts acpi mmx fxsr sse sse2 ss ht tm pbe syscall nx
+lm constant_tsc arch_perfmon pebs bts rep_good aperfmperf pni dtes64
+monitor ds_cpl est tm2 ssse3 cx16 xtpr pdcm sse4_1 lahf_lm
+bogomips	: 4665.87
+clflush size	: 64
+cache_alignment	: 64
+address sizes	: 36 bits physical, 48 bits virtual
+power management:
+
+Gr{oetje,eeting}s,
+
+						Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+							    -- Linus Torvalds
