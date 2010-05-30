@@ -1,111 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754726Ab0E3PCV (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 May 2010 11:02:21 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:53289 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754521Ab0E3PCT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 30 May 2010 11:02:19 -0400
-Date: Sun, 30 May 2010 17:02:14 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: Toralf =?utf-8?Q?F=C3=B6rster?= <toralf.foerster@gmx.de>,
-       Borislav Petkov <borislav.petkov@amd.com>,
-       "H. Peter Anvin" <hpa@zytor.com>,
-       user-mode-linux-devel@lists.sourceforge.net,
-       linux-kernel@vger.kernel.org
-Subject: Re: current git kernel crashes UML system during boot
-Message-ID: <20100530150214.GA1565@liondog.tnic>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	Geert Uytterhoeven <geert@linux-m68k.org>,
-	Toralf =?utf-8?Q?F=C3=B6rster?= <toralf.foerster@gmx.de>,
-	Borislav Petkov <borislav.petkov@amd.com>,
-	"H. Peter Anvin" <hpa@zytor.com>,
-	user-mode-linux-devel@lists.sourceforge.net,
-	linux-kernel@vger.kernel.org
-References: <201005271944.09541.toralf.foerster@gmx.de>
- <AANLkTimYeMO_fc8C5MQedwF646_au4lvEbXkBPmQSxb9@mail.gmail.com>
- <AANLkTimKwxYxM_PExplIDK1WPTQ9e_-CHn5SnIvfjfUg@mail.gmail.com>
+	id S1754634Ab0E3PJM (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 May 2010 11:09:12 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:47869 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751116Ab0E3PJK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 30 May 2010 11:09:10 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:content-transfer-encoding
+         :in-reply-to:user-agent;
+        b=P2AkwAgsanOk3CV24vCWvnSomUnLWOcZCwvplWgyZ8QiLiKnuJf/njeLsoSv9YJkix
+         y8U1kEbvFPw+/R+gEOjzDbhuVkQMxIVe7co7XHuUFWeZxkfQ85FFPnll51p9Eimtq5PG
+         s7+u6CLhKz1fhtiSbETFu5Zxt/7yd/07mMKoA=
+Date: Mon, 31 May 2010 00:09:00 +0900
+From: Minchan Kim <minchan.kim@gmail.com>
+To: "Luis Claudio R. Goncalves" <lclaudio@uudg.org>
+Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+       balbir@linux.vnet.ibm.com, Oleg Nesterov <oleg@redhat.com>,
+       linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+       Thomas Gleixner <tglx@linutronix.de>,
+       Peter Zijlstra <peterz@infradead.org>,
+       David Rientjes <rientjes@google.com>, Mel Gorman <mel@csn.ul.ie>,
+       williams@redhat.com
+Subject: Re: [RFC] oom-kill: give the dying task a higher priority
+Message-ID: <20100530150900.GA13768@barrios-desktop>
+References: <20100528143605.7E2A.A69D9226@jp.fujitsu.com>
+ <AANLkTikB-8Qu03VrA5Z0LMXM_alSV7SLqzl-MmiLmFGv@mail.gmail.com>
+ <20100528145329.7E2D.A69D9226@jp.fujitsu.com>
+ <20100528125305.GE11364@uudg.org>
+ <20100528140623.GA11041@barrios-desktop>
+ <20100528143617.GF11364@uudg.org>
+ <20100528151249.GB12035@barrios-desktop>
+ <20100528152842.GH11364@uudg.org>
+ <20100528154549.GC12035@barrios-desktop>
+ <20100528164826.GJ11364@uudg.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
-In-Reply-To: <AANLkTimKwxYxM_PExplIDK1WPTQ9e_-CHn5SnIvfjfUg@mail.gmail.com>
+In-Reply-To: <20100528164826.GJ11364@uudg.org>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-Date: Sun, May 30, 2010 at 01:57:05PM +0200
-
-> On Sun, May 30, 2010 at 13:39, Geert Uytterhoeven <geert@linux-m68k.org> wrote:
-> > 2010/5/27 Toralf Förster <toralf.foerster@gmx.de>:
-> >> I bisected it to this :
+On Fri, May 28, 2010 at 01:48:26PM -0300, Luis Claudio R. Goncalves wrote:
+> On Sat, May 29, 2010 at 12:45:49AM +0900, Minchan Kim wrote:
+> | On Fri, May 28, 2010 at 12:28:42PM -0300, Luis Claudio R. Goncalves wrote:
+> | > On Sat, May 29, 2010 at 12:12:49AM +0900, Minchan Kim wrote:
+> ...
+> | > | I think highest RT proirity ins't good solution.
+> | > | As I mentiond, Some RT functions don't want to be preempted by other processes
+> | > | which cause memory pressure. It makes RT task broken.
+> | > 
+> | > For the RT case, if you reached a system OOM situation, your determinism has
+> | > already been hurt. If the memcg OOM happens on the same memcg your RT task
+> | > is - what will probably be the case most of time - again, the determinism
+> | > has deteriorated. For both these cases, giving the dying task SCHED_FIFO
+> | > MAX_RT_PRIO-1 means a faster recovery.
+> | 
+> | What I want to say is that determinisic has no relation with OOM. 
+> | Why is some RT task affected by other process's OOM?
+> | 
+> | Of course, if system has no memory, it is likely to slow down RT task. 
+> | But it's just only thought. If some task scheduled just is exit, we don't need
+> | to raise OOMed task's priority.
+> | 
+> | But raising min rt priority on your patch was what I want.
+> | It doesn't preempt any RT task.
+> | 
+> | So until now, I have made noise about your patch.
+> | Really, sorry for that. 
+> | I don't have any objection on raising priority part from now on. 
 > 
-> > After fixing the missing/superfluous slab inclusion issues, I bisected
-> > it further to
-> >
-> > commit d61931d89be506372d01a90d1755f6d0a9fafe2d
-> > Author: Borislav Petkov <borislav.petkov@amd.com>
-> > Date:   Fri Mar 5 17:34:46 2010 +0100
-> >
-> >    x86: Add optimized popcnt variants
-> >
-> >    Add support for the hardware version of the Hamming weight function,
-> >    popcnt, present in CPUs which advertize it under CPUID, Function
-> >    0x0000_0001_ECX[23]. On CPUs which don't support it, we fallback to the
-> >    default lib/hweight.c sw versions.
-> >
-> >    A synthetic benchmark comparing popcnt with __sw_hweight64 showed almost
-> >    a 3x speedup on a F10h machine.
-> >
-> >    Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
-> >    LKML-Reference: <20100318112015.GC11152@aftab>
-> >    Signed-off-by: H. Peter Anvin <hpa@zytor.com>
-> >
-> > I reverted that commit on top of current mainline (and fixed up the
-> > conflicts), and now
-> > it boots again.
+> This is the third version of the patch, factoring in your input along with
+> Peter's comment. Basically the same patch, but using the lowest RT priority
+> to boost the dying task.
 > 
-> I tried adding
+> Thanks again for reviewing and commenting.
+> Luis
 > 
-> config ARCH_HWEIGHT_CFLAGS
->         string
->         default "-fcall-saved-ecx -fcall-saved-edx" if !64_BIT
->         default "-fcall-saved-rdi -fcall-saved-rsi -fcall-saved-rdx
-> -fcall-saved-rcx -fcall-saved-r8 -fcall-saved-r9 -fcall-saved-r10
-> -fcall-saved-r11" if 64_BIT
+> oom-killer: give the dying task rt priority (v3)
 > 
-> to arch/um/Kconfig.x86. Now it got a bit further, but it still crashes:
+> Give the dying task RT priority so that it can be scheduled quickly and die,
+> freeing needed memory.
+> 
+> Signed-off-by: Luis Claudio R. Gon�alves <lgoncalv@redhat.com>
+> 
+> diff --git a/mm/oom_kill.c b/mm/oom_kill.c
+> index 84bbba2..2b0204f 100644
+> --- a/mm/oom_kill.c
+> +++ b/mm/oom_kill.c
+> @@ -266,6 +266,8 @@ static struct task_struct *select_bad_process(unsigned long *ppoints)
+>   */
+>  static void __oom_kill_task(struct task_struct *p, int verbose)
+>  {
+> +	struct sched_param param;
+> +
+>  	if (is_global_init(p)) {
+>  		WARN_ON(1);
+>  		printk(KERN_WARNING "tried to kill init!\n");
+> @@ -288,6 +290,8 @@ static void __oom_kill_task(struct task_struct *p, int verbose)
+>  	 * exit() and clear out its resources quickly...
+>  	 */
+>  	p->time_slice = HZ;
+> +	param.sched_priority = MAX_RT_PRIO-10;
 
-Ok, this is a kinda stab in the dark but from what I could decypher
-from the include hell, one possible fix should be if UML didn't include
-<arch/x86/include/asm/arch_hweight.h> but use the software hweight
-version only.
+I can't understand your point, still.
+Why you put the priority as "MAX_RT_PRIO - 10"?
+What I and peter mentioned was "1" which is lowest RT priority. 
 
-Can you guys check whether the following fixes the issue?
+> +	sched_setscheduler(p, SCHED_FIFO, &param);
 
-Thanks.
+Why do you change sched_setscheduler_nocheck with sched_set_scheduler?
+It means you can't boost prioity if current context doesn't have permission.
+Is it a your intention?
 
---
-diff --git a/arch/x86/include/asm/bitops.h b/arch/x86/include/asm/bitops.h
-index 545776e..c9dad12 100644
---- a/arch/x86/include/asm/bitops.h
-+++ b/arch/x86/include/asm/bitops.h
-@@ -444,7 +444,11 @@ static inline int fls(int x)
- 
- #define ARCH_HAS_FAST_MULTIPLIER 1
- 
-+#ifdef CONFIG_UML
-+#include <asm-generic/bitops/arch_hweight.h>
-+#else
- #include <asm/arch_hweight.h>
-+#endif
- 
- #include <asm-generic/bitops/const_hweight.h>
- 
-
+>  	set_tsk_thread_flag(p, TIF_MEMDIE);
+>  
+>  	force_sig(SIGKILL, p);
+> -- 
+> [ Luis Claudio R. Goncalves                    Bass - Gospel - RT ]
+> [ Fingerprint: 4FDD B8C4 3C59 34BD 8BE9  2696 7203 D980 A448 C8F8 ]
+> 
 -- 
-Regards/Gruss,
-    Boris.
+Kind regards,
+Minchan Kim
