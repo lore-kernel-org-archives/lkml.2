@@ -1,56 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753213Ab0E3Sv1 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 May 2010 14:51:27 -0400
-Received: from mail-yw0-f179.google.com ([209.85.211.179]:47750 "EHLO
-	mail-yw0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752206Ab0E3Sv0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 30 May 2010 14:51:26 -0400
-X-Greylist: delayed 679 seconds by postgrey-1.27 at vger.kernel.org; Sun, 30 May 2010 14:51:26 EDT
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=tnhAbd32VAJ50OwYvlrcHNQ/pZ/TGEzPZ3UbwFBU+BoP2a3w9tffQLVhe6Og5sp7ou
-         IqKTj7o0QJcf5XMQFCkRYlTpp3UyFmZB9CZVU/PfEy8yLHfJqEn9yzHiqWq0q+C3V7HX
-         vJDA9fBKNjUJw1hY91cEXXH1yUUH0iJCUY7/E=
-Message-ID: <4C02B3AB.3040405@gmail.com>
-Date: Sun, 30 May 2010 12:51:23 -0600
-From: Robert Hancock <hancockrwd@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-3.fc13 Thunderbird/3.0.4
+	id S1753467Ab0E3S5q (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 May 2010 14:57:46 -0400
+Received: from troy.hostgo.com ([64.62.143.130]:48439 "EHLO troy.hostgo.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752575Ab0E3S5o (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 30 May 2010 14:57:44 -0400
+From: Thomas Fjellstrom <tfjellstrom@strangesoft.net>
+To: linux-kernel@vger.kernel.org
+Subject: Re: via 8237 sata errors
+Date: Sun, 30 May 2010 12:57:31 -0600
+User-Agent: KMail/1.13.3 (Linux/2.6.33-2-amd64; KDE/4.4.3; x86_64; ; )
+Cc: Robert Hancock <hancockrwd@gmail.com>, linux-ide@vger.kernel.org
+References: <201005292046.06344.tfjellstrom@strangesoft.net> <4C02B104.4010900@gmail.com>
+In-Reply-To: <4C02B104.4010900@gmail.com>
 MIME-Version: 1.0
-To: Udo van den Heuvel <udovdh@xs4all.nl>
-CC: linux-kernel@vger.kernel.org
-Subject: Re: hpet timers gone?
-References: <4BFA52C3.4080006@xs4all.nl> <20100526120236.4a849b5b.randy.dunlap@oracle.com> <4C021507.6020703@xs4all.nl>
-In-Reply-To: <4C021507.6020703@xs4all.nl>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201005301257.31839.tfjellstrom@strangesoft.net>
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - troy.hostgo.com
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - strangesoft.net
+X-Source: 
+X-Source-Args: 
+X-Source-Dir: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/30/2010 01:34 AM, Udo van den Heuvel wrote:
->
->> Have you enabled ACPI in the BIOS and kernel config? AFAIK, HPET
->> timers, need some backup timers, for HPET to be enabled.
->
-> ACPI is enabled. APM is disabled.
->
-> Epia LT BIOS is at 1.01 presumably. BIOS update to 1.03  fails as
-> vf-1.02.exe, presumably due to freedos, does not recognise the VIA board
-> and complains about it.
->
-> Also due to board swap last year it can be the case that HPET has so far
-> not worked at all on EPIA LT.
->
-> The board has VIA C7 CPU and VIA CX700M2 Unified Digital Media IGP
-> chipset which supports HPET.
->
-> Can it be that the kernel lacks support for CX700 hpet?
-> Or is it a matter of getting the BIOS upgrade to work?
+On May 30, 2010, Robert Hancock wrote:
+> On 05/29/2010 08:46 PM, Thomas Fjellstrom wrote:
+> > I'm getting a rather nasty set of messages from dmesg when trying to
+> > use a couple SATA II WD 2TB Green drives with an older system (via
+> > 8237 based). They seem to work fine on a newer p35 based system.
+> 
+> ..
+> 
+> > [  283.308963] ata2.00: exception Emask 0x0 SAct 0x0 SErr 0x0 action
+> > 0x0 [  283.309007] ata2.00: BMDMA stat 0x4
+> > [  283.309045] ata2.00: failed command: READ DMA
+> > [  283.309089] ata2.00: cmd c8/00:08:08:08:30/00:00:00:00:00/e0 tag 0
+> > dma 4096 in [  283.309091]          res
+> > 41/04:00:08:08:30/00:00:00:00:00/e0 Emask 0x1 (device error) [ 
+> > 283.309171] ata2.00: status: { DRDY ERR }
+> > [  283.309207] ata2.00: error: { ABRT }
+> > [  283.324886] ata2.00: configured for UDMA/133
+> > [  283.324904] ata2: EH complete
+> 
+> It's not really clear why the drive is returning command aborted on a
+> read, there's no other error bits to indicate an uncorrectable error or
+> a CRC error. Is it only the one drive that's giving the errors?
 
-Your current BIOS doesn't provide an HPET ACPI table, which is the way 
-it's supposed to indicate support. The kernel only supports 
-force-enabling HPET on VIA for VT8235 and VT8237.
+I'm not entirely sure if its the same drive each time. I can make sure 
+today. The fun part is it works fine in a different machine. Where as it 
+will start erroring out like that almost right away in the via based 
+machine. When its doing that, its also making some fairly scary (for a hard 
+drive) noises, but since it doesn't do that in the p35 machine I'm really 
+hoping it isn't the drive.
+
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel"
+> in the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+
+
+-- 
+Thomas Fjellstrom
+tfjellstrom@strangesoft.net
