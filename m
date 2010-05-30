@@ -1,104 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755017Ab0E3VZW (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 May 2010 17:25:22 -0400
-Received: from thunk.org ([69.25.196.29]:37137 "EHLO thunker.thunk.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754718Ab0E3VZU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 30 May 2010 17:25:20 -0400
-Date: Sun, 30 May 2010 17:25:02 -0400
-From: tytso@mit.edu
-To: "Jayson R. King" <dev@jaysonking.com>
-Cc: Stable team <stable@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-       Greg Kroah-Hartman <gregkh@suse.de>,
-       "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-       Dave Chinner <david@fromorbit.com>,
-       Ext4 Developers List <linux-ext4@vger.kernel.org>,
-       Kay Diederichs <Kay.Diederichs@uni-konstanz.de>
-Subject: Re: [PATCH 2.6.27.y 1/3] ext4: Use our own write_cache_pages()
-Message-ID: <20100530212502.GQ26177@thunk.org>
-Mail-Followup-To: tytso@mit.edu, "Jayson R. King" <dev@jaysonking.com>,
-	Stable team <stable@kernel.org>,
-	LKML <linux-kernel@vger.kernel.org>,
-	Greg Kroah-Hartman <gregkh@suse.de>,
-	"Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-	Dave Chinner <david@fromorbit.com>,
-	Ext4 Developers List <linux-ext4@vger.kernel.org>,
-	Kay Diederichs <Kay.Diederichs@uni-konstanz.de>
-References: <4C001888.8020006@jaysonking.com>
- <4C0018E1.5060007@jaysonking.com>
- <20100529004913.GL26177@thunk.org>
- <4C0070D8.8060500@jaysonking.com>
+	id S1755131Ab0E3VjO (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 May 2010 17:39:14 -0400
+Received: from mo-p00-ob.rzone.de ([81.169.146.162]:13128 "EHLO
+	mo-p00-ob.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754990Ab0E3VjN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 30 May 2010 17:39:13 -0400
+X-RZG-AUTH: :P2EQZWCpfu+qG7CngxMFH1J+3aIibppu0283rgF+SkOsw8xqo3A=
+X-RZG-CLASS-ID: mo00
+Date: Sun, 30 May 2010 23:39:02 +0200
+From: Olaf Hering <olaf@aepfle.de>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: acquire_console_mutex: WARNING: at
+ 2.6.33.4-rt20/kernel/mutex-debug.c:65 mutex_remove_waiter+0xe8/0x11c()
+Message-ID: <20100530213902.GA3619@aepfle.de>
+References: <20100524225357.GA19513@aepfle.de>
+ <201005251318.37242.arnd@arndb.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <4C0070D8.8060500@jaysonking.com>
+In-Reply-To: <201005251318.37242.arnd@arndb.de>
 User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on thunker.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 28, 2010 at 08:41:44PM -0500, Jayson R. King wrote:
+On Tue, May 25, Arnd Bergmann wrote:
+
+> On Tuesday 25 May 2010, Olaf Hering wrote:
+> > I get this warning when busybox /sbin/init opens the console.
+> > It does not happen when CONFIG_PREEMPT_RT is enabled.
+> > Any ideas how to fix it for CONFIG_PREEMPT_DESKTOP?
+> > 
+> > [   16.450000] ------------[ cut here ]------------
+> > [   16.450000] WARNING: at /work/rt/linux-2.6.33-rt/kernel/mutex-debug.c:65 mutex_remove_waiter+0xe8/0x11c()
+> > [   16.450000] Modules linked in:
+> > [   16.450000] [<c0033e68>] (unwind_backtrace+0x0/0xdc) from [<c0324994>] (dump_stack+0x18/0x1c)
+> > [   16.450000] [<c0324994>] (dump_stack+0x18/0x1c) from [<c0049aec>] (warn_slowpath_common+0x50/0x68)
+> > [   16.450000] [<c0049aec>] (warn_slowpath_common+0x50/0x68) from [<c0049b1c>] (warn_slowpath_null+0x18/0x1c)
+> > [   16.450000] [<c0049b1c>] (warn_slowpath_null+0x18/0x1c) from [<c006d640>] (mutex_remove_waiter+0xe8/0x11c)
+> > [   16.450000] [<c006d640>] (mutex_remove_waiter+0xe8/0x11c) from [<c032709c>] (mutex_lock_nested+0x268/0x304)
+> > [   16.450000] [<c032709c>] (mutex_lock_nested+0x268/0x304) from [<c004a2d8>] (acquire_console_mutex+0x40/0x68)
+> > [   16.450000] [<c004a2d8>] (acquire_console_mutex+0x40/0x68) from [<c01d8420>] (con_open+0x18/0xc4)
+> > [   16.450000] [<c01d8420>] (con_open+0x18/0xc4) from [<c01c80dc>] (tty_open+0x398/0x55c)
+> > [   16.450000] [<c01c80dc>] (tty_open+0x398/0x55c) from [<c00ae628>] (chrdev_open+0x198/0x1bc)
+> > [   16.450000] [<c00ae628>] (chrdev_open+0x198/0x1bc) from [<c00a9928>] (__dentry_open+0x188/0x294)
+> > [   16.450000] [<c00a9928>] (__dentry_open+0x188/0x294) from [<c00a9b04>] (nameidata_to_filp+0x48/0x60)
+> > [   16.450000] [<c00a9b04>] (nameidata_to_filp+0x48/0x60) from [<c00b795c>] (do_filp_open+0x42c/0x8a8)
+> > [   16.450000] [<c00b795c>] (do_filp_open+0x42c/0x8a8) from [<c00a968c>] (do_sys_open+0x64/0x11c)
+> > [   16.450000] [<c00a968c>] (do_sys_open+0x64/0x11c) from [<c00a977c>] (sys_open+0x24/0x28)
+> > [   16.450000] [<c00a977c>] (sys_open+0x24/0x28) from [<c002e000>] (ret_fast_syscall+0x0/0x34)
+> > [   16.450000] ---[ end trace cdbe849ecfa1acdf ]---
+> > 
+> > The used config is shown after dmesg.
 > 
-> The difference is that, 2.6.27's write_cache_pages() in
-> page-writeback.c still updates wbc->nr_to_write, since the patch
-> which changed that behavior was dropped from .27-rc2 due to the XFS
-> regression it causes on mainline. ext4 appears to want the behavior
-> of write_cache_pages which does not update wbc->nr_to_write. This
-> write_cache_pages_da() does what ext4 wants, without introducing the
-> XFS regression. So I believe it is needed.
+> As a wild guess, this might happen because we drop the BKL in
+> mutex_lock_nested and might need to wait for it when we got the lock.
+> The reason that this surfaces in -rt would be that the console_sem
+> is replaced with a proper mutex there, on non-rt kernels this would
+> be invisible.
+> 
+> You could try to pull in the blk/tty branch from
+> http://git.kernel.org/?p=linux/kernel/git/arnd/playground.git and enable
+> CONFIG_TTY_MUTEX to see if that gives you better lockdep output,
+> because that replaces the implicit dropping of the BKL with mutex operations
+> that lockdep is aware of.
 
-Ah, OK.  So I understand the motivation now, and that's a valid
-concern.  The question is now: how much the goal of the 2.6.27 stable
-branch to fix bugs, and how much is it to get the best possible
-performance, at least with respect to ext4?  It's going to be harder
-and harder to backport fixes to 2.6.27, and I can speak from
-experience that it's very easy to introduce regressions while trying
-to do backports, since sometimes an individual upstream commit can end
-up introducing a regression, and while we do try to document
-regression fixes in later commits, sometimes the documentation isn't
-complete.
+CONFIG_TTY_MUTEX depends on SMP and this ARM system does not support
+CONFIG_SMP, its hidden by Kconfig dependencies.
 
-I just spent the better part of a day trying to fix up a backport
-series for 2.6.32.  When I was engaged in this particular exercise, it
-turns out a particular commit to fix a quota deadlock introduced a
-regression, and the fix to that introduced yet another, and there were
-three or four patches that all needed to be pulled in at once.  Except
-initially I missed one, and that caused an i_blocks corruption issue
-when using fallocate() that took me several hours and a reverse
-git-bisection to find.  (And this is one set of fixes that will
-probably never be able to go into 2.6.27.y, since these changes also
-interlock with probably a dozen or so quota changes that have also
-gone in over the last couple of kernel releases.)
 
-I'll also add that simply testing using dbench, as you said you used
-in another e-mail message, really isn't good enough to find all
-possible regressions (it wouldn't have found the i_blocks corruption
-problem in my initial set of 2.6.32 ext4 backports patches, for
-example, since dbench only tests a very limited set of fs operations,
-which doesn't include fallocate, or quotas, or mmap for that matter.)
-
-What I would recommend is using the XFSQA (also sometimes known
-xfstests) test suite to make sure that your changes are sound.  Dbench
-will sometimes find issues, yes, but in my experience it's not the
-best tool.  The fsstress program, which is called in a number of
-different configurations by xfstests, has found all sorts of problems
-that other thing shaven't been able to find.  Run it on at least a
-2-core system, or preferably a 4-core or 8-core system if you have it.
-I generally run tests using both 4k and 1k blocksize file systems to
-make sure there aren't problems where the fs blocksize is less than
-the pagesize.
-
-If you are willing to take on the support burden of ext4 for 2.6.27,
-and do a lot of testing, I at least wouldn't have any objection to
-these patches.  It's really a question of risk vs. reward for the
-users of the 2.6.27 stable tree, plus a question of someone willing to
-take on the support/debugging burden, and how much testing is done to
-appropriate tilt the risk/reward balance.
-
-Regards,
-
-						- Ted
+Olaf
