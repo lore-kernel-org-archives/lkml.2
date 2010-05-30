@@ -1,76 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757271Ab0E3AnO (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 29 May 2010 20:43:14 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:33182 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756906Ab0E3AnM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 29 May 2010 20:43:12 -0400
-Date: Sun, 30 May 2010 10:43:03 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-next@vger.kernel.org,
-       linux-kernel@vger.kernel.org, Jack Steiner <steiner@sgi.com>,
-       Lee Schermerhorn <lee.schermerhorn@hp.com>
-Subject: Re: linux-next: build failure in Linus' tree
-Message-Id: <20100530104303.15864d35.sfr@canb.auug.org.au>
-In-Reply-To: <alpine.LFD.2.00.1005271807470.11382@i5.linux-foundation.org>
-References: <20100528105719.a356ba4f.sfr@canb.auug.org.au>
-	<alpine.LFD.2.00.1005271807470.11382@i5.linux-foundation.org>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Sun__30_May_2010_10_43_03_+1000__MvVWbMZ85qqb=j_"
+	id S1757361Ab0E3Apz (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 29 May 2010 20:45:55 -0400
+Received: from netrider.rowland.org ([192.131.102.5]:54828 "HELO
+	netrider.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1757016Ab0E3Apy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 29 May 2010 20:45:54 -0400
+Date: Sat, 29 May 2010 20:45:53 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@netrider.rowland.org
+To: =?ISO-8859-1?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>
+cc: Florian Mickler <florian@mickler.org>,
+       Peter Zijlstra <peterz@infradead.org>,
+       "Rafael J. Wysocki" <rjw@sisk.pl>,
+       Linux PM <linux-pm@lists.linux-foundation.org>,
+       Brian Swetland <swetland@google.com>,
+       Alan Cox <alan@lxorguk.ukuu.org.uk>,
+       Matthew Garrett <mjg59@srcf.ucam.org>,
+       Thomas Gleixner <tglx@linutronix.de>,
+       LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>
+Subject: Re: [linux-pm] [PATCH 0/8] Suspend block api (version 8)
+In-Reply-To: <AANLkTik_4ezDAQoAQjkpEgwD9SLKeOjDzy2H7T2v6uCP@mail.gmail.com>
+Message-ID: <Pine.LNX.4.44L0.1005292026080.6300-100000@netrider.rowland.org>
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Sun__30_May_2010_10_43_03_+1000__MvVWbMZ85qqb=j_
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Sat, 29 May 2010, Arve Hjønnevåg wrote:
 
-Hi Linus,
+> > In place of in-kernel suspend blockers, there will be a new type of QoS
+> > constraint -- call it QOS_EVENTUALLY.  It's a very weak constraint,
+> > compatible with all cpuidle modes in which runnable threads are allowed
+> > to run (which is all of them), but not compatible with suspend.
+> >
+> This sound just like another API rename. It will work, but given that
+> suspend blockers was the name least objectionable last time around,
+> I'm not sure what this would solve.
 
-On Thu, 27 May 2010 18:09:17 -0700 (PDT) Linus Torvalds <torvalds@linux-fou=
-ndation.org> wrote:
->
-> On Fri, 28 May 2010, Stephen Rothwell wrote:
-> >=20
-> > Caused by commit 0ac0c0d0f837c499afd02a802f9cf52d3027fa3b ("cpusets:
-> > randomize node rotor used in cpuset_mem_spread_node()").
-> >=20
-> > This commit assumes that __node_random() exists if (MAX_NUMNODES > 1) a=
-nd
-> > uses it if CONFIG_CPUSETS is set, but only creates it for x86 ...  there
-> > is at least one other architecture where those conditions are true.
->=20
-> Yeah, looking at that, it seems totally idiotic.
->=20
-> Why is that "__node_random()" in x86 code at all? There is absolutely=20
-> nothing x86 about it that I can tell. And now I have an ia64 merge that=20
-> just duplicates that moronic function.
+It's not just a rename.  By changing this into a QoS constraint, we 
+make it more generally useful.  Instead of standing on its own, it 
+becomes part of the PM-QOS framework.
 
-So, is it reasonable for me to ask you to revert commit
-0ac0c0d0f837c499afd02a802f9cf52d3027fa3b ("cpusets: randomize node rotor
-used in cpuset_mem_spread_node()")?  Reverting it won't break ia64 (since
-their fix was to just add code that would then be unreferenced).
+> > There is no /sys/power/policy file.  In place of opportunistic suspend,
+> > we have "QoS-based suspend".  This is initiated by userspace writing
+> > "qos" to /sys/power/state, and it is very much like suspend-to-RAM.
+> 
+> Why do you want to tie it to a specific state?
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
+I don't.  I suggested making it a veriant of suspend-to-RAM merely
+because that's what you were using.  But Nigel's suggestion of having
+"qos" variants of all the different suspend states makes sense.
 
---Signature=_Sun__30_May_2010_10_43_03_+1000__MvVWbMZ85qqb=j_
-Content-Type: application/pgp-signature
+> > However a QoS-based suspend fails immediately if there are any active
+> 
+> Fail or block? Your next paragraph said that it blocks for
+> QOS_EVENTUALLY, but if normal constraints fail, you are still stuck in
+> a retry loop.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
+Normal (i.e., non QOS_EVENTUALLY) constraints aren't part of the
+Android use case, so it wasn't clear how they should be treated.  On
+further thought, it probably makes more sense to block for them too
+instead of failing immediately.
 
-iEYEARECAAYFAkwBtJcACgkQjjKRsyhoI8wN1QCfXy6phQG05R6wsflQPUV37afj
-+BkAoIW8l469CvRK4RksvXk8JXYQS/Zl
-=Px2r
------END PGP SIGNATURE-----
+> > normal QoS constraints incompatible with system suspend, in other
+> > words, any constraints requiring a throughput > 0 or an interrupt
+> > latency shorter than the time required for a suspend-to-RAM/resume
+> > cycle.
+> >
+> > If no such constraints are active, the QoS-based suspend blocks in an
+> > interruptible wait until the number of active QOS_EVENTUALLY
+> 
+> How do you implement this?
 
---Signature=_Sun__30_May_2010_10_43_03_+1000__MvVWbMZ85qqb=j_--
+I'm not sure what you mean.  The same way you implement any 
+interruptible wait.
+
+> >        for (;;) {
+> >                while (any IPC requests remain)
+> >                        handle them;
+> >                if (any processes need to prevent suspend)
+> >                        sleep;
+> >                else
+> >                        write "qos" to /sys/power/state;
+> >        }
+> >
+> > The idea is that receipt of a new IPC request will cause a signal to be
+> > sent, interrupting the sleep or the "qos" write.
+> 
+> What happen if the signal is right before (or even right after)
+> calling write "qos". How does the signal handler stop the write?
+
+You're right, this is a serious problem.  The process would have to
+give the kernel a signal mask to be used during the wait, as in ppoll
+or pselect.  There ought to be a way to do this or something
+equivalent.
+
+Alan Stern
+
