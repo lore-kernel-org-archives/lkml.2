@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754851Ab0E3U1f (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 May 2010 16:27:35 -0400
-Received: from mgw1.diku.dk ([130.225.96.91]:36178 "EHLO mgw1.diku.dk"
+	id S1754891Ab0E3U1x (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 May 2010 16:27:53 -0400
+Received: from mgw1.diku.dk ([130.225.96.91]:36193 "EHLO mgw1.diku.dk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754405Ab0E3U1e (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 30 May 2010 16:27:34 -0400
-Date: Sun, 30 May 2010 22:27:28 +0200 (CEST)
+	id S1754405Ab0E3U1v (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 30 May 2010 16:27:51 -0400
+Date: Sun, 30 May 2010 22:27:46 +0200 (CEST)
 From: Julia Lawall <julia@diku.dk>
-To: Al Viro <viro@zeniv.linux.org.uk>, Eric Paris <eparis@redhat.com>,
+To: Greg Kroah-Hartman <gregkh@suse.de>, devel@driverdev.osuosl.org,
        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-Subject: [PATCH 1/3] kernel: Use GFP_ATOMIC when a lock is held
-Message-ID: <Pine.LNX.4.64.1005302227130.19253@ask.diku.dk>
+Subject: [PATCH 2/3] drivers/staging: Use GFP_ATOMIC when a lock is held
+Message-ID: <Pine.LNX.4.64.1005302227290.19253@ask.diku.dk>
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
@@ -20,8 +20,8 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Julia Lawall <julia@diku.dk>
 
-The containing function is called from several places.  At one of them, in
-the function untag_chunk, the spin lock &entry->lock is held.
+In each case, the containing function is only called from one place, where
+a spin lock is held.
 
 The semantic patch that makes this change is as follows:
 (http://coccinelle.lip6.fr/)
@@ -58,18 +58,44 @@ position gfp.p;
 Signed-off-by: Julia Lawall <julia@diku.dk>
 
 ---
- kernel/audit_tree.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/staging/iio/ring_sw.c              |    2 +-
+ drivers/staging/vme/bridges/vme_ca91cx42.c |    2 +-
+ drivers/staging/vme/bridges/vme_tsi148.c   |    2 +-
+ 3 files changed, 3 insertions(+), 3 deletions(-)
 
-diff -u -p a/kernel/audit_tree.c b/kernel/audit_tree.c
---- a/kernel/audit_tree.c
-+++ b/kernel/audit_tree.c
-@@ -147,7 +147,7 @@ static struct audit_chunk *alloc_chunk(i
- 	int i;
+diff -u -p a/drivers/staging/iio/ring_sw.c b/drivers/staging/iio/ring_sw.c
+--- a/drivers/staging/iio/ring_sw.c
++++ b/drivers/staging/iio/ring_sw.c
+@@ -20,7 +20,7 @@ static inline int __iio_allocate_sw_ring
+ 	if ((length == 0) || (bytes_per_datum == 0))
+ 		return -EINVAL;
+ 	__iio_update_ring_buffer(&ring->buf, bytes_per_datum, length);
+-	ring->data = kmalloc(length*ring->buf.bpd, GFP_KERNEL);
++	ring->data = kmalloc(length*ring->buf.bpd, GFP_ATOMIC);
+ 	ring->read_p = NULL;
+ 	ring->write_p = NULL;
+ 	ring->last_written_p = NULL;
+diff -u -p a/drivers/staging/vme/bridges/vme_ca91cx42.c b/drivers/staging/vme/bridges/vme_ca91cx42.c
+--- a/drivers/staging/vme/bridges/vme_ca91cx42.c
++++ b/drivers/staging/vme/bridges/vme_ca91cx42.c
+@@ -523,7 +523,7 @@ static int ca91cx42_alloc_resource(struc
+ 	}
  
- 	size = offsetof(struct audit_chunk, owners) + count * sizeof(struct node);
--	chunk = kzalloc(size, GFP_KERNEL);
-+	chunk = kzalloc(size, GFP_ATOMIC);
- 	if (!chunk)
- 		return NULL;
+ 	if (image->bus_resource.name == NULL) {
+-		image->bus_resource.name = kmalloc(VMENAMSIZ+3, GFP_KERNEL);
++		image->bus_resource.name = kmalloc(VMENAMSIZ+3, GFP_ATOMIC);
+ 		if (image->bus_resource.name == NULL) {
+ 			dev_err(ca91cx42_bridge->parent, "Unable to allocate "
+ 				"memory for resource name\n");
+diff -u -p a/drivers/staging/vme/bridges/vme_tsi148.c b/drivers/staging/vme/bridges/vme_tsi148.c
+--- a/drivers/staging/vme/bridges/vme_tsi148.c
++++ b/drivers/staging/vme/bridges/vme_tsi148.c
+@@ -828,7 +828,7 @@ static int tsi148_alloc_resource(struct 
+ 		return 0;
  
+ 	if (image->bus_resource.name == NULL) {
+-		image->bus_resource.name = kmalloc(VMENAMSIZ+3, GFP_KERNEL);
++		image->bus_resource.name = kmalloc(VMENAMSIZ+3, GFP_ATOMIC);
+ 		if (image->bus_resource.name == NULL) {
+ 			dev_err(tsi148_bridge->parent, "Unable to allocate "
+ 				"memory for resource name\n");
