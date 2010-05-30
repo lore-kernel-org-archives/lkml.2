@@ -1,41 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755181Ab0E3VZe (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 May 2010 17:25:34 -0400
-Received: from mail-ww0-f46.google.com ([74.125.82.46]:35399 "EHLO
-	mail-ww0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755159Ab0E3VZb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 30 May 2010 17:25:31 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=googlemail.com; s=gamma;
-        h=mime-version:reply-to:date:message-id:subject:from:to:cc
-         :content-type;
-        b=shS/jVb06+fdc/BOa9Io/AjCv8ArBhR4Nkn01CvP5wVWWnj3nIl16ZY3f0W+WxZWgA
-         FppHEj3V6bQsnXvS0df5rGNBp1cDCr5ZWsaSWswcwxVLEkhUhbDBABNyUwrqZzzl5heA
-         OU1r5PziXOPEmNgm1hcRIvBySEmgXawK3hYA4=
+	id S1755017Ab0E3VZW (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 May 2010 17:25:22 -0400
+Received: from thunk.org ([69.25.196.29]:37137 "EHLO thunker.thunk.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754718Ab0E3VZU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 30 May 2010 17:25:20 -0400
+Date: Sun, 30 May 2010 17:25:02 -0400
+From: tytso@mit.edu
+To: "Jayson R. King" <dev@jaysonking.com>
+Cc: Stable team <stable@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+       Greg Kroah-Hartman <gregkh@suse.de>,
+       "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+       Dave Chinner <david@fromorbit.com>,
+       Ext4 Developers List <linux-ext4@vger.kernel.org>,
+       Kay Diederichs <Kay.Diederichs@uni-konstanz.de>
+Subject: Re: [PATCH 2.6.27.y 1/3] ext4: Use our own write_cache_pages()
+Message-ID: <20100530212502.GQ26177@thunk.org>
+Mail-Followup-To: tytso@mit.edu, "Jayson R. King" <dev@jaysonking.com>,
+	Stable team <stable@kernel.org>,
+	LKML <linux-kernel@vger.kernel.org>,
+	Greg Kroah-Hartman <gregkh@suse.de>,
+	"Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+	Dave Chinner <david@fromorbit.com>,
+	Ext4 Developers List <linux-ext4@vger.kernel.org>,
+	Kay Diederichs <Kay.Diederichs@uni-konstanz.de>
+References: <4C001888.8020006@jaysonking.com>
+ <4C0018E1.5060007@jaysonking.com>
+ <20100529004913.GL26177@thunk.org>
+ <4C0070D8.8060500@jaysonking.com>
 MIME-Version: 1.0
-Reply-To: sedat.dilek@gmail.com
-Date: Sun, 30 May 2010 23:25:29 +0200
-Message-ID: <AANLkTilnzeN_j3QCdZ7e-u5fUKn3mgJsy324dtjoeM8n@mail.gmail.com>
-Subject: Re: Linux 2.6.35-rc1
-From: Sedat Dilek <sedat.dilek@googlemail.com>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: torvalds@linux-foundation.org
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4C0070D8.8060500@jaysonking.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on thunker.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Fri, May 28, 2010 at 08:41:44PM -0500, Jayson R. King wrote:
+> 
+> The difference is that, 2.6.27's write_cache_pages() in
+> page-writeback.c still updates wbc->nr_to_write, since the patch
+> which changed that behavior was dropped from .27-rc2 due to the XFS
+> regression it causes on mainline. ext4 appears to want the behavior
+> of write_cache_pages which does not update wbc->nr_to_write. This
+> write_cache_pages_da() does what ext4 wants, without introducing the
+> XFS regression. So I believe it is needed.
 
->It's been two weeks, and so the merge window is closed. There may be a few
->trees I haven't pulled yet, but the bulk should all be there.
+Ah, OK.  So I understand the motivation now, and that's a valid
+concern.  The question is now: how much the goal of the 2.6.27 stable
+branch to fix bugs, and how much is it to get the best possible
+performance, at least with respect to ext4?  It's going to be harder
+and harder to backport fixes to 2.6.27, and I can speak from
+experience that it's very easy to introduce regressions while trying
+to do backports, since sometimes an individual upstream commit can end
+up introducing a regression, and while we do try to document
+regression fixes in later commits, sometimes the documentation isn't
+complete.
 
-I am missing the merge of linux-2.6-block.git/for-linus [1], dunno if
-there was a pull request for it on LKML.
+I just spent the better part of a day trying to fix up a backport
+series for 2.6.32.  When I was engaged in this particular exercise, it
+turns out a particular commit to fix a quota deadlock introduced a
+regression, and the fix to that introduced yet another, and there were
+three or four patches that all needed to be pulled in at once.  Except
+initially I missed one, and that caused an i_blocks corruption issue
+when using fallocate() that took me several hours and a reverse
+git-bisection to find.  (And this is one set of fixes that will
+probably never be able to go into 2.6.27.y, since these changes also
+interlock with probably a dozen or so quota changes that have also
+gone in over the last couple of kernel releases.)
 
-Kind Regards,
-- Sedat -
+I'll also add that simply testing using dbench, as you said you used
+in another e-mail message, really isn't good enough to find all
+possible regressions (it wouldn't have found the i_blocks corruption
+problem in my initial set of 2.6.32 ext4 backports patches, for
+example, since dbench only tests a very limited set of fs operations,
+which doesn't include fallocate, or quotas, or mmap for that matter.)
 
-[1] http://git.kernel.org/?p=linux/kernel/git/axboe/linux-2.6-block.git;a=shortlog;h=refs/heads/for-linus
+What I would recommend is using the XFSQA (also sometimes known
+xfstests) test suite to make sure that your changes are sound.  Dbench
+will sometimes find issues, yes, but in my experience it's not the
+best tool.  The fsstress program, which is called in a number of
+different configurations by xfstests, has found all sorts of problems
+that other thing shaven't been able to find.  Run it on at least a
+2-core system, or preferably a 4-core or 8-core system if you have it.
+I generally run tests using both 4k and 1k blocksize file systems to
+make sure there aren't problems where the fs blocksize is less than
+the pagesize.
+
+If you are willing to take on the support burden of ext4 for 2.6.27,
+and do a lot of testing, I at least wouldn't have any objection to
+these patches.  It's really a question of risk vs. reward for the
+users of the 2.6.27 stable tree, plus a question of someone willing to
+take on the support/debugging burden, and how much testing is done to
+appropriate tilt the risk/reward balance.
+
+Regards,
+
+						- Ted
