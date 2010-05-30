@@ -1,106 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754676Ab0E3U0f (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 May 2010 16:26:35 -0400
-Received: from hera.kernel.org ([140.211.167.34]:32835 "EHLO hera.kernel.org"
+	id S1754851Ab0E3U1f (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 May 2010 16:27:35 -0400
+Received: from mgw1.diku.dk ([130.225.96.91]:36178 "EHLO mgw1.diku.dk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754125Ab0E3U0d (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 30 May 2010 16:26:33 -0400
-Message-ID: <4C02C99D.9070204@kernel.org>
-Date: Sun, 30 May 2010 22:25:01 +0200
-From: Tejun Heo <tj@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.1.9) Gecko/20100317 Thunderbird/3.0.4
+	id S1754405Ab0E3U1e (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 30 May 2010 16:27:34 -0400
+Date: Sun, 30 May 2010 22:27:28 +0200 (CEST)
+From: Julia Lawall <julia@diku.dk>
+To: Al Viro <viro@zeniv.linux.org.uk>, Eric Paris <eparis@redhat.com>,
+       linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
+Subject: [PATCH 1/3] kernel: Use GFP_ATOMIC when a lock is held
+Message-ID: <Pine.LNX.4.64.1005302227130.19253@ask.diku.dk>
 MIME-Version: 1.0
-To: "Michael S. Tsirkin" <mst@redhat.com>
-CC: Oleg Nesterov <oleg@redhat.com>, Sridhar Samudrala <sri@us.ibm.com>,
-       netdev <netdev@vger.kernel.org>, lkml <linux-kernel@vger.kernel.org>,
-       "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Dmitri Vorobiev <dmitri.vorobiev@movial.com>,
-       Jiri Kosina <jkosina@suse.cz>, Thomas Gleixner <tglx@linutronix.de>,
-       Ingo Molnar <mingo@elte.hu>, Andi Kleen <ak@linux.intel.com>
-Subject: [PATCH 3/3] vhost: apply cpumask and cgroup to vhost pollers
-References: <20100527091426.GA6308@redhat.com> <20100527124448.GA4241@redhat.com> <20100527131254.GB7974@redhat.com> <4BFE9ABA.6030907@kernel.org> <20100527163954.GA21710@redhat.com> <4BFEA434.6080405@kernel.org> <20100527173207.GA21880@redhat.com> <4BFEE216.2070807@kernel.org> <20100528150830.GB21880@redhat.com> <4BFFE742.2060205@kernel.org> <20100530112925.GB27611@redhat.com>
-In-Reply-To: <20100530112925.GB27611@redhat.com>
-X-Enigmail-Version: 1.0.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Sun, 30 May 2010 20:25:02 +0000 (UTC)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Apply the cpumask and cgroup of the initializing task to the created
-vhost poller.
+From: Julia Lawall <julia@diku.dk>
 
-Based on Sridhar Samudrala's patch.
+The containing function is called from several places.  At one of them, in
+the function untag_chunk, the spin lock &entry->lock is held.
 
-Cc: Michael S. Tsirkin <mst@redhat.com>
-Cc: Sridhar Samudrala <samudrala.sridhar@gmail.com>
+The semantic patch that makes this change is as follows:
+(http://coccinelle.lip6.fr/)
+
+// <smpl>
+@gfp exists@
+identifier fn;
+position p;
+@@
+
+fn(...) {
+... when != spin_unlock
+    when any
+  GFP_KERNEL@p
+ ... when any
+}
+
+@locked@
+identifier gfp.fn;
+@@
+
+spin_lock(...)
+... when != spin_unlock
+fn(...)
+
+@depends on locked@
+position gfp.p;
+@@
+
+- GFP_KERNEL@p
++ GFP_ATOMIC
+// </smpl>
+
+Signed-off-by: Julia Lawall <julia@diku.dk>
+
 ---
- drivers/vhost/vhost.c |   36 +++++++++++++++++++++++++++++++-----
- 1 file changed, 31 insertions(+), 5 deletions(-)
+ kernel/audit_tree.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Index: work/drivers/vhost/vhost.c
-===================================================================
---- work.orig/drivers/vhost/vhost.c
-+++ work/drivers/vhost/vhost.c
-@@ -23,6 +23,7 @@
- #include <linux/highmem.h>
- #include <linux/slab.h>
- #include <linux/kthread.h>
-+#include <linux/cgroup.h>
-
- #include <linux/net.h>
- #include <linux/if_packet.h>
-@@ -176,12 +177,30 @@ repeat:
- long vhost_dev_init(struct vhost_dev *dev,
- 		    struct vhost_virtqueue *vqs, int nvqs)
- {
--	struct task_struct *poller;
--	int i;
-+	struct task_struct *poller = NULL;
-+	cpumask_var_t mask;
-+	int i, ret = -ENOMEM;
-+
-+	if (!alloc_cpumask_var(&mask, GFP_KERNEL))
-+		goto out;
-
- 	poller = kthread_create(vhost_poller, dev, "vhost-%d", current->pid);
--	if (IS_ERR(poller))
--		return PTR_ERR(poller);
-+	if (IS_ERR(poller)) {
-+		ret = PTR_ERR(poller);
-+		goto out;
-+	}
-+
-+	ret = sched_getaffinity(current->pid, mask);
-+	if (ret)
-+		goto out;
-+
-+	ret = sched_setaffinity(poller->pid, mask);
-+	if (ret)
-+		goto out;
-+
-+	ret = cgroup_attach_task_current_cg(poller);
-+	if (ret)
-+		goto out;
-
- 	dev->vqs = vqs;
- 	dev->nvqs = nvqs;
-@@ -202,7 +221,14 @@ long vhost_dev_init(struct vhost_dev *de
- 			vhost_poll_init(&dev->vqs[i].poll,
- 					dev->vqs[i].handle_kick, POLLIN, dev);
- 	}
--	return 0;
-+
-+	wake_up_process(poller);	/* avoid contributing to loadavg */
-+	ret = 0;
-+out:
-+	if (ret)
-+		kthread_stop(poller);
-+	free_cpumask_var(mask);
-+	return ret;
- }
-
- /* Caller should have device mutex */
+diff -u -p a/kernel/audit_tree.c b/kernel/audit_tree.c
+--- a/kernel/audit_tree.c
++++ b/kernel/audit_tree.c
+@@ -147,7 +147,7 @@ static struct audit_chunk *alloc_chunk(i
+ 	int i;
+ 
+ 	size = offsetof(struct audit_chunk, owners) + count * sizeof(struct node);
+-	chunk = kzalloc(size, GFP_KERNEL);
++	chunk = kzalloc(size, GFP_ATOMIC);
+ 	if (!chunk)
+ 		return NULL;
+ 
