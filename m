@@ -1,67 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756312Ab0E3DZl (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 29 May 2010 23:25:41 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:51516 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754947Ab0E3DZj convert rfc822-to-8bit (ORCPT
+	id S1756329Ab0E3Doh (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 29 May 2010 23:44:37 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:36764 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754947Ab0E3Dof (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 29 May 2010 23:25:39 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type:content-transfer-encoding;
-        b=yDGJoW9xqjxwAcIhvpv90EePFSh4bwJVswassKkbwyjrktFHlu0b02i+rk3SXdW6y0
-         L6yrrREI5bJfKQATY7Y6PbdGLJv4X+83Hm/vXV93plPY07ePdRBlJEqSe5IzhcX5wgJp
-         R47izrMwdjrvg2ZBa6rJVbZJV3GO5cwKWTBbI=
-MIME-Version: 1.0
-In-Reply-To: <1275179960.4825.1.camel@gandalf.stny.rr.com>
-References: <1274885054-15698-1-git-send-email-xiaosuo@gmail.com> 
-	<E1OHw3d-0001yr-Ag@pomaz-ex.szeredi.hu> <AANLkTimzsHAxha3vQxeFn5pF5BmYZ8nLawSG2YU3eujZ@mail.gmail.com> 
-	<AANLkTimCXzrXcfwbCy5MZ3D40WBnGbF6Kbj6egTSjk2s@mail.gmail.com> 
-	<1275150019.22648.615.camel@gandalf.stny.rr.com> <AANLkTim6tj4OKnLGW2dDIsvAmeU6b9Qsi6IZKdvlKHV2@mail.gmail.com> 
-	<1275179960.4825.1.camel@gandalf.stny.rr.com>
-From: Changli Gao <xiaosuo@gmail.com>
-Date: Sun, 30 May 2010 11:25:19 +0800
-Message-ID: <AANLkTilGP6lF61zuG8L6u54g1R2YItrx6df3RWfxvCqf@mail.gmail.com>
-Subject: Re: [PATCH v2 3/4]: sendfile: remove flags paramter of 
-	do_splice_direct()
-To: rostedt@goodmis.org
-Cc: Miklos Szeredi <miklos@szeredi.hu>, axboe@kernel.dk,
-       Al Viro <viro@zeniv.linux.org.uk>, mszeredi@suse.cz,
-       linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       Eric Dumazet <eric.dumazet@gmail.com>,
-       Frederic Weisbecker <fweisbec@gmail.com>,
-       Ingo Molnar <mingo@redhat.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Sat, 29 May 2010 23:44:35 -0400
+Date: Sat, 29 May 2010 20:42:56 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Cesar Eduardo Barros <cesarb@cesarb.net>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+       Russell King <linux@arm.linux.org.uk>,
+       Ralf Baechle <ralf@linux-mips.org>, David Howells <dhowells@redhat.com>,
+       Koichi Yasutake <yasutake.koichi@jp.panasonic.com>,
+       Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+       Paul Mackerras <paulus@samba.org>,
+       "David S. Miller" <davem@davemloft.net>,
+       Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+       "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
+       Arnd Bergmann <arnd@arndb.de>, Rusty Russell <rusty@rustcorp.com.au>
+Subject: Re: [PATCH] Make kunmap_atomic() harder to misuse
+Message-Id: <20100529204256.b92b1ff6.akpm@linux-foundation.org>
+In-Reply-To: <1275043993-26557-1-git-send-email-cesarb@cesarb.net>
+References: <1275043993-26557-1-git-send-email-cesarb@cesarb.net>
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, May 30, 2010 at 8:39 AM, Steven Rostedt <rostedt@goodmis.org> wrote:
-> Probably because I copied the code from something that used
-> SPLICE_F_NONBLOCK ;-)
+On Fri, 28 May 2010 07:53:13 -0300 Cesar Eduardo Barros <cesarb@cesarb.net> wrote:
+
+> kunmap_atomic() is currently at level -4 on Rusty's "Hard To Misuse"
+> list[1] ("Follow common convention and you'll get it wrong"), except in
+> some architectures when CONFIG_DEBUG_HIGHMEM is set[2][3].
+> 
+> kunmap() takes a pointer to a struct page; kunmap_atomic(), however,
+> takes takes a pointer to within the page itself. This seems to once in a
+> while trip people up (the convention they are following is the one from
+> kunmap()).
+> 
+> Make it much harder to misuse, by moving it to level 9 on Rusty's
+> list[4] ("The compiler/linker won't let you get it wrong"). This is done
+> by refusing to build if the pointer passed to it is convertible to a
+> struct page * but it is not a void * (verified by trying to convert it
+> to a pointer to a dummy struct).
+> 
+> The real kunmap_atomic() is renamed to kunmap_atomic_notypecheck()
+> (which is what you would call in case for some strange reason calling it
+> with a pointer to a struct page is not incorrect in your code).
+> 
+
+Fair enough, that's a 99% fix.  A long time ago I made kmap_atomic()
+return a char * (iirc) and kunmap_atomic() is passed a char*.  It
+worked, but I ended up throwing it away.  I don't precisely remember
+why - I think it was intrusiveness and general hassle rather than
+anything fundamental.
+
 >
-
->From the relay API implementation?
-
-> But userspace passes that flag too. Although, maybe I just don't
-> understand the API fully.
+> ...
 >
+> +/* Prevent people trying to call kunmap_atomic() as if it were kunmap() */
+> +struct __kunmap_atomic_dummy {};
+> +#define kunmap_atomic(addr, idx) do { \
+> +		BUILD_BUG_ON( \
+> +			__builtin_types_compatible_p(typeof(addr), struct page *) && \
+> +			!__builtin_types_compatible_p(typeof(addr), struct __kunmap_atomic_dummy *)); \
+> +		kunmap_atomic_notypecheck((addr), (idx)); \
+> +	} while (0)
 
-this flag is a little confusing. It is much like:
+<looks around>
 
-flags = fcntl(pipe_fd, F_GETFL);
-fcntl(pipe_fd, F_SETFL, flags | O_NONBLOCK);
-splice(..pipe_fd..., 0); // without O_NONBLOCK
-fcntl(pipe_fd, F_SETFL, falgs);
+OK, it seems that __builtin_types_compatible_p() is supported on all
+approved gcc versions.
 
-In fact, setting O_NONBLOCK is the only way of letting splice pipe
-operations non-blockable currently. When splicing, splice doesn't
-refer to the pipe file's f_flags. :(
+We have a little __same_type() helper for this.  __must_be_array()
+should be using it, too.
 
--- 
-Regards，
-Changli Gao(xiaosuo@gmail.com)
