@@ -1,72 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754917Ab0E3PeV (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 May 2010 11:34:21 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:39863 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754521Ab0E3PeT (ORCPT
+	id S1754855Ab0E3Pnv (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 May 2010 11:43:51 -0400
+Received: from netrider.rowland.org ([192.131.102.5]:55642 "HELO
+	netrider.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752749Ab0E3Pnu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 30 May 2010 11:34:19 -0400
-X-Authority-Analysis: v=1.1 cv=WC2cwRI/KXdLNEmE8ivg2cmI8vFt6dWmaZdvaJ93QHU= c=1 sm=0 a=PjWTFMnUE30A:10 a=0qYQvVkOOIcA:10 a=7U3hwN5JcxgA:10 a=Q9fys5e9bTEA:10 a=gMqfjgEr1zLu/65IO0LwxA==:17 a=uxnuuD7PqwD2Kl0nwZIA:9 a=Mim128DOxl5aIivq8LwA:7 a=xuMK44m7uZR8Dw7znGI-pJcDKpwA:4 a=PUjeQqilurYA:10 a=gMqfjgEr1zLu/65IO0LwxA==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.89.75
-Subject: Re: Perf trace event parse errors for KVM events
-From: Steven Rostedt <rostedt@goodmis.org>
-Reply-To: rostedt@goodmis.org
-To: Avi Kivity <avi@redhat.com>
-Cc: Stefan Hajnoczi <stefanha@gmail.com>, linux-perf-users@vger.kernel.org,
-       linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
-       Frederic Weisbecker <fweisbec@gmail.com>,
-       Marcelo Tosatti <mtosatti@redhat.com>,
-       Peter Zijlstra <a.p.zijlstra@chello.nl>,
-       Stefan Hajnoczi <stefanha@linux.vnet.ibm.com>,
-       Johannes Berg <johannes.berg@intel.com>,
-       Darren Hart <darren@dvhart.com>
-In-Reply-To: <4C027131.2010309@redhat.com>
-References: <20100526123443.GB8905@stefan-thinkpad.transitives.com>
-	 <AANLkTil8BiuzrmacV7Lpx1wES0EvLSiVmcfwtSY6Zis2@mail.gmail.com>
-	 <1275083157.22648.593.camel@gandalf.stny.rr.com>
-	 <4C00FF9B.9000107@redhat.com>
-	 <1275139177.22648.610.camel@gandalf.stny.rr.com>
-	 <4C021D7E.1060705@redhat.com>
-	 <1275228182.15884.1.camel@gandalf.stny.rr.com>
-	 <4C027131.2010309@redhat.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-Organization: Kihon Technologies Inc.
-Date: Sun, 30 May 2010 11:34:16 -0400
-Message-ID: <1275233656.15884.4.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	Sun, 30 May 2010 11:43:50 -0400
+Date: Sun, 30 May 2010 11:43:50 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@netrider.rowland.org
+To: =?ISO-8859-1?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>
+cc: Peter Zijlstra <peterz@infradead.org>,
+       Brian Swetland <swetland@google.com>, Ingo Molnar <mingo@elte.hu>,
+       LKML <linux-kernel@vger.kernel.org>,
+       Florian Mickler <florian@mickler.org>,
+       Linux PM <linux-pm@lists.linux-foundation.org>,
+       Thomas Gleixner <tglx@linutronix.de>,
+       Alan Cox <alan@lxorguk.ukuu.org.uk>
+Subject: Re: [linux-pm] [PATCH 0/8] Suspend block api (version 8)
+In-Reply-To: <Pine.LNX.4.44L0.1005292026080.6300-100000@netrider.rowland.org>
+Message-ID: <Pine.LNX.4.44L0.1005301134530.19555-100000@netrider.rowland.org>
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2010-05-30 at 17:07 +0300, Avi Kivity wrote:
-> On 05/30/2010 05:03 PM, Steven Rostedt wrote:
-> >
-> >> Right.  The tools can fall back to %x/%s based on the structure
-> >> descriptor if they can't parse the format string.
-> >>
-> >>      
-> > trace-cmd has plugin support to override how to read the format and
-> > print it out. It now has the ability to write those plugins in python.
-> >    
+On Sat, 29 May 2010, Alan Stern wrote:
+
+> On Sat, 29 May 2010, Arve Hjønnevåg wrote:
+
+> > >        for (;;) {
+> > >                while (any IPC requests remain)
+> > >                        handle them;
+> > >                if (any processes need to prevent suspend)
+> > >                        sleep;
+> > >                else
+> > >                        write "qos" to /sys/power/state;
+> > >        }
+> > >
+> > > The idea is that receipt of a new IPC request will cause a signal to be
+> > > sent, interrupting the sleep or the "qos" write.
+> > 
+> > What happen if the signal is right before (or even right after)
+> > calling write "qos". How does the signal handler stop the write?
 > 
-> Cool.  May make sense to use simpler formatting in the kernel, and use 
-> trace-cmd plugins for the complicated cases.
-> 
-> It does raise issues with ABIs.  Can trace-cmd read plugins from 
-> /lib/modules/*?  We can then distribute the plugins with the kernel.
-> 
+> You're right, this is a serious problem.  The process would have to
+> give the kernel a signal mask to be used during the wait, as in ppoll
+> or pselect.  There ought to be a way to do this or something
+> equivalent.
 
-We probably could do that. Perhaps if we can port the python code to
-perf, then it would work for both. Then the plugins could be just python
-scripts, (or binary .so modules) and have a tools/plugins dir?
+Okay, here's a possible solution:
 
-The python part probably would be easier to port, since the .so modules
-are a bit more specific to trace-cmd.
+	char arg[20];
 
--- Steve
+	signal_handler()
+	{
+		arg[0] = 0;
+	}
 
+
+	In the main loop:
+
+	...
+	mask signals;
+	if (we decide to start a QoS-based suspend) {
+		strcpy(arg, "qos");
+		unmask signals;
+		write arg to /sys/power/state;
+	}
+
+It's hacky but I think it will work.
+
+A more straightforward approach is to give processes the ability to 
+register their own QoS constraints.  This could be done via a custom 
+driver as Brian suggested or by adding a new system call as Alan Cox 
+suggested.  Then the power manager could be split into two threads, one 
+of which handles IPC requests and manages QoS constraints, while the 
+other repeatedly attempts to initiate QoS-based suspends.
+
+Alan Stern
 
