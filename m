@@ -1,50 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755188Ab0E3V7A (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 May 2010 17:59:00 -0400
-Received: from s12.ALPHA-c2.vectant.ne.jp ([222.230.51.12]:51469 "EHLO
-	s12.ALPHA-c2.vectant.ne.jp" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755101Ab0E3V67 (ORCPT
+	id S1755173Ab0E3Whf (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 May 2010 18:37:35 -0400
+Received: from science.horizon.com ([71.41.210.146]:50304 "HELO
+	science.horizon.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1754523Ab0E3Whe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 30 May 2010 17:58:59 -0400
-Message-Id: <201005302158.AA00414@tamuki.linet.gr.jp>
-From: TAMUKI Shoichi <tamuki@linet.gr.jp>
-Date: Mon, 31 May 2010 06:58:16 +0900
-To: Randy Dunlap <randy.dunlap@oracle.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
-       Anton Blanchard <anton@samba.org>, Andi Kleen <andi@firstfloor.org>,
-       Andy Green <andy@warmcat.com>, TAMUKI Shoichi <tamuki@linet.gr.jp>,
-       linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] panic: keep blinking in spite of long spin timer mode
-In-Reply-To: <20100528152241.4f5db28f.randy.dunlap@oracle.com>
-References: <20100528152241.4f5db28f.randy.dunlap@oracle.com>
-MIME-Version: 1.0
-X-Mailer: AL-Mail32 Version 1.13
-Content-Type: text/plain; charset=us-ascii
+	Sun, 30 May 2010 18:37:34 -0400
+Date: 30 May 2010 18:37:28 -0400
+Message-ID: <20100530223728.14700.qmail@science.horizon.com>
+From: "George Spelvin" <linux@horizon.com>
+To: sameo@linux.intel.com
+Subject: Re: [GIT] [2.6.35] MFD pull request
+Cc: linux@horizon.com, linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+Linus wrote:
+> Samuel - this adds the CONFIG_MFD thing, with absolutely _no_ explanation. 
+> So now people see this totally incomprehensible question:
+>
+>	Enable Multifunction device drivers? (Y/n)
+>
+> with no sane way to decide whether they should actually enable it or not.  
 
-Thank you for your comment.
+Seconded.  This actually happens a lot; I don't mean to pick on the MFD drivers
+especially.  Sometimes the best way to answer a new config question is to
+RTFS, which is a bit tedious.
 
-On Fri, 28 May 2010 15:22:41 -0700 Randy Dunlap wrote:
+For example, the "ACPI 4.0 Power Meter" (CONFIG_ACPI_POWER_METER).  To me,
+a power meter is a large glass-encased object containing a spinning
+aluminum disc and mounted on the wall of my house which determines my
+monthly power bill.
 
-> > +	panicblink=	[KNL] The speed of panic blink (default is 12 wpm)
-> 
-> What is "wpm"?  In typing, it's words per minute.
-> Is it "winks per minute" here?  If not, what?
+How this relates to ACPI 4.0 firmware is unclear.  Indeed, how do I figure
+out of I have ACPI 4.0 firmware?
 
-Yes, it's words per minute.  "wpm" here is analogized to the speed of
-morse code and is thought natural and reasonable as an indicator of the
-speed of blinking.
+Then there's CONFIG_SFI.  Nowhere in the Kconfig text does it explain that
+it's intended as a lightweight alternative to ACPI for hand-held devices
+and not for desktop machines.
 
-The period of panic blink can be computed by the formula T = 7200 / W,
-where T is the period in milliseconds, W is the speed in wpm.
+Then there are the PCI_GO* options... I still have no idea.  (I just pick
+"any", figuring it's the most likely to work.)
 
-Anyway, not to be confused, I will add two lines of the above-mentioned
-to kernel-parameters.txt in the PATCH v2.
+I think the CONFIG_PCI help text could use some updating.
 
-Regards,
-TAMUKI Shoichi
+The CONFIG_PCIEPORTBUS is unnecessarily confusing.  It doesn't clearly
+explain, if I have PCI express slots on my computer:
+- Do I actually need this to boot?
+- Does it do anything besides enable a config submenu?
+
+CONFIG_MCA (admittedly a critically endangered interest group, but
+still listed as "Maintained" in MAINTAINERS) stresses the importance
+of the web site address given in in Documentation/mca.txt, which is
+http://www.dgmicro.com/mca/.  That domain no longer exists (expired March
+'07) and has been grabbed by a squatter.  It can be found on the wayback
+machine at
+http://web.archive.org/web/20070225223240/http://www.dgmicro.com/mca/
+and gives a last update date of 1999.
+
+It would be easy to go on...
