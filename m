@@ -1,89 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754747Ab0E3PYr (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 May 2010 11:24:47 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:33336 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752600Ab0E3PYq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 30 May 2010 11:24:46 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:x-enigmail-version:content-type
-         :content-transfer-encoding;
-        b=IjHFfFLKCLfiYo3h2yXuCZnw6eRUbO0WkPdfDvi2VaVI66jF1lhyGlNjSWW0rU0smA
-         7tnls10fsjv9v/dbNFE0rymfWxCBKaHvcqxj/vlwOsVw4fNrskHt3e1XtlAdEIGm3Bbt
-         R2yVffjK+WblWOa0ZUcZ+sViWy5ODE7iyuBOw=
-Message-ID: <4C028336.8030704@gmail.com>
-Date: Sun, 30 May 2010 17:24:38 +0200
-From: Jiri Slaby <jirislaby@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; cs-CZ; rv:1.9.2.4) Gecko/20100522 SUSE/3.1rc1-2.1 Thunderbird/3.1
+	id S1754823Ab0E3P2b (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 May 2010 11:28:31 -0400
+Received: from mail.gmx.net ([213.165.64.20]:33914 "HELO mail.gmx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1752600Ab0E3P23 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 30 May 2010 11:28:29 -0400
+X-Authenticated: #5108953
+X-Provags-ID: V01U2FsdGVkX1/+yk0T9mL+PmBPjvv8eTAeqkSU9I4ghGrr01GUQd
+	qwUL7RVevBYE27
+From: Toralf =?utf-8?q?F=C3=B6rster?= <toralf.foerster@gmx.de>
+To: Borislav Petkov <bp@alien8.de>, Geert Uytterhoeven <geert@linux-m68k.org>,
+       Borislav Petkov <borislav.petkov@amd.com>
+Subject: Re: current git kernel crashes UML system during boot
+Date: Sun, 30 May 2010 17:28:25 +0200
+User-Agent: KMail/1.13.3 (Linux/2.6.34; KDE/4.4.3; i686; ; )
+References: <201005271944.09541.toralf.foerster@gmx.de> <AANLkTimKwxYxM_PExplIDK1WPTQ9e_-CHn5SnIvfjfUg@mail.gmail.com> <20100530150214.GA1565@liondog.tnic>
+In-Reply-To: <20100530150214.GA1565@liondog.tnic>
+Cc: "H. Peter Anvin" <hpa@zytor.com>,
+       user-mode-linux-devel@lists.sourceforge.net,
+       linux-kernel@vger.kernel.org
 MIME-Version: 1.0
-To: Richard Zidlicky <rz@linux-m68k.org>
-CC: linux-kernel@vger.kernel.org, linux-media@vger.kernel.org
-Subject: Re: schedule inside spin_lock_irqsave?
-References: <20100530145240.GA21559@linux-m68k.org>
-In-Reply-To: <20100530145240.GA21559@linux-m68k.org>
-X-Enigmail-Version: 1.0
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 8bit
+Message-Id: <201005301728.25976.toralf.foerster@gmx.de>
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/30/2010 04:52 PM, Richard Zidlicky wrote:
-> Hi,
-> 
-> came across following snippet of code (2.6.34:drivers/media/dvb/siano/smscoreapi.c) and 
-> since prepare_to_wait is new for me I am wondering if this is can work?
-> 
-> struct smscore_buffer_t *smscore_getbuffer(struct smscore_device_t *coredev)
-> {
-> 	struct smscore_buffer_t *cb = NULL;
-> 	unsigned long flags;
-> 
-> 	DEFINE_WAIT(wait);
-> 
-> 	spin_lock_irqsave(&coredev->bufferslock, flags);
-> 
-> 	/* This function must return a valid buffer, since the buffer list is
-> 	 * finite, we check that there is an available buffer, if not, we wait
-> 	 * until such buffer become available.
-> 	 */
-> 
-> 	prepare_to_wait(&coredev->buffer_mng_waitq, &wait, TASK_INTERRUPTIBLE);
-> 
-> 	if (list_empty(&coredev->buffers))
-> 		schedule();
-> 
-> 	finish_wait(&coredev->buffer_mng_waitq, &wait);
-> 
-> 	cb = (struct smscore_buffer_t *) coredev->buffers.next;
-> 	list_del(&cb->entry);
-> 
-> 	spin_unlock_irqrestore(&coredev->bufferslock, flags);
 
+Borislav Petkov wrote at 17:02:14
+> Can you guys check whether the following fixes the issue?
+> 
+> Thanks.
+> 
+> --
+> diff --git a/arch/x86/include/asm/bitops.h b/arch/x86/include/asm/bitops.h
+> index 545776e..c9dad12 100644
+> --- a/arch/x86/include/asm/bitops.h
+> +++ b/arch/x86/include/asm/bitops.h
+> @@ -444,7 +444,11 @@ static inline int fls(int x)
+>  
+>  #define ARCH_HAS_FAST_MULTIPLIER 1
+>  
+> +#ifdef CONFIG_UML
+> +#include <asm-generic/bitops/arch_hweight.h>
+> +#else
+>  #include <asm/arch_hweight.h>
+> +#endif
+>  
+>  #include <asm-generic/bitops/const_hweight.h>
+>  
+> 
+> 
+solved reported issue.
+Thx
 
-Yep, that's a double bug.
-1) If the waiting is interrupted, it will die because the list is still
-empty.
-2) If there is no entry in the list, it will deadlock at least on UP.
-This should be
-wait_event(&coredev->buffer_mng_waitq, cb = get_entry());
-with get_entry like:
-struct smscore_buffer_t *get_entry(void)
-{
-  struct smscore_buffer_t *cb = NULL;
-  spin_lock_irqsave(&coredev->bufferslock, flags);
-  if (!list_empty(&coredev->buffers)) {
-    cb = (struct smscore_buffer_t *) coredev->buffers.next;
-    list_del(&cb->entry);
-  }
-  spin_unlock_irqrestore(&coredev->bufferslock, flags);
-  return cb;
-}
-
-regards,
 -- 
-js
+MfG/Sincerely
+Toralf Förster
+
+pgp finger print: 7B1A 07F4 EC82 0F90 D4C2 8936 872A E508 7DB6 9DA3
+
