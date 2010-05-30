@@ -1,57 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754866Ab0E3UyT (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 May 2010 16:54:19 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:59487 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754572Ab0E3UyS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 30 May 2010 16:54:18 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: markgross@thegnar.org
-Subject: Re: [linux-pm] [patch] complain when users abuse the pm_qos API
-Date: Sun, 30 May 2010 22:55:24 +0200
-User-Agent: KMail/1.12.4 (Linux/2.6.34-tst; KDE/4.3.5; x86_64; ; )
-Cc: Nigel Cunningham <ncunningham@crca.org.au>,
-       linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org
-References: <20100529045027.GE11600@gvim.org> <201005302150.01452.rjw@sisk.pl> <20100530201142.GC25545@gvim.org>
-In-Reply-To: <20100530201142.GC25545@gvim.org>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201005302255.24807.rjw@sisk.pl>
+	id S1755039Ab0E3UzW (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 May 2010 16:55:22 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:47267 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754987Ab0E3UzS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 30 May 2010 16:55:18 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=Bw7RMZYN9gCjF3NUOh4l4viAyih4mIMBUii8E9+WXZ0du6d8UJ8IWptBy8ogl6k8vX
+         dhIKIlWJXiGiePg4DDbfDvDx/D/L40GiOLR67fiXRWAt7mSPhBtNiZiEWlTqiKRQFDnP
+         rFAPEffFeItyZ+vKSUXGjQ8W8uhJvdMl5naZk=
+Subject: Re: Subject: [PATCH] net/ipv6: Use GFP_ATOMIC when a lock is held
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Julia Lawall <julia@diku.dk>
+Cc: "David S. Miller" <davem@davemloft.net>,
+       Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
+       "Pekka Savola (ipv6)" <pekkas@netcore.fi>,
+       James Morris <jmorris@namei.org>,
+       Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
+       Patrick McHardy <kaber@trash.net>, netdev@vger.kernel.org,
+       linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
+In-Reply-To: <Pine.LNX.4.64.1005302248500.19253@ask.diku.dk>
+References: <Pine.LNX.4.64.1005302147310.19253@ask.diku.dk>
+	 <1275250288.2472.21.camel@edumazet-laptop>
+	 <Pine.LNX.4.64.1005302248500.19253@ask.diku.dk>
+Content-Type: text/plain; charset="UTF-8"
+Date: Sun, 30 May 2010 22:55:12 +0200
+Message-ID: <1275252912.2472.23.camel@edumazet-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sunday 30 May 2010, mark gross wrote:
-> On Sun, May 30, 2010 at 09:50:01PM +0200, Rafael J. Wysocki wrote:
-> > On Sunday 30 May 2010, Nigel Cunningham wrote:
-> > > Hi.
-> > > 
-> > > On 30/05/10 06:08, Rafael J. Wysocki wrote:
-> > > > On Saturday 29 May 2010, mark gross wrote:
-> > > >> The following patch is to help clean up API abusers of pm_qos where
-> > > >> they call update_request before registering a request.
-> > > >>
-> > > >> --mgross
-> > > >>
-> > > >> --Signed-off-by: markgross<markgross@thegnar.org>
-> > > >
-> > > > Will there be a big issue if I push this during the next merge window?
-> > > 
-> > > What's the point to the patch? That is: why is calling update_request 
-> > > before registering a request such a big problem that it demands a WARN() 
-> > > and dump stack?
-> > 
-> > It is an API violation if I understand that correctly.
-> 
-> Yeah, it is, but now that I'm thinking clearly perhaps a better fix
-> would be to change the prototype of pm_qos_update_request to return
-> something so callers can check for success.
-> 
-> Lets fix the API rather than use this patch.  Please dopt apply it.
+Le dimanche 30 mai 2010 à 22:50 +0200, Julia Lawall a écrit :
 
-OK
+> I think the proposed patch does not work, because the for loop overwrites 
+> p.  That use of p looks like it is completely local to the for loop, so 
+> perhaps a new variable p1 could be added to be used there?
 
-Rafael
+Please do so.
+
+I just wanted to tell you changing GFP_KERNEL to GFP_ATOMIC is not an
+appropriate way to solve this kind of problems. My patch was to get an
+idea, not a full and tested patch :)
+
+
+
+
