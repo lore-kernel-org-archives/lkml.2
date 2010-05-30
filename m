@@ -1,45 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752704Ab0E3J1a (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 May 2010 05:27:30 -0400
-Received: from one.firstfloor.org ([213.235.205.2]:41373 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752130Ab0E3J12 (ORCPT
+	id S1753044Ab0E3KFQ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 May 2010 06:05:16 -0400
+Received: from courier.cs.helsinki.fi ([128.214.9.1]:39902 "EHLO
+	mail.cs.helsinki.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751233Ab0E3KFO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 30 May 2010 05:27:28 -0400
-To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-Cc: James Bottomley <James.Bottomley@suse.de>,
-       Christoph Hellwig <hch@infradead.org>,
-       FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-       Mike Christie <michaelc@cs.wisc.edu>, Douglas@firstfloor.org,
-       Gilbe@firstfloor.org, linux-scsi <linux-scsi@vger.kernel.org>,
-       LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC]: Mainline of TCM Core and TCM_Loop for v2.6.35
-From: Andi Kleen <andi@firstfloor.org>
-References: <1274317792.30733.59.camel@haakon2.linux-iscsi.org>
-Date: Sun, 30 May 2010 11:27:26 +0200
-In-Reply-To: <1274317792.30733.59.camel@haakon2.linux-iscsi.org> (Nicholas A. Bellinger's message of "Wed\, 19 May 2010 18\:09\:52 -0700")
-Message-ID: <87vda5zqm9.fsf@basil.nowhere.org>
-User-Agent: Gnus/5.11 (Gnus v5.11) Emacs/22.3 (gnu/linux)
+	Sun, 30 May 2010 06:05:14 -0400
+Message-ID: <4C023854.3090002@cs.helsinki.fi>
+Date: Sun, 30 May 2010 13:05:08 +0300
+From: Pekka Enberg <penberg@cs.helsinki.fi>
+User-Agent: Thunderbird 2.0.0.24 (Macintosh/20100228)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+To: Heiko Carstens <heiko.carstens@de.ibm.com>
+CC: Christoph Lameter <cl@linux-foundation.org>, linux-kernel@vger.kernel.org,
+       linux-mm@kvack.org
+Subject: Re: [BUG] slub crashes on dma allocations
+References: <20100526153757.GB2232@osiris.boeblingen.de.ibm.com> <alpine.DEB.2.00.1005270916220.5762@router.home> <20100527190440.GA2205@osiris.boeblingen.de.ibm.com>
+In-Reply-To: <20100527190440.GA2205@osiris.boeblingen.de.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-"Nicholas A. Bellinger" <nab@linux-iscsi.org> writes:
->
-> As always, I am open to constructive suggestions,
+Heiko Carstens wrote:
+> On Thu, May 27, 2010 at 09:17:17AM -0500, Christoph Lameter wrote:
+>> So S390 has NUMA and the minalign is allowing very small slabs of 8/16/32 bytes?
+> 
+> No NUMA, but minalign is 8.
+> 
+>> Try this patch
+>>
+>> From: Christoph Lameter <cl@linux-foundation.org>
+>> Subject: SLUB: Allow full duplication of kmalloc array for 390
+>>
+>> Seems that S390 is running out of kmalloc caches.
+>>
+>> Increase the number of kmalloc caches to a safe size.
+>>
+>> Signed-off-by: Christoph Lameter <cl@linux-foundation.org>
+> 
+> Yes, that fixes the bug. Thanks!
 
-Your description contains quite a lot of acronyms (I count 8 in the first
-paragraph alone). For the benefit of the linux-kernel audience which are
-not storage experts and are struggling to find out what this is all good
-for, how about including a glossary that explains what it all means?  I
-suspect having that in the git commit log later will be also useful.
-
-Thanks,
-
--Andi
-
--- 
-ak@linux.intel.com -- Speaking for myself only.
+We need this for .33 and .34 stable, right?
