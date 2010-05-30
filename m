@@ -1,80 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752051Ab0E3IKz (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 May 2010 04:10:55 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:49255 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751468Ab0E3IKx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 30 May 2010 04:10:53 -0400
-Message-ID: <4C021D7E.1060705@redhat.com>
-Date: Sun, 30 May 2010 11:10:38 +0300
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100330 Fedora/3.0.4-1.fc12 Thunderbird/3.0.4
+	id S1752035Ab0E3Ifs (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 May 2010 04:35:48 -0400
+Received: from mail-gw0-f46.google.com ([74.125.83.46]:36638 "EHLO
+	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751457Ab0E3Ifq convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 30 May 2010 04:35:46 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :content-type:content-transfer-encoding;
+        b=HVBPd3LbChcMEFpYwvQAXXjRHPhUcuXrNf+mVe0HPv/aTlZnjqvjSBpYNHZb0OPcYI
+         GwCDOSToaTq1np1wMQrmI6ZFwJqBuo4rPnWJ/Duf7Q9zAV/s9qIPHIZuIg8gkQRD+d5x
+         9h/lnshWbftRFpBugb6aFXrp6K7F+1IWxJpgw=
 MIME-Version: 1.0
-To: rostedt@goodmis.org
-CC: Stefan Hajnoczi <stefanha@gmail.com>, linux-perf-users@vger.kernel.org,
-       linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
-       Frederic Weisbecker <fweisbec@gmail.com>,
-       Marcelo Tosatti <mtosatti@redhat.com>,
-       Peter Zijlstra <a.p.zijlstra@chello.nl>,
-       Stefan Hajnoczi <stefanha@linux.vnet.ibm.com>
-Subject: Re: Perf trace event parse errors for KVM events
-References: <20100526123443.GB8905@stefan-thinkpad.transitives.com>	 <AANLkTil8BiuzrmacV7Lpx1wES0EvLSiVmcfwtSY6Zis2@mail.gmail.com>	 <1275083157.22648.593.camel@gandalf.stny.rr.com>	 <4C00FF9B.9000107@redhat.com> <1275139177.22648.610.camel@gandalf.stny.rr.com>
-In-Reply-To: <1275139177.22648.610.camel@gandalf.stny.rr.com>
-Content-Type: text/plain; charset=ISO-8859-15; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <AANLkTil5lzl8kCHRr7HZNhUCEC4qzuciWQAOenS1aCzO@mail.gmail.com>
+References: <AANLkTil5lzl8kCHRr7HZNhUCEC4qzuciWQAOenS1aCzO@mail.gmail.com>
+Date: Sun, 30 May 2010 18:35:44 +1000
+Message-ID: <AANLkTikjZxmlWmDIHuKbNSpz7UfINwvjamyZ-xdFNjzh@mail.gmail.com>
+Subject: Re: BUG: using smp_processor_id() in preemptible [00000000] code: 
+	ondemand/1327
+From: andrew hendry <andrew.hendry@gmail.com>
+To: linux-kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/29/2010 04:19 PM, Steven Rostedt wrote:
-> On Sat, 2010-05-29 at 14:50 +0300, Avi Kivity wrote:
->    
->> On 05/29/2010 12:45 AM, Steven Rostedt wrote:
->>      
->>> On Fri, 2010-05-28 at 17:42 +0100, Stefan Hajnoczi wrote:
->>>
->>>        
->>>> I get parse errors when using Steven Rostedt's trace-cmd tool, too.
->>>>
->>>> Any ideas what is going on here?  I can provide more info (e.g. trace
->>>> files) if necessary.
->>>>
->>>>          
->>> Does trace-cmd fail on the same tracepoints? Have you checkout the
->>> latest code?.
->>>
->>> I do know it fails on some of the KVM tracerpoints since the formatting
->>> they use is obnoxious.
->>>
->>>
->>>        
->> Isn't there a binary trace for this?
->>
->>      
-> The pretty printing from the kernel handles this fine. But there's
-> pressure to pass the format to userspace in binary and have the tool
-> parse it. Currently it uses the print fmt to figure out how to parse.
->
-> Using one of the examples that Stefan showed:
->
-> kvmmmu/kvm_mmu_get_page: print fmt: "%s %s", ({ const char *ret =
-> p->buffer + p->len; static const char *access_str[] = { "---", "--x",
-> "w--", "w-x", "-u-", "-ux", "wu-", "wux" }; union kvm_mmu_page_role
-> role; role.word = REC->role; trace_seq_printf(p, "sp gfn %llx %u%s q%u%s
-> %s%s" " %snxe root %u %s%c", REC->gfn, role.level, role.cr4_pae ? "
-> pae" : "", role.quadrant, role.direct ? " direct" : "",
-> access_str[role.access], role.invalid ? " invalid" : "", role.nxe ? "" :
-> "!", REC->root_count, REC->unsync ? "unsync" : "sync", 0); ret; }),
-> REC->created ? "new" : "existing"
->
->
-> You need a full C parser/interpreter to understand the above.
->    
+Running hdparm -tT /dev/sda gets a similar one.
 
-Right.  The tools can fall back to %x/%s based on the structure 
-descriptor if they can't parse the format string.
+[ 2705.519946] BUG: using smp_processor_id() in preemptible [00000000]
+code: hdparm/2479
+[ 2705.519948] caller is vfs_quota_sync+0x18c/0x350
+[ 2705.519950] Pid: 2479, comm: hdparm Not tainted 2.6.34 #2
+[ 2705.519951] Call Trace:
+[ 2705.519953]  [<ffffffff81288548>] debug_smp_processor_id+0xd8/0xf0
+[ 2705.519956]  [<ffffffff8118d21c>] vfs_quota_sync+0x18c/0x350
+[ 2705.519958]  [<ffffffff811621c0>] ? sync_one_sb+0x0/0x30
+[ 2705.519960]  [<ffffffff811621c0>] ? sync_one_sb+0x0/0x30
+[ 2705.519962]  [<ffffffff81162161>] __sync_filesystem+0x41/0xa0
+[ 2705.519964]  [<ffffffff811621e0>] sync_one_sb+0x20/0x30
+[ 2705.519966]  [<ffffffff8113cd54>] iterate_supers+0x84/0xd0
+[ 2705.519969]  [<ffffffff8116221f>] sys_sync+0x2f/0x70
+[ 2705.519971]  [<ffffffff8100b0f2>] system_call_fastpath+0x16/0x1b
 
--- 
-error compiling committee.c: too many arguments to function
-
+On Sun, May 30, 2010 at 6:02 PM, andrew hendry <andrew.hendry@gmail.com> wrote:
+> I get 6 of these logged together about 1 minute after startup on an i7-860.
+> Config attached. Distro is Ubuntu 10.04 64 bit.
+> Is this one known or should I start a bisect?
+>
+> [   64.924201] BUG: using smp_processor_id() in preemptible [00000000]
+> code: ondemand/1327
+> [   64.924625] caller is nr_iowait_cpu+0x1a/0x40
+> [   64.924627] Pid: 1327, comm: ondemand Not tainted 2.6.34 #2
+> [   64.924629] Call Trace:
+> [   64.924634]  [<ffffffff81288548>] debug_smp_processor_id+0xd8/0xf0
+> [   64.924637]  [<ffffffff81042c7a>] nr_iowait_cpu+0x1a/0x40
+> [   64.924641]  [<ffffffff81089f42>] update_ts_time_stats+0x72/0x90
+> [   64.924645]  [<ffffffff81012759>] ? read_tsc+0x9/0x20
+> [   64.924647]  [<ffffffff81084733>] ? ktime_get+0x63/0xe0
+> [   64.924650]  [<ffffffff8108a162>] get_cpu_idle_time_us+0x52/0x80
+> [   64.924654]  [<ffffffff8140a44c>] cpufreq_governor_dbs+0x1dc/0x430
+> [   64.924657]  [<ffffffff81407af5>] __cpufreq_governor+0xc5/0x190
+> [   64.924660]  [<ffffffff81407552>] ? lock_policy_rwsem_write+0x52/0x90
+> [   64.924662]  [<ffffffff81407d07>] __cpufreq_set_policy+0x147/0x190
+> [   64.924665]  [<ffffffff81408125>] store_scaling_governor+0xe5/0x210
+> [   64.924667]  [<ffffffff81408480>] ? handle_update+0x0/0x20
+> [   64.924672]  [<ffffffff8151dc00>] ? _raw_write_unlock_irq+0x40/0x50
+> [   64.924675]  [<ffffffff814075f7>] store+0x67/0xa0
+> [   64.924679]  [<ffffffff811a1375>] sysfs_write_file+0xe5/0x170
+> [   64.924682]  [<ffffffff8113b088>] vfs_write+0xb8/0x180
+> [   64.924685]  [<ffffffff8113b231>] sys_write+0x51/0x90
+> [   64.924689]  [<ffffffff8100b0f2>] system_call_fastpath+0x16/0x1b
+>
