@@ -1,60 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757304Ab0E3Aj0 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 29 May 2010 20:39:26 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:43541 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756912Ab0E3AjY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 29 May 2010 20:39:24 -0400
-X-Authority-Analysis: v=1.1 cv=muTmBHIsIIrvj5np50lvqqEF3x9MmSj/zDSU9q1ni6E= c=1 sm=0 a=2iQPwODrlvMA:10 a=hO-oPbc3tlwA:10 a=7U3hwN5JcxgA:10 a=Q9fys5e9bTEA:10 a=gMqfjgEr1zLu/65IO0LwxA==:17 a=meVymXHHAAAA:8 a=siATOLSJuON90bMvc2sA:9 a=VUkxu63Sq8aEJLU4XyQA:7 a=nAEgpHB0WXwWgUiqnjpT5Oc3xnYA:4 a=PUjeQqilurYA:10 a=jeBq3FmKZ4MA:10 a=gMqfjgEr1zLu/65IO0LwxA==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.89.75
-Subject: Re: [PATCH v2 3/4]: sendfile: remove flags paramter of 
- do_splice_direct()
-From: Steven Rostedt <rostedt@goodmis.org>
-Reply-To: rostedt@goodmis.org
-To: Changli Gao <xiaosuo@gmail.com>
-Cc: Miklos Szeredi <miklos@szeredi.hu>, axboe@kernel.dk,
-       Al Viro <viro@zeniv.linux.org.uk>, mszeredi@suse.cz,
-       linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       Eric Dumazet <eric.dumazet@gmail.com>,
-       Frederic Weisbecker <fweisbec@gmail.com>,
-       Ingo Molnar <mingo@redhat.com>
-In-Reply-To: <AANLkTim6tj4OKnLGW2dDIsvAmeU6b9Qsi6IZKdvlKHV2@mail.gmail.com>
-References: <1274885054-15698-1-git-send-email-xiaosuo@gmail.com>
-	 <E1OHw3d-0001yr-Ag@pomaz-ex.szeredi.hu>
-	 <AANLkTimzsHAxha3vQxeFn5pF5BmYZ8nLawSG2YU3eujZ@mail.gmail.com>
-	 <AANLkTimCXzrXcfwbCy5MZ3D40WBnGbF6Kbj6egTSjk2s@mail.gmail.com>
-	 <1275150019.22648.615.camel@gandalf.stny.rr.com>
-	 <AANLkTim6tj4OKnLGW2dDIsvAmeU6b9Qsi6IZKdvlKHV2@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-Organization: Kihon Technologies Inc.
-Date: Sat, 29 May 2010 20:39:20 -0400
-Message-ID: <1275179960.4825.1.camel@gandalf.stny.rr.com>
+	id S1757271Ab0E3AnO (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 29 May 2010 20:43:14 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:33182 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756906Ab0E3AnM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 29 May 2010 20:43:12 -0400
+Date: Sun, 30 May 2010 10:43:03 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-next@vger.kernel.org,
+       linux-kernel@vger.kernel.org, Jack Steiner <steiner@sgi.com>,
+       Lee Schermerhorn <lee.schermerhorn@hp.com>
+Subject: Re: linux-next: build failure in Linus' tree
+Message-Id: <20100530104303.15864d35.sfr@canb.auug.org.au>
+In-Reply-To: <alpine.LFD.2.00.1005271807470.11382@i5.linux-foundation.org>
+References: <20100528105719.a356ba4f.sfr@canb.auug.org.au>
+	<alpine.LFD.2.00.1005271807470.11382@i5.linux-foundation.org>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Sun__30_May_2010_10_43_03_+1000__MvVWbMZ85qqb=j_"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2010-05-30 at 07:58 +0800, Changli Gao wrote:
-> On Sun, May 30, 2010 at 12:20 AM, Steven Rostedt <rostedt@goodmis.org> wrote:
-> > [ Removed matthew@wil.cx since I'm getting errors in sending to that address ]
-> >
+--Signature=_Sun__30_May_2010_10_43_03_+1000__MvVWbMZ85qqb=j_
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> But why not use (file->f_flags & O_NONBLOCK) instead, as
-> tracing_splice_read_pipe() does?
+Hi Linus,
 
-Probably because I copied the code from something that used
-SPLICE_F_NONBLOCK ;-)
+On Thu, 27 May 2010 18:09:17 -0700 (PDT) Linus Torvalds <torvalds@linux-fou=
+ndation.org> wrote:
+>
+> On Fri, 28 May 2010, Stephen Rothwell wrote:
+> >=20
+> > Caused by commit 0ac0c0d0f837c499afd02a802f9cf52d3027fa3b ("cpusets:
+> > randomize node rotor used in cpuset_mem_spread_node()").
+> >=20
+> > This commit assumes that __node_random() exists if (MAX_NUMNODES > 1) a=
+nd
+> > uses it if CONFIG_CPUSETS is set, but only creates it for x86 ...  there
+> > is at least one other architecture where those conditions are true.
+>=20
+> Yeah, looking at that, it seems totally idiotic.
+>=20
+> Why is that "__node_random()" in x86 code at all? There is absolutely=20
+> nothing x86 about it that I can tell. And now I have an ia64 merge that=20
+> just duplicates that moronic function.
 
-But userspace passes that flag too. Although, maybe I just don't
-understand the API fully.
+So, is it reasonable for me to ask you to revert commit
+0ac0c0d0f837c499afd02a802f9cf52d3027fa3b ("cpusets: randomize node rotor
+used in cpuset_mem_spread_node()")?  Reverting it won't break ia64 (since
+their fix was to just add code that would then be unreferenced).
 
--- Steve
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
 
+--Signature=_Sun__30_May_2010_10_43_03_+1000__MvVWbMZ85qqb=j_
+Content-Type: application/pgp-signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
 
+iEYEARECAAYFAkwBtJcACgkQjjKRsyhoI8wN1QCfXy6phQG05R6wsflQPUV37afj
++BkAoIW8l469CvRK4RksvXk8JXYQS/Zl
+=Px2r
+-----END PGP SIGNATURE-----
+
+--Signature=_Sun__30_May_2010_10_43_03_+1000__MvVWbMZ85qqb=j_--
