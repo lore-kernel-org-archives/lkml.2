@@ -1,96 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754133Ab0E3NQ4 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 May 2010 09:16:56 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:63081 "EHLO mx1.redhat.com"
+	id S1754279Ab0E3Nts (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 May 2010 09:49:48 -0400
+Received: from mgw2.diku.dk ([130.225.96.92]:49169 "EHLO mgw2.diku.dk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753690Ab0E3NQz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 30 May 2010 09:16:55 -0400
-Message-ID: <4C026543.20608@redhat.com>
-Date: Sun, 30 May 2010 16:16:51 +0300
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100330 Fedora/3.0.4-1.fc12 Thunderbird/3.0.4
+	id S1753785Ab0E3Ntp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 30 May 2010 09:49:45 -0400
+Date: Sun, 30 May 2010 15:49:40 +0200 (CEST)
+From: Julia Lawall <julia@diku.dk>
+To: Karsten Keil <isdn@linux-pingi.de>, netdev@vger.kernel.org,
+       linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
+Subject: [PATCH 2/2] drivers/isdn/hardware/mISDN: Use GFP_ATOMIC when a lock
+ is held
+Message-ID: <Pine.LNX.4.64.1005301549230.15938@ask.diku.dk>
 MIME-Version: 1.0
-To: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
-CC: Marcelo Tosatti <mtosatti@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-       KVM list <kvm@vger.kernel.org>
-Subject: Re: [PATCH 2/5] KVM: MMU: split the operations of kvm_mmu_zap_page()
-References: <4C025BDC.1020304@cn.fujitsu.com> <4C025C24.9010200@cn.fujitsu.com>
-In-Reply-To: <4C025C24.9010200@cn.fujitsu.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/30/2010 03:37 PM, Xiao Guangrong wrote:
-> Using kvm_mmu_prepare_zap_page() and kvm_mmu_commit_zap_page() to
-> split kvm_mmu_zap_page() function, then we can:
->
-> - traverse hlist safely
-> - easily to gather remote tlb flush which occurs during page zapped
->
->
-> +static int kvm_mmu_prepare_zap_page(struct kvm *kvm, struct kvm_mmu_page *sp)
-> +{
-> +	int ret;
-> +
-> +	trace_kvm_mmu_zap_page(sp);
-> +	++kvm->stat.mmu_shadow_zapped;
-> +	ret = mmu_zap_unsync_children(kvm, sp);
-> +	kvm_mmu_page_unlink_children(kvm, sp);
-> +	kvm_mmu_unlink_parents(kvm, sp);
-> +	if (!sp->role.invalid&&  !sp->role.direct)
-> +		unaccount_shadowed(kvm, sp->gfn);
-> +	if (sp->unsync)
-> +		kvm_unlink_unsync_page(kvm, sp);
-> +	if (!sp->root_count)
-> +		/* Count self */
-> +		ret++;
-> +	else
-> +		kvm_reload_remote_mmus(kvm);
-> +
-> +	sp->role.invalid = 1;
-> +	list_move(&sp->link,&kvm->arch.invalid_mmu_pages);
-> +	kvm_mmu_reset_last_pte_updated(kvm);
-> +	return ret;
-> +}
-> +
-> +static void kvm_mmu_commit_zap_page(struct kvm *kvm)
-> +{
-> +	struct kvm_mmu_page *sp, *n;
-> +
-> +	if (list_empty(&kvm->arch.invalid_mmu_pages))
-> +		return;
-> +
-> +	kvm_flush_remote_tlbs(kvm);
-> +	list_for_each_entry_safe(sp, n,&kvm->arch.invalid_mmu_pages, link) {
-> +		WARN_ON(!sp->role.invalid);
-> +		if (!sp->root_count)
-> +			kvm_mmu_free_page(kvm, sp);
-> +	}
-> +}
-> +
->    
+From: Julia Lawall <julia@diku.dk>
 
-You're adding two new functions but not using them here?  Possibly in 
-the old kvm_mmu_zap_page()?
+The function inittiger is only called from nj_init_card, where a lock is held.
 
-> diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
-> index 5e5cd8d..225c3c4 100644
-> --- a/arch/x86/kvm/x86.c
-> +++ b/arch/x86/kvm/x86.c
-> @@ -5331,6 +5331,7 @@ struct  kvm *kvm_arch_create_vm(void)
->   	}
->
->   	INIT_LIST_HEAD(&kvm->arch.active_mmu_pages);
-> +	INIT_LIST_HEAD(&kvm->arch.invalid_mmu_pages);
->   	INIT_LIST_HEAD(&kvm->arch.assigned_dev_head);
->    
+The semantic patch that makes this change is as follows:
+(http://coccinelle.lip6.fr/)
 
-This is a good idea, but belongs in a separate patch?  We can use it to 
-reclaim invalid pages before allocating new ones.
+// <smpl>
+@gfp exists@
+identifier fn;
+position p;
+@@
 
--- 
-error compiling committee.c: too many arguments to function
+fn(...) {
+ ... when != spin_unlock_irqrestore
+     when any
+ GFP_KERNEL@p
+ ... when any
+}
 
+@locked@
+identifier gfp.fn;
+@@
+
+spin_lock_irqsave(...)
+...  when != spin_unlock_irqrestore
+fn(...)
+
+@depends on locked@
+position gfp.p;
+@@
+
+- GFP_KERNEL@p
++ GFP_ATOMIC
+// </smpl>
+
+Signed-off-by: Julia Lawall <julia@diku.dk>
+
+---
+ drivers/isdn/hardware/mISDN/netjet.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff -u -p a/drivers/isdn/hardware/mISDN/netjet.c b/drivers/isdn/hardware/mISDN/netjet.c
+--- a/drivers/isdn/hardware/mISDN/netjet.c
++++ b/drivers/isdn/hardware/mISDN/netjet.c
+@@ -320,12 +320,12 @@ inittiger(struct tiger_hw *card)
+ 		return -ENOMEM;
+ 	}
+ 	for (i = 0; i < 2; i++) {
+-		card->bc[i].hsbuf = kmalloc(NJ_DMA_TXSIZE, GFP_KERNEL);
++		card->bc[i].hsbuf = kmalloc(NJ_DMA_TXSIZE, GFP_ATOMIC);
+ 		if (!card->bc[i].hsbuf) {
+ 			pr_info("%s: no B%d send buffer\n", card->name, i + 1);
+ 			return -ENOMEM;
+ 		}
+-		card->bc[i].hrbuf = kmalloc(NJ_DMA_RXSIZE, GFP_KERNEL);
++		card->bc[i].hrbuf = kmalloc(NJ_DMA_RXSIZE, GFP_ATOMIC);
+ 		if (!card->bc[i].hrbuf) {
+ 			pr_info("%s: no B%d recv buffer\n", card->name, i + 1);
+ 			return -ENOMEM;
