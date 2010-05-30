@@ -1,107 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752250Ab0E3Rm7 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 May 2010 13:42:59 -0400
-Received: from smtp-01.mandic.com.br ([200.225.81.132]:39649 "EHLO
-	smtp-01.mandic.com.br" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751456Ab0E3Rm6 (ORCPT
+	id S1752541Ab0E3RxU (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 May 2010 13:53:20 -0400
+Received: from einhorn.in-berlin.de ([192.109.42.8]:58879 "EHLO
+	einhorn.in-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751456Ab0E3RxT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 30 May 2010 13:42:58 -0400
-Message-ID: <4C02A39D.3050303@cesarb.net>
-Date: Sun, 30 May 2010 14:42:53 -0300
-From: Cesar Eduardo Barros <cesarb@cesarb.net>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-2.fc12 Thunderbird/3.0.4
+	Sun, 30 May 2010 13:53:19 -0400
+X-Envelope-From: stefanr@s5r6.in-berlin.de
+Date: Sun, 30 May 2010 19:43:52 +0200 (CEST)
+From: Stefan Richter <stefanr@s5r6.in-berlin.de>
+Subject: [PATCH] firewire: core: check for 1394a compliant IRM, fix
+ inaccessibility of Sony camcorder
+To: linux1394-devel@lists.sourceforge.net
+cc: linux-kernel@vger.kernel.org, Clemens Ladisch <clemens@ladisch.de>
+In-Reply-To: <4C0284E7.3050803@s5r6.in-berlin.de>
+Message-ID: <tkrat.740b506673ccbf6d@s5r6.in-berlin.de>
+References: <AANLkTimIFRbKWYjFd56acxT2A6nnH6l3-7Q_UyORnonW@mail.gmail.com>
+ <4C017477.8000008@s5r6.in-berlin.de> <4C0284E7.3050803@s5r6.in-berlin.de>
 MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-       Russell King <linux@arm.linux.org.uk>,
-       Ralf Baechle <ralf@linux-mips.org>, David Howells <dhowells@redhat.com>,
-       Koichi Yasutake <yasutake.koichi@jp.panasonic.com>,
-       Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-       Paul Mackerras <paulus@samba.org>,
-       "David S. Miller" <davem@davemloft.net>,
-       Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-       "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
-       Arnd Bergmann <arnd@arndb.de>, Rusty Russell <rusty@rustcorp.com.au>
-Subject: Re: [PATCH] Make kunmap_atomic() harder to misuse
-References: <1275043993-26557-1-git-send-email-cesarb@cesarb.net> <20100529204256.b92b1ff6.akpm@linux-foundation.org>
-In-Reply-To: <20100529204256.b92b1ff6.akpm@linux-foundation.org>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: TEXT/PLAIN; CHARSET=us-ascii
+Content-Disposition: INLINE
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em 30-05-2010 00:42, Andrew Morton escreveu:
-> On Fri, 28 May 2010 07:53:13 -0300 Cesar Eduardo Barros<cesarb@cesarb.net>  wrote:
->> Make it much harder to misuse, by moving it to level 9 on Rusty's
->> list[4] ("The compiler/linker won't let you get it wrong"). This is done
->> by refusing to build if the pointer passed to it is convertible to a
->> struct page * but it is not a void * (verified by trying to convert it
->> to a pointer to a dummy struct).
->>
->> The real kunmap_atomic() is renamed to kunmap_atomic_notypecheck()
->> (which is what you would call in case for some strange reason calling it
->> with a pointer to a struct page is not incorrect in your code).
->>
->
-> Fair enough, that's a 99% fix.  A long time ago I made kmap_atomic()
-> return a char * (iirc) and kunmap_atomic() is passed a char*.  It
-> worked, but I ended up throwing it away.  I don't precisely remember
-> why - I think it was intrusiveness and general hassle rather than
-> anything fundamental.
+Per IEEE 1394 clause 8.4.2.3, a contender for the IRM role shall check
+whether the current IRM complies to 1394a-2000 or later.  If not force a
+compliant node (e.g. itself) to become IRM.  This was implemented in the
+older ieee1394 driver but not yet in firewire-core.
 
-I vaguely recall reading something about that on LWN a long time ago.[1]
+An older Sony camcorder (Sony DCR-TRV25) which implements 1394-1995 IRM
+but neither 1394a-2000 IRM nor BM was now found to cause an
+interoperability bug:
+  - Camcorder becomes root node when plugged in, hence gets IRM role.
+  - firewire-core successfully contends for BM role, proceeds to perform
+    gap count optimization and resets the bus.
+  - Sony camcorder ignores presence of a BM (against the spec, this is
+    a firmware bug), performs its idea of gap count optimization and
+    resets the bus.
+  - Preceding two steps are repeated endlessly, bus never settles,
+    regular I/O is practically impossible.
+http://thread.gmane.org/gmane.linux.kernel.firewire.user/3913
 
-The advantage of my __builtin_types_compatible_p approach is that it 
-does not have to change the callers at all (except in the extremly 
-unlikely case that someone actually meant to call it with a struct page 
-*, which is something I did not find when looking at the whole kernel 
-with spatch[2]).
+This is an interoperability regression from the old to the new drivers.
+Fix it indirectly by adding the 1394a IRM check.  The spec suggests
+three and a half methods to determine 1394a compliance of a remote IRM;
+we choose the method of testing the Config_ROM.Bus_Info.generation
+field.  This is data that firewire-core should have readily available at
+this point, i.e. does not require extra I/O.
 
-The disadvantage of my approach is that gcc's error message is 
-absolutely atrocious:
+Reported-by: Clemens Ladisch <clemens@ladisch.de> (missing 1394a check)
+Reported-by: H. S. (issue with Sony DCR-TRV25)
+Signed-off-by: Stefan Richter <stefanr@s5r6.in-berlin.de>
+---
 
-mm/swapfile.c: In function ‘foo’:
-mm/swapfile.c:2501: error: negative width in bit-field ‘<anonymous>’
+The patch was generated against the latest kernel sources but is
+applicable with harmless line offsets to the 2.6.32.y stable kernel
+series too.  Hence it should be applicable to Debian's 2.6.32 sources as
+well.
 
-But that is a problem with BUILD_BUG_ON, not this code.
+H. S., could you please test this?  *If* this fixes the issue, may I add
+your mail address in a Tested-By signature to the changelog as described
+at
+http://git.kernel.org/?p=linux/kernel/git/torvalds/linux-2.6.git;a=blob;f=Documentation/SubmittingPatches;h=72651f788f4e3536149ef5e7ddfbed96a8f14d2f;hb=HEAD#l412
+?
 
->> +/* Prevent people trying to call kunmap_atomic() as if it were kunmap() */
->> +struct __kunmap_atomic_dummy {};
->> +#define kunmap_atomic(addr, idx) do { \
->> +		BUILD_BUG_ON( \
->> +			__builtin_types_compatible_p(typeof(addr), struct page *)&&  \
->> +			!__builtin_types_compatible_p(typeof(addr), struct __kunmap_atomic_dummy *)); \
->> +		kunmap_atomic_notypecheck((addr), (idx)); \
->> +	} while (0)
->
-> We have a little __same_type() helper for this.  __must_be_array()
-> should be using it, too.
+ drivers/firewire/core-card.c |   24 +++++++++++++++++++-----
+ 1 file changed, 19 insertions(+), 5 deletions(-)
 
-It would be great (shortening the long lines a lot), except that in this 
-case it is a complete misnomer, which would probably confuse people 
-reading the code. If __same_type(typeof(addr), void *) worked, I would 
-not need a dummy struct; but __same_type is actually looking for 
-compatible types, not same type (perhaps for non-pointers it actually 
-means "same type"). In the first part of the condition, I am actually 
-looking for "same type", but even there __same_type(void *, struct page 
-*) would return true (which is why I need the second part).
-
-And now I am having second thoughts about the line breaks here; I should 
-have also broken between the parameters of __builtin_types_compatible_p, 
-to avoid long lines. If you want, I can resend the patch with it reindented.
-
-
-[1] Yep, there it is: https://lwn.net/Articles/111226/
-[2]
-@@
-struct page *page;
-expression E;
-@@
-* kunmap_atomic(page, E)
+Index: b/drivers/firewire/core-card.c
+===================================================================
+--- a/drivers/firewire/core-card.c
++++ b/drivers/firewire/core-card.c
+@@ -231,7 +231,7 @@ void fw_schedule_bm_work(struct fw_card 
+ static void fw_card_bm_work(struct work_struct *work)
+ {
+ 	struct fw_card *card = container_of(work, struct fw_card, work.work);
+-	struct fw_device *root_device;
++	struct fw_device *root_device, *irm_device;
+ 	struct fw_node *root_node;
+ 	unsigned long flags;
+ 	int root_id, new_root_id, irm_id, local_id;
+@@ -239,6 +239,7 @@ static void fw_card_bm_work(struct work_
+ 	bool do_reset = false;
+ 	bool root_device_is_running;
+ 	bool root_device_is_cmc;
++	bool irm_is_1394_1995_only;
+ 
+ 	spin_lock_irqsave(&card->lock, flags);
+ 
+@@ -248,12 +249,18 @@ static void fw_card_bm_work(struct work_
+ 	}
+ 
+ 	generation = card->generation;
++
+ 	root_node = card->root_node;
+ 	fw_node_get(root_node);
+ 	root_device = root_node->data;
+ 	root_device_is_running = root_device &&
+ 			atomic_read(&root_device->state) == FW_DEVICE_RUNNING;
+ 	root_device_is_cmc = root_device && root_device->cmc;
++
++	irm_device = card->irm_node->data;
++	irm_is_1394_1995_only = irm_device && irm_device->config_rom &&
++			(irm_device->config_rom[2] & 0x000000f0) == 0;
++
+ 	root_id  = root_node->node_id;
+ 	irm_id   = card->irm_node->node_id;
+ 	local_id = card->local_node->node_id;
+@@ -276,8 +283,15 @@ static void fw_card_bm_work(struct work_
+ 
+ 		if (!card->irm_node->link_on) {
+ 			new_root_id = local_id;
+-			fw_notify("IRM has link off, making local node (%02x) root.\n",
+-				  new_root_id);
++			fw_notify("%s, making local node (%02x) root.\n",
++				  "IRM has link off", new_root_id);
++			goto pick_me;
++		}
++
++		if (irm_is_1394_1995_only) {
++			new_root_id = local_id;
++			fw_notify("%s, making local node (%02x) root.\n",
++				  "IRM is not 1394a compliant", new_root_id);
+ 			goto pick_me;
+ 		}
+ 
+@@ -316,8 +330,8 @@ static void fw_card_bm_work(struct work_
+ 			 * root, and thus, IRM.
+ 			 */
+ 			new_root_id = local_id;
+-			fw_notify("BM lock failed, making local node (%02x) root.\n",
+-				  new_root_id);
++			fw_notify("%s, making local node (%02x) root.\n",
++				  "BM lock failed", new_root_id);
+ 			goto pick_me;
+ 		}
+ 	} else if (card->bm_generation != generation) {
 
 -- 
-Cesar Eduardo Barros
-cesarb@cesarb.net
-cesar.barros@gmail.com
+Stefan Richter
+-=====-==-=- -=-= ====-
+http://arcgraph.de/sr/
+
