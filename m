@@ -1,70 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752119Ab0E3L0s (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 May 2010 07:26:48 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:18437 "EHLO mx1.redhat.com"
+	id S1752337Ab0E3LeV (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 May 2010 07:34:21 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:41931 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751753Ab0E3L0r (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 30 May 2010 07:26:47 -0400
-Date: Sun, 30 May 2010 14:22:20 +0300
+	id S1751208Ab0E3LeT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 30 May 2010 07:34:19 -0400
+Date: Sun, 30 May 2010 14:29:25 +0300
 From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Jes Sorensen <Jes.Sorensen@redhat.com>
-Cc: Rusty Russell <rusty@rustcorp.com.au>, linux-kernel@vger.kernel.org,
-       virtualization@lists.linux-foundation.org, kvm@vger.kernel.org,
-       qemu-devel@nongnu.org
-Subject: Re: [PATCHv2-RFC 0/2] virtio: put last seen used index into ring
-	itself
-Message-ID: <20100530112220.GA27611@redhat.com>
-References: <cover.1274903328.git.mst@redhat.com> <4BFF9366.5090103@redhat.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: Oleg Nesterov <oleg@redhat.com>, Sridhar Samudrala <sri@us.ibm.com>,
+       netdev <netdev@vger.kernel.org>, lkml <linux-kernel@vger.kernel.org>,
+       "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Dmitri Vorobiev <dmitri.vorobiev@movial.com>,
+       Jiri Kosina <jkosina@suse.cz>, Thomas Gleixner <tglx@linutronix.de>,
+       Ingo Molnar <mingo@elte.hu>, Andi Kleen <ak@linux.intel.com>
+Subject: Re: [PATCH 2/3] workqueue: Add an API to create a singlethread
+	workqueue attached to the current task's cgroup
+Message-ID: <20100530112925.GB27611@redhat.com>
+References: <20100527091426.GA6308@redhat.com> <20100527124448.GA4241@redhat.com> <20100527131254.GB7974@redhat.com> <4BFE9ABA.6030907@kernel.org> <20100527163954.GA21710@redhat.com> <4BFEA434.6080405@kernel.org> <20100527173207.GA21880@redhat.com> <4BFEE216.2070807@kernel.org> <20100528150830.GB21880@redhat.com> <4BFFE742.2060205@kernel.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4BFF9366.5090103@redhat.com>
+In-Reply-To: <4BFFE742.2060205@kernel.org>
 User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 28, 2010 at 11:56:54AM +0200, Jes Sorensen wrote:
-> On 05/26/10 21:50, Michael S. Tsirkin wrote:
-> > Here's a rewrite of the original patch with a new layout.
-> > I haven't tested it yet so no idea how this performs, but
-> > I think this addresses the cache bounce issue raised by Avi.
-> > Posting for early flames/comments.
+On Fri, May 28, 2010 at 05:54:42PM +0200, Tejun Heo wrote:
+> Hello,
+> 
+> On 05/28/2010 05:08 PM, Michael S. Tsirkin wrote:
+> > Well, we have create_singlethread_workqueue, right?
+> > This is not very different ... is it?
 > > 
-> > Generally, the Host end of the virtio ring doesn't need to see where
-> > Guest is up to in consuming the ring.  However, to completely understand
-> > what's going on from the outside, this information must be exposed.
-> > For example, host can reduce the number of interrupts by detecting
-> > that the guest is currently handling previous buffers.
-> > 
-> > We add a feature bit so the guest can tell the host that it's writing
-> > out the current value there, if it wants to use that.
-> > 
-> > This differs from original approach in that the used index
-> > is put after avail index (they are typically written out together).
-> > To avoid cache bounces on descriptor access,
-> > and make future extensions easier, we put the ring itself at start of
-> > page, and move the control after it.
+> > Just copying structures and code from workqueue.c,
+> > adding vhost_ in front of it will definitely work:
 > 
-> Hi Michael,
+> Sure it will, but you'll probably be able to get away with much less.
 > 
-> It looks pretty good to me, however one thing I have been thinking of
-> while reading through it:
+> > there is nothing magic about the workqueue library.
+> > But this just involves cut and paste which might be best avoided.
 > 
-> Rather than storing a pointer within the ring struct, pointing into a
-> position within the same struct. How about storing a byte offset instead
-> and using a cast to get to the pointer position? That would avoid the
-> pointer dereference, which is less effective cache wise and harder for
-> the CPU to predict.
+> What I'm saying is that some magic needs to be added to workqueue and
+> if you add this single(!) exception, it will have to be backed out
+> pretty soon, so it would be better to do it properly now.
 > 
-> Not sure whether it really matters performance wise, just a thought.
+> > One final idea before we go the cut and paste way: how about
+> > 'create_workqueue_from_task' that would get a thread and have workqueue
+> > run there?
 > 
-> Cheers,
-> Jes
+> You can currently depend on that implementation detail but it's not
+> the workqueue interface is meant to do.  The single threadedness is
+> there as execution ordering and concurrency specification and it
+> doesn't (or rather won't) necessarily mean that a specific single
+> thread is bound to certain workqueue.
+> 
+> Can you please direct me to have a look at the code.  I'll be happy to
+> do the conversion for you.
 
-I think this won't work: when PUBLUSH_USED_IDX is negotiated,
-the pointer is to within the ring.
+Great, thanks! The code in question is in drivers/vhost/vhost.c
+It is used from drivers/vhost/net.c
 
--- 
-MST
+On top of this, we have patchset from Sridhar Samudrala,
+titled '0/3 Make vhost multi-threaded and associate each thread to its
+guest's cgroup':
+
+cgroups: Add an API to attach a task to current task's cgroup
+workqueue: Add an API to create a singlethread workqueue attached to the
+current task's cgroup
+vhost: make it more scalable by creating a vhost thread per device
+
+I have bounced the last three your way.
+
+
+> Thanks.
+> 
+> -- 
+> tejun
