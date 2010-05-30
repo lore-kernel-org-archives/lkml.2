@@ -1,75 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754780Ab0E3PJX (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 May 2010 11:09:23 -0400
-Received: from out01.mta.xmission.com ([166.70.13.231]:34353 "EHLO
-	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752262Ab0E3PJL (ORCPT
+	id S1754707Ab0E3PSY (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 May 2010 11:18:24 -0400
+Received: from mail-ww0-f46.google.com ([74.125.82.46]:65375 "EHLO
+	mail-ww0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752262Ab0E3PSX convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 30 May 2010 11:09:11 -0400
-To: David Miller <davem@davemloft.net>
-Cc: amwang@redhat.com, hooanon05@yahoo.co.jp, opurdila@ixiacom.com,
-       linux-kernel@vger.kernel.org
-References: <4BFB6197.5030206@redhat.com>
-	<1274770184-12611-1-git-send-email-hooanon05@yahoo.co.jp>
-	<4BFBC153.9040704@redhat.com>
-	<20100525.161040.71125311.davem@davemloft.net>
-From: ebiederm@xmission.com (Eric W. Biederman)
-Date: Sun, 30 May 2010 08:09:02 -0700
-In-Reply-To: <20100525.161040.71125311.davem@davemloft.net> (David Miller's message of "Tue\, 25 May 2010 16\:10\:40 -0700 \(PDT\)")
-Message-ID: <m1k4qlh1f5.fsf@fess.ebiederm.org>
-User-Agent: Gnus/5.11 (Gnus v5.11) Emacs/22.2 (gnu/linux)
+	Sun, 30 May 2010 11:18:23 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:content-type
+         :content-transfer-encoding;
+        b=HK/RDSL9sn/w/5VdJw3yp0DmFQ3r+IqMzSKRvfp5cdcnmB7HkPfAIqKxfwtCO6e0Fo
+         zvOlMB8S1vPul6y4N3hSSP9mhkJbhN3+S1t9iBzFllv4z2B2CiWLjCu9TQnEvo6kvE2C
+         Gq685vb6JofInYhFoof4AChR99r0Kwn6/Qx/s=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-X-XM-SPF: eid=;;;mid=;;;hst=in01.mta.xmission.com;;;ip=67.188.5.249;;;frm=ebiederm@xmission.com;;;spf=neutral
-X-SA-Exim-Connect-IP: 67.188.5.249
-X-SA-Exim-Rcpt-To: davem@davemloft.net, linux-kernel@vger.kernel.org, opurdila@ixiacom.com, hooanon05@yahoo.co.jp, amwang@redhat.com
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-DCC: XMission; sa02 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: ;David Miller <davem@davemloft.net>
-X-Spam-Relay-Country: 
-X-Spam-Report: * -1.8 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	* -3.0 BAYES_00 BODY: Bayesian spam probability is 0 to 1%
-	*      [score: 0.0000]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa02 1397; Body=1 Fuz1=1 Fuz2=1]
-	*  0.0 T_TooManySym_01 4+ unique symbols in subject
-	*  0.0 XM_SPF_Neutral SPF-Neutral
-	*  0.4 UNTRUSTED_Relay Comes from a non-trusted relay
-Subject: Re: [PATCH] proc_dointvec, write a single value
-X-SA-Exim-Version: 4.2.1 (built Thu, 25 Oct 2007 00:26:12 +0000)
-X-SA-Exim-Scanned: Yes (on in01.mta.xmission.com)
+In-Reply-To: <20100530150214.GA1565@liondog.tnic>
+References: <201005271944.09541.toralf.foerster@gmx.de>
+	<AANLkTimYeMO_fc8C5MQedwF646_au4lvEbXkBPmQSxb9@mail.gmail.com>
+	<AANLkTimKwxYxM_PExplIDK1WPTQ9e_-CHn5SnIvfjfUg@mail.gmail.com>
+	<20100530150214.GA1565@liondog.tnic>
+Date: Sun, 30 May 2010 17:18:21 +0200
+X-Google-Sender-Auth: bZGK7eDKPSm1pGXah5Q25_NzWsA
+Message-ID: <AANLkTimo-kuzlyQvraLnYBZKlGQHr23ZiMeWmTaj4Yea@mail.gmail.com>
+Subject: Re: current git kernel crashes UML system during boot
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Borislav Petkov <bp@alien8.de>, Geert Uytterhoeven <geert@linux-m68k.org>,
+       =?UTF-8?Q?Toralf_F=C3=B6rster?= <toralf.foerster@gmx.de>,
+       Borislav Petkov <borislav.petkov@amd.com>,
+       "H. Peter Anvin" <hpa@zytor.com>,
+       user-mode-linux-devel@lists.sourceforge.net,
+       linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-David Miller <davem@davemloft.net> writes:
-
-> From: Cong Wang <amwang@redhat.com>
-> Date: Tue, 25 May 2010 20:23:47 +0800
+On Sun, May 30, 2010 at 17:02, Borislav Petkov <bp@alien8.de> wrote:
+> From: Geert Uytterhoeven <geert@linux-m68k.org>
+> Date: Sun, May 30, 2010 at 01:57:05PM +0200
 >
->> On 05/25/10 14:49, J. R. Okajima wrote:
->>> The commit 00b7c3395aec3df43de5bd02a3c5a099ca51169f
->>> "sysctl: refactor integer handling proc code"
->>> modified the behaviour of writing to /proc.
->>> Before the commit, write("1\n") to /proc/sys/kernel/printk
->>> succeeded. But
->>> now it returns EINVAL.
->>>
->>> This commit supports writing a single value to a multi-valued entry.
->>>
->>> Signed-off-by: J. R. Okajima<hooanon05@yahoo.co.jp>
->> 
->> Reviewed-and-tested-by: WANG Cong <amwang@redhat.com>
+>> On Sun, May 30, 2010 at 13:39, Geert Uytterhoeven <geert@linux-m68k.org> wrote:
+>> > 2010/5/27 Toralf Förster <toralf.foerster@gmx.de>:
+>> >> I bisected it to this :
+>>
+>> > After fixing the missing/superfluous slab inclusion issues, I bisected
+>> > it further to
+>> >
+>> > commit d61931d89be506372d01a90d1755f6d0a9fafe2d
+>> > Author: Borislav Petkov <borislav.petkov@amd.com>
+>> > Date:   Fri Mar 5 17:34:46 2010 +0100
+>> >
+>> >    x86: Add optimized popcnt variants
+>> >
+>> >    Add support for the hardware version of the Hamming weight function,
+>> >    popcnt, present in CPUs which advertize it under CPUID, Function
+>> >    0x0000_0001_ECX[23]. On CPUs which don't support it, we fallback to the
+>> >    default lib/hweight.c sw versions.
+>> >
+>> >    A synthetic benchmark comparing popcnt with __sw_hweight64 showed almost
+>> >    a 3x speedup on a F10h machine.
+>> >
+>> >    Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
+>> >    LKML-Reference: <20100318112015.GC11152@aftab>
+>> >    Signed-off-by: H. Peter Anvin <hpa@zytor.com>
+>> >
+>> > I reverted that commit on top of current mainline (and fixed up the
+>> > conflicts), and now
+>> > it boots again.
+>>
+>> I tried adding
+>>
+>> config ARCH_HWEIGHT_CFLAGS
+>>         string
+>>         default "-fcall-saved-ecx -fcall-saved-edx" if !64_BIT
+>>         default "-fcall-saved-rdi -fcall-saved-rsi -fcall-saved-rdx
+>> -fcall-saved-rcx -fcall-saved-r8 -fcall-saved-r9 -fcall-saved-r10
+>> -fcall-saved-r11" if 64_BIT
+>>
+>> to arch/um/Kconfig.x86. Now it got a bit further, but it still crashes:
 >
-> Since the regression causing change came in via the net tree
-> I'll integrate this fix too, applied, thanks!
+> Ok, this is a kinda stab in the dark but from what I could decypher
+> from the include hell, one possible fix should be if UML didn't include
+> <arch/x86/include/asm/arch_hweight.h> but use the software hweight
+> version only.
+>
+> Can you guys check whether the following fixes the issue?
 
-Thanks, guys for fixing this.
+Works, thanks!
 
-I hate to see my review comments show up like this in practice.
-I had really hoped those unnecessary changes to proc would have
-been dropped from that patchset.  Oh well.
+BTW, if you want to check yourself:
 
-Eric
+    make ARCH=um defconfig
+    make ACH=um
+    ./linux
+
+If it panics because it cannot mount the root file system, it works.
+
+> diff --git a/arch/x86/include/asm/bitops.h b/arch/x86/include/asm/bitops.h
+> index 545776e..c9dad12 100644
+> --- a/arch/x86/include/asm/bitops.h
+> +++ b/arch/x86/include/asm/bitops.h
+> @@ -444,7 +444,11 @@ static inline int fls(int x)
+>
+>  #define ARCH_HAS_FAST_MULTIPLIER 1
+>
+> +#ifdef CONFIG_UML
+> +#include <asm-generic/bitops/arch_hweight.h>
+> +#else
+>  #include <asm/arch_hweight.h>
+> +#endif
+>
+>  #include <asm-generic/bitops/const_hweight.h>
+
+Gr{oetje,eeting}s,
+
+						Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+							    -- Linus Torvalds
