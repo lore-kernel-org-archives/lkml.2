@@ -1,80 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753040Ab0E3SNJ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 May 2010 14:13:09 -0400
-Received: from THUNK.ORG ([69.25.196.29]:48224 "EHLO thunker.thunk.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752679Ab0E3SNH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 30 May 2010 14:13:07 -0400
-Date: Sun, 30 May 2010 14:13:00 -0400
-From: tytso@mit.edu
-To: Peter Hallberg <hallberg68@hotmail.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: What happened to mount option "noextents"
-Message-ID: <20100530181300.GP26177@thunk.org>
-Mail-Followup-To: tytso@mit.edu, Peter Hallberg <hallberg68@hotmail.com>,
-	linux-kernel@vger.kernel.org
-References: <COL116-W195C862FD57AC7C2144804DAED0@phx.gbl>
- <20100530123248.GO26177@thunk.org>
- <COL116-W2944FC5A891172B1FECD52DAED0@phx.gbl>
+	id S1753294Ab0E3SPz (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 May 2010 14:15:55 -0400
+Received: from mail-px0-f174.google.com ([209.85.212.174]:54571 "EHLO
+	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752736Ab0E3SPy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 30 May 2010 14:15:54 -0400
+Message-ID: <4C02AB5A.5000706@vflare.org>
+Date: Sun, 30 May 2010 23:45:54 +0530
+From: Nitin Gupta <ngupta@vflare.org>
+Reply-To: ngupta@vflare.org
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-3.fc13 Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <COL116-W2944FC5A891172B1FECD52DAED0@phx.gbl>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on thunker.thunk.org); SAEximRunCond expanded to false
+To: Dan Magenheimer <dan.magenheimer@oracle.com>
+CC: linux-kernel@vger.kernel.org, linux-mm@kvack.org, jeremy@goop.org,
+       hugh.dickins@tiscali.co.uk, JBeulich@novell.com, chris.mason@oracle.com,
+       kurt.hackel@oracle.com, dave.mccracken@oracle.com, npiggin@suse.de,
+       akpm@linux-foundation.org, riel@redhat.com, avi@redhat.com,
+       pavel@ucw.cz, konrad.wilk@oracle.com
+Subject: Re: [PATCH V2 0/4] Frontswap (was Transcendent Memory): overview
+References: <20100528174020.GA28150@ca-server1.us.oracle.com>
+In-Reply-To: <20100528174020.GA28150@ca-server1.us.oracle.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, May 30, 2010 at 03:52:10PM +0200, Peter Hallberg wrote:
+On 05/28/2010 11:10 PM, Dan Magenheimer wrote:
+> [PATCH V2 0/4] Frontswap (was Transcendent Memory): overview
 > 
-> > Basically, since we couldn't think of a good use case where the mount
-> > options made sense, and ext4 has way too many mount options already, we
-> > decided to remove them.
+> Changes since V1:
+> - Rebased to 2.6.34 (no functional changes)
+> - Convert to sane types (per Al Viro comment in cleancache thread)
+> - Define some raw constants (Konrad Wilk)
+> - Performance analysis shows significant advantage for frontswap's
+>   synchronous page-at-a-time design (vs batched asynchronous speculated
+>   as an alternative design).  See http://lkml.org/lkml/2010/5/20/314
 > 
-> The ext2/3 Windows driver doesn't support extents yet so one common
-> use would be to do a mount -o remount,noextents and make a dir and
-> copy the files you want to read from Windows to it. I think mount -o
-> remount is something that is well known, if you use tune2fs you
-> would need to do research before you know if the change starts
-> working right a way or after a reboot or if it is valid only until
-> reboot or is static, with mount -o remount there is no risk that you
-> forget to set the flag back to the right value.
 
-Yeah, but.... it's a horrible interface to support.  If one or more
-directories happen to be extent-mapped, then Windows won't be able to
-read it.  And if there are other files that are created while the
-filesystem is remounted noextents, they will be created w/o extents,
-which means that fallocate won't work.  The opportunities for
-hard-to-understand failures are very large, and especially for
-clueless Ubuntu users, it's just not something where I want to see
-whining on Launchpad because they read somewhere that they could do
-it, and it doesn't quite work right.
+I think zram (http://lwn.net/Articles/388889/) is a more generic solution
+and can also achieve swap-to-hypervisor as a special case.
 
-This is more something where if someone wants to patch the kernel do
-something hacky like this, it's almost better because then it's not
-something where we have to worry about confused users wondering why
-something broke when they tried to use this interface.  Something that
-works 80% of the time can be far worse than something that doesn't
-work at all.
+zram is a generic in-memory compressed block device. To get frontswap
+functionality, such a device (/dev/zram0) can be exposed to a VM as
+a 'raw disk'. Such a disk can be used for _any_ purpose by the guest,
+including use as a swap disk.
 
-The real right answer is to fix the Windows driver to support extents.
-Or create a separate filesystem just for moving files from Linux to
-Windows --- or just write the files directly onto the Windows
-partition.
+This method even works for Windows guests. Please see:
+http://www.vflare.org/2010/05/compressed-ram-disk-for-windows-virtual.html
+
+Here /dev/zram0 of size 2GB was created and exposed to Windows VM as a
+'raw disk' (using VirtualBox). This disk was detected in the guest and NTFS
+filesystem was created on it (Windows cannot swap directly to a partition;
+it always uses swap file(s)). Then Windows was configured to swap over a
+file in this drive.
+
+Obviously, the same can be done with Linux guests. Thus, zram is useful
+in both native and virtualized environments with different use cases.
 
 
-> Also when I tryed tune2fs as you said, I got the following error message:
-> 
-> peter@sanna:~$ sudo tune2fs -O ^extents /dev/mapper/sannavg-home
-> tune2fs 1.41.4 (27-Jan-2009)
-> Clearing filesystem feature 'extent' not supported.
-> peter@sanna:~$ 
-
-Yes, right now you can only enable extents; it's not something you
-can disable.
-
-					- Ted
+Thanks,
+Nitin
