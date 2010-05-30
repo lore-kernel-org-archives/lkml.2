@@ -1,65 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753294Ab0E3SPz (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 May 2010 14:15:55 -0400
-Received: from mail-px0-f174.google.com ([209.85.212.174]:54571 "EHLO
-	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752736Ab0E3SPy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 30 May 2010 14:15:54 -0400
-Message-ID: <4C02AB5A.5000706@vflare.org>
-Date: Sun, 30 May 2010 23:45:54 +0530
-From: Nitin Gupta <ngupta@vflare.org>
-Reply-To: ngupta@vflare.org
+	id S1753205Ab0E3SkI (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 May 2010 14:40:08 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:54606 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752206Ab0E3SkH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 30 May 2010 14:40:07 -0400
+Message-ID: <4C02B020.2040103@zytor.com>
+Date: Sun, 30 May 2010 11:36:16 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
 User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-3.fc13 Thunderbird/3.0.4
 MIME-Version: 1.0
-To: Dan Magenheimer <dan.magenheimer@oracle.com>
-CC: linux-kernel@vger.kernel.org, linux-mm@kvack.org, jeremy@goop.org,
-       hugh.dickins@tiscali.co.uk, JBeulich@novell.com, chris.mason@oracle.com,
-       kurt.hackel@oracle.com, dave.mccracken@oracle.com, npiggin@suse.de,
-       akpm@linux-foundation.org, riel@redhat.com, avi@redhat.com,
-       pavel@ucw.cz, konrad.wilk@oracle.com
-Subject: Re: [PATCH V2 0/4] Frontswap (was Transcendent Memory): overview
-References: <20100528174020.GA28150@ca-server1.us.oracle.com>
-In-Reply-To: <20100528174020.GA28150@ca-server1.us.oracle.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Borislav Petkov <bp@alien8.de>, Geert Uytterhoeven <geert@linux-m68k.org>,
+       Borislav Petkov <borislav.petkov@amd.com>,
+       =?UTF-8?B?VG9yYWxmIEbDtnJzdGVy?= <toralf.foerster@gmx.de>,
+       user-mode-linux-devel@lists.sourceforge.net,
+       linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] x86, hweight: Fix UML boot crash
+References: <201005271944.09541.toralf.foerster@gmx.de> <AANLkTimKwxYxM_PExplIDK1WPTQ9e_-CHn5SnIvfjfUg@mail.gmail.com> <20100530150214.GA1565@liondog.tnic> <201005301728.25976.toralf.foerster@gmx.de> <20100530170346.GC1565@liondog.tnic>
+In-Reply-To: <20100530170346.GC1565@liondog.tnic>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/28/2010 11:10 PM, Dan Magenheimer wrote:
-> [PATCH V2 0/4] Frontswap (was Transcendent Memory): overview
+On 05/30/2010 10:03 AM, Borislav Petkov wrote:
+> Obviously UML cannot stomach callee reg-saving trickery
+> introduced with d61931d89be506372d01a90d1755f6d0a9fafe2d (x86:
+> Add optimized popcnt variants) and oopses during boot:
+> http://marc.info/?l=linux-kernel&m=127522065202435&w=2
 > 
-> Changes since V1:
-> - Rebased to 2.6.34 (no functional changes)
-> - Convert to sane types (per Al Viro comment in cleancache thread)
-> - Define some raw constants (Konrad Wilk)
-> - Performance analysis shows significant advantage for frontswap's
->   synchronous page-at-a-time design (vs batched asynchronous speculated
->   as an alternative design).  See http://lkml.org/lkml/2010/5/20/314
-> 
+> Go ahead and fall back to the software hweight* routines on UML.
 
-I think zram (http://lwn.net/Articles/388889/) is a more generic solution
-and can also achieve swap-to-hypervisor as a special case.
+I actually don't understand why UML can't stomach that... it would work
+exactly the same in userspace as in kernel space.  The only thing that I
+can think of is if UML overrides the CFLAGS including the per-file
+CFLAGS, but that would seem to cause all kinds of other issues.
 
-zram is a generic in-memory compressed block device. To get frontswap
-functionality, such a device (/dev/zram0) can be exposed to a VM as
-a 'raw disk'. Such a disk can be used for _any_ purpose by the guest,
-including use as a swap disk.
+I would also be a lot happier if this was handled in
+<asm/arch_hweight.h> than in <asm/bitops.h>.  Finally, if UML really
+can't handle this, then ARCH_HWEIGHT_CFLAGS should be disabled on UML.
 
-This method even works for Windows guests. Please see:
-http://www.vflare.org/2010/05/compressed-ram-disk-for-windows-virtual.html
+This bothers me, because it really feels like something is fundamentally
+broken in UML tryingto track the upstream architecture, and this is just
+a bandage.
 
-Here /dev/zram0 of size 2GB was created and exposed to Windows VM as a
-'raw disk' (using VirtualBox). This disk was detected in the guest and NTFS
-filesystem was created on it (Windows cannot swap directly to a partition;
-it always uses swap file(s)). Then Windows was configured to swap over a
-file in this drive.
+	-hpa
 
-Obviously, the same can be done with Linux guests. Thus, zram is useful
-in both native and virtualized environments with different use cases.
+-- 
+H. Peter Anvin, Intel Open Source Technology Center
+I work for Intel.  I don't speak on their behalf.
 
-
-Thanks,
-Nitin
