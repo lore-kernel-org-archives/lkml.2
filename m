@@ -1,81 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755543Ab0EaQ62 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 May 2010 12:58:28 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:50109 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754065Ab0EaQ60 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 May 2010 12:58:26 -0400
-Date: Mon, 31 May 2010 18:56:58 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
-       David Rientjes <rientjes@google.com>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-       Nick Piggin <npiggin@suse.de>
-Subject: Re: [PATCH 4/5] oom: the points calculation of child processes
-	must use find_lock_task_mm() too
-Message-ID: <20100531165658.GC9991@redhat.com>
-References: <20100531182526.1843.A69D9226@jp.fujitsu.com> <20100531183636.184C.A69D9226@jp.fujitsu.com>
+	id S1755926Ab0EaQ6k (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 May 2010 12:58:40 -0400
+Received: from einhorn.in-berlin.de ([192.109.42.8]:37849 "EHLO
+	einhorn.in-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755642Ab0EaQ6i (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 31 May 2010 12:58:38 -0400
+X-Envelope-From: stefanr@s5r6.in-berlin.de
+Message-ID: <4C03EAAA.6050603@s5r6.in-berlin.de>
+Date: Mon, 31 May 2010 18:58:18 +0200
+From: Stefan Richter <stefanr@s5r6.in-berlin.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.8.1.23) Gecko/20100415 SeaMonkey/1.1.18
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100531183636.184C.A69D9226@jp.fujitsu.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: Julia Lawall <julia@diku.dk>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+       linux1394-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
+       kernel-janitors@vger.kernel.org
+Subject: Re: [PATCH 12/27] drivers/ieee1394: Use memdup_user
+References: <Pine.LNX.4.64.1005221021460.13021@ask.diku.dk>
+In-Reply-To: <Pine.LNX.4.64.1005221021460.13021@ask.diku.dk>
+X-Enigmail-Version: 0.96.0
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/31, KOSAKI Motohiro wrote:
->
-> --- a/mm/oom_kill.c
-> +++ b/mm/oom_kill.c
-> @@ -87,6 +87,7 @@ static struct task_struct *find_lock_task_mm(struct task_struct *p)
->  unsigned long badness(struct task_struct *p, unsigned long uptime)
->  {
->  	unsigned long points, cpu_time, run_time;
-> +	struct task_struct *c;
->  	struct task_struct *child;
->  	int oom_adj = p->signal->oom_adj;
->  	struct task_cputime task_time;
-> @@ -124,11 +125,13 @@ unsigned long badness(struct task_struct *p, unsigned long uptime)
->  	 * child is eating the vast majority of memory, adding only half
->  	 * to the parents will make the child our kill candidate of choice.
->  	 */
-> -	list_for_each_entry(child, &p->children, sibling) {
-> -		task_lock(child);
-> -		if (child->mm != p->mm && child->mm)
-> -			points += child->mm->total_vm/2 + 1;
-> -		task_unlock(child);
-> +	list_for_each_entry(c, &p->children, sibling) {
-> +		child = find_lock_task_mm(c);
-> +		if (child) {
-> +			if (child->mm != p->mm)
-> +				points += child->mm->total_vm/2 + 1;
-> +			task_unlock(child);
-> +		}
+Julia Lawall wrote on 2010-05-22:
+...
+> --- a/drivers/ieee1394/video1394.c
+> +++ b/drivers/ieee1394/video1394.c
+> @@ -1045,14 +1045,9 @@ static long video1394_ioctl(struct file *file,
+>  			if (get_user(qv, &p->packet_sizes))
+>  				return -EFAULT;
+>  
+> -			psizes = kmalloc(buf_size, GFP_KERNEL);
+> -			if (!psizes)
+> -				return -ENOMEM;
+> -
+> -			if (copy_from_user(psizes, qv, buf_size)) {
+> -				kfree(psizes);
+> -				return -EFAULT;
+> -			}
+> +			psizes = memdup_user(qv, buf_size);
+> +			if (IS_ERR(psizes))
+> +				return PTR_ERR(psizes);
+>  		}
+>  
+>  		spin_lock_irqsave(&d->lock,flags);
 
-Acked-by: Oleg Nesterov <oleg@redhat.com>
-
-
-
-
-And, I think we need another patch on top of this one. Note that
-this list_for_each_entry(p->children) can only see the tasks forked
-by p, it can't see other children forked by its sub-threads.
-
-IOW, we need
-
-	do {
-		list_for_each_entry(c, &t->children, sibling) {
-			...
-		}
-	} while_each_thread(p, t);
-
-Probably the same for oom_kill_process().
-
-What do you think?
-
-Oleg.
-
+Committed to linux1394-2.6.git now, thanks.  (Because akpm said that it
+is worth it regardless of video1394 being at its end of life.)
+-- 
+Stefan Richter
+-=====-==-=- -=-= =====
+http://arcgraph.de/sr/
