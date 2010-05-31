@@ -1,48 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756503Ab0EaJaT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 May 2010 05:30:19 -0400
-Received: from one.firstfloor.org ([213.235.205.2]:49319 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756071Ab0EaJaR (ORCPT
+	id S1756668Ab0EaJam (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 May 2010 05:30:42 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:33553 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756627Ab0EaJal (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 May 2010 05:30:17 -0400
-Date: Mon, 31 May 2010 11:30:09 +0200
-From: Andi Kleen <andi@firstfloor.org>
-To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-       Andi Kleen <andi@firstfloor.org>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Wu Fengguang <fengguang.wu@intel.com>, Mel Gorman <mel@csn.ul.ie>
-Subject: Re: [PATCH 0/8] HWPOISON for hugepage (v6)
-Message-ID: <20100531093009.GA10766@basil.fritz.box>
-References: <1275006562-18946-1-git-send-email-n-horiguchi@ah.jp.nec.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1275006562-18946-1-git-send-email-n-horiguchi@ah.jp.nec.com>
-User-Agent: Mutt/1.5.17 (2007-11-01)
+	Mon, 31 May 2010 05:30:41 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:content-type:date:message-id:mime-version
+         :x-mailer:content-transfer-encoding;
+        b=xsIp3xIrKO/Sx6GrTWB8RKK/aI3aX+djItrAQast1zhYlszeoaFE/lmkgOKbh8zlgs
+         DhVaSELmnkfMJ/8F/Kd8tjM2Kj1W3tsLDg5pJt9JqupGSmWS6EL9SbOkfu8b5YKbLhRG
+         uuK6Tv7m/0E3czWjz9lNun9XkNmYZ7v8a/KIY=
+Subject: [PATCH] mfd-core: properly handle platform_device_add_resources
+	fail in mfd_add_device
+From: Axel Lin <axel.lin@gmail.com>
+To: linux-kernel <linux-kernel@vger.kernel.org>
+Cc: Samuel Ortiz <sameo@linux.intel.com>,
+       Mark Brown <broonie@opensource.wolfsonmicro.com>,
+       Ian Molton <spyro@f2s.com>, Dmitry Baryshkov <dbaryshkov@gmail.com>
+Content-Type: text/plain
+Date: Mon, 31 May 2010 17:30:55 +0800
+Message-Id: <1275298255.23779.2.camel@mola>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.22.3.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 28, 2010 at 09:29:14AM +0900, Naoya Horiguchi wrote:
-> Hi,
-> 
-> Here is a "HWPOISON for hugepage" patchset which reflects
-> Mel's comments on hugepage rmapping code.
-> Only patch 1/8 and 2/8 are changed since the previous post.
-> 
-> Mel, could you please restart reviewing and testing?
+platform_device_add_resources may fail, thus add error checking for it.
 
-Thanks everyone, I merged this patch series in the hwpoison
-tree now, aimed for 2.6.36. It should appear in linux-next
-shortly.
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+---
+ drivers/mfd/mfd-core.c |    4 +++-
+ 1 files changed, 3 insertions(+), 1 deletions(-)
 
-Question is how to proceed now: the next steps would
-be early kill support and soft offline/migration support for
-hugetlb too. Horiguchi-san, is this something you're interested
-in working on?
+diff --git a/drivers/mfd/mfd-core.c b/drivers/mfd/mfd-core.c
+index 7dd76bc..1823a57 100644
+--- a/drivers/mfd/mfd-core.c
++++ b/drivers/mfd/mfd-core.c
+@@ -70,7 +70,9 @@ static int mfd_add_device(struct device *parent, int id,
+ 			goto fail_res;
+ 	}
+ 
+-	platform_device_add_resources(pdev, res, cell->num_resources);
++	ret = platform_device_add_resources(pdev, res, cell->num_resources);
++	if (ret)
++		goto fail_res;
+ 
+ 	ret = platform_device_add(pdev);
+ 	if (ret)
+-- 
+1.5.4.3
 
--Andi
+
 
