@@ -1,146 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756198Ab0EaOvY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 May 2010 10:51:24 -0400
-Received: from mondschein.lichtvoll.de ([194.150.191.11]:35603 "EHLO
-	mail.lichtvoll.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754255Ab0EaOvX (ORCPT
+	id S1756380Ab0EaOzl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 May 2010 10:55:41 -0400
+Received: from mail-ww0-f46.google.com ([74.125.82.46]:36375 "EHLO
+	mail-ww0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754783Ab0EaOzk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 May 2010 10:51:23 -0400
-X-Greylist: delayed 502 seconds by postgrey-1.27 at vger.kernel.org; Mon, 31 May 2010 10:51:22 EDT
-From: Martin Steigerwald <Martin@lichtvoll.de>
-To: stable@kernel.org
-Subject: [stable] please consider drm radeon kms agp release
-Date: Mon, 31 May 2010 16:42:41 +0200
-User-Agent: KMail/1.13.3 (Linux/2.6.34-tp42-toi-3.1-radeon-kms-agp-suspend-04981-gb9a071a-dirty; KDE/4.4.3; i686; ; )
-Cc: =?iso-8859-1?q?J=E9r=F4me_Glisse?= <glisse@freedesktop.org>,
-       Alex Deucher <alexdeucher@gmail.com>, linux-kernel@vger.kernel.org
+	Mon, 31 May 2010 10:55:40 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=kJK274kzNIHcfOCEC6B6j5OspjXbSybUph0TbC+FeM01sV84u2wLjk6gDyQYszsHBM
+         IyGS628YjaXZOIlP2KQhpvX/WBAj066NOg+4KYJV4I33CdbqE4guEZmo2O7NXCZStq+q
+         jTgZNnfb9TTFXAi46sDsxNflgP5h8wHv2gCVU=
+Date: Mon, 31 May 2010 16:48:23 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>,
+       Steven Rostedt <rostedt@goodmis.org>
+Subject: Re: [PATCH] tracing: Add task activate/deactivate tracepoints
+Message-ID: <20100531144820.GB5157@nowhere>
+References: <1275056762-13130-1-git-send-regression-fweisbec@gmail.com> <1275059710.27810.9624.camel@twins> <20100531080049.GA435@elte.hu> <1275293544.27810.21478.camel@twins> <1275296099.27810.21622.camel@twins> <20100531143622.GA5157@nowhere> <1275317013.27810.23019.camel@twins>
 MIME-Version: 1.0
-Content-Type: multipart/signed;
-  boundary="nextPart2061228.qr21Lqbp1g";
-  protocol="application/pgp-signature";
-  micalg=pgp-sha1
-Content-Transfer-Encoding: 7bit
-Message-Id: <201005311642.49843.Martin@lichtvoll.de>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1275317013.27810.23019.camel@twins>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---nextPart2061228.qr21Lqbp1g
-Content-Type: multipart/mixed;
-  boundary="Boundary-01=_ir8AM+mPPZ15Ogz"
-Content-Transfer-Encoding: 7bit
+On Mon, May 31, 2010 at 04:43:33PM +0200, Peter Zijlstra wrote:
+> On Mon, 2010-05-31 at 16:36 +0200, Frederic Weisbecker wrote:
+> > On Mon, May 31, 2010 at 10:54:59AM +0200, Peter Zijlstra wrote:
+> > > On Mon, 2010-05-31 at 10:12 +0200, Peter Zijlstra wrote:
+> > > > On Mon, 2010-05-31 at 10:00 +0200, Ingo Molnar wrote:
+> > > > > > 
+> > > > > > NAK, aside from a few corner cases wakeup and sleep are the important 
+> > > > > > points.
+> > > > > > 
+> > > > > > The activate and deactivate functions are implementation details.
+> > > > > 
+> > > > > Frederic, can you show us a concrete example of where we dont know what is 
+> > > > > going on due to inadequate instrumentation? Can we fix that be extending the 
+> > > > > existing tracepoints? 
+> > > > 
+> > > > Right, so a few of those corner cases I mentioned above are things like
+> > > > re-nice, PI-boosts etc.. Those use deactivate, modify task-state,
+> > > > activate cycles. so if you want to see those, we can add an explicit
+> > > > tracepoint for those actions.
+> > > > 
+> > > > An explicit nice/PI-boost tracepoint is much clearer than trying to
+> > > > figure out wth the deactivate/activate cycle was for.
+> > > 
+> > > Another advantage of explicit tracepoints is that you'd see them even
+> > > for non-running tasks, because we only do the deactivate/activate thingy
+> > > for runnable tasks.
+> > 
+> > 
+> > Yeah. So I agree with you that activate/deactivate are too much
+> > implementation related, they even don't give much sense as we
+> > don't know the cause of the event, could be a simple renice, or
+> > could be a sleep.
+> > 
+> > So agreed, this sucks.
+> > 
+> > For the corner cases like re-nice and PI-boost or so, we can indeed plug
+> > some higher level tracepoints there.
+> > 
+> > But there is one more important problem these tracepoints were solving and
+> > that still need something:
+> > 
+> > We don't know when a task goes to sleep. We have two wait tracepoints,
+> > sched_wait_task() to wait for a task to unschedule, and sched_process_wait()
+> > that is a hooks for waitid and wait4 syscalls. So we are missing all
+> > the event waiting from inside the kernel. But even with that, wait and sleep
+> > doesn't mean the same thing. Sleeping don't always involve using the waiting
+> > API.
+> > 
+> >   I think we need such tracepoint:
+> > 
+> > diff --git a/kernel/sched.c b/kernel/sched.c
+> > index 8c0b90d..5f67c04 100644
+> > --- a/kernel/sched.c
+> > +++ b/kernel/sched.c
+> > @@ -3628,8 +3628,10 @@ need_resched_nonpreemptible:
+> >  	if (prev->state && !(preempt_count() & PREEMPT_ACTIVE)) {
+> >  		if (unlikely(signal_pending_state(prev->state, prev)))
+> >  			prev->state = TASK_RUNNING;
+> > -		else
+> > +		else {
+> > +			trace_sched_task_sleep(prev);
+> >  			deactivate_task(rq, prev, DEQUEUE_SLEEP);
+> > +		}
+> >  		switch_count = &prev->nvcsw;
+> >  	}
+> 
+> > And concerning the task waking up, if it is not migrated, it means it stays
+> > on its orig cpu. This is something that can be dealt from the post-processing.
+> 
+> Hurm,.. I was thinking trace_sched_switch(.prev_state != TASK_RUNNING)
+> would be enough, but its not for preemptible kernels.
+> 
+> Should we maybe cure this and rely on sched_switch() to detect sleeps?
+> It seems natural since only the current task can go to sleep, its just
+> that the whole preempt state gets a bit iffy.
 
 
---Boundary-01=_ir8AM+mPPZ15Ogz
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: quoted-printable
-Content-Disposition: inline
-
-
-Hi Greg, hi stable kernel team,
-
-Please consider the attached patch from J=E9r=F4me Glisse. It fixes drm rad=
-eon=20
-KMS after coming out from a snapshot cycle [1] - no matter whether I use=20
-userspace software suspend or TuxOnIce.
-
-Verified on my notebook ThinkPad T42 and by cedric, the reporter of above=20
-bug.
+Sounds good, we have the preempt depth in the common tracepoint headers, I'll
+try to rebuild a reliable cpu runqueue from post-processing and see if all that
+is enough.
 
 Thanks.
 
-[1] https://bugzilla.kernel.org/show_bug.cgi?id=3D15969#c14
-
-Ciao,
-=2D-=20
-Martin 'Helios' Steigerwald - http://www.Lichtvoll.de
-GPG: 03B0 0D6C 0040 0710 4AFA  B82F 991B EAAC A599 84C7
-
---Boundary-01=_ir8AM+mPPZ15Ogz
-Content-Type: text/x-patch;
-  charset="UTF-8";
-  name="0001-drm-radeon-kms-release-AGP-bridge-at-suspend.patch"
-Content-Transfer-Encoding: quoted-printable
-Content-Disposition: attachment;
-	filename="0001-drm-radeon-kms-release-AGP-bridge-at-suspend.patch"
-
-=46rom bc19ff2e0bff31523af06bc089b71b4f46478837 Mon Sep 17 00:00:00 2001
-=46rom: Jerome Glisse <jglisse@redhat.com>
-Date: Fri, 21 May 2010 14:19:07 +0200
-Subject: [PATCH] drm/radeon/kms: release AGP bridge at suspend
-
-I think it's good to release the AGP bridge at suspend
-and reacquire it at resume. Also fix :
-https://bugzilla.kernel.org/show_bug.cgi?id=3D15969
-
-Signed-off-by: Jerome Glisse <jglisse@redhat.com>
-=2D--
- drivers/gpu/drm/radeon/radeon.h        |    1 +
- drivers/gpu/drm/radeon/radeon_agp.c    |    5 +++++
- drivers/gpu/drm/radeon/radeon_device.c |    2 ++
- 3 files changed, 8 insertions(+), 0 deletions(-)
-
-diff --git a/drivers/gpu/drm/radeon/radeon.h b/drivers/gpu/drm/radeon/radeo=
-n.h
-index 034218c..4c7204a 100644
-=2D-- a/drivers/gpu/drm/radeon/radeon.h
-+++ b/drivers/gpu/drm/radeon/radeon.h
-@@ -566,6 +566,7 @@ typedef int (*radeon_packet3_check_t)(struct radeon_cs_=
-parser *p,
-  */
- int radeon_agp_init(struct radeon_device *rdev);
- void radeon_agp_resume(struct radeon_device *rdev);
-+void radeon_agp_suspend(struct radeon_device *rdev);
- void radeon_agp_fini(struct radeon_device *rdev);
-=20
-=20
-diff --git a/drivers/gpu/drm/radeon/radeon_agp.c b/drivers/gpu/drm/radeon/r=
-adeon_agp.c
-index 28e473f..f40dfb7 100644
-=2D-- a/drivers/gpu/drm/radeon/radeon_agp.c
-+++ b/drivers/gpu/drm/radeon/radeon_agp.c
-@@ -270,3 +270,8 @@ void radeon_agp_fini(struct radeon_device *rdev)
- 	}
- #endif
- }
-+
-+void radeon_agp_suspend(struct radeon_device *rdev)
-+{
-+	radeon_agp_fini(rdev);
-+}
-diff --git a/drivers/gpu/drm/radeon/radeon_device.c b/drivers/gpu/drm/radeo=
-n/radeon_device.c
-index 7b629e3..ed6a724 100644
-=2D-- a/drivers/gpu/drm/radeon/radeon_device.c
-+++ b/drivers/gpu/drm/radeon/radeon_device.c
-@@ -748,6 +748,8 @@ int radeon_suspend_kms(struct drm_device *dev, pm_messa=
-ge_t state)
- 	/* evict remaining vram memory */
- 	radeon_bo_evict_vram(rdev);
-=20
-+	radeon_agp_suspend(rdev);
-+
- 	pci_save_state(dev->pdev);
- 	if (state.event =3D=3D PM_EVENT_SUSPEND) {
- 		/* Shut down the device */
-=2D-=20
-1.7.0.1
-
-
---Boundary-01=_ir8AM+mPPZ15Ogz--
-
---nextPart2061228.qr21Lqbp1g
-Content-Type: application/pgp-signature; name=signature.asc 
-Content-Description: This is a digitally signed message part.
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iEYEABECAAYFAkwDyuIACgkQmRvqrKWZhMdX/wCeKA+iL4tdqoalBVa5rjRUTPJL
-BqYAnRG5jhoIuMlYhMwB7BlTYgZ0MqxQ
-=BdHr
------END PGP SIGNATURE-----
-
---nextPart2061228.qr21Lqbp1g--
