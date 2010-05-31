@@ -1,81 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756817Ab0EaJrI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 May 2010 05:47:08 -0400
-Received: from krynn.se.axis.com ([193.13.178.10]:42813 "EHLO
-	krynn.se.axis.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756682Ab0EaJrG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 May 2010 05:47:06 -0400
-Date: Mon, 31 May 2010 11:46:52 +0200
-From: Jesper Nilsson <jesper.nilsson@axis.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       mikael.starvik@axis.com, jesper.nilsson@axis.com
-Subject: Re: Linux 2.6.35-rc1
-Message-ID: <20100531094652.GI5051@axis.com>
-References: <alpine.LFD.2.00.1005301356350.3986@i5.linux-foundation.org>
+	id S1756805Ab0EaJtV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 May 2010 05:49:21 -0400
+Received: from hera.kernel.org ([140.211.167.34]:49470 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756682Ab0EaJtU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 31 May 2010 05:49:20 -0400
+Message-ID: <4C0385D8.2090107@kernel.org>
+Date: Mon, 31 May 2010 11:48:08 +0200
+From: Tejun Heo <tj@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.1.9) Gecko/20100317 Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LFD.2.00.1005301356350.3986@i5.linux-foundation.org>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: Peter Zijlstra <peterz@infradead.org>
+CC: mingo@elte.hu, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/4] sched: consult online mask instead of active in select_fallback_rq()
+References: <1273747705-7829-1-git-send-email-tj@kernel.org>	 <1273747705-7829-2-git-send-email-tj@kernel.org> <1275292864.27810.21440.camel@twins>
+In-Reply-To: <1275292864.27810.21440.camel@twins>
+X-Enigmail-Version: 1.0.1
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Mon, 31 May 2010 09:48:10 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, May 30, 2010 at 11:11:09PM +0200, Linus Torvalds wrote:
-> It's been two weeks, and so the merge window is closed. There may be a few 
-> trees I haven't pulled yet, but the bulk should all be there. And please, 
-> let's try to make the merge window mean something this time - don't send 
-> me any new pull request unless they are for real regressions or for major 
-> bugs, ok?
+Hello,
 
-I'm missing the CRIS tree changes, however, it seems to be me that
-screwed up here, my new computer was misconfigured for outgoing mail, so the
-request probably never reached you. Sorry about that.
+On 05/31/2010 10:01 AM, Peter Zijlstra wrote:
+> On Thu, 2010-05-13 at 12:48 +0200, Tejun Heo wrote:
+>> If called after sched_class chooses a CPU which isn't in a task's
+>> cpus_allowed mask, select_fallback_rq() can end up migrating a task
+>> which is bound to an !active but online cpu to an active cpu.  This is
+>> dangerous because active is cleared before CPU_DOWN_PREPARE is called
+>> and subsystems expect affinities of kthreads and other tasks to be
+>> maintained till their CPU_DOWN_PREPARE callbacks are complete.
+> 
+> So 6ad4c188 (sched: Fix balance vs hotplug race) moved it that early
+> because it was done too late.
+> 
+> Could we not instead do it explicitly after CPU_DOWN_PREPARE? It would
+> of course mean removing the partition_sched_domain() and
+> generate_sched_domains() calls from these callbacks and doing it
+> explicitly.
+> 
+> So we need to do it before we take the CPU down, but I think we can do
+> it after DOWN_PREPARE.
 
-Of the changes, the "mask_irq" one is still a candidate since it
-fixes a compile error.
+Hmm.... yeah, I suppose that would be cleaner.  Maybe doing it from
+the lowest priority DOWN_PREPARE notifier would do the trick.  I'll
+give it a shot.
 
+>> Consult cpu_online_mask instead.
+>>
+>> This problem is triggered by cmwq.  During CPU_DOWN_PREPARE, hotplug
+>> callback creates the trustee kthread and kthread_bind()s it to the
+>> target cpu, and the trustee is expected to run on that cpu.
+> 
+> It doesn't explain wth a trustee kthread is, which pretty much renders
+> the whole paragraph useless.
 
-The following changes since commit 1d16b0f2f3edf05f12a9e3960588e0d4854157bb:
-  Linus Torvalds (1):
-        Merge branch 'for-linus' of git://git.kernel.org/.../lrg/voltage-2.6
+Come on.  The paragraph makes perfect sense even if you remove the
+words "trustee" completely.  It's saying that it's creating a kthread
+CPU_DOWN_PREPARE and binds it to the cpu and expects it to stay there.
+If you're not completely comfortable with the use of "trustee" without
+proper introduction, I'll be happy to remove it, but limited amount of
+forward reference is helpful when searching the history backwards.
 
-are available in the git repository at:
+Thanks.
 
-  git://www.jni.nu/cris.git for-linus
-
-Arnd Bergmann (1):
-      cris: push down BKL into some device drivers
-
-Jesper Nilsson (6):
-      CRISv32: Remove duplicated Kconfig items.
-      CRISv32: Fix RS485 port 4 CD Kconfig item.
-      CRISv10: Trivial fixes.
-      CRISv10: Whitespace fixes for hw_settings.S
-      CRIS: Simplify param.h by simply including <asm-generic/param.h>
-      CRIS: Don't use mask_irq as symbol name
-
- arch/cris/arch-v10/drivers/ds1302.c   |   20 +++++++++++++++-----
- arch/cris/arch-v10/drivers/pcf8563.c  |   19 +++++++++++++++----
- arch/cris/arch-v10/kernel/irq.c       |    8 ++++----
- arch/cris/arch-v10/lib/dmacopy.c      |   15 +++++++--------
- arch/cris/arch-v10/lib/hw_settings.S  |   14 ++++++--------
- arch/cris/arch-v32/drivers/Kconfig    |   16 +---------------
- arch/cris/arch-v32/drivers/i2c.c      |   22 ++++++++++++++--------
- arch/cris/arch-v32/drivers/pcf8563.c  |   21 ++++++++++++++++-----
- arch/cris/arch-v32/kernel/crisksyms.c |    4 ++--
- arch/cris/arch-v32/kernel/irq.c       |   14 ++++++--------
- arch/cris/arch-v32/kernel/smp.c       |    4 ++--
- arch/cris/include/arch-v10/arch/irq.h |    9 +++++----
- arch/cris/include/arch-v32/arch/irq.h |    4 ++--
- arch/cris/include/asm/param.h         |   17 ++---------------
- 14 files changed, 97 insertions(+), 90 deletions(-)
-
-> 			Linus
-
-/^JN - Jesper Nilsson
 -- 
-               Jesper Nilsson -- jesper.nilsson@axis.com
+tejun
