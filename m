@@ -1,82 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755079Ab0EaNva (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 May 2010 09:51:30 -0400
-Received: from tx2ehsobe003.messaging.microsoft.com ([65.55.88.13]:10279 "EHLO
-	TX2EHSOBE006.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754255Ab0EaNv2 (ORCPT
+	id S1755332Ab0EaNwl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 May 2010 09:52:41 -0400
+Received: from mail-pz0-f193.google.com ([209.85.222.193]:62013 "EHLO
+	mail-pz0-f193.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754928Ab0EaNwj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 May 2010 09:51:28 -0400
-X-SpamScore: 1
-X-BigFish: VPS1(zz1432P98dNzz1202hzz3198r327alz32i2a8h43h62h)
-X-Spam-TCS-SCL: 1:0
-X-WSS-ID: 0L3AEHI-01-FDM-02
-X-M-MSG: 
-Date: Mon, 31 May 2010 15:51:32 +0200
-From: Borislav Petkov <borislav.petkov@amd.com>
-To: Jeff Dike <jdike@addtoit.com>
-CC: Borislav Petkov <bp@alien8.de>, "H. Peter Anvin" <hpa@zytor.com>,
-       Geert Uytterhoeven <geert@linux-m68k.org>,
-       Toralf =?iso-8859-1?Q?F=F6rster?= <toralf.foerster@gmx.de>,
-       "user-mode-linux-devel@lists.sourceforge.net" 
-	<user-mode-linux-devel@lists.sourceforge.net>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] x86, hweight: Fix UML boot crash
-Message-ID: <20100531135132.GA4915@aftab>
-References: <201005271944.09541.toralf.foerster@gmx.de>
- <AANLkTimKwxYxM_PExplIDK1WPTQ9e_-CHn5SnIvfjfUg@mail.gmail.com>
- <20100530150214.GA1565@liondog.tnic>
- <201005301728.25976.toralf.foerster@gmx.de>
- <20100530170346.GC1565@liondog.tnic>
- <4C02B020.2040103@zytor.com>
- <20100530193956.GA2498@liondog.tnic>
- <20100531023212.GA22673@c-98-229-117-200.hsd1.ma.comcast.net>
+	Mon, 31 May 2010 09:52:39 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:content-transfer-encoding
+         :in-reply-to:user-agent;
+        b=OSDob6bi4ua5tzxTXzlkMROfGhM1liTrSBSc4LuVPVDXFk3HDKc2sX36gPcJu+G5ap
+         KsKAUZIbf8IwMFqTzBOttsi5RWZVjYpiDMTXDSHWnHBAgd5sbOUeuIQERPbXdpreipdj
+         Yog+xO0SO8NeQYCC/YkHtRSnM8rSUotVPBzkM=
+Date: Mon, 31 May 2010 10:52:27 -0300
+From: "Luis Claudio R. Goncalves" <lclaudio@uudg.org>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: Minchan Kim <minchan.kim@gmail.com>,
+       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+       balbir@linux.vnet.ibm.com, Oleg Nesterov <oleg@redhat.com>,
+       linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+       Thomas Gleixner <tglx@linutronix.de>,
+       Peter Zijlstra <peterz@infradead.org>,
+       David Rientjes <rientjes@google.com>, Mel Gorman <mel@csn.ul.ie>,
+       williams@redhat.com
+Subject: Re: [RFC] oom-kill: give the dying task a higher priority
+Message-ID: <20100531135227.GC19784@uudg.org>
+References: <20100528152842.GH11364@uudg.org>
+ <20100528154549.GC12035@barrios-desktop>
+ <20100528164826.GJ11364@uudg.org>
+ <20100531092133.73705339.kamezawa.hiroyu@jp.fujitsu.com>
+ <AANLkTikFk_HnZWPG0s_VrRkro2rruEc8OBX5KfKp_QdX@mail.gmail.com>
+ <20100531140443.b36a4f02.kamezawa.hiroyu@jp.fujitsu.com>
+ <AANLkTil75ziCd6bivhpmwojvhaJ2LVxwEaEaBEmZf2yN@mail.gmail.com>
+ <20100531145415.5e53f837.kamezawa.hiroyu@jp.fujitsu.com>
+ <AANLkTilcuY5e1DNmLhUWfXtiQgPUafz2zRTUuTVl-88l@mail.gmail.com>
+ <20100531155102.9a122772.kamezawa.hiroyu@jp.fujitsu.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <20100531023212.GA22673@c-98-229-117-200.hsd1.ma.comcast.net>
-Organization: Advanced Micro Devices =?iso-8859-1?Q?GmbH?=
-	=?iso-8859-1?Q?=2C_Einsteinring_24=2C_85609_Dornach_bei_M=FCnchen=2C_Gesc?=
-	=?iso-8859-1?Q?h=E4ftsf=FChrer=3A_Thomas_M=2E_McCoy=2C_Giuliano_Meroni=2C?=
-	=?iso-8859-1?Q?_Andrew_Bowd=2C_Sitz=3A_Dornach=2C_Gemeinde_Aschheim=2C_La?=
-	=?iso-8859-1?Q?ndkreis_M=FCnchen=2C_Registergericht_M=FCnchen?=
-	=?iso-8859-1?Q?=2C?= HRB Nr. 43632
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Reverse-DNS: unknown
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20100531155102.9a122772.kamezawa.hiroyu@jp.fujitsu.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jeff Dike <jdike@addtoit.com>
-Date: Sun, May 30, 2010 at 10:32:12PM -0400
+On Mon, May 31, 2010 at 03:51:02PM +0900, KAMEZAWA Hiroyuki wrote:
+| On Mon, 31 May 2010 15:09:41 +0900
+| Minchan Kim <minchan.kim@gmail.com> wrote:
+| > On Mon, May 31, 2010 at 2:54 PM, KAMEZAWA Hiroyuki
+| > <kamezawa.hiroyu@jp.fujitsu.com> wrote:
+...
+| > >> > IIUC, the purpose of rising priority is to accerate dying thread to exit()
+| > >> > for freeing memory AFAP. But to free memory, exit, all threads which share
+| > >> > mm_struct should exit, too. I'm sorry if I miss something.
+| > >>
+| > >> How do we kill only some thread and what's the benefit of it?
+| > >> I think when if some thread receives  KILL signal, the process include
+| > >> the thread will be killed.
+| > >>
+| > > yes, so, if you want a _process_ die quickly, you have to acceralte the whole
+| > > threads on a process. Acceralating a thread in a process is not big help.
+| > 
+| > Yes.
+| > 
+| > I see the code.
+| > oom_kill_process is called by
+| > 
+| > 1. mem_cgroup_out_of_memory
+| > 2. __out_of_memory
+| > 3. out_of_memory
+| > 
+| > 
+| > (1,2) calls select_bad_process which select victim task in processes
+| > by do_each_process.
+| > But 3 isn't In case of  CONSTRAINT_MEMORY_POLICY, it kills current.
+| > In only the case, couldn't we pass task of process, not one of thread?
+| > 
+| 
+| Hmm, my point is that priority-acceralation is against a thread, not against a process.
+| So, most of threads in memory-eater will not gain high priority even with this patch
+| and works slowly.
 
-> On Sun, May 30, 2010 at 09:39:56PM +0200, Borislav Petkov wrote:
-> > Which begs the question why _is_ UML sucking in x86 stuff and can anyone
-> > provide us with some sensible reasons? Because if there aren't any, it
-> > is their includes that should be fixed. Let me see what I can do to
-> > redirect hweight stuff properly...
-> 
-> Generally, UML pulls in the host arch headers because they work.  When
-> they are only architecture-dependent (and not, say, depending on the
-> host task struct or something), they're fine.
-> 
-> What's the include path from UML to the x86 hweight stuff?
+This is a good point...
 
-<arch/x86/include/asm/bitops.h> includes <asm/arch_hweight.h> which are
-the optimized variants.
+| I have no objections to this patch. I just want to confirm the purpose. If this patch
+| is for accelating exiting process by SIGKILL, it seems not enough.
 
-I have a patch which with which UML falls back to the defaults:
-http://marc.info/?l=linux-kernel&m=127525067908139&w=2 but hpa's concern
-is still valid: UML shouldn't choke on the optimized variants. Anyways,
-here's the original commit d61931d89be506372d01a90d1755f6d0a9fafe2d -
-you might be able to find something which interferes with UML in there.
+I understand (from the comments in the code) the badness calculation gives more
+points to the siblings in a thread that have their own mm. I wonder if what you
+are describing is not a corner case.
 
-Thanks.
+Again, your idea sounds like an interesting refinement to the patch. I am
+just not sure this change should implemented now or in a second round of
+changes.
 
+| If an explanation as "acceralating all thread's priority in a process seems overkill"
+| is given in changelog or comment, it's ok to me.
+
+If my understanding of badness() is right, I wouldn't be ashamed of saying
+that it seems to be _a bit_ overkill. But I may be wrong in my
+interpretation.
+
+While re-reading the code I noticed that in select_bad_process() we can
+eventually bump on an already dying task, case in which we just wait for
+the task to die and avoid killing other tasks. Maybe we could boost the
+priority of the dying task here too.
+
+Luis
 -- 
-Regards/Gruss,
-Boris.
-
-Operating Systems Research Center
-Advanced Micro Devices, Inc.
+[ Luis Claudio R. Goncalves                    Bass - Gospel - RT ]
+[ Fingerprint: 4FDD B8C4 3C59 34BD 8BE9  2696 7203 D980 A448 C8F8 ]
 
