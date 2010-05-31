@@ -1,80 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752602Ab0EaUhK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 May 2010 16:37:10 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:35412 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751888Ab0EaUhH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 May 2010 16:37:07 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:reply-to:to:subject:date:user-agent:mime-version:content-type
-         :content-transfer-encoding:message-id;
-        b=bkyfZke3oLLHnMN9EaZGnvmN04NVDvsE82nZP8SpxFlAq6VCAMiJsgloDB8xVRvLOg
-         yvGm1HJ5cQtw1EsRO1wUzRDkWlxmjUR8xA9vsviKZsaB8gqAksGIM9H36guwAOwvYZRw
-         0GJXUaBMiOXxfKe/DvRptNFLpTWh6YLP5FOQ8=
-From: Maciej Rutecki <maciej.rutecki@gmail.com>
-Reply-To: maciej.rutecki@gmail.com
-To: "Rafael J. Wysocki" <rjw@sisk.pl>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: [Regression] [2.6.35-rc1][suspend to ram] BUG: using smp_processor_id() in preemptible [00000000] code: cat/3634
-Date: Mon, 31 May 2010 22:37:01 +0200
-User-Agent: KMail/1.12.4 (Linux/2.6.34; KDE/4.3.4; i686; ; )
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="us-ascii"
+	id S1752753Ab0EaUrq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 May 2010 16:47:46 -0400
+Received: from ist.d-labs.de ([213.239.218.44]:60213 "EHLO mx01.d-labs.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751888Ab0EaUro (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 31 May 2010 16:47:44 -0400
+Date: Mon, 31 May 2010 22:47:32 +0200
+From: Florian Mickler <florian@mickler.org>
+To: Florian Mickler <florian@mickler.org>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+       James Bottomley <James.Bottomley@suse.de>,
+       Arve =?ISO-8859-15?Q?Hj=F8nnev=E5g?= <arve@android.com>, tytso@mit.edu,
+       LKML <linux-kernel@vger.kernel.org>,
+       Linux PM <linux-pm@lists.linux-foundation.org>,
+       Thomas Gleixner <tglx@linutronix.de>,
+       Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
+       felipe.balbi@nokia.com, Alan Cox <alan@lxorguk.ukuu.org.uk>
+Subject: Re: [linux-pm] [PATCH 0/8] Suspend block api (version 8)
+Message-ID: <20100531224732.2073828d@schatten.dmk.lab>
+In-Reply-To: <20100531221219.212bf119@schatten.dmk.lab>
+References: <20100527222514.0a1710bf@lxorguk.ukuu.org.uk>
+	<Pine.LNX.4.44L0.1005271730180.3239-100000@iolanthe.rowland.org>
+	<20100527230806.4deb6de3@lxorguk.ukuu.org.uk>
+	<20100527220949.GB10602@srcf.ucam.org>
+	<20100527232357.6d14fdb2@lxorguk.ukuu.org.uk>
+	<20100527223605.GB11364@srcf.ucam.org>
+	<20100527235546.09f3ce8a@lxorguk.ukuu.org.uk>
+	<20100528043114.GC26177@thunk.org>
+	<1275030704.32462.11.camel@laptop>
+	<AANLkTikEtlbkT4Ws3H2YGt_9QC46B5dr-b1oxJOcG4GN@mail.gmail.com>
+	<1275120618.27810.12699.camel@twins>
+	<1275149418.4503.128.camel@mulgrave.site>
+	<1275156734.1645.496.camel@laptop>
+	<20100531221219.212bf119@schatten.dmk.lab>
+X-Mailer: Claws Mail 3.7.5 (GTK+ 2.18.9; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-Message-Id: <201005312237.01725.maciej.rutecki@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Last known good: 2.6.34
-Failing kernel: 2.6.35-rc1
+On Mon, 31 May 2010 22:12:19 +0200
+Florian Mickler <florian@mickler.org> wrote:
 
-More info:
-After resume from suspend to ram I saw this message in dmesg:
-[  484.658275] BUG: using smp_processor_id() in preemptible [00000000] code: 
-cat/3634
-[  484.658285] caller is nr_iowait_cpu+0xe/0x1e
-[  484.658288] Pid: 3634, comm: cat Not tainted 2.6.35-rc1 #1
-[  484.658291] Call Trace:
-[  484.658298]  [<c0369776>] ? printk+0xf/0x11
-[  484.658304]  [<c0215eb1>] debug_smp_processor_id+0xa5/0xbc
-[  484.658308]  [<c011ff7b>] nr_iowait_cpu+0xe/0x1e
-[  484.658314]  [<c01464aa>] update_ts_time_stats+0x32/0x8d
-[  484.658317]  [<c0142179>] ? ktime_get+0x5f/0xce
-[  484.658321]  [<c0146653>] get_cpu_idle_time_us+0x36/0x62
-[  484.658326]  [<c02f5970>] cpufreq_governor_dbs+0xc3/0x3df
-[  484.658332]  [<c01cd2fc>] ? ext3_mark_iloc_dirty+0x2a6/0x306
-[  484.658337]  [<c025bc75>] ? acpi_processor_ppc_notifier+0x90/0x95
-[  484.658341]  [<c013ecda>] ? notifier_call_chain+0x26/0x50
-[  484.658346]  [<c02f339d>] __cpufreq_governor+0x97/0xcb
-[  484.658349]  [<c02f3dd2>] ? lock_policy_rwsem_write+0x33/0x59
-[  484.658353]  [<c02f4170>] __cpufreq_set_policy+0x104/0x13c
-[  484.658357]  [<c02f451c>] store_scaling_governor+0x154/0x178
-[  484.658362]  [<c02f4a43>] ? handle_update+0x0/0xd
-[  484.658366]  [<c02f3dd2>] ? lock_policy_rwsem_write+0x33/0x59
-[  484.658370]  [<c02f43c8>] ? store_scaling_governor+0x0/0x178
-[  484.658374]  [<c02f4053>] store+0x42/0x5b
-[  484.658378]  [<c01c79b2>] sysfs_write_file+0xbc/0xe7
-[  484.658383]  [<c018c27c>] vfs_write+0x8a/0x112
-[  484.658386]  [<c01c78f6>] ? sysfs_write_file+0x0/0xe7
-[  484.658390]  [<c018c39b>] sys_write+0x3b/0x60
-[  484.658394]  [<c01026ec>] sysenter_do_call+0x12/0x22
+> On Sat, 29 May 2010 20:12:14 +0200
+> Peter Zijlstra <peterz@infradead.org> wrote:
+> > 
+> > Why would you try to let buggy apps work as intended instead of break
+> > them as hard as possible? Such policy promotes crappy code since people
+> > get away with it.
+> 
+> If I have a simple shell script then I don't wanna jump through
+> hoops just to please your fragile kernel. 
 
-After this system works.
+Also why should that code on one device kill my uptime and on the
+other machine (my wall-plugged desktop) work just well? That doesn't
+sound right.
 
-Suspend to disk seems be OK.
+Clearly opportunistic suspend is a workaround for battery-driven devices
+and no general solution. But it is not specific to android. At least
+not inherently. It could be useful for any embedded or mobile device
+where you can clearly distinguish important functions from convenience
+functions.
 
-Config:
-http://unixy.pl/maciek/download/kernel/2.6.35-rc1/zlom/config-2.6.35-rc1
+I really can't understand the whole _fundamental_ opposition to this
+design choice. 
 
-Dmesg:
-http://unixy.pl/maciek/download/kernel/2.6.35-rc1/zlom/dmesg-2.6.35-rc1.txt
-
-Regards
--- 
-Maciej Rutecki
-http://www.maciek.unixy.pl
+Cheers,
+Flo
