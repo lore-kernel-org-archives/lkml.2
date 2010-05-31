@@ -1,62 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752907Ab0EaKpL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 May 2010 06:45:11 -0400
-Received: from smtp-01.mandic.com.br ([200.225.81.132]:59710 "EHLO
-	smtp-01.mandic.com.br" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751418Ab0EaKpJ (ORCPT
+	id S1753243Ab0EaKqb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 May 2010 06:46:31 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:57826 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751541Ab0EaKqa convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 May 2010 06:45:09 -0400
-Message-ID: <4C03932F.8000303@cesarb.net>
-Date: Mon, 31 May 2010 07:45:03 -0300
-From: Cesar Eduardo Barros <cesarb@cesarb.net>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-2.fc12 Thunderbird/3.0.4
-MIME-Version: 1.0
-To: Rusty Russell <rusty@rustcorp.com.au>
-CC: Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-       linux-kernel@vger.kernel.org, Russell King <linux@arm.linux.org.uk>,
-       Ralf Baechle <ralf@linux-mips.org>, David Howells <dhowells@redhat.com>,
-       Koichi Yasutake <yasutake.koichi@jp.panasonic.com>,
-       Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-       Paul Mackerras <paulus@samba.org>,
-       "David S. Miller" <davem@davemloft.net>,
-       Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-       "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
-       Arnd Bergmann <arnd@arndb.de>
-Subject: Re: [PATCH] Make kunmap_atomic() harder to misuse
-References: <1275043993-26557-1-git-send-email-cesarb@cesarb.net> <20100529204256.b92b1ff6.akpm@linux-foundation.org> <201005311945.19784.rusty@rustcorp.com.au>
-In-Reply-To: <201005311945.19784.rusty@rustcorp.com.au>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+	Mon, 31 May 2010 06:46:30 -0400
+Subject: Re: [PATCH 2/4] sched: implement __set_cpus_allowed()
+From: Peter Zijlstra <peterz@infradead.org>
+To: Tejun Heo <tj@kernel.org>
+Cc: mingo@elte.hu, linux-kernel@vger.kernel.org,
+       Rusty Russell <rusty@rustcorp.com.au>, Mike Galbraith <efault@gmx.de>
+In-Reply-To: <4C038D18.9010006@kernel.org>
+References: <1273747705-7829-1-git-send-email-tj@kernel.org>
+	 <1273747705-7829-3-git-send-email-tj@kernel.org>
+	 <1275292866.27810.21441.camel@twins>  <4C03879A.8030505@kernel.org>
+	 <1275300084.27810.21850.camel@twins> <1275300165.27810.21858.camel@twins>
+	 <4C038A08.8090209@kernel.org> <1275300904.27810.21907.camel@twins>
+	 <4C038D18.9010006@kernel.org>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Mon, 31 May 2010 12:46:36 +0200
+Message-ID: <1275302796.27810.22049.camel@twins>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em 31-05-2010 07:15, Rusty Russell escreveu:
-> On Sun, 30 May 2010 01:12:56 pm Andrew Morton wrote:
->> On Fri, 28 May 2010 07:53:13 -0300 Cesar Eduardo Barros<cesarb@cesarb.net>  wrote:
->>> +/* Prevent people trying to call kunmap_atomic() as if it were kunmap() */
->>> +struct __kunmap_atomic_dummy {};
->>> +#define kunmap_atomic(addr, idx) do { \
->>> +		BUILD_BUG_ON( \
->>> +			__builtin_types_compatible_p(typeof(addr), struct page *)&&  \
->>> +			!__builtin_types_compatible_p(typeof(addr), struct __kunmap_atomic_dummy *)); \
->>> +		kunmap_atomic_notypecheck((addr), (idx)); \
->>> +	} while (0)
->>
->> We have a little __same_type() helper for this.  __must_be_array()
->> should be using it, too.
->
-> Yep... but I think BUILD_BUG_ON(__same_type((addr), struct page *)); is
-> sufficient; void * is not compatible in my quick tests here.
+On Mon, 2010-05-31 at 12:19 +0200, Tejun Heo wrote:
+> Hello,
+> 
+> On 05/31/2010 12:15 PM, Peter Zijlstra wrote:
+> > On Mon, 2010-05-31 at 12:06 +0200, Tejun Heo wrote:
+> >>  I meant CPU_ONLINE not CPU_UP_PREPARE.  So,
+> >> we can mark a cpu active before other CPU_ONLINE callbacks are run.
+> > 
+> > OK, that should work.
+> 
+> The only remaining problemw is PF_THREAD_BOUND.  It needs to be set
+> for wq workers (including rescuers).  Would it be okay to add an
+> interface which only ignores PF_THREAD_BOUND?
 
-That is what I get for only reading the manual instead of testing :(
+So workers _are_ thread bound and don't migrate, so for those I don't
+see the problem, that is of course until we have to break affinity when
+their CPU goes down, at which point we should clear PF_THREAD_BOUND I
+think.
 
-(I only tested the completed patch, not each step along the way.)
+For the rescue thread, why not set PF_THREAD_BOUND when its running
+worklets and clear it when done? That way we get extra checking that
+people won't migrate it when its not allowed.
 
-I will try it later today and make a new patch if it works as expected.
-
--- 
-Cesar Eduardo Barros
-cesarb@cesarb.net
-cesar.barros@gmail.com
+Does that work, or did I miss something?
