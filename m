@@ -1,162 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757117Ab0EaTkr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 May 2010 15:40:47 -0400
-Received: from proofpoint-cluster.metrocast.net ([65.175.128.136]:12219 "EHLO
-	proofpoint-cluster.metrocast.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756922Ab0EaTkp (ORCPT
+	id S1757204Ab0EaTmW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 May 2010 15:42:22 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:14606 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756893Ab0EaTmV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 May 2010 15:40:45 -0400
-X-Greylist: delayed 573 seconds by postgrey-1.27 at vger.kernel.org; Mon, 31 May 2010 15:40:45 EDT
-Subject: Re: 2.6.35-rc1 fails to boot: OOPS in ir_register_class
-From: Andy Walls <awalls@md.metrocast.net>
-To: Torsten Kaiser <just.for.lkml@googlemail.com>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       Mauro Carvalho Chehab <mchehab@infradead.org>,
-       linux-media@vger.kernel.org
-In-Reply-To: <AANLkTim9-8q3OyWlksc2OdeLqFF-nPgKukTXb6Gws0lt@mail.gmail.com>
-References: <AANLkTim9-8q3OyWlksc2OdeLqFF-nPgKukTXb6Gws0lt@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 31 May 2010 15:31:21 -0400
-Message-ID: <1275334281.2261.38.camel@localhost>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
-Content-Transfer-Encoding: 7bit
-X-Proofpoint-Virus-Version: vendor=fsecure engine=1.12.8161:2.4.5,1.2.40,4.0.166
- definitions=2010-05-31_03:2010-02-06,2010-05-31,2010-05-31 signatures=0
-X-Proofpoint-Spam-Details: rule=notspam policy=default score=0 spamscore=0 ipscore=0 phishscore=0
- bulkscore=0 adultscore=0 classifier=spam adjust=0 reason=mlx
- engine=5.0.0-1005130000 definitions=main-1005310134
+	Mon, 31 May 2010 15:42:21 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=mime-version:in-reply-to:references:date:message-id:subject:from:to:
+	cc:content-type:content-transfer-encoding:x-system-of-record;
+	b=wupezX5xbxcRSwmjL5/cBYDBOlddiq20en5jeskrPQ6LiJTXjsHK9GmBtPYGRoWbB
+	Cqr1k1m2aQMRc9ghR9pFw==
+MIME-Version: 1.0
+In-Reply-To: <52092.1275333099@localhost>
+References: <1274234900-12162-1-git-send-email-acme@infradead.org>
+	<1274234900-12162-2-git-send-email-acme@infradead.org>
+	<52092.1275333099@localhost>
+Date: Mon, 31 May 2010 21:30:36 +0200
+Message-ID: <AANLkTimBxG-2TVC7hAfvRHWupa8T7FaVEcDTnAMCtQWy@mail.gmail.com>
+Subject: Re: [PATCH 1/5] perf stat: add perf stat -B to pretty print large 
+	numbers
+From: Stephane Eranian <eranian@google.com>
+To: Valdis.Kletnieks@vt.edu
+Cc: Arnaldo Carvalho de Melo <acme@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+       linux-kernel@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
+       =?UTF-8?B?RnLDqWTDqXJpYyBXZWlzYmVja2Vy?= <fweisbec@gmail.com>,
+       Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
+       Peter Zijlstra <peterz@infradead.org>, Tom Zanussi <tzanussi@gmail.com>,
+       Arnaldo Carvalho de Melo <acme@redhat.com>
+Content-Type: text/plain; charset=UTF-8
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by alpha.home.local id o4VJgVim011272
 
-On Mon, 2010-05-31 at 07:25 +0200, Torsten Kaiser wrote:
-> Trying to boot the new -rc1 it fails with the following OOPS:
-> [    3.454804] IR NEC protocol handler initialized
-> [    3.461310] IR RC5(x) protocol handler initialized
-> [    3.467865] IR RC6 protocol handler initialized
-> [    3.474070] IR JVC protocol handler initialized
-> [    3.480257] IR Sony protocol handler initialized
-> [    3.480259] Linux video capture interface: v2.00
-> [    3.480722] bttv: driver version 0.9.18 loaded
-> [    3.480724] bttv: using 8 buffers with 2080k (520 pages) each for capture
-> [    3.507950] bttv: Bt8xx card found (0).
-> [    3.513845] ACPI: PCI Interrupt Link [LNKC] enabled at IRQ 19
-> [    3.521339] bttv 0000:05:06.0: PCI INT A -> Link[LNKC] -> GSI 19
-> (level, low) -> IRQ 19
-> [    3.531039] bttv0: Bt878 (rev 17) at 0000:05:06.0, irq: 19,
-> latency: 64, mmio: 0xeefff000
-> [    3.541062] bttv0: detected: Hauppauge WinTV [card=10], PCI
-> subsystem ID is 0070:13eb
-> [    3.550946] bttv0: using: Hauppauge (bt878) [card=10,autodetected]
-> [    3.561433] bttv0: Hauppauge/Voodoo msp34xx: reset line init [5]
-> [    3.593765] usb 2-6: new low speed USB device using ohci_hcd and address 2
-> [    3.599016] tveeprom 4-0050: Hauppauge model 61344, rev D421, serial# 3902813
-> [    3.599018] tveeprom 4-0050: tuner model is Philips FM1216 (idx 21, type 5)
-> [    3.599021] tveeprom 4-0050: TV standards PAL(B/G) (eeprom 0x04)
-> [    3.599022] tveeprom 4-0050: audio processor is MSP3415 (idx 6)
-> [    3.599024] tveeprom 4-0050: has radio
-> [    3.599025] bttv0: Hauppauge eeprom indicates model#61344
-> [    3.599027] bttv0: tuner type=5
-> [    3.609618] msp3400 4-0040: MSP3415D-B3 found @ 0x80 (bt878 #0 [sw])
-> [    3.609620] msp3400 4-0040: msp3400 supports nicam, mode is autodetect
-> [    3.621863] tuner 4-0061: chip found @ 0xc2 (bt878 #0 [sw])
-> [    3.622168] tuner-simple 4-0061: creating new instance
-> [    3.622170] tuner-simple 4-0061: type set to 5 (Philips PAL_BG
-> (FI1216 and compatibles))
-> [    3.622882] bttv0: registered device video0
-> [    3.622940] bttv0: registered device vbi0
-> [    3.622997] bttv0: registered device radio0
-> [    3.632337] bttv0: PLL: 28636363 => 35468950 .. ok
-> [    3.683096] Registered IR keymap rc-rc5-tv
-> [    3.683110] BUG: unable to handle kernel NULL pointer dereference at (null)
-> [    3.683113] IP: [<ffffffff813ebe79>] ir_register_class+0x59/0x160
-> [    3.683122] PGD 0
-> [    3.683124] Oops: 0000 [#1] SMP
-> [    3.683125] last sysfs file:
-> [    3.683127] CPU 2
-> [    3.683129] Modules linked in:
-> [    3.683130]
-> [    3.683133] Pid: 1, comm: swapper Not tainted 2.6.35-rc1 #1 KFN5-D
-> SLI/KFN5-D SLI
-> [    3.683135] RIP: 0010:[<ffffffff813ebe79>]  [<ffffffff813ebe79>]
-> ir_register_class+0x59/0x160
-> [    3.683139] RSP: 0018:ffff88011ff09cd0  EFLAGS: 00010246
-> [    3.683141] RAX: 0000000000000000 RBX: ffff88011f3c1a00 RCX: ffffffff81a5baa0
-> [    3.683142] RDX: 0000000000000000 RSI: ffffffff817d24f0 RDI: ffff88011f3c1a00
-> [    3.683144] RBP: 0000000000000000 R08: 0000000000000000 R09: 0000000000000000
-> [    3.683146] R10: 0000000000000000 R11: 0000000000000021 R12: ffffffff817d6960
-> [    3.683147] R13: ffff88011f223000 R14: ffff88011f3c1a00 R15: ffff88011f3c1b40
-> [    3.683150] FS:  00000000010f8870(0000) GS:ffff880080200000(0000)
-> knlGS:0000000000000000
-> [    3.683151] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-> [    3.683153] CR2: 0000000000000000 CR3: 0000000001a05000 CR4: 00000000000006e0
-> [    3.683155] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-> [    3.683157] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-> [    3.683159] Process swapper (pid: 1, threadinfo ffff88011ff08000,
-> task ffff88007ff48000)
-> [    3.683160] Stack:
-> [    3.683162]  ffff88011f223000 ffffffff81a5ab30 ffff88011f223000
-> ffffffff817d6960
-> [    3.683164] <0> 0000000000000021 ffffffff813eb90a ffff880100000028
-> ffffffff817d240e
-> [    3.683166] <0> ffff88011f3c1b68 0000000000000282 ffff8800070b54e0
-> ffff88011f35f100
-> [    3.683169] Call Trace:
-> [    3.683174]  [<ffffffff813eb90a>] ? __ir_input_register+0x2ba/0x350
-> [    3.683178]  [<ffffffff8141730a>] ? ir_probe+0x36a/0x4f0
-> [    3.683181]  [<ffffffff81416fa0>] ? ir_probe+0x0/0x4f0
-> [    3.683185]  [<ffffffff813d9bca>] ? i2c_device_probe+0xea/0x120
-> [    3.683188]  [<ffffffff813367aa>] ? driver_sysfs_add+0x5a/0x80
-> [    3.683190]  [<ffffffff813368d3>] ? driver_probe_device+0x83/0x190
-> [    3.683193]  [<ffffffff813d9c54>] ? i2c_device_match+0x54/0x70
-> [    3.683195]  [<ffffffff81336d03>] ? __driver_attach+0x93/0xa0
-> [    3.683197]  [<ffffffff81336c70>] ? __driver_attach+0x0/0xa0
-> [    3.683201]  [<ffffffff81335bf8>] ? bus_for_each_dev+0x58/0x80
-> [    3.683203]  [<ffffffff81335ea0>] ? bus_add_driver+0xb0/0x250
-> [    3.683206]  [<ffffffff81336e4a>] ? driver_register+0x6a/0x130
-> [    3.683209]  [<ffffffff812124a0>] ? __pci_register_driver+0x80/0xc0
-> [    3.683212]  [<ffffffff813daa30>] ? i2c_register_driver+0x30/0xb0
-> [    3.683217]  [<ffffffff81ae990d>] ? bttv_init_module+0x0/0xde
-> [    3.683220]  [<ffffffff81ae9b09>] ? ir_init+0x0/0x14
-> [    3.683224]  [<ffffffff810001d4>] ? do_one_initcall+0x34/0x190
-> [    3.683227]  [<ffffffff81ac36d6>] ? kernel_init+0x143/0x1cd
-> [    3.683230]  [<ffffffff81003194>] ? kernel_thread_helper+0x4/0x10
-> [    3.683232]  [<ffffffff81ac3593>] ? kernel_init+0x0/0x1cd
-> [    3.683235]  [<ffffffff81003190>] ? kernel_thread_helper+0x0/0x10
-> [    3.683237] Code: c7 80 a5 ba 81 48 89 c3 e8 b5 8f e0 ff 85 c0 89
-> c5 78 62 48 8b 93 78 01 00 00 48 c7 c1 a0 ba a5 81 48 c7 c6 f0 24 7d
-> 81 48 89 df <8b> 12 48 c7 83 20 01 00 00 20 ba a5 81 85 d2 48 c7 c2 e0
-> ba a5
-
-Refer to the linux/drivers/media/IR/ir-sysfs.c:ir_register_class().
-
-That Oops code disassembles to this:
-
-  33:	48 89 c3             	mov    %rax,%rbx
-  36:	e8 b5 8f e0 ff       	callq  0xffffffffffe08ff0  <--- devno = find_first_zero_bit()
-  3b:	85 c0                	test   %eax,%eax           <--- if (unlikely(devno < 0))
-  3d:	89 c5                	mov    %eax,%ebp
-  3f:	78 62                	js     0xa3		   <--- return devno
-  41:	48 8b 93 78 01 00 00 	mov    0x178(%rbx),%rdx    <--- %rdx = irdev->props
-  48:	48 c7 c1 a0 ba a5 81 	mov    $0xffffffff81a5baa0,%rcx
-  4f:	48 c7 c6 f0 24 7d 81 	mov    $0xffffffff817d24f0,%rsi
-  56:	48 89 df             	mov    %rbx,%rdi
-  59:	8b 12                	mov    (%rdx),%edx         <-------- Ooops here  %edx = irdev->props->driver_type
-  5b:	48 c7 83 20 01 00 00 	movq   $0xffffffff81a5ba20,0x120(%rbx)
-
-As best I can tell, in this oops irdev->props was NULL in
-ir_register_class().
-
-I don't know if ir_dev->props is always supposed to get set, but
-__ir_input_register() appears to check for it being NULL and then allows
-the call to ir_register_class() to happen.  Of note is that if one fixes
-ir_register_class() to handle a NULL props pointer,  the next if()
-statement in __ir_input_register() will then try to dereference the NULL
-pointer and then Oops.
+On Mon, May 31, 2010 at 9:11 PM,  <Valdis.Kletnieks@vt.edu> wrote:> On Tue, 18 May 2010 23:08:16 -0300, Arnaldo Carvalho de Melo said:>> (Sorry for late reply)>>> instance LC_NUMERIC=en_US.UTF8. You need to pass -B to activate this>> feature. This way existing scripts parsing the output do not need to be>> changed. Here is an example.>>>> $ perf stat noploop 2>> noploop for 2 seconds>>>>  Performance counter stats for 'noploop 2':>>>>         1998.347031  task-clock-msecs         #      0.998 CPUs>>                  61  context-switches         #      0.000 M/sec>>                   0  CPU-migrations           #      0.000 M/sec>>                 118  page-faults              #      0.000 M/sec>>       4,138,410,900  cycles                   #   2070.917 M/sec  (scaled from 70.01%)>>       2,062,650,268  instructions             #      0.498 IPC    (scaled from 70.01%)>>       2,057,653,466  branches                 #   1029.678 M/sec  (scaled from 70.01%)>>              40,267  branch-misses            #      0.002 %      (scaled from 30.04%)>>       2,055,961,348  cache-references         #   1028.831 M/sec  (scaled from 30.03%)>>              53,725  cache-misses             #      0.027 M/sec  (scaled from 30.02%)>>>>         2.001393933  seconds time elapsed>>>> $ perf stat -B  noploop 2>> noploop for 2 seconds>>>>  Performance counter stats for 'noploop 2':>>>>         1998.297883  task-clock-msecs         #      0.998 CPUs>>                  59  context-switches         #      0.000 M/sec>>                   0  CPU-migrations           #      0.000 M/sec>>                 119  page-faults              #      0.000 M/sec>>       4,131,380,160  cycles                   #   2067.450 M/sec  (scaled from 70.01%)>>       2,059,096,507  instructions             #      0.498 IPC    (scaled from 70.01%)>>       2,054,681,303  branches                 #   1028.216 M/sec  (scaled from 70.01%)>>              25,650  branch-misses            #      0.001 %      (scaled from 30.05%)>>       2,056,283,014  cache-references         #   1029.017 M/sec  (scaled from 30.03%)>>              47,097  cache-misses             #      0.024 M/sec  (scaled from 30.02%)>>>>         2.001391016  seconds time elapsed>> Is it me, or did -B not make any difference for these two examples?> I'm confused.>Did you set the LC_NUMERIC environement variable?
+>> -     fprintf(stderr, " %14.6f  %-24s", msecs, event_name(counter));>> +     fprintf(stderr, " %18.6f  %-24s", msecs, event_name(counter));>>> -     fprintf(stderr, " %14.0f  %-24s", avg, event_name(counter));>> +     if (big_num)>> +             fprintf(stderr, " %'18.0f  %-24s", avg, event_name(counter));>> +     else>> +             fprintf(stderr, " %18.0f  %-24s", avg, event_name(counter));>>> -             fprintf(stderr, " %14s  %-24s\n",>> +             fprintf(stderr, " %18s  %-24s\n",>>                       "<not counted>", event_name(counter));>>> -     fprintf(stderr, " %14.9f  seconds time elapsed",>> +     fprintf(stderr, " %18.9f  seconds time elapsed",>> Why is the 'if (big_num)' applied to only one of the 4 sites, and the> other 3 blindly expanded from 14 to 18 characters?
+Because the units of the others don't make sense.The expansion is to make things still appear aligned when the thousandsare separated.
+>
 
 
-Regards,
-Andy
-
+-- Stephane Eranian  | EMEA Software EngineeringGoogle France | 38 avenue de l'Opéra | 75002 ParisTel : +33 (0) 1 42 68 53 00This email may be confidential or privileged. If you received thiscommunication by mistake, pleasedon't forward it to anyone else, please erase all copies andattachments, and please let me know thatit went to the wrong person. Thanks���{.n�+�������+%�����ݶ��w��{.n�+����{��G�����{ay�ʇڙ�,j��f���h��������z_�(�階�ݢj"���m������G������?����&���~��iO��z��v�^�m����������?�I�
