@@ -1,88 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757205Ab0EaTJY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 May 2010 15:09:24 -0400
-Received: from mail-pz0-f185.google.com ([209.85.222.185]:42482 "EHLO
-	mail-pz0-f185.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753093Ab0EaTJW (ORCPT
+	id S1757222Ab0EaTJy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 May 2010 15:09:54 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:52827 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753379Ab0EaTJw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 May 2010 15:09:22 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=ag3w9QFlxKO8IYvaPBurFmcuSovIWNLZDlV6/e9YUrI4hfEPgqyDST1PfTt6QKaBj6
-         3apFwyMVbDSiUlK50X8hBSIM9pOXYz2kHj3zxwNtzsIKNHW89x9jMg5HRj/CccNLWlWS
-         GytdvuoJpj79+pTENLLsgfr5pc+GvZGf6w4xc=
-Date: Mon, 31 May 2010 12:09:12 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Wolfram Sang <w.sang@pengutronix.de>
-Cc: linux-i2c@vger.kernel.org, Jean Delvare <khali@linux-fr.org>,
-       George Joseph <george.joseph@fairview5.com>,
-       Riku Voipio <riku.voipio@iki.fi>,
-       Guillaume Ligneul <guillaume.ligneul@gmail.com>,
-       "Ben Dooks (embedded platforms)" <ben-linux@fluff.org>,
-       Alessandro Rubini <rubini@cvml.unipv.it>,
-       Richard Purdie <rpurdie@rpsys.net>, Colin Leroy <colin@colino.net>,
-       Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-       Mauro Carvalho Chehab <mchehab@infradead.org>,
-       Samuel Ortiz <sameo@linux.intel.com>,
-       Mark Brown <broonie@opensource.wolfsonmicro.com>,
-       David Woodhouse <dwmw2@infradead.org>,
-       Liam Girdwood <lrg@slimlogic.co.uk>,
-       Paul Gortmaker <p_gortmaker@yahoo.com>,
-       Alessandro Zummo <a.zummo@towertech.it>,
-       Greg Kroah-Hartman <gregkh@suse.de>, lm-sensors@lm-sensors.org,
-       linux-kernel@vger.kernel.org, linux-input@vger.kernel.org,
-       linuxppc-dev@ozlabs.org, linux-media@vger.kernel.org,
-       linux-mtd@lists.infradead.org, rtc-linux@googlegroups.com,
-       devel@driverdev.osuosl.org
-Subject: Re: [PATCH] drivers: remove all i2c_set_clientdata(client, NULL)
-Message-ID: <20100531190911.GC30712@core.coreip.homeip.net>
-References: <1275310552-14685-1-git-send-email-w.sang@pengutronix.de>
+	Mon, 31 May 2010 15:09:52 -0400
+Message-ID: <4C040981.8030002@vflare.org>
+Date: Tue, 01 Jun 2010 00:39:53 +0530
+From: Nitin Gupta <ngupta@vflare.org>
+Reply-To: ngupta@vflare.org
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-3.fc13 Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1275310552-14685-1-git-send-email-w.sang@pengutronix.de>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+To: Dan Magenheimer <dan.magenheimer@oracle.com>
+CC: linux-kernel@vger.kernel.org, linux-mm@kvack.org, jeremy@goop.org,
+       hugh.dickins@tiscali.co.uk, JBeulich@novell.com, chris.mason@oracle.com,
+       kurt.hackel@oracle.com, dave.mccracken@oracle.com, npiggin@suse.de,
+       akpm@linux-foundation.org, riel@redhat.com, avi@redhat.com,
+       pavel@ucw.cz, konrad.wilk@oracle.com
+Subject: Re: [PATCH V2 0/4] Frontswap (was Transcendent Memory): overview
+References: <20100528174020.GA28150@ca-server1.us.oracle.com 4C02AB5A.5000706@vflare.org> <a38d5a97-1517-46c4-9b2f-27e16aba58f2@default>
+In-Reply-To: <a38d5a97-1517-46c4-9b2f-27e16aba58f2@default>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Wolfram,
+Hi Dan,
 
-On Mon, May 31, 2010 at 02:55:48PM +0200, Wolfram Sang wrote:
-> I2C-drivers can use the clientdata-pointer to point to private data. As I2C
-> devices are not really unregistered, but merely detached from their driver, it
-> used to be the drivers obligation to clear this pointer during remove() or a
-> failed probe(). As a couple of drivers forgot to do this, it was agreed that it
-> was cleaner if the i2c-core does this clearance when appropriate, as there is
-> no guarantee for the lifetime of the clientdata-pointer after remove() anyhow.
-> This feature was added to the core with commit
-> e4a7b9b04de15f6b63da5ccdd373ffa3057a3681 to fix the faulty drivers.
-> 
-> As there is no need anymore to clear the clientdata-pointer, remove all current
-> occurrences in the drivers to simplify the code and prevent confusion.
-> 
-> Signed-off-by: Wolfram Sang <w.sang@pengutronix.de>
-> Cc: Jean Delvare <khali@linux-fr.org>
-> ---
-> 
-> Some more notes:
-> 
-> I waited for rc1 as I knew there were some drivers/patches coming along which
-> needed to be processed, too.
-> 
-> I'd suggest that this goes via the i2c-tree, so we get rid of all occurences at
-> once.
+On 05/31/2010 10:44 PM, Dan Magenheimer wrote:
+>> On 05/28/2010 11:10 PM, Dan Magenheimer wrote:
+>>> [PATCH V2 0/4] Frontswap (was Transcendent Memory): overview
+>>>
+>>> Changes since V1:
+>>> - Rebased to 2.6.34 (no functional changes)
+>>> - Convert to sane types (per Al Viro comment in cleancache thread)
+>>> - Define some raw constants (Konrad Wilk)
+>>> - Performance analysis shows significant advantage for frontswap's
+>>>   synchronous page-at-a-time design (vs batched asynchronous
+>> speculated
+>>>   as an alternative design).  See http://lkml.org/lkml/2010/5/20/314
+>>>
+>>
+>> I think zram (http://lwn.net/Articles/388889/) is a more generic
+>> solution
+>> and can also achieve swap-to-hypervisor as a special case.
+>>
+>> zram is a generic in-memory compressed block device. To get frontswap
+>> functionality, such a device (/dev/zram0) can be exposed to a VM as
+>> a 'raw disk'. Such a disk can be used for _any_ purpose by the guest,
+>> including use as a swap disk.
 > 
 
-Frankly I'd prefer taking input stuff through my tree with the goal of
-.36 merge window just to minimize potential merge issues. This is a
-simple cleanup patch that has no dependencies, so there is little gain
-from doing it all in one go.
+> 
+> Though I agree zram is cool inside Linux, I don't see that it can
+> be used to get the critical value of frontswap functionality in a
+> virtual environment, specifically the 100% dynamic control by the
+> hypervisor of every single page attempted to be "put" to frontswap.
+> This is the key to the "intelligent overcommit" discussed in the
+> previous long thread about frontswap.
+>
 
-Thanks.
+Yes, zram cannot return write/put failure for arbitrary pages but other
+than that what additional benefits does frontswap bring? Even with frontswap,
+whatever pages are once given out to hypervisor just stay there till guest
+reads them back. Unlike cleancache, you cannot free them at any point. So,
+it does not seem anyway more flexible than zram.
 
--- 
-Dmitry
+One point I can see is additional block layer overhead in case of zram.
+For this, I have not yet done detailed measurements.
+
+ 
+> Further, by doing "guest-side compression" you are eliminating
+> possibilities for KSM-style sharing, right?
+> 
+
+With zram, whether compression happens within guest or on the host,
+depends on how it is used.
+
+When zram device(s) are exported as raw disk(s) to a guest, pages
+written to them are sent to host and they are compressed on host an
+not within the guest. Also, I'm planning to include de-duplication
+support for zram too (which will be separate from KSM).
+
+> So while zram may be a great feature, it is NOT a more generic
+> solution than frontswap, just a different solution that has a
+> different set of objectives.
+> 
+
+frontswap is a particular use case of zram disks. However, we still
+need to work on some issues with zram:
+ - zram cannot return write/put failures for arbitrary pages. OTOH,
+frontswap can consult host before every put and may forward pages to
+in-guest swap device when put fails.
+ - When a swap slot is freed, the notification from guest does
+not reach zram device(s) as exported from host. OTOH, frontswap calls
+frontswap_flush() which frees corresponding page from host memory.
+ - Being a block device, it is potentially slower than frontswap
+approach. But being a generic device, its useful for all kinds
+of guest OS (including windows etc).
+
+Thanks,
+Nitin
