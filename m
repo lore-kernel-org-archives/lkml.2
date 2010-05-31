@@ -1,72 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757252Ab0EaTwg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 May 2010 15:52:36 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:58857 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757153Ab0EaTwe (ORCPT
+	id S1757264Ab0EaTz2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 May 2010 15:55:28 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:49188 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757043Ab0EaTz0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 May 2010 15:52:34 -0400
-Date: Mon, 31 May 2010 20:52:30 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Kees Cook <kees.cook@canonical.com>
-Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, linux-kernel@vger.kernel.org,
-       linux-security-module@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-       linux-doc@vger.kernel.org, Randy Dunlap <rdunlap@xenotime.net>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Jiri Kosina <jkosina@suse.cz>, Dave Young <hidave.darkstar@gmail.com>,
-       Martin Schwidefsky <schwidefsky@de.ibm.com>,
-       James Morris <jmorris@namei.org>, Eric Paris <eparis@redhat.com>,
-       David Howells <dhowells@redhat.com>, Ingo Molnar <mingo@elte.hu>,
-       Peter Zijlstra <a.p.zijlstra@chello.nl>,
-       "Eric W. Biederman" <ebiederm@xmission.com>,
-       Tim Gardner <tim.gardner@canonical.com>,
-       "Serge E. Hallyn" <serue@us.ibm.com>
-Subject: Re: [PATCH v2] fs: block cross-uid sticky symlinks
-Message-ID: <20100531195230.GS31073@ZenIV.linux.org.uk>
-References: <20100531030402.GQ6056@outflux.net>
- <20100531112314.373b0f26@lxorguk.ukuu.org.uk>
- <20100531175008.GC4098@outflux.net>
- <20100531190936.03076096@lxorguk.ukuu.org.uk>
- <20100531190754.GF4098@outflux.net>
+	Mon, 31 May 2010 15:55:26 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:reply-to:to:subject:date:user-agent:mime-version:content-type
+         :content-transfer-encoding:message-id;
+        b=GD4UK56di8PyMMjMcGE+ueyeuwnSSd7AkqiVq/G6IRsmt0hcRMcRACNX0AlEbvQ+lh
+         i7wX66Sjaxzh2FojGRS9m1dBDKquevXScYmaWR1BGtzBCUpmCpH2yukcr09acHF2Voc4
+         9lExTItOHc0X10aWqmk/EMejEqGNjALZt4AYA=
+From: Maciej Rutecki <maciej.rutecki@gmail.com>
+Reply-To: maciej.rutecki@gmail.com
+To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       linux-pci@vger.kernel.org, linux-usb@vger.kernel.org,
+       "Rafael J. Wysocki" <rjw@sisk.pl>
+Subject: [Regression] [2.6.35-rc1] ssb_is_sprom_available
+Date: Mon, 31 May 2010 21:55:20 +0200
+User-Agent: KMail/1.12.4 (Linux/2.6.34; KDE/4.3.4; i686; ; )
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100531190754.GF4098@outflux.net>
-User-Agent: Mutt/1.5.20 (2009-08-17)
+Content-Type: Text/Plain;
+  charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201005312155.20602.maciej.rutecki@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 31, 2010 at 12:07:54PM -0700, Kees Cook wrote:
+Last known good: 2.6.34
+Failing kernel: 2.6.35-rc1
 
-> IIRC, screen, when setuid, allows users to share screen sessions (following
-> some system-defined ACLs) but it does it via the /tmp directory trees it
-> creates.  Per-user /tmp would break this (but yes, it's solvable using some
-> kind of /var/lib/screen which maybe even already exists).
+subsystem: PCI, USB(?)
 
-screen(1) does *not* put directories in /tmp these days, TYVM.
+Kernel dies during booting on message "ssb_is_sprom_available", see picture:
+http://www.unixy.pl/maciek/download/kernel/2.6.35-rc1/gumis/DSC_0011.JPG
 
-al@duke:~/linux/trees/vfs-next$ ls -l /var/run/screen/
-total 1
-drwx------ 2 al al 1024 May 20 21:50 S-al
+Config:
+http://www.unixy.pl/maciek/download/kernel/2.6.35-rc1/gumis/config-2.6.35-rc1
 
-That's lenny/x86_64; I can't be arsed to install ubuntu, but in case you
-have a really ancient screen(1), pulling one from debian -stable would
-suffice.  IIRC, -oldstable would work as well, actually, but I could be
-wrong on that.
-
-In any case, the suggested "improvement" breaks realistic use cases, AFAICS.
-In particular,
-
-cd /tmp
-tar jxf foo-2.42.orig.tar.bz2
-<...>
-tar jxf foo-gtk-wank-wank-wank-2.69.orig.tar.bz2
-<...>
-ln -s foo-gtk-wank-wank-wank-2.69/docs/GNOME/design/ crap
-<...>
-lpr crap/taste-is-optional.ps
-lpr crap/why-options-are-wrong.ps
-
-is going to break with that, isn't it?
+Regards
+-- 
+Maciej Rutecki
+http://www.maciek.unixy.pl
