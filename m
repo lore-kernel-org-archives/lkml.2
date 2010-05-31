@@ -1,34 +1,33 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756509Ab0EaSLx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 May 2010 14:11:53 -0400
-Received: from icebox.esperi.org.uk ([81.187.191.129]:41568 "EHLO
-	mail.esperi.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754073Ab0EaSLw (ORCPT
+	id S1756872Ab0EaSVU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 May 2010 14:21:20 -0400
+Received: from mail.moh.gov.om ([212.72.22.77]:48546 "HELO
+	moh-zcs-mta1.moh.gov.om" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with SMTP id S1756055Ab0EaSVS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 May 2010 14:11:52 -0400
-To: Trond Myklebust <trond.myklebust@fys.uio.no>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: 2.6.34 nfs fsync() deadlock
-References: <87r5ksjfql.fsf@spindle.srvr.nix>
-	<1275320467.5038.9.camel@heimdal.trondhjem.org>
-From: Nix <nix@esperi.org.uk>
-Emacs: no job too big... no job.
-Date: Mon, 31 May 2010 19:11:49 +0100
-In-Reply-To: <1275320467.5038.9.camel@heimdal.trondhjem.org> (Trond Myklebust's message of "Mon, 31 May 2010 11:41:07 -0400")
-Message-ID: <87zkzghrfe.fsf@spindle.srvr.nix>
-User-Agent: Gnus/5.1008 (Gnus v5.10.8) XEmacs/21.5-b29 (linux)
+	Mon, 31 May 2010 14:21:18 -0400
+X-Greylist: delayed 6863 seconds by postgrey-1.27 at vger.kernel.org; Mon, 31 May 2010 14:20:58 EDT
+Date: Mon, 31 May 2010 19:21:33 +0400 (GST)
+From: Maria Gordon <roy-ocol-hod@moh.gov.om>
+Reply-To: Maria Gordon <lotto649@gala.net>
+Message-ID: <1589735090.119841275319293551.JavaMail.root@moh-zcs-mbs1.moh.gov.om>
+Subject: Good News
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-X-DCC-URT-Metrics: spindle 1060; Body=2 Fuz1=2 Fuz2=2
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.99.8.17]
+X-Mailer: Zimbra 5.0.18_GA_3011.RHEL5_64 (zclient/5.0.18_GA_3011.RHEL5_64)
+X-TM-AS-Product-Ver: IGSA-1.5.0.1102-5.0.0.1018-15184.001
+X-TM-AS-SenderIP: 192.168.22.4
+X-TM-AS-IGSA-Result: No-5.897900-8.000000-31-1
+To: undisclosed-recipients:;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 31 May 2010, Trond Myklebust said:
-> Can you see if the following 2 attached patches (already sent to
-> stable@kernel.org) suffice to fix the hang?
+Your e-mail address has made you a winner of 2,500,000GBP, from the Canadian Lottery Promo.
+Contact our British Agent Trevor Allan via: 
+E-mail: lotto649@gala.net
+Tel: +447031979972
 
-It's hard to be absolutely certain (it only fails about a tenth of the
-time with this testcase), but it seems to fix it (I've run a hundred or
-so tests and it's still going).
