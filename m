@@ -1,121 +1,174 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755511Ab0EaQhj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 May 2010 12:37:39 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:58278 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752430Ab0EaQhg (ORCPT
+	id S1755330Ab0EaQir (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 May 2010 12:38:47 -0400
+Received: from smtp.nokia.com ([192.100.105.134]:44885 "EHLO
+	mgw-mx09.nokia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751990Ab0EaQiq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 May 2010 12:37:36 -0400
-X-Authority-Analysis: v=1.1 cv=EbJB9AiBqsyZPMVATYsj78CfMiBiOs+4P7kRKNQkfg0= c=1 sm=0 a=bhrI7EF9pE8A:10 a=yQWWgrYGNuUA:10 a=7U3hwN5JcxgA:10 a=Q9fys5e9bTEA:10 a=gMqfjgEr1zLu/65IO0LwxA==:17 a=g-lpuYZiLiJU4iChdKAA:9 a=a8WHtM3wUhpE7I8AaRAA:7 a=_kBRvLBvYX_Rc7FTCdrj14S5SroA:4 a=PUjeQqilurYA:10 a=gMqfjgEr1zLu/65IO0LwxA==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.89.75
-Subject: Re: [PATCH] tracing: Add task activate/deactivate tracepoints
-From: Steven Rostedt <rostedt@goodmis.org>
-Reply-To: rostedt@goodmis.org
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-       LKML <linux-kernel@vger.kernel.org>
-In-Reply-To: <1275322715.27810.23323.camel@twins>
-References: <1275056762-13130-1-git-send-regression-fweisbec@gmail.com>
-	 <1275059710.27810.9624.camel@twins> <20100531080049.GA435@elte.hu>
-	 <1275293544.27810.21478.camel@twins> <1275296099.27810.21622.camel@twins>
-	 <20100531143622.GA5157@nowhere> <1275317013.27810.23019.camel@twins>
-	 <20100531144820.GB5157@nowhere>  <1275322715.27810.23323.camel@twins>
-Content-Type: text/plain; charset="ISO-8859-15"
-Organization: Kihon Technologies Inc.
-Date: Mon, 31 May 2010 12:37:33 -0400
-Message-ID: <1275323853.15884.14.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	Mon, 31 May 2010 12:38:46 -0400
+Date: Mon, 31 May 2010 19:41:21 +0300
+From: Phil Carmody <ext-phil.2.carmody@nokia.com>
+To: "Doyu Hiroshi (Nokia-D/Helsinki)" <hiroshi.doyu@nokia.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       "catalin.marinas@arm.com" <catalin.marinas@arm.com>
+Subject: Re: [PATCH 1/2] kmemleak: Fix some false positives with special
+	scan
+Message-ID: <20100531164121.GV17639@pcarmody-desktop>
+References: <1273821401-26578-1-git-send-email-Hiroshi.DOYU@nokia.com> <1273821401-26578-2-git-send-email-Hiroshi.DOYU@nokia.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1273821401-26578-2-git-send-email-Hiroshi.DOYU@nokia.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
+X-OriginalArrivalTime: 31 May 2010 16:38:34.0716 (UTC) FILETIME=[B658A1C0:01CB00DF]
+X-Nokia-AV: Clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Expect slow responses from me today. It's a US Holiday.
+One small comment below.
 
-
-On Mon, 2010-05-31 at 18:18 +0200, Peter Zijlstra wrote:
-> On Mon, 2010-05-31 at 16:48 +0200, Frederic Weisbecker wrote:
-> > > Should we maybe cure this and rely on sched_switch() to detect sleeps?
-> > > It seems natural since only the current task can go to sleep, its just
-> > > that the whole preempt state gets a bit iffy.
+On 14/05/10 09:16 +0200, Doyu Hiroshi (Nokia-D/Helsinki) wrote:
+> From: Hiroshi DOYU <Hiroshi.DOYU@nokia.com>
 > 
-> How about something like the below?
+> There is the false positive that the pointer is calculated by other
+> methods than the usual container_of macro. "kmemleak_ignore" can cover
+> a false positive, but it would loose the advantage of kmemleak. This
+> patch allows kmemleak to work with such false positives by introducing
+> a new special memory block with a calculation formula. The client
+> module can register the area with a function, which kmemleak scan and
+> calculate the pointer with the function.
 > 
-> Steve, is that proper usage of CREATE_TRACE_POINT?
+> The typical use case could be the IOMMU first level pagetable which
+> stores the pointer to the second level of page table with
+> modification, for example, a physical address with attribution bits.
 > 
+> Signed-off-by: Hiroshi DOYU <Hiroshi.DOYU@nokia.com>
 > ---
-> Subject: sched, trace: Fix sched_switch() prev_state argument
-> From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> Date: Mon May 31 18:13:25 CEST 2010
+>  include/linux/kmemleak.h |    4 ++
+>  mm/kmemleak.c            |   83 ++++++++++++++++++++++++++++++++++++++++++++--
+>  2 files changed, 84 insertions(+), 3 deletions(-)
 > 
-> For CONFIG_PREEMPT=y kernels the sched_switch(.prev_state) argument
-> isn't useful because we can get preempted with current->state !=
-> TASK_RUNNING without actually getting removed from the runqueue.
-> 
-> Cure this by treating all preempted tasks as runnable from the
-> tracer's point of view.
-> 
-> Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> ---
->  include/trace/events/sched.h |   19 ++++++++++++++++++-
->  1 file changed, 18 insertions(+), 1 deletion(-)
-> 
-> Index: linux-2.6/include/trace/events/sched.h
-> ===================================================================
-> --- linux-2.6.orig/include/trace/events/sched.h
-> +++ linux-2.6/include/trace/events/sched.h
-> @@ -115,6 +115,23 @@ DEFINE_EVENT(sched_wakeup_template, sche
->  	     TP_PROTO(struct task_struct *p, int success),
->  	     TP_ARGS(p, success));
+> diff --git a/include/linux/kmemleak.h b/include/linux/kmemleak.h
+> index 99d9a67..10be9ef 100644
+> --- a/include/linux/kmemleak.h
+> +++ b/include/linux/kmemleak.h
+> @@ -35,6 +35,10 @@ extern void kmemleak_ignore(const void *ptr) __ref;
+>  extern void kmemleak_scan_area(const void *ptr, size_t size, gfp_t gfp) __ref;
+>  extern void kmemleak_no_scan(const void *ptr) __ref;
 >  
-> +#ifdef CREATE_TRACE_POINTS
-
-I guess this could work. I can't think of anything that would cause this
-to fail. But this is not exactly what the CREATE_TRACE_POINTS macro was
-for.
-
-Maybe we could make a CREATE_UTIL_FUNCTIONS macro that the
-define_trace.h can unset like it does with CREATE_TRACE_POINTS before
-recursively including the trace headers.
-
-Maybe I'm a bit paranoid, but I'm a little nervous to extend the
-CREATE_TRACE_POINTS macro to be used within the header to create utility
-functions, although, currently I don't think there's anything
-technically wrong in doing so.
-
--- Steve
-
-> +static inline long __trace_sched_switch_state(struct task_struct *p)
+> +extern int kmemleak_special_scan(const void *ptr, size_t size,
+> +				 unsigned long (*fn)(unsigned long)) __ref;
+> +extern void kmemleak_no_special(const void *ptr) __ref;
+> +
+>  static inline void kmemleak_alloc_recursive(const void *ptr, size_t size,
+>  					    int min_count, unsigned long flags,
+>  					    gfp_t gfp)
+> diff --git a/mm/kmemleak.c b/mm/kmemleak.c
+> index 2c0d032..5166987 100644
+> --- a/mm/kmemleak.c
+> +++ b/mm/kmemleak.c
+> @@ -249,6 +249,67 @@ static struct early_log
+>  	early_log[CONFIG_DEBUG_KMEMLEAK_EARLY_LOG_SIZE] __initdata;
+>  static int crt_early_log __initdata;
+>  
+> +/* scan area which requires special conversion */
+> +struct special_block {
+> +	void *start;
+> +	void *end;
+> +	unsigned long (*fn)(unsigned long);
+> +};
+> +#define SPECIAL_MAX 5
+> +static struct special_block special_block[SPECIAL_MAX];
+> +static DEFINE_SPINLOCK(special_block_lock);
+> +
+> +int kmemleak_special_scan(const void *ptr, size_t size,
+> +			  unsigned long (*fn)(unsigned long))
 > +{
-> +	long state = p->state;
+> +	struct special_block *p;
+> +	int i, err = 0;
 > +
-> +#ifdef CONFIG_PREEMPT
-> +	/*
-> +	 * For all intents and purposes a preempted task is a running task.
-> +	 */
-> +	if (task_thread_info(p)->preempt_count & PREEMPT_ACTIVE)
-> +		state = TASK_RUNNING;
-> +#endif
+> +	if (!ptr || (size == 0) || !fn)
+> +		return -EINVAL;
 > +
-> +	return state;
+> +	spin_lock(&special_block_lock);
+> +
+> +	p = special_block;
+> +	for (i = 0; i < SPECIAL_MAX; i++, p++) {
+> +		if (!p->start)
+> +			break;
+> +	}
+> +
+> +	if (i == SPECIAL_MAX) {
+> +		err = -ENOMEM;
+> +		goto out;
+> +	}
+> +	p->start = (void *)ptr;
+> +	p->end = (void *)ptr + size;
+> +	p->fn = fn;
+> +out:
+> +	spin_unlock(&special_block_lock);
+> +
+> +	return err;
 > +}
-> +#endif
+> +EXPORT_SYMBOL_GPL(kmemleak_special_scan);
 > +
+> +void kmemleak_no_special(const void *ptr)
+> +{
+> +	int i;
+> +
+> +	spin_lock(&special_block_lock);
+> +
+> +	for (i = 0; i < SPECIAL_MAX; i++) {
+> +		struct special_block *p;
+> +
+> +		p = &special_block[i];
+> +		if (p->start == ptr) {
+> +			memset(p, 0, sizeof(*p));
+> +			break;
+> +		}
+> +	}
+> +
+> +	spin_unlock(&special_block_lock);
+> +}
+> +EXPORT_SYMBOL_GPL(kmemleak_no_special);
+> +
+>  static void kmemleak_disable(void);
+>  
 >  /*
->   * Tracepoint for task switches, performed by the scheduler:
+> @@ -983,8 +1044,9 @@ static int scan_should_stop(void)
+>   * Scan a memory block (exclusive range) for valid pointers and add those
+>   * found to the gray list.
 >   */
-> @@ -139,7 +156,7 @@ TRACE_EVENT(sched_switch,
->  		memcpy(__entry->next_comm, next->comm, TASK_COMM_LEN);
->  		__entry->prev_pid	= prev->pid;
->  		__entry->prev_prio	= prev->prio;
-> -		__entry->prev_state	= prev->state;
-> +		__entry->prev_state	= __trace_sched_switch_state(prev);
->  		memcpy(__entry->prev_comm, prev->comm, TASK_COMM_LEN);
->  		__entry->next_pid	= next->pid;
->  		__entry->next_prio	= next->prio;
-> 
+> -static void scan_block(void *_start, void *_end,
+> -		       struct kmemleak_object *scanned, int allow_resched)
+> +static void __scan_block(void *_start, void *_end,
+> +			 struct kmemleak_object *scanned, int allow_resched,
+> +			 unsigned long (*fn)(unsigned long))
+>  {
+>  	unsigned long *ptr;
+>  	unsigned long *start = PTR_ALIGN(_start, BYTES_PER_POINTER);
+> @@ -1005,7 +1067,7 @@ static void scan_block(void *_start, void *_end,
+>  						  BYTES_PER_POINTER))
+>  			continue;
+>  
+> -		pointer = *ptr;
+> +		pointer = fn ? fn(*ptr) : *ptr;
 
+Tests on the real-world scenario where this special scan became
+desirable indicate that the following micro-optimisation is useful,
+as much of the scanning is over zero-initialised blocks:
 
+-		pointer = *ptr;
++		pointer = (fn && *ptr) ? fn(*ptr) : *ptr;
+
+But that's itsy-bitsy.
+
+As this patchset is already making itself useful, I'd like to add my 
+support for it:
+
+Acked-by: Phil Carmody <ext-phil.2.carmody@nokia.com>
+
+Cheers,
+Phil
