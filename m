@@ -1,171 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751523Ab0EaXr2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 May 2010 19:47:28 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:56678 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750757Ab0EaXr1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 May 2010 19:47:27 -0400
-Subject: Re: [linux-pm] [PATCH 0/8] Suspend block api (version 8)
-From: James Bottomley <James.Bottomley@suse.de>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-       Arve =?ISO-8859-1?Q?Hj=F8nnev=E5g?= <arve@android.com>, tytso@mit.edu,
-       LKML <linux-kernel@vger.kernel.org>,
-       Florian Mickler <florian@mickler.org>,
-       Linux PM <linux-pm@lists.linux-foundation.org>,
-       Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
-       felipe.balbi@nokia.com, Alan Cox <alan@lxorguk.ukuu.org.uk>
-In-Reply-To: <alpine.LFD.2.00.1005312250050.2933@localhost.localdomain>
-References: <20100527222514.0a1710bf@lxorguk.ukuu.org.uk>
-	 <Pine.LNX.4.44L0.1005271730180.3239-100000@iolanthe.rowland.org>
-	 <20100527230806.4deb6de3@lxorguk.ukuu.org.uk>
-	 <20100527220949.GB10602@srcf.ucam.org>
-	 <20100527232357.6d14fdb2@lxorguk.ukuu.org.uk>
-	 <20100527223605.GB11364@srcf.ucam.org>
-	 <20100527235546.09f3ce8a@lxorguk.ukuu.org.uk>
-	 <20100528043114.GC26177@thunk.org> <1275030704.32462.11.camel@laptop>
-	 <AANLkTikEtlbkT4Ws3H2YGt_9QC46B5dr-b1oxJOcG4GN@mail.gmail.com>
-	 <1275120618.27810.12699.camel@twins>
-	 <1275149418.4503.128.camel@mulgrave.site>
-	 <alpine.LFD.2.00.1005312250050.2933@localhost.localdomain>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 31 May 2010 18:47:17 -0500
-Message-ID: <1275349638.2823.395.camel@mulgrave.site>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.2 
+	id S1751398Ab0EaXtF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 May 2010 19:49:05 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:55275 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750935Ab0EaXtD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 31 May 2010 19:49:03 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+To: Oleg Nesterov <oleg@redhat.com>
+Subject: Re: [PATCH 4/5] oom: the points calculation of child processes must use find_lock_task_mm() too
+Cc: kosaki.motohiro@jp.fujitsu.com, LKML <linux-kernel@vger.kernel.org>,
+       linux-mm <linux-mm@kvack.org>, David Rientjes <rientjes@google.com>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+       Nick Piggin <npiggin@suse.de>
+In-Reply-To: <20100531165658.GC9991@redhat.com>
+References: <20100531183636.184C.A69D9226@jp.fujitsu.com> <20100531165658.GC9991@redhat.com>
+Message-Id: <20100601084807.242D.A69D9226@jp.fujitsu.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="US-ASCII"
 Content-Transfer-Encoding: 7bit
+X-Mailer: Becky! ver. 2.50.07 [ja]
+Date: Tue,  1 Jun 2010 08:48:58 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-05-31 at 23:41 +0200, Thomas Gleixner wrote:
-> On Sat, 29 May 2010, James Bottomley wrote:
-> > On Sat, 2010-05-29 at 10:10 +0200, Peter Zijlstra wrote:
-> > > 
-> > > Not using suspend is exactly the point. As Alan has argued, propagating
-> > > suspend blockers up into all regions of userspace will take much longer
-> > > than fixing the hardware.
-> > 
-> > Strange, that's not what I heard as the possible solution.  I thought he
-> > was advocating expressing the kernel side of suspend blockers as QoS
-> > constraints.  Once we have QoS constraints correctly done in the kernel,
-> > userspace still has to express its requirements.  If the requirements
-> > are static, then they can be done from policy files or in some other
-> > static way but if they're dynamic, they'll still have to be in the
-> > applications ... in about the same places the android wakelocks are.
+> And, I think we need another patch on top of this one. Note that
+> this list_for_each_entry(p->children) can only see the tasks forked
+> by p, it can't see other children forked by its sub-threads.
 > 
-> That's wrong. You only need the explicit dynamic QoS constraints for
-> applications which follow the scheme:
+> IOW, we need
 > 
->      while (1) {
->      	   if (event_available())
-> 	      process_event();
-> 	   else
-> 	      do_useless_crap_which_consumes_power();
->      }	   
+> 	do {
+> 		list_for_each_entry(c, &t->children, sibling) {
+> 			...
+> 		}
+> 	} while_each_thread(p, t);
 > 
-> which need the following annotation:
+> Probably the same for oom_kill_process().
 > 
->      while (1) {
->      	   block_suspend();
->      	   if (event_available()) {
-> 	      process_event();
-> 	      unblock_suspend();
-> 	   } else {
-> 	      unblock_suspend();
-> 	      do_useless_crap_which_consumes_power();
->            }
->      }	   
-> 
-> Plus the kernel counterpart of drivers which take the suspend blocker
-> in the interrupt handler and release it when the event queue is empty.
-> 
-> So that's done for making polling event handling power "efficient".
-> 
-> Even worse, you need the same "annotation" for non polling mode and it
-> enforces the use of select() because you cannot take a suspend blocker
-> across a blocking read() without adding more invasive interactions to
-> the kernel..
-> 
-> So the "sane" app looks like:
-> 
->    while (1) {
->    	 select();
-> 	 block_suspend();
-> 	 process_events();
-> 	 unblock_suspend();
->    }
-> 
-> I'm really tired of arguing that this promotion of "programming style"
-> is the worst idea ever, so let's look how you can do the same thing
-> QoS based.
-> 
-> s/block_suspend()/qos(INTERACTIVE)/ and
-> s/unblock_suspend()/qos(NONE)/ and
-> s/block_magic()/qos_magic()/ in the drivers.
+> What do you think?
 
-So this is the re-expression in terms of a QoS API that I mentioned ...
-as I said, I think it's the way forwards. (from the android point of
-view, it keeps the user space expression in exactly the same place as
-the original wake locks, or suspend blocks, which is why it looks like a
-rename to them).
+Makes perfectly sense. I have to do it!
 
-> Yes, it's mostly the same, with a subtle difference:
-> 
-> While android can use it in the big hammer approach to disable the
-> existing user initiated suspend via /sys/power/state, the rest of the
-> world can benefit as well in various ways.
-> 
->  - Sane applications which use a blocking event wait can be handled
->    with a static QoS setting simply because a blocking read relies on
->    the QoS state of the underlying I/O system.
-> 
->  - Idle based suspend as the logical consequence of idle states is
->    just a matter of QoS constraint based decisions.
-> 
->  - Untrusted apps can be confined in cgroups. The groups are set to
->    QoS(None) when user land decides that it's time to safe power
->    (e.g. screen lock kicks in)
-> 
->  - QoS states can block applications from I/O when the I/O system is
->    set to a state which is exclusive.
-> 
->   - ...
+Thanks good reviewing!
 
-I understand this ... it's effectively the alan stern approach.  I've
-already said that looks like the way forwards.
 
-> So that allows to use the same mechanism for more than the android
-> sledge hammer approach and confines the controversial use cases into
-> android specific files without adding a hard to maintain user space
-> interface which would prevent or at least make it hard to do some of
-> the above mentioned things which we want to see implemented.
-
-Yes, which is why I think something like this can be made to work ... I
-don't really see that we differ on the broad brush picture.  As long as
-the acceptable implementation accomplishes what everyone wants, I think
-we're home.
-
-James
-
-> While I personally disagree with the android approach, I REALLY want
-> to provide them a mechanism to make it work, but not for the price
-> that it actively prevents solutions which are considered to be
-> technically superior by a relevant group of developers/maintainers.
-> 
-> > > You got to realize this is about Linux as a whole, I really don't care
-> > > one whit about the specific Android case. We want a solution that is
-> > > generic enough to solve the power consumption problem and makes sense on
-> > > future hardware.
-> > 
-> > I don't think anyone disagrees with this. As long as we find a long term
-> > solution that satisfies the android case, everyone will be happy.
-> 
-> See above.
-> 
-> Thanks,
-> 
-> 	tglx
 
 
