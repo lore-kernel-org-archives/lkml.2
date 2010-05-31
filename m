@@ -1,75 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753613Ab0EaFx2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 May 2010 01:53:28 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:40053 "EHLO mx1.redhat.com"
+	id S1753915Ab0EaF4p (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 May 2010 01:56:45 -0400
+Received: from cantor.suse.de ([195.135.220.2]:59734 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752702Ab0EaFx1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 May 2010 01:53:27 -0400
-Message-ID: <4C034FA4.5000401@redhat.com>
-Date: Mon, 31 May 2010 13:56:52 +0800
-From: Cong Wang <amwang@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100330 Shredder/3.0.4
-MIME-Version: 1.0
-To: Flavio Leitner <fbl@sysclose.org>
-CC: linux-kernel@vger.kernel.org, Matt Mackall <mpm@selenic.com>,
-       netdev@vger.kernel.org, bridge@lists.linux-foundation.org,
-       Andy Gospodarek <gospo@redhat.com>, Neil Horman <nhorman@tuxdriver.com>,
-       Jeff Moyer <jmoyer@redhat.com>,
-       Stephen Hemminger <shemminger@linux-foundation.org>,
-       bonding-devel@lists.sourceforge.net, Jay Vosburgh <fubar@us.ibm.com>,
-       David Miller <davem@davemloft.net>
-Subject: Re: [v5 Patch 1/3] netpoll: add generic support for bridge and bonding
- devices
-References: <20100505081514.5157.83783.sendpatchset@localhost.localdomain> <20100527180545.GA2345@sysclose.org> <4BFF2EA5.9090008@redhat.com> <20100528194041.GC2345@sysclose.org>
-In-Reply-To: <20100528194041.GC2345@sysclose.org>
-Content-Type: multipart/mixed;
- boundary="------------080108050002040107090202"
+	id S1752778Ab0EaF4o (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 31 May 2010 01:56:44 -0400
+Date: Mon, 31 May 2010 15:56:25 +1000
+From: Neil Brown <neilb@suse.de>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>,
+       Arve =?UTF-8?B?SGrDuG5uZXbDpWc=?= <arve@android.com>,
+       Alan Stern <stern@rowland.harvard.edu>
+Cc: markgross@thegnar.org, Matthew Garrett <mjg59@srcf.ucam.org>,
+       Greg KH <gregkh@suse.de>, linux-doc@vger.kernel.org,
+       Peter Zijlstra <peterz@infradead.org>,
+       Jesse Barnes <jbarnes@virtuousgeek.org>,
+       Andi Kleen <ak@linux.intel.com>,
+       "Linux-pm mailing list" <linux-pm@lists.linux-foundation.org>,
+       Len Brown <len.brown@intel.com>,
+       James Bottomley <James.Bottomley@suse.de>, tytso@mit.edu,
+       Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+       Kernel development list <linux-kernel@vger.kernel.org>,
+       Tejun Heo <tj@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
+       Wu Fengguang <fengguang.wu@intel.com>
+Subject: Re: [linux-pm] [PATCH 1/8] PM: Opportunistic suspend support.
+Message-ID: <20100531155625.65fd094d@notabene.brown>
+In-Reply-To: <20100531090329.786fce79@notabene.brown>
+References: <Pine.LNX.4.44L0.1005251647530.1634-100000@iolanthe.rowland.org>
+	<AANLkTimVhC3X68uN3krrkkAAAK4a4D5yTK1V8i_x_Vfy@mail.gmail.com>
+	<20100530180846.408e50be@notabene.brown>
+	<201005302152.14166.rjw@sisk.pl>
+	<20100531090329.786fce79@notabene.brown>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a multi-part message in MIME format.
---------------080108050002040107090202
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+On Mon, 31 May 2010 09:03:29 +1000
+Neil Brown <neilb@suse.de> wrote:
 
-Hi, Flavio,
+> > Well, please have a look at the Alan Stern's proposal here:
+> > http://lkml.org/lkml/2010/5/29/77
+> >
+> 
+> Thanks for the reference.
+> Some of the details are different, but the idea seems almost exactly the same
+> as mine.
+> The apparent dependence on signals makes me feel a little uncomfortable
+> (interfaces that depend on using signals seem to be easy to use wrongly), but
+> I don't think that is a serious flaw.
+> 
+> Maybe the biggest difference is philosophical.  Alan's proposal appears to be
+> adding a new feature.  Mine presents as trying to fix an existing feature so
+> that it can be used reliably.
+> It is easier to argue against a feature than against a bug-fix (??).
 
-Please use the attached patch instead, try to see if it solves
-all your problems.
+Addendum...
 
-Thanks a lot!
+The use of signals by Alan here got me thinking.. and combining it which what 
+Alan Cox and Thomas Gleixner (and others?) have been saying about detecting
+idleness led me down an interesting path that I thought I would share.
 
+An absolutely minimal change to allow a user-space initiated auto-suspend to
+be race-free would be achieved by placing an interruptible wait between
+       pm_notifier_call_chain(PM_SUSPEND_PREPARE);
+and 
+       suspend_freeze_processes();
 
---------------080108050002040107090202
-Content-Type: text/x-patch;
- name="drivers-net-bonding-fix-activebackup-deadlock.diff"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: attachment;
- filename="drivers-net-bonding-fix-activebackup-deadlock.diff"
+which waits for all kernel threads to have passed through an 'idle' state.
 
-diff --git a/drivers/net/netconsole.c b/drivers/net/netconsole.c
-index ca142c4..2d1d594 100644
---- a/drivers/net/netconsole.c
-+++ b/drivers/net/netconsole.c
-@@ -666,7 +666,8 @@ static int netconsole_netdev_event(struct notifier_block *this,
- 	struct net_device *dev = ptr;
- 
- 	if (!(event == NETDEV_CHANGENAME || event == NETDEV_UNREGISTER ||
--	      event == NETDEV_BONDING_DESLAVE || event == NETDEV_GOING_DOWN))
-+	      event == NETDEV_BONDING_DESLAVE || event == NETDEV_GOING_DOWN ||
-+	      event == NETDEV_BONDING_FAILOVER))
- 		goto done;
- 
- 	spin_lock_irqsave(&target_list_lock, flags);
-@@ -682,6 +683,7 @@ static int netconsole_netdev_event(struct notifier_block *this,
- 				/* Fall through */
- 			case NETDEV_GOING_DOWN:
- 			case NETDEV_BONDING_DESLAVE:
-+			case NETDEV_BONDING_FAILOVER:
- 				nt->enabled = 0;
- 				break;
- 			}
+Then any wake event that happened after the PM_SUSPEND_PREPARE would
+presumably either abort the suspend later, or would cause an immediate
+wake-up.
+Any event that happened before the PM_SUSPEND_PREPARE would have been fully
+processed by any kernel thread and so would be queued for user-space (or have
+been discarded).
 
---------------080108050002040107090202--
+If we then require any process that handles wakeup events to use the
+equivalent of fcntl(F_SETOWN) to direct a SIGIO (or other signal) at the
+process which requests the suspend, then wakeup events won't be lost.
+They will either send a signal to the suspend-daemon in time to abort the
+suspend, or will be late enough to either abort the suspend in-kernel, or
+trigger an immediate wakeup.
+
+Yes: this would require quite a large change of the android code, and the
+F_SETOWN usage is fairly ugly, but balanced against it actually working and
+it being minimal, that might be OK.
+
+The hardest part would be waiting for all kernel-threads to pass through idle
+(or all threads to pass through idle or user-space).  We'd need help to make
+that work, but at least it would be a fairly localised change.
+
+Maybe it is something to keep in mind when other possibilities have proven
+intractable.
+
+NeilBrown
