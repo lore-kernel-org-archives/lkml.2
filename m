@@ -1,50 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755836Ab0EaHgb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 May 2010 03:36:31 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:10692 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752702Ab0EaHga (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 May 2010 03:36:30 -0400
-Message-ID: <4C0366E0.6040203@redhat.com>
-Date: Mon, 31 May 2010 09:36:00 +0200
-From: Jes Sorensen <Jes.Sorensen@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-2.fc12 Lightning/1.0b2pre Thunderbird/3.0.4
+	id S1756159Ab0EaHqM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 May 2010 03:46:12 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:58015 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1754981Ab0EaHqK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 31 May 2010 03:46:10 -0400
+Message-ID: <4C0369CD.70008@cn.fujitsu.com>
+Date: Mon, 31 May 2010 15:48:29 +0800
+From: Li Zefan <lizf@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1b3pre) Gecko/20090513 Fedora/3.0-2.3.beta2.fc11 Thunderbird/3.0b2
 MIME-Version: 1.0
-To: "Michael S. Tsirkin" <mst@redhat.com>
-CC: Rusty Russell <rusty@rustcorp.com.au>, linux-kernel@vger.kernel.org,
-       virtualization@lists.linux-foundation.org, kvm@vger.kernel.org,
-       qemu-devel@nongnu.org
-Subject: Re: [PATCHv2-RFC 0/2] virtio: put last seen used index into ring
- itself
-References: <cover.1274903328.git.mst@redhat.com> <4BFF9366.5090103@redhat.com> <20100530112220.GA27611@redhat.com>
-In-Reply-To: <20100530112220.GA27611@redhat.com>
+To: Tejun Heo <tj@kernel.org>
+CC: "Michael S. Tsirkin" <mst@redhat.com>, Oleg Nesterov <oleg@redhat.com>,
+       Sridhar Samudrala <sri@us.ibm.com>, netdev <netdev@vger.kernel.org>,
+       lkml <linux-kernel@vger.kernel.org>,
+       "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Dmitri Vorobiev <dmitri.vorobiev@movial.com>,
+       Jiri Kosina <jkosina@suse.cz>, Thomas Gleixner <tglx@linutronix.de>,
+       Ingo Molnar <mingo@elte.hu>, Andi Kleen <ak@linux.intel.com>
+Subject: Re: [PATCH UPDATED 3/3] vhost: apply cpumask and cgroup to vhost
+ pollers
+References: <20100527091426.GA6308@redhat.com> <20100527124448.GA4241@redhat.com> <20100527131254.GB7974@redhat.com> <4BFE9ABA.6030907@kernel.org> <20100527163954.GA21710@redhat.com> <4BFEA434.6080405@kernel.org> <20100527173207.GA21880@redhat.com> <4BFEE216.2070807@kernel.org> <20100528150830.GB21880@redhat.com> <4BFFE742.2060205@kernel.org> <20100530112925.GB27611@redhat.com> <4C02C99D.9070204@kernel.org> <4C030CB8.505@cn.fujitsu.com> <4C035E22.9010001@kernel.org>
+In-Reply-To: <4C035E22.9010001@kernel.org>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/30/10 13:22, Michael S. Tsirkin wrote:
-> On Fri, May 28, 2010 at 11:56:54AM +0200, Jes Sorensen wrote:
->> It looks pretty good to me, however one thing I have been thinking of
->> while reading through it:
->>
->> Rather than storing a pointer within the ring struct, pointing into a
->> position within the same struct. How about storing a byte offset instead
->> and using a cast to get to the pointer position? That would avoid the
->> pointer dereference, which is less effective cache wise and harder for
->> the CPU to predict.
->>
->> Not sure whether it really matters performance wise, just a thought.
+>  	poller = kthread_create(vhost_poller, dev, "vhost-%d", current->pid);
+> -	if (IS_ERR(poller))
+> -		return PTR_ERR(poller);
+> +	if (IS_ERR(poller)) {
+> +		ret = PTR_ERR(poller);
+> +		goto out;
+
+here...
+
+> +	}
+> +
+> +	ret = sched_getaffinity(current->pid, mask);
+> +	if (ret)
+> +		goto out;
+> +
+> +	ret = sched_setaffinity(poller->pid, mask);
+> +	if (ret)
+> +		goto out;
+> +
+> +	ret = cgroup_attach_task_current_cg(poller);
+> +	if (ret)
+> +		goto out;
 > 
-> I think this won't work: when PUBLUSH_USED_IDX is negotiated,
-> the pointer is to within the ring.
+>  	dev->vqs = vqs;
+>  	dev->nvqs = nvqs;
+> @@ -202,7 +221,14 @@ long vhost_dev_init(struct vhost_dev *de
+>  			vhost_poll_init(&dev->vqs[i].poll,
+>  					dev->vqs[i].handle_kick, POLLIN, dev);
+>  	}
+> -	return 0;
+> +
+> +	wake_up_process(poller);	/* avoid contributing to loadavg */
+> +	ret = 0;
+> +out:
+> +	if (ret && poller)
 
-Hmmm shame, it would be a nice optimization.
+It's still buggy..
 
-Maybe it's time to introduce the v2 ring format, rather than having
-adding more kludges to the existing one?
-
-Cheers,
-Jes
+> +		kthread_stop(poller);
+> +	free_cpumask_var(mask);
+> +	return ret;
+>  }
+> 
+>  /* Caller should have device mutex */
+> 
+> 
