@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756701Ab0EaJfn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 May 2010 05:35:43 -0400
-Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:44552 "EHLO
+	id S1756727Ab0EaJgi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 May 2010 05:36:38 -0400
+Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:44587 "EHLO
 	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756071Ab0EaJfm (ORCPT
+	with ESMTP id S1756529Ab0EaJgh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 May 2010 05:35:42 -0400
+	Mon, 31 May 2010 05:36:37 -0400
 X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
 From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
 To: LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
@@ -14,56 +14,130 @@ To: LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
        Andrew Morton <akpm@linux-foundation.org>,
        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
        Nick Piggin <npiggin@suse.de>
-Subject: [PATCH 2/5] oom: select_bad_process: PF_EXITING check should take ->mm into account
+Subject: [PATCH 3/5] oom: introduce find_lock_task_mm() to fix !mm false positives
 Cc: kosaki.motohiro@jp.fujitsu.com
 In-Reply-To: <20100531182526.1843.A69D9226@jp.fujitsu.com>
 References: <20100531182526.1843.A69D9226@jp.fujitsu.com>
-Message-Id: <20100531183335.1846.A69D9226@jp.fujitsu.com>
+Message-Id: <20100531183539.1849.A69D9226@jp.fujitsu.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="US-ASCII"
 Content-Transfer-Encoding: 7bit
 X-Mailer: Becky! ver. 2.50.07 [ja]
-Date: Mon, 31 May 2010 18:35:39 +0900 (JST)
+Date: Mon, 31 May 2010 18:36:34 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Oleg Nesterov <oleg@redhat.com>
-Subject: oom: select_bad_process: PF_EXITING check should take ->mm into account
+Subject: [PATCH 3/5] oom: introduce find_lock_task_mm() to fix !mm false positives
 
-select_bad_process() checks PF_EXITING to detect the task which is going
-to release its memory, but the logic is very wrong.
+Almost all ->mm == NUL checks in oom_kill.c are wrong.
 
-	- a single process P with the dead group leader disables
-	  select_bad_process() completely, it will always return
-	  ERR_PTR() while P can live forever
+The current code assumes that the task without ->mm has already
+released its memory and ignores the process. However this is not
+necessarily true when this process is multithreaded, other live
+sub-threads can use this ->mm.
 
-	- if the PF_EXITING task has already released its ->mm
-	  it doesn't make sense to expect it is goiing to free
-	  more memory (except task_struct/etc)
+- Remove the "if (!p->mm)" check in select_bad_process(), it is
+  just wrong.
 
-Change the code to ignore the PF_EXITING tasks without ->mm.
+- Add the new helper, find_lock_task_mm(), which finds the live
+  thread which uses the memory and takes task_lock() to pin ->mm
+
+- change oom_badness() to use this helper instead of just checking
+  ->mm != NULL.
+
+- As David pointed out, select_bad_process() must never choose the
+  task without ->mm, but no matter what badness() returns the
+  task can be chosen if nothing else has been found yet.
+
+Note! This patch is not enough, we need more changes.
+
+	- badness() was fixed, but oom_kill_task() still ignores
+	  the task without ->mm
+
+This will be addressed later.
 
 Signed-off-by: Oleg Nesterov <oleg@redhat.com>
-Acked-by: David Rientjes <rientjes@google.com>
-Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com> [rebase to latest -mm]
+Cc: David Rientjes <rientjes@google.com>
+Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com> [rebase
+latest -mm and remove some obsoleted description]
 ---
- mm/oom_kill.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ mm/oom_kill.c |   28 +++++++++++++++++-----------
+ 1 files changed, 17 insertions(+), 11 deletions(-)
 
 diff --git a/mm/oom_kill.c b/mm/oom_kill.c
-index 070b713..c87a6f4 100644
+index c87a6f4..162af2e 100644
 --- a/mm/oom_kill.c
 +++ b/mm/oom_kill.c
-@@ -287,7 +287,7 @@ static struct task_struct *select_bad_process(unsigned long *ppoints,
- 		 * the process of exiting and releasing its resources.
- 		 * Otherwise we could get an easy OOM deadlock.
- 		 */
--		if (p->flags & PF_EXITING) {
-+		if ((p->flags & PF_EXITING) && p->mm) {
- 			if (p != current)
- 				return ERR_PTR(-1UL);
+@@ -52,6 +52,19 @@ static int has_intersects_mems_allowed(struct task_struct *tsk)
+ 	return 0;
+ }
  
++static struct task_struct *find_lock_task_mm(struct task_struct *p)
++{
++	struct task_struct *t = p;
++	do {
++		task_lock(t);
++		if (likely(t->mm))
++			return t;
++		task_unlock(t);
++	} while_each_thread(p, t);
++
++	return NULL;
++}
++
+ /**
+  * badness - calculate a numeric value for how bad this task has been
+  * @p: task struct of which task we should calculate
+@@ -74,7 +87,6 @@ static int has_intersects_mems_allowed(struct task_struct *tsk)
+ unsigned long badness(struct task_struct *p, unsigned long uptime)
+ {
+ 	unsigned long points, cpu_time, run_time;
+-	struct mm_struct *mm;
+ 	struct task_struct *child;
+ 	int oom_adj = p->signal->oom_adj;
+ 	struct task_cputime task_time;
+@@ -84,17 +96,14 @@ unsigned long badness(struct task_struct *p, unsigned long uptime)
+ 	if (oom_adj == OOM_DISABLE)
+ 		return 0;
+ 
+-	task_lock(p);
+-	mm = p->mm;
+-	if (!mm) {
+-		task_unlock(p);
++	p = find_lock_task_mm(p);
++	if (!p)
+ 		return 0;
+-	}
+ 
+ 	/*
+ 	 * The memory size of the process is the basis for the badness.
+ 	 */
+-	points = mm->total_vm;
++	points = p->mm->total_vm;
+ 
+ 	/*
+ 	 * After this unlock we can no longer dereference local variable `mm'
+@@ -117,7 +126,7 @@ unsigned long badness(struct task_struct *p, unsigned long uptime)
+ 	 */
+ 	list_for_each_entry(child, &p->children, sibling) {
+ 		task_lock(child);
+-		if (child->mm != mm && child->mm)
++		if (child->mm != p->mm && child->mm)
+ 			points += child->mm->total_vm/2 + 1;
+ 		task_unlock(child);
+ 	}
+@@ -256,9 +265,6 @@ static struct task_struct *select_bad_process(unsigned long *ppoints,
+ 	for_each_process(p) {
+ 		unsigned long points;
+ 
+-		/* skip the tasks which have already released their mm. */
+-		if (!p->mm)
+-			continue;
+ 		/* skip the init task and kthreads */
+ 		if (is_global_init(p) || (p->flags & PF_KTHREAD))
+ 			continue;
 -- 
 1.6.5.2
 
