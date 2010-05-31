@@ -1,53 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755364Ab0EaN4z (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 May 2010 09:56:55 -0400
-Received: from mail.gmx.net ([213.165.64.20]:60003 "HELO mail.gmx.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1754191Ab0EaN4y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 May 2010 09:56:54 -0400
-X-Authenticated: #14349625
-X-Provags-ID: V01U2FsdGVkX1/bg1wDnrTbd0ZAgRASvA8O0SZ30B33rmI0BRBi47
-	LTJgAFTW1uIFOx
-Subject: Re: commit e9e9250b: sync wakeup bustage when waker is an RT task
-From: Mike Galbraith <efault@gmx.de>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>,
-       Thomas Gleixner <tglx@linutronix.de>
-In-Reply-To: <1275306978.27810.22357.camel@twins>
-References: <1273924628.10630.24.camel@marge.simson.net>
-	 <1273925052.1674.138.camel@laptop>
-	 <1273943222.8752.7.camel@marge.simson.net>
-	 <1273994510.7873.10.camel@marge.simson.net>
-	 <1275306978.27810.22357.camel@twins>
-Content-Type: text/plain
-Date: Mon, 31 May 2010 15:56:49 +0200
-Message-Id: <1275314209.17599.7.camel@marge.simson.net>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.24.1.1 
+	id S1755377Ab0EaODf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 May 2010 10:03:35 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:29524 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755264Ab0EaODe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 31 May 2010 10:03:34 -0400
+Message-ID: <4C03C1B1.8010102@redhat.com>
+Date: Mon, 31 May 2010 17:03:29 +0300
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-3.fc13 Thunderbird/3.0.4
+MIME-Version: 1.0
+To: Glauber Costa <glommer@redhat.com>
+CC: kvm@vger.kernel.org, linux-kernel@vger.kernel.org, zamsden@redhat.com
+Subject: Re: [PATCH] Add Documentation/kvm/msr.txt
+References: <1274897088-8587-1-git-send-email-glommer@redhat.com> <4BFE2A2F.50209@redhat.com> <20100527160248.GF3445@mothafucka.localdomain> <4C022C6D.7070701@redhat.com> <20100531134906.GA19104@mothafucka.localdomain>
+In-Reply-To: <20100531134906.GA19104@mothafucka.localdomain>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-05-31 at 13:56 +0200, Peter Zijlstra wrote:
-> On Sun, 2010-05-16 at 09:21 +0200, Mike Galbraith wrote:
-> > sched: RT waker sync wakeup bugfix
-> > 
-> > An RT waker's weight is not on the runqueue, but we try to subrtact it anyway
-> > in the sync wakeup case,  sending this_load negative.  This leads to affine
-> > wakeup failure in cases where it should succeed.  This was found while testing
-> > an PREEMPT_RT kernel with lmbench's lat_udp.  In a PREEMPT_RT kernel, softirq
-> > threads act as a ~proxy for the !RT buddy.  Approximate !PREEMPT_RT sync wakeup
-> > behavior by looking at the buddy instead, and subtracting the maximum task weight
-> > that will not send this_load negative. 
-> 
-> 
-> Does the below work?
+On 05/31/2010 04:49 PM, Glauber Costa wrote:
+>
+>> How are we failing to meet it?  All guests align to at least four bytes.
+>>      
+> static struct pvclock_wall_clock wall_clock;
+>
+> Unless there is something that the compiler does that I should take for granted,
+> there is no alignment directive in there, and it could be anywhere.
+>    
 
-Had to make a dinky adjustment for x86-tip-rt33, but yeah, the horrid
-latencies are gone.  (hm, skinnier than expected too)
+The compiler will align u32 and larger to 4 bytes on i386 (and align u64 
+to 8 bytes on x86_64).
 
-	-Mike
+-- 
+I have a truly marvellous patch that fixes the bug which this
+signature is too narrow to contain.
 
