@@ -1,43 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755454Ab0EaRqL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 May 2010 13:46:11 -0400
-Received: from mail-pz0-f193.google.com ([209.85.222.193]:64492 "EHLO
-	mail-pz0-f193.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754630Ab0EaRqK (ORCPT
+	id S1756123Ab0EaRqT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 May 2010 13:46:19 -0400
+Received: from one.firstfloor.org ([213.235.205.2]:40679 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755515Ab0EaRqR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 May 2010 13:46:10 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=CTKjBHms5nOpsjZ1Fm2Y78W57jxlA+xWNNNNqLiieCb4nvmPl4tDruw0ESEhDP4BKI
-         /2UzBsoklLRcbN0UKASzVT+1w6RgY0/kAJQ2UAZAloasJUtgwUnMs9X+zffjeJK0HgDS
-         klp36oRmZov4orr+72fghXjegNXzfFrZdnNQs=
-Message-ID: <4C03F5EF.8080302@gmail.com>
-Date: Mon, 31 May 2010 10:46:23 -0700
-From: "Justin P. Mattock" <justinmattock@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.4pre) Gecko/20091114 Lightning/1.0pre Thunderbird/3.0b4
+	Mon, 31 May 2010 13:46:17 -0400
+Date: Mon, 31 May 2010 19:46:11 +0200
+From: Andi Kleen <andi@firstfloor.org>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: Andi Kleen <andi@firstfloor.org>, herbert@gondor.hengli.com.au,
+       dm-devel@redhat.com, linux-kernel@vger.kernel.org, agk@redhat.com,
+       ak@linux.intel.com
+Subject: Re: [PATCH] DM-CRYPT: Scale to multiple CPUs
+Message-ID: <20100531174611.GF10766@basil.fritz.box>
+References: <20100531160425.GA20344@basil.fritz.box> <1275323695.3291.122.camel@edumazet-laptop>
 MIME-Version: 1.0
-To: Matthew Garrett <mjg59@srcf.ucam.org>
-CC: x86@kernel.org, tglx@linutronix.de, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH]X86:reboot.c Add some dmi entries to	pci_reboot_dmi_table.
-References: <1275114371-5329-1-git-send-email-justinmattock@gmail.com> <20100531170745.GA21225@srcf.ucam.org>
-In-Reply-To: <20100531170745.GA21225@srcf.ucam.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1275323695.3291.122.camel@edumazet-laptop>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/31/2010 10:07 AM, Matthew Garrett wrote:
-> I know that I'm partially responsible for this, but again this strongly
-> indicates that we're doing something wrong. I'll look into how Windows
-> behaves.
->
+On Mon, May 31, 2010 at 06:34:55PM +0200, Eric Dumazet wrote:
 
+Yes seems like I'm behind on per cpu innovations.
 
-alright!! I've a machine over here
-test anything..
+> Since commit e0fdb0e050eae331, we have a __percpu annotation so that
+> sparse can be augmented. This would also make the comment unnecessary...
 
-Justin P. Mattock
+I think the comment is still necessary.
+
+> 
+> > +       __get_cpu_var(io_wq_cpu) = current;
+> 
+> 	this_cpu_write(io_wq_cpu, current)
+
+And this one looks more ugly than before and does not seem
+to generate better code, so I decided to skip it.
+
+Thanks.
+
+-Andi
+-- 
+ak@linux.intel.com -- Speaking for myself only.
