@@ -1,49 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753653Ab0EaLeu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 May 2010 07:34:50 -0400
-Received: from mtagate7.uk.ibm.com ([194.196.100.167]:53222 "EHLO
-	mtagate7.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751691Ab0EaLet (ORCPT
+	id S1753294Ab0EaLjT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 May 2010 07:39:19 -0400
+Received: from mailrelay003.isp.belgacom.be ([195.238.6.53]:13200 "EHLO
+	mailrelay003.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751419Ab0EaLjR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 May 2010 07:34:49 -0400
-Date: Mon, 31 May 2010 13:34:47 +0200
-From: Christof Schmitt <christof.schmitt@de.ibm.com>
-To: linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
-       linux-fsdevel@vger.kernel.org
-Subject: Re: Wrong DIF guard tag on ext2 write
-Message-ID: <20100531113447.GB16260@schmichrtp.mainz.de.ibm.com>
-References: <20100531112817.GA16260@schmichrtp.mainz.de.ibm.com>
+	Mon, 31 May 2010 07:39:17 -0400
+X-Belgacom-Dynamic: yes
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AvsEACo9A0xbstGb/2dsb2JhbACeMXLAew6FCAQ
+Date: Mon, 31 May 2010 13:39:15 +0200
+From: Wim Van Sebroeck <wim@iguana.be>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+       Julia Lawall <julia@diku.dk>
+Cc: linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
+Subject: Re: [PATCH 2/11] drivers/watchdog: Eliminate a NULL pointer
+	dereference
+Message-ID: <20100531113915.GS3972@infomag.iguana.be>
+References: <Pine.LNX.4.64.1005271432100.5422@ask.diku.dk> <20100531112330.GI3489@rakim.wolfsonmicro.main>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100531112817.GA16260@schmichrtp.mainz.de.ibm.com>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+In-Reply-To: <20100531112330.GI3489@rakim.wolfsonmicro.main>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 31, 2010 at 01:28:17PM +0200, Christof Schmitt wrote:
-> When running tests with an ext2 filesystem on a device using DIF/DIX
-> integrity data, i sometimes see invalid guard tags on write requests.
-> To track down the problem, i patched the function sd_prep_fn in sd.c
-> to verify the IP checksums in the guard tags against the actual data.
-> Sometimes there is a mismatch and the write request fails when the HBA
-> checks the guard tag.
-> 
-> Since the guard tags are created in Linux, it seems that the data
-> attached to the write request changes between the generation in
-> bio_integrity_generate and the call to sd_prep_fn.
-> 
-> Using ext3 or ext4 instead of ext2 does not show the problem.
-> 
-> There is a bugzilla open at Redhat with the same symptom, but there is
-> no data or activity:
-> https://bugzilla.redhat.com/show_bug.cgi?id=574266
-> 
-> What would be the best way to track down this problem?
+Hi All,
 
-One more thing: The test is running with a 2.6.34 kernel, the problem
-in the bugzilla is reported for 2.6.33.
+> > From: Julia Lawall <julia@diku.dk>
+> > 
+> > At the point of the call to dev_err, wm8350 is NULL.
+> 
+> Acked-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
 
-Christof Schmitt
+Will add this one in linux-2.6-watchdog-next for testing and sent it to Linus after a couple of days.
+
+Kind regards,
+Wim.
+
