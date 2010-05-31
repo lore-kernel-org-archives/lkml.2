@@ -1,87 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755322Ab0EaBaG (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 May 2010 21:30:06 -0400
-Received: from alerce.vps.bitfolk.com ([212.13.194.134]:3798 "EHLO
-	alerce.vps.bitfolk.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755248Ab0EaBaE (ORCPT
+	id S1755332Ab0EaBig (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 May 2010 21:38:36 -0400
+Received: from mga10.intel.com ([192.55.52.92]:29909 "EHLO
+	fmsmga102.fm.intel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1755298Ab0EaBif (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 30 May 2010 21:30:04 -0400
-X-Greylist: delayed 2703 seconds by postgrey-1.27 at vger.kernel.org; Sun, 30 May 2010 21:30:04 EDT
-Date: Sun, 30 May 2010 21:44:50 -0300
-From: Leandro Lucarella <llucax@gmail.com>
-To: linux-kernel@vger.kernel.org, dri-devel@lists.sourceforge.net
-Subject: Re: intel graphic card hanging (Hangcheck timer elapsed... GPU
- hung)
-Message-ID: <20100531004450.GU17817@burns.springfield.home>
+	Sun, 30 May 2010 21:38:35 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.53,330,1272870000"; 
+   d="scan'208";a="803259552"
+Date: Mon, 31 May 2010 09:39:50 +0800
+From: Huaxu Wan <huaxu.wan@linux.intel.com>
+To: Maxim Levitsky <maximlevitsky@gmail.com>
+Cc: Huaxu Wan <huaxu.wan@linux.intel.com>, linux-kernel@vger.kernel.org,
+       lm-sensors@lm-sensors.org, huaxu.wan@intel.com, khali@linux-fr.org
+Subject: Re: [PATCH 2/2] hwmon: (coretemp) Get TjMax value from MSR
+Message-ID: <20100531013950.GA8265@owl>
+References: <20100507095945.GB12190@owl>
+ <1275111551.3427.4.camel@maxim-laptop>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-X-Paranoid: Just because you're paranoid, don't mean they're not after you.
+In-Reply-To: <1275111551.3427.4.camel@maxim-laptop>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Dear all,
-> (please Cc)
+On 08:39 Sat 29 May, Maxim Levitsky wrote:
+> On Fri, 2010-05-07 at 17:59 +0800, Huaxu Wan wrote: 
+> > The MSR IA32_TEMPERATURE_TARGET contains the TjMax value in the newer
+> > processers.
 > 
-> I am running 2.6.34-rc2 + git 01e7770 commit (yesterday) with KMS on
-> Debian/sid:
-> xserver-xorg: 7.5+5
-> video-intel: 2.9.1-3
+> I know that TjMax on my system is 85, and now coretemp reports wrong
+> temperatures.
+> First of all BIOS using stupid tricks actualy reports CPU temperature
+> through ACPI, and assuming it was correct TjMax is 85.
+> It also shuts down the system if I 'lie' to it that cpu temperature is
+> 85C.
+
+>From the list at [1], the TjMax(Tjunction) of T5450 is 100C. Does anyone
+here can make a double check?
+
+[1] http://ark.intel.com/Product.aspx?id=30787&processor=T5450&spec-codes=SLA4F
+
+Thanks
+Huaxu
+
+
+
 > 
-> Running D2X-xl (self compiled) (descent2 open source code) X suddenly
-> died,
-> and after that gdm could not be restarted because after a few secs
-> it went dead again.
+> Coretemp was working correctly in 2.6.34
 > 
-> In the logs I see:
-> kernel: [ 2486.341227] [drm:i915_hangcheck_elapsed] *ERROR* Hangcheck
-> timer elapsed... GPU hung
-> kernel: [ 2486.341240] render error detected, EIR: 0x00000000
-> kernel: [ 2486.341278] [drm:i915_do_wait_request] *ERROR*
-> i915_do_wait_request returns -5 (awaiting 113671 at 113604)
-> kernel: [ 2486.669008] [drm:i915_hangcheck_elapsed] *ERROR* Hangcheck
-> timer elapsed... GPU hung
-> kernel: [ 2486.669012] render error detected, EIR: 0x00000000
-> kernel: [ 2486.669522] [drm:i915_do_wait_request] *ERROR*
-> i915_do_wait_request returns -5 (awaiting 113672 at 113604)
-> kernel: [ 2487.524230] [drm:i915_hangcheck_elapsed] *ERROR* Hangcheck
-> timer elapsed... GPU hung
-> kernel: [ 2487.524243] render error detected, EIR: 0x00000000
-> kernel: [ 2487.524284] [drm:i915_do_wait_request] *ERROR*
-> i915_do_wait_request returns -5 (awaiting 113673 at 113604)
-> kernel: [ 2487.912237] [drm:i915_hangcheck_elapsed] *ERROR* Hangcheck
-> timer elapsed... GPU hung
-> kernel: [ 2487.916175] render error detected, EIR: 0x00000000
-> kernel: [ 2487.920137] [drm:i915_do_wait_request] *ERROR*
-> i915_do_wait_request returns -5 (awaiting 113674 at 113604)
-> Stopping gdm and restarting didn't help to get the graphics card back to
-> normal.
+> cat /proc/cpuinfo
 > 
-> If you have any ideas how to fix/track/debug that please let me know,
-> same if you need more information.
-
-Hi. I just wanted to say that I was hitting this bug too. It seems to be
-a problem associated with xscreensaver and/or OpenGL. Looking for
-information on the web I found some bug report that said something about
-OpenGL (I can't find it now) so I tried deactivating xscreensaver and
-the system is working very stable, no GPU hungs in 10 days of uptime.
-When I had xscreensaver active the X server crashed in a couple of days
-and sometime I got the GPU hung error in dmesg but X didn't crashed.
-
-Thanks.
-
-(please Cc)
-
--- 
-Leandro Lucarella (AKA luca)                     http://llucax.com.ar/
-----------------------------------------------------------------------
-GPG Key: 5F5A8D05 (F8CD F9A7 BF00 5431 4145  104C 949E BFB6 5F5A 8D05)
-----------------------------------------------------------------------
-This homeless guy asked me for some money the other day.
-And I was gonna give it to him but then I thought you're
-just gonna use it on drugs or alcohol.
-And then I thought, that's what I'm gonna use it on.
-Why am I judging this poor bastard.
+> processor	: 0
+> vendor_id	: GenuineIntel
+> cpu family	: 6
+> model		: 15
+> model name	: Intel(R) Core(TM)2 Duo CPU     T5450  @ 1.66GHz
+> stepping	: 13
+> cpu MHz		: 1667.000
+> cache size	: 2048 KB
+> physical id	: 0
+> siblings	: 2
+> core id		: 0
+> cpu cores	: 2
+> apicid		: 0
+> initial apicid	: 0
+> fpu		: yes
+> fpu_exception	: yes
+> cpuid level	: 10
+> wp		: yes
+> flags		: fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat pse36 clflush dts acpi mmx fxsr sse sse2 ss ht tm pbe syscall nx lm constant_tsc arch_perfmon pebs bts rep_good aperfmperf pni dtes64 monitor ds_cpl est tm2 ssse3 cx16 xtpr pdcm lahf_lm
+> bogomips	: 3324.70
+> clflush size	: 64
+> cache_alignment	: 64
+> address sizes	: 36 bits physical, 48 bits virtual
+> power management:
+> 
+> processor	: 1
+> vendor_id	: GenuineIntel
+> cpu family	: 6
+> model		: 15
+> model name	: Intel(R) Core(TM)2 Duo CPU     T5450  @ 1.66GHz
+> stepping	: 13
+> cpu MHz		: 1667.000
+> cache size	: 2048 KB
+> physical id	: 0
+> siblings	: 2
+> core id		: 1
+> cpu cores	: 2
+> apicid		: 1
+> initial apicid	: 1
+> fpu		: yes
+> fpu_exception	: yes
+> cpuid level	: 10
+> wp		: yes
+> flags		: fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat pse36 clflush dts acpi mmx fxsr sse sse2 ss ht tm pbe syscall nx lm constant_tsc arch_perfmon pebs bts rep_good aperfmperf pni dtes64 monitor ds_cpl est tm2 ssse3 cx16 xtpr pdcm lahf_lm
+> bogomips	: 3324.99
+> clflush size	: 64
+> cache_alignment	: 64
+> address sizes	: 36 bits physical, 48 bits virtual
+> power management:
+> 
+> 
+> Best regards,
+> 	Maxim Levitsky
+> 
