@@ -1,43 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756714Ab0EaP5I (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 May 2010 11:57:08 -0400
-Received: from saraswathi.solana.com ([198.99.130.12]:41113 "EHLO
-	saraswathi.solana.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754938Ab0EaP5G (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 May 2010 11:57:06 -0400
-Date: Mon, 31 May 2010 11:56:19 -0400
-From: Jeff Dike <jdike@addtoit.com>
-To: Borislav Petkov <borislav.petkov@amd.com>
-Cc: Borislav Petkov <bp@alien8.de>, "H. Peter Anvin" <hpa@zytor.com>,
-       Geert Uytterhoeven <geert@linux-m68k.org>,
-       Toralf =?iso-8859-1?Q?F=F6rster?= <toralf.foerster@gmx.de>,
-       "user-mode-linux-devel@lists.sourceforge.net" 
-	<user-mode-linux-devel@lists.sourceforge.net>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] x86, hweight: Fix UML boot crash
-Message-ID: <20100531155619.GA29244@c-98-229-117-200.hsd1.ma.comcast.net>
-References: <201005271944.09541.toralf.foerster@gmx.de> <AANLkTimKwxYxM_PExplIDK1WPTQ9e_-CHn5SnIvfjfUg@mail.gmail.com> <20100530150214.GA1565@liondog.tnic> <201005301728.25976.toralf.foerster@gmx.de> <20100530170346.GC1565@liondog.tnic> <4C02B020.2040103@zytor.com> <20100530193956.GA2498@liondog.tnic> <20100531023212.GA22673@c-98-229-117-200.hsd1.ma.comcast.net> <20100531135132.GA4915@aftab>
+	id S1751190Ab0EaP6t (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 May 2010 11:58:49 -0400
+Received: from rere.qmqm.pl ([89.167.52.164]:51168 "EHLO rere.qmqm.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754938Ab0EaP6r (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 31 May 2010 11:58:47 -0400
+Date: Mon, 31 May 2010 17:58:46 +0200
+From: =?iso-8859-2?Q?Micha=B3_Miros=B3aw?= <mirq-linux@rere.qmqm.pl>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [RFC] [PATCH 1/2] mmc: split mmc_sd_init_card()
+Message-ID: <20100531155846.GA9493@rere.qmqm.pl>
+References: <1-1000-12432-1274803827-7569@rere.qmqm.pl> <20100528144027.3c868841.akpm@linux-foundation.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-2
 Content-Disposition: inline
-In-Reply-To: <20100531135132.GA4915@aftab>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20100528144027.3c868841.akpm@linux-foundation.org>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 31, 2010 at 03:51:32PM +0200, Borislav Petkov wrote:
-> <arch/x86/include/asm/bitops.h> includes <asm/arch_hweight.h> which are
-> the optimized variants.
+Thanks for your review!
 
-But how does UML get to arch/x86/include/asm/bitops.h in the first place?
+On Fri, May 28, 2010 at 02:40:27PM -0700, Andrew Morton wrote:
+> On Tue, 25 May 2010 18:10:28 +0200 (CEST)
+> Micha__ Miros__aw <mirq-linux@rere.qmqm.pl> wrote:
+> > This is needed to avoid code duplication in SD-combo support.
+> hm.  Perhaps you could have told us a bit more about it than this.
+> > +int mmc_sd_get_cid(struct mmc_host *host, u32 ocr, u32 *cid)
+> > +int mmc_sd_get_csd(struct mmc_host *host, struct mmc_card *card)
+> > +int mmc_sd_setup_card(struct mmc_host *host, struct mmc_card *card,
+> > +unsigned mmc_sd_get_max_clock(struct mmc_card *card)
+> > +void mmc_sd_go_highspeed(struct mmc_card *card)
+> These are global symbols, but they are not exported to (other) modules.
+> That's odd.  I'd have expected to see them either `static' or
+> EXPORT_MODULE()d.
 
-It must go through an arch/um/include/asm/something.h (where something
-might be bitops) first, right?
+This is all contained in mmc_core.ko and needs not be exported to other
+modules. A SD-combo card is a SD (memory) and SDIO in one package - the
+only changes needed are in initialization sequence, after which both
+parts are mostly independent.
 
-				Jeff
+> I'll take the lack of a signed-off-by: and the "RFC" as signal to not
+> apply these patches.
 
--- 
-Work email - jdike at linux dot intel dot com
+I would like for this to get tested by other people first, but it looks
+like not many kernel developers use SD combo cards.
+
+I'll resend the patches after applying your suggestions from the other
+mail.
+
+Best Regards,
+Micha³ Miros³aw
+
