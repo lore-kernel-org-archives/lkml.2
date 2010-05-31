@@ -1,49 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756695Ab0EaJbY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 May 2010 05:31:24 -0400
-Received: from www.telegraphics.com.au ([204.15.192.19]:51595 "EHLO
-	mail.telegraphics.com.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756225Ab0EaJbW (ORCPT
+	id S1756660Ab0EaJdO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 May 2010 05:33:14 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:38174 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756071Ab0EaJdM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 May 2010 05:31:22 -0400
-X-Greylist: delayed 586 seconds by postgrey-1.27 at vger.kernel.org; Mon, 31 May 2010 05:31:21 EDT
-Date: Mon, 31 May 2010 19:21:26 +1000 (EST)
-From: fthain@telegraphics.com.au
-To: David Miller <davem@davemloft.net>
-cc: joe@perches.com, p_gortmaker@yahoo.com, netdev@vger.kernel.org,
-       linux-kernel@vger.kernel.org, linux-m68k@vger.kernel.org
-Subject: Re: [PATCH] mac8390: change an error return code and some cleanup,
- take 4
-In-Reply-To: <20100531.001947.193703044.davem@davemloft.net>
-Message-ID: <alpine.LNX.2.00.1005311905520.469@nippy.intranet>
-References: <alpine.OSX.2.00.1004171258330.358@localhost> <20100421.163041.158540277.davem@davemloft.net> <alpine.OSX.2.00.1005290255580.691@localhost> <20100531.001947.193703044.davem@davemloft.net>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	Mon, 31 May 2010 05:33:12 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+To: LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
+       Oleg Nesterov <oleg@redhat.com>, David Rientjes <rientjes@google.com>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+       Nick Piggin <npiggin@suse.de>
+Subject: [PATCH 1/5] oom: select_bad_process: check PF_KTHREAD instead of !mm to skip kthreads
+Cc: kosaki.motohiro@jp.fujitsu.com
+Message-Id: <20100531182526.1843.A69D9226@jp.fujitsu.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset="US-ASCII"
+Content-Transfer-Encoding: 7bit
+X-Mailer: Becky! ver. 2.50.07 [ja]
+Date: Mon, 31 May 2010 18:33:06 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Oleg Nesterov <oleg@redhat.com>
+Subject: oom: select_bad_process: check PF_KTHREAD instead of !mm to skip kthreads
 
-On Mon, 31 May 2010, David Miller wrote:
+select_bad_process() thinks a kernel thread can't have ->mm != NULL, this
+is not true due to use_mm().
 
-> This is getting tiring Finn.
+Change the code to check PF_KTHREAD.
 
-I agree. My patch addresses all of the criticism of the earlier 
-submissions.
+Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+Acked-by: David Rientjes <rientjes@google.com>
+Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+---
+ mm/oom_kill.c |    9 +++------
+ 1 files changed, 3 insertions(+), 6 deletions(-)
 
-To make it plain: there are 25 files or so that use ei_debug. Three of 
-those that now have the KERN_DEBUG printk's suppresed by the DEBUG macro 
-only do so as an apparently unintended side effect of a commit that claims 
-to "implement dynmic debug infrastructure". (Go figure.)
+diff --git a/mm/oom_kill.c b/mm/oom_kill.c
+index 709aedf..070b713 100644
+--- a/mm/oom_kill.c
++++ b/mm/oom_kill.c
+@@ -256,14 +256,11 @@ static struct task_struct *select_bad_process(unsigned long *ppoints,
+ 	for_each_process(p) {
+ 		unsigned long points;
+ 
+-		/*
+-		 * skip kernel threads and tasks which have already released
+-		 * their mm.
+-		 */
++		/* skip the tasks which have already released their mm. */
+ 		if (!p->mm)
+ 			continue;
+-		/* skip the init task */
+-		if (is_global_init(p))
++		/* skip the init task and kthreads */
++		if (is_global_init(p) || (p->flags & PF_KTHREAD))
+ 			continue;
+ 		if (mem && !task_in_mem_cgroup(p, mem))
+ 			continue;
+-- 
+1.6.5.2
 
-http://git.kernel.org/?p=linux/kernel/git/davem/net-2.6.git;a=commitdiff;h=dd0fab5b940c0b65f26ac5b01485bac1f690ace6
 
-Your suggestion to use pr_debug is invoking compile time infrastructure 
-(the DEBUG macro), so it is not in the spirit of this commit, and it is 
-not relevant to any criticism from you or Joe of the earlier submissions.
 
-Please apply the patch.
 
-Finn
