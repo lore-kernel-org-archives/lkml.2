@@ -1,61 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752436Ab0EaLHk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 May 2010 07:07:40 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:2888 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751541Ab0EaLHi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 May 2010 07:07:38 -0400
-From: Xiaotian Feng <dfeng@redhat.com>
-To: netfilter-devel@vger.kernel.org, netfilter@vger.kernel.org,
-       coreteam@netfilter.org
-Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-       Xiaotian Feng <dfeng@redhat.com>, Patrick McHardy <kaber@trash.net>,
-       "David S. Miller" <davem@davemloft.net>,
-       Jan Engelhardt <jengelh@medozas.de>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Rusty Russell <rusty@rustcorp.com.au>,
-       Alexey Dobriyan <adobriyan@gmail.com>
-Subject: [PATCH] netfilter: don't xt_jumpstack_alloc twice in xt_register_table
-Date: Mon, 31 May 2010 19:06:38 +0800
-Message-Id: <1275303998-2435-1-git-send-email-dfeng@redhat.com>
+	id S1752387Ab0EaLM2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 May 2010 07:12:28 -0400
+Received: from relay3.sgi.com ([192.48.152.1]:40007 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751640Ab0EaLM1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 31 May 2010 07:12:27 -0400
+Message-ID: <4C039980.3020608@sgi.com>
+Date: Mon, 31 May 2010 04:12:00 -0700
+From: Mike Travis <travis@sgi.com>
+User-Agent: Thunderbird 2.0.0.24 (X11/20100411)
+MIME-Version: 1.0
+To: "H. Peter Anvin" <hpa@zytor.com>
+CC: Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+       x86@kernel.org, Jesse Barnes <jbarnes@virtuousgeek.org>,
+       Bjorn Helgaas <bjorn.helgaas@hp.com>,
+       Jacob Pan <jacob.jun.pan@intel.com>, Tejun Heo <tj@kernel.org>,
+       Mike Habeck <habeck@sgi.com>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [Patch 1/1] x86 pci: Add option to not assign BAR's if not already
+ assigned
+References: <4BEAF008.9030805@sgi.com> <4BFFF517.6040401@sgi.com> <4BFFF6B8.30005@zytor.com> <4BFFF8F8.1070502@sgi.com> <4C0021DC.60608@zytor.com>
+In-Reply-To: <4C0021DC.60608@zytor.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In xt_register_table, xt_jumpstack_alloc is called first, later
-xt_replace_table is used. But in xt_replace_table, xt_jumpstack_alloc
-will be used again. Then the memory allocated by previous xt_jumpstack_alloc
-will be leaked. We can simply remove the previous xt_jumpstack_alloc because
-there aren't any users of newinfo between xt_jumpstack_alloc and
-xt_replace_table.
 
-Signed-off-by: Xiaotian Feng <dfeng@redhat.com>
-Cc: Patrick McHardy <kaber@trash.net>
-Cc: "David S. Miller" <davem@davemloft.net>
-Cc: Jan Engelhardt <jengelh@medozas.de>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Rusty Russell <rusty@rustcorp.com.au>
-Cc: Alexey Dobriyan <adobriyan@gmail.com>
----
- net/netfilter/x_tables.c |    4 ----
- 1 files changed, 0 insertions(+), 4 deletions(-)
 
-diff --git a/net/netfilter/x_tables.c b/net/netfilter/x_tables.c
-index 445de70..47b1e79 100644
---- a/net/netfilter/x_tables.c
-+++ b/net/netfilter/x_tables.c
-@@ -844,10 +844,6 @@ struct xt_table *xt_register_table(struct net *net,
- 	struct xt_table_info *private;
- 	struct xt_table *t, *table;
- 
--	ret = xt_jumpstack_alloc(newinfo);
--	if (ret < 0)
--		return ERR_PTR(ret);
--
- 	/* Don't add one object to multiple lists. */
- 	table = kmemdup(input_table, sizeof(struct xt_table), GFP_KERNEL);
- 	if (!table) {
--- 
-1.7.0.1
+H. Peter Anvin wrote:
+> On 05/28/2010 10:10 AM, Mike Travis wrote:
+>>
+>> H. Peter Anvin wrote:
+>>> On 05/28/2010 09:53 AM, Mike Travis wrote:
+>>>> Any further consideration for this patch, or has it been rejected?
+>>> Well, it's really up to Jesse, but as far as I can see, this patch is a
+>>> net loss of functionality and doesn't actually add anything.  Without
+>>> this patch, some resources that were not assigned by BIOS will be
+>>> unreachable.  With this patch, *all* resources that were not assigned by
+>>> BIOS will be unreachable...
+>>>
+>>> 	-hpa
+>>>
+>> Apparently you're missing the point of the patch?  The patch is needed
+>> because BIOS is purposely not assigning I/O BAR's to devices that won't
+>> use them, freeing up the resource for devices that do need them.  Where
+>> is the "all" resources that are not reachable?
+>>
+> 
+> No, the patch isn't needed for those.
+> 
+> Without your patch:
+> 
+> - Devices assigned by BIOS remain assigned;
+> - Devices not assigned by BIOS get assigned until address space
+>   exhausted.
+> 
+> With your patch:
+> 
+> - Devices assigned by BIOS remain assigned;
+> - Devices not assigned by BIOS never get assigned at all.
+> 
+> What am I missing here?
+> 
+> 	-hpa
+> 
 
+BIOS still assigns the MMIO BAR's so the devices are alive.
