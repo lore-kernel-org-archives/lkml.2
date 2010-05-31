@@ -1,129 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755289Ab0EaB7B (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 May 2010 21:59:01 -0400
-Received: from gate.crashing.org ([63.228.1.57]:60980 "EHLO gate.crashing.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750929Ab0EaB67 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 30 May 2010 21:58:59 -0400
-Subject: [git pull] Please pull powerpc.git next branch (or not...)
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linuxppc-dev list <linuxppc-dev@ozlabs.org>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Linux Kernel list <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 31 May 2010 11:58:48 +1000
-Message-ID: <1275271128.1931.545.camel@pasglop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	id S1755337Ab0EaCEH (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 May 2010 22:04:07 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:60411 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1751271Ab0EaCEF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 30 May 2010 22:04:05 -0400
+Message-ID: <4C031845.7040208@cn.fujitsu.com>
+Date: Mon, 31 May 2010 10:00:37 +0800
+From: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+User-Agent: Thunderbird 2.0.0.24 (Windows/20100228)
+MIME-Version: 1.0
+To: Avi Kivity <avi@redhat.com>
+CC: Marcelo Tosatti <mtosatti@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+       KVM list <kvm@vger.kernel.org>
+Subject: Re: [PATCH 1/5] KVM: MMU: introduce some macros to cleanup hlist
+ traverseing
+References: <4C025BDC.1020304@cn.fujitsu.com> <4C026433.50602@redhat.com>
+In-Reply-To: <4C026433.50602@redhat.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus !
 
-So some of these you might decide are too late, in which case I'll just
-make this branch my -next for the next cycle and cherry pick a few bug
-fixes.
 
-It's some embedded changes, not all fixes, that are late mostly because
-I forgot to pull from Josh (the stuff was submitted and reviewed ages
-ago and is pretty low risk), and in the case of Kumar, because his a
-manager now which sucks :-)
+Avi Kivity wrote:
+> On 05/30/2010 03:36 PM, Xiao Guangrong wrote:
+>> Introduce for_each_gfn_sp(), for_each_gfn_indirect_sp() and
+>> for_each_gfn_indirect_valid_sp() to cleanup hlist traverseing
+>>
+>> Signed-off-by: Xiao Guangrong<xiaoguangrong@cn.fujitsu.com>
+>> ---
+>>   arch/x86/kvm/mmu.c |  129
+>> ++++++++++++++++++++++------------------------------
+>>   1 files changed, 54 insertions(+), 75 deletions(-)
+>>
+>> diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
+>> index 56f8c3c..84c705e 100644
+>> --- a/arch/x86/kvm/mmu.c
+>> +++ b/arch/x86/kvm/mmu.c
+>> @@ -1200,6 +1200,22 @@ static void kvm_unlink_unsync_page(struct kvm
+>> *kvm, struct kvm_mmu_page *sp)
+>>
+>>   static int kvm_mmu_zap_page(struct kvm *kvm, struct kvm_mmu_page *sp);
+>>
+>> +#define for_each_gfn_sp(kvm, sp, gfn, pos, n)                \
+>> +  hlist_for_each_entry_safe(sp, pos, n,                    \
+>> +    &kvm->arch.mmu_page_hash[kvm_page_table_hashfn(gfn)], hash_link)\
+>> +        if (sp->gfn == gfn)
+>>    
 
-I think they are ok in that they only have a potential to break their
-respective embedded platforms, but I'll let you judge.
+Avi,
 
-Cheers,
-Ben.
+Thanks for your review.
 
-The following changes since commit 67a3e12b05e055c0415c556a315a3d3eb637e29e:
-  Linus Torvalds (1):
-        Linux 2.6.35-rc1
+> 
+> 
+>    if (...)
+>         for_each_gfn_sp(...)
+>               blah();
+>    else
+>          BUG();
+> 
+> will break.  Can do 'if ((sp)->gfn != (gfn)) ; else'.
+> 
+> Or call functions from the for (;;) parameters to advance the cursor.
+> 
+> (also use parentheses to protect macro arguments)
+> 
 
-are available in the git repository at:
+Yeah, it's my mistake, i'll fix it in the next version.
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/benh/powerpc.git next
+> 
+> 
+>> +
+>> +#define for_each_gfn_indirect_sp(kvm, sp, gfn, pos, n)            \
+>> +  hlist_for_each_entry_safe(sp, pos, n,                    \
+>> +    &kvm->arch.mmu_page_hash[kvm_page_table_hashfn(gfn)], hash_link)\
+>> +        if (sp->gfn == gfn&&  !sp->role.direct)
+>> +
+>> +#define for_each_gfn_indirect_valid_sp(kvm, sp, gfn, pos, n)        \
+>> +  hlist_for_each_entry_safe(sp, pos, n,                    \
+>> +    &kvm->arch.mmu_page_hash[kvm_page_table_hashfn(gfn)], hash_link)\
+>> +        if (sp->gfn == gfn&&  !sp->role.direct&&        \
+>> +            !sp->role.invalid)
+>>    
+> 
+> Shouldn't we always skip invalid gfns? 
 
-Anatolij Gustschin (1):
-      powerpc/44x: icon: select SM502 and frame buffer console support
+Actually, in kvm_mmu_unprotect_page() function, it need find out
+invalid shadow pages:
 
-Andy Fleming (1):
-      powerpc/85xx: Enable support for ports 3 and 4 on 8548 CDS
+|	hlist_for_each_entry_safe(sp, node, n, bucket, hash_link)
+|		if (sp->gfn == gfn && !sp->role.direct) {
+|			pgprintk("%s: gfn %lx role %x\n", __func__, gfn,
+|				 sp->role.word);
+|			r = 1;
+|			if (kvm_mmu_zap_page(kvm, sp))
+|				goto restart;
+|		}
 
-Anton Vorontsov (1):
-      powerpc/fsl-booke: Add hibernation support for FSL BookE processors
+I'm not sure whether we can skip invalid sp here, since it can change this
+function's return value. :-(
 
-Benjamin Herrenschmidt (4):
-      powerpc/44x: Fix UART clocks on 440SPe
-      Merge commit 'jwb/next' into next
-      Merge commit 'kumar/next' into next
-      powerpc: Don't export cvt_fd & _df when CONFIG_PPC_FPU is not set
 
-Haiying Wang (1):
-      powerpc/85xx: Add P1021MDS board support
+> What about providing both gfn and role to the macro?
+> 
 
-Lan Chunhe-B25806 (1):
-      powerpc/fsl_msi: Add multiple MSI bank support
+In current code, no code simply use role and gfn to find sp,
+in kvm_mmu_get_page(), we need do other work for
+'sp->gfn == gfn && sp->role != role' sp, and other functions only need compare
+some members in role, but not all members.
 
-Li Yang (5):
-      powerpc/fsl_msi: fix the conflict of virt_msir's chip_data
-      powerpc/fsl_msi: enable msi allocation in all banks
-      powerpc/fsl_msi: enable msi sharing through AMP OSes
-      powerpc/fsl_msi: add removal path and probe failing path
-      powerpc/85xx: Change MPC8572DS camp dtses for MSI sharing
-
-Scott Wood (1):
-      powerpc/e500mc: Implement machine check handler.
-
-Sebastian Andrzej Siewior (3):
-      powerpc/fsl-booke: fix the case where we are not in the first page
-      powerpc/fsl-booke: Move the entry setup code into a seperate file
-      powerpc/kexec: Add support for FSL-BookE
-
-Stefan Roese (2):
-      powerpc/44x: Add reset-type to katmai.dts
-      powerpc/44x: Add basic ICON PPC440SPe board support
-
-Tirumala Marri (1):
-      powerpc/44x: Adding PCI-E support for PowerPC 460SX based SOC.
-
- arch/powerpc/Kconfig                           |    2 +-
- arch/powerpc/boot/4xx.c                        |   12 +-
- arch/powerpc/boot/dts/icon.dts                 |  447 ++++++++
- arch/powerpc/boot/dts/katmai.dts               |    1 +
- arch/powerpc/boot/dts/mpc8548cds.dts           |    4 -
- arch/powerpc/boot/dts/mpc8572ds_camp_core0.dts |   15 +-
- arch/powerpc/boot/dts/mpc8572ds_camp_core1.dts |    7 +-
- arch/powerpc/boot/dts/p1021mds.dts             |  698 ++++++++++++
- arch/powerpc/boot/dts/redwood.dts              |  122 ++
- arch/powerpc/configs/44x/icon_defconfig        | 1451 ++++++++++++++++++++++++
- arch/powerpc/include/asm/cputable.h            |    1 +
- arch/powerpc/include/asm/kexec.h               |   13 +
- arch/powerpc/include/asm/reg_booke.h           |   33 +-
- arch/powerpc/kernel/Makefile                   |    8 +-
- arch/powerpc/kernel/cputable.c                 |    2 +-
- arch/powerpc/kernel/crash.c                    |    4 +
- arch/powerpc/kernel/fsl_booke_entry_mapping.S  |  237 ++++
- arch/powerpc/kernel/head_fsl_booke.S           |  200 +----
- arch/powerpc/kernel/misc_32.S                  |   17 +
- arch/powerpc/kernel/ppc_ksyms.c                |    2 +-
- arch/powerpc/kernel/swsusp_booke.S             |  193 ++++
- arch/powerpc/kernel/traps.c                    |   88 ++-
- arch/powerpc/platforms/44x/Kconfig             |   11 +
- arch/powerpc/platforms/44x/ppc44x_simple.c     |    3 +-
- arch/powerpc/platforms/85xx/mpc85xx_mds.c      |  102 ++-
- arch/powerpc/sysdev/fsl_msi.c                  |  117 ++-
- arch/powerpc/sysdev/fsl_msi.h                  |    3 +
- arch/powerpc/sysdev/ppc4xx_pci.c               |  119 ++
- arch/powerpc/sysdev/ppc4xx_pci.h               |   58 +
- 29 files changed, 3712 insertions(+), 258 deletions(-)
- create mode 100644 arch/powerpc/boot/dts/icon.dts
- create mode 100644 arch/powerpc/boot/dts/p1021mds.dts
- create mode 100644 arch/powerpc/configs/44x/icon_defconfig
- create mode 100644 arch/powerpc/kernel/fsl_booke_entry_mapping.S
- create mode 100644 arch/powerpc/kernel/swsusp_booke.S
-
+Xiao
 
