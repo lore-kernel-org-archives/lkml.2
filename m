@@ -1,41 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754858Ab0EaSGS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 May 2010 14:06:18 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:39436 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751317Ab0EaSGR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 May 2010 14:06:17 -0400
-Date: Mon, 31 May 2010 20:04:46 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Ben Blum <bblum@andrew.cmu.edu>
-Cc: linux-kernel@vger.kernel.org, containers@lists.linux-foundation.org,
-       akpm@linux-foundation.org, ebiederm@xmission.com, lizf@cn.fujitsu.com,
-       matthltc@us.ibm.com, menage@google.com
-Subject: Re: [RFC] [PATCH 2/2] cgroups: make procs file writable
-Message-ID: <20100531180446.GA16249@redhat.com>
-References: <20100530013002.GA762@ghc01.ghc.andrew.cmu.edu> <20100530013303.GC762@ghc01.ghc.andrew.cmu.edu> <20100531175242.GA14691@redhat.com>
+	id S1756418Ab0EaSGy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 May 2010 14:06:54 -0400
+Received: from pfepa.post.tele.dk ([195.41.46.235]:46179 "EHLO
+	pfepa.post.tele.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755074Ab0EaSGw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 31 May 2010 14:06:52 -0400
+Date: Mon, 31 May 2010 20:06:50 +0200
+From: Sam Ravnborg <sam@ravnborg.org>
+To: Arnaldo Carvalho de Melo <acme@infradead.org>
+Cc: Michal Marek <mmarek@suse.cz>, "David S. Miller" <davem@davemloft.net>,
+       Fr?d?ric Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+       Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
+       Peter Zijlstra <peterz@infradead.org>,
+       Stephane Eranian <eranian@google.com>, Tom Zanussi <tzanussi@gmail.com>,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2 1/1] perf tools: Make target to generate self
+	contained source tarball
+Message-ID: <20100531180650.GB27518@merkur.ravnborg.org>
+References: <20100528185357.GA28009@ghostprotocols.net> <20100529072948.GE16257@merkur.ravnborg.org> <20100531174207.GB3481@ghostprotocols.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100531175242.GA14691@redhat.com>
+In-Reply-To: <20100531174207.GB3481@ghostprotocols.net>
 User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/31, Oleg Nesterov wrote:
->
-> I only glanced into one function, cgroup_attach_proc(), and some things
-> look "obviously wrong". Sorry, I can't really read these patches now,
-> most probably I misunderstood the code...
+On Mon, May 31, 2010 at 02:42:07PM -0300, Arnaldo Carvalho de Melo wrote:
+> Em Sat, May 29, 2010 at 09:29:48AM +0200, Sam Ravnborg escreveu:
+> > On Fri, May 28, 2010 at 03:53:57PM -0300, Arnaldo Carvalho de Melo wrote:
+> > > Hi Michal, Sam,
+> > > 
+> > > 	Are you OK with with this change?
+> > 
+> > No - I do not like it :-)
+> > 
+> > But I like the concept.
+> > 
+> > We have some minimal infrastructure to support packaging
+> > and this seems like an OK fit for this too.
+> > Only drawback is that you need to configure your kernel
+> > before you can pack the source tarball.
+> > 
+> > Moving the packaging support to scripts/package/
+> > avoiding any changes to the top-level Makefile.
+> 
+> What about this one?
+> 
+> It touches one line in the top level Makefile, but that can be
+> considered not perf specific, i.e. if building source tarballs
+> (-src-pkg suffixed targets) is considered useful, and I think it is,
+> then that can be used for building source tarballs with some processing,
+> i.e. adding the HEAD to the tarball being generated, like I'm doing
+> for perf.
 
-And, forgot to mention, I do not understand the PF_EXITING check in
-attach_task_by_pid() (and some others).
+Both the top-level Makefile change and the package stuff can be considered:
 
-At first glance, it buys nothing. PF_EXITING can be set right after
-the check. And, what if we have the process with the exited group-leader?
-In that case we can't use tgid to move this process?
+Acked-by: Sam Ravnborg <sam@ravnborg.org>
 
-Oleg.
-
+	Sam
