@@ -1,89 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756767Ab0EaJzT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 May 2010 05:55:19 -0400
-Received: from mail-px0-f174.google.com ([209.85.212.174]:46711 "EHLO
-	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755985Ab0EaJzR convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 May 2010 05:55:17 -0400
+	id S1756830Ab0EaJzz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 May 2010 05:55:55 -0400
+Received: from hera.kernel.org ([140.211.167.34]:39867 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755985Ab0EaJzy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 31 May 2010 05:55:54 -0400
+Message-ID: <4C03879A.8030505@kernel.org>
+Date: Mon, 31 May 2010 11:55:38 +0200
+From: Tejun Heo <tj@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.1.9) Gecko/20100317 Thunderbird/3.0.4
 MIME-Version: 1.0
-In-Reply-To: <20100530200409.GA21632@gvim.org>
-References: <20100530200409.GA21632@gvim.org>
-Date: Mon, 31 May 2010 02:55:16 -0700
-Message-ID: <AANLkTilPCxcVhcxEyLSixAoOs-ujXzzkSq8cAOE-5Nsz@mail.gmail.com>
-Subject: Re: [RFC] lp_events: an lternitive to suspend blocker user mode and 
-	kernel API
-From: =?ISO-8859-1?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>
-To: markgross@thegnar.org
-Cc: Thomas Gleixner <tglx@linutronix.de>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
-       Brian Swetland <swetland@google.com>,
-       linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-       "Rafael J. Wysocki" <rjw@sisk.pl>, mark.gross@intel.com
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: Peter Zijlstra <peterz@infradead.org>
+CC: mingo@elte.hu, linux-kernel@vger.kernel.org,
+       Rusty Russell <rusty@rustcorp.com.au>, Mike Galbraith <efault@gmx.de>
+Subject: Re: [PATCH 2/4] sched: implement __set_cpus_allowed()
+References: <1273747705-7829-1-git-send-email-tj@kernel.org>	 <1273747705-7829-3-git-send-email-tj@kernel.org> <1275292866.27810.21441.camel@twins>
+In-Reply-To: <1275292866.27810.21441.camel@twins>
+X-Enigmail-Version: 1.0.1
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Mon, 31 May 2010 09:55:40 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, May 30, 2010 at 1:04 PM, mark gross <640e9920@gmail.com> wrote:
-> Low Power Events is a possible alternative to suspend blocker / wake
-> lock API used by Android.
->
-> It provides comparable power state notification and kernel mode critical
-> section definition.  It differs from suspend blocker in that:
-> 1) it is a platform and device independent implementation.  Device
-> specific code is register as lp_ops, similar to pm_ops.  Drivers use
-> the platform independent functions.
->
-How is this more platform independent than suspend blockers?
+Hello,
 
-> 2) it forces a user mode transition coming out of a LP state.
-> Notification of wake up sources go to the user mode process managing the
-> lp states.  Notification of blocked LP state entry is through an
-> error return, and notification of un-blocking is through a file node as
-> well.
->
-If you want a user mode transition for every resume, you can easily
-get this with the opportunistic suspend patchset by sending an input
-event (or other a custom event with that blocks suspend) from a
-driver's resume hook.
+On 05/31/2010 10:01 AM, Peter Zijlstra wrote:
+> On Thu, 2010-05-13 at 12:48 +0200, Tejun Heo wrote:
+>> Concurrency managed workqueue needs to be able to migrate tasks to a
+>> cpu which is online but !active for the following two purposes.
+>>
+>> p1. To guarantee forward progress during cpu down sequence.  Each
+>>     workqueue which could be depended upon during memory allocation
+>>     has an emergency worker task which is summoned when a pending work
+>>     on such workqueue can't be serviced immediately.  cpu hotplug
+>>     callbacks expect workqueues to work during cpu down sequence
+>>     (usually so that they can flush them), so, to guarantee forward
+>>     progress, it should be possible to summon emergency workers to
+>>     !active but online cpus.
+> 
+> If we do the thing suggested in the previous patch, that is move
+> clearing active and rebuilding the sched domains until right after
+> DOWN_PREPARE, this goes away, right?
 
-> I think the change need to the Google Android user mode power handling
-> code can be limited to changes to _only_
-> "hardware/libhardware_legacy/power/power.c"
->
-> This code is still just a prototype of the platform independent code,
-> and I'm implementing it on Eclair for the Intel Moorestown platform this
-> weekend.  I'll have patches to eclair and updated kernel patches that
-> enable this sometime Monday, after I bring it up on my target device.
-> Hopefully by the end of next week I think I'll have it working well with
-> Android.
->
-> At this time the following patch is only known to compile.  I send it to
-> help with the discussion.
->
-> FWTW I do work on Android at Intel and I think I can make this work.
-> (well, today I do.)
->
-> --mgross
->
-> Draft kernel patch :
->
-...
-> +
-> +/dev/lpe_wake_event:
-> +reads from this returns a list of wake events that happened between entry
-> +into the LP state and the return from the read of the low_power_enter device
-> +node.  User mode is expected to do something with these events before
-> +re-trying to enter low power mode.
-> +
+Hmmm... yeah, if the usual set_cpus_allowed_ptr() keeps working
+throughout CPU_DOWN_PREPARE, this probably goes away.  I'll give it a
+shot.
 
-I don't think this will work very well. Multiple input events can be
-pending at the same time. If you register a single wake-event for an
-input device, you don't know if all the events have been read when you
-try to clear this wake-event.
+>> p2. To migrate back unbound workers when a cpu comes back online.
+>>     When a cpu goes down, existing workers are unbound from the cpu
+>>     and allowed to run on other cpus if there still are pending or
+>>     running works.  If the cpu comes back online while those workers
+>>     are still around, those workers are migrated back and re-bound to
+>>     the cpu.  This isn't strictly required for correctness as long as
+>>     those unbound workers don't execute works which are newly
+>>     scheduled after the cpu comes back online; however, migrating back
+>>     the workers has the advantage of making the behavior more
+>>     consistent thus avoiding surprises which are difficult to expect
+>>     and reproduce, and being actually cleaner and easier to implement.
+> 
+> I still don't like this much, if you mark these tasks to simply die when
+> the queue is exhausted, and flush the queue explicitly on
+> CPU_UP_PREPARE, you should never need to do this.
 
+I don't think flushing from CPU_UP_PREPARE would be a good idea.
+There is no guarantee that those works will finish in short (human
+scale) time, but we can update cpu_active mask before other
+CPU_UP_PREPARE notifiers are executed so that it's symmetrical to cpu
+down path and then this problem goes away the exact same way, right?
+
+Thanks.
 
 -- 
-Arve Hjønnevåg
+tejun
