@@ -1,43 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756427Ab0EaIrN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 May 2010 04:47:13 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:60319 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754459Ab0EaIrM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 May 2010 04:47:12 -0400
-Date: Mon, 31 May 2010 04:47:09 -0400
-From: Christoph Hellwig <hch@infradead.org>
-To: Adrian Hunter <adrian.hunter@nokia.com>
-Cc: Christoph Hellwig <hch@infradead.org>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
-       LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC][PATCH] mmc: add an ioctl for erasing
-Message-ID: <20100531084709.GA7784@infradead.org>
-References: <4BF68EFC.70101@nokia.com> <20100521140714.GB15070@infradead.org> <4C037731.5030301@nokia.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4C037731.5030301@nokia.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+	id S1756569Ab0EaIsP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 May 2010 04:48:15 -0400
+Received: from mga02.intel.com ([134.134.136.20]:42314 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754883Ab0EaIsO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 31 May 2010 04:48:14 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.53,332,1272870000"; 
+   d="scan'208";a="626205666"
+Subject: [PATCH 2/2] Use HW_ERR in MCE handler
+From: Huang Ying <ying.huang@intel.com>
+To: Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
+       Andi Kleen <ak@linux.intel.com>,
+       Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 31 May 2010 16:48:10 +0800
+Message-ID: <1275295690.3444.463.camel@yhuang-dev.sh.intel.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 31, 2010 at 11:45:37AM +0300, Adrian Hunter wrote:
-> Sorry for the slow reply, I have been away.
->
-> Connecting erase to discard was rejected for performance reasons in 2008.
-> Refer:
->
-> 	http://thread.gmane.org/gmane.linux.file-systems/25378/focus=25606
+Use HW_ERR printk prefix in MCE handler. To make it more explicit that
+this is hardware error instead of software error.
 
-The discard implementation changed a lot since those days.  Discard
-requests now have their own request size limitation which is separate
-form that for normal requests, and we also store the alignment
-requirement for them separately.
+Signed-off-by: Huang Ying <ying.huang@intel.com>
+Reviewed-by: Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
+---
+ arch/x86/kernel/cpu/mcheck/mce.c |   32 ++++++++++----------------------
+ 1 file changed, 10 insertions(+), 22 deletions(-)
+
+--- a/arch/x86/kernel/cpu/mcheck/mce.c
++++ b/arch/x86/kernel/cpu/mcheck/mce.c
+@@ -106,8 +106,8 @@ EXPORT_SYMBOL_GPL(x86_mce_decoder_chain)
+ static int default_decode_mce(struct notifier_block *nb, unsigned long val,
+ 			       void *data)
+ {
+-	pr_emerg("No human readable MCE decoding support on this CPU type.\n");
+-	pr_emerg("Run the message through 'mcelog --ascii' to decode.\n");
++	pr_emerg(HW_ERR "No human readable MCE decoding support on this CPU type.\n");
++	pr_emerg(HW_ERR "Run the message through 'mcelog --ascii' to decode.\n");
+ 
+ 	return NOTIFY_STOP;
+ }
+@@ -201,11 +201,11 @@ void mce_log(struct mce *mce)
+ 
+ static void print_mce(struct mce *m)
+ {
+-	pr_emerg("CPU %d: Machine Check Exception: %16Lx Bank %d: %016Lx\n",
++	pr_emerg(HW_ERR "CPU %d: Machine Check Exception: %Lx Bank %d: %016Lx\n",
+ 	       m->extcpu, m->mcgstatus, m->bank, m->status);
+ 
+ 	if (m->ip) {
+-		pr_emerg("RIP%s %02x:<%016Lx> ",
++		pr_emerg(HW_ERR "RIP%s %02x:<%016Lx> ",
+ 			!(m->mcgstatus & MCG_STATUS_EIPV) ? " !INEXACT!" : "",
+ 				m->cs, m->ip);
+ 
+@@ -214,14 +214,14 @@ static void print_mce(struct mce *m)
+ 		pr_cont("\n");
+ 	}
+ 
+-	pr_emerg("TSC %llx ", m->tsc);
++	pr_emerg(HW_ERR "TSC %llx ", m->tsc);
+ 	if (m->addr)
+ 		pr_cont("ADDR %llx ", m->addr);
+ 	if (m->misc)
+ 		pr_cont("MISC %llx ", m->misc);
+ 
+ 	pr_cont("\n");
+-	pr_emerg("PROCESSOR %u:%x TIME %llu SOCKET %u APIC %x\n",
++	pr_emerg(HW_ERR "PROCESSOR %u:%x TIME %llu SOCKET %u APIC %x\n",
+ 		m->cpuvendor, m->cpuid, m->time, m->socketid, m->apicid);
+ 
+ 	/*
+@@ -231,16 +231,6 @@ static void print_mce(struct mce *m)
+ 	atomic_notifier_call_chain(&x86_mce_decoder_chain, 0, m);
+ }
+ 
+-static void print_mce_head(void)
+-{
+-	pr_emerg("\nHARDWARE ERROR\n");
+-}
+-
+-static void print_mce_tail(void)
+-{
+-	pr_emerg("This is not a software problem!\n");
+-}
+-
+ #define PANIC_TIMEOUT 5 /* 5 seconds */
+ 
+ static atomic_t mce_paniced;
+@@ -281,7 +271,6 @@ static void mce_panic(char *msg, struct
+ 		if (atomic_inc_return(&mce_fake_paniced) > 1)
+ 			return;
+ 	}
+-	print_mce_head();
+ 	/* First print corrected ones that are still unlogged */
+ 	for (i = 0; i < MCE_LOG_LEN; i++) {
+ 		struct mce *m = &mcelog.entry[i];
+@@ -312,16 +301,15 @@ static void mce_panic(char *msg, struct
+ 			apei_err = apei_write_mce(final);
+ 	}
+ 	if (cpu_missing)
+-		printk(KERN_EMERG "Some CPUs didn't answer in synchronization\n");
+-	print_mce_tail();
++		pr_emerg(HW_ERR "Some CPUs didn't answer in synchronization\n");
+ 	if (exp)
+-		printk(KERN_EMERG "Machine check: %s\n", exp);
++		pr_emerg(HW_ERR "Machine check: %s\n", exp);
+ 	if (!fake_panic) {
+ 		if (panic_timeout == 0)
+ 			panic_timeout = mce_panic_timeout;
+ 		panic(msg);
+ 	} else
+-		printk(KERN_EMERG "Fake kernel panic: %s\n", msg);
++		pr_emerg(HW_ERR "Fake kernel panic: %s\n", msg);
+ }
+ 
+ /* Support code for software error injection */
+@@ -1210,7 +1198,7 @@ int mce_notify_irq(void)
+ 			schedule_work(&mce_trigger_work);
+ 
+ 		if (__ratelimit(&ratelimit))
+-			printk(KERN_INFO "Machine check events logged\n");
++			pr_info(HW_ERR "Machine check events logged\n");
+ 
+ 		return 1;
+ 	}
+
 
