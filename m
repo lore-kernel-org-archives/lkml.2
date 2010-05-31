@@ -1,115 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754185Ab0EaAZ4 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 May 2010 20:25:56 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:51539 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751828Ab0EaAZz (ORCPT
+	id S1754522Ab0EaApA (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 May 2010 20:45:00 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:33848 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753863Ab0EaAo6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 30 May 2010 20:25:55 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Mon, 31 May 2010 09:21:33 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: "Luis Claudio R. Goncalves" <lclaudio@uudg.org>
-Cc: Minchan Kim <minchan.kim@gmail.com>,
-       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-       balbir@linux.vnet.ibm.com, Oleg Nesterov <oleg@redhat.com>,
-       linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-       Thomas Gleixner <tglx@linutronix.de>,
-       Peter Zijlstra <peterz@infradead.org>,
-       David Rientjes <rientjes@google.com>, Mel Gorman <mel@csn.ul.ie>,
-       williams@redhat.com
-Subject: Re: [RFC] oom-kill: give the dying task a higher priority
-Message-Id: <20100531092133.73705339.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <20100528164826.GJ11364@uudg.org>
-References: <20100528143605.7E2A.A69D9226@jp.fujitsu.com>
-	<AANLkTikB-8Qu03VrA5Z0LMXM_alSV7SLqzl-MmiLmFGv@mail.gmail.com>
-	<20100528145329.7E2D.A69D9226@jp.fujitsu.com>
-	<20100528125305.GE11364@uudg.org>
-	<20100528140623.GA11041@barrios-desktop>
-	<20100528143617.GF11364@uudg.org>
-	<20100528151249.GB12035@barrios-desktop>
-	<20100528152842.GH11364@uudg.org>
-	<20100528154549.GC12035@barrios-desktop>
-	<20100528164826.GJ11364@uudg.org>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+	Sun, 30 May 2010 20:44:58 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=mime-version:in-reply-to:references:from:date:message-id:
+	subject:to:cc:content-type:x-system-of-record;
+	b=POTi1RexouhMy45FtfBSROIIXo9UfderBFCuD8S75I6bF7p159B/GfqV0Bfr0UiuC
+	aJqvx51oRsQ8mu8CXiIZQ==
+MIME-Version: 1.0
+In-Reply-To: <20100531085431.a45b30b9.kamezawa.hiroyu@jp.fujitsu.com>
+References: <1275059781-9831-1-git-send-email-gthelen@google.com> 
+	<AANLkTino0k-wok9kXLmWTyr40dZKSCnR0Uk41uxAj5k1@mail.gmail.com> 
+	<20100531084529.2b1f0d25.kamezawa.hiroyu@jp.fujitsu.com> <20100531085431.a45b30b9.kamezawa.hiroyu@jp.fujitsu.com>
+From: Greg Thelen <gthelen@google.com>
+Date: Sun, 30 May 2010 17:44:34 -0700
+Message-ID: <AANLkTilNrrsNluDBUlXCsZMz7d_-VHn31Ogvkw9AUPnE@mail.gmail.com>
+Subject: Re: [PATCH] cgroup: alloc_css_id() increments hierarchy depth
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: Paul Menage <menage@google.com>,
+       "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+       Li Zefan <lizf@cn.fujitsu.com>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Ben Blum <bblum@andrew.cmu.edu>, containers@lists.linux-foundation.org,
+       linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 28 May 2010 13:48:26 -0300
-"Luis Claudio R. Goncalves" <lclaudio@uudg.org> wrote:
+On Sun, May 30, 2010 at 4:54 PM, KAMEZAWA Hiroyuki
+<kamezawa.hiroyu@jp.fujitsu.com> wrote:
+> On Mon, 31 May 2010 08:45:29 +0900
+> KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
+>
+>> On Fri, 28 May 2010 15:25:08 -0700
+>> Paul Menage <menage@google.com> wrote:
+>>
+>> > On Fri, May 28, 2010 at 8:16 AM, Greg Thelen <gthelen@google.com> wrote:
+>> > >
+>> > > Signed-off-by: Greg Thelen <gthelen@google.com>
+>> >
+>> > Acked-by: Paul Menage <menage@google.com>
+>> >
+>> > Good catch, thanks.
+>> >
+>> Nice Catch.
+>> Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+>>
+>> But, who breaks this ? Do we need backport this against old kernels ?
+>>
+> http://git.kernel.org/?p=linux/kernel/git/torvalds/linux-2.6.git;a=commitdiff;h=fae9c791703606636c1220e47f6690660042ce7f
+>
+> Hmm. this one. and 2.6.34 needs this patch. Greg, could you post this to
+> stable-2.6.34 tree ?
 
-> On Sat, May 29, 2010 at 12:45:49AM +0900, Minchan Kim wrote:
-> | On Fri, May 28, 2010 at 12:28:42PM -0300, Luis Claudio R. Goncalves wrote:
-> | > On Sat, May 29, 2010 at 12:12:49AM +0900, Minchan Kim wrote:
-> ...
-> | > | I think highest RT proirity ins't good solution.
-> | > | As I mentiond, Some RT functions don't want to be preempted by other processes
-> | > | which cause memory pressure. It makes RT task broken.
-> | > 
-> | > For the RT case, if you reached a system OOM situation, your determinism has
-> | > already been hurt. If the memcg OOM happens on the same memcg your RT task
-> | > is - what will probably be the case most of time - again, the determinism
-> | > has deteriorated. For both these cases, giving the dying task SCHED_FIFO
-> | > MAX_RT_PRIO-1 means a faster recovery.
-> | 
-> | What I want to say is that determinisic has no relation with OOM. 
-> | Why is some RT task affected by other process's OOM?
-> | 
-> | Of course, if system has no memory, it is likely to slow down RT task. 
-> | But it's just only thought. If some task scheduled just is exit, we don't need
-> | to raise OOMed task's priority.
-> | 
-> | But raising min rt priority on your patch was what I want.
-> | It doesn't preempt any RT task.
-> | 
-> | So until now, I have made noise about your patch.
-> | Really, sorry for that. 
-> | I don't have any objection on raising priority part from now on. 
-> 
-> This is the third version of the patch, factoring in your input along with
-> Peter's comment. Basically the same patch, but using the lowest RT priority
-> to boost the dying task.
-> 
-> Thanks again for reviewing and commenting.
-> Luis
-> 
-> oom-killer: give the dying task rt priority (v3)
-> 
-> Give the dying task RT priority so that it can be scheduled quickly and die,
-> freeing needed memory.
-> 
-> Signed-off-by: Luis Claudio R. Gonçalves <lgoncalv@redhat.com>
-> 
-> diff --git a/mm/oom_kill.c b/mm/oom_kill.c
-> index 84bbba2..2b0204f 100644
-> --- a/mm/oom_kill.c
-> +++ b/mm/oom_kill.c
-> @@ -266,6 +266,8 @@ static struct task_struct *select_bad_process(unsigned long *ppoints)
->   */
->  static void __oom_kill_task(struct task_struct *p, int verbose)
->  {
-> +	struct sched_param param;
-> +
->  	if (is_global_init(p)) {
->  		WARN_ON(1);
->  		printk(KERN_WARNING "tried to kill init!\n");
-> @@ -288,6 +290,8 @@ static void __oom_kill_task(struct task_struct *p, int verbose)
->  	 * exit() and clear out its resources quickly...
->  	 */
->  	p->time_slice = HZ;
-> +	param.sched_priority = MAX_RT_PRIO-10;
-> +	sched_setscheduler(p, SCHED_FIFO, &param);
->  	set_tsk_thread_flag(p, TIF_MEMDIE);
->  
+Given that I forgot to include "Cc: stable <stable@kernel.org>" in the
+patch, I assume the best way to get this patch into -stable is for me
+to email the commit id to stable@kernel.org once the patch is accepted
+into Linus' tree.  Let me know if there is a better way.
 
-BTW, how about the other threads which share mm_struct ?
-
-Thanks,
--Kame
-
+--
+Greg
