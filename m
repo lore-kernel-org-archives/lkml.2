@@ -1,246 +1,303 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756590Ab0EaPZP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 May 2010 11:25:15 -0400
-Received: from icebox.esperi.org.uk ([81.187.191.129]:46820 "EHLO
-	mail.esperi.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754722Ab0EaPZN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 May 2010 11:25:13 -0400
-X-Greylist: delayed 2620 seconds by postgrey-1.27 at vger.kernel.org; Mon, 31 May 2010 11:25:13 EDT
-To: linux-kernel@vger.kernel.org,
-       Linux NFS Mailing List <nfs@lists.sourceforge.net>
-Subject: 2.6.34 nfs fsync() deadlock
-From: Nix <nix@esperi.org.uk>
-Emacs: because extension languages should come with the editor built in.
-Date: Mon, 31 May 2010 15:41:22 +0100
-Message-ID: <87r5ksjfql.fsf@spindle.srvr.nix>
-User-Agent: Gnus/5.1008 (Gnus v5.10.8) XEmacs/21.5-b29 (linux)
+	id S1755409Ab0EaP1N (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 May 2010 11:27:13 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:35104 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753870Ab0EaP1L (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 31 May 2010 11:27:11 -0400
+Date: Mon, 31 May 2010 18:22:21 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: Oleg Nesterov <oleg@redhat.com>, Sridhar Samudrala <sri@us.ibm.com>,
+       netdev <netdev@vger.kernel.org>, lkml <linux-kernel@vger.kernel.org>,
+       "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Dmitri Vorobiev <dmitri.vorobiev@movial.com>,
+       Jiri Kosina <jkosina@suse.cz>, Thomas Gleixner <tglx@linutronix.de>,
+       Ingo Molnar <mingo@elte.hu>, Andi Kleen <ak@linux.intel.com>
+Subject: Re: [PATCH 1/3] vhost: replace vhost_workqueue with per-vhost
+	kthread
+Message-ID: <20100531152221.GB2987@redhat.com>
+References: <20100527131254.GB7974@redhat.com> <4BFE9ABA.6030907@kernel.org> <20100527163954.GA21710@redhat.com> <4BFEA434.6080405@kernel.org> <20100527173207.GA21880@redhat.com> <4BFEE216.2070807@kernel.org> <20100528150830.GB21880@redhat.com> <4BFFE742.2060205@kernel.org> <20100530112925.GB27611@redhat.com> <4C02C961.9050606@kernel.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-X-DCC-URT-Metrics: spindle 1060; Body=2 Fuz1=2
+Content-Disposition: inline
+In-Reply-To: <4C02C961.9050606@kernel.org>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I just got a deadlock while doing a postgresql 'make check' on an NFSv3
-TCP mount (the server is Linux 2.6.34 as well; the underlying filesystem
-is ext4). This testsuite is notable for doing a lot of things in
-parallel, each of which is generally doing a lot of fsync()ing.
+On Sun, May 30, 2010 at 10:24:01PM +0200, Tejun Heo wrote:
+> Replace vhost_workqueue with per-vhost kthread.  Other than callback
+> argument change from struct work_struct * to struct vhost_poll *,
+> there's no visible change to vhost_poll_*() interface.
 
-/proc/mounts for the filesystem of discourse:
+I would prefer a substructure vhost_work, even just to make
+the code easier to review and compare to workqueue.c.
 
-package.srvr.nix:/usr/src /usr/src nfs rw,relatime,vers=3,rsize=1048576,wsize=1048576,namlen=255,hard,proto=tcp,timeo=600,retrans=2,sec=sys,mountaddr=192.168.14.15,mountvers=3,mountport=50892,mountproto=udp,addr=192.168.14.15 0 0
+> This conversion is to make each vhost use a dedicated kthread so that
+> resource control via cgroup can be applied.
+> 
+> Partially based on Sridhar Samudrala's patch.
+> 
+> Cc: Michael S. Tsirkin <mst@redhat.com>
+> Cc: Sridhar Samudrala <samudrala.sridhar@gmail.com>
+> ---
+> Okay, here is three patch series to convert vhost to use per-vhost
+> kthread, add cgroup_attach_task_current_cg() and apply it to the vhost
+> kthreads.  The conversion is mostly straight forward although flush is
+> slightly tricky.
+> 
+> The problem is that I have no idea how to test this.
 
-/etc/exports for it on the server:
+It's a 3 step process:
 
-/usr/src mutilate(rw,no_root_squash,no_subtree_check,async)
+1. 
+Install qemu-kvm under fc13, or build recent one from source,
+get it from here:
+git://git.kernel.org/pub/scm/virt/kvm/qemu-kvm.git
 
-dmesg:
-
-[ 6161.193031] INFO: task postgres:12472 blocked for more than 120 seconds.
-[ 6161.193039] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
-[ 6161.193044] postgres      D 0000000000000004     0 12472  12448 0x00000000
-[ 6161.193060]  ffff880190f33c28 0000000000000046 ffff880190f33bc8 ffffffff810d92e0
-[ 6161.193096]  ffff880190f33fd8 ffff880336758340 ffff880190f33fd8 ffff880190f32000
-[ 6161.193128]  ffff880190f32000 ffff880190f33fd8 ffff880190f32000 ffff880190f33fd8
-[ 6161.193159] Call Trace:
-[ 6161.193179]  [<ffffffff810d92e0>] ? find_get_pages_tag+0xd9/0x103
-[ 6161.193186]  [<ffffffff8111e561>] ? inode_wait+0x0/0x12
-[ 6161.193195]  [<ffffffff8111e56f>] inode_wait+0xe/0x12
-[ 6161.193206]  [<ffffffff814d87dc>] __wait_on_bit+0x48/0x7b
-[ 6161.193216]  [<ffffffff811b80b6>] ? nfs_writepages+0xd5/0xf8
-[ 6161.193226]  [<ffffffff81127974>] inode_wait_for_writeback+0x8d/0xad
-[ 6161.193238]  [<ffffffff81081276>] ? wake_bit_function+0x0/0x33
-[ 6161.193247]  [<ffffffff81127a44>] writeback_single_inode+0xb0/0x2dc
-[ 6161.193257]  [<ffffffff81127c9d>] sync_inode+0x2d/0x46
-[ 6161.193266]  [<ffffffff811b6f99>] nfs_wb_all+0x42/0x44
-[ 6161.193276]  [<ffffffff811abf4b>] nfs_do_fsync+0x20/0x3d
-[ 6161.193286]  [<ffffffff811ac130>] nfs_file_flush+0x75/0x7d
-[ 6161.193296]  [<ffffffff8110a58c>] filp_close+0x43/0x72
-[ 6161.193306]  [<ffffffff8106903a>] put_files_struct+0x74/0xcc
-[ 6161.193316]  [<ffffffff810690dd>] exit_files+0x4b/0x53
-[ 6161.193325]  [<ffffffff8106a77c>] do_exit+0x269/0x6fb
-[ 6161.193334]  [<ffffffff8106ac86>] do_group_exit+0x78/0xa1
-[ 6161.193344]  [<ffffffff8106acc6>] sys_exit_group+0x17/0x1b
-[ 6161.193353]  [<ffffffff8102e0eb>] system_call_fastpath+0x16/0x1b
-[ 6161.193367] INFO: task postgres:12477 blocked for more than 120 seconds.
-[ 6161.193371] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
-[ 6161.193374] postgres      D 0000000000000001     0 12477  12448 0x00000000
-[ 6161.193396]  ffff8803382e7a38 0000000000000046 ffff8803382e7988 ffffffffffffffff
-[ 6161.193427]  ffff8803382e7fd8 ffff8802f3606800 ffff8803382e7fd8 ffff8803382e6000
-[ 6161.193458]  ffff8803382e6000 ffff8803382e7fd8 ffff8803382e6000 ffff8803382e7fd8
-[ 6161.193489] Call Trace:
-[ 6161.193503]  [<ffffffff810d96e0>] ? sync_page+0x0/0x4a
-[ 6161.193508]  [<ffffffff814d81f4>] io_schedule+0x3d/0x52
-[ 6161.193517]  [<ffffffff810d9726>] sync_page+0x46/0x4a
-[ 6161.193526]  [<ffffffff814d86d2>] __wait_on_bit_lock+0x46/0x8f
-[ 6161.193535]  [<ffffffff810d96c7>] __lock_page+0x66/0x6d
-[ 6161.193545]  [<ffffffff81081276>] ? wake_bit_function+0x0/0x33
-[ 6161.193555]  [<ffffffff810dfb71>] write_cache_pages+0x19b/0x329
-[ 6161.193565]  [<ffffffff811b80d9>] ? nfs_writepages_callback+0x0/0x7c
-[ 6161.193579]  [<ffffffff811b8097>] nfs_writepages+0xb6/0xf8
-[ 6161.193584]  [<ffffffff811b8c30>] ? nfs_flush_one+0x0/0xdf
-[ 6161.193594]  [<ffffffff81081276>] ? wake_bit_function+0x0/0x33
-[ 6161.193604]  [<ffffffff810dfd46>] do_writepages+0x21/0x2a
-[ 6161.193613]  [<ffffffff81127a7b>] writeback_single_inode+0xe7/0x2dc
-[ 6161.193622]  [<ffffffff81127c9d>] sync_inode+0x2d/0x46
-[ 6161.193631]  [<ffffffff811b6f99>] nfs_wb_all+0x42/0x44
-[ 6161.193641]  [<ffffffff811abf4b>] nfs_do_fsync+0x20/0x3d
-[ 6161.193650]  [<ffffffff811ac130>] nfs_file_flush+0x75/0x7d
-[ 6161.193660]  [<ffffffff8110a58c>] filp_close+0x43/0x72
-[ 6161.193669]  [<ffffffff8106903a>] put_files_struct+0x74/0xcc
-[ 6161.193678]  [<ffffffff810690dd>] exit_files+0x4b/0x53
-[ 6161.193687]  [<ffffffff8106a77c>] do_exit+0x269/0x6fb
-[ 6161.193697]  [<ffffffff8106ac86>] do_group_exit+0x78/0xa1
-[ 6161.193706]  [<ffffffff8106acc6>] sys_exit_group+0x17/0x1b
-[ 6161.193715]  [<ffffffff8102e0eb>] system_call_fastpath+0x16/0x1b
-[ 6161.193729] INFO: task postgres:12483 blocked for more than 120 seconds.
-[ 6161.193733] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
-[ 6161.193736] postgres      D 0000000000000004     0 12483  12448 0x00000000
-[ 6161.193758]  ffff880332079c28 0000000000000046 ffff880332079bc8 ffffffffffffffff
-[ 6161.193795]  ffff880332079fd8 ffff880190f66880 ffff880332079fd8 ffff880332078000
-[ 6161.193825]  ffff880332078000 ffff880332079fd8 ffff880332078000 ffff880332079fd8
-[ 6161.193868] Call Trace:
-[ 6161.193882]  [<ffffffff8111e561>] ? inode_wait+0x0/0x12
-[ 6161.193890]  [<ffffffff8111e56f>] inode_wait+0xe/0x12
-[ 6161.193905]  [<ffffffff814d87dc>] __wait_on_bit+0x48/0x7b
-[ 6161.193913]  [<ffffffff81081160>] ? bit_waitqueue+0x17/0x97
-[ 6161.193928]  [<ffffffff81127974>] inode_wait_for_writeback+0x8d/0xad
-[ 6161.193952]  [<ffffffff81081276>] ? wake_bit_function+0x0/0x33
-[ 6161.193960]  [<ffffffff81127a44>] writeback_single_inode+0xb0/0x2dc
-[ 6161.193978]  [<ffffffff81127c9d>] sync_inode+0x2d/0x46
-[ 6161.193987]  [<ffffffff811b6f99>] nfs_wb_all+0x42/0x44
-[ 6161.194004]  [<ffffffff811abf4b>] nfs_do_fsync+0x20/0x3d
-[ 6161.194014]  [<ffffffff811ac130>] nfs_file_flush+0x75/0x7d
-[ 6161.194031]  [<ffffffff8110a58c>] filp_close+0x43/0x72
-[ 6161.194041]  [<ffffffff8106903a>] put_files_struct+0x74/0xcc
-[ 6161.194058]  [<ffffffff810690dd>] exit_files+0x4b/0x53
-[ 6161.194067]  [<ffffffff8106a77c>] do_exit+0x269/0x6fb
-[ 6161.194084]  [<ffffffff8106ac86>] do_group_exit+0x78/0xa1
-[ 6161.194095]  [<ffffffff8106acc6>] sys_exit_group+0x17/0x1b
-[ 6161.194112]  [<ffffffff8102e0eb>] system_call_fastpath+0x16/0x1b
-[ 6161.194124] INFO: task postgres:12491 blocked for more than 120 seconds.
-[ 6161.194140] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
-[ 6161.194149] postgres      D 0000000000000006     0 12491  12448 0x00000000
-[ 6161.194179]  ffff8803318afc28 0000000000000046 ffff8803318afb88 ffff880001f13200
-[ 6161.194205]  ffff8803318affd8 ffff880338612540 ffff8803318affd8 ffff8803318ae000
-[ 6161.194242]  ffff8803318ae000 ffff8803318affd8 ffff8803318ae000 ffff8803318affd8
-[ 6161.194276] Call Trace:
-[ 6161.194296]  [<ffffffff8111e561>] ? inode_wait+0x0/0x12
-[ 6161.194306]  [<ffffffff8111e56f>] inode_wait+0xe/0x12
-[ 6161.194322]  [<ffffffff814d87dc>] __wait_on_bit+0x48/0x7b
-[ 6161.194334]  [<ffffffff81081276>] ? wake_bit_function+0x0/0x33
-[ 6161.194351]  [<ffffffff81127974>] inode_wait_for_writeback+0x8d/0xad
-[ 6161.194362]  [<ffffffff81081276>] ? wake_bit_function+0x0/0x33
-[ 6161.194380]  [<ffffffff81127a44>] writeback_single_inode+0xb0/0x2dc
-[ 6161.194390]  [<ffffffff81127c9d>] sync_inode+0x2d/0x46
-[ 6161.194406]  [<ffffffff811b6f99>] nfs_wb_all+0x42/0x44
-[ 6161.194417]  [<ffffffff811abf4b>] nfs_do_fsync+0x20/0x3d
-[ 6161.194434]  [<ffffffff811ac130>] nfs_file_flush+0x75/0x7d
-[ 6161.194444]  [<ffffffff8110a58c>] filp_close+0x43/0x72
-[ 6161.194460]  [<ffffffff8106903a>] put_files_struct+0x74/0xcc
-[ 6161.194470]  [<ffffffff810690dd>] exit_files+0x4b/0x53
-[ 6161.194482]  [<ffffffff8106a77c>] do_exit+0x269/0x6fb
-[ 6161.194498]  [<ffffffff8106ac86>] do_group_exit+0x78/0xa1
-[ 6161.194505]  [<ffffffff8106acc6>] sys_exit_group+0x17/0x1b
-[ 6161.194516]  [<ffffffff8102e0eb>] system_call_fastpath+0x16/0x1b
-[ 6161.194533] INFO: task postgres:12497 blocked for more than 120 seconds.
-[ 6161.194540] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
-[ 6161.194551] postgres      D 0000000000000007     0 12497  12448 0x00000004
-[ 6161.194575]  ffff880337261988 0000000000000082 ffff8803372618f8 ffffffff814b3a8b
-[ 6161.194611]  ffff880337261fd8 ffff8803323e66c0 ffff880337261fd8 ffff880337260000
-[ 6161.194646]  ffff880337260000 ffff880337261fd8 ffff880337260000 ffff880337261fd8
-[ 6161.194681] Call Trace:
-[ 6161.194698]  [<ffffffff814b3a8b>] ? __rpc_execute+0xc8/0x25b
-[ 6161.194707]  [<ffffffff811b744b>] ? nfs_write_rpcsetup+0x243/0x258
-[ 6161.194719]  [<ffffffff8111e561>] ? inode_wait+0x0/0x12
-[ 6161.194731]  [<ffffffff8111e56f>] inode_wait+0xe/0x12
-[ 6161.194743]  [<ffffffff814d87dc>] __wait_on_bit+0x48/0x7b
-[ 6161.194759]  [<ffffffff81127974>] inode_wait_for_writeback+0x8d/0xad
-[ 6161.194765]  [<ffffffff81081276>] ? wake_bit_function+0x0/0x33
-[ 6161.194775]  [<ffffffff81127a44>] writeback_single_inode+0xb0/0x2dc
-[ 6161.194784]  [<ffffffff81127c9d>] sync_inode+0x2d/0x46
-[ 6161.194793]  [<ffffffff811b7792>] nfs_wb_page+0x81/0x9a
-[ 6161.194802]  [<ffffffff811b7807>] nfs_flush_incompatible+0x5c/0x6c
-[ 6161.194812]  [<ffffffff811abdb6>] nfs_write_begin+0xeb/0x1b6
-[ 6161.194823]  [<ffffffff810d8d91>] generic_file_buffered_write+0x116/0x273
-[ 6161.194833]  [<ffffffff811be17f>] ? nfs3_getxattr+0x50/0xc0
-[ 6161.194848]  [<ffffffff810da840>] __generic_file_aio_write+0x395/0x3ca
-[ 6161.194855]  [<ffffffff811f2567>] ? sys_semtimedop+0x794/0x8f6
-[ 6161.194864]  [<ffffffff810da8d2>] generic_file_aio_write+0x5d/0xa7
-[ 6161.194874]  [<ffffffff811ac81a>] nfs_file_write+0xdc/0x184
-[ 6161.194884]  [<ffffffff8110be84>] do_sync_write+0xcb/0x108
-[ 6161.194899]  [<ffffffff811ac998>] ? nfs_file_llseek+0x0/0xb8
-[ 6161.194904]  [<ffffffff8110c7a4>] vfs_write+0xb2/0x153
-[ 6161.194914]  [<ffffffff8110c908>] sys_write+0x4a/0x71
-[ 6161.194923]  [<ffffffff8102e0eb>] system_call_fastpath+0x16/0x1b
-[ 6161.194942] INFO: task postgres:12498 blocked for more than 120 seconds.
-[ 6161.194946] "echo 0 > /proc/sys/kernel/hung_task_timeout_secs" disables this message.
-[ 6161.194950] postgres      D 0000000000000000     0 12498  12448 0x00000000
-[ 6161.194972]  ffff8802f0681c28 0000000000000046 ffff8802f0681bc8 ffffffff810d92e0
-[ 6161.195004]  ffff8802f0681fd8 ffff880337624700 ffff8802f0681fd8 ffff8802f0680000
-[ 6161.195036]  ffff8802f0680000 ffff8802f0681fd8 ffff8802f0680000 ffff8802f0681fd8
-[ 6161.195067] Call Trace:
-[ 6161.195077]  [<ffffffff810d92e0>] ? find_get_pages_tag+0xd9/0x103
-[ 6161.195092]  [<ffffffff8111e561>] ? inode_wait+0x0/0x12
-[ 6161.195096]  [<ffffffff8111e56f>] inode_wait+0xe/0x12
-[ 6161.195106]  [<ffffffff814d87dc>] __wait_on_bit+0x48/0x7b
-[ 6161.195111]  [<ffffffff811b80b6>] ? nfs_writepages+0xd5/0xf8
-[ 6161.195121]  [<ffffffff81127974>] inode_wait_for_writeback+0x8d/0xad
-[ 6161.195131]  [<ffffffff81081276>] ? wake_bit_function+0x0/0x33
-[ 6161.195140]  [<ffffffff81127a44>] writeback_single_inode+0xb0/0x2dc
-[ 6161.195150]  [<ffffffff81127c9d>] sync_inode+0x2d/0x46
-[ 6161.195159]  [<ffffffff811b6f99>] nfs_wb_all+0x42/0x44
-[ 6161.195168]  [<ffffffff811abf4b>] nfs_do_fsync+0x20/0x3d
-[ 6161.195178]  [<ffffffff811ac130>] nfs_file_flush+0x75/0x7d
-[ 6161.195195]  [<ffffffff8110a58c>] filp_close+0x43/0x72
-[ 6161.195200]  [<ffffffff8106903a>] put_files_struct+0x74/0xcc
-[ 6161.195209]  [<ffffffff810690dd>] exit_files+0x4b/0x53
-[ 6161.195219]  [<ffffffff8106a77c>] do_exit+0x269/0x6fb
-[ 6161.195228]  [<ffffffff8106ac86>] do_group_exit+0x78/0xa1
-[ 6161.195237]  [<ffffffff8106acc6>] sys_exit_group+0x17/0x1b
-[ 6161.195247]  [<ffffffff8102e0eb>] system_call_fastpath+0x16/0x1b
+2. install guest under it:
+qemu-img create -f qcow2 disk.qcow2 100G
+Now get some image (e.g. fedora 13 in fc13.iso)
+and install guest:
+qemu-kvm -enable-kvm -m 1G -cdrom fc13.iso -drive file=disk.qcow2
 
 
-NFS- and networking-related .config on the client:
+3. set up networking. I usually simply do host to guest 
+on a special subnet for testing purposes:
 
-CONFIG_NETWORK_FILESYSTEMS=y
-CONFIG_NFS_FS=y
-CONFIG_NFS_V3=y
-CONFIG_NFS_V3_ACL=y
-CONFIG_NFSD=y
-CONFIG_NFSD_V2_ACL=y
-CONFIG_NFSD_V3=y
-CONFIG_NFSD_V3_ACL=y
-CONFIG_LOCKD=y
-CONFIG_LOCKD_V4=y
-CONFIG_EXPORTFS=y
-CONFIG_NFS_ACL_SUPPORT=y
-CONFIG_NFS_COMMON=y
-CONFIG_SUNRPC=y
+Set up a bridge named mstbr0:
 
-CONFIG_PACKET=y
-CONFIG_UNIX=y
-CONFIG_INET=y
-CONFIG_IP_MULTICAST=y
-CONFIG_IP_FIB_HASH=y
-CONFIG_INET_LRO=y
-CONFIG_INET_DIAG=y
-CONFIG_INET_TCP_DIAG=y
-CONFIG_TCP_CONG_CUBIC=y
-CONFIG_DEFAULT_TCP_CONG="cubic"
-CONFIG_BT=y
-CONFIG_BT_L2CAP=y
-CONFIG_BT_SCO=y
-CONFIG_BT_RFCOMM=y
-CONFIG_BT_HCIBTUSB=y
+ifconfig mstbr0 down
+brctl delbr mstbr0
+brctl addbr mstbr0
+brctl setfd mstbr0 0
+ifconfig mstbr0 11.0.0.1
 
-CONFIG_FIREWIRE=y
-CONFIG_FIREWIRE_OHCI=y
-CONFIG_FIREWIRE_OHCI_DEBUG=y
-CONFIG_FIREWIRE_SBP2=y
-CONFIG_NETDEVICES=y
-CONFIG_MII=y
-CONFIG_NETDEV_1000=y
-CONFIG_R8169=y
+cat > ifup << EOF
+#!/bin/sh -x
+/sbin/ifconfig msttap0 0.0.0.0 up
+brctl addif mstbr0 msttap0
+EOF
+
+
+qemu-kvm -enable-kvm -m 1G -cdrom fc13.iso -drive file=disk.qcow2
+ -net nic,model=virtio,netdev=foo -netdev
+tap,id=foo,ifname=msttap0,script=/home/mst/ifup,downscript=no,vhost=on
+
+after you set up the guest, log into it and
+ifconfig eth0 11.0.0.2
+
+You should now be able to ping guest to host and back.
+Use something like netperf to stress the connection.
+Close qemu with kill -9 and unload module to test flushing code.
+
+
+
+> Index: work/drivers/vhost/vhost.c
+> ===================================================================
+> --- work.orig/drivers/vhost/vhost.c
+> +++ work/drivers/vhost/vhost.c
+
+...
+
+> @@ -125,10 +139,50 @@ static void vhost_vq_reset(struct vhost_
+>  	vq->log_ctx = NULL;
+>  }
+> 
+> +static int vhost_poller(void *data)
+> +{
+> +	struct vhost_dev *dev = data;
+> +	struct vhost_poll *poll;
+> +
+> +repeat:
+> +	set_current_state(TASK_INTERRUPTIBLE);	/* mb paired w/ kthread_stop */
+> +
+> +	if (kthread_should_stop()) {
+> +		__set_current_state(TASK_RUNNING);
+> +		return 0;
+> +	}
+> +
+> +	poll = NULL;
+> +	spin_lock(&dev->poller_lock);
+> +	if (!list_empty(&dev->poll_list)) {
+> +		poll = list_first_entry(&dev->poll_list,
+> +					struct vhost_poll, node);
+> +		list_del_init(&poll->node);
+> +	}
+> +	spin_unlock(&dev->poller_lock);
+> +
+> +	if (poll) {
+> +		__set_current_state(TASK_RUNNING);
+> +		poll->fn(poll);
+> +		smp_wmb();	/* paired with rmb in vhost_poll_flush() */
+> +		poll->done_seq = poll->queue_seq;
+> +		wake_up_all(&poll->done);
+
+
+This seems to add wakeups on data path, which uses spinlocks etc.
+OTOH workqueue.c adds a special barrier
+entry which only does a wakeup when needed.
+Right?
+
+> +	} else
+> +		schedule();
+> +
+> +	goto repeat;
+> +}
+> +
+>  long vhost_dev_init(struct vhost_dev *dev,
+>  		    struct vhost_virtqueue *vqs, int nvqs)
+>  {
+> +	struct task_struct *poller;
+>  	int i;
+> +
+> +	poller = kthread_create(vhost_poller, dev, "vhost-%d", current->pid);
+> +	if (IS_ERR(poller))
+> +		return PTR_ERR(poller);
+> +
+>  	dev->vqs = vqs;
+>  	dev->nvqs = nvqs;
+>  	mutex_init(&dev->mutex);
+> @@ -136,6 +190,9 @@ long vhost_dev_init(struct vhost_dev *de
+>  	dev->log_file = NULL;
+>  	dev->memory = NULL;
+>  	dev->mm = NULL;
+> +	spin_lock_init(&dev->poller_lock);
+> +	INIT_LIST_HEAD(&dev->poll_list);
+> +	dev->poller = poller;
+> 
+>  	for (i = 0; i < dev->nvqs; ++i) {
+>  		dev->vqs[i].dev = dev;
+> @@ -143,8 +200,7 @@ long vhost_dev_init(struct vhost_dev *de
+>  		vhost_vq_reset(dev, dev->vqs + i);
+>  		if (dev->vqs[i].handle_kick)
+>  			vhost_poll_init(&dev->vqs[i].poll,
+> -					dev->vqs[i].handle_kick,
+> -					POLLIN);
+> +					dev->vqs[i].handle_kick, POLLIN, dev);
+>  	}
+>  	return 0;
+>  }
+> @@ -217,6 +273,8 @@ void vhost_dev_cleanup(struct vhost_dev
+>  	if (dev->mm)
+>  		mmput(dev->mm);
+>  	dev->mm = NULL;
+> +
+> +	kthread_stop(dev->poller);
+>  }
+> 
+>  static int log_access_ok(void __user *log_base, u64 addr, unsigned long sz)
+> @@ -1113,16 +1171,3 @@ void vhost_disable_notify(struct vhost_v
+>  		vq_err(vq, "Failed to enable notification at %p: %d\n",
+>  		       &vq->used->flags, r);
+>  }
+> -
+> -int vhost_init(void)
+> -{
+> -	vhost_workqueue = create_singlethread_workqueue("vhost");
+> -	if (!vhost_workqueue)
+> -		return -ENOMEM;
+> -	return 0;
+> -}
+> -
+> -void vhost_cleanup(void)
+> -{
+> -	destroy_workqueue(vhost_workqueue);
+
+I note that destroy_workqueue does a flush, kthread_stop
+doesn't. Right? Sure we don't need to check nothing is in one of
+the lists? Maybe add a BUG_ON?
+
+> -}
+> Index: work/drivers/vhost/vhost.h
+> ===================================================================
+> --- work.orig/drivers/vhost/vhost.h
+> +++ work/drivers/vhost/vhost.h
+> @@ -5,7 +5,6 @@
+>  #include <linux/vhost.h>
+>  #include <linux/mm.h>
+>  #include <linux/mutex.h>
+> -#include <linux/workqueue.h>
+>  #include <linux/poll.h>
+>  #include <linux/file.h>
+>  #include <linux/skbuff.h>
+> @@ -20,19 +19,26 @@ enum {
+>  	VHOST_NET_MAX_SG = MAX_SKB_FRAGS + 2,
+>  };
+> 
+> +struct vhost_poll;
+> +typedef void (*vhost_poll_fn_t)(struct vhost_poll *poll);
+> +
+>  /* Poll a file (eventfd or socket) */
+>  /* Note: there's nothing vhost specific about this structure. */
+>  struct vhost_poll {
+> +	vhost_poll_fn_t		  fn;
+>  	poll_table                table;
+>  	wait_queue_head_t        *wqh;
+>  	wait_queue_t              wait;
+> -	/* struct which will handle all actual work. */
+> -	struct work_struct        work;
+> +	struct list_head	  node;
+> +	wait_queue_head_t	  done;
+>  	unsigned long		  mask;
+> +	struct vhost_dev	 *dev;
+> +	int			  queue_seq;
+> +	int			  done_seq;
+>  };
+> 
+> -void vhost_poll_init(struct vhost_poll *poll, work_func_t func,
+> -		     unsigned long mask);
+> +void vhost_poll_init(struct vhost_poll *poll, vhost_poll_fn_t fn,
+> +		     unsigned long mask, struct vhost_dev *dev);
+>  void vhost_poll_start(struct vhost_poll *poll, struct file *file);
+>  void vhost_poll_stop(struct vhost_poll *poll);
+>  void vhost_poll_flush(struct vhost_poll *poll);
+> @@ -63,7 +69,7 @@ struct vhost_virtqueue {
+>  	struct vhost_poll poll;
+> 
+>  	/* The routine to call when the Guest pings us, or timeout. */
+> -	work_func_t handle_kick;
+> +	vhost_poll_fn_t handle_kick;
+> 
+>  	/* Last available index we saw. */
+>  	u16 last_avail_idx;
+> @@ -86,11 +92,11 @@ struct vhost_virtqueue {
+>  	struct iovec hdr[VHOST_NET_MAX_SG];
+>  	size_t hdr_size;
+>  	/* We use a kind of RCU to access private pointer.
+> -	 * All readers access it from workqueue, which makes it possible to
+> -	 * flush the workqueue instead of synchronize_rcu. Therefore readers do
+> +	 * All readers access it from poller, which makes it possible to
+> +	 * flush the vhost_poll instead of synchronize_rcu. Therefore readers do
+>  	 * not need to call rcu_read_lock/rcu_read_unlock: the beginning of
+> -	 * work item execution acts instead of rcu_read_lock() and the end of
+> -	 * work item execution acts instead of rcu_read_lock().
+> +	 * vhost_poll execution acts instead of rcu_read_lock() and the end of
+> +	 * vhost_poll execution acts instead of rcu_read_lock().
+>  	 * Writers use virtqueue mutex. */
+>  	void *private_data;
+>  	/* Log write descriptors */
+> @@ -110,6 +116,9 @@ struct vhost_dev {
+>  	int nvqs;
+>  	struct file *log_file;
+>  	struct eventfd_ctx *log_ctx;
+> +	spinlock_t poller_lock;
+> +	struct list_head poll_list;
+> +	struct task_struct *poller;
+>  };
+> 
+>  long vhost_dev_init(struct vhost_dev *, struct vhost_virtqueue *vqs, int nvqs);
+> @@ -136,9 +145,6 @@ bool vhost_enable_notify(struct vhost_vi
+>  int vhost_log_write(struct vhost_virtqueue *vq, struct vhost_log *log,
+>  		    unsigned int log_num, u64 len);
+> 
+> -int vhost_init(void);
+> -void vhost_cleanup(void);
+> -
+>  #define vq_err(vq, fmt, ...) do {                                  \
+>  		pr_debug(pr_fmt(fmt), ##__VA_ARGS__);       \
+>  		if ((vq)->error_ctx)                               \
