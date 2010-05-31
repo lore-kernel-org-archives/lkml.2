@@ -1,106 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756994Ab0EaTXB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 May 2010 15:23:01 -0400
-Received: from mail-px0-f174.google.com ([209.85.212.174]:36418 "EHLO
-	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756825Ab0EaTXA (ORCPT
+	id S1757033Ab0EaT2B (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 May 2010 15:28:01 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:36862 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756254Ab0EaT16 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 May 2010 15:23:00 -0400
-Message-ID: <4C040C98.8000105@vflare.org>
-Date: Tue, 01 Jun 2010 00:53:04 +0530
-From: Nitin Gupta <ngupta@vflare.org>
-Reply-To: ngupta@vflare.org
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-3.fc13 Thunderbird/3.0.4
-MIME-Version: 1.0
-To: Minchan Kim <minchan.kim@gmail.com>
-CC: Greg KH <greg@kroah.com>, Pekka Enberg <penberg@cs.helsinki.fi>,
+	Mon, 31 May 2010 15:27:58 -0400
+Date: Mon, 31 May 2010 20:27:45 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Kees Cook <kees.cook@canonical.com>
+Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, linux-kernel@vger.kernel.org,
+       linux-security-module@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+       linux-doc@vger.kernel.org, Randy Dunlap <rdunlap@xenotime.net>,
        Andrew Morton <akpm@linux-foundation.org>,
-       Hugh Dickins <hugh.dickins@tiscali.co.uk>, Cyp <cyp561@gmail.com>,
-       driverdev <devel@driverdev.osuosl.org>,
-       linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/3] Support generic I/O requests
-References: <1274710685-2351-1-git-send-email-ngupta@vflare.org>	 <1274710685-2351-2-git-send-email-ngupta@vflare.org> <1275320471.15980.24.camel@barrios-desktop>
-In-Reply-To: <1275320471.15980.24.camel@barrios-desktop>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+       Jiri Kosina <jkosina@suse.cz>, Dave Young <hidave.darkstar@gmail.com>,
+       Martin Schwidefsky <schwidefsky@de.ibm.com>,
+       James Morris <jmorris@namei.org>, Eric Paris <eparis@redhat.com>,
+       David Howells <dhowells@redhat.com>, Ingo Molnar <mingo@elte.hu>,
+       Peter Zijlstra <a.p.zijlstra@chello.nl>,
+       "Eric W. Biederman" <ebiederm@xmission.com>,
+       Tim Gardner <tim.gardner@canonical.com>,
+       "Serge E. Hallyn" <serue@us.ibm.com>
+Subject: Re: [PATCH v2] fs: block cross-uid sticky symlinks
+Message-ID: <20100531192745.GR31073@ZenIV.linux.org.uk>
+References: <20100531030402.GQ6056@outflux.net>
+ <20100531112314.373b0f26@lxorguk.ukuu.org.uk>
+ <20100531175008.GC4098@outflux.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100531175008.GC4098@outflux.net>
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Minchan,
+On Mon, May 31, 2010 at 10:50:08AM -0700, Kees Cook wrote:
 
-On 05/31/2010 09:11 PM, Minchan Kim wrote:
+> > Give your users their own /tmp. No kernel mods, no misbehaviours, no
+> > weirdomatic path walking hackery. No kernel patch needed that I can see.
 > 
-> On Mon, 2010-05-24 at 19:48 +0530, Nitin Gupta wrote:
-<snip>
->>
->>  - Scalability: There is only one (per-device) de/compression
->> buffer stats. This can lead to significant contention, especially
->> when used for generic (non-swap) purposes.
-> 
-> Later, we could enhance it by per-cpu counter. 
-> 
+> Some real applications expect to share /tmp (e.g. "screen").
 
-Yes, currently we effectively use just 1 core due to a single
-compression buffer. So, per-cpu buffers and counters should
-really help.
-  
->> -static int handle_zero_page(struct bio *bio)
->> +static void handle_zero_page(struct page *page, u32 index)
-> 
-> It doesn't use index. 
->
-
-Ok, I will remove this argument.
- 
->>  
->> -	/* Page is stored uncompressed since it's incompressible */
->> -	if (unlikely(rzs_test_flag(rzs, index, RZS_UNCOMPRESSED)))
->> -		return handle_uncompressed_page(rzs, bio);
->> +		/* Requested page is not present in compressed area */
->> +		if (unlikely(!rzs->table[index].page)) {
->> +			pr_debug("Read before write on swap device: "
->                                                          ^^^^
-> It's not ramzswap any more. It is zram. :)
->
-
-I will correct this :)
-
- 
->> +		/*
->> +		 * Page is incompressible. Store it as-is (uncompressed)
->> +		 * since we do not want to return too many swap write
->> +		 * errors which has side effect of hanging the system.
->> +		 */
->> +		if (unlikely(clen > max_zpage_size)) {
->> +			clen = PAGE_SIZE;
->> +			page_store = alloc_page(GFP_NOIO | __GFP_HIGHMEM);
->> +			if (unlikely(!page_store)) {
->> +				mutex_unlock(&rzs->lock);
-> 
-> What's purpose of rzs->lock?
-> Please, Document it. 
->
-
-
-Ok. I intentionally deferred much of the documentation for later patches
-to reduce "side noise" for these patches. Anyways, I will document this
-lock in "v2" patches.
- 
-> And please, take care of "swap" mentioned in comments. 
-> 
-
-Old habits die hard :)  I will clean them up.
-
-> I think code doesn't have big problem. 
-> But my feel is we can clean up some portion of codes. But it's not a big
-> deal. It doesn't have any problem to work. 
-> So I want to add zram into linux-next, too. 
-> 
-
-I will be sending patch series with code commentary, cleanups and minor
-fixes once this much enters linux-next.
-
-Thanks for the review.
-Nitin
+/tmp/screen-exchange, you mean?  Such a brilliant idea on multiuser system...
