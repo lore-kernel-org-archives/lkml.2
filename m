@@ -1,93 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755775Ab0EaQ7j (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 May 2010 12:59:39 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:47324 "EHLO mx2.suse.de"
+	id S1756309Ab0EaRAY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 May 2010 13:00:24 -0400
+Received: from cantor.suse.de ([195.135.220.2]:53011 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754893Ab0EaQ7h (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 May 2010 12:59:37 -0400
-Subject: Re: aha1542 oops caused by new request_irq routines
-From: James Bottomley <James.Bottomley@suse.de>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Tedheadster <tedheadster@gmail.com>, linux-scsi@vger.kernel.org,
-       linux-kernel <linux-kernel@vger.kernel.org>
-In-Reply-To: <alpine.LFD.2.00.1005311829360.2933@localhost.localdomain>
-References: <AANLkTilB661W9H9IPxn9TGBvv-omVnAh43r3XR5uM58m@mail.gmail.com>
-	 <1275316364.2823.22.camel@mulgrave.site>
-	 <alpine.LFD.2.00.1005311829360.2933@localhost.localdomain>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 31 May 2010 11:59:30 -0500
-Message-ID: <1275325170.2823.79.camel@mulgrave.site>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.2 
-Content-Transfer-Encoding: 7bit
+	id S1754475Ab0EaRAW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 31 May 2010 13:00:22 -0400
+Date: Mon, 31 May 2010 09:54:52 -0700
+From: Greg KH <gregkh@suse.de>
+To: Wolfram Sang <w.sang@pengutronix.de>
+Cc: linux-i2c@vger.kernel.org, Jean Delvare <khali@linux-fr.org>,
+       George Joseph <george.joseph@fairview5.com>,
+       Riku Voipio <riku.voipio@iki.fi>,
+       Guillaume Ligneul <guillaume.ligneul@gmail.com>,
+       "Ben Dooks (embedded platforms)" <ben-linux@fluff.org>,
+       Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+       Alessandro Rubini <rubini@cvml.unipv.it>,
+       Richard Purdie <rpurdie@rpsys.net>, Colin Leroy <colin@colino.net>,
+       Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+       Mauro Carvalho Chehab <mchehab@infradead.org>,
+       Samuel Ortiz <sameo@linux.intel.com>,
+       Mark Brown <broonie@opensource.wolfsonmicro.com>,
+       David Woodhouse <dwmw2@infradead.org>,
+       Liam Girdwood <lrg@slimlogic.co.uk>,
+       Paul Gortmaker <p_gortmaker@yahoo.com>,
+       Alessandro Zummo <a.zummo@towertech.it>, lm-sensors@lm-sensors.org,
+       linux-kernel@vger.kernel.org, linux-input@vger.kernel.org,
+       linuxppc-dev@ozlabs.org, linux-media@vger.kernel.org,
+       linux-mtd@lists.infradead.org, rtc-linux@googlegroups.com,
+       devel@driverdev.osuosl.org
+Subject: Re: [PATCH] drivers: remove all i2c_set_clientdata(client, NULL)
+Message-ID: <20100531165452.GA14066@suse.de>
+References: <1275310552-14685-1-git-send-email-w.sang@pengutronix.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1275310552-14685-1-git-send-email-w.sang@pengutronix.de>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-05-31 at 18:43 +0200, Thomas Gleixner wrote:
-> On Mon, 31 May 2010, James Bottomley wrote:
+On Mon, May 31, 2010 at 02:55:48PM +0200, Wolfram Sang wrote:
+> I2C-drivers can use the clientdata-pointer to point to private data. As I2C
+> devices are not really unregistered, but merely detached from their driver, it
+> used to be the drivers obligation to clear this pointer during remove() or a
+> failed probe(). As a couple of drivers forgot to do this, it was agreed that it
+> was cleaner if the i2c-core does this clearance when appropriate, as there is
+> no guarantee for the lifetime of the clientdata-pointer after remove() anyhow.
+> This feature was added to the core with commit
+> e4a7b9b04de15f6b63da5ccdd373ffa3057a3681 to fix the faulty drivers.
 > 
-> > On Mon, 2010-05-31 at 10:03 -0400, Tedheadster wrote:
-> > > I'm reliably getting this oops:
-> > > 
-> > > Configuring Adaptec (SCSI-ID 6) at IO:334, IRQ 10, DMA priority 6
-> > > BUG: sleeping function called from invalid context at mm/slub.c:1598
-> > > in_atomic(): 0, irqs_disabled(): 1, pid: 4782, name: modprobe
-> > > Pid: 4782, comm: modprobe Not tainted 2.6.30.10-105.2.23.RODATA.fc11.i586 #1
-> > > Call Trace:
-> > >  [<c0469e58>] ? request_threaded_irq+0x85/0x145
-> > >  [<c0422ab7>] __might_sleep+0xc4/0xc9
-> > >  [<c04a4322>] kmem_cache_alloc_notrace+0x29/0xb0
-> > >  [<c0469e58>] request_threaded_irq+0x85/0x145
-> > >  [<d086439c>] ? do_aha1542_intr_handle+0x0/0x2be [aha1542]
-> > >  [<d08696aa>] aha1542_detect+0x631/0x76f [aha1542]
-> > >  [<d0869841>] init_this_scsi_driver+0x59/0xc7 [aha1542]
-> > >  [<d08697e8>] ? init_this_scsi_driver+0x0/0xc7 [aha1542]
-> > >  [<c040114b>] do_one_initcall+0x51/0x13f
-> > >  [<c0451111>] sys_init_module+0x8b/0x192
-> > >  [<c0403535>] syscall_call+0x7/0xb
-> > > scsi5 : Adaptec 1542
-> > 
-> > So this one's a bit tricky.  aha1542 uses a global spinlock to give it
-> > thread safety and various other things.  In this case it's trying to use
-> > the lock to hold off the interrupt until everything is set up.
-> > 
-> > Now that we're doing a GFP_KERNEL allocation in the interrupt handler
-> > code you can't disable interrupts while calling request_irq since this
-> > is an old card liable to spurious interrupts as it gets poked in setup.
-> >
-> > I think a possible solution is this, since the mere act of installing an
-> > interrupt handler shouldn't trigger the problem.
-> > 
-> > However, I thought the pattern of disabling interrupts and setting up
-> > the handler and registers was a common one ... is there some way this is
-> > supposed to work now that doesn't involve altering the drivers?
+> As there is no need anymore to clear the clientdata-pointer, remove all current
+> occurrences in the drivers to simplify the code and prevent confusion.
 > 
-> Most drivers do the sane thing:
-> 
->      Disable interrupts at the device level
->      Install handler via request_irq()
->      Setup stuff
->      Enable interrupts at the device level
+> Signed-off-by: Wolfram Sang <w.sang@pengutronix.de>
+> Cc: Jean Delvare <khali@linux-fr.org>
 
-That only works for some hardware ... a lot of older hardware can't
-disable interrupts; the best you can do is to have the box physically
-not listening to the line.
-
-> So no, there is no way this is supposed to work with drivers which
-> don't follow that simple scheme.
-> 
-> commit 0e43785c5 (irq: use GFP_KERNEL for action allocation in
-> request_irq()) changed that particular instance to GFP_KERNEL because
-> the request_irq code calls (and always did) code which cannot be
-> called in atomic contexts, e.g. the proc entry handling.
-
-So, like I said, I think we can install the handler without tickling the
-hardware.  Ideally we'd like to install it IRQ_DISABLED and then call
-enable_irq after we're done with the setup, but that doesn't seem to be
-possible.
-
-James
-
-
+Acked-by: Greg Kroah-Hartman <gregkh@suse.de>
