@@ -1,93 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751587Ab0EWE6Q (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 May 2010 00:58:16 -0400
-Received: from mail-gw0-f46.google.com ([74.125.83.46]:38184 "EHLO
-	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751143Ab0EWE6P (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 May 2010 00:58:15 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:date:message-id:subject:from:to:content-type;
-        b=LxBFkiJE2QiAoB4aqaQfe4/D99uojlaz6VK9pQcpmGgQ07XiWHV5ELYXeTumUQCoKw
-         nfY4TK6sEPJqypqbwpw1usdrsmDa8OOl636Uy5lFA70bNtKWYG9FfJZr/Mekxx91fZ5Q
-         5mFm/0wWgHuADTTZbQ2AmbxULbRFDBODDxdsY=
+	id S1753249Ab0EaWBY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 May 2010 18:01:24 -0400
+Received: from smtp.outflux.net ([198.145.64.163]:40998 "EHLO smtp.outflux.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751231Ab0EaWBV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 31 May 2010 18:01:21 -0400
+Date: Mon, 31 May 2010 15:00:00 -0700
+From: Kees Cook <kees.cook@canonical.com>
+To: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, linux-kernel@vger.kernel.org,
+       linux-security-module@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+       linux-doc@vger.kernel.org, Randy Dunlap <rdunlap@xenotime.net>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Jiri Kosina <jkosina@suse.cz>, Dave Young <hidave.darkstar@gmail.com>,
+       Martin Schwidefsky <schwidefsky@de.ibm.com>,
+       James Morris <jmorris@namei.org>, Eric Paris <eparis@redhat.com>,
+       David Howells <dhowells@redhat.com>, Ingo Molnar <mingo@elte.hu>,
+       Peter Zijlstra <a.p.zijlstra@chello.nl>,
+       "Eric W. Biederman" <ebiederm@xmission.com>,
+       Tim Gardner <tim.gardner@canonical.com>,
+       "Serge E. Hallyn" <serue@us.ibm.com>
+Subject: Re: [PATCH v2] fs: block cross-uid sticky symlinks
+Message-ID: <20100531220000.GI4098@outflux.net>
+References: <20100531030402.GQ6056@outflux.net>
+ <20100531112314.373b0f26@lxorguk.ukuu.org.uk>
+ <20100531175008.GC4098@outflux.net>
+ <20100531190936.03076096@lxorguk.ukuu.org.uk>
+ <20100531190754.GF4098@outflux.net>
+ <20100531195230.GS31073@ZenIV.linux.org.uk>
 MIME-Version: 1.0
-Date: Sun, 23 May 2010 12:58:14 +0800
-Message-ID: <AANLkTikg6BEFCC-vwn3K96ZI-uiErg4SO8V701SWNkn0@mail.gmail.com>
-Subject: Wireless IBSS on Linux-2.6.34 broken by commit 3bbb9ec946428b96657126768f65487a48dd090c
-From: Jeff Chua <jeff.chua.linux@gmail.com>
-To: Arjan van de Ven <arjan@linux.intel.com>, johnstul@us.ibm.com,
-       Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
-       Thomas Gleixner <tglx@linutronix.de>,
-       Intel Linux Wireless <ilw@linux.intel.com>,
-       "John W. Linville" <linville@tuxdriver.com>,
-       Frans Pop <elendil@planet.nl>, Johannes Berg <johannes.berg@intel.com>,
-       Reinette Chatre <reinette.chatre@intel.com>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       lkml <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100531195230.GS31073@ZenIV.linux.org.uk>
+Organization: Canonical
+X-HELO: www.outflux.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Wireless IBSS on Linux-2.6.34 is broken. Reverting commit
-3bbb9ec946428b96657126768f65487a48dd090c makes it work again. This was
-tested by bisecting the kernel.
+Hi Al,
 
-I'm using 6200 AGN ...
+On Mon, May 31, 2010 at 08:52:30PM +0100, Al Viro wrote:
+> On Mon, May 31, 2010 at 12:07:54PM -0700, Kees Cook wrote:
+> > IIRC, screen, when setuid, allows users to share screen sessions (following
+> > some system-defined ACLs) but it does it via the /tmp directory trees it
+> > creates.  Per-user /tmp would break this (but yes, it's solvable using some
+> > kind of /var/lib/screen which maybe even already exists).
+> 
+> screen(1) does *not* put directories in /tmp these days, TYVM.
+> 
+> al@duke:~/linux/trees/vfs-next$ ls -l /var/run/screen/
+> total 1
+> drwx------ 2 al al 1024 May 20 21:50 S-al
 
-cfg80211: Calling CRDA to update world regulatory domain
-iwlagn: Intel(R) Wireless WiFi Link AGN driver for Linux, in-tree:
-iwlagn: Copyright(c) 2003-2010 Intel Corporation
-iwlagn 0000:02:00.0: PCI INT A -> GSI 16 (level, low) -> IRQ 16
-iwlagn 0000:02:00.0: setting latency timer to 64
-iwlagn 0000:02:00.0: Detected Intel(R) Centrino(R) Advanced-N 6200 AGN, REV=0x74
-iwlagn 0000:02:00.0: Tunable channels: 13 802.11bg, 24 802.11a channels
-iwlagn 0000:02:00.0: irq 46 for MSI/MSI-X
-iwlagn 0000:02:00.0: loaded firmware version 9.193.4.1 build 19710
+Okay, good; that's a relief.
 
+> In any case, the suggested "improvement" breaks realistic use cases, AFAICS.
+> In particular,
+> 
+> cd /tmp
+> tar jxf foo-2.42.orig.tar.bz2
+> <...>
+> tar jxf foo-gtk-wank-wank-wank-2.69.orig.tar.bz2
+> <...>
+> ln -s foo-gtk-wank-wank-wank-2.69/docs/GNOME/design/ crap
+> <...>
+> lpr crap/taste-is-optional.ps
+> lpr crap/why-options-are-wrong.ps
+> 
+> is going to break with that, isn't it?
 
+Nope.  To be fair, it depends on the implementation of of LPR.  In the
+case of CUPS, this is fine since lpr will run as the local user, follow
+the symlink and read the file contents before POSTing the contents to
+the CUPS server.  The privilege boundary is crossed at the network,
+not the filesystem in this case.
 
-So, where should the fix be?
+I would note however that without the symlink following patch a hypothetical
+attacker would be able to race you for the "foo-gtk-wank-wank-wank-2.69"
+entry, or the "crap" entry, since either could be directed out from under
+"tar" and "ln" to symlinks controlled by the attacker.  Unpacking archives
+in a sticky world-writable directory is dangerous without this symlink
+following patch.
 
+-Kees
 
-Here's the commit ...
-
-3bbb9ec946428b96657126768f65487a48dd090c is the first bad commit
-commit 3bbb9ec946428b96657126768f65487a48dd090c
-Author: Arjan van de Ven <arjan@linux.intel.com>
-Date:   Thu Mar 11 14:04:36 2010 -0800
-
-    timers: Introduce the concept of timer slack for legacy timers
-
-    While HR timers have had the concept of timer slack for quite some time
-    now, the legacy timers lacked this concept, and had to make do with
-    round_jiffies() and friends.
-
-    Timer slack is important for power management; grouping timers reduces the
-    number of wakeups which in turn reduces power consumption.
-
-    This patch introduces timer slack to the legacy timers using the following
-    pieces:
-    * A slack field in the timer struct
-    * An api (set_timer_slack) that callers can use to set explicit timer slack
-    * A default slack of 0.4% of the requested delay for callers that do not set
-      any explicit slack
-    * Rounding code that is part of mod_timer() that tries to
-      group timers around jiffies values every 'power of two'
-      (so quick timers will group around every 2, but longer timers
-      will group around every 4, 8, 16, 32 etc)
-
-    Signed-off-by: Arjan van de Ven <arjan@linux.intel.com>
-    Cc: johnstul@us.ibm.com
-    Cc: Ingo Molnar <mingo@elte.hu>
-    Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-    Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-
-
-
-
-Thanks,
-Jeff.
+-- 
+Kees Cook
+Ubuntu Security Team
