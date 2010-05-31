@@ -1,58 +1,157 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756996Ab0EaS6P (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 May 2010 14:58:15 -0400
-Received: from hera.kernel.org ([140.211.167.34]:34880 "EHLO hera.kernel.org"
+	id S1757081Ab0EaS6U (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 May 2010 14:58:20 -0400
+Received: from hera.kernel.org ([140.211.167.34]:34883 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756921Ab0EaS6N (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 May 2010 14:58:13 -0400
+	id S1757025Ab0EaS6S (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 31 May 2010 14:58:18 -0400
 From: Tejun Heo <tj@kernel.org>
 To: mingo@elte.hu, peterz@infradead.org, linux-kernel@vger.kernel.org,
        rusty@rustcorp.com.au, paulus@samba.org, acme@redhat.com
-Subject: [PATCHSET sched/core] sched: prepare for cmwq, take#2
-Date: Mon, 31 May 2010 20:56:35 +0200
-Message-Id: <1275332199-28082-1-git-send-email-tj@kernel.org>
+Cc: Tejun Heo <tj@kernel.org>, Mike Galbraith <efault@gmx.de>
+Subject: [PATCH 3/4] sched: refactor try_to_wake_up()
+Date: Mon, 31 May 2010 20:56:38 +0200
+Message-Id: <1275332199-28082-4-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.6.4.2
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Mon, 31 May 2010 18:56:42 +0000 (UTC)
+In-Reply-To: <1275332199-28082-1-git-send-email-tj@kernel.org>
+References: <1275332199-28082-1-git-send-email-tj@kernel.org>
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Mon, 31 May 2010 18:56:43 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+Factor ttwu_activate() and ttwu_woken_up() out of try_to_wake_up().
+The factoring out doesn't affect try_to_wake_up() much
+code-generation-wise.  Depending on configuration options, it ends up
+generating the same object code as before or slightly different one
+due to different register assignment.
 
-This is the second take of repare-for-cmwq patchset.  Changes from the
-first take[L] are
+This is to help future implementation of try_to_wake_up_local().
 
-* consult-online-mask-instead-of-active-in-select_fallback_rq and
-  implement-__set_cpus_allowed replaced by updates to when cpu_active
-  and cpuset configuration are updated as suggested by Peter.
+Mike Galbraith suggested rename to ttwu_post_activation() from
+ttwu_woken_up() and comment update in try_to_wake_up().
 
-* Patch description updated in 0004 as suggested by Peter.
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Mike Galbraith <efault@gmx.de>
+Cc: Ingo Molnar <mingo@elte.hu>
+---
+ kernel/sched.c |   83 +++++++++++++++++++++++++++++++++-----------------------
+ 1 files changed, 49 insertions(+), 34 deletions(-)
 
- 0001-sched-define-and-use-CPU_PRI_-enums-for-cpu-notifier.patch
- 0002-sched-adjust-when-cpu_active-and-cpuset-configuratio.patch
- 0003-sched-refactor-try_to_wake_up.patch
- 0004-sched-add-hooks-for-workqueue.patch
+diff --git a/kernel/sched.c b/kernel/sched.c
+index 80a806e..d54f063 100644
+--- a/kernel/sched.c
++++ b/kernel/sched.c
+@@ -2321,11 +2321,52 @@ static void update_avg(u64 *avg, u64 sample)
+ }
+ #endif
+ 
+-/***
++static inline void ttwu_activate(struct task_struct *p, struct rq *rq,
++				 bool is_sync, bool is_migrate, bool is_local,
++				 unsigned long en_flags)
++{
++	schedstat_inc(p, se.statistics.nr_wakeups);
++	if (is_sync)
++		schedstat_inc(p, se.statistics.nr_wakeups_sync);
++	if (is_migrate)
++		schedstat_inc(p, se.statistics.nr_wakeups_migrate);
++	if (is_local)
++		schedstat_inc(p, se.statistics.nr_wakeups_local);
++	else
++		schedstat_inc(p, se.statistics.nr_wakeups_remote);
++
++	activate_task(rq, p, en_flags);
++}
++
++static inline void ttwu_post_activation(struct task_struct *p, struct rq *rq,
++					int wake_flags, bool success)
++{
++	trace_sched_wakeup(p, success);
++	check_preempt_curr(rq, p, wake_flags);
++
++	p->state = TASK_RUNNING;
++#ifdef CONFIG_SMP
++	if (p->sched_class->task_woken)
++		p->sched_class->task_woken(rq, p);
++
++	if (unlikely(rq->idle_stamp)) {
++		u64 delta = rq->clock - rq->idle_stamp;
++		u64 max = 2*sysctl_sched_migration_cost;
++
++		if (delta > max)
++			rq->avg_idle = max;
++		else
++			update_avg(&rq->avg_idle, delta);
++		rq->idle_stamp = 0;
++	}
++#endif
++}
++
++/**
+  * try_to_wake_up - wake up a thread
+- * @p: the to-be-woken-up thread
++ * @p: the thread to be awakened
+  * @state: the mask of task states that can be woken
+- * @sync: do a synchronous wakeup?
++ * @wake_flags: wake modifier flags (WF_*)
+  *
+  * Put it on the run-queue if it's not already there. The "current"
+  * thread is always on the run-queue (except when the actual
+@@ -2333,7 +2374,8 @@ static void update_avg(u64 *avg, u64 sample)
+  * the simpler "current->state = TASK_RUNNING" to mark yourself
+  * runnable without the overhead of this.
+  *
+- * returns failure only if the task is already active.
++ * Returns %true if @p was woken up, %false if it was already running
++ * or @state didn't match @p's state.
+  */
+ static int try_to_wake_up(struct task_struct *p, unsigned int state,
+ 			  int wake_flags)
+@@ -2413,38 +2455,11 @@ static int try_to_wake_up(struct task_struct *p, unsigned int state,
+ 
+ out_activate:
+ #endif /* CONFIG_SMP */
+-	schedstat_inc(p, se.statistics.nr_wakeups);
+-	if (wake_flags & WF_SYNC)
+-		schedstat_inc(p, se.statistics.nr_wakeups_sync);
+-	if (orig_cpu != cpu)
+-		schedstat_inc(p, se.statistics.nr_wakeups_migrate);
+-	if (cpu == this_cpu)
+-		schedstat_inc(p, se.statistics.nr_wakeups_local);
+-	else
+-		schedstat_inc(p, se.statistics.nr_wakeups_remote);
+-	activate_task(rq, p, en_flags);
++	ttwu_activate(p, rq, wake_flags & WF_SYNC, orig_cpu != cpu,
++		      cpu == this_cpu, en_flags);
+ 	success = 1;
+-
+ out_running:
+-	trace_sched_wakeup(p, success);
+-	check_preempt_curr(rq, p, wake_flags);
+-
+-	p->state = TASK_RUNNING;
+-#ifdef CONFIG_SMP
+-	if (p->sched_class->task_woken)
+-		p->sched_class->task_woken(rq, p);
+-
+-	if (unlikely(rq->idle_stamp)) {
+-		u64 delta = rq->clock - rq->idle_stamp;
+-		u64 max = 2*sysctl_sched_migration_cost;
+-
+-		if (delta > max)
+-			rq->avg_idle = max;
+-		else
+-			update_avg(&rq->avg_idle, delta);
+-		rq->idle_stamp = 0;
+-	}
+-#endif
++	ttwu_post_activation(p, rq, wake_flags, success);
+ out:
+ 	task_rq_unlock(rq, &flags);
+ 	put_cpu();
+-- 
+1.6.4.2
 
-This patchset is available in the following git tree.
-
- git://git.kernel.org/pub/scm/linux/kernel/git/tj/wq.git sched-wq
-
-and contains the following changes.
-
- include/linux/cpu.h        |   25 ++++++
- include/linux/perf_event.h |    2 
- include/linux/sched.h      |    1 
- kernel/cpu.c               |    6 -
- kernel/cpuset.c            |   46 +++++++-----
- kernel/fork.c              |    2 
- kernel/sched.c             |  169 ++++++++++++++++++++++++++++++++++-----------
- kernel/workqueue_sched.h   |   16 ++++
- 8 files changed, 203 insertions(+), 64 deletions(-)
-
-Thanks.
-
---
-tejun
-
-[L] http://thread.gmane.org/gmane.linux.kernel/984967
