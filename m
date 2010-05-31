@@ -1,65 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756759Ab0EaJiT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 May 2010 05:38:19 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:38448 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756267Ab0EaJiS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 May 2010 05:38:18 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-To: LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
-       Oleg Nesterov <oleg@redhat.com>, David Rientjes <rientjes@google.com>,
+	id S1756772Ab0EaJkh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 May 2010 05:40:37 -0400
+Received: from ozlabs.org ([203.10.76.45]:45285 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756529Ab0EaJkg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 31 May 2010 05:40:36 -0400
+From: Rusty Russell <rusty@rustcorp.com.au>
+To: Brandon Philips <brandon@ifup.org>
+Subject: Re: [Regression] Crash in load_module() while freeing args
+Date: Mon, 31 May 2010 19:10:31 +0930
+User-Agent: KMail/1.13.2 (Linux/2.6.32-21-generic; KDE/4.4.2; i686; ; )
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       LKML <linux-kernel@vger.kernel.org>,
        Andrew Morton <akpm@linux-foundation.org>,
-       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-       Nick Piggin <npiggin@suse.de>
-Subject: [PATCH 5/5] oom: __oom_kill_task() must use find_lock_task_mm() too
-Cc: kosaki.motohiro@jp.fujitsu.com
-In-Reply-To: <20100531182526.1843.A69D9226@jp.fujitsu.com>
-References: <20100531182526.1843.A69D9226@jp.fujitsu.com>
-Message-Id: <20100531183727.184F.A69D9226@jp.fujitsu.com>
+       Jon Masters <jonathan@jonmasters.org>, Tejun Heo <htejun@gmail.com>,
+       Masami Hiramatsu <mhiramat@redhat.com>
+References: <201005252300.07739.rjw@sisk.pl> <201005271456.20003.rusty@rustcorp.com.au> <20100527184602.GF7351@jenkins.ifup.org>
+In-Reply-To: <20100527184602.GF7351@jenkins.ifup.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
-X-Mailer: Becky! ver. 2.50.07 [ja]
-Date: Mon, 31 May 2010 18:38:14 +0900 (JST)
+Message-Id: <201005311910.32407.rusty@rustcorp.com.au>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Subject: [PATCH 5/5] oom: __oom_kill_task() must use find_lock_task_mm() too
+On Fri, 28 May 2010 04:16:02 am Brandon Philips wrote:
+> On 14:56 Thu 27 May 2010, Rusty Russell wrote:
+> > On Thu, 27 May 2010 08:26:25 am Rafael J. Wysocki wrote:
+> > > On Wednesday 26 May 2010, Rusty Russell wrote:
+> > > > I suspect that the increased parallelism enabled by this patch uncovered this
+> > > > bug.  Does this fix it?
+> > > 
+> > > Since the commit has been reverted, do you still want me to test this patch?
+> > > Quite frankly I'd prefer to test a complete replacement for that commit on top
+> > > of current -git.
+> > 
+> > OK, combo meal deal below, against Linus' latest.  I'd really appreciate
+> > a report, since AFAIK you're the only one hitting it, and only when that
+> > other (now reverted) patch was applied.
+> 
+> I tested this patch on my machine on top of Linus's latest and it
+> fixes the issue. Without the patch and using Linus's latest I
+> reproduce the original issue:
+> 
+> [   60.836022] bnx2: gave up waiting for init of module libcrc32c.
+> [   60.847997] bnx2: Unknown symbol crc32c
+> 
+> Note: Again, since I don't have bnx2x hardware I forced bnx2.ko to
+> depend on libcrc32c as bnx2x does:
+>   http://ifup.org/~philips/review/bnx2-hack-to-use-libcrc32c.patch
+> 
+> > As an side to Brandon: I can see how my patch fixed an explicit
+> > request_module inside module_init (that's how I tested it).  I can't
+> > see how we have a problem with an implicit dependency such as
+> > bne2x->crc32.  Modules go into the live state without retaking the
+> > lock.
+> 
+> libcrc32c is doing an explicit request_module inside of its
+> module_init. Follow the call chain in libcrc32c_mod_init()
 
-__oom_kill_task also use find_lock_task_mm(). because if sysctl_oom_kill_allocating_task
-is true, __out_of_memory() don't call select_bad_process().
+Thanks for confirmation, I figured that must be the case as I pondered
+it on the weekend after sending my query.
 
-Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
----
- mm/oom_kill.c |    5 ++---
- 1 files changed, 2 insertions(+), 3 deletions(-)
+Linus didn't like dropping the lock, so I'll create a more ambitious patch
+which reduces the lock coverage to those places which really need it.
 
-diff --git a/mm/oom_kill.c b/mm/oom_kill.c
-index 30d9da0..f6aa3fc 100644
---- a/mm/oom_kill.c
-+++ b/mm/oom_kill.c
-@@ -394,12 +394,11 @@ static void __oom_kill_task(struct task_struct *p, int verbose)
- 		return;
- 	}
- 
--	task_lock(p);
--	if (!p->mm) {
-+	p = find_lock_task_mm(p);
-+	if (!p) {
- 		WARN_ON(1);
- 		printk(KERN_WARNING "tried to kill an mm-less task %d (%s)!\n",
- 			task_pid_nr(p), p->comm);
--		task_unlock(p);
- 		return;
- 	}
- 
--- 
-1.6.5.2
-
+Cheers,
+Rusty.
 
 
