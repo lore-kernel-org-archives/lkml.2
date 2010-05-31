@@ -1,54 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756493Ab0EaIsN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 May 2010 04:48:13 -0400
-Received: from mga02.intel.com ([134.134.136.20]:42314 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754883Ab0EaIsM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 May 2010 04:48:12 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.53,332,1272870000"; 
-   d="scan'208";a="626205659"
-Subject: [PATCH 1/2] Add HW_ERR printk prefix for hardware error logging
-From: Huang Ying <ying.huang@intel.com>
-To: Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
-       Andi Kleen <ak@linux.intel.com>,
-       Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+	id S1756538Ab0EaIys (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 May 2010 04:54:48 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:34025 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753491Ab0EaIyr convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 31 May 2010 04:54:47 -0400
+Subject: Re: [PATCH] tracing: Add task activate/deactivate tracepoints
+From: Peter Zijlstra <peterz@infradead.org>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>,
+       LKML <linux-kernel@vger.kernel.org>,
+       Steven Rostedt <rostedt@goodmis.org>
+In-Reply-To: <1275293544.27810.21478.camel@twins>
+References: <1275056762-13130-1-git-send-regression-fweisbec@gmail.com>
+	 <1275059710.27810.9624.camel@twins>  <20100531080049.GA435@elte.hu>
+	 <1275293544.27810.21478.camel@twins>
 Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 31 May 2010 16:48:09 +0800
-Message-ID: <1275295689.3444.462.camel@yhuang-dev.sh.intel.com>
+Content-Transfer-Encoding: 8BIT
+Date: Mon, 31 May 2010 10:54:59 +0200
+Message-ID: <1275296099.27810.21622.camel@twins>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This makes hardware error related log in printk log more explicit. So
-that the users can report it to hardware vendor instead of LKML or
-software vendor.
+On Mon, 2010-05-31 at 10:12 +0200, Peter Zijlstra wrote:
+> On Mon, 2010-05-31 at 10:00 +0200, Ingo Molnar wrote:
+> > > 
+> > > NAK, aside from a few corner cases wakeup and sleep are the important 
+> > > points.
+> > > 
+> > > The activate and deactivate functions are implementation details.
+> > 
+> > Frederic, can you show us a concrete example of where we dont know what is 
+> > going on due to inadequate instrumentation? Can we fix that be extending the 
+> > existing tracepoints? 
+> 
+> Right, so a few of those corner cases I mentioned above are things like
+> re-nice, PI-boosts etc.. Those use deactivate, modify task-state,
+> activate cycles. so if you want to see those, we can add an explicit
+> tracepoint for those actions.
+> 
+> An explicit nice/PI-boost tracepoint is much clearer than trying to
+> figure out wth the deactivate/activate cycle was for.
 
-Signed-off-by: Huang Ying <ying.huang@intel.com>
----
- include/linux/kernel.h |    7 +++++++
- 1 file changed, 7 insertions(+)
-
---- a/include/linux/kernel.h
-+++ b/include/linux/kernel.h
-@@ -247,6 +247,13 @@ extern struct pid *session_of_pgrp(struc
- #define FW_WARN		"[Firmware Warn]: "
- #define FW_INFO		"[Firmware Info]: "
- 
-+/*
-+ * HW_ERR
-+ * Add this to a message for hardware errors, so that user can report
-+ * it to hardware vendor instead of LKML or software vendor.
-+ */
-+#define HW_ERR		"[Hardware Error]: "
-+
- #ifdef CONFIG_PRINTK
- asmlinkage int vprintk(const char *fmt, va_list args)
- 	__attribute__ ((format (printf, 1, 0)));
+Another advantage of explicit tracepoints is that you'd see them even
+for non-running tasks, because we only do the deactivate/activate thingy
+for runnable tasks.
 
 
