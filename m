@@ -1,111 +1,191 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756060Ab0EaG7Y (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 May 2010 02:59:24 -0400
-Received: from hera.kernel.org ([140.211.167.34]:43800 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752967Ab0EaG7X (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 May 2010 02:59:23 -0400
-Message-ID: <4C035E22.9010001@kernel.org>
-Date: Mon, 31 May 2010 08:58:42 +0200
-From: Tejun Heo <tj@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.1.9) Gecko/20100317 Thunderbird/3.0.4
+	id S1756106Ab0EaG76 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 May 2010 02:59:58 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:50035 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753002Ab0EaG74 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 31 May 2010 02:59:56 -0400
+Date: Mon, 31 May 2010 08:59:38 +0200
+From: Sascha Hauer <s.hauer@pengutronix.de>
+To: Stuart Longland <redhatter@gentoo.org>
+Cc: linux-arm-kernel@lists.infradead.org, Sascha Hauer <kernel@pengutronix.de>,
+       linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH] ARM: Add SSI Clock Adjustment for i.MX27 TO2
+Message-ID: <20100531065938.GA26820@pengutronix.de>
+References: <1275267300-30687-1-git-send-email-redhatter@gentoo.org>
 MIME-Version: 1.0
-To: Li Zefan <lizf@cn.fujitsu.com>
-CC: "Michael S. Tsirkin" <mst@redhat.com>, Oleg Nesterov <oleg@redhat.com>,
-       Sridhar Samudrala <sri@us.ibm.com>, netdev <netdev@vger.kernel.org>,
-       lkml <linux-kernel@vger.kernel.org>,
-       "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Dmitri Vorobiev <dmitri.vorobiev@movial.com>,
-       Jiri Kosina <jkosina@suse.cz>, Thomas Gleixner <tglx@linutronix.de>,
-       Ingo Molnar <mingo@elte.hu>, Andi Kleen <ak@linux.intel.com>
-Subject: [PATCH UPDATED 3/3] vhost: apply cpumask and cgroup to vhost pollers
-References: <20100527091426.GA6308@redhat.com> <20100527124448.GA4241@redhat.com> <20100527131254.GB7974@redhat.com> <4BFE9ABA.6030907@kernel.org> <20100527163954.GA21710@redhat.com> <4BFEA434.6080405@kernel.org> <20100527173207.GA21880@redhat.com> <4BFEE216.2070807@kernel.org> <20100528150830.GB21880@redhat.com> <4BFFE742.2060205@kernel.org> <20100530112925.GB27611@redhat.com> <4C02C99D.9070204@kernel.org> <4C030CB8.505@cn.fujitsu.com>
-In-Reply-To: <4C030CB8.505@cn.fujitsu.com>
-X-Enigmail-Version: 1.0.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Mon, 31 May 2010 06:58:47 +0000 (UTC)
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1275267300-30687-1-git-send-email-redhatter@gentoo.org>
+X-Sent-From: Pengutronix Hildesheim
+X-URL: http://www.pengutronix.de/
+X-IRC: #ptxdist @freenode
+X-Accept-Language: de,en
+X-Accept-Content-Type: text/plain
+X-Uptime: 08:30:50 up 1 day, 15:39, 10 users,  load average: 0.13, 0.22,
+	0.34
+User-Agent: Mutt/1.5.18 (2008-05-17)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
+X-SA-Exim-Mail-From: sha@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Apply the cpumask and cgroup of the initializing task to the created
-vhost poller.
+Hi Stuart,
 
-Based on Sridhar Samudrala's patch.  Li Zefan spotted a bug in error
-path, fixed.
+On Mon, May 31, 2010 at 10:55:00AM +1000, Stuart Longland wrote:
+> This adds support for adjusting the SSI clocks using the generic clock
+> infrastructure.
+> 
+> Known bug:
+> 	The generated clock is approximately 1/4 of what is requested.
+> 	I'm not sure if this is due to a bug in reading MCLK, or
+> 	something else dividing the clock down.  Hence the printk's in
+> 	get_rate_ssix, and the patch's "RFC" status.
 
-Cc: Michael S. Tsirkin <mst@redhat.com>
-Cc: Sridhar Samudrala <samudrala.sridhar@gmail.com>
-Cc: Li Zefan <lizf@cn.fujitsu.com>
----
-Updated accordingly.  Thanks.
+The SSI clock can be switched between mpll and spll in CSCR/SSIx_SEL,
+currently this is not handled. Could this be the problem?
+Do you measure the resulting clock on the SSI clock pin? If yes, you
+could try using the CLKO pin to measure the input clock of the SSI unit.
 
- drivers/vhost/vhost.c |   36 +++++++++++++++++++++++++++++++-----
- 1 file changed, 31 insertions(+), 5 deletions(-)
+> 
+> This should open the door to using the SSI ports on the i.MX27 in I²S
+> Master mode amongst other things.
+> 
+> Signed-off-by: Stuart Longland <redhatter@gentoo.org>
+> ---
+>  arch/arm/mach-mx2/clock_imx27.c |   75 +++++++++++++++++++++++++++++++++++++--
+>  1 files changed, 72 insertions(+), 3 deletions(-)
+> 
+> diff --git a/arch/arm/mach-mx2/clock_imx27.c b/arch/arm/mach-mx2/clock_imx27.c
+> index 0f0823c..48a4f62 100644
+> --- a/arch/arm/mach-mx2/clock_imx27.c
+> +++ b/arch/arm/mach-mx2/clock_imx27.c
+> @@ -244,12 +244,59 @@ static unsigned long get_rate_ssix(struct clk *clk, unsigned long pdf)
+>  
+>  	parent_rate = clk_get_rate(clk->parent);
+>  
+> +	printk("%s: parent = %ld Hz; raw pdf = %ld\n",
+> +		__FUNCTION__, parent_rate, pdf );
+> +
 
-Index: work/drivers/vhost/vhost.c
-===================================================================
---- work.orig/drivers/vhost/vhost.c
-+++ work/drivers/vhost/vhost.c
-@@ -23,6 +23,7 @@
- #include <linux/highmem.h>
- #include <linux/slab.h>
- #include <linux/kthread.h>
-+#include <linux/cgroup.h>
+Please use __func__. Probably doesn't matter because the printks will go
+away anyway.
 
- #include <linux/net.h>
- #include <linux/if_packet.h>
-@@ -176,12 +177,30 @@ repeat:
- long vhost_dev_init(struct vhost_dev *dev,
- 		    struct vhost_virtqueue *vqs, int nvqs)
- {
--	struct task_struct *poller;
--	int i;
-+	struct task_struct *poller = NULL;
-+	cpumask_var_t mask;
-+	int i, ret = -ENOMEM;
-+
-+	if (!alloc_cpumask_var(&mask, GFP_KERNEL))
-+		goto out;
+Sascha
 
- 	poller = kthread_create(vhost_poller, dev, "vhost-%d", current->pid);
--	if (IS_ERR(poller))
--		return PTR_ERR(poller);
-+	if (IS_ERR(poller)) {
-+		ret = PTR_ERR(poller);
-+		goto out;
-+	}
-+
-+	ret = sched_getaffinity(current->pid, mask);
-+	if (ret)
-+		goto out;
-+
-+	ret = sched_setaffinity(poller->pid, mask);
-+	if (ret)
-+		goto out;
-+
-+	ret = cgroup_attach_task_current_cg(poller);
-+	if (ret)
-+		goto out;
 
- 	dev->vqs = vqs;
- 	dev->nvqs = nvqs;
-@@ -202,7 +221,14 @@ long vhost_dev_init(struct vhost_dev *de
- 			vhost_poll_init(&dev->vqs[i].poll,
- 					dev->vqs[i].handle_kick, POLLIN, dev);
- 	}
--	return 0;
-+
-+	wake_up_process(poller);	/* avoid contributing to loadavg */
-+	ret = 0;
-+out:
-+	if (ret && poller)
-+		kthread_stop(poller);
-+	free_cpumask_var(mask);
-+	return ret;
- }
+>  	if (mx27_revision() >= CHIP_REV_2_0)
+>  		pdf += 4;  /* MX27 TO2+ */
+>  	else
+>  		pdf = (pdf < 2) ? 124UL : pdf;  /* MX21 & MX27 TO1 */
+>  
+> -	return 2UL * parent_rate / pdf;
+> +	printk("%s: parent = %ld Hz;     pdf = %ld\n",
+> +		__FUNCTION__, parent_rate, pdf );
+> +
+> +	return (2UL * parent_rate) / pdf;
+> +}
+> +
+> +static unsigned long set_rate_ssix(struct clk *clk, unsigned long rate)
+> +{
+> +	unsigned long parent_rate;
+> +	unsigned long pdf;
+> +
+> +	parent_rate = clk_get_rate(clk->parent);
+> +	pdf = (2UL * parent_rate) / rate;
+> +
+> +	if (mx27_revision() >= CHIP_REV_2_0)
+> +		pdf -= 4;  /* MX27 TO2+ */
+> +
+> +	/* TODO: Not sure how to handle other CPU types */
+> +#if 0
+> +	else
+> +		pdf = (pdf < 2) ? 124UL : pdf;  /* MX21 & MX27 TO1 */
+> +#endif
+> +	printk("%s: %ld Hz => %ld; pdf = %ld\n",
+> +			__FUNCTION__, parent_rate, rate, pdf );
+> +
+> +	return pdf & 0x3f;
+> +}
+> +
+> +static unsigned long round_rate_ssix(struct clk *clk, unsigned long rate)
+> +{
+> +	unsigned long div;
+> +	unsigned long parent_rate = clk_get_rate(clk->parent);
+> +
+> +	div = (2UL * parent_rate) / rate;
+> +	printk("%s: 2* %ld Hz / %ld Hz = %ld\n",
+> +			__FUNCTION__, parent_rate, rate, div );
+> +
+> +	if ( ( div < 4 ) || ( div > 67 ) )
+> +		/* Corresponds to divider value < 2 or > 33.5 */
+> +		return -EINVAL;
+> +
+> +	printk("%s: 2* %ld Hz / %ld = %ld\n",
+> +			__FUNCTION__, parent_rate, div, (2UL*parent_rate) / div);
+> +
+> +	return (2UL * parent_rate) / div;
+>  }
+>  
+>  static unsigned long get_rate_ssi1(struct clk *clk)
+> @@ -257,11 +304,33 @@ static unsigned long get_rate_ssi1(struct clk *clk)
+>  	return get_rate_ssix(clk, (__raw_readl(CCM_PCDR0) >> 16) & 0x3f);
+>  }
+>  
+> +static int set_rate_ssi1(struct clk *clk, unsigned long rate)
+> +{
+> +	__raw_writel( set_rate_ssix(clk, rate) << 16, CCM_PCDR0 );
+> +	return 0;
+> +}
+> +
+> +static unsigned long round_rate_ssi1(struct clk *clk, unsigned long rate)
+> +{
+> +	return round_rate_ssix(clk, rate);
+> +}
+> +
+>  static unsigned long get_rate_ssi2(struct clk *clk)
+>  {
+>  	return get_rate_ssix(clk, (__raw_readl(CCM_PCDR0) >> 26) & 0x3f);
+>  }
+>  
+> +static int set_rate_ssi2(struct clk *clk, unsigned long rate)
+> +{
+> +	__raw_writel( set_rate_ssix(clk, rate) << 26, CCM_PCDR0 );
+> +	return 0;
+> +}
+> +
+> +static unsigned long round_rate_ssi2(struct clk *clk, unsigned long rate)
+> +{
+> +	return round_rate_ssix(clk, rate);
+> +}
+> +
+>  static unsigned long get_rate_nfc(struct clk *clk)
+>  {
+>  	unsigned long nfc_pdf;
+> @@ -564,8 +633,8 @@ DEFINE_CLOCK(cspi1_clk1,   0, PCCR0, 31, NULL, NULL, &ipg_clk);
+>  
+>  DEFINE_CLOCK(mstick_clk,   0, PCCR1,  2, NULL, &mstick_clk1, &ipg_clk);
+>  DEFINE_CLOCK(nfc_clk,      0, PCCR1,  3, get_rate_nfc, NULL, &cpu_clk);
+> -DEFINE_CLOCK(ssi2_clk,     1, PCCR1,  4, get_rate_ssi2, &ssi2_clk1, &mpll_main2_clk);
+> -DEFINE_CLOCK(ssi1_clk,     0, PCCR1,  5, get_rate_ssi1, &ssi1_clk1, &mpll_main2_clk);
+> +DEFINE_CLOCK1(ssi2_clk,     1, PCCR1,  4, ssi2, &ssi2_clk1, &mpll_main2_clk);
+> +DEFINE_CLOCK1(ssi1_clk,     0, PCCR1,  5, ssi1, &ssi1_clk1, &mpll_main2_clk);
+>  DEFINE_CLOCK(vpu_clk,      0, PCCR1,  6, get_rate_vpu, &vpu_clk1, &mpll_main2_clk);
+>  DEFINE_CLOCK1(per4_clk,    3, PCCR1,  7, per, NULL, &mpll_main2_clk);
+>  DEFINE_CLOCK1(per3_clk,    2, PCCR1,  8, per, NULL, &mpll_main2_clk);
+> -- 
+> 1.6.4.4
+> 
+> 
 
- /* Caller should have device mutex */
+-- 
+Pengutronix e.K.                           |                             |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
+Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
