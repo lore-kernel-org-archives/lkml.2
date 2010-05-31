@@ -1,39 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755341Ab0EaPDJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 May 2010 11:03:09 -0400
-Received: from cavan.codon.org.uk ([93.93.128.6]:57746 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753840Ab0EaPDH (ORCPT
+	id S1756422Ab0EaPDm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 May 2010 11:03:42 -0400
+Received: from one.firstfloor.org ([213.235.205.2]:43159 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753840Ab0EaPDl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 May 2010 11:03:07 -0400
-Date: Mon, 31 May 2010 16:03:00 +0100
-From: Matthew Garrett <mjg59@srcf.ucam.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, platform-driver-x86@vger.kernel.org
-Subject: Re: [GIT PULL] x86 platform driver updates for 2.6.35
-Message-ID: <20100531150300.GA19134@srcf.ucam.org>
-References: <20100528182549.GA32694@srcf.ucam.org> <alpine.LFD.2.00.1005300914460.4639@i5.linux-foundation.org>
+	Mon, 31 May 2010 11:03:41 -0400
+Date: Mon, 31 May 2010 17:03:32 +0200
+From: Andi Kleen <andi@firstfloor.org>
+To: apw@canonical.com, linux-kernel@vger.kernel.org
+Subject: [PATCH] checkpatch: don't warn for space after for_each_* macros
+Message-ID: <20100531150332.GA18341@basil.fritz.box>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.LFD.2.00.1005300914460.4639@i5.linux-foundation.org>
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, May 30, 2010 at 09:15:32AM -0700, Linus Torvalds wrote:
+checkpatch: don't warn for space after for_each_* macros
 
-> This doesn't seem to have the proper sign-off chains, so I'm not pulling 
-> it. 
+for_each_possible_cpu and similar macros act like loops and it's natural
+for them to be written like while () with a space before the paren.
 
-Sorry about that. I've fixed things up - are you ok with still pulling 
-this? If not I can separate out the bugfixes and new drivers from the 
-cleanups.
+Unfortunately checkpatch.pl warns about this:
 
--- 
-Matthew Garrett | mjg59@srcf.ucam.org
+WARNING: space prohibited between function name and open parenthesis '('
++       for_each_possible_cpu (cpu) {
+
+Don't warn for all function names matching a reasonable for_each pattern.
+    
+ Signed-off-by: Andi Kleen <ak@linux.intel.com>
+
+diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
+index bd88f11..c35eda2 100755
+--- a/scripts/checkpatch.pl
++++ b/scripts/checkpatch.pl
+@@ -1906,6 +1906,7 @@ sub process {
+ 				if|for|while|switch|return|case|
+ 				volatile|__volatile__|
+ 				__attribute__|format|__extension__|
++				([a-z]+_)?for_each_[a-z_]+|
+ 				asm|__asm__)$/x)
+ 			{
+ 
