@@ -1,58 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756230Ab0EaHAy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 May 2010 03:00:54 -0400
-Received: from sh.osrg.net ([192.16.179.4]:38177 "EHLO sh.osrg.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755967Ab0EaHAs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 May 2010 03:00:48 -0400
-From: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
-To: akpm@linux-foundation.org
-Cc: jens.axboe@oracle.com, James.Bottomley@suse.de,
-       linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
-       FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
-Subject: [PATCH -mm 2/3] block: kill ISA_DMA_THRESHOLD usage
-Date: Mon, 31 May 2010 15:59:03 +0900
-Message-Id: <1275289144-28782-3-git-send-email-fujita.tomonori@lab.ntt.co.jp>
-X-Mailer: git-send-email 1.6.5
-In-Reply-To: <1275289144-28782-1-git-send-email-fujita.tomonori@lab.ntt.co.jp>
-References: <1275289144-28782-1-git-send-email-fujita.tomonori@lab.ntt.co.jp>
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-3.0 (sh.osrg.net [192.16.179.4]); Mon, 31 May 2010 16:00:37 +0900 (JST)
+	id S1756142Ab0EaHFv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 May 2010 03:05:51 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:53644 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753252Ab0EaHFu convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 31 May 2010 03:05:50 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=XLt9yBQ9sfXXpNUNYNWyyL+98Ej1GBfAv50exa7JDISOo3nCnwwrghJ02kqjm87Mxx
+         yUieajM1lg9k3zZfxn0FTqpiaKpTxjfJMEyL2MsxPfOOBc1gJe2vsqZCIIkXZc/WDqOC
+         0g+wnZYEMxoiT5WCH9MgIDXXnMCTlg1HOLWfs=
+MIME-Version: 1.0
+In-Reply-To: <20100531152424.739D.A69D9226@jp.fujitsu.com>
+References: <20100529125136.62CA.A69D9226@jp.fujitsu.com>
+	<AANLkTimg3PuUAmUUib2pdXNyEeniccLSCEvAm9jtKNji@mail.gmail.com>
+	<20100531152424.739D.A69D9226@jp.fujitsu.com>
+Date: Mon, 31 May 2010 16:05:48 +0900
+Message-ID: <AANLkTilYtODW-8Ey2IUTT2lRR3sy0kgSOO7rN32rjvux@mail.gmail.com>
+Subject: Re: [RFC] oom-kill: give the dying task a higher priority
+From: Minchan Kim <minchan.kim@gmail.com>
+To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: "Luis Claudio R. Goncalves" <lclaudio@uudg.org>, balbir@linux.vnet.ibm.com,
+       Oleg Nesterov <oleg@redhat.com>, linux-kernel@vger.kernel.org,
+       linux-mm@kvack.org, Thomas Gleixner <tglx@linutronix.de>,
+       Peter Zijlstra <peterz@infradead.org>,
+       David Rientjes <rientjes@google.com>, Mel Gorman <mel@csn.ul.ie>,
+       williams@redhat.com, KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-block uses ISA_DMA_THRESHOLD for BLK_BOUNCE_ISA. Only SCSI uses
-ISA_DMA_THRESHOLD for ancient drivers with non-zero
-unchecked_isa_dma. Nowadays drivers (and subsystems) use dma_mask
-properly instead of ISA_DMA_THRESHOLD.
+On Mon, May 31, 2010 at 3:35 PM, KOSAKI Motohiro
+<kosaki.motohiro@jp.fujitsu.com> wrote:
+> Hi
+>
+>> Hi, Kosaki.
+>>
+>> On Sat, May 29, 2010 at 12:59 PM, KOSAKI Motohiro
+>> <kosaki.motohiro@jp.fujitsu.com> wrote:
+>> > Hi
+>> >
+>> >> oom-killer: give the dying task rt priority (v3)
+>> >>
+>> >> Give the dying task RT priority so that it can be scheduled quickly and die,
+>> >> freeing needed memory.
+>> >>
+>> >> Signed-off-by: Luis Claudio R. Gonçalves <lgoncalv@redhat.com>
+>> >
+>> > Almostly acceptable to me. but I have two requests,
+>> >
+>> > - need 1) force_sig() 2)sched_setscheduler() order as Oleg mentioned
+>> > - don't boost priority if it's in mem_cgroup_out_of_memory()
+>>
+>> Why do you want to not boost priority if it's path of memcontrol?
+>>
+>> If it's path of memcontrol and CONFIG_CGROUP_MEM_RES_CTLR is enabled,
+>> mem_cgroup_out_of_memory will select victim task in memcg.
+>> So __oom_kill_task's target task would be in memcg, I think.
+>
+> Yep.
+> But priority boost naturally makes CPU starvation for out of the group
+> processes.
+> It seems to break cgroup's isolation concept.
+>
+>> As you and memcg guys don't complain this, I would be missing something.
+>> Could you explain it? :)
+>
+> So, My points are,
+>
+> 1) Usually priority boost is wrong idea. It have various side effect, but
+>   system wide OOM is one of exception. In such case, all tasks aren't
+>   runnable, then, the downside is acceptable.
+> 2) memcg have OOM notification mechanism. If the admin need priority boost,
+>   they can do it by their OOM-daemon.
 
-Documentation/scsi/scsi_mid_low_api.txt says:
+Is it possible kill the hogging task immediately when the daemon send
+kill signal?
+I mean we can make OOM daemon higher priority than others and it can
+send signal to normal process. but when is normal process exited after
+receiving kill signal from OOM daemon? Maybe it's when killed task is
+executed by scheduler. It's same problem again, I think.
 
-unchecked_isa_dma - 1=>only use bottom 16 MB of ram (ISA DMA addressing
-                   restriction), 0=>can use full 32 bit (or better) DMA
-                   address space
+Kame, Do you have an idea?
 
-So block simply uses DMA_BIT_MASK(24) for BLK_BOUNCE_ISA for SCSI.
+> Thanks.
+>
+>
+>
 
-Signed-off-by: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
----
- include/linux/blkdev.h |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/include/linux/blkdev.h b/include/linux/blkdev.h
-index 8b7f5e0..f95bdd1 100644
---- a/include/linux/blkdev.h
-+++ b/include/linux/blkdev.h
-@@ -709,7 +709,7 @@ extern unsigned long blk_max_low_pfn, blk_max_pfn;
- #define BLK_BOUNCE_HIGH		-1ULL
- #endif
- #define BLK_BOUNCE_ANY		(-1ULL)
--#define BLK_BOUNCE_ISA		(ISA_DMA_THRESHOLD)
-+#define BLK_BOUNCE_ISA		(DMA_BIT_MASK(24))
- 
- /*
-  * default timeout for SG_IO if none specified
+
 -- 
-1.6.5
-
+Kind regards,
+Minchan Kim
