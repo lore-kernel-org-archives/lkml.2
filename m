@@ -1,57 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754439Ab0EaKFt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 May 2010 06:05:49 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:52929 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750934Ab0EaKFr convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 May 2010 06:05:47 -0400
-Subject: Re: [PATCH 4/4] sched: add hooks for workqueue
-From: Peter Zijlstra <peterz@infradead.org>
-To: Tejun Heo <tj@kernel.org>
-Cc: mingo@elte.hu, linux-kernel@vger.kernel.org,
-       Mike Galbraith <efault@gmx.de>
-In-Reply-To: <4C038841.1010507@kernel.org>
-References: <1273747705-7829-1-git-send-email-tj@kernel.org>
-	 <1273747705-7829-5-git-send-email-tj@kernel.org>
-	 <1275292867.27810.21442.camel@twins>  <4C038841.1010507@kernel.org>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Mon, 31 May 2010 12:05:58 +0200
-Message-ID: <1275300358.27810.21869.camel@twins>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	id S1754978Ab0EaKGb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 May 2010 06:06:31 -0400
+Received: from hera.kernel.org ([140.211.167.34]:47243 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751823Ab0EaKG3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 31 May 2010 06:06:29 -0400
+Message-ID: <4C038A08.8090209@kernel.org>
+Date: Mon, 31 May 2010 12:06:00 +0200
+From: Tejun Heo <tj@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.1.9) Gecko/20100317 Thunderbird/3.0.4
+MIME-Version: 1.0
+To: Peter Zijlstra <peterz@infradead.org>
+CC: mingo@elte.hu, linux-kernel@vger.kernel.org,
+       Rusty Russell <rusty@rustcorp.com.au>, Mike Galbraith <efault@gmx.de>
+Subject: Re: [PATCH 2/4] sched: implement __set_cpus_allowed()
+References: <1273747705-7829-1-git-send-email-tj@kernel.org>	 <1273747705-7829-3-git-send-email-tj@kernel.org>	 <1275292866.27810.21441.camel@twins>  <4C03879A.8030505@kernel.org>	 <1275300084.27810.21850.camel@twins> <1275300165.27810.21858.camel@twins>
+In-Reply-To: <1275300165.27810.21858.camel@twins>
+X-Enigmail-Version: 1.0.1
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Mon, 31 May 2010 10:06:02 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-05-31 at 11:58 +0200, Tejun Heo wrote:
-> Hello, Peter.
+On 05/31/2010 12:02 PM, Peter Zijlstra wrote:
+> On Mon, 2010-05-31 at 12:01 +0200, Peter Zijlstra wrote:
+>>>  but we can update cpu_active mask before other
+>>> CPU_UP_PREPARE notifiers are executed so that it's symmetrical to cpu
+>>> down path and then this problem goes away the exact same way, right?
+>>
+>> Ah, no, we cannot mark it active before its actually up, because at that
+>> time we'll actually try and run stuff on it, which clearly won't work
+>> when its not there to run stuff. 
 > 
-> On 05/31/2010 10:01 AM, Peter Zijlstra wrote:
-> > On Thu, 2010-05-13 at 12:48 +0200, Tejun Heo wrote:
-> >> Concurrency managed workqueue needs to know when workers are going to
-> >> sleep and waking up, and, when a worker goes to sleep, be able to wake
-> >> up another worker to maintain adequate concurrency.  This patch
-> >> introduces PF_WQ_WORKER to identify workqueue workers and adds the
-> >> following two hooks.
-> >>
-> >> * wq_worker_waking_up(): called when a worker is woken up.
-> >>
-> >> * wq_worker_sleeping(): called when a worker is going to sleep and may
-> >>   return a pointer to a local task which should be woken up.  The
-> >>   returned task is woken up using try_to_wake_up_local() which is
-> >>   simplified ttwu which is called under rq lock and can only wake up
-> >>   local tasks.
-> > 
-> > This changelog seems to lack explanation for why you need the wakeup
-> > callback.
+> So we should clear it _before_ we go down, and set it _after_ we're up.
 > 
-> Because cmwq "needs to know when workers are going to sleep and waking
-> up, and, when a worker goes to sleep, be able to wake up another
-> worker to maintain adequate concurrency".  
 
-That again only explains what you use the sleep hook for, not what you
-want to use the wakeup hook for (putting a worker to sleep when there
-are now 2 runnable seems like a good use).
+Yeah, sure, I misspoke.  I meant CPU_ONLINE not CPU_UP_PREPARE.  So,
+we can mark a cpu active before other CPU_ONLINE callbacks are run.
+
+Thanks.
+
+-- 
+tejun
