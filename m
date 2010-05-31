@@ -1,117 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755332Ab0EaNwl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 May 2010 09:52:41 -0400
-Received: from mail-pz0-f193.google.com ([209.85.222.193]:62013 "EHLO
-	mail-pz0-f193.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754928Ab0EaNwj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 May 2010 09:52:39 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:content-transfer-encoding
-         :in-reply-to:user-agent;
-        b=OSDob6bi4ua5tzxTXzlkMROfGhM1liTrSBSc4LuVPVDXFk3HDKc2sX36gPcJu+G5ap
-         KsKAUZIbf8IwMFqTzBOttsi5RWZVjYpiDMTXDSHWnHBAgd5sbOUeuIQERPbXdpreipdj
-         Yog+xO0SO8NeQYCC/YkHtRSnM8rSUotVPBzkM=
-Date: Mon, 31 May 2010 10:52:27 -0300
-From: "Luis Claudio R. Goncalves" <lclaudio@uudg.org>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: Minchan Kim <minchan.kim@gmail.com>,
-       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-       balbir@linux.vnet.ibm.com, Oleg Nesterov <oleg@redhat.com>,
-       linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-       Thomas Gleixner <tglx@linutronix.de>,
-       Peter Zijlstra <peterz@infradead.org>,
-       David Rientjes <rientjes@google.com>, Mel Gorman <mel@csn.ul.ie>,
-       williams@redhat.com
-Subject: Re: [RFC] oom-kill: give the dying task a higher priority
-Message-ID: <20100531135227.GC19784@uudg.org>
-References: <20100528152842.GH11364@uudg.org>
- <20100528154549.GC12035@barrios-desktop>
- <20100528164826.GJ11364@uudg.org>
- <20100531092133.73705339.kamezawa.hiroyu@jp.fujitsu.com>
- <AANLkTikFk_HnZWPG0s_VrRkro2rruEc8OBX5KfKp_QdX@mail.gmail.com>
- <20100531140443.b36a4f02.kamezawa.hiroyu@jp.fujitsu.com>
- <AANLkTil75ziCd6bivhpmwojvhaJ2LVxwEaEaBEmZf2yN@mail.gmail.com>
- <20100531145415.5e53f837.kamezawa.hiroyu@jp.fujitsu.com>
- <AANLkTilcuY5e1DNmLhUWfXtiQgPUafz2zRTUuTVl-88l@mail.gmail.com>
- <20100531155102.9a122772.kamezawa.hiroyu@jp.fujitsu.com>
+	id S1755036Ab0EaN4I (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 May 2010 09:56:08 -0400
+Received: from mail.gmx.net ([213.165.64.20]:48900 "HELO mail.gmx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1754462Ab0EaN4G (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 31 May 2010 09:56:06 -0400
+X-Authenticated: #5108953
+X-Provags-ID: V01U2FsdGVkX1/P8kJbjxzP3g4e0Zd2DStgJMbcizv8N4N5MegLCt
+	ZXtP+wVE3h7aVg
+From: Toralf =?utf-8?q?F=C3=B6rster?= <toralf.foerster@gmx.de>
+To: Borislav Petkov <bp@alien8.de>, Borislav Petkov <borislav.petkov@amd.com>
+Subject: Re: [PATCH] x86, hweight: Fix UML boot crash
+Date: Mon, 31 May 2010 15:55:53 +0200
+User-Agent: KMail/1.13.3 (Linux/2.6.34; KDE/4.4.3; i686; ; )
+Cc: "H. Peter Anvin" <hpa@zytor.com>,
+       Geert Uytterhoeven <geert@linux-m68k.org>,
+       user-mode-linux-devel@lists.sourceforge.net,
+       linux-kernel@vger.kernel.org
+References: <201005271944.09541.toralf.foerster@gmx.de> <20100530193956.GA2498@liondog.tnic> <20100530201738.GB2498@liondog.tnic>
+In-Reply-To: <20100530201738.GB2498@liondog.tnic>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
+Content-Type: Text/Plain;
+  charset="utf-8"
 Content-Transfer-Encoding: 8bit
-In-Reply-To: <20100531155102.9a122772.kamezawa.hiroyu@jp.fujitsu.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
+Message-Id: <201005311555.56791.toralf.foerster@gmx.de>
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 31, 2010 at 03:51:02PM +0900, KAMEZAWA Hiroyuki wrote:
-| On Mon, 31 May 2010 15:09:41 +0900
-| Minchan Kim <minchan.kim@gmail.com> wrote:
-| > On Mon, May 31, 2010 at 2:54 PM, KAMEZAWA Hiroyuki
-| > <kamezawa.hiroyu@jp.fujitsu.com> wrote:
-...
-| > >> > IIUC, the purpose of rising priority is to accerate dying thread to exit()
-| > >> > for freeing memory AFAP. But to free memory, exit, all threads which share
-| > >> > mm_struct should exit, too. I'm sorry if I miss something.
-| > >>
-| > >> How do we kill only some thread and what's the benefit of it?
-| > >> I think when if some thread receives  KILL signal, the process include
-| > >> the thread will be killed.
-| > >>
-| > > yes, so, if you want a _process_ die quickly, you have to acceralte the whole
-| > > threads on a process. Acceralating a thread in a process is not big help.
-| > 
-| > Yes.
-| > 
-| > I see the code.
-| > oom_kill_process is called by
-| > 
-| > 1. mem_cgroup_out_of_memory
-| > 2. __out_of_memory
-| > 3. out_of_memory
-| > 
-| > 
-| > (1,2) calls select_bad_process which select victim task in processes
-| > by do_each_process.
-| > But 3 isn't In case of  CONSTRAINT_MEMORY_POLICY, it kills current.
-| > In only the case, couldn't we pass task of process, not one of thread?
-| > 
-| 
-| Hmm, my point is that priority-acceralation is against a thread, not against a process.
-| So, most of threads in memory-eater will not gain high priority even with this patch
-| and works slowly.
 
-This is a good point...
+Borislav Petkov wrote at 22:17:38
+> LKML-Reference: <201005271944.09541.toralf.foerster@gmx.de>
+> Signed-off-by: Borislav Petkov <bp@alien8.de>
+> ---
+>  arch/um/include/asm/arch_hweight.h |    6 ++++++
+>  1 files changed, 6 insertions(+), 0 deletions(-)
+>  create mode 100644 arch/um/include/asm/arch_hweight.h
+> 
+> diff --git a/arch/um/include/asm/arch_hweight.h b/arch/um/include/asm/arch_hweight.h
+> new file mode 100644
+> index 0000000..c656cf4
+> --- /dev/null
+> +++ b/arch/um/include/asm/arch_hweight.h
+> @@ -0,0 +1,6 @@
+> +#ifndef _ASM_UM_HWEIGHT_H
+> +#define _ASM_UM_HWEIGHT_H
+> +
+> +#include <asm-generic/bitops/arch_hweight.h>
+> +
+> +#endif
+> 
+This patch does not to solve the reported issue by me.
 
-| I have no objections to this patch. I just want to confirm the purpose. If this patch
-| is for accelating exiting process by SIGKILL, it seems not enough.
-
-I understand (from the comments in the code) the badness calculation gives more
-points to the siblings in a thread that have their own mm. I wonder if what you
-are describing is not a corner case.
-
-Again, your idea sounds like an interesting refinement to the patch. I am
-just not sure this change should implemented now or in a second round of
-changes.
-
-| If an explanation as "acceralating all thread's priority in a process seems overkill"
-| is given in changelog or comment, it's ok to me.
-
-If my understanding of badness() is right, I wouldn't be ashamed of saying
-that it seems to be _a bit_ overkill. But I may be wrong in my
-interpretation.
-
-While re-reading the code I noticed that in select_bad_process() we can
-eventually bump on an already dying task, case in which we just wait for
-the task to die and avoid killing other tasks. Maybe we could boost the
-priority of the dying task here too.
-
-Luis
 -- 
-[ Luis Claudio R. Goncalves                    Bass - Gospel - RT ]
-[ Fingerprint: 4FDD B8C4 3C59 34BD 8BE9  2696 7203 D980 A448 C8F8 ]
+MfG/Sincerely
+Toralf FÃ¶rster
+
+pgp finger print: 7B1A 07F4 EC82 0F90 D4C2 8936 872A E508 7DB6 9DA3
 
