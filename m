@@ -1,95 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752175Ab0EaAEo (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 May 2010 20:04:44 -0400
-Received: from mail-px0-f174.google.com ([209.85.212.174]:41254 "EHLO
-	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750800Ab0EaAEm (ORCPT
+	id S1753636Ab0EaATm (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 May 2010 20:19:42 -0400
+Received: from mail-gw0-f46.google.com ([74.125.83.46]:64864 "EHLO
+	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751710Ab0EaATl convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 30 May 2010 20:04:42 -0400
+	Sun, 30 May 2010 20:19:41 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=subject:from:to:cc:content-type:date:message-id:mime-version
-         :x-mailer:content-transfer-encoding;
-        b=K7f/giN4oSVn2hNA5c1W18daYd+ahCStR82HYcv9J1DuJfuexZteWE0rPtt49+ffim
-         4RLEoFqDa2ATu4iIiBQxc74HUb8uGGCbb6MyEipw0vHMak1Hl3Mlkje/QnDXH6hVnCFJ
-         3+1duakNz/8ehwgaeNxB0t2+IXloOQl3dUl0c=
-Subject: [PATCH v2] cdc-acm: fix resource reclaim in error path of acm_probe
-From: Axel Lin <axel.lin@gmail.com>
-To: linux-kernel <linux-kernel@vger.kernel.org>
-Cc: Oliver Neukum <oliver@neukum.name>, Greg Kroah-Hartman <gregkh@suse.de>,
-       Alan Cox <alan@linux.intel.com>,
-       Francesco Lavra <francescolavra@interfree.it>,
-       Julian Calaby <julian.calaby@gmail.com>, linux-usb@vger.kernel.org
-Content-Type: text/plain
-Date: Mon, 31 May 2010 08:04:47 +0800
-Message-Id: <1275264287.20355.2.camel@mola>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.22.3.1 
-Content-Transfer-Encoding: 7bit
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=JtIajDHFdsNJFEoFFpbnXgodCvAdILrY5c5/ZOoWzteOGeDJtxXeBAHDAP5pfSt0XH
+         Q/rgOzpGABhWAXeR8msMxp1lG19YQYBYlI3rP/s+LPViQSCVqFA5HzkjpkxuoYB7t/2T
+         AReL/sFE3jYO1ppmQH3iKOPo8iyzapQcNHWUE=
+MIME-Version: 1.0
+In-Reply-To: <AANLkTim5zUD18vmMeNSzo2o8UGg8pr8l1uPbSYmHamq8@mail.gmail.com>
+References: <AANLkTim5zUD18vmMeNSzo2o8UGg8pr8l1uPbSYmHamq8@mail.gmail.com>
+Date: Mon, 31 May 2010 08:19:39 +0800
+Message-ID: <AANLkTikqD93owVeTLxr2n9U7qYEhqHy0Vew5mx33Eih6@mail.gmail.com>
+Subject: Re: About offload function of Virtio Nic
+From: Amos Kong <kongjianjun@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: rusty@rustcorp.com.au, davem@davemloft.net, kvm@vger.kernel.org
+Content-Type: text/plain; charset=GB2312
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch fixes resource reclaim in error path of acm_probe:
-1. In the case of "out of memory (read urbs usb_alloc_urb)\n")",
-there is no need to call acm_read_buffers_free(acm) here.
-Fix it by goto alloc_fail6 instead of alloc_fail7.
-2. In the case of "out of memory (write urbs usb_alloc_urb)",
-usb_alloc_urb may fail in any iteration of the for loop.
-Current implementation does not properly free allocated snd->urb.
-Fix it by goto alloc_fail8 instead of alloc_fail7.
-3. In the case of device_create_file(&intf->dev,&dev_attr_iCountryCodeRelDate)
-fail, acm->country_codes is kfreed. As a result, device_remove_file for
-dev_attr_wCountryCodes will not be executed in acm_disconnect.
-Fix it by calling device_remove_file for dev_attr_wCountryCodes before goto
-skip_countries.
+On Mon, May 31, 2010 at 7:44 AM, Amos Kong <kongjianjun@gmail.com> wrote:
+> Hello all,
+>
+> Can I ask some question of the offloading function with Virtio-NIC?
+>
+> I'm interested in KVM virtualization. The virtual NIC is different
+> from real hardward. And there is also a big distance between
+> Virtio-NIC and E1000-NIC.
+> The offloading function of Virtio-NIC close related with the function
+> of host's real hardware.
+> Associate Feature bits:
+> VIRTIO_NET_F_GUEST_...
+> VIRTIO_NET_F_HOST_...
+>
+> ---------------------------------------------------
+> command:
+> enable rx:  guest) # ethtool -K eth0
+> enable tx:  guest) # ethtool -K eth0
+> enable gs: guest) # ethtool -K eth0
+> enable tso: guest) # ethtool -K eth0
+> enable gso: guest) # ethtool -K eth0
+> enable lro: guest) # ethtool -K eth0
+> enable gro: guest) # ethtool -K eth0
 
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
----
- drivers/usb/class/cdc-acm.c |    6 ++++--
- 1 files changed, 4 insertions(+), 2 deletions(-)
+sorry , it should be
 
-diff --git a/drivers/usb/class/cdc-acm.c b/drivers/usb/class/cdc-acm.c
-index 0c2f14f..61d7550 100644
---- a/drivers/usb/class/cdc-acm.c
-+++ b/drivers/usb/class/cdc-acm.c
-@@ -1201,7 +1201,7 @@ made_compressed_probe:
- 		if (rcv->urb == NULL) {
- 			dev_dbg(&intf->dev,
- 				"out of memory (read urbs usb_alloc_urb)\n");
--			goto alloc_fail7;
-+			goto alloc_fail6;
- 		}
- 
- 		rcv->urb->transfer_flags |= URB_NO_TRANSFER_DMA_MAP;
-@@ -1225,7 +1225,7 @@ made_compressed_probe:
- 		if (snd->urb == NULL) {
- 			dev_dbg(&intf->dev,
- 				"out of memory (write urbs usb_alloc_urb)");
--			goto alloc_fail7;
-+			goto alloc_fail8;
- 		}
- 
- 		if (usb_endpoint_xfer_int(epwrite))
-@@ -1264,6 +1264,7 @@ made_compressed_probe:
- 		i = device_create_file(&intf->dev,
- 						&dev_attr_iCountryCodeRelDate);
- 		if (i < 0) {
-+			device_remove_file(&intf->dev, &dev_attr_wCountryCodes);
- 			kfree(acm->country_codes);
- 			goto skip_countries;
- 		}
-@@ -1300,6 +1301,7 @@ alloc_fail8:
- 		usb_free_urb(acm->wb[i].urb);
- alloc_fail7:
- 	acm_read_buffers_free(acm);
-+alloc_fail6:
- 	for (i = 0; i < num_rx_buf; i++)
- 		usb_free_urb(acm->ru[i].urb);
- 	usb_free_urb(acm->ctrlurb);
+enable rx:  guest) # ethtool -K eth0 rx on
+enable tx:  guest) # ethtool -K eth0 tx on
+enable gs: guest) # ethtool -K eth0 gs on
+enable tso: guest) # ethtool -K eth0 tso on
+enable gso: guest) # ethtool -K eth0 gso on
+enable lro: guest) # ethtool -K eth0 lro on
+enable gro: guest) # ethtool -K eth0 gro on
+
+It also works with my real hardware.
+
+> Those steps work well with Virtual E1000-NIC, but it always fail when
+> using Virtio-NIC.
+>
+> ---------------------------------------------------
+> After setup, I have two check method. For example:
+> 1. enable tso
+> 2. check the output of 'ethtool -k eth0'
+> 3. send large file from guest to host by scp, listen by tcpdump during
+> transferring file. and check if there contains some large
+> packet($length > 1514).
+>
+> The check method works with Virtual E1000-NIC, but it always fail when
+> using Virtio-NIC.
+>
+> ---------------------------------------------------
+> My question:
+> 1. How to setup offloading function of Virtio-NIC?
+> 2. How about my check method of offloading function(transferring file,
+> check packet length by tcpdump)?
+> 3. Is there some detail user guide for Virtio-NIC?
+>
+>
+>
+> Best Regards,
+> Amos
+>
+
+
+
 -- 
-1.5.4.3
-
-
-
+个人主页搬家了，欢迎来串门  ;)
+http://kongove.whostas.com/
