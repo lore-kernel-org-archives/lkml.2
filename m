@@ -1,141 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755981Ab0EaGz3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 May 2010 02:55:29 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:40656 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752408Ab0EaGz0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 May 2010 02:55:26 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Mon, 31 May 2010 15:51:02 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: Minchan Kim <minchan.kim@gmail.com>
-Cc: "Luis Claudio R. Goncalves" <lclaudio@uudg.org>,
-       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-       balbir@linux.vnet.ibm.com, Oleg Nesterov <oleg@redhat.com>,
-       linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-       Thomas Gleixner <tglx@linutronix.de>,
-       Peter Zijlstra <peterz@infradead.org>,
-       David Rientjes <rientjes@google.com>, Mel Gorman <mel@csn.ul.ie>,
-       williams@redhat.com
-Subject: Re: [RFC] oom-kill: give the dying task a higher priority
-Message-Id: <20100531155102.9a122772.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <AANLkTilcuY5e1DNmLhUWfXtiQgPUafz2zRTUuTVl-88l@mail.gmail.com>
-References: <20100528143605.7E2A.A69D9226@jp.fujitsu.com>
-	<AANLkTikB-8Qu03VrA5Z0LMXM_alSV7SLqzl-MmiLmFGv@mail.gmail.com>
-	<20100528145329.7E2D.A69D9226@jp.fujitsu.com>
-	<20100528125305.GE11364@uudg.org>
-	<20100528140623.GA11041@barrios-desktop>
-	<20100528143617.GF11364@uudg.org>
-	<20100528151249.GB12035@barrios-desktop>
-	<20100528152842.GH11364@uudg.org>
-	<20100528154549.GC12035@barrios-desktop>
-	<20100528164826.GJ11364@uudg.org>
-	<20100531092133.73705339.kamezawa.hiroyu@jp.fujitsu.com>
-	<AANLkTikFk_HnZWPG0s_VrRkro2rruEc8OBX5KfKp_QdX@mail.gmail.com>
-	<20100531140443.b36a4f02.kamezawa.hiroyu@jp.fujitsu.com>
-	<AANLkTil75ziCd6bivhpmwojvhaJ2LVxwEaEaBEmZf2yN@mail.gmail.com>
-	<20100531145415.5e53f837.kamezawa.hiroyu@jp.fujitsu.com>
-	<AANLkTilcuY5e1DNmLhUWfXtiQgPUafz2zRTUuTVl-88l@mail.gmail.com>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+	id S1756060Ab0EaG7Y (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 May 2010 02:59:24 -0400
+Received: from hera.kernel.org ([140.211.167.34]:43800 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752967Ab0EaG7X (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 31 May 2010 02:59:23 -0400
+Message-ID: <4C035E22.9010001@kernel.org>
+Date: Mon, 31 May 2010 08:58:42 +0200
+From: Tejun Heo <tj@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.1.9) Gecko/20100317 Thunderbird/3.0.4
+MIME-Version: 1.0
+To: Li Zefan <lizf@cn.fujitsu.com>
+CC: "Michael S. Tsirkin" <mst@redhat.com>, Oleg Nesterov <oleg@redhat.com>,
+       Sridhar Samudrala <sri@us.ibm.com>, netdev <netdev@vger.kernel.org>,
+       lkml <linux-kernel@vger.kernel.org>,
+       "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Dmitri Vorobiev <dmitri.vorobiev@movial.com>,
+       Jiri Kosina <jkosina@suse.cz>, Thomas Gleixner <tglx@linutronix.de>,
+       Ingo Molnar <mingo@elte.hu>, Andi Kleen <ak@linux.intel.com>
+Subject: [PATCH UPDATED 3/3] vhost: apply cpumask and cgroup to vhost pollers
+References: <20100527091426.GA6308@redhat.com> <20100527124448.GA4241@redhat.com> <20100527131254.GB7974@redhat.com> <4BFE9ABA.6030907@kernel.org> <20100527163954.GA21710@redhat.com> <4BFEA434.6080405@kernel.org> <20100527173207.GA21880@redhat.com> <4BFEE216.2070807@kernel.org> <20100528150830.GB21880@redhat.com> <4BFFE742.2060205@kernel.org> <20100530112925.GB27611@redhat.com> <4C02C99D.9070204@kernel.org> <4C030CB8.505@cn.fujitsu.com>
+In-Reply-To: <4C030CB8.505@cn.fujitsu.com>
+X-Enigmail-Version: 1.0.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Mon, 31 May 2010 06:58:47 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 31 May 2010 15:09:41 +0900
-Minchan Kim <minchan.kim@gmail.com> wrote:
+Apply the cpumask and cgroup of the initializing task to the created
+vhost poller.
 
-> On Mon, May 31, 2010 at 2:54 PM, KAMEZAWA Hiroyuki
-> <kamezawa.hiroyu@jp.fujitsu.com> wrote:
-> > On Mon, 31 May 2010 14:46:05 +0900
-> > Minchan Kim <minchan.kim@gmail.com> wrote:
-> >
-> >> On Mon, May 31, 2010 at 2:04 PM, KAMEZAWA Hiroyuki
-> >> <kamezawa.hiroyu@jp.fujitsu.com> wrote:
-> >> > On Mon, 31 May 2010 14:01:03 +0900
-> >> > Minchan Kim <minchan.kim@gmail.com> wrote:
-> >> >
-> >> >> Hi, Kame.
-> >> >>
-> >> >> On Mon, May 31, 2010 at 9:21 AM, KAMEZAWA Hiroyuki
-> >> >> <kamezawa.hiroyu@jp.fujitsu.com> wrote:
-> >> >> > On Fri, 28 May 2010 13:48:26 -0300
-> >> >> > "Luis Claudio R. Goncalves" <lclaudio@uudg.org> wrote:
-> >> >> >>
-> >> >> >> oom-killer: give the dying task rt priority (v3)
-> >> >> >>
-> >> >> >> Give the dying task RT priority so that it can be scheduled quickly and die,
-> >> >> >> freeing needed memory.
-> >> >> >>
-> >> >> >> Signed-off-by: Luis Claudio R. Gonçalves <lgoncalv@redhat.com>
-> >> >> >>
-> >> >> >> diff --git a/mm/oom_kill.c b/mm/oom_kill.c
-> >> >> >> index 84bbba2..2b0204f 100644
-> >> >> >> --- a/mm/oom_kill.c
-> >> >> >> +++ b/mm/oom_kill.c
-> >> >> >> @@ -266,6 +266,8 @@ static struct task_struct *select_bad_process(unsigned long *ppoints)
-> >> >> >>   */
-> >> >> >>  static void __oom_kill_task(struct task_struct *p, int verbose)
-> >> >> >>  {
-> >> >> >> +     struct sched_param param;
-> >> >> >> +
-> >> >> >>       if (is_global_init(p)) {
-> >> >> >>               WARN_ON(1);
-> >> >> >>               printk(KERN_WARNING "tried to kill init!\n");
-> >> >> >> @@ -288,6 +290,8 @@ static void __oom_kill_task(struct task_struct *p, int verbose)
-> >> >> >>        * exit() and clear out its resources quickly...
-> >> >> >>        */
-> >> >> >>       p->time_slice = HZ;
-> >> >> >> +     param.sched_priority = MAX_RT_PRIO-10;
-> >> >> >> +     sched_setscheduler(p, SCHED_FIFO, &param);
-> >> >> >>       set_tsk_thread_flag(p, TIF_MEMDIE);
-> >> >> >>
-> >> >> >
-> >> >> > BTW, how about the other threads which share mm_struct ?
-> >> >>
-> >> >> Could you elaborate your intention? :)
-> >> >>
-> >> >
-> >> > IIUC, the purpose of rising priority is to accerate dying thread to exit()
-> >> > for freeing memory AFAP. But to free memory, exit, all threads which share
-> >> > mm_struct should exit, too. I'm sorry if I miss something.
-> >>
-> >> How do we kill only some thread and what's the benefit of it?
-> >> I think when if some thread receives  KILL signal, the process include
-> >> the thread will be killed.
-> >>
-> > yes, so, if you want a _process_ die quickly, you have to acceralte the whole
-> > threads on a process. Acceralating a thread in a process is not big help.
-> 
-> Yes.
-> 
-> I see the code.
-> oom_kill_process is called by
-> 
-> 1. mem_cgroup_out_of_memory
-> 2. __out_of_memory
-> 3. out_of_memory
-> 
-> 
-> (1,2) calls select_bad_process which select victim task in processes
-> by do_each_process.
-> But 3 isn't In case of  CONSTRAINT_MEMORY_POLICY, it kills current.
-> In only the case, couldn't we pass task of process, not one of thread?
-> 
+Based on Sridhar Samudrala's patch.  Li Zefan spotted a bug in error
+path, fixed.
 
-Hmm, my point is that priority-acceralation is against a thread, not against a process.
-So, most of threads in memory-eater will not gain high priority even with this patch
-and works slowly. 
-I have no objections to this patch. I just want to confirm the purpose. If this patch
-is for accelating exiting process by SIGKILL, it seems not enough.
-If an explanation as "acceralating all thread's priority in a process seems overkill"
-is given in changelog or comment, it's ok to me.
+Cc: Michael S. Tsirkin <mst@redhat.com>
+Cc: Sridhar Samudrala <samudrala.sridhar@gmail.com>
+Cc: Li Zefan <lizf@cn.fujitsu.com>
+---
+Updated accordingly.  Thanks.
 
-Thanks,
--Kame
+ drivers/vhost/vhost.c |   36 +++++++++++++++++++++++++++++++-----
+ 1 file changed, 31 insertions(+), 5 deletions(-)
 
+Index: work/drivers/vhost/vhost.c
+===================================================================
+--- work.orig/drivers/vhost/vhost.c
++++ work/drivers/vhost/vhost.c
+@@ -23,6 +23,7 @@
+ #include <linux/highmem.h>
+ #include <linux/slab.h>
+ #include <linux/kthread.h>
++#include <linux/cgroup.h>
+
+ #include <linux/net.h>
+ #include <linux/if_packet.h>
+@@ -176,12 +177,30 @@ repeat:
+ long vhost_dev_init(struct vhost_dev *dev,
+ 		    struct vhost_virtqueue *vqs, int nvqs)
+ {
+-	struct task_struct *poller;
+-	int i;
++	struct task_struct *poller = NULL;
++	cpumask_var_t mask;
++	int i, ret = -ENOMEM;
++
++	if (!alloc_cpumask_var(&mask, GFP_KERNEL))
++		goto out;
+
+ 	poller = kthread_create(vhost_poller, dev, "vhost-%d", current->pid);
+-	if (IS_ERR(poller))
+-		return PTR_ERR(poller);
++	if (IS_ERR(poller)) {
++		ret = PTR_ERR(poller);
++		goto out;
++	}
++
++	ret = sched_getaffinity(current->pid, mask);
++	if (ret)
++		goto out;
++
++	ret = sched_setaffinity(poller->pid, mask);
++	if (ret)
++		goto out;
++
++	ret = cgroup_attach_task_current_cg(poller);
++	if (ret)
++		goto out;
+
+ 	dev->vqs = vqs;
+ 	dev->nvqs = nvqs;
+@@ -202,7 +221,14 @@ long vhost_dev_init(struct vhost_dev *de
+ 			vhost_poll_init(&dev->vqs[i].poll,
+ 					dev->vqs[i].handle_kick, POLLIN, dev);
+ 	}
+-	return 0;
++
++	wake_up_process(poller);	/* avoid contributing to loadavg */
++	ret = 0;
++out:
++	if (ret && poller)
++		kthread_stop(poller);
++	free_cpumask_var(mask);
++	return ret;
+ }
+
+ /* Caller should have device mutex */
