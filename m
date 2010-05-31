@@ -1,91 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753249Ab0EaWBY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 May 2010 18:01:24 -0400
-Received: from smtp.outflux.net ([198.145.64.163]:40998 "EHLO smtp.outflux.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751231Ab0EaWBV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 May 2010 18:01:21 -0400
-Date: Mon, 31 May 2010 15:00:00 -0700
-From: Kees Cook <kees.cook@canonical.com>
-To: Al Viro <viro@ZenIV.linux.org.uk>
-Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, linux-kernel@vger.kernel.org,
-       linux-security-module@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-       linux-doc@vger.kernel.org, Randy Dunlap <rdunlap@xenotime.net>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Jiri Kosina <jkosina@suse.cz>, Dave Young <hidave.darkstar@gmail.com>,
-       Martin Schwidefsky <schwidefsky@de.ibm.com>,
-       James Morris <jmorris@namei.org>, Eric Paris <eparis@redhat.com>,
-       David Howells <dhowells@redhat.com>, Ingo Molnar <mingo@elte.hu>,
-       Peter Zijlstra <a.p.zijlstra@chello.nl>,
-       "Eric W. Biederman" <ebiederm@xmission.com>,
-       Tim Gardner <tim.gardner@canonical.com>,
-       "Serge E. Hallyn" <serue@us.ibm.com>
-Subject: Re: [PATCH v2] fs: block cross-uid sticky symlinks
-Message-ID: <20100531220000.GI4098@outflux.net>
-References: <20100531030402.GQ6056@outflux.net>
- <20100531112314.373b0f26@lxorguk.ukuu.org.uk>
- <20100531175008.GC4098@outflux.net>
- <20100531190936.03076096@lxorguk.ukuu.org.uk>
- <20100531190754.GF4098@outflux.net>
- <20100531195230.GS31073@ZenIV.linux.org.uk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100531195230.GS31073@ZenIV.linux.org.uk>
-Organization: Canonical
-X-HELO: www.outflux.net
+	id S1753439Ab0EaWDu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 May 2010 18:03:50 -0400
+Received: from mail-ww0-f46.google.com ([74.125.82.46]:38321 "EHLO
+	mail-ww0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751540Ab0EaWDt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 31 May 2010 18:03:49 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=qqrTmN2tdFLFx+qp814IIm1LlKqKchQ6XWYac3sqJEXYrb0iID/56InNLIapOup/Ct
+         WpjKtw+D0kDjb8+cJ/u2ZeyYgPVH5AgnGzS1KQ8Wal5O4nJImuGQR2+D6FjOEXfoMX4i
+         ShbShuDRU5TUX6Rak5CMzK2ybbBNa7u0TsuBo=
+Subject: Re: [Regression] [2.6.35-rc1] ssb_is_sprom_available
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: maciej.rutecki@gmail.com
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
+       linux-kernel <linux-kernel@vger.kernel.org>
+In-Reply-To: <201005312155.20602.maciej.rutecki@gmail.com>
+References: <201005312155.20602.maciej.rutecki@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 01 Jun 2010 00:03:42 +0200
+Message-ID: <1275343422.2478.38.camel@edumazet-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Al,
-
-On Mon, May 31, 2010 at 08:52:30PM +0100, Al Viro wrote:
-> On Mon, May 31, 2010 at 12:07:54PM -0700, Kees Cook wrote:
-> > IIRC, screen, when setuid, allows users to share screen sessions (following
-> > some system-defined ACLs) but it does it via the /tmp directory trees it
-> > creates.  Per-user /tmp would break this (but yes, it's solvable using some
-> > kind of /var/lib/screen which maybe even already exists).
+Le lundi 31 mai 2010 à 21:55 +0200, Maciej Rutecki a écrit :
+> Last known good: 2.6.34
+> Failing kernel: 2.6.35-rc1
 > 
-> screen(1) does *not* put directories in /tmp these days, TYVM.
+> subsystem: PCI, USB(?)
 > 
-> al@duke:~/linux/trees/vfs-next$ ls -l /var/run/screen/
-> total 1
-> drwx------ 2 al al 1024 May 20 21:50 S-al
-
-Okay, good; that's a relief.
-
-> In any case, the suggested "improvement" breaks realistic use cases, AFAICS.
-> In particular,
+> Kernel dies during booting on message "ssb_is_sprom_available", see picture:
+> http://www.unixy.pl/maciek/download/kernel/2.6.35-rc1/gumis/DSC_0011.JPG
 > 
-> cd /tmp
-> tar jxf foo-2.42.orig.tar.bz2
-> <...>
-> tar jxf foo-gtk-wank-wank-wank-2.69.orig.tar.bz2
-> <...>
-> ln -s foo-gtk-wank-wank-wank-2.69/docs/GNOME/design/ crap
-> <...>
-> lpr crap/taste-is-optional.ps
-> lpr crap/why-options-are-wrong.ps
+> Config:
+> http://www.unixy.pl/maciek/download/kernel/2.6.35-rc1/gumis/config-2.6.35-rc1
 > 
-> is going to break with that, isn't it?
+> Regards
 
-Nope.  To be fair, it depends on the implementation of of LPR.  In the
-case of CUPS, this is fine since lpr will run as the local user, follow
-the symlink and read the file contents before POSTing the contents to
-the CUPS server.  The privilege boundary is crossed at the network,
-not the filesystem in this case.
+You could try following patch :
 
-I would note however that without the symlink following patch a hypothetical
-attacker would be able to race you for the "foo-gtk-wank-wank-wank-2.69"
-entry, or the "crap" entry, since either could be directed out from under
-"tar" and "ln" to symlinks controlled by the attacker.  Unpacking archives
-in a sticky world-writable directory is dangerous without this symlink
-following patch.
+Followup of commit d53cdbb94a52a920d5420ed64d986c3523a56743
+(ssb: do not read SPROM if it does not exist)
 
--Kees
+diff --git a/drivers/ssb/sprom.c b/drivers/ssb/sprom.c
+index 007bc3a..af3cd4d 100644
+--- a/drivers/ssb/sprom.c
++++ b/drivers/ssb/sprom.c
+@@ -185,6 +185,7 @@ bool ssb_is_sprom_available(struct ssb_bus *bus)
+ 	/* this routine differs from specs as we do not access SPROM directly
+ 	   on PCMCIA */
+ 	if (bus->bustype == SSB_BUSTYPE_PCI &&
++	    bus->chipco.dev &&
+ 	    bus->chipco.dev->id.revision >= 31)
+ 		return bus->chipco.capabilities & SSB_CHIPCO_CAP_SPROM;
+ 
 
--- 
-Kees Cook
-Ubuntu Security Team
+
+
+
+
