@@ -1,105 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755921Ab0EaOnY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 May 2010 10:43:24 -0400
-Received: from casper.infradead.org ([85.118.1.10]:38466 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755154Ab0EaOnX convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 May 2010 10:43:23 -0400
-Subject: Re: [PATCH] tracing: Add task activate/deactivate tracepoints
-From: Peter Zijlstra <peterz@infradead.org>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>,
-       Steven Rostedt <rostedt@goodmis.org>
-In-Reply-To: <20100531143622.GA5157@nowhere>
-References: <1275056762-13130-1-git-send-regression-fweisbec@gmail.com>
-	 <1275059710.27810.9624.camel@twins> <20100531080049.GA435@elte.hu>
-	 <1275293544.27810.21478.camel@twins> <1275296099.27810.21622.camel@twins>
-	 <20100531143622.GA5157@nowhere>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Mon, 31 May 2010 16:43:33 +0200
-Message-ID: <1275317013.27810.23019.camel@twins>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	id S1756031Ab0EaOql (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 May 2010 10:46:41 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:15669 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754255Ab0EaOqk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 31 May 2010 10:46:40 -0400
+Date: Mon, 31 May 2010 16:39:45 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: "Michael S. Tsirkin" <mst@redhat.com>, Sridhar Samudrala <sri@us.ibm.com>,
+       netdev <netdev@vger.kernel.org>, lkml <linux-kernel@vger.kernel.org>,
+       "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Dmitri Vorobiev <dmitri.vorobiev@movial.com>,
+       Jiri Kosina <jkosina@suse.cz>, Thomas Gleixner <tglx@linutronix.de>,
+       Ingo Molnar <mingo@elte.hu>, Andi Kleen <ak@linux.intel.com>
+Subject: Re: [PATCH 1/3] vhost: replace vhost_workqueue with per-vhost
+	kthread
+Message-ID: <20100531143945.GA6497@redhat.com>
+References: <20100527131254.GB7974@redhat.com> <4BFE9ABA.6030907@kernel.org> <20100527163954.GA21710@redhat.com> <4BFEA434.6080405@kernel.org> <20100527173207.GA21880@redhat.com> <4BFEE216.2070807@kernel.org> <20100528150830.GB21880@redhat.com> <4BFFE742.2060205@kernel.org> <20100530112925.GB27611@redhat.com> <4C02C961.9050606@kernel.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4C02C961.9050606@kernel.org>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-05-31 at 16:36 +0200, Frederic Weisbecker wrote:
-> On Mon, May 31, 2010 at 10:54:59AM +0200, Peter Zijlstra wrote:
-> > On Mon, 2010-05-31 at 10:12 +0200, Peter Zijlstra wrote:
-> > > On Mon, 2010-05-31 at 10:00 +0200, Ingo Molnar wrote:
-> > > > > 
-> > > > > NAK, aside from a few corner cases wakeup and sleep are the important 
-> > > > > points.
-> > > > > 
-> > > > > The activate and deactivate functions are implementation details.
-> > > > 
-> > > > Frederic, can you show us a concrete example of where we dont know what is 
-> > > > going on due to inadequate instrumentation? Can we fix that be extending the 
-> > > > existing tracepoints? 
-> > > 
-> > > Right, so a few of those corner cases I mentioned above are things like
-> > > re-nice, PI-boosts etc.. Those use deactivate, modify task-state,
-> > > activate cycles. so if you want to see those, we can add an explicit
-> > > tracepoint for those actions.
-> > > 
-> > > An explicit nice/PI-boost tracepoint is much clearer than trying to
-> > > figure out wth the deactivate/activate cycle was for.
-> > 
-> > Another advantage of explicit tracepoints is that you'd see them even
-> > for non-running tasks, because we only do the deactivate/activate thingy
-> > for runnable tasks.
-> 
-> 
-> Yeah. So I agree with you that activate/deactivate are too much
-> implementation related, they even don't give much sense as we
-> don't know the cause of the event, could be a simple renice, or
-> could be a sleep.
-> 
-> So agreed, this sucks.
-> 
-> For the corner cases like re-nice and PI-boost or so, we can indeed plug
-> some higher level tracepoints there.
-> 
-> But there is one more important problem these tracepoints were solving and
-> that still need something:
-> 
-> We don't know when a task goes to sleep. We have two wait tracepoints,
-> sched_wait_task() to wait for a task to unschedule, and sched_process_wait()
-> that is a hooks for waitid and wait4 syscalls. So we are missing all
-> the event waiting from inside the kernel. But even with that, wait and sleep
-> doesn't mean the same thing. Sleeping don't always involve using the waiting
-> API.
-> 
->   I think we need such tracepoint:
-> 
-> diff --git a/kernel/sched.c b/kernel/sched.c
-> index 8c0b90d..5f67c04 100644
-> --- a/kernel/sched.c
-> +++ b/kernel/sched.c
-> @@ -3628,8 +3628,10 @@ need_resched_nonpreemptible:
->  	if (prev->state && !(preempt_count() & PREEMPT_ACTIVE)) {
->  		if (unlikely(signal_pending_state(prev->state, prev)))
->  			prev->state = TASK_RUNNING;
-> -		else
-> +		else {
-> +			trace_sched_task_sleep(prev);
->  			deactivate_task(rq, prev, DEQUEUE_SLEEP);
-> +		}
->  		switch_count = &prev->nvcsw;
->  	}
+On 05/30, Tejun Heo wrote:
+>
+> This conversion is to make each vhost use a dedicated kthread so that
+> resource control via cgroup can be applied.
 
-> And concerning the task waking up, if it is not migrated, it means it stays
-> on its orig cpu. This is something that can be dealt from the post-processing.
+Personally, I agree. I think This is better than play with workqueue thread.
 
-Hurm,.. I was thinking trace_sched_switch(.prev_state != TASK_RUNNING)
-would be enough, but its not for preemptible kernels.
+A couple of simple questions after the quick glance at the unapplied patch...
 
-Should we maybe cure this and rely on sched_switch() to detect sleeps?
-It seems natural since only the current task can go to sleep, its just
-that the whole preempt state gets a bit iffy.
+>  void vhost_poll_flush(struct vhost_poll *poll)
+>  {
+> -	flush_work(&poll->work);
+> +	int seq = poll->queue_seq;
+> +
+> +	if (seq - poll->done_seq > 0)
+> +		wait_event(poll->done, seq - poll->done_seq <= 0);
 
+The check before wait_event() is not needed, please note that wait_event()
+checks the condition before __wait_event().
+
+What I can't understand is why we do have ->queue_seq and ->done_seq.
+
+Isn't the single "bool poll->active" enough? vhost_poll_queue() sets
+->active == T, vhost_poller() clears it before wake_up_all(poll->done).
+
+> +static int vhost_poller(void *data)
+> +{
+> +	struct vhost_dev *dev = data;
+> +	struct vhost_poll *poll;
+> +
+> +repeat:
+> +	set_current_state(TASK_INTERRUPTIBLE);	/* mb paired w/ kthread_stop */
+
+I don't understand the comment... why do we need this barrier?
+
+> +	if (kthread_should_stop()) {
+> +		__set_current_state(TASK_RUNNING);
+> +		return 0;
+> +	}
+> +
+> +	poll = NULL;
+> +	spin_lock(&dev->poller_lock);
+> +	if (!list_empty(&dev->poll_list)) {
+> +		poll = list_first_entry(&dev->poll_list,
+> +					struct vhost_poll, node);
+> +		list_del_init(&poll->node);
+> +	}
+> +	spin_unlock(&dev->poller_lock);
+> +
+> +	if (poll) {
+> +		__set_current_state(TASK_RUNNING);
+> +		poll->fn(poll);
+> +		smp_wmb();	/* paired with rmb in vhost_poll_flush() */
+> +		poll->done_seq = poll->queue_seq;
+> +		wake_up_all(&poll->done);
+> +	} else
+> +		schedule();
+> +
+> +	goto repeat;
+> +}
+
+Given that vhost_poll_queue() does list_add() and wake_up_process() under
+->poller_lock, I don't think we need any barriers to change ->state.
+
+IOW, can't vhost_poller() simply do
+
+	while(!kthread_should_stop()) {
+
+		poll = NULL;
+		spin_lock(&dev->poller_lock);
+		if (!list_empty(&dev->poll_list)) {
+			...
+		} else
+			 __set_current_state(TASK_INTERRUPTIBLE);
+		spin_unlock(&dev->poller_lock);
+
+		if (poll) {
+			...
+		} else
+			schedule();
+	}
+
+?
+
+Oleg.
 
