@@ -1,52 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932094Ab0EaHfc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 May 2010 03:35:32 -0400
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:37734
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756656Ab0EaHfa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 May 2010 03:35:30 -0400
-Date: Mon, 31 May 2010 00:35:39 -0700 (PDT)
-Message-Id: <20100531.003539.200382257.davem@davemloft.net>
-To: daniel@caiaq.de
-Cc: linux-kernel@vger.kernel.org, tj@kernel.org, jkosina@suse.cz,
-       cl@linux-foundation.org, joe@perches.com, netdev@vger.kernel.org
-Subject: Re: [PATCH] drivers/net/arcnet/capmode.c: clean up code
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1275291070-23062-1-git-send-email-daniel@caiaq.de>
-References: <20100531.002429.71095599.davem@davemloft.net>
-	<1275291070-23062-1-git-send-email-daniel@caiaq.de>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=iso-8859-7
+	id S1755836Ab0EaHgb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 May 2010 03:36:31 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:10692 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752702Ab0EaHga (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 31 May 2010 03:36:30 -0400
+Message-ID: <4C0366E0.6040203@redhat.com>
+Date: Mon, 31 May 2010 09:36:00 +0200
+From: Jes Sorensen <Jes.Sorensen@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-2.fc12 Lightning/1.0b2pre Thunderbird/3.0.4
+MIME-Version: 1.0
+To: "Michael S. Tsirkin" <mst@redhat.com>
+CC: Rusty Russell <rusty@rustcorp.com.au>, linux-kernel@vger.kernel.org,
+       virtualization@lists.linux-foundation.org, kvm@vger.kernel.org,
+       qemu-devel@nongnu.org
+Subject: Re: [PATCHv2-RFC 0/2] virtio: put last seen used index into ring
+ itself
+References: <cover.1274903328.git.mst@redhat.com> <4BFF9366.5090103@redhat.com> <20100530112220.GA27611@redhat.com>
+In-Reply-To: <20100530112220.GA27611@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by alpha.home.local id o4V7Zfim003005
 
-From: Daniel Mack <daniel@caiaq.de>
-Date: Mon, 31 May 2010 09:31:10 +0200
-
->  - shuffle around functions to get rid of forward declarations
->  - fix some CodingStyle and indentation issues
->  - last but not least, get rid of the following CONFIG_MODULE=n warning:
+On 05/30/10 13:22, Michael S. Tsirkin wrote:
+> On Fri, May 28, 2010 at 11:56:54AM +0200, Jes Sorensen wrote:
+>> It looks pretty good to me, however one thing I have been thinking of
+>> while reading through it:
+>>
+>> Rather than storing a pointer within the ring struct, pointing into a
+>> position within the same struct. How about storing a byte offset instead
+>> and using a cast to get to the pointer position? That would avoid the
+>> pointer dereference, which is less effective cache wise and harder for
+>> the CPU to predict.
+>>
+>> Not sure whether it really matters performance wise, just a thought.
 > 
-> 	drivers/net/arcnet/capmode.c:52: warning: ¡capmode_proto¢ defined but not used
-> 
-> Signed-off-by: Daniel Mack <daniel@caiaq.de>
+> I think this won't work: when PUBLUSH_USED_IDX is negotiated,
+> the pointer is to within the ring.
 
-Applied, but:
+Hmmm shame, it would be a nice optimization.
 
-> +MODULE_LICENSE("GPL");
-> +
-> -- 
-> 1.7.1
-> 
+Maybe it's time to introduce the v2 ring format, rather than having
+adding more kludges to the existing one?
 
-Extraneous empty line at end of file, which GIT warned about.
-I fixed it up before applying your patch.
-
-Thanks.
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+Cheers,
+Jes
