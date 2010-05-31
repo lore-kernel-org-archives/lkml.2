@@ -1,70 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752387Ab0EaLM2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 May 2010 07:12:28 -0400
-Received: from relay3.sgi.com ([192.48.152.1]:40007 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751640Ab0EaLM1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 May 2010 07:12:27 -0400
-Message-ID: <4C039980.3020608@sgi.com>
-Date: Mon, 31 May 2010 04:12:00 -0700
-From: Mike Travis <travis@sgi.com>
-User-Agent: Thunderbird 2.0.0.24 (X11/20100411)
+	id S1752610Ab0EaLOo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 May 2010 07:14:44 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:42567 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751508Ab0EaLOm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 31 May 2010 07:14:42 -0400
+Message-ID: <4C039A1B.4010703@redhat.com>
+Date: Mon, 31 May 2010 14:14:35 +0300
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-3.fc13 Thunderbird/3.0.4
 MIME-Version: 1.0
-To: "H. Peter Anvin" <hpa@zytor.com>
-CC: Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
-       x86@kernel.org, Jesse Barnes <jbarnes@virtuousgeek.org>,
-       Bjorn Helgaas <bjorn.helgaas@hp.com>,
-       Jacob Pan <jacob.jun.pan@intel.com>, Tejun Heo <tj@kernel.org>,
-       Mike Habeck <habeck@sgi.com>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [Patch 1/1] x86 pci: Add option to not assign BAR's if not already
- assigned
-References: <4BEAF008.9030805@sgi.com> <4BFFF517.6040401@sgi.com> <4BFFF6B8.30005@zytor.com> <4BFFF8F8.1070502@sgi.com> <4C0021DC.60608@zytor.com>
-In-Reply-To: <4C0021DC.60608@zytor.com>
+To: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+CC: Marcelo Tosatti <mtosatti@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+       KVM list <kvm@vger.kernel.org>
+Subject: Re: [PATCH 1/5] KVM: MMU: introduce some macros to cleanup hlist
+ traverseing
+References: <4C025BDC.1020304@cn.fujitsu.com> <4C026433.50602@redhat.com> <4C031845.7040208@cn.fujitsu.com>
+In-Reply-To: <4C031845.7040208@cn.fujitsu.com>
 Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-H. Peter Anvin wrote:
-> On 05/28/2010 10:10 AM, Mike Travis wrote:
->>
->> H. Peter Anvin wrote:
->>> On 05/28/2010 09:53 AM, Mike Travis wrote:
->>>> Any further consideration for this patch, or has it been rejected?
->>> Well, it's really up to Jesse, but as far as I can see, this patch is a
->>> net loss of functionality and doesn't actually add anything.  Without
->>> this patch, some resources that were not assigned by BIOS will be
->>> unreachable.  With this patch, *all* resources that were not assigned by
->>> BIOS will be unreachable...
+On 05/31/2010 05:00 AM, Xiao Guangrong wrote:
+>
+>>      
+>>> +
+>>> +#define for_each_gfn_indirect_sp(kvm, sp, gfn, pos, n)            \
+>>> +  hlist_for_each_entry_safe(sp, pos, n,                    \
+>>> +&kvm->arch.mmu_page_hash[kvm_page_table_hashfn(gfn)], hash_link)\
+>>> +        if (sp->gfn == gfn&&   !sp->role.direct)
+>>> +
+>>> +#define for_each_gfn_indirect_valid_sp(kvm, sp, gfn, pos, n)        \
+>>> +  hlist_for_each_entry_safe(sp, pos, n,                    \
+>>> +&kvm->arch.mmu_page_hash[kvm_page_table_hashfn(gfn)], hash_link)\
+>>> +        if (sp->gfn == gfn&&   !sp->role.direct&&         \
+>>> +            !sp->role.invalid)
 >>>
->>> 	-hpa
->>>
->> Apparently you're missing the point of the patch?  The patch is needed
->> because BIOS is purposely not assigning I/O BAR's to devices that won't
->> use them, freeing up the resource for devices that do need them.  Where
->> is the "all" resources that are not reachable?
->>
-> 
-> No, the patch isn't needed for those.
-> 
-> Without your patch:
-> 
-> - Devices assigned by BIOS remain assigned;
-> - Devices not assigned by BIOS get assigned until address space
->   exhausted.
-> 
-> With your patch:
-> 
-> - Devices assigned by BIOS remain assigned;
-> - Devices not assigned by BIOS never get assigned at all.
-> 
-> What am I missing here?
-> 
-> 	-hpa
-> 
+>>>        
+>> Shouldn't we always skip invalid gfns?
+>>      
+> Actually, in kvm_mmu_unprotect_page() function, it need find out
+> invalid shadow pages:
+>
+> |	hlist_for_each_entry_safe(sp, node, n, bucket, hash_link)
+> |		if (sp->gfn == gfn&&  !sp->role.direct) {
+> |			pgprintk("%s: gfn %lx role %x\n", __func__, gfn,
+> |				 sp->role.word);
+> |			r = 1;
+> |			if (kvm_mmu_zap_page(kvm, sp))
+> |				goto restart;
+> |		}
+>
+> I'm not sure whether we can skip invalid sp here, since it can change this
+> function's return value. :-(
+>    
 
-BIOS still assigns the MMIO BAR's so the devices are alive.
+Hm.  Invalid pages don't need to be write protected.  So I think you can 
+patch unprotect_page() to ignore invalid pages, and then you can convert 
+it to the new macros which ignore invalid pages as well.
+
+The invariant is: if an sp exists with !role.invalid and !unsync, then 
+the page must be write protected.
+
+
+>> What about providing both gfn and role to the macro?
+>>
+>>      
+> In current code, no code simply use role and gfn to find sp,
+> in kvm_mmu_get_page(), we need do other work for
+> 'sp->gfn == gfn&&  sp->role != role' sp, and other functions only need compare
+> some members in role, but not all members.
+>    
+
+How about just gfn?  I think everything compares against that!
+
+-- 
+I have a truly marvellous patch that fixes the bug which this
+signature is too narrow to contain.
+
