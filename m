@@ -1,73 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757288Ab0EaUPX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 May 2010 16:15:23 -0400
-Received: from mondschein.lichtvoll.de ([194.150.191.11]:48014 "EHLO
-	mail.lichtvoll.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756692Ab0EaUPV (ORCPT
+	id S1751551Ab0EaUUH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 May 2010 16:20:07 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:55069 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751059Ab0EaUUF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 May 2010 16:15:21 -0400
-From: Martin Steigerwald <Martin@lichtvoll.de>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Subject: [regression] Please add bug 15788 and 15969, usb sound / radeon kms broken after snapshot cycle
-Date: Mon, 31 May 2010 22:15:04 +0200
-User-Agent: KMail/1.13.3 (Linux/2.6.34-tp42-toi-3.1-radeon-kms-agp-suspend-04981-gb9a071a-dirty; KDE/4.4.3; i686; ; )
-Cc: linux-kernel@vger.kernel.org,
-       "Linux-pm mailing list" <linux-pm@lists.linux-foundation.org>
+	Mon, 31 May 2010 16:20:05 -0400
+Date: Mon, 31 May 2010 13:15:37 -0700 (PDT)
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+cc: Rusty Russell <rusty@rustcorp.com.au>, Brandon Philips <brandon@ifup.org>,
+       "Rafael J. Wysocki" <rjw@sisk.pl>, LKML <linux-kernel@vger.kernel.org>,
+       Jon Masters <jonathan@jonmasters.org>, Tejun Heo <htejun@gmail.com>,
+       Masami Hiramatsu <mhiramat@redhat.com>,
+       Kay Sievers <kay.sievers@vrfy.org>
+Subject: Re: [PATCH 2/2] module: fix bne2 "gave up waiting for init of module
+ libcrc32c"
+In-Reply-To: <alpine.LFD.2.00.1005311100220.3986@i5.linux-foundation.org>
+Message-ID: <alpine.LFD.2.00.1005311311490.3637@i5.linux-foundation.org>
+References: <201005252300.07739.rjw@sisk.pl> <201005312130.17038.rusty@rustcorp.com.au> <201005312131.43238.rusty@rustcorp.com.au> <201005312132.28631.rusty@rustcorp.com.au> <20100531094834.c1a684d1.akpm@linux-foundation.org>
+ <alpine.LFD.2.00.1005311100220.3986@i5.linux-foundation.org>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: multipart/signed;
-  boundary="nextPart1372653.zhlqzsHAFM";
-  protocol="application/pgp-signature";
-  micalg=pgp-sha1
-Content-Transfer-Encoding: 7bit
-Message-Id: <201005312215.17793.Martin@lichtvoll.de>
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---nextPart1372653.zhlqzsHAFM
-Content-Type: text/plain;
-  charset="us-ascii"
-Content-Transfer-Encoding: quoted-printable
 
 
-Hi Rafael,
+On Mon, 31 May 2010, Linus Torvalds wrote:
+> 
+> It's entirely possible that an interim fix (if we can't just fix the 
+> locking) is to _not_ use "strong_try_module_get()" at all, but instead 
+> just use "try_module_get()", and then after we've dropped the 
+> module_mutex, but _before_ we call the "init" function for the module, we 
+> wait for all the modules that this module depends on.
+> 
+> IOW, we'd link to other modules _before_ they are necessarily initialized 
+> (their symbol tables will be as initialized as they are going to be), but 
+> then before we call our own initialization routines we make sure that the 
+> modules we linked to have finished theirs.
+> 
+> Doesn't that sound like the logical thing to do? And it wouldn't change 
+> any locking.
 
-please add
+Ok, this is a two-patch series to do exactly that. It's totally untested, 
+although I _have_ booted the result, and tested that module loading and 
+unloading works. But I haven't tested the race condition, obviously.
 
-Bug 15788 -  external usb sound card doesn't work after resume
-https://bugzilla.kernel.org/show_bug.cgi?id=3D15788
+It looks sane, and quite frankly, I think it's a much better design than 
+what we have now. I also note that the old code was broken for the case of 
+not having CONFIG_MODULE_UNLOAD - I didn't fix it, but it should be easy 
+to do (basically, we should do the whole module dependency list regardless 
+of whether we can unload modules or not - we _do_ need it in order to get 
+that whole case of waiting for them to load right).
 
-to your regression list.
+The first patch doesn't really change anything, it just cleans things up 
+and introduces the two-way module usage list that the second patch needs 
+in order to wait for modules that we use to initialize.
 
-And
+Comments? Brandon - does this work for you? I may well have missed 
+something.
 
-Bug 15969 -  radeon regression couldn't schedule IB on resume with 2.6.34-
-rc7=20
-https://bugzilla.kernel.org/show_bug.cgi?id=3D15969
-
-Thanks.
-
-I find it irritating that a stable kernel is released with regressions like=
-=20
-this, but that seems to be what I can get for not waiting for 2.6.34.2 or=20
-higher.
-
-Ciao,
-=2D-=20
-Martin 'Helios' Steigerwald - http://www.Lichtvoll.de
-GPG: 03B0 0D6C 0040 0710 4AFA  B82F 991B EAAC A599 84C7
-
---nextPart1372653.zhlqzsHAFM
-Content-Type: application/pgp-signature; name=signature.asc 
-Content-Description: This is a digitally signed message part.
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iEYEABECAAYFAkwEGMkACgkQmRvqrKWZhMdAgwCbBdJwVp317zPLsQJcr0+fsHzk
-6+4AoIUVFZF5DOUVof0Ifj1AEp155JWn
-=9kYJ
------END PGP SIGNATURE-----
-
---nextPart1372653.zhlqzsHAFM--
+			Linus
