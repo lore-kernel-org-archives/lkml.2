@@ -1,117 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755399Ab0EaCRQ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 May 2010 22:17:16 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:60094 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1755329Ab0EaCRO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 30 May 2010 22:17:14 -0400
-Message-ID: <4C031B5D.3000502@cn.fujitsu.com>
-Date: Mon, 31 May 2010 10:13:49 +0800
-From: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
-User-Agent: Thunderbird 2.0.0.24 (Windows/20100228)
+	id S1755403Ab0EaCgi (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 May 2010 22:36:38 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:61552 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755349Ab0EaCgg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 30 May 2010 22:36:36 -0400
+Message-ID: <4C03203B.3050501@oracle.com>
+Date: Sun, 30 May 2010 19:34:35 -0700
+From: Randy Dunlap <randy.dunlap@oracle.com>
+Organization: Oracle Linux Engineering
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.5) Gecko/20091209 Fedora/3.0-3.fc11 Thunderbird/3.0
 MIME-Version: 1.0
-To: Avi Kivity <avi@redhat.com>
-CC: Marcelo Tosatti <mtosatti@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-       KVM list <kvm@vger.kernel.org>
-Subject: Re: [PATCH 2/5] KVM: MMU: split the operations of kvm_mmu_zap_page()
-References: <4C025BDC.1020304@cn.fujitsu.com> <4C025C24.9010200@cn.fujitsu.com> <4C026543.20608@redhat.com>
-In-Reply-To: <4C026543.20608@redhat.com>
-Content-Type: text/plain; charset=UTF-8
+To: Heiko Carstens <heiko.carstens@de.ibm.com>
+CC: linux-kernel@vger.kernel.org
+Subject: Re: Documentation/timers/hpet_example.c compile bug
+References: <20100528113514.GA3686@osiris.boeblingen.de.ibm.com> <4C015FE6.8040004@oracle.com>
+In-Reply-To: <4C015FE6.8040004@oracle.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
+X-Auth-Type: Internal IP
+X-Source-IP: acsinet15.oracle.com [141.146.126.227]
+X-CT-RefId: str=0001.0A090209.4C0320B1.00C6:SCFMA922111,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-Avi Kivity wrote:
-> On 05/30/2010 03:37 PM, Xiao Guangrong wrote:
->> Using kvm_mmu_prepare_zap_page() and kvm_mmu_commit_zap_page() to
->> split kvm_mmu_zap_page() function, then we can:
+On 05/29/10 11:41, Randy Dunlap wrote:
+> On 05/28/10 04:35, Heiko Carstens wrote:
+>> Hi Randy,
 >>
->> - traverse hlist safely
->> - easily to gather remote tlb flush which occurs during page zapped
+>> since your commit e61863099f58e458f08c101da87da752a1e009f5
+>> "Documentation/timers/: split txt and source files" I get this compile
+>> error on s390 with an allyesconfig:
 >>
->>
->> +static int kvm_mmu_prepare_zap_page(struct kvm *kvm, struct
->> kvm_mmu_page *sp)
->> +{
->> +    int ret;
->> +
->> +    trace_kvm_mmu_zap_page(sp);
->> +    ++kvm->stat.mmu_shadow_zapped;
->> +    ret = mmu_zap_unsync_children(kvm, sp);
->> +    kvm_mmu_page_unlink_children(kvm, sp);
->> +    kvm_mmu_unlink_parents(kvm, sp);
->> +    if (!sp->role.invalid&&  !sp->role.direct)
->> +        unaccount_shadowed(kvm, sp->gfn);
->> +    if (sp->unsync)
->> +        kvm_unlink_unsync_page(kvm, sp);
->> +    if (!sp->root_count)
->> +        /* Count self */
->> +        ret++;
->> +    else
->> +        kvm_reload_remote_mmus(kvm);
->> +
->> +    sp->role.invalid = 1;
->> +    list_move(&sp->link,&kvm->arch.invalid_mmu_pages);
->> +    kvm_mmu_reset_last_pte_updated(kvm);
->> +    return ret;
->> +}
->> +
->> +static void kvm_mmu_commit_zap_page(struct kvm *kvm)
->> +{
->> +    struct kvm_mmu_page *sp, *n;
->> +
->> +    if (list_empty(&kvm->arch.invalid_mmu_pages))
->> +        return;
->> +
->> +    kvm_flush_remote_tlbs(kvm);
->> +    list_for_each_entry_safe(sp, n,&kvm->arch.invalid_mmu_pages, link) {
->> +        WARN_ON(!sp->role.invalid);
->> +        if (!sp->root_count)
->> +            kvm_mmu_free_page(kvm, sp);
->> +    }
->> +}
->> +
->>    
+>> In file included from Documentation/timers/hpet_example.c:15:
+>> /usr/include/linux/hpet.h:11: error: expected specifier-qualifier-list before 'u64'
 > 
-> You're adding two new functions but not using them here?  Possibly in
-> the old kvm_mmu_zap_page()?
-
-I use those in the next patch, it's not in kvm_mmu_zap_page(), it's used like:
-
-hold mmu spin lock
-
-kvm_mmu_prepare_zap_page page A
-kvm_mmu_prepare_zap_page page B
-kvm_mmu_prepare_zap_page page C
-......
-kvm_mmu_commit_zap_page
-
-release mmu spin lock
-
+> Where is the u64?  My (x86_64) copy of /usr/include/linux/hpet.h looks like:
 > 
->> diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
->> index 5e5cd8d..225c3c4 100644
->> --- a/arch/x86/kvm/x86.c
->> +++ b/arch/x86/kvm/x86.c
->> @@ -5331,6 +5331,7 @@ struct  kvm *kvm_arch_create_vm(void)
->>       }
->>
->>       INIT_LIST_HEAD(&kvm->arch.active_mmu_pages);
->> +    INIT_LIST_HEAD(&kvm->arch.invalid_mmu_pages);
->>       INIT_LIST_HEAD(&kvm->arch.assigned_dev_head);
->>    
+>      1	#ifndef	__HPET__
+>      2	#define	__HPET__ 1
+>      3	
+>      4	
+>      5	
+>      6	
+>      7	struct hpet_info {
+>      8		unsigned long hi_ireqfreq;	/* Hz */
+>      9		unsigned long hi_flags;	/* information */
+>     10		unsigned short hi_hpet;
+>     11		unsigned short hi_timer;
+>     12	};
+>     13	
+>     14	#define HPET_INFO_PERIODIC	0x0010	/* periodic-capable comparator */
+>     15	
+>     16	#define	HPET_IE_ON	_IO('h', 0x01)	/* interrupt on */
+>     17	#define	HPET_IE_OFF	_IO('h', 0x02)	/* interrupt off */
+>     18	#define	HPET_INFO	_IOR('h', 0x03, struct hpet_info)
+>     19	#define	HPET_EPI	_IO('h', 0x04)	/* enable periodic */
+>     20	#define	HPET_DPI	_IO('h', 0x05)	/* disable periodic */
+>     21	#define	HPET_IRQFREQ	_IOW('h', 0x6, unsigned long)	/* IRQFREQ usec */
+>     22	
+>     23	#endif				/* !__HPET__ */
 > 
-> This is a good idea, but belongs in a separate patch?  We can use it to
-> reclaim invalid pages before allocating new ones.
+> I guess s390 hpet.h looks different?  Does it just need to #include <linux/types.h> ?
+> Or is the problem the kernel-space u64 vs. userspace __u64?
 > 
+>> Please fix.
+> 
+> Any suggestions?
 
-This patch is very simple and kvm_mmu_commit_zap_page() function should depend on
-kvm->arch.invalid_mmu_pages, so i think we on need separate this patch, your opinion? :-)
+Does it even make sense to build hpet_example on s390?
+I.e., does s390 have hpet?
+If not, then a simple Kconfig "depends on X86" or "depends on !S390" will fix this.
 
-Thanks,
-Xiao
-
+-- 
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
