@@ -1,48 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753516Ab0EaL3Q (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 May 2010 07:29:16 -0400
-Received: from moutng.kundenserver.de ([212.227.17.8]:64095 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752145Ab0EaL3P (ORCPT
+	id S1752954Ab0EaLat (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 May 2010 07:30:49 -0400
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:34743
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753059Ab0EaLar (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 May 2010 07:29:15 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Olaf Hering <olaf@aepfle.de>
-Subject: Re: acquire_console_mutex: WARNING: at 2.6.33.4-rt20/kernel/mutex-debug.c:65 mutex_remove_waiter+0xe8/0x11c()
-Date: Mon, 31 May 2010 13:29:07 +0200
-User-Agent: KMail/1.12.2 (Linux/2.6.31-19-generic; KDE/4.3.2; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org
-References: <20100524225357.GA19513@aepfle.de> <201005251318.37242.arnd@arndb.de> <20100530213902.GA3619@aepfle.de>
-In-Reply-To: <20100530213902.GA3619@aepfle.de>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
+	Mon, 31 May 2010 07:30:47 -0400
+Date: Mon, 31 May 2010 04:30:56 -0700 (PDT)
+Message-Id: <20100531.043056.258120791.davem@davemloft.net>
+To: fthain@telegraphics.com.au
+Cc: geert@linux-m68k.org, joe@perches.com, p_gortmaker@yahoo.com,
+       netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+       linux-m68k@vger.kernel.org
+Subject: Re: [PATCH] mac8390: change an error return code and some cleanup,
+ take 4
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <alpine.LNX.2.00.1005312011210.469@nippy.intranet>
+References: <alpine.LNX.2.00.1005311905520.469@nippy.intranet>
+	<AANLkTilkooBglbk33yDHmk8c_ZdlamOW8FVvuvjQaNsF@mail.gmail.com>
+	<alpine.LNX.2.00.1005312011210.469@nippy.intranet>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
-Message-Id: <201005311329.07182.arnd@arndb.de>
-X-Provags-ID: V01U2FsdGVkX1+stAdxgU2ZI3N2KmeotqRhyif00P5wUEHgOhq
- i2qF4s1G4cT4KYn2CnpH0Ee0HVe0e9lLkn/NlnpzFlbMiscJKq
- VQAZQANIBkU9MG2zL27Ew==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sunday 30 May 2010, Olaf Hering wrote:
-> > You could try to pull in the blk/tty branch from
-> > http://git.kernel.org/?p=linux/kernel/git/arnd/playground.git and enable
-> > CONFIG_TTY_MUTEX to see if that gives you better lockdep output,
-> > because that replaces the implicit dropping of the BKL with mutex operations
-> > that lockdep is aware of.
+From: fthain@telegraphics.com.au
+Date: Mon, 31 May 2010 21:07:09 +1000 (EST)
+
+> Apparently David now wants me to submit this again --
 > 
-> CONFIG_TTY_MUTEX depends on SMP and this ARM system does not support
-> CONFIG_SMP, its hidden by Kconfig dependencies.
+> if (ei_debug)
+> 	pr_debug(...)
 > 
-Ah right, sorry about that.
+> David, if that code is acceptable, please let me know.
 
-It should be
+The only thing I care about is at the moment that you don't do
+something that ends up dropping the pr_fmt prefix.
 
-	depends on SMP || PREEMPT
-
-	Arnd
-
+The pr_fmt define at the beginning of the driver is for nothing
+if we end up adding exceptions that end up eliding it for no
+good reason.  And that's what your patch was doing.
 
