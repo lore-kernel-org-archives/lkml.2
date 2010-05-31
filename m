@@ -1,58 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755926Ab0EaQ6k (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 May 2010 12:58:40 -0400
-Received: from einhorn.in-berlin.de ([192.109.42.8]:37849 "EHLO
-	einhorn.in-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755642Ab0EaQ6i (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 May 2010 12:58:38 -0400
-X-Envelope-From: stefanr@s5r6.in-berlin.de
-Message-ID: <4C03EAAA.6050603@s5r6.in-berlin.de>
-Date: Mon, 31 May 2010 18:58:18 +0200
-From: Stefan Richter <stefanr@s5r6.in-berlin.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.8.1.23) Gecko/20100415 SeaMonkey/1.1.18
-MIME-Version: 1.0
-To: Julia Lawall <julia@diku.dk>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-       linux1394-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
-       kernel-janitors@vger.kernel.org
-Subject: Re: [PATCH 12/27] drivers/ieee1394: Use memdup_user
-References: <Pine.LNX.4.64.1005221021460.13021@ask.diku.dk>
-In-Reply-To: <Pine.LNX.4.64.1005221021460.13021@ask.diku.dk>
-X-Enigmail-Version: 0.96.0
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1755775Ab0EaQ7j (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 May 2010 12:59:39 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:47324 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754893Ab0EaQ7h (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 31 May 2010 12:59:37 -0400
+Subject: Re: aha1542 oops caused by new request_irq routines
+From: James Bottomley <James.Bottomley@suse.de>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Tedheadster <tedheadster@gmail.com>, linux-scsi@vger.kernel.org,
+       linux-kernel <linux-kernel@vger.kernel.org>
+In-Reply-To: <alpine.LFD.2.00.1005311829360.2933@localhost.localdomain>
+References: <AANLkTilB661W9H9IPxn9TGBvv-omVnAh43r3XR5uM58m@mail.gmail.com>
+	 <1275316364.2823.22.camel@mulgrave.site>
+	 <alpine.LFD.2.00.1005311829360.2933@localhost.localdomain>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 31 May 2010 11:59:30 -0500
+Message-ID: <1275325170.2823.79.camel@mulgrave.site>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.2 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Julia Lawall wrote on 2010-05-22:
-...
-> --- a/drivers/ieee1394/video1394.c
-> +++ b/drivers/ieee1394/video1394.c
-> @@ -1045,14 +1045,9 @@ static long video1394_ioctl(struct file *file,
->  			if (get_user(qv, &p->packet_sizes))
->  				return -EFAULT;
->  
-> -			psizes = kmalloc(buf_size, GFP_KERNEL);
-> -			if (!psizes)
-> -				return -ENOMEM;
-> -
-> -			if (copy_from_user(psizes, qv, buf_size)) {
-> -				kfree(psizes);
-> -				return -EFAULT;
-> -			}
-> +			psizes = memdup_user(qv, buf_size);
-> +			if (IS_ERR(psizes))
-> +				return PTR_ERR(psizes);
->  		}
->  
->  		spin_lock_irqsave(&d->lock,flags);
+On Mon, 2010-05-31 at 18:43 +0200, Thomas Gleixner wrote:
+> On Mon, 31 May 2010, James Bottomley wrote:
+> 
+> > On Mon, 2010-05-31 at 10:03 -0400, Tedheadster wrote:
+> > > I'm reliably getting this oops:
+> > > 
+> > > Configuring Adaptec (SCSI-ID 6) at IO:334, IRQ 10, DMA priority 6
+> > > BUG: sleeping function called from invalid context at mm/slub.c:1598
+> > > in_atomic(): 0, irqs_disabled(): 1, pid: 4782, name: modprobe
+> > > Pid: 4782, comm: modprobe Not tainted 2.6.30.10-105.2.23.RODATA.fc11.i586 #1
+> > > Call Trace:
+> > >  [<c0469e58>] ? request_threaded_irq+0x85/0x145
+> > >  [<c0422ab7>] __might_sleep+0xc4/0xc9
+> > >  [<c04a4322>] kmem_cache_alloc_notrace+0x29/0xb0
+> > >  [<c0469e58>] request_threaded_irq+0x85/0x145
+> > >  [<d086439c>] ? do_aha1542_intr_handle+0x0/0x2be [aha1542]
+> > >  [<d08696aa>] aha1542_detect+0x631/0x76f [aha1542]
+> > >  [<d0869841>] init_this_scsi_driver+0x59/0xc7 [aha1542]
+> > >  [<d08697e8>] ? init_this_scsi_driver+0x0/0xc7 [aha1542]
+> > >  [<c040114b>] do_one_initcall+0x51/0x13f
+> > >  [<c0451111>] sys_init_module+0x8b/0x192
+> > >  [<c0403535>] syscall_call+0x7/0xb
+> > > scsi5 : Adaptec 1542
+> > 
+> > So this one's a bit tricky.  aha1542 uses a global spinlock to give it
+> > thread safety and various other things.  In this case it's trying to use
+> > the lock to hold off the interrupt until everything is set up.
+> > 
+> > Now that we're doing a GFP_KERNEL allocation in the interrupt handler
+> > code you can't disable interrupts while calling request_irq since this
+> > is an old card liable to spurious interrupts as it gets poked in setup.
+> >
+> > I think a possible solution is this, since the mere act of installing an
+> > interrupt handler shouldn't trigger the problem.
+> > 
+> > However, I thought the pattern of disabling interrupts and setting up
+> > the handler and registers was a common one ... is there some way this is
+> > supposed to work now that doesn't involve altering the drivers?
+> 
+> Most drivers do the sane thing:
+> 
+>      Disable interrupts at the device level
+>      Install handler via request_irq()
+>      Setup stuff
+>      Enable interrupts at the device level
 
-Committed to linux1394-2.6.git now, thanks.  (Because akpm said that it
-is worth it regardless of video1394 being at its end of life.)
--- 
-Stefan Richter
--=====-==-=- -=-= =====
-http://arcgraph.de/sr/
+That only works for some hardware ... a lot of older hardware can't
+disable interrupts; the best you can do is to have the box physically
+not listening to the line.
+
+> So no, there is no way this is supposed to work with drivers which
+> don't follow that simple scheme.
+> 
+> commit 0e43785c5 (irq: use GFP_KERNEL for action allocation in
+> request_irq()) changed that particular instance to GFP_KERNEL because
+> the request_irq code calls (and always did) code which cannot be
+> called in atomic contexts, e.g. the proc entry handling.
+
+So, like I said, I think we can install the handler without tickling the
+hardware.  Ideally we'd like to install it IRQ_DISABLED and then call
+enable_irq after we're done with the setup, but that doesn't seem to be
+possible.
+
+James
+
+
