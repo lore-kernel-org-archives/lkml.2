@@ -1,61 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754601Ab0EaNCF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 May 2010 09:02:05 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:52961 "EHLO
-	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754032Ab0EaNCB (ORCPT
+	id S1754689Ab0EaNCS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 May 2010 09:02:18 -0400
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:56655
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754530Ab0EaNCQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 May 2010 09:02:01 -0400
-Date: Mon, 31 May 2010 14:01:58 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Wolfram Sang <w.sang@pengutronix.de>
-Cc: linux-i2c@vger.kernel.org, Jean Delvare <khali@linux-fr.org>,
-       George Joseph <george.joseph@fairview5.com>,
-       Riku Voipio <riku.voipio@iki.fi>,
-       Guillaume Ligneul <guillaume.ligneul@gmail.com>,
-       "Ben Dooks (embedded platforms)" <ben-linux@fluff.org>,
-       Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-       Alessandro Rubini <rubini@cvml.unipv.it>,
-       Richard Purdie <rpurdie@rpsys.net>, Colin Leroy <colin@colino.net>,
-       Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-       Mauro Carvalho Chehab <mchehab@infradead.org>,
-       Samuel Ortiz <sameo@linux.intel.com>,
-       David Woodhouse <dwmw2@infradead.org>,
-       Liam Girdwood <lrg@slimlogic.co.uk>,
-       Paul Gortmaker <p_gortmaker@yahoo.com>,
-       Alessandro Zummo <a.zummo@towertech.it>,
-       Greg Kroah-Hartman <gregkh@suse.de>, lm-sensors@lm-sensors.org,
-       linux-kernel@vger.kernel.org, linux-input@vger.kernel.org,
-       linuxppc-dev@ozlabs.org, linux-media@vger.kernel.org,
-       linux-mtd@lists.infradead.org, rtc-linux@googlegroups.com,
-       devel@driverdev.osuosl.org
-Subject: Re: [PATCH] drivers: remove all i2c_set_clientdata(client, NULL)
-Message-ID: <20100531130157.GA10507@rakim.wolfsonmicro.main>
-References: <1275310552-14685-1-git-send-email-w.sang@pengutronix.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1275310552-14685-1-git-send-email-w.sang@pengutronix.de>
-X-Cookie: Security check:  =?ISO-8859-1?Q?=20=07=07=07INTRUDER?= ALERT!
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Mon, 31 May 2010 09:02:16 -0400
+Date: Mon, 31 May 2010 06:02:25 -0700 (PDT)
+Message-Id: <20100531.060225.68146363.davem@davemloft.net>
+To: fthain@telegraphics.com.au
+Cc: geert@linux-m68k.org, joe@perches.com, p_gortmaker@yahoo.com,
+       netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+       linux-m68k@vger.kernel.org
+Subject: Re: [PATCH] mac8390: change an error return code and some cleanup,
+ take 4
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <alpine.OSX.2.00.1005312244520.1490@localhost>
+References: <alpine.LNX.2.00.1005312011210.469@nippy.intranet>
+	<20100531.043056.258120791.davem@davemloft.net>
+	<alpine.OSX.2.00.1005312244520.1490@localhost>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 31, 2010 at 02:55:48PM +0200, Wolfram Sang wrote:
-> I2C-drivers can use the clientdata-pointer to point to private data. As I2C
-> devices are not really unregistered, but merely detached from their driver, it
-> used to be the drivers obligation to clear this pointer during remove() or a
-> failed probe(). As a couple of drivers forgot to do this, it was agreed that it
-> was cleaner if the i2c-core does this clearance when appropriate, as there is
-> no guarantee for the lifetime of the clientdata-pointer after remove() anyhow.
-> This feature was added to the core with commit
-> e4a7b9b04de15f6b63da5ccdd373ffa3057a3681 to fix the faulty drivers.
-> 
-> As there is no need anymore to clear the clientdata-pointer, remove all current
-> occurrences in the drivers to simplify the code and prevent confusion.
-> 
-> Signed-off-by: Wolfram Sang <w.sang@pengutronix.de>
+From: Finn Thain <fthain@telegraphics.com.au>
+Date: Mon, 31 May 2010 22:55:23 +1000 (EST)
 
-Acked-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+> if (ei_debug)
+> 	pr_debug(...)
+> 
+> OR
+> 
+> if (ei_debug)
+> 	pr_info(...)
+
+Well for the printk in question, it's telling the user that
+a certain feature can't be enabled.
+
+And if the driver has an explicit way to control this message,
+using ei_debug, it's kind of redundant to slap another layer on
+top by using the debug printk facility.
+
+Changing this to a debug log level printk is only going to make
+getting the debug message shown harder for the user.  So leaving it at
+pr_info() is just as correct in my eyes.
+
+Finally, your patch has so many problems getting applied because
+you're doing multiple things in one patch.
+
+And in fact I've asked you not to do this on several occiaions.
+
+Fix the error return codes in one patch, and nothing more.
+Then in another you can masterbate with printk log levels.
