@@ -1,76 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752703Ab0EaKrZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 May 2010 06:47:25 -0400
-Received: from thunk.org ([69.25.196.29]:43816 "EHLO thunker.thunk.org"
+	id S1751546Ab0EaLDX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 May 2010 07:03:23 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:25092 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751541Ab0EaKrV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 May 2010 06:47:21 -0400
-Date: Mon, 31 May 2010 06:47:08 -0400
-From: tytso@mit.edu
-To: Kees Cook <kees.cook@canonical.com>
-Cc: linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
-       linux-fsdevel@vger.kernel.org, linux-doc@vger.kernel.org,
-       Randy Dunlap <rdunlap@xenotime.net>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Jiri Kosina <jkosina@suse.cz>, Dave Young <hidave.darkstar@gmail.com>,
-       Martin Schwidefsky <schwidefsky@de.ibm.com>,
-       James Morris <jmorris@namei.org>, Eric Paris <eparis@redhat.com>,
-       David Howells <dhowells@redhat.com>, Ingo Molnar <mingo@elte.hu>,
-       Peter Zijlstra <a.p.zijlstra@chello.nl>,
-       "Eric W. Biederman" <ebiederm@xmission.com>,
-       Tim Gardner <tim.gardner@canonical.com>,
-       "Serge E. Hallyn" <serue@us.ibm.com>
-Subject: Re: [PATCH v2] fs: block cross-uid sticky symlinks
-Message-ID: <20100531104708.GR26177@thunk.org>
-Mail-Followup-To: tytso@mit.edu, Kees Cook <kees.cook@canonical.com>,
-	linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
-	linux-fsdevel@vger.kernel.org, linux-doc@vger.kernel.org,
-	Randy Dunlap <rdunlap@xenotime.net>,
-	Andrew Morton <akpm@linux-foundation.org>,
-	Jiri Kosina <jkosina@suse.cz>,
-	Dave Young <hidave.darkstar@gmail.com>,
-	Martin Schwidefsky <schwidefsky@de.ibm.com>,
-	James Morris <jmorris@namei.org>, Eric Paris <eparis@redhat.com>,
-	David Howells <dhowells@redhat.com>, Ingo Molnar <mingo@elte.hu>,
-	Peter Zijlstra <a.p.zijlstra@chello.nl>,
-	"Eric W. Biederman" <ebiederm@xmission.com>,
-	Tim Gardner <tim.gardner@canonical.com>,
-	"Serge E. Hallyn" <serue@us.ibm.com>
-References: <20100531030402.GQ6056@outflux.net>
+	id S1750934Ab0EaLDW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 31 May 2010 07:03:22 -0400
+Message-ID: <4C03974A.8050802@redhat.com>
+Date: Mon, 31 May 2010 14:02:34 +0300
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-3.fc13 Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100531030402.GQ6056@outflux.net>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on thunker.thunk.org); SAEximRunCond expanded to false
+To: Huang Ying <ying.huang@intel.com>
+CC: Marcelo Tosatti <mtosatti@redhat.com>, Andi Kleen <andi@firstfloor.org>,
+       linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
+       Andrew Morton <akpm@linux-foundation.org>, masbock@linux.vnet.ibm.com,
+       Wu Fengguang <fengguang.wu@intel.com>
+Subject: Re: [PATCH -v3] KVM, Fix QEMU-KVM is killed by guest SRAO MCE (resend)
+References: <1275287299.3444.423.camel@yhuang-dev.sh.intel.com>
+In-Reply-To: <1275287299.3444.423.camel@yhuang-dev.sh.intel.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, May 30, 2010 at 08:04:02PM -0700, Kees Cook wrote:
->  - Violates POSIX.
->    - POSIX didn't consider this situation and it's not useful to follow
->      a broken specification at the cost of security.
+On 05/31/2010 09:28 AM, Huang Ying wrote:
+> In common cases, guest SRAO MCE will cause corresponding poisoned page
+> be un-mapped and SIGBUS be sent to QEMU-KVM, then QEMU-KVM will relay
+> the MCE to guest OS.
+>
+> But it is reported that if the poisoned page is accessed in guest
+> after un-mapped and before MCE is relayed to guest OS, QEMU-KVM will
+> be killed.
+>
+> The reason is as follow. Because poisoned page has been un-mapped,
+> guest access will cause guest exit and kvm_mmu_page_fault will be
+> called. kvm_mmu_page_fault can not get the poisoned page for fault
+> address, so kernel and user space MMIO processing is tried in turn. In
+> user MMIO processing, poisoned page is accessed again, then QEMU-KVM
+> is killed by force_sig_info.
+>
+> To fix the bug, kvm_mmu_page_fault send HWPOISON signal to QEMU-KVM
+> and do not try kernel and user space MMIO processing for poisoned
+> page.
+>    
 
-POSIX allows implementations to fail requested operations with a
-permission denied for reasons beyond that which is specified by the
-POSIX implementation.  Indeed, POSIX doesn't specify the sticky bit at
-all, so implementations that implemented the sticky bit were able to
-pass POSIX precisely because it's OK to provide stricter semantics
-than that which is specified by POSIX.  (The sticky bit is specified
-in the XSI exstension to the Single Unix Specification, but the same
-principle applies; it's OK for us have additional situations where we
-return EACCESS beyond that which was contemplated by POSIX/SUS; this
-alone wouldn't cause us to 'violate POSIX'.)
+Applied, thanks.  Sorry about the delay.
 
-So for people who to argue against this (which I believe to be a
-useful restriction, and not one that necessarily has to be done in a
-LSM), it's not sufficient to say that it is a POSIX violation, because
-it isn't.  The sticky bit itself wasn't originally considered by
-POSIX, and many systems which implemented the sticky bit had no
-problems becoming ceritifed as POSIX compliant.
+-- 
+I have a truly marvellous patch that fixes the bug which this
+signature is too narrow to contain.
 
-						- Ted
