@@ -1,57 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756296Ab0EaPBv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 May 2010 11:01:51 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:42564 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752334Ab0EaPBt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 May 2010 11:01:49 -0400
-Subject: Re: Wrong DIF guard tag on ext2 write
-From: James Bottomley <James.Bottomley@suse.de>
-To: "Martin K. Petersen" <martin.petersen@oracle.com>
-Cc: Christof Schmitt <christof.schmitt@de.ibm.com>, linux-scsi@vger.kernel.org,
-       linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
-In-Reply-To: <yq1iq64kv9f.fsf@sermon.lab.mkp.net>
-References: <20100531112817.GA16260@schmichrtp.mainz.de.ibm.com>
-	 <yq1iq64kv9f.fsf@sermon.lab.mkp.net>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 31 May 2010 10:01:42 -0500
-Message-ID: <1275318102.2823.47.camel@mulgrave.site>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.2 
-Content-Transfer-Encoding: 7bit
+	id S1755341Ab0EaPDJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 May 2010 11:03:09 -0400
+Received: from cavan.codon.org.uk ([93.93.128.6]:57746 "EHLO
+	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753840Ab0EaPDH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 31 May 2010 11:03:07 -0400
+Date: Mon, 31 May 2010 16:03:00 +0100
+From: Matthew Garrett <mjg59@srcf.ucam.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, platform-driver-x86@vger.kernel.org
+Subject: Re: [GIT PULL] x86 platform driver updates for 2.6.35
+Message-ID: <20100531150300.GA19134@srcf.ucam.org>
+References: <20100528182549.GA32694@srcf.ucam.org> <alpine.LFD.2.00.1005300914460.4639@i5.linux-foundation.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LFD.2.00.1005300914460.4639@i5.linux-foundation.org>
+User-Agent: Mutt/1.5.18 (2008-05-17)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-05-31 at 10:20 -0400, Martin K. Petersen wrote:
-> >>>>> "Christof" == Christof Schmitt <christof.schmitt@de.ibm.com> writes:
-> 
-> Christof> Since the guard tags are created in Linux, it seems that the
-> Christof> data attached to the write request changes between the
-> Christof> generation in bio_integrity_generate and the call to
-> Christof> sd_prep_fn.
-> 
-> Yep, known bug.  Page writeback locking is messed up for buffer_head
-> users.  The extNfs folks volunteered to look into this a while back but
-> I don't think they have found the time yet.
-> 
-> 
-> Christof> Using ext3 or ext4 instead of ext2 does not show the problem.
-> 
-> Last I looked there were still code paths in ext3 and ext4 that
-> permitted pages to be changed during flight.  I guess you've just been
-> lucky.
+On Sun, May 30, 2010 at 09:15:32AM -0700, Linus Torvalds wrote:
 
-Pages have always been modifiable in flight.  The OS guarantees they'll
-be rewritten, so the drivers can drop them if it detects the problem.
-This is identical to the iscsi checksum issue (iscsi adds a checksum
-because it doesn't trust TCP/IP and if the checksum is generated in
-software, there's time between generation and page transmission for the
-alteration to occur).  The solution in the iscsi case was not to
-complain if the page is still marked dirty.
+> This doesn't seem to have the proper sign-off chains, so I'm not pulling 
+> it. 
 
-James
+Sorry about that. I've fixed things up - are you ok with still pulling 
+this? If not I can separate out the bugfixes and new drivers from the 
+cleanups.
 
-
-
+-- 
+Matthew Garrett | mjg59@srcf.ucam.org
