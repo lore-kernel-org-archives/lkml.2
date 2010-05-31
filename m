@@ -1,62 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755599Ab0EaC5W (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 May 2010 22:57:22 -0400
-Received: from mga01.intel.com ([192.55.52.88]:4094 "EHLO mga01.intel.com"
+	id S1755672Ab0EaC60 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 May 2010 22:58:26 -0400
+Received: from sh.osrg.net ([192.16.179.4]:49663 "EHLO sh.osrg.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755424Ab0EaC5V (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 30 May 2010 22:57:21 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.53,330,1272870000"; 
-   d="scan'208";a="571878657"
-Subject: Re: [BUG] kacpi_notify goes into an infinite loop (luckly it calls
- cond_resched)
-From: Zhang Rui <rui.zhang@intel.com>
-To: "rostedt@goodmis.org" <rostedt@goodmis.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, Thomas Renninger <trenn@suse.de>,
-       "clarkt@cnsp.com" <clarkt@cnsp.com>, "Brown, Len" <len.brown@intel.com>,
-       Andrew Morton <akpm@linux-foundation.org>
-In-Reply-To: <1275094882.22648.607.camel@gandalf.stny.rr.com>
-References: <1275094882.22648.607.camel@gandalf.stny.rr.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 31 May 2010 10:57:50 +0800
-Message-ID: <1275274670.9119.4419.camel@rzhang1-desktop>
+	id S1755339Ab0EaC6Y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 30 May 2010 22:58:24 -0400
+Date: Mon, 31 May 2010 11:58:12 +0900
+To: cmetcalf@tilera.com
+Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
+       torvalds@linux-foundation.org
+Subject: Re: [PATCH 3/8] arch/tile: header files for the Tile architecture.
+From: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+In-Reply-To: <201005290334.o4T3Y1FX029944@farm-0002.internal.tilera.com>
+References: <201005200543.o4K5hFRF006079@farm-0002.internal.tilera.com>
+	<201005290334.o4T3Y1FX029944@farm-0002.internal.tilera.com>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.28.1 
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
+Message-Id: <20100531113524E.fujita.tomonori@lab.ntt.co.jp>
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-3.0 (sh.osrg.net [192.16.179.4]); Mon, 31 May 2010 11:58:13 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi, Steve,
+On Fri, 28 May 2010 23:10:07 -0400
+Chris Metcalf <cmetcalf@tilera.com> wrote:
 
-On Sat, 2010-05-29 at 09:01 +0800, Steven Rostedt wrote:
-> I just replaced Windows with F12 on my wife's computer, to have nothing
-> but issues. But anyway, one of the issues I had on this box was in
-> vanilla linux kernel 2.6.34 (all the fedora kernels had other issues),
-> the kacpi_notify would go into an infinite loop.
+> This includes the relevant Linux headers in asm/; the low-level
+> low-level "Tile architecture" headers in arch/, which are
+> shared with the hypervisor, etc., and are build-system agnostic;
+> and the relevant hypervisor headers in hv/.
 > 
-> I debugged it a bit with ftrace and saw that the kacpi_notify workqueue
-> was constantly requeuing itself (thanks to the workqueue trace events).
-> 
-> I bisected this, and it came down to this change:
-> 
-> commit fa80945269f312bc609e8384302f58b03c916e12
-> Author: Thomas Renninger <trenn@suse.de>
-> Date:   Sat Feb 20 11:44:27 2010 +0100
-> 
->     ACPI thermal: Don't invalidate thermal zone if critical trip point is bad
-> 
-> 
-This patch enables the ACPI thermal control which is used to be disabled
-on some laptops.
+> Signed-off-by: Chris Metcalf <cmetcalf@tilera.com>
 
-Maybe this triggers an interrupt storm on this box.
+(snip)
 
-please attach the output of "grep . /sys/firmware/acpi/interrupts/*".
-please attach the acpidump output of your laptop as well.
+> +++ b/arch/tile/include/asm/dma-mapping.h
+> @@ -0,0 +1,106 @@
+> +/*
+> + * Copyright 2010 Tilera Corporation. All Rights Reserved.
+> + *
+> + *   This program is free software; you can redistribute it and/or
+> + *   modify it under the terms of the GNU General Public License
+> + *   as published by the Free Software Foundation, version 2.
+> + *
+> + *   This program is distributed in the hope that it will be useful, but
+> + *   WITHOUT ANY WARRANTY; without even the implied warranty of
+> + *   MERCHANTABILITY OR FITNESS FOR A PARTICULAR PURPOSE, GOOD TITLE or
+> + *   NON INFRINGEMENT.  See the GNU General Public License for
+> + *   more details.
+> + */
+> +
+> +#ifndef _ASM_TILE_DMA_MAPPING_H
+> +#define _ASM_TILE_DMA_MAPPING_H
+> +
+> +/*
+> + * IOMMU interface. See Documentation/PCI/PCI-DMA-mapping.txt and
+> + * Documentation/DMA-API.txt for documentation.
+> + */
 
-thanks,
-rui
+Documentation/PCI/PCI-DMA-mapping.txt was renamed to
+Documentation/DMA-API-HOWTO. Anyway, I recommend removing the useless
+comment.
 
 
+> +#include <linux/mm.h>
+> +#include <linux/scatterlist.h>
+> +#include <linux/cache.h>
+> +#include <linux/io.h>
+> +
+> +/*
+> + * Note that on x86 and powerpc, there is a "struct dma_mapping_ops"
+> + * that is used for all the DMA operations.  For now, we don't have an
+> + * equivalent on tile, because we only have a single way of doing DMA.
+> + */
+
+I think that using "struct dma_mapping_ops" is a good idea even if you
+support the single dma ops. You can avoid lots of duplicated code.
+
+
+(snip)
+
+> --- /dev/null
+> --- /dev/null
+> +++ b/arch/tile/include/asm/scatterlist.h
+> @@ -0,0 +1 @@
+> +#include <asm-generic/scatterlist.h>
+
+Did you compile this patchset with 2.6.35-rc1? I think that you need
+to define ISA_DMA_THRESHOLD here.
