@@ -1,98 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755627Ab0EaRzQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 May 2010 13:55:16 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:3103 "EHLO mx1.redhat.com"
+	id S1756868Ab0EaR60 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 May 2010 13:58:26 -0400
+Received: from smtp.outflux.net ([198.145.64.163]:55895 "EHLO smtp.outflux.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754630Ab0EaRzO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 May 2010 13:55:14 -0400
-Date: Mon, 31 May 2010 19:52:42 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Ben Blum <bblum@andrew.cmu.edu>
-Cc: linux-kernel@vger.kernel.org, containers@lists.linux-foundation.org,
-       akpm@linux-foundation.org, ebiederm@xmission.com, lizf@cn.fujitsu.com,
-       matthltc@us.ibm.com, menage@google.com
-Subject: Re: [RFC] [PATCH 2/2] cgroups: make procs file writable
-Message-ID: <20100531175242.GA14691@redhat.com>
-References: <20100530013002.GA762@ghc01.ghc.andrew.cmu.edu> <20100530013303.GC762@ghc01.ghc.andrew.cmu.edu>
+	id S1755030Ab0EaR6Y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 31 May 2010 13:58:24 -0400
+Date: Mon, 31 May 2010 10:57:33 -0700
+From: Kees Cook <kees.cook@canonical.com>
+To: Christoph Hellwig <hch@infradead.org>
+Cc: linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
+       linux-fsdevel@vger.kernel.org, linux-doc@vger.kernel.org,
+       Randy Dunlap <rdunlap@xenotime.net>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Jiri Kosina <jkosina@suse.cz>, Dave Young <hidave.darkstar@gmail.com>,
+       Martin Schwidefsky <schwidefsky@de.ibm.com>,
+       James Morris <jmorris@namei.org>, Eric Paris <eparis@redhat.com>,
+       David Howells <dhowells@redhat.com>, Ingo Molnar <mingo@elte.hu>,
+       Peter Zijlstra <a.p.zijlstra@chello.nl>,
+       "Eric W. Biederman" <ebiederm@xmission.com>,
+       Tim Gardner <tim.gardner@canonical.com>,
+       "Serge E. Hallyn" <serue@us.ibm.com>
+Subject: Re: [PATCH v2] fs: block cross-uid sticky symlinks
+Message-ID: <20100531175733.GD4098@outflux.net>
+References: <20100531030402.GQ6056@outflux.net>
+ <20100531103510.GA30021@infradead.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100530013303.GC762@ghc01.ghc.andrew.cmu.edu>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <20100531103510.GA30021@infradead.org>
+Organization: Canonical
+X-HELO: www.outflux.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I only glanced into one function, cgroup_attach_proc(), and some things
-look "obviously wrong". Sorry, I can't really read these patches now,
-most probably I misunderstood the code...
+Hi Christoph,
 
-> +int cgroup_attach_proc(struct cgroup *cgrp, struct task_struct *leader)
-> +{
-> +	int retval;
-> +	struct cgroup_subsys *ss, *failed_ss = NULL;
-> +	struct cgroup *oldcgrp;
-> +	struct css_set *oldcg;
-> +	struct cgroupfs_root *root = cgrp->root;
-> +	/* threadgroup list cursor */
-> +	struct task_struct *tsk;
-> +	/*
-> +	 * we need to make sure we have css_sets for all the tasks we're
-> +	 * going to move -before- we actually start moving them, so that in
-> +	 * case we get an ENOMEM we can bail out before making any changes.
-> +	 */
-> +	struct list_head newcg_list;
-> +	struct cg_list_entry *cg_entry, *temp_nobe;
-> +
-> +	/*
-> +	 * Note: Because of possible races with de_thread(), we can't
-> +	 * distinguish between the case where the user gives a non-leader tid
-> +	 * and the case where it changes out from under us. So both are allowed.
-> +	 */
+On Mon, May 31, 2010 at 06:35:10AM -0400, Christoph Hellwig wrote:
+> NAK for changing this in core code.  These are long-living and
+> documented semantics that we can't simply break, and as Alan mentioned
+> having there's good enough workaround that don't break applications.
 
-OK, the caller has a reference to the argument, leader,
+I totally disagree -- there are no applications that depend on this
+behavior in sticky world-writable directories.  Adding this logic (where
+ever it lands) fixes /tmp symlink races forever and breaks nothing.
 
-> +	leader = leader->group_leader;
+> Feel free to shovel it into the crackpot LSM of your choice.
 
-But why it is safe to use leader->group_leader if we race with exec?
+I have no strong opinion about where it should live.  The strong opinion
+I have is that all Linux users, regardless of LSM choice, should benefit
+from the fix.
 
-> +	list_for_each_entry_rcu(tsk, &leader->thread_group, thread_group) {
+I'd like to separate objections about implementation from objections about
+the change in semantics itself.  If every user of Linux gains this symlink
+protection, does it matter if it's in core VFS or in commoncaps?
 
-Even if we didn't change "leader" above, this is not safe in theory.
-We already discussed this, list_for_each_rcu(head) is only safe when
-we know that "head" itself is valid.
+Expecting the push-back from VFS, I wrote this patch against commoncaps.
 
-Suppose that this leader exits, then leader->thread_group.next exits
-too before we take rcu_read_lock().
+James, would you take it there (along with the patch to SELinux to call
+out to commoncaps) if there is no way to proceed with the VFS core towards
+solving this?
 
-> +	oldcgrp = task_cgroup_from_root(leader, root);
-> +	if (cgrp != oldcgrp) {
-> +		retval = cgroup_task_migrate(cgrp, oldcgrp, leader, true);
-> +		BUG_ON(retval != 0 && retval != -ESRCH);
-> +	}
-> +	/* Now iterate over each thread in the group. */
-> +	list_for_each_entry_rcu(tsk, &leader->thread_group, thread_group) {
-> +		BUG_ON(tsk->signal != leader->signal);
-> +		/* leave current thread as it is if it's already there */
-> +		oldcgrp = task_cgroup_from_root(tsk, root);
-> +		if (cgrp == oldcgrp)
-> +			continue;
-> +		/* we don't care whether these threads are exiting */
-> +		retval = cgroup_task_migrate(cgrp, oldcgrp, tsk, true);
-> +		BUG_ON(retval != 0 && retval != -ESRCH);
-> +	}
+Thanks,
 
-This looks strange. Why do we move leader outside of the loop ?
-Of course, list_for_each_entry() can't work to move all sub-threads,
-but "do while_each_thread()" can.
+-Kees
 
->From 0/2:
->
-> recentish changes to signal_struct's lifetime rules (which don't seem to
-> appear when I check out mmotm with git clone,
-
-already in Linus's tree.
-
-Oleg.
-
+-- 
+Kees Cook
+Ubuntu Security Team
