@@ -1,110 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755257Ab0EaBJE (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 May 2010 21:09:04 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:59049 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1754171Ab0EaBJA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 30 May 2010 21:09:00 -0400
-Message-ID: <4C030CB8.505@cn.fujitsu.com>
-Date: Mon, 31 May 2010 09:11:20 +0800
-From: Li Zefan <lizf@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1b3pre) Gecko/20090513 Fedora/3.0-2.3.beta2.fc11 Thunderbird/3.0b2
+	id S1755253Ab0EaBTW (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 May 2010 21:19:22 -0400
+Received: from troy.hostgo.com ([64.62.143.130]:46622 "EHLO troy.hostgo.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751552Ab0EaBTU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 30 May 2010 21:19:20 -0400
+From: Thomas Fjellstrom <tfjellstrom@strangesoft.net>
+To: linux-kernel@vger.kernel.org
+Subject: Re: via 8237 sata errors
+Date: Sun, 30 May 2010 19:19:16 -0600
+User-Agent: KMail/1.13.3 (Linux/2.6.33-2-amd64; KDE/4.4.3; x86_64; ; )
+Cc: Robert Hancock <hancockrwd@gmail.com>, linux-ide@vger.kernel.org
+References: <201005292046.06344.tfjellstrom@strangesoft.net> <AANLkTilSg8KZc2ZNobxQUnU105ADOeyxTAvJ3vFvbqEC@mail.gmail.com> <201005301348.50004.tfjellstrom@strangesoft.net>
+In-Reply-To: <201005301348.50004.tfjellstrom@strangesoft.net>
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: "Michael S. Tsirkin" <mst@redhat.com>, Oleg Nesterov <oleg@redhat.com>,
-       Sridhar Samudrala <sri@us.ibm.com>, netdev <netdev@vger.kernel.org>,
-       lkml <linux-kernel@vger.kernel.org>,
-       "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Dmitri Vorobiev <dmitri.vorobiev@movial.com>,
-       Jiri Kosina <jkosina@suse.cz>, Thomas Gleixner <tglx@linutronix.de>,
-       Ingo Molnar <mingo@elte.hu>, Andi Kleen <ak@linux.intel.com>
-Subject: Re: [PATCH 3/3] vhost: apply cpumask and cgroup to vhost pollers
-References: <20100527091426.GA6308@redhat.com> <20100527124448.GA4241@redhat.com> <20100527131254.GB7974@redhat.com> <4BFE9ABA.6030907@kernel.org> <20100527163954.GA21710@redhat.com> <4BFEA434.6080405@kernel.org> <20100527173207.GA21880@redhat.com> <4BFEE216.2070807@kernel.org> <20100528150830.GB21880@redhat.com> <4BFFE742.2060205@kernel.org> <20100530112925.GB27611@redhat.com> <4C02C99D.9070204@kernel.org>
-In-Reply-To: <4C02C99D.9070204@kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201005301919.16747.tfjellstrom@strangesoft.net>
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - troy.hostgo.com
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - strangesoft.net
+X-Source: 
+X-Source-Args: 
+X-Source-Dir: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Tejun Heo wrote:
-> Apply the cpumask and cgroup of the initializing task to the created
-> vhost poller.
+On May 30, 2010, Thomas Fjellstrom wrote:
+> On May 30, 2010, Robert Hancock wrote:
+> > On Sun, May 30, 2010 at 1:33 PM, Thomas Fjellstrom
+> > 
+> > <tfjellstrom@strangesoft.net> wrote:
+> > > On May 30, 2010, Thomas Fjellstrom wrote:
+> > >> On May 30, 2010, Robert Hancock wrote:
+> > >> > On 05/29/2010 08:46 PM, Thomas Fjellstrom wrote:
+> > >> > > I'm getting a rather nasty set of messages from dmesg when
+> > >> > > trying to use a couple SATA II WD 2TB Green drives with an
+> > >> > > older system (via 8237 based). They seem to work fine on a
+> > >> > > newer p35 based system.
+> > >> > 
+> > >> > ..
+> > >> > 
+> > >> > > [  283.308963] ata2.00: exception Emask 0x0 SAct 0x0 SErr 0x0
+> > >> > > action 0x0 [  283.309007] ata2.00: BMDMA stat 0x4
+> > >> > > [  283.309045] ata2.00: failed command: READ DMA
+> > >> > > [  283.309089] ata2.00: cmd c8/00:08:08:08:30/00:00:00:00:00/e0
+> > >> > > tag 0 dma 4096 in [  283.309091]          res
+> > >> > > 41/04:00:08:08:30/00:00:00:00:00/e0 Emask 0x1 (device error) [
+> > >> > > 283.309171] ata2.00: status: { DRDY ERR }
+> > >> > > [  283.309207] ata2.00: error: { ABRT }
+> > >> > > [  283.324886] ata2.00: configured for UDMA/133
+> > >> > > [  283.324904] ata2: EH complete
+> > >> > 
+> > >> > It's not really clear why the drive is returning command aborted
+> > >> > on a read, there's no other error bits to indicate an
+> > >> > uncorrectable error or a CRC error. Is it only the one drive
+> > >> > that's giving the errors?
+> > >> 
+> > >> I'm not entirely sure if its the same drive each time. I can make
+> > >> sure today. The fun part is it works fine in a different machine.
+> > >> Where as it will start erroring out like that almost right away in
+> > >> the via based machine. When its doing that, its also making some
+> > >> fairly scary (for a hard drive) noises, but since it doesn't do
+> > >> that in the p35 machine I'm really hoping it isn't the drive.
+> > > 
+> > > I've started up a dd on each drive, just for kicks, and reading from
+> > > both of them at the same time seems to work fine on the via chipset.
+> > > Given this little tid-bit, it seems its only once md-raid is setup on
+> > > the drives does one of them freak out.
+> > 
+> > If the problem happens mostly when both drives are in use then it
+> > could be a power supply issue. Some drives are rather sensitive to
+> > power fluctuations. You could try and move the drives to separate
+> > power cables if they're on the same one, or maybe the power supply's
+> > just not up to snuff.
 > 
-> Based on Sridhar Samudrala's patch.
-> 
-> Cc: Michael S. Tsirkin <mst@redhat.com>
-> Cc: Sridhar Samudrala <samudrala.sridhar@gmail.com>
-> ---
->  drivers/vhost/vhost.c |   36 +++++++++++++++++++++++++++++++-----
->  1 file changed, 31 insertions(+), 5 deletions(-)
-> 
-> Index: work/drivers/vhost/vhost.c
-> ===================================================================
-> --- work.orig/drivers/vhost/vhost.c
-> +++ work/drivers/vhost/vhost.c
-> @@ -23,6 +23,7 @@
->  #include <linux/highmem.h>
->  #include <linux/slab.h>
->  #include <linux/kthread.h>
-> +#include <linux/cgroup.h>
-> 
->  #include <linux/net.h>
->  #include <linux/if_packet.h>
-> @@ -176,12 +177,30 @@ repeat:
->  long vhost_dev_init(struct vhost_dev *dev,
->  		    struct vhost_virtqueue *vqs, int nvqs)
->  {
-> -	struct task_struct *poller;
-> -	int i;
-> +	struct task_struct *poller = NULL;
-> +	cpumask_var_t mask;
-> +	int i, ret = -ENOMEM;
-> +
-> +	if (!alloc_cpumask_var(&mask, GFP_KERNEL))
-> +		goto out;
-> 
+> I'll give that a shot too. But I have dd running on both drives right now
+> (dd if=/dev/sdX of=/dev/null), and its running fine. I'm also going to
+> run some other tests, see if maybe there isn't a ram problem, it could
+> be the cause.
 
-If we "goto out", we will end up calling kthread_stop(poller), but
-seems kthread_stop() requires the task_struct pointer != NULL.
+Interesting, after moving each WD drive to its own power cable, that 
+particular problem seems to have gone away. However another problem seems to 
+have popped up, which I'm not sure is related so I'll post another thread 
+(unable to handle kernel paging request).
 
->  	poller = kthread_create(vhost_poller, dev, "vhost-%d", current->pid);
-> -	if (IS_ERR(poller))
-> -		return PTR_ERR(poller);
-> +	if (IS_ERR(poller)) {
-> +		ret = PTR_ERR(poller);
-> +		goto out;
-> +	}
-> +
-> +	ret = sched_getaffinity(current->pid, mask);
-> +	if (ret)
-> +		goto out;
-> +
-> +	ret = sched_setaffinity(poller->pid, mask);
-> +	if (ret)
-> +		goto out;
-> +
-> +	ret = cgroup_attach_task_current_cg(poller);
-> +	if (ret)
-> +		goto out;
-> 
->  	dev->vqs = vqs;
->  	dev->nvqs = nvqs;
-> @@ -202,7 +221,14 @@ long vhost_dev_init(struct vhost_dev *de
->  			vhost_poll_init(&dev->vqs[i].poll,
->  					dev->vqs[i].handle_kick, POLLIN, dev);
->  	}
-> -	return 0;
-> +
-> +	wake_up_process(poller);	/* avoid contributing to loadavg */
-> +	ret = 0;
-> +out:
-> +	if (ret)
-> +		kthread_stop(poller);
-> +	free_cpumask_var(mask);
-> +	return ret;
->  }
-> 
->  /* Caller should have device mutex */
+> > --
+> > To unsubscribe from this list: send the line "unsubscribe linux-kernel"
+> > in the body of a message to majordomo@vger.kernel.org
+> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> > Please read the FAQ at  http://www.tux.org/lkml/
+
+
+-- 
+Thomas Fjellstrom
+tfjellstrom@strangesoft.net
