@@ -1,33 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751241Ab0EaEN3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 May 2010 00:13:29 -0400
-Received: from smtp.outflux.net ([198.145.64.163]:51056 "EHLO smtp.outflux.net"
+	id S1751310Ab0EaEYS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 May 2010 00:24:18 -0400
+Received: from smtp.outflux.net ([198.145.64.163]:51189 "EHLO smtp.outflux.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750730Ab0EaEN1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 May 2010 00:13:27 -0400
-Date: Sun, 30 May 2010 21:12:04 -0700
+	id S1750730Ab0EaEYQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 31 May 2010 00:24:16 -0400
+Date: Sun, 30 May 2010 21:23:37 -0700
 From: Kees Cook <kees.cook@canonical.com>
-To: "Eric W. Biederman" <ebiederm@xmission.com>
+To: Eric Paris <eparis@redhat.com>
 Cc: linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
        linux-fsdevel@vger.kernel.org, linux-doc@vger.kernel.org,
        Randy Dunlap <rdunlap@xenotime.net>,
        Andrew Morton <akpm@linux-foundation.org>,
        Jiri Kosina <jkosina@suse.cz>, Dave Young <hidave.darkstar@gmail.com>,
        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-       James Morris <jmorris@namei.org>, Eric Paris <eparis@redhat.com>,
-       David Howells <dhowells@redhat.com>, Ingo Molnar <mingo@elte.hu>,
-       Peter Zijlstra <a.p.zijlstra@chello.nl>,
+       James Morris <jmorris@namei.org>, David Howells <dhowells@redhat.com>,
+       Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+       "Eric W. Biederman" <ebiederm@xmission.com>,
        Tim Gardner <tim.gardner@canonical.com>,
-       "Serge E. Hallyn" <serue@us.ibm.com>
+       "Serge E. Hallyn" <serue@us.ibm.com>, sds@tycho.nsa.gov,
+       selinux@tycho.nsa.gov
 Subject: Re: [PATCH v2] fs: block cross-uid sticky symlinks
-Message-ID: <20100531041204.GR6056@outflux.net>
+Message-ID: <20100531042336.GS6056@outflux.net>
 References: <20100531030402.GQ6056@outflux.net>
- <m17hmkg25e.fsf@fess.ebiederm.org>
+ <1275278063.20730.16.camel@localhost>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <m17hmkg25e.fsf@fess.ebiederm.org>
+In-Reply-To: <1275278063.20730.16.camel@localhost>
 Organization: Canonical
 X-HELO: www.outflux.net
 Sender: linux-kernel-owner@vger.kernel.org
@@ -36,72 +37,56 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Hi Eric,
 
-On Sun, May 30, 2010 at 08:50:53PM -0700, Eric W. Biederman wrote:
-> The name of the sysctl is horrible it is a double negative, which
-> makes thinking about it hard.
+On Sun, May 30, 2010 at 11:54:23PM -0400, Eric Paris wrote:
+> We need to call this function in the SELinux case.  So you'll need a
+> patch like the one attached (not even compiled but I think it is right)
+> [..]
+>  static int selinux_inode_follow_link(struct dentry *dentry, struct nameidata *nameidata)
+> [..]
+> +       rc = cap_inode_follow_link(dentry, nameidata);
 
-Hmm, I see your point, the "safe" value is "weak: not".  I was trying to
-be descriptive without needing a "true" value, but I guess that's silly;
-we already have things like randomize_va_space set to "2" by default, etc.
-What would you suggest instead?  "protected_sticky_symlinks" (and reverse
-the default and test logic)?
+Yeah, when I quickly checked SELinux and AppArmor, it seemed that they
+were always calling down to all commoncaps functions, but it looks like
+not in all cases.  I think that Eric Biederman's observations here makes
+the most sense: this check needs to happen without involving the LSMs
+at all.
 
-> Why not simply put each user in a different mount namespace and have separate
-> /tmp directories per user?  That works today, with no kernel changes.
+> > +int cap_inode_follow_link(struct dentry *dentry,
+> > +			  struct nameidata *nameidata)
+> > +{
+> > +	const struct inode *parent = dentry->d_parent->d_inode;
+> > +	const struct inode *inode = dentry->d_inode;
+> > +	const struct cred *cred = current_cred();
+> > +
+> > +	if (weak_sticky_symlinks)
+> > +		return 0;
+> > +
+> > +	if ((parent->i_mode & (S_ISVTX|S_IWOTH)) == (S_ISVTX|S_IWOTH) &&
+> > +	    parent->i_uid != inode->i_uid &&
+> > +	    cred->fsuid != inode->i_uid) {
+> > +		printk_ratelimited(KERN_NOTICE "non-matching-uid symlink "
+> > +			"following attempted in sticky-directory by "
+> > +			"%s (fsuid %d)\n", current->comm, cred->fsuid);
+> > +		return -EACCES;
+> > +	}
+> > +	return 0;
+> > +}
+> 
+> What stops us from racing between the assignment of parent and it's
+> first use with a rename on our object and rmdir on the old parent?  I'm
+> wondering if we need to be doing this test holding dentry->d_lock (which
+> is what protects dentry->d_parent if I recall correctly)
+> 
+> Certainly doesn't fix all of the raciness, but I think it would close
+> the opps part.  Maybe someone who knows the VFS better can tell me if I
+> am misguided.
 
-The key here is "no kernel changes" -- trying to isolate every user
-and service from each other using different mount namespaces will not
-work quickly in current distributions.  Even doing bind-mount tricks
-to keep /tmp away from different users is overkill, especially when
-you have situations like "screen" using a common /tmp directory tree
-(in the setuid version), etc.  Things (correctly) expect to share /tmp
-in some cases.  However, this one kernel change will allow everything
-to continue without userspace overhead and without breaking anything
-terribly.  Using containers will probably be the future, but I want to
-solve this in the general case today.
+The only other use of d_parent I can see there is in may_delete().  With
+vfs_unlink() calling that, it would seem to be racey too if we needed to
+hold a lock for that.  But it's not clear to me in vfs_follow_link is doing
+locking somehow.
 
-> Placing this in cap_inode_follow_link is horrible naming.  There is nothing
-> capabilities about this.  Either this needs to go into one or several
-> of the security modules or this needs to go into the core vfs.
-
-My thinking was that most of the LSMs call down to commoncaps first,
-so it's a single place to put this.  When I was looking at this code
-originally, I thought that if it doesn't go in security_inode_follow_link,
-then a new function would be added to the VFS and both callers
-of security_inode_follow_link would need to call it just before
-security_inode_follow_link.  It seemed like putting it in there reduced
-duplication of logic.
-
-However, on closer examination, it seems that this code could live in
-__do_follow_link instead.
-
-fs/namei.c:
-...
-                error = security_inode_follow_link(path.dentry, &nd);
-                if (error)
-                        goto exit_dput;
-                error = __do_follow_link(&path, &nd, &cookie);
-...
-        err = security_inode_follow_link(path->dentry, nd);
-        if (err)
-                goto loop;
-        current->link_count++;
-        current->total_link_count++;
-        nd->depth++;
-        err = __do_follow_link(path, nd, &cookie);
-...
-
-What would you suggest for the best approach here?
-
-> I can't argue with taking action to close the too frequently security
-> issues in /tmp, but this changes appears to be unnecessary, difficult
-> to maintain, and difficult to understand.
-
-Well, we disagree about "unnecessary".  :)  Finding an easy to maintain
-solution is my goal here, and if it's difficult to understand, then I need
-to fix that too.  What could use better clarification?
-
-Thanks!
+Thanks,
 
 -Kees
 
