@@ -1,117 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756031Ab0EaOql (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 May 2010 10:46:41 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:15669 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754255Ab0EaOqk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 May 2010 10:46:40 -0400
-Date: Mon, 31 May 2010 16:39:45 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: "Michael S. Tsirkin" <mst@redhat.com>, Sridhar Samudrala <sri@us.ibm.com>,
-       netdev <netdev@vger.kernel.org>, lkml <linux-kernel@vger.kernel.org>,
-       "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Dmitri Vorobiev <dmitri.vorobiev@movial.com>,
-       Jiri Kosina <jkosina@suse.cz>, Thomas Gleixner <tglx@linutronix.de>,
-       Ingo Molnar <mingo@elte.hu>, Andi Kleen <ak@linux.intel.com>
-Subject: Re: [PATCH 1/3] vhost: replace vhost_workqueue with per-vhost
-	kthread
-Message-ID: <20100531143945.GA6497@redhat.com>
-References: <20100527131254.GB7974@redhat.com> <4BFE9ABA.6030907@kernel.org> <20100527163954.GA21710@redhat.com> <4BFEA434.6080405@kernel.org> <20100527173207.GA21880@redhat.com> <4BFEE216.2070807@kernel.org> <20100528150830.GB21880@redhat.com> <4BFFE742.2060205@kernel.org> <20100530112925.GB27611@redhat.com> <4C02C961.9050606@kernel.org>
+	id S1756241Ab0EaOqx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 May 2010 10:46:53 -0400
+Received: from mtagate7.de.ibm.com ([195.212.17.167]:39343 "EHLO
+	mtagate7.de.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756108Ab0EaOqu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 31 May 2010 10:46:50 -0400
+Date: Mon, 31 May 2010 16:46:49 +0200
+From: Christof Schmitt <christof.schmitt@de.ibm.com>
+To: "Martin K. Petersen" <martin.petersen@oracle.com>
+Cc: linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
+       linux-fsdevel@vger.kernel.org
+Subject: Re: Wrong DIF guard tag on ext2 write
+Message-ID: <20100531144648.GA19068@schmichrtp.mainz.de.ibm.com>
+References: <20100531112817.GA16260@schmichrtp.mainz.de.ibm.com>
+ <yq1iq64kv9f.fsf@sermon.lab.mkp.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4C02C961.9050606@kernel.org>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <yq1iq64kv9f.fsf@sermon.lab.mkp.net>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/30, Tejun Heo wrote:
->
-> This conversion is to make each vhost use a dedicated kthread so that
-> resource control via cgroup can be applied.
+On Mon, May 31, 2010 at 10:20:44AM -0400, Martin K. Petersen wrote:
+> >>>>> "Christof" == Christof Schmitt <christof.schmitt@de.ibm.com> writes:
+> 
+> Christof> Since the guard tags are created in Linux, it seems that the
+> Christof> data attached to the write request changes between the
+> Christof> generation in bio_integrity_generate and the call to
+> Christof> sd_prep_fn.
+> 
+> Yep, known bug.  Page writeback locking is messed up for buffer_head
+> users.  The extNfs folks volunteered to look into this a while back but
+> I don't think they have found the time yet.
 
-Personally, I agree. I think This is better than play with workqueue thread.
+Thanks for the info. This means that this bug appears with all
+filesystems?
 
-A couple of simple questions after the quick glance at the unapplied patch...
+> 
+> 
+> Christof> Using ext3 or ext4 instead of ext2 does not show the problem.
+> 
+> Last I looked there were still code paths in ext3 and ext4 that
+> permitted pages to be changed during flight.  I guess you've just been
+> lucky.
 
->  void vhost_poll_flush(struct vhost_poll *poll)
->  {
-> -	flush_work(&poll->work);
-> +	int seq = poll->queue_seq;
-> +
-> +	if (seq - poll->done_seq > 0)
-> +		wait_event(poll->done, seq - poll->done_seq <= 0);
+ext3 looks good so far. I see the problem also with ext4, so i spoke
+too early on that one. I will start a longer testrun with ext3 to see
+if and when the problem appears with ext3 in my setup.
 
-The check before wait_event() is not needed, please note that wait_event()
-checks the condition before __wait_event().
-
-What I can't understand is why we do have ->queue_seq and ->done_seq.
-
-Isn't the single "bool poll->active" enough? vhost_poll_queue() sets
-->active == T, vhost_poller() clears it before wake_up_all(poll->done).
-
-> +static int vhost_poller(void *data)
-> +{
-> +	struct vhost_dev *dev = data;
-> +	struct vhost_poll *poll;
-> +
-> +repeat:
-> +	set_current_state(TASK_INTERRUPTIBLE);	/* mb paired w/ kthread_stop */
-
-I don't understand the comment... why do we need this barrier?
-
-> +	if (kthread_should_stop()) {
-> +		__set_current_state(TASK_RUNNING);
-> +		return 0;
-> +	}
-> +
-> +	poll = NULL;
-> +	spin_lock(&dev->poller_lock);
-> +	if (!list_empty(&dev->poll_list)) {
-> +		poll = list_first_entry(&dev->poll_list,
-> +					struct vhost_poll, node);
-> +		list_del_init(&poll->node);
-> +	}
-> +	spin_unlock(&dev->poller_lock);
-> +
-> +	if (poll) {
-> +		__set_current_state(TASK_RUNNING);
-> +		poll->fn(poll);
-> +		smp_wmb();	/* paired with rmb in vhost_poll_flush() */
-> +		poll->done_seq = poll->queue_seq;
-> +		wake_up_all(&poll->done);
-> +	} else
-> +		schedule();
-> +
-> +	goto repeat;
-> +}
-
-Given that vhost_poll_queue() does list_add() and wake_up_process() under
-->poller_lock, I don't think we need any barriers to change ->state.
-
-IOW, can't vhost_poller() simply do
-
-	while(!kthread_should_stop()) {
-
-		poll = NULL;
-		spin_lock(&dev->poller_lock);
-		if (!list_empty(&dev->poll_list)) {
-			...
-		} else
-			 __set_current_state(TASK_INTERRUPTIBLE);
-		spin_unlock(&dev->poller_lock);
-
-		if (poll) {
-			...
-		} else
-			schedule();
-	}
-
-?
-
-Oleg.
-
+--
+Christof Schmitt
