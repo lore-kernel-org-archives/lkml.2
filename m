@@ -1,142 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752312Ab0EaUwG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 May 2010 16:52:06 -0400
-Received: from lennier.cc.vt.edu ([198.82.162.213]:58351 "EHLO
-	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750908Ab0EaUwE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 May 2010 16:52:04 -0400
-X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.2
-To: Stephane Eranian <eranian@google.com>
-Cc: Arnaldo Carvalho de Melo <acme@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-       linux-kernel@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
-       =?UTF-8?B?RnLDqWTDqXJpYyBXZWlzYmVja2Vy?= <fweisbec@gmail.com>,
-       Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
-       Peter Zijlstra <peterz@infradead.org>, Tom Zanussi <tzanussi@gmail.com>,
-       Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: Re: [PATCH 1/5] perf stat: add perf stat -B to pretty print large numbers
-In-Reply-To: Your message of "Mon, 31 May 2010 21:30:36 +0200."
-             <AANLkTimBxG-2TVC7hAfvRHWupa8T7FaVEcDTnAMCtQWy@mail.gmail.com>
-From: Valdis.Kletnieks@vt.edu
-References: <1274234900-12162-1-git-send-email-acme@infradead.org> <1274234900-12162-2-git-send-email-acme@infradead.org> <52092.1275333099@localhost>
-            <AANLkTimBxG-2TVC7hAfvRHWupa8T7FaVEcDTnAMCtQWy@mail.gmail.com>
+	id S1753074Ab0EaUwO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 May 2010 16:52:14 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:53016 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752750Ab0EaUwL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 31 May 2010 16:52:11 -0400
+Subject: Re: [linux-pm] [PATCH 0/8] Suspend block api (version 8)
+From: James Bottomley <James.Bottomley@suse.de>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: tytso@mit.edu, LKML <linux-kernel@vger.kernel.org>,
+       Florian Mickler <florian@mickler.org>,
+       Alan Cox <alan@lxorguk.ukuu.org.uk>,
+       Thomas Gleixner <tglx@linutronix.de>,
+       Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
+       Linux PM <linux-pm@lists.linux-foundation.org>, felipe.balbi@nokia.com
+In-Reply-To: <1275156734.1645.496.camel@laptop>
+References: <20100527222514.0a1710bf@lxorguk.ukuu.org.uk>
+	 <Pine.LNX.4.44L0.1005271730180.3239-100000@iolanthe.rowland.org>
+	 <20100527230806.4deb6de3@lxorguk.ukuu.org.uk>
+	 <20100527220949.GB10602@srcf.ucam.org>
+	 <20100527232357.6d14fdb2@lxorguk.ukuu.org.uk>
+	 <20100527223605.GB11364@srcf.ucam.org>
+	 <20100527235546.09f3ce8a@lxorguk.ukuu.org.uk>
+	 <20100528043114.GC26177@thunk.org> <1275030704.32462.11.camel@laptop>
+	 <AANLkTikEtlbkT4Ws3H2YGt_9QC46B5dr-b1oxJOcG4GN@mail.gmail.com>
+	 <1275120618.27810.12699.camel@twins>
+	 <1275149418.4503.128.camel@mulgrave.site>
+	 <1275156734.1645.496.camel@laptop>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 31 May 2010 15:52:04 -0500
+Message-ID: <1275339124.2823.318.camel@mulgrave.site>
 Mime-Version: 1.0
-Content-Type: multipart/signed; boundary="==_Exmh_1275338942_6730P";
-	 micalg=pgp-sha1; protocol="application/pgp-signature"
+X-Mailer: Evolution 2.28.2 
 Content-Transfer-Encoding: 7bit
-Date: Mon, 31 May 2010 16:49:02 -0400
-Message-ID: <77282.1275338942@localhost>
-X-Mirapoint-Received-SPF: 128.173.14.107 localhost Valdis.Kletnieks@vt.edu 2 pass
-X-Mirapoint-IP-Reputation: reputation=neutral-1,
-	source=Fixed,
-	refid=n/a,
-	actions=MAILHURDLE SPF TAG
-X-Junkmail-Info: (45) HELO_LOCALHOST
-X-Junkmail-Status: score=45/50, host=dagger.cc.vt.edu
-X-Junkmail-SD-Raw: score=unknown,
-	refid=str=0001.0A020207.4C0420BF.0083,ss=1,fgs=0,
-	ip=0.0.0.0,
-	so=2009-09-22 00:05:22,
-	dmn=2009-09-10 00:05:08,
-	mode=multiengine
-X-Junkmail-IWF: false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---==_Exmh_1275338942_6730P
-Content-Type: text/plain; charset=iso-8859-1
-Content-Transfer-Encoding: quoted-printable
+On Sat, 2010-05-29 at 20:12 +0200, Peter Zijlstra wrote:
+> On Sat, 2010-05-29 at 11:10 -0500, James Bottomley wrote:
+> > > Correct, I strongly oppose using suspend. Not running runnable tasks is
+> > > not a sane solution.
+> > 
+> > Look, this is getting into the realms of a pointless semantic quibble.
+> > The problem is that untrusted tasks need to be forcibly suspended when
+> > they have no legitimate work to do and the user hasn't authorised them
+> > to continue even if the scheduler sees them as runnable.  Whether that's
+> > achieved by suspending the entire system or forcibly idling the tasks
+> > (using blocking states or freezers or something) so the scheduler can
+> > suspend from idle is something to be discussed,
+> 
+> So what happens if you task is CPU bound and gets suspended and is
+> holding a resource (lock, whatever) that is required by someone else
+> that didn't get suspended?
+> 
+> That's the classic inversion problem, and is caused by not running
+> runnable tasks.
 
-On Mon, 31 May 2010 21:30:36 +0200, Stephane Eranian said:
-> >> instance LC_NUMERIC=3Den_US.UTF8. You need to pass -B to activate th=
-is
->>> feature. This way existing scripts parsing the output do not need to =
-be
->>> changed. Here is an example.
+OK ... but if the options are running and S3 for the entire platform,
+then all tasks get suspended and this isn't a problem.  This is why the
+current wakelock implementation on the android platform works flawlessly
+today.
 
-Two examples, actually...
+Inversion only becomes a problem if tasks get individually idled, so you
+can see that, from the android point of view, we're creating a problem
+which their implementation doesn't have.
 
->>>
->>> =24 perf stat noploop 2
->>> noploop for 2 seconds
->>>
->>> =A0Performance counter stats for 'noploop 2':
->>>
->>> =A0 =A0 =A0 =A0 1998.347031 =A0task-clock-msecs =A0 =A0 =A0 =A0 =23 =
-=A0 =A0 =A00.998 CPUs
->>>   =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A061 =A0context-switches =A0 =A0 =A0 =
-=A0 =23 =A0 =A0 =A00.000 M/sec
->>> =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 0 =A0CPU-migrations =A0 =A0 =A0 =
-=A0 =A0 =23 =A0 =A0 =A00.000 M/sec
->>> =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 118 =A0page-faults =A0 =A0 =A0 =A0 =
-=A0 =A0 =A0=23 =A0 =A0 =A00.000 M/sec
->>> =A0 =A0 =A0 4,138,410,900 =A0cycles =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =
-=A0 =23 =A0 2070.917 M/sec =A0(scaled from 70.01%)
->>> =A0 =A0 =A0 2,062,650,268 =A0instructions =A0 =A0 =A0 =A0 =A0 =A0 =23=
- =A0 =A0 =A00.498 IPC =A0 =A0(scaled from 70.01%)
->>> =A0 =A0 =A0 2,057,653,466 =A0branches =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0=
- =23 =A0 1029.678 M/sec =A0(scaled from 70.01%)
->>> =A0 =A0 =A0 =A0 =A0 =A0 =A040,267 =A0branch-misses =A0 =A0 =A0 =A0 =
-=A0 =A0=23 =A0 =A0 =A00.002 % =A0 =A0 =A0(scaled from 30.04%)
->>> =A0 =A0 =A0 2,055,961,348 =A0cache-references =A0 =A0 =A0 =A0 =23 =A0=
- 1028.831 M/sec =A0(scaled from 30.03%)
->>> =A0 =A0 =A0 =A0 =A0 =A0 =A053,725 =A0cache-misses =A0 =A0 =A0 =A0 =A0=
- =A0 =23 =A0 =A0 =A00.027 M/sec =A0(scaled from 30.02%)
->>>
->>> =A0 =A0 =A0 =A0 2.001393933 =A0seconds time elapsed
->>>
->>> =24 perf stat -B =A0noploop 2
->>> noploop for 2 seconds
->>>
->>> =A0Performance counter stats for 'noploop 2':
->>>
->>> =A0 =A0 =A0 =A0 1998.297883 =A0task-clock-msecs =A0 =A0 =A0 =A0 =23 =
-=A0 =A0 =A00.998 CPUs
->>> =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A059 =A0context-switches =A0 =A0 =A0=
- =A0 =23 =A0 =A0 =A00.000 M/sec
->>> =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 0 =A0CPU-migrations =A0 =A0 =A0 =
-=A0 =A0 =23 =A0 =A0 =A00.000 M/sec
->>> =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 119 =A0page-faults =A0 =A0 =A0 =A0 =
-=A0 =A0 =A0=23 =A0 =A0 =A00.000 M/sec
->>> =A0 =A0 =A0 4,131,380,160 =A0cycles =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =
-=A0 =23 =A0 2067.450 M/sec =A0(scaled from 70.01%)
->>> =A0 =A0 =A0 2,059,096,507 =A0instructions =A0 =A0 =A0 =A0 =A0 =A0 =23=
- =A0 =A0 =A00.498 IPC =A0 =A0(scaled from 70.01%)
->>> =A0 =A0 =A0 2,054,681,303 =A0branches =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0=
- =23 =A0 1028.216 M/sec =A0(scaled from 70.01%)
->>> =A0 =A0 =A0 =A0 =A0 =A0 =A025,650 =A0branch-misses =A0 =A0 =A0 =A0 =
-=A0 =A0=23 =A0 =A0 =A00.001 % =A0 =A0 =A0(scaled from 30.05%)
->>> =A0 =A0 =A0 2,056,283,014 =A0cache-references =A0 =A0 =A0 =A0 =23 =A0=
- 1029.017 M/sec =A0(scaled from 30.03%)
->>> =A0 =A0 =A0 =A0 =A0 =A0 =A047,097 =A0cache-misses =A0 =A0 =A0 =A0 =A0=
- =A0 =23 =A0 =A0 =A00.024 M/sec =A0(scaled from 30.02%)
->>>
->>> =A0 =A0 =A0 =A0 2.001391016 =A0seconds time elapsed
->>
->> Is it me, or did -B not make any difference for these two examples?
->> I'm confused.
+In this view, S3 suspend does look elegant: it solves the inversion
+problem by suspending everything, it controls rogue applications' power
+consumption and it gets certain hardware into a lower power state than
+is possible from suspend from idle.
 
-> Did you set the LC_NUMERIC environement variable?
+The inelegance of the S3 suspend solution is the requirement to use
+these suspend blockers through kernel and user space to get the whole
+thing up again to respond to an event, which is an inelegance suspend
+from idle doesn't have.
 
-I meant I was reading the two examples given, and I'm seeing commas in
-the same places, -B or not -B.  I was sort of expecting that the first
-example wouldn't have commas in it, or something?  Or were those two
-examples *supposed* to be identical, and there's a not-shown 3rd example
-that shows what you get if you use -B and set the LC_NUMERIC variable?
+> >  but the net result is
+> > that we have to stop a certain set of tasks in such a way that they can
+> > still receive certain external events ... semantically, this is
+> > equivalent to not running runnable tasks in my book.
+> 
+> Why would be care about external events? Clearly these apps are ill
+> behaved, otherwise they would have listened to the environment telling
+> them to idle.
 
---==_Exmh_1275338942_6730P
-Content-Type: application/pgp-signature
+That's not a correct characterisation.  Badly behaved apps from a power
+point of view can do useful things for the user.  The object is to
+contain the badness while still getting useful stuff done.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-Comment: Exmh version 2.5 07/13/2001
+> Why would you try to let buggy apps work as intended instead of break
+> them as hard as possible? Such policy promotes crappy code since people
+> get away with it.
+> 
+> >  (Perhaps this whole
+> > thing is because the word runnable means different things ... I'm
+> > thinking a task that would consume power ... are you thinking in the
+> > scheduler R state?)
+> 
+> Clearly I mean TASK_RUNNABLE, if not that the scheduler doesn't care.
+> 
+> > Realistically, the main thing we need to do is stop timers posted
+> > against the task (which is likely polling in a main loop, that being the
+> > usual form of easy to write but power crazy app behaviour) from waking
+> > the task and bringing the system out of suspend (whether from idle or
+> > forced).
+> 
+> Sure, that same main loop will probably receive a message along the
+> lines of, 'hey, screen is off, we ought to go sleep'. If after that it
+> doesn't listen, and more serious messages don't get responded to, simply
+> kill the thing.
+> 
+> Again, there is no reason what so ever to tolerate broken apps, it only
+> promotes crappy apps.
 
-iD8DBQFMBCC+cC3lWbTT17ARAnStAKD+6E8o2IghlRupfu5qazpFrF47fACg2nE+
-Wv8yxHD5rsrLkfwXmjd5t6Y=
-=1Zy0
------END PGP SIGNATURE-----
+Actually, no, if this were a correct view, we wouldn't have the huge x86
+hardware work around problem because we'd just be able to tell
+manufacturers of shoddy or badly standards compliant stuff where to
+stick it.
 
---==_Exmh_1275338942_6730P--
+The great strength of the x86 commodity platform revolution was the fact
+that the hardware became cheap, plentiful and outside the ambit of a
+single walled garden manufacturer.  It's great weakness is integration
+problems and shoddy hardware.  We tolerate the weakness because the
+strength vastly outweighs it: and toleration to us in the kernel means
+driver work arounds ... it also means that if a device doesn't work with
+the kernel, we get blamed (rather than the manufacturer).
+
+By the same token, the revolution in smart phones is driven in quite a
+large part by the provision of third party applications.  This commodity
+app view is almost the direct software analogue of the commodity
+platform view that has been so successful in hardware; Therefore, fair
+play seems to demand that we don't draw a hard line for software
+applications that we wouldn't draw for hardware devices.
+
+James
+
 
