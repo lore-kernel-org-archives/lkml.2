@@ -1,52 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754785Ab0EaNW1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 May 2010 09:22:27 -0400
-Received: from borg.medozas.de ([188.40.89.202]:34078 "EHLO borg.medozas.de"
+	id S1754803Ab0EaNep (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 May 2010 09:34:45 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:59056 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754097Ab0EaNW0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 May 2010 09:22:26 -0400
-Date: Mon, 31 May 2010 15:22:24 +0200 (CEST)
-From: Jan Engelhardt <jengelh@medozas.de>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-cc: Xiaotian Feng <dfeng@redhat.com>, netfilter-devel@vger.kernel.org,
-       netfilter@vger.kernel.org, coreteam@netfilter.org,
-       linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-       Patrick McHardy <kaber@trash.net>,
-       "David S. Miller" <davem@davemloft.net>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Rusty Russell <rusty@rustcorp.com.au>,
-       Alexey Dobriyan <adobriyan@gmail.com>
-Subject: Re: [PATCH] netfilter: xtables: stackptr should be percpu
-In-Reply-To: <1275311580.3291.44.camel@edumazet-laptop>
-Message-ID: <alpine.LSU.2.01.1005311519340.25402@obet.zrqbmnf.qr>
-References: <1275303998-2435-1-git-send-email-dfeng@redhat.com>  <alpine.LSU.2.01.1005311350580.31799@obet.zrqbmnf.qr> <1275311580.3291.44.camel@edumazet-laptop>
-User-Agent: Alpine 2.01 (LSU 1266 2009-07-14)
+	id S1753964Ab0EaNeo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 31 May 2010 09:34:44 -0400
+Date: Mon, 31 May 2010 16:29:50 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Jes Sorensen <Jes.Sorensen@redhat.com>
+Cc: Rusty Russell <rusty@rustcorp.com.au>, linux-kernel@vger.kernel.org,
+       virtualization@lists.linux-foundation.org, kvm@vger.kernel.org,
+       qemu-devel@nongnu.org
+Subject: Re: [PATCHv2-RFC 0/2] virtio: put last seen used index into ring
+	itself
+Message-ID: <20100531132950.GC1704@redhat.com>
+References: <cover.1274903328.git.mst@redhat.com> <4BFF9366.5090103@redhat.com> <20100530112220.GA27611@redhat.com> <4C0366E0.6040203@redhat.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4C0366E0.6040203@redhat.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-On Monday 2010-05-31 15:13, Eric Dumazet wrote:
->
->All cpus share a single cache line for their 'stackptr' storage,
->introduced in commit f3c5c1bfd4
->
->This is a stable candidate (2.6.34)
-
-Stackptr was first introduced for 2.6.35-rcX.
-
->+	i->stackptr = alloc_percpu(unsigned int);
-> 	if (i->stackptr == NULL)
-> 		return -ENOMEM;
->-	memset(i->stackptr, 0, size);
+On Mon, May 31, 2010 at 09:36:00AM +0200, Jes Sorensen wrote:
+> On 05/30/10 13:22, Michael S. Tsirkin wrote:
+> > On Fri, May 28, 2010 at 11:56:54AM +0200, Jes Sorensen wrote:
+> >> It looks pretty good to me, however one thing I have been thinking of
+> >> while reading through it:
+> >>
+> >> Rather than storing a pointer within the ring struct, pointing into a
+> >> position within the same struct. How about storing a byte offset instead
+> >> and using a cast to get to the pointer position? That would avoid the
+> >> pointer dereference, which is less effective cache wise and harder for
+> >> the CPU to predict.
+> >>
+> >> Not sure whether it really matters performance wise, just a thought.
+> > 
+> > I think this won't work: when PUBLUSH_USED_IDX is negotiated,
+> > the pointer is to within the ring.
 > 
-> 	size = sizeof(void **) * nr_cpu_ids;
-> 	if (size > PAGE_SIZE)
+> Hmmm shame, it would be a nice optimization.
+> 
+> Maybe it's time to introduce the v2 ring format, rather than having
+> adding more kludges to the existing one?
+> 
+> Cheers,
+> Jes
 
-Are alloc_percpu areas cleared?
+There has been discussion about a ring format that does not
+use indexes at all. My guess is that would be a good point
+for v2 ring format. But making that a product
+and tuning might take a while. So definitely something to
+keep in mind but I would not want that to block this optimization.
 
-Acked-By: Jan Engelhardt <jengelh@medozas.de>
-
+-- 
+MST
