@@ -1,67 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752845Ab0EaUuY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 May 2010 16:50:24 -0400
-Received: from www.tglx.de ([62.245.132.106]:55409 "EHLO www.tglx.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750908Ab0EaUuW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 May 2010 16:50:22 -0400
-Date: Mon, 31 May 2010 22:49:56 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: James Bottomley <James.Bottomley@suse.de>
-cc: Peter Zijlstra <peterz@infradead.org>,
-       =?ISO-8859-15?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>, tytso@mit.edu,
-       LKML <linux-kernel@vger.kernel.org>,
-       Florian Mickler <florian@mickler.org>,
-       Linux PM <linux-pm@lists.linux-foundation.org>,
-       Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
-       felipe.balbi@nokia.com, Alan Cox <alan@lxorguk.ukuu.org.uk>
-Subject: Re: [linux-pm] [PATCH 0/8] Suspend block api (version 8)
-In-Reply-To: <1275149418.4503.128.camel@mulgrave.site>
-Message-ID: <alpine.LFD.2.00.1005312231120.2933@localhost.localdomain>
-References: <20100527222514.0a1710bf@lxorguk.ukuu.org.uk>  <Pine.LNX.4.44L0.1005271730180.3239-100000@iolanthe.rowland.org>  <20100527230806.4deb6de3@lxorguk.ukuu.org.uk>  <20100527220949.GB10602@srcf.ucam.org>  <20100527232357.6d14fdb2@lxorguk.ukuu.org.uk>
-  <20100527223605.GB11364@srcf.ucam.org>  <20100527235546.09f3ce8a@lxorguk.ukuu.org.uk>  <20100528043114.GC26177@thunk.org> <1275030704.32462.11.camel@laptop>  <AANLkTikEtlbkT4Ws3H2YGt_9QC46B5dr-b1oxJOcG4GN@mail.gmail.com>  <1275120618.27810.12699.camel@twins>
- <1275149418.4503.128.camel@mulgrave.site>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1752312Ab0EaUwG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 May 2010 16:52:06 -0400
+Received: from lennier.cc.vt.edu ([198.82.162.213]:58351 "EHLO
+	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750908Ab0EaUwE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 31 May 2010 16:52:04 -0400
+X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.2
+To: Stephane Eranian <eranian@google.com>
+Cc: Arnaldo Carvalho de Melo <acme@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+       linux-kernel@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
+       =?UTF-8?B?RnLDqWTDqXJpYyBXZWlzYmVja2Vy?= <fweisbec@gmail.com>,
+       Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
+       Peter Zijlstra <peterz@infradead.org>, Tom Zanussi <tzanussi@gmail.com>,
+       Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: Re: [PATCH 1/5] perf stat: add perf stat -B to pretty print large numbers
+In-Reply-To: Your message of "Mon, 31 May 2010 21:30:36 +0200."
+             <AANLkTimBxG-2TVC7hAfvRHWupa8T7FaVEcDTnAMCtQWy@mail.gmail.com>
+From: Valdis.Kletnieks@vt.edu
+References: <1274234900-12162-1-git-send-email-acme@infradead.org> <1274234900-12162-2-git-send-email-acme@infradead.org> <52092.1275333099@localhost>
+            <AANLkTimBxG-2TVC7hAfvRHWupa8T7FaVEcDTnAMCtQWy@mail.gmail.com>
+Mime-Version: 1.0
+Content-Type: multipart/signed; boundary="==_Exmh_1275338942_6730P";
+	 micalg=pgp-sha1; protocol="application/pgp-signature"
+Content-Transfer-Encoding: 7bit
+Date: Mon, 31 May 2010 16:49:02 -0400
+Message-ID: <77282.1275338942@localhost>
+X-Mirapoint-Received-SPF: 128.173.14.107 localhost Valdis.Kletnieks@vt.edu 2 pass
+X-Mirapoint-IP-Reputation: reputation=neutral-1,
+	source=Fixed,
+	refid=n/a,
+	actions=MAILHURDLE SPF TAG
+X-Junkmail-Info: (45) HELO_LOCALHOST
+X-Junkmail-Status: score=45/50, host=dagger.cc.vt.edu
+X-Junkmail-SD-Raw: score=unknown,
+	refid=str=0001.0A020207.4C0420BF.0083,ss=1,fgs=0,
+	ip=0.0.0.0,
+	so=2009-09-22 00:05:22,
+	dmn=2009-09-10 00:05:08,
+	mode=multiengine
+X-Junkmail-IWF: false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 29 May 2010, James Bottomley wrote:
-> The job of the kernel is to accommodate hardware as best it can ...
-> sometimes it might not be able to, but most of the time it does a pretty
-> good job.
-> 
-> The facts are that C states and S states are different and are entered
-> differently. 
+--==_Exmh_1275338942_6730P
+Content-Type: text/plain; charset=iso-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-That's an x86'ism which is going away. And that's really completely
-irrelevant for the mobile device space. Can we please stop trying to
-fix todays x86 based laptop problems? They are simply not fixable.
+On Mon, 31 May 2010 21:30:36 +0200, Stephane Eranian said:
+> >> instance LC_NUMERIC=3Den_US.UTF8. You need to pass -B to activate th=
+is
+>>> feature. This way existing scripts parsing the output do not need to =
+be
+>>> changed. Here is an example.
 
-> For some omap hardware, the power consumption in the
-> lowest C state (with all the ancillary power control) is the same as S3,
-> that's fine, suspend from idle works as well as suspend to ram modulo
-> bad apps. For quite a lot of MSM hardware, the lowest C state power
-> consumption is quite a bit above S3.  It's not acceptable to tell those
-> people "tough, your battery runs out in 30 minutes because you bought
-> the wrong hardware".  We have to figure out how to get to S3 ... whether
-> this is from idle or some other mechanism is again a discussion point,
-> but not doing it is not an option.
+Two examples, actually...
 
-If you'd have read the answers from Alan carefully, then you'd have
-noticed that even x86 hardware is getting to the point where OMAP is
-today. i.e. support of transparent suspend from idle. If that wouldn't
-happen then x86 would be simply unusable for mobile devices. It's that
-easy. And we really do _NOT_ care about the existing laptop hardware
-which does not provide that because it's a lost case. Not only due to
-the missing (or just disabled) wakeup sources, also due to the fact
-that you cannot do sensible power management by completely disabling
-clock and/or power of unused devices in the chipset. There is a damn
-good reason why the mobile space is _NOT_ x86 based at the moment.
+>>>
+>>> =24 perf stat noploop 2
+>>> noploop for 2 seconds
+>>>
+>>> =A0Performance counter stats for 'noploop 2':
+>>>
+>>> =A0 =A0 =A0 =A0 1998.347031 =A0task-clock-msecs =A0 =A0 =A0 =A0 =23 =
+=A0 =A0 =A00.998 CPUs
+>>>   =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A061 =A0context-switches =A0 =A0 =A0 =
+=A0 =23 =A0 =A0 =A00.000 M/sec
+>>> =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 0 =A0CPU-migrations =A0 =A0 =A0 =
+=A0 =A0 =23 =A0 =A0 =A00.000 M/sec
+>>> =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 118 =A0page-faults =A0 =A0 =A0 =A0 =
+=A0 =A0 =A0=23 =A0 =A0 =A00.000 M/sec
+>>> =A0 =A0 =A0 4,138,410,900 =A0cycles =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =
+=A0 =23 =A0 2070.917 M/sec =A0(scaled from 70.01%)
+>>> =A0 =A0 =A0 2,062,650,268 =A0instructions =A0 =A0 =A0 =A0 =A0 =A0 =23=
+ =A0 =A0 =A00.498 IPC =A0 =A0(scaled from 70.01%)
+>>> =A0 =A0 =A0 2,057,653,466 =A0branches =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0=
+ =23 =A0 1029.678 M/sec =A0(scaled from 70.01%)
+>>> =A0 =A0 =A0 =A0 =A0 =A0 =A040,267 =A0branch-misses =A0 =A0 =A0 =A0 =
+=A0 =A0=23 =A0 =A0 =A00.002 % =A0 =A0 =A0(scaled from 30.04%)
+>>> =A0 =A0 =A0 2,055,961,348 =A0cache-references =A0 =A0 =A0 =A0 =23 =A0=
+ 1028.831 M/sec =A0(scaled from 30.03%)
+>>> =A0 =A0 =A0 =A0 =A0 =A0 =A053,725 =A0cache-misses =A0 =A0 =A0 =A0 =A0=
+ =A0 =23 =A0 =A0 =A00.027 M/sec =A0(scaled from 30.02%)
+>>>
+>>> =A0 =A0 =A0 =A0 2.001393933 =A0seconds time elapsed
+>>>
+>>> =24 perf stat -B =A0noploop 2
+>>> noploop for 2 seconds
+>>>
+>>> =A0Performance counter stats for 'noploop 2':
+>>>
+>>> =A0 =A0 =A0 =A0 1998.297883 =A0task-clock-msecs =A0 =A0 =A0 =A0 =23 =
+=A0 =A0 =A00.998 CPUs
+>>> =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A059 =A0context-switches =A0 =A0 =A0=
+ =A0 =23 =A0 =A0 =A00.000 M/sec
+>>> =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 0 =A0CPU-migrations =A0 =A0 =A0 =
+=A0 =A0 =23 =A0 =A0 =A00.000 M/sec
+>>> =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 119 =A0page-faults =A0 =A0 =A0 =A0 =
+=A0 =A0 =A0=23 =A0 =A0 =A00.000 M/sec
+>>> =A0 =A0 =A0 4,131,380,160 =A0cycles =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =
+=A0 =23 =A0 2067.450 M/sec =A0(scaled from 70.01%)
+>>> =A0 =A0 =A0 2,059,096,507 =A0instructions =A0 =A0 =A0 =A0 =A0 =A0 =23=
+ =A0 =A0 =A00.498 IPC =A0 =A0(scaled from 70.01%)
+>>> =A0 =A0 =A0 2,054,681,303 =A0branches =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0=
+ =23 =A0 1028.216 M/sec =A0(scaled from 70.01%)
+>>> =A0 =A0 =A0 =A0 =A0 =A0 =A025,650 =A0branch-misses =A0 =A0 =A0 =A0 =
+=A0 =A0=23 =A0 =A0 =A00.001 % =A0 =A0 =A0(scaled from 30.05%)
+>>> =A0 =A0 =A0 2,056,283,014 =A0cache-references =A0 =A0 =A0 =A0 =23 =A0=
+ 1029.017 M/sec =A0(scaled from 30.03%)
+>>> =A0 =A0 =A0 =A0 =A0 =A0 =A047,097 =A0cache-misses =A0 =A0 =A0 =A0 =A0=
+ =A0 =23 =A0 =A0 =A00.024 M/sec =A0(scaled from 30.02%)
+>>>
+>>> =A0 =A0 =A0 =A0 2.001391016 =A0seconds time elapsed
+>>
+>> Is it me, or did -B not make any difference for these two examples?
+>> I'm confused.
 
-Thanks,
+> Did you set the LC_NUMERIC environement variable?
 
-	tglx
+I meant I was reading the two examples given, and I'm seeing commas in
+the same places, -B or not -B.  I was sort of expecting that the first
+example wouldn't have commas in it, or something?  Or were those two
+examples *supposed* to be identical, and there's a not-shown 3rd example
+that shows what you get if you use -B and set the LC_NUMERIC variable?
+
+--==_Exmh_1275338942_6730P
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+Comment: Exmh version 2.5 07/13/2001
+
+iD8DBQFMBCC+cC3lWbTT17ARAnStAKD+6E8o2IghlRupfu5qazpFrF47fACg2nE+
+Wv8yxHD5rsrLkfwXmjd5t6Y=
+=1Zy0
+-----END PGP SIGNATURE-----
+
+--==_Exmh_1275338942_6730P--
+
