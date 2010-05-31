@@ -1,91 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756428Ab0EaIF4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 May 2010 04:05:56 -0400
-Received: from ist.d-labs.de ([213.239.218.44]:46170 "EHLO mx01.d-labs.de"
+	id S1756379Ab0EaIIO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 May 2010 04:08:14 -0400
+Received: from hera.kernel.org ([140.211.167.34]:58575 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755877Ab0EaIFz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 May 2010 04:05:55 -0400
-Date: Mon, 31 May 2010 10:05:45 +0200
-From: Florian Mickler <florian@mickler.org>
-To: Florian Mickler <florian@mickler.org>
-Newsgroups: gmane.linux.kernel
-Cc: linux-kernel@vger.kernel.org, markgross@thegnar.org, 640e9920@gmail.com,
-       Thomas Gleixner <tglx@linutronix.de>,
-       Alan Cox <alan@lxorguk.ukuu.org.uk>,
-       Brian Swetland <swetland@google.com>,
-       Arve =?ISO-8859-15?B?SGr4bm5lduVn?= <arve@android.com>,
-       linux-pm@lists.linux-foundation.org, "Rafael J. Wysocki" <rjw@sisk.pl>,
-       mark.gross@intel.com
-Subject: Re: [RFC] lp_events: an lternitive to suspend blocker user mode and
- kernel API
-Message-ID: <20100531100545.658a35b7@schatten.dmk.lab>
-In-Reply-To: <20100531084356.272f3e1a@schatten.dmk.lab>
-References: <20100530200409.GA21632@gvim.org>
-	<20100531095753.4c174f2d@notabene.brown>
-	<20100531084356.272f3e1a@schatten.dmk.lab>
-X-Newsreader: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1753795Ab0EaIIL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 31 May 2010 04:08:11 -0400
+Date: Mon, 31 May 2010 08:06:44 GMT
+From: tip-bot for Akinobu Mita <akinobu.mita@gmail.com>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
+       akinobu.mita@gmail.com, tglx@linutronix.de, mingo@elte.hu
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+       tglx@linutronix.de, akinobu.mita@gmail.com, mingo@elte.hu
+In-Reply-To: <1274706291-13554-1-git-send-email-akinobu.mita@gmail.com>
+References: <1274706291-13554-1-git-send-email-akinobu.mita@gmail.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/urgent] x86/mm: Remove unused DBG() macro
+Message-ID: <tip-e565813ab95875af0d51a6bcd537068380bb06ea@git.kernel.org>
+Git-Commit-ID: e565813ab95875af0d51a6bcd537068380bb06ea
+X-Mailer: tip-git-log-daemon
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Mon, 31 May 2010 08:06:45 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 31 May 2010 08:43:56 +0200
-Florian Mickler <florian@mickler.org> wrote:
+Commit-ID:  e565813ab95875af0d51a6bcd537068380bb06ea
+Gitweb:     http://git.kernel.org/tip/e565813ab95875af0d51a6bcd537068380bb06ea
+Author:     Akinobu Mita <akinobu.mita@gmail.com>
+AuthorDate: Mon, 24 May 2010 22:04:51 +0900
+Committer:  Ingo Molnar <mingo@elte.hu>
+CommitDate: Mon, 31 May 2010 10:01:53 +0200
 
-> On Mon, 31 May 2010 09:57:53 +1000
-> Neil Brown <neilb@suse.de> wrote:
-> 
-> > 2/ Rather than tracking wake-events from the hardware up through possibly
-> >    several kernel modules, you go directly from hardware to user-space so each
-> >    event is potentially presented to user-space twice: once as a "wake up
-> >    from low power state" event and once following the normal path (maybe a
-> >    key-press event, maybe a serial-port event, maybe a network receive event).
-> >    I can see that this is a very tempting approach.  It allows all those
-> >    intermediate modules to remain unchanged and that is good.
-> >    However it isn't clear to me that this would be easy for user-space to use
-> >    correctly.
-> >    When an lpe event arrived it would need to wait around for the real event
-> >    to arrive and then process that.  I probably wouldn't wait long, but it
-> >    would be an indeterminate wait, and it might not be  trivial to determine
-> >    if all events that would cause a wake-up have been consumed as a direct
-> >    mapping from lpe event to normal event may not always be possible.
-> >    Maybe this is more of a theoretical problem and in practice it would be
-> >    easy to get it right - I don't have enough concrete experience to be sure.
-> > 
-> >    So: I like the idea of leaving the intermediate layers unchanged, but I'm
-> >    not convinced it would work.
-> 
-> To add to this: Is it a correct assumption
-> that all wake-up events that leave a driver trickle eventually up to
-> userspace?
-> 
-> I think splitting the actual driver product (i.e. keypress or whatever)
-> of a wake-up-event and it's corresponding wake-lock is not possible.
-> Because you would have to _somehow_ map the block back to the product
-> when you consume the product. 
-> 
-> If you want to abstract the blocking from the kernel-code you probably
-> have to introduce an abstract "driver-product" entity where you can do
-> all your blocking associated with the product but hidden from the code
-> that uses the product. (Which I don't think is feasible, because it
-> increases overhead)
-> 
-> Or am I on the wrong track here? 
+x86/mm: Remove unused DBG() macro
 
-I just realized, that you can cancel lpe_blocks via delete_lpe_block(),
-so this is not an issue at all.
-They can be used just like suspend blockers. 
+DBG() macro for CONFIG_DEBUG_PER_CPU_MAPS is unused.
 
-Also the mapping of lpe_block to "wake event" is the same problem as
-with the suspend_blockers... 
+Signed-off-by: Akinobu Mita <akinobu.mita@gmail.com>
+LKML-Reference: <1274706291-13554-1-git-send-email-akinobu.mita@gmail.com>
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
+---
+ arch/x86/kernel/setup_percpu.c |    6 ------
+ arch/x86/mm/numa.c             |    6 ------
+ 2 files changed, 0 insertions(+), 12 deletions(-)
 
-So I don't think this is a bad idea after all. It decouples the
-suspend_blockers from "suspend" quite nicely. 
-Although it still is only "block" or "no block" and not, as was
-suggested some sort of more fine grained requirement definition.
-
-Cheers,
-Flo
+diff --git a/arch/x86/kernel/setup_percpu.c b/arch/x86/kernel/setup_percpu.c
+index a867940..401ff10 100644
+--- a/arch/x86/kernel/setup_percpu.c
++++ b/arch/x86/kernel/setup_percpu.c
+@@ -21,12 +21,6 @@
+ #include <asm/cpu.h>
+ #include <asm/stackprotector.h>
+ 
+-#ifdef CONFIG_DEBUG_PER_CPU_MAPS
+-# define DBG(fmt, ...) pr_dbg(fmt, ##__VA_ARGS__)
+-#else
+-# define DBG(fmt, ...) do { if (0) pr_dbg(fmt, ##__VA_ARGS__); } while (0)
+-#endif
+-
+ DEFINE_PER_CPU(int, cpu_number);
+ EXPORT_PER_CPU_SYMBOL(cpu_number);
+ 
+diff --git a/arch/x86/mm/numa.c b/arch/x86/mm/numa.c
+index 550df48..787c52c 100644
+--- a/arch/x86/mm/numa.c
++++ b/arch/x86/mm/numa.c
+@@ -3,12 +3,6 @@
+ #include <linux/module.h>
+ #include <linux/bootmem.h>
+ 
+-#ifdef CONFIG_DEBUG_PER_CPU_MAPS
+-# define DBG(x...) printk(KERN_DEBUG x)
+-#else
+-# define DBG(x...)
+-#endif
+-
+ /*
+  * Which logical CPUs are on which nodes
+  */
