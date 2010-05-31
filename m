@@ -1,110 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754252Ab0EaWEM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 May 2010 18:04:12 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:35751 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753747Ab0EaWEJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 May 2010 18:04:09 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Neil Brown <neilb@suse.de>
-Subject: Re: [linux-pm] [PATCH 0/8] Suspend block api (version 8)
-Date: Tue, 1 Jun 2010 00:05:19 +0200
-User-Agent: KMail/1.12.4 (Linux/2.6.35-rc1-rjw; KDE/4.3.5; x86_64; ; )
-Cc: Thomas Gleixner <tglx@linutronix.de>,
-       Alan Stern <stern@rowland.harvard.edu>,
-       Felipe Balbi <felipe.balbi@nokia.com>,
-       Arve =?iso-8859-1?q?Hj=F8nnev=E5g?= <arve@android.com>,
-       Peter Zijlstra <peterz@infradead.org>,
-       "Paul@smtp1.linux-foundation.org" <Paul@smtp1.linux-foundation.org>,
-       LKML <linux-kernel@vger.kernel.org>,
-       Florian Mickler <florian@mickler.org>,
-       Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
-       Linux PM <linux-pm@lists.linux-foundation.org>,
-       Alan Cox <alan@lxorguk.ukuu.org.uk>
-References: <Pine.LNX.4.44L0.1005271303190.3239-100000@iolanthe.rowland.org> <alpine.LFD.2.00.1005272334040.3478@localhost.localdomain> <20100531143339.249ae1f4@notabene.brown>
-In-Reply-To: <20100531143339.249ae1f4@notabene.brown>
+	id S1753784Ab0EaWHK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 May 2010 18:07:10 -0400
+Received: from ringil.hengli.com.au ([216.59.3.182]:35182 "EHLO
+	arnor.apana.org.au" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752638Ab0EaWHI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 31 May 2010 18:07:08 -0400
+Date: Tue, 1 Jun 2010 08:07:00 +1000
+From: Herbert Xu <herbert@gondor.hengli.com.au>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: Milan Broz <mbroz@redhat.com>,
+       device-mapper development <dm-devel@redhat.com>,
+       linux-kernel@vger.kernel.org, agk@redhat.com, ak@linux.intel.com
+Subject: Re: [dm-devel] [PATCH] DM-CRYPT: Scale to multiple CPUs
+Message-ID: <20100531220700.GA23076@gondor.apana.org.au>
+References: <20100531160425.GA20344@basil.fritz.box> <4C03F04D.4040200@redhat.com> <20100531174225.GE10766@basil.fritz.box> <4C03FB8E.1060109@redhat.com> <20100531182724.GG10766@basil.fritz.box> <4C040636.8060702@redhat.com> <20100531190400.GH10766@basil.fritz.box>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201006010005.19554.rjw@sisk.pl>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100531190400.GH10766@basil.fritz.box>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 31 May 2010, Neil Brown wrote:
-> On Thu, 27 May 2010 23:40:29 +0200 (CEST)
-> Thomas Gleixner <tglx@linutronix.de> wrote:
+On Mon, May 31, 2010 at 09:04:00PM +0200, Andi Kleen wrote:
+> > I mean how it is implemented now in crypto API, and I was almost
+> > sure that aes-ni acceleration code uses cryptd (iow real asynchronous processing)
+> > and also that not all CPU cores can run these instruction in parallel.
 > 
-> > On Thu, 27 May 2010, Rafael J. Wysocki wrote:
-> > 
-> > > On Thursday 27 May 2010, Thomas Gleixner wrote:
-> > > > On Thu, 27 May 2010, Alan Stern wrote:
-> > > > 
-> > > > > On Thu, 27 May 2010, Felipe Balbi wrote:
-> > > > > 
-> > > > > > On Thu, May 27, 2010 at 05:06:23PM +0200, ext Alan Stern wrote:
-> > > > > > >If people don't mind, here is a greatly simplified summary of the
-> > > > > > >comments and objections I have seen so far on this thread:
-> > > > > > >
-> > > > > > >	The in-kernel suspend blocker implementation is okay, even
-> > > > > > >	beneficial.
-> > > > > > 
-> > > > > > I disagree here. I believe expressing that as QoS is much better. Let 
-> > > > > > the kernel decide which power state is better as long as I can say I 
-> > > > > > need 100us IRQ latency or 100ms wakeup latency.
-> > > > > 
-> > > > > Does this mean you believe "echo mem >/sys/power/state" is bad and
-> > > > > should be removed?  Or "echo disk >/sys/power/state"?  They pay no
-> > > > 
-> > > > mem should be replaced by an idle suspend to ram mechanism
-> > > 
-> > > Well, what about when I want the machine to suspend _regardless_ of whether
-> > > or not it's idle at the moment?  That actually happens quite often to me. :-)
-> > 
-> > Fair enough. Let's agree on a non ambigous terminology then:
-> > 
-> >      forced:
-> > 
-> > 	     suspend which you enforce via user interaction, which
-> >      	     also implies that you risk losing wakeups depending on
-> >      	     the hardware properties
-> 
-> Reasonable definition I think.  However the current implementation doesn't
-> exactly match it.
-> With the current implementation you risk losing wakeups *independent* of the
-> hardware properties.
+> I think you can configure it to use cryptd (or pcrypt), but it's not default
+> and usually higher overhead.
 
-Define "losing", please.
+Right.  The only reason aes-ni uses the async interface is to
+work around the fact that you have to save FPU state when using
+it.  For dm-crypt you can consider it to be synchronous.
 
-Currently, we simply don't regard hardware signals occuring _during_ the
-suspend operation itself as wakeups (unless they are wakeup interrupts to be
-precise, because these _are_ taken into account by our current code).
+Note that cryptd is nothing like pcrypt.  cryptd always keeps
+the work on the local CPU, even if goes into another thread.
 
-The reason is that the meaning of given event may be _different_ at run time
-and after the system has been suspended.  For example, consider a power button
-on a PC box.  If it's pressed at run time, it usually means "power off the
-system" to the kernel.  After the system has been suspended, however, it means
-"wake up".  So, you have to switch from one interpretation of the event to the
-other and that's not an atomic operaition (to put it lightly).
+OTOH pcrypt was designed to parallelise the work across CPUs.
 
-> Even with ideal hardware events can be lost - by which I mean that they will
-> not be seen until some other event effects a wake-up.
-> e.g. the interrupt which signals the event happens immediately before the
-> suspend is requested (or maybe at the same time as), but the process which
-> needs to handle the event doesn't get a chance to see it before the suspend
-> procedure freezes that process, and even if it did it would have no way to
-> abort the suspend.
-> 
-> So I submit that the current implementation doesn't match your description of
-> "forced", is therefore buggy, and that if it were fixed, that would be
-> sufficient to meet the immediate needs of android.
-
-I don't really think it may be fixed with respect to every possible kind of
-hardware.  On platforms where I/O interrupts are wakeup events it should
-work right now.  On other platforms it may be impossible to overcome hardware
-limitations.
-
-Thanks,
-Rafael
+Cheers,
+-- 
+Visit Openswan at http://www.openswan.org/
+Email: Herbert Xu ~{PmV>HI~} <herbert@gondor.apana.org.au>
+Home Page: http://gondor.apana.org.au/~herbert/
+PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
