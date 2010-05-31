@@ -1,75 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755469Ab0EaQzp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 May 2010 12:55:45 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:51852 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751610Ab0EaQzo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 May 2010 12:55:44 -0400
-Date: Mon, 31 May 2010 18:43:54 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
-       David Rientjes <rientjes@google.com>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-       Nick Piggin <npiggin@suse.de>
-Subject: Re: [PATCH 2/5] oom: select_bad_process: PF_EXITING check should
-	take ->mm into account
-Message-ID: <20100531164354.GA9991@redhat.com>
-References: <20100531182526.1843.A69D9226@jp.fujitsu.com> <20100531183335.1846.A69D9226@jp.fujitsu.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100531183335.1846.A69D9226@jp.fujitsu.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1755525Ab0EaQ5V (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 May 2010 12:57:21 -0400
+Received: from mail-ww0-f46.google.com ([74.125.82.46]:47666 "EHLO
+	mail-ww0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754475Ab0EaQ5T (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 31 May 2010 12:57:19 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=Bj2s00sTylD/tRENAFOvJzAm5xQuGIwr4c7GQqZXrubG3FZD4fkX9msL9JU242FY5u
+         EsboTEu7JnbxPek3RWZYBEMpTUZYDeLlN509R1BRAKXqQt95uRnto6e8bR+g4f7diQb9
+         YkUqWtzmdRj7oXqQraimFTwWcm3/e0Sk2WcAA=
+Subject: Re: [PATCH] DM-CRYPT: Scale to multiple CPUs
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: herbert@gondor.hengli.com.au, dm-devel@redhat.com,
+       linux-kernel@vger.kernel.org, agk@redhat.com, ak@linux.intel.com
+In-Reply-To: <20100531160425.GA20344@basil.fritz.box>
+References: <20100531160425.GA20344@basil.fritz.box>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 31 May 2010 18:34:55 +0200
+Message-ID: <1275323695.3291.122.camel@edumazet-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thanks a lot Kosaki for doing this!
-
-I still can't find the time to play with this code :/
-
-On 05/31, KOSAKI Motohiro wrote:
->
-> select_bad_process() checks PF_EXITING to detect the task which is going
-> to release its memory, but the logic is very wrong.
->
-> 	- a single process P with the dead group leader disables
-> 	  select_bad_process() completely, it will always return
-> 	  ERR_PTR() while P can live forever
->
-> 	- if the PF_EXITING task has already released its ->mm
-> 	  it doesn't make sense to expect it is goiing to free
-> 	  more memory (except task_struct/etc)
->
-> Change the code to ignore the PF_EXITING tasks without ->mm.
->
-> --- a/mm/oom_kill.c
-> +++ b/mm/oom_kill.c
-> @@ -287,7 +287,7 @@ static struct task_struct *select_bad_process(unsigned long *ppoints,
->  		 * the process of exiting and releasing its resources.
->  		 * Otherwise we could get an easy OOM deadlock.
->  		 */
-> -		if (p->flags & PF_EXITING) {
-> +		if ((p->flags & PF_EXITING) && p->mm) {
-
-(strictly speaking, this change is needed after 3/5 which removes the
- top-level "if (!p->mm)" check in select_bad_process).
+Le lundi 31 mai 2010 à 18:04 +0200, Andi Kleen a écrit :
+> DM-CRYPT: Scale to multiple CPUs
+> 
+> Currently dm-crypt does all encryption work per dmcrypt mapping in a
+> single workqueue. This does not scale well when multiple CPUs
+> are submitting IO at a high rate. The single CPU running the single
+> thread cannot keep up with the encryption and encrypted IO performance
+> tanks.
+> 
+> This patch changes the crypto workqueue to be per CPU. This means
+> that as long as the IO submitter (or the interrupt target CPUs
+> for reads) runs on different CPUs the encryption work will be also
+> parallel.
+> 
+> To avoid a bottleneck on the IO worker I also changed those to be
+> per CPU threads.
+> 
+> There is still some shared data, so I suspect some bouncing
+> cache lines. But I haven't done a detailed study on that yet.
+> 
+> All the threads are global, not per CPU. That is to avoid a thread
+> explosion on systems with a large number of CPUs and a larger
+> number of dm-crypt mappings. The code takes care to avoid problems
+> with nested mappings.
+>     
+> Signed-off-by: Andi Kleen <ak@linux.intel.com>
 
 
-I'd like to add a note... with or without this, we have problems
-with the coredump. A thread participating in the coredumping
-(group-leader in this case) can have PF_EXITING && mm, but this doesn't
-mean it is going to exit soon, and the dumper can use a lot more memory.
+>  	/*
+> +	 * Duplicated per cpu state. Access through
+> +	 * per_cpu_ptr() only.
+> +	 */
+> +	struct crypt_cpu *cpu;
+> +
+> +	/*
+>  	 * Layout of each crypto request:
+>  	 *
 
-Otoh, if select_bad_process() chooses the thread which dumps the core,
-SIGKILL can't stop it. This should be fixed in do_coredump() paths, this
-is the long-standing problem.
+Since commit e0fdb0e050eae331, we have a __percpu annotation so that
+sparse can be augmented. This would also make the comment unnecessary...
 
-And, as it was already discussed, we only check the group-leader here.
-But I can't suggest something better.
 
-Oleg.
+We also have this_cpu_ accessors
+
+> +       return per_cpu_ptr(cc->cpu, smp_processor_id());
+
+	this_cpu_ptr(cc->cpu)
+
+and __thic_cpu_ptr() for the 'raw' version
+
+
+> +       __get_cpu_var(io_wq_cpu) = current;
+
+	this_cpu_write(io_wq_cpu, current)
+
 
