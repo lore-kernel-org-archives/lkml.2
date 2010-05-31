@@ -1,70 +1,157 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754621Ab0EaNLL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 May 2010 09:11:11 -0400
-Received: from mailout-eu.gmx.com ([213.165.64.42]:37348 "HELO
-	mailout-eu.gmx.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1754383Ab0EaNLI (ORCPT
+	id S1754676Ab0EaNNh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 May 2010 09:13:37 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:41407 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751574Ab0EaNNe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 May 2010 09:11:08 -0400
-X-Authenticated: #65048216
-X-Provags-ID: V01U2FsdGVkX1+qjlMTTKyqbpSfBy+G+mokEeMuoPPwGU948XHjf2
-	hOV7Dmp2QtQCL6
-Subject: Re: iwl3945 bug in 2.6.34
-From: Ivan Bulatovic <combuster@gmx.com>
-To: reinette chatre <reinette.chatre@intel.com>
-Cc: Satish Eerpini <eerpini@gmail.com>,
-       linux-kernel <linux-kernel@vger.kernel.org>,
-       "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>
-In-Reply-To: <1274830187.2091.17034.camel@rchatre-DESK>
-References: <AANLkTik_7rxDBc0TKlAfoYyM5S6Cf_Hyxbr4W5ORnTsq@mail.gmail.com>
-	 <1274726029.2091.15160.camel@rchatre-DESK>
-	 <1274738896.2091.15438.camel@rchatre-DESK>
-	 <1274830187.2091.17034.camel@rchatre-DESK>
+	Mon, 31 May 2010 09:13:34 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=EkBlWvCqKxyoDP4BniKB3uWEgOd0gLt1wUW5CtJ4CCi+dz9d+a6F2sYW90wx/dEGq5
+         BkOCGrHR4EvPi5lHlfN3w2zzK+a9ceHWWpLBwqbFgSIReWaeo/mw9IZ9ir5MISM+uzf8
+         Cx4nsXPSEouMR0SpLmXMvKZEzxZIlaNedq9Y0=
+Subject: [PATCH] netfilter: xtables: stackptr should be percpu
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Jan Engelhardt <jengelh@medozas.de>
+Cc: Xiaotian Feng <dfeng@redhat.com>, netfilter-devel@vger.kernel.org,
+       netfilter@vger.kernel.org, coreteam@netfilter.org,
+       linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+       Patrick McHardy <kaber@trash.net>,
+       "David S. Miller" <davem@davemloft.net>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Rusty Russell <rusty@rustcorp.com.au>,
+       Alexey Dobriyan <adobriyan@gmail.com>
+In-Reply-To: <alpine.LSU.2.01.1005311350580.31799@obet.zrqbmnf.qr>
+References: <1275303998-2435-1-git-send-email-dfeng@redhat.com>
+	 <alpine.LSU.2.01.1005311350580.31799@obet.zrqbmnf.qr>
 Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 31 May 2010 15:06:16 +0200
-Message-ID: <1275311176.3329.3.camel@localhost.localdomain>
+Date: Mon, 31 May 2010 15:13:00 +0200
+Message-ID: <1275311580.3291.44.camel@edumazet-laptop>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.1.2 
-Content-Transfer-Encoding: 7bit
-X-Y-GMX-Trusted: 0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-05-25 at 16:29 -0700, reinette chatre wrote: 
-> Hi Satish,
+Le lundi 31 mai 2010 à 13:51 +0200, Jan Engelhardt a écrit :
+> On Monday 2010-05-31 13:06, Xiaotian Feng wrote:
 > 
-> On Mon, 2010-05-24 at 15:08 -0700, reinette chatre wrote:
-> > On Mon, 2010-05-24 at 11:33 -0700, reinette chatre wrote:
-> > > On Sat, 2010-05-22 at 23:25 -0700, Satish Eerpini wrote:
-> > > 
-> > > > No probe response from AP 00:1b:da:2a:a1:53 after 500ms, disconnecting.
-> > > > iwl3945 0000:10:00.0: Error sending REPLY_RXON: time out after 500ms.
-> > > > iwl3945 0000:10:00.0: Error setting new configuration (-110).
-> > > > iwl3945 0000:10:00.0: Error sending REPLY_RXON: time out after 500ms.
-> > > > iwl3945 0000:10:00.0: Error setting new configuration (-110).
-> > > 
-> > > This did not use to be an issue with 3945 and unfortunately we do not
-> > > know what is triggering it now. Please try the "Enable stuck queue
-> > > detection on 3945" patch that is attached to
-> > > http://bugzilla.intellinuxwireless.org/show_bug.cgi?id=1834 as a
-> > > workaround.
-> > 
-> > Actually, sorry, but that patch will not work on 2.6.34 since the
-> > feature it enables is not present there - it will be in 2.6.35 though.
-> > To enable the feature in 2.6.34 will take some more backporting effort
-> > that I'm looking into now.
+> >In xt_register_table, xt_jumpstack_alloc is called first, later
+> >xt_replace_table is used. But in xt_replace_table, xt_jumpstack_alloc
+> >will be used again. Then the memory allocated by previous xt_jumpstack_alloc
+> >will be leaked. We can simply remove the previous xt_jumpstack_alloc because
+> >there aren't any users of newinfo between xt_jumpstack_alloc and
+> >xt_replace_table.
 > 
-> Please try the attached two patches.
-> 
-> Reinette
-> 
-I didn't have a problem with 2.6.34 but with 2.6.35-rc1 while obtaing IP
-address with dhcpcd it bails out with reason 3 and gets timed out. I've
-tried to increase timeout to 100 but the result is the same. I can't
-apply this patches because base is somewhat different, as I can see the
-first patch is already applied but the second one isn't. Any
-suggestions ? Thanks. In the meantime I will try to get some more debug
-information.
+> Indeed that seems to be so.
+
+An official "Acked-by: ..." would be fine Jan :)
+
+BTW I noticed a _big_ slowdown of iptables lately, and located the
+reason.
+
+All cpus share a single cache line for their 'stackptr' storage,
+introduced in commit f3c5c1bfd4
+
+This is a stable candidate (2.6.34)
+
+Note : We also should use alloc_percpu() for jumpstack but this is not a
+critical thing and can be a net-next patch.
+
+
+[PATCH] netfilter: xtables: stackptr should be percpu
+
+commit f3c5c1bfd4 (netfilter: xtables: make ip_tables reentrant)
+introduced a performance regression, because stackptr array is shared by
+all cpus, adding cache line ping pongs. (16 cpus share a 64 bytes cache
+line)
+
+Fix this using alloc_percpu()
+
+Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
+---
+ include/linux/netfilter/x_tables.h |    2 +-
+ net/ipv4/netfilter/ip_tables.c     |    2 +-
+ net/ipv6/netfilter/ip6_tables.c    |    2 +-
+ net/netfilter/x_tables.c           |   13 +++----------
+ 4 files changed, 6 insertions(+), 13 deletions(-)
+
+diff --git a/include/linux/netfilter/x_tables.h b/include/linux/netfilter/x_tables.h
+index c00cc0c..24e5d01 100644
+--- a/include/linux/netfilter/x_tables.h
++++ b/include/linux/netfilter/x_tables.h
+@@ -397,7 +397,7 @@ struct xt_table_info {
+ 	 * @stacksize jumps (number of user chains) can possibly be made.
+ 	 */
+ 	unsigned int stacksize;
+-	unsigned int *stackptr;
++	unsigned int __percpu *stackptr;
+ 	void ***jumpstack;
+ 	/* ipt_entry tables: one per CPU */
+ 	/* Note : this field MUST be the last one, see XT_TABLE_INFO_SZ */
+diff --git a/net/ipv4/netfilter/ip_tables.c b/net/ipv4/netfilter/ip_tables.c
+index 63958f3..4b6c5ca 100644
+--- a/net/ipv4/netfilter/ip_tables.c
++++ b/net/ipv4/netfilter/ip_tables.c
+@@ -336,7 +336,7 @@ ipt_do_table(struct sk_buff *skb,
+ 	cpu        = smp_processor_id();
+ 	table_base = private->entries[cpu];
+ 	jumpstack  = (struct ipt_entry **)private->jumpstack[cpu];
+-	stackptr   = &private->stackptr[cpu];
++	stackptr   = per_cpu_ptr(private->stackptr, cpu);
+ 	origptr    = *stackptr;
+ 
+ 	e = get_entry(table_base, private->hook_entry[hook]);
+diff --git a/net/ipv6/netfilter/ip6_tables.c b/net/ipv6/netfilter/ip6_tables.c
+index 6f517bd..9d2d68f 100644
+--- a/net/ipv6/netfilter/ip6_tables.c
++++ b/net/ipv6/netfilter/ip6_tables.c
+@@ -363,7 +363,7 @@ ip6t_do_table(struct sk_buff *skb,
+ 	cpu        = smp_processor_id();
+ 	table_base = private->entries[cpu];
+ 	jumpstack  = (struct ip6t_entry **)private->jumpstack[cpu];
+-	stackptr   = &private->stackptr[cpu];
++	stackptr   = per_cpu_ptr(private->stackptr, cpu);
+ 	origptr    = *stackptr;
+ 
+ 	e = get_entry(table_base, private->hook_entry[hook]);
+diff --git a/net/netfilter/x_tables.c b/net/netfilter/x_tables.c
+index 445de70..7e8a93d 100644
+--- a/net/netfilter/x_tables.c
++++ b/net/netfilter/x_tables.c
+@@ -699,10 +699,8 @@ void xt_free_table_info(struct xt_table_info *info)
+ 		vfree(info->jumpstack);
+ 	else
+ 		kfree(info->jumpstack);
+-	if (sizeof(unsigned int) * nr_cpu_ids > PAGE_SIZE)
+-		vfree(info->stackptr);
+-	else
+-		kfree(info->stackptr);
++
++	free_percpu(info->stackptr);
+ 
+ 	kfree(info);
+ }
+@@ -753,14 +751,9 @@ static int xt_jumpstack_alloc(struct xt_table_info *i)
+ 	unsigned int size;
+ 	int cpu;
+ 
+-	size = sizeof(unsigned int) * nr_cpu_ids;
+-	if (size > PAGE_SIZE)
+-		i->stackptr = vmalloc(size);
+-	else
+-		i->stackptr = kmalloc(size, GFP_KERNEL);
++	i->stackptr = alloc_percpu(unsigned int);
+ 	if (i->stackptr == NULL)
+ 		return -ENOMEM;
+-	memset(i->stackptr, 0, size);
+ 
+ 	size = sizeof(void **) * nr_cpu_ids;
+ 	if (size > PAGE_SIZE)
+
 
