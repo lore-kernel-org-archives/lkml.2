@@ -1,50 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755085Ab0EaOWa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 May 2010 10:22:30 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:41557 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754912Ab0EaOW1 (ORCPT
+	id S1755866Ab0EaOZ0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 May 2010 10:25:26 -0400
+Received: from daytona.panasas.com ([67.152.220.89]:3422 "EHLO
+	daytona.int.panasas.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1755599Ab0EaOZZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 May 2010 10:22:27 -0400
-To: Christof Schmitt <christof.schmitt@de.ibm.com>
-Cc: linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
-       linux-fsdevel@vger.kernel.org
-Subject: Re: Wrong DIF guard tag on ext2 write
-From: "Martin K. Petersen" <martin.petersen@oracle.com>
-Organization: Oracle
-References: <20100531112817.GA16260@schmichrtp.mainz.de.ibm.com>
-Date: Mon, 31 May 2010 10:20:44 -0400
-In-Reply-To: <20100531112817.GA16260@schmichrtp.mainz.de.ibm.com> (Christof
-	Schmitt's message of "Mon, 31 May 2010 13:28:18 +0200")
-Message-ID: <yq1iq64kv9f.fsf@sermon.lab.mkp.net>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
+	Mon, 31 May 2010 10:25:25 -0400
+Message-ID: <4C03C6D1.2020305@panasas.com>
+Date: Mon, 31 May 2010 17:25:21 +0300
+From: Boaz Harrosh <bharrosh@panasas.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-2.fc12 Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-X-Auth-Type: Internal IP
-X-Source-IP: acsinet15.oracle.com [141.146.126.227]
-X-CT-RefId: str=0001.0A090209.4C03C620.00E3:SCFMA922111,ss=1,fgs=0
+To: =?UTF-8?B?VG9yYWxmIEbDtnJzdGVy?= <toralf.foerster@gmx.de>
+CC: Borislav Petkov <bp@alien8.de>, Borislav Petkov <borislav.petkov@amd.com>,
+       Geert Uytterhoeven <geert@linux-m68k.org>, linux-kernel@vger.kernel.org,
+       user-mode-linux-devel@lists.sourceforge.net,
+       "H. Peter Anvin" <hpa@zytor.com>
+Subject: Re: [uml-devel] [PATCH] x86, hweight: Fix UML boot crash
+References: <201005271944.09541.toralf.foerster@gmx.de>	<20100530193956.GA2498@liondog.tnic>	<20100530201738.GB2498@liondog.tnic> <201005311555.56791.toralf.foerster@gmx.de>
+In-Reply-To: <201005311555.56791.toralf.foerster@gmx.de>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-OriginalArrivalTime: 31 May 2010 14:25:23.0927 (UTC) FILETIME=[1B76FE70:01CB00CD]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>>>> "Christof" == Christof Schmitt <christof.schmitt@de.ibm.com> writes:
+On 05/31/2010 04:55 PM, Toralf Förster wrote:
+> 
+> Borislav Petkov wrote at 22:17:38
+>> LKML-Reference: <201005271944.09541.toralf.foerster@gmx.de>
+>> Signed-off-by: Borislav Petkov <bp@alien8.de>
+>> ---
+>>  arch/um/include/asm/arch_hweight.h |    6 ++++++
+>>  1 files changed, 6 insertions(+), 0 deletions(-)
+>>  create mode 100644 arch/um/include/asm/arch_hweight.h
+>>
+>> diff --git a/arch/um/include/asm/arch_hweight.h b/arch/um/include/asm/arch_hweight.h
+>> new file mode 100644
+>> index 0000000..c656cf4
+>> --- /dev/null
+>> +++ b/arch/um/include/asm/arch_hweight.h
+>> @@ -0,0 +1,6 @@
+>> +#ifndef _ASM_UM_HWEIGHT_H
+>> +#define _ASM_UM_HWEIGHT_H
+>> +
+>> +#include <asm-generic/bitops/arch_hweight.h>
+>> +
+>> +#endif
+>>
+> This patch does not to solve the reported issue by me.
+> 
 
-Christof> Since the guard tags are created in Linux, it seems that the
-Christof> data attached to the write request changes between the
-Christof> generation in bio_integrity_generate and the call to
-Christof> sd_prep_fn.
+Watch out. It did fix it for me but only after a deep
+clean. (mrproper) Makefile does not pick up this dependency.
 
-Yep, known bug.  Page writeback locking is messed up for buffer_head
-users.  The extNfs folks volunteered to look into this a while back but
-I don't think they have found the time yet.
+Also I could not use my 2.6.34 config file. I had to do
+make defconfig, and then xconfig all my extra stuff. But
+this is regular for any Kernel upgrade and UML.
 
-
-Christof> Using ext3 or ext4 instead of ext2 does not show the problem.
-
-Last I looked there were still code paths in ext3 and ext4 that
-permitted pages to be changed during flight.  I guess you've just been
-lucky.
-
--- 
-Martin K. Petersen	Oracle Linux Engineering
+It does fix my setup. (Wouldn't load before this)
+Boaz
