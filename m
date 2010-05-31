@@ -1,70 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756830Ab0EaQPL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 May 2010 12:15:11 -0400
-Received: from lo.gmane.org ([80.91.229.12]:41725 "EHLO lo.gmane.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756523Ab0EaQPI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 May 2010 12:15:08 -0400
-X-Injected-Via-Gmane: http://gmane.org/
-To: linux-kernel@vger.kernel.org
-connect(): No such file or directory
-From: "H.S." <hs.samix@gmail.com>
-Subject: Re: [PATCH] firewire: core: check for 1394a compliant IRM, fix inaccessibility
- of Sony camcorder
-Date: Mon, 31 May 2010 11:14:02 -0400
-Message-ID: <hu0jnr$10b$1@dough.gmane.org>
-References: <AANLkTimIFRbKWYjFd56acxT2A6nnH6l3-7Q_UyORnonW@mail.gmail.com>	<4C017477.8000008@s5r6.in-berlin.de>	<4C0284E7.3050803@s5r6.in-berlin.de>	<tkrat.740b506673ccbf6d@s5r6.in-berlin.de>	<htu993$60f$1@dough.gmane.org>	<4C02B483.9080802@s5r6.in-berlin.de> <htuebt$l80$1@dough.gmane.org>
+	id S1756779Ab0EaQS1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 May 2010 12:18:27 -0400
+Received: from casper.infradead.org ([85.118.1.10]:33148 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751630Ab0EaQS0 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 31 May 2010 12:18:26 -0400
+Subject: Re: [PATCH] tracing: Add task activate/deactivate tracepoints
+From: Peter Zijlstra <peterz@infradead.org>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>,
+       Steven Rostedt <rostedt@goodmis.org>
+In-Reply-To: <20100531144820.GB5157@nowhere>
+References: <1275056762-13130-1-git-send-regression-fweisbec@gmail.com>
+	 <1275059710.27810.9624.camel@twins> <20100531080049.GA435@elte.hu>
+	 <1275293544.27810.21478.camel@twins> <1275296099.27810.21622.camel@twins>
+	 <20100531143622.GA5157@nowhere> <1275317013.27810.23019.camel@twins>
+	 <20100531144820.GB5157@nowhere>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Mon, 31 May 2010 18:18:35 +0200
+Message-ID: <1275322715.27810.23323.camel@twins>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Complaints-To: usenet@dough.gmane.org
-X-Gmane-NNTP-Posting-Host: 206-248-129-141.dsl.teksavvy.com
-User-Agent: Mozilla-Thunderbird 2.0.0.22 (X11/20090706)
-In-Reply-To: <htuebt$l80$1@dough.gmane.org>
-Cc: linux1394-devel@lists.sourceforge.net
+X-Mailer: Evolution 2.28.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-H.S. wrote:
-> 
-> I will report back how it goes as soon as I am able to do the experiments.
-> 
+On Mon, 2010-05-31 at 16:48 +0200, Frederic Weisbecker wrote:
+> > Should we maybe cure this and rely on sched_switch() to detect sleeps?
+> > It seems natural since only the current task can go to sleep, its just
+> > that the whole preempt state gets a bit iffy.
 
+How about something like the below?
 
-Well, good news. The patch seems to be worked as you designed.
+Steve, is that proper usage of CREATE_TRACE_POINT?
 
-Compiled the kernel with your patch, rebooted the machine and plugged in
-the camcorder to the firewire port. This is what the log said:
-May 31 11:06:47 red kernel: [  924.228439] firewire_ohci: isochronous
-cycle inconsistent
-May 31 11:06:48 red kernel: [  924.821383] firewire_core: created device
-fw1: GUID 08004601024aca36, S100
-May 31 11:06:48 red kernel: [  924.821396] firewire_core: phy config:
-card 0, new root=ffc1, gap_count=5
-May 31 11:06:48 red kernel: [  924.833768] firewire_core: IRM is not
-1394a compliant, making local node (ffc0) root.
-May 31 11:06:48 red kernel: [  924.833777] firewire_core: phy config:
-card 0, new root=ffc0, gap_count=5
+---
+Subject: sched, trace: Fix sched_switch() prev_state argument
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Date: Mon May 31 18:13:25 CEST 2010
 
+For CONFIG_PREEMPT=y kernels the sched_switch(.prev_state) argument
+isn't useful because we can get preempted with current->state !=
+TASK_RUNNING without actually getting removed from the runqueue.
 
-And that is all it said ever after I captured a footage of some seconds.
-I used the following command:
-$>  dvgrab -a -f raw -t video-
+Cure this by treating all preempted tasks as runnable from the
+tracer's point of view.
 
-Then I switched off the camera, and still there were no messages in the log.
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+---
+ include/trace/events/sched.h |   19 ++++++++++++++++++-
+ 1 file changed, 18 insertions(+), 1 deletion(-)
 
-So, what is verdict?
-
-Meanwhile, I will continue using this kernel.
-
-Thanks.
-
--- 
-
-Please reply to this list only. I read this list on its corresponding
-newsgroup on gmane.org. Replies sent to my email address are just
-filtered to a folder in my mailbox and get periodically deleted without
-ever having been read.
+Index: linux-2.6/include/trace/events/sched.h
+===================================================================
+--- linux-2.6.orig/include/trace/events/sched.h
++++ linux-2.6/include/trace/events/sched.h
+@@ -115,6 +115,23 @@ DEFINE_EVENT(sched_wakeup_template, sche
+ 	     TP_PROTO(struct task_struct *p, int success),
+ 	     TP_ARGS(p, success));
+ 
++#ifdef CREATE_TRACE_POINTS
++static inline long __trace_sched_switch_state(struct task_struct *p)
++{
++	long state = p->state;
++
++#ifdef CONFIG_PREEMPT
++	/*
++	 * For all intents and purposes a preempted task is a running task.
++	 */
++	if (task_thread_info(p)->preempt_count & PREEMPT_ACTIVE)
++		state = TASK_RUNNING;
++#endif
++
++	return state;
++}
++#endif
++
+ /*
+  * Tracepoint for task switches, performed by the scheduler:
+  */
+@@ -139,7 +156,7 @@ TRACE_EVENT(sched_switch,
+ 		memcpy(__entry->next_comm, next->comm, TASK_COMM_LEN);
+ 		__entry->prev_pid	= prev->pid;
+ 		__entry->prev_prio	= prev->prio;
+-		__entry->prev_state	= prev->state;
++		__entry->prev_state	= __trace_sched_switch_state(prev);
+ 		memcpy(__entry->prev_comm, prev->comm, TASK_COMM_LEN);
+ 		__entry->next_pid	= next->pid;
+ 		__entry->next_prio	= next->prio;
 
