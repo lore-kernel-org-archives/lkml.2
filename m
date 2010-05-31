@@ -1,30 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756595Ab0EaJJ0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 May 2010 05:09:26 -0400
-Received: from ch-smtp02.sth.basefarm.net ([80.76.149.213]:47709 "EHLO
-	ch-smtp02.sth.basefarm.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751590Ab0EaJJZ convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 May 2010 05:09:25 -0400
-X-Greylist: delayed 1230 seconds by postgrey-1.27 at vger.kernel.org; Mon, 31 May 2010 05:09:24 EDT
-Message-ID: <1970068.31971275294228555.JavaMail.defaultUser@defaultHost>
-Date: Mon, 31 May 2010 10:23:48 +0200 (CEST)
-From: NOKIA UKONLINE PROMO AWARD 2010 <leif.lindeskov@comhem.se>
-Reply-To: NOKIA UKONLINE PROMO AWARD 2010 <leif.lindeskov@comhem.se>
-Subject: YOU HAVE WON NOKIA AWARD CONTACT; Nokiaclaimunit77@9.cn
+	id S1756409Ab0EaJPh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 May 2010 05:15:37 -0400
+Received: from smtp.nokia.com ([192.100.122.233]:31090 "EHLO
+	mgw-mx06.nokia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755889Ab0EaJPf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 31 May 2010 05:15:35 -0400
+Message-ID: <4C037E0D.6030708@nokia.com>
+Date: Mon, 31 May 2010 12:14:53 +0300
+From: Adrian Hunter <adrian.hunter@nokia.com>
+User-Agent: Thunderbird 2.0.0.24 (X11/20100411)
 MIME-Version: 1.0
-Content-Type: text/plain;charset="ISO-8859-15"
-Content-Transfer-Encoding: 8BIT
-X-Originating-IP: 10.2.6.80
-X-Scan-Result: No virus found in message 1OJ0fG-0002ec-7J.
-X-Scan-Signature: ch-smtp02.sth.basefarm.net 1OJ0fG-0002ec-7J 370a3f2e3bbc6ebf76343a9a60b4da9c
-To: unlisted-recipients:; (no To-header on input)
+To: Christoph Hellwig <hch@infradead.org>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+       "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
+       LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC][PATCH] mmc: add an ioctl for erasing
+References: <4BF68EFC.70101@nokia.com> <20100521140714.GB15070@infradead.org> <4C037731.5030301@nokia.com> <20100531084709.GA7784@infradead.org>
+In-Reply-To: <20100531084709.GA7784@infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 31 May 2010 09:14:39.0268 (UTC) FILETIME=[B261CE40:01CB00A1]
+X-Nokia-AV: Clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-CONGRATULATION !!! YOU HAVE WON GB£850,000.00.POUNDS STERLING IN THE ON-
-GOING (NOKIA UKONLINE PROMO AWARD 2010). CONTACT THE FINANCE DEPARTMENT 
-OFFICER DR. DAVID GORDON ON EMAIL: Nokiaclaimunit77@9.cn , TEL:+44-704-
-576-2818 DIRECT ALL EMAILS TO Nokiaclaimunit77@9.cn
+Christoph Hellwig wrote:
+> On Mon, May 31, 2010 at 11:45:37AM +0300, Adrian Hunter wrote:
+>> Sorry for the slow reply, I have been away.
+>>
+>> Connecting erase to discard was rejected for performance reasons in 2008.
+>> Refer:
+>>
+>> 	http://thread.gmane.org/gmane.linux.file-systems/25378/focus=25606
+> 
+> The discard implementation changed a lot since those days.  Discard
+> requests now have their own request size limitation which is separate
+> form that for normal requests, and we also store the alignment
+> requirement for them separately.
+> 
+
+
+I tested extensively at that time with all changes necessary to allow
+discards to produce MMC erases that work with maximum efficacy.  There was
+no performance benefit and operations like file deletion were much slower.
+
+If connecting discard to MMC erase does not always improve performance, then
+many people will have to change their mount options to include nodiscard.
+Alternatively, if the connection is an optional configuration, then the
+ioctl won't work all the time.
+
+The erase ioctl needs to be separate from discard, which means it can be
+made to support secure erase also.
