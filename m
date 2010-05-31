@@ -1,118 +1,156 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756911Ab0EaSYF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 May 2010 14:24:05 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:39287 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751581Ab0EaSYD (ORCPT
+	id S1756919Ab0EaS12 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 May 2010 14:27:28 -0400
+Received: from one.firstfloor.org ([213.235.205.2]:54124 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755538Ab0EaS11 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 May 2010 14:24:03 -0400
-Date: Mon, 31 May 2010 11:19:14 -0700 (PDT)
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-cc: Rusty Russell <rusty@rustcorp.com.au>, Brandon Philips <brandon@ifup.org>,
-       "Rafael J. Wysocki" <rjw@sisk.pl>, LKML <linux-kernel@vger.kernel.org>,
-       Jon Masters <jonathan@jonmasters.org>, Tejun Heo <htejun@gmail.com>,
-       Masami Hiramatsu <mhiramat@redhat.com>,
-       Kay Sievers <kay.sievers@vrfy.org>
-Subject: Re: [PATCH 2/2] module: fix bne2 "gave up waiting for init of module
- libcrc32c"
-In-Reply-To: <20100531094834.c1a684d1.akpm@linux-foundation.org>
-Message-ID: <alpine.LFD.2.00.1005311100220.3986@i5.linux-foundation.org>
-References: <201005252300.07739.rjw@sisk.pl> <201005312130.17038.rusty@rustcorp.com.au> <201005312131.43238.rusty@rustcorp.com.au> <201005312132.28631.rusty@rustcorp.com.au> <20100531094834.c1a684d1.akpm@linux-foundation.org>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	Mon, 31 May 2010 14:27:27 -0400
+Date: Mon, 31 May 2010 20:27:24 +0200
+From: Andi Kleen <andi@firstfloor.org>
+To: Milan Broz <mbroz@redhat.com>
+Cc: Andi Kleen <andi@firstfloor.org>,
+       device-mapper development <dm-devel@redhat.com>,
+       herbert@gondor.hengli.com.au, linux-kernel@vger.kernel.org,
+       agk@redhat.com, ak@linux.intel.com
+Subject: Re: [dm-devel] [PATCH] DM-CRYPT: Scale to multiple CPUs
+Message-ID: <20100531182724.GG10766@basil.fritz.box>
+References: <20100531160425.GA20344@basil.fritz.box> <4C03F04D.4040200@redhat.com> <20100531174225.GE10766@basil.fritz.box> <4C03FB8E.1060109@redhat.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4C03FB8E.1060109@redhat.com>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-On Mon, 31 May 2010, Andrew Morton wrote:
+On Mon, May 31, 2010 at 08:10:22PM +0200, Milan Broz wrote:
+> On 05/31/2010 07:42 PM, Andi Kleen wrote:
+> > On Mon, May 31, 2010 at 07:22:21PM +0200, Milan Broz wrote:
+> >> On 05/31/2010 06:04 PM, Andi Kleen wrote:
+> >>> DM-CRYPT: Scale to multiple CPUs
+> >>>
+> >>> Currently dm-crypt does all encryption work per dmcrypt mapping in a
+> >>> single workqueue. This does not scale well when multiple CPUs
+> >>> are submitting IO at a high rate. The single CPU running the single
+> >>> thread cannot keep up with the encryption and encrypted IO performance
+> >>> tanks.
+> >>
+> >> This is true only if encryption run on the CPU synchronously.
+> > 
+> > That's the common case isn't it?
 > 
-> Who's returning -EBUSY?  request_module()?  If so, are you requiring
-> that all code which might call request_module() be correctly
-> propagating error codes back?  Please spell this all out?
+> Maybe now, but I think not in the near future.
 
-The problem roughly as follows:
+Why? 
 
-	task 1				task 2
-	------				------
+> >> 1) How this scale together with asynchronous
+> >> crypto which run in parallel in crypto API layer (and have limited
+> >> resources)? (AES-NI for example)
+> > 
+> > AES-NI is not asynchronous and doesn't have limited resources.
+> 
+> AES-NI used asynchronous crypto interface, was using asynchronous
+> crypto API cryptd daemon IIRC. So this changed?
 
-	request_module("crc32c")
-	gets module_mutex
-	...
-	drops module_mutex in otder to run "init"
-					request_module("bne2");
-					gets module_mutex
-					wants to link to crc32:
-					use_module("bne2", "crc32c")
-					.. 
-					strong_try_module_get() returns -EBUSY
-					because it's not initialized yet
-	calls libcrc32c_mod_init
-	 ...
-          request_module(optimized crc32c)
-	  waits for module_mutex
-	  that is held by the bne2 loading
+AFAIK all ciphers use the asynchronous interface,  but that 
+doesn't mean they are actually asynchronous. AES-NI certainly
+does not require running in a special thread. The only
+thing it doesn't support is running from interrupt context.
 
-					.. gives up .. BOOM ..
-					releases module_mutex
-					returns error
-	finishes successfully
+> 
+> >> 2) Per volume threads and mempools were added to solve low memory
+> >> problems (exhausted mempools), isn't now possible deadlock here again?
+> > 
+> > Increasing the number of parallel submitters does not increase deadlocks
+> > with mempool as long as they don't nest.  They would just
+> > block each other, but eventually make progress as one finishes. 
+> 
+> I mean if they nest of course, sorry for confusion.
+
+No change to that, it's the same as it always worked.
+
+Anyways, Right now you would need to nest more than 16 times I think
+to exhaust the mempool (or 8, but the pages are less critical I think)
+
+For me that seems like a "don't do that if hurts" situation.
+
+> 
+> > This only matters when you're low on memory anyways, 
+> > in the common case with enough memory there is full parallelism.
+> 
+> If it breaks not-so-common case, it is wrong approach:-)
+> It must not deadlock. We had already similar design before and it
+> was broken, that's why I am asking.
+
+There's no new deadlock possibility to my knowledge.
 
 
-because the module locking is pure and utter crap. It uses one hug lock 
-that it tries to hold for a long time, rather than protecting just the 
-parts it needs.
+> 
+> >> (Like one CPU, many dm-crypt volumes - thread waiting for allocating
+> >> page from exhausted mempool, blocking another request (another volume)
+> > 
+> > As long as they are not dependent that is not a deadlock
+> > (and they are not) 
+> 
+> Please try truecrupt, select AES-Twofish-Serpent mode and see how it is
+> nested... This is common case. (not that I like it :-)
 
-Rusty's fix is to just drop the lock around use_module(), and it seems to 
-work. It's may be right for 'use_module()', but totally wrong from a 
-conceptual locking standpoint, though - dropping the lock in the middle of 
-module loading may well "work", but who the hell knows what it really 
-results in?
+Nesting a few times is fine, you should just not nest
+more times than your mempool is big.
 
-IOW, it's one of those "this works, but it's very wrong" things. It makes 
-the whole module_mutex pretty much a random thing with even less semantics 
-than it has now. Right now it has some clear area that it protects - the 
-area may be too _big_, but at least it makes some amount of sense. 
+Again also this is a red herring here because my patch
+does not change the situation.
 
-The proper fix would appear to be to actually fix locking, which probably 
-implies turning most of "module_mutex" into a spinlock that protects just 
-the _real_ critical sections. I don't think there are any real blocking 
-things except for that "wait for another module to load" case, which is 
-obviously exactly where we cannot hold the lock in the first place.
+I guess if there was a way to determine the global nesting
+one could also increase the mempool allocation to match it.
+I don't think it has anything to do with my patch though.
 
-So rather than having one large area that gets protected but then dropping 
-the lock in random places, we should probably just have lots of small 
-areas that are clearly defined and protected.
+And if you will ever have any user who wants to nest more than 8/16
+times is also quite doubtful.
 
-And a _lot_ of the module loading doesn't need any locks at all. Much of 
-the real work is probably totally private, ie loading the actual module 
-and setting things up before we really expose it. We hold that big lock 
-over a ridiculously large area right now (basically _all_ of module 
-loading except the actual init sequence for a module).
+> 
+> >> Anyway, I still think that proper solution to this problem is run
+> >> parallel requests in cryptoAPI using async crypt interface,
+> >> IOW paralelize this on cryptoAPI layer which know best which resources
+> >> it can use for crypto work.
+> > 
+> > I discussed this with Herbert before and he suggested that it's better
+> > done in the submitter for the common case. There is a parallel crypt
+> > manager now (pcrypt), but it has more overhead than simply doing it directly.
+> 
+> Yes, I meant pcrypt extension.
+> Asynchronous crypto has big overhead, but that can be optimized eventually, no?
+Maybe it can be optimized, but for a fast CPU it will never
+be as fast as just doing it directly.
 
-> Also, I bet there are drivers which return -EBUSY from their
-> module_init() functions if the hardware's in an unexpected state.  What
-> happens?
+Communication between CPUs is slow.
 
-Nothing. See above: this is a special case, and it's really just about 
-strong_try_module_get() returning EBUSY for one special reason.
+> 
+> So we now run parallel crypt over parallel crypt in some case...
+> This is not good. And dm-crypt have no way to check if crypto
+> request will be processed synchronously or asynchronously.
 
-It's entirely possible that an interim fix (if we can't just fix the 
-locking) is to _not_ use "strong_try_module_get()" at all, but instead 
-just use "try_module_get()", and then after we've dropped the 
-module_mutex, but _before_ we call the "init" function for the module, we 
-wait for all the modules that this module depends on.
+It doesn't need to know.
 
-IOW, we'd link to other modules _before_ they are necessarily initialized 
-(their symbol tables will be as initialized as they are going to be), but 
-then before we call our own initialization routines we make sure that the 
-modules we linked to have finished theirs.
+Also even if there's asynchronous crypto it's more efficient
+to submit to it from multiple CPUs than to funnel everything
+through a single CPU bottleneck.
 
-Doesn't that sound like the logical thing to do? And it wouldn't change 
-any locking.
 
-			Linus
+> > It can be still used when it is instantiated, but it's likely
+> > only a win with very slow CPUs. For the case of reasonably fast
+> > CPUs all that matters is that it scales.
+> 
+> I know this is problem and parallel processing is needed here,
+> but it must not cause problems or slow  down that AES-NI case,
+> most of new cpu will support these extensions...
+
+My patch is the best way to make use of AES-NI.
+
+-Andi
+
+-- 
+ak@linux.intel.com -- Speaking for myself only.
