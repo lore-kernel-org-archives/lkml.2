@@ -1,57 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756154Ab0EaSDf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 May 2010 14:03:35 -0400
-Received: from mail.gmx.net ([213.165.64.20]:34616 "HELO mail.gmx.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1751317Ab0EaSDe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 May 2010 14:03:34 -0400
-X-Authenticated: #14349625
-X-Provags-ID: V01U2FsdGVkX1+L9FNw+ZeLXGpkZHdf+LrhMMoqkwP/wUV5yta/RE
-	9G3gelbupK9d7I
-Subject: Re: commit e9e9250b: sync wakeup bustage when waker is an RT task
-From: Mike Galbraith <efault@gmx.de>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>,
-       Thomas Gleixner <tglx@linutronix.de>
-In-Reply-To: <1275316109.27810.22969.camel@twins>
-References: <1273924628.10630.24.camel@marge.simson.net>
-	 <1273925052.1674.138.camel@laptop>
-	 <1273943222.8752.7.camel@marge.simson.net>
-	 <1273994510.7873.10.camel@marge.simson.net>
-	 <1275306978.27810.22357.camel@twins>
-	 <1275314209.17599.7.camel@marge.simson.net>
-	 <1275316109.27810.22969.camel@twins>
-Content-Type: text/plain
-Date: Mon, 31 May 2010 20:03:28 +0200
-Message-Id: <1275329008.8096.104.camel@marge.simson.net>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.24.1.1 
-Content-Transfer-Encoding: 7bit
-X-Y-GMX-Trusted: 0
+	id S1754858Ab0EaSGS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 May 2010 14:06:18 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:39436 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751317Ab0EaSGR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 31 May 2010 14:06:17 -0400
+Date: Mon, 31 May 2010 20:04:46 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Ben Blum <bblum@andrew.cmu.edu>
+Cc: linux-kernel@vger.kernel.org, containers@lists.linux-foundation.org,
+       akpm@linux-foundation.org, ebiederm@xmission.com, lizf@cn.fujitsu.com,
+       matthltc@us.ibm.com, menage@google.com
+Subject: Re: [RFC] [PATCH 2/2] cgroups: make procs file writable
+Message-ID: <20100531180446.GA16249@redhat.com>
+References: <20100530013002.GA762@ghc01.ghc.andrew.cmu.edu> <20100530013303.GC762@ghc01.ghc.andrew.cmu.edu> <20100531175242.GA14691@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100531175242.GA14691@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-05-31 at 16:28 +0200, Peter Zijlstra wrote:
-> On Mon, 2010-05-31 at 15:56 +0200, Mike Galbraith wrote:
->  
-> > > Does the below work?
-> > 
-> > Had to make a dinky adjustment for x86-tip-rt33, but yeah, the horrid
-> > latencies are gone.  (hm, skinnier than expected too)
-> 
-> 
-> Here's one that should be even skinnier ;-)
+On 05/31, Oleg Nesterov wrote:
+>
+> I only glanced into one function, cgroup_attach_proc(), and some things
+> look "obviously wrong". Sorry, I can't really read these patches now,
+> most probably I misunderstood the code...
 
-Cool, box is into skeletal.
+And, forgot to mention, I do not understand the PF_EXITING check in
+attach_task_by_pid() (and some others).
 
-> I knew I already had an accessor: power_of(), also, I duplicated the
-> cpu_power variable inside struct rq so we don't have to chase three
-> pointers to get it.
+At first glance, it buys nothing. PF_EXITING can be set right after
+the check. And, what if we have the process with the exited group-leader?
+In that case we can't use tgid to move this process?
 
-Looks good, but I'll retest anyway. 
-
-	-Mike
-
+Oleg.
 
