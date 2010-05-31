@@ -1,63 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756897Ab0EaR0O (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 May 2010 13:26:14 -0400
-Received: from mail.netservers.co.uk ([80.248.178.71]:44682 "EHLO
-	mail.netservers.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755555Ab0EaR0L (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 May 2010 13:26:11 -0400
-X-Greylist: delayed 3901 seconds by postgrey-1.27 at vger.kernel.org; Mon, 31 May 2010 13:26:10 EDT
-X-Envelope-From: ben@netservers.co.uk
-Message-ID: <4C03E1CD.4000809@netservers.co.uk>
-Date: Mon, 31 May 2010 17:20:29 +0100
-From: Ben McKeegan <ben@netservers.co.uk>
-User-Agent: Mozilla-Thunderbird 2.0.0.24 (X11/20100328)
-MIME-Version: 1.0
-To: Paul Mackerras <paulus@samba.org>
-CC: netdev@vger.kernel.org, linux-ppp@vger.kernel.org,
-       Alan Cox <alan@lxorguk.ukuu.org.uk>,
-       "Alexander E. Patrakov" <patrakov@gmail.com>,
-       Richard Hartmann <richih.mailinglist@gmail.com>,
-       linux-kernel@vger.kernel.org
-Subject: Re: [Patch] fix packet loss and massive ping spikes with PPP multi-link
-References: <2d460de71003260850x7f90d04cy79ac853464108182@mail.gmail.com> <20100326160226.0159ac3b@lxorguk.ukuu.org.uk> <4BACE827.4070006@gmail.com> <20100326170428.6c1ad66c@lxorguk.ukuu.org.uk> <4BB31E00.8060204@netservers.co.uk> <20100529021624.GA2538@brick.ozlabs.ibm.com>
-In-Reply-To: <20100529021624.GA2538@brick.ozlabs.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	id S1756907Ab0EaRaz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 May 2010 13:30:55 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:48176 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755254Ab0EaRax (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 31 May 2010 13:30:53 -0400
+Subject: Re: aha1542 oops caused by new request_irq routines
+From: James Bottomley <James.Bottomley@suse.de>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Tedheadster <tedheadster@gmail.com>, linux-scsi@vger.kernel.org,
+       linux-kernel <linux-kernel@vger.kernel.org>
+In-Reply-To: <alpine.LFD.2.00.1005311914560.2933@localhost.localdomain>
+References: <AANLkTilB661W9H9IPxn9TGBvv-omVnAh43r3XR5uM58m@mail.gmail.com>
+	 <1275316364.2823.22.camel@mulgrave.site>
+	 <alpine.LFD.2.00.1005311829360.2933@localhost.localdomain>
+	 <1275325170.2823.79.camel@mulgrave.site>
+	 <alpine.LFD.2.00.1005311914560.2933@localhost.localdomain>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 31 May 2010 12:30:48 -0500
+Message-ID: <1275327048.2823.115.camel@mulgrave.site>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.2 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Paul Mackerras wrote:
-
->> I needed to do something similar a while back and I took a very
->> different approach, which I think is more flexible.   Rather than
->> implement a new round-robin scheduler I simply introduced a target
->> minimum fragment size into the fragment size calculation, as a per
->> bundle parameter that can be configured via a new ioctl.  This
->> modifies the algorithm so that it tries to limit the number of
->> fragments such that each fragment is at least the minimum size.  If
->> the minimum size is greater than the packet size it will not be
->> fragmented all but will instead just get sent down the next
->> available channel.
->>
->> A pppd plugin generates the ioctl call allowing this to be tweaked
->> per connection.  It is more flexible in that you can still have the
->> larger packets fragmented if you wish.
+On Mon, 2010-05-31 at 19:19 +0200, Thomas Gleixner wrote:
+> On Mon, 31 May 2010, James Bottomley wrote:
+> > On Mon, 2010-05-31 at 18:43 +0200, Thomas Gleixner wrote:
+> > > On Mon, 31 May 2010, James Bottomley wrote:
+> > > 
+> > > > On Mon, 2010-05-31 at 10:03 -0400, Tedheadster wrote:
+> > > > > I'm reliably getting this oops:
+> > > > > 
+> > > > > Configuring Adaptec (SCSI-ID 6) at IO:334, IRQ 10, DMA priority 6
+> > > > > BUG: sleeping function called from invalid context at mm/slub.c:1598
+> > > > > in_atomic(): 0, irqs_disabled(): 1, pid: 4782, name: modprobe
+> > > > > Pid: 4782, comm: modprobe Not tainted 2.6.30.10-105.2.23.RODATA.fc11.i586 #1
+> > > > > Call Trace:
+> > > > >  [<c0469e58>] ? request_threaded_irq+0x85/0x145
+> > > > >  [<c0422ab7>] __might_sleep+0xc4/0xc9
+> > > > >  [<c04a4322>] kmem_cache_alloc_notrace+0x29/0xb0
+> > > > >  [<c0469e58>] request_threaded_irq+0x85/0x145
+> > > > >  [<d086439c>] ? do_aha1542_intr_handle+0x0/0x2be [aha1542]
+> > > > >  [<d08696aa>] aha1542_detect+0x631/0x76f [aha1542]
+> > > > >  [<d0869841>] init_this_scsi_driver+0x59/0xc7 [aha1542]
+> > > > >  [<d08697e8>] ? init_this_scsi_driver+0x0/0xc7 [aha1542]
+> > > > >  [<c040114b>] do_one_initcall+0x51/0x13f
+> > > > >  [<c0451111>] sys_init_module+0x8b/0x192
+> > > > >  [<c0403535>] syscall_call+0x7/0xb
+> > > > > scsi5 : Adaptec 1542
+> > > > 
+> > > > So this one's a bit tricky.  aha1542 uses a global spinlock to give it
+> > > > thread safety and various other things.  In this case it's trying to use
+> > > > the lock to hold off the interrupt until everything is set up.
+> > > > 
+> > > > Now that we're doing a GFP_KERNEL allocation in the interrupt handler
+> > > > code you can't disable interrupts while calling request_irq since this
+> > > > is an old card liable to spurious interrupts as it gets poked in setup.
+> > > >
+> > > > I think a possible solution is this, since the mere act of installing an
+> > > > interrupt handler shouldn't trigger the problem.
+> > > > 
+> > > > However, I thought the pattern of disabling interrupts and setting up
+> > > > the handler and registers was a common one ... is there some way this is
+> > > > supposed to work now that doesn't involve altering the drivers?
+> > > 
+> > > Most drivers do the sane thing:
+> > > 
+> > >      Disable interrupts at the device level
+> > >      Install handler via request_irq()
+> > >      Setup stuff
+> > >      Enable interrupts at the device level
+> > 
+> > That only works for some hardware ... a lot of older hardware can't
+> > disable interrupts; the best you can do is to have the box physically
+> > not listening to the line.
+> > 
+> > > So no, there is no way this is supposed to work with drivers which
+> > > don't follow that simple scheme.
+> > > 
+> > > commit 0e43785c5 (irq: use GFP_KERNEL for action allocation in
+> > > request_irq()) changed that particular instance to GFP_KERNEL because
+> > > the request_irq code calls (and always did) code which cannot be
+> > > called in atomic contexts, e.g. the proc entry handling.
+> > 
+> > So, like I said, I think we can install the handler without tickling the
+> > hardware.  Ideally we'd like to install it IRQ_DISABLED and then call
+> > enable_irq after we're done with the setup, but that doesn't seem to be
+> > possible.
 > 
-> I like this a lot better than the other proposed patch.  It adds less
-> code because it uses the fact that ppp_mp_explode() already has a
-> round-robin capability using the ppp->nxchan field, plus it provides a
-> way to control it per bundle via pppd.
-> 
-> If you fix up the indentation issues (2-space indent in some of the
-> added code -- if you're using emacs, set c-basic-offset to 8), I'll
-> ack it and hopefully DaveM will pick it up.
+> We have a mechanism in place to do that, but it's not available for
+> drivers yet. If that's really a requirement, then we can make it
+> available with very little effort, but that does not resolve the
+> problem when the interrupt is shared and the interrupt line is already
+> enabled.
 
-Okay, I'll fix it up when I'm back at work Tuesday and submit (today is 
-a UK public holiday) and also dig out and fix up the userspace code to 
-go with it.
+Heh, well having this problem is usually a reason the driver disallows
+interrupt sharing.
 
-Ben.
+Like I said, I don't see a reason why installing the handler would
+trigger the interrupt, so lets try just moving the lock first.  I'd only
+need the install disabled if I weren't disabling interrupts during
+setup, which would be nice, but not necessary since this driver is coded
+to do that already.
+
+James
+
 
