@@ -1,89 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757180Ab0EaTI3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 May 2010 15:08:29 -0400
-Received: from caiajhbdcbhh.dreamhost.com ([208.97.132.177]:40020 "EHLO
-	homiemail-a15.g.dreamhost.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1756586Ab0EaTI0 (ORCPT
+	id S1757205Ab0EaTJY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 May 2010 15:09:24 -0400
+Received: from mail-pz0-f185.google.com ([209.85.222.185]:42482 "EHLO
+	mail-pz0-f185.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753093Ab0EaTJW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 May 2010 15:08:26 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws; d=sysclose.org; h=date:from:to:cc
-	:subject:message-id:references:mime-version:content-type:
-	in-reply-to; q=dns; s=sysclose.org; b=WCPZul0R4kax22PHD4MN0jJiad
-	tMreaOYCOYEA+k2Jh78Wn3nF4AqYroE3afIShJ6J/xsiGUtPR+6OUQLlOFeeg5r2
-	CJFd/V9ayZF/qiJcmhuQT8Z59NnuAcCvj28QIBmmzvMU1Zhc0JWdTjUf6sX2JBHe
-	b1v4/nn1A5cB7QuyY=
-Date: Mon, 31 May 2010 16:08:20 -0300
-From: Flavio Leitner <fbl@sysclose.org>
-To: Cong Wang <amwang@redhat.com>
-Cc: linux-kernel@vger.kernel.org, Matt Mackall <mpm@selenic.com>,
-       netdev@vger.kernel.org, bridge@lists.linux-foundation.org,
-       Andy Gospodarek <gospo@redhat.com>, Neil Horman <nhorman@tuxdriver.com>,
-       Jeff Moyer <jmoyer@redhat.com>,
-       Stephen Hemminger <shemminger@linux-foundation.org>,
-       bonding-devel@lists.sourceforge.net, Jay Vosburgh <fubar@us.ibm.com>,
-       David Miller <davem@davemloft.net>
-Subject: Re: [v5 Patch 1/3] netpoll: add generic support for bridge and
- bonding devices
-Message-ID: <20100531190820.GA24569@sysclose.org>
-References: <20100505081514.5157.83783.sendpatchset@localhost.localdomain>
- <20100527180545.GA2345@sysclose.org>
- <4BFF2EA5.9090008@redhat.com>
- <20100528194041.GC2345@sysclose.org>
- <4C034FA4.5000401@redhat.com>
+	Mon, 31 May 2010 15:09:22 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=ag3w9QFlxKO8IYvaPBurFmcuSovIWNLZDlV6/e9YUrI4hfEPgqyDST1PfTt6QKaBj6
+         3apFwyMVbDSiUlK50X8hBSIM9pOXYz2kHj3zxwNtzsIKNHW89x9jMg5HRj/CccNLWlWS
+         GytdvuoJpj79+pTENLLsgfr5pc+GvZGf6w4xc=
+Date: Mon, 31 May 2010 12:09:12 -0700
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Wolfram Sang <w.sang@pengutronix.de>
+Cc: linux-i2c@vger.kernel.org, Jean Delvare <khali@linux-fr.org>,
+       George Joseph <george.joseph@fairview5.com>,
+       Riku Voipio <riku.voipio@iki.fi>,
+       Guillaume Ligneul <guillaume.ligneul@gmail.com>,
+       "Ben Dooks (embedded platforms)" <ben-linux@fluff.org>,
+       Alessandro Rubini <rubini@cvml.unipv.it>,
+       Richard Purdie <rpurdie@rpsys.net>, Colin Leroy <colin@colino.net>,
+       Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+       Mauro Carvalho Chehab <mchehab@infradead.org>,
+       Samuel Ortiz <sameo@linux.intel.com>,
+       Mark Brown <broonie@opensource.wolfsonmicro.com>,
+       David Woodhouse <dwmw2@infradead.org>,
+       Liam Girdwood <lrg@slimlogic.co.uk>,
+       Paul Gortmaker <p_gortmaker@yahoo.com>,
+       Alessandro Zummo <a.zummo@towertech.it>,
+       Greg Kroah-Hartman <gregkh@suse.de>, lm-sensors@lm-sensors.org,
+       linux-kernel@vger.kernel.org, linux-input@vger.kernel.org,
+       linuxppc-dev@ozlabs.org, linux-media@vger.kernel.org,
+       linux-mtd@lists.infradead.org, rtc-linux@googlegroups.com,
+       devel@driverdev.osuosl.org
+Subject: Re: [PATCH] drivers: remove all i2c_set_clientdata(client, NULL)
+Message-ID: <20100531190911.GC30712@core.coreip.homeip.net>
+References: <1275310552-14685-1-git-send-email-w.sang@pengutronix.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4C034FA4.5000401@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1275310552-14685-1-git-send-email-w.sang@pengutronix.de>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 31, 2010 at 01:56:52PM +0800, Cong Wang wrote:
-> Hi, Flavio,
+Hi Wolfram,
+
+On Mon, May 31, 2010 at 02:55:48PM +0200, Wolfram Sang wrote:
+> I2C-drivers can use the clientdata-pointer to point to private data. As I2C
+> devices are not really unregistered, but merely detached from their driver, it
+> used to be the drivers obligation to clear this pointer during remove() or a
+> failed probe(). As a couple of drivers forgot to do this, it was agreed that it
+> was cleaner if the i2c-core does this clearance when appropriate, as there is
+> no guarantee for the lifetime of the clientdata-pointer after remove() anyhow.
+> This feature was added to the core with commit
+> e4a7b9b04de15f6b63da5ccdd373ffa3057a3681 to fix the faulty drivers.
 > 
-> Please use the attached patch instead, try to see if it solves
-> all your problems.
-
-I tried and it hangs. No backtraces this time.
-The bond_change_active_slave() prints before NETDEV_BONDING_FAILOVER
-notification, so I think it won't work. 
-
-Please, correct if I'm wrong, but when a failover happens with your 
-patch applied, the netconsole would be disabled forever even with
-another healthy slave, right?
-
-fbl
-
-
+> As there is no need anymore to clear the clientdata-pointer, remove all current
+> occurrences in the drivers to simplify the code and prevent confusion.
 > 
-> Thanks a lot!
+> Signed-off-by: Wolfram Sang <w.sang@pengutronix.de>
+> Cc: Jean Delvare <khali@linux-fr.org>
+> ---
+> 
+> Some more notes:
+> 
+> I waited for rc1 as I knew there were some drivers/patches coming along which
+> needed to be processed, too.
+> 
+> I'd suggest that this goes via the i2c-tree, so we get rid of all occurences at
+> once.
 > 
 
-> diff --git a/drivers/net/netconsole.c b/drivers/net/netconsole.c
-> index ca142c4..2d1d594 100644
-> --- a/drivers/net/netconsole.c
-> +++ b/drivers/net/netconsole.c
-> @@ -666,7 +666,8 @@ static int netconsole_netdev_event(struct notifier_block *this,
->  	struct net_device *dev = ptr;
->  
->  	if (!(event == NETDEV_CHANGENAME || event == NETDEV_UNREGISTER ||
-> -	      event == NETDEV_BONDING_DESLAVE || event == NETDEV_GOING_DOWN))
-> +	      event == NETDEV_BONDING_DESLAVE || event == NETDEV_GOING_DOWN ||
-> +	      event == NETDEV_BONDING_FAILOVER))
->  		goto done;
->  
->  	spin_lock_irqsave(&target_list_lock, flags);
-> @@ -682,6 +683,7 @@ static int netconsole_netdev_event(struct notifier_block *this,
->  				/* Fall through */
->  			case NETDEV_GOING_DOWN:
->  			case NETDEV_BONDING_DESLAVE:
-> +			case NETDEV_BONDING_FAILOVER:
->  				nt->enabled = 0;
->  				break;
->  			}
+Frankly I'd prefer taking input stuff through my tree with the goal of
+.36 merge window just to minimize potential merge issues. This is a
+simple cleanup patch that has no dependencies, so there is little gain
+from doing it all in one go.
 
+Thanks.
 
 -- 
-Flavio
+Dmitry
