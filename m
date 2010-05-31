@@ -1,75 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756772Ab0EaJkh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 May 2010 05:40:37 -0400
-Received: from ozlabs.org ([203.10.76.45]:45285 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756529Ab0EaJkg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 May 2010 05:40:36 -0400
-From: Rusty Russell <rusty@rustcorp.com.au>
-To: Brandon Philips <brandon@ifup.org>
-Subject: Re: [Regression] Crash in load_module() while freeing args
-Date: Mon, 31 May 2010 19:10:31 +0930
-User-Agent: KMail/1.13.2 (Linux/2.6.32-21-generic; KDE/4.4.2; i686; ; )
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       LKML <linux-kernel@vger.kernel.org>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Jon Masters <jonathan@jonmasters.org>, Tejun Heo <htejun@gmail.com>,
-       Masami Hiramatsu <mhiramat@redhat.com>
-References: <201005252300.07739.rjw@sisk.pl> <201005271456.20003.rusty@rustcorp.com.au> <20100527184602.GF7351@jenkins.ifup.org>
-In-Reply-To: <20100527184602.GF7351@jenkins.ifup.org>
+	id S1756789Ab0EaJnF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 May 2010 05:43:05 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:63589 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756682Ab0EaJnC convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 31 May 2010 05:43:02 -0400
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201005311910.32407.rusty@rustcorp.com.au>
+In-Reply-To: <Pine.LNX.4.44L0.1005292026080.6300-100000@netrider.rowland.org>
+References: <AANLkTik_4ezDAQoAQjkpEgwD9SLKeOjDzy2H7T2v6uCP@mail.gmail.com>
+	<Pine.LNX.4.44L0.1005292026080.6300-100000@netrider.rowland.org>
+Date: Mon, 31 May 2010 02:43:01 -0700
+Message-ID: <AANLkTikxws5kmFhnBO1MLzE65ETka3Jy0R5ayAKTS1Lc@mail.gmail.com>
+Subject: Re: [linux-pm] [PATCH 0/8] Suspend block api (version 8)
+From: =?ISO-8859-1?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>
+To: Alan Stern <stern@rowland.harvard.edu>
+Cc: Florian Mickler <florian@mickler.org>,
+       Peter Zijlstra <peterz@infradead.org>,
+       "Rafael J. Wysocki" <rjw@sisk.pl>,
+       Linux PM <linux-pm@lists.linux-foundation.org>,
+       Brian Swetland <swetland@google.com>,
+       Alan Cox <alan@lxorguk.ukuu.org.uk>,
+       Matthew Garrett <mjg59@srcf.ucam.org>,
+       Thomas Gleixner <tglx@linutronix.de>,
+       LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 28 May 2010 04:16:02 am Brandon Philips wrote:
-> On 14:56 Thu 27 May 2010, Rusty Russell wrote:
-> > On Thu, 27 May 2010 08:26:25 am Rafael J. Wysocki wrote:
-> > > On Wednesday 26 May 2010, Rusty Russell wrote:
-> > > > I suspect that the increased parallelism enabled by this patch uncovered this
-> > > > bug.  Does this fix it?
-> > > 
-> > > Since the commit has been reverted, do you still want me to test this patch?
-> > > Quite frankly I'd prefer to test a complete replacement for that commit on top
-> > > of current -git.
-> > 
-> > OK, combo meal deal below, against Linus' latest.  I'd really appreciate
-> > a report, since AFAIK you're the only one hitting it, and only when that
-> > other (now reverted) patch was applied.
-> 
-> I tested this patch on my machine on top of Linus's latest and it
-> fixes the issue. Without the patch and using Linus's latest I
-> reproduce the original issue:
-> 
-> [   60.836022] bnx2: gave up waiting for init of module libcrc32c.
-> [   60.847997] bnx2: Unknown symbol crc32c
-> 
-> Note: Again, since I don't have bnx2x hardware I forced bnx2.ko to
-> depend on libcrc32c as bnx2x does:
->   http://ifup.org/~philips/review/bnx2-hack-to-use-libcrc32c.patch
-> 
-> > As an side to Brandon: I can see how my patch fixed an explicit
-> > request_module inside module_init (that's how I tested it).  I can't
-> > see how we have a problem with an implicit dependency such as
-> > bne2x->crc32.  Modules go into the live state without retaking the
-> > lock.
-> 
-> libcrc32c is doing an explicit request_module inside of its
-> module_init. Follow the call chain in libcrc32c_mod_init()
+2010/5/29 Alan Stern <stern@rowland.harvard.edu>:
+> On Sat, 29 May 2010, Arve Hjønnevåg wrote:
+>
+>> > In place of in-kernel suspend blockers, there will be a new type of QoS
+>> > constraint -- call it QOS_EVENTUALLY.  It's a very weak constraint,
+>> > compatible with all cpuidle modes in which runnable threads are allowed
+>> > to run (which is all of them), but not compatible with suspend.
+>> >
+>> This sound just like another API rename. It will work, but given that
+>> suspend blockers was the name least objectionable last time around,
+>> I'm not sure what this would solve.
+>
+> It's not just a rename.  By changing this into a QoS constraint, we
+> make it more generally useful.  Instead of standing on its own, it
+> becomes part of the PM-QOS framework.
+>
 
-Thanks for confirmation, I figured that must be the case as I pondered
-it on the weekend after sending my query.
+We cannot use the existing pm-qos framework. It is not safe to call
+from atomic context. Also, it does not have any state constraints, so
+it iterates over every registered constraint each time one of them
+changes. Nor does is currently provide any stats for debugging.
 
-Linus didn't like dropping the lock, so I'll create a more ambitious patch
-which reduces the lock coverage to those places which really need it.
+The original wakelock patchset supported a wakelock type so it could
+be used to block more then suspend, but I had to remove this because
+it "overlapped" with pm-qos. So, yes I do consider this just another
+rename.
 
-Cheers,
-Rusty.
+>> > There is no /sys/power/policy file.  In place of opportunistic suspend,
+>> > we have "QoS-based suspend".  This is initiated by userspace writing
+>> > "qos" to /sys/power/state, and it is very much like suspend-to-RAM.
+>>
+>> Why do you want to tie it to a specific state?
+>
+> I don't.  I suggested making it a veriant of suspend-to-RAM merely
+> because that's what you were using.  But Nigel's suggestion of having
+> "qos" variants of all the different suspend states makes sense.
+>
+>> > However a QoS-based suspend fails immediately if there are any active
+>>
+>> Fail or block? Your next paragraph said that it blocks for
+>> QOS_EVENTUALLY, but if normal constraints fail, you are still stuck in
+>> a retry loop.
+>
+> Normal (i.e., non QOS_EVENTUALLY) constraints aren't part of the
+> Android use case, so it wasn't clear how they should be treated.  On
+> further thought, it probably makes more sense to block for them too
+> instead of failing immediately.
+>
+>> > normal QoS constraints incompatible with system suspend, in other
+>> > words, any constraints requiring a throughput > 0 or an interrupt
+>> > latency shorter than the time required for a suspend-to-RAM/resume
+>> > cycle.
+>> >
+>> > If no such constraints are active, the QoS-based suspend blocks in an
+>> > interruptible wait until the number of active QOS_EVENTUALLY
+>>
+>> How do you implement this?
+>
+> I'm not sure what you mean.  The same way you implement any
+> interruptible wait.
+>
+
+I mean what should it wait on so that it gets interrupted by a
+userspace ipc call. I guess you want to send a signal in addition to
+the ipc. I still don't know why you want to do it this way though. It
+seems much simpler to just return immedeately and allow the same
+thread to cancel the request with another write.
+
+>> >        for (;;) {
+>> >                while (any IPC requests remain)
+>> >                        handle them;
+>> >                if (any processes need to prevent suspend)
+>> >                        sleep;
+>> >                else
+>> >                        write "qos" to /sys/power/state;
+>> >        }
+>> >
+>> > The idea is that receipt of a new IPC request will cause a signal to be
+>> > sent, interrupting the sleep or the "qos" write.
+>>
+>> What happen if the signal is right before (or even right after)
+>> calling write "qos". How does the signal handler stop the write?
+>
+> You're right, this is a serious problem.  The process would have to
+> give the kernel a signal mask to be used during the wait, as in ppoll
+> or pselect.  There ought to be a way to do this or something
+> equivalent.
+>
+> Alan Stern
+>
+>
 
 
+
+-- 
+Arve Hjønnevåg
