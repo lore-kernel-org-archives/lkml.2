@@ -1,39 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753059Ab0EaLn6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 May 2010 07:43:58 -0400
-Received: from mx5.orcon.net.nz ([219.88.242.55]:58317 "EHLO mx5.orcon.net.nz"
+	id S1752907Ab0EaLrc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 May 2010 07:47:32 -0400
+Received: from hera.kernel.org ([140.211.167.34]:37162 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750960Ab0EaLn5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 May 2010 07:43:57 -0400
-X-Greylist: delayed 8944 seconds by postgrey-1.27 at vger.kernel.org; Mon, 31 May 2010 07:43:56 EDT
-Message-ID: <2983.91.121.198.190.1275297237.squirrel@mail.hyper.net.nz>
-Date: Mon, 31 May 2010 21:13:57 +1200 (NZST)
-Subject: PLEASE REPLY, I NEED YOUR HELP'
-From: "Mrs. Sarah Grant" <shqrant56@sify.com>
-Reply-To: shgrant56@sify.com
-User-Agent: SquirrelMail/1.4.5
+	id S1751762Ab0EaLrb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 31 May 2010 07:47:31 -0400
+Message-ID: <4C03A1C0.4020104@kernel.org>
+Date: Mon, 31 May 2010 13:47:12 +0200
+From: Tejun Heo <tj@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.1.9) Gecko/20100317 Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Priority: 3 (Normal)
-Importance: Normal
-X-DSPAM-Check: by mx5.orcon.net.nz on Mon, 31 May 2010 21:13:58 +1200
-X-DSPAM-Result: Spam
-X-DSPAM-Processed: Mon May 31 21:14:50 2010
-X-DSPAM-Confidence: 0.6075
-X-DSPAM-Probability: 1.0000
-To: unlisted-recipients:; (no To-header on input)
+To: Peter Zijlstra <peterz@infradead.org>
+CC: mingo@elte.hu, linux-kernel@vger.kernel.org,
+       Rusty Russell <rusty@rustcorp.com.au>, Mike Galbraith <efault@gmx.de>
+Subject: Re: [PATCH 2/4] sched: implement __set_cpus_allowed()
+References: <1273747705-7829-1-git-send-email-tj@kernel.org>	 <1273747705-7829-3-git-send-email-tj@kernel.org>	 <1275292866.27810.21441.camel@twins>  <4C03879A.8030505@kernel.org>	 <1275300084.27810.21850.camel@twins> <1275300165.27810.21858.camel@twins>	 <4C038A08.8090209@kernel.org> <1275300904.27810.21907.camel@twins>	 <4C038D18.9010006@kernel.org> <1275302796.27810.22049.camel@twins>
+In-Reply-To: <1275302796.27810.22049.camel@twins>
+X-Enigmail-Version: 1.0.1
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Mon, 31 May 2010 11:47:14 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hello,
 
+On 05/31/2010 12:46 PM, Peter Zijlstra wrote:
+> So workers _are_ thread bound and don't migrate, so for those I don't
+> see the problem, that is of course until we have to break affinity when
+> their CPU goes down, at which point we should clear PF_THREAD_BOUND I
+> think.
+> 
+> For the rescue thread, why not set PF_THREAD_BOUND when its running
+> worklets and clear it when done? That way we get extra checking that
+> people won't migrate it when its not allowed.
+> 
+> Does that work, or did I miss something?
 
-I am Mrs. Sarah Grant, the wife of Late Mr.Robert Grant, my husband was a
-business merchant in Russia before he died in the year 2003. When he was
-alive he deposited the sum of 7.5 Million Pounds with a Bank. Presently,
-I'm suffering from esophageal cancer, Please Stand-in as the beneficiary
-and collect the Funds from the Bank to finance Charity Organizations. If 
-interested, reply to: shgrant56@sify.com
+The rescuers migrate themselves so should be okay.  I still think it
+would be better to migrate back detached workers.  It's a slow path
+for sure but there's a big gaping hole between machine-slow and
+human-slow and works can be human-slow (ie. hotplug operation not
+finished in several minutes).  I'll see if that's implementable w/o
+adding an additional interface.
 
+Thanks.
+
+-- 
+tejun
