@@ -1,52 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753917Ab0EaMZx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 May 2010 08:25:53 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:28198 "EHLO mx1.redhat.com"
+	id S1754243Ab0EaMrx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 May 2010 08:47:53 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:38361 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751942Ab0EaMZw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 May 2010 08:25:52 -0400
-Date: Mon, 31 May 2010 15:20:56 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Rusty Russell <rusty@rustcorp.com.au>
-Cc: linux-kernel@vger.kernel.org, virtualization@lists.linux-foundation.org,
-       kvm@vger.kernel.org, qemu-devel@nongnu.org
-Subject: Re: [PATCHv2-RFC 0/2] virtio: put last seen used index into ring
-	itself
-Message-ID: <20100531122055.GB1704@redhat.com>
-References: <cover.1274903328.git.mst@redhat.com> <201005311716.43573.rusty@rustcorp.com.au>
+	id S1751745Ab0EaMrw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 31 May 2010 08:47:52 -0400
+Date: Mon, 31 May 2010 22:47:42 +1000
+From: Nick Piggin <npiggin@suse.de>
+To: Artem Bityutskiy <dedekind1@gmail.com>
+Cc: Al Viro <viro@ZenIV.linux.org.uk>, LKML <linux-kernel@vger.kernel.org>,
+       Jens Axboe <jens.axboe@oracle.com>, linux-fsdevel@vger.kernel.org
+Subject: Re: [PATCHv4 17/17] writeback: lessen sync_supers wakeup count
+Message-ID: <20100531124742.GG9453@laptop>
+References: <1274795352-3551-18-git-send-email-dedekind1@gmail.com>
+ <20100527065041.GA31073@ZenIV.linux.org.uk>
+ <20100527072240.GM22536@laptop>
+ <1274957469.13159.20.camel@localhost>
+ <20100527120737.GN22536@laptop>
+ <1274973693.15516.67.camel@localhost>
+ <20100527154435.GS22536@laptop>
+ <1275294352.2678.102.camel@localhost>
+ <20100531083844.GF9453@laptop>
+ <1275296644.2678.122.camel@localhost>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <201005311716.43573.rusty@rustcorp.com.au>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <1275296644.2678.122.camel@localhost>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 31, 2010 at 05:16:42PM +0930, Rusty Russell wrote:
-> On Thu, 27 May 2010 05:20:35 am Michael S. Tsirkin wrote:
-> > Here's a rewrite of the original patch with a new layout.
-> > I haven't tested it yet so no idea how this performs, but
-> > I think this addresses the cache bounce issue raised by Avi.
-> > Posting for early flames/comments.
+On Mon, May 31, 2010 at 12:04:04PM +0300, Artem Bityutskiy wrote:
+> > On Mon, May 31, 2010 at 11:25:52AM +0300, Artem Bityutskiy wrote:
+> > > Hmm, but it looks like we cannot do that either. If we do
+> > > 
+> > > set_current_state(TASK_INTERRUPTIBLE);
+> > > if (supers_dirty)
+> > > 	bdi_arm_supers_timer();
+> > > schedule();
+> > > 
+> > > and the kernel is preemptive, is it possible that we get preempted
+> > > before we run 'bdi_arm_supers_timer()', but after we do
+> > > 'set_current_state(TASK_INTERRUPTIBLE)'. And we will never wake up if
+> > > the timer armed in mark_sb_dirty() went off.
+> > > 
+> > > So it looks like this is the way to go:
+> > > 
+> > > /*
+> > >  * Disable preemption for a while to make sure we are not
+> > >  * preempted before the timer is armed.
+> > >  */
+> > > preempt_disable();
+> > > set_current_state(TASK_INTERRUPTIBLE);
+> > > if (supers_dirty)
+> > > 	bdi_arm_supers_timer();
+> > > preempt_enable();
+> > > schedule();
+> > 
+> > This should not be required because preempt is transparent to these
+> > task sleep/schedule APIs.
+> > 
+> > The preempt event will not clear TASK_INTERRUPTIBLE, and so the timer
+> > wakeup will set it to TASK_RUNNING (whether or not it has called
+> > schedule() yet and whether or not it is currently preempted).
 > 
-> Sorry, not without some evidence that it'll actually reduce cacheline
-> bouncing.  I *think* it will, but it's not obvious: the host may keep
-> looking at avail_idx as we're updating last_seen.  Or does qemu always
-> look at both together anyway?
-> Can someone convince me this is a win?
-> Rusty.
+> Nick, I'm sorry, but could you please elaborate:
+> 
+> set_current_state(TASK_INTERRUPTIBLE);
+> /* 
+>  * XXX: what if we are preempted here. No timer is armed. Our state is
+>  * TASK_INTERRUPTIBLE, supers_dirty is 1, so no one will ever wake us
+>  * up. Thus, we'll sleep forever.
+>  */
+> if (supers_dirty)
+> 	bdi_arm_supers_timer();
+> schedule();
+> 
+> Not sure, but I did quick search and it looks like in preemptive kernel,
+> an interrupt may happen in the XXX place above, then it will call
+> 'preempt_schedule_irq()', which sill call 'schedule()'.
 
-What really happens is host looks at flags and last_seen together.
-And flags happens to be in the same cache line with avail idx.
-So to get an obvious win, we should put flags and last_seen
-in a separate cache line from avail, which us easy - just add some padding.
+Yes, preempt does not participate in tsak sleeping exactly for reasons
+such as this.
 
-And I'll relax the requirement from guest to only require it to update
-last_seen when interrupts are enabled. This way flags and
-last_seen are written together and read together.
+>From kernel/sched.c:schedule()
 
-Makes sense?
--- 
-MST
+        if (prev->state && !(preempt_count() & PREEMPT_ACTIVE)) {
+                if (unlikely(signal_pending_state(prev->state, prev)))
+                        prev->state = TASK_RUNNING;
+                else
+                        deactivate_task(rq, prev, DEQUEUE_SLEEP);
+                switch_count = &prev->nvcsw;
+        }
+
+If the task is not running, then is only removed from the runqueue
+(or reset to running in case of pending signal) IFF it has not been
+scheduled from an involuntary kernel preemption.
+
+So in the XXX region, the task will actually be allowed to run again
+until it calls schedule().
+
