@@ -1,56 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756409Ab0EaJPh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 May 2010 05:15:37 -0400
-Received: from smtp.nokia.com ([192.100.122.233]:31090 "EHLO
-	mgw-mx06.nokia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755889Ab0EaJPf (ORCPT
+	id S1756492Ab0EaJQr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 May 2010 05:16:47 -0400
+Received: from mail-pz0-f204.google.com ([209.85.222.204]:48259 "EHLO
+	mail-pz0-f204.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755889Ab0EaJQq convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 May 2010 05:15:35 -0400
-Message-ID: <4C037E0D.6030708@nokia.com>
-Date: Mon, 31 May 2010 12:14:53 +0300
-From: Adrian Hunter <adrian.hunter@nokia.com>
-User-Agent: Thunderbird 2.0.0.24 (X11/20100411)
+	Mon, 31 May 2010 05:16:46 -0400
 MIME-Version: 1.0
-To: Christoph Hellwig <hch@infradead.org>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-       "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
-       LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC][PATCH] mmc: add an ioctl for erasing
-References: <4BF68EFC.70101@nokia.com> <20100521140714.GB15070@infradead.org> <4C037731.5030301@nokia.com> <20100531084709.GA7784@infradead.org>
-In-Reply-To: <20100531084709.GA7784@infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 31 May 2010 09:14:39.0268 (UTC) FILETIME=[B261CE40:01CB00A1]
-X-Nokia-AV: Clean
+In-Reply-To: <201005302202.39511.rjw@sisk.pl>
+References: <Pine.LNX.4.44L0.1005271253240.3239-100000@iolanthe.rowland.org>
+	<201005292227.15479.rjw@sisk.pl>
+	<AANLkTim6zsho4RSrseJostaOJe9lL4VNRKA3vDGJWJhK@mail.gmail.com>
+	<201005302202.39511.rjw@sisk.pl>
+Date: Mon, 31 May 2010 02:16:45 -0700
+Message-ID: <AANLkTilUQ2AG76nbK6LwI8_7zw0_yMSoAOr9pmuz7xrt@mail.gmail.com>
+Subject: Re: [linux-pm] [PATCH 0/8] Suspend block api (version 8)
+From: =?ISO-8859-1?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Florian Mickler <florian@mickler.org>,
+       Thomas Gleixner <tglx@linutronix.de>,
+       Matthew Garrett <mjg59@srcf.ucam.org>,
+       Alan Stern <stern@rowland.harvard.edu>,
+       Peter Zijlstra <peterz@infradead.org>, Paul@smtp1.linux-foundation.org,
+       LKML <linux-kernel@vger.kernel.org>, felipe.balbi@nokia.com,
+       Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
+       Linux PM <linux-pm@lists.linux-foundation.org>,
+       Alan Cox <alan@lxorguk.ukuu.org.uk>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Christoph Hellwig wrote:
-> On Mon, May 31, 2010 at 11:45:37AM +0300, Adrian Hunter wrote:
->> Sorry for the slow reply, I have been away.
+2010/5/30 Rafael J. Wysocki <rjw@sisk.pl>:
+> On Saturday 29 May 2010, Arve Hjønnevåg wrote:
+>> 2010/5/29 Rafael J. Wysocki <rjw@sisk.pl>:
+>> > On Saturday 29 May 2010, Arve Hjønnevåg wrote:
+>> >> 2010/5/28 Rafael J. Wysocki <rjw@sisk.pl>:
+>> >> > On Friday 28 May 2010, Arve Hjønnevåg wrote:
+>> >> >> On Fri, May 28, 2010 at 1:44 AM, Florian Mickler <florian@mickler.org> wrote:
+>> >> >> > On Thu, 27 May 2010 20:05:39 +0200 (CEST)
+>> >> >> > Thomas Gleixner <tglx@linutronix.de> wrote:
+>> >> > ...
+>> >> >> > To integrate this with the current way of doing things, i gathered it
+>> >> >> > needs to be implemented as an idle-state that does the suspend()-call?
+>> >> >> >
+>> >> >>
+>> >> >> I think it is better no not confuse this with idle. Since initiating
+>> >> >> suspend will cause the system to become not-idle, I don't think is is
+>> >> >> beneficial to initiate suspend from idle.
+>> >> >
+>> >> > It is, if the following two conditions hold simultaneously:
+>> >> >
+>> >> > (a) Doing full system suspend is ultimately going to bring you more energy
+>> >> >    savings than the (presumably lowest) idle state you're currently in.
+>> >> >
+>> >> > (b) You anticipate that the system will stay idle for a considerably long time
+>> >> >    such that it's worth suspending.
+>> >> >
+>> >>
+>> >> I still don't think this matters. If you are waiting for in interrupt
+>> >> that cannot wake you up from suspend, then idle is not an indicator
+>> >> that it is safe to enter suspend. I also don't think you can avoid any
+>> >> user-space suspend blockers by delaying suspend until the system goes
+>> >> idle since any page fault could cause it to go idle. Therefore I don't
+>> >> see a benefit in delaying suspend until idle when the last suspend
+>> >> blocker is released (it would only mask possible race conditions).
+>> >
+>> > I wasn't referring to suspend blockers, but to the idea of initiating full
+>> > system suspend from idle, which I still think makes sense.  If you are
+>> > waiting for an interrupt that cannot wake you from suspend, then
+>> > _obviously_ suspend should not be started.  However, if you're not waiting for
+>> > such an interrupt and the (a) and (b) above hold, it makes sense to start
+>> > suspend from idle.
+>> >
 >>
->> Connecting erase to discard was rejected for performance reasons in 2008.
->> Refer:
->>
->> 	http://thread.gmane.org/gmane.linux.file-systems/25378/focus=25606
-> 
-> The discard implementation changed a lot since those days.  Discard
-> requests now have their own request size limitation which is separate
-> form that for normal requests, and we also store the alignment
-> requirement for them separately.
-> 
+>> What about timers? When you suspend timers stop (otherwise it is just
+>> a deep-idle mode), and this could cause problems. Some drivers rely on
+>> timers if the hardware does not have a completion interrupt. It is not
+>> uncommon to see send command x then wait 200ms in a some hardware
+>> specs.
+>
+> QoS should be used in such cases.
+>
 
+I think it makes more sense to block suspend while wakeup events are
+pending than blocking it everywhere timers are used by code that could
+be called while handling wakeup events or other critical work. Also,
+even if you did block suspend everywhere timers where used you still
+have the race where a wakeup interrupt happens right after you decided
+to suspend. In other words, you still need to block suspend in all the
+same places as with the current opportunistic suspend code, so what is
+the benefit of delaying suspend until idle?
 
-I tested extensively at that time with all changes necessary to allow
-discards to produce MMC erases that work with maximum efficacy.  There was
-no performance benefit and operations like file deletion were much slower.
-
-If connecting discard to MMC erase does not always improve performance, then
-many people will have to change their mount options to include nodiscard.
-Alternatively, if the connection is an optional configuration, then the
-ioctl won't work all the time.
-
-The erase ioctl needs to be separate from discard, which means it can be
-made to support secure erase also.
+-- 
+Arve Hjønnevåg
