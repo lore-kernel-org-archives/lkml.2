@@ -1,58 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751190Ab0EaP6t (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 May 2010 11:58:49 -0400
-Received: from rere.qmqm.pl ([89.167.52.164]:51168 "EHLO rere.qmqm.pl"
+	id S1756251Ab0EaQE1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 May 2010 12:04:27 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:50232 "EHLO smtps.tip.net.au"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754938Ab0EaP6r (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 May 2010 11:58:47 -0400
-Date: Mon, 31 May 2010 17:58:46 +0200
-From: =?iso-8859-2?Q?Micha=B3_Miros=B3aw?= <mirq-linux@rere.qmqm.pl>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [RFC] [PATCH 1/2] mmc: split mmc_sd_init_card()
-Message-ID: <20100531155846.GA9493@rere.qmqm.pl>
-References: <1-1000-12432-1274803827-7569@rere.qmqm.pl> <20100528144027.3c868841.akpm@linux-foundation.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-2
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20100528144027.3c868841.akpm@linux-foundation.org>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1751317Ab0EaQE0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 31 May 2010 12:04:26 -0400
+Date: Tue, 1 Jun 2010 02:04:18 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Matthew Garrett <mjg59@srcf.ucam.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [NEXT] add x86 platform driver tree
+Message-Id: <20100601020418.e1853324.sfr@canb.auug.org.au>
+In-Reply-To: <20100531150450.GB19134@srcf.ucam.org>
+References: <20100531150450.GB19134@srcf.ucam.org>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Tue__1_Jun_2010_02_04_18_+1000_logAsG.Tmc94WEfp"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thanks for your review!
+--Signature=_Tue__1_Jun_2010_02_04_18_+1000_logAsG.Tmc94WEfp
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-On Fri, May 28, 2010 at 02:40:27PM -0700, Andrew Morton wrote:
-> On Tue, 25 May 2010 18:10:28 +0200 (CEST)
-> Micha__ Miros__aw <mirq-linux@rere.qmqm.pl> wrote:
-> > This is needed to avoid code duplication in SD-combo support.
-> hm.  Perhaps you could have told us a bit more about it than this.
-> > +int mmc_sd_get_cid(struct mmc_host *host, u32 ocr, u32 *cid)
-> > +int mmc_sd_get_csd(struct mmc_host *host, struct mmc_card *card)
-> > +int mmc_sd_setup_card(struct mmc_host *host, struct mmc_card *card,
-> > +unsigned mmc_sd_get_max_clock(struct mmc_card *card)
-> > +void mmc_sd_go_highspeed(struct mmc_card *card)
-> These are global symbols, but they are not exported to (other) modules.
-> That's odd.  I'd have expected to see them either `static' or
-> EXPORT_MODULE()d.
+Hi Matthew,
 
-This is all contained in mmc_core.ko and needs not be exported to other
-modules. A SD-combo card is a SD (memory) and SDIO in one package - the
-only changes needed are in initialization sequence, after which both
-parts are mostly independent.
+On Mon, 31 May 2010 16:04:50 +0100 Matthew Garrett <mjg59@srcf.ucam.org> wr=
+ote:
+>
+> Could you please add=20
+> git://git.kernel.org/pub/scm/linux/kernel/git/mjg59/platform-drivers-x86.=
+git=20
+> linux-next to the -next tree? This consists of x86-specific platform=20
+> drivers and is relatively quiet.
 
-> I'll take the lack of a signed-off-by: and the "RFC" as signal to not
-> apply these patches.
+I will add it from (later) today.
 
-I would like for this to get tested by other people first, but it looks
-like not many kernel developers use SD combo cards.
+Thanks for adding your subsystem tree as a participant of linux-next.  As
+you may know, this is not a judgment of your code.  The purpose of
+linux-next is for integration testing and to lower the impact of
+conflicts between subsystems in the next merge window.=20
 
-I'll resend the patches after applying your suggestions from the other
-mail.
+You will need to ensure that the patches/commits in your tree/series have
+been:
+     * submitted under GPL v2 (or later) and include the Contributor's
+	Signed-off-by,
+     * posted to the relevant mailing list,
+     * reviewed by you (or another maintainer of your subsystem tree),
+     * successfully unit tested, and=20
+     * destined for the current or next Linux merge window.
 
-Best Regards,
-Micha³ Miros³aw
+Basically, this should be just what you would send to Linus (or ask him
+to fetch).  It is allowed to be rebased if you deem it necessary.
 
+--=20
+Cheers,
+Stephen Rothwell=20
+sfr@canb.auug.org.au
+
+Legal Stuff:
+By participating in linux-next, your subsystem tree contributions are
+public and will be included in the linux-next trees.  You may be sent
+e-mail messages indicating errors or other issues when the
+patches/commits from your subsystem tree are merged and tested in
+linux-next.  These messages may also be cross-posted to the linux-next
+mailing list, the linux-kernel mailing list, etc.  The linux-next tree
+project and IBM (my employer) make no warranties regarding the linux-next
+project, the testing procedures, the results, the e-mails, etc.  If you
+don't agree to these ground rules, let me know and I'll remove your tree
+from participation in linux-next.
+
+--Signature=_Tue__1_Jun_2010_02_04_18_+1000_logAsG.Tmc94WEfp
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iEYEARECAAYFAkwD3gIACgkQjjKRsyhoI8yVzQCdEJ37e+kxSu3IAO3yxisMyMwq
+SocAoKfTaaY046Gw1uWmKxsHj/RlBLoA
+=6ASq
+-----END PGP SIGNATURE-----
+
+--Signature=_Tue__1_Jun_2010_02_04_18_+1000_logAsG.Tmc94WEfp--
