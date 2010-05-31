@@ -1,80 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755459Ab0EaQnq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 May 2010 12:43:46 -0400
-Received: from www.tglx.de ([62.245.132.106]:56580 "EHLO www.tglx.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754088Ab0EaQnp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 May 2010 12:43:45 -0400
-Date: Mon, 31 May 2010 18:43:34 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: James Bottomley <James.Bottomley@suse.de>
-cc: Tedheadster <tedheadster@gmail.com>, linux-scsi@vger.kernel.org,
-       linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: aha1542 oops caused by new request_irq routines
-In-Reply-To: <1275316364.2823.22.camel@mulgrave.site>
-Message-ID: <alpine.LFD.2.00.1005311829360.2933@localhost.localdomain>
-References: <AANLkTilB661W9H9IPxn9TGBvv-omVnAh43r3XR5uM58m@mail.gmail.com> <1275316364.2823.22.camel@mulgrave.site>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S1755506Ab0EaQqK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 May 2010 12:46:10 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:58831 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754972Ab0EaQqH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 31 May 2010 12:46:07 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=ZXQ5PxHEVHAjJf/z6Em9N2V7eyrHad24bjmvDadMj9oBylInUl3D1qLx9lAA/TQUp5
+         SgW8TEu9uCLnYgk4HTg6bBdzfbnkHKQx3TnbbAw4W4pQRwX+umnKqavKmSUTCDWx0G6E
+         nBpDwcI+Vi6WHyjTeF8t5WoHGsXftcquo1DMQ=
+Date: Mon, 31 May 2010 20:45:53 +0400
+From: Cyrill Gorcunov <gorcunov@gmail.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Ingo Molnar <mingo@elte.hu>,
+       =?iso-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>,
+       Robert Richter <robert.richter@amd.com>,
+       Arnaldo Carvalho de Melo <acme@redhat.com>,
+       LKML <linux-kernel@vger.kernel.org>,
+       Stephane Eranian <eranian@google.com>
+Subject: Re: [RFC] perf, x86: Segregate PMU workaraunds into
+	x86_pmu_quirk_ops structure
+Message-ID: <20100531164553.GD5489@lenovo>
+References: <20100529182409.GJ5322@lenovo> <1275157990.1645.519.camel@laptop>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1275157990.1645.519.camel@laptop>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 31 May 2010, James Bottomley wrote:
-
-> On Mon, 2010-05-31 at 10:03 -0400, Tedheadster wrote:
-> > I'm reliably getting this oops:
-> > 
-> > Configuring Adaptec (SCSI-ID 6) at IO:334, IRQ 10, DMA priority 6
-> > BUG: sleeping function called from invalid context at mm/slub.c:1598
-> > in_atomic(): 0, irqs_disabled(): 1, pid: 4782, name: modprobe
-> > Pid: 4782, comm: modprobe Not tainted 2.6.30.10-105.2.23.RODATA.fc11.i586 #1
-> > Call Trace:
-> >  [<c0469e58>] ? request_threaded_irq+0x85/0x145
-> >  [<c0422ab7>] __might_sleep+0xc4/0xc9
-> >  [<c04a4322>] kmem_cache_alloc_notrace+0x29/0xb0
-> >  [<c0469e58>] request_threaded_irq+0x85/0x145
-> >  [<d086439c>] ? do_aha1542_intr_handle+0x0/0x2be [aha1542]
-> >  [<d08696aa>] aha1542_detect+0x631/0x76f [aha1542]
-> >  [<d0869841>] init_this_scsi_driver+0x59/0xc7 [aha1542]
-> >  [<d08697e8>] ? init_this_scsi_driver+0x0/0xc7 [aha1542]
-> >  [<c040114b>] do_one_initcall+0x51/0x13f
-> >  [<c0451111>] sys_init_module+0x8b/0x192
-> >  [<c0403535>] syscall_call+0x7/0xb
-> > scsi5 : Adaptec 1542
+On Sat, May 29, 2010 at 08:33:10PM +0200, Peter Zijlstra wrote:
 > 
-> So this one's a bit tricky.  aha1542 uses a global spinlock to give it
-> thread safety and various other things.  In this case it's trying to use
-> the lock to hold off the interrupt until everything is set up.
+> On Sat, 2010-05-29 at 22:24 +0400, Cyrill Gorcunov wrote:
+> > @@ -924,7 +930,11 @@ x86_perf_event_set_period(struct perf_ev
+> >          */
+> >         atomic64_set(&hwc->prev_count, (u64)-left);
+> >  
+> > -       wrmsrl(hwc->event_base + idx,
+> > +       if (x86_pmu.quirks.perfctr_write)
+> > +               x86_pmu.quirks.perfctr_write(hwc->event_base + idx,
+> > +                               (u64)(-left) & x86_pmu.cntval_mask);
+> > +       else
+> > +               wrmsrl(hwc->event_base + idx,
+> >                         (u64)(-left) & x86_pmu.cntval_mask);
 > 
-> Now that we're doing a GFP_KERNEL allocation in the interrupt handler
-> code you can't disable interrupts while calling request_irq since this
-> is an old card liable to spurious interrupts as it gets poked in setup.
->
-> I think a possible solution is this, since the mere act of installing an
-> interrupt handler shouldn't trigger the problem.
+> This bit is rather ugly,.. not quite sure how to clean it up though.
+> Anybody got a bright idea?
 > 
-> However, I thought the pattern of disabling interrupts and setting up
-> the handler and registers was a common one ... is there some way this is
-> supposed to work now that doesn't involve altering the drivers?
 
-Most drivers do the sane thing:
+Yes, I know, only a bit lighter solution could be like in patch
+below, alternative instructions bring mess (and considering we
+may have paravirt turned on -- even more mess), jump labels...
+I didn't find them in tree, in which file(s) they are? I mean,
+are they under review now or merged in some place?
 
-     Disable interrupts at the device level
-     Install handler via request_irq()
-     Setup stuff
-     Enable interrupts at the device level
+So I guess plain test may be more-less fine here, hmm?
 
-So no, there is no way this is supposed to work with drivers which
-don't follow that simple scheme.
+	-- Cyrill
+---
+perf, x86: Make a second write to performance counter when needed
 
-commit 0e43785c5 (irq: use GFP_KERNEL for action allocation in
-request_irq()) changed that particular instance to GFP_KERNEL because
-the request_irq code calls (and always did) code which cannot be
-called in atomic contexts, e.g. the proc entry handling.
+On Netburst cpu we need a second write to performance counter to
+be sure it's updated properly.
 
-Thanks,
+Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
+---
+ arch/x86/kernel/cpu/perf_event.c    |   10 ++++++++++
+ arch/x86/kernel/cpu/perf_event_p4.c |    9 +++++++++
+ 2 files changed, 19 insertions(+)
 
-	tglx
+Index: linux-2.6.git/arch/x86/kernel/cpu/perf_event.c
+=====================================================================
+--- linux-2.6.git.orig/arch/x86/kernel/cpu/perf_event.c
++++ linux-2.6.git/arch/x86/kernel/cpu/perf_event.c
+@@ -220,6 +220,7 @@ struct x86_pmu {
+ 						 struct perf_event *event);
+ 	struct event_constraint *event_constraints;
+ 	void		(*quirks)(void);
++	int		perfctr_second_write;
+ 
+ 	int		(*cpu_prepare)(int cpu);
+ 	void		(*cpu_starting)(int cpu);
+@@ -926,6 +927,15 @@ x86_perf_event_set_period(struct perf_ev
+ 	atomic64_set(&hwc->prev_count, (u64)-left);
+ 
+ 	wrmsrl(hwc->event_base + idx,
++		(u64)(-left) & x86_pmu.cntval_mask);
++
++	/*
++	 * Due to erratum on certan cpu we need
++	 * a second write to be sure the register
++	 * is updated properly
++	 */
++	if (x86_pmu.perfctr_second_write)
++		wrmsrl(hwc->event_base + idx,
+ 			(u64)(-left) & x86_pmu.cntval_mask);
+ 
+ 	perf_event_update_userpage(event);
+Index: linux-2.6.git/arch/x86/kernel/cpu/perf_event_p4.c
+=====================================================================
+--- linux-2.6.git.orig/arch/x86/kernel/cpu/perf_event_p4.c
++++ linux-2.6.git/arch/x86/kernel/cpu/perf_event_p4.c
+@@ -829,6 +829,15 @@ static __initconst const struct x86_pmu 
+ 	.max_period		= (1ULL << 39) - 1,
+ 	.hw_config		= p4_hw_config,
+ 	.schedule_events	= p4_pmu_schedule_events,
++	/*
++	 * This handles erratum N15 in intel doc 249199-029,
++	 * the counter may not be updated correctly on write
++	 * so we need a second write operation to do the trick
++	 * (the official workaround didn't work)
++	 *
++	 * the former idea is taken from OProfile code
++	 */
++	.perfctr_second_write	= 1,
+ };
+ 
+ static __init int p4_pmu_init(void)
