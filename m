@@ -1,44 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753579Ab0EaL2V (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 May 2010 07:28:21 -0400
-Received: from mtagate3.de.ibm.com ([195.212.17.163]:33099 "EHLO
-	mtagate3.de.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751858Ab0EaL2T (ORCPT
+	id S1753516Ab0EaL3Q (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 May 2010 07:29:16 -0400
+Received: from moutng.kundenserver.de ([212.227.17.8]:64095 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752145Ab0EaL3P (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 May 2010 07:28:19 -0400
-Date: Mon, 31 May 2010 13:28:18 +0200
-From: Christof Schmitt <christof.schmitt@de.ibm.com>
-To: linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
-       linux-fsdevel@vger.kernel.org
-Subject: Wrong DIF guard tag on ext2 write
-Message-ID: <20100531112817.GA16260@schmichrtp.mainz.de.ibm.com>
+	Mon, 31 May 2010 07:29:15 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Olaf Hering <olaf@aepfle.de>
+Subject: Re: acquire_console_mutex: WARNING: at 2.6.33.4-rt20/kernel/mutex-debug.c:65 mutex_remove_waiter+0xe8/0x11c()
+Date: Mon, 31 May 2010 13:29:07 +0200
+User-Agent: KMail/1.12.2 (Linux/2.6.31-19-generic; KDE/4.3.2; x86_64; ; )
+Cc: linux-kernel@vger.kernel.org
+References: <20100524225357.GA19513@aepfle.de> <201005251318.37242.arnd@arndb.de> <20100530213902.GA3619@aepfle.de>
+In-Reply-To: <20100530213902.GA3619@aepfle.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-12-10)
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201005311329.07182.arnd@arndb.de>
+X-Provags-ID: V01U2FsdGVkX1+stAdxgU2ZI3N2KmeotqRhyif00P5wUEHgOhq
+ i2qF4s1G4cT4KYn2CnpH0Ee0HVe0e9lLkn/NlnpzFlbMiscJKq
+ VQAZQANIBkU9MG2zL27Ew==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When running tests with an ext2 filesystem on a device using DIF/DIX
-integrity data, i sometimes see invalid guard tags on write requests.
-To track down the problem, i patched the function sd_prep_fn in sd.c
-to verify the IP checksums in the guard tags against the actual data.
-Sometimes there is a mismatch and the write request fails when the HBA
-checks the guard tag.
+On Sunday 30 May 2010, Olaf Hering wrote:
+> > You could try to pull in the blk/tty branch from
+> > http://git.kernel.org/?p=linux/kernel/git/arnd/playground.git and enable
+> > CONFIG_TTY_MUTEX to see if that gives you better lockdep output,
+> > because that replaces the implicit dropping of the BKL with mutex operations
+> > that lockdep is aware of.
+> 
+> CONFIG_TTY_MUTEX depends on SMP and this ARM system does not support
+> CONFIG_SMP, its hidden by Kconfig dependencies.
+> 
+Ah right, sorry about that.
 
-Since the guard tags are created in Linux, it seems that the data
-attached to the write request changes between the generation in
-bio_integrity_generate and the call to sd_prep_fn.
+It should be
 
-Using ext3 or ext4 instead of ext2 does not show the problem.
+	depends on SMP || PREEMPT
 
-There is a bugzilla open at Redhat with the same symptom, but there is
-no data or activity:
-https://bugzilla.redhat.com/show_bug.cgi?id=574266
+	Arnd
 
-What would be the best way to track down this problem?
 
---
-Christof Schmitt
