@@ -1,53 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751398Ab0EaXtF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 May 2010 19:49:05 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:55275 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750935Ab0EaXtD (ORCPT
+	id S1751546Ab0EaXyb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 May 2010 19:54:31 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:36038 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750935Ab0EaXya (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 May 2010 19:49:03 -0400
+	Mon, 31 May 2010 19:54:30 -0400
 X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-To: Oleg Nesterov <oleg@redhat.com>
-Subject: Re: [PATCH 4/5] oom: the points calculation of child processes must use find_lock_task_mm() too
-Cc: kosaki.motohiro@jp.fujitsu.com, LKML <linux-kernel@vger.kernel.org>,
-       linux-mm <linux-mm@kvack.org>, David Rientjes <rientjes@google.com>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-       Nick Piggin <npiggin@suse.de>
-In-Reply-To: <20100531165658.GC9991@redhat.com>
-References: <20100531183636.184C.A69D9226@jp.fujitsu.com> <20100531165658.GC9991@redhat.com>
-Message-Id: <20100601084807.242D.A69D9226@jp.fujitsu.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+Date: Tue, 1 Jun 2010 08:50:06 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: "Luis Claudio R. Goncalves" <lclaudio@uudg.org>
+Cc: Minchan Kim <minchan.kim@gmail.com>,
+       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+       balbir@linux.vnet.ibm.com, Oleg Nesterov <oleg@redhat.com>,
+       linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+       Thomas Gleixner <tglx@linutronix.de>,
+       Peter Zijlstra <peterz@infradead.org>,
+       David Rientjes <rientjes@google.com>, Mel Gorman <mel@csn.ul.ie>,
+       williams@redhat.com
+Subject: Re: [RFC] oom-kill: give the dying task a higher priority
+Message-Id: <20100601085006.f732c049.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <20100531135227.GC19784@uudg.org>
+References: <20100528152842.GH11364@uudg.org>
+	<20100528154549.GC12035@barrios-desktop>
+	<20100528164826.GJ11364@uudg.org>
+	<20100531092133.73705339.kamezawa.hiroyu@jp.fujitsu.com>
+	<AANLkTikFk_HnZWPG0s_VrRkro2rruEc8OBX5KfKp_QdX@mail.gmail.com>
+	<20100531140443.b36a4f02.kamezawa.hiroyu@jp.fujitsu.com>
+	<AANLkTil75ziCd6bivhpmwojvhaJ2LVxwEaEaBEmZf2yN@mail.gmail.com>
+	<20100531145415.5e53f837.kamezawa.hiroyu@jp.fujitsu.com>
+	<AANLkTilcuY5e1DNmLhUWfXtiQgPUafz2zRTUuTVl-88l@mail.gmail.com>
+	<20100531155102.9a122772.kamezawa.hiroyu@jp.fujitsu.com>
+	<20100531135227.GC19784@uudg.org>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-Mailer: Becky! ver. 2.50.07 [ja]
-Date: Tue,  1 Jun 2010 08:48:58 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> And, I think we need another patch on top of this one. Note that
-> this list_for_each_entry(p->children) can only see the tasks forked
-> by p, it can't see other children forked by its sub-threads.
+On Mon, 31 May 2010 10:52:27 -0300
+"Luis Claudio R. Goncalves" <lclaudio@uudg.org> wrote:
+
+> | If an explanation as "acceralating all thread's priority in a process seems overkill"
+> | is given in changelog or comment, it's ok to me.
 > 
-> IOW, we need
+> If my understanding of badness() is right, I wouldn't be ashamed of saying
+> that it seems to be _a bit_ overkill. But I may be wrong in my
+> interpretation.
 > 
-> 	do {
-> 		list_for_each_entry(c, &t->children, sibling) {
-> 			...
-> 		}
-> 	} while_each_thread(p, t);
+> While re-reading the code I noticed that in select_bad_process() we can
+> eventually bump on an already dying task, case in which we just wait for
+> the task to die and avoid killing other tasks. Maybe we could boost the
+> priority of the dying task here too.
 > 
-> Probably the same for oom_kill_process().
-> 
-> What do you think?
+yes, nice catch.
 
-Makes perfectly sense. I have to do it!
-
-Thanks good reviewing!
-
-
-
+Thanks,
+-Kame
 
