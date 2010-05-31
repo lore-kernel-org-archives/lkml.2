@@ -1,61 +1,362 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751512Ab0EaXmm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 May 2010 19:42:42 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:43540 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750757Ab0EaXml (ORCPT
+	id S1751437Ab0EaXqR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 May 2010 19:46:17 -0400
+Received: from smtp-03.mandic.com.br ([200.225.81.143]:38544 "EHLO
+	smtp-03.mandic.com.br" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750763Ab0EaXqP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 May 2010 19:42:41 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=URGW9pz659RgjTlINgFmWl46MVKO5coHX6tZ9X1w3dLiVKoxL0gn8m1N08E//HsqD0
-         0C4OBWXcvmLVCIVKcrzQ5/HNqeDJL+ivUU6ZykuiBgn7JalmdhUAM4YjnIqSqeojrLMR
-         jOXiJWxhJWz7oGxdP+XuYjn31mAphmnRVxIRo=
-Message-ID: <4C04496E.3000303@gmail.com>
-Date: Mon, 31 May 2010 17:42:38 -0600
-From: Robert Hancock <hancockrwd@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-3.fc13 Thunderbird/3.0.4
-MIME-Version: 1.0
-To: Richard Tillmore <rtillmore@gmail.com>
-CC: linux-kernel@vger.kernel.org
-Subject: Re: resource piix4_smbus conflicts with ACPI region SMRG
-References: <AANLkTinmBxzM4IEgrY6gqokDhLJDrVyKd0cu75VaFR8Q@mail.gmail.com>
-In-Reply-To: <AANLkTinmBxzM4IEgrY6gqokDhLJDrVyKd0cu75VaFR8Q@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Mon, 31 May 2010 19:46:15 -0400
+From: Cesar Eduardo Barros <cesarb@cesarb.net>
+To: linux-mm@kvack.org
+Cc: linux-kernel@vger.kernel.org, Russell King <linux@arm.linux.org.uk>,
+       Ralf Baechle <ralf@linux-mips.org>, David Howells <dhowells@redhat.com>,
+       Koichi Yasutake <yasutake.koichi@jp.panasonic.com>,
+       Kyle McMartin <kyle@mcmartin.ca>, Helge Deller <deller@gmx.de>,
+       "James E.J. Bottomley" <jejb@parisc-linux.org>,
+       Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+       Paul Mackerras <paulus@samba.org>,
+       "David S. Miller" <davem@davemloft.net>,
+       Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+       "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
+       Arnd Bergmann <arnd@arndb.de>, Rusty Russell <rusty@rustcorp.com.au>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Cesar Eduardo Barros <cesarb@cesarb.net>
+Subject: [PATCH v2] Make kunmap_atomic() harder to misuse
+Date: Mon, 31 May 2010 20:45:54 -0300
+Message-Id: <1275349554-7621-1-git-send-email-cesarb@cesarb.net>
+X-Mailer: git-send-email 1.6.6.1
+In-Reply-To: <4C03932F.8000303@cesarb.net>
+References: <4C03932F.8000303@cesarb.net>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/31/2010 04:12 PM, Richard Tillmore wrote:
-> Hi,
->
-> I was running 2.6.30 until I had time to update.  Being a long weekend
-> I upgraded to 2.6.34-rc6 and noticed a few new messages in dmesg.  I
-> then installed 2.6.34 and the messages remain.
->
-> PCI: Ignoring host bridge windows from ACPI; if necessary, use
-> "pci=use_crs" and report a bug
-> ACPI: PCI Root Bridge [PCI0] (0000:00)
+kunmap_atomic() is currently at level -4 on Rusty's "Hard To Misuse"
+list[1] ("Follow common convention and you'll get it wrong"), except in
+some architectures when CONFIG_DEBUG_HIGHMEM is set[2][3].
 
-This is just an informational message.
+kunmap() takes a pointer to a struct page; kunmap_atomic(), however,
+takes takes a pointer to within the page itself. This seems to once in a
+while trip people up (the convention they are following is the one from
+kunmap()).
 
->
-> ACPI: resource piix4_smbus [io  0x0440-0x0447] conflicts with ACPI
-> region SMRG [??? 0x00000440-0x0000044f flags 0x47]
-> ACPI: If an ACPI driver is available for this device, you should use
-> it instead of the native driver
->
-> The system is a Tyan Tiger S1832 motherboard with a P3 850Mhz
-> processor running the latest bios.  Everything appears to work
-> properly so I am unsure what the messages mean beyond the obvious.  I
-> did a little research and was wondering if this is related to the no
-> bootmem patches.  I have:
+Make it much harder to misuse, by moving it to level 9 on Rusty's
+list[4] ("The compiler/linker won't let you get it wrong"). This is done
+by refusing to build if the type of its first argument is a pointer to a
+struct page.
 
-Unless you need to use anything on SMBus (hardware sensors, essentially) 
-you don't have to worry about that one. It means that the kernel has 
-detected that the BIOS may potentially access the SMBus controller which 
-may conflict with usage of the controller from within the OS.
+The real kunmap_atomic() is renamed to kunmap_atomic_notypecheck()
+(which is what you would call in case for some strange reason calling it
+with a pointer to a struct page is not incorrect in your code).
+
+The previous version of this patch was compile tested on x86-64.
+
+[1] http://ozlabs.org/~rusty/index.cgi/tech/2008-04-01.html
+[2] In these cases, it is at level 5, "Do it right or it will always
+    break at runtime."
+[3] At least mips and powerpc look very similar, and sparc also seems to
+    share a common ancestor with both; there seems to be quite some
+    degree of copy-and-paste coding here. The include/asm/highmem.h file
+    for these three archs mention x86 CPUs at its top.
+[4] http://ozlabs.org/~rusty/index.cgi/tech/2008-03-30.html
+[5] As an aside, could someone tell me why mn10300 uses unsigned long as
+    the first parameter of kunmap_atomic() instead of void *?
+
+Changes since -v1:
+  Rebased to 2.6.35-rc1
+  Add parisc which had been missed
+  Use Andrew Morton's suggestion to simplify the code
+  Add explanatory comment
+
+Cc: Russell King <linux@arm.linux.org.uk> (arch/arm)
+Cc: Ralf Baechle <ralf@linux-mips.org> (arch/mips)
+Cc: David Howells <dhowells@redhat.com> (arch/frv, arch/mn10300)
+Cc: Koichi Yasutake <yasutake.koichi@jp.panasonic.com> (arch/mn10300)
+Cc: Kyle McMartin <kyle@mcmartin.ca> (arch/parisc)
+Cc: Helge Deller <deller@gmx.de> (arch/parisc)
+Cc: "James E.J. Bottomley" <jejb@parisc-linux.org> (arch/parisc)
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org> (arch/powerpc)
+Cc: Paul Mackerras <paulus@samba.org> (arch/powerpc)
+Cc: "David S. Miller" <davem@davemloft.net> (arch/sparc)
+Cc: Thomas Gleixner <tglx@linutronix.de> (arch/x86)
+Cc: Ingo Molnar <mingo@redhat.com> (arch/x86)
+Cc: "H. Peter Anvin" <hpa@zytor.com> (arch/x86)
+Cc: x86@kernel.org (arch/x86)
+Cc: Arnd Bergmann <arnd@arndb.de> (include/asm-generic)
+Cc: Rusty Russell <rusty@rustcorp.com.au> ("Hard To Misuse" list)
+Signed-off-by: Cesar Eduardo Barros <cesarb@cesarb.net>
+---
+ arch/arm/include/asm/highmem.h       |    2 +-
+ arch/arm/mm/highmem.c                |    4 ++--
+ arch/frv/include/asm/highmem.h       |    2 +-
+ arch/mips/include/asm/highmem.h      |    4 ++--
+ arch/mips/mm/highmem.c               |    4 ++--
+ arch/mn10300/include/asm/highmem.h   |    2 +-
+ arch/parisc/include/asm/cacheflush.h |    2 +-
+ arch/powerpc/include/asm/highmem.h   |    2 +-
+ arch/powerpc/mm/highmem.c            |    4 ++--
+ arch/sparc/include/asm/highmem.h     |    2 +-
+ arch/sparc/mm/highmem.c              |    4 ++--
+ arch/x86/include/asm/highmem.h       |    2 +-
+ arch/x86/mm/highmem_32.c             |    4 ++--
+ include/linux/highmem.h              |   10 +++++++++-
+ 14 files changed, 28 insertions(+), 20 deletions(-)
+
+diff --git a/arch/arm/include/asm/highmem.h b/arch/arm/include/asm/highmem.h
+index feb988a..5aff581 100644
+--- a/arch/arm/include/asm/highmem.h
++++ b/arch/arm/include/asm/highmem.h
+@@ -36,7 +36,7 @@ extern void kunmap_high_l1_vipt(struct page *page, pte_t saved_pte);
+ extern void *kmap(struct page *page);
+ extern void kunmap(struct page *page);
+ extern void *kmap_atomic(struct page *page, enum km_type type);
+-extern void kunmap_atomic(void *kvaddr, enum km_type type);
++extern void kunmap_atomic_notypecheck(void *kvaddr, enum km_type type);
+ extern void *kmap_atomic_pfn(unsigned long pfn, enum km_type type);
+ extern struct page *kmap_atomic_to_page(const void *ptr);
+ #endif
+diff --git a/arch/arm/mm/highmem.c b/arch/arm/mm/highmem.c
+index 77b030f..128c2aa 100644
+--- a/arch/arm/mm/highmem.c
++++ b/arch/arm/mm/highmem.c
+@@ -73,7 +73,7 @@ void *kmap_atomic(struct page *page, enum km_type type)
+ }
+ EXPORT_SYMBOL(kmap_atomic);
+ 
+-void kunmap_atomic(void *kvaddr, enum km_type type)
++void kunmap_atomic_notypecheck(void *kvaddr, enum km_type type)
+ {
+ 	unsigned long vaddr = (unsigned long) kvaddr & PAGE_MASK;
+ 	unsigned int idx = type + KM_TYPE_NR * smp_processor_id();
+@@ -94,7 +94,7 @@ void kunmap_atomic(void *kvaddr, enum km_type type)
+ 	}
+ 	pagefault_enable();
+ }
+-EXPORT_SYMBOL(kunmap_atomic);
++EXPORT_SYMBOL(kunmap_atomic_notypecheck);
+ 
+ void *kmap_atomic_pfn(unsigned long pfn, enum km_type type)
+ {
+diff --git a/arch/frv/include/asm/highmem.h b/arch/frv/include/asm/highmem.h
+index 68e4677..cb4c317 100644
+--- a/arch/frv/include/asm/highmem.h
++++ b/arch/frv/include/asm/highmem.h
+@@ -152,7 +152,7 @@ do {									\
+ 	asm volatile("tlbpr %0,gr0,#4,#1" : : "r"(vaddr) : "memory");	\
+ } while(0)
+ 
+-static inline void kunmap_atomic(void *kvaddr, enum km_type type)
++static inline void kunmap_atomic_notypecheck(void *kvaddr, enum km_type type)
+ {
+ 	switch (type) {
+         case 0:		__kunmap_atomic_primary(0, 2);	break;
+diff --git a/arch/mips/include/asm/highmem.h b/arch/mips/include/asm/highmem.h
+index 25adfb0..75753ca 100644
+--- a/arch/mips/include/asm/highmem.h
++++ b/arch/mips/include/asm/highmem.h
+@@ -48,14 +48,14 @@ extern void kunmap_high(struct page *page);
+ extern void *__kmap(struct page *page);
+ extern void __kunmap(struct page *page);
+ extern void *__kmap_atomic(struct page *page, enum km_type type);
+-extern void __kunmap_atomic(void *kvaddr, enum km_type type);
++extern void __kunmap_atomic_notypecheck(void *kvaddr, enum km_type type);
+ extern void *kmap_atomic_pfn(unsigned long pfn, enum km_type type);
+ extern struct page *__kmap_atomic_to_page(void *ptr);
+ 
+ #define kmap			__kmap
+ #define kunmap			__kunmap
+ #define kmap_atomic		__kmap_atomic
+-#define kunmap_atomic		__kunmap_atomic
++#define kunmap_atomic_notypecheck		__kunmap_atomic_notypecheck
+ #define kmap_atomic_to_page	__kmap_atomic_to_page
+ 
+ #define flush_cache_kmaps()	flush_cache_all()
+diff --git a/arch/mips/mm/highmem.c b/arch/mips/mm/highmem.c
+index 127d732..6a2b1bf 100644
+--- a/arch/mips/mm/highmem.c
++++ b/arch/mips/mm/highmem.c
+@@ -64,7 +64,7 @@ void *__kmap_atomic(struct page *page, enum km_type type)
+ }
+ EXPORT_SYMBOL(__kmap_atomic);
+ 
+-void __kunmap_atomic(void *kvaddr, enum km_type type)
++void __kunmap_atomic_notypecheck(void *kvaddr, enum km_type type)
+ {
+ #ifdef CONFIG_DEBUG_HIGHMEM
+ 	unsigned long vaddr = (unsigned long) kvaddr & PAGE_MASK;
+@@ -87,7 +87,7 @@ void __kunmap_atomic(void *kvaddr, enum km_type type)
+ 
+ 	pagefault_enable();
+ }
+-EXPORT_SYMBOL(__kunmap_atomic);
++EXPORT_SYMBOL(__kunmap_atomic_notypecheck);
+ 
+ /*
+  * This is the same as kmap_atomic() but can map memory that doesn't
+diff --git a/arch/mn10300/include/asm/highmem.h b/arch/mn10300/include/asm/highmem.h
+index 90f2abb..b0b187a 100644
+--- a/arch/mn10300/include/asm/highmem.h
++++ b/arch/mn10300/include/asm/highmem.h
+@@ -91,7 +91,7 @@ static inline unsigned long kmap_atomic(struct page *page, enum km_type type)
+ 	return vaddr;
+ }
+ 
+-static inline void kunmap_atomic(unsigned long vaddr, enum km_type type)
++static inline void kunmap_atomic_notypecheck(unsigned long vaddr, enum km_type type)
+ {
+ #if HIGHMEM_DEBUG
+ 	enum fixed_addresses idx = type + KM_TYPE_NR * smp_processor_id();
+diff --git a/arch/parisc/include/asm/cacheflush.h b/arch/parisc/include/asm/cacheflush.h
+index 4556d82..dba11ae 100644
+--- a/arch/parisc/include/asm/cacheflush.h
++++ b/arch/parisc/include/asm/cacheflush.h
+@@ -132,7 +132,7 @@ static inline void *kmap_atomic(struct page *page, enum km_type idx)
+ 	return page_address(page);
+ }
+ 
+-static inline void kunmap_atomic(void *addr, enum km_type idx)
++static inline void kunmap_atomic_notypecheck(void *addr, enum km_type idx)
+ {
+ 	kunmap_parisc(addr);
+ 	pagefault_enable();
+diff --git a/arch/powerpc/include/asm/highmem.h b/arch/powerpc/include/asm/highmem.h
+index a74c4ee..d10d64a 100644
+--- a/arch/powerpc/include/asm/highmem.h
++++ b/arch/powerpc/include/asm/highmem.h
+@@ -62,7 +62,7 @@ extern void *kmap_high(struct page *page);
+ extern void kunmap_high(struct page *page);
+ extern void *kmap_atomic_prot(struct page *page, enum km_type type,
+ 			      pgprot_t prot);
+-extern void kunmap_atomic(void *kvaddr, enum km_type type);
++extern void kunmap_atomic_notypecheck(void *kvaddr, enum km_type type);
+ 
+ static inline void *kmap(struct page *page)
+ {
+diff --git a/arch/powerpc/mm/highmem.c b/arch/powerpc/mm/highmem.c
+index c2186c7..857d417 100644
+--- a/arch/powerpc/mm/highmem.c
++++ b/arch/powerpc/mm/highmem.c
+@@ -52,7 +52,7 @@ void *kmap_atomic_prot(struct page *page, enum km_type type, pgprot_t prot)
+ }
+ EXPORT_SYMBOL(kmap_atomic_prot);
+ 
+-void kunmap_atomic(void *kvaddr, enum km_type type)
++void kunmap_atomic_notypecheck(void *kvaddr, enum km_type type)
+ {
+ #ifdef CONFIG_DEBUG_HIGHMEM
+ 	unsigned long vaddr = (unsigned long) kvaddr & PAGE_MASK;
+@@ -74,4 +74,4 @@ void kunmap_atomic(void *kvaddr, enum km_type type)
+ #endif
+ 	pagefault_enable();
+ }
+-EXPORT_SYMBOL(kunmap_atomic);
++EXPORT_SYMBOL(kunmap_atomic_notypecheck);
+diff --git a/arch/sparc/include/asm/highmem.h b/arch/sparc/include/asm/highmem.h
+index 3de42e7..ec23b0a 100644
+--- a/arch/sparc/include/asm/highmem.h
++++ b/arch/sparc/include/asm/highmem.h
+@@ -71,7 +71,7 @@ static inline void kunmap(struct page *page)
+ }
+ 
+ extern void *kmap_atomic(struct page *page, enum km_type type);
+-extern void kunmap_atomic(void *kvaddr, enum km_type type);
++extern void kunmap_atomic_notypecheck(void *kvaddr, enum km_type type);
+ extern struct page *kmap_atomic_to_page(void *vaddr);
+ 
+ #define flush_cache_kmaps()	flush_cache_all()
+diff --git a/arch/sparc/mm/highmem.c b/arch/sparc/mm/highmem.c
+index 7916feb..e139e9c 100644
+--- a/arch/sparc/mm/highmem.c
++++ b/arch/sparc/mm/highmem.c
+@@ -65,7 +65,7 @@ void *kmap_atomic(struct page *page, enum km_type type)
+ }
+ EXPORT_SYMBOL(kmap_atomic);
+ 
+-void kunmap_atomic(void *kvaddr, enum km_type type)
++void kunmap_atomic_notypecheck(void *kvaddr, enum km_type type)
+ {
+ #ifdef CONFIG_DEBUG_HIGHMEM
+ 	unsigned long vaddr = (unsigned long) kvaddr & PAGE_MASK;
+@@ -100,7 +100,7 @@ void kunmap_atomic(void *kvaddr, enum km_type type)
+ 
+ 	pagefault_enable();
+ }
+-EXPORT_SYMBOL(kunmap_atomic);
++EXPORT_SYMBOL(kunmap_atomic_notypecheck);
+ 
+ /* We may be fed a pagetable here by ptep_to_xxx and others. */
+ struct page *kmap_atomic_to_page(void *ptr)
+diff --git a/arch/x86/include/asm/highmem.h b/arch/x86/include/asm/highmem.h
+index a726650..8caac76 100644
+--- a/arch/x86/include/asm/highmem.h
++++ b/arch/x86/include/asm/highmem.h
+@@ -61,7 +61,7 @@ void *kmap(struct page *page);
+ void kunmap(struct page *page);
+ void *kmap_atomic_prot(struct page *page, enum km_type type, pgprot_t prot);
+ void *kmap_atomic(struct page *page, enum km_type type);
+-void kunmap_atomic(void *kvaddr, enum km_type type);
++void kunmap_atomic_notypecheck(void *kvaddr, enum km_type type);
+ void *kmap_atomic_pfn(unsigned long pfn, enum km_type type);
+ void *kmap_atomic_prot_pfn(unsigned long pfn, enum km_type type, pgprot_t prot);
+ struct page *kmap_atomic_to_page(void *ptr);
+diff --git a/arch/x86/mm/highmem_32.c b/arch/x86/mm/highmem_32.c
+index 63a6ba6..5e8fa12 100644
+--- a/arch/x86/mm/highmem_32.c
++++ b/arch/x86/mm/highmem_32.c
+@@ -53,7 +53,7 @@ void *kmap_atomic(struct page *page, enum km_type type)
+ 	return kmap_atomic_prot(page, type, kmap_prot);
+ }
+ 
+-void kunmap_atomic(void *kvaddr, enum km_type type)
++void kunmap_atomic_notypecheck(void *kvaddr, enum km_type type)
+ {
+ 	unsigned long vaddr = (unsigned long) kvaddr & PAGE_MASK;
+ 	enum fixed_addresses idx = type + KM_TYPE_NR*smp_processor_id();
+@@ -102,7 +102,7 @@ struct page *kmap_atomic_to_page(void *ptr)
+ EXPORT_SYMBOL(kmap);
+ EXPORT_SYMBOL(kunmap);
+ EXPORT_SYMBOL(kmap_atomic);
+-EXPORT_SYMBOL(kunmap_atomic);
++EXPORT_SYMBOL(kunmap_atomic_notypecheck);
+ EXPORT_SYMBOL(kmap_atomic_prot);
+ EXPORT_SYMBOL(kmap_atomic_to_page);
+ 
+diff --git a/include/linux/highmem.h b/include/linux/highmem.h
+index caafd05..67460f0 100644
+--- a/include/linux/highmem.h
++++ b/include/linux/highmem.h
+@@ -2,6 +2,7 @@
+ #define _LINUX_HIGHMEM_H
+ 
+ #include <linux/fs.h>
++#include <linux/kernel.h>
+ #include <linux/mm.h>
+ #include <linux/uaccess.h>
+ 
+@@ -72,7 +73,7 @@ static inline void *kmap_atomic(struct page *page, enum km_type idx)
+ }
+ #define kmap_atomic_prot(page, idx, prot)	kmap_atomic(page, idx)
+ 
+-#define kunmap_atomic(addr, idx)	do { pagefault_enable(); } while (0)
++#define kunmap_atomic_notypecheck(addr, idx)	do { pagefault_enable(); } while (0)
+ #define kmap_atomic_pfn(pfn, idx)	kmap_atomic(pfn_to_page(pfn), (idx))
+ #define kmap_atomic_to_page(ptr)	virt_to_page(ptr)
+ 
+@@ -81,6 +82,13 @@ static inline void *kmap_atomic(struct page *page, enum km_type idx)
+ 
+ #endif /* CONFIG_HIGHMEM */
+ 
++/* Prevent people trying to call kunmap_atomic() as if it were kunmap() */
++/* kunmap_atomic() should get the return value of kmap_atomic, not the page. */
++#define kunmap_atomic(addr, idx) do { \
++		BUILD_BUG_ON(__same_type((addr), struct page *)); \
++		kunmap_atomic_notypecheck((addr), (idx)); \
++	} while (0)
++
+ /* when CONFIG_HIGHMEM is not set these will be plain clear/copy_page */
+ #ifndef clear_user_highpage
+ static inline void clear_user_highpage(struct page *page, unsigned long vaddr)
+-- 
+1.6.6.1
+
