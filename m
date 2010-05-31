@@ -1,308 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755356Ab0EaG2X (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 May 2010 02:28:23 -0400
-Received: from mga11.intel.com ([192.55.52.93]:35761 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752052Ab0EaG2W (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 May 2010 02:28:22 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.53,331,1272870000"; 
-   d="scan'208";a="571911965"
-Subject: [PATCH -v3] KVM, Fix QEMU-KVM is killed by guest SRAO MCE (resend)
-From: Huang Ying <ying.huang@intel.com>
-To: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>,
-       Andi Kleen <andi@firstfloor.org>
-Cc: linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
-       Andrew Morton <akpm@linux-foundation.org>, masbock@linux.vnet.ibm.com,
-       Wu Fengguang <fengguang.wu@intel.com>
+	id S1755418Ab0EaGfi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 May 2010 02:35:38 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:57195 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751828Ab0EaGfg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 31 May 2010 02:35:36 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+To: Minchan Kim <minchan.kim@gmail.com>
+Subject: Re: [RFC] oom-kill: give the dying task a higher priority
+Cc: kosaki.motohiro@jp.fujitsu.com,
+       "Luis Claudio R. Goncalves" <lclaudio@uudg.org>,
+       balbir@linux.vnet.ibm.com, Oleg Nesterov <oleg@redhat.com>,
+       linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+       Thomas Gleixner <tglx@linutronix.de>,
+       Peter Zijlstra <peterz@infradead.org>,
+       David Rientjes <rientjes@google.com>, Mel Gorman <mel@csn.ul.ie>,
+       williams@redhat.com
+In-Reply-To: <AANLkTimg3PuUAmUUib2pdXNyEeniccLSCEvAm9jtKNji@mail.gmail.com>
+References: <20100529125136.62CA.A69D9226@jp.fujitsu.com> <AANLkTimg3PuUAmUUib2pdXNyEeniccLSCEvAm9jtKNji@mail.gmail.com>
+Message-Id: <20100531152424.739D.A69D9226@jp.fujitsu.com>
+MIME-Version: 1.0
 Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 31 May 2010 14:28:19 +0800
-Message-ID: <1275287299.3444.423.camel@yhuang-dev.sh.intel.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8bit
+X-Mailer: Becky! ver. 2.50.07 [ja]
+Date: Mon, 31 May 2010 15:35:30 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In common cases, guest SRAO MCE will cause corresponding poisoned page
-be un-mapped and SIGBUS be sent to QEMU-KVM, then QEMU-KVM will relay
-the MCE to guest OS.
+Hi
 
-But it is reported that if the poisoned page is accessed in guest
-after un-mapped and before MCE is relayed to guest OS, QEMU-KVM will
-be killed.
+> Hi, Kosaki.
+> 
+> On Sat, May 29, 2010 at 12:59 PM, KOSAKI Motohiro
+> <kosaki.motohiro@jp.fujitsu.com> wrote:
+> > Hi
+> >
+> >> oom-killer: give the dying task rt priority (v3)
+> >>
+> >> Give the dying task RT priority so that it can be scheduled quickly and die,
+> >> freeing needed memory.
+> >>
+> >> Signed-off-by: Luis Claudio R. Gonçalves <lgoncalv@redhat.com>
+> >
+> > Almostly acceptable to me. but I have two requests,
+> >
+> > - need 1) force_sig() 2)sched_setscheduler() order as Oleg mentioned
+> > - don't boost priority if it's in mem_cgroup_out_of_memory()
+> 
+> Why do you want to not boost priority if it's path of memcontrol?
+> 
+> If it's path of memcontrol and CONFIG_CGROUP_MEM_RES_CTLR is enabled,
+> mem_cgroup_out_of_memory will select victim task in memcg.
+> So __oom_kill_task's target task would be in memcg, I think.
 
-The reason is as follow. Because poisoned page has been un-mapped,
-guest access will cause guest exit and kvm_mmu_page_fault will be
-called. kvm_mmu_page_fault can not get the poisoned page for fault
-address, so kernel and user space MMIO processing is tried in turn. In
-user MMIO processing, poisoned page is accessed again, then QEMU-KVM
-is killed by force_sig_info.
+Yep.
+But priority boost naturally makes CPU starvation for out of the group
+processes.
+It seems to break cgroup's isolation concept.
 
-To fix the bug, kvm_mmu_page_fault send HWPOISON signal to QEMU-KVM
-and do not try kernel and user space MMIO processing for poisoned
-page.
+> As you and memcg guys don't complain this, I would be missing something.
+> Could you explain it? :)
 
+So, My points are, 
 
-Changelog:
+1) Usually priority boost is wrong idea. It have various side effect, but
+   system wide OOM is one of exception. In such case, all tasks aren't 
+   runnable, then, the downside is acceptable.
+2) memcg have OOM notification mechanism. If the admin need priority boost,
+   they can do it by their OOM-daemon.
 
-v3:
-
-- Make is_hwpoison_address workable for pud_large or pmd_large address.
-
-v2:
-
-- Use page table walker to determine whether the virtual address is
-  poisoned to avoid change user space interface (via changing
-  get_user_pages).
-
-- Wrap bad page processing into kvm_handle_bad_page to avoid code
-  duplicating.
-
-Reported-by: Max Asbock <masbock@linux.vnet.ibm.com>
-Signed-off-by: Huang Ying <ying.huang@intel.com>
----
- arch/x86/kvm/mmu.c         |   34 ++++++++++++++++++++++++++--------
- arch/x86/kvm/paging_tmpl.h |    7 ++-----
- include/linux/kvm_host.h   |    1 +
- include/linux/mm.h         |    8 ++++++++
- mm/memory-failure.c        |   30 ++++++++++++++++++++++++++++++
- virt/kvm/kvm_main.c        |   30 ++++++++++++++++++++++++++++--
- 6 files changed, 95 insertions(+), 15 deletions(-)
-
---- a/arch/x86/kvm/mmu.c
-+++ b/arch/x86/kvm/mmu.c
-@@ -32,6 +32,7 @@
- #include <linux/compiler.h>
- #include <linux/srcu.h>
- #include <linux/slab.h>
-+#include <linux/uaccess.h>
- 
- #include <asm/page.h>
- #include <asm/cmpxchg.h>
-@@ -1953,6 +1954,27 @@ static int __direct_map(struct kvm_vcpu
- 	return pt_write;
- }
- 
-+static void kvm_send_hwpoison_signal(struct kvm *kvm, gfn_t gfn)
-+{
-+	char buf[1];
-+	void __user *hva;
-+	int r;
-+
-+	/* Touch the page, so send SIGBUS */
-+	hva = (void __user *)gfn_to_hva(kvm, gfn);
-+	r = copy_from_user(buf, hva, 1);
-+}
-+
-+static int kvm_handle_bad_page(struct kvm *kvm, gfn_t gfn, pfn_t pfn)
-+{
-+	kvm_release_pfn_clean(pfn);
-+	if (is_hwpoison_pfn(pfn)) {
-+		kvm_send_hwpoison_signal(kvm, gfn);
-+		return 0;
-+	}
-+	return 1;
-+}
-+
- static int nonpaging_map(struct kvm_vcpu *vcpu, gva_t v, int write, gfn_t gfn)
- {
- 	int r;
-@@ -1976,10 +1998,8 @@ static int nonpaging_map(struct kvm_vcpu
- 	pfn = gfn_to_pfn(vcpu->kvm, gfn);
- 
- 	/* mmio */
--	if (is_error_pfn(pfn)) {
--		kvm_release_pfn_clean(pfn);
--		return 1;
--	}
-+	if (is_error_pfn(pfn))
-+		return kvm_handle_bad_page(vcpu->kvm, gfn, pfn);
- 
- 	spin_lock(&vcpu->kvm->mmu_lock);
- 	if (mmu_notifier_retry(vcpu, mmu_seq))
-@@ -2191,10 +2211,8 @@ static int tdp_page_fault(struct kvm_vcp
- 	mmu_seq = vcpu->kvm->mmu_notifier_seq;
- 	smp_rmb();
- 	pfn = gfn_to_pfn(vcpu->kvm, gfn);
--	if (is_error_pfn(pfn)) {
--		kvm_release_pfn_clean(pfn);
--		return 1;
--	}
-+	if (is_error_pfn(pfn))
-+		return kvm_handle_bad_page(vcpu->kvm, gfn, pfn);
- 	spin_lock(&vcpu->kvm->mmu_lock);
- 	if (mmu_notifier_retry(vcpu, mmu_seq))
- 		goto out_unlock;
---- a/arch/x86/kvm/paging_tmpl.h
-+++ b/arch/x86/kvm/paging_tmpl.h
-@@ -430,11 +430,8 @@ static int FNAME(page_fault)(struct kvm_
- 	pfn = gfn_to_pfn(vcpu->kvm, walker.gfn);
- 
- 	/* mmio */
--	if (is_error_pfn(pfn)) {
--		pgprintk("gfn %lx is mmio\n", walker.gfn);
--		kvm_release_pfn_clean(pfn);
--		return 1;
--	}
-+	if (is_error_pfn(pfn))
-+		return kvm_handle_bad_page(vcpu->kvm, walker.gfn, pfn);
- 
- 	spin_lock(&vcpu->kvm->mmu_lock);
- 	if (mmu_notifier_retry(vcpu, mmu_seq))
---- a/include/linux/kvm_host.h
-+++ b/include/linux/kvm_host.h
-@@ -266,6 +266,7 @@ extern pfn_t bad_pfn;
- 
- int is_error_page(struct page *page);
- int is_error_pfn(pfn_t pfn);
-+int is_hwpoison_pfn(pfn_t pfn);
- int kvm_is_error_hva(unsigned long addr);
- int kvm_set_memory_region(struct kvm *kvm,
- 			  struct kvm_userspace_memory_region *mem,
---- a/include/linux/mm.h
-+++ b/include/linux/mm.h
-@@ -1465,6 +1465,14 @@ extern int sysctl_memory_failure_recover
- extern void shake_page(struct page *p, int access);
- extern atomic_long_t mce_bad_pages;
- extern int soft_offline_page(struct page *page, int flags);
-+#ifdef CONFIG_MEMORY_FAILURE
-+int is_hwpoison_address(unsigned long addr);
-+#else
-+static inline int is_hwpoison_address(unsigned long addr)
-+{
-+	return 0;
-+}
-+#endif
- 
- extern void dump_page(struct page *page);
- 
---- a/mm/memory-failure.c
-+++ b/mm/memory-failure.c
-@@ -45,6 +45,7 @@
- #include <linux/page-isolation.h>
- #include <linux/suspend.h>
- #include <linux/slab.h>
-+#include <linux/swapops.h>
- #include "internal.h"
- 
- int sysctl_memory_failure_early_kill __read_mostly = 0;
-@@ -1296,3 +1297,32 @@ done:
- 	/* keep elevated page count for bad page */
- 	return ret;
- }
-+
-+int is_hwpoison_address(unsigned long addr)
-+{
-+	pgd_t *pgdp;
-+	pud_t pud, *pudp;
-+	pmd_t pmd, *pmdp;
-+	pte_t pte, *ptep;
-+	swp_entry_t entry;
-+
-+	pgdp = pgd_offset(current->mm, addr);
-+	if (!pgd_present(*pgdp))
-+		return 0;
-+	pudp = pud_offset(pgdp, addr);
-+	pud = *pudp;
-+	if (!pud_present(pud) || pud_large(pud))
-+		return 0;
-+	pmdp = pmd_offset(pudp, addr);
-+	pmd = *pmdp;
-+	if (!pmd_present(pmd) || pmd_large(pmd))
-+		return 0;
-+	ptep = pte_offset_map(pmdp, addr);
-+	pte = *ptep;
-+	pte_unmap(ptep);
-+	if (!is_swap_pte(pte))
-+		return 0;
-+	entry = pte_to_swp_entry(pte);
-+	return is_hwpoison_entry(entry);
-+}
-+EXPORT_SYMBOL_GPL(is_hwpoison_address);
---- a/virt/kvm/kvm_main.c
-+++ b/virt/kvm/kvm_main.c
-@@ -92,6 +92,9 @@ static bool kvm_rebooting;
- 
- static bool largepages_enabled = true;
- 
-+struct page *hwpoison_page;
-+pfn_t hwpoison_pfn;
-+
- inline int kvm_is_mmio_pfn(pfn_t pfn)
- {
- 	if (pfn_valid(pfn)) {
-@@ -810,16 +813,22 @@ EXPORT_SYMBOL_GPL(kvm_disable_largepages
- 
- int is_error_page(struct page *page)
- {
--	return page == bad_page;
-+	return page == bad_page || page == hwpoison_page;
- }
- EXPORT_SYMBOL_GPL(is_error_page);
- 
- int is_error_pfn(pfn_t pfn)
- {
--	return pfn == bad_pfn;
-+	return pfn == bad_pfn || pfn == hwpoison_pfn;
- }
- EXPORT_SYMBOL_GPL(is_error_pfn);
- 
-+int is_hwpoison_pfn(pfn_t pfn)
-+{
-+	return pfn == hwpoison_pfn;
-+}
-+EXPORT_SYMBOL_GPL(is_hwpoison_pfn);
-+
- static inline unsigned long bad_hva(void)
- {
- 	return PAGE_OFFSET;
-@@ -945,6 +954,11 @@ static pfn_t hva_to_pfn(struct kvm *kvm,
- 	if (unlikely(npages != 1)) {
- 		struct vm_area_struct *vma;
- 
-+		if (is_hwpoison_address(addr)) {
-+			get_page(hwpoison_page);
-+			return page_to_pfn(hwpoison_page);
-+		}
-+
- 		down_read(&current->mm->mmap_sem);
- 		vma = find_vma(current->mm, addr);
- 
-@@ -2197,6 +2211,15 @@ int kvm_init(void *opaque, unsigned vcpu
- 
- 	bad_pfn = page_to_pfn(bad_page);
- 
-+	hwpoison_page = alloc_page(GFP_KERNEL | __GFP_ZERO);
-+
-+	if (hwpoison_page == NULL) {
-+		r = -ENOMEM;
-+		goto out_free_0;
-+	}
-+
-+	hwpoison_pfn = page_to_pfn(hwpoison_page);
-+
- 	if (!zalloc_cpumask_var(&cpus_hardware_enabled, GFP_KERNEL)) {
- 		r = -ENOMEM;
- 		goto out_free_0;
-@@ -2269,6 +2292,8 @@ out_free_1:
- out_free_0a:
- 	free_cpumask_var(cpus_hardware_enabled);
- out_free_0:
-+	if (hwpoison_page)
-+		__free_page(hwpoison_page);
- 	__free_page(bad_page);
- out:
- 	kvm_arch_exit();
-@@ -2290,6 +2315,7 @@ void kvm_exit(void)
- 	kvm_arch_hardware_unsetup();
- 	kvm_arch_exit();
- 	free_cpumask_var(cpus_hardware_enabled);
-+	__free_page(hwpoison_page);
- 	__free_page(bad_page);
- }
- EXPORT_SYMBOL_GPL(kvm_exit);
+Thanks.
 
 
