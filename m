@@ -1,112 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756907Ab0EaRaz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 May 2010 13:30:55 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:48176 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755254Ab0EaRax (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 May 2010 13:30:53 -0400
-Subject: Re: aha1542 oops caused by new request_irq routines
-From: James Bottomley <James.Bottomley@suse.de>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Tedheadster <tedheadster@gmail.com>, linux-scsi@vger.kernel.org,
-       linux-kernel <linux-kernel@vger.kernel.org>
-In-Reply-To: <alpine.LFD.2.00.1005311914560.2933@localhost.localdomain>
-References: <AANLkTilB661W9H9IPxn9TGBvv-omVnAh43r3XR5uM58m@mail.gmail.com>
-	 <1275316364.2823.22.camel@mulgrave.site>
-	 <alpine.LFD.2.00.1005311829360.2933@localhost.localdomain>
-	 <1275325170.2823.79.camel@mulgrave.site>
-	 <alpine.LFD.2.00.1005311914560.2933@localhost.localdomain>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 31 May 2010 12:30:48 -0500
-Message-ID: <1275327048.2823.115.camel@mulgrave.site>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.2 
+	id S1756898Ab0EaRhW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 May 2010 13:37:22 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:56411 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754835Ab0EaRhT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 31 May 2010 13:37:19 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=fCUxqHn1aAkq4AA/tnVXqdIpjgey49gXgGGF+wur4ccuyn7+Qw3vfauw7/LUFOiT9G
+         nr5JGX0GrVAgRDEjXnZdCAPLJ1AYKgudHVPf19dIJr5F3c7+81tPVsHnQb2+bOgaB7g8
+         Mt/79ErWS73WGr6+I8Yrp/8NnTd0escFFqIgI=
+Message-ID: <4C03F3CA.6070809@gmail.com>
+Date: Mon, 31 May 2010 19:37:14 +0200
+From: Jiri Slaby <jirislaby@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; cs-CZ; rv:1.9.2.4) Gecko/20100520 SUSE/3.1rc1-1.1 Thunderbird/3.1
+MIME-Version: 1.0
+To: Spyros Papageorgiou <spyros.papageorgiou@gmail.com>
+CC: gregkh@suse.de, devel@driverdev.osuosl.org,
+       kernel-janitors@vger.kernel.org, ossama.othman@intel.com,
+       Kernel development list <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] Drivers: Stagins: memrar: cleanup
+References: <4C03CFED.2030101@gmail.com>
+In-Reply-To: <4C03CFED.2030101@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-05-31 at 19:19 +0200, Thomas Gleixner wrote:
-> On Mon, 31 May 2010, James Bottomley wrote:
-> > On Mon, 2010-05-31 at 18:43 +0200, Thomas Gleixner wrote:
-> > > On Mon, 31 May 2010, James Bottomley wrote:
-> > > 
-> > > > On Mon, 2010-05-31 at 10:03 -0400, Tedheadster wrote:
-> > > > > I'm reliably getting this oops:
-> > > > > 
-> > > > > Configuring Adaptec (SCSI-ID 6) at IO:334, IRQ 10, DMA priority 6
-> > > > > BUG: sleeping function called from invalid context at mm/slub.c:1598
-> > > > > in_atomic(): 0, irqs_disabled(): 1, pid: 4782, name: modprobe
-> > > > > Pid: 4782, comm: modprobe Not tainted 2.6.30.10-105.2.23.RODATA.fc11.i586 #1
-> > > > > Call Trace:
-> > > > >  [<c0469e58>] ? request_threaded_irq+0x85/0x145
-> > > > >  [<c0422ab7>] __might_sleep+0xc4/0xc9
-> > > > >  [<c04a4322>] kmem_cache_alloc_notrace+0x29/0xb0
-> > > > >  [<c0469e58>] request_threaded_irq+0x85/0x145
-> > > > >  [<d086439c>] ? do_aha1542_intr_handle+0x0/0x2be [aha1542]
-> > > > >  [<d08696aa>] aha1542_detect+0x631/0x76f [aha1542]
-> > > > >  [<d0869841>] init_this_scsi_driver+0x59/0xc7 [aha1542]
-> > > > >  [<d08697e8>] ? init_this_scsi_driver+0x0/0xc7 [aha1542]
-> > > > >  [<c040114b>] do_one_initcall+0x51/0x13f
-> > > > >  [<c0451111>] sys_init_module+0x8b/0x192
-> > > > >  [<c0403535>] syscall_call+0x7/0xb
-> > > > > scsi5 : Adaptec 1542
-> > > > 
-> > > > So this one's a bit tricky.  aha1542 uses a global spinlock to give it
-> > > > thread safety and various other things.  In this case it's trying to use
-> > > > the lock to hold off the interrupt until everything is set up.
-> > > > 
-> > > > Now that we're doing a GFP_KERNEL allocation in the interrupt handler
-> > > > code you can't disable interrupts while calling request_irq since this
-> > > > is an old card liable to spurious interrupts as it gets poked in setup.
-> > > >
-> > > > I think a possible solution is this, since the mere act of installing an
-> > > > interrupt handler shouldn't trigger the problem.
-> > > > 
-> > > > However, I thought the pattern of disabling interrupts and setting up
-> > > > the handler and registers was a common one ... is there some way this is
-> > > > supposed to work now that doesn't involve altering the drivers?
-> > > 
-> > > Most drivers do the sane thing:
-> > > 
-> > >      Disable interrupts at the device level
-> > >      Install handler via request_irq()
-> > >      Setup stuff
-> > >      Enable interrupts at the device level
-> > 
-> > That only works for some hardware ... a lot of older hardware can't
-> > disable interrupts; the best you can do is to have the box physically
-> > not listening to the line.
-> > 
-> > > So no, there is no way this is supposed to work with drivers which
-> > > don't follow that simple scheme.
-> > > 
-> > > commit 0e43785c5 (irq: use GFP_KERNEL for action allocation in
-> > > request_irq()) changed that particular instance to GFP_KERNEL because
-> > > the request_irq code calls (and always did) code which cannot be
-> > > called in atomic contexts, e.g. the proc entry handling.
-> > 
-> > So, like I said, I think we can install the handler without tickling the
-> > hardware.  Ideally we'd like to install it IRQ_DISABLED and then call
-> > enable_irq after we're done with the setup, but that doesn't seem to be
-> > possible.
+On 05/31/2010 05:04 PM, Spyros Papageorgiou wrote:
+> From:Spyros Papageorgiou <spyros.papageorgiou@gmai.com>
 > 
-> We have a mechanism in place to do that, but it's not available for
-> drivers yet. If that's really a requirement, then we can make it
-> available with very little effort, but that does not resolve the
-> problem when the interrupt is shared and the interrupt line is already
-> enabled.
+> Removed an unneeded struct specifier in function call.
+> 
+> Signed-off-by: Spyros Papageorgiou <spyros.papageorgiou@gmai.com>
+> ---
+>  drivers/staging/memrar/memrar_allocator.c |    6 +++---
+>  1 files changed, 3 insertions(+), 3 deletions(-)
+> 
+> diff --git a/drivers/staging/memrar/memrar_allocator.c b/drivers/staging/memrar/memrar_allocator.c
+> index a4f8c58..db37c6a 100644
+> --- a/drivers/staging/memrar/memrar_allocator.c
+> +++ b/drivers/staging/memrar/memrar_allocator.c
+> @@ -276,7 +276,7 @@ long memrar_allocator_free(struct memrar_allocator *allocator,
+>  
+>  		struct memrar_address_range * const chunk =
+>  			&list_entry(pos,
+> -				    struct memrar_address_ranges,
+> +				    memrar_address_ranges,
+>  				    list)->range;
 
-Heh, well having this problem is usually a reason the driver disallows
-interrupt sharing.
-
-Like I said, I don't see a reason why installing the handler would
-trigger the interrupt, so lets try just moving the lock first.  I'd only
-need the install disabled if I weren't disabling interrupts during
-setup, which would be nice, but not necessary since this driver is coded
-to do that already.
-
-James
-
-
+It is not a function call, it's a macro. Did you try to compile this?
