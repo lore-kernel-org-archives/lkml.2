@@ -1,70 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756342Ab0EaPaL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 May 2010 11:30:11 -0400
-Received: from daytona.panasas.com ([67.152.220.89]:57179 "EHLO
-	daytona.int.panasas.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752334Ab0EaPaI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 May 2010 11:30:08 -0400
-Message-ID: <4C03D5FD.3000202@panasas.com>
-Date: Mon, 31 May 2010 18:30:05 +0300
-From: Boaz Harrosh <bharrosh@panasas.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-2.fc12 Thunderbird/3.0.4
+	id S1756591Ab0EaPcr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 May 2010 11:32:47 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:42850 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754344Ab0EaPcp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 31 May 2010 11:32:45 -0400
+Date: Mon, 31 May 2010 17:31:04 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: "Michael S. Tsirkin" <mst@redhat.com>, Sridhar Samudrala <sri@us.ibm.com>,
+       netdev <netdev@vger.kernel.org>, lkml <linux-kernel@vger.kernel.org>,
+       "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Dmitri Vorobiev <dmitri.vorobiev@movial.com>,
+       Jiri Kosina <jkosina@suse.cz>, Thomas Gleixner <tglx@linutronix.de>,
+       Ingo Molnar <mingo@elte.hu>, Andi Kleen <ak@linux.intel.com>
+Subject: Re: [PATCH 1/3] vhost: replace vhost_workqueue with per-vhost
+	kthread
+Message-ID: <20100531153104.GA9452@redhat.com>
+References: <20100527163954.GA21710@redhat.com> <4BFEA434.6080405@kernel.org> <20100527173207.GA21880@redhat.com> <4BFEE216.2070807@kernel.org> <20100528150830.GB21880@redhat.com> <4BFFE742.2060205@kernel.org> <20100530112925.GB27611@redhat.com> <4C02C961.9050606@kernel.org> <20100531143945.GA6497@redhat.com> <4C03D0BE.1040601@kernel.org>
 MIME-Version: 1.0
-To: James Bottomley <James.Bottomley@suse.de>
-CC: "Martin K. Petersen" <martin.petersen@oracle.com>,
-       Christof Schmitt <christof.schmitt@de.ibm.com>,
-       linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
-       linux-fsdevel@vger.kernel.org, Chris Mason <chris.mason@oracle.com>
-Subject: Re: Wrong DIF guard tag on ext2 write
-References: <20100531112817.GA16260@schmichrtp.mainz.de.ibm.com>	 <yq1iq64kv9f.fsf@sermon.lab.mkp.net> <1275318102.2823.47.camel@mulgrave.site>
-In-Reply-To: <1275318102.2823.47.camel@mulgrave.site>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 31 May 2010 15:30:07.0733 (UTC) FILETIME=[2664C250:01CB00D6]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4C03D0BE.1040601@kernel.org>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/31/2010 06:01 PM, James Bottomley wrote:
-> On Mon, 2010-05-31 at 10:20 -0400, Martin K. Petersen wrote:
->>>>>>> "Christof" == Christof Schmitt <christof.schmitt@de.ibm.com> writes:
->>
->> Christof> Since the guard tags are created in Linux, it seems that the
->> Christof> data attached to the write request changes between the
->> Christof> generation in bio_integrity_generate and the call to
->> Christof> sd_prep_fn.
->>
->> Yep, known bug.  Page writeback locking is messed up for buffer_head
->> users.  The extNfs folks volunteered to look into this a while back but
->> I don't think they have found the time yet.
->>
->>
->> Christof> Using ext3 or ext4 instead of ext2 does not show the problem.
->>
->> Last I looked there were still code paths in ext3 and ext4 that
->> permitted pages to be changed during flight.  I guess you've just been
->> lucky.
-> 
-> Pages have always been modifiable in flight.  The OS guarantees they'll
-> be rewritten, so the drivers can drop them if it detects the problem.
-> This is identical to the iscsi checksum issue (iscsi adds a checksum
-> because it doesn't trust TCP/IP and if the checksum is generated in
-> software, there's time between generation and page transmission for the
-> alteration to occur).  The solution in the iscsi case was not to
-> complain if the page is still marked dirty.
-> 
+On 05/31, Tejun Heo wrote:
+>
+> On 05/31/2010 04:39 PM, Oleg Nesterov wrote:
+>
+> > What I can't understand is why we do have ->queue_seq and ->done_seq.
+> >
+> > Isn't the single "bool poll->active" enough? vhost_poll_queue() sets
+> > ->active == T, vhost_poller() clears it before wake_up_all(poll->done).
+>
+> I might have slightly over engineered this part not knowing the
+> expected workload.  ->queue_seq/->done_seq pair is to guarantee that
+> flushers never get starved.
 
-And also why RAID1 and RAID4/5/6 need the data bounced. I wish VFS
-would prevent data writing given a device queue flag that requests
-it. So all these devices and modes could just flag the VFS/filesystems
-that: "please don't allow concurrent writes, otherwise I need to copy data"
+Ah, indeed.
 
->From what Chris Mason has said before, all the mechanics are there, and it's
-what btrfs is doing. Though I don't know how myself?
+Well, afaics we do not need 2 counters anyway, both vhost_poll_queue()
+and vhost_poller() could increment the single counter and the flusher
+can take bit 0 into account. But I agree 2 counters are much more clean.
 
-> James
-> 
+> >> +static int vhost_poller(void *data)
+> >> +{
+> >> +	struct vhost_dev *dev = data;
+> >> +	struct vhost_poll *poll;
+> >> +
+> >> +repeat:
+> >> +	set_current_state(TASK_INTERRUPTIBLE);	/* mb paired w/ kthread_stop */
+> >
+> > I don't understand the comment... why do we need this barrier?
+>
+> So that either kthread_stop()'s should_stop = 1 in kthread_stop() is
+> visible to kthread_should_stop() or task state is set to RUNNING.
 
-Boaz
+Of course, you are right. I am really surprized I asked this question ;)
+
+Thanks,
+
+Oleg.
+
