@@ -1,137 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756031Ab0EaDzd (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 May 2010 23:55:33 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:59572 "EHLO mx1.redhat.com"
+	id S1751241Ab0EaEN3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 May 2010 00:13:29 -0400
+Received: from smtp.outflux.net ([198.145.64.163]:51056 "EHLO smtp.outflux.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755832Ab0EaDza (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 30 May 2010 23:55:30 -0400
-Subject: Re: [PATCH v2] fs: block cross-uid sticky symlinks
-From: Eric Paris <eparis@redhat.com>
-To: Kees Cook <kees.cook@canonical.com>
+	id S1750730Ab0EaEN1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 31 May 2010 00:13:27 -0400
+Date: Sun, 30 May 2010 21:12:04 -0700
+From: Kees Cook <kees.cook@canonical.com>
+To: "Eric W. Biederman" <ebiederm@xmission.com>
 Cc: linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
        linux-fsdevel@vger.kernel.org, linux-doc@vger.kernel.org,
        Randy Dunlap <rdunlap@xenotime.net>,
        Andrew Morton <akpm@linux-foundation.org>,
        Jiri Kosina <jkosina@suse.cz>, Dave Young <hidave.darkstar@gmail.com>,
        Martin Schwidefsky <schwidefsky@de.ibm.com>,
-       James Morris <jmorris@namei.org>, David Howells <dhowells@redhat.com>,
-       Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-       "Eric W. Biederman" <ebiederm@xmission.com>,
+       James Morris <jmorris@namei.org>, Eric Paris <eparis@redhat.com>,
+       David Howells <dhowells@redhat.com>, Ingo Molnar <mingo@elte.hu>,
+       Peter Zijlstra <a.p.zijlstra@chello.nl>,
        Tim Gardner <tim.gardner@canonical.com>,
-       "Serge E. Hallyn" <serue@us.ibm.com>, sds@tycho.nsa.gov,
-       selinux@tycho.nsa.gov
-In-Reply-To: <20100531030402.GQ6056@outflux.net>
+       "Serge E. Hallyn" <serue@us.ibm.com>
+Subject: Re: [PATCH v2] fs: block cross-uid sticky symlinks
+Message-ID: <20100531041204.GR6056@outflux.net>
 References: <20100531030402.GQ6056@outflux.net>
-Content-Type: text/plain; charset="UTF-8"
-Date: Sun, 30 May 2010 23:54:23 -0400
-Message-ID: <1275278063.20730.16.camel@localhost>
-Mime-Version: 1.0
-Content-Transfer-Encoding: 8bit
+ <m17hmkg25e.fsf@fess.ebiederm.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <m17hmkg25e.fsf@fess.ebiederm.org>
+Organization: Canonical
+X-HELO: www.outflux.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2010-05-30 at 20:04 -0700, Kees Cook wrote:
-> A long-standing class of security issues is the symlink-based
-> time-of-check-time-of-use race, most commonly seen in world-writable
-> directories like /tmp. The common method of exploitation of this flaw
-> is to cross privilege boundaries when following a given symlink (i.e. a
-> root process follows a symlink belonging to another user).  For a likely
-> incomplete list of hundreds of examples across the years, please see:
-> http://cve.mitre.org/cgi-bin/cvekey.cgi?keyword=/tmp
-> 
-> The solution is to permit symlinks to only be followed when outside a sticky
-> world-writable directory, or when the uid of the symlink and follower match,
-> or when the directory owner matches the symlink's owner.
-> 
-> Some pointers to the history of earlier discussion that I could find:
-> 
->  1996 Aug, Zygo Blaxell
->   http://marc.info/?l=bugtraq&m=87602167419830&w=2
->  1996 Oct, Andrew Tridgell
->   http://lkml.indiana.edu/hypermail/linux/kernel/9610.2/0086.html
->  1997 Dec, Albert D Cahalan
->   http://lkml.org/lkml/1997/12/16/4
->  2005 Feb, Lorenzo Hernández García-Hierro
->   http://lkml.indiana.edu/hypermail/linux/kernel/0502.0/1896.html
-> 
-> Past objections and rebuttals could be summarized as:
-> 
->  - Violates POSIX.
->    - POSIX didn't consider this situation and it's not useful to follow
->      a broken specification at the cost of security.
->  - Might break unknown applications that use this feature.
->    - Applications that break because of the change are easy to spot and
->      fix. Applications that are vulnerable to symlink ToCToU by not having
->      the change aren't.
->  - Applications should just use mkstemp() or O_CREATE|O_EXCL.
->    - True, but applications are not perfect, and new software is written
->      all the time that makes these mistakes; blocking this flaw at the
->      kernel is a single solution to the entire class of vulnerability.
-> 
-> This patch is based on the patch in Openwall and grsecurity.  I have
-> added a sysctl to toggle the behavior back to the old logic via
-> /proc/sys/fs/weak-sticky-symlinks, documentation, and a ratelimited
-> warning.
-> 
-> v2:
->  - dropped redundant S_ISLNK check.
->  - moved sysctl extern into security.h.
->  - asked to include CC to linux-fsdevel.
+Hi Eric,
 
-We need to call this function in the SELinux case.  So you'll need a
-patch like the one attached (not even compiled but I think it is right)
+On Sun, May 30, 2010 at 08:50:53PM -0700, Eric W. Biederman wrote:
+> The name of the sysctl is horrible it is a double negative, which
+> makes thinking about it hard.
 
-diff --git a/security/selinux/hooks.c b/security/selinux/hooks.c
-index 5c9f25b..d6ebee2 100644
---- a/security/selinux/hooks.c
-+++ b/security/selinux/hooks.c
-@@ -2668,8 +2668,13 @@ static int selinux_inode_readlink(struct dentry *dentry)
- 
- static int selinux_inode_follow_link(struct dentry *dentry, struct nameidata *nameidata)
- {
-+       int rc;
-        const struct cred *cred = current_cred();
- 
-+       rc = cap_inode_follow_link(dentry, nameidata);
-+       if (rc)
-+               return rc;
-+
-        return dentry_has_perm(cred, NULL, dentry, FILE__READ);
- }
- 
+Hmm, I see your point, the "safe" value is "weak: not".  I was trying to
+be descriptive without needing a "true" value, but I guess that's silly;
+we already have things like randomize_va_space set to "2" by default, etc.
+What would you suggest instead?  "protected_sticky_symlinks" (and reverse
+the default and test logic)?
 
-> +int cap_inode_follow_link(struct dentry *dentry,
-> +			  struct nameidata *nameidata)
-> +{
-> +	const struct inode *parent = dentry->d_parent->d_inode;
-> +	const struct inode *inode = dentry->d_inode;
-> +	const struct cred *cred = current_cred();
-> +
-> +	if (weak_sticky_symlinks)
-> +		return 0;
-> +
-> +	if ((parent->i_mode & (S_ISVTX|S_IWOTH)) == (S_ISVTX|S_IWOTH) &&
-> +	    parent->i_uid != inode->i_uid &&
-> +	    cred->fsuid != inode->i_uid) {
-> +		printk_ratelimited(KERN_NOTICE "non-matching-uid symlink "
-> +			"following attempted in sticky-directory by "
-> +			"%s (fsuid %d)\n", current->comm, cred->fsuid);
-> +		return -EACCES;
-> +	}
-> +	return 0;
-> +}
+> Why not simply put each user in a different mount namespace and have separate
+> /tmp directories per user?  That works today, with no kernel changes.
 
-What stops us from racing between the assignment of parent and it's
-first use with a rename on our object and rmdir on the old parent?  I'm
-wondering if we need to be doing this test holding dentry->d_lock (which
-is what protects dentry->d_parent if I recall correctly)
+The key here is "no kernel changes" -- trying to isolate every user
+and service from each other using different mount namespaces will not
+work quickly in current distributions.  Even doing bind-mount tricks
+to keep /tmp away from different users is overkill, especially when
+you have situations like "screen" using a common /tmp directory tree
+(in the setuid version), etc.  Things (correctly) expect to share /tmp
+in some cases.  However, this one kernel change will allow everything
+to continue without userspace overhead and without breaking anything
+terribly.  Using containers will probably be the future, but I want to
+solve this in the general case today.
 
-Certainly doesn't fix all of the raciness, but I think it would close
-the opps part.  Maybe someone who knows the VFS better can tell me if I
-am misguided.
+> Placing this in cap_inode_follow_link is horrible naming.  There is nothing
+> capabilities about this.  Either this needs to go into one or several
+> of the security modules or this needs to go into the core vfs.
 
--Eric
+My thinking was that most of the LSMs call down to commoncaps first,
+so it's a single place to put this.  When I was looking at this code
+originally, I thought that if it doesn't go in security_inode_follow_link,
+then a new function would be added to the VFS and both callers
+of security_inode_follow_link would need to call it just before
+security_inode_follow_link.  It seemed like putting it in there reduced
+duplication of logic.
 
+However, on closer examination, it seems that this code could live in
+__do_follow_link instead.
 
+fs/namei.c:
+...
+                error = security_inode_follow_link(path.dentry, &nd);
+                if (error)
+                        goto exit_dput;
+                error = __do_follow_link(&path, &nd, &cookie);
+...
+        err = security_inode_follow_link(path->dentry, nd);
+        if (err)
+                goto loop;
+        current->link_count++;
+        current->total_link_count++;
+        nd->depth++;
+        err = __do_follow_link(path, nd, &cookie);
+...
+
+What would you suggest for the best approach here?
+
+> I can't argue with taking action to close the too frequently security
+> issues in /tmp, but this changes appears to be unnecessary, difficult
+> to maintain, and difficult to understand.
+
+Well, we disagree about "unnecessary".  :)  Finding an easy to maintain
+solution is my goal here, and if it's difficult to understand, then I need
+to fix that too.  What could use better clarification?
+
+Thanks!
+
+-Kees
+
+-- 
+Kees Cook
+Ubuntu Security Team
