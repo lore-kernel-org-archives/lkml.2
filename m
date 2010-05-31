@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754091Ab0EaMBs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 May 2010 08:01:48 -0400
-Received: from ozlabs.org ([203.10.76.45]:41199 "EHLO ozlabs.org"
+	id S1754110Ab0EaMCc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 May 2010 08:02:32 -0400
+Received: from ozlabs.org ([203.10.76.45]:41246 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751691Ab0EaMBr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 May 2010 08:01:47 -0400
+	id S1753880Ab0EaMCb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 31 May 2010 08:02:31 -0400
 From: Rusty Russell <rusty@rustcorp.com.au>
 To: Brandon Philips <brandon@ifup.org>
-Subject: [PATCH 1/2] module: make locking more fine-grained.
-Date: Mon, 31 May 2010 21:31:42 +0930
+Subject: [PATCH 2/2] module: fix bne2 "gave up waiting for init of module libcrc32c"
+Date: Mon, 31 May 2010 21:32:27 +0930
 User-Agent: KMail/1.13.2 (Linux/2.6.32-21-generic; KDE/4.4.2; i686; ; )
 Cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
        Linus Torvalds <torvalds@linux-foundation.org>,
@@ -18,235 +18,219 @@ Cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
        Jon Masters <jonathan@jonmasters.org>, Tejun Heo <htejun@gmail.com>,
        Masami Hiramatsu <mhiramat@redhat.com>,
        Kay Sievers <kay.sievers@vrfy.org>
-References: <201005252300.07739.rjw@sisk.pl> <201005311910.32407.rusty@rustcorp.com.au> <201005312130.17038.rusty@rustcorp.com.au>
-In-Reply-To: <201005312130.17038.rusty@rustcorp.com.au>
+References: <201005252300.07739.rjw@sisk.pl> <201005312130.17038.rusty@rustcorp.com.au> <201005312131.43238.rusty@rustcorp.com.au>
+In-Reply-To: <201005312131.43238.rusty@rustcorp.com.au>
 MIME-Version: 1.0
 Content-Type: Text/Plain;
   charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201005312131.43238.rusty@rustcorp.com.au>
+Message-Id: <201005312132.28631.rusty@rustcorp.com.au>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Kay Sievers <kay.sievers@vrfy.org> reports that we still have some
-contention over module loading which is slowing boot.
+Problem: it's hard to avoid an init routine stumbling over a
+request_module these days.  And it's not clear it's always a bad idea:
+for example, a module like kvm with dynamic dependencies on kvm-intel
+or kvm-amd would be neater if it could simply request_module the right
+one.
 
-Linus also disliked a previous "drop lock and regrab" patch to fix the
-bne2 "gave up waiting for init of module libcrc32c" message.
+In this particular case, it's libcrc32c:
 
-This is more ambitious in that we only grab the lock where we need it.
+	libcrc32c_mod_init
+	 crypto_alloc_shash
+	  crypto_alloc_tfm
+	   crypto_find_alg
+	    crypto_alg_mod_lookup
+	     crypto_larval_lookup
+	      request_module
+
+If another module is waiting for libcrc32c to finish initializing
+(ie. bne2 depends on libcrc32c) then it does so holding the module
+lock, and our request_module() can't make progress until that is
+released.
+
+Waiting without the lock isn't all that hard: we just need to pass the
+-EBUSY up the call chain so we can sleep where we don't hold the lock.
+Error reporting is a bit trickier: we need to copy the name of the
+unfinished module before releasing the lock.
+
+Other notes:
+1) This also fixes a theoretical issue where a weak dependency would allow
+   symbol version mismatches to be ignored.
+2) We rename use_module to ref_module to make life easier for the only
+   external user (the out-of-tree ksplice patches).
 
 Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
 Cc: Brandon Philips <brandon@ifup.org>
-Cc: Kay Sievers <kay.sievers@vrfy.org>
+Cc: Avi Kivity <avi@redhat.com>
 Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Tim Abbot <tabbott@ksplice.com>
 ---
- kernel/module.c |   57 +++++++++++++++++++++++++++++++++++---------------------
- 1 file changed, 36 insertions(+), 21 deletions(-)
+ kernel/module.c |   91 ++++++++++++++++++++++++++++++++++++--------------------
+ 1 file changed, 59 insertions(+), 32 deletions(-)
 
 diff --git a/kernel/module.c b/kernel/module.c
 --- a/kernel/module.c
 +++ b/kernel/module.c
-@@ -90,7 +90,8 @@ static DECLARE_WAIT_QUEUE_HEAD(module_wq
- 
- static BLOCKING_NOTIFIER_HEAD(module_notify_list);
- 
--/* Bounds of module allocation, for speeding __module_address */
-+/* Bounds of module allocation, for speeding __module_address.
-+ * Protected by module_mutex. */
- static unsigned long module_addr_min = -1UL, module_addr_max = 0;
- 
- int register_module_notifier(struct notifier_block * nb)
-@@ -329,7 +330,7 @@ static bool find_symbol_in_section(const
+@@ -559,40 +559,33 @@ static int already_uses(struct module *a
  }
  
- /* Find a symbol and return it, along with, (optional) crc and
-- * (optional) module which owns it */
-+ * (optional) module which owns it.  Needs preempt disabled or module_mutex. */
- const struct kernel_symbol *find_symbol(const char *name,
- 					struct module **owner,
- 					const unsigned long **crc,
-@@ -557,7 +558,7 @@ static int already_uses(struct module *a
- 	return 0;
- }
- 
--/* Module a uses b */
-+/* Module a uses b: caller needs module_mutex() */
- int use_module(struct module *a, struct module *b)
+ /* Module a uses b: caller needs module_mutex() */
+-int use_module(struct module *a, struct module *b)
++int ref_module(struct module *a, struct module *b)
  {
  	struct module_use *use;
-@@ -598,6 +599,7 @@ static void module_unload_free(struct mo
- {
- 	struct module *i;
+ 	int no_warn, err;
  
-+	mutex_lock(&module_mutex);
- 	list_for_each_entry(i, &modules, list) {
- 		struct module_use *use;
+-	if (b == NULL || already_uses(a, b)) return 1;
++	if (b == NULL || already_uses(a, b))
++		return 0;
  
-@@ -613,6 +615,7 @@ static void module_unload_free(struct mo
- 			}
- 		}
- 	}
-+	mutex_unlock(&module_mutex);
- }
- 
- #ifdef CONFIG_MODULE_FORCE_UNLOAD
-@@ -665,6 +668,7 @@ static int try_stop_module(struct module
- 		synchronize_sched();
- 		return 0;
- 	}
-+	mutex_unlock(&module_mutex);
- }
- 
- unsigned int module_refcount(struct module *mod)
-@@ -783,9 +787,13 @@ SYSCALL_DEFINE2(delete_module, const cha
- 	/* Store the name of the last unloaded module for diagnostic purposes */
- 	strlcpy(last_unloaded_module, mod->name, sizeof(last_unloaded_module));
- 	ddebug_remove_module(mod->name);
-+
-+	/* free_module doesn't want module_mutex held by caller. */
-+	mutex_unlock(&module_mutex);
- 	free_module(mod);
+ 	/* If we're interrupted or time out, we fail. */
+-	if (wait_event_interruptible_timeout(
+-		    module_wq, (err = strong_try_module_get(b)) != -EBUSY,
+-		    30 * HZ) <= 0) {
+-		printk("%s: gave up waiting for init of module %s.\n",
+-		       a->name, b->name);
+-		return 0;
+-	}
 -
-- out:
-+	goto out_stop;
-+
-+out:
- 	mutex_unlock(&module_mutex);
- 	return ret;
+-	/* If strong_try_module_get() returned a different error, we fail. */
++	err = strong_try_module_get(b);
+ 	if (err)
+-		return 0;
++		return err;
+ 
+ 	DEBUGP("Allocating new usage for %s.\n", a->name);
+ 	use = kmalloc(sizeof(*use), GFP_ATOMIC);
+ 	if (!use) {
+ 		printk("%s: out of memory loading\n", a->name);
+ 		module_put(b);
+-		return 0;
++		return -ENOMEM;
+ 	}
+ 
+ 	use->module_which_uses = a;
+ 	list_add(&use->list, &b->modules_which_use_me);
+ 	no_warn = sysfs_create_link(b->holders_dir, &a->mkobj.kobj, a->name);
+-	return 1;
++	return 0;
  }
-@@ -1001,6 +1009,8 @@ static inline int check_modstruct_versio
+-EXPORT_SYMBOL_GPL(use_module);
++EXPORT_SYMBOL_GPL(ref_module);
+ 
+ /* Clear the unload stuff of the module. */
+ static void module_unload_free(struct module *mod)
+@@ -888,11 +881,11 @@ static inline void module_unload_free(st
  {
- 	const unsigned long *crc;
- 
-+	/* Since this should be found in kernel (which can't be removed),
-+	 * no locking is necessary. */
- 	if (!find_symbol(MODULE_SYMBOL_PREFIX "module_layout", NULL,
- 			 &crc, true, false))
- 		BUG();
-@@ -1043,8 +1053,7 @@ static inline int same_magic(const char 
  }
- #endif /* CONFIG_MODVERSIONS */
  
--/* Resolve a symbol for this module.  I.e. if we find one, record usage.
--   Must be holding module_mutex. */
-+/* Resolve a symbol for this module.  I.e. if we find one, record usage. */
+-int use_module(struct module *a, struct module *b)
++int ref_module(struct module *a, struct module *b)
+ {
+-	return strong_try_module_get(b) == 0;
++	return strong_try_module_get(b);
+ }
+-EXPORT_SYMBOL_GPL(use_module);
++EXPORT_SYMBOL_GPL(ref_module);
+ 
+ static inline void module_unload_init(struct module *mod)
+ {
+@@ -1057,26 +1050,58 @@ static inline int same_magic(const char 
  static const struct kernel_symbol *resolve_symbol(Elf_Shdr *sechdrs,
  						  unsigned int versindex,
  						  const char *name,
-@@ -1054,6 +1063,7 @@ static const struct kernel_symbol *resol
+-						  struct module *mod)
++						  struct module *mod,
++						  char ownername[])
+ {
+ 	struct module *owner;
  	const struct kernel_symbol *sym;
  	const unsigned long *crc;
++	int err;
  
-+	mutex_lock(&module_mutex);
+ 	mutex_lock(&module_mutex);
  	sym = find_symbol(name, &owner, &crc,
  			  !(mod->taints & (1 << TAINT_PROPRIETARY_MODULE)), true);
- 	/* use_module can fail due to OOM,
-@@ -1063,6 +1073,7 @@ static const struct kernel_symbol *resol
- 		    || !use_module(mod, owner))
- 			sym = NULL;
+-	/* use_module can fail due to OOM,
+-	   or module initialization or unloading */
+-	if (sym) {
+-		if (!check_version(sechdrs, versindex, name, mod, crc, owner)
+-		    || !use_module(mod, owner))
+-			sym = NULL;
++	if (!sym)
++		goto unlock;
++
++	if (!check_version(sechdrs, versindex, name, mod, crc, owner)) {
++		sym = ERR_PTR(-EINVAL);
++		goto getname;
  	}
-+	mutex_unlock(&module_mutex);
++
++	err = ref_module(mod, owner);
++	if (err) {
++		sym = ERR_PTR(err);
++		goto getname;
++	}
++
++getname:
++	/* We must make copy under the lock if we failed to get ref. */
++	strncpy(ownername, module_name(owner), MODULE_NAME_LEN);
++unlock:
+ 	mutex_unlock(&module_mutex);
  	return sym;
  }
  
-@@ -1436,13 +1447,15 @@ static int __unlink_module(void *_mod)
- 	return 0;
- }
- 
--/* Free a module, remove from lists, etc (must hold module_mutex). */
-+/* Free a module, remove from lists, etc. */
- static void free_module(struct module *mod)
- {
- 	trace_module_free(mod);
- 
- 	/* Delete from various lists */
-+	mutex_lock(&module_mutex);
- 	stop_machine(__unlink_module, mod, NULL);
-+	mutex_unlock(&module_mutex);
- 	remove_notes_attrs(mod);
- 	remove_sect_attrs(mod);
- 	mod_kobject_remove(mod);
-@@ -1514,7 +1527,14 @@ static int verify_export_symbols(struct 
- 
- 	for (i = 0; i < ARRAY_SIZE(arr); i++) {
- 		for (s = arr[i].sym; s < arr[i].sym + arr[i].num; s++) {
--			if (find_symbol(s->name, &owner, NULL, true, false)) {
-+			const struct kernel_symbol *sym;
++static const struct kernel_symbol *resolve_symbol_wait(Elf_Shdr *sechdrs,
++						       unsigned int versindex,
++						       const char *name,
++						       struct module *mod)
++{
++	const struct kernel_symbol *ksym;
++	char ownername[MODULE_NAME_LEN];
 +
-+			/* Stopping preemption makes find_symbol safe. */
-+			preempt_disable();
-+			sym = find_symbol(s->name, &owner, NULL, true, false);
-+			preempt_enable();
++	if (wait_event_interruptible_timeout(module_wq,
++			IS_ERR(ksym = resolve_symbol(sechdrs, versindex, name,
++						     mod, ownername)) &&
++			PTR_ERR(ksym) == -EBUSY,
++					     30 * HZ) <= 0) {
++		printk(KERN_WARNING "%s: gave up waiting for init of module %s.\n",
++		       mod->name, ownername);
++	}
++	return ksym;
++}
 +
-+			if (sym) {
- 				printk(KERN_ERR
- 				       "%s: exports duplicate symbol %s"
- 				       " (owned by %s)\n",
-@@ -1960,11 +1980,13 @@ static void *module_alloc_update_bounds(
- 	void *ret = module_alloc(size);
+ /*
+  * /sys/module/foo/sections stuff
+  * J. Corbet <corbet@lwn.net>
+@@ -1578,21 +1603,23 @@ static int simplify_symbols(Elf_Shdr *se
+ 			break;
  
- 	if (ret) {
-+		mutex_lock(&module_mutex);
- 		/* Update module bounds. */
- 		if ((unsigned long)ret < module_addr_min)
- 			module_addr_min = (unsigned long)ret;
- 		if ((unsigned long)ret + size > module_addr_max)
- 			module_addr_max = (unsigned long)ret + size;
-+		mutex_unlock(&module_mutex);
- 	}
- 	return ret;
- }
-@@ -2426,7 +2448,9 @@ static noinline struct module *load_modu
- 	 * function to insert in a way safe to concurrent readers.
- 	 * The mutex protects against concurrent writers.
- 	 */
-+	mutex_lock(&module_mutex);
- 	list_add_rcu(&mod->list, &modules);
-+	mutex_unlock(&module_mutex);
+ 		case SHN_UNDEF:
+-			ksym = resolve_symbol(sechdrs, versindex,
+-					      strtab + sym[i].st_name, mod);
++			ksym = resolve_symbol_wait(sechdrs, versindex,
++						   strtab + sym[i].st_name,
++						   mod);
+ 			/* Ok if resolved.  */
+-			if (ksym) {
++			if (ksym && !IS_ERR(ksym)) {
+ 				sym[i].st_value = ksym->value;
+ 				break;
+ 			}
  
- 	err = parse_args(mod->name, mod->args, mod->kp, mod->num_kp, NULL);
- 	if (err < 0)
-@@ -2447,8 +2471,10 @@ static noinline struct module *load_modu
- 	return mod;
+ 			/* Ok if weak.  */
+-			if (ELF_ST_BIND(sym[i].st_info) == STB_WEAK)
++			if (!ksym && ELF_ST_BIND(sym[i].st_info) == STB_WEAK)
+ 				break;
  
-  unlink:
-+	mutex_lock(&module_mutex);
- 	/* Unlink carefully: kallsyms could be walking list. */
- 	list_del_rcu(&mod->list);
-+	mutex_unlock(&module_mutex);
- 	synchronize_sched();
- 	module_arch_cleanup(mod);
-  cleanup:
-@@ -2502,19 +2528,10 @@ SYSCALL_DEFINE3(init_module, void __user
- 	if (!capable(CAP_SYS_MODULE) || modules_disabled)
- 		return -EPERM;
+-			printk(KERN_WARNING "%s: Unknown symbol %s\n",
+-			       mod->name, strtab + sym[i].st_name);
+-			ret = -ENOENT;
++			printk(KERN_WARNING "%s: Unknown symbol %s (err %li)\n",
++			       mod->name, strtab + sym[i].st_name,
++			       PTR_ERR(ksym));
++			ret = PTR_ERR(ksym) ?: -ENOENT;
+ 			break;
  
--	/* Only one module load at a time, please */
--	if (mutex_lock_interruptible(&module_mutex) != 0)
--		return -EINTR;
--
- 	/* Do all the hard work */
- 	mod = load_module(umod, len, uargs);
--	if (IS_ERR(mod)) {
--		mutex_unlock(&module_mutex);
-+	if (IS_ERR(mod))
- 		return PTR_ERR(mod);
--	}
--
--	/* Drop lock so they can recurse */
--	mutex_unlock(&module_mutex);
- 
- 	blocking_notifier_call_chain(&module_notify_list,
- 			MODULE_STATE_COMING, mod);
-@@ -2531,9 +2548,7 @@ SYSCALL_DEFINE3(init_module, void __user
- 		module_put(mod);
- 		blocking_notifier_call_chain(&module_notify_list,
- 					     MODULE_STATE_GOING, mod);
--		mutex_lock(&module_mutex);
- 		free_module(mod);
--		mutex_unlock(&module_mutex);
- 		wake_up(&module_wq);
- 		return ret;
- 	}
+ 		default:
