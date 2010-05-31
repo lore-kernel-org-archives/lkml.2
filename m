@@ -1,118 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751703Ab0EaLGN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 May 2010 07:06:13 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:21068 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751372Ab0EaLGM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 May 2010 07:06:12 -0400
-Message-ID: <4C039816.5090101@redhat.com>
-Date: Mon, 31 May 2010 14:05:58 +0300
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-3.fc13 Thunderbird/3.0.4
+	id S1752003Ab0EaLHR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 May 2010 07:07:17 -0400
+Received: from www.telegraphics.com.au ([204.15.192.19]:52674 "EHLO
+	mail.telegraphics.com.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751440Ab0EaLHP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 31 May 2010 07:07:15 -0400
+Date: Mon, 31 May 2010 21:07:09 +1000 (EST)
+From: fthain@telegraphics.com.au
+To: Geert Uytterhoeven <geert@linux-m68k.org>,
+       David Miller <davem@davemloft.net>
+cc: joe@perches.com, p_gortmaker@yahoo.com, netdev@vger.kernel.org,
+       linux-kernel@vger.kernel.org, linux-m68k@vger.kernel.org
+Subject: Re: [PATCH] mac8390: change an error return code and some cleanup,
+ take 4
+In-Reply-To: <AANLkTilkooBglbk33yDHmk8c_ZdlamOW8FVvuvjQaNsF@mail.gmail.com>
+Message-ID: <alpine.LNX.2.00.1005312011210.469@nippy.intranet>
+References: <alpine.OSX.2.00.1004171258330.358@localhost> <20100421.163041.158540277.davem@davemloft.net> <alpine.OSX.2.00.1005290255580.691@localhost> <20100531.001947.193703044.davem@davemloft.net> <alpine.LNX.2.00.1005311905520.469@nippy.intranet>
+ <AANLkTilkooBglbk33yDHmk8c_ZdlamOW8FVvuvjQaNsF@mail.gmail.com>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-To: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
-CC: Marcelo Tosatti <mtosatti@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-       KVM list <kvm@vger.kernel.org>
-Subject: Re: [PATCH 2/5] KVM: MMU: split the operations of kvm_mmu_zap_page()
-References: <4C025BDC.1020304@cn.fujitsu.com> <4C025C24.9010200@cn.fujitsu.com> <4C026543.20608@redhat.com> <4C031B5D.3000502@cn.fujitsu.com>
-In-Reply-To: <4C031B5D.3000502@cn.fujitsu.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/31/2010 05:13 AM, Xiao Guangrong wrote:
->
-> Avi Kivity wrote:
->    
->> On 05/30/2010 03:37 PM, Xiao Guangrong wrote:
->>      
->>> Using kvm_mmu_prepare_zap_page() and kvm_mmu_commit_zap_page() to
->>> split kvm_mmu_zap_page() function, then we can:
->>>
->>> - traverse hlist safely
->>> - easily to gather remote tlb flush which occurs during page zapped
->>>
->>>
->>> +static int kvm_mmu_prepare_zap_page(struct kvm *kvm, struct
->>> kvm_mmu_page *sp)
->>> +{
->>> +    int ret;
->>> +
->>> +    trace_kvm_mmu_zap_page(sp);
->>> +    ++kvm->stat.mmu_shadow_zapped;
->>> +    ret = mmu_zap_unsync_children(kvm, sp);
->>> +    kvm_mmu_page_unlink_children(kvm, sp);
->>> +    kvm_mmu_unlink_parents(kvm, sp);
->>> +    if (!sp->role.invalid&&   !sp->role.direct)
->>> +        unaccount_shadowed(kvm, sp->gfn);
->>> +    if (sp->unsync)
->>> +        kvm_unlink_unsync_page(kvm, sp);
->>> +    if (!sp->root_count)
->>> +        /* Count self */
->>> +        ret++;
->>> +    else
->>> +        kvm_reload_remote_mmus(kvm);
->>> +
->>> +    sp->role.invalid = 1;
->>> +    list_move(&sp->link,&kvm->arch.invalid_mmu_pages);
->>> +    kvm_mmu_reset_last_pte_updated(kvm);
->>> +    return ret;
->>> +}
->>> +
->>> +static void kvm_mmu_commit_zap_page(struct kvm *kvm)
->>> +{
->>> +    struct kvm_mmu_page *sp, *n;
->>> +
->>> +    if (list_empty(&kvm->arch.invalid_mmu_pages))
->>> +        return;
->>> +
->>> +    kvm_flush_remote_tlbs(kvm);
->>> +    list_for_each_entry_safe(sp, n,&kvm->arch.invalid_mmu_pages, link) {
->>> +        WARN_ON(!sp->role.invalid);
->>> +        if (!sp->root_count)
->>> +            kvm_mmu_free_page(kvm, sp);
->>> +    }
->>> +}
->>> +
->>>
->>>        
->> You're adding two new functions but not using them here?  Possibly in
->> the old kvm_mmu_zap_page()?
->>      
-> I use those in the next patch, it's not in kvm_mmu_zap_page(), it's used like:
->
-> hold mmu spin lock
->
-> kvm_mmu_prepare_zap_page page A
-> kvm_mmu_prepare_zap_page page B
-> kvm_mmu_prepare_zap_page page C
-> ......
-> kvm_mmu_commit_zap_page
->    
 
-It would be better to rewrite kvm_mmu_zap_page() in terms of 
-prepare/commit in the patch so we don't have two copies of the same 
-thing (also easier to review).
+On Mon, 31 May 2010, Geert Uytterhoeven wrote:
 
+> 
+> `pr_debug()' indeed now may generate code if DEBUG is not defined, i.e. 
+> if CONFIG_DYNAMIC_DEBUG is enabled. This is intented for debug 
+> infrastructure the user may want to enable later.
+> 
+> If you want the old behavior, you can use `pr_devel()' instead, which 
+> only generates code if DEBUG is defined. This is intended for debug 
+> infrastructure for developers only.
+> 
+> However, you used `printk(KERN_DEBUG pr_fmt()...)`, which always 
+> generates code. I'm still not 100% sure that was intentional?
 
+Geert, in the beginning, I decided that it should be KERN_DEBUG, not 
+KERN_INFO, and made that change in the first patch submission. I used 
+pr_debug().
 
+Then Joe pointed out that this required DEBUG defined, which I'd forgotten 
+(I didn't know about CONFIG_DYNAMIC_DEBUG). So, to retain the old 
+behaviour, while following the example of other usages of ei_debug in 
+lib8390 and drivers, I changed it to printk(KERN_DEBUG ...).
 
->> This is a good idea, but belongs in a separate patch?  We can use it to
->> reclaim invalid pages before allocating new ones.
->>
->>      
-> This patch is very simple and kvm_mmu_commit_zap_page() function should depend on
-> kvm->arch.invalid_mmu_pages, so i think we on need separate this patch, your opinion? :-)
->
->    
+Then Joe pointed out that I should take advantage of pr_fmt(), so the 
+third submission made that change.
 
-How about passing the list as a parameter to prepare() and commit()?  If 
-the lifetime of the list is just prepare/commit, it shouldn't be a global.
+(Then David said I should propagate the return code from request_irq, so I 
+made the present patch submission.)
 
--- 
-I have a truly marvellous patch that fixes the bug which this
-signature is too narrow to contain.
+Apparently David now wants me to submit this again --
 
+if (ei_debug)
+	pr_debug(...)
+
+David, if that code is acceptable, please let me know.
+
+If that code is mandatory, why didn't you say so upon the second patch 
+submission?
+
+Alternatively, if the following is preferred (as implied by your last 
+email):
+
+if (ei_debug)
+	pr_info(...)
+
+Then let me know, and I'll quit bothering you.
+
+Or just go ahead and change my patch if you wish to save us both some 
+time.
+
+Finn
+
+> 
+> Gr{oetje,eeting}s,
+> 
+> 						Geert
