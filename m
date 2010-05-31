@@ -1,108 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756445Ab0EaKPY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 May 2010 06:15:24 -0400
-Received: from ozlabs.org ([203.10.76.45]:57120 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754211Ab0EaKPW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 May 2010 06:15:22 -0400
-From: Rusty Russell <rusty@rustcorp.com.au>
-To: Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH] Make kunmap_atomic() harder to misuse
-Date: Mon, 31 May 2010 19:45:18 +0930
-User-Agent: KMail/1.13.2 (Linux/2.6.32-21-generic; KDE/4.4.2; i686; ; )
-Cc: Cesar Eduardo Barros <cesarb@cesarb.net>, linux-mm@kvack.org,
-       linux-kernel@vger.kernel.org, Russell King <linux@arm.linux.org.uk>,
-       Ralf Baechle <ralf@linux-mips.org>, David Howells <dhowells@redhat.com>,
-       Koichi Yasutake <yasutake.koichi@jp.panasonic.com>,
-       Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-       Paul Mackerras <paulus@samba.org>,
-       "David S. Miller" <davem@davemloft.net>,
-       Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-       "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
-       Arnd Bergmann <arnd@arndb.de>
-References: <1275043993-26557-1-git-send-email-cesarb@cesarb.net> <20100529204256.b92b1ff6.akpm@linux-foundation.org>
-In-Reply-To: <20100529204256.b92b1ff6.akpm@linux-foundation.org>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+	id S1756591Ab0EaKQv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 May 2010 06:16:51 -0400
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:59034 "EHLO
+	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753014Ab0EaKQs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 31 May 2010 06:16:48 -0400
+Date: Mon, 31 May 2010 11:23:14 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Kees Cook <kees.cook@canonical.com>
+Cc: linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
+       linux-fsdevel@vger.kernel.org, linux-doc@vger.kernel.org,
+       Randy Dunlap <rdunlap@xenotime.net>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Jiri Kosina <jkosina@suse.cz>, Dave Young <hidave.darkstar@gmail.com>,
+       Martin Schwidefsky <schwidefsky@de.ibm.com>,
+       James Morris <jmorris@namei.org>, Eric Paris <eparis@redhat.com>,
+       David Howells <dhowells@redhat.com>, Ingo Molnar <mingo@elte.hu>,
+       Peter Zijlstra <a.p.zijlstra@chello.nl>,
+       "Eric W. Biederman" <ebiederm@xmission.com>,
+       Tim Gardner <tim.gardner@canonical.com>,
+       "Serge E. Hallyn" <serue@us.ibm.com>
+Subject: Re: [PATCH v2] fs: block cross-uid sticky symlinks
+Message-ID: <20100531112314.373b0f26@lxorguk.ukuu.org.uk>
+In-Reply-To: <20100531030402.GQ6056@outflux.net>
+References: <20100531030402.GQ6056@outflux.net>
+X-Mailer: Claws Mail 3.7.5 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-Message-Id: <201005311945.19784.rusty@rustcorp.com.au>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 30 May 2010 01:12:56 pm Andrew Morton wrote:
-> On Fri, 28 May 2010 07:53:13 -0300 Cesar Eduardo Barros <cesarb@cesarb.net> wrote:
-> 
-> > kunmap_atomic() is currently at level -4 on Rusty's "Hard To Misuse"
-> > list[1] ("Follow common convention and you'll get it wrong"), except in
-> > some architectures when CONFIG_DEBUG_HIGHMEM is set[2][3].
-> > 
-> > kunmap() takes a pointer to a struct page; kunmap_atomic(), however,
-> > takes takes a pointer to within the page itself. This seems to once in a
-> > while trip people up (the convention they are following is the one from
-> > kunmap()).
-> > 
-> > Make it much harder to misuse, by moving it to level 9 on Rusty's
-> > list[4] ("The compiler/linker won't let you get it wrong"). This is done
-> > by refusing to build if the pointer passed to it is convertible to a
-> > struct page * but it is not a void * (verified by trying to convert it
-> > to a pointer to a dummy struct).
-> > 
-> > The real kunmap_atomic() is renamed to kunmap_atomic_notypecheck()
-> > (which is what you would call in case for some strange reason calling it
-> > with a pointer to a struct page is not incorrect in your code).
-> > 
-> 
-> Fair enough, that's a 99% fix.  A long time ago I made kmap_atomic()
-> return a char * (iirc) and kunmap_atomic() is passed a char*.  It
-> worked, but I ended up throwing it away.  I don't precisely remember
-> why - I think it was intrusiveness and general hassle rather than
-> anything fundamental.
-> 
-> >
-> > ...
-> >
-> > +/* Prevent people trying to call kunmap_atomic() as if it were kunmap() */
-> > +struct __kunmap_atomic_dummy {};
-> > +#define kunmap_atomic(addr, idx) do { \
-> > +		BUILD_BUG_ON( \
-> > +			__builtin_types_compatible_p(typeof(addr), struct page *) && \
-> > +			!__builtin_types_compatible_p(typeof(addr), struct __kunmap_atomic_dummy *)); \
-> > +		kunmap_atomic_notypecheck((addr), (idx)); \
-> > +	} while (0)
-> 
-> <looks around>
-> 
-> OK, it seems that __builtin_types_compatible_p() is supported on all
-> approved gcc versions.
-> 
-> We have a little __same_type() helper for this.  __must_be_array()
-> should be using it, too.
+> Past objections and rebuttals could be summarized as:
 
-Yep... but I think BUILD_BUG_ON(__same_type((addr), struct page *)); is
-sufficient; void * is not compatible in my quick tests here.
+You missed a couple at least
 
-Andrew, want to take this?
+1.We have things like SELinux so you can write rules to bound apps
+  which should be able to do this, if not then we should fix the security
+  policy to generally solve it
 
-Subject: Use __same_type() in __must_be_array()
+2. If it worries you that much then you can *fix* /tmp/ for good using
+the work Al Viro did years ago on mountpoints. Give people their
+own /tmp. End of problem.
 
-We should use the __same_type() helper in __must_be_array().
+>  - Violates POSIX.
+>    - POSIX didn't consider this situation and it's not useful to follow
+>      a broken specification at the cost of security.
 
-Reported-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
+(If you fill your computer with concrete it will also violate POSIX but
+it will be more secure than your proposal. Both will of course has some
+impact on applications).
 
-diff --git a/include/linux/compiler-gcc.h b/include/linux/compiler-gcc.h
---- a/include/linux/compiler-gcc.h
-+++ b/include/linux/compiler-gcc.h
-@@ -35,8 +35,7 @@
-     (typeof(ptr)) (__ptr + (off)); })
- 
- /* &a[0] degrades to a pointer: a different type from an array */
--#define __must_be_array(a) \
--  BUILD_BUG_ON_ZERO(__builtin_types_compatible_p(typeof(a), typeof(&a[0])))
-+#define __must_be_array(a) BUILD_BUG_ON_ZERO(__same_type((a), &(a)[0]))
- 
- /*
-  * Force always-inline if the user requests it so via the .config,
+>  - Might break unknown applications that use this feature.
+>    - Applications that break because of the change are easy to spot and
+>      fix. Applications that are vulnerable to symlink ToCToU by not having
+
+What if they are things like binary only games - now you can neither turn
+on your feature nor fix the app if you want to use it. If it was using
+SELinux or similar rules you could create a single exception rule. If it
+was using per user /tmp nobody would have to do anything
+
+>  - Applications should just use mkstemp() or O_CREATE|O_EXCL.
+>    - True, but applications are not perfect, and new software is written
+>      all the time that makes these mistakes; blocking this flaw at the
+>      kernel is a single solution to the entire class of vulnerability.
+
+So new software is also being written all the time which has other holes.
+Actually its also according to your argument being written all the time
+so it'll break if you turn the feature on ?
+
+
+> +The default value is "0".  To disable this protection, setting a value of "1"
+> +will allow symlinks in sticky world-writable directories to be followed by
+> +anyone.
+
+Wrong way around. You don't enable non-compliance and misbehaviour by
+default. For it to be any use you need a userspace adapted to run on your
+odd environment, so your distro can flip the flag from Linux mode to odd.
+
+
+> +	if ((parent->i_mode & (S_ISVTX|S_IWOTH)) == (S_ISVTX|S_IWOTH) &&
+> +	    parent->i_uid != inode->i_uid &&
+> +	    cred->fsuid != inode->i_uid) {
+> +		printk_ratelimited(KERN_NOTICE "non-matching-uid symlink "
+> +			"following attempted in sticky-directory by "
+> +			"%s (fsuid %d)\n", current->comm, cred->fsuid);
+
+This is of minimal use - current->comm is arbitary and user controlled.
+Also are we guaranteed to hold enough locks here to stop the parent uid
+changing ?
+
+You've also stopped root doing this. Given DAC override that makes no
+sense and is asking to confuse stuff.
+
+Give your users their own /tmp. No kernel mods, no misbehaviours, no
+weirdomatic path walking hackery. No kernel patch needed that I can see.
+
+
+Alan
