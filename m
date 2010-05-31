@@ -1,77 +1,168 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753170Ab0EaVKr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 May 2010 17:10:47 -0400
-Received: from smtp-out29.alice.it ([85.33.2.29]:1464 "EHLO
-	smtp-out29.alice.it" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751455Ab0EaVKq (ORCPT
+	id S1753416Ab0EaVM0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 May 2010 17:12:26 -0400
+Received: from mail-ww0-f46.google.com ([74.125.82.46]:44756 "EHLO
+	mail-ww0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751455Ab0EaVMZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 May 2010 17:10:46 -0400
-X-Greylist: delayed 611 seconds by postgrey-1.27 at vger.kernel.org; Mon, 31 May 2010 17:10:46 EDT
-Date: Mon, 31 May 2010 22:59:36 +0200
-From: Giuliano Pochini <pochini@shiny.it>
-To: "F. Heitkamp" <heitkamp@ameritech.net>
-Cc: linux-audio-user@lists.linuxaudio.org, alsa-user@lists.sourceforge.net,
-       Clemens Ladisch <clemens@ladisch.de>, Takashi Iwai <tiwai@suse.de>,
-       linux-kernel@vger.kernel.org, alsa-devel@alsa-project.org
-Subject: Re: [alsa-devel] Crash 2.6.32.x, Echo 3G, Alsa, SCSI
-Message-ID: <20100531225936.4a9344df@Jay>
-In-Reply-To: <4C040864.8010205@ameritech.net>
-References: <73211.74714.qm@web180714.mail.sp1.yahoo.com>
-	<4B684513.8090201@ladisch.de>
-	<20100202230911.71e8b600@Jay>
-	<4C040864.8010205@ameritech.net>
-X-Mailer: Claws Mail 3.7.5 (GTK+ 2.14.7; powerpc-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 31 May 2010 21:00:33.0023 (UTC) FILETIME=[4F2FF0F0:01CB0104]
+	Mon, 31 May 2010 17:12:25 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
+        b=FTJev1HGYBoB617HfmgS+uInkars+3YWSW99Um/SVhYhKzuFvRtDMsuEoDnN/dfgyb
+         XVQDVFKXhcN2oz1JlRsvUcLl5LvqiqD4IoN6ZcgNRCMkNXrk3tIMytjjm0Q2TX662sr9
+         OGFvH+HwBsmjY904m/argg7bjSPJMtdyrZCYQ=
+From: Pierre Tardy <tardyp@gmail.com>
+To: Tom Zanussi <tzanussi@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+       Frederic Weisbecker <fweisbec@gmail.com>,
+       Linux Kernel <linux-kernel@vger.kernel.org>
+Cc: Pierre Tardy <tardyp@gmail.com>
+Subject: [PATCH] trace-event-python: give field dict to unhandled callback
+Date: Mon, 31 May 2010 23:12:09 +0200
+Message-Id: <1275340329-2397-1-git-send-email-tardyp@gmail.com>
+X-Mailer: git-send-email 1.7.0.4
+In-Reply-To: <AANLkTimP7PwL7sRV_FVaa57JhWZ9wHJBYRnnbXPdj-ls@mail.gmail.com>
+References: <AANLkTimP7PwL7sRV_FVaa57JhWZ9wHJBYRnnbXPdj-ls@mail.gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 31 May 2010 15:05:08 -0400
-"F. Heitkamp" <heitkamp@ameritech.net> wrote:
+trace_unhandled() callback does not allow to access event fields, this
+patch resolves the problem.
 
-> On 02/02/10 17:09, Giuliano Pochini wrote:
-> > On Tue, 02 Feb 2010 16:30:27 +0100
-> > Clemens Ladisch<clemens@ladisch.de>  wrote:
-> >
-> >    
-> >> Frederick V Heitkamp wrote:
-> >>      
-> >>> Repeatable Hard Crash.
-> >>> What else do I need to provide?
-[...]
-> > Signed-off-by: Giuliano Pochini<pochini@shiny.it>
-> >
-> > --- alsa-driver-1.0.22.1/alsa-kernel/pci/echoaudio/echoaudio.c__orig	2010-02-02 22:37:33.000000000 +0100
-> > +++ alsa-driver-1.0.22.1/alsa-kernel/pci/echoaudio/echoaudio.c	2010-02-02 22:44:03.000000000 +0100
-> > @@ -1821,7 +1821,9 @@ static irqreturn_t snd_echo_interrupt(in
-> >   	/* The hardware doesn't tell us which substream caused the irq,
-> >   	thus we have to check all running substreams. */
-> >   	for (ss = 0; ss<  DSP_MAXPIPES; ss++) {
-> > -		if ((substream = chip->substream[ss])) {
-> > +		substream = chip->substream[ss];
-> > +		if (substream&&  ((struct audiopipe *)substream->runtime->
-> > +				private_data)->state == PIPE_STATE_STARTED) {
-> >   			period = pcm_pointer(substream) /
-> >   				substream->runtime->period_size;
-> >   			if (period != chip->last_period[ss]) {
-> >
-> >
-> >    
-> I've tried some newer kernels.  Still having problems with the echo 3G.  
-> This is kernel version:
-> 2.6.32.13.  The above patches posted to the linux kernel list seemed to 
-> get rid of the crashes, but evidently did not go into the main kernel tree.
+It can also been used as a more pythonic and flexible way for script
+writters to demux event types
 
-Indeed. I've just checked 2.6.33 and the patch isn't there. It's in 2.6.34.
+This will for example greatly simplify pytimechart event demux.
 
-If you need 2.6.32.13 you can apply the above patch to the kernel tree or
-download ftp://ftp.alsa-project.org/pub/driver/alsa-driver-1.0.23.tar.bz2,
-otherwise just use the latest kernel.
+Signed-off-by: Pierre Tardy <tardyp@gmail.com>
+---
+ tools/perf/scripts/python/check-perf-trace.py      |    3 +-
+ .../util/scripting-engines/trace-event-python.c    |   50 +++++++++++++------
+ 2 files changed, 35 insertions(+), 18 deletions(-)
 
-
+diff --git a/tools/perf/scripts/python/check-perf-trace.py b/tools/perf/scripts/python/check-perf-trace.py
+index 964d934..d9f7893 100644
+--- a/tools/perf/scripts/python/check-perf-trace.py
++++ b/tools/perf/scripts/python/check-perf-trace.py
+@@ -51,8 +51,7 @@ def kmem__kmalloc(event_name, context, common_cpu,
+ 
+ 		flag_str("kmem__kmalloc", "gfp_flags", gfp_flags)),
+ 
+-def trace_unhandled(event_name, context, common_cpu, common_secs, common_nsecs,
+-		common_pid, common_comm):
++def trace_unhandled(event_name, context, event_fields_dict):
+     try:
+         unhandled[event_name] += 1
+     except TypeError:
+diff --git a/tools/perf/util/scripting-engines/trace-event-python.c b/tools/perf/util/scripting-engines/trace-event-python.c
+index 81f39ca..33a6325 100644
+--- a/tools/perf/util/scripting-engines/trace-event-python.c
++++ b/tools/perf/util/scripting-engines/trace-event-python.c
+@@ -208,7 +208,7 @@ static void python_process_event(int cpu, void *data,
+ 				 int size __unused,
+ 				 unsigned long long nsecs, char *comm)
+ {
+-	PyObject *handler, *retval, *context, *t, *obj;
++	PyObject *handler, *retval, *context, *t, *obj, *dict = NULL;
+ 	static char handler_name[256];
+ 	struct format_field *field;
+ 	unsigned long long val;
+@@ -232,6 +232,14 @@ static void python_process_event(int cpu, void *data,
+ 
+ 	sprintf(handler_name, "%s__%s", event->system, event->name);
+ 
++	handler = PyDict_GetItemString(main_dict, handler_name);
++	if (handler && !PyCallable_Check(handler))
++		handler = NULL;
++	if (!handler) {
++		dict = PyDict_New();
++		if (!dict)
++			Py_FatalError("couldn't create Python dict");
++	}
+ 	s = nsecs / NSECS_PER_SEC;
+ 	ns = nsecs - s * NSECS_PER_SEC;
+ 
+@@ -242,12 +250,20 @@ static void python_process_event(int cpu, void *data,
+ 	PyTuple_SetItem(t, n++, PyString_FromString(handler_name));
+ 	PyTuple_SetItem(t, n++,
+ 			PyCObject_FromVoidPtr(scripting_context, NULL));
+-	PyTuple_SetItem(t, n++, PyInt_FromLong(cpu));
+-	PyTuple_SetItem(t, n++, PyInt_FromLong(s));
+-	PyTuple_SetItem(t, n++, PyInt_FromLong(ns));
+-	PyTuple_SetItem(t, n++, PyInt_FromLong(pid));
+-	PyTuple_SetItem(t, n++, PyString_FromString(comm));
+ 
++	if (handler) {
++		PyTuple_SetItem(t, n++, PyInt_FromLong(cpu));
++		PyTuple_SetItem(t, n++, PyInt_FromLong(s));
++		PyTuple_SetItem(t, n++, PyInt_FromLong(ns));
++		PyTuple_SetItem(t, n++, PyInt_FromLong(pid));
++		PyTuple_SetItem(t, n++, PyString_FromString(comm));
++	} else {
++		PyDict_SetItemString(dict, "common_cpu", PyInt_FromLong(cpu));
++		PyDict_SetItemString(dict, "common_s", PyInt_FromLong(s));
++		PyDict_SetItemString(dict, "common_ns", PyInt_FromLong(ns));
++		PyDict_SetItemString(dict, "common_pid", PyInt_FromLong(pid));
++		PyDict_SetItemString(dict, "common_comm", PyString_FromString(comm));
++	}
+ 	for (field = event->format.fields; field; field = field->next) {
+ 		if (field->flags & FIELD_IS_STRING) {
+ 			int offset;
+@@ -272,27 +288,31 @@ static void python_process_event(int cpu, void *data,
+ 					obj = PyLong_FromUnsignedLongLong(val);
+ 			}
+ 		}
+-		PyTuple_SetItem(t, n++, obj);
++		if (handler)
++			PyTuple_SetItem(t, n++, obj);
++		else
++			PyDict_SetItemString(dict, field->name, obj);
++
+ 	}
++	if (!handler)
++		PyTuple_SetItem(t, n++, dict);
+ 
+ 	if (_PyTuple_Resize(&t, n) == -1)
+ 		Py_FatalError("error resizing Python tuple");
+ 
+-	handler = PyDict_GetItemString(main_dict, handler_name);
+-	if (handler && PyCallable_Check(handler)) {
++	if (handler) {
+ 		retval = PyObject_CallObject(handler, t);
+ 		if (retval == NULL)
+ 			handler_call_die(handler_name);
+ 	} else {
+ 		handler = PyDict_GetItemString(main_dict, "trace_unhandled");
+ 		if (handler && PyCallable_Check(handler)) {
+-			if (_PyTuple_Resize(&t, N_COMMON_FIELDS) == -1)
+-				Py_FatalError("error resizing Python tuple");
+ 
+ 			retval = PyObject_CallObject(handler, t);
+ 			if (retval == NULL)
+ 				handler_call_die("trace_unhandled");
+ 		}
++		Py_DECREF(dict);
+ 	}
+ 
+ 	Py_DECREF(t);
+@@ -548,12 +568,10 @@ static int python_generate_script(const char *outfile)
+ 	}
+ 
+ 	fprintf(ofp, "def trace_unhandled(event_name, context, "
+-		"common_cpu, common_secs, common_nsecs,\n\t\t"
+-		"common_pid, common_comm):\n");
++		"event_fields_dict):\n");
+ 
+-	fprintf(ofp, "\t\tprint_header(event_name, common_cpu, "
+-		"common_secs, common_nsecs,\n\t\tcommon_pid, "
+-		"common_comm)\n\n");
++	fprintf(ofp, "\t\tprint ' '.join(['%%s=%%s'%%(k,str(v))"
++		"for k,v in sorted(event_fields_dict.items())])\n\n");
+ 
+ 	fprintf(ofp, "def print_header("
+ 		"event_name, cpu, secs, nsecs, pid, comm):\n"
 -- 
-Giuliano.
+1.7.0.4
+
