@@ -1,84 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755954Ab0EaDtj (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 30 May 2010 23:49:39 -0400
-Received: from smtp127.sbc.mail.sp1.yahoo.com ([69.147.65.186]:27936 "HELO
-	smtp127.sbc.mail.sp1.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1755853Ab0EaDth (ORCPT
+	id S1755982Ab0EaDvc (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 30 May 2010 23:51:32 -0400
+Received: from out01.mta.xmission.com ([166.70.13.231]:36488 "EHLO
+	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755832Ab0EaDva convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 30 May 2010 23:49:37 -0400
-X-Yahoo-SMTP: fzDSGlOswBCWnIOrNw7KwwK1j9PqyNbe5PtLKiS4dDU.UNl_t6bdEZu9tTLW
-X-YMail-OSG: C_0EvtYVM1nOm2NPTF0GvuAEPmHflTVgoKNTIX4Wm5gYJKTp5qaucw_d89lwgqbSN4ynk6Tx9tGA7tRA0qeCecOG95ff_SNVrtpD3IaEHOX0N07nT2EzqpL1r6bPCEG_iIlbyPe5gVhedWDTYvK.IjYqvmTjIDd9rzq.xqfv9g8ZjeoasvQBJ3Rg.fVWZi7xu2QMAexBfH81ZBu38iMxJmLN8MMnypA9R4fHVIbMlLZpC_FHVENCa3Q5Avq.u_vUPNY.Ts.6kntF6mP71298lHhWKVDp4tjzaVQjZn5b20yk6iaRAV_J8nInp4Ex1RmtkzXmMdbfrfRdXnBtUhHRYQB8XuIHxQkKal9dmZ7dqReX7A--
-X-Yahoo-Newman-Property: ymail-3
-Subject: Re: [RFC]: Mainline of TCM Core and TCM_Loop for v2.6.35
-From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: James Bottomley <James.Bottomley@suse.de>,
-       Christoph Hellwig <hch@infradead.org>,
-       FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-       Mike Christie <michaelc@cs.wisc.edu>, Douglas@firstfloor.org,
-       Gilbe@firstfloor.org, linux-scsi <linux-scsi@vger.kernel.org>,
-       LKML <linux-kernel@vger.kernel.org>
-In-Reply-To: <87vda5zqm9.fsf@basil.nowhere.org>
-References: <1274317792.30733.59.camel@haakon2.linux-iscsi.org>
-	 <87vda5zqm9.fsf@basil.nowhere.org>
-Content-Type: text/plain
-Date: Sun, 30 May 2010 20:47:04 -0700
-Message-Id: <1275277624.32585.88.camel@haakon2.linux-iscsi.org>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.22.3.1 
-Content-Transfer-Encoding: 7bit
+	Sun, 30 May 2010 23:51:30 -0400
+To: Kees Cook <kees.cook@canonical.com>
+Cc: linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
+       linux-fsdevel@vger.kernel.org, linux-doc@vger.kernel.org,
+       Randy Dunlap <rdunlap@xenotime.net>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Jiri Kosina <jkosina@suse.cz>, Dave Young <hidave.darkstar@gmail.com>,
+       Martin Schwidefsky <schwidefsky@de.ibm.com>,
+       James Morris <jmorris@namei.org>, Eric Paris <eparis@redhat.com>,
+       David Howells <dhowells@redhat.com>, Ingo Molnar <mingo@elte.hu>,
+       Peter Zijlstra <a.p.zijlstra@chello.nl>,
+       Tim Gardner <tim.gardner@canonical.com>,
+       "Serge E. Hallyn" <serue@us.ibm.com>
+References: <20100531030402.GQ6056@outflux.net>
+From: ebiederm@xmission.com (Eric W. Biederman)
+Date: Sun, 30 May 2010 20:50:53 -0700
+In-Reply-To: <20100531030402.GQ6056@outflux.net> (Kees Cook's message of "Sun\, 30 May 2010 20\:04\:02 -0700")
+Message-ID: <m17hmkg25e.fsf@fess.ebiederm.org>
+User-Agent: Gnus/5.11 (Gnus v5.11) Emacs/22.2 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
+X-XM-SPF: eid=;;;mid=;;;hst=in01.mta.xmission.com;;;ip=67.188.5.249;;;frm=ebiederm@xmission.com;;;spf=neutral
+X-SA-Exim-Connect-IP: 67.188.5.249
+X-SA-Exim-Rcpt-To: kees.cook@canonical.com, serue@us.ibm.com, tim.gardner@canonical.com, a.p.zijlstra@chello.nl, mingo@elte.hu, dhowells@redhat.com, eparis@redhat.com, jmorris@namei.org, schwidefsky@de.ibm.com, hidave.darkstar@gmail.com, jkosina@suse.cz, akpm@linux-foundation.org, rdunlap@xenotime.net, linux-doc@vger.kernel.org, linux-fsdevel@vger.kernel.org, linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-DCC: XMission; sa03 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: ***;Kees Cook <kees.cook@canonical.com>
+X-Spam-Relay-Country: 
+X-Spam-Report: *  7.0 XM_URI_RBL URI blacklisted in uri.bl.xmission.com
+	*      [URIs: lkml.org]
+	* -1.0 XM_URI_RBL_RM URI removed in uri.bl.xmission.com
+	*      [URIs: mitre.org]
+	* -1.8 ALL_TRUSTED Passed through trusted hosts only via SMTP
+	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
+	* -3.0 BAYES_00 BODY: Bayesian spam probability is 0 to 1%
+	*      [score: 0.0000]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa03 1397; Body=1 Fuz1=1 Fuz2=1]
+	*  0.5 XM_Body_Dirty_Words Contains a dirty word
+	*  1.6 XMSubMetaSx_00 1+ Sexy Words
+	*  0.0 XM_SPF_Neutral SPF-Neutral
+	*  0.4 UNTRUSTED_Relay Comes from a non-trusted relay
+Subject: Re: [PATCH v2] fs: block cross-uid sticky symlinks
+X-SA-Exim-Version: 4.2.1 (built Thu, 25 Oct 2007 00:26:12 +0000)
+X-SA-Exim-Scanned: Yes (on in01.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2010-05-30 at 11:27 +0200, Andi Kleen wrote:
-> "Nicholas A. Bellinger" <nab@linux-iscsi.org> writes:
-> >
-> > As always, I am open to constructive suggestions,
-> 
+Kees Cook <kees.cook@canonical.com> writes:
 
-Greetings Andi,
+> A long-standing class of security issues is the symlink-based
+> time-of-check-time-of-use race, most commonly seen in world-writable
+> directories like /tmp. The common method of exploitation of this flaw
+> is to cross privilege boundaries when following a given symlink (i.e. a
+> root process follows a symlink belonging to another user).  For a likely
+> incomplete list of hundreds of examples across the years, please see:
+> http://cve.mitre.org/cgi-bin/cvekey.cgi?keyword=/tmp
+>
+> The solution is to permit symlinks to only be followed when outside a sticky
+> world-writable directory, or when the uid of the symlink and follower match,
+> or when the directory owner matches the symlink's owner.
+>
+> Some pointers to the history of earlier discussion that I could find:
+>
+>  1996 Aug, Zygo Blaxell
+>   http://marc.info/?l=bugtraq&m=87602167419830&w=2
+>  1996 Oct, Andrew Tridgell
+>   http://lkml.indiana.edu/hypermail/linux/kernel/9610.2/0086.html
+>  1997 Dec, Albert D Cahalan
+>   http://lkml.org/lkml/1997/12/16/4
+>  2005 Feb, Lorenzo Hernández García-Hierro
+>   http://lkml.indiana.edu/hypermail/linux/kernel/0502.0/1896.html
+>
+> Past objections and rebuttals could be summarized as:
+>
+>  - Violates POSIX.
+>    - POSIX didn't consider this situation and it's not useful to follow
+>      a broken specification at the cost of security.
+>  - Might break unknown applications that use this feature.
+>    - Applications that break because of the change are easy to spot and
+>      fix. Applications that are vulnerable to symlink ToCToU by not having
+>      the change aren't.
+>  - Applications should just use mkstemp() or O_CREATE|O_EXCL.
+>    - True, but applications are not perfect, and new software is written
+>      all the time that makes these mistakes; blocking this flaw at the
+>      kernel is a single solution to the entire class of vulnerability.
+>
+> This patch is based on the patch in Openwall and grsecurity.  I have
+> added a sysctl to toggle the behavior back to the old logic via
+> /proc/sys/fs/weak-sticky-symlinks, documentation, and a ratelimited
+> warning.
 
-> Your description contains quite a lot of acronyms (I count 8 in the first
-> paragraph alone). For the benefit of the linux-kernel audience which are
-> not storage experts and are struggling to find out what this is all good
-> for, how about including a glossary that explains what it all means?  I
-> suspect having that in the git commit log later will be also useful.
-> 
+The name of the sysctl is horrible it is a double negative, which
+makes thinking about it hard.
 
-Point taken on a glossary + storage decoder ring..  Being able to open
-up the discussion to a wider kernel audience is a really good thing I
-think. ;)
+Why not simply put each user in a different mount namespace and have separate
+/tmp directories per user?  That works today, with no kernel changes.
 
-Also, one major item on my TODO list is to publish a fabric plugin
-'cookbook' for creating your very own TCM target mode fabric module with
-a fully functioning configfs control plane.  This will initially involve
-a walkthough of the required logic to get up and running for new fabric
-module developers.
+Placing this in cap_inode_follow_link is horrible naming.  There is nothing
+capabilities about this.  Either this needs to go into one or several
+of the security modules or this needs to go into the core vfs. 
 
-However, what I would like to eventually do with the mainline TCM code
-is to provide a single example fabric module + script for generating N
-new base TCM fabric modules with a fully functioning v4 configfs fabric
-shell.  This script would generate code with sed-fu based on a supplied
-fabric plugin name and supported SCSI ProtocolIDs (eg: SAS, FC, iSCSI,
-etc) using existing TCM v4 world wide port name (WWPN) emulation logic
-located in drivers/target/target_core_fabric_lib.c.
+I can't argue with taking action to close the too frequently security
+issues in /tmp, but this changes appears to be unnecessary, difficult
+to maintain, and difficult to understand.
 
-The latter WWPN emulation bit is what allows SPC-4 features like
-persistent reservation (PR), asymmetric logical unit access (ALUA) to
-work right out of the box for a newly generated TCM v4 fabric plugin
-today.  This is what has been included in new base code for tcm_lpfc,
-tcm_qla2xxx and tcm_mvsas modules and recently posted to linux-scsi.
-
-Anyways, the ability generate a base kernel fabric module you can
-actually build, load and configure it's new TCM configfs fabric shell
-would be pretty cool and would certainly be a big help for new
-developers too.
-
-Thanks for your comments Andi!
-
-Best,
-
---nab
+Eric
 
