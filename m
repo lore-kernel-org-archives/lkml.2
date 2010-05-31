@@ -1,68 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755027Ab0EaNmX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 May 2010 09:42:23 -0400
-Received: from tex.lwn.net ([70.33.254.29]:58108 "EHLO vena.lwn.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754355Ab0EaNmW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 May 2010 09:42:22 -0400
-Date: Mon, 31 May 2010 07:42:19 -0600
-From: Jonathan Corbet <corbet@lwn.net>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: LKML <linux-kernel@vger.kernel.org>
-Subject: [RESEND, PULL] viafb video capture engine driver
-Message-ID: <20100531074219.4c5b7763@bike.lwn.net>
-Organization: LWN.net
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.21.0; x86_64-redhat-linux-gnu)
+	id S1755060Ab0EaNnq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 May 2010 09:43:46 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:46524 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754547Ab0EaNnp convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 31 May 2010 09:43:45 -0400
+Subject: Re: [RFC] perf, x86: Segregate PMU workaraunds into
+ x86_pmu_quirk_ops structure
+From: Peter Zijlstra <peterz@infradead.org>
+To: Robert Richter <robert.richter@amd.com>
+Cc: Cyrill Gorcunov <gorcunov@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+       =?ISO-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>,
+       Arnaldo Carvalho de Melo <acme@redhat.com>,
+       LKML <linux-kernel@vger.kernel.org>
+In-Reply-To: <20100531130058.GR21799@erda.amd.com>
+References: <20100529182409.GJ5322@lenovo>
+	 <20100531130058.GR21799@erda.amd.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Mon, 31 May 2010 15:43:47 +0200
+Message-ID: <1275313427.27810.22792.camel@twins>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8bit
+X-Mailer: Evolution 2.28.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi, Linus,
+On Mon, 2010-05-31 at 15:00 +0200, Robert Richter wrote:
+> 
+> The quirk functions add additional code and ops structures to the
+> already existing model specific code. This quirks would be fine if we
+> would could merge model specific code and get unified code. But these
+> model specific code cannot be replaced. So I rather prefer to
+> implement cpu errata in model specific code.
 
-Might the following little pull request have gotten lost in the noise?  If
-you saw something there you didn't like, please let me know; otherwise,
-hopefully, it can still find its way in?
-
-Thanks,
-
-jon
-
-Begin forwarded message:
-
-Date: Wed, 26 May 2010 10:03:07 -0600
-From: Jonathan Corbet <corbet@lwn.net>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Mauro Carvalho Chehab <mchehab@infradead.org>, 
-    LKML <linux-kernel@vger.kernel.org> 
-Subject: [PULL] viafb video capture engine driver
+The reason the existing quirk() function is called after *_pmu_init() is
+because of the funny way it all writes to the console.
 
 
-Hi, Linus,
-
-Mauro has now given me an ack for the via-camera driver - used on OLPC
-XO 1.5 systems - so it's now ready for a pull:
-
-  git://git.lwn.net/linux-2.6.git viafb-next
-
-Thanks,
-
-jon
-
-Jonathan Corbet (1):
-      Add the viafb video capture driver
-
- drivers/media/video/Kconfig      |   10 +
- drivers/media/video/Makefile     |    2 +
- drivers/media/video/via-camera.c | 1369 ++++++++++++++++++++++++++++++++++++++
- drivers/media/video/via-camera.h |   93 +++
- drivers/video/via/accel.c        |    2 +-
- drivers/video/via/via-core.c     |   16 +-
- include/linux/via-core.h         |    4 +-
- include/media/v4l2-chip-ident.h  |    4 + 
-8 files changed, 1496 insertions(+), 4 deletions(-) 
-create mode 100644 drivers/media/video/via-camera.c
-create mode 100644 drivers/media/video/via-camera.h
