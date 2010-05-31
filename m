@@ -1,54 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754802Ab0EaWNq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 May 2010 18:13:46 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:54410 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753033Ab0EaWNo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 May 2010 18:13:44 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:date:message-id:subject:from:to:content-type;
-        b=FonRgn372FgZHiffi9D/8mbiT9i5zeYpGvC28+B4JJs9LyEMK3ZQH+Q/HHVrhXYxGD
-         i0fFbkTJME9T55eBcJegkBnVJ6DqhUL1sJTWNih2e70dHxe8sf4O5XK9D7POtuBXwWUo
-         5Ii7k2L7OB8qJ+jM/ZtR9rAC2frX8nCkXnkGw=
+	id S1754861Ab0EaWRq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 May 2010 18:17:46 -0400
+Received: from www.tglx.de ([62.245.132.106]:51003 "EHLO www.tglx.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751231Ab0EaWRp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 31 May 2010 18:17:45 -0400
+Date: Tue, 1 Jun 2010 00:17:13 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: James Bottomley <James.Bottomley@suse.de>
+cc: Peter Zijlstra <peterz@infradead.org>,
+       =?ISO-8859-15?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>, tytso@mit.edu,
+       LKML <linux-kernel@vger.kernel.org>,
+       Florian Mickler <florian@mickler.org>,
+       Linux PM <linux-pm@lists.linux-foundation.org>,
+       Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
+       felipe.balbi@nokia.com, Alan Cox <alan@lxorguk.ukuu.org.uk>
+Subject: Re: [linux-pm] [PATCH 0/8] Suspend block api (version 8)
+In-Reply-To: <1275340869.2823.344.camel@mulgrave.site>
+Message-ID: <alpine.LFD.2.00.1006010006320.2933@localhost.localdomain>
+References: <20100527222514.0a1710bf@lxorguk.ukuu.org.uk>  <Pine.LNX.4.44L0.1005271730180.3239-100000@iolanthe.rowland.org>  <20100527230806.4deb6de3@lxorguk.ukuu.org.uk>  <20100527220949.GB10602@srcf.ucam.org>  <20100527232357.6d14fdb2@lxorguk.ukuu.org.uk>
+  <20100527223605.GB11364@srcf.ucam.org>  <20100527235546.09f3ce8a@lxorguk.ukuu.org.uk>  <20100528043114.GC26177@thunk.org> <1275030704.32462.11.camel@laptop>  <AANLkTikEtlbkT4Ws3H2YGt_9QC46B5dr-b1oxJOcG4GN@mail.gmail.com>  <1275120618.27810.12699.camel@twins>
+  <1275149418.4503.128.camel@mulgrave.site>  <alpine.LFD.2.00.1005312231120.2933@localhost.localdomain> <1275340869.2823.344.camel@mulgrave.site>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-Date: Mon, 31 May 2010 17:12:38 -0500
-Message-ID: <AANLkTinmBxzM4IEgrY6gqokDhLJDrVyKd0cu75VaFR8Q@mail.gmail.com>
-Subject: resource piix4_smbus conflicts with ACPI region SMRG
-From: Richard Tillmore <rtillmore@gmail.com>
-To: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Mon, 31 May 2010, James Bottomley wrote:
 
-I was running 2.6.30 until I had time to update.  Being a long weekend
-I upgraded to 2.6.34-rc6 and noticed a few new messages in dmesg.  I
-then installed 2.6.34 and the messages remain.
+> On Mon, 2010-05-31 at 22:49 +0200, Thomas Gleixner wrote:
+> > On Sat, 29 May 2010, James Bottomley wrote:
+> > > The job of the kernel is to accommodate hardware as best it can ...
+> > > sometimes it might not be able to, but most of the time it does a pretty
+> > > good job.
+> > > 
+> > > The facts are that C states and S states are different and are entered
+> > > differently. 
+> > 
+> > That's an x86'ism which is going away. And that's really completely
+> > irrelevant for the mobile device space. Can we please stop trying to
+> > fix todays x86 based laptop problems? They are simply not fixable.
+> 
+> You're the one mentioning x86, not me.  I already explained that some
+> MSM hardware (the G1 for example) has lower power consumption in S3
+> (which I'm using as an ACPI shorthand for suspend to ram) than any
+> suspend from idle C state.
 
-PCI: Ignoring host bridge windows from ACPI; if necessary, use
-"pci=use_crs" and report a bug
-ACPI: PCI Root Bridge [PCI0] (0000:00)
+Those machines can go from idle into S2RAM just fine w/o touching the
+/sys/power/state S2RAM mechanism.
 
-ACPI: resource piix4_smbus [io  0x0440-0x0447] conflicts with ACPI
-region SMRG [??? 0x00000440-0x0000044f flags 0x47]
-ACPI: If an ACPI driver is available for this device, you should use
-it instead of the native driver
+It's just a deeper "C" state, really.
 
-The system is a Tyan Tiger S1832 motherboard with a P3 850Mhz
-processor running the latest bios.  Everything appears to work
-properly so I am unsure what the messages mean beyond the obvious.  I
-did a little research and was wondering if this is related to the no
-bootmem patches.  I have:
-CONFIG_NO_BOOTMEM=y
-in my .config
+The confusion is that S3 is considered to be a complete different
+mechanism - which is true for PC style x86 - but not relevant for
+hardware which is sane from the PM point of view.
 
-I have the full dmesgs from 2.6.30, 2.6.34-rc6 and 2.6.34 if you need
-to see them.  I can also post my config if requested.
+Now some people think, that suspend blockers are a cure for the
+existing x86/ACPI/BIOS mess, which cannot go to S3 from idle, but
+that's simply not feasible.
 
 Thanks,
-Rich
+
+	tglx
