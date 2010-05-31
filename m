@@ -1,59 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756747Ab0EaKT3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 May 2010 06:19:29 -0400
-Received: from TYO201.gate.nec.co.jp ([202.32.8.193]:42778 "EHLO
-	tyo201.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756540Ab0EaKT0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 May 2010 06:19:26 -0400
-Date: Mon, 31 May 2010 19:17:46 +0900
-From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Wu Fengguang <fengguang.wu@intel.com>, Mel Gorman <mel@csn.ul.ie>
-Subject: Re: [PATCH 0/8] HWPOISON for hugepage (v6)
-Message-ID: <20100531101746.GB5370@spritzera.linux.bs1.fc.nec.co.jp>
-References: <1275006562-18946-1-git-send-email-n-horiguchi@ah.jp.nec.com>
- <20100531093009.GA10766@basil.fritz.box>
+	id S1756658Ab0EaKWQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 May 2010 06:22:16 -0400
+Received: from hera.kernel.org ([140.211.167.34]:58433 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751049Ab0EaKWO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 31 May 2010 06:22:14 -0400
+Message-ID: <4C038D77.3060508@kernel.org>
+Date: Mon, 31 May 2010 12:20:39 +0200
+From: Tejun Heo <tj@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.1.9) Gecko/20100317 Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-2022-jp
-Content-Disposition: inline
-In-Reply-To: <20100531093009.GA10766@basil.fritz.box>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+To: Li Zefan <lizf@cn.fujitsu.com>
+CC: "Michael S. Tsirkin" <mst@redhat.com>, Oleg Nesterov <oleg@redhat.com>,
+       Sridhar Samudrala <sri@us.ibm.com>, netdev <netdev@vger.kernel.org>,
+       lkml <linux-kernel@vger.kernel.org>,
+       "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Dmitri Vorobiev <dmitri.vorobiev@movial.com>,
+       Jiri Kosina <jkosina@suse.cz>, Thomas Gleixner <tglx@linutronix.de>,
+       Ingo Molnar <mingo@elte.hu>, Andi Kleen <ak@linux.intel.com>
+Subject: Re: [PATCH UPDATED2 3/3] vhost: apply cpumask and cgroup to vhost
+ pollers
+References: <20100527091426.GA6308@redhat.com> <20100527124448.GA4241@redhat.com> <20100527131254.GB7974@redhat.com> <4BFE9ABA.6030907@kernel.org> <20100527163954.GA21710@redhat.com> <4BFEA434.6080405@kernel.org> <20100527173207.GA21880@redhat.com> <4BFEE216.2070807@kernel.org> <20100528150830.GB21880@redhat.com> <4BFFE742.2060205@kernel.org> <20100530112925.GB27611@redhat.com> <4C02C99D.9070204@kernel.org> <4C030CB8.505@cn.fujitsu.com> <4C035E22.9010001@kernel.org> <4C0369CD.70008@cn.fujitsu.com>
+In-Reply-To: <4C0369CD.70008@cn.fujitsu.com>
+X-Enigmail-Version: 1.0.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Mon, 31 May 2010 10:20:42 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 31, 2010 at 11:30:09AM +0200, Andi Kleen wrote:
-> On Fri, May 28, 2010 at 09:29:14AM +0900, Naoya Horiguchi wrote:
-> > Hi,
-> > 
-> > Here is a "HWPOISON for hugepage" patchset which reflects
-> > Mel's comments on hugepage rmapping code.
-> > Only patch 1/8 and 2/8 are changed since the previous post.
-> > 
-> > Mel, could you please restart reviewing and testing?
-> 
-> Thanks everyone, I merged this patch series in the hwpoison
-> tree now, aimed for 2.6.36. It should appear in linux-next
-> shortly.
+Apply the cpumask and cgroup of the initializing task to the created
+vhost poller.
+
+Based on Sridhar Samudrala's patch.  Li Zefan spotted a bug in error
+path (twice), fixed (twice).
+
+Cc: Michael S. Tsirkin <mst@redhat.com>
+Cc: Sridhar Samudrala <samudrala.sridhar@gmail.com>
+Cc: Li Zefan <lizf@cn.fujitsu.com>
+---
+Heh... that's embarrassing.  Let's see if I can get it right the third
+time.
 
 Thank you.
 
-> Question is how to proceed now: the next steps would
-> be early kill support
+ drivers/vhost/vhost.c |   36 ++++++++++++++++++++++++++++++++----
+ 1 file changed, 32 insertions(+), 4 deletions(-)
 
-Does early kill for hugetlb work with this patchset, doesn't it?
-Do you mean something else?
+Index: work/drivers/vhost/vhost.c
+===================================================================
+--- work.orig/drivers/vhost/vhost.c
++++ work/drivers/vhost/vhost.c
+@@ -23,6 +23,7 @@
+ #include <linux/highmem.h>
+ #include <linux/slab.h>
+ #include <linux/kthread.h>
++#include <linux/cgroup.h>
 
-> and soft offline/migration support for
-> hugetlb too. Horiguchi-san, is this something you're interested
-> in working on?
+ #include <linux/net.h>
+ #include <linux/if_packet.h>
+@@ -177,11 +178,29 @@ long vhost_dev_init(struct vhost_dev *de
+ 		    struct vhost_virtqueue *vqs, int nvqs)
+ {
+ 	struct task_struct *poller;
+-	int i;
++	cpumask_var_t mask;
++	int i, ret = -ENOMEM;
++
++	if (!alloc_cpumask_var(&mask, GFP_KERNEL))
++		goto out_free_mask;
 
-Yes, it is.
-I'll do it with pleasure :)
+ 	poller = kthread_create(vhost_poller, dev, "vhost-%d", current->pid);
+-	if (IS_ERR(poller))
+-		return PTR_ERR(poller);
++	if (IS_ERR(poller)) {
++		ret = PTR_ERR(poller);
++		goto out_free_mask;
++	}
++
++	ret = sched_getaffinity(current->pid, mask);
++	if (ret)
++		goto out_stop_poller;
++
++	ret = sched_setaffinity(poller->pid, mask);
++	if (ret)
++		goto out_stop_poller;
++
++	ret = cgroup_attach_task_current_cg(poller);
++	if (ret)
++		goto out_stop_poller;
 
-Thanks,
-Naoya Horiguchi
+ 	dev->vqs = vqs;
+ 	dev->nvqs = nvqs;
+@@ -202,7 +221,16 @@ long vhost_dev_init(struct vhost_dev *de
+ 			vhost_poll_init(&dev->vqs[i].poll,
+ 					dev->vqs[i].handle_kick, POLLIN, dev);
+ 	}
+-	return 0;
++
++	wake_up_process(poller);	/* avoid contributing to loadavg */
++	ret = 0;
++	goto out_free_mask;
++
++out_stop_poller:
++	kthread_stop(poller);
++out_free_mask:
++	free_cpumask_var(mask);
++	return ret;
+ }
+
+ /* Caller should have device mutex */
