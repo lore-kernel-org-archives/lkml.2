@@ -1,48 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755187Ab0EaXKq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 May 2010 19:10:46 -0400
-Received: from tundra.namei.org ([65.99.196.166]:38600 "EHLO tundra.namei.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753635Ab0EaXKo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 May 2010 19:10:44 -0400
-Date: Tue, 1 Jun 2010 09:09:10 +1000 (EST)
-From: James Morris <jmorris@namei.org>
-To: Kees Cook <kees.cook@canonical.com>
-cc: Christoph Hellwig <hch@infradead.org>, linux-kernel@vger.kernel.org,
-       linux-security-module@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-       linux-doc@vger.kernel.org, Randy Dunlap <rdunlap@xenotime.net>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Jiri Kosina <jkosina@suse.cz>, Dave Young <hidave.darkstar@gmail.com>,
-       Martin Schwidefsky <schwidefsky@de.ibm.com>,
-       Eric Paris <eparis@redhat.com>, David Howells <dhowells@redhat.com>,
-       Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-       "Eric W. Biederman" <ebiederm@xmission.com>,
-       Tim Gardner <tim.gardner@canonical.com>,
-       "Serge E. Hallyn" <serue@us.ibm.com>
-Subject: Re: [PATCH v2] fs: block cross-uid sticky symlinks
-In-Reply-To: <20100531175733.GD4098@outflux.net>
-Message-ID: <alpine.LRH.2.00.1006010904190.675@tundra.namei.org>
-References: <20100531030402.GQ6056@outflux.net> <20100531103510.GA30021@infradead.org> <20100531175733.GD4098@outflux.net>
-User-Agent: Alpine 2.00 (LRH 1167 2008-08-23)
+	id S1755212Ab0EaXL6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 May 2010 19:11:58 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:56369 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753635Ab0EaXL5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 31 May 2010 19:11:57 -0400
+Date: Mon, 31 May 2010 20:11:45 -0300
+From: Arnaldo Carvalho de Melo <acme@infradead.org>
+To: Valdis.Kletnieks@vt.edu
+Cc: Stephane Eranian <eranian@google.com>, Ingo Molnar <mingo@elte.hu>,
+       linux-kernel@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
+       =?iso-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>,
+       Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
+       Peter Zijlstra <peterz@infradead.org>, Tom Zanussi <tzanussi@gmail.com>
+Subject: Re: [PATCH 1/5] perf stat: add perf stat -B to pretty print large
+ numbers
+Message-ID: <20100531231145.GA4093@ghostprotocols.net>
+References: <1274234900-12162-1-git-send-email-acme@infradead.org>
+ <1274234900-12162-2-git-send-email-acme@infradead.org>
+ <52092.1275333099@localhost>
+ <AANLkTimBxG-2TVC7hAfvRHWupa8T7FaVEcDTnAMCtQWy@mail.gmail.com>
+ <77282.1275338942@localhost>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <77282.1275338942@localhost>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 31 May 2010, Kees Cook wrote:
+Em Mon, May 31, 2010 at 04:49:02PM -0400, Valdis.Kletnieks@vt.edu escreveu:
+> the same places, -B or not -B.  I was sort of expecting that the first
+> example wouldn't have commas in it, or something?  Or were those two
 
-> Expecting the push-back from VFS, I wrote this patch against commoncaps.
-> 
-> James, would you take it there (along with the patch to SELinux to call
-> out to commoncaps) if there is no way to proceed with the VFS core towards
-> solving this?
+Right, from a quick read it seems you saw a bug in the changeset and I
+saw none in the patch itself.
 
-Isn't this just bypassing the VFS objections?
+I've read the intent, tested the patches, found it matched the intent,
+happily applied the patch with a confusing/wrong comment, too bad :-\
 
+> examples *supposed* to be identical, and there's a not-shown 3rd example
+> that shows what you get if you use -B and set the LC_NUMERIC variable?
 
-- James
--- 
-James Morris
-<jmorris@namei.org>
+- Arnaldo
