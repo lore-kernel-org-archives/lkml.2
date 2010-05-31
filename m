@@ -1,24 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756172Ab0EaHJN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 May 2010 03:09:13 -0400
-Received: from mga14.intel.com ([143.182.124.37]:48589 "EHLO mga14.intel.com"
+	id S1756242Ab0EaHJS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 May 2010 03:09:18 -0400
+Received: from mga11.intel.com ([192.55.52.93]:29510 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753002Ab0EaHJL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 May 2010 03:09:11 -0400
+	id S1756217Ab0EaHJQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 31 May 2010 03:09:16 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.53,331,1272870000"; 
-   d="scan'208";a="283140630"
-Subject: [PATCH -v3 0/2] x86, MCE, FIX MSR_IA32_MCI_CTL2_CMCI threshold
- setup (resend)
+   d="scan'208";a="571922572"
+Subject: [PATCH 2/2] x86, MCE, fix MSR_IA32_MCI_CTL2 CMCI threshold setup
 From: Huang Ying <ying.huang@intel.com>
 To: Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>
 Cc: LKML <linux-kernel@vger.kernel.org>, Huang@vger.kernel.org,
-       Ying <ying.huang@intel.com>, Andi Kleen <andi@firstfloor.org>,
+       Andi Kleen <andi@firstfloor.org>, Ying <ying.huang@intel.com>,
        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
 Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 31 May 2010 15:09:08 +0800
-Message-ID: <1275289748.3444.441.camel@yhuang-dev.sh.intel.com>
+Date: Mon, 31 May 2010 15:09:13 +0800
+Message-ID: <1275289753.3444.443.camel@yhuang-dev.sh.intel.com>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
@@ -26,16 +25,42 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Changelog:
+It is reported that CMCI is not raised when number of corrected error
+reaches preset threshold. After inspection, it is found that
+MSR_IA32_MCI_CTL2 threshold field is not setup properly. This patch
+fixed it.
 
-v3:
+Value of MCI_CTL2_CMCI_THRESHOLD_MASK is fixed according to x86_64
+Software Developer's Manual too.
 
-- Separate patch into 2 patches, one for renaming, the other for
-threshold setup fixing.
+Reported-by: Shaohui Zheng <shaohui.zheng@intel.com>
+Signed-off-by: Huang Ying <ying.huang@intel.com>
+Reviewed-by: Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
+---
+ arch/x86/include/asm/mce.h             |    2 +-
+ arch/x86/kernel/cpu/mcheck/mce_intel.c |    1 +
+ 2 files changed, 2 insertions(+), 1 deletion(-)
 
-v2:
-
-- Rename CMCI_EN to MCI_CTL2_CMCI_EN and CMCI_THRESHOLD_MASK to
-  MCI_CTL2_CMCI_THRESHOLD_MASK to make naming consistent.
+--- a/arch/x86/include/asm/mce.h
++++ b/arch/x86/include/asm/mce.h
+@@ -40,7 +40,7 @@
+ 
+ /* CTL2 register defines */
+ #define MCI_CTL2_CMCI_EN		(1ULL << 30)
+-#define MCI_CTL2_CMCI_THRESHOLD_MASK	0xffffULL
++#define MCI_CTL2_CMCI_THRESHOLD_MASK	0x7fffULL
+ 
+ #define MCJ_CTX_MASK		3
+ #define MCJ_CTX(flags)		((flags) & MCJ_CTX_MASK)
+--- a/arch/x86/kernel/cpu/mcheck/mce_intel.c
++++ b/arch/x86/kernel/cpu/mcheck/mce_intel.c
+@@ -102,6 +102,7 @@ static void cmci_discover(int banks, int
+ 			continue;
+ 		}
+ 
++		val &= ~MCI_CTL2_CMCI_THRESHOLD_MASK;
+ 		val |= MCI_CTL2_CMCI_EN | CMCI_THRESHOLD;
+ 		wrmsrl(MSR_IA32_MCx_CTL2(i), val);
+ 		rdmsrl(MSR_IA32_MCx_CTL2(i), val);
 
 
