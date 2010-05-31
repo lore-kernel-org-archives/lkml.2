@@ -1,102 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756562Ab0EaQKJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 May 2010 12:10:09 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:1027 "EHLO mx1.redhat.com"
+	id S1756830Ab0EaQPL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 May 2010 12:15:11 -0400
+Received: from lo.gmane.org ([80.91.229.12]:41725 "EHLO lo.gmane.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751839Ab0EaQKH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 May 2010 12:10:07 -0400
-Date: Mon, 31 May 2010 19:00:20 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: Oleg Nesterov <oleg@redhat.com>, Sridhar Samudrala <sri@us.ibm.com>,
-       netdev <netdev@vger.kernel.org>, lkml <linux-kernel@vger.kernel.org>,
-       "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Dmitri Vorobiev <dmitri.vorobiev@movial.com>,
-       Jiri Kosina <jkosina@suse.cz>, Thomas Gleixner <tglx@linutronix.de>,
-       Ingo Molnar <mingo@elte.hu>, Andi Kleen <ak@linux.intel.com>
-Subject: Re: [PATCH 1/3] vhost: replace vhost_workqueue with per-vhost
-	kthread
-Message-ID: <20100531160020.GC3067@redhat.com>
-References: <20100527163954.GA21710@redhat.com> <4BFEA434.6080405@kernel.org> <20100527173207.GA21880@redhat.com> <4BFEE216.2070807@kernel.org> <20100528150830.GB21880@redhat.com> <4BFFE742.2060205@kernel.org> <20100530112925.GB27611@redhat.com> <4C02C961.9050606@kernel.org> <20100531152221.GB2987@redhat.com> <4C03D983.9010905@kernel.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4C03D983.9010905@kernel.org>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+	id S1756523Ab0EaQPI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 31 May 2010 12:15:08 -0400
+X-Injected-Via-Gmane: http://gmane.org/
+To: linux-kernel@vger.kernel.org
+connect(): No such file or directory
+From: "H.S." <hs.samix@gmail.com>
+Subject: Re: [PATCH] firewire: core: check for 1394a compliant IRM, fix inaccessibility
+ of Sony camcorder
+Date: Mon, 31 May 2010 11:14:02 -0400
+Message-ID: <hu0jnr$10b$1@dough.gmane.org>
+References: <AANLkTimIFRbKWYjFd56acxT2A6nnH6l3-7Q_UyORnonW@mail.gmail.com>	<4C017477.8000008@s5r6.in-berlin.de>	<4C0284E7.3050803@s5r6.in-berlin.de>	<tkrat.740b506673ccbf6d@s5r6.in-berlin.de>	<htu993$60f$1@dough.gmane.org>	<4C02B483.9080802@s5r6.in-berlin.de> <htuebt$l80$1@dough.gmane.org>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Complaints-To: usenet@dough.gmane.org
+X-Gmane-NNTP-Posting-Host: 206-248-129-141.dsl.teksavvy.com
+User-Agent: Mozilla-Thunderbird 2.0.0.22 (X11/20090706)
+In-Reply-To: <htuebt$l80$1@dough.gmane.org>
+Cc: linux1394-devel@lists.sourceforge.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 31, 2010 at 05:45:07PM +0200, Tejun Heo wrote:
-> Hello,
+H.S. wrote:
 > 
-> On 05/31/2010 05:22 PM, Michael S. Tsirkin wrote:
-> > On Sun, May 30, 2010 at 10:24:01PM +0200, Tejun Heo wrote:
-> >> Replace vhost_workqueue with per-vhost kthread.  Other than callback
-> >> argument change from struct work_struct * to struct vhost_poll *,
-> >> there's no visible change to vhost_poll_*() interface.
-> > 
-> > I would prefer a substructure vhost_work, even just to make
-> > the code easier to review and compare to workqueue.c.
+> I will report back how it goes as soon as I am able to do the experiments.
 > 
-> Yeap, sure.
-> 
-> >> The problem is that I have no idea how to test this.
-> > 
-> > It's a 3 step process:
-> ...
-> > You should now be able to ping guest to host and back.
-> > Use something like netperf to stress the connection.
-> > Close qemu with kill -9 and unload module to test flushing code.
-> 
-> Thanks for the instruction.  I'll see if there's a way to do it
-> without building qemu myself on opensuse.
 
-My guess is no, there was no stable qemu release with vhost net support
-yet.  Building it is mostly configure/make/make install,
-as far as I remember you only need devel versions of X libraries,
-SDL and curses installed.
 
->  But please feel free to go
-> ahead and test it.  It might just work!  :-)
-> 
-> >> +	if (poll) {
-> >> +		__set_current_state(TASK_RUNNING);
-> >> +		poll->fn(poll);
-> >> +		smp_wmb();	/* paired with rmb in vhost_poll_flush() */
-> >> +		poll->done_seq = poll->queue_seq;
-> >> +		wake_up_all(&poll->done);
-> > 
-> 
-> > This seems to add wakeups on data path, which uses spinlocks etc.
-> > OTOH workqueue.c adds a special barrier entry which only does a
-> > wakeup when needed.  Right?
-> 
-> Yeah, well, if it's a really hot path sure we can avoid wake_up_all()
-> in most cases.  Do you think that would be necessary?
+Well, good news. The patch seems to be worked as you designed.
 
-My guess is yes. This is really very hot path in code, and we are
-close to 100% CPU in some benchmarks.
+Compiled the kernel with your patch, rebooted the machine and plugged in
+the camcorder to the firewire port. This is what the log said:
+May 31 11:06:47 red kernel: [  924.228439] firewire_ohci: isochronous
+cycle inconsistent
+May 31 11:06:48 red kernel: [  924.821383] firewire_core: created device
+fw1: GUID 08004601024aca36, S100
+May 31 11:06:48 red kernel: [  924.821396] firewire_core: phy config:
+card 0, new root=ffc1, gap_count=5
+May 31 11:06:48 red kernel: [  924.833768] firewire_core: IRM is not
+1394a compliant, making local node (ffc0) root.
+May 31 11:06:48 red kernel: [  924.833777] firewire_core: phy config:
+card 0, new root=ffc0, gap_count=5
 
-> >> -void vhost_cleanup(void)
-> >> -{
-> >> -	destroy_workqueue(vhost_workqueue);
-> > 
-> > I note that destroy_workqueue does a flush, kthread_stop
-> > doesn't. Right? Sure we don't need to check nothing is in one of
-> > the lists? Maybe add a BUG_ON?
-> 
-> There were a bunch of flushes before kthread_stop() and they seemed to
-> stop and flush everything.  Aren't they enough?
 
-I was just asking, I'll need to review the code in depth.
+And that is all it said ever after I captured a footage of some seconds.
+I used the following command:
+$>  dvgrab -a -f raw -t video-
 
-> We can definitely add
-> BUG_ON() after kthread_should_stop() check succeeds either way tho.
-> 
-> Thanks.
-> 
-> -- 
-> tejun
+Then I switched off the camera, and still there were no messages in the log.
+
+So, what is verdict?
+
+Meanwhile, I will continue using this kernel.
+
+Thanks.
+
+-- 
+
+Please reply to this list only. I read this list on its corresponding
+newsgroup on gmane.org. Replies sent to my email address are just
+filtered to a folder in my mailbox and get periodically deleted without
+ever having been read.
+
