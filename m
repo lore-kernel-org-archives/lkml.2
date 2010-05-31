@@ -1,33 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751897Ab0EaFEi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 May 2010 01:04:38 -0400
-Received: from cpoproxy2-pub.bluehost.com ([67.222.39.38]:40540 "HELO
-	outbound-mail-158.bluehost.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1750933Ab0EaFEg (ORCPT
+	id S1752287Ab0EaFFF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 May 2010 01:05:05 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:51653 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751506Ab0EaFFB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 May 2010 01:04:36 -0400
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=virtuousgeek.org;
-	h=Received:Date:Subject:Message-ID:From:To:Cc:Content-Type:Content-Transfer-Encoding:X-Identified-User;
-	b=Z5UvHiVsDzqJXcrVkzli3RxArlaG4PIG4j7TrdOxiseGf6XC7TFnKki5/SDlCrUIvhvq/GADtp+Jfaengcjz2XGEJb+LkzVuI3KD8FOpSnN9R2NHjr0SzUR6/O48SQth;
-Date: Sun, 30 May 2010 22:03:10 -0700
-Subject: Re: [RFC] Try a bit harder to get output on the screen at panic
- time
-Message-ID: <vbf0pu1dqa60ojk7uuublww9.1275282082699@email.android.com>
-From: Jesse Barnes <jbarnes@virtuousgeek.org>
-To: Maxim Levitsky <maximlevitsky@gmail.com>
-Cc: dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       Dave Airlie <airlied@gmail.com>, James Simmons <jsimmons@infradead.org>
-Content-Type: text/plain; charset=utf-8
-X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 75.210.28.220 authed with jbarnes@virtuousgeek.org}
+	Mon, 31 May 2010 01:05:01 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=LhNaZ1ltVWwBvdzW5IaSCxkm8OXAPQx+cAjc1w2QHzr25jKMrgBM5j6TZ+kyC0rOrq
+         Z9nGE+OEpxVskvGb4q6tXfOM5S+7dt66jxbpxUllplTmx0ed0cutM8TtCkppXmGy7DtU
+         MHkK8HiUjri60yPXoRW1Ky/Pej3NBz4gLIq1w=
+Subject: [PATCH] ipv6: get rid of ipip6_prl_lock
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Julia Lawall <julia@diku.dk>
+Cc: "David S. Miller" <davem@davemloft.net>,
+       Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
+       "Pekka Savola (ipv6)" <pekkas@netcore.fi>,
+       James Morris <jmorris@namei.org>,
+       Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
+       Patrick McHardy <kaber@trash.net>, netdev@vger.kernel.org,
+       linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
+In-Reply-To: <Pine.LNX.4.64.1005302303180.19253@ask.diku.dk>
+References: <Pine.LNX.4.64.1005302147310.19253@ask.diku.dk>
+	 <1275250288.2472.21.camel@edumazet-laptop>
+	 <Pine.LNX.4.64.1005302248500.19253@ask.diku.dk>
+	 <1275252912.2472.23.camel@edumazet-laptop>
+	 <Pine.LNX.4.64.1005302303180.19253@ask.diku.dk>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 31 May 2010 07:04:55 +0200
+Message-ID: <1275282295.2472.34.camel@edumazet-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by alpha.home.local id o4V54iim001253
 
-I'll test again this week.  I still don't see how these small patches could cause issues with suspend/resume unless we set oops_in_progress during that time on your machine...
-Jesse
-Maxim Levitsky <maximlevitsky@gmail.com> wrote:
->On Sat, 2010-05-22 at 01:26 +0300, Maxim Levitsky wrote: >> On Fri, 2010-05-21 at 15:02 -0700, Jesse Barnes wrote: >> > On Sat, 22 May 2010 00:57:30 +0300>> > Maxim Levitsky <maximlevitsky@gmail.com> wrote:>> > >> > > On Fri, 2010-05-21 at 00:14 +0300, Maxim Levitsky wrote: >> > > > On Thu, 2010-05-20 at 09:28 -0700, Jesse Barnes wrote: >> > > > > On Thu, 20 May 2010 04:27:07 +0300>> > > > > Maxim Levitsky <maximlevitsky@gmail.com> wrote:>> > > > > >> > > > > > On Thu, 2010-05-20 at 04:13 +0300, Maxim Levitsky wrote: >> > > > > > > On Wed, 2010-05-19 at 17:34 -0700, Jesse Barnes wrote: >> > > > > > > > On Fri, 9 Apr 2010 15:10:50 -0700>> > > > > > > > Jesse Barnes <jbarnes@virtuousgeek.org> wrote:>> > > > > > > > >> > > > > > > > > This set of 3 patches makes it a little more likely we'll get panic>> > > > > > > > > output onto the screen even when X is running, assuming a KMS enabled>> > > > > > > > > stack anyway.>> > > > > > > > > >> > > > > > > > > It gets me from a blank or very sparsely populated black screen at>> > > > > > > > > panic time, to one including the full backtrace and panic output at>> > > > > > > > > panic time (tested with "echo c > /proc/sysrq-trigger" from an X>> > > > > > > > > session).>> > > > > > > > > >> > > > > > > > > It doesn't cover every case; for instance I think it'll fail when X has>> > > > > > > > > disabled the display, but those cases need to be handled with separate>> > > > > > > > > patches anyway (need to add atomic DPMS paths for instance).>> > > > > > > > > >> > > > > > > > > Anyway, please test these out and let me know if they work for you.>> > > > > > > > >> > > > > > > > Ping Linus & Dave again.  Have you guys tried these?  Really, it's cool.>> > > > > > > > >> > > > > > > Second that, just tested these patches, and these work perfectly.>> > > > > > > One more reason for me to dump nvidia driver for nouveau.>> > > > > > >> > > > > > >> > > > > > Unfortunately I spoke too soon.>> > > > > > >> > > > > > >> > > > > > After suspend to ram, system doesn't properly resume now.>> > > > > > >> > > > > > My system is based on nvidia G86, I use latest nouveau drivers, and>> > > > > > suspend with compiz running.>> > > > > > >> > > > > > I also patched kernel not to do vt switch on suspend/resume:>> > > > > > >> > > > > > diff --git a/drivers/gpu/drm/nouveau/nouveau_state.c>> > > > > > b/drivers/gpu/drm/nouveau/nouveau_state.c>> > > > > > index 062b7f6..b3ef08b 100644>> > > > > > --- a/drivers/gpu/drm/nouveau/nouveau_state.c>> > > > > > +++ b/drivers/gpu/drm/nouveau/nouveau_state.c>> > > > > > @@ -31,6 +31,7 @@>> > > > > > #include "drm_crtc_helper.h">> > > > > > #include <linux/vgaarb.h>>> > > > > > #include <linux/vga_switcheroo.h>>> > > > > > +#include <linux/suspend.h>>> > > > > > >> > > > > > #include "nouveau_drv.h">> > > > > > #include "nouveau_drm.h">> > > > > > @@ -771,6 +772,8 @@ int nouveau_load(struct drm_device *dev, unsigned>> > > > > > long flags)>> > > > > >                 int ret = nouveau_card_init(dev);>> > > > > >                 if (ret)>> > > > > >                         return ret;>> > > > > > +>> > > > > > +               pm_set_vt_switch(0);>> > > > > >         }>> > > > > > >> > > > > >         return 0;>> > > > > >> > > > > Hm I don't see how my patches would have affected suspend/resume, since>> > > > > they just add "oops_in_progress" checks to a few places.  Are you sure>> > > > > something else isn't breaking your resume path?>> > > > I am sure. I just reverted them, and everything works again.>> > > > I refer to 3 patches in this thread.>> > > In fact I might look a bit silly, but I applied these patches on top of>> > > linus master tree + nouveau master, and suspend to ram works just fine.>> > > >> > > Maybe it shows up when kgdb+kdb isn't compiled in or so.>> > > Maybe it just triggered some bug in nouveau drivers...>> > > >> > > >> > > (Note that I also enabled kgdb, and kdb, and breaking into kdb (SysRQ+g)>> > > doesn't switch console mode, just hangs till I press 'g'.>> > >> > Ok so it sounds like these particular patches are innocent?>> > >> > As for kdb, I think the latest tree is probably missing the graphics>> > switch support on the driver side...>> In what part? nouveau or kdb?>> >> Screen does switch to text mode and displays the backtrace on 'panic'>> (Tested with sysrq+c).>> (If kdb is enabled, screen doesn't switch, but allowing kdb to continue>> via 'g' command eventually breaks into it.)>>Ping.>>Best regards,>Maxim Levitsky>>ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+Le dimanche 30 mai 2010 Ã  23:09 +0200, Julia Lawall a Ã©crit :
+> On Sun, 30 May 2010, Eric Dumazet wrote:
+> 
+> > Le dimanche 30 mai 2010 Ã  22:50 +0200, Julia Lawall a Ã©crit :
+> > 
+> > > I think the proposed patch does not work, because the for loop overwrites 
+> > > p.  That use of p looks like it is completely local to the for loop, so 
+> > > perhaps a new variable p1 could be added to be used there?
+> > 
+> > Please do so.
+> > 
+> > I just wanted to tell you changing GFP_KERNEL to GFP_ATOMIC is not an
+> > appropriate way to solve this kind of problems. My patch was to get an
+> > idea, not a full and tested patch :)
+> 
+> Looking at it again, there is still a problem, because in the original 
+> code, the loop:
+> 
+...
+> 
+> could exit with success without the kzalloc ever being called.  If the 
+> kzalloc is moved up, it could fail and then it returns immediately without 
+> executing the loop.  A solution could be to leave the NULL test on p where 
+> it is, and only move up the kzalloc.  Or perhaps the change in behavior 
+> doesn't matter?
+> 
+
+
+[PATCH] ipv6: get rid of ipip6_prl_lock
+
+As noticed by Julia Lawall, ipip6_tunnel_add_prl() incorrectly calls 
+kzallloc(..., GFP_KERNEL) while a spinlock is held. He provided
+a patch to use GFP_ATOMIC instead.
+
+One possibility would be to convert this spinlock to a mutex, or
+preallocate the thing before taking the lock.
+
+After RCU conversion, it appears we dont need this lock, since 
+caller already holds RTNL
+
+Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
+---
+ net/ipv6/sit.c |    8 ++------
+ 1 file changed, 2 insertions(+), 6 deletions(-)
+
+diff --git a/net/ipv6/sit.c b/net/ipv6/sit.c
+index e51e650..702c532 100644
+--- a/net/ipv6/sit.c
++++ b/net/ipv6/sit.c
+@@ -249,8 +249,6 @@ failed:
+ 	return NULL;
+ }
+ 
+-static DEFINE_SPINLOCK(ipip6_prl_lock);
+-
+ #define for_each_prl_rcu(start)			\
+ 	for (prl = rcu_dereference(start);	\
+ 	     prl;				\
+@@ -340,7 +338,7 @@ ipip6_tunnel_add_prl(struct ip_tunnel *t, struct ip_tunnel_prl *a, int chg)
+ 	if (a->addr == htonl(INADDR_ANY))
+ 		return -EINVAL;
+ 
+-	spin_lock(&ipip6_prl_lock);
++	ASSERT_RTNL();
+ 
+ 	for (p = t->prl; p; p = p->next) {
+ 		if (p->addr == a->addr) {
+@@ -370,7 +368,6 @@ ipip6_tunnel_add_prl(struct ip_tunnel *t, struct ip_tunnel_prl *a, int chg)
+ 	t->prl_count++;
+ 	rcu_assign_pointer(t->prl, p);
+ out:
+-	spin_unlock(&ipip6_prl_lock);
+ 	return err;
+ }
+ 
+@@ -397,7 +394,7 @@ ipip6_tunnel_del_prl(struct ip_tunnel *t, struct ip_tunnel_prl *a)
+ 	struct ip_tunnel_prl_entry *x, **p;
+ 	int err = 0;
+ 
+-	spin_lock(&ipip6_prl_lock);
++	ASSERT_RTNL();
+ 
+ 	if (a && a->addr != htonl(INADDR_ANY)) {
+ 		for (p = &t->prl; *p; p = &(*p)->next) {
+@@ -419,7 +416,6 @@ ipip6_tunnel_del_prl(struct ip_tunnel *t, struct ip_tunnel_prl *a)
+ 		}
+ 	}
+ out:
+-	spin_unlock(&ipip6_prl_lock);
+ 	return err;
+ }
+ 
+
+
