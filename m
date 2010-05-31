@@ -1,74 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754850Ab0EaI2L (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 May 2010 04:28:11 -0400
-Received: from smtp.nokia.com ([192.100.122.233]:25694 "EHLO
-	mgw-mx06.nokia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751717Ab0EaI2J (ORCPT
+	id S1756190Ab0EaIdS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 May 2010 04:33:18 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:55062 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753872Ab0EaIdR convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 May 2010 04:28:09 -0400
-Subject: Re: [PATCHv4 17/17] writeback: lessen sync_supers wakeup count
-From: Artem Bityutskiy <dedekind1@gmail.com>
-Reply-To: dedekind1@gmail.com
-To: Nick Piggin <npiggin@suse.de>
-Cc: Al Viro <viro@ZenIV.linux.org.uk>, LKML <linux-kernel@vger.kernel.org>,
-       Jens Axboe <jens.axboe@oracle.com>, linux-fsdevel@vger.kernel.org
-In-Reply-To: <20100527154435.GS22536@laptop>
-References: <1274795352-3551-1-git-send-email-dedekind1@gmail.com>
-	 <1274795352-3551-18-git-send-email-dedekind1@gmail.com>
-	 <20100527065041.GA31073@ZenIV.linux.org.uk> <20100527072240.GM22536@laptop>
-	 <1274957469.13159.20.camel@localhost> <20100527120737.GN22536@laptop>
-	 <1274973693.15516.67.camel@localhost>  <20100527154435.GS22536@laptop>
+	Mon, 31 May 2010 04:33:17 -0400
+Subject: Re: [PATCH 1/5] sched: fix capacity calculations for SMT4
+From: Peter Zijlstra <peterz@infradead.org>
+To: Michael Neuling <mikey@neuling.org>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>, linuxppc-dev@ozlabs.org,
+       linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
+       Suresh Siddha <suresh.b.siddha@intel.com>,
+       Gautham R Shenoy <ego@in.ibm.com>
+In-Reply-To: <1271426308.1674.429.camel@laptop>
+References: <20100409062118.D4096CBB6C@localhost.localdomain>
+	 <1271161766.4807.1280.camel@twins>  <2906.1271219317@neuling.org>
+	 <1271426308.1674.429.camel@laptop>
 Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 31 May 2010 11:25:52 +0300
-Message-ID: <1275294352.2678.102.camel@localhost>
+Content-Transfer-Encoding: 8BIT
+Date: Mon, 31 May 2010 10:33:16 +0200
+Message-ID: <1275294796.27810.21554.camel@twins>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.1.2 (2.30.1.2-6.fc13) 
-Content-Transfer-Encoding: 8bit
-X-OriginalArrivalTime: 31 May 2010 08:27:56.0282 (UTC) FILETIME=[2BAC15A0:01CB009B]
-X-Nokia-AV: Clean
+X-Mailer: Evolution 2.28.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2010-05-28 at 01:44 +1000, Nick Piggin wrote:
-> > if (supers_dirty)
-> > 	bdi_arm_supers_timer();
-> > set_current_state(TASK_INTERRUPTIBLE);
-> > schedule();
-
-> But we cannot do the above, because again the timer might go off
-> before we set current state. We'd lose the wakeup and never wake
-> up again.
+On Fri, 2010-04-16 at 15:58 +0200, Peter Zijlstra wrote:
 > 
-> Putting it inside set_current_state() should be OK. I suppose.
+> 
+> Hrmm, my brain seems muddled but I might have another solution, let me
+> ponder this for a bit..
+> 
 
-Hmm, but it looks like we cannot do that either. If we do
+Right, so the thing I was thinking about is taking the group capacity
+into account when determining the capacity for a single cpu.
 
-set_current_state(TASK_INTERRUPTIBLE);
-if (supers_dirty)
-	bdi_arm_supers_timer();
-schedule();
+Say the group contains all the SMT siblings, then use the group capacity
+(usually larger than 1024) and then distribute the capacity over the
+group members, preferring CPUs with higher individual cpu_power over
+those with less.
 
-and the kernel is preemptive, is it possible that we get preempted
-before we run 'bdi_arm_supers_timer()', but after we do
-'set_current_state(TASK_INTERRUPTIBLE)'. And we will never wake up if
-the timer armed in mark_sb_dirty() went off.
+So suppose you've got 4 siblings with cpu_power=294 each, then we assign
+capacity 1 to the first member, and the remaining 153 is insufficient,
+and thus we stop and the rest lives with 0 capacity.
 
-So it looks like this is the way to go:
+Now take the example that the first sibling would be running a heavy RT
+load, and its cpu_power would be reduced to say, 50, then we still got
+nearly 933 left over the others, which is still sufficient for one
+capacity, but because the first sibling is low, we'll assign it 0 and
+instead assign 1 to the second, again, leaving the third and fourth 0.
 
-/*
- * Disable preemption for a while to make sure we are not
- * preempted before the timer is armed.
- */
-preempt_disable();
-set_current_state(TASK_INTERRUPTIBLE);
-if (supers_dirty)
-	bdi_arm_supers_timer();
-preempt_enable();
-schedule();
+If the group were a core group, the total would be much higher and we'd
+likely end up assigning 1 to each before we'd run out of capacity.
 
--- 
-Best Regards,
-Artem Bityutskiy (Артём Битюцкий)
+
+For power savings, we can lower the threshold and maybe use the maximal
+individual cpu_power in the group to base 1 capacity from.
+
+So, suppose the second example, where sibling0 has 50 and the others
+have 294, you'd end up with a capacity distribution of: {0,1,1,1}.
+
 
