@@ -1,59 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754689Ab0EaNCS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 May 2010 09:02:18 -0400
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:56655
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754530Ab0EaNCQ (ORCPT
+	id S1754151Ab0EaNFw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 May 2010 09:05:52 -0400
+Received: from smtp.nokia.com ([192.100.122.230]:36949 "EHLO
+	mgw-mx03.nokia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754219Ab0EaNFv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 May 2010 09:02:16 -0400
-Date: Mon, 31 May 2010 06:02:25 -0700 (PDT)
-Message-Id: <20100531.060225.68146363.davem@davemloft.net>
-To: fthain@telegraphics.com.au
-Cc: geert@linux-m68k.org, joe@perches.com, p_gortmaker@yahoo.com,
-       netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-       linux-m68k@vger.kernel.org
-Subject: Re: [PATCH] mac8390: change an error return code and some cleanup,
- take 4
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <alpine.OSX.2.00.1005312244520.1490@localhost>
-References: <alpine.LNX.2.00.1005312011210.469@nippy.intranet>
-	<20100531.043056.258120791.davem@davemloft.net>
-	<alpine.OSX.2.00.1005312244520.1490@localhost>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+	Mon, 31 May 2010 09:05:51 -0400
+Subject: Re: [PATCHv4 17/17] writeback: lessen sync_supers wakeup count
+From: Artem Bityutskiy <dedekind1@gmail.com>
+Reply-To: dedekind1@gmail.com
+To: Nick Piggin <npiggin@suse.de>
+Cc: Al Viro <viro@ZenIV.linux.org.uk>, LKML <linux-kernel@vger.kernel.org>,
+       Jens Axboe <jens.axboe@oracle.com>, linux-fsdevel@vger.kernel.org
+In-Reply-To: <20100531124742.GG9453@laptop>
+References: <1274795352-3551-18-git-send-email-dedekind1@gmail.com>
+	 <20100527065041.GA31073@ZenIV.linux.org.uk> <20100527072240.GM22536@laptop>
+	 <1274957469.13159.20.camel@localhost> <20100527120737.GN22536@laptop>
+	 <1274973693.15516.67.camel@localhost> <20100527154435.GS22536@laptop>
+	 <1275294352.2678.102.camel@localhost> <20100531083844.GF9453@laptop>
+	 <1275296644.2678.122.camel@localhost>  <20100531124742.GG9453@laptop>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 31 May 2010 16:03:35 +0300
+Message-ID: <1275311015.2678.131.camel@localhost>
 Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+X-Mailer: Evolution 2.30.1.2 (2.30.1.2-6.fc13) 
+Content-Transfer-Encoding: 8bit
+X-OriginalArrivalTime: 31 May 2010 13:05:35.0855 (UTC) FILETIME=[F58D2FF0:01CB00C1]
+X-Nokia-AV: Clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Finn Thain <fthain@telegraphics.com.au>
-Date: Mon, 31 May 2010 22:55:23 +1000 (EST)
-
-> if (ei_debug)
-> 	pr_debug(...)
+On Mon, 2010-05-31 at 22:47 +1000, Nick Piggin wrote:
+> > set_current_state(TASK_INTERRUPTIBLE);
+> > /* 
+> >  * XXX: what if we are preempted here. No timer is armed. Our state is
+> >  * TASK_INTERRUPTIBLE, supers_dirty is 1, so no one will ever wake us
+> >  * up. Thus, we'll sleep forever.
+> >  */
+> > if (supers_dirty)
+> > 	bdi_arm_supers_timer();
+> > schedule();
+> > 
+> > Not sure, but I did quick search and it looks like in preemptive kernel,
+> > an interrupt may happen in the XXX place above, then it will call
+> > 'preempt_schedule_irq()', which sill call 'schedule()'.
 > 
-> OR
+> Yes, preempt does not participate in tsak sleeping exactly for reasons
+> such as this.
 > 
-> if (ei_debug)
-> 	pr_info(...)
+> From kernel/sched.c:schedule()
+> 
+>         if (prev->state && !(preempt_count() & PREEMPT_ACTIVE)) {
+>                 if (unlikely(signal_pending_state(prev->state, prev)))
+>                         prev->state = TASK_RUNNING;
+>                 else
+>                         deactivate_task(rq, prev, DEQUEUE_SLEEP);
+>                 switch_count = &prev->nvcsw;
+>         }
+> 
+> If the task is not running, then is only removed from the runqueue
+> (or reset to running in case of pending signal) IFF it has not been
+> scheduled from an involuntary kernel preemption.
+> 
+> So in the XXX region, the task will actually be allowed to run again
+> until it calls schedule().
 
-Well for the printk in question, it's telling the user that
-a certain feature can't be enabled.
+Clear now, thanks a lot again!
 
-And if the driver has an explicit way to control this message,
-using ei_debug, it's kind of redundant to slap another layer on
-top by using the debug printk facility.
+-- 
+Best Regards,
+Artem Bityutskiy (Артём Битюцкий)
 
-Changing this to a debug log level printk is only going to make
-getting the debug message shown harder for the user.  So leaving it at
-pr_info() is just as correct in my eyes.
-
-Finally, your patch has so many problems getting applied because
-you're doing multiple things in one patch.
-
-And in fact I've asked you not to do this on several occiaions.
-
-Fix the error return codes in one patch, and nothing more.
-Then in another you can masterbate with printk log levels.
