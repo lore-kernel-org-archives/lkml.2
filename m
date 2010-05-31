@@ -1,199 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753104Ab0EaFdz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 May 2010 01:33:55 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:18631 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751940Ab0EaFdx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 May 2010 01:33:53 -0400
-Message-ID: <4C034B19.10902@redhat.com>
-Date: Mon, 31 May 2010 13:37:29 +0800
-From: Cong Wang <amwang@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100330 Shredder/3.0.4
+	id S1752981Ab0EaFqI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 May 2010 01:46:08 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:65356 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752638Ab0EaFqG convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 31 May 2010 01:46:06 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=iDWRN1BS7+UQHwTbpiEt8zh5cWBlvoqvQfrJF+tpytFESqccKo3NnFjtU1BrJzs1My
+         EGDXcEEV2i7tjG+oGoPZwqs4oi07duBk/+SBvniyIaOI6XUTm0n7kpj4UKqRcv9/wjX7
+         ndfptBnZ48PrdKbWDwnkoykcyu0b0xJoXnaq0=
 MIME-Version: 1.0
-To: Jay Vosburgh <fubar@us.ibm.com>
-CC: Flavio Leitner <fbl@sysclose.org>, linux-kernel@vger.kernel.org,
-       Matt Mackall <mpm@selenic.com>, netdev@vger.kernel.org,
-       bridge@lists.linux-foundation.org, Andy Gospodarek <gospo@redhat.com>,
-       Neil Horman <nhorman@tuxdriver.com>, Jeff Moyer <jmoyer@redhat.com>,
-       Stephen Hemminger <shemminger@linux-foundation.org>,
-       bonding-devel@lists.sourceforge.net, David Miller <davem@davemloft.net>
-Subject: Re: [v5 Patch 1/3] netpoll: add generic support for bridge and bonding
- devices
-References: <20100505081514.5157.83783.sendpatchset@localhost.localdomain> <20100527180545.GA2345@sysclose.org> <4BFF7BE2.6020503@redhat.com> <20100528204229.GD2345@sysclose.org> <24802.1275080599@death.nxdomain.ibm.com> <4C03494B.1010802@redhat.com>
-In-Reply-To: <4C03494B.1010802@redhat.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20100531140443.b36a4f02.kamezawa.hiroyu@jp.fujitsu.com>
+References: <20100528143605.7E2A.A69D9226@jp.fujitsu.com>
+	<AANLkTikB-8Qu03VrA5Z0LMXM_alSV7SLqzl-MmiLmFGv@mail.gmail.com>
+	<20100528145329.7E2D.A69D9226@jp.fujitsu.com>
+	<20100528125305.GE11364@uudg.org>
+	<20100528140623.GA11041@barrios-desktop>
+	<20100528143617.GF11364@uudg.org>
+	<20100528151249.GB12035@barrios-desktop>
+	<20100528152842.GH11364@uudg.org>
+	<20100528154549.GC12035@barrios-desktop>
+	<20100528164826.GJ11364@uudg.org>
+	<20100531092133.73705339.kamezawa.hiroyu@jp.fujitsu.com>
+	<AANLkTikFk_HnZWPG0s_VrRkro2rruEc8OBX5KfKp_QdX@mail.gmail.com>
+	<20100531140443.b36a4f02.kamezawa.hiroyu@jp.fujitsu.com>
+Date: Mon, 31 May 2010 14:46:05 +0900
+Message-ID: <AANLkTil75ziCd6bivhpmwojvhaJ2LVxwEaEaBEmZf2yN@mail.gmail.com>
+Subject: Re: [RFC] oom-kill: give the dying task a higher priority
+From: Minchan Kim <minchan.kim@gmail.com>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: "Luis Claudio R. Goncalves" <lclaudio@uudg.org>,
+       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+       balbir@linux.vnet.ibm.com, Oleg Nesterov <oleg@redhat.com>,
+       linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+       Thomas Gleixner <tglx@linutronix.de>,
+       Peter Zijlstra <peterz@infradead.org>,
+       David Rientjes <rientjes@google.com>, Mel Gorman <mel@csn.ul.ie>,
+       williams@redhat.com
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/31/10 13:29, Cong Wang wrote:
-> On 05/29/10 05:03, Jay Vosburgh wrote:
->> Flavio Leitner<fbl@sysclose.org> wrote:
+On Mon, May 31, 2010 at 2:04 PM, KAMEZAWA Hiroyuki
+<kamezawa.hiroyu@jp.fujitsu.com> wrote:
+> On Mon, 31 May 2010 14:01:03 +0900
+> Minchan Kim <minchan.kim@gmail.com> wrote:
+>
+>> Hi, Kame.
 >>
->>> On Fri, May 28, 2010 at 04:16:34PM +0800, Cong Wang wrote:
->>>> On 05/28/10 02:05, Flavio Leitner wrote:
->>>>>
->>>>> Hi guys!
->>>>>
->>>>> I finally could test this to see if an old problem reported on
->>>>> bugzilla[1] was
->>>>> fixed now, but unfortunately it is still there.
->>>>>
->>>>> The ticket is private I guess, but basically the problem happens
->>>>> when bonding
->>>>> driver tries to print something after it had taken the write_lock
->>>>> (monitor
->>>>> functions, enslave/de-enslave), so the printk() will pass through
->>>>> netpoll, then
->>>>> on bonding again which no matter what mode you use, it will try to
->>>>> read_lock()
->>>>> the lock again. The result is a deadlock and the entire system hangs.
->>>>>
->>>>
->>>> Does the attached patch fix this hang?
->>>
->>> I got another issue now:
->>>
->>> [ 89.523062] bonding: bond0: enslaving eth0 as a backup interface
->>> with a down link.
->>> [ 89.580746] bonding: bond0: enslaving eth2 as a backup interface
->>> with a down link.
->>> [ 91.198527] e1000: eth2 NIC Link is Up 100 Mbps Half Duplex, Flow
->>> Control: None
->>> [ 91.238245] bonding: bond0: link status definitely up for interface
->>> eth2.
->>>
->>> [ 91.245381] BUG: scheduling while atomic: bond0/2716/0x10000100
->>> [ 91.251565] 5 locks held by bond0/2716:
->>> [ 91.255663] #0: ((bond_dev->name)){+.+.+.}, at: [<ffffffff81045fb4>]
->>> worker_thread+0x19a/0x2e2
->>> [ 91.265179] #1: ((&(&bond->mii_work)->work)){+.+.+.}, at:
->>> [<ffffffff81045fb4>] worker_thread+0x19a/0x2e2
->>> [ 91.275554] #2: (rtnl_mutex){+.+.+.}, at: [<ffffffff812daf38>]
->>> rtnl_lock+0x12/0x14
->>> [ 91.284018] #3: (&bond->lock){++.+.+}, at: [<ffffffffa029e06a>]
->>> bond_mii_monitor+0x2a2/0x4ed [bonding]
->>> [ 91.294230] #4: (&bond->curr_slave_lock){+...+.}, at:
->>> [<ffffffffa029e239>] bond_mii_monitor+0x471/0x4ed [bonding]
->>> [ 91.305387] Modules linked in: bonding sunrpc ip6t_REJECT xt_tcpudp
->>> nf_conntrack_ipv6 xt_state nf_conntrack ip6table_filter ip6_tables
->>> x_tables ipv6 dm_mirror dm_region_hash dm_log dm_multipath uinput
->>> snd_hda_codec_idt snd_hda_intel snd_hda_codec snd_hwdep snd_seq
->>> snd_seq_device snd_pcm ppdev parport_pc parport rtc_cmos snd_timer
->>> tg3 snd ide_cd_mod i5000_edac i2c_i801 libphy rtc_core rtc_lib
->>> edac_core pcspkr e1000 dcdbas uhci_hcd tulip shpchp i2c_core cdrom
->>> serio_raw soundcore sg snd_page_alloc raid0 sd_mod button [last
->>> unloaded: mperf]
->>> [ 91.357735] Pid: 2716, comm: bond0 Not tainted
->>> 2.6.34-04700-gd938a70-dirty #36
->>> [ 91.371112] Call Trace:
->>> [ 91.373825] [<ffffffff81056002>] ? __debug_show_held_locks+0x22/0x24
->>> [ 91.380530] [<ffffffff8102e4a2>] __schedule_bug+0x6d/0x72
->>> [ 91.386284] [<ffffffff81363f6e>] schedule+0xc9/0x791
->>> [ 91.391600] [<ffffffff81032540>] __cond_resched+0x25/0x30
->>> [ 91.397350] [<ffffffff81364757>] _cond_resched+0x27/0x32
->>> [ 91.403013] [<ffffffff810ab243>] kmem_cache_alloc+0x2b/0xac
->>> [ 91.408936] [<ffffffff812c61fd>] skb_clone+0x42/0x5d
->>> [ 91.414253] [<ffffffff812ec696>] netlink_broadcast+0x192/0x369
->>> [ 91.420436] [<ffffffff812ecdc3>] nlmsg_notify+0x43/0x89
->>> [ 91.426012] [<ffffffff812dabc7>] rtnl_notify+0x2b/0x2d
->>> [ 91.431501] [<ffffffff812dacbc>] rtmsg_ifinfo+0xf3/0x118
->>> [ 91.437165] [<ffffffff812dad0c>] rtnetlink_event+0x2b/0x2f
->>> [ 91.443003] [<ffffffff81369fe4>] notifier_call_chain+0x32/0x5e
->>> [ 91.449188] [<ffffffff8104d618>] raw_notifier_call_chain+0xf/0x11
->>> [ 91.455634] [<ffffffff812cfc73>] call_netdevice_notifiers+0x45/0x4a
->>> [ 91.462253] [<ffffffff812d04f7>] netdev_bonding_change+0x12/0x14
+>> On Mon, May 31, 2010 at 9:21 AM, KAMEZAWA Hiroyuki
+>> <kamezawa.hiroyu@jp.fujitsu.com> wrote:
+>> > On Fri, 28 May 2010 13:48:26 -0300
+>> > "Luis Claudio R. Goncalves" <lclaudio@uudg.org> wrote:
+>> >>
+>> >> oom-killer: give the dying task rt priority (v3)
+>> >>
+>> >> Give the dying task RT priority so that it can be scheduled quickly and die,
+>> >> freeing needed memory.
+>> >>
+>> >> Signed-off-by: Luis Claudio R. Gonçalves <lgoncalv@redhat.com>
+>> >>
+>> >> diff --git a/mm/oom_kill.c b/mm/oom_kill.c
+>> >> index 84bbba2..2b0204f 100644
+>> >> --- a/mm/oom_kill.c
+>> >> +++ b/mm/oom_kill.c
+>> >> @@ -266,6 +266,8 @@ static struct task_struct *select_bad_process(unsigned long *ppoints)
+>> >>   */
+>> >>  static void __oom_kill_task(struct task_struct *p, int verbose)
+>> >>  {
+>> >> +     struct sched_param param;
+>> >> +
+>> >>       if (is_global_init(p)) {
+>> >>               WARN_ON(1);
+>> >>               printk(KERN_WARNING "tried to kill init!\n");
+>> >> @@ -288,6 +290,8 @@ static void __oom_kill_task(struct task_struct *p, int verbose)
+>> >>        * exit() and clear out its resources quickly...
+>> >>        */
+>> >>       p->time_slice = HZ;
+>> >> +     param.sched_priority = MAX_RT_PRIO-10;
+>> >> +     sched_setscheduler(p, SCHED_FIFO, &param);
+>> >>       set_tsk_thread_flag(p, TIF_MEMDIE);
+>> >>
+>> >
+>> > BTW, how about the other threads which share mm_struct ?
 >>
->> This warning is because the notifier call is happening with spin
->> locks held.
+>> Could you elaborate your intention? :)
 >>
->>> [ 91.468614] [<ffffffffa029d589>] bond_select_active_slave+0xe8/0x123
->>> [bonding]
->>> [ 91.476408] [<ffffffffa029e241>] bond_mii_monitor+0x479/0x4ed [bonding]
->>> [ 91.483375] [<ffffffff81046009>] worker_thread+0x1ef/0x2e2
->>> [ 91.489212] [<ffffffff81045fb4>] ? worker_thread+0x19a/0x2e2
->>> [ 91.495227] [<ffffffffa029ddc8>] ? bond_mii_monitor+0x0/0x4ed [bonding]
->>> [ 91.502192] [<ffffffff81049c71>] ? autoremove_wake_function+0x0/0x34
->>> [ 91.508897] [<ffffffff81045e1a>] ? worker_thread+0x0/0x2e2
->>> [ 91.514734] [<ffffffff810498bb>] kthread+0x7a/0x82
->>> [ 91.519878] [<ffffffff81003714>] kernel_thread_helper+0x4/0x10
->>> [ 91.526060] [<ffffffff81366ffc>] ? restore_args+0x0/0x30
->>> [ 91.531723] [<ffffffff81049841>] ? kthread+0x0/0x82
->>> [ 91.536953] [<ffffffff81003710>] ? kernel_thread_helper+0x0/0x10
->>> [ 91.543343] bonding: bond0: making interface eth2 the new active one.
->>> [ 91.550554] bonding: bond0: first active interface up!
->>> [ 91.556859] ADDRCONF(NETDEV_CHANGE): bond0: link becomes ready
->>>
->>>
->>> No other patch applied. Just started netconsole over bonding, so no need
->>> to pull the cable from slaves. Reproduced twice, one I got the
->>> backtrace above, and on the other one the system hangs completely
->>> after the BUG: scheduling message.
->>>
->>> fbl
->>>
->>>
->>>>
->>>> Thanks!
->>>>
->>>> ----------------------->
->>>>
->>>> We should notify netconsole that bond is changing its slaves
->>>> when we use active-backup mode.
->>>>
->>>> Signed-off-by: WANG Cong<amwang@redhat.com>
->>>>
->>>> ----
->>>>
->>>
->>>> diff --git a/drivers/net/bonding/bond_main.c
->>>> b/drivers/net/bonding/bond_main.c
->>>> index 5e12462..9494c02 100644
->>>> --- a/drivers/net/bonding/bond_main.c
->>>> +++ b/drivers/net/bonding/bond_main.c
->>>> @@ -1199,6 +1199,7 @@ void bond_select_active_slave(struct bonding
->>>> *bond)
->>>>
->>>> best_slave = bond_find_best_slave(bond);
->>>> if (best_slave != bond->curr_active_slave) {
->>>> + netdev_bonding_change(bond->dev, NETDEV_BONDING_DESLAVE);
->>>> bond_change_active_slave(bond, best_slave);
->>>> rv = bond_set_carrier(bond);
->>>> if (!rv)
->>
->> You can't do this here; the driver is holding various spin
->> locks, and notifier calls can sleep (hence the warning). If you look at
->> the bond_change_active_slave function, it drops all locks other than
->> RTNL before making a notifier call, e.g.,
->>
->> void bond_change_active_slave(struct bonding *bond, struct slave
->> *new_active)
->> {
->> [...]
->> if (bond->params.mode == BOND_MODE_ACTIVEBACKUP) {
->> [...]
->> write_unlock_bh(&bond->curr_slave_lock);
->> read_unlock(&bond->lock);
->>
->> netdev_bonding_change(bond->dev, NETDEV_BONDING_FAILOVER);
->>
->> read_lock(&bond->lock);
->> write_lock_bh(&bond->curr_slave_lock);
->> }
->>
->>
->> You may be able to add your notifier to this case, or change
->> your handler to notice the _FAILOVER notifier.
+>
+> IIUC, the purpose of rising priority is to accerate dying thread to exit()
+> for freeing memory AFAP. But to free memory, exit, all threads which share
+> mm_struct should exit, too. I'm sorry if I miss something.
+
+How do we kill only some thread and what's the benefit of it?
+I think when if some thread receives  KILL signal, the process include
+the thread will be killed.
+
+I think
+> Thanks,
+> -Kame
 >
 >
-> Thanks for your analysis! Hmm, I think let netconsole to handle
-> NETDEV_BONDING_FAILOVER here is a better solution.
+>
 >
 
-No, in bond_change_active_slave() does notification after
-printing messages, thus will not solve the problem here,
-we need to notify netconsole before printing any messages.
 
-Thanks.
+
+-- 
+Kind regards,
+Minchan Kim
