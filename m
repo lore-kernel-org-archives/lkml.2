@@ -1,74 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756466Ab0EaHVO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 May 2010 03:21:14 -0400
-Received: from hera.kernel.org ([140.211.167.34]:42512 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756432Ab0EaHVJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 May 2010 03:21:09 -0400
-Date: Mon, 31 May 2010 07:20:44 GMT
-From: tip-bot for Frederic Weisbecker <fweisbec@gmail.com>
-Cc: linux-kernel@vger.kernel.org, paulus@samba.org, acme@redhat.com,
-       hpa@zytor.com, mingo@redhat.com, a.p.zijlstra@chello.nl,
-       fweisbec@gmail.com, tglx@linutronix.de, mingo@elte.hu
-Reply-To: mingo@redhat.com, hpa@zytor.com, acme@redhat.com, paulus@samba.org,
-       linux-kernel@vger.kernel.org, fweisbec@gmail.com,
-       a.p.zijlstra@chello.nl, tglx@linutronix.de, mingo@elte.hu
-In-Reply-To: <1274988898-5639-1-git-send-regression-fweisbec@gmail.com>
-References: <1274988898-5639-1-git-send-regression-fweisbec@gmail.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/urgent] perf_events: Fix unincremented buffer base on partial copy
-Message-ID: <tip-74048f895fa8cbf8119b4999f1f44881a825f954@git.kernel.org>
-Git-Commit-ID: 74048f895fa8cbf8119b4999f1f44881a825f954
-X-Mailer: tip-git-log-daemon
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Mon, 31 May 2010 07:20:45 +0000 (UTC)
+	id S1756391Ab0EaHYU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 May 2010 03:24:20 -0400
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:40927
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753078Ab0EaHYT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 31 May 2010 03:24:19 -0400
+Date: Mon, 31 May 2010 00:24:29 -0700 (PDT)
+Message-Id: <20100531.002429.71095599.davem@davemloft.net>
+To: daniel@caiaq.de
+Cc: linux-kernel@vger.kernel.org, tj@kernel.org, jkosina@suse.cz,
+       cl@linux-foundation.org, joe@perches.com, netdev@vger.kernel.org
+Subject: Re: [PATCH] drivers/net/arcnet/capmode.c: clean up code
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1274284857-21932-1-git-send-email-daniel@caiaq.de>
+References: <1274284857-21932-1-git-send-email-daniel@caiaq.de>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=iso-8859-7
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by alpha.home.local id o4V7OOim002574
 
-Commit-ID:  74048f895fa8cbf8119b4999f1f44881a825f954
-Gitweb:     http://git.kernel.org/tip/74048f895fa8cbf8119b4999f1f44881a825f954
-Author:     Frederic Weisbecker <fweisbec@gmail.com>
-AuthorDate: Thu, 27 May 2010 21:34:58 +0200
-Committer:  Ingo Molnar <mingo@elte.hu>
-CommitDate: Mon, 31 May 2010 08:46:10 +0200
+From: Daniel Mack <daniel@caiaq.de>
+Date: Wed, 19 May 2010 18:00:57 +0200
 
-perf_events: Fix unincremented buffer base on partial copy
+>  - shuffle around functions to get rid of forward declarations
+>  - fix some CodingStyle and indentation issues
+>  - last but not least, get rid of the following CONFIG_MODULE=n warning:
+> 
+> 	drivers/net/arcnet/capmode.c:52: warning: ¡capmode_proto¢ defined but not used
+> 
+> Signed-off-by: Daniel Mack <daniel@caiaq.de>
 
-If a sample size crosses to the next page boundary, the copy
-will be made in more than one step. However we forget to advance
-the source offset for the next copy, leading to unexpected double
-copies that completely mess up the traces.
-
-This fixes various kinds of bad traces that have irrelevant
-data inside, as an example:
-
-	geany-4979  [001]  5758.077775: sched_switch: prev_comm=! prev_pid=121
-		prev_prio=0 prev_state=S|D|Z|X|x ==> next_comm= next_pid=7497072
-		next_prio=0
-
-Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
-Cc: Paul Mackerras <paulus@samba.org>
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-LKML-Reference: <1274988898-5639-1-git-send-regression-fweisbec@gmail.com>
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
----
- kernel/perf_event.c |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
-
-diff --git a/kernel/perf_event.c b/kernel/perf_event.c
-index 42a0e91..858f56f 100644
---- a/kernel/perf_event.c
-+++ b/kernel/perf_event.c
-@@ -3064,6 +3064,7 @@ __always_inline void perf_output_copy(struct perf_output_handle *handle,
- 
- 		len -= size;
- 		handle->addr += size;
-+		buf += size;
- 		handle->size -= size;
- 		if (!handle->size) {
- 			struct perf_mmap_data *data = handle->data;
+This does not apply cleanly to the current tree.   Please respin
+this.
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
