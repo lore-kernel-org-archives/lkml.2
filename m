@@ -1,63 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755755Ab0EaOV2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 May 2010 10:21:28 -0400
-Received: from mailrelay011.isp.belgacom.be ([195.238.6.178]:60448 "EHLO
-	mailrelay011.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754912Ab0EaOV1 (ORCPT
+	id S1755983Ab0EaOWG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 May 2010 10:22:06 -0400
+Received: from fg-out-1718.google.com ([72.14.220.154]:12271 "EHLO
+	fg-out-1718.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754912Ab0EaOWE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 May 2010 10:21:27 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AvsEADNiA0zCTtAn/2dsb2JhbACeMnHBEYUWBA
-Date: Mon, 31 May 2010 16:21:23 +0200
-From: Philippe De Muyter <phdm@macqel.be>
-To: Claudio Scordino <claudio@evidence.eu.com>
-Cc: hskinnemoen@atmel.com, Nicolas Ferre <nicolas.ferre@atmel.com>,
-       Alan Cox <alan@lxorguk.ukuu.org.uk>, Bernhard Roth <br@pwrnet.de>,
-       Rick Bronson <rick@efn.org>, John Nicholls <john@thinlinx.com>,
-       Sebastian Heutling <Sebastian.Heutling@who-ing.de>,
-       Ryan Mallon <ryan@bluewatersys.com>,
-       michael trimarchi <michael@evidence.eu.com>,
-       Konrad Mattheis <mattheis@ukma.de>, Elektrolot <elektrolot@wp.pl>,
-       Prchal =?utf-8?B?SmnFmcOt?= <jiri.prchal@aksignal.cz>,
-       akpm@linux-foundation.org, Linux Kernel <linux-kernel@vger.kernel.org>,
-       linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-       linux@maxim.org.za
-Subject: Re: [PATCH] General fixes in the serial_rs485 structure
-Message-ID: <20100531142122.GA2571@frolo.macqel>
-References: <4BFE66CA.5050500@evidence.eu.com> <20100529000839.158dedd3@lxorguk.ukuu.org.uk> <4C0375C1.5030305@evidence.eu.com> <20100531113429.5efd6de9@lxorguk.ukuu.org.uk> <4C03BC19.5060402@evidence.eu.com>
+	Mon, 31 May 2010 10:22:04 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :x-enigmail-version:content-type:content-transfer-encoding;
+        b=e0X4IAepTFSk2e1fvpBs/ZhTGM2qhAFIK5NN3tm4fXrWgY90CrtRZZoVyMwTW8FVzd
+         inYmRI2FCjleJJGDdew6Zmo1Fl5kzESU3765dKdK2mFOlQC0r4wvk9IgMiuqFMfsI1ZZ
+         DjCu3D0+3NJMuxtXMUeSyz7eOuA8o4H04q5wQ=
+Message-ID: <4C03C608.1040600@gmail.com>
+Date: Mon, 31 May 2010 16:22:00 +0200
+From: Jiri Slaby <jirislaby@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; cs-CZ; rv:1.9.2.4) Gecko/20100522 SUSE/3.1rc1-2.1 Thunderbird/3.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4C03BC19.5060402@evidence.eu.com>
-User-Agent: Mutt/1.5.16 (2007-06-09)
+To: dzickus@redhat.com
+CC: Frederic Weisbecker <fweisbec@gmail.com>,
+       LKML <linux-kernel@vger.kernel.org>,
+       Linux-pm mailing list <linux-pm@lists.linux-foundation.org>,
+       linux-ide@vger.kernel.org
+Subject: hibernation hangs with ATA errors (lockup_detector bug)
+X-Enigmail-Version: 1.0
+Content-Type: text/plain; charset=ISO-8859-2
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 31, 2010 at 03:39:37PM +0200, Claudio Scordino wrote:
+Hi,
 
-> diff --git a/drivers/serial/atmel_serial.c b/drivers/serial/atmel_serial.c
-> index eed3c2d..1adb1bf 100644
-> --- a/drivers/serial/atmel_serial.c
-> +++ b/drivers/serial/atmel_serial.c
-> @@ -216,7 +216,7 @@ void atmel_config_rs485(struct uart_port *port, struct serial_rs485 *rs485conf)
->  	if (rs485conf->flags & SER_RS485_ENABLED) {
->  		dev_dbg(port->dev, "Setting UART to RS485\n");
->  		atmel_port->tx_done_mask = ATMEL_US_TXEMPTY;
-> -		UART_PUT_TTGR(port, rs485conf->delay_rts_before_send);
-> +		UART_PUT_TTGR(port, rs485conf->delay_rts_after_send);
->  		mode |= ATMEL_US_USMODE_RS485;
->  	} else {
->  		dev_dbg(port->dev, "Setting UART to RS232\n");
+with -next I get the following errors while trying to hibernate in
+qemu-kvm after the image is stored on disk:
+sd 0:0:0:0: [sda] Starting disk
+sd 0:0:1:0: [sdb] Starting disk
+e1000: eth0 NIC Link is Up 1000 Mbps Full Duplex, Flow Control: RX
+ata1.00: configured for MWDMA2
+ata1.01: configured for MWDMA2
+PM: thaw of devices complete after 168.017 msecs
+ata2.01: qc timeout (cmd 0xec)
+ata2.01: failed to IDENTIFY (I/O error, err_mask=0x4)
+sd 0:0:1:0: [sdb] Stopping disk
+sd 0:0:0:0: [sda] Stopping disk
+uhci_hcd 0000:00:01.2: PCI INT D disabled
+e1000 0000:00:03.0: PCI INT A disabled
+ata2.01: qc timeout (cmd 0xec)
+ata2.01: failed to IDENTIFY (I/O error, err_mask=0x4)
+ata2.01: qc timeout (cmd 0xec)
+ata2.01: failed to IDENTIFY (I/O error, err_mask=0x4)
+...
 
-Should the usage of delay_rts_after_send not depend on
-(flags & SER_RS485_RTS_AFTER_SEND) also ?
+I bisected it down to:
+commit 58687acba59266735adb8ccd9b5b9aa2c7cd205b
+Author: Don Zickus <dzickus@redhat.com>
+Date:   Fri May 7 17:11:44 2010 -0400
 
-and likewise with delay_rts_before_send and SER_RS485_RTS_BEFORE_SEND ?
+    lockup_detector: Combine nmi_watchdog and softlockup detector
 
-Philippe
+    The new nmi_watchdog (which uses the perf event subsystem) is very
+    similar in structure to the softlockup detector.  Using Ingo's
+    suggestion, I combined the two functionalities into one file:
+    kernel/watchdog.c.
+...
+
+
+
+The config difference against 58687acb^:
+--- .config.old     2010-05-31 16:01:51.727312636 +0200
++++ .config 2010-05-31 16:11:08.682136175 +0200
+@@ -1,7 +1,7 @@
+ #
+ # Automatically generated make config: don't edit
+ # Linux kernel version: 2.6.34-rc7
+-# Mon May 31 16:01:51 2010
++# Mon May 31 16:11:08 2010
+ #
+ CONFIG_64BIT=y
+ # CONFIG_X86_32 is not set
+@@ -2133,7 +2133,7 @@
+ CONFIG_DEBUG_KERNEL=y
+ CONFIG_DEBUG_SHIRQ=y
+ CONFIG_DETECT_SOFTLOCKUP=y
+-CONFIG_NMI_WATCHDOG=y
++CONFIG_LOCKUP_DETECTOR=y
+ # CONFIG_BOOTPARAM_SOFTLOCKUP_PANIC is not set
+ CONFIG_BOOTPARAM_SOFTLOCKUP_PANIC_VALUE=0
+ CONFIG_DETECT_HUNG_TASK=y
+
+
+
+
+'nowatchdog' parameter helps.
+
+$ grep PERF .config
+CONFIG_HAVE_PERF_EVENTS=y
+CONFIG_PERF_EVENTS=y
+# CONFIG_PERF_COUNTERS is not set
+# CONFIG_DEBUG_PERF_USE_VMALLOC is not set
+CONFIG_HAVE_PERF_EVENTS_NMI=y
 
 -- 
-Philippe De Muyter  phdm at macqel dot be  Tel +32 27029044
-Macq Electronique SA  rue de l'Aeronef 2  B-1140 Bruxelles  Fax +32 27029077
+js
