@@ -1,41 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756391Ab0EaHYU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 May 2010 03:24:20 -0400
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:40927
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753078Ab0EaHYT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 May 2010 03:24:19 -0400
-Date: Mon, 31 May 2010 00:24:29 -0700 (PDT)
-Message-Id: <20100531.002429.71095599.davem@davemloft.net>
-To: daniel@caiaq.de
-Cc: linux-kernel@vger.kernel.org, tj@kernel.org, jkosina@suse.cz,
-       cl@linux-foundation.org, joe@perches.com, netdev@vger.kernel.org
-Subject: Re: [PATCH] drivers/net/arcnet/capmode.c: clean up code
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1274284857-21932-1-git-send-email-daniel@caiaq.de>
-References: <1274284857-21932-1-git-send-email-daniel@caiaq.de>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=iso-8859-7
+	id S1756327Ab0EaH26 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 May 2010 03:28:58 -0400
+Received: from cantor.suse.de ([195.135.220.2]:33512 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755847Ab0EaH25 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 31 May 2010 03:28:57 -0400
+Date: Mon, 31 May 2010 17:28:50 +1000
+From: Nick Piggin <npiggin@suse.de>
+To: Dave Chinner <david@fromorbit.com>
+Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+       linux-mm@kvack.org, xfs@oss.sgi.com
+Subject: Re: [PATCH 3/5] superblock: introduce per-sb cache shrinker
+ infrastructure
+Message-ID: <20100531072850.GB9453@laptop>
+References: <1274777588-21494-1-git-send-email-david@fromorbit.com>
+ <1274777588-21494-4-git-send-email-david@fromorbit.com>
+ <20100527063523.GJ22536@laptop>
+ <20100527224034.GO12087@dastard>
+ <20100528051924.GZ22536@laptop>
+ <20100531063938.GE1395@dastard>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20100531063938.GE1395@dastard>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by alpha.home.local id o4V7OOim002574
 
-From: Daniel Mack <daniel@caiaq.de>
-Date: Wed, 19 May 2010 18:00:57 +0200
-
->  - shuffle around functions to get rid of forward declarations
->  - fix some CodingStyle and indentation issues
->  - last but not least, get rid of the following CONFIG_MODULE=n warning:
+On Mon, May 31, 2010 at 04:39:38PM +1000, Dave Chinner wrote:
+> On Fri, May 28, 2010 at 03:19:24PM +1000, Nick Piggin wrote:
+> > On Fri, May 28, 2010 at 08:40:34AM +1000, Dave Chinner wrote:
+> > > On Thu, May 27, 2010 at 04:35:23PM +1000, Nick Piggin wrote:
+> > > > But we can think of inodes that are only in use by unused (and aged)
+> > > > dentries as effectively unused themselves. So this sequence under
+> > > > estimates how many inodes to scan. This could bias pressure against
+> > > > dcache I'd think, especially considering inodes are far larger than
+> > > > dentries. Maybe require 2 passes to get the inodes unused inthe
+> > > > first pass.
+> > > 
+> > > It's self-balancing - it trends towards an equal number of unused
+> > > dentries and inodes in the caches. Yes, it will tear down more
+> > > dentries at first, but we need to do that to be able to reclaim
+> > > inodes.
+> > 
+> > But then it doesn't scan enough inodes on the inode pass.
 > 
-> 	drivers/net/arcnet/capmode.c:52: warning: ¡capmode_proto¢ defined but not used
-> 
-> Signed-off-by: Daniel Mack <daniel@caiaq.de>
+> We don't get a single shrinker call - we get batches of them fo each
+> shrinker.
 
-This does not apply cleanly to the current tree.   Please respin
-this.
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+OK fair point. However
+
+[...]
+
+> In other words, we have roughly 18k dentries and 1.9k inodes
+> reclaimed for the code I wrote new algorithm. That does mean it
+> initially attempts to reclaim dentries faster than the current code, but
+> as the number of unused inodes increases, this comes back to parity
+> with the current code and we end up with a 1:1 reclaim ratio.
+> 
+> This is good behaviour - dentries are cheap to reconstruct from the
+> inode cache, and we should hold onto the inode cache as much as
+> possible. i.e. we should reclaim them more aggressively only if
+> there is sustained pressure on the superblock and that is what the
+> above algorithm does.
+
+I prefer just to keep changes to a minimum and split into seperate
+patches (each with at least basic test or two showing no regression).
+
+As-is you're already changing global inode/dentry passes into per
+sb inode and dentry passes. I think it can only be a good thing
+for that changeset if other changes are minimised.
+
+Then if it is so obviously good behaviour to reduce dcache pressure,
+it should be easy to justify that too.
+
+ 
+> > > â„«s reclaim progresses the propotion of inodes increases, so
+> > > the amount of inodes reclaimed increases. 
+> > > 
+> > > Basically this is a recognition that the important cache for
+> > > avoiding IO is the inode cache, not he dentry cache. Once the inode
+> > 
+> > You can bias against the dcache using multipliers.
+> 
+> Multipliers are not self-balancing, and generally just amplify any
+> imbalance an algorithm tends towards. The vfs_cache_pressure
+> multiplier is a shining example of this kind of utterly useless
+> knob...
+
+Well you can also bias against the dcache with any other means,
+including the change you've made here. My main point I guess is
+that it should not be in the same as this patchset (or at least
+an individual patch).
+
+ 
+> > > > Part of the problem is the funny shrinker API.
+> > > > 
+> > > > The right way to do it is to change the shrinker API so that it passes
+> > > > down the lru_pages and scanned into the callback. From there, the
+> > > > shrinkers can calculate the appropriate ratio of objects to scan.
+> > > > No need for 2-call scheme, no need for shrinker->seeks, and the
+> > > > ability to calculate an appropriate ratio first for dcache, and *then*
+> > > > for icache.
+> > > 
+> > > My only concern about this is that exposes the inner workings of the
+> > > shrinker and mm subsystem to code that simply doesn't need to know
+> > > about it.
+> > 
+> > It's just providing a ratio. The shrinkers allready know they are
+> > scanning based on a ratio of pagecache scanned.
+> 
+> Sure, but the shrinkers are just a simple mechanism for implementing
+> VM policy decisions. IMO reclaim policy decisions should not be
+> pushed down and replicated in every one of these reclaim mechanisms.
+
+Not really. The VM doesn't know about any of those. They are just
+told to provide a ratio and some scanning based on some abstract cost.
+
+The VM doesn't know anything about usage patterns, inuse vs unused
+objects, exactly how their LRU algorithms are supposed to work, etc.
+
+There is very little policy decision by the VM in the shrinkers.
+
+ 
+> > But shrinkers are very subsystem specific.
+> 
+> And as such should concentrate on getting their subsystem reclaim
+> correct, not have to worry about implementing VM policy
+> calculations...
+
+Clearly they wouldn't with what I was proposing. And the result would
+be much more flexible and also gives the shrinkers more information.
+
