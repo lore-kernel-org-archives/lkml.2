@@ -1,69 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756621Ab0EaRXO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 May 2010 13:23:14 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:16606 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753818Ab0EaRXN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 May 2010 13:23:13 -0400
-Message-ID: <4C03F04D.4040200@redhat.com>
-Date: Mon, 31 May 2010 19:22:21 +0200
-From: Milan Broz <mbroz@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.9) Gecko/20100317 Lightning/1.0b1 Thunderbird/3.0.4
+	id S1756897Ab0EaR0O (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 May 2010 13:26:14 -0400
+Received: from mail.netservers.co.uk ([80.248.178.71]:44682 "EHLO
+	mail.netservers.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755555Ab0EaR0L (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 31 May 2010 13:26:11 -0400
+X-Greylist: delayed 3901 seconds by postgrey-1.27 at vger.kernel.org; Mon, 31 May 2010 13:26:10 EDT
+X-Envelope-From: ben@netservers.co.uk
+Message-ID: <4C03E1CD.4000809@netservers.co.uk>
+Date: Mon, 31 May 2010 17:20:29 +0100
+From: Ben McKeegan <ben@netservers.co.uk>
+User-Agent: Mozilla-Thunderbird 2.0.0.24 (X11/20100328)
 MIME-Version: 1.0
-To: device-mapper development <dm-devel@redhat.com>
-CC: Andi Kleen <andi@firstfloor.org>, herbert@gondor.hengli.com.au,
-       linux-kernel@vger.kernel.org, agk@redhat.com, ak@linux.intel.com
-Subject: Re: [dm-devel] [PATCH] DM-CRYPT: Scale to multiple CPUs
-References: <20100531160425.GA20344@basil.fritz.box>
-In-Reply-To: <20100531160425.GA20344@basil.fritz.box>
-X-Enigmail-Version: 1.0.1
-Content-Type: text/plain; charset=ISO-8859-1
+To: Paul Mackerras <paulus@samba.org>
+CC: netdev@vger.kernel.org, linux-ppp@vger.kernel.org,
+       Alan Cox <alan@lxorguk.ukuu.org.uk>,
+       "Alexander E. Patrakov" <patrakov@gmail.com>,
+       Richard Hartmann <richih.mailinglist@gmail.com>,
+       linux-kernel@vger.kernel.org
+Subject: Re: [Patch] fix packet loss and massive ping spikes with PPP multi-link
+References: <2d460de71003260850x7f90d04cy79ac853464108182@mail.gmail.com> <20100326160226.0159ac3b@lxorguk.ukuu.org.uk> <4BACE827.4070006@gmail.com> <20100326170428.6c1ad66c@lxorguk.ukuu.org.uk> <4BB31E00.8060204@netservers.co.uk> <20100529021624.GA2538@brick.ozlabs.ibm.com>
+In-Reply-To: <20100529021624.GA2538@brick.ozlabs.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/31/2010 06:04 PM, Andi Kleen wrote:
-> DM-CRYPT: Scale to multiple CPUs
+Paul Mackerras wrote:
+
+>> I needed to do something similar a while back and I took a very
+>> different approach, which I think is more flexible.   Rather than
+>> implement a new round-robin scheduler I simply introduced a target
+>> minimum fragment size into the fragment size calculation, as a per
+>> bundle parameter that can be configured via a new ioctl.  This
+>> modifies the algorithm so that it tries to limit the number of
+>> fragments such that each fragment is at least the minimum size.  If
+>> the minimum size is greater than the packet size it will not be
+>> fragmented all but will instead just get sent down the next
+>> available channel.
+>>
+>> A pppd plugin generates the ioctl call allowing this to be tweaked
+>> per connection.  It is more flexible in that you can still have the
+>> larger packets fragmented if you wish.
 > 
-> Currently dm-crypt does all encryption work per dmcrypt mapping in a
-> single workqueue. This does not scale well when multiple CPUs
-> are submitting IO at a high rate. The single CPU running the single
-> thread cannot keep up with the encryption and encrypted IO performance
-> tanks.
+> I like this a lot better than the other proposed patch.  It adds less
+> code because it uses the fact that ppp_mp_explode() already has a
+> round-robin capability using the ppp->nxchan field, plus it provides a
+> way to control it per bundle via pppd.
+> 
+> If you fix up the indentation issues (2-space indent in some of the
+> added code -- if you're using emacs, set c-basic-offset to 8), I'll
+> ack it and hopefully DaveM will pick it up.
 
-This is true only if encryption run on the CPU synchronously.
+Okay, I'll fix it up when I'm back at work Tuesday and submit (today is 
+a UK public holiday) and also dig out and fix up the userspace code to 
+go with it.
 
-(Usually it is high speed SSD or dm-crypt above striped RAID where
-underlying device throughput is higher than CPU encryption speed.)
+Ben.
 
-I did a lot of experiments with similar design and abandoned it.
-(If we go this way, there should be some parameter limiting
-used # cpu threads for encryption, I had this configurable
-through dm messages online + initial kernel module parameter.)
-
-But I see two main problems:
-
-1) How this scale together with asynchronous
-crypto which run in parallel in crypto API layer (and have limited
-resources)? (AES-NI for example)
-
-2) Per volume threads and mempools were added to solve low memory
-problems (exhausted mempools), isn't now possible deadlock here again?
-
-(Like one CPU, many dm-crypt volumes - thread waiting for allocating
-page from exhausted mempool, blocking another request (another volume)
-in queue later which will free some pages after crypt processing.
-This cannot happen with per volume threads. Or am I missing something here?)
-
-
-Anyway, I still think that proper solution to this problem is run
-parallel requests in cryptoAPI using async crypt interface,
-IOW paralelize this on cryptoAPI layer which know best which resources
-it can use for crypto work.
-
-(Herbert - is something like per cpu crypto threads planned
-for use in this case?)
-
-Milan
