@@ -1,44 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754657Ab0EaVqf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 May 2010 17:46:35 -0400
-Received: from www.tglx.de ([62.245.132.106]:44724 "EHLO www.tglx.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751778Ab0EaVqe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 May 2010 17:46:34 -0400
-Date: Mon, 31 May 2010 23:46:12 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: James Bottomley <James.Bottomley@suse.de>
-cc: Peter Zijlstra <peterz@infradead.org>,
-       =?ISO-8859-15?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>, tytso@mit.edu,
-       LKML <linux-kernel@vger.kernel.org>,
-       Florian Mickler <florian@mickler.org>,
-       Linux PM <linux-pm@lists.linux-foundation.org>,
-       Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
-       felipe.balbi@nokia.com, Alan Cox <alan@lxorguk.ukuu.org.uk>
-Subject: Re: [linux-pm] [PATCH 0/8] Suspend block api (version 8)
-In-Reply-To: <1275340869.2823.344.camel@mulgrave.site>
-Message-ID: <alpine.LFD.2.00.1005312343290.2933@localhost.localdomain>
-References: <20100527222514.0a1710bf@lxorguk.ukuu.org.uk>  <Pine.LNX.4.44L0.1005271730180.3239-100000@iolanthe.rowland.org>  <20100527230806.4deb6de3@lxorguk.ukuu.org.uk>  <20100527220949.GB10602@srcf.ucam.org>  <20100527232357.6d14fdb2@lxorguk.ukuu.org.uk>
-  <20100527223605.GB11364@srcf.ucam.org>  <20100527235546.09f3ce8a@lxorguk.ukuu.org.uk>  <20100528043114.GC26177@thunk.org> <1275030704.32462.11.camel@laptop>  <AANLkTikEtlbkT4Ws3H2YGt_9QC46B5dr-b1oxJOcG4GN@mail.gmail.com>  <1275120618.27810.12699.camel@twins>
-  <1275149418.4503.128.camel@mulgrave.site>  <alpine.LFD.2.00.1005312231120.2933@localhost.localdomain> <1275340869.2823.344.camel@mulgrave.site>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1754310Ab0EaVvZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 May 2010 17:51:25 -0400
+Received: from 93-97-173-237.zone5.bethere.co.uk ([93.97.173.237]:62408 "EHLO
+	tim.rpsys.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751778Ab0EaVvY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 31 May 2010 17:51:24 -0400
+Subject: Re: [PATCH] drivers: remove all i2c_set_clientdata(client, NULL)
+From: Richard Purdie <rpurdie@rpsys.net>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+       Wolfram Sang <w.sang@pengutronix.de>
+Cc: linux-i2c@vger.kernel.org, Jean Delvare <khali@linux-fr.org>,
+       George Joseph <george.joseph@fairview5.com>,
+       Riku Voipio <riku.voipio@iki.fi>,
+       Guillaume Ligneul <guillaume.ligneul@gmail.com>,
+       "Ben Dooks (embedded platforms)" <ben-linux@fluff.org>,
+       Alessandro Rubini <rubini@cvml.unipv.it>,
+       Colin Leroy <colin@colino.net>,
+       Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+       Mauro Carvalho Chehab <mchehab@infradead.org>,
+       Samuel Ortiz <sameo@linux.intel.com>,
+       Mark Brown <broonie@opensource.wolfsonmicro.com>,
+       David Woodhouse <dwmw2@infradead.org>,
+       Liam Girdwood <lrg@slimlogic.co.uk>,
+       Paul Gortmaker <p_gortmaker@yahoo.com>,
+       Alessandro Zummo <a.zummo@towertech.it>,
+       Greg Kroah-Hartman <gregkh@suse.de>, lm-sensors@lm-sensors.org,
+       linux-kernel@vger.kernel.org, linux-input@vger.kernel.org,
+       linuxppc-dev@ozlabs.org, linux-media@vger.kernel.org,
+       linux-mtd@lists.infradead.org, rtc-linux@googlegroups.com,
+       devel@driverdev.osuosl.org
+In-Reply-To: <20100531190911.GC30712@core.coreip.homeip.net>
+References: <1275310552-14685-1-git-send-email-w.sang@pengutronix.de>
+	 <20100531190911.GC30712@core.coreip.homeip.net>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 31 May 2010 22:48:32 +0100
+Message-ID: <1275342512.24079.1559.camel@rex>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 31 May 2010, James Bottomley wrote:
+On Mon, 2010-05-31 at 12:09 -0700, Dmitry Torokhov wrote:
+> On Mon, May 31, 2010 at 02:55:48PM +0200, Wolfram Sang wrote:
+> > I2C-drivers can use the clientdata-pointer to point to private data. As I2C
+> > devices are not really unregistered, but merely detached from their driver, it
+> > used to be the drivers obligation to clear this pointer during remove() or a
+> > failed probe(). As a couple of drivers forgot to do this, it was agreed that it
+> > was cleaner if the i2c-core does this clearance when appropriate, as there is
+> > no guarantee for the lifetime of the clientdata-pointer after remove() anyhow.
+> > This feature was added to the core with commit
+> > e4a7b9b04de15f6b63da5ccdd373ffa3057a3681 to fix the faulty drivers.
+> > 
+> > As there is no need anymore to clear the clientdata-pointer, remove all current
+> > occurrences in the drivers to simplify the code and prevent confusion.
+> > 
+> > Signed-off-by: Wolfram Sang <w.sang@pengutronix.de>
+> > Cc: Jean Delvare <khali@linux-fr.org>
+> > ---
+> > 
+> > Some more notes:
+> > 
+> > I waited for rc1 as I knew there were some drivers/patches coming along which
+> > needed to be processed, too.
+> > 
+> > I'd suggest that this goes via the i2c-tree, so we get rid of all occurences at
+> > once.
+> > 
 > 
-> For MSM hardware, it looks possible to unify the S and C states by doing
-> suspend to ram from idle but I'm not sure how much work that is.
+> Frankly I'd prefer taking input stuff through my tree with the goal of
+> .36 merge window just to minimize potential merge issues. This is a
+> simple cleanup patch that has no dependencies, so there is little gain
+> from doing it all in one go.
 
-On ARM, it's not rocket science and we have in tree support for this
-already (OMAP). I have done the same thing on a Samsung part as a
-prove of concept two years ago and it's really easy as the hardware is
-sane. Hint: It's designed for mobile devices :)
+How about asking Linus to take this one now, then its done and we can
+all move on rather than queuing up problems for the next merge window?
 
-Thanks,
+Acked-by: Richard Purdie <rpurdie@linux.intel.com>
 
-	tglx
+Cheers,
+
+Richard
+
