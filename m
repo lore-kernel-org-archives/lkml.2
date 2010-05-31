@@ -1,66 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756190Ab0EaIdS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 May 2010 04:33:18 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:55062 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753872Ab0EaIdR convert rfc822-to-8bit (ORCPT
+	id S1756316Ab0EaIey (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 May 2010 04:34:54 -0400
+Received: from krynn.se.axis.com ([193.13.178.10]:59446 "EHLO
+	krynn.se.axis.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753728Ab0EaIex (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 May 2010 04:33:17 -0400
-Subject: Re: [PATCH 1/5] sched: fix capacity calculations for SMT4
-From: Peter Zijlstra <peterz@infradead.org>
-To: Michael Neuling <mikey@neuling.org>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>, linuxppc-dev@ozlabs.org,
-       linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
-       Suresh Siddha <suresh.b.siddha@intel.com>,
-       Gautham R Shenoy <ego@in.ibm.com>
-In-Reply-To: <1271426308.1674.429.camel@laptop>
-References: <20100409062118.D4096CBB6C@localhost.localdomain>
-	 <1271161766.4807.1280.camel@twins>  <2906.1271219317@neuling.org>
-	 <1271426308.1674.429.camel@laptop>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Mon, 31 May 2010 10:33:16 +0200
-Message-ID: <1275294796.27810.21554.camel@twins>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	Mon, 31 May 2010 04:34:53 -0400
+Date: Mon, 31 May 2010 10:33:58 +0200
+From: Jesper Nilsson <Jesper.Nilsson@axis.com>
+To: Claudio Scordino <claudio@evidence.eu.com>
+Cc: Mikael Starvik <mikael.starvik@axis.com>,
+       linux-cris-kernel <linux-cris-kernel@axis.com>,
+       Alan Cox <alan@lxorguk.ukuu.org.uk>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Hinko Kocevar <hinko.kocevar@cetrtapot.si>,
+       Janez Cufer <janez.cufer@cetrtapot.si>,
+       Andy Whitcroft <apw@canonical.com>,
+       Linux Kernel <linux-kernel@vger.kernel.org>,
+       dev-etrax <dev-etrax@axis.com>
+Subject: Re: [PATCH] ioctl for getting RS485 information on Cris
+	architecture
+Message-ID: <20100531083358.GH5051@axis.com>
+References: <49A51878.7020206@evidence.eu.com> <4C0370FD.3090909@evidence.eu.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4C0370FD.3090909@evidence.eu.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2010-04-16 at 15:58 +0200, Peter Zijlstra wrote:
+On Mon, May 31, 2010 at 10:19:09AM +0200, Claudio Scordino wrote:
+> Hi Jesper, hi Mikael, 
 > 
+> 	I think that the Cris architecture should provide a full RS485 interface (like the atmel_serial driver).
 > 
-> Hrmm, my brain seems muddled but I might have another solution, let me
-> ponder this for a bit..
-> 
+> Therefore, I propose this patch which adds an ioctl to get RS485 information from user-level.
 
-Right, so the thing I was thinking about is taking the group capacity
-into account when determining the capacity for a single cpu.
+Thanks, looks good, I'll take this into the CRIS tree.
 
-Say the group contains all the SMT siblings, then use the group capacity
-(usually larger than 1024) and then distribute the capacity over the
-group members, preferring CPUs with higher individual cpu_power over
-those with less.
+>              Claudio
 
-So suppose you've got 4 siblings with cpu_power=294 each, then we assign
-capacity 1 to the first member, and the remaining 153 is insufficient,
-and thus we stop and the rest lives with 0 capacity.
-
-Now take the example that the first sibling would be running a heavy RT
-load, and its cpu_power would be reduced to say, 50, then we still got
-nearly 933 left over the others, which is still sufficient for one
-capacity, but because the first sibling is low, we'll assign it 0 and
-instead assign 1 to the second, again, leaving the third and fourth 0.
-
-If the group were a core group, the total would be much higher and we'd
-likely end up assigning 1 to each before we'd run out of capacity.
-
-
-For power savings, we can lower the threshold and maybe use the maximal
-individual cpu_power in the group to base 1 capacity from.
-
-So, suppose the second example, where sibling0 has 50 and the others
-have 294, you'd end up with a capacity distribution of: {0,1,1,1}.
-
-
+/^JN - Jesper Nilsson
+-- 
+               Jesper Nilsson -- jesper.nilsson@axis.com
