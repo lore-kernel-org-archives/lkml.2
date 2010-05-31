@@ -1,77 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756830Ab0EaJzz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 May 2010 05:55:55 -0400
-Received: from hera.kernel.org ([140.211.167.34]:39867 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755985Ab0EaJzy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 May 2010 05:55:54 -0400
-Message-ID: <4C03879A.8030505@kernel.org>
-Date: Mon, 31 May 2010 11:55:38 +0200
-From: Tejun Heo <tj@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.1.9) Gecko/20100317 Thunderbird/3.0.4
+	id S1756851Ab0EaJ6f (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 May 2010 05:58:35 -0400
+Received: from mail-ww0-f46.google.com ([74.125.82.46]:37977 "EHLO
+	mail-ww0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756762Ab0EaJ6c (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 31 May 2010 05:58:32 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
+        b=UfmMDeXGEMw9t5UwKhYTjmT1QvKRvg3WTGw9STpxMu4q78CYPT/y+dT+wJyK+THTB7
+         gdszV3Z+X0W3W4y7F4Oyndvs53AfSvGfJlJadF3W1v10e9GX7JfTRYMhGDhaQWN86bYw
+         7BMvxPEvZVz/KaQCvrftMHksUKIFemHd5i++o=
 MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: mingo@elte.hu, linux-kernel@vger.kernel.org,
-       Rusty Russell <rusty@rustcorp.com.au>, Mike Galbraith <efault@gmx.de>
-Subject: Re: [PATCH 2/4] sched: implement __set_cpus_allowed()
-References: <1273747705-7829-1-git-send-email-tj@kernel.org>	 <1273747705-7829-3-git-send-email-tj@kernel.org> <1275292866.27810.21441.camel@twins>
-In-Reply-To: <1275292866.27810.21441.camel@twins>
-X-Enigmail-Version: 1.0.1
+In-Reply-To: <alpine.LNX.2.00.1005311905520.469@nippy.intranet>
+References: <alpine.OSX.2.00.1004171258330.358@localhost>
+	<20100421.163041.158540277.davem@davemloft.net>
+	<alpine.OSX.2.00.1005290255580.691@localhost>
+	<20100531.001947.193703044.davem@davemloft.net>
+	<alpine.LNX.2.00.1005311905520.469@nippy.intranet>
+Date: Mon, 31 May 2010 11:58:30 +0200
+X-Google-Sender-Auth: cG5ITo03NY8zPcV5UTSyyDrGTQs
+Message-ID: <AANLkTilkooBglbk33yDHmk8c_ZdlamOW8FVvuvjQaNsF@mail.gmail.com>
+Subject: Re: [PATCH] mac8390: change an error return code and some cleanup, 
+	take 4
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: fthain@telegraphics.com.au
+Cc: David Miller <davem@davemloft.net>, joe@perches.com, p_gortmaker@yahoo.com,
+       netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+       linux-m68k@vger.kernel.org
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Mon, 31 May 2010 09:55:40 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On Mon, May 31, 2010 at 11:21,  <fthain@telegraphics.com.au> wrote:
+> On Mon, 31 May 2010, David Miller wrote:
+>> This is getting tiring Finn.
+>
+> I agree. My patch addresses all of the criticism of the earlier
+> submissions.
+>
+> To make it plain: there are 25 files or so that use ei_debug. Three of
+> those that now have the KERN_DEBUG printk's suppresed by the DEBUG macro
+> only do so as an apparently unintended side effect of a commit that claims
+> to "implement dynmic debug infrastructure". (Go figure.)
+>
+> http://git.kernel.org/?p=linux/kernel/git/davem/net-2.6.git;a=commitdiff;h=dd0fab5b940c0b65f26ac5b01485bac1f690ace6
+>
+> Your suggestion to use pr_debug is invoking compile time infrastructure
+> (the DEBUG macro), so it is not in the spirit of this commit, and it is
+> not relevant to any criticism from you or Joe of the earlier submissions.
+>
+> Please apply the patch.
 
-On 05/31/2010 10:01 AM, Peter Zijlstra wrote:
-> On Thu, 2010-05-13 at 12:48 +0200, Tejun Heo wrote:
->> Concurrency managed workqueue needs to be able to migrate tasks to a
->> cpu which is online but !active for the following two purposes.
->>
->> p1. To guarantee forward progress during cpu down sequence.  Each
->>     workqueue which could be depended upon during memory allocation
->>     has an emergency worker task which is summoned when a pending work
->>     on such workqueue can't be serviced immediately.  cpu hotplug
->>     callbacks expect workqueues to work during cpu down sequence
->>     (usually so that they can flush them), so, to guarantee forward
->>     progress, it should be possible to summon emergency workers to
->>     !active but online cpus.
-> 
-> If we do the thing suggested in the previous patch, that is move
-> clearing active and rebuilding the sched domains until right after
-> DOWN_PREPARE, this goes away, right?
+`pr_debug()' indeed now may generate code if DEBUG is not defined,
+i.e. if CONFIG_DYNAMIC_DEBUG is enabled.
+This is intented for debug infrastructure the user may want to enable later.
 
-Hmmm... yeah, if the usual set_cpus_allowed_ptr() keeps working
-throughout CPU_DOWN_PREPARE, this probably goes away.  I'll give it a
-shot.
+If you want the old behavior, you can use `pr_devel()' instead, which
+only generates code if DEBUG is defined.
+This is intended for debug infrastructure for developers only.
 
->> p2. To migrate back unbound workers when a cpu comes back online.
->>     When a cpu goes down, existing workers are unbound from the cpu
->>     and allowed to run on other cpus if there still are pending or
->>     running works.  If the cpu comes back online while those workers
->>     are still around, those workers are migrated back and re-bound to
->>     the cpu.  This isn't strictly required for correctness as long as
->>     those unbound workers don't execute works which are newly
->>     scheduled after the cpu comes back online; however, migrating back
->>     the workers has the advantage of making the behavior more
->>     consistent thus avoiding surprises which are difficult to expect
->>     and reproduce, and being actually cleaner and easier to implement.
-> 
-> I still don't like this much, if you mark these tasks to simply die when
-> the queue is exhausted, and flush the queue explicitly on
-> CPU_UP_PREPARE, you should never need to do this.
+However, you used `printk(KERN_DEBUG pr_fmt()...)`, which always generates code.
+I'm still not 100% sure that was intentional?
 
-I don't think flushing from CPU_UP_PREPARE would be a good idea.
-There is no guarantee that those works will finish in short (human
-scale) time, but we can update cpu_active mask before other
-CPU_UP_PREPARE notifiers are executed so that it's symmetrical to cpu
-down path and then this problem goes away the exact same way, right?
+Gr{oetje,eeting}s,
 
-Thanks.
+						Geert
 
--- 
-tejun
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+							    -- Linus Torvalds
