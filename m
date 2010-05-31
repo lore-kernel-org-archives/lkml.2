@@ -1,74 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756776Ab0EaRQW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 May 2010 13:16:22 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:23834 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755274Ab0EaRQV convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 May 2010 13:16:21 -0400
+	id S1756845Ab0EaRTT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 May 2010 13:19:19 -0400
+Received: from www.tglx.de ([62.245.132.106]:39162 "EHLO www.tglx.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753633Ab0EaRTR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 31 May 2010 13:19:17 -0400
+Date: Mon, 31 May 2010 19:19:07 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: James Bottomley <James.Bottomley@suse.de>
+cc: Tedheadster <tedheadster@gmail.com>, linux-scsi@vger.kernel.org,
+       linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: aha1542 oops caused by new request_irq routines
+In-Reply-To: <1275325170.2823.79.camel@mulgrave.site>
+Message-ID: <alpine.LFD.2.00.1005311914560.2933@localhost.localdomain>
+References: <AANLkTilB661W9H9IPxn9TGBvv-omVnAh43r3XR5uM58m@mail.gmail.com>  <1275316364.2823.22.camel@mulgrave.site>  <alpine.LFD.2.00.1005311829360.2933@localhost.localdomain> <1275325170.2823.79.camel@mulgrave.site>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-Message-ID: <a38d5a97-1517-46c4-9b2f-27e16aba58f2@default>
-Date: Mon, 31 May 2010 10:14:07 -0700 (PDT)
-From: Dan Magenheimer <dan.magenheimer@oracle.com>
-To: ngupta@vflare.org
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org, jeremy@goop.org,
-       hugh.dickins@tiscali.co.uk, JBeulich@novell.com, chris.mason@oracle.com,
-       kurt.hackel@oracle.com, dave.mccracken@oracle.com, npiggin@suse.de,
-       akpm@linux-foundation.org, riel@redhat.com, avi@redhat.com,
-       pavel@ucw.cz, konrad.wilk@oracle.com
-Subject: RE: [PATCH V2 0/4] Frontswap (was Transcendent Memory): overview
-References: <20100528174020.GA28150@ca-server1.us.oracle.com
- 4C02AB5A.5000706@vflare.org>
-In-Reply-To: <4C02AB5A.5000706@vflare.org>
-X-Priority: 3
-X-Mailer: Oracle Beehive Extensions for Outlook 1.5.1.5.2  (401224) [OL
- 12.0.6514.5000]
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 8BIT
-X-Auth-Type: Internal IP
-X-Source-IP: acsinet15.oracle.com [141.146.126.227]
-X-CT-RefId: str=0001.0A090201.4C03EEA9.0132:SCFMA922111,ss=1,fgs=0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> On 05/28/2010 11:10 PM, Dan Magenheimer wrote:
-> > [PATCH V2 0/4] Frontswap (was Transcendent Memory): overview
-> >
-> > Changes since V1:
-> > - Rebased to 2.6.34 (no functional changes)
-> > - Convert to sane types (per Al Viro comment in cleancache thread)
-> > - Define some raw constants (Konrad Wilk)
-> > - Performance analysis shows significant advantage for frontswap's
-> >   synchronous page-at-a-time design (vs batched asynchronous
-> speculated
-> >   as an alternative design).  See http://lkml.org/lkml/2010/5/20/314
-> >
+On Mon, 31 May 2010, James Bottomley wrote:
+> On Mon, 2010-05-31 at 18:43 +0200, Thomas Gleixner wrote:
+> > On Mon, 31 May 2010, James Bottomley wrote:
+> > 
+> > > On Mon, 2010-05-31 at 10:03 -0400, Tedheadster wrote:
+> > > > I'm reliably getting this oops:
+> > > > 
+> > > > Configuring Adaptec (SCSI-ID 6) at IO:334, IRQ 10, DMA priority 6
+> > > > BUG: sleeping function called from invalid context at mm/slub.c:1598
+> > > > in_atomic(): 0, irqs_disabled(): 1, pid: 4782, name: modprobe
+> > > > Pid: 4782, comm: modprobe Not tainted 2.6.30.10-105.2.23.RODATA.fc11.i586 #1
+> > > > Call Trace:
+> > > >  [<c0469e58>] ? request_threaded_irq+0x85/0x145
+> > > >  [<c0422ab7>] __might_sleep+0xc4/0xc9
+> > > >  [<c04a4322>] kmem_cache_alloc_notrace+0x29/0xb0
+> > > >  [<c0469e58>] request_threaded_irq+0x85/0x145
+> > > >  [<d086439c>] ? do_aha1542_intr_handle+0x0/0x2be [aha1542]
+> > > >  [<d08696aa>] aha1542_detect+0x631/0x76f [aha1542]
+> > > >  [<d0869841>] init_this_scsi_driver+0x59/0xc7 [aha1542]
+> > > >  [<d08697e8>] ? init_this_scsi_driver+0x0/0xc7 [aha1542]
+> > > >  [<c040114b>] do_one_initcall+0x51/0x13f
+> > > >  [<c0451111>] sys_init_module+0x8b/0x192
+> > > >  [<c0403535>] syscall_call+0x7/0xb
+> > > > scsi5 : Adaptec 1542
+> > > 
+> > > So this one's a bit tricky.  aha1542 uses a global spinlock to give it
+> > > thread safety and various other things.  In this case it's trying to use
+> > > the lock to hold off the interrupt until everything is set up.
+> > > 
+> > > Now that we're doing a GFP_KERNEL allocation in the interrupt handler
+> > > code you can't disable interrupts while calling request_irq since this
+> > > is an old card liable to spurious interrupts as it gets poked in setup.
+> > >
+> > > I think a possible solution is this, since the mere act of installing an
+> > > interrupt handler shouldn't trigger the problem.
+> > > 
+> > > However, I thought the pattern of disabling interrupts and setting up
+> > > the handler and registers was a common one ... is there some way this is
+> > > supposed to work now that doesn't involve altering the drivers?
+> > 
+> > Most drivers do the sane thing:
+> > 
+> >      Disable interrupts at the device level
+> >      Install handler via request_irq()
+> >      Setup stuff
+> >      Enable interrupts at the device level
 > 
-> I think zram (http://lwn.net/Articles/388889/) is a more generic
-> solution
-> and can also achieve swap-to-hypervisor as a special case.
+> That only works for some hardware ... a lot of older hardware can't
+> disable interrupts; the best you can do is to have the box physically
+> not listening to the line.
 > 
-> zram is a generic in-memory compressed block device. To get frontswap
-> functionality, such a device (/dev/zram0) can be exposed to a VM as
-> a 'raw disk'. Such a disk can be used for _any_ purpose by the guest,
-> including use as a swap disk.
+> > So no, there is no way this is supposed to work with drivers which
+> > don't follow that simple scheme.
+> > 
+> > commit 0e43785c5 (irq: use GFP_KERNEL for action allocation in
+> > request_irq()) changed that particular instance to GFP_KERNEL because
+> > the request_irq code calls (and always did) code which cannot be
+> > called in atomic contexts, e.g. the proc entry handling.
+> 
+> So, like I said, I think we can install the handler without tickling the
+> hardware.  Ideally we'd like to install it IRQ_DISABLED and then call
+> enable_irq after we're done with the setup, but that doesn't seem to be
+> possible.
 
-Hi Nitin --
+We have a mechanism in place to do that, but it's not available for
+drivers yet. If that's really a requirement, then we can make it
+available with very little effort, but that does not resolve the
+problem when the interrupt is shared and the interrupt line is already
+enabled.
 
-Though I agree zram is cool inside Linux, I don't see that it can
-be used to get the critical value of frontswap functionality in a
-virtual environment, specifically the 100% dynamic control by the
-hypervisor of every single page attempted to be "put" to frontswap.
-This is the key to the "intelligent overcommit" discussed in the
-previous long thread about frontswap.
+Thanks,
 
-Further, by doing "guest-side compression" you are eliminating
-possibilities for KSM-style sharing, right?
-
-So while zram may be a great feature, it is NOT a more generic
-solution than frontswap, just a different solution that has a
-different set of objectives.
-
-Dan
+	tglx
