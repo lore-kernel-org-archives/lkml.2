@@ -1,90 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755844Ab0EaOLA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 May 2010 10:11:00 -0400
-Received: from va3ehsobe003.messaging.microsoft.com ([216.32.180.13]:34455
-	"EHLO VA3EHSOBE003.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1755065Ab0EaOK6 convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 May 2010 10:10:58 -0400
-X-SpamScore: -7
-X-BigFish: VPS-7(zz1432Pab9bhzz1202hzzz32i2a8h43h61h)
-X-Spam-TCS-SCL: 0:0
-X-WSS-ID: 0L3AFDW-02-G9K-02
-X-M-MSG: 
-Date: Mon, 31 May 2010 16:10:58 +0200
-From: Borislav Petkov <borislav.petkov@amd.com>
-To: Toralf =?iso-8859-1?Q?F=F6rster?= <toralf.foerster@gmx.de>
-CC: Borislav Petkov <bp@alien8.de>, "H. Peter Anvin" <hpa@zytor.com>,
+	id S1755753Ab0EaOMV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 May 2010 10:12:21 -0400
+Received: from saraswathi.solana.com ([198.99.130.12]:39582 "EHLO
+	saraswathi.solana.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754424Ab0EaOMT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 31 May 2010 10:12:19 -0400
+X-Greylist: delayed 2224 seconds by postgrey-1.27 at vger.kernel.org; Mon, 31 May 2010 10:12:19 EDT
+Date: Sun, 30 May 2010 22:32:12 -0400
+From: Jeff Dike <jdike@addtoit.com>
+To: Borislav Petkov <bp@alien8.de>, "H. Peter Anvin" <hpa@zytor.com>,
        Geert Uytterhoeven <geert@linux-m68k.org>,
-       "user-mode-linux-devel@lists.sourceforge.net" 
-	<user-mode-linux-devel@lists.sourceforge.net>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+       Borislav Petkov <borislav.petkov@amd.com>,
+       Toralf =?iso-8859-1?Q?F=F6rster?= <toralf.foerster@gmx.de>,
+       user-mode-linux-devel@lists.sourceforge.net,
+       linux-kernel@vger.kernel.org
 Subject: Re: [PATCH] x86, hweight: Fix UML boot crash
-Message-ID: <20100531141058.GB4915@aftab>
-References: <201005271944.09541.toralf.foerster@gmx.de>
- <20100530193956.GA2498@liondog.tnic>
- <20100530201738.GB2498@liondog.tnic>
- <201005311555.56791.toralf.foerster@gmx.de>
+Message-ID: <20100531023212.GA22673@c-98-229-117-200.hsd1.ma.comcast.net>
+References: <201005271944.09541.toralf.foerster@gmx.de> <AANLkTimKwxYxM_PExplIDK1WPTQ9e_-CHn5SnIvfjfUg@mail.gmail.com> <20100530150214.GA1565@liondog.tnic> <201005301728.25976.toralf.foerster@gmx.de> <20100530170346.GC1565@liondog.tnic> <4C02B020.2040103@zytor.com> <20100530193956.GA2498@liondog.tnic>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="iso-8859-1"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <201005311555.56791.toralf.foerster@gmx.de>
-Organization: Advanced Micro Devices =?iso-8859-1?Q?GmbH?=
-	=?iso-8859-1?Q?=2C_Einsteinring_24=2C_85609_Dornach_bei_M=FCnchen=2C_Gesc?=
-	=?iso-8859-1?Q?h=E4ftsf=FChrer=3A_Thomas_M=2E_McCoy=2C_Giuliano_Meroni=2C?=
-	=?iso-8859-1?Q?_Andrew_Bowd=2C_Sitz=3A_Dornach=2C_Gemeinde_Aschheim=2C_La?=
-	=?iso-8859-1?Q?ndkreis_M=FCnchen=2C_Registergericht_M=FCnchen?=
-	=?iso-8859-1?Q?=2C?= HRB Nr. 43632
-User-Agent: Mutt/1.5.20 (2009-06-14)
-Content-Transfer-Encoding: 8BIT
-X-Reverse-DNS: unknown
+In-Reply-To: <20100530193956.GA2498@liondog.tnic>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Toralf Förster <toralf.foerster@gmx.de>
-Date: Mon, May 31, 2010 at 09:55:53AM -0400
+On Sun, May 30, 2010 at 09:39:56PM +0200, Borislav Petkov wrote:
+> Which begs the question why _is_ UML sucking in x86 stuff and can anyone
+> provide us with some sensible reasons? Because if there aren't any, it
+> is their includes that should be fixed. Let me see what I can do to
+> redirect hweight stuff properly...
 
-> Borislav Petkov wrote at 22:17:38
-> > LKML-Reference: <201005271944.09541.toralf.foerster@gmx.de>
-> > Signed-off-by: Borislav Petkov <bp@alien8.de>
-> > ---
-> >  arch/um/include/asm/arch_hweight.h |    6 ++++++
-> >  1 files changed, 6 insertions(+), 0 deletions(-)
-> >  create mode 100644 arch/um/include/asm/arch_hweight.h
-> > 
-> > diff --git a/arch/um/include/asm/arch_hweight.h b/arch/um/include/asm/arch_hweight.h
-> > new file mode 100644
-> > index 0000000..c656cf4
-> > --- /dev/null
-> > +++ b/arch/um/include/asm/arch_hweight.h
-> > @@ -0,0 +1,6 @@
-> > +#ifndef _ASM_UM_HWEIGHT_H
-> > +#define _ASM_UM_HWEIGHT_H
-> > +
-> > +#include <asm-generic/bitops/arch_hweight.h>
-> > +
-> > +#endif
-> > 
-> This patch does not to solve the reported issue by me.
+Generally, UML pulls in the host arch headers because they work.  When
+they are only architecture-dependent (and not, say, depending on the
+host task struct or something), they're fine.
 
-Did you do 'make mrproper' before rebuilding UML with it?
+What's the include path from UML to the x86 hweight stuff?
 
-Also, can you do
-
-grep -EriIn 'x86.*hweight\.h' arch/um/
-
-after having applied the patch?
-
-You shouldn't be getting any matches. If it still fails then, then it is
-something else since with this patch, UML includes the standard hweight*
-routines.
+				Jeff
 
 -- 
-Regards/Gruss,
-Boris.
-
-Operating Systems Research Center
-Advanced Micro Devices, Inc.
-
+Work email - jdike at linux dot intel dot com
