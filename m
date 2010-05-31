@@ -1,57 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753303Ab0EaU54 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 May 2010 16:57:56 -0400
-Received: from poutre.nerim.net ([62.4.16.124]:65226 "EHLO poutre.nerim.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750824Ab0EaU5y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 May 2010 16:57:54 -0400
-Date: Mon, 31 May 2010 22:57:50 +0200
-From: Jean Delvare <khali@linux-fr.org>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: Wolfram Sang <w.sang@pengutronix.de>, linux-i2c@vger.kernel.org,
-       George Joseph <george.joseph@fairview5.com>,
-       Riku Voipio <riku.voipio@iki.fi>,
-       Guillaume Ligneul <guillaume.ligneul@gmail.com>,
-       "Ben Dooks (embedded platforms)" <ben-linux@fluff.org>,
-       Alessandro Rubini <rubini@cvml.unipv.it>,
-       Richard Purdie <rpurdie@rpsys.net>, Colin Leroy <colin@colino.net>,
-       Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-       Mauro Carvalho Chehab <mchehab@infradead.org>,
-       Samuel Ortiz <sameo@linux.intel.com>,
-       Mark Brown <broonie@opensource.wolfsonmicro.com>,
-       David Woodhouse <dwmw2@infradead.org>,
-       Liam Girdwood <lrg@slimlogic.co.uk>,
-       Paul Gortmaker <p_gortmaker@yahoo.com>,
-       Alessandro Zummo <a.zummo@towertech.it>,
-       Greg Kroah-Hartman <gregkh@suse.de>, lm-sensors@lm-sensors.org,
-       linux-kernel@vger.kernel.org, linux-input@vger.kernel.org,
-       linuxppc-dev@ozlabs.org, linux-media@vger.kernel.org,
-       linux-mtd@lists.infradead.org, rtc-linux@googlegroups.com,
-       devel@driverdev.osuosl.org
-Subject: Re: [PATCH] drivers: remove all i2c_set_clientdata(client, NULL)
-Message-ID: <20100531225750.0dc18950@hyperion.delvare>
-In-Reply-To: <20100531190911.GC30712@core.coreip.homeip.net>
-References: <1275310552-14685-1-git-send-email-w.sang@pengutronix.de>
-	<20100531190911.GC30712@core.coreip.homeip.net>
-X-Mailer: Claws Mail 3.5.0 (GTK+ 2.14.4; i586-suse-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1752788Ab0EaVHk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 May 2010 17:07:40 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:41285 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751332Ab0EaVHj convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 31 May 2010 17:07:39 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=nl0QeC27TclXWW6DB2OBz8/s3nt1BQ1OwiRcw7NcNWLfLnUII3nAndw+BCX39ijMW3
+         xyFRzx/9Q204D6XMlZI/lN7lSWGeNdfGwjcpoMkYBPRBh6Dhcajh4m8MJj0HW6805HrO
+         uUWKM9Z0Zqk6qoQT4lIHmrhX97dzSKT6aiX3Y=
+MIME-Version: 1.0
+In-Reply-To: <1275332796.6696.24.camel@tropicana>
+References: <1275147754-3037-1-git-send-email-tardyp@gmail.com>
+	<AANLkTikn53S1Gd_lf4jeu5dEy9C_RTGxxioN4EEYxM2C@mail.gmail.com>
+	<1275332796.6696.24.camel@tropicana>
+Date: Mon, 31 May 2010 23:07:38 +0200
+Message-ID: <AANLkTimP7PwL7sRV_FVaa57JhWZ9wHJBYRnnbXPdj-ls@mail.gmail.com>
+Subject: Re: [PATCH] trace-event-python: give field dict to unhandled callback
+From: Pierre Tardy <tardyp@gmail.com>
+To: Tom Zanussi <tzanussi@gmail.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Frederic Weisbecker <fweisbec@gmail.com>,
+       Linux Kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Dmitry,
+> The if statement expands to:
+>
+> if (!handler)
+>  if ( --(dict)->ob_refcnt != 0) ; else
+> ( (*((PyObject*)(dict))->ob_type->tp_dealloc)((PyObject *)((PyObject
+> *)(dict))));
+>
+yeah, in python2.6 at least,  Py_DECREF is protected by do{ } while(0)
+#define Py_DECREF(op)                                   \
+        do {                                            \
+            if (_Py_DEC_REFTOTAL  _Py_REF_DEBUG_COMMA   \
+                --((PyObject*)(op))->ob_refcnt != 0)    \
+                    _Py_CHECK_REFCNT(op)                \
+            else                                        \
+                _Py_Dealloc((PyObject *)(op));          \
+        } while (0)
 
-On Mon, 31 May 2010 12:09:12 -0700, Dmitry Torokhov wrote:
-> Frankly I'd prefer taking input stuff through my tree with the goal of
-> .36 merge window just to minimize potential merge issues. This is a
-> simple cleanup patch that has no dependencies, so there is little gain
-> from doing it all in one go.
+>       if (!handler) {
+>               Py_DECREF(dict);
+>       }
 
-If I take the patch in my i2c tree, the aim is to merge it upstream
-immediately, so merge issues won't exist.
+See a simpler fix in my next email.
 
 -- 
-Jean Delvare
+Pierre
