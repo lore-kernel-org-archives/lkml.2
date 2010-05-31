@@ -1,48 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751628Ab0EaXhi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 May 2010 19:37:38 -0400
-Received: from casper.infradead.org ([85.118.1.10]:60400 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750935Ab0EaXhh (ORCPT
+	id S1751745Ab0EaXji (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 May 2010 19:39:38 -0400
+Received: from mail-gw0-f46.google.com ([74.125.83.46]:48561 "EHLO
+	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750960Ab0EaXjh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 May 2010 19:37:37 -0400
-Date: Mon, 31 May 2010 20:37:16 -0300
-From: Arnaldo Carvalho de Melo <acme@infradead.org>
-To: Valdis.Kletnieks@vt.edu
-Cc: Stephane Eranian <eranian@google.com>, Ingo Molnar <mingo@elte.hu>,
-       linux-kernel@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
-       =?iso-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>,
-       Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
-       Peter Zijlstra <peterz@infradead.org>, Tom Zanussi <tzanussi@gmail.com>
-Subject: Re: [PATCH 1/5] perf stat: add perf stat -B to pretty print large
- numbers
-Message-ID: <20100531233716.GB4093@ghostprotocols.net>
-References: <1274234900-12162-1-git-send-email-acme@infradead.org>
- <1274234900-12162-2-git-send-email-acme@infradead.org>
- <52092.1275333099@localhost>
- <AANLkTimBxG-2TVC7hAfvRHWupa8T7FaVEcDTnAMCtQWy@mail.gmail.com>
- <77282.1275338942@localhost>
- <20100531231145.GA4093@ghostprotocols.net>
+	Mon, 31 May 2010 19:39:37 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=cw3jEmaqKJR3hDDMZCjor9W4BB8R0JnsnOYi+uF9v2hh8avH4hWcOWQXgSBp1VXnmO
+         73MA8AfD7hocxdf9qs9J76s4QBI1KwggegUysQafUAWJ0KeZ8GBst797FXvy3M+64X9z
+         CGkqY4xzQvA7B0eYGe3TvoXcLjeSXzOEMTeIc=
+Message-ID: <4C0448B5.7090904@gmail.com>
+Date: Mon, 31 May 2010 17:39:33 -0600
+From: Robert Hancock <hancockrwd@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-3.fc13 Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100531231145.GA4093@ghostprotocols.net>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
-	See http://www.infradead.org/rpr.html
+To: alex.buell@munted.org.uk
+CC: Mailing Lists - Kernel Developers <linux-kernel@vger.kernel.org>
+Subject: Re: Article in Phoronix about loss of performance in 2.6.35 release
+ candidates
+References: <1275347969.29006.5.camel@lithium.local.net>
+In-Reply-To: <1275347969.29006.5.camel@lithium.local.net>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Mon, May 31, 2010 at 08:11:45PM -0300, Arnaldo Carvalho de Melo escreveu:
-> Em Mon, May 31, 2010 at 04:49:02PM -0400, Valdis.Kletnieks@vt.edu escreveu:
-> > the same places, -B or not -B.  I was sort of expecting that the first
-> > example wouldn't have commas in it, or something?  Or were those two
-> 
-> Right, from a quick read it seems you saw a bug in the changeset and I
+On 05/31/2010 05:19 PM, Alex Buell wrote:
+> http://www.phoronix.com/vr.php?view=14976
+>
+> Question: Why?
 
-Gack, s/in the changeset and/in the changeset comment and/g
-
-> saw none in the patch itself.
+Good question.. I guess it would too much to ask of them to try to 
+figure out what area the problem lies in (even to the point of figuring 
+out if it's a CPU or IO-bound problem), or try to bisect, or at least 
+report it to LKML before going to the trouble of creating 5 pages of 
+graphs.. Given the 20x slowdown in some of the benchmarks you'd think it 
+wouldn't be too hard to narrow down.
