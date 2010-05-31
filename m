@@ -1,133 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754907Ab0EaWWw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 May 2010 18:22:52 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:35803 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751717Ab0EaWWu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 May 2010 18:22:50 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [linux-pm] [PATCH 0/8] Suspend block api (version 8)
-Date: Tue, 1 Jun 2010 00:23:59 +0200
-User-Agent: KMail/1.12.4 (Linux/2.6.35-rc1-rjw; KDE/4.3.5; x86_64; ; )
-Cc: James Bottomley <James.Bottomley@suse.de>,
-       Peter Zijlstra <peterz@infradead.org>,
-       Arve =?iso-8859-1?q?Hj=F8nnev=E5g?= <arve@android.com>, tytso@mit.edu,
-       LKML <linux-kernel@vger.kernel.org>,
-       Florian Mickler <florian@mickler.org>,
-       Linux PM <linux-pm@lists.linux-foundation.org>,
-       Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
-       felipe.balbi@nokia.com, Alan Cox <alan@lxorguk.ukuu.org.uk>
-References: <20100527222514.0a1710bf@lxorguk.ukuu.org.uk> <1275149418.4503.128.camel@mulgrave.site> <alpine.LFD.2.00.1005312250050.2933@localhost.localdomain>
-In-Reply-To: <alpine.LFD.2.00.1005312250050.2933@localhost.localdomain>
+	id S1755001Ab0EaW0N (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 May 2010 18:26:13 -0400
+Received: from mail-px0-f174.google.com ([209.85.212.174]:41815 "EHLO
+	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753207Ab0EaW0M (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 31 May 2010 18:26:12 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:reply-to:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=W+LyXksuiNd9NMxuvYdPwmjqivpXIrZkjpJWHu11ZnfD5ytNu2nMKNcxldtY9kxKd9
+         HTMuiIWAORJVZ0Td0rSzbIuplGXUjM4xiXk563cWl4aP4bb5VHo/Fzwi+dAqHvWUYIY3
+         4WfWFo5VhUIlSUmeSffWuGIwBxMsiUqOd8HCY=
+Date: Mon, 31 May 2010 15:26:27 -0700
+From: mark gross <640e9920@gmail.com>
+To: Florian Mickler <florian@mickler.org>
+Cc: Neil Brown <neilb@suse.de>, markgross@thegnar.org, 640e9920@gmail.com,
+       Thomas Gleixner <tglx@linutronix.de>,
+       Alan Cox <alan@lxorguk.ukuu.org.uk>,
+       Brian Swetland <swetland@google.com>,
+       Arve =?iso-8859-1?B?SGr4bm5lduVn?= <arve@android.com>,
+       linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+       "Rafael J. Wysocki" <rjw@sisk.pl>, mark.gross@intel.com
+Subject: Re: [RFC] lp_events: an lternitive to suspend blocker user mode
+ and kernel API
+Message-ID: <20100531222627.GC31155@gvim.org>
+Reply-To: markgross@thegnar.org
+References: <20100530200409.GA21632@gvim.org>
+ <20100531095753.4c174f2d@notabene.brown>
+ <20100531084356.272f3e1a@schatten.dmk.lab>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201006010024.00032.rjw@sisk.pl>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100531084356.272f3e1a@schatten.dmk.lab>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 31 May 2010, Thomas Gleixner wrote:
-> On Sat, 29 May 2010, James Bottomley wrote:
-> > On Sat, 2010-05-29 at 10:10 +0200, Peter Zijlstra wrote:
-> > > 
-> > > Not using suspend is exactly the point. As Alan has argued, propagating
-> > > suspend blockers up into all regions of userspace will take much longer
-> > > than fixing the hardware.
+On Mon, May 31, 2010 at 08:43:56AM +0200, Florian Mickler wrote:
+> On Mon, 31 May 2010 09:57:53 +1000
+> Neil Brown <neilb@suse.de> wrote:
+> 
+> > On Sun, 30 May 2010 13:04:10 -0700
+> > mark gross <640e9920@gmail.com> wrote:
 > > 
-> > Strange, that's not what I heard as the possible solution.  I thought he
-> > was advocating expressing the kernel side of suspend blockers as QoS
-> > constraints.  Once we have QoS constraints correctly done in the kernel,
-> > userspace still has to express its requirements.  If the requirements
-> > are static, then they can be done from policy files or in some other
-> > static way but if they're dynamic, they'll still have to be in the
-> > applications ... in about the same places the android wakelocks are.
+> > > Low Power Events is a possible alternative to suspend blocker / wake
+> > > lock API used by Android.
+> > 
+> > Here is how I see your proposal.  It is of course possible that I
+> > misunderstood bits, so please correct me where I'm wrong.
+> > 
+> > 1/ You have introduced a new mechanism for requesting a transition
+> >   to a low power state.  This involves writing a number to /dev/lpe_enter.
+> >   It is not clear to me from your text what the magic number really means.
+> >   I think this parallels writing to /sys/power/state, but achieves the same
+> >   result though a different mechanism and adds some extra checking.
+> >   So: I don't understand the numbers, and I don't see why we need a
+> >    second way to request a low power state.  Probably I missed something
+> >    important.
 > 
-> That's wrong. You only need the explicit dynamic QoS constraints for
-> applications which follow the scheme:
+> I can only think for lpe to provide the levels and have userspace and
+> platform code hook into there. Else you would have a dependency from
+> userspace to platform code.
 > 
->      while (1) {
->      	   if (event_available())
-> 	      process_event();
-> 	   else
-> 	      do_useless_crap_which_consumes_power();
->      }	   
+> > 
+> > 2/ Rather than tracking wake-events from the hardware up through possibly
+> >    several kernel modules, you go directly from hardware to user-space so each
+> >    event is potentially presented to user-space twice: once as a "wake up
+> >    from low power state" event and once following the normal path (maybe a
+> >    key-press event, maybe a serial-port event, maybe a network receive event).
+> >    I can see that this is a very tempting approach.  It allows all those
+> >    intermediate modules to remain unchanged and that is good.
+> >    However it isn't clear to me that this would be easy for user-space to use
+> >    correctly.
+> >    When an lpe event arrived it would need to wait around for the real event
+> >    to arrive and then process that.  I probably wouldn't wait long, but it
+> >    would be an indeterminate wait, and it might not be  trivial to determine
+> >    if all events that would cause a wake-up have been consumed as a direct
+> >    mapping from lpe event to normal event may not always be possible.
+> >    Maybe this is more of a theoretical problem and in practice it would be
+> >    easy to get it right - I don't have enough concrete experience to be sure.
+> > 
+> >    So: I like the idea of leaving the intermediate layers unchanged, but I'm
+> >    not convinced it would work.
 > 
-> which need the following annotation:
+> To add to this: Is it a correct assumption
+> that all wake-up events that leave a driver trickle eventually up to
+> userspace?
 > 
->      while (1) {
->      	   block_suspend();
->      	   if (event_available()) {
-> 	      process_event();
-> 	      unblock_suspend();
-> 	   } else {
-> 	      unblock_suspend();
-> 	      do_useless_crap_which_consumes_power();
->            }
->      }	   
-> 
-> Plus the kernel counterpart of drivers which take the suspend blocker
-> in the interrupt handler and release it when the event queue is empty.
-> 
-> So that's done for making polling event handling power "efficient".
-> 
-> Even worse, you need the same "annotation" for non polling mode and it
-> enforces the use of select() because you cannot take a suspend blocker
-> across a blocking read() without adding more invasive interactions to
-> the kernel..
-> 
-> So the "sane" app looks like:
-> 
->    while (1) {
->    	 select();
-> 	 block_suspend();
-> 	 process_events();
-> 	 unblock_suspend();
->    }
-> 
-> I'm really tired of arguing that this promotion of "programming style"
-> is the worst idea ever, so let's look how you can do the same thing
-> QoS based.
-> 
-> s/block_suspend()/qos(INTERACTIVE)/ and
-> s/unblock_suspend()/qos(NONE)/ and
-> s/block_magic()/qos_magic()/ in the drivers.
-> 
-> Yes, it's mostly the same, with a subtle difference:
-> 
-> While android can use it in the big hammer approach to disable the
-> existing user initiated suspend via /sys/power/state, the rest of the
-> world can benefit as well in various ways.
-> 
->  - Sane applications which use a blocking event wait can be handled
->    with a static QoS setting simply because a blocking read relies on
->    the QoS state of the underlying I/O system.
-> 
->  - Idle based suspend as the logical consequence of idle states is
->    just a matter of QoS constraint based decisions.
-> 
->  - Untrusted apps can be confined in cgroups. The groups are set to
->    QoS(None) when user land decides that it's time to safe power
->    (e.g. screen lock kicks in)
-> 
->  - QoS states can block applications from I/O when the I/O system is
->    set to a state which is exclusive.
-> 
->   - ...
-> 
-> So that allows to use the same mechanism for more than the android
-> sledge hammer approach and confines the controversial use cases into
-> android specific files without adding a hard to maintain user space
-> interface which would prevent or at least make it hard to do some of
-> the above mentioned things which we want to see implemented.
+> I think splitting the actual driver product (i.e. keypress or whatever)
+> of a wake-up-event and it's corresponding wake-lock is not possible.
+> Because you would have to _somehow_ map the block back to the product
+> when you consume the product. 
 
-I generally agree.
+its only possible if you require a user mode transition after a wake up
+before re-entry into the suspend / low power state.
 
-I think the Alan Stern's recent proposal goes along these lines, but it has
-the advantage of being a bit more specific. ;-)
+I think kernel mode initiated suspends are problematic.
+ 
+> If you want to abstract the blocking from the kernel-code you probably
+> have to introduce an abstract "driver-product" entity where you can do
+> all your blocking associated with the product but hidden from the code
+> that uses the product. (Which I don't think is feasible, because it
+> increases overhead)
+> 
+> Or am I on the wrong track here? 
+maybe a little. 
 
-Thanks,
-Rafael
+blocking low power entry and the handling of the unblocking as an event
+is orthogonal to wake event notification and handling and the coupling
+of the next entry into the low power state..  Much of these
+discussions are conflating these two notions.
+
+first blocking from the kernel mode *is* needed.  My poster child for
+this is the moorestown OTG hardware.  If we attempt a suspend while
+attached to a host the device hangs.  there is a real need for blocking
+suspend attempts from kernel mode.  How to handle the event of
+unblocking is one of the two main issues.  (the other being wake event
+handling.)
+
+
+> cheers,
+> Flo
