@@ -1,116 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756380Ab0EaOzl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 May 2010 10:55:41 -0400
-Received: from mail-ww0-f46.google.com ([74.125.82.46]:36375 "EHLO
-	mail-ww0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754783Ab0EaOzk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 May 2010 10:55:40 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=kJK274kzNIHcfOCEC6B6j5OspjXbSybUph0TbC+FeM01sV84u2wLjk6gDyQYszsHBM
-         IyGS628YjaXZOIlP2KQhpvX/WBAj066NOg+4KYJV4I33CdbqE4guEZmo2O7NXCZStq+q
-         jTgZNnfb9TTFXAi46sDsxNflgP5h8wHv2gCVU=
-Date: Mon, 31 May 2010 16:48:23 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>,
-       Steven Rostedt <rostedt@goodmis.org>
-Subject: Re: [PATCH] tracing: Add task activate/deactivate tracepoints
-Message-ID: <20100531144820.GB5157@nowhere>
-References: <1275056762-13130-1-git-send-regression-fweisbec@gmail.com> <1275059710.27810.9624.camel@twins> <20100531080049.GA435@elte.hu> <1275293544.27810.21478.camel@twins> <1275296099.27810.21622.camel@twins> <20100531143622.GA5157@nowhere> <1275317013.27810.23019.camel@twins>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1275317013.27810.23019.camel@twins>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1756296Ab0EaPBv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 May 2010 11:01:51 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:42564 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752334Ab0EaPBt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 31 May 2010 11:01:49 -0400
+Subject: Re: Wrong DIF guard tag on ext2 write
+From: James Bottomley <James.Bottomley@suse.de>
+To: "Martin K. Petersen" <martin.petersen@oracle.com>
+Cc: Christof Schmitt <christof.schmitt@de.ibm.com>, linux-scsi@vger.kernel.org,
+       linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
+In-Reply-To: <yq1iq64kv9f.fsf@sermon.lab.mkp.net>
+References: <20100531112817.GA16260@schmichrtp.mainz.de.ibm.com>
+	 <yq1iq64kv9f.fsf@sermon.lab.mkp.net>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 31 May 2010 10:01:42 -0500
+Message-ID: <1275318102.2823.47.camel@mulgrave.site>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 31, 2010 at 04:43:33PM +0200, Peter Zijlstra wrote:
-> On Mon, 2010-05-31 at 16:36 +0200, Frederic Weisbecker wrote:
-> > On Mon, May 31, 2010 at 10:54:59AM +0200, Peter Zijlstra wrote:
-> > > On Mon, 2010-05-31 at 10:12 +0200, Peter Zijlstra wrote:
-> > > > On Mon, 2010-05-31 at 10:00 +0200, Ingo Molnar wrote:
-> > > > > > 
-> > > > > > NAK, aside from a few corner cases wakeup and sleep are the important 
-> > > > > > points.
-> > > > > > 
-> > > > > > The activate and deactivate functions are implementation details.
-> > > > > 
-> > > > > Frederic, can you show us a concrete example of where we dont know what is 
-> > > > > going on due to inadequate instrumentation? Can we fix that be extending the 
-> > > > > existing tracepoints? 
-> > > > 
-> > > > Right, so a few of those corner cases I mentioned above are things like
-> > > > re-nice, PI-boosts etc.. Those use deactivate, modify task-state,
-> > > > activate cycles. so if you want to see those, we can add an explicit
-> > > > tracepoint for those actions.
-> > > > 
-> > > > An explicit nice/PI-boost tracepoint is much clearer than trying to
-> > > > figure out wth the deactivate/activate cycle was for.
-> > > 
-> > > Another advantage of explicit tracepoints is that you'd see them even
-> > > for non-running tasks, because we only do the deactivate/activate thingy
-> > > for runnable tasks.
-> > 
-> > 
-> > Yeah. So I agree with you that activate/deactivate are too much
-> > implementation related, they even don't give much sense as we
-> > don't know the cause of the event, could be a simple renice, or
-> > could be a sleep.
-> > 
-> > So agreed, this sucks.
-> > 
-> > For the corner cases like re-nice and PI-boost or so, we can indeed plug
-> > some higher level tracepoints there.
-> > 
-> > But there is one more important problem these tracepoints were solving and
-> > that still need something:
-> > 
-> > We don't know when a task goes to sleep. We have two wait tracepoints,
-> > sched_wait_task() to wait for a task to unschedule, and sched_process_wait()
-> > that is a hooks for waitid and wait4 syscalls. So we are missing all
-> > the event waiting from inside the kernel. But even with that, wait and sleep
-> > doesn't mean the same thing. Sleeping don't always involve using the waiting
-> > API.
-> > 
-> >   I think we need such tracepoint:
-> > 
-> > diff --git a/kernel/sched.c b/kernel/sched.c
-> > index 8c0b90d..5f67c04 100644
-> > --- a/kernel/sched.c
-> > +++ b/kernel/sched.c
-> > @@ -3628,8 +3628,10 @@ need_resched_nonpreemptible:
-> >  	if (prev->state && !(preempt_count() & PREEMPT_ACTIVE)) {
-> >  		if (unlikely(signal_pending_state(prev->state, prev)))
-> >  			prev->state = TASK_RUNNING;
-> > -		else
-> > +		else {
-> > +			trace_sched_task_sleep(prev);
-> >  			deactivate_task(rq, prev, DEQUEUE_SLEEP);
-> > +		}
-> >  		switch_count = &prev->nvcsw;
-> >  	}
+On Mon, 2010-05-31 at 10:20 -0400, Martin K. Petersen wrote:
+> >>>>> "Christof" == Christof Schmitt <christof.schmitt@de.ibm.com> writes:
 > 
-> > And concerning the task waking up, if it is not migrated, it means it stays
-> > on its orig cpu. This is something that can be dealt from the post-processing.
+> Christof> Since the guard tags are created in Linux, it seems that the
+> Christof> data attached to the write request changes between the
+> Christof> generation in bio_integrity_generate and the call to
+> Christof> sd_prep_fn.
 > 
-> Hurm,.. I was thinking trace_sched_switch(.prev_state != TASK_RUNNING)
-> would be enough, but its not for preemptible kernels.
+> Yep, known bug.  Page writeback locking is messed up for buffer_head
+> users.  The extNfs folks volunteered to look into this a while back but
+> I don't think they have found the time yet.
 > 
-> Should we maybe cure this and rely on sched_switch() to detect sleeps?
-> It seems natural since only the current task can go to sleep, its just
-> that the whole preempt state gets a bit iffy.
+> 
+> Christof> Using ext3 or ext4 instead of ext2 does not show the problem.
+> 
+> Last I looked there were still code paths in ext3 and ext4 that
+> permitted pages to be changed during flight.  I guess you've just been
+> lucky.
+
+Pages have always been modifiable in flight.  The OS guarantees they'll
+be rewritten, so the drivers can drop them if it detects the problem.
+This is identical to the iscsi checksum issue (iscsi adds a checksum
+because it doesn't trust TCP/IP and if the checksum is generated in
+software, there's time between generation and page transmission for the
+alteration to occur).  The solution in the iscsi case was not to
+complain if the page is still marked dirty.
+
+James
 
 
-Sounds good, we have the preempt depth in the common tracepoint headers, I'll
-try to rebuild a reliable cpu runqueue from post-processing and see if all that
-is enough.
-
-Thanks.
 
