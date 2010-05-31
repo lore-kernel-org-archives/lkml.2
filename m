@@ -1,113 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755421Ab0EaQyP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 May 2010 12:54:15 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:52162 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751610Ab0EaQyO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 May 2010 12:54:14 -0400
-From: Himanshu Chauhan <hschauhan@nulltrace.org>
-To: linux-kernel@vger.kernel.org
-Cc: usbip-devel@lists.sourceforge.net, greg@kroah.com
-Subject: [PATCH] staging: usbip: usbip_common: kill rx thread on tx thread creation error.
-Date: Mon, 31 May 2010 22:23:37 +0530
-Message-Id: <1275324817-4810-1-git-send-email-hschauhan@nulltrace.org>
-X-Mailer: git-send-email 1.7.0.4
+	id S1755469Ab0EaQzp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 May 2010 12:55:45 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:51852 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751610Ab0EaQzo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 31 May 2010 12:55:44 -0400
+Date: Mon, 31 May 2010 18:43:54 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
+       David Rientjes <rientjes@google.com>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+       Nick Piggin <npiggin@suse.de>
+Subject: Re: [PATCH 2/5] oom: select_bad_process: PF_EXITING check should
+	take ->mm into account
+Message-ID: <20100531164354.GA9991@redhat.com>
+References: <20100531182526.1843.A69D9226@jp.fujitsu.com> <20100531183335.1846.A69D9226@jp.fujitsu.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100531183335.1846.A69D9226@jp.fujitsu.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Himanshu Chauhan <hschauhan@nulltrace.org>
----
- drivers/staging/usbip/usbip_common.c |   46 ++++++++++++++++++++++++---------
- 1 files changed, 33 insertions(+), 13 deletions(-)
+Thanks a lot Kosaki for doing this!
 
-diff --git a/drivers/staging/usbip/usbip_common.c b/drivers/staging/usbip/usbip_common.c
-index 5240816..cd20d2b 100644
---- a/drivers/staging/usbip/usbip_common.c
-+++ b/drivers/staging/usbip/usbip_common.c
-@@ -378,48 +378,67 @@ int usbip_thread(void *param)
- 	complete_and_exit(&ut->thread_done, 0);
- }
- 
-+static void stop_rx_thread(struct usbip_device *ud)
-+{
-+	if (ud->tcp_rx.thread != NULL) {
-+		send_sig(SIGKILL, ud->tcp_rx.thread, 1);
-+		wait_for_completion(&ud->tcp_rx.thread_done);
-+		usbip_udbg("rx_thread for ud %p has finished\n", ud);
-+	}
-+}
-+
-+static void stop_tx_thread(struct usbip_device *ud)
-+{
-+	if (ud->tcp_tx.thread != NULL) {
-+		send_sig(SIGKILL, ud->tcp_tx.thread, 1);
-+		wait_for_completion(&ud->tcp_tx.thread_done);
-+		usbip_udbg("tx_thread for ud %p has finished\n", ud);
-+	}
-+}
-+
- int usbip_start_threads(struct usbip_device *ud)
- {
- 	/*
- 	 * threads are invoked per one device (per one connection).
- 	 */
- 	struct task_struct *th;
-+	int err = 0;
- 
- 	th = kthread_run(usbip_thread, (void *)&ud->tcp_rx, "usbip");
- 	if (IS_ERR(th)) {
- 		printk(KERN_WARNING
- 			"Unable to start control thread\n");
--		return PTR_ERR(th);
-+		err = PTR_ERR(th);
-+		goto ust_exit;
- 	}
-+
- 	th = kthread_run(usbip_thread, (void *)&ud->tcp_tx, "usbip");
- 	if (IS_ERR(th)) {
- 		printk(KERN_WARNING
- 			"Unable to start control thread\n");
--		return PTR_ERR(th);
-+		err = PTR_ERR(th);
-+		goto tx_thread_err;
- 	}
- 
- 	/* confirm threads are starting */
- 	wait_for_completion(&ud->tcp_rx.thread_done);
- 	wait_for_completion(&ud->tcp_tx.thread_done);
-+
- 	return 0;
-+
-+tx_thread_err:
-+	stop_rx_thread(ud);
-+
-+ust_exit:
-+	return err;
- }
- EXPORT_SYMBOL_GPL(usbip_start_threads);
- 
- void usbip_stop_threads(struct usbip_device *ud)
- {
- 	/* kill threads related to this sdev, if v.c. exists */
--	if (ud->tcp_rx.thread != NULL) {
--		send_sig(SIGKILL, ud->tcp_rx.thread, 1);
--		wait_for_completion(&ud->tcp_rx.thread_done);
--		usbip_udbg("rx_thread for ud %p has finished\n", ud);
--	}
--
--	if (ud->tcp_tx.thread != NULL) {
--		send_sig(SIGKILL, ud->tcp_tx.thread, 1);
--		wait_for_completion(&ud->tcp_tx.thread_done);
--		usbip_udbg("tx_thread for ud %p has finished\n", ud);
--	}
-+	stop_rx_thread(ud);
-+	stop_tx_thread(ud);
- }
- EXPORT_SYMBOL_GPL(usbip_stop_threads);
- 
--- 
-1.7.0.4
+I still can't find the time to play with this code :/
+
+On 05/31, KOSAKI Motohiro wrote:
+>
+> select_bad_process() checks PF_EXITING to detect the task which is going
+> to release its memory, but the logic is very wrong.
+>
+> 	- a single process P with the dead group leader disables
+> 	  select_bad_process() completely, it will always return
+> 	  ERR_PTR() while P can live forever
+>
+> 	- if the PF_EXITING task has already released its ->mm
+> 	  it doesn't make sense to expect it is goiing to free
+> 	  more memory (except task_struct/etc)
+>
+> Change the code to ignore the PF_EXITING tasks without ->mm.
+>
+> --- a/mm/oom_kill.c
+> +++ b/mm/oom_kill.c
+> @@ -287,7 +287,7 @@ static struct task_struct *select_bad_process(unsigned long *ppoints,
+>  		 * the process of exiting and releasing its resources.
+>  		 * Otherwise we could get an easy OOM deadlock.
+>  		 */
+> -		if (p->flags & PF_EXITING) {
+> +		if ((p->flags & PF_EXITING) && p->mm) {
+
+(strictly speaking, this change is needed after 3/5 which removes the
+ top-level "if (!p->mm)" check in select_bad_process).
+
+
+I'd like to add a note... with or without this, we have problems
+with the coredump. A thread participating in the coredumping
+(group-leader in this case) can have PF_EXITING && mm, but this doesn't
+mean it is going to exit soon, and the dumper can use a lot more memory.
+
+Otoh, if select_bad_process() chooses the thread which dumps the core,
+SIGKILL can't stop it. This should be fixed in do_coredump() paths, this
+is the long-standing problem.
+
+And, as it was already discussed, we only check the group-leader here.
+But I can't suggest something better.
+
+Oleg.
 
