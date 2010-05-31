@@ -1,46 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755753Ab0EaOMV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 May 2010 10:12:21 -0400
-Received: from saraswathi.solana.com ([198.99.130.12]:39582 "EHLO
-	saraswathi.solana.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754424Ab0EaOMT (ORCPT
+	id S1755672Ab0EaOQZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 May 2010 10:16:25 -0400
+Received: from mail-ww0-f46.google.com ([74.125.82.46]:40434 "EHLO
+	mail-ww0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755236Ab0EaOQX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 May 2010 10:12:19 -0400
-X-Greylist: delayed 2224 seconds by postgrey-1.27 at vger.kernel.org; Mon, 31 May 2010 10:12:19 EDT
-Date: Sun, 30 May 2010 22:32:12 -0400
-From: Jeff Dike <jdike@addtoit.com>
-To: Borislav Petkov <bp@alien8.de>, "H. Peter Anvin" <hpa@zytor.com>,
-       Geert Uytterhoeven <geert@linux-m68k.org>,
-       Borislav Petkov <borislav.petkov@amd.com>,
-       Toralf =?iso-8859-1?Q?F=F6rster?= <toralf.foerster@gmx.de>,
-       user-mode-linux-devel@lists.sourceforge.net,
-       linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] x86, hweight: Fix UML boot crash
-Message-ID: <20100531023212.GA22673@c-98-229-117-200.hsd1.ma.comcast.net>
-References: <201005271944.09541.toralf.foerster@gmx.de> <AANLkTimKwxYxM_PExplIDK1WPTQ9e_-CHn5SnIvfjfUg@mail.gmail.com> <20100530150214.GA1565@liondog.tnic> <201005301728.25976.toralf.foerster@gmx.de> <20100530170346.GC1565@liondog.tnic> <4C02B020.2040103@zytor.com> <20100530193956.GA2498@liondog.tnic>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100530193956.GA2498@liondog.tnic>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+	Mon, 31 May 2010 10:16:23 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=XhTmuyfqwsLg+u0cs4VUC0V2C7IybLPf31JTfjXx0XcgCbu1GUG0STk+12vY1w6cRH
+         EmvOLWHq42GtdC2T249zMO0f91CNz2Oc9MYVnqj1qYLdYnc0nVX6sFnVfG3OtyMxEAel
+         Qy194HfMnEt71Nwhi49FVBzSld/Kog/yQdlUw=
+Subject: Re: [PATCH] netfilter: xtables: stackptr should be percpu
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Jan Engelhardt <jengelh@medozas.de>
+Cc: Xiaotian Feng <dfeng@redhat.com>, netfilter-devel@vger.kernel.org,
+       netfilter@vger.kernel.org, coreteam@netfilter.org,
+       linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+       Patrick McHardy <kaber@trash.net>,
+       "David S. Miller" <davem@davemloft.net>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Rusty Russell <rusty@rustcorp.com.au>,
+       Alexey Dobriyan <adobriyan@gmail.com>
+In-Reply-To: <alpine.LSU.2.01.1005311608570.20623@obet.zrqbmnf.qr>
+References: <1275303998-2435-1-git-send-email-dfeng@redhat.com>
+	 <alpine.LSU.2.01.1005311350580.31799@obet.zrqbmnf.qr>
+	 <1275311580.3291.44.camel@edumazet-laptop>
+	 <alpine.LSU.2.01.1005311519340.25402@obet.zrqbmnf.qr>
+	 <1275313448.3291.49.camel@edumazet-laptop>
+	 <alpine.LSU.2.01.1005311608570.20623@obet.zrqbmnf.qr>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 31 May 2010 16:16:12 +0200
+Message-ID: <1275315372.3291.51.camel@edumazet-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, May 30, 2010 at 09:39:56PM +0200, Borislav Petkov wrote:
-> Which begs the question why _is_ UML sucking in x86 stuff and can anyone
-> provide us with some sensible reasons? Because if there aren't any, it
-> is their includes that should be fixed. Let me see what I can do to
-> redirect hweight stuff properly...
+Le lundi 31 mai 2010 à 16:09 +0200, Jan Engelhardt a écrit :
 
-Generally, UML pulls in the host arch headers because they work.  When
-they are only architecture-dependent (and not, say, depending on the
-host task struct or something), they're fine.
+> Keep your friends close, and your enemies closer ;-)
+> 
+> 	git describe --contains f3c5c1bfd
 
-What's the include path from UML to the x86 hweight stuff?
 
-				Jeff
+Yes, --contains should be the default, and --predates the option :)
 
--- 
-Work email - jdike at linux dot intel dot com
+This is a bit OT anyway :)
+
+
