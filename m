@@ -1,42 +1,35 @@
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756329Ab0EaOyU (ORCPT <rfc822;list-kernel77@spinics.net>);
-	Mon, 31 May 2010 10:54:20 -0400
-Received: from pop.tdm.co.mz ([41.220.162.42]:47576 "EHLO pop.tdm.co.mz"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752244Ab0EaOyS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 May 2010 10:54:18 -0400
-Message-ID: <fd145bbb0cc92dd4c3358e1c2205071a.squirrel@webmail.tdm.co.mz>
-Date: Mon, 31 May 2010 15:13:27 +0100 (BST)
-Subject: Dear Webmail/E-mail user
-From: "2010 Account Upgrade" <info@upgrade.co.uk>
-Reply-To: sbc.upgrade@onfruit.cn
-User-Agent: SquirrelMail/1.4.16
+	id S1757297Ab0EaURA (ORCPT <rfc822;list-kernel77@spinics.net>);
+	Mon, 31 May 2010 16:17:00 -0400
+Received: from 41-203-219-162.safaricombusiness.co.ke ([41.203.219.162]:44240
+	"EHLO mail.kcaa.or.ke" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756581Ab0EaUQ6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 31 May 2010 16:16:58 -0400
+X-Greylist: delayed 1376 seconds by postgrey-1.27 at vger.kernel.org; Mon, 31 May 2010 16:16:58 EDT
+Message-ID: <60930.41.204.224.12.1275336170.squirrel@mail.kcaa.or.ke>
+Date: Tue, 1 Jun 2010 00:02:50 +0400 (GST)
+Subject: **SECURE LOAN OFFER**
+From: "Ehab Elbalawi" <ehab.elbalawi@hotmail.com>
+Reply-To: ehablbala33@live.com
+User-Agent: SquirrelMail/1.4.8-4.el5
 MIME-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7BIT
 X-Priority: 3 (Normal)
 Importance: Normal
-To: unlisted-recipients:; (no To-header on input)
+To: undisclosed-recipients:;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear Webmail/E-mail user,
 
-This message is from our Webmail Messaging Center to all our account
-owners.We are currently upgrading our database and e-mail center. We are
-deleting all unused webmail account to create more space for new accounts.
-To ensure that you do not experience service interruption during this
-period; you will need to  verify your webmail account details through the
-following:
+We are currently giving out loan of any type to any part of the world at
+2% interest rate. Interested applicant should please contact Mr. Bernard
+Thompson with the email address bellow: mrbernard.thompson001@admin.in.th
+or call +44-7045709945
 
-1.Username :....................................
-2.Password :...................................
-3.Date of Birth :...............................
+Regards.
 
-You will be sent a new confirmation alphanumerical password that will only
-be valid during this period, and may be altered by this process. We very
-much regret any inconvenience this may cost you.Please reply to this
-message to enable us to give you better online services with our new
-improved webmail functionality and improvements.
+B&T 48HRS FINANCE LOAN
 
