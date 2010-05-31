@@ -1,99 +1,33 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751765Ab0EaFBG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 May 2010 01:01:06 -0400
-Received: from mail-gw0-f46.google.com ([74.125.83.46]:42165 "EHLO
-	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750933Ab0EaFBE convert rfc822-to-8bit (ORCPT
+	id S1751897Ab0EaFEi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 May 2010 01:04:38 -0400
+Received: from cpoproxy2-pub.bluehost.com ([67.222.39.38]:40540 "HELO
+	outbound-mail-158.bluehost.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1750933Ab0EaFEg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 May 2010 01:01:04 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=dHPArgYHccR5BzalePwhv4tbOVGgRDqvVIP0qx6QWpvAlszHnzKNSKczHVWJ7dTTj8
-         orRz3DXksNkS+B1l0IMcKgZnQjg7EqCFdl/pY3chEqmIEeatVswu8MztFRCmpqHp5rP1
-         ctKD94tWTayR3hwbtlpXawxxJX4aYm4S2TNao=
-MIME-Version: 1.0
-In-Reply-To: <20100531092133.73705339.kamezawa.hiroyu@jp.fujitsu.com>
-References: <20100528143605.7E2A.A69D9226@jp.fujitsu.com>
-	<AANLkTikB-8Qu03VrA5Z0LMXM_alSV7SLqzl-MmiLmFGv@mail.gmail.com>
-	<20100528145329.7E2D.A69D9226@jp.fujitsu.com>
-	<20100528125305.GE11364@uudg.org>
-	<20100528140623.GA11041@barrios-desktop>
-	<20100528143617.GF11364@uudg.org>
-	<20100528151249.GB12035@barrios-desktop>
-	<20100528152842.GH11364@uudg.org>
-	<20100528154549.GC12035@barrios-desktop>
-	<20100528164826.GJ11364@uudg.org>
-	<20100531092133.73705339.kamezawa.hiroyu@jp.fujitsu.com>
-Date: Mon, 31 May 2010 14:01:03 +0900
-Message-ID: <AANLkTikFk_HnZWPG0s_VrRkro2rruEc8OBX5KfKp_QdX@mail.gmail.com>
-Subject: Re: [RFC] oom-kill: give the dying task a higher priority
-From: Minchan Kim <minchan.kim@gmail.com>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: "Luis Claudio R. Goncalves" <lclaudio@uudg.org>,
-       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-       balbir@linux.vnet.ibm.com, Oleg Nesterov <oleg@redhat.com>,
-       linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-       Thomas Gleixner <tglx@linutronix.de>,
-       Peter Zijlstra <peterz@infradead.org>,
-       David Rientjes <rientjes@google.com>, Mel Gorman <mel@csn.ul.ie>,
-       williams@redhat.com
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Mon, 31 May 2010 01:04:36 -0400
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=virtuousgeek.org;
+	h=Received:Date:Subject:Message-ID:From:To:Cc:Content-Type:Content-Transfer-Encoding:X-Identified-User;
+	b=Z5UvHiVsDzqJXcrVkzli3RxArlaG4PIG4j7TrdOxiseGf6XC7TFnKki5/SDlCrUIvhvq/GADtp+Jfaengcjz2XGEJb+LkzVuI3KD8FOpSnN9R2NHjr0SzUR6/O48SQth;
+Date: Sun, 30 May 2010 22:03:10 -0700
+Subject: Re: [RFC] Try a bit harder to get output on the screen at panic
+ time
+Message-ID: <vbf0pu1dqa60ojk7uuublww9.1275282082699@email.android.com>
+From: Jesse Barnes <jbarnes@virtuousgeek.org>
+To: Maxim Levitsky <maximlevitsky@gmail.com>
+Cc: dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       Dave Airlie <airlied@gmail.com>, James Simmons <jsimmons@infradead.org>
+Content-Type: text/plain; charset=utf-8
+X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 75.210.28.220 authed with jbarnes@virtuousgeek.org}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by alpha.home.local id o4V54iim001253
 
-Hi, Kame.
-
-On Mon, May 31, 2010 at 9:21 AM, KAMEZAWA Hiroyuki
-<kamezawa.hiroyu@jp.fujitsu.com> wrote:
-> On Fri, 28 May 2010 13:48:26 -0300
-> "Luis Claudio R. Goncalves" <lclaudio@uudg.org> wrote:
->>
->> oom-killer: give the dying task rt priority (v3)
->>
->> Give the dying task RT priority so that it can be scheduled quickly and die,
->> freeing needed memory.
->>
->> Signed-off-by: Luis Claudio R. GonÃ§alves <lgoncalv@redhat.com>
->>
->> diff --git a/mm/oom_kill.c b/mm/oom_kill.c
->> index 84bbba2..2b0204f 100644
->> --- a/mm/oom_kill.c
->> +++ b/mm/oom_kill.c
->> @@ -266,6 +266,8 @@ static struct task_struct *select_bad_process(unsigned long *ppoints)
->> Â  */
->> Â static void __oom_kill_task(struct task_struct *p, int verbose)
->> Â {
->> + Â  Â  struct sched_param param;
->> +
->> Â  Â  Â  if (is_global_init(p)) {
->> Â  Â  Â  Â  Â  Â  Â  WARN_ON(1);
->> Â  Â  Â  Â  Â  Â  Â  printk(KERN_WARNING "tried to kill init!\n");
->> @@ -288,6 +290,8 @@ static void __oom_kill_task(struct task_struct *p, int verbose)
->> Â  Â  Â  Â * exit() and clear out its resources quickly...
->> Â  Â  Â  Â */
->> Â  Â  Â  p->time_slice = HZ;
->> + Â  Â  param.sched_priority = MAX_RT_PRIO-10;
->> + Â  Â  sched_setscheduler(p, SCHED_FIFO, &param);
->> Â  Â  Â  set_tsk_thread_flag(p, TIF_MEMDIE);
->>
->
-> BTW, how about the other threads which share mm_struct ?
-
-Could you elaborate your intention? :)
-
->
-> Thanks,
-> -Kame
->
->
-
-
-
--- 
-Kind regards,
-Minchan Kim
+I'll test again this week.  I still don't see how these small patches could cause issues with suspend/resume unless we set oops_in_progress during that time on your machine...
+Jesse
+Maxim Levitsky <maximlevitsky@gmail.com> wrote:
+>On Sat, 2010-05-22 at 01:26 +0300, Maxim Levitsky wrote: >> On Fri, 2010-05-21 at 15:02 -0700, Jesse Barnes wrote: >> > On Sat, 22 May 2010 00:57:30 +0300>> > Maxim Levitsky <maximlevitsky@gmail.com> wrote:>> > >> > > On Fri, 2010-05-21 at 00:14 +0300, Maxim Levitsky wrote: >> > > > On Thu, 2010-05-20 at 09:28 -0700, Jesse Barnes wrote: >> > > > > On Thu, 20 May 2010 04:27:07 +0300>> > > > > Maxim Levitsky <maximlevitsky@gmail.com> wrote:>> > > > > >> > > > > > On Thu, 2010-05-20 at 04:13 +0300, Maxim Levitsky wrote: >> > > > > > > On Wed, 2010-05-19 at 17:34 -0700, Jesse Barnes wrote: >> > > > > > > > On Fri, 9 Apr 2010 15:10:50 -0700>> > > > > > > > Jesse Barnes <jbarnes@virtuousgeek.org> wrote:>> > > > > > > > >> > > > > > > > > This set of 3 patches makes it a little more likely we'll get panic>> > > > > > > > > output onto the screen even when X is running, assuming a KMS enabled>> > > > > > > > > stack anyway.>> > > > > > > > > >> > > > > > > > > It gets me from a blank or very sparsely populated black screen at>> > > > > > > > > panic time, to one including the full backtrace and panic output at>> > > > > > > > > panic time (tested with "echo c > /proc/sysrq-trigger" from an X>> > > > > > > > > session).>> > > > > > > > > >> > > > > > > > > It doesn't cover every case; for instance I think it'll fail when X has>> > > > > > > > > disabled the display, but those cases need to be handled with separate>> > > > > > > > > patches anyway (need to add atomic DPMS paths for instance).>> > > > > > > > > >> > > > > > > > > Anyway, please test these out and let me know if they work for you.>> > > > > > > > >> > > > > > > > Ping Linus & Dave again.  Have you guys tried these?  Really, it's cool.>> > > > > > > > >> > > > > > > Second that, just tested these patches, and these work perfectly.>> > > > > > > One more reason for me to dump nvidia driver for nouveau.>> > > > > > >> > > > > > >> > > > > > Unfortunately I spoke too soon.>> > > > > > >> > > > > > >> > > > > > After suspend to ram, system doesn't properly resume now.>> > > > > > >> > > > > > My system is based on nvidia G86, I use latest nouveau drivers, and>> > > > > > suspend with compiz running.>> > > > > > >> > > > > > I also patched kernel not to do vt switch on suspend/resume:>> > > > > > >> > > > > > diff --git a/drivers/gpu/drm/nouveau/nouveau_state.c>> > > > > > b/drivers/gpu/drm/nouveau/nouveau_state.c>> > > > > > index 062b7f6..b3ef08b 100644>> > > > > > --- a/drivers/gpu/drm/nouveau/nouveau_state.c>> > > > > > +++ b/drivers/gpu/drm/nouveau/nouveau_state.c>> > > > > > @@ -31,6 +31,7 @@>> > > > > > #include "drm_crtc_helper.h">> > > > > > #include <linux/vgaarb.h>>> > > > > > #include <linux/vga_switcheroo.h>>> > > > > > +#include <linux/suspend.h>>> > > > > > >> > > > > > #include "nouveau_drv.h">> > > > > > #include "nouveau_drm.h">> > > > > > @@ -771,6 +772,8 @@ int nouveau_load(struct drm_device *dev, unsigned>> > > > > > long flags)>> > > > > >                 int ret = nouveau_card_init(dev);>> > > > > >                 if (ret)>> > > > > >                         return ret;>> > > > > > +>> > > > > > +               pm_set_vt_switch(0);>> > > > > >         }>> > > > > > >> > > > > >         return 0;>> > > > > >> > > > > Hm I don't see how my patches would have affected suspend/resume, since>> > > > > they just add "oops_in_progress" checks to a few places.  Are you sure>> > > > > something else isn't breaking your resume path?>> > > > I am sure. I just reverted them, and everything works again.>> > > > I refer to 3 patches in this thread.>> > > In fact I might look a bit silly, but I applied these patches on top of>> > > linus master tree + nouveau master, and suspend to ram works just fine.>> > > >> > > Maybe it shows up when kgdb+kdb isn't compiled in or so.>> > > Maybe it just triggered some bug in nouveau drivers...>> > > >> > > >> > > (Note that I also enabled kgdb, and kdb, and breaking into kdb (SysRQ+g)>> > > doesn't switch console mode, just hangs till I press 'g'.>> > >> > Ok so it sounds like these particular patches are innocent?>> > >> > As for kdb, I think the latest tree is probably missing the graphics>> > switch support on the driver side...>> In what part? nouveau or kdb?>> >> Screen does switch to text mode and displays the backtrace on 'panic'>> (Tested with sysrq+c).>> (If kdb is enabled, screen doesn't switch, but allowing kdb to continue>> via 'g' command eventually breaks into it.)>>Ping.>>Best regards,>Maxim Levitsky>>ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
