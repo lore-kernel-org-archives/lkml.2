@@ -1,258 +1,494 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756341Ab0EaHUF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 May 2010 03:20:05 -0400
-Received: from hera.kernel.org ([140.211.167.34]:44391 "EHLO hera.kernel.org"
+	id S1756283Ab0EaHTx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 May 2010 03:19:53 -0400
+Received: from hera.kernel.org ([140.211.167.34]:44355 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756304Ab0EaHT4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 May 2010 03:19:56 -0400
-Date: Mon, 31 May 2010 07:19:30 GMT
+	id S1756034Ab0EaHTj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 31 May 2010 03:19:39 -0400
+Date: Mon, 31 May 2010 07:19:11 GMT
 From: tip-bot for Peter Zijlstra <a.p.zijlstra@chello.nl>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-       a.p.zijlstra@chello.nl, tglx@linutronix.de, mingo@elte.hu
+       a.p.zijlstra@chello.nl, stable@kernel.org, tglx@linutronix.de,
+       mingo@elte.hu
 Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-       a.p.zijlstra@chello.nl, tglx@linutronix.de, mingo@elte.hu
+       a.p.zijlstra@chello.nl, stable@kernel.org, tglx@linutronix.de,
+       mingo@elte.hu
 In-Reply-To: <new-submission>
 References: <new-submission>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/urgent] perf_events: Fix races in group composition
-Message-ID: <tip-8a49542c0554af7d0073aac0ee73ee65b807ef34@git.kernel.org>
-Git-Commit-ID: 8a49542c0554af7d0073aac0ee73ee65b807ef34
+Subject: [tip:perf/urgent] perf_events: Fix races and clean up perf_event and perf_mmap_data interaction
+Message-ID: <tip-ac9721f3f54b27a16c7e1afb2481e7ee95a70318@git.kernel.org>
+Git-Commit-ID: ac9721f3f54b27a16c7e1afb2481e7ee95a70318
 X-Mailer: tip-git-log-daemon
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Mon, 31 May 2010 07:19:30 +0000 (UTC)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Mon, 31 May 2010 07:19:12 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  8a49542c0554af7d0073aac0ee73ee65b807ef34
-Gitweb:     http://git.kernel.org/tip/8a49542c0554af7d0073aac0ee73ee65b807ef34
+Commit-ID:  ac9721f3f54b27a16c7e1afb2481e7ee95a70318
+Gitweb:     http://git.kernel.org/tip/ac9721f3f54b27a16c7e1afb2481e7ee95a70318
 Author:     Peter Zijlstra <a.p.zijlstra@chello.nl>
-AuthorDate: Thu, 27 May 2010 15:47:49 +0200
+AuthorDate: Thu, 27 May 2010 12:54:41 +0200
 Committer:  Ingo Molnar <mingo@elte.hu>
-CommitDate: Mon, 31 May 2010 08:46:09 +0200
+CommitDate: Mon, 31 May 2010 08:46:08 +0200
 
-perf_events: Fix races in group composition
+perf_events: Fix races and clean up perf_event and perf_mmap_data interaction
 
-Group siblings don't pin each-other or the parent, so when we destroy
-events we must make sure to clean up all cross referencing pointers.
+In order to move toward separate buffer objects, rework the whole
+perf_mmap_data construct to be a more self-sufficient entity, one
+with its own lifetime rules.
 
-In particular, for destruction of a group leader we must be able to
-find all its siblings and remove their reference to it.
-
-This means that detaching an event from its context must not detach it
-from the group, otherwise we can end up failing to clear all pointers.
-
-Solve this by clearly separating the attachment to a context and
-attachment to a group, and keep the group composed until we destroy
-the events.
+This greatly sanitizes the whole output redirection code, which
+was riddled with bugs and races.
 
 Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: <stable@kernel.org>
 LKML-Reference: <new-submission>
 Signed-off-by: Ingo Molnar <mingo@elte.hu>
 ---
- include/linux/perf_event.h |    4 ++
- kernel/perf_event.c        |   91 ++++++++++++++++++++++++++++++++-----------
- 2 files changed, 71 insertions(+), 24 deletions(-)
+ include/linux/perf_event.h |    5 +-
+ kernel/perf_event.c        |  224 +++++++++++++++++++++++++-------------------
+ 2 files changed, 129 insertions(+), 100 deletions(-)
 
 diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
-index 4906985..5d0266d 100644
+index fb6c91e..4906985 100644
 --- a/include/linux/perf_event.h
 +++ b/include/linux/perf_event.h
-@@ -631,6 +631,9 @@ struct swevent_hlist {
- 	struct rcu_head		rcu_head;
- };
+@@ -585,6 +585,7 @@ enum perf_event_active_state {
+ struct file;
  
-+#define PERF_ATTACH_CONTEXT	0x01
-+#define PERF_ATTACH_GROUP	0x02
-+
- /**
-  * struct perf_event - performance event kernel representation:
-  */
-@@ -646,6 +649,7 @@ struct perf_event {
+ struct perf_mmap_data {
++	atomic_t			refcount;
+ 	struct rcu_head			rcu_head;
+ #ifdef CONFIG_PERF_USE_VMALLOC
+ 	struct work_struct		work;
+@@ -592,7 +593,6 @@ struct perf_mmap_data {
+ #endif
+ 	int				nr_pages;	/* nr of data pages  */
+ 	int				writable;	/* are we writable   */
+-	int				nr_locked;	/* nr pages mlocked  */
+ 
+ 	atomic_t			poll;		/* POLL_ for wakeups */
+ 
+@@ -643,7 +643,6 @@ struct perf_event {
+ 	int				nr_siblings;
+ 	int				group_flags;
+ 	struct perf_event		*group_leader;
+-	struct perf_event		*output;
  	const struct pmu		*pmu;
  
  	enum perf_event_active_state	state;
-+	unsigned int			attach_state;
- 	atomic64_t			count;
+@@ -704,6 +703,8 @@ struct perf_event {
+ 	/* mmap bits */
+ 	struct mutex			mmap_mutex;
+ 	atomic_t			mmap_count;
++	int				mmap_locked;
++	struct user_struct		*mmap_user;
+ 	struct perf_mmap_data		*data;
  
- 	/*
+ 	/* poll related */
 diff --git a/kernel/perf_event.c b/kernel/perf_event.c
-index 848d49a..10a1aee 100644
+index bd7ce8c..848d49a 100644
 --- a/kernel/perf_event.c
 +++ b/kernel/perf_event.c
-@@ -283,14 +283,15 @@ ctx_group_list(struct perf_event *event, struct perf_event_context *ctx)
- static void
- list_add_event(struct perf_event *event, struct perf_event_context *ctx)
+@@ -1841,6 +1841,7 @@ static void free_event_rcu(struct rcu_head *head)
+ }
+ 
+ static void perf_pending_sync(struct perf_event *event);
++static void perf_mmap_data_put(struct perf_mmap_data *data);
+ 
+ static void free_event(struct perf_event *event)
  {
--	struct perf_event *group_leader = event->group_leader;
-+	WARN_ON_ONCE(event->attach_state & PERF_ATTACH_CONTEXT);
-+	event->attach_state |= PERF_ATTACH_CONTEXT;
- 
- 	/*
--	 * Depending on whether it is a standalone or sibling event,
--	 * add it straight to the context's event list, or to the group
--	 * leader's sibling list:
-+	 * If we're a stand alone event or group leader, we go to the context
-+	 * list, group events are kept attached to the group so that
-+	 * perf_group_detach can, at all times, locate all siblings.
- 	 */
--	if (group_leader == event) {
-+	if (event->group_leader == event) {
- 		struct list_head *list;
- 
- 		if (is_software_event(event))
-@@ -298,13 +299,6 @@ list_add_event(struct perf_event *event, struct perf_event_context *ctx)
- 
- 		list = ctx_group_list(event, ctx);
- 		list_add_tail(&event->group_entry, list);
--	} else {
--		if (group_leader->group_flags & PERF_GROUP_SOFTWARE &&
--		    !is_software_event(event))
--			group_leader->group_flags &= ~PERF_GROUP_SOFTWARE;
--
--		list_add_tail(&event->group_entry, &group_leader->sibling_list);
--		group_leader->nr_siblings++;
+@@ -1856,9 +1857,9 @@ static void free_event(struct perf_event *event)
+ 			atomic_dec(&nr_task_events);
  	}
  
- 	list_add_rcu(&event->event_entry, &ctx->event_list);
-@@ -313,6 +307,24 @@ list_add_event(struct perf_event *event, struct perf_event_context *ctx)
- 		ctx->nr_stat++;
+-	if (event->output) {
+-		fput(event->output->filp);
+-		event->output = NULL;
++	if (event->data) {
++		perf_mmap_data_put(event->data);
++		event->data = NULL;
+ 	}
+ 
+ 	if (event->destroy)
+@@ -2175,7 +2176,27 @@ unlock:
+ 	return ret;
  }
  
-+static void perf_group_attach(struct perf_event *event)
+-static int perf_event_set_output(struct perf_event *event, int output_fd);
++static const struct file_operations perf_fops;
++
++static struct perf_event *perf_fget_light(int fd, int *fput_needed)
 +{
-+	struct perf_event *group_leader = event->group_leader;
++	struct file *file;
 +
-+	WARN_ON_ONCE(event->attach_state & PERF_ATTACH_GROUP);
-+	event->attach_state |= PERF_ATTACH_GROUP;
++	file = fget_light(fd, fput_needed);
++	if (!file)
++		return ERR_PTR(-EBADF);
 +
-+	if (group_leader == event)
-+		return;
-+
-+	if (group_leader->group_flags & PERF_GROUP_SOFTWARE &&
-+			!is_software_event(event))
-+		group_leader->group_flags &= ~PERF_GROUP_SOFTWARE;
-+
-+	list_add_tail(&event->group_entry, &group_leader->sibling_list);
-+	group_leader->nr_siblings++;
-+}
-+
- /*
-  * Remove a event from the lists for its context.
-  * Must be called with ctx->mutex and ctx->lock held.
-@@ -320,17 +332,22 @@ list_add_event(struct perf_event *event, struct perf_event_context *ctx)
- static void
- list_del_event(struct perf_event *event, struct perf_event_context *ctx)
- {
--	if (list_empty(&event->group_entry))
-+	/*
-+	 * We can have double detach due to exit/hot-unplug + close.
-+	 */
-+	if (!(event->attach_state & PERF_ATTACH_CONTEXT))
- 		return;
-+
-+	event->attach_state &= ~PERF_ATTACH_CONTEXT;
-+
- 	ctx->nr_events--;
- 	if (event->attr.inherit_stat)
- 		ctx->nr_stat--;
- 
--	list_del_init(&event->group_entry);
- 	list_del_rcu(&event->event_entry);
- 
--	if (event->group_leader != event)
--		event->group_leader->nr_siblings--;
-+	if (event->group_leader == event)
-+		list_del_init(&event->group_entry);
- 
- 	update_group_times(event);
- 
-@@ -345,21 +362,39 @@ list_del_event(struct perf_event *event, struct perf_event_context *ctx)
- 		event->state = PERF_EVENT_STATE_OFF;
- }
- 
--static void
--perf_destroy_group(struct perf_event *event, struct perf_event_context *ctx)
-+static void perf_group_detach(struct perf_event *event)
- {
- 	struct perf_event *sibling, *tmp;
-+	struct list_head *list = NULL;
-+
-+	/*
-+	 * We can have double detach due to exit/hot-unplug + close.
-+	 */
-+	if (!(event->attach_state & PERF_ATTACH_GROUP))
-+		return;
-+
-+	event->attach_state &= ~PERF_ATTACH_GROUP;
-+
-+	/*
-+	 * If this is a sibling, remove it from its group.
-+	 */
-+	if (event->group_leader != event) {
-+		list_del_init(&event->group_entry);
-+		event->group_leader->nr_siblings--;
-+		return;
++	if (file->f_op != &perf_fops) {
++		fput_light(file, *fput_needed);
++		*fput_needed = 0;
++		return ERR_PTR(-EBADF);
 +	}
 +
-+	if (!list_empty(&event->group_entry))
-+		list = &event->group_entry;
++	return file->private_data;
++}
++
++static int perf_event_set_output(struct perf_event *event,
++				 struct perf_event *output_event);
+ static int perf_event_set_filter(struct perf_event *event, void __user *arg);
+ 
+ static long perf_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
+@@ -2202,7 +2223,23 @@ static long perf_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
+ 		return perf_event_period(event, (u64 __user *)arg);
+ 
+ 	case PERF_EVENT_IOC_SET_OUTPUT:
+-		return perf_event_set_output(event, arg);
++	{
++		struct perf_event *output_event = NULL;
++		int fput_needed = 0;
++		int ret;
++
++		if (arg != -1) {
++			output_event = perf_fget_light(arg, &fput_needed);
++			if (IS_ERR(output_event))
++				return PTR_ERR(output_event);
++		}
++
++		ret = perf_event_set_output(event, output_event);
++		if (output_event)
++			fput_light(output_event->filp, fput_needed);
++
++		return ret;
++	}
+ 
+ 	case PERF_EVENT_IOC_SET_FILTER:
+ 		return perf_event_set_filter(event, (void __user *)arg);
+@@ -2335,8 +2372,6 @@ perf_mmap_data_alloc(struct perf_event *event, int nr_pages)
+ 	unsigned long size;
+ 	int i;
+ 
+-	WARN_ON(atomic_read(&event->mmap_count));
+-
+ 	size = sizeof(struct perf_mmap_data);
+ 	size += nr_pages * sizeof(void *);
+ 
+@@ -2452,8 +2487,6 @@ perf_mmap_data_alloc(struct perf_event *event, int nr_pages)
+ 	unsigned long size;
+ 	void *all_buf;
+ 
+-	WARN_ON(atomic_read(&event->mmap_count));
+-
+ 	size = sizeof(struct perf_mmap_data);
+ 	size += sizeof(void *);
+ 
+@@ -2536,7 +2569,7 @@ perf_mmap_data_init(struct perf_event *event, struct perf_mmap_data *data)
+ 	if (!data->watermark)
+ 		data->watermark = max_size / 2;
+ 
+-
++	atomic_set(&data->refcount, 1);
+ 	rcu_assign_pointer(event->data, data);
+ }
+ 
+@@ -2548,13 +2581,26 @@ static void perf_mmap_data_free_rcu(struct rcu_head *rcu_head)
+ 	perf_mmap_data_free(data);
+ }
+ 
+-static void perf_mmap_data_release(struct perf_event *event)
++static struct perf_mmap_data *perf_mmap_data_get(struct perf_event *event)
+ {
+-	struct perf_mmap_data *data = event->data;
++	struct perf_mmap_data *data;
++
++	rcu_read_lock();
++	data = rcu_dereference(event->data);
++	if (data) {
++		if (!atomic_inc_not_zero(&data->refcount))
++			data = NULL;
++	}
++	rcu_read_unlock();
++
++	return data;
++}
+ 
+-	WARN_ON(atomic_read(&event->mmap_count));
++static void perf_mmap_data_put(struct perf_mmap_data *data)
++{
++	if (!atomic_dec_and_test(&data->refcount))
++		return;
+ 
+-	rcu_assign_pointer(event->data, NULL);
+ 	call_rcu(&data->rcu_head, perf_mmap_data_free_rcu);
+ }
+ 
+@@ -2569,15 +2615,18 @@ static void perf_mmap_close(struct vm_area_struct *vma)
+ {
+ 	struct perf_event *event = vma->vm_file->private_data;
+ 
+-	WARN_ON_ONCE(event->ctx->parent_ctx);
+ 	if (atomic_dec_and_mutex_lock(&event->mmap_count, &event->mmap_mutex)) {
+ 		unsigned long size = perf_data_size(event->data);
+-		struct user_struct *user = current_user();
++		struct user_struct *user = event->mmap_user;
++		struct perf_mmap_data *data = event->data;
+ 
+ 		atomic_long_sub((size >> PAGE_SHIFT) + 1, &user->locked_vm);
+-		vma->vm_mm->locked_vm -= event->data->nr_locked;
+-		perf_mmap_data_release(event);
++		vma->vm_mm->locked_vm -= event->mmap_locked;
++		rcu_assign_pointer(event->data, NULL);
+ 		mutex_unlock(&event->mmap_mutex);
++
++		perf_mmap_data_put(data);
++		free_uid(user);
+ 	}
+ }
+ 
+@@ -2629,13 +2678,10 @@ static int perf_mmap(struct file *file, struct vm_area_struct *vma)
+ 
+ 	WARN_ON_ONCE(event->ctx->parent_ctx);
+ 	mutex_lock(&event->mmap_mutex);
+-	if (event->output) {
+-		ret = -EINVAL;
+-		goto unlock;
+-	}
+-
+-	if (atomic_inc_not_zero(&event->mmap_count)) {
+-		if (nr_pages != event->data->nr_pages)
++	if (event->data) {
++		if (event->data->nr_pages == nr_pages)
++			atomic_inc(&event->data->refcount);
++		else
+ 			ret = -EINVAL;
+ 		goto unlock;
+ 	}
+@@ -2667,21 +2713,23 @@ static int perf_mmap(struct file *file, struct vm_area_struct *vma)
+ 	WARN_ON(event->data);
+ 
+ 	data = perf_mmap_data_alloc(event, nr_pages);
+-	ret = -ENOMEM;
+-	if (!data)
++	if (!data) {
++		ret = -ENOMEM;
+ 		goto unlock;
++	}
+ 
+-	ret = 0;
+ 	perf_mmap_data_init(event, data);
+-
+-	atomic_set(&event->mmap_count, 1);
+-	atomic_long_add(user_extra, &user->locked_vm);
+-	vma->vm_mm->locked_vm += extra;
+-	event->data->nr_locked = extra;
+ 	if (vma->vm_flags & VM_WRITE)
+ 		event->data->writable = 1;
+ 
++	atomic_long_add(user_extra, &user->locked_vm);
++	event->mmap_locked = extra;
++	event->mmap_user = get_current_user();
++	vma->vm_mm->locked_vm += event->mmap_locked;
++
+ unlock:
++	if (!ret)
++		atomic_inc(&event->mmap_count);
+ 	mutex_unlock(&event->mmap_mutex);
+ 
+ 	vma->vm_flags |= VM_RESERVED;
+@@ -2993,7 +3041,6 @@ int perf_output_begin(struct perf_output_handle *handle,
+ 		      struct perf_event *event, unsigned int size,
+ 		      int nmi, int sample)
+ {
+-	struct perf_event *output_event;
+ 	struct perf_mmap_data *data;
+ 	unsigned long tail, offset, head;
+ 	int have_lost;
+@@ -3010,10 +3057,6 @@ int perf_output_begin(struct perf_output_handle *handle,
+ 	if (event->parent)
+ 		event = event->parent;
+ 
+-	output_event = rcu_dereference(event->output);
+-	if (output_event)
+-		event = output_event;
+-
+ 	data = rcu_dereference(event->data);
+ 	if (!data)
+ 		goto out;
+@@ -4912,39 +4955,17 @@ err_size:
+ 	goto out;
+ }
+ 
+-static int perf_event_set_output(struct perf_event *event, int output_fd)
++static int
++perf_event_set_output(struct perf_event *event, struct perf_event *output_event)
+ {
+-	struct perf_event *output_event = NULL;
+-	struct file *output_file = NULL;
+-	struct perf_event *old_output;
+-	int fput_needed = 0;
++	struct perf_mmap_data *data = NULL, *old_data = NULL;
+ 	int ret = -EINVAL;
+ 
+-	/*
+-	 * Don't allow output of inherited per-task events. This would
+-	 * create performance issues due to cross cpu access.
+-	 */
+-	if (event->cpu == -1 && event->attr.inherit)
+-		return -EINVAL;
+-
+-	if (!output_fd)
++	if (!output_event)
+ 		goto set;
+ 
+-	output_file = fget_light(output_fd, &fput_needed);
+-	if (!output_file)
+-		return -EBADF;
+-
+-	if (output_file->f_op != &perf_fops)
+-		goto out;
+-
+-	output_event = output_file->private_data;
+-
+-	/* Don't chain output fds */
+-	if (output_event->output)
+-		goto out;
+-
+-	/* Don't set an output fd when we already have an output channel */
+-	if (event->data)
++	/* don't allow circular references */
++	if (event == output_event)
+ 		goto out;
  
  	/*
- 	 * If this was a group event with sibling events then
- 	 * upgrade the siblings to singleton events by adding them
--	 * to the context list directly:
-+	 * to whatever list we are on.
- 	 */
- 	list_for_each_entry_safe(sibling, tmp, &event->sibling_list, group_entry) {
--		struct list_head *list;
+@@ -4959,26 +4980,28 @@ static int perf_event_set_output(struct perf_event *event, int output_fd)
+ 	if (output_event->cpu == -1 && output_event->ctx != event->ctx)
+ 		goto out;
+ 
+-	atomic_long_inc(&output_file->f_count);
 -
--		list = ctx_group_list(event, ctx);
--		list_move_tail(&sibling->group_entry, list);
-+		if (list)
-+			list_move_tail(&sibling->group_entry, list);
- 		sibling->group_leader = sibling;
+ set:
+ 	mutex_lock(&event->mmap_mutex);
+-	old_output = event->output;
+-	rcu_assign_pointer(event->output, output_event);
+-	mutex_unlock(&event->mmap_mutex);
++	/* Can't redirect output if we've got an active mmap() */
++	if (atomic_read(&event->mmap_count))
++		goto unlock;
  
- 		/* Inherit group flags from the previous leader */
-@@ -727,6 +762,7 @@ static void add_event_to_ctx(struct perf_event *event,
- 			       struct perf_event_context *ctx)
+-	if (old_output) {
+-		/*
+-		 * we need to make sure no existing perf_output_*()
+-		 * is still referencing this event.
+-		 */
+-		synchronize_rcu();
+-		fput(old_output->filp);
++	if (output_event) {
++		/* get the buffer we want to redirect to */
++		data = perf_mmap_data_get(output_event);
++		if (!data)
++			goto unlock;
+ 	}
+ 
++	old_data = event->data;
++	rcu_assign_pointer(event->data, data);
+ 	ret = 0;
++unlock:
++	mutex_unlock(&event->mmap_mutex);
++
++	if (old_data)
++		perf_mmap_data_put(old_data);
+ out:
+-	fput_light(output_file, fput_needed);
+ 	return ret;
+ }
+ 
+@@ -4994,7 +5017,7 @@ SYSCALL_DEFINE5(perf_event_open,
+ 		struct perf_event_attr __user *, attr_uptr,
+ 		pid_t, pid, int, cpu, int, group_fd, unsigned long, flags)
  {
- 	list_add_event(event, ctx);
-+	perf_group_attach(event);
- 	event->tstamp_enabled = ctx->time;
- 	event->tstamp_running = ctx->time;
- 	event->tstamp_stopped = ctx->time;
-@@ -1894,8 +1930,8 @@ int perf_event_release_kernel(struct perf_event *event)
+-	struct perf_event *event, *group_leader;
++	struct perf_event *event, *group_leader = NULL, *output_event = NULL;
+ 	struct perf_event_attr attr;
+ 	struct perf_event_context *ctx;
+ 	struct file *event_file = NULL;
+@@ -5034,19 +5057,25 @@ SYSCALL_DEFINE5(perf_event_open,
+ 		goto err_fd;
+ 	}
+ 
++	if (group_fd != -1) {
++		group_leader = perf_fget_light(group_fd, &fput_needed);
++		if (IS_ERR(group_leader)) {
++			err = PTR_ERR(group_leader);
++			goto err_put_context;
++		}
++		group_file = group_leader->filp;
++		if (flags & PERF_FLAG_FD_OUTPUT)
++			output_event = group_leader;
++		if (flags & PERF_FLAG_FD_NO_GROUP)
++			group_leader = NULL;
++	}
++
+ 	/*
+ 	 * Look up the group leader (we will attach this event to it):
  	 */
- 	mutex_lock_nested(&ctx->mutex, SINGLE_DEPTH_NESTING);
- 	raw_spin_lock_irq(&ctx->lock);
-+	perf_group_detach(event);
- 	list_del_event(event, ctx);
--	perf_destroy_group(event, ctx);
- 	raw_spin_unlock_irq(&ctx->lock);
- 	mutex_unlock(&ctx->mutex);
+-	group_leader = NULL;
+-	if (group_fd != -1 && !(flags & PERF_FLAG_FD_NO_GROUP)) {
++	if (group_leader) {
+ 		err = -EINVAL;
+-		group_file = fget_light(group_fd, &fput_needed);
+-		if (!group_file)
+-			goto err_put_context;
+-		if (group_file->f_op != &perf_fops)
+-			goto err_put_context;
  
-@@ -5127,6 +5163,12 @@ SYSCALL_DEFINE5(perf_event_open,
- 	list_add_tail(&event->owner_entry, &current->perf_event_list);
- 	mutex_unlock(&current->perf_event_mutex);
+-		group_leader = group_file->private_data;
+ 		/*
+ 		 * Do not allow a recursive hierarchy (this new sibling
+ 		 * becoming part of another group-sibling):
+@@ -5068,9 +5097,16 @@ SYSCALL_DEFINE5(perf_event_open,
  
-+	/*
-+	 * Drop the reference on the group_event after placing the
-+	 * new event on the sibling_list. This ensures destruction
-+	 * of the group leader will find the pointer to itself in
-+	 * perf_group_detach().
-+	 */
- 	fput_light(group_file, fput_needed);
+ 	event = perf_event_alloc(&attr, cpu, ctx, group_leader,
+ 				     NULL, NULL, GFP_KERNEL);
+-	err = PTR_ERR(event);
+-	if (IS_ERR(event))
++	if (IS_ERR(event)) {
++		err = PTR_ERR(event);
+ 		goto err_put_context;
++	}
++
++	if (output_event) {
++		err = perf_event_set_output(event, output_event);
++		if (err)
++			goto err_free_put_context;
++	}
+ 
+ 	event_file = anon_inode_getfile("[perf_event]", &perf_fops, event, O_RDWR);
+ 	if (IS_ERR(event_file)) {
+@@ -5078,12 +5114,6 @@ SYSCALL_DEFINE5(perf_event_open,
+ 		goto err_free_put_context;
+ 	}
+ 
+-	if (flags & PERF_FLAG_FD_OUTPUT) {
+-		err = perf_event_set_output(event, group_fd);
+-		if (err)
+-			goto err_fput_free_put_context;
+-	}
+-
+ 	event->filp = event_file;
+ 	WARN_ON_ONCE(ctx->parent_ctx);
+ 	mutex_lock(&ctx->mutex);
+@@ -5101,8 +5131,6 @@ SYSCALL_DEFINE5(perf_event_open,
  	fd_install(event_fd, event_file);
  	return event_fd;
-@@ -5448,6 +5490,7 @@ static void perf_free_event(struct perf_event *event,
  
- 	fput(parent->filp);
- 
-+	perf_group_detach(event);
- 	list_del_event(event, ctx);
+-err_fput_free_put_context:
+-	fput(event_file);
+ err_free_put_context:
  	free_event(event);
- }
+ err_put_context:
