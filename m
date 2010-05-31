@@ -1,46 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754586Ab0EaNBX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 May 2010 09:01:23 -0400
-Received: from mx1.zhaw.ch ([160.85.104.50]:58473 "EHLO mx1.zhaw.ch"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754522Ab0EaNBW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 May 2010 09:01:22 -0400
-From: Tobias Klauser <tklauser@distanz.ch>
-To: gregkh@suse.de, linux-kernel@vger.kernel.org
-Cc: alan@lxorguk.ukuu.org.uk, akpm@linux-foundation.org,
-       Tobias Klauser <tklauser@distanz.ch>
-Subject: [PATCH] altera_uart: Proper section for altera_uart_remove
-Date: Mon, 31 May 2010 15:01:08 +0200
-Message-Id: <1275310868-21071-1-git-send-email-tklauser@distanz.ch>
-X-Mailer: git-send-email 1.6.3.3
-X-PMX-Version: 5.5.9.395186, Antispam-Engine: 2.7.2.376379, Antispam-Data: 2010.5.31.124815
-X-PerlMx-Spam: Gauge=IIIIIIII, Probability=8%, Report='
- BODYTEXTP_SIZE_3000_LESS 0, BODY_SIZE_1000_LESS 0, BODY_SIZE_2000_LESS 0, BODY_SIZE_5000_LESS 0, BODY_SIZE_600_699 0, BODY_SIZE_7000_LESS 0, TO_NO_NAME 0, __HAS_MSGID 0, __HAS_X_MAILER 0, __MIME_TEXT_ONLY 0, __SANE_MSGID 0, __TO_MALFORMED_2 0, __URI_NO_PATH 0, __URI_NO_WWW 0, __URI_NS '
+	id S1754601Ab0EaNCF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 May 2010 09:02:05 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:52961 "EHLO
+	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754032Ab0EaNCB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 31 May 2010 09:02:01 -0400
+Date: Mon, 31 May 2010 14:01:58 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Wolfram Sang <w.sang@pengutronix.de>
+Cc: linux-i2c@vger.kernel.org, Jean Delvare <khali@linux-fr.org>,
+       George Joseph <george.joseph@fairview5.com>,
+       Riku Voipio <riku.voipio@iki.fi>,
+       Guillaume Ligneul <guillaume.ligneul@gmail.com>,
+       "Ben Dooks (embedded platforms)" <ben-linux@fluff.org>,
+       Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+       Alessandro Rubini <rubini@cvml.unipv.it>,
+       Richard Purdie <rpurdie@rpsys.net>, Colin Leroy <colin@colino.net>,
+       Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+       Mauro Carvalho Chehab <mchehab@infradead.org>,
+       Samuel Ortiz <sameo@linux.intel.com>,
+       David Woodhouse <dwmw2@infradead.org>,
+       Liam Girdwood <lrg@slimlogic.co.uk>,
+       Paul Gortmaker <p_gortmaker@yahoo.com>,
+       Alessandro Zummo <a.zummo@towertech.it>,
+       Greg Kroah-Hartman <gregkh@suse.de>, lm-sensors@lm-sensors.org,
+       linux-kernel@vger.kernel.org, linux-input@vger.kernel.org,
+       linuxppc-dev@ozlabs.org, linux-media@vger.kernel.org,
+       linux-mtd@lists.infradead.org, rtc-linux@googlegroups.com,
+       devel@driverdev.osuosl.org
+Subject: Re: [PATCH] drivers: remove all i2c_set_clientdata(client, NULL)
+Message-ID: <20100531130157.GA10507@rakim.wolfsonmicro.main>
+References: <1275310552-14685-1-git-send-email-w.sang@pengutronix.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1275310552-14685-1-git-send-email-w.sang@pengutronix.de>
+X-Cookie: Security check:  =?ISO-8859-1?Q?=20=07=07=07INTRUDER?= ALERT!
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-altera_uart_remove should be in .devexit.text
+On Mon, May 31, 2010 at 02:55:48PM +0200, Wolfram Sang wrote:
+> I2C-drivers can use the clientdata-pointer to point to private data. As I2C
+> devices are not really unregistered, but merely detached from their driver, it
+> used to be the drivers obligation to clear this pointer during remove() or a
+> failed probe(). As a couple of drivers forgot to do this, it was agreed that it
+> was cleaner if the i2c-core does this clearance when appropriate, as there is
+> no guarantee for the lifetime of the clientdata-pointer after remove() anyhow.
+> This feature was added to the core with commit
+> e4a7b9b04de15f6b63da5ccdd373ffa3057a3681 to fix the faulty drivers.
+> 
+> As there is no need anymore to clear the clientdata-pointer, remove all current
+> occurrences in the drivers to simplify the code and prevent confusion.
+> 
+> Signed-off-by: Wolfram Sang <w.sang@pengutronix.de>
 
-Signed-off-by: Tobias Klauser <tklauser@distanz.ch>
----
- drivers/serial/altera_uart.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/drivers/serial/altera_uart.c b/drivers/serial/altera_uart.c
-index bcee156..6dc22b0 100644
---- a/drivers/serial/altera_uart.c
-+++ b/drivers/serial/altera_uart.c
-@@ -516,7 +516,7 @@ static int __devinit altera_uart_probe(struct platform_device *pdev)
- 	return 0;
- }
- 
--static int altera_uart_remove(struct platform_device *pdev)
-+static int __devexit altera_uart_remove(struct platform_device *pdev)
- {
- 	struct uart_port *port;
- 	int i;
--- 
-1.6.3.3
-
+Acked-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
