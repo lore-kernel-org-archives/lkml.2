@@ -1,89 +1,160 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754061Ab0EaVVS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 May 2010 17:21:18 -0400
-Received: from cantor.suse.de ([195.135.220.2]:59640 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753696Ab0EaVVQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 May 2010 17:21:16 -0400
-Subject: Re: [linux-pm] [PATCH 0/8] Suspend block api (version 8)
-From: James Bottomley <James.Bottomley@suse.de>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-       Arve =?ISO-8859-1?Q?Hj=F8nnev=E5g?= <arve@android.com>, tytso@mit.edu,
-       LKML <linux-kernel@vger.kernel.org>,
-       Florian Mickler <florian@mickler.org>,
-       Linux PM <linux-pm@lists.linux-foundation.org>,
-       Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
-       felipe.balbi@nokia.com, Alan Cox <alan@lxorguk.ukuu.org.uk>
-In-Reply-To: <alpine.LFD.2.00.1005312231120.2933@localhost.localdomain>
-References: <20100527222514.0a1710bf@lxorguk.ukuu.org.uk>
-	 <Pine.LNX.4.44L0.1005271730180.3239-100000@iolanthe.rowland.org>
-	 <20100527230806.4deb6de3@lxorguk.ukuu.org.uk>
-	 <20100527220949.GB10602@srcf.ucam.org>
-	 <20100527232357.6d14fdb2@lxorguk.ukuu.org.uk>
-	 <20100527223605.GB11364@srcf.ucam.org>
-	 <20100527235546.09f3ce8a@lxorguk.ukuu.org.uk>
-	 <20100528043114.GC26177@thunk.org> <1275030704.32462.11.camel@laptop>
-	 <AANLkTikEtlbkT4Ws3H2YGt_9QC46B5dr-b1oxJOcG4GN@mail.gmail.com>
-	 <1275120618.27810.12699.camel@twins>
-	 <1275149418.4503.128.camel@mulgrave.site>
-	 <alpine.LFD.2.00.1005312231120.2933@localhost.localdomain>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 31 May 2010 16:21:09 -0500
-Message-ID: <1275340869.2823.344.camel@mulgrave.site>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.2 
-Content-Transfer-Encoding: 7bit
+	id S1753855Ab0EaVXO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 May 2010 17:23:14 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:57848 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751973Ab0EaVXM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 31 May 2010 17:23:12 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=uEDvijA+xA/7DD6azrwXtJvre1k52/DgpcgM5LlrXNkZxnFfoVuEa5p9V1Wsr4Y0sE
+         42UWIx0HMyFR+E7gdqfUXYF56iCPtXBFg1d0Gz3Tor7ujitvBUp6Fg3uCxtqBjXpcpVY
+         cm92kDvR4GSwpFjgseD2cMGn2j81411jnyVx8=
+Date: Mon, 31 May 2010 23:23:15 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Pierre Tardy <tardyp@gmail.com>,
+       Arnaldo Carvalho de Melo <acme@redhat.com>
+Cc: Tom Zanussi <tzanussi@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+       Linux Kernel <linux-kernel@vger.kernel.org>,
+       Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: [PATCH] trace-event-python: give field dict to unhandled
+	callback
+Message-ID: <20100531212312.GG5157@nowhere>
+References: <AANLkTimP7PwL7sRV_FVaa57JhWZ9wHJBYRnnbXPdj-ls@mail.gmail.com> <1275340329-2397-1-git-send-email-tardyp@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1275340329-2397-1-git-send-email-tardyp@gmail.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-05-31 at 22:49 +0200, Thomas Gleixner wrote:
-> On Sat, 29 May 2010, James Bottomley wrote:
-> > The job of the kernel is to accommodate hardware as best it can ...
-> > sometimes it might not be able to, but most of the time it does a pretty
-> > good job.
-> > 
-> > The facts are that C states and S states are different and are entered
-> > differently. 
+On Mon, May 31, 2010 at 11:12:09PM +0200, Pierre Tardy wrote:
+> trace_unhandled() callback does not allow to access event fields, this
+> patch resolves the problem.
 > 
-> That's an x86'ism which is going away. And that's really completely
-> irrelevant for the mobile device space. Can we please stop trying to
-> fix todays x86 based laptop problems? They are simply not fixable.
-
-You're the one mentioning x86, not me.  I already explained that some
-MSM hardware (the G1 for example) has lower power consumption in S3
-(which I'm using as an ACPI shorthand for suspend to ram) than any
-suspend from idle C state.  The fact that current x86 hardware has the
-same problem may be true, but it's not entirely relevant.
-
-> > For some omap hardware, the power consumption in the
-> > lowest C state (with all the ancillary power control) is the same as S3,
-> > that's fine, suspend from idle works as well as suspend to ram modulo
-> > bad apps. For quite a lot of MSM hardware, the lowest C state power
-> > consumption is quite a bit above S3.  It's not acceptable to tell those
-> > people "tough, your battery runs out in 30 minutes because you bought
-> > the wrong hardware".  We have to figure out how to get to S3 ... whether
-> > this is from idle or some other mechanism is again a discussion point,
-> > but not doing it is not an option.
+> It can also been used as a more pythonic and flexible way for script
+> writters to demux event types
 > 
-> If you'd have read the answers from Alan carefully, then you'd have
-> noticed that even x86 hardware is getting to the point where OMAP is
-> today. i.e. support of transparent suspend from idle. If that wouldn't
-> happen then x86 would be simply unusable for mobile devices. It's that
-> easy. And we really do _NOT_ care about the existing laptop hardware
-> which does not provide that because it's a lost case. Not only due to
-> the missing (or just disabled) wakeup sources, also due to the fact
-> that you cannot do sensible power management by completely disabling
-> clock and/or power of unused devices in the chipset. There is a damn
-> good reason why the mobile space is _NOT_ x86 based at the moment.
+> This will for example greatly simplify pytimechart event demux.
+> 
+> Signed-off-by: Pierre Tardy <tardyp@gmail.com>
+> ---
+>  tools/perf/scripts/python/check-perf-trace.py      |    3 +-
+>  .../util/scripting-engines/trace-event-python.c    |   50 +++++++++++++------
+>  2 files changed, 35 insertions(+), 18 deletions(-)
+> 
+> diff --git a/tools/perf/scripts/python/check-perf-trace.py b/tools/perf/scripts/python/check-perf-trace.py
+> index 964d934..d9f7893 100644
+> --- a/tools/perf/scripts/python/check-perf-trace.py
+> +++ b/tools/perf/scripts/python/check-perf-trace.py
+> @@ -51,8 +51,7 @@ def kmem__kmalloc(event_name, context, common_cpu,
+>  
+>  		flag_str("kmem__kmalloc", "gfp_flags", gfp_flags)),
+>  
+> -def trace_unhandled(event_name, context, common_cpu, common_secs, common_nsecs,
+> -		common_pid, common_comm):
+> +def trace_unhandled(event_name, context, event_fields_dict):
+>      try:
+>          unhandled[event_name] += 1
+>      except TypeError:
+> diff --git a/tools/perf/util/scripting-engines/trace-event-python.c b/tools/perf/util/scripting-engines/trace-event-python.c
+> index 81f39ca..33a6325 100644
+> --- a/tools/perf/util/scripting-engines/trace-event-python.c
+> +++ b/tools/perf/util/scripting-engines/trace-event-python.c
+> @@ -208,7 +208,7 @@ static void python_process_event(int cpu, void *data,
+>  				 int size __unused,
+>  				 unsigned long long nsecs, char *comm)
+>  {
+> -	PyObject *handler, *retval, *context, *t, *obj;
+> +	PyObject *handler, *retval, *context, *t, *obj, *dict = NULL;
+>  	static char handler_name[256];
+>  	struct format_field *field;
+>  	unsigned long long val;
+> @@ -232,6 +232,14 @@ static void python_process_event(int cpu, void *data,
+>  
+>  	sprintf(handler_name, "%s__%s", event->system, event->name);
+>  
+> +	handler = PyDict_GetItemString(main_dict, handler_name);
+> +	if (handler && !PyCallable_Check(handler))
+> +		handler = NULL;
+> +	if (!handler) {
+> +		dict = PyDict_New();
+> +		if (!dict)
+> +			Py_FatalError("couldn't create Python dict");
+> +	}
+>  	s = nsecs / NSECS_PER_SEC;
+>  	ns = nsecs - s * NSECS_PER_SEC;
+>  
+> @@ -242,12 +250,20 @@ static void python_process_event(int cpu, void *data,
+>  	PyTuple_SetItem(t, n++, PyString_FromString(handler_name));
+>  	PyTuple_SetItem(t, n++,
+>  			PyCObject_FromVoidPtr(scripting_context, NULL));
+> -	PyTuple_SetItem(t, n++, PyInt_FromLong(cpu));
+> -	PyTuple_SetItem(t, n++, PyInt_FromLong(s));
+> -	PyTuple_SetItem(t, n++, PyInt_FromLong(ns));
+> -	PyTuple_SetItem(t, n++, PyInt_FromLong(pid));
+> -	PyTuple_SetItem(t, n++, PyString_FromString(comm));
+>  
+> +	if (handler) {
+> +		PyTuple_SetItem(t, n++, PyInt_FromLong(cpu));
+> +		PyTuple_SetItem(t, n++, PyInt_FromLong(s));
+> +		PyTuple_SetItem(t, n++, PyInt_FromLong(ns));
+> +		PyTuple_SetItem(t, n++, PyInt_FromLong(pid));
+> +		PyTuple_SetItem(t, n++, PyString_FromString(comm));
+> +	} else {
+> +		PyDict_SetItemString(dict, "common_cpu", PyInt_FromLong(cpu));
+> +		PyDict_SetItemString(dict, "common_s", PyInt_FromLong(s));
+> +		PyDict_SetItemString(dict, "common_ns", PyInt_FromLong(ns));
+> +		PyDict_SetItemString(dict, "common_pid", PyInt_FromLong(pid));
+> +		PyDict_SetItemString(dict, "common_comm", PyString_FromString(comm));
+> +	}
+>  	for (field = event->format.fields; field; field = field->next) {
+>  		if (field->flags & FIELD_IS_STRING) {
+>  			int offset;
+> @@ -272,27 +288,31 @@ static void python_process_event(int cpu, void *data,
+>  					obj = PyLong_FromUnsignedLongLong(val);
+>  			}
+>  		}
+> -		PyTuple_SetItem(t, n++, obj);
+> +		if (handler)
+> +			PyTuple_SetItem(t, n++, obj);
+> +		else
+> +			PyDict_SetItemString(dict, field->name, obj);
+> +
+>  	}
+> +	if (!handler)
+> +		PyTuple_SetItem(t, n++, dict);
+>  
+>  	if (_PyTuple_Resize(&t, n) == -1)
+>  		Py_FatalError("error resizing Python tuple");
+>  
+> -	handler = PyDict_GetItemString(main_dict, handler_name);
+> -	if (handler && PyCallable_Check(handler)) {
+> +	if (handler) {
+>  		retval = PyObject_CallObject(handler, t);
+>  		if (retval == NULL)
+>  			handler_call_die(handler_name);
+>  	} else {
+>  		handler = PyDict_GetItemString(main_dict, "trace_unhandled");
+>  		if (handler && PyCallable_Check(handler)) {
+> -			if (_PyTuple_Resize(&t, N_COMMON_FIELDS) == -1)
+> -				Py_FatalError("error resizing Python tuple");
+>  
+>  			retval = PyObject_CallObject(handler, t);
+>  			if (retval == NULL)
+>  				handler_call_die("trace_unhandled");
+>  		}
+> +		Py_DECREF(dict);
 
-So not at all interested in x86 at the moment.
 
-For MSM hardware, it looks possible to unify the S and C states by doing
-suspend to ram from idle but I'm not sure how much work that is.
 
-James
+Cool!
 
+Acked-by: Frederic Weisbecker <fweisbec@gmail.com>
 
