@@ -1,47 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752954Ab0EaLat (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 May 2010 07:30:49 -0400
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:34743
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753059Ab0EaLar (ORCPT
+	id S1753653Ab0EaLeu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 May 2010 07:34:50 -0400
+Received: from mtagate7.uk.ibm.com ([194.196.100.167]:53222 "EHLO
+	mtagate7.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751691Ab0EaLet (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 May 2010 07:30:47 -0400
-Date: Mon, 31 May 2010 04:30:56 -0700 (PDT)
-Message-Id: <20100531.043056.258120791.davem@davemloft.net>
-To: fthain@telegraphics.com.au
-Cc: geert@linux-m68k.org, joe@perches.com, p_gortmaker@yahoo.com,
-       netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-       linux-m68k@vger.kernel.org
-Subject: Re: [PATCH] mac8390: change an error return code and some cleanup,
- take 4
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <alpine.LNX.2.00.1005312011210.469@nippy.intranet>
-References: <alpine.LNX.2.00.1005311905520.469@nippy.intranet>
-	<AANLkTilkooBglbk33yDHmk8c_ZdlamOW8FVvuvjQaNsF@mail.gmail.com>
-	<alpine.LNX.2.00.1005312011210.469@nippy.intranet>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	Mon, 31 May 2010 07:34:49 -0400
+Date: Mon, 31 May 2010 13:34:47 +0200
+From: Christof Schmitt <christof.schmitt@de.ibm.com>
+To: linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
+       linux-fsdevel@vger.kernel.org
+Subject: Re: Wrong DIF guard tag on ext2 write
+Message-ID: <20100531113447.GB16260@schmichrtp.mainz.de.ibm.com>
+References: <20100531112817.GA16260@schmichrtp.mainz.de.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100531112817.GA16260@schmichrtp.mainz.de.ibm.com>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: fthain@telegraphics.com.au
-Date: Mon, 31 May 2010 21:07:09 +1000 (EST)
-
-> Apparently David now wants me to submit this again --
+On Mon, May 31, 2010 at 01:28:17PM +0200, Christof Schmitt wrote:
+> When running tests with an ext2 filesystem on a device using DIF/DIX
+> integrity data, i sometimes see invalid guard tags on write requests.
+> To track down the problem, i patched the function sd_prep_fn in sd.c
+> to verify the IP checksums in the guard tags against the actual data.
+> Sometimes there is a mismatch and the write request fails when the HBA
+> checks the guard tag.
 > 
-> if (ei_debug)
-> 	pr_debug(...)
+> Since the guard tags are created in Linux, it seems that the data
+> attached to the write request changes between the generation in
+> bio_integrity_generate and the call to sd_prep_fn.
 > 
-> David, if that code is acceptable, please let me know.
+> Using ext3 or ext4 instead of ext2 does not show the problem.
+> 
+> There is a bugzilla open at Redhat with the same symptom, but there is
+> no data or activity:
+> https://bugzilla.redhat.com/show_bug.cgi?id=574266
+> 
+> What would be the best way to track down this problem?
 
-The only thing I care about is at the moment that you don't do
-something that ends up dropping the pr_fmt prefix.
+One more thing: The test is running with a 2.6.34 kernel, the problem
+in the bugzilla is reported for 2.6.33.
 
-The pr_fmt define at the beginning of the driver is for nothing
-if we end up adding exceptions that end up eliding it for no
-good reason.  And that's what your patch was doing.
-
+Christof Schmitt
