@@ -1,108 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754236Ab0FAImI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Jun 2010 04:42:08 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:40045 "EHLO mx2.suse.de"
+	id S1755055Ab0FAImp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Jun 2010 04:42:45 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:50417 "EHLO smtps.tip.net.au"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750833Ab0FAImG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Jun 2010 04:42:06 -0400
-Date: Tue, 1 Jun 2010 18:41:57 +1000
-From: Nick Piggin <npiggin@suse.de>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-       Ingo Molnar <mingo@redhat.com>, linux-mm@kvack.org,
-       linux-kernel@vger.kernel.org,
-       Lee Schermerhorn <lee.schermerhorn@hp.com>
-Subject: Re: [rfc] forked kernel task and mm structures imbalanced on NUMA
-Message-ID: <20100601084157.GS9453@laptop>
-References: <20100601073343.GQ9453@laptop>
- <1275380202.27810.26214.camel@twins>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1275380202.27810.26214.camel@twins>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1751696Ab0FAImo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Jun 2010 04:42:44 -0400
+Date: Tue, 1 Jun 2010 18:42:37 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Jens Axboe <jaxboe@fusionio.com>
+Cc: Christoph Hellwig <hch@infradead.org>,
+       Philipp Reisner <philipp.reisner@linbit.com>, drbd-dev@linbit.com,
+       linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+       Julia Lawall <julia@diku.dk>, Al Viro <viro@zeniv.linux.org.uk>
+Subject: Re: linux-next: manual merge of the drbd tree with Linus' tree
+Message-Id: <20100601184237.5755044d.sfr@canb.auug.org.au>
+In-Reply-To: <20100601083126.GB3564@kernel.dk>
+References: <20100601141324.edf41f7f.sfr@canb.auug.org.au>
+	<20100601081823.GA29991@infradead.org>
+	<20100601182213.479a777e.sfr@canb.auug.org.au>
+	<20100601083126.GB3564@kernel.dk>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Tue__1_Jun_2010_18_42_37_+1000_c.=IpPumQ2AMbmhA"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 01, 2010 at 10:16:42AM +0200, Peter Zijlstra wrote:
-> On Tue, 2010-06-01 at 17:33 +1000, Nick Piggin wrote:
-> > Another problem I found when testing this patch is that the scheduler
-> > has some issues of its own when balancing. This is improved by
-> > traversing the sd groups starting from a different spot each time, so
-> > processes get sprinkled around the nodes a bit better.
-> 
-> Right, makes sense. And I think we could merge that group iteration
-> without much problems.
-> 
-> Your alternative placement for sched_exec() seems to make sense too, the
-> earlier we do that the better the memory allocations will be.
-> 
-> Your changes to sched_fork() and wake_up_new_task() made my head hurt a
-> bit -- but that's not your fault. I'm not quite sure why you're changing
-> that though.
+--Signature=_Tue__1_Jun_2010_18_42_37_+1000_c.=IpPumQ2AMbmhA
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Well because we indeed don't want to select a new CPU for it unless
-there has been a cpus_allowed race in the meantime.
+Hi Jens,
 
- 
-> The addition of sched_fork_suggest_cpu() to select a target node seems
-> to make sense, but since you then call fork balancing a second time we
-> have a chance of ending up on a totally different node all together.
-> 
-> So I think it would make sense to rework the fork balancing muck to be
-> called only once and stick with its decision.
+On Tue, 1 Jun 2010 10:31:26 +0200 Jens Axboe <jaxboe@fusionio.com> wrote:
+>
+> Just checked, and it is indeed for-next that is behind... Will update
+> it.
 
-Just need to close that race somehow. AFAIKS we can't use TASK_WAKING
-because that must not be preempted?
+Thanks.
 
-Otherwise I don't see a problem with just taking another balance on
-the extremely rare case of task failure.
+BTW, what email address should I now use for you?
 
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
 
- 
-> One thing that would make the whole fork path much easier is fully
-> ripping out that child_runs_first mess for CONFIG_SMP, I think its been
-> disabled by default for long enough, and its always been broken in the
-> face of fork balancing anyway.
+--Signature=_Tue__1_Jun_2010_18_42_37_+1000_c.=IpPumQ2AMbmhA
+Content-Type: application/pgp-signature
 
-Interesting problem. vfork is nice for fork+exec, but it's a bit
-restrictive.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
 
- 
-> So basically we have to move fork balancing back to sched_fork(), I'd
-> have to again look at wth happens to ->cpus_allowed, but I guess it
-> should be fixable, and I don't think we should care overly much about
-> cpu-hotplug.
+iEYEARECAAYFAkwEx/0ACgkQjjKRsyhoI8xjMgCgjAUDes27DOEWr8mv6FVYK4Mm
+P5YAn1yTatkARupBsKiRIS+mrwfFdRoX
+=Nenz
+-----END PGP SIGNATURE-----
 
-No more than simply getting it right. Simply calling into the balancer
-again seems to be the simplest way to do it.
-
- 
-> A specific code comment:
-> 
-> > @@ -2550,14 +2561,16 @@ void wake_up_new_task(struct task_struct
-> >          * We set TASK_WAKING so that select_task_rq() can drop rq->lock
-> >          * without people poking at ->cpus_allowed.
-> >          */
-> > -       cpu = select_task_rq(rq, p, SD_BALANCE_FORK, 0);
-> > -       set_task_cpu(p, cpu);
-> > -
-> > -       p->state = TASK_RUNNING;
-> > -       task_rq_unlock(rq, &flags);
-> > +       if (!cpumask_test_cpu(cpu, &p->cpus_allowed)) {
-> > +               p->state = TASK_WAKING;
-> > +               cpu = select_task_rq(rq, p, SD_BALANCE_FORK, 0);
-> > +               set_task_cpu(p, cpu);
-> > +               p->state = TASK_RUNNING;
-> > +               task_rq_unlock(rq, &flags);
-> > +               rq = task_rq_lock(p, &flags);
-> > +       }
-> >  #endif
-> 
-> That's iffy because p->cpus_allowed isn't stable when we're not holding
-> the task's current rq->lock or p->state is not TASK_WAKING.
-> 
-
-Oop, yeah missed that. Half hearted attempt to avoid more rq locks.
+--Signature=_Tue__1_Jun_2010_18_42_37_+1000_c.=IpPumQ2AMbmhA--
