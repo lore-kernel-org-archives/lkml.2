@@ -1,62 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756564Ab0FAUGE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Jun 2010 16:06:04 -0400
-Received: from mail-pz0-f185.google.com ([209.85.222.185]:35709 "EHLO
-	mail-pz0-f185.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753479Ab0FAUGA (ORCPT
+	id S1756650Ab0FAUGu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Jun 2010 16:06:50 -0400
+Received: from sprinkles.athenacr.com ([64.95.46.210]:45051 "EHLO
+	sprinkles.inp.in.athenacr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753044Ab0FAUGr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Jun 2010 16:06:00 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=D44b9cff3r1aTq+VdZvse/ibVVpybLd4lhlJGVdv5d/99ZhDXxKO/0e1/S0pBX7evA
-         45Wn7Z2POGRulxvHFmFQF2Lrgt7bl6wvedDZoViME2xYvLogmudRmsYUNQZmu8YjpouP
-         u1dDvGzSFCE8xNKLlwAoriMopCimz/aOR3Oa0=
-Message-ID: <4C056839.8020605@gmail.com>
-Date: Tue, 01 Jun 2010 13:06:17 -0700
-From: "Justin P. Mattock" <justinmattock@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.4pre) Gecko/20091114 Lightning/1.0pre Thunderbird/3.0b4
+	Tue, 1 Jun 2010 16:06:47 -0400
+Message-ID: <4C056854.3@athenacr.com>
+Date: Tue, 01 Jun 2010 16:06:44 -0400
+From: Brian Bloniarz <bmb@athenacr.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100423 Thunderbird/3.0.4
 MIME-Version: 1.0
-To: Matthew Garrett <mjg59@srcf.ucam.org>
-CC: x86@kernel.org, tglx@linutronix.de, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH]X86:reboot.c Add some dmi entries to	pci_reboot_dmi_table.
-References: <1275114371-5329-1-git-send-email-justinmattock@gmail.com> <20100531170745.GA21225@srcf.ucam.org> <4C03F5EF.8080302@gmail.com> <20100601190050.GA14667@srcf.ucam.org> <4C055BFF.8090800@gmail.com> <20100601192101.GA15086@srcf.ucam.org>
-In-Reply-To: <20100601192101.GA15086@srcf.ucam.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Mikael Pettersson <mikpe@it.uu.se>
+CC: linux-kernel@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
+       achiang@canonical.com
+Subject: Re: [2.6.35-rc1 regression] sysfs: cannot create duplicate filename
+ ... XVR-600 related?
+References: <19461.26166.427857.612983@pilspetsen.it.uu.se>
+In-Reply-To: <19461.26166.427857.612983@pilspetsen.it.uu.se>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/01/2010 12:21 PM, Matthew Garrett wrote:
-> On Tue, Jun 01, 2010 at 12:14:07PM -0700, Justin P. Mattock wrote:
+On 06/01/2010 03:57 PM, Mikael Pettersson wrote:
+> Booting 2.6.35-rc1 on a Sun Blade 2500 Red, I'm greeted with:
 >
->> o.k. applied.. unfortunately
->> I get init telling me it's rebooting,
->> then, nothing but a black screen.
->
-> Could you send me the output of acpidump on this machine? Also, try
-> building the following app and running it as root:
->
-> #include<sys/io.h>
->
-> int main() {
-> 	outb(6, 0xcf9);
-> 	return 0;
-> }
->
-> and see if the machine reboots.
->
+> ------------[ cut here ]------------
+> WARNING: at fs/sysfs/dir.c:451 sysfs_add_one+0x74/0x90()
+> sysfs: cannot create duplicate filename '/devices/root/f0079a58/pci0003:00/0003:00:02.0/slot'
+> Modules linked in:
+> Call Trace:
+>  [0000000000458e20] warn_slowpath_fmt+0x2c/0x3c
+>  [0000000000501dac] sysfs_add_one+0x74/0x90
+>  [0000000000502cd4] sysfs_do_create_link+0xf0/0x184
+>  [000000000055a62c] pci_create_sysfs_dev_files+0x304/0x428
+>  [000000000074c6f8] pci_sysfs_init+0x20/0x6c
+>  [0000000000426acc] do_one_initcall+0x44/0x164
+>  [000000000073a32c] kernel_init+0x1a0/0x238
+>  [000000000042aea4] kernel_thread+0x30/0x48
+>  [0000000000640efc] rest_init+0x18/0x88
+> ---[ end trace 8093a3146373dac8 ]---
 
-nope.. here is what I get:
-./reboot
-Segmentation fault (core dumped)
+I've seen this too on KVM; this commit caused it:
 
-and in dmesg:
-[ 1401.323601] reboot[3615] general protection ip:40048b
-sp:7fff2a601910 error:0 in reboot[400000+1000]
+commit 75568f8094eb0333e9c2109b23cbc8b82d318a3c
+Author: Alex Chiang <achiang@hp.com>
+Date:   Mon Mar 8 10:24:29 2010 -0700
 
+    PCI: create function symlinks in /sys/bus/pci/slots/N/
+    
+    Create convenience symlinks in sysfs, linking slots to device
+    functions, and vice versa. These links make it easier for users to
+    figure out which devices actually live in what slots.
 
-Justin P. Mattock
+Some discussion happened at http://lkml.org/lkml/2010/4/12/259.
+Alex Chiang is working on resolving this AFAIK, adding him.
