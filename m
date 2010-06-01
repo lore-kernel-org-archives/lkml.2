@@ -1,68 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755314Ab0FAURb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Jun 2010 16:17:31 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:42674 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751665Ab0FAURa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Jun 2010 16:17:30 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=baifxCjY2GQyhOsdQwrjCUjnz7mmnNuZwy4kKhX0/mmySILpPR/JJGQUZ7azppRSMt
-         SlJ2e0ytlujvP06qz2hYw8ykhREOlgZMobRLDdX5MDhdaI5nun4EThz0ogCdIUIuQLpB
-         BAjzpTJbhkwkRrrH13ANtNaR9+via4R0QVRL0=
-Message-ID: <4C056AE6.3000409@gmail.com>
-Date: Tue, 01 Jun 2010 13:17:42 -0700
-From: "Justin P. Mattock" <justinmattock@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.4pre) Gecko/20091114 Lightning/1.0pre Thunderbird/3.0b4
+	id S1756825Ab0FAUUQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Jun 2010 16:20:16 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:8186 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753624Ab0FAUUO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Jun 2010 16:20:14 -0400
+Date: Tue, 1 Jun 2010 22:18:43 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
+       David Rientjes <rientjes@google.com>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+       Nick Piggin <npiggin@suse.de>
+Subject: Re: [PATCH 2/5] oom: select_bad_process: PF_EXITING check should
+	take ->mm into account
+Message-ID: <20100601201843.GA20732@redhat.com>
+References: <20100531183335.1846.A69D9226@jp.fujitsu.com> <20100531164354.GA9991@redhat.com> <20100601093951.2430.A69D9226@jp.fujitsu.com>
 MIME-Version: 1.0
-To: Matthew Garrett <mjg59@srcf.ucam.org>
-CC: x86@kernel.org, tglx@linutronix.de, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH]X86:reboot.c Add some dmi entries to	pci_reboot_dmi_table.
-References: <1275114371-5329-1-git-send-email-justinmattock@gmail.com> <20100531170745.GA21225@srcf.ucam.org> <4C03F5EF.8080302@gmail.com> <20100601190050.GA14667@srcf.ucam.org> <4C055BFF.8090800@gmail.com> <20100601192101.GA15086@srcf.ucam.org> <4C056839.8020605@gmail.com> <20100601200704.GA16091@srcf.ucam.org>
-In-Reply-To: <20100601200704.GA16091@srcf.ucam.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100601093951.2430.A69D9226@jp.fujitsu.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/01/2010 01:07 PM, Matthew Garrett wrote:
-> On Tue, Jun 01, 2010 at 01:06:17PM -0700, Justin P. Mattock wrote:
+On 06/01, KOSAKI Motohiro wrote:
 >
->> nope.. here is what I get:
->> ./reboot
->> Segmentation fault (core dumped)
+> > I'd like to add a note... with or without this, we have problems
+> > with the coredump. A thread participating in the coredumping
+> > (group-leader in this case) can have PF_EXITING && mm, but this doesn't
+> > mean it is going to exit soon, and the dumper can use a lot more memory.
 >
-> Sorry, put
+> Sure. I think coredump sould do nothing if oom occur.
+> So, merely making PF_COREDUMP is bad idea? I mean
 >
-> iopl(3);
+> task-flags		allocator
+> ------------------------------------------------
+> none			N/A
+> TIF_MEMDIE		allow to use emergency memory.
+> 			don't call page reclaim.
+> PF_COREDUMP		N/A
+> TIF_MEMDIE+PF_COREDUMP	disallow to use emergency memory.
+> 			don't call page reclaim.
 >
-> before the outb.
+> In other word, coredump path makes allocation failure if the task
+> marked as TIF_MEMDIE.
+
+Perhaps... But where should TIF_MEMDIE go this case? Let me clarify.
+
+Two threads, group-leader L and its sub-thread T. T dumps the code.
+In this case both threads have ->mm != NULL, L has PF_EXITING.
+
+The first problem is, select_bad_process() always return -1 in this
+case (even if the caller is T, this doesn't matter).
+
+The second problem is that we should add TIF_MEMDIE to T, not L.
+
+This is more or less easy. For simplicity, let's suppose we removed
+this PF_EXITING check from select_bad_process().
+
+Otoh, if we make do_coredump() interruptible (and we should do this
+in any case), then perhaps the TIF_MEMDIE+PF_COREDUMP is not really
+needed? Afaics we always send SIGKILL along with TIF_MEMDIE.
+
+> > And, as it was already discussed, we only check the group-leader here.
+> > But I can't suggest something better.
 >
+> I guess signal_group_exit() is enough in practical case.
 
+Unlike SIGNAL_GROUP_EXIT check, signal_group_exit() can also mean
+exec. This is probably correct. If we see the task inside de_thread()
+he is going to free its old mm soon.
 
-still craps out.
-this is what the code looks like now:
+The problem is this check doesn't cover the case when a single-threaded
+task exits (even if it does sys_exit_group). And it is not enough to
+remove the thread_group_empty-case-optimization from do_group_exit(),
+it can call sys_exit() instead.
 
-#include <sys/io.h>
+But anyway I agree, select_bad_process can probably check
 
-int main() {
-	iopl(3);
-	outb(6, 0xcf9);
-	return 0;
-}
-(hopefully done right).
+	signal_group_exit() || (PF_EXITINF && thread_group_empty())
 
-as for the acpidump, I seem
-to be hitting some error trying
-to dissemble it, so I just grabbed my copy from:
-https://bugzilla.kernel.org/show_bug.cgi?id=14483
+And in that case it is better to remove the "&& p->mm" part of the
+current check.
 
-what/where might I be looking for, for this reboot
-port in the *.dsl?
+Oleg.
 
-Justin P. Mattock
