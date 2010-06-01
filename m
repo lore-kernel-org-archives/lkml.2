@@ -1,57 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752390Ab0FAGBA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Jun 2010 02:01:00 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:49741 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751671Ab0FAGA6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Jun 2010 02:00:58 -0400
-Date: Tue, 1 Jun 2010 16:00:50 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-       Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Subject: linux-next: build failure after merge of the hwpoison tree
-Message-Id: <20100601160050.91404d78.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Tue__1_Jun_2010_16_00_50_+1000_xsnyU_jkT4ionoZc"
+	id S1752264Ab0FAGEn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Jun 2010 02:04:43 -0400
+Received: from fallback.mail.elte.hu ([157.181.151.13]:54397 "EHLO
+	fallback.mail.elte.hu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751669Ab0FAGEl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Jun 2010 02:04:41 -0400
+Date: Tue, 1 Jun 2010 08:04:33 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Randy Dunlap <randy.dunlap@oracle.com>
+Cc: akpm@linux-foundation.org, Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
+       Mauro Carvalho Chehab <mchehab@infradead.org>,
+       linux-kernel@vger.kernel.org, linux-media@vger.kernel.org
+Subject: Re: [PATCH -mmotm] media: ak881x needs slab.h
+Message-ID: <20100601060433.GA24396@elte.hu>
+References: <201005192341.o4JNf5Hv012931@imap1.linux-foundation.org>
+ <20100520140823.a9b81de9.randy.dunlap@oracle.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100520140823.a9b81de9.randy.dunlap@oracle.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
+	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__1_Jun_2010_16_00_50_+1000_xsnyU_jkT4ionoZc
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
 
-Hi Andi,
+* Randy Dunlap <randy.dunlap@oracle.com> wrote:
 
-After merging the hwpoison tree, today's linux-next build (x86_64
-allmodconfig) failed like this:
+> From: Randy Dunlap <randy.dunlap@oracle.com>
+> 
+> Add slab.h to fix ak881x build:
+> 
+> drivers/media/video/ak881x.c:265:error: implicit declaration of function 'kzalloc'
+> drivers/media/video/ak881x.c:265:warning: assignment makes pointer from integer without a cast
+> drivers/media/video/ak881x.c:283:error: implicit declaration of function 'kfree'
+> 
+> Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
+> Cc: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+> Cc: Mauro Carvalho Chehab <mchehab@infradead.org>
+> ---
+>  drivers/media/video/ak881x.c |    1 +
 
-ERROR: "PageHuge" [mm/hwpoison-inject.ko] undefined!
+This build bug is now triggering in .35-rc1 as well.
 
-Caused by commit 0bfc18afbf46bf2d93d55ec64501fff17067a1c2 ("HWPOISON,
-hugetlb: support hwpoison injection for hugepage").
-
-I have used the hwpoison tree from next-20100531 for today.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
-
---Signature=_Tue__1_Jun_2010_16_00_50_+1000_xsnyU_jkT4ionoZc
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iEYEARECAAYFAkwEohIACgkQjjKRsyhoI8w0MwCfZjlGCblNEkwJrFVn1IMb4Cvy
-RJgAoJBd4QRosd9D/OscBFohzZ6HCdC4
-=GA01
------END PGP SIGNATURE-----
-
---Signature=_Tue__1_Jun_2010_16_00_50_+1000_xsnyU_jkT4ionoZc--
+	Ingo
