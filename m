@@ -1,65 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757078Ab0FAPxi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Jun 2010 11:53:38 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:39387 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755601Ab0FAPxg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Jun 2010 11:53:36 -0400
-Date: Tue, 1 Jun 2010 08:49:33 -0700 (PDT)
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Daniel J Blueman <daniel.blueman@gmail.com>,
-       Akinobu Mita <akinobu.mita@gmail.com>,
-       Andrew Morton <akpm@linux-foundation.org>
-cc: Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [2.6.35-rc1, patch] fix cpu_chain section mismatch...
-In-Reply-To: <AANLkTilnTVvZOw-bIpcKS0VwhlpYWnnxvOevNv67hnga@mail.gmail.com>
-Message-ID: <alpine.LFD.2.00.1006010842350.3637@i5.linux-foundation.org>
-References: <AANLkTilnTVvZOw-bIpcKS0VwhlpYWnnxvOevNv67hnga@mail.gmail.com>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S1757115Ab0FAPyf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Jun 2010 11:54:35 -0400
+Received: from cantor.suse.de ([195.135.220.2]:60309 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755601Ab0FAPyd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Jun 2010 11:54:33 -0400
+Date: Tue, 1 Jun 2010 17:54:17 +0200
+From: Jan Kara <jack@suse.cz>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Dave Chinner <david@fromorbit.com>, linux-kernel@vger.kernel.org,
+       xfs@oss.sgi.com, linux-fsdevel@vger.kernel.org,
+       linux-ext4@vger.kernel.org, tytso@mit.edu, jens.axboe@oracle.com
+Subject: Re: [PATCH 6/6] writeback: limit write_cache_pages integrity
+ scanning to current EOF
+Message-ID: <20100601155417.GA7425@quack.suse.cz>
+References: <1274784852-30502-1-git-send-email-david@fromorbit.com>
+ <1274784852-30502-7-git-send-email-david@fromorbit.com>
+ <20100527143341.d4258798.akpm@linux-foundation.org>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100527143341.d4258798.akpm@linux-foundation.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-On Tue, 1 Jun 2010, Daniel J Blueman wrote:
->
-> In 2.6.35-rc1, __cpu_notify access cpu_chain, which shouldn't be
-> marked __cpuinitdata (via section mismatch warning).
-
-Hmm. Does this section mismatch go away if you instead mark cpu_notify(), 
-__cpu_notify() and cpu_notify_nofail as "inline"? Or alternatively, maybe 
-they should all be marked as __ref?
-
-I think the section mismatch started happening when those wrapper 
-functions were created, but all the callers seem to be __ref or __cpuinit. 
-
-Or maybe we should just make that variable be non-cpuinitdata like your 
-patch suggests.
-
-Does anybody have strong preferences (patch appended for reference)?
-
-		Linus
----
-> Signed-off-by: Daniel J Blueman <daniel.blueman@gmail.com>
+On Thu 27-05-10 14:33:41, Andrew Morton wrote:
+> On Tue, 25 May 2010 20:54:12 +1000
+> Dave Chinner <david@fromorbit.com> wrote:
 > 
-> diff --git a/kernel/cpu.c b/kernel/cpu.c
-> index 8b92539..97d1b42 100644
-> --- a/kernel/cpu.c
-> +++ b/kernel/cpu.c
-> @@ -34,7 +34,7 @@ void cpu_maps_update_done(void)
->  	mutex_unlock(&cpu_add_remove_lock);
->  }
+> > From: Dave Chinner <dchinner@redhat.com>
+> > 
+> > sync can currently take a really long time if a concurrent writer is
+> > extending a file. The problem is that the dirty pages on the address
+> > space grow in the same direction as write_cache_pages scans, so if
+> > the writer keeps ahead of writeback, the writeback will not
+> > terminate until the writer stops adding dirty pages.
 > 
-> -static __cpuinitdata RAW_NOTIFIER_HEAD(cpu_chain);
-> +static RAW_NOTIFIER_HEAD(cpu_chain);
+> <looks at Jens>
 > 
->  /* If set, cpu_up and cpu_down will return -EBUSY and do nothing.
->   * Should always be manipulated under cpu_add_remove_lock
-> -- 
-> Daniel J Blueman
+> The really was a pretty basic bug.  It's writeback 101 to test that case :(
+  The code has this live-lock since Nick fixed data integrity issues in
+write_cache_pages which was (digging) commit 05fe478d ("mm:
+write_cache_pages integrity fix") in January 2009. Jens just kept the code
+as it was...
+
+...
+> That being said, I think the patch is insufficient.  If I create an
+> enormous (possibly sparse) file with a 16TB hole (or a run of clean
+> pages) in the middle and then start busily writing into that hole (run
+> of clean pages), the problem will still occur.
 > 
+> One obvious fix for that (a) would be to add another radix-tree tag and
+> do two passes across the radix-tree.
+> 
+> Another fix (b) would be to track the number of dirty pages per
+> adddress_space, and only write that number of pages.
+> 
+> Another fix would be to work out how the code handled this situation
+> before we broke it, and restore that in some fashion.  I guess fix (b)
+> above kinda does that.
+  (b) does not work for data integrity sync (see changelog of the above
+mentioned commit). I was sending a patch doing (a) in February but in
+particular you raised concerns whether it's not too expensive... Since
+it indeed has some cost (although I was not able to measure any performance
+impact) and I didn't know a better solution, I just postponed the patches.
+But I guess it's time to revive the series and maybe we'll get further with
+it.
+
+								Honza
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
