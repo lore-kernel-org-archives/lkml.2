@@ -1,83 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757413Ab0FAVIJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Jun 2010 17:08:09 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:36635 "EHLO mx2.suse.de"
+	id S1757464Ab0FAVKR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Jun 2010 17:10:17 -0400
+Received: from smtp.outflux.net ([198.145.64.163]:42121 "EHLO smtp.outflux.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756081Ab0FAVIG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Jun 2010 17:08:06 -0400
-Subject: Re: Wrong DIF guard tag on ext2 write
-From: James Bottomley <James.Bottomley@suse.de>
-To: Chris Mason <chris.mason@oracle.com>
-Cc: Matthew Wilcox <matthew@wil.cx>,
-       Christof Schmitt <christof.schmitt@de.ibm.com>,
-       Boaz Harrosh <bharrosh@panasas.com>,
-       "Martin K. Petersen" <martin.petersen@oracle.com>,
-       linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
-       linux-fsdevel@vger.kernel.org
-In-Reply-To: <20100601180905.GR8980@think>
-References: <1275318102.2823.47.camel@mulgrave.site>
-	 <4C03D5FD.3000202@panasas.com>
-	 <20100601103041.GA15922@schmichrtp.mainz.de.ibm.com>
-	 <1275398876.21962.6.camel@mulgrave.site> <20100601133341.GK8980@think>
-	 <1275399637.21962.11.camel@mulgrave.site> <20100601134951.GM8980@think>
-	 <20100601162929.GC32708@parisc-linux.org> <20100601164750.GQ8980@think>
-	 <1275411293.21962.387.camel@mulgrave.site>  <20100601180905.GR8980@think>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 01 Jun 2010 16:07:43 -0500
-Message-ID: <1275426463.21962.977.camel@mulgrave.site>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.2 
-Content-Transfer-Encoding: 7bit
+	id S1753192Ab0FAVKO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Jun 2010 17:10:14 -0400
+Date: Tue, 1 Jun 2010 14:07:34 -0700
+From: Kees Cook <kees.cook@canonical.com>
+To: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: Eric Paris <eparis@redhat.com>, Christoph Hellwig <hch@infradead.org>,
+       James Morris <jmorris@namei.org>, linux-kernel@vger.kernel.org,
+       linux-security-module@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+       linux-doc@vger.kernel.org, Randy Dunlap <rdunlap@xenotime.net>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Jiri Kosina <jkosina@suse.cz>, Dave Young <hidave.darkstar@gmail.com>,
+       Martin Schwidefsky <schwidefsky@de.ibm.com>,
+       David Howells <dhowells@redhat.com>, Ingo Molnar <mingo@elte.hu>,
+       Peter Zijlstra <a.p.zijlstra@chello.nl>,
+       "Eric W. Biederman" <ebiederm@xmission.com>,
+       Tim Gardner <tim.gardner@canonical.com>,
+       "Serge E. Hallyn" <serue@us.ibm.com>
+Subject: Re: [PATCH v3] fs: allow protected cross-uid sticky symlinks
+Message-ID: <20100601210734.GD4098@outflux.net>
+References: <20100601185248.GB4098@outflux.net>
+ <20100601190102.GT31073@ZenIV.linux.org.uk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100601190102.GT31073@ZenIV.linux.org.uk>
+Organization: Canonical
+X-HELO: www.outflux.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-06-01 at 14:09 -0400, Chris Mason wrote:
-> On Tue, Jun 01, 2010 at 04:54:53PM +0000, James Bottomley wrote:
-> > On Tue, 2010-06-01 at 12:47 -0400, Chris Mason wrote:
-> > > On Tue, Jun 01, 2010 at 10:29:30AM -0600, Matthew Wilcox wrote:
-> > > > On Tue, Jun 01, 2010 at 09:49:51AM -0400, Chris Mason wrote:
-> > > > > > I agree that a block based retry would close all the holes ... it just
-> > > > > > doesn't look elegant to me that the fs will already be repeating the I/O
-> > > > > > if it changed the page and so will block.
-> > > > > 
-> > > > > We might not ever repeat the IO.  We might change the page, write it,
-> > > > > change it again, truncate the file and toss the page completely.
-> > > > 
-> > > > Why does it matter that it was never written in that case?
-> > > 
-> > > It matters is the storage layer is going to wait around for the block to
-> > > be written again with a correct crc.
+On Tue, Jun 01, 2010 at 08:01:02PM +0100, Al Viro wrote:
+> On Tue, Jun 01, 2010 at 11:52:48AM -0700, Kees Cook wrote:
+> > A long-standing class of security issues is the symlink-based
+> > time-of-check-time-of-use race, most commonly seen in world-writable
+> > directories like /tmp. The common method of exploitation of this flaw
+> > is to cross privilege boundaries when following a given symlink (i.e. a
+> > root process follows a symlink belonging to another user).  For a likely
+> > incomplete list of hundreds of examples across the years, please see:
+> > http://cve.mitre.org/cgi-bin/cvekey.cgi?keyword=/tmp
 > > 
-> > Actually, I wasn't advocating that.  I think block should return a guard
-> > mismatch error.  I think somewhere in filesystem writeout is the place
-> > to decide whether the error was self induced or systematic.
+> > The solution is to permit symlinks to only be followed when outside a sticky
+> > world-writable directory, or when the uid of the symlink and follower match,
+> > or when the directory owner matches the symlink's owner.
+> > 
+> > Some pointers to the history of earlier discussion that I could find:
 > 
-> In that case the io error goes to the async page writeback bio-endio
-> handlers.  We don't have a reference on the inode and no ability to
-> reliably restart the IO, but we can set a bit on the address space
-> indicating that somewhere, sometime in the past we had an IO error.
-> 
-> > For self
-> > induced errors (as long as we can detect them) I think we can just
-> > forget about it ... if the changed page is important, the I/O request
-> > gets repeated (modulo the problem of too great a frequency of changes
-> > leading to us never successfully writing it) or it gets dropped because
-> > the file was truncated or the data deleted for some other reason.
-> 
-> Sorry, how can we tell the errors that are self induced from the evil
-> bit flipping cable induced errors?
+> I don't buy it.  If we are concerned about the symlinks in the middle of
+> pathname, your checks are useless (mkdir /tmp/a, ln -s whatever /tmp/a/b,
+> have victim open /tmp/a/b/something).  If we are not, then your checks are
+> in the wrong place.
 
-We have all the information ... the fs will eventually mark the page
-dirty when it finishes the alterations, we just have to find a way to
-express that.
+Well, that's not traditionally where the problems happen, but I have no
+problem strengthening the protection to include a full examination of the
+entire path looking for sticky/world-writable directories.
 
-If you're thinking of the double fault scenario where the page
-spontaneously corrupts *and* the filesystem alters it, then the only way
-of detecting that is to freeze the page as it undergoes I/O ... which
-involves quite a bit of filesystem surgery, doesn't it?
+If not, what is the right place for the checks?
 
-James
+> "The more we prohibit, the safer we are" is best left to the likes of TSA;
+> if we are really interested in security and not in security theatre or
+> BDSM fetishism, let's make sure that heuristics we use make sense.
 
+I'm not suggesting we remove symlinks.  :)  I don't feel that there is any
+theatre here, since it only eliminates a strictly bad situation.  If there
+are even more strictly bad situations, then we should eliminate those too.
 
+-Kees
+
+-- 
+Kees Cook
+Ubuntu Security Team
