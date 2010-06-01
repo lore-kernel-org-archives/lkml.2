@@ -1,59 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755399Ab0FAIXK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Jun 2010 04:23:10 -0400
-Received: from va3ehsobe004.messaging.microsoft.com ([216.32.180.14]:51738
-	"EHLO VA3EHSOBE004.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1755309Ab0FAIXG (ORCPT
+	id S1755472Ab0FAIXa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Jun 2010 04:23:30 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:63559 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754167Ab0FAIX1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Jun 2010 04:23:06 -0400
-X-SpamScore: -4
-X-BigFish: VPS-4(z78cMzzz1202hzzz32i2a8h62h)
-X-Spam-TCS-SCL: 1:0
-X-WSS-ID: 0L3BTY1-01-R7M-02
-X-M-MSG: 
-Date: Tue, 1 Jun 2010 10:23:05 +0200
-From: Borislav Petkov <borislav.petkov@amd.com>
-To: Dan Carpenter <error27@gmail.com>
-CC: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-       "H. Peter Anvin" <hpa@zytor.com>, <x86@kernel.org>,
-       Dave Jones <davej@redhat.com>, <linux-kernel@vger.kernel.org>,
-       <kernel-janitors@vger.kernel.org>
-Subject: Re: [patch] x86, cacheinfo: dereferences before check
-Message-ID: <20100601082305.GA10650@aftab>
-References: <20100601071126.GF5483@bicker>
+	Tue, 1 Jun 2010 04:23:27 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:mail-followup-to:mime-version
+         :content-type:content-disposition:user-agent;
+        b=bAkKFHMqn7ZhBG9Q//mCBw7ZSFk4lirThE84BetCYC8of8aKuTC6nxHoG1KsIEw8k9
+         1Xvayj4d6a5edrX7uKFlMB6SkS11Ys+FHys3HltUfxtt+XqquB2A4R49PimNSfFwsna7
+         yOCkr/qCaqWs1lAGud+F/GZB3t80lbhxhmqGs=
+Date: Tue, 1 Jun 2010 10:23:11 +0200
+From: Dan Carpenter <error27@gmail.com>
+To: Chris Mason <chris.mason@oracle.com>
+Cc: Yan Zheng <zheng.yan@oracle.com>, Josef Bacik <josef@redhat.com>,
+       Al Viro <viro@zeniv.linux.org.uk>, linux-btrfs@vger.kernel.org,
+       linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
+Subject: [patch] btrfs: uninitialized data is check_path_shared()
+Message-ID: <20100601082311.GM5483@bicker>
+Mail-Followup-To: Dan Carpenter <error27@gmail.com>,
+	Chris Mason <chris.mason@oracle.com>,
+	Yan Zheng <zheng.yan@oracle.com>, Josef Bacik <josef@redhat.com>,
+	Al Viro <viro@zeniv.linux.org.uk>, linux-btrfs@vger.kernel.org,
+	linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100601071126.GF5483@bicker>
-Organization: Advanced Micro Devices =?iso-8859-1?Q?GmbH?=
-	=?iso-8859-1?Q?=2C_Einsteinring_24=2C_85609_Dornach_bei_M=FCnchen=2C_Gesc?=
-	=?iso-8859-1?Q?h=E4ftsf=FChrer=3A_Thomas_M=2E_McCoy=2C_Giuliano_Meroni=2C?=
-	=?iso-8859-1?Q?_Andrew_Bowd=2C_Sitz=3A_Dornach=2C_Gemeinde_Aschheim=2C_La?=
-	=?iso-8859-1?Q?ndkreis_M=FCnchen=2C_Registergericht_M=FCnchen?=
-	=?iso-8859-1?Q?=2C?= HRB Nr. 43632
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Reverse-DNS: ausb3extmailp02.amd.com
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Dan Carpenter <error27@gmail.com>
-Date: Tue, Jun 01, 2010 at 03:11:27AM -0400
+refs can be used with uninitialized data if btrfs_lookup_extent_info()
+fails on the first pass through the loop.  In the original code if that
+happens then check_path_shared() probably returns 1, but with this patch
+it will continue through the loop.
 
-> This moves a couple dereferences after the checks in
-> show_cache_disable() and store_cache_disable().  These were introduced
-> fairly recently in 9350f982e4: "x86, cacheinfo: Reorganize AMD L3 cache
-> structure"
+I'm not super familiar with this code so please look it over carefully.
 
-Yes, this is correct, thanks. However I have a couple of patches which
-rewrite and cleanup this section even more and was waiting for the merge
-window to close before sending out. Stay tuned...
+Signed-off-by: Dan Carpenter <error27@gmail.com>
 
--- 
-Regards/Gruss,
-Boris.
-
-Operating Systems Research Center
-Advanced Micro Devices, Inc.
-
+diff --git a/fs/btrfs/inode.c b/fs/btrfs/inode.c
+index fa6ccc1..9640dae 100644
+--- a/fs/btrfs/inode.c
++++ b/fs/btrfs/inode.c
+@@ -2673,7 +2673,7 @@ static int check_path_shared(struct btrfs_root *root,
+ 	struct extent_buffer *eb;
+ 	int level;
+ 	int ret;
+-	u64 refs;
++	u64 refs = 0;
+ 
+ 	for (level = 0; level < BTRFS_MAX_LEVEL; level++) {
+ 		if (!path->nodes[level])
