@@ -1,107 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932118Ab0FAUjB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Jun 2010 16:39:01 -0400
-Received: from bosmailout14.eigbox.net ([66.96.189.14]:47296 "EHLO
-	bosmailout14.eigbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756665Ab0FAUjA (ORCPT
+	id S932153Ab0FAUjM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Jun 2010 16:39:12 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:44023 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932130Ab0FAUjI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Jun 2010 16:39:00 -0400
-X-Greylist: delayed 1980 seconds by postgrey-1.27 at vger.kernel.org; Tue, 01 Jun 2010 16:39:00 EDT
-X-EN-OrigOutIP: 10.20.18.11
-X-EN-IMPSID: Qk5v1e00H0EKspE01k5vkv
-Message-ID: <4C056831.3020104@jaysonking.com>
-Date: Tue, 01 Jun 2010 15:06:09 -0500
-From: "Jayson R. King" <dev@jaysonking.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.8) Gecko/20100301 Fedora/3.0.3-1.fc11 Thunderbird/3.0.3
-MIME-Version: 1.0
-To: tytso@mit.edu
-CC: "Jayson R. King" <dev@jaysonking.com>, Stable team <stable@kernel.org>,
-       LKML <linux-kernel@vger.kernel.org>,
-       Greg Kroah-Hartman <gregkh@suse.de>,
-       "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
-       Dave Chinner <david@fromorbit.com>,
-       Ext4 Developers List <linux-ext4@vger.kernel.org>,
-       Kay Diederichs <Kay.Diederichs@uni-konstanz.de>
-Subject: Re: [PATCH 2.6.27.y 1/3] ext4: Use our own write_cache_pages()
-References: <4C001888.8020006@jaysonking.com> <4C0018E1.5060007@jaysonking.com> <20100529004913.GL26177@thunk.org> <4C0070D8.8060500@jaysonking.com> <20100530212502.GQ26177@thunk.org>
-In-Reply-To: <20100530212502.GQ26177@thunk.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	Tue, 1 Jun 2010 16:39:08 -0400
+Date: Tue, 1 Jun 2010 13:38:51 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Daniel Mack <daniel@caiaq.de>
+Cc: Hemanth V <hemanthv@ti.com>, linux-kernel@vger.kernel.org,
+       linux-omap@vger.kernel.org, Jonathan Cameron <jic23@cam.ac.uk>,
+       Wolfram Sang <w.sang@pengutronix.de>
+Subject: Re: [PATCH V2] misc : ROHM BH1780GLI Ambient light sensor Driver
+Message-Id: <20100601133851.76adbe17.akpm@linux-foundation.org>
+In-Reply-To: <20100601202715.GV2695@buzzloop.caiaq.de>
+References: <39216.10.24.255.17.1274699065.squirrel@dbdmail.itg.ti.com>
+	<20100601131244.7164b43c.akpm@linux-foundation.org>
+	<20100601202715.GV2695@buzzloop.caiaq.de>
+X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-EN-UserInfo: 06af1bc540adb20c3d2d7097199478a6:08dd1976e651f6e3791fbe97eaa5f898
-X-EN-AuthUser: jaysonking@jaysonking.com
-X-EN-OrigIP: 68.93.139.172
-X-EN-OrigHost: unknown
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/30/2010 04:25 PM, tytso@mit.edu wrote:
-> Ah, OK.  So I understand the motivation now, and that's a valid
-> concern.  The question is now: how much the goal of the 2.6.27 stable
-> branch to fix bugs, and how much is it to get the best possible
-> performance, at least with respect to ext4?  It's going to be harder
-> and harder to backport fixes to 2.6.27, and I can speak from
-> experience that it's very easy to introduce regressions while trying
-> to do backports, since sometimes an individual upstream commit can end
-> up introducing a regression, and while we do try to document
-> regression fixes in later commits, sometimes the documentation isn't
-> complete.
+On Tue, 1 Jun 2010 22:27:15 +0200
+Daniel Mack <daniel@caiaq.de> wrote:
 
-Apologies for not making the motivation for these patches more clear. 
-The first two of these three patches really only exist as support for 
-the last one, which fixes the deadlock that I was really concerned 
-about. That was the same motivation for the earlier 11 patches I sent. 
-While the other patches may fix some real bugs on .27, that wasn't my 
-goal. So I won't be offering to send any more ext4-related fixes to 
-.27.y either unless it is for something really serious.
+> On Tue, Jun 01, 2010 at 01:12:44PM -0700, Andrew Morton wrote:
+> > On Mon, 24 May 2010 16:34:25 +0530 (IST)
+> > "Hemanth V" <hemanthv@ti.com> wrote:
+> > 
+> > > This patch adds support for ROHM BH1780GLI Ambient light sensor.
+> > > 
+> > > BH1780 supports I2C interface. Driver supports read/update of power state and
+> > > read of lux value (through SYSFS). Writing value 3 to power_state enables the
+> > > sensor and current lux value could be read.
+> > 
+> > There are at least two other ambient light sensor drivers:
+> > drivers/misc/isl29003.c and drivers/misc/tsl2550.c.
+> > 
+> > Is there any standardisation of the ABIs whcih these drivers offer?  If
+> > so, does this new driver comply with that?
+> 
+> Jonathan proposed the ALS framework for these type of devices, but it
+> was rejected (don't know about the reasons, I didn't follow the
+> discussions). The new idea is to put such drivers in the industrial IO
+> subsystem, but I don't know how mature that approach is currently.
+> 
+> For the time being, these drivers cook up whatever sysfs interface they
+> like, and their userspace ABIs are not standardized, unfortunately.
 
-I considered carefully whether to send the patches as they are now, but 
-the alternative would be to re-work the fix in the last patch, which I 
-didn't want to tackle, for fear of getting it wrong.
+Well can we fix that?  Look at the existing drivers, pick one and make
+this new driver provide the same interface?
 
-> I just spent the better part of a day trying to fix up a backport
-> series for 2.6.32.  When I was engaged in this particular exercise, it
-> turns out a particular commit to fix a quota deadlock introduced a
-> regression, and the fix to that introduced yet another, and there were
-> three or four patches that all needed to be pulled in at once.  Except
-> initially I missed one, and that caused an i_blocks corruption issue
-> when using fallocate() that took me several hours and a reverse
-> git-bisection to find.  (And this is one set of fixes that will
-> probably never be able to go into 2.6.27.y, since these changes also
-> interlock with probably a dozen or so quota changes that have also
-> gone in over the last couple of kernel releases.)
-
-The concern is understandable, and I agree that .27.y is no longer a 
-good candidate for receiving noncritical ext4 fixes.
-
-> I'll also add that simply testing using dbench, as you said you used
-> in another e-mail message, really isn't good enough to find all
-> possible regressions (it wouldn't have found the i_blocks corruption
-> problem in my initial set of 2.6.32 ext4 backports patches, for
-> example, since dbench only tests a very limited set of fs operations,
-> which doesn't include fallocate, or quotas, or mmap for that matter.)
->
-> What I would recommend is using the XFSQA (also sometimes known
-> xfstests) test suite to make sure that your changes are sound.  Dbench
-> will sometimes find issues, yes, but in my experience it's not the
-> best tool.  The fsstress program, which is called in a number of
-> different configurations by xfstests, has found all sorts of problems
-> that other thing shaven't been able to find.  Run it on at least a
-> 2-core system, or preferably a 4-core or 8-core system if you have it.
-> I generally run tests using both 4k and 1k blocksize file systems to
-> make sure there aren't problems where the fs blocksize is less than
-> the pagesize.
->
-> If you are willing to take on the support burden of ext4 for 2.6.27,
-> and do a lot of testing, I at least wouldn't have any objection to
-> these patches.  It's really a question of risk vs. reward for the
-> users of the 2.6.27 stable tree, plus a question of someone willing to
-> take on the support/debugging burden, and how much testing is done to
-> appropriate tilt the risk/reward balance.
-
-Thanks for the tip. I will get xfstests running and report the results 
-in a few days.
-
-Jayson
+It's not a grand plan - more of an incremental baby step, but it's
+better than this random proliferation.
 
