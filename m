@@ -1,87 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754942Ab0FAIQu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Jun 2010 04:16:50 -0400
-Received: from casper.infradead.org ([85.118.1.10]:58057 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752028Ab0FAIQs convert rfc822-to-8bit (ORCPT
+	id S1755257Ab0FAISc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Jun 2010 04:18:32 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:45973 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753104Ab0FAIS3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Jun 2010 04:16:48 -0400
-Subject: Re: [rfc] forked kernel task and mm structures imbalanced on NUMA
-From: Peter Zijlstra <peterz@infradead.org>
-To: Nick Piggin <npiggin@suse.de>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-       Ingo Molnar <mingo@redhat.com>, linux-mm@kvack.org,
-       linux-kernel@vger.kernel.org,
-       Lee Schermerhorn <lee.schermerhorn@hp.com>
-In-Reply-To: <20100601073343.GQ9453@laptop>
-References: <20100601073343.GQ9453@laptop>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Tue, 01 Jun 2010 10:16:42 +0200
-Message-ID: <1275380202.27810.26214.camel@twins>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	Tue, 1 Jun 2010 04:18:29 -0400
+Date: Tue, 1 Jun 2010 04:18:23 -0400
+From: Christoph Hellwig <hch@infradead.org>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Philipp Reisner <philipp.reisner@linbit.com>, drbd-dev@linbit.com,
+       linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+       Julia Lawall <julia@diku.dk>, Al Viro <viro@zeniv.linux.org.uk>,
+       Jens Axboe <jens.axboe@oracle.com>
+Subject: Re: linux-next: manual merge of the drbd tree with Linus' tree
+Message-ID: <20100601081823.GA29991@infradead.org>
+References: <20100601141324.edf41f7f.sfr@canb.auug.org.au>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100601141324.edf41f7f.sfr@canb.auug.org.au>
+User-Agent: Mutt/1.5.19 (2009-01-05)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-06-01 at 17:33 +1000, Nick Piggin wrote:
-> Another problem I found when testing this patch is that the scheduler
-> has some issues of its own when balancing. This is improved by
-> traversing the sd groups starting from a different spot each time, so
-> processes get sprinkled around the nodes a bit better.
+On Tue, Jun 01, 2010 at 02:13:24PM +1000, Stephen Rothwell wrote:
+> Hi all,
+> 
+> Today's linux-next merge of the drbd tree got a conflict in fs/pipe.c
+> between commit cc967be54710d97c05229b2e5ba2d00df84ddd64 ("fs: Add missing
+> mutex_unlock") from Linus' tree and commits
+> 0191f8697bbdfefcd36e7b8dc3eeddfe82893e4b ("pipe: F_SETPIPE_SZ should
+> return -EPERM for non-root") and b9598db3401282bb27b4aef77e3eee12015f7f29
+> ("pipe: make F_{GET,SET}PIPE_SZ deal with byte sizes") from the drbd tree.
+> 
+> I fixed it up (see below) and can carry the fix for a while.
 
-Right, makes sense. And I think we could merge that group iteration
-without much problems.
-
-Your alternative placement for sched_exec() seems to make sense too, the
-earlier we do that the better the memory allocations will be.
-
-Your changes to sched_fork() and wake_up_new_task() made my head hurt a
-bit -- but that's not your fault. I'm not quite sure why you're changing
-that though.
-
-The addition of sched_fork_suggest_cpu() to select a target node seems
-to make sense, but since you then call fork balancing a second time we
-have a chance of ending up on a totally different node all together.
-
-So I think it would make sense to rework the fork balancing muck to be
-called only once and stick with its decision.
-
-One thing that would make the whole fork path much easier is fully
-ripping out that child_runs_first mess for CONFIG_SMP, I think its been
-disabled by default for long enough, and its always been broken in the
-face of fork balancing anyway.
-
-So basically we have to move fork balancing back to sched_fork(), I'd
-have to again look at wth happens to ->cpus_allowed, but I guess it
-should be fixable, and I don't think we should care overly much about
-cpu-hotplug.
-
-
-A specific code comment:
-
-> @@ -2550,14 +2561,16 @@ void wake_up_new_task(struct task_struct
->          * We set TASK_WAKING so that select_task_rq() can drop rq->lock
->          * without people poking at ->cpus_allowed.
->          */
-> -       cpu = select_task_rq(rq, p, SD_BALANCE_FORK, 0);
-> -       set_task_cpu(p, cpu);
-> -
-> -       p->state = TASK_RUNNING;
-> -       task_rq_unlock(rq, &flags);
-> +       if (!cpumask_test_cpu(cpu, &p->cpus_allowed)) {
-> +               p->state = TASK_WAKING;
-> +               cpu = select_task_rq(rq, p, SD_BALANCE_FORK, 0);
-> +               set_task_cpu(p, cpu);
-> +               p->state = TASK_RUNNING;
-> +               task_rq_unlock(rq, &flags);
-> +               rq = task_rq_lock(p, &flags);
-> +       }
->  #endif
-
-That's iffy because p->cpus_allowed isn't stable when we're not holding
-the task's current rq->lock or p->state is not TASK_WAKING.
-
+Why is the drbd tree touching fs/pipe.c anyway?
 
