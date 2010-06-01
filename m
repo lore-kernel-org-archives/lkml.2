@@ -1,102 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754168Ab0FADNy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 May 2010 23:13:54 -0400
-Received: from mail-yw0-f179.google.com ([209.85.211.179]:62269 "EHLO
-	mail-yw0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753880Ab0FADNw convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 May 2010 23:13:52 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=jItjXfh1AyblHWC4P8TFfYyiUCIyHlB70sefO3ZoT2hHHl7ScMsDG/VDiG0AT8lVEY
-         /GvXgZPryZ6my4kkcFvdZy2JxDehbMtep5I5V7X0OVZ0dFacIjPaV9/6iQqLK7GBcgOv
-         eCRPI3zcKBtab6UPEca2pAR9IfSNCf/VhqrgA=
+	id S1754193Ab0FADPO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 May 2010 23:15:14 -0400
+Received: from mail.tmr.com ([64.65.253.246]:51415 "EHLO partygirl.tmr.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753837Ab0FADPM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 31 May 2010 23:15:12 -0400
+Message-ID: <4C047B38.9050506@tmr.com>
+Date: Mon, 31 May 2010 23:15:04 -0400
+From: Bill Davidsen <davidsen@tmr.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.8.1.21) Gecko/20090507 Fedora/1.1.16-1.fc9 NOT Firefox/3.0.11 SeaMonkey/1.1.16
 MIME-Version: 1.0
-In-Reply-To: <AANLkTil6y3F1RDZaNwKS1FZB_Nrl_meFxIR2XzMoqCO7@mail.gmail.com>
-References: <AANLkTinmBxzM4IEgrY6gqokDhLJDrVyKd0cu75VaFR8Q@mail.gmail.com>
-	<4C04496E.3000303@gmail.com>
-	<AANLkTil6y3F1RDZaNwKS1FZB_Nrl_meFxIR2XzMoqCO7@mail.gmail.com>
-Date: Mon, 31 May 2010 21:13:51 -0600
-Message-ID: <AANLkTilQQrWX-wUiw_835x6KxRM_9xAV_z58Fu0IgqY2@mail.gmail.com>
-Subject: Re: resource piix4_smbus conflicts with ACPI region SMRG
-From: Robert Hancock <hancockrwd@gmail.com>
-To: Richard Tillmore <rtillmore@gmail.com>
-Cc: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: Robert Hancock <hancockrwd@gmail.com>
+CC: alex.buell@munted.org.uk,
+       Mailing Lists - Kernel Developers 
+	<linux-kernel@vger.kernel.org>,
+       Dave Airlie <airlied@gmail.com>
+Subject: Re: Article in Phoronix about loss of performance in 2.6.35 release
+ candidates
+References: <1275347969.29006.5.camel@lithium.local.net> <4C0448B5.7090904@gmail.com>
+In-Reply-To: <4C0448B5.7090904@gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 31, 2010 at 8:36 PM, Richard Tillmore <rtillmore@gmail.com> wrote:
-> On Mon, May 31, 2010 at 6:42 PM, Robert Hancock wrote:
->> On 05/31/2010 04:12 PM, Richard wrote:
->>>
->>> I upgraded to 2.6.34-rc6 and noticed a few new messages in dmesg.  I
->>> then installed 2.6.34 and the messages remain.
->>>
->>> PCI: Ignoring host bridge windows from ACPI; if necessary, use
->>> "pci=use_crs" and report a bug
->>> ACPI: PCI Root Bridge [PCI0] (0000:00)
+Robert Hancock wrote:
+> On 05/31/2010 05:19 PM, Alex Buell wrote:
+>> http://www.phoronix.com/vr.php?view=14976
 >>
->> This is just an informational message.
->>
->>>
->>> ACPI: resource piix4_smbus [io  0x0440-0x0447] conflicts with ACPI
->>> region SMRG [??? 0x00000440-0x0000044f flags 0x47]
->>> ACPI: If an ACPI driver is available for this device, you should use
->>> it instead of the native driver
->>>
->>> The system is a Tyan Tiger S1832 motherboard with a P3 850Mhz
->>> processor running the latest bios.  Everything appears to work
->>> properly so I am unsure what the messages mean beyond the obvious.  I
->>> did a little research and was wondering if this is related to the no
->>> bootmem patches.  I have:
->>
->> Unless you need to use anything on SMBus (hardware sensors, essentially) you
->> don't have to worry about that one. It means that the kernel has detected
->> that the BIOS may potentially access the SMBus controller which may conflict
->> with usage of the controller from within the OS.
->
-> I do use the lm78 sensor driver:
-> lm78: Found an LM79 chip at 0x290
-> and the Xsensors seem to work, the voltages and fan speeds change.
->
-> But you are correct the lm75 driver isn't loading so I am not getting
-> my cpu temperature.
->
-> In 2.6.30.9 I have:
-> Driver `lm78'
->  Detects correctly:
->  * Bus `SMBus PIIX4 adapter at 0440'
->    Busdriver `i2c-piix4', I2C address 0x2d
->    ISA bus, address 0x290
->    Chip `National Semiconductor LM79' (confidence: 6)
->
-> Driver `lm75'
->  Detects correctly:
->  * Bus `SMBus PIIX4 adapter at 0440'
->    Busdriver `i2c-piix4', I2C address 0x4c
->    Chip `National Semiconductor LM75' (confidence: 6)
->  * Bus `SMBus PIIX4 adapter at 0440'
->    Busdriver `i2c-piix4', I2C address 0x4d
->    Chip `National Semiconductor LM75' (confidence: 6)
->
-> In 2.6.34 I get:
-> Driver `lm78'
->  Detects correctly:
->  * ISA bus, address 0x290
->    Chip `National Semiconductor LM79' (confidence: 6)
->
-> So this is a regression.
+>> Question: Why?
+> 
+> Good question.. I guess it would too much to ask of them to try to 
+> figure out what area the problem lies in (even to the point of figuring 
+> out if it's a CPU or IO-bound problem), or try to bisect, or at least 
+> report it to LKML before going to the trouble of creating 5 pages of 
+> graphs.. Given the 20x slowdown in some of the benchmarks you'd think it 
+> wouldn't be too hard to narrow down.
 
-You should be able to use acpi_enforce_resources=lax on the kernel
-command line to allow the driver to load. The problem is that the
-kernel can't tell if it's safe to allow a driver to access that
-hardware since it may conflict with BIOS access (in some cases this
-can cause serious problems like system overheating or spurious thermal
-shutdowns if the BIOS also accesses the device to perform thermal
-management) and so the default is to not allow it.
+That's true, but 20x should be too hard for people to detect when they do QA 
+after creating a patch, before sending it to LKML in the first place, either. If 
+such a regression made it to an -rc1 then it really is kind of a big deal. Of 
+course Phoronics running the tests on netbook processors is probably a good 
+thing, I doubt many developers and testers are compiling kernels on a rig like 
+that, or doing much of anything else demanding.
+
+I guess I would expect people to react with dismay to the fact that such a 
+problem made it undetected to rc stage, but perhaps I have too much respect for 
+developers. This looks more like "how dare they not keep it quiet and just tell 
+us" indignation. In the end I doubt it makes a lot of difference, if someone 
+posted to LKML and Slashdot picked it up, be sure it would have hit the media 
+anyway.
+
+Should any media keep a defect quiet when they make their living informing the 
+readers? I see a lot of glee among Linux users every few days when a new Windows 
+bug becomes public. Phoronics tested and reported, why is that less honorable 
+than Tom's Hardware telling us a new CPU sucks?
+
+
+-- 
+Bill Davidsen <davidsen@tmr.com>
+   "We have more to fear from the bungling of the incompetent than from
+the machinations of the wicked."  - from Slashdot
