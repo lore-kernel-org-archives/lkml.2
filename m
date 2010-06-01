@@ -1,61 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756877Ab0FANwU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Jun 2010 09:52:20 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:24481 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755885Ab0FANwS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Jun 2010 09:52:18 -0400
-To: James Bottomley <James.Bottomley@suse.de>
-Cc: Chris Mason <chris.mason@oracle.com>,
-       Christof Schmitt <christof.schmitt@de.ibm.com>,
-       Boaz Harrosh <bharrosh@panasas.com>,
-       "Martin K. Petersen" <martin.petersen@oracle.com>,
-       linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
-       linux-fsdevel@vger.kernel.org
-Subject: Re: Wrong DIF guard tag on ext2 write
-From: "Martin K. Petersen" <martin.petersen@oracle.com>
-Organization: Oracle
-References: <20100531112817.GA16260@schmichrtp.mainz.de.ibm.com>
-	<yq1iq64kv9f.fsf@sermon.lab.mkp.net>
-	<1275318102.2823.47.camel@mulgrave.site>
-	<4C03D5FD.3000202@panasas.com>
-	<20100601103041.GA15922@schmichrtp.mainz.de.ibm.com>
-	<1275398876.21962.6.camel@mulgrave.site> <20100601133341.GK8980@think>
-	<1275399637.21962.11.camel@mulgrave.site>
-Date: Tue, 01 Jun 2010 09:50:29 -0400
-In-Reply-To: <1275399637.21962.11.camel@mulgrave.site> (James Bottomley's
-	message of "Tue, 01 Jun 2010 08:40:37 -0500")
-Message-ID: <yq1hblmkgka.fsf@sermon.lab.mkp.net>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-X-Auth-Type: Internal IP
-X-Source-IP: rcsinet13.oracle.com [148.87.113.125]
-X-CT-RefId: str=0001.0A090203.4C05108A.00EA:SCFMA4539811,ss=1,fgs=0
+	id S1756896Ab0FANxR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Jun 2010 09:53:17 -0400
+Received: from poutre.nerim.net ([62.4.16.124]:53172 "EHLO poutre.nerim.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755020Ab0FANxO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Jun 2010 09:53:14 -0400
+Date: Tue, 1 Jun 2010 15:53:10 +0200
+From: Jean Delvare <khali@linux-fr.org>
+To: Wolfram Sang <w.sang@pengutronix.de>
+Cc: linux-i2c@vger.kernel.org, George Joseph <george.joseph@fairview5.com>,
+       Riku Voipio <riku.voipio@iki.fi>,
+       Guillaume Ligneul <guillaume.ligneul@gmail.com>,
+       "Ben Dooks (embedded platforms)" <ben-linux@fluff.org>,
+       Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+       Alessandro Rubini <rubini@cvml.unipv.it>,
+       Richard Purdie <rpurdie@rpsys.net>, Colin Leroy <colin@colino.net>,
+       Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+       Mauro Carvalho Chehab <mchehab@infradead.org>,
+       Samuel Ortiz <sameo@linux.intel.com>,
+       Mark Brown <broonie@opensource.wolfsonmicro.com>,
+       David Woodhouse <dwmw2@infradead.org>,
+       Liam Girdwood <lrg@slimlogic.co.uk>,
+       Paul Gortmaker <p_gortmaker@yahoo.com>,
+       Alessandro Zummo <a.zummo@towertech.it>,
+       Greg Kroah-Hartman <gregkh@suse.de>, lm-sensors@lm-sensors.org,
+       linux-kernel@vger.kernel.org, linux-input@vger.kernel.org,
+       linuxppc-dev@ozlabs.org, linux-media@vger.kernel.org,
+       linux-mtd@lists.infradead.org, rtc-linux@googlegroups.com,
+       devel@driverdev.osuosl.org
+Subject: Re: [PATCH] drivers: remove all i2c_set_clientdata(client, NULL)
+Message-ID: <20100601155310.3781fce6@hyperion.delvare>
+In-Reply-To: <1275310552-14685-1-git-send-email-w.sang@pengutronix.de>
+References: <1275310552-14685-1-git-send-email-w.sang@pengutronix.de>
+X-Mailer: Claws Mail 3.5.0 (GTK+ 2.14.4; i586-suse-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>>>> "James" == James Bottomley <James.Bottomley@suse.de> writes:
+On Mon, 31 May 2010 14:55:48 +0200, Wolfram Sang wrote:
+> I2C-drivers can use the clientdata-pointer to point to private data. As I2C
+> devices are not really unregistered, but merely detached from their driver, it
+> used to be the drivers obligation to clear this pointer during remove() or a
+> failed probe(). As a couple of drivers forgot to do this, it was agreed that it
+> was cleaner if the i2c-core does this clearance when appropriate, as there is
+> no guarantee for the lifetime of the clientdata-pointer after remove() anyhow.
+> This feature was added to the core with commit
+> e4a7b9b04de15f6b63da5ccdd373ffa3057a3681 to fix the faulty drivers.
+> 
+> As there is no need anymore to clear the clientdata-pointer, remove all current
+> occurrences in the drivers to simplify the code and prevent confusion.
+> 
+> Signed-off-by: Wolfram Sang <w.sang@pengutronix.de>
+> Cc: Jean Delvare <khali@linux-fr.org>
+> (...)
 
-James> Would it be too much work in the fs to mark the page dirty before
-James> you begin altering it (and again after you finish, just in case
-James> some cleaner noticed and initiated a write)?  Or some other flag
-James> that indicates page under modification?  All the process
-James> controlling the writeout (which is pretty high up in the stack)
-James> needs to know is if we triggered the check error by altering the
-James> page while it was in flight.
-
-James> I agree that a block based retry would close all the holes ... it
-James> just doesn't look elegant to me that the fs will already be
-James> repeating the I/O if it changed the page and so will block.
-
-I experimented with this approach a while back.  However, I quickly got
-into a situation where frequently updated blocks never made it to disk
-because the page was constantly being updated.  And all writes failed
-with a guard tag error.
+Applied, thanks. Will go to Linus in the next few days.
 
 -- 
-Martin K. Petersen	Oracle Linux Engineering
+Jean Delvare
