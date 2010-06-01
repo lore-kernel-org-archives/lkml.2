@@ -1,100 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756193Ab0FANFh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Jun 2010 09:05:37 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:42574 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756045Ab0FANFf (ORCPT
+	id S1756250Ab0FANGQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Jun 2010 09:06:16 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:50827 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756045Ab0FANGO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Jun 2010 09:05:35 -0400
-Date: Tue, 1 Jun 2010 09:03:25 -0400
-From: Chris Mason <chris.mason@oracle.com>
-To: Christof Schmitt <christof.schmitt@de.ibm.com>
-Cc: Boaz Harrosh <bharrosh@panasas.com>,
-       James Bottomley <James.Bottomley@suse.de>,
-       "Martin K. Petersen" <martin.petersen@oracle.com>,
-       linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
-       linux-fsdevel@vger.kernel.org
-Subject: Re: Wrong DIF guard tag on ext2 write
-Message-ID: <20100601130325.GG8980@think>
-Mail-Followup-To: Chris Mason <chris.mason@oracle.com>,
-	Christof Schmitt <christof.schmitt@de.ibm.com>,
-	Boaz Harrosh <bharrosh@panasas.com>,
-	James Bottomley <James.Bottomley@suse.de>,
-	"Martin K. Petersen" <martin.petersen@oracle.com>,
-	linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
-	linux-fsdevel@vger.kernel.org
-References: <20100531112817.GA16260@schmichrtp.mainz.de.ibm.com>
- <yq1iq64kv9f.fsf@sermon.lab.mkp.net>
- <1275318102.2823.47.camel@mulgrave.site>
- <4C03D5FD.3000202@panasas.com>
- <20100601103041.GA15922@schmichrtp.mainz.de.ibm.com>
+	Tue, 1 Jun 2010 09:06:14 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:date:message-id:subject:from:to:content-type;
+        b=YBVaCqACG1p1yykM8+hCu5KvWvA4/LmX4H6/MwVEQYrjkPFXDqZT0DnvdyyxNpOIuL
+         Ew1VbE5cSPhykVMawn0eQrl/B9m+gFXPBr4wMoQn9hXWxFkCZM1qkY3CrwdqmhGbjhKV
+         xv6dGe1/sqvrurbbopbPQ+cXPIi10th+nRk7w=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100601103041.GA15922@schmichrtp.mainz.de.ibm.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Auth-Type: Internal IP
-X-Source-IP: acsinet15.oracle.com [141.146.126.227]
-X-CT-RefId: str=0001.0A090202.4C050594.0056:SCFMA922111,ss=1,fgs=0
+Date: Tue, 1 Jun 2010 14:06:13 +0100
+Message-ID: <AANLkTinNygSdXsg3vAVRHttAMh6nX4tauNKn3XnfQC_x@mail.gmail.com>
+Subject: Re: [PATCH] RCU: don't turn off lockdep when find suspicious 
+	rcu_dereference_check() usage
+From: Daniel J Blueman <daniel.blueman@gmail.com>
+To: paulmck@linux.vnet.ibm.com, Linux Kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 01, 2010 at 12:30:42PM +0200, Christof Schmitt wrote:
-> On Mon, May 31, 2010 at 06:30:05PM +0300, Boaz Harrosh wrote:
-> > On 05/31/2010 06:01 PM, James Bottomley wrote:
-> > > On Mon, 2010-05-31 at 10:20 -0400, Martin K. Petersen wrote:
-> > >>>>>>> "Christof" == Christof Schmitt <christof.schmitt@de.ibm.com> writes:
-> > >>
-> > >> Christof> Since the guard tags are created in Linux, it seems that the
-> > >> Christof> data attached to the write request changes between the
-> > >> Christof> generation in bio_integrity_generate and the call to
-> > >> Christof> sd_prep_fn.
-> > >>
-> > >> Yep, known bug.  Page writeback locking is messed up for buffer_head
-> > >> users.  The extNfs folks volunteered to look into this a while back but
-> > >> I don't think they have found the time yet.
-> > >>
-> > >>
-> > >> Christof> Using ext3 or ext4 instead of ext2 does not show the problem.
-> > >>
-> > >> Last I looked there were still code paths in ext3 and ext4 that
-> > >> permitted pages to be changed during flight.  I guess you've just been
-> > >> lucky.
-> > > 
-> > > Pages have always been modifiable in flight.  The OS guarantees they'll
-> > > be rewritten, so the drivers can drop them if it detects the problem.
-> > > This is identical to the iscsi checksum issue (iscsi adds a checksum
-> > > because it doesn't trust TCP/IP and if the checksum is generated in
-> > > software, there's time between generation and page transmission for the
-> > > alteration to occur).  The solution in the iscsi case was not to
-> > > complain if the page is still marked dirty.
-> > > 
-> > 
-> > And also why RAID1 and RAID4/5/6 need the data bounced. I wish VFS
-> > would prevent data writing given a device queue flag that requests
-> > it. So all these devices and modes could just flag the VFS/filesystems
-> > that: "please don't allow concurrent writes, otherwise I need to copy data"
-> > 
-> > From what Chris Mason has said before, all the mechanics are there, and it's
-> > what btrfs is doing. Though I don't know how myself?
-> 
-> I also tested with btrfs and invalid guard tags in writes have been
-> encountered as well (again in 2.6.34). The only difference is that no
-> error was reported to userspace, although this might be a
-> configuration issue.
+Hi Paul,
 
-This would be a btrfs bug.  We have strict checks in place that are
-supposed to prevent buffers changing while in flight.  What was the
-workload that triggered this problem?
+With 2.6.35-rc1 and your patch in the context below, we still see
+"include/linux/cgroup.h:534 invoked rcu_dereference_check() without
+protection!", so need this additional patch:
 
-> 
-> What is the best strategy to continue with the invalid guard tags on
-> write requests? Should this be fixed in the filesystems?
-> 
+Acquire read-side RCU lock around task_group() calls, addressing
+"include/linux/cgroup.h:534 invoked rcu_dereference_check() without
+protection!" warning.
 
-Long term, I think the filesystems shouldn't be changing pages in
-flight.  Bouncing just hurts way too much.
+Signed-off-by: Daniel J Blueman <daniel.blueman@gmail.com>
 
--chris
+diff --git a/kernel/sched_fair.c b/kernel/sched_fair.c
+index 217e4a9..50ec9ea 100644
+--- a/kernel/sched_fair.c
++++ b/kernel/sched_fair.c
+@@ -1241,6 +1241,7 @@ static int wake_affine(struct sched_domain *sd,
+struct task_struct *p, int sync)
+ 	 * effect of the currently running task from the load
+ 	 * of the current CPU:
+ 	 */
++	rcu_read_lock();
+ 	if (sync) {
+ 		tg = task_group(current);
+ 		weight = current->se.load.weight;
+@@ -1250,6 +1251,7 @@ static int wake_affine(struct sched_domain *sd,
+struct task_struct *p, int sync)
+ 	}
+
+ 	tg = task_group(p);
++	rcu_read_unlock();
+ 	weight = p->se.load.weight;
+
+ 	imbalance = 100 + (sd->imbalance_pct - 100) / 2;
+
+---
+
+On Wed, Apr 21, 2010 at 02:35:43PM -0700, Paul E. McKenney wrote:
+    On Tue, Apr 20, 2010 at 11:38:28AM -0400, Miles Lane wrote:
+        Excellent. Here are the results on my machine. .config appended.
+    First, thank you very much for testing this, Miles!
+
+And as Tetsuo Handa pointed out privately, my patch was way broken.
+
+Here is an updated version.
+
+Thanx, Paul
+
+commit b15e561ed91b7a366c3cc635026f3b9ce6483070
+Author: Paul E. McKenney <paulmck@xxxxxxxxxxxxxxxxxx>
+Date: Wed Apr 21 14:04:56 2010 -0700
+
+sched: protect __sched_setscheduler() access to cgroups
+
+A given task's cgroups structures must remain while that task is running
+due to reference counting, so this is presumably a false positive.
+Updated to reflect feedback from Tetsuo Handa.
+
+Signed-off-by: Paul E. McKenney <paulmck@xxxxxxxxxxxxxxxxxx>
+
+diff --git a/kernel/sched.c b/kernel/sched.c
+index 14c44ec..f425a2b 100644
+--- a/kernel/sched.c
++++ b/kernel/sched.c
+@@ -4575,9 +4575,13 @@ recheck:
+* Do not allow realtime tasks into groups that have no runtime
+* assigned.
+*/
++ rcu_read_lock();
+if (rt_bandwidth_enabled() && rt_policy(policy) &&
+- task_group(p)->rt_bandwidth.rt_runtime == 0)
++ task_group(p)->rt_bandwidth.rt_runtime == 0) {
++ rcu_read_unlock();
+return -EPERM;
++ }
++ rcu_read_unlock();
+#endif
+
+retval = security_task_setscheduler(p, policy, param);
+-- 
+Daniel J Blueman
