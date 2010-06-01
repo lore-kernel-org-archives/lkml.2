@@ -1,36 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755683Ab0FAJwA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Jun 2010 05:52:00 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:27057 "EHLO mx1.redhat.com"
+	id S1755429Ab0FAJy1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Jun 2010 05:54:27 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:34723 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752775Ab0FAJv7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Jun 2010 05:51:59 -0400
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-In-Reply-To: <1274863421-14052-1-git-send-email-vapier@gentoo.org>
-References: <1274863421-14052-1-git-send-email-vapier@gentoo.org>
-To: Mike Frysinger <vapier@gentoo.org>
-Cc: dhowells@redhat.com, uclinux-dev@uclinux.org,
-       David McCullough <davidm@snapgear.com>, Greg Ungerer <gerg@uclinux.org>,
-       Paul Mundt <lethal@linux-sh.org>,
-       Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] FLAT: fix unmap len in load error path
-Date: Tue, 01 Jun 2010 10:50:55 +0100
-Message-ID: <27142.1275385855@redhat.com>
+	id S1751364Ab0FAJy0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Jun 2010 05:54:26 -0400
+Message-ID: <4C04D98D.4020509@redhat.com>
+Date: Tue, 01 Jun 2010 17:57:33 +0800
+From: Cong Wang <amwang@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100330 Shredder/3.0.4
+MIME-Version: 1.0
+To: Flavio Leitner <fbl@sysclose.org>
+CC: linux-kernel@vger.kernel.org, Matt Mackall <mpm@selenic.com>,
+       netdev@vger.kernel.org, bridge@lists.linux-foundation.org,
+       Andy Gospodarek <gospo@redhat.com>, Neil Horman <nhorman@tuxdriver.com>,
+       Jeff Moyer <jmoyer@redhat.com>,
+       Stephen Hemminger <shemminger@linux-foundation.org>,
+       bonding-devel@lists.sourceforge.net, Jay Vosburgh <fubar@us.ibm.com>,
+       David Miller <davem@davemloft.net>
+Subject: Re: [v5 Patch 1/3] netpoll: add generic support for bridge and bonding
+ devices
+References: <20100505081514.5157.83783.sendpatchset@localhost.localdomain> <20100527180545.GA2345@sysclose.org> <4BFF2EA5.9090008@redhat.com> <20100528194041.GC2345@sysclose.org> <4C034FA4.5000401@redhat.com> <20100531190820.GA24569@sysclose.org>
+In-Reply-To: <20100531190820.GA24569@sysclose.org>
+Content-Type: multipart/mixed;
+ boundary="------------080508020407030406080308"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Mike Frysinger <vapier@gentoo.org> wrote:
+This is a multi-part message in MIME format.
+--------------080508020407030406080308
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 
-> The data chunk is mmaped with 'len' which remains unchanged, so use that
-> when unmapping in the error path rather than trying to recalculate (and
-> incorrectly so) the value used originally.
-> 
-> Signed-off-by: Mike Frysinger <vapier@gentoo.org>
+On 06/01/10 03:08, Flavio Leitner wrote:
+> On Mon, May 31, 2010 at 01:56:52PM +0800, Cong Wang wrote:
+>> Hi, Flavio,
+>>
+>> Please use the attached patch instead, try to see if it solves
+>> all your problems.
+>
+> I tried and it hangs. No backtraces this time.
+> The bond_change_active_slave() prints before NETDEV_BONDING_FAILOVER
+> notification, so I think it won't work.
 
-Acked-by: David Howells <dhowells@redhat.com>
+Ah, I thought the same.
+
+>
+> Please, correct if I'm wrong, but when a failover happens with your
+> patch applied, the netconsole would be disabled forever even with
+> another healthy slave, right?
+>
+
+Yes, this is an easy solution, because bonding has several modes,
+it is complex to make netpoll work in different modes.
+
+Would you like to test the following patch?
+
+Thanks much!
+
+
+--------------080508020407030406080308
+Content-Type: text/x-patch;
+ name="drivers-net-bonding-fix-activebackup-deadlock.diff"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: attachment;
+ filename="drivers-net-bonding-fix-activebackup-deadlock.diff"
+
+diff --git a/drivers/net/bonding/bond_main.c b/drivers/net/bonding/bond_main.c
+index 5e12462..59ade92 100644
+--- a/drivers/net/bonding/bond_main.c
++++ b/drivers/net/bonding/bond_main.c
+@@ -1109,6 +1109,14 @@ void bond_change_active_slave(struct bonding *bond, struct slave *new_active)
+ 	if (old_active == new_active)
+ 		return;
+ 
++	write_unlock_bh(&bond->curr_slave_lock);
++	read_unlock(&bond->lock);
++
++	netdev_bonding_change(bond->dev, NETDEV_BONDING_DESLAVE);
++
++	read_lock(&bond->lock);
++	write_lock_bh(&bond->curr_slave_lock);
++
+ 	if (new_active) {
+ 		new_active->jiffies = jiffies;
+ 
+
+--------------080508020407030406080308--
