@@ -1,33 +1,293 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756400Ab0FASwI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Jun 2010 14:52:08 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:20002 "EHLO mx1.redhat.com"
+	id S1756432Ab0FASyW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Jun 2010 14:54:22 -0400
+Received: from smtp.outflux.net ([198.145.64.163]:38205 "EHLO smtp.outflux.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753044Ab0FASwE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Jun 2010 14:52:04 -0400
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-In-Reply-To: <1275289144-28782-4-git-send-email-fujita.tomonori@lab.ntt.co.jp>
-References: <1275289144-28782-4-git-send-email-fujita.tomonori@lab.ntt.co.jp> <1275289144-28782-1-git-send-email-fujita.tomonori@lab.ntt.co.jp>
-To: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
-Cc: dhowells@redhat.com, akpm@linux-foundation.org, jens.axboe@oracle.com,
-       James.Bottomley@suse.de, linux-kernel@vger.kernel.org,
-       linux-arch@vger.kernel.org
-Subject: Re: [PATCH -mm 3/3] remove needless ISA_DMA_THRESHOLD
-Date: Tue, 01 Jun 2010 19:51:08 +0100
-Message-ID: <4959.1275418268@redhat.com>
+	id S1751768Ab0FASyU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Jun 2010 14:54:20 -0400
+Date: Tue, 1 Jun 2010 11:52:48 -0700
+From: Kees Cook <kees.cook@canonical.com>
+To: Eric Paris <eparis@redhat.com>
+Cc: Christoph Hellwig <hch@infradead.org>, James Morris <jmorris@namei.org>,
+       linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
+       linux-fsdevel@vger.kernel.org, linux-doc@vger.kernel.org,
+       Randy Dunlap <rdunlap@xenotime.net>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Jiri Kosina <jkosina@suse.cz>, Dave Young <hidave.darkstar@gmail.com>,
+       Martin Schwidefsky <schwidefsky@de.ibm.com>,
+       David Howells <dhowells@redhat.com>, Ingo Molnar <mingo@elte.hu>,
+       Peter Zijlstra <a.p.zijlstra@chello.nl>,
+       "Eric W. Biederman" <ebiederm@xmission.com>,
+       Tim Gardner <tim.gardner@canonical.com>,
+       "Serge E. Hallyn" <serue@us.ibm.com>
+Subject: [PATCH v3] fs: allow protected cross-uid sticky symlinks
+Message-ID: <20100601185248.GB4098@outflux.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+Organization: Canonical
+X-HELO: www.outflux.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp> wrote:
+A long-standing class of security issues is the symlink-based
+time-of-check-time-of-use race, most commonly seen in world-writable
+directories like /tmp. The common method of exploitation of this flaw
+is to cross privilege boundaries when following a given symlink (i.e. a
+root process follows a symlink belonging to another user).  For a likely
+incomplete list of hundreds of examples across the years, please see:
+http://cve.mitre.org/cgi-bin/cvekey.cgi?keyword=/tmp
 
-> Architectures don't need to define ISA_DMA_THRESHOLD anymore.
-> 
-> Signed-off-by: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+The solution is to permit symlinks to only be followed when outside a sticky
+world-writable directory, or when the uid of the symlink and follower match,
+or when the directory owner matches the symlink's owner.
 
-Acked-by: David Howells <dhowells@redhat.com>
+Some pointers to the history of earlier discussion that I could find:
+
+ 1996 Aug, Zygo Blaxell
+  http://marc.info/?l=bugtraq&m=87602167419830&w=2
+ 1996 Oct, Andrew Tridgell
+  http://lkml.indiana.edu/hypermail/linux/kernel/9610.2/0086.html
+ 1997 Dec, Albert D Cahalan
+  http://lkml.org/lkml/1997/12/16/4
+ 2005 Feb, Lorenzo Hernández García-Hierro
+  http://lkml.indiana.edu/hypermail/linux/kernel/0502.0/1896.html
+
+Past objections and rebuttals could be summarized as:
+
+ - Violates POSIX.
+   - POSIX didn't consider this situation and it's not useful to follow
+     a broken specification at the cost of security.
+ - Might break unknown applications that use this feature.
+   - Applications that break because of the change are easy to spot and
+     fix. Applications that are vulnerable to symlink ToCToU by not having
+     the change aren't.
+ - Applications should just use mkstemp() or O_CREATE|O_EXCL.
+   - True, but applications are not perfect, and new software is written
+     all the time that makes these mistakes; blocking this flaw at the
+     kernel is a single solution to the entire class of vulnerability.
+
+This patch is based on the patch in Openwall and grsecurity.  I have
+added a sysctl to enable the protected behavior, documentation, and a
+ratelimited warning.
+
+v2:
+ - dropped redundant S_ISLNK check.
+ - moved sysctl extern into security.h.
+ - asked to include CC to linux-fsdevel.
+
+v3:
+ - move into VFS core.
+ - add CONFIG entry for build-time default.
+ - rename sysctl, invert logic.
+ - use get_task_comm for task name.
+ - lock dentry when checking parent.
+
+Signed-off-by: Kees Cook <kees.cook@canonical.com>
+---
+ Documentation/sysctl/fs.txt |   15 +++++++++
+ fs/Kconfig                  |   15 +++++++++
+ fs/namei.c                  |   69 +++++++++++++++++++++++++++++++++++++++----
+ kernel/sysctl.c             |   10 ++++++
+ 4 files changed, 103 insertions(+), 6 deletions(-)
+
+diff --git a/Documentation/sysctl/fs.txt b/Documentation/sysctl/fs.txt
+index 6268250..07f3b5b 100644
+--- a/Documentation/sysctl/fs.txt
++++ b/Documentation/sysctl/fs.txt
+@@ -32,6 +32,7 @@ Currently, these files are in /proc/sys/fs:
+ - nr_open
+ - overflowuid
+ - overflowgid
++- protected-sticky-symlinks
+ - suid_dumpable
+ - super-max
+ - super-nr
+@@ -158,6 +159,20 @@ The default is 65534.
+ 
+ ==============================================================
+ 
++protected-sticky-symlinks:
++
++Following symlinks in sticky world-writable directories (like /tmp) can
++be dangerous due to time-of-check-time-of-use races that frequently result
++in security vulnerabilities.
++
++The default value is "0", leaving the behavior of symlink following
++unchanged from POSIX.  A value of "1" will enable the protection, causing
++symlinks to be followable only if outside a sticky world-writable directory,
++or if the symlink and the follower's uid match, or if the symlink and its
++directory are owned by the same uid.
++
++==============================================================
++
+ suid_dumpable:
+ 
+ This value can be used to query and set the core dump mode for setuid
+diff --git a/fs/Kconfig b/fs/Kconfig
+index 5f85b59..59497c7 100644
+--- a/fs/Kconfig
++++ b/fs/Kconfig
+@@ -256,3 +256,18 @@ source "fs/nls/Kconfig"
+ source "fs/dlm/Kconfig"
+ 
+ endmenu
++
++config PROTECTED_STICKY_SYMLINKS
++	bool "Protect symlink following in sticky world-writable directories"
++	help
++	  A long-standing class of security issues is the symlink-based
++	  time-of-check-time-of-use race, most commonly seen in
++	  world-writable directories like /tmp. The common method of
++	  exploitation of this flaw is to cross privilege boundaries
++	  when following a given symlink (i.e. a root process follows
++	  a malicious symlink belonging to another user).
++
++	  Enabling this solves the problem by permitting symlinks to only
++	  be followed when outside a sticky world-writable directory,
++	  or when the uid of the symlink and follower match, or when
++	  the directory and symlink owners match.
+diff --git a/fs/namei.c b/fs/namei.c
+index 868d0cb..1620aac 100644
+--- a/fs/namei.c
++++ b/fs/namei.c
+@@ -32,6 +32,7 @@
+ #include <linux/fcntl.h>
+ #include <linux/device_cgroup.h>
+ #include <linux/fs_struct.h>
++#include <linux/ratelimit.h>
+ #include <asm/uaccess.h>
+ 
+ #include "internal.h"
+@@ -530,12 +531,74 @@ static inline void path_to_nameidata(struct path *path, struct nameidata *nd)
+ 	nd->path.dentry = path->dentry;
+ }
+ 
++int protected_sticky_symlinks = CONFIG_PROTECTED_STICKY_SYMLINKS;
++
++/**
++ * may_follow_link - Check symlink following for unsafe situations
++ * @dentry: The inode/dentry of the symlink
++ * @nameidata: The path data of the symlink
++ *
++ * In the case of the protected_sticky_symlinks sysctl being enabled,
++ * CAP_DAC_OVERRIDE needs to be specifically ignored if the symlink is
++ * in a sticky world-writable directory.  This is to protect privileged
++ * processes from failing races against path names that may change out
++ * from under them by way of other users creating malicious symlinks.
++ * It will permit symlinks to only be followed when outside a sticky
++ * world-writable directory, or when the uid of the symlink and follower
++ * match, or when the directory owner matches the symlink's owner.
++ *
++ * Returns 0 if following the symlink is allowed, -ve on error.
++ */
++static __always_inline int
++may_follow_link(struct dentry *dentry, struct nameidata *nameidata)
++{
++	int error = 0;
++	const struct inode *parent;
++	const struct inode *inode;
++	const struct cred *cred;
++
++	if (!protected_sticky_symlinks)
++		return 0;
++
++	/* owner and follower match? */
++	cred = current_cred();
++	inode = dentry->d_inode;
++	if (cred->fsuid == inode->i_uid)
++		return 0;
++
++	/* check parent directory mode and owner */
++	spin_lock(&dentry->d_lock);
++	parent = dentry->d_parent->d_inode;
++	if ((parent->i_mode & (S_ISVTX|S_IWOTH)) == (S_ISVTX|S_IWOTH) &&
++	    parent->i_uid != inode->i_uid) {
++		error = -EACCES;
++	}
++	spin_unlock(&dentry->d_lock);
++
++	if (error) {
++		char name[sizeof(current->comm)];
++		printk_ratelimited(KERN_NOTICE "non-matching-uid symlink "
++			"following attempted in sticky world-writable "
++			"directory by %s (fsuid %d)\n",
++			get_task_comm(name, current), cred->fsuid);
++	}
++	return error;
++}
++
+ static __always_inline int
+ __do_follow_link(struct path *path, struct nameidata *nd, void **p)
+ {
+ 	int error;
+ 	struct dentry *dentry = path->dentry;
+ 
++	error = may_follow_link(dentry, nd);
++	if (error)
++		return error;
++
++	error = security_inode_follow_link(dentry, nd);
++	if (error)
++		return error;
++
+ 	touch_atime(path->mnt, dentry);
+ 	nd_set_link(nd, NULL);
+ 
+@@ -578,9 +641,6 @@ static inline int do_follow_link(struct path *path, struct nameidata *nd)
+ 		goto loop;
+ 	BUG_ON(nd->depth >= MAX_NESTED_LINKS);
+ 	cond_resched();
+-	err = security_inode_follow_link(path->dentry, nd);
+-	if (err)
+-		goto loop;
+ 	current->link_count++;
+ 	current->total_link_count++;
+ 	nd->depth++;
+@@ -1856,9 +1916,6 @@ reval:
+ 		 * just set LAST_BIND.
+ 		 */
+ 		nd.flags |= LOOKUP_PARENT;
+-		error = security_inode_follow_link(path.dentry, &nd);
+-		if (error)
+-			goto exit_dput;
+ 		error = __do_follow_link(&path, &nd, &cookie);
+ 		if (unlikely(error)) {
+ 			/* nd.path had been dropped */
+diff --git a/kernel/sysctl.c b/kernel/sysctl.c
+index 997080f..56affd6 100644
+--- a/kernel/sysctl.c
++++ b/kernel/sysctl.c
+@@ -87,6 +87,7 @@ extern int sysctl_oom_kill_allocating_task;
+ extern int sysctl_oom_dump_tasks;
+ extern int max_threads;
+ extern int core_uses_pid;
++extern int protected_sticky_symlinks;
+ extern int suid_dumpable;
+ extern char core_pattern[];
+ extern unsigned int core_pipe_limit;
+@@ -1455,6 +1456,15 @@ static struct ctl_table fs_table[] = {
+ #endif
+ #endif
+ 	{
++		.procname	= "protected-sticky-symlinks",
++		.data		= &protected_sticky_symlinks,
++		.maxlen		= sizeof(int),
++		.mode		= 0644,
++		.proc_handler	= proc_dointvec_minmax,
++		.extra1		= &zero,
++		.extra2		= &one,
++	},
++	{
+ 		.procname	= "suid_dumpable",
+ 		.data		= &suid_dumpable,
+ 		.maxlen		= sizeof(int),
+-- 
+1.7.0.4
+
+-- 
+Kees Cook
+Ubuntu Security Team
