@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932263Ab0FAUy4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Jun 2010 16:54:56 -0400
-Received: from moutng.kundenserver.de ([212.227.17.8]:59679 "EHLO
+	id S1757400Ab0FAUzS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Jun 2010 16:55:18 -0400
+Received: from moutng.kundenserver.de ([212.227.17.8]:56281 "EHLO
 	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932170Ab0FAUxv (ORCPT
+	with ESMTP id S932089Ab0FAUxv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 1 Jun 2010 16:53:51 -0400
 From: Arnd Bergmann <arnd@arndb.de>
@@ -13,128 +13,122 @@ Cc: linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
        Alan Cox <alan@lxorguk.ukuu.org.uk>,
        Frederic Weisbecker <fweisbec@gmail.com>,
        John Kacur <jkacur@redhat.com>
-Subject: [PATCH 26/31] tty: reorder ldisc locking
-Date: Tue,  1 Jun 2010 22:53:06 +0200
-Message-Id: <1275425591-8803-27-git-send-email-arnd@arndb.de>
+Subject: [PATCH 22/31] tty: never hold BTM while getting tty_mutex
+Date: Tue,  1 Jun 2010 22:53:02 +0200
+Message-Id: <1275425591-8803-23-git-send-email-arnd@arndb.de>
 X-Mailer: git-send-email 1.7.0.4
 In-Reply-To: <1275425591-8803-1-git-send-email-arnd@arndb.de>
 References: <1275425591-8803-1-git-send-email-arnd@arndb.de>
-X-Provags-ID: V01U2FsdGVkX18uff/jrfbunFg/T/rSxT/CcuuwOkbmllIkOPH
- YrSmPk+pTOcaQZgk0ENekAV8gc5ebs+xsFLI/mSKlNaYbxgYQ/
- +8RX5p/ex7FcXGLgiMniA==
+X-Provags-ID: V01U2FsdGVkX1/UPYxPd+8V3+0uHzfzvFRCsNBZCo79pAib/rz
+ 3mhhuV0npOYVQ46GahX8SHtqTuJOJrZ9Dd36ISQk/CSlkupgqZ
+ zBDdF9v4c3h5EjMCZK9IQ==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We need to release the BTM in paste_selection() when
-sleeping in tty_ldisc_ref_wait to avoid deadlocks
-with tty_ldisc_enable.
-
-In tty_set_ldisc, we now always grab the BTM before
-taking the ldisc_mutex in order to avoid AB-BA
-deadlocks between the two.
-
-tty_ldisc_halt potentially blocks on a workqueue
-function that takes the BTM, so we must release
-the BTM before calling it.
+tty_mutex is never taken with the BTM held, except for
+two corner cases that are worked around here.
+We give up the BTM before calling tty_release() in the
+error path of tty_open().
+Similarly, we reorder the locking in ptmx_open()
+to get tty_mutex before the BTM.
 
 Signed-off-by: Arnd Bergmann <arnd@arndb.de>
 ---
- drivers/char/selection.c |    9 +++++++--
- drivers/char/tty_ldisc.c |   24 ++++++++++++++++++++----
- 2 files changed, 27 insertions(+), 6 deletions(-)
+ drivers/char/pty.c    |   24 +++++++++++-------------
+ drivers/char/tty_io.c |   12 ++++++------
+ 2 files changed, 17 insertions(+), 19 deletions(-)
 
-diff --git a/drivers/char/selection.c b/drivers/char/selection.c
-index 85211a3..75889cd 100644
---- a/drivers/char/selection.c
-+++ b/drivers/char/selection.c
-@@ -319,8 +319,13 @@ int paste_selection(struct tty_struct *tty)
- 	poke_blanked_console();
- 	release_console_sem();
+diff --git a/drivers/char/pty.c b/drivers/char/pty.c
+index 384e79f..d9c1407 100644
+--- a/drivers/char/pty.c
++++ b/drivers/char/pty.c
+@@ -626,7 +626,7 @@ static const struct tty_operations pty_unix98_ops = {
+  *		allocated_ptys_lock handles the list of free pty numbers
+  */
  
--	ld = tty_ldisc_ref_wait(tty);
--	
-+	ld = tty_ldisc_ref(tty);
-+	if (!ld) {
-+		tty_unlock();
-+		ld = tty_ldisc_ref_wait(tty);
-+		tty_lock();
-+	}
-+
- 	add_wait_queue(&vc->paste_wait, &wait);
- 	while (sel_buffer && sel_buffer_lth > pasted) {
- 		set_current_state(TASK_INTERRUPTIBLE);
-diff --git a/drivers/char/tty_ldisc.c b/drivers/char/tty_ldisc.c
-index 97681ff..0f49479 100644
---- a/drivers/char/tty_ldisc.c
-+++ b/drivers/char/tty_ldisc.c
-@@ -582,6 +582,7 @@ int tty_set_ldisc(struct tty_struct *tty, int ldisc)
+-static int __ptmx_open(struct inode *inode, struct file *filp)
++static int ptmx_open(struct inode *inode, struct file *filp)
+ {
+ 	struct tty_struct *tty;
+ 	int retval;
+@@ -635,11 +635,14 @@ static int __ptmx_open(struct inode *inode, struct file *filp)
+ 	nonseekable_open(inode, filp);
  
- 	tty_wait_until_sent(tty, 0);
- 
+ 	/* find a device that is not in use. */
 +	tty_lock();
- 	mutex_lock(&tty->ldisc_mutex);
+ 	index = devpts_new_index(inode);
++	tty_unlock();
+ 	if (index < 0)
+ 		return index;
  
- 	/*
-@@ -591,13 +592,13 @@ int tty_set_ldisc(struct tty_struct *tty, int ldisc)
+ 	mutex_lock(&tty_mutex);
++	tty_lock();
+ 	tty = tty_init_dev(ptm_driver, index, 1);
+ 	mutex_unlock(&tty_mutex);
  
- 	while (test_bit(TTY_LDISC_CHANGING, &tty->flags)) {
- 		mutex_unlock(&tty->ldisc_mutex);
-+		tty_unlock();
- 		wait_event(tty_ldisc_wait,
- 			test_bit(TTY_LDISC_CHANGING, &tty->flags) == 0);
-+		tty_lock();
- 		mutex_lock(&tty->ldisc_mutex);
- 	}
+@@ -657,24 +660,19 @@ static int __ptmx_open(struct inode *inode, struct file *filp)
+ 		goto out1;
  
--	tty_lock();
+ 	retval = ptm_driver->ops->open(tty, filp);
+-	if (!retval)
+-		return 0;
++	if (retval)
++		goto out2;
+ out1:
++	tty_unlock();
++	return retval;
++out2:
++	tty_unlock();
+ 	tty_release(inode, filp);
+ 	return retval;
+ out:
+ 	devpts_kill_index(inode, index);
+-	return retval;
+-}
 -
- 	set_bit(TTY_LDISC_CHANGING, &tty->flags);
+-static int ptmx_open(struct inode *inode, struct file *filp)
+-{
+-	int ret;
+-
+-	tty_lock();
+-	ret = __ptmx_open(inode, filp);
+ 	tty_unlock();
+-	return ret;
++	return retval;
+ }
  
- 	/*
-@@ -634,8 +635,8 @@ int tty_set_ldisc(struct tty_struct *tty, int ldisc)
- 
- 	flush_scheduled_work();
- 
--	mutex_lock(&tty->ldisc_mutex);
- 	tty_lock();
-+	mutex_lock(&tty->ldisc_mutex);
- 	if (test_bit(TTY_HUPPED, &tty->flags)) {
- 		/* We were raced by the hangup method. It will have stomped
- 		   the ldisc data and closed the ldisc down */
-@@ -782,7 +783,20 @@ void tty_ldisc_hangup(struct tty_struct *tty)
- 	 * Avoid racing set_ldisc or tty_ldisc_release
- 	 */
- 	mutex_lock(&tty->ldisc_mutex);
--	tty_ldisc_halt(tty);
+ static struct file_operations ptmx_fops;
+diff --git a/drivers/char/tty_io.c b/drivers/char/tty_io.c
+index 4c2cc6b..d51993b 100644
+--- a/drivers/char/tty_io.c
++++ b/drivers/char/tty_io.c
+@@ -1866,19 +1866,19 @@ got_driver:
+ 		printk(KERN_DEBUG "error %d in opening %s...", retval,
+ 		       tty->name);
+ #endif
++		tty_unlock(); /* need to call tty_release without BTM */
+ 		tty_release(inode, filp);
+-		if (retval != -ERESTARTSYS) {
+-			tty_unlock();
++		if (retval != -ERESTARTSYS)
+ 			return retval;
+-		}
+-		if (signal_pending(current)) {
+-			tty_unlock();
 +
-+	/*
-+	 * this is like tty_ldisc_halt, but we need to give up
-+	 * the BTM before calling cancel_delayed_work_sync,
-+	 * which may need to wait for another function taking the BTM
-+	 */
-+	clear_bit(TTY_LDISC, &tty->flags);
-+	tty_unlock();
-+	cancel_delayed_work_sync(&tty->buf.work);
-+	mutex_unlock(&tty->ldisc_mutex);
++		if (signal_pending(current))
+ 			return retval;
+-		}
 +
-+	tty_lock();
-+	mutex_lock(&tty->ldisc_mutex);
-+
- 	/* At this point we have a closed ldisc and we want to
- 	   reopen it. We could defer this to the next open but
- 	   it means auditing a lot of other paths so this is
-@@ -853,8 +867,10 @@ void tty_ldisc_release(struct tty_struct *tty, struct tty_struct *o_tty)
- 	 * race with the set_ldisc code path.
- 	 */
- 
-+	tty_unlock();
- 	tty_ldisc_halt(tty);
- 	flush_scheduled_work();
-+	tty_lock();
- 
- 	mutex_lock(&tty->ldisc_mutex);
- 	/*
+ 		schedule();
+ 		/*
+ 		 * Need to reset f_op in case a hangup happened.
+ 		 */
++		tty_lock();
+ 		if (filp->f_op == &hung_up_tty_fops)
+ 			filp->f_op = &tty_fops;
+ 		tty_unlock();
 -- 
 1.7.0.4
 
