@@ -1,58 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932095Ab0FAO21 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Jun 2010 10:28:27 -0400
-Received: from cantor.suse.de ([195.135.220.2]:57334 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756421Ab0FAO2Z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Jun 2010 10:28:25 -0400
-Date: Wed, 2 Jun 2010 00:28:22 +1000
-From: Nick Piggin <npiggin@suse.de>
-To: "Martin K. Petersen" <martin.petersen@oracle.com>
-Cc: James Bottomley <James.Bottomley@suse.de>,
-       Chris Mason <chris.mason@oracle.com>,
-       Christof Schmitt <christof.schmitt@de.ibm.com>,
-       Boaz Harrosh <bharrosh@panasas.com>, linux-scsi@vger.kernel.org,
-       linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
-Subject: Re: Wrong DIF guard tag on ext2 write
-Message-ID: <20100601142822.GW9453@laptop>
-References: <20100531112817.GA16260@schmichrtp.mainz.de.ibm.com>
- <yq1iq64kv9f.fsf@sermon.lab.mkp.net>
- <1275318102.2823.47.camel@mulgrave.site>
- <4C03D5FD.3000202@panasas.com>
- <20100601103041.GA15922@schmichrtp.mainz.de.ibm.com>
- <1275398876.21962.6.camel@mulgrave.site>
- <20100601133341.GK8980@think>
- <1275399637.21962.11.camel@mulgrave.site>
- <yq1hblmkgka.fsf@sermon.lab.mkp.net>
+	id S1756977Ab0FAO3a (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Jun 2010 10:29:30 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:49189 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756421Ab0FAO32 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Jun 2010 10:29:28 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:reply-to:to:subject:date:user-agent:cc:references:in-reply-to
+         :mime-version:content-type:content-transfer-encoding:message-id;
+        b=MzxPn/e+hPhdHM9s9TMsRjyri5ojqXzhMl8q9oObhdwgFbe564nziA9kP0COPpRQef
+         d+uutB4YM6ojKX414hwIfQ/w6WQ/7dJws2KnhqIHT0ukMCxo57vq4OkeQ2bWcLNKgad3
+         VRC8eLQ2nTM+4HOv6zm8L+7GuslgPqw99JuSc=
+From: Maciej Rutecki <maciej.rutecki@gmail.com>
+Reply-To: maciej.rutecki@gmail.com
+To: sedat.dilek@gmail.com
+Subject: Re: [Regression] [2.6.35-rc1][suspend to ram] BUG: using smp_processor_id() in preemptible [00000000] code: cat/3634
+Date: Tue, 1 Jun 2010 16:29:22 +0200
+User-Agent: KMail/1.12.4 (Linux/2.6.34; KDE/4.3.4; i686; ; )
+Cc: LKML <linux-kernel@vger.kernel.org>, cpufreq@vger.kernel.org
+References: <AANLkTimjEegQQxqllHI2jolnAlgg4eAQdsmENeNnwBlT@mail.gmail.com>
+In-Reply-To: <AANLkTimjEegQQxqllHI2jolnAlgg4eAQdsmENeNnwBlT@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <yq1hblmkgka.fsf@sermon.lab.mkp.net>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: Text/Plain;
+  charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201006011629.22552.maciej.rutecki@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 01, 2010 at 09:50:29AM -0400, Martin K. Petersen wrote:
-> >>>>> "James" == James Bottomley <James.Bottomley@suse.de> writes:
+On wtorek, 1 czerwca 2010 o 00:47:17 Sedat Dilek wrote:
+> [ CC cpufreq@vger.kernel.org ]
 > 
-> James> Would it be too much work in the fs to mark the page dirty before
-> James> you begin altering it (and again after you finish, just in case
-> James> some cleaner noticed and initiated a write)?  Or some other flag
-> James> that indicates page under modification?  All the process
-> James> controlling the writeout (which is pretty high up in the stack)
-> James> needs to know is if we triggered the check error by altering the
-> James> page while it was in flight.
+> [1] directs you to a fix from cpufreq ML.
+> It worked fine here on my HP nc6400 notebook.
 > 
-> James> I agree that a block based retry would close all the holes ... it
-> James> just doesn't look elegant to me that the fs will already be
-> James> repeating the I/O if it changed the page and so will block.
+> - Sedat -
 > 
-> I experimented with this approach a while back.  However, I quickly got
-> into a situation where frequently updated blocks never made it to disk
-> because the page was constantly being updated.  And all writes failed
-> with a guard tag error.
+> [1] http://lkml.org/lkml/2010/5/31/77
+> 
 
-What if you bounce in the case of a first guard error?
-
+This patch solves problem. Thanks!
+-- 
+Maciej Rutecki
+http://www.maciek.unixy.pl
