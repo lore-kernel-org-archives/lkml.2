@@ -1,105 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756879Ab0FAN7Y (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Jun 2010 09:59:24 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:24106 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756651Ab0FAN7W (ORCPT
+	id S932083Ab0FAOAh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Jun 2010 10:00:37 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:42800 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756651Ab0FAOAf convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Jun 2010 09:59:22 -0400
-Date: Tue, 1 Jun 2010 09:58:18 -0400
-From: Chris Mason <chris.mason@oracle.com>
-To: Christof Schmitt <christof.schmitt@de.ibm.com>
-Cc: Boaz Harrosh <bharrosh@panasas.com>,
-       James Bottomley <James.Bottomley@suse.de>,
-       "Martin K. Petersen" <martin.petersen@oracle.com>,
-       linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
-       linux-fsdevel@vger.kernel.org
-Subject: Re: Wrong DIF guard tag on ext2 write
-Message-ID: <20100601135818.GN8980@think>
-Mail-Followup-To: Chris Mason <chris.mason@oracle.com>,
-	Christof Schmitt <christof.schmitt@de.ibm.com>,
-	Boaz Harrosh <bharrosh@panasas.com>,
-	James Bottomley <James.Bottomley@suse.de>,
-	"Martin K. Petersen" <martin.petersen@oracle.com>,
-	linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
-	linux-fsdevel@vger.kernel.org
-References: <20100531112817.GA16260@schmichrtp.mainz.de.ibm.com>
- <yq1iq64kv9f.fsf@sermon.lab.mkp.net>
- <1275318102.2823.47.camel@mulgrave.site>
- <4C03D5FD.3000202@panasas.com>
- <20100601103041.GA15922@schmichrtp.mainz.de.ibm.com>
- <20100601130325.GG8980@think>
- <20100601135059.GA21008@schmichrtp.mainz.de.ibm.com>
+	Tue, 1 Jun 2010 10:00:35 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=TXfxM5otbFRK0A5CT3ich8Cjp++4hOaN00tiToXlkyKzXI8qvQKWuQcwbvkljG6BYw
+         KHgupvC/rtg8sJ3JYux4K5qAEiFflzaIgmgHpM7eu7z0nnwBXuN4M1uiJwRwe8L7zkeO
+         DK2c5XQzjYoV3MdVTzcjwJOtg2wyauD7FEIKU=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100601135059.GA21008@schmichrtp.mainz.de.ibm.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Auth-Type: Internal IP
-X-Source-IP: rcsinet13.oracle.com [148.87.113.125]
-X-CT-RefId: str=0001.0A090206.4C051230.019C:SCFMA4539811,ss=1,fgs=0
+In-Reply-To: <4C0358B1.1050605@uni-konstanz.de>
+References: <4C001888.8020006@jaysonking.com>
+	<4C0018E1.5060007@jaysonking.com>
+	<20100529004913.GL26177@thunk.org>
+	<4C0070D8.8060500@jaysonking.com>
+	<20100530212502.GQ26177@thunk.org>
+	<4C0358B1.1050605@uni-konstanz.de>
+Date: Tue, 1 Jun 2010 09:54:29 -0400
+Message-ID: <AANLkTin3rfw04Shsmmd2O0URjWqbUhf-HOw4r2dXaprH@mail.gmail.com>
+Subject: Re: [PATCH 2.6.27.y 1/3] ext4: Use our own write_cache_pages()
+From: Greg Freemyer <greg.freemyer@gmail.com>
+To: Kay Diederichs <kay.diederichs@uni-konstanz.de>
+Cc: tytso@mit.edu, "Jayson R. King" <dev@jaysonking.com>,
+       Stable team <stable@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+       Greg Kroah-Hartman <gregkh@suse.de>,
+       "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+       Dave Chinner <david@fromorbit.com>,
+       Ext4 Developers List <linux-ext4@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 01, 2010 at 03:50:59PM +0200, Christof Schmitt wrote:
-> On Tue, Jun 01, 2010 at 09:03:25AM -0400, Chris Mason wrote:
-> > On Tue, Jun 01, 2010 at 12:30:42PM +0200, Christof Schmitt wrote:
-> > > On Mon, May 31, 2010 at 06:30:05PM +0300, Boaz Harrosh wrote:
-> > > > On 05/31/2010 06:01 PM, James Bottomley wrote:
-> > > > > On Mon, 2010-05-31 at 10:20 -0400, Martin K. Petersen wrote:
-> > > > >>>>>>> "Christof" == Christof Schmitt <christof.schmitt@de.ibm.com> writes:
-> > > > >>
-> > > > >> Christof> Since the guard tags are created in Linux, it seems that the
-> > > > >> Christof> data attached to the write request changes between the
-> > > > >> Christof> generation in bio_integrity_generate and the call to
-> > > > >> Christof> sd_prep_fn.
-> > > > >>
-> > > > >> Yep, known bug.  Page writeback locking is messed up for buffer_head
-> > > > >> users.  The extNfs folks volunteered to look into this a while back but
-> > > > >> I don't think they have found the time yet.
-> > > > >>
-> > > > >>
-> > > > >> Christof> Using ext3 or ext4 instead of ext2 does not show the problem.
-> > > > >>
-> > > > >> Last I looked there were still code paths in ext3 and ext4 that
-> > > > >> permitted pages to be changed during flight.  I guess you've just been
-> > > > >> lucky.
-> > > > > 
-> > > > > Pages have always been modifiable in flight.  The OS guarantees they'll
-> > > > > be rewritten, so the drivers can drop them if it detects the problem.
-> > > > > This is identical to the iscsi checksum issue (iscsi adds a checksum
-> > > > > because it doesn't trust TCP/IP and if the checksum is generated in
-> > > > > software, there's time between generation and page transmission for the
-> > > > > alteration to occur).  The solution in the iscsi case was not to
-> > > > > complain if the page is still marked dirty.
-> > > > > 
-> > > > 
-> > > > And also why RAID1 and RAID4/5/6 need the data bounced. I wish VFS
-> > > > would prevent data writing given a device queue flag that requests
-> > > > it. So all these devices and modes could just flag the VFS/filesystems
-> > > > that: "please don't allow concurrent writes, otherwise I need to copy data"
-> > > > 
-> > > > From what Chris Mason has said before, all the mechanics are there, and it's
-> > > > what btrfs is doing. Though I don't know how myself?
-> > > 
-> > > I also tested with btrfs and invalid guard tags in writes have been
-> > > encountered as well (again in 2.6.34). The only difference is that no
-> > > error was reported to userspace, although this might be a
-> > > configuration issue.
-> > 
-> > This would be a btrfs bug.  We have strict checks in place that are
-> > supposed to prevent buffers changing while in flight.  What was the
-> > workload that triggered this problem?
-> 
-> I am running an internal test tool that creates files with a known
-> pattern until the disk is full, reads the data to verify if the
-> pattern is still intact, removes the files and starts over.
+On Mon, May 31, 2010 at 2:35 AM, Kay Diederichs
+<kay.diederichs@uni-konstanz.de> wrote:
+> Am 30.05.2010 23:25, schrieb tytso@mit.edu:
+>>
+>> On Fri, May 28, 2010 at 08:41:44PM -0500, Jayson R. King wrote:
+>>>
+>>> The difference is that, 2.6.27's write_cache_pages() in
+>>> page-writeback.c still updates wbc->nr_to_write, since the patch
+>>> which changed that behavior was dropped from .27-rc2 due to the XFS
+>>> regression it causes on mainline. ext4 appears to want the behavior
+>>> of write_cache_pages which does not update wbc->nr_to_write. This
+>>> write_cache_pages_da() does what ext4 wants, without introducing the
+>>> XFS regression. So I believe it is needed.
+>>
+>> Ah, OK.  So I understand the motivation now, and that's a valid
+>> concern.  The question is now: how much the goal of the 2.6.27 stable
+>> branch to fix bugs, and how much is it to get the best possible
+>> performance, at least with respect to ext4?  It's going to be harder
+>> and harder to backport fixes to 2.6.27, and I can speak from
+>> experience that it's very easy to introduce regressions while trying
+>> to do backports, since sometimes an individual upstream commit can end
+>> up introducing a regression, and while we do try to document
+>> regression fixes in later commits, sometimes the documentation isn't
+>> complete.
+>>
+>> I just spent the better part of a day trying to fix up a backport
+>> series for 2.6.32.  When I was engaged in this particular exercise, it
+>> turns out a particular commit to fix a quota deadlock introduced a
+>> regression, and the fix to that introduced yet another, and there were
+>> three or four patches that all needed to be pulled in at once.  Except
+>> initially I missed one, and that caused an i_blocks corruption issue
+>> when using fallocate() that took me several hours and a reverse
+>> git-bisection to find.  (And this is one set of fixes that will
+>> probably never be able to go into 2.6.27.y, since these changes also
+>> interlock with probably a dozen or so quota changes that have also
+>> gone in over the last couple of kernel releases.)
+>>
+>> I'll also add that simply testing using dbench, as you said you used
+>> in another e-mail message, really isn't good enough to find all
+>> possible regressions (it wouldn't have found the i_blocks corruption
+>> problem in my initial set of 2.6.32 ext4 backports patches, for
+>> example, since dbench only tests a very limited set of fs operations,
+>> which doesn't include fallocate, or quotas, or mmap for that matter.)
+>>
+>> What I would recommend is using the XFSQA (also sometimes known
+>> xfstests) test suite to make sure that your changes are sound.  Dbench
+>> will sometimes find issues, yes, but in my experience it's not the
+>> best tool.  The fsstress program, which is called in a number of
+>> different configurations by xfstests, has found all sorts of problems
+>> that other thing shaven't been able to find.  Run it on at least a
+>> 2-core system, or preferably a 4-core or 8-core system if you have it.
+>> I generally run tests using both 4k and 1k blocksize file systems to
+>> make sure there aren't problems where the fs blocksize is less than
+>> the pagesize.
+>>
+>> If you are willing to take on the support burden of ext4 for 2.6.27,
+>> and do a lot of testing, I at least wouldn't have any objection to
+>> these patches.  It's really a question of risk vs. reward for the
+>> users of the 2.6.27 stable tree, plus a question of someone willing to
+>> take on the support/debugging burden, and how much testing is done to
+>> appropriate tilt the risk/reward balance.
+>>
+>> Regards,
+>>
+>>                                                - Ted
+>
+> For what it's worth: my 2.6.27.45 fileservers deadlock reproducibly after 1
+> to 2 minutes of heavy NFS load, when using ext4 (never had a problem with
+> ext3). Jayson King's patch series (posted Feb 27) fixed this, and I've been
+> running it since May 1 without problems.
+>
+> From my experience, I'd say that the ext4 deadlock needs to be fixed;
+> otherwise ext4 in 2.6.27 should not be called stable.
+>
+> best wishes,
+> Kay
 
-Ok, is the lba in the output the sector offset?  We can map that to a
-btrfs block and figure out what it was.
+It has always been marked experimental in 2.6.27, not stable so I'm
+totally lost about this effort.
 
-Btrfs never complains about the IO error?  We really should explode.
+See http://lxr.linux.no/#linux+v2.6.27.47/fs/Kconfig
 
--chris
+ 139        config EXT4DEV_FS
+ 140        tristate "Ext4dev/ext4 extended fs support development
+(EXPERIMENTAL)"
+ 141        depends on EXPERIMENTAL
+ 142        select JBD2
+ 143        select CRC16
+ 144        help
+ 145          Ext4dev is a predecessor filesystem of the next generation
+ 146          extended fs ext4, based on ext3 filesystem code. It will be
+ 147          renamed ext4 fs later, once ext4dev is mature and stabilized.
+ ...
+ 164
+ 165          If unsure, say N.
+
+Greg
