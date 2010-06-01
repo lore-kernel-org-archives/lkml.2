@@ -1,76 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755573Ab0FAKvX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Jun 2010 06:51:23 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:46098 "EHLO mx1.redhat.com"
+	id S1755076Ab0FAK5S (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Jun 2010 06:57:18 -0400
+Received: from hera.kernel.org ([140.211.167.34]:41769 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753718Ab0FAKvT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Jun 2010 06:51:19 -0400
-Date: Tue, 1 Jun 2010 13:46:51 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Avi Kivity <avi@redhat.com>
-Cc: Tom Lyon <pugs@cisco.com>, linux-kernel@vger.kernel.org,
-       kvm@vger.kernel.org, chrisw@sous-sol.org, joro@8bytes.org,
-       hjk@linutronix.de, gregkh@suse.de, aafabbri@cisco.com,
-       scofeldm@cisco.com
-Subject: Re: [PATCH] VFIO driver: Non-privileged user level PCI drivers
-Message-ID: <20100601104651.GA9415@redhat.com>
-References: <20100530124949.GI27611@redhat.com> <4C0261C1.9090204@redhat.com> <20100530130332.GM27611@redhat.com> <4C026497.8070901@redhat.com> <20100530145309.GO27611@redhat.com> <4C03A285.7060902@redhat.com> <20100531171007.GA6516@redhat.com> <4C04C085.1030107@redhat.com> <20100601095532.GA9178@redhat.com> <4C04E0E0.3070006@redhat.com>
+	id S1753128Ab0FAK5Q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Jun 2010 06:57:16 -0400
+Message-ID: <4C04E761.4020800@kernel.org>
+Date: Tue, 01 Jun 2010 12:56:33 +0200
+From: Tejun Heo <tj@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.1.9) Gecko/20100317 Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4C04E0E0.3070006@redhat.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+To: "Michael S. Tsirkin" <mst@redhat.com>
+CC: Oleg Nesterov <oleg@redhat.com>, Sridhar Samudrala <sri@us.ibm.com>,
+       netdev <netdev@vger.kernel.org>, lkml <linux-kernel@vger.kernel.org>,
+       "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Dmitri Vorobiev <dmitri.vorobiev@movial.com>,
+       Jiri Kosina <jkosina@suse.cz>, Thomas Gleixner <tglx@linutronix.de>,
+       Ingo Molnar <mingo@elte.hu>, Andi Kleen <ak@linux.intel.com>
+Subject: Re: [PATCH 3/3] vhost: apply cpumask and cgroup to vhost workers
+References: <20100527173207.GA21880@redhat.com> <4BFEE216.2070807@kernel.org> <20100528150830.GB21880@redhat.com> <4BFFE742.2060205@kernel.org> <20100530112925.GB27611@redhat.com> <4C02C961.9050606@kernel.org> <20100531152221.GB2987@redhat.com> <4C03D983.9010905@kernel.org> <20100531160020.GC3067@redhat.com> <4C04D453.9040208@kernel.org> <20100601101703.GB9178@redhat.com>
+In-Reply-To: <20100601101703.GB9178@redhat.com>
+X-Enigmail-Version: 1.0.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Tue, 01 Jun 2010 10:56:36 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 01, 2010 at 01:28:48PM +0300, Avi Kivity wrote:
-> On 06/01/2010 12:55 PM, Michael S. Tsirkin wrote:
->>
->>>   It can't program the iommu.
->>> What
->>> the patch proposes is that userspace tells vfio about the needed
->>> mappings, and vfio programs the iommu.
->>>      
->> There seems to be some misunderstanding.  The userspace interface
->> proposed forces a separate domain per device and forces userspace to
->> repeat iommu programming for each device.  We are better off sharing a
->> domain between devices and programming the iommu once.
->>    
->
->   iommufd = open(/dev/iommu);
->   ioctl(iommufd, IOMMUFD_ASSIGN_RANGE, ...)
->   ioctl(vfiofd, VFIO_SET_IOMMU, iommufd)
->
-> ?
+Hello,
 
-Yes.
+On 06/01/2010 12:17 PM, Michael S. Tsirkin wrote:
+> Something that I wanted to figure out - what happens if the
+> CPU mask limits us to a certain CPU that subsequently goes offline?
 
-> If so, I agree.
+The thread gets unbound during the last steps of cpu offlining.
 
-Good.
+> Will e.g. flush block forever or until that CPU comes back?
+> Also, does singlethreaded workqueue behave in the same way?
 
->> The natural way to do this is to have an iommu driver for programming
->> iommu.
->>
->> This likely means we will have to pass the domain to 'vfio' or uio or
->> whatever the driver that gives userspace the access to device is called,
->> but this is only for security, there's no need to support programming
->> iommu there.
->>
->> And using this design means the uio framework changes
->> required would be minor, so we won't have to duplicate code.
->>    
->
-> Since vfio would be the only driver, there would be no duplication.  But  
-> a separate object for the iommu mapping is a good thing.  Perhaps we can  
-> even share it with vhost (without actually using the mmu, since vhost is  
-> software only).
+So, things will proceed as usual although the thread will lose its
+affinity.  Singlethread wqs don't bind their workers (and they
+shouldn't! :-).  MT ones explicitly manage workers according to cpu
+up/down events.
 
-Main difference is that vhost works fine with unlocked
-memory, paging it in on demand. iommu needs to unmap
-memory when it is swapped out or relocated.
+Thanks.
 
-> -- 
-> error compiling committee.c: too many arguments to function
+-- 
+tejun
