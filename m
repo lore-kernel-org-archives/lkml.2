@@ -1,18 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755049Ab0FADXh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 May 2010 23:23:37 -0400
-Received: from mail.perches.com ([173.55.12.10]:2492 "EHLO mail.perches.com"
+	id S1755292Ab0FADX6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 May 2010 23:23:58 -0400
+Received: from mail.perches.com ([173.55.12.10]:2508 "EHLO mail.perches.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754847Ab0FADXd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 May 2010 23:23:33 -0400
+	id S1754766Ab0FADXg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 31 May 2010 23:23:36 -0400
 From: Joe Perches <joe@perches.com>
 To: linux-kernel@vger.kernel.org
-Cc: Matthew Dharm <mdharm-usb@one-eyed-alien.net>, linux-usb@vger.kernel.org,
-       usb-storage@lists.one-eyed-alien.net
-Subject: [PATCH 17/21] drivers/usb/storage/isd200.c: Remove unnecessary kmalloc casts
-Date: Mon, 31 May 2010 20:23:19 -0700
-Message-Id: <75c229f6bedef9b1924ef1d7daaf4df383e06fa7.1275360951.git.joe@perches.com>
+Cc: "David S. Miller" <davem@davemloft.net>,
+       Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
+       "Pekka Savola (ipv6)" <pekkas@netcore.fi>,
+       James Morris <jmorris@namei.org>,
+       Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
+       Patrick McHardy <kaber@trash.net>, netdev@vger.kernel.org
+Subject: [PATCH 20/21] net/ipv6/mcast.c: Remove unnecessary kmalloc casts
+Date: Mon, 31 May 2010 20:23:22 -0700
+Message-Id: <52b8781064af8d4b1051f5ac175f7b7f175ff1ed.1275360951.git.joe@perches.com>
 X-Mailer: git-send-email 1.7.0.3.311.g6a6955
 In-Reply-To: <cover.1275360951.git.joe@perches.com>
 References: <cover.1275360951.git.joe@perches.com>
@@ -22,23 +26,23 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Joe Perches <joe@perches.com>
 ---
- drivers/usb/storage/isd200.c |    3 +--
+ net/ipv6/mcast.c |    3 +--
  1 files changed, 1 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/usb/storage/isd200.c b/drivers/usb/storage/isd200.c
-index e9cbc14..6b9982c 100644
---- a/drivers/usb/storage/isd200.c
-+++ b/drivers/usb/storage/isd200.c
-@@ -1456,8 +1456,7 @@ static int isd200_init_info(struct us_data *us)
- 	int retStatus = ISD200_GOOD;
- 	struct isd200_info *info;
- 
--	info = (struct isd200_info *)
--			kzalloc(sizeof(struct isd200_info), GFP_KERNEL);
-+	info = kzalloc(sizeof(struct isd200_info), GFP_KERNEL);
- 	if (!info)
- 		retStatus = ISD200_ERROR;
- 	else {
+diff --git a/net/ipv6/mcast.c b/net/ipv6/mcast.c
+index 59f1881..7b5fb43 100644
+--- a/net/ipv6/mcast.c
++++ b/net/ipv6/mcast.c
+@@ -1995,8 +1995,7 @@ static int sf_setstate(struct ifmcaddr6 *pmc)
+ 				    &psf->sf_addr))
+ 					break;
+ 			if (!dpsf) {
+-				dpsf = (struct ip6_sf_list *)
+-					kmalloc(sizeof(*dpsf), GFP_ATOMIC);
++				dpsf = kmalloc(sizeof(*dpsf), GFP_ATOMIC);
+ 				if (!dpsf)
+ 					continue;
+ 				*dpsf = *psf;
 -- 
 1.7.0.3.311.g6a6955
 
