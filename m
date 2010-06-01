@@ -1,108 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756499Ab0FATAG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Jun 2010 15:00:06 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:51613 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751694Ab0FATAD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Jun 2010 15:00:03 -0400
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-Subject: [PATCH] NOMMU: Add '[stack]' label to /proc/pid/maps output
-To: torvalds@osdl.org, akpm@linux-foundation.org
-Cc: uclinux-dev@uclinux.org, linux-kernel@vger.kernel.org,
-       uclinux-dist-devel@blackfin.uclinux.org,
-       Mike Frysinger <vapier@gentoo.org>, David Howells <dhowells@redhat.com>
-Date: Tue, 01 Jun 2010 19:59:37 +0100
-Message-ID: <20100601185937.5188.77506.stgit@warthog.procyon.org.uk>
-User-Agent: StGIT/0.14.3
+	id S1756656Ab0FATBF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Jun 2010 15:01:05 -0400
+Received: from cavan.codon.org.uk ([93.93.128.6]:33194 "EHLO
+	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751694Ab0FATBD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Jun 2010 15:01:03 -0400
+Date: Tue, 1 Jun 2010 20:00:50 +0100
+From: Matthew Garrett <mjg59@srcf.ucam.org>
+To: "Justin P. Mattock" <justinmattock@gmail.com>
+Cc: x86@kernel.org, tglx@linutronix.de, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH]X86:reboot.c Add some dmi entries to
+	pci_reboot_dmi_table.
+Message-ID: <20100601190050.GA14667@srcf.ucam.org>
+References: <1275114371-5329-1-git-send-email-justinmattock@gmail.com> <20100531170745.GA21225@srcf.ucam.org> <4C03F5EF.8080302@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4C03F5EF.8080302@gmail.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Mike Frysinger <vapier@gentoo.org>
+Can you try with this patch? From what I can see of Apple ACPI tables, 
+it should be functionally equivalent but less hate inducing.
 
-Add support to the NOMMU /proc/pid/maps file to show which mapping is the stack
-of the original thread after execve.  This is largely based on the MMU code.
-Subsidiary thread stacks are not indicated.
+commit 9c8c25fda1b993a81b1a3a9bc4e9e8b0d7ac4062
+Author: Matthew Garrett <mjg@redhat.com>
+Date:   Tue Jun 1 14:40:55 2010 -0400
 
-For FDPIC, we now get:
+    x86: Default to using ACPI for reboot
+    
+    Running a hacked qemu with a modified seabios image that declares support
+    for reboot via ACPI shows that Windows will use the ACPI reboot vector
+    before falling back to hitting i8042. Change the default reboot method to
+    match this. This looks like it should improve life for Apples, which
+    declare the cf9 reboot method via ACPI, don't have a competent i8042
+    emulation and currently have a large DMI whitelist.
+    
+    Signed-off-by: Matthew Garrett <mjg@redhat.com>
 
-	root:/> cat /proc/self/maps
-	02064000-02067ccc rw-p 0004d000 00:01 22         /bin/busybox
-	0206e000-0206f35c rw-p 00006000 00:01 295        /lib/ld-uClibc.so.0
-	025f0000-025f6f0c r-xs 00000000 00:01 295        /lib/ld-uClibc.so.0
-	02680000-026ba6b0 r-xs 00000000 00:01 297        /lib/libc.so.0
-	02700000-0274d384 r-xs 00000000 00:01 22         /bin/busybox
-	02816000-02817000 rw-p 00000000 00:00 0
-	02848000-0284c0d8 rw-p 00000000 00:00 0
-	02860000-02880000 rw-p 00000000 00:00 0          [stack]
-
-The semi-downside here is that for FLAT, we get:
-
-	root:/> cat /proc/155/maps
-	029f0000-029f9000 rwxp 00000000 00:00 0          [stack]
-
-The reason being that FLAT combines a whole lot of stuff into one map
-(including the stack).  But this isn't any worse than the current output (which
-is nothing), so screw it.
-
-Signed-off-by: Mike Frysinger <vapier@gentoo.org>
-Signed-off-by: David Howells <dhowells@redhat.com>
----
-
- fs/proc/task_nommu.c |   20 ++++++++++++++++----
- 1 files changed, 16 insertions(+), 4 deletions(-)
-
-
-diff --git a/fs/proc/task_nommu.c b/fs/proc/task_nommu.c
-index 46d4b5d..cb6306e 100644
---- a/fs/proc/task_nommu.c
-+++ b/fs/proc/task_nommu.c
-@@ -122,11 +122,20 @@ int task_statm(struct mm_struct *mm, int *shared, int *text,
- 	return size;
- }
+diff --git a/arch/x86/kernel/reboot.c b/arch/x86/kernel/reboot.c
+index 8e1aac8..0a04c4b 100644
+--- a/arch/x86/kernel/reboot.c
++++ b/arch/x86/kernel/reboot.c
+@@ -34,7 +34,7 @@ EXPORT_SYMBOL(pm_power_off);
  
-+static void pad_len_spaces(struct seq_file *m, int len)
-+{
-+	len = 25 + sizeof(void*) * 6 - len;
-+	if (len < 1)
-+		len = 1;
-+	seq_printf(m, "%*c", len, ' ');
-+}
-+
- /*
-  * display a single VMA to a sequenced file
-  */
- static int nommu_vma_show(struct seq_file *m, struct vm_area_struct *vma)
- {
-+	struct mm_struct *mm = vma->vm_mm;
- 	unsigned long ino = 0;
- 	struct file *file;
- 	dev_t dev = 0;
-@@ -155,11 +164,14 @@ static int nommu_vma_show(struct seq_file *m, struct vm_area_struct *vma)
- 		   MAJOR(dev), MINOR(dev), ino, &len);
+ static const struct desc_ptr no_idt = {};
+ static int reboot_mode;
+-enum reboot_type reboot_type = BOOT_KBD;
++enum reboot_type reboot_type = BOOT_ACPI;
+ int reboot_force;
  
- 	if (file) {
--		len = 25 + sizeof(void *) * 6 - len;
--		if (len < 1)
--			len = 1;
--		seq_printf(m, "%*c", len, ' ');
-+		pad_len_spaces(m, len);
- 		seq_path(m, &file->f_path, "");
-+	} else if (mm) {
-+		if (vma->vm_start <= mm->start_stack &&
-+			vma->vm_end >= mm->start_stack) {
-+			pad_len_spaces(m, len);
-+			seq_puts(m, "[stack]");
-+		}
- 	}
- 
- 	seq_putc(m, '\n');
+ #if defined(CONFIG_X86_32) && defined(CONFIG_SMP)
 
+-- 
+Matthew Garrett | mjg59@srcf.ucam.org
