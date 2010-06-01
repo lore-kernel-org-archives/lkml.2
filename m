@@ -1,73 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754040Ab0FATEy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Jun 2010 15:04:54 -0400
-Received: from mail-va3.bigfish.com ([216.32.180.114]:33982 "EHLO
-	mail195-va3-R.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751373Ab0FATEx (ORCPT
+	id S1753552Ab0FATM1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Jun 2010 15:12:27 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:36267 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751171Ab0FATM0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Jun 2010 15:04:53 -0400
-X-SpamScore: 1
-X-BigFish: VPS1(zzab9bhzz1202hzzz32i2a8h62h)
-X-Spam-TCS-SCL: 1:0
-X-MS-Exchange-Organization-Antispam-Report: OrigIP: 163.181.251.22;Service: EHS
-X-WSS-ID: 0L3CNNQ-02-51P-02
-X-M-MSG: 
-Date: Tue, 1 Jun 2010 21:04:55 +0200
-From: Borislav Petkov <borislav.petkov@amd.com>
-To: Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
-       Thomas Gleixner <tglx@linutronix.de>
-CC: x86 <x86@kernel.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH] x86, smpboot: Fix cores per node printing on boot
-Message-ID: <20100601190455.GA14237@aftab>
+	Tue, 1 Jun 2010 15:12:26 -0400
+Date: Tue, 1 Jun 2010 12:07:52 -0700 (PDT)
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: David Howells <dhowells@redhat.com>
+cc: akpm@linux-foundation.org, uclinux-dev@uclinux.org,
+       linux-kernel@vger.kernel.org, uclinux-dist-devel@blackfin.uclinux.org,
+       Mike Frysinger <vapier@gentoo.org>
+Subject: Re: [PATCH] NOMMU: Add '[stack]' label to /proc/pid/maps output
+In-Reply-To: <20100601185937.5188.77506.stgit@warthog.procyon.org.uk>
+Message-ID: <alpine.LFD.2.00.1006011204270.8175@i5.linux-foundation.org>
+References: <20100601185937.5188.77506.stgit@warthog.procyon.org.uk>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-Organization: Advanced Micro Devices =?iso-8859-1?Q?GmbH?=
-	=?iso-8859-1?Q?=2C_Einsteinring_24=2C_85609_Dornach_bei_M=FCnchen=2C_Gesc?=
-	=?iso-8859-1?Q?h=E4ftsf=FChrer=3A_Thomas_M=2E_McCoy=2C_Giuliano_Meroni=2C?=
-	=?iso-8859-1?Q?_Andrew_Bowd=2C_Sitz=3A_Dornach=2C_Gemeinde_Aschheim=2C_La?=
-	=?iso-8859-1?Q?ndkreis_M=FCnchen=2C_Registergericht_M=FCnchen?=
-	=?iso-8859-1?Q?=2C?= HRB Nr. 43632
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Reverse-DNS: ausb3extmailp02.amd.com
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Percpu initialization happens now after booting the cores on the machine
-and this causes them all to be displayed as belonging to node 0:
-
-Jun  8 05:57:21 kepek kernel: [    0.106999] Booting Node   0, Processors  #1 #2 #3 #4 #5 #6 #7 #8 #9 #10 #11 #12 #13 #14 #15 #16 #17 #18 #19 #20 #21 #22 #23 Ok.
-
-Use early_cpu_to_node() to get the correct node of each core instead.
-
-Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
----
- arch/x86/kernel/smpboot.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/arch/x86/kernel/smpboot.c b/arch/x86/kernel/smpboot.c
-index 37462f1..c4f33b2 100644
---- a/arch/x86/kernel/smpboot.c
-+++ b/arch/x86/kernel/smpboot.c
-@@ -686,7 +686,7 @@ static void __cpuinit do_fork_idle(struct work_struct *work)
- static void __cpuinit announce_cpu(int cpu, int apicid)
- {
- 	static int current_node = -1;
--	int node = cpu_to_node(cpu);
-+	int node = early_cpu_to_node(cpu);
- 
- 	if (system_state == SYSTEM_BOOTING) {
- 		if (node != current_node) {
--- 
-1.6.4.4
 
 
--- 
-Regards/Gruss,
-Boris.
+On Tue, 1 Jun 2010, David Howells wrote:
+>
+> From: Mike Frysinger <vapier@gentoo.org>
+> 
+> Add support to the NOMMU /proc/pid/maps file to show which mapping is the stack
+> of the original thread after execve.  This is largely based on the MMU code.
 
-Operating Systems Research Center
-Advanced Micro Devices, Inc.
+Umm? The MMU code that we _reverted_?
 
+It turns out to be totally useless, since people put stacks in various 
+different places, and the values the kernel does see end up not even being 
+the "real" stack top.
+
+See commit 34441427aab4bdb3069a4ffcda69a99357abcb2e.
+
+Just don't do it.
+
+		Linus
