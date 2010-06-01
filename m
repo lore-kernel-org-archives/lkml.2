@@ -1,112 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754854Ab0FAKWD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Jun 2010 06:22:03 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:33119 "EHLO mx1.redhat.com"
+	id S1754771Ab0FAKXX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Jun 2010 06:23:23 -0400
+Received: from 0122700014.0.fullrate.dk ([95.166.99.235]:55138 "EHLO kernel.dk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753069Ab0FAKWA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Jun 2010 06:22:00 -0400
-Date: Tue, 1 Jun 2010 13:17:03 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: Oleg Nesterov <oleg@redhat.com>, Sridhar Samudrala <sri@us.ibm.com>,
-       netdev <netdev@vger.kernel.org>, lkml <linux-kernel@vger.kernel.org>,
-       "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Dmitri Vorobiev <dmitri.vorobiev@movial.com>,
-       Jiri Kosina <jkosina@suse.cz>, Thomas Gleixner <tglx@linutronix.de>,
-       Ingo Molnar <mingo@elte.hu>, Andi Kleen <ak@linux.intel.com>
-Subject: Re: [PATCH 3/3] vhost: apply cpumask and cgroup to vhost workers
-Message-ID: <20100601101703.GB9178@redhat.com>
-References: <20100527173207.GA21880@redhat.com> <4BFEE216.2070807@kernel.org> <20100528150830.GB21880@redhat.com> <4BFFE742.2060205@kernel.org> <20100530112925.GB27611@redhat.com> <4C02C961.9050606@kernel.org> <20100531152221.GB2987@redhat.com> <4C03D983.9010905@kernel.org> <20100531160020.GC3067@redhat.com> <4C04D453.9040208@kernel.org>
+	id S1752915Ab0FAKXV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Jun 2010 06:23:21 -0400
+Date: Tue, 1 Jun 2010 12:23:19 +0200
+From: Jens Axboe <jaxboe@fusionio.com>
+To: David John <davidjon@xenontk.org>
+Cc: Divyesh Shah <dpshah@google.com>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [2.6.35-rc1 BUG]: Calling sched_clock causes stack trace with
+	DEBUG_PREEMPT
+Message-ID: <20100601102319.GL3564@kernel.dk>
+References: <4C04AC78.3020702@xenontk.org> <4C04BB3F.2030707@xenontk.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4C04D453.9040208@kernel.org>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <4C04BB3F.2030707@xenontk.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 01, 2010 at 11:35:15AM +0200, Tejun Heo wrote:
-> Apply the cpumask and cgroup of the initializing task to the created
-> vhost worker.
+On Tue, Jun 01 2010, David John wrote:
+> On 06/01/2010 12:15 PM, David John wrote:
+> > Hi,
+> > 
+> > I get stack traces like the following:
+> > 
+> > BUG: using smp_processor_id() in preemptible [00000000] code: init/1
+> > caller is native_sched_clock+0x37/0x6d
+> > Pid: 1, comm: init Not tainted 2.6.35-rc1 #99
+> > Call Trace:
+> > [<ffffffff811c422b>] debug_smp_processor_id+0xd3/0xec
+> > [<ffffffff81008a1e>] native_sched_clock+0x37/0x6d
+> > [<ffffffff811a7bfd>] blk_rq_init+0x92/0x9e
+> > [<ffffffff811a7f2e>] get_request+0x1c8/0x27e
+> > [<ffffffff811a8011>] get_request_wait+0x2d/0x13c
+> > [<ffffffff810306ee>] ? get_parent_ip+0x11/0x42
+> > [<ffffffff81411ea6>] ? add_preempt_count+0xad/0xb1
+> > [<ffffffff811a83b3>] __make_request+0x293/0x3b8
+> > [<ffffffff81099737>] ? mempool_alloc_slab+0x10/0x12
+> > [<ffffffff811a6bc4>] generic_make_request+0x187/0x1ea
+> > [<ffffffff810306ee>] ? get_parent_ip+0x11/0x42
+> > [<ffffffff811a6ce5>] submit_bio+0xbe/0xc7
+> > [<ffffffff810f1f37>] submit_bh+0xef/0x111
+> > [<ffffffff810f4865>] block_read_full_page+0x1ec/0x20c
+> > [<ffffffff810f6815>] ? blkdev_get_block+0x0/0x5e
+> > [<ffffffff81411de6>] ? sub_preempt_count+0x92/0xa5
+> > [<ffffffff810a0500>] ? __lru_cache_add+0x73/0x93
+> > [<ffffffff810f6e81>] blkdev_readpage+0x13/0x15
+> > [<ffffffff8109f981>] __do_page_cache_readahead+0x161/0x194
+> > [<ffffffff8109f9d0>] ra_submit+0x1c/0x20
+> > [<ffffffff8109fc5f>] ondemand_readahead+0x1bb/0x1ce
+> > [<ffffffff810973c9>] ? rcu_read_unlock+0xe/0x29
+> > [<ffffffff8109fd46>] page_cache_sync_readahead+0x38/0x3a
+> > [<ffffffff810993c2>] generic_file_aio_read+0x24d/0x57f
+> > [<ffffffff810cf973>] ? __mem_cgroup_try_charge+0x78/0x46c
+> > [<ffffffff810d2aa0>] do_sync_read+0xc6/0x103
+> > [<ffffffff810306ee>] ? get_parent_ip+0x11/0x42
+> > [<ffffffff810adca5>] ? handle_mm_fault+0x7cb/0x7e5
+> > [<ffffffff810f69c5>] ? block_ioctl+0x32/0x36
+> > [<ffffffff81189fcc>] ? selinux_file_permission+0x57/0xae
+> > [<ffffffff81184524>] ? security_file_permission+0x11/0x13
+> > [<ffffffff810d34af>] vfs_read+0xa6/0x103
+> > [<ffffffff810d35c2>] sys_read+0x45/0x69
+> > [<ffffffff810029ab>] system_call_fastpath+0x16/0x1b
+> > 
+> > Since with commit 9195291e you call 'set_start_time_ns' from
+> > 'blk_rq_init' which in turn calls 'sched_clock' with preempt enabled.
+> > There are other calls to sched_clock in blk-cgroup.c. Maybe they should
+> > be checked as well?
+> > 
+> > Regards,
+> > David.
+> > 
 > 
-> Based on Sridhar Samudrala's patch.  Li Zefan spotted a bug in error
-> path (twice), fixed (twice).
-> 
-> Signed-off-by: Tejun Heo <tj@kernel.org>
-> Cc: Michael S. Tsirkin <mst@redhat.com>
-> Cc: Sridhar Samudrala <samudrala.sridhar@gmail.com>
-> Cc: Li Zefan <lizf@cn.fujitsu.com>
+> I see this has been reported. Never mind.
 
-Something that I wanted to figure out - what happens if the
-CPU mask limits us to a certain CPU that subsequently goes offline?
-Will e.g. flush block forever or until that CPU comes back?
-Also, does singlethreaded workqueue behave in the same way?
+This should fix it for now, if you have time to test, then that would
+not hurt.
 
-> ---
->  drivers/vhost/vhost.c |   34 ++++++++++++++++++++++++++++++----
->  1 file changed, 30 insertions(+), 4 deletions(-)
-> 
-> Index: work/drivers/vhost/vhost.c
-> ===================================================================
-> --- work.orig/drivers/vhost/vhost.c
-> +++ work/drivers/vhost/vhost.c
-> @@ -23,6 +23,7 @@
->  #include <linux/highmem.h>
->  #include <linux/slab.h>
->  #include <linux/kthread.h>
-> +#include <linux/cgroup.h>
-> 
->  #include <linux/net.h>
->  #include <linux/if_packet.h>
-> @@ -187,11 +188,29 @@ long vhost_dev_init(struct vhost_dev *de
->  		    struct vhost_virtqueue *vqs, int nvqs)
->  {
->  	struct task_struct *worker;
-> -	int i;
-> +	cpumask_var_t mask;
-> +	int i, ret = -ENOMEM;
-> +
-> +	if (!alloc_cpumask_var(&mask, GFP_KERNEL))
-> +		goto out_free_mask;
-> 
->  	worker = kthread_create(vhost_worker, dev, "vhost-%d", current->pid);
-> -	if (IS_ERR(worker))
-> -		return PTR_ERR(worker);
-> +	if (IS_ERR(worker)) {
-> +		ret = PTR_ERR(worker);
-> +		goto out_free_mask;
-> +	}
-> +
-> +	ret = sched_getaffinity(current->pid, mask);
-> +	if (ret)
-> +		goto out_stop_worker;
-> +
-> +	ret = sched_setaffinity(worker->pid, mask);
-> +	if (ret)
-> +		goto out_stop_worker;
-> +
-> +	ret = cgroup_attach_task_current_cg(worker);
-> +	if (ret)
-> +		goto out_stop_worker;
-> 
->  	dev->vqs = vqs;
->  	dev->nvqs = nvqs;
-> @@ -214,7 +233,14 @@ long vhost_dev_init(struct vhost_dev *de
->  	}
-> 
->  	wake_up_process(worker);	/* avoid contributing to loadavg */
-> -	return 0;
-> +	ret = 0;
-> +	goto out_free_mask;
-> +
-> +out_stop_worker:
-> +	kthread_stop(worker);
-> +out_free_mask:
-> +	free_cpumask_var(mask);
-> +	return ret;
->  }
-> 
->  /* Caller should have device mutex */
+diff --git a/include/linux/blkdev.h b/include/linux/blkdev.h
+index 8b7f5e0..09a8402 100644
+--- a/include/linux/blkdev.h
++++ b/include/linux/blkdev.h
+@@ -1211,14 +1211,23 @@ struct work_struct;
+ int kblockd_schedule_work(struct request_queue *q, struct work_struct *work);
+ 
+ #ifdef CONFIG_BLK_CGROUP
++/*
++ * This should not be using sched_clock(). A real patch is in progress
++ * to fix this up, until that is in place we need to disable preemption
++ * around sched_clock() in this function and set_io_start_time_ns().
++ */
+ static inline void set_start_time_ns(struct request *req)
+ {
++	preempt_disable();
+ 	req->start_time_ns = sched_clock();
++	preempt_enable();
+ }
+ 
+ static inline void set_io_start_time_ns(struct request *req)
+ {
++	preempt_disable();
+ 	req->io_start_time_ns = sched_clock();
++	preempt_enable();
+ }
+ 
+ static inline uint64_t rq_start_time_ns(struct request *req)
+
+-- 
+Jens Axboe
+
