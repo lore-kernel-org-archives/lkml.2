@@ -1,17 +1,16 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754652Ab0FADX3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 May 2010 23:23:29 -0400
-Received: from mail.perches.com ([173.55.12.10]:2470 "EHLO mail.perches.com"
+	id S1755392Ab0FAD0i (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 May 2010 23:26:38 -0400
+Received: from mail.perches.com ([173.55.12.10]:2476 "EHLO mail.perches.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754566Ab0FADX1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 May 2010 23:23:27 -0400
+	id S1754647Ab0FADX3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 31 May 2010 23:23:29 -0400
 From: Joe Perches <joe@perches.com>
 To: linux-kernel@vger.kernel.org
-Cc: David Airlie <airlied@linux.ie>, dri-devel@lists.freedesktop.org
-Subject: [PATCH 05/21] drivers/gpu/drm: Remove unnecessary kmalloc casts
-Date: Mon, 31 May 2010 20:23:07 -0700
-Message-Id: <4f58955fcf54c4af12f7ef3d63e323ed50e24fba.1275360951.git.joe@perches.com>
+Subject: [PATCH 09/21] drivers/message/i2o/i20_config.c: Remove unnecessary kmalloc casts
+Date: Mon, 31 May 2010 20:23:11 -0700
+Message-Id: <339f43c45c6725e43faeefe6fa59a1996e15bcb1.1275360951.git.joe@perches.com>
 X-Mailer: git-send-email 1.7.0.3.311.g6a6955
 In-Reply-To: <cover.1275360951.git.joe@perches.com>
 References: <cover.1275360951.git.joe@perches.com>
@@ -21,39 +20,23 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Joe Perches <joe@perches.com>
 ---
- drivers/gpu/drm/drm_sman.c      |    4 +---
- drivers/gpu/drm/i915/i915_dma.c |    3 +--
- 2 files changed, 2 insertions(+), 5 deletions(-)
+ drivers/message/i2o/i2o_config.c |    3 +--
+ 1 files changed, 1 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/gpu/drm/drm_sman.c b/drivers/gpu/drm/drm_sman.c
-index 463aed9..3466458 100644
---- a/drivers/gpu/drm/drm_sman.c
-+++ b/drivers/gpu/drm/drm_sman.c
-@@ -59,9 +59,7 @@ drm_sman_init(struct drm_sman * sman, unsigned int num_managers,
+diff --git a/drivers/message/i2o/i2o_config.c b/drivers/message/i2o/i2o_config.c
+index c4b117f..3be46c5 100644
+--- a/drivers/message/i2o/i2o_config.c
++++ b/drivers/message/i2o/i2o_config.c
+@@ -1041,8 +1041,7 @@ static long i2o_cfg_ioctl(struct file *fp, unsigned int cmd, unsigned long arg)
+ 
+ static int cfg_open(struct inode *inode, struct file *file)
  {
- 	int ret = 0;
+-	struct i2o_cfg_info *tmp =
+-	    (struct i2o_cfg_info *)kmalloc(sizeof(struct i2o_cfg_info),
++	struct i2o_cfg_info *tmp = kmalloc(sizeof(struct i2o_cfg_info),
+ 					   GFP_KERNEL);
+ 	unsigned long flags;
  
--	sman->mm = (struct drm_sman_mm *) kcalloc(num_managers,
--						  sizeof(*sman->mm),
--						  GFP_KERNEL);
-+	sman->mm = kcalloc(num_managers, sizeof(*sman->mm), GFP_KERNEL);
- 	if (!sman->mm) {
- 		ret = -ENOMEM;
- 		goto out;
-diff --git a/drivers/gpu/drm/i915/i915_dma.c b/drivers/gpu/drm/i915/i915_dma.c
-index 2a6b5de..f3d5d9f 100644
---- a/drivers/gpu/drm/i915/i915_dma.c
-+++ b/drivers/gpu/drm/i915/i915_dma.c
-@@ -1821,8 +1821,7 @@ int i915_driver_open(struct drm_device *dev, struct drm_file *file_priv)
- 	struct drm_i915_file_private *i915_file_priv;
- 
- 	DRM_DEBUG_DRIVER("\n");
--	i915_file_priv = (struct drm_i915_file_private *)
--	    kmalloc(sizeof(*i915_file_priv), GFP_KERNEL);
-+	i915_file_priv = kmalloc(sizeof(*i915_file_priv), GFP_KERNEL);
- 
- 	if (!i915_file_priv)
- 		return -ENOMEM;
 -- 
 1.7.0.3.311.g6a6955
 
