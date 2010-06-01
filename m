@@ -1,75 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751993Ab0FAFT4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Jun 2010 01:19:56 -0400
-Received: from ozlabs.org ([203.10.76.45]:48626 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751140Ab0FAFTz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Jun 2010 01:19:55 -0400
-From: Rusty Russell <rusty@rustcorp.com.au>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [PATCH 2/2] module: fix bne2 "gave up waiting for init of module libcrc32c"
-Date: Tue, 1 Jun 2010 14:49:50 +0930
-User-Agent: KMail/1.13.2 (Linux/2.6.32-21-generic; KDE/4.4.2; i686; ; )
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-       Brandon Philips <brandon@ifup.org>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-       LKML <linux-kernel@vger.kernel.org>,
-       Jon Masters <jonathan@jonmasters.org>, Tejun Heo <htejun@gmail.com>,
-       Masami Hiramatsu <mhiramat@redhat.com>,
-       Kay Sievers <kay.sievers@vrfy.org>
-References: <201005252300.07739.rjw@sisk.pl> <201006011127.14794.rusty@rustcorp.com.au> <alpine.LFD.2.00.1005312024320.3637@i5.linux-foundation.org>
-In-Reply-To: <alpine.LFD.2.00.1005312024320.3637@i5.linux-foundation.org>
+	id S1752139Ab0FAFVk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Jun 2010 01:21:40 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:56889 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751585Ab0FAFVi convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Jun 2010 01:21:38 -0400
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201006011449.51587.rusty@rustcorp.com.au>
+In-Reply-To: <alpine.LFD.2.00.1005312343290.2933@localhost.localdomain>
+References: <20100527222514.0a1710bf@lxorguk.ukuu.org.uk>
+	<Pine.LNX.4.44L0.1005271730180.3239-100000@iolanthe.rowland.org>
+	<20100527230806.4deb6de3@lxorguk.ukuu.org.uk>
+	<20100527220949.GB10602@srcf.ucam.org>
+	<20100527232357.6d14fdb2@lxorguk.ukuu.org.uk>
+	<20100527223605.GB11364@srcf.ucam.org>
+	<20100527235546.09f3ce8a@lxorguk.ukuu.org.uk>
+	<20100528043114.GC26177@thunk.org>
+	<1275030704.32462.11.camel@laptop>
+	<AANLkTikEtlbkT4Ws3H2YGt_9QC46B5dr-b1oxJOcG4GN@mail.gmail.com>
+	<1275120618.27810.12699.camel@twins>
+	<1275149418.4503.128.camel@mulgrave.site>
+	<alpine.LFD.2.00.1005312231120.2933@localhost.localdomain>
+	<1275340869.2823.344.camel@mulgrave.site>
+	<alpine.LFD.2.00.1005312343290.2933@localhost.localdomain>
+Date: Mon, 31 May 2010 22:21:38 -0700
+Message-ID: <AANLkTinwvkJRU0JjJdNrGfXWYpQMIr8bO3BZxcXubt_Z@mail.gmail.com>
+Subject: Re: [linux-pm] [PATCH 0/8] Suspend block api (version 8)
+From: =?ISO-8859-1?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: James Bottomley <James.Bottomley@suse.de>,
+       Peter Zijlstra <peterz@infradead.org>, tytso@mit.edu,
+       LKML <linux-kernel@vger.kernel.org>,
+       Florian Mickler <florian@mickler.org>,
+       Linux PM <linux-pm@lists.linux-foundation.org>,
+       Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
+       felipe.balbi@nokia.com, Alan Cox <alan@lxorguk.ukuu.org.uk>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 1 Jun 2010 01:10:36 pm Linus Torvalds wrote:
-> 
-> On Tue, 1 Jun 2010, Rusty Russell wrote:
-> 
-> > On Tue, 1 Jun 2010 05:45:37 am Linus Torvalds wrote:
-> > > 
-> > > basically, we should do the whole module dependency list regardless 
-> > > of whether we can unload modules or not 
-> > 
-> > Why?
-> 
-> Because the current non-CONFIG_MODULE_UNLOAD code is currently broken, and 
-> it was broken exactly because the code had two totally different paths and 
-> totally different logic. And one part simply missed the case.
-> 
-> We'd be much better off having as much of the logic shared as possible. 
-> No?
-> 
-> Your 2/2 actually fixed that, because it moved the broken 
-> wait_event_interruptible_timeout() out of the (non-shared) use_module() 
-> into the (shared) resolve_symbol_wait(). But even that seemed to be almost 
-> accidental, and seemed to be more about the fact that now the locking 
-> rules required it (if you wanted to wait without holding the lock), rather 
-> than anything else.
+On Mon, May 31, 2010 at 2:46 PM, Thomas Gleixner <tglx@linutronix.de> wrote:
+> On Mon, 31 May 2010, James Bottomley wrote:
+>>
+>> For MSM hardware, it looks possible to unify the S and C states by doing
+>> suspend to ram from idle but I'm not sure how much work that is.
+>
+> On ARM, it's not rocket science and we have in tree support for this
+> already (OMAP). I have done the same thing on a Samsung part as a
+> prove of concept two years ago and it's really easy as the hardware is
+> sane. Hint: It's designed for mobile devices :)
+>
 
-!CONFIG_MODULE_UNLOAD still does the old "fail don't wait" behavior.
+We already enter the same power state from idle and suspend on msm. In
+the absence of misbehaving apps, the difference in power consumption
+is entirely caused by periodic timers in the user-space framework
+_and_ kernel. It only takes a few timers triggering per second (I
+think 3 if they do no work) to double the average power consumption on
+the G1 if the radio is off. We originally added wakelocks because the
+hardware we had at the time had much lower power consumption in
+suspend then idle, but we still use suspend because it saves power.
 
-So yes, moving the waiting into common code was a win for consistency,
-either with your patch or mine.
-
-> So I'd suggest we should just track those module dependencies, and share 
-> more of the code and the logic. Because it looks to me like not sharing it 
-> continually results in bugs.
-> 
-> No?
-
-I wonder if we should just get rid of !CONFIG_UNLOAD then?  I have a soft spot
-for it because it keeps us honest and shows how much shit is there simply for
-our poor man's pagable kernel.
-
-Let me compile up a kernel with and without and see what it's really doing
-to us...
-
-Thanks,
-Rusty.
+-- 
+Arve Hjønnevåg
