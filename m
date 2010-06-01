@@ -1,19 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754903Ab0FADXf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 May 2010 23:23:35 -0400
-Received: from mail.perches.com ([173.55.12.10]:2473 "EHLO mail.perches.com"
+	id S1755207Ab0FADXj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 May 2010 23:23:39 -0400
+Received: from mail.perches.com ([173.55.12.10]:2512 "EHLO mail.perches.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754766Ab0FADXc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 May 2010 23:23:32 -0400
+	id S1754942Ab0FADXg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 31 May 2010 23:23:36 -0400
 From: Joe Perches <joe@perches.com>
 To: linux-kernel@vger.kernel.org
-Cc: Kyle McMartin <kyle@mcmartin.ca>, Helge Deller <deller@gmx.de>,
-       "James E.J. Bottomley" <jejb@parisc-linux.org>,
-       linux-parisc@vger.kernel.org
-Subject: [PATCH 14/21] drivers/parisc/iosapic.c: Remove unnecessary kzalloc cast
-Date: Mon, 31 May 2010 20:23:16 -0700
-Message-Id: <ba7d48df75ca37c39b0e519921c116a617e71db7.1275360951.git.joe@perches.com>
+Cc: Vlad Yasevich <vladislav.yasevich@hp.com>,
+       Sridhar Samudrala <sri@us.ibm.com>, linux-sctp@vger.kernel.org
+Subject: [PATCH 21/21] net/sctp/protocol.c: Remove unnecessary kmalloc casts
+Date: Mon, 31 May 2010 20:23:23 -0700
+Message-Id: <789ef255b7c046dd11fad6ca8c057354b6306c7f.1275360951.git.joe@perches.com>
 X-Mailer: git-send-email 1.7.0.3.311.g6a6955
 In-Reply-To: <cover.1275360951.git.joe@perches.com>
 References: <cover.1275360951.git.joe@perches.com>
@@ -21,28 +20,25 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Convert kzalloc to kcalloc
-
 Signed-off-by: Joe Perches <joe@perches.com>
 ---
- drivers/parisc/iosapic.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+ net/sctp/protocol.c |    3 +--
+ 1 files changed, 1 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/parisc/iosapic.c b/drivers/parisc/iosapic.c
-index c768367..3e6f56c 100644
---- a/drivers/parisc/iosapic.c
-+++ b/drivers/parisc/iosapic.c
-@@ -891,8 +891,8 @@ void *iosapic_register(unsigned long hpa)
- 	isi->isi_version = iosapic_rd_version(isi);
- 	isi->isi_num_vectors = IOSAPIC_IRDT_MAX_ENTRY(isi->isi_version) + 1;
+diff --git a/net/sctp/protocol.c b/net/sctp/protocol.c
+index 1827498..fef38be 100644
+--- a/net/sctp/protocol.c
++++ b/net/sctp/protocol.c
+@@ -1216,8 +1216,7 @@ SCTP_STATIC __init int sctp_init(void)
  
--	vip = isi->isi_vector = (struct vector_info *)
--		kzalloc(sizeof(struct vector_info) * isi->isi_num_vectors, GFP_KERNEL);
-+	vip = isi->isi_vector = kcalloc(isi->isi_num_vectors,
-+					sizeof(struct vector_info), GFP_KERNEL);
- 	if (vip == NULL) {
- 		kfree(isi);
- 		return NULL;
+ 	/* Allocate and initialize the endpoint hash table.  */
+ 	sctp_ep_hashsize = 64;
+-	sctp_ep_hashtable = (struct sctp_hashbucket *)
+-		kmalloc(64 * sizeof(struct sctp_hashbucket), GFP_KERNEL);
++	sctp_ep_hashtable = kmalloc(64 * sizeof(struct sctp_hashbucket), GFP_KERNEL);
+ 	if (!sctp_ep_hashtable) {
+ 		printk(KERN_ERR "SCTP: Failed endpoint_hash alloc.\n");
+ 		status = -ENOMEM;
 -- 
 1.7.0.3.311.g6a6955
 
