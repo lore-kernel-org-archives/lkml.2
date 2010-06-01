@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932214Ab0FAQOS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Jun 2010 12:14:18 -0400
-Received: from mail.vyatta.com ([76.74.103.46]:35917 "EHLO mail.vyatta.com"
+	id S1757148Ab0FAQO1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Jun 2010 12:14:27 -0400
+Received: from mail.vyatta.com ([76.74.103.46]:35923 "EHLO mail.vyatta.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756827Ab0FAQOQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Jun 2010 12:14:16 -0400
-Date: Tue, 1 Jun 2010 09:14:01 -0700
+	id S932122Ab0FAQOR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Jun 2010 12:14:17 -0400
+Date: Tue, 1 Jun 2010 09:11:44 -0700
 From: Stephen Hemminger <shemminger@vyatta.com>
-To: Geert Uytterhoeven <geert@linux-m68k.org>,
-       Phillip Lougher <phillip@lougher.demon.co.uk>
-Cc: Linux Kernel Development <linux-kernel@vger.kernel.org>
-Subject: [PATCH 2/2] squashfs: fix unsigned warnings
-Message-ID: <20100601091401.0d927f09@nehalam>
-In-Reply-To: <20100601091144.1ff3e677@nehalam>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: Phillip Lougher <phillip@lougher.demon.co.uk>,
+       Linux Kernel Development <linux-kernel@vger.kernel.org>
+Subject: [PATCH 1/2] squashfs: xattr_handler don't inline
+Message-ID: <20100601091144.1ff3e677@nehalam>
+In-Reply-To: <AANLkTilWjRvjl5M_4lenw3aMI57eDYjOV96k3KmxrNwB@mail.gmail.com>
 References: <4BFC7269.3070309@lougher.demon.co.uk>
 	<AANLkTilWjRvjl5M_4lenw3aMI57eDYjOV96k3KmxrNwB@mail.gmail.com>
-	<20100601091144.1ff3e677@nehalam>
 Organization: Vyatta
 X-Mailer: Claws Mail 3.7.5 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
@@ -26,39 +25,22 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The xattr_size is passed to xattr_lookup as a signed integer, when
-it is unsigned.  Also include xattr.h to get function prototype.
+Don't need to explicitly inline this function, it causes a sparse
+warning; and GCC will inline it already.
 
 Signed-off-by: Stephen Hemminger <shemminger@vyatta.com>
 
+---
+Patch against 2.6.35-rc1
 
---- a/fs/squashfs/xattr.h	2010-06-01 08:48:42.539735350 -0700
-+++ b/fs/squashfs/xattr.h	2010-06-01 09:02:27.889738545 -0700
-@@ -25,7 +25,7 @@
- extern __le64 *squashfs_read_xattr_id_table(struct super_block *, u64,
- 		u64 *, int *);
- extern int squashfs_xattr_lookup(struct super_block *, unsigned int, int *,
--		int *, unsigned long long *);
-+		unsigned int *, unsigned long long *);
- #else
- static inline __le64 *squashfs_read_xattr_id_table(struct super_block *sb,
- 		u64 start, u64 *xattr_table_start, int *xattr_ids)
-@@ -35,7 +35,7 @@ static inline __le64 *squashfs_read_xatt
- }
+--- a/fs/squashfs/xattr.c	2010-06-01 08:38:44.659739327 -0700
++++ b/fs/squashfs/xattr.c	2010-06-01 08:39:29.731326492 -0700
+@@ -295,7 +295,7 @@ static const struct xattr_handler squash
+ 	.get	= squashfs_security_get
+ };
  
- static inline int squashfs_xattr_lookup(struct super_block *sb,
--		unsigned int index, int *count, int *size,
-+		unsigned int index, int *count, unsigned int *size,
- 		unsigned long long *xattr)
+-static inline const struct xattr_handler *squashfs_xattr_handler(int type)
++static const struct xattr_handler *squashfs_xattr_handler(int type)
  {
- 	return 0;
---- a/fs/squashfs/xattr_id.c	2010-06-01 08:49:21.350077943 -0700
-+++ b/fs/squashfs/xattr_id.c	2010-06-01 09:03:35.030052467 -0700
-@@ -34,6 +34,7 @@
- #include "squashfs_fs_sb.h"
- #include "squashfs_fs_i.h"
- #include "squashfs.h"
-+#include "xattr.h"
- 
- /*
-  * Map xattr id using the xattr id look up table
+ 	if (type & ~(SQUASHFS_XATTR_PREFIX_MASK | SQUASHFS_XATTR_VALUE_OOL))
+ 		/* ignore unrecognised type */
