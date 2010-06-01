@@ -1,98 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756450Ab0FAPf5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Jun 2010 11:35:57 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:38816 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756924Ab0FAPfy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Jun 2010 11:35:54 -0400
-Subject: Re: [PATCH v2] fs: block cross-uid sticky symlinks
-From: Eric Paris <eparis@redhat.com>
-To: Kees Cook <kees.cook@canonical.com>
-Cc: Christoph Hellwig <hch@infradead.org>, James Morris <jmorris@namei.org>,
-       linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
-       linux-fsdevel@vger.kernel.org, linux-doc@vger.kernel.org,
-       Randy Dunlap <rdunlap@xenotime.net>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Jiri Kosina <jkosina@suse.cz>, Dave Young <hidave.darkstar@gmail.com>,
-       Martin Schwidefsky <schwidefsky@de.ibm.com>,
-       David Howells <dhowells@redhat.com>, Ingo Molnar <mingo@elte.hu>,
-       Peter Zijlstra <a.p.zijlstra@chello.nl>,
-       "Eric W. Biederman" <ebiederm@xmission.com>,
-       Tim Gardner <tim.gardner@canonical.com>,
-       "Serge E. Hallyn" <serue@us.ibm.com>
-In-Reply-To: <20100601145251.GP4098@outflux.net>
-References: <20100531030402.GQ6056@outflux.net>
-	 <20100531103510.GA30021@infradead.org> <20100531175733.GD4098@outflux.net>
-	 <alpine.LRH.2.00.1006010904190.675@tundra.namei.org>
-	 <20100601032423.GL4098@outflux.net> <20100601075529.GA11397@infradead.org>
-	 <1275393302.2690.13.camel@localhost>  <20100601145251.GP4098@outflux.net>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 01 Jun 2010 11:34:37 -0400
-Message-ID: <1275406477.2690.56.camel@localhost>
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1756962Ab0FAPkA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Jun 2010 11:40:00 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:58662 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756308Ab0FAPj7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Jun 2010 11:39:59 -0400
+Date: Tue, 1 Jun 2010 08:32:53 -0700 (PDT)
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Michal Marek <mmarek@suse.cz>
+cc: linux-kernel@vger.kernel.org, linux-kbuild@vger.kernel.org,
+       a.beregalov@gmail.com, andi@firstfloor.org, dzickus@redhat.com,
+       fejes@joco.name, g.liakhovetski@gmx.de, gthelen@google.com,
+       hschauhan@nulltrace.org, hui.zhu@windriver.com, jan3sobi3ski@gmail.com,
+       jay@goldhive.com, jgunthorpe@obsidianresearch.com, jkacur@redhat.com,
+       joe@perches.com, kirr@mns.spb.ru, lizf@cn.fujitsu.com,
+       nir.tzachar@gmail.com, rabin@rab.in, rientjes@google.com,
+       roland@redhat.com, saalwaechter@gmail.com, shemminger@vyatta.com,
+       tabbott@ksplice.com, u.kleine-koenig@pengutronix.de, vbendeb@google.com,
+       vda.linux@googlemail.com, wuzhangjin@gmail.com, xt28@gmx.de
+Subject: Re: [GIT] kbuild changes for 2.6.35
+In-Reply-To: <20100531120223.GA11700@sepie.suse.cz>
+Message-ID: <alpine.LFD.2.00.1006010823080.3637@i5.linux-foundation.org>
+References: <20100527144459.GA14513@sepie.suse.cz> <alpine.LFD.2.00.1005300921000.4639@i5.linux-foundation.org> <20100531120223.GA11700@sepie.suse.cz>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-06-01 at 07:52 -0700, Kees Cook wrote:
-> On Tue, Jun 01, 2010 at 07:55:02AM -0400, Eric Paris wrote:
-> > On Tue, 2010-06-01 at 03:55 -0400, Christoph Hellwig wrote:
-> > > On Mon, May 31, 2010 at 08:24:23PM -0700, Kees Cook wrote:
+
+
+On Mon, 31 May 2010, Michal Marek wrote:
 > > 
-> > > > My rationale is that if it's in commoncaps, it's effective for everyone, so
-> > > > it might as well be in core VFS.  If the VFS objections really do boil down
-> > > > to "not in fs/" then I'm curious if doing this in commoncaps is acceptable.
-> > > 
-> > > If you think the objection is about having things in fs/ you're smoking
-> > > some really bad stuff.
-> > 
-> > Sounds to me like we should probably follow the same path as
-> > mmap_min_addr.  We should add these hooks right in the VFS where they
-> > belong (much like mmap_min_addr hooks into the vm) and control them 2
-> > ways.
-> > 
-> > 1) a Kconfig so distros can choose to turn it on or off by default
-> > 2) a /proc interface so root can turn it off
-> > 
-> > Nothing about that precludes additional similar checks inside an LSM
-> > (like CONFIG_LSM_MMAP_MIN_ADDR) which can be more finely controlled.  So
-> > maybe we want to follow up with the core VFS check with new checks in
-> > SELinux (and maybe apparmour).  This allows the user to disable the
-> > general check and still be provided with some modicum of protection.
-> > You might ask why not ONLY do the check in SELinux and drop the generic
-> > check, but we have seen with mmap_min_addr that the SELinux unconfined
-> > user can do damn well anything it wants to, so having a non-LSM version
-> > of appropriate security checks is highly regarded.
+> > I refuse to take stuff like this. If I don't know why somethign happens, I 
+> > don't want to pull it.
 > 
-> Would a CONFIG for this be overkill?  mmap_min_addr is a little different
-> in that there was desire to control a bottom limit on it, etc.  Given this
-> is either "on" or "off", I think just a sysctl is needed?
+> Sorry, here is a more complete description of the changes.
+> Alternatively, would you pull a branch with the section rename stuff taken
+> out?
 
-Seems like one of Alan's main arguments is that you should not turn it
-on 'by default.'  I assume most distros will want it on by default.
-Alan made the same argument against mmap_min_addr (known to break dos
-emu) but I think most major distros have it on by default these days
-even if it does break those weird obscure use cases.  I guess distros
-can do it through sysctl but Fedora, at least, likes to keep those
-default if possible, which is why I suggested the CONFIG.  In any case,
-putting this right square in the VFS where it happens makes the most
-sense to me.
+No, the commits themselves are likely fine, although for the future it 
+really would be good to make things like that more descriptive. I just 
+want people to try to argue for _why_ I should do a pull, and _what_ I'm 
+getting in their "please pull" thing.
 
-I'd also like to point out that I don't buy the argument that per
-user /tmp/ is a 'better' solution for the general case.  Any application
-that would be broken by this change will also be broken by per
-user /tmp.  Now, if we used filesystem namespaces regularly for years
-and users, administrators, and developers dealt with them often I agree
-that would probably be the preferred solution.  It would solve this
-issue, but in introduces a whole host of other problems that are even
-more obvious and even likely to bite people.
+It's not always necessary, and some people do it better than others. For 
+an example of a really good pull request, look at the ones David Miller 
+sends me for networking - they explain what's going on in the pull, so 
+it's always easy to pull them because just the request makes me feel like 
+David is really on top of things, and lets me have some 30'000 ft overview 
+of what's going on.
 
-I probably would move the security hook down into __do_follow_link and
-put this check down there as well, but I think you still have a problem
-with d_parent.  I don't see what keeps d_parent from being freed while
-you are using it....
+At the same time, in many cases I obviously pull _without_ any kind of 
+real explanation - and that tends to be especially true with maintainers 
+that I've worked with for a long time, or areas that are so specialized 
+that they are almost self-explanatory (let's be honest: when a filesystem 
+maintainer asks me to pull their special filesystem, I'm perfectly happy 
+with the overview of "30 changesets to XFS", and there's no need for much 
+explanation, although a rough overview of what's been going on is always 
+good to see).
 
--Eric
+So the reason I ask for explanations for kbuild is that not only have we 
+had different maintainers, it's an area that affects a lot of different 
+things and has historically had issues with odd architectures or old 
+binutils tools etc.
 
+So for something like that, I really do want to know what is going on, and 
+then when I get a pull request with little to no explanation, and look at 
+a trial pull with "gitk ORIG_HEAD.." and see no additional explanation 
+there either, I just go "no, I can't pull this, I don't really know what 
+it does or why it does so".
+
+> Summary of the changes:
+> - A new configuration interface (make nconfig)
+> - Improvements to the other *config interfaces
+> - Better modpost mismatch reporting
+> - Section rename to allow for -ffunction-sections -fdata-sections
+> - Untagged builds without LOCALVERSION_AUTO have a '+' appended to the
+>   version string
+> - Lots of minor fixes & improvements.
+
+So I really want to know _why_ that section rename is specifically like it 
+is. Why is ".data..stack" better than ".data.stack"?
+
+			Linus
