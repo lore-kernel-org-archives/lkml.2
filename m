@@ -1,16 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755392Ab0FAD0i (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 May 2010 23:26:38 -0400
-Received: from mail.perches.com ([173.55.12.10]:2476 "EHLO mail.perches.com"
+	id S1755546Ab0FAD0x (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 May 2010 23:26:53 -0400
+Received: from mail.perches.com ([173.55.12.10]:2475 "EHLO mail.perches.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754647Ab0FADX3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 May 2010 23:23:29 -0400
+	id S1754581Ab0FADX2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 31 May 2010 23:23:28 -0400
 From: Joe Perches <joe@perches.com>
 To: linux-kernel@vger.kernel.org
-Subject: [PATCH 09/21] drivers/message/i2o/i20_config.c: Remove unnecessary kmalloc casts
-Date: Mon, 31 May 2010 20:23:11 -0700
-Message-Id: <339f43c45c6725e43faeefe6fa59a1996e15bcb1.1275360951.git.joe@perches.com>
+Cc: Luca Risolia <luca.risolia@studio.unibo.it>, linux-usb@vger.kernel.org,
+       linux-media@vger.kernel.org
+Subject: [PATCH 08/21] drivers/media: Remove unnecesary kmalloc casts
+Date: Mon, 31 May 2010 20:23:10 -0700
+Message-Id: <895ae027d1e7e1165f887cf923c30511bb3654e4.1275360951.git.joe@perches.com>
 X-Mailer: git-send-email 1.7.0.3.311.g6a6955
 In-Reply-To: <cover.1275360951.git.joe@perches.com>
 References: <cover.1275360951.git.joe@perches.com>
@@ -20,22 +22,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Joe Perches <joe@perches.com>
 ---
- drivers/message/i2o/i2o_config.c |    3 +--
- 1 files changed, 1 insertions(+), 2 deletions(-)
+ drivers/media/dvb/siano/smscoreapi.c |    4 +---
+ drivers/media/video/w9968cf.c        |    3 +--
+ 2 files changed, 2 insertions(+), 5 deletions(-)
 
-diff --git a/drivers/message/i2o/i2o_config.c b/drivers/message/i2o/i2o_config.c
-index c4b117f..3be46c5 100644
---- a/drivers/message/i2o/i2o_config.c
-+++ b/drivers/message/i2o/i2o_config.c
-@@ -1041,8 +1041,7 @@ static long i2o_cfg_ioctl(struct file *fp, unsigned int cmd, unsigned long arg)
+diff --git a/drivers/media/dvb/siano/smscoreapi.c b/drivers/media/dvb/siano/smscoreapi.c
+index 0c87a3c..828bcc2 100644
+--- a/drivers/media/dvb/siano/smscoreapi.c
++++ b/drivers/media/dvb/siano/smscoreapi.c
+@@ -116,9 +116,7 @@ static struct smscore_registry_entry_t *smscore_find_registry(char *devpath)
+ 			return entry;
+ 		}
+ 	}
+-	entry = (struct smscore_registry_entry_t *)
+-			kmalloc(sizeof(struct smscore_registry_entry_t),
+-				GFP_KERNEL);
++	entry = kmalloc(sizeof(struct smscore_registry_entry_t), GFP_KERNEL);
+ 	if (entry) {
+ 		entry->mode = default_mode;
+ 		strcpy(entry->devpath, devpath);
+diff --git a/drivers/media/video/w9968cf.c b/drivers/media/video/w9968cf.c
+index d807eea..591fc6d 100644
+--- a/drivers/media/video/w9968cf.c
++++ b/drivers/media/video/w9968cf.c
+@@ -3429,8 +3429,7 @@ w9968cf_usb_probe(struct usb_interface* intf, const struct usb_device_id* id)
+ 	else
+ 		return -ENODEV;
  
- static int cfg_open(struct inode *inode, struct file *file)
- {
--	struct i2o_cfg_info *tmp =
--	    (struct i2o_cfg_info *)kmalloc(sizeof(struct i2o_cfg_info),
-+	struct i2o_cfg_info *tmp = kmalloc(sizeof(struct i2o_cfg_info),
- 					   GFP_KERNEL);
- 	unsigned long flags;
+-	cam = (struct w9968cf_device*)
+-		  kzalloc(sizeof(struct w9968cf_device), GFP_KERNEL);
++	cam = kzalloc(sizeof(struct w9968cf_device), GFP_KERNEL);
+ 	if (!cam)
+ 		return -ENOMEM;
  
 -- 
 1.7.0.3.311.g6a6955
