@@ -1,94 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752841Ab0FAFgD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Jun 2010 01:36:03 -0400
-Received: from ist.d-labs.de ([213.239.218.44]:44789 "EHLO mx01.d-labs.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750768Ab0FAFgA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Jun 2010 01:36:00 -0400
-Date: Tue, 1 Jun 2010 07:35:48 +0200
-From: Florian Mickler <florian@mickler.org>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Neil Brown <neilb@suse.de>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-       Alan Stern <stern@rowland.harvard.edu>,
-       Felipe Balbi <felipe.balbi@nokia.com>,
-       Arve =?ISO-8859-15?Q?Hj=F8nnev=E5g?= <arve@android.com>,
-       Peter Zijlstra <peterz@infradead.org>,
-       "Paul@smtp1.linux-foundation.org" <Paul@smtp1.linux-foundation.org>,
-       LKML <linux-kernel@vger.kernel.org>,
-       Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
-       Linux PM <linux-pm@lists.linux-foundation.org>,
-       Alan Cox <alan@lxorguk.ukuu.org.uk>
-Subject: Re: [linux-pm] [PATCH 0/8] Suspend block api (version 8)
-Message-ID: <20100601073548.5ed65352@schatten.dmk.lab>
-In-Reply-To: <20100601122012.1edeaf48@notabene.brown>
-References: <Pine.LNX.4.44L0.1005271303190.3239-100000@iolanthe.rowland.org>
-	<201006010005.19554.rjw@sisk.pl>
-	<20100601090023.788cabf4@notabene.brown>
-	<201006010232.20263.rjw@sisk.pl>
-	<20100601113309.609349fd@notabene.brown>
-	<alpine.LFD.2.00.1006010340160.2933@localhost.localdomain>
-	<20100601122012.1edeaf48@notabene.brown>
-X-Mailer: Claws Mail 3.7.5 (GTK+ 2.18.9; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1753127Ab0FAFgt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Jun 2010 01:36:49 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:48981 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751597Ab0FAFgs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Jun 2010 01:36:48 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=HsYxDw3f0QfftW82QMkcakt3/7IvohYBz40WPXcsdTSdBzuKoRgO1JElV/KAJ1hTdK
+         3GRuuTzPd5jnYq2EH2rw3Fc3FSRLUFaTj0kBRYt9x7FEidZxKM6wwoBZoZygspbuUXRB
+         G7X2OeKruR7wqb8IlJGxGwGfBnhrljI/CD7qo=
+Message-ID: <4C049C6A.8060605@garzik.org>
+Date: Tue, 01 Jun 2010 01:36:42 -0400
+From: Jeff Garzik <jeff@garzik.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-2.fc12 Thunderbird/3.0.4
+MIME-Version: 1.0
+To: Dave Airlie <airlied@gmail.com>
+CC: LKML <linux-kernel@vger.kernel.org>, Chris Mason <chris.mason@oracle.com>
+Subject: Re: SSD + sata_nv + btrfs oops
+References: <AANLkTilqsIdlzZgUf7TMLHYKqHDZoVkcs42vcG8wXKEr@mail.gmail.com>
+In-Reply-To: <AANLkTilqsIdlzZgUf7TMLHYKqHDZoVkcs42vcG8wXKEr@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 1 Jun 2010 12:20:12 +1000
-Neil Brown <neilb@suse.de> wrote:
+On 05/31/2010 11:04 PM, Dave Airlie wrote:
+> Hi guys,
+>
+> I've been running an Intel SSD (the KS one) on my Dell XPS710 desktop
+> machine, with btrfs on it.
+>
+> I'm not sure the btrfs oops isn't due to the disk/controller doing
+> something bad (almost guaranteed).
 
-> On Tue, 1 Jun 2010 03:49:37 +0200 (CEST)
-> Thomas Gleixner <tglx@linutronix.de> wrote:
+The btrfs oops may be poor handling of an I/O error thrown by the block 
+error.
 
-> > If "suspend" is another deep idle state and the hardware is sane,
-> > there is no race at all - assumed that the driver/platform developer
-> > got it right. It's not rocket science to transition from "normal" irq
-> > delivery to wakeup based delivery raceless (except for PC style x86
-> > hardware of today)
+Root cause is definitely your SATA PHY throwing some hardware errors 
+from the transport layer (low level SATA packet transmission failures). 
+  Everything else sorta falls apart after that.
 
-> > If "suspend" is the thing we are used to via /sys/power/state then the
-> > race will persist forever except for the suspend blocker workaround,
-> > which we can express in QoS terms as well w/o adding another suspend
-> > related user space API.
+First guesses are the usual suspects: cabling, temperature, power or 
+SATA ports on the [SATA controller | SATA device] going bad.
 
-Can you explain the difference between the /sys/power/state thing? Is
-it the reprogramming of wake-sources as mentioned by Raffael?
+Disabling swncq will only improve things from the perspective of slowing 
+things down and giving the hardware less to do.  swncq makes things 
+parallel, so forcing only one transaction at a time certainly increases 
+the chances of success by reducing complexity and serializing transactions.
 
-In an idle based suspend I assume there would be no new wake-sources
-on suspending.
+	Jeff
 
-> I'm not interested in adding another user-space API if it can possibly be
-> avoided, and I think it can.  But that is a later step in the process.
-> 
-> I think you have acknowledged that there is a race with suspend - thanks.
-> Next step was "can it be closed".
-> You seem to suggest that it can, but you describe it as a "work around"
-> rather than a "bug fix"...
 
-Well as far as I get it, the workaround is to not suspend in sitations
-where a race is likely to occur. (I.e. block suspend)
 
-> 
-> Do you agree that the race is a "bug", and therefore it is appropriate to
-> "fix" it assuming an acceptable fix can be found (which I think it can)?
-> 
-> If you agree that it is appropriate for try to fix this bug, then the next
-> step would be to get the Android devs to agree that a fix could - in
-> principle - address the need for which they created suspend-blockers.
-> Arve: can you confirm that?
-> 
-> Then, with a clear and agreed goal, we can look at possible fixes.
-> 
-> Thanks,
-> NeilBrown
-> 
-> > 
-> > Thanks,
-> > 
-> > 	tglx
-
-cheers,
-Flo
