@@ -1,82 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757467Ab0FAWCd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Jun 2010 18:02:33 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:39763 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757317Ab0FAWCb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Jun 2010 18:02:31 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Alan Stern <stern@rowland.harvard.edu>
-Subject: Re: [linux-pm] [PATCH 0/8] Suspend block api (version 8)
-Date: Wed, 2 Jun 2010 00:03:58 +0200
-User-Agent: KMail/1.12.4 (Linux/2.6.35-rc1-rjw; KDE/4.3.5; x86_64; ; )
-Cc: Neil Brown <neilb@suse.de>, Thomas Gleixner <tglx@linutronix.de>,
-       Felipe Balbi <felipe.balbi@nokia.com>,
-       Arve =?iso-8859-1?q?Hj=F8nnev=E5g?= <arve@android.com>,
-       Peter Zijlstra <peterz@infradead.org>,
-       LKML <linux-kernel@vger.kernel.org>,
-       Florian Mickler <florian@mickler.org>,
-       Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
-       Linux PM <linux-pm@lists.linux-foundation.org>,
-       Alan Cox <alan@lxorguk.ukuu.org.uk>
-References: <Pine.LNX.4.44L0.1005312159420.9148-100000@netrider.rowland.org>
-In-Reply-To: <Pine.LNX.4.44L0.1005312159420.9148-100000@netrider.rowland.org>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+	id S1757450Ab0FAWEw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Jun 2010 18:04:52 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:47099 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752388Ab0FAWEv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Jun 2010 18:04:51 -0400
+Date: Tue, 1 Jun 2010 15:04:02 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Rik van Riel <riel@redhat.com>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+       Mel Gorman <mel@csn.ul.ie>, Andrea Arcangeli <aarcange@redhat.com>,
+       Minchan Kim <minchan.kim@gmail.com>,
+       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+       Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
+       Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: [PATCH 2/5] change direct call of spin_lock(anon_vma->lock) to
+ inline function
+Message-Id: <20100601150402.c828b219.akpm@linux-foundation.org>
+In-Reply-To: <20100526153926.1272945b@annuminas.surriel.com>
+References: <20100526153819.6e5cec0d@annuminas.surriel.com>
+	<20100526153926.1272945b@annuminas.surriel.com>
+X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-Message-Id: <201006020003.58899.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 01 June 2010, Alan Stern wrote:
-> On Tue, 1 Jun 2010, Neil Brown wrote:
-> 
-> > > As I said before, we generally can't prevent such things from happening,
-> > > because even if we handle the particular race described above, it still is
-> > > possible that the event will be "lost" if it arrives just a bit later (eg.
-> > > during a suspend-toggle switch).  So the PRE_SUSPEND thing won't really
-> > > solve the entire problem while increasing complexity.
-> > > 
-> > > > My freerunner has a single core so without CONFIG_PREEMPT it may be that
-> > > > there is no actual race-window - maybe the PRE_SUSPENDs will all run before a
-> > > > soft_irq thread has a chance to finish handling of the interrupt (my
-> > > > knowledge of these details is limits).  But on a muilti-core device I think
-> > > > there would definitely be a race-window.
-> > > 
-> > > Yes, there always will be a race window.  The only thing we can do is to
-> > > narrow it, but we cannot really close it (at least not on a PC, but I'm not
-> > > really sure it can be closed at all).
-> > 
-> > Well you are the expert so I assume you are right, but I would really like to
-> > understand why this is.
-> > 
-> > I guess that if the event was delivered as an edge-triggered interrupt which
-> > the interrupt controller couldn't latch, then it might get lost.  Is that
-> > what happens?
-> 
-> You're barking up the wrong tree.  If I understand correctly, Rafael is
-> saying that there's a race involving events which are not _wakeup_
-> events.  If a non-wakeup event arrives shortly before a suspend, it can
-> have its normal effect.  If it arrives while a suspend is in progress,
-> its delivery may be delayed until the system resumes.  And if it
-> arrives after the system is fully suspended, it may never be noticed at
-> all.
-> 
-> With wakeup events the problem isn't so bad.  Wakeup events are always
-> noticed, and if the system is designed properly they will either abort
-> a suspend-in-progress or else cause the system to resume as soon as the
-> suspend is complete.  (Linux is not yet properly designed in this
-> sense.)
-> 
-> Or maybe I'm misunderstanding also, and Rafael is saying that there's 
-> a race involving events whose meaning changes depending on whether or 
-> not the system is asleep.  This is obviously true and clearly 
-> unavoidable.
+On Wed, 26 May 2010 15:39:26 -0400
+Rik van Riel <riel@redhat.com> wrote:
 
-In fact I was referring to both in different places.  That's why what I said
-wasn't too clear, sorry about that.
+> @@ -303,10 +303,10 @@ again:
+>  		goto out;
+>  
+>  	anon_vma = (struct anon_vma *) (anon_mapping - PAGE_MAPPING_ANON);
+> -	spin_lock(&anon_vma->lock);
+> +	anon_vma_lock(anon_vma);
+>  
+>  	if (page_rmapping(page) != anon_vma) {
+> -		spin_unlock(&anon_vma->lock);
+> +		anon_vma_unlock(anon_vma);
+>  		goto again;
+>  	}
+>  
 
-Rafael
+This bit is dependent upon Peter's
+mm-revalidate-anon_vma-in-page_lock_anon_vma.patch (below).  I've been
+twiddling thumbs for weeks awaiting the updated version of that patch
+(hint).
+
+Do we think that this patch series is needed in 2.6.35?  If so, why? 
+And if so I guess we'll need to route around
+mm-revalidate-anon_vma-in-page_lock_anon_vma.patch, or just merge it
+as-is.
+
+
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+
+There is nothing preventing the anon_vma from being detached while we are
+spinning to acquire the lock.  Most (all?) current users end up calling
+something like vma_address(page, vma) on it, which has a fairly good
+chance of weeding out wonky vmas.
+
+However suppose the anon_vma got freed and re-used while we were waiting
+to acquire the lock, and the new anon_vma fits with the page->index
+(because that is the only thing vma_address() uses to determine if the
+page fits in a particular vma, we could end up traversing faulty anon_vma
+chains.
+
+Close this hole for good by re-validating that page->mapping still holds
+the very same anon_vma pointer after we acquire the lock, if not be
+utterly paranoid and retry the whole operation (which will very likely
+bail, because it's unlikely the page got attached to a different anon_vma
+in the meantime).
+
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Hugh Dickins <hugh.dickins@tiscali.co.uk>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>
+Reviewed-by: Rik van Riel <riel@redhat.com>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+---
+
+ mm/rmap.c |    7 +++++++
+ 1 file changed, 7 insertions(+)
+
+diff -puN mm/rmap.c~mm-revalidate-anon_vma-in-page_lock_anon_vma mm/rmap.c
+--- a/mm/rmap.c~mm-revalidate-anon_vma-in-page_lock_anon_vma
++++ a/mm/rmap.c
+@@ -370,6 +370,7 @@ struct anon_vma *page_lock_anon_vma(stru
+ 	unsigned long anon_mapping;
+ 
+ 	rcu_read_lock();
++again:
+ 	anon_mapping = (unsigned long) ACCESS_ONCE(page->mapping);
+ 	if ((anon_mapping & PAGE_MAPPING_FLAGS) != PAGE_MAPPING_ANON)
+ 		goto out;
+@@ -378,6 +379,12 @@ struct anon_vma *page_lock_anon_vma(stru
+ 
+ 	anon_vma = (struct anon_vma *) (anon_mapping - PAGE_MAPPING_ANON);
+ 	spin_lock(&anon_vma->lock);
++
++	if (page_rmapping(page) != anon_vma) {
++		spin_unlock(&anon_vma->lock);
++		goto again;
++	}
++
+ 	return anon_vma;
+ out:
+ 	rcu_read_unlock();
+_
+
