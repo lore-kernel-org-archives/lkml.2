@@ -1,67 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755038Ab0FAKrS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Jun 2010 06:47:18 -0400
-Received: from webmail02.domeneshop.no ([194.63.248.28]:54297 "EHLO
-	webmail02.domeneshop.no" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752955Ab0FAKrQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Jun 2010 06:47:16 -0400
-Content-Disposition: inline
-Content-Transfer-Encoding: binary
-Content-Type: text/plain; charset="iso-8859-1"
-MIME-Version: 1.0
-X-Mailer: MIME::Lite 3.01 (F2.74; T1.18; A1.74; B3.07; Q3.07)
-From: uwaysi.bin.kareem@paradoxuncreated.com
-To: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Psychovisually-optimized HZ setting (2.6.33.3)
-Date: Tue, 01 Jun 2010 12:47:15 +0200
-X-Remote-Address: 91.186.70.220
-X-User-Agent: Opera/9.63 (Windows NT 5.1; U; en) Presto/2.1.1
-X-Mailer: Domeneshop webmail 1.07 (2008-04-23)
-X-Moam-Version: 0.93
-Message-Id: <E1OJP07-00029Z-Cb@webmail02.domeneshop.no>
+	id S1755326Ab0FAKtv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Jun 2010 06:49:51 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:58368 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753408Ab0FAKtt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Jun 2010 06:49:49 -0400
+Date: Tue, 1 Jun 2010 20:49:42 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Jens Axboe <jaxboe@fusionio.com>
+Cc: Christoph Hellwig <hch@infradead.org>,
+       Philipp Reisner <philipp.reisner@linbit.com>, drbd-dev@linbit.com,
+       linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+       Julia Lawall <julia@diku.dk>, Al Viro <viro@zeniv.linux.org.uk>
+Subject: Re: linux-next: manual merge of the drbd tree with Linus' tree
+Message-Id: <20100601204942.134965e5.sfr@canb.auug.org.au>
+In-Reply-To: <20100601104515.GM3564@kernel.dk>
+References: <20100601141324.edf41f7f.sfr@canb.auug.org.au>
+	<20100601081823.GA29991@infradead.org>
+	<20100601182213.479a777e.sfr@canb.auug.org.au>
+	<20100601104515.GM3564@kernel.dk>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Tue__1_Jun_2010_20_49_42_+1000_tei0oTqVGLudjGs+"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+--Signature=_Tue__1_Jun_2010_20_49_42_+1000_tei0oTqVGLudjGs+
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-On Tue, 01 Jun 2010 08:21:46 +0200, <Valdis.Kletnieks@vt.edu> wrote:
+HI Jens,
 
-> On Sat, 29 May 2010 13:54:00 +0200,  
-> uwaysi.bin.kareem@paradoxuncreated.com said:
+On Tue, 1 Jun 2010 12:45:15 +0200 Jens Axboe <jaxboe@fusionio.com> wrote:
 >
->> Valdis Kletnieks: Why 3956, and why better than 1000:
->>
->> As stated the exact value 3956, fits a profile of "where the human  
->> senses register the most information".
->
-> More details on that profile. Where *exactly* did the number 3956 come  
-> from?
-> How did you distinguish between 3956 and 4000 or 4096?  What numbers do  
-> you
-> have that show an actual *measurable* improvement over 1000?
->
-> In other words, convince us that people can actually see the difference
-> between 1000 and 3956.
+> So the pipe patches were the same, the problem was that a fix for a
+> missing pipe_unlock() had gone into mainline and for-linus/for-next
+> weren't synced up to that. I'm guessing you pull drbd before for-next
+> and that is why it showed up there.
 
-I do not really have any numbers Valdis, other than simple glxgears benchmarks.
-However I have a lot of experience with jitter, and I am looking for sporadic jitter, jitter related to application-startup, jitter that is more or less constant.
+Actually, I merge the drbd tree after the block tree and this fell to the
+drbd tree only because your for-next branch had not been updated (and I
+don't merge your for-linus branch).
 
-Ofcourse I do not need any numbers either. If you think 1000 is better than 50, then there is a difference between 1000 and 4000 aswell.
-However it gets in the the area of research, one would call psychovisuals. Small changes affecting the immersion, or experience of opengl.
+> BTW, I would recommend moving for-next from the block tree up before any
+> potential other trees being based off it if that is the case.
 
-Put it simply one might state "If you feel that your computer is a bit stoopid, try increasing the value, and maybe you will be more satisfied." This because the computer now, is more like the human senses.
+That is already true.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
 
-The advanced version:
-For those who posess religious knowledge, or believe in religious phenomea, lets just say that, if you don't comply to certain religious knowledge, you will be tuning psychovisuals for a spirit, and not a human, and the experience will be suboptimal. 
+--Signature=_Tue__1_Jun_2010_20_49_42_+1000_tei0oTqVGLudjGs+
+Content-Type: application/pgp-signature
 
-Just like the worshipper of one spirit, say, atheist, includes his preferences in the tuning, so does, for instance the hash-smoker, and that is reflected in his tunings. What one would optimally like, is a spirit-free tuning. No personal preference, but tuned for the universal in us all. 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
 
-And for those who would like to understand some of the methology behind this, again www.paradoxuncreated.com .Try the meditation-techinque, which purifies the mind from spirits.
+iEYEARECAAYFAkwE5cYACgkQjjKRsyhoI8wujACffVSwL97RMoEoVSh/+RFVnGnf
+n1IAn1AaJi1NtBHimLC5NNYJKpqHsbdj
+=FODO
+-----END PGP SIGNATURE-----
 
-Any answers related to this post, critisising or wasting my time, will be ignored.
-
-God guides and deludes whomever he wills.
-Peace Be with You.
-Uwaysi.
+--Signature=_Tue__1_Jun_2010_20_49_42_+1000_tei0oTqVGLudjGs+--
