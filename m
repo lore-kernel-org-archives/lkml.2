@@ -1,50 +1,156 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757330Ab0FAUxW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Jun 2010 16:53:22 -0400
-Received: from mail-pz0-f185.google.com ([209.85.222.185]:38899 "EHLO
-	mail-pz0-f185.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754590Ab0FAUxU (ORCPT
+	id S1757436Ab0FAUxj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Jun 2010 16:53:39 -0400
+Received: from moutng.kundenserver.de ([212.227.126.187]:65241 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757370Ab0FAUxc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Jun 2010 16:53:20 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=wwio8xdv4f2sU5qnaMOdCcoZ2Zj+XGfDHWvisrqSN9mr901dHAwy8a47EXpLAbnfl6
-         jkH8RZ9f4w1+M1k7WKX6AkHUg20W+SmfaVFZ1s4FjMuRZWmdsq3GGdVkCuSHnz4BtKE9
-         EZwKWBIPptJI+3UbDclxIRqpET6nz2q4+q/No=
-Message-ID: <4C0572B4.6000201@gmail.com>
-Date: Tue, 01 Jun 2010 13:51:00 -0700
-From: "Justin P. Mattock" <justinmattock@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.4pre) Gecko/20091114 Lightning/1.0pre Thunderbird/3.0b4
-MIME-Version: 1.0
-To: Matthew Garrett <mjg59@srcf.ucam.org>
-CC: x86@kernel.org, tglx@linutronix.de, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH]X86:reboot.c Add some dmi entries to	pci_reboot_dmi_table.
-References: <20100531170745.GA21225@srcf.ucam.org> <4C03F5EF.8080302@gmail.com> <20100601190050.GA14667@srcf.ucam.org> <4C055BFF.8090800@gmail.com> <20100601192101.GA15086@srcf.ucam.org> <4C056839.8020605@gmail.com> <20100601200704.GA16091@srcf.ucam.org> <4C056AE6.3000409@gmail.com> <20100601202130.GA16391@srcf.ucam.org> <4C056E0C.2030709@gmail.com> <20100601203351.GA16575@srcf.ucam.org>
-In-Reply-To: <20100601203351.GA16575@srcf.ucam.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Tue, 1 Jun 2010 16:53:32 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Greg KH <gregkh@suse.de>
+Cc: linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
+       Alan Cox <alan@lxorguk.ukuu.org.uk>,
+       Frederic Weisbecker <fweisbec@gmail.com>,
+       John Kacur <jkacur@redhat.com>, Alan Cox <alan@linux.intel.com>
+Subject: [PATCH 10/31] synclink: reworking locking a bit
+Date: Tue,  1 Jun 2010 22:52:50 +0200
+Message-Id: <1275425591-8803-11-git-send-email-arnd@arndb.de>
+X-Mailer: git-send-email 1.7.0.4
+In-Reply-To: <1275425591-8803-1-git-send-email-arnd@arndb.de>
+References: <1275425591-8803-1-git-send-email-arnd@arndb.de>
+X-Provags-ID: V01U2FsdGVkX18a+xAZcRsUN8sttMfjr617X9Gw8XaSBu9JXuK
+ AR+RaPKB8zTgOTDD5+WwZ1RyGBgkEy8mt7VEDidiMhiKV6cCvW
+ gKK15hiem1g7WV9EOCTjg==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/01/2010 01:33 PM, Matthew Garrett wrote:
-> On Tue, Jun 01, 2010 at 01:31:08PM -0700, Justin P. Mattock wrote:
->
->> now running as root gives nothing.
->
-> It returns you to the prompt? The machine hangs? What do you mean by
-> "nothing"? (Also, what chipset does this machine have?)
->
+From: Alan Cox <alan@linux.intel.com>
 
-this is what it does:
-It returns you to the prompt
+Use the port mutex and port lock to fix the various races. The locking
+still isn't totally consistent but its better than before. Wants switching
+to the port helpers.
 
-as for the chipset name..(not sure)
-intel with nvidia(right after santa rosa was
-released(I don't keep track of chipsets)..
-  iMac9,1
+Signed-off-by: Alan Cox <alan@linux.intel.com>
+---
+ drivers/char/synclink_gt.c |   12 +++++++++++-
+ drivers/char/synclinkmp.c  |    9 ++++++++-
+ 2 files changed, 19 insertions(+), 2 deletions(-)
 
-Justin P. Mattock
+diff --git a/drivers/char/synclink_gt.c b/drivers/char/synclink_gt.c
+index d0f81f5..c56b70a 100644
+--- a/drivers/char/synclink_gt.c
++++ b/drivers/char/synclink_gt.c
+@@ -675,12 +675,14 @@ static int open(struct tty_struct *tty, struct file *filp)
+ 		goto cleanup;
+ 	}
+ 
++	mutex_lock(&info->port.mutex);
+ 	info->port.tty->low_latency = (info->port.flags & ASYNC_LOW_LATENCY) ? 1 : 0;
+ 
+ 	spin_lock_irqsave(&info->netlock, flags);
+ 	if (info->netcount) {
+ 		retval = -EBUSY;
+ 		spin_unlock_irqrestore(&info->netlock, flags);
++		mutex_unlock(&info->port.mutex);
+ 		goto cleanup;
+ 	}
+ 	info->port.count++;
+@@ -692,7 +694,7 @@ static int open(struct tty_struct *tty, struct file *filp)
+ 		if (retval < 0)
+ 			goto cleanup;
+ 	}
+-
++	mutex_unlock(&info->port.mutex);
+ 	retval = block_til_ready(tty, filp, info);
+ 	if (retval) {
+ 		DBGINFO(("%s block_til_ready rc=%d\n", info->device_name, retval));
+@@ -724,12 +726,14 @@ static void close(struct tty_struct *tty, struct file *filp)
+ 	if (tty_port_close_start(&info->port, tty, filp) == 0)
+ 		goto cleanup;
+ 
++	mutex_lock(&info->port.mutex);
+  	if (info->port.flags & ASYNC_INITIALIZED)
+  		wait_until_sent(tty, info->timeout);
+ 	flush_buffer(tty);
+ 	tty_ldisc_flush(tty);
+ 
+ 	shutdown(info);
++	mutex_unlock(&info->port.mutex);
+ 
+ 	tty_port_close_end(&info->port, tty);
+ 	info->port.tty = NULL;
+@@ -740,17 +744,23 @@ cleanup:
+ static void hangup(struct tty_struct *tty)
+ {
+ 	struct slgt_info *info = tty->driver_data;
++	unsigned long flags;
+ 
+ 	if (sanity_check(info, tty->name, "hangup"))
+ 		return;
+ 	DBGINFO(("%s hangup\n", info->device_name));
+ 
+ 	flush_buffer(tty);
++
++	mutex_lock(&info->port.mutex);
+ 	shutdown(info);
+ 
++	spin_lock_irqsave(&info->port.lock, flags);
+ 	info->port.count = 0;
+ 	info->port.flags &= ~ASYNC_NORMAL_ACTIVE;
+ 	info->port.tty = NULL;
++	spin_unlock_irqrestore(&info->port.lock, flags);
++	mutex_unlock(&info->port.mutex);
+ 
+ 	wake_up_interruptible(&info->port.open_wait);
+ }
+diff --git a/drivers/char/synclinkmp.c b/drivers/char/synclinkmp.c
+index 8da976b..cfa581e 100644
+--- a/drivers/char/synclinkmp.c
++++ b/drivers/char/synclinkmp.c
+@@ -812,13 +812,15 @@ static void close(struct tty_struct *tty, struct file *filp)
+ 
+ 	if (tty_port_close_start(&info->port, tty, filp) == 0)
+ 		goto cleanup;
+-		
++
++	mutex_lock(&info->port.mutex);		
+  	if (info->port.flags & ASYNC_INITIALIZED)
+  		wait_until_sent(tty, info->timeout);
+ 
+ 	flush_buffer(tty);
+ 	tty_ldisc_flush(tty);
+ 	shutdown(info);
++	mutex_unlock(&info->port.mutex);		
+ 
+ 	tty_port_close_end(&info->port, tty);
+ 	info->port.tty = NULL;
+@@ -834,6 +836,7 @@ cleanup:
+ static void hangup(struct tty_struct *tty)
+ {
+ 	SLMP_INFO *info = tty->driver_data;
++	unsigned long flags;
+ 
+ 	if (debug_level >= DEBUG_LEVEL_INFO)
+ 		printk("%s(%d):%s hangup()\n",
+@@ -842,12 +845,16 @@ static void hangup(struct tty_struct *tty)
+ 	if (sanity_check(info, tty->name, "hangup"))
+ 		return;
+ 
++	mutex_lock(&info->port.mutex);		
+ 	flush_buffer(tty);
+ 	shutdown(info);
+ 
++	spin_lock_irqsave(&info->port.lock, flags);
+ 	info->port.count = 0;
+ 	info->port.flags &= ~ASYNC_NORMAL_ACTIVE;
+ 	info->port.tty = NULL;
++	spin_unlock_irqrestore(&info->port.lock, flags);
++	mutex_unlock(&info->port.mutex);		
+ 
+ 	wake_up_interruptible(&info->port.open_wait);
+ }
+-- 
+1.7.0.4
+
