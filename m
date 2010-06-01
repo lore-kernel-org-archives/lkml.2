@@ -1,62 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755865Ab0FAJ6H (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Jun 2010 05:58:07 -0400
-Received: from 8bytes.org ([88.198.83.132]:53126 "EHLO 8bytes.org"
+	id S1756013Ab0FAKAJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Jun 2010 06:00:09 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:41345 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751783Ab0FAJ6D (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Jun 2010 05:58:03 -0400
-Date: Tue, 1 Jun 2010 11:58:01 +0200
-From: Joerg Roedel <joro@8bytes.org>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: "Roedel, Joerg" <Joerg.Roedel@amd.com>, Nicolas Palix <npalix@diku.dk>,
-       "x86@kernel.org" <x86@kernel.org>,
-       "kernel-janitors@vger.kernel.org" <kernel-janitors@vger.kernel.org>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
-       Ingo Molnar <mingo@redhat.com>, Julia Lawall <julia@diku.dk>,
-       Thomas Gleixner <tglx@linutronix.de>,
-       Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [PATCH 6/17] arch/x86/kernel: Add missing spin_unlock
-Message-ID: <20100601095801.GB964@8bytes.org>
-References: <Pine.LNX.4.64.1005261755260.23743@ask.diku.dk> <20100527111136.GV3266@amd.com> <Pine.LNX.4.64.1005271317180.5422@ask.diku.dk> <201005271342.25619.npalix@diku.dk> <20100528071114.GA3266@amd.com> <4BFFF31C.9090904@zytor.com>
+	id S1755768Ab0FAKAC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Jun 2010 06:00:02 -0400
+Date: Tue, 1 Jun 2010 12:55:32 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Avi Kivity <avi@redhat.com>
+Cc: Tom Lyon <pugs@cisco.com>, linux-kernel@vger.kernel.org,
+       kvm@vger.kernel.org, chrisw@sous-sol.org, joro@8bytes.org,
+       hjk@linutronix.de, gregkh@suse.de, aafabbri@cisco.com,
+       scofeldm@cisco.com
+Subject: Re: [PATCH] VFIO driver: Non-privileged user level PCI drivers
+Message-ID: <20100601095532.GA9178@redhat.com>
+References: <20100530121944.GH27611@redhat.com> <4C025999.7080706@redhat.com> <20100530124949.GI27611@redhat.com> <4C0261C1.9090204@redhat.com> <20100530130332.GM27611@redhat.com> <4C026497.8070901@redhat.com> <20100530145309.GO27611@redhat.com> <4C03A285.7060902@redhat.com> <20100531171007.GA6516@redhat.com> <4C04C085.1030107@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4BFFF31C.9090904@zytor.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <4C04C085.1030107@redhat.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 28, 2010 at 09:45:16AM -0700, H. Peter Anvin wrote:
-> On 05/28/2010 12:11 AM, Roedel, Joerg wrote:
-> > On Thu, May 27, 2010 at 07:42:25AM -0400, Nicolas Palix wrote:
-> >>> We have submitted and received some feedback on an initial version of 
-> >>> this, but I'm not completely sure of the current status.
-> >>
-> >> You can see the latest feedback we get at
-> >> http://lkml.org/lkml/2010/5/10/257
-> >>
-> >> The initial submission and its comments are at
-> >> http://lkml.org/lkml/2010/4/26/269
-> > 
-> > I've also sent some feedback. Would be cool if you could work the
-> > feedback in and do a repost asking Andrew to take it. Would be cool to
-> > have this merged with 2.6.36.
-> > 
-> 
-> I don't see why scripts that don't *in themselves* change the output
-> binaries need to wait for .36.  Instead, it would be better to get them
-> in sooner to make them available to developers in advance of the .36 cycle.
-> 
-> Of course, I'm not Linus, and I don't see him Cc:'d on this, but that
-> would be the normal rules.
+On Tue, Jun 01, 2010 at 11:10:45AM +0300, Avi Kivity wrote:
+> On 05/31/2010 08:10 PM, Michael S. Tsirkin wrote:
+>> On Mon, May 31, 2010 at 02:50:29PM +0300, Avi Kivity wrote:
+>>    
+>>> On 05/30/2010 05:53 PM, Michael S. Tsirkin wrote:
+>>>      
+>>>> So what I suggested is failing any kind of access until iommu
+>>>> is assigned.
+>>>>
+>>>>        
+>>> So, the kernel driver must be aware of the iommu.  In which case it may
+>>> as well program it.
+>>>      
+>> It's a kernel driver anyway. Point is that
+>> the *device* driver is better off not programming iommu,
+>> this way we do not need to reprogram it for each device.
+>>    
+>
+> The device driver is in userspace.
 
-Yeah, merging it now would be even better. Since these scripts don't
-change the kernel itself there is little risk to break anything. So how
-about working in the feedback and sending an updated version to Linus
-soon?
+I mean the kernel driver that grants userspace the access.
 
-	Joerg
+>  It can't program the iommu.
+> What  
+> the patch proposes is that userspace tells vfio about the needed  
+> mappings, and vfio programs the iommu.
 
+There seems to be some misunderstanding.  The userspace interface
+proposed forces a separate domain per device and forces userspace to
+repeat iommu programming for each device.  We are better off sharing a
+domain between devices and programming the iommu once.
+
+The natural way to do this is to have an iommu driver for programming
+iommu.
+
+This likely means we will have to pass the domain to 'vfio' or uio or
+whatever the driver that gives userspace the access to device is called,
+but this is only for security, there's no need to support programming
+iommu there.
+
+And using this design means the uio framework changes
+required would be minor, so we won't have to duplicate code.
+
+> -- 
+> error compiling committee.c: too many arguments to function
