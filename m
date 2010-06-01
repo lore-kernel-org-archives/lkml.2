@@ -1,65 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754193Ab0FADPO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 May 2010 23:15:14 -0400
-Received: from mail.tmr.com ([64.65.253.246]:51415 "EHLO partygirl.tmr.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753837Ab0FADPM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 May 2010 23:15:12 -0400
-Message-ID: <4C047B38.9050506@tmr.com>
-Date: Mon, 31 May 2010 23:15:04 -0400
-From: Bill Davidsen <davidsen@tmr.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.8.1.21) Gecko/20090507 Fedora/1.1.16-1.fc9 NOT Firefox/3.0.11 SeaMonkey/1.1.16
+	id S1754302Ab0FADPu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 May 2010 23:15:50 -0400
+Received: from 124x34x33x190.ap124.ftth.ucom.ne.jp ([124.34.33.190]:47297 "EHLO
+	master.linux-sh.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751811Ab0FADPs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 31 May 2010 23:15:48 -0400
+Date: Tue, 1 Jun 2010 12:15:28 +0900
+From: Paul Mundt <lethal@linux-sh.org>
+To: Kevin Cernekee <cernekee@gmail.com>
+Cc: mingo@elte.hu, akpm@linux-foundation.org, simon.kagstrom@netinsight.net,
+       David.Woodhouse@intel.com, rgetz@analog.com,
+       linux-kernel@vger.kernel.org, linux-mips@linux-mips.org
+Subject: Re: [PATCH v2] printk: fix delayed messages from CPU hotplug events
+Message-ID: <20100601031528.GC15411@linux-sh.org>
+References: <ede63b5a20af951c755736f035d1e787772d7c28@localhost>
 MIME-Version: 1.0
-To: Robert Hancock <hancockrwd@gmail.com>
-CC: alex.buell@munted.org.uk,
-       Mailing Lists - Kernel Developers 
-	<linux-kernel@vger.kernel.org>,
-       Dave Airlie <airlied@gmail.com>
-Subject: Re: Article in Phoronix about loss of performance in 2.6.35 release
- candidates
-References: <1275347969.29006.5.camel@lithium.local.net> <4C0448B5.7090904@gmail.com>
-In-Reply-To: <4C0448B5.7090904@gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <ede63b5a20af951c755736f035d1e787772d7c28@localhost>
+User-Agent: Mutt/1.5.13 (2006-08-11)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Robert Hancock wrote:
-> On 05/31/2010 05:19 PM, Alex Buell wrote:
->> http://www.phoronix.com/vr.php?view=14976
->>
->> Question: Why?
-> 
-> Good question.. I guess it would too much to ask of them to try to 
-> figure out what area the problem lies in (even to the point of figuring 
-> out if it's a CPU or IO-bound problem), or try to bisect, or at least 
-> report it to LKML before going to the trouble of creating 5 pages of 
-> graphs.. Given the 20x slowdown in some of the benchmarks you'd think it 
-> wouldn't be too hard to narrow down.
+On Mon, May 31, 2010 at 04:57:15PM -0700, Kevin Cernekee wrote:
+>  /**
+> + * console_cpu_notify - print deferred console messages after CPU hotplug
+> + *
+> + * If printk() is called from a CPU that is not online yet, the messages
+> + * will be spooled but will not show up on the console.  This function is
+> + * called when a new CPU comes online and ensures that any such output
+> + * gets printed.
+> + */
+> +static int __cpuinit console_cpu_notify(struct notifier_block *self,
+> +	unsigned long action, void *hcpu)
+> +{
+> +	switch (action) {
+> +	case CPU_ONLINE:
+> +	case CPU_UP_CANCELED:
+> +		if (try_acquire_console_sem() == 0)
+> +			release_console_sem();
+> +	}
+> +	return NOTIFY_OK;
+> +}
+> +
+> +static struct notifier_block __cpuinitdata console_nb = {
+> +	.notifier_call		= console_cpu_notify,
+> +};
+> +
+> +static int __init console_notifier_init(void)
+> +{
+> +	register_cpu_notifier(&console_nb);
+> +	return 0;
+> +}
 
-That's true, but 20x should be too hard for people to detect when they do QA 
-after creating a patch, before sending it to LKML in the first place, either. If 
-such a regression made it to an -rc1 then it really is kind of a big deal. Of 
-course Phoronics running the tests on netbook processors is probably a good 
-thing, I doubt many developers and testers are compiling kernels on a rig like 
-that, or doing much of anything else demanding.
-
-I guess I would expect people to react with dismay to the fact that such a 
-problem made it undetected to rc stage, but perhaps I have too much respect for 
-developers. This looks more like "how dare they not keep it quiet and just tell 
-us" indignation. In the end I doubt it makes a lot of difference, if someone 
-posted to LKML and Slashdot picked it up, be sure it would have hit the media 
-anyway.
-
-Should any media keep a defect quiet when they make their living informing the 
-readers? I see a lot of glee among Linux users every few days when a new Windows 
-bug becomes public. Phoronics tested and reported, why is that less honorable 
-than Tom's Hardware telling us a new CPU sucks?
-
-
--- 
-Bill Davidsen <davidsen@tmr.com>
-   "We have more to fear from the bungling of the incompetent than from
-the machinations of the wicked."  - from Slashdot
+If this is to be entirely restricted to CPU hotplug then you could use
+the hotcpu notifier here instead of the open-coded cpu notifier directly,
+the former wraps to the latter in the CPU hotplug case and is simply a
+nop for the regular SMP case.
