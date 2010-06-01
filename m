@@ -1,64 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756896Ab0FANxR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Jun 2010 09:53:17 -0400
-Received: from poutre.nerim.net ([62.4.16.124]:53172 "EHLO poutre.nerim.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755020Ab0FANxO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Jun 2010 09:53:14 -0400
-Date: Tue, 1 Jun 2010 15:53:10 +0200
-From: Jean Delvare <khali@linux-fr.org>
-To: Wolfram Sang <w.sang@pengutronix.de>
-Cc: linux-i2c@vger.kernel.org, George Joseph <george.joseph@fairview5.com>,
-       Riku Voipio <riku.voipio@iki.fi>,
-       Guillaume Ligneul <guillaume.ligneul@gmail.com>,
-       "Ben Dooks (embedded platforms)" <ben-linux@fluff.org>,
-       Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-       Alessandro Rubini <rubini@cvml.unipv.it>,
-       Richard Purdie <rpurdie@rpsys.net>, Colin Leroy <colin@colino.net>,
-       Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-       Mauro Carvalho Chehab <mchehab@infradead.org>,
-       Samuel Ortiz <sameo@linux.intel.com>,
-       Mark Brown <broonie@opensource.wolfsonmicro.com>,
-       David Woodhouse <dwmw2@infradead.org>,
-       Liam Girdwood <lrg@slimlogic.co.uk>,
-       Paul Gortmaker <p_gortmaker@yahoo.com>,
-       Alessandro Zummo <a.zummo@towertech.it>,
-       Greg Kroah-Hartman <gregkh@suse.de>, lm-sensors@lm-sensors.org,
-       linux-kernel@vger.kernel.org, linux-input@vger.kernel.org,
-       linuxppc-dev@ozlabs.org, linux-media@vger.kernel.org,
-       linux-mtd@lists.infradead.org, rtc-linux@googlegroups.com,
-       devel@driverdev.osuosl.org
-Subject: Re: [PATCH] drivers: remove all i2c_set_clientdata(client, NULL)
-Message-ID: <20100601155310.3781fce6@hyperion.delvare>
-In-Reply-To: <1275310552-14685-1-git-send-email-w.sang@pengutronix.de>
-References: <1275310552-14685-1-git-send-email-w.sang@pengutronix.de>
-X-Mailer: Claws Mail 3.5.0 (GTK+ 2.14.4; i586-suse-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1756879Ab0FAN7Y (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Jun 2010 09:59:24 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:24106 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756651Ab0FAN7W (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Jun 2010 09:59:22 -0400
+Date: Tue, 1 Jun 2010 09:58:18 -0400
+From: Chris Mason <chris.mason@oracle.com>
+To: Christof Schmitt <christof.schmitt@de.ibm.com>
+Cc: Boaz Harrosh <bharrosh@panasas.com>,
+       James Bottomley <James.Bottomley@suse.de>,
+       "Martin K. Petersen" <martin.petersen@oracle.com>,
+       linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
+       linux-fsdevel@vger.kernel.org
+Subject: Re: Wrong DIF guard tag on ext2 write
+Message-ID: <20100601135818.GN8980@think>
+Mail-Followup-To: Chris Mason <chris.mason@oracle.com>,
+	Christof Schmitt <christof.schmitt@de.ibm.com>,
+	Boaz Harrosh <bharrosh@panasas.com>,
+	James Bottomley <James.Bottomley@suse.de>,
+	"Martin K. Petersen" <martin.petersen@oracle.com>,
+	linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
+	linux-fsdevel@vger.kernel.org
+References: <20100531112817.GA16260@schmichrtp.mainz.de.ibm.com>
+ <yq1iq64kv9f.fsf@sermon.lab.mkp.net>
+ <1275318102.2823.47.camel@mulgrave.site>
+ <4C03D5FD.3000202@panasas.com>
+ <20100601103041.GA15922@schmichrtp.mainz.de.ibm.com>
+ <20100601130325.GG8980@think>
+ <20100601135059.GA21008@schmichrtp.mainz.de.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100601135059.GA21008@schmichrtp.mainz.de.ibm.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Auth-Type: Internal IP
+X-Source-IP: rcsinet13.oracle.com [148.87.113.125]
+X-CT-RefId: str=0001.0A090206.4C051230.019C:SCFMA4539811,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 31 May 2010 14:55:48 +0200, Wolfram Sang wrote:
-> I2C-drivers can use the clientdata-pointer to point to private data. As I2C
-> devices are not really unregistered, but merely detached from their driver, it
-> used to be the drivers obligation to clear this pointer during remove() or a
-> failed probe(). As a couple of drivers forgot to do this, it was agreed that it
-> was cleaner if the i2c-core does this clearance when appropriate, as there is
-> no guarantee for the lifetime of the clientdata-pointer after remove() anyhow.
-> This feature was added to the core with commit
-> e4a7b9b04de15f6b63da5ccdd373ffa3057a3681 to fix the faulty drivers.
+On Tue, Jun 01, 2010 at 03:50:59PM +0200, Christof Schmitt wrote:
+> On Tue, Jun 01, 2010 at 09:03:25AM -0400, Chris Mason wrote:
+> > On Tue, Jun 01, 2010 at 12:30:42PM +0200, Christof Schmitt wrote:
+> > > On Mon, May 31, 2010 at 06:30:05PM +0300, Boaz Harrosh wrote:
+> > > > On 05/31/2010 06:01 PM, James Bottomley wrote:
+> > > > > On Mon, 2010-05-31 at 10:20 -0400, Martin K. Petersen wrote:
+> > > > >>>>>>> "Christof" == Christof Schmitt <christof.schmitt@de.ibm.com> writes:
+> > > > >>
+> > > > >> Christof> Since the guard tags are created in Linux, it seems that the
+> > > > >> Christof> data attached to the write request changes between the
+> > > > >> Christof> generation in bio_integrity_generate and the call to
+> > > > >> Christof> sd_prep_fn.
+> > > > >>
+> > > > >> Yep, known bug.  Page writeback locking is messed up for buffer_head
+> > > > >> users.  The extNfs folks volunteered to look into this a while back but
+> > > > >> I don't think they have found the time yet.
+> > > > >>
+> > > > >>
+> > > > >> Christof> Using ext3 or ext4 instead of ext2 does not show the problem.
+> > > > >>
+> > > > >> Last I looked there were still code paths in ext3 and ext4 that
+> > > > >> permitted pages to be changed during flight.  I guess you've just been
+> > > > >> lucky.
+> > > > > 
+> > > > > Pages have always been modifiable in flight.  The OS guarantees they'll
+> > > > > be rewritten, so the drivers can drop them if it detects the problem.
+> > > > > This is identical to the iscsi checksum issue (iscsi adds a checksum
+> > > > > because it doesn't trust TCP/IP and if the checksum is generated in
+> > > > > software, there's time between generation and page transmission for the
+> > > > > alteration to occur).  The solution in the iscsi case was not to
+> > > > > complain if the page is still marked dirty.
+> > > > > 
+> > > > 
+> > > > And also why RAID1 and RAID4/5/6 need the data bounced. I wish VFS
+> > > > would prevent data writing given a device queue flag that requests
+> > > > it. So all these devices and modes could just flag the VFS/filesystems
+> > > > that: "please don't allow concurrent writes, otherwise I need to copy data"
+> > > > 
+> > > > From what Chris Mason has said before, all the mechanics are there, and it's
+> > > > what btrfs is doing. Though I don't know how myself?
+> > > 
+> > > I also tested with btrfs and invalid guard tags in writes have been
+> > > encountered as well (again in 2.6.34). The only difference is that no
+> > > error was reported to userspace, although this might be a
+> > > configuration issue.
+> > 
+> > This would be a btrfs bug.  We have strict checks in place that are
+> > supposed to prevent buffers changing while in flight.  What was the
+> > workload that triggered this problem?
 > 
-> As there is no need anymore to clear the clientdata-pointer, remove all current
-> occurrences in the drivers to simplify the code and prevent confusion.
-> 
-> Signed-off-by: Wolfram Sang <w.sang@pengutronix.de>
-> Cc: Jean Delvare <khali@linux-fr.org>
-> (...)
+> I am running an internal test tool that creates files with a known
+> pattern until the disk is full, reads the data to verify if the
+> pattern is still intact, removes the files and starts over.
 
-Applied, thanks. Will go to Linus in the next few days.
+Ok, is the lba in the output the sector offset?  We can map that to a
+btrfs block and figure out what it was.
 
--- 
-Jean Delvare
+Btrfs never complains about the IO error?  We really should explode.
+
+-chris
