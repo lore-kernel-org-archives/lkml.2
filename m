@@ -1,102 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755031Ab0FAWHY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Jun 2010 18:07:24 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:39789 "EHLO ogre.sisk.pl"
+	id S1754823Ab0FAWMr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Jun 2010 18:12:47 -0400
+Received: from thunk.org ([69.25.196.29]:49167 "EHLO thunker.thunk.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751364Ab0FAWHW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Jun 2010 18:07:22 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Alan Stern <stern@rowland.harvard.edu>
-Subject: Re: [linux-pm] [PATCH 0/8] Suspend block api (version 8)
-Date: Wed, 2 Jun 2010 00:08:49 +0200
-User-Agent: KMail/1.12.4 (Linux/2.6.35-rc1-rjw; KDE/4.3.5; x86_64; ; )
-Cc: Neil Brown <neilb@suse.de>, Thomas Gleixner <tglx@linutronix.de>,
-       Felipe Balbi <felipe.balbi@nokia.com>,
-       Arve =?iso-8859-1?q?Hj=F8nnev=E5g?= <arve@android.com>,
-       Peter Zijlstra <peterz@infradead.org>,
-       LKML <linux-kernel@vger.kernel.org>,
-       Florian Mickler <florian@mickler.org>,
-       Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
-       Linux PM <linux-pm@lists.linux-foundation.org>,
-       Alan Cox <alan@lxorguk.ukuu.org.uk>
-References: <Pine.LNX.4.44L0.1006011032150.2949-100000@iolanthe.rowland.org>
-In-Reply-To: <Pine.LNX.4.44L0.1006011032150.2949-100000@iolanthe.rowland.org>
+	id S1751364Ab0FAWMp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Jun 2010 18:12:45 -0400
+Date: Tue, 1 Jun 2010 18:12:32 -0400
+From: tytso@mit.edu
+To: "Jayson R. King" <dev@jaysonking.com>
+Cc: Greg Freemyer <greg.freemyer@gmail.com>,
+       Kay Diederichs <kay.diederichs@uni-konstanz.de>,
+       Stable team <stable@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+       Greg Kroah-Hartman <gregkh@suse.de>,
+       "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+       Dave Chinner <david@fromorbit.com>,
+       Ext4 Developers List <linux-ext4@vger.kernel.org>
+Subject: Re: [PATCH 2.6.27.y 1/3] ext4: Use our own write_cache_pages()
+Message-ID: <20100601221232.GH4426@thunk.org>
+Mail-Followup-To: tytso@mit.edu, "Jayson R. King" <dev@jaysonking.com>,
+	Greg Freemyer <greg.freemyer@gmail.com>,
+	Kay Diederichs <kay.diederichs@uni-konstanz.de>,
+	Stable team <stable@kernel.org>,
+	LKML <linux-kernel@vger.kernel.org>,
+	Greg Kroah-Hartman <gregkh@suse.de>,
+	"Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+	Dave Chinner <david@fromorbit.com>,
+	Ext4 Developers List <linux-ext4@vger.kernel.org>
+References: <4C001888.8020006@jaysonking.com>
+ <4C0018E1.5060007@jaysonking.com>
+ <20100529004913.GL26177@thunk.org>
+ <4C0070D8.8060500@jaysonking.com>
+ <20100530212502.GQ26177@thunk.org>
+ <4C0358B1.1050605@uni-konstanz.de>
+ <AANLkTin3rfw04Shsmmd2O0URjWqbUhf-HOw4r2dXaprH@mail.gmail.com>
+ <070DAF41-4DD5-4F20-B9F1-3B472147C499@mit.edu>
+ <4C05684D.5050204@jaysonking.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201006020008.49150.rjw@sisk.pl>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4C05684D.5050204@jaysonking.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on thunker.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 01 June 2010, Alan Stern wrote:
-> On Tue, 1 Jun 2010, Neil Brown wrote:
-> 
-> > > With wakeup events the problem isn't so bad.  Wakeup events are always
-> > > noticed, and if the system is designed properly they will either abort
-> > > a suspend-in-progress or else cause the system to resume as soon as the
-> > > suspend is complete.  (Linux is not yet properly designed in this
-> > > sense.)
-> > 
-> > This is exactly the issue.  Linux doesn't get this right.  A wakeup that is
-> > processed by the driver just before suspend may not get all the way out to
-> > it's final destination (possibly in meat-space) until after some other event
-> > wakes the device.  It is not possible to guarantee full delivery of a wakeup
-> > event with Linux in its current state.  This is a bug.
-> 
-> That wasn't what I meant.  An important requirement is that a wakeup 
-> event received after the device has been suspended, but before the 
-> system suspend is complete, should cause the system suspend to abort.  
-> This is one of the things suspend blockers were meant to help with.  In 
-> theory it should already work correctly -- but it doesn't.  That's a 
-> real bug.
-> 
-> The other things you're talking about aren't really bugs.  That is,
-> they are things which the kernel _ought_ to do but it wasn't _intended_
-> to do.  They are misfeatures: failures of design, not failures of 
-> execution.
-> 
-> > I don't think I'm missing that.  Wakeup events are the only events of
-> > interest.  But wakeup events are more than just low-level hardware events.
-> > They are also the virtual events that are a direct consequence of the
-> > original hardware event.
-> 
-> This is a matter of semantics and it is highly debatable.
-> 
-> > A UART asserts 'data ready' which is routed to an IO interrupt line that
-> > wakes the device.  This is a wakeup event.
-> 
-> Yes.
-> 
-> > So are the bits that appear on the data line which represent the data
-> > So are the characters that appear on the serial port
-> > So is the "here is a message from the GSM processor" event
-> > So is the "there is a new TXT message" event
-> > So is the "'beep beep beep' out the speaker" event
-> 
-> None of those things can cause the system to wake up after it is
-> suspended.  Indeed, they can't happen at all if the CPU isn't running
-> (unless the GSM processor runs autonomously -- let's ignore such
-> details).  Hence it makes little sense to call them "wakeup" events.
-> 
-> > All these events are wakeup events, and should abort or instant-resume the
-> > system.  Currently only the first can be guaranteed to do this (... and maybe
-> > the second, depending on the details of the implementation).
-> > suspend-blocks effectively pass a lock from one event to the next to ensure
-> > that all of these event block the suspend.  There are various other ways to
-> > achieve the same thing, and I think it can be done with no significant change
-> > to the API.  But some how we need to allow all of these events to be
-> > linked wake-up events, not just the first one.
-> 
-> That's not entirely clear.  Yes, for Android's use case that's what you 
-> want.  But in other situations maybe you don't.  Consider the example 
-> of someone who closes the lid of their laptop and throws it in a 
-> backpack.  The computer should suspend immediately; it shouldn't be 
-> delayed by these "virtual wakeup" events.
+On Tue, Jun 01, 2010 at 03:06:37PM -0500, Jayson R. King wrote:
+> Like Kay Diederichs mentioned, .27 has received ext4 updates in the
+> past, even as recently as April this year ("ext4: Avoid null pointer
+> dereference..."). Though this of course does not imply that .27
+> should receive ext4 fixes (or other fixes) forever, but it is nice
+> to fix the most serious, show-stopping problems if it is feasable.
 
-BTW, this is an important point.  We've already had some bug reports regarding
-such unwanted wakeup events.
+Some people have, but I had stopped doing wholesale attempts of
+backports about 6-9 months ago, due to lack of time and because 2.6.27
+was just getting too hard to backport to.  So what has been getting
+backported has been a little bit of a scattershot.  In retrospect, if
+I had known people would have wanted to keep it going for this long, I
+would have been more aggressive about backporting patches which might
+not (strictly speaking) meet the "critical bugfix" category, but which
+enables backporting of future important bugs without having to do some
+pretty extreme efforts to make the backport work.  
 
-Rafael
+(And past a certain point, we end up needing to manually regen each
+patch, and because of quota and i_blocks updates are so closely tied
+together, and quota received a bunch of "clean up patches", we either
+need to merge in all of the quota "clean ups", or we need to regen the
+patch pretty much from scratch as part of the stable backport.)
+
+> (maybe OT?: When I made an attempt to switch to kernel .31 or .32
+> earlier, the kernel would not boot for me. Surely, I can do some
+> investigating and get it to boot some day, but I wasn't motivated to
+> solve it at the time and stuck with .27 instead.)
+
+You might want to try the latest 2.6.32 stable kernel and see if it
+works any better for you.  Since all of the major enterprise distro's
+are using 2.6.32 as a base, it's likely that a lot of problem that may
+have been in the original 2.6.32 kernel has been fixed.
+
+And, to sweeten the pot, I've done all of the backporting of the ext4
+patches to 2.6.32 already, and will probably keep it up for a while,
+just because the enterprise distros that are focusing on 2.6.32.
+
+						- Ted
