@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752032Ab0FAFsL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Jun 2010 01:48:11 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:52712 "EHLO
+	id S1752385Ab0FAFtV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Jun 2010 01:49:21 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:52760 "EHLO
 	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750768Ab0FAFsJ (ORCPT
+	with ESMTP id S1751483Ab0FAFtU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Jun 2010 01:48:09 -0400
+	Tue, 1 Jun 2010 01:49:20 -0400
 X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
 From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
 To: LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
@@ -14,49 +14,101 @@ To: LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
        Andrew Morton <akpm@linux-foundation.org>,
        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
        Nick Piggin <npiggin@suse.de>
-Subject: [PATCH 2/5] oom: remove warning for in mm-less task __oom_kill_process()
+Subject: [PATCH 3/5] oom: Fix child process iteration properly
 Cc: kosaki.motohiro@jp.fujitsu.com
 In-Reply-To: <20100601144238.243A.A69D9226@jp.fujitsu.com>
 References: <20100601144238.243A.A69D9226@jp.fujitsu.com>
-Message-Id: <20100601144705.243D.A69D9226@jp.fujitsu.com>
+Message-Id: <20100601144810.2440.A69D9226@jp.fujitsu.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="US-ASCII"
 Content-Transfer-Encoding: 7bit
 X-Mailer: Becky! ver. 2.50.07 [ja]
-Date: Tue,  1 Jun 2010 14:48:05 +0900 (JST)
+Date: Tue,  1 Jun 2010 14:49:17 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If the race of mm detach in task exiting vs oom is happen,
-find_lock_task_mm() can be return NULL.
+Oleg pointed out that current oom child process iterating logic is wrong.
 
-So, the warning is pointless. remove it.
+  > list_for_each_entry(p->children) can only see the tasks forked
+  > by p, it can't see other children forked by its sub-threads.
 
+This patch fixes it.
 
+Reported-by: Oleg Nesterov <oleg@redhat.com>
 Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
 ---
- mm/oom_kill.c |    6 +-----
- 1 files changed, 1 insertions(+), 5 deletions(-)
+ mm/oom_kill.c |   34 ++++++++++++++++++++--------------
+ 1 files changed, 20 insertions(+), 14 deletions(-)
 
 diff --git a/mm/oom_kill.c b/mm/oom_kill.c
-index bac4515..70e1a85 100644
+index 70e1a85..1bdf27d 100644
 --- a/mm/oom_kill.c
 +++ b/mm/oom_kill.c
-@@ -402,12 +402,8 @@ static int __oom_kill_process(struct task_struct *p, struct mem_cgroup *mem,
- 		return 1;
- 
- 	p = find_lock_task_mm(p);
--	if (!p) {
--		WARN_ON(1);
--		printk(KERN_WARNING "tried to kill an mm-less task %d (%s)!\n",
--			task_pid_nr(p), p->comm);
-+	if (!p)
- 		return 1;
+@@ -88,6 +88,7 @@ unsigned long badness(struct task_struct *p, unsigned long uptime)
+ {
+ 	unsigned long points, cpu_time, run_time;
+ 	struct task_struct *c;
++	struct task_struct *t = p;
+ 	struct task_struct *child;
+ 	int oom_adj = p->signal->oom_adj;
+ 	struct task_cputime task_time;
+@@ -125,14 +126,16 @@ unsigned long badness(struct task_struct *p, unsigned long uptime)
+ 	 * child is eating the vast majority of memory, adding only half
+ 	 * to the parents will make the child our kill candidate of choice.
+ 	 */
+-	list_for_each_entry(c, &p->children, sibling) {
+-		child = find_lock_task_mm(c);
+-		if (child) {
+-			if (child->mm != p->mm)
+-				points += child->mm->total_vm/2 + 1;
+-			task_unlock(child);
++	do {
++		list_for_each_entry(c, &t->children, sibling) {
++			child = find_lock_task_mm(c);
++			if (child) {
++				if (child->mm != p->mm)
++					points += child->mm->total_vm/2 + 1;
++				task_unlock(child);
++			}
+ 		}
 -	}
++	} while_each_thread(p, t);
  
- 	if (verbose)
- 		printk(KERN_ERR "Killed process %d (%s) "
+ 	/*
+ 	 * CPU time is in tens of seconds and run time is in thousands
+@@ -432,6 +435,7 @@ static int oom_kill_process(struct task_struct *p, gfp_t gfp_mask, int order,
+ 			    const char *message)
+ {
+ 	struct task_struct *c;
++	struct task_struct *t = p;
+ 
+ 	if (printk_ratelimit())
+ 		dump_header(p, gfp_mask, order, mem);
+@@ -449,14 +453,16 @@ static int oom_kill_process(struct task_struct *p, gfp_t gfp_mask, int order,
+ 					message, task_pid_nr(p), p->comm, points);
+ 
+ 	/* Try to kill a child first */
+-	list_for_each_entry(c, &p->children, sibling) {
+-		if (c->mm == p->mm)
+-			continue;
++	do {
++		list_for_each_entry(c, &t->children, sibling) {
++			if (c->mm == p->mm)
++				continue;
+ 
+-		/* Ok, Kill the child */
+-		if (!__oom_kill_process(c, mem, 1))
+-			return 0;
+-	}
++			/* Ok, Kill the child */
++			if (!__oom_kill_process(c, mem, 1))
++				return 0;
++		}
++	} while_each_thread(p, t);
+ 
+ 	return __oom_kill_process(p, mem, 1);
+ }
 -- 
 1.6.5.2
 
