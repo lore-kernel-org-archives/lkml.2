@@ -1,86 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751942Ab0FABKt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 May 2010 21:10:49 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:59116 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751506Ab0FABKs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 May 2010 21:10:48 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-To: Oleg Nesterov <oleg@redhat.com>
-Subject: Re: [PATCH 2/5] oom: select_bad_process: PF_EXITING check should take ->mm into account
-Cc: kosaki.motohiro@jp.fujitsu.com, LKML <linux-kernel@vger.kernel.org>,
-       linux-mm <linux-mm@kvack.org>, David Rientjes <rientjes@google.com>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-       Nick Piggin <npiggin@suse.de>
-In-Reply-To: <20100531164354.GA9991@redhat.com>
-References: <20100531183335.1846.A69D9226@jp.fujitsu.com> <20100531164354.GA9991@redhat.com>
-Message-Id: <20100601093951.2430.A69D9226@jp.fujitsu.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
-Content-Transfer-Encoding: 7bit
-X-Mailer: Becky! ver. 2.50.07 [ja]
-Date: Tue,  1 Jun 2010 10:10:45 +0900 (JST)
+	id S1752123Ab0FABL4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 May 2010 21:11:56 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:51833 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751506Ab0FABLz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 31 May 2010 21:11:55 -0400
+Date: Tue, 1 Jun 2010 11:11:49 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Paul Mundt <lethal@linux-sh.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: linux-next: build failure after merge of the  shtree
+Message-Id: <20100601111149.a809f097.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Tue__1_Jun_2010_11_11_49_+1000_Z.UIu83JnXe5K8w7"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi
+--Signature=_Tue__1_Jun_2010_11_11_49_+1000_Z.UIu83JnXe5K8w7
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> > --- a/mm/oom_kill.c
-> > +++ b/mm/oom_kill.c
-> > @@ -287,7 +287,7 @@ static struct task_struct *select_bad_process(unsigned long *ppoints,
-> >  		 * the process of exiting and releasing its resources.
-> >  		 * Otherwise we could get an easy OOM deadlock.
-> >  		 */
-> > -		if (p->flags & PF_EXITING) {
-> > +		if ((p->flags & PF_EXITING) && p->mm) {
-> 
-> (strictly speaking, this change is needed after 3/5 which removes the
->  top-level "if (!p->mm)" check in select_bad_process).
-> 
-> 
-> I'd like to add a note... with or without this, we have problems
-> with the coredump. A thread participating in the coredumping
-> (group-leader in this case) can have PF_EXITING && mm, but this doesn't
-> mean it is going to exit soon, and the dumper can use a lot more memory.
+Hi Paul,
 
-Sure. I think coredump sould do nothing if oom occur.
-So, merely making PF_COREDUMP is bad idea? I mean
+After merging the sh tree, today's linux-next build (x86_64
+allmodconfig) failed like this:
 
+In file included from drivers/usb/gadget/r8a66597-udc.c:35:
+drivers/usb/gadget/r8a66597-udc.h: In function 'r8a66597_read_fifo':
+drivers/usb/gadget/r8a66597-udc.h:147: error: implicit declaration of funct=
+ion 'readsl'
+drivers/usb/gadget/r8a66597-udc.h:164: error: implicit declaration of funct=
+ion 'readsw'
+drivers/usb/gadget/r8a66597-udc.h: In function 'r8a66597_write_fifo':
+drivers/usb/gadget/r8a66597-udc.h:197: error: implicit declaration of funct=
+ion 'writesl'
+drivers/usb/gadget/r8a66597-udc.h:204: error: implicit declaration of funct=
+ion 'writesw'
+In file included from drivers/usb/host/r8a66597-hcd.c:44:
+drivers/usb/host/r8a66597.h: In function 'r8a66597_read_fifo':
+drivers/usb/host/r8a66597.h:185: error: implicit declaration of function 'r=
+eadsl'
+drivers/usb/host/r8a66597.h:194: error: implicit declaration of function 'r=
+eadsw'
+drivers/usb/host/r8a66597.h: In function 'r8a66597_write_fifo':
+drivers/usb/host/r8a66597.h:215: error: implicit declaration of function 'w=
+ritesl'
+drivers/usb/host/r8a66597.h:230: error: implicit declaration of function 'w=
+ritesw'
 
-task-flags		allocator
-------------------------------------------------
-none			N/A
-TIF_MEMDIE		allow to use emergency memory.
-			don't call page reclaim.
-PF_COREDUMP		N/A
-TIF_MEMDIE+PF_COREDUMP	disallow to use emergency memory.
-			don't call page reclaim.
+Caused by commits 920491717d4729844a6ebcd13c863e163d41ca6e ("usb: gadget:
+r8a66597-udc pio to mmio accessor conversion") and
+ae7cbc543c96c90d3b277a5370d77c08a047c396 ("usb: r8a66597-hcd pio to mmio
+accessor conversion").
 
-In other word, coredump path makes allocation failure if the task
-marked as TIF_MEMDIE.
-And, userland oom helper should be marked PF_OOM_ORIGIN perhaps.
+I have used the version of the sh tree form next-20100531 for today.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
 
+--Signature=_Tue__1_Jun_2010_11_11_49_+1000_Z.UIu83JnXe5K8w7
+Content-Type: application/pgp-signature
 
-> Otoh, if select_bad_process() chooses the thread which dumps the core,
-> SIGKILL can't stop it. This should be fixed in do_coredump() paths, this
-> is the long-standing problem.
-> 
-> And, as it was already discussed, we only check the group-leader here.
-> But I can't suggest something better.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
 
-I guess signal_group_exit() is enough in practical case. I mean
-exit(2) is only used by pthread_exit(3), so practically the last thread
-in the process don't die by using exit(2).
+iEYEARECAAYFAkwEXlUACgkQjjKRsyhoI8zJ2ACgs4dHahbIUwVHNcT6EILt1dA1
+ekkAniQatgLKgRGMxRhCqhx76kWHqxst
+=aTpH
+-----END PGP SIGNATURE-----
 
-I don't say signal_group_exit() is no side-effect. but I guess originally
-intention was testing during _process_ exiting. 
-
-Am I missing something?
-
-
-
+--Signature=_Tue__1_Jun_2010_11_11_49_+1000_Z.UIu83JnXe5K8w7--
