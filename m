@@ -1,16 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755452Ab0FAD0B (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 May 2010 23:26:01 -0400
-Received: from mail.perches.com ([173.55.12.10]:2482 "EHLO mail.perches.com"
+	id S1755497Ab0FAD0F (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 May 2010 23:26:05 -0400
+Received: from mail.perches.com ([173.55.12.10]:2473 "EHLO mail.perches.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754724Ab0FADXa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1754698Ab0FADXa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 31 May 2010 23:23:30 -0400
 From: Joe Perches <joe@perches.com>
 To: linux-kernel@vger.kernel.org
-Subject: [PATCH 12/21] drivers/net/vxge/vxge-main.c: Remove unnecessary kmalloc casts
-Date: Mon, 31 May 2010 20:23:14 -0700
-Message-Id: <3b77109efe35cf983a884c793b7d47e446ea8988.1275360951.git.joe@perches.com>
+Cc: Grant Grundler <grundler@parisc-linux.org>,
+       Kyle McMartin <kyle@mcmartin.ca>, netdev@vger.kernel.org
+Subject: [PATCH 11/21] drivers/net/tulip/eeprom.c: Remove unnecessary kmalloc casts
+Date: Mon, 31 May 2010 20:23:13 -0700
+Message-Id: <4fc0e008a2fc826c5696c07bf25a68440e36353b.1275360951.git.joe@perches.com>
 X-Mailer: git-send-email 1.7.0.3.311.g6a6955
 In-Reply-To: <cover.1275360951.git.joe@perches.com>
 References: <cover.1275360951.git.joe@perches.com>
@@ -20,24 +22,37 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Joe Perches <joe@perches.com>
 ---
- drivers/net/vxge/vxge-main.c |    4 +---
- 1 files changed, 1 insertions(+), 3 deletions(-)
+ drivers/net/tulip/eeprom.c |   10 +++++-----
+ 1 files changed, 5 insertions(+), 5 deletions(-)
 
-diff --git a/drivers/net/vxge/vxge-main.c b/drivers/net/vxge/vxge-main.c
-index b504bd5..3c43430 100644
---- a/drivers/net/vxge/vxge-main.c
-+++ b/drivers/net/vxge/vxge-main.c
-@@ -4350,9 +4350,7 @@ vxge_probe(struct pci_dev *pdev, const struct pci_device_id *pre)
+diff --git a/drivers/net/tulip/eeprom.c b/drivers/net/tulip/eeprom.c
+index 6002e65..3031ed9 100644
+--- a/drivers/net/tulip/eeprom.c
++++ b/drivers/net/tulip/eeprom.c
+@@ -120,8 +120,8 @@ static void __devinit tulip_build_fake_mediatable(struct tulip_private *tp)
+ 			  0x00, 0x06  /* ttm bit map */
+ 			};
  
- 	/* Copy the station mac address to the list */
- 	for (i = 0; i < vdev->no_of_vpath; i++) {
--		entry =	(struct vxge_mac_addrs *)
--				kzalloc(sizeof(struct vxge_mac_addrs),
+-		tp->mtable = (struct mediatable *)
+-			kmalloc(sizeof(struct mediatable) + sizeof(struct medialeaf), GFP_KERNEL);
++		tp->mtable = kmalloc(sizeof(struct mediatable) +
++				     sizeof(struct medialeaf), GFP_KERNEL);
+ 
+ 		if (tp->mtable == NULL)
+ 			return; /* Horrible, impossible failure. */
+@@ -227,9 +227,9 @@ subsequent_board:
+ 		        return;
+ 		}
+ 
+-		mtable = (struct mediatable *)
+-			kmalloc(sizeof(struct mediatable) + count*sizeof(struct medialeaf),
 -					GFP_KERNEL);
-+		entry =	kzalloc(sizeof(struct vxge_mac_addrs), GFP_KERNEL);
- 		if (NULL == entry) {
- 			vxge_debug_init(VXGE_ERR,
- 				"%s: mac_addr_list : memory allocation failed",
++		mtable = kmalloc(sizeof(struct mediatable) +
++				 count * sizeof(struct medialeaf),
++				 GFP_KERNEL);
+ 		if (mtable == NULL)
+ 			return;				/* Horrible, impossible failure. */
+ 		last_mediatable = tp->mtable = mtable;
 -- 
 1.7.0.3.311.g6a6955
 
