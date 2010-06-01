@@ -1,138 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932148Ab0FAUxt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Jun 2010 16:53:49 -0400
-Received: from moutng.kundenserver.de ([212.227.17.8]:62893 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757501Ab0FAUxr (ORCPT
+	id S932277Ab0FAUzm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Jun 2010 16:55:42 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:49706 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757417Ab0FAUzg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Jun 2010 16:53:47 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Greg KH <gregkh@suse.de>
-Cc: linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
-       Alan Cox <alan@lxorguk.ukuu.org.uk>,
-       Frederic Weisbecker <fweisbec@gmail.com>,
-       John Kacur <jkacur@redhat.com>, Alan Cox <alan@linux.intel.com>
-Subject: [PATCH 18/31] serial: add port helpers
-Date: Tue,  1 Jun 2010 22:52:58 +0200
-Message-Id: <1275425591-8803-19-git-send-email-arnd@arndb.de>
-X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <1275425591-8803-1-git-send-email-arnd@arndb.de>
-References: <1275425591-8803-1-git-send-email-arnd@arndb.de>
-X-Provags-ID: V01U2FsdGVkX19g2es0S9asqGMsM0fyx5uSuwUf6tUt/cbMDbI
- uc6loMa2EeKtNRN3B31S0dxB2JxV4I6ltO73C9Sne4aN4ex8xh
- Pck/zDUH9lWlmQwXdoj/Q==
+	Tue, 1 Jun 2010 16:55:36 -0400
+Date: Tue, 1 Jun 2010 13:54:30 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Jonathan Cameron <kernel@jic23.retrosnub.co.uk>
+Cc: Hemanth V <hemanthv@ti.com>, linux-kernel@vger.kernel.org,
+       linux-omap@vger.kernel.org, Daniel Mack <daniel@caiaq.de>,
+       Jonathan Cameron <jic23@cam.ac.uk>,
+       Wolfram Sang <w.sang@pengutronix.de>
+Subject: Re: [PATCH V2] misc : ROHM BH1780GLI Ambient light sensor Driver
+Message-Id: <20100601135430.9c8c28df.akpm@linux-foundation.org>
+In-Reply-To: <4C056FEE.3040107@jic23.retrosnub.co.uk>
+References: <39216.10.24.255.17.1274699065.squirrel@dbdmail.itg.ti.com>
+	<20100601131244.7164b43c.akpm@linux-foundation.org>
+	<4C056FEE.3040107@jic23.retrosnub.co.uk>
+X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Alan Cox <alan@linux.intel.com>
+On Tue, 01 Jun 2010 21:39:10 +0100
+Jonathan Cameron <kernel@jic23.retrosnub.co.uk> wrote:
 
-We can make this the same as the ones that will be needed by the tty_port
-helper logic that we want to move to but still call them from the existing
-code base.
+> > 
+> > It would be most useful if the changelog were to fully describe the
+> > proposed kernel<->userspace interface.  That's the most important part
+> > of the driver, because it's the only part we can never change.
+> > 
+> > There is a desultory effort to maintain sysfs API descriptions under
+> > Documentation/ABI/.  I'd have thought that it would be appropriate to
+> > document this driver's ABI in there.
+> Agreed, but we get back to the debate of what we should standardise on.
 
-Signed-off-by: Alan Cox <alan@linux.intel.com>
----
- drivers/serial/serial_core.c |   51 ++++++++++++++++++++++++++++++-----------
- 1 files changed, 37 insertions(+), 14 deletions(-)
+I'd suggest standardising on one of the existing drivers.  That way we
+have two compliant drivers and only need to change (n-2) others.  If we
+pick some new standard then we need to change (n) drivers.
 
-diff --git a/drivers/serial/serial_core.c b/drivers/serial/serial_core.c
-index 424b1c7..2379045 100644
---- a/drivers/serial/serial_core.c
-+++ b/drivers/serial/serial_core.c
-@@ -1501,6 +1501,34 @@ static void uart_update_termios(struct tty_struct *tty,
- 	}
- }
- 
-+static int uart_carrier_raised(struct tty_port *port)
-+{
-+	struct uart_state *state = container_of(port, struct uart_state, port);
-+	struct uart_port *uport = state->uart_port;
-+	int mctrl;
-+	mutex_lock(&port->mutex);
-+	spin_lock_irq(&uport->lock);
-+	uport->ops->enable_ms(uport);
-+	mctrl = uport->ops->get_mctrl(uport);
-+	spin_unlock_irq(&uport->lock);
-+	mutex_unlock(&port->mutex);
-+	if (mctrl & TIOCM_CAR)
-+		return 1;
-+	return 0;
-+}
-+
-+static void uart_dtr_rts(struct tty_port *port, int onoff)
-+{
-+	struct uart_state *state = container_of(port, struct uart_state, port);
-+	struct uart_port *uport = state->uart_port;
-+	mutex_lock(&port->mutex);
-+	if (onoff)
-+		uart_set_mctrl(uport, TIOCM_DTR | TIOCM_RTS);
-+	else
-+		uart_clear_mctrl(uport, TIOCM_DTR | TIOCM_RTS);
-+	mutex_unlock(&port->mutex);
-+}
-+
- /*
-  * Block the open until the port is ready.  We must be called with
-  * the per-port semaphore held.
-@@ -1509,9 +1537,7 @@ static int
- uart_block_til_ready(struct file *filp, struct uart_state *state)
- {
- 	DECLARE_WAITQUEUE(wait, current);
--	struct uart_port *uport = state->uart_port;
- 	struct tty_port *port = &state->port;
--	unsigned int mctrl;
- 	unsigned long flags;
- 
- 	spin_lock_irqsave(&port->lock, flags);
-@@ -1555,23 +1581,14 @@ uart_block_til_ready(struct file *filp, struct uart_state *state)
- 		 * not set RTS here - we want to make sure we catch
- 		 * the data from the modem.
- 		 */
--		if (port->tty->termios->c_cflag & CBAUD) {
--			mutex_lock(&port->mutex);
--			uart_set_mctrl(uport, TIOCM_DTR);
--			mutex_unlock(&port->mutex);
--		}
-+		if (port->tty->termios->c_cflag & CBAUD)
-+			tty_port_raise_dtr_rts(port);
- 
- 		/*
- 		 * and wait for the carrier to indicate that the
- 		 * modem is ready for us.
- 		 */
--		mutex_lock(&port->mutex);
--		spin_lock_irq(&uport->lock);
--		uport->ops->enable_ms(uport);
--		mctrl = uport->ops->get_mctrl(uport);
--		spin_unlock_irq(&uport->lock);
--		mutex_unlock(&port->mutex);
--		if (mctrl & TIOCM_CAR)
-+		if (tty_port_carrier_raised(port))
- 			break;
- 
- 		schedule();
-@@ -2349,6 +2366,11 @@ static const struct tty_operations uart_ops = {
- #endif
- };
- 
-+static const struct tty_port_operations uart_port_ops = {
-+	.carrier_raised = uart_carrier_raised,
-+	.dtr_rts	= uart_dtr_rts,
-+};
-+
- /**
-  *	uart_register_driver - register a driver with the uart core layer
-  *	@drv: low level driver structure
-@@ -2405,6 +2427,7 @@ int uart_register_driver(struct uart_driver *drv)
- 		struct tty_port *port = &state->port;
- 
- 		tty_port_init(port);
-+		port->ops = &uart_port_ops;
- 		port->close_delay     = 500;	/* .5 seconds */
- 		port->closing_wait    = 30000;	/* 30 seconds */
- 		tasklet_init(&state->tlet, uart_tasklet_action,
--- 
-1.7.0.4
+And we can't change the drivers, really.  They'd all end up needing to
+provide two interfaces: one for the shiny-new-standard and one legacy.
+
+> The main point of ALS before it died was exactly putting this standardization
+> in place (admittedly the interface was slightly different from what we
+> are proposing in IIO, but that was before Greg pointed out that sharing
+> with hwmon would be a good idea!)
+> 
+> I have to admit I'm a little loath to spend too much time on this given
+> the amount of time wasted previously (ALS).
+
+Well, it's not a waste.  This is very important!  We appear to be
+making a big mess which we can never fix up.
 
