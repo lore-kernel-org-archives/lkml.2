@@ -1,56 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754873Ab0FAQ5c (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Jun 2010 12:57:32 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:30340 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754015Ab0FAQ5b (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Jun 2010 12:57:31 -0400
-Message-ID: <4C053B6B.9000906@oracle.com>
-Date: Tue, 01 Jun 2010 09:55:07 -0700
-From: Randy Dunlap <randy.dunlap@oracle.com>
-Organization: Oracle Linux Engineering
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.5) Gecko/20091209 Fedora/3.0-3.fc11 Thunderbird/3.0
+	id S1755523Ab0FAQ55 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Jun 2010 12:57:57 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:46095 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754015Ab0FAQ54 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Jun 2010 12:57:56 -0400
+Message-ID: <4C053ACC.5020708@redhat.com>
+Date: Tue, 01 Jun 2010 19:52:28 +0300
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100330 Fedora/3.0.4-1.fc12 Thunderbird/3.0.4
 MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: Heiko Carstens <heiko.carstens@de.ibm.com>, linux-kernel@vger.kernel.org,
-       "arjan@infradead.org" <arjan@infradead.org>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Thomas Gleixner <tglx@linutronix.de>
-Subject: [PATCH v2] Documentation/timers/hpet_example.c: only build on X86
-References: <20100528113514.GA3686@osiris.boeblingen.de.ibm.com> <4C0470BE.6040709@oracle.com> <alpine.LFD.2.00.1006010852470.3637@i5.linux-foundation.org>
-In-Reply-To: <alpine.LFD.2.00.1006010852470.3637@i5.linux-foundation.org>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Andi Kleen <andi@firstfloor.org>
+CC: Gleb Natapov <gleb@redhat.com>, linux-kernel@vger.kernel.org,
+       kvm@vger.kernel.org, hpa@zytor.com, mingo@elte.hu, npiggin@suse.de,
+       tglx@linutronix.de, mtosatti@redhat.com
+Subject: Re: [PATCH] use unfair spinlock when running on hypervisor.
+References: <20100601093515.GH24302@redhat.com> <87sk56ycka.fsf@basil.nowhere.org> <20100601162414.GA6191@redhat.com> <20100601163807.GA11880@basil.fritz.box>
+In-Reply-To: <20100601163807.GA11880@basil.fritz.box>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Auth-Type: Internal IP
-X-Source-IP: acsinet15.oracle.com [141.146.126.227]
-X-CT-RefId: str=0001.0A090205.4C053BC6.002D:SCFMA922111,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Randy Dunlap <randy.dunlap@oracle.com>
+On 06/01/2010 07:38 PM, Andi Kleen wrote:
+>>> Your new code would starve again, right?
+>>>
+>>>        
+>> Yes, of course it may starve with unfair spinlock. Since vcpus are not
+>> always running there is much smaller chance then vcpu on remote memory
+>> node will starve forever. Old kernels with unfair spinlocks are running
+>> fine in VMs on NUMA machines with various loads.
+>>      
+> Try it on a NUMA system with unfair memory.
+>    
 
-We should only build hpet_example on (any) X86, where it is
-implemented.  It can cause build errors on other arch-es.
+We are running everything on NUMA (since all modern machines are now 
+NUMA).  At what scale do the issues become observable?
 
-Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
-Reported-by: Heiko Carstens <heiko.carstens@de.ibm.com>
-Cc: Heiko Carstens <heiko.carstens@de.ibm.com>
-Cc: Arjan van de Ven <arjan@infradead.org>
----
- Documentation/timers/Makefile |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+>> I understand that reason and do not propose to get back to old spinlock
+>> on physical HW! But with virtualization performance hit is unbearable.
+>>      
+> Extreme unfairness can be unbearable too.
+>    
 
---- lnx-2635-rc1.orig/Documentation/timers/Makefile
-+++ lnx-2635-rc1/Documentation/timers/Makefile
-@@ -2,7 +2,7 @@
- obj- := dummy.o
- 
- # List of programs to build
--hostprogs-y := hpet_example
-+hostprogs-$(CONFIG_X86) := hpet_example
- 
- # Tell kbuild to always build the programs
- always := $(hostprogs-y)
+Well, the question is what happens first.  In our experience, vcpu 
+overcommit is a lot more painful.  People will never see the NUMA 
+unfairness issue if they can't use kvm due to the vcpu overcommit problem.
+
+What I'd like to see eventually is a short-term-unfair, long-term-fair 
+spinlock.  Might make sense for bare metal as well.  But it won't be 
+easy to write.
+
+-- 
+error compiling committee.c: too many arguments to function
+
