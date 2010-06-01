@@ -1,57 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754817Ab0FAHzl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Jun 2010 03:55:41 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:52069 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753401Ab0FAHzh (ORCPT
+	id S1754333Ab0FAIB1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Jun 2010 04:01:27 -0400
+Received: from mail-pz0-f185.google.com ([209.85.222.185]:59774 "EHLO
+	mail-pz0-f185.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751696Ab0FAIB0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Jun 2010 03:55:37 -0400
-Date: Tue, 1 Jun 2010 03:55:29 -0400
-From: Christoph Hellwig <hch@infradead.org>
-To: Kees Cook <kees.cook@canonical.com>
-Cc: James Morris <jmorris@namei.org>, Christoph Hellwig <hch@infradead.org>,
-       linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
-       linux-fsdevel@vger.kernel.org, linux-doc@vger.kernel.org,
-       Randy Dunlap <rdunlap@xenotime.net>,
+	Tue, 1 Jun 2010 04:01:26 -0400
+From: Nitin Gupta <ngupta@vflare.org>
+To: Greg KH <greg@kroah.com>
+Cc: Pekka Enberg <penberg@cs.helsinki.fi>,
        Andrew Morton <akpm@linux-foundation.org>,
-       Jiri Kosina <jkosina@suse.cz>, Dave Young <hidave.darkstar@gmail.com>,
-       Martin Schwidefsky <schwidefsky@de.ibm.com>,
-       Eric Paris <eparis@redhat.com>, David Howells <dhowells@redhat.com>,
-       Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-       "Eric W. Biederman" <ebiederm@xmission.com>,
-       Tim Gardner <tim.gardner@canonical.com>,
-       "Serge E. Hallyn" <serue@us.ibm.com>
-Subject: Re: [PATCH v2] fs: block cross-uid sticky symlinks
-Message-ID: <20100601075529.GA11397@infradead.org>
-References: <20100531030402.GQ6056@outflux.net> <20100531103510.GA30021@infradead.org> <20100531175733.GD4098@outflux.net> <alpine.LRH.2.00.1006010904190.675@tundra.namei.org> <20100601032423.GL4098@outflux.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100601032423.GL4098@outflux.net>
-User-Agent: Mutt/1.5.19 (2009-01-05)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+       Minchan Kim <minchan.kim@gmail.com>, Ed Tomlinson <edt@aei.ca>,
+       Hugh Dickins <hugh.dickins@tiscali.co.uk>, Cyp <cyp561@gmail.com>,
+       driverdev <devel@driverdev.osuosl.org>,
+       linux-kernel <linux-kernel@vger.kernel.org>
+Subject: [PATCH 0/4] zram: generic RAM based compressed R/W block devices (v2)
+Date: Tue,  1 Jun 2010 13:31:22 +0530
+Message-Id: <1275379286-10453-1-git-send-email-ngupta@vflare.org>
+X-Mailer: git-send-email 1.7.0.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 31, 2010 at 08:24:23PM -0700, Kees Cook wrote:
-> Well, that's what I'm trying to understand.  It sounds like there is some
-> general agreement that the issue needs to be solved, but some folks do not
-> want it in the core VFS.  As in, the objections aren't with how symlink
-> behavior is changed, just that the changes would be in the fs/ directory.
+* Changelog v1 vs v2
+ - Split file rename and code rename patches
+ - Removed useless swap related includes from zram_drv.c
+ - Various cleanups suggested by Minchan:
+   - Documented rzs->lock mutex in ramzswap_drv.h (see patch 1)
+     (this file is renamed to zram_drv.h in patch 2)
+   - remove useless 'index' argument in handle_zero_page()
+   - Edited comments/messages mentioning 'swap'
+   - Removed redundant return from void zram_slot_free_notify()
 
-No, it's not.  It's not a change we can make for the default that
-everyone uses.  If you're keen to mess up installations you control (aka
-ubuntu valuedadd viper) push it into a special LSM or rather a
-non-standard rule for it.  It really doesn't matter if it's in fs/ or
-security/ but it's simplify not going to happen by default.
+Creates RAM based block devices: /dev/zramX (X = 0, 1, ...).
+Pages written to these disks are compressed and stored in memory
+itself. These disks allow very fast I/O and compression provides
+good amounts of memory savings.
 
-> My rationale is that if it's in commoncaps, it's effective for everyone, so
-> it might as well be in core VFS.  If the VFS objections really do boil down
-> to "not in fs/" then I'm curious if doing this in commoncaps is acceptable.
+This is enhancement over existing ramzswap driver which creates
+virtual block devices (/dev/ramzswapX) which could be used only
+as swap disks.
 
-If you think the objection is about having things in fs/ you're smoking
-some really bad stuff.
+Now, with the ability to handle any kind of I/O request, zram
+devices have lot more use cases:
+ - /tmp storage
+ - various caches under /var
+ - swap disks
+ - CacheFiles storage
+ - maybe even more! :)
+
+Performance numbers can be found at:
+http://code.google.com/p/compcache/wiki/zramperf
+
+Stress testing results:
+http://code.google.com/p/compcache/wiki/zramIOzone
+
+Patch 1 makes core changes to support handling generic I/O
+requests. Subsequent patches rename ramzswap* files to zram*
+and similar changes in code and documentation.
+
+Nitin Gupta (4):
+  Support generic I/O requests
+  Rename ramzswap files to zram
+  Rename ramzswap to zram in code
+  Rename ramzswap to zram in documentation
+
+ drivers/staging/Kconfig                            |    2 +-
+ drivers/staging/Makefile                           |    2 +-
+ drivers/staging/ramzswap/Kconfig                   |   21 -
+ drivers/staging/ramzswap/Makefile                  |    3 -
+ drivers/staging/ramzswap/ramzswap.txt              |   51 --
+ drivers/staging/ramzswap/ramzswap_drv.c            |  837 --------------------
+ drivers/staging/zram/Kconfig                       |   28 +
+ drivers/staging/zram/Makefile                      |    3 +
+ drivers/staging/{ramzswap => zram}/xvmalloc.c      |    0
+ drivers/staging/{ramzswap => zram}/xvmalloc.h      |    0
+ drivers/staging/{ramzswap => zram}/xvmalloc_int.h  |    0
+ drivers/staging/zram/zram.txt                      |   62 ++
+ drivers/staging/zram/zram_drv.c                    |  804 +++++++++++++++++++
+ .../{ramzswap/ramzswap_drv.h => zram/zram_drv.h}   |   71 +-
+ .../ramzswap_ioctl.h => zram/zram_ioctl.h}         |   21 +-
+ 15 files changed, 943 insertions(+), 962 deletions(-)
+ delete mode 100644 drivers/staging/ramzswap/Kconfig
+ delete mode 100644 drivers/staging/ramzswap/Makefile
+ delete mode 100644 drivers/staging/ramzswap/ramzswap.txt
+ delete mode 100644 drivers/staging/ramzswap/ramzswap_drv.c
+ create mode 100644 drivers/staging/zram/Kconfig
+ create mode 100644 drivers/staging/zram/Makefile
+ rename drivers/staging/{ramzswap => zram}/xvmalloc.c (100%)
+ rename drivers/staging/{ramzswap => zram}/xvmalloc.h (100%)
+ rename drivers/staging/{ramzswap => zram}/xvmalloc_int.h (100%)
+ create mode 100644 drivers/staging/zram/zram.txt
+ create mode 100644 drivers/staging/zram/zram_drv.c
+ rename drivers/staging/{ramzswap/ramzswap_drv.h => zram/zram_drv.h} (69%)
+ rename drivers/staging/{ramzswap/ramzswap_ioctl.h => zram/zram_ioctl.h} (68%)
 
