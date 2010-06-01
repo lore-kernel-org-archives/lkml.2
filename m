@@ -1,59 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756696Ab0FATBY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Jun 2010 15:01:24 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:59465 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755922Ab0FATBW (ORCPT
+	id S1754040Ab0FATEy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Jun 2010 15:04:54 -0400
+Received: from mail-va3.bigfish.com ([216.32.180.114]:33982 "EHLO
+	mail195-va3-R.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751373Ab0FATEx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Jun 2010 15:01:22 -0400
-Date: Tue, 1 Jun 2010 20:01:02 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Kees Cook <kees.cook@canonical.com>
-Cc: Eric Paris <eparis@redhat.com>, Christoph Hellwig <hch@infradead.org>,
-       James Morris <jmorris@namei.org>, linux-kernel@vger.kernel.org,
-       linux-security-module@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-       linux-doc@vger.kernel.org, Randy Dunlap <rdunlap@xenotime.net>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Jiri Kosina <jkosina@suse.cz>, Dave Young <hidave.darkstar@gmail.com>,
-       Martin Schwidefsky <schwidefsky@de.ibm.com>,
-       David Howells <dhowells@redhat.com>, Ingo Molnar <mingo@elte.hu>,
-       Peter Zijlstra <a.p.zijlstra@chello.nl>,
-       "Eric W. Biederman" <ebiederm@xmission.com>,
-       Tim Gardner <tim.gardner@canonical.com>,
-       "Serge E. Hallyn" <serue@us.ibm.com>
-Subject: Re: [PATCH v3] fs: allow protected cross-uid sticky symlinks
-Message-ID: <20100601190102.GT31073@ZenIV.linux.org.uk>
-References: <20100601185248.GB4098@outflux.net>
+	Tue, 1 Jun 2010 15:04:53 -0400
+X-SpamScore: 1
+X-BigFish: VPS1(zzab9bhzz1202hzzz32i2a8h62h)
+X-Spam-TCS-SCL: 1:0
+X-MS-Exchange-Organization-Antispam-Report: OrigIP: 163.181.251.22;Service: EHS
+X-WSS-ID: 0L3CNNQ-02-51P-02
+X-M-MSG: 
+Date: Tue, 1 Jun 2010 21:04:55 +0200
+From: Borislav Petkov <borislav.petkov@amd.com>
+To: Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
+       Thomas Gleixner <tglx@linutronix.de>
+CC: x86 <x86@kernel.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: [PATCH] x86, smpboot: Fix cores per node printing on boot
+Message-ID: <20100601190455.GA14237@aftab>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
-In-Reply-To: <20100601185248.GB4098@outflux.net>
-User-Agent: Mutt/1.5.20 (2009-08-17)
+Organization: Advanced Micro Devices =?iso-8859-1?Q?GmbH?=
+	=?iso-8859-1?Q?=2C_Einsteinring_24=2C_85609_Dornach_bei_M=FCnchen=2C_Gesc?=
+	=?iso-8859-1?Q?h=E4ftsf=FChrer=3A_Thomas_M=2E_McCoy=2C_Giuliano_Meroni=2C?=
+	=?iso-8859-1?Q?_Andrew_Bowd=2C_Sitz=3A_Dornach=2C_Gemeinde_Aschheim=2C_La?=
+	=?iso-8859-1?Q?ndkreis_M=FCnchen=2C_Registergericht_M=FCnchen?=
+	=?iso-8859-1?Q?=2C?= HRB Nr. 43632
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Reverse-DNS: ausb3extmailp02.amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 01, 2010 at 11:52:48AM -0700, Kees Cook wrote:
-> A long-standing class of security issues is the symlink-based
-> time-of-check-time-of-use race, most commonly seen in world-writable
-> directories like /tmp. The common method of exploitation of this flaw
-> is to cross privilege boundaries when following a given symlink (i.e. a
-> root process follows a symlink belonging to another user).  For a likely
-> incomplete list of hundreds of examples across the years, please see:
-> http://cve.mitre.org/cgi-bin/cvekey.cgi?keyword=/tmp
-> 
-> The solution is to permit symlinks to only be followed when outside a sticky
-> world-writable directory, or when the uid of the symlink and follower match,
-> or when the directory owner matches the symlink's owner.
-> 
-> Some pointers to the history of earlier discussion that I could find:
+Percpu initialization happens now after booting the cores on the machine
+and this causes them all to be displayed as belonging to node 0:
 
-I don't buy it.  If we are concerned about the symlinks in the middle of
-pathname, your checks are useless (mkdir /tmp/a, ln -s whatever /tmp/a/b,
-have victim open /tmp/a/b/something).  If we are not, then your checks are
-in the wrong place.
+Jun  8 05:57:21 kepek kernel: [    0.106999] Booting Node   0, Processors  #1 #2 #3 #4 #5 #6 #7 #8 #9 #10 #11 #12 #13 #14 #15 #16 #17 #18 #19 #20 #21 #22 #23 Ok.
 
-"The more we prohibit, the safer we are" is best left to the likes of TSA;
-if we are really interested in security and not in security theatre or
-BDSM fetishism, let's make sure that heuristics we use make sense.
+Use early_cpu_to_node() to get the correct node of each core instead.
+
+Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
+---
+ arch/x86/kernel/smpboot.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/arch/x86/kernel/smpboot.c b/arch/x86/kernel/smpboot.c
+index 37462f1..c4f33b2 100644
+--- a/arch/x86/kernel/smpboot.c
++++ b/arch/x86/kernel/smpboot.c
+@@ -686,7 +686,7 @@ static void __cpuinit do_fork_idle(struct work_struct *work)
+ static void __cpuinit announce_cpu(int cpu, int apicid)
+ {
+ 	static int current_node = -1;
+-	int node = cpu_to_node(cpu);
++	int node = early_cpu_to_node(cpu);
+ 
+ 	if (system_state == SYSTEM_BOOTING) {
+ 		if (node != current_node) {
+-- 
+1.6.4.4
+
+
+-- 
+Regards/Gruss,
+Boris.
+
+Operating Systems Research Center
+Advanced Micro Devices, Inc.
+
