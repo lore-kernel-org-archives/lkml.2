@@ -1,98 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755934Ab0FAKuC (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Jun 2010 06:50:02 -0400
-Received: from daytona.panasas.com ([67.152.220.89]:6700 "EHLO
-	daytona.int.panasas.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755604Ab0FAKt7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Jun 2010 06:49:59 -0400
-Message-ID: <4C04E5D3.8000709@panasas.com>
-Date: Tue, 01 Jun 2010 13:49:55 +0300
-From: Boaz Harrosh <bharrosh@panasas.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-2.fc12 Thunderbird/3.0.4
+	id S1756056Ab0FAKvA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Jun 2010 06:51:00 -0400
+Received: from 0122700014.0.fullrate.dk ([95.166.99.235]:36430 "EHLO kernel.dk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755573Ab0FAKu4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Jun 2010 06:50:56 -0400
+Date: Tue, 1 Jun 2010 12:50:56 +0200
+From: Jens Axboe <jaxboe@fusionio.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Christoph Hellwig <hch@infradead.org>,
+       Philipp Reisner <philipp.reisner@linbit.com>,
+       "drbd-dev@linbit.com" <drbd-dev@linbit.com>,
+       "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       Julia Lawall <julia@diku.dk>, Al Viro <viro@zeniv.linux.org.uk>
+Subject: Re: linux-next: manual merge of the drbd tree with Linus' tree
+Message-ID: <20100601105055.GN3564@kernel.dk>
+References: <20100601141324.edf41f7f.sfr@canb.auug.org.au> <20100601081823.GA29991@infradead.org> <20100601182213.479a777e.sfr@canb.auug.org.au> <20100601104515.GM3564@kernel.dk> <20100601204942.134965e5.sfr@canb.auug.org.au>
 MIME-Version: 1.0
-To: Christof Schmitt <christof.schmitt@de.ibm.com>
-CC: James Bottomley <James.Bottomley@suse.de>,
-       "Martin K. Petersen" <martin.petersen@oracle.com>,
-       linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
-       linux-fsdevel@vger.kernel.org, Chris Mason <chris.mason@oracle.com>
-Subject: Re: Wrong DIF guard tag on ext2 write
-References: <20100531112817.GA16260@schmichrtp.mainz.de.ibm.com> <yq1iq64kv9f.fsf@sermon.lab.mkp.net> <1275318102.2823.47.camel@mulgrave.site> <4C03D5FD.3000202@panasas.com> <20100601103041.GA15922@schmichrtp.mainz.de.ibm.com>
-In-Reply-To: <20100601103041.GA15922@schmichrtp.mainz.de.ibm.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 01 Jun 2010 10:49:57.0703 (UTC) FILETIME=[2D3F7D70:01CB0178]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100601204942.134965e5.sfr@canb.auug.org.au>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/01/2010 01:30 PM, Christof Schmitt wrote:
-> On Mon, May 31, 2010 at 06:30:05PM +0300, Boaz Harrosh wrote:
->> On 05/31/2010 06:01 PM, James Bottomley wrote:
->>> On Mon, 2010-05-31 at 10:20 -0400, Martin K. Petersen wrote:
->>>>>>>>> "Christof" == Christof Schmitt <christof.schmitt@de.ibm.com> writes:
->>>>
->>>> Christof> Since the guard tags are created in Linux, it seems that the
->>>> Christof> data attached to the write request changes between the
->>>> Christof> generation in bio_integrity_generate and the call to
->>>> Christof> sd_prep_fn.
->>>>
->>>> Yep, known bug.  Page writeback locking is messed up for buffer_head
->>>> users.  The extNfs folks volunteered to look into this a while back but
->>>> I don't think they have found the time yet.
->>>>
->>>>
->>>> Christof> Using ext3 or ext4 instead of ext2 does not show the problem.
->>>>
->>>> Last I looked there were still code paths in ext3 and ext4 that
->>>> permitted pages to be changed during flight.  I guess you've just been
->>>> lucky.
->>>
->>> Pages have always been modifiable in flight.  The OS guarantees they'll
->>> be rewritten, so the drivers can drop them if it detects the problem.
->>> This is identical to the iscsi checksum issue (iscsi adds a checksum
->>> because it doesn't trust TCP/IP and if the checksum is generated in
->>> software, there's time between generation and page transmission for the
->>> alteration to occur).  The solution in the iscsi case was not to
->>> complain if the page is still marked dirty.
->>>
->>
->> And also why RAID1 and RAID4/5/6 need the data bounced. I wish VFS
->> would prevent data writing given a device queue flag that requests
->> it. So all these devices and modes could just flag the VFS/filesystems
->> that: "please don't allow concurrent writes, otherwise I need to copy data"
->>
->> From what Chris Mason has said before, all the mechanics are there, and it's
->> what btrfs is doing. Though I don't know how myself?
+On Tue, Jun 01 2010, Stephen Rothwell wrote:
+> HI Jens,
 > 
-> I also tested with btrfs and invalid guard tags in writes have been
-> encountered as well (again in 2.6.34). The only difference is that no
-> error was reported to userspace, although this might be a
-> configuration issue.
+> On Tue, 1 Jun 2010 12:45:15 +0200 Jens Axboe <jaxboe@fusionio.com> wrote:
+> >
+> > So the pipe patches were the same, the problem was that a fix for a
+> > missing pipe_unlock() had gone into mainline and for-linus/for-next
+> > weren't synced up to that. I'm guessing you pull drbd before for-next
+> > and that is why it showed up there.
 > 
+> Actually, I merge the drbd tree after the block tree and this fell to the
+> drbd tree only because your for-next branch had not been updated (and I
+> don't merge your for-linus branch).
 
-I think in btrfs you need a raid1/5 multi-device configuration for this
-to work. If you use a single device then it is just like ext4.
+Ah I see, then it all adds up.
 
-BTW: you could use DM or MD and it will guard your DIF by coping the
-data before IO. 
-
-> What is the best strategy to continue with the invalid guard tags on
-> write requests? Should this be fixed in the filesystems?
+> > BTW, I would recommend moving for-next from the block tree up before any
+> > potential other trees being based off it if that is the case.
 > 
-> Another idea would be to pass invalid guard tags on write requests
-> down to the hardware, expect an "invalid guard tag" error and report
-> it to the block layer where a new checksum is generated and the
-> request is issued again. Basically implement a retry through the whole
-> I/O stack. But this also sounds complicated.
-> 
+> That is already true.
 
-I suggest we should talk about this issue in upcoming LSF, because it does
-not only affects DIF but any checksum subsystem. And it could enhance Linux
-raid performance.
+Good!
 
-> --
-> Christof Schmitt
+-- 
+Jens Axboe
 
-Boaz
