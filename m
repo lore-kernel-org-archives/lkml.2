@@ -1,19 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756973Ab0FAOe1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Jun 2010 10:34:27 -0400
-Received: from mgw1.diku.dk ([130.225.96.91]:51316 "EHLO mgw1.diku.dk"
+	id S932123Ab0FAOeu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Jun 2010 10:34:50 -0400
+Received: from mgw1.diku.dk ([130.225.96.91]:51351 "EHLO mgw1.diku.dk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756076Ab0FAOe0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Jun 2010 10:34:26 -0400
-Date: Tue, 1 Jun 2010 16:34:20 +0200 (CEST)
+	id S1756990Ab0FAOes (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Jun 2010 10:34:48 -0400
+Date: Tue, 1 Jun 2010 16:34:38 +0200 (CEST)
 From: Julia Lawall <julia@diku.dk>
-To: David Woodhouse <dwmw2@infradead.org>,
-       Grant Likely <grant.likely@secretlab.ca>, linux-mtd@lists.infradead.org,
-       linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org,
+To: Samuel Ortiz <sameo@linux.intel.com>, linux-kernel@vger.kernel.org,
        kernel-janitors@vger.kernel.org
-Subject: [PATCH 1/4] drivers/mtd/maps: introduce missing kfree
-Message-ID: <Pine.LNX.4.64.1006011625510.12546@ask.diku.dk>
+Subject: [PATCH 2/4] drivers/mfd: introduce missing kfree
+Message-ID: <Pine.LNX.4.64.1006011634200.12546@ask.diku.dk>
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
@@ -66,36 +64,30 @@ print "* file: %s kmalloc %s return %s" % (p1[0].file,p1[0].line,p2[0].line)
 
 Signed-off-by: Julia Lawall <julia@diku.dk>
 ---
- drivers/mtd/maps/physmap_of.c |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
+ drivers/mfd/davinci_voicecodec.c |    6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/mtd/maps/physmap_of.c b/drivers/mtd/maps/physmap_of.c
-index ba124ba..6ac5f9f 100644
---- a/drivers/mtd/maps/physmap_of.c
-+++ b/drivers/mtd/maps/physmap_of.c
-@@ -353,7 +353,7 @@ static int __devinit of_flash_probe(struct of_device *dev,
- 				   &info->parts, 0);
- 	if (err < 0) {
- 		of_free_probes(part_probe_types);
--		return err;
-+		goto err_out;
- 	}
- 	of_free_probes(part_probe_types);
- 
-@@ -361,14 +361,14 @@ static int __devinit of_flash_probe(struct of_device *dev,
- 	if (err == 0) {
- 		err = of_mtd_parse_partitions(&dev->dev, dp, &info->parts);
- 		if (err < 0)
--			return err;
-+			goto err_out;
- 	}
- #endif
- 
- 	if (err == 0) {
- 		err = parse_obsolete_partitions(dev, info, dp);
- 		if (err < 0)
--			return err;
-+			goto err_out;
+diff --git a/drivers/mfd/davinci_voicecodec.c b/drivers/mfd/davinci_voicecodec.c
+index 3e75f02..33c923d 100644
+--- a/drivers/mfd/davinci_voicecodec.c
++++ b/drivers/mfd/davinci_voicecodec.c
+@@ -94,7 +94,8 @@ static int __init davinci_vc_probe(struct platform_device *pdev)
+ 	res = platform_get_resource(pdev, IORESOURCE_DMA, 0);
+ 	if (!res) {
+ 		dev_err(&pdev->dev, "no DMA resource\n");
+-		return -ENXIO;
++		ret = -ENXIO;
++		goto fail4;
  	}
  
- 	if (err > 0)
+ 	davinci_vc->davinci_vcif.dma_tx_channel = res->start;
+@@ -104,7 +105,8 @@ static int __init davinci_vc_probe(struct platform_device *pdev)
+ 	res = platform_get_resource(pdev, IORESOURCE_DMA, 1);
+ 	if (!res) {
+ 		dev_err(&pdev->dev, "no DMA resource\n");
+-		return -ENXIO;
++		ret = -ENXIO;
++		goto fail4;
+ 	}
+ 
+ 	davinci_vc->davinci_vcif.dma_rx_channel = res->start;
