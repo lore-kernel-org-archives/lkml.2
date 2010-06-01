@@ -1,67 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756253Ab0FANUy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Jun 2010 09:20:54 -0400
-Received: from smtp.adbgroup.pl ([62.29.174.70]:48605 "EHLO smtp.adbgroup.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756076Ab0FANUx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Jun 2010 09:20:53 -0400
-X-Greylist: delayed 1689 seconds by postgrey-1.27 at vger.kernel.org; Tue, 01 Jun 2010 09:20:53 EDT
-Message-ID: <4C05029A.5020000@gmail.com>
-Date: Tue, 01 Jun 2010 14:52:42 +0200
-From: Lukasz Gromanowski <lgromanowski@gmail.com>
-User-Agent: Thunderbird 2.0.0.24 (X11/20100411)
+	id S1756301Ab0FANYU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Jun 2010 09:24:20 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:62802 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755995Ab0FANYS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Jun 2010 09:24:18 -0400
+To: Nick Piggin <npiggin@suse.de>
+Cc: Boaz Harrosh <bharrosh@panasas.com>,
+       James Bottomley <James.Bottomley@suse.de>,
+       "Martin K. Petersen" <martin.petersen@oracle.com>,
+       Christof Schmitt <christof.schmitt@de.ibm.com>,
+       linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
+       linux-fsdevel@vger.kernel.org, Chris Mason <chris.mason@oracle.com>
+Subject: Re: Wrong DIF guard tag on ext2 write
+From: "Martin K. Petersen" <martin.petersen@oracle.com>
+Organization: Oracle
+References: <20100531112817.GA16260@schmichrtp.mainz.de.ibm.com>
+	<yq1iq64kv9f.fsf@sermon.lab.mkp.net>
+	<1275318102.2823.47.camel@mulgrave.site>
+	<4C03D5FD.3000202@panasas.com> <20100531154925.GO9453@laptop>
+Date: Tue, 01 Jun 2010 09:22:42 -0400
+In-Reply-To: <20100531154925.GO9453@laptop> (Nick Piggin's message of "Tue, 1
+	Jun 2010 01:49:25 +1000")
+Message-ID: <yq1pr0akhul.fsf@sermon.lab.mkp.net>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
 MIME-Version: 1.0
-To: Petr Ovtchenkov <ptr@void-ptr.info>
-CC: linux-kernel@vger.kernel.org
-Subject: Re: constant half-byte from /proc/sys/kernel/random/uuid
-References: <201006011622.58834.ptr@void-ptr.info>
-In-Reply-To: <201006011622.58834.ptr@void-ptr.info>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+X-Auth-Type: Internal IP
+X-Source-IP: acsinet15.oracle.com [141.146.126.227]
+X-CT-RefId: str=0001.0A090202.4C0509FB.00E4:SCFMA922111,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Petr Ovtchenkov pisze:
-> Lack of randomness during generating uuid.
-> 
-> Sample:
-> 
-> for i in 1 2 3 4 5 6 7 8 9; do cat /proc/sys/kernel/random/uuid ; done
-> 
-> 3faf5c7e-5e1b-4b3c-a318-979653d85404
-> a929d2d3-e229-42ca-9f33-9c09801f41fb
-> c2a96cb6-0dba-401c-a9c6-dabe1dec89d6
-> df341de3-eb97-4327-bb63-46afd8dbfaa8
-> 9d84d61c-0c55-4914-8bd6-7f1601110908
-> 6d82e69b-418e-4189-b5a4-0661b6e24dcf
-> eb38de66-4e0b-4bd0-827b-e75ba273e85a
-> 5585c367-754f-4bbf-81f6-8a728380860d
-> c074480b-ad5c-4e10-81d2-82225c449b91
-> 
-> 
-> See on 7th high half-byte: it '4' in
-> all cases---4b, 42, 40, 43, 49, 41,
-> 4b, 4b, 4e. Checked three comps, with
-> similar results. All Linux-generated UUID (boot_id)
-> that I see in internet has '4' in this
-> half-byte.
+>>>>> "Nick" == Nick Piggin <npiggin@suse.de> writes:
 
-Hi,
-quote from wikipedia[1]
+Nick> More complex and maybe more performant would be to avoid holding
+Nick> page lock but wait_on_page_writeback in page-modification (write,
+Nick> fault) paths. 
 
-"Version 4 (random)
-
-Version 4 UUIDs use a scheme relying only on random numbers. This
-algorithm sets the version number as well as two reserved bits.
-All other bits are set using a random or pseudorandom data source.
-Version 4 UUIDs have the form xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx
-with any hexadecimal digits for x but only one of 8, 9, A, or B for y.
-e.g. f47ac10b-58cc-4372-a567-0e02b2c3d479."
-
-[1] http://en.wikipedia.org/wiki/Universally_Unique_Identifier
+That's what I was doing last I looked at this.  I seem to recall that my
+head exploded once I added buffer_heads to the mix.  And then the extfs
+folks promised to take a look so I didn't mess more with it.
 
 -- 
-best regards,
-Lukasz
+Martin K. Petersen	Oracle Linux Engineering
