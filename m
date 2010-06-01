@@ -1,113 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755715Ab0FAJEg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Jun 2010 05:04:36 -0400
-Received: from va3ehsobe004.messaging.microsoft.com ([216.32.180.14]:14741
-	"EHLO VA3EHSOBE004.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754764Ab0FAJEC (ORCPT
+	id S1755607Ab0FAJFq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Jun 2010 05:05:46 -0400
+Received: from casper.infradead.org ([85.118.1.10]:60334 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754643Ab0FAJFo convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Jun 2010 05:04:02 -0400
-X-SpamScore: -4
-X-BigFish: VPS-4(zz936eMab9bhzz1202hzzz32i2a8h87h43h63h)
-X-Spam-TCS-SCL: 2:0
-X-FB-DOMAIN-IP-MATCH: fail
-X-WSS-ID: 0L3BVUE-01-T62-02
-X-M-MSG: 
-From: Joerg Roedel <joerg.roedel@amd.com>
-To: Ingo Molnar <mingo@elte.hu>
-CC: <iommu@lists.linux-foundation.org>, <linux-kernel@vger.kernel.org>,
-       Julia Lawall <julia@diku.dk>, <stable@kernel.org>,
-       Joerg Roedel <joerg.roedel@amd.com>
-Subject: [PATCH 1/3] arch/x86/kernel: Add missing spin_unlock
-Date: Tue, 1 Jun 2010 11:03:39 +0200
-Message-ID: <1275383021-20172-2-git-send-email-joerg.roedel@amd.com>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1275383021-20172-1-git-send-email-joerg.roedel@amd.com>
-References: <1275383021-20172-1-git-send-email-joerg.roedel@amd.com>
-MIME-Version: 1.0
-Content-Type: text/plain
-X-Reverse-DNS: unknown
+	Tue, 1 Jun 2010 05:05:44 -0400
+Subject: Re: [rfc] forked kernel task and mm structures imbalanced on NUMA
+From: Peter Zijlstra <peterz@infradead.org>
+To: Nick Piggin <npiggin@suse.de>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+       Ingo Molnar <mingo@redhat.com>, linux-mm@kvack.org,
+       linux-kernel@vger.kernel.org,
+       Lee Schermerhorn <lee.schermerhorn@hp.com>
+In-Reply-To: <20100601084157.GS9453@laptop>
+References: <20100601073343.GQ9453@laptop>
+	 <1275380202.27810.26214.camel@twins>  <20100601084157.GS9453@laptop>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Tue, 01 Jun 2010 11:05:52 +0200
+Message-ID: <1275383152.27810.26387.camel@twins>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Julia Lawall <julia@diku.dk>
+On Tue, 2010-06-01 at 18:41 +1000, Nick Piggin wrote:
+> > So I think it would make sense to rework the fork balancing muck to be
+> > called only once and stick with its decision.
+> 
+> Just need to close that race somehow. AFAIKS we can't use TASK_WAKING
+> because that must not be preempted?
 
-Add a spin_unlock missing on the error path.  The locks and unlocks are
-balanced in other functions, so it seems that the same should be the case
-here.
+Right its basically a bit-spinlock and since it interacts with the
+rq->lock it needs to have IRQs disabled while we have it set -- which
+isn't a problem for the wakeup path, but it would be for the whole fork
+path.
 
-The semantic match that finds this problem is as follows:
-(http://coccinelle.lip6.fr/)
+> > One thing that would make the whole fork path much easier is fully
+> > ripping out that child_runs_first mess for CONFIG_SMP, I think its been
+> > disabled by default for long enough, and its always been broken in the
+> > face of fork balancing anyway.
+> 
+> Interesting problem. vfork is nice for fork+exec, but it's a bit
+> restrictive.
 
-// <smpl>
-@@
-expression E1;
-@@
+Right, and all that is a separate issue, its broken now, its still
+broken with child_runs_first ripped out.
+ 
+> > So basically we have to move fork balancing back to sched_fork(), I'd
+> > have to again look at wth happens to ->cpus_allowed, but I guess it
+> > should be fixable, and I don't think we should care overly much about
+> > cpu-hotplug.
+> 
+> No more than simply getting it right. Simply calling into the balancer
+> again seems to be the simplest way to do it.
 
-* spin_lock(E1,...);
-  <+... when != E1
-  if (...) {
-    ... when != E1
-*   return ...;
-  }
-  ...+>
-* spin_unlock(E1,...);
-// </smpl>
+Right.
 
-Cc: stable@kernel.org
-Signed-off-by: Julia Lawall <julia@diku.dk>
-Signed-off-by: Joerg Roedel <joerg.roedel@amd.com>
----
- arch/x86/kernel/amd_iommu.c |   12 +++++++++---
- 1 files changed, 9 insertions(+), 3 deletions(-)
+> > A specific code comment:
+> > 
+> > > @@ -2550,14 +2561,16 @@ void wake_up_new_task(struct task_struct
+> > >          * We set TASK_WAKING so that select_task_rq() can drop rq->lock
+> > >          * without people poking at ->cpus_allowed.
+> > >          */
+> > > -       cpu = select_task_rq(rq, p, SD_BALANCE_FORK, 0);
+> > > -       set_task_cpu(p, cpu);
+> > > -
+> > > -       p->state = TASK_RUNNING;
+> > > -       task_rq_unlock(rq, &flags);
+> > > +       if (!cpumask_test_cpu(cpu, &p->cpus_allowed)) {
+> > > +               p->state = TASK_WAKING;
+> > > +               cpu = select_task_rq(rq, p, SD_BALANCE_FORK, 0);
+> > > +               set_task_cpu(p, cpu);
+> > > +               p->state = TASK_RUNNING;
+> > > +               task_rq_unlock(rq, &flags);
+> > > +               rq = task_rq_lock(p, &flags);
+> > > +       }
+> > >  #endif
+> > 
+> > That's iffy because p->cpus_allowed isn't stable when we're not holding
+> > the task's current rq->lock or p->state is not TASK_WAKING.
+> > 
+> 
+> Oop, yeah missed that. Half hearted attempt to avoid more rq locks. 
 
-diff --git a/arch/x86/kernel/amd_iommu.c b/arch/x86/kernel/amd_iommu.c
-index fa5a147..8a9aaa8 100644
---- a/arch/x86/kernel/amd_iommu.c
-+++ b/arch/x86/kernel/amd_iommu.c
-@@ -1487,6 +1487,7 @@ static int __attach_device(struct device *dev,
- 			   struct protection_domain *domain)
- {
- 	struct iommu_dev_data *dev_data, *alias_data;
-+	int ret;
- 
- 	dev_data   = get_dev_data(dev);
- 	alias_data = get_dev_data(dev_data->alias);
-@@ -1498,13 +1499,14 @@ static int __attach_device(struct device *dev,
- 	spin_lock(&domain->lock);
- 
- 	/* Some sanity checks */
-+	ret = -EBUSY;
- 	if (alias_data->domain != NULL &&
- 	    alias_data->domain != domain)
--		return -EBUSY;
-+		goto out_unlock;
- 
- 	if (dev_data->domain != NULL &&
- 	    dev_data->domain != domain)
--		return -EBUSY;
-+		goto out_unlock;
- 
- 	/* Do real assignment */
- 	if (dev_data->alias != dev) {
-@@ -1520,10 +1522,14 @@ static int __attach_device(struct device *dev,
- 
- 	atomic_inc(&dev_data->bind);
- 
-+	ret = 0;
-+
-+out_unlock:
-+
- 	/* ready */
- 	spin_unlock(&domain->lock);
- 
--	return 0;
-+	return ret;
- }
- 
- /*
--- 
-1.7.1
-
-
+Yeah, something well worth the effort. At one point I considered making
+p->cpus_allowed an RCU managed cpumask, but I never sat down and ran
+through all the interesting races that that would bring.
