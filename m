@@ -1,42 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756498Ab0FAR6X (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Jun 2010 13:58:23 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:58472 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752670Ab0FAR6V (ORCPT
+	id S1755729Ab0FASJe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Jun 2010 14:09:34 -0400
+Received: from smtp-out.google.com ([74.125.121.35]:44054 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754531Ab0FASJc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Jun 2010 13:58:21 -0400
-Date: Tue, 1 Jun 2010 10:53:35 -0700 (PDT)
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Rusty Russell <rusty@rustcorp.com.au>
-cc: Andrew Morton <akpm@linux-foundation.org>,
-       Brandon Philips <brandon@ifup.org>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-       LKML <linux-kernel@vger.kernel.org>,
-       Jon Masters <jonathan@jonmasters.org>, Tejun Heo <htejun@gmail.com>,
-       Masami Hiramatsu <mhiramat@redhat.com>,
-       Kay Sievers <kay.sievers@vrfy.org>
-Subject: Re: [PATCH 2/2] module: fix bne2 "gave up waiting for init of module
- libcrc32c"
-In-Reply-To: <alpine.LFD.2.00.1006010722160.3637@i5.linux-foundation.org>
-Message-ID: <alpine.LFD.2.00.1006011052340.8175@i5.linux-foundation.org>
-References: <201005252300.07739.rjw@sisk.pl> <201006011051.25636.rusty@rustcorp.com.au> <alpine.LFD.2.00.1005312011490.3637@i5.linux-foundation.org> <201006011452.06843.rusty@rustcorp.com.au> <alpine.LFD.2.00.1006010722160.3637@i5.linux-foundation.org>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	Tue, 1 Jun 2010 14:09:32 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=mime-version:in-reply-to:references:date:message-id:subject:from:to:
+	cc:content-type:x-system-of-record;
+	b=mYIj34jspiJKii+fp6QJJaWRL9fV9bG/xPuFyYjCMzX78GpqiqGHiQAMIQbjAnhOi
+	xpsqULpe8m8nyQ95bNTRQ==
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <1275414172.27810.27961.camel@twins>
+References: <20100210232343.GA11465@linux-os.sc.intel.com>
+	<tip-17d9ddc72fb8bba0d4f67868c9c612e472a594a9@git.kernel.org>
+	<1275136178.27810.13539.camel@twins>
+	<1275139902.27810.13737.camel@twins>
+	<AANLkTimZkyRwP5k290rUr-DUMhsynl9fzBkS68x-57KM@mail.gmail.com>
+	<1275412748.27810.27883.camel@twins>
+	<AANLkTilGfY1PnNgpEeB3AQEqTNoDJQfPTxK5LNUYb7ZA@mail.gmail.com>
+	<1275414172.27810.27961.camel@twins>
+Date: Tue, 1 Jun 2010 11:09:23 -0700
+Message-ID: <AANLkTil8ly_3P2DgEI9oI_ZbYP6FkwP2lCY2v47iAn9-@mail.gmail.com>
+Subject: Re: [PATCH] rbtree: undo augmented damage -v2
+From: Venkatesh Pallipadi <venki@google.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+       suresh.b.siddha@intel.com, tglx@linutronix.de,
+       linux-tip-commits@vger.kernel.org,
+       Fabio Checconi <fabio@gandalf.sssup.it>
+Content-Type: text/plain; charset=ISO-8859-1
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Jun 1, 2010 at 10:42 AM, Peter Zijlstra <peterz@infradead.org> wrote:
+> On Tue, 2010-06-01 at 10:34 -0700, Venkatesh Pallipadi wrote:
+>>
+>> Yes. This will cover all the cases on insert. But on erase, there is
+>> still a case where a rotate of sibling node is done during the
+>> re-coloration process. There we have a child change on sibling's
+>> child. I am not able to think of any easy way to handle that case.
+>
+> Let me go draw some figures with pen and paper to match up the erase
+> path with the rb_augment_erase_begin() code, because I can't quite spot
+> the case we're missing.
+>
+> If you have it handy, ascii art might help..
 
+It is this case
 
-On Tue, 1 Jun 2010, Linus Torvalds wrote:
-> 
-> So I do agree that your later two-patch series is the way to go.
+    P
+   / \
+  N   S
+     / \
+    SL SR
 
-Oh, btw, did we ever get that version tested by the only person who seems 
-to see the problem? Brandon?
+changing to
 
-I'd like to have a Tested-By: line too.
+    P
+   / \
+  N  SL
+      \
+       S
+        \
+        SR
 
-		Linus
+This can happen in __rb_erase_color, where 'other' points to sibling node.
+
+Thanks,
+Venki
