@@ -1,65 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757299Ab0FAWbH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Jun 2010 18:31:07 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:39860 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756839Ab0FAWbE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Jun 2010 18:31:04 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Dave Airlie <airlied@gmail.com>
-Subject: Re: 2.6.35 Radeon KMS power management regression?
-Date: Wed, 2 Jun 2010 00:32:30 +0200
-User-Agent: KMail/1.12.4 (Linux/2.6.35-rc1-rjw; KDE/4.3.5; x86_64; ; )
-Cc: Nigel Cunningham <ncunningham@crca.org.au>,
-       LKML <linux-kernel@vger.kernel.org>,
-       "dri-devel" <dri-devel@lists.freedesktop.org>
-References: <4C04A767.8000209@crca.org.au> <AANLkTikTyYOGEEkFoV9NfbWE9Jxe9Q6Kk1mAJ4PDNL5r@mail.gmail.com>
-In-Reply-To: <AANLkTikTyYOGEEkFoV9NfbWE9Jxe9Q6Kk1mAJ4PDNL5r@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+	id S1756119Ab0FAWcB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Jun 2010 18:32:01 -0400
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:52124
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754260Ab0FAWb7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Jun 2010 18:31:59 -0400
+Date: Tue, 01 Jun 2010 15:32:09 -0700 (PDT)
+Message-Id: <20100601.153209.135521213.davem@davemloft.net>
+To: mikpe@it.uu.se
+Cc: netdev@vger.kernel.org, mcarlson@broadcom.com,
+       linux-kernel@vger.kernel.org, sparclinux@vger.kernel.org
+Subject: Re: [2.6.35-rc1 regression] tg3 vpd r/w failed
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <19461.26529.591960.912204@pilspetsen.it.uu.se>
+References: <19461.26529.591960.912204@pilspetsen.it.uu.se>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
-Message-Id: <201006020032.30163.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 01 June 2010, Dave Airlie wrote:
-> On Tue, Jun 1, 2010 at 4:23 PM, Nigel Cunningham
-> <ncunningham@crca.org.au> wrote:
-> > Hi all.
-> >
-> > Just wondering if anyone else has tried to hibernate while using Radeon KMS
-> > and a tree with Dave's post 2.6.34 patches? My 32 bit P4 based system (with
-> > an RV250 card) is hanging at the atomic copy, with the following backtrace
-> >
-> > hibernation_snapshot
-> > dpm_suspend_start
-> > async_synchronize_full
-> > async_synchronize_cookie
-> > async_synchronize_cookie_domain
-> >
-> > I've been trying to bisect, but this computer is being painfully slow, so I
-> > haven't been making much progress. 2.6.34 with the same config is fine, and
-> > my bisection progress so far seems to be pointing at the merge I mentioned
-> > above.
-> 
-> The only thing I can think off might be the output polling task, or
-> the fix from Jerome for AGP suspend/resume
-> 10b06122afcc78468bd1d009633cb71e528acdc5 is AGP one to test
-> 
-> disabling output polling is a messier revert, might be easier to just edit
-> drivers/gpu/drm/drm_crtc_helper.c:drm_kms_helper_poll_init and remove
-> the delayed_slow_work_enqueue call, also forcing repoll to false
-> inside output_poll_execute which should in theory stop the polling
-> from starting or being kicked off later.
-> 
-> I'll try and recreate if I get a chance, cc'ing dri-devel also for Alex/Jerome.
 
-I'm not reproducing this on Acer Ferrari One (that has an rs780 IIRC),
-but it seems I can reproduce it on a desktop box with some PCIe r300.
+Mikael I'm getting tired of continuing to add the proper
+mailing list CC: for your sparc bug reports.  Please make
+sure to add sparclinux@vger.kernel.org to your reports
+in the future.
 
-Tomorrow I'll try .35-rc1 on HP nx6325.
+Thanks.
 
-Rafael
+> Booting 2.6.35-rc1 on a Sun Blade 2500 Red with builtin tg3 I get:
+> 
+> tg3.c:v3.110 (April 9, 2010)
+> PCI: Enabling device: (0000:00:03.0), cmd 2
+> ...
+> tg3 0000:00:03.0: vpd r/w failed.  This is likely a firmware bug on this device.  Contact the card vendor for a firmware update.
+> tg3 0000:00:03.0: vpd r/w failed.  This is likely a firmware bug on this device.  Contact the card vendor for a firmware update.
+> tg3 0000:00:03.0: vpd r/w failed.  This is likely a firmware bug on this device.  Contact the card vendor for a firmware update.
+> tg3 0000:00:03.0: eth0: Tigon3 [partno(none) rev 1002] (PCI:66MHz:64-bit) MAC address ...
+> tg3 0000:00:03.0: eth0: attached PHY is 5703 (10/100/1000Base-T Ethernet) (WireSpeed[1])
+> tg3 0000:00:03.0: eth0: RXcsums[1] LinkChgREG[0] MIirq[0] ASF[0] TSOcap[1]
+> tg3 0000:00:03.0: eth0: dma_rwctrl[763f0000] dma_mask[32-bit]
+> ...
+> tg3 0000:00:03.0: eth0: No firmware running
+> tg3 0000:00:03.0: eth0: Link is up at 100 Mbps, full duplex
+> tg3 0000:00:03.0: eth0: Flow control is on for TX and on for RX
+> 
+> The three 'vpd r/w failed' messages are new and did not occur with 2.6.34
+> or earlier kernels.
+> 
+> /Mikael
