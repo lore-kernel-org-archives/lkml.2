@@ -1,83 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757284Ab0FAUtv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Jun 2010 16:49:51 -0400
-Received: from mail-yw0-f179.google.com ([209.85.211.179]:43239 "EHLO
-	mail-yw0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754453Ab0FAUtt convert rfc822-to-8bit (ORCPT
+	id S932136Ab0FAUuL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Jun 2010 16:50:11 -0400
+Received: from smtp-out.google.com ([74.125.121.35]:44201 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756743Ab0FAUuI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Jun 2010 16:49:49 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=Bw1Wk2ip+/3iVngNUeV0f0BNiI1FfmQz7kRhoVy3CjsKbJvJREy7Zd1dz8v+3iHlBQ
-         f6sqDPttwVHPw5sdF1WCSfO2eQn6DX/n9Heg6gfg45b9iusozSF6uGmM5cLUjiZ8v3hu
-         wwYZ0pOXWlC3pyeERxM3eXK7s/5gGhn1Q67ao=
+	Tue, 1 Jun 2010 16:50:08 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id:
+	references:user-agent:mime-version:content-type:x-system-of-record;
+	b=LxvG1CsRcbK1is7aqdk/pFJ4+qQaNa+WtuSAele4tOJ0Ge8A64/tX1BmTVf3EZ+5G
+	7uacCGe7lPROtmvQ/D/8A==
+Date: Tue, 1 Jun 2010 13:49:58 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: "Luis Claudio R. Goncalves" <lclaudio@uudg.org>
+cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+       Minchan Kim <minchan.kim@gmail.com>,
+       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+       balbir@linux.vnet.ibm.com, Oleg Nesterov <oleg@redhat.com>,
+       linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+       Thomas Gleixner <tglx@linutronix.de>,
+       Peter Zijlstra <peterz@infradead.org>, Mel Gorman <mel@csn.ul.ie>,
+       williams@redhat.com
+Subject: Re: [RFC] oom-kill: give the dying task a higher priority
+In-Reply-To: <20100601173535.GD23428@uudg.org>
+Message-ID: <alpine.DEB.2.00.1006011347060.13136@chino.kir.corp.google.com>
+References: <20100528164826.GJ11364@uudg.org> <20100531092133.73705339.kamezawa.hiroyu@jp.fujitsu.com> <AANLkTikFk_HnZWPG0s_VrRkro2rruEc8OBX5KfKp_QdX@mail.gmail.com> <20100531140443.b36a4f02.kamezawa.hiroyu@jp.fujitsu.com> <AANLkTil75ziCd6bivhpmwojvhaJ2LVxwEaEaBEmZf2yN@mail.gmail.com>
+ <20100531145415.5e53f837.kamezawa.hiroyu@jp.fujitsu.com> <AANLkTilcuY5e1DNmLhUWfXtiQgPUafz2zRTUuTVl-88l@mail.gmail.com> <20100531155102.9a122772.kamezawa.hiroyu@jp.fujitsu.com> <20100531135227.GC19784@uudg.org> <20100601085006.f732c049.kamezawa.hiroyu@jp.fujitsu.com>
+ <20100601173535.GD23428@uudg.org>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-In-Reply-To: <alpine.LFD.2.00.1006010842350.3637@i5.linux-foundation.org>
-References: <AANLkTilnTVvZOw-bIpcKS0VwhlpYWnnxvOevNv67hnga@mail.gmail.com>
-	<alpine.LFD.2.00.1006010842350.3637@i5.linux-foundation.org>
-Date: Tue, 1 Jun 2010 21:49:48 +0100
-Message-ID: <AANLkTik_SVekWMlhJXvEI0Iao6OTVSBG0tdPBl3PShCj@mail.gmail.com>
-Subject: Re: [2.6.35-rc1, patch] fix cpu_chain section mismatch...
-From: Daniel J Blueman <daniel.blueman@gmail.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Akinobu Mita <akinobu.mita@gmail.com>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Linux Kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: MULTIPART/MIXED; BOUNDARY="531400454-399898958-1275425400=:13136"
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+  This message is in MIME format.  The first part should be readable text,
+  while the remaining parts are likely unreadable without MIME-aware tools.
 
-On Tue, Jun 1, 2010 at 4:49 PM, Linus Torvalds
-<torvalds@linux-foundation.org> wrote:
->
->
-> On Tue, 1 Jun 2010, Daniel J Blueman wrote:
->>
->> In 2.6.35-rc1, __cpu_notify access cpu_chain, which shouldn't be
->> marked __cpuinitdata (via section mismatch warning).
->
-> Hmm. Does this section mismatch go away if you instead mark cpu_notify(),
-> __cpu_notify() and cpu_notify_nofail as "inline"? Or alternatively, maybe
-> they should all be marked as __ref?
+--531400454-399898958-1275425400=:13136
+Content-Type: TEXT/PLAIN; charset=iso-8859-1
+Content-Transfer-Encoding: 8BIT
 
-Indeed the inline and __ref approaches quench the warning too.
+On Tue, 1 Jun 2010, Luis Claudio R. Goncalves wrote:
 
-> I think the section mismatch started happening when those wrapper
-> functions were created, but all the callers seem to be __ref or __cpuinit.
->
-> Or maybe we should just make that variable be non-cpuinitdata like your
-> patch suggests.
+> oom-kill: give the dying task a higher priority (v5)
+> 
+> In a system under heavy load it was observed that even after the
+> oom-killer selects a task to die, the task may take a long time to die.
+> 
+> Right before sending a SIGKILL to the task selected by the oom-killer
+> this task has it's priority increased so that it can exit() exit soon,
+> freeing memory. That is accomplished by:
+> 
+>         /*
+>          * We give our sacrificial lamb high priority and access to
+>          * all the memory it needs. That way it should be able to
+>          * exit() and clear out its resources quickly...
+>          */
+>  	p->rt.time_slice = HZ;
+>  	set_tsk_thread_flag(p, TIF_MEMDIE);
+> 
+> It sounds plausible giving the dying task an even higher priority to be
+> sure it will be scheduled sooner and free the desired memory. It was
+> suggested on LKML using SCHED_FIFO:1, the lowest RT priority so that
+> this task won't interfere with any running RT task.
+> 
+> If the dying task is already an RT task, leave it untouched.
+> 
+> Another good suggestion, implemented here, was to avoid boosting the
+> dying task priority in case of mem_cgroup OOM.
+> 
+> Signed-off-by: Luis Claudio R. Gonçalves <lclaudio@uudg.org>
+> 
+> diff --git a/mm/oom_kill.c b/mm/oom_kill.c
+> index 709aedf..67e18ca 100644
+> --- a/mm/oom_kill.c
+> +++ b/mm/oom_kill.c
+> @@ -52,6 +52,22 @@ static int has_intersects_mems_allowed(struct task_struct *tsk)
+>  	return 0;
+>  }
+>  
+> +/*
+> + * If this is a system OOM (not a memcg OOM) and the task selected to be
+> + * killed is not already running at high (RT) priorities, speed up the
+> + * recovery by boosting the dying task to the lowest FIFO priority.
+> + * That helps with the recovery and avoids interfering with RT tasks.
+> + */
+> +static void boost_dying_task_prio(struct task_struct *p,
+> +					struct mem_cgroup *mem)
+> +{
+> +	if ((mem == NULL) && !rt_task(p)) {
+> +		struct sched_param param;
+> +		param.sched_priority = 1;
+> +		sched_setscheduler_nocheck(p, SCHED_FIFO, &param);
+> +	}
+> +}
+> +
+>  /**
+>   * badness - calculate a numeric value for how bad this task has been
+>   * @p: task struct of which task we should calculate
+> @@ -277,8 +293,10 @@ static struct task_struct *select_bad_process(unsigned long *ppoints,
+>  		 * blocked waiting for another task which itself is waiting
+>  		 * for memory. Is there a better alternative?
+>  		 */
+> -		if (test_tsk_thread_flag(p, TIF_MEMDIE))
+> +		if (test_tsk_thread_flag(p, TIF_MEMDIE)) {
+> +			boost_dying_task_prio(p, mem);
+>  			return ERR_PTR(-1UL);
+> +		}
+>  
+>  		/*
+>  		 * This is in the process of releasing memory so wait for it
 
-At least this is the minimal change until a good reason comes along.
+That's unnecessary, if p already has TIF_MEMDIE set, then 
+boost_dying_task_prio(p) has already been called.
 
-Thanks,
-  Daniel
+> @@ -291,9 +309,10 @@ static struct task_struct *select_bad_process(unsigned long *ppoints,
+>  		 * Otherwise we could get an easy OOM deadlock.
+>  		 */
+>  		if (p->flags & PF_EXITING) {
+> -			if (p != current)
+> +			if (p != current) {
+> +				boost_dying_task_prio(p, mem);
+>  				return ERR_PTR(-1UL);
+> -
+> +			}
+>  			chosen = p;
+>  			*ppoints = ULONG_MAX;
+>  		}
 
-> Does anybody have strong preferences (patch appended for reference)?
->
->                Linus
-> ---
->> Signed-off-by: Daniel J Blueman <daniel.blueman@gmail.com>
->>
->> diff --git a/kernel/cpu.c b/kernel/cpu.c
->> index 8b92539..97d1b42 100644
->> --- a/kernel/cpu.c
->> +++ b/kernel/cpu.c
->> @@ -34,7 +34,7 @@ void cpu_maps_update_done(void)
->>       mutex_unlock(&cpu_add_remove_lock);
->>  }
->>
->> -static __cpuinitdata RAW_NOTIFIER_HEAD(cpu_chain);
->> +static RAW_NOTIFIER_HEAD(cpu_chain);
->>
->>  /* If set, cpu_up and cpu_down will return -EBUSY and do nothing.
->>   * Should always be manipulated under cpu_add_remove_lock
--- 
-Daniel J Blueman
+This has the potential to actually make it harder to free memory if p is 
+waiting to acquire a writelock on mm->mmap_sem in the exit path while the 
+thread holding mm->mmap_sem is trying to run.
+--531400454-399898958-1275425400=:13136--
