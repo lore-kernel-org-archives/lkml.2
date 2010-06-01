@@ -1,100 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932258Ab0FAVje (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Jun 2010 17:39:34 -0400
-Received: from n5-vm0.bullet.mail.gq1.yahoo.com ([67.195.8.62]:36423 "HELO
-	n5-vm0.bullet.mail.gq1.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S932225Ab0FAVjb convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Jun 2010 17:39:31 -0400
-X-Yahoo-Newman-Property: ymail-3
-X-Yahoo-Newman-Id: 710098.38695.bm@omp118.mail.gq1.yahoo.com
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=s1024; d=pacbell.net;
-  h=Message-ID:X-YMail-OSG:Received:X-Mailer:Date:From:Subject:To:Cc:In-Reply-To:MIME-Version:Content-Type:Content-Transfer-Encoding;
-  b=pZNzPTWFyWPBaCzZ4xElQl8MWNXkwbmahi+B/Z9TC1cAoYN+O0oNJvxYf/yX7K0QLzUMWbEYMOTvZfGnCKKG6YbjiU8HvhBmz4jmzaE+fPZvA7YetvKZC2UoxImQTpa7y2uJ2nrdd/oQi6y3iAZTEaW2CW0794YgGtfqLmsR/OE=;
-Message-ID: <599286.8177.qm@web180301.mail.gq1.yahoo.com>
-X-YMail-OSG: JFz7gR4VM1l8uKeybQxKJ.Lmm8b_YW6ZTW3E1XBUCdFR1ij
- B9T0N_G_9tqcZNyvEUzYeYzwgwZpa00sWIDIHoi00D1ReATe2NOyv7EDO0EW
- KtoISQyU8.NQogi2QXBQT0ZQw4_ENgnQbSG_9FOGOlHIdVL58Nmwz2fe0AH8
- 6pHxe8GM63vaNjtpCxrfhvEiGdpsxS9xI7zgqjEFLLAZtq_LPVt0NqwIk4tx
- 9S6W.b_DmDLJamg5l9IV93ZDtxa.RjkvEaK9yGFAGb5W2oOG18K9KpC37aEk
- Y8FHeT5obaHvNjVq2ubXuBY7fTSqrvpfstZfIZaw9rVZIN9I35VTQtXm97jM
- JS4V6xj5fENX5J7QKfm6nXRrf
-X-Mailer: YahooMailClassic/11.0.8 YahooMailWebService/0.8.103.269680
-Date: Tue, 1 Jun 2010 14:39:29 -0700 (PDT)
-From: David Brownell <david-b@pacbell.net>
-Subject: Re: [linux-pm] [PATCH 0/8] Suspend block api (version 8)
-To: Matthew Garrett <mjg59@srcf.ucam.org>,
-       James Bottomley <James.Bottomley@suse.de>
-Cc: Thomas Gleixner <tglx@linutronix.de>,
-       Peter Zijlstra <peterz@infradead.org>,
-       =?iso-8859-1?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>, tytso@mit.edu,
-       LKML <linux-kernel@vger.kernel.org>,
-       Florian Mickler <florian@mickler.org>,
-       Linux PM <linux-pm@lists.linux-foundation.org>,
-       Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
-       felipe.balbi@nokia.com, Alan Cox <alan@lxorguk.ukuu.org.uk>
-In-Reply-To: <1275426085.21962.967.camel@mulgrave.site>
+	id S1756230Ab0FAVm4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Jun 2010 17:42:56 -0400
+Received: from mail-px0-f174.google.com ([209.85.212.174]:54565 "EHLO
+	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754531Ab0FAVmz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Jun 2010 17:42:55 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=RovLssDtdO9444hYx6YZhZKXA3+zTnoJaW/iNz8WczcdXtXI6KedFMzna3nP3Enfe6
+         psMgK/T6Gd2h/tD/lLIlW5g6fu1xaIPgzfOUS0DGftZBgjPLNEnJ4BQLOa/06iseAtW8
+         ZipNYStmeoTCsu20wEY4pOZtUpKchclBJshMk=
+Message-ID: <4C057EF0.2030808@gmail.com>
+Date: Tue, 01 Jun 2010 14:43:12 -0700
+From: "Justin P. Mattock" <justinmattock@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.4pre) Gecko/20091114 Lightning/1.0pre Thunderbird/3.0b4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
+To: Matthew Garrett <mjg59@srcf.ucam.org>
+CC: x86@kernel.org, tglx@linutronix.de, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH]X86:reboot.c Add some dmi entries to	pci_reboot_dmi_table.
+References: <20100601192101.GA15086@srcf.ucam.org> <4C056839.8020605@gmail.com> <20100601200704.GA16091@srcf.ucam.org> <4C056AE6.3000409@gmail.com> <20100601202130.GA16391@srcf.ucam.org> <4C056E0C.2030709@gmail.com> <20100601203351.GA16575@srcf.ucam.org> <4C0572B4.6000201@gmail.com> <20100601211219.GA17719@srcf.ucam.org> <4C057AE9.9020307@gmail.com> <20100601212901.GA18390@srcf.ucam.org>
+In-Reply-To: <20100601212901.GA18390@srcf.ucam.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---- On Tue, 6/1/10, James Bottomley <James.Bottomley@suse.de> wrote:
+On 06/01/2010 02:29 PM, Matthew Garrett wrote:
+> On Tue, Jun 01, 2010 at 02:26:01PM -0700, Justin P. Mattock wrote:
+>> On 06/01/2010 02:12 PM, Matthew Garrett wrote:
+>>> some level. How about the following (again, run as root):
+>>>
+>>> #include<sys/io.h>
+>>>
+>>> int main() {
+>>> 	iopl(3);
+>>> 	outb(0xfe, 0x64);
+>>> 	return 0;
+>>> }
+>>>
+>
+> So, just to be clear, you run this as root and it immediately returns
+> you to the prompt? This seems unlikely.
 
-> > As long as you can set a wakeup timer, an S state is just a C state with 
-> > side effects.
+yep.. with the above code
+I (save to a file) then
+non-root gcc reboot.c -o reboot
+then su
+./reboot
+just bake to the command prompt
 
-I've seen similar statements on this endless
-thread before; they're not quite true...
+>
+>> ahh!! I see now:
+>> grep 0x64 *.dsl
+>
+> No, that's unrelated.
+>
 
+alright!!
 
-> > The significant one is that entering an
-> > S state stops the process scheduler and
-> > any in-kernel timers.
-
-There's a structural difference too, related
-to peripheral device activity and power states.
-
-Specifically, peripherals can be active in C
-states (erforming I/O, maybe with DMA etc) and
- will in general not be in lowest power states
-(PCI etc).  Whereas entry to ACPI S-states
-involves calling the AML code to put those
-peripherals into lowest power modes ... ones
-they can't in general enter at run time.  (An
-additional task of that bytecode is to activate
-any wakeup logic, which again is not generally
-functional in except in S-states).
-
-
-The point being perhaps more that ACPI doesn't
-map well to the more power-efficient architectures
-(often built on ARM) ... hardware vendors provide
-all kinds of PM hooks, and Linux can choose between
-them so it's more power-miserly than if it tried
-to emulate an ACPI based platform.
-
-I've seen some Linux systems which put DRAM into
-self-refresh during certain idle modes, for example,
-not just during suspend-to-RAM, if it's known that
-no DMA is active.  (Why not save that power if it's
-safe?)  Likewise, disable some oscillators and PLLs
-if they're not needed (the clock API allows that to
-be done regardless of "C-states" etc).
-
-The notion of "suspend" gets introduced on such
-systems primarily to match the ACPI-ish models  that
-exist ... rather than because they necessarily make
-good matches for the hardware.  Which has left a
-puzzle:  how and why to use such "suspend" models?
-
-Maybe that's underlying some of the pushback for
-the notion of automagic entry to "suspend" states.
-
-- Dave
-
-
+Justin P. Mattock
