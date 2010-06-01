@@ -1,131 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756182Ab0FASjM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Jun 2010 14:39:12 -0400
-Received: from casper.infradead.org ([85.118.1.10]:37366 "EHLO
+	id S1753695Ab0FASmG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Jun 2010 14:42:06 -0400
+Received: from casper.infradead.org ([85.118.1.10]:51959 "EHLO
 	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752035Ab0FASjK (ORCPT
+	with ESMTP id S1751364Ab0FASmC convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Jun 2010 14:39:10 -0400
-Date: Tue, 1 Jun 2010 15:38:37 -0300
-From: Arnaldo Carvalho de Melo <acme@infradead.org>
-To: Stephane Eranian <eranian@google.com>
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
-       perfmon2-devel@lists.sf.net, eranian@gmail.com,
-       "David S. Miller" <davem@davemloft.net>,
-       =?iso-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>,
-       Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
-       Peter Zijlstra <peterz@infradead.org>,
-       Stephane Eranian <eranian@google.com>, Tom Zanussi <tzanussi@gmail.com>
-Subject: Re: [BUG] perf: buildid not managed properly when cmd path is
- relative
-Message-ID: <20100601183837.GC4093@ghostprotocols.net>
-References: <AANLkTimTMDjP3fgcOv2kIUPYYONAiMYPdhDb1VsLrTE_@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <AANLkTimTMDjP3fgcOv2kIUPYYONAiMYPdhDb1VsLrTE_@mail.gmail.com>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
-	See http://www.infradead.org/rpr.html
+	Tue, 1 Jun 2010 14:42:02 -0400
+Subject: Re: [PATCH] rbtree: undo augmented damage -v2
+From: Peter Zijlstra <peterz@infradead.org>
+To: Venkatesh Pallipadi <venki@google.com>
+Cc: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+       suresh.b.siddha@intel.com, tglx@linutronix.de,
+       linux-tip-commits@vger.kernel.org,
+       Fabio Checconi <fabio@gandalf.sssup.it>
+In-Reply-To: <AANLkTil8ly_3P2DgEI9oI_ZbYP6FkwP2lCY2v47iAn9-@mail.gmail.com>
+References: <20100210232343.GA11465@linux-os.sc.intel.com>
+	 <tip-17d9ddc72fb8bba0d4f67868c9c612e472a594a9@git.kernel.org>
+	 <1275136178.27810.13539.camel@twins> <1275139902.27810.13737.camel@twins>
+	 <AANLkTimZkyRwP5k290rUr-DUMhsynl9fzBkS68x-57KM@mail.gmail.com>
+	 <1275412748.27810.27883.camel@twins>
+	 <AANLkTilGfY1PnNgpEeB3AQEqTNoDJQfPTxK5LNUYb7ZA@mail.gmail.com>
+	 <1275414172.27810.27961.camel@twins>
+	 <AANLkTil8ly_3P2DgEI9oI_ZbYP6FkwP2lCY2v47iAn9-@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Tue, 01 Jun 2010 20:42:00 +0200
+Message-ID: <1275417720.27810.28160.camel@twins>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Thu, May 27, 2010 at 03:46:16PM +0200, Stephane Eranian escreveu:
-> I ran into another problem while running more tests with perf record,
-> perf buildid-list.
- 
-> I do the following:
- 
-> $ perf record foo/noploop 5 ; perf buildid-list
-> 54b1e7cc3cf52e0db255aab44ce7538eb62655b8 [kernel.kallsyms]
-> 875ae61623e89f408b425ca0486a9ec99e3ac73e
-> /home/eranian/perfmon/official/tip/build/tools/perf/foo/noploop
+On Tue, 2010-06-01 at 11:09 -0700, Venkatesh Pallipadi wrote:
+> On Tue, Jun 1, 2010 at 10:42 AM, Peter Zijlstra <peterz@infradead.org> wrote:
+> > On Tue, 2010-06-01 at 10:34 -0700, Venkatesh Pallipadi wrote:
+> >>
+> >> Yes. This will cover all the cases on insert. But on erase, there is
+> >> still a case where a rotate of sibling node is done during the
+> >> re-coloration process. There we have a child change on sibling's
+> >> child. I am not able to think of any easy way to handle that case.
+> >
+> > Let me go draw some figures with pen and paper to match up the erase
+> > path with the rb_augment_erase_begin() code, because I can't quite spot
+> > the case we're missing.
+> >
+> > If you have it handy, ascii art might help..
 > 
-> I know I have samples in noploop:
-> $ perf report -D
-> 0x10a0 [0x20]: PERF_RECORD_SAMPLE(IP, 2): 14721/14721: 0x4006d6 period: 2351576
->  ... thread: noploop:14721
->  ...... dso: ./foo/noploop
+> It is this case
+> 
+>     P
+>    / \
+>   N   S
+>      / \
+>     SL SR
+> 
+> changing to
+> 
+>     P
+>    / \
+>   N  SL
+>       \
+>        S
+>         \
+>         SR
 
-> But if I ask with buildid-list (like per-archive is doing) then I get:
-> $ perf buildid-list --with-hits
-> 54b1e7cc3cf52e0db255aab44ce7538eb62655b8 [kernel.kallsyms]
-> 0000000000000000000000000000000000000000 ./foo/noploop
+Right, but see: http://en.wikipedia.org/wiki/Red-black_tree
+That is delete_case5, however then we fall into delete_case6 and perform
+a left rotation.
 
-> The builid is bogus for noploop and it is relative path not full anymore.
+So suppose we start with the tree:
 
-Hi Stephane,
+    P                  P               P                SL
+  /   \               / \             / \               / \
+ D     S      -->    N  S      -->   N   SL     -->    P   S
+  \   / \              / \                \           /     \
+   N SL  SR          SL* SR                S*        N      SR
+                                            \
+                                             SR
 
-	Can you please try the following patch?
+and then remove D, delete case 5 and finally delete case 6, * marks red.
 
-Thanks in advance,
+rb_augment_erase_begin(D) will return N, and then rb_augment_path(N)
+will re-augment: N, P, SL and S.
 
-- Arnaldo
-
->From 9d146ff3c994634c529396442a4a96b0e58809e2 Mon Sep 17 00:00:00 2001
-From: Arnaldo Carvalho de Melo <acme@redhat.com>
-Date: Tue, 1 Jun 2010 12:37:05 -0300
-Subject: [PATCH 1/1] perf buildid-list: Fix --with-hits event processing
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-
-When we use plain 'perf buildid-list' we use only what is in the buildid
-table in the perf.data header. And those have absolute pathnames because
-at 'perf record' time we used __perf_session__process_events and that
-doesn't sets up the path shortening code in map__new() that happens if
-symbol_conf.full_paths is false, the default.
-
-On the other hand, when we use 'perf buildid-list --with-hits' we
-process all the events using perf_session__process_events, adding
-entries to the global DSO list _after_ removing the current directory
-from the DSO name, for presentation purposes.
-
-Because of that we end up having two entries in the DSO list when
-recording events for binaries using relative pathnames.
-
-Fix it minimally by setting symbol_conf.full_paths to true when marking
-the DSOs with hits in 'perf buildid-list --with-hits', as used by 'perf
-archive'
-
-Right fix longer term is to shorten the path only at presentation time.
-Will be done for 2.6.36.
-
-Reported-by: Stephane Eranian <eranian@google.com>
-Cc: David S. Miller <davem@davemloft.net>
-Cc: Frédéric Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Mike Galbraith <efault@gmx.de>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Stephane Eranian <eranian@google.com>
-Cc: Tom Zanussi <tzanussi@gmail.com>
-LKML-Reference: <new-submission>
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/perf/builtin-buildid-list.c |    4 +++-
- 1 files changed, 3 insertions(+), 1 deletions(-)
-
-diff --git a/tools/perf/builtin-buildid-list.c b/tools/perf/builtin-buildid-list.c
-index 44a47e1..9989072 100644
---- a/tools/perf/builtin-buildid-list.c
-+++ b/tools/perf/builtin-buildid-list.c
-@@ -43,8 +43,10 @@ static int __cmd_buildid_list(void)
- 	if (session == NULL)
- 		return -1;
- 
--	if (with_hits)
-+	if (with_hits) {
-+		symbol_conf.full_paths = true;
- 		perf_session__process_events(session, &build_id__mark_dso_hit_ops);
-+	}
- 
- 	perf_session__fprintf_dsos_buildid(session, stdout, with_hits);
- 
--- 
-1.6.5.2
 
