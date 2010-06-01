@@ -1,70 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755793Ab0FAL5R (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Jun 2010 07:57:17 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:27503 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755064Ab0FAL5P (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Jun 2010 07:57:15 -0400
-Subject: Re: [PATCH v2] fs: block cross-uid sticky symlinks
-From: Eric Paris <eparis@redhat.com>
-To: Christoph Hellwig <hch@infradead.org>
-Cc: Kees Cook <kees.cook@canonical.com>, James Morris <jmorris@namei.org>,
-       linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
-       linux-fsdevel@vger.kernel.org, linux-doc@vger.kernel.org,
-       Randy Dunlap <rdunlap@xenotime.net>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Jiri Kosina <jkosina@suse.cz>, Dave Young <hidave.darkstar@gmail.com>,
-       Martin Schwidefsky <schwidefsky@de.ibm.com>,
-       David Howells <dhowells@redhat.com>, Ingo Molnar <mingo@elte.hu>,
+	id S1755960Ab0FAL7L (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Jun 2010 07:59:11 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:56547 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752791Ab0FAL7J (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Jun 2010 07:59:09 -0400
+X-Authority-Analysis: v=1.1 cv=EbJB9AiBqsyZPMVATYsj78CfMiBiOs+4P7kRKNQkfg0= c=1 sm=0 a=PjWTFMnUE30A:10 a=0qYQvVkOOIcA:10 a=7U3hwN5JcxgA:10 a=Q9fys5e9bTEA:10 a=gMqfjgEr1zLu/65IO0LwxA==:17 a=5vTwxQwy-NLxs3pkj-oA:9 a=Q0ESIHjJbWByVLmchJ4A:7 a=zjoW2GO5q2nIWNJAF4GEsmF2UF0A:4 a=PUjeQqilurYA:10 a=gMqfjgEr1zLu/65IO0LwxA==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.89.75
+Subject: Re: Perf trace event parse errors for KVM events
+From: Steven Rostedt <rostedt@goodmis.org>
+Reply-To: rostedt@goodmis.org
+To: Avi Kivity <avi@redhat.com>
+Cc: Stefan Hajnoczi <stefanha@gmail.com>, linux-perf-users@vger.kernel.org,
+       linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
+       Frederic Weisbecker <fweisbec@gmail.com>,
+       Marcelo Tosatti <mtosatti@redhat.com>,
        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-       "Eric W. Biederman" <ebiederm@xmission.com>,
-       Tim Gardner <tim.gardner@canonical.com>,
-       "Serge E. Hallyn" <serue@us.ibm.com>
-In-Reply-To: <20100601075529.GA11397@infradead.org>
-References: <20100531030402.GQ6056@outflux.net>
-	 <20100531103510.GA30021@infradead.org> <20100531175733.GD4098@outflux.net>
-	 <alpine.LRH.2.00.1006010904190.675@tundra.namei.org>
-	 <20100601032423.GL4098@outflux.net>  <20100601075529.GA11397@infradead.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 01 Jun 2010 07:55:02 -0400
-Message-ID: <1275393302.2690.13.camel@localhost>
+       Stefan Hajnoczi <stefanha@linux.vnet.ibm.com>,
+       Johannes Berg <johannes.berg@intel.com>,
+       Darren Hart <darren@dvhart.com>
+In-Reply-To: <4C04C739.8050607@redhat.com>
+References: <20100526123443.GB8905@stefan-thinkpad.transitives.com>
+	 <AANLkTil8BiuzrmacV7Lpx1wES0EvLSiVmcfwtSY6Zis2@mail.gmail.com>
+	 <1275083157.22648.593.camel@gandalf.stny.rr.com>
+	 <4C00FF9B.9000107@redhat.com>
+	 <1275139177.22648.610.camel@gandalf.stny.rr.com>
+	 <4C021D7E.1060705@redhat.com>
+	 <1275228182.15884.1.camel@gandalf.stny.rr.com>
+	 <4C027131.2010309@redhat.com>
+	 <1275233656.15884.4.camel@gandalf.stny.rr.com>
+	 <4C04C739.8050607@redhat.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+Organization: Kihon Technologies Inc.
+Date: Tue, 01 Jun 2010 07:59:04 -0400
+Message-ID: <1275393544.15884.19.camel@gandalf.stny.rr.com>
 Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-06-01 at 03:55 -0400, Christoph Hellwig wrote:
-> On Mon, May 31, 2010 at 08:24:23PM -0700, Kees Cook wrote:
-
-> > My rationale is that if it's in commoncaps, it's effective for everyone, so
-> > it might as well be in core VFS.  If the VFS objections really do boil down
-> > to "not in fs/" then I'm curious if doing this in commoncaps is acceptable.
+On Tue, 2010-06-01 at 11:39 +0300, Avi Kivity wrote:
+> On 05/30/2010 06:34 PM, Steven Rostedt wrote:
+> >
+> >> Cool.  May make sense to use simpler formatting in the kernel, and use
+> >> trace-cmd plugins for the complicated cases.
+> >>
+> >> It does raise issues with ABIs.  Can trace-cmd read plugins from
+> >> /lib/modules/*?  We can then distribute the plugins with the kernel.
+> >>
+> >>      
+> > We probably could do that. Perhaps if we can port the python code to
+> > perf, then it would work for both. Then the plugins could be just python
+> > scripts, (or binary .so modules) and have a tools/plugins dir?
+> >
+> > The python part probably would be easier to port, since the .so modules
+> > are a bit more specific to trace-cmd.
+> >    
 > 
-> If you think the objection is about having things in fs/ you're smoking
-> some really bad stuff.
+> One concern is performance.  Traces tend to be long, and running python 
+> code on each line will be slow.
+> 
+> If trace-cmd integrates a pager and a search mechanism that looks at the 
+> binary data instead of the text, we could format only the lines that are 
+> displayed.  But that is going to be a lot of work and I don't think it's 
+> worth the effort.
+> 
 
-Sounds to me like we should probably follow the same path as
-mmap_min_addr.  We should add these hooks right in the VFS where they
-belong (much like mmap_min_addr hooks into the vm) and control them 2
-ways.
+Every event gets its own ID. The plugin registers a callback to that ID.
+When the ID is hit, the plugin is executed on that event to display its
+binary format.
 
-1) a Kconfig so distros can choose to turn it on or off by default
-2) a /proc interface so root can turn it off
+This is done after the data has been saved in binary format to a file.
+It may slow down the executing of reading a data file, but it does not
+affect the running of the trace one bit.
 
-Nothing about that precludes additional similar checks inside an LSM
-(like CONFIG_LSM_MMAP_MIN_ADDR) which can be more finely controlled.  So
-maybe we want to follow up with the core VFS check with new checks in
-SELinux (and maybe apparmour).  This allows the user to disable the
-general check and still be provided with some modicum of protection.
-You might ask why not ONLY do the check in SELinux and drop the generic
-check, but we have seen with mmap_min_addr that the SELinux unconfined
-user can do damn well anything it wants to, so having a non-LSM version
-of appropriate security checks is highly regarded.
+-- Steve
 
-(see eparis.livejournal.com for a long discussion on the LSM creating a
-weaker machine in some cases when there are no non-LSM checks)
-
--Eric
 
