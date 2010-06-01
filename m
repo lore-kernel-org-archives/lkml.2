@@ -1,64 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755852Ab0FAK3P (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Jun 2010 06:29:15 -0400
-Received: from cantor.suse.de ([195.135.220.2]:48726 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755096Ab0FAK3B (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Jun 2010 06:29:01 -0400
-Message-ID: <4C04E0EA.8010100@suse.cz>
-Date: Tue, 01 Jun 2010 12:28:58 +0200
-From: Michal Marek <mmarek@suse.cz>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100317 SUSE/3.0.4-1.18 Thunderbird/3.0.4
+	id S1755183Ab0FAKar (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Jun 2010 06:30:47 -0400
+Received: from mtagate4.uk.ibm.com ([194.196.100.164]:54121 "EHLO
+	mtagate4.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753408Ab0FAKao (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Jun 2010 06:30:44 -0400
+Date: Tue, 1 Jun 2010 12:30:42 +0200
+From: Christof Schmitt <christof.schmitt@de.ibm.com>
+To: Boaz Harrosh <bharrosh@panasas.com>
+Cc: James Bottomley <James.Bottomley@suse.de>,
+       "Martin K. Petersen" <martin.petersen@oracle.com>,
+       linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
+       linux-fsdevel@vger.kernel.org, Chris Mason <chris.mason@oracle.com>
+Subject: Re: Wrong DIF guard tag on ext2 write
+Message-ID: <20100601103041.GA15922@schmichrtp.mainz.de.ibm.com>
+References: <20100531112817.GA16260@schmichrtp.mainz.de.ibm.com>
+ <yq1iq64kv9f.fsf@sermon.lab.mkp.net>
+ <1275318102.2823.47.camel@mulgrave.site>
+ <4C03D5FD.3000202@panasas.com>
 MIME-Version: 1.0
-To: Arnaldo Carvalho de Melo <acme@infradead.org>
-Cc: Sam Ravnborg <sam@ravnborg.org>, "David S. Miller" <davem@davemloft.net>,
-       =?ISO-8859-1?Q?Fr=E9d=E9ric_Weisbecker?= <fweisbec@gmail.com>,
-       Ingo Molnar <mingo@elte.hu>, Mike Galbraith <efault@gmx.de>,
-       Paul Mackerras <paulus@samba.org>,
-       Peter Zijlstra <peterz@infradead.org>,
-       Stephane Eranian <eranian@google.com>, Tom Zanussi <tzanussi@gmail.com>,
-       Eduardo Habkost <ehabkost@redhat.com>,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2 1/1] perf tools: Make target to generate self contained
- source tarball
-References: <20100528185357.GA28009@ghostprotocols.net> <20100529072948.GE16257@merkur.ravnborg.org> <20100531174207.GB3481@ghostprotocols.net> <4C0417EC.8050906@suse.cz> <20100531230639.GD3481@ghostprotocols.net>
-In-Reply-To: <20100531230639.GD3481@ghostprotocols.net>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4C03D5FD.3000202@panasas.com>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 1.6.2010 01:06, Arnaldo Carvalho de Melo wrote:
-> Em Mon, May 31, 2010 at 10:11:24PM +0200, Michal Marek escreveu:
->> On 31.5.2010 19:42, Arnaldo Carvalho de Melo wrote:
->>> +git archive --prefix=$(perf-tar)/ HEAD^{tree}                       \
->>
->> If you use plain "HEAD" (a commit-ish) instead if HEAD^{tree}, then
->> git archive will store the commit id in the archive metadata and the
->> user can then use git get-tar-commit-id to extract it.
+On Mon, May 31, 2010 at 06:30:05PM +0300, Boaz Harrosh wrote:
+> On 05/31/2010 06:01 PM, James Bottomley wrote:
+> > On Mon, 2010-05-31 at 10:20 -0400, Martin K. Petersen wrote:
+> >>>>>>> "Christof" == Christof Schmitt <christof.schmitt@de.ibm.com> writes:
+> >>
+> >> Christof> Since the guard tags are created in Linux, it seems that the
+> >> Christof> data attached to the write request changes between the
+> >> Christof> generation in bio_integrity_generate and the call to
+> >> Christof> sd_prep_fn.
+> >>
+> >> Yep, known bug.  Page writeback locking is messed up for buffer_head
+> >> users.  The extNfs folks volunteered to look into this a while back but
+> >> I don't think they have found the time yet.
+> >>
+> >>
+> >> Christof> Using ext3 or ext4 instead of ext2 does not show the problem.
+> >>
+> >> Last I looked there were still code paths in ext3 and ext4 that
+> >> permitted pages to be changed during flight.  I guess you've just been
+> >> lucky.
+> > 
+> > Pages have always been modifiable in flight.  The OS guarantees they'll
+> > be rewritten, so the drivers can drop them if it detects the problem.
+> > This is identical to the iscsi checksum issue (iscsi adds a checksum
+> > because it doesn't trust TCP/IP and if the checksum is generated in
+> > software, there's time between generation and page transmission for the
+> > alteration to occur).  The solution in the iscsi case was not to
+> > complain if the page is still marked dirty.
+> > 
 > 
-> I just used what was in git.git and then when talking with a git
-> enthusiast, he showed me this:
+> And also why RAID1 and RAID4/5/6 need the data bounced. I wish VFS
+> would prevent data writing given a device queue flag that requests
+> it. So all these devices and modes could just flag the VFS/filesystems
+> that: "please don't allow concurrent writes, otherwise I need to copy data"
 > 
-> [acme@emilia git]$ git show 9cd625b79babaf50f50a0e5d96903eaacb1ee600
-> commit 9cd625b79babaf50f50a0e5d96903eaacb1ee600
-> Author: Rene Scharfe <rene.scharfe@lsrfire.ath.cx>
-> Date:   Sun Jun 18 15:25:33 2006 +0200
-> 
->     Make release tarballs friendlier to older tar versions
+> From what Chris Mason has said before, all the mechanics are there, and it's
+> what btrfs is doing. Though I don't know how myself?
 
-...
+I also tested with btrfs and invalid guard tags in writes have been
+encountered as well (again in 2.6.34). The only difference is that no
+error was reported to userspace, although this might be a
+configuration issue.
 
-Ah, ok.
+What is the best strategy to continue with the invalid guard tags on
+write requests? Should this be fixed in the filesystems?
 
+Another idea would be to pass invalid guard tags on write requests
+down to the hardware, expect an "invalid guard tag" error and report
+it to the block layer where a new checksum is generated and the
+request is issued again. Basically implement a retry through the whole
+I/O stack. But this also sounds complicated.
 
-> Well, what about the other aspects of the patch, is this the only issue
-> you have found with it?
-
-The patch is OK.
-
-Acked-by: Michal Marek <mmarek@suse.cz>
-
-Michal
+--
+Christof Schmitt
