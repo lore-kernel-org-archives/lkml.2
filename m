@@ -1,134 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757400Ab0FAUzS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Jun 2010 16:55:18 -0400
-Received: from moutng.kundenserver.de ([212.227.17.8]:56281 "EHLO
+	id S932148Ab0FAUxt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Jun 2010 16:53:49 -0400
+Received: from moutng.kundenserver.de ([212.227.17.8]:62893 "EHLO
 	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932089Ab0FAUxv (ORCPT
+	with ESMTP id S1757501Ab0FAUxr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Jun 2010 16:53:51 -0400
+	Tue, 1 Jun 2010 16:53:47 -0400
 From: Arnd Bergmann <arnd@arndb.de>
 To: Greg KH <gregkh@suse.de>
 Cc: linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
        Alan Cox <alan@lxorguk.ukuu.org.uk>,
        Frederic Weisbecker <fweisbec@gmail.com>,
-       John Kacur <jkacur@redhat.com>
-Subject: [PATCH 22/31] tty: never hold BTM while getting tty_mutex
-Date: Tue,  1 Jun 2010 22:53:02 +0200
-Message-Id: <1275425591-8803-23-git-send-email-arnd@arndb.de>
+       John Kacur <jkacur@redhat.com>, Alan Cox <alan@linux.intel.com>
+Subject: [PATCH 18/31] serial: add port helpers
+Date: Tue,  1 Jun 2010 22:52:58 +0200
+Message-Id: <1275425591-8803-19-git-send-email-arnd@arndb.de>
 X-Mailer: git-send-email 1.7.0.4
 In-Reply-To: <1275425591-8803-1-git-send-email-arnd@arndb.de>
 References: <1275425591-8803-1-git-send-email-arnd@arndb.de>
-X-Provags-ID: V01U2FsdGVkX1/UPYxPd+8V3+0uHzfzvFRCsNBZCo79pAib/rz
- 3mhhuV0npOYVQ46GahX8SHtqTuJOJrZ9Dd36ISQk/CSlkupgqZ
- zBDdF9v4c3h5EjMCZK9IQ==
+X-Provags-ID: V01U2FsdGVkX19g2es0S9asqGMsM0fyx5uSuwUf6tUt/cbMDbI
+ uc6loMa2EeKtNRN3B31S0dxB2JxV4I6ltO73C9Sne4aN4ex8xh
+ Pck/zDUH9lWlmQwXdoj/Q==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-tty_mutex is never taken with the BTM held, except for
-two corner cases that are worked around here.
-We give up the BTM before calling tty_release() in the
-error path of tty_open().
-Similarly, we reorder the locking in ptmx_open()
-to get tty_mutex before the BTM.
+From: Alan Cox <alan@linux.intel.com>
 
-Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+We can make this the same as the ones that will be needed by the tty_port
+helper logic that we want to move to but still call them from the existing
+code base.
+
+Signed-off-by: Alan Cox <alan@linux.intel.com>
 ---
- drivers/char/pty.c    |   24 +++++++++++-------------
- drivers/char/tty_io.c |   12 ++++++------
- 2 files changed, 17 insertions(+), 19 deletions(-)
+ drivers/serial/serial_core.c |   51 ++++++++++++++++++++++++++++++-----------
+ 1 files changed, 37 insertions(+), 14 deletions(-)
 
-diff --git a/drivers/char/pty.c b/drivers/char/pty.c
-index 384e79f..d9c1407 100644
---- a/drivers/char/pty.c
-+++ b/drivers/char/pty.c
-@@ -626,7 +626,7 @@ static const struct tty_operations pty_unix98_ops = {
-  *		allocated_ptys_lock handles the list of free pty numbers
-  */
- 
--static int __ptmx_open(struct inode *inode, struct file *filp)
-+static int ptmx_open(struct inode *inode, struct file *filp)
- {
- 	struct tty_struct *tty;
- 	int retval;
-@@ -635,11 +635,14 @@ static int __ptmx_open(struct inode *inode, struct file *filp)
- 	nonseekable_open(inode, filp);
- 
- 	/* find a device that is not in use. */
-+	tty_lock();
- 	index = devpts_new_index(inode);
-+	tty_unlock();
- 	if (index < 0)
- 		return index;
- 
- 	mutex_lock(&tty_mutex);
-+	tty_lock();
- 	tty = tty_init_dev(ptm_driver, index, 1);
- 	mutex_unlock(&tty_mutex);
- 
-@@ -657,24 +660,19 @@ static int __ptmx_open(struct inode *inode, struct file *filp)
- 		goto out1;
- 
- 	retval = ptm_driver->ops->open(tty, filp);
--	if (!retval)
--		return 0;
-+	if (retval)
-+		goto out2;
- out1:
-+	tty_unlock();
-+	return retval;
-+out2:
-+	tty_unlock();
- 	tty_release(inode, filp);
- 	return retval;
- out:
- 	devpts_kill_index(inode, index);
--	return retval;
--}
--
--static int ptmx_open(struct inode *inode, struct file *filp)
--{
--	int ret;
--
--	tty_lock();
--	ret = __ptmx_open(inode, filp);
- 	tty_unlock();
--	return ret;
-+	return retval;
+diff --git a/drivers/serial/serial_core.c b/drivers/serial/serial_core.c
+index 424b1c7..2379045 100644
+--- a/drivers/serial/serial_core.c
++++ b/drivers/serial/serial_core.c
+@@ -1501,6 +1501,34 @@ static void uart_update_termios(struct tty_struct *tty,
+ 	}
  }
  
- static struct file_operations ptmx_fops;
-diff --git a/drivers/char/tty_io.c b/drivers/char/tty_io.c
-index 4c2cc6b..d51993b 100644
---- a/drivers/char/tty_io.c
-+++ b/drivers/char/tty_io.c
-@@ -1866,19 +1866,19 @@ got_driver:
- 		printk(KERN_DEBUG "error %d in opening %s...", retval,
- 		       tty->name);
- #endif
-+		tty_unlock(); /* need to call tty_release without BTM */
- 		tty_release(inode, filp);
--		if (retval != -ERESTARTSYS) {
--			tty_unlock();
-+		if (retval != -ERESTARTSYS)
- 			return retval;
--		}
--		if (signal_pending(current)) {
--			tty_unlock();
++static int uart_carrier_raised(struct tty_port *port)
++{
++	struct uart_state *state = container_of(port, struct uart_state, port);
++	struct uart_port *uport = state->uart_port;
++	int mctrl;
++	mutex_lock(&port->mutex);
++	spin_lock_irq(&uport->lock);
++	uport->ops->enable_ms(uport);
++	mctrl = uport->ops->get_mctrl(uport);
++	spin_unlock_irq(&uport->lock);
++	mutex_unlock(&port->mutex);
++	if (mctrl & TIOCM_CAR)
++		return 1;
++	return 0;
++}
 +
-+		if (signal_pending(current))
- 			return retval;
--		}
++static void uart_dtr_rts(struct tty_port *port, int onoff)
++{
++	struct uart_state *state = container_of(port, struct uart_state, port);
++	struct uart_port *uport = state->uart_port;
++	mutex_lock(&port->mutex);
++	if (onoff)
++		uart_set_mctrl(uport, TIOCM_DTR | TIOCM_RTS);
++	else
++		uart_clear_mctrl(uport, TIOCM_DTR | TIOCM_RTS);
++	mutex_unlock(&port->mutex);
++}
 +
- 		schedule();
- 		/*
- 		 * Need to reset f_op in case a hangup happened.
+ /*
+  * Block the open until the port is ready.  We must be called with
+  * the per-port semaphore held.
+@@ -1509,9 +1537,7 @@ static int
+ uart_block_til_ready(struct file *filp, struct uart_state *state)
+ {
+ 	DECLARE_WAITQUEUE(wait, current);
+-	struct uart_port *uport = state->uart_port;
+ 	struct tty_port *port = &state->port;
+-	unsigned int mctrl;
+ 	unsigned long flags;
+ 
+ 	spin_lock_irqsave(&port->lock, flags);
+@@ -1555,23 +1581,14 @@ uart_block_til_ready(struct file *filp, struct uart_state *state)
+ 		 * not set RTS here - we want to make sure we catch
+ 		 * the data from the modem.
  		 */
-+		tty_lock();
- 		if (filp->f_op == &hung_up_tty_fops)
- 			filp->f_op = &tty_fops;
- 		tty_unlock();
+-		if (port->tty->termios->c_cflag & CBAUD) {
+-			mutex_lock(&port->mutex);
+-			uart_set_mctrl(uport, TIOCM_DTR);
+-			mutex_unlock(&port->mutex);
+-		}
++		if (port->tty->termios->c_cflag & CBAUD)
++			tty_port_raise_dtr_rts(port);
+ 
+ 		/*
+ 		 * and wait for the carrier to indicate that the
+ 		 * modem is ready for us.
+ 		 */
+-		mutex_lock(&port->mutex);
+-		spin_lock_irq(&uport->lock);
+-		uport->ops->enable_ms(uport);
+-		mctrl = uport->ops->get_mctrl(uport);
+-		spin_unlock_irq(&uport->lock);
+-		mutex_unlock(&port->mutex);
+-		if (mctrl & TIOCM_CAR)
++		if (tty_port_carrier_raised(port))
+ 			break;
+ 
+ 		schedule();
+@@ -2349,6 +2366,11 @@ static const struct tty_operations uart_ops = {
+ #endif
+ };
+ 
++static const struct tty_port_operations uart_port_ops = {
++	.carrier_raised = uart_carrier_raised,
++	.dtr_rts	= uart_dtr_rts,
++};
++
+ /**
+  *	uart_register_driver - register a driver with the uart core layer
+  *	@drv: low level driver structure
+@@ -2405,6 +2427,7 @@ int uart_register_driver(struct uart_driver *drv)
+ 		struct tty_port *port = &state->port;
+ 
+ 		tty_port_init(port);
++		port->ops = &uart_port_ops;
+ 		port->close_delay     = 500;	/* .5 seconds */
+ 		port->closing_wait    = 30000;	/* 30 seconds */
+ 		tasklet_init(&state->tlet, uart_tasklet_action,
 -- 
 1.7.0.4
 
