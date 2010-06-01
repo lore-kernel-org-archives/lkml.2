@@ -1,82 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756596Ab0FANbS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Jun 2010 09:31:18 -0400
-Received: from smtp.gentoo.org ([140.211.166.183]:33439 "EHLO smtp.gentoo.org"
+	id S1756739Ab0FANbU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Jun 2010 09:31:20 -0400
+Received: from smtp.gentoo.org ([140.211.166.183]:33442 "EHLO smtp.gentoo.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756512Ab0FANbR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Jun 2010 09:31:17 -0400
+	id S1756581Ab0FANbS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Jun 2010 09:31:18 -0400
 From: Mike Frysinger <vapier@gentoo.org>
 To: linux-kernel@vger.kernel.org, Liam Girdwood <lrg@slimlogic.co.uk>,
        Mark Brown <broonie@opensource.wolfsonmicro.com>
 Cc: uclinux-dist-devel@blackfin.uclinux.org,
        Sonic Zhang <sonic.zhang@analog.com>
-Subject: [PATCH 2/2] regulator: new driver for the AD12{2,3,4,5}, AD150, and AD5022 parts
-Date: Tue,  1 Jun 2010 09:33:59 -0400
-Message-Id: <1275399239-6788-2-git-send-email-vapier@gentoo.org>
+Subject: [PATCH 1/2] regulator: new driver for the AD5398 and AD5821
+Date: Tue,  1 Jun 2010 09:33:58 -0400
+Message-Id: <1275399239-6788-1-git-send-email-vapier@gentoo.org>
 X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1275399239-6788-1-git-send-email-vapier@gentoo.org>
-References: <1275399239-6788-1-git-send-email-vapier@gentoo.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Sonic Zhang <sonic.zhang@analog.com>
 
-With userspace consumer enabled, power devices with only one switch
-PIN connect to GPIO port can be enabled and disable via sysfs interface.
-
-Following chips are supported.
-AD122, AD123, AD124, AD125, AD150, AD5022.
+This driver supports both the AD5398 and the AD5821.  It adapts into the
+voltage and current framework.  The generic userspace-consumer and virtual
+consumer should be selected to access devices via this driver.
 
 Signed-off-by: Sonic Zhang <sonic.zhang@analog.com>
 Signed-off-by: Mike Frysinger <vapier@gentoo.org>
 ---
- drivers/regulator/Kconfig            |    6 +
- drivers/regulator/Makefile           |    1 +
- drivers/regulator/adp_switch.c       |  172 ++++++++++++++++++++++++++++++++++
- include/linux/regulator/adp_switch.h |   26 +++++
- 4 files changed, 205 insertions(+), 0 deletions(-)
- create mode 100644 drivers/regulator/adp_switch.c
- create mode 100644 include/linux/regulator/adp_switch.h
+ drivers/regulator/Kconfig        |    6 +
+ drivers/regulator/Makefile       |    1 +
+ drivers/regulator/ad5398.c       |  270 ++++++++++++++++++++++++++++++++++++++
+ include/linux/regulator/ad5398.h |   30 ++++
+ 4 files changed, 307 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/regulator/ad5398.c
+ create mode 100644 include/linux/regulator/ad5398.h
 
 diff --git a/drivers/regulator/Kconfig b/drivers/regulator/Kconfig
-index 2ade09c..7760f16 100644
+index 04f2e08..2ade09c 100644
 --- a/drivers/regulator/Kconfig
 +++ b/drivers/regulator/Kconfig
-@@ -207,5 +207,11 @@ config REGULATOR_AD5398
+@@ -201,5 +201,11 @@ config REGULATOR_88PM8607
  	help
- 	  This driver supports AD5398 and AD5821 current regulator chips.
+ 	  This driver supports 88PM8607 voltage regulator chips.
  
-+config REGULATOR_ADP_SWITCH
-+	tristate "Ananlog Devices Switch only power regulators"
++config REGULATOR_AD5398
++	tristate "Ananlog Devices AD5398/AD5821 regulators"
++	depends on I2C
 +	help
-+	  This driver supports ADP series siwtch only power regulator chips.
-+	  ADP122, ADP123, ADP124, ADP125, ADP150, ADP5022, etc.
++	  This driver supports AD5398 and AD5821 current regulator chips.
 +
  endif
  
 diff --git a/drivers/regulator/Makefile b/drivers/regulator/Makefile
-index c256668..10e7a5a 100644
+index 4e7feec..c256668 100644
 --- a/drivers/regulator/Makefile
 +++ b/drivers/regulator/Makefile
-@@ -9,6 +9,7 @@ obj-$(CONFIG_REGULATOR_VIRTUAL_CONSUMER) += virtual.o
+@@ -8,6 +8,7 @@ obj-$(CONFIG_REGULATOR_FIXED_VOLTAGE) += fixed.o
+ obj-$(CONFIG_REGULATOR_VIRTUAL_CONSUMER) += virtual.o
  obj-$(CONFIG_REGULATOR_USERSPACE_CONSUMER) += userspace-consumer.o
  
- obj-$(CONFIG_REGULATOR_AD5398) += ad5398.o
-+obj-$(CONFIG_REGULATOR_ADP_SWITCH) += adp_switch.o
++obj-$(CONFIG_REGULATOR_AD5398) += ad5398.o
  obj-$(CONFIG_REGULATOR_BQ24022) += bq24022.o
  obj-$(CONFIG_REGULATOR_DUMMY) += dummy.o
  obj-$(CONFIG_REGULATOR_LP3971) += lp3971.o
-diff --git a/drivers/regulator/adp_switch.c b/drivers/regulator/adp_switch.c
+diff --git a/drivers/regulator/ad5398.c b/drivers/regulator/ad5398.c
 new file mode 100644
-index 0000000..37951d2
+index 0000000..9dbfc05
 --- /dev/null
-+++ b/drivers/regulator/adp_switch.c
-@@ -0,0 +1,172 @@
++++ b/drivers/regulator/ad5398.c
+@@ -0,0 +1,270 @@
 +/*
-+ * adp_switch.c  --  Voltage regulation for switch only power devices
-+ *		     AD122, AD123, AD124, AD125, AD150, AD5022, etc
++ * ad5398.c  --  Voltage and current regulation for AD5398 and AD5821
 + *
 + * Copyright 2010 Analog Devices Inc.
 + *
@@ -86,175 +81,273 @@ index 0000000..37951d2
 + */
 +#include <linux/module.h>
 +#include <linux/err.h>
-+#include <linux/gpio.h>
++#include <linux/i2c.h>
 +#include <linux/slab.h>
 +#include <linux/platform_device.h>
 +#include <linux/regulator/driver.h>
-+#include <linux/regulator/adp_switch.h>
++#include <linux/regulator/ad5398.h>
 +
-+struct adp_switch_chip_info {
-+	unsigned short gpio_port;
-+	unsigned short enabled;
-+	struct regulator_dev *rdev;
-+	struct regulator_desc rdesc;
++struct ad5398_chip_info {
++	struct i2c_client *client;
++	unsigned int min_uA;
++	unsigned int max_uA;
++	unsigned int current_level;
++	unsigned int current_mask;
++	unsigned int current_offset;
++	struct regulator_dev rdev;
 +};
 +
-+static int adp_switch_is_enabled(struct regulator_dev *rdev)
++static int ad5398_calc_current(struct ad5398_chip_info *chip,
++	unsigned selector)
 +{
-+	struct adp_switch_chip_info *chip = rdev_get_drvdata(rdev);
++	unsigned range_uA = chip->max_uA - chip->min_uA;
 +
-+	return chip->enabled;
++	return chip->min_uA + (selector * range_uA / chip->current_level);
 +}
 +
-+static int adp_switch_enable(struct regulator_dev *rdev)
++static int ad5398_get(struct regulator_dev *rdev)
 +{
-+	struct adp_switch_chip_info *chip = rdev_get_drvdata(rdev);
++	struct ad5398_chip_info *chip = rdev_get_drvdata(rdev);
++	struct i2c_client *client = chip->client;
++	unsigned short data;
++	int ret;
 +
-+	gpio_set_value(chip->gpio_port, 1);
++	ret = i2c_master_recv(client, (char *)&data, 2);
++	if (ret < 0) {
++		dev_err(&client->dev, "I2C read error\n");
++		return ret;
++	}
 +
-+	return 0;
++	ret = (be16_to_cpu(data) & chip->current_mask) >> chip->current_offset;
++
++	return ad5398_calc_current(chip, ret);
 +}
 +
-+static int adp_switch_disable(struct regulator_dev *rdev)
++static int ad5398_set(struct regulator_dev *rdev, int min_uA, int max_uA)
 +{
-+	struct adp_switch_chip_info *chip = rdev_get_drvdata(rdev);
++	struct ad5398_chip_info *chip = rdev_get_drvdata(rdev);
++	struct i2c_client *client = chip->client;
++	unsigned range_uA = chip->max_uA - chip->min_uA;
++	unsigned selector;
++	unsigned short data;
++	int ret;
 +
-+	gpio_set_value(chip->gpio_port, 0);
++	if (min_uA > chip->max_uA || max_uA < chip->min_uA)
++		return -EINVAL;
++	if (min_uA < chip->min_uA)
++		min_uA = chip->min_uA;
 +
-+	return 0;
-+}
-+
-+static struct regulator_ops adp_switch_ops = {
-+	.enable = adp_switch_enable,
-+	.disable = adp_switch_disable,
-+	.is_enabled = adp_switch_is_enabled,
-+	.set_suspend_enable = adp_switch_enable,
-+	.set_suspend_disable = adp_switch_disable,
-+};
-+
-+static int __devinit adp_switch_probe(struct platform_device *pdev)
-+{
-+	struct regulator_dev *rdev;
-+	struct adp_switch_platform_data *pdata = pdev->dev.platform_data;
-+	struct adp_switch_chip_info *chip;
-+	int i, ret = 0;
-+
-+	dev_dbg(&pdev->dev, "%s enter\n", __func__);
-+
-+	if (!pdata || !pdata->regulator_num)
++	selector = ((min_uA - chip->min_uA) * chip->current_level +
++			range_uA - 1) / range_uA;
++	if (ad5398_calc_current(chip, selector) > max_uA)
 +		return -EINVAL;
 +
-+	chip = kzalloc(sizeof(struct adp_switch_chip_info) *
-+			pdata->regulator_num, GFP_KERNEL);
++	dev_dbg(&client->dev, "changing current %dmA\n",
++		ad5398_calc_current(chip, selector) / 1000);
++
++	/* read chip enable bit */
++	ret = i2c_master_recv(client, (char *)&data, 2);
++	if (ret < 0) {
++		dev_err(&client->dev, "I2C read error\n");
++		return ret;
++	}
++	data = be16_to_cpu(data);
++
++	/* prepare register data */
++	selector = (selector << chip->current_offset) & chip->current_mask;
++	selector |= (data & CURRENT_EN_MASK);
++
++	/* write the new current value back as well as enable bit */
++	data = cpu_to_be16((unsigned short)selector);
++	ret = i2c_master_send(client, (char *)&data, 2);
++	if (ret < 0)
++		dev_err(&client->dev, "I2C write error\n");
++
++	return ret;
++}
++
++static int ad5398_is_enabled(struct regulator_dev *rdev)
++{
++	struct ad5398_chip_info *chip = rdev_get_drvdata(rdev);
++	struct i2c_client *client = chip->client;
++	unsigned short data;
++	int ret;
++
++	ret = i2c_master_recv(client, (char *)&data, 2);
++	if (ret < 0) {
++		dev_err(&client->dev, "I2C read error\n");
++		return ret;
++	}
++
++	if (be16_to_cpu(data) & CURRENT_EN_MASK)
++		return 1;
++	else
++		return 0;
++}
++
++static int ad5398_enable(struct regulator_dev *rdev)
++{
++	struct ad5398_chip_info *chip = rdev_get_drvdata(rdev);
++	struct i2c_client *client = chip->client;
++	unsigned short data;
++	int ret;
++
++	ret = i2c_master_recv(client, (char *)&data, 2);
++	if (ret < 0) {
++		dev_err(&client->dev, "I2C read error\n");
++		return ret;
++	}
++	data = be16_to_cpu(data);
++	if (data & CURRENT_EN_MASK)
++		return 0;
++
++	data = cpu_to_be16(data | CURRENT_EN_MASK);
++
++	ret = i2c_master_send(client, (char *)&data, 2);
++	if (ret < 0)
++		dev_err(&client->dev, "I2C write error\n");
++
++	return ret;
++}
++
++static int ad5398_disable(struct regulator_dev *rdev)
++{
++	struct ad5398_chip_info *chip = rdev_get_drvdata(rdev);
++	struct i2c_client *client = chip->client;
++	unsigned short data;
++	int ret;
++
++	ret = i2c_master_recv(client, (char *)&data, 2);
++	if (ret < 0) {
++		dev_err(&client->dev, "I2C read error\n");
++		return ret;
++	}
++	if (!(data & CURRENT_EN_MASK))
++		return 0;
++
++	data = cpu_to_be16(data & ~CURRENT_EN_MASK);
++
++	ret = i2c_master_send(client, (char *)&data, 2);
++	if (ret < 0)
++		dev_err(&client->dev, "I2C write error\n");
++
++	return ret;
++}
++
++static struct regulator_ops ad5398_ops = {
++	.get_current_limit = ad5398_get,
++	.set_current_limit = ad5398_set,
++	.enable = ad5398_enable,
++	.disable = ad5398_disable,
++	.is_enabled = ad5398_is_enabled,
++	.set_suspend_enable = ad5398_enable,
++	.set_suspend_disable = ad5398_disable,
++};
++
++static struct regulator_desc ad5398_reg = {
++		.name = "isink",
++		.id = 0,
++		.ops = &ad5398_ops,
++		.type = REGULATOR_CURRENT,
++		.owner = THIS_MODULE,
++};
++
++static int ad5398_probe(struct i2c_client *client,
++		      const struct i2c_device_id *id)
++{
++	struct regulator_dev *rdev;
++	struct ad5398_platform_data *pdata = client->dev.platform_data;
++	struct ad5398_chip_info *chip;
++	int ret;
++
++	if (!pdata || !(pdata->regulator_data))
++		return -EINVAL;
++
++	if (pdata->current_bits >= CURRENT_BITS_MAX)
++		return -EINVAL;
++
++	chip = kzalloc(sizeof(struct ad5398_chip_info), GFP_KERNEL);
 +	if (!chip)
 +		return -ENOMEM;
 +
-+	for (i = 0; i < pdata->regulator_num; i++) {
-+		/*
-+		 * The GPIO port of the specific regulator is in driver_data field
-+		 * of struct regulator_init_data defined in its platform board file.
-+		 */
-+		chip[i].gpio_port =
-+		(unsigned short)(unsigned int)pdata->regulator_data[i].driver_data;
-+		chip[i].rdesc.name = pdata->regulator_data[i].consumer_supplies->supply;
-+		chip[i].rdesc.id = i,
-+		chip[i].rdesc.ops = &adp_switch_ops,
-+		chip[i].rdesc.type = REGULATOR_CURRENT,
-+		chip[i].rdesc.owner = THIS_MODULE,
++	chip->client = client;
 +
-+		ret = gpio_request(chip[i].gpio_port, "adp_switch");
-+		if (ret) {
-+			dev_err(&pdev->dev,
-+				"Fail to request adp switch peripherals\n");
-+			goto err;
-+		}
++	chip->min_uA = pdata->regulator_data->constraints.min_uA;
++	chip->max_uA = pdata->regulator_data->constraints.max_uA;
++	chip->current_level = 1 << pdata->current_bits;
++	chip->current_offset = pdata->current_offset;
++	chip->current_mask = (chip->current_level - 1) << chip->current_offset;
 +
-+		rdev = regulator_register(&chip[i].rdesc, &pdev->dev,
-+				 &pdata->regulator_data[i], &chip[i]);
-+		if (IS_ERR(rdev)) {
-+			ret = PTR_ERR(rdev);
-+			dev_err(&pdev->dev, "failed to register %s\n",
-+				chip[i].rdesc.name);
-+			gpio_free(chip[i].gpio_port);
-+			goto err;
-+		}
-+
-+		gpio_direction_output(chip[i].gpio_port, 0);
-+		chip[i].rdev = rdev;
++	rdev = regulator_register(&ad5398_reg, &client->dev,
++			 pdata->regulator_data, chip);
++	if (IS_ERR(rdev)) {
++		ret = PTR_ERR(rdev);
++		dev_err(&client->dev, "failed to register %s %s\n",
++			id->name, ad5398_reg.name);
++		goto err;
 +	}
 +
-+	dev_set_drvdata(&pdev->dev, chip);
-+	dev_info(&pdev->dev, "regulator driver loaded\n");
++	i2c_set_clientdata(client, chip);
++	dev_info(&client->dev, "%s regulator driver loaded\n", id->name);
 +	return 0;
 +
 +err:
-+	while (--i >= 0) {
-+		regulator_unregister(chip[i].rdev);
-+		gpio_free(chip[i].gpio_port);
-+	}
 +	kfree(chip);
 +	return ret;
 +}
 +
-+static int __devexit adp_switch_remove(struct platform_device *pdev)
++static int ad5398_remove(struct i2c_client *client)
 +{
-+	struct adp_switch_chip_info *chip = platform_get_drvdata(pdev);
-+	struct adp_switch_platform_data *pdata = pdev->dev.platform_data;
-+	int i;
-+
-+	dev_dbg(&pdev->dev, "%s enter\n", __func__);
-+	dev_set_drvdata(&pdev->dev, NULL);
-+
++	struct ad5398_chip_info *chip = i2c_get_clientdata(client);
 +
 +	if (chip) {
-+		for (i = 0; i < pdata->regulator_num; i++) {
-+			regulator_unregister(chip[i].rdev);
-+			gpio_free(chip[i].gpio_port);
-+		}
++		regulator_unregister(&chip->rdev);
 +		kfree(chip);
 +	}
++	i2c_set_clientdata(client, NULL);
 +
 +	return 0;
 +}
 +
-+static struct platform_driver adp_switch_driver = {
-+	.probe          = adp_switch_probe,
-+	.remove         = __devexit_p(adp_switch_remove),
-+	.driver         = {
-+		.name   = "adp_switch",
++static const struct i2c_device_id ad5398_id[] = {
++	{ "ad5398", 0 },
++	{ "ad5821", 1 },
++	{ }
++};
++MODULE_DEVICE_TABLE(i2c, ad5398_id);
++
++static struct i2c_driver ad5398_driver = {
++	.probe = ad5398_probe,
++	.remove = ad5398_remove,
++	.driver		= {
++		.name	= "ad5398",
 +	},
++	.id_table	= ad5398_id,
 +};
 +
-+static int __init adp_switch_init(void)
++static int __init ad5398_init(void)
 +{
-+	int ret;
-+
-+	ret = platform_driver_register(&adp_switch_driver);
-+	if (ret)
-+		pr_err("failed to register adp switch driver:%d\n", ret);
-+
-+	return ret;
++	return i2c_add_driver(&ad5398_driver);
 +}
-+module_init(adp_switch_init);
++module_init(ad5398_init);
 +
-+static void __exit adp_switch_exit(void)
++static void __exit ad5398_exit(void)
 +{
-+	platform_driver_unregister(&adp_switch_driver);
++	i2c_del_driver(&ad5398_driver);
 +}
-+module_exit(adp_switch_exit);
++module_exit(ad5398_exit);
 +
-+MODULE_DESCRIPTION("Switch only power regulator driver");
++MODULE_DESCRIPTION("AD5398 and AD5821 current regulator driver");
 +MODULE_AUTHOR("Sonic Zhang");
 +MODULE_LICENSE("GPL");
-diff --git a/include/linux/regulator/adp_switch.h b/include/linux/regulator/adp_switch.h
+diff --git a/include/linux/regulator/ad5398.h b/include/linux/regulator/ad5398.h
 new file mode 100644
-index 0000000..bbfac61
+index 0000000..92c9fcb
 --- /dev/null
-+++ b/include/linux/regulator/adp_switch.h
-@@ -0,0 +1,26 @@
++++ b/include/linux/regulator/ad5398.h
+@@ -0,0 +1,30 @@
 +/*
-+ * adp_switch.h --  Voltage regulation for switch only power devices.
-+ *		    AD122, AD123, AD124, AD125, AD150, AD5022, etc.
++ * ad5398.h --  Voltage and current regulation for AD5398 and AD5821
 + *
 + * Copyright 2010 Analog Devices Inc.
 + *
@@ -262,18 +355,23 @@ index 0000000..bbfac61
 + *
 + * Licensed under the GPL-2 or later.
 + */
-+#ifndef REGULATOR_ADP_SWITCH
-+#define REGULATOR_ADP_SWITCH
++#ifndef REGULATOR_AD5398
++#define REGULATOR_AD5398
 +
 +#include <linux/regulator/machine.h>
 +
++#define CURRENT_EN_MASK		0x8000
++#define CURRENT_BITS_MAX	16
++
 +/**
-+ * adp_switch_platform_data - platform data for power swtich
-+ * @regulator_num: number of regulators
-+ * @regulator_data: regulator init data
++ * ad5398_platform_data - platform data for ad5398
++ * @current_bits: effective bits in register
++ * @current_offset: offset of effective bits in register
++ * @ad5398_init_data: regulator init data
 + */
-+struct adp_switch_platform_data {
-+	unsigned short regulator_num;
++struct ad5398_platform_data {
++	unsigned short current_bits;
++	unsigned short current_offset;
 +	struct regulator_init_data *regulator_data;
 +};
 +
