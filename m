@@ -1,114 +1,214 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757152Ab0FARej (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Jun 2010 13:34:39 -0400
-Received: from smtp-out.google.com ([74.125.121.35]:30226 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757023Ab0FAReh convert rfc822-to-8bit (ORCPT
+	id S1757199Ab0FARfp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Jun 2010 13:35:45 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:43623 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755949Ab0FARfn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Jun 2010 13:34:37 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=mime-version:in-reply-to:references:date:message-id:subject:from:to:
-	cc:content-type:content-transfer-encoding:x-system-of-record;
-	b=RjKl1Cgavowkz8TOkZNbOx35xxTa0JYM0w++z0advgV9lx6xT48LB0AwVoOfXkk5K
-	AxxdZ5QQJtiR/FCfgBJdg==
+	Tue, 1 Jun 2010 13:35:43 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:content-transfer-encoding
+         :in-reply-to:user-agent;
+        b=DOS2qtQSdATl0mmmQmcAtpmr13rRmToKQtAgXepqkyBDSTwgGtS18rSoolf5Uw4D9h
+         hUQpzb4tkefSq/tmSecI0n9Idh4OmhmkMSvpKYG3KbaWdQ33AJbThsyFW4Sz3IX4baNv
+         TX2TrbmdI0Wf8iEAzVDUZMDGlOc5gMUfhV27s=
+Date: Tue, 1 Jun 2010 14:35:35 -0300
+From: "Luis Claudio R. Goncalves" <lclaudio@uudg.org>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: Minchan Kim <minchan.kim@gmail.com>,
+       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+       balbir@linux.vnet.ibm.com, Oleg Nesterov <oleg@redhat.com>,
+       linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+       Thomas Gleixner <tglx@linutronix.de>,
+       Peter Zijlstra <peterz@infradead.org>,
+       David Rientjes <rientjes@google.com>, Mel Gorman <mel@csn.ul.ie>,
+       williams@redhat.com
+Subject: Re: [RFC] oom-kill: give the dying task a higher priority
+Message-ID: <20100601173535.GD23428@uudg.org>
+References: <20100528164826.GJ11364@uudg.org>
+ <20100531092133.73705339.kamezawa.hiroyu@jp.fujitsu.com>
+ <AANLkTikFk_HnZWPG0s_VrRkro2rruEc8OBX5KfKp_QdX@mail.gmail.com>
+ <20100531140443.b36a4f02.kamezawa.hiroyu@jp.fujitsu.com>
+ <AANLkTil75ziCd6bivhpmwojvhaJ2LVxwEaEaBEmZf2yN@mail.gmail.com>
+ <20100531145415.5e53f837.kamezawa.hiroyu@jp.fujitsu.com>
+ <AANLkTilcuY5e1DNmLhUWfXtiQgPUafz2zRTUuTVl-88l@mail.gmail.com>
+ <20100531155102.9a122772.kamezawa.hiroyu@jp.fujitsu.com>
+ <20100531135227.GC19784@uudg.org>
+ <20100601085006.f732c049.kamezawa.hiroyu@jp.fujitsu.com>
 MIME-Version: 1.0
-In-Reply-To: <1275412748.27810.27883.camel@twins>
-References: <20100210232343.GA11465@linux-os.sc.intel.com>
-	<tip-17d9ddc72fb8bba0d4f67868c9c612e472a594a9@git.kernel.org>
-	<1275136178.27810.13539.camel@twins>
-	<1275139902.27810.13737.camel@twins>
-	<AANLkTimZkyRwP5k290rUr-DUMhsynl9fzBkS68x-57KM@mail.gmail.com>
-	<1275412748.27810.27883.camel@twins>
-Date: Tue, 1 Jun 2010 10:34:31 -0700
-Message-ID: <AANLkTilGfY1PnNgpEeB3AQEqTNoDJQfPTxK5LNUYb7ZA@mail.gmail.com>
-Subject: Re: [PATCH] rbtree: undo augmented damage -v2
-From: Venkatesh Pallipadi <venki@google.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-       suresh.b.siddha@intel.com, tglx@linutronix.de,
-       linux-tip-commits@vger.kernel.org,
-       Fabio Checconi <fabio@gandalf.sssup.it>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20100601085006.f732c049.kamezawa.hiroyu@jp.fujitsu.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 1, 2010 at 10:19 AM, Peter Zijlstra <peterz@infradead.org> wrote:
-> On Tue, 2010-06-01 at 10:00 -0700, Venkatesh Pallipadi wrote:
->> I am not seeing how this can cover all the callbacks we will need to
->> maintain the augmented tree property. May be I am missing something.
->
-> Yes, indeed, how about the below delta, which my eevdf code did do but I
-> overlooked on the conversion to the PAT code.
->
-> That removes the break as you said, but also adds code to update the
-> child nodes when walking up the path.
->
-> So in your rotation case:
->
->    G             P
->   / \    -->    / \
->  P   U         N   G
->  /        <--        \
-> N                     U
->
-> Say we take the right rotation, then the traversal up from N to P will
-> find that since N was the left child of P and it has a right child (G)
-> it will also update G.
+On Tue, Jun 01, 2010 at 08:50:06AM +0900, KAMEZAWA Hiroyuki wrote:
+| On Mon, 31 May 2010 10:52:27 -0300
+| "Luis Claudio R. Goncalves" <lclaudio@uudg.org> wrote:
+| 
+| > | If an explanation as "acceralating all thread's priority in a process seems overkill"
+| > | is given in changelog or comment, it's ok to me.
+| > 
+| > If my understanding of badness() is right, I wouldn't be ashamed of saying
+| > that it seems to be _a bit_ overkill. But I may be wrong in my
+| > interpretation.
+| > 
+| > While re-reading the code I noticed that in select_bad_process() we can
+| > eventually bump on an already dying task, case in which we just wait for
+| > the task to die and avoid killing other tasks. Maybe we could boost the
+| > priority of the dying task here too.
+| > 
+| yes, nice catch.
 
-Yes. This will cover all the cases on insert. But on erase, there is
-still a case where a rotate of sibling node is done during the
-re-coloration process. There we have a child change on sibling's
-child. I am not able to think of any easy way to handle that case.
+Here is a more complete version of the patch, boosting priority on the
+three exit points of the OOM-killer. I also avoid touching the priority if
+the task is already an RT task. The patch:
 
-Thanks,
-Venki
+ 
+oom-kill: give the dying task a higher priority (v5)
 
->
-> Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> ---
->  arch/x86/mm/pat_rbtree.c |   23 ++++++++++++-----------
->  1 files changed, 12 insertions(+), 11 deletions(-)
->
-> diff --git a/arch/x86/mm/pat_rbtree.c b/arch/x86/mm/pat_rbtree.c
-> index f537087..ca19aae 100644
-> --- a/arch/x86/mm/pat_rbtree.c
-> +++ b/arch/x86/mm/pat_rbtree.c
-> @@ -81,20 +81,21 @@ static void update_node_max_end(struct rb_node *node)
->  /* Update 'subtree_max_end' for a node and all its ancestors */
->  static void update_path_max_end(struct rb_node *node)
->  {
-> -       u64 old_max_end, new_max_end;
-> +       struct rb_node *parent;
->
-> -       while (node) {
-> -               struct memtype *data = container_of(node, struct memtype, rb);
-> -
-> -               old_max_end = data->subtree_max_end;
-> -               update_node_max_end(node);
-> -               new_max_end = data->subtree_max_end;
-> +up:
-> +       update_node_max_end(node);
-> +       parent = rb_parent(node);
-> +       if (!parent)
-> +               return;
->
-> -               if (new_max_end == old_max_end)
-> -                       break;
-> +       if (node == parent->rb_left && parent->rb_right)
-> +               update_node_max_end(parent->rb_right);
-> +       else if (parent->rb_left)
-> +               update_node_max_end(parent->rb_left);
->
-> -               node = rb_parent(node);
-> -       }
-> +       node = parent;
-> +       goto up;
->  }
->
->  /* Find the first (lowest start addr) overlapping range from rb tree */
->
->
+In a system under heavy load it was observed that even after the
+oom-killer selects a task to die, the task may take a long time to die.
+
+Right before sending a SIGKILL to the task selected by the oom-killer
+this task has it's priority increased so that it can exit() exit soon,
+freeing memory. That is accomplished by:
+
+        /*
+         * We give our sacrificial lamb high priority and access to
+         * all the memory it needs. That way it should be able to
+         * exit() and clear out its resources quickly...
+         */
+ 	p->rt.time_slice = HZ;
+ 	set_tsk_thread_flag(p, TIF_MEMDIE);
+
+It sounds plausible giving the dying task an even higher priority to be
+sure it will be scheduled sooner and free the desired memory. It was
+suggested on LKML using SCHED_FIFO:1, the lowest RT priority so that
+this task won't interfere with any running RT task.
+
+If the dying task is already an RT task, leave it untouched.
+
+Another good suggestion, implemented here, was to avoid boosting the
+dying task priority in case of mem_cgroup OOM.
+
+Signed-off-by: Luis Claudio R. Gonçalves <lclaudio@uudg.org>
+
+diff --git a/mm/oom_kill.c b/mm/oom_kill.c
+index 709aedf..67e18ca 100644
+--- a/mm/oom_kill.c
++++ b/mm/oom_kill.c
+@@ -52,6 +52,22 @@ static int has_intersects_mems_allowed(struct task_struct *tsk)
+ 	return 0;
+ }
+ 
++/*
++ * If this is a system OOM (not a memcg OOM) and the task selected to be
++ * killed is not already running at high (RT) priorities, speed up the
++ * recovery by boosting the dying task to the lowest FIFO priority.
++ * That helps with the recovery and avoids interfering with RT tasks.
++ */
++static void boost_dying_task_prio(struct task_struct *p,
++					struct mem_cgroup *mem)
++{
++	if ((mem == NULL) && !rt_task(p)) {
++		struct sched_param param;
++		param.sched_priority = 1;
++		sched_setscheduler_nocheck(p, SCHED_FIFO, &param);
++	}
++}
++
+ /**
+  * badness - calculate a numeric value for how bad this task has been
+  * @p: task struct of which task we should calculate
+@@ -277,8 +293,10 @@ static struct task_struct *select_bad_process(unsigned long *ppoints,
+ 		 * blocked waiting for another task which itself is waiting
+ 		 * for memory. Is there a better alternative?
+ 		 */
+-		if (test_tsk_thread_flag(p, TIF_MEMDIE))
++		if (test_tsk_thread_flag(p, TIF_MEMDIE)) {
++			boost_dying_task_prio(p, mem);
+ 			return ERR_PTR(-1UL);
++		}
+ 
+ 		/*
+ 		 * This is in the process of releasing memory so wait for it
+@@ -291,9 +309,10 @@ static struct task_struct *select_bad_process(unsigned long *ppoints,
+ 		 * Otherwise we could get an easy OOM deadlock.
+ 		 */
+ 		if (p->flags & PF_EXITING) {
+-			if (p != current)
++			if (p != current) {
++				boost_dying_task_prio(p, mem);
+ 				return ERR_PTR(-1UL);
+-
++			}
+ 			chosen = p;
+ 			*ppoints = ULONG_MAX;
+ 		}
+@@ -380,7 +399,8 @@ static void dump_header(struct task_struct *p, gfp_t gfp_mask, int order,
+  * flag though it's unlikely that  we select a process with CAP_SYS_RAW_IO
+  * set.
+  */
+-static void __oom_kill_task(struct task_struct *p, int verbose)
++static void __oom_kill_task(struct task_struct *p, struct mem_cgroup *mem,
++								int verbose)
+ {
+ 	if (is_global_init(p)) {
+ 		WARN_ON(1);
+@@ -413,11 +433,11 @@ static void __oom_kill_task(struct task_struct *p, int verbose)
+ 	 */
+ 	p->rt.time_slice = HZ;
+ 	set_tsk_thread_flag(p, TIF_MEMDIE);
+-
+ 	force_sig(SIGKILL, p);
++	boost_dying_task_prio(p, mem);
+ }
+ 
+-static int oom_kill_task(struct task_struct *p)
++static int oom_kill_task(struct task_struct *p, struct mem_cgroup *mem)
+ {
+ 	/* WARNING: mm may not be dereferenced since we did not obtain its
+ 	 * value from get_task_mm(p).  This is OK since all we need to do is
+@@ -430,7 +450,7 @@ static int oom_kill_task(struct task_struct *p)
+ 	if (!p->mm || p->signal->oom_adj == OOM_DISABLE)
+ 		return 1;
+ 
+-	__oom_kill_task(p, 1);
++	__oom_kill_task(p, mem, 1);
+ 
+ 	return 0;
+ }
+@@ -449,7 +469,7 @@ static int oom_kill_process(struct task_struct *p, gfp_t gfp_mask, int order,
+ 	 * its children or threads, just set TIF_MEMDIE so it can die quickly
+ 	 */
+ 	if (p->flags & PF_EXITING) {
+-		__oom_kill_task(p, 0);
++		__oom_kill_task(p, mem, 0);
+ 		return 0;
+ 	}
+ 
+@@ -462,10 +482,10 @@ static int oom_kill_process(struct task_struct *p, gfp_t gfp_mask, int order,
+ 			continue;
+ 		if (mem && !task_in_mem_cgroup(c, mem))
+ 			continue;
+-		if (!oom_kill_task(c))
++		if (!oom_kill_task(c, mem))
+ 			return 0;
+ 	}
+-	return oom_kill_task(p);
++	return oom_kill_task(p, mem);
+ }
+ 
+ #ifdef CONFIG_CGROUP_MEM_RES_CTLR
+
+-- 
+[ Luis Claudio R. Goncalves                    Bass - Gospel - RT ]
+[ Fingerprint: 4FDD B8C4 3C59 34BD 8BE9  2696 7203 D980 A448 C8F8 ]
+
