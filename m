@@ -1,68 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751857Ab0FAE5K (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Jun 2010 00:57:10 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:42126 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751658Ab0FAE5I convert rfc822-to-8bit (ORCPT
+	id S1751232Ab0FAE7t (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Jun 2010 00:59:49 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:40873 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750716Ab0FAE7r (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Jun 2010 00:57:08 -0400
+	Tue, 1 Jun 2010 00:59:47 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=qcbSwhNS4r5Y4/aO/gS2ewRlzQVvXdfjw6qfzGaXeS2rOYPjNVDmikjqsRaflFD/n7
+         S6ou5SqQr6ak3lBWwdnf+un6sswBa8uxwRiMPjL3czWyru/2qhWWdSCbeTZ4xvMJLHnT
+         2WIhUXPy7f63slOeYqZRUcr+zgnZgVaT3ld34=
+Message-ID: <4C0493C0.7000703@gmail.com>
+Date: Mon, 31 May 2010 22:59:44 -0600
+From: Robert Hancock <hancockrwd@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-3.fc13 Thunderbird/3.0.4
 MIME-Version: 1.0
-In-Reply-To: <201005312347.24251.rjw@sisk.pl>
-References: <Pine.LNX.4.44L0.1005271253240.3239-100000@iolanthe.rowland.org>
-	<201005302202.39511.rjw@sisk.pl>
-	<AANLkTilUQ2AG76nbK6LwI8_7zw0_yMSoAOr9pmuz7xrt@mail.gmail.com>
-	<201005312347.24251.rjw@sisk.pl>
-Date: Mon, 31 May 2010 21:57:05 -0700
-Message-ID: <AANLkTilvOgSFTDFtXbjJobMZWxgfvsC97TqC7_a_NHBX@mail.gmail.com>
-Subject: Re: [linux-pm] [PATCH 0/8] Suspend block api (version 8)
-From: =?ISO-8859-1?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Florian Mickler <florian@mickler.org>,
-       Thomas Gleixner <tglx@linutronix.de>,
-       Matthew Garrett <mjg59@srcf.ucam.org>,
-       Alan Stern <stern@rowland.harvard.edu>,
-       Peter Zijlstra <peterz@infradead.org>, Paul@smtp1.linux-foundation.org,
-       LKML <linux-kernel@vger.kernel.org>, felipe.balbi@nokia.com,
-       Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
-       Linux PM <linux-pm@lists.linux-foundation.org>,
-       Alan Cox <alan@lxorguk.ukuu.org.uk>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: Dave Airlie <airlied@gmail.com>
+CC: LKML <linux-kernel@vger.kernel.org>, Jeff Garzik <jeff@garzik.org>,
+       Chris Mason <chris.mason@oracle.com>
+Subject: Re: SSD + sata_nv + btrfs oops
+References: <AANLkTilqsIdlzZgUf7TMLHYKqHDZoVkcs42vcG8wXKEr@mail.gmail.com>
+In-Reply-To: <AANLkTilqsIdlzZgUf7TMLHYKqHDZoVkcs42vcG8wXKEr@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2010/5/31 Rafael J. Wysocki <rjw@sisk.pl>:
-> On Monday 31 May 2010, Arve Hjønnevåg wrote:
->> 2010/5/30 Rafael J. Wysocki <rjw@sisk.pl>:
-> ...
->>
->> I think it makes more sense to block suspend while wakeup events are
->> pending than blocking it everywhere timers are used by code that could
->> be called while handling wakeup events or other critical work. Also,
->> even if you did block suspend everywhere timers where used you still
->> have the race where a wakeup interrupt happens right after you decided
->> to suspend. In other words, you still need to block suspend in all the
->> same places as with the current opportunistic suspend code, so what is
->> the benefit of delaying suspend until idle?
+On 05/31/2010 09:04 PM, Dave Airlie wrote:
+> Hi guys,
 >
-> Assume for a while that you don't use suspend blockers, OK?  I realize you
-> think that anything else doesn't make sense, but evidently some other people
-> have that opinion about suspend blockers.
+> I've been running an Intel SSD (the KS one) on my Dell XPS710 desktop
+> machine, with btrfs on it.
 >
-
-It sounded like you were suggesting that initiating suspend from idle
-would somehow avoid the race condition with wakeup events. All I'm
-saying is that you would need to block suspend in all the same places.
-If you don't care about ignoring wakeup events, then sure you can
-initiate suspend from idle.
-
-> Now, under that assumption, I think it _generally_ is reasonable to make the
-> system go into full suspend if everything (ie. CPUs and I/O) has been idle
-> for sufficiently long time and there are no QoS requirements that aren't
-> compatible with full system suspend.
+> I'm not sure the btrfs oops isn't due to the disk/controller doing
+> something bad (almost guaranteed).
 >
+> Attached the dmesg + config, using 2.6.34 + only drm patches.
+>
+> Jeff I'd be interested in knowing what is happening to the disk before
+> btrfs oops.
 
--- 
-Arve Hjønnevåg
+ata2: EH in SWNCQ mode,QC:qc_active 0x7FFFFE03 sactive 0x7FFFFE03
+ata2: SWNCQ:qc_active 0xFE00 defer_bits 0x7FFF0003 last_issue_tag 0xf
+   dhfis 0x7E00 dmafis 0x200 sdbfis 0x0
+ata2: ATA_REG 0x40 ERR_REG 0x0
+ata2: tag : dhfis dmafis sdbfis sacitve
+ata2: tag 0x9: 1 1 0 1
+ata2: tag 0xa: 1 0 0 1
+ata2: tag 0xb: 1 0 0 1
+ata2: tag 0xc: 1 0 0 1
+ata2: tag 0xd: 1 0 0 1
+ata2: tag 0xe: 1 0 0 1
+ata2: tag 0xf: 0 0 0 1
+ata2.00: exception Emask 0x0 SAct 0x7ffffe03 SErr 0x1800000 action 0x6 
+frozen
+ata2: SError: { LinkSeq TrStaTrns }
+
+Last line is probably the most informative, SATA link sequence error and 
+transport state transition error. That's probably something bad 
+happening at the low level between the controller and drive. Is this 
+happening repeatedly?
