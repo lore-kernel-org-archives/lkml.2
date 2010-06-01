@@ -1,75 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755729Ab0FASJe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Jun 2010 14:09:34 -0400
-Received: from smtp-out.google.com ([74.125.121.35]:44054 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754531Ab0FASJc (ORCPT
+	id S932098Ab0FASJp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Jun 2010 14:09:45 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:29905 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755744Ab0FASJg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Jun 2010 14:09:32 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=mime-version:in-reply-to:references:date:message-id:subject:from:to:
-	cc:content-type:x-system-of-record;
-	b=mYIj34jspiJKii+fp6QJJaWRL9fV9bG/xPuFyYjCMzX78GpqiqGHiQAMIQbjAnhOi
-	xpsqULpe8m8nyQ95bNTRQ==
+	Tue, 1 Jun 2010 14:09:36 -0400
+Date: Tue, 1 Jun 2010 14:09:05 -0400
+From: Chris Mason <chris.mason@oracle.com>
+To: James Bottomley <James.Bottomley@suse.de>
+Cc: Matthew Wilcox <matthew@wil.cx>,
+       Christof Schmitt <christof.schmitt@de.ibm.com>,
+       Boaz Harrosh <bharrosh@panasas.com>,
+       "Martin K. Petersen" <martin.petersen@oracle.com>,
+       linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
+       linux-fsdevel@vger.kernel.org
+Subject: Re: Wrong DIF guard tag on ext2 write
+Message-ID: <20100601180905.GR8980@think>
+Mail-Followup-To: Chris Mason <chris.mason@oracle.com>,
+	James Bottomley <James.Bottomley@suse.de>,
+	Matthew Wilcox <matthew@wil.cx>,
+	Christof Schmitt <christof.schmitt@de.ibm.com>,
+	Boaz Harrosh <bharrosh@panasas.com>,
+	"Martin K. Petersen" <martin.petersen@oracle.com>,
+	linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
+	linux-fsdevel@vger.kernel.org
+References: <1275318102.2823.47.camel@mulgrave.site>
+ <4C03D5FD.3000202@panasas.com>
+ <20100601103041.GA15922@schmichrtp.mainz.de.ibm.com>
+ <1275398876.21962.6.camel@mulgrave.site>
+ <20100601133341.GK8980@think>
+ <1275399637.21962.11.camel@mulgrave.site>
+ <20100601134951.GM8980@think>
+ <20100601162929.GC32708@parisc-linux.org>
+ <20100601164750.GQ8980@think>
+ <1275411293.21962.387.camel@mulgrave.site>
 MIME-Version: 1.0
-In-Reply-To: <1275414172.27810.27961.camel@twins>
-References: <20100210232343.GA11465@linux-os.sc.intel.com>
-	<tip-17d9ddc72fb8bba0d4f67868c9c612e472a594a9@git.kernel.org>
-	<1275136178.27810.13539.camel@twins>
-	<1275139902.27810.13737.camel@twins>
-	<AANLkTimZkyRwP5k290rUr-DUMhsynl9fzBkS68x-57KM@mail.gmail.com>
-	<1275412748.27810.27883.camel@twins>
-	<AANLkTilGfY1PnNgpEeB3AQEqTNoDJQfPTxK5LNUYb7ZA@mail.gmail.com>
-	<1275414172.27810.27961.camel@twins>
-Date: Tue, 1 Jun 2010 11:09:23 -0700
-Message-ID: <AANLkTil8ly_3P2DgEI9oI_ZbYP6FkwP2lCY2v47iAn9-@mail.gmail.com>
-Subject: Re: [PATCH] rbtree: undo augmented damage -v2
-From: Venkatesh Pallipadi <venki@google.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-       suresh.b.siddha@intel.com, tglx@linutronix.de,
-       linux-tip-commits@vger.kernel.org,
-       Fabio Checconi <fabio@gandalf.sssup.it>
-Content-Type: text/plain; charset=ISO-8859-1
-X-System-Of-Record: true
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1275411293.21962.387.camel@mulgrave.site>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Auth-Type: Internal IP
+X-Source-IP: rcsinet15.oracle.com [148.87.113.117]
+X-CT-RefId: str=0001.0A090206.4C054CD8.014B:SCFMA4539811,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 1, 2010 at 10:42 AM, Peter Zijlstra <peterz@infradead.org> wrote:
-> On Tue, 2010-06-01 at 10:34 -0700, Venkatesh Pallipadi wrote:
->>
->> Yes. This will cover all the cases on insert. But on erase, there is
->> still a case where a rotate of sibling node is done during the
->> re-coloration process. There we have a child change on sibling's
->> child. I am not able to think of any easy way to handle that case.
->
-> Let me go draw some figures with pen and paper to match up the erase
-> path with the rb_augment_erase_begin() code, because I can't quite spot
-> the case we're missing.
->
-> If you have it handy, ascii art might help..
+On Tue, Jun 01, 2010 at 04:54:53PM +0000, James Bottomley wrote:
+> On Tue, 2010-06-01 at 12:47 -0400, Chris Mason wrote:
+> > On Tue, Jun 01, 2010 at 10:29:30AM -0600, Matthew Wilcox wrote:
+> > > On Tue, Jun 01, 2010 at 09:49:51AM -0400, Chris Mason wrote:
+> > > > > I agree that a block based retry would close all the holes ... it just
+> > > > > doesn't look elegant to me that the fs will already be repeating the I/O
+> > > > > if it changed the page and so will block.
+> > > > 
+> > > > We might not ever repeat the IO.  We might change the page, write it,
+> > > > change it again, truncate the file and toss the page completely.
+> > > 
+> > > Why does it matter that it was never written in that case?
+> > 
+> > It matters is the storage layer is going to wait around for the block to
+> > be written again with a correct crc.
+> 
+> Actually, I wasn't advocating that.  I think block should return a guard
+> mismatch error.  I think somewhere in filesystem writeout is the place
+> to decide whether the error was self induced or systematic.
 
-It is this case
+In that case the io error goes to the async page writeback bio-endio
+handlers.  We don't have a reference on the inode and no ability to
+reliably restart the IO, but we can set a bit on the address space
+indicating that somewhere, sometime in the past we had an IO error.
 
-    P
-   / \
-  N   S
-     / \
-    SL SR
+> For self
+> induced errors (as long as we can detect them) I think we can just
+> forget about it ... if the changed page is important, the I/O request
+> gets repeated (modulo the problem of too great a frequency of changes
+> leading to us never successfully writing it) or it gets dropped because
+> the file was truncated or the data deleted for some other reason.
 
-changing to
+Sorry, how can we tell the errors that are self induced from the evil
+bit flipping cable induced errors?
 
-    P
-   / \
-  N  SL
-      \
-       S
-        \
-        SR
+-chris
 
-This can happen in __rb_erase_color, where 'other' points to sibling node.
-
-Thanks,
-Venki
