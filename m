@@ -1,64 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755055Ab0FAImp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Jun 2010 04:42:45 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:50417 "EHLO smtps.tip.net.au"
+	id S1755316Ab0FAIr3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Jun 2010 04:47:29 -0400
+Received: from ist.d-labs.de ([213.239.218.44]:56462 "EHLO mx01.d-labs.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751696Ab0FAImo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Jun 2010 04:42:44 -0400
-Date: Tue, 1 Jun 2010 18:42:37 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Jens Axboe <jaxboe@fusionio.com>
-Cc: Christoph Hellwig <hch@infradead.org>,
-       Philipp Reisner <philipp.reisner@linbit.com>, drbd-dev@linbit.com,
-       linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-       Julia Lawall <julia@diku.dk>, Al Viro <viro@zeniv.linux.org.uk>
-Subject: Re: linux-next: manual merge of the drbd tree with Linus' tree
-Message-Id: <20100601184237.5755044d.sfr@canb.auug.org.au>
-In-Reply-To: <20100601083126.GB3564@kernel.dk>
-References: <20100601141324.edf41f7f.sfr@canb.auug.org.au>
-	<20100601081823.GA29991@infradead.org>
-	<20100601182213.479a777e.sfr@canb.auug.org.au>
-	<20100601083126.GB3564@kernel.dk>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Tue__1_Jun_2010_18_42_37_+1000_c.=IpPumQ2AMbmhA"
+	id S1753279Ab0FAIr2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Jun 2010 04:47:28 -0400
+From: florian@mickler.org
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: 640e9920@gmail.com, markgross@thegnar.org,
+       Arve Hj?nnev?g <arve@android.com>,
+       Alan Stern <stern@rowland.harvard.edu>,
+       Peter Zijlstra <peterz@infradead.org>,
+       Linux PM <linux-pm@lists.linux-foundation.org>,
+       Brian Swetland <swetland@google.com>,
+       Alan Cox <alan@lxorguk.ukuu.org.uk>,
+       Matthew Garrett <mjg59@srcf.ucam.org>,
+       Thomas Gleixner <tglx@linutronix.de>,
+       LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
+       Florian Mickler <florian@mickler.org>
+Subject: [PATCH] pm_qos: remove unnecessary list-traversal
+Date: Tue,  1 Jun 2010 10:46:54 +0200
+Message-Id: <1275382014-10178-1-git-send-email-florian@mickler.org>
+X-Mailer: git-send-email 1.7.1
+In-Reply-To: <20100601090737.4bc243d9@schatten.dmk.lab>
+References: <20100601090737.4bc243d9@schatten.dmk.lab>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__1_Jun_2010_18_42_37_+1000_c.=IpPumQ2AMbmhA
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+The new extreme value is only depending on the old extreme value and
+the changed value.
 
-Hi Jens,
+Signed-off-by: Florian Mickler <florian@mickler.org>
+---
+ kernel/pm_qos_params.c |   19 +++++++++++++++++--
+ 1 files changed, 17 insertions(+), 2 deletions(-)
 
-On Tue, 1 Jun 2010 10:31:26 +0200 Jens Axboe <jaxboe@fusionio.com> wrote:
->
-> Just checked, and it is indeed for-next that is behind... Will update
-> it.
+diff --git a/kernel/pm_qos_params.c b/kernel/pm_qos_params.c
+index f42d3f7..5d71c12 100644
+--- a/kernel/pm_qos_params.c
++++ b/kernel/pm_qos_params.c
+@@ -136,6 +136,16 @@ static s32 min_compare(s32 v1, s32 v2)
+ }
+ 
+ 
++static void update_target_val(int pm_qos_class, s32 val)
++{
++	s32 extreme_value;
++	s32 new_value;
++	extreme_value = atomic_read(&pm_qos_array[pm_qos_class]->target_value);
++	new_value = pm_qos_array[pm_qos_class]->comparitor(val,extreme_value);
++	if (extreme_value != new_value)
++		atomic_set(&pm_qos_array[pm_qos_class]->target_value,new_value);
++}
++
+ static void update_target(int pm_qos_class)
+ {
+ 	s32 extreme_value;
+@@ -253,19 +263,24 @@ void pm_qos_update_request(struct pm_qos_request_list *pm_qos_req,
+ 	s32 temp;
+ 
+ 	if (pm_qos_req) { /*guard against callers passing in null */
++		int target = pm_qos_req->pm_qos_class;
+ 		spin_lock_irqsave(&pm_qos_lock, flags);
+ 		if (new_value == PM_QOS_DEFAULT_VALUE)
+-			temp = pm_qos_array[pm_qos_req->pm_qos_class]->default_value;
++			temp = pm_qos_array[target]->default_value;
+ 		else
+ 			temp = new_value;
+ 
+ 		if (temp != pm_qos_req->value) {
+ 			pending_update = 1;
+ 			pm_qos_req->value = temp;
++			update_target_val(target,temp);
+ 		}
+ 		spin_unlock_irqrestore(&pm_qos_lock, flags);
++
+ 		if (pending_update)
+-			update_target(pm_qos_req->pm_qos_class);
++			blocking_notifier_call_chain(
++				pm_qos_array[pm_qos_class]->notifiers,
++					(unsigned long) temp, NULL);
+ 	}
+ }
+ EXPORT_SYMBOL_GPL(pm_qos_update_request);
+-- 
+1.7.1
 
-Thanks.
-
-BTW, what email address should I now use for you?
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
-
---Signature=_Tue__1_Jun_2010_18_42_37_+1000_c.=IpPumQ2AMbmhA
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iEYEARECAAYFAkwEx/0ACgkQjjKRsyhoI8xjMgCgjAUDes27DOEWr8mv6FVYK4Mm
-P5YAn1yTatkARupBsKiRIS+mrwfFdRoX
-=Nenz
------END PGP SIGNATURE-----
-
---Signature=_Tue__1_Jun_2010_18_42_37_+1000_c.=IpPumQ2AMbmhA--
