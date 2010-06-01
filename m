@@ -1,38 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754944Ab0FAIgR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Jun 2010 04:36:17 -0400
-Received: from 0122700014.0.fullrate.dk ([95.166.99.235]:51737 "EHLO kernel.dk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753328Ab0FAIgP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Jun 2010 04:36:15 -0400
-Date: Tue, 1 Jun 2010 10:36:13 +0200
-From: Jens Axboe <jaxboe@fusionio.com>
-To: Christoph Hellwig <hch@infradead.org>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
-       Philipp Reisner <philipp.reisner@linbit.com>,
-       "drbd-dev@linbit.com" <drbd-dev@linbit.com>,
-       "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       Julia Lawall <julia@diku.dk>, Al Viro <viro@zeniv.linux.org.uk>
-Subject: Re: linux-next: manual merge of the drbd tree with Linus' tree
-Message-ID: <20100601083613.GC3564@kernel.dk>
-References: <20100601141324.edf41f7f.sfr@canb.auug.org.au> <20100601081823.GA29991@infradead.org> <20100601082246.GA3564@kernel.dk> <20100601083244.GA2496@infradead.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100601083244.GA2496@infradead.org>
+	id S1755067Ab0FAIhS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Jun 2010 04:37:18 -0400
+Received: from smtp7.myhsphere.biz ([204.10.105.69]:40003 "EHLO
+	mail9.myhsphere.biz" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754526Ab0FAIhP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Jun 2010 04:37:15 -0400
+X-Originating-IP: 61.11.90.129
+Subject: PXA300-DDRAM base vaue
+From: balakrishnan <balakrishnan@e-consystems.com>
+To: Linux Kernel list <linux-kernel@vger.kernel.org>
+Content-Type: text/plain
+Date: Tue, 01 Jun 2010 14:07:03 +0530
+Message-Id: <1275381423.7001.42.camel@balakrishnan-desktop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.26.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 01 2010, Christoph Hellwig wrote:
-> Talking about the block tree: can we please get the two writeback
-> reverts in?  -rc1 is copletly unsuable under heavy I/O loads as it
-> stands.
+I am working on pxa300 based development board and using Linux 2.6.34.
+This Linux kernel already has support for following boards
+1. zylonite_pxa300
+2. cm-x300 
+3. colibri-pxa300
+4. littleton
 
-Yes, it'll go out today, it was supposed to land in -rc1 :/
+My doubt is that pxa300 based boards are using "0xa0000000"  as DDRAM
+base and PHYS_OFFSET is also defined in
+"arch/arm/mach-pxa/include/mach/memory.h" as 0xa0000000.
+But in our board  DDR is mapped in 0x80000000. Does it make any
+problem?. Because after mmu is turned ON, my board is hanging. 
 
--- 
-Jens Axboe
+"zreladdr-y   := 0x80008000" is defined in
+"arch/arm/mach-pxa/Makefile.boot" file .
+my machine_desc is as follows 
+.phys_io        = 0x40000000, 
+.io_pg_offst    = (io_p2v(0x40000000) >> 18) & 0xfffc,  
+.boot_params    = 0x80000100,  
+
+With Thanks
+J.Balakrishnan
 
