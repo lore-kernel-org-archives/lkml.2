@@ -1,47 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754643Ab0FAT5r (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Jun 2010 15:57:47 -0400
-Received: from fanny.its.uu.se ([130.238.4.241]:45350 "EHLO fanny.its.uu.se"
+	id S1754698Ab0FAT7J (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Jun 2010 15:59:09 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:1874 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752173Ab0FAT5q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Jun 2010 15:57:46 -0400
+	id S1751171Ab0FAT7H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Jun 2010 15:59:07 -0400
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+Subject: [PATCH] FS-Cache: Remove unneeded null checks
+To: torvalds@osdl.org, akpm@linux-foundation.org
+Cc: linux-cachefs@redhat.com, linux-kernel@vger.kernel.org,
+       Dan Carpenter <error27@gmail.com>, David Howells <dhowells@redhat.com>
+Date: Tue, 01 Jun 2010 20:58:22 +0100
+Message-ID: <20100601195822.8452.90732.stgit@warthog.procyon.org.uk>
+User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
-Message-ID: <19461.26166.427857.612983@pilspetsen.it.uu.se>
-Date: Tue, 1 Jun 2010 21:57:42 +0200
-From: Mikael Pettersson <mikpe@it.uu.se>
-To: linux-kernel@vger.kernel.org
-Cc: "David S. Miller" <davem@davemloft.net>
-Subject: [2.6.35-rc1 regression] sysfs: cannot create duplicate filename ... XVR-600 related?
-X-Mailer: VM 7.17 under Emacs 20.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Booting 2.6.35-rc1 on a Sun Blade 2500 Red, I'm greeted with:
+From: Dan Carpenter <error27@gmail.com>
 
-------------[ cut here ]------------
-WARNING: at fs/sysfs/dir.c:451 sysfs_add_one+0x74/0x90()
-sysfs: cannot create duplicate filename '/devices/root/f0079a58/pci0003:00/0003:00:02.0/slot'
-Modules linked in:
-Call Trace:
- [0000000000458e20] warn_slowpath_fmt+0x2c/0x3c
- [0000000000501dac] sysfs_add_one+0x74/0x90
- [0000000000502cd4] sysfs_do_create_link+0xf0/0x184
- [000000000055a62c] pci_create_sysfs_dev_files+0x304/0x428
- [000000000074c6f8] pci_sysfs_init+0x20/0x6c
- [0000000000426acc] do_one_initcall+0x44/0x164
- [000000000073a32c] kernel_init+0x1a0/0x238
- [000000000042aea4] kernel_thread+0x30/0x48
- [0000000000640efc] rest_init+0x18/0x88
----[ end trace 8093a3146373dac8 ]---
+fscache_write_op() makes unnecessary checks of the page variable to see if it
+is NULL.  It can't be NULL at those points as the kernel would already have
+crashed a little higher up where we examined page->index.
 
-(There are no interesting messages before or after this one.)
+Furthermore, unless radix_tree_gang_lookup_tag() can return 1 but no page, a
+NULL pointer crash should not be encountered there as we can only get there if
+r_t_g_l_t() returned 1.
 
-The device at 003:00:02.0 is a Sun XVR-600 graphics card, driven by
-drivers/video/sunxvr500.c.  There was no such warning in 2.6.34 or
-earlier kernels.
+Signed-off-by: Dan Carpenter <error27@gmail.com>
+Signed-off-by: David Howells <dhowells@redhat.com>
+---
 
-/Mikael
+ fs/fscache/page.c |   36 ++++++++++++++++--------------------
+ 1 files changed, 16 insertions(+), 20 deletions(-)
+
+diff --git a/fs/fscache/page.c b/fs/fscache/page.c
+index 9461617..5b9b00a 100644
+--- a/fs/fscache/page.c
++++ b/fs/fscache/page.c
+@@ -710,30 +710,26 @@ static void fscache_write_op(struct fscache_operation *_op)
+ 		goto superseded;
+ 	}
+ 
+-	if (page) {
+-		radix_tree_tag_set(&cookie->stores, page->index,
+-				   FSCACHE_COOKIE_STORING_TAG);
+-		radix_tree_tag_clear(&cookie->stores, page->index,
+-				     FSCACHE_COOKIE_PENDING_TAG);
+-	}
++	radix_tree_tag_set(&cookie->stores, page->index,
++			   FSCACHE_COOKIE_STORING_TAG);
++	radix_tree_tag_clear(&cookie->stores, page->index,
++			     FSCACHE_COOKIE_PENDING_TAG);
+ 
+ 	spin_unlock(&cookie->stores_lock);
+ 	spin_unlock(&object->lock);
+ 
+-	if (page) {
+-		fscache_set_op_state(&op->op, "Store");
+-		fscache_stat(&fscache_n_store_pages);
+-		fscache_stat(&fscache_n_cop_write_page);
+-		ret = object->cache->ops->write_page(op, page);
+-		fscache_stat_d(&fscache_n_cop_write_page);
+-		fscache_set_op_state(&op->op, "EndWrite");
+-		fscache_end_page_write(object, page);
+-		if (ret < 0) {
+-			fscache_set_op_state(&op->op, "Abort");
+-			fscache_abort_object(object);
+-		} else {
+-			fscache_enqueue_operation(&op->op);
+-		}
++	fscache_set_op_state(&op->op, "Store");
++	fscache_stat(&fscache_n_store_pages);
++	fscache_stat(&fscache_n_cop_write_page);
++	ret = object->cache->ops->write_page(op, page);
++	fscache_stat_d(&fscache_n_cop_write_page);
++	fscache_set_op_state(&op->op, "EndWrite");
++	fscache_end_page_write(object, page);
++	if (ret < 0) {
++		fscache_set_op_state(&op->op, "Abort");
++		fscache_abort_object(object);
++	} else {
++		fscache_enqueue_operation(&op->op);
+ 	}
+ 
+ 	_leave("");
+
