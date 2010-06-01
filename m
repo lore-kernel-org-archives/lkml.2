@@ -1,49 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751179Ab0FAEKZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Jun 2010 00:10:25 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:43759 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750746Ab0FAEKY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Jun 2010 00:10:24 -0400
-Date: Mon, 31 May 2010 21:05:55 -0700 (PDT)
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Rusty Russell <rusty@rustcorp.com.au>
-cc: Andrew Morton <akpm@linux-foundation.org>,
-       Brandon Philips <brandon@ifup.org>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-       LKML <linux-kernel@vger.kernel.org>,
-       Jon Masters <jonathan@jonmasters.org>, Tejun Heo <htejun@gmail.com>,
-       Masami Hiramatsu <mhiramat@redhat.com>,
-       Kay Sievers <kay.sievers@vrfy.org>
-Subject: Re: [PATCH 1/2] Make the module 'usage' lists be two-way
-In-Reply-To: <alpine.LFD.2.00.1005312051390.3637@i5.linux-foundation.org>
-Message-ID: <alpine.LFD.2.00.1005312102040.3637@i5.linux-foundation.org>
-References: <201005252300.07739.rjw@sisk.pl> <alpine.LFD.2.00.1005311315460.3637@i5.linux-foundation.org> <201006011107.35722.rusty@rustcorp.com.au> <201006011312.22198.rusty@rustcorp.com.au> <alpine.LFD.2.00.1005312051390.3637@i5.linux-foundation.org>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S1750746Ab0FAEKf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Jun 2010 00:10:35 -0400
+Received: from thunk.org ([69.25.196.29]:54855 "EHLO thunker.thunk.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751250Ab0FAEKd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Jun 2010 00:10:33 -0400
+Date: Tue, 1 Jun 2010 00:10:28 -0400
+From: tytso@mit.edu
+To: Alex Buell <alex.buell@munted.org.uk>
+Cc: Mailing Lists - Kernel Developers <linux-kernel@vger.kernel.org>,
+       Eric Paris <eparis@redhat.com>
+Subject: Re: Article in Phoronix about loss of performance in 2.6.35
+ release candidates
+Message-ID: <20100601041028.GB4426@thunk.org>
+Mail-Followup-To: tytso@mit.edu, Alex Buell <alex.buell@munted.org.uk>,
+	Mailing Lists - Kernel Developers <linux-kernel@vger.kernel.org>,
+	Eric Paris <eparis@redhat.com>
+References: <1275347969.29006.5.camel@lithium.local.net>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1275347969.29006.5.camel@lithium.local.net>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on thunker.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-On Mon, 31 May 2010, Linus Torvalds wrote:
+On Tue, Jun 01, 2010 at 12:19:29AM +0100, Alex Buell wrote:
+> http://www.phoronix.com/vr.php?view=14976
 > 
-> Oh. And back then, it was inside a "modlist_lock". And that lock is long 
-> gone, but the GFP_ATOMIC remains.
+> Question: Why?
 
-Actually, keep it that way. Because I think that with your locking 
-cleanup, we could actually turn the module_mutex back into a spinlock.
+One of the theories that has been advanced is that it's simply this
+problem:
 
-And the thing is, we don't necessarily want it to be a spinlock per se, 
-but at the same time, I think that would be a good sanity test. If we can 
-turn it into a spinlock without triggering the "might_sleep()" debugging 
-code, that means that we are only holding it over real critical regions.
+	http://lkml.org/lkml/2010/5/22/154
 
-So while I don't think it needs to be a spinlock, it would be a nice added 
-sanity check if it were one. We have all this helper debugging code to 
-verify that spinlocked regions don't do "bad" things.
+If so, it points out how idiotic Phoronix is about not being able to
+notice udev pegging the CPU at 100% being someone bad for its
+benchmark runs.  :-)
 
-			Linus
+OTOH, this bug has been known for over a week, and it is sort sad that
+we haven't reverted this patch.  It looks like the conversation has
+died, but without a fix?
+
+						- Ted
