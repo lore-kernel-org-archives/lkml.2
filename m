@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754895Ab0FAIBd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Jun 2010 04:01:33 -0400
-Received: from mail-px0-f174.google.com ([209.85.212.174]:60155 "EHLO
-	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754671Ab0FAIBb (ORCPT
+	id S1755097Ab0FAIBi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Jun 2010 04:01:38 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:60997 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754965Ab0FAIBf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Jun 2010 04:01:31 -0400
+	Tue, 1 Jun 2010 04:01:35 -0400
 From: Nitin Gupta <ngupta@vflare.org>
 To: Greg KH <greg@kroah.com>
 Cc: Pekka Enberg <penberg@cs.helsinki.fi>,
@@ -15,9 +15,9 @@ Cc: Pekka Enberg <penberg@cs.helsinki.fi>,
        Hugh Dickins <hugh.dickins@tiscali.co.uk>, Cyp <cyp561@gmail.com>,
        driverdev <devel@driverdev.osuosl.org>,
        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: [PATCH 1/4] Support generic I/O requests
-Date: Tue,  1 Jun 2010 13:31:23 +0530
-Message-Id: <1275379286-10453-2-git-send-email-ngupta@vflare.org>
+Subject: [PATCH 2/4] Rename ramzswap files to zram
+Date: Tue,  1 Jun 2010 13:31:24 +0530
+Message-Id: <1275379286-10453-3-git-send-email-ngupta@vflare.org>
 X-Mailer: git-send-email 1.7.0.1
 In-Reply-To: <1275379286-10453-1-git-send-email-ngupta@vflare.org>
 References: <1275379286-10453-1-git-send-email-ngupta@vflare.org>
@@ -25,561 +25,197 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently, ramzwap devices (/dev/ramzswapX) can only
-be used as swap disks since it was hard-coded to consider
-only the first request in bio vector.
-
-Now, we iterate over all the segments in an incoming
-bio which allows us to handle all kinds of I/O requests.
-
-ramzswap devices can still handle PAGE_SIZE aligned and
-multiple of PAGE_SIZE sized I/O requests only. To ensure
-that we get always get such requests only, we set following
-request_queue attributes to PAGE_SIZE:
- - physical_block_size
- - logical_block_size
- - io_min
- - io_opt
-
-Note: physical and logical block sizes were already set
-equal to PAGE_SIZE and that seems to be sufficient to get
-PAGE_SIZE aligned I/O.
-
-Since we are no longer limited to handling swap requests
-only, the next few patches rename ramzswap to zram. So,
-the devices will then be called /dev/zram{0, 1, 2, ...}
-
-Usage/Examples:
- 1) Use as /tmp storage
- - mkfs.ext4 /dev/zram0
- - mount /dev/zram0 /tmp
-
- 2) Use as swap:
- - mkswap /dev/zram0
- - swapon /dev/zram0 -p 10 # give highest priority to zram0
-
-Performance:
-
- - I/O benchamark done with 'dd' command. Details can be
-found here:
-http://code.google.com/p/compcache/wiki/zramperf
-Summary:
- - Maximum read speed (approx):
-   - ram disk: 1200 MB/sec
-   - zram disk: 600 MB/sec
- - Maximum write speed (approx):
-   - ram disk: 500 MB/sec
-   - zram disk: 160 MB/sec
-
-Issues:
-
- - Double caching: We can potentially waste memory by having
-two copies of a page -- one in page cache (uncompress) and
-second in the device memory (compressed). However, during
-reclaim, clean page cache pages are quickly freed, so this
-does not seem to be a big problem.
-
- - Stale data: Not all filesystems support issuing 'discard'
-requests to underlying block devices. So, if such filesystems
-are used over zram devices, we can accumulate lot of stale
-data in memory. Even for filesystems to do support discard
-(example, ext4), we need to see how effective it is.
-
- - Scalability: There is only one (per-device) de/compression
-buffer stats. This can lead to significant contention, especially
-when used for generic (non-swap) purposes.
+Related changes:
+ - Modify revelant Kconfig and Makefile accordingly.
+ - Change include filenames in code.
+ - Remove dependency on CONFIG_SWAP in Kconfig as zram usage
+is no longer limited to swap disks.
 
 Signed-off-by: Nitin Gupta <ngupta@vflare.org>
 ---
- drivers/staging/ramzswap/ramzswap_drv.c |  326 ++++++++++++++-----------------
- drivers/staging/ramzswap/ramzswap_drv.h |    3 +-
- 2 files changed, 149 insertions(+), 180 deletions(-)
+ drivers/staging/Kconfig                            |    2 +-
+ drivers/staging/Makefile                           |    2 +-
+ drivers/staging/ramzswap/Kconfig                   |   21 ---------------
+ drivers/staging/ramzswap/Makefile                  |    3 --
+ drivers/staging/zram/Kconfig                       |   28 ++++++++++++++++++++
+ drivers/staging/zram/Makefile                      |    3 ++
+ drivers/staging/{ramzswap => zram}/xvmalloc.c      |    0
+ drivers/staging/{ramzswap => zram}/xvmalloc.h      |    0
+ drivers/staging/{ramzswap => zram}/xvmalloc_int.h  |    0
+ .../{ramzswap/ramzswap.txt => zram/zram.txt}       |    0
+ .../{ramzswap/ramzswap_drv.c => zram/zram_drv.c}   |    2 +-
+ .../{ramzswap/ramzswap_drv.h => zram/zram_drv.h}   |    2 +-
+ .../ramzswap_ioctl.h => zram/zram_ioctl.h}         |    0
+ 13 files changed, 35 insertions(+), 28 deletions(-)
+ delete mode 100644 drivers/staging/ramzswap/Kconfig
+ delete mode 100644 drivers/staging/ramzswap/Makefile
+ create mode 100644 drivers/staging/zram/Kconfig
+ create mode 100644 drivers/staging/zram/Makefile
+ rename drivers/staging/{ramzswap => zram}/xvmalloc.c (100%)
+ rename drivers/staging/{ramzswap => zram}/xvmalloc.h (100%)
+ rename drivers/staging/{ramzswap => zram}/xvmalloc_int.h (100%)
+ rename drivers/staging/{ramzswap/ramzswap.txt => zram/zram.txt} (100%)
+ rename drivers/staging/{ramzswap/ramzswap_drv.c => zram/zram_drv.c} (99%)
+ rename drivers/staging/{ramzswap/ramzswap_drv.h => zram/zram_drv.h} (99%)
+ rename drivers/staging/{ramzswap/ramzswap_ioctl.h => zram/zram_ioctl.h} (100%)
 
-diff --git a/drivers/staging/ramzswap/ramzswap_drv.c b/drivers/staging/ramzswap/ramzswap_drv.c
-index d14bf91..7b5cc61 100644
+diff --git a/drivers/staging/Kconfig b/drivers/staging/Kconfig
+index b5c3b30..32d5300 100644
+--- a/drivers/staging/Kconfig
++++ b/drivers/staging/Kconfig
+@@ -117,7 +117,7 @@ source "drivers/staging/sep/Kconfig"
+ 
+ source "drivers/staging/iio/Kconfig"
+ 
+-source "drivers/staging/ramzswap/Kconfig"
++source "drivers/staging/zram/Kconfig"
+ 
+ source "drivers/staging/wlags49_h2/Kconfig"
+ 
+diff --git a/drivers/staging/Makefile b/drivers/staging/Makefile
+index e330dd5..cec25b0 100644
+--- a/drivers/staging/Makefile
++++ b/drivers/staging/Makefile
+@@ -39,7 +39,7 @@ obj-$(CONFIG_RAR_REGISTER)	+= rar_register/
+ obj-$(CONFIG_MRST_RAR_HANDLER)	+= memrar/
+ obj-$(CONFIG_DX_SEP)		+= sep/
+ obj-$(CONFIG_IIO)		+= iio/
+-obj-$(CONFIG_RAMZSWAP)		+= ramzswap/
++obj-$(CONFIG_ZRAM)		+= zram/
+ obj-$(CONFIG_WLAGS49_H2)	+= wlags49_h2/
+ obj-$(CONFIG_WLAGS49_H25)	+= wlags49_h25/
+ obj-$(CONFIG_BATMAN_ADV)	+= batman-adv/
+diff --git a/drivers/staging/ramzswap/Kconfig b/drivers/staging/ramzswap/Kconfig
+deleted file mode 100644
+index 127b3c6..0000000
+--- a/drivers/staging/ramzswap/Kconfig
++++ /dev/null
+@@ -1,21 +0,0 @@
+-config RAMZSWAP
+-	tristate "Compressed in-memory swap device (ramzswap)"
+-	depends on SWAP
+-	select LZO_COMPRESS
+-	select LZO_DECOMPRESS
+-	default n
+-	help
+-	  Creates virtual block devices which can (only) be used as swap
+-	  disks. Pages swapped to these disks are compressed and stored in
+-	  memory itself.
+-
+-	  See ramzswap.txt for more information.
+-	  Project home: http://compcache.googlecode.com/
+-
+-config RAMZSWAP_STATS
+-	bool "Enable ramzswap stats"
+-	depends on RAMZSWAP
+-	default y
+-	help
+-	  Enable statistics collection for ramzswap. This adds only a minimal
+-	  overhead. In unsure, say Y.
+diff --git a/drivers/staging/ramzswap/Makefile b/drivers/staging/ramzswap/Makefile
+deleted file mode 100644
+index 507d7dc..0000000
+--- a/drivers/staging/ramzswap/Makefile
++++ /dev/null
+@@ -1,3 +0,0 @@
+-ramzswap-objs	:=	ramzswap_drv.o xvmalloc.o
+-
+-obj-$(CONFIG_RAMZSWAP)	+=	ramzswap.o
+diff --git a/drivers/staging/zram/Kconfig b/drivers/staging/zram/Kconfig
+new file mode 100644
+index 0000000..5bcfe16
+--- /dev/null
++++ b/drivers/staging/zram/Kconfig
+@@ -0,0 +1,28 @@
++config ZRAM
++	tristate "Compressed RAM block device support"
++	select LZO_COMPRESS
++	select LZO_DECOMPRESS
++	default n
++	help
++	  Creates virtual block devices called /dev/zramX (X = 0, 1, ...).
++	  Pages written to these disks are compressed and stored in memory
++	  itself. These disks allow very fast I/O and compression provides
++	  good amounts of memory savings.
++
++	  It has several use cases, for example: /tmp storage, use as swap
++	  disks and maybe many more.
++
++	  See zram.txt for more information.
++	  Project home: http://compcache.googlecode.com/
++
++config ZRAM_STATS
++	bool "Enable statistics for compressed RAM disks"
++	depends on ZRAM
++	default y
++	help
++	  Enable statistics collection for compressed RAM devices. Statistics
++	  are exported through ioctl interface, so you have to use zramconfig
++	  program to get them. This adds only a minimal overhead.
++
++	  If unsure, say Y.
++
+diff --git a/drivers/staging/zram/Makefile b/drivers/staging/zram/Makefile
+new file mode 100644
+index 0000000..b2c087a
+--- /dev/null
++++ b/drivers/staging/zram/Makefile
+@@ -0,0 +1,3 @@
++zram-objs	:=	zram_drv.o xvmalloc.o
++
++obj-$(CONFIG_ZRAM)	+=	zram.o
+diff --git a/drivers/staging/ramzswap/xvmalloc.c b/drivers/staging/zram/xvmalloc.c
+similarity index 100%
+rename from drivers/staging/ramzswap/xvmalloc.c
+rename to drivers/staging/zram/xvmalloc.c
+diff --git a/drivers/staging/ramzswap/xvmalloc.h b/drivers/staging/zram/xvmalloc.h
+similarity index 100%
+rename from drivers/staging/ramzswap/xvmalloc.h
+rename to drivers/staging/zram/xvmalloc.h
+diff --git a/drivers/staging/ramzswap/xvmalloc_int.h b/drivers/staging/zram/xvmalloc_int.h
+similarity index 100%
+rename from drivers/staging/ramzswap/xvmalloc_int.h
+rename to drivers/staging/zram/xvmalloc_int.h
+diff --git a/drivers/staging/ramzswap/ramzswap.txt b/drivers/staging/zram/zram.txt
+similarity index 100%
+rename from drivers/staging/ramzswap/ramzswap.txt
+rename to drivers/staging/zram/zram.txt
+diff --git a/drivers/staging/ramzswap/ramzswap_drv.c b/drivers/staging/zram/zram_drv.c
+similarity index 99%
+rename from drivers/staging/ramzswap/ramzswap_drv.c
+rename to drivers/staging/zram/zram_drv.c
+index 7b5cc61..e9b064c 100644
 --- a/drivers/staging/ramzswap/ramzswap_drv.c
-+++ b/drivers/staging/ramzswap/ramzswap_drv.c
-@@ -101,20 +101,6 @@ static void ramzswap_set_disksize(struct ramzswap *rzs, size_t totalram_bytes)
- 	rzs->disksize &= PAGE_MASK;
- }
++++ b/drivers/staging/zram/zram_drv.c
+@@ -30,7 +30,7 @@
+ #include <linux/swapops.h>
+ #include <linux/vmalloc.h>
  
--/*
-- * Swap header (1st page of swap device) contains information
-- * about a swap file/partition. Prepare such a header for the
-- * given ramzswap device so that swapon can identify it as a
-- * swap partition.
-- */
--static void setup_swap_header(struct ramzswap *rzs, union swap_header *s)
--{
--	s->info.version = 1;
--	s->info.last_page = (rzs->disksize >> PAGE_SHIFT) - 1;
--	s->info.nr_badpages = 0;
--	memcpy(s->magic.magic, "SWAPSPACE2", 10);
--}
--
- static void ramzswap_ioctl_get_stats(struct ramzswap *rzs,
- 			struct ramzswap_ioctl_stats *s)
- {
-@@ -202,31 +188,22 @@ out:
- 	rzs->table[index].offset = 0;
- }
+-#include "ramzswap_drv.h"
++#include "zram_drv.h"
  
--static int handle_zero_page(struct bio *bio)
-+static void handle_zero_page(struct page *page)
- {
- 	void *user_mem;
--	struct page *page = bio->bi_io_vec[0].bv_page;
- 
- 	user_mem = kmap_atomic(page, KM_USER0);
- 	memset(user_mem, 0, PAGE_SIZE);
- 	kunmap_atomic(user_mem, KM_USER0);
- 
- 	flush_dcache_page(page);
--
--	set_bit(BIO_UPTODATE, &bio->bi_flags);
--	bio_endio(bio, 0);
--	return 0;
- }
- 
--static int handle_uncompressed_page(struct ramzswap *rzs, struct bio *bio)
-+static void handle_uncompressed_page(struct ramzswap *rzs,
-+				struct page *page, u32 index)
- {
--	u32 index;
--	struct page *page;
- 	unsigned char *user_mem, *cmem;
- 
--	page = bio->bi_io_vec[0].bv_page;
--	index = bio->bi_sector >> SECTORS_PER_PAGE_SHIFT;
--
- 	user_mem = kmap_atomic(page, KM_USER0);
- 	cmem = kmap_atomic(rzs->table[index].page, KM_USER1) +
- 			rzs->table[index].offset;
-@@ -236,79 +213,71 @@ static int handle_uncompressed_page(struct ramzswap *rzs, struct bio *bio)
- 	kunmap_atomic(cmem, KM_USER1);
- 
- 	flush_dcache_page(page);
--
--	set_bit(BIO_UPTODATE, &bio->bi_flags);
--	bio_endio(bio, 0);
--	return 0;
--}
--
--/*
-- * Called when request page is not present in ramzswap.
-- * This is an attempt to read before any previous write
-- * to this location - this happens due to readahead when
-- * swap device is read from user-space (e.g. during swapon)
-- */
--static int handle_ramzswap_fault(struct ramzswap *rzs, struct bio *bio)
--{
--	pr_debug("Read before write on swap device: "
--		"sector=%lu, size=%u, offset=%u\n",
--		(ulong)(bio->bi_sector), bio->bi_size,
--		bio->bi_io_vec[0].bv_offset);
--
--	/* Do nothing. Just return success */
--	set_bit(BIO_UPTODATE, &bio->bi_flags);
--	bio_endio(bio, 0);
--	return 0;
- }
- 
- static int ramzswap_read(struct ramzswap *rzs, struct bio *bio)
- {
--	int ret;
-+
-+	int i;
- 	u32 index;
--	size_t clen;
--	struct page *page;
--	struct zobj_header *zheader;
--	unsigned char *user_mem, *cmem;
-+	struct bio_vec *bvec;
- 
- 	rzs_stat64_inc(rzs, &rzs->stats.num_reads);
- 
--	page = bio->bi_io_vec[0].bv_page;
- 	index = bio->bi_sector >> SECTORS_PER_PAGE_SHIFT;
-+	bio_for_each_segment(bvec, bio, i) {
-+		int ret;
-+		size_t clen;
-+		struct page *page;
-+		struct zobj_header *zheader;
-+		unsigned char *user_mem, *cmem;
- 
--	if (rzs_test_flag(rzs, index, RZS_ZERO))
--		return handle_zero_page(bio);
-+		page = bvec->bv_page;
- 
--	/* Requested page is not present in compressed area */
--	if (!rzs->table[index].page)
--		return handle_ramzswap_fault(rzs, bio);
-+		if (rzs_test_flag(rzs, index, RZS_ZERO)) {
-+			handle_zero_page(page);
-+			continue;
-+		}
- 
--	/* Page is stored uncompressed since it's incompressible */
--	if (unlikely(rzs_test_flag(rzs, index, RZS_UNCOMPRESSED)))
--		return handle_uncompressed_page(rzs, bio);
-+		/* Requested page is not present in compressed area */
-+		if (unlikely(!rzs->table[index].page)) {
-+			pr_debug("Read before write: sector=%lu, size=%u",
-+				(ulong)(bio->bi_sector), bio->bi_size);
-+			/* Do nothing */
-+			continue;
-+		}
- 
--	user_mem = kmap_atomic(page, KM_USER0);
--	clen = PAGE_SIZE;
-+		/* Page is stored uncompressed since it's incompressible */
-+		if (unlikely(rzs_test_flag(rzs, index, RZS_UNCOMPRESSED))) {
-+			handle_uncompressed_page(rzs, page, index);
-+			continue;
-+		}
- 
--	cmem = kmap_atomic(rzs->table[index].page, KM_USER1) +
--			rzs->table[index].offset;
-+		user_mem = kmap_atomic(page, KM_USER0);
-+		clen = PAGE_SIZE;
- 
--	ret = lzo1x_decompress_safe(
--		cmem + sizeof(*zheader),
--		xv_get_object_size(cmem) - sizeof(*zheader),
--		user_mem, &clen);
-+		cmem = kmap_atomic(rzs->table[index].page, KM_USER1) +
-+				rzs->table[index].offset;
- 
--	kunmap_atomic(user_mem, KM_USER0);
--	kunmap_atomic(cmem, KM_USER1);
-+		ret = lzo1x_decompress_safe(
-+			cmem + sizeof(*zheader),
-+			xv_get_object_size(cmem) - sizeof(*zheader),
-+			user_mem, &clen);
- 
--	/* should NEVER happen */
--	if (unlikely(ret != LZO_E_OK)) {
--		pr_err("Decompression failed! err=%d, page=%u\n",
--			ret, index);
--		rzs_stat64_inc(rzs, &rzs->stats.failed_reads);
--		goto out;
--	}
-+		kunmap_atomic(user_mem, KM_USER0);
-+		kunmap_atomic(cmem, KM_USER1);
- 
--	flush_dcache_page(page);
-+		/* Should NEVER happen. Return bio error if it does. */
-+		if (unlikely(ret != LZO_E_OK)) {
-+			pr_err("Decompression failed! err=%d, page=%u\n",
-+				ret, index);
-+			rzs_stat64_inc(rzs, &rzs->stats.failed_reads);
-+			goto out;
-+		}
-+
-+		flush_dcache_page(page);
-+		index++;
-+	}
- 
- 	set_bit(BIO_UPTODATE, &bio->bi_flags);
- 	bio_endio(bio, 0);
-@@ -321,108 +290,120 @@ out:
- 
- static int ramzswap_write(struct ramzswap *rzs, struct bio *bio)
- {
--	int ret;
--	u32 offset, index;
--	size_t clen;
--	struct zobj_header *zheader;
--	struct page *page, *page_store;
--	unsigned char *user_mem, *cmem, *src;
-+	int i;
-+	u32 index;
-+	struct bio_vec *bvec;
- 
- 	rzs_stat64_inc(rzs, &rzs->stats.num_writes);
- 
--	page = bio->bi_io_vec[0].bv_page;
- 	index = bio->bi_sector >> SECTORS_PER_PAGE_SHIFT;
- 
--	src = rzs->compress_buffer;
-+	bio_for_each_segment(bvec, bio, i) {
-+		int ret;
-+		u32 offset;
-+		size_t clen;
-+		struct zobj_header *zheader;
-+		struct page *page, *page_store;
-+		unsigned char *user_mem, *cmem, *src;
- 
--	mutex_lock(&rzs->lock);
-+		page = bvec->bv_page;
-+		src = rzs->compress_buffer;
- 
--	user_mem = kmap_atomic(page, KM_USER0);
--	if (page_zero_filled(user_mem)) {
--		kunmap_atomic(user_mem, KM_USER0);
--		mutex_unlock(&rzs->lock);
--		rzs_stat_inc(&rzs->stats.pages_zero);
--		rzs_set_flag(rzs, index, RZS_ZERO);
-+		/*
-+		 * System overwrites unused sectors. Free memory associated
-+		 * with this sector now.
-+		 */
-+		if (rzs->table[index].page ||
-+				rzs_test_flag(rzs, index, RZS_ZERO))
-+			ramzswap_free_page(rzs, index);
- 
--		set_bit(BIO_UPTODATE, &bio->bi_flags);
--		bio_endio(bio, 0);
--		return 0;
--	}
-+		mutex_lock(&rzs->lock);
- 
--	ret = lzo1x_1_compress(user_mem, PAGE_SIZE, src, &clen,
--				rzs->compress_workmem);
-+		user_mem = kmap_atomic(page, KM_USER0);
-+		if (page_zero_filled(user_mem)) {
-+			kunmap_atomic(user_mem, KM_USER0);
-+			mutex_unlock(&rzs->lock);
-+			rzs_stat_inc(&rzs->stats.pages_zero);
-+			rzs_set_flag(rzs, index, RZS_ZERO);
-+			continue;
-+		}
- 
--	kunmap_atomic(user_mem, KM_USER0);
-+		ret = lzo1x_1_compress(user_mem, PAGE_SIZE, src, &clen,
-+					rzs->compress_workmem);
- 
--	if (unlikely(ret != LZO_E_OK)) {
--		mutex_unlock(&rzs->lock);
--		pr_err("Compression failed! err=%d\n", ret);
--		rzs_stat64_inc(rzs, &rzs->stats.failed_writes);
--		goto out;
--	}
-+		kunmap_atomic(user_mem, KM_USER0);
- 
--	/*
--	 * Page is incompressible. Store it as-is (uncompressed)
--	 * since we do not want to return too many swap write
--	 * errors which has side effect of hanging the system.
--	 */
--	if (unlikely(clen > max_zpage_size)) {
--		clen = PAGE_SIZE;
--		page_store = alloc_page(GFP_NOIO | __GFP_HIGHMEM);
--		if (unlikely(!page_store)) {
-+		if (unlikely(ret != LZO_E_OK)) {
- 			mutex_unlock(&rzs->lock);
--			pr_info("Error allocating memory for incompressible "
--				"page: %u\n", index);
-+			pr_err("Compression failed! err=%d\n", ret);
- 			rzs_stat64_inc(rzs, &rzs->stats.failed_writes);
- 			goto out;
- 		}
- 
--		offset = 0;
--		rzs_set_flag(rzs, index, RZS_UNCOMPRESSED);
--		rzs_stat_inc(&rzs->stats.pages_expand);
--		rzs->table[index].page = page_store;
--		src = kmap_atomic(page, KM_USER0);
--		goto memstore;
--	}
-+		/*
-+		 * Page is incompressible. Store it as-is (uncompressed)
-+		 * since we do not want to return too many swap write
-+		 * errors which has side effect of hanging the system.
-+		 */
-+		if (unlikely(clen > max_zpage_size)) {
-+			clen = PAGE_SIZE;
-+			page_store = alloc_page(GFP_NOIO | __GFP_HIGHMEM);
-+			if (unlikely(!page_store)) {
-+				mutex_unlock(&rzs->lock);
-+				pr_info("Error allocating memory for "
-+					"incompressible page: %u\n", index);
-+				rzs_stat64_inc(rzs, &rzs->stats.failed_writes);
-+				goto out;
-+			}
-+
-+			offset = 0;
-+			rzs_set_flag(rzs, index, RZS_UNCOMPRESSED);
-+			rzs_stat_inc(&rzs->stats.pages_expand);
-+			rzs->table[index].page = page_store;
-+			src = kmap_atomic(page, KM_USER0);
-+			goto memstore;
-+		}
- 
--	if (xv_malloc(rzs->mem_pool, clen + sizeof(*zheader),
--			&rzs->table[index].page, &offset,
--			GFP_NOIO | __GFP_HIGHMEM)) {
--		mutex_unlock(&rzs->lock);
--		pr_info("Error allocating memory for compressed "
--			"page: %u, size=%zu\n", index, clen);
--		rzs_stat64_inc(rzs, &rzs->stats.failed_writes);
--		goto out;
--	}
-+		if (xv_malloc(rzs->mem_pool, clen + sizeof(*zheader),
-+				&rzs->table[index].page, &offset,
-+				GFP_NOIO | __GFP_HIGHMEM)) {
-+			mutex_unlock(&rzs->lock);
-+			pr_info("Error allocating memory for compressed "
-+				"page: %u, size=%zu\n", index, clen);
-+			rzs_stat64_inc(rzs, &rzs->stats.failed_writes);
-+			goto out;
-+		}
- 
- memstore:
--	rzs->table[index].offset = offset;
-+		rzs->table[index].offset = offset;
- 
--	cmem = kmap_atomic(rzs->table[index].page, KM_USER1) +
--			rzs->table[index].offset;
-+		cmem = kmap_atomic(rzs->table[index].page, KM_USER1) +
-+				rzs->table[index].offset;
- 
- #if 0
--	/* Back-reference needed for memory defragmentation */
--	if (!rzs_test_flag(rzs, index, RZS_UNCOMPRESSED)) {
--		zheader = (struct zobj_header *)cmem;
--		zheader->table_idx = index;
--		cmem += sizeof(*zheader);
--	}
-+		/* Back-reference needed for memory defragmentation */
-+		if (!rzs_test_flag(rzs, index, RZS_UNCOMPRESSED)) {
-+			zheader = (struct zobj_header *)cmem;
-+			zheader->table_idx = index;
-+			cmem += sizeof(*zheader);
-+		}
- #endif
- 
--	memcpy(cmem, src, clen);
-+		memcpy(cmem, src, clen);
- 
--	kunmap_atomic(cmem, KM_USER1);
--	if (unlikely(rzs_test_flag(rzs, index, RZS_UNCOMPRESSED)))
--		kunmap_atomic(src, KM_USER0);
-+		kunmap_atomic(cmem, KM_USER1);
-+		if (unlikely(rzs_test_flag(rzs, index, RZS_UNCOMPRESSED)))
-+			kunmap_atomic(src, KM_USER0);
- 
--	/* Update stats */
--	rzs->stats.compr_size += clen;
--	rzs_stat_inc(&rzs->stats.pages_stored);
--	if (clen <= PAGE_SIZE / 2)
--		rzs_stat_inc(&rzs->stats.good_compress);
-+		/* Update stats */
-+		rzs->stats.compr_size += clen;
-+		rzs_stat_inc(&rzs->stats.pages_stored);
-+		if (clen <= PAGE_SIZE / 2)
-+			rzs_stat_inc(&rzs->stats.good_compress);
- 
--	mutex_unlock(&rzs->lock);
-+		mutex_unlock(&rzs->lock);
-+		index++;
-+	}
- 
- 	set_bit(BIO_UPTODATE, &bio->bi_flags);
- 	bio_endio(bio, 0);
-@@ -436,19 +417,17 @@ out:
- /*
-  * Check if request is within bounds and page aligned.
-  */
--static inline int valid_swap_request(struct ramzswap *rzs, struct bio *bio)
-+static inline int valid_io_request(struct ramzswap *rzs, struct bio *bio)
- {
- 	if (unlikely(
- 		(bio->bi_sector >= (rzs->disksize >> SECTOR_SHIFT)) ||
- 		(bio->bi_sector & (SECTORS_PER_PAGE - 1)) ||
--		(bio->bi_vcnt != 1) ||
--		(bio->bi_size != PAGE_SIZE) ||
--		(bio->bi_io_vec[0].bv_offset != 0))) {
-+		(bio->bi_size & (PAGE_SIZE - 1)))) {
- 
- 		return 0;
- 	}
- 
--	/* swap request is valid */
-+	/* I/O request is valid */
- 	return 1;
- }
- 
-@@ -465,7 +444,7 @@ static int ramzswap_make_request(struct request_queue *queue, struct bio *bio)
- 		return 0;
- 	}
- 
--	if (!valid_swap_request(rzs, bio)) {
-+	if (!valid_io_request(rzs, bio)) {
- 		rzs_stat64_inc(rzs, &rzs->stats.invalid_io);
- 		bio_io_error(bio);
- 		return 0;
-@@ -531,8 +510,6 @@ static int ramzswap_ioctl_init_device(struct ramzswap *rzs)
- {
- 	int ret;
- 	size_t num_pages;
--	struct page *page;
--	union swap_header *swap_header;
- 
- 	if (rzs->init_done) {
- 		pr_info("Device already initialized!\n");
-@@ -566,19 +543,6 @@ static int ramzswap_ioctl_init_device(struct ramzswap *rzs)
- 	}
- 	memset(rzs->table, 0, num_pages * sizeof(*rzs->table));
- 
--	page = alloc_page(__GFP_ZERO);
--	if (!page) {
--		pr_err("Error allocating swap header page\n");
--		ret = -ENOMEM;
--		goto fail;
--	}
--	rzs->table[0].page = page;
--	rzs_set_flag(rzs, 0, RZS_UNCOMPRESSED);
--
--	swap_header = kmap(page);
--	setup_swap_header(rzs, swap_header);
--	kunmap(page);
--
- 	set_capacity(rzs->disk, rzs->disksize >> SECTOR_SHIFT);
- 
- 	/* ramzswap devices sort of resembles non-rotational disks */
-@@ -689,11 +653,9 @@ void ramzswap_slot_free_notify(struct block_device *bdev, unsigned long index)
- 	rzs = bdev->bd_disk->private_data;
- 	ramzswap_free_page(rzs, index);
- 	rzs_stat64_inc(rzs, &rzs->stats.notify_free);
--
--	return;
- }
- 
--static struct block_device_operations ramzswap_devops = {
-+static const struct block_device_operations ramzswap_devops = {
- 	.ioctl = ramzswap_ioctl,
- 	.swap_slot_free_notify = ramzswap_slot_free_notify,
- 	.owner = THIS_MODULE
-@@ -737,8 +699,14 @@ static int create_device(struct ramzswap *rzs, int device_id)
- 	/* Actual capacity set using RZSIO_SET_DISKSIZE_KB ioctl */
- 	set_capacity(rzs->disk, 0);
- 
-+	/*
-+	 * To ensure that we always get PAGE_SIZE aligned
-+	 * and n*PAGE_SIZED sized I/O requests.
-+	 */
- 	blk_queue_physical_block_size(rzs->disk->queue, PAGE_SIZE);
- 	blk_queue_logical_block_size(rzs->disk->queue, PAGE_SIZE);
-+	blk_queue_io_min(rzs->disk->queue, PAGE_SIZE);
-+	blk_queue_io_opt(rzs->disk->queue, PAGE_SIZE);
- 
- 	add_disk(rzs->disk);
- 
-diff --git a/drivers/staging/ramzswap/ramzswap_drv.h b/drivers/staging/ramzswap/ramzswap_drv.h
-index 63c3042..ad91726 100644
+ /* Globals */
+ static int ramzswap_major;
+diff --git a/drivers/staging/ramzswap/ramzswap_drv.h b/drivers/staging/zram/zram_drv.h
+similarity index 99%
+rename from drivers/staging/ramzswap/ramzswap_drv.h
+rename to drivers/staging/zram/zram_drv.h
+index ad91726..4d2e48a 100644
 --- a/drivers/staging/ramzswap/ramzswap_drv.h
-+++ b/drivers/staging/ramzswap/ramzswap_drv.h
-@@ -112,7 +112,8 @@ struct ramzswap {
- 	void *compress_buffer;
- 	struct table *table;
- 	spinlock_t stat64_lock;	/* protect 64-bit stats */
--	struct mutex lock;
-+	struct mutex lock;	/* protect compression buffers against
-+				 * concurrent writes */
- 	struct request_queue *queue;
- 	struct gendisk *disk;
- 	int init_done;
++++ b/drivers/staging/zram/zram_drv.h
+@@ -18,7 +18,7 @@
+ #include <linux/spinlock.h>
+ #include <linux/mutex.h>
+ 
+-#include "ramzswap_ioctl.h"
++#include "zram_ioctl.h"
+ #include "xvmalloc.h"
+ 
+ /*
+diff --git a/drivers/staging/ramzswap/ramzswap_ioctl.h b/drivers/staging/zram/zram_ioctl.h
+similarity index 100%
+rename from drivers/staging/ramzswap/ramzswap_ioctl.h
+rename to drivers/staging/zram/zram_ioctl.h
 -- 
 1.7.0.1
 
