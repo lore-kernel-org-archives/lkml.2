@@ -1,46 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757148Ab0FAQO1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Jun 2010 12:14:27 -0400
-Received: from mail.vyatta.com ([76.74.103.46]:35923 "EHLO mail.vyatta.com"
+	id S1756093Ab0FAQRb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Jun 2010 12:17:31 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:6153 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932122Ab0FAQOR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Jun 2010 12:14:17 -0400
-Date: Tue, 1 Jun 2010 09:11:44 -0700
-From: Stephen Hemminger <shemminger@vyatta.com>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: Phillip Lougher <phillip@lougher.demon.co.uk>,
-       Linux Kernel Development <linux-kernel@vger.kernel.org>
-Subject: [PATCH 1/2] squashfs: xattr_handler don't inline
-Message-ID: <20100601091144.1ff3e677@nehalam>
-In-Reply-To: <AANLkTilWjRvjl5M_4lenw3aMI57eDYjOV96k3KmxrNwB@mail.gmail.com>
-References: <4BFC7269.3070309@lougher.demon.co.uk>
-	<AANLkTilWjRvjl5M_4lenw3aMI57eDYjOV96k3KmxrNwB@mail.gmail.com>
-Organization: Vyatta
-X-Mailer: Claws Mail 3.7.5 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1755601Ab0FAQRa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Jun 2010 12:17:30 -0400
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+Subject: [PATCH] AFS: Fix possible null pointer dereference in
+	afs_alloc_server()
+To: torvalds@osdl.org, akpm@linux-foundation.org
+Cc: linux-afs@lists.infradead.org, linux-kernel@vger.kernel.org,
+       Denis Kirjanov <dkirjanov@kernel.org>,
+       David Howells <dhowells@redhat.com>
+Date: Tue, 01 Jun 2010 17:15:39 +0100
+Message-ID: <20100601161538.2174.57858.stgit@warthog.procyon.org.uk>
+User-Agent: StGIT/0.14.3
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Don't need to explicitly inline this function, it causes a sparse
-warning; and GCC will inline it already.
+From: Denis Kirjanov <dkirjanov@hera.kernel.org>
 
-Signed-off-by: Stephen Hemminger <shemminger@vyatta.com>
+Fix a possible null pointer dereference in afs_alloc_server(): the server
+pointer is NULL if there was an allocation failure, and under such a
+condition, we can't dereference it in the _leave() statement.
 
+Signed-off-by: Denis Kirjanov <dkirjanov@kernel.org>
+Signed-off-by: David Howells <dhowells@redhat.com>
 ---
-Patch against 2.6.35-rc1
 
---- a/fs/squashfs/xattr.c	2010-06-01 08:38:44.659739327 -0700
-+++ b/fs/squashfs/xattr.c	2010-06-01 08:39:29.731326492 -0700
-@@ -295,7 +295,7 @@ static const struct xattr_handler squash
- 	.get	= squashfs_security_get
- };
+ fs/afs/server.c |    5 +++--
+ 1 files changed, 3 insertions(+), 2 deletions(-)
+
+diff --git a/fs/afs/server.c b/fs/afs/server.c
+index f490995..9fdc7fe 100644
+--- a/fs/afs/server.c
++++ b/fs/afs/server.c
+@@ -91,9 +91,10 @@ static struct afs_server *afs_alloc_server(struct afs_cell *cell,
  
--static inline const struct xattr_handler *squashfs_xattr_handler(int type)
-+static const struct xattr_handler *squashfs_xattr_handler(int type)
- {
- 	if (type & ~(SQUASHFS_XATTR_PREFIX_MASK | SQUASHFS_XATTR_VALUE_OOL))
- 		/* ignore unrecognised type */
+ 		memcpy(&server->addr, addr, sizeof(struct in_addr));
+ 		server->addr.s_addr = addr->s_addr;
++		_leave(" = %p{%d}", server, atomic_read(&server->usage));
++	} else {
++		_leave(" = NULL [nomem]");
+ 	}
+-
+-	_leave(" = %p{%d}", server, atomic_read(&server->usage));
+ 	return server;
+ }
+ 
+
