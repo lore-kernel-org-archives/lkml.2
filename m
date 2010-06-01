@@ -1,81 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757110Ab0FARN6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Jun 2010 13:13:58 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:38463 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752882Ab0FARN4 (ORCPT
+	id S1753748Ab0FARTD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Jun 2010 13:19:03 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:37180 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750837Ab0FARTA convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Jun 2010 13:13:56 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=googlemail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=ruoOlATdloIK89yOQ7HyBEtpTXzUyIb3nXmrnxC1Ao+yDMSNbAK5x1EMKXgLYkJ5fT
-         HLmb0XUJj3uciX0E5GpYd8aREhANwMpJvJhP74NNq0P0EDcz48msjEa9SiGBWIfgVhWP
-         XOGofChGzWp5/avWLjR13JwTeEkClnoAVE2xE=
-Date: Tue, 1 Jun 2010 19:17:10 +0200
-From: Richard Zidlicky <rz@linux-m68k.org>
-To: Jiri Slaby <jirislaby@gmail.com>
-Cc: linux-kernel@vger.kernel.org, linux-media@vger.kernel.org
-Subject: Re: schedule inside spin_lock_irqsave?
-Message-ID: <20100601171710.GA5176@linux-m68k.org>
-References: <20100530145240.GA21559@linux-m68k.org> <4C028336.8030704@gmail.com> <4C0284FF.4080707@gmail.com> <20100530145240.GA21559@linux-m68k.org> <4C028336.8030704@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4C0284FF.4080707@gmail.com> <4C028336.8030704@gmail.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	Tue, 1 Jun 2010 13:19:00 -0400
+Subject: Re: [PATCH] rbtree: undo augmented damage -v2
+From: Peter Zijlstra <peterz@infradead.org>
+To: Venkatesh Pallipadi <venki@google.com>
+Cc: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+       suresh.b.siddha@intel.com, tglx@linutronix.de,
+       linux-tip-commits@vger.kernel.org,
+       Fabio Checconi <fabio@gandalf.sssup.it>
+In-Reply-To: <AANLkTimZkyRwP5k290rUr-DUMhsynl9fzBkS68x-57KM@mail.gmail.com>
+References: <20100210232343.GA11465@linux-os.sc.intel.com>
+	 <tip-17d9ddc72fb8bba0d4f67868c9c612e472a594a9@git.kernel.org>
+	 <1275136178.27810.13539.camel@twins> <1275139902.27810.13737.camel@twins>
+	 <AANLkTimZkyRwP5k290rUr-DUMhsynl9fzBkS68x-57KM@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Tue, 01 Jun 2010 19:19:08 +0200
+Message-ID: <1275412748.27810.27883.camel@twins>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, May 30, 2010 at 05:24:38PM +0200, Jiri Slaby wrote:
+On Tue, 2010-06-01 at 10:00 -0700, Venkatesh Pallipadi wrote:
+> I am not seeing how this can cover all the callbacks we will need to
+> maintain the augmented tree property. May be I am missing something.
 
-Hi,
+Yes, indeed, how about the below delta, which my eevdf code did do but I
+overlooked on the conversion to the PAT code.
 
-> > came across following snippet of code (2.6.34:drivers/media/dvb/siano/smscoreapi.c) and 
+That removes the break as you said, but also adds code to update the
+child nodes when walking up the path.
 
-...
-...
-...
+So in your rotation case:
 
-> This should be
-> wait_event(&coredev->buffer_mng_waitq, cb = get_entry());
-> with get_entry like:
-> struct smscore_buffer_t *get_entry(void)
-> {
->   struct smscore_buffer_t *cb = NULL;
->   spin_lock_irqsave(&coredev->bufferslock, flags);
->   if (!list_empty(&coredev->buffers)) {
->     cb = (struct smscore_buffer_t *) coredev->buffers.next;
->     list_del(&cb->entry);
->   }
->   spin_unlock_irqrestore(&coredev->bufferslock, flags);
->   return cb;
-> }
+    G             P
+   / \    -->    / \
+  P   U         N   G
+ /        <--        \
+N                     U
 
-...
-...
-...
+Say we take the right rotation, then the traversal up from N to P will
+find that since N was the left child of P and it has a right child (G)
+it will also update G.
 
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+---
+ arch/x86/mm/pat_rbtree.c |   23 ++++++++++++-----------
+ 1 files changed, 12 insertions(+), 11 deletions(-)
 
-> 
-> Looking at the smscore_buffer_t definition, this is really ugly since it
-> relies on entry being the first in the structure. It should be
-> list_first_entry(&coredev->buffers, ...) instead, cast-less.
-> 
-> >     list_del(&cb->entry);
-> >   }
-> >   spin_unlock_irqrestore(&coredev->bufferslock, flags);
-> >   return cb;
-> > }
+diff --git a/arch/x86/mm/pat_rbtree.c b/arch/x86/mm/pat_rbtree.c
+index f537087..ca19aae 100644
+--- a/arch/x86/mm/pat_rbtree.c
++++ b/arch/x86/mm/pat_rbtree.c
+@@ -81,20 +81,21 @@ static void update_node_max_end(struct rb_node *node)
+ /* Update 'subtree_max_end' for a node and all its ancestors */
+ static void update_path_max_end(struct rb_node *node)
+ {
+-	u64 old_max_end, new_max_end;
++	struct rb_node *parent;
+ 
+-	while (node) {
+-		struct memtype *data = container_of(node, struct memtype, rb);
+-
+-		old_max_end = data->subtree_max_end;
+-		update_node_max_end(node);
+-		new_max_end = data->subtree_max_end;
++up:
++	update_node_max_end(node);
++	parent = rb_parent(node);
++	if (!parent)
++		return;
+ 
+-		if (new_max_end == old_max_end)
+-			break;
++	if (node == parent->rb_left && parent->rb_right)
++		update_node_max_end(parent->rb_right);
++	else if (parent->rb_left)
++		update_node_max_end(parent->rb_left);
+ 
+-		node = rb_parent(node);
+-	}
++	node = parent;
++	goto up;
+ }
+ 
+ /* Find the first (lowest start addr) overlapping range from rb tree */
 
-thanks for the suggestions, is it on anyones TODO list or should I cook up my own patch? 
-Would take a few more days till I can get at it.
-
-BTW does anyone have knowledge how to enable IR receiver code for the smsxxx devices? 
-Looks like its just the matter of setting sms_board_gpio_cfg.ir to the "right" value
-- which value?
-
-Richard
