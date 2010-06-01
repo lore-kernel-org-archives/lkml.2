@@ -1,92 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755607Ab0FAJFq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Jun 2010 05:05:46 -0400
-Received: from casper.infradead.org ([85.118.1.10]:60334 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754643Ab0FAJFo convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Jun 2010 05:05:44 -0400
-Subject: Re: [rfc] forked kernel task and mm structures imbalanced on NUMA
-From: Peter Zijlstra <peterz@infradead.org>
-To: Nick Piggin <npiggin@suse.de>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-       Ingo Molnar <mingo@redhat.com>, linux-mm@kvack.org,
-       linux-kernel@vger.kernel.org,
-       Lee Schermerhorn <lee.schermerhorn@hp.com>
-In-Reply-To: <20100601084157.GS9453@laptop>
-References: <20100601073343.GQ9453@laptop>
-	 <1275380202.27810.26214.camel@twins>  <20100601084157.GS9453@laptop>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Tue, 01 Jun 2010 11:05:52 +0200
-Message-ID: <1275383152.27810.26387.camel@twins>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	id S1753979Ab0FAJNe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Jun 2010 05:13:34 -0400
+Received: from hera.kernel.org ([140.211.167.34]:48126 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752096Ab0FAJNc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Jun 2010 05:13:32 -0400
+Date: Tue, 1 Jun 2010 09:13:00 GMT
+From: tip-bot for Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
+       rostedt@goodmis.org, a.p.zijlstra@chello.nl, tglx@linutronix.de,
+       mingo@elte.hu
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+       a.p.zijlstra@chello.nl, rostedt@goodmis.org, tglx@linutronix.de,
+       mingo@elte.hu
+In-Reply-To: <1275322715.27810.23323.camel@twins>
+References: <1275322715.27810.23323.camel@twins>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:sched/urgent] sched, trace: Fix sched_switch() prev_state argument
+Message-ID: <tip-02f726949f2be0967aa4871dd4e47d3967779b26@git.kernel.org>
+Git-Commit-ID: 02f726949f2be0967aa4871dd4e47d3967779b26
+X-Mailer: tip-git-log-daemon
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Tue, 01 Jun 2010 09:13:01 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-06-01 at 18:41 +1000, Nick Piggin wrote:
-> > So I think it would make sense to rework the fork balancing muck to be
-> > called only once and stick with its decision.
-> 
-> Just need to close that race somehow. AFAIKS we can't use TASK_WAKING
-> because that must not be preempted?
+Commit-ID:  02f726949f2be0967aa4871dd4e47d3967779b26
+Gitweb:     http://git.kernel.org/tip/02f726949f2be0967aa4871dd4e47d3967779b26
+Author:     Peter Zijlstra <a.p.zijlstra@chello.nl>
+AuthorDate: Mon, 31 May 2010 18:13:25 +0200
+Committer:  Ingo Molnar <mingo@elte.hu>
+CommitDate: Tue, 1 Jun 2010 09:27:17 +0200
 
-Right its basically a bit-spinlock and since it interacts with the
-rq->lock it needs to have IRQs disabled while we have it set -- which
-isn't a problem for the wakeup path, but it would be for the whole fork
-path.
+sched, trace: Fix sched_switch() prev_state argument
 
-> > One thing that would make the whole fork path much easier is fully
-> > ripping out that child_runs_first mess for CONFIG_SMP, I think its been
-> > disabled by default for long enough, and its always been broken in the
-> > face of fork balancing anyway.
-> 
-> Interesting problem. vfork is nice for fork+exec, but it's a bit
-> restrictive.
+For CONFIG_PREEMPT=y kernels the sched_switch(.prev_state) argument isn't
+useful because we can get preempted with current->state != TASK_RUNNING
+without actually getting removed from the runqueue.
 
-Right, and all that is a separate issue, its broken now, its still
-broken with child_runs_first ripped out.
+Cure this by treating all preempted tasks as runnable from the tracer's
+point of view.
+
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cautiously-acked-by: Steven Rostedt <rostedt@goodmis.org>
+LKML-Reference: <1275322715.27810.23323.camel@twins>
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
+---
+ include/trace/events/sched.h |   19 ++++++++++++++++++-
+ 1 files changed, 18 insertions(+), 1 deletions(-)
+
+diff --git a/include/trace/events/sched.h b/include/trace/events/sched.h
+index 4f733ec..b9e1dd6 100644
+--- a/include/trace/events/sched.h
++++ b/include/trace/events/sched.h
+@@ -115,6 +115,23 @@ DEFINE_EVENT(sched_wakeup_template, sched_wakeup_new,
+ 	     TP_PROTO(struct task_struct *p, int success),
+ 	     TP_ARGS(p, success));
  
-> > So basically we have to move fork balancing back to sched_fork(), I'd
-> > have to again look at wth happens to ->cpus_allowed, but I guess it
-> > should be fixable, and I don't think we should care overly much about
-> > cpu-hotplug.
-> 
-> No more than simply getting it right. Simply calling into the balancer
-> again seems to be the simplest way to do it.
-
-Right.
-
-> > A specific code comment:
-> > 
-> > > @@ -2550,14 +2561,16 @@ void wake_up_new_task(struct task_struct
-> > >          * We set TASK_WAKING so that select_task_rq() can drop rq->lock
-> > >          * without people poking at ->cpus_allowed.
-> > >          */
-> > > -       cpu = select_task_rq(rq, p, SD_BALANCE_FORK, 0);
-> > > -       set_task_cpu(p, cpu);
-> > > -
-> > > -       p->state = TASK_RUNNING;
-> > > -       task_rq_unlock(rq, &flags);
-> > > +       if (!cpumask_test_cpu(cpu, &p->cpus_allowed)) {
-> > > +               p->state = TASK_WAKING;
-> > > +               cpu = select_task_rq(rq, p, SD_BALANCE_FORK, 0);
-> > > +               set_task_cpu(p, cpu);
-> > > +               p->state = TASK_RUNNING;
-> > > +               task_rq_unlock(rq, &flags);
-> > > +               rq = task_rq_lock(p, &flags);
-> > > +       }
-> > >  #endif
-> > 
-> > That's iffy because p->cpus_allowed isn't stable when we're not holding
-> > the task's current rq->lock or p->state is not TASK_WAKING.
-> > 
-> 
-> Oop, yeah missed that. Half hearted attempt to avoid more rq locks. 
-
-Yeah, something well worth the effort. At one point I considered making
-p->cpus_allowed an RCU managed cpumask, but I never sat down and ran
-through all the interesting races that that would bring.
++#ifdef CREATE_TRACE_POINTS
++static inline long __trace_sched_switch_state(struct task_struct *p)
++{
++	long state = p->state;
++
++#ifdef CONFIG_PREEMPT
++	/*
++	 * For all intents and purposes a preempted task is a running task.
++	 */
++	if (task_thread_info(p)->preempt_count & PREEMPT_ACTIVE)
++		state = TASK_RUNNING;
++#endif
++
++	return state;
++}
++#endif
++
+ /*
+  * Tracepoint for task switches, performed by the scheduler:
+  */
+@@ -139,7 +156,7 @@ TRACE_EVENT(sched_switch,
+ 		memcpy(__entry->next_comm, next->comm, TASK_COMM_LEN);
+ 		__entry->prev_pid	= prev->pid;
+ 		__entry->prev_prio	= prev->prio;
+-		__entry->prev_state	= prev->state;
++		__entry->prev_state	= __trace_sched_switch_state(prev);
+ 		memcpy(__entry->prev_comm, prev->comm, TASK_COMM_LEN);
+ 		__entry->next_pid	= next->pid;
+ 		__entry->next_prio	= next->prio;
