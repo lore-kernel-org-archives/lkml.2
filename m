@@ -1,49 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756348Ab0FATVN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Jun 2010 15:21:13 -0400
-Received: from cavan.codon.org.uk ([93.93.128.6]:35141 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753575Ab0FATVM (ORCPT
+	id S1756167Ab0FATYd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Jun 2010 15:24:33 -0400
+Received: from e32.co.us.ibm.com ([32.97.110.150]:49487 "EHLO
+	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752985Ab0FATYc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Jun 2010 15:21:12 -0400
-Date: Tue, 1 Jun 2010 20:21:01 +0100
-From: Matthew Garrett <mjg59@srcf.ucam.org>
-To: "Justin P. Mattock" <justinmattock@gmail.com>
-Cc: x86@kernel.org, tglx@linutronix.de, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH]X86:reboot.c Add some dmi entries to
-	pci_reboot_dmi_table.
-Message-ID: <20100601192101.GA15086@srcf.ucam.org>
-References: <1275114371-5329-1-git-send-email-justinmattock@gmail.com> <20100531170745.GA21225@srcf.ucam.org> <4C03F5EF.8080302@gmail.com> <20100601190050.GA14667@srcf.ucam.org> <4C055BFF.8090800@gmail.com>
+	Tue, 1 Jun 2010 15:24:32 -0400
+Date: Tue, 1 Jun 2010 12:32:30 -0700
+From: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
+To: Albert Cahalan <acahalan@gmail.com>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>, randy.dunlap@oracle.com,
+       linuxppc-dev@lists.ozlabs.org
+Subject: Re: [PATCH v21 011/100] eclone (11/11): Document sys_eclone
+Message-ID: <20100601193230.GA17579@us.ibm.com>
+References: <AANLkTimDfbJkAuoK1-asvk8Ub9C9QBkK5RkzLR3ilJUY@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4C055BFF.8090800@gmail.com>
+In-Reply-To: <AANLkTimDfbJkAuoK1-asvk8Ub9C9QBkK5RkzLR3ilJUY@mail.gmail.com>
+X-Operating-System: Linux 2.0.32 on an i486
 User-Agent: Mutt/1.5.18 (2008-05-17)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 01, 2010 at 12:14:07PM -0700, Justin P. Mattock wrote:
+Albert Cahalan [acahalan@gmail.com] wrote:
+| Sukadev Bhattiprolu writes:
+| 
+| > Randy Dunlap [randy.dunlap at oracle.com] wrote:
+| >>> base of the region allocated for stack. These architectures
+| >>> must pass in the size of the stack-region in ->child_stack_size.
+| >>
+| >>                               stack region
+| >>
+| >> Seems unfortunate that different architectures use
+| >> the fields differently.
+| >
+| > Yes and no. The field still has a single purpose, just that
+| > some architectures may not need it. We enforce that if unused
+| > on an architecture, the field must be 0. It looked like
+| > the easiest way to keep the API common across architectures.
+| 
+| Yuck. You're forcing userspace to have #ifdef messes or,
+| more likely, just not work on all architectures.
 
-> o.k. applied.. unfortunately
-> I get init telling me it's rebooting,
-> then, nothing but a black screen.
+There is going to be #ifdef code in the library interface to eclone().
+But applications should not need any #ifdefs. Please see the test cases
+for eclone in
 
-Could you send me the output of acpidump on this machine? Also, try 
-building the following app and running it as root:
+	git://git.sr71.net/~hallyn/cr_tests.git
 
-#include <sys/io.h>
+There is no #ifdef and the tests work on x86, x86_64, ppc, s390.
 
-int main() {
-	outb(6, 0xcf9);
-	return 0;
-}
+These use the libeclone.a built from following git-tree, which has the
+arch-dependent user space code.
 
-and see if the machine reboots.
+	git://git.ncl.cs.columbia.edu/pub/git/user-cr.git
 
--- 
-Matthew Garrett | mjg59@srcf.ucam.org
+Is that the #ifdef mess you are talking about ? I don't see that as a
+consequence of the API. So maybe you can elaborate.
+
+| There is no reason to have field usage vary by architecture. The
+
+The field usage does not vary by architecture. Some architectures
+don't use some fields and those fields must be 0. A simple 
+
+	memset(&clone_args, 0, sizeof(clone_args))
+
+before initializing fields is all that is required.
+
+| original clone syscall was not designed with ia64 and hppa
+| in mind, and has been causing trouble ever since. Let's not
+| perpetuate the problem.
+
+and lot of folks contributed to this new API to try and make sure
+it is portable and meets the forseeable requirements.
+
+| 
+| Given code like this:   stack_base = malloc(stack_size);
+| stack_base and stack_size are what the kernel needs.
+| 
+| I suspect that you chose the defective method for some reason
+| related to restarting processes that were created with the
+| older system calls. I can't say most of us even care, but in
+| that broken-already case your process restarter can make up
+| some numbers that will work. (for i386, the base could be the
+| lowest address in the vma in which %esp lies, or even address 0)
+
+I don't understand how "making up some numbers (pids) that will work"
+is more portable/cleaner than the proposed eclone(). 
+
+Sukadev
