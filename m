@@ -1,55 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756862Ab0FAP1O (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Jun 2010 11:27:14 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:53311 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753920Ab0FAP1M (ORCPT
+	id S1756842Ab0FAPfp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Jun 2010 11:35:45 -0400
+Received: from g6t0184.atlanta.hp.com ([15.193.32.61]:38502 "EHLO
+	g6t0184.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755580Ab0FAPfn convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Jun 2010 11:27:12 -0400
-Date: Tue, 1 Jun 2010 08:22:25 -0700 (PDT)
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Jens Axboe <axboe@kernel.dk>
-cc: mtk.manpages@gmail.com, OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Miklos Szeredi <miklos@szeredi.hu>, linux-fsdevel@vger.kernel.org,
-       linux-kernel@vger.kernel.org
-Subject: Re: [patch] pipe: add support for shrinking and growing pipes
-In-Reply-To: <20100601074805.GM1660@kernel.dk>
-Message-ID: <alpine.LFD.2.00.1006010813440.3637@i5.linux-foundation.org>
-References: <AANLkTimKFHQPi9kKhYYjRhMt0s5CDsBXmESQaH493hpR@mail.gmail.com> <20100523174706.GP23411@kernel.dk> <87632e846m.fsf@devron.myhome.or.jp> <AANLkTin42kucqLbErGA4GlGPZEIPQV2DFkiHkEVSYiI9@mail.gmail.com> <20100524070552.GR23411@kernel.dk>
- <AANLkTikogQtGpO9c94A7YSmP8zdyM8dZBrwJf1nwlR4j@mail.gmail.com> <20100524173551.GU23411@kernel.dk> <AANLkTimDJjHWKISxnLax3r200Db8OQp_lMKOx14ONgkS@mail.gmail.com> <20100524175649.GV23411@kernel.dk> <AANLkTinHkWCdrOGZHbVGN4ooen9--z5rl5UL65wXcFEy@mail.gmail.com>
- <20100601074805.GM1660@kernel.dk>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	Tue, 1 Jun 2010 11:35:43 -0400
+X-Greylist: delayed 483 seconds by postgrey-1.27 at vger.kernel.org; Tue, 01 Jun 2010 11:35:43 EDT
+From: "Miller, Mike (OS Dev)" <Mike.Miller@hp.com>
+To: Joe Perches <joe@perches.com>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+CC: ISS StorageDev <iss_storagedev@hp.com>
+Date: Tue, 1 Jun 2010 15:26:25 +0000
+Subject: RE: [PATCH 04/21] drivers/block/cciss_scsi.c: Remove unnecessary
+ kmalloc casts
+Thread-Topic: [PATCH 04/21] drivers/block/cciss_scsi.c: Remove unnecessary
+ kmalloc casts
+Thread-Index: AcsBOc6H7I4yI0pQQ0+N9vQ4O91YhwAZOZBA
+Message-ID: <0F5B06BAB751E047AB5C87D1F77A77887D012EFC8F@GVW0547EXC.americas.hpqcorp.net>
+References: <cover.1275360951.git.joe@perches.com>
+ <839dcab1f4fae391567c600dd515ede10232cfd4.1275360951.git.joe@perches.com>
+In-Reply-To: <839dcab1f4fae391567c600dd515ede10232cfd4.1275360951.git.joe@perches.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+ 
 
-
-On Tue, 1 Jun 2010, Jens Axboe wrote:
+> -----Original Message-----
+> From: Joe Perches [mailto:joe@perches.com] 
+> Sent: Monday, May 31, 2010 10:23 PM
+> To: linux-kernel@vger.kernel.org
+> Cc: Miller, Mike (OS Dev); ISS StorageDev
+> Subject: [PATCH 04/21] drivers/block/cciss_scsi.c: Remove 
+> unnecessary kmalloc casts
 > 
-> > Also, the minuimum size of the buffer is 2 pages. Why is it not 1?
-> > (Notwithstanding Linus's assertion, a buffer size of 1 page did give
-> > us POSIX compliance in kernels before 2.6.10.)
+> Signed-off-by: Joe Perches <joe@perches.com>
+
+Acked-by: Mike Miller <mike.miller@hp.com>
+
+> ---
+>  drivers/block/cciss_scsi.c |    3 +--
+>  1 files changed, 1 insertions(+), 2 deletions(-)
 > 
-> I'll defer to Linus on that, I remember some emails on that part from
-> way back when. As far as I can tell, POSIX wants atomic writes of "less
-> than a page size", which would make more sense as "of a page size and
-> less". And since it should not be a page size from either side on a
-> uni-directional pipe, then 1 page seems enough for that guarantee at
-> least.
-
-Hmm. You guys may well be right that a single slot is sufficient. It still 
-gives us PIPE_BUF worth of data for writing atomically. I had this memory 
-that we needed two because of the merging logic (we have that special case 
-for re-using the previous page, so that we don't use waste of memory for 
-lots of small writes), but looking at the code there is no reason at all 
-for me to hav thought so.
-
-So I don't know why I thought we needed the extra slot, and a single slot 
-(if anybody really wants slow writes) looks to be fine.
-
-		Linus
+> diff --git a/drivers/block/cciss_scsi.c 
+> b/drivers/block/cciss_scsi.c index e1d0e2c..ffd8470 100644
+> --- a/drivers/block/cciss_scsi.c
+> +++ b/drivers/block/cciss_scsi.c
+> @@ -702,8 +702,7 @@ cciss_scsi_setup(int cntl_num)
+>  	struct cciss_scsi_adapter_data_t * shba;
+>  
+>  	ccissscsi[cntl_num].ndevices = 0;
+> -	shba = (struct cciss_scsi_adapter_data_t *)
+> -		kmalloc(sizeof(*shba), GFP_KERNEL);	
+> +	shba = kmalloc(sizeof(*shba), GFP_KERNEL);
+>  	if (shba == NULL)
+>  		return;
+>  	shba->scsi_host = NULL;
+> --
+> 1.7.0.3.311.g6a6955
+> 
+> 
