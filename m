@@ -1,66 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756554Ab0FANko (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Jun 2010 09:40:44 -0400
-Received: from cantor.suse.de ([195.135.220.2]:55446 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754623Ab0FANkm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Jun 2010 09:40:42 -0400
-Subject: Re: Wrong DIF guard tag on ext2 write
-From: James Bottomley <James.Bottomley@suse.de>
-To: Chris Mason <chris.mason@oracle.com>
-Cc: Christof Schmitt <christof.schmitt@de.ibm.com>,
-       Boaz Harrosh <bharrosh@panasas.com>,
-       "Martin K. Petersen" <martin.petersen@oracle.com>,
-       linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
-       linux-fsdevel@vger.kernel.org
-In-Reply-To: <20100601133341.GK8980@think>
-References: <20100531112817.GA16260@schmichrtp.mainz.de.ibm.com>
-	 <yq1iq64kv9f.fsf@sermon.lab.mkp.net>
-	 <1275318102.2823.47.camel@mulgrave.site> <4C03D5FD.3000202@panasas.com>
-	 <20100601103041.GA15922@schmichrtp.mainz.de.ibm.com>
-	 <1275398876.21962.6.camel@mulgrave.site>  <20100601133341.GK8980@think>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 01 Jun 2010 08:40:37 -0500
-Message-ID: <1275399637.21962.11.camel@mulgrave.site>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.2 
-Content-Transfer-Encoding: 7bit
+	id S1756563Ab0FANpU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Jun 2010 09:45:20 -0400
+Received: from charlotte.tuxdriver.com ([70.61.120.58]:57147 "EHLO
+	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756374Ab0FANpQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Jun 2010 09:45:16 -0400
+Date: Tue, 1 Jun 2010 09:34:02 -0400
+From: "John W. Linville" <linville@tuxdriver.com>
+To: Matthew Wilcox <matthew@wil.cx>
+Cc: Maciej Rutecki <maciej.rutecki@gmail.com>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       linux-pci@vger.kernel.org, linux-usb@vger.kernel.org,
+       "Rafael J. Wysocki" <rjw@sisk.pl>, netdev@vger.kernel.org,
+       Michael Buesch <mb@bu3sch.de>
+Subject: Re: [Regression] [2.6.35-rc1] ssb_is_sprom_available
+Message-ID: <20100601133402.GB26701@tuxdriver.com>
+References: <201005312155.20602.maciej.rutecki@gmail.com>
+ <20100531205300.GB32708@parisc-linux.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100531205300.GB32708@parisc-linux.org>
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-06-01 at 09:33 -0400, Chris Mason wrote:
-> On Tue, Jun 01, 2010 at 01:27:56PM +0000, James Bottomley wrote:
-> > On Tue, 2010-06-01 at 12:30 +0200, Christof Schmitt wrote:
-> > > What is the best strategy to continue with the invalid guard tags on
-> > > write requests? Should this be fixed in the filesystems?
+On Mon, May 31, 2010 at 02:53:00PM -0600, Matthew Wilcox wrote:
+> On Mon, May 31, 2010 at 09:55:20PM +0200, Maciej Rutecki wrote:
+> > Last known good: 2.6.34
+> > Failing kernel: 2.6.35-rc1
 > > 
-> > For write requests, as long as the page dirty bit is still set, it's
-> > safe to drop the request, since it's already going to be repeated.  What
-> > we probably want is an error code we can return that the layer that sees
-> > both the request and the page flags can make the call.
+> > subsystem: PCI, USB(?)
+> > 
+> > Kernel dies during booting on message "ssb_is_sprom_available", see picture:
+> > http://www.unixy.pl/maciek/download/kernel/2.6.35-rc1/gumis/DSC_0011.JPG
 > 
-> I'm afraid this isn't entirely true.  The FS tends to do this:
-> 
-> change the page
-> <---------> truck sized race right here where the page is clean
-> mark the page dirty
+> Um, looks like it's something to do with the Sonics Silicon Backplane,
+> not PCI, nor USB.
 
-Would it be too much work in the fs to mark the page dirty before you
-begin altering it (and again after you finish, just in case some cleaner
-noticed and initiated a write)?  Or some other flag that indicates page
-under modification?  All the process controlling the writeout (which is
-pretty high up in the stack) needs to know is if we triggered the check
-error by altering the page while it was in flight.
+Fix is on its way...
 
-I agree that a block based retry would close all the holes ... it just
-doesn't look elegant to me that the fs will already be repeating the I/O
-if it changed the page and so will block.
+commit da1fdb02d9200ff28b6f3a380d21930335fe5429
+Author: Christoph Fritz <chf.fritz@googlemail.com>
+Date:   Fri May 28 10:45:59 2010 +0200
 
-James
+    ssb: fix NULL ptr deref when pcihost_wrapper is used
+    
+    Ethernet driver b44 does register ssb by it's pcihost_wrapper
+    and doesn't set ssb_chipcommon. A check on this value
+    introduced with commit d53cdbb94a52a920d5420ed64d986c3523a56743
+    and ea2db495f92ad2cf3301623e60cb95b4062bc484 triggers:
+    
+    BUG: unable to handle kernel NULL pointer dereference at 00000010
+    IP: [<c1266c36>] ssb_is_sprom_available+0x16/0x30
+    
+    Signed-off-by: Christoph Fritz <chf.fritz@googlemail.com>
+    Signed-off-by: John W. Linville <linville@tuxdriver.com>
 
-
-James
-
-
+-- 
+John W. Linville		Someday the world will need a hero, and you
+linville@tuxdriver.com			might be all we have.  Be ready.
