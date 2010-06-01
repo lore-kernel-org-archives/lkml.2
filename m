@@ -1,69 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753982Ab0FATzh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Jun 2010 15:55:37 -0400
-Received: from cantor.suse.de ([195.135.220.2]:39474 "EHLO mx1.suse.de"
+	id S1754643Ab0FAT5r (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Jun 2010 15:57:47 -0400
+Received: from fanny.its.uu.se ([130.238.4.241]:45350 "EHLO fanny.its.uu.se"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752416Ab0FATzg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Jun 2010 15:55:36 -0400
-Message-ID: <4C0565AC.8020205@suse.cz>
-Date: Tue, 01 Jun 2010 21:55:24 +0200
-From: Michal Marek <mmarek@suse.cz>
-User-Agent: Thunderbird 2.0.0.24 (X11/20100302)
+	id S1752173Ab0FAT5q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Jun 2010 15:57:46 -0400
 MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, linux-kbuild@vger.kernel.org,
-       a.beregalov@gmail.com, andi@firstfloor.org, dzickus@redhat.com,
-       fejes@joco.name, g.liakhovetski@gmx.de, gthelen@google.com,
-       hschauhan@nulltrace.org, hui.zhu@windriver.com, jan3sobi3ski@gmail.com,
-       jay@goldhive.com, jgunthorpe@obsidianresearch.com, jkacur@redhat.com,
-       joe@perches.com, kirr@mns.spb.ru, lizf@cn.fujitsu.com,
-       nir.tzachar@gmail.com, rabin@rab.in, rientjes@google.com,
-       roland@redhat.com, saalwaechter@gmail.com, shemminger@vyatta.com,
-       tabbott@ksplice.com, u.kleine-koenig@pengutronix.de, vbendeb@google.com,
-       vda.linux@googlemail.com, wuzhangjin@gmail.com, xt28@gmx.de
-Subject: Re: [GIT] kbuild changes for 2.6.35
-References: <20100527144459.GA14513@sepie.suse.cz> <alpine.LFD.2.00.1005300921000.4639@i5.linux-foundation.org> <20100531120223.GA11700@sepie.suse.cz> <alpine.LFD.2.00.1006010823080.3637@i5.linux-foundation.org>
-In-Reply-To: <alpine.LFD.2.00.1006010823080.3637@i5.linux-foundation.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
+Message-ID: <19461.26166.427857.612983@pilspetsen.it.uu.se>
+Date: Tue, 1 Jun 2010 21:57:42 +0200
+From: Mikael Pettersson <mikpe@it.uu.se>
+To: linux-kernel@vger.kernel.org
+Cc: "David S. Miller" <davem@davemloft.net>
+Subject: [2.6.35-rc1 regression] sysfs: cannot create duplicate filename ... XVR-600 related?
+X-Mailer: VM 7.17 under Emacs 20.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 1.6.2010 17:32, Linus Torvalds wrote:
-> No, the commits themselves are likely fine, although for the future it 
-> really would be good to make things like that more descriptive. I just 
-> want people to try to argue for _why_ I should do a pull, and _what_ I'm 
-> getting in their "please pull" thing.
-> 
-> It's not always necessary, and some people do it better than others. For 
-> an example of a really good pull request, look at the ones David Miller 
-> sends me for networking - they explain what's going on in the pull, so 
-> it's always easy to pull them because just the request makes me feel like 
-> David is really on top of things, and lets me have some 30'000 ft overview 
-> of what's going on.
+Booting 2.6.35-rc1 on a Sun Blade 2500 Red, I'm greeted with:
 
-OK, I'll try to do better job next time. I'm also going to use different
-branches for kbuild / kconfig / trivial stuff like .gitignore / etc from
-now on, so that you don't get a all-or-nothing pull request in the next
-merge window (something that Sam suggested).
+------------[ cut here ]------------
+WARNING: at fs/sysfs/dir.c:451 sysfs_add_one+0x74/0x90()
+sysfs: cannot create duplicate filename '/devices/root/f0079a58/pci0003:00/0003:00:02.0/slot'
+Modules linked in:
+Call Trace:
+ [0000000000458e20] warn_slowpath_fmt+0x2c/0x3c
+ [0000000000501dac] sysfs_add_one+0x74/0x90
+ [0000000000502cd4] sysfs_do_create_link+0xf0/0x184
+ [000000000055a62c] pci_create_sysfs_dev_files+0x304/0x428
+ [000000000074c6f8] pci_sysfs_init+0x20/0x6c
+ [0000000000426acc] do_one_initcall+0x44/0x164
+ [000000000073a32c] kernel_init+0x1a0/0x238
+ [000000000042aea4] kernel_thread+0x30/0x48
+ [0000000000640efc] rest_init+0x18/0x88
+---[ end trace 8093a3146373dac8 ]---
 
+(There are no interesting messages before or after this one.)
 
-> At the same time, in many cases I obviously pull _without_ any kind of 
-> real explanation - and that tends to be especially true with maintainers 
-> that I've worked with for a long time, or areas that are so specialized 
-> that they are almost self-explanatory (let's be honest: when a filesystem 
-> maintainer asks me to pull their special filesystem, I'm perfectly happy 
-> with the overview of "30 changesets to XFS", and there's no need for much 
-> explanation, although a rough overview of what's been going on is always 
-> good to see).
-> 
-> So the reason I ask for explanations for kbuild is that not only have we 
-> had different maintainers, it's an area that affects a lot of different 
-> things and has historically had issues with odd architectures or old 
-> binutils tools etc.
+The device at 003:00:02.0 is a Sun XVR-600 graphics card, driven by
+drivers/video/sunxvr500.c.  There was no such warning in 2.6.34 or
+earlier kernels.
 
-I see. Thanks a lot for pulling the changes now.
-
-Michal
+/Mikael
