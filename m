@@ -1,52 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754804Ab0FALZi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Jun 2010 07:25:38 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:38295 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753030Ab0FALZg (ORCPT
+	id S1755418Ab0FAL3F (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Jun 2010 07:29:05 -0400
+Received: from mail-ew0-f216.google.com ([209.85.219.216]:53167 "EHLO
+	mail-ew0-f216.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752915Ab0FAL3B convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Jun 2010 07:25:36 -0400
-Date: Tue, 1 Jun 2010 07:23:42 -0400
-From: Chris Mason <chris.mason@oracle.com>
-To: Jeff Garzik <jeff@garzik.org>
-Cc: Dave Airlie <airlied@gmail.com>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: SSD + sata_nv + btrfs oops
-Message-ID: <20100601112342.GC8980@think>
-Mail-Followup-To: Chris Mason <chris.mason@oracle.com>,
-	Jeff Garzik <jeff@garzik.org>, Dave Airlie <airlied@gmail.com>,
-	LKML <linux-kernel@vger.kernel.org>
-References: <AANLkTilqsIdlzZgUf7TMLHYKqHDZoVkcs42vcG8wXKEr@mail.gmail.com>
- <4C049C6A.8060605@garzik.org>
+	Tue, 1 Jun 2010 07:29:01 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=F+zpAx+8VrB2qMoVglH61TkEyaTkDLBREtDrHAsicVRqM6CmZMCMHVhpIIQ2gyqBCF
+         TaUDggrjl85A9kZXlkfB0h+3ZivK/Qespc+LV03QaAoIReYbqll1vOwozBRBw43FFcU2
+         bJEoEE52pg78TAmcXQ311/m+GJXc3bZcs40Co=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4C049C6A.8060605@garzik.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Auth-Type: Internal IP
-X-Source-IP: acsinet15.oracle.com [141.146.126.227]
-X-CT-RefId: str=0001.0A090206.4C04EE2B.01DA:SCFMA922111,ss=1,fgs=0
+In-Reply-To: <4C04ECA3.1080905@netservers.co.uk>
+References: <2d460de71003260850x7f90d04cy79ac853464108182@mail.gmail.com>
+	<20100326160226.0159ac3b@lxorguk.ukuu.org.uk>
+	<4BACE827.4070006@gmail.com>
+	<20100326170428.6c1ad66c@lxorguk.ukuu.org.uk>
+	<4BB31E00.8060204@netservers.co.uk>
+	<20100529021624.GA2538@brick.ozlabs.ibm.com>
+	<AANLkTil7fk_ikrSPiZnqcJSLGCrzcCrCwbeuUMY5Yu5v@mail.gmail.com>
+	<4C04ECA3.1080905@netservers.co.uk>
+Date: Tue, 1 Jun 2010 13:28:59 +0200
+Message-ID: <AANLkTinpsIs7qMSpQ78fWCTHh03iLBIwRlsU7sqJau08@mail.gmail.com>
+Subject: Re: [Patch] fix packet loss and massive ping spikes with PPP 
+	multi-link
+From: Richard Hartmann <richih.mailinglist@gmail.com>
+To: Ben McKeegan <ben@netservers.co.uk>
+Cc: Paul Mackerras <paulus@samba.org>, netdev@vger.kernel.org,
+       linux-ppp@vger.kernel.org, Alan Cox <alan@lxorguk.ukuu.org.uk>,
+       "Alexander E. Patrakov" <patrakov@gmail.com>,
+       linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 01, 2010 at 01:36:42AM -0400, Jeff Garzik wrote:
-> On 05/31/2010 11:04 PM, Dave Airlie wrote:
-> >Hi guys,
-> >
-> >I've been running an Intel SSD (the KS one) on my Dell XPS710 desktop
-> >machine, with btrfs on it.
-> >
-> >I'm not sure the btrfs oops isn't due to the disk/controller doing
-> >something bad (almost guaranteed).
-> 
-> The btrfs oops may be poor handling of an I/O error thrown by the
-> block error.
+On Tue, Jun 1, 2010 at 13:18, Ben McKeegan <ben@netservers.co.uk> wrote:
 
-Correct, we do pretty well when there is an alternate copy but we're
-still working on the eios when there is only one.
+> This isn't really a bug fix.  Its a behavioural change to work around poor
+> quality/mismatched underlying PPP channels.
 
-Dave, one the hardware side is sorted out, if you have trouble with the
-btrfs data let me know.
+Maybe not a bug in the Linux kernel itself, but certainly in the real world
+that exists around Linux. Similar to how a change to a device driver that
+is needed to work around broken hardware is a bug fix, imo.
 
--chris
+
+RIchard
