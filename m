@@ -1,81 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756220Ab0FAMwp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Jun 2010 08:52:45 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:38729 "EHLO
+	id S1756193Ab0FANFh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Jun 2010 09:05:37 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:42574 "EHLO
 	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755990Ab0FAMwn (ORCPT
+	with ESMTP id S1756045Ab0FANFf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Jun 2010 08:52:43 -0400
-Date: Tue, 1 Jun 2010 08:44:40 -0400
+	Tue, 1 Jun 2010 09:05:35 -0400
+Date: Tue, 1 Jun 2010 09:03:25 -0400
 From: Chris Mason <chris.mason@oracle.com>
-To: Pekka Enberg <penberg@cs.helsinki.fi>
-Cc: tytso@mit.edu, Alex Buell <alex.buell@munted.org.uk>,
-       Mailing Lists - Kernel Developers 
-	<linux-kernel@vger.kernel.org>,
-       Eric Paris <eparis@redhat.com>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       Arjan van de Ven <arjan@infradead.org>, Ingo Molnar <mingo@elte.hu>
-Subject: Re: Article in Phoronix about loss of performance in 2.6.35
- release candidates
-Message-ID: <20100601124440.GE8980@think>
+To: Christof Schmitt <christof.schmitt@de.ibm.com>
+Cc: Boaz Harrosh <bharrosh@panasas.com>,
+       James Bottomley <James.Bottomley@suse.de>,
+       "Martin K. Petersen" <martin.petersen@oracle.com>,
+       linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
+       linux-fsdevel@vger.kernel.org
+Subject: Re: Wrong DIF guard tag on ext2 write
+Message-ID: <20100601130325.GG8980@think>
 Mail-Followup-To: Chris Mason <chris.mason@oracle.com>,
-	Pekka Enberg <penberg@cs.helsinki.fi>, tytso@mit.edu,
-	Alex Buell <alex.buell@munted.org.uk>,
-	Mailing Lists - Kernel Developers <linux-kernel@vger.kernel.org>,
-	Eric Paris <eparis@redhat.com>,
-	Linus Torvalds <torvalds@linux-foundation.org>,
-	Arjan van de Ven <arjan@infradead.org>, Ingo Molnar <mingo@elte.hu>
-References: <1275347969.29006.5.camel@lithium.local.net>
- <20100601041028.GB4426@thunk.org>
- <AANLkTikRoff0zK-o8W4Wb_MveGibxlOG8mnrQMBtYZOY@mail.gmail.com>
+	Christof Schmitt <christof.schmitt@de.ibm.com>,
+	Boaz Harrosh <bharrosh@panasas.com>,
+	James Bottomley <James.Bottomley@suse.de>,
+	"Martin K. Petersen" <martin.petersen@oracle.com>,
+	linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
+	linux-fsdevel@vger.kernel.org
+References: <20100531112817.GA16260@schmichrtp.mainz.de.ibm.com>
+ <yq1iq64kv9f.fsf@sermon.lab.mkp.net>
+ <1275318102.2823.47.camel@mulgrave.site>
+ <4C03D5FD.3000202@panasas.com>
+ <20100601103041.GA15922@schmichrtp.mainz.de.ibm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <AANLkTikRoff0zK-o8W4Wb_MveGibxlOG8mnrQMBtYZOY@mail.gmail.com>
+In-Reply-To: <20100601103041.GA15922@schmichrtp.mainz.de.ibm.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 X-Auth-Type: Internal IP
-X-Source-IP: rcsinet13.oracle.com [148.87.113.125]
-X-CT-RefId: str=0001.0A090203.4C050102.0050:SCFMA4539811,ss=1,fgs=0
+X-Source-IP: acsinet15.oracle.com [141.146.126.227]
+X-CT-RefId: str=0001.0A090202.4C050594.0056:SCFMA922111,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 01, 2010 at 08:00:39AM +0300, Pekka Enberg wrote:
-> On Tue, Jun 1, 2010 at 7:10 AM,  <tytso@mit.edu> wrote:
-> > On Tue, Jun 01, 2010 at 12:19:29AM +0100, Alex Buell wrote:
-> >> http://www.phoronix.com/vr.php?view=14976
-> >>
-> >> Question: Why?
-> >
-> > One of the theories that has been advanced is that it's simply this
-> > problem:
-> >
-> >        http://lkml.org/lkml/2010/5/22/154
-> >
-> > If so, it points out how idiotic Phoronix is about not being able to
-> > notice udev pegging the CPU at 100% being someone bad for its
-> > benchmark runs.  :-)
-> >
-> > OTOH, this bug has been known for over a week, and it is sort sad that
-> > we haven't reverted this patch.  It looks like the conversation has
-> > died, but without a fix?
+On Tue, Jun 01, 2010 at 12:30:42PM +0200, Christof Schmitt wrote:
+> On Mon, May 31, 2010 at 06:30:05PM +0300, Boaz Harrosh wrote:
+> > On 05/31/2010 06:01 PM, James Bottomley wrote:
+> > > On Mon, 2010-05-31 at 10:20 -0400, Martin K. Petersen wrote:
+> > >>>>>>> "Christof" == Christof Schmitt <christof.schmitt@de.ibm.com> writes:
+> > >>
+> > >> Christof> Since the guard tags are created in Linux, it seems that the
+> > >> Christof> data attached to the write request changes between the
+> > >> Christof> generation in bio_integrity_generate and the call to
+> > >> Christof> sd_prep_fn.
+> > >>
+> > >> Yep, known bug.  Page writeback locking is messed up for buffer_head
+> > >> users.  The extNfs folks volunteered to look into this a while back but
+> > >> I don't think they have found the time yet.
+> > >>
+> > >>
+> > >> Christof> Using ext3 or ext4 instead of ext2 does not show the problem.
+> > >>
+> > >> Last I looked there were still code paths in ext3 and ext4 that
+> > >> permitted pages to be changed during flight.  I guess you've just been
+> > >> lucky.
+> > > 
+> > > Pages have always been modifiable in flight.  The OS guarantees they'll
+> > > be rewritten, so the drivers can drop them if it detects the problem.
+> > > This is identical to the iscsi checksum issue (iscsi adds a checksum
+> > > because it doesn't trust TCP/IP and if the checksum is generated in
+> > > software, there's time between generation and page transmission for the
+> > > alteration to occur).  The solution in the iscsi case was not to
+> > > complain if the page is still marked dirty.
+> > > 
+> > 
+> > And also why RAID1 and RAID4/5/6 need the data bounced. I wish VFS
+> > would prevent data writing given a device queue flag that requests
+> > it. So all these devices and modes could just flag the VFS/filesystems
+> > that: "please don't allow concurrent writes, otherwise I need to copy data"
+> > 
+> > From what Chris Mason has said before, all the mechanics are there, and it's
+> > what btrfs is doing. Though I don't know how myself?
 > 
-> It's fixed by 1eb2cbb6d5efe129 so the problem doesn't exist for 2.6.35-r1.
+> I also tested with btrfs and invalid guard tags in writes have been
+> encountered as well (again in 2.6.34). The only difference is that no
+> error was reported to userspace, although this might be a
+> configuration issue.
 
-When I first read this email, I thought it meant the test was done
-on rc1, but reading the article:
+This would be a btrfs bug.  We have strict checks in place that are
+supposed to prevent buffers changing while in flight.  What was the
+workload that triggered this problem?
 
-	To cut to the chase, between the 22nd and 24th of May there
-	looks to be at least one commit (though perhaps multiple based
-	upon the different data) within the Linus Torvalds 2.6 Git tree
-	that are negatively affecting many different server/desktop
-	benchmarks. We waited nearly a week to see if these regressions
-	would be organically caught and addressed, but they have not
-	been at least of the Linux 2.6 Git state as of 2010-05-26.
+> 
+> What is the best strategy to continue with the invalid guard tags on
+> write requests? Should this be fixed in the filesystems?
+> 
 
-I'll give the udev fix a try w/the btrfs tests.
+Long term, I think the filesystems shouldn't be changing pages in
+flight.  Bouncing just hurts way too much.
 
 -chris
-
