@@ -1,111 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753689Ab0FAXvW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Jun 2010 19:51:22 -0400
-Received: from bld-mail16.adl2.internode.on.net ([150.101.137.101]:60394 "EHLO
-	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751364Ab0FAXvU (ORCPT
+	id S1754981Ab0FAX4f (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Jun 2010 19:56:35 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:48298 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751635Ab0FAX4e (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Jun 2010 19:51:20 -0400
-Date: Wed, 2 Jun 2010 09:51:11 +1000
-From: Dave Chinner <david@fromorbit.com>
-To: Pedro =?iso-8859-1?Q?M=2E_L=F3pez?= <pmlopez@multimensaje.es>
-Cc: Linux Kernel list <linux-kernel@vger.kernel.org>, xfs@oss.sgi.com
-Subject: Re: inconsistent lock state (2.6.34, XFS inode shrinker)
-Message-ID: <20100601235111.GH1395@dastard>
-References: <20100601121322.1e8f9edf@multimensaje.es>
+	Tue, 1 Jun 2010 19:56:34 -0400
+Date: Tue, 1 Jun 2010 16:51:43 -0700 (PDT)
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Brandon Philips <brandon@ifup.org>
+cc: Rusty Russell <rusty@rustcorp.com.au>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       "Rafael J. Wysocki" <rjw@sisk.pl>, LKML <linux-kernel@vger.kernel.org>,
+       Jon Masters <jonathan@jonmasters.org>, Tejun Heo <htejun@gmail.com>,
+       Masami Hiramatsu <mhiramat@redhat.com>,
+       Kay Sievers <kay.sievers@vrfy.org>
+Subject: Re: [PATCH 2/2] module: fix bne2 "gave up waiting for init of module
+ libcrc32c"
+In-Reply-To: <20100601232430.GC10332@jenkins.ifup.org>
+Message-ID: <alpine.LFD.2.00.1006011638540.8175@i5.linux-foundation.org>
+References: <201005252300.07739.rjw@sisk.pl> <201006011051.25636.rusty@rustcorp.com.au> <alpine.LFD.2.00.1005312011490.3637@i5.linux-foundation.org> <201006011452.06843.rusty@rustcorp.com.au> <alpine.LFD.2.00.1006010722160.3637@i5.linux-foundation.org>
+ <alpine.LFD.2.00.1006011052340.8175@i5.linux-foundation.org> <20100601232430.GC10332@jenkins.ifup.org>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20100601121322.1e8f9edf@multimensaje.es>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 01, 2010 at 12:13:22PM +0200, Pedro M. López wrote:
-> =================================
-> [ INFO: inconsistent lock state ]
-> 2.6.34 #1
-> ---------------------------------
-> inconsistent {RECLAIM_FS-ON-W} -> {IN-RECLAIM_FS-W} usage.
-> kswapd0/227 [HC0[0]:SC0[0]:HE1:SE1] takes:
->  (&(&ip->i_iolock)->mr_lock#2){++++?+}, at: [<ffffffff8112c11f>]
-> xfs_ilock+0x27/0x79 {RECLAIM_FS-ON-W} state was registered at:
->   [<ffffffff810510f5>] mark_held_locks+0x52/0x70
->   [<ffffffff81051198>] lockdep_trace_alloc+0x85/0x9f
->   [<ffffffff81073db2>] __alloc_pages_nodemask+0x7b/0x5b5
->   [<ffffffff8106f1e2>] grab_cache_page_write_begin+0x65/0xaa
->   [<ffffffff810bfaaa>] block_write_begin+0x38/0xcd
->   [<ffffffff81146f1f>] xfs_vm_write_begin+0x25/0x27
->   [<ffffffff8106e140>] generic_file_buffered_write+0x114/0x271
->   [<ffffffff8114aa31>] xfs_file_aio_write+0x4e1/0x70c
->   [<ffffffff8109d187>] do_sync_write+0xc6/0x103
->   [<ffffffff8109db5f>] vfs_write+0xad/0x172
->   [<ffffffff8109dcdd>] sys_write+0x45/0x6c
->   [<ffffffff81001f2b>] system_call_fastpath+0x16/0x1b
-> irq event stamp: 62175
-> hardirqs last  enabled at (62175): [<ffffffff8126fb03>]
-> _raw_spin_unlock_irqrestore+0x3a/0x60 hardirqs last disabled at
-> (62174): [<ffffffff8126f3a9>] _raw_spin_lock_irqsave+0x17/0x58 softirqs
-> last  enabled at (61572): [<ffffffff8103398d>] __do_softirq+0x127/0x13e
-> softirqs last disabled at (61543): [<ffffffff81002dcc>]
-> call_softirq+0x1c/0x28
+
+
+On Tue, 1 Jun 2010, Brandon Philips wrote:
 > 
-> other info that might help us debug this:
-> 2 locks held by kswapd0/227:
->  #0:  (shrinker_rwsem){++++..}, at: [<ffffffff810797f0>]
-> shrink_slab+0x38/0x144 #1:  (&xfs_mount_list_lock){++++.-}, at:
-> [<ffffffff811503fc>] xfs_reclaim_inode_shrink+0x35/0x128
-> 
-> stack backtrace:
-> Pid: 227, comm: kswapd0 Not tainted 2.6.34 #1
-> Call Trace:
->  [<ffffffff81050b72>] print_usage_bug+0x1a4/0x1b5
->  [<ffffffff8100c995>] ? save_stack_trace+0x2a/0x47
->  [<ffffffff810516bc>] ? check_usage_forwards+0x0/0xcf
->  [<ffffffff81050e6d>] mark_lock+0x2ea/0x520
->  [<ffffffff81052b8a>] __lock_acquire+0x6c1/0x1607
->  [<ffffffff8116820b>] ? radix_tree_delete+0xd1/0x1d0
->  [<ffffffff81053b27>] lock_acquire+0x57/0x6d
->  [<ffffffff8112c11f>] ? xfs_ilock+0x27/0x79
->  [<ffffffff81046939>] down_write_nested+0x2a/0x4d
->  [<ffffffff8112c11f>] ? xfs_ilock+0x27/0x79
->  [<ffffffff8112c11f>] xfs_ilock+0x27/0x79
->  [<ffffffff8112c2eb>] xfs_ireclaim+0x93/0xb1
->  [<ffffffff8114f949>] xfs_reclaim_inode+0x1de/0x20a
->  [<ffffffff81150299>] xfs_inode_ag_walk+0x8b/0xe6
->  [<ffffffff8114f76b>] ? xfs_reclaim_inode+0x0/0x20a
->  [<ffffffff81150374>] xfs_inode_ag_iterator+0x80/0xd3
->  [<ffffffff8114f76b>] ? xfs_reclaim_inode+0x0/0x20a
->  [<ffffffff81150428>] xfs_reclaim_inode_shrink+0x61/0x128
->  [<ffffffff8107988b>] shrink_slab+0xd3/0x144
->  [<ffffffff81079c61>] balance_pgdat+0x365/0x59b
->  [<ffffffff81077908>] ? isolate_pages_global+0x0/0x212
->  [<ffffffff8107a089>] kswapd+0x1f2/0x20f
->  [<ffffffff81042e89>] ? autoremove_wake_function+0x0/0x34
->  [<ffffffff8126fb24>] ? _raw_spin_unlock_irqrestore+0x5b/0x60
->  [<ffffffff81079e97>] ? kswapd+0x0/0x20f
->  [<ffffffff81042ac7>] kthread+0x7a/0x82
->  [<ffffffff81002cd4>] kernel_thread_helper+0x4/0x10
->  [<ffffffff8126ff40>] ? restore_args+0x0/0x30
->  [<ffffffff81042a4d>] ? kthread+0x0/0x82
->  [<ffffffff81002cd0>] ? kernel_thread_helper+0x0/0x10
+> When I tested a Kernel with Rusty's modules branch pulled onto
+> 2.6.35-rc1 I got duplicate sysfs path errors:
 
-It's a false positive introduced in 2.6.34 by the inode shrinker.
-That's one of several different false positive traces in 2.6.34,
-but I can't do anything about them because the shrinkers require
-global scope. The patches to customise the shrinker contexts (which
-avoids all of these warnings) will fix this....
+Hmm. Yeah, the module_mutex used to be held across the whole "find -> add" 
+state, but isn't any more.
 
-You may as well not run lockdep on anything with an XFS filesystem,
-as these false positives will occur as soon as memory reclaim
-triggers and turn lockdep off.
+> To fix this we need to make sure that we only have one copy of a module
+> going through load_module at a time.  Patch suggestion follows which
+> boots without errors. I am sure there is a better way to do what it does
+>    ;)
 
-Cheers,
+I think Rusty may have made the lock a bit _too_ finegrained there, and 
+didn't add it to some places that needed it. It looks, for example, like 
+PATCH 1/2 actually drops the lock in places where it's needed 
+("find_module()" is documented to need it, but now load_module() didn't 
+hold it at all when it did the find_module()).
 
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
+Rather than adding a new "module_loading" list, I think we should be able 
+to just use the existing "modules" list, and just fix up the locking a 
+bit.
+
+In fact, maybe we could just move the "look up existing module" a bit 
+later - optimistically assuming that the module doesn't exist, and then 
+just undoing the work if it turns out that we were wrong, just before 
+adding ourselves to the list.
+
+A patch something like the appended (TOTALLY UNTESTED!)
+
+		Linus
+---
+ kernel/module.c |   13 ++++++++-----
+ 1 files changed, 8 insertions(+), 5 deletions(-)
+
+diff --git a/kernel/module.c b/kernel/module.c
+index a1f46a5..21f7ffa 100644
+--- a/kernel/module.c
++++ b/kernel/module.c
+@@ -2198,11 +2198,6 @@ static noinline struct module *load_module(void __user *umod,
+ 		goto free_mod;
+ 	}
+ 
+-	if (find_module(mod->name)) {
+-		err = -EEXIST;
+-		goto free_mod;
+-	}
+-
+ 	mod->state = MODULE_STATE_COMING;
+ 
+ 	/* Allow arches to frob section contents and sizes.  */
+@@ -2486,6 +2481,13 @@ static noinline struct module *load_module(void __user *umod,
+ 	 * The mutex protects against concurrent writers.
+ 	 */
+ 	mutex_lock(&module_mutex);
++
++	if (find_module(mod->name)) {
++		err = -EEXIST;
++		/* This will also unlock the mutex */
++		goto already_exists;
++	}
++
+ 	list_add_rcu(&mod->list, &modules);
+ 	mutex_unlock(&module_mutex);
+ 
+@@ -2511,6 +2513,7 @@ static noinline struct module *load_module(void __user *umod,
+ 	mutex_lock(&module_mutex);
+ 	/* Unlink carefully: kallsyms could be walking list. */
+ 	list_del_rcu(&mod->list);
++ already_exists:
+ 	mutex_unlock(&module_mutex);
+ 	synchronize_sched();
+ 	module_arch_cleanup(mod);
