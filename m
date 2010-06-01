@@ -1,92 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754293Ab0FAHO2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Jun 2010 03:14:28 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:52325 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751612Ab0FAHOZ (ORCPT
+	id S1754556Ab0FAHOp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Jun 2010 03:14:45 -0400
+Received: from smtpauth.net4india.com ([202.71.129.41]:50281 "EHLO
+	smtpauth.net4india.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752843Ab0FAHOn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Jun 2010 03:14:25 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:mail-followup-to:mime-version
-         :content-type:content-disposition:user-agent;
-        b=sq3orhpGhVFbnoklnfGWk9JuVaBXN5vuowLbnOAQVL7fwdeNTuGmcLgvJF+MdDDjMS
-         byBT1d/C4TRtU4TO1jZz40LEP3I8RQnTVCe2XUVdzQPv9dLp5OlidVmHrxXJGhE3ap5G
-         KIyIB0uBF1AuKxez6xtcOHfh4GI5egT3U7pBQ=
-Date: Tue, 1 Jun 2010 09:14:04 +0200
-From: Dan Carpenter <error27@gmail.com>
-To: James Morris <jmorris@namei.org>
-Cc: Casey Schaufler <casey@schaufler-ca.com>,
-       "David P. Quigley" <dpquigl@tycho.nsa.gov>,
-       David Howells <dhowells@redhat.com>, Serge Hallyn <serue@us.ibm.com>,
-       linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
-       kernel-janitors@vger.kernel.org
-Subject: [patch] smack: opt_dentry is never null in in smack_d_instantiate()
-Message-ID: <20100601071404.GH5483@bicker>
-Mail-Followup-To: Dan Carpenter <error27@gmail.com>,
-	James Morris <jmorris@namei.org>,
-	Casey Schaufler <casey@schaufler-ca.com>,
-	"David P. Quigley" <dpquigl@tycho.nsa.gov>,
-	David Howells <dhowells@redhat.com>,
-	Serge Hallyn <serue@us.ibm.com>,
-	linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
-	kernel-janitors@vger.kernel.org
+	Tue, 1 Jun 2010 03:14:43 -0400
+X-Greylist: delayed 1811 seconds by postgrey-1.27 at vger.kernel.org; Tue, 01 Jun 2010 03:14:43 EDT
+Message-ID: <4C04AC78.3020702@xenontk.org>
+Date: Tue, 01 Jun 2010 12:15:12 +0530
+From: David John <davidjon@xenontk.org>
+Reply-To: davidjon@xenontk.org
+User-Agent: Mozilla/5.0 (X11; X; Linux x86_64; rv:1.9.1.9) Gecko/20100430 Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: Divyesh Shah <dpshah@google.com>
+CC: Jens Axboe <jens.axboe@oracle.com>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: [2.6.35-rc1 BUG]: Calling sched_clock causes stack trace with DEBUG_PREEMPT
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch removes some unneeded code for if opt_dentry is null because
-that can never happen.
+Hi,
 
-The function dereferences "opt_dentry" earlier when it checks 
-"if (opt_dentry->d_parent == opt_dentry) {".  That code was added in
-2008.
+I get stack traces like the following:
 
-This function called from security_d_instantiate().  I checked all the 
-places which call security_d_instantiate() and dentry is always non-null.
-I also checked the selinux version of this hook and there is a comment
-which says that dentry should be non-null if called from 
-d_instantiate().
+BUG: using smp_processor_id() in preemptible [00000000] code: init/1
+caller is native_sched_clock+0x37/0x6d
+Pid: 1, comm: init Not tainted 2.6.35-rc1 #99
+Call Trace:
+[<ffffffff811c422b>] debug_smp_processor_id+0xd3/0xec
+[<ffffffff81008a1e>] native_sched_clock+0x37/0x6d
+[<ffffffff811a7bfd>] blk_rq_init+0x92/0x9e
+[<ffffffff811a7f2e>] get_request+0x1c8/0x27e
+[<ffffffff811a8011>] get_request_wait+0x2d/0x13c
+[<ffffffff810306ee>] ? get_parent_ip+0x11/0x42
+[<ffffffff81411ea6>] ? add_preempt_count+0xad/0xb1
+[<ffffffff811a83b3>] __make_request+0x293/0x3b8
+[<ffffffff81099737>] ? mempool_alloc_slab+0x10/0x12
+[<ffffffff811a6bc4>] generic_make_request+0x187/0x1ea
+[<ffffffff810306ee>] ? get_parent_ip+0x11/0x42
+[<ffffffff811a6ce5>] submit_bio+0xbe/0xc7
+[<ffffffff810f1f37>] submit_bh+0xef/0x111
+[<ffffffff810f4865>] block_read_full_page+0x1ec/0x20c
+[<ffffffff810f6815>] ? blkdev_get_block+0x0/0x5e
+[<ffffffff81411de6>] ? sub_preempt_count+0x92/0xa5
+[<ffffffff810a0500>] ? __lru_cache_add+0x73/0x93
+[<ffffffff810f6e81>] blkdev_readpage+0x13/0x15
+[<ffffffff8109f981>] __do_page_cache_readahead+0x161/0x194
+[<ffffffff8109f9d0>] ra_submit+0x1c/0x20
+[<ffffffff8109fc5f>] ondemand_readahead+0x1bb/0x1ce
+[<ffffffff810973c9>] ? rcu_read_unlock+0xe/0x29
+[<ffffffff8109fd46>] page_cache_sync_readahead+0x38/0x3a
+[<ffffffff810993c2>] generic_file_aio_read+0x24d/0x57f
+[<ffffffff810cf973>] ? __mem_cgroup_try_charge+0x78/0x46c
+[<ffffffff810d2aa0>] do_sync_read+0xc6/0x103
+[<ffffffff810306ee>] ? get_parent_ip+0x11/0x42
+[<ffffffff810adca5>] ? handle_mm_fault+0x7cb/0x7e5
+[<ffffffff810f69c5>] ? block_ioctl+0x32/0x36
+[<ffffffff81189fcc>] ? selinux_file_permission+0x57/0xae
+[<ffffffff81184524>] ? security_file_permission+0x11/0x13
+[<ffffffff810d34af>] vfs_read+0xa6/0x103
+[<ffffffff810d35c2>] sys_read+0x45/0x69
+[<ffffffff810029ab>] system_call_fastpath+0x16/0x1b
 
-Signed-off-by: Dan Carpenter <error27@gmail.com>
+Since with commit 9195291e you call 'set_start_time_ns' from
+'blk_rq_init' which in turn calls 'sched_clock' with preempt enabled.
+There are other calls to sched_clock in blk-cgroup.c. Maybe they should
+be checked as well?
 
-diff --git a/security/smack/smack_lsm.c b/security/smack/smack_lsm.c
-index 0f2fc48..07abc9c 100644
---- a/security/smack/smack_lsm.c
-+++ b/security/smack/smack_lsm.c
-@@ -2191,7 +2191,7 @@ static void smack_ipc_getsecid(struct kern_ipc_perm *ipp, u32 *secid)
- 
- /**
-  * smack_d_instantiate - Make sure the blob is correct on an inode
-- * @opt_dentry: unused
-+ * @opt_dentry: dentry where inode will be attached
-  * @inode: the object
-  *
-  * Set the inode's security blob if it hasn't been done already.
-@@ -2310,20 +2310,10 @@ static void smack_d_instantiate(struct dentry *opt_dentry, struct inode *inode)
- 		/*
- 		 * Get the dentry for xattr.
- 		 */
--		if (opt_dentry == NULL) {
--			dp = d_find_alias(inode);
--			if (dp == NULL)
--				break;
--		} else {
--			dp = dget(opt_dentry);
--			if (dp == NULL)
--				break;
--		}
--
-+		dp = dget(opt_dentry);
- 		fetched = smk_fetch(inode, dp);
- 		if (fetched != NULL)
- 			final = fetched;
--
- 		dput(dp);
- 		break;
- 	}
+Regards,
+David.
