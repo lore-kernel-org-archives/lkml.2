@@ -1,82 +1,172 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753038Ab0FAFiU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Jun 2010 01:38:20 -0400
-Received: from mail.gmx.net ([213.165.64.20]:58085 "HELO mail.gmx.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1752194Ab0FAFiS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Jun 2010 01:38:18 -0400
-X-Authenticated: #14349625
-X-Provags-ID: V01U2FsdGVkX1+U+l9qkiSU1vFplS8nUxYH4URk1kriEXl9k7CTuM
-	K/K/7NqM1qXu0Y
-Subject: Re: Article in Phoronix about loss of performance in 2.6.35
- release candidates
-From: Mike Galbraith <efault@gmx.de>
-To: Robert Hancock <hancockrwd@gmail.com>
-Cc: Bill Davidsen <davidsen@tmr.com>, alex.buell@munted.org.uk,
-       Mailing Lists - Kernel Developers 
-	<linux-kernel@vger.kernel.org>,
-       Dave Airlie <airlied@gmail.com>
-In-Reply-To: <AANLkTin-kNPeEsyweU1dJM7Jbe0TzbRfLWlkqdbr4GlQ@mail.gmail.com>
-References: <1275347969.29006.5.camel@lithium.local.net>
-	 <4C0448B5.7090904@gmail.com> <4C047B38.9050506@tmr.com>
-	 <AANLkTin-kNPeEsyweU1dJM7Jbe0TzbRfLWlkqdbr4GlQ@mail.gmail.com>
-Content-Type: text/plain
-Date: Tue, 01 Jun 2010 07:38:14 +0200
-Message-Id: <1275370694.9751.58.camel@marge.simson.net>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.24.1.1 
+	id S1751943Ab0FAFrG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Jun 2010 01:47:06 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:43869 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751338Ab0FAFrE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Jun 2010 01:47:04 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+To: LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
+       Oleg Nesterov <oleg@redhat.com>, David Rientjes <rientjes@google.com>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+       Nick Piggin <npiggin@suse.de>
+Subject: [PATCH 1/5] oom: make oom_unkillable() helper function
+Cc: kosaki.motohiro@jp.fujitsu.com
+Message-Id: <20100601144238.243A.A69D9226@jp.fujitsu.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="US-ASCII"
 Content-Transfer-Encoding: 7bit
-X-Y-GMX-Trusted: 0
+X-Mailer: Becky! ver. 2.50.07 [ja]
+Date: Tue,  1 Jun 2010 14:46:59 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-05-31 at 21:22 -0600, Robert Hancock wrote:
-> On Mon, May 31, 2010 at 9:15 PM, Bill Davidsen <davidsen@tmr.com> wrote:
-> > Robert Hancock wrote:
-> >>
-> >> On 05/31/2010 05:19 PM, Alex Buell wrote:
-> >>>
-> >>> http://www.phoronix.com/vr.php?view=14976
-> >>>
-> >>> Question: Why?
-> >>
-> >> Good question.. I guess it would too much to ask of them to try to figure
-> >> out what area the problem lies in (even to the point of figuring out if it's
-> >> a CPU or IO-bound problem), or try to bisect, or at least report it to LKML
-> >> before going to the trouble of creating 5 pages of graphs.. Given the 20x
-> >> slowdown in some of the benchmarks you'd think it wouldn't be too hard to
-> >> narrow down.
-> >
-> > That's true, but 20x should be too hard for people to detect when they do QA
-> > after creating a patch, before sending it to LKML in the first place,
-> > either. If such a regression made it to an -rc1 then it really is kind of a
-> > big deal. Of course Phoronics running the tests on netbook processors is
-> > probably a good thing, I doubt many developers and testers are compiling
-> > kernels on a rig like that, or doing much of anything else demanding.
-> >
-> > I guess I would expect people to react with dismay to the fact that such a
-> > problem made it undetected to rc stage, but perhaps I have too much respect
-> > for developers. This looks more like "how dare they not keep it quiet and
-> > just tell us" indignation. In the end I doubt it makes a lot of difference,
-> > if someone posted to LKML and Slashdot picked it up, be sure it would have
-> > hit the media anyway.
-> >
-> > Should any media keep a defect quiet when they make their living informing
-> > the readers? I see a lot of glee among Linux users every few days when a new
-> > Windows bug becomes public. Phoronics tested and reported, why is that less
-> > honorable than Tom's Hardware telling us a new CPU sucks?
-> 
-> Of course they shouldn't keep it quiet. The problem is they went and
-> wrote an article that was basically "OMG HUGE PERFORMANCE LOSS!!1!!"
-> without reporting the problem to people that can actually do something
-> about it, and also didn't provide any very useful details like dmesg,
-> config, etc. that might let someone figure out what's going on.
 
-Shrug.  If eggshells land in our omelet, they can make a buck telling
-people about it.  Who cares?  If tasty bacon bits land, they'll make a
-buck on that event.  Either way, we get some test coverage.
+This patch series was made on top yesterday oom pile
+=====================================================================
 
-	-Mike
+Now, sysctl_oom_kill_allocating_task case and CONSTRAINT_MEMORY_POLICY
+case don't call select_bad_process(). then, oom_kill_process() need
+very similar check for distinguish unkillable tasks.
+
+This patch unify such two logic.
+
+Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+---
+ mm/oom_kill.c |   62 ++++++++++++++++++++++++--------------------------------
+ 1 files changed, 27 insertions(+), 35 deletions(-)
+
+diff --git a/mm/oom_kill.c b/mm/oom_kill.c
+index f6aa3fc..bac4515 100644
+--- a/mm/oom_kill.c
++++ b/mm/oom_kill.c
+@@ -250,6 +250,21 @@ static enum oom_constraint constrained_alloc(struct zonelist *zonelist,
+ }
+ #endif
+ 
++int oom_unkillable(struct task_struct *p, struct mem_cgroup *mem)
++{
++	/* skip the init task and kthreads */
++	if (is_global_init(p) || (p->flags & PF_KTHREAD))
++		return 1;
++
++	if (mem && !task_in_mem_cgroup(p, mem))
++		return 1;
++
++	if (p->signal->oom_adj == OOM_DISABLE)
++		return 1;
++
++	return 0;
++}
++
+ /*
+  * Simple selection loop. We chose the process with the highest
+  * number of 'points'. We expect the caller will lock the tasklist.
+@@ -268,10 +283,7 @@ static struct task_struct *select_bad_process(unsigned long *ppoints,
+ 	for_each_process(p) {
+ 		unsigned long points;
+ 
+-		/* skip the init task and kthreads */
+-		if (is_global_init(p) || (p->flags & PF_KTHREAD))
+-			continue;
+-		if (mem && !task_in_mem_cgroup(p, mem))
++		if (oom_unkillable(p, mem))
+ 			continue;
+ 
+ 		/*
+@@ -304,9 +316,6 @@ static struct task_struct *select_bad_process(unsigned long *ppoints,
+ 			*ppoints = ULONG_MAX;
+ 		}
+ 
+-		if (p->signal->oom_adj == OOM_DISABLE)
+-			continue;
+-
+ 		points = badness(p, uptime.tv_sec);
+ 		if (points > *ppoints || !chosen) {
+ 			chosen = p;
+@@ -386,20 +395,18 @@ static void dump_header(struct task_struct *p, gfp_t gfp_mask, int order,
+  * flag though it's unlikely that  we select a process with CAP_SYS_RAW_IO
+  * set.
+  */
+-static void __oom_kill_task(struct task_struct *p, int verbose)
++static int __oom_kill_process(struct task_struct *p, struct mem_cgroup *mem,
++			      int verbose)
+ {
+-	if (is_global_init(p)) {
+-		WARN_ON(1);
+-		printk(KERN_WARNING "tried to kill init!\n");
+-		return;
+-	}
++	if (oom_unkillable(p, mem))
++		return 1;
+ 
+ 	p = find_lock_task_mm(p);
+ 	if (!p) {
+ 		WARN_ON(1);
+ 		printk(KERN_WARNING "tried to kill an mm-less task %d (%s)!\n",
+ 			task_pid_nr(p), p->comm);
+-		return;
++		return 1;
+ 	}
+ 
+ 	if (verbose)
+@@ -420,22 +427,6 @@ static void __oom_kill_task(struct task_struct *p, int verbose)
+ 	set_tsk_thread_flag(p, TIF_MEMDIE);
+ 
+ 	force_sig(SIGKILL, p);
+-}
+-
+-static int oom_kill_task(struct task_struct *p)
+-{
+-	/* WARNING: mm may not be dereferenced since we did not obtain its
+-	 * value from get_task_mm(p).  This is OK since all we need to do is
+-	 * compare mm to q->mm below.
+-	 *
+-	 * Furthermore, even if mm contains a non-NULL value, p->mm may
+-	 * change to NULL at any time since we do not hold task_lock(p).
+-	 * However, this is of no concern to us.
+-	 */
+-	if (!p->mm || p->signal->oom_adj == OOM_DISABLE)
+-		return 1;
+-
+-	__oom_kill_task(p, 1);
+ 
+ 	return 0;
+ }
+@@ -454,7 +445,7 @@ static int oom_kill_process(struct task_struct *p, gfp_t gfp_mask, int order,
+ 	 * its children or threads, just set TIF_MEMDIE so it can die quickly
+ 	 */
+ 	if (p->flags & PF_EXITING) {
+-		__oom_kill_task(p, 0);
++		__oom_kill_process(p, mem, 0);
+ 		return 0;
+ 	}
+ 
+@@ -465,12 +456,13 @@ static int oom_kill_process(struct task_struct *p, gfp_t gfp_mask, int order,
+ 	list_for_each_entry(c, &p->children, sibling) {
+ 		if (c->mm == p->mm)
+ 			continue;
+-		if (mem && !task_in_mem_cgroup(c, mem))
+-			continue;
+-		if (!oom_kill_task(c))
++
++		/* Ok, Kill the child */
++		if (!__oom_kill_process(c, mem, 1))
+ 			return 0;
+ 	}
+-	return oom_kill_task(p);
++
++	return __oom_kill_process(p, mem, 1);
+ }
+ 
+ #ifdef CONFIG_CGROUP_MEM_RES_CTLR
+-- 
+1.6.5.2
+
+
 
