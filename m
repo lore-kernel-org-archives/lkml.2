@@ -1,91 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754446Ab0FAQuk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Jun 2010 12:50:40 -0400
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:46820 "EHLO e9.ny.us.ibm.com"
+	id S1754882Ab0FAQzS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Jun 2010 12:55:18 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:57452 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753915Ab0FAQui (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Jun 2010 12:50:38 -0400
-Date: Tue, 1 Jun 2010 09:50:35 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: mingo@elte.hu
-Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
-       a.p.zijlstra@chello.nl, tglx@linutronix.de, viro@zeniv.linux.org.uk,
-       kosaki.motohiro@jp.fujitsu.com, benh@kernel.crashing.org,
-       paulus@samba.org, sparse@chrisli.org
-Subject: [GIT PULL] rcu: finalize debugobjects, first round of RCU sparse
- pointer checks
-Message-ID: <20100601165034.GA9522@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1753078Ab0FAQzQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Jun 2010 12:55:16 -0400
+Subject: Re: Wrong DIF guard tag on ext2 write
+From: James Bottomley <James.Bottomley@suse.de>
+To: Chris Mason <chris.mason@oracle.com>
+Cc: Matthew Wilcox <matthew@wil.cx>,
+       Christof Schmitt <christof.schmitt@de.ibm.com>,
+       Boaz Harrosh <bharrosh@panasas.com>,
+       "Martin K. Petersen" <martin.petersen@oracle.com>,
+       linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
+       linux-fsdevel@vger.kernel.org
+In-Reply-To: <20100601164750.GQ8980@think>
+References: <20100531112817.GA16260@schmichrtp.mainz.de.ibm.com>
+	 <yq1iq64kv9f.fsf@sermon.lab.mkp.net>
+	 <1275318102.2823.47.camel@mulgrave.site> <4C03D5FD.3000202@panasas.com>
+	 <20100601103041.GA15922@schmichrtp.mainz.de.ibm.com>
+	 <1275398876.21962.6.camel@mulgrave.site> <20100601133341.GK8980@think>
+	 <1275399637.21962.11.camel@mulgrave.site> <20100601134951.GM8980@think>
+	 <20100601162929.GC32708@parisc-linux.org>  <20100601164750.GQ8980@think>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 01 Jun 2010 16:54:53 +0000
+Message-ID: <1275411293.21962.387.camel@mulgrave.site>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Ingo,
+On Tue, 2010-06-01 at 12:47 -0400, Chris Mason wrote:
+> On Tue, Jun 01, 2010 at 10:29:30AM -0600, Matthew Wilcox wrote:
+> > On Tue, Jun 01, 2010 at 09:49:51AM -0400, Chris Mason wrote:
+> > > > I agree that a block based retry would close all the holes ... it just
+> > > > doesn't look elegant to me that the fs will already be repeating the I/O
+> > > > if it changed the page and so will block.
+> > > 
+> > > We might not ever repeat the IO.  We might change the page, write it,
+> > > change it again, truncate the file and toss the page completely.
+> > 
+> > Why does it matter that it was never written in that case?
+> 
+> It matters is the storage layer is going to wait around for the block to
+> be written again with a correct crc.
 
-Here are the final commits from Mathieu's debugobjects series and the
-first few from Arnd's RCU-pointer sparse series.  The first three remove
-RCU's (useless) initializations from mm, fs, and powerpc:
+Actually, I wasn't advocating that.  I think block should return a guard
+mismatch error.  I think somewhere in filesystem writeout is the place
+to decide whether the error was self induced or systematic.  For self
+induced errors (as long as we can detect them) I think we can just
+forget about it ... if the changed page is important, the I/O request
+gets repeated (modulo the problem of too great a frequency of changes
+leading to us never successfully writing it) or it gets dropped because
+the file was truncated or the data deleted for some other reason.
 
-mm:	http://lkml.org/lkml/2010/5/18/562
-fs:	http://lkml.org/lkml/2010/5/18/500
-powerpc:http://www.mail-archive.com/linuxppc-dev@lists.ozlabs.org/msg43510.html
-
-Kosaki Motohiro agreed that the mm patch should go up -tip, and none of
-the other maintainers objected to the prospect of their patches going
-up -tip.
-
-The fourth patch removes RCU's initialization definitions, and the final
-four patches provide the beginnings of Arnd's RCU-pointer sparse checks.
-
-git://git.kernel.org/pub/scm/linux/kernel/git/paulmck/linux-2.6-rcu.git rcu/next
-
-Or, if you prefer this against 2.6.34-rc7 without a merge record:
-
-git://git.kernel.org/pub/scm/linux/kernel/git/paulmck/linux-2.6-rcu.git rcu/next-rc7
-
-If you would rather me rebase this stack against 2.6.35-rc1, let me know!
-
-Either way, once these commits reach mainline, I will submit the next 21
-commits to their respective trees.  The maintainers have been CCed on the
-earlier LKML patchsets (http://lkml.org/lkml/2010/5/12/372).  Once these
-21 commits hit mainline, I will send you a pull request for the remaining
-two commits.
-
-Then on to CONFIG_TINY_PREEMPT_RCU.
-
-							Thanx, Paul
-
------------------->
- Mathieu Desnoyers (2)
-	 rcu head remove init
-	 tree/tiny rcu: Add debug RCU head objects
-
- Paul E. McKenney (6)
-	 powerpc: remove all rcu head initializations
-	 fs: remove all rcu head initializations, except on_stack initializations
-	 mm: remove all rcu head initializations
-	 rcu: add an rcu_dereference_index_check()
-	 rcu: add __rcu API for later sparse checking
-	 lockdep: Add an in_workqueue_context() lockdep-based test function
+James
 
 
- arch/powerpc/mm/pgtable.c |    1 
- fs/file.c                 |    3 
- fs/fs-writeback.c         |   31 +++++++-
- fs/partitions/check.c     |    1 
- include/linux/compiler.h  |    2 
- include/linux/rcupdate.h  |   88 ++++++++++++++++++++++-
- include/linux/workqueue.h |    4 +
- kernel/rcupdate.c         |  170 ++++++++++++++++++++++++++++++++++++++++++++++
- kernel/rcutiny.c          |    2 
- kernel/rcutree.c          |    2 
- kernel/workqueue.c        |   15 ++++
- lib/Kconfig.debug         |    6 +
- mm/backing-dev.c          |    1 
- mm/slob.c                 |    1 
- 14 files changed, 309 insertions(+), 18 deletions(-)
