@@ -1,48 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756010Ab0FAKu7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Jun 2010 06:50:59 -0400
-Received: from www.tglx.de ([62.245.132.106]:43946 "EHLO www.tglx.de"
+	id S1755573Ab0FAKvX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Jun 2010 06:51:23 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:46098 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754934Ab0FAKu4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Jun 2010 06:50:56 -0400
-Date: Tue, 1 Jun 2010 12:50:01 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Neil Brown <neilb@suse.de>
-cc: "Rafael J. Wysocki" <rjw@sisk.pl>, Alan Stern <stern@rowland.harvard.edu>,
-       Felipe Balbi <felipe.balbi@nokia.com>,
-       =?ISO-8859-15?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>,
-       Peter Zijlstra <peterz@infradead.org>,
-       "Paul@smtp1.linux-foundation.org" <Paul@smtp1.linux-foundation.org>,
-       LKML <linux-kernel@vger.kernel.org>,
-       Florian Mickler <florian@mickler.org>,
-       Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
-       Linux PM <linux-pm@lists.linux-foundation.org>,
-       Alan Cox <alan@lxorguk.ukuu.org.uk>
-Subject: Re: [linux-pm] [PATCH 0/8] Suspend block api (version 8)
-In-Reply-To: <20100601122012.1edeaf48@notabene.brown>
-Message-ID: <alpine.LFD.2.00.1006011243350.2933@localhost.localdomain>
-References: <Pine.LNX.4.44L0.1005271303190.3239-100000@iolanthe.rowland.org> <201006010005.19554.rjw@sisk.pl> <20100601090023.788cabf4@notabene.brown> <201006010232.20263.rjw@sisk.pl> <20100601113309.609349fd@notabene.brown> <alpine.LFD.2.00.1006010340160.2933@localhost.localdomain>
- <20100601122012.1edeaf48@notabene.brown>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S1753718Ab0FAKvT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Jun 2010 06:51:19 -0400
+Date: Tue, 1 Jun 2010 13:46:51 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Avi Kivity <avi@redhat.com>
+Cc: Tom Lyon <pugs@cisco.com>, linux-kernel@vger.kernel.org,
+       kvm@vger.kernel.org, chrisw@sous-sol.org, joro@8bytes.org,
+       hjk@linutronix.de, gregkh@suse.de, aafabbri@cisco.com,
+       scofeldm@cisco.com
+Subject: Re: [PATCH] VFIO driver: Non-privileged user level PCI drivers
+Message-ID: <20100601104651.GA9415@redhat.com>
+References: <20100530124949.GI27611@redhat.com> <4C0261C1.9090204@redhat.com> <20100530130332.GM27611@redhat.com> <4C026497.8070901@redhat.com> <20100530145309.GO27611@redhat.com> <4C03A285.7060902@redhat.com> <20100531171007.GA6516@redhat.com> <4C04C085.1030107@redhat.com> <20100601095532.GA9178@redhat.com> <4C04E0E0.3070006@redhat.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4C04E0E0.3070006@redhat.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 1 Jun 2010, Neil Brown wrote:
-> 
-> I think you have acknowledged that there is a race with suspend - thanks.
-> Next step was "can it be closed".
-> You seem to suggest that it can, but you describe it as a "work around"
-> rather than a "bug fix"...
-> 
-> Do you agree that the race is a "bug", and therefore it is appropriate to
-> "fix" it assuming an acceptable fix can be found (which I think it can)?
+On Tue, Jun 01, 2010 at 01:28:48PM +0300, Avi Kivity wrote:
+> On 06/01/2010 12:55 PM, Michael S. Tsirkin wrote:
+>>
+>>>   It can't program the iommu.
+>>> What
+>>> the patch proposes is that userspace tells vfio about the needed
+>>> mappings, and vfio programs the iommu.
+>>>      
+>> There seems to be some misunderstanding.  The userspace interface
+>> proposed forces a separate domain per device and forces userspace to
+>> repeat iommu programming for each device.  We are better off sharing a
+>> domain between devices and programming the iommu once.
+>>    
+>
+>   iommufd = open(/dev/iommu);
+>   ioctl(iommufd, IOMMUFD_ASSIGN_RANGE, ...)
+>   ioctl(vfiofd, VFIO_SET_IOMMU, iommufd)
+>
+> ?
 
-If we can fix it, yes we definitely should do and not work around it.
- 
-Thanks,
+Yes.
 
-	tglx
+> If so, I agree.
+
+Good.
+
+>> The natural way to do this is to have an iommu driver for programming
+>> iommu.
+>>
+>> This likely means we will have to pass the domain to 'vfio' or uio or
+>> whatever the driver that gives userspace the access to device is called,
+>> but this is only for security, there's no need to support programming
+>> iommu there.
+>>
+>> And using this design means the uio framework changes
+>> required would be minor, so we won't have to duplicate code.
+>>    
+>
+> Since vfio would be the only driver, there would be no duplication.  But  
+> a separate object for the iommu mapping is a good thing.  Perhaps we can  
+> even share it with vhost (without actually using the mmu, since vhost is  
+> software only).
+
+Main difference is that vhost works fine with unlocked
+memory, paging it in on demand. iommu needs to unmap
+memory when it is swapped out or relocated.
+
+> -- 
+> error compiling committee.c: too many arguments to function
