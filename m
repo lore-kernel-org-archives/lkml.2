@@ -1,56 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756286Ab0FAS5O (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Jun 2010 14:57:14 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:45067 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751373Ab0FAS5N (ORCPT
+	id S1756537Ab0FAS5q (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Jun 2010 14:57:46 -0400
+Received: from mga09.intel.com ([134.134.136.24]:46903 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752035Ab0FAS5o convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Jun 2010 14:57:13 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=mime-version:in-reply-to:references:date:message-id:subject:from:to:
-	cc:content-type:x-system-of-record;
-	b=fb3e9CojT9hUO3cJ6EXl6H4gLuKQI0fnA/p3OelPMrdznymv1H/5aN3nD16+VAnca
-	1DERAiAYFWzauqg07ZWbg==
+	Tue, 1 Jun 2010 14:57:44 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.53,341,1272870000"; 
+   d="scan'208";a="626594447"
+From: "Williams, Mitch A" <mitch.a.williams@intel.com>
+To: Greg KH <greg@kroah.com>, Frank Pan <frankpzh@gmail.com>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+       Jesse Barnes <jbarnes@virtuousgeek.org>,
+       Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>,
+       Yu Zhao <yu.zhao@intel.com>, Chris Wright <chrisw@sous-sol.org>,
+       "Rafael J. Wysocki" <rjw@sisk.pl>,
+       "David S. Miller" <davem@davemloft.net>,
+       Matt Carlson <mcarlson@broadcom.com>,
+       "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Tue, 1 Jun 2010 12:57:18 -0600
+Subject: RE: Add a helper function in PCI IOV to get VF device
+Thread-Topic: Add a helper function in PCI IOV to get VF device
+Thread-Index: AcsBuuYRAsDnk3SAT6agyOw2APIFcwAALeLg
+Message-ID: <EA929A9653AAE14F841771FB1DE5A1365FF3EC130E@rrsmsx501.amr.corp.intel.com>
+References: <AANLkTimTm57fvumRXo9pegOY2M78mduBsClwYlmAOzpo@mail.gmail.com>
+ <20100601183920.GB19955@kroah.com>
+In-Reply-To: <20100601183920.GB19955@kroah.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-cr-hashedpuzzle: Go8t IIPg NNNm Q0Ke R355 TCwa TYYS u5X/ 8dcY AAL8jA==
+ AAv/kw== AAyQ3Q== ACrRbA== ALf9/A== ANlDPQ==
+ AOuv9g==;12;YQBrAHAAbQBAAGwAaQBuAHUAeAAtAGYAbwB1AG4AZABhAHQAaQBvAG4ALgBvAHIAZwA7AGMAaAByAGkAcwB3AEAAcwBvAHUAcwAtAHMAbwBsAC4AbwByAGcAOwBkAGEAdgBlAG0AQABkAGEAdgBlAG0AbABvAGYAdAAuAG4AZQB0ADsAZgByAGEAbgBrAHAAegBoAEAAZwBtAGEAaQBsAC4AYwBvAG0AOwBnAHIAZQBnAEAAawByAG8AYQBoAC4AYwBvAG0AOwBqAGIAYQByAG4AZQBzAEAAdgBpAHIAdAB1AG8AdQBzAGcAZQBlAGsALgBvAHIAZwA7AGsAYQBuAGUAcwBoAGkAZwBlAC4AawBlAG4AagBpAEAAagBwAC4AZgB1AGoAaQB0AHMAdQAuAGMAbwBtADsAbABpAG4AdQB4AC0AawBlAHIAbgBlAGwAQAB2AGcAZQByAC4AawBlAHIAbgBlAGwALgBvAHIAZwA7AGwAaQBuAHUAeAAtAHAAYwBpAEAAdgBnAGUAcgAuAGsAZQByAG4AZQBsAC4AbwByAGcAOwBtAGMAYQByAGwAcwBvAG4AQABiAHIAbwBhAGQAYwBvAG0ALgBjAG8AbQA7AHIAagB3AEAAcwBpAHMAawAuAHAAbAA7AHkAdQAuAHoAaABhAG8AQABpAG4AdABlAGwALgBjAG8AbQA=;Sosha1_v1;7;{83083E92-9C78-485F-A2EF-DC09162BE6DB};bQBpAHQAYwBoAC4AYQAuAHcAaQBsAGwAaQBhAG0AcwBAAGkAbgB0AGUAbAAuAGMAbwBtAA==;Tue,
+ 01 Jun 2010 18:57:18
+ GMT;UgBFADoAIABBAGQAZAAgAGEAIABoAGUAbABwAGUAcgAgAGYAdQBuAGMAdABpAG8AbgAgAGkAbgAgAFAAQwBJACAASQBPAFYAIAB0AG8AIABnAGUAdAAgAFYARgAgAGQAZQB2AGkAYwBlAA==
+x-cr-puzzleid: {83083E92-9C78-485F-A2EF-DC09162BE6DB}
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-In-Reply-To: <20100531180446.GA16249@redhat.com>
-References: <20100530013002.GA762@ghc01.ghc.andrew.cmu.edu>
-	<20100530013303.GC762@ghc01.ghc.andrew.cmu.edu>
-	<20100531175242.GA14691@redhat.com>
-	<20100531180446.GA16249@redhat.com>
-Date: Tue, 1 Jun 2010 11:57:08 -0700
-Message-ID: <AANLkTimcrX0TjzDMNJdubR92pAO4IPATbVpyvvVt0qIV@mail.gmail.com>
-Subject: Re: [RFC] [PATCH 2/2] cgroups: make procs file writable
-From: Paul Menage <menage@google.com>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Ben Blum <bblum@andrew.cmu.edu>, linux-kernel@vger.kernel.org,
-       containers@lists.linux-foundation.org, akpm@linux-foundation.org,
-       ebiederm@xmission.com, lizf@cn.fujitsu.com, matthltc@us.ibm.com
-Content-Type: text/plain; charset=ISO-8859-1
-X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 31, 2010 at 11:04 AM, Oleg Nesterov <oleg@redhat.com> wrote:
+>-----Original Message-----
+>From: Greg KH [mailto:greg@kroah.com]
+>Sent: Tuesday, June 01, 2010 11:39 AM
+
+
 >
-> And, forgot to mention, I do not understand the PF_EXITING check in
-> attach_task_by_pid() (and some others).
+>On Tue, Jun 01, 2010 at 01:05:25PM +0800, Frank Pan wrote:
+>> Greetings,
+>>
+>> The motivation is make VF device visible to PF driver. PF driver
+>> may need this to access VF's PCI configuration.
 >
-> At first glance, it buys nothing. PF_EXITING can be set right after
-> the check.
+>What is "VF" and "PF" here?
+>
+>> Another use case is in sysfs symbolic linking. Some of VF's sysfs
+>> entries are created by PF driver. For example, /sys/class/net/ethx/vfx
+>> in Intel 82576 NIC driver. Makeing a symbolic link from VF's pci device
+>> to this path also must be done in PF's driver.
+>
+>No, the network core should create that symlink, not the driver, right?
+>
+>thanks,
+>
+>greg k-h
 
-It can, but it's a benign race.
+Furthermore, the links are already there in sysfs, created by the PCI subsystem. 
 
-Moving a non-current thread into a cgroup takes task->alloc_lock and
-checks for PF_EXITING before manipulating that thread's cgroup links.
-The exit procedure sets PF_EXITING and then (somewhat later, but
-guaranteed) moves current to the root cgroups while holding
-alloc_lock. If a task hasn't set PF_EXITING by the time we check for
-it, while holding alloc_lock, it can't enter the cgroup cleanup code
-until we've finished moving it to its new cgroup. If it has set
-PF_EXITING by that point, it's guaranteed to be moving itself to the
-root cgroups and disconnecting from various cgroups structures in the
-very near future, so it's fine to refuse to move it to a new cgroup.
+/sys/class/net/ethX/device links to the PCI device entry for the PF device, which itself has symlinks to each of the VF devices.
 
-Paul
+This patch just isn't necessary.
+
+-Mitch
