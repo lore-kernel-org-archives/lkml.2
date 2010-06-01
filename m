@@ -1,61 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757355Ab0FAV0E (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Jun 2010 17:26:04 -0400
-Received: from fg-out-1718.google.com ([72.14.220.156]:52724 "EHLO
-	fg-out-1718.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756637Ab0FAV0A (ORCPT
+	id S1756771Ab0FAV1I (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Jun 2010 17:27:08 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:45642 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754155Ab0FAV1E (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Jun 2010 17:26:00 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=ttaMHwFggvgUYE/F2yG6YU0LunfL/6BAHrlfZblunZbglQuBerpxN2+zlRfQTnodD2
-         ZzWsz56kVpnbbaV3QmoBlinGk6GDaGhVuwyW+7r+hOQmppw0+jQFdIldsakHNRESsOh/
-         Wly/Bnp9kkNmos0mCAb2iU/2+96/J8Y05u9Tk=
-Date: Wed, 2 Jun 2010 01:25:56 +0400
-From: Cyrill Gorcunov <gorcunov@gmail.com>
-To: Peter Zijlstra <peterz@infradead.org>,
-       Robert Richter <robert.richter@amd.com>
-Cc: Ingo Molnar <mingo@elte.hu>,
-       =?iso-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>,
-       Arnaldo Carvalho de Melo <acme@redhat.com>,
-       LKML <linux-kernel@vger.kernel.org>,
-       Stephane Eranian <eranian@google.com>
-Subject: Re: [RFC] perf, x86: Segregate PMU workaraunds into
-	x86_pmu_quirk_ops structure
-Message-ID: <20100601212556.GD14072@lenovo>
-References: <20100529182409.GJ5322@lenovo> <1275157990.1645.519.camel@laptop> <20100531164553.GD5489@lenovo>
+	Tue, 1 Jun 2010 17:27:04 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id:
+	references:user-agent:mime-version:content-type:x-system-of-record;
+	b=W+RH3kGq59Vx7YncqGoO7u2L6sCXwK7+tocTXqlV8f93ecDRPQeVN0pgHX5CM9QLz
+	ayqYL+NVB6P5c8v1+Hgvw==
+Date: Tue, 1 Jun 2010 14:26:56 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Oleg Nesterov <oleg@redhat.com>
+cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+       LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+       Nick Piggin <npiggin@suse.de>
+Subject: Re: [PATCH 1/5] oom: select_bad_process: check PF_KTHREAD instead
+ of !mm to skip kthreads
+In-Reply-To: <20100601212023.GA24917@redhat.com>
+Message-ID: <alpine.DEB.2.00.1006011424200.16725@chino.kir.corp.google.com>
+References: <20100531182526.1843.A69D9226@jp.fujitsu.com> <alpine.DEB.2.00.1006011333470.13136@chino.kir.corp.google.com> <20100601212023.GA24917@redhat.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100531164553.GD5489@lenovo>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 31, 2010 at 08:45:53PM +0400, Cyrill Gorcunov wrote:
-...
-> 
-> So I guess plain test may be more-less fine here, hmm?
-> 
-> 	-- Cyrill
-> ---
-> perf, x86: Make a second write to performance counter when needed
-> 
-> On Netburst cpu we need a second write to performance counter to
-> be sure it's updated properly.
-> 
-> Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
-> ---
->  arch/x86/kernel/cpu/perf_event.c    |   10 ++++++++++
->  arch/x86/kernel/cpu/perf_event_p4.c |    9 +++++++++
->  2 files changed, 19 insertions(+)
-> 
-...
+On Tue, 1 Jun 2010, Oleg Nesterov wrote:
 
-Ping? Any objections/ideas on this approach?
+> But yes, I agree, the problem is minor. But nevertheless it is bug,
+> the longstanding bug with the simple fix. Why should we "hide" this fix
+> inside the long series of non-trivial patches which rewrite oom-killer?
+> And it is completely orthogonal to other changes.
+> 
 
-	-- Cyrill
+Again, the question is whether or not the fix is rc material or not, 
+otherwise there's no difference in the route that it gets upstream: the 
+patch is duplicated in both series.  If you feel that this minor issue 
+(which has never been reported in at least the last three years and 
+doesn't have any side effects other than a couple of millisecond delay 
+until unuse_mm() when the oom killer will kill something else) should be 
+addressed in 2.6.35-rc2, then that's a conversation to be had with Andrew.
