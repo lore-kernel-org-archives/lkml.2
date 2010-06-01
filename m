@@ -1,90 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752270Ab0FAFJM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Jun 2010 01:09:12 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:57879 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751585Ab0FAFJK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Jun 2010 01:09:10 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:reply-to:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=Hpa6xIw4R+uxbdg6lkTQbRROWJ8TqOggZVJAoBXUcAf2pIxGAY7ITT1taMDEuG0Fvq
-         cM+o8I7IzuxcCcuzjRihXFroPUve5DwA7DFgMgefpyT2NoXMsEu0d0yhOhyO8KZBEQdI
-         X7YZP2WTygu7RbIdiNZdPbLtunxYK6AOVGBSA=
-Date: Mon, 31 May 2010 22:09:14 -0700
-From: mark gross <640e9920@gmail.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: markgross@thegnar.org, mark.gross@intel.com, Neil Brown <neilb@suse.de>,
-       Brian Swetland <swetland@google.com>, linux-kernel@vger.kernel.org,
-       Arve@smtp1.linux-foundation.org, Thomas Gleixner <tglx@linutronix.de>,
-       linux-pm@lists.linux-foundation.org,
-       Alan Cox <alan@lxorguk.ukuu.org.uk>
-Subject: Re: [linux-pm] [RFC] lp_events: an lternitive to suspend blocker
- user mode and kernel API
-Message-ID: <20100601050914.GG31155@gvim.org>
-Reply-To: markgross@thegnar.org
-References: <20100530200409.GA21632@gvim.org>
- <20100531095753.4c174f2d@notabene.brown>
- <20100531221035.GB31155@gvim.org>
- <201006010045.21382.rjw@sisk.pl>
+	id S1751993Ab0FAFT4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Jun 2010 01:19:56 -0400
+Received: from ozlabs.org ([203.10.76.45]:48626 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751140Ab0FAFTz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Jun 2010 01:19:55 -0400
+From: Rusty Russell <rusty@rustcorp.com.au>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [PATCH 2/2] module: fix bne2 "gave up waiting for init of module libcrc32c"
+Date: Tue, 1 Jun 2010 14:49:50 +0930
+User-Agent: KMail/1.13.2 (Linux/2.6.32-21-generic; KDE/4.4.2; i686; ; )
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+       Brandon Philips <brandon@ifup.org>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+       LKML <linux-kernel@vger.kernel.org>,
+       Jon Masters <jonathan@jonmasters.org>, Tejun Heo <htejun@gmail.com>,
+       Masami Hiramatsu <mhiramat@redhat.com>,
+       Kay Sievers <kay.sievers@vrfy.org>
+References: <201005252300.07739.rjw@sisk.pl> <201006011127.14794.rusty@rustcorp.com.au> <alpine.LFD.2.00.1005312024320.3637@i5.linux-foundation.org>
+In-Reply-To: <alpine.LFD.2.00.1005312024320.3637@i5.linux-foundation.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201006010045.21382.rjw@sisk.pl>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201006011449.51587.rusty@rustcorp.com.au>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 01, 2010 at 12:45:21AM +0200, Rafael J. Wysocki wrote:
-> On Tuesday 01 June 2010, mark gross wrote:
-> > On Mon, May 31, 2010 at 09:57:53AM +1000, Neil Brown wrote:
-> ...
-> > > So I would suggest modifying your proposal to simply create a new 'input'
-> > > device.  Any driver that supports wake-from-suspend queues an event to that
-> > > device when a wakeup event occurs.  If the device is open and has any queued
-> > > events, then a suspend request such as 'echo mem > /sys/power/state' completes
-> > > without going into full suspend.
-> > 
-> > /me likes.
-> >  
-> > > Then you just need to convince us that this mechanism can be used without any
-> > > race problems.  If it can, then it would certainly be a simple and
-> > > unobtrusive approach.
-> > 
-> > Lets find out.
+On Tue, 1 Jun 2010 01:10:36 pm Linus Torvalds wrote:
 > 
-> Simple question: how is that better than the Alan Stern's proposed approach?
->
-I just saw Alan Stern's proposal, and have gotten some input form some
-others.  I can't say my patch represents a better Idea than what Alan
-proposed.  However; what Alan (and Thomas) are talking about is
-effectively the same as the kenrel mode wakelock/suspend blocker thing,
-and although it reuses existing infrastructure, it doesn't solve the
-problem of needing overlapping blocking sections of code from ISR to
-user mode.
+> On Tue, 1 Jun 2010, Rusty Russell wrote:
+> 
+> > On Tue, 1 Jun 2010 05:45:37 am Linus Torvalds wrote:
+> > > 
+> > > basically, we should do the whole module dependency list regardless 
+> > > of whether we can unload modules or not 
+> > 
+> > Why?
+> 
+> Because the current non-CONFIG_MODULE_UNLOAD code is currently broken, and 
+> it was broken exactly because the code had two totally different paths and 
+> totally different logic. And one part simply missed the case.
+> 
+> We'd be much better off having as much of the logic shared as possible. 
+> No?
+> 
+> Your 2/2 actually fixed that, because it moved the broken 
+> wait_event_interruptible_timeout() out of the (non-shared) use_module() 
+> into the (shared) resolve_symbol_wait(). But even that seemed to be almost 
+> accidental, and seemed to be more about the fact that now the locking 
+> rules required it (if you wanted to wait without holding the lock), rather 
+> than anything else.
 
-(which to be fair, I seem to be the only one that feels thats a problem.
-so perhaps I'm making that a bigger issue than it is...)
+!CONFIG_MODULE_UNLOAD still does the old "fail don't wait" behavior.
 
-Also my current patch may be better in that it makes it explicit that we
-need wake event notification up to user mode, where this Alan's leaves
-it as an exercise for the integrator.
+So yes, moving the waiting into common code was a win for consistency,
+either with your patch or mine.
 
-(wake events are not just key presses or lid events,  there is modem,
-UI, network, usb, block device insertion, RTC and likely a few other
-wake events that need to be handled effectively before re-suspending.
+> So I'd suggest we should just track those module dependencies, and share 
+> more of the code and the logic. Because it looks to me like not sharing it 
+> continually results in bugs.
+> 
+> No?
 
-so to answer your question: I'm not sure.  I need to stub out what Alan
-is proposing and hash it out with some folks.  I'm sorry I can't be
-decisive on this yet.
+I wonder if we should just get rid of !CONFIG_UNLOAD then?  I have a soft spot
+for it because it keeps us honest and shows how much shit is there simply for
+our poor man's pagable kernel.
 
-I'll stub out a new pm_qos class for "qos_eventually" (perhaps with a
-better name.) some modes to the input event mechanism to see how that
-feels.
+Let me compile up a kernel with and without and see what it's really doing
+to us...
 
-
---mgross
+Thanks,
+Rusty.
