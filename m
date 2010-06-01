@@ -1,79 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752123Ab0FABL4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 May 2010 21:11:56 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:51833 "EHLO smtps.tip.net.au"
+	id S1752115Ab0FABVa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 May 2010 21:21:30 -0400
+Received: from ozlabs.org ([203.10.76.45]:58724 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751506Ab0FABLz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 May 2010 21:11:55 -0400
-Date: Tue, 1 Jun 2010 11:11:49 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Paul Mundt <lethal@linux-sh.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: linux-next: build failure after merge of the  shtree
-Message-Id: <20100601111149.a809f097.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Tue__1_Jun_2010_11_11_49_+1000_Z.UIu83JnXe5K8w7"
+	id S1751506Ab0FABV3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 31 May 2010 21:21:29 -0400
+From: Rusty Russell <rusty@rustcorp.com.au>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [PATCH 2/2] module: fix bne2 "gave up waiting for init of module libcrc32c"
+Date: Tue, 1 Jun 2010 10:51:24 +0930
+User-Agent: KMail/1.13.2 (Linux/2.6.32-21-generic; KDE/4.4.2; i686; ; )
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+       Brandon Philips <brandon@ifup.org>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+       LKML <linux-kernel@vger.kernel.org>,
+       Jon Masters <jonathan@jonmasters.org>, Tejun Heo <htejun@gmail.com>,
+       Masami Hiramatsu <mhiramat@redhat.com>,
+       Kay Sievers <kay.sievers@vrfy.org>
+References: <201005252300.07739.rjw@sisk.pl> <20100531094834.c1a684d1.akpm@linux-foundation.org> <alpine.LFD.2.00.1005311100220.3986@i5.linux-foundation.org>
+In-Reply-To: <alpine.LFD.2.00.1005311100220.3986@i5.linux-foundation.org>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201006011051.25636.rusty@rustcorp.com.au>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__1_Jun_2010_11_11_49_+1000_Z.UIu83JnXe5K8w7
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Tue, 1 Jun 2010 03:49:14 am Linus Torvalds wrote:
+> because the module locking is pure and utter crap. It uses one hug lock 
+> that it tries to hold for a long time, rather than protecting just the 
+> parts it needs.
 
-Hi Paul,
+Originally it was a big lock around module loading.  That was simple, and
+simple is good.
 
-After merging the sh tree, today's linux-next build (x86_64
-allmodconfig) failed like this:
+Sure, that simplicity has been eroded, but "crap" is harsh.
+ 
+> Rusty's fix is to just drop the lock around use_module(), and it seems to 
+> work. It's may be right for 'use_module()', but totally wrong from a 
+> conceptual locking standpoint, though - dropping the lock in the middle of 
+> module loading may well "work", but who the hell knows what it really 
+> results in?
 
-In file included from drivers/usb/gadget/r8a66597-udc.c:35:
-drivers/usb/gadget/r8a66597-udc.h: In function 'r8a66597_read_fifo':
-drivers/usb/gadget/r8a66597-udc.h:147: error: implicit declaration of funct=
-ion 'readsl'
-drivers/usb/gadget/r8a66597-udc.h:164: error: implicit declaration of funct=
-ion 'readsw'
-drivers/usb/gadget/r8a66597-udc.h: In function 'r8a66597_write_fifo':
-drivers/usb/gadget/r8a66597-udc.h:197: error: implicit declaration of funct=
-ion 'writesl'
-drivers/usb/gadget/r8a66597-udc.h:204: error: implicit declaration of funct=
-ion 'writesw'
-In file included from drivers/usb/host/r8a66597-hcd.c:44:
-drivers/usb/host/r8a66597.h: In function 'r8a66597_read_fifo':
-drivers/usb/host/r8a66597.h:185: error: implicit declaration of function 'r=
-eadsl'
-drivers/usb/host/r8a66597.h:194: error: implicit declaration of function 'r=
-eadsw'
-drivers/usb/host/r8a66597.h: In function 'r8a66597_write_fifo':
-drivers/usb/host/r8a66597.h:215: error: implicit declaration of function 'w=
-ritesl'
-drivers/usb/host/r8a66597.h:230: error: implicit declaration of function 'w=
-ritesw'
+I do.  If I didn't think so, I wouldn't have pushed the patch.
 
-Caused by commits 920491717d4729844a6ebcd13c863e163d41ca6e ("usb: gadget:
-r8a66597-udc pio to mmio accessor conversion") and
-ae7cbc543c96c90d3b277a5370d77c08a047c396 ("usb: r8a66597-hcd pio to mmio
-accessor conversion").
+> IOW, it's one of those "this works, but it's very wrong" things. It makes 
+> the whole module_mutex pretty much a random thing with even less semantics 
+> than it has now. Right now it has some clear area that it protects - the 
+> area may be too _big_, but at least it makes some amount of sense.
 
-I have used the version of the sh tree form next-20100531 for today.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
+See, this I agree with, but you could have said this in far fewer words and
+much more politely.
 
---Signature=_Tue__1_Jun_2010_11_11_49_+1000_Z.UIu83JnXe5K8w7
-Content-Type: application/pgp-signature
+As posted, I had a patch to clean up the locking.  Seems you ignored it.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
+> It's entirely possible that an interim fix (if we can't just fix the 
+> locking) is to _not_ use "strong_try_module_get()" at all, but instead 
+> just use "try_module_get()", and then after we've dropped the 
+> module_mutex, but _before_ we call the "init" function for the module, we 
+> wait for all the modules that this module depends on.
 
-iEYEARECAAYFAkwEXlUACgkQjjKRsyhoI8zJ2ACgs4dHahbIUwVHNcT6EILt1dA1
-ekkAniQatgLKgRGMxRhCqhx76kWHqxst
-=aTpH
------END PGP SIGNATURE-----
+No, those modules could still fail init.
 
---Signature=_Tue__1_Jun_2010_11_11_49_+1000_Z.UIu83JnXe5K8w7--
+> Doesn't that sound like the logical thing to do? And it wouldn't change 
+> any locking.
+
+No, it sounds wrong, complex and fundamentally broken.
+
+Rusty.
