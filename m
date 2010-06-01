@@ -1,125 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756277Ab0FASmy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Jun 2010 14:42:54 -0400
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:37124 "EHLO e9.ny.us.ibm.com"
+	id S1754710Ab0FASrK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Jun 2010 14:47:10 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:60605 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752035Ab0FASmw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Jun 2010 14:42:52 -0400
-From: Jay Vosburgh <fubar@us.ibm.com>
-To: Cong Wang <amwang@redhat.com>
-cc: Flavio Leitner <fbl@sysclose.org>, linux-kernel@vger.kernel.org,
-       Matt Mackall <mpm@selenic.com>, netdev@vger.kernel.org,
-       bridge@lists.linux-foundation.org, Andy Gospodarek <gospo@redhat.com>,
-       Neil Horman <nhorman@tuxdriver.com>, Jeff Moyer <jmoyer@redhat.com>,
-       Stephen Hemminger <shemminger@linux-foundation.org>,
-       bonding-devel@lists.sourceforge.net, David Miller <davem@davemloft.net>
-Subject: Re: [v5 Patch 1/3] netpoll: add generic support for bridge and bonding devices
-In-reply-to: <4C04D98D.4020509@redhat.com>
-References: <20100505081514.5157.83783.sendpatchset@localhost.localdomain> <20100527180545.GA2345@sysclose.org> <4BFF2EA5.9090008@redhat.com> <20100528194041.GC2345@sysclose.org> <4C034FA4.5000401@redhat.com> <20100531190820.GA24569@sysclose.org> <4C04D98D.4020509@redhat.com>
-Comments: In-reply-to Cong Wang <amwang@redhat.com>
-   message dated "Tue, 01 Jun 2010 17:57:33 +0800."
-X-Mailer: MH-E 8.2; nmh 1.3-RC3; GNU Emacs 23.1.90
-Date: Tue, 01 Jun 2010 11:42:47 -0700
-Message-ID: <24059.1275417767@death.nxdomain.ibm.com>
+	id S1751282Ab0FASrI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Jun 2010 14:47:08 -0400
+Date: Wed, 2 Jun 2010 04:46:49 +1000
+From: Nick Piggin <npiggin@suse.de>
+To: Chris Mason <chris.mason@oracle.com>,
+       James Bottomley <James.Bottomley@suse.de>,
+       Matthew Wilcox <matthew@wil.cx>,
+       Christof Schmitt <christof.schmitt@de.ibm.com>,
+       Boaz Harrosh <bharrosh@panasas.com>,
+       "Martin K. Petersen" <martin.petersen@oracle.com>,
+       linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
+       linux-fsdevel@vger.kernel.org
+Subject: Re: Wrong DIF guard tag on ext2 write
+Message-ID: <20100601184649.GE9453@laptop>
+References: <4C03D5FD.3000202@panasas.com>
+ <20100601103041.GA15922@schmichrtp.mainz.de.ibm.com>
+ <1275398876.21962.6.camel@mulgrave.site>
+ <20100601133341.GK8980@think>
+ <1275399637.21962.11.camel@mulgrave.site>
+ <20100601134951.GM8980@think>
+ <20100601162929.GC32708@parisc-linux.org>
+ <20100601164750.GQ8980@think>
+ <1275411293.21962.387.camel@mulgrave.site>
+ <20100601180905.GR8980@think>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100601180905.GR8980@think>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Cong Wang <amwang@redhat.com> wrote:
+On Tue, Jun 01, 2010 at 02:09:05PM -0400, Chris Mason wrote:
+> On Tue, Jun 01, 2010 at 04:54:53PM +0000, James Bottomley wrote:
+> > On Tue, 2010-06-01 at 12:47 -0400, Chris Mason wrote:
+> > > On Tue, Jun 01, 2010 at 10:29:30AM -0600, Matthew Wilcox wrote:
+> > > > On Tue, Jun 01, 2010 at 09:49:51AM -0400, Chris Mason wrote:
+> > > > > > I agree that a block based retry would close all the holes ... it just
+> > > > > > doesn't look elegant to me that the fs will already be repeating the I/O
+> > > > > > if it changed the page and so will block.
+> > > > > 
+> > > > > We might not ever repeat the IO.  We might change the page, write it,
+> > > > > change it again, truncate the file and toss the page completely.
+> > > > 
+> > > > Why does it matter that it was never written in that case?
+> > > 
+> > > It matters is the storage layer is going to wait around for the block to
+> > > be written again with a correct crc.
+> > 
+> > Actually, I wasn't advocating that.  I think block should return a guard
+> > mismatch error.  I think somewhere in filesystem writeout is the place
+> > to decide whether the error was self induced or systematic.
+> 
+> In that case the io error goes to the async page writeback bio-endio
+> handlers.  We don't have a reference on the inode and no ability to
+> reliably restart the IO, but we can set a bit on the address space
+> indicating that somewhere, sometime in the past we had an IO error.
+> 
+> > For self
+> > induced errors (as long as we can detect them) I think we can just
+> > forget about it ... if the changed page is important, the I/O request
+> > gets repeated (modulo the problem of too great a frequency of changes
+> > leading to us never successfully writing it) or it gets dropped because
+> > the file was truncated or the data deleted for some other reason.
+> 
+> Sorry, how can we tell the errors that are self induced from the evil
+> bit flipping cable induced errors?
 
->On 06/01/10 03:08, Flavio Leitner wrote:
->> On Mon, May 31, 2010 at 01:56:52PM +0800, Cong Wang wrote:
->>> Hi, Flavio,
->>>
->>> Please use the attached patch instead, try to see if it solves
->>> all your problems.
->>
->> I tried and it hangs. No backtraces this time.
->> The bond_change_active_slave() prints before NETDEV_BONDING_FAILOVER
->> notification, so I think it won't work.
->
->Ah, I thought the same.
->
->>
->> Please, correct if I'm wrong, but when a failover happens with your
->> patch applied, the netconsole would be disabled forever even with
->> another healthy slave, right?
->>
->
->Yes, this is an easy solution, because bonding has several modes,
->it is complex to make netpoll work in different modes.
+Block layer should retry it with bounce pages. That would be a lot nicer
+than forcing all upper layers to avoid the problem.
 
-	If I understand correctly, the root cause of the problem with
-netconsole and bonding is that bonding is, ultimately, performing
-printks with a write lock held, and when netconsole recursively calls
-into bonding to send the printk over the netconsole, there is a deadlock
-(when the bonding xmit function attempts to acquire the same lock for
-read).
-
-	You're trying to avoid the deadlock by shutting off netconsole
-(permanently, it looks like) for one problem case: a failover, which
-does some printks with a write lock held.
-
-	This doesn't look to me like a complete solution, there are
-other cases in bonding that will do printk with write locks held.  I
-suspect those will also hang netconsole as things exist today, and won't
-be affected by your patch below.
-
-	For example:
-
-	The sysfs functions to set the primary (bonding_store_primary)
-or active (bonding_store_active_slave) options: a pr_info is called to
-provide a log message of the results.  These could be tested by setting
-the primary or active options via sysfs, e.g.,
-
-echo eth0 > /sys/class/net/bond0/bonding/primary
-echo eth0 > /sys/class/net/bond0/bonding/active
-
-	If the kernel is defined with DEBUG, there are a few pr_debug
-calls within write_locks (bond_del_vlan, for example).
-
-	If the slave's underlying device driver's ndo_vlan_rx_register
-or ndo_vlan_rx_kill_vid functions call printk (and it looks like some do
-for error cases, e.g., igbvf, ehea, enic), those would also presumably
-deadlock (because bonding holds its write_lock when calling the ndo_
-vlan functions).
-
-	It also appears that (with the patch below) some nominally
-normal usage patterns will immediately disable netconsole.  The one that
-comes to mind is if the primary= option is set (to "eth1" for this
-example), but that slave not enslaved first (the slaves are added, say,
-eth0 then eth1).  In that situation, when the primary slave (eth1 here)
-is added, the first thing that will happen is a failover, and that will
-disable netconsole.
-
-	Thoughts?
-
-	-J
-
->Would you like to test the following patch?
->
->Thanks much!
->
->diff --git a/drivers/net/bonding/bond_main.c b/drivers/net/bonding/bond_main.c
->index 5e12462..59ade92 100644
->--- a/drivers/net/bonding/bond_main.c
->+++ b/drivers/net/bonding/bond_main.c
->@@ -1109,6 +1109,14 @@ void bond_change_active_slave(struct bonding *bond, struct slave *new_active)
-> 	if (old_active == new_active)
-> 		return;
->
->+	write_unlock_bh(&bond->curr_slave_lock);
->+	read_unlock(&bond->lock);
->+
->+	netdev_bonding_change(bond->dev, NETDEV_BONDING_DESLAVE);
->+
->+	read_lock(&bond->lock);
->+	write_lock_bh(&bond->curr_slave_lock);
->+
-> 	if (new_active) {
-> 		new_active->jiffies = jiffies;
->
-
----
-	-Jay Vosburgh, IBM Linux Technology Center, fubar@us.ibm.com
