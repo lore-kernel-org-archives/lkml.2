@@ -1,54 +1,32 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933111Ab0FBT6d (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jun 2010 15:58:33 -0400
-Received: from mail.perches.com ([173.55.12.10]:2564 "EHLO mail.perches.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933022Ab0FBT6c (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jun 2010 15:58:32 -0400
-Subject: [PATCH] kernel.h: Remove unused NIPQUAD and NIPQUAD_FMT
-From: Joe Perches <joe@perches.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, David Miller <davem@davemloft.net>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 02 Jun 2010 12:58:30 -0700
-Message-ID: <1275508710.23599.31.camel@Joe-Laptop.home>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	id S933099Ab0FBUAa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jun 2010 16:00:30 -0400
+Received: from mail.montebelodosul.rs.gov.br ([201.11.252.130]:53307 "EHLO
+	srvmta01.montebelodosul.rs.gov.br" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S933022Ab0FBUA3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Jun 2010 16:00:29 -0400
+Message-ID: <1800a0e5d7006d56fc947c8b3b1d531a.squirrel@mail.montebelodosul.rs.gov.br>
+Date: Tue, 1 Jun 2010 20:19:42 -0300
+Subject: 
+From: "!!!" <yu@montebelodosul.rs.gov.br>
+Reply-To: yu009@w.cn
+User-Agent: SquirrelMail/1.4.19-1.fc9
+MIME-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Priority: 3 (Normal)
+Importance: Normal
+To: undisclosed-recipients:;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There are no more uses of NIPQUAD or NIPQUAD_FMT.
-Remove the definitions.
-
-Signed-off-by: Joe Perches <joe@perches.com>
----
- include/linux/kernel.h |   11 -----------
- 1 files changed, 0 insertions(+), 11 deletions(-)
-
-diff --git a/include/linux/kernel.h b/include/linux/kernel.h
-index 8317ec4..81892d2 100644
---- a/include/linux/kernel.h
-+++ b/include/linux/kernel.h
-@@ -609,17 +609,6 @@ static inline void ftrace_dump(enum ftrace_dump_mode oops_dump_mode) { }
- #endif /* CONFIG_TRACING */
- 
- /*
-- *      Display an IP address in readable format.
-- */
--
--#define NIPQUAD(addr) \
--	((unsigned char *)&addr)[0], \
--	((unsigned char *)&addr)[1], \
--	((unsigned char *)&addr)[2], \
--	((unsigned char *)&addr)[3]
--#define NIPQUAD_FMT "%u.%u.%u.%u"
--
--/*
-  * min()/max()/clamp() macros that also do
-  * strict type-checking.. See the
-  * "unnecessary" pointer comparison.
 
 
+
+I am a branch manager in Bank of China Ltd, Hong Kong. I have a
+business transaction with a value of US$25,000,000.00 only, is 60/40 ratio,
+if you are interested send me Your Name, location, phone and occupation to
+yu009@w.cn and I will send you full details of this.
