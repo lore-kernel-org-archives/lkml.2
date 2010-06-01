@@ -1,62 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753014Ab0FACad (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 May 2010 22:30:33 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:42382 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752003Ab0FACab (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 May 2010 22:30:31 -0400
-Date: Tue, 1 Jun 2010 12:30:11 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Takashi Iwai <tiwai@suse.de>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-       Daniel Mack <daniel@caiaq.de>
-Subject: linux-next: build failure after merge of the sound tree
-Message-Id: <20100601123011.3f20ffde.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Tue__1_Jun_2010_12_30_11_+1000_HolKtbwgNLxfJRxS"
+	id S1753040Ab0FACb7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 May 2010 22:31:59 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:50526 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752003Ab0FACb6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 31 May 2010 22:31:58 -0400
+Message-ID: <4C0470BE.6040709@oracle.com>
+Date: Mon, 31 May 2010 19:30:22 -0700
+From: Randy Dunlap <randy.dunlap@oracle.com>
+Organization: Oracle Linux Engineering
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.5) Gecko/20091209 Fedora/3.0-3.fc11 Thunderbird/3.0
+MIME-Version: 1.0
+To: Heiko Carstens <heiko.carstens@de.ibm.com>
+CC: linux-kernel@vger.kernel.org, "arjan@infradead.org" <arjan@infradead.org>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Thomas Gleixner <tglx@linutronix.de>
+Subject: [PATCH] Documentation/timers/hpet_example.c: only build on X64
+References: <20100528113514.GA3686@osiris.boeblingen.de.ibm.com>
+In-Reply-To: <20100528113514.GA3686@osiris.boeblingen.de.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Auth-Type: Internal IP
+X-Source-IP: rcsinet13.oracle.com [148.87.113.125]
+X-CT-RefId: str=0001.0A090207.4C047103.000D:SCFMA4539811,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__1_Jun_2010_12_30_11_+1000_HolKtbwgNLxfJRxS
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+From: Randy Dunlap <randy.dunlap@oracle.com>
 
-Hi Takashi,
+We should only build hpet_example on X64, where it is
+implemented.  It can cause build errors on other arch-es.
 
-After merging the sound tree, today's linux-next build (x86_64
-allmodconfig) failed like this:
+Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
+Reported-by: Heiko Carstens <heiko.carstens@de.ibm.com>
+Cc: Heiko Carstens <heiko.carstens@de.ibm.com>
+Cc: Arjan van de Ven <arjan@infradead.org>
+---
+ Documentation/timers/Makefile |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-In file included from drivers/usb/gadget/audio.c:37:
-drivers/usb/gadget/f_audio.c:104: error: 'UAC_MUTE_CONTROL' undeclared here=
- (not in a function)
-drivers/usb/gadget/f_audio.c:113: error: 'UAC_VOLUME_CONTROL' undeclared he=
-re (not in a function)
-
-Presumably caused by commit 65f25da44b51f55e3a74301c25f29263be2bf1ba
-("ALSA: usb-audio: unify constants from specification").
-
-I have used the version of the sound tree from next-20100531 for today.
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
-
---Signature=_Tue__1_Jun_2010_12_30_11_+1000_HolKtbwgNLxfJRxS
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iEYEARECAAYFAkwEcLMACgkQjjKRsyhoI8xFxQCfecSHG/1iWjPIHsTdHLoIonVd
-0MQAniNw1En27JwEzT4I9taVD+zHgHl5
-=gq/v
------END PGP SIGNATURE-----
-
---Signature=_Tue__1_Jun_2010_12_30_11_+1000_HolKtbwgNLxfJRxS--
+--- lnx-2635-rc1.orig/Documentation/timers/Makefile
++++ lnx-2635-rc1/Documentation/timers/Makefile
+@@ -2,7 +2,7 @@
+ obj- := dummy.o
+ 
+ # List of programs to build
+-hostprogs-y := hpet_example
++hostprogs-$(CONFIG_X86) := hpet_example
+ 
+ # Tell kbuild to always build the programs
+ always := $(hostprogs-y)
