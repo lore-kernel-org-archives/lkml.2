@@ -1,68 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755407Ab0FAK3E (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Jun 2010 06:29:04 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:52857 "EHLO mx1.redhat.com"
+	id S1755852Ab0FAK3P (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Jun 2010 06:29:15 -0400
+Received: from cantor.suse.de ([195.135.220.2]:48726 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754934Ab0FAK3A (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Jun 2010 06:29:00 -0400
-Message-ID: <4C04E0E0.3070006@redhat.com>
-Date: Tue, 01 Jun 2010 13:28:48 +0300
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100330 Fedora/3.0.4-1.fc12 Thunderbird/3.0.4
+	id S1755096Ab0FAK3B (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Jun 2010 06:29:01 -0400
+Message-ID: <4C04E0EA.8010100@suse.cz>
+Date: Tue, 01 Jun 2010 12:28:58 +0200
+From: Michal Marek <mmarek@suse.cz>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100317 SUSE/3.0.4-1.18 Thunderbird/3.0.4
 MIME-Version: 1.0
-To: "Michael S. Tsirkin" <mst@redhat.com>
-CC: Tom Lyon <pugs@cisco.com>, linux-kernel@vger.kernel.org,
-       kvm@vger.kernel.org, chrisw@sous-sol.org, joro@8bytes.org,
-       hjk@linutronix.de, gregkh@suse.de, aafabbri@cisco.com,
-       scofeldm@cisco.com
-Subject: Re: [PATCH] VFIO driver: Non-privileged user level PCI drivers
-References: <20100530121944.GH27611@redhat.com> <4C025999.7080706@redhat.com> <20100530124949.GI27611@redhat.com> <4C0261C1.9090204@redhat.com> <20100530130332.GM27611@redhat.com> <4C026497.8070901@redhat.com> <20100530145309.GO27611@redhat.com> <4C03A285.7060902@redhat.com> <20100531171007.GA6516@redhat.com> <4C04C085.1030107@redhat.com> <20100601095532.GA9178@redhat.com>
-In-Reply-To: <20100601095532.GA9178@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Arnaldo Carvalho de Melo <acme@infradead.org>
+Cc: Sam Ravnborg <sam@ravnborg.org>, "David S. Miller" <davem@davemloft.net>,
+       =?ISO-8859-1?Q?Fr=E9d=E9ric_Weisbecker?= <fweisbec@gmail.com>,
+       Ingo Molnar <mingo@elte.hu>, Mike Galbraith <efault@gmx.de>,
+       Paul Mackerras <paulus@samba.org>,
+       Peter Zijlstra <peterz@infradead.org>,
+       Stephane Eranian <eranian@google.com>, Tom Zanussi <tzanussi@gmail.com>,
+       Eduardo Habkost <ehabkost@redhat.com>,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2 1/1] perf tools: Make target to generate self contained
+ source tarball
+References: <20100528185357.GA28009@ghostprotocols.net> <20100529072948.GE16257@merkur.ravnborg.org> <20100531174207.GB3481@ghostprotocols.net> <4C0417EC.8050906@suse.cz> <20100531230639.GD3481@ghostprotocols.net>
+In-Reply-To: <20100531230639.GD3481@ghostprotocols.net>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/01/2010 12:55 PM, Michael S. Tsirkin wrote:
->
->>   It can't program the iommu.
->> What
->> the patch proposes is that userspace tells vfio about the needed
->> mappings, and vfio programs the iommu.
->>      
-> There seems to be some misunderstanding.  The userspace interface
-> proposed forces a separate domain per device and forces userspace to
-> repeat iommu programming for each device.  We are better off sharing a
-> domain between devices and programming the iommu once.
->    
+On 1.6.2010 01:06, Arnaldo Carvalho de Melo wrote:
+> Em Mon, May 31, 2010 at 10:11:24PM +0200, Michal Marek escreveu:
+>> On 31.5.2010 19:42, Arnaldo Carvalho de Melo wrote:
+>>> +git archive --prefix=$(perf-tar)/ HEAD^{tree}                       \
+>>
+>> If you use plain "HEAD" (a commit-ish) instead if HEAD^{tree}, then
+>> git archive will store the commit id in the archive metadata and the
+>> user can then use git get-tar-commit-id to extract it.
+> 
+> I just used what was in git.git and then when talking with a git
+> enthusiast, he showed me this:
+> 
+> [acme@emilia git]$ git show 9cd625b79babaf50f50a0e5d96903eaacb1ee600
+> commit 9cd625b79babaf50f50a0e5d96903eaacb1ee600
+> Author: Rene Scharfe <rene.scharfe@lsrfire.ath.cx>
+> Date:   Sun Jun 18 15:25:33 2006 +0200
+> 
+>     Make release tarballs friendlier to older tar versions
 
-   iommufd = open(/dev/iommu);
-   ioctl(iommufd, IOMMUFD_ASSIGN_RANGE, ...)
-   ioctl(vfiofd, VFIO_SET_IOMMU, iommufd)
+...
 
-?
+Ah, ok.
 
-If so, I agree.
 
-> The natural way to do this is to have an iommu driver for programming
-> iommu.
->
-> This likely means we will have to pass the domain to 'vfio' or uio or
-> whatever the driver that gives userspace the access to device is called,
-> but this is only for security, there's no need to support programming
-> iommu there.
->
-> And using this design means the uio framework changes
-> required would be minor, so we won't have to duplicate code.
->    
+> Well, what about the other aspects of the patch, is this the only issue
+> you have found with it?
 
-Since vfio would be the only driver, there would be no duplication.  But 
-a separate object for the iommu mapping is a good thing.  Perhaps we can 
-even share it with vhost (without actually using the mmu, since vhost is 
-software only).
+The patch is OK.
 
--- 
-error compiling committee.c: too many arguments to function
+Acked-by: Michal Marek <mmarek@suse.cz>
 
+Michal
