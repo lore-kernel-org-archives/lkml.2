@@ -1,140 +1,325 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756836Ab0FAOMW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Jun 2010 10:12:22 -0400
-Received: from webmail01.domeneshop.no ([194.63.248.8]:37722 "EHLO
-	webmail01.domeneshop.no" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755157Ab0FAOMU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Jun 2010 10:12:20 -0400
-Content-Disposition: inline
-Content-Transfer-Encoding: binary
-Content-Type: text/plain; charset="iso-8859-1"
+	id S1756900Ab0FAOPE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Jun 2010 10:15:04 -0400
+Received: from e4.ny.us.ibm.com ([32.97.182.144]:46771 "EHLO e4.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756258Ab0FAOPA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Jun 2010 10:15:00 -0400
+Date: Tue, 1 Jun 2010 07:13:33 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: Tejun Heo <tj@kernel.org>, Oleg Nesterov <oleg@redhat.com>,
+       Sridhar Samudrala <sri@us.ibm.com>, netdev <netdev@vger.kernel.org>,
+       lkml <linux-kernel@vger.kernel.org>,
+       "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Dmitri Vorobiev <dmitri.vorobiev@movial.com>,
+       Jiri Kosina <jkosina@suse.cz>, Thomas Gleixner <tglx@linutronix.de>,
+       Ingo Molnar <mingo@elte.hu>, Andi Kleen <ak@linux.intel.com>
+Subject: Re: [PATCH 1/3] vhost: replace vhost_workqueue with per-vhost
+	kthread
+Message-ID: <20100601141333.GA3228@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <4BFE9ABA.6030907@kernel.org>
+ <20100527163954.GA21710@redhat.com>
+ <4BFEA434.6080405@kernel.org>
+ <20100527173207.GA21880@redhat.com>
+ <4BFEE216.2070807@kernel.org>
+ <20100528150830.GB21880@redhat.com>
+ <4BFFE742.2060205@kernel.org>
+ <20100530112925.GB27611@redhat.com>
+ <4C02C961.9050606@kernel.org>
+ <20100531152221.GB2987@redhat.com>
 MIME-Version: 1.0
-X-Mailer: MIME::Lite 3.01 (F2.74; T1.18; A1.74; B3.07; Q3.07)
-From: uwaysi.bin.kareem@paradoxuncreated.com
-To: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Psychovisually-optimized HZ setting (2.6.33.3)
-Date: Tue, 01 Jun 2010 16:12:17 +0200
-X-Remote-Address: 91.186.70.220
-X-User-Agent: Opera/9.63 (Windows NT 5.1; U; en) Presto/2.1.1
-X-Mailer: Domeneshop webmail 1.07 (2008-04-23)
-X-Moam-Version: 0.93
-Message-Id: <E1OJSCX-0000ke-Da@webmail01.domeneshop.no>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100531152221.GB2987@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, May 31, 2010 at 06:22:21PM +0300, Michael S. Tsirkin wrote:
+> On Sun, May 30, 2010 at 10:24:01PM +0200, Tejun Heo wrote:
+> > Replace vhost_workqueue with per-vhost kthread.  Other than callback
+> > argument change from struct work_struct * to struct vhost_poll *,
+> > there's no visible change to vhost_poll_*() interface.
+> 
+> I would prefer a substructure vhost_work, even just to make
+> the code easier to review and compare to workqueue.c.
 
-I guess I could pick this post apart, just for the fun of it. I really hate satanical stupidity. Most of you here, can probably follow a level, where my arguments make sense, and some of you can even follow the religious argument. However a few may post completely retarded stuff like this. Now I'm going to pick this apart, so that you can rather imagine this being done, in similar future incidents, however I will just ignore. My life is better without this kind of conversation ;)
+Either way this plays out, the rcu_dereference_check() calls will need
+to be adjusted to reflect the change.
 
-On Tue, 01 Jun 2010 15:25:46 +0200, <Valdis.Kletnieks@vt.edu> wrote:
+							Thanx, Paul
 
-> On Tue, 01 Jun 2010 12:47:15 +0200,  
-> uwaysi.bin.kareem@paradoxuncreated.com said:
->
->> I do not really have any numbers Valdis, other than simple glxgears  
->> benchmarks.
->
-> I suspect that glxgears isn't telling you what you think it's telling  
-> you.
-> For starters, the distinction between a glxgears wank-o-meter reading of
-> 4,000 FPS and 8,000 FPS doesn't actually *matter* when your screen is  
-> only
-It matters to jitter measurements, where numbers in the 80000 region, is giving me the information I need. With more complex scenes, who would only render say 100fps, less information would be given. We are not talking about how complex scenes, we can render. We are talking about jitter, which is present, regardless of scene-complexity.
-> actually able to do 60 or 72 or 120FPS.  What it *really* tells you is  
-> that
-> the card that can do 8,000FPS can probably handle a more complicated  
-> scene
-> before the FPS drops below the refresh rate and you miss a frame, which
-> *will* be noticeable.
->
-> Repeat after me: Graphics cards are locked to the refresh rate, and you  
-> can't
-I think very few things should be repeated after you. First the 8000fps, and now you claim vsynced behaviour. This is a contradiction.
-> see jitter or low frame rates unless it causes tearing, missed frames, or
-> other screen artifacts.  And to maximize your chances of not missing a  
-> screen
-> update, you want a *lower* HZ value so you don't waste precious time  
-No. You run 50hz, I run 3956hz. If you have this amount of garbage in your head, maybe it's in your vision aswell, and little can help you.
-> handling
-> timer interrupts.
->
->> However I have a lot of experience with jitter, and I am looking for  
->> sporadic
->> jitter, jitter related to application-startup, jitter that is more or  
->> less
->> constant.
->
-> "Constant jitter" - talking like that will get you mocked mercilessly by
-> some people.
-
-Mindless people, who set a value of 4000hz instead of 3956, because they don't believe or lack the skill, to tune a value. Instead the value 4000 would reflect a guess, not tuned for the human senses, and we are back to the old stoopid computer again, tuned by people like Vladis, who would rather sit and run 50hz updates in machocistic hope of saving a cpu cycle, when reallife tests show that even values of 10000hz make little difference of performance in opengl. You do that Vladis. Live with the cheapest clothes, the most outwatered drinks, and the stalest and cheapest bread. And for us, who appreciate higher intelligence, and use the resources available to us, we will enjoy ourselves a little, away from backwardpeople like you.
-
->> Ofcourse I do not need any numbers either. If you think 1000 is better  
->> than
->> 50, then there is a difference between 1000 and 4000 aswell.
->
-> OK, so why not go straight to 8,00 or 10,000 instead? Did you try values  
-> in that
-> range?
->
-> Hate to tell you this, but around here, you *do* need numbers to justify
-> making changes.  It used to be that HZ=100 was the only choice - 250 and
-In a menu. Lol, some of us actually looked at the source, and changed that value anyway. It's really quite simple, and if you don't posess even that basic level of skill, what are you doing on LKML. Lol, it's never been 100hz or no choice. You seem to even lack the most basic insight into what opensource is.
-> 1000 were added because somebody showed that those options made  
-> noticeable
-> differences in the latency/overhead tradeoff (interestingly enough,  
-> HZ=1000
-> mattered more to audio processing than video, because most video cards  
-> are
-> locked to a relatively low refresh rate while audio cards will produce
-> a noticable transient if you miss a timeout by even 1ms).  HZ=300 was  
-> added
-> specifically to play nice with 60-hz video processing.
-Play nice? Jitter between frames are still a problem, even though 300hz is divisible by 60.
->
-> But to swallow the added overhead of setting HZ=4000, you'll have to show
-> some remarkable benefits (especially when you're pulling out a magic  
-> number
-> like 3956 rather than 4000).
-
-You completely failed to comprehend the simple statement in my previous post "There is no performance penalty for opengl applications". How is it possible?
-
->> Put it simply one might state "If you feel that your computer is a bit
->> stoopid, try increasing the value, and maybe you will be more  
->> satisfied." This
->> because the computer now, is more like the human senses.
->
-> And maybe you won't be, unless you're the type of person who buys the
-> special $1,000 HDMI cables and $600 wooden volume controls.   
-> Unfortunately,
-> we aren't building kernels for those type of people.
-
-We? This is opensource. I do whatever I will with the kernel. You take your cheap pirate rip-off copy of a volume control, and I WILL have the nice volume control. Resources exist to be consumed.
-
->> And for those who would like to understand some of the methology behind  
->> this,
->> again www.paradoxuncreated.com .Try the meditation-techinque, which  
->> purifies
->> the mind from spirits.
->
-> Unfortunately, that's unlikely to get your changes into the kernel.
-
-If people like you are influental in what goes into the kernel, the linux community truly suffers. Be ready for the cheapest and the lowest, just because theoretically some cpu cycles get lost. Why don't you get yourself and z80 and live in sinclair lands, it truly sounds like you want to keep being there.
-
->> Any answers related to this post, critisising or wasting my time, will  
->> be ignored.
->
-> Nor is this likely to help...
-
-I don't think you have any idea about what helps and not helps. Go to a 1$ mental hospital, with zx sinclair computers, and run it at 0.0001hz screen update. That will surely save cpu cycles.
-
-On the other hand it would bring our economy to a halt, and development of linux or any other OS, would be for a stagnant hardware market. What should we do with the new hardware? Pile em up, and brag, and never use em, because it saves cpu cycles?
-Like a pile of trash?
-Might aswell go the direct route to the trashheap then.
-
-Peace Be With You.
-Uwaysi. (in a more-than-rare-flamewars thesedays)
-
-PS: To all the sane people here, do it. You will enjoy it. Do not be mr. 50hz sadomachochist.
+> > This conversion is to make each vhost use a dedicated kthread so that
+> > resource control via cgroup can be applied.
+> > 
+> > Partially based on Sridhar Samudrala's patch.
+> > 
+> > Cc: Michael S. Tsirkin <mst@redhat.com>
+> > Cc: Sridhar Samudrala <samudrala.sridhar@gmail.com>
+> > ---
+> > Okay, here is three patch series to convert vhost to use per-vhost
+> > kthread, add cgroup_attach_task_current_cg() and apply it to the vhost
+> > kthreads.  The conversion is mostly straight forward although flush is
+> > slightly tricky.
+> > 
+> > The problem is that I have no idea how to test this.
+> 
+> It's a 3 step process:
+> 
+> 1. 
+> Install qemu-kvm under fc13, or build recent one from source,
+> get it from here:
+> git://git.kernel.org/pub/scm/virt/kvm/qemu-kvm.git
+> 
+> 2. install guest under it:
+> qemu-img create -f qcow2 disk.qcow2 100G
+> Now get some image (e.g. fedora 13 in fc13.iso)
+> and install guest:
+> qemu-kvm -enable-kvm -m 1G -cdrom fc13.iso -drive file=disk.qcow2
+> 
+> 
+> 3. set up networking. I usually simply do host to guest 
+> on a special subnet for testing purposes:
+> 
+> Set up a bridge named mstbr0:
+> 
+> ifconfig mstbr0 down
+> brctl delbr mstbr0
+> brctl addbr mstbr0
+> brctl setfd mstbr0 0
+> ifconfig mstbr0 11.0.0.1
+> 
+> cat > ifup << EOF
+> #!/bin/sh -x
+> /sbin/ifconfig msttap0 0.0.0.0 up
+> brctl addif mstbr0 msttap0
+> EOF
+> 
+> 
+> qemu-kvm -enable-kvm -m 1G -cdrom fc13.iso -drive file=disk.qcow2
+>  -net nic,model=virtio,netdev=foo -netdev
+> tap,id=foo,ifname=msttap0,script=/home/mst/ifup,downscript=no,vhost=on
+> 
+> after you set up the guest, log into it and
+> ifconfig eth0 11.0.0.2
+> 
+> You should now be able to ping guest to host and back.
+> Use something like netperf to stress the connection.
+> Close qemu with kill -9 and unload module to test flushing code.
+> 
+> 
+> 
+> > Index: work/drivers/vhost/vhost.c
+> > ===================================================================
+> > --- work.orig/drivers/vhost/vhost.c
+> > +++ work/drivers/vhost/vhost.c
+> 
+> ...
+> 
+> > @@ -125,10 +139,50 @@ static void vhost_vq_reset(struct vhost_
+> >  	vq->log_ctx = NULL;
+> >  }
+> > 
+> > +static int vhost_poller(void *data)
+> > +{
+> > +	struct vhost_dev *dev = data;
+> > +	struct vhost_poll *poll;
+> > +
+> > +repeat:
+> > +	set_current_state(TASK_INTERRUPTIBLE);	/* mb paired w/ kthread_stop */
+> > +
+> > +	if (kthread_should_stop()) {
+> > +		__set_current_state(TASK_RUNNING);
+> > +		return 0;
+> > +	}
+> > +
+> > +	poll = NULL;
+> > +	spin_lock(&dev->poller_lock);
+> > +	if (!list_empty(&dev->poll_list)) {
+> > +		poll = list_first_entry(&dev->poll_list,
+> > +					struct vhost_poll, node);
+> > +		list_del_init(&poll->node);
+> > +	}
+> > +	spin_unlock(&dev->poller_lock);
+> > +
+> > +	if (poll) {
+> > +		__set_current_state(TASK_RUNNING);
+> > +		poll->fn(poll);
+> > +		smp_wmb();	/* paired with rmb in vhost_poll_flush() */
+> > +		poll->done_seq = poll->queue_seq;
+> > +		wake_up_all(&poll->done);
+> 
+> 
+> This seems to add wakeups on data path, which uses spinlocks etc.
+> OTOH workqueue.c adds a special barrier
+> entry which only does a wakeup when needed.
+> Right?
+> 
+> > +	} else
+> > +		schedule();
+> > +
+> > +	goto repeat;
+> > +}
+> > +
+> >  long vhost_dev_init(struct vhost_dev *dev,
+> >  		    struct vhost_virtqueue *vqs, int nvqs)
+> >  {
+> > +	struct task_struct *poller;
+> >  	int i;
+> > +
+> > +	poller = kthread_create(vhost_poller, dev, "vhost-%d", current->pid);
+> > +	if (IS_ERR(poller))
+> > +		return PTR_ERR(poller);
+> > +
+> >  	dev->vqs = vqs;
+> >  	dev->nvqs = nvqs;
+> >  	mutex_init(&dev->mutex);
+> > @@ -136,6 +190,9 @@ long vhost_dev_init(struct vhost_dev *de
+> >  	dev->log_file = NULL;
+> >  	dev->memory = NULL;
+> >  	dev->mm = NULL;
+> > +	spin_lock_init(&dev->poller_lock);
+> > +	INIT_LIST_HEAD(&dev->poll_list);
+> > +	dev->poller = poller;
+> > 
+> >  	for (i = 0; i < dev->nvqs; ++i) {
+> >  		dev->vqs[i].dev = dev;
+> > @@ -143,8 +200,7 @@ long vhost_dev_init(struct vhost_dev *de
+> >  		vhost_vq_reset(dev, dev->vqs + i);
+> >  		if (dev->vqs[i].handle_kick)
+> >  			vhost_poll_init(&dev->vqs[i].poll,
+> > -					dev->vqs[i].handle_kick,
+> > -					POLLIN);
+> > +					dev->vqs[i].handle_kick, POLLIN, dev);
+> >  	}
+> >  	return 0;
+> >  }
+> > @@ -217,6 +273,8 @@ void vhost_dev_cleanup(struct vhost_dev
+> >  	if (dev->mm)
+> >  		mmput(dev->mm);
+> >  	dev->mm = NULL;
+> > +
+> > +	kthread_stop(dev->poller);
+> >  }
+> > 
+> >  static int log_access_ok(void __user *log_base, u64 addr, unsigned long sz)
+> > @@ -1113,16 +1171,3 @@ void vhost_disable_notify(struct vhost_v
+> >  		vq_err(vq, "Failed to enable notification at %p: %d\n",
+> >  		       &vq->used->flags, r);
+> >  }
+> > -
+> > -int vhost_init(void)
+> > -{
+> > -	vhost_workqueue = create_singlethread_workqueue("vhost");
+> > -	if (!vhost_workqueue)
+> > -		return -ENOMEM;
+> > -	return 0;
+> > -}
+> > -
+> > -void vhost_cleanup(void)
+> > -{
+> > -	destroy_workqueue(vhost_workqueue);
+> 
+> I note that destroy_workqueue does a flush, kthread_stop
+> doesn't. Right? Sure we don't need to check nothing is in one of
+> the lists? Maybe add a BUG_ON?
+> 
+> > -}
+> > Index: work/drivers/vhost/vhost.h
+> > ===================================================================
+> > --- work.orig/drivers/vhost/vhost.h
+> > +++ work/drivers/vhost/vhost.h
+> > @@ -5,7 +5,6 @@
+> >  #include <linux/vhost.h>
+> >  #include <linux/mm.h>
+> >  #include <linux/mutex.h>
+> > -#include <linux/workqueue.h>
+> >  #include <linux/poll.h>
+> >  #include <linux/file.h>
+> >  #include <linux/skbuff.h>
+> > @@ -20,19 +19,26 @@ enum {
+> >  	VHOST_NET_MAX_SG = MAX_SKB_FRAGS + 2,
+> >  };
+> > 
+> > +struct vhost_poll;
+> > +typedef void (*vhost_poll_fn_t)(struct vhost_poll *poll);
+> > +
+> >  /* Poll a file (eventfd or socket) */
+> >  /* Note: there's nothing vhost specific about this structure. */
+> >  struct vhost_poll {
+> > +	vhost_poll_fn_t		  fn;
+> >  	poll_table                table;
+> >  	wait_queue_head_t        *wqh;
+> >  	wait_queue_t              wait;
+> > -	/* struct which will handle all actual work. */
+> > -	struct work_struct        work;
+> > +	struct list_head	  node;
+> > +	wait_queue_head_t	  done;
+> >  	unsigned long		  mask;
+> > +	struct vhost_dev	 *dev;
+> > +	int			  queue_seq;
+> > +	int			  done_seq;
+> >  };
+> > 
+> > -void vhost_poll_init(struct vhost_poll *poll, work_func_t func,
+> > -		     unsigned long mask);
+> > +void vhost_poll_init(struct vhost_poll *poll, vhost_poll_fn_t fn,
+> > +		     unsigned long mask, struct vhost_dev *dev);
+> >  void vhost_poll_start(struct vhost_poll *poll, struct file *file);
+> >  void vhost_poll_stop(struct vhost_poll *poll);
+> >  void vhost_poll_flush(struct vhost_poll *poll);
+> > @@ -63,7 +69,7 @@ struct vhost_virtqueue {
+> >  	struct vhost_poll poll;
+> > 
+> >  	/* The routine to call when the Guest pings us, or timeout. */
+> > -	work_func_t handle_kick;
+> > +	vhost_poll_fn_t handle_kick;
+> > 
+> >  	/* Last available index we saw. */
+> >  	u16 last_avail_idx;
+> > @@ -86,11 +92,11 @@ struct vhost_virtqueue {
+> >  	struct iovec hdr[VHOST_NET_MAX_SG];
+> >  	size_t hdr_size;
+> >  	/* We use a kind of RCU to access private pointer.
+> > -	 * All readers access it from workqueue, which makes it possible to
+> > -	 * flush the workqueue instead of synchronize_rcu. Therefore readers do
+> > +	 * All readers access it from poller, which makes it possible to
+> > +	 * flush the vhost_poll instead of synchronize_rcu. Therefore readers do
+> >  	 * not need to call rcu_read_lock/rcu_read_unlock: the beginning of
+> > -	 * work item execution acts instead of rcu_read_lock() and the end of
+> > -	 * work item execution acts instead of rcu_read_lock().
+> > +	 * vhost_poll execution acts instead of rcu_read_lock() and the end of
+> > +	 * vhost_poll execution acts instead of rcu_read_lock().
+> >  	 * Writers use virtqueue mutex. */
+> >  	void *private_data;
+> >  	/* Log write descriptors */
+> > @@ -110,6 +116,9 @@ struct vhost_dev {
+> >  	int nvqs;
+> >  	struct file *log_file;
+> >  	struct eventfd_ctx *log_ctx;
+> > +	spinlock_t poller_lock;
+> > +	struct list_head poll_list;
+> > +	struct task_struct *poller;
+> >  };
+> > 
+> >  long vhost_dev_init(struct vhost_dev *, struct vhost_virtqueue *vqs, int nvqs);
+> > @@ -136,9 +145,6 @@ bool vhost_enable_notify(struct vhost_vi
+> >  int vhost_log_write(struct vhost_virtqueue *vq, struct vhost_log *log,
+> >  		    unsigned int log_num, u64 len);
+> > 
+> > -int vhost_init(void);
+> > -void vhost_cleanup(void);
+> > -
+> >  #define vq_err(vq, fmt, ...) do {                                  \
+> >  		pr_debug(pr_fmt(fmt), ##__VA_ARGS__);       \
+> >  		if ((vq)->error_ctx)                               \
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
