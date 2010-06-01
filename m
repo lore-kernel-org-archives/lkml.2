@@ -1,41 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932161Ab0FAPzm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Jun 2010 11:55:42 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:34940 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755601Ab0FAPzl (ORCPT
+	id S932173Ab0FAP52 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Jun 2010 11:57:28 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:57451 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757023Ab0FAP51 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Jun 2010 11:55:41 -0400
-Date: Tue, 1 Jun 2010 08:51:32 -0700 (PDT)
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Jesper Nilsson <jesper.nilsson@axis.com>
-cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       mikael.starvik@axis.com
-Subject: Re: Linux 2.6.35-rc1
-In-Reply-To: <20100531094652.GI5051@axis.com>
-Message-ID: <alpine.LFD.2.00.1006010850230.3637@i5.linux-foundation.org>
-References: <alpine.LFD.2.00.1005301356350.3986@i5.linux-foundation.org> <20100531094652.GI5051@axis.com>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Tue, 1 Jun 2010 11:57:27 -0400
+Subject: Re: [PATCH 2/4] sched: adjust when cpu_active and cpuset
+ configurations are updated during cpu on/offlining
+From: Peter Zijlstra <peterz@infradead.org>
+To: Tejun Heo <tj@kernel.org>
+Cc: mingo@elte.hu, linux-kernel@vger.kernel.org, rusty@rustcorp.com.au,
+       paulus@samba.org, acme@redhat.com, Paul Menage <menage@google.com>
+In-Reply-To: <1275332199-28082-3-git-send-email-tj@kernel.org>
+References: <1275332199-28082-1-git-send-email-tj@kernel.org>
+	 <1275332199-28082-3-git-send-email-tj@kernel.org>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Tue, 01 Jun 2010 17:57:26 +0200
+Message-ID: <1275407846.27810.27627.camel@twins>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-On Mon, 31 May 2010, Jesper Nilsson wrote:
+On Mon, 2010-05-31 at 20:56 +0200, Tejun Heo wrote:
+> Currently, when a cpu goes down, cpu_active is cleared before
+> CPU_DOWN_PREPARE starts and cpuset configuration is updated from a
+> default priority cpu notifier.  When a cpu is coming up, it's set
+> before CPU_ONLINE but cpuset configuration again is updated from the
+> same cpu notifier.
 > 
-> I'm missing the CRIS tree changes, however, it seems to be me that
-> screwed up here, my new computer was misconfigured for outgoing mail, so the
-> request probably never reached you. Sorry about that.
+> For cpu notifiers, this presents an inconsistent state.  Threads which
+> a CPU_DOWN_PREPARE notifier expects to be bound to the CPU can be
+> migrated to other cpus because the cpu is no more inactive.
 > 
-> Of the changes, the "mask_irq" one is still a candidate since it
-> fixes a compile error.
+> Fix it by updating cpu_active in the highest priority cpu notifier and
+> cpuset configuration in the second highest when a cpu is coming up.
+> Down path is updated similarly.  This guarantees that all other cpu
+> notifiers see consistent cpu_active and cpuset configuration.
+> 
+> This problem is triggered by cmwq.  During CPU_DOWN_PREPARE, hotplug
+> callback creates a kthread and kthread_bind()s it to the target cpu,
+> and the thread is expected to run on that cpu.
 
-Ok, I'll take them, since while it's late it's all in arch/cris. And if 
-you broke it, you get to keep both pieces, and I can't really claim to 
-care too deeply ;)
+I know we all love notifier lists, but doesn't the below code get lots
+more readable if we don't play tricks with notifier priorities and
+simply hardcode the few (perf/sched/cpuset) callbacks into the hotplug
+paths?
 
-		Linus
+Also, I'm afraid you've now inverted the relation between
+cpu_active_mask and parition_sched_domains().
+
+You need to first set/clear the active mask, then rebuild the domain.
+But with your patch parition_sched_domains() gets called in the regular
+DOWN_PREPARE path, while we only clear active at the very end, which
+means we build the wrong domains.
+
+
