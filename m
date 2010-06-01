@@ -1,76 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754424Ab0FADWs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 May 2010 23:22:48 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:62237 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752957Ab0FADWk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 May 2010 23:22:40 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=cOFnGmKLjdIA5b4noUT0jkfIIYi9itE3/e/zy9muGJpsXba9YrOUkUamAeclOIrVla
-         G9y3MYeATJjAuKPjB+AMeCIvaDntq6n0LyuYNyMDCJ/Trtdz/hSHlTz4eqPku4vwpEB6
-         Pizn6QbNo/KrD+a+HkzYzr9vFwwFDBiPixLNQ=
-MIME-Version: 1.0
-In-Reply-To: <4C047B38.9050506@tmr.com>
-References: <1275347969.29006.5.camel@lithium.local.net>
-	<4C0448B5.7090904@gmail.com>
-	<4C047B38.9050506@tmr.com>
-Date: Mon, 31 May 2010 21:22:38 -0600
-Message-ID: <AANLkTin-kNPeEsyweU1dJM7Jbe0TzbRfLWlkqdbr4GlQ@mail.gmail.com>
-Subject: Re: Article in Phoronix about loss of performance in 2.6.35 release 
-	candidates
-From: Robert Hancock <hancockrwd@gmail.com>
-To: Bill Davidsen <davidsen@tmr.com>
-Cc: alex.buell@munted.org.uk,
-       Mailing Lists - Kernel Developers 
-	<linux-kernel@vger.kernel.org>,
-       Dave Airlie <airlied@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1754903Ab0FADXf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 May 2010 23:23:35 -0400
+Received: from mail.perches.com ([173.55.12.10]:2473 "EHLO mail.perches.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754766Ab0FADXc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 31 May 2010 23:23:32 -0400
+From: Joe Perches <joe@perches.com>
+To: linux-kernel@vger.kernel.org
+Cc: Kyle McMartin <kyle@mcmartin.ca>, Helge Deller <deller@gmx.de>,
+       "James E.J. Bottomley" <jejb@parisc-linux.org>,
+       linux-parisc@vger.kernel.org
+Subject: [PATCH 14/21] drivers/parisc/iosapic.c: Remove unnecessary kzalloc cast
+Date: Mon, 31 May 2010 20:23:16 -0700
+Message-Id: <ba7d48df75ca37c39b0e519921c116a617e71db7.1275360951.git.joe@perches.com>
+X-Mailer: git-send-email 1.7.0.3.311.g6a6955
+In-Reply-To: <cover.1275360951.git.joe@perches.com>
+References: <cover.1275360951.git.joe@perches.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 31, 2010 at 9:15 PM, Bill Davidsen <davidsen@tmr.com> wrote:
-> Robert Hancock wrote:
->>
->> On 05/31/2010 05:19 PM, Alex Buell wrote:
->>>
->>> http://www.phoronix.com/vr.php?view=14976
->>>
->>> Question: Why?
->>
->> Good question.. I guess it would too much to ask of them to try to figure
->> out what area the problem lies in (even to the point of figuring out if it's
->> a CPU or IO-bound problem), or try to bisect, or at least report it to LKML
->> before going to the trouble of creating 5 pages of graphs.. Given the 20x
->> slowdown in some of the benchmarks you'd think it wouldn't be too hard to
->> narrow down.
->
-> That's true, but 20x should be too hard for people to detect when they do QA
-> after creating a patch, before sending it to LKML in the first place,
-> either. If such a regression made it to an -rc1 then it really is kind of a
-> big deal. Of course Phoronics running the tests on netbook processors is
-> probably a good thing, I doubt many developers and testers are compiling
-> kernels on a rig like that, or doing much of anything else demanding.
->
-> I guess I would expect people to react with dismay to the fact that such a
-> problem made it undetected to rc stage, but perhaps I have too much respect
-> for developers. This looks more like "how dare they not keep it quiet and
-> just tell us" indignation. In the end I doubt it makes a lot of difference,
-> if someone posted to LKML and Slashdot picked it up, be sure it would have
-> hit the media anyway.
->
-> Should any media keep a defect quiet when they make their living informing
-> the readers? I see a lot of glee among Linux users every few days when a new
-> Windows bug becomes public. Phoronics tested and reported, why is that less
-> honorable than Tom's Hardware telling us a new CPU sucks?
+Convert kzalloc to kcalloc
 
-Of course they shouldn't keep it quiet. The problem is they went and
-wrote an article that was basically "OMG HUGE PERFORMANCE LOSS!!1!!"
-without reporting the problem to people that can actually do something
-about it, and also didn't provide any very useful details like dmesg,
-config, etc. that might let someone figure out what's going on.
+Signed-off-by: Joe Perches <joe@perches.com>
+---
+ drivers/parisc/iosapic.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/parisc/iosapic.c b/drivers/parisc/iosapic.c
+index c768367..3e6f56c 100644
+--- a/drivers/parisc/iosapic.c
++++ b/drivers/parisc/iosapic.c
+@@ -891,8 +891,8 @@ void *iosapic_register(unsigned long hpa)
+ 	isi->isi_version = iosapic_rd_version(isi);
+ 	isi->isi_num_vectors = IOSAPIC_IRDT_MAX_ENTRY(isi->isi_version) + 1;
+ 
+-	vip = isi->isi_vector = (struct vector_info *)
+-		kzalloc(sizeof(struct vector_info) * isi->isi_num_vectors, GFP_KERNEL);
++	vip = isi->isi_vector = kcalloc(isi->isi_num_vectors,
++					sizeof(struct vector_info), GFP_KERNEL);
+ 	if (vip == NULL) {
+ 		kfree(isi);
+ 		return NULL;
+-- 
+1.7.0.3.311.g6a6955
+
