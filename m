@@ -1,53 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756928Ab0FAVpp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Jun 2010 17:45:45 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:45318 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754675Ab0FAVpn (ORCPT
+	id S1756730Ab0FAVs3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Jun 2010 17:48:29 -0400
+Received: from cavan.codon.org.uk ([93.93.128.6]:34285 "EHLO
+	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754425Ab0FAVs2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Jun 2010 17:45:43 -0400
-Date: Tue, 1 Jun 2010 22:45:27 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Kees Cook <kees.cook@canonical.com>
-Cc: Eric Paris <eparis@redhat.com>, Christoph Hellwig <hch@infradead.org>,
-       James Morris <jmorris@namei.org>, linux-kernel@vger.kernel.org,
-       linux-security-module@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-       linux-doc@vger.kernel.org, Randy Dunlap <rdunlap@xenotime.net>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Jiri Kosina <jkosina@suse.cz>, Dave Young <hidave.darkstar@gmail.com>,
-       Martin Schwidefsky <schwidefsky@de.ibm.com>,
-       David Howells <dhowells@redhat.com>, Ingo Molnar <mingo@elte.hu>,
-       Peter Zijlstra <a.p.zijlstra@chello.nl>,
-       "Eric W. Biederman" <ebiederm@xmission.com>,
-       Tim Gardner <tim.gardner@canonical.com>,
-       "Serge E. Hallyn" <serue@us.ibm.com>
-Subject: Re: [PATCH v3] fs: allow protected cross-uid sticky symlinks
-Message-ID: <20100601214527.GU31073@ZenIV.linux.org.uk>
-References: <20100601185248.GB4098@outflux.net>
- <20100601190102.GT31073@ZenIV.linux.org.uk>
- <20100601210734.GD4098@outflux.net>
+	Tue, 1 Jun 2010 17:48:28 -0400
+Date: Tue, 1 Jun 2010 22:48:20 +0100
+From: Matthew Garrett <mjg59@srcf.ucam.org>
+To: "Justin P. Mattock" <justinmattock@gmail.com>
+Cc: x86@kernel.org, tglx@linutronix.de, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH]X86:reboot.c Add some dmi entries to
+	pci_reboot_dmi_table.
+Message-ID: <20100601214820.GB18864@srcf.ucam.org>
+References: <20100601200704.GA16091@srcf.ucam.org> <4C056AE6.3000409@gmail.com> <20100601202130.GA16391@srcf.ucam.org> <4C056E0C.2030709@gmail.com> <20100601203351.GA16575@srcf.ucam.org> <4C0572B4.6000201@gmail.com> <20100601211219.GA17719@srcf.ucam.org> <4C057AE9.9020307@gmail.com> <20100601212901.GA18390@srcf.ucam.org> <4C057EF0.2030808@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100601210734.GD4098@outflux.net>
-User-Agent: Mutt/1.5.20 (2009-08-17)
+In-Reply-To: <4C057EF0.2030808@gmail.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 01, 2010 at 02:07:34PM -0700, Kees Cook wrote:
-> > I don't buy it.  If we are concerned about the symlinks in the middle of
-> > pathname, your checks are useless (mkdir /tmp/a, ln -s whatever /tmp/a/b,
-> > have victim open /tmp/a/b/something).  If we are not, then your checks are
-> > in the wrong place.
-> 
-> Well, that's not traditionally where the problems happen, but I have no
-> problem strengthening the protection to include a full examination of the
-> entire path looking for sticky/world-writable directories.
-> 
-> If not, what is the right place for the checks?
+On Tue, Jun 01, 2010 at 02:43:12PM -0700, Justin P. Mattock wrote:
+> On 06/01/2010 02:29 PM, Matthew Garrett wrote:
+>> So, just to be clear, you run this as root and it immediately returns
+>> you to the prompt? This seems unlikely.
+>
+> yep.. with the above code
+> I (save to a file) then
+> non-root gcc reboot.c -o reboot
+> then su
+> ./reboot
+> just bake to the command prompt
 
-Handling of trailing symlink on open().  At most.  And I wouldn't be
-surprised if the real answer turns out to include "... if we have
-O_CREAT in flags", but that needs to be determined.
+Are you running some sort of security policy that might block hardware 
+access? I'm going to have to find one of these machines to test with - 
+on everything I have here, the cf9 write and the keyboard controller 
+write both generate reboots. The worst case should be a hung machine, 
+not one that continues running...
+
+-- 
+Matthew Garrett | mjg59@srcf.ucam.org
