@@ -1,49 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754052Ab0FATdV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Jun 2010 15:33:21 -0400
-Received: from mail.tmr.com ([64.65.253.246]:59022 "EHLO partygirl.tmr.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753279Ab0FATdU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Jun 2010 15:33:20 -0400
-Message-ID: <4C05607C.6010208@tmr.com>
-Date: Tue, 01 Jun 2010 15:33:16 -0400
-From: Bill Davidsen <davidsen@tmr.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.8.1.21) Gecko/20090507 Fedora/1.1.16-1.fc9 NOT Firefox/3.0.11 SeaMonkey/1.1.16
+	id S1753709Ab0FATgO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Jun 2010 15:36:14 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:44194 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750748Ab0FATgM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Jun 2010 15:36:12 -0400
+Date: Tue, 1 Jun 2010 15:35:28 -0400
+From: Chris Mason <chris.mason@oracle.com>
+To: Nick Piggin <npiggin@suse.de>
+Cc: James Bottomley <James.Bottomley@suse.de>, Matthew Wilcox <matthew@wil.cx>,
+       Christof Schmitt <christof.schmitt@de.ibm.com>,
+       Boaz Harrosh <bharrosh@panasas.com>,
+       "Martin K. Petersen" <martin.petersen@oracle.com>,
+       linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
+       linux-fsdevel@vger.kernel.org
+Subject: Re: Wrong DIF guard tag on ext2 write
+Message-ID: <20100601193528.GV8980@think>
+Mail-Followup-To: Chris Mason <chris.mason@oracle.com>,
+	Nick Piggin <npiggin@suse.de>,
+	James Bottomley <James.Bottomley@suse.de>,
+	Matthew Wilcox <matthew@wil.cx>,
+	Christof Schmitt <christof.schmitt@de.ibm.com>,
+	Boaz Harrosh <bharrosh@panasas.com>,
+	"Martin K. Petersen" <martin.petersen@oracle.com>,
+	linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
+	linux-fsdevel@vger.kernel.org
+References: <20100601103041.GA15922@schmichrtp.mainz.de.ibm.com>
+ <1275398876.21962.6.camel@mulgrave.site>
+ <20100601133341.GK8980@think>
+ <1275399637.21962.11.camel@mulgrave.site>
+ <20100601134951.GM8980@think>
+ <20100601162929.GC32708@parisc-linux.org>
+ <20100601164750.GQ8980@think>
+ <1275411293.21962.387.camel@mulgrave.site>
+ <20100601180905.GR8980@think>
+ <20100601184649.GE9453@laptop>
 MIME-Version: 1.0
-To: "Fred ." <eldmannen@gmail.com>
-CC: linux-kernel@vger.kernel.org
-Subject: Re: What computer do Linus and other prominent kernel developers
- have?
-References: <AANLkTinUwSwiMKsP6ocBJpHMX83YLZaADylHasdyqJEu@mail.gmail.com>
-In-Reply-To: <AANLkTinUwSwiMKsP6ocBJpHMX83YLZaADylHasdyqJEu@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100601184649.GE9453@laptop>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Auth-Type: Internal IP
+X-Source-IP: acsinet15.oracle.com [141.146.126.227]
+X-CT-RefId: str=0001.0A090205.4C056122.019B:SCFMA922111,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fred . wrote:
-> What exact computer hardware components do Linus Torvalds have in his
-> computer system?
-> Also other prominent kernel developers like Alan Cox, etc.
+On Wed, Jun 02, 2010 at 04:46:49AM +1000, Nick Piggin wrote:
+> On Tue, Jun 01, 2010 at 02:09:05PM -0400, Chris Mason wrote:
+> > On Tue, Jun 01, 2010 at 04:54:53PM +0000, James Bottomley wrote:
+> > 
+> > > For self
+> > > induced errors (as long as we can detect them) I think we can just
+> > > forget about it ... if the changed page is important, the I/O request
+> > > gets repeated (modulo the problem of too great a frequency of changes
+> > > leading to us never successfully writing it) or it gets dropped because
+> > > the file was truncated or the data deleted for some other reason.
+> > 
+> > Sorry, how can we tell the errors that are self induced from the evil
+> > bit flipping cable induced errors?
 > 
-> If want to buy same motherboard, CPU, GPU, HDD, etc.
+> Block layer should retry it with bounce pages. That would be a lot nicer
+> than forcing all upper layers to avoid the problem.
 > 
-I suspect that developers are unlikely to be running any hardware you can 
-duplicate, and if they are anything like me they will change hardware regularly 
-for one reason or another, to test something, have fun using something, or 
-because some part of a system was redeployed.
 
-> That way, I know there wont be any problems running Linux, because if
-> I have that problem,
-> then he will also have that problem.
-> If he have that problem, he will surely fix it.
+So the idea is that we have sent down a buffer and it changed in flight.
+The block layer is going to say: oh look, the crcs don't match, I'll
+bounce it, recrc it and send again.  But, there are at least 3 reasons the crc
+will change:
 
-Wouldn't bet on that, either, usage controls which bugs you see to some extent. 
-Get something common.
+1) filesystem changed it
+2) corruption on the wire or in the raid controller
+3) the page was corrupted while the IO layer was doing the IO.
 
--- 
-Bill Davidsen <davidsen@tmr.com>
-   "We have more to fear from the bungling of the incompetent than from
-the machinations of the wicked."  - from Slashdot
+1 and 2 are easy, we bounce, retry and everyone continues on with
+their lives.  With #3, we'll recrc and send the IO down again thinking
+the data is correct when really we're writing garbage.
+
+How can we tell these three cases apart?
+
+-chris
+
