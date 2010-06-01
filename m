@@ -1,51 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756771Ab0FAV1I (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Jun 2010 17:27:08 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:45642 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754155Ab0FAV1E (ORCPT
+	id S1756556Ab0FAV3N (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Jun 2010 17:29:13 -0400
+Received: from cavan.codon.org.uk ([93.93.128.6]:41498 "EHLO
+	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754789Ab0FAV3L (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Jun 2010 17:27:04 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id:
-	references:user-agent:mime-version:content-type:x-system-of-record;
-	b=W+RH3kGq59Vx7YncqGoO7u2L6sCXwK7+tocTXqlV8f93ecDRPQeVN0pgHX5CM9QLz
-	ayqYL+NVB6P5c8v1+Hgvw==
-Date: Tue, 1 Jun 2010 14:26:56 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Oleg Nesterov <oleg@redhat.com>
-cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-       LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-       Nick Piggin <npiggin@suse.de>
-Subject: Re: [PATCH 1/5] oom: select_bad_process: check PF_KTHREAD instead
- of !mm to skip kthreads
-In-Reply-To: <20100601212023.GA24917@redhat.com>
-Message-ID: <alpine.DEB.2.00.1006011424200.16725@chino.kir.corp.google.com>
-References: <20100531182526.1843.A69D9226@jp.fujitsu.com> <alpine.DEB.2.00.1006011333470.13136@chino.kir.corp.google.com> <20100601212023.GA24917@redhat.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Tue, 1 Jun 2010 17:29:11 -0400
+Date: Tue, 1 Jun 2010 22:29:01 +0100
+From: Matthew Garrett <mjg59@srcf.ucam.org>
+To: "Justin P. Mattock" <justinmattock@gmail.com>
+Cc: x86@kernel.org, tglx@linutronix.de, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH]X86:reboot.c Add some dmi entries to
+	pci_reboot_dmi_table.
+Message-ID: <20100601212901.GA18390@srcf.ucam.org>
+References: <20100601192101.GA15086@srcf.ucam.org> <4C056839.8020605@gmail.com> <20100601200704.GA16091@srcf.ucam.org> <4C056AE6.3000409@gmail.com> <20100601202130.GA16391@srcf.ucam.org> <4C056E0C.2030709@gmail.com> <20100601203351.GA16575@srcf.ucam.org> <4C0572B4.6000201@gmail.com> <20100601211219.GA17719@srcf.ucam.org> <4C057AE9.9020307@gmail.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-System-Of-Record: true
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4C057AE9.9020307@gmail.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 1 Jun 2010, Oleg Nesterov wrote:
+On Tue, Jun 01, 2010 at 02:26:01PM -0700, Justin P. Mattock wrote:
+> On 06/01/2010 02:12 PM, Matthew Garrett wrote:
+>> some level. How about the following (again, run as root):
+>>
+>> #include<sys/io.h>
+>>
+>> int main() {
+>> 	iopl(3);
+>> 	outb(0xfe, 0x64);
+>> 	return 0;
+>> }
+>>
 
-> But yes, I agree, the problem is minor. But nevertheless it is bug,
-> the longstanding bug with the simple fix. Why should we "hide" this fix
-> inside the long series of non-trivial patches which rewrite oom-killer?
-> And it is completely orthogonal to other changes.
-> 
+So, just to be clear, you run this as root and it immediately returns 
+you to the prompt? This seems unlikely.
 
-Again, the question is whether or not the fix is rc material or not, 
-otherwise there's no difference in the route that it gets upstream: the 
-patch is duplicated in both series.  If you feel that this minor issue 
-(which has never been reported in at least the last three years and 
-doesn't have any side effects other than a couple of millisecond delay 
-until unuse_mm() when the oom killer will kill something else) should be 
-addressed in 2.6.35-rc2, then that's a conversation to be had with Andrew.
+> ahh!! I see now:
+> grep 0x64 *.dsl
+
+No, that's unrelated.
+
+-- 
+Matthew Garrett | mjg59@srcf.ucam.org
