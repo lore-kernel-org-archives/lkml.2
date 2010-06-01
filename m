@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932131Ab0FAPsS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Jun 2010 11:48:18 -0400
-Received: from one.firstfloor.org ([213.235.205.2]:33452 "EHLO
+	id S932158Ab0FAPxM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Jun 2010 11:53:12 -0400
+Received: from one.firstfloor.org ([213.235.205.2]:54248 "EHLO
 	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757078Ab0FAPsR (ORCPT
+	with ESMTP id S1755580Ab0FAPxL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Jun 2010 11:48:17 -0400
-To: Nick Piggin <npiggin@suse.de>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-       Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
-       linux-mm@kvack.org, linux-kernel@vger.kernel.org, Lee@firstfloor.org,
-       Schermerh@firstfloor.org
-Subject: Re: [rfc] forked kernel task and mm structures imbalanced on NUMA
+	Tue, 1 Jun 2010 11:53:11 -0400
+To: Gleb Natapov <gleb@redhat.com>
+Cc: linux-kernel@vger.kernel.org, kvm@vger.kernel.org, avi@redhat.com,
+       hpa@zytor.com, mingo@elte.hu, npiggin@suse.de, tglx@linutronix.de,
+       mtosatti@redhat.com
+Subject: Re: [PATCH] use unfair spinlock when running on hypervisor.
 From: Andi Kleen <andi@firstfloor.org>
-References: <20100601073343.GQ9453@laptop>
-Date: Tue, 01 Jun 2010 17:48:10 +0200
-In-Reply-To: <20100601073343.GQ9453@laptop> (Nick Piggin's message of "Tue\, 1 Jun 2010 17\:33\:43 +1000")
-Message-ID: <87wruiycsl.fsf@basil.nowhere.org>
+References: <20100601093515.GH24302@redhat.com>
+Date: Tue, 01 Jun 2010 17:53:09 +0200
+In-Reply-To: <20100601093515.GH24302@redhat.com> (Gleb Natapov's message of "Tue\, 1 Jun 2010 12\:35\:15 +0300")
+Message-ID: <87sk56ycka.fsf@basil.nowhere.org>
 User-Agent: Gnus/5.11 (Gnus v5.11) Emacs/22.3 (gnu/linux)
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
@@ -25,19 +24,17 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Nick Piggin <npiggin@suse.de> writes:
+Gleb Natapov <gleb@redhat.com> writes:
+>
+> The patch below allows to patch ticket spinlock code to behave similar to
+> old unfair spinlock when hypervisor is detected. After patching unlocked
 
-> This isn't really a new problem, and I don't know how important it is,
-> but I recently came across it again when doing some aim7 testing with
-> huge numbers of tasks.
+The question is what happens when you have a system with unfair
+memory and you run the hypervisor on that. There it could be much worse.
 
-Seems reasonable. Of course you need to at least 
-save/restore the old CPU policy, and use a subset of it.
+Your new code would starve again, right?
 
-Another approach would be to migrate this on touch, but that is probably
-slightly more difficult. The advantage would be that on multiple
-migrations it would follow. And it would be a bit slower for
-the initial case.
+There's a reason the ticket spinlocks were added in the first place.
 
 -Andi
 
