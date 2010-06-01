@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756640Ab0FAN32 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Jun 2010 09:29:28 -0400
-Received: from s15228384.onlinehome-server.info ([87.106.30.177]:45648 "EHLO
+	id S1756675Ab0FAN33 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Jun 2010 09:29:29 -0400
+Received: from s15228384.onlinehome-server.info ([87.106.30.177]:45653 "EHLO
 	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756401Ab0FAN3W (ORCPT
+	with ESMTP id S1756351Ab0FAN3W (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 1 Jun 2010 09:29:22 -0400
 From: Borislav Petkov <bp@amd64.org>
@@ -12,9 +12,9 @@ To: <mingo@elte.hu>, <norsk5@yahoo.com>
 Cc: <hpa@zytor.com>, <tglx@linutronix.de>, <linux-edac@vger.kernel.org>,
        <linux-kernel@vger.kernel.org>,
        Borislav Petkov <borislav.petkov@amd.com>
-Subject: [PATCH 2/6] edac: Remove EDAC_DEBUG_VERBOSE
-Date: Tue,  1 Jun 2010 15:29:27 +0200
-Message-Id: <1275398971-12439-3-git-send-email-bp@amd64.org>
+Subject: [PATCH 1/6] amd64_edac: Dump syndrome size in debug mode
+Date: Tue,  1 Jun 2010 15:29:26 +0200
+Message-Id: <1275398971-12439-2-git-send-email-bp@amd64.org>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1275398971-12439-1-git-send-email-bp@amd64.org>
 References: <1275398971-12439-1-git-send-email-bp@amd64.org>
@@ -24,83 +24,105 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Borislav Petkov <borislav.petkov@amd.com>
 
-This option differs from EDAC_DEBUG only by printing the file and
-line of where the debug statement is placed, which contains unneeded
-information. So remove it.
+Cache ECC syndrome size and dump it in debug output.
 
 Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
 ---
- drivers/edac/Kconfig     |    8 --------
- drivers/edac/edac_core.h |   15 ---------------
- 2 files changed, 0 insertions(+), 23 deletions(-)
+ drivers/edac/amd64_edac.c |   30 ++++++++++++++++++++----------
+ drivers/edac/amd64_edac.h |    4 ++++
+ 2 files changed, 24 insertions(+), 10 deletions(-)
 
-diff --git a/drivers/edac/Kconfig b/drivers/edac/Kconfig
-index 55c9c59..5a8a569 100644
---- a/drivers/edac/Kconfig
-+++ b/drivers/edac/Kconfig
-@@ -39,14 +39,6 @@ config EDAC_DEBUG
- 	  there're four debug levels (x=0,1,2,3 from low to high).
- 	  Usually you should select 'N'.
+diff --git a/drivers/edac/amd64_edac.c b/drivers/edac/amd64_edac.c
+index cf17dbb..297cc12 100644
+--- a/drivers/edac/amd64_edac.c
++++ b/drivers/edac/amd64_edac.c
+@@ -888,6 +888,8 @@ static void amd64_dump_misc_regs(struct amd64_pvt *pvt)
+ 		return;
+ 	}
  
--config EDAC_DEBUG_VERBOSE
--	bool "More verbose debugging"
--	depends on EDAC_DEBUG
--	help
--	  This option makes debugging information more verbose.
--	  Source file name and line number where debugging message
--	  printed will be added to debugging message.
++	debugf1("F3x180 (ECC symb.): %s\n", (pvt->x8_syndromes ? "x8" : "x4"));
++
+ 	/* Only if NOT ganged does dclr1 have valid info */
+ 	if (!dct_ganging_enabled(pvt))
+ 		amd64_dump_dramcfg_low(pvt->dclr1, 1);
+@@ -1955,23 +1957,19 @@ static int map_err_sym_to_channel(int err_sym, int sym_size)
+ static int get_channel_from_ecc_syndrome(struct mem_ctl_info *mci, u16 syndrome)
+ {
+ 	struct amd64_pvt *pvt = mci->pvt_info;
+-	u32 value = 0;
+-	int err_sym = 0;
 -
-  config EDAC_DECODE_MCE
- 	tristate "Decode MCEs in human-readable form (only on AMD for now)"
- 	depends on CPU_SUP_AMD && X86_MCE
-diff --git a/drivers/edac/edac_core.h b/drivers/edac/edac_core.h
-index 001b2e7..2efd8f7 100644
---- a/drivers/edac/edac_core.h
-+++ b/drivers/edac/edac_core.h
-@@ -49,21 +49,15 @@
- #define edac_printk(level, prefix, fmt, arg...) \
- 	printk(level "EDAC " prefix ": " fmt, ##arg)
+-	amd64_read_pci_cfg(pvt->misc_f3_ctl, 0x180, &value);
++	int err_sym = 0, sym_size = 0;
  
--#define edac_printk_verbose(level, prefix, fmt, arg...) \
--	printk(level "EDAC " prefix ": " "in %s, line at %d: " fmt,	\
--	       __FILE__, __LINE__, ##arg)
--
- #define edac_mc_printk(mci, level, fmt, arg...) \
- 	printk(level "EDAC MC%d: " fmt, mci->mc_idx, ##arg)
+-	/* F3x180[EccSymbolSize]=1, x8 symbols */
+-	if (boot_cpu_data.x86 == 0x10 &&
+-	    boot_cpu_data.x86_model > 7 &&
+-	    value & BIT(25)) {
++	if (pvt->x8_syndromes)	{
++		sym_size = 8;
+ 		err_sym = decode_syndrome(syndrome, x8_vectors,
+ 					  ARRAY_SIZE(x8_vectors), 8);
+-		return map_err_sym_to_channel(err_sym, 8);
+ 	} else {
++		sym_size = 4;
+ 		err_sym = decode_syndrome(syndrome, x4_vectors,
+ 					  ARRAY_SIZE(x4_vectors), 4);
+-		return map_err_sym_to_channel(err_sym, 4);
+ 	}
++
++	return map_err_sym_to_channel(err_sym, sym_size);
+ }
  
- #define edac_mc_chipset_printk(mci, level, prefix, fmt, arg...) \
- 	printk(level "EDAC " prefix " MC%d: " fmt, mci->mc_idx, ##arg)
+ /*
+@@ -2284,6 +2282,7 @@ static void amd64_free_mc_sibling_devices(struct amd64_pvt *pvt)
+ static void amd64_read_mc_registers(struct amd64_pvt *pvt)
+ {
+ 	u64 msr_val;
++	u32 tmp;
+ 	int dram;
  
--/* edac_device printk */
- #define edac_device_printk(ctl, level, fmt, arg...) \
- 	printk(level "EDAC DEVICE%d: " fmt, ctl->dev_idx, ##arg)
+ 	/*
+@@ -2353,6 +2352,17 @@ static void amd64_read_mc_registers(struct amd64_pvt *pvt)
+ 		amd64_read_pci_cfg(pvt->dram_f2_ctl, F10_DCLR_1, &pvt->dclr1);
+ 		amd64_read_pci_cfg(pvt->dram_f2_ctl, F10_DCHR_1, &pvt->dchr1);
+ 	}
++
++	amd64_read_pci_cfg(pvt->misc_f3_ctl, EXT_NB_MCA_CFG, &tmp);
++
++	/* F3x180[EccSymbolSize]=1, x8 symbols */
++	if (boot_cpu_data.x86 == 0x10 &&
++	    boot_cpu_data.x86_model > 7 &&
++	    tmp & BIT(25))
++		pvt->x8_syndromes = true;
++	else
++		pvt->x8_syndromes = false;
++
+ 	amd64_dump_misc_regs(pvt);
+ }
  
--/* edac_pci printk */
- #define edac_pci_printk(ctl, level, fmt, arg...) \
- 	printk(level "EDAC PCI%d: " fmt, ctl->pci_idx, ##arg)
+diff --git a/drivers/edac/amd64_edac.h b/drivers/edac/amd64_edac.h
+index 0d4bf56..93bfdb4 100644
+--- a/drivers/edac/amd64_edac.h
++++ b/drivers/edac/amd64_edac.h
+@@ -382,6 +382,8 @@ enum {
+ #define K8_NBCAP_SECDED			BIT(3)
+ #define K8_NBCAP_DCT_DUAL		BIT(0)
  
-@@ -76,21 +70,12 @@
- extern int edac_debug_level;
- extern const char *edac_mem_types[];
++#define EXT_NB_MCA_CFG			0x180
++
+ /* MSRs */
+ #define K8_MSR_MCGCTL_NBE		BIT(4)
  
--#ifndef CONFIG_EDAC_DEBUG_VERBOSE
- #define edac_debug_printk(level, fmt, arg...)                           \
- 	do {                                                            \
- 		if (level <= edac_debug_level)                          \
- 			edac_printk(KERN_DEBUG, EDAC_DEBUG,		\
- 				    "%s: " fmt, __func__, ##arg);	\
- 	} while (0)
--#else  /* CONFIG_EDAC_DEBUG_VERBOSE */
--#define edac_debug_printk(level, fmt, arg...)                            \
--	do {                                                             \
--		if (level <= edac_debug_level)                           \
--			edac_printk_verbose(KERN_DEBUG, EDAC_DEBUG, fmt, \
--					    ##arg);			\
--	} while (0)
--#endif
+@@ -471,6 +473,8 @@ struct amd64_pvt {
+ 	u32 dram_ctl_select_high;	/* DRAM Controller Select High Reg */
+ 	u32 online_spare;               /* On-Line spare Reg */
  
- #define debugf0( ... ) edac_debug_printk(0, __VA_ARGS__ )
- #define debugf1( ... ) edac_debug_printk(1, __VA_ARGS__ )
++	bool x8_syndromes;
++
+ 	/* temp storage for when input is received from sysfs */
+ 	struct err_regs ctl_error_info;
+ 
 -- 
 1.7.1
 
