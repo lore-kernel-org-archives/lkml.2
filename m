@@ -1,62 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754882Ab0FAQzS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Jun 2010 12:55:18 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:57452 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753078Ab0FAQzQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Jun 2010 12:55:16 -0400
-Subject: Re: Wrong DIF guard tag on ext2 write
-From: James Bottomley <James.Bottomley@suse.de>
-To: Chris Mason <chris.mason@oracle.com>
-Cc: Matthew Wilcox <matthew@wil.cx>,
-       Christof Schmitt <christof.schmitt@de.ibm.com>,
-       Boaz Harrosh <bharrosh@panasas.com>,
-       "Martin K. Petersen" <martin.petersen@oracle.com>,
-       linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
-       linux-fsdevel@vger.kernel.org
-In-Reply-To: <20100601164750.GQ8980@think>
-References: <20100531112817.GA16260@schmichrtp.mainz.de.ibm.com>
-	 <yq1iq64kv9f.fsf@sermon.lab.mkp.net>
-	 <1275318102.2823.47.camel@mulgrave.site> <4C03D5FD.3000202@panasas.com>
-	 <20100601103041.GA15922@schmichrtp.mainz.de.ibm.com>
-	 <1275398876.21962.6.camel@mulgrave.site> <20100601133341.GK8980@think>
-	 <1275399637.21962.11.camel@mulgrave.site> <20100601134951.GM8980@think>
-	 <20100601162929.GC32708@parisc-linux.org>  <20100601164750.GQ8980@think>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 01 Jun 2010 16:54:53 +0000
-Message-ID: <1275411293.21962.387.camel@mulgrave.site>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.2 
+	id S1754873Ab0FAQ5c (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Jun 2010 12:57:32 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:30340 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754015Ab0FAQ5b (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Jun 2010 12:57:31 -0400
+Message-ID: <4C053B6B.9000906@oracle.com>
+Date: Tue, 01 Jun 2010 09:55:07 -0700
+From: Randy Dunlap <randy.dunlap@oracle.com>
+Organization: Oracle Linux Engineering
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.5) Gecko/20091209 Fedora/3.0-3.fc11 Thunderbird/3.0
+MIME-Version: 1.0
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: Heiko Carstens <heiko.carstens@de.ibm.com>, linux-kernel@vger.kernel.org,
+       "arjan@infradead.org" <arjan@infradead.org>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Thomas Gleixner <tglx@linutronix.de>
+Subject: [PATCH v2] Documentation/timers/hpet_example.c: only build on X86
+References: <20100528113514.GA3686@osiris.boeblingen.de.ibm.com> <4C0470BE.6040709@oracle.com> <alpine.LFD.2.00.1006010852470.3637@i5.linux-foundation.org>
+In-Reply-To: <alpine.LFD.2.00.1006010852470.3637@i5.linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
+X-Auth-Type: Internal IP
+X-Source-IP: acsinet15.oracle.com [141.146.126.227]
+X-CT-RefId: str=0001.0A090205.4C053BC6.002D:SCFMA922111,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-06-01 at 12:47 -0400, Chris Mason wrote:
-> On Tue, Jun 01, 2010 at 10:29:30AM -0600, Matthew Wilcox wrote:
-> > On Tue, Jun 01, 2010 at 09:49:51AM -0400, Chris Mason wrote:
-> > > > I agree that a block based retry would close all the holes ... it just
-> > > > doesn't look elegant to me that the fs will already be repeating the I/O
-> > > > if it changed the page and so will block.
-> > > 
-> > > We might not ever repeat the IO.  We might change the page, write it,
-> > > change it again, truncate the file and toss the page completely.
-> > 
-> > Why does it matter that it was never written in that case?
-> 
-> It matters is the storage layer is going to wait around for the block to
-> be written again with a correct crc.
+From: Randy Dunlap <randy.dunlap@oracle.com>
 
-Actually, I wasn't advocating that.  I think block should return a guard
-mismatch error.  I think somewhere in filesystem writeout is the place
-to decide whether the error was self induced or systematic.  For self
-induced errors (as long as we can detect them) I think we can just
-forget about it ... if the changed page is important, the I/O request
-gets repeated (modulo the problem of too great a frequency of changes
-leading to us never successfully writing it) or it gets dropped because
-the file was truncated or the data deleted for some other reason.
+We should only build hpet_example on (any) X86, where it is
+implemented.  It can cause build errors on other arch-es.
 
-James
+Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
+Reported-by: Heiko Carstens <heiko.carstens@de.ibm.com>
+Cc: Heiko Carstens <heiko.carstens@de.ibm.com>
+Cc: Arjan van de Ven <arjan@infradead.org>
+---
+ Documentation/timers/Makefile |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-
+--- lnx-2635-rc1.orig/Documentation/timers/Makefile
++++ lnx-2635-rc1/Documentation/timers/Makefile
+@@ -2,7 +2,7 @@
+ obj- := dummy.o
+ 
+ # List of programs to build
+-hostprogs-y := hpet_example
++hostprogs-$(CONFIG_X86) := hpet_example
+ 
+ # Tell kbuild to always build the programs
+ always := $(hostprogs-y)
