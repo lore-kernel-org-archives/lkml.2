@@ -1,59 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754722Ab0FAIjg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Jun 2010 04:39:36 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:33596 "EHLO mx1.redhat.com"
+	id S1754236Ab0FAImI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Jun 2010 04:42:08 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:40045 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753411Ab0FAIje (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Jun 2010 04:39:34 -0400
-Message-ID: <4C04C739.8050607@redhat.com>
-Date: Tue, 01 Jun 2010 11:39:21 +0300
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100330 Fedora/3.0.4-1.fc12 Thunderbird/3.0.4
+	id S1750833Ab0FAImG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Jun 2010 04:42:06 -0400
+Date: Tue, 1 Jun 2010 18:41:57 +1000
+From: Nick Piggin <npiggin@suse.de>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+       Ingo Molnar <mingo@redhat.com>, linux-mm@kvack.org,
+       linux-kernel@vger.kernel.org,
+       Lee Schermerhorn <lee.schermerhorn@hp.com>
+Subject: Re: [rfc] forked kernel task and mm structures imbalanced on NUMA
+Message-ID: <20100601084157.GS9453@laptop>
+References: <20100601073343.GQ9453@laptop>
+ <1275380202.27810.26214.camel@twins>
 MIME-Version: 1.0
-To: rostedt@goodmis.org
-CC: Stefan Hajnoczi <stefanha@gmail.com>, linux-perf-users@vger.kernel.org,
-       linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
-       Frederic Weisbecker <fweisbec@gmail.com>,
-       Marcelo Tosatti <mtosatti@redhat.com>,
-       Peter Zijlstra <a.p.zijlstra@chello.nl>,
-       Stefan Hajnoczi <stefanha@linux.vnet.ibm.com>,
-       Johannes Berg <johannes.berg@intel.com>,
-       Darren Hart <darren@dvhart.com>
-Subject: Re: Perf trace event parse errors for KVM events
-References: <20100526123443.GB8905@stefan-thinkpad.transitives.com>	 <AANLkTil8BiuzrmacV7Lpx1wES0EvLSiVmcfwtSY6Zis2@mail.gmail.com>	 <1275083157.22648.593.camel@gandalf.stny.rr.com>	 <4C00FF9B.9000107@redhat.com>	 <1275139177.22648.610.camel@gandalf.stny.rr.com>	 <4C021D7E.1060705@redhat.com>	 <1275228182.15884.1.camel@gandalf.stny.rr.com>	 <4C027131.2010309@redhat.com> <1275233656.15884.4.camel@gandalf.stny.rr.com>
-In-Reply-To: <1275233656.15884.4.camel@gandalf.stny.rr.com>
-Content-Type: text/plain; charset=ISO-8859-15; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1275380202.27810.26214.camel@twins>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/30/2010 06:34 PM, Steven Rostedt wrote:
->
->> Cool.  May make sense to use simpler formatting in the kernel, and use
->> trace-cmd plugins for the complicated cases.
->>
->> It does raise issues with ABIs.  Can trace-cmd read plugins from
->> /lib/modules/*?  We can then distribute the plugins with the kernel.
->>
->>      
-> We probably could do that. Perhaps if we can port the python code to
-> perf, then it would work for both. Then the plugins could be just python
-> scripts, (or binary .so modules) and have a tools/plugins dir?
->
-> The python part probably would be easier to port, since the .so modules
-> are a bit more specific to trace-cmd.
->    
+On Tue, Jun 01, 2010 at 10:16:42AM +0200, Peter Zijlstra wrote:
+> On Tue, 2010-06-01 at 17:33 +1000, Nick Piggin wrote:
+> > Another problem I found when testing this patch is that the scheduler
+> > has some issues of its own when balancing. This is improved by
+> > traversing the sd groups starting from a different spot each time, so
+> > processes get sprinkled around the nodes a bit better.
+> 
+> Right, makes sense. And I think we could merge that group iteration
+> without much problems.
+> 
+> Your alternative placement for sched_exec() seems to make sense too, the
+> earlier we do that the better the memory allocations will be.
+> 
+> Your changes to sched_fork() and wake_up_new_task() made my head hurt a
+> bit -- but that's not your fault. I'm not quite sure why you're changing
+> that though.
 
-One concern is performance.  Traces tend to be long, and running python 
-code on each line will be slow.
+Well because we indeed don't want to select a new CPU for it unless
+there has been a cpus_allowed race in the meantime.
 
-If trace-cmd integrates a pager and a search mechanism that looks at the 
-binary data instead of the text, we could format only the lines that are 
-displayed.  But that is going to be a lot of work and I don't think it's 
-worth the effort.
+ 
+> The addition of sched_fork_suggest_cpu() to select a target node seems
+> to make sense, but since you then call fork balancing a second time we
+> have a chance of ending up on a totally different node all together.
+> 
+> So I think it would make sense to rework the fork balancing muck to be
+> called only once and stick with its decision.
 
--- 
-error compiling committee.c: too many arguments to function
+Just need to close that race somehow. AFAIKS we can't use TASK_WAKING
+because that must not be preempted?
 
+Otherwise I don't see a problem with just taking another balance on
+the extremely rare case of task failure.
+
+
+ 
+> One thing that would make the whole fork path much easier is fully
+> ripping out that child_runs_first mess for CONFIG_SMP, I think its been
+> disabled by default for long enough, and its always been broken in the
+> face of fork balancing anyway.
+
+Interesting problem. vfork is nice for fork+exec, but it's a bit
+restrictive.
+
+ 
+> So basically we have to move fork balancing back to sched_fork(), I'd
+> have to again look at wth happens to ->cpus_allowed, but I guess it
+> should be fixable, and I don't think we should care overly much about
+> cpu-hotplug.
+
+No more than simply getting it right. Simply calling into the balancer
+again seems to be the simplest way to do it.
+
+ 
+> A specific code comment:
+> 
+> > @@ -2550,14 +2561,16 @@ void wake_up_new_task(struct task_struct
+> >          * We set TASK_WAKING so that select_task_rq() can drop rq->lock
+> >          * without people poking at ->cpus_allowed.
+> >          */
+> > -       cpu = select_task_rq(rq, p, SD_BALANCE_FORK, 0);
+> > -       set_task_cpu(p, cpu);
+> > -
+> > -       p->state = TASK_RUNNING;
+> > -       task_rq_unlock(rq, &flags);
+> > +       if (!cpumask_test_cpu(cpu, &p->cpus_allowed)) {
+> > +               p->state = TASK_WAKING;
+> > +               cpu = select_task_rq(rq, p, SD_BALANCE_FORK, 0);
+> > +               set_task_cpu(p, cpu);
+> > +               p->state = TASK_RUNNING;
+> > +               task_rq_unlock(rq, &flags);
+> > +               rq = task_rq_lock(p, &flags);
+> > +       }
+> >  #endif
+> 
+> That's iffy because p->cpus_allowed isn't stable when we're not holding
+> the task's current rq->lock or p->state is not TASK_WAKING.
+> 
+
+Oop, yeah missed that. Half hearted attempt to avoid more rq locks.
