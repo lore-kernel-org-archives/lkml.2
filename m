@@ -1,62 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755134Ab0FAKpS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Jun 2010 06:45:18 -0400
-Received: from 0122700014.0.fullrate.dk ([95.166.99.235]:44044 "EHLO kernel.dk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753718Ab0FAKpQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Jun 2010 06:45:16 -0400
-Date: Tue, 1 Jun 2010 12:45:15 +0200
-From: Jens Axboe <jaxboe@fusionio.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Christoph Hellwig <hch@infradead.org>,
-       Philipp Reisner <philipp.reisner@linbit.com>, drbd-dev@linbit.com,
-       linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-       Julia Lawall <julia@diku.dk>, Al Viro <viro@zeniv.linux.org.uk>
-Subject: Re: linux-next: manual merge of the drbd tree with Linus' tree
-Message-ID: <20100601104515.GM3564@kernel.dk>
-References: <20100601141324.edf41f7f.sfr@canb.auug.org.au> <20100601081823.GA29991@infradead.org> <20100601182213.479a777e.sfr@canb.auug.org.au>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1755038Ab0FAKrS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Jun 2010 06:47:18 -0400
+Received: from webmail02.domeneshop.no ([194.63.248.28]:54297 "EHLO
+	webmail02.domeneshop.no" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752955Ab0FAKrQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Jun 2010 06:47:16 -0400
 Content-Disposition: inline
-In-Reply-To: <20100601182213.479a777e.sfr@canb.auug.org.au>
+Content-Transfer-Encoding: binary
+Content-Type: text/plain; charset="iso-8859-1"
+MIME-Version: 1.0
+X-Mailer: MIME::Lite 3.01 (F2.74; T1.18; A1.74; B3.07; Q3.07)
+From: uwaysi.bin.kareem@paradoxuncreated.com
+To: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Psychovisually-optimized HZ setting (2.6.33.3)
+Date: Tue, 01 Jun 2010 12:47:15 +0200
+X-Remote-Address: 91.186.70.220
+X-User-Agent: Opera/9.63 (Windows NT 5.1; U; en) Presto/2.1.1
+X-Mailer: Domeneshop webmail 1.07 (2008-04-23)
+X-Moam-Version: 0.93
+Message-Id: <E1OJP07-00029Z-Cb@webmail02.domeneshop.no>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 01 2010, Stephen Rothwell wrote:
-> [Replacing Jens' Oracle address ...]
-> 
-> Hi Christoph,
-> 
-> On Tue, 1 Jun 2010 04:18:23 -0400 Christoph Hellwig <hch@infradead.org> wrote:
-> >
-> > On Tue, Jun 01, 2010 at 02:13:24PM +1000, Stephen Rothwell wrote:
-> > > Hi all,
-> > > 
-> > > Today's linux-next merge of the drbd tree got a conflict in fs/pipe.c
-> > > between commit cc967be54710d97c05229b2e5ba2d00df84ddd64 ("fs: Add missing
-> > > mutex_unlock") from Linus' tree and commits
-> > > 0191f8697bbdfefcd36e7b8dc3eeddfe82893e4b ("pipe: F_SETPIPE_SZ should
-> > > return -EPERM for non-root") and b9598db3401282bb27b4aef77e3eee12015f7f29
-> > > ("pipe: make F_{GET,SET}PIPE_SZ deal with byte sizes") from the drbd tree.
-> > > 
-> > > I fixed it up (see below) and can carry the fix for a while.
-> > 
-> > Why is the drbd tree touching fs/pipe.c anyway?
-> 
-> It is based on the block tree.  I assume that it is currently based on a
-> version of the block tree that Jens has not yet pushed into
-> linux-next.  :-(
 
-So the pipe patches were the same, the problem was that a fix for a
-missing pipe_unlock() had gone into mainline and for-linus/for-next
-weren't synced up to that. I'm guessing you pull drbd before for-next
-and that is why it showed up there.
+On Tue, 01 Jun 2010 08:21:46 +0200, <Valdis.Kletnieks@vt.edu> wrote:
 
-BTW, I would recommend moving for-next from the block tree up before any
-potential other trees being based off it if that is the case.
+> On Sat, 29 May 2010 13:54:00 +0200,  
+> uwaysi.bin.kareem@paradoxuncreated.com said:
+>
+>> Valdis Kletnieks: Why 3956, and why better than 1000:
+>>
+>> As stated the exact value 3956, fits a profile of "where the human  
+>> senses register the most information".
+>
+> More details on that profile. Where *exactly* did the number 3956 come  
+> from?
+> How did you distinguish between 3956 and 4000 or 4096?  What numbers do  
+> you
+> have that show an actual *measurable* improvement over 1000?
+>
+> In other words, convince us that people can actually see the difference
+> between 1000 and 3956.
 
--- 
-Jens Axboe
+I do not really have any numbers Valdis, other than simple glxgears benchmarks.
+However I have a lot of experience with jitter, and I am looking for sporadic jitter, jitter related to application-startup, jitter that is more or less constant.
 
+Ofcourse I do not need any numbers either. If you think 1000 is better than 50, then there is a difference between 1000 and 4000 aswell.
+However it gets in the the area of research, one would call psychovisuals. Small changes affecting the immersion, or experience of opengl.
+
+Put it simply one might state "If you feel that your computer is a bit stoopid, try increasing the value, and maybe you will be more satisfied." This because the computer now, is more like the human senses.
+
+The advanced version:
+For those who posess religious knowledge, or believe in religious phenomea, lets just say that, if you don't comply to certain religious knowledge, you will be tuning psychovisuals for a spirit, and not a human, and the experience will be suboptimal. 
+
+Just like the worshipper of one spirit, say, atheist, includes his preferences in the tuning, so does, for instance the hash-smoker, and that is reflected in his tunings. What one would optimally like, is a spirit-free tuning. No personal preference, but tuned for the universal in us all. 
+
+And for those who would like to understand some of the methology behind this, again www.paradoxuncreated.com .Try the meditation-techinque, which purifies the mind from spirits.
+
+Any answers related to this post, critisising or wasting my time, will be ignored.
+
+God guides and deludes whomever he wills.
+Peace Be with You.
+Uwaysi.
