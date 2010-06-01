@@ -1,39 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757066Ab0FAQCZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Jun 2010 12:02:25 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:41650 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756063Ab0FAQCY convert rfc822-to-8bit (ORCPT
+	id S932172Ab0FAQGv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Jun 2010 12:06:51 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:43003 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756790Ab0FAQGu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Jun 2010 12:02:24 -0400
-Subject: Re: [rfc] forked kernel task and mm structures imbalanced on NUMA
-From: Peter Zijlstra <peterz@infradead.org>
-To: Nick Piggin <npiggin@suse.de>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-       Ingo Molnar <mingo@redhat.com>, linux-mm@kvack.org,
-       linux-kernel@vger.kernel.org,
-       Lee Schermerhorn <lee.schermerhorn@hp.com>
-In-Reply-To: <1275408030.27810.27637.camel@twins>
-References: <20100601073343.GQ9453@laptop>
-	 <1275408030.27810.27637.camel@twins>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Tue, 01 Jun 2010 18:02:24 +0200
-Message-ID: <1275408144.27810.27644.camel@twins>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	Tue, 1 Jun 2010 12:06:50 -0400
+Date: Tue, 1 Jun 2010 09:02:30 -0700 (PDT)
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Daniel J Blueman <daniel.blueman@gmail.com>,
+       Akinobu Mita <akinobu.mita@gmail.com>,
+       Andrew Morton <akpm@linux-foundation.org>
+cc: Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [2.6.35-rc1, patch] fix cpu_chain section mismatch...
+In-Reply-To: <alpine.LFD.2.00.1006010842350.3637@i5.linux-foundation.org>
+Message-ID: <alpine.LFD.2.00.1006010901550.3637@i5.linux-foundation.org>
+References: <AANLkTilnTVvZOw-bIpcKS0VwhlpYWnnxvOevNv67hnga@mail.gmail.com> <alpine.LFD.2.00.1006010842350.3637@i5.linux-foundation.org>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-06-01 at 18:00 +0200, Peter Zijlstra wrote:
-> On Tue, 2010-06-01 at 17:33 +1000, Nick Piggin wrote:
-> > +       sd->iter = iter->next;
+
+
+On Tue, 1 Jun 2010, Linus Torvalds wrote:
 > 
-> BTW, the (utter lack of) synchronization of sd->iter probably wants a
-> comment somewhere ;-)
+> Does anybody have strong preferences (patch appended for reference)?
 
-serialization that is,..
+Never mind. I'll just apply the patch. If somebody _does_ have strong 
+preferences, holler with a new patch that updates it to inline or 
+whatever..
 
-/me goes brew more tea
+		Linus
