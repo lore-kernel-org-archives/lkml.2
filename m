@@ -1,91 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751713Ab0FAFCO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Jun 2010 01:02:14 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:46286 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750823Ab0FAFCM convert rfc822-to-8bit (ORCPT
+	id S1751966Ab0FAFEl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Jun 2010 01:04:41 -0400
+Received: from mail-px0-f174.google.com ([209.85.212.174]:58060 "EHLO
+	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751140Ab0FAFEk convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Jun 2010 01:02:12 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=wn4dF+hbSNX1EflY9OsttLODffHL68GeA5XIgpmoiVkaG/2XsObyUMYyCtBUcQo8r7
-         E0W0dcfNFCHeeoo6p6ijNLnfMT6uJB8Ayvo+T45NRUOV5bN6jA6Vf3DK1SIMrSpzOZ6Z
-         jXIcRVQ85aoeMDLXZXdpoWx/EbGJnD9Umuyvo=
+	Tue, 1 Jun 2010 01:04:40 -0400
 MIME-Version: 1.0
-In-Reply-To: <4C0493C0.7000703@gmail.com>
-References: <AANLkTilqsIdlzZgUf7TMLHYKqHDZoVkcs42vcG8wXKEr@mail.gmail.com>
-	<4C0493C0.7000703@gmail.com>
-Date: Tue, 1 Jun 2010 15:02:11 +1000
-Message-ID: <AANLkTilrjgoGLaXsaDhCxKwgw6d71wnO4X7O9_lR1wfD@mail.gmail.com>
-Subject: Re: SSD + sata_nv + btrfs oops
-From: Dave Airlie <airlied@gmail.com>
-To: Robert Hancock <hancockrwd@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Jeff Garzik <jeff@garzik.org>,
-       Chris Mason <chris.mason@oracle.com>
+In-Reply-To: <201006010005.19554.rjw@sisk.pl>
+References: <Pine.LNX.4.44L0.1005271303190.3239-100000@iolanthe.rowland.org>
+	<alpine.LFD.2.00.1005272334040.3478@localhost.localdomain>
+	<20100531143339.249ae1f4@notabene.brown>
+	<201006010005.19554.rjw@sisk.pl>
+Date: Mon, 31 May 2010 22:04:39 -0700
+Message-ID: <AANLkTimIzm7fEczlaDT5QqkiBFAjbe46rciLxxsoLSya@mail.gmail.com>
+Subject: Re: [linux-pm] [PATCH 0/8] Suspend block api (version 8)
+From: =?ISO-8859-1?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Neil Brown <neilb@suse.de>, Thomas Gleixner <tglx@linutronix.de>,
+       Alan Stern <stern@rowland.harvard.edu>,
+       Felipe Balbi <felipe.balbi@nokia.com>,
+       Peter Zijlstra <peterz@infradead.org>,
+       "Paul@smtp1.linux-foundation.org" <Paul@smtp1.linux-foundation.org>,
+       LKML <linux-kernel@vger.kernel.org>,
+       Florian Mickler <florian@mickler.org>,
+       Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
+       Linux PM <linux-pm@lists.linux-foundation.org>,
+       Alan Cox <alan@lxorguk.ukuu.org.uk>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 1, 2010 at 2:59 PM, Robert Hancock <hancockrwd@gmail.com> wrote:
-> On 05/31/2010 09:04 PM, Dave Airlie wrote:
+On Mon, May 31, 2010 at 3:05 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> On Monday 31 May 2010, Neil Brown wrote:
+>> On Thu, 27 May 2010 23:40:29 +0200 (CEST)
+>> Thomas Gleixner <tglx@linutronix.de> wrote:
 >>
->> Hi guys,
+>> > On Thu, 27 May 2010, Rafael J. Wysocki wrote:
+>> >
+>> > > On Thursday 27 May 2010, Thomas Gleixner wrote:
+>> > > > On Thu, 27 May 2010, Alan Stern wrote:
+>> > > >
+>> > > > > On Thu, 27 May 2010, Felipe Balbi wrote:
+>> > > > >
+>> > > > > > On Thu, May 27, 2010 at 05:06:23PM +0200, ext Alan Stern wrote:
+>> > > > > > >If people don't mind, here is a greatly simplified summary of the
+>> > > > > > >comments and objections I have seen so far on this thread:
+>> > > > > > >
+>> > > > > > >   The in-kernel suspend blocker implementation is okay, even
+>> > > > > > >   beneficial.
+>> > > > > >
+>> > > > > > I disagree here. I believe expressing that as QoS is much better. Let
+>> > > > > > the kernel decide which power state is better as long as I can say I
+>> > > > > > need 100us IRQ latency or 100ms wakeup latency.
+>> > > > >
+>> > > > > Does this mean you believe "echo mem >/sys/power/state" is bad and
+>> > > > > should be removed?  Or "echo disk >/sys/power/state"?  They pay no
+>> > > >
+>> > > > mem should be replaced by an idle suspend to ram mechanism
+>> > >
+>> > > Well, what about when I want the machine to suspend _regardless_ of whether
+>> > > or not it's idle at the moment?  That actually happens quite often to me. :-)
+>> >
+>> > Fair enough. Let's agree on a non ambigous terminology then:
+>> >
+>> >      forced:
+>> >
+>> >          suspend which you enforce via user interaction, which
+>> >                  also implies that you risk losing wakeups depending on
+>> >                  the hardware properties
 >>
->> I've been running an Intel SSD (the KS one) on my Dell XPS710 desktop
->> machine, with btrfs on it.
->>
->> I'm not sure the btrfs oops isn't due to the disk/controller doing
->> something bad (almost guaranteed).
->>
->> Attached the dmesg + config, using 2.6.34 + only drm patches.
->>
->> Jeff I'd be interested in knowing what is happening to the disk before
->> btrfs oops.
+>> Reasonable definition I think.  However the current implementation doesn't
+>> exactly match it.
+>> With the current implementation you risk losing wakeups *independent* of the
+>> hardware properties.
 >
-> ata2: EH in SWNCQ mode,QC:qc_active 0x7FFFFE03 sactive 0x7FFFFE03
-> ata2: SWNCQ:qc_active 0xFE00 defer_bits 0x7FFF0003 last_issue_tag 0xf
->  dhfis 0x7E00 dmafis 0x200 sdbfis 0x0
-> ata2: ATA_REG 0x40 ERR_REG 0x0
-> ata2: tag : dhfis dmafis sdbfis sacitve
-> ata2: tag 0x9: 1 1 0 1
-> ata2: tag 0xa: 1 0 0 1
-> ata2: tag 0xb: 1 0 0 1
-> ata2: tag 0xc: 1 0 0 1
-> ata2: tag 0xd: 1 0 0 1
-> ata2: tag 0xe: 1 0 0 1
-> ata2: tag 0xf: 0 0 0 1
-> ata2.00: exception Emask 0x0 SAct 0x7ffffe03 SErr 0x1800000 action 0x6
-> frozen
-> ata2: SError: { LinkSeq TrStaTrns }
+> Define "losing", please.
 >
-> Last line is probably the most informative, SATA link sequence error and
-> transport state transition error. That's probably something bad happening at
-> the low level between the controller and drive. Is this happening
-> repeatedly?
+> Currently, we simply don't regard hardware signals occuring _during_ the
+> suspend operation itself as wakeups (unless they are wakeup interrupts to be
+> precise, because these _are_ taken into account by our current code).
+>
+> The reason is that the meaning of given event may be _different_ at run time
+> and after the system has been suspended.  For example, consider a power button
+> on a PC box.  If it's pressed at run time, it usually means "power off the
+> system" to the kernel.  After the system has been suspended, however, it means
+> "wake up".  So, you have to switch from one interpretation of the event to the
+> other and that's not an atomic operaition (to put it lightly).
+>
+>> Even with ideal hardware events can be lost - by which I mean that they will
+>> not be seen until some other event effects a wake-up.
+>> e.g. the interrupt which signals the event happens immediately before the
+>> suspend is requested (or maybe at the same time as), but the process which
+>> needs to handle the event doesn't get a chance to see it before the suspend
+>> procedure freezes that process, and even if it did it would have no way to
+>> abort the suspend.
+>>
+>> So I submit that the current implementation doesn't match your description of
+>> "forced", is therefore buggy, and that if it were fixed, that would be
+>> sufficient to meet the immediate needs of android.
+>
+> I don't really think it may be fixed with respect to every possible kind of
+> hardware.  On platforms where I/O interrupts are wakeup events it should
+> work right now.  On other platforms it may be impossible to overcome hardware
+> limitations.
 >
 
-from another boot I do see another one.
+There is no reason you cannot make the rtc alarms work reliably on x86
+hardware. Even if you may loose key events while suspending I think it
+is still valuable to have reliable alarms. I gave an example earlier
+why reliable alarms are useful (dvr application).
 
-ata2: EH in SWNCQ mode,QC:qc_active 0x1FF sactive 0x1FF
-ata2: SWNCQ:qc_active 0x7F defer_bits 0x180 last_issue_tag 0x6
-  dhfis 0x3F dmafis 0x8 sdbfis 0x0
-ata2: ATA_REG 0x41 ERR_REG 0x84
-ata2: tag : dhfis dmafis sdbfis sacitve
-ata2: tag 0x0: 1 0 0 1
-ata2: tag 0x1: 1 0 0 1
-ata2: tag 0x2: 1 0 0 1
-ata2: tag 0x3: 1 1 0 1
-ata2: tag 0x4: 1 0 0 1
-ata2: tag 0x5: 1 0 0 1
-ata2: tag 0x6: 0 0 0 1
-ata2.00: exception Emask 0x1 SAct 0x1ff SErr 0x3800000 action 0x6 frozen
-
-So yes it seems to happen quite a bit, I'm wondering is SWNCQ is
-something I should be disabling for this controller.
-
-Dave.
+-- 
+Arve Hjønnevåg
