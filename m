@@ -1,92 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753130Ab0FAGR6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Jun 2010 02:17:58 -0400
-Received: from fallback.mail.elte.hu ([157.181.151.13]:53729 "EHLO
-	fallback.mail.elte.hu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752194Ab0FAGR4 (ORCPT
+	id S1753315Ab0FAGWp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Jun 2010 02:22:45 -0400
+Received: from lennier.cc.vt.edu ([198.82.162.213]:35732 "EHLO
+	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752091Ab0FAGWn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Jun 2010 02:17:56 -0400
-Date: Tue, 1 Jun 2010 08:17:49 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Pekka Enberg <penberg@cs.helsinki.fi>,
-       Alexander Viro <viro@ftp.linux.org.uk>
-Cc: tytso@mit.edu, Alex Buell <alex.buell@munted.org.uk>,
-       Mailing Lists - Kernel Developers 
-	<linux-kernel@vger.kernel.org>,
-       Eric Paris <eparis@redhat.com>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       Arjan van de Ven <arjan@infradead.org>
-Subject: Re: Article in Phoronix about loss of performance in 2.6.35 release
- candidates
-Message-ID: <20100601061749.GA26705@elte.hu>
-References: <1275347969.29006.5.camel@lithium.local.net>
- <20100601041028.GB4426@thunk.org>
- <AANLkTikRoff0zK-o8W4Wb_MveGibxlOG8mnrQMBtYZOY@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTikRoff0zK-o8W4Wb_MveGibxlOG8mnrQMBtYZOY@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
-	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
-	[score: 0.0000]
+	Tue, 1 Jun 2010 02:22:43 -0400
+X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.2
+To: uwaysi.bin.kareem@paradoxuncreated.com
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Psychovisually-optimized HZ setting (2.6.33.3)
+In-Reply-To: Your message of "Sat, 29 May 2010 13:54:00 +0200."
+             <E1OIKc4-0002gp-0W@webmail04.domeneshop.no>
+From: Valdis.Kletnieks@vt.edu
+References: <E1OIKc4-0002gp-0W@webmail04.domeneshop.no>
+Mime-Version: 1.0
+Content-Type: multipart/signed; boundary="==_Exmh_1275373306_5077P";
+	 micalg=pgp-sha1; protocol="application/pgp-signature"
+Content-Transfer-Encoding: 7bit
+Date: Tue, 01 Jun 2010 02:21:46 -0400
+Message-ID: <17659.1275373306@localhost>
+X-Mirapoint-Received-SPF: 128.173.34.98 localhost Valdis.Kletnieks@vt.edu 2 pass
+X-Mirapoint-IP-Reputation: reputation=neutral-1,
+	source=Fixed,
+	refid=n/a,
+	actions=MAILHURDLE SPF TAG
+X-Junkmail-Info: (45) HELO_LOCALHOST
+X-Junkmail-Status: score=45/50, host=dagger.cc.vt.edu
+X-Junkmail-SD-Raw: score=unknown,
+	refid=str=0001.0A020206.4C04A6FB.00D9,ss=1,fgs=0,
+	ip=0.0.0.0,
+	so=2009-09-22 00:05:22,
+	dmn=2009-09-10 00:05:08,
+	mode=multiengine
+X-Junkmail-IWF: false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+--==_Exmh_1275373306_5077P
+Content-Type: text/plain; charset=us-ascii
 
-* Pekka Enberg <penberg@cs.helsinki.fi> wrote:
+On Sat, 29 May 2010 13:54:00 +0200, uwaysi.bin.kareem@paradoxuncreated.com said:
 
-> On Tue, Jun 1, 2010 at 7:10 AM,  <tytso@mit.edu> wrote:
-> > On Tue, Jun 01, 2010 at 12:19:29AM +0100, Alex Buell wrote:
-> >> http://www.phoronix.com/vr.php?view=14976
-> >>
-> >> Question: Why?
-> >
-> > One of the theories that has been advanced is that it's simply this
-> > problem:
-> >
-> > ? ? ? ?http://lkml.org/lkml/2010/5/22/154
-> >
-> > If so, it points out how idiotic Phoronix is about not being able to
-> > notice udev pegging the CPU at 100% being someone bad for its
-> > benchmark runs. ?:-)
-> >
-> > OTOH, this bug has been known for over a week, and it is sort sad that
-> > we haven't reverted this patch. ?It looks like the conversation has
-> > died, but without a fix?
+> Valdis Kletnieks: Why 3956, and why better than 1000:
 > 
-> It's fixed by 1eb2cbb6d5efe129 so the problem doesn't exist for 2.6.35-r1.
+> As stated the exact value 3956, fits a profile of "where the human senses register the most information".
 
-Btw., the changelog in 1eb2cbb6d5efe129:
+More details on that profile. Where *exactly* did the number 3956 come from?
+How did you distinguish between 3956 and 4000 or 4096?  What numbers do you
+have that show an actual *measurable* improvement over 1000?
 
- | From 1eb2cbb6d5efe129cd006691267ce513c0aa59da Mon Sep 17 00:00:00 2001
- | From: Al Viro <viro@zeniv.linux.org.uk>
- | Date: Thu, 27 May 2010 11:11:06 -0400
- | Subject: [PATCH] Revert "anon_inode: set S_IFREG on the anon_inode"
- | 
- | This reverts commit a7cf4145bb86aaf85d4d4d29a69b50b688e2e49d.
- | ---
- |  fs/anon_inodes.c |    2 +-
- |  1 files changed, 1 insertions(+), 1 deletions(-)
+In other words, convince us that people can actually see the difference
+between 1000 and 3956.
 
-Is lacking pretty much all essential pieces of information which are required 
-for reverts:
+--==_Exmh_1275373306_5077P
+Content-Type: application/pgp-signature
 
- - it has no description about who reported the bug.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+Comment: Exmh version 2.5 07/13/2001
 
- - it has no description about what the problem was and what the effects were. 
-   People have little chance to link up the 'udev is spinning' bug to
-   this fix.
+iD8DBQFMBKb6cC3lWbTT17ARAq30AJsHE2uUM+9yvfJkR4luza9vDw737QCfeLQ/
+MpVAd3u8i02WANB2OkBhjes=
+=S9M0
+-----END PGP SIGNATURE-----
 
- - it has no link back to '3836a03: anon_inodes: mark the anon inode private' 
-   which introduced it and hence it has no -stable tag either.
+--==_Exmh_1275373306_5077P--
 
- - has no signoff line
-
-	Ingo
