@@ -1,84 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753859Ab0FAQnq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Jun 2010 12:43:46 -0400
-Received: from exprod6og102.obsmtp.com ([64.18.1.183]:33093 "HELO
-	exprod6og102.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753449Ab0FAQno convert rfc822-to-8bit (ORCPT
+	id S1754265Ab0FAQsT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Jun 2010 12:48:19 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:60505 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753795Ab0FAQsR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Jun 2010 12:43:44 -0400
-X-Greylist: delayed 428 seconds by postgrey-1.27 at vger.kernel.org; Tue, 01 Jun 2010 12:43:44 EDT
-X-MimeOLE: Produced By Microsoft Exchange V6.5
-Content-class: urn:content-classes:message
+	Tue, 1 Jun 2010 12:48:17 -0400
+Date: Tue, 1 Jun 2010 12:47:50 -0400
+From: Chris Mason <chris.mason@oracle.com>
+To: Matthew Wilcox <matthew@wil.cx>
+Cc: James Bottomley <James.Bottomley@suse.de>,
+       Christof Schmitt <christof.schmitt@de.ibm.com>,
+       Boaz Harrosh <bharrosh@panasas.com>,
+       "Martin K. Petersen" <martin.petersen@oracle.com>,
+       linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
+       linux-fsdevel@vger.kernel.org
+Subject: Re: Wrong DIF guard tag on ext2 write
+Message-ID: <20100601164750.GQ8980@think>
+Mail-Followup-To: Chris Mason <chris.mason@oracle.com>,
+	Matthew Wilcox <matthew@wil.cx>,
+	James Bottomley <James.Bottomley@suse.de>,
+	Christof Schmitt <christof.schmitt@de.ibm.com>,
+	Boaz Harrosh <bharrosh@panasas.com>,
+	"Martin K. Petersen" <martin.petersen@oracle.com>,
+	linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
+	linux-fsdevel@vger.kernel.org
+References: <20100531112817.GA16260@schmichrtp.mainz.de.ibm.com>
+ <yq1iq64kv9f.fsf@sermon.lab.mkp.net>
+ <1275318102.2823.47.camel@mulgrave.site>
+ <4C03D5FD.3000202@panasas.com>
+ <20100601103041.GA15922@schmichrtp.mainz.de.ibm.com>
+ <1275398876.21962.6.camel@mulgrave.site>
+ <20100601133341.GK8980@think>
+ <1275399637.21962.11.camel@mulgrave.site>
+ <20100601134951.GM8980@think>
+ <20100601162929.GC32708@parisc-linux.org>
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-Subject: RE: [patch] pipe: add support for shrinking and growing pipes
-Date: Tue, 1 Jun 2010 12:36:33 -0400
-Message-ID: <D3F292ADF945FB49B35E96C94C2061B90BB30BAF@nsmail.netscout.com>
-In-Reply-To: <alpine.LFD.2.00.1006010813440.3637@i5.linux-foundation.org>
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-Thread-Topic: [patch] pipe: add support for shrinking and growing pipes
-Thread-Index: AcsBnvdvDoLcwBhLQB+nGiVKMGd8cQABwNIQ
-References: <AANLkTimKFHQPi9kKhYYjRhMt0s5CDsBXmESQaH493hpR@mail.gmail.com> <20100523174706.GP23411@kernel.dk> <87632e846m.fsf@devron.myhome.or.jp> <AANLkTin42kucqLbErGA4GlGPZEIPQV2DFkiHkEVSYiI9@mail.gmail.com> <20100524070552.GR23411@kernel.dk> <AANLkTikogQtGpO9c94A7YSmP8zdyM8dZBrwJf1nwlR4j@mail.gmail.com> <20100524173551.GU23411@kernel.dk> <AANLkTimDJjHWKISxnLax3r200Db8OQp_lMKOx14ONgkS@mail.gmail.com> <20100524175649.GV23411@kernel.dk> <AANLkTinHkWCdrOGZHbVGN4ooen9--z5rl5UL65wXcFEy@mail.gmail.com> <20100601074805.GM1660@kernel.dk> <alpine.LFD.2.00.1006010813440.3637@i5.linux-foundation.org>
-From: "Loke, Chetan" <Chetan.Loke@netscout.com>
-To: "Linus Torvalds" <torvalds@linux-foundation.org>,
-       "Jens Axboe" <axboe@kernel.dk>
-Cc: <mtk.manpages@gmail.com>, "OGAWA Hirofumi" <hirofumi@mail.parknet.co.jp>,
-       "Andrew Morton" <akpm@linux-foundation.org>,
-       "Miklos Szeredi" <miklos@szeredi.hu>, <linux-fsdevel@vger.kernel.org>,
-       <linux-kernel@vger.kernel.org>
-X-OriginalArrivalTime: 01 Jun 2010 16:36:35.0085 (UTC) FILETIME=[997423D0:01CB01A8]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100601162929.GC32708@parisc-linux.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Auth-Type: Internal IP
+X-Source-IP: acsinet15.oracle.com [141.146.126.227]
+X-CT-RefId: str=0001.0A090204.4C0539C3.00AF:SCFMA922111,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> -----Original Message-----
-> From: linux-kernel-owner@vger.kernel.org [mailto:linux-kernel-
-> owner@vger.kernel.org] On Behalf Of Linus Torvalds
-> Sent: June 01, 2010 11:22 AM
+On Tue, Jun 01, 2010 at 10:29:30AM -0600, Matthew Wilcox wrote:
+> On Tue, Jun 01, 2010 at 09:49:51AM -0400, Chris Mason wrote:
+> > > I agree that a block based retry would close all the holes ... it just
+> > > doesn't look elegant to me that the fs will already be repeating the I/O
+> > > if it changed the page and so will block.
+> > 
+> > We might not ever repeat the IO.  We might change the page, write it,
+> > change it again, truncate the file and toss the page completely.
 > 
-> On Tue, 1 Jun 2010, Jens Axboe wrote:
-> >
-> > > Also, the minuimum size of the buffer is 2 pages. Why is it not 1?
-> > > (Notwithstanding Linus's assertion, a buffer size of 1 page did
->     give us POSIX compliance in kernels before 2.6.10.)
-> >
-> > I'll defer to Linus on that, I remember some emails on that part
-from
-> > way back when. As far as I can tell, POSIX wants atomic writes of
-> > "less than a page size", which would make more sense as "of a page
-size and
-> > less". And since it should not be a page size from either side on a
-> > uni-directional pipe, then 1 page seems enough for that guarantee at
-> > least.
-> 
-> Hmm. You guys may well be right that a single slot is sufficient. It
-> still gives us PIPE_BUF worth of data for writing atomically. I had
-this
-> memory that we needed two because of the merging logic (we have that
-special
-> case for re-using the previous page, so that we don't use waste of
-memory
-> for lots of small writes), but looking at the code there is no reason
-at
-> all for me to hav thought so.
-> 
-> So I don't know why I thought we needed the extra slot, and a single
-> slot (if anybody really wants slow writes) looks to be fine.
-> 
+> Why does it matter that it was never written in that case?
 
-Ok, I have a really dumb/basic question. The reason we are letting users
-grow the pipe->buffers is to decrease the number of splice-calls. This
-implies the user has fnctl'd(when he/she wants performance). Can we not
-have an option where we don't have to 'alloc pipe->buffers' worth pages
-every single time? As an example look at 'default_file_splice_read'. Is
-it possible to enhance the existing functionality by defining a new cmd
-and a flag(in struct pipe_xxx etc) and allowing an user to control that?
-Something like 'fcntl->F_SETPIPE_SZ_AND_LOCK_PIPE_PAGES'? Does this make
-sense?
+It matters is the storage layer is going to wait around for the block to
+be written again with a correct crc.
 
-regards
-Chetan Loke
+Unless there is trim + DIF, but that's a lot of plates to spin just for
+a basic implementation.
+
+-chris
+
