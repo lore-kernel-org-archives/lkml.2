@@ -1,57 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754016Ab0FAGk5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Jun 2010 02:40:57 -0400
-Received: from mga09.intel.com ([134.134.136.24]:16248 "EHLO mga09.intel.com"
+	id S1754073Ab0FAGld (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Jun 2010 02:41:33 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:40728 "EHLO mx2.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753647Ab0FAGkz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Jun 2010 02:40:55 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.53,339,1272870000"; 
-   d="scan'208";a="522828840"
-Message-ID: <4C04AB6E.1080305@linux.intel.com>
-Date: Tue, 01 Jun 2010 08:40:46 +0200
-From: Andi Kleen <ak@linux.intel.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; de; rv:1.9.1.9) Gecko/20100317 Thunderbird/3.0.4
+	id S1753511Ab0FAGlc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Jun 2010 02:41:32 -0400
+Date: Tue, 1 Jun 2010 08:41:20 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Peter Zijlstra <peterz@infradead.org>, Jens Axboe <jens.axboe@oracle.com>
+Cc: piotr@hosowicz.com, linux-kernel@vger.kernel.org,
+       Divyesh Shah <dpshah@google.com>
+Subject: Re: BUG: using smp_processor_id() in preemptible [00000000] code:
+ icedove-bin/5449
+Message-ID: <20100601064120.GA3407@elte.hu>
+References: <4BF9EC69.5030709@example.com>
+ <1274777422.5882.591.camel@twins>
 MIME-Version: 1.0
-To: Mikulas Patocka <mpatocka@redhat.com>
-CC: device-mapper development <dm-devel@redhat.com>,
-       herbert@gondor.hengli.com.au, linux-kernel@vger.kernel.org,
-       agk@redhat.com
-Subject: Re: [dm-devel] [PATCH] DM-CRYPT: Scale to multiple CPUs
-References: <20100531160425.GA20344@basil.fritz.box> <Pine.LNX.4.64.1005312239520.6372@hs20-bc2-1.build.redhat.com>
-In-Reply-To: <Pine.LNX.4.64.1005312239520.6372@hs20-bc2-1.build.redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1274777422.5882.591.camel@twins>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
+	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
+	[score: 0.0004]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-, Mikulas Patocka wrote:
-> Questions:
->
-> If you are optimizing it,
->
-> 1) why don't you optimize it in such a way that if one CPU submits
-> requests, the crypto work is spread among all the CPUs? Currently it
-> spreads the work only if different CPUs submit it.
 
-This case is only useful with very slow CPUs and is handled by pcrypt
-in theory
+* Peter Zijlstra <peterz@infradead.org> wrote:
 
-(but I haven't tested it)
+> On Mon, 2010-05-24 at 05:03 +0200, Piotr Hosowicz wrote:
+> > [  720.313607] BUG: using smp_processor_id() in preemptible [00000000] code: icedove-bin/5449
+> > [  720.313612] caller is native_sched_clock+0x3c/0x68
+> > [  720.313616] Pid: 5449, comm: icedove-bin Tainted: P            2.6.34-20100524-0407 #1
+> > [  720.313618] Call Trace:
+> > [  720.313624]  [<ffffffff811a533b>] debug_smp_processor_id+0xc7/0xe0
+> > [  720.313629]  [<ffffffff81009b87>] native_sched_clock+0x3c/0x68
+> > [  720.313634]  [<ffffffff81009a4d>] sched_clock+0x9/0xd
+> > [  720.313637]  [<ffffffff811823ec>] blk_rq_init+0x92/0x9d
+> > [  720.313641]  [<ffffffff81184227>] get_request+0x1bf/0x2c7
+> > [  720.313646]  [<ffffffff8118435c>] get_request_wait+0x2d/0x19d 
+> 
+> This comes from wreckage in the blk tree..
+> 
+> ---
+> commit 9195291e5f05e01d67f9a09c756b8aca8f009089
+> Author: Divyesh Shah <dpshah@google.com>
+> Date:   Thu Apr 1 15:01:41 2010 -0700
+> 
+>     blkio: Increment the blkio cgroup stats for real now
 
->
-> 2) why not optimize software async crypto daemon (crypt/cryptd.c) instead
-> of dm-crypt, so that all kernel subsystems can actually take advantage of
-> those multi-CPU optimizations, not just dm-crypt?
+Jens, this regression is still in .35-rc1 and triggers in about 25% of all 
+-tip boot tests.
 
-Normally most subsystems are multi-CPU already, unless they limit
-themselves artitifically like dm-crypt.
+The above commit is using sched_clock() in an unsafe way - please fix it or 
+revert it.
 
-For dm-crypt would be wasteful to funnel everything through two single CPU threads just
-to spread it out again.  That is why I also used per CPU IO threads too.
+The local_clock() changes PeterZ is working on are still WIP, it's not sure 
+we'll have it before .36.
 
--Andi
+Thanks,
 
-
+	Ingo
