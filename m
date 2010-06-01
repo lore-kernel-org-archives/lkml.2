@@ -1,106 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754981Ab0FAX4f (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Jun 2010 19:56:35 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:48298 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751635Ab0FAX4e (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Jun 2010 19:56:34 -0400
-Date: Tue, 1 Jun 2010 16:51:43 -0700 (PDT)
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Brandon Philips <brandon@ifup.org>
-cc: Rusty Russell <rusty@rustcorp.com.au>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       "Rafael J. Wysocki" <rjw@sisk.pl>, LKML <linux-kernel@vger.kernel.org>,
-       Jon Masters <jonathan@jonmasters.org>, Tejun Heo <htejun@gmail.com>,
-       Masami Hiramatsu <mhiramat@redhat.com>,
-       Kay Sievers <kay.sievers@vrfy.org>
-Subject: Re: [PATCH 2/2] module: fix bne2 "gave up waiting for init of module
- libcrc32c"
-In-Reply-To: <20100601232430.GC10332@jenkins.ifup.org>
-Message-ID: <alpine.LFD.2.00.1006011638540.8175@i5.linux-foundation.org>
-References: <201005252300.07739.rjw@sisk.pl> <201006011051.25636.rusty@rustcorp.com.au> <alpine.LFD.2.00.1005312011490.3637@i5.linux-foundation.org> <201006011452.06843.rusty@rustcorp.com.au> <alpine.LFD.2.00.1006010722160.3637@i5.linux-foundation.org>
- <alpine.LFD.2.00.1006011052340.8175@i5.linux-foundation.org> <20100601232430.GC10332@jenkins.ifup.org>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S1756305Ab0FBAAu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Jun 2010 20:00:50 -0400
+Received: from hera.kernel.org ([140.211.167.34]:43959 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753460Ab0FBAAs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Jun 2010 20:00:48 -0400
+Message-ID: <4C059EE4.5070104@kernel.org>
+Date: Wed, 02 Jun 2010 01:59:32 +0200
+From: Tejun Heo <tj@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.1.9) Gecko/20100317 Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Sridhar Samudrala <sri@us.ibm.com>
+CC: "Michael S. Tsirkin" <mst@redhat.com>, Oleg Nesterov <oleg@redhat.com>,
+       netdev <netdev@vger.kernel.org>, lkml <linux-kernel@vger.kernel.org>,
+       "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Dmitri Vorobiev <dmitri.vorobiev@movial.com>,
+       Jiri Kosina <jkosina@suse.cz>, Thomas Gleixner <tglx@linutronix.de>,
+       Ingo Molnar <mingo@elte.hu>, Andi Kleen <ak@linux.intel.com>
+Subject: Re: [PATCH 3/3] vhost: apply cpumask and cgroup to vhost workers
+References: <20100527163954.GA21710@redhat.com>	 <4BFEA434.6080405@kernel.org> <20100527173207.GA21880@redhat.com>	 <4BFEE216.2070807@kernel.org> <20100528150830.GB21880@redhat.com>	 <4BFFE742.2060205@kernel.org> <20100530112925.GB27611@redhat.com>	 <4C02C961.9050606@kernel.org> <20100531152221.GB2987@redhat.com>	 <4C03D983.9010905@kernel.org> <20100531160020.GC3067@redhat.com>	 <4C04D453.9040208@kernel.org> <1275412754.989.10.camel@w-sridhar.beaverton.ibm.com>
+In-Reply-To: <1275412754.989.10.camel@w-sridhar.beaverton.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Tue, 01 Jun 2010 23:59:38 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-On Tue, 1 Jun 2010, Brandon Philips wrote:
+On 06/01/2010 07:19 PM, Sridhar Samudrala wrote:
+>> -	int i;
+>> +	cpumask_var_t mask;
+>> +	int i, ret = -ENOMEM;
+>> +
+>> +	if (!alloc_cpumask_var(&mask, GFP_KERNEL))
+>> +		goto out_free_mask;
 > 
-> When I tested a Kernel with Rusty's modules branch pulled onto
-> 2.6.35-rc1 I got duplicate sysfs path errors:
+> I think this is another bug in the error path. You should simply
+> do a return instead of a goto here when aloc_cpu_mask fails.
 
-Hmm. Yeah, the module_mutex used to be held across the whole "find -> add" 
-state, but isn't any more.
+Oh... it's always safe to call free_cpumask_var() after failed
+alloc_cpumask_var(), so that part isn't broken.
 
-> To fix this we need to make sure that we only have one copy of a module
-> going through load_module at a time.  Patch suggestion follows which
-> boots without errors. I am sure there is a better way to do what it does
->    ;)
+Thanks.
 
-I think Rusty may have made the lock a bit _too_ finegrained there, and 
-didn't add it to some places that needed it. It looks, for example, like 
-PATCH 1/2 actually drops the lock in places where it's needed 
-("find_module()" is documented to need it, but now load_module() didn't 
-hold it at all when it did the find_module()).
-
-Rather than adding a new "module_loading" list, I think we should be able 
-to just use the existing "modules" list, and just fix up the locking a 
-bit.
-
-In fact, maybe we could just move the "look up existing module" a bit 
-later - optimistically assuming that the module doesn't exist, and then 
-just undoing the work if it turns out that we were wrong, just before 
-adding ourselves to the list.
-
-A patch something like the appended (TOTALLY UNTESTED!)
-
-		Linus
----
- kernel/module.c |   13 ++++++++-----
- 1 files changed, 8 insertions(+), 5 deletions(-)
-
-diff --git a/kernel/module.c b/kernel/module.c
-index a1f46a5..21f7ffa 100644
---- a/kernel/module.c
-+++ b/kernel/module.c
-@@ -2198,11 +2198,6 @@ static noinline struct module *load_module(void __user *umod,
- 		goto free_mod;
- 	}
- 
--	if (find_module(mod->name)) {
--		err = -EEXIST;
--		goto free_mod;
--	}
--
- 	mod->state = MODULE_STATE_COMING;
- 
- 	/* Allow arches to frob section contents and sizes.  */
-@@ -2486,6 +2481,13 @@ static noinline struct module *load_module(void __user *umod,
- 	 * The mutex protects against concurrent writers.
- 	 */
- 	mutex_lock(&module_mutex);
-+
-+	if (find_module(mod->name)) {
-+		err = -EEXIST;
-+		/* This will also unlock the mutex */
-+		goto already_exists;
-+	}
-+
- 	list_add_rcu(&mod->list, &modules);
- 	mutex_unlock(&module_mutex);
- 
-@@ -2511,6 +2513,7 @@ static noinline struct module *load_module(void __user *umod,
- 	mutex_lock(&module_mutex);
- 	/* Unlink carefully: kallsyms could be walking list. */
- 	list_del_rcu(&mod->list);
-+ already_exists:
- 	mutex_unlock(&module_mutex);
- 	synchronize_sched();
- 	module_arch_cleanup(mod);
+-- 
+tejun
