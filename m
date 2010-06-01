@@ -1,115 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756757Ab0FANuu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Jun 2010 09:50:50 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:60673 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756182Ab0FANus (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Jun 2010 09:50:48 -0400
-Date: Tue, 1 Jun 2010 09:50:04 -0400
-From: Don Zickus <dzickus@redhat.com>
-To: Jiri Slaby <jirislaby@gmail.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>,
-       LKML <linux-kernel@vger.kernel.org>,
-       Linux-pm mailing list <linux-pm@lists.linux-foundation.org>,
-       linux-ide@vger.kernel.org
-Subject: Re: hibernation hangs with ATA errors (lockup_detector bug)
-Message-ID: <20100601135004.GP15159@redhat.com>
-References: <4C03C608.1040600@gmail.com>
+	id S1756828Ab0FANvF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Jun 2010 09:51:05 -0400
+Received: from mtagate1.uk.ibm.com ([194.196.100.161]:58385 "EHLO
+	mtagate1.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756767Ab0FANvB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Jun 2010 09:51:01 -0400
+Date: Tue, 1 Jun 2010 15:50:59 +0200
+From: Christof Schmitt <christof.schmitt@de.ibm.com>
+To: Chris Mason <chris.mason@oracle.com>, Boaz Harrosh <bharrosh@panasas.com>,
+       James Bottomley <James.Bottomley@suse.de>,
+       "Martin K. Petersen" <martin.petersen@oracle.com>,
+       linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
+       linux-fsdevel@vger.kernel.org
+Subject: Re: Wrong DIF guard tag on ext2 write
+Message-ID: <20100601135059.GA21008@schmichrtp.mainz.de.ibm.com>
+References: <20100531112817.GA16260@schmichrtp.mainz.de.ibm.com>
+ <yq1iq64kv9f.fsf@sermon.lab.mkp.net>
+ <1275318102.2823.47.camel@mulgrave.site>
+ <4C03D5FD.3000202@panasas.com>
+ <20100601103041.GA15922@schmichrtp.mainz.de.ibm.com>
+ <20100601130325.GG8980@think>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4C03C608.1040600@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
+In-Reply-To: <20100601130325.GG8980@think>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 31, 2010 at 04:22:00PM +0200, Jiri Slaby wrote:
-> Hi,
+On Tue, Jun 01, 2010 at 09:03:25AM -0400, Chris Mason wrote:
+> On Tue, Jun 01, 2010 at 12:30:42PM +0200, Christof Schmitt wrote:
+> > On Mon, May 31, 2010 at 06:30:05PM +0300, Boaz Harrosh wrote:
+> > > On 05/31/2010 06:01 PM, James Bottomley wrote:
+> > > > On Mon, 2010-05-31 at 10:20 -0400, Martin K. Petersen wrote:
+> > > >>>>>>> "Christof" == Christof Schmitt <christof.schmitt@de.ibm.com> writes:
+> > > >>
+> > > >> Christof> Since the guard tags are created in Linux, it seems that the
+> > > >> Christof> data attached to the write request changes between the
+> > > >> Christof> generation in bio_integrity_generate and the call to
+> > > >> Christof> sd_prep_fn.
+> > > >>
+> > > >> Yep, known bug.  Page writeback locking is messed up for buffer_head
+> > > >> users.  The extNfs folks volunteered to look into this a while back but
+> > > >> I don't think they have found the time yet.
+> > > >>
+> > > >>
+> > > >> Christof> Using ext3 or ext4 instead of ext2 does not show the problem.
+> > > >>
+> > > >> Last I looked there were still code paths in ext3 and ext4 that
+> > > >> permitted pages to be changed during flight.  I guess you've just been
+> > > >> lucky.
+> > > > 
+> > > > Pages have always been modifiable in flight.  The OS guarantees they'll
+> > > > be rewritten, so the drivers can drop them if it detects the problem.
+> > > > This is identical to the iscsi checksum issue (iscsi adds a checksum
+> > > > because it doesn't trust TCP/IP and if the checksum is generated in
+> > > > software, there's time between generation and page transmission for the
+> > > > alteration to occur).  The solution in the iscsi case was not to
+> > > > complain if the page is still marked dirty.
+> > > > 
+> > > 
+> > > And also why RAID1 and RAID4/5/6 need the data bounced. I wish VFS
+> > > would prevent data writing given a device queue flag that requests
+> > > it. So all these devices and modes could just flag the VFS/filesystems
+> > > that: "please don't allow concurrent writes, otherwise I need to copy data"
+> > > 
+> > > From what Chris Mason has said before, all the mechanics are there, and it's
+> > > what btrfs is doing. Though I don't know how myself?
+> > 
+> > I also tested with btrfs and invalid guard tags in writes have been
+> > encountered as well (again in 2.6.34). The only difference is that no
+> > error was reported to userspace, although this might be a
+> > configuration issue.
 > 
-> with -next I get the following errors while trying to hibernate in
-> qemu-kvm after the image is stored on disk:
+> This would be a btrfs bug.  We have strict checks in place that are
+> supposed to prevent buffers changing while in flight.  What was the
+> workload that triggered this problem?
 
-Is this the host that is hibernating or the guest?
+I am running an internal test tool that creates files with a known
+pattern until the disk is full, reads the data to verify if the
+pattern is still intact, removes the files and starts over.
 
-KVM guests don't emulate the performance counters, so the nmi piece
-shouldn't be functioning and the soft lockup piece just sits on top of an
-hrtimer, so off the top of my head it is hard to imagine it intefering
-with a sata driver.
+# uname -r
+2.6.34
 
-I'll need your whole boot up log to see how the lockup detector
-initialized itself.
+# mkfs.btrfs /dev/sda
 
-Cheers,
-Don
+WARNING! - Btrfs Btrfs v0.19 IS EXPERIMENTAL
+WARNING! - see http://btrfs.wiki.kernel.org before using
 
-> sd 0:0:0:0: [sda] Starting disk
-> sd 0:0:1:0: [sdb] Starting disk
-> e1000: eth0 NIC Link is Up 1000 Mbps Full Duplex, Flow Control: RX
-> ata1.00: configured for MWDMA2
-> ata1.01: configured for MWDMA2
-> PM: thaw of devices complete after 168.017 msecs
-> ata2.01: qc timeout (cmd 0xec)
-> ata2.01: failed to IDENTIFY (I/O error, err_mask=0x4)
-> sd 0:0:1:0: [sdb] Stopping disk
-> sd 0:0:0:0: [sda] Stopping disk
-> uhci_hcd 0000:00:01.2: PCI INT D disabled
-> e1000 0000:00:03.0: PCI INT A disabled
-> ata2.01: qc timeout (cmd 0xec)
-> ata2.01: failed to IDENTIFY (I/O error, err_mask=0x4)
-> ata2.01: qc timeout (cmd 0xec)
-> ata2.01: failed to IDENTIFY (I/O error, err_mask=0x4)
-> ...
-> 
-> I bisected it down to:
-> commit 58687acba59266735adb8ccd9b5b9aa2c7cd205b
-> Author: Don Zickus <dzickus@redhat.com>
-> Date:   Fri May 7 17:11:44 2010 -0400
-> 
->     lockup_detector: Combine nmi_watchdog and softlockup detector
-> 
->     The new nmi_watchdog (which uses the perf event subsystem) is very
->     similar in structure to the softlockup detector.  Using Ingo's
->     suggestion, I combined the two functionalities into one file:
->     kernel/watchdog.c.
-> ...
-> 
-> 
-> 
-> The config difference against 58687acb^:
-> --- .config.old     2010-05-31 16:01:51.727312636 +0200
-> +++ .config 2010-05-31 16:11:08.682136175 +0200
-> @@ -1,7 +1,7 @@
->  #
->  # Automatically generated make config: don't edit
->  # Linux kernel version: 2.6.34-rc7
-> -# Mon May 31 16:01:51 2010
-> +# Mon May 31 16:11:08 2010
->  #
->  CONFIG_64BIT=y
->  # CONFIG_X86_32 is not set
-> @@ -2133,7 +2133,7 @@
->  CONFIG_DEBUG_KERNEL=y
->  CONFIG_DEBUG_SHIRQ=y
->  CONFIG_DETECT_SOFTLOCKUP=y
-> -CONFIG_NMI_WATCHDOG=y
-> +CONFIG_LOCKUP_DETECTOR=y
->  # CONFIG_BOOTPARAM_SOFTLOCKUP_PANIC is not set
->  CONFIG_BOOTPARAM_SOFTLOCKUP_PANIC_VALUE=0
->  CONFIG_DETECT_HUNG_TASK=y
-> 
-> 
-> 
-> 
-> 'nowatchdog' parameter helps.
-> 
-> $ grep PERF .config
-> CONFIG_HAVE_PERF_EVENTS=y
-> CONFIG_PERF_EVENTS=y
-> # CONFIG_PERF_COUNTERS is not set
-> # CONFIG_DEBUG_PERF_USE_VMALLOC is not set
-> CONFIG_HAVE_PERF_EVENTS_NMI=y
-> 
-> -- 
-> js
+fs created label (null) on /dev/sda
+        nodesize 4096 leafsize 4096 sectorsize 4096 size 8.00GB
+Btrfs Btrfs v0.19
+    
+# mount /dev/sda /mnt/esslv0/
+
+The kernel log shows:
+
+Jun  1 11:11:53 R78_4E19_ESAME26_40_1 kernel: device fsid d260dc729d784bf0-9d097091e01ec932 devid 1 transid 7 /dev/sda
+Jun  1 11:23:26 R78_4E19_ESAME26_40_1 kernel: no space left, need 4096, 0 delalloc bytes, 7701659648 bytes_used, 0 bytes_reserved, 0 bytes_pinned, 0 bytes_readonly, 0 may use 7701659648 total 
+
+I guess this is to be expected, since the test tool keeps writing
+until there is no space left.
+
+Jun  1 11:25:10 R78_4E19_ESAME26_40_1 kernel: sd tag mismatch, lba 0x12480, dif tag c8c0, computed tag dbe0
+Jun  1 11:25:10 R78_4E19_ESAME26_40_1 kernel: sd tag mismatch, lba 0x12480, dif tag 51d, computed tag 5861
+Jun  1 11:25:10 R78_4E19_ESAME26_40_1 kernel: sd tag mismatch, lba 0x12480, dif tag 3693, computed tag c52e
+Jun  1 11:25:10 R78_4E19_ESAME26_40_1 kernel: sd tag mismatch, lba 0x12480, dif tag ff8a, computed tag 4ac3
+Jun  1 11:25:10 R78_4E19_ESAME26_40_1 kernel: sd tag mismatch, lba 0x12480, dif tag b337, computed tag 3840
+Jun  1 11:25:10 R78_4E19_ESAME26_40_1 kernel: sd tag mismatch, lba 0x12480, dif tag fbed, computed tag 746a
+Jun  1 11:25:10 R78_4E19_ESAME26_40_1 kernel: sd tag mismatch, lba 0x12480, dif tag 2bfc, computed tag 263e
+Jun  1 11:25:10 R78_4E19_ESAME26_40_1 kernel: sd tag mismatch, lba 0x12480, dif tag c0a4, computed tag 3942
+
+This is the output from my debug patch where i see the mismatch
+between the data and the provided guard tags in the block integrity
+data.
+
+Jun  1 11:25:10 R78_4E19_ESAME26_40_1 kernel: sd 0:0:13:1077952528: [sda] Host Data Integrity Failure
+Jun  1 11:25:10 R78_4E19_ESAME26_40_1 kernel: sd 0:0:13:1077952528: [sda] Result: hostbyte=DID_OK driverbyte=DRIVER_SENSE
+Jun  1 11:25:10 R78_4E19_ESAME26_40_1 kernel: sd 0:0:13:1077952528: [sda] Sense Key : Illegal Request [current] [descriptor]
+Jun  1 11:25:10 R78_4E19_ESAME26_40_1 kernel: sd 0:0:13:1077952528: [sda] Add. Sense: Logical block guard check failed
+Jun  1 11:25:10 R78_4E19_ESAME26_40_1 kernel: sd 0:0:13:1077952528: [sda] CDB: Write(10): 2a 20 00 01 24 80 00 00 08 00
+Jun  1 11:25:10 R78_4E19_ESAME26_40_1 kernel: end_request: I/O error, dev sda, sector 74880
+
+As expected, the controller detects the checksum mismatch in the same
+request and this is reported as an error for the request. But the
+running application is not affected.
+
+I can start this again to get more data, but for now, this is what i
+see.
+
+--
+Christof Schmitt
