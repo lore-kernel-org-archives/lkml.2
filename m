@@ -1,63 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932104Ab0FAOcF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Jun 2010 10:32:05 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:54114 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756076Ab0FAOcC convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Jun 2010 10:32:02 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:reply-to:to:subject:date:user-agent:cc:references:in-reply-to
-         :mime-version:content-type:content-transfer-encoding:message-id;
-        b=TRnVm0d9y3L7wGPmsckAWzYSf9GismUPL51yKRQ9BuWt9aVBMRgZsvKKh0oJT/uwwG
-         q5EDq4bi+bQRIfdaMlyoZZO3hDlxlMP6Wk3EKmSZudHox/Ltgyi8YINuwhB9o0ieHLWB
-         QbeLRhCMgG7SsupgCZp82QtsnGIjV5g1Tdza4=
-From: Maciej Rutecki <maciej.rutecki@gmail.com>
-Reply-To: maciej.rutecki@gmail.com
-To: sedat.dilek@gmail.com
-Subject: Re: [FIXED] 2.6.35-rc1: Call trace: BUG: using smp_processor_id() in preemptible [00000000] code: cpufreq-set/2344 (cpufreq-releated?)
-Date: Tue, 1 Jun 2010 16:31:52 +0200
-User-Agent: KMail/1.12.4 (Linux/2.6.34; KDE/4.3.4; i686; ; )
-Cc: LKML <linux-kernel@vger.kernel.org>, cpufreq@vger.kernel.org,
-       Dave Jones <davej@redhat.com>, Thomas Renninger <trenn@suse.de>,
-       Venkatesh Pallipadi <venkatesh.pallipadi@intel.com>,
-       Rik van Riel <riel@redhat.com>, Tejun Heo <tj@kernel.org>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Arjan van de Ven <arjan@linux.intel.com>,
-       Stephen Hemminger <shemminger@vyatta.com>,
-       Corrado Zoccolo <czoccolo@gmail.com>,
-       markgross <mgross@linux.intel.com>, dmonakhov@openvz.org
-References: <AANLkTilTnAAZIizKinYsxFkNTkrmPqk6XJJuUjjhJ7EP@mail.gmail.com> <AANLkTimj_kruEyL3Ac7xJZt0tunTua6JDBcuAU7XbWoP@mail.gmail.com> <AANLkTinVrUPdaRtLIU4ZfNprJY5SVRmFDIjvOmeAzqOC@mail.gmail.com>
-In-Reply-To: <AANLkTinVrUPdaRtLIU4ZfNprJY5SVRmFDIjvOmeAzqOC@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 8BIT
-Message-Id: <201006011631.53084.maciej.rutecki@gmail.com>
+	id S932132Ab0FAOcR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Jun 2010 10:32:17 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:52470 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932116Ab0FAOcO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Jun 2010 10:32:14 -0400
+Subject: Re: Wrong DIF guard tag on ext2 write
+From: James Bottomley <James.Bottomley@suse.de>
+To: "Martin K. Petersen" <martin.petersen@oracle.com>
+Cc: Chris Mason <chris.mason@oracle.com>,
+       Christof Schmitt <christof.schmitt@de.ibm.com>,
+       Boaz Harrosh <bharrosh@panasas.com>, linux-scsi@vger.kernel.org,
+       linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
+In-Reply-To: <yq1hblmkgka.fsf@sermon.lab.mkp.net>
+References: <20100531112817.GA16260@schmichrtp.mainz.de.ibm.com>
+	 <yq1iq64kv9f.fsf@sermon.lab.mkp.net>
+	 <1275318102.2823.47.camel@mulgrave.site> <4C03D5FD.3000202@panasas.com>
+	 <20100601103041.GA15922@schmichrtp.mainz.de.ibm.com>
+	 <1275398876.21962.6.camel@mulgrave.site> <20100601133341.GK8980@think>
+	 <1275399637.21962.11.camel@mulgrave.site>
+	 <yq1hblmkgka.fsf@sermon.lab.mkp.net>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 01 Jun 2010 14:32:08 +0000
+Message-ID: <1275402728.21962.35.camel@mulgrave.site>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On poniedziałek, 31 maja 2010 o 10:10:51 Sedat Dilek wrote:
-> [ Removed CC to "Venkatesh Pallipadi <venkatesh.pallipadi@intel.com>"
-> (email-adsress seems not to exist) ]
+On Tue, 2010-06-01 at 09:50 -0400, Martin K. Petersen wrote:
+> >>>>> "James" == James Bottomley <James.Bottomley@suse.de> writes:
 > 
-> Indeed, the patch fixes the cpufreq issue here - Thanks.
+> James> Would it be too much work in the fs to mark the page dirty before
+> James> you begin altering it (and again after you finish, just in case
+> James> some cleaner noticed and initiated a write)?  Or some other flag
+> James> that indicates page under modification?  All the process
+> James> controlling the writeout (which is pretty high up in the stack)
+> James> needs to know is if we triggered the check error by altering the
+> James> page while it was in flight.
 > 
-> Feel free to add:
+> James> I agree that a block based retry would close all the holes ... it
+> James> just doesn't look elegant to me that the fs will already be
+> James> repeating the I/O if it changed the page and so will block.
 > 
->      Tested-by: Sedat Dilek <sedat.dilek@gmail.com>
-> 
-> - Sedat -
+> I experimented with this approach a while back.  However, I quickly got
+> into a situation where frequently updated blocks never made it to disk
+> because the page was constantly being updated.  And all writes failed
+> with a guard tag error.
 
-This patch (thanks Sedat for information) also helps me:
-http://marc.info/?l=linux-kernel&m=127533824131117&w=2
+But that's unfixable with a retry based system as well if the page is
+changing so fast that the guard is always wrong by the time we get to
+the array.  The only way to fix this is either to copy or freeze the
+page.
 
-Tested-by Maciej Rutecki <maciej.rutecki@gmail.com>
+James
 
-Regards
--- 
-Maciej Rutecki
-http://www.maciek.unixy.pl
+
+
