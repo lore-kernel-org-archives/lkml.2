@@ -1,62 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754302Ab0FADPu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 May 2010 23:15:50 -0400
-Received: from 124x34x33x190.ap124.ftth.ucom.ne.jp ([124.34.33.190]:47297 "EHLO
-	master.linux-sh.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751811Ab0FADPs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 May 2010 23:15:48 -0400
-Date: Tue, 1 Jun 2010 12:15:28 +0900
-From: Paul Mundt <lethal@linux-sh.org>
-To: Kevin Cernekee <cernekee@gmail.com>
-Cc: mingo@elte.hu, akpm@linux-foundation.org, simon.kagstrom@netinsight.net,
-       David.Woodhouse@intel.com, rgetz@analog.com,
-       linux-kernel@vger.kernel.org, linux-mips@linux-mips.org
-Subject: Re: [PATCH v2] printk: fix delayed messages from CPU hotplug events
-Message-ID: <20100601031528.GC15411@linux-sh.org>
-References: <ede63b5a20af951c755736f035d1e787772d7c28@localhost>
+	id S1754136Ab0FADWh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 May 2010 23:22:37 -0400
+Received: from mail.tmr.com ([64.65.253.246]:34282 "EHLO partygirl.tmr.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752957Ab0FADWg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 31 May 2010 23:22:36 -0400
+Message-ID: <4C047CF9.9000804@tmr.com>
+Date: Mon, 31 May 2010 23:22:33 -0400
+From: Bill Davidsen <davidsen@tmr.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.8.1.21) Gecko/20090507 Fedora/1.1.16-1.fc9 NOT Firefox/3.0.11 SeaMonkey/1.1.16
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <ede63b5a20af951c755736f035d1e787772d7c28@localhost>
-User-Agent: Mutt/1.5.13 (2006-08-11)
+To: Randy Dunlap <rdunlap@xenotime.net>
+CC: Giangiacomo Mariotti <gg.mariotti@gmail.com>, linux-kernel@vger.kernel.org
+Subject: Re: Possible bug in 2.6.34 slub
+References: <AANLkTimEFy6VM3InWlqhVooQjKGSD3yBxlgeRbQC2r1L@mail.gmail.com> <20100531165528.35a323fb.rdunlap@xenotime.net>
+In-Reply-To: <20100531165528.35a323fb.rdunlap@xenotime.net>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 31, 2010 at 04:57:15PM -0700, Kevin Cernekee wrote:
->  /**
-> + * console_cpu_notify - print deferred console messages after CPU hotplug
-> + *
-> + * If printk() is called from a CPU that is not online yet, the messages
-> + * will be spooled but will not show up on the console.  This function is
-> + * called when a new CPU comes online and ensures that any such output
-> + * gets printed.
-> + */
-> +static int __cpuinit console_cpu_notify(struct notifier_block *self,
-> +	unsigned long action, void *hcpu)
-> +{
-> +	switch (action) {
-> +	case CPU_ONLINE:
-> +	case CPU_UP_CANCELED:
-> +		if (try_acquire_console_sem() == 0)
-> +			release_console_sem();
-> +	}
-> +	return NOTIFY_OK;
-> +}
-> +
-> +static struct notifier_block __cpuinitdata console_nb = {
-> +	.notifier_call		= console_cpu_notify,
-> +};
-> +
-> +static int __init console_notifier_init(void)
-> +{
-> +	register_cpu_notifier(&console_nb);
-> +	return 0;
-> +}
+Randy Dunlap wrote:
+> On Tue, 1 Jun 2010 01:39:43 +0200 Giangiacomo Mariotti wrote:
+> 
+>> Hi, I've recently noticed this line on the dmesg output(kernel 2.6.34):
+>> [    0.000000] SLUB: Genslabs=14, HWalign=64, Order=0-3, MinObjects=0,
+>> CPUs=16, Nodes=1
+>>
+>> My cpu is an I7 920, so it has 4 cores and there's hyperthreading
+>> enabled, so there are 8 logical cpus. Is this a bug?
+> 
+> 
+> No, it's just some boot/init time information.
+> 
+I would consider it a bug to claim CPUs=xx when xx is something other than the 
+number of cores or the number of SMT threads supported by the processor. Of 
+course if /proc/cpuinfo shows four siblings per core or something exciting, then 
+it's right and you have a CPU you can sell to gizmodo and tell them a drunk left 
+on the bar.
 
-If this is to be entirely restricted to CPU hotplug then you could use
-the hotcpu notifier here instead of the open-coded cpu notifier directly,
-the former wraps to the latter in the CPU hotplug case and is simply a
-nop for the regular SMP case.
+-- 
+Bill Davidsen <davidsen@tmr.com>
+   "We have more to fear from the bungling of the incompetent than from
+the machinations of the wicked."  - from Slashdot
