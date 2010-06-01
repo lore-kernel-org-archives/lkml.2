@@ -1,137 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757517Ab0FAVQW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Jun 2010 17:16:22 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:34357 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754694Ab0FAVQV (ORCPT
+	id S1757552Ab0FAVRM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Jun 2010 17:17:12 -0400
+Received: from moutng.kundenserver.de ([212.227.126.186]:55494 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756839Ab0FAVRJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Jun 2010 17:16:21 -0400
-Date: Tue, 1 Jun 2010 14:15:29 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Julia Lawall <julia@diku.dk>
-Cc: Joerg Roedel <joerg.roedel@amd.com>, Thomas Gleixner <tglx@linutronix.de>,
-       Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-       x86@kernel.org, iommu@lists.linux-foundation.org,
-       linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-Subject: Re: [PATCH 6/17] arch/x86/kernel: Add missing spin_unlock
-Message-Id: <20100601141529.0c99f22c.akpm@linux-foundation.org>
-In-Reply-To: <Pine.LNX.4.64.1005261755260.23743@ask.diku.dk>
-References: <Pine.LNX.4.64.1005261755260.23743@ask.diku.dk>
-X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 1 Jun 2010 17:17:09 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: "James E.J. Bottomley" <James.Bottomley@suse.de>
+Cc: Arnd Bergmann <arnd@arndb.de>, Willem Riede <osst@riede.org>,
+       =?UTF-8?q?Kai=20M=C3=A4kisara?= <Kai.Makisara@kolumbus.fi>,
+       "James E.J. Bottomley" <James.Bottomley@suse.de>,
+       osst-users@lists.sourceforge.net, linux-scsi@vger.kernel.org,
+       linux-kernel@vger.kernel.org
+Subject: [PATCH] scsi/st: remove BKL from open
+Date: Tue,  1 Jun 2010 23:16:54 +0200
+Message-Id: <1275427014-9801-1-git-send-email-arnd@arndb.de>
+X-Mailer: git-send-email 1.7.0.4
+X-Provags-ID: V01U2FsdGVkX18JpkRRI9b5hfmUk2PlefpI+fFYpE8oCFFUszS
+ opEEwQOjzGyKcc4uKDF906+50vT2Uh0pV0s18gc6pL6iafJMZn
+ J7/LpoakJycbOk+w8+x0g==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 26 May 2010 17:55:59 +0200 (CEST)
-Julia Lawall <julia@diku.dk> wrote:
+The st_open function is serialized through the st_dev_arr_lock
+and the STp->in_use flag, so there is no race that the BKL
+can protect against in the driver itself, and the function
+does not access any global state outside of the driver that
+might be protected with the BKL.
 
-> From: Julia Lawall <julia@diku.dk>
-> 
-> Add a spin_unlock missing on the error path.  The locks and unlocks are
-> balanced in other functions, so it seems that the same should be the case
-> here.
-> 
-> The semantic match that finds this problem is as follows:
-> (http://coccinelle.lip6.fr/)
-> 
-> // <smpl>
-> @@
-> expression E1;
-> @@
-> 
-> * spin_lock(E1,...);
->   <+... when != E1
->   if (...) {
->     ... when != E1
-> *   return ...;
->   }
->   ...+>
-> * spin_unlock(E1,...);
-> // </smpl>
-> 
-> Signed-off-by: Julia Lawall <julia@diku.dk>
-> 
-> ---
->  arch/x86/kernel/amd_iommu.c |    8 ++++++--
->  1 file changed, 6 insertions(+), 2 deletions(-)
-> 
-> diff --git a/arch/x86/kernel/amd_iommu.c b/arch/x86/kernel/amd_iommu.c
-> index fa5a147..b98e1cd 100644
-> --- a/arch/x86/kernel/amd_iommu.c
-> +++ b/arch/x86/kernel/amd_iommu.c
-> @@ -1499,12 +1499,16 @@ static int __attach_device(struct device *dev,
->  
->  	/* Some sanity checks */
->  	if (alias_data->domain != NULL &&
-> -	    alias_data->domain != domain)
-> +	    alias_data->domain != domain) {
-> +		spin_unlock(&domain->lock);
->  		return -EBUSY;
-> +	}
->  
->  	if (dev_data->domain != NULL &&
-> -	    dev_data->domain != domain)
-> +	    dev_data->domain != domain) {
-> +		spin_unlock(&domain->lock);
->  		return -EBUSY;
-> +	}
->  
->  	/* Do real assignment */
->  	if (dev_data->alias != dev) {
+Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+Cc: Willem Riede <osst@riede.org>
+Cc: "Kai Mäkisara" <Kai.Makisara@kolumbus.fi>
+Cc: "James E.J. Bottomley" <James.Bottomley@suse.de>
+Cc: osst-users@lists.sourceforge.net
+Cc: linux-scsi@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org
 
-The reason why these bugs occur is that we sprinkle multiple `return'
-statements inside the middle of non-trivial functions.  People miss
-some or fail to modify some when later changing locking rules and we
-gain bugs (or, similarly, resource leaks).
+---
+ drivers/scsi/st.c |    9 +--------
+ 1 files changed, 1 insertions(+), 8 deletions(-)
 
-So I'd suggest that when fixing such bugs, we also fix their cause.
-
-ie:
-
---- a/arch/x86/kernel/amd_iommu.c~arch-x86-kernel-add-missing-spin_unlock
-+++ a/arch/x86/kernel/amd_iommu.c
-@@ -1487,6 +1487,7 @@ static int __attach_device(struct device
- 			   struct protection_domain *domain)
- {
- 	struct iommu_dev_data *dev_data, *alias_data;
-+	int ret;
+diff --git a/drivers/scsi/st.c b/drivers/scsi/st.c
+index 24211d0..8d4c4bb 100644
+--- a/drivers/scsi/st.c
++++ b/drivers/scsi/st.c
+@@ -39,7 +39,6 @@ static const char *verstr = "20081215";
+ #include <linux/cdev.h>
+ #include <linux/delay.h>
+ #include <linux/mutex.h>
+-#include <linux/smp_lock.h>
  
- 	dev_data   = get_dev_data(dev);
- 	alias_data = get_dev_data(dev_data->alias);
-@@ -1497,14 +1498,17 @@ static int __attach_device(struct device
- 	/* lock domain */
- 	spin_lock(&domain->lock);
+ #include <asm/uaccess.h>
+ #include <asm/dma.h>
+@@ -1180,7 +1179,6 @@ static int st_open(struct inode *inode, struct file *filp)
+ 	int dev = TAPE_NR(inode);
+ 	char *name;
  
-+	ret = -EBUSY;
- 	/* Some sanity checks */
- 	if (alias_data->domain != NULL &&
- 	    alias_data->domain != domain)
--		return -EBUSY;
-+		goto out;
+-	lock_kernel();
+ 	/*
+ 	 * We really want to do nonseekable_open(inode, filp); here, but some
+ 	 * versions of tar incorrectly call lseek on tapes and bail out if that
+@@ -1188,10 +1186,8 @@ static int st_open(struct inode *inode, struct file *filp)
+ 	 */
+ 	filp->f_mode &= ~(FMODE_PREAD | FMODE_PWRITE);
  
- 	if (dev_data->domain != NULL &&
- 	    dev_data->domain != domain)
--		return -EBUSY;
-+		goto out;
-+
-+	ret = 0;
+-	if (!(STp = scsi_tape_get(dev))) {
+-		unlock_kernel();
++	if (!(STp = scsi_tape_get(dev)))
+ 		return -ENXIO;
+-	}
  
- 	/* Do real assignment */
- 	if (dev_data->alias != dev) {
-@@ -1522,8 +1526,8 @@ static int __attach_device(struct device
+ 	write_lock(&st_dev_arr_lock);
+ 	filp->private_data = STp;
+@@ -1200,7 +1196,6 @@ static int st_open(struct inode *inode, struct file *filp)
+ 	if (STp->in_use) {
+ 		write_unlock(&st_dev_arr_lock);
+ 		scsi_tape_put(STp);
+-		unlock_kernel();
+ 		DEB( printk(ST_DEB_MSG "%s: Device already in use.\n", name); )
+ 		return (-EBUSY);
+ 	}
+@@ -1249,14 +1244,12 @@ static int st_open(struct inode *inode, struct file *filp)
+ 			retval = (-EIO);
+ 		goto err_out;
+ 	}
+-	unlock_kernel();
+ 	return 0;
  
- 	/* ready */
- 	spin_unlock(&domain->lock);
--
--	return 0;
-+out:
-+	return ret;
+  err_out:
+ 	normalize_buffer(STp->buffer);
+ 	STp->in_use = 0;
+ 	scsi_tape_put(STp);
+-	unlock_kernel();
+ 	return retval;
+ 
  }
- 
- /*
-_
+-- 
+1.7.0.4
 
