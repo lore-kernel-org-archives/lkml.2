@@ -1,72 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756231Ab0FAMSI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Jun 2010 08:18:08 -0400
-Received: from www.tglx.de ([62.245.132.106]:48672 "EHLO www.tglx.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756215Ab0FAMSE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Jun 2010 08:18:04 -0400
-Date: Tue, 1 Jun 2010 14:17:01 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: =?ISO-8859-15?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>
-cc: "Rafael J. Wysocki" <rjw@sisk.pl>, Florian Mickler <florian@mickler.org>,
-       Matthew Garrett <mjg59@srcf.ucam.org>,
-       Alan Stern <stern@rowland.harvard.edu>,
-       Peter Zijlstra <peterz@infradead.org>, Paul@smtp1.linux-foundation.org,
-       LKML <linux-kernel@vger.kernel.org>, felipe.balbi@nokia.com,
-       Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
-       Linux PM <linux-pm@lists.linux-foundation.org>,
-       Alan Cox <alan@lxorguk.ukuu.org.uk>
-Subject: Re: [linux-pm] [PATCH 0/8] Suspend block api (version 8)
-In-Reply-To: <AANLkTilvOgSFTDFtXbjJobMZWxgfvsC97TqC7_a_NHBX@mail.gmail.com>
-Message-ID: <alpine.LFD.2.00.1006011411200.2933@localhost.localdomain>
-References: <Pine.LNX.4.44L0.1005271253240.3239-100000@iolanthe.rowland.org> <201005302202.39511.rjw@sisk.pl> <AANLkTilUQ2AG76nbK6LwI8_7zw0_yMSoAOr9pmuz7xrt@mail.gmail.com> <201005312347.24251.rjw@sisk.pl>
- <AANLkTilvOgSFTDFtXbjJobMZWxgfvsC97TqC7_a_NHBX@mail.gmail.com>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S1756235Ab0FAMSh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Jun 2010 08:18:37 -0400
+Received: from www.telegraphics.com.au ([204.15.192.19]:34005 "EHLO
+	mail.telegraphics.com.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755883Ab0FAMSf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Jun 2010 08:18:35 -0400
+Date: Tue, 1 Jun 2010 22:18:32 +1000 (EST)
+From: Finn Thain <fthain@telegraphics.com.au>
+To: David Miller <davem@davemloft.net>
+cc: geert@linux-m68k.org, joe@perches.com, p_gortmaker@yahoo.com,
+       netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+       linux-m68k@vger.kernel.org
+Subject: [PATCH 1/2] mac8390: propagate error code from request_irq
+In-Reply-To: <20100531.060225.68146363.davem@davemloft.net>
+Message-ID: <alpine.OSX.2.00.1006011738330.299@localhost>
+References: <alpine.LNX.2.00.1005312011210.469@nippy.intranet> <20100531.043056.258120791.davem@davemloft.net> <alpine.OSX.2.00.1005312244520.1490@localhost> <20100531.060225.68146363.davem@davemloft.net>
+User-Agent: Alpine 2.00 (OSX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="8323328-1710233220-1275394626=:2933"
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
 
---8323328-1710233220-1275394626=:2933
-Content-Type: TEXT/PLAIN; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Use the request_irq() error code as the return value for mac8390_open(). 
+EAGAIN doesn't make sense for Nubus slot IRQs. Only this driver can claim 
+this IRQ (until the NIC is removed, which means everything is powered 
+down).
 
-On Mon, 31 May 2010, Arve Hjønnevåg wrote:
+Signed-off-by: Finn Thain <fthain@telegraphics.com.au>
 
-> 2010/5/31 Rafael J. Wysocki <rjw@sisk.pl>:
-> > On Monday 31 May 2010, Arve Hjønnevåg wrote:
-> >> 2010/5/30 Rafael J. Wysocki <rjw@sisk.pl>:
-> > ...
-> >>
-> >> I think it makes more sense to block suspend while wakeup events are
-> >> pending than blocking it everywhere timers are used by code that could
-> >> be called while handling wakeup events or other critical work. Also,
-> >> even if you did block suspend everywhere timers where used you still
-> >> have the race where a wakeup interrupt happens right after you decided
-> >> to suspend. In other words, you still need to block suspend in all the
-> >> same places as with the current opportunistic suspend code, so what is
-> >> the benefit of delaying suspend until idle?
-> >
-> > Assume for a while that you don't use suspend blockers, OK?  I realize you
-> > think that anything else doesn't make sense, but evidently some other people
-> > have that opinion about suspend blockers.
-> >
-> 
-> It sounded like you were suggesting that initiating suspend from idle
-> would somehow avoid the race condition with wakeup events. All I'm
-> saying is that you would need to block suspend in all the same places.
-> If you don't care about ignoring wakeup events, then sure you can
-> initiate suspend from idle.
-
-And why should you miss a wakeup there ? If you get an interrupt in
-the transition, then you are not longer idle.
-
-Thanks,
-
-	tglx
---8323328-1710233220-1275394626=:2933--
+Index: linux-2.6.34/drivers/net/mac8390.c
+===================================================================
+--- linux-2.6.34.orig/drivers/net/mac8390.c	2010-06-01 20:20:29.000000000 +1000
++++ linux-2.6.34/drivers/net/mac8390.c	2010-06-01 20:22:23.000000000 +1000
+@@ -643,12 +643,13 @@ static int __init mac8390_initdev(struct
+ 
+ static int mac8390_open(struct net_device *dev)
+ {
++	int err;
++
+ 	__ei_open(dev);
+-	if (request_irq(dev->irq, __ei_interrupt, 0, "8390 Ethernet", dev)) {
+-		pr_info("%s: unable to get IRQ %d.\n", dev->name, dev->irq);
+-		return -EAGAIN;
+-	}
+-	return 0;
++	err = request_irq(dev->irq, __ei_interrupt, 0, "8390 Ethernet", dev);
++	if (err)
++		pr_info("%s: unable to get IRQ %d\n", dev->name, dev->irq);
++	return err;
+ }
+ 
+ static int mac8390_close(struct net_device *dev)
