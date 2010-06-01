@@ -1,90 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755316Ab0FAIr3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Jun 2010 04:47:29 -0400
-Received: from ist.d-labs.de ([213.239.218.44]:56462 "EHLO mx01.d-labs.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753279Ab0FAIr2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Jun 2010 04:47:28 -0400
-From: florian@mickler.org
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: 640e9920@gmail.com, markgross@thegnar.org,
-       Arve Hj?nnev?g <arve@android.com>,
-       Alan Stern <stern@rowland.harvard.edu>,
-       Peter Zijlstra <peterz@infradead.org>,
-       Linux PM <linux-pm@lists.linux-foundation.org>,
-       Brian Swetland <swetland@google.com>,
-       Alan Cox <alan@lxorguk.ukuu.org.uk>,
-       Matthew Garrett <mjg59@srcf.ucam.org>,
-       Thomas Gleixner <tglx@linutronix.de>,
-       LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
-       Florian Mickler <florian@mickler.org>
-Subject: [PATCH] pm_qos: remove unnecessary list-traversal
-Date: Tue,  1 Jun 2010 10:46:54 +0200
-Message-Id: <1275382014-10178-1-git-send-email-florian@mickler.org>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <20100601090737.4bc243d9@schatten.dmk.lab>
-References: <20100601090737.4bc243d9@schatten.dmk.lab>
+	id S1755481Ab0FAIt7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Jun 2010 04:49:59 -0400
+Received: from casper.infradead.org ([85.118.1.10]:49167 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755238Ab0FAIt6 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Jun 2010 04:49:58 -0400
+Subject: Re: [rfc] forked kernel task and mm structures imbalanced on NUMA
+From: Peter Zijlstra <peterz@infradead.org>
+To: Nick Piggin <npiggin@suse.de>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+       Ingo Molnar <mingo@redhat.com>, linux-mm@kvack.org,
+       linux-kernel@vger.kernel.org,
+       Lee Schermerhorn <lee.schermerhorn@hp.com>,
+       "Serge E. Hallyn" <serue@us.ibm.com>
+In-Reply-To: <1275380202.27810.26214.camel@twins>
+References: <20100601073343.GQ9453@laptop>
+	 <1275380202.27810.26214.camel@twins>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Tue, 01 Jun 2010 10:49:54 +0200
+Message-ID: <1275382194.27810.26330.camel@twins>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The new extreme value is only depending on the old extreme value and
-the changed value.
+On Tue, 2010-06-01 at 10:16 +0200, Peter Zijlstra wrote:
+> I'd have to again look at wth happens to ->cpus_allowed, but I guess
+> it should be fixable
 
-Signed-off-by: Florian Mickler <florian@mickler.org>
----
- kernel/pm_qos_params.c |   19 +++++++++++++++++--
- 1 files changed, 17 insertions(+), 2 deletions(-)
+Ah, I remember, cgroup_clone was a massive pain, Serge said he'd wanted
+to kill that, but I don't think that ever happened.
 
-diff --git a/kernel/pm_qos_params.c b/kernel/pm_qos_params.c
-index f42d3f7..5d71c12 100644
---- a/kernel/pm_qos_params.c
-+++ b/kernel/pm_qos_params.c
-@@ -136,6 +136,16 @@ static s32 min_compare(s32 v1, s32 v2)
- }
- 
- 
-+static void update_target_val(int pm_qos_class, s32 val)
-+{
-+	s32 extreme_value;
-+	s32 new_value;
-+	extreme_value = atomic_read(&pm_qos_array[pm_qos_class]->target_value);
-+	new_value = pm_qos_array[pm_qos_class]->comparitor(val,extreme_value);
-+	if (extreme_value != new_value)
-+		atomic_set(&pm_qos_array[pm_qos_class]->target_value,new_value);
-+}
-+
- static void update_target(int pm_qos_class)
- {
- 	s32 extreme_value;
-@@ -253,19 +263,24 @@ void pm_qos_update_request(struct pm_qos_request_list *pm_qos_req,
- 	s32 temp;
- 
- 	if (pm_qos_req) { /*guard against callers passing in null */
-+		int target = pm_qos_req->pm_qos_class;
- 		spin_lock_irqsave(&pm_qos_lock, flags);
- 		if (new_value == PM_QOS_DEFAULT_VALUE)
--			temp = pm_qos_array[pm_qos_req->pm_qos_class]->default_value;
-+			temp = pm_qos_array[target]->default_value;
- 		else
- 			temp = new_value;
- 
- 		if (temp != pm_qos_req->value) {
- 			pending_update = 1;
- 			pm_qos_req->value = temp;
-+			update_target_val(target,temp);
- 		}
- 		spin_unlock_irqrestore(&pm_qos_lock, flags);
-+
- 		if (pending_update)
--			update_target(pm_qos_req->pm_qos_class);
-+			blocking_notifier_call_chain(
-+				pm_qos_array[pm_qos_class]->notifiers,
-+					(unsigned long) temp, NULL);
- 	}
- }
- EXPORT_SYMBOL_GPL(pm_qos_update_request);
--- 
-1.7.1
+    copy_process():
+      if (current->nsproxy != p->nsproxy)
+         ns_cgroup_clone()
+           cgroup_clone()
+             mutex_lock(inode->i_mutex)
+             mutex_lock(cgroup_mutex)
+             cgroup_attach_task()
+           ss->can_attach()
+               ss->attach() [ -> cpuset_attach() ]
+                 cpuset_attach_task()
+                   set_cpus_allowed_ptr();
+
+was the code path that made set_cpus_allowed_ptr() exclusion against
+fork interesting.
+
 
