@@ -1,58 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755523Ab0FAQ55 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Jun 2010 12:57:57 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:46095 "EHLO mx1.redhat.com"
+	id S1756741Ab0FARAI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Jun 2010 13:00:08 -0400
+Received: from hera.kernel.org ([140.211.167.34]:56332 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754015Ab0FAQ54 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Jun 2010 12:57:56 -0400
-Message-ID: <4C053ACC.5020708@redhat.com>
-Date: Tue, 01 Jun 2010 19:52:28 +0300
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100330 Fedora/3.0.4-1.fc12 Thunderbird/3.0.4
+	id S1756550Ab0FARAE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Jun 2010 13:00:04 -0400
+Message-ID: <4C053C39.9070405@kernel.org>
+Date: Tue, 01 Jun 2010 18:58:33 +0200
+From: Tejun Heo <tj@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.1.9) Gecko/20100317 Thunderbird/3.0.4
 MIME-Version: 1.0
-To: Andi Kleen <andi@firstfloor.org>
-CC: Gleb Natapov <gleb@redhat.com>, linux-kernel@vger.kernel.org,
-       kvm@vger.kernel.org, hpa@zytor.com, mingo@elte.hu, npiggin@suse.de,
-       tglx@linutronix.de, mtosatti@redhat.com
-Subject: Re: [PATCH] use unfair spinlock when running on hypervisor.
-References: <20100601093515.GH24302@redhat.com> <87sk56ycka.fsf@basil.nowhere.org> <20100601162414.GA6191@redhat.com> <20100601163807.GA11880@basil.fritz.box>
-In-Reply-To: <20100601163807.GA11880@basil.fritz.box>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Peter Zijlstra <peterz@infradead.org>
+CC: mingo@elte.hu, linux-kernel@vger.kernel.org, rusty@rustcorp.com.au,
+       paulus@samba.org, acme@redhat.com, Paul Menage <menage@google.com>
+Subject: Re: [PATCH 2/4] sched: adjust when cpu_active and cpuset configurations
+ are updated during cpu on/offlining
+References: <1275332199-28082-1-git-send-email-tj@kernel.org>	 <1275332199-28082-3-git-send-email-tj@kernel.org> <1275407846.27810.27627.camel@twins>
+In-Reply-To: <1275407846.27810.27627.camel@twins>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Tue, 01 Jun 2010 16:58:38 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/01/2010 07:38 PM, Andi Kleen wrote:
->>> Your new code would starve again, right?
->>>
->>>        
->> Yes, of course it may starve with unfair spinlock. Since vcpus are not
->> always running there is much smaller chance then vcpu on remote memory
->> node will starve forever. Old kernels with unfair spinlocks are running
->> fine in VMs on NUMA machines with various loads.
->>      
-> Try it on a NUMA system with unfair memory.
->    
+Hello,
 
-We are running everything on NUMA (since all modern machines are now 
-NUMA).  At what scale do the issues become observable?
+On 06/01/2010 05:57 PM, Peter Zijlstra wrote:
+> I know we all love notifier lists, but doesn't the below code get lots
+> more readable if we don't play tricks with notifier priorities and
+> simply hardcode the few (perf/sched/cpuset) callbacks into the hotplug
+> paths?
 
->> I understand that reason and do not propose to get back to old spinlock
->> on physical HW! But with virtualization performance hit is unbearable.
->>      
-> Extreme unfairness can be unbearable too.
->    
+Maybe, maybe not.  In this case, I kind of like that sleep failure
+case doesn't have to be explicitly rolled back but if you like hard
+coding that's fine too.
 
-Well, the question is what happens first.  In our experience, vcpu 
-overcommit is a lot more painful.  People will never see the NUMA 
-unfairness issue if they can't use kvm due to the vcpu overcommit problem.
+> Also, I'm afraid you've now inverted the relation between
+> cpu_active_mask and parition_sched_domains().
+>
+> You need to first set/clear the active mask, then rebuild the domain.
+> But with your patch parition_sched_domains() gets called in the regular
+> DOWN_PREPARE path, while we only clear active at the very end, which
+> means we build the wrong domains.
 
-What I'd like to see eventually is a short-term-unfair, long-term-fair 
-spinlock.  Might make sense for bare metal as well.  But it won't be 
-easy to write.
+Ah, right forgot about that.  So, the things that need to be ordered
+are cpu_active mask update, cpuset configuration and sched domains,
+right?
+
+Thanks.
 
 -- 
-error compiling committee.c: too many arguments to function
-
+tejun
