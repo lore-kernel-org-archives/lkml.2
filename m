@@ -1,126 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932073Ab0FAV34 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Jun 2010 17:29:56 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:60103 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754982Ab0FAV3y (ORCPT
+	id S1757528Ab0FAVaO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Jun 2010 17:30:14 -0400
+Received: from sj-iport-6.cisco.com ([171.71.176.117]:15541 "EHLO
+	sj-iport-6.cisco.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754728Ab0FAVaM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Jun 2010 17:29:54 -0400
-Date: Tue, 1 Jun 2010 14:28:06 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Baruch Siach <baruch@tkos.co.il>
-Cc: Thadeu Lima de Souza Cascardo <cascardo@holoscopio.com>,
-       linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-       Uwe =?ISO-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>,
-       Sascha Hauer <s.hauer@pengutronix.de>
-Subject: Re: [PATCH] fbdev: fix frame buffer devices menu
-Message-Id: <20100601142806.03c50a49.akpm@linux-foundation.org>
-In-Reply-To: <20100527040329.GA14841@jasper.tkos.co.il>
-References: <1274896477-6832-1-git-send-email-cascardo@holoscopio.com>
-	<20100527040329.GA14841@jasper.tkos.co.il>
-X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Tue, 1 Jun 2010 17:30:12 -0400
+Authentication-Results: sj-iport-6.cisco.com; dkim=neutral (message not signed) header.i=none
+X-IronPort-AV: E=Sophos;i="4.53,342,1272844800"; 
+   d="scan'208";a="538332997"
+From: Tom Lyon <pugs@lyon-about.com>
+To: "Michael S. Tsirkin" <mst@redhat.com>
+Subject: Re: [PATCH] VFIO driver: Non-privileged user level PCI drivers
+Date: Tue, 1 Jun 2010 14:26:53 -0700
+User-Agent: KMail/1.9.9
+Cc: Avi Kivity <avi@redhat.com>, linux-kernel@vger.kernel.org,
+       kvm@vger.kernel.org, chrisw@sous-sol.org, joro@8bytes.org,
+       hjk@linutronix.de, gregkh@suse.de, aafabbri@cisco.com,
+       scofeldm@cisco.com
+References: <20100530124949.GI27611@redhat.com> <4C04E0E0.3070006@redhat.com> <20100601104651.GA9415@redhat.com>
+In-Reply-To: <20100601104651.GA9415@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+Message-Id: <201006011426.53563.pugs@lyon-about.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 27 May 2010 07:03:29 +0300
-Baruch Siach <baruch@tkos.co.il> wrote:
-
-> On Wed, May 26, 2010 at 02:54:37PM -0300, Thadeu Lima de Souza Cascardo wrote:
-> > Commit f601441916d1e19291d0b4f044b4a7551e2924d0 has inserted the symbol
-> > HAVE_FB_IMX, which does not depend on FB after the menuconfig FB. This
-> > breaks the menu, presenting most of the drivers outside of it, when
-> > using menuconfig.
-> > 
-> > Moving the symbol to the start of the file, just like HAVE_FB_ATMEL,
-> > fixes the problem without breaking it for iMX25 configurations (tested
-> > with ARCH=arm, no build).
-> > 
-> > Cc: Baruch Siach <baruch@tkos.co.il>
-> > Cc: Uwe Kleine-K__nig <u.kleine-koenig@pengutronix.de>
-> > Cc: Sascha Hauer <s.hauer@pengutronix.de>
-> > Signed-off-by: Thadeu Lima de Souza Cascardo <cascardo@holoscopio.com>
+On Tuesday 01 June 2010 03:46:51 am Michael S. Tsirkin wrote:
+> On Tue, Jun 01, 2010 at 01:28:48PM +0300, Avi Kivity wrote:
+> > On 06/01/2010 12:55 PM, Michael S. Tsirkin wrote:
+> >>
+> >>>   It can't program the iommu.
+> >>> What
+> >>> the patch proposes is that userspace tells vfio about the needed
+> >>> mappings, and vfio programs the iommu.
+> >>>      
+> >> There seems to be some misunderstanding.  The userspace interface
+> >> proposed forces a separate domain per device and forces userspace to
+> >> repeat iommu programming for each device.  We are better off sharing a
+> >> domain between devices and programming the iommu once.
+> >>    
+> >
+> >   iommufd = open(/dev/iommu);
+> >   ioctl(iommufd, IOMMUFD_ASSIGN_RANGE, ...)
+> >   ioctl(vfiofd, VFIO_SET_IOMMU, iommufd)
+> >
+> > ?
 > 
-> Acked-by: Baruch Siach <baruch@tkos.co.il>
+> Yes.
 > 
+> > If so, I agree.
+> 
+> Good.
 
-OK, I've been sitting on the below patch
-(fbdev-fix-kconfig-breakage-in-drivers-video.patch) for months, waiting
-for Krzysztof to respond to some comment which Baruch made, but
-Krzysztof seems to have gone quiet.
+I'm not really opposed to multiple devices per domain, but let me point out how I
+ended up here.  First, the driver has two ways of mapping pages, one based on the
+iommu api and one based on the dma_map_sg api.  With the latter, the system
+already allocates a domain per device and there's no way to control it. This was
+presumably done to help isolation between drivers.  If there are multiple drivers
+in the user level, do we not want the same isoation to apply to them?  
+Also, domains are not a very scarce resource - my little core i5 has 256, 
+and the intel architecture goes to 64K.
+And then there's the fact that it is possible to have multiple disjoint iommus on a system,
+so it may not even be possible to bring 2 devices under one domain. 
 
-Could you guys please compare Thadeu's patch with the below and work
-out which is preferable and whether the new patch has the same coverage
-as the old one, etc?
-
-Thanks.
-
-
-
-From: Krzysztof Helt <krzysztof.h1@wp.pl>
-
-There are two new options inside the CONFIG_FB section which do not depend
-on the CONFIG_FB.  This break Kconfig menu layout.
-
-Fix it and reduce few conditions for sparc frame buffers as the FB_SBUS ==
-((FB = y) && SPARC).
-
-Signed-off-by: Krzysztof Helt <krzysztof.h1@wp.pl>
-Acked-by: David S. Miller <davem@davemloft.net>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
----
-
- drivers/video/Kconfig |   11 ++++-------
- 1 file changed, 4 insertions(+), 7 deletions(-)
-
-diff -puN drivers/video/Kconfig~fbdev-fix-kconfig-breakage-in-drivers-video drivers/video/Kconfig
---- a/drivers/video/Kconfig~fbdev-fix-kconfig-breakage-in-drivers-video
-+++ a/drivers/video/Kconfig
-@@ -400,12 +400,9 @@ config FB_SA1100
- 	  If you plan to use the LCD display with your SA-1100 system, say
- 	  Y here.
- 
--config HAVE_FB_IMX
--	bool
--
- config FB_IMX
- 	tristate "Motorola i.MX LCD support"
--	depends on FB && (HAVE_FB_IMX || ARCH_MX1 || ARCH_MX2)
-+	depends on FB && (ARCH_MX1 || ARCH_MX2)
- 	select FB_CFB_FILLRECT
- 	select FB_CFB_COPYAREA
- 	select FB_CFB_IMAGEBLIT
-@@ -802,7 +799,7 @@ config FB_SBUS
- 
- config FB_BW2
- 	bool "BWtwo support"
--	depends on (FB = y) && (SPARC && FB_SBUS)
-+	depends on FB_SBUS
- 	select FB_CFB_FILLRECT
- 	select FB_CFB_COPYAREA
- 	select FB_CFB_IMAGEBLIT
-@@ -811,7 +808,7 @@ config FB_BW2
- 
- config FB_CG3
- 	bool "CGthree support"
--	depends on (FB = y) && (SPARC && FB_SBUS)
-+	depends on FB_SBUS
- 	select FB_CFB_FILLRECT
- 	select FB_CFB_COPYAREA
- 	select FB_CFB_IMAGEBLIT
-@@ -820,7 +817,7 @@ config FB_CG3
- 
- config FB_CG6
- 	bool "CGsix (GX,TurboGX) support"
--	depends on (FB = y) && (SPARC && FB_SBUS)
-+	depends on FB_SBUS
- 	select FB_CFB_COPYAREA
- 	select FB_CFB_IMAGEBLIT
- 	help
-_
-
+Given all that, I am inclined to leave it alone until someone has a real problem.
+Note that not sharing iommu domains doesn't mean you can't share device memory,
+just that you have to do multiple mappings
