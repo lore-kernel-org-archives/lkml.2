@@ -1,56 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756236Ab0FAT2z (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Jun 2010 15:28:55 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:18010 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753118Ab0FAT2y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Jun 2010 15:28:54 -0400
-Date: Tue, 1 Jun 2010 21:27:26 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
-       David Rientjes <rientjes@google.com>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-       Nick Piggin <npiggin@suse.de>
-Subject: Re: [PATCH 3/5] oom: Fix child process iteration properly
-Message-ID: <20100601192726.GA19120@redhat.com>
-References: <20100601144238.243A.A69D9226@jp.fujitsu.com> <20100601144810.2440.A69D9226@jp.fujitsu.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100601144810.2440.A69D9226@jp.fujitsu.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1756687Ab0FAT3M (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Jun 2010 15:29:12 -0400
+Received: from e36.co.us.ibm.com ([32.97.110.154]:46957 "EHLO
+	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756605Ab0FAT3I (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Jun 2010 15:29:08 -0400
+Subject: Re: [PATCH 00/14] EVM
+From: Mimi Zohar <zohar@linux.vnet.ibm.com>
+To: Shaz <shazalive@gmail.com>
+Cc: James Morris <jmorris@namei.org>, linux-kernel@vger.kernel.org,
+       linux-security-module@vger.kernel.org,
+       David Safford <safford@watson.ibm.com>,
+       Dave Hansen <dave@linux.vnet.ibm.com>,
+       Arjan van de Ven <arjan@infradead.org>,
+       securityengineeringresearchgroup 
+	<securityengineeringresearchgroup@googlegroups.com>
+In-Reply-To: <AANLkTil7WvVZ-3zpA0E--fUcHTqul3pnXnPm1xXn_vlH@mail.gmail.com>
+References: <1271886594-3719-1-git-send-email-zohar@linux.vnet.ibm.com>
+	 <alpine.LRH.2.00.1005311017530.24571@tundra.namei.org>
+	 <AANLkTil8LHjRT_PMosymmtBb1pxIzkBaWC0ef35DCBUU@mail.gmail.com>
+	 <AANLkTil7WvVZ-3zpA0E--fUcHTqul3pnXnPm1xXn_vlH@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 01 Jun 2010 15:28:56 -0400
+Message-ID: <1275420536.28134.37.camel@localhost.localdomain>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/01, KOSAKI Motohiro wrote:
->
-> @@ -88,6 +88,7 @@ unsigned long badness(struct task_struct *p, unsigned long uptime)
->  {
->  	unsigned long points, cpu_time, run_time;
->  	struct task_struct *c;
-> +	struct task_struct *t = p;
+On Mon, 2010-05-31 at 15:08 +0500, Shaz wrote:
+> > EVM is based on EA while Aegis does not use EA as far as I can
+> > understand from the documentation available. Can we make EVM
+> > independent of EA? Even the MAC mechanism is very different then
+> > existing LSM based mechanisms.
+> 
+> Have a look at the following:
+> 
+> http://research.nokia.com/files/NRCTR2008010.pdf
+> http://research.nokia.com/files/NRCTR2008007.pdf
+> http://lwn.net/Articles/372937/
 
-This initialization should be moved down to
+SELinux, Smack, Capabilities, and IMA all use extended attributes. The
+purpose of EVM is to detect offline tampering of these security extended
+attributes.
 
-> +	do {
-> +		list_for_each_entry(c, &t->children, sibling) {
-> +			child = find_lock_task_mm(c);
-> +			if (child) {
-> +				if (child->mm != p->mm)
-> +					points += child->mm->total_vm/2 + 1;
-> +				task_unlock(child);
-> +			}
->  		}
-> -	}
-> +	} while_each_thread(p, t);
+The IMA integrity appraisal extension extends IMA with local measurement
+appraisal. The extension stores and maintains the file integrity
+measurement as an extended attribute 'security.ima', which EVM can be
+configured to protect.  Instead of storing the hash measurement as an
+extended attribute, the file hashes could be loaded in kernel memory, as
+long as the appraise policy is appropriately constrained.
 
-this loop. We have "p = find_lock_task_mm(p)" in between which can change p.
+Mimi
 
-Apart from this, I think the whole series is nice.
-
-Oleg.
 
