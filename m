@@ -1,58 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757181Ab0FAUgz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Jun 2010 16:36:55 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:25001 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754412Ab0FAUgx (ORCPT
+	id S1757248Ab0FAUhh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Jun 2010 16:37:37 -0400
+Received: from bosmailout08.eigbox.net ([66.96.190.8]:47594 "EHLO
+	bosmailout08.eigbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757005Ab0FAUhg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Jun 2010 16:36:53 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id:
-	references:user-agent:mime-version:content-type:x-system-of-record;
-	b=FrbLa0ceErZpPgCyuw2/BprDoOCnLjb+A5w/FeUUuDTPSmAv3ZUcubYGR//0DOrgj
-	XfQfaDYtriWIYJbLwXMAQ==
-Date: Tue, 1 Jun 2010 13:36:45 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-cc: LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
-       Oleg Nesterov <oleg@redhat.com>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-       Nick Piggin <npiggin@suse.de>
-Subject: Re: [PATCH 1/5] oom: select_bad_process: check PF_KTHREAD instead
- of !mm to skip kthreads
-In-Reply-To: <20100531182526.1843.A69D9226@jp.fujitsu.com>
-Message-ID: <alpine.DEB.2.00.1006011333470.13136@chino.kir.corp.google.com>
-References: <20100531182526.1843.A69D9226@jp.fujitsu.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Tue, 1 Jun 2010 16:37:36 -0400
+X-Greylist: delayed 1871 seconds by postgrey-1.27 at vger.kernel.org; Tue, 01 Jun 2010 16:37:36 EDT
+X-EN-OrigOutIP: 10.20.18.2
+X-EN-IMPSID: Qk6N1e00S02gpmq01k6N36
+Message-ID: <4C05684D.5050204@jaysonking.com>
+Date: Tue, 01 Jun 2010 15:06:37 -0500
+From: "Jayson R. King" <dev@jaysonking.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.8) Gecko/20100301 Fedora/3.0.3-1.fc11 Thunderbird/3.0.3
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-System-Of-Record: true
+To: Theodore Tso <tytso@MIT.EDU>
+CC: Greg Freemyer <greg.freemyer@gmail.com>,
+       Kay Diederichs <kay.diederichs@uni-konstanz.de>,
+       "Jayson R. King" <dev@jaysonking.com>, Stable team <stable@kernel.org>,
+       LKML <linux-kernel@vger.kernel.org>,
+       Greg Kroah-Hartman <gregkh@suse.de>,
+       "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>,
+       Dave Chinner <david@fromorbit.com>,
+       Ext4 Developers List <linux-ext4@vger.kernel.org>
+Subject: Re: [PATCH 2.6.27.y 1/3] ext4: Use our own write_cache_pages()
+References: <4C001888.8020006@jaysonking.com> <4C0018E1.5060007@jaysonking.com> <20100529004913.GL26177@thunk.org> <4C0070D8.8060500@jaysonking.com> <20100530212502.GQ26177@thunk.org> <4C0358B1.1050605@uni-konstanz.de> <AANLkTin3rfw04Shsmmd2O0URjWqbUhf-HOw4r2dXaprH@mail.gmail.com> <070DAF41-4DD5-4F20-B9F1-3B472147C499@mit.edu>
+In-Reply-To: <070DAF41-4DD5-4F20-B9F1-3B472147C499@mit.edu>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-EN-UserInfo: 06af1bc540adb20c3d2d7097199478a6:08dd1976e651f6e3791fbe97eaa5f898
+X-EN-AuthUser: jaysonking@jaysonking.com
+X-EN-OrigIP: 68.93.139.172
+X-EN-OrigHost: unknown
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 31 May 2010, KOSAKI Motohiro wrote:
+On 06/01/2010 09:49 AM, Theodore Tso wrote:
+> This is one of the things that confuses me, actually.  Why is it that there are a number of people who want to use ext4 on 2.6.27?   Even the enterprise distro's have moved on; SLES 11 SP1 upgraded their users from 2.6.27 to 2.6.32, for example.  I wonder if it's time to start a new "stable anchor point" around 2.6.32, given that Ubuntu's latest Long-Term Stable (Lucid LTS) is based on 2.6.32, as is SLES 11 SP1.  The RHEL 6 beta is also based on 2.6.32.  (And I just spent quite a bit of time over the past week backporting a lot of ext4 bug fixes to 2.6.32.y :-)
+>
+> If there are people who want to work on trying to backport more ext4 fixes to 2.6.27, they're of course free to do so.  I am really curious  as to *why*, though.
 
-> From: Oleg Nesterov <oleg@redhat.com>
-> Subject: oom: select_bad_process: check PF_KTHREAD instead of !mm to skip kthreads
-> 
-> select_bad_process() thinks a kernel thread can't have ->mm != NULL, this
-> is not true due to use_mm().
-> 
-> Change the code to check PF_KTHREAD.
-> 
-> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
-> Acked-by: David Rientjes <rientjes@google.com>
-> Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+2.6.27 is still a good kernel and ext4 is a good filesystem, IMO 
+(existing deadlock notwithstanding).
 
-This is already pushed in my oom killer rewrite as patch 14/18 "check 
-PF_KTHREAD instead of !mm to skip kthreads".
+Like Kay Diederichs mentioned, .27 has received ext4 updates in the 
+past, even as recently as April this year ("ext4: Avoid null pointer 
+dereference..."). Though this of course does not imply that .27 should 
+receive ext4 fixes (or other fixes) forever, but it is nice to fix the 
+most serious, show-stopping problems if it is feasable.
 
-This does not need to be merged immediately since it's not vital: use_mm() 
-is only temporary state and these kthreads will once again be excluded 
-when they call unuse_mm().  The worst case scenario here is that the oom 
-killer will erroneously select one of these kthreads which cannot die and 
-will need to reselect another task on its next call.
+(maybe OT?: When I made an attempt to switch to kernel .31 or .32 
+earlier, the kernel would not boot for me. Surely, I can do some 
+investigating and get it to boot some day, but I wasn't motivated to 
+solve it at the time and stuck with .27 instead.)
+
+Thanks for the comments.
+
+Rgds,
+
+Jayson
+
