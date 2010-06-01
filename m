@@ -1,84 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932180Ab0FAUxw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Jun 2010 16:53:52 -0400
-Received: from moutng.kundenserver.de ([212.227.126.186]:61752 "EHLO
+	id S932263Ab0FAUy4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Jun 2010 16:54:56 -0400
+Received: from moutng.kundenserver.de ([212.227.17.8]:59679 "EHLO
 	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757504Ab0FAUxs (ORCPT
+	with ESMTP id S932170Ab0FAUxv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Jun 2010 16:53:48 -0400
+	Tue, 1 Jun 2010 16:53:51 -0400
 From: Arnd Bergmann <arnd@arndb.de>
 To: Greg KH <gregkh@suse.de>
 Cc: linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
        Alan Cox <alan@lxorguk.ukuu.org.uk>,
        Frederic Weisbecker <fweisbec@gmail.com>,
        John Kacur <jkacur@redhat.com>
-Subject: [PATCH 24/31] cdc-acm: remove dead code
-Date: Tue,  1 Jun 2010 22:53:04 +0200
-Message-Id: <1275425591-8803-25-git-send-email-arnd@arndb.de>
+Subject: [PATCH 26/31] tty: reorder ldisc locking
+Date: Tue,  1 Jun 2010 22:53:06 +0200
+Message-Id: <1275425591-8803-27-git-send-email-arnd@arndb.de>
 X-Mailer: git-send-email 1.7.0.4
 In-Reply-To: <1275425591-8803-1-git-send-email-arnd@arndb.de>
 References: <1275425591-8803-1-git-send-email-arnd@arndb.de>
-X-Provags-ID: V01U2FsdGVkX19NZivv4ENQYfzQRGgL/KPif2jKn0hehXXqNX4
- YKXYwM6P9oUcxYddu1hSAszhnhRvMBPjIC/C3Xu56oIK7SM2VY
- dn80Kf7h3WyNaHmmECqnA==
+X-Provags-ID: V01U2FsdGVkX18uff/jrfbunFg/T/rSxT/CcuuwOkbmllIkOPH
+ YrSmPk+pTOcaQZgk0ENekAV8gc5ebs+xsFLI/mSKlNaYbxgYQ/
+ +8RX5p/ex7FcXGLgiMniA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The wait_event_interruptible_timeout in acm_port_down is
-never reached. Remove it to avoid possible deadlocks
-with the big tty mutex if someone were to start using
-the blocking version of acm_port_down.
+We need to release the BTM in paste_selection() when
+sleeping in tty_ldisc_ref_wait to avoid deadlocks
+with tty_ldisc_enable.
+
+In tty_set_ldisc, we now always grab the BTM before
+taking the ldisc_mutex in order to avoid AB-BA
+deadlocks between the two.
+
+tty_ldisc_halt potentially blocks on a workqueue
+function that takes the BTM, so we must release
+the BTM before calling it.
 
 Signed-off-by: Arnd Bergmann <arnd@arndb.de>
 ---
- drivers/usb/class/cdc-acm.c |   12 +++---------
- 1 files changed, 3 insertions(+), 9 deletions(-)
+ drivers/char/selection.c |    9 +++++++--
+ drivers/char/tty_ldisc.c |   24 ++++++++++++++++++++----
+ 2 files changed, 27 insertions(+), 6 deletions(-)
 
-diff --git a/drivers/usb/class/cdc-acm.c b/drivers/usb/class/cdc-acm.c
-index 0c2f14f..d00d155 100644
---- a/drivers/usb/class/cdc-acm.c
-+++ b/drivers/usb/class/cdc-acm.c
-@@ -636,19 +636,13 @@ static void acm_tty_unregister(struct acm *acm)
+diff --git a/drivers/char/selection.c b/drivers/char/selection.c
+index 85211a3..75889cd 100644
+--- a/drivers/char/selection.c
++++ b/drivers/char/selection.c
+@@ -319,8 +319,13 @@ int paste_selection(struct tty_struct *tty)
+ 	poke_blanked_console();
+ 	release_console_sem();
  
- static int acm_tty_chars_in_buffer(struct tty_struct *tty);
+-	ld = tty_ldisc_ref_wait(tty);
+-	
++	ld = tty_ldisc_ref(tty);
++	if (!ld) {
++		tty_unlock();
++		ld = tty_ldisc_ref_wait(tty);
++		tty_lock();
++	}
++
+ 	add_wait_queue(&vc->paste_wait, &wait);
+ 	while (sel_buffer && sel_buffer_lth > pasted) {
+ 		set_current_state(TASK_INTERRUPTIBLE);
+diff --git a/drivers/char/tty_ldisc.c b/drivers/char/tty_ldisc.c
+index 97681ff..0f49479 100644
+--- a/drivers/char/tty_ldisc.c
++++ b/drivers/char/tty_ldisc.c
+@@ -582,6 +582,7 @@ int tty_set_ldisc(struct tty_struct *tty, int ldisc)
  
--static void acm_port_down(struct acm *acm, int drain)
-+static void acm_port_down(struct acm *acm)
- {
- 	int i, nr = acm->rx_buflimit;
- 	mutex_lock(&open_mutex);
- 	if (acm->dev) {
- 		usb_autopm_get_interface(acm->control);
- 		acm_set_control(acm, acm->ctrlout = 0);
--		/* try letting the last writes drain naturally */
--		if (drain) {
--			wait_event_interruptible_timeout(acm->drain_wait,
--				(ACM_NW == acm_wb_is_avail(acm)) || !acm->dev,
--					ACM_CLOSE_TIMEOUT * HZ);
--		}
- 		usb_kill_urb(acm->ctrlurb);
- 		for (i = 0; i < ACM_NW; i++)
- 			usb_kill_urb(acm->wb[i].urb);
-@@ -664,7 +658,7 @@ static void acm_tty_hangup(struct tty_struct *tty)
- {
- 	struct acm *acm = tty->driver_data;
- 	tty_port_hangup(&acm->port);
--	acm_port_down(acm, 0);
-+	acm_port_down(acm);
- }
+ 	tty_wait_until_sent(tty, 0);
  
- static void acm_tty_close(struct tty_struct *tty, struct file *filp)
-@@ -685,7 +679,7 @@ static void acm_tty_close(struct tty_struct *tty, struct file *filp)
- 		mutex_unlock(&open_mutex);
- 		return;
++	tty_lock();
+ 	mutex_lock(&tty->ldisc_mutex);
+ 
+ 	/*
+@@ -591,13 +592,13 @@ int tty_set_ldisc(struct tty_struct *tty, int ldisc)
+ 
+ 	while (test_bit(TTY_LDISC_CHANGING, &tty->flags)) {
+ 		mutex_unlock(&tty->ldisc_mutex);
++		tty_unlock();
+ 		wait_event(tty_ldisc_wait,
+ 			test_bit(TTY_LDISC_CHANGING, &tty->flags) == 0);
++		tty_lock();
+ 		mutex_lock(&tty->ldisc_mutex);
  	}
--	acm_port_down(acm, 0);
-+	acm_port_down(acm);
- 	tty_port_close_end(&acm->port, tty);
- 	tty_port_tty_set(&acm->port, NULL);
- }
+ 
+-	tty_lock();
+-
+ 	set_bit(TTY_LDISC_CHANGING, &tty->flags);
+ 
+ 	/*
+@@ -634,8 +635,8 @@ int tty_set_ldisc(struct tty_struct *tty, int ldisc)
+ 
+ 	flush_scheduled_work();
+ 
+-	mutex_lock(&tty->ldisc_mutex);
+ 	tty_lock();
++	mutex_lock(&tty->ldisc_mutex);
+ 	if (test_bit(TTY_HUPPED, &tty->flags)) {
+ 		/* We were raced by the hangup method. It will have stomped
+ 		   the ldisc data and closed the ldisc down */
+@@ -782,7 +783,20 @@ void tty_ldisc_hangup(struct tty_struct *tty)
+ 	 * Avoid racing set_ldisc or tty_ldisc_release
+ 	 */
+ 	mutex_lock(&tty->ldisc_mutex);
+-	tty_ldisc_halt(tty);
++
++	/*
++	 * this is like tty_ldisc_halt, but we need to give up
++	 * the BTM before calling cancel_delayed_work_sync,
++	 * which may need to wait for another function taking the BTM
++	 */
++	clear_bit(TTY_LDISC, &tty->flags);
++	tty_unlock();
++	cancel_delayed_work_sync(&tty->buf.work);
++	mutex_unlock(&tty->ldisc_mutex);
++
++	tty_lock();
++	mutex_lock(&tty->ldisc_mutex);
++
+ 	/* At this point we have a closed ldisc and we want to
+ 	   reopen it. We could defer this to the next open but
+ 	   it means auditing a lot of other paths so this is
+@@ -853,8 +867,10 @@ void tty_ldisc_release(struct tty_struct *tty, struct tty_struct *o_tty)
+ 	 * race with the set_ldisc code path.
+ 	 */
+ 
++	tty_unlock();
+ 	tty_ldisc_halt(tty);
+ 	flush_scheduled_work();
++	tty_lock();
+ 
+ 	mutex_lock(&tty->ldisc_mutex);
+ 	/*
 -- 
 1.7.0.4
 
