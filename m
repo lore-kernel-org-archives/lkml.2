@@ -1,91 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756825Ab0FAUUQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Jun 2010 16:20:16 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:8186 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753624Ab0FAUUO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Jun 2010 16:20:14 -0400
-Date: Tue, 1 Jun 2010 22:18:43 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
-       David Rientjes <rientjes@google.com>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-       Nick Piggin <npiggin@suse.de>
-Subject: Re: [PATCH 2/5] oom: select_bad_process: PF_EXITING check should
-	take ->mm into account
-Message-ID: <20100601201843.GA20732@redhat.com>
-References: <20100531183335.1846.A69D9226@jp.fujitsu.com> <20100531164354.GA9991@redhat.com> <20100601093951.2430.A69D9226@jp.fujitsu.com>
+	id S1756981Ab0FAUVY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Jun 2010 16:21:24 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:51381 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753580Ab0FAUVX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Jun 2010 16:21:23 -0400
+Date: Tue, 1 Jun 2010 17:20:59 -0300
+From: Arnaldo Carvalho de Melo <acme@infradead.org>
+To: Stephane Eranian <eranian@google.com>
+Cc: linux-kernel@vger.kernel.org, peterz@infradead.org, mingo@elte.hu,
+       paulus@samba.org, davem@davemloft.net, fweisbec@gmail.com,
+       perfmon2-devel@lists.sf.net, eranian@gmail.com, tzanussi@gmail.com
+Subject: Re: [PATCH] perf: add perfconfig option to specify buildid cache dir
+Message-ID: <20100601202058.GD4093@ghostprotocols.net>
+References: <4c055fb7.df0ce30a.5f0d.ffffae52@mx.google.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100601093951.2430.A69D9226@jp.fujitsu.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <4c055fb7.df0ce30a.5f0d.ffffae52@mx.google.com>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/01, KOSAKI Motohiro wrote:
->
-> > I'd like to add a note... with or without this, we have problems
-> > with the coredump. A thread participating in the coredumping
-> > (group-leader in this case) can have PF_EXITING && mm, but this doesn't
-> > mean it is going to exit soon, and the dumper can use a lot more memory.
->
-> Sure. I think coredump sould do nothing if oom occur.
-> So, merely making PF_COREDUMP is bad idea? I mean
->
-> task-flags		allocator
-> ------------------------------------------------
-> none			N/A
-> TIF_MEMDIE		allow to use emergency memory.
-> 			don't call page reclaim.
-> PF_COREDUMP		N/A
-> TIF_MEMDIE+PF_COREDUMP	disallow to use emergency memory.
-> 			don't call page reclaim.
->
-> In other word, coredump path makes allocation failure if the task
-> marked as TIF_MEMDIE.
+Em Tue, Jun 01, 2010 at 09:25:01PM +0200, Stephane Eranian escreveu:
+> This patch adds the ability to specify an alternate directory
+> to store the buildid cache (buildids, copy of binaries). By
+> default, it is hardcoded to $HOME/.debug. This directory
+> contains immutable data. The layout of the directory is such
+> that no conflicts in filenames are possible. A modification
+> in a file, yields a different buildid and thus a different
+> location in the subdir hierarchy.
 
-Perhaps... But where should TIF_MEMDIE go this case? Let me clarify.
+There are some minor nits about coding style and that tolower part that
+seems to be better suited for being in a separate patch with a separate
+explanation as to why it is needed (is it really?), but yeah, that is a
+worthy change and I'll test and merge it, thanks!
 
-Two threads, group-leader L and its sub-thread T. T dumps the code.
-In this case both threads have ->mm != NULL, L has PF_EXITING.
-
-The first problem is, select_bad_process() always return -1 in this
-case (even if the caller is T, this doesn't matter).
-
-The second problem is that we should add TIF_MEMDIE to T, not L.
-
-This is more or less easy. For simplicity, let's suppose we removed
-this PF_EXITING check from select_bad_process().
-
-Otoh, if we make do_coredump() interruptible (and we should do this
-in any case), then perhaps the TIF_MEMDIE+PF_COREDUMP is not really
-needed? Afaics we always send SIGKILL along with TIF_MEMDIE.
-
-> > And, as it was already discussed, we only check the group-leader here.
-> > But I can't suggest something better.
->
-> I guess signal_group_exit() is enough in practical case.
-
-Unlike SIGNAL_GROUP_EXIT check, signal_group_exit() can also mean
-exec. This is probably correct. If we see the task inside de_thread()
-he is going to free its old mm soon.
-
-The problem is this check doesn't cover the case when a single-threaded
-task exits (even if it does sys_exit_group). And it is not enough to
-remove the thread_group_empty-case-optimization from do_group_exit(),
-it can call sys_exit() instead.
-
-But anyway I agree, select_bad_process can probably check
-
-	signal_group_exit() || (PF_EXITINF && thread_group_empty())
-
-And in that case it is better to remove the "&& p->mm" part of the
-current check.
-
-Oleg.
-
+- Arnaldo
