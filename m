@@ -1,45 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753309Ab0FAQ3d (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Jun 2010 12:29:33 -0400
-Received: from palinux.external.hp.com ([192.25.206.14]:55510 "EHLO
-	mail.parisc-linux.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750748Ab0FAQ3b (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Jun 2010 12:29:31 -0400
-Date: Tue, 1 Jun 2010 10:29:30 -0600
-From: Matthew Wilcox <matthew@wil.cx>
-To: Chris Mason <chris.mason@oracle.com>,
-       James Bottomley <James.Bottomley@suse.de>,
-       Christof Schmitt <christof.schmitt@de.ibm.com>,
-       Boaz Harrosh <bharrosh@panasas.com>,
-       "Martin K. Petersen" <martin.petersen@oracle.com>,
-       linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
-       linux-fsdevel@vger.kernel.org
-Subject: Re: Wrong DIF guard tag on ext2 write
-Message-ID: <20100601162929.GC32708@parisc-linux.org>
-References: <20100531112817.GA16260@schmichrtp.mainz.de.ibm.com> <yq1iq64kv9f.fsf@sermon.lab.mkp.net> <1275318102.2823.47.camel@mulgrave.site> <4C03D5FD.3000202@panasas.com> <20100601103041.GA15922@schmichrtp.mainz.de.ibm.com> <1275398876.21962.6.camel@mulgrave.site> <20100601133341.GK8980@think> <1275399637.21962.11.camel@mulgrave.site> <20100601134951.GM8980@think>
+	id S1753410Ab0FAQbJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Jun 2010 12:31:09 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:56791 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751449Ab0FAQbI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Jun 2010 12:31:08 -0400
+Date: Wed, 2 Jun 2010 02:31:03 +1000
+From: Nick Piggin <npiggin@suse.de>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+       Ingo Molnar <mingo@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+       linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+       Lee Schermerhorn <lee.schermerhorn@hp.com>
+Subject: Re: [rfc] forked kernel task and mm structures imbalanced on NUMA
+Message-ID: <20100601163103.GB9453@laptop>
+References: <20100601073343.GQ9453@laptop>
+ <87wruiycsl.fsf@basil.nowhere.org>
+ <20100601155943.GA9453@laptop>
+ <20100601162024.GC30556@basil.fritz.box>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100601134951.GM8980@think>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <20100601162024.GC30556@basil.fritz.box>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 01, 2010 at 09:49:51AM -0400, Chris Mason wrote:
-> > I agree that a block based retry would close all the holes ... it just
-> > doesn't look elegant to me that the fs will already be repeating the I/O
-> > if it changed the page and so will block.
+On Tue, Jun 01, 2010 at 06:20:25PM +0200, Andi Kleen wrote:
+> On Wed, Jun 02, 2010 at 01:59:43AM +1000, Nick Piggin wrote:
+> > On Tue, Jun 01, 2010 at 05:48:10PM +0200, Andi Kleen wrote:
+> > > Nick Piggin <npiggin@suse.de> writes:
+> > > 
+> > > > This isn't really a new problem, and I don't know how important it is,
+> > > > but I recently came across it again when doing some aim7 testing with
+> > > > huge numbers of tasks.
+> > > 
+> > > Seems reasonable. Of course you need to at least 
+> > > save/restore the old CPU policy, and use a subset of it.
+> > 
+> > The mpolicy? My patch does that (mpol_prefer_cpu_start/end). The real
+> > problem is that it can actually violate the parent's mempolicy. For
+> > example MPOL_BIND and cpus_allowed set on a node outside the mempolicy.
 > 
-> We might not ever repeat the IO.  We might change the page, write it,
-> change it again, truncate the file and toss the page completely.
+> I don't see where you store 'old', but maybe I missed it.
 
-Why does it matter that it was never written in that case?
+It's the argument returned by mpol_prefer_cpu_start. Yes this also
+opens races for lost-write when we have concurrent mpol changes. So
+I'm not claiming the code is right.
 
--- 
-Matthew Wilcox				Intel Open Source Technology Centre
-"Bill, look, we understand that you're interested in selling us this
-operating system, but compare it to ours.  We can't possibly take such
-a retrograde step."
+ 
+> > > slightly more difficult. The advantage would be that on multiple
+> > > migrations it would follow. And it would be a bit slower for
+> > > the initial case.
+> > 
+> > Migrate what on touch? Talking mainly about kernel memory structures,
+> > task_struct, mm, vmas, page tables, kernel stack, etc.
+> 
+> Migrate task_struct, mm, vmas, page tables, kernel stack
+> on reasonable touch. As long as they are not shared it shouldn't
+> be too difficult.
+
+Possible but that's a lot further off (considering we don't even migrate
+user memory) and is complimentary to this patch.
+
