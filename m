@@ -1,91 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755429Ab0FAJy1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Jun 2010 05:54:27 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:34723 "EHLO mx1.redhat.com"
+	id S1755865Ab0FAJ6H (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Jun 2010 05:58:07 -0400
+Received: from 8bytes.org ([88.198.83.132]:53126 "EHLO 8bytes.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751364Ab0FAJy0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Jun 2010 05:54:26 -0400
-Message-ID: <4C04D98D.4020509@redhat.com>
-Date: Tue, 01 Jun 2010 17:57:33 +0800
-From: Cong Wang <amwang@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100330 Shredder/3.0.4
+	id S1751783Ab0FAJ6D (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Jun 2010 05:58:03 -0400
+Date: Tue, 1 Jun 2010 11:58:01 +0200
+From: Joerg Roedel <joro@8bytes.org>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: "Roedel, Joerg" <Joerg.Roedel@amd.com>, Nicolas Palix <npalix@diku.dk>,
+       "x86@kernel.org" <x86@kernel.org>,
+       "kernel-janitors@vger.kernel.org" <kernel-janitors@vger.kernel.org>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
+       Ingo Molnar <mingo@redhat.com>, Julia Lawall <julia@diku.dk>,
+       Thomas Gleixner <tglx@linutronix.de>,
+       Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [PATCH 6/17] arch/x86/kernel: Add missing spin_unlock
+Message-ID: <20100601095801.GB964@8bytes.org>
+References: <Pine.LNX.4.64.1005261755260.23743@ask.diku.dk> <20100527111136.GV3266@amd.com> <Pine.LNX.4.64.1005271317180.5422@ask.diku.dk> <201005271342.25619.npalix@diku.dk> <20100528071114.GA3266@amd.com> <4BFFF31C.9090904@zytor.com>
 MIME-Version: 1.0
-To: Flavio Leitner <fbl@sysclose.org>
-CC: linux-kernel@vger.kernel.org, Matt Mackall <mpm@selenic.com>,
-       netdev@vger.kernel.org, bridge@lists.linux-foundation.org,
-       Andy Gospodarek <gospo@redhat.com>, Neil Horman <nhorman@tuxdriver.com>,
-       Jeff Moyer <jmoyer@redhat.com>,
-       Stephen Hemminger <shemminger@linux-foundation.org>,
-       bonding-devel@lists.sourceforge.net, Jay Vosburgh <fubar@us.ibm.com>,
-       David Miller <davem@davemloft.net>
-Subject: Re: [v5 Patch 1/3] netpoll: add generic support for bridge and bonding
- devices
-References: <20100505081514.5157.83783.sendpatchset@localhost.localdomain> <20100527180545.GA2345@sysclose.org> <4BFF2EA5.9090008@redhat.com> <20100528194041.GC2345@sysclose.org> <4C034FA4.5000401@redhat.com> <20100531190820.GA24569@sysclose.org>
-In-Reply-To: <20100531190820.GA24569@sysclose.org>
-Content-Type: multipart/mixed;
- boundary="------------080508020407030406080308"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4BFFF31C.9090904@zytor.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a multi-part message in MIME format.
---------------080508020407030406080308
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+On Fri, May 28, 2010 at 09:45:16AM -0700, H. Peter Anvin wrote:
+> On 05/28/2010 12:11 AM, Roedel, Joerg wrote:
+> > On Thu, May 27, 2010 at 07:42:25AM -0400, Nicolas Palix wrote:
+> >>> We have submitted and received some feedback on an initial version of 
+> >>> this, but I'm not completely sure of the current status.
+> >>
+> >> You can see the latest feedback we get at
+> >> http://lkml.org/lkml/2010/5/10/257
+> >>
+> >> The initial submission and its comments are at
+> >> http://lkml.org/lkml/2010/4/26/269
+> > 
+> > I've also sent some feedback. Would be cool if you could work the
+> > feedback in and do a repost asking Andrew to take it. Would be cool to
+> > have this merged with 2.6.36.
+> > 
+> 
+> I don't see why scripts that don't *in themselves* change the output
+> binaries need to wait for .36.  Instead, it would be better to get them
+> in sooner to make them available to developers in advance of the .36 cycle.
+> 
+> Of course, I'm not Linus, and I don't see him Cc:'d on this, but that
+> would be the normal rules.
 
-On 06/01/10 03:08, Flavio Leitner wrote:
-> On Mon, May 31, 2010 at 01:56:52PM +0800, Cong Wang wrote:
->> Hi, Flavio,
->>
->> Please use the attached patch instead, try to see if it solves
->> all your problems.
->
-> I tried and it hangs. No backtraces this time.
-> The bond_change_active_slave() prints before NETDEV_BONDING_FAILOVER
-> notification, so I think it won't work.
+Yeah, merging it now would be even better. Since these scripts don't
+change the kernel itself there is little risk to break anything. So how
+about working in the feedback and sending an updated version to Linus
+soon?
 
-Ah, I thought the same.
+	Joerg
 
->
-> Please, correct if I'm wrong, but when a failover happens with your
-> patch applied, the netconsole would be disabled forever even with
-> another healthy slave, right?
->
-
-Yes, this is an easy solution, because bonding has several modes,
-it is complex to make netpoll work in different modes.
-
-Would you like to test the following patch?
-
-Thanks much!
-
-
---------------080508020407030406080308
-Content-Type: text/x-patch;
- name="drivers-net-bonding-fix-activebackup-deadlock.diff"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: attachment;
- filename="drivers-net-bonding-fix-activebackup-deadlock.diff"
-
-diff --git a/drivers/net/bonding/bond_main.c b/drivers/net/bonding/bond_main.c
-index 5e12462..59ade92 100644
---- a/drivers/net/bonding/bond_main.c
-+++ b/drivers/net/bonding/bond_main.c
-@@ -1109,6 +1109,14 @@ void bond_change_active_slave(struct bonding *bond, struct slave *new_active)
- 	if (old_active == new_active)
- 		return;
- 
-+	write_unlock_bh(&bond->curr_slave_lock);
-+	read_unlock(&bond->lock);
-+
-+	netdev_bonding_change(bond->dev, NETDEV_BONDING_DESLAVE);
-+
-+	read_lock(&bond->lock);
-+	write_lock_bh(&bond->curr_slave_lock);
-+
- 	if (new_active) {
- 		new_active->jiffies = jiffies;
- 
-
---------------080508020407030406080308--
