@@ -1,165 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932091Ab0FAOvw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Jun 2010 10:51:52 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:59876 "EHLO mx1.redhat.com"
+	id S1756856Ab0FAOx5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Jun 2010 10:53:57 -0400
+Received: from smtp.outflux.net ([198.145.64.163]:38618 "EHLO smtp.outflux.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756741Ab0FAOvd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Jun 2010 10:51:33 -0400
-Date: Tue, 1 Jun 2010 17:47:16 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Rusty Russell <rusty@rustcorp.com.au>, linux-kernel@vger.kernel.org,
-       virtualization@lists.linux-foundation.org, kvm@vger.kernel.org,
-       qemu-devel@nongnu.org
-Subject: [PATCHv3 2/2] virtio: publish used idx
-Message-ID: <4e79f8b2536f736f8104804eed23a0a95d0839e4.1275403477.git.mst@redhat.com>
-References: <cover.1275403477.git.mst@redhat.com>
+	id S1753920Ab0FAOxz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Jun 2010 10:53:55 -0400
+Date: Tue, 1 Jun 2010 07:52:51 -0700
+From: Kees Cook <kees.cook@canonical.com>
+To: Eric Paris <eparis@redhat.com>
+Cc: Christoph Hellwig <hch@infradead.org>, James Morris <jmorris@namei.org>,
+       linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
+       linux-fsdevel@vger.kernel.org, linux-doc@vger.kernel.org,
+       Randy Dunlap <rdunlap@xenotime.net>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Jiri Kosina <jkosina@suse.cz>, Dave Young <hidave.darkstar@gmail.com>,
+       Martin Schwidefsky <schwidefsky@de.ibm.com>,
+       David Howells <dhowells@redhat.com>, Ingo Molnar <mingo@elte.hu>,
+       Peter Zijlstra <a.p.zijlstra@chello.nl>,
+       "Eric W. Biederman" <ebiederm@xmission.com>,
+       Tim Gardner <tim.gardner@canonical.com>,
+       "Serge E. Hallyn" <serue@us.ibm.com>
+Subject: Re: [PATCH v2] fs: block cross-uid sticky symlinks
+Message-ID: <20100601145251.GP4098@outflux.net>
+References: <20100531030402.GQ6056@outflux.net>
+ <20100531103510.GA30021@infradead.org>
+ <20100531175733.GD4098@outflux.net>
+ <alpine.LRH.2.00.1006010904190.675@tundra.namei.org>
+ <20100601032423.GL4098@outflux.net>
+ <20100601075529.GA11397@infradead.org>
+ <1275393302.2690.13.camel@localhost>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <cover.1275403477.git.mst@redhat.com>
-X-Mutt-Fcc: =sent
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <1275393302.2690.13.camel@localhost>
+Organization: Canonical
+X-HELO: www.outflux.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
----
- drivers/net/virtio_net.c     |    2 ++
- drivers/virtio/virtio_ring.c |   15 +++++++++++++--
- include/linux/virtio_ring.h  |   10 ++++++++++
- 3 files changed, 25 insertions(+), 2 deletions(-)
+On Tue, Jun 01, 2010 at 07:55:02AM -0400, Eric Paris wrote:
+> On Tue, 2010-06-01 at 03:55 -0400, Christoph Hellwig wrote:
+> > On Mon, May 31, 2010 at 08:24:23PM -0700, Kees Cook wrote:
+> 
+> > > My rationale is that if it's in commoncaps, it's effective for everyone, so
+> > > it might as well be in core VFS.  If the VFS objections really do boil down
+> > > to "not in fs/" then I'm curious if doing this in commoncaps is acceptable.
+> > 
+> > If you think the objection is about having things in fs/ you're smoking
+> > some really bad stuff.
+> 
+> Sounds to me like we should probably follow the same path as
+> mmap_min_addr.  We should add these hooks right in the VFS where they
+> belong (much like mmap_min_addr hooks into the vm) and control them 2
+> ways.
+> 
+> 1) a Kconfig so distros can choose to turn it on or off by default
+> 2) a /proc interface so root can turn it off
+> 
+> Nothing about that precludes additional similar checks inside an LSM
+> (like CONFIG_LSM_MMAP_MIN_ADDR) which can be more finely controlled.  So
+> maybe we want to follow up with the core VFS check with new checks in
+> SELinux (and maybe apparmour).  This allows the user to disable the
+> general check and still be provided with some modicum of protection.
+> You might ask why not ONLY do the check in SELinux and drop the generic
+> check, but we have seen with mmap_min_addr that the SELinux unconfined
+> user can do damn well anything it wants to, so having a non-LSM version
+> of appropriate security checks is highly regarded.
 
-diff --git a/drivers/net/virtio_net.c b/drivers/net/virtio_net.c
-index 78eb319..30e7483 100644
---- a/drivers/net/virtio_net.c
-+++ b/drivers/net/virtio_net.c
-@@ -23,6 +23,7 @@
- #include <linux/module.h>
- #include <linux/virtio.h>
- #include <linux/virtio_net.h>
-+#include <linux/virtio_ring.h>
- #include <linux/scatterlist.h>
- #include <linux/if_vlan.h>
- #include <linux/slab.h>
-@@ -1056,6 +1057,7 @@ static unsigned int features[] = {
- 	VIRTIO_NET_F_GUEST_ECN, VIRTIO_NET_F_GUEST_UFO,
- 	VIRTIO_NET_F_MRG_RXBUF, VIRTIO_NET_F_STATUS, VIRTIO_NET_F_CTRL_VQ,
- 	VIRTIO_NET_F_CTRL_RX, VIRTIO_NET_F_CTRL_VLAN,
-+	VIRTIO_RING_F_PUBLISH_USED,
- };
- 
- static struct virtio_driver virtio_net_driver = {
-diff --git a/drivers/virtio/virtio_ring.c b/drivers/virtio/virtio_ring.c
-index 0f684b4..5a8c711 100644
---- a/drivers/virtio/virtio_ring.c
-+++ b/drivers/virtio/virtio_ring.c
-@@ -92,6 +92,9 @@ struct vring_virtqueue
- 	/* Last used index we've seen. */
- 	u16 last_used_idx;
- 
-+	/* Publish last used index we've seen at this location. */
-+	u16 *publish_last_used_idx;
-+
- 	/* How to notify other side. FIXME: commonalize hcalls! */
- 	void (*notify)(struct virtqueue *vq);
- 
-@@ -325,7 +328,7 @@ void *virtqueue_get_buf(struct virtqueue *_vq, unsigned int *len)
- 	/* detach_buf clears data, so grab it now. */
- 	ret = vq->data[i];
- 	detach_buf(vq, i);
--	vq->last_used_idx++;
-+	*vq->publish_last_used_idx = ++vq->last_used_idx;
- 	END_USE(vq);
- 	return ret;
- }
-@@ -425,13 +428,19 @@ struct virtqueue *vring_new_virtqueue(unsigned int num,
- 	if (!vq)
- 		return NULL;
- 
--	vring_init(&vq->vring, num, pages, vring_align, false);
-+	vring_init(&vq->vring, num, pages, vring_align,
-+		   virtio_has_feature(vdev, VIRTIO_RING_F_PUBLISH_USED));
-+	if (virtio_has_feature(vdev, VIRTIO_RING_F_PUBLISH_USED))
-+	    vq->publish_last_used_idx = &vq->vring.avail->last_used_idx;
-+	else
-+	    vq->publish_last_used_idx = &vq->last_used_idx;
- 	vq->vq.callback = callback;
- 	vq->vq.vdev = vdev;
- 	vq->vq.name = name;
- 	vq->notify = notify;
- 	vq->broken = false;
- 	vq->last_used_idx = 0;
-+	*vq->publish_last_used_idx = 0;
- 	vq->num_added = 0;
- 	list_add_tail(&vq->vq.list, &vdev->vqs);
- #ifdef DEBUG
-@@ -473,6 +482,8 @@ void vring_transport_features(struct virtio_device *vdev)
- 		switch (i) {
- 		case VIRTIO_RING_F_INDIRECT_DESC:
- 			break;
-+		case VIRTIO_RING_F_PUBLISH_USED:
-+			break;
- 		default:
- 			/* We don't understand this bit. */
- 			clear_bit(i, vdev->features);
-diff --git a/include/linux/virtio_ring.h b/include/linux/virtio_ring.h
-index 458ce41..87f8fd3 100644
---- a/include/linux/virtio_ring.h
-+++ b/include/linux/virtio_ring.h
-@@ -29,6 +29,9 @@
- /* We support indirect buffer descriptors */
- #define VIRTIO_RING_F_INDIRECT_DESC	28
- 
-+/* The Guest publishes last-seen used index at the end of the avail ring. */
-+#define VIRTIO_RING_F_PUBLISH_USED	29
-+
- /* Virtio ring descriptors: 16 bytes.  These can chain together via "next". */
- struct vring_desc {
- 	/* Address (guest-physical). */
-@@ -51,6 +54,7 @@ struct vring_avail_ctrl {
- 	__u16 idx;
- 	__u8 pad[254];
- 	__u16 flags;
-+	__u16 last_used_idx;
- };
- 
- /* u32 is used here for ids for padding reasons. */
-@@ -75,6 +79,7 @@ struct vring {
- 	__u16 *avail_idx;
- 	__u16 *avail_flags;
- 	__u16 *avail_ring;
-+	__u16 *last_used_idx;
- 
- 	struct vring_used *used;
- };
-@@ -100,6 +105,7 @@ struct vring {
-  *	__u16 avail_idx;
-  *	__u8 pad[254]; // Padding to align flags at cache line boundary.
-  *	__u16 avail_flags;
-+ *	__u16 last_used_idx;
-  *	// Padding to the next align boundary.
-  *	char pad[];
-  *
-@@ -120,14 +126,18 @@ static inline void vring_init(struct vring *vr, unsigned int num, void *p,
- 		vr->avail_ring = (void*)avail;
- 		vr->avail_idx = &ctrl->idx;
- 		vr->avail_flags = &ctrl->flags;
-+		vr->last_used_idx = &ctrl->last_used_idx;
- 	} else {
- 		vr->avail_idx = &avail->idx;
- 		vr->avail_flags = &avail->flags;
-+		vr->last_used_idx = NULL;
- 	}
- 	vr->used = (void *)ALIGN((unsigned long)&avail->ring[num], align);
- 	/* Verify that avail fits before used. */
- 	BUG_ON((unsigned long)(vr->avail_flags + 1) > (unsigned long)vr->used);
- 	BUG_ON((unsigned long)(vr->avail_idx + 1) > (unsigned long)vr->used);
-+	BUG_ON(vr->last_used_idx && (unsigned long)(vr->last_used_idx + 1) >
-+	       (unsigned long)vr->used);
- 	BUG_ON((unsigned long)(&vr->avail_ring[num]) > (unsigned long)vr->used);
- }
- 
+Would a CONFIG for this be overkill?  mmap_min_addr is a little different
+in that there was desire to control a bottom limit on it, etc.  Given this
+is either "on" or "off", I think just a sysctl is needed?
+
+I will send a v3 patch that fixes the sysctl name and default, so that it
+is up to the distro and end user how to configure their symlink semantics.
+
+-Kees
+
 -- 
-1.7.1.12.g42b7f
+Kees Cook
+Ubuntu Security Team
