@@ -1,65 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751834Ab0FAFev (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Jun 2010 01:34:51 -0400
-Received: from mail-px0-f174.google.com ([209.85.212.174]:64899 "EHLO
-	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750768Ab0FAFet (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Jun 2010 01:34:49 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=Uq60NgN88eq7xJN0J9f1PaQqlnNac+iRjCa9RjjRnNBoOeAgdruCVZ2VJ/B9aZhTb0
-         u9jepLoBKRrji5W0e18qVXWBqRX5Yd9KIPFMv5XDSWVthAzEiahFX+3iAypktxPkaFX6
-         Er7u6n6My9agvDG5K7cZKZydC/1xkta5Dncxw=
-Date: Tue, 1 Jun 2010 13:38:42 +0800
-From: =?utf-8?Q?Am=C3=A9rico?= Wang <xiyou.wangcong@gmail.com>
-To: Rusty Russell <rusty@rustcorp.com.au>
-Cc: Brandon Philips <brandon@ifup.org>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
+	id S1752841Ab0FAFgD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Jun 2010 01:36:03 -0400
+Received: from ist.d-labs.de ([213.239.218.44]:44789 "EHLO mx01.d-labs.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750768Ab0FAFgA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Jun 2010 01:36:00 -0400
+Date: Tue, 1 Jun 2010 07:35:48 +0200
+From: Florian Mickler <florian@mickler.org>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Neil Brown <neilb@suse.de>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+       Alan Stern <stern@rowland.harvard.edu>,
+       Felipe Balbi <felipe.balbi@nokia.com>,
+       Arve =?ISO-8859-15?Q?Hj=F8nnev=E5g?= <arve@android.com>,
+       Peter Zijlstra <peterz@infradead.org>,
+       "Paul@smtp1.linux-foundation.org" <Paul@smtp1.linux-foundation.org>,
        LKML <linux-kernel@vger.kernel.org>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Jon Masters <jonathan@jonmasters.org>, Tejun Heo <htejun@gmail.com>,
-       Masami Hiramatsu <mhiramat@redhat.com>,
-       Kay Sievers <kay.sievers@vrfy.org>
-Subject: Re: [PATCH 1/2] module: make locking more fine-grained.
-Message-ID: <20100601053842.GD5134@cr0.nay.redhat.com>
-References: <201005252300.07739.rjw@sisk.pl>
- <201005311910.32407.rusty@rustcorp.com.au>
- <201005312130.17038.rusty@rustcorp.com.au>
- <201005312131.43238.rusty@rustcorp.com.au>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201005312131.43238.rusty@rustcorp.com.au>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+       Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
+       Linux PM <linux-pm@lists.linux-foundation.org>,
+       Alan Cox <alan@lxorguk.ukuu.org.uk>
+Subject: Re: [linux-pm] [PATCH 0/8] Suspend block api (version 8)
+Message-ID: <20100601073548.5ed65352@schatten.dmk.lab>
+In-Reply-To: <20100601122012.1edeaf48@notabene.brown>
+References: <Pine.LNX.4.44L0.1005271303190.3239-100000@iolanthe.rowland.org>
+	<201006010005.19554.rjw@sisk.pl>
+	<20100601090023.788cabf4@notabene.brown>
+	<201006010232.20263.rjw@sisk.pl>
+	<20100601113309.609349fd@notabene.brown>
+	<alpine.LFD.2.00.1006010340160.2933@localhost.localdomain>
+	<20100601122012.1edeaf48@notabene.brown>
+X-Mailer: Claws Mail 3.7.5 (GTK+ 2.18.9; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 31, 2010 at 09:31:42PM +0930, Rusty Russell wrote:
->@@ -783,9 +787,13 @@ SYSCALL_DEFINE2(delete_module, const cha
-> 	/* Store the name of the last unloaded module for diagnostic purposes */
-> 	strlcpy(last_unloaded_module, mod->name, sizeof(last_unloaded_module));
-> 	ddebug_remove_module(mod->name);
->+
->+	/* free_module doesn't want module_mutex held by caller. */
->+	mutex_unlock(&module_mutex);
-> 	free_module(mod);
->-
->- out:
->+	goto out_stop;
+On Tue, 1 Jun 2010 12:20:12 +1000
+Neil Brown <neilb@suse.de> wrote:
 
-As Stephen found in linux-next, this line doesn't pass compiling.
-I think this line should be just deleted.
+> On Tue, 1 Jun 2010 03:49:37 +0200 (CEST)
+> Thomas Gleixner <tglx@linutronix.de> wrote:
 
->+
->+out:
-> 	mutex_unlock(&module_mutex);
-> 	return ret;
-> }
+> > If "suspend" is another deep idle state and the hardware is sane,
+> > there is no race at all - assumed that the driver/platform developer
+> > got it right. It's not rocket science to transition from "normal" irq
+> > delivery to wakeup based delivery raceless (except for PC style x86
+> > hardware of today)
 
+> > If "suspend" is the thing we are used to via /sys/power/state then the
+> > race will persist forever except for the suspend blocker workaround,
+> > which we can express in QoS terms as well w/o adding another suspend
+> > related user space API.
 
-Thanks.
+Can you explain the difference between the /sys/power/state thing? Is
+it the reprogramming of wake-sources as mentioned by Raffael?
+
+In an idle based suspend I assume there would be no new wake-sources
+on suspending.
+
+> I'm not interested in adding another user-space API if it can possibly be
+> avoided, and I think it can.  But that is a later step in the process.
+> 
+> I think you have acknowledged that there is a race with suspend - thanks.
+> Next step was "can it be closed".
+> You seem to suggest that it can, but you describe it as a "work around"
+> rather than a "bug fix"...
+
+Well as far as I get it, the workaround is to not suspend in sitations
+where a race is likely to occur. (I.e. block suspend)
+
+> 
+> Do you agree that the race is a "bug", and therefore it is appropriate to
+> "fix" it assuming an acceptable fix can be found (which I think it can)?
+> 
+> If you agree that it is appropriate for try to fix this bug, then the next
+> step would be to get the Android devs to agree that a fix could - in
+> principle - address the need for which they created suspend-blockers.
+> Arve: can you confirm that?
+> 
+> Then, with a clear and agreed goal, we can look at possible fixes.
+> 
+> Thanks,
+> NeilBrown
+> 
+> > 
+> > Thanks,
+> > 
+> > 	tglx
+
+cheers,
+Flo
