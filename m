@@ -1,59 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757491Ab0FAVGZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Jun 2010 17:06:25 -0400
-Received: from moutng.kundenserver.de ([212.227.17.9]:55767 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754578Ab0FAVEx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Jun 2010 17:04:53 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Greg KH <gregkh@suse.de>
-Cc: linux-kernel@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
-       linux-usb@vger.kernel.org, Frederic Weisbecker <fweisbec@gmail.com>,
-       John Kacur <jkacur@redhat.com>, Andi Kleen <andi@firstfloor.org>
-Subject: [PATCH 0/6] USB: BKL removal
-Date: Tue,  1 Jun 2010 23:04:39 +0200
-Message-Id: <1275426285-9088-1-git-send-email-arnd@arndb.de>
-X-Mailer: git-send-email 1.7.0.4
-X-Provags-ID: V01U2FsdGVkX1/V1tcL13YchVibEMAOvnp2sLanxNLejhtMZrd
- jrwsGMHuGuqJRr0vstlXkGu3ckZsbn5cDM5NRF8ipfAetY49Uz
- B2ui2EvYMLJtIRkFh+jSA==
+	id S1757413Ab0FAVIJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Jun 2010 17:08:09 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:36635 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756081Ab0FAVIG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Jun 2010 17:08:06 -0400
+Subject: Re: Wrong DIF guard tag on ext2 write
+From: James Bottomley <James.Bottomley@suse.de>
+To: Chris Mason <chris.mason@oracle.com>
+Cc: Matthew Wilcox <matthew@wil.cx>,
+       Christof Schmitt <christof.schmitt@de.ibm.com>,
+       Boaz Harrosh <bharrosh@panasas.com>,
+       "Martin K. Petersen" <martin.petersen@oracle.com>,
+       linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
+       linux-fsdevel@vger.kernel.org
+In-Reply-To: <20100601180905.GR8980@think>
+References: <1275318102.2823.47.camel@mulgrave.site>
+	 <4C03D5FD.3000202@panasas.com>
+	 <20100601103041.GA15922@schmichrtp.mainz.de.ibm.com>
+	 <1275398876.21962.6.camel@mulgrave.site> <20100601133341.GK8980@think>
+	 <1275399637.21962.11.camel@mulgrave.site> <20100601134951.GM8980@think>
+	 <20100601162929.GC32708@parisc-linux.org> <20100601164750.GQ8980@think>
+	 <1275411293.21962.387.camel@mulgrave.site>  <20100601180905.GR8980@think>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 01 Jun 2010 16:07:43 -0500
+Message-ID: <1275426463.21962.977.camel@mulgrave.site>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Greg,
+On Tue, 2010-06-01 at 14:09 -0400, Chris Mason wrote:
+> On Tue, Jun 01, 2010 at 04:54:53PM +0000, James Bottomley wrote:
+> > On Tue, 2010-06-01 at 12:47 -0400, Chris Mason wrote:
+> > > On Tue, Jun 01, 2010 at 10:29:30AM -0600, Matthew Wilcox wrote:
+> > > > On Tue, Jun 01, 2010 at 09:49:51AM -0400, Chris Mason wrote:
+> > > > > > I agree that a block based retry would close all the holes ... it just
+> > > > > > doesn't look elegant to me that the fs will already be repeating the I/O
+> > > > > > if it changed the page and so will block.
+> > > > > 
+> > > > > We might not ever repeat the IO.  We might change the page, write it,
+> > > > > change it again, truncate the file and toss the page completely.
+> > > > 
+> > > > Why does it matter that it was never written in that case?
+> > > 
+> > > It matters is the storage layer is going to wait around for the block to
+> > > be written again with a correct crc.
+> > 
+> > Actually, I wasn't advocating that.  I think block should return a guard
+> > mismatch error.  I think somewhere in filesystem writeout is the place
+> > to decide whether the error was self induced or systematic.
+> 
+> In that case the io error goes to the async page writeback bio-endio
+> handlers.  We don't have a reference on the inode and no ability to
+> reliably restart the IO, but we can set a bit on the address space
+> indicating that somewhere, sometime in the past we had an IO error.
+> 
+> > For self
+> > induced errors (as long as we can detect them) I think we can just
+> > forget about it ... if the changed page is important, the I/O request
+> > gets repeated (modulo the problem of too great a frequency of changes
+> > leading to us never successfully writing it) or it gets dropped because
+> > the file was truncated or the data deleted for some other reason.
+> 
+> Sorry, how can we tell the errors that are self induced from the evil
+> bit flipping cable induced errors?
 
-Here goes another series of BKL removal patches, mostly
-from Andi. There are some minor drivers left in the
-USB subsystem that someone should take care of, but
-this series at least gets to the point where USB
-works with the BKL disabled.
+We have all the information ... the fs will eventually mark the page
+dirty when it finishes the alterations, we just have to find a way to
+express that.
 
-Please apply to your USB next tree.
+If you're thinking of the double fault scenario where the page
+spontaneously corrupts *and* the filesystem alters it, then the only way
+of detecting that is to freeze the page as it undergoes I/O ... which
+involves quite a bit of filesystem surgery, doesn't it?
 
-	Arnd
+James
 
-Andi Kleen (4):
-  USB-BKL: Remove lock_kernel in usbfs update_sb()
-  USB-BKL: Convert usb_driver ioctl to unlocked_ioctl
-  USB-BKL: Remove BKL use for usb serial driver probing
-  USB-BKL: Remove BKL use in uhci-debug
-
-Arnd Bergmann (2):
-  usb/gadget: Do not take BKL for gadget->ops->ioctl
-  usb/mon: kill BKL usage
-
- drivers/usb/core/devio.c        |    7 ++-----
- drivers/usb/core/hub.c          |    3 ++-
- drivers/usb/core/inode.c        |    4 ----
- drivers/usb/gadget/f_fs.c       |    2 --
- drivers/usb/gadget/inode.c      |    6 ++----
- drivers/usb/host/uhci-debug.c   |   17 ++++++-----------
- drivers/usb/misc/usbtest.c      |    3 ++-
- drivers/usb/mon/mon_bin.c       |   22 ++--------------------
- drivers/usb/serial/usb-serial.c |   30 ++++++++++++++----------------
- include/linux/usb.h             |    2 +-
- 10 files changed, 31 insertions(+), 65 deletions(-)
 
