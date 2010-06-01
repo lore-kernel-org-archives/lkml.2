@@ -1,64 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757418Ab0FAWve (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Jun 2010 18:51:34 -0400
-Received: from fanny.its.uu.se ([130.238.4.241]:59360 "EHLO fanny.its.uu.se"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755918Ab0FAWvc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Jun 2010 18:51:32 -0400
+	id S1757392Ab0FAWxE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Jun 2010 18:53:04 -0400
+Received: from e28smtp02.in.ibm.com ([122.248.162.2]:46162 "EHLO
+	e28smtp02.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755918Ab0FAWxA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Jun 2010 18:53:00 -0400
+Date: Wed, 2 Jun 2010 04:22:50 +0530
+From: Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Michael Neuling <mikey@neuling.org>,
+       Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+       linuxppc-dev@ozlabs.org, linux-kernel@vger.kernel.org,
+       Ingo Molnar <mingo@elte.hu>, Suresh Siddha <suresh.b.siddha@intel.com>,
+       Gautham R Shenoy <ego@in.ibm.com>
+Subject: Re: [PATCH 1/5] sched: fix capacity calculations for SMT4
+Message-ID: <20100601225250.GA7764@dirshya.in.ibm.com>
+Reply-To: svaidy@linux.vnet.ibm.com
+References: <20100409062118.D4096CBB6C@localhost.localdomain>
+ <1271161766.4807.1280.camel@twins>
+ <2906.1271219317@neuling.org>
+ <1271426308.1674.429.camel@laptop>
+ <1275294796.27810.21554.camel@twins>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-Message-ID: <19461.36591.729312.846067@pilspetsen.it.uu.se>
-Date: Wed, 2 Jun 2010 00:51:27 +0200
-From: Mikael Pettersson <mikpe@it.uu.se>
-To: David Miller <davem@davemloft.net>
-Cc: mikpe@it.uu.se, linux-kernel@vger.kernel.org, sparclinux@vger.kernel.org
-Subject: Re: [2.6.35-rc1 regression] sysfs: cannot create duplicate
- filename ... XVR-600 related?
-In-Reply-To: <20100601.153105.90813554.davem@davemloft.net>
-References: <19461.26166.427857.612983@pilspetsen.it.uu.se>
-	<20100601.153105.90813554.davem@davemloft.net>
-X-Mailer: VM 7.17 under Emacs 20.7.1
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+In-Reply-To: <1275294796.27810.21554.camel@twins>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-David Miller writes:
- > From: Mikael Pettersson <mikpe@it.uu.se>
- > Date: Tue, 1 Jun 2010 21:57:42 +0200
- > 
- > > Booting 2.6.35-rc1 on a Sun Blade 2500 Red, I'm greeted with:
- > 
- > I know about the problem and will look at it soon hopefully, I see it
- > on some of my sparc64 boxes too.
- > 
- > You'll also have better luck reporting this to the proper mailing
- > list, which is sparclinux@vger.kernel.org, added to the CC:
+* Peter Zijlstra <peterz@infradead.org> [2010-05-31 10:33:16]:
 
-I wasn't sure if this was a generic bug or a SPARC-specific one.
-If I had suspected it was SPARC-specific I'd certainly have chosen
-the sparclinux ML as the primary recipient.  FWIW, one reply I
-received indicated it was a known generic bug.
+> On Fri, 2010-04-16 at 15:58 +0200, Peter Zijlstra wrote:
+> > 
+> > 
+> > Hrmm, my brain seems muddled but I might have another solution, let me
+> > ponder this for a bit..
+> > 
+> 
+> Right, so the thing I was thinking about is taking the group capacity
+> into account when determining the capacity for a single cpu.
+> 
+> Say the group contains all the SMT siblings, then use the group capacity
+> (usually larger than 1024) and then distribute the capacity over the
+> group members, preferring CPUs with higher individual cpu_power over
+> those with less.
+> 
+> So suppose you've got 4 siblings with cpu_power=294 each, then we assign
+> capacity 1 to the first member, and the remaining 153 is insufficient,
+> and thus we stop and the rest lives with 0 capacity.
+> 
+> Now take the example that the first sibling would be running a heavy RT
+> load, and its cpu_power would be reduced to say, 50, then we still got
+> nearly 933 left over the others, which is still sufficient for one
+> capacity, but because the first sibling is low, we'll assign it 0 and
+> instead assign 1 to the second, again, leaving the third and fourth 0.
 
- > > ------------[ cut here ]------------
- > > WARNING: at fs/sysfs/dir.c:451 sysfs_add_one+0x74/0x90()
- > > sysfs: cannot create duplicate filename '/devices/root/f0079a58/pci0003:00/0003:00:02.0/slot'
- > > Modules linked in:
- > > Call Trace:
- > >  [0000000000458e20] warn_slowpath_fmt+0x2c/0x3c
- > >  [0000000000501dac] sysfs_add_one+0x74/0x90
- > >  [0000000000502cd4] sysfs_do_create_link+0xf0/0x184
- > >  [000000000055a62c] pci_create_sysfs_dev_files+0x304/0x428
- > >  [000000000074c6f8] pci_sysfs_init+0x20/0x6c
- > >  [0000000000426acc] do_one_initcall+0x44/0x164
- > >  [000000000073a32c] kernel_init+0x1a0/0x238
- > >  [000000000042aea4] kernel_thread+0x30/0x48
- > >  [0000000000640efc] rest_init+0x18/0x88
- > > ---[ end trace 8093a3146373dac8 ]---
- > > 
- > > (There are no interesting messages before or after this one.)
- > > 
- > > The device at 003:00:02.0 is a Sun XVR-600 graphics card, driven by
- > > drivers/video/sunxvr500.c.  There was no such warning in 2.6.34 or
- > > earlier kernels.
+Hi Peter,
+
+Thanks for the suggestion.
+
+> If the group were a core group, the total would be much higher and we'd
+> likely end up assigning 1 to each before we'd run out of capacity.
+
+This is a tricky case because we are depending upon the
+DIV_ROUND_CLOSEST to decide whether to flag capacity to 0 or 1.  We
+will not have any task movement until capacity is depleted to quite
+low value due to RT task.  Having a threshold to flag 0/1 instead of
+DIV_ROUND_CLOSEST just like you have suggested in the power savings
+case may help here as well to move tasks to other idle cores.
+
+> For power savings, we can lower the threshold and maybe use the maximal
+> individual cpu_power in the group to base 1 capacity from.
+> 
+> So, suppose the second example, where sibling0 has 50 and the others
+> have 294, you'd end up with a capacity distribution of: {0,1,1,1}.
+
+One challenge here is that if RT tasks run on more that one thread in
+this group, we will have slightly different cpu powers.  Arranging
+them from max to min and having a cutoff threshold should work.
+
+Should we keep the RT scaling as a separate entity along with
+cpu_power to simplify these thresholds.  Whenever we need to scale
+group load with cpu power can take the product of cpu_power and
+scale_rt_power but in these cases where we compute capacity, we can
+mark a 0 or 1 just based on whether scale_rt_power was less than
+SCHED_LOAD_SCALE or not.  Alternatively we can keep cpu_power as
+a product of all scaling factors as it is today but save the component
+scale factors also like scale_rt_power() and arch_scale_freq_power()
+so that it can be used in load balance decisions.
+
+Basically in power save balance we would give all threads a capacity
+'1' unless the cpu_power was reduced due to RT task.  Similarly in
+the non-power save case, we can have flag 1,0,0,0 unless first thread
+had a RT scaling during the last interval.
+
+I am suggesting to distinguish the reduction is cpu_power due to
+architectural (hardware DVFS) reasons from RT tasks so that it is easy
+to decide if moving tasks to sibling thread or core can help or not.
+
+--Vaidy
+
