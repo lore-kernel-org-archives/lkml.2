@@ -1,116 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754771Ab0FAKXX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Jun 2010 06:23:23 -0400
-Received: from 0122700014.0.fullrate.dk ([95.166.99.235]:55138 "EHLO kernel.dk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752915Ab0FAKXV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Jun 2010 06:23:21 -0400
-Date: Tue, 1 Jun 2010 12:23:19 +0200
-From: Jens Axboe <jaxboe@fusionio.com>
-To: David John <davidjon@xenontk.org>
-Cc: Divyesh Shah <dpshah@google.com>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [2.6.35-rc1 BUG]: Calling sched_clock causes stack trace with
-	DEBUG_PREEMPT
-Message-ID: <20100601102319.GL3564@kernel.dk>
-References: <4C04AC78.3020702@xenontk.org> <4C04BB3F.2030707@xenontk.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4C04BB3F.2030707@xenontk.org>
+	id S1754784Ab0FAKZs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Jun 2010 06:25:48 -0400
+Received: from smtp.nokia.com ([192.100.105.134]:59862 "EHLO
+	mgw-mx09.nokia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751259Ab0FAKZr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Jun 2010 06:25:47 -0400
+From: Hiroshi DOYU <Hiroshi.DOYU@nokia.com>
+To: linux-kernel@vger.kernel.org
+Cc: catalin.marinas@arm.com, ext-phil.2.carmody@nokia.com,
+       linux-omap@vger.kernel.org, Hiroshi DOYU <Hiroshi.DOYU@nokia.com>
+Subject: [PATCH v2 0/3] kmemleak: Fix false positive with special scan
+Date: Tue,  1 Jun 2010 13:25:08 +0300
+Message-Id: <1275387911-13030-1-git-send-email-Hiroshi.DOYU@nokia.com>
+X-Mailer: git-send-email 1.7.1.rc1
+In-Reply-To: <1273821401-26578-2-git-send-email-Hiroshi.DOYU@nokia.com>
+References: <1273821401-26578-2-git-send-email-Hiroshi.DOYU@nokia.com>
+X-OriginalArrivalTime: 01 Jun 2010 10:25:29.0437 (UTC) FILETIME=[C217E0D0:01CB0174]
+X-Nokia-AV: Clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 01 2010, David John wrote:
-> On 06/01/2010 12:15 PM, David John wrote:
-> > Hi,
-> > 
-> > I get stack traces like the following:
-> > 
-> > BUG: using smp_processor_id() in preemptible [00000000] code: init/1
-> > caller is native_sched_clock+0x37/0x6d
-> > Pid: 1, comm: init Not tainted 2.6.35-rc1 #99
-> > Call Trace:
-> > [<ffffffff811c422b>] debug_smp_processor_id+0xd3/0xec
-> > [<ffffffff81008a1e>] native_sched_clock+0x37/0x6d
-> > [<ffffffff811a7bfd>] blk_rq_init+0x92/0x9e
-> > [<ffffffff811a7f2e>] get_request+0x1c8/0x27e
-> > [<ffffffff811a8011>] get_request_wait+0x2d/0x13c
-> > [<ffffffff810306ee>] ? get_parent_ip+0x11/0x42
-> > [<ffffffff81411ea6>] ? add_preempt_count+0xad/0xb1
-> > [<ffffffff811a83b3>] __make_request+0x293/0x3b8
-> > [<ffffffff81099737>] ? mempool_alloc_slab+0x10/0x12
-> > [<ffffffff811a6bc4>] generic_make_request+0x187/0x1ea
-> > [<ffffffff810306ee>] ? get_parent_ip+0x11/0x42
-> > [<ffffffff811a6ce5>] submit_bio+0xbe/0xc7
-> > [<ffffffff810f1f37>] submit_bh+0xef/0x111
-> > [<ffffffff810f4865>] block_read_full_page+0x1ec/0x20c
-> > [<ffffffff810f6815>] ? blkdev_get_block+0x0/0x5e
-> > [<ffffffff81411de6>] ? sub_preempt_count+0x92/0xa5
-> > [<ffffffff810a0500>] ? __lru_cache_add+0x73/0x93
-> > [<ffffffff810f6e81>] blkdev_readpage+0x13/0x15
-> > [<ffffffff8109f981>] __do_page_cache_readahead+0x161/0x194
-> > [<ffffffff8109f9d0>] ra_submit+0x1c/0x20
-> > [<ffffffff8109fc5f>] ondemand_readahead+0x1bb/0x1ce
-> > [<ffffffff810973c9>] ? rcu_read_unlock+0xe/0x29
-> > [<ffffffff8109fd46>] page_cache_sync_readahead+0x38/0x3a
-> > [<ffffffff810993c2>] generic_file_aio_read+0x24d/0x57f
-> > [<ffffffff810cf973>] ? __mem_cgroup_try_charge+0x78/0x46c
-> > [<ffffffff810d2aa0>] do_sync_read+0xc6/0x103
-> > [<ffffffff810306ee>] ? get_parent_ip+0x11/0x42
-> > [<ffffffff810adca5>] ? handle_mm_fault+0x7cb/0x7e5
-> > [<ffffffff810f69c5>] ? block_ioctl+0x32/0x36
-> > [<ffffffff81189fcc>] ? selinux_file_permission+0x57/0xae
-> > [<ffffffff81184524>] ? security_file_permission+0x11/0x13
-> > [<ffffffff810d34af>] vfs_read+0xa6/0x103
-> > [<ffffffff810d35c2>] sys_read+0x45/0x69
-> > [<ffffffff810029ab>] system_call_fastpath+0x16/0x1b
-> > 
-> > Since with commit 9195291e you call 'set_start_time_ns' from
-> > 'blk_rq_init' which in turn calls 'sched_clock' with preempt enabled.
-> > There are other calls to sched_clock in blk-cgroup.c. Maybe they should
-> > be checked as well?
-> > 
-> > Regards,
-> > David.
-> > 
-> 
-> I see this has been reported. Never mind.
+Hi,
 
-This should fix it for now, if you have time to test, then that would
-not hurt.
+There is a false positive case that a pointer is calculated by other
+methods than the usual container_of macro. "kmemleak_ignore" can cover
+such a false positive, but it would loose the advantage of memory leak
+detection. This patch allows kmemleak to work with such false
+positives by introducing a new special memory block with a specified
+calculation formula. A client module can register its area with a
+conversion function, with which function kmemleak scan could calculate
+a correct pointer.
 
-diff --git a/include/linux/blkdev.h b/include/linux/blkdev.h
-index 8b7f5e0..09a8402 100644
---- a/include/linux/blkdev.h
-+++ b/include/linux/blkdev.h
-@@ -1211,14 +1211,23 @@ struct work_struct;
- int kblockd_schedule_work(struct request_queue *q, struct work_struct *work);
- 
- #ifdef CONFIG_BLK_CGROUP
-+/*
-+ * This should not be using sched_clock(). A real patch is in progress
-+ * to fix this up, until that is in place we need to disable preemption
-+ * around sched_clock() in this function and set_io_start_time_ns().
-+ */
- static inline void set_start_time_ns(struct request *req)
- {
-+	preempt_disable();
- 	req->start_time_ns = sched_clock();
-+	preempt_enable();
- }
- 
- static inline void set_io_start_time_ns(struct request *req)
- {
-+	preempt_disable();
- 	req->io_start_time_ns = sched_clock();
-+	preempt_enable();
- }
- 
- static inline uint64_t rq_start_time_ns(struct request *req)
+For this version 2, to avoid client kernel module being unloaded
+before unregistering special conversion, module reference count is
+used. This was pointed by Phil Carmody.
 
--- 
-Jens Axboe
+A typical use case could be the IOMMU pagetable allocation which
+stores pointers to the second level of page tables with some
+conversion, for example, a physical address with attribution
+bits. Right now I don't have other use cases but I hope that there
+could be some that this special scan works with.
+
+Test:
+
+# echo scan > kmemleak
+# modprobe kmemleak-special-test
+[ 1328.260162] Stored 1024@dfc5ac00 -> 9fc5ac01
+[ 1328.264984] Stored 1024@dfc5b800 -> 9fc5b801
+[ 1328.269500] Stored 1024@dfc5b400 -> 9fc5b401
+[ 1328.273895] Stored 1024@dfc5b000 -> 9fc5b001
+[ 1328.278381] Stored 1024@deb9bc00 -> 9eb9bc01
+[ 1328.282714] Stored 1024@deea6c00 -> 9eea6c01
+[ 1328.287139] Stored 1024@deea7c00 -> 9eea7c01
+[ 1328.291473] Stored 1024@deea7800 -> 9eea7801
+# echo scan > kmemleak
+[ 1344.062591] kmemleak: 8 new suspected memory leaks (see /sys/kernel/debug/kmemleak)
+# rmmod kmemleak-special-test
+# echo scan > kmemleak
+# modprobe kmemleak-special-test timeout=60
+[   71.758850] Stored 1024@dfc5b000 -> 9fc5b001
+[   71.763702] Stored 1024@dfc5b400 -> 9fc5b401
+[   71.768066] Stored 1024@dfc5b800 -> 9fc5b801
+[   71.772583] Stored 1024@dfc5bc00 -> 9fc5bc01
+[   71.776977] Stored 1024@deea6000 -> 9eea6001
+[   71.781341] Stored 1024@deea6400 -> 9eea6401
+[   71.785736] Stored 1024@deea6800 -> 9eea6801
+[   71.790069] Stored 1024@deea6c00 -> 9eea6c01
+[   71.794433] kmemleak_special_init: Registered special scan: bf000360
+# echo scan > kmemleak
+[   79.588836] custom_conversion: Converted 9fc5b001 -> dfc5b000
+[   79.594696] custom_conversion: Converted 9fc5b401 -> dfc5b400
+[   79.600494] custom_conversion: Converted 9fc5b801 -> dfc5b800
+[   79.606292] custom_conversion: Converted 9fc5bc01 -> dfc5bc00
+[   79.612060] custom_conversion: Converted 9eea6001 -> deea6000
+[   79.617889] custom_conversion: Converted 9eea6401 -> deea6400
+[   79.623687] custom_conversion: Converted 9eea6801 -> deea6800
+[   79.629486] custom_conversion: Converted 9eea6c01 -> deea6c00
+# rmmod kmemleak-special-test
+rmmod: cannot unload 'kmemleak_special_test': Resource temporarily unavailable
+# lsmod kmemleak-special-test
+Module                  Size  Used by    Not tainted
+kmemleak_special_test     1467  1
+# [  131.800354] no_special_func: Unregistered special scan bf000360
+# lsmod kmemleak-special-test
+Module                  Size  Used by    Not tainted
+kmemleak_special_test     1467  0
+# rmmod kmemleak-special-test
+
+
+Hiroshi DOYU (3):
+  kmemleak: Fix false positives with special scan
+  kmemleak: Add special scan test case
+  omap iommu: kmemleak: Fix false positive with special scan
+
+ arch/arm/plat-omap/iommu.c |   19 +++++++
+ include/linux/kmemleak.h   |    5 ++
+ mm/Makefile                |    2 +-
+ mm/kmemleak-special-test.c |   94 ++++++++++++++++++++++++++++++++++++
+ mm/kmemleak.c              |  114 ++++++++++++++++++++++++++++++++++++++++++-
+ 5 files changed, 230 insertions(+), 4 deletions(-)
+ create mode 100644 mm/kmemleak-special-test.c
 
