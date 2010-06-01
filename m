@@ -1,46 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753701Ab0FAGkV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Jun 2010 02:40:21 -0400
-Received: from mail.gmx.net ([213.165.64.20]:55750 "HELO mail.gmx.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1753340Ab0FAGkT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Jun 2010 02:40:19 -0400
-X-Authenticated: #14349625
-X-Provags-ID: V01U2FsdGVkX1+tXlA9JMSt+rzdeTzanFRwoZHH0QUlZDhKVT1lFf
-	xEqLFcfPyh4TM3
-Subject: Re: commit e9e9250b: sync wakeup bustage when waker is an RT task
-From: Mike Galbraith <efault@gmx.de>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>,
-       Thomas Gleixner <tglx@linutronix.de>
-In-Reply-To: <1275329008.8096.104.camel@marge.simson.net>
-References: <1273924628.10630.24.camel@marge.simson.net>
-	 <1273925052.1674.138.camel@laptop>
-	 <1273943222.8752.7.camel@marge.simson.net>
-	 <1273994510.7873.10.camel@marge.simson.net>
-	 <1275306978.27810.22357.camel@twins>
-	 <1275314209.17599.7.camel@marge.simson.net>
-	 <1275316109.27810.22969.camel@twins>
-	 <1275329008.8096.104.camel@marge.simson.net>
-Content-Type: text/plain
-Date: Tue, 01 Jun 2010 08:40:15 +0200
-Message-Id: <1275374415.10282.7.camel@marge.simson.net>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.24.1.1 
+	id S1754016Ab0FAGk5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Jun 2010 02:40:57 -0400
+Received: from mga09.intel.com ([134.134.136.24]:16248 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753647Ab0FAGkz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Jun 2010 02:40:55 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.53,339,1272870000"; 
+   d="scan'208";a="522828840"
+Message-ID: <4C04AB6E.1080305@linux.intel.com>
+Date: Tue, 01 Jun 2010 08:40:46 +0200
+From: Andi Kleen <ak@linux.intel.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; de; rv:1.9.1.9) Gecko/20100317 Thunderbird/3.0.4
+MIME-Version: 1.0
+To: Mikulas Patocka <mpatocka@redhat.com>
+CC: device-mapper development <dm-devel@redhat.com>,
+       herbert@gondor.hengli.com.au, linux-kernel@vger.kernel.org,
+       agk@redhat.com
+Subject: Re: [dm-devel] [PATCH] DM-CRYPT: Scale to multiple CPUs
+References: <20100531160425.GA20344@basil.fritz.box> <Pine.LNX.4.64.1005312239520.6372@hs20-bc2-1.build.redhat.com>
+In-Reply-To: <Pine.LNX.4.64.1005312239520.6372@hs20-bc2-1.build.redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-05-31 at 20:03 +0200, Mike Galbraith wrote:
+, Mikulas Patocka wrote:
+> Questions:
+>
+> If you are optimizing it,
+>
+> 1) why don't you optimize it in such a way that if one CPU submits
+> requests, the crypto work is spread among all the CPUs? Currently it
+> spreads the work only if different CPUs submit it.
 
-> Looks good, but I'll retest anyway.
+This case is only useful with very slow CPUs and is handled by pcrypt
+in theory
 
-I wedged skinnier version into x86-tip-rt33, works fine too.
+(but I haven't tested it)
 
-(todo: non-rt config testing)
+>
+> 2) why not optimize software async crypto daemon (crypt/cryptd.c) instead
+> of dm-crypt, so that all kernel subsystems can actually take advantage of
+> those multi-CPU optimizations, not just dm-crypt?
 
-	-Mike
+Normally most subsystems are multi-CPU already, unless they limit
+themselves artitifically like dm-crypt.
+
+For dm-crypt would be wasteful to funnel everything through two single CPU threads just
+to spread it out again.  That is why I also used per CPU IO threads too.
+
+-Andi
+
 
