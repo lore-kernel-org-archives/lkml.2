@@ -1,114 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753346Ab0FACgJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 May 2010 22:36:09 -0400
-Received: from mga03.intel.com ([143.182.124.21]:56806 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752739Ab0FACgH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 May 2010 22:36:07 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.53,337,1272870000"; 
-   d="scan'208";a="283400949"
-Subject: Re: [rfc] Describe events in a structured way via sysfs
-From: Lin Ming <ming.m.lin@intel.com>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Peter Zijlstra <peterz@infradead.org>, Greg KH <greg@kroah.com>,
-       Lin Ming <ming.m.lin@intel.com>,
-       Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-       Frederic Weisbecker <fweisbec@gmail.com>,
-       Paul Mundt <lethal@linux-sh.org>,
-       "eranian@gmail.com" <eranian@gmail.com>,
-       "Gary.Mohr@Bull.com" <Gary.Mohr@bull.com>,
-       "arjan@linux.intel.com" <arjan@linux.intel.com>,
-       "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>,
-       Paul Mackerras <paulus@samba.org>,
-       "David S. Miller" <davem@davemloft.net>,
-       Russell King <rmk+kernel@arm.linux.org.uk>,
-       Arnaldo Carvalho de Melo <acme@redhat.com>,
-       Will Deacon <will.deacon@arm.com>, Maynard Johnson <mpjohn@us.ibm.com>,
-       Carl Love <carll@us.ibm.com>, Kay Sievers <kay.sievers@vrfy.org>,
-       lkml <linux-kernel@vger.kernel.org>,
-       Thomas Gleixner <tglx@linutronix.de>
-In-Reply-To: <AANLkTinJeYJtCg2aRWhHTcf5E2-dN2-oAfEJ8tAtFjb9@mail.gmail.com>
-References: <1274233602.3036.84.camel@localhost>
-	 <20100518200524.GA20223@kroah.com>
-	 <1274236496.3603.22.camel@minggr.sh.intel.com>
-	 <20100519024823.GA25229@kroah.com>	<1274253276.5605.10124.camel@twins>
-	 <20100520184213.GB21030@kroah.com>	<20100520201418.GB11470@elte.hu>
-	 <20100520231229.GB8335@kroah.com>	<1274429038.1674.1684.camel@laptop>
-	 <20100521094053.GA4658@elte.hu>
-	 <AANLkTinJeYJtCg2aRWhHTcf5E2-dN2-oAfEJ8tAtFjb9@mail.gmail.com>
-Content-Type: text/plain
-Date: Tue, 01 Jun 2010 10:34:32 +0800
-Message-Id: <1275359672.7586.85.camel@minggr.sh.intel.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.24.1 (2.24.1-2.fc10) 
-Content-Transfer-Encoding: 7bit
+	id S1753582Ab0FACgp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 May 2010 22:36:45 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:36971 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752739Ab0FACgn convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 31 May 2010 22:36:43 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=xg7POVAkHHMqJceVOlprUAkZ1MU7Fy9Q2bdYk9Sm5gjoo/icB803UltK0qOob8xEAm
+         wQGm7PNjph+LS0QQs2o4QBCC2vyH5hIZEET/nIh5mELszqVHFdHIRaey/V4q4eED4fK4
+         PqmflJ8D4TCIQUVi28X/uWAcIJ1teWqp8JQ98=
+MIME-Version: 1.0
+In-Reply-To: <4C04496E.3000303@gmail.com>
+References: <AANLkTinmBxzM4IEgrY6gqokDhLJDrVyKd0cu75VaFR8Q@mail.gmail.com>
+	<4C04496E.3000303@gmail.com>
+Date: Mon, 31 May 2010 21:36:38 -0500
+Message-ID: <AANLkTil6y3F1RDZaNwKS1FZB_Nrl_meFxIR2XzMoqCO7@mail.gmail.com>
+Subject: Re: resource piix4_smbus conflicts with ACPI region SMRG
+From: Richard Tillmore <rtillmore@gmail.com>
+To: Robert Hancock <hancockrwd@gmail.com>
+Cc: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, May 31, 2010 at 6:42 PM, Robert Hancock wrote:
+> On 05/31/2010 04:12 PM, Richard wrote:
+>>
+>> I upgraded to 2.6.34-rc6 and noticed a few new messages in dmesg.  I
+>> then installed 2.6.34 and the messages remain.
+>>
+>> PCI: Ignoring host bridge windows from ACPI; if necessary, use
+>> "pci=use_crs" and report a bug
+>> ACPI: PCI Root Bridge [PCI0] (0000:00)
+>
+> This is just an informational message.
+>
+>>
+>> ACPI: resource piix4_smbus [io  0x0440-0x0447] conflicts with ACPI
+>> region SMRG [??? 0x00000440-0x0000044f flags 0x47]
+>> ACPI: If an ACPI driver is available for this device, you should use
+>> it instead of the native driver
+>>
+>> The system is a Tyan Tiger S1832 motherboard with a P3 850Mhz
+>> processor running the latest bios.  Everything appears to work
+>> properly so I am unsure what the messages mean beyond the obvious.  I
+>> did a little research and was wondering if this is related to the no
+>> bootmem patches.  I have:
+>
+> Unless you need to use anything on SMBus (hardware sensors, essentially) you
+> don't have to worry about that one. It means that the kernel has detected
+> that the BIOS may potentially access the SMBus controller which may conflict
+> with usage of the controller from within the OS.
 
-> * Peter Zijlstra <peterz@infradead.org> wrote:
-> 
-> > On Thu, 2010-05-20 at 16:12 -0700, Greg KH wrote:
-> 
-> > > How deep in the device tree are you really going to be
-> > > caring about?  It sounds like the large majority of
-> > > events are only going to be coming from the "system"
-> > > type objects (cpu, nodes, memory, etc.) and very few
-> > > would be from things that we consider a 'struct
-> > > device' today (like a pci, usb, scsi, or input, etc.)
-> >
-> > The general noise I hear from the hardware people is
-> > that we'll see more and more device-level stuff - bus
-> > bridges/controller and actual devices (GPUs, NICs etc.)
-> > will be wanting to export performance metrics.
-> 
-> There's (much) more:
-> 
->  - laptops want to provide power level/usage metrics,
-> 
->  - we could express a lot of special, lower level
->   (transport specific) disk IO stats via events as well -
->   without having to push those stats to a higher level
->   (where it might not make sense). Currently such kinds
->   of stats/metrics are very device/subsystem specific
->   way, if they are provided at all.
-> 
-> Also, we already have quite a few per device tracepoints
-> upstream. Here are a few examples:
-> 
->  - GPU tracepoints (trace_i915_gem_request_submit(), etc.)
->  - WIFI tracepoints (trace_iwlwifi_dev_ioread32(), etc.)
->  - block tracepoints (trace_block_bio_complete())
-> 
-> So these would be attached to:
-> 
->  # GEM events of drm/card0:
->  /sys/devices/pci0000:00/0000:00:02.0/drm/card0/events/i915_gem_request_submit/
-> 
->  # Wifi-ioread events of wlan0:
->  /sys/devices/pci0000:00/0000:00:1c.1/0000:03:00.0/net/wlan0/events/iwlwifi_dev_ioread32/
-> 
->  # whole sdb disk events:
->  /sys/block/sdb/events/block_bio_complete/
-> 
->  # sdb1 partition events:
->  /sys/block/sdb/sdb1/events/block_bio_complete/
-> 
+I do use the lm78 sensor driver:
+lm78: Found an LM79 chip at 0x290
+and the Xsensors seem to work, the voltages and fan speeds change.
 
-The difficulty is how to know where each event should be attached to.
+But you are correct the lm75 driver isn't loading so I am not getting
+my cpu temperature.
 
-struct ftrace_event_call *call;
+In 2.6.30.9 I have:
+Driver `lm78'
+  Detects correctly:
+  * Bus `SMBus PIIX4 adapter at 0440'
+    Busdriver `i2c-piix4', I2C address 0x2d
+    ISA bus, address 0x290
+    Chip `National Semiconductor LM79' (confidence: 6)
 
-for_each_event(call, __start_ftrace_events, __stop_ftrace_events) {
-	/* where will this event be attached to?  */
-}
+Driver `lm75'
+  Detects correctly:
+  * Bus `SMBus PIIX4 adapter at 0440'
+    Busdriver `i2c-piix4', I2C address 0x4c
+    Chip `National Semiconductor LM75' (confidence: 6)
+  * Bus `SMBus PIIX4 adapter at 0440'
+    Busdriver `i2c-piix4', I2C address 0x4d
+    Chip `National Semiconductor LM75' (confidence: 6)
 
-Any idea?
+In 2.6.34 I get:
+Driver `lm78'
+  Detects correctly:
+  * ISA bus, address 0x290
+    Chip `National Semiconductor LM79' (confidence: 6)
+
+So this is a regression.
 
 Thanks,
-Lin Ming
-
-
+Rich
