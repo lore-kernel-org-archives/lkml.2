@@ -1,91 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757233Ab0FAWXL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Jun 2010 18:23:11 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:39834 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753843Ab0FAWXI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Jun 2010 18:23:08 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: James Bottomley <James.Bottomley@suse.de>
-Subject: Re: [linux-pm] [PATCH 0/8] Suspend block api (version 8)
-Date: Wed, 2 Jun 2010 00:24:14 +0200
-User-Agent: KMail/1.12.4 (Linux/2.6.35-rc1-rjw; KDE/4.3.5; x86_64; ; )
-Cc: Matthew Garrett <mjg59@srcf.ucam.org>,
-       Thomas Gleixner <tglx@linutronix.de>,
-       Peter Zijlstra <peterz@infradead.org>,
-       Arve =?utf-8?q?Hj=C3=B8nnev=C3=A5g?= <arve@android.com>, tytso@mit.edu,
-       LKML <linux-kernel@vger.kernel.org>,
-       Florian Mickler <florian@mickler.org>,
-       Linux PM <linux-pm@lists.linux-foundation.org>,
-       Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
-       felipe.balbi@nokia.com, Alan Cox <alan@lxorguk.ukuu.org.uk>,
-       Alan Stern <stern@rowland.harvard.edu>, mark.gross@intel.com,
-       Neil Brown <neilb@suse.de>
-References: <20100527232357.6d14fdb2@lxorguk.ukuu.org.uk> <20100601135102.GA8098@srcf.ucam.org> <1275426085.21962.967.camel@mulgrave.site>
-In-Reply-To: <1275426085.21962.967.camel@mulgrave.site>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
+	id S1756398Ab0FAW16 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Jun 2010 18:27:58 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:46750 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754694Ab0FAW15 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Jun 2010 18:27:57 -0400
+Date: Tue, 1 Jun 2010 15:26:52 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: adharmap@codeaurora.org
+Cc: tglx@linutronix.de, Mark Brown <broonie@opensource.wolfsonmicro.com>,
+       Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+       Trilok Soni <soni.trilok@gmail.com>, Pavel Machek <pavel@ucw.cz>,
+       Brian Swetland <swetland@google.com>,
+       Joonyoung Shim <jy0922.shim@samsung.com>, m.szyprowski@samsung.com,
+       t.fujak@samsung.com, kyungmin.park@samsung.com,
+       David Brownell <david-b@pacbell.net>, Daniel Ribeiro <drwyrm@gmail.com>,
+       arve@android.com, Barry Song <21cnbao@gmail.com>,
+       Russell King <linux@arm.linux.org.uk>,
+       Bryan Huntsman <bryanh@quicinc.com>,
+       Iliyan Malchev <malchev@google.com>, Michael Buesch <mb@bu3sch.de>,
+       Bruno Premont <bonbons@linux-vserver.org>,
+       linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH] irq: handle private interrupt registration
+Message-Id: <20100601152652.9296c5d0.akpm@linux-foundation.org>
+In-Reply-To: <1274905794-7848-1-git-send-email-adharmap@codeaurora.org>
+References: <1274905794-7848-1-git-send-email-adharmap@codeaurora.org>
+X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-Message-Id: <201006020024.14220.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 01 June 2010, James Bottomley wrote:
-> On Tue, 2010-06-01 at 14:51 +0100, Matthew Garrett wrote:
-> > On Mon, May 31, 2010 at 04:21:09PM -0500, James Bottomley wrote:
-> > 
-> > > You're the one mentioning x86, not me.  I already explained that some
-> > > MSM hardware (the G1 for example) has lower power consumption in S3
-> > > (which I'm using as an ACPI shorthand for suspend to ram) than any
-> > > suspend from idle C state.  The fact that current x86 hardware has the
-> > > same problem may be true, but it's not entirely relevant.
-> > 
-> > As long as you can set a wakeup timer, an S state is just a C state with 
-> > side effects. The significant one is that entering an S state stops the 
-> > process scheduler and any in-kernel timers. I don't think Google care at 
-> > all about whether suspend is entered through an explicit transition or 
-> > something hooked into cpuidle - the relevant issue is that they want to 
-> > be able to express a set of constraints that lets them control whether 
-> > or not the scheduler keeps on scheduling, and which doesn't let them 
-> > lose wakeup events in the process.
+On Wed, 26 May 2010 13:29:54 -0700
+adharmap@codeaurora.org wrote:
+
+> From: Abhijeet Dharmapurikar <adharmap@codeaurora.org>
 > 
-> Exactly, so my understanding of where we currently are is:
-
-Thanks for the recap.
-
->      1. pm_qos will be updated to be able to express the android suspend
->         blockers as interactivity constraints (exact name TBD, but
->         probably /dev/cpu_interactivity)
-
-I think that's not been decided yet precisely enough.  I saw a few ideas
-here and there in the thread, but which of them are we going to follow?
-
->      2. pm_qos will be updated to be callable from atomic context
->      3. pm_qos will be updated to export statistics initially closely
->         matching what suspend blockers provides (simple update of the rw
->         interface?)
+> The current code fails to register a handler for the same irq
+> without taking in to account that it could be a per cpu interrupt.
+> If the IRQF_PERCPU flag is set, enable the interrupt on that cpu
+> and return success.
 > 
-> After this is done, the current android suspend block patch becomes a
-> re-expression in kernel space in terms of pm_qos, with the current
-> userspace wakelocks being adapted by the android framework into pm_qos
-> requirements expressed to /dev/cpu_interactivity (or whatever name is
-> chosen).  Then opportunistic suspend is either a small add-on kernel
-> patch they have in their tree to suspend when the interactivity
-> constraint goes to NONE, or it could be done entirely by a userspace
-> process.  Long term this could migrate to the freezer and suspend from
-> idle approach as the various problem timers get fixed.
+> Change-Id: I748b3aa08d794342ad74cbd0bb900cc599f883a6
+> Signed-off-by: Abhijeet Dharmapurikar <adharmap@codeaurora.org>
+> ---
 > 
-> I think the big unresolved issue is the stats extension.  For android,
-> we need just a name written along with the value, so we have something
-> to hang the stats off ... current pm_qos userspace users just write a
-> value, so the name would be optional.  From the kernel, we probably just
-> need an additional API that takes a stats name or NULL if none
-> (pm_qos_add_request_named()?).  Then reading the stats could be done by
-> implementing a fops read routine on the misc device.
+> On systems with an interrupt controller that supports
+> private interrupts per core, it is not possible to call 
+> request_irq/setup_irq from multiple cores for the same irq. This is because
+> the second+ invocation of __setup_irq checks if the previous
+> hndler had a IRQ_SHARED flag set and errors out if not. 
+> 
+> The current irq handling code doesnt take in to account what cpu it 
+> is executing on.  Usually the local interrupt controller registers are banked 
+> per cpu a.k.a. a cpu can enable its local interrupt by writing to its banked 
+> registers.
+> 
+> One way to get around this problem is to call the setup_irq on a single cpu 
+> while other cpus simply enable their private interrupts by writing to their 
+> banked registers
+> 
+> For eg. code in arch/arm/time/smp_twd.c
+> 	/* Make sure our local interrupt controller has this enabled */
+> 	local_irq_save(flags);
+> 	get_irq_chip(clk->irq)->unmask(clk->irq);
+> 	local_irq_restore(flags);
+> 
+> This looks like a hacky way to get local interrupts working on 
+> multiple cores.
+> 
+> The patch adds a check for PERCPU flag in __setup_irq - if an handler is 
+> present it simply enables that interrupt for that core and returns 0.
+> 
+> ...
+>  
+> --- a/kernel/irq/manage.c
+> +++ b/kernel/irq/manage.c
+> @@ -683,6 +683,37 @@ __setup_irq(unsigned int irq, struct irq_desc *desc, struct irqaction *new)
+>  	old_ptr = &desc->action;
+>  	old = *old_ptr;
+>  	if (old) {
+> +#if defined(CONFIG_IRQ_PER_CPU)
+> +		/* All handlers must agree on per-cpuness */
+> +		if ((old->flags & IRQF_PERCPU) !=
+> +			(new->flags & IRQF_PERCPU))
+> +			goto mismatch;
+> +
+> +		if (old->flags & IRQF_PERCPU) {
+> +			/* the chip must have been set for this interrupt*/
+> +			if (!(desc->status & IRQ_NOAUTOEN)) {
+> +				desc->depth = 0;
+> +				desc->status &= ~IRQ_DISABLED;
+> +				desc->chip->startup(irq);
+> +			} else
+> +				/* Undo nested disables: */
+> +				desc->depth = 1;
+> +
+> +			spin_unlock_irqrestore(&desc->lock, flags);
 
-Is the original idea of having that information in debugfs objectionable?
+The rest of the code uses raw_spin_unlock_irqrestore().
 
-Rafael
+I don't know _why_ is uses this.  There are no code comments, and the
+239007b8440abff689632f50cdf0f2b9e895b534 changelog is:
+
+: genirq: Convert irq_desc.lock to raw_spinlock
+:    
+: Convert locks which cannot be sleeping locks in preempt-rt to
+: raw_spinlocks.
+
+which is pathetically useless.
+
+But I suppose we should ignorantly copy it and hope we're not screwing
+something up.
+
+> +			if (new->thread)
+> +				wake_up_process(new->thread);
+> +			return 0;
+> +		}
+> +#endif
+> +
+> +		/* they are the same types and same handler
+> +		 * perhaps it is a private cpu interrupt
+> +		 */
+> +		if (old->flags == new->flags
+> +			&& old->handler == new->handler)
+> +			setup_affinity(irq, desc);
+> +			return 0;
+
+And this appears to have forgotten to undo the lock altogether, which
+makes one wonder about the testing coverage.
+
+It also embeds a `return' statement deep inside a huge and complex
+function, which is invariably bad.
+
+And in so doing it bypasses the register_irq_proc() and
+register_handler_proc() calls.  I have no way of knowing whether that
+was deliberate or whether it was a bug.  If it was deliberate then some
+code and'/or changelog commentary is needed, so that others don't think
+that it is a bug too.
+
+
