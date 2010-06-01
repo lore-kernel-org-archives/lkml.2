@@ -1,62 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932173Ab0FAP52 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Jun 2010 11:57:28 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:57451 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757023Ab0FAP51 convert rfc822-to-8bit (ORCPT
+	id S932182Ab0FAP7l (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Jun 2010 11:59:41 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:49909 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932118Ab0FAP7j (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Jun 2010 11:57:27 -0400
-Subject: Re: [PATCH 2/4] sched: adjust when cpu_active and cpuset
- configurations are updated during cpu on/offlining
-From: Peter Zijlstra <peterz@infradead.org>
-To: Tejun Heo <tj@kernel.org>
-Cc: mingo@elte.hu, linux-kernel@vger.kernel.org, rusty@rustcorp.com.au,
-       paulus@samba.org, acme@redhat.com, Paul Menage <menage@google.com>
-In-Reply-To: <1275332199-28082-3-git-send-email-tj@kernel.org>
-References: <1275332199-28082-1-git-send-email-tj@kernel.org>
-	 <1275332199-28082-3-git-send-email-tj@kernel.org>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Tue, 01 Jun 2010 17:57:26 +0200
-Message-ID: <1275407846.27810.27627.camel@twins>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	Tue, 1 Jun 2010 11:59:39 -0400
+Date: Tue, 1 Jun 2010 08:55:19 -0700 (PDT)
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Randy Dunlap <randy.dunlap@oracle.com>
+cc: Heiko Carstens <heiko.carstens@de.ibm.com>, linux-kernel@vger.kernel.org,
+       "arjan@infradead.org" <arjan@infradead.org>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH] Documentation/timers/hpet_example.c: only build on X64
+In-Reply-To: <4C0470BE.6040709@oracle.com>
+Message-ID: <alpine.LFD.2.00.1006010852470.3637@i5.linux-foundation.org>
+References: <20100528113514.GA3686@osiris.boeblingen.de.ibm.com> <4C0470BE.6040709@oracle.com>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-05-31 at 20:56 +0200, Tejun Heo wrote:
-> Currently, when a cpu goes down, cpu_active is cleared before
-> CPU_DOWN_PREPARE starts and cpuset configuration is updated from a
-> default priority cpu notifier.  When a cpu is coming up, it's set
-> before CPU_ONLINE but cpuset configuration again is updated from the
-> same cpu notifier.
+
+
+On Mon, 31 May 2010, Randy Dunlap wrote:
 > 
-> For cpu notifiers, this presents an inconsistent state.  Threads which
-> a CPU_DOWN_PREPARE notifier expects to be bound to the CPU can be
-> migrated to other cpus because the cpu is no more inactive.
-> 
-> Fix it by updating cpu_active in the highest priority cpu notifier and
-> cpuset configuration in the second highest when a cpu is coming up.
-> Down path is updated similarly.  This guarantees that all other cpu
-> notifiers see consistent cpu_active and cpuset configuration.
-> 
-> This problem is triggered by cmwq.  During CPU_DOWN_PREPARE, hotplug
-> callback creates a kthread and kthread_bind()s it to the target cpu,
-> and the thread is expected to run on that cpu.
+> We should only build hpet_example on X64, where it is
+> implemented.  It can cause build errors on other arch-es.
 
-I know we all love notifier lists, but doesn't the below code get lots
-more readable if we don't play tricks with notifier priorities and
-simply hardcode the few (perf/sched/cpuset) callbacks into the hotplug
-paths?
+Both the subject and the body say "X64" (don't use that, btw, it's x86-64, 
+please), but the patch itself says CONFIG_X86.
 
-Also, I'm afraid you've now inverted the relation between
-cpu_active_mask and parition_sched_domains().
+So what is it? Is it any x86, is it just 64-bit, or what? 
 
-You need to first set/clear the active mask, then rebuild the domain.
-But with your patch parition_sched_domains() gets called in the regular
-DOWN_PREPARE path, while we only clear active at the very end, which
-means we build the wrong domains.
+So if it's any x86, then please say so in the explanation. And if it's 
+really just x86-64, then use CONFIG_X86_64 as the config variable (and 
+x86-64 rather than X64 in the commentary).
 
-
+			Linus
