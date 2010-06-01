@@ -1,95 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753582Ab0FACgp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 May 2010 22:36:45 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:36971 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752739Ab0FACgn convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 May 2010 22:36:43 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=xg7POVAkHHMqJceVOlprUAkZ1MU7Fy9Q2bdYk9Sm5gjoo/icB803UltK0qOob8xEAm
-         wQGm7PNjph+LS0QQs2o4QBCC2vyH5hIZEET/nIh5mELszqVHFdHIRaey/V4q4eED4fK4
-         PqmflJ8D4TCIQUVi28X/uWAcIJ1teWqp8JQ98=
-MIME-Version: 1.0
-In-Reply-To: <4C04496E.3000303@gmail.com>
-References: <AANLkTinmBxzM4IEgrY6gqokDhLJDrVyKd0cu75VaFR8Q@mail.gmail.com>
-	<4C04496E.3000303@gmail.com>
-Date: Mon, 31 May 2010 21:36:38 -0500
-Message-ID: <AANLkTil6y3F1RDZaNwKS1FZB_Nrl_meFxIR2XzMoqCO7@mail.gmail.com>
-Subject: Re: resource piix4_smbus conflicts with ACPI region SMRG
-From: Richard Tillmore <rtillmore@gmail.com>
-To: Robert Hancock <hancockrwd@gmail.com>
-Cc: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1753566Ab0FACjE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 31 May 2010 22:39:04 -0400
+Received: from cantor.suse.de ([195.135.220.2]:37557 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752898Ab0FACjB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 31 May 2010 22:39:01 -0400
+Date: Tue, 1 Jun 2010 12:38:46 +1000
+From: Neil Brown <neilb@suse.de>
+To: Alan Stern <stern@rowland.harvard.edu>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, Thomas Gleixner <tglx@linutronix.de>,
+       Felipe Balbi <felipe.balbi@nokia.com>,
+       Arve =?UTF-8?B?SGrDuG5uZXbDpWc=?= <arve@android.com>,
+       Peter Zijlstra <peterz@infradead.org>,
+       LKML <linux-kernel@vger.kernel.org>,
+       Florian Mickler <florian@mickler.org>,
+       Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
+       Linux PM <linux-pm@lists.linux-foundation.org>,
+       Alan Cox <alan@lxorguk.ukuu.org.uk>
+Subject: Re: [linux-pm] [PATCH 0/8] Suspend block api (version 8)
+Message-ID: <20100601123846.14d0535b@notabene.brown>
+In-Reply-To: <Pine.LNX.4.44L0.1005312159420.9148-100000@netrider.rowland.org>
+References: <20100601113309.609349fd@notabene.brown>
+	<Pine.LNX.4.44L0.1005312159420.9148-100000@netrider.rowland.org>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 31, 2010 at 6:42 PM, Robert Hancock wrote:
-> On 05/31/2010 04:12 PM, Richard wrote:
->>
->> I upgraded to 2.6.34-rc6 and noticed a few new messages in dmesg.  I
->> then installed 2.6.34 and the messages remain.
->>
->> PCI: Ignoring host bridge windows from ACPI; if necessary, use
->> "pci=use_crs" and report a bug
->> ACPI: PCI Root Bridge [PCI0] (0000:00)
->
-> This is just an informational message.
->
->>
->> ACPI: resource piix4_smbus [io  0x0440-0x0447] conflicts with ACPI
->> region SMRG [??? 0x00000440-0x0000044f flags 0x47]
->> ACPI: If an ACPI driver is available for this device, you should use
->> it instead of the native driver
->>
->> The system is a Tyan Tiger S1832 motherboard with a P3 850Mhz
->> processor running the latest bios.  Everything appears to work
->> properly so I am unsure what the messages mean beyond the obvious.  I
->> did a little research and was wondering if this is related to the no
->> bootmem patches.  I have:
->
-> Unless you need to use anything on SMBus (hardware sensors, essentially) you
-> don't have to worry about that one. It means that the kernel has detected
-> that the BIOS may potentially access the SMBus controller which may conflict
-> with usage of the controller from within the OS.
+On Mon, 31 May 2010 22:10:00 -0400 (EDT)
+Alan Stern <stern@rowland.harvard.edu> wrote:
 
-I do use the lm78 sensor driver:
-lm78: Found an LM79 chip at 0x290
-and the Xsensors seem to work, the voltages and fan speeds change.
+> On Tue, 1 Jun 2010, Neil Brown wrote:
+> 
+> > > As I said before, we generally can't prevent such things from happening,
+> > > because even if we handle the particular race described above, it still is
+> > > possible that the event will be "lost" if it arrives just a bit later (eg.
+> > > during a suspend-toggle switch).  So the PRE_SUSPEND thing won't really
+> > > solve the entire problem while increasing complexity.
+> > > 
+> > > > My freerunner has a single core so without CONFIG_PREEMPT it may be that
+> > > > there is no actual race-window - maybe the PRE_SUSPENDs will all run before a
+> > > > soft_irq thread has a chance to finish handling of the interrupt (my
+> > > > knowledge of these details is limits).  But on a muilti-core device I think
+> > > > there would definitely be a race-window.
+> > > 
+> > > Yes, there always will be a race window.  The only thing we can do is to
+> > > narrow it, but we cannot really close it (at least not on a PC, but I'm not
+> > > really sure it can be closed at all).
+> > 
+> > Well you are the expert so I assume you are right, but I would really like to
+> > understand why this is.
+> > 
+> > I guess that if the event was delivered as an edge-triggered interrupt which
+> > the interrupt controller couldn't latch, then it might get lost.  Is that
+> > what happens?
+> 
+> You're barking up the wrong tree.  If I understand correctly, Rafael is
+> saying that there's a race involving events which are not _wakeup_
+> events.  If a non-wakeup event arrives shortly before a suspend, it can
+> have its normal effect.  If it arrives while a suspend is in progress,
+> its delivery may be delayed until the system resumes.  And if it
+> arrives after the system is fully suspended, it may never be noticed at
+> all.
 
-But you are correct the lm75 driver isn't loading so I am not getting
-my cpu temperature.
+I am only thinking of wakeup event. (And I am only thinking of suspend as
+initiated by writing 'mem' to /sys/power/state.)
+I agree that non-wakeup events can easily be delayed by suspend, and this is
+by design and no-one wants it to change.
 
-In 2.6.30.9 I have:
-Driver `lm78'
-  Detects correctly:
-  * Bus `SMBus PIIX4 adapter at 0440'
-    Busdriver `i2c-piix4', I2C address 0x2d
-    ISA bus, address 0x290
-    Chip `National Semiconductor LM79' (confidence: 6)
+> 
+> With wakeup events the problem isn't so bad.  Wakeup events are always
+> noticed, and if the system is designed properly they will either abort
+> a suspend-in-progress or else cause the system to resume as soon as the
+> suspend is complete.  (Linux is not yet properly designed in this
+> sense.)
 
-Driver `lm75'
-  Detects correctly:
-  * Bus `SMBus PIIX4 adapter at 0440'
-    Busdriver `i2c-piix4', I2C address 0x4c
-    Chip `National Semiconductor LM75' (confidence: 6)
-  * Bus `SMBus PIIX4 adapter at 0440'
-    Busdriver `i2c-piix4', I2C address 0x4d
-    Chip `National Semiconductor LM75' (confidence: 6)
+This is exactly the issue.  Linux doesn't get this right.  A wakeup that is
+processed by the driver just before suspend may not get all the way out to
+it's final destination (possibly in meat-space) until after some other event
+wakes the device.  It is not possible to guarantee full delivery of a wakeup
+event with Linux in its current state.  This is a bug.
 
-In 2.6.34 I get:
-Driver `lm78'
-  Detects correctly:
-  * ISA bus, address 0x290
-    Chip `National Semiconductor LM79' (confidence: 6)
+> 
+> Or maybe I'm misunderstanding also, and Rafael is saying that there's 
+> a race involving events whose meaning changes depending on whether or 
+> not the system is asleep.  This is obviously true and clearly 
+> unavoidable.
+> 
+> > And if you are right that the race window cannot be closed, then the whole
+> > suspend-blocker infrastructure is pointless as the purpose of it is simply to
+> > close that window.  If it really does not and cannot work, then it would be
+> > best to reject it for that reason rather than for less concrete aesthetic
+> > arguments.
+> > But presumably it does work in practice on Android hardware so ..... confused.
+> 
+> The point you're missing is that Android works with regard to wakeup
+> events.  It doesn't necessarily always receive non-wakeup events
+> (although I don't know how Android classifies events -- maybe
+> everything is a wakeup event for them).
+> 
 
-So this is a regression.
+I don't think I'm missing that.  Wakeup events are the only events of
+interest.  But wakeup events are more than just low-level hardware events.
+They are also the virtual events that are a direct consequence of the
+original hardware event.
+A UART asserts 'data ready' which is routed to an IO interrupt line that
+wakes the device.  This is a wakeup event.
+So are the bits that appear on the data line which represent the data
+So are the characters that appear on the serial port
+So is the "here is a message from the GSM processor" event
+So is the "there is a new TXT message" event
+So is the "'beep beep beep' out the speaker" event
+
+All these events are wakeup events, and should abort or instant-resume the
+system.  Currently only the first can be guaranteed to do this (... and maybe
+the second, depending on the details of the implementation).
+suspend-blocks effectively pass a lock from one event to the next to ensure
+that all of these event block the suspend.  There are various other ways to
+achieve the same thing, and I think it can be done with no significant change
+to the API.  But some how we need to allow all of these events to be
+linked wake-up events, not just the first one.
 
 Thanks,
-Rich
+NeilBrown
