@@ -1,96 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753748Ab0FARTD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Jun 2010 13:19:03 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:37180 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750837Ab0FARTA convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Jun 2010 13:19:00 -0400
-Subject: Re: [PATCH] rbtree: undo augmented damage -v2
-From: Peter Zijlstra <peterz@infradead.org>
-To: Venkatesh Pallipadi <venki@google.com>
-Cc: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-       suresh.b.siddha@intel.com, tglx@linutronix.de,
-       linux-tip-commits@vger.kernel.org,
-       Fabio Checconi <fabio@gandalf.sssup.it>
-In-Reply-To: <AANLkTimZkyRwP5k290rUr-DUMhsynl9fzBkS68x-57KM@mail.gmail.com>
-References: <20100210232343.GA11465@linux-os.sc.intel.com>
-	 <tip-17d9ddc72fb8bba0d4f67868c9c612e472a594a9@git.kernel.org>
-	 <1275136178.27810.13539.camel@twins> <1275139902.27810.13737.camel@twins>
-	 <AANLkTimZkyRwP5k290rUr-DUMhsynl9fzBkS68x-57KM@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Tue, 01 Jun 2010 19:19:08 +0200
-Message-ID: <1275412748.27810.27883.camel@twins>
+	id S1756715Ab0FARTY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Jun 2010 13:19:24 -0400
+Received: from e1.ny.us.ibm.com ([32.97.182.141]:59225 "EHLO e1.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753965Ab0FARTU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Jun 2010 13:19:20 -0400
+Subject: Re: [PATCH 3/3] vhost: apply cpumask and cgroup to vhost workers
+From: Sridhar Samudrala <sri@us.ibm.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: "Michael S. Tsirkin" <mst@redhat.com>, Oleg Nesterov <oleg@redhat.com>,
+       netdev <netdev@vger.kernel.org>, lkml <linux-kernel@vger.kernel.org>,
+       "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Dmitri Vorobiev <dmitri.vorobiev@movial.com>,
+       Jiri Kosina <jkosina@suse.cz>, Thomas Gleixner <tglx@linutronix.de>,
+       Ingo Molnar <mingo@elte.hu>, Andi Kleen <ak@linux.intel.com>
+In-Reply-To: <4C04D453.9040208@kernel.org>
+References: <20100527163954.GA21710@redhat.com>
+	 <4BFEA434.6080405@kernel.org> <20100527173207.GA21880@redhat.com>
+	 <4BFEE216.2070807@kernel.org> <20100528150830.GB21880@redhat.com>
+	 <4BFFE742.2060205@kernel.org> <20100530112925.GB27611@redhat.com>
+	 <4C02C961.9050606@kernel.org> <20100531152221.GB2987@redhat.com>
+	 <4C03D983.9010905@kernel.org> <20100531160020.GC3067@redhat.com>
+	 <4C04D453.9040208@kernel.org>
+Content-Type: text/plain
+Date: Tue, 01 Jun 2010 10:19:14 -0700
+Message-Id: <1275412754.989.10.camel@w-sridhar.beaverton.ibm.com>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+X-Mailer: Evolution 2.26.3 (2.26.3-1.fc11) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-06-01 at 10:00 -0700, Venkatesh Pallipadi wrote:
-> I am not seeing how this can cover all the callbacks we will need to
-> maintain the augmented tree property. May be I am missing something.
+On Tue, 2010-06-01 at 11:35 +0200, Tejun Heo wrote:
+> Apply the cpumask and cgroup of the initializing task to the created
+> vhost worker.
+> 
+> Based on Sridhar Samudrala's patch.  Li Zefan spotted a bug in error
+> path (twice), fixed (twice).
+> 
+> Signed-off-by: Tejun Heo <tj@kernel.org>
+> Cc: Michael S. Tsirkin <mst@redhat.com>
+> Cc: Sridhar Samudrala <samudrala.sridhar@gmail.com>
+> Cc: Li Zefan <lizf@cn.fujitsu.com>
+> ---
+>  drivers/vhost/vhost.c |   34 ++++++++++++++++++++++++++++++----
+>  1 file changed, 30 insertions(+), 4 deletions(-)
+> 
+> Index: work/drivers/vhost/vhost.c
+> ===================================================================
+> --- work.orig/drivers/vhost/vhost.c
+> +++ work/drivers/vhost/vhost.c
+> @@ -23,6 +23,7 @@
+>  #include <linux/highmem.h>
+>  #include <linux/slab.h>
+>  #include <linux/kthread.h>
+> +#include <linux/cgroup.h>
+> 
+>  #include <linux/net.h>
+>  #include <linux/if_packet.h>
+> @@ -187,11 +188,29 @@ long vhost_dev_init(struct vhost_dev *de
+>  		    struct vhost_virtqueue *vqs, int nvqs)
+>  {
+>  	struct task_struct *worker;
+> -	int i;
+> +	cpumask_var_t mask;
+> +	int i, ret = -ENOMEM;
+> +
+> +	if (!alloc_cpumask_var(&mask, GFP_KERNEL))
+> +		goto out_free_mask;
 
-Yes, indeed, how about the below delta, which my eevdf code did do but I
-overlooked on the conversion to the PAT code.
+I think this is another bug in the error path. You should simply
+do a return instead of a goto here when aloc_cpu_mask fails.
 
-That removes the break as you said, but also adds code to update the
-child nodes when walking up the path.
-
-So in your rotation case:
-
-    G             P
-   / \    -->    / \
-  P   U         N   G
- /        <--        \
-N                     U
-
-Say we take the right rotation, then the traversal up from N to P will
-find that since N was the left child of P and it has a right child (G)
-it will also update G.
-
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
----
- arch/x86/mm/pat_rbtree.c |   23 ++++++++++++-----------
- 1 files changed, 12 insertions(+), 11 deletions(-)
-
-diff --git a/arch/x86/mm/pat_rbtree.c b/arch/x86/mm/pat_rbtree.c
-index f537087..ca19aae 100644
---- a/arch/x86/mm/pat_rbtree.c
-+++ b/arch/x86/mm/pat_rbtree.c
-@@ -81,20 +81,21 @@ static void update_node_max_end(struct rb_node *node)
- /* Update 'subtree_max_end' for a node and all its ancestors */
- static void update_path_max_end(struct rb_node *node)
- {
--	u64 old_max_end, new_max_end;
-+	struct rb_node *parent;
- 
--	while (node) {
--		struct memtype *data = container_of(node, struct memtype, rb);
--
--		old_max_end = data->subtree_max_end;
--		update_node_max_end(node);
--		new_max_end = data->subtree_max_end;
-+up:
-+	update_node_max_end(node);
-+	parent = rb_parent(node);
-+	if (!parent)
-+		return;
- 
--		if (new_max_end == old_max_end)
--			break;
-+	if (node == parent->rb_left && parent->rb_right)
-+		update_node_max_end(parent->rb_right);
-+	else if (parent->rb_left)
-+		update_node_max_end(parent->rb_left);
- 
--		node = rb_parent(node);
--	}
-+	node = parent;
-+	goto up;
- }
- 
- /* Find the first (lowest start addr) overlapping range from rb tree */
+Thanks
+Sridhar
+> 
+>  	worker = kthread_create(vhost_worker, dev, "vhost-%d", current->pid);
+> -	if (IS_ERR(worker))
+> -		return PTR_ERR(worker);
+> +	if (IS_ERR(worker)) {
+> +		ret = PTR_ERR(worker);
+> +		goto out_free_mask;
+> +	}
+> +
+> +	ret = sched_getaffinity(current->pid, mask);
+> +	if (ret)
+> +		goto out_stop_worker;
+> +
+> +	ret = sched_setaffinity(worker->pid, mask);
+> +	if (ret)
+> +		goto out_stop_worker;
+> +
+> +	ret = cgroup_attach_task_current_cg(worker);
+> +	if (ret)
+> +		goto out_stop_worker;
+> 
+>  	dev->vqs = vqs;
+>  	dev->nvqs = nvqs;
+> @@ -214,7 +233,14 @@ long vhost_dev_init(struct vhost_dev *de
+>  	}
+> 
+>  	wake_up_process(worker);	/* avoid contributing to loadavg */
+> -	return 0;
+> +	ret = 0;
+> +	goto out_free_mask;
+> +
+> +out_stop_worker:
+> +	kthread_stop(worker);
+> +out_free_mask:
+> +	free_cpumask_var(mask);
+> +	return ret;
+>  }
+> 
+>  /* Caller should have device mutex */
+> --
+> To unsubscribe from this list: send the line "unsubscribe netdev" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
