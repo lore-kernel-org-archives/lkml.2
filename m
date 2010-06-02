@@ -1,360 +1,279 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756641Ab0FBIx4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jun 2010 04:53:56 -0400
-Received: from mail.pripojeni.net ([217.66.174.14]:59198 "EHLO
+	id S1756943Ab0FBIyS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jun 2010 04:54:18 -0400
+Received: from mail.pripojeni.net ([217.66.174.14]:59184 "EHLO
 	mail.jetsystems.cz" rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org
-	with ESMTP id S1756248Ab0FBIxy (ORCPT
+	with ESMTP id S1752684Ab0FBIxU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jun 2010 04:53:54 -0400
+	Wed, 2 Jun 2010 04:53:20 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: rjw@sisk.pl
 Cc: pavel@ucw.cz, linux-pm@lists.linux-foundation.org,
        linux-kernel@vger.kernel.org, jirislaby@gmail.com
-Subject: [PATCH 1/9] PM / Hibernate: swap, switch to hibernate_io_handle
-Date: Wed,  2 Jun 2010 10:52:40 +0200
-Message-Id: <1275468768-28229-1-git-send-email-jslaby@suse.cz>
+Subject: [PATCH 3/9] PM / Hibernate: user, implement user_ops writer
+Date: Wed,  2 Jun 2010 10:52:42 +0200
+Message-Id: <1275468768-28229-3-git-send-email-jslaby@suse.cz>
 X-Mailer: git-send-email 1.7.1
+In-Reply-To: <1275468768-28229-1-git-send-email-jslaby@suse.cz>
+References: <1275468768-28229-1-git-send-email-jslaby@suse.cz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Switch /dev/snapshot writer to hibernate_io_ops approach so that we
+can do whatever we want with snapshot processing code. All the later
+code changes will be transparent and needn't care about different
+readers/writers.
 
-I addressed the comments I got on the previous RFC. I left the handles
-in place, the functions in hibernate_io_ops now works on them. Further
-I got rid of the memory barriers and minimized global variables as much
-as possible. Comments welcome.
+In this patch only writer is implemented -- for better bisectability
+if something breaks. (The development was easier too, because one
+could break only one part, not both.)
 
---
+Also, when using this interface, switch to the ops on open/release,
+so they are used.
 
-Some code, which will be moved out of swap.c, will know nothing about
-swap. There will be also other than swap writers later, so that it
-won't make sense at all.
+There are explicit barriers protecting to_do_buffer, because it is
+all done in a producer-consumer fashion:
+PRODUCER (snapshot layer)
+1) to_do_buffer is set
+2) set TODO bit
+3) wake CONSUMER
+4) wait for TODO bit _clear_
 
-So introduce a new structure called hibernate_io_handle which
-currently contains only a pointer to private data, but is independent
-on I/O reader/writer actually used. Private data are swap_map_handle
-for now.
-
-This structure is allocated in _start and freed in _finish. This will
-correspond to the later introduction of hibernate_io_ops where users
-will do handle=start->repeat{read/write(handle)}->finish(handle).
-I.e. they will operate on handle instead of global variables.
+CONSUMER (fops->read)
+1) wait for TODO bit
+2) pass to_do_buffer to userspace
+3) clear TODO bit
+4) wake PRODUCER
 
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 Cc: "Rafael J. Wysocki" <rjw@sisk.pl>
 ---
- kernel/power/power.h |   24 ++++++++++
- kernel/power/swap.c  |  114 +++++++++++++++++++++++++++++++------------------
- 2 files changed, 96 insertions(+), 42 deletions(-)
+ kernel/power/user.c |  140 ++++++++++++++++++++++++++++++++++++++++++++++++---
+ 1 files changed, 132 insertions(+), 8 deletions(-)
 
-diff --git a/kernel/power/power.h b/kernel/power/power.h
-index 006270f..7427d54 100644
---- a/kernel/power/power.h
-+++ b/kernel/power/power.h
-@@ -1,3 +1,4 @@
-+#include <linux/slab.h> /* kzalloc */
- #include <linux/suspend.h>
- #include <linux/suspend_ioctls.h>
- #include <linux/utsname.h>
-@@ -115,6 +116,29 @@ struct snapshot_handle {
-  */
- #define data_of(handle)	((handle).buffer)
+diff --git a/kernel/power/user.c b/kernel/power/user.c
+index e819e17..b4610c3 100644
+--- a/kernel/power/user.c
++++ b/kernel/power/user.c
+@@ -23,6 +23,8 @@
+ #include <linux/console.h>
+ #include <linux/cpu.h>
+ #include <linux/freezer.h>
++#include <linux/mutex.h>
++#include <linux/wait.h>
+ #include <scsi/scsi_scan.h>
  
-+/**
-+ * struct hibernate_io_handle - handle for image I/O processing
-+ *
-+ * @priv: private data for each processor (swap_map_handle etc.)
-+ */
-+struct hibernate_io_handle {
-+	void *priv;
-+};
+ #include <asm/uaccess.h>
+@@ -61,10 +63,93 @@ static struct snapshot_data {
+ 	char frozen;
+ 	char ready;
+ 	char platform_support;
++	struct hibernate_io_ops *prev_ops;
+ } snapshot_state;
+ 
+ atomic_t snapshot_device_available = ATOMIC_INIT(1);
+ 
++static struct {
++	void *buffer; /* buffer to pass through */
++	struct workqueue_struct *worker; /* the thread initiating read/write */
++	wait_queue_head_t wait; /* wait for buffer */
++	wait_queue_head_t done; /* read/write done? */
++	struct mutex lock; /* protection for buffer */
 +
-+/**
-+ * hib_io_handle_alloc - allocate io handle with priv_size for private data
-+ *
-+ * @priv_size: the sie to allocate behind hibernate_io_handle for private use
-+ */
-+static inline struct hibernate_io_handle *hib_io_handle_alloc(size_t priv_size)
++#define TODO_WORK	1
++#define TODO_FINISH	2
++#define TODO_CLOSED	3
++#define TODO_ERROR	4
++	DECLARE_BITMAP(flags, 10); /* TODO_* flags defined above */
++} to_do;
++
++static unsigned long user_free_space(void)
 +{
-+	struct hibernate_io_handle *ret;
-+	ret = kzalloc(sizeof(*ret) + priv_size, GFP_KERNEL);
-+	if (ret)
-+		ret->priv = ret + 1;
-+	return ret;
++	return ~0UL; /* we have no idea, maybe we will fail later */
 +}
 +
- extern unsigned int snapshot_additional_pages(struct zone *zone);
- extern unsigned long snapshot_get_image_size(void);
- extern int snapshot_read_next(struct snapshot_handle *handle);
-diff --git a/kernel/power/swap.c b/kernel/power/swap.c
-index b0bb217..7096d20 100644
---- a/kernel/power/swap.c
-+++ b/kernel/power/swap.c
-@@ -268,8 +268,10 @@ static void release_swap_writer(struct swap_map_handle *handle)
- 	handle->cur = NULL;
- }
- 
--static int get_swap_writer(struct swap_map_handle *handle)
-+static struct hibernate_io_handle *get_swap_writer(void)
- {
-+	struct hibernate_io_handle *io_handle;
-+	struct swap_map_handle *handle;
- 	int ret;
- 
- 	ret = swsusp_swap_check();
-@@ -277,12 +279,18 @@ static int get_swap_writer(struct swap_map_handle *handle)
- 		if (ret != -ENOSPC)
- 			printk(KERN_ERR "PM: Cannot find swap device, try "
- 					"swapon -a.\n");
--		return ret;
-+		return ERR_PTR(ret);
- 	}
-+	io_handle = hib_io_handle_alloc(sizeof(*handle));
-+	if (!io_handle) {
-+		ret = -ENOMEM;
-+		goto err_close;
-+	}
-+	handle = io_handle->priv;
- 	handle->cur = (struct swap_map_page *)get_zeroed_page(GFP_KERNEL);
- 	if (!handle->cur) {
- 		ret = -ENOMEM;
--		goto err_close;
-+		goto err_free;
- 	}
- 	handle->cur_swap = alloc_swapdev_block(root_swap);
- 	if (!handle->cur_swap) {
-@@ -291,17 +299,20 @@ static int get_swap_writer(struct swap_map_handle *handle)
- 	}
- 	handle->k = 0;
- 	handle->first_sector = handle->cur_swap;
--	return 0;
-+	return io_handle;
- err_rel:
- 	release_swap_writer(handle);
- err_close:
- 	swsusp_close(FMODE_WRITE);
--	return ret;
-+err_free:
-+	kfree(io_handle);
-+	return ERR_PTR(ret);
- }
- 
--static int swap_write_page(struct swap_map_handle *handle, void *buf,
--				struct bio **bio_chain)
-+static int swap_write_page(struct hibernate_io_handle *io_handle, void *buf,
-+		struct bio **bio_chain)
- {
-+	struct swap_map_handle *handle = io_handle->priv;
- 	int error = 0;
- 	sector_t offset;
- 
-@@ -339,9 +350,11 @@ static int flush_swap_writer(struct swap_map_handle *handle)
- 		return -EINVAL;
- }
- 
--static int swap_writer_finish(struct swap_map_handle *handle,
-+static int swap_writer_finish(struct hibernate_io_handle *io_handle,
- 		unsigned int flags, int error)
- {
-+	struct swap_map_handle *handle = io_handle->priv;
++static struct hibernate_io_handle *user_writer_start(void)
++{
++	return hib_io_handle_alloc(0) ? : ERR_PTR(-ENOMEM);
++}
 +
- 	if (!error) {
- 		flush_swap_writer(handle);
- 		printk(KERN_INFO "PM: S");
-@@ -352,6 +365,7 @@ static int swap_writer_finish(struct swap_map_handle *handle,
- 	if (error)
- 		free_all_swap_pages(root_swap);
- 	release_swap_writer(handle);
-+	kfree(io_handle);
- 	swsusp_close(FMODE_WRITE);
- 
- 	return error;
-@@ -361,8 +375,8 @@ static int swap_writer_finish(struct swap_map_handle *handle,
-  *	save_image - save the suspend image data
-  */
- 
--static int save_image(struct swap_map_handle *handle,
--                      struct snapshot_handle *snapshot,
-+static int save_image(struct hibernate_io_handle *io_handle,
-+		      struct snapshot_handle *snapshot,
-                       unsigned int nr_to_write)
- {
- 	unsigned int m;
-@@ -385,7 +399,7 @@ static int save_image(struct swap_map_handle *handle,
- 		ret = snapshot_read_next(snapshot);
- 		if (ret <= 0)
- 			break;
--		ret = swap_write_page(handle, data_of(*snapshot), &bio);
-+		ret = swap_write_page(io_handle, data_of(*snapshot), &bio);
- 		if (ret)
- 			break;
- 		if (!(nr_pages % m))
-@@ -431,17 +445,17 @@ static int enough_swap(unsigned int nr_pages)
- 
- int swsusp_write(unsigned int flags)
- {
--	struct swap_map_handle handle;
-+	struct hibernate_io_handle *io_handle;
- 	struct snapshot_handle snapshot;
- 	struct swsusp_info *header;
- 	unsigned long pages;
- 	int error;
- 
- 	pages = snapshot_get_image_size();
--	error = get_swap_writer(&handle);
--	if (error) {
-+	io_handle = get_swap_writer();
-+	if (IS_ERR(io_handle)) {
- 		printk(KERN_ERR "PM: Cannot get swap writer\n");
--		return error;
-+		return PTR_ERR(io_handle);
- 	}
- 	if (!enough_swap(pages)) {
- 		printk(KERN_ERR "PM: Not enough free swap\n");
-@@ -457,11 +471,11 @@ int swsusp_write(unsigned int flags)
- 		goto out_finish;
- 	}
- 	header = (struct swsusp_info *)data_of(snapshot);
--	error = swap_write_page(&handle, header, NULL);
-+	error = swap_write_page(io_handle, header, NULL);
- 	if (!error)
--		error = save_image(&handle, &snapshot, pages - 1);
-+		error = save_image(io_handle, &snapshot, pages - 1);
- out_finish:
--	error = swap_writer_finish(&handle, flags, error);
-+	error = swap_writer_finish(io_handle, flags, error);
- 	return error;
- }
- 
-@@ -477,32 +491,43 @@ static void release_swap_reader(struct swap_map_handle *handle)
- 	handle->cur = NULL;
- }
- 
--static int get_swap_reader(struct swap_map_handle *handle,
--		unsigned int *flags_p)
-+static struct hibernate_io_handle *get_swap_reader(unsigned int *flags_p)
- {
-+	struct hibernate_io_handle *io_handle;
-+	struct swap_map_handle *handle;
- 	int error;
- 
- 	*flags_p = swsusp_header->flags;
- 
- 	if (!swsusp_header->image) /* how can this happen? */
--		return -EINVAL;
-+		return ERR_PTR(-EINVAL);
- 
-+	io_handle = hib_io_handle_alloc(sizeof(*handle));
-+	if (!io_handle)
-+		return ERR_PTR(-ENOMEM);
-+	handle = io_handle->priv;
- 	handle->cur = (struct swap_map_page *)get_zeroed_page(__GFP_WAIT | __GFP_HIGH);
--	if (!handle->cur)
--		return -ENOMEM;
-+	if (!handle->cur) {
-+		error = -ENOMEM;
-+		goto err_free;
-+	}
- 
- 	error = hib_bio_read_page(swsusp_header->image, handle->cur, NULL);
--	if (error) {
--		release_swap_reader(handle);
--		return error;
--	}
++static int user_write_page(struct hibernate_io_handle *io_handle, void *buf,
++		struct bio **bio_chain)
++{
++	int err = 0;
++
++	if (test_bit(TODO_CLOSED, to_do.flags))
++		return -EIO;
++
++	mutex_lock(&to_do.lock);
++	to_do.buffer = buf;
++	mutex_unlock(&to_do.lock);
++	set_bit(TODO_WORK, to_do.flags);
++	wake_up_interruptible(&to_do.wait);
++
++	wait_event(to_do.done, !test_bit(TODO_WORK, to_do.flags) ||
++			(err = test_bit(TODO_CLOSED, to_do.flags)));
++
++	return err ? -EIO : 0;
++}
++
++static int user_writer_finish(struct hibernate_io_handle *io_handle,
++		unsigned int flags, int error)
++{
++	int err = 0;
++
 +	if (error)
-+		goto err_rel;
- 	handle->k = 0;
--	return 0;
-+	return io_handle;
-+err_rel:
-+	release_swap_reader(handle);
-+err_free:
-+	kfree(io_handle);
-+	return ERR_PTR(error);
- }
- 
--static int swap_read_page(struct swap_map_handle *handle, void *buf,
--				struct bio **bio_chain)
-+static int swap_read_page(struct hibernate_io_handle *io_handle, void *buf,
-+		struct bio **bio_chain)
- {
-+	struct swap_map_handle *handle = io_handle->priv;
- 	sector_t offset;
- 	int error;
- 
-@@ -526,22 +551,25 @@ static int swap_read_page(struct swap_map_handle *handle, void *buf,
- 	return error;
- }
- 
--static int swap_reader_finish(struct swap_map_handle *handle)
-+static int swap_reader_finish(struct hibernate_io_handle *io_handle)
- {
-+	struct swap_map_handle *handle = io_handle->priv;
++		set_bit(TODO_ERROR, to_do.flags);
++	set_bit(TODO_FINISH, to_do.flags);
++	wake_up_interruptible(&to_do.wait);
 +
- 	release_swap_reader(handle);
-+	kfree(io_handle);
- 
- 	return 0;
- }
- 
- /**
-- *	load_image - load the image using the swap map handle
-+ *	load_image - load the image
-  *	@handle and the snapshot handle @snapshot
-  *	(assume there are @nr_pages pages to load)
-  */
- 
--static int load_image(struct swap_map_handle *handle,
--                      struct snapshot_handle *snapshot,
--                      unsigned int nr_to_read)
-+static int load_image(struct hibernate_io_handle *io_handle,
-+		      struct snapshot_handle *snapshot,
-+		      unsigned int nr_to_read)
++	wait_event(to_do.done, !test_bit(TODO_FINISH, to_do.flags) ||
++			(err = test_bit(TODO_CLOSED, to_do.flags)));
++
++	if (!error && err)
++		error = -EIO;
++
++	return error;
++}
++
++struct hibernate_io_ops user_ops = {
++	.free_space = user_free_space,
++
++	.writer_start = user_writer_start,
++	.writer_finish = user_writer_finish,
++	.write_page = user_write_page,
++};
++
++static void snapshot_writer(struct work_struct *work)
++{
++	int ret;
++
++	ret = swsusp_write(0);
++	if (ret)
++		printk(KERN_ERR "PM: write failed with %d\n", ret);
++}
++
++static DECLARE_WORK(snapshot_writer_w, snapshot_writer);
++
+ static int snapshot_open(struct inode *inode, struct file *filp)
  {
- 	unsigned int m;
- 	int error = 0;
-@@ -563,7 +591,7 @@ static int load_image(struct swap_map_handle *handle,
- 		error = snapshot_write_next(snapshot);
- 		if (error <= 0)
- 			break;
--		error = swap_read_page(handle, data_of(*snapshot), &bio);
-+		error = swap_read_page(io_handle, data_of(*snapshot), &bio);
- 		if (error)
- 			break;
- 		if (snapshot->sync_read)
-@@ -598,7 +626,7 @@ static int load_image(struct swap_map_handle *handle,
- int swsusp_read(unsigned int *flags_p)
- {
- 	int error;
--	struct swap_map_handle handle;
-+	struct hibernate_io_handle *io_handle;
- 	struct snapshot_handle snapshot;
- 	struct swsusp_info *header;
- 
-@@ -607,14 +635,16 @@ int swsusp_read(unsigned int *flags_p)
- 	if (error < PAGE_SIZE)
- 		return error < 0 ? error : -EFAULT;
- 	header = (struct swsusp_info *)data_of(snapshot);
--	error = get_swap_reader(&handle, flags_p);
--	if (error)
-+	io_handle = get_swap_reader(flags_p);
-+	if (IS_ERR(io_handle)) {
-+		error = PTR_ERR(io_handle);
- 		goto end;
+ 	struct snapshot_data *data;
+@@ -115,9 +200,17 @@ static int snapshot_open(struct inode *inode, struct file *filp)
+ 	}
+ 	if (error)
+ 		atomic_inc(&snapshot_device_available);
++	else {
++		data->prev_ops = hibernate_io_ops;
++		hibernate_io_ops = &user_ops;
 +	}
- 	if (!error)
--		error = swap_read_page(&handle, header, NULL);
-+		error = swap_read_page(io_handle, header, NULL);
- 	if (!error)
--		error = load_image(&handle, &snapshot, header->pages - 1);
--	swap_reader_finish(&handle);
-+		error = load_image(io_handle, &snapshot, header->pages - 1);
-+	swap_reader_finish(io_handle);
- end:
- 	if (!error)
- 		pr_debug("PM: Image successfully loaded\n");
+ 	data->frozen = 0;
+ 	data->ready = 0;
+ 	data->platform_support = 0;
++	memset(to_do.flags, 0, sizeof(*to_do.flags));
++	init_waitqueue_head(&to_do.wait);
++	init_waitqueue_head(&to_do.done);
++	mutex_init(&to_do.lock);
+ 
+  Unlock:
+ 	mutex_unlock(&pm_mutex);
+@@ -131,6 +224,10 @@ static int snapshot_release(struct inode *inode, struct file *filp)
+ 
+ 	mutex_lock(&pm_mutex);
+ 
++	set_bit(TODO_CLOSED, to_do.flags);
++	wake_up(&to_do.done);
++	flush_workqueue(to_do.worker);
++
+ 	swsusp_free();
+ 	free_basic_memory_bitmaps();
+ 	data = filp->private_data;
+@@ -139,6 +236,7 @@ static int snapshot_release(struct inode *inode, struct file *filp)
+ 		thaw_processes();
+ 	pm_notifier_call_chain(data->mode == O_WRONLY ?
+ 			PM_POST_HIBERNATION : PM_POST_RESTORE);
++	hibernate_io_ops = data->prev_ops;
+ 	atomic_inc(&snapshot_device_available);
+ 
+ 	mutex_unlock(&pm_mutex);
+@@ -152,6 +250,7 @@ static ssize_t snapshot_read(struct file *filp, char __user *buf,
+ 	struct snapshot_data *data;
+ 	ssize_t res;
+ 	loff_t pg_offp = *offp & ~PAGE_MASK;
++	int fin = 0;
+ 
+ 	mutex_lock(&pm_mutex);
+ 
+@@ -161,18 +260,31 @@ static ssize_t snapshot_read(struct file *filp, char __user *buf,
+ 		goto Unlock;
+ 	}
+ 	if (!pg_offp) { /* on page boundary? */
+-		res = snapshot_read_next(&data->handle);
+-		if (res <= 0)
++		res = wait_event_interruptible(to_do.wait,
++			test_bit(TODO_WORK, to_do.flags) ||
++			(fin = test_and_clear_bit(TODO_FINISH, to_do.flags)));
++		if (res)
+ 			goto Unlock;
+-	} else {
+-		res = PAGE_SIZE - pg_offp;
++		if (test_bit(TODO_ERROR, to_do.flags)) {
++			res = -EIO;
++			goto Unlock;
++		}
++		if (fin)
++			goto wake;
+ 	}
++	res = PAGE_SIZE - pg_offp;
+ 
+-	res = simple_read_from_buffer(buf, count, &pg_offp,
+-			data_of(data->handle), res);
++	mutex_lock(&to_do.lock);
++	res = simple_read_from_buffer(buf, count, &pg_offp, to_do.buffer, res);
++	mutex_unlock(&to_do.lock);
+ 	if (res > 0)
+ 		*offp += res;
+ 
++	if (!(pg_offp & ~PAGE_MASK)) {
++		clear_bit(TODO_WORK, to_do.flags);
++wake:
++		wake_up(&to_do.done);
++	}
+  Unlock:
+ 	mutex_unlock(&pm_mutex);
+ 
+@@ -278,8 +390,11 @@ static long snapshot_ioctl(struct file *filp, unsigned int cmd,
+ 		error = hibernation_snapshot(data->platform_support);
+ 		if (!error)
+ 			error = put_user(in_suspend, (int __user *)arg);
+-		if (!error)
++		if (!error) {
++			if (in_suspend)
++				queue_work(to_do.worker, &snapshot_writer_w);
+ 			data->ready = 1;
++		}
+ 		break;
+ 
+ 	case SNAPSHOT_ATOMIC_RESTORE:
+@@ -473,7 +588,16 @@ static struct miscdevice snapshot_device = {
+ 
+ static int __init snapshot_device_init(void)
+ {
+-	return misc_register(&snapshot_device);
++	int ret;
++
++	to_do.worker = create_singlethread_workqueue("suspend_worker");
++	if (!to_do.worker)
++		return -ENOMEM;
++
++	ret = misc_register(&snapshot_device);
++	if (ret)
++		destroy_workqueue(to_do.worker);
++	return ret;
+ };
+ 
+ device_initcall(snapshot_device_init);
 -- 
 1.7.1
 
