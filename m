@@ -1,117 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757766Ab0FBKBX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jun 2010 06:01:23 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:7245 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752131Ab0FBKBW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jun 2010 06:01:22 -0400
-Message-ID: <4C062CBD.7090906@redhat.com>
-Date: Wed, 02 Jun 2010 18:04:45 +0800
-From: Cong Wang <amwang@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100330 Shredder/3.0.4
-MIME-Version: 1.0
-To: Jay Vosburgh <fubar@us.ibm.com>
-CC: Flavio Leitner <fbl@sysclose.org>, linux-kernel@vger.kernel.org,
-       Matt Mackall <mpm@selenic.com>, netdev@vger.kernel.org,
-       bridge@lists.linux-foundation.org, Andy Gospodarek <gospo@redhat.com>,
-       Neil Horman <nhorman@tuxdriver.com>, Jeff Moyer <jmoyer@redhat.com>,
-       Stephen Hemminger <shemminger@linux-foundation.org>,
-       bonding-devel@lists.sourceforge.net, David Miller <davem@davemloft.net>
-Subject: Re: [v5 Patch 1/3] netpoll: add generic support for bridge and bonding
- devices
-References: <20100505081514.5157.83783.sendpatchset@localhost.localdomain> <20100527180545.GA2345@sysclose.org> <4BFF2EA5.9090008@redhat.com> <20100528194041.GC2345@sysclose.org> <4C034FA4.5000401@redhat.com> <20100531190820.GA24569@sysclose.org> <4C04D98D.4020509@redhat.com> <24059.1275417767@death.nxdomain.ibm.com>
-In-Reply-To: <24059.1275417767@death.nxdomain.ibm.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+	id S932317Ab0FBKB4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jun 2010 06:01:56 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:45170 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932147Ab0FBKBy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Jun 2010 06:01:54 -0400
+Subject: Re: [PATCH v2 0/3] kmemleak: Fix false positive with special scan
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Hiroshi DOYU <Hiroshi.DOYU@nokia.com>
+Cc: linux-kernel@vger.kernel.org, ext-phil.2.carmody@nokia.com,
+       linux-omap@vger.kernel.org
+In-Reply-To: <1275387911-13030-1-git-send-email-Hiroshi.DOYU@nokia.com>
+References: <1273821401-26578-2-git-send-email-Hiroshi.DOYU@nokia.com>
+	 <1275387911-13030-1-git-send-email-Hiroshi.DOYU@nokia.com>
+Content-Type: text/plain; charset="UTF-8"
+Organization: ARM Limited
+Date: Wed, 02 Jun 2010 11:01:24 +0100
+Message-ID: <1275472884.13743.29.camel@e102109-lin.cambridge.arm.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.1 
 Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 02 Jun 2010 10:01:26.0596 (UTC) FILETIME=[90819040:01CB023A]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/02/10 02:42, Jay Vosburgh wrote:
-> Cong Wang<amwang@redhat.com>  wrote:
->
->> On 06/01/10 03:08, Flavio Leitner wrote:
->>> On Mon, May 31, 2010 at 01:56:52PM +0800, Cong Wang wrote:
->>>> Hi, Flavio,
->>>>
->>>> Please use the attached patch instead, try to see if it solves
->>>> all your problems.
->>>
->>> I tried and it hangs. No backtraces this time.
->>> The bond_change_active_slave() prints before NETDEV_BONDING_FAILOVER
->>> notification, so I think it won't work.
->>
->> Ah, I thought the same.
->>
->>>
->>> Please, correct if I'm wrong, but when a failover happens with your
->>> patch applied, the netconsole would be disabled forever even with
->>> another healthy slave, right?
->>>
->>
->> Yes, this is an easy solution, because bonding has several modes,
->> it is complex to make netpoll work in different modes.
->
-> 	If I understand correctly, the root cause of the problem with
-> netconsole and bonding is that bonding is, ultimately, performing
-> printks with a write lock held, and when netconsole recursively calls
-> into bonding to send the printk over the netconsole, there is a deadlock
-> (when the bonding xmit function attempts to acquire the same lock for
-> read).
+Hi,
 
+Sorry for the delay, I eventually got the time to look at your patches.
 
-Yes.
+On Tue, 2010-06-01 at 11:25 +0100, Hiroshi DOYU wrote:
+> There is a false positive case that a pointer is calculated by other
+> methods than the usual container_of macro. "kmemleak_ignore" can cover
+> such a false positive, but it would loose the advantage of memory leak
+> detection. This patch allows kmemleak to work with such false
+> positives by introducing a new special memory block with a specified
+> calculation formula. A client module can register its area with a
+> conversion function, with which function kmemleak scan could calculate
+> a correct pointer.
 
->
-> 	You're trying to avoid the deadlock by shutting off netconsole
-> (permanently, it looks like) for one problem case: a failover, which
-> does some printks with a write lock held.
->
-> 	This doesn't look to me like a complete solution, there are
-> other cases in bonding that will do printk with write locks held.  I
-> suspect those will also hang netconsole as things exist today, and won't
-> be affected by your patch below.
+While something needs to be done to cover these situations, I'm not so
+convinced about the method as it complicates the code requiring such
+conversion by having to insert two kmemleak hooks and a callback
+function.
 
+Can we not add a new prio tree (or just use the existing one) for
+pointer aliases? The advantage is that you only have a single function
+to call, something like kmemleak_add_alias() and you do it at the point
+the value was converted.
 
-I can expect that, bonding modes are complex.
+Thanks.
 
->
-> 	For example:
->
-> 	The sysfs functions to set the primary (bonding_store_primary)
-> or active (bonding_store_active_slave) options: a pr_info is called to
-> provide a log message of the results.  These could be tested by setting
-> the primary or active options via sysfs, e.g.,
->
-> echo eth0>  /sys/class/net/bond0/bonding/primary
-> echo eth0>  /sys/class/net/bond0/bonding/active
->
-> 	If the kernel is defined with DEBUG, there are a few pr_debug
-> calls within write_locks (bond_del_vlan, for example).
->
-> 	If the slave's underlying device driver's ndo_vlan_rx_register
-> or ndo_vlan_rx_kill_vid functions call printk (and it looks like some do
-> for error cases, e.g., igbvf, ehea, enic), those would also presumably
-> deadlock (because bonding holds its write_lock when calling the ndo_
-> vlan functions).
->
-> 	It also appears that (with the patch below) some nominally
-> normal usage patterns will immediately disable netconsole.  The one that
-> comes to mind is if the primary= option is set (to "eth1" for this
-> example), but that slave not enslaved first (the slaves are added, say,
-> eth0 then eth1).  In that situation, when the primary slave (eth1 here)
-> is added, the first thing that will happen is a failover, and that will
-> disable netconsole.
->
+-- 
+Catalin
 
-Thanks for your detailed explanation!
-
-This is why I said bonding is complex. I guess we would have to adjust
-netpoll code for different bonding cases, one solution seems not fix all.
-I am not sure how much work to do, since I am not familiar with bonding
-code. Maybe Andy can help?
-
-For the previous patch, it at least can make Flavio happy. :)
-
-Thanks!
