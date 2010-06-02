@@ -1,75 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752849Ab0FBIrs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jun 2010 04:47:48 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:62801 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751604Ab0FBIrp (ORCPT
+	id S1753289Ab0FBIuX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jun 2010 04:50:23 -0400
+Received: from pfepa.post.tele.dk ([195.41.46.235]:41525 "EHLO
+	pfepa.post.tele.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752166Ab0FBIuV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jun 2010 04:47:45 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=googlemail.com; s=gamma;
-        h=mime-version:reply-to:in-reply-to:references:date:message-id
-         :subject:from:to:cc:content-type;
-        b=FRI4Sl8SPnWsC58GgGCcAt/rhZ7bwUquZ8g/PTtulMK3Cv4IxyeD3dsKkMAx1qpVno
-         TvdNMNCy8JQu4vVV86uouqabkS+MLJ8ihFPekmslzltO0+Zd9SGaRR4RrnrDSnrOHhT1
-         fBBaHo+AxdYi9nb6YRWmuJIjY/ey/MBmiG+Ns=
+	Wed, 2 Jun 2010 04:50:21 -0400
+Date: Wed, 2 Jun 2010 10:50:18 +0200
+From: Sam Ravnborg <sam@ravnborg.org>
+To: Am?rico Wang <xiyou.wangcong@gmail.com>
+Cc: Jaswinder Singh Rajput <jaswinderlinux@gmail.com>,
+       Christoph Hellwig <hch@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       the arch/x86 maintainers <x86@kernel.org>,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       mmarek@suse.cz
+Subject: Re: config automatically switches from 32-bit to 64-bit for x86
+Message-ID: <20100602085018.GA6507@merkur.ravnborg.org>
+References: <AANLkTik0PUKP3QLPRbb3nlh034_inmaeVbXy3q5_LQz-@mail.gmail.com> <20100527154916.GA5585@infradead.org> <20100527184653.GA11830@merkur.ravnborg.org> <AANLkTikkZGdf8-WnHQu4dY6WiXH7d0Raak0j-82hrvAA@mail.gmail.com> <20100529111951.GB31550@merkur.ravnborg.org> <AANLkTiku0kPykE30DIQvOD9gauEGZbyeDWXGkLb53sgJ@mail.gmail.com> <20100602082039.GB5103@cr0.nay.redhat.com>
 MIME-Version: 1.0
-Reply-To: sedat.dilek@gmail.com
-In-Reply-To: <1275409361.2091.27208.camel@rchatre-DESK>
-References: <20100528180952.GC2405@tuxdriver.com>
-	<AANLkTil8SLseSeq1M_Xg7P4AqMy3V_0jxc7by2Xuaqnb@mail.gmail.com>
-	<1275409361.2091.27208.camel@rchatre-DESK>
-Date: Wed, 2 Jun 2010 10:42:02 +0200
-Message-ID: <AANLkTimo_CpVC0B99GMJtIllAye5Yqa5yiIAiFBY-pIN@mail.gmail.com>
-Subject: Re: pull request: wireless-2.6 2010-05-28
-From: Sedat Dilek <sedat.dilek@googlemail.com>
-To: reinette chatre <reinette.chatre@intel.com>
-Cc: "John W. Linville" <linville@tuxdriver.com>,
-       "davem@davemloft.net" <davem@davemloft.net>,
-       "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
-       "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       "Zheng, Jiajia" <jiajia.zheng@intel.com>,
-       "Kolekar, Abhijeet" <abhijeet.kolekar@intel.com>,
-       "Berg, Johannes" <johannes.berg@intel.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20100602082039.GB5103@cr0.nay.redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 1, 2010 at 6:22 PM, reinette chatre
-<reinette.chatre@intel.com> wrote:
-> Hi Sedat,
->
-> On Sat, 2010-05-29 at 06:34 -0700, Sedat Dilek wrote:
->> Two people confirmed the patch in [2] fixes:
->> 1. iwlwifi-2.6 GIT master (commit f10a237c95abd6d64a3a24553bd1d3bcddd9108b)
->> 2. compat-wireless (2010-05-21)
->>
->> And it fixes also the above mentionned combination.
->
-> We are working on getting this patch upstream. The version tested
-> contains a significant amount of duplicated code as well as some cleanup
-> code mixed in. It is thus not appropriate for an upstream submission at
-> this time.
->
+> >>
+> >> Although the patch touches only a generic file this is x86 specific.
+> >>
+> >
+> >Américo Wang, Do you mind handle this kconfig patch.
+> >
+> 
+> 
+> Sorry for the delay.
+> 
+> Usually Michal should take this patch. Cc'ing him.
 
-What do you mean by "upstream"?
-upstream for me is Linus-tree (linux-2.6 GIT master).
-Patches against iwlwifi-2.6 GIT trees are not very helpful in my case.
+This is not generic functionality. The patch changes default
+behaviour when building x86 kernes only.
+So IMO it requires ack from the x86 maintainers.
 
->> As a suggestion:
->> What about "copying" bug-reports (incl. its history) from IWL-BTS into
->> linux-wireless ML?
->> For example (dri-devel related) bug-reports from
->> bugzilla.freedesktop.org are "copied" into dri-devel ML.
->
-> Pointing people to the bug report seems to work ok. What benefit does
-> the above have?
->
-
-[+] People - not subscribed to the BR - can follow "on change".
-[-] Blow up linux-wireless ML?
-
-- Sedat -
+	Sam
