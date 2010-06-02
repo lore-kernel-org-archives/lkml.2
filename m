@@ -1,114 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756772Ab0FBJc7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jun 2010 05:32:59 -0400
-Received: from mail-pz0-f176.google.com ([209.85.222.176]:45447 "EHLO
-	mail-pz0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751329Ab0FBJc6 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jun 2010 05:32:58 -0400
-MIME-Version: 1.0
-In-Reply-To: <alpine.LFD.2.00.1006021059150.2933@localhost.localdomain>
-References: <Pine.LNX.4.44L0.1005271253240.3239-100000@iolanthe.rowland.org>
-	<201005302202.39511.rjw@sisk.pl>
-	<AANLkTilUQ2AG76nbK6LwI8_7zw0_yMSoAOr9pmuz7xrt@mail.gmail.com>
-	<201005312347.24251.rjw@sisk.pl>
-	<AANLkTilvOgSFTDFtXbjJobMZWxgfvsC97TqC7_a_NHBX@mail.gmail.com>
-	<alpine.LFD.2.00.1006011411200.2933@localhost.localdomain>
-	<AANLkTikZHmF6baP7dEXEGFE8YsbEteRjlhb5wqZX8ll1@mail.gmail.com>
-	<alpine.LFD.2.00.1006020905410.2933@localhost.localdomain>
-	<AANLkTinDm3FIrbS1jqEzW15THmr1hdd7ox0Mllm1VLjZ@mail.gmail.com>
-	<alpine.LFD.2.00.1006021059150.2933@localhost.localdomain>
-Date: Wed, 2 Jun 2010 02:32:57 -0700
-Message-ID: <AANLkTimE1N76sB6UHm4-YMJ97gQ7-Ztndf97dTLdm5nX@mail.gmail.com>
-Subject: Re: [linux-pm] [PATCH 0/8] Suspend block api (version 8)
-From: =?ISO-8859-1?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, Florian Mickler <florian@mickler.org>,
-       Matthew Garrett <mjg59@srcf.ucam.org>,
+	id S1757656Ab0FBJdq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jun 2010 05:33:46 -0400
+Received: from www.tglx.de ([62.245.132.106]:55019 "EHLO www.tglx.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755229Ab0FBJdo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Jun 2010 05:33:44 -0400
+Date: Wed, 2 Jun 2010 11:33:05 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: =?ISO-8859-15?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>
+cc: Neil Brown <neilb@suse.de>, "Rafael J. Wysocki" <rjw@sisk.pl>,
        Alan Stern <stern@rowland.harvard.edu>,
-       Peter Zijlstra <peterz@infradead.org>, Paul@smtp1.linux-foundation.org,
-       LKML <linux-kernel@vger.kernel.org>, felipe.balbi@nokia.com,
+       Felipe Balbi <felipe.balbi@nokia.com>,
+       Peter Zijlstra <peterz@infradead.org>,
+       "Paul@smtp1.linux-foundation.org" <Paul@smtp1.linux-foundation.org>,
+       LKML <linux-kernel@vger.kernel.org>,
+       Florian Mickler <florian@mickler.org>,
        Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
        Linux PM <linux-pm@lists.linux-foundation.org>,
-       Alan Cox <alan@lxorguk.ukuu.org.uk>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+       Alan Cox <alan@lxorguk.ukuu.org.uk>,
+       James Bottomley <James.Bottomley@suse.de>
+Subject: Re: [PATCH] - race-free suspend. Was: Re: [linux-pm] [PATCH 0/8]
+ Suspend block api (version 8)
+In-Reply-To: <AANLkTimISbs4X2YR_Pal9A80mpkNyCy8laWBcOgR2Cl7@mail.gmail.com>
+Message-ID: <alpine.LFD.2.00.1006021117480.2933@localhost.localdomain>
+References: <Pine.LNX.4.44L0.1005271303190.3239-100000@iolanthe.rowland.org> <201006010005.19554.rjw@sisk.pl> <20100601090023.788cabf4@notabene.brown> <201006010232.20263.rjw@sisk.pl> <20100601113309.609349fd@notabene.brown> <alpine.LFD.2.00.1006010340160.2933@localhost.localdomain>
+ <20100601122012.1edeaf48@notabene.brown> <alpine.LFD.2.00.1006011243350.2933@localhost.localdomain> <20100602153235.340a7852@notabene.brown> <AANLkTikVjAf5nHdMx2bcHRAUSkq99s-b5YZCECXIJJLy@mail.gmail.com> <20100602180614.729246ea@notabene.brown>
+ <AANLkTimISbs4X2YR_Pal9A80mpkNyCy8laWBcOgR2Cl7@mail.gmail.com>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: MULTIPART/MIXED; BOUNDARY="8323328-206425387-1275471188=:2933"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2010/6/2 Thomas Gleixner <tglx@linutronix.de>:
-> On Wed, 2 Jun 2010, Arve Hjønnevåg wrote:
->> 2010/6/2 Thomas Gleixner <tglx@linutronix.de>:
->> > On Tue, 1 Jun 2010, Arve Hjønnevåg wrote:
->> >>
->> >> Because suspend itself causes you to not be idle you cannot abort
->> >> suspend just because you are not idle anymore.
->> >
->> > You still are addicted to the current suspend mechanism. :)
->> >
->>
->> No I want you to stop confusing low power idle modes with suspend. I
->> know how to enter low power modes from idle if that low power mode is
->> not too disruptive.
->
-> What prevents us from going into a disruptive mode from idle ? I don't
-> see a reason - except crappy ACPI stuff, which I'm happy to ignore.
->
+  This message is in MIME format.  The first part should be readable text,
+  while the remaining parts are likely unreadable without MIME-aware tools.
 
-What do you consider disruptive? Disabling active interrupts? Stopping
-the monotonic clock?
+--8323328-206425387-1275471188=:2933
+Content-Type: TEXT/PLAIN; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 
->> > If I understood you correctly then you can shutdown the CPU in idle
->> > completelty already, but that's not enough due to:
->> >
->> >    1) crappy applications keeping the cpu away from idle
->> >    2) timers firing
->> >
->> > Would solving those two issues be sufficient for you or am I missing
->> > something ?
->>
->> Solving those two is enough for current android phones, but it may not
->> be enough for other android devices.
->
-> In which way ? May not be enough is a pretty vague statement.
+On Wed, 2 Jun 2010, Arve Hjønnevåg wrote:
+> 2010/6/2 Neil Brown <neilb@suse.de>:
+> > There would still need to be some sort of communication between the the
+> > suspend daemon on any event daemon to ensure that the events had been
+> > processed.  This could be very light weight interaction.  The point though is
+> > that with this patch it becomes possible to avoid races.  Possible is better
+> > than impossible.
+> >
+> 
+> We already have a solution. I don't think rejecting our solution but
+> merging a worse solution should be the goal.
 
-They may not be based on hardware that can get to the same power mode
-from idle as suspend. This could be acpi based hardware, it could be
-like the hardware we started with that did not have regular timers
-that could run in the low power mode, or devices could loose their
-state in the lowest power mode.
+That's not the goal at all. We want a solution which is acceptable for
+android and OTOH does not get into the way of other approaches.
 
->
->> 1 is not solvable (meaning we cannot fix all apps),
->
-> We can mitigate it with cgroups and confine crap there, i.e. force
-> idle them.
->
+The main problem I have is that suspend blockers are only addressing
+one particular problem space of power management.
 
-I think using suspend is much simpler. It avoids having to worry about
-dependencies between processes.
+We have more requirements than that, e.g. an active device transfer
+requires to prevent the idle code to select a deep power state due to
+latency requirements. 
 
->> and 2 is difficult to fix since the periodic
->> work is useful while the device is actually in use. One possible way
->> to solve 2 is to allow timers on a not-idle clock.
->
-> That's what I had in mind.
->
->> Unrelated to Android, I also want to use opportunistic suspend on my
->> desktop.
->
-> I expect that intel/amd fixing their stuff is going to happen way
-> before we sprinkled suspend blockers over a full featured desktop
-> distro.
->
+So we then have to implement two mechanisms in the relevant drivers:
 
-You do not need to sprinkle suspend blocker all over the distro for it
-to be useful. You can convert the existing auto-suspend code to use
-opportunistic suspend and all apps that don't use suspend blocker will
-behave as they do today while allowing apps to use suspend blockers to
-keep the system running after the auto-suspend timeout expired.
+   1) telling the idle code to limit latency
+   2) telling the suspend code not to suspend
 
--- 
-Arve Hjønnevåg
+My main interest is to limit it to one mechanism, which is QoS based
+and let idle and suspend make the appropriate decisions based on that
+information.
+
+Thanks,
+
+	tglx
+
+
+
+
+--8323328-206425387-1275471188=:2933--
