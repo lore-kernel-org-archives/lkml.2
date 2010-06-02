@@ -1,169 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932936Ab0FBTYq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jun 2010 15:24:46 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:61830 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932493Ab0FBTYp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jun 2010 15:24:45 -0400
-Date: Wed, 2 Jun 2010 21:23:18 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Roland McGrath <roland@redhat.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-       Evan Teran <eteran@alum.rit.edu>,
-       Jan Kratochvil <jan.kratochvil@redhat.com>,
-       linux-kernel@vger.kernel.org
-Subject: Bug 16061 - single stepping in a signal handler can cause the
-	single step flag to get "stuck"
-Message-ID: <20100602192318.GA26735@redhat.com>
+	id S932990Ab0FBT0Q (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jun 2010 15:26:16 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:41617 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932597Ab0FBT0P (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Jun 2010 15:26:15 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=googlemail.com; s=gamma;
+        h=mime-version:reply-to:in-reply-to:references:from:date:message-id
+         :subject:to:cc:content-type;
+        b=Cw513+/P5w8jdQwDktdmlURMqdij7cue/CxqbM7EwCCyoITtht1NTFfv8Clor8/iPU
+         RfaM5VJrDmtrONaup0u3/oiv5Zu9k22hzgoPp3J8q0JRx7iCl4TEyq1CueLQzgsdlBfQ
+         1PePfChUaAksIYWkxZzLr9ckP3j/TOwMRayec=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Reply-To: mtk.manpages@gmail.com
+In-Reply-To: <20100601074534.GL1660@kernel.dk>
+References: <AANLkTimKFHQPi9kKhYYjRhMt0s5CDsBXmESQaH493hpR@mail.gmail.com> 
+	<20100523174706.GP23411@kernel.dk> <87632e846m.fsf@devron.myhome.or.jp> 
+	<AANLkTin42kucqLbErGA4GlGPZEIPQV2DFkiHkEVSYiI9@mail.gmail.com> 
+	<20100524070552.GR23411@kernel.dk> <AANLkTikogQtGpO9c94A7YSmP8zdyM8dZBrwJf1nwlR4j@mail.gmail.com> 
+	<20100524173551.GU23411@kernel.dk> <AANLkTimDJjHWKISxnLax3r200Db8OQp_lMKOx14ONgkS@mail.gmail.com> 
+	<20100524175649.GV23411@kernel.dk> <AANLkTim_yrRZG6v1tMPgefeaaI-nUa35Q-mLQpuXWJ1p@mail.gmail.com> 
+	<20100601074534.GL1660@kernel.dk>
+From: Michael Kerrisk <mtk.manpages@googlemail.com>
+Date: Wed, 2 Jun 2010 21:25:52 +0200
+Message-ID: <AANLkTinGfonivZvofBkMzv53IJZeKbFAEMVpv96BiJ30@mail.gmail.com>
+Subject: Re: [patch] pipe: add support for shrinking and growing pipes
+To: Jens Axboe <axboe@kernel.dk>
+Cc: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       Miklos Szeredi <miklos@szeredi.hu>, linux-fsdevel@vger.kernel.org,
+       linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(see https://bugzilla.kernel.org/show_bug.cgi?id=16061)
-
-Roland McGrath wrote:
+On Tue, Jun 1, 2010 at 9:45 AM, Jens Axboe <axboe@kernel.dk> wrote:
+> On Thu, May 27 2010, Michael Kerrisk wrote:
+>> Jens,
+>>
+>> On Mon, May 24, 2010 at 7:56 PM, Jens Axboe <jens.axboe@oracle.com> wrote:
+>> > On Mon, May 24 2010, Michael Kerrisk wrote:
+>> >> On Mon, May 24, 2010 at 7:35 PM, Jens Axboe <jens.axboe@oracle.com> wrote:
+>> >> > On Mon, May 24 2010, Michael Kerrisk wrote:
+>> >> >> > Right, that looks like a thinko.
+>> >> >> >
+>> >> >> > I'll submit a patch changing it to bytes and the agreed API and fix this
+>> >> >> > -Eerror. Thanks for your comments and suggestions!
+>> >> >>
+>> >> >> Thanks. And of course you are welcome. (Please CC linux-api@vger on
+>> >> >> this patche (and all patches that change the API/ABI.)
+>> >> >
+>> >> > The first change is this:
+>> >> >
+>> >> > http://git.kernel.dk/?p=linux-2.6-block.git;a=commit;h=0191f8697bbdfefcd36e7b8dc3eeddfe82893e4b
+>> >> >
+>> >> > and the one dealing with the pages vs bytes API is this:
+>> >> >
+>> >> > http://git.kernel.dk/?p=linux-2.6-block.git;a=commit;h=b9598db3401282bb27b4aef77e3eee12015f7f29
+>> >> >
+>> >> > Not tested yet, will do so before sending in of course.
+>> >>
+>> >> Eyeballing it quickly, these changes look right.
+>> >
+>> > Good, thanks.
+>> >
+>> >> Do you have some test programs you can make available?
+>> >
+>> > Actually I don't, I test it by modifying fio's splice engine to set/get
+>> > the pipe size and test the resulting transfers.
+>>
+>> An afterthought. Do there not also need to be fixes to the /proc
+>> interfaces. I don't think they were included in your revised patches.
 >
-> Oleg, please get an appropriate test case for this into the ptrace-tests suite.
+> I think the proc part can be sanely left in pages, since it's just a
+> memory limiter.
 
-The first thing I did, I created the test-case ;)
+I can't see any advantage to using two different units for these
+closely related APIs, and it does seem like it could be a source of
+confusion. Similar APIs that I can think of like RLIMIT_MEMLOCK and
+shmget() SHMMAX that impose per-process memory-related limits use
+bytes. Best to be consistent, don't you think?
 
-	#include <signal.h>
-	#include <unistd.h>
-	#include <stdio.h>
-	#include <sys/ptrace.h>
-	#include <sys/wait.h>
-	#include <sys/user.h>
-	#include <assert.h>
-	#include <stddef.h>
+Cheers,
 
-	void handler(int n)
-	{
-		asm("nop; nop; nop");
-	}
+Michael
 
-	int child(void)
-	{
-		assert(ptrace(PTRACE_TRACEME, 0,0,0) == 0);
-		signal(SIGALRM, handler);
-		kill(getpid(), SIGALRM);
-		return 0x23;
-	}
 
-	void *getip(int pid)
-	{
-		return (void*)ptrace(PTRACE_PEEKUSER, pid,
-					offsetof(struct user, regs.rip), 0);
-	}
-
-	int main(void)
-	{
-		int pid, status;
-
-		pid = fork();
-		if (!pid)
-			return child();
-
-		assert(wait(&status) == pid);
-		assert(WIFSTOPPED(status) && WSTOPSIG(status) == SIGALRM);
-
-		assert(ptrace(PTRACE_SINGLESTEP, pid, 0, SIGALRM) == 0);
-		assert(wait(&status) == pid);
-		assert(WIFSTOPPED(status) && WSTOPSIG(status) == SIGTRAP);
-		assert((getip(pid) - (void*)handler) == 0);
-
-		assert(ptrace(PTRACE_SINGLESTEP, pid, 0, SIGALRM) == 0);
-		assert(wait(&status) == pid);
-		assert(WIFSTOPPED(status) && WSTOPSIG(status) == SIGTRAP);
-		assert((getip(pid) - (void*)handler) == 1);
-
-		assert(ptrace(PTRACE_CONT, pid, 0,0) == 0);
-		assert(wait(&status) == pid);
-		assert(WIFEXITED(status) && WEXITSTATUS(status) == 0x23);
-
-		return 0;
-	}
-
-It is x86 specific and needs -O2. Probably I can just remove getip()
-and related asserts and send it to Jan.
-
-> That change might be the right one, but we should discuss it more in email, and
-> look at the situation on other machines.
-
-Yes. And I think it is better to discuss this on lkml.
-
-I do not know what is the right fix. I do not like the fix in
-https://bugzilla.kernel.org/attachment.cgi?id=26587 even if it is correct.
-I can't explain this, but I think that tracehook.h is not the right place
-to call disable_step(). And note that handle_signal() plays with TF anyway.
-
-I am starting to think we should fix this per arch. As for x86, perhaps
-we should start with this one-liner
-
-		spin_unlock_irq(&current->sighand->siglock);
-	 
-		tracehook_signal_handler(sig, info, ka, regs,
-	-				 test_thread_flag(TIF_SINGLESTEP));
-	+				 test_and_clear_thread_flag(TIF_SINGLESTEP));
-	 
-		return 0;
-	 }
-
-then do other changes.
-
-However, what I am thinking about is the more "clever" change (it
-passed ptrace-tests).
-
-Do you think it can be correct? I am asking because I never understood
-the TIF_SINGLESTEP/TIF_FORCED_TF interaction. But otoh, shouldn't
-TIF_FORCED_TF + X86_EFLAGS_TF always imply TIF_SINGLESTEP? at least
-in handle_signal().
-
-IOW, help! To me, the patch below is also cleanup. But only if you think
-it can fly ;)
-
-Oleg.
-
---- 34-rc1/arch/x86/kernel/signal.c~BZ16061_MAYBE_FIX	2010-06-02 21:11:07.000000000 +0200
-+++ 34-rc1/arch/x86/kernel/signal.c	2010-06-02 21:11:48.000000000 +0200
-@@ -682,6 +682,7 @@ static int
- handle_signal(unsigned long sig, siginfo_t *info, struct k_sigaction *ka,
- 	      sigset_t *oldset, struct pt_regs *regs)
- {
-+	bool stepping;
- 	int ret;
- 
- 	/* Are we from a system call? */
-@@ -706,13 +707,10 @@ handle_signal(unsigned long sig, siginfo
- 		}
- 	}
- 
--	/*
--	 * If TF is set due to a debugger (TIF_FORCED_TF), clear the TF
--	 * flag so that register information in the sigcontext is correct.
--	 */
--	if (unlikely(regs->flags & X86_EFLAGS_TF) &&
--	    likely(test_and_clear_thread_flag(TIF_FORCED_TF)))
--		regs->flags &= ~X86_EFLAGS_TF;
-+	stepping = test_thread_flag(TIF_SINGLESTEP);
-+	if (stepping)
-+		// do this before setup_sigcontext()
-+		user_disable_single_step(current);
- 
- 	ret = setup_rt_frame(sig, ka, info, oldset, regs);
- 
-@@ -748,8 +746,7 @@ handle_signal(unsigned long sig, siginfo
- 	recalc_sigpending();
- 	spin_unlock_irq(&current->sighand->siglock);
- 
--	tracehook_signal_handler(sig, info, ka, regs,
--				 test_thread_flag(TIF_SINGLESTEP));
-+	tracehook_signal_handler(sig, info, ka, regs, stepping);
- 
- 	return 0;
- }
-
+-- 
+Michael Kerrisk
+Linux man-pages maintainer; http://www.kernel.org/doc/man-pages/
+Author of "The Linux Programming Interface" http://blog.man7.org/
