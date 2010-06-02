@@ -1,67 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754161Ab0FBIux (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jun 2010 04:50:53 -0400
-Received: from ist.d-labs.de ([213.239.218.44]:35500 "EHLO mx01.d-labs.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753403Ab0FBIuv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jun 2010 04:50:51 -0400
-Date: Wed, 2 Jun 2010 10:50:39 +0200
-From: Florian Mickler <florian@mickler.org>
-To: Neil Brown <neilb@suse.de>
-Cc: Arve =?ISO-8859-15?Q?Hj=F8nnev=E5g?= <arve@android.com>,
-       Thomas Gleixner <tglx@linutronix.de>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-       Alan Stern <stern@rowland.harvard.edu>,
-       Felipe Balbi <felipe.balbi@nokia.com>,
-       Peter Zijlstra <peterz@infradead.org>,
-       "Paul@smtp1.linux-foundation.org" <Paul@smtp1.linux-foundation.org>,
-       LKML <linux-kernel@vger.kernel.org>,
-       Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
-       Linux PM <linux-pm@lists.linux-foundation.org>,
-       Alan Cox <alan@lxorguk.ukuu.org.uk>,
-       James Bottomley <James.Bottomley@suse.de>
-Subject: Re: [PATCH] - race-free suspend. Was: Re: [linux-pm] [PATCH 0/8] 
- Suspend block api (version 8)
-Message-ID: <20100602105039.068c5e00@schatten.dmk.lab>
-In-Reply-To: <20100602180614.729246ea@notabene.brown>
-References: <Pine.LNX.4.44L0.1005271303190.3239-100000@iolanthe.rowland.org>
-	<201006010005.19554.rjw@sisk.pl>
-	<20100601090023.788cabf4@notabene.brown>
-	<201006010232.20263.rjw@sisk.pl>
-	<20100601113309.609349fd@notabene.brown>
-	<alpine.LFD.2.00.1006010340160.2933@localhost.localdomain>
-	<20100601122012.1edeaf48@notabene.brown>
-	<alpine.LFD.2.00.1006011243350.2933@localhost.localdomain>
-	<20100602153235.340a7852@notabene.brown>
-	<AANLkTikVjAf5nHdMx2bcHRAUSkq99s-b5YZCECXIJJLy@mail.gmail.com>
-	<20100602180614.729246ea@notabene.brown>
-X-Mailer: Claws Mail 3.7.5 (GTK+ 2.18.9; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1755538Ab0FBIvF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jun 2010 04:51:05 -0400
+Received: from one.firstfloor.org ([213.235.205.2]:39062 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754441Ab0FBIvB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Jun 2010 04:51:01 -0400
+Date: Wed, 2 Jun 2010 10:50:55 +0200
+From: Andi Kleen <andi@firstfloor.org>
+To: Avi Kivity <avi@redhat.com>
+Cc: Andi Kleen <andi@firstfloor.org>, Gleb Natapov <gleb@redhat.com>,
+       linux-kernel@vger.kernel.org, kvm@vger.kernel.org, hpa@zytor.com,
+       mingo@elte.hu, npiggin@suse.de, tglx@linutronix.de, mtosatti@redhat.com
+Subject: Re: [PATCH] use unfair spinlock when running on hypervisor.
+Message-ID: <20100602085055.GA14221@basil.fritz.box>
+References: <20100601093515.GH24302@redhat.com> <87sk56ycka.fsf@basil.nowhere.org> <20100601162414.GA6191@redhat.com> <20100601163807.GA11880@basil.fritz.box> <4C053ACC.5020708@redhat.com> <20100601172730.GB11880@basil.fritz.box> <4C05C722.1010804@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4C05C722.1010804@redhat.com>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2 Jun 2010 18:06:14 +1000
-Neil Brown <neilb@suse.de> wrote:
+On Wed, Jun 02, 2010 at 05:51:14AM +0300, Avi Kivity wrote:
+> On 06/01/2010 08:27 PM, Andi Kleen wrote:
+>> On Tue, Jun 01, 2010 at 07:52:28PM +0300, Avi Kivity wrote:
+>>    
+>>> We are running everything on NUMA (since all modern machines are now NUMA).
+>>>   At what scale do the issues become observable?
+>>>      
+>> On Intel platforms it's visible starting with 4 sockets.
+>>    
+>
+> Can you recommend a benchmark that shows bad behaviour?  I'll run it with 
 
-> I cannot imagine why it would take multiple seconds to scan a keypad.
-> Can you explain that?
-> 
-> Do you mean while keys are held pressed?  Maybe you don't get a wake-up event
-> on key-release?  In that case your user-space daemon could block suspend
-> while there are any pressed keys....  confused.
+Pretty much anything with high lock contention.
 
-IIRC, the device sends interrupts only for first key-down and
-last key-up.
-To detect simultaneous key-presses you must actively scan it after the
-first key-down.
+> ticket spinlocks and Gleb's patch.  I have a 4-way Nehalem-EX, presumably 
+> the huge number of threads will magnify the problem even more there.
 
+Yes more threads cause more lock contention too.
 
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-omap" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
+> Do  you have any idea how we can tackle both problems?
+
+Apparently Xen has something, perhaps that can be leveraged
+(but I haven't looked at their solution in detail)
+
+Otherwise I would probably try to start with a adaptive
+spinlock that at some point calls into the HV (or updates
+shared memory?), like john cooper suggested. The tricky part here would
+be to find the thresholds and fit that state into
+paravirt ops and the standard spinlock_t.
+
+-Andi
+
+-- 
+ak@linux.intel.com -- Speaking for myself only.
