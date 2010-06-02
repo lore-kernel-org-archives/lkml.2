@@ -1,41 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932683Ab0FBPgf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jun 2010 11:36:35 -0400
-Received: from www.telegraphics.com.au ([204.15.192.19]:46360 "EHLO
-	mail.telegraphics.com.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932626Ab0FBPge (ORCPT
+	id S932702Ab0FBPg4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jun 2010 11:36:56 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:38616 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932626Ab0FBPgx convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jun 2010 11:36:34 -0400
-Date: Thu, 3 Jun 2010 01:36:15 +1000 (EST)
-From: Finn Thain <fthain@telegraphics.com.au>
-To: David Miller <davem@davemloft.net>
-cc: geert@linux-m68k.org, joe@perches.com, p_gortmaker@yahoo.com,
-       netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-       linux-m68k@vger.kernel.org
-Subject: Re: [PATCH 2/2] mac8390: raise error logging priority
-In-Reply-To: <20100602.070647.106817718.davem@davemloft.net>
-Message-ID: <alpine.OSX.2.00.1006030122350.270@localhost>
-References: <alpine.OSX.2.00.1005312244520.1490@localhost> <20100531.060225.68146363.davem@davemloft.net> <alpine.OSX.2.00.1006011739160.299@localhost> <20100602.070647.106817718.davem@davemloft.net>
-User-Agent: Alpine 2.00 (OSX 1167 2008-08-23)
+	Wed, 2 Jun 2010 11:36:53 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Message-ID: <312cfff6-7ee7-4a6e-a3fd-fc9b6893f0b1@default>
+Date: Wed, 2 Jun 2010 08:35:43 -0700 (PDT)
+From: Dan Magenheimer <dan.magenheimer@oracle.com>
+To: Jamie Lokier <jamie@shareable.org>
+Cc: chris.mason@oracle.com, viro@zeniv.linux.org.uk, akpm@linux-foundation.org,
+       adilger@sun.com, tytso@mit.edu, mfasheh@suse.com,
+       joel.becker@oracle.com, matthew@wil.cx, linux-btrfs@vger.kernel.org,
+       linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+       linux-ext4@vger.kernel.org, ocfs2-devel@oss.oracle.com,
+       linux-mm@kvack.org, ngupta@vflare.org, jeremy@goop.org,
+       JBeulich@novell.com, kurt.hackel@oracle.com, npiggin@suse.de,
+       dave.mccracken@oracle.com, riel@redhat.com, avi@redhat.com,
+       konrad.wilk@oracle.com
+Subject: RE: [PATCH V2 0/7] Cleancache (was Transcendent Memory): overview
+References: <20100528173510.GA12166@ca-server1.us.oracle.com
+ 20100602130014.GB7238@shareable.org>
+In-Reply-To: <20100602130014.GB7238@shareable.org>
+X-Priority: 3
+X-Mailer: Oracle Beehive Extensions for Outlook 1.5.1.5.2  (401224) [OL
+ 12.0.6514.5000]
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 8BIT
+X-Auth-Type: Internal IP
+X-Source-IP: acsinet15.oracle.com [141.146.126.227]
+X-CT-RefId: str=0001.0A090202.4C067A63.017A:SCFMA922111,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-On Wed, 2 Jun 2010, David Miller wrote:
-
+> From: Jamie Lokier [mailto:jamie@shareable.org]
+> Subject: Re: [PATCH V2 0/7] Cleancache (was Transcendent Memory):
+> overview
 > 
-> Applied, thank you.
+> Dan Magenheimer wrote:
+> > Most important, cleancache is "ephemeral".  Pages which are copied
+> into
+> > cleancache have an indefinite lifetime which is completely unknowable
+> > by the kernel and so may or may not still be in cleancache at any
+> later time.
+> > Thus, as its name implies, cleancache is not suitable for dirty
+> pages.  The
+> > pseudo-RAM has complete discretion over what pages to preserve and
+> what
+> > pages to discard and when.
 > 
+> Fwiw, the feature sounds useful to userspace too, for those things
+> with memory hungry caches like web browsers.  Any plans to make it
+> available to userspace?
 
-You're welcome.
+No plans yet, though we agree it sounds useful, at least for
+apps that bypass the page cache (e.g. O_DIRECT).  If you have
+time and interest to investigate this further, I'd be happy
+to help.  Send email offlist.
 
-And I ought to add, thanks, Joe, for your patches.
-
-It is much harder than I had realised to do them right (or for that 
-matter, well enough).
-
-Finn
+Thanks,
+Dan
