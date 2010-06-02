@@ -1,99 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932800Ab0FBQlF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jun 2010 12:41:05 -0400
-Received: from g1t0027.austin.hp.com ([15.216.28.34]:19147 "EHLO
-	g1t0027.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752875Ab0FBQlC (ORCPT
+	id S932827Ab0FBQv0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jun 2010 12:51:26 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:44039 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932812Ab0FBQvY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jun 2010 12:41:02 -0400
-From: Bjorn Helgaas <bjorn.helgaas@hp.com>
-To: Mike Habeck <habeck@sgi.com>
-Subject: Re: [Patch 1/1] x86 pci: Add option to not assign BAR's if not already assigned
-Date: Wed, 2 Jun 2010 10:40:38 -0600
-User-Agent: KMail/1.13.2 (Linux/2.6.32-22-generic; KDE/4.4.2; x86_64; ; )
-Cc: Mike Travis <travis@sgi.com>, "H. Peter Anvin" <hpa@zytor.com>,
-       Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
-       x86@kernel.org, Jesse Barnes <jbarnes@virtuousgeek.org>,
-       Jacob Pan <jacob.jun.pan@intel.com>, Tejun Heo <tj@kernel.org>,
-       LKML <linux-kernel@vger.kernel.org>, linux-pci@vger.kernel.org
-References: <4BEAF008.9030805@sgi.com> <201006011649.56074.bjorn.helgaas@hp.com> <4C067E73.2010005@sgi.com>
-In-Reply-To: <4C067E73.2010005@sgi.com>
+	Wed, 2 Jun 2010 12:51:24 -0400
+Message-ID: <4C068BAA.4030004@oracle.com>
+Date: Wed, 02 Jun 2010 09:49:46 -0700
+From: Randy Dunlap <randy.dunlap@oracle.com>
+Organization: Oracle Linux Engineering
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.5) Gecko/20091209 Fedora/3.0-3.fc11 Thunderbird/3.0
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
+To: Nobin Mathew <nobin.mathew@gmail.com>
+CC: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+       linux-kbuild@vger.kernel.org, Ben Dooks <ben-linux@fluff.org>
+Subject: [TEMP PATCH] Re: make ARM=arm menuconfig problem in mainline
+References: <AANLkTikC61Y9g-WbqwgGDghDSy2XtgraFSRoZYkHRGTG@mail.gmail.com>	<AANLkTilEYHVHJrj_KgF48OYCSEUcsKLi57Q_Y73d9va-@mail.gmail.com>	<20100602085748.6771e025.randy.dunlap@oracle.com> <AANLkTilpzeYVExQfLgpVmS3bPvb_h3kmWaatidekI-0r@mail.gmail.com>
+In-Reply-To: <AANLkTilpzeYVExQfLgpVmS3bPvb_h3kmWaatidekI-0r@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Message-Id: <201006021040.39378.bjorn.helgaas@hp.com>
+X-Auth-Type: Internal IP
+X-Source-IP: acsinet15.oracle.com [141.146.126.227]
+X-CT-RefId: str=0001.0A090204.4C068BED.017A:SCFMA922111,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, June 02, 2010 09:53:23 am Mike Habeck wrote:
-> Bjorn Helgaas wrote:
-> > I'm still having trouble reconciling the stated purpose, i.e., the
-> > changelog, with the behavior.  The changelog implies that the patch
-> > is required to make >16 devices with I/O BARs work at all, but per
-> > Mike Habeck, the patch just gets rid of some warnings and maybe helps
-> > with hot-add of devices using I/O space.
+On 06/02/10 09:08, Nobin Mathew wrote:
 > 
-> greaterthan 16 devices will still work if the BIOS doesn't assign
-> the I/O BARs and the kernel does (including the devices that don't
-> get assigned due to the kernel running out of I/O Port resources).
-> And when the kernel runs out of I/O Port space it will warn for
-> those devices it couldn't assign: (example):
+> On Wed, Jun 2, 2010 at 9:27 PM, Randy Dunlap <randy.dunlap@oracle.com> wrote:
+>> On Wed, 2 Jun 2010 20:04:28 +0530 Nobin Mathew wrote:
+>>
+>>> adding linux-arm-kernel@lists.infradead.org
+>>>
+>>> Hi,
+>>>
+>>> The following entry creates problem in ARM System type menu. I am
+>>> using a Fedora 12 system.
+>>
+>> What kind of problem does it create?
+>> It seems to work for me (on f11, not f12).
+>> Does it have something to do with F12 specifically?
+>>
+>>
+>>> Length of bool "Samsung S3C2410, S3C2412, S3C2413, S3C2416, S3C2440,
+>>> S3C2442, S3C2443, S3C2450" is the problem. How can I fix it.
+>>
+>> Describe the problem, please.
+
+[please don't top-post]
+
+> Sorry if attachments are not allowed, when I go to select ARM system
+> type(OMAP, Davinci etc), I am not seeing any entries there in the pop
+> up window. When I remove  bool "Samsung S3C2410, S3C2412, S3C2413,
+> S3C2416, S3C2440,
+>>> S3C2442, S3C2443, S3C2450"  it is working fine. I feel it is something to do with length of that string.
 > 
->    pci 0002:03:00.0: BAR 5: can't allocate I/O resource [0x0-0x7f]
+> Thanks
+> Nobin
 
-[For anybody else grepping for this message, it is now "can't assign",
-not "can't allocate".]
 
-> But if the kernel assigns all the I/O Port space to these devices
-> we know don't need it (thus the reason the BIOS didn't assign it)
-> then I believe hot-add of devices using I/O space will fail.
+OK, I see that now.  Well, it is some kind of problem.
+Adding cc to linux-kbuild mailing list.
 
-Yes, I understand and agree with this motivation, though I hope
-"pci=nobar" is recognized as only a short-term workaround.  I think
-it's completely unacceptable in terms of the user experience.  Using
-DMI quirks to turn it on automatically removes some user pain, but
-it's not a real solution and still leaves a maintenance problem.
 
-How about if we write a changelog that mentions hot-add of devices
-that need I/O space?  :-)
+The patch below fixes the problem temporarily, but the bool string length does
+seem to be a problem.
 
-> There is also the issue that quirk_system_pci_resources() thinks
-> those unassigned I/O resources are using I/O port space 0x0-0xFF.
-> Since the BIOS never assigned the BAR the kernel reads it as
-> having a base of 0x0 and a limit of whatever the BAR size is when
-> it writes all 1's to obtain the size.  So that results in
-> quirk_system_pci_resources() disabling pnp devices: (example):
-> 
->    pnp 00:11: io resource (0x92-0x92) overlaps 0002:03:00.0 BAR 0 (0x0-0xff), disabling
-[...]
-> 
-> One could argue this is a quirk_system_pci_resources() issue and
-> should be handled there rather than "zeroing out the resource if
-> the bios didn't assign it" as the patch does, but what the patch
-> is attempting to do (as stated above) is to allow the BIOS a way
-> to not assign resources it knows are not needed and thus make sure
-> the kernel doesn't override that... and in doing that the quirk
-> issue goes away too.
+Thanks for your report.
 
-This is definitely a problem, but I think it should be handled
-separately.  The fact that this patch makes the "overlap" messages
-go away is a nice coincidence, but it doesn't fix the underlying
-issue.
+-- 
+From: Randy Dunlap <randy.dunlap@oracle.com>
 
-I think setting the resource start/end to zero to "disable" it as in
-this patch (and elsewhere) is just a hack -- we no longer know the size
-of the BAR, the struct resource no longer corresponds to the BAR contents,
-and I don't think we do anything with the PCI_COMMAND_IO/PCI_COMMAND_MEM
-bits to actually disable the BAR, so the device probably still responds
-at whatever we left in the BAR.
+The bool "long string" causes the choices not to be displayed,
+so temporarily change it to a shorter string until a real fix
+is found.
 
-In quirk_system_pci_resources(), we set IORESOURCE_DISABLED rather than
-setting the PNP resource start/end to zero, but that's a bit of a hack,
-too.  All that does is prevent the PNP motherboard driver (pnp/system.c)
-from requesting that region.  We don't actually do anything to stop the
-device from responding to that address.
+Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
+Reported-by: Nobin Mathew <nobin.mathew@gmail.com>
+Cc: Ben Dooks <ben-linux@fluff.org>
+---
+ arch/arm/Kconfig |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Bjorn
+--- linux-next-20100602.orig/arch/arm/Kconfig
++++ linux-next-20100602/arch/arm/Kconfig
+@@ -629,7 +629,7 @@ config ARCH_SA1100
+ 	  Support for StrongARM 11x0 based boards.
+ 
+ config ARCH_S3C2410
+-	bool "Samsung S3C2410, S3C2412, S3C2413, S3C2416, S3C2440, S3C2442, S3C2443, S3C2450"
++	bool "Samsung S3C24xx"
+ 	select GENERIC_GPIO
+ 	select ARCH_HAS_CPUFREQ
+ 	select HAVE_CLK
