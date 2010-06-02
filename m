@@ -1,171 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933044Ab0FBTuK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jun 2010 15:50:10 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:51070 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932963Ab0FBTuH (ORCPT
+	id S933069Ab0FBTxi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jun 2010 15:53:38 -0400
+Received: from smtp-out.google.com ([74.125.121.35]:17818 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933056Ab0FBTxh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jun 2010 15:50:07 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=lXeYeoB93qxKGT1HPWVav/f+ke6KIByAuN/L3FsJwfpSf7eAFK839CXBPNeJPNm9j/
-         4qJXiXwnsKstwTA54DWoypV5h4rX9CMjESO/frgwtBgiTbhfpvLdNHmNs8h/+epgUe7i
-         DMieU9eGmRFNr7bl83/DkWHejb4w+aY4SYtFU=
-Date: Wed, 2 Jun 2010 23:49:56 +0400
-From: Cyrill Gorcunov <gorcunov@gmail.com>
-To: Prarit Bhargava <prarit@redhat.com>
-Cc: linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org, mjg@redhat.com,
-       x86@kernel.org
-Subject: Re: [PATCH]: x86: use acpi flags for apic mapping
-Message-ID: <20100602194956.GB5264@lenovo>
-References: <20100602192418.2706.35192.sendpatchset@prarit.bos.redhat.com>
+	Wed, 2 Jun 2010 15:53:37 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=mime-version:in-reply-to:references:date:message-id:subject:from:to:
+	cc:content-type:x-system-of-record;
+	b=B3Cat/ddeQevVeoiKmDGDJVm/6FPWAntrw+MNhxyYgnxBuv5eFu+beZoz0vrJXRoY
+	ticUlzR4W2+IwTfTYihmA==
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100602192418.2706.35192.sendpatchset@prarit.bos.redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <20100602140659.GA5324@redhat.com>
+References: <20100530013002.GA762@ghc01.ghc.andrew.cmu.edu>
+	<20100530013303.GC762@ghc01.ghc.andrew.cmu.edu>
+	<20100531175242.GA14691@redhat.com>
+	<20100531180446.GA16249@redhat.com>
+	<AANLkTimcrX0TjzDMNJdubR92pAO4IPATbVpyvvVt0qIV@mail.gmail.com>
+	<20100602140659.GA5324@redhat.com>
+Date: Wed, 2 Jun 2010 12:53:33 -0700
+Message-ID: <AANLkTin-T6ij3xf0ceGoCamwcoayxyf0GdAKY6yXDMVl@mail.gmail.com>
+Subject: Re: [RFC] [PATCH 2/2] cgroups: make procs file writable
+From: Paul Menage <menage@google.com>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Ben Blum <bblum@andrew.cmu.edu>, linux-kernel@vger.kernel.org,
+       containers@lists.linux-foundation.org, akpm@linux-foundation.org,
+       ebiederm@xmission.com, lizf@cn.fujitsu.com, matthltc@us.ibm.com
+Content-Type: text/plain; charset=ISO-8859-1
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 02, 2010 at 03:29:27PM -0400, Prarit Bhargava wrote:
-> ACPI FADT has entries to describe the apic mapping of a system.  Currently,
-> these are ignored in the apic code.
-> 
-> Introduce apic_is_acpi_clustered_box() and read the FADT to determine
-> if a box is clustered or not.
-> 
-> Signed-off-by: Prarit Bhargava <prarit@redhat.com>
-> 
-> diff --git a/arch/x86/include/asm/apic.h b/arch/x86/include/asm/apic.h
-> index 1fa03e0..4518683 100644
-> --- a/arch/x86/include/asm/apic.h
-> +++ b/arch/x86/include/asm/apic.h
-> @@ -252,6 +252,14 @@ static inline int apic_is_clustered_box(void)
->  }
->  #endif
->  
-> +enum apic_acpi_map_status {
-> +	APIC_ACPI_BOTH,
-> +	APIC_ACPI_CLUSTER,
-> +	APIC_ACPI_PHYSICAL,
-> +	APIC_ACPI_NONE
-> +};
-> +extern enum apic_acpi_map_status apic_is_acpi_clustered_box(void);
-> +
->  extern u8 setup_APIC_eilvt_mce(u8 vector, u8 msg_type, u8 mask);
->  extern u8 setup_APIC_eilvt_ibs(u8 vector, u8 msg_type, u8 mask);
->  
-> diff --git a/arch/x86/kernel/apic/apic.c b/arch/x86/kernel/apic/apic.c
-> index e5a4a1e..6ca346a 100644
-> --- a/arch/x86/kernel/apic/apic.c
-> +++ b/arch/x86/kernel/apic/apic.c
-> @@ -2189,6 +2189,30 @@ static const __cpuinitconst struct dmi_system_id multi_dmi_table[] = {
->  	{}
->  };
->  
-> +#ifdef CONFIG_ACPI
-> +enum apic_acpi_map_status apic_is_acpi_clustered_box(void)
-> +{
+On Wed, Jun 2, 2010 at 7:06 AM, Oleg Nesterov <oleg@redhat.com> wrote:
+>
+> Yes sure, I understand this part. cgroup_attach_task() correctly checks
+> PF_EXITING under task_lock(), this protects from the case when this
+> task has already passed cgroup_exit() which takes this lock too.
 
-It's a bit strange that function is "is" prefixed and returns not true or false
-but enum, perhaps we may name it apic_acpi_dst_model() or something like
-that?
+Right.
 
-> +	if (acpi_gbl_FADT.header.revision >= FADT2_REVISION_ID) {
-> +		if (acpi_gbl_FADT.flags & ACPI_FADT_APIC_PHYSICAL &&
-> +		    acpi_gbl_FADT.flags & ACPI_FADT_APIC_CLUSTER) {
-> +			/*
-> +			 * The rest of the code assumes physical flat
-> +			 * in this case.
-> +			 */
-> +			return APIC_ACPI_BOTH;
-> +		}
-> +
-> +		if (acpi_gbl_FADT.flags & ACPI_FADT_APIC_CLUSTER)
-> +			return APIC_ACPI_CLUSTER;
-> +
-> +		if (acpi_gbl_FADT.flags & ACPI_FADT_APIC_PHYSICAL)
-> +			return APIC_ACPI_PHYSICAL;
-> +	}
-> +
-> +	return APIC_ACPI_NONE;
-> +}
-> +#endif
-> +
->  static void __cpuinit dmi_check_multi(void)
->  {
->  	if (multi_checked)
-> @@ -2208,6 +2232,20 @@ static void __cpuinit dmi_check_multi(void)
->   */
->  __cpuinit int apic_is_clustered_box(void)
->  {
-> +#ifdef CONFIG_ACPI
-> +	switch (apic_is_acpi_clustered_box()) {
-> +		case APIC_ACPI_PHYSICAL:
-> +		case APIC_ACPI_BOTH: /* assume physical flat in this case */
-> +			return 0;
-> +			break;
-> +		case APIC_ACPI_CLUSTER:
-> +			return 1;
-> +			break;
-> +		default:
-> +			break;
-> +	}
-> +#endif
-> +
->  	dmi_check_multi();
->  	if (multi)
->  		return 1;
-> diff --git a/arch/x86/kernel/apic/apic_flat_64.c b/arch/x86/kernel/apic/apic_flat_64.c
-> index 09d3b17..80e291a 100644
-> --- a/arch/x86/kernel/apic/apic_flat_64.c
-> +++ b/arch/x86/kernel/apic/apic_flat_64.c
-> @@ -231,14 +231,32 @@ static int physflat_acpi_madt_oem_check(char *oem_id, char *oem_table_id)
->  {
->  #ifdef CONFIG_ACPI
->  	/*
-> -	 * Quirk: some x86_64 machines can only use physical APIC mode
-> -	 * regardless of how many processors are present (x86_64 ES7000
-> -	 * is an example).
-> +	 * Some x86_64 machines can only use clustered or physical APIC
-> +	 * mode regardless of how many processors are present.
->  	 */
+>
+> But. This exactly means that the PF_EXITING check in attach_task_by_pid()
+> is not necessary from the correctness pov (while probably can be considered
+> as optimization), right?
 
-Hmm, was it really needed to remove ES7000 from comment? Keep it here please.
+For the value of correctness that was relevant when writing that code
+originally, I think it's fine. But ...
 
-> -	if (acpi_gbl_FADT.header.revision >= FADT2_REVISION_ID &&
-> -		(acpi_gbl_FADT.flags & ACPI_FADT_APIC_PHYSICAL)) {
-> -		printk(KERN_DEBUG "system APIC only can use physical flat");
-> -		return 1;
-> +	switch (apic_is_acpi_clustered_box()) {
-> +		case APIC_ACPI_BOTH:
-> +			printk(KERN_WARNING FW_BUG "ACPI has set apic mode to "
-> +			       "both clustered and physical flat.  Please "
-> +			       "contact your firmware vendor for an update.\n");
-> +			/*
-> +			 * In this case assume physical flat as only a very
-> +			 * limited number of systems use cluster
-> +			 */
-> +			printk(KERN_DEBUG "system APIC using physical flat\n");
-> +			return 1;
-> +			break;
-> +		case APIC_ACPI_CLUSTER:
-> +			printk(KERN_DEBUG "system APIC can only use cluster\n");
-> +			return 0;
-> +			break;
-> +		case APIC_ACPI_PHYSICAL:
-> +			printk(KERN_DEBUG "system APIC can only use physical"
-> +			       " flat\n");
-> +			return 1;
-> +			break;
-> +		default:
-> +			break;
->  	}
->  
->  	if (!strncmp(oem_id, "IBM", 3) && !strncmp(oem_table_id, "EXA", 3)) {
+> I am not sure. It doesn't hurt when we try to move a thread. But if
+> we want to move the whole thread group, we should proceed even if the
+> group leader has already exited and thus has PF_EXITING bit set.
 
-	-- Cyrill
+Hmm, maybe. I could see this being argued both ways. Can the process
+hang around indefinitely with the leader as a zombie and the other
+threads still running?
+
+It wouldn't be that hard to make it possible to avoid relying on
+PF_EXITING as the check - instead we'd have an exiting_css_set object
+that have the same pointer set as init_css_set, but would be
+distinguishable from it as a task->cgroups pointer by virtue of being
+a different object. Then cgroup_exit() can reassign tasks to point to
+exiting_css_set rather than init_css_set, and the various checks that
+are currently made for (task->flags & PF_EXITING) could check for
+(task->cgroups == exiting_css_set) instead. This would allow task
+movement further into the exit process.
+
+Paul
