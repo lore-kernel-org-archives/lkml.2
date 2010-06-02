@@ -1,141 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758854Ab0FBXmh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jun 2010 19:42:37 -0400
-Received: from troy.hostgo.com ([64.62.143.130]:43292 "EHLO troy.hostgo.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754989Ab0FBXmg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jun 2010 19:42:36 -0400
-From: Thomas Fjellstrom <tfjellstrom@strangesoft.net>
-To: Robert Hancock <hancockrwd@gmail.com>
-Subject: Re: failed command FLUSH CACHE EXT (was: Re: via 8237 sata errors)
-Date: Wed, 2 Jun 2010 17:42:31 -0600
-User-Agent: KMail/1.13.3 (Linux/2.6.34-0.dmz.6-liquorix-amd64; KDE/4.4.3; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org, linux-ide@vger.kernel.org
-References: <201005292046.06344.tfjellstrom@strangesoft.net> <201006021510.52463.tfjellstrom@strangesoft.net> <AANLkTingFbJAr9z0AzRJCV23FGVS-UAvIKCr5ULQJawt@mail.gmail.com>
-In-Reply-To: <AANLkTingFbJAr9z0AzRJCV23FGVS-UAvIKCr5ULQJawt@mail.gmail.com>
+	id S1758901Ab0FBXnT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jun 2010 19:43:19 -0400
+Received: from mail-pz0-f185.google.com ([209.85.222.185]:64737 "EHLO
+	mail-pz0-f185.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754989Ab0FBXnS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Jun 2010 19:43:18 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=cJaf4X7jirFR7pk5hVDgqSo+yPaQYJ1nCFtG+MJsKQmGp3BuidYfGO+fOAi7g7Nmih
+         oOJrCq/5FVaLDha35C0dqoJoqqu0iMFj73uRIzsGMZkCzT2+2FAA7+do75vVyh7iLBUk
+         89rMm22yCqZP9Yo8hVGmJNcbzYAOkcPgENS7U=
+Message-ID: <4C06ECAA.3060708@gmail.com>
+Date: Wed, 02 Jun 2010 16:43:38 -0700
+From: "Justin P. Mattock" <justinmattock@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.4pre) Gecko/20091114 Lightning/1.0pre Thunderbird/3.0b4
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+To: Robert Hancock <hancockrwd@gmail.com>
+CC: Matthew Garrett <mjg59@srcf.ucam.org>, x86@kernel.org, tglx@linutronix.de,
+       linux-kernel@vger.kernel.org
+Subject: Re: [PATCH]X86:reboot.c Add some dmi entries to pci_reboot_dmi_table.
+References: <20100601192101.GA15086@srcf.ucam.org>	<4C056839.8020605@gmail.com>	<20100601200704.GA16091@srcf.ucam.org>	<4C056AE6.3000409@gmail.com>	<20100601202130.GA16391@srcf.ucam.org>	<4C056E0C.2030709@gmail.com>	<20100601203351.GA16575@srcf.ucam.org>	<4C0572B4.6000201@gmail.com>	<20100601211219.GA17719@srcf.ucam.org>	<4C057AE9.9020307@gmail.com>	<20100601212901.GA18390@srcf.ucam.org>	<4C057EF0.2030808@gmail.com>	<4C05E800.1010400@gmail.com>	<4C05F3BF.6090503@gmail.com> <AANLkTinyxtHQrsgvV0CMQZnyEelVnrpCTM05PLAj-ZYx@mail.gmail.com>
+In-Reply-To: <AANLkTinyxtHQrsgvV0CMQZnyEelVnrpCTM05PLAj-ZYx@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-Message-Id: <201006021742.32232.tfjellstrom@strangesoft.net>
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - troy.hostgo.com
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - strangesoft.net
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On June 2, 2010, Robert Hancock wrote:
-> On Wed, Jun 2, 2010 at 3:10 PM, Thomas Fjellstrom
-> 
-> <tfjellstrom@strangesoft.net> wrote:
-> > Ok, more testing, I've moved the drives over to the p35 machine semi-
-> > permanently, and after a day or so of uptime I got some new errors:
-> > 
-> > ata3.00: exception Emask 0x0 SAct 0x0 SErr 0x0 action 0x6 frozen
-> > ata3.00: failed command: FLUSH CACHE EXT
-> > ata3.00: cmd ea/00:00:00:00:00/00:00:00:00:00/a0 tag 0
-> >         res 40/00:00:00:00:00/00:00:00:00:00/00 Emask 0x4 (timeout)
-> > ata3.00: status: { DRDY }
-> > ata3: hard resetting link
-> > ata3: link is slow to respond, please be patient (ready=0)
-> > ata3: SRST failed (errno=-16)
-> > ata3: hard resetting link
-> > ata3: link is slow to respond, please be patient (ready=0)
-> > ata3: SRST failed (errno=-16)
-> > ata3: hard resetting link
-> > ata3: link is slow to respond, please be patient (ready=0)
-> > ata3: SRST failed (errno=-16)
-> > ata3: limiting SATA link speed to 1.5 Gbps
-> > ata3: hard resetting link
-> > ata3: SRST failed (errno=-16)
-> > ata3: reset failed, giving up
-> > ata3.00: disabled
-> > ata3.00: device reported invalid CHS sector 0
-> > ata3: EH complete
-> > end_request: I/O error, dev sdc, sector 0
-> > sd 2:0:0:0: [sdc] Unhandled error code
-> > sd 2:0:0:0: [sdc] Result: hostbyte=DID_BAD_TARGET driverbyte=DRIVER_OK
-> > sd 2:0:0:0: [sdc] CDB: Write(10): 2a 00 00 00 07 a7 00 00 08 00
-> > end_request: I/O error, dev sdc, sector 1959
-> > Buffer I/O error on device dm-0, logical block 189
-> > lost page write due to I/O error on dm-0
-> > end_request: I/O error, dev sdc, sector 0
-> > end_request: I/O error, dev sdc, sector 0
-> > JBD2 unexpected failure: do_get_write_access:
-> > buffer_uptodate(jh2bh(jh)); Possible IO failure.
-> > 
-> > end_request: I/O error, dev sdc, sector 0
-> > end_request: I/O error, dev sdc, sector 0
-> > ------------[ cut here ]------------
-> > WARNING: at /home/damentz/src/zen/main/linux-
-> > liquorix-2.6-2.6.34/debian/build/source_amd64_none/fs/buffer.c:1199
-> > mark_buffer_dirty+0x74/0x90()
-> > Hardware name: P5K SE
-> > Modules linked in: nfs lockd fscache nfs_acl auth_rpcgss sunrpc ipv6
-> > acpi_cpufreq cpufreq_ondemand freq_table cpufreq_conservative
-> > cpufreq_userspace cpufreq_powersave af_packet ext3 jbd loop
-> > snd_hda_codec_realtek snd_hda_intel snd_hda_codec snd_hwdep snd_pcm_oss
-> > snd_mixer_oss snd_pcm rtc_cmos rtc_core snd_timer tpm_tis nvidia(P) tpm
-> > rtc_lib tpm_bios evdev snd intel_agp pcspkr asus_atk0110 soundcore
-> > i2c_i801 snd_page_alloc button i2c_core processor dm_mod raid10
-> > raid456 async_raid6_recov async_pq raid6_pq async_xor xor async_memcpy
-> > async_tx raid1 raid0 multipath linear md_mod ext4 mbcache jbd2 crc16
-> > usbhid sd_mod ata_generic pata_acpi uhci_hcd ata_piix libata floppy
-> > scsi_mod thermal atl1 mii ehci_hcd [last unloaded: scsi_wait_scan]
-> > Pid: 3283, comm: jbd2/dm-0-8 Tainted: P          
-> > 2.6.34-0.dmz.8-liquorix- amd64 #1
-> > Call Trace:
-> >  [<ffffffff8103bf23>] ? warn_slowpath_common+0x73/0xb0
-> >  [<ffffffff81101cd4>] ? mark_buffer_dirty+0x74/0x90
-> >  [<ffffffffa005a3c9>] ? __jbd2_journal_unfile_buffer+0x9/0x20 [jbd2]
-> >  [<ffffffffa005d8a3>] ? jbd2_journal_commit_transaction+0xba3/0x12d0
-> > [jbd2] [<ffffffff810542d0>] ? autoremove_wake_function+0x0/0x30
-> >  [<ffffffffa0061701>] ? kjournald2+0xb1/0x210 [jbd2]
-> >  [<ffffffff810542d0>] ? autoremove_wake_function+0x0/0x30
-> >  [<ffffffffa0061650>] ? kjournald2+0x0/0x210 [jbd2]
-> >  [<ffffffff81053e3e>] ? kthread+0x8e/0xa0
-> >  [<ffffffff81033e8d>] ? schedule_tail+0x4d/0xf0
-> >  [<ffffffff81003c94>] ? kernel_thread_helper+0x4/0x10
-> >  [<ffffffff81053db0>] ? kthread+0x0/0xa0
-> >  [<ffffffff81003c90>] ? kernel_thread_helper+0x0/0x10
-> > ---[ end trace c90e4c710c9ef513 ]---
-> > end_request: I/O error, dev sdc, sector 0
-> > 
-> > (and plenty more dmesg lines from lvm and ext4/jbd2 screaming about the
-> > io commands failing)
-> > 
-> > I take it that this means the drive is likely pooched? I'm going to try
-> > some more tests, and make sure both of the WD drives are on their own
-> > power cable first. but I'm betting now that the drive is just failing.
-> > This would make 2 out of 4 in the same batch that had issues. The
-> > first one would increase the sector reallocated count 4 every hour or
-> > so. Now this one fails a flush cache command (and other spurious
-> > errors).
-> > 
-> > I guess its time to break out the WD diagnostics disk.
-> 
-> I think it's a fairly safe assumption there's something wrong with the
-> drive - it looks like the drive just pretty much stopped talking..
+On 06/02/2010 04:18 PM, Robert Hancock wrote:
+> On Wed, Jun 2, 2010 at 12:01 AM, Justin P. Mattock
+> <justinmattock@gmail.com>  wrote:
+>>> Can you post the FACP section of the acpidump output from this machine?
+>>>
+>>
+>> here you go:
+>>
+>
+>
+>>              Reset Register Supported (V2) : 1
+>
+>> [074h 116 12]               Reset Register :<Generic Address Structure>
+>> [074h 116  1]                     Space ID : 01 (SystemIO)
+>> [075h 117  1]                    Bit Width : 08
+>> [076h 118  1]                   Bit Offset : 00
+>> [077h 119  1]                 Access Width : 00
+>> [078h 120  8]                      Address : 0000000000000CF9
+>>
+>> [080h 128  1]         Value to cause reset : 06
+>
+> Hmm, so the FADT says the reset register is listed as supported, and
+> says writing 0x06 to 0xCF9 is supposed to do it.. That's exactly what
+> this should do:
+>
+> #include<sys/io.h>
+>
+> int main() {
+>      iopl(3);
+>      outb(6, 0xcf9);
+>      return 0;
+> }
+>
+> but you said that didn't do anything.. It kind of seems like ACPI
+> reboot is busted on this machine then, but then I wonder how Windows
+> manages to work..
+>
 
-I've only managed to see that error once though. The last few times I've 
-booted that machine I get the same old DMA error messages I posted before.
 
-Unfortunately I haven't been able to run the WD Diagnostics thing on it so 
-far, it either takes an age to load, or hangs at the screen prior to the 
-license screen.
+alright!! I have a better idea at what this is now..
+as for the above code, yes this one segfaults,
+the other code posted on the thread just returns
+a command prompt(testing:
 
-I seem to have rather bad luck with hard drives. Every time I buy more than 
-two, I tend to get one or two failures out of the batch. 25-50% failure rate 
-almost. Horrible. I at least average 1 dead hard drive a year since I got my 
-first computer.
+#include <sys/io.h>
 
--- 
-Thomas Fjellstrom
-tfjellstrom@strangesoft.net
+int main() {
+     iopl(3);
+     outb(0xfe, 0xcf9);
+     return 0;
+}
+on a dell reboot's as is.)
+
+both my macbook, and imac are
+broken with the above.(but for whatever
+reason the macbook doesnt need an dmi entry
+in reboot.c just iMac9,1 etc..)
+
+so the address for the CF9 is this:
+
+[074h 116 12]               Reset Register : <Generic Address Structure>
+[074h 116  1]                     Space ID : 01 (SystemIO)
+[075h 117  1]                    Bit Width : 08
+[076h 118  1]                   Bit Offset : 00
+[077h 119  1]                 Access Width : 00
+[078h 120  8]                      Address : 0000000000000CF9
+
+[080h 128  1]         Value to cause reset : 06
+[081h 129  3]                     Reserved : 000000
+[084h 132  8]                 FACS Address : 00000000BFECD000
+[08Ch 140  8]                 DSDT Address : 00000000BFEE0000
+[094h 148 12]             PM1A Event Block : <Generic Address Structure>
+[094h 148  1]                     Space ID : 01 (SystemIO)
+[095h 149  1]                    Bit Width : 20
+[096h 150  1]                   Bit Offset : 00
+[097h 151  1]                 Access Width : 00
+[098h 152  8]                      Address : 0000000000000400
+
+not sure how to read this, but are there
+two devices here i.g.
+is the top a cold boot(reset register) and
+the bottom(value to cause reset) a warm boot?
+
+at the moment I'm trying to figure out what/where
+*((unsigned short *)__va(0x472)) = reboot_mode;
+0x472 comes from as well as 0x1234 then
+#define KBD_STATUS_REG                0x64
+to see if I can see anything.
+
+
+thanks for the info on this..
+
+Justin P. Mattock
+
