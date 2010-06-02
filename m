@@ -1,101 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932642Ab0FBP46 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jun 2010 11:56:58 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:63697 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758150Ab0FBP44 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jun 2010 11:56:56 -0400
-Date: Wed, 2 Jun 2010 17:54:55 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
-       David Rientjes <rientjes@google.com>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-       Nick Piggin <npiggin@suse.de>
-Subject: Re: [PATCH] oom: remove PF_EXITING check completely
-Message-ID: <20100602155455.GB9622@redhat.com>
-References: <20100601093951.2430.A69D9226@jp.fujitsu.com> <20100601201843.GA20732@redhat.com> <20100602200732.F518.A69D9226@jp.fujitsu.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100602200732.F518.A69D9226@jp.fujitsu.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1758403Ab0FBP6v (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jun 2010 11:58:51 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:49415 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752995Ab0FBP6t convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Jun 2010 11:58:49 -0400
+Date: Wed, 2 Jun 2010 08:57:48 -0700
+From: Randy Dunlap <randy.dunlap@oracle.com>
+To: Nobin Mathew <nobin.mathew@gmail.com>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: make ARM=arm menuconfig problem in mainline
+Message-Id: <20100602085748.6771e025.randy.dunlap@oracle.com>
+In-Reply-To: <AANLkTilEYHVHJrj_KgF48OYCSEUcsKLi57Q_Y73d9va-@mail.gmail.com>
+References: <AANLkTikC61Y9g-WbqwgGDghDSy2XtgraFSRoZYkHRGTG@mail.gmail.com>
+	<AANLkTilEYHVHJrj_KgF48OYCSEUcsKLi57Q_Y73d9va-@mail.gmail.com>
+Organization: Oracle Linux Eng.
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-Auth-Type: Internal IP
+X-Source-IP: acsinet15.oracle.com [141.146.126.227]
+X-CT-RefId: str=0001.0A090202.4C067FB5.0150:SCFMA922111,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/02, KOSAKI Motohiro wrote:
->
-> Today, I've thought to make some bandaid patches for this issue. but
-> yes, I've reached the same conclusion.
->
-> If we think multithread and core dump situation, all fixes are just
-> bandaid. We can't remove deadlock chance completely.
->
-> The deadlock is certenaly worst result, then, minor PF_EXITING optimization
-> doesn't have so much worth.
+On Wed, 2 Jun 2010 20:04:28 +0530 Nobin Mathew wrote:
 
-Agreed! I was always wondering if it really helps in practice.
+> adding linux-arm-kernel@lists.infradead.org
+> 
+> Hi,
+> 
+> The following entry creates problem in ARM System type menu. I am
+> using a Fedora 12 system.
+
+What kind of problem does it create?
+It seems to work for me (on f11, not f12).
+Does it have something to do with F12 specifically?
 
 
-> Subject: [PATCH] oom: remove PF_EXITING check completely
->
-> PF_EXITING is wrong check if the task have multiple threads. This patch
-> removes it.
->
-> Suggested-by: Oleg Nesterov <oleg@redhat.com>
-> Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-> Cc: Nick Piggin <npiggin@suse.de>
-> ---
->  mm/oom_kill.c |   27 ---------------------------
->  1 files changed, 0 insertions(+), 27 deletions(-)
->
-> diff --git a/mm/oom_kill.c b/mm/oom_kill.c
-> index 9e7f0f9..b06f8d1 100644
-> --- a/mm/oom_kill.c
-> +++ b/mm/oom_kill.c
-> @@ -302,24 +302,6 @@ static struct task_struct *select_bad_process(unsigned long *ppoints,
->  		if (test_tsk_thread_flag(p, TIF_MEMDIE))
->  			return ERR_PTR(-1UL);
->
-> -		/*
-> -		 * This is in the process of releasing memory so wait for it
-> -		 * to finish before killing some other task by mistake.
-> -		 *
-> -		 * However, if p is the current task, we allow the 'kill' to
-> -		 * go ahead if it is exiting: this will simply set TIF_MEMDIE,
-> -		 * which will allow it to gain access to memory reserves in
-> -		 * the process of exiting and releasing its resources.
-> -		 * Otherwise we could get an easy OOM deadlock.
-> -		 */
-> -		if ((p->flags & PF_EXITING) && p->mm) {
-> -			if (p != current)
-> -				return ERR_PTR(-1UL);
-> -
-> -			chosen = p;
-> -			*ppoints = ULONG_MAX;
-> -		}
-> -
->  		points = badness(p, uptime.tv_sec);
->  		if (points > *ppoints || !chosen) {
->  			chosen = p;
-> @@ -436,15 +418,6 @@ static int oom_kill_process(struct task_struct *p, gfp_t gfp_mask, int order,
->  	if (printk_ratelimit())
->  		dump_header(p, gfp_mask, order, mem);
->
-> -	/*
-> -	 * If the task is already exiting, don't alarm the sysadmin or kill
-> -	 * its children or threads, just set TIF_MEMDIE so it can die quickly
-> -	 */
-> -	if (p->flags & PF_EXITING) {
-> -		__oom_kill_process(p, mem, 0);
-> -		return 0;
-> -	}
-> -
->  	printk(KERN_ERR "%s: kill process %d (%s) score %li or a child\n",
->  					message, task_pid_nr(p), p->comm, points);
->
-> --
+> Length of bool "Samsung S3C2410, S3C2412, S3C2413, S3C2416, S3C2440,
+> S3C2442, S3C2443, S3C2450" is the problem. How can I fix it.
 
+Describe the problem, please.
+
+> config ARCH_S3C2410
+>        bool "Samsung S3C2410, S3C2412, S3C2413, S3C2416, S3C2440,
+> S3C2442, S3C2443, S3C2450"
+>        select GENERIC_GPIO
+>        select ARCH_HAS_CPUFREQ
+>        select HAVE_CLK
+>        select ARCH_USES_GETTIMEOFFSET
+>        help
+>          Samsung S3C2410X CPU based systems, such as the Simtec Electronics
+>          BAST (<http://www.simtec.co.uk/products/EB110ITX/>), the IPAQ 1940 or
+>          the Samsung SMDK2410 development board (and derivatives).
+> 
+>          Note, the S3C2416 and the S3C2450 are so close that they even share
+>          the same SoC ID code. This means that there is no seperate machine
+>          directory (no arch/arm/mach-s3c2450) as the S3C2416 was first.
+
+
+---
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
