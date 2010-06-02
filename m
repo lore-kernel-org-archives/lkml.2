@@ -1,58 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758302Ab0FBOda (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jun 2010 10:33:30 -0400
-Received: from smtp-out.google.com ([74.125.121.35]:37393 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757893Ab0FBOd2 (ORCPT
+	id S1758316Ab0FBOec (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jun 2010 10:34:32 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:55898 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757893Ab0FBOea convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jun 2010 10:33:28 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=message-id:from:date:to:reply-to:cc:subject:x-system-of-record;
-	b=w8ZXEs/XhCDqoaOiDOSh9hcgRJ8z0YhoKJxphr/CvyUqnElYXiPq0myNRogVDn4xB
-	tU7RoULu32WdSIfxoeYuA==
-Message-ID: <4c066bb2.5cebd80a.19ec.45d8@mx.google.com>
-From: Stephane Eranian <eranian@google.com>
-Date: Wed, 2 Jun 2010 16:31:01 +0200
-To: linux-kernel@vger.kernel.org
-Reply-to: eranian@google.com
-Cc: peterz@infradead.org, mingo@elte.hu, paulus@samba.org, davem@davemloft.net,
-       fweisbec@gmail.com, acme@infradead.org, perfmon2-devel@lists.sf.net,
-       eranian@gmail.com, eranian@google.com, tzanussi@gmail.com
-Subject: [PATCH] perf: avoid assertion for -p option in perf stat -a
-X-System-Of-Record: true
+	Wed, 2 Jun 2010 10:34:30 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :content-type:content-transfer-encoding;
+        b=xOPb38lMMbO6xN93klQYANYICF7IqO1PhO/+/w//1GiJlxWwRZxAF4cPZDQOcfrrcP
+         oTnAlrdw0OWN1zSSUuMyvvq4odSAjdbSFrUoE8f061QDZacH23YAbs3SlPi2ENzzROhK
+         m6ZpLx96/r4NrcIfkCSmjxm+1hf3zF5hDozns=
+MIME-Version: 1.0
+In-Reply-To: <AANLkTikC61Y9g-WbqwgGDghDSy2XtgraFSRoZYkHRGTG@mail.gmail.com>
+References: <AANLkTikC61Y9g-WbqwgGDghDSy2XtgraFSRoZYkHRGTG@mail.gmail.com>
+Date: Wed, 2 Jun 2010 20:04:28 +0530
+Message-ID: <AANLkTilEYHVHJrj_KgF48OYCSEUcsKLi57Q_Y73d9va-@mail.gmail.com>
+Subject: Re: make ARM=arm menuconfig problem in mainline
+From: Nobin Mathew <nobin.mathew@gmail.com>
+To: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It was possible to use perf stat in system-wide mode with -a
-and still attach to a process (-p) or thread (-t). The issue
-is that it is not possible to get a termination signal from
-the attached task, thus the command never terminates.
-Furthermore, passing -p -a was triggering the assertion in
-read_counter().
+adding linux-arm-kernel@lists.infradead.org
 
-This patch fixes the issue by aborting perf stat if the
-parameters conflict.
+Hi,
 
-Signed-off-by: Stephane Eranian <eranian@google.com>
+The following entry creates problem in ARM System type menu. I am
+using a Fedora 12 system.
 
-diff --git a/tools/perf/builtin-stat.c b/tools/perf/builtin-stat.c
-index a6b4d44..a3b6a5f 100644
---- a/tools/perf/builtin-stat.c
-+++ b/tools/perf/builtin-stat.c
-@@ -573,6 +573,14 @@ int cmd_stat(int argc, const char **argv, const char *prefix __used)
- 	else
- 		nr_cpus = 1;
- 
-+	/*
-+	 * a system-wide session cannot be delimited via an attachment
-+	 * because we cannot get a termination notification.
-+	 * It also triggers the assertion in read_counter()
-+	 */
-+	if (system_wide && (target_tid != -1 || target_pid != -1))
-+		usage_with_options(stat_usage, options);
-+
- 	if (nr_cpus < 1)
- 		usage_with_options(stat_usage, options);
- 
+Length of bool "Samsung S3C2410, S3C2412, S3C2413, S3C2416, S3C2440,
+S3C2442, S3C2443, S3C2450" is the problem. How can I fix it.
+
+config ARCH_S3C2410
+       bool "Samsung S3C2410, S3C2412, S3C2413, S3C2416, S3C2440,
+S3C2442, S3C2443, S3C2450"
+       select GENERIC_GPIO
+       select ARCH_HAS_CPUFREQ
+       select HAVE_CLK
+       select ARCH_USES_GETTIMEOFFSET
+       help
+         Samsung S3C2410X CPU based systems, such as the Simtec Electronics
+         BAST (<http://www.simtec.co.uk/products/EB110ITX/>), the IPAQ 1940 or
+         the Samsung SMDK2410 development board (and derivatives).
+
+         Note, the S3C2416 and the S3C2450 are so close that they even share
+         the same SoC ID code. This means that there is no seperate machine
+         directory (no arch/arm/mach-s3c2450) as the S3C2416 was first.
+
+Thanks
+Nobin
