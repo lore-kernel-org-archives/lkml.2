@@ -1,38 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754386Ab0FBGQh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jun 2010 02:16:37 -0400
-Received: from ozlabs.org ([203.10.76.45]:53037 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751316Ab0FBGQg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jun 2010 02:16:36 -0400
-From: Rusty Russell <rusty@rustcorp.com.au>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Subject: Re: [PATCH] module: module_unload_init() cleanup
-Date: Wed, 2 Jun 2010 15:46:33 +0930
-User-Agent: KMail/1.13.2 (Linux/2.6.32-21-generic; KDE/4.4.2; i686; ; )
-Cc: "linux-kernel" <linux-kernel@vger.kernel.org>, Tejun Heo <tj@kernel.org>,
-       Nick Piggin <npiggin@suse.de>
-References: <1275456740.2638.143.camel@edumazet-laptop>
-In-Reply-To: <1275456740.2638.143.camel@edumazet-laptop>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
+	id S1755512Ab0FBGRT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jun 2010 02:17:19 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:46080 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752125Ab0FBGRS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Jun 2010 02:17:18 -0400
+Date: Tue, 1 Jun 2010 23:16:00 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Doug Doan <dougd@cray.com>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org, andi@firstfloor.org,
+       lee.schermerhorn@hp.com, rientjes@google.com, mel@csn.ul.ie,
+       Andrea Arcangeli <andrea@redhat.com>
+Subject: Re: [PATCH] hugetlb: call mmu notifiers on hugepage cow
+Message-Id: <20100601231600.3b3bf499.akpm@linux-foundation.org>
+In-Reply-To: <4BFED954.8060807@cray.com>
+References: <4BFED954.8060807@cray.com>
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-Message-Id: <201006021546.34363.rusty@rustcorp.com.au>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2 Jun 2010 03:02:20 pm Eric Dumazet wrote:
-> No need to clear mod->refptr in module_unload_init(), since
-> alloc_percpu() already clears allocated chunks.
+On Thu, 27 May 2010 13:43:00 -0700 Doug Doan <dougd@cray.com> wrote:
+
 > 
-> Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
+> When a copy-on-write occurs, we take one of two paths in handle_mm_fault: 
+> through handle_pte_fault for normal pages, or through hugetlb_fault for huge pages.
+> 
+> In the normal page case, we eventually get to do_wp_page and call mmu notifiers 
+> via ptep_clear_flush_notify. There is no callout to the mmmu notifiers in the 
+> huge page case. This patch fixes that.
+> 
+> Signed-off-by: Doug Doan <dougd@cray.com>
+> ---
+> 
+> [patch  text/plain (802B)]
+> --- mm/hugetlb.c.orig	2010-05-27 13:07:58.569546314 -0700
+> +++ mm/hugetlb.c	2010-05-26 14:41:06.449296524 -0700
 
-Thanks, applied!
+(In patch -p1 form, please.  So a/mm/hugetlb.c)
 
-I know it's trivial, but you should have cc'd Nick since this was his patch.
+> @@ -2345,11 +2345,17 @@ retry_avoidcopy:
+>  	ptep = huge_pte_offset(mm, address & huge_page_mask(h));
+>  	if (likely(pte_same(huge_ptep_get(ptep), pte))) {
+>  		/* Break COW */
+> +		mmu_notifier_invalidate_range_start(mm,
+> +			address & huge_page_mask(h),
+> +			(address & huge_page_mask(h)) + huge_page_size(h));
+>  		huge_ptep_clear_flush(vma, address, ptep);
+>  		set_huge_pte_at(mm, address, ptep,
+>  				make_huge_pte(vma, new_page, 1));
+>  		/* Make the old page be freed below */
+>  		new_page = old_page;
+> +		mmu_notifier_invalidate_range_end(mm,
+> +			address & huge_page_mask(h),
+> +			(address & huge_page_mask(h)) + huge_page_size(h));
+>  	}
+>  	page_cache_release(new_page);
+>  	page_cache_release(old_page);
 
-Cheers,
-Rusty.
+This causes mmu_notifier_invalidate_range_start() to be called under
+page_table_lock.  The immediately preceding code seems to take some
+care to avoid doing that.  I took a quick look at other callsites and
+cannot immediately see other cases where
+mmu_notifier_invalidate_range_start/end() are called under that lock.
+
+This may not introduce bugs with current notifier implementations (I
+didn't check), but it does lessen flexibility?
+
