@@ -1,192 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932414Ab0FBKX2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jun 2010 06:23:28 -0400
-Received: from smtp.nokia.com ([192.100.105.134]:59012 "EHLO
-	mgw-mx09.nokia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932402Ab0FBKXY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jun 2010 06:23:24 -0400
-Message-ID: <4C063104.4010903@nokia.com>
-Date: Wed, 02 Jun 2010 13:23:00 +0300
-From: Dmitry Kasatkin <dmitry.kasatkin@nokia.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.9) Gecko/20100423 Thunderbird/3.0.4
+	id S1757811Ab0FBK0Q (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jun 2010 06:26:16 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:9614 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757256Ab0FBK0O (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Jun 2010 06:26:14 -0400
+Date: Wed, 2 Jun 2010 13:21:44 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Joerg Roedel <joro@8bytes.org>
+Cc: Avi Kivity <avi@redhat.com>, Tom Lyon <pugs@cisco.com>,
+       linux-kernel@vger.kernel.org, kvm@vger.kernel.org, chrisw@sous-sol.org,
+       hjk@linutronix.de, gregkh@suse.de, aafabbri@cisco.com,
+       scofeldm@cisco.com
+Subject: Re: [PATCH] VFIO driver: Non-privileged user level PCI drivers
+Message-ID: <20100602102144.GD29023@redhat.com>
+References: <20100530130332.GM27611@redhat.com> <4C026497.8070901@redhat.com> <20100530145309.GO27611@redhat.com> <4C03A285.7060902@redhat.com> <20100531171007.GA6516@redhat.com> <4C04C085.1030107@redhat.com> <20100601095532.GA9178@redhat.com> <20100602094201.GC964@8bytes.org> <20100602095312.GA25335@redhat.com> <20100602101940.GG964@8bytes.org>
 MIME-Version: 1.0
-To: ext Shaz <shazalive@gmail.com>
-CC: ext Mimi Zohar <zohar@linux.vnet.ibm.com>,
-       James Morris <jmorris@namei.org>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       "linux-security-module@vger.kernel.org" 
-	<linux-security-module@vger.kernel.org>,
-       David Safford <safford@watson.ibm.com>,
-       Dave Hansen <dave@linux.vnet.ibm.com>,
-       Arjan van de Ven <arjan@infradead.org>,
-       securityengineeringresearchgroup 
-	<securityengineeringresearchgroup@googlegroups.com>
-Subject: Re: [PATCH 00/14] EVM
-References: <1271886594-3719-1-git-send-email-zohar@linux.vnet.ibm.com>	<alpine.LRH.2.00.1005311017530.24571@tundra.namei.org>	<AANLkTil8LHjRT_PMosymmtBb1pxIzkBaWC0ef35DCBUU@mail.gmail.com>	<AANLkTil7WvVZ-3zpA0E--fUcHTqul3pnXnPm1xXn_vlH@mail.gmail.com>	<1275420536.28134.37.camel@localhost.localdomain>	<4C060224.4090601@nokia.com>	<AANLkTikuXjWTEfYG2JLNW6znGGKNxzobw3ijCpG7u1xz@mail.gmail.com>	<4C062092.2030608@nokia.com> <AANLkTilnHzSqAPAS8Wf9u_7os1F-0ZGizOA1Uz5v64Cz@mail.gmail.com>
-In-Reply-To: <AANLkTilnHzSqAPAS8Wf9u_7os1F-0ZGizOA1Uz5v64Cz@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 02 Jun 2010 10:22:58.0111 (UTC) FILETIME=[924F1CF0:01CB023D]
-X-Nokia-AV: Clean
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100602101940.GG964@8bytes.org>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Jun 02, 2010 at 12:19:40PM +0200, Joerg Roedel wrote:
+> On Wed, Jun 02, 2010 at 12:53:12PM +0300, Michael S. Tsirkin wrote:
+> > On Wed, Jun 02, 2010 at 11:42:01AM +0200, Joerg Roedel wrote:
+> 
+> > > IMO a seperate iommu-userspace driver is a nightmare for a userspace
+> > > interface. It is just too complicated to use.
+> > 
+> > One advantage would be that we can reuse the uio framework
+> > for the devices themselves. So an existing app can just program
+> > an iommu for DMA and keep using uio for interrupts and access.
+> 
+> The driver is called UIO and not U-INTR-MMIO ;-) So I think handling
+> IOMMU mappings belongs there.
+> 
+> > > We can solve the problem
+> > > of multiple devices-per-domain with an ioctl which allows binding one
+> > > uio-device to the address-space on another.
+> > 
+> > This would imply switching an iommu domain for a device while
+> > it could potentially be doing DMA. No idea whether this can be done
+> > in a safe manner.
+> 
+> It can. The worst thing that can happen is an io-page-fault.
 
+devices might not be able to recover from this.
 
-On 02/06/10 13:15, ext Shaz wrote:
-> On Wed, Jun 2, 2010 at 2:12 PM, Dmitry Kasatkin
-> <dmitry.kasatkin@nokia.com> wrote:
->   
->> On 02/06/10 10:50, ext Shaz wrote:
->>     
->>> On Wed, Jun 2, 2010 at 12:03 PM, Dmitry Kasatkin
->>> <dmitry.kasatkin@nokia.com> wrote:
->>>
->>>       
->>>> On 01/06/10 22:28, ext Mimi Zohar wrote:
->>>>
->>>>         
->>>>> On Mon, 2010-05-31 at 15:08 +0500, Shaz wrote:
->>>>>
->>>>>
->>>>>           
->>>>>>> EVM is based on EA while Aegis does not use EA as far as I can
->>>>>>> understand from the documentation available. Can we make EVM
->>>>>>> independent of EA? Even the MAC mechanism is very different then
->>>>>>> existing LSM based mechanisms.
->>>>>>>
->>>>>>>
->>>>>>>               
->>>>>> Have a look at the following:
->>>>>>
->>>>>> http://research.nokia.com/files/NRCTR2008010.pdf
->>>>>> http://research.nokia.com/files/NRCTR2008007.pdf
->>>>>> http://lwn.net/Articles/372937/
->>>>>>
->>>>>>
->>>>>>             
->>>>> SELinux, Smack, Capabilities, and IMA all use extended attributes. The
->>>>> purpose of EVM is to detect offline tampering of these security extended
->>>>> attributes.
->>>>>
->>>>>           
->>> MeeGo/Maemo security framework does not use LSM because Maemo/MeeGo
->>> security framework only focuses at process level MAC and for that they
->>> use Dazuko as Nokia research report mentions.
->>>
->>> By the way MeeGo 1.0 has no security at the moment so one cannot be
->>> sure if they are going according to their research or what. They are
->>> also not opening the internals of their security framework. Not sure
->>> why if the whole thing is open and Linux Foundation is backing it up.
->>>
->>>
->>>       
->> Maemo/MeeGo does not do exactly what is written in that research report.
->> It has been done in parallel to our work.
->> And we do use LSM.
->>     
-> Elina was the first author of the report and she is the person who has
-> presented whatever is available from Maemo project regarding security.
-> Therefore it is very odd that your work is in parallel to the report!
->
->   
-Elena was not working for Maemo at that time.
-They had own objectives in their research.
-Then after moving to Maemo she was assigned to present maemo stuff.
-But I guess we never said that we follow that research work.
-Yeah.. might look confusing but that is how it went.
+> > Forcing iommu assignment to be done as a first step seems much saner.
+> 
+> If we force it, there is no reason why not doing it implicitly.
 
-- Dmitry
+What you describe below does 3 ioctls for what can be done with 1.
 
->> We go approval from company layers to open source the work.
->> We will see what to do next.
->>     
-> I cannot understand what the Linux Foundation will have to say about this?
->
->   
->>>>> The IMA integrity appraisal extension extends IMA with local measurement
->>>>> appraisal. The extension stores and maintains the file integrity
->>>>> measurement as an extended attribute 'security.ima', which EVM can be
->>>>> configured to protect.  Instead of storing the hash measurement as an
->>>>> extended attribute, the file hashes could be loaded in kernel memory, as
->>>>> long as the appraise policy is appropriately constrained.
->>>>>
->>>>>
->>>>>
->>>>>           
->>>> Hi,
->>>>
->>>> Maemo integrity protection solution was based on old DigSig project
->>>> which was used to verify
->>>> integrity of executables. Signed integrity measurement was embedded to
->>>> the ELF header.
->>>> When we started to develop it EVM was not available.
->>>>
->>>> And we decided to use a file to keep hashes and other info.
->>>>
->>>> Our goals were
->>>> 1. Protect also certain data files.
->>>> digsig worked only with ELF files.
->>>>
->>>> 2. Be mobile friendly
->>>> It seems faster to verify signature of one file with hashes instead of
->>>> checking signature of every EA.
->>>>
->>>>         
->>> Here Mimi can explain better because I am of the same opinion as yours
->>> if you mean that all signatures lie in one file and you check it from
->>> there. Anyways some sort of policy can reduce checking every EA ... I
->>> guess.
->>>
->>>
->>>       
->>>> 3. Persistant to offline attacks
->>>> EA can be delete. If not all files has EA then it is not possible to
->>>> detect removal
->>>>
->>>>         
->>> Availability of EA on all file systems needs some effort but it's not
->>> a big deal. I have even seen patches for yaffs2.
->>>
->>>
->>>       
->> The issue was removal.
->>     
-> EA is a filesystem functionality and if the attributes get deleted or
-> tampered than EVM will report is as un-trusted. I haven't done
-> practical work on EVM yet but this is how it should be. Mimi can
-> clarify this.
->
->   
->>>> 4. Do not use EA.
->>>> IIRC it was some problems with EA on our system and we could not use them..
->>>>
->>>>         
->>> This is a bad excuse :)
->>>
->>>
->>>       
->> Yes. not so convincing...
->>     
->>>> EVM looks very interesting and I would like also to review the code and
->>>> understand the architecture.
->>>>         
-> It is very odd that you guys are unaware of what is opensource since a decade!
->
->   
->>>> We consider possibility to use EVM if it is going to be in the kernel.
->>>>
->>>>         
->>> Please do have a look because we need these features too but in a
->>> light weight manner. We are trying to make available similar
->>> functionality for OpenMoko based software stacks.
->>>
->>>
->>>       
->>     
->
->
->   
+> We can do something like this then:
+> 
+> dev1 = open();
+> ioctl(dev1, IOMMU_MAP, ...); /* creates IOMMU domain and assigns dev1 to
+> 			        it*/
+> 
+> dev2 = open();
+> ioctl(dev2, IOMMU_MAP, ...);
+> 
+> /* Now dev1 and dev2 are in seperate domains */
+> 
+> ioctl(dev2, IOMMU_SHARE, dev1); /* destroys all mapping for dev2 and
+> 				   assigns it to the same domain as
+> 				   dev1. Domain has a refcount of two
+> 				   now */
+
+Or maybe it destroys mapping for dev1?
+How do you remember?
+
+> close(dev1); /* domain refcount goes down to one */
+> close(dev2); /* domain refcount is zero and domain gets destroyed */
+> 
+> 
+> 	Joerg
+
+Also, no way to unshare? That seems limiting.
+
+-- 
+MST
