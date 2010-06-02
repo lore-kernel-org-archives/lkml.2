@@ -1,60 +1,182 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752692Ab0FBGDO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jun 2010 02:03:14 -0400
-Received: from mail-px0-f174.google.com ([209.85.212.174]:47887 "EHLO
-	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751112Ab0FBGDM (ORCPT
+	id S1753933Ab0FBGD1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jun 2010 02:03:27 -0400
+Received: from mail-yw0-f179.google.com ([209.85.211.179]:55528 "EHLO
+	mail-yw0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753140Ab0FBGDY convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jun 2010 02:03:12 -0400
+	Wed, 2 Jun 2010 02:03:24 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type;
-        b=c4zQMG4HLh+y8KaVuAZNmdhUiAFUJo0D4VdNmNdqI1mp0oiWb5sQ1Fs9/3Eg2ms8cN
-         Rres2zUgHKP0VdIZxJIM5Dp3f7YH0wqxif4zca4VDo+RQkm6SwbUkDSi5cgNHGEZUrXG
-         Y2ki4cDCzz98itmH6vqDAKdchbdZ3ZRjS3hqE=
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=gNJa4RzaEW0WDPitXfhbexPRU0K+nhnbB1VR202ku2PqNhVWux9t9nwgjJuvZvor7X
+         KmE06LZQ7rEJIhJHd+YNLECUO3xL5rBJXXrZMTR6IlxDDHdHe6lZrARpDrTF+Nc2cJrg
+         AStVevKrpG6KhDCl//Unro7zsTC6DlQvl51vk=
 MIME-Version: 1.0
-In-Reply-To: <20100601183920.GB19955@kroah.com>
-References: <AANLkTimTm57fvumRXo9pegOY2M78mduBsClwYlmAOzpo@mail.gmail.com> 
-	<20100601183920.GB19955@kroah.com>
-From: Frank Pan <frankpzh@gmail.com>
-Date: Wed, 2 Jun 2010 14:02:50 +0800
-Message-ID: <AANLkTim-ivA0jM9Dyn_nodz56vdsQBUbtvtvzXiPYRLj@mail.gmail.com>
-Subject: Re: Add a helper function in PCI IOV to get VF device
-To: Greg KH <greg@kroah.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-       Jesse Barnes <jbarnes@virtuousgeek.org>,
-       Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>,
-       Yu Zhao <yu.zhao@intel.com>, Chris Wright <chrisw@sous-sol.org>,
-       Mitch Williams <mitch.a.williams@intel.com>,
-       "Rafael J. Wysocki" <rjw@sisk.pl>,
-       "David S. Miller" <davem@davemloft.net>,
-       Matt Carlson <mcarlson@broadcom.com>, linux-pci@vger.kernel.org,
-       linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <20100528173510.GA12166@ca-server1.us.oracle.com>
+References: <20100528173510.GA12166@ca-server1.us.oracle.com>
+Date: Wed, 2 Jun 2010 15:03:22 +0900
+Message-ID: <AANLkTilV-4_QaNq5O0WSplDx1Oq7JvkgVrEiR1rgf1up@mail.gmail.com>
+Subject: Re: [PATCH V2 0/7] Cleancache (was Transcendent Memory): overview
+From: Minchan Kim <minchan.kim@gmail.com>
+To: Dan Magenheimer <dan.magenheimer@oracle.com>
+Cc: chris.mason@oracle.com, viro@zeniv.linux.org.uk, akpm@linux-foundation.org,
+       adilger@sun.com, tytso@mit.edu, mfasheh@suse.com,
+       joel.becker@oracle.com, matthew@wil.cx, linux-btrfs@vger.kernel.org,
+       linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+       linux-ext4@vger.kernel.org, ocfs2-devel@oss.oracle.com,
+       linux-mm@kvack.org, ngupta@vflare.org, jeremy@goop.org,
+       JBeulich@novell.com, kurt.hackel@oracle.com, npiggin@suse.de,
+       dave.mccracken@oracle.com, riel@redhat.com, avi@redhat.com,
+       konrad.wilk@oracle.com
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> What is "VF" and "PF" here?
-Virtual function/Physical function
+Hello.
 
-> No, the network core should create that symlink, not the driver, right?
-They are not network interfaces, so network core
-won't link them. They are for VM uses. I may need
-to explain this more clearly.
+I think cleancache approach is cool. :)
+I have some suggestions and questions.
 
-PF's interface in sysfs is /sys/class/net/ethx, while
-VF has no interface. So 82576 driver makes directories
-to provide interface-like sysfs entries: /sys/class/net/ethx/vf[1-7]
-Make a link to this directory form VF's pci device is
-almost impossible, because PF doesn't know VF's bdf.
+On Sat, May 29, 2010 at 2:35 AM, Dan Magenheimer
+<dan.magenheimer@oracle.com> wrote:
+> [PATCH V2 0/7] Cleancache (was Transcendent Memory): overview
+>
+> Changes since V1:
+> - Rebased to 2.6.34 (no functional changes)
+> - Convert to sane types (Al Viro)
+> - Define some raw constants (Konrad Wilk)
+> - Add ack from Andreas Dilger
+>
+> In previous patch postings, cleancache was part of the Transcendent
+> Memory ("tmem") patchset.  This patchset refocuses not on the underlying
+> technology (tmem) but instead on the useful functionality provided for Linux,
+> and provides a clean API so that cleancache can provide this very useful
+> functionality either via a Xen tmem driver OR completely independent of tmem.
+> For example: Nitin Gupta (of compcache and ramzswap fame) is implementing
+> an in-kernel compression "backend" for cleancache; some believe
+> cleancache will be a very nice interface for building RAM-like functionality
+> for pseudo-RAM devices such as SSD or phase-change memory; and a Pune
+> University team is looking at a backend for virtio (see OLS'2010).
+>
+> A more complete description of cleancache can be found in the introductory
+> comment in mm/cleancache.c (in PATCH 2/7) which is included below
+> for convenience.
+>
+> Note that an earlier version of this patch is now shipping in OpenSuSE 11.2
+> and will soon ship in a release of Oracle Enterprise Linux.  Underlying
+> tmem technology is now shipping in Oracle VM 2.2 and was just released
+> in Xen 4.0 on April 15, 2010.  (Search news.google.com for Transcendent
+> Memory)
+>
+> Signed-off-by: Dan Magenheimer <dan.magenheimer@oracle.com>
+> Reviewed-by: Jeremy Fitzhardinge <jeremy@goop.org>
+>
+>  fs/btrfs/extent_io.c       |    9 +
+>  fs/btrfs/super.c           |    2
+>  fs/buffer.c                |    5 +
+>  fs/ext3/super.c            |    2
+>  fs/ext4/super.c            |    2
+>  fs/mpage.c                 |    7 +
+>  fs/ocfs2/super.c           |    3
+>  fs/super.c                 |    8 +
+>  include/linux/cleancache.h |   90 +++++++++++++++++++
+>  include/linux/fs.h         |    5 +
+>  mm/Kconfig                 |   22 ++++
+>  mm/Makefile                |    1
+>  mm/cleancache.c            |  203 +++++++++++++++++++++++++++++++++++++++++++++
+>  mm/filemap.c               |   11 ++
+>  mm/truncate.c              |   10 ++
+>  15 files changed, 380 insertions(+)
+>
+> Cleancache can be thought of as a page-granularity victim cache for clean
+> pages that the kernel's pageframe replacement algorithm (PFRA) would like
+> to keep around, but can't since there isn't enough memory.  So when the
+> PFRA "evicts" a page, it first attempts to put it into a synchronous
+> concurrency-safe page-oriented pseudo-RAM device (such as Xen's Transcendent
+> Memory, aka "tmem", or in-kernel compressed memory, aka "zmem", or other
+> RAM-like devices) which is not directly accessible or addressable by the
+> kernel and is of unknown and possibly time-varying size.  And when a
+> cleancache-enabled filesystem wishes to access a page in a file on disk,
+> it first checks cleancache to see if it already contains it; if it does,
+> the page is copied into the kernel and a disk access is avoided.
+> This pseudo-RAM device links itself to cleancache by setting the
+> cleancache_ops pointer appropriately and the functions it provides must
+> conform to certain semantics as follows:
+>
+> Most important, cleancache is "ephemeral".  Pages which are copied into
+> cleancache have an indefinite lifetime which is completely unknowable
+> by the kernel and so may or may not still be in cleancache at any later time.
+> Thus, as its name implies, cleancache is not suitable for dirty pages.  The
+> pseudo-RAM has complete discretion over what pages to preserve and what
+> pages to discard and when.
+>
+> A filesystem calls "init_fs" to obtain a pool id which, if positive, must be
+> saved in the filesystem's superblock; a negative return value indicates
+> failure.  A "put_page" will copy a (presumably about-to-be-evicted) page into
+> pseudo-RAM and associate it with the pool id, the file inode, and a page
+> index into the file.  (The combination of a pool id, an inode, and an index
+> is called a "handle".)  A "get_page" will copy the page, if found, from
+> pseudo-RAM into kernel memory.  A "flush_page" will ensure the page no longer
+> is present in pseudo-RAM; a "flush_inode" will flush all pages associated
+> with the specified inode; and a "flush_fs" will flush all pages in all
+> inodes specified by the given pool id.
+>
+> A "init_shared_fs", like init, obtains a pool id but tells the pseudo-RAM
+> to treat the pool as shared using a 128-bit UUID as a key.  On systems
+> that may run multiple kernels (such as hard partitioned or virtualized
+> systems) that may share a clustered filesystem, and where the pseudo-RAM
+> may be shared among those kernels, calls to init_shared_fs that specify the
+> same UUID will receive the same pool id, thus allowing the pages to
+> be shared.  Note that any security requirements must be imposed outside
+> of the kernel (e.g. by "tools" that control the pseudo-RAM).  Or a
+> pseudo-RAM implementation can simply disable shared_init by always
+> returning a negative value.
+>
+> If a get_page is successful on a non-shared pool, the page is flushed (thus
+> making cleancache an "exclusive" cache).  On a shared pool, the page
 
-Thanks for reply.
+Do you have any reason about force "exclusive" on a non-shared pool?
+To free memory on pesudo-RAM?
+I want to make it "inclusive" by some reason but unfortunately I can't
+say why I want it now.
+
+While you mentioned it's "exclusive", cleancache_get_page doesn't
+flush the page at below code.
+Is it a role of user who implement cleancache_ops->get_page?
+
++int __cleancache_get_page(struct page *page)
++{
++       int ret = 0;
++       int pool_id = page->mapping->host->i_sb->cleancache_poolid;
++
++       if (pool_id >= 0) {
++               ret = (*cleancache_ops->get_page)(pool_id,
++                                                 page->mapping->host->i_ino,
++                                                 page->index,
++                                                 page);
++               if (ret == CLEANCACHE_GET_PAGE_SUCCESS)
++                       succ_gets++;
++               else
++                       failed_gets++;
++       }
++       return ret;
++}
++EXPORT_SYMBOL(__cleancache_get_page);
+
+If backed device is ram(ie), Could we _move_ the pages from page cache
+to cleancache?
+I mean I don't want to copy page when get/put operation. we can just
+move page in case of backed device "ram". Is it possible?
+
+You send the patches which is core of cleancache but I don't see any use case.
+Could you send use case patches with this series?
+It could help understand cleancache's benefit.
 
 -- 
-Frank Pan
-
-Computer Science and Technology
-Tsinghua University
+Kind regards,
+Minchan Kim
