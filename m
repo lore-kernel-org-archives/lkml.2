@@ -1,75 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932610Ab0FBPQ5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jun 2010 11:16:57 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:58676 "EHLO mx1.redhat.com"
+	id S932618Ab0FBPSr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jun 2010 11:18:47 -0400
+Received: from mga11.intel.com ([192.55.52.93]:58562 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932599Ab0FBPQz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jun 2010 11:16:55 -0400
-Date: Wed, 2 Jun 2010 11:16:11 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Vitaly Mayatskikh <v.mayatskih@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-       Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-       "H. Peter Anvin" <hpa@zytor.com>, Randy Dunlap <rdunlap@xenotime.net>
-Subject: Re: [PATCH 0/5] kdump: extract log buffer and registers from
-	vmcore on NMI button pressing
-Message-ID: <20100602151611.GA3174@redhat.com>
-References: <1275464359-1566-1-git-send-email-v.mayatskih@gmail.com>
+	id S932340Ab0FBPSp convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Jun 2010 11:18:45 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.53,347,1272870000"; 
+   d="scan'208";a="804106882"
+From: "Paoloni, Gabriele" <gabriele.paoloni@intel.com>
+To: Ben McKeegan <ben@netservers.co.uk>,
+       "davem@davemloft.net" <davem@davemloft.net>
+CC: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       "alan@lxorguk.ukuu.org.uk" <alan@lxorguk.ukuu.org.uk>,
+       "linux-ppp@vger.kernel.org" <linux-ppp@vger.kernel.org>,
+       "paulus@samba.org" <paulus@samba.org>
+Date: Wed, 2 Jun 2010 16:17:59 +0100
+Subject: RE: [PATCH] ppp_generic: fix multilink fragment sizes
+Thread-Topic: [PATCH] ppp_generic: fix multilink fragment sizes
+Thread-Index: AcsCZP+qY2zPdToHRRC+8AwT79+FUwAANpcw
+Message-ID: <DF7BB929B28FCF479E888E3D9F8D9E88D3E16B5A@irsmsx502.ger.corp.intel.com>
+References: <4C0670E2.1090708@netservers.co.uk>
+ <1275491094-9526-1-git-send-email-ben@netservers.co.uk>
+In-Reply-To: <1275491094-9526-1-git-send-email-ben@netservers.co.uk>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1275464359-1566-1-git-send-email-v.mayatskih@gmail.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 02, 2010 at 09:39:14AM +0200, Vitaly Mayatskikh wrote:
-> Sometimes non-interactive dump capture environment silently fails to
-> store vmcore due to hardware or software bug. It is hard then to
-> understand and fix reasons of system failure in both production and
-> dump capture environments to prevent this failure to reoccur. It would
-> be quite usefull to see log buffer contents of crashed kernel at
-> least.
-> 
-> This patchset adds possibility for dump capture mode to extract and
-> print log buffer and CPU registers from captured vmcore. Also the
-> state of running kernel is printed. This action can be triggered via
-> NMI button.
+The proposed patch looks wrong to me.
 
-Hi Vitaly,
+nbigger is already doing the job; I didn't use DIV_ROUND_UP because in general we don't have always to roundup, otherwise we would exceed the total bandwidth.
 
-I am not sure what is the problem we are trying to solve here. If we are
-unable to capture the dump because second kernel did not boot due to
-some dirver issue etc, above patch is not going to help either.
+Regards
 
-If kernel has booted, then one should be able to capture the dump, filter
-it and look at the log buffers and cpu registers.
+Gabriele Paoloni
 
-Most of the failures I have seen in capture kernel is that it was unable
-to boot due to either deivce issues or failure in early boot. Once it has
-crossed those hurdles, after that capturing the dump is easy part.
+-----Original Message-----
+From: Ben McKeegan [mailto:ben@netservers.co.uk] 
+Sent: 02 June 2010 16:05
+To: davem@davemloft.net
+Cc: ben@netservers.co.uk; netdev@vger.kernel.org; linux-kernel@vger.kernel.org; Paoloni, Gabriele; alan@lxorguk.ukuu.org.uk; linux-ppp@vger.kernel.org; paulus@samba.org
+Subject: [PATCH] ppp_generic: fix multilink fragment sizes
 
-How many times does it happen in second kernel that kernel is spinning in
-a loop and NMI can still get you information out.
+Fix bug in multilink fragment size calculation introduced by
+commit 9c705260feea6ae329bc6b6d5f6d2ef0227eda0a
+"ppp: ppp_mp_explode() redesign"
 
-So can you please give some more information about what kind of failures
-while capturing the dump you are addressing by this patchset.
+Signed-off-by: Ben McKeegan <ben@netservers.co.uk>
+---
+ drivers/net/ppp_generic.c |    3 ++-
+ 1 files changed, 2 insertions(+), 1 deletions(-)
 
-Thanks
-Vivek
-> 
-> Signed-off-by: Vitaly Mayatskikh <v.mayatskih@gmail.com>
-> 
->  arch/x86/include/asm/elf.h    |   46 +++++
->  arch/x86/include/asm/kdebug.h |    1 +
->  arch/x86/include/asm/nmi.h    |    1 +
->  arch/x86/kernel/apic/nmi.c    |   27 +++
->  arch/x86/kernel/process_32.c  |   22 ++-
->  arch/x86/kernel/process_64.c  |   20 ++-
->  fs/proc/vmcore.c              |  365 +++++++++++++++++++++++++++++++++++++++--
->  include/linux/sysctl.h        |    1 +
->  kernel/sysctl.c               |    7 +
->  kernel/sysctl_binary.c        |    1 +
->  10 files changed, 463 insertions(+), 28 deletions(-)
+diff --git a/drivers/net/ppp_generic.c b/drivers/net/ppp_generic.c
+index 0db3894..8b36bfe 100644
+--- a/drivers/net/ppp_generic.c
++++ b/drivers/net/ppp_generic.c
+@@ -1416,7 +1416,8 @@ static int ppp_mp_explode(struct ppp *ppp, struct sk_buff *skb)
+ 		flen = len;
+ 		if (nfree > 0) {
+ 			if (pch->speed == 0) {
+-				flen = totlen/nfree;
++				if (nfree > 1)
++					flen = DIV_ROUND_UP(len, nfree);
+ 				if (nbigger > 0) {
+ 					flen++;
+ 					nbigger--;
+-- 
+1.5.6.5
+
+--------------------------------------------------------------
+Intel Shannon Limited
+Registered in Ireland
+Registered Office: Collinstown Industrial Park, Leixlip, County Kildare
+Registered Number: 308263
+Business address: Dromore House, East Park, Shannon, Co. Clare
+
+This e-mail and any attachments may contain confidential material for the sole use of the intended recipient(s). Any review or distribution by others is strictly prohibited. If you are not the intended recipient, please contact the sender and delete all copies.
+
+
