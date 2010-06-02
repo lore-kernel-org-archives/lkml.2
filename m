@@ -1,182 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757486Ab0FBIy1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jun 2010 04:54:27 -0400
-Received: from mail.pripojeni.net ([217.66.174.14]:59180 "EHLO
-	mail.jetsystems.cz" rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org
-	with ESMTP id S1751799Ab0FBIxT (ORCPT
+	id S1757593Ab0FBIyo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jun 2010 04:54:44 -0400
+Received: from mail-px0-f174.google.com ([209.85.212.174]:48208 "EHLO
+	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752131Ab0FBIyj convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jun 2010 04:53:19 -0400
-From: Jiri Slaby <jslaby@suse.cz>
-To: rjw@sisk.pl
-Cc: pavel@ucw.cz, linux-pm@lists.linux-foundation.org,
-       linux-kernel@vger.kernel.org, jirislaby@gmail.com
-Subject: [PATCH 6/9] PM / Hibernate: split snapshot_read_next
-Date: Wed,  2 Jun 2010 10:52:45 +0200
-Message-Id: <1275468768-28229-6-git-send-email-jslaby@suse.cz>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1275468768-28229-1-git-send-email-jslaby@suse.cz>
-References: <1275468768-28229-1-git-send-email-jslaby@suse.cz>
+	Wed, 2 Jun 2010 04:54:39 -0400
+MIME-Version: 1.0
+In-Reply-To: <alpine.LFD.2.00.1006020905410.2933@localhost.localdomain>
+References: <Pine.LNX.4.44L0.1005271253240.3239-100000@iolanthe.rowland.org>
+	<201005302202.39511.rjw@sisk.pl>
+	<AANLkTilUQ2AG76nbK6LwI8_7zw0_yMSoAOr9pmuz7xrt@mail.gmail.com>
+	<201005312347.24251.rjw@sisk.pl>
+	<AANLkTilvOgSFTDFtXbjJobMZWxgfvsC97TqC7_a_NHBX@mail.gmail.com>
+	<alpine.LFD.2.00.1006011411200.2933@localhost.localdomain>
+	<AANLkTikZHmF6baP7dEXEGFE8YsbEteRjlhb5wqZX8ll1@mail.gmail.com>
+	<alpine.LFD.2.00.1006020905410.2933@localhost.localdomain>
+Date: Wed, 2 Jun 2010 01:54:38 -0700
+Message-ID: <AANLkTinDm3FIrbS1jqEzW15THmr1hdd7ox0Mllm1VLjZ@mail.gmail.com>
+Subject: Re: [linux-pm] [PATCH 0/8] Suspend block api (version 8)
+From: =?ISO-8859-1?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, Florian Mickler <florian@mickler.org>,
+       Matthew Garrett <mjg59@srcf.ucam.org>,
+       Alan Stern <stern@rowland.harvard.edu>,
+       Peter Zijlstra <peterz@infradead.org>, Paul@smtp1.linux-foundation.org,
+       LKML <linux-kernel@vger.kernel.org>, felipe.balbi@nokia.com,
+       Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
+       Linux PM <linux-pm@lists.linux-foundation.org>,
+       Alan Cox <alan@lxorguk.ukuu.org.uk>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When writing the snapshot, do the initialization and header write in
-a separate function. This makes the code more readable and lowers
-complexity of snapshot_read_next.
+2010/6/2 Thomas Gleixner <tglx@linutronix.de>:
+> On Tue, 1 Jun 2010, Arve Hjønnevåg wrote:
+>> 2010/6/1 Thomas Gleixner <tglx@linutronix.de>:
+>> > On Mon, 31 May 2010, Arve Hjønnevåg wrote:
+>> >
+>> >> 2010/5/31 Rafael J. Wysocki <rjw@sisk.pl>:
+>> >> > On Monday 31 May 2010, Arve Hjønnevåg wrote:
+>> >> >> 2010/5/30 Rafael J. Wysocki <rjw@sisk.pl>:
+>> >> > ...
+>> >> >>
+>> >> >> I think it makes more sense to block suspend while wakeup events are
+>> >> >> pending than blocking it everywhere timers are used by code that could
+>> >> >> be called while handling wakeup events or other critical work. Also,
+>> >> >> even if you did block suspend everywhere timers where used you still
+>> >> >> have the race where a wakeup interrupt happens right after you decided
+>> >> >> to suspend. In other words, you still need to block suspend in all the
+>> >> >> same places as with the current opportunistic suspend code, so what is
+>> >> >> the benefit of delaying suspend until idle?
+>> >> >
+>> >> > Assume for a while that you don't use suspend blockers, OK?  I realize you
+>> >> > think that anything else doesn't make sense, but evidently some other people
+>> >> > have that opinion about suspend blockers.
+>> >> >
+>> >>
+>> >> It sounded like you were suggesting that initiating suspend from idle
+>> >> would somehow avoid the race condition with wakeup events. All I'm
+>> >> saying is that you would need to block suspend in all the same places.
+>> >> If you don't care about ignoring wakeup events, then sure you can
+>> >> initiate suspend from idle.
+>> >
+>> > And why should you miss a wakeup there ? If you get an interrupt in
+>> > the transition, then you are not longer idle.
+>> >
+>>
+>> Because suspend itself causes you to not be idle you cannot abort
+>> suspend just because you are not idle anymore.
+>
+> You still are addicted to the current suspend mechanism. :)
+>
 
-Signed-off-by: Jiri Slaby <jslaby@suse.cz>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>
----
- kernel/power/power.h    |    2 +
- kernel/power/snapshot.c |   65 ++++++++++++++++++++++++++++++----------------
- kernel/power/swap.c     |   14 +++-------
- 3 files changed, 48 insertions(+), 33 deletions(-)
+No I want you to stop confusing low power idle modes with suspend. I
+know how to enter low power modes from idle if that low power mode is
+not too disruptive.
 
-diff --git a/kernel/power/power.h b/kernel/power/power.h
-index 812b66c..ff3f63f 100644
---- a/kernel/power/power.h
-+++ b/kernel/power/power.h
-@@ -171,6 +171,8 @@ struct hibernate_io_ops {
- 
- extern unsigned int snapshot_additional_pages(struct zone *zone);
- extern unsigned long snapshot_get_image_size(void);
-+extern int snapshot_write_init(struct hibernate_io_handle *io_handle,
-+		struct snapshot_handle *handle);
- extern int snapshot_read_next(struct snapshot_handle *handle);
- extern int snapshot_write_next(struct snapshot_handle *handle);
- extern void snapshot_write_finalize(struct snapshot_handle *handle);
-diff --git a/kernel/power/snapshot.c b/kernel/power/snapshot.c
-index 25ce010..4600d15 100644
---- a/kernel/power/snapshot.c
-+++ b/kernel/power/snapshot.c
-@@ -1598,10 +1598,46 @@ pack_pfns(unsigned long *buf, struct memory_bitmap *bm)
- }
- 
- /**
-+ *	snapshot_write_init - initialization before writing the snapshot to
-+ *	a backing storage
-+ *
-+ *	This function *must* be called before snapshot_read_next to initialize
-+ *	@handle and write a header.
-+ *
-+ *	@io_handle: handle used when writing the initial info onto storage
-+ *	@handle: snapshot handle to init
-+ */
-+int snapshot_write_init(struct hibernate_io_handle *io_handle,
-+		struct snapshot_handle *handle)
-+{
-+	int ret;
-+
-+	/* This makes the buffer be freed by swsusp_free() */
-+	buffer = get_image_page(GFP_ATOMIC, PG_ANY);
-+	if (!buffer)
-+		return -ENOMEM;
-+	init_header(buffer);
-+	ret = hib_buffer_init_write(io_handle);
-+	if (ret)
-+		return ret;
-+	ret = hib_buffer_write(io_handle, buffer, sizeof(struct swsusp_info));
-+	if (ret)
-+		goto finish;
-+	hib_buffer_finish_write(io_handle);
-+	memory_bm_position_reset(&orig_bm);
-+	memory_bm_position_reset(&copy_bm);
-+	handle->buffer = buffer;
-+	return 0;
-+finish:
-+	hib_buffer_finish_write(io_handle);
-+	return ret;
-+}
-+
-+/**
-  *	snapshot_read_next - used for reading the system memory snapshot.
-  *
-- *	On the first call to it @handle should point to a zeroed
-- *	snapshot_handle structure.  The structure gets updated and a pointer
-+ *	Before calling this function, snapshot_write_init has to be called with
-+ *	handle passed as @handle here. The structure gets updated and a pointer
-  *	to it should be passed to this function every next time.
-  *
-  *	On success the function returns a positive number.  Then, the caller
-@@ -1613,31 +1649,12 @@ pack_pfns(unsigned long *buf, struct memory_bitmap *bm)
-  *	structure pointed to by @handle is not updated and should not be used
-  *	any more.
-  */
--
- int snapshot_read_next(struct snapshot_handle *handle)
- {
--	if (handle->cur > nr_meta_pages + nr_copy_pages)
--		return 0;
--
--	if (!buffer) {
--		/* This makes the buffer be freed by swsusp_free() */
--		buffer = get_image_page(GFP_ATOMIC, PG_ANY);
--		if (!buffer)
--			return -ENOMEM;
--	}
--	if (!handle->cur) {
--		int error;
--
--		error = init_header((struct swsusp_info *)buffer);
--		if (error)
--			return error;
--		handle->buffer = buffer;
--		memory_bm_position_reset(&orig_bm);
--		memory_bm_position_reset(&copy_bm);
--	} else if (handle->cur <= nr_meta_pages) {
-+	if (handle->cur < nr_meta_pages) {
- 		memset(buffer, 0, PAGE_SIZE);
- 		pack_pfns(buffer, &orig_bm);
--	} else {
-+	} else if (handle->cur < nr_meta_pages + nr_copy_pages) {
- 		struct page *page;
- 
- 		page = pfn_to_page(memory_bm_next_pfn(&copy_bm));
-@@ -1655,6 +1672,8 @@ int snapshot_read_next(struct snapshot_handle *handle)
- 		} else {
- 			handle->buffer = page_address(page);
- 		}
-+	} else {
-+		return 0;
- 	}
- 	handle->cur++;
- 	return PAGE_SIZE;
-diff --git a/kernel/power/swap.c b/kernel/power/swap.c
-index f09494e..9b319f1 100644
---- a/kernel/power/swap.c
-+++ b/kernel/power/swap.c
-@@ -448,7 +448,6 @@ int swsusp_write(unsigned int flags)
- {
- 	struct hibernate_io_handle *io_handle;
- 	struct snapshot_handle snapshot;
--	struct swsusp_info *header;
- 	unsigned long pages;
- 	int error;
- 
-@@ -464,17 +463,12 @@ int swsusp_write(unsigned int flags)
- 		goto out_finish;
- 	}
- 	memset(&snapshot, 0, sizeof(struct snapshot_handle));
--	error = snapshot_read_next(&snapshot);
--	if (error < PAGE_SIZE) {
--		if (error >= 0)
--			error = -EFAULT;
--
-+	error = snapshot_write_init(io_handle, &snapshot);
-+	if (error) {
-+		printk(KERN_ERR "PM: Cannot init writer\n");
- 		goto out_finish;
- 	}
--	header = (struct swsusp_info *)data_of(snapshot);
--	error = hibernate_io_ops->write_page(io_handle, header, NULL);
--	if (!error)
--		error = save_image(io_handle, &snapshot, pages - 1);
-+	error = save_image(io_handle, &snapshot, pages - 1);
- out_finish:
- 	error = hibernate_io_ops->writer_finish(io_handle, flags, error);
- 	return error;
+> The whole point of doing it from idle in the form of a deep power
+> state is to avoid the massive sh*tload of work which is neccesary to
+> run the existing suspend code. But that needs runtime power management
+> and tweaks to avoid your timers waking you, etc.
+>
+> The mechanism you want to use is: suspend no matter what, like closing
+> the lid of the laptop, but with a few tweaks around it:
+>
+>   1) An interrupt on a wakeup source which comes in while the suspend
+>      code runs, i.e before you transitioned into wakeup mode, must
+>      abort / prevent suspend.
+>
+>   2) Prevent another attempt to suspend before the event has been
+>      delivered and the apps have signaled that they have not longer
+>      any work to do.
+>
+>   As a side effect you confine crappy apps with that mechanism in
+>   some way.
+>
+> In the laptop case we do not want the tweaks as not going into suspend
+> might set your backpack on fire.
+
+If that is the case you should also disable the wakeup events.
+
+>
+> If I understood you correctly then you can shutdown the CPU in idle
+> completelty already, but that's not enough due to:
+>
+>    1) crappy applications keeping the cpu away from idle
+>    2) timers firing
+>
+> Would solving those two issues be sufficient for you or am I missing
+> something ?
+
+Solving those two is enough for current android phones, but it may not
+be enough for other android devices. 1 is not solvable (meaning we
+cannot fix all apps), and 2 is difficult to fix since the periodic
+work is useful while the device is actually in use. One possible way
+to solve 2 is to allow timers on a not-idle clock. Unrelated to
+Android, I also want to use opportunistic suspend on my desktop.
+
 -- 
-1.7.1
-
-
+Arve Hjønnevåg
