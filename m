@@ -1,49 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758824Ab0FBWVM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jun 2010 18:21:12 -0400
-Received: from mail-pz0-f185.google.com ([209.85.222.185]:34684 "EHLO
-	mail-pz0-f185.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757962Ab0FBWVL (ORCPT
+	id S1758856Ab0FBWYX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jun 2010 18:24:23 -0400
+Received: from g1t0027.austin.hp.com ([15.216.28.34]:34344 "EHLO
+	g1t0027.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758807Ab0FBWYU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jun 2010 18:21:11 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:subject:date:organization:message-id:x-mailer:mime-version
-         :content-type:content-transfer-encoding;
-        b=Q1i83P2kmVtn8L43XGVw20T5qSZ78s3B62WELYgRM0HSMLlb/UKhL37Qs9m84D/nFd
-         ujLzdLe726qNlcMjuNyz55fzAf0jfzxbAzX5CEAoeHpT30xmf3Ug42PGALasX9PVQ0qr
-         5hnOsKgnR5qHmvlQPT7BqT3tcGOTVUlpkzN0M=
-From: Grant Coady <gcoady.lk@gmail.com>
-To: linux-kernel@vger.kernel.org
-Subject: How to stop kernel rebooting during startup?
-Date: Thu, 03 Jun 2010 08:20:54 +1000
-Organization: scattered
-Message-ID: <kqld06dbv2ektmqfadr8l3dqtmm6hler2c@4ax.com>
-X-Mailer: Forte Agent 6.00/32.1186
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	Wed, 2 Jun 2010 18:24:20 -0400
+From: dann frazier <dannf@hp.com>
+To: Wim Van Sebroeck <wim@iguana.be>
+Cc: linux-kernel@vger.kernel.org, Thomas Mingarelli <thomas.mingarelli@hp.com>,
+       dann frazier <dannf@hp.com>
+Subject: [PATCH 1/3] hpwdt: Introduce SECS_TO_TICKS() macro
+Date: Wed,  2 Jun 2010 16:23:39 -0600
+Message-Id: <1275517421-10544-1-git-send-email-dannf@hp.com>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi there,
+Define a macro to convert from seconds to timer ticks.
 
-Kernel has a problem mounting root, but it reboots before I can read 
-the message.  Of course nothing gets logged so I cannot see exactly 
-why the kernel wants to reboot.
+Signed-off-by: dann frazier <dannf@hp.com>
+---
+ drivers/watchdog/hpwdt.c |    6 ++++--
+ 1 files changed, 4 insertions(+), 2 deletions(-)
 
-Can I stop kernel doing an automatic reboot?  How?  
+diff --git a/drivers/watchdog/hpwdt.c b/drivers/watchdog/hpwdt.c
+index 809e716..af61fb6 100644
+--- a/drivers/watchdog/hpwdt.c
++++ b/drivers/watchdog/hpwdt.c
+@@ -49,6 +49,8 @@
+ #define ROM_SIZE			0x10000
+ #define HPWDT_VERSION			"1.1.1"
+ 
++#define SECS_TO_TICKS(secs) ((secs) * 1000 / 128)
++
+ struct bios32_service_dir {
+ 	u32 signature;
+ 	u32 entry_point;
+@@ -420,7 +422,7 @@ static int __devinit detect_cru_service(void)
+  */
+ static void hpwdt_start(void)
+ {
+-	reload = (soft_margin * 1000) / 128;
++	reload = SECS_TO_TICKS(soft_margin);
+ 	iowrite16(reload, hpwdt_timer_reg);
+ 	iowrite16(0x85, hpwdt_timer_con);
+ }
+@@ -453,7 +455,7 @@ static int hpwdt_change_timer(int new_margin)
+ 	printk(KERN_DEBUG
+ 		"hpwdt: New timer passed in is %d seconds.\n",
+ 		new_margin);
+-	reload = (soft_margin * 1000) / 128;
++	reload = SECS_TO_TICKS(soft_margin);
+ 
+ 	return 0;
+ }
+-- 
+1.7.1
 
-It's version 2.6.33.5, .4 has same behaviour.  Filesystem is Reiserfs, 
-Intel ICH9R with Core2Duo, .config is on: 
-
-  http://bugsplatter.id.au/kernel/boxen/pooh64/config-2.6.33.5a.gz
-
-which worked fine on slackware64-13.0, has this behaviour on slack-
-ware64-13.1.  Because I cannot read the screen before reboot, no idea 
-where to look next, or what is actually happening.
-
-Thanks,
-Grant.
