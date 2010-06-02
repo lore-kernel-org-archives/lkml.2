@@ -1,47 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757819Ab0FBKQv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jun 2010 06:16:51 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:46811 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755477Ab0FBKQt (ORCPT
+	id S932344Ab0FBKTT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jun 2010 06:19:19 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:56103 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755143Ab0FBKTS convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jun 2010 06:16:49 -0400
-Date: Wed, 2 Jun 2010 06:16:21 -0400
-From: Christoph Hellwig <hch@infradead.org>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Christoph Hellwig <hch@infradead.org>, Jens Axboe <jaxboe@fusionio.com>,
-       Vivek Goyal <vgoyal@redhat.com>, Tejun Heo <tj@kernel.org>,
-       Frederic Weisbecker <fweisbec@gmail.com>,
-       FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-       "Martin K. Petersen" <martin.petersen@oracle.com>,
-       Steven Rostedt <rostedt@goodmis.org>,
-       Douglas Gilbert <dgilbert@interlog.com>, Ingo Molnar <mingo@redhat.com>,
-       John Kacur <jkacur@redhat.com>, linux-scsi@vger.kernel.org,
-       linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] block: push down BKL into .locked_ioctl
-Message-ID: <20100602101621.GA8845@infradead.org>
-References: <1275428028-10901-1-git-send-email-arnd@arndb.de> <20100601213755.GA1004@infradead.org> <201006020043.12257.arnd@arndb.de>
+	Wed, 2 Jun 2010 06:19:18 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type:content-transfer-encoding;
+        b=XDxHOpCfxXtJFi62+FuIptVsSjRk8BZmD+AWP+rKTMmVeRZW7ukJfzuio+tuqC7UvK
+         QeDSAmR/Cn7AVjS6nwag/SZSBYuWtwlq1zYOqig7HJyva2lno46ZW1uSOavCTBVvYiUs
+         yxZI6u71d2/5gKRTPHQuvg/r5fFyh4DOF57jM=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201006020043.12257.arnd@arndb.de>
-User-Agent: Mutt/1.5.19 (2009-01-05)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+In-Reply-To: <AANLkTilZ5jJo8spBdfXBqZmTRfNlq4PQJI5wsn2lBj9Z@mail.gmail.com>
+References: <1275468694.2545.1.camel@eight.analog.com> <AANLkTinaPmKUx04I1mjNhla4s3S6vmWp8x6eoDTZGRVz@mail.gmail.com> 
+	<AANLkTincaxtwu_voxAbEkrOGeB5NWTVvmbHZJsaHpoYJ@mail.gmail.com> 
+	<AANLkTilIweGx1NXLiTuRphex1RMk9DF3Vdva5F-6JDKl@mail.gmail.com> 
+	<AANLkTilZ5jJo8spBdfXBqZmTRfNlq4PQJI5wsn2lBj9Z@mail.gmail.com>
+From: Mike Frysinger <vapier.adi@gmail.com>
+Date: Wed, 2 Jun 2010 06:18:57 -0400
+Message-ID: <AANLkTikLZjLaHSYJ5Z6q8fAxrmTsmnjaUjqlIDPgnz84@mail.gmail.com>
+Subject: Re: [Uclinux-dist-devel] [PATCH v2] regulator: new drivers for AD5398 
+	and AD5821
+To: Sonic Zhang <sonic.adi@gmail.com>
+Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+       Liam Girdwood <lrg@slimlogic.co.uk>,
+       uclinux-dist-devel <uclinux-dist-devel@blackfin.uclinux.org>,
+       Linux Kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Ok, here comes the first step. Can you be more specific
-> about what you mean with the open and release methods? 
-> Do you mean the sg.c and bsg.c chrdev file operations?
+On Wed, Jun 2, 2010 at 06:10, Sonic Zhang wrote:
+> On Wed, Jun 2, 2010 at 5:36 PM, Mike Frysinger wrote:
+>> On Wed, Jun 2, 2010 at 05:29, Sonic Zhang wrote:
+>>> On Wed, Jun 2, 2010 at 5:02 PM, Mike Frysinger wrote:
+>>>> On Wed, Jun 2, 2010 at 04:51, sonic zhang wrote:
+>>>>> +static const struct ad5398_current_data_format ad5398_df = {10, 4};
+>>>>> +static const struct ad5398_current_data_format ad5821_df = {10, 4};
+>>>>> +
+>>>>> +static const struct i2c_device_id ad5398_id[] = {
+>>>>> +       { "ad5398", (kernel_ulong_t)&ad5398_df },
+>>>>> +       { "ad5821", (kernel_ulong_t)&ad5821_df },
+>>>>> +       { }
+>>>>> +};
+>>>>
+>>>> do you really need sep storage for these _df vars ?
+>>>
+>>> Yes, this makes probe code simpler.
+>>
+>> how does it make any difference to the probe code what each id is
+>> pointing to ?  it isnt comparing the private data pointers to any
+>> other storage pointers.
+>>
+>> from what i can see, this should give the same exact behavior:
+>> static const struct ad5398_current_data_format df_10_4 = {10, 4};
+>> static const struct i2c_device_id ad5398_id[] = {
+>>       { "ad5398", (kernel_ulong_t)&df_10_4 },
+>>       { "ad5821", (kernel_ulong_t)&df_10_4 },
+>
+> Yes, the behavior is the same for ad5398 and ad5821. But, if more
+> chips are enabled in this driver, they may differ.
+> This line is used as an example for future chips.
 
-No, the open and release methods in struct block_device_operations.
-After this the driver API for block devices is BKL free, which
-is an important step.  To get there the locking in blkdev_get/put
-needs to be sorted out first, though.
-
-
-The ioctl pushdown patch looks good to me, btw.
-
+seems like a weak reason for otherwise useless overhead.  especially
+considering my simpler example should also be pretty obvious to extend
+for future drivers should the need arise.  you're a smart guy and dont
+need things spelled out explicitly.
+-mike
