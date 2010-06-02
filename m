@@ -1,135 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933164Ab0FBVVu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jun 2010 17:21:50 -0400
-Received: from relay2.sgi.com ([192.48.179.30]:37303 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S932894Ab0FBVVe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jun 2010 17:21:34 -0400
-To: linux-kernel@vger.kernel.org
-Subject: [PATCH 7/11] x86, UV: correct BAU discovery of hubs and sockets
-Cc: mingo@elte.hu, hpa@zytor.com, gregkh@suse.de
-Message-Id: <E1OJvNy-0004aW-9S@eag09.americas.sgi.com>
-From: Cliff Wickman <cpw@sgi.com>
-Date: Wed, 02 Jun 2010 16:22:02 -0500
+	id S933205Ab0FBVXQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jun 2010 17:23:16 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:44856 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932991Ab0FBVXK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Jun 2010 17:23:10 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:date:from:to:cc:subject:message-id:mime-version:content-type
+         :content-disposition:content-transfer-encoding:user-agent;
+        b=YdIBKcq99eYebTXyHUQcCd1gims6iSPRSCXCHLUlOXAnKJeP3UqMaapnSKLh+2l3Rh
+         jJv9vHHX3eLudWQtv+9d2LFDdDee2FPX4opbf2yD5P4Wq1383bm+3mu83LkIbDDHTjO6
+         McMFQRd6BN3foG8hmwAfSreDp9d/dwYla5MBQ=
+Date: Thu, 3 Jun 2010 01:23:04 +0400
+From: Cyrill Gorcunov <gorcunov@openvz.org>
+To: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
+       Robert Richter <robert.richter@amd.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Lin Ming <ming.m.lin@intel.com>,
+       Arnaldo Carvalho de Melo <acme@redhat.com>,
+       =?iso-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>
+Subject: [PATCH -tip] perf, x86: Make a second write to performance counter
+	if needed
+Message-ID: <20100602212304.GC5264@lenovo>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Netburst PMU we need a second write to a performance counter
+due to cpu erratum.
 
-Correct the initialization-time assumption of contigous blade numbers and
-of sockets numbered from zero.
+A simple flag test instead of alternative instructions was choosen
+because wrmsrl is already a macro and if virtualization is turned
+on will need an additional wrapper call which is more expencise.
 
-There may be hubs present with no cpu's enabled.
-There may be disabled sockets such that the active socket is not
-number zero.
+nb: we should propably switch to jump-labels as only this facility
+reach the mainline.
 
-And assign a 'socket master' by assuming that a socket is a node. (it is
-not safe to extract socket number from an apicid)
-
-Diffed against 2.6.34 -tip
-
-Signed-off-by: Cliff Wickman <cpw@sgi.com>
+Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
+CC: Robert Richter <robert.richter@amd.com>
+CC: Peter Zijlstra <peterz@infradead.org>
+CC: Lin Ming <ming.m.lin@intel.com>
+CC: Arnaldo Carvalho de Melo <acme@redhat.com>
+CC: Frédéric Weisbecker <fweisbec@gmail.com>
 ---
- arch/x86/kernel/tlb_uv.c |   49 +++++++++++++++++++++++++++++------------------
- 1 file changed, 31 insertions(+), 18 deletions(-)
+ arch/x86/kernel/cpu/perf_event.c    |   10 ++++++++++
+ arch/x86/kernel/cpu/perf_event_p4.c |    9 +++++++++
+ 2 files changed, 19 insertions(+)
 
-Index: 100531.linux-tip/arch/x86/kernel/tlb_uv.c
-===================================================================
---- 100531.linux-tip.orig/arch/x86/kernel/tlb_uv.c
-+++ 100531.linux-tip/arch/x86/kernel/tlb_uv.c
-@@ -1547,11 +1547,13 @@ calculate_destination_timeout(void)
-  */
- static void uv_init_per_cpu(int nuvhubs)
- {
--	int i, j, k;
-+	int i;
- 	int cpu;
- 	int pnode;
- 	int uvhub;
- 	short socket = 0;
-+	unsigned short socket_mask;
-+	unsigned int uvhub_mask;
- 	struct bau_control *bcp;
- 	struct uvhub_desc *bdp;
- 	struct socket_desc *sdp;
-@@ -1562,7 +1564,7 @@ static void uv_init_per_cpu(int nuvhubs)
- 		short cpu_number[16];
- 	};
- 	struct uvhub_desc {
--		short num_sockets;
-+		unsigned short socket_mask;
- 		short num_cpus;
- 		short uvhub;
- 		short pnode;
-@@ -1581,43 +1583,54 @@ static void uv_init_per_cpu(int nuvhubs)
- 		spin_lock_init(&bcp->masks_lock);
- 		pnode = uv_cpu_hub_info(cpu)->pnode;
- 		uvhub = uv_cpu_hub_info(cpu)->numa_blade_id;
-+		uvhub_mask |= (1 << uvhub);
- 		bdp = &uvhub_descs[uvhub];
- 		bdp->num_cpus++;
- 		bdp->uvhub = uvhub;
- 		bdp->pnode = pnode;
--		/* kludge: assume uv_hub.h is constant */
--		socket = (cpu_physical_id(cpu)>>5)&1;
--		if (socket >= bdp->num_sockets)
--			bdp->num_sockets = socket+1;
-+		/* kludge: 'assuming' one node per socket, and assuming that
-+		   disabling a socket just leaves a gap in node numbers */
-+		socket = (cpu_to_node(cpu) & 1);;
-+		bdp->socket_mask |= (1 << socket);
- 		sdp = &bdp->socket[socket];
- 		sdp->cpu_number[sdp->num_cpus] = cpu;
- 		sdp->num_cpus++;
- 	}
--	socket = 0;
--	for_each_possible_blade(uvhub) {
-+	uvhub = 0;
-+	while (uvhub_mask) {
-+		if (!(uvhub_mask & 1))
-+			goto nexthub;
- 		bdp = &uvhub_descs[uvhub];
--		for (i = 0; i < bdp->num_sockets; i++) {
--			sdp = &bdp->socket[i];
--			for (j = 0; j < sdp->num_cpus; j++) {
--				cpu = sdp->cpu_number[j];
-+		socket_mask = bdp->socket_mask;
-+		socket = 0;
-+		while (socket_mask) {
-+			if (!(socket_mask & 1))
-+				goto nextsocket;
-+			sdp = &bdp->socket[socket];
-+			for (i = 0; i < sdp->num_cpus; i++) {
-+				cpu = sdp->cpu_number[i];
- 				bcp = &per_cpu(bau_control, cpu);
- 				bcp->cpu = cpu;
--				if (j == 0) {
-+				if (i == 0) {
- 					smaster = bcp;
--					if (i == 0)
-+					if (socket == 0)
- 						hmaster = bcp;
- 				}
- 				bcp->cpus_in_uvhub = bdp->num_cpus;
- 				bcp->cpus_in_socket = sdp->num_cpus;
- 				bcp->socket_master = smaster;
-+				bcp->uvhub = bdp->uvhub;
- 				bcp->uvhub_master = hmaster;
--				for (k = 0; k < DEST_Q_SIZE; k++)
--					bcp->socket_acknowledge_count[k] = 0;
--				bcp->uvhub_cpu =
--				  uv_cpu_hub_info(cpu)->blade_processor_id;
-+				bcp->uvhub_cpu = uv_cpu_hub_info(cpu)->
-+						blade_processor_id;
- 			}
-+nextsocket:
- 			socket++;
-+			socket_mask = (socket_mask >> 1);
- 		}
-+nexthub:
-+		uvhub++;
-+		uvhub_mask = (uvhub_mask >> 1);
- 	}
- 	kfree(uvhub_descs);
- 	for_each_present_cpu(cpu) {
+Index: linux-2.6.git/arch/x86/kernel/cpu/perf_event.c
+=====================================================================
+--- linux-2.6.git.orig/arch/x86/kernel/cpu/perf_event.c
++++ linux-2.6.git/arch/x86/kernel/cpu/perf_event.c
+@@ -220,6 +220,7 @@ struct x86_pmu {
+ 						 struct perf_event *event);
+ 	struct event_constraint *event_constraints;
+ 	void		(*quirks)(void);
++	int		perfctr_second_write;
+ 
+ 	int		(*cpu_prepare)(int cpu);
+ 	void		(*cpu_starting)(int cpu);
+@@ -926,6 +927,15 @@ x86_perf_event_set_period(struct perf_ev
+ 	atomic64_set(&hwc->prev_count, (u64)-left);
+ 
+ 	wrmsrl(hwc->event_base + idx,
++		(u64)(-left) & x86_pmu.cntval_mask);
++
++	/*
++	 * Due to erratum on certan cpu we need
++	 * a second write to be sure the register
++	 * is updated properly
++	 */
++	if (x86_pmu.perfctr_second_write)
++		wrmsrl(hwc->event_base + idx,
+ 			(u64)(-left) & x86_pmu.cntval_mask);
+ 
+ 	perf_event_update_userpage(event);
+Index: linux-2.6.git/arch/x86/kernel/cpu/perf_event_p4.c
+=====================================================================
+--- linux-2.6.git.orig/arch/x86/kernel/cpu/perf_event_p4.c
++++ linux-2.6.git/arch/x86/kernel/cpu/perf_event_p4.c
+@@ -829,6 +829,15 @@ static __initconst const struct x86_pmu 
+ 	.max_period		= (1ULL << 39) - 1,
+ 	.hw_config		= p4_hw_config,
+ 	.schedule_events	= p4_pmu_schedule_events,
++	/*
++	 * This handles erratum N15 in intel doc 249199-029,
++	 * the counter may not be updated correctly on write
++	 * so we need a second write operation to do the trick
++	 * (the official workaround didn't work)
++	 *
++	 * the former idea is taken from OProfile code
++	 */
++	.perfctr_second_write	= 1,
+ };
+ 
+ static __init int p4_pmu_init(void)
