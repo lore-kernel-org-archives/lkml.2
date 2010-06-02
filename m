@@ -1,61 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751267Ab0FBEa0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jun 2010 00:30:26 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:13743 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750828Ab0FBEaY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jun 2010 00:30:24 -0400
-Subject: Re: [PATCH] VFIO driver: Non-privileged user level PCI drivers
-From: Alex Williamson <alex.williamson@redhat.com>
-To: Avi Kivity <avi@redhat.com>
-Cc: "Michael S. Tsirkin" <mst@redhat.com>, Tom Lyon <pugs@cisco.com>,
-       linux-kernel@vger.kernel.org, kvm@vger.kernel.org, chrisw@sous-sol.org,
-       joro@8bytes.org, hjk@linutronix.de, gregkh@suse.de, aafabbri@cisco.com,
-       scofeldm@cisco.com
-In-Reply-To: <4C04E0E0.3070006@redhat.com>
-References: <20100530121944.GH27611@redhat.com>
-	 <4C025999.7080706@redhat.com> <20100530124949.GI27611@redhat.com>
-	 <4C0261C1.9090204@redhat.com> <20100530130332.GM27611@redhat.com>
-	 <4C026497.8070901@redhat.com> <20100530145309.GO27611@redhat.com>
-	 <4C03A285.7060902@redhat.com> <20100531171007.GA6516@redhat.com>
-	 <4C04C085.1030107@redhat.com> <20100601095532.GA9178@redhat.com>
-	 <4C04E0E0.3070006@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 01 Jun 2010 22:29:47 -0600
-Message-ID: <1275452987.16980.24.camel@x201>
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1751511Ab0FBEcQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jun 2010 00:32:16 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:55460 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751169Ab0FBEcO convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Jun 2010 00:32:14 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:date:message-id:subject:from:to:content-type
+         :content-transfer-encoding;
+        b=iBp8YN4QODnuXKeIULPUDN84Nko7LiKD5Lma0pJBS572/rBRezz8pIOl3uVyfb/Xq3
+         ONpDR5dMsBejeqDT3oCfYD2gdAnw6voDJFx2XrnlVm6xZJYCCqyxFPvuYeOdC8ZCwL34
+         YKISucO67fogU2SbTBwmrLoI/eEIpwIRLb3IA=
+MIME-Version: 1.0
+Date: Wed, 2 Jun 2010 10:02:13 +0530
+Message-ID: <AANLkTikC61Y9g-WbqwgGDghDSy2XtgraFSRoZYkHRGTG@mail.gmail.com>
+Subject: make ARM=arm menuconfig problem in mainline
+From: Nobin Mathew <nobin.mathew@gmail.com>
+To: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.arm.linux.org.uk
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-06-01 at 13:28 +0300, Avi Kivity wrote:
-> On 06/01/2010 12:55 PM, Michael S. Tsirkin wrote:
-> >
-> >>   It can't program the iommu.
-> >> What
-> >> the patch proposes is that userspace tells vfio about the needed
-> >> mappings, and vfio programs the iommu.
-> >>      
-> > There seems to be some misunderstanding.  The userspace interface
-> > proposed forces a separate domain per device and forces userspace to
-> > repeat iommu programming for each device.  We are better off sharing a
-> > domain between devices and programming the iommu once.
-> >    
-> 
->    iommufd = open(/dev/iommu);
->    ioctl(iommufd, IOMMUFD_ASSIGN_RANGE, ...)
->    ioctl(vfiofd, VFIO_SET_IOMMU, iommufd)
+Hi,
 
-It seems part of the annoyance of the current KVM device assignment is
-that we have multiple files open, we mmap here, read there, write over
-there, maybe, if it's not emulated.  I quite like Tom's approach that we
-have one stop shopping with /dev/vfio<n>, including config space
-emulation so each driver doesn't have to try to write their own.  So
-continuing with that, shouldn't we be able to add a GET_IOMMU/SET_IOMMU
-ioctl to vfio so that after we setup one device we can bind the next to
-the same domain?
+The following entry creates problem in ARM System type menu. I am
+using a Fedora 12 system.
 
-Alex
+Length of bool "Samsung S3C2410, S3C2412, S3C2413, S3C2416, S3C2440,
+S3C2442, S3C2443, S3C2450" is the problem. How can I fix it.
 
+config ARCH_S3C2410
+        bool "Samsung S3C2410, S3C2412, S3C2413, S3C2416, S3C2440,
+S3C2442, S3C2443, S3C2450"
+        select GENERIC_GPIO
+        select ARCH_HAS_CPUFREQ
+        select HAVE_CLK
+        select ARCH_USES_GETTIMEOFFSET
+        help
+          Samsung S3C2410X CPU based systems, such as the Simtec Electronics
+          BAST (<http://www.simtec.co.uk/products/EB110ITX/>), the IPAQ 1940 or
+          the Samsung SMDK2410 development board (and derivatives).
+
+          Note, the S3C2416 and the S3C2450 are so close that they even share
+          the same SoC ID code. This means that there is no seperate machine
+          directory (no arch/arm/mach-s3c2450) as the S3C2416 was first.
+
+Thanks
+Nobin
