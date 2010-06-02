@@ -1,104 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757036Ab0FBHD2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jun 2010 03:03:28 -0400
-Received: from smtp.nokia.com ([192.100.122.233]:51195 "EHLO
-	mgw-mx06.nokia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756772Ab0FBHD0 (ORCPT
+	id S1757068Ab0FBHEt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jun 2010 03:04:49 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:55876 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751350Ab0FBHEs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jun 2010 03:03:26 -0400
-Message-ID: <4C060224.4090601@nokia.com>
-Date: Wed, 02 Jun 2010 10:03:00 +0300
-From: Dmitry Kasatkin <dmitry.kasatkin@nokia.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.9) Gecko/20100423 Thunderbird/3.0.4
+	Wed, 2 Jun 2010 03:04:48 -0400
+Date: Tue, 1 Jun 2010 23:59:43 -0700 (PDT)
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Rusty Russell <rusty@rustcorp.com.au>
+cc: Andrew Morton <akpm@linux-foundation.org>,
+       Brandon Philips <brandon@ifup.org>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+       LKML <linux-kernel@vger.kernel.org>,
+       Jon Masters <jonathan@jonmasters.org>, Tejun Heo <htejun@gmail.com>,
+       Masami Hiramatsu <mhiramat@redhat.com>,
+       Kay Sievers <kay.sievers@vrfy.org>, Tim Abbott <tabbott@ksplice.com>
+Subject: Re: [PATCH 2/2] module: fix bne2 "gave up waiting for init of module
+ libcrc32c"
+In-Reply-To: <201006021522.35784.rusty@rustcorp.com.au>
+Message-ID: <alpine.LFD.2.00.1006012352150.8175@i5.linux-foundation.org>
+References: <201005252300.07739.rjw@sisk.pl> <201006021239.42006.rusty@rustcorp.com.au> <alpine.LFD.2.00.1006012150070.8175@i5.linux-foundation.org> <201006021522.35784.rusty@rustcorp.com.au>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-To: ext Mimi Zohar <zohar@linux.vnet.ibm.com>
-CC: Shaz <shazalive@gmail.com>, James Morris <jmorris@namei.org>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       "linux-security-module@vger.kernel.org" 
-	<linux-security-module@vger.kernel.org>,
-       David Safford <safford@watson.ibm.com>,
-       Dave Hansen <dave@linux.vnet.ibm.com>,
-       Arjan van de Ven <arjan@infradead.org>,
-       securityengineeringresearchgroup 
-	<securityengineeringresearchgroup@googlegroups.com>
-Subject: Re: [PATCH 00/14] EVM
-References: <1271886594-3719-1-git-send-email-zohar@linux.vnet.ibm.com>	 <alpine.LRH.2.00.1005311017530.24571@tundra.namei.org>	 <AANLkTil8LHjRT_PMosymmtBb1pxIzkBaWC0ef35DCBUU@mail.gmail.com>	 <AANLkTil7WvVZ-3zpA0E--fUcHTqul3pnXnPm1xXn_vlH@mail.gmail.com> <1275420536.28134.37.camel@localhost.localdomain>
-In-Reply-To: <1275420536.28134.37.camel@localhost.localdomain>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 02 Jun 2010 07:02:58.0107 (UTC) FILETIME=[A1BFD0B0:01CB0221]
-X-Nokia-AV: Clean
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
 
-On 01/06/10 22:28, ext Mimi Zohar wrote:
-> On Mon, 2010-05-31 at 15:08 +0500, Shaz wrote:
->   
->>> EVM is based on EA while Aegis does not use EA as far as I can
->>> understand from the documentation available. Can we make EVM
->>> independent of EA? Even the MAC mechanism is very different then
->>> existing LSM based mechanisms.
->>>       
->> Have a look at the following:
->>
->> http://research.nokia.com/files/NRCTR2008010.pdf
->> http://research.nokia.com/files/NRCTR2008007.pdf
->> http://lwn.net/Articles/372937/
->>     
-> SELinux, Smack, Capabilities, and IMA all use extended attributes. The
-> purpose of EVM is to detect offline tampering of these security extended
-> attributes.
->
-> The IMA integrity appraisal extension extends IMA with local measurement
-> appraisal. The extension stores and maintains the file integrity
-> measurement as an extended attribute 'security.ima', which EVM can be
-> configured to protect.  Instead of storing the hash measurement as an
-> extended attribute, the file hashes could be loaded in kernel memory, as
-> long as the appraise policy is appropriately constrained.
->
->   
-Hi,
+On Wed, 2 Jun 2010, Rusty Russell wrote:
+> 
+> Hmm, you're still missing it.  Let me try again.
+> 
+> You weren't the best person to make the call.  That didn't occur to you, did
+> it?
 
-Maemo integrity protection solution was based on old DigSig project
-which was used to verify
-integrity of executables. Signed integrity measurement was embedded to
-the ELF header.
-When we started to develop it EVM was not available.
+Sure, fair enough. 
 
-And we decided to use a file to keep hashes and other info.
+At the same time, I'm the one who has to make the call. And quite often, 
+that call is "this causes more problems than it fixes, we need to revert 
+it".
 
-Our goals were
-1. Protect also certain data files.
-digsig worked only with ELF files.
+Maybe I was too eager to revert this time. Quite often it ends up the 
+other way, where we end up having broken kernels for too long because 
+people weren't eager _enough_ to revert commits that had been bisected to 
+be troublesome. It's hard to tell beforehand.
 
-2. Be mobile friendly
-It seems faster to verify signature of one file with hashes instead of
-checking signature of every EA.
+And quite often, subsystem maintainers are _way_ too eager to not revert 
+the commits they wrote. So I really do end up having to balance that 
+force. 
 
-3. Persistant to offline attacks
-EA can be delete. If not all files has EA then it is not possible to
-detect removal
+Does it always work out? Nope. 
 
-4. Do not use EA.
-IIRC it was some problems with EA on our system and we could not use them..
-
-
-EVM looks very interesting and I would like also to review the code and
-understand the architecture.
-We consider possibility to use EVM if it is going to be in the kernel.
-
-- Dmitry Kasatkin
-Maemo/MeeGo security team
-
-> Mimi
->
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-security-module" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->   
+			Linus
