@@ -1,214 +1,631 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752560Ab0FBFcx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jun 2010 01:32:53 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:46106 "EHLO mx2.suse.de"
+	id S1752295Ab0FBFiD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jun 2010 01:38:03 -0400
+Received: from tango.tkos.co.il ([62.219.50.35]:59011 "EHLO tango.tkos.co.il"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751489Ab0FBFcw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jun 2010 01:32:52 -0400
-Date: Wed, 2 Jun 2010 15:32:35 +1000
-From: Neil Brown <neilb@suse.de>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, Alan Stern <stern@rowland.harvard.edu>,
-       Felipe Balbi <felipe.balbi@nokia.com>,
-       Arve =?UTF-8?B?SGrDuG5uZXbDpWc=?= <arve@android.com>,
-       Peter Zijlstra <peterz@infradead.org>,
-       "Paul@smtp1.linux-foundation.org" <Paul@smtp1.linux-foundation.org>,
-       LKML <linux-kernel@vger.kernel.org>,
-       Florian Mickler <florian@mickler.org>,
-       Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
-       Linux PM <linux-pm@lists.linux-foundation.org>,
-       Alan Cox <alan@lxorguk.ukuu.org.uk>,
-       James Bottomley <James.Bottomley@suse.de>
-Subject: [PATCH] - race-free suspend.  Was: Re: [linux-pm] [PATCH 0/8]
- Suspend block api (version 8)
-Message-ID: <20100602153235.340a7852@notabene.brown>
-In-Reply-To: <alpine.LFD.2.00.1006011243350.2933@localhost.localdomain>
-References: <Pine.LNX.4.44L0.1005271303190.3239-100000@iolanthe.rowland.org>
-	<201006010005.19554.rjw@sisk.pl>
-	<20100601090023.788cabf4@notabene.brown>
-	<201006010232.20263.rjw@sisk.pl>
-	<20100601113309.609349fd@notabene.brown>
-	<alpine.LFD.2.00.1006010340160.2933@localhost.localdomain>
-	<20100601122012.1edeaf48@notabene.brown>
-	<alpine.LFD.2.00.1006011243350.2933@localhost.localdomain>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1751528Ab0FBFiA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Jun 2010 01:38:00 -0400
+From: Baruch Siach <baruch@tkos.co.il>
+To: rtc-linux@googlegroups.com, linux-kernel@vger.kernel.org
+Cc: Baruch Siach <baruch@tkos.co.il>, Alessandro Zummo <a.zummo@towertech.it>
+Subject: [PATCH] rtc: driver for the DryIce block found in i.MX25 chips
+Date: Wed,  2 Jun 2010 08:37:21 +0300
+Message-Id: <0173f18c60cb4d1f8a0d123da6cd3cfca0224788.1275456869.git.baruch@tkos.co.il>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 1 Jun 2010 12:50:01 +0200 (CEST)
-Thomas Gleixner <tglx@linutronix.de> wrote:
+This driver is based on code from Freescale which accompanies their i.MX25 PDK
+board, with some cleanup.
 
-> On Tue, 1 Jun 2010, Neil Brown wrote:
-> > 
-> > I think you have acknowledged that there is a race with suspend - thanks.
-> > Next step was "can it be closed".
-> > You seem to suggest that it can, but you describe it as a "work around"
-> > rather than a "bug fix"...
-> > 
-> > Do you agree that the race is a "bug", and therefore it is appropriate to
-> > "fix" it assuming an acceptable fix can be found (which I think it can)?
-> 
-> If we can fix it, yes we definitely should do and not work around it.
->  
-> Thanks,
-> 
-> 	tglx
+Signed-off-by: Baruch Siach <baruch@tkos.co.il>
+Cc: Alessandro Zummo <a.zummo@towertech.it>
+---
 
-OK.
-Here is my suggestion.
+I'm sending this to LKML also, since the RTC maintainer has been silent since I 
+sent v3 of this driver three months ago. If you know any better way to push 
+this driver upstream, please let me know.
 
-While I think this patch would actually work, and hope the ugly aspects are
-reasonably balanced by the simplicity, I present it primarily as a base for
-improvement.
-The important part is to present how drivers and user-space can co-operate 
-to avoid losing wake-events.  The details of what happens in the kernel are
-certainly up for discussion (as is everything else really of course).
+Changes v3 -> v4:
 
-The user-space suspend daemon avoids losing wake-events by using
-fcntl(F_OWNER) to ensure it gets a signal whenever any important wake-event
-is ready to be read by user-space.  This may involve:
-  - the one daemon processing all wake events
-  - Both the suspend daemon and the main event handling daemon opening any
-    given device that delivers wake events (this should work with input
-    events ... unless grabbing is needed)
-  - The event handling daemon giving the suspend-daemon's pid as F_OWNER, and
-    using poll/select to get the events itself.
+	Merge in a patch fixing an "irq: nobody cared" race.
 
-When 'mem' is written to /sys/power/state, suspend_prepare waits in an
-interruptible wait until any wake-event that might have been initiated before
-the suspend was request, has had a chance to be queued for user-space and
-trigger kill_fasync.
-Currently this wait is a configurable time after the last wake-event was
-initiated.  This is hackish, but simple and probably adequate.
-If more precise timing is needed and achievable, that can be added later.  It
-would be an entirely internal change and would not affect the API further.
-Some of the code developed for suspend-blockers might be a starting point for
-this.
+Changes v2 -> v3:
 
-Drivers should call pm_suspend_delay() whenever a wake-event occurs.  This
-simply records the time so that the suspend process knows if there is in fact
-any need to wait at all.
+Add spaces around the '+' operator as suggested by Alessandro Zummo and Lothar 
+Waßmann.
 
-The delay to wait after the last pm_suspend_delay() is limited to 10 seconds
-and can be set by kernel parameter suspend_block_delay=number-of-milliseconds
-It defaults to 2 jiffies (which is possibly too short).
+Address other comments of Alessandro Zummo:
 
-- Would this fix the "bug"??
-- and address the issues that suspend-blockers was created to address?
-- or are the requirements on user-space too onerous?
+	* add implementation of the alarm_irq_enable rtc op
+	* use devres in .probe
+	* remove unneeded initializations
 
+Changes v1 -> v2:
 
-Thanks,
-NeilBrown
+Address the comments of Alessandro Zummo:
 
-Signed-off-by: NeilBrown <neilb@suse.de>
+	* remove the .ioctl implementation
+	* implement .set_mmss instead of .set_time
+	* reorder the .probe implementation
+	* make sure not to have enabled interrupts when registering or 
+	  unregistering the rtc device
+	* add MODULE_AUTHOR() with my email
 
-diff --git a/include/linux/suspend.h b/include/linux/suspend.h
-index 5e781d8..ccbadd0 100644
---- a/include/linux/suspend.h
-+++ b/include/linux/suspend.h
-@@ -142,11 +142,13 @@ extern void arch_suspend_disable_irqs(void);
- extern void arch_suspend_enable_irqs(void);
+Address the comment of Lothar Waßmann:
+
+	* return PTR_ERR on clk_get failure
+
+Slightly change MODULE_DESCRIPTION().
+Use timeout which is independent of HZ for wait_event_interruptible_timeout().
+
+ drivers/rtc/Kconfig     |   10 +
+ drivers/rtc/Makefile    |    1 +
+ drivers/rtc/rtc-imxdi.c |  520 +++++++++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 531 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/rtc/rtc-imxdi.c
+
+diff --git a/drivers/rtc/Kconfig b/drivers/rtc/Kconfig
+index 10ba12c..f7dab3b 100644
+--- a/drivers/rtc/Kconfig
++++ b/drivers/rtc/Kconfig
+@@ -537,6 +537,16 @@ config RTC_DRV_MSM6242
+ 	  This driver can also be built as a module. If so, the module
+ 	  will be called rtc-msm6242.
  
- extern int pm_suspend(suspend_state_t state);
-+extern void pm_suspend_delay(void);
- #else /* !CONFIG_SUSPEND */
- #define suspend_valid_only_mem	NULL
- 
- static inline void suspend_set_ops(struct platform_suspend_ops *ops) {}
- static inline int pm_suspend(suspend_state_t state) { return -ENOSYS; }
-+static inlint void pm_suspend_delay(void) {}
- #endif /* !CONFIG_SUSPEND */
- 
- /* struct pbe is used for creating lists of pages that should be restored
-diff --git a/kernel/power/suspend.c b/kernel/power/suspend.c
-index 56e7dbb..07897b9 100644
---- a/kernel/power/suspend.c
-+++ b/kernel/power/suspend.c
-@@ -46,6 +46,69 @@ bool valid_state(suspend_state_t state)
- 	return suspend_ops && suspend_ops->valid && suspend_ops->valid(state);
- }
- 
++config RTC_DRV_IMXDI
++	tristate "Freescale IMX DryIce Real Time Clock"
++	depends on ARCH_MX25
++	depends on RTC_CLASS
++	help
++	   Support for Freescale IMX DryIce RTC
++
++	   This driver can also be built as a module, if so, the module
++	   will be called "rtc-imxdi".
++
+ config RTC_MXC
+ 	tristate "Freescale MXC Real Time Clock"
+ 	depends on ARCH_MXC
+diff --git a/drivers/rtc/Makefile b/drivers/rtc/Makefile
+index 5adbba7..e0f6fd5 100644
+--- a/drivers/rtc/Makefile
++++ b/drivers/rtc/Makefile
+@@ -46,6 +46,7 @@ obj-$(CONFIG_RTC_DRV_EFI)	+= rtc-efi.o
+ obj-$(CONFIG_RTC_DRV_EP93XX)	+= rtc-ep93xx.o
+ obj-$(CONFIG_RTC_DRV_FM3130)	+= rtc-fm3130.o
+ obj-$(CONFIG_RTC_DRV_GENERIC)	+= rtc-generic.o
++obj-$(CONFIG_RTC_DRV_IMXDI)	+= rtc-imxdi.o
+ obj-$(CONFIG_RTC_DRV_ISL1208)	+= rtc-isl1208.o
+ obj-$(CONFIG_RTC_DRV_M41T80)	+= rtc-m41t80.o
+ obj-$(CONFIG_RTC_DRV_M41T94)	+= rtc-m41t94.o
+diff --git a/drivers/rtc/rtc-imxdi.c b/drivers/rtc/rtc-imxdi.c
+new file mode 100644
+index 0000000..7f207cd
+--- /dev/null
++++ b/drivers/rtc/rtc-imxdi.c
+@@ -0,0 +1,520 @@
 +/*
-+ * Devices that process potential wake-up events report each
-+ * wake-up events by pm_suspend_delay();
-+ * This ensures that suspend won't happen for a "little while"
-+ * so the event has a chance to get to user-space.
-+ * pm_suspend calls wait_for_blockers to wait the required
-+ * "little while" and to check for signals.
-+ * A process that requests a suspend should arrange (via
-+ * fcntl(F_GETOWN)) to get signalled whenever a wake-up event
-+ * is queued for user-space.  This will ensure that if a suspend
-+ * is requested at much the same time as a wakeup event arrives, either
-+ * the suspend will be interrupted, or it will complete quickly.
-+ *
-+ * The "little while" is a heuristic to avoid having to explicitly
-+ * track every event through the kernel with associated locking and unlocking.
-+ * It should be more than the longest time it can take between an interrupt
-+ * occurring and the corresponding event being queued to userspace
-+ * (and the accompanying kill_fasync call).
-+ * This duration is configurable at boot time, has a lower limit of 2
-+ * jiffies and an upper limit of 10 seconds.  It defaults to the minimum.
++ * Copyright 2008-2009 Freescale Semiconductor, Inc. All Rights Reserved.
++ * Copyright 2010 Orex Computed Radiography
 + */
-+static unsigned long little_while_jiffies = 2;
-+static int __init setup_suspend_block_delay(char *str)
++
++/*
++ * The code contained herein is licensed under the GNU General Public
++ * License. You may obtain a copy of the GNU General Public License
++ * Version 2 or later at the following locations:
++ *
++ * http://www.opensource.org/licenses/gpl-license.html
++ * http://www.gnu.org/copyleft/gpl.html
++ */
++
++/* based on rtc-mc13892.c */
++
++/*
++ * This driver uses the 47-bit 32 kHz counter in the Freescale DryIce block
++ * to implement a Linux RTC. Times and alarms are truncated to seconds.
++ * Since the RTC framework performs API locking via rtc->ops_lock the
++ * only simultaneous accesses we need to deal with is updating DryIce
++ * registers while servicing an alarm.
++ *
++ * Note that reading the DSR (DryIce Status Register) automatically clears
++ * the WCF (Write Complete Flag). All DryIce writes are synchronized to the
++ * LP (Low Power) domain and set the WCF upon completion. Writes to the
++ * DIER (DryIce Interrupt Enable Register) are the only exception. These
++ * occur at normal bus speeds and do not set WCF.  Periodic interrupts are
++ * not supported by the hardware.
++ */
++
++#include <linux/io.h>
++#include <linux/clk.h>
++#include <linux/delay.h>
++#include <linux/module.h>
++#include <linux/platform_device.h>
++#include <linux/rtc.h>
++#include <linux/workqueue.h>
++
++/* DryIce Register Definitions */
++
++#define DTCMR     0x00           /* Time Counter MSB Reg */
++#define DTCLR     0x04           /* Time Counter LSB Reg */
++
++#define DCAMR     0x08           /* Clock Alarm MSB Reg */
++#define DCALR     0x0c           /* Clock Alarm LSB Reg */
++#define DCAMR_UNSET  0xFFFFFFFF  /* doomsday - 1 sec */
++
++#define DCR       0x10           /* Control Reg */
++#define DCR_TCE   (1 << 3)       /* Time Counter Enable */
++
++#define DSR       0x14           /* Status Reg */
++#define DSR_WBF   (1 << 10)      /* Write Busy Flag */
++#define DSR_WNF   (1 << 9)       /* Write Next Flag */
++#define DSR_WCF   (1 << 8)       /* Write Complete Flag */
++#define DSR_WEF   (1 << 7)       /* Write Error Flag */
++#define DSR_CAF   (1 << 4)       /* Clock Alarm Flag */
++#define DSR_NVF   (1 << 1)       /* Non-Valid Flag */
++#define DSR_SVF   (1 << 0)       /* Security Violation Flag */
++
++#define DIER      0x18           /* Interrupt Enable Reg */
++#define DIER_WNIE (1 << 9)       /* Write Next Interrupt Enable */
++#define DIER_WCIE (1 << 8)       /* Write Complete Interrupt Enable */
++#define DIER_WEIE (1 << 7)       /* Write Error Interrupt Enable */
++#define DIER_CAIE (1 << 4)       /* Clock Alarm Interrupt Enable */
++
++/**
++ * struct imxdi_dev - private imxdi rtc data
++ * @pdev: pionter to platform dev
++ * @rtc: pointer to rtc struct
++ * @ioaddr: IO registers pointer
++ * @irq: dryice normal interrupt
++ * @clk: input reference clock
++ * @dsr: copy of the DSR register
++ * @irq_lock: interrupt enable register (DIER) lock
++ * @write_wait: registers write complete queue
++ * @write_mutex: serialize registers write
++ * @work: schedule alarm work
++ */
++struct imxdi_dev {
++	struct platform_device *pdev;
++	struct rtc_device *rtc;
++	void __iomem *ioaddr;
++	int irq;
++	struct clk *clk;
++	u32 dsr;
++	spinlock_t irq_lock;
++	wait_queue_head_t write_wait;
++	struct mutex write_mutex;
++	struct work_struct work;
++};
++
++/*
++ * enable a dryice interrupt
++ */
++static inline void di_int_enable(struct imxdi_dev *imxdi, u32 intr)
 +{
-+	unsigned long msec;
-+	if (sscanf(str, "%lu", &msec) != 1)
-+		return 1;
-+	if (msec > 10000)
-+		msec = 10000;
-+	little_while_jiffies = msecs_to_jiffies(msec);
-+	if (little_while_jiffies < 2)
-+		little_while_jiffies = 2;
-+	return 1;
++	unsigned long flags;
++
++	spin_lock_irqsave(&imxdi->irq_lock, flags);
++	__raw_writel(__raw_readl(imxdi->ioaddr + DIER) | intr,
++			imxdi->ioaddr + DIER);
++	spin_unlock_irqrestore(&imxdi->irq_lock, flags);
 +}
-+__setup("suspend_block_delay=", setup_suspend_block_delay);
 +
-+static unsigned long next_little_while;
-+void pm_suspend_delay()
++/*
++ * disable a dryice interrupt
++ */
++static inline void di_int_disable(struct imxdi_dev *imxdi, u32 intr)
 +{
-+	unsigned long then = jiffies + little_while_jiffies;
++	unsigned long flags;
 +
-+	if (then != next_little_while)
-+		next_little_while = then;
++	spin_lock_irqsave(&imxdi->irq_lock, flags);
++	__raw_writel(__raw_readl(imxdi->ioaddr + DIER) & ~intr,
++			imxdi->ioaddr + DIER);
++	spin_unlock_irqrestore(&imxdi->irq_lock, flags);
 +}
-+EXPORT_SYMBOL_GPL(pm_suspend_delay);
 +
-+static int wait_for_blockers(void)
++/*
++ * This function attempts to clear the dryice write-error flag.
++ *
++ * A dryice write error is similar to a bus fault and should not occur in
++ * normal operation.  Clearing the flag requires another write, so the root
++ * cause of the problem may need to be fixed before the flag can be cleared.
++ */
++static void clear_write_error(struct imxdi_dev *imxdi)
 +{
-+	unsigned long timeout;
++	int cnt;
 +
-+	if (time_after(jiffies, next_little_while))
-+		return 0;
-+	timeout = next_little_while - jiffies;
-+	if (timeout > msecs_to_jiffies(10000))
-+		/* jiffy wrap */
-+		return 0;
++	dev_warn(&imxdi->pdev->dev, "WARNING: Register write error!\n");
 +
-+	while (timeout && !signal_pending(current))
-+		timeout = schedule_timeout_interruptible(timeout);
-+	if (signal_pending(current))
-+		return -EINTR;
++	for (;;) {
++		/* clear the write error flag */
++		__raw_writel(DSR_WEF, imxdi->ioaddr + DSR);
++
++		/* wait for it to take effect */
++		for (cnt = 0; cnt < 100; cnt++) {
++			if ((__raw_readl(imxdi->ioaddr + DSR) & DSR_WEF) == 0)
++				return;
++			udelay(10);
++		}
++		dev_err(&imxdi->pdev->dev,
++			"ERROR: Cannot clear write-error flag!\n");
++	}
++}
++
++/*
++ * Write a dryice register and wait until it completes.
++ *
++ * This function uses interrupts to determine when the
++ * write has completed.
++ */
++static int di_write_wait(struct imxdi_dev *imxdi, u32 val, int reg)
++{
++	int ret;
++	int rc = 0;
++
++	/* serialize register writes */
++	mutex_lock(&imxdi->write_mutex);
++
++	/* enable the write-complete interrupt */
++	di_int_enable(imxdi, DIER_WCIE);
++
++	imxdi->dsr = 0;
++
++	/* do the register write */
++	__raw_writel(val, imxdi->ioaddr + reg);
++
++	/* wait for the write to finish */
++	ret = wait_event_interruptible_timeout(imxdi->write_wait,
++			imxdi->dsr & (DSR_WCF | DSR_WEF), msecs_to_jiffies(1));
++	if (ret == 0)
++		dev_warn(&imxdi->pdev->dev,
++				"Write-wait timeout "
++				"val = 0x%08x reg = 0x%08x\n", val, reg);
++
++	/* check for write error */
++	if (imxdi->dsr & DSR_WEF) {
++		clear_write_error(imxdi);
++		rc = -EIO;
++	}
++	mutex_unlock(&imxdi->write_mutex);
++	return rc;
++}
++
++/*
++ * read the seconds portion of the current time from the dryice time counter
++ */
++static int dryice_rtc_read_time(struct device *dev, struct rtc_time *tm)
++{
++	struct imxdi_dev *imxdi = dev_get_drvdata(dev);
++	unsigned long now;
++
++	now = __raw_readl(imxdi->ioaddr + DTCMR);
++	rtc_time_to_tm(now, tm);
++
 +	return 0;
 +}
- /**
-  * suspend_valid_only_mem - generic memory-only valid callback
-  *
-@@ -89,6 +152,10 @@ static int suspend_prepare(void)
- 	if (error)
- 		goto Finish;
- 
-+	error = wait_for_blockers();
-+	if (error)
-+		goto Finish;
 +
- 	error = usermodehelper_disable();
- 	if (error)
- 		goto Finish;
++/*
++ * set the seconds portion of dryice time counter and clear the
++ * fractional part.
++ */
++static int dryice_rtc_set_mmss(struct device *dev, unsigned long secs)
++{
++	struct imxdi_dev *imxdi = dev_get_drvdata(dev);
++	int rc;
++
++	/* zero the fractional part first */
++	rc = di_write_wait(imxdi, 0, DTCLR);
++	if (rc == 0)
++		rc = di_write_wait(imxdi, secs, DTCMR);
++
++	return rc;
++}
++
++static int dryice_rtc_alarm_irq_enable(struct device *dev,
++		unsigned int enabled)
++{
++	struct imxdi_dev *imxdi = dev_get_drvdata(dev);
++
++	if (enabled)
++		di_int_enable(imxdi, DIER_CAIE);
++	else
++		di_int_disable(imxdi, DIER_CAIE);
++
++	return 0;
++}
++
++/*
++ * read the seconds portion of the alarm register.
++ * the fractional part of the alarm register is always zero.
++ */
++static int dryice_rtc_read_alarm(struct device *dev, struct rtc_wkalrm *alarm)
++{
++	struct imxdi_dev *imxdi = dev_get_drvdata(dev);
++	u32 dcamr;
++
++	dcamr = __raw_readl(imxdi->ioaddr + DCAMR);
++	rtc_time_to_tm(dcamr, &alarm->time);
++
++	/* alarm is enabled if the interrupt is enabled */
++	alarm->enabled = (__raw_readl(imxdi->ioaddr + DIER) & DIER_CAIE) != 0;
++
++	/* don't allow the DSR read to mess up DSR_WCF */
++	mutex_lock(&imxdi->write_mutex);
++
++	/* alarm is pending if the alarm flag is set */
++	alarm->pending = (__raw_readl(imxdi->ioaddr + DSR) & DSR_CAF) != 0;
++
++	mutex_unlock(&imxdi->write_mutex);
++
++	return 0;
++}
++
++/*
++ * set the seconds portion of dryice alarm register
++ */
++static int dryice_rtc_set_alarm(struct device *dev, struct rtc_wkalrm *alarm)
++{
++	struct imxdi_dev *imxdi = dev_get_drvdata(dev);
++	unsigned long now;
++	unsigned long alarm_time;
++	int rc;
++
++	rc = rtc_tm_to_time(&alarm->time, &alarm_time);
++	if (rc)
++		return rc;
++
++	/* don't allow setting alarm in the past */
++	now = __raw_readl(imxdi->ioaddr + DTCMR);
++	if (alarm_time < now)
++		return -EINVAL;
++
++	/* write the new alarm time */
++	rc = di_write_wait(imxdi, (u32)alarm_time, DCAMR);
++	if (rc)
++		return rc;
++
++	if (alarm->enabled)
++		di_int_enable(imxdi, DIER_CAIE);  /* enable alarm intr */
++	else
++		di_int_disable(imxdi, DIER_CAIE); /* disable alarm intr */
++
++	return 0;
++}
++
++static struct rtc_class_ops dryice_rtc_ops = {
++	.read_time		= dryice_rtc_read_time,
++	.set_mmss		= dryice_rtc_set_mmss,
++	.alarm_irq_enable	= dryice_rtc_alarm_irq_enable,
++	.read_alarm		= dryice_rtc_read_alarm,
++	.set_alarm		= dryice_rtc_set_alarm,
++};
++
++/*
++ * dryice "normal" interrupt handler
++ */
++static irqreturn_t dryice_norm_irq(int irq, void *dev_id)
++{
++	struct imxdi_dev *imxdi = dev_id;
++	u32 dsr, dier;
++	irqreturn_t rc = IRQ_NONE;
++
++	dier = __raw_readl(imxdi->ioaddr + DIER);
++
++	/* handle write complete and write error cases */
++	if ((dier & DIER_WCIE)) {
++		/*If the write wait queue is empty then there is no pending
++		  operations. It means the interrupt is for DryIce -Security.
++		  IRQ must be returned as none.*/
++		if (list_empty_careful(&imxdi->write_wait.task_list))
++			return rc;
++
++		/* DSR_WCF clears itself on DSR read */
++		dsr = __raw_readl(imxdi->ioaddr + DSR);
++		if ((dsr & (DSR_WCF | DSR_WEF))) {
++			/* mask the interrupt */
++			di_int_disable(imxdi, DIER_WCIE);
++
++			/* save the dsr value for the wait queue */
++			imxdi->dsr |= dsr;
++
++			wake_up_interruptible(&imxdi->write_wait);
++			rc = IRQ_HANDLED;
++		}
++	}
++
++	/* handle the alarm case */
++	if ((dier & DIER_CAIE)) {
++		/* DSR_WCF clears itself on DSR read */
++		dsr = __raw_readl(imxdi->ioaddr + DSR);
++		if (dsr & DSR_CAF) {
++			/* mask the interrupt */
++			di_int_disable(imxdi, DIER_CAIE);
++
++			/* finish alarm in user context */
++			schedule_work(&imxdi->work);
++			rc = IRQ_HANDLED;
++		}
++	}
++	return rc;
++}
++
++/*
++ * post the alarm event from user context so it can sleep
++ * on the write completion.
++ */
++static void dryice_work(struct work_struct *work)
++{
++	struct imxdi_dev *imxdi = container_of(work,
++			struct imxdi_dev, work);
++
++	/* dismiss the interrupt (ignore error) */
++	di_write_wait(imxdi, DSR_CAF, DSR);
++
++	/*
++	 * pass the alarm event to the rtc framework. note that
++	 * rtc_update_irq expects to be called with interrupts off.
++	 */
++	local_irq_disable();
++	rtc_update_irq(imxdi->rtc, 1, RTC_AF | RTC_IRQF);
++	local_irq_enable();
++}
++
++/*
++ * probe for dryice rtc device
++ */
++static int dryice_rtc_probe(struct platform_device *pdev)
++{
++	struct resource *res;
++	struct imxdi_dev *imxdi;
++	int rc;
++
++	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
++	if (!res)
++		return -ENODEV;
++
++	imxdi = devm_kzalloc(&pdev->dev, sizeof(*imxdi), GFP_KERNEL);
++	if (!imxdi)
++		return -ENOMEM;
++
++	imxdi->pdev = pdev;
++
++	if (!devm_request_mem_region(&pdev->dev, res->start, resource_size(res),
++				pdev->name))
++		return -EBUSY;
++
++	imxdi->ioaddr = devm_ioremap(&pdev->dev, res->start,
++			resource_size(res));
++	if (imxdi->ioaddr == NULL)
++		return -ENOMEM;
++
++	imxdi->irq = platform_get_irq(pdev, 0);
++	if (imxdi->irq < 0)
++		return imxdi->irq;
++
++	init_waitqueue_head(&imxdi->write_wait);
++
++	INIT_WORK(&imxdi->work, dryice_work);
++
++	mutex_init(&imxdi->write_mutex);
++
++	imxdi->clk = clk_get(&pdev->dev, NULL);
++	if (IS_ERR(imxdi->clk))
++		return PTR_ERR(imxdi->clk);
++	clk_enable(imxdi->clk);
++
++	/*
++	 * Initialize dryice hardware
++	 */
++
++	/* mask all interrupts */
++	__raw_writel(0, imxdi->ioaddr + DIER);
++
++	rc = devm_request_irq(&pdev->dev, imxdi->irq, dryice_norm_irq,
++			IRQF_SHARED, pdev->name, imxdi);
++	if (rc) {
++		dev_warn(&pdev->dev, "interrupt not available.\n");
++		goto err;
++	}
++
++	/* put dryice into valid state */
++	if (__raw_readl(imxdi->ioaddr + DSR) & DSR_NVF) {
++		rc = di_write_wait(imxdi, DSR_NVF | DSR_SVF, DSR);
++		if (rc)
++			goto err;
++	}
++
++	/* initialize alarm */
++	rc = di_write_wait(imxdi, DCAMR_UNSET, DCAMR);
++	if (rc)
++		goto err;
++	rc = di_write_wait(imxdi, 0, DCALR);
++	if (rc)
++		goto err;
++
++	/* clear alarm flag */
++	if (__raw_readl(imxdi->ioaddr + DSR) & DSR_CAF) {
++		rc = di_write_wait(imxdi, DSR_CAF, DSR);
++		if (rc)
++			goto err;
++	}
++
++	/* the timer won't count if it has never been written to */
++	if (__raw_readl(imxdi->ioaddr + DTCMR) == 0) {
++		rc = di_write_wait(imxdi, 0, DTCMR);
++		if (rc)
++			goto err;
++	}
++
++	/* start keeping time */
++	if (!(__raw_readl(imxdi->ioaddr + DCR) & DCR_TCE)) {
++		rc = di_write_wait(imxdi,
++				__raw_readl(imxdi->ioaddr + DCR) | DCR_TCE,
++				DCR);
++		if (rc)
++			goto err;
++	}
++
++	imxdi->rtc = rtc_device_register(pdev->name, &pdev->dev,
++				  &dryice_rtc_ops, THIS_MODULE);
++	if (IS_ERR(imxdi->rtc)) {
++		rc = PTR_ERR(imxdi->rtc);
++		goto err;
++	}
++	platform_set_drvdata(pdev, imxdi);
++
++	return 0;
++
++err:
++	clk_disable(imxdi->clk);
++	clk_put(imxdi->clk);
++
++	return rc;
++}
++
++static int __devexit dryice_rtc_remove(struct platform_device *pdev)
++{
++	struct imxdi_dev *imxdi = platform_get_drvdata(pdev);
++
++	flush_scheduled_work();
++
++	/* mask all interrupts */
++	__raw_writel(0, imxdi->ioaddr + DIER);
++
++	rtc_device_unregister(imxdi->rtc);
++
++	clk_disable(imxdi->clk);
++	clk_put(imxdi->clk);
++
++	return 0;
++}
++
++static struct platform_driver dryice_rtc_driver = {
++	.driver = {
++		   .name = "imxdi_rtc",
++		   .owner = THIS_MODULE,
++		   },
++	.probe = dryice_rtc_probe,
++	.remove = __devexit_p(dryice_rtc_remove),
++};
++
++static int __init dryice_rtc_init(void)
++{
++	return platform_driver_register(&dryice_rtc_driver);
++}
++
++static void __exit dryice_rtc_exit(void)
++{
++	platform_driver_unregister(&dryice_rtc_driver);
++}
++
++module_init(dryice_rtc_init);
++module_exit(dryice_rtc_exit);
++
++MODULE_AUTHOR("Freescale Semiconductor, Inc.");
++MODULE_AUTHOR("Baruch Siach <baruch@tkos.co.il>");
++MODULE_DESCRIPTION("IMX DryIce Realtime Clock Driver (RTC)");
++MODULE_LICENSE("GPL");
+-- 
+1.7.1
 
