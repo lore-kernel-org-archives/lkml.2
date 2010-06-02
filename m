@@ -1,114 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932623Ab0FBPVW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jun 2010 11:21:22 -0400
-Received: from smtp-out.google.com ([74.125.121.35]:54130 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932340Ab0FBPVV (ORCPT
+	id S932630Ab0FBPYO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jun 2010 11:24:14 -0400
+Received: from mail-gw0-f46.google.com ([74.125.83.46]:33991 "EHLO
+	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932340Ab0FBPYN convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jun 2010 11:21:21 -0400
-Date: Wed, 2 Jun 2010 08:16:02 -0700
-From: Bill Richardson <wfrichar@chromium.org>
-To: tglx@linutronix.de, mingo@redhat.com, hpa@zytor.com, x86@kernel.org,
-       akpm@linux-foundation.org, fweisbec@gmail.com, yinghai@kernel.org,
-       pavel@ucw.cz, shane.wang@intel.com, linux-kernel@vger.kernel.org
-Cc: olofj@chromium.org, msb@chromium.org, drewry@chromium.org
-Subject: [RFC] [PATCH] Allow empty e820 map if EFI map will be provided
-	later.
-Message-ID: <20100602151602.GA3656@google.com>
+	Wed, 2 Jun 2010 11:24:13 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=mY1Szqfefx61w6v5rXYTFkI4y3xwQlVeE0skioQcK2dLdvaGem6MRUvS/q8DDPU/cd
+         46/NK4aIHYPxDkGFTRjPN6OPtG3DpnXw5WnvkHyTjnoqxKe2AeoTDoVpc6c/+M6i5Jax
+         FzhsdBbZM7rZUL4A5N0fBicsugU7w7aHv7J9g=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
-X-System-Of-Record: true
+In-Reply-To: <20100602145653.GA2385@linux.vnet.ibm.com>
+References: <AANLkTinNygSdXsg3vAVRHttAMh6nX4tauNKn3XnfQC_x@mail.gmail.com>
+	<20100602145653.GA2385@linux.vnet.ibm.com>
+Date: Wed, 2 Jun 2010 16:24:12 +0100
+Message-ID: <AANLkTinu-JJ-X7annZ0U3oY8mcGF-hUEMV3ByYpNtL9n@mail.gmail.com>
+Subject: Re: [PATCH] RCU: don't turn off lockdep when find suspicious 
+	rcu_dereference_check() usage
+From: Daniel J Blueman <daniel.blueman@gmail.com>
+To: paulmck@linux.vnet.ibm.com
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If you are booting an x86-based system from an EFI BIOS that does not
-provide any e820-style memory maps, setup_arch() calls functions that expect
-to find the e820 maps long before it calls functions to find the EFI maps.
-The default behavior in arch/x86/kernel/e820.c is that if no e820 map
-exists, default_machine_specific_memory_setup() adds two default regions
-just in case. Later, when you get around to using the EFI maps, these
-default regions interfere with the real memory map.
+On Wed, Jun 2, 2010 at 3:56 PM, Paul E. McKenney
+<paulmck@linux.vnet.ibm.com> wrote:
+> On Tue, Jun 01, 2010 at 02:06:13PM +0100, Daniel J Blueman wrote:
+>> Hi Paul,
+>>
+>> With 2.6.35-rc1 and your patch in the context below, we still see
+>> "include/linux/cgroup.h:534 invoked rcu_dereference_check() without
+>> protection!", so need this additional patch:
+>>
+>> Acquire read-side RCU lock around task_group() calls, addressing
+>> "include/linux/cgroup.h:534 invoked rcu_dereference_check() without
+>> protection!" warning.
+>>
+>> Signed-off-by: Daniel J Blueman <daniel.blueman@gmail.com>
+>
+> Thank you, Daniel!  I have queued this for 2.6.35.
+>
+> I had to apply the patch by hand due to line wrapping.  Could you please
+> check your email-agent settings?  This simple patch was no problem to
+> hand apply, but for a larger patch this process would be both tedious
+> and error prone.
 
-This patch provides a config option that allows the lack of e820 maps to be
-ignored, under the assumption that you know what you're doing and will
-provide a valid EFI memory map to use.
+True - will do.
 
-The reason this problem has not arisen before now is that under most
-circumstances either the EFI BIOS' Compatibility Support Module provides an
-e820-style memory map in the first place, or the EFI-aware bootloader
-(grub2, elilo) translates the EFI map to the e280 format before booting the
-kernel.
+Thanks,
+  Daniel
 
-I'm trying to reduce the boot time and BIOS footprint, so I'm booting
-without either of those pre-boot map translations. This patch allows that to
-happen.
-
-Signed-off-by: Bill Richardson <wfrichar@chromium.org>
----
- arch/x86/Kconfig            |   10 ++++++++++
- arch/x86/include/asm/e820.h |    5 +++++
- arch/x86/kernel/e820.c      |    2 +-
- 3 files changed, 16 insertions(+), 1 deletions(-)
-
-diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
-index dcb0593..5af1da6 100644
---- a/arch/x86/Kconfig
-+++ b/arch/x86/Kconfig
-@@ -1468,6 +1468,16 @@ config EFI
- 	  resultant kernel should continue to boot on existing non-EFI
- 	  platforms.
- 
-+config ALLOW_EMPTY_E820
-+	bool "Allow empty e820 memory maps"
-+	default y
-+	depends on EFI && (X86_64 || X86_32)
-+	---help---
-+	  Enable this if you are using EFI memory maps instead of e820.
-+	  The EFI memory maps are scanned much later than the e820 maps, and
-+	  without this option the e280 setup code will automatically add
-+	  some default mappings that may conflict with the real EFI maps.
-+
- config SECCOMP
- 	def_bool y
- 	prompt "Enable seccomp to safely compute untrusted bytecode"
-diff --git a/arch/x86/include/asm/e820.h b/arch/x86/include/asm/e820.h
-index ec8a52d..cbe22f9 100644
---- a/arch/x86/include/asm/e820.h
-+++ b/arch/x86/include/asm/e820.h
-@@ -134,6 +134,11 @@ extern void e820_reserve_resources(void);
- extern void e820_reserve_resources_late(void);
- extern void setup_memory_map(void);
- extern char *default_machine_specific_memory_setup(void);
-+#ifdef CONFIG_ALLOW_EMPTY_E820
-+static inline int no_e820_map_return(void) { return 0; }
-+#else
-+static inline int no_e820_map_return(void) { return -1; }
-+#endif
- 
- /*
-  * Returns true iff the specified range [s,e) is completely contained inside
-diff --git a/arch/x86/kernel/e820.c b/arch/x86/kernel/e820.c
-index 7bca3c6..b7db15c 100644
---- a/arch/x86/kernel/e820.c
-+++ b/arch/x86/kernel/e820.c
-@@ -416,7 +416,7 @@ static int __init append_e820_map(struct e820entry *biosmap, int nr_map)
- {
- 	/* Only one memory region (or negative)? Ignore it */
- 	if (nr_map < 2)
--		return -1;
-+		return no_e820_map_return();
- 
- 	return __append_e820_map(biosmap, nr_map);
- }
+>> diff --git a/kernel/sched_fair.c b/kernel/sched_fair.c
+>> index 217e4a9..50ec9ea 100644
+>> --- a/kernel/sched_fair.c
+>> +++ b/kernel/sched_fair.c
+>> @@ -1241,6 +1241,7 @@ static int wake_affine(struct sched_domain *sd,
+>> struct task_struct *p, int sync)
+>>        * effect of the currently running task from the load
+>>        * of the current CPU:
+>>        */
+>> +     rcu_read_lock();
+>>       if (sync) {
+>>               tg = task_group(current);
+>>               weight = current->se.load.weight;
+>> @@ -1250,6 +1251,7 @@ static int wake_affine(struct sched_domain *sd,
+>> struct task_struct *p, int sync)
+>>       }
+>>
+>>       tg = task_group(p);
+>> +     rcu_read_unlock();
+>>       weight = p->se.load.weight;
+>>
+>>       imbalance = 100 + (sd->imbalance_pct - 100) / 2;
+>>
+>> ---
+>>
+>> On Wed, Apr 21, 2010 at 02:35:43PM -0700, Paul E. McKenney wrote:
+>>     On Tue, Apr 20, 2010 at 11:38:28AM -0400, Miles Lane wrote:
+>>         Excellent. Here are the results on my machine. .config appended.
+>>     First, thank you very much for testing this, Miles!
+>>
+>> And as Tetsuo Handa pointed out privately, my patch was way broken.
+>>
+>> Here is an updated version.
+>>
+>> Thanx, Paul
+>>
+>> commit b15e561ed91b7a366c3cc635026f3b9ce6483070
+>> Author: Paul E. McKenney <paulmck@xxxxxxxxxxxxxxxxxx>
+>> Date: Wed Apr 21 14:04:56 2010 -0700
+>>
+>> sched: protect __sched_setscheduler() access to cgroups
+>>
+>> A given task's cgroups structures must remain while that task is running
+>> due to reference counting, so this is presumably a false positive.
+>> Updated to reflect feedback from Tetsuo Handa.
+>>
+>> Signed-off-by: Paul E. McKenney <paulmck@xxxxxxxxxxxxxxxxxx>
+>>
+>> diff --git a/kernel/sched.c b/kernel/sched.c
+>> index 14c44ec..f425a2b 100644
+>> --- a/kernel/sched.c
+>> +++ b/kernel/sched.c
+>> @@ -4575,9 +4575,13 @@ recheck:
+>> * Do not allow realtime tasks into groups that have no runtime
+>> * assigned.
+>> */
+>> + rcu_read_lock();
+>> if (rt_bandwidth_enabled() && rt_policy(policy) &&
+>> - task_group(p)->rt_bandwidth.rt_runtime == 0)
+>> + task_group(p)->rt_bandwidth.rt_runtime == 0) {
+>> + rcu_read_unlock();
+>> return -EPERM;
+>> + }
+>> + rcu_read_unlock();
+>> #endif
+>>
+>> retval = security_task_setscheduler(p, policy, param);
 -- 
-1.7.0.1
-
-
--- 
-Art for Art's Sake
-Engineering for Money
-
+Daniel J Blueman
