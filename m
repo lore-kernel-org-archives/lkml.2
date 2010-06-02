@@ -1,134 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756402Ab0FBCbL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Jun 2010 22:31:11 -0400
-Received: from sh.osrg.net ([192.16.179.4]:35584 "EHLO sh.osrg.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752498Ab0FBCbJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Jun 2010 22:31:09 -0400
-Date: Wed, 2 Jun 2010 11:30:55 +0900
-To: jaxboe@fusionio.com
-Cc: fujita.tomonori@lab.ntt.co.jp, akpm@linux-foundation.org,
-       James.Bottomley@suse.de, linux-kernel@vger.kernel.org,
-       linux-arch@vger.kernel.org
-Subject: Re: [PATCH -mm 0/3] remove useless ISA_DMA_THRESHOLD
-From: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
-In-Reply-To: <20100601182452.GA3564@kernel.dk>
-References: <1275289144-28782-1-git-send-email-fujita.tomonori@lab.ntt.co.jp>
-	<20100601182452.GA3564@kernel.dk>
+	id S1756754Ab0FBCkc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Jun 2010 22:40:32 -0400
+Received: from serv2.oss.ntt.co.jp ([222.151.198.100]:46733 "EHLO
+	serv2.oss.ntt.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755527Ab0FBCkb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Jun 2010 22:40:31 -0400
+Date: Wed, 2 Jun 2010 11:40:57 +0900
+From: Takuya Yoshikawa <yoshikawa.takuya@oss.ntt.co.jp>
+To: David Howells <dhowells@redhat.com>
+Cc: torvalds@osdl.org, akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+       Mike Frysinger <vapier@gentoo.org>,
+       Alexander Viro <viro@zeniv.linux.org.uk>,
+       Daisuke HATAYAMA <d.hatayama@jp.fujitsu.com>,
+       Paul Mundt <lethal@linux-sh.org>
+Subject: Re: [PATCH] binfmt_elf_fdpic: Fix clear_user() error handling
+Message-Id: <20100602114057.03b40af1.yoshikawa.takuya@oss.ntt.co.jp>
+In-Reply-To: <20100601131047.5456.34014.stgit@warthog.procyon.org.uk>
+References: <20100601131047.5456.34014.stgit@warthog.procyon.org.uk>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
 Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-Message-Id: <20100602113022I.fujita.tomonori@lab.ntt.co.jp>
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-3.0 (sh.osrg.net [192.16.179.4]); Wed, 02 Jun 2010 11:30:56 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 1 Jun 2010 20:24:52 +0200
-Jens Axboe <jaxboe@fusionio.com> wrote:
+David Howells <dhowells@redhat.com> wrote:
 
-> On Mon, May 31 2010, FUJITA Tomonori wrote:
-> > This patchset removes useless ISA_DMA_THRESHOLD:
-> > 
-> > - ISA_DMA_THRESHOLD is irrelevant to the majority of architectures but
-> >   they have to define it.
-> > 
-> > - ISA_DMA_THRESHOLD definition is inconsistent on architectures; ISA
-> >   DMA addressing restriction, DMA addressing restriction or something
-> >   else.
-> > 
-> > - Everyone (except for SCSI) uses dma_mask instead of ancient
-> >   ISA_DMA_THRESHOLD.
-> > 
-> > Only SCSI uses ISA_DMA_THRESHOLD for ancient drivers with non-zero
-> > unchecked_isa_dma. We can safely remove ISA_DMA_THRESHOLD usage in
-> > SCSI. So we can clean up ISA_DMA_THRESHOLD on the whole tree.
+> From: Takuya Yoshikawa <yoshikawa.takuya@oss.ntt.co.jp>
 > 
-> Looks good. James, it's probably easier if I just carry this patch set.
 
-Thanks,
+Thanks for updating, improving, the explanation!
 
-Any tree works for me, I thought about -mm though.
+  Takuya
 
-Can you replace [1/3] with the following?
 
-I fixed the subject and the body, s/aha1532/aha1542/;
+> clear_user() returns the number of bytes that could not be copied rather than
+> an error code.  So we should return -EFAULT rather than directly returning the
+> results.
+> 
+> Without this patch, positive values may be returned to elf_fdpic_map_file()
+> and the following error handlings do not function as expected.
+> 
+> 1.
+> 	ret = elf_fdpic_map_file_constdisp_on_uclinux(params, file, mm);
+> 	if (ret < 0)
+> 		return ret;
+> 2.
+> 	ret = elf_fdpic_map_file_by_direct_mmap(params, file, mm);
+> 	if (ret < 0)
+> 		return ret;
+> 
+> Signed-off-by: Takuya Yoshikawa <yoshikawa.takuya@oss.ntt.co.jp>
+> Signed-off-by: David Howells <dhowells@redhat.com>
+> Acked-by: Mike Frysinger <vapier@gentoo.org>
+> CC: Alexander Viro <viro@zeniv.linux.org.uk>
+> CC: Andrew Morton <akpm@linux-foundation.org>
+> CC: Daisuke HATAYAMA <d.hatayama@jp.fujitsu.com>
+> CC: Paul Mundt <lethal@linux-sh.org>
+> ---
+> 
+>  fs/binfmt_elf_fdpic.c |   26 +++++++++++---------------
+>  1 files changed, 11 insertions(+), 15 deletions(-)
+> 
+> 
+> diff --git a/fs/binfmt_elf_fdpic.c b/fs/binfmt_elf_fdpic.c
+> index 2c5f9a0..63039ed 100644
+> --- a/fs/binfmt_elf_fdpic.c
+> +++ b/fs/binfmt_elf_fdpic.c
+> @@ -990,10 +990,9 @@ static int elf_fdpic_map_file_constdisp_on_uclinux(
+>  
+>  		/* clear any space allocated but not loaded */
+>  		if (phdr->p_filesz < phdr->p_memsz) {
+> -			ret = clear_user((void *) (seg->addr + phdr->p_filesz),
+> -					 phdr->p_memsz - phdr->p_filesz);
+> -			if (ret)
+> -				return ret;
+> +			if (clear_user((void *) (seg->addr + phdr->p_filesz),
+> +				       phdr->p_memsz - phdr->p_filesz))
+> +				return -EFAULT;
+>  		}
+>  
+>  		if (mm) {
+> @@ -1027,7 +1026,7 @@ static int elf_fdpic_map_file_by_direct_mmap(struct elf_fdpic_params *params,
+>  	struct elf32_fdpic_loadseg *seg;
+>  	struct elf32_phdr *phdr;
+>  	unsigned long load_addr, delta_vaddr;
+> -	int loop, dvset, ret;
+> +	int loop, dvset;
+>  
+>  	load_addr = params->load_addr;
+>  	delta_vaddr = 0;
+> @@ -1127,9 +1126,8 @@ static int elf_fdpic_map_file_by_direct_mmap(struct elf_fdpic_params *params,
+>  		 * PT_LOAD */
+>  		if (prot & PROT_WRITE && disp > 0) {
+>  			kdebug("clear[%d] ad=%lx sz=%lx", loop, maddr, disp);
+> -			ret = clear_user((void __user *) maddr, disp);
+> -			if (ret)
+> -				return ret;
+> +			if (clear_user((void __user *) maddr, disp))
+> +				return -EFAULT;
+>  			maddr += disp;
+>  		}
+>  
+> @@ -1164,19 +1162,17 @@ static int elf_fdpic_map_file_by_direct_mmap(struct elf_fdpic_params *params,
+>  		if (prot & PROT_WRITE && excess1 > 0) {
+>  			kdebug("clear[%d] ad=%lx sz=%lx",
+>  			       loop, maddr + phdr->p_filesz, excess1);
+> -			ret = clear_user((void __user *) maddr + phdr->p_filesz,
+> -					 excess1);
+> -			if (ret)
+> -				return ret;
+> +			if (clear_user((void __user *) maddr + phdr->p_filesz,
+> +				       excess1))
+> +				return -EFAULT;
+>  		}
+>  
+>  #else
+>  		if (excess > 0) {
+>  			kdebug("clear[%d] ad=%lx sz=%lx",
+>  			       loop, maddr + phdr->p_filesz, excess);
+> -			ret = clear_user((void *) maddr + phdr->p_filesz, excess);
+> -			if (ret)
+> -				return ret;
+> +			if (clear_user((void *) maddr + phdr->p_filesz, excess))
+> +				return -EFAULT;
+>  		}
+>  #endif
+>  
+> 
 
-Somehow I forgot to remove unused BAD_SG_DMA().
 
-=
-From: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
-Subject: [PATCH 1/3] aha1542: remove ISA_DMA_THRESHOLD usage
-
-We can safely remove ISA_DMA_THRESHOLD usage in aha1542. aha1542 uses
-ISA_DMA_THRESHOLD to see if:
-
-- the buffers in scatter/list are below 16MB.
-- scsi_host is below 16MB.
-
-Both checkings were added in the ancient times but aren't necessary
-nowadays since we properly bounce the buffers and allocate scsi_host
-below 16MB with non-zero unchecked_isa_dma.
-
-Signed-off-by: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
----
- drivers/scsi/aha1542.c |   25 -------------------------
- 1 files changed, 0 insertions(+), 25 deletions(-)
-
-diff --git a/drivers/scsi/aha1542.c b/drivers/scsi/aha1542.c
-index 2a8cf13..4f785f2 100644
---- a/drivers/scsi/aha1542.c
-+++ b/drivers/scsi/aha1542.c
-@@ -52,22 +52,6 @@
- #define SCSI_BUF_PA(address)	isa_virt_to_bus(address)
- #define SCSI_SG_PA(sgent)	(isa_page_to_bus(sg_page((sgent))) + (sgent)->offset)
- 
--static void BAD_SG_DMA(Scsi_Cmnd * SCpnt,
--		       struct scatterlist *sgp,
--		       int nseg,
--		       int badseg)
--{
--	printk(KERN_CRIT "sgpnt[%d:%d] page %p/0x%llx length %u\n",
--	       badseg, nseg, sg_virt(sgp),
--	       (unsigned long long)SCSI_SG_PA(sgp),
--	       sgp->length);
--
--	/*
--	 * Not safe to continue.
--	 */
--	panic("Buffer at physical address > 16Mb used for aha1542");
--}
--
- #include<linux/stat.h>
- 
- #ifdef DEBUG
-@@ -691,8 +675,6 @@ static int aha1542_queuecommand(Scsi_Cmnd * SCpnt, void (*done) (Scsi_Cmnd *))
- 		}
- 		scsi_for_each_sg(SCpnt, sg, sg_count, i) {
- 			any2scsi(cptr[i].dataptr, SCSI_SG_PA(sg));
--			if (SCSI_SG_PA(sg) + sg->length - 1 > ISA_DMA_THRESHOLD)
--				BAD_SG_DMA(SCpnt, scsi_sglist(SCpnt), sg_count, i);
- 			any2scsi(cptr[i].datalen, sg->length);
- 		};
- 		any2scsi(ccb[mbo].datalen, sg_count * sizeof(struct chain));
-@@ -1133,16 +1115,9 @@ static int __init aha1542_detect(struct scsi_host_template * tpnt)
- 				release_region(bases[indx], 4);
- 				continue;
- 			}
--			/* For now we do this - until kmalloc is more intelligent
--			   we are resigned to stupid hacks like this */
--			if (SCSI_BUF_PA(shpnt) >= ISA_DMA_THRESHOLD) {
--				printk(KERN_ERR "Invalid address for shpnt with 1542.\n");
--				goto unregister;
--			}
- 			if (!aha1542_test_port(bases[indx], shpnt))
- 				goto unregister;
- 
--
- 			base_io = bases[indx];
- 
- 			/* Set the Bus on/off-times as not to ruin floppy performance */
 -- 
-1.6.5
-
+Takuya Yoshikawa <yoshikawa.takuya@oss.ntt.co.jp>
