@@ -1,120 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933286Ab0FBXDu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jun 2010 19:03:50 -0400
-Received: from cantor.suse.de ([195.135.220.2]:53410 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933161Ab0FBXDs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jun 2010 19:03:48 -0400
-Subject: Re: [linux-pm] [PATCH 0/8] Suspend block api (version 8)
-From: James Bottomley <James.Bottomley@suse.de>
-To: Arve =?ISO-8859-1?Q?Hj=F8nnev=E5g?= <arve@android.com>
-Cc: tytso@mit.edu, Neil Brown <neilb@suse.de>, felipe.balbi@nokia.com,
-       LKML <linux-kernel@vger.kernel.org>,
-       Florian Mickler <florian@mickler.org>,
-       Peter Zijlstra <peterz@infradead.org>, mark.gross@intel.com,
-       Thomas Gleixner <tglx@linutronix.de>,
-       Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
-       Linux PM <linux-pm@lists.linux-foundation.org>,
-       Alan Cox <alan@lxorguk.ukuu.org.uk>
-In-Reply-To: <AANLkTikeHarkwvO5-Fdrxt1FzTQL2lGHiQXBSG0vsKob@mail.gmail.com>
-References: <20100527232357.6d14fdb2@lxorguk.ukuu.org.uk>
-	 <20100601135102.GA8098@srcf.ucam.org>
-	 <1275426085.21962.967.camel@mulgrave.site> <201006020024.14220.rjw@sisk.pl>
-	 <1275431816.21962.1108.camel@mulgrave.site>
-	 <AANLkTikObnAZbyOxeYAhXcEbimO3XTTO-HlC9CD_HH6t@mail.gmail.com>
-	 <1275451342.21962.1777.camel@mulgrave.site>
-	 <AANLkTilRcFZyYa-0HlaM-6IEZSyar3S9S_cCWSFax2Zo@mail.gmail.com>
-	 <1275491111.2799.110.camel@mulgrave.site>
-	 <20100602214748.7742e3ae@schatten.dmk.lab>
-	 <1275511271.2799.516.camel@mulgrave.site>
-	 <AANLkTikeHarkwvO5-Fdrxt1FzTQL2lGHiQXBSG0vsKob@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 02 Jun 2010 18:03:38 -0500
-Message-ID: <1275519818.2799.527.camel@mulgrave.site>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.2 
-Content-Transfer-Encoding: 8bit
+	id S933295Ab0FBXFQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jun 2010 19:05:16 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:25402 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758061Ab0FBXFO convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Jun 2010 19:05:14 -0400
+MIME-Version: 1.0
+Message-ID: <489aa002-6d42-4dd5-bb66-81c665f8cdd1@default>
+Date: Wed, 2 Jun 2010 16:02:40 -0700 (PDT)
+From: Dan Magenheimer <dan.magenheimer@oracle.com>
+To: Minchan Kim <minchan.kim@gmail.com>
+Cc: chris.mason@oracle.com, viro@zeniv.linux.org.uk, akpm@linux-foundation.org,
+       adilger@Sun.COM, tytso@mit.edu, mfasheh@suse.com,
+       joel.becker@oracle.com, matthew@wil.cx, linux-btrfs@vger.kernel.org,
+       linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+       linux-ext4@vger.kernel.org, ocfs2-devel@oss.oracle.com,
+       linux-mm@kvack.org, ngupta@vflare.org, jeremy@goop.org,
+       JBeulich@novell.com, kurt.hackel@oracle.com, npiggin@suse.de,
+       dave.mccracken@oracle.com, riel@redhat.com, avi@redhat.com,
+       konrad.wilk@oracle.com
+Subject: RE: [PATCH V2 0/7] Cleancache (was Transcendent Memory): overview
+References: <20100528173510.GA12166@ca-server1.us.oracle.comAANLkTilV-4_QaNq5O0WSplDx1Oq7JvkgVrEiR1rgf1up@mail.gmail.com>
+ <1d88619a-bb1e-493f-ad96-bf204b60938d@default
+ 20100602163827.GA5450@barrios-desktop>
+In-Reply-To: <20100602163827.GA5450@barrios-desktop>
+X-Priority: 3
+X-Mailer: Oracle Beehive Extensions for Outlook 1.5.1.5.2  (401224) [OL
+ 12.0.6514.5000]
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 8BIT
+X-Auth-Type: Internal IP
+X-Source-IP: acsinet15.oracle.com [141.146.126.227]
+X-CT-RefId: str=0001.0A090201.4C06E38B.0153:SCFMA922111,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-06-02 at 15:27 -0700, Arve Hjønnevåg wrote:
-> On Wed, Jun 2, 2010 at 1:41 PM, James Bottomley <James.Bottomley@suse.de> wrote:
-> > On Wed, 2010-06-02 at 21:47 +0200, Florian Mickler wrote:
-> >> On Wed, 02 Jun 2010 10:05:11 -0500
-> >> James Bottomley <James.Bottomley@suse.de> wrote:
-> >>
-> >> > On Tue, 2010-06-01 at 21:41 -0700, Arve Hjønnevåg wrote:
-> >> > > No, they have to be two separate constraints, otherwise a constraint
-> >> > > to block suspend would override a constraint to block a low power idle
-> >> > > mode or the other way around.
-> >> >
-> >> > Depends.  If you block the system from going into low power idle, does
-> >> > that mean you still want it to be fully suspended?
-> >> >
-> >> > If yes, then we do have independent constraints.  If not, they have a
-> >> > hierarchy:
-> >> >
-> >> >       * Fully Interactive (no low power idle or suspend)
-> >> >       * Partially Interactive (may go into low power idle but not
-> >> >         suspend)
-> >> >       * None (may go into low power idle or suspend)
-> >> >
-> >> > Which is expressable as a ternary constraint.
-> >> >
-> >> > James
-> >> >
-> >>
-> >> But unblocking suspend at the moment is independent to getting idle.
-> >> If you have the requirement to stay in the highest-idle level (i.e.
-> >> best latency you can get) that does not (currently) mean, that you can
-> >> not suspend.
-> >
-> > I don't understand that as a reason.  If we looks at this a qos
-> > constraints, you're saying that the system may not drop into certain low
-> > power states because it might turn something off that's currently being
-> > used by a driver or a process.  Suspend is certainly the lowest state of
-> > that because it turns everything off, why would it be legal to drop into
-> > that?
+> From: Minchan Kim [mailto:minchan.kim@gmail.com]
+
+> > I am also eagerly awaiting Nitin Gupta's cleancache backend
+> > and implementation to do in-kernel page cache compression.
 > 
-> Because the driver gets called on suspend which gives it a change to
-> stop using it.
+> Do Nitin say he will make backend of cleancache for
+> page cache compression?
 > 
-> >
-> > I also couldn't find this notion of separation of idleness power from
-> > suspend blocking in the original suspend block patch set ... if you can
-> > either tell me where it is, or give me an example of the separated use
-> > cases, I'd understand better.
-> >
+> It would be good feature.
+> I have a interest, too. :)
+
+That was Nitin's plan for his GSOC project when we last discussed
+this.  Nitin is on the cc list and can comment if this has
+changed.
+
+> > By "move", do you mean changing the virtual mappings?  Yes,
+> > this could be done as long as the source and destination are
+> > both directly addressable (that is, true physical RAM), but
+> > requires TLB manipulation and has some complicated corner
+> > cases.  The copy semantics simplifies the implementation on
+> > both the "frontend" and the "backend" and also allows the
+> > backend to do fancy things on-the-fly like page compression
+> > and page deduplication.
 > 
-> The suspend block patchset only deals with suspend, not low power idle
-> modes. The original wakelock patchset had two wakelock types, idle and
-> suspend.
-
-OK, so that explains why I didn't see it ...
-
-> >> To preserve that explicit fall-through while still having working
-> >> run-time-powermanagement I think the qos-constraints need to be
-> >> separated.
-> >
-> > OK, as above, why?  or better yet, just give an example.
-> >
+> Agree. But I don't mean it.
+> If I use brd as backend, i want to do it follwing as.
 > 
-> The i2c bus on the Nexus One is used by the other core to turn off the
-> power you our core when we enter the lowest power mode. This means
-> that we cannot enter that low power mode while the i2c bus is active,
-> so we block low power idle modes. At some point we also tries to block
-> suspend in this case, but this caused a lot of failed suspend attempts
-> since the frequency scaling code would try to ramp up while freezing
-> processes which in turn aborted the process freezing attempts.
+> <snip>
+> 
+> Of course, I know it's impossible without new metadata and
+> modification of page cache handling and it makes front and
+> backend's good layered design.
+> 
+> What I want is to remove copy overhead when backend is ram
+> and it's also part of main memory(ie, we have page descriptor).
+> 
+> Do you have an idea?
 
-OK, so this is a device specific power constraint state.  I suppose it
-makes sense to have a bunch of those, because the device isn't
-necessarily going to know what idle power mode it can't go into, so the
-cpu govenor should sort it out rather than have the device specify a
-minimum state.  
+Copy overhead on modern processors is very low now due to
+very wide memory buses.  The additional metadata and code
+to handle coherency and concurrency, plus existing overhead
+for batching and asynchronous access to brd is likely much
+higher than the cost to avoid copying.
 
-James
+But if you did implement this without copying, I think
+you might need a different set of hooks in various places.
+I don't know.
 
+> > Or did you mean a cleancache_ops "backend"?  For tmem, there
+> > is one file linux/drivers/xen/tmem.c and it interfaces between
+> > the cleancache_ops calls and Xen hypercalls.  It should be in
+> > a Xenlinux pv_ops tree soon, or I can email it sooner.
+> 
+> I mean "backend". :)
 
+I dropped the code used for a RHEL6beta Xen tmem driver here:
+http://oss.oracle.com/projects/tmem/dist/files/RHEL6beta/tmem-backend.patch 
+
+Thanks,
+Dan
