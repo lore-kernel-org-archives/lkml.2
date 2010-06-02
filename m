@@ -1,169 +1,168 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756528Ab0FBAnd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Jun 2010 20:43:33 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:40872 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755985Ab0FBAnc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Jun 2010 20:43:32 -0400
-Date: Wed, 2 Jun 2010 10:43:18 +1000
-From: Neil Brown <neilb@suse.de>
-To: Alan Stern <stern@rowland.harvard.edu>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, Thomas Gleixner <tglx@linutronix.de>,
-       Felipe Balbi <felipe.balbi@nokia.com>,
-       Arve =?UTF-8?B?SGrDuG5uZXbDpWc=?= <arve@android.com>,
-       Peter Zijlstra <peterz@infradead.org>,
-       LKML <linux-kernel@vger.kernel.org>,
-       Florian Mickler <florian@mickler.org>,
-       Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
-       Linux PM <linux-pm@lists.linux-foundation.org>,
-       Alan Cox <alan@lxorguk.ukuu.org.uk>
-Subject: Re: [linux-pm] [PATCH 0/8] Suspend block api (version 8)
-Message-ID: <20100602104318.0c41b3cd@notabene.brown>
-In-Reply-To: <Pine.LNX.4.44L0.1006011032150.2949-100000@iolanthe.rowland.org>
-References: <20100601123846.14d0535b@notabene.brown>
-	<Pine.LNX.4.44L0.1006011032150.2949-100000@iolanthe.rowland.org>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1757246Ab0FBBCm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Jun 2010 21:02:42 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:37057 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756569Ab0FBBCl convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Jun 2010 21:02:41 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=ZQfAsrgBvzWDpRV+oWLJNNSqdmJggnvkz2qGG4zdqrdZPCS4hABM6V4RbafO9x+Q6z
+         +oeJjbzPzq1yP8c0IO/tJ6HzBZYAIcETNYDfHpC6gMtjtSHaSCKi5DlMbAjMunWADPl2
+         /ldb1yVoW1xxluFxtHy4b1Uu4os2ewTetYgK0=
+MIME-Version: 1.0
+In-Reply-To: <20100601164603.39dfedf7.akpm@linux-foundation.org>
+References: <25328.1274886067@redhat.com>
+	<4BFE4203.5010803@kernel.org>
+	<20100601164603.39dfedf7.akpm@linux-foundation.org>
+Date: Wed, 2 Jun 2010 09:02:40 +0800
+Message-ID: <AANLkTikhC_cVbuTjSSaOffEH5dpCU-S-JBpcXNk8N2QC@mail.gmail.com>
+Subject: Re: [PATCH] fs: run emergency remount on dedicated workqueue
+From: Dave Young <hidave.darkstar@gmail.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Tejun Heo <tj@kernel.org>, David Howells <dhowells@redhat.com>,
+       davem@davemloft.net, jens.axboe@oracle.com,
+       linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
+       viro@zeniv.linux.org.uk, Nick Piggin <nickpiggin@yahoo.com.au>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 1 Jun 2010 10:47:49 -0400 (EDT)
-Alan Stern <stern@rowland.harvard.edu> wrote:
+On Wed, Jun 2, 2010 at 7:46 AM, Andrew Morton <akpm@linux-foundation.org> wrote:
+> On Thu, 27 May 2010 11:57:23 +0200
+> Tejun Heo <tj@kernel.org> wrote:
+>
+>> Commit fa4b9074cd8428958c2adf9dc0c831f46e27c193 made s_umount depend
+>> on keventd;
+>
+> For a while I thought you had the wrong commit ID, but I worked it out!
+>
+> Please, always quote the patch title rather than a bare commit ID.  The
+> usual form is
+>
+>    fa4b9074cd8428958c2adf9dc0c831f46e27c193 ("buffer: make
+>    invalidate_bdev() drain all percpu LRU add caches:)
+>
+> The main reason for this is so that people can more reliably and simply
+> identify the patch within a different tree.  I think.
+>
+>> however, emergency remount schedules works to keventd
+>> which grabs s_umount creating a circular dependency.  Run emergency
+>> remount on a separate workqueue to break it.
+>>
+>> ...
+>>
+>> index 69688b1..1ada607 100644
+>> --- a/fs/super.c
+>> +++ b/fs/super.c
+>> @@ -575,6 +575,11 @@ int do_remount_sb(struct super_block *sb, int flags, void *data, int force)
+>>       return 0;
+>>  }
+>>
+>> +/*
+>> + * For emergency remount
+>> + */
+>> +static struct workqueue_struct *emergency_remount_wq;
+>> +
+>>  static void do_emergency_remount(struct work_struct *work)
+>>  {
+>>       struct super_block *sb, *n;
+>> @@ -605,13 +610,25 @@ void emergency_remount(void)
+>>  {
+>>       struct work_struct *work;
+>>
+>> +     if (!emergency_remount_wq)
+>> +             return;
+>> +
+>>       work = kmalloc(sizeof(*work), GFP_ATOMIC);
+>>       if (work) {
+>>               INIT_WORK(work, do_emergency_remount);
+>> -             schedule_work(work);
+>> +             queue_work(emergency_remount_wq, work);
+>>       }
+>>  }
+>>
+>> +static int __init emergency_remount_init(void)
+>> +{
+>> +     emergency_remount_wq = create_singlethread_workqueue("emerg-remount");
+>> +     if (!emergency_remount_wq)
+>> +             pr_warn("failed to create emergency remount workqueue\n");
+>> +     return 0;
+>> +}
+>> +subsys_initcall(emergency_remount_init);
+>> +
+>>  /*
+>>   * Unnamed block devices are dummy devices used by virtual
+>>   * filesystems which don't use real block-devices.  -- jrs
+>
+> gaah.  Do we really want to add Yet Another Kernel Thread just for that
+> dopey sysrq-U thing?
+>
+> I assume (coz you didn't tell us) that it generates a lockdep spew?
+> Perhaps it'd be better to just suppress that somehow rather than this...
+>
+> And if we _do_ end up adding a new kernel thread for this, maybe it
+> would be better to use that thread for lru_add_drain_all() rather than
+> within the dopey do_emergency_remount(), so as to reduce the likelihood
+> that we'll need to add even more kernel threads to solve the same
+> problem elsewhere?  But this would require a new kernel thread on each
+> CPU, grr.
+>
+> Another possibility might be to change lru_add_drain_all() to use IPI
+> interrupts rather than schedule_on_each_cpu().  That would greatly
+> speed up lru_add_drain_all().  I don't recall why we did it that way
+> and I don't immediately see a reason not to.  A few things in core mm
+> would need to be changed from spin_lock_irq() to spin_lock_irqsave().
+>
+> But I do have vague memories that there was a reason for it.
+>
+> <It's a huge PITA locating the commit which initially added
+> lru_add_drain_all()>
+>
+> <ten minutes later>
+>
+> : tree 05d7615894131a368fc4943f641b11acdd2ae694
+> : parent e236a166b2bc437769a9b8b5d19186a3761bde48
+> : author Nick Piggin <npiggin@suse.de> Thu, 19 Jan 2006 09:42:27 -0800
+> : committer Linus Torvalds <torvalds@g5.osdl.org> Thu, 19 Jan 2006 11:20:17 -0800
+> :
+> : [PATCH] mm: migration page refcounting fix
+> :
+> : Migration code currently does not take a reference to target page
+> : properly, so between unlocking the pte and trying to take a new
+> : reference to the page with isolate_lru_page, anything could happen to
+> : it.
+> :
+> : Fix this by holding the pte lock until we get a chance to elevate the
+> : refcount.
+> :
+> : Other small cleanups while we're here.
+>
+> It didn't tell us.
+>
+> <looks in the linux-mm archives>
+>
+> Nope, no rationale is provided there either.
 
-> On Tue, 1 Jun 2010, Neil Brown wrote:
-> 
-> > > With wakeup events the problem isn't so bad.  Wakeup events are always
-> > > noticed, and if the system is designed properly they will either abort
-> > > a suspend-in-progress or else cause the system to resume as soon as the
-> > > suspend is complete.  (Linux is not yet properly designed in this
-> > > sense.)
-> > 
-> > This is exactly the issue.  Linux doesn't get this right.  A wakeup that is
-> > processed by the driver just before suspend may not get all the way out to
-> > it's final destination (possibly in meat-space) until after some other event
-> > wakes the device.  It is not possible to guarantee full delivery of a wakeup
-> > event with Linux in its current state.  This is a bug.
-> 
-> That wasn't what I meant.  An important requirement is that a wakeup 
-> event received after the device has been suspended, but before the 
-> system suspend is complete, should cause the system suspend to abort.  
-> This is one of the things suspend blockers were meant to help with.  In 
-> theory it should already work correctly -- but it doesn't.  That's a 
-> real bug.
-> 
-> The other things you're talking about aren't really bugs.  That is,
-> they are things which the kernel _ought_ to do but it wasn't _intended_
-> to do.  They are misfeatures: failures of design, not failures of 
-> execution.
+Maybe this thread?
 
-A fairly subtle distinction, but I can accept it.  We are working with a
-design failure.
-But when a design failure results in a feature not being usable in a
-race-free way, I would still call that failure of design a bug - a bug in the
-design.
+http://lkml.org/lkml/2008/10/23/226
 
-> 
-> > I don't think I'm missing that.  Wakeup events are the only events of
-> > interest.  But wakeup events are more than just low-level hardware events.
-> > They are also the virtual events that are a direct consequence of the
-> > original hardware event.
-> 
-> This is a matter of semantics and it is highly debatable.
-> 
-> > A UART asserts 'data ready' which is routed to an IO interrupt line that
-> > wakes the device.  This is a wakeup event.
-> 
-> Yes.
-> 
-> > So are the bits that appear on the data line which represent the data
-> > So are the characters that appear on the serial port
-> > So is the "here is a message from the GSM processor" event
-> > So is the "there is a new TXT message" event
-> > So is the "'beep beep beep' out the speaker" event
-> 
-> None of those things can cause the system to wake up after it is
-> suspended.  Indeed, they can't happen at all if the CPU isn't running
-> (unless the GSM processor runs autonomously -- let's ignore such
-> details).  Hence it makes little sense to call them "wakeup" events.
-> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+>
 
-I think we are seeing this very differently.  In my mind these are in one
-sense all the same event, just represented in different ways.
 
-One of the reasons that we have an OS is to support levels of abstraction.
-A disk drives stores sectors, but I want to store files
-A monitor displays pixels, but I want to display text
-A network sends packets, but I want to send Email.
 
-The OS (including but not only the kernel) handles the conversion.
-It is still my Email that is going out over the network even though the
-network card has no concept of 'email'.
-
-Similarly the event of importance above in the notification that a TXT has
-arrived.
-At the lowest level, it appears as 'data-ready' on a UART.  At the highest
-level is it sound-waves in the air.  But it is the same event.  And the role
-of the OS is to allow me to treat it all as one event - one abstract concept.
-
-Obviously the involvement of the kernel ends when the event reaches or
-crosses the boundary to user-space, and user-space must be responsible for
-taking it to the boundary to meat-space.
-But the kernel needs to ensure that this holistic wake-up event can be
-handled without racing with a suspend request.
-If you just protect the lowest level representation of the event, but don't
-allow the higher level representations to be protected, then it is a bit like
-a filesystem that requires you to send SCSI commands to the disk drive if you
-want to be sure your data is safe.
-
-> > All these events are wakeup events, and should abort or instant-resume the
-> > system.  Currently only the first can be guaranteed to do this (... and maybe
-> > the second, depending on the details of the implementation).
-> > suspend-blocks effectively pass a lock from one event to the next to ensure
-> > that all of these event block the suspend.  There are various other ways to
-> > achieve the same thing, and I think it can be done with no significant change
-> > to the API.  But some how we need to allow all of these events to be
-> > linked wake-up events, not just the first one.
-> 
-> That's not entirely clear.  Yes, for Android's use case that's what you 
-> want.  But in other situations maybe you don't.  Consider the example 
-> of someone who closes the lid of their laptop and throws it in a 
-> backpack.  The computer should suspend immediately; it shouldn't be 
-> delayed by these "virtual wakeup" events.
-
-Completely agree.  Old behaviour must remain unchanged, new behaviour must be
-explicitly requested.
-
-At each level, it must be explicitly stated that an event is to be treated
-like a wake-up event.  I believe that is already the case in drivers - they
-need to explicitly configure the interrupt to cause a wake-from-suspend.
-
-I've considered several possibilities for how user-space could explicitly say
-that events are wake-event.  My current favourite is to use fcntl(F_SETOWN)
-to request a signal be sent to the process that is initiating the suspend
-when the relevant events are ready to be consumed by user-space.
-This would work for events that come through the input system (button press)
-or through the network, or rtc alarm events.  I suspect all potential
-wake-events could be made to use this scheme, but I don't have an exhausting
-list at present.
-
-So a suspend request waits just long enough to close any race, checks if
-there are signals pending, and proceeds with the suspend if there aren't.
-The "just long enough" is a little tricky to measure, though the in-kernel
-part of suspend-blockers presumably can be used to get that right.
-
-If the suspending process hasn't requested the delivery of these signals, the
-suspend will possibly pause to make sure that any events-in-transit in the
-kernel have reached their in-kernel destination (milliseconds at most) and
-then proceed with the suspend as normal.
-
-So yes, there are different use cases and we should support all of them,
-both "I shut the lid and my laptop really stays asleep" and "I never miss a
-TXT because my phone went to sleep at a bad time".  The process that
-initiates the suspend has a role in choosing what can wake it up.
-
-Thanks,
-NeilBrown
+-- 
+Regards
+dave
