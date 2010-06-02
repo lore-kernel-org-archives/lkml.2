@@ -1,53 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933253Ab0FBWDz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jun 2010 18:03:55 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:59738 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933178Ab0FBWDx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jun 2010 18:03:53 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=mime-version:in-reply-to:references:date:message-id:subject:from:to:
-	cc:content-type:x-system-of-record;
-	b=qXkBHBp3dPCyYBWNwVTWpzIIiWa+mbcCyFgKhD/uEynNuu0wF+npldldIqlRh2lF9
-	KdmilxQ4EXPES7iJVPreA==
-MIME-Version: 1.0
-In-Reply-To: <20100602213832.GB31949@redhat.com>
-References: <20100530013303.GC762@ghc01.ghc.andrew.cmu.edu>
-	<20100531175242.GA14691@redhat.com>
-	<20100531180446.GA16249@redhat.com>
-	<AANLkTimcrX0TjzDMNJdubR92pAO4IPATbVpyvvVt0qIV@mail.gmail.com>
-	<20100602140659.GA5324@redhat.com>
-	<AANLkTin-T6ij3xf0ceGoCamwcoayxyf0GdAKY6yXDMVl@mail.gmail.com>
-	<20100602202048.GB28663@redhat.com>
-	<AANLkTimrJFiidM8BlUNvmzfapUAv8369R9PYnTscasEf@mail.gmail.com>
-	<20100602205855.GA30039@redhat.com>
-	<AANLkTimfHlapl7mbRyAazWW5q5Wzs23n6i9wIhVtSv6r@mail.gmail.com>
-	<20100602213832.GB31949@redhat.com>
-Date: Wed, 2 Jun 2010 15:03:49 -0700
-Message-ID: <AANLkTimsusetA9B95-LvKsDdAB_PegYH7Zljyi4Doe_q@mail.gmail.com>
-Subject: Re: [RFC] [PATCH 2/2] cgroups: make procs file writable
-From: Paul Menage <menage@google.com>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Ben Blum <bblum@andrew.cmu.edu>, linux-kernel@vger.kernel.org,
-       containers@lists.linux-foundation.org, akpm@linux-foundation.org,
-       ebiederm@xmission.com, lizf@cn.fujitsu.com, matthltc@us.ibm.com
-Content-Type: text/plain; charset=ISO-8859-1
-X-System-Of-Record: true
+	id S1758828Ab0FBWGT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jun 2010 18:06:19 -0400
+Received: from cantor.suse.de ([195.135.220.2]:52371 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758777Ab0FBWGR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Jun 2010 18:06:17 -0400
+Date: Thu, 3 Jun 2010 08:05:56 +1000
+From: Neil Brown <neilb@suse.de>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Thomas Gleixner <tglx@linutronix.de>,
+       Alan Stern <stern@rowland.harvard.edu>,
+       Felipe Balbi <felipe.balbi@nokia.com>,
+       Arve =?UTF-8?B?SGrDuG5uZXbDpWc=?= <arve@android.com>,
+       Peter Zijlstra <peterz@infradead.org>,
+       "Paul@smtp1.linux-foundation.org" <Paul@smtp1.linux-foundation.org>,
+       LKML <linux-kernel@vger.kernel.org>,
+       Florian Mickler <florian@mickler.org>,
+       Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
+       Linux PM <linux-pm@lists.linux-foundation.org>,
+       Alan Cox <alan@lxorguk.ukuu.org.uk>,
+       James Bottomley <James.Bottomley@suse.de>
+Subject: Re: [PATCH] - race-free suspend.  Was: Re: [linux-pm] [PATCH 0/8]
+ Suspend block api (version 8)
+Message-ID: <20100603080556.46d2d671@notabene.brown>
+In-Reply-To: <201006022241.14152.rjw@sisk.pl>
+References: <Pine.LNX.4.44L0.1005271303190.3239-100000@iolanthe.rowland.org>
+	<alpine.LFD.2.00.1006011243350.2933@localhost.localdomain>
+	<20100602153235.340a7852@notabene.brown>
+	<201006022241.14152.rjw@sisk.pl>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 2, 2010 at 2:38 PM, Oleg Nesterov <oleg@redhat.com> wrote:
->
-> cgroup_attach_task() does, and this time PF_EXITING is understandable.
->
+On Wed, 2 Jun 2010 22:41:14 +0200
+"Rafael J. Wysocki" <rjw@sisk.pl> wrote:
 
-Oh, OK, I was talking about the one in cgroup_attach_task(), which is
-called by attach_task_by_pid(), and assumed that you were referring to
-the same one. I'd forgotten about the pre-check in
-attach_task_by_pid(). Yes, that one could probably be removed without
-affecting any final outcomes.
+> On Wednesday 02 June 2010, Neil Brown wrote:
+> > - Would this fix the "bug"??
+> > - and address the issues that suspend-blockers was created to address?
+> > - or are the requirements on user-space too onerous?
+> 
+> In theory wakeup events can also happen after  wait_for_blockers() has returned
+> 0 and I guess we should rollback the suspend in such cases.
+> 
 
-Paul
+I naively assumed this was already the case, but on a slightly closer look at
+the code it seems not.
+
+Presumably there is some point deep in the suspend code, probably after the
+call to sysdev_suspend, where interrupts are disabled and we are about to
+actually suspend.  At that point a simple "is a roll-back required" test
+could abort the suspend.
+Then any driver that handles wake-up events, if it gets and event that (would
+normally cause a wakeup) PM_SUSPEND_PREPARE and PM_POST_SUSPEND, could set
+the "roll-back is required" flag.
+
+??
+
+NeilBrown
