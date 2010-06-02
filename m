@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932914Ab0FBTOJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jun 2010 15:14:09 -0400
-Received: from smtp-out-182.synserver.de ([212.40.180.182]:1579 "HELO
+	id S932955Ab0FBTOb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jun 2010 15:14:31 -0400
+Received: from smtp-out-182.synserver.de ([212.40.180.182]:1207 "HELO
 	smtp-out-182.synserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1758500Ab0FBTOE (ORCPT
+	with SMTP id S1758599Ab0FBTOG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jun 2010 15:14:04 -0400
+	Wed, 2 Jun 2010 15:14:06 -0400
 X-SynServer-TrustedSrc: 1
 X-SynServer-AuthUser: lars@laprican.de
 X-SynServer-PPID: 31322
@@ -14,12 +14,10 @@ From: Lars-Peter Clausen <lars@metafoo.de>
 To: Ralf Baechle <ralf@linux-mips.org>
 Cc: linux-mips@linux-mips.org, linux-kernel@vger.kernel.org,
        Lars-Peter Clausen <lars@metafoo.de>,
-       Greg Kroah-Hartman <gregkh@suse.de>,
-       David Brownell <dbrownell@users.sourceforge.net>,
-       linux-usb@vger.kernel.org
-Subject: [RFC][PATCH 19/26] USB: Add JZ4740 ohci support
-Date: Wed,  2 Jun 2010 21:12:25 +0200
-Message-Id: <1275505950-17334-3-git-send-email-lars@metafoo.de>
+       Anton Vorontsov <cbouatmailru@gmail.com>
+Subject: [RFC][PATCH 23/26] power: Add JZ4740 battery driver.
+Date: Wed,  2 Jun 2010 21:12:29 +0200
+Message-Id: <1275505950-17334-7-git-send-email-lars@metafoo.de>
 X-Mailer: git-send-email 1.5.6.5
 In-Reply-To: <1275505397-16758-1-git-send-email-lars@metafoo.de>
 References: <1275505397-16758-1-git-send-email-lars@metafoo.de>
@@ -27,317 +25,444 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds ohci glue code for JZ4740 SoCs ohci module.
+This patch adds support for the battery voltage measurement part of the JZ4740
+ADC unit.
 
 Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
-Cc: Greg Kroah-Hartman <gregkh@suse.de>
-Cc: David Brownell <dbrownell@users.sourceforge.net>
-Cc: linux-usb@vger.kernel.org
+Cc: Anton Vorontsov <cbouatmailru@gmail.com>
 ---
- drivers/usb/Kconfig            |    1 +
- drivers/usb/host/ohci-hcd.c    |    5 +
- drivers/usb/host/ohci-jz4740.c |  264 ++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 270 insertions(+), 0 deletions(-)
- create mode 100644 drivers/usb/host/ohci-jz4740.c
+ drivers/power/Kconfig                |   11 +
+ drivers/power/Makefile               |    1 +
+ drivers/power/jz4740-battery.c       |  359 ++++++++++++++++++++++++++++++++++
+ include/linux/power/jz4740-battery.h |   24 +++
+ 4 files changed, 395 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/power/jz4740-battery.c
+ create mode 100644 include/linux/power/jz4740-battery.h
 
-diff --git a/drivers/usb/Kconfig b/drivers/usb/Kconfig
-index 6a58cb1..39a6bfd 100644
---- a/drivers/usb/Kconfig
-+++ b/drivers/usb/Kconfig
-@@ -46,6 +46,7 @@ config USB_ARCH_HAS_OHCI
- 	default y if PPC_MPC52xx
- 	# MIPS:
- 	default y if SOC_AU1X00
-+	default y if MACH_JZ4740
- 	# SH:
- 	default y if CPU_SUBTYPE_SH7720
- 	default y if CPU_SUBTYPE_SH7721
-diff --git a/drivers/usb/host/ohci-hcd.c b/drivers/usb/host/ohci-hcd.c
-index fc57655..05b071c 100644
---- a/drivers/usb/host/ohci-hcd.c
-+++ b/drivers/usb/host/ohci-hcd.c
-@@ -1095,6 +1095,11 @@ MODULE_LICENSE ("GPL");
- #define TMIO_OHCI_DRIVER	ohci_hcd_tmio_driver
- #endif
+diff --git a/drivers/power/Kconfig b/drivers/power/Kconfig
+index 8e9ba17..80bbd0d 100644
+--- a/drivers/power/Kconfig
++++ b/drivers/power/Kconfig
+@@ -142,4 +142,15 @@ config CHARGER_PCF50633
+ 	help
+ 	 Say Y to include support for NXP PCF50633 Main Battery Charger.
  
-+#ifdef CONFIG_MACH_JZ4740
-+#include "ohci-jz4740.c"
-+#define PLATFORM_DRIVER	ohci_hcd_jz4740_driver
-+#endif
++config BATTERY_JZ4740
++	tristate "Ingenic JZ4740 battery"
++	depends on MACH_JZ4740
++	depends on SENSORS_JZ4740
++	help
++	  Say Y to enable support for the battery on Ingenic JZ4740 based
++	  boards.
 +
- #if	!defined(PCI_DRIVER) &&		\
- 	!defined(PLATFORM_DRIVER) &&	\
- 	!defined(OMAP1_PLATFORM_DRIVER) &&	\
-diff --git a/drivers/usb/host/ohci-jz4740.c b/drivers/usb/host/ohci-jz4740.c
++	  This driver can be build as a module. If so, the module will be
++	  called jz4740-battery.
++
+ endif # POWER_SUPPLY
+diff --git a/drivers/power/Makefile b/drivers/power/Makefile
+index 0005080..cf95009 100644
+--- a/drivers/power/Makefile
++++ b/drivers/power/Makefile
+@@ -34,3 +34,4 @@ obj-$(CONFIG_BATTERY_DA9030)	+= da9030_battery.o
+ obj-$(CONFIG_BATTERY_MAX17040)	+= max17040_battery.o
+ obj-$(CONFIG_BATTERY_Z2)	+= z2_battery.o
+ obj-$(CONFIG_CHARGER_PCF50633)	+= pcf50633-charger.o
++obj-$(CONFIG_BATTERY_JZ4740)	+= jz4740-battery.o
+diff --git a/drivers/power/jz4740-battery.c b/drivers/power/jz4740-battery.c
 new file mode 100644
-index 0000000..0371b17
+index 0000000..9eadb36
 --- /dev/null
-+++ b/drivers/usb/host/ohci-jz4740.c
-@@ -0,0 +1,264 @@
++++ b/drivers/power/jz4740-battery.c
+@@ -0,0 +1,359 @@
++/*
++ * Battery measurement code for Ingenic JZ SOC.
++ *
++ * Copyright (C) 2009 Jiejing Zhang <kzjeef@gmail.com>
++ * Copyright (C) 2010, Lars-Peter Clausen <lars@metafoo.de>
++ *
++ * based on tosa_battery.c
++ *
++ * Copyright (C) 2008 Marek Vasut <marek.vasut@gmail.com>
++*
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ *
++ */
 +
++#include <linux/interrupt.h>
++#include <linux/kernel.h>
++#include <linux/module.h>
 +#include <linux/platform_device.h>
-+#include <linux/clk.h>
-+#include <linux/regulator/consumer.h>
++#include <linux/slab.h>
++#include <linux/spinlock.h>
 +
-+struct jz4740_ohci_hcd {
-+	struct ohci_hcd ohci_hcd;
++#include <linux/delay.h>
++#include <linux/gpio.h>
++#include <linux/power_supply.h>
 +
-+	struct regulator *vbus;
-+	bool vbus_enabled;
-+	struct clk *clk;
++#include <linux/power/jz4740-battery.h>
++#include <linux/jz4740-adc.h>
++
++struct jz_battery {
++	struct jz_battery_platform_data *pdata;
++
++	int charge_irq;
++
++	int status;
++	long voltage;
++
++	struct power_supply battery;
++	struct delayed_work work;
 +};
 +
-+static inline struct jz4740_ohci_hcd *hcd_to_jz4740_hcd(struct usb_hcd *hcd)
++static inline struct jz_battery *psy_to_jz_battery(struct power_supply *psy)
 +{
-+	return (struct jz4740_ohci_hcd *)(hcd->hcd_priv);
++	return container_of(psy, struct jz_battery, battery);
 +}
 +
-+static inline struct usb_hcd *jz4740_hcd_to_hcd(struct jz4740_ohci_hcd *jz4740_ohci)
++static long jz_battery_read_voltage(struct jz_battery *jz_battery)
 +{
-+	return container_of((void *)jz4740_ohci, struct usb_hcd, hcd_priv);
++	struct device *adc = jz_battery->battery.dev->parent->parent;
++	enum jz_adc_battery_scale scale;
++
++	if (jz_battery->pdata->info.voltage_max_design > 2500000)
++		scale = JZ_ADC_BATTERY_SCALE_7V5;
++	else
++		scale = JZ_ADC_BATTERY_SCALE_2V5;
++
++	return jz4740_adc_read_battery_voltage(adc, scale);
 +}
 +
-+static int ohci_jz4740_start(struct usb_hcd *hcd)
++static int jz_battery_get_capacity(struct power_supply *psy)
 +{
-+	struct ohci_hcd *ohci = hcd_to_ohci(hcd);
-+	int	ret;
++	struct jz_battery *jz_battery = psy_to_jz_battery(psy);
++	struct power_supply_info *info = &jz_battery->pdata->info;
++	long voltage;
++	int ret;
++	int voltage_span;
 +
-+	ret = ohci_init(ohci);
-+	if (ret < 0)
-+		return ret;
++	voltage = jz_battery_read_voltage(jz_battery);
 +
-+	ohci->num_ports = 1;
++	if (voltage < 0)
++		return voltage;
 +
-+	ret = ohci_run(ohci);
-+	if (ret < 0) {
-+		dev_err(hcd->self.controller, "Can not start %s",
-+			hcd->self.bus_name);
-+		ohci_stop(hcd);
-+		return ret;
-+	}
-+	return 0;
-+}
++	voltage_span = info->voltage_max_design - info->voltage_min_design;
++	ret = ((voltage - info->voltage_min_design) * 100) / voltage_span;
 +
-+static int ohci_jz4740_set_vbus_power(struct jz4740_ohci_hcd *jz4740_ohci,
-+	bool enabled)
-+{
-+	int ret = 0;
-+
-+	if (!jz4740_ohci->vbus)
-+		return 0;
-+
-+	if (enabled && !jz4740_ohci->vbus_enabled) {
-+		ret = regulator_enable(jz4740_ohci->vbus);
-+		if (ret)
-+			dev_err(jz4740_hcd_to_hcd(jz4740_ohci)->self.controller,
-+				"Could not power vbus\n");
-+	} else if (!enabled && jz4740_ohci->vbus_enabled) {
-+		ret = regulator_disable(jz4740_ohci->vbus);
-+	}
-+
-+	if (ret == 0)
-+		jz4740_ohci->vbus_enabled = enabled;
++	if (ret > 100)
++		ret = 100;
++	else if (ret < 0)
++		ret = 0;
 +
 +	return ret;
 +}
 +
-+static int ohci_jz4740_hub_control(struct usb_hcd *hcd, u16 typeReq, u16 wValue,
-+	u16 wIndex, char *buf, u16 wLength)
++static int jz_battery_get_property(struct power_supply *psy,
++				enum power_supply_property psp,
++				union power_supply_propval *val)
 +{
-+	struct jz4740_ohci_hcd *jz4740_ohci = hcd_to_jz4740_hcd(hcd);
-+	int ret;
++	struct jz_battery *jz_battery = psy_to_jz_battery(psy);
++	struct power_supply_info *info = &jz_battery->pdata->info;
++	long voltage;
 +
-+	switch (typeReq) {
-+	case SetHubFeature:
-+		if (wValue == USB_PORT_FEAT_POWER)
-+			ret = ohci_jz4740_set_vbus_power(jz4740_ohci, true);
++	switch (psp) {
++	case POWER_SUPPLY_PROP_STATUS:
++		val->intval = jz_battery->status;
 +		break;
-+	case ClearHubFeature:
-+		if (wValue == USB_PORT_FEAT_POWER)
-+			ret = ohci_jz4740_set_vbus_power(jz4740_ohci, false);
++	case POWER_SUPPLY_PROP_TECHNOLOGY:
++		val->intval = jz_battery->pdata->info.technology;
 +		break;
++	case POWER_SUPPLY_PROP_HEALTH:
++		voltage = jz_battery_read_voltage(jz_battery);
++		if (voltage < info->voltage_min_design)
++			val->intval = POWER_SUPPLY_HEALTH_DEAD;
++		else
++			val->intval = POWER_SUPPLY_HEALTH_GOOD;
++		break;
++	case POWER_SUPPLY_PROP_CAPACITY:
++		val->intval = jz_battery_get_capacity(psy);
++		break;
++	case POWER_SUPPLY_PROP_VOLTAGE_NOW:
++		val->intval = jz_battery_read_voltage(jz_battery);
++		if (val->intval < 0)
++			return val->intval;
++		break;
++	case POWER_SUPPLY_PROP_VOLTAGE_MAX_DESIGN:
++		val->intval = info->voltage_max_design;
++		break;
++	case POWER_SUPPLY_PROP_VOLTAGE_MIN_DESIGN:
++		val->intval = info->voltage_min_design;
++		break;
++	case POWER_SUPPLY_PROP_PRESENT:
++		val->intval = 1;
++		break;
++	default:
++		return -EINVAL;
 +	}
-+
-+	if (ret)
-+		return ret;
-+
-+	return ohci_hub_control(hcd, typeReq, wValue, wIndex, buf, wLength);
++	return 0;
 +}
 +
++static void jz_battery_external_power_changed(struct power_supply *psy)
++{
++	struct jz_battery *jz_battery = psy_to_jz_battery(psy);
 +
-+static const struct hc_driver ohci_jz4740_hc_driver = {
-+	.description =		hcd_name,
-+	.product_desc =		"JZ4740 OHCI",
-+	.hcd_priv_size =	sizeof(struct jz4740_ohci_hcd),
++	cancel_delayed_work(&jz_battery->work);
++	schedule_delayed_work(&jz_battery->work, 0);
++}
 +
-+	/*
-+	 * generic hardware linkage
-+	 */
-+	.irq =			ohci_irq,
-+	.flags =		HCD_USB11 | HCD_MEMORY,
++static irqreturn_t jz_battery_charge_irq(int irq, void *data)
++{
++	struct jz_battery *jz_battery = data;
 +
-+	/*
-+	 * basic lifecycle operations
-+	 */
-+	.start =		ohci_jz4740_start,
-+	.stop =			ohci_stop,
-+	.shutdown =		ohci_shutdown,
++	cancel_delayed_work(&jz_battery->work);
++	schedule_delayed_work(&jz_battery->work, 0);
 +
-+	/*
-+	 * managing i/o requests and associated device resources
-+	 */
-+	.urb_enqueue =		ohci_urb_enqueue,
-+	.urb_dequeue =		ohci_urb_dequeue,
-+	.endpoint_disable =	ohci_endpoint_disable,
++	return IRQ_HANDLED;
++}
 +
-+	/*
-+	 * scheduling support
-+	 */
-+	.get_frame_number =	ohci_get_frame,
++static void jz_battery_update(struct jz_battery *jz_battery)
++{
++	int status;
++	long voltage;
++	long voltage_difference;
++	bool has_changed = 0;
 +
-+	/*
-+	 * root hub support
-+	 */
-+	.hub_status_data =	ohci_hub_status_data,
-+	.hub_control =		ohci_jz4740_hub_control,
-+#ifdef	CONFIG_PM
-+	.bus_suspend =		ohci_bus_suspend,
-+	.bus_resume =		ohci_bus_resume,
-+#endif
-+	.start_port_reset =	ohci_start_port_reset,
++	if (gpio_is_valid(jz_battery->pdata->gpio_charge)) {
++		int is_charging;
++
++		is_charging = gpio_get_value(jz_battery->pdata->gpio_charge);
++		is_charging ^= jz_battery->pdata->gpio_charge_active_low;
++		if (is_charging)
++			status = POWER_SUPPLY_STATUS_CHARGING;
++		else
++			status = POWER_SUPPLY_STATUS_NOT_CHARGING;
++
++		if (status != jz_battery->status) {
++			jz_battery->status = status;
++			has_changed = 1;
++		}
++	}
++
++	voltage = jz_battery_read_voltage(jz_battery);
++	voltage_difference = voltage - jz_battery->voltage;
++	if (voltage_difference > 50000 || voltage_difference < 50000) {
++		jz_battery->voltage = voltage;
++		has_changed = 1;
++	}
++	if (has_changed)
++		power_supply_changed(&jz_battery->battery);
++}
++
++static enum power_supply_property jz_battery_properties[] = {
++	POWER_SUPPLY_PROP_STATUS,
++	POWER_SUPPLY_PROP_TECHNOLOGY,
++	POWER_SUPPLY_PROP_HEALTH,
++	POWER_SUPPLY_PROP_CAPACITY,
++	POWER_SUPPLY_PROP_VOLTAGE_NOW,
++	POWER_SUPPLY_PROP_VOLTAGE_MAX_DESIGN,
++	POWER_SUPPLY_PROP_VOLTAGE_MIN_DESIGN,
++	POWER_SUPPLY_PROP_PRESENT,
 +};
 +
-+
-+static __devinit int jz4740_ohci_probe(struct platform_device *pdev)
++static void jz_battery_work(struct work_struct *work)
 +{
-+	int ret;
-+	struct usb_hcd *hcd;
-+	struct jz4740_ohci_hcd *jz4740_ohci;
-+	struct resource *res;
-+	int irq;
++	/* Too small interval will increase system workload */
++	const int interval = HZ * 30;
++	struct jz_battery *jz_battery = container_of(work, struct jz_battery,
++					    work.work);
 +
-+	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
++	jz_battery_update(jz_battery);
++	schedule_delayed_work(&jz_battery->work, interval);
++}
 +
-+	if (!res) {
-+		dev_err(&pdev->dev, "Failed to get platform resource\n");
-+		return -ENOENT;
++static int __devinit jz_battery_probe(struct platform_device *pdev)
++{
++	int ret = 0;
++	struct jz_battery_platform_data *pdata = pdev->dev.platform_data;
++	struct jz_battery *jz_battery;
++	struct power_supply *battery;
++
++	if (!pdev->dev.platform_data) {
++		dev_err(&pdev->dev, "No platform data\n");
++		return -EINVAL;
 +	}
 +
-+	irq = platform_get_irq(pdev, 0);
-+	if (irq < 0) {
-+		dev_err(&pdev->dev, "Failed to get platform irq\n");
-+		return irq;
-+	}
++	jz_battery = kzalloc(sizeof(*jz_battery), GFP_KERNEL);
 +
-+	hcd = usb_create_hcd(&ohci_jz4740_hc_driver, &pdev->dev, "jz4740");
-+	if (!hcd) {
-+		dev_err(&pdev->dev, "Failed to create hcd.\n");
++	if (!jz_battery) {
++		dev_err(&pdev->dev, "Failed to allocate driver structure\n");
 +		return -ENOMEM;
 +	}
 +
-+	jz4740_ohci = hcd_to_jz4740_hcd(hcd);
++	battery = &jz_battery->battery;
++	battery->name = pdata->info.name;
++	battery->type = POWER_SUPPLY_TYPE_BATTERY;
++	battery->properties	= jz_battery_properties;
++	battery->num_properties	= ARRAY_SIZE(jz_battery_properties);
++	battery->get_property = jz_battery_get_property;
++	battery->external_power_changed = jz_battery_external_power_changed;
++	battery->use_for_apm = 1;
 +
-+	res = request_mem_region(res->start, resource_size(res), hcd_name);
++	jz_battery->pdata = pdata;
 +
-+	if (!res) {
-+		dev_err(&pdev->dev, "Failed to request mem region.\n");
-+		ret = -EBUSY;
-+		goto err_free;
++	INIT_DELAYED_WORK(&jz_battery->work, jz_battery_work);
++
++	if (gpio_is_valid(pdata->gpio_charge)) {
++		ret = gpio_request(pdata->gpio_charge, dev_name(&pdev->dev));
++		if (ret) {
++			dev_err(&pdev->dev, "charger state gpio request failed.\n");
++			goto err_free;
++		}
++		ret = gpio_direction_input(pdata->gpio_charge);
++		if (ret) {
++			dev_err(&pdev->dev, "charger state gpio set direction failed.\n");
++			goto err_free_gpio;
++		}
++
++		jz_battery->charge_irq = gpio_to_irq(pdata->gpio_charge);
++
++		if (jz_battery->charge_irq >= 0) {
++			ret = request_irq(jz_battery->charge_irq,
++				    jz_battery_charge_irq,
++				    IRQF_TRIGGER_RISING | IRQF_TRIGGER_FALLING,
++				    dev_name(&pdev->dev), jz_battery);
++			if (ret) {
++				dev_err(&pdev->dev, "Failed to request charge irq: %d\n", ret);
++				goto err_free_gpio;
++			}
++		}
++	} else {
++		jz_battery->charge_irq = -1;
 +	}
 +
-+	hcd->rsrc_start = res->start;
-+	hcd->rsrc_len = resource_size(res);
-+	hcd->regs = ioremap(res->start, resource_size(res));
 +
-+	if (!hcd->regs) {
-+		dev_err(&pdev->dev, "Failed to ioremap registers.\n");
-+		ret = -EBUSY;
-+		goto err_release_mem;
-+	}
-+
-+	jz4740_ohci->clk = clk_get(&pdev->dev, "uhc");
-+	if (IS_ERR(jz4740_ohci->clk)) {
-+		ret = PTR_ERR(jz4740_ohci->clk);
-+		dev_err(&pdev->dev, "Failed to get clock: %d\n", ret);
-+		goto err_iounmap;
-+	}
-+
-+	jz4740_ohci->vbus = regulator_get(&pdev->dev, "vbus");
-+	if (IS_ERR(jz4740_ohci->vbus))
-+		jz4740_ohci->vbus = NULL;
-+
-+
-+	clk_set_rate(jz4740_ohci->clk, 48000000);
-+	clk_enable(jz4740_ohci->clk);
-+	if (jz4740_ohci->vbus)
-+		ohci_jz4740_set_vbus_power(jz4740_ohci, true);
-+
-+	platform_set_drvdata(pdev, hcd);
-+
-+	ohci_hcd_init(hcd_to_ohci(hcd));
-+
-+	ret = usb_add_hcd(hcd, irq, IRQF_DISABLED);
++	ret = power_supply_register(&pdev->dev, &jz_battery->battery);
 +	if (ret) {
-+		dev_err(&pdev->dev, "Failed to add hcd: %d\n", ret);
-+		goto err_disable;
++		dev_err(&pdev->dev, "power supply battery register failed.\n");
++		goto err_free_irq;
 +	}
++
++	platform_set_drvdata(pdev, jz_battery);
++	schedule_delayed_work(&jz_battery->work, 0);
 +
 +	return 0;
 +
-+err_disable:
-+	platform_set_drvdata(pdev, NULL);
-+	if (jz4740_ohci->vbus) {
-+		regulator_disable(jz4740_ohci->vbus);
-+		regulator_put(jz4740_ohci->vbus);
-+	}
-+	clk_disable(jz4740_ohci->clk);
-+
-+	clk_put(jz4740_ohci->clk);
-+err_iounmap:
-+	iounmap(hcd->regs);
-+err_release_mem:
-+	release_mem_region(res->start, resource_size(res));
++err_free_irq:
++	if (jz_battery->charge_irq >= 0)
++		free_irq(jz_battery->charge_irq, jz_battery);
++err_free_gpio:
++	if (gpio_is_valid(pdata->gpio_charge))
++		gpio_free(jz_battery->pdata->gpio_charge);
 +err_free:
-+	usb_put_hcd(hcd);
-+
++	kfree(jz_battery);
 +	return ret;
 +}
 +
-+static __devexit int jz4740_ohci_remove(struct platform_device *pdev)
++static int __devexit jz_battery_remove(struct platform_device *pdev)
 +{
-+	struct usb_hcd *hcd = platform_get_drvdata(pdev);
-+	struct jz4740_ohci_hcd *jz4740_ohci = hcd_to_jz4740_hcd(hcd);
++	struct jz_battery *jz_battery = platform_get_drvdata(pdev);
 +
-+	usb_remove_hcd(hcd);
++	cancel_delayed_work_sync(&jz_battery->work);
 +
-+	platform_set_drvdata(pdev, NULL);
-+
-+	if (jz4740_ohci->vbus) {
-+		regulator_disable(jz4740_ohci->vbus);
-+		regulator_put(jz4740_ohci->vbus);
++	if (gpio_is_valid(jz_battery->pdata->gpio_charge)) {
++		if (jz_battery->charge_irq >= 0)
++			free_irq(jz_battery->charge_irq, jz_battery);
++		gpio_free(jz_battery->pdata->gpio_charge);
 +	}
 +
-+	clk_disable(jz4740_ohci->clk);
-+	clk_put(jz4740_ohci->clk);
-+
-+	iounmap(hcd->regs);
-+	release_mem_region(hcd->rsrc_start, hcd->rsrc_len);
-+
-+	usb_put_hcd(hcd);
++	power_supply_unregister(&jz_battery->battery);
 +
 +	return 0;
 +}
 +
-+static struct platform_driver ohci_hcd_jz4740_driver = {
-+	.probe = jz4740_ohci_probe,
-+	.remove = __devexit_p(jz4740_ohci_remove),
++#ifdef CONFIG_PM
++static int jz_battery_suspend(struct device *dev)
++{
++	struct jz_battery *jz_battery = dev_get_drvdata(dev);
++
++	cancel_delayed_work_sync(&jz_battery->work);
++	jz_battery->status =  POWER_SUPPLY_STATUS_UNKNOWN;
++
++	return 0;
++}
++
++static int jz_battery_resume(struct device *dev)
++{
++	struct jz_battery *jz_battery = dev_get_drvdata(dev);
++
++	schedule_delayed_work(&jz_battery->work, 0);
++
++	return 0;
++}
++
++static const struct dev_pm_ops jz_battery_pm_ops = {
++	.suspend	= jz_battery_suspend,
++	.resume		= jz_battery_resume,
++};
++
++#define JZ_BATTERY_PM_OPS (&jz_battery_pm_ops)
++
++#else
++#define JZ_BATTERY_PM_OPS NULL
++#endif
++
++static struct platform_driver jz_battery_driver = {
++	.probe		= jz_battery_probe,
++	.remove		= __devexit_p(jz_battery_remove),
 +	.driver = {
-+		.name = "jz4740-ohci",
++		.name = "jz4740-battery",
 +		.owner = THIS_MODULE,
++		.pm = JZ_BATTERY_PM_OPS,
 +	},
 +};
 +
-+MODULE_ALIAS("platfrom:jz4740-ohci");
++static int __init jz_battery_init(void)
++{
++	return platform_driver_register(&jz_battery_driver);
++}
++module_init(jz_battery_init);
++
++static void __exit jz_battery_exit(void)
++{
++	platform_driver_unregister(&jz_battery_driver);
++}
++module_exit(jz_battery_exit);
++
++MODULE_ALIAS("platform:jz4740-battery");
++MODULE_LICENSE("GPL");
++MODULE_AUTHOR("Lars-Peter Clausen <lars@metafoo.de>");
++MODULE_DESCRIPTION("JZ4740 SoC battery driver");
+diff --git a/include/linux/power/jz4740-battery.h b/include/linux/power/jz4740-battery.h
+new file mode 100644
+index 0000000..19c9610
+--- /dev/null
++++ b/include/linux/power/jz4740-battery.h
+@@ -0,0 +1,24 @@
++/*
++ *  Copyright (C) 2009, Jiejing Zhang <kzjeef@gmail.com>
++ *
++ *  This program is free software; you can redistribute	 it and/or modify it
++ *  under  the terms of	 the GNU General  Public License as published by the
++ *  Free Software Foundation;  either version 2 of the	License, or (at your
++ *  option) any later version.
++ *
++ *  You should have received a copy of the  GNU General Public License along
++ *  with this program; if not, write  to the Free Software Foundation, Inc.,
++ *  675 Mass Ave, Cambridge, MA 02139, USA.
++ *
++ */
++
++#ifndef __JZ4740_BATTERY_H
++#define __JZ4740_BATTERY_H
++
++struct jz_battery_platform_data {
++	struct power_supply_info info;
++	int gpio_charge;	/* GPIO port of Charger state */
++	int gpio_charge_active_low;
++};
++
++#endif
 -- 
 1.5.6.5
 
