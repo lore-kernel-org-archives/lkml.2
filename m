@@ -1,89 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932509Ab0FBNln (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jun 2010 09:41:43 -0400
-Received: from cantor.suse.de ([195.135.220.2]:37624 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757873Ab0FBNll (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jun 2010 09:41:41 -0400
-Date: Wed, 2 Jun 2010 23:41:21 +1000
-From: Nick Piggin <npiggin@suse.de>
-To: "Martin K. Petersen" <martin.petersen@oracle.com>
-Cc: Chris Mason <chris.mason@oracle.com>,
-       James Bottomley <James.Bottomley@suse.de>,
-       Matthew Wilcox <matthew@wil.cx>,
-       Christof Schmitt <christof.schmitt@de.ibm.com>,
-       Boaz Harrosh <bharrosh@panasas.com>, linux-scsi@vger.kernel.org,
-       linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
-Subject: Re: Wrong DIF guard tag on ext2 write
-Message-ID: <20100602134121.GD6152@laptop>
-References: <1275399637.21962.11.camel@mulgrave.site>
- <20100601134951.GM8980@think>
- <20100601162929.GC32708@parisc-linux.org>
- <20100601164750.GQ8980@think>
- <1275411293.21962.387.camel@mulgrave.site>
- <20100601180905.GR8980@think>
- <20100601184649.GE9453@laptop>
- <20100601193528.GV8980@think>
- <20100602032030.GF9453@laptop>
- <yq17hmhbmkb.fsf@sermon.lab.mkp.net>
+	id S1758200Ab0FBNru (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jun 2010 09:47:50 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:53355 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1755062Ab0FBNrt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Jun 2010 09:47:49 -0400
+Date: Wed, 2 Jun 2010 09:47:46 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Arnd Bergmann <arnd@arndb.de>
+cc: Greg KH <gregkh@suse.de>,
+       Kernel development list <linux-kernel@vger.kernel.org>,
+       USB list <linux-usb@vger.kernel.org>,
+       Frederic Weisbecker <fweisbec@gmail.com>,
+       John Kacur <jkacur@redhat.com>, Andi Kleen <andi@firstfloor.org>,
+       Andi Kleen <ak@linux.intel.com>
+Subject: Re: [PATCH 4/6] USB-BKL: Remove BKL use in uhci-debug
+In-Reply-To: <1275426285-9088-5-git-send-email-arnd@arndb.de>
+Message-ID: <Pine.LNX.4.44L0.1006020944450.1992-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <yq17hmhbmkb.fsf@sermon.lab.mkp.net>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 02, 2010 at 09:17:56AM -0400, Martin K. Petersen wrote:
-> >>>>> "Nick" == Nick Piggin <npiggin@suse.de> writes:
+On Tue, 1 Jun 2010, Arnd Bergmann wrote:
+
+> From: Andi Kleen <ak@linux.intel.com>
 > 
-> >> 1) filesystem changed it
-> >> 2) corruption on the wire or in the raid controller
-> >> 3) the page was corrupted while the IO layer was doing the IO.
-> >> 
-> >> 1 and 2 are easy, we bounce, retry and everyone continues on with
-> >> their lives.  With #3, we'll recrc and send the IO down again
-> >> thinking the data is correct when really we're writing garbage.
-> >> 
-> >> How can we tell these three cases apart?
-> 
-> Nick> Do we really need to handle #3? It could have happened before the
-> Nick> checksum was calculated.
-> 
-> Reason #3 is one of the main reasons for having the checksum in the
-> first place.  The whole premise of the data integrity extensions is that
-> the checksum is calculated in close temporal proximity to the data
-> creation.  I.e. eventually in userland.
-> 
-> Filesystems will inevitably have to be integrity-aware for that to work.
-> And it will be their job to keep the data pages stable during DMA.
+> BKL was not really needed, just came from earlier push downs.
 
-Let's just think hard about what windows can actually be closed versus
-how much effort goes in to closing them. I also prefer not to accept
-half-solutions in the kernel because they don't want to implement real
-solutions in hardware (it's pretty hard to checksum and protect all
-kernel data structures by hand).
+Yes.
 
-For "normal" writes into pagecache, the data can get corrupted anywhere
-from after it is generated in userspace, during the copy, while it is
-dirty in cache, and while it is being written out.
+> The only part that's a bit dodgy is the lseek function. Would
+> need another lock or atomic access to fpos on 32bit?
+> Better to have a libfs lseek
 
-Closing the while it is dirty, while it is being written back window
-still leaves a pretty big window. Also, how do you handle mmap writes?
-Write protect and checksum the destination page after every store? Or
-leave some window between when the pagecache is dirtied and when it is
-written back? So I don't know whether it's worth putting a lot of effort
-into this case.
+It doesn't matter.  Anyone who tries to do lseeks on this file 
+from two different threads, simultaneously, deserves what they get.
 
-If you had an interface for userspace to insert checksums to direct IO
-requests or pagecache ranges, then not only can you close the entire gap
-between userspace data generation, and writeback. But you also can
-handle mmap writes and anything else just fine: userspace knows about
-the concurrency details, so it can add the right checksum (and
-potentially fsync etc) when it's ready.
+> @@ -539,11 +534,11 @@ static loff_t uhci_debug_lseek(struct file *file, loff_t off, int whence)
+>  		new = file->f_pos + off;
+>  		break;
+>  	}
+> +
+> +	/* XXX: Can size shrink? */
+>  	if (new < 0 || new > up->size) {
+> -		unlock_kernel();
+>  		return -EINVAL;
+>  	}
+> -	unlock_kernel();
+>  	return (file->f_pos = new);
+>  }
 
-And the bounce-retry method would be sufficient to handle IO
-transmission errors for normal IOs without being intrusive.
+This comment isn't needed; the size cannot change after the file has 
+been opened.
+
+Alan Stern
 
