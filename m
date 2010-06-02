@@ -1,178 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758802Ab0FBV5G (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jun 2010 17:57:06 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:54997 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758669Ab0FBV5E (ORCPT
+	id S1758788Ab0FBV6c (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jun 2010 17:58:32 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:64354 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758647Ab0FBV6b convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jun 2010 17:57:04 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:from:date:message-id:subject:to:content-type;
-        b=YU5GgRWtOsnDM6K9ACiMQdN5Wp87P0IMNa7OoowMoSe2OXLYuMJO3d9KCVlHVDzQCF
-         0HmHjn00CwZHRu0HN6ENSc8Zx3OHkkDtXjuwZkaA514gdW/POAvGGan4JLxqoy5HSTBT
-         Gc4m453XIlwqfX1gHz2Yi1/xJEvF53b/2Z1LM=
+	Wed, 2 Jun 2010 17:58:31 -0400
 MIME-Version: 1.0
-From: Rafael Tinoco <tinhocas@gmail.com>
-Date: Wed, 2 Jun 2010 18:56:43 -0300
-Message-ID: <AANLkTikfoquMibVsd1dTtrFTDvaKVn1bmL_SfbjyZUoR@mail.gmail.com>
-Subject: [PATCH] task_io_accounting, taskstats
-To: LKML <linux-kernel@vger.kernel.org>, Balbir <balbir@linux.vnet.ibm.com>,
-       Scrum - Linux <scrum-linux@locaweb.com.br>,
-       Juliano Martinez <juliano.martinez@locaweb.com.br>,
-       Gleicon Moraes <gleicon.moraes@locaweb.com.br>
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <20100602133910.GA9106@gvim.org>
+References: <AANLkTik_4ezDAQoAQjkpEgwD9SLKeOjDzy2H7T2v6uCP@mail.gmail.com>
+	<Pine.LNX.4.44L0.1005292026080.6300-100000@netrider.rowland.org>
+	<AANLkTikxws5kmFhnBO1MLzE65ETka3Jy0R5ayAKTS1Lc@mail.gmail.com>
+	<201005312338.55109.rjw@sisk.pl>
+	<20100531232617.GF31155@gvim.org>
+	<20100601090737.4bc243d9@schatten.dmk.lab>
+	<20100601140519.GC1281@gvim.org>
+	<AANLkTikF-B23_UWG1O3tlBl4m8NStAJllGhhevNhYZT6@mail.gmail.com>
+	<20100602133910.GA9106@gvim.org>
+Date: Wed, 2 Jun 2010 14:58:30 -0700
+Message-ID: <AANLkTilSU79cnBODXFokzIPB1hRcZBxbwTgTQ59MeKcK@mail.gmail.com>
+Subject: Re: [linux-pm] [PATCH 0/8] Suspend block api (version 8)
+From: =?ISO-8859-1?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>
+To: markgross@thegnar.org
+Cc: Florian Mickler <florian@mickler.org>, 640e9920@gmail.com,
+       "Rafael J. Wysocki" <rjw@sisk.pl>,
+       Alan Stern <stern@rowland.harvard.edu>,
+       Peter Zijlstra <peterz@infradead.org>,
+       Linux PM <linux-pm@lists.linux-foundation.org>,
+       Brian Swetland <swetland@google.com>,
+       Alan Cox <alan@lxorguk.ukuu.org.uk>,
+       Matthew Garrett <mjg59@srcf.ucam.org>,
+       Thomas Gleixner <tglx@linutronix.de>,
+       LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+2010/6/2 mark gross <640e9920@gmail.com>:
+> On Tue, Jun 01, 2010 at 08:50:02PM -0700, Arve Hjønnevåg wrote:
+>> On Tue, Jun 1, 2010 at 7:05 AM, mark gross <640e9920@gmail.com> wrote:
+>> > On Tue, Jun 01, 2010 at 09:07:37AM +0200, Florian Mickler wrote:
+>> ...
+>> >> +static void update_target_val(int pm_qos_class, s32 val)
+>> >> +{
+>> >> +     s32 extreme_value;
+>> >> +     s32 new_value;
+>> >> +     extreme_value = atomic_read(&pm_qos_array[pm_qos_class]->target_value);
+>> >> +     new_value = pm_qos_array[pm_qos_class]->comparitor(val,extreme_value);
+>> >> +     if (extreme_value != new_value)
+>> >> +             atomic_set(&pm_qos_array[pm_qos_class]->target_value,new_value);
+>> >> +}
+>> >> +
+>> >
+>> > Only works 1/2 the time, but I like the idea!
+>> > It fails to get the righ answer when constraints are reduced.  But, this
+>> > idea is a good improvement i'll roll into the next pm_qos update!
+>> >
+>>
+>> I think it would be a better idea to track your constraints with a
+>> sorted data structure. That way you can to better than O(n) for both
+>> directions. If you have a lot of constraints with the same value, it
+>> may even be worthwhile to have a two stage structure where for
+>> instance you use a rbtree for the unique values and list for identical
+>> constraints.
+>
+> I don't agree, we went through this tree vrs list discussion a few times
+> before in other areas of the kernel.  Wherever the list tended to be
+> short, a simple list wins.  However; we can try it, after we have some
+> metrics and stress test cases identified we can measure its effectivenes
+> against.
+>
 
-I'm proposing this patch to extend taskstats capability of
-IO_ACCOUTING based on socket msg size.
-Already discussed with Balbir about it. The idea was to keep the
-"socket" accounting generic.
-Not taking in consideration witch type of socket or protocol is used.
-I'm using this in a user land tool called ustats for uid accounting
-with very low overhead (cn_msg and taskstats through netlink).
+The list is not short. You have all the inactive and active
+constraints on the same list. If you change it to a two level list
+though, the list of unique values (which is the list you have to walk)
+may be short enough for a tree to be overkill.
 
-Thanks
-
-Rafael Tinoco
-
-diff --git a/include/linux/task_io_accounting.h
-b/include/linux/task_io_accounting.h
-index bdf855c..ed54fab 100644
---- a/include/linux/task_io_accounting.h
-+++ b/include/linux/task_io_accounting.h
-@@ -41,5 +41,16 @@ struct task_io_accounting {
- 	 * information loss in doing that.
- 	 */
- 	u64 cancelled_write_bytes;
-+
-+	/*
-+	 * The number of bytes which this task has read from a socket
-+	 */
-+	u64 read_net_bytes;
-+
-+        /*
-+	 * The number of bytes which this task has written to a socket
-+	 */
-+	u64 write_net_bytes;
-+
- #endif /* CONFIG_TASK_IO_ACCOUNTING */
- };
-diff --git a/include/linux/task_io_accounting_ops.h
-b/include/linux/task_io_accounting_ops.h
-index 4d090f9..f28aa4c 100644
---- a/include/linux/task_io_accounting_ops.h
-+++ b/include/linux/task_io_accounting_ops.h
-@@ -12,6 +12,11 @@ static inline void task_io_account_read(size_t bytes)
- 	current->ioac.read_bytes += bytes;
- }
-
-+static inline void task_io_account_read_net(size_t bytes)
-+{
-+        current->ioac.read_net_bytes += bytes;
-+}
-+
- /*
-  * We approximate number of blocks, because we account bytes only.
-  * A 'block' is 512 bytes
-@@ -26,6 +31,11 @@ static inline void task_io_account_write(size_t bytes)
- 	current->ioac.write_bytes += bytes;
- }
-
-+static inline void task_io_account_write_net(size_t bytes)
-+{
-+        current->ioac.write_net_bytes += bytes;
-+}
-+
- /*
-  * We approximate number of blocks, because we account bytes only.
-  * A 'block' is 512 bytes
-@@ -59,6 +69,10 @@ static inline void task_io_account_read(size_t bytes)
- {
- }
-
-+static inline void task_io_account_read_net(size_t bytes)
-+{
-+}
-+
- static inline unsigned long task_io_get_inblock(const struct task_struct *p)
- {
- 	return 0;
-@@ -68,6 +82,10 @@ static inline void task_io_account_write(size_t bytes)
- {
- }
-
-+static inline void task_io_account_write_net(size_t bytes)
-+{
-+}
-+
- static inline unsigned long task_io_get_oublock(const struct task_struct *p)
- {
- 	return 0;
-diff --git a/include/linux/taskstats.h b/include/linux/taskstats.h
-index 341dddb..5067376 100644
---- a/include/linux/taskstats.h
-+++ b/include/linux/taskstats.h
-@@ -163,6 +163,10 @@ struct taskstats {
- 	/* Delay waiting for memory reclaim */
- 	__u64	freepages_count;
- 	__u64	freepages_delay_total;
-+
-+        /* Per-task network I/O accounting */
-+        __u64   read_net_bytes;         /* bytes of socket read I/O */
-+        __u64   write_net_bytes;        /* bytes of socket write I/O */
- };
-
-
-diff --git a/net/socket.c b/net/socket.c
-index 769c386..93507a3 100644
---- a/net/socket.c
-+++ b/net/socket.c
-@@ -103,6 +103,8 @@
- #include <linux/sockios.h>
- #include <linux/atalk.h>
-
-+#include <linux/task_io_accounting_ops.h>
-+
- static int sock_no_open(struct inode *irrelevant, struct file *dontcare);
- static ssize_t sock_aio_read(struct kiocb *iocb, const struct iovec *iov,
- 			 unsigned long nr_segs, loff_t pos);
-@@ -550,6 +552,9 @@ static inline int __sock_sendmsg(struct kiocb
-*iocb, struct socket *sock,
- 	if (err)
- 		return err;
-
-+        if(size > 0)
-+            task_io_account_read_net(size);
-+
- 	return sock->ops->sendmsg(iocb, sock, msg, size);
- }
-
-@@ -666,6 +671,7 @@ EXPORT_SYMBOL_GPL(sock_recv_ts_and_drops);
- static inline int __sock_recvmsg_nosec(struct kiocb *iocb, struct socket *sock,
- 				       struct msghdr *msg, size_t size, int flags)
- {
-+        int ret = 0;
- 	struct sock_iocb *si = kiocb_to_siocb(iocb);
-
- 	si->sock = sock;
-@@ -674,7 +680,12 @@ static inline int __sock_recvmsg_nosec(struct
-kiocb *iocb, struct socket *sock,
- 	si->size = size;
- 	si->flags = flags;
-
--	return sock->ops->recvmsg(iocb, sock, msg, size, flags);
-+        ret = sock->ops->recvmsg(iocb, sock, msg, size, flags);
-+
-+        if(ret > 0)
-+            task_io_account_read_net(ret);
-+
-+        return ret;
- }
-
- static inline int __sock_recvmsg(struct kiocb *iocb, struct socket *sock,
+-- 
+Arve Hjønnevåg
