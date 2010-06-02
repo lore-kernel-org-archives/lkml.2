@@ -1,63 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933181Ab0FBVkI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jun 2010 17:40:08 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:2324 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933128Ab0FBVkG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jun 2010 17:40:06 -0400
-Date: Wed, 2 Jun 2010 23:38:33 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Paul Menage <menage@google.com>
-Cc: Ben Blum <bblum@andrew.cmu.edu>, linux-kernel@vger.kernel.org,
-       containers@lists.linux-foundation.org, akpm@linux-foundation.org,
-       ebiederm@xmission.com, lizf@cn.fujitsu.com, matthltc@us.ibm.com
-Subject: Re: [RFC] [PATCH 2/2] cgroups: make procs file writable
-Message-ID: <20100602213832.GB31949@redhat.com>
-References: <20100530013303.GC762@ghc01.ghc.andrew.cmu.edu> <20100531175242.GA14691@redhat.com> <20100531180446.GA16249@redhat.com> <AANLkTimcrX0TjzDMNJdubR92pAO4IPATbVpyvvVt0qIV@mail.gmail.com> <20100602140659.GA5324@redhat.com> <AANLkTin-T6ij3xf0ceGoCamwcoayxyf0GdAKY6yXDMVl@mail.gmail.com> <20100602202048.GB28663@redhat.com> <AANLkTimrJFiidM8BlUNvmzfapUAv8369R9PYnTscasEf@mail.gmail.com> <20100602205855.GA30039@redhat.com> <AANLkTimfHlapl7mbRyAazWW5q5Wzs23n6i9wIhVtSv6r@mail.gmail.com>
+	id S933190Ab0FBVoC (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jun 2010 17:44:02 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:50360 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932995Ab0FBVn7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Jun 2010 17:43:59 -0400
+Date: Wed, 2 Jun 2010 14:39:38 -0700 (PDT)
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Daniel Walker <dwalker@codeaurora.org>
+cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org
+Subject: Re: [GIT PULL] ARM MSM updates for 2.6.35-rc1
+In-Reply-To: <alpine.LFD.2.00.1006021413100.8175@i5.linux-foundation.org>
+Message-ID: <alpine.LFD.2.00.1006021430100.8175@i5.linux-foundation.org>
+References: <1274997173.10998.21.camel@c-dwalke-linux.qualcomm.com> <1275511857.27006.6.camel@c-dwalke-linux.qualcomm.com> <alpine.LFD.2.00.1006021413100.8175@i5.linux-foundation.org>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTimfHlapl7mbRyAazWW5q5Wzs23n6i9wIhVtSv6r@mail.gmail.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/02, Paul Menage wrote:
->
-> On Wed, Jun 2, 2010 at 1:58 PM, Oleg Nesterov <oleg@redhat.com> wrote:
-> >> The "it" that you're proposing to remove is in fact the code that
-> >> handles those races.
-> >
-> > In that case I confused, and I thought we already agreed that
-> > the PF_EXITING check in attach_task_by_pid() is not strictly needed
-> > for correctness.
->
-> Not quite - something is required for correctness, and the PF_EXITING
-> check provides that correctness, with a very small window (between
-> setting PF_EXITING and calling cgroup_exit) where we might arguably
-> have been able to move the thread but decline to do so because it's
-> simpler not to do so and no-one cares. That's the optimization that I
-> meant - the data structures are slightly simpler since there's no way
-> to tell when a task has passed cgroup_exit(), and instead we just see
-> if they've passed PF_EXITING.
->
-> >
-> > Once again, the task can call do_exit() and set PF_EXITING right
-> > after the check.
->
-> Yes, the important part is that they haven't set it *before* the check
-> in attach_task_by_pid(). If they have set it before that, then they
-> could be anywhere in the exit path after PF_EXITING, and we decline to
-> move them since it's possible that they've already passed
-> cgroup_exit(). If the exiting task has not yet set PF_EXITING, then it
-> can't possibly get into the critical section in cgroup_exit() since
-> attach_task_by_pid() holds task->alloc_lock.
 
-It doesn't ? At least in Linus's tree.
 
-cgroup_attach_task() does, and this time PF_EXITING is understandable.
+On Wed, 2 Jun 2010, Linus Torvalds wrote:
+> 
+> I got a bit frustrated with ten different ARM pulls per day at one point.
 
-Oleg.
+In other words - when I do a "git pull", I really want to feel like there 
+is some point to it. When I get ten different ARM maintainers asking me to 
+pull stuff that just looks like noise, I'm just not getting those warm and 
+fuzzies about them. 
 
+I'm also getting the feeling that now that different arch sub-architecture 
+maintainers all try to get their stuff in through me, things have actually 
+gotten worse - there's even less feeling of "somebody is actually trying 
+to keep track of all this stuff".
+
+I understand why rmk wasn't happy. I'm also not really happy. 
+
+			Linus
