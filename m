@@ -1,91 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756953Ab0FBHBt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jun 2010 03:01:49 -0400
-Received: from www.tglx.de ([62.245.132.106]:51688 "EHLO www.tglx.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751059Ab0FBHBs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jun 2010 03:01:48 -0400
-Date: Wed, 2 Jun 2010 09:00:33 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: =?ISO-8859-15?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>
-cc: James Bottomley <James.Bottomley@suse.de>,
-       Peter Zijlstra <peterz@infradead.org>, tytso@mit.edu,
-       LKML <linux-kernel@vger.kernel.org>,
-       Florian Mickler <florian@mickler.org>,
-       Linux PM <linux-pm@lists.linux-foundation.org>,
-       Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
-       felipe.balbi@nokia.com, Alan Cox <alan@lxorguk.ukuu.org.uk>
-Subject: Re: [linux-pm] [PATCH 0/8] Suspend block api (version 8)
-In-Reply-To: <AANLkTimTO5n_s9JZAcFJOhMlPMtsOrogx-5S5nykOWtY@mail.gmail.com>
-Message-ID: <alpine.LFD.2.00.1006020856550.2933@localhost.localdomain>
-References: <20100527222514.0a1710bf@lxorguk.ukuu.org.uk> <Pine.LNX.4.44L0.1005271730180.3239-100000@iolanthe.rowland.org> <20100527230806.4deb6de3@lxorguk.ukuu.org.uk> <20100527220949.GB10602@srcf.ucam.org> <20100527232357.6d14fdb2@lxorguk.ukuu.org.uk>
- <20100527223605.GB11364@srcf.ucam.org> <20100527235546.09f3ce8a@lxorguk.ukuu.org.uk> <20100528043114.GC26177@thunk.org> <1275030704.32462.11.camel@laptop> <AANLkTikEtlbkT4Ws3H2YGt_9QC46B5dr-b1oxJOcG4GN@mail.gmail.com> <1275120618.27810.12699.camel@twins>
- <1275149418.4503.128.camel@mulgrave.site> <alpine.LFD.2.00.1005312231120.2933@localhost.localdomain> <1275340869.2823.344.camel@mulgrave.site> <alpine.LFD.2.00.1005312343290.2933@localhost.localdomain> <AANLkTinwvkJRU0JjJdNrGfXWYpQMIr8bO3BZxcXubt_Z@mail.gmail.com>
- <alpine.LFD.2.00.1006011257580.2933@localhost.localdomain> <AANLkTimTO5n_s9JZAcFJOhMlPMtsOrogx-5S5nykOWtY@mail.gmail.com>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S1757036Ab0FBHD2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jun 2010 03:03:28 -0400
+Received: from smtp.nokia.com ([192.100.122.233]:51195 "EHLO
+	mgw-mx06.nokia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756772Ab0FBHD0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Jun 2010 03:03:26 -0400
+Message-ID: <4C060224.4090601@nokia.com>
+Date: Wed, 02 Jun 2010 10:03:00 +0300
+From: Dmitry Kasatkin <dmitry.kasatkin@nokia.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.9) Gecko/20100423 Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="8323328-983960478-1275462035=:2933"
+To: ext Mimi Zohar <zohar@linux.vnet.ibm.com>
+CC: Shaz <shazalive@gmail.com>, James Morris <jmorris@namei.org>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       "linux-security-module@vger.kernel.org" 
+	<linux-security-module@vger.kernel.org>,
+       David Safford <safford@watson.ibm.com>,
+       Dave Hansen <dave@linux.vnet.ibm.com>,
+       Arjan van de Ven <arjan@infradead.org>,
+       securityengineeringresearchgroup 
+	<securityengineeringresearchgroup@googlegroups.com>
+Subject: Re: [PATCH 00/14] EVM
+References: <1271886594-3719-1-git-send-email-zohar@linux.vnet.ibm.com>	 <alpine.LRH.2.00.1005311017530.24571@tundra.namei.org>	 <AANLkTil8LHjRT_PMosymmtBb1pxIzkBaWC0ef35DCBUU@mail.gmail.com>	 <AANLkTil7WvVZ-3zpA0E--fUcHTqul3pnXnPm1xXn_vlH@mail.gmail.com> <1275420536.28134.37.camel@localhost.localdomain>
+In-Reply-To: <1275420536.28134.37.camel@localhost.localdomain>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 02 Jun 2010 07:02:58.0107 (UTC) FILETIME=[A1BFD0B0:01CB0221]
+X-Nokia-AV: Clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
 
---8323328-983960478-1275462035=:2933
-Content-Type: TEXT/PLAIN; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
 
-On Tue, 1 Jun 2010, Arve Hjønnevåg wrote:
-> 2010/6/1 Thomas Gleixner <tglx@linutronix.de>:
-> >
-> > On Mon, 31 May 2010, Arve Hjønnevåg wrote:
-> >
-> >> On Mon, May 31, 2010 at 2:46 PM, Thomas Gleixner <tglx@linutronix.de> wrote:
-> >> > On Mon, 31 May 2010, James Bottomley wrote:
-> >> >>
-> >> >> For MSM hardware, it looks possible to unify the S and C states by doing
-> >> >> suspend to ram from idle but I'm not sure how much work that is.
-> >> >
-> >> > On ARM, it's not rocket science and we have in tree support for this
-> >> > already (OMAP). I have done the same thing on a Samsung part as a
-> >> > prove of concept two years ago and it's really easy as the hardware is
-> >> > sane. Hint: It's designed for mobile devices :)
-> >> >
-> >>
-> >> We already enter the same power state from idle and suspend on msm. In
-> >> the absence of misbehaving apps, the difference in power consumption
-> >> is entirely caused by periodic timers in the user-space framework
-> >> _and_ kernel. It only takes a few timers triggering per second (I
-> >> think 3 if they do no work) to double the average power consumption on
-> >> the G1 if the radio is off. We originally added wakelocks because the
-> >> hardware we had at the time had much lower power consumption in
-> >> suspend then idle, but we still use suspend because it saves power.
-> >
-> > So how do you differentiate between timers which _should_ fire and
-> > those you do not care about ?
-> >
-> 
-> Only alarms are allowed to fire while suspended.
-> 
-> > We have mechanisms in place to defer timers so the wakeups are
-> > minimized. If that's not enough we need to revisit.
-> >
-> 
-> Deferring the the timers forever without stopping the clock can cause
-> problems. Our user space code has a lot of timeouts that will trigger
-> an error if an app does not respond in time. Freezing everything and
-> stopping the clock while suspended is a lot simpler than trying to
-> stop individual timers and processes from running.
+On 01/06/10 22:28, ext Mimi Zohar wrote:
+> On Mon, 2010-05-31 at 15:08 +0500, Shaz wrote:
+>   
+>>> EVM is based on EA while Aegis does not use EA as far as I can
+>>> understand from the documentation available. Can we make EVM
+>>> independent of EA? Even the MAC mechanism is very different then
+>>> existing LSM based mechanisms.
+>>>       
+>> Have a look at the following:
+>>
+>> http://research.nokia.com/files/NRCTR2008010.pdf
+>> http://research.nokia.com/files/NRCTR2008007.pdf
+>> http://lwn.net/Articles/372937/
+>>     
+> SELinux, Smack, Capabilities, and IMA all use extended attributes. The
+> purpose of EVM is to detect offline tampering of these security extended
+> attributes.
+>
+> The IMA integrity appraisal extension extends IMA with local measurement
+> appraisal. The extension stores and maintains the file integrity
+> measurement as an extended attribute 'security.ima', which EVM can be
+> configured to protect.  Instead of storing the hash measurement as an
+> extended attribute, the file hashes could be loaded in kernel memory, as
+> long as the appraise policy is appropriately constrained.
+>
+>   
+Hi,
 
-And resume updates timekeeping to account for the slept time. So the
-only way to get away with that is to sleep under a second or just
-ignoring the update by avoiding the access to rtc. 
+Maemo integrity protection solution was based on old DigSig project
+which was used to verify
+integrity of executables. Signed integrity measurement was embedded to
+the ELF header.
+When we started to develop it EVM was not available.
 
-So how do you keep timekeeping happy ?
+And we decided to use a file to keep hashes and other info.
 
-Thanks,
+Our goals were
+1. Protect also certain data files.
+digsig worked only with ELF files.
 
-	tglx
---8323328-983960478-1275462035=:2933--
+2. Be mobile friendly
+It seems faster to verify signature of one file with hashes instead of
+checking signature of every EA.
+
+3. Persistant to offline attacks
+EA can be delete. If not all files has EA then it is not possible to
+detect removal
+
+4. Do not use EA.
+IIRC it was some problems with EA on our system and we could not use them..
+
+
+EVM looks very interesting and I would like also to review the code and
+understand the architecture.
+We consider possibility to use EVM if it is going to be in the kernel.
+
+- Dmitry Kasatkin
+Maemo/MeeGo security team
+
+> Mimi
+>
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-security-module" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>   
