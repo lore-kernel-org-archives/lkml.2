@@ -1,85 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758351Ab0FBSph (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jun 2010 14:45:37 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:43492 "EHLO mx1.redhat.com"
+	id S932665Ab0FBSpt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jun 2010 14:45:49 -0400
+Received: from e4.ny.us.ibm.com ([32.97.182.144]:57875 "EHLO e4.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757971Ab0FBSpf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jun 2010 14:45:35 -0400
-Date: Wed, 2 Jun 2010 14:44:59 -0400
-From: Don Zickus <dzickus@redhat.com>
-To: Jiri Slaby <jirislaby@gmail.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>,
-       LKML <linux-kernel@vger.kernel.org>,
-       Linux-pm mailing list <linux-pm@lists.linux-foundation.org>,
-       linux-ide@vger.kernel.org
-Subject: Re: hibernation hangs with ATA errors (lockup_detector bug)
-Message-ID: <20100602184459.GA15159@redhat.com>
-References: <4C03C608.1040600@gmail.com>
- <20100601135004.GP15159@redhat.com>
- <4C051D44.7040203@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4C051D44.7040203@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
+	id S932392Ab0FBSpr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Jun 2010 14:45:47 -0400
+Subject: Re: [Linux-ima-user] [PATCH][1/1] fs: wrong type for 'magic'
+ argument	in 'simple_fill_super()', fs/libfs.c
+From: Mimi Zohar <zohar@linux.vnet.ibm.com>
+To: Roberto Sassu <roberto.sassu@polito.it>
+Cc: linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
+       James Morris <jmorris@namei.org>
+In-Reply-To: <201006011906.00880.roberto.sassu@polito.it>
+References: <201006011906.00880.roberto.sassu@polito.it>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 02 Jun 2010 14:44:25 -0400
+Message-ID: <1275504265.3091.5.camel@localhost.localdomain>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 01, 2010 at 04:46:28PM +0200, Jiri Slaby wrote:
-> On 06/01/2010 03:50 PM, Don Zickus wrote:
-> > On Mon, May 31, 2010 at 04:22:00PM +0200, Jiri Slaby wrote:
-> >> Hi,
-> >>
-> >> with -next I get the following errors while trying to hibernate in
-> >> qemu-kvm after the image is stored on disk:
-> > 
-> > Is this the host that is hibernating or the guest?
+On Tue, 2010-06-01 at 19:05 +0200, Roberto Sassu wrote: 
+> Description of the issue:
 > 
-> Guest.
+> The function 'simple_fill_super()' in the path 'fs/libfs.c' takes the 'magic' argument as int. 
+> In the include file 'include/linux/fs.h' the 's_magic' field of the 'super_block' structure is
+> declared as unsigned long.
+> This causes a misbehaviour in the 'Integrity Measurement Architecture' security module, 
+> since the 's_magic' field is used as criteria to determine if the inode must be measured.
+
+There aren't any magic numbers today greater than 32 bits. Out of
+curiosity, which magic number on which platform are you having a
+problem?
+
+> This patch applies to the mainline kernel repository.
 > 
-> > KVM guests don't emulate the performance counters, so the nmi piece
-> > shouldn't be functioning and the soft lockup piece just sits on top of an
-> > hrtimer, so off the top of my head it is hard to imagine it intefering
-> > with a sata driver.
-> > 
-> > I'll need your whole boot up log to see how the lockup detector
-> > initialized itself.
+> 
+> >From a9f6d9bc7b2259ac025977f4b28a8b90784caf62 Mon Sep 17 00:00:00 2001
+> From: Roberto Sassu <roberto.sassu@polito.it>
+> Date: Tue, 1 Jun 2010 18:28:13 +0200
+> Subject: [PATCH] BUG: wrong type for magic argument in simple_fill_super(), fs/libfs.c
+> 
+> 
+> Signed-off-by: Roberto Sassu <roberto.sassu@polito.it>
 
-Ok, so I found out what is causing the problem, not entirely sure why or
-what the right fix is, but this patch should do the trick.
+Reviewed-by: Mimi Zohar <zohar@us.ibm.com>
 
-This is probably one of those fixing the symptoms but not the problem patch,
-but I don't know enough about suspend/resume to understand what the real
-problem is.
+> ---
+>  fs/libfs.c         |    2 +-
+>  include/linux/fs.h |    2 +-
+>  2 files changed, 2 insertions(+), 2 deletions(-)
+> 
+> diff --git a/fs/libfs.c b/fs/libfs.c
+> index 09e1016..7d966e8 100644
+> --- a/fs/libfs.c
+> +++ b/fs/libfs.c
+> @@ -489,7 +489,7 @@ int simple_write_end(struct file *file, struct address_space *mapping,
+>   * unique inode values later for this filesystem, then you must take care
+>   * to pass it an appropriate max_reserved value to avoid collisions.
+>   */
+> -int simple_fill_super(struct super_block *s, int magic, struct tree_descr *files)
+> +int simple_fill_super(struct super_block *s, unsigned long magic, struct tree_descr *files)
+>  {
+>   	struct inode *inode;
+>         struct dentry *root;
+> diff --git a/include/linux/fs.h b/include/linux/fs.h
+> index 3428393..471e1ff 100644
+> --- a/include/linux/fs.h
+> +++ b/include/linux/fs.h
+> @@ -2388,7 +2388,7 @@ extern const struct file_operations simple_dir_operations;
+>  extern const struct inode_operations simple_dir_inode_operations;
+>  struct tree_descr { char *name; const struct file_operations *ops; int mode; };
+>  struct dentry *d_alloc_name(struct dentry *, const char *);
+> -extern int simple_fill_super(struct super_block *, int, struct tree_descr *);
+> +extern int simple_fill_super(struct super_block *, unsigned long, struct tree_descr *);
+>  extern int simple_pin_fs(struct file_system_type *, struct vfsmount **mount, int *count);
+>  extern void simple_release_fs(struct vfsmount **mount, int *count);
+> 
 
----->SNIP<---------------------
-[lockup detector] don't return NOTIFY_BAD when cpu goes online for suspend
 
-KVM guests do not support performance counter emulation, so if the nmi
-watchdog piece is compiled in, it will always fail during boot.  The
-failure returns NOTIFY_BAD when the cpu goes online in the cpu notifier
-callback.  Returning NOTIFY_BAD causes hibernation to do really bad
-things, so avoid doing that.
-
-The cpu failure shouldn't be a critical failure anyway, so returning
-NOTIFY_BAD was probably overstating things.
-
-Signed-off-by: Don Zickus <dzickus@redhat.com>
-
-
-diff --git a/kernel/watchdog.c b/kernel/watchdog.c
-index 6b7fad8..fda9770 100644
---- a/kernel/watchdog.c
-+++ b/kernel/watchdog.c
-@@ -550,8 +550,7 @@ cpu_callback(struct notifier_block *nfb, unsigned long action, void *hcpu)
- 		break;
- 	case CPU_ONLINE:
- 	case CPU_ONLINE_FROZEN:
--		if (watchdog_enable(hotcpu))
--			return NOTIFY_BAD;
-+		watchdog_enable(hotcpu)
- 		break;
- #ifdef CONFIG_HOTPLUG_CPU
- 	case CPU_UP_CANCELED:
