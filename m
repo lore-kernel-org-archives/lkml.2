@@ -1,55 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758684Ab0FBUyt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jun 2010 16:54:49 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:43733 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757538Ab0FBUyr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jun 2010 16:54:47 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Neil Brown <neilb@suse.de>
-Subject: Re: [linux-pm] [PATCH 0/8] Suspend block api (version 8)
-Date: Wed, 2 Jun 2010 22:55:51 +0200
-User-Agent: KMail/1.12.4 (Linux/2.6.35-rc1-rjw; KDE/4.3.5; x86_64; ; )
-Cc: Alan Stern <stern@rowland.harvard.edu>,
-       Thomas Gleixner <tglx@linutronix.de>,
-       Felipe Balbi <felipe.balbi@nokia.com>,
-       Arve =?iso-8859-1?q?Hj=F8nnev=E5g?= <arve@android.com>,
-       Peter Zijlstra <peterz@infradead.org>,
-       LKML <linux-kernel@vger.kernel.org>,
-       Florian Mickler <florian@mickler.org>,
-       Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
-       Linux PM <linux-pm@lists.linux-foundation.org>,
-       Alan Cox <alan@lxorguk.ukuu.org.uk>
-References: <20100601123846.14d0535b@notabene.brown> <Pine.LNX.4.44L0.1006011032150.2949-100000@iolanthe.rowland.org> <20100602104318.0c41b3cd@notabene.brown>
-In-Reply-To: <20100602104318.0c41b3cd@notabene.brown>
+	id S1758700Ab0FBU4m (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jun 2010 16:56:42 -0400
+Received: from sj-iport-6.cisco.com ([171.71.176.117]:9013 "EHLO
+	sj-iport-6.cisco.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757538Ab0FBU4k (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Jun 2010 16:56:40 -0400
+Authentication-Results: sj-iport-6.cisco.com; dkim=neutral (message not signed) header.i=none
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AvsEAPJiBkyrRN+J/2dsb2JhbACeInGnNZoehRYEg0g
+X-IronPort-AV: E=Sophos;i="4.53,348,1272844800"; 
+   d="scan'208";a="538952318"
+From: Roland Dreier <rdreier@cisco.com>
+To: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
+       Michal Marek <mmarek@suse.cz>
+Subject: [PATCH] checkkconfigsymbols.sh: Kconfig symbols sometimes have lowercase letters
+X-Message-Flag: Warning: May contain useful information
+Date: Wed, 02 Jun 2010 13:56:36 -0700
+Message-ID: <adazkzdqhkr.fsf@roland-alpha.cisco.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201006022255.51551.rjw@sisk.pl>
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 02 June 2010, Neil Brown wrote:
-> On Tue, 1 Jun 2010 10:47:49 -0400 (EDT)
-> Alan Stern <stern@rowland.harvard.edu> wrote:
-...
-> So yes, there are different use cases and we should support all of them,
-> both "I shut the lid and my laptop really stays asleep" and "I never miss a
-> TXT because my phone went to sleep at a bad time".  The process that
-> initiates the suspend has a role in choosing what can wake it up.
+Quite a few Kconfig symbols contain lowercase letters.  The current
+checkkconfigsymbols.sh code only contains A-Z in the regexp it uses to
+find config symbols in source code, so it comes up with the wrong symbol
+to look for in Kconfig files and then generates false positives when it
+doesn't find that wrong symbol.  For example checking drivers/net
+generates a false positive for MAC89 because the the actual config
+option is MAC89x0.
 
-You'd need to add some all new infrastructure for that, because right now
-only hardware wakeup signals are regarded as (system) wakeup events
-(they are either interrupts or things like PCI PMEs, possibly translated to
-some platform signals like GPIOs or something).
+Fix this by also adding a-z to the regexp.
 
-I think I know how to prevent these hardware wakeup events from being lost
-(such that the entire suspend will be aborted if one of them happens
-during suspend), but for the handling of more generally defined wakeup
-events we'd need to provide user space with information on what wakeup events
-are available and how to enable and disable them, among other things.
+Signed-off-by: Roland Dreier <rolandd@cisco.com>
+---
+ scripts/checkkconfigsymbols.sh |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-Rafael
+diff --git a/scripts/checkkconfigsymbols.sh b/scripts/checkkconfigsymbols.sh
+index 46be3c5..2ca49bb 100755
+--- a/scripts/checkkconfigsymbols.sh
++++ b/scripts/checkkconfigsymbols.sh
+@@ -14,7 +14,7 @@ find $paths -name '*.[chS]' -o -name 'Makefile' -o -name 'Makefile*[^~]'| while
+ do
+ 	# Output the bare Kconfig variable and the filename; the _MODULE part at
+ 	# the end is not removed here (would need perl an not-hungry regexp for that).
+-	sed -ne 's!^.*\<\(UML_\)\?CONFIG_\([0-9A-Z_]\+\).*!\2 '$i'!p' < $i
++	sed -ne 's!^.*\<\(UML_\)\?CONFIG_\([0-9A-Za-z_]\+\).*!\2 '$i'!p' < $i
+ done | \
+ # Smart "sort|uniq" implemented in awk and tuned to collect the names of all
+ # files which use a given symbol
+
+-- 
+Roland Dreier <rolandd@cisco.com> || For corporate legal information go to:
+http://www.cisco.com/web/about/doing_business/legal/cri/index.html
