@@ -1,62 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757686Ab0FBJjU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jun 2010 05:39:20 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:55468 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755918Ab0FBJjT convert rfc822-to-8bit (ORCPT
+	id S1757700Ab0FBJjf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jun 2010 05:39:35 -0400
+Received: from ey-out-2122.google.com ([74.125.78.27]:34459 "EHLO
+	ey-out-2122.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932109Ab0FBJjd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jun 2010 05:39:19 -0400
-Subject: Re: [linux-pm] [PATCH 0/8] Suspend block api (version 8)
-From: Peter Zijlstra <peterz@infradead.org>
-To: Arve =?ISO-8859-1?Q?Hj=F8nnev=E5g?= <arve@android.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-       Florian Mickler <florian@mickler.org>,
-       Matthew Garrett <mjg59@srcf.ucam.org>,
-       Alan Stern <stern@rowland.harvard.edu>, Paul@smtp1.linux-foundation.org,
-       LKML <linux-kernel@vger.kernel.org>, felipe.balbi@nokia.com,
-       Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
-       Linux PM <linux-pm@lists.linux-foundation.org>,
-       Alan Cox <alan@lxorguk.ukuu.org.uk>
-In-Reply-To: <AANLkTinDm3FIrbS1jqEzW15THmr1hdd7ox0Mllm1VLjZ@mail.gmail.com>
-References: <Pine.LNX.4.44L0.1005271253240.3239-100000@iolanthe.rowland.org>
-	 <201005302202.39511.rjw@sisk.pl>
-	 <AANLkTilUQ2AG76nbK6LwI8_7zw0_yMSoAOr9pmuz7xrt@mail.gmail.com>
-	 <201005312347.24251.rjw@sisk.pl>
-	 <AANLkTilvOgSFTDFtXbjJobMZWxgfvsC97TqC7_a_NHBX@mail.gmail.com>
-	 <alpine.LFD.2.00.1006011411200.2933@localhost.localdomain>
-	 <AANLkTikZHmF6baP7dEXEGFE8YsbEteRjlhb5wqZX8ll1@mail.gmail.com>
-	 <alpine.LFD.2.00.1006020905410.2933@localhost.localdomain>
-	 <AANLkTinDm3FIrbS1jqEzW15THmr1hdd7ox0Mllm1VLjZ@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Wed, 02 Jun 2010 11:39:21 +0200
-Message-ID: <1275471561.27810.30865.camel@twins>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	Wed, 2 Jun 2010 05:39:33 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=AIKmBvG8TroBmfAjGh9YCYhypA5WmRAVNOgKRGOl187wa2JxaKUk8ejq0rZpr2pRx8
+         v45GELBDO4QXyGK06SmiK0nD1ukQFNKjsfBdOrJLddltXcSkZLOH7k4Ikmflh7ZA74+N
+         XAd6q4x8tFr0dLqBcjcttxq8XecUnpTAOA0dk=
+From: Vitaly Mayatskikh <v.mayatskih@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+       Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+       "H. Peter Anvin" <hpa@zytor.com>, Vivek Goyal <vgoyal@redhat.com>,
+       Randy Dunlap <rdunlap@xenotime.net>
+Subject: [PATCH 0/5] kdump: extract log buffer and registers from vmcore on NMI button pressing
+Date: Wed,  2 Jun 2010 09:39:14 +0200
+Message-Id: <1275464359-1566-1-git-send-email-v.mayatskih@gmail.com>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-06-02 at 01:54 -0700, Arve Hjønnevåg wrote:
-> No I want you to stop confusing low power idle modes with suspend.
+Sometimes non-interactive dump capture environment silently fails to
+store vmcore due to hardware or software bug. It is hard then to
+understand and fix reasons of system failure in both production and
+dump capture environments to prevent this failure to reoccur. It would
+be quite usefull to see log buffer contents of crashed kernel at
+least.
 
-I think it is you who is confused. For power management purposes suspend
-is nothing more but a deep idle state.
+This patchset adds possibility for dump capture mode to extract and
+print log buffer and CPU registers from captured vmcore. Also the
+state of running kernel is printed. This action can be triggered via
+NMI button.
 
-(and please don't mention @#$@ up x86 ACPI again, Intel knows, they're
-fixing it, get over it already).
+Signed-off-by: Vitaly Mayatskikh <v.mayatskih@gmail.com>
 
-> Unrelated to
-> Android, I also want to use opportunistic suspend on my desktop.
-
-So you're going to sprinkle this suspend blocker shite all over regular
-userspace? Why not instead work on getting apps to behave properly and
-idle when there's nothing to do?
-
-After all, if you have the code to add suspend blockers into, you also
-have the means to fix it being stupid in the first place.
-
-
-
+ arch/x86/include/asm/elf.h    |   46 +++++
+ arch/x86/include/asm/kdebug.h |    1 +
+ arch/x86/include/asm/nmi.h    |    1 +
+ arch/x86/kernel/apic/nmi.c    |   27 +++
+ arch/x86/kernel/process_32.c  |   22 ++-
+ arch/x86/kernel/process_64.c  |   20 ++-
+ fs/proc/vmcore.c              |  365 +++++++++++++++++++++++++++++++++++++++--
+ include/linux/sysctl.h        |    1 +
+ kernel/sysctl.c               |    7 +
+ kernel/sysctl_binary.c        |    1 +
+ 10 files changed, 463 insertions(+), 28 deletions(-)
 
