@@ -1,104 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933205Ab0FBVXQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jun 2010 17:23:16 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:44856 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932991Ab0FBVXK (ORCPT
+	id S1758766Ab0FBVbr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jun 2010 17:31:47 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:54021 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1758048Ab0FBVbq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jun 2010 17:23:10 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:mime-version:content-type
-         :content-disposition:content-transfer-encoding:user-agent;
-        b=YdIBKcq99eYebTXyHUQcCd1gims6iSPRSCXCHLUlOXAnKJeP3UqMaapnSKLh+2l3Rh
-         jJv9vHHX3eLudWQtv+9d2LFDdDee2FPX4opbf2yD5P4Wq1383bm+3mu83LkIbDDHTjO6
-         McMFQRd6BN3foG8hmwAfSreDp9d/dwYla5MBQ=
-Date: Thu, 3 Jun 2010 01:23:04 +0400
-From: Cyrill Gorcunov <gorcunov@openvz.org>
-To: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
-       Robert Richter <robert.richter@amd.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Lin Ming <ming.m.lin@intel.com>,
-       Arnaldo Carvalho de Melo <acme@redhat.com>,
-       =?iso-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>
-Subject: [PATCH -tip] perf, x86: Make a second write to performance counter
-	if needed
-Message-ID: <20100602212304.GC5264@lenovo>
+	Wed, 2 Jun 2010 17:31:46 -0400
+Date: Wed, 2 Jun 2010 14:27:06 -0700 (PDT)
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Daniel Walker <dwalker@codeaurora.org>
+cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org
+Subject: Re: [GIT PULL] ARM MSM updates for 2.6.35-rc1
+In-Reply-To: <1275511857.27006.6.camel@c-dwalke-linux.qualcomm.com>
+Message-ID: <alpine.LFD.2.00.1006021413100.8175@i5.linux-foundation.org>
+References: <1274997173.10998.21.camel@c-dwalke-linux.qualcomm.com> <1275511857.27006.6.camel@c-dwalke-linux.qualcomm.com>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Netburst PMU we need a second write to a performance counter
-due to cpu erratum.
 
-A simple flag test instead of alternative instructions was choosen
-because wrmsrl is already a macro and if virtualization is turned
-on will need an additional wrapper call which is more expencise.
 
-nb: we should propably switch to jump-labels as only this facility
-reach the mainline.
+On Wed, 2 Jun 2010, Daniel Walker wrote:
+> 
+> Don't forget about this one! Or was something wrong with it?
 
-Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
-CC: Robert Richter <robert.richter@amd.com>
-CC: Peter Zijlstra <peterz@infradead.org>
-CC: Lin Ming <ming.m.lin@intel.com>
-CC: Arnaldo Carvalho de Melo <acme@redhat.com>
-CC: Frédéric Weisbecker <fweisbec@gmail.com>
----
- arch/x86/kernel/cpu/perf_event.c    |   10 ++++++++++
- arch/x86/kernel/cpu/perf_event_p4.c |    9 +++++++++
- 2 files changed, 19 insertions(+)
+I got a bit frustrated with ten different ARM pulls per day at one point.
 
-Index: linux-2.6.git/arch/x86/kernel/cpu/perf_event.c
-=====================================================================
---- linux-2.6.git.orig/arch/x86/kernel/cpu/perf_event.c
-+++ linux-2.6.git/arch/x86/kernel/cpu/perf_event.c
-@@ -220,6 +220,7 @@ struct x86_pmu {
- 						 struct perf_event *event);
- 	struct event_constraint *event_constraints;
- 	void		(*quirks)(void);
-+	int		perfctr_second_write;
- 
- 	int		(*cpu_prepare)(int cpu);
- 	void		(*cpu_starting)(int cpu);
-@@ -926,6 +927,15 @@ x86_perf_event_set_period(struct perf_ev
- 	atomic64_set(&hwc->prev_count, (u64)-left);
- 
- 	wrmsrl(hwc->event_base + idx,
-+		(u64)(-left) & x86_pmu.cntval_mask);
-+
-+	/*
-+	 * Due to erratum on certan cpu we need
-+	 * a second write to be sure the register
-+	 * is updated properly
-+	 */
-+	if (x86_pmu.perfctr_second_write)
-+		wrmsrl(hwc->event_base + idx,
- 			(u64)(-left) & x86_pmu.cntval_mask);
- 
- 	perf_event_update_userpage(event);
-Index: linux-2.6.git/arch/x86/kernel/cpu/perf_event_p4.c
-=====================================================================
---- linux-2.6.git.orig/arch/x86/kernel/cpu/perf_event_p4.c
-+++ linux-2.6.git/arch/x86/kernel/cpu/perf_event_p4.c
-@@ -829,6 +829,15 @@ static __initconst const struct x86_pmu 
- 	.max_period		= (1ULL << 39) - 1,
- 	.hw_config		= p4_hw_config,
- 	.schedule_events	= p4_pmu_schedule_events,
-+	/*
-+	 * This handles erratum N15 in intel doc 249199-029,
-+	 * the counter may not be updated correctly on write
-+	 * so we need a second write operation to do the trick
-+	 * (the official workaround didn't work)
-+	 *
-+	 * the former idea is taken from OProfile code
-+	 */
-+	.perfctr_second_write	= 1,
- };
- 
- static __init int p4_pmu_init(void)
+There's something wrong with ARM development. The amount of pure noise in 
+the patches is incredibly annoying. Right now, ARM is already (despite me 
+not reacting to some of the flood) 55% of all arch/ changes since 2.6.34, 
+and it's all pointless churn in 
+
+	arch/arm/configs/
+	arch/arm/mach-xyz
+	arch/arm/plat-blah
+
+and at a certain point in the merge window I simply could not find it in 
+me to care about it any more.
+
+Do you guys at all talk about this problem? Have any of the ARM people 
+bothered to look at the arch/arm diffs and see how mind-deadening they 
+are? I try to look through these kinds of things when I pull, but after a 
+million lines of pure noise, it gets old pretty quickly.
+
+Somehow, I can't believe that you need thousands of lines for each random 
+arch/arm/mach-xyz (yeah, some very few of them are smaller).
+
+For a taste of the mind-deadening experience, just do
+
+	for i in arch/arm/mach-*
+	do
+		echo $i; wc -l $(git ls-files $i)
+	done | less -S
+
+and imagine being on the receiving side of that.
+
+			Linus
