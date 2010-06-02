@@ -1,208 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758585Ab0FBThm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jun 2010 15:37:42 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:53344 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758313Ab0FBThl (ORCPT
+	id S1758573Ab0FBTng (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jun 2010 15:43:36 -0400
+Received: from mail-ww0-f46.google.com ([74.125.82.46]:64116 "EHLO
+	mail-ww0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755474Ab0FBTne (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jun 2010 15:37:41 -0400
-Date: Wed, 2 Jun 2010 12:36:57 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Lars-Peter Clausen <lars@metafoo.de>
-Cc: Ralf Baechle <ralf@linux-mips.org>, linux-mips@linux-mips.org,
-       linux-kernel@vger.kernel.org, linux-fbdev@vger.kernel.org
-Subject: Re: [RFC][PATCH 16/26] fbdev: Add JZ4740 framebuffer driver
-Message-Id: <20100602123657.e197990b.akpm@linux-foundation.org>
-In-Reply-To: <1275505832-17185-8-git-send-email-lars@metafoo.de>
-References: <1275505397-16758-1-git-send-email-lars@metafoo.de>
-	<1275505832-17185-8-git-send-email-lars@metafoo.de>
-X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 2 Jun 2010 15:43:34 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=T3pqPlnlnfx/Ga5bv/8kxfBFb+oA1uklrRZl1eCjkU1sV/3k8yik9IBlS3zskgyirg
+         +qgn2mst8RHSal6J3Er0Nmgha3fFQTUbjfZUjSdOmyiiSkzCwz+FGANs5Q0ZzTobO9CH
+         SrpsaqTKJGH+BwRHMW2UiARdtBmmDKcCmo0KA=
+Date: Wed, 2 Jun 2010 21:43:37 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Don Zickus <dzickus@redhat.com>, Jeff Garzik <jgarzik@pobox.com>
+Cc: Jiri Slaby <jirislaby@gmail.com>, LKML <linux-kernel@vger.kernel.org>,
+       Linux-pm mailing list <linux-pm@lists.linux-foundation.org>,
+       linux-ide@vger.kernel.org
+Subject: Re: hibernation hangs with ATA errors (lockup_detector bug)
+Message-ID: <20100602194336.GB5164@nowhere>
+References: <4C03C608.1040600@gmail.com> <20100601135004.GP15159@redhat.com> <4C051D44.7040203@gmail.com> <20100602184459.GA15159@redhat.com> <20100602191336.GA5164@nowhere>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100602191336.GA5164@nowhere>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed,  2 Jun 2010 21:10:32 +0200
-Lars-Peter Clausen <lars@metafoo.de> wrote:
-
-> This patch adds support for the LCD controller on JZ4740 SoCs.
+On Wed, Jun 02, 2010 at 09:13:40PM +0200, Frederic Weisbecker wrote:
+> On Wed, Jun 02, 2010 at 02:44:59PM -0400, Don Zickus wrote:
+> > On Tue, Jun 01, 2010 at 04:46:28PM +0200, Jiri Slaby wrote:
+> > > On 06/01/2010 03:50 PM, Don Zickus wrote:
+> > > > On Mon, May 31, 2010 at 04:22:00PM +0200, Jiri Slaby wrote:
+> > > >> Hi,
+> > > >>
+> > > >> with -next I get the following errors while trying to hibernate in
+> > > >> qemu-kvm after the image is stored on disk:
+> > > > 
+> > > > Is this the host that is hibernating or the guest?
+> > > 
+> > > Guest.
+> > > 
+> > > > KVM guests don't emulate the performance counters, so the nmi piece
+> > > > shouldn't be functioning and the soft lockup piece just sits on top of an
+> > > > hrtimer, so off the top of my head it is hard to imagine it intefering
+> > > > with a sata driver.
+> > > > 
+> > > > I'll need your whole boot up log to see how the lockup detector
+> > > > initialized itself.
+> > 
+> > Ok, so I found out what is causing the problem, not entirely sure why or
+> > what the right fix is, but this patch should do the trick.
+> > 
+> > This is probably one of those fixing the symptoms but not the problem patch,
+> > but I don't know enough about suspend/resume to understand what the real
+> > problem is.
 > 
->
-> ...
->
-> +struct jzfb_framedesc {
-> +	uint32_t next;
-> +	uint32_t addr;
-> +	uint32_t id;
-> +	uint32_t cmd;
-> +} __attribute__((packed));
+> 
+> So the problem is that we stop the cpu hotplug notifying, I guess this prevents
+> some ata callbacks to execute in the cpu hotplug notifier and then provoke this
+> crash.
 
-We have a little __packed helper.  
 
->
-> ...
->
-> +static int jzfb_setcolreg(unsigned regno, unsigned red, unsigned green,
-> +			unsigned blue, unsigned transp, struct fb_info *fb)
-> +{
-> +	uint32_t color;
-> +
-> +	if (regno >= 16)
-> +		return -EINVAL;
-> +
-> +	color = jzfb_convert_color_to_hw(red, fb->var.red.length);
-> +	color |= jzfb_convert_color_to_hw(green, fb->var.green.length);
-> +	color |= jzfb_convert_color_to_hw(blue, fb->var.blue.length);
-> +	color |= jzfb_convert_color_to_hw(transp, fb->var.transp.length);
-> +
-> +	((uint32_t *)(fb->pseudo_palette))[regno] = color;
+(Adding more people in Cc)
 
-The typecast apepars to be unneeded.  If it _was_ needed then this code
-would look rather fishy from an endianness POV.
 
-> +	return 0;
-> +}
-> +
->
-> ...
->
-> +static int __devinit jzfb_probe(struct platform_device *pdev)
-> +{
-> +	int ret;
-> +	struct jzfb *jzfb;
-> +	struct fb_info *fb;
-> +	struct jz4740_fb_platform_data *pdata = pdev->dev.platform_data;
-> +	struct resource *mem;
-> +
-> +	if (!pdata) {
-> +		dev_err(&pdev->dev, "Missing platform data\n");
-> +		return -ENOENT;
-> +	}
-> +
-> +	mem = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-> +	if (!mem) {
-> +		dev_err(&pdev->dev, "Failed to get register memory resource\n");
-> +		return -ENOENT;
-> +	}
-> +
-> +	mem = request_mem_region(mem->start, resource_size(mem), pdev->name);
-> +	if (!mem) {
-> +		dev_err(&pdev->dev, "Failed to request register memory region\n");
-> +		return -EBUSY;
-> +	}
-> +
-> +	fb = framebuffer_alloc(sizeof(struct jzfb), &pdev->dev);
-> +	if (!fb) {
-> +		dev_err(&pdev->dev, "Failed to allocate framebuffer device\n");
-> +		ret = -ENOMEM;
-> +		goto err_release_mem_region;
-> +	}
-> +
-> +	fb->fbops = &jzfb_ops;
-> +	fb->flags = FBINFO_DEFAULT;
-> +
-> +	jzfb = fb->par;
-> +	jzfb->pdev = pdev;
-> +	jzfb->pdata = pdata;
-> +	jzfb->mem = mem;
-> +
-> +	jzfb->ldclk = clk_get(&pdev->dev, "lcd");
-> +	if (IS_ERR(jzfb->ldclk)) {
-> +		ret = PTR_ERR(jzfb->ldclk);
-> +		dev_err(&pdev->dev, "Failed to get lcd clock: %d\n", ret);
-> +		goto err_framebuffer_release;
-> +	}
-> +
-> +	jzfb->lpclk = clk_get(&pdev->dev, "lcd_pclk");
-> +	if (IS_ERR(jzfb->lpclk)) {
-> +		ret = PTR_ERR(jzfb->lpclk);
-> +		dev_err(&pdev->dev, "Failed to get lcd pixel clock: %d\n", ret);
-> +		goto err_put_ldclk;
-> +	}
-> +
-> +	jzfb->base = ioremap(mem->start, resource_size(mem));
-> +
-> +	if (!jzfb->base) {
-> +		dev_err(&pdev->dev, "Failed to ioremap register memory region\n");
-> +		ret = -EBUSY;
-> +		goto err_put_lpclk;
-> +	}
-> +
-> +	platform_set_drvdata(pdev, jzfb);
-> +
-> +	fb_videomode_to_modelist(pdata->modes, pdata->num_modes,
-> +				 &fb->modelist);
-> +	fb->mode = pdata->modes;
-> +
-> +	fb_videomode_to_var(&fb->var, fb->mode);
-> +	fb->var.bits_per_pixel = pdata->bpp;
-> +	jzfb_check_var(&fb->var, fb);
-> +
-> +	ret = jzfb_alloc_devmem(jzfb);
-> +	if (ret) {
-> +		dev_err(&pdev->dev, "Failed to allocate video memory\n");
-> +		goto err_iounmap;
-> +	}
-> +
-> +	fb->fix = jzfb_fix;
-> +	fb->fix.line_length = fb->var.bits_per_pixel * fb->var.xres / 8;
-> +	fb->fix.mmio_start = mem->start;
-> +	fb->fix.mmio_len = resource_size(mem);
-> +	fb->fix.smem_start = jzfb->vidmem_phys;
-> +	fb->fix.smem_len =  fb->fix.line_length * fb->var.yres;
-> +	fb->screen_base = jzfb->vidmem;
-> +	fb->pseudo_palette = jzfb->pseudo_palette;
-> +
-> +	fb_alloc_cmap(&fb->cmap, 256, 0);
-> +
-> +	mutex_init(&jzfb->lock);
+But I'm eventually surprised about this: stopping the cpu hotplug callbacks
+prevents some ATA resume callbacks to execute.
 
-I'd suggest initializing the mutex much earlier.  THings like
-jzfb_check_var() and jzfb_alloc_devmem() don't currently take that
-lock, but who knows what might happen in the future..
-
-> +	clk_enable(jzfb->ldclk);
-> +	jzfb->is_enabled = 1;
-> +
-> +	writel(jzfb->framedesc->next, jzfb->base + JZ_REG_LCD_DA0);
-> +	jzfb_set_par(fb);
-> +
-> +	jz_gpio_bulk_request(jz_lcd_ctrl_pins, jzfb_num_ctrl_pins(jzfb));
-> +	jz_gpio_bulk_request(jz_lcd_data_pins, jzfb_num_data_pins(jzfb));
-> +
-> +	ret = register_framebuffer(fb);
-> +	if (ret) {
-> +		dev_err(&pdev->dev, "Failed to register framebuffer: %d\n", ret);
-> +		goto err_free_devmem;
-> +	}
-> +
-> +	jzfb->fb = fb;
-> +
-> +	return 0;
-> +
-> +err_free_devmem:
-> +	jz_gpio_bulk_free(jz_lcd_ctrl_pins, jzfb_num_ctrl_pins(jzfb));
-> +	jz_gpio_bulk_free(jz_lcd_data_pins, jzfb_num_data_pins(jzfb));
-> +
-> +	fb_dealloc_cmap(&fb->cmap);
-> +	jzfb_free_devmem(jzfb);
-> +err_iounmap:
-> +	iounmap(jzfb->base);
-> +err_put_lpclk:
-> +	clk_put(jzfb->lpclk);
-> +err_put_ldclk:
-> +	clk_put(jzfb->ldclk);
-> +err_framebuffer_release:
-> +	framebuffer_release(fb);
-> +err_release_mem_region:
-> +	release_mem_region(mem->start, resource_size(mem));
-> +	return ret;
-> +}
-> +
->
-> ...
->
+Does that mean some ata resume path are done from a cpu hotplug notifier?
+That looks weird.
 
