@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758549Ab0FBTEx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jun 2010 15:04:53 -0400
-Received: from smtp-out-182.synserver.de ([212.40.180.182]:1068 "HELO
+	id S1758564Ab0FBTEz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jun 2010 15:04:55 -0400
+Received: from smtp-out-182.synserver.de ([212.40.180.182]:1067 "HELO
 	smtp-out-182.synserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1757964Ab0FBTEr (ORCPT
+	with SMTP id S1758167Ab0FBTEr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 2 Jun 2010 15:04:47 -0400
 X-SynServer-TrustedSrc: 1
@@ -13,10 +13,11 @@ X-SynServer-PPID: 28645
 From: Lars-Peter Clausen <lars@metafoo.de>
 To: Ralf Baechle <ralf@linux-mips.org>
 Cc: linux-mips@linux-mips.org, linux-kernel@vger.kernel.org,
-       Lars-Peter Clausen <lars@metafoo.de>
-Subject: [RFC][PATCH 06/26] MIPS: JZ4740: Add power-management and system reset support
-Date: Wed,  2 Jun 2010 21:02:57 +0200
-Message-Id: <1275505397-16758-7-git-send-email-lars@metafoo.de>
+       Lars-Peter Clausen <lars@metafoo.de>,
+       Thomas Gleixner <tglx@linutronix.de>
+Subject: [RFC][PATCH 05/26] MIPS: JZ4740: Add clocksource/clockevent support.
+Date: Wed,  2 Jun 2010 21:02:56 +0200
+Message-Id: <1275505397-16758-6-git-send-email-lars@metafoo.de>
 X-Mailer: git-send-email 1.5.6.5
 In-Reply-To: <1275505397-16758-1-git-send-email-lars@metafoo.de>
 References: <1275505397-16758-1-git-send-email-lars@metafoo.de>
@@ -24,27 +25,25 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds support for suspend/resume and poweroff/reboot on a JZ4740 SoC.
+This patch add clocksource and clockevent support for the timer/counter unit on
+JZ4740 SoCs.
 
 Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
+Cc: Thomas Gleixner <tglx@linutronix.de>
 ---
- arch/mips/jz4740/pm.c    |   56 +++++++++++++++++++++++++++++++
- arch/mips/jz4740/reset.c |   81 ++++++++++++++++++++++++++++++++++++++++++++++
- arch/mips/jz4740/reset.h |    7 ++++
- 3 files changed, 144 insertions(+), 0 deletions(-)
- create mode 100644 arch/mips/jz4740/pm.c
- create mode 100644 arch/mips/jz4740/reset.c
- create mode 100644 arch/mips/jz4740/reset.h
+ arch/mips/jz4740/time.c |  144 +++++++++++++++++++++++++++++++++++++++++++++++
+ 1 files changed, 144 insertions(+), 0 deletions(-)
+ create mode 100644 arch/mips/jz4740/time.c
 
-diff --git a/arch/mips/jz4740/pm.c b/arch/mips/jz4740/pm.c
+diff --git a/arch/mips/jz4740/time.c b/arch/mips/jz4740/time.c
 new file mode 100644
-index 0000000..3b78ced
+index 0000000..da8183f
 --- /dev/null
-+++ b/arch/mips/jz4740/pm.c
-@@ -0,0 +1,56 @@
++++ b/arch/mips/jz4740/time.c
+@@ -0,0 +1,144 @@
 +/*
 + *  Copyright (C) 2010, Lars-Peter Clausen <lars@metafoo.de>
-+ *		JZ4740 SoC power management support
++ *  JZ4740 platform time support
 + *
 + *  This program is free software; you can redistribute	 it and/or modify it
 + *  under  the terms of	 the GNU General  Public License as published by the
@@ -57,147 +56,135 @@ index 0000000..3b78ced
 + *
 + */
 +
-+#include <linux/init.h>
-+#include <linux/pm.h>
-+#include <linux/delay.h>
-+#include <linux/suspend.h>
++#include <linux/interrupt.h>
++#include <linux/kernel.h>
++#include <linux/time.h>
 +
-+#include <asm/mach-jz4740/clock.h>
++#include <linux/clockchips.h>
++
++#include <asm/mach-jz4740/irq.h>
++#include <asm/time.h>
 +
 +#include "clock.h"
-+#include "irq.h"
++#include "timer.h"
 +
-+static int jz4740_pm_enter(suspend_state_t state)
++#define TIMER_CLOCKEVENT 0
++#define TIMER_CLOCKSOURCE 1
++
++static uint16_t jz4740_jiffies_per_tick;
++
++static cycle_t jz4740_clocksource_read(struct clocksource *cs)
 +{
-+	jz4740_intc_suspend();
-+	jz4740_clock_suspend();
-+
-+	jz4740_clock_set_wait_mode(JZ4740_WAIT_MODE_SLEEP);
-+
-+	__asm__(".set\tmips3\n\t"
-+		"wait\n\t"
-+		".set\tmips0");
-+
-+	jz4740_clock_set_wait_mode(JZ4740_WAIT_MODE_IDLE);
-+
-+	jz4740_clock_resume();
-+	jz4740_intc_resume();
-+
-+	return 0;
++	return jz4740_timer_get_count(TIMER_CLOCKSOURCE);
 +}
 +
-+static struct platform_suspend_ops jz4740_pm_ops = {
-+	.valid		= suspend_valid_only_mem,
-+	.enter		= jz4740_pm_enter,
++static struct clocksource jz4740_clocksource = {
++	.name = "jz4740-timer",
++	.rating = 200,
++	.read = jz4740_clocksource_read,
++	.mask = CLOCKSOURCE_MASK(16),
++	.flags = CLOCK_SOURCE_IS_CONTINUOUS,
 +};
 +
-+static int __init jz4740_pm_init(void)
++static irqreturn_t jz4740_clockevent_irq(int irq, void *devid)
 +{
-+	suspend_set_ops(&jz4740_pm_ops);
-+	return 0;
++	struct clock_event_device *cd = devid;
 +
++	jz4740_timer_ack_full(TIMER_CLOCKEVENT);
++
++	if (cd->mode != CLOCK_EVT_MODE_PERIODIC)
++		jz4740_timer_disable(TIMER_CLOCKEVENT);
++
++	cd->event_handler(cd);
++
++	return IRQ_HANDLED;
 +}
-+late_initcall(jz4740_pm_init);
-diff --git a/arch/mips/jz4740/reset.c b/arch/mips/jz4740/reset.c
-new file mode 100644
-index 0000000..448a7da
---- /dev/null
-+++ b/arch/mips/jz4740/reset.c
-@@ -0,0 +1,81 @@
-+/*
-+ *  Copyright (C) 2010, Lars-Peter Clausen <lars@metafoo.de>
-+ *
-+ *  This program is free software; you can redistribute	 it and/or modify it
-+ *  under  the terms of	 the GNU General  Public License as published by the
-+ *  Free Software Foundation;  either version 2 of the	License, or (at your
-+ *  option) any later version.
-+ *
-+ *  You should have received a copy of the  GNU General Public License along
-+ *  with this program; if not, write  to the Free Software Foundation, Inc.,
-+ *  675 Mass Ave, Cambridge, MA 02139, USA.
-+ *
-+ */
 +
-+#include <linux/io.h>
-+#include <linux/kernel.h>
-+#include <linux/pm.h>
-+
-+#include <linux/delay.h>
-+
-+#include <asm/reboot.h>
-+
-+#include <asm/mach-jz4740/base.h>
-+#include <asm/mach-jz4740/timer.h>
-+
-+static void jz4740_halt(void)
++static void jz4740_clockevent_set_mode(enum clock_event_mode mode,
++	struct clock_event_device *cd)
 +{
-+	while (1) {
-+		__asm__(".set push;\n"
-+			".set mips3;\n"
-+			"wait;\n"
-+			".set pop;\n"
-+		);
++	switch (mode) {
++	case CLOCK_EVT_MODE_PERIODIC:
++		jz4740_timer_set_count(TIMER_CLOCKEVENT, 0);
++		jz4740_timer_set_period(TIMER_CLOCKEVENT, jz4740_jiffies_per_tick);
++	case CLOCK_EVT_MODE_RESUME:
++		jz4740_timer_irq_full_enable(TIMER_CLOCKEVENT);
++		jz4740_timer_enable(TIMER_CLOCKEVENT);
++		break;
++	case CLOCK_EVT_MODE_ONESHOT:
++	case CLOCK_EVT_MODE_SHUTDOWN:
++		jz4740_timer_disable(TIMER_CLOCKEVENT);
++		break;
++	default:
++		break;
 +	}
 +}
 +
-+#define JZ_REG_WDT_DATA 0x00
-+#define JZ_REG_WDT_COUNTER_ENABLE 0x04
-+#define JZ_REG_WDT_COUNTER 0x08
-+#define JZ_REG_WDT_CTRL 0x0c
-+
-+static void jz4740_restart(char *command)
++static int jz4740_clockevent_set_next(unsigned long evt,
++	struct clock_event_device *cd)
 +{
-+	void __iomem *wdt_base = ioremap(CPHYSADDR(JZ4740_WDT_BASE_ADDR), 0x0f);
++	jz4740_timer_set_count(TIMER_CLOCKEVENT, 0);
++	jz4740_timer_set_period(TIMER_CLOCKEVENT, evt);
++	jz4740_timer_enable(TIMER_CLOCKEVENT);
 +
-+	jz4740_timer_enable_watchdog();
-+
-+	writeb(0, wdt_base + JZ_REG_WDT_COUNTER_ENABLE);
-+
-+	writew(0, wdt_base + JZ_REG_WDT_COUNTER);
-+	writew(0, wdt_base + JZ_REG_WDT_DATA);
-+	writew(BIT(2), wdt_base + JZ_REG_WDT_CTRL);
-+
-+	writeb(1, wdt_base + JZ_REG_WDT_COUNTER_ENABLE);
-+	jz4740_halt();
++	return 0;
 +}
 +
-+#define JZ_REG_RTC_CTRL		0x00
-+#define JZ_REG_RTC_HIBERNATE	0x20
++static struct clock_event_device jz4740_clockevent = {
++	.name = "jz4740-timer",
++	.features = CLOCK_EVT_FEAT_PERIODIC,
++	.set_next_event = jz4740_clockevent_set_next,
++	.set_mode = jz4740_clockevent_set_mode,
++	.rating = 200,
++	.irq = JZ4740_IRQ_TCU0,
++};
 +
-+#define JZ_RTC_CTRL_WRDY	BIT(7)
++static struct irqaction timer_irqaction = {
++	.handler	= jz4740_clockevent_irq,
++	.flags		= IRQF_PERCPU | IRQF_TIMER | IRQF_DISABLED,
++	.name		= "jz4740-timerirq",
++	.dev_id		= &jz4740_clockevent,
++};
 +
-+static void jz4740_power_off(void)
++void __init plat_time_init(void)
 +{
-+	void __iomem *rtc_base = ioremap(CPHYSADDR(JZ4740_RTC_BASE_ADDR), 0x24);
-+	uint32_t ctrl;
++	int ret;
++	uint32_t clk_rate;
++	uint16_t ctrl;
 +
-+	do {
-+		ctrl = readl(rtc_base + JZ_REG_RTC_CTRL);
-+	} while (!(ctrl & JZ_RTC_CTRL_WRDY));
++	jz4740_timer_init();
 +
-+	writel(1, rtc_base + JZ_REG_RTC_HIBERNATE);
-+	jz4740_halt();
++	clk_rate = jz4740_clock_bdata.ext_rate >> 4;
++	jz4740_jiffies_per_tick = DIV_ROUND_CLOSEST(clk_rate, HZ);
++
++	clockevent_set_clock(&jz4740_clockevent, clk_rate);
++	jz4740_clockevent.min_delta_ns = clockevent_delta2ns(100, &jz4740_clockevent);
++	jz4740_clockevent.max_delta_ns = clockevent_delta2ns(0xffff, &jz4740_clockevent);
++	jz4740_clockevent.cpumask = cpumask_of(0);
++
++	clockevents_register_device(&jz4740_clockevent);
++
++	clocksource_set_clock(&jz4740_clocksource, clk_rate);
++	ret = clocksource_register(&jz4740_clocksource);
++
++	if (ret)
++		printk(KERN_ERR "Failed to register clocksource: %d\n", ret);
++
++	setup_irq(JZ4740_IRQ_TCU0, &timer_irqaction);
++
++	ctrl = JZ_TIMER_CTRL_PRESCALE_16 | JZ_TIMER_CTRL_SRC_EXT;
++
++	jz4740_timer_set_ctrl(TIMER_CLOCKEVENT, ctrl);
++	jz4740_timer_set_ctrl(TIMER_CLOCKSOURCE, ctrl);
++
++	jz4740_timer_set_period(TIMER_CLOCKEVENT, jz4740_jiffies_per_tick);
++	jz4740_timer_irq_full_enable(TIMER_CLOCKEVENT);
++
++	jz4740_timer_set_period(TIMER_CLOCKSOURCE, 0xffff);
++
++	jz4740_timer_enable(TIMER_CLOCKEVENT);
++	jz4740_timer_enable(TIMER_CLOCKSOURCE);
 +}
-+
-+void jz4740_reset_init(void)
-+{
-+	_machine_restart = jz4740_restart;
-+	_machine_halt = jz4740_halt;
-+	pm_power_off = jz4740_power_off;
-+}
-diff --git a/arch/mips/jz4740/reset.h b/arch/mips/jz4740/reset.h
-new file mode 100644
-index 0000000..c57a829
---- /dev/null
-+++ b/arch/mips/jz4740/reset.h
-@@ -0,0 +1,7 @@
-+#ifndef __MIPS_JZ4740_RESET_H__
-+#define __MIPS_JZ4740_RESET_H__
-+
-+extern void jz4740_reset_init(void);
-+
-+#endif
-+
 -- 
 1.5.6.5
 
