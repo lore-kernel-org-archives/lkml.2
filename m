@@ -1,73 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758331Ab0FBOz4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jun 2010 10:55:56 -0400
-Received: from mail.netservers.co.uk ([80.248.178.71]:47295 "EHLO
-	mail.netservers.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757693Ab0FBOzx (ORCPT
+	id S1758375Ab0FBO4J (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jun 2010 10:56:09 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:51108 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1758357Ab0FBO4D (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jun 2010 10:55:53 -0400
-X-Envelope-From: ben@netservers.co.uk
-Message-ID: <4C0670E2.1090708@netservers.co.uk>
-Date: Wed, 02 Jun 2010 15:55:30 +0100
-From: Ben McKeegan <ben@netservers.co.uk>
-User-Agent: Mozilla-Thunderbird 2.0.0.24 (X11/20100328)
+	Wed, 2 Jun 2010 10:56:03 -0400
+Date: Wed, 2 Jun 2010 07:50:48 -0700 (PDT)
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Rusty Russell <rusty@rustcorp.com.au>
+cc: Brandon Philips <brandon@ifup.org>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       "Rafael J. Wysocki" <rjw@sisk.pl>, LKML <linux-kernel@vger.kernel.org>,
+       Jon Masters <jonathan@jonmasters.org>, Tejun Heo <htejun@gmail.com>,
+       Masami Hiramatsu <mhiramat@redhat.com>,
+       Kay Sievers <kay.sievers@vrfy.org>
+Subject: Re: [PATCH 2/2] module: fix bne2 "gave up waiting for init of module
+ libcrc32c"
+In-Reply-To: <201006022336.53024.rusty@rustcorp.com.au>
+Message-ID: <alpine.LFD.2.00.1006020750330.8175@i5.linux-foundation.org>
+References: <201005252300.07739.rjw@sisk.pl> <201006021523.00357.rusty@rustcorp.com.au> <alpine.LFD.2.00.1006020006420.8175@i5.linux-foundation.org> <201006022336.53024.rusty@rustcorp.com.au>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-To: Paul Mackerras <paulus@samba.org>
-CC: netdev@vger.kernel.org, linux-ppp@vger.kernel.org,
-       Alan Cox <alan@lxorguk.ukuu.org.uk>,
-       "Alexander E. Patrakov" <patrakov@gmail.com>,
-       Richard Hartmann <richih.mailinglist@gmail.com>,
-       linux-kernel@vger.kernel.org, gabriele.paoloni@intel.com
-Subject: Re: [Patch] fix packet loss and massive ping spikes with PPP multi-link
-References: <2d460de71003260850x7f90d04cy79ac853464108182@mail.gmail.com> <20100326160226.0159ac3b@lxorguk.ukuu.org.uk> <4BACE827.4070006@gmail.com> <20100326170428.6c1ad66c@lxorguk.ukuu.org.uk> <4BB31E00.8060204@netservers.co.uk> <20100529021624.GA2538@brick.ozlabs.ibm.com> <4C03E1CD.4000809@netservers.co.uk>
-In-Reply-To: <4C03E1CD.4000809@netservers.co.uk>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ben McKeegan wrote:
-> Paul Mackerras wrote:
+
+
+On Wed, 2 Jun 2010, Rusty Russell wrote:
 > 
->>> I needed to do something similar a while back and I took a very
->>> different approach, which I think is more flexible.   Rather than
->>> implement a new round-robin scheduler I simply introduced a target
->>> minimum fragment size into the fragment size calculation, as a per
->>> bundle parameter that can be configured via a new ioctl.  This
->>> modifies the algorithm so that it tries to limit the number of
->>> fragments such that each fragment is at least the minimum size.  If
->>> the minimum size is greater than the packet size it will not be
->>> fragmented all but will instead just get sent down the next
->>> available channel.
->>>
->>> A pppd plugin generates the ioctl call allowing this to be tweaked
->>> per connection.  It is more flexible in that you can still have the
->>> larger packets fragmented if you wish.
->>
->> I like this a lot better than the other proposed patch.  It adds less
->> code because it uses the fact that ppp_mp_explode() already has a
->> round-robin capability using the ppp->nxchan field, plus it provides a
->> way to control it per bundle via pppd.
->>
->> If you fix up the indentation issues (2-space indent in some of the
->> added code -- if you're using emacs, set c-basic-offset to 8), I'll
->> ack it and hopefully DaveM will pick it up.
-> 
-> Okay, I'll fix it up when I'm back at work Tuesday and submit (today is 
-> a UK public holiday) and also dig out and fix up the userspace code to 
-> go with it.
+> Found another locking issue: the code which verifies we don't export over
+> an existing symbol needs to be atomic wrt. adding us to the list.
 
-Still working on this, updating the patch wasn't as trivial as I thought 
-as it clashed with Gabriele Paoloni's ppp_mp_explode redesign.  However, 
-while looking at this code I believe I have found a bug which might have 
-been contributing to the poor performance the OP was experiencing.   For 
-the case where channel speeds are unknown and there are more than 2 
-channels it would miscalculate the fragment sizes so they are not 
-balanced on the channels.
+Yup.
 
-Patch for the bug to follow immediately.
+And now that I'm looking at that call-chain (to see if it would make sense 
+to use some other more specific lock - doesn't look like it: all the 
+readers are using RCU and this is the only writer), I also give you this 
+trivial one-liner. It changes each_symbol() to not put that constant array 
+on the stack, resulting in changing
 
-Regards,
-Ben.
+        movq    $C.388.31095, %rsi      #, tmp85
+        subq    $376, %rsp      #,
+        movq    %rdi, %rbx      # fn, fn
+        leaq    -208(%rbp), %rdi        #, tmp84
+        movq    %rbx, %rdx      # fn,
+        rep movsl
+        xorl    %esi, %esi      #
+        leaq    -208(%rbp), %rdi        #, tmp87
+        movq    %r12, %rcx      # data,
+        call    each_symbol_in_section.clone.0  #
+
+into
+
+        xorl    %esi, %esi      #
+        subq    $216, %rsp      #,
+        movq    %rdi, %rbx      # fn, fn  
+        movq    $arr.31078, %rdi        #,
+        call    each_symbol_in_section.clone.0  #
+
+which is not so much about being obviously shorter and simpler because we 
+don't unnecessarily copy that constant array around onto the stack, but 
+also about having a much smaller stack footprint (376 vs 216 bytes - see 
+the update of 'rsp').
+
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+---
+
+Btw, feel free to consider all those peeling patches signed-off-on, since 
+they seem to work.
+
+> And load_module is down to 259 lines.  The label chain at the end is no
+> shorter tho :(  I'll leave those cleanups until next merge window.
+
+I don't think it's necessarily bad to have multiple exit targets (although 
+9 is pushing it), if the thing is short enough that you can fairly easily 
+see how they work. Not that it's quite there yet.
+
+		Linus
+---
+ kernel/module.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/kernel/module.c b/kernel/module.c
+index 01e8874..2602264 100644
+--- a/kernel/module.c
++++ b/kernel/module.c
+@@ -227,7 +227,7 @@ bool each_symbol(bool (*fn)(const struct symsearch *arr, struct module *owner,
+ 			    unsigned int symnum, void *data), void *data)
+ {
+ 	struct module *mod;
+-	const struct symsearch arr[] = {
++	static const struct symsearch arr[] = {
+ 		{ __start___ksymtab, __stop___ksymtab, __start___kcrctab,
+ 		  NOT_GPL_ONLY, false },
+ 		{ __start___ksymtab_gpl, __stop___ksymtab_gpl,
