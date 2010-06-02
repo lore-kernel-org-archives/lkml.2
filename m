@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932992Ab0FBTPK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jun 2010 15:15:10 -0400
-Received: from smtp-out-182.synserver.de ([212.40.180.182]:1588 "HELO
+	id S933000Ab0FBTPT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jun 2010 15:15:19 -0400
+Received: from smtp-out-182.synserver.de ([212.40.180.182]:1585 "HELO
 	smtp-out-182.synserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1758597Ab0FBTOF (ORCPT
+	with SMTP id S1758571Ab0FBTOF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 2 Jun 2010 15:14:05 -0400
 X-SynServer-TrustedSrc: 1
@@ -13,10 +13,12 @@ X-SynServer-PPID: 31322
 From: Lars-Peter Clausen <lars@metafoo.de>
 To: Ralf Baechle <ralf@linux-mips.org>
 Cc: linux-mips@linux-mips.org, linux-kernel@vger.kernel.org,
-       Lars-Peter Clausen <lars@metafoo.de>, lm-sensors@lm-sensors.org
-Subject: [RFC][PATCH 22/26] hwmon: Add JZ4740 ADC driver
-Date: Wed,  2 Jun 2010 21:12:28 +0200
-Message-Id: <1275505950-17334-6-git-send-email-lars@metafoo.de>
+       Lars-Peter Clausen <lars@metafoo.de>,
+       Mark Brown <broonie@opensource.wolfsonmicro.com>,
+       Liam Girdwood <lrg@slimlogic.co.uk>, alsa-devel@alsa-project.org
+Subject: [RFC][PATCH 21/26] alsa: ASoC: Add JZ4740 ASoC support
+Date: Wed,  2 Jun 2010 21:12:27 +0200
+Message-Id: <1275505950-17334-5-git-send-email-lars@metafoo.de>
 X-Mailer: git-send-email 1.5.6.5
 In-Reply-To: <1275505397-16758-1-git-send-email-lars@metafoo.de>
 References: <1275505397-16758-1-git-send-email-lars@metafoo.de>
@@ -24,511 +26,1064 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds support for the ADC module on JZ4740 SoCs.
+This patch adds ASoC support for JZ4740 SoCs I2S module.
 
 Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
-Cc: lm-sensors@lm-sensors.org
+Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Liam Girdwood <lrg@slimlogic.co.uk>
+Cc: alsa-devel@alsa-project.org
 ---
- drivers/hwmon/Kconfig      |   11 ++
- drivers/hwmon/Makefile     |    1 +
- drivers/hwmon/jz4740-adc.c |  423 ++++++++++++++++++++++++++++++++++++++++++++
- include/linux/jz4740-adc.h |   25 +++
- 4 files changed, 460 insertions(+), 0 deletions(-)
- create mode 100644 drivers/hwmon/jz4740-adc.c
- create mode 100644 include/linux/jz4740-adc.h
+ sound/soc/Kconfig             |    1 +
+ sound/soc/Makefile            |    1 +
+ sound/soc/jz4740/Kconfig      |   13 +
+ sound/soc/jz4740/Makefile     |    9 +
+ sound/soc/jz4740/jz4740-i2s.c |  568 +++++++++++++++++++++++++++++++++++++++++
+ sound/soc/jz4740/jz4740-i2s.h |   18 ++
+ sound/soc/jz4740/jz4740-pcm.c |  350 +++++++++++++++++++++++++
+ sound/soc/jz4740/jz4740-pcm.h |   22 ++
+ 8 files changed, 982 insertions(+), 0 deletions(-)
+ create mode 100644 sound/soc/jz4740/Kconfig
+ create mode 100644 sound/soc/jz4740/Makefile
+ create mode 100644 sound/soc/jz4740/jz4740-i2s.c
+ create mode 100644 sound/soc/jz4740/jz4740-i2s.h
+ create mode 100644 sound/soc/jz4740/jz4740-pcm.c
+ create mode 100644 sound/soc/jz4740/jz4740-pcm.h
 
-diff --git a/drivers/hwmon/Kconfig b/drivers/hwmon/Kconfig
-index e19cf8e..da79ba9 100644
---- a/drivers/hwmon/Kconfig
-+++ b/drivers/hwmon/Kconfig
-@@ -446,6 +446,17 @@ config SENSORS_IT87
- 	  This driver can also be built as a module.  If so, the module
- 	  will be called it87.
+diff --git a/sound/soc/Kconfig b/sound/soc/Kconfig
+index b1749bc..5a7a724 100644
+--- a/sound/soc/Kconfig
++++ b/sound/soc/Kconfig
+@@ -36,6 +36,7 @@ source "sound/soc/s3c24xx/Kconfig"
+ source "sound/soc/s6000/Kconfig"
+ source "sound/soc/sh/Kconfig"
+ source "sound/soc/txx9/Kconfig"
++source "sound/soc/jz4740/Kconfig"
  
-+config SENSORS_JZ4740
-+	tristate "Ingenic JZ4740 SoC ADC driver"
-+	depends on MACH_JZ4740
-+    help
-+      If you say yes here you get support for the Ingenic JZ4740 SoC ADC core.
-+      It is required for the JZ4740 battery and touchscreen driver and is used
-+      to synchronize access to the adc module between those two.
-+
-+      This driver can also be build as a module. If so, the module will be
-+      called jz4740-adc.
-+
- config SENSORS_LM63
- 	tristate "National Semiconductor LM63 and LM64"
- 	depends on I2C
-diff --git a/drivers/hwmon/Makefile b/drivers/hwmon/Makefile
-index 2138ceb..3e772aa 100644
---- a/drivers/hwmon/Makefile
-+++ b/drivers/hwmon/Makefile
-@@ -55,6 +55,7 @@ obj-$(CONFIG_SENSORS_I5K_AMB)	+= i5k_amb.o
- obj-$(CONFIG_SENSORS_IBMAEM)	+= ibmaem.o
- obj-$(CONFIG_SENSORS_IBMPEX)	+= ibmpex.o
- obj-$(CONFIG_SENSORS_IT87)	+= it87.o
-+obj-$(CONFIG_SENSORS_JZ4740)	+= jz4740-adc.o
- obj-$(CONFIG_SENSORS_K8TEMP)	+= k8temp.o
- obj-$(CONFIG_SENSORS_K10TEMP)	+= k10temp.o
- obj-$(CONFIG_SENSORS_LIS3LV02D) += lis3lv02d.o hp_accel.o
-diff --git a/drivers/hwmon/jz4740-adc.c b/drivers/hwmon/jz4740-adc.c
+ # Supported codecs
+ source "sound/soc/codecs/Kconfig"
+diff --git a/sound/soc/Makefile b/sound/soc/Makefile
+index 1470141..fdbe74d 100644
+--- a/sound/soc/Makefile
++++ b/sound/soc/Makefile
+@@ -14,3 +14,4 @@ obj-$(CONFIG_SND_SOC)	+= s3c24xx/
+ obj-$(CONFIG_SND_SOC)	+= s6000/
+ obj-$(CONFIG_SND_SOC)	+= sh/
+ obj-$(CONFIG_SND_SOC)	+= txx9/
++obj-$(CONFIG_SND_SOC)	+= jz4740/
+diff --git a/sound/soc/jz4740/Kconfig b/sound/soc/jz4740/Kconfig
 new file mode 100644
-index 0000000..635dfe9
+index 0000000..39df949
 --- /dev/null
-+++ b/drivers/hwmon/jz4740-adc.c
-@@ -0,0 +1,423 @@
++++ b/sound/soc/jz4740/Kconfig
+@@ -0,0 +1,13 @@
++config SND_JZ4740_SOC
++	tristate "SoC Audio for Ingenic JZ4740 SoC"
++	depends on SOC_JZ4740 && SND_SOC
++	help
++	  Say Y or M if you want to add support for codecs attached to
++	  the Jz4740 AC97, I2S or SSP interface. You will also need
++	  to select the audio interfaces to support below.
++
++config SND_JZ4740_SOC_I2S
++	depends on SND_JZ4740_SOC
++	tristate "SoC Audio (I2S protocol) for Ingenic jz4740 chip"
++	help
++	  Say Y if you want to use I2S protocol and I2S codec on Ingenic Jz4740 QI_LB60 board.
+diff --git a/sound/soc/jz4740/Makefile b/sound/soc/jz4740/Makefile
+new file mode 100644
+index 0000000..1be8d19
+--- /dev/null
++++ b/sound/soc/jz4740/Makefile
+@@ -0,0 +1,9 @@
++#
++# Jz4740 Platform Support
++#
++snd-soc-jz4740-objs := jz4740-pcm.o
++snd-soc-jz4740-i2s-objs := jz4740-i2s.o
++
++obj-$(CONFIG_SND_JZ4740_SOC) += snd-soc-jz4740.o
++obj-$(CONFIG_SND_JZ4740_SOC_I2S) += snd-soc-jz4740-i2s.o
++
+diff --git a/sound/soc/jz4740/jz4740-i2s.c b/sound/soc/jz4740/jz4740-i2s.c
+new file mode 100644
+index 0000000..2b139fd
+--- /dev/null
++++ b/sound/soc/jz4740/jz4740-i2s.c
+@@ -0,0 +1,568 @@
 +/*
-+ * Copyright (C) 2009-2010, Lars-Peter Clausen <lars@metafoo.de>
-+ *		JZ4740 SoC ADC driver
++ *  Copyright (C) 2010, Lars-Peter Clausen <lars@metafoo.de>
 + *
-+ * This program is free software; you can redistribute	 it and/or modify it
-+ * under  the terms of	 the GNU General  Public License as published by the
-+ * Free Software Foundation;  either version 2 of the	License, or (at your
-+ * option) any later version.
++ *  This program is free software; you can redistribute	 it and/or modify it
++ *  under  the terms of	 the GNU General  Public License as published by the
++ *  Free Software Foundation;  either version 2 of the	License, or (at your
++ *  option) any later version.
 + *
-+ * You should have received a copy of the  GNU General Public License along
-+ * with this program; if not, write  to the Free Software Foundation, Inc.,
-+ * 675 Mass Ave, Cambridge, MA 02139, USA.
++ *  You should have received a copy of the  GNU General Public License along
++ *  with this program; if not, write  to the Free Software Foundation, Inc.,
++ *  675 Mass Ave, Cambridge, MA 02139, USA.
 + *
-+ * This driver is meant to synchronize access to the adc core for the battery
-+ * and touchscreen driver. Thus these drivers should use the adc driver as a
-+ * parent.
 + */
 +
-+#include <linux/err.h>
-+#include <linux/interrupt.h>
++#include <linux/init.h>
++#include <linux/io.h>
 +#include <linux/kernel.h>
 +#include <linux/module.h>
 +#include <linux/platform_device.h>
 +#include <linux/slab.h>
-+#include <linux/spinlock.h>
-+
-+#include <linux/hwmon.h>
-+#include <linux/hwmon-sysfs.h>
 +
 +#include <linux/clk.h>
++#include <linux/delay.h>
 +
-+#include <linux/jz4740-adc.h>
++#include <linux/dma-mapping.h>
 +
-+#define JZ_REG_ADC_ENABLE	0x00
-+#define JZ_REG_ADC_CFG		0x04
-+#define JZ_REG_ADC_CTRL		0x08
-+#define JZ_REG_ADC_STATUS	0x0C
-+#define JZ_REG_ADC_SAME		0x10
-+#define JZ_REG_ADC_WAIT		0x14
-+#define JZ_REG_ADC_TOUCH	0x18
-+#define JZ_REG_ADC_BATTERY	0x1C
-+#define JZ_REG_ADC_ADCIN	0x20
++#include <sound/core.h>
++#include <sound/pcm.h>
++#include <sound/pcm_params.h>
++#include <sound/soc.h>
++#include <sound/soc-dapm.h>
++#include <sound/initval.h>
 +
-+#define JZ_ADC_ENABLE_TOUCH		BIT(2)
-+#define JZ_ADC_ENABLE_BATTERY		BIT(1)
-+#define JZ_ADC_ENABLE_ADCIN		BIT(0)
++#include "jz4740-i2s.h"
++#include "jz4740-pcm.h"
 +
-+#define JZ_ADC_CFG_SPZZ			BIT(31)
-+#define JZ_ADC_CFG_EX_IN		BIT(30)
-+#define JZ_ADC_CFG_DNUM_MASK		(0x7 << 16)
-+#define JZ_ADC_CFG_DMA_ENABLE		BIT(15)
-+#define JZ_ADC_CFG_XYZ_MASK		(0x2 << 13)
-+#define JZ_ADC_CFG_SAMPLE_NUM_MASK	(0x7 << 10)
-+#define JZ_ADC_CFG_CLKDIV		(0xf << 5)
-+#define JZ_ADC_CFG_BAT_MB		BIT(4)
++#define JZ_REG_AIC_CONF		0x00
++#define JZ_REG_AIC_CTRL		0x04
++#define JZ_REG_AIC_I2S_FMT	0x10
++#define JZ_REG_AIC_FIFO_STATUS	0x14
++#define JZ_REG_AIC_I2S_STATUS	0x1c
++#define JZ_REG_AIC_CLK_DIV	0x30
++#define JZ_REG_AIC_FIFO		0x34
 +
-+#define JZ_ADC_CFG_DNUM_OFFSET		16
-+#define JZ_ADC_CFG_XYZ_OFFSET		13
-+#define JZ_ADC_CFG_SAMPLE_NUM_OFFSET	10
-+#define JZ_ADC_CFG_CLKDIV_OFFSET	5
++#define JZ_AIC_CONF_FIFO_RX_THRESHOLD_MASK (0xf << 12)
++#define JZ_AIC_CONF_FIFO_TX_THRESHOLD_MASK (0xf <<  8)
++#define JZ_AIC_CONF_OVERFLOW_PLAY_LAST BIT(6)
++#define JZ_AIC_CONF_INTERNAL_CODEC BIT(5)
++#define JZ_AIC_CONF_I2S BIT(4)
++#define JZ_AIC_CONF_RESET BIT(3)
++#define JZ_AIC_CONF_BIT_CLK_MASTER BIT(2)
++#define JZ_AIC_CONF_SYNC_CLK_MASTER BIT(1)
++#define JZ_AIC_CONF_ENABLE BIT(0)
 +
-+#define JZ_ADC_IRQ_PENDOWN		BIT(4)
-+#define JZ_ADC_IRQ_PENUP		BIT(3)
-+#define JZ_ADC_IRQ_TOUCH		BIT(2)
-+#define JZ_ADC_IRQ_BATTERY		BIT(1)
-+#define JZ_ADC_IRQ_ADCIN		BIT(0)
++#define JZ_AIC_CONF_FIFO_RX_THRESHOLD_OFFSET 12
++#define JZ_AIC_CONF_FIFO_TX_THRESHOLD_OFFSET 8
 +
-+#define JZ_ADC_TOUCH_TYPE1		BIT(31)
-+#define JZ_ADC_TOUCH_DATA1_MASK		0xfff
-+#define JZ_ADC_TOUCH_TYPE0		BIT(15)
-+#define JZ_ADC_TOUCH_DATA0_MASK		0xfff
++#define JZ_AIC_CTRL_OUTPUT_SAMPLE_SIZE_MASK (0x7 << 19)
++#define JZ_AIC_CTRL_INPUT_SAMPLE_SIZE_MASK (0x7 << 16)
++#define JZ_AIC_CTRL_ENABLE_RX_DMA BIT(15)
++#define JZ_AIC_CTRL_ENABLE_TX_DMA BIT(14)
++#define JZ_AIC_CTRL_MONO_TO_STEREO BIT(11)
++#define JZ_AIC_CTRL_SWITCH_ENDIANNESS BIT(10)
++#define JZ_AIC_CTRL_SIGNED_TO_UNSIGNED BIT(9)
++#define JZ_AIC_CTRL_FLUSH		BIT(8)
++#define JZ_AIC_CTRL_ENABLE_ROR_INT BIT(6)
++#define JZ_AIC_CTRL_ENABLE_TUR_INT BIT(5)
++#define JZ_AIC_CTRL_ENABLE_RFS_INT BIT(4)
++#define JZ_AIC_CTRL_ENABLE_TFS_INT BIT(3)
++#define JZ_AIC_CTRL_ENABLE_LOOPBACK BIT(2)
++#define JZ_AIC_CTRL_ENABLE_PLAYBACK BIT(1)
++#define JZ_AIC_CTRL_ENABLE_CAPTURE BIT(0)
 +
-+#define JZ_ADC_BATTERY_MASK		0xfff
++#define JZ_AIC_CTRL_OUTPUT_SAMPLE_SIZE_OFFSET 19
++#define JZ_AIC_CTRL_INPUT_SAMPLE_SIZE_OFFSET  16
 +
-+#define JZ_ADC_ADCIN_MASK		0xfff
++#define JZ_AIC_I2S_FMT_DISABLE_BIT_CLK BIT(12)
++#define JZ_AIC_I2S_FMT_ENABLE_SYS_CLK BIT(4)
++#define JZ_AIC_I2S_FMT_MSB BIT(0)
 +
-+struct jz4740_adc {
++#define JZ_AIC_I2S_STATUS_BUSY BIT(2)
++
++#define JZ_AIC_CLK_DIV_MASK 0xf
++
++struct jz4740_i2s {
 +	struct resource *mem;
 +	void __iomem *base;
++	dma_addr_t phys_base;
 +
-+	int irq;
++	struct clk *clk_aic;
++	struct clk *clk_i2s;
 +
-+	struct clk *clk;
-+	unsigned int clk_ref;
-+
-+	struct device *hwmon;
-+
-+	struct completion bat_completion;
-+	struct completion adc_completion;
-+
-+	spinlock_t lock;
++	struct jz4740_pcm_config pcm_config_playback;
++	struct jz4740_pcm_config pcm_config_capture;
 +};
 +
-+static irqreturn_t jz4740_adc_irq(int irq, void *data)
++static inline uint32_t jz4740_i2s_read(const struct jz4740_i2s *i2s,
++	unsigned int reg)
 +{
-+	struct jz4740_adc *adc = data;
-+	uint8_t status;
-+
-+	status = readb(adc->base + JZ_REG_ADC_STATUS);
-+
-+	if (status & JZ_ADC_IRQ_BATTERY)
-+		complete(&adc->bat_completion);
-+	if (status & JZ_ADC_IRQ_ADCIN)
-+		complete(&adc->adc_completion);
-+
-+	writeb(0xff, adc->base + JZ_REG_ADC_STATUS);
-+
-+	return IRQ_HANDLED;
++	return readl(i2s->base + reg);
 +}
 +
-+static void jz4740_adc_enable_irq(struct jz4740_adc *adc, int irq)
++static inline void jz4740_i2s_write(const struct jz4740_i2s *i2s,
++	unsigned int reg, uint32_t value)
 +{
-+	unsigned long flags;
-+	uint8_t val;
-+
-+	spin_lock_irqsave(&adc->lock, flags);
-+
-+	val = readb(adc->base + JZ_REG_ADC_CTRL);
-+	val &= ~irq;
-+	writeb(val, adc->base + JZ_REG_ADC_CTRL);
-+
-+	spin_unlock_irqrestore(&adc->lock, flags);
++	writel(value, i2s->base + reg);
 +}
 +
-+static void jz4740_adc_disable_irq(struct jz4740_adc *adc, int irq)
++static inline struct jz4740_i2s *jz4740_dai_to_i2s(struct snd_soc_dai *dai)
 +{
-+	unsigned long flags;
-+	uint8_t val;
-+
-+	spin_lock_irqsave(&adc->lock, flags);
-+
-+	val = readb(adc->base + JZ_REG_ADC_CTRL);
-+	val |= irq;
-+	writeb(val, adc->base + JZ_REG_ADC_CTRL);
-+
-+	spin_unlock_irqrestore(&adc->lock, flags);
++	return dai->private_data;
 +}
 +
-+static void jz4740_adc_enable_adc(struct jz4740_adc *adc, int engine)
++static int jz4740_i2s_startup(struct snd_pcm_substream *substream,
++	struct snd_soc_dai *dai)
 +{
-+	unsigned long flags;
-+	uint8_t val;
++	struct jz4740_i2s *i2s = jz4740_dai_to_i2s(dai);
++	uint32_t conf, ctrl;
 +
-+	spin_lock_irqsave(&adc->lock, flags);
++	if (dai->active)
++		return 0;
 +
-+	val = readb(adc->base + JZ_REG_ADC_ENABLE);
-+	val |= engine;
-+	writeb(val, adc->base + JZ_REG_ADC_ENABLE);
 +
-+	spin_unlock_irqrestore(&adc->lock, flags);
-+}
++	ctrl = jz4740_i2s_read(i2s, JZ_REG_AIC_CTRL);
++	ctrl |= JZ_AIC_CTRL_FLUSH;
++	jz4740_i2s_write(i2s, JZ_REG_AIC_CTRL, ctrl);
 +
-+static void jz4740_adc_disable_adc(struct jz4740_adc *adc, int engine)
-+{
-+	unsigned long flags;
-+	uint8_t val;
++	clk_enable(i2s->clk_i2s);
 +
-+	spin_lock_irqsave(&adc->lock, flags);
-+
-+	val = readb(adc->base + JZ_REG_ADC_ENABLE);
-+	val &= ~engine;
-+	writeb(val, adc->base + JZ_REG_ADC_ENABLE);
-+
-+	spin_unlock_irqrestore(&adc->lock, flags);
-+}
-+
-+static inline void jz4740_adc_set_cfg(struct jz4740_adc *adc, uint32_t mask,
-+uint32_t val)
-+{
-+	unsigned long flags;
-+	uint32_t cfg;
-+
-+	spin_lock_irqsave(&adc->lock, flags);
-+
-+	cfg = readl(adc->base + JZ_REG_ADC_CFG);
-+
-+	cfg &= ~mask;
-+	cfg |= val;
-+
-+	writel(cfg, adc->base + JZ_REG_ADC_CFG);
-+
-+	spin_unlock_irqrestore(&adc->lock, flags);
-+}
-+
-+static inline void jz4740_adc_clk_enable(struct jz4740_adc *adc)
-+{
-+	unsigned long flags;
-+
-+	spin_lock_irqsave(&adc->lock, flags);
-+	if (adc->clk_ref++ == 0)
-+		clk_enable(adc->clk);
-+	spin_unlock_irqrestore(&adc->lock, flags);
-+}
-+
-+static inline void jz4740_adc_clk_disable(struct jz4740_adc *adc)
-+{
-+	unsigned long flags;
-+
-+	spin_lock_irqsave(&adc->lock, flags);
-+	if (--adc->clk_ref == 0)
-+		clk_disable(adc->clk);
-+	spin_unlock_irqrestore(&adc->lock, flags);
-+}
-+
-+long jz4740_adc_read_battery_voltage(struct device *dev,
-+						enum jz_adc_battery_scale scale)
-+{
-+	struct jz4740_adc *adc = dev_get_drvdata(dev);
-+	unsigned long t;
-+	long long voltage;
-+	uint16_t val;
-+
-+	if (!adc)
-+		return -ENODEV;
-+
-+	jz4740_adc_clk_enable(adc);
-+
-+	if (scale == JZ_ADC_BATTERY_SCALE_2V5)
-+		jz4740_adc_set_cfg(adc, JZ_ADC_CFG_BAT_MB, JZ_ADC_CFG_BAT_MB);
-+	else
-+		jz4740_adc_set_cfg(adc, JZ_ADC_CFG_BAT_MB, 0);
-+
-+	jz4740_adc_enable_irq(adc, JZ_ADC_IRQ_BATTERY);
-+	jz4740_adc_enable_adc(adc, JZ_ADC_ENABLE_BATTERY);
-+
-+	t = wait_for_completion_interruptible_timeout(&adc->bat_completion,
-+							HZ);
-+
-+	jz4740_adc_disable_irq(adc, JZ_ADC_IRQ_BATTERY);
-+
-+	if (t <= 0) {
-+		jz4740_adc_disable_adc(adc, JZ_ADC_ENABLE_BATTERY);
-+		return t ? t : -ETIMEDOUT;
-+	}
-+
-+	val = readw(adc->base + JZ_REG_ADC_BATTERY);
-+
-+	jz4740_adc_clk_disable(adc);
-+
-+	if (scale == JZ_ADC_BATTERY_SCALE_2V5)
-+		voltage = (((long long)val) * 2500000LL) >> 12LL;
-+	else
-+		voltage = ((((long long)val) * 7395000LL) >> 12LL) + 33000LL;
-+
-+	return voltage;
-+}
-+EXPORT_SYMBOL_GPL(jz4740_adc_read_battery_voltage);
-+
-+static ssize_t jz4740_adc_read_adcin(struct device *dev,
-+					struct device_attribute *dev_attr,
-+					char *buf)
-+{
-+	struct jz4740_adc *adc = dev_get_drvdata(dev);
-+	unsigned long t;
-+	uint16_t val;
-+
-+	jz4740_adc_clk_enable(adc);
-+
-+	jz4740_adc_enable_irq(adc, JZ_ADC_IRQ_ADCIN);
-+	jz4740_adc_enable_adc(adc, JZ_ADC_ENABLE_ADCIN);
-+
-+	t = wait_for_completion_interruptible_timeout(&adc->adc_completion,
-+							HZ);
-+
-+	jz4740_adc_disable_irq(adc, JZ_ADC_IRQ_ADCIN);
-+
-+	if (t <= 0) {
-+		jz4740_adc_disable_adc(adc, JZ_ADC_ENABLE_ADCIN);
-+		return t ? t : -ETIMEDOUT;
-+	}
-+
-+	val = readw(adc->base + JZ_REG_ADC_ADCIN);
-+	jz4740_adc_clk_disable(adc);
-+
-+	return sprintf(buf, "%d\n", val);
-+}
-+
-+static SENSOR_DEVICE_ATTR(in0_input, S_IRUGO, jz4740_adc_read_adcin, NULL, 0);
-+
-+static int __devinit jz4740_adc_probe(struct platform_device *pdev)
-+{
-+	int ret;
-+	struct jz4740_adc *adc;
-+
-+	adc = kmalloc(sizeof(*adc), GFP_KERNEL);
-+
-+	adc->irq = platform_get_irq(pdev, 0);
-+
-+	if (adc->irq < 0) {
-+		ret = adc->irq;
-+		dev_err(&pdev->dev, "Failed to get platform irq: %d\n", ret);
-+		goto err_free;
-+	}
-+
-+	adc->mem = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-+
-+	if (!adc->mem) {
-+		ret = -ENOENT;
-+		dev_err(&pdev->dev, "Failed to get platform mmio resource\n");
-+		goto err_free;
-+	}
-+
-+	adc->mem = request_mem_region(adc->mem->start, resource_size(adc->mem),
-+					pdev->name);
-+
-+	if (!adc->mem) {
-+		ret = -EBUSY;
-+		dev_err(&pdev->dev, "Failed to request mmio memory region\n");
-+		goto err_free;
-+	}
-+
-+	adc->base = ioremap_nocache(adc->mem->start, resource_size(adc->mem));
-+
-+	if (!adc->base) {
-+		ret = -EBUSY;
-+		dev_err(&pdev->dev, "Failed to ioremap mmio memory\n");
-+		goto err_release_mem_region;
-+	}
-+
-+	adc->clk = clk_get(&pdev->dev, "adc");
-+
-+	if (IS_ERR(adc->clk)) {
-+		ret = PTR_ERR(adc->clk);
-+		dev_err(&pdev->dev, "Failed to get clock: %d\n", ret);
-+		goto err_iounmap;
-+	}
-+
-+	init_completion(&adc->bat_completion);
-+	init_completion(&adc->adc_completion);
-+
-+	spin_lock_init(&adc->lock);
-+
-+	adc->clk_ref = 0;
-+
-+	platform_set_drvdata(pdev, adc);
-+
-+	ret = request_irq(adc->irq, jz4740_adc_irq, 0, pdev->name, adc);
-+
-+	if (ret) {
-+		dev_err(&pdev->dev, "Failed to request irq: %d\n", ret);
-+		goto err_clk_put;
-+	}
-+
-+	ret = device_create_file(&pdev->dev, &sensor_dev_attr_in0_input.dev_attr);
-+	if (ret) {
-+		dev_err(&pdev->dev, "Failed to create sysfs file: %d\n", ret);
-+		goto err_free_irq;
-+	}
-+
-+	adc->hwmon = hwmon_device_register(&pdev->dev);
-+	if (IS_ERR(adc->hwmon)) {
-+		ret = PTR_ERR(adc->hwmon);
-+		goto err_remove_file;
-+	}
-+
-+	writeb(0x00, adc->base + JZ_REG_ADC_ENABLE);
-+	writeb(0xff, adc->base + JZ_REG_ADC_CTRL);
++	conf = jz4740_i2s_read(i2s, JZ_REG_AIC_CONF);
++	conf |= JZ_AIC_CONF_ENABLE;
++	jz4740_i2s_write(i2s, JZ_REG_AIC_CONF, conf);
 +
 +	return 0;
++}
 +
-+err_remove_file:
-+	device_remove_file(&pdev->dev, &sensor_dev_attr_in0_input.dev_attr);
-+err_free_irq:
-+	free_irq(adc->irq, adc);
-+err_clk_put:
-+	clk_put(adc->clk);
-+err_iounmap:
-+	platform_set_drvdata(pdev, NULL);
-+	iounmap(adc->base);
-+err_release_mem_region:
-+	release_mem_region(adc->mem->start, resource_size(adc->mem));
-+err_free:
-+	kfree(adc);
++static void jz4740_i2s_shutdown(struct snd_pcm_substream *substream,
++	struct snd_soc_dai *dai)
++{
++	struct jz4740_i2s *i2s = jz4740_dai_to_i2s(dai);
++	uint32_t conf;
++
++	if (!dai->active)
++		return;
++
++	conf = jz4740_i2s_read(i2s, JZ_REG_AIC_CONF);
++	conf &= ~JZ_AIC_CONF_ENABLE;
++	jz4740_i2s_write(i2s, JZ_REG_AIC_CONF, conf);
++
++	clk_disable(i2s->clk_i2s);
++}
++
++
++static int jz4740_i2s_trigger(struct snd_pcm_substream *substream, int cmd,
++	struct snd_soc_dai *dai)
++{
++	struct jz4740_i2s *i2s = jz4740_dai_to_i2s(dai);
++	bool playback = (substream->stream == SNDRV_PCM_STREAM_PLAYBACK);
++
++	uint32_t ctrl;
++	uint32_t mask;
++
++	if (playback)
++		mask = JZ_AIC_CTRL_ENABLE_PLAYBACK | JZ_AIC_CTRL_ENABLE_TX_DMA;
++	else
++		mask = JZ_AIC_CTRL_ENABLE_CAPTURE | JZ_AIC_CTRL_ENABLE_RX_DMA;
++
++	ctrl = jz4740_i2s_read(i2s, JZ_REG_AIC_CTRL);
++
++	switch (cmd) {
++	case SNDRV_PCM_TRIGGER_START:
++	case SNDRV_PCM_TRIGGER_RESUME:
++	case SNDRV_PCM_TRIGGER_PAUSE_RELEASE:
++		ctrl |= mask;
++		break;
++	case SNDRV_PCM_TRIGGER_STOP:
++	case SNDRV_PCM_TRIGGER_SUSPEND:
++	case SNDRV_PCM_TRIGGER_PAUSE_PUSH:
++		ctrl &= ~mask;
++		break;
++	default:
++		return -EINVAL;
++	}
++
++	jz4740_i2s_write(i2s, JZ_REG_AIC_CTRL, ctrl);
++
++	return 0;
++}
++
++
++static int jz4740_i2s_set_fmt(struct snd_soc_dai *dai, unsigned int fmt)
++{
++	struct jz4740_i2s *i2s = jz4740_dai_to_i2s(dai);
++
++	uint32_t format = 0;
++	uint32_t conf;
++
++	conf = jz4740_i2s_read(i2s, JZ_REG_AIC_CONF);
++
++	conf &= ~(JZ_AIC_CONF_BIT_CLK_MASTER | JZ_AIC_CONF_SYNC_CLK_MASTER);
++
++	switch (fmt & SND_SOC_DAIFMT_MASTER_MASK) {
++	case SND_SOC_DAIFMT_CBS_CFS:
++		conf |= JZ_AIC_CONF_BIT_CLK_MASTER | JZ_AIC_CONF_SYNC_CLK_MASTER;
++		format |= JZ_AIC_I2S_FMT_ENABLE_SYS_CLK;
++		break;
++	case SND_SOC_DAIFMT_CBM_CFS:
++		conf |= JZ_AIC_CONF_SYNC_CLK_MASTER;
++		break;
++	case SND_SOC_DAIFMT_CBS_CFM:
++		conf |= JZ_AIC_CONF_BIT_CLK_MASTER;
++		break;
++	case SND_SOC_DAIFMT_CBM_CFM:
++		break;
++	default:
++		return -EINVAL;
++	}
++
++	switch (fmt & SND_SOC_DAIFMT_FORMAT_MASK) {
++	case SND_SOC_DAIFMT_MSB:
++		format |= JZ_AIC_I2S_FMT_MSB;
++		break;
++	case SND_SOC_DAIFMT_I2S:
++		break;
++	default:
++		return -EINVAL;
++	}
++
++	switch (fmt & SND_SOC_DAIFMT_INV_MASK) {
++	case SND_SOC_DAIFMT_NB_NF:
++		break;
++	default:
++		return -EINVAL;
++	}
++
++	jz4740_i2s_write(i2s, JZ_REG_AIC_CONF, conf);
++	jz4740_i2s_write(i2s, JZ_REG_AIC_I2S_FMT, format);
++
++	return 0;
++}
++
++static int jz4740_i2s_hw_params(struct snd_pcm_substream *substream,
++	struct snd_pcm_hw_params *params, struct snd_soc_dai *dai)
++{
++	struct jz4740_i2s *i2s = jz4740_dai_to_i2s(dai);
++	bool playback = (substream->stream == SNDRV_PCM_STREAM_PLAYBACK);
++	enum jz4740_dma_width dma_width;
++	struct jz4740_pcm_config *pcm_config;
++	unsigned int sample_size;
++	uint32_t ctrl;
++
++	ctrl = jz4740_i2s_read(i2s, JZ_REG_AIC_CTRL);
++
++	switch (params_format(params)) {
++	case SNDRV_PCM_FORMAT_S8:
++		sample_size = 0;
++		dma_width = JZ4740_DMA_WIDTH_8BIT;
++		break;
++	case SNDRV_PCM_FORMAT_S16:
++		sample_size = 1;
++		dma_width = JZ4740_DMA_WIDTH_16BIT;
++		break;
++	default:
++		return -EINVAL;
++	}
++
++	if (playback) {
++		ctrl &= ~JZ_AIC_CTRL_OUTPUT_SAMPLE_SIZE_MASK;
++		ctrl |= sample_size << JZ_AIC_CTRL_OUTPUT_SAMPLE_SIZE_OFFSET;
++	} else {
++		ctrl &= ~JZ_AIC_CTRL_INPUT_SAMPLE_SIZE_MASK;
++		ctrl |= sample_size << JZ_AIC_CTRL_INPUT_SAMPLE_SIZE_OFFSET;
++	}
++
++	switch (params_channels(params)) {
++	case 2:
++		break;
++	case 1:
++		if (playback) {
++			ctrl |= JZ_AIC_CTRL_MONO_TO_STEREO;
++			break;
++		}
++	default: /* Falltrough */
++		return -EINVAL;
++	}
++
++	jz4740_i2s_write(i2s, JZ_REG_AIC_CTRL, ctrl);
++
++	if (playback) {
++		pcm_config = &i2s->pcm_config_playback;
++		pcm_config->dma_config.dst_width = dma_width;
++	} else {
++		pcm_config = &i2s->pcm_config_capture;
++		pcm_config->dma_config.src_width = dma_width;
++	}
++
++
++	snd_soc_dai_set_dma_data(dai, substream, pcm_config);
++
++	return 0;
++}
++
++static int jz4740_i2s_set_clkdiv(struct snd_soc_dai *dai, int div_id, int div)
++{
++	struct jz4740_i2s *i2s = jz4740_dai_to_i2s(dai);
++
++	switch (div_id) {
++	case JZ4740_I2S_BIT_CLK:
++		if (div & 1 || div > 16)
++			return -EINVAL;
++		jz4740_i2s_write(i2s, JZ_REG_AIC_CLK_DIV, div - 1);
++		break;
++	default:
++		return -EINVAL;
++	}
++
++	return 0;
++}
++
++static int jz4740_i2s_set_sysclk(struct snd_soc_dai *dai, int clk_id,
++	unsigned int freq, int dir)
++{
++	struct jz4740_i2s *i2s = jz4740_dai_to_i2s(dai);
++	int ret = 0;
++	struct clk *parent;
++
++	switch (clk_id) {
++	case JZ4740_I2S_CLKSRC_EXT:
++		parent = clk_get(NULL, "ext");
++		clk_set_parent(i2s->clk_i2s, parent);
++		break;
++	case JZ4740_I2S_CLKSRC_PLL:
++		parent = clk_get(NULL, "pll half");
++		clk_set_parent(i2s->clk_i2s, parent);
++		ret = clk_set_rate(i2s->clk_i2s, freq);
++		break;
++	default:
++		return -EINVAL;
++	}
++	clk_put(parent);
 +
 +	return ret;
 +}
 +
-+static int __devexit jz4740_adc_remove(struct platform_device *pdev)
++static int jz4740_i2s_suspend(struct snd_soc_dai *dai)
 +{
-+	struct jz4740_adc *adc = platform_get_drvdata(pdev);
++	struct jz4740_i2s *i2s = jz4740_dai_to_i2s(dai);
++	uint32_t conf;
 +
-+	hwmon_device_unregister(adc->hwmon);
-+	device_remove_file(&pdev->dev, &sensor_dev_attr_in0_input.dev_attr);
++	if (dai->active) {
++		conf = jz4740_i2s_read(i2s, JZ_REG_AIC_CONF);
++		conf &= ~JZ_AIC_CONF_ENABLE;
++		jz4740_i2s_write(i2s, JZ_REG_AIC_CONF, conf);
 +
-+	free_irq(adc->irq, adc);
++		clk_disable(i2s->clk_i2s);
++	}
 +
-+	iounmap(adc->base);
-+	release_mem_region(adc->mem->start, resource_size(adc->mem));
-+
-+	clk_put(adc->clk);
-+
-+	platform_set_drvdata(pdev, NULL);
-+
-+	kfree(adc);
++	clk_disable(i2s->clk_aic);
 +
 +	return 0;
 +}
 +
-+struct platform_driver jz4740_adc_driver = {
-+	.probe	= jz4740_adc_probe,
-+	.remove = __devexit_p(jz4740_adc_remove),
++static int jz4740_i2s_resume(struct snd_soc_dai *dai)
++{
++	struct jz4740_i2s *i2s = jz4740_dai_to_i2s(dai);
++	uint32_t conf;
++
++	clk_enable(i2s->clk_aic);
++
++	if (dai->active) {
++		clk_enable(i2s->clk_i2s);
++
++		conf = jz4740_i2s_read(i2s, JZ_REG_AIC_CONF);
++		conf |= JZ_AIC_CONF_ENABLE;
++		jz4740_i2s_write(i2s, JZ_REG_AIC_CONF, conf);
++
++	}
++
++	return 0;
++}
++
++static int jz4740_i2s_probe(struct platform_device *pdev, struct snd_soc_dai *dai)
++{
++	struct jz4740_i2s *i2s = jz4740_dai_to_i2s(dai);
++	uint32_t conf;
++
++	conf = (7 << JZ_AIC_CONF_FIFO_RX_THRESHOLD_OFFSET) |
++		(8 << JZ_AIC_CONF_FIFO_TX_THRESHOLD_OFFSET) |
++		JZ_AIC_CONF_OVERFLOW_PLAY_LAST |
++		JZ_AIC_CONF_I2S |
++		JZ_AIC_CONF_INTERNAL_CODEC;
++
++	jz4740_i2s_write(i2s, JZ_REG_AIC_CONF, JZ_AIC_CONF_RESET);
++	jz4740_i2s_write(i2s, JZ_REG_AIC_CONF, conf);
++
++	return 0;
++}
++
++
++static struct snd_soc_dai_ops jz4740_i2s_dai_ops = {
++	.startup = jz4740_i2s_startup,
++	.shutdown = jz4740_i2s_shutdown,
++	.trigger = jz4740_i2s_trigger,
++	.hw_params = jz4740_i2s_hw_params,
++	.set_fmt = jz4740_i2s_set_fmt,
++	.set_clkdiv = jz4740_i2s_set_clkdiv,
++	.set_sysclk = jz4740_i2s_set_sysclk,
++};
++
++#define JZ4740_I2S_FMTS (SNDRV_PCM_FMTBIT_S8 | \
++		SNDRV_PCM_FMTBIT_S16_LE)
++
++struct snd_soc_dai jz4740_i2s_dai = {
++	.name = "jz4740-i2s",
++	.probe = jz4740_i2s_probe,
++	.playback = {
++		.channels_min = 1,
++		.channels_max = 2,
++		.rates = SNDRV_PCM_RATE_8000_48000,
++		.formats = JZ4740_I2S_FMTS,
++	},
++	.capture = {
++		.channels_min = 2,
++		.channels_max = 2,
++		.rates = SNDRV_PCM_RATE_8000_48000,
++		.formats = JZ4740_I2S_FMTS,
++	},
++	.symmetric_rates = 1,
++	.ops = &jz4740_i2s_dai_ops,
++	.suspend = jz4740_i2s_suspend,
++	.resume = jz4740_i2s_resume,
++};
++EXPORT_SYMBOL_GPL(jz4740_i2s_dai);
++
++static void __devinit jz4740_i2c_init_pcm_config(struct jz4740_i2s *i2s)
++{
++	struct jz4740_dma_config *dma_config;
++
++	/* Playback */
++	dma_config = &i2s->pcm_config_playback.dma_config;
++	dma_config->src_width = JZ4740_DMA_WIDTH_32BIT,
++	dma_config->transfer_size = JZ4740_DMA_TRANSFER_SIZE_16BYTE;
++	dma_config->request_type = JZ4740_DMA_TYPE_AIC_TRANSMIT;
++	dma_config->flags = JZ4740_DMA_SRC_AUTOINC;
++	dma_config->mode = JZ4740_DMA_MODE_SINGLE;
++	i2s->pcm_config_playback.fifo_addr = i2s->phys_base + JZ_REG_AIC_FIFO;
++
++	/* Capture */
++	dma_config = &i2s->pcm_config_capture.dma_config;
++	dma_config->dst_width = JZ4740_DMA_WIDTH_32BIT,
++	dma_config->transfer_size = JZ4740_DMA_TRANSFER_SIZE_16BYTE;
++	dma_config->request_type = JZ4740_DMA_TYPE_AIC_RECEIVE;
++	dma_config->flags = JZ4740_DMA_DST_AUTOINC;
++	dma_config->mode = JZ4740_DMA_MODE_SINGLE;
++	i2s->pcm_config_capture.fifo_addr = i2s->phys_base + JZ_REG_AIC_FIFO;
++}
++
++static int __devinit jz4740_i2s_dev_probe(struct platform_device *pdev)
++{
++	struct jz4740_i2s *i2s;
++	int ret;
++
++	i2s = kzalloc(sizeof(*i2s), GFP_KERNEL);
++
++	if (!i2s)
++		return -ENOMEM;
++
++	i2s->mem = platform_get_resource(pdev, IORESOURCE_MEM, 0);
++
++	if (!i2s->mem) {
++		ret = -ENOENT;
++		goto err_free;
++	}
++
++	i2s->mem = request_mem_region(i2s->mem->start, resource_size(i2s->mem),
++				pdev->name);
++
++	if (!i2s->mem) {
++		ret = -EBUSY;
++		goto err_free;
++	}
++
++	i2s->base = ioremap_nocache(i2s->mem->start, resource_size(i2s->mem));
++
++	if (!i2s->base) {
++		ret = -EBUSY;
++		goto err_release_mem_region;
++	}
++
++	i2s->phys_base = i2s->mem->start;
++
++	i2s->clk_aic = clk_get(&pdev->dev, "aic");
++	if (IS_ERR(i2s->clk_aic)) {
++		ret = PTR_ERR(i2s->clk_aic);
++		goto err_iounmap;
++	}
++
++	i2s->clk_i2s = clk_get(&pdev->dev, "i2s");
++	if (IS_ERR(i2s->clk_i2s)) {
++		ret = PTR_ERR(i2s->clk_i2s);
++		goto err_iounmap;
++	}
++
++	clk_enable(i2s->clk_aic);
++
++	jz4740_i2c_init_pcm_config(i2s);
++
++	jz4740_i2s_dai.private_data = i2s;
++	ret = snd_soc_register_dai(&jz4740_i2s_dai);
++
++	platform_set_drvdata(pdev, i2s);
++
++	return 0;
++
++err_iounmap:
++	iounmap(i2s->base);
++err_release_mem_region:
++	release_mem_region(i2s->mem->start, resource_size(i2s->mem));
++err_free:
++	kfree(i2s);
++
++	return ret;
++}
++
++static int __devexit jz4740_i2s_dev_remove(struct platform_device *pdev)
++{
++	struct jz4740_i2s *i2s = platform_get_drvdata(pdev);
++
++	snd_soc_unregister_dai(&jz4740_i2s_dai);
++
++	clk_disable(i2s->clk_aic);
++	clk_put(i2s->clk_i2s);
++	clk_put(i2s->clk_aic);
++
++	iounmap(i2s->base);
++	release_mem_region(i2s->mem->start, resource_size(i2s->mem));
++
++	platform_set_drvdata(pdev, NULL);
++	kfree(i2s);
++
++	return 0;
++}
++
++static struct platform_driver jz4740_i2s_driver = {
++	.probe = jz4740_i2s_dev_probe,
++	.remove = __devexit_p(jz4740_i2s_dev_remove),
 +	.driver = {
-+		.name = "jz4740-adc",
++		.name = "jz4740-i2s",
 +		.owner = THIS_MODULE,
 +	},
 +};
 +
-+static int __init jz4740_adc_init(void)
++static int __init jz4740_i2s_init(void)
 +{
-+	return platform_driver_register(&jz4740_adc_driver);
++	return platform_driver_register(&jz4740_i2s_driver);
 +}
-+module_init(jz4740_adc_init);
++module_init(jz4740_i2s_init);
 +
-+static void __exit jz4740_adc_exit(void)
++static void __exit jz4740_i2s_exit(void)
 +{
-+	platform_driver_unregister(&jz4740_adc_driver);
++	platform_driver_unregister(&jz4740_i2s_driver);
 +}
-+module_exit(jz4740_adc_exit);
++module_exit(jz4740_i2s_exit);
 +
-+MODULE_DESCRIPTION("JZ4740 SoC ADC driver");
-+MODULE_AUTHOR("Lars-Peter Clausen <lars@metafoo.de>");
++MODULE_AUTHOR("Lars-Peter Clausen, <lars@metafoo.de>");
++MODULE_DESCRIPTION("Ingenic JZ4740 SoC I2S driver");
 +MODULE_LICENSE("GPL");
-+MODULE_ALIAS("platform:jz4740-adc");
-diff --git a/include/linux/jz4740-adc.h b/include/linux/jz4740-adc.h
++MODULE_ALIAS("platform:jz4740-i2s");
+diff --git a/sound/soc/jz4740/jz4740-i2s.h b/sound/soc/jz4740/jz4740-i2s.h
 new file mode 100644
-index 0000000..59cfe63
+index 0000000..da22ed8
 --- /dev/null
-+++ b/include/linux/jz4740-adc.h
-@@ -0,0 +1,25 @@
++++ b/sound/soc/jz4740/jz4740-i2s.h
+@@ -0,0 +1,18 @@
++/*
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ */
 +
-+#ifndef __LINUX_JZ4740_ADC
-+#define __LINUX_JZ4740_ADC
++#ifndef _JZ4740_I2S_H
++#define _JZ4740_I2S_H
 +
-+#include <linux/device.h>
++/* I2S clock source */
++#define JZ4740_I2S_CLKSRC_EXT 0
++#define JZ4740_I2S_CLKSRC_PLL 1
 +
-+enum jz_adc_battery_scale {
-+	JZ_ADC_BATTERY_SCALE_2V5, /* Mesures voltages up to 2.5V */
-+	JZ_ADC_BATTERY_SCALE_7V5, /* Mesures voltages up to 7.5V */
++#define JZ4740_I2S_BIT_CLK		0
++
++extern struct snd_soc_dai jz4740_i2s_dai;
++
++#endif
+diff --git a/sound/soc/jz4740/jz4740-pcm.c b/sound/soc/jz4740/jz4740-pcm.c
+new file mode 100644
+index 0000000..fd1c203
+--- /dev/null
++++ b/sound/soc/jz4740/jz4740-pcm.c
+@@ -0,0 +1,350 @@
++/*
++ *  Copyright (C) 2010, Lars-Peter Clausen <lars@metafoo.de>
++ *
++ *  This program is free software; you can redistribute	 it and/or modify it
++ *  under  the terms of	 the GNU General  Public License as published by the
++ *  Free Software Foundation;  either version 2 of the	License, or (at your
++ *  option) any later version.
++ *
++ *  You should have received a copy of the  GNU General Public License along
++ *  with this program; if not, write  to the Free Software Foundation, Inc.,
++ *  675 Mass Ave, Cambridge, MA 02139, USA.
++ *
++ */
++
++#include <linux/init.h>
++#include <linux/interrupt.h>
++#include <linux/kernel.h>
++#include <linux/module.h>
++#include <linux/slab.h>
++
++#include <linux/dma-mapping.h>
++
++#include <sound/core.h>
++#include <sound/pcm.h>
++#include <sound/pcm_params.h>
++#include <sound/soc.h>
++
++#include <asm/mach-jz4740/dma.h>
++#include "jz4740-pcm.h"
++
++struct jz4740_runtime_data {
++	unsigned int dma_period;
++	dma_addr_t dma_start;
++	dma_addr_t dma_pos;
++	dma_addr_t dma_end;
++
++	struct jz4740_dma_chan *dma;
++
++	dma_addr_t fifo_addr;
 +};
 +
-+/*
-+ * jz4740_adc_read_battery_voltage - Read battery voltage from the ADC PBAT pin
-+ * @dev: Pointer to a jz4740-adc device
-+ * @scale: Whether to use 2.5V or 7.5V scale
-+ *
-+ * Returns: Battery voltage in mircovolts
-+ *
-+ * Context: Process
-+*/
-+long jz4740_adc_read_battery_voltage(struct device *dev,
-+					enum jz_adc_battery_scale scale);
++/* identify hardware playback capabilities */
++static const struct snd_pcm_hardware jz4740_pcm_hardware = {
++	.info = SNDRV_PCM_INFO_MMAP |
++		SNDRV_PCM_INFO_MMAP_VALID |
++		SNDRV_PCM_INFO_INTERLEAVED |
++		SNDRV_PCM_INFO_BLOCK_TRANSFER,
++	.formats = SNDRV_PCM_FMTBIT_S16_LE | SNDRV_PCM_FMTBIT_S8,
 +
++	.rates			= SNDRV_PCM_RATE_8000_48000,
++	.channels_min		= 1,
++	.channels_max		= 2,
++	.period_bytes_min	= 16,
++	.period_bytes_max	= 2 * PAGE_SIZE,
++	.periods_min		= 2,
++	.periods_max		= 128,
++	.buffer_bytes_max	= 128 * 2 * PAGE_SIZE,
++	.fifo_size		= 32,
++};
++
++static void jz4740_pcm_start_transfer(struct jz4740_runtime_data *prtd, int stream)
++{
++	unsigned int count;
++
++	if (prtd->dma_pos + prtd->dma_period > prtd->dma_end)
++		count = prtd->dma_end - prtd->dma_pos;
++	else
++		count = prtd->dma_period;
++
++	jz4740_dma_disable(prtd->dma);
++
++	if (stream == SNDRV_PCM_STREAM_PLAYBACK) {
++		jz4740_dma_set_src_addr(prtd->dma, prtd->dma_pos);
++		jz4740_dma_set_dst_addr(prtd->dma, prtd->fifo_addr);
++	} else {
++		jz4740_dma_set_src_addr(prtd->dma, prtd->fifo_addr);
++		jz4740_dma_set_dst_addr(prtd->dma, prtd->dma_pos);
++	}
++
++	jz4740_dma_set_transfer_count(prtd->dma, count);
++
++	jz4740_dma_enable(prtd->dma);
++
++	prtd->dma_pos += prtd->dma_period;
++	if (prtd->dma_pos >= prtd->dma_end)
++		prtd->dma_pos = prtd->dma_start;
++}
++
++static void jz4740_pcm_dma_transfer_done(struct jz4740_dma_chan *dma, int err,
++	void *dev_id)
++{
++	struct snd_pcm_substream *substream = dev_id;
++	struct snd_pcm_runtime *runtime = substream->runtime;
++	struct jz4740_runtime_data *prtd = runtime->private_data;
++
++	snd_pcm_period_elapsed(substream);
++
++	jz4740_pcm_start_transfer(prtd, substream->stream);
++}
++
++static int jz4740_pcm_hw_params(struct snd_pcm_substream *substream,
++	struct snd_pcm_hw_params *params)
++{
++	struct snd_pcm_runtime *runtime = substream->runtime;
++	struct jz4740_runtime_data *prtd = runtime->private_data;
++	struct snd_soc_pcm_runtime *rtd = substream->private_data;
++	struct jz4740_pcm_config *config;
++
++	config = snd_soc_dai_get_dma_data(rtd->dai->cpu_dai, substream);
++	if (!prtd->dma) {
++		const char *dma_channel_name;
++		if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK)
++			dma_channel_name = "PCM Playback";
++		else
++			dma_channel_name = "PCM Capture";
++
++		prtd->dma = jz4740_dma_request(substream, dma_channel_name);
++	}
++
++	if (!prtd->dma)
++		return -EBUSY;
++
++	jz4740_dma_configure(prtd->dma, &config->dma_config);
++	prtd->fifo_addr = config->fifo_addr;
++
++	jz4740_dma_set_complete_cb(prtd->dma, jz4740_pcm_dma_transfer_done);
++
++	snd_pcm_set_runtime_buffer(substream, &substream->dma_buffer);
++	runtime->dma_bytes = params_buffer_bytes(params);
++
++	prtd->dma_period = params_period_bytes(params);
++	prtd->dma_start = runtime->dma_addr;
++	prtd->dma_pos = prtd->dma_start;
++	prtd->dma_end = prtd->dma_start + runtime->dma_bytes;
++
++	return 0;
++}
++
++static int jz4740_pcm_hw_free(struct snd_pcm_substream *substream)
++{
++	struct jz4740_runtime_data *prtd = substream->runtime->private_data;
++
++	snd_pcm_set_runtime_buffer(substream, NULL);
++	if (prtd->dma) {
++		jz4740_dma_free(prtd->dma);
++		prtd->dma = NULL;
++	}
++
++	return 0;
++}
++
++static int jz4740_pcm_prepare(struct snd_pcm_substream *substream)
++{
++	struct jz4740_runtime_data *prtd = substream->runtime->private_data;
++	int ret = 0;
++
++	if (!prtd->dma)
++			return 0;
++
++	prtd->dma_pos = prtd->dma_start;
++
++	return ret;
++}
++
++static int jz4740_pcm_trigger(struct snd_pcm_substream *substream, int cmd)
++{
++	struct snd_pcm_runtime *runtime = substream->runtime;
++	struct jz4740_runtime_data *prtd = runtime->private_data;
++
++	int ret = 0;
++
++	switch (cmd) {
++	case SNDRV_PCM_TRIGGER_START:
++	case SNDRV_PCM_TRIGGER_RESUME:
++	case SNDRV_PCM_TRIGGER_PAUSE_RELEASE:
++		jz4740_pcm_start_transfer(prtd, substream->stream);
++		break;
++	case SNDRV_PCM_TRIGGER_STOP:
++	case SNDRV_PCM_TRIGGER_SUSPEND:
++	case SNDRV_PCM_TRIGGER_PAUSE_PUSH:
++		jz4740_dma_disable(prtd->dma);
++		break;
++	default:
++		ret = -EINVAL;
++	}
++
++	return ret;
++}
++
++static snd_pcm_uframes_t jz4740_pcm_pointer(struct snd_pcm_substream *substream)
++{
++	struct snd_pcm_runtime *runtime = substream->runtime;
++	struct jz4740_runtime_data *prtd = runtime->private_data;
++	unsigned long count, pos;
++	snd_pcm_uframes_t offset;
++	struct jz4740_dma_chan *dma = prtd->dma;
++
++	count = jz4740_dma_get_residue(dma);
++	if (prtd->dma_pos == prtd->dma_start)
++		pos = prtd->dma_end - prtd->dma_start - count;
++	else
++		pos = prtd->dma_pos - prtd->dma_start - count;
++
++	offset = bytes_to_frames(runtime, pos);
++	if (offset >= runtime->buffer_size)
++		offset = 0;
++
++	return offset;
++}
++
++static int jz4740_pcm_open(struct snd_pcm_substream *substream)
++{
++	struct snd_pcm_runtime *runtime = substream->runtime;
++	struct jz4740_runtime_data *prtd;
++
++	snd_soc_set_runtime_hwparams(substream, &jz4740_pcm_hardware);
++	prtd = kzalloc(sizeof(struct jz4740_runtime_data), GFP_KERNEL);
++
++	if (prtd == NULL)
++		return -ENOMEM;
++
++	runtime->private_data = prtd;
++	return 0;
++}
++
++static int jz4740_pcm_close(struct snd_pcm_substream *substream)
++{
++	struct snd_pcm_runtime *runtime = substream->runtime;
++	struct jz4740_runtime_data *prtd = runtime->private_data;
++
++	kfree(prtd);
++
++	return 0;
++}
++
++static int jz4740_pcm_mmap(struct snd_pcm_substream *substream,
++	struct vm_area_struct *vma)
++{
++	return remap_pfn_range(vma, vma->vm_start,
++			substream->dma_buffer.addr >> PAGE_SHIFT,
++			vma->vm_end - vma->vm_start, vma->vm_page_prot);
++}
++
++static struct snd_pcm_ops jz4740_pcm_ops = {
++	.open		= jz4740_pcm_open,
++	.close		= jz4740_pcm_close,
++	.ioctl		= snd_pcm_lib_ioctl,
++	.hw_params	= jz4740_pcm_hw_params,
++	.hw_free	= jz4740_pcm_hw_free,
++	.prepare	= jz4740_pcm_prepare,
++	.trigger	= jz4740_pcm_trigger,
++	.pointer	= jz4740_pcm_pointer,
++	.mmap		= jz4740_pcm_mmap,
++};
++
++static int jz4740_pcm_preallocate_dma_buffer(struct snd_pcm *pcm, int stream)
++{
++	struct snd_pcm_substream *substream = pcm->streams[stream].substream;
++	struct snd_dma_buffer *buf = &substream->dma_buffer;
++	size_t size = jz4740_pcm_hardware.buffer_bytes_max;
++
++	buf->dev.type = SNDRV_DMA_TYPE_DEV;
++	buf->dev.dev = pcm->card->dev;
++	buf->private_data = NULL;
++
++	buf->area = dma_alloc_noncoherent(pcm->card->dev, size,
++					  &buf->addr, GFP_KERNEL);
++	if (!buf->area)
++		return -ENOMEM;
++
++	buf->bytes = size;
++
++	return 0;
++}
++
++static void jz4740_pcm_free(struct snd_pcm *pcm)
++{
++	struct snd_pcm_substream *substream;
++	struct snd_dma_buffer *buf;
++	int stream;
++
++	for (stream = 0; stream < 2; stream++) {
++		substream = pcm->streams[stream].substream;
++		if (!substream)
++			continue;
++
++		buf = &substream->dma_buffer;
++		if (!buf->area)
++			continue;
++
++		dma_free_noncoherent(pcm->card->dev, buf->bytes,
++		  buf->area, buf->addr);
++		buf->area = NULL;
++	}
++}
++
++static u64 jz4740_pcm_dmamask = DMA_BIT_MASK(32);
++
++int jz4740_pcm_new(struct snd_card *card, struct snd_soc_dai *dai,
++	struct snd_pcm *pcm)
++{
++	int ret = 0;
++
++	if (!card->dev->dma_mask)
++		card->dev->dma_mask = &jz4740_pcm_dmamask;
++
++	if (!card->dev->coherent_dma_mask)
++		card->dev->coherent_dma_mask = DMA_BIT_MASK(32);
++
++	if (dai->playback.channels_min) {
++		ret = jz4740_pcm_preallocate_dma_buffer(pcm,
++			SNDRV_PCM_STREAM_PLAYBACK);
++		if (ret)
++			goto err;
++	}
++
++	if (dai->capture.channels_min) {
++		ret = jz4740_pcm_preallocate_dma_buffer(pcm,
++			SNDRV_PCM_STREAM_CAPTURE);
++		if (ret)
++			goto err;
++	}
++
++err:
++	return ret;
++}
++
++struct snd_soc_platform jz4740_soc_platform = {
++		.name		= "jz4740-pcm",
++		.pcm_ops	= &jz4740_pcm_ops,
++		.pcm_new	= jz4740_pcm_new,
++		.pcm_free	= jz4740_pcm_free,
++};
++EXPORT_SYMBOL_GPL(jz4740_soc_platform);
++
++static int __init jz4740_soc_platform_init(void)
++{
++	return snd_soc_register_platform(&jz4740_soc_platform);
++}
++module_init(jz4740_soc_platform_init);
++
++static void __exit jz4740_soc_platform_exit(void)
++{
++	snd_soc_unregister_platform(&jz4740_soc_platform);
++}
++module_exit(jz4740_soc_platform_exit);
++
++MODULE_AUTHOR("Lars-Peter Clausen <lars@metafoo.de>");
++MODULE_DESCRIPTION("Ingenic SoC JZ4740 PCM driver");
++MODULE_LICENSE("GPL");
+diff --git a/sound/soc/jz4740/jz4740-pcm.h b/sound/soc/jz4740/jz4740-pcm.h
+new file mode 100644
+index 0000000..e3f221e
+--- /dev/null
++++ b/sound/soc/jz4740/jz4740-pcm.h
+@@ -0,0 +1,22 @@
++/*
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
++ */
++
++#ifndef _JZ4740_PCM_H
++#define _JZ4740_PCM_H
++
++#include <linux/dma-mapping.h>
++#include <asm/mach-jz4740/dma.h>
++
++/* platform data */
++extern struct snd_soc_platform jz4740_soc_platform;
++
++struct jz4740_pcm_config {
++	struct jz4740_dma_config dma_config;
++	phys_addr_t fifo_addr;
++};
 +
 +#endif
 -- 
