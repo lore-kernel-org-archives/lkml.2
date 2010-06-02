@@ -1,22 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932644Ab0FBTLR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jun 2010 15:11:17 -0400
-Received: from blue-ld-261.synserver.de ([217.119.54.83]:38181 "EHLO
+	id S932903Ab0FBTLZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jun 2010 15:11:25 -0400
+Received: from blue-ld-261.synserver.de ([217.119.54.83]:38243 "EHLO
 	smtp-out-182.synserver.de" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1758571Ab0FBTLO (ORCPT
+	by vger.kernel.org with ESMTP id S932859Ab0FBTLW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jun 2010 15:11:14 -0400
+	Wed, 2 Jun 2010 15:11:22 -0400
 X-SynServer-TrustedSrc: 1
 X-SynServer-AuthUser: lars@laprican.de
 X-SynServer-PPID: 13236
 From: Lars-Peter Clausen <lars@metafoo.de>
 To: Ralf Baechle <ralf@linux-mips.org>
 Cc: linux-mips@linux-mips.org, linux-kernel@vger.kernel.org,
-       Lars-Peter Clausen <lars@metafoo.de>
-Subject: [RFC][PATCH 13/26] MIPS: JZ4740: Add platform devices
-Date: Wed,  2 Jun 2010 21:10:29 +0200
-Message-Id: <1275505832-17185-5-git-send-email-lars@metafoo.de>
+       Lars-Peter Clausen <lars@metafoo.de>,
+       Alessandro Zummo <a.zummo@towertech.it>,
+       Paul Gortmaker <p_gortmaker@yahoo.com>, rtc-linux@googlegroups.com
+Subject: [RFC][PATCH 15/26] RTC: Add JZ4740 RTC driver
+Date: Wed,  2 Jun 2010 21:10:31 +0200
+Message-Id: <1275505832-17185-7-git-send-email-lars@metafoo.de>
 X-Mailer: git-send-email 1.5.6.5
 In-Reply-To: <1275505397-16758-1-git-send-email-lars@metafoo.de>
 References: <1275505397-16758-1-git-send-email-lars@metafoo.de>
@@ -24,25 +26,60 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds platform devices for all the JZ4740 platform drivers.
+This patch adds support for the RTC unit on JZ4740 SoCs.
 
 Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
+Cc: Alessandro Zummo <a.zummo@towertech.it>
+Cc: Paul Gortmaker <p_gortmaker@yahoo.com>
+Cc: rtc-linux@googlegroups.com
 ---
- arch/mips/include/asm/mach-jz4740/platform.h |   36 ++++
- arch/mips/jz4740/platform.c                  |  288 ++++++++++++++++++++++++++
- 2 files changed, 324 insertions(+), 0 deletions(-)
- create mode 100644 arch/mips/include/asm/mach-jz4740/platform.h
- create mode 100644 arch/mips/jz4740/platform.c
+ drivers/rtc/Kconfig      |   11 ++
+ drivers/rtc/Makefile     |    1 +
+ drivers/rtc/rtc-jz4740.c |  344 ++++++++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 356 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/rtc/rtc-jz4740.c
 
-diff --git a/arch/mips/include/asm/mach-jz4740/platform.h b/arch/mips/include/asm/mach-jz4740/platform.h
+diff --git a/drivers/rtc/Kconfig b/drivers/rtc/Kconfig
+index 10ba12c..d0ed7e6 100644
+--- a/drivers/rtc/Kconfig
++++ b/drivers/rtc/Kconfig
+@@ -905,4 +905,15 @@ config RTC_DRV_MPC5121
+ 	  This driver can also be built as a module. If so, the module
+ 	  will be called rtc-mpc5121.
+ 
++config RTC_DRV_JZ4740
++	tristate "Ingenic JZ4740 SoC"
++	depends on RTC_CLASS
++	depends on MACH_JZ4740
++	help
++	  If you say yes here you get support for the Ingenic JZ4740 SoC RTC
++	  controller.
++
++	  This driver can also be buillt as a module. If so, the module
++	  will be called rtc-jz4740.
++
+ endif # RTC_CLASS
+diff --git a/drivers/rtc/Makefile b/drivers/rtc/Makefile
+index 5adbba7..fedf9bb 100644
+--- a/drivers/rtc/Makefile
++++ b/drivers/rtc/Makefile
+@@ -47,6 +47,7 @@ obj-$(CONFIG_RTC_DRV_EP93XX)	+= rtc-ep93xx.o
+ obj-$(CONFIG_RTC_DRV_FM3130)	+= rtc-fm3130.o
+ obj-$(CONFIG_RTC_DRV_GENERIC)	+= rtc-generic.o
+ obj-$(CONFIG_RTC_DRV_ISL1208)	+= rtc-isl1208.o
++obj-$(CONFIG_RTC_DRV_JZ4740)	+= rtc-jz4740.o
+ obj-$(CONFIG_RTC_DRV_M41T80)	+= rtc-m41t80.o
+ obj-$(CONFIG_RTC_DRV_M41T94)	+= rtc-m41t94.o
+ obj-$(CONFIG_RTC_DRV_M48T35)	+= rtc-m48t35.o
+diff --git a/drivers/rtc/rtc-jz4740.c b/drivers/rtc/rtc-jz4740.c
 new file mode 100644
-index 0000000..7a51c70
+index 0000000..41ab78f
 --- /dev/null
-+++ b/arch/mips/include/asm/mach-jz4740/platform.h
-@@ -0,0 +1,36 @@
++++ b/drivers/rtc/rtc-jz4740.c
+@@ -0,0 +1,344 @@
 +/*
 + *  Copyright (C) 2009-2010, Lars-Peter Clausen <lars@metafoo.de>
-+ *  JZ4740 platform device definitions
++ *		JZ4740 SoC RTC driver
 + *
 + *  This program is free software; you can redistribute	 it and/or modify it
 + *  under  the terms of	 the GNU General  Public License as published by the
@@ -55,321 +92,335 @@ index 0000000..7a51c70
 + *
 + */
 +
-+
-+#ifndef __JZ4740_PLATFORM_H
-+#define __JZ4740_PLATFORM_H
-+
-+#include <linux/platform_device.h>
-+
-+extern struct platform_device jz4740_usb_ohci_device;
-+extern struct platform_device jz4740_udc_device;
-+extern struct platform_device jz4740_mmc_device;
-+extern struct platform_device jz4740_rtc_device;
-+extern struct platform_device jz4740_i2c_device;
-+extern struct platform_device jz4740_nand_device;
-+extern struct platform_device jz4740_framebuffer_device;
-+extern struct platform_device jz4740_i2s_device;
-+extern struct platform_device jz4740_codec_device;
-+extern struct platform_device jz4740_adc_device;
-+extern struct platform_device jz4740_battery_device;
-+
-+void jz4740_serial_device_register(void);
-+
-+#endif
-diff --git a/arch/mips/jz4740/platform.c b/arch/mips/jz4740/platform.c
-new file mode 100644
-index 0000000..734b441
---- /dev/null
-+++ b/arch/mips/jz4740/platform.c
-@@ -0,0 +1,288 @@
-+/*
-+ *  Copyright (C) 2009-2010, Lars-Peter Clausen <lars@metafoo.de>
-+ *  JZ4740 platform devices
-+ *
-+ *  This program is free software; you can redistribute	 it and/or modify it
-+ *  under  the terms of	 the GNU General  Public License as published by the
-+ *  Free Software Foundation;  either version 2 of the	License, or (at your
-+ *  option) any later version.
-+ *
-+ *  You should have received a copy of the  GNU General Public License along
-+ *  with this program; if not, write  to the Free Software Foundation, Inc.,
-+ *  675 Mass Ave, Cambridge, MA 02139, USA.
-+ *
-+ */
-+
-+#include <linux/device.h>
-+#include <linux/platform_device.h>
 +#include <linux/kernel.h>
-+#include <linux/init.h>
-+#include <linux/resource.h>
++#include <linux/module.h>
++#include <linux/platform_device.h>
++#include <linux/rtc.h>
++#include <linux/slab.h>
++#include <linux/spinlock.h>
 +
-+#include <asm/mach-jz4740/platform.h>
-+#include <asm/mach-jz4740/base.h>
-+#include <asm/mach-jz4740/irq.h>
++#define JZ_REG_RTC_CTRL		0x00
++#define JZ_REG_RTC_SEC		0x04
++#define JZ_REG_RTC_SEC_ALARM	0x08
++#define JZ_REG_RTC_REGULATOR	0x0C
++#define JZ_REG_RTC_HIBERNATE	0x20
++#define JZ_REG_RTC_SCRATCHPAD	0x34
 +
-+#include <linux/serial_core.h>
-+#include <linux/serial_8250.h>
++#define JZ_RTC_CTRL_WRDY	BIT(7)
++#define JZ_RTC_CTRL_1HZ		BIT(6)
++#define JZ_RTC_CTRL_1HZ_IRQ	BIT(5)
++#define JZ_RTC_CTRL_AF		BIT(4)
++#define JZ_RTC_CTRL_AF_IRQ	BIT(3)
++#define JZ_RTC_CTRL_AE		BIT(2)
++#define JZ_RTC_CTRL_ENABLE	BIT(0)
 +
-+#include "serial.h"
-+#include "clock.h"
++struct jz4740_rtc {
++	struct resource *mem;
++	void __iomem *base;
 +
-+/* OHCI (USB full speed host controller) */
-+static struct resource jz4740_usb_ohci_resources[] = {
-+	[0] = {
-+		.start	= CPHYSADDR(JZ4740_UHC_BASE_ADDR),
-+		.end	= CPHYSADDR(JZ4740_UHC_BASE_ADDR) + 0x10000 - 1,
-+		.flags	= IORESOURCE_MEM,
-+	},
-+	[1] = {
-+		.start	= JZ4740_IRQ_UHC,
-+		.end	= JZ4740_IRQ_UHC,
-+		.flags	= IORESOURCE_IRQ,
-+	},
++	struct rtc_device *rtc;
++
++	unsigned int irq;
++
++	spinlock_t lock;
 +};
 +
-+/* The dmamask must be set for OHCI to work */
-+static u64 ohci_dmamask = ~(u32)0;
-+
-+struct platform_device jz4740_usb_ohci_device = {
-+	.name		= "jz4740-ohci",
-+	.id		= -1,
-+	.dev = {
-+		.dma_mask		= &ohci_dmamask,
-+		.coherent_dma_mask	= 0xffffffff,
-+	},
-+	.num_resources	= ARRAY_SIZE(jz4740_usb_ohci_resources),
-+	.resource	= jz4740_usb_ohci_resources,
-+};
-+
-+/* UDC (USB gadget controller) */
-+static struct resource jz4740_usb_gdt_resources[] = {
-+	[0] = {
-+		.start	= CPHYSADDR(JZ4740_UDC_BASE_ADDR),
-+		.end	= CPHYSADDR(JZ4740_UDC_BASE_ADDR) + 0x10000 - 1,
-+		.flags	= IORESOURCE_MEM,
-+	},
-+	[1] = {
-+		.start	= JZ4740_IRQ_UDC,
-+		.end	= JZ4740_IRQ_UDC,
-+		.flags	= IORESOURCE_IRQ,
-+	},
-+};
-+
-+static u64 jz4740_udc_dmamask = ~(u32)0;
-+
-+struct platform_device jz4740_udc_device = {
-+	.name		= "jz-udc",
-+	.id		= -1,
-+	.dev = {
-+		.dma_mask		= &jz4740_udc_dmamask,
-+		.coherent_dma_mask	= 0xffffffff,
-+	},
-+	.num_resources	= ARRAY_SIZE(jz4740_usb_gdt_resources),
-+	.resource	= jz4740_usb_gdt_resources,
-+};
-+
-+/** MMC/SD controller **/
-+static struct resource jz4740_mmc_resources[] = {
-+	[0] = {
-+		.start	= CPHYSADDR(JZ4740_MSC_BASE_ADDR),
-+		.end	= CPHYSADDR(JZ4740_MSC_BASE_ADDR) + 0x10000 - 1,
-+		.flags	= IORESOURCE_MEM,
-+	},
-+	[1] = {
-+		.start	= JZ4740_IRQ_MSC,
-+		.end	= JZ4740_IRQ_MSC,
-+		.flags	= IORESOURCE_IRQ,
-+	}
-+};
-+
-+static u64 jz4740_mmc_dmamask =  ~(u32)0;
-+
-+struct platform_device jz4740_mmc_device = {
-+	.name = "jz4740-mmc",
-+	.id = 0,
-+	.dev = {
-+		.dma_mask		= &jz4740_mmc_dmamask,
-+		.coherent_dma_mask	= 0xffffffff,
-+	},
-+	.num_resources  = ARRAY_SIZE(jz4740_mmc_resources),
-+	.resource	= jz4740_mmc_resources,
-+};
-+
-+static struct resource jz4740_rtc_resources[] = {
-+	[0] = {
-+		.start	= CPHYSADDR(JZ4740_RTC_BASE_ADDR),
-+		.end	= CPHYSADDR(JZ4740_RTC_BASE_ADDR) + 0x38 - 1,
-+		.flags	= IORESOURCE_MEM,
-+	},
-+	[1] = {
-+		.start  = JZ4740_IRQ_RTC,
-+		.end	= JZ4740_IRQ_RTC,
-+		.flags	= IORESOURCE_IRQ,
-+	},
-+};
-+
-+struct platform_device jz4740_rtc_device = {
-+	.name	= "jz4740-rtc",
-+	.id	= -1,
-+	.num_resources	= ARRAY_SIZE(jz4740_rtc_resources),
-+	.resource	= jz4740_rtc_resources,
-+};
-+
-+/** I2C controller **/
-+static struct resource jz4740_i2c_resources[] = {
-+	[0] = {
-+		.start	= CPHYSADDR(JZ4740_I2C_BASE_ADDR),
-+		.end	= CPHYSADDR(JZ4740_I2C_BASE_ADDR) + 0x10000 - 1,
-+		.flags	= IORESOURCE_MEM,
-+	},
-+	[1] = {
-+		.start	= JZ4740_IRQ_I2C,
-+		.end	= JZ4740_IRQ_I2C,
-+		.flags	= IORESOURCE_IRQ,
-+	}
-+};
-+
-+static u64 jz4740_i2c_dmamask =  ~(u32)0;
-+
-+struct platform_device jz4740_i2c_device = {
-+	.name = "jz_i2c",
-+	.id = 0,
-+	.dev = {
-+		.dma_mask		= &jz4740_i2c_dmamask,
-+		.coherent_dma_mask	= 0xffffffff,
-+	},
-+	.num_resources  = ARRAY_SIZE(jz4740_i2c_resources),
-+	.resource	= jz4740_i2c_resources,
-+};
-+
-+static struct resource jz4740_nand_resources[] = {
-+	[0] = {
-+		.start	= CPHYSADDR(JZ4740_EMC_BASE_ADDR),
-+		.end	= CPHYSADDR(JZ4740_EMC_BASE_ADDR) + 0x10000 - 1,
-+		.flags	= IORESOURCE_MEM,
-+	},
-+};
-+
-+struct platform_device jz4740_nand_device = {
-+	.name = "jz4740-nand",
-+	.num_resources = ARRAY_SIZE(jz4740_nand_resources),
-+	.resource = jz4740_nand_resources,
-+};
-+
-+static struct resource jz4740_framebuffer_resources[] = {
-+	[0] = {
-+		.start	= CPHYSADDR(JZ4740_LCD_BASE_ADDR),
-+		.end	= CPHYSADDR(JZ4740_LCD_BASE_ADDR) + 0x10000 - 1,
-+		.flags	= IORESOURCE_MEM,
-+	},
-+};
-+
-+static u64 jz4740_fb_dmamask = ~(u32)0;
-+
-+struct platform_device jz4740_framebuffer_device = {
-+	.name = "jz4740-fb",
-+	.id = -1,
-+	.num_resources = ARRAY_SIZE(jz4740_framebuffer_resources),
-+	.resource = jz4740_framebuffer_resources,
-+	.dev = {
-+		.dma_mask = &jz4740_fb_dmamask,
-+		.coherent_dma_mask = 0xffffffff,
-+	},
-+};
-+
-+static struct resource jz4740_i2s_resources[] = {
-+	[0] = {
-+		.start	= CPHYSADDR(JZ4740_AIC_BASE_ADDR),
-+		.end	= CPHYSADDR(JZ4740_AIC_BASE_ADDR) + 0x38 - 1,
-+		.flags	= IORESOURCE_MEM,
-+	},
-+};
-+
-+struct platform_device jz4740_i2s_device = {
-+	.name = "jz4740-i2s",
-+	.id = -1,
-+	.num_resources = ARRAY_SIZE(jz4740_i2s_resources),
-+	.resource = jz4740_i2s_resources,
-+};
-+
-+static struct resource jz4740_codec_resources[] = {
-+	[0] = {
-+		.start	= CPHYSADDR(JZ4740_AIC_BASE_ADDR) + 0x80,
-+		.end	= CPHYSADDR(JZ4740_AIC_BASE_ADDR) + 0x88 - 1,
-+		.flags	= IORESOURCE_MEM,
-+	},
-+};
-+
-+struct platform_device jz4740_codec_device = {
-+	.name		= "jz4740-codec",
-+	.id		= -1,
-+	.num_resources	= ARRAY_SIZE(jz4740_codec_resources),
-+	.resource	= jz4740_codec_resources,
-+};
-+
-+static struct resource jz4740_adc_resources[] = {
-+	[0] = {
-+		.start	= CPHYSADDR(JZ4740_SADC_BASE_ADDR),
-+		.end	= CPHYSADDR(JZ4740_SADC_BASE_ADDR) + 0x30,
-+		.flags	= IORESOURCE_MEM,
-+	},
-+	[1] = {
-+		.start	= JZ4740_IRQ_SADC,
-+		.end	= JZ4740_IRQ_SADC,
-+		.flags	= IORESOURCE_IRQ,
-+	},
-+};
-+
-+struct platform_device jz4740_adc_device = {
-+	.name		= "jz4740-adc",
-+	.id		= -1,
-+	.num_resources	= ARRAY_SIZE(jz4740_adc_resources),
-+	.resource	= jz4740_adc_resources,
-+};
-+
-+struct platform_device jz4740_battery_device = {
-+	.name = "jz4740-battery",
-+	.id = -1,
-+	.dev = {
-+		.parent	= &jz4740_adc_device.dev
-+	},
-+};
-+
-+/* Serial */
-+#define JZ4740_UART_DATA(_id) \
-+	{ \
-+		.flags = UPF_SKIP_TEST | UPF_IOREMAP | UPF_FIXED_TYPE, \
-+		.iotype = UPIO_MEM, \
-+		.regshift = 2, \
-+		.serial_out = jz4740_serial_out, \
-+		.type = PORT_16550A, \
-+		.mapbase = CPHYSADDR(JZ4740_UART ## _id ## _BASE_ADDR), \
-+		.irq = JZ4740_IRQ_UART ## _id, \
-+	}
-+
-+static struct plat_serial8250_port jz4740_uart_data[] = {
-+	JZ4740_UART_DATA(0),
-+	JZ4740_UART_DATA(1),
-+	{},
-+};
-+
-+static struct platform_device jz4740_uart_device = {
-+	.name = "serial8250",
-+	.id = 0,
-+	.dev = {
-+		.platform_data = jz4740_uart_data,
-+	},
-+};
-+
-+void jz4740_serial_device_register(void)
++static inline uint32_t jz4740_rtc_reg_read(struct jz4740_rtc *rtc, size_t reg)
 +{
-+	struct plat_serial8250_port *p;
-+
-+	for (p = jz4740_uart_data; p->flags != 0; ++p)
-+		p->uartclk = jz4740_clock_bdata.ext_rate;
-+
-+	platform_device_register(&jz4740_uart_device);
++	return readl(rtc->base + reg);
 +}
++
++static inline void jz4740_rtc_wait_write_ready(struct jz4740_rtc *rtc)
++{
++	uint32_t ctrl;
++	do {
++		ctrl = jz4740_rtc_reg_read(rtc, JZ_REG_RTC_CTRL);
++	} while (!(ctrl & JZ_RTC_CTRL_WRDY));
++}
++
++
++static inline void jz4740_rtc_reg_write(struct jz4740_rtc *rtc, size_t reg,
++					uint32_t val)
++{
++	jz4740_rtc_wait_write_ready(rtc);
++	writel(val, rtc->base + reg);
++}
++
++static void jz4740_rtc_ctrl_set_bits(struct jz4740_rtc *rtc, uint32_t mask,
++					uint32_t val)
++{
++	unsigned long flags;
++	uint32_t ctrl;
++
++	spin_lock_irqsave(&rtc->lock, flags);
++
++	ctrl = jz4740_rtc_reg_read(rtc, JZ_REG_RTC_CTRL);
++
++	/* Don't clear interrupt flags by accident */
++	ctrl |= JZ_RTC_CTRL_1HZ | JZ_RTC_CTRL_AF;
++
++	ctrl &= ~mask;
++	ctrl |= val;
++
++	jz4740_rtc_reg_write(rtc, JZ_REG_RTC_CTRL, ctrl);
++
++	spin_unlock_irqrestore(&rtc->lock, flags);
++}
++
++static inline struct jz4740_rtc *dev_to_rtc(struct device *dev)
++{
++	return dev_get_drvdata(dev);
++}
++
++static int jz4740_rtc_read_time(struct device *dev, struct rtc_time *time)
++{
++	struct jz4740_rtc *rtc = dev_to_rtc(dev);
++	uint32_t secs, secs2;
++
++	secs = jz4740_rtc_reg_read(rtc, JZ_REG_RTC_SEC);
++	secs2 = jz4740_rtc_reg_read(rtc, JZ_REG_RTC_SEC);
++
++	while (secs != secs2) {
++		secs = secs2;
++		secs2 = jz4740_rtc_reg_read(rtc, JZ_REG_RTC_SEC);
++	}
++
++	rtc_time_to_tm(secs, time);
++
++	return rtc_valid_tm(time);
++}
++
++static int jz4740_rtc_set_mmss(struct device *dev, unsigned long secs)
++{
++	struct jz4740_rtc *rtc = dev_to_rtc(dev);
++
++	if ((uint32_t)secs != secs)
++		return -EINVAL;
++
++	jz4740_rtc_reg_write(rtc, JZ_REG_RTC_SEC, secs);
++
++	return 0;
++}
++
++static int jz4740_rtc_read_alarm(struct device *dev, struct rtc_wkalrm *alrm)
++{
++	struct jz4740_rtc *rtc = dev_to_rtc(dev);
++	uint32_t secs, secs2;
++	uint32_t ctrl;
++
++	secs = jz4740_rtc_reg_read(rtc, JZ_REG_RTC_SEC_ALARM);
++	secs2 = jz4740_rtc_reg_read(rtc, JZ_REG_RTC_SEC_ALARM);
++
++	while (secs != secs2) {
++		secs = secs2;
++		secs2 = jz4740_rtc_reg_read(rtc, JZ_REG_RTC_SEC_ALARM);
++	}
++
++	ctrl = jz4740_rtc_reg_read(rtc, JZ_REG_RTC_CTRL);
++
++	alrm->enabled = !!(ctrl & JZ_RTC_CTRL_AE);
++	alrm->pending = !!(ctrl & JZ_RTC_CTRL_AF);
++
++	rtc_time_to_tm(secs, &alrm->time);
++
++	return rtc_valid_tm(&alrm->time);
++}
++
++static int jz4740_rtc_set_alarm(struct device *dev, struct rtc_wkalrm *alrm)
++{
++	struct jz4740_rtc *rtc = dev_to_rtc(dev);
++	unsigned long secs;
++
++	rtc_tm_to_time(&alrm->time, &secs);
++
++	if ((uint32_t)secs != secs)
++		return -EINVAL;
++
++	jz4740_rtc_reg_write(rtc, JZ_REG_RTC_SEC_ALARM, (uint32_t)secs);
++	jz4740_rtc_ctrl_set_bits(rtc, JZ_RTC_CTRL_AE,
++					alrm->enabled ? JZ_RTC_CTRL_AE : 0);
++
++	return 0;
++}
++
++static int jz4740_rtc_update_irq_enable(struct device *dev, unsigned int enable)
++{
++	struct jz4740_rtc *rtc = dev_to_rtc(dev);
++	jz4740_rtc_ctrl_set_bits(rtc, JZ_RTC_CTRL_1HZ_IRQ,
++					enable ? JZ_RTC_CTRL_1HZ_IRQ : 0);
++	return 0;
++}
++
++
++static int jz4740_rtc_alarm_irq_enable(struct device *dev, unsigned int enable)
++{
++	struct jz4740_rtc *rtc = dev_to_rtc(dev);
++	jz4740_rtc_ctrl_set_bits(rtc, JZ_RTC_CTRL_AF_IRQ,
++					enable ? JZ_RTC_CTRL_AF_IRQ : 0);
++	return 0;
++}
++
++static struct rtc_class_ops jz4740_rtc_ops = {
++	.read_time	= jz4740_rtc_read_time,
++	.set_mmss	= jz4740_rtc_set_mmss,
++	.read_alarm	= jz4740_rtc_read_alarm,
++	.set_alarm	= jz4740_rtc_set_alarm,
++	.update_irq_enable = jz4740_rtc_update_irq_enable,
++	.alarm_irq_enable = jz4740_rtc_alarm_irq_enable,
++};
++
++static irqreturn_t jz4740_rtc_irq(int irq, void *data)
++{
++	struct jz4740_rtc *rtc = data;
++	uint32_t ctrl;
++	unsigned long events = 0;
++	ctrl = jz4740_rtc_reg_read(rtc, JZ_REG_RTC_CTRL);
++
++	if (ctrl & JZ_RTC_CTRL_1HZ)
++		events |= (RTC_UF | RTC_IRQF);
++
++	if (ctrl & JZ_RTC_CTRL_AF)
++		events |= (RTC_AF | RTC_IRQF);
++
++	rtc_update_irq(rtc->rtc, 1, events);
++
++	jz4740_rtc_ctrl_set_bits(rtc, JZ_RTC_CTRL_1HZ | JZ_RTC_CTRL_AF, 0);
++
++	return IRQ_HANDLED;
++}
++
++void jz4740_rtc_poweroff(struct device *dev)
++{
++	struct jz4740_rtc *rtc = dev_get_drvdata(dev);
++	jz4740_rtc_reg_write(rtc, JZ_REG_RTC_HIBERNATE, 1);
++}
++EXPORT_SYMBOL_GPL(jz4740_rtc_poweroff);
++
++static int __devinit jz4740_rtc_probe(struct platform_device *pdev)
++{
++	int ret;
++	struct jz4740_rtc *rtc;
++	uint32_t scratchpad;
++
++	rtc = kmalloc(sizeof(*rtc), GFP_KERNEL);
++
++	rtc->irq = platform_get_irq(pdev, 0);
++
++	if (rtc->irq < 0) {
++		ret = -ENOENT;
++		dev_err(&pdev->dev, "Failed to get platform irq\n");
++		goto err_free;
++	}
++
++	rtc->mem = platform_get_resource(pdev, IORESOURCE_MEM, 0);
++	if (!rtc->mem) {
++		ret = -ENOENT;
++		dev_err(&pdev->dev, "Failed to get platform mmio memory\n");
++		goto err_free;
++	}
++
++	rtc->mem = request_mem_region(rtc->mem->start, resource_size(rtc->mem),
++					pdev->name);
++
++	if (!rtc->mem) {
++		ret = -EBUSY;
++		dev_err(&pdev->dev, "Failed to request mmio memory region\n");
++		goto err_free;
++	}
++
++	rtc->base = ioremap_nocache(rtc->mem->start, resource_size(rtc->mem));
++
++	if (!rtc->base) {
++		ret = -EBUSY;
++		dev_err(&pdev->dev, "Failed to ioremap mmio memory\n");
++		goto err_release_mem_region;
++	}
++
++	spin_lock_init(&rtc->lock);
++
++	platform_set_drvdata(pdev, rtc);
++
++	rtc->rtc = rtc_device_register(pdev->name, &pdev->dev, &jz4740_rtc_ops,
++					THIS_MODULE);
++
++	if (IS_ERR(rtc->rtc)) {
++		ret = PTR_ERR(rtc->rtc);
++		dev_err(&pdev->dev, "Failed to register rtc device: %d\n", ret);
++		goto err_iounmap;
++	}
++
++	ret = request_irq(rtc->irq, jz4740_rtc_irq, 0,
++				pdev->name, rtc);
++
++	if (ret) {
++		dev_err(&pdev->dev, "Failed to request rtc irq: %d\n", ret);
++		goto err_unregister_rtc;
++	}
++
++	scratchpad = jz4740_rtc_reg_read(rtc, JZ_REG_RTC_SCRATCHPAD);
++	if (scratchpad != 0x12345678) {
++		jz4740_rtc_reg_write(rtc, JZ_REG_RTC_SCRATCHPAD, 0x12345678);
++		jz4740_rtc_reg_write(rtc, JZ_REG_RTC_SEC, 0);
++	}
++
++	return 0;
++
++err_unregister_rtc:
++	rtc_device_unregister(rtc->rtc);
++err_iounmap:
++	platform_set_drvdata(pdev, NULL);
++	iounmap(rtc->base);
++err_release_mem_region:
++	release_mem_region(rtc->mem->start, resource_size(rtc->mem));
++err_free:
++	kfree(rtc);
++
++	return ret;
++}
++
++static int __devexit jz4740_rtc_remove(struct platform_device *pdev)
++{
++	struct jz4740_rtc *rtc = platform_get_drvdata(pdev);
++
++	free_irq(rtc->irq, rtc);
++
++	rtc_device_unregister(rtc->rtc);
++
++	iounmap(rtc->base);
++	release_mem_region(rtc->mem->start, resource_size(rtc->mem));
++
++	kfree(rtc);
++
++	platform_set_drvdata(pdev, NULL);
++
++	return 0;
++}
++
++struct platform_driver jz4740_rtc_driver = {
++	.probe = jz4740_rtc_probe,
++	.remove = __devexit_p(jz4740_rtc_remove),
++	.driver = {
++		.name = "jz4740-rtc",
++		.owner = THIS_MODULE,
++	},
++};
++
++static int __init jz4740_rtc_init(void)
++{
++	return platform_driver_register(&jz4740_rtc_driver);
++}
++module_init(jz4740_rtc_init);
++
++static void __exit jz4740_rtc_exit(void)
++{
++	platform_driver_unregister(&jz4740_rtc_driver);
++}
++module_exit(jz4740_rtc_exit);
++
++MODULE_AUTHOR("Lars-Peter Clausen <lars@metafoo.de>");
++MODULE_LICENSE("GPL");
++MODULE_DESCRIPTION("RTC driver for the JZ4740 SoC\n");
++MODULE_ALIAS("platform:jz4740-rtc");
 -- 
 1.5.6.5
 
