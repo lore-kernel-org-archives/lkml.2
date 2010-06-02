@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755042Ab0FBIyV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jun 2010 04:54:21 -0400
-Received: from mail.pripojeni.net ([217.66.174.14]:59183 "EHLO
+	id S1757486Ab0FBIy1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jun 2010 04:54:27 -0400
+Received: from mail.pripojeni.net ([217.66.174.14]:59180 "EHLO
 	mail.jetsystems.cz" rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org
-	with ESMTP id S1752663Ab0FBIxU (ORCPT
+	with ESMTP id S1751799Ab0FBIxT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jun 2010 04:53:20 -0400
+	Wed, 2 Jun 2010 04:53:19 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: rjw@sisk.pl
 Cc: pavel@ucw.cz, linux-pm@lists.linux-foundation.org,
        linux-kernel@vger.kernel.org, jirislaby@gmail.com
-Subject: [PATCH 5/9] PM / Hibernate: add chunk i/o support
-Date: Wed,  2 Jun 2010 10:52:44 +0200
-Message-Id: <1275468768-28229-5-git-send-email-jslaby@suse.cz>
+Subject: [PATCH 6/9] PM / Hibernate: split snapshot_read_next
+Date: Wed,  2 Jun 2010 10:52:45 +0200
+Message-Id: <1275468768-28229-6-git-send-email-jslaby@suse.cz>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1275468768-28229-1-git-send-email-jslaby@suse.cz>
 References: <1275468768-28229-1-git-send-email-jslaby@suse.cz>
@@ -21,203 +21,161 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Chunk support is useful when not writing whole pages at once. It takes
-care of joining the buffers into the pages and writing at once when
-needed.
-
-This adds functions for both reads and writes.
-
-In the end when pages are compressed they use this interface as well
-(because they are indeed shorter than PAGE_SIZE).
+When writing the snapshot, do the initialization and header write in
+a separate function. This makes the code more readable and lowers
+complexity of snapshot_read_next.
 
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 Cc: "Rafael J. Wysocki" <rjw@sisk.pl>
 ---
- kernel/power/block_io.c |  126 +++++++++++++++++++++++++++++++++++++++++++++++
- kernel/power/power.h    |   16 ++++++
- 2 files changed, 142 insertions(+), 0 deletions(-)
+ kernel/power/power.h    |    2 +
+ kernel/power/snapshot.c |   65 ++++++++++++++++++++++++++++++----------------
+ kernel/power/swap.c     |   14 +++-------
+ 3 files changed, 48 insertions(+), 33 deletions(-)
 
-diff --git a/kernel/power/block_io.c b/kernel/power/block_io.c
-index 97024fd..5b6413d 100644
---- a/kernel/power/block_io.c
-+++ b/kernel/power/block_io.c
-@@ -3,6 +3,7 @@
-  *
-  * Copyright (C) 1998,2001-2005 Pavel Machek <pavel@ucw.cz>
-  * Copyright (C) 2006 Rafael J. Wysocki <rjw@sisk.pl>
-+ * Copyright (C) 2004-2008 Nigel Cunningham (nigel at tuxonice net)
-  *
-  * This file is released under the GPLv2.
-  */
-@@ -74,6 +75,131 @@ int hib_bio_write_page(pgoff_t page_off, void *addr, struct bio **bio_chain)
- 			virt_to_page(addr), bio_chain);
+diff --git a/kernel/power/power.h b/kernel/power/power.h
+index 812b66c..ff3f63f 100644
+--- a/kernel/power/power.h
++++ b/kernel/power/power.h
+@@ -171,6 +171,8 @@ struct hibernate_io_ops {
+ 
+ extern unsigned int snapshot_additional_pages(struct zone *zone);
+ extern unsigned long snapshot_get_image_size(void);
++extern int snapshot_write_init(struct hibernate_io_handle *io_handle,
++		struct snapshot_handle *handle);
+ extern int snapshot_read_next(struct snapshot_handle *handle);
+ extern int snapshot_write_next(struct snapshot_handle *handle);
+ extern void snapshot_write_finalize(struct snapshot_handle *handle);
+diff --git a/kernel/power/snapshot.c b/kernel/power/snapshot.c
+index 25ce010..4600d15 100644
+--- a/kernel/power/snapshot.c
++++ b/kernel/power/snapshot.c
+@@ -1598,10 +1598,46 @@ pack_pfns(unsigned long *buf, struct memory_bitmap *bm)
  }
  
-+static int hib_buffer_init_rw(struct hibernate_io_handle *io_handle,
-+		int writing)
-+{
-+	/* should never happen - it means we didn't finish properly last time */
-+	BUG_ON(io_handle->chunk_buffer || io_handle->chunk_buffer_pos);
-+
-+	io_handle->chunk_buffer =
-+		(void *)get_zeroed_page(__GFP_WAIT | __GFP_HIGH);
-+	if (io_handle->chunk_buffer && !writing)
-+		io_handle->chunk_buffer_pos = PAGE_SIZE;
-+
-+	return io_handle->chunk_buffer ? 0 : -ENOMEM;
-+}
-+
-+int hib_buffer_init_read(struct hibernate_io_handle *io_handle)
-+{
-+	return hib_buffer_init_rw(io_handle, 0);
-+}
-+
-+int hib_buffer_init_write(struct hibernate_io_handle *io_handle)
-+{
-+	return hib_buffer_init_rw(io_handle, 1);
-+}
-+
-+/**
-+ * hib_buffer_rw - combine smaller buffers into PAGE_SIZE I/O
-+ * @io_handle: handle from reader/writer
-+ * @writing: whether writing (or reading).
-+ * @buffer: the start of the buffer to write or fill.
-+ * @buffer_size: the size of the buffer to write or fill.
-+ **/
-+static int hib_buffer_rw(struct hibernate_io_handle *io_handle, int writing,
-+		char *buffer, int buffer_size)
-+{
-+	int bytes_left = buffer_size, ret;
-+
-+	while (bytes_left) {
-+		char *source_start = buffer + buffer_size - bytes_left;
-+		char *dest_start = io_handle->chunk_buffer +
-+			io_handle->chunk_buffer_pos;
-+		int capacity = PAGE_SIZE - io_handle->chunk_buffer_pos;
-+		char *to = writing ? dest_start : source_start;
-+		char *from = writing ? source_start : dest_start;
-+
-+		if (bytes_left <= capacity) {
-+			memcpy(to, from, bytes_left);
-+			io_handle->chunk_buffer_pos += bytes_left;
-+			return 0;
-+		}
-+
-+		/* Complete this page and start a new one */
-+		memcpy(to, from, capacity);
-+		bytes_left -= capacity;
-+
-+		if (writing)
-+			ret = hibernate_io_ops->write_page(io_handle,
-+					io_handle->chunk_buffer, NULL);
-+		else
-+			ret = hibernate_io_ops->read_page(io_handle,
-+					io_handle->chunk_buffer, NULL);
-+
-+		if (ret)
-+			return ret;
-+
-+		io_handle->chunk_buffer_pos = 0;
-+	}
-+
-+	return 0;
-+}
-+
-+int hib_buffer_read(struct hibernate_io_handle *io_handle, char *buffer,
-+		int buffer_size)
-+{
-+	return hib_buffer_rw(io_handle, 0, buffer, buffer_size);
-+}
-+
-+int hib_buffer_write(struct hibernate_io_handle *io_handle, char *buffer,
-+		int buffer_size)
-+{
-+	return hib_buffer_rw(io_handle, 1, buffer, buffer_size);
-+}
-+
-+int hib_buffer_flush_page_read(struct hibernate_io_handle *io_handle)
-+{
-+	io_handle->chunk_buffer_pos = PAGE_SIZE;
-+
-+	return 0;
-+}
-+
-+int hib_buffer_finish_read(struct hibernate_io_handle *io_handle)
+ /**
++ *	snapshot_write_init - initialization before writing the snapshot to
++ *	a backing storage
++ *
++ *	This function *must* be called before snapshot_read_next to initialize
++ *	@handle and write a header.
++ *
++ *	@io_handle: handle used when writing the initial info onto storage
++ *	@handle: snapshot handle to init
++ */
++int snapshot_write_init(struct hibernate_io_handle *io_handle,
++		struct snapshot_handle *handle)
 +{
 +	int ret;
 +
-+	ret = hib_buffer_flush_page_read(io_handle);
-+
-+	free_page((unsigned long)io_handle->chunk_buffer);
-+	io_handle->chunk_buffer = NULL;
-+	io_handle->chunk_buffer_pos = 0;
-+
++	/* This makes the buffer be freed by swsusp_free() */
++	buffer = get_image_page(GFP_ATOMIC, PG_ANY);
++	if (!buffer)
++		return -ENOMEM;
++	init_header(buffer);
++	ret = hib_buffer_init_write(io_handle);
++	if (ret)
++		return ret;
++	ret = hib_buffer_write(io_handle, buffer, sizeof(struct swsusp_info));
++	if (ret)
++		goto finish;
++	hib_buffer_finish_write(io_handle);
++	memory_bm_position_reset(&orig_bm);
++	memory_bm_position_reset(&copy_bm);
++	handle->buffer = buffer;
++	return 0;
++finish:
++	hib_buffer_finish_write(io_handle);
 +	return ret;
 +}
 +
-+int hib_buffer_flush_page_write(struct hibernate_io_handle *io_handle)
-+{
-+	int ret = 0;
-+	if (io_handle->chunk_buffer_pos)
-+		ret = hibernate_io_ops->write_page(io_handle,
-+				io_handle->chunk_buffer, NULL);
-+	io_handle->chunk_buffer_pos = 0;
-+	return ret;
-+}
-+
-+int hib_buffer_finish_write(struct hibernate_io_handle *io_handle)
-+{
-+	int ret = 0;
-+
-+	ret = hib_buffer_flush_page_write(io_handle);
-+
-+	free_page((unsigned long)io_handle->chunk_buffer);
-+	io_handle->chunk_buffer = NULL;
-+	io_handle->chunk_buffer_pos = 0;
-+
-+	return ret;
-+}
-+
- int hib_wait_on_bio_chain(struct bio **bio_chain)
- {
- 	struct bio *bio;
-diff --git a/kernel/power/power.h b/kernel/power/power.h
-index 32a40f9..812b66c 100644
---- a/kernel/power/power.h
-+++ b/kernel/power/power.h
-@@ -119,9 +119,14 @@ struct snapshot_handle {
- /**
-  * struct hibernate_io_handle - handle for image I/O processing
++/**
+  *	snapshot_read_next - used for reading the system memory snapshot.
   *
-+ * @chunk_buffer: temporary buffer used by chunk I/O to fill whole page
-+ * @chunk_buffer_pos: position in chio_buffer
-  * @priv: private data for each processor (swap_map_handle etc.)
+- *	On the first call to it @handle should point to a zeroed
+- *	snapshot_handle structure.  The structure gets updated and a pointer
++ *	Before calling this function, snapshot_write_init has to be called with
++ *	handle passed as @handle here. The structure gets updated and a pointer
+  *	to it should be passed to this function every next time.
+  *
+  *	On success the function returns a positive number.  Then, the caller
+@@ -1613,31 +1649,12 @@ pack_pfns(unsigned long *buf, struct memory_bitmap *bm)
+  *	structure pointed to by @handle is not updated and should not be used
+  *	any more.
   */
- struct hibernate_io_handle {
-+	char *chunk_buffer;
-+	unsigned long chunk_buffer_pos;
-+
- 	void *priv;
- };
+-
+ int snapshot_read_next(struct snapshot_handle *handle)
+ {
+-	if (handle->cur > nr_meta_pages + nr_copy_pages)
+-		return 0;
+-
+-	if (!buffer) {
+-		/* This makes the buffer be freed by swsusp_free() */
+-		buffer = get_image_page(GFP_ATOMIC, PG_ANY);
+-		if (!buffer)
+-			return -ENOMEM;
+-	}
+-	if (!handle->cur) {
+-		int error;
+-
+-		error = init_header((struct swsusp_info *)buffer);
+-		if (error)
+-			return error;
+-		handle->buffer = buffer;
+-		memory_bm_position_reset(&orig_bm);
+-		memory_bm_position_reset(&copy_bm);
+-	} else if (handle->cur <= nr_meta_pages) {
++	if (handle->cur < nr_meta_pages) {
+ 		memset(buffer, 0, PAGE_SIZE);
+ 		pack_pfns(buffer, &orig_bm);
+-	} else {
++	} else if (handle->cur < nr_meta_pages + nr_copy_pages) {
+ 		struct page *page;
  
-@@ -200,6 +205,17 @@ extern int hib_bio_write_page(pgoff_t page_off, void *addr,
- 		struct bio **bio_chain);
- extern int hib_wait_on_bio_chain(struct bio **bio_chain);
+ 		page = pfn_to_page(memory_bm_next_pfn(&copy_bm));
+@@ -1655,6 +1672,8 @@ int snapshot_read_next(struct snapshot_handle *handle)
+ 		} else {
+ 			handle->buffer = page_address(page);
+ 		}
++	} else {
++		return 0;
+ 	}
+ 	handle->cur++;
+ 	return PAGE_SIZE;
+diff --git a/kernel/power/swap.c b/kernel/power/swap.c
+index f09494e..9b319f1 100644
+--- a/kernel/power/swap.c
++++ b/kernel/power/swap.c
+@@ -448,7 +448,6 @@ int swsusp_write(unsigned int flags)
+ {
+ 	struct hibernate_io_handle *io_handle;
+ 	struct snapshot_handle snapshot;
+-	struct swsusp_info *header;
+ 	unsigned long pages;
+ 	int error;
  
-+extern int hib_buffer_init_read(struct hibernate_io_handle *io_handle);
-+extern int hib_buffer_init_write(struct hibernate_io_handle *io_handle);
-+extern int hib_buffer_finish_read(struct hibernate_io_handle *io_handle);
-+extern int hib_buffer_finish_write(struct hibernate_io_handle *io_handle);
-+extern int hib_buffer_flush_page_read(struct hibernate_io_handle *io_handle);
-+extern int hib_buffer_flush_page_write(struct hibernate_io_handle *io_handle);
-+extern int hib_buffer_read(struct hibernate_io_handle *io_handle, char *buffer,
-+		int buffer_size);
-+extern int hib_buffer_write(struct hibernate_io_handle *io_handle, char *buffer,
-+		int buffer_size);
-+
- struct timeval;
- /* kernel/power/swsusp.c */
- extern void swsusp_show_speed(struct timeval *, struct timeval *,
+@@ -464,17 +463,12 @@ int swsusp_write(unsigned int flags)
+ 		goto out_finish;
+ 	}
+ 	memset(&snapshot, 0, sizeof(struct snapshot_handle));
+-	error = snapshot_read_next(&snapshot);
+-	if (error < PAGE_SIZE) {
+-		if (error >= 0)
+-			error = -EFAULT;
+-
++	error = snapshot_write_init(io_handle, &snapshot);
++	if (error) {
++		printk(KERN_ERR "PM: Cannot init writer\n");
+ 		goto out_finish;
+ 	}
+-	header = (struct swsusp_info *)data_of(snapshot);
+-	error = hibernate_io_ops->write_page(io_handle, header, NULL);
+-	if (!error)
+-		error = save_image(io_handle, &snapshot, pages - 1);
++	error = save_image(io_handle, &snapshot, pages - 1);
+ out_finish:
+ 	error = hibernate_io_ops->writer_finish(io_handle, flags, error);
+ 	return error;
 -- 
 1.7.1
 
