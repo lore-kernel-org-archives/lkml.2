@@ -1,71 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933069Ab0FBTxi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jun 2010 15:53:38 -0400
-Received: from smtp-out.google.com ([74.125.121.35]:17818 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933056Ab0FBTxh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jun 2010 15:53:37 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=mime-version:in-reply-to:references:date:message-id:subject:from:to:
-	cc:content-type:x-system-of-record;
-	b=B3Cat/ddeQevVeoiKmDGDJVm/6FPWAntrw+MNhxyYgnxBuv5eFu+beZoz0vrJXRoY
-	ticUlzR4W2+IwTfTYihmA==
+	id S933077Ab0FBT4v (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jun 2010 15:56:51 -0400
+Received: from usul.saidi.cx ([204.11.33.34]:48425 "EHLO usul.overt.org"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S932897Ab0FBT4t (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Jun 2010 15:56:49 -0400
+To: Maxim Levitsky <maximlevitsky@gmail.com>
+Subject: Re: strange problem with ricoh-mmc
 MIME-Version: 1.0
-In-Reply-To: <20100602140659.GA5324@redhat.com>
-References: <20100530013002.GA762@ghc01.ghc.andrew.cmu.edu>
-	<20100530013303.GC762@ghc01.ghc.andrew.cmu.edu>
-	<20100531175242.GA14691@redhat.com>
-	<20100531180446.GA16249@redhat.com>
-	<AANLkTimcrX0TjzDMNJdubR92pAO4IPATbVpyvvVt0qIV@mail.gmail.com>
-	<20100602140659.GA5324@redhat.com>
-Date: Wed, 2 Jun 2010 12:53:33 -0700
-Message-ID: <AANLkTin-T6ij3xf0ceGoCamwcoayxyf0GdAKY6yXDMVl@mail.gmail.com>
-Subject: Re: [RFC] [PATCH 2/2] cgroups: make procs file writable
-From: Paul Menage <menage@google.com>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Ben Blum <bblum@andrew.cmu.edu>, linux-kernel@vger.kernel.org,
-       containers@lists.linux-foundation.org, akpm@linux-foundation.org,
-       ebiederm@xmission.com, lizf@cn.fujitsu.com, matthltc@us.ibm.com
-Content-Type: text/plain; charset=ISO-8859-1
-X-System-Of-Record: true
+Date: Wed, 02 Jun 2010 15:54:20 -0400
+From: Philip Langdale <philipl@overt.org>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>
+In-Reply-To: <1275505018.4215.10.camel@maxim-laptop>
+References: <1275505018.4215.10.camel@maxim-laptop>
+Message-ID: <04b98a3f757587ee9b72f2e28e257b50@localhost>
+User-Agent: RoundCube Webmail/0.3.1
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 2, 2010 at 7:06 AM, Oleg Nesterov <oleg@redhat.com> wrote:
->
-> Yes sure, I understand this part. cgroup_attach_task() correctly checks
-> PF_EXITING under task_lock(), this protects from the case when this
-> task has already passed cgroup_exit() which takes this lock too.
 
-Right.
+On Wed, 02 Jun 2010 21:56:58 +0300, Maxim Levitsky
+<maximlevitsky@gmail.com> wrote:
+> Hi,
+> 
+> Maybe this is my fault, don't know, but I found and now confident that
+> new and possible old version of ricoh-mmc causes troubles after
+> suspend/resume.
+> 
+> Namely there are two problems.
+> One is that sometimes card detection on xD controller stops working.
+> That is it doesn't respond to insert/remove events, and suspend to ram
+> just updates that once. Granted I wrote this driver, but it appears to
+> work without richoh-mmc.
+> 
+> Another problem that is unrelated to xD is that sometimes sdhci
+> conroller issues an interrupt storm, and does so until its driver is
+> reloaded. At that point it refuses to load with missing voltage levels.
+> 
+> I never seen these without ricoh-mmc pci quirk.
+> 
+> Both problems are semi-rare.
+> 
+> So just one question, did you see these problems?
+> Do you have a clue on how to proceed?
 
->
-> But. This exactly means that the PF_EXITING check in attach_task_by_pid()
-> is not necessary from the correctness pov (while probably can be considered
-> as optimization), right?
+I have never seen these problems, but I could imagine that perhaps the
+PCI register pokes have side-effects or there's actually more that needs
+to be done than what we currently have. No one has access to the relevant
+datasheets so the magic incantations are second hand. More worryingly, it
+may not be a well supported configuration - while the other controllers
+might be disabled based on physical slot design, SD and MMC are the same,
+so I doubt Ricoh or OEMs have ever seriously considered having only one
+on. I've not heard of the sdhci problem before - maybe your hardware is
+dodgy? :-)
 
-For the value of correctness that was relevant when writing that code
-originally, I think it's fine. But ...
-
-> I am not sure. It doesn't hurt when we try to move a thread. But if
-> we want to move the whole thread group, we should proceed even if the
-> group leader has already exited and thus has PF_EXITING bit set.
-
-Hmm, maybe. I could see this being argued both ways. Can the process
-hang around indefinitely with the leader as a zombie and the other
-threads still running?
-
-It wouldn't be that hard to make it possible to avoid relying on
-PF_EXITING as the check - instead we'd have an exiting_css_set object
-that have the same pointer set as init_css_set, but would be
-distinguishable from it as a task->cgroups pointer by virtue of being
-a different object. Then cgroup_exit() can reassign tasks to point to
-exiting_css_set rather than init_css_set, and the various checks that
-are currently made for (task->flags & PF_EXITING) could check for
-(task->cgroups == exiting_css_set) instead. This would allow task
-movement further into the exit process.
-
-Paul
+--phil
