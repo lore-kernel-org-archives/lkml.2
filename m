@@ -1,72 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758279Ab0FBOcL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jun 2010 10:32:11 -0400
-Received: from mail-pz0-f185.google.com ([209.85.222.185]:54597 "EHLO
-	mail-pz0-f185.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751575Ab0FBOcK (ORCPT
+	id S1758302Ab0FBOda (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jun 2010 10:33:30 -0400
+Received: from smtp-out.google.com ([74.125.121.35]:37393 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757893Ab0FBOd2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jun 2010 10:32:10 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=JYkj/3Q6qZjZxjNGAWBVOTTK9k9heWVcoJN3ZgU4HyMqTiAOlVDwgSGkPek5J+rcQ5
-         uoIYkE7UDdoaaHRksQACJvOfAhoz3jyoEnctDHQ1huFnTfejCEGE2RsC+vWRqbK0j4yF
-         k/nJ0Xa/Boo39EL+IoabCv94CiyJEWgxe1iZk=
-Date: Wed, 2 Jun 2010 11:20:18 -0300
-From: "Luis Claudio R. Goncalves" <lclaudio@uudg.org>
-To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: David Rientjes <rientjes@google.com>,
-       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-       Minchan Kim <minchan.kim@gmail.com>, balbir@linux.vnet.ibm.com,
-       Oleg Nesterov <oleg@redhat.com>, linux-kernel@vger.kernel.org,
-       linux-mm@kvack.org, Thomas Gleixner <tglx@linutronix.de>,
-       Peter Zijlstra <peterz@infradead.org>, Mel Gorman <mel@csn.ul.ie>,
-       williams@redhat.com
-Subject: Re: [RFC] oom-kill: give the dying task a higher priority
-Message-ID: <20100602142018.GH17404@uudg.org>
-References: <20100601173535.GD23428@uudg.org>
- <alpine.DEB.2.00.1006011347060.13136@chino.kir.corp.google.com>
- <20100602220429.F51E.A69D9226@jp.fujitsu.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100602220429.F51E.A69D9226@jp.fujitsu.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
+	Wed, 2 Jun 2010 10:33:28 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=message-id:from:date:to:reply-to:cc:subject:x-system-of-record;
+	b=w8ZXEs/XhCDqoaOiDOSh9hcgRJ8z0YhoKJxphr/CvyUqnElYXiPq0myNRogVDn4xB
+	tU7RoULu32WdSIfxoeYuA==
+Message-ID: <4c066bb2.5cebd80a.19ec.45d8@mx.google.com>
+From: Stephane Eranian <eranian@google.com>
+Date: Wed, 2 Jun 2010 16:31:01 +0200
+To: linux-kernel@vger.kernel.org
+Reply-to: eranian@google.com
+Cc: peterz@infradead.org, mingo@elte.hu, paulus@samba.org, davem@davemloft.net,
+       fweisbec@gmail.com, acme@infradead.org, perfmon2-devel@lists.sf.net,
+       eranian@gmail.com, eranian@google.com, tzanussi@gmail.com
+Subject: [PATCH] perf: avoid assertion for -p option in perf stat -a
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 02, 2010 at 10:54:01PM +0900, KOSAKI Motohiro wrote:
-| > > @@ -291,9 +309,10 @@ static struct task_struct *select_bad_process(unsigned long *ppoints,
-| > >  		 * Otherwise we could get an easy OOM deadlock.
-| > >  		 */
-| > >  		if (p->flags & PF_EXITING) {
-| > > -			if (p != current)
-| > > +			if (p != current) {
-| > > +				boost_dying_task_prio(p, mem);
-| > >  				return ERR_PTR(-1UL);
-| > > -
-| > > +			}
-| > >  			chosen = p;
-| > >  			*ppoints = ULONG_MAX;
-| > >  		}
-| > 
-| > This has the potential to actually make it harder to free memory if p is 
-| > waiting to acquire a writelock on mm->mmap_sem in the exit path while the 
-| > thread holding mm->mmap_sem is trying to run.
-| 
-| if p is waiting, changing prio have no effect. It continue tol wait to release mmap_sem.
+It was possible to use perf stat in system-wide mode with -a
+and still attach to a process (-p) or thread (-t). The issue
+is that it is not possible to get a termination signal from
+the attached task, thus the command never terminates.
+Furthermore, passing -p -a was triggering the assertion in
+read_counter().
 
-Ok, that was not a good idea after all :)
+This patch fixes the issue by aborting perf stat if the
+parameters conflict.
 
-But I understand the !rt_task(p) test is necessary to avoid decrementing
-the priority of an eventual RT task selected to die. Though it may also be
-a corner case in badness().
+Signed-off-by: Stephane Eranian <eranian@google.com>
 
-Luis
--- 
-[ Luis Claudio R. Goncalves                    Bass - Gospel - RT ]
-[ Fingerprint: 4FDD B8C4 3C59 34BD 8BE9  2696 7203 D980 A448 C8F8 ]
-
+diff --git a/tools/perf/builtin-stat.c b/tools/perf/builtin-stat.c
+index a6b4d44..a3b6a5f 100644
+--- a/tools/perf/builtin-stat.c
++++ b/tools/perf/builtin-stat.c
+@@ -573,6 +573,14 @@ int cmd_stat(int argc, const char **argv, const char *prefix __used)
+ 	else
+ 		nr_cpus = 1;
+ 
++	/*
++	 * a system-wide session cannot be delimited via an attachment
++	 * because we cannot get a termination notification.
++	 * It also triggers the assertion in read_counter()
++	 */
++	if (system_wide && (target_tid != -1 || target_pid != -1))
++		usage_with_options(stat_usage, options);
++
+ 	if (nr_cpus < 1)
+ 		usage_with_options(stat_usage, options);
+ 
