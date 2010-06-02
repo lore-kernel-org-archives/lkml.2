@@ -1,117 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758384Ab0FBO45 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jun 2010 10:56:57 -0400
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:51800 "EHLO e9.ny.us.ibm.com"
+	id S1758096Ab0FBPCi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jun 2010 11:02:38 -0400
+Received: from cantor.suse.de ([195.135.220.2]:40315 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754564Ab0FBO4z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jun 2010 10:56:55 -0400
-Date: Wed, 2 Jun 2010 07:56:53 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Daniel J Blueman <daniel.blueman@gmail.com>
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] RCU: don't turn off lockdep when find suspicious
- rcu_dereference_check() usage
-Message-ID: <20100602145653.GA2385@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <AANLkTinNygSdXsg3vAVRHttAMh6nX4tauNKn3XnfQC_x@mail.gmail.com>
+	id S1755560Ab0FBPCh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Jun 2010 11:02:37 -0400
+Date: Wed, 2 Jun 2010 17:02:35 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: S?bastien Paumier <sebastien.paumier@univ-mlv.fr>,
+       linux-kernel@vger.kernel.org
+Subject: Re: PROBLEM: getpid() returning same value as getppid()
+Message-ID: <20100602150235.GD12784@tiehlicka.suse.cz>
+References: <4BFD33F0.1060908@univ-mlv.fr>
+ <20100526151651.GA21197@elliptictech.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <AANLkTinNygSdXsg3vAVRHttAMh6nX4tauNKn3XnfQC_x@mail.gmail.com>
+In-Reply-To: <20100526151651.GA21197@elliptictech.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 01, 2010 at 02:06:13PM +0100, Daniel J Blueman wrote:
-> Hi Paul,
+On Wed 26-05-10 11:16:51, Nick Bowler wrote:
+> On 16:45 Wed 26 May     , S?bastien Paumier wrote:
+> > Hi,
+> > here is a bug that occurs on my kernel 2.6.31-21, maybe with older ones. 
+> >   If a C program contains a function with the constructor attribute that 
+> > calls getpid(), then, a call to syscall(SYS_fork) produces a son that 
+> > obtains the same value calling getpid() or getppid().
 > 
-> With 2.6.35-rc1 and your patch in the context below, we still see
-> "include/linux/cgroup.h:534 invoked rcu_dereference_check() without
-> protection!", so need this additional patch:
-> 
-> Acquire read-side RCU lock around task_group() calls, addressing
-> "include/linux/cgroup.h:534 invoked rcu_dereference_check() without
-> protection!" warning.
-> 
-> Signed-off-by: Daniel J Blueman <daniel.blueman@gmail.com>
+> The GNU C library caches the results of getpid, which is probably the
+> cause of your grief.  This cache relies on the glibc wrappers for fork
+> and friends, which you have bypassed by using syscall directly.
 
-Thank you, Daniel!  I have queued this for 2.6.35.
+man page for getpid states that explicitly:
+NOTES
+       Since  glibc  version  2.3.4, the glibc wrapper function for
+       getpid() caches PIDs, so as to avoid additional system calls when
+       a process calls getpid() repeatedly.  Normally this caching is
+       invisible, but its correct operation relies on support in the
+       wrapper  functions for  fork(2), vfork(2),  and  clone(2):
+       if an application bypasses the glibc wrappers for these system
+       calls by using syscall(2), then a call to getpid() in the child
+       will return the wrong value (to be precise: it will return the
+       PID of the parent process).  See also clone(2) for  discussion
+       of  a case where getpid() may return the wrong value even when
+       invoking clone(2) via the glibc wrapper function.
 
-I had to apply the patch by hand due to line wrapping.  Could you please
-check your email-agent settings?  This simple patch was no problem to
-hand apply, but for a larger patch this process would be both tedious
-and error prone.
-
-							Thanx, Paul
-
-> diff --git a/kernel/sched_fair.c b/kernel/sched_fair.c
-> index 217e4a9..50ec9ea 100644
-> --- a/kernel/sched_fair.c
-> +++ b/kernel/sched_fair.c
-> @@ -1241,6 +1241,7 @@ static int wake_affine(struct sched_domain *sd,
-> struct task_struct *p, int sync)
->  	 * effect of the currently running task from the load
->  	 * of the current CPU:
->  	 */
-> +	rcu_read_lock();
->  	if (sync) {
->  		tg = task_group(current);
->  		weight = current->se.load.weight;
-> @@ -1250,6 +1251,7 @@ static int wake_affine(struct sched_domain *sd,
-> struct task_struct *p, int sync)
->  	}
 > 
->  	tg = task_group(p);
-> +	rcu_read_unlock();
->  	weight = p->se.load.weight;
-> 
->  	imbalance = 100 + (sd->imbalance_pct - 100) / 2;
-> 
-> ---
-> 
-> On Wed, Apr 21, 2010 at 02:35:43PM -0700, Paul E. McKenney wrote:
->     On Tue, Apr 20, 2010 at 11:38:28AM -0400, Miles Lane wrote:
->         Excellent. Here are the results on my machine. .config appended.
->     First, thank you very much for testing this, Miles!
-> 
-> And as Tetsuo Handa pointed out privately, my patch was way broken.
-> 
-> Here is an updated version.
-> 
-> Thanx, Paul
-> 
-> commit b15e561ed91b7a366c3cc635026f3b9ce6483070
-> Author: Paul E. McKenney <paulmck@xxxxxxxxxxxxxxxxxx>
-> Date: Wed Apr 21 14:04:56 2010 -0700
-> 
-> sched: protect __sched_setscheduler() access to cgroups
-> 
-> A given task's cgroups structures must remain while that task is running
-> due to reference counting, so this is presumably a false positive.
-> Updated to reflect feedback from Tetsuo Handa.
-> 
-> Signed-off-by: Paul E. McKenney <paulmck@xxxxxxxxxxxxxxxxxx>
-> 
-> diff --git a/kernel/sched.c b/kernel/sched.c
-> index 14c44ec..f425a2b 100644
-> --- a/kernel/sched.c
-> +++ b/kernel/sched.c
-> @@ -4575,9 +4575,13 @@ recheck:
-> * Do not allow realtime tasks into groups that have no runtime
-> * assigned.
-> */
-> + rcu_read_lock();
-> if (rt_bandwidth_enabled() && rt_policy(policy) &&
-> - task_group(p)->rt_bandwidth.rt_runtime == 0)
-> + task_group(p)->rt_bandwidth.rt_runtime == 0) {
-> + rcu_read_unlock();
-> return -EPERM;
-> + }
-> + rcu_read_unlock();
-> #endif
-> 
-> retval = security_task_setscheduler(p, policy, param);
 > -- 
-> Daniel J Blueman
+> Nick Bowler, Elliptic Technologies (http://www.elliptictech.com/)
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+
+-- 
+Michal Hocko
+L3 team 
+SUSE LINUX s.r.o.
+Lihovarska 1060/12
+190 00 Praha 9    
+Czech Republic
