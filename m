@@ -1,198 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758120Ab0FBMrV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jun 2010 08:47:21 -0400
-Received: from mailout3.w1.samsung.com ([210.118.77.13]:57176 "EHLO
-	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757226Ab0FBMo5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jun 2010 08:44:57 -0400
-MIME-version: 1.0
-Content-transfer-encoding: 8BIT
-Content-type: TEXT/PLAIN; CHARSET=EUC-KR
-Date: Wed, 02 Jun 2010 14:45:21 +0200
-From: Michal Nazarewicz <m.nazarewicz@samsung.com>
-Subject: [PATCHv3 00/11] USB improvements and cleanpus, g_multi install mode
-To: linux-usb@vger.kernel.org, linux-usb@vger.kernel.org
-Cc: David Brownell <dbrownell@users.sourceforge.net>,
-       Kyungmin Park <kyungmin.park@samsung.com>,
-       Marek Szyprowski <m.szyprowski@samsung.com>,
-       linux-kernel@vger.kernel.org
-Message-id: <cover.1275481997.git.mina86@mina86.com>
-X-Mailer: git-send-email 1.7.1
+	id S1758053Ab0FBMux (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jun 2010 08:50:53 -0400
+Received: from 8bytes.org ([88.198.83.132]:34898 "EHLO 8bytes.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753654Ab0FBMuv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Jun 2010 08:50:51 -0400
+Date: Wed, 2 Jun 2010 14:50:50 +0200
+From: Joerg Roedel <joro@8bytes.org>
+To: Avi Kivity <avi@redhat.com>
+Cc: "Michael S. Tsirkin" <mst@redhat.com>, Tom Lyon <pugs@cisco.com>,
+       linux-kernel@vger.kernel.org, kvm@vger.kernel.org, chrisw@sous-sol.org,
+       hjk@linutronix.de, gregkh@suse.de, aafabbri@cisco.com,
+       scofeldm@cisco.com
+Subject: Re: [PATCH] VFIO driver: Non-privileged user level PCI drivers
+Message-ID: <20100602125049.GB11162@8bytes.org>
+References: <20100602094201.GC964@8bytes.org> <20100602095312.GA25335@redhat.com> <20100602101940.GG964@8bytes.org> <20100602102144.GD29023@redhat.com> <20100602103516.GI964@8bytes.org> <20100602103828.GF29023@redhat.com> <20100602111224.GA11033@8bytes.org> <20100602112100.GA29697@redhat.com> <20100602121927.GA11162@8bytes.org> <4C064DA7.6060504@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4C064DA7.6060504@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello again,
+On Wed, Jun 02, 2010 at 03:25:11PM +0300, Avi Kivity wrote:
+> On 06/02/2010 03:19 PM, Joerg Roedel wrote:
+>>
+>>> Yes.  so you do:
+>>> iommu = open
+>>> ioctl(dev1, BIND, iommu)
+>>> ioctl(dev2, BIND, iommu)
+>>> ioctl(dev3, BIND, iommu)
+>>> ioctl(dev4, BIND, iommu)
+>>>
+>>> No need to add a SHARE ioctl.
+>>>      
+>> In my proposal this looks like:
+>>
+>>
+>> dev1 = open();
+>> ioctl(dev2, SHARE, dev1);
+>> ioctl(dev3, SHARE, dev1);
+>> ioctl(dev4, SHARE, dev1);
+>>
+>> So we actually save an ioctl.
+>>    
+>
+> The problem with this is that it is assymetric, dev1 is treated  
+> differently from dev[234].  It's an unintuitive API.
 
-It's me again with a bunch of patches but this time I bring some new
-functionality!  Install mode!  If you are interested only in this jump
-near the end of the mail.
+Its by far more unintuitive that a process needs to explicitly bind a
+device to an iommu domain before it can do anything with it. If its
+required anyway the binding can happen implicitly. We could allow to do
+a nop 'ioctl(dev1, SHARE, dev1)' to remove the asymmetry.
 
+Note that this way of handling userspace iommu mappings is also a lot
+simpler for most use-cases outside of KVM. If a developer wants to write
+a userspace driver all it needs to do is:
 
-The first 7 patches are what I've posted previously.  I'm resending it
-again since those are required for later patches plus there were some
-minor fixes.  The patches are:
+dev = open();
+ioctl(dev, MAP, ...);
+/* use device with mappings */
+close(dev);
 
-  USB: gadget: g_mass_storage: static data instead of dynamic
-    allocation
+Which is much easier than the need to create a domain explicitly.
 
-    A micro optimisation preventing a kmalloc call() which would
-    otherwise be always called at the very beginning for the same area
-    size.
+	Joerg
 
-    This was submitted previously but Greg did not included it in his
-    quilt tree (unless I overlooked something) so I'll posting it
-    again for completeness.  Sorry if that creates confusion.
-
-    In my opinion this is worth including as it simplifies the code
-    a bit and removes the call to kmalloc/kfree (hidden in
-    fsg_common_init) which in my opinion is a good thing as well.
-
-  USB: gadget: f_mass_storage: fsg_add() renamed to fsg_bind_config()
-  USB: gadget: f_fs: functionfs_add() renamed to
-    functionfs_bind_config()
-
-    All other USB composite functions use foo_bind_config() to add
-    function to USB configuration so changed the names for mass
-    storage and FunctionFS as well.
-
-    The inconstancy apparent in multifunction gadgets stroke me for
-    quite some time now.  I was always reluctant to submit patch
-    thinking that it would be just stupid name change but finally
-    couldn't stand it. ;)
-
-    In case of mass storage the old (fsg_add()) function is still
-    available but marked deprecated.  In case of FFS the old
-    (functionfs_add()) function has been removed.
-
-  USB: gadget: composite: usb_string_ids_*() functions added
-  USB: gadget: f_fs: use usb_string_ids_n()
-
-    usb_string_ids_n() and usb_string_ids_tab() functions added for batch
-    sting IDs requests.
-
-    This simplifies the code where one would call usb_string_id()
-    several times and each time has to check for error codes.  With
-    usb_string_ids_n() one can get a whole bunch of IDs with one call
-    and with usb_string_ids_tab() fill an array full of usb_string
-    structures.
-
-  USB: gadget: g_multi: code clean up and refactoring
-  USB: gadget: g_multi: added documentation and INF files
-
-    g_multi clean up, fixes, etc.  Also a bit of documentation for
-    g_multi and an INF file tested with Windows XP SP3.  Hopefully,
-    someone will find it useful.
-
-
-Then, there is this patch David didn't seem impressed with:
-
-  USB: gadget: g_multi: more configurable
-
-    Adds a Kconfig option for each function provided by the g_multi.
-    This may look like making g_multi complex but I see it more as
-    creating an gadget that can be used to test various functionality
-    as well as show that adding new functions is not so hard even in
-    a complex gadget since the code adds a clear separation of each
-    function so that one may easily see which parts are for each
-    function.
-
-
-And, finally 3 new patches with the advertised install mode
-functionality:
-
-  USB: gadget: composite: addad disconnect callback
-
-    Adds an disconnect callback to the composite framework which is
-    called whenever composite receives disconnect from the hardware
-    driver.
-
-  USB: gadget: f_mass_storage: added eject callback
-
-    Adds a pre- and post-eject callbacks.  The first may prevent
-    eject from really happen even though no error is reported to the
-    host so host things it succeeded.  The second is called after the
-    file is closed so one may use it for some funky stuff which is
-    otherwise impossible while mass storage function holds the file or
-    mounting another file.
-
-  USB: gadget: g_multi: Install Mode added
-
-    This adds the install mode to the g_multi.  Not to repeat myself,
-    quote from documentation:
-
-      * Install mode
-
-      The install mode makes the gadget appear as a plain mass storage
-      device the first time it is connected (and after each
-      disconnect).  This lets one develop an "autorun" CD-ROM image
-      with drivers and put it as the first logical unit.
-
-      ** Workings of the install mode
-
-      As you may know, mass storage gadget may provide several logical
-      units and its easier to think of them as separate drives.  When
-      install mode is enabled, g_multi forces the first logical unit
-      to be a read-only CD-ROM.  When install mode is enabled but mass
-      storage itself is not then exactly one logical unit is set.
-
-      When an eject request is made on that logical unit, the file is
-      not really closed but the gadget switches it's mode to the full
-      flagged gadget with all the other functions.  If mass storage is
-      among them, the firs logical unit will be the CD-ROM image with
-      drivers (which may be seen as a bad thing).
-
-      When gadget is disconnected and connected afterwards it will
-      work again in install mode.  Some heuristics are used here -- if
-      disconnection (or suspend) happens no longer then 10 seconds
-      after last eject on the first logical unit then on next
-      enumeration gadget will claim to be full flagged otherwise it'll
-      stick to install mode.
-
-      ** Interoperability with host
-
-      As said, the idea behind install mode is that hosts that require
-      drivers will be able to get them without the need for additional
-      CD-ROM or another medium provided with the device.
-
-      CD-ROM image should provide an "autorun" functionality witch
-      will install drivers and eject the emulated CD-ROM to switch
-      gadget into the other mode which will be handled by newly
-      installed drivers.  If drivers are installed already, they
-      should "catch" the install mode device by product and vendor IDs
-      and issue an eject.
-
-      This mode is not very Linux-friendly though since Linux and
-      Linux based systems have no notion of autorun (which from
-      security point of view is a good thing) and there's no way of
-      adding some file on the image which will make gadget eject the
-      device.
-
-      Fortunately, there's USB_ModeSwitch and/or udev which should
-      handle it just fine.  A single rule need to be added and
-      everything should work fine.
-
- Documentation/usb/gadget_multi.txt        |  221 +++++++++
- Documentation/usb/gadget_multi_rndis.inf  |  200 ++++++++
- Documentation/usb/gadget_multi_serial.inf |   44 ++
- drivers/usb/gadget/Kconfig                |   88 +++-
- drivers/usb/gadget/composite.c            |   73 +++-
- drivers/usb/gadget/f_fs.c                 |   36 +-
- drivers/usb/gadget/f_mass_storage.c       |  122 +++--
- drivers/usb/gadget/g_ffs.c                |    2 +-
- drivers/usb/gadget/mass_storage.c         |   17 +-
- drivers/usb/gadget/multi.c                |  744 ++++++++++++++++++++++-------
- include/linux/usb/composite.h             |    6 +
- include/linux/usb/functionfs.h            |    6 +-
- 12 files changed, 1278 insertions(+), 281 deletions(-)
- create mode 100644 Documentation/usb/gadget_multi.txt
- create mode 100644 Documentation/usb/gadget_multi_rndis.inf
- create mode 100644 Documentation/usb/gadget_multi_serial.inf
-
---
-Best regards,                                        _     _
-| Humble Liege of Serenely Enlightened Majesty of  o' \,=./ `o
-| Computer Science,  Michał "mina86" Nazarewicz       (o o)
-+----[mina86*mina86.com]---[mina86*jabber.org]----ooO--(_)--Ooo--
