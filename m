@@ -1,138 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933305Ab0FBXGX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jun 2010 19:06:23 -0400
-Received: from ist.d-labs.de ([213.239.218.44]:40870 "EHLO mx01.d-labs.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933172Ab0FBXGV convert rfc822-to-8bit (ORCPT
+	id S1758730Ab0FBXNi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jun 2010 19:13:38 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:44321 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758171Ab0FBXNh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jun 2010 19:06:21 -0400
-Date: Thu, 3 Jun 2010 01:06:07 +0200
-From: Florian Mickler <florian@mickler.org>
-To: James Bottomley <James.Bottomley@suse.de>
-Cc: Arve =?ISO-8859-15?Q?Hj=F8nnev=E5g?= <arve@android.com>,
-       Neil Brown <neilb@suse.de>, tytso@mit.edu,
-       Peter Zijlstra <peterz@infradead.org>,
-       LKML <linux-kernel@vger.kernel.org>,
-       Alan Cox <alan@lxorguk.ukuu.org.uk>, mark.gross@intel.com,
-       Thomas Gleixner <tglx@linutronix.de>,
-       Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
-       Linux PM <linux-pm@lists.linux-foundation.org>, felipe.balbi@nokia.com
-Subject: Re: [linux-pm] [PATCH 0/8] Suspend block api (version 8)
-Message-ID: <20100603010607.5baf82a6@schatten.dmk.lab>
-In-Reply-To: <1275511271.2799.516.camel@mulgrave.site>
-References: <20100527232357.6d14fdb2@lxorguk.ukuu.org.uk>
-	<20100601135102.GA8098@srcf.ucam.org>
-	<1275426085.21962.967.camel@mulgrave.site>
-	<201006020024.14220.rjw@sisk.pl>
-	<1275431816.21962.1108.camel@mulgrave.site>
-	<AANLkTikObnAZbyOxeYAhXcEbimO3XTTO-HlC9CD_HH6t@mail.gmail.com>
-	<1275451342.21962.1777.camel@mulgrave.site>
-	<AANLkTilRcFZyYa-0HlaM-6IEZSyar3S9S_cCWSFax2Zo@mail.gmail.com>
-	<1275491111.2799.110.camel@mulgrave.site>
-	<20100602214748.7742e3ae@schatten.dmk.lab>
-	<1275511271.2799.516.camel@mulgrave.site>
-X-Mailer: Claws Mail 3.7.5 (GTK+ 2.18.9; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: 8BIT
+	Wed, 2 Jun 2010 19:13:37 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=JHmdTgGPxGqvWTpytcSYfOXEzkFdzak3d+0DIx8Lc3IdACKwjMS0vbtwqywbLmp6mp
+         42BKD+wnZWoIYbC8mtbRTJzW1YbPc8kjBMEV217fvW2ZHOk2hCNWgm0dZ099fD82L1yu
+         MnHHju81MBc61JiEbz76u0vtCgaxjXA5qR8mY=
+Message-ID: <4C06E59E.40508@gmail.com>
+Date: Wed, 02 Jun 2010 17:13:34 -0600
+From: Robert Hancock <hancockrwd@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-3.fc13 Thunderbird/3.0.4
+MIME-Version: 1.0
+To: Bert dd <bert.ddecker@gmail.com>
+CC: linux-kernel@vger.kernel.org
+Subject: Re: Is there a way to change irq numbers of pcie cards ?
+References: <AANLkTinfWMJ94pPxjRAx-vgvcqSwE9Hw3kHqEDLazhZ2@mail.gmail.com>
+In-Reply-To: <AANLkTinfWMJ94pPxjRAx-vgvcqSwE9Hw3kHqEDLazhZ2@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 02 Jun 2010 15:41:11 -0500
-James Bottomley <James.Bottomley@suse.de> wrote:
+On 06/02/2010 06:08 AM, Bert dd wrote:
+> Hi,
+> Is there a way to change irq numbers of pcie cards ?
+>
+> I have a supermicro machine with 2 raid cards (lsi 9260-8i and lsi 9260-8e) and
+> one nvidia GTX480 graphics card.
+> The problem is that all these pcie cards are assigned the same irq number,
+> and thus all the interrupts are routed to the same cpu which can not
+> handle this.
+> If I replace the nvidia GTX480 with an older graphics card(too old for
+> our purposes (GTX295)), the graphics card gets a different irq number
+> than the raid cards, the interrups of the graphics card are handled by
+> a different cpu than those of the raid cards, and the read/write speed
+> of the raid increases.
+> I am reading/writing at 2.5 GB/s to the raid and I am uploading
+> textures at 0.5 GB/s to the graphics hardware.
+> Is there a way to change the irq numbers of the pcie cards ?
+> I am using IOAPIC for interrupt routing.
+> I am using ubuntu - kernel version 2.6.31-14-generic.
 
-> On Wed, 2010-06-02 at 21:47 +0200, Florian Mickler wrote:
-> > On Wed, 02 Jun 2010 10:05:11 -0500
-> > James Bottomley <James.Bottomley@suse.de> wrote:
-> > 
-> > > On Tue, 2010-06-01 at 21:41 -0700, Arve Hjønnevåg wrote:
-> > > > No, they have to be two separate constraints, otherwise a constraint
-> > > > to block suspend would override a constraint to block a low power idle
-> > > > mode or the other way around.
-> > > 
-> > > Depends.  If you block the system from going into low power idle, does
-> > > that mean you still want it to be fully suspended?
-> > > 
-> > > If yes, then we do have independent constraints.  If not, they have a
-> > > hierarchy:
-> > > 
-> > >       * Fully Interactive (no low power idle or suspend)
-> > >       * Partially Interactive (may go into low power idle but not
-> > >         suspend)
-> > >       * None (may go into low power idle or suspend)
-> > > 
-> > > Which is expressable as a ternary constraint.
-> > > 
-> > > James
-> > > 
-> > 
-> > But unblocking suspend at the moment is independent to getting idle.
-> > If you have the requirement to stay in the highest-idle level (i.e.
-> > best latency you can get) that does not (currently) mean, that you can
-> > not suspend.
-> 
-> I don't understand that as a reason.  If we looks at this a qos
-> constraints, you're saying that the system may not drop into certain low
-> power states because it might turn something off that's currently being
-> used by a driver or a process.  Suspend is certainly the lowest state of
-> that because it turns everything off, why would it be legal to drop into
-> that?
-> 
-> I also couldn't find this notion of separation of idleness power from
-> suspend blocking in the original suspend block patch set ... if you can
-> either tell me where it is, or give me an example of the separated use
-> cases, I'd understand better.
-> 
-> > To preserve that explicit fall-through while still having working
-> > run-time-powermanagement I think the qos-constraints need to be
-> > separated. 
-> 
-> OK, as above, why?  or better yet, just give an example.
+In general there's no way to change what interrupts get allocated to 
+what slots, unless the BIOS has a setting somewhere to change it.
 
-Hm. Maybe it is me who doesn't understand. 
-
-With proposed patchset: 
-1. As soon as we unblock suspend we go down.  (i.e. suspending)
-2. While suspend is blocked, the idle-loop does it's things. (i.e.
-runtime power managment -> can give same power-result as suspend)
-
-possible cases:
-1: 
-   - qos-latency-constraints: 1ms,  [here: forbids anything other than
-     C1 idle state.]
-   - suspend is blocked
-
-2: - qos latency-constraints: as in 1
-   - suspend unblocked
-
-3: - qos latency-constraints: infinity, cpu in lowest power state.
-   - suspend is blocked
-
-4: - qos latency-constraints: infinity, cpu in lowest power state.
-   - suspend unblocked
-
-
-in case 2 and 4 we would suspend, regardeless of the qos-latency.
-
-in case 1 and 3 we would stay awake, regardeless of the qos-latency
-constraint.
-
-
-If only one constraint, then case 2 (or 3) wouldn't be possible. But it
-is possible now. 
-
-A possible use case as an example?
-(hmm... i'm trying my imagination hard now): 
-	Your sound needs low latency, so that could be a cause for the
-	qos-latency constraint. 
-
-	And unblocking suspend could nonetheless happen:
-	For example... you have an firefox open and don't want to
-	prevent suspend for that case when the display is turned off
-
-
-Cheers,
-Flo
-
+If you can get MSI enabled for some of those cards, though, that should 
+prevent them from sharing interrupts. What driver are you using for the 
+nvidia cards? You can turn on MSI on the binary nvidia driver with the 
+NVreg_EnableMSI=1 module parameter..
