@@ -1,77 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933139Ab0FBUTt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jun 2010 16:19:49 -0400
-Received: from xenotime.net ([72.52.115.56]:54582 "HELO xenotime.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S932937Ab0FBUTr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jun 2010 16:19:47 -0400
-Date: Wed, 2 Jun 2010 13:19:38 -0700
-From: Randy Dunlap <rdunlap@xenotime.net>
-To: Greg KH <gregkh@suse.de>
-Cc: Joe Perches <joe@perches.com>, devel <devel@driverdev.osuosl.org>,
-       linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH] MAINTAINERS: Add staging/b.a.t.m.a.n
-Message-Id: <20100602131938.cda13ed7.rdunlap@xenotime.net>
-In-Reply-To: <20100602201717.GA8803@suse.de>
-References: <1275498615.23599.12.camel@Joe-Laptop.home>
-	<20100602185323.GA6600@suse.de>
-	<1275509319.23599.40.camel@Joe-Laptop.home>
-	<20100602201717.GA8803@suse.de>
-Organization: YPO4
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1758570Ab0FBUW0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jun 2010 16:22:26 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:33983 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758067Ab0FBUWZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Jun 2010 16:22:25 -0400
+Date: Wed, 2 Jun 2010 22:20:49 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Paul Menage <menage@google.com>
+Cc: Ben Blum <bblum@andrew.cmu.edu>, linux-kernel@vger.kernel.org,
+       containers@lists.linux-foundation.org, akpm@linux-foundation.org,
+       ebiederm@xmission.com, lizf@cn.fujitsu.com, matthltc@us.ibm.com
+Subject: Re: [RFC] [PATCH 2/2] cgroups: make procs file writable
+Message-ID: <20100602202048.GB28663@redhat.com>
+References: <20100530013002.GA762@ghc01.ghc.andrew.cmu.edu> <20100530013303.GC762@ghc01.ghc.andrew.cmu.edu> <20100531175242.GA14691@redhat.com> <20100531180446.GA16249@redhat.com> <AANLkTimcrX0TjzDMNJdubR92pAO4IPATbVpyvvVt0qIV@mail.gmail.com> <20100602140659.GA5324@redhat.com> <AANLkTin-T6ij3xf0ceGoCamwcoayxyf0GdAKY6yXDMVl@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <AANLkTin-T6ij3xf0ceGoCamwcoayxyf0GdAKY6yXDMVl@mail.gmail.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2 Jun 2010 13:17:17 -0700 Greg KH wrote:
+On 06/02, Paul Menage wrote:
+>
+> On Wed, Jun 2, 2010 at 7:06 AM, Oleg Nesterov <oleg@redhat.com> wrote:
+> >
+> > I am not sure. It doesn't hurt when we try to move a thread. But if
+> > we want to move the whole thread group, we should proceed even if the
+> > group leader has already exited and thus has PF_EXITING bit set.
+>
+> Hmm, maybe. I could see this being argued both ways. Can the process
+> hang around indefinitely with the leader as a zombie and the other
+> threads still running?
 
-> On Wed, Jun 02, 2010 at 01:08:39PM -0700, Joe Perches wrote:
-> > On Wed, 2010-06-02 at 11:53 -0700, Greg KH wrote:
-> > > The TODO file in this directory clearly states who to copy on patches to
-> > > these files.
-> > 
-> > Does anyone look at those? ;)
-> 
-> Yes, they should.
-> 
-> Heck, get_maintainer.pl would have given you the correct people to cc:
-> as well, why not use that?
-> 
-> > Signed-off-by: Joe Perches <joe@perches.com>
-> > ---
-> >  MAINTAINERS |    8 ++++++++
-> >  1 files changed, 8 insertions(+), 0 deletions(-)
-> > 
-> > diff --git a/MAINTAINERS b/MAINTAINERS
-> > index 2652ebc..e25e15a 100644
-> > --- a/MAINTAINERS
-> > +++ b/MAINTAINERS
-> > @@ -5436,6 +5436,14 @@ L:	devel@driverdev.osuosl.org
-> >  S:	Maintained
-> >  F:	drivers/staging/
-> >  
-> > +STAGING B.A.T.M.A.N.
-> > +M:	Marek Lindner <lindner_marek@yahoo.de>
-> > +M:	Simon Wunderlich <siwu@hrz.tu-chemnitz.de>
-> > +M:	Andrew Lunn <andrew@lunn.ch>
-> > +L:	b.a.t.m.a.n@lists.open-mesh.net
-> > +S:	Maintained (one day soon)
-> > +F:	drivers/staging/batman-adv/
-> 
-> Care to at least cc: the people who you are adding to the file?
-> 
-> To not do so is a bit rude, don't you think so?
-> 
-> I'm not going to take this, sorry.
+Yes sure. The main thread can exit via sys_exit(), this doesn't affect
+the thread group. Of course, I am not saying this is common practice,
+perhaps no "important" app does this.
 
+> It wouldn't be that hard to make it possible to avoid relying on
+> PF_EXITING as the check - instead we'd have an exiting_css_set object
+> that have the same pointer set as init_css_set, but would be
+> distinguishable from it as a task->cgroups pointer by virtue of being
+> a different object. Then cgroup_exit() can reassign tasks to point to
+> exiting_css_set rather than init_css_set, and the various checks that
+> are currently made for (task->flags & PF_EXITING) could check for
+> (task->cgroups == exiting_css_set) instead. This would allow task
+> movement further into the exit process.
 
-Sure he should have cc-ed them, but it's still a valid patch and should
-be applied.
+It is too late for me to even try to understand the above ;)
 
----
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+But I still can't understand why we can't just remove it. Both
+cgroup_attach_task() and cgroup_attach_proc() should handle the
+possible races correctly anyway.
+
+Oleg.
+
