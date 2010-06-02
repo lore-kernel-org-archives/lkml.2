@@ -1,76 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932921Ab0FBUTb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jun 2010 16:19:31 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:36962 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758067Ab0FBUTa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jun 2010 16:19:30 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=i5MhmLmcO5JaLXqbAZZalUDKtK2NZFfRjFOfpHGeO+Le6gtRkQHvsCpxuaVSv+XaXu
-         9a8815+nwcPnbgsYPctpI53siiCVx7AHqe8u2CKaY/rqtK8lAf3qAS90V2SFf8bYw2k8
-         TMnKUPr3ztnrRXJrVuohdjw7bXG/5e2LhQHrI=
-Subject: Re: strange problem with ricoh-mmc
-From: Maxim Levitsky <maximlevitsky@gmail.com>
-To: Philip Langdale <philipl@overt.org>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>
-In-Reply-To: <04b98a3f757587ee9b72f2e28e257b50@localhost>
-References: <1275505018.4215.10.camel@maxim-laptop>
-	 <04b98a3f757587ee9b72f2e28e257b50@localhost>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 02 Jun 2010 23:19:25 +0300
-Message-ID: <1275509965.6277.5.camel@maxim-laptop>
+	id S933139Ab0FBUTt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jun 2010 16:19:49 -0400
+Received: from xenotime.net ([72.52.115.56]:54582 "HELO xenotime.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S932937Ab0FBUTr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Jun 2010 16:19:47 -0400
+Date: Wed, 2 Jun 2010 13:19:38 -0700
+From: Randy Dunlap <rdunlap@xenotime.net>
+To: Greg KH <gregkh@suse.de>
+Cc: Joe Perches <joe@perches.com>, devel <devel@driverdev.osuosl.org>,
+       linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH] MAINTAINERS: Add staging/b.a.t.m.a.n
+Message-Id: <20100602131938.cda13ed7.rdunlap@xenotime.net>
+In-Reply-To: <20100602201717.GA8803@suse.de>
+References: <1275498615.23599.12.camel@Joe-Laptop.home>
+	<20100602185323.GA6600@suse.de>
+	<1275509319.23599.40.camel@Joe-Laptop.home>
+	<20100602201717.GA8803@suse.de>
+Organization: YPO4
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-06-02 at 15:54 -0400, Philip Langdale wrote: 
-> On Wed, 02 Jun 2010 21:56:58 +0300, Maxim Levitsky
-> <maximlevitsky@gmail.com> wrote:
-> > Hi,
+On Wed, 2 Jun 2010 13:17:17 -0700 Greg KH wrote:
+
+> On Wed, Jun 02, 2010 at 01:08:39PM -0700, Joe Perches wrote:
+> > On Wed, 2010-06-02 at 11:53 -0700, Greg KH wrote:
+> > > The TODO file in this directory clearly states who to copy on patches to
+> > > these files.
 > > 
-> > Maybe this is my fault, don't know, but I found and now confident that
-> > new and possible old version of ricoh-mmc causes troubles after
-> > suspend/resume.
-> > 
-> > Namely there are two problems.
-> > One is that sometimes card detection on xD controller stops working.
-> > That is it doesn't respond to insert/remove events, and suspend to ram
-> > just updates that once. Granted I wrote this driver, but it appears to
-> > work without richoh-mmc.
-> > 
-> > Another problem that is unrelated to xD is that sometimes sdhci
-> > conroller issues an interrupt storm, and does so until its driver is
-> > reloaded. At that point it refuses to load with missing voltage levels.
-> > 
-> > I never seen these without ricoh-mmc pci quirk.
-> > 
-> > Both problems are semi-rare.
-> > 
-> > So just one question, did you see these problems?
-> > Do you have a clue on how to proceed?
+> > Does anyone look at those? ;)
 > 
-> I have never seen these problems, but I could imagine that perhaps the
-> PCI register pokes have side-effects or there's actually more that needs
-> to be done than what we currently have. No one has access to the relevant
-> datasheets so the magic incantations are second hand. More worryingly, it
-> may not be a well supported configuration - while the other controllers
-> might be disabled based on physical slot design, SD and MMC are the same,
-> so I doubt Ricoh or OEMs have ever seriously considered having only one
-> on. I've not heard of the sdhci problem before - maybe your hardware is
-> dodgy? :-)
+> Yes, they should.
+> 
+> Heck, get_maintainer.pl would have given you the correct people to cc:
+> as well, why not use that?
+> 
+> > Signed-off-by: Joe Perches <joe@perches.com>
+> > ---
+> >  MAINTAINERS |    8 ++++++++
+> >  1 files changed, 8 insertions(+), 0 deletions(-)
+> > 
+> > diff --git a/MAINTAINERS b/MAINTAINERS
+> > index 2652ebc..e25e15a 100644
+> > --- a/MAINTAINERS
+> > +++ b/MAINTAINERS
+> > @@ -5436,6 +5436,14 @@ L:	devel@driverdev.osuosl.org
+> >  S:	Maintained
+> >  F:	drivers/staging/
+> >  
+> > +STAGING B.A.T.M.A.N.
+> > +M:	Marek Lindner <lindner_marek@yahoo.de>
+> > +M:	Simon Wunderlich <siwu@hrz.tu-chemnitz.de>
+> > +M:	Andrew Lunn <andrew@lunn.ch>
+> > +L:	b.a.t.m.a.n@lists.open-mesh.net
+> > +S:	Maintained (one day soon)
+> > +F:	drivers/staging/batman-adv/
+> 
+> Care to at least cc: the people who you are adding to the file?
+> 
+> To not do so is a bit rude, don't you think so?
+> 
+> I'm not going to take this, sorry.
 
 
-Thanks.
-I some future I maybe consider reverse engineering  the MMC controller.
+Sure he should have cc-ed them, but it's still a valid patch and should
+be applied.
 
-Best regards,
-Maxim Levitsky
-
+---
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
