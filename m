@@ -1,53 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755138Ab0FBMoj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jun 2010 08:44:39 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:59475 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751759Ab0FBMoh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jun 2010 08:44:37 -0400
-Message-ID: <4C065232.7000501@suse.cz>
-Date: Wed, 02 Jun 2010 14:44:34 +0200
-From: Michal Marek <mmarek@suse.cz>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100317 SUSE/3.0.4-1.18 Thunderbird/3.0.4
-MIME-Version: 1.0
-To: Aristeu Rozanski <aris@redhat.com>
-Cc: Randy Dunlap <randy.dunlap@oracle.com>, linux-kbuild@vger.kernel.org,
-       linux-kernel@vger.kernel.org, davej@redhat.com, kyle@redhat.com,
-       vgoyal@redhat.com, arjan@linux.intel.com
-Subject: Re: [PATCH] kconfig: introduce nonint_oldconfig and	loose_nonint_oldconfig
- (v3)
-References: <20100413194747.GX31193@redhat.com> <20100413130031.d4dec19b.randy.dunlap@oracle.com> <20100413201759.GY31193@redhat.com> <4BC4D310.6060705@oracle.com> <20100413210352.GA31193@redhat.com> <4BC5C190.3020501@suse.cz> <20100506164834.GL20778@redhat.com>
-In-Reply-To: <20100506164834.GL20778@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1757931Ab0FBMpA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jun 2010 08:45:00 -0400
+Received: from mailout3.w1.samsung.com ([210.118.77.13]:57176 "EHLO
+	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756264Ab0FBMo4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Jun 2010 08:44:56 -0400
+MIME-version: 1.0
+Content-transfer-encoding: 7BIT
+Content-type: TEXT/PLAIN
+Date: Wed, 02 Jun 2010 14:45:22 +0200
+From: Michal Nazarewicz <m.nazarewicz@samsung.com>
+Subject: [PATCHv3 01/11] USB: gadget: g_mass_storage: static data instead of
+ dynamic allocation
+In-reply-to: <cover.1275481997.git.mina86@mina86.com>
+To: linux-usb@vger.kernel.org
+Cc: David Brownell <dbrownell@users.sourceforge.net>,
+       Kyungmin Park <kyungmin.park@samsung.com>,
+       Marek Szyprowski <m.szyprowski@samsung.com>,
+       linux-kernel@vger.kernel.org
+Message-id: <5e151207bced1e418bcfed136a871d2da47e417e.1275481997.git.mina86@mina86.com>
+X-Mailer: git-send-email 1.7.1
+References: <cover.1275481997.git.mina86@mina86.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 6.5.2010 18:48, Aristeu Rozanski wrote:
-> This patch has been around for a long time in Fedora and Red Hat Enterprise
-> Linux kernels and it may be useful for others. The nonint_oldconfig target
-> will fail and print the unset config options while loose_nonint_oldconfig will
-> simply let the config option unset. They're useful in distro kernel packages
-> where the config files are built using a combination of smaller config files.
-> 
-> Arjan van de Ven wrote the initial nonint_config and Roland McGrath added the
-> loose_nonint_oldconfig.
-> 
-> v2:
-> - when -B and -b are used, return "2" so the reason can be distinguished from
->   other errors
-> v3:
-> - help updated
-> - nonint_oldconfig won't update the config file if options are missing
-> 
-> Signed-off-by: Arjan van de Ven <arjan@redhat.com> [defunct email]
-> Whatevered-by: Kyle McMartin <kyle@redhat.com>
-> Acked-by: Arjan van de Ven <arjan@linux.intel.com>
-> Acked-by: Randy Dunlap <randy.dunlap@oracle.com>
-> Signed-off-by: Aristeu Rozanski <aris@redhat.com>
+This patch changes msg_do_config() function so that it uses
+a static object for a fsg_common structure instead of dynamically
+allocated.  This is a micro-optimisation.
 
-Sorry for the delay. Applied now.
+Signed-off-by: Michal Nazarewicz <m.nazarewicz@samsung.com>
+Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+---
+ drivers/usb/gadget/mass_storage.c |   13 +++++++------
+ 1 files changed, 7 insertions(+), 6 deletions(-)
 
-Michal
+diff --git a/drivers/usb/gadget/mass_storage.c b/drivers/usb/gadget/mass_storage.c
+index 705cc1f..a3349f2 100644
+--- a/drivers/usb/gadget/mass_storage.c
++++ b/drivers/usb/gadget/mass_storage.c
+@@ -143,7 +143,7 @@ static int msg_thread_exits(struct fsg_common *common)
+ 
+ static int __init msg_do_config(struct usb_configuration *c)
+ {
+-	struct fsg_common *common;
++	static struct fsg_common common, *retp;
+ 	struct fsg_config config;
+ 	int ret;
+ 
+@@ -154,12 +154,13 @@ static int __init msg_do_config(struct usb_configuration *c)
+ 
+ 	fsg_config_from_params(&config, &mod_data);
+ 	config.thread_exits = msg_thread_exits;
+-	common = fsg_common_init(0, c->cdev, &config);
+-	if (IS_ERR(common))
+-		return PTR_ERR(common);
+ 
+-	ret = fsg_add(c->cdev, c, common);
+-	fsg_common_put(common);
++	retp = fsg_common_init(&common, c->cdev, &config);
++	if (IS_ERR(retp))
++		return PTR_ERR(retp);
++
++	ret = fsg_add(c->cdev, c, &common);
++	fsg_common_put(&common);
+ 	return ret;
+ }
+ 
+-- 
+1.7.1
+
