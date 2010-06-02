@@ -1,146 +1,208 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933060Ab0FBT3k (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jun 2010 15:29:40 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:10947 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933012Ab0FBT32 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jun 2010 15:29:28 -0400
-Date: Wed, 2 Jun 2010 15:29:27 -0400
-From: Prarit Bhargava <prarit@redhat.com>
-To: linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org, mjg@redhat.com,
-       x86@kernel.org
-Cc: Prarit Bhargava <prarit@redhat.com>
-Message-Id: <20100602192418.2706.35192.sendpatchset@prarit.bos.redhat.com>
-Subject: [PATCH]: x86: use acpi flags for apic mapping
+	id S1758585Ab0FBThm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jun 2010 15:37:42 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:53344 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1758313Ab0FBThl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Jun 2010 15:37:41 -0400
+Date: Wed, 2 Jun 2010 12:36:57 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Lars-Peter Clausen <lars@metafoo.de>
+Cc: Ralf Baechle <ralf@linux-mips.org>, linux-mips@linux-mips.org,
+       linux-kernel@vger.kernel.org, linux-fbdev@vger.kernel.org
+Subject: Re: [RFC][PATCH 16/26] fbdev: Add JZ4740 framebuffer driver
+Message-Id: <20100602123657.e197990b.akpm@linux-foundation.org>
+In-Reply-To: <1275505832-17185-8-git-send-email-lars@metafoo.de>
+References: <1275505397-16758-1-git-send-email-lars@metafoo.de>
+	<1275505832-17185-8-git-send-email-lars@metafoo.de>
+X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ACPI FADT has entries to describe the apic mapping of a system.  Currently,
-these are ignored in the apic code.
+On Wed,  2 Jun 2010 21:10:32 +0200
+Lars-Peter Clausen <lars@metafoo.de> wrote:
 
-Introduce apic_is_acpi_clustered_box() and read the FADT to determine
-if a box is clustered or not.
+> This patch adds support for the LCD controller on JZ4740 SoCs.
+> 
+>
+> ...
+>
+> +struct jzfb_framedesc {
+> +	uint32_t next;
+> +	uint32_t addr;
+> +	uint32_t id;
+> +	uint32_t cmd;
+> +} __attribute__((packed));
 
-Signed-off-by: Prarit Bhargava <prarit@redhat.com>
+We have a little __packed helper.  
 
-diff --git a/arch/x86/include/asm/apic.h b/arch/x86/include/asm/apic.h
-index 1fa03e0..4518683 100644
---- a/arch/x86/include/asm/apic.h
-+++ b/arch/x86/include/asm/apic.h
-@@ -252,6 +252,14 @@ static inline int apic_is_clustered_box(void)
- }
- #endif
- 
-+enum apic_acpi_map_status {
-+	APIC_ACPI_BOTH,
-+	APIC_ACPI_CLUSTER,
-+	APIC_ACPI_PHYSICAL,
-+	APIC_ACPI_NONE
-+};
-+extern enum apic_acpi_map_status apic_is_acpi_clustered_box(void);
-+
- extern u8 setup_APIC_eilvt_mce(u8 vector, u8 msg_type, u8 mask);
- extern u8 setup_APIC_eilvt_ibs(u8 vector, u8 msg_type, u8 mask);
- 
-diff --git a/arch/x86/kernel/apic/apic.c b/arch/x86/kernel/apic/apic.c
-index e5a4a1e..6ca346a 100644
---- a/arch/x86/kernel/apic/apic.c
-+++ b/arch/x86/kernel/apic/apic.c
-@@ -2189,6 +2189,30 @@ static const __cpuinitconst struct dmi_system_id multi_dmi_table[] = {
- 	{}
- };
- 
-+#ifdef CONFIG_ACPI
-+enum apic_acpi_map_status apic_is_acpi_clustered_box(void)
-+{
-+	if (acpi_gbl_FADT.header.revision >= FADT2_REVISION_ID) {
-+		if (acpi_gbl_FADT.flags & ACPI_FADT_APIC_PHYSICAL &&
-+		    acpi_gbl_FADT.flags & ACPI_FADT_APIC_CLUSTER) {
-+			/*
-+			 * The rest of the code assumes physical flat
-+			 * in this case.
-+			 */
-+			return APIC_ACPI_BOTH;
-+		}
-+
-+		if (acpi_gbl_FADT.flags & ACPI_FADT_APIC_CLUSTER)
-+			return APIC_ACPI_CLUSTER;
-+
-+		if (acpi_gbl_FADT.flags & ACPI_FADT_APIC_PHYSICAL)
-+			return APIC_ACPI_PHYSICAL;
-+	}
-+
-+	return APIC_ACPI_NONE;
-+}
-+#endif
-+
- static void __cpuinit dmi_check_multi(void)
- {
- 	if (multi_checked)
-@@ -2208,6 +2232,20 @@ static void __cpuinit dmi_check_multi(void)
-  */
- __cpuinit int apic_is_clustered_box(void)
- {
-+#ifdef CONFIG_ACPI
-+	switch (apic_is_acpi_clustered_box()) {
-+		case APIC_ACPI_PHYSICAL:
-+		case APIC_ACPI_BOTH: /* assume physical flat in this case */
-+			return 0;
-+			break;
-+		case APIC_ACPI_CLUSTER:
-+			return 1;
-+			break;
-+		default:
-+			break;
-+	}
-+#endif
-+
- 	dmi_check_multi();
- 	if (multi)
- 		return 1;
-diff --git a/arch/x86/kernel/apic/apic_flat_64.c b/arch/x86/kernel/apic/apic_flat_64.c
-index 09d3b17..80e291a 100644
---- a/arch/x86/kernel/apic/apic_flat_64.c
-+++ b/arch/x86/kernel/apic/apic_flat_64.c
-@@ -231,14 +231,32 @@ static int physflat_acpi_madt_oem_check(char *oem_id, char *oem_table_id)
- {
- #ifdef CONFIG_ACPI
- 	/*
--	 * Quirk: some x86_64 machines can only use physical APIC mode
--	 * regardless of how many processors are present (x86_64 ES7000
--	 * is an example).
-+	 * Some x86_64 machines can only use clustered or physical APIC
-+	 * mode regardless of how many processors are present.
- 	 */
--	if (acpi_gbl_FADT.header.revision >= FADT2_REVISION_ID &&
--		(acpi_gbl_FADT.flags & ACPI_FADT_APIC_PHYSICAL)) {
--		printk(KERN_DEBUG "system APIC only can use physical flat");
--		return 1;
-+	switch (apic_is_acpi_clustered_box()) {
-+		case APIC_ACPI_BOTH:
-+			printk(KERN_WARNING FW_BUG "ACPI has set apic mode to "
-+			       "both clustered and physical flat.  Please "
-+			       "contact your firmware vendor for an update.\n");
-+			/*
-+			 * In this case assume physical flat as only a very
-+			 * limited number of systems use cluster
-+			 */
-+			printk(KERN_DEBUG "system APIC using physical flat\n");
-+			return 1;
-+			break;
-+		case APIC_ACPI_CLUSTER:
-+			printk(KERN_DEBUG "system APIC can only use cluster\n");
-+			return 0;
-+			break;
-+		case APIC_ACPI_PHYSICAL:
-+			printk(KERN_DEBUG "system APIC can only use physical"
-+			       " flat\n");
-+			return 1;
-+			break;
-+		default:
-+			break;
- 	}
- 
- 	if (!strncmp(oem_id, "IBM", 3) && !strncmp(oem_table_id, "EXA", 3)) {
+>
+> ...
+>
+> +static int jzfb_setcolreg(unsigned regno, unsigned red, unsigned green,
+> +			unsigned blue, unsigned transp, struct fb_info *fb)
+> +{
+> +	uint32_t color;
+> +
+> +	if (regno >= 16)
+> +		return -EINVAL;
+> +
+> +	color = jzfb_convert_color_to_hw(red, fb->var.red.length);
+> +	color |= jzfb_convert_color_to_hw(green, fb->var.green.length);
+> +	color |= jzfb_convert_color_to_hw(blue, fb->var.blue.length);
+> +	color |= jzfb_convert_color_to_hw(transp, fb->var.transp.length);
+> +
+> +	((uint32_t *)(fb->pseudo_palette))[regno] = color;
+
+The typecast apepars to be unneeded.  If it _was_ needed then this code
+would look rather fishy from an endianness POV.
+
+> +	return 0;
+> +}
+> +
+>
+> ...
+>
+> +static int __devinit jzfb_probe(struct platform_device *pdev)
+> +{
+> +	int ret;
+> +	struct jzfb *jzfb;
+> +	struct fb_info *fb;
+> +	struct jz4740_fb_platform_data *pdata = pdev->dev.platform_data;
+> +	struct resource *mem;
+> +
+> +	if (!pdata) {
+> +		dev_err(&pdev->dev, "Missing platform data\n");
+> +		return -ENOENT;
+> +	}
+> +
+> +	mem = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+> +	if (!mem) {
+> +		dev_err(&pdev->dev, "Failed to get register memory resource\n");
+> +		return -ENOENT;
+> +	}
+> +
+> +	mem = request_mem_region(mem->start, resource_size(mem), pdev->name);
+> +	if (!mem) {
+> +		dev_err(&pdev->dev, "Failed to request register memory region\n");
+> +		return -EBUSY;
+> +	}
+> +
+> +	fb = framebuffer_alloc(sizeof(struct jzfb), &pdev->dev);
+> +	if (!fb) {
+> +		dev_err(&pdev->dev, "Failed to allocate framebuffer device\n");
+> +		ret = -ENOMEM;
+> +		goto err_release_mem_region;
+> +	}
+> +
+> +	fb->fbops = &jzfb_ops;
+> +	fb->flags = FBINFO_DEFAULT;
+> +
+> +	jzfb = fb->par;
+> +	jzfb->pdev = pdev;
+> +	jzfb->pdata = pdata;
+> +	jzfb->mem = mem;
+> +
+> +	jzfb->ldclk = clk_get(&pdev->dev, "lcd");
+> +	if (IS_ERR(jzfb->ldclk)) {
+> +		ret = PTR_ERR(jzfb->ldclk);
+> +		dev_err(&pdev->dev, "Failed to get lcd clock: %d\n", ret);
+> +		goto err_framebuffer_release;
+> +	}
+> +
+> +	jzfb->lpclk = clk_get(&pdev->dev, "lcd_pclk");
+> +	if (IS_ERR(jzfb->lpclk)) {
+> +		ret = PTR_ERR(jzfb->lpclk);
+> +		dev_err(&pdev->dev, "Failed to get lcd pixel clock: %d\n", ret);
+> +		goto err_put_ldclk;
+> +	}
+> +
+> +	jzfb->base = ioremap(mem->start, resource_size(mem));
+> +
+> +	if (!jzfb->base) {
+> +		dev_err(&pdev->dev, "Failed to ioremap register memory region\n");
+> +		ret = -EBUSY;
+> +		goto err_put_lpclk;
+> +	}
+> +
+> +	platform_set_drvdata(pdev, jzfb);
+> +
+> +	fb_videomode_to_modelist(pdata->modes, pdata->num_modes,
+> +				 &fb->modelist);
+> +	fb->mode = pdata->modes;
+> +
+> +	fb_videomode_to_var(&fb->var, fb->mode);
+> +	fb->var.bits_per_pixel = pdata->bpp;
+> +	jzfb_check_var(&fb->var, fb);
+> +
+> +	ret = jzfb_alloc_devmem(jzfb);
+> +	if (ret) {
+> +		dev_err(&pdev->dev, "Failed to allocate video memory\n");
+> +		goto err_iounmap;
+> +	}
+> +
+> +	fb->fix = jzfb_fix;
+> +	fb->fix.line_length = fb->var.bits_per_pixel * fb->var.xres / 8;
+> +	fb->fix.mmio_start = mem->start;
+> +	fb->fix.mmio_len = resource_size(mem);
+> +	fb->fix.smem_start = jzfb->vidmem_phys;
+> +	fb->fix.smem_len =  fb->fix.line_length * fb->var.yres;
+> +	fb->screen_base = jzfb->vidmem;
+> +	fb->pseudo_palette = jzfb->pseudo_palette;
+> +
+> +	fb_alloc_cmap(&fb->cmap, 256, 0);
+> +
+> +	mutex_init(&jzfb->lock);
+
+I'd suggest initializing the mutex much earlier.  THings like
+jzfb_check_var() and jzfb_alloc_devmem() don't currently take that
+lock, but who knows what might happen in the future..
+
+> +	clk_enable(jzfb->ldclk);
+> +	jzfb->is_enabled = 1;
+> +
+> +	writel(jzfb->framedesc->next, jzfb->base + JZ_REG_LCD_DA0);
+> +	jzfb_set_par(fb);
+> +
+> +	jz_gpio_bulk_request(jz_lcd_ctrl_pins, jzfb_num_ctrl_pins(jzfb));
+> +	jz_gpio_bulk_request(jz_lcd_data_pins, jzfb_num_data_pins(jzfb));
+> +
+> +	ret = register_framebuffer(fb);
+> +	if (ret) {
+> +		dev_err(&pdev->dev, "Failed to register framebuffer: %d\n", ret);
+> +		goto err_free_devmem;
+> +	}
+> +
+> +	jzfb->fb = fb;
+> +
+> +	return 0;
+> +
+> +err_free_devmem:
+> +	jz_gpio_bulk_free(jz_lcd_ctrl_pins, jzfb_num_ctrl_pins(jzfb));
+> +	jz_gpio_bulk_free(jz_lcd_data_pins, jzfb_num_data_pins(jzfb));
+> +
+> +	fb_dealloc_cmap(&fb->cmap);
+> +	jzfb_free_devmem(jzfb);
+> +err_iounmap:
+> +	iounmap(jzfb->base);
+> +err_put_lpclk:
+> +	clk_put(jzfb->lpclk);
+> +err_put_ldclk:
+> +	clk_put(jzfb->ldclk);
+> +err_framebuffer_release:
+> +	framebuffer_release(fb);
+> +err_release_mem_region:
+> +	release_mem_region(mem->start, resource_size(mem));
+> +	return ret;
+> +}
+> +
+>
+> ...
+>
+
