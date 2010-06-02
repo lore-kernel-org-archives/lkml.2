@@ -1,42 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757548Ab0FBM6s (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jun 2010 08:58:48 -0400
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:44955 "EHLO
-	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750749Ab0FBM6q (ORCPT
+	id S1757884Ab0FBNAn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jun 2010 09:00:43 -0400
+Received: from mail2.shareable.org ([80.68.89.115]:39138 "EHLO
+	mail2.shareable.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752933Ab0FBNAk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jun 2010 08:58:46 -0400
-Date: Wed, 2 Jun 2010 14:05:28 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: "Hemanth V" <hemanthv@ti.com>, linux-kernel@vger.kernel.org,
-       linux-omap@vger.kernel.org, Daniel Mack <daniel@caiaq.de>,
-       Jonathan Cameron <jic23@cam.ac.uk>,
-       Wolfram Sang <w.sang@pengutronix.de>
-Subject: Re: [PATCH V2] misc : ROHM BH1780GLI Ambient light sensor Driver
-Message-ID: <20100602140528.06013fee@lxorguk.ukuu.org.uk>
-In-Reply-To: <20100601131244.7164b43c.akpm@linux-foundation.org>
-References: <39216.10.24.255.17.1274699065.squirrel@dbdmail.itg.ti.com>
-	<20100601131244.7164b43c.akpm@linux-foundation.org>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 2 Jun 2010 09:00:40 -0400
+Date: Wed, 2 Jun 2010 14:00:14 +0100
+From: Jamie Lokier <jamie@shareable.org>
+To: Dan Magenheimer <dan.magenheimer@oracle.com>
+Cc: chris.mason@oracle.com, viro@zeniv.linux.org.uk, akpm@linux-foundation.org,
+       adilger@sun.com, tytso@mit.edu, mfasheh@suse.com,
+       joel.becker@oracle.com, matthew@wil.cx, linux-btrfs@vger.kernel.org,
+       linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+       linux-ext4@vger.kernel.org, ocfs2-devel@oss.oracle.com,
+       linux-mm@kvack.org, ngupta@vflare.org, jeremy@goop.org,
+       JBeulich@novell.com, kurt.hackel@oracle.com, npiggin@suse.de,
+       dave.mccracken@oracle.com, riel@redhat.com, avi@redhat.com,
+       konrad.wilk@oracle.com
+Subject: Re: [PATCH V2 0/7] Cleancache (was Transcendent Memory): overview
+Message-ID: <20100602130014.GB7238@shareable.org>
+References: <20100528173510.GA12166@ca-server1.us.oracle.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100528173510.GA12166@ca-server1.us.oracle.com>
+User-Agent: Mutt/1.5.13 (2006-08-11)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Is there any standardisation of the ABIs whcih these drivers offer?  If
-> so, does this new driver comply with that?
+Dan Magenheimer wrote:
+> Most important, cleancache is "ephemeral".  Pages which are copied into
+> cleancache have an indefinite lifetime which is completely unknowable
+> by the kernel and so may or may not still be in cleancache at any later time.
+> Thus, as its name implies, cleancache is not suitable for dirty pages.  The
+> pseudo-RAM has complete discretion over what pages to preserve and what
+> pages to discard and when.
 
-There was an attempt to sort this out but Linux vetoed it because he is
-under the delusion that light sensors are input devices. That doesn't
-work in many use cases as you have to go ask them the light level and the
-polling needed for input events keeps wrecks your idle behaviour when you
-need to sample them when required instead. Instead therefore the API is
-random and the devices appear in random ways and classes.
+Fwiw, the feature sounds useful to userspace too, for those things
+with memory hungry caches like web browsers.  Any plans to make it
+available to userspace?
 
-We have some intel drivers to submit as well as and when sanity prevails.
-
-Alan
+Thanks,
+-- Jamie
