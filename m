@@ -1,82 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933048Ab0FBT3j (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jun 2010 15:29:39 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:48024 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933036Ab0FBT3g (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jun 2010 15:29:36 -0400
-Date: Wed, 2 Jun 2010 12:29:10 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Dan Magenheimer <dan.magenheimer@oracle.com>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org, jeremy@goop.org,
-       hugh.dickins@tiscali.co.uk, ngupta@vflare.org, JBeulich@novell.com,
-       chris.mason@oracle.com, kurt.hackel@oracle.com,
-       dave.mccracken@oracle.com, npiggin@suse.de, riel@redhat.com,
-       avi@redhat.com, pavel@ucw.cz, konrad.wilk@oracle.com
-Subject: Re: [PATCH V2 1/4] Frontswap (was Transcendent Memory): swap data
- structure changes
-Message-Id: <20100602122910.71f981e8.akpm@linux-foundation.org>
-In-Reply-To: <20100528174041.GA28176@ca-server1.us.oracle.com>
-References: <20100528174041.GA28176@ca-server1.us.oracle.com>
-X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S933060Ab0FBT3k (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jun 2010 15:29:40 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:10947 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933012Ab0FBT32 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Jun 2010 15:29:28 -0400
+Date: Wed, 2 Jun 2010 15:29:27 -0400
+From: Prarit Bhargava <prarit@redhat.com>
+To: linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org, mjg@redhat.com,
+       x86@kernel.org
+Cc: Prarit Bhargava <prarit@redhat.com>
+Message-Id: <20100602192418.2706.35192.sendpatchset@prarit.bos.redhat.com>
+Subject: [PATCH]: x86: use acpi flags for apic mapping
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 28 May 2010 10:40:41 -0700
-Dan Magenheimer <dan.magenheimer@oracle.com> wrote:
+ACPI FADT has entries to describe the apic mapping of a system.  Currently,
+these are ignored in the apic code.
 
-> [PATCH V2 1/4] Frontswap (was Transcendent Memory): swap data structure changes
-> 
-> Core swap data structures are needed by frontswap.c but we don't
-> need to expose them to the dozens of files that include swap.h
-> so create a new swapfile.h just to extern-ify these.
-> 
-> Add frontswap-related elements to swap_info_struct.  Don't tie
-> these to CONFIG_FRONTSWAP to avoid unnecessary clutter around
-> various frontswap hooks.
-> 
-> Signed-off-by: Dan Magenheimer <dan.magenheimer@oracle.com>
-> 
-> Diffstat:
->  swap.h                                   |    2 ++
->  swapfile.h                               |   13 +++++++++++++
->  2 files changed, 15 insertions(+)
-> 
-> --- linux-2.6.34/include/linux/swapfile.h	1969-12-31 17:00:00.000000000 -0700
-> +++ linux-2.6.34-frontswap/include/linux/swapfile.h	2010-05-21 16:36:45.000000000 -0600
-> @@ -0,0 +1,13 @@
-> +#ifndef _LINUX_SWAPFILE_H
-> +#define _LINUX_SWAPFILE_H
-> +
-> +/*
-> + * these were static in swapfile.c but frontswap.c needs them and we don't
-> + * want to expose them to the dozens of source files that include swap.h
-> + */
-> +extern spinlock_t swap_lock;
-> +extern struct swap_list_t swap_list;
-> +extern struct swap_info_struct *swap_info[];
-> +extern int try_to_unuse(unsigned int, bool, unsigned long);
-> +
-> +#endif /* _LINUX_SWAPFILE_H */
-> --- linux-2.6.34/include/linux/swap.h	2010-05-16 15:17:36.000000000 -0600
-> +++ linux-2.6.34-frontswap/include/linux/swap.h	2010-05-24 10:13:41.000000000 -0600
-> @@ -182,6 +182,8 @@ struct swap_info_struct {
->  	struct block_device *bdev;	/* swap device or bdev of swap file */
->  	struct file *swap_file;		/* seldom referenced */
->  	unsigned int old_block_size;	/* seldom referenced */
-> +	unsigned long *frontswap_map;	/* frontswap in-use, one bit per page */
-> +	unsigned int frontswap_pages;	/* frontswap pages in-use counter */
+Introduce apic_is_acpi_clustered_box() and read the FADT to determine
+if a box is clustered or not.
 
-Is a 32-bit uint large enough?  Maybe there are other things in swap
-which restrict us to less than 16TB, dunno.
+Signed-off-by: Prarit Bhargava <prarit@redhat.com>
 
-
->  };
->  
->  struct swap_list_t {
+diff --git a/arch/x86/include/asm/apic.h b/arch/x86/include/asm/apic.h
+index 1fa03e0..4518683 100644
+--- a/arch/x86/include/asm/apic.h
++++ b/arch/x86/include/asm/apic.h
+@@ -252,6 +252,14 @@ static inline int apic_is_clustered_box(void)
+ }
+ #endif
+ 
++enum apic_acpi_map_status {
++	APIC_ACPI_BOTH,
++	APIC_ACPI_CLUSTER,
++	APIC_ACPI_PHYSICAL,
++	APIC_ACPI_NONE
++};
++extern enum apic_acpi_map_status apic_is_acpi_clustered_box(void);
++
+ extern u8 setup_APIC_eilvt_mce(u8 vector, u8 msg_type, u8 mask);
+ extern u8 setup_APIC_eilvt_ibs(u8 vector, u8 msg_type, u8 mask);
+ 
+diff --git a/arch/x86/kernel/apic/apic.c b/arch/x86/kernel/apic/apic.c
+index e5a4a1e..6ca346a 100644
+--- a/arch/x86/kernel/apic/apic.c
++++ b/arch/x86/kernel/apic/apic.c
+@@ -2189,6 +2189,30 @@ static const __cpuinitconst struct dmi_system_id multi_dmi_table[] = {
+ 	{}
+ };
+ 
++#ifdef CONFIG_ACPI
++enum apic_acpi_map_status apic_is_acpi_clustered_box(void)
++{
++	if (acpi_gbl_FADT.header.revision >= FADT2_REVISION_ID) {
++		if (acpi_gbl_FADT.flags & ACPI_FADT_APIC_PHYSICAL &&
++		    acpi_gbl_FADT.flags & ACPI_FADT_APIC_CLUSTER) {
++			/*
++			 * The rest of the code assumes physical flat
++			 * in this case.
++			 */
++			return APIC_ACPI_BOTH;
++		}
++
++		if (acpi_gbl_FADT.flags & ACPI_FADT_APIC_CLUSTER)
++			return APIC_ACPI_CLUSTER;
++
++		if (acpi_gbl_FADT.flags & ACPI_FADT_APIC_PHYSICAL)
++			return APIC_ACPI_PHYSICAL;
++	}
++
++	return APIC_ACPI_NONE;
++}
++#endif
++
+ static void __cpuinit dmi_check_multi(void)
+ {
+ 	if (multi_checked)
+@@ -2208,6 +2232,20 @@ static void __cpuinit dmi_check_multi(void)
+  */
+ __cpuinit int apic_is_clustered_box(void)
+ {
++#ifdef CONFIG_ACPI
++	switch (apic_is_acpi_clustered_box()) {
++		case APIC_ACPI_PHYSICAL:
++		case APIC_ACPI_BOTH: /* assume physical flat in this case */
++			return 0;
++			break;
++		case APIC_ACPI_CLUSTER:
++			return 1;
++			break;
++		default:
++			break;
++	}
++#endif
++
+ 	dmi_check_multi();
+ 	if (multi)
+ 		return 1;
+diff --git a/arch/x86/kernel/apic/apic_flat_64.c b/arch/x86/kernel/apic/apic_flat_64.c
+index 09d3b17..80e291a 100644
+--- a/arch/x86/kernel/apic/apic_flat_64.c
++++ b/arch/x86/kernel/apic/apic_flat_64.c
+@@ -231,14 +231,32 @@ static int physflat_acpi_madt_oem_check(char *oem_id, char *oem_table_id)
+ {
+ #ifdef CONFIG_ACPI
+ 	/*
+-	 * Quirk: some x86_64 machines can only use physical APIC mode
+-	 * regardless of how many processors are present (x86_64 ES7000
+-	 * is an example).
++	 * Some x86_64 machines can only use clustered or physical APIC
++	 * mode regardless of how many processors are present.
+ 	 */
+-	if (acpi_gbl_FADT.header.revision >= FADT2_REVISION_ID &&
+-		(acpi_gbl_FADT.flags & ACPI_FADT_APIC_PHYSICAL)) {
+-		printk(KERN_DEBUG "system APIC only can use physical flat");
+-		return 1;
++	switch (apic_is_acpi_clustered_box()) {
++		case APIC_ACPI_BOTH:
++			printk(KERN_WARNING FW_BUG "ACPI has set apic mode to "
++			       "both clustered and physical flat.  Please "
++			       "contact your firmware vendor for an update.\n");
++			/*
++			 * In this case assume physical flat as only a very
++			 * limited number of systems use cluster
++			 */
++			printk(KERN_DEBUG "system APIC using physical flat\n");
++			return 1;
++			break;
++		case APIC_ACPI_CLUSTER:
++			printk(KERN_DEBUG "system APIC can only use cluster\n");
++			return 0;
++			break;
++		case APIC_ACPI_PHYSICAL:
++			printk(KERN_DEBUG "system APIC can only use physical"
++			       " flat\n");
++			return 1;
++			break;
++		default:
++			break;
+ 	}
+ 
+ 	if (!strncmp(oem_id, "IBM", 3) && !strncmp(oem_table_id, "EXA", 3)) {
