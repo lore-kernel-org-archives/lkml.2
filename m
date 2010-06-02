@@ -1,86 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752870Ab0FBFk3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jun 2010 01:40:29 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:1026 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751307Ab0FBFk2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jun 2010 01:40:28 -0400
-Message-ID: <4C05EEB6.7070007@redhat.com>
-Date: Wed, 02 Jun 2010 08:40:06 +0300
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-3.fc13 Thunderbird/3.0.4
+	id S1751758Ab0FBFmh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jun 2010 01:42:37 -0400
+Received: from smtp.nokia.com ([192.100.122.233]:44879 "EHLO
+	mgw-mx06.nokia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751169Ab0FBFmf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Jun 2010 01:42:35 -0400
+Date: Wed, 2 Jun 2010 08:41:04 +0300
+From: Felipe Balbi <felipe.balbi@nokia.com>
+To: ext Thomas Gleixner <tglx@linutronix.de>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+       "adharmap@codeaurora.org" <adharmap@codeaurora.org>,
+       Mark Brown <broonie@opensource.wolfsonmicro.com>,
+       Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+       Trilok Soni <soni.trilok@gmail.com>, Pavel Machek <pavel@ucw.cz>,
+       Brian Swetland <swetland@google.com>,
+       Joonyoung Shim <jy0922.shim@samsung.com>,
+       "m.szyprowski@samsung.com" <m.szyprowski@samsung.com>,
+       "t.fujak@samsung.com" <t.fujak@samsung.com>,
+       "kyungmin.park@samsung.com" <kyungmin.park@samsung.com>,
+       David Brownell <david-b@pacbell.net>, Daniel Ribeiro <drwyrm@gmail.com>,
+       "arve@android.com" <arve@android.com>, Barry Song <21cnbao@gmail.com>,
+       Russell King <linux@arm.linux.org.uk>,
+       Bryan Huntsman <bryanh@quicinc.com>,
+       Iliyan Malchev <malchev@google.com>, Michael Buesch <mb@bu3sch.de>,
+       Bruno Premont <bonbons@linux-vserver.org>,
+       "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC PATCH] irq: handle private interrupt registration
+Message-ID: <20100602054104.GE6465@nokia.com>
+Reply-To: felipe.balbi@nokia.com
+References: <1274905794-7848-1-git-send-email-adharmap@codeaurora.org>
+ <20100601152652.9296c5d0.akpm@linux-foundation.org>
+ <alpine.LFD.2.00.1006020110090.2933@localhost.localdomain>
 MIME-Version: 1.0
-To: Chris Wright <chrisw@sous-sol.org>
-CC: Tom Lyon <pugs@lyon-about.com>, "Michael S. Tsirkin" <mst@redhat.com>,
-       linux-kernel@vger.kernel.org, kvm@vger.kernel.org, joro@8bytes.org,
-       hjk@linutronix.de, gregkh@suse.de, aafabbri@cisco.com,
-       scofeldm@cisco.com, alex.williamson@redhat.com
-Subject: Re: [PATCH] VFIO driver: Non-privileged user level PCI drivers
-References: <20100530124949.GI27611@redhat.com> <4C04E0E0.3070006@redhat.com> <20100601104651.GA9415@redhat.com> <201006011426.53563.pugs@lyon-about.com> <4C05C925.6080006@redhat.com> <20100602052907.GT8301@sequoia.sous-sol.org>
-In-Reply-To: <20100602052907.GT8301@sequoia.sous-sol.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii; format=flowed
+Content-Disposition: inline
+In-Reply-To: <alpine.LFD.2.00.1006020110090.2933@localhost.localdomain>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-OriginalArrivalTime: 02 Jun 2010 05:41:40.0045 (UTC) FILETIME=[46329FD0:01CB0216]
+X-Nokia-AV: Clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/02/2010 08:29 AM, Chris Wright wrote:
-> * Avi Kivity (avi@redhat.com) wrote:
->    
->> On 06/02/2010 12:26 AM, Tom Lyon wrote:
->>      
->>> I'm not really opposed to multiple devices per domain, but let me point out how I
->>> ended up here.  First, the driver has two ways of mapping pages, one based on the
->>> iommu api and one based on the dma_map_sg api.  With the latter, the system
->>> already allocates a domain per device and there's no way to control it. This was
->>> presumably done to help isolation between drivers.  If there are multiple drivers
->>> in the user level, do we not want the same isoation to apply to them?
->>>        
->> In the case of kvm, we don't want isolation between devices, because
->> that doesn't happen on real hardware.
->>      
-> Sure it does.  That's exactly what happens when there's an iommu
-> involved with bare metal.
->    
+Hi,
 
-But we are emulating a machine without an iommu.
+On Wed, Jun 02, 2010 at 01:14:32AM +0200, ext Thomas Gleixner wrote:
+>1) Use PER_CPU offsets for the irq numbers. The generic irq code does
+>   not care whether the interrupt number is matching any physical
+>   numbering scheme in the hardware, as long as the arch specific chip
+>   implementation knows how to deal with it, which is not rocket
+>   science to do.
 
-When we emulate a machine with an iommu, then yes, we'll want to use as 
-many domains as the guest does.
+FWIW, I think (1) is a better approach as the problem will vanish 
+altogether and to me it sounds like the simpler approach as well. Archs 
+which have more than one IRQ chip (like OMAP with the twl4030 family) 
+will already use sequencial numbering anyway, so using the same approach 
+for N cpus, to me, sounds like a good deal.
 
->> So if the guest programs
->> devices to dma to each other, we want that to succeed.
->>      
-> And it will as long as ATS is enabled (this is a basic requirement
-> for PCIe peer-to-peer traffic to succeed with an iommu involved on
-> bare metal).
->
-> That's how things currently are, i.e. we put all devices belonging to a
-> single guest in the same domain.  However, it can be useful to put each
-> device belonging to a guest in a unique domain.  Especially as qemu
-> grows support for iommu emulation, and guest OSes begin to understand
-> how to use a hw iommu.
->    
+While at that, a question from my side: do we have a generic way of 
+fetching the last IRQ number so we can easily use that to calculate the 
+physical number of the IRQ line on the chip ?
 
-Right, we need to keep flexibility.
-
->>> And then there's the fact that it is possible to have multiple disjoint iommus on a system,
->>> so it may not even be possible to bring 2 devices under one domain.
->>>        
->> That's indeed a deficiency.
->>      
-> Not sure it's a deficiency.  Typically to share page table mappings
-> across multiple iommu's you just have to do update/invalidate to each
-> hw iommu that is sharing the mapping.  Alternatively, you can use more
-> memory and build/maintain identical mappings (as Tom alludes to below).
->    
-
-Sharing the page tables is just an optimization, I was worried about 
-devices in separate domains not talking to each other.  if ATS fixes 
-that, great.
+On OMAP, we have been passing that number down to twl4030 via 
+platform_data, but it would be better to ask genirq to tell us which was 
+the last irq number "claimed".
 
 -- 
-I have a truly marvellous patch that fixes the bug which this
-signature is too narrow to contain.
+balbi
 
+DefectiveByDesign.org
