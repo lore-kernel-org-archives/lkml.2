@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933002Ab0FBTQO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jun 2010 15:16:14 -0400
-Received: from smtp-out-182.synserver.de ([212.40.180.182]:1264 "HELO
+	id S933016Ab0FBTQR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jun 2010 15:16:17 -0400
+Received: from smtp-out-182.synserver.de ([212.40.180.182]:1493 "HELO
 	smtp-out-182.synserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S932888Ab0FBTQK (ORCPT
+	with SMTP id S932501Ab0FBTQK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 2 Jun 2010 15:16:10 -0400
 X-SynServer-TrustedSrc: 1
@@ -13,12 +13,10 @@ X-SynServer-PPID: 17602
 From: Lars-Peter Clausen <lars@metafoo.de>
 To: Ralf Baechle <ralf@linux-mips.org>
 Cc: linux-mips@linux-mips.org, linux-kernel@vger.kernel.org,
-       Lars-Peter Clausen <lars@metafoo.de>,
-       Mark Brown <broonie@opensource.wolfsonmicro.com>,
-       Liam Girdwood <lrg@slimlogic.co.uk>, alsa-devel@alsa-project.org
-Subject: [RFC][PATCH 26/26] alsa: ASoC: JZ4740: Add qi_lb60 board driver
-Date: Wed,  2 Jun 2010 21:15:32 +0200
-Message-Id: <1275506132-17519-2-git-send-email-lars@metafoo.de>
+       Lars-Peter Clausen <lars@metafoo.de>
+Subject: [RFC][PATCH 25/26] MIPS: Add defconfig for the qi_lb60 board
+Date: Wed,  2 Jun 2010 21:15:31 +0200
+Message-Id: <1275506132-17519-1-git-send-email-lars@metafoo.de>
 X-Mailer: git-send-email 1.5.6.5
 In-Reply-To: <1275505397-16758-1-git-send-email-lars@metafoo.de>
 References: <1275505397-16758-1-git-send-email-lars@metafoo.de>
@@ -26,228 +24,1476 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds ASoC support for the qi_lb60 board.
+This patch adds a defconfig for the qi_lb60 clammshell device.
 
 Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
-Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Liam Girdwood <lrg@slimlogic.co.uk>
-Cc: alsa-devel@alsa-project.org
 ---
- sound/soc/jz4740/Kconfig   |    8 ++
- sound/soc/jz4740/Makefile  |    4 +
- sound/soc/jz4740/qi_lb60.c |  175 ++++++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 187 insertions(+), 0 deletions(-)
- create mode 100644 sound/soc/jz4740/qi_lb60.c
+ arch/mips/configs/qi_lb60_defconfig | 1456 +++++++++++++++++++++++++++++++++++
+ 1 files changed, 1456 insertions(+), 0 deletions(-)
+ create mode 100644 arch/mips/configs/qi_lb60_defconfig
 
-diff --git a/sound/soc/jz4740/Kconfig b/sound/soc/jz4740/Kconfig
-index 39df949..aaa116f 100644
---- a/sound/soc/jz4740/Kconfig
-+++ b/sound/soc/jz4740/Kconfig
-@@ -11,3 +11,11 @@ config SND_JZ4740_SOC_I2S
- 	tristate "SoC Audio (I2S protocol) for Ingenic jz4740 chip"
- 	help
- 	  Say Y if you want to use I2S protocol and I2S codec on Ingenic Jz4740 QI_LB60 board.
-+
-+config SND_JZ4740_SOC_QI_LB60
-+	tristate "SoC Audio support for Qi Hardware Ben Nanonote"
-+	depends on SND_JZ4740_SOC && JZ4740_QI_LB60
-+	select SND_JZ4740_SOC_I2S
-+    select SND_SOC_JZ4740_CODEC
-+	help
-+	  Say Y if you want to add support for SoC audio of internal codec on Ingenic Jz4740 QI_LB60 board.
-diff --git a/sound/soc/jz4740/Makefile b/sound/soc/jz4740/Makefile
-index 1be8d19..be873c1 100644
---- a/sound/soc/jz4740/Makefile
-+++ b/sound/soc/jz4740/Makefile
-@@ -7,3 +7,7 @@ snd-soc-jz4740-i2s-objs := jz4740-i2s.o
- obj-$(CONFIG_SND_JZ4740_SOC) += snd-soc-jz4740.o
- obj-$(CONFIG_SND_JZ4740_SOC_I2S) += snd-soc-jz4740-i2s.o
- 
-+# Jz4740 Machine Support
-+snd-soc-qi-lb60-objs := qi_lb60.o
-+
-+obj-$(CONFIG_SND_JZ4740_SOC_QI_LB60) += snd-soc-qi-lb60.o
-diff --git a/sound/soc/jz4740/qi_lb60.c b/sound/soc/jz4740/qi_lb60.c
+diff --git a/arch/mips/configs/qi_lb60_defconfig b/arch/mips/configs/qi_lb60_defconfig
 new file mode 100644
-index 0000000..c3f1f91
+index 0000000..74efbe0
 --- /dev/null
-+++ b/sound/soc/jz4740/qi_lb60.c
-@@ -0,0 +1,175 @@
-+/*
-+ * Copyright (C) 2009, Lars-Peter Clausen <lars@metafoo.de>
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License version 2 as
-+ * published by the Free Software Foundation.
-+ *
-+ *  You should have received a copy of the  GNU General Public License along
-+ *  with this program; if not, write  to the Free Software Foundation, Inc.,
-+ *  675 Mass Ave, Cambridge, MA 02139, USA.
-+ *
-+ */
++++ b/arch/mips/configs/qi_lb60_defconfig
+@@ -0,0 +1,1456 @@
++#
++# Automatically generated make config: don't edit
++# Linux kernel version: 2.6.35-rc1
++# Wed Jun  2 20:58:34 2010
++#
++CONFIG_MIPS=y
 +
-+#include <linux/module.h>
-+#include <linux/moduleparam.h>
-+#include <linux/timer.h>
-+#include <linux/interrupt.h>
-+#include <linux/platform_device.h>
-+#include <sound/core.h>
-+#include <sound/pcm.h>
-+#include <sound/soc.h>
-+#include <sound/soc-dapm.h>
-+#include <linux/gpio.h>
++#
++# Machine selection
++#
++# CONFIG_MACH_ALCHEMY is not set
++# CONFIG_AR7 is not set
++# CONFIG_BCM47XX is not set
++# CONFIG_BCM63XX is not set
++# CONFIG_MIPS_COBALT is not set
++# CONFIG_MACH_DECSTATION is not set
++# CONFIG_MACH_JAZZ is not set
++CONFIG_MACH_JZ4740=y
++# CONFIG_LASAT is not set
++# CONFIG_MACH_LOONGSON is not set
++# CONFIG_MIPS_MALTA is not set
++# CONFIG_MIPS_SIM is not set
++# CONFIG_NEC_MARKEINS is not set
++# CONFIG_MACH_VR41XX is not set
++# CONFIG_NXP_STB220 is not set
++# CONFIG_NXP_STB225 is not set
++# CONFIG_PNX8550_JBS is not set
++# CONFIG_PNX8550_STB810 is not set
++# CONFIG_PMC_MSP is not set
++# CONFIG_PMC_YOSEMITE is not set
++# CONFIG_POWERTV is not set
++# CONFIG_SGI_IP22 is not set
++# CONFIG_SGI_IP27 is not set
++# CONFIG_SGI_IP28 is not set
++# CONFIG_SGI_IP32 is not set
++# CONFIG_SIBYTE_CRHINE is not set
++# CONFIG_SIBYTE_CARMEL is not set
++# CONFIG_SIBYTE_CRHONE is not set
++# CONFIG_SIBYTE_RHONE is not set
++# CONFIG_SIBYTE_SWARM is not set
++# CONFIG_SIBYTE_LITTLESUR is not set
++# CONFIG_SIBYTE_SENTOSA is not set
++# CONFIG_SIBYTE_BIGSUR is not set
++# CONFIG_SNI_RM is not set
++# CONFIG_MACH_TX39XX is not set
++# CONFIG_MACH_TX49XX is not set
++# CONFIG_MIKROTIK_RB532 is not set
++# CONFIG_WR_PPMC is not set
++# CONFIG_CAVIUM_OCTEON_SIMULATOR is not set
++# CONFIG_CAVIUM_OCTEON_REFERENCE_BOARD is not set
++# CONFIG_ALCHEMY_GPIO_INDIRECT is not set
++CONFIG_JZ4740_QI_LB60=y
++CONFIG_HAVE_PWM=y
++CONFIG_LOONGSON_UART_BASE=y
++CONFIG_RWSEM_GENERIC_SPINLOCK=y
++# CONFIG_ARCH_HAS_ILOG2_U32 is not set
++# CONFIG_ARCH_HAS_ILOG2_U64 is not set
++CONFIG_ARCH_SUPPORTS_OPROFILE=y
++CONFIG_GENERIC_FIND_NEXT_BIT=y
++CONFIG_GENERIC_HWEIGHT=y
++CONFIG_GENERIC_CALIBRATE_DELAY=y
++CONFIG_GENERIC_CLOCKEVENTS=y
++CONFIG_GENERIC_TIME=y
++CONFIG_GENERIC_CMOS_UPDATE=y
++CONFIG_SCHED_OMIT_FRAME_POINTER=y
++CONFIG_GENERIC_HARDIRQS_NO__DO_IRQ=y
++CONFIG_DMA_NONCOHERENT=y
++CONFIG_NEED_DMA_MAP_STATE=y
++CONFIG_SYS_HAS_EARLY_PRINTK=y
++# CONFIG_NO_IOPORT is not set
++CONFIG_GENERIC_GPIO=y
++# CONFIG_CPU_BIG_ENDIAN is not set
++CONFIG_CPU_LITTLE_ENDIAN=y
++CONFIG_SYS_SUPPORTS_LITTLE_ENDIAN=y
++CONFIG_IRQ_CPU=y
++CONFIG_MIPS_L1_CACHE_SHIFT=5
 +
-+#include "../codecs/jz4740-codec.h"
-+#include "jz4740-pcm.h"
-+#include "jz4740-i2s.h"
++#
++# CPU selection
++#
++# CONFIG_CPU_LOONGSON2E is not set
++# CONFIG_CPU_LOONGSON2F is not set
++CONFIG_CPU_MIPS32_R1=y
++# CONFIG_CPU_MIPS32_R2 is not set
++# CONFIG_CPU_MIPS64_R1 is not set
++# CONFIG_CPU_MIPS64_R2 is not set
++# CONFIG_CPU_R3000 is not set
++# CONFIG_CPU_TX39XX is not set
++# CONFIG_CPU_VR41XX is not set
++# CONFIG_CPU_R4300 is not set
++# CONFIG_CPU_R4X00 is not set
++# CONFIG_CPU_TX49XX is not set
++# CONFIG_CPU_R5000 is not set
++# CONFIG_CPU_R5432 is not set
++# CONFIG_CPU_R5500 is not set
++# CONFIG_CPU_R6000 is not set
++# CONFIG_CPU_NEVADA is not set
++# CONFIG_CPU_R8000 is not set
++# CONFIG_CPU_R10000 is not set
++# CONFIG_CPU_RM7000 is not set
++# CONFIG_CPU_RM9000 is not set
++# CONFIG_CPU_SB1 is not set
++# CONFIG_CPU_CAVIUM_OCTEON is not set
++CONFIG_SYS_HAS_CPU_MIPS32_R1=y
++CONFIG_CPU_MIPS32=y
++CONFIG_CPU_MIPSR1=y
++CONFIG_SYS_SUPPORTS_32BIT_KERNEL=y
++CONFIG_CPU_SUPPORTS_32BIT_KERNEL=y
++CONFIG_HARDWARE_WATCHPOINTS=y
 +
++#
++# Kernel type
++#
++CONFIG_32BIT=y
++# CONFIG_64BIT is not set
++CONFIG_PAGE_SIZE_4KB=y
++# CONFIG_PAGE_SIZE_8KB is not set
++# CONFIG_PAGE_SIZE_16KB is not set
++# CONFIG_PAGE_SIZE_32KB is not set
++# CONFIG_PAGE_SIZE_64KB is not set
++CONFIG_CPU_HAS_PREFETCH=y
++CONFIG_MIPS_MT_DISABLED=y
++# CONFIG_MIPS_MT_SMP is not set
++# CONFIG_MIPS_MT_SMTC is not set
++# CONFIG_ARCH_PHYS_ADDR_T_64BIT is not set
++CONFIG_CPU_HAS_SYNC=y
++CONFIG_GENERIC_HARDIRQS=y
++CONFIG_GENERIC_IRQ_PROBE=y
++CONFIG_CPU_SUPPORTS_HIGHMEM=y
++CONFIG_ARCH_FLATMEM_ENABLE=y
++CONFIG_ARCH_POPULATES_NODE_MAP=y
++CONFIG_SELECT_MEMORY_MODEL=y
++CONFIG_FLATMEM_MANUAL=y
++# CONFIG_DISCONTIGMEM_MANUAL is not set
++# CONFIG_SPARSEMEM_MANUAL is not set
++CONFIG_FLATMEM=y
++CONFIG_FLAT_NODE_MEM_MAP=y
++CONFIG_PAGEFLAGS_EXTENDED=y
++CONFIG_SPLIT_PTLOCK_CPUS=4
++# CONFIG_PHYS_ADDR_T_64BIT is not set
++CONFIG_ZONE_DMA_FLAG=0
++CONFIG_VIRT_TO_BUS=y
++# CONFIG_KSM is not set
++CONFIG_DEFAULT_MMAP_MIN_ADDR=4096
++# CONFIG_NO_HZ is not set
++# CONFIG_HIGH_RES_TIMERS is not set
++CONFIG_GENERIC_CLOCKEVENTS_BUILD=y
++# CONFIG_HZ_48 is not set
++CONFIG_HZ_100=y
++# CONFIG_HZ_128 is not set
++# CONFIG_HZ_250 is not set
++# CONFIG_HZ_256 is not set
++# CONFIG_HZ_1000 is not set
++# CONFIG_HZ_1024 is not set
++CONFIG_SYS_SUPPORTS_ARBIT_HZ=y
++CONFIG_HZ=100
++# CONFIG_PREEMPT_NONE is not set
++# CONFIG_PREEMPT_VOLUNTARY is not set
++CONFIG_PREEMPT=y
++# CONFIG_KEXEC is not set
++# CONFIG_SECCOMP is not set
++CONFIG_LOCKDEP_SUPPORT=y
++CONFIG_STACKTRACE_SUPPORT=y
++CONFIG_DEFCONFIG_LIST="/lib/modules/$UNAME_RELEASE/.config"
++CONFIG_CONSTRUCTORS=y
 +
-+#define QI_LB60_SND_GPIO JZ_GPIO_PORTB(29)
-+#define QI_LB60_AMP_GPIO JZ_GPIO_PORTD(4)
++#
++# General setup
++#
++CONFIG_EXPERIMENTAL=y
++CONFIG_BROKEN_ON_SMP=y
++CONFIG_LOCK_KERNEL=y
++CONFIG_INIT_ENV_ARG_LIMIT=32
++CONFIG_LOCALVERSION=""
++# CONFIG_LOCALVERSION_AUTO is not set
++CONFIG_SWAP=y
++CONFIG_SYSVIPC=y
++CONFIG_SYSVIPC_SYSCTL=y
++# CONFIG_POSIX_MQUEUE is not set
++# CONFIG_BSD_PROCESS_ACCT is not set
++# CONFIG_TASKSTATS is not set
++# CONFIG_AUDIT is not set
 +
-+static int qi_lb60_spk_event(struct snd_soc_dapm_widget *widget,
-+			     struct snd_kcontrol *ctrl, int event)
-+{
-+	int on = 0;
-+	if (event & SND_SOC_DAPM_POST_PMU)
-+		on = 1;
-+	else if (event & SND_SOC_DAPM_PRE_PMD)
-+		on = 0;
++#
++# RCU Subsystem
++#
++# CONFIG_TREE_RCU is not set
++# CONFIG_TREE_PREEMPT_RCU is not set
++CONFIG_TINY_RCU=y
++# CONFIG_TREE_RCU_TRACE is not set
++# CONFIG_IKCONFIG is not set
++CONFIG_LOG_BUF_SHIFT=14
++# CONFIG_CGROUPS is not set
++# CONFIG_SYSFS_DEPRECATED_V2 is not set
++# CONFIG_RELAY is not set
++# CONFIG_NAMESPACES is not set
++# CONFIG_BLK_DEV_INITRD is not set
++# CONFIG_CC_OPTIMIZE_FOR_SIZE is not set
++CONFIG_SYSCTL=y
++CONFIG_ANON_INODES=y
++CONFIG_EMBEDDED=y
++CONFIG_SYSCTL_SYSCALL=y
++CONFIG_KALLSYMS=y
++# CONFIG_KALLSYMS_EXTRA_PASS is not set
++CONFIG_HOTPLUG=y
++CONFIG_PRINTK=y
++CONFIG_BUG=y
++CONFIG_ELF_CORE=y
++# CONFIG_PCSPKR_PLATFORM is not set
++CONFIG_BASE_FULL=y
++CONFIG_FUTEX=y
++CONFIG_EPOLL=y
++CONFIG_SIGNALFD=y
++CONFIG_TIMERFD=y
++CONFIG_EVENTFD=y
++CONFIG_SHMEM=y
++CONFIG_AIO=y
 +
-+	gpio_set_value(QI_LB60_SND_GPIO, on);
-+	gpio_set_value(QI_LB60_AMP_GPIO, on);
++#
++# Kernel Performance Events And Counters
++#
++# CONFIG_VM_EVENT_COUNTERS is not set
++# CONFIG_COMPAT_BRK is not set
++CONFIG_SLAB=y
++# CONFIG_SLUB is not set
++# CONFIG_SLOB is not set
++# CONFIG_PROFILING is not set
++CONFIG_HAVE_OPROFILE=y
 +
-+	return 0;
-+}
++#
++# GCOV-based kernel profiling
++#
++# CONFIG_GCOV_KERNEL is not set
++# CONFIG_SLOW_WORK is not set
++CONFIG_HAVE_GENERIC_DMA_COHERENT=y
++CONFIG_SLABINFO=y
++CONFIG_RT_MUTEXES=y
++CONFIG_BASE_SMALL=0
++CONFIG_MODULES=y
++# CONFIG_MODULE_FORCE_LOAD is not set
++CONFIG_MODULE_UNLOAD=y
++# CONFIG_MODULE_FORCE_UNLOAD is not set
++# CONFIG_MODVERSIONS is not set
++# CONFIG_MODULE_SRCVERSION_ALL is not set
++CONFIG_BLOCK=y
++CONFIG_LBDAF=y
++# CONFIG_BLK_DEV_BSG is not set
++# CONFIG_BLK_DEV_INTEGRITY is not set
 +
-+static const struct snd_soc_dapm_widget qi_lb60_widgets[] = {
-+	SND_SOC_DAPM_SPK("Speaker", qi_lb60_spk_event),
-+	SND_SOC_DAPM_MIC("Mic", NULL),
-+};
++#
++# IO Schedulers
++#
++CONFIG_IOSCHED_NOOP=y
++# CONFIG_IOSCHED_DEADLINE is not set
++# CONFIG_IOSCHED_CFQ is not set
++# CONFIG_DEFAULT_DEADLINE is not set
++# CONFIG_DEFAULT_CFQ is not set
++CONFIG_DEFAULT_NOOP=y
++CONFIG_DEFAULT_IOSCHED="noop"
++# CONFIG_INLINE_SPIN_TRYLOCK is not set
++# CONFIG_INLINE_SPIN_TRYLOCK_BH is not set
++# CONFIG_INLINE_SPIN_LOCK is not set
++# CONFIG_INLINE_SPIN_LOCK_BH is not set
++# CONFIG_INLINE_SPIN_LOCK_IRQ is not set
++# CONFIG_INLINE_SPIN_LOCK_IRQSAVE is not set
++# CONFIG_INLINE_SPIN_UNLOCK is not set
++# CONFIG_INLINE_SPIN_UNLOCK_BH is not set
++# CONFIG_INLINE_SPIN_UNLOCK_IRQ is not set
++# CONFIG_INLINE_SPIN_UNLOCK_IRQRESTORE is not set
++# CONFIG_INLINE_READ_TRYLOCK is not set
++# CONFIG_INLINE_READ_LOCK is not set
++# CONFIG_INLINE_READ_LOCK_BH is not set
++# CONFIG_INLINE_READ_LOCK_IRQ is not set
++# CONFIG_INLINE_READ_LOCK_IRQSAVE is not set
++# CONFIG_INLINE_READ_UNLOCK is not set
++# CONFIG_INLINE_READ_UNLOCK_BH is not set
++# CONFIG_INLINE_READ_UNLOCK_IRQ is not set
++# CONFIG_INLINE_READ_UNLOCK_IRQRESTORE is not set
++# CONFIG_INLINE_WRITE_TRYLOCK is not set
++# CONFIG_INLINE_WRITE_LOCK is not set
++# CONFIG_INLINE_WRITE_LOCK_BH is not set
++# CONFIG_INLINE_WRITE_LOCK_IRQ is not set
++# CONFIG_INLINE_WRITE_LOCK_IRQSAVE is not set
++# CONFIG_INLINE_WRITE_UNLOCK is not set
++# CONFIG_INLINE_WRITE_UNLOCK_BH is not set
++# CONFIG_INLINE_WRITE_UNLOCK_IRQ is not set
++# CONFIG_INLINE_WRITE_UNLOCK_IRQRESTORE is not set
++# CONFIG_MUTEX_SPIN_ON_OWNER is not set
++CONFIG_FREEZER=y
 +
-+static const struct snd_soc_dapm_route qi_lb60_routes[] = {
-+	{"Mic", NULL, "MIC"},
-+	{"Speaker", NULL, "LOUT"},
-+	{"Speaker", NULL, "ROUT"},
-+};
++#
++# Bus options (PCI, PCMCIA, EISA, ISA, TC)
++#
++# CONFIG_ARCH_SUPPORTS_MSI is not set
++CONFIG_MMU=y
++# CONFIG_PCCARD is not set
 +
-+#define QI_LB60_DAIFMT (SND_SOC_DAIFMT_I2S | \
-+			SND_SOC_DAIFMT_NB_NF | \
-+			SND_SOC_DAIFMT_CBM_CFM)
++#
++# Executable file formats
++#
++CONFIG_BINFMT_ELF=y
++# CONFIG_CORE_DUMP_DEFAULT_ELF_HEADERS is not set
++# CONFIG_HAVE_AOUT is not set
++# CONFIG_BINFMT_MISC is not set
++CONFIG_TRAD_SIGNALS=y
 +
-+static int qi_lb60_codec_init(struct snd_soc_codec *codec)
-+{
-+	int ret;
-+	struct snd_soc_dai *cpu_dai = codec->socdev->card->dai_link->cpu_dai;
-+	struct snd_soc_dai *codec_dai = codec->socdev->card->dai_link->codec_dai;
++#
++# Power management options
++#
++CONFIG_ARCH_HIBERNATION_POSSIBLE=y
++CONFIG_ARCH_SUSPEND_POSSIBLE=y
++CONFIG_PM=y
++# CONFIG_PM_DEBUG is not set
++CONFIG_PM_SLEEP=y
++CONFIG_SUSPEND=y
++CONFIG_SUSPEND_FREEZER=y
++# CONFIG_HIBERNATION is not set
++# CONFIG_PM_RUNTIME is not set
++CONFIG_PM_OPS=y
++CONFIG_NET=y
 +
-+	snd_soc_dapm_nc_pin(codec, "LIN");
-+	snd_soc_dapm_nc_pin(codec, "RIN");
++#
++# Networking options
++#
++CONFIG_PACKET=y
++CONFIG_UNIX=y
++# CONFIG_NET_KEY is not set
++CONFIG_INET=y
++CONFIG_IP_MULTICAST=y
++CONFIG_IP_ADVANCED_ROUTER=y
++CONFIG_ASK_IP_FIB_HASH=y
++# CONFIG_IP_FIB_TRIE is not set
++CONFIG_IP_FIB_HASH=y
++CONFIG_IP_MULTIPLE_TABLES=y
++CONFIG_IP_ROUTE_MULTIPATH=y
++CONFIG_IP_ROUTE_VERBOSE=y
++# CONFIG_IP_PNP is not set
++# CONFIG_NET_IPIP is not set
++# CONFIG_NET_IPGRE is not set
++CONFIG_IP_MROUTE=y
++# CONFIG_IP_MROUTE_MULTIPLE_TABLES is not set
++# CONFIG_IP_PIMSM_V1 is not set
++# CONFIG_IP_PIMSM_V2 is not set
++# CONFIG_ARPD is not set
++# CONFIG_SYN_COOKIES is not set
++# CONFIG_INET_AH is not set
++# CONFIG_INET_ESP is not set
++# CONFIG_INET_IPCOMP is not set
++# CONFIG_INET_XFRM_TUNNEL is not set
++# CONFIG_INET_TUNNEL is not set
++# CONFIG_INET_XFRM_MODE_TRANSPORT is not set
++# CONFIG_INET_XFRM_MODE_TUNNEL is not set
++# CONFIG_INET_XFRM_MODE_BEET is not set
++# CONFIG_INET_LRO is not set
++# CONFIG_INET_DIAG is not set
++CONFIG_TCP_CONG_ADVANCED=y
++# CONFIG_TCP_CONG_BIC is not set
++# CONFIG_TCP_CONG_CUBIC is not set
++CONFIG_TCP_CONG_WESTWOOD=y
++# CONFIG_TCP_CONG_HTCP is not set
++# CONFIG_TCP_CONG_HSTCP is not set
++# CONFIG_TCP_CONG_HYBLA is not set
++# CONFIG_TCP_CONG_VEGAS is not set
++# CONFIG_TCP_CONG_SCALABLE is not set
++# CONFIG_TCP_CONG_LP is not set
++# CONFIG_TCP_CONG_VENO is not set
++# CONFIG_TCP_CONG_YEAH is not set
++# CONFIG_TCP_CONG_ILLINOIS is not set
++# CONFIG_DEFAULT_BIC is not set
++# CONFIG_DEFAULT_CUBIC is not set
++# CONFIG_DEFAULT_HTCP is not set
++# CONFIG_DEFAULT_HYBLA is not set
++# CONFIG_DEFAULT_VEGAS is not set
++# CONFIG_DEFAULT_VENO is not set
++CONFIG_DEFAULT_WESTWOOD=y
++# CONFIG_DEFAULT_RENO is not set
++CONFIG_DEFAULT_TCP_CONG="westwood"
++# CONFIG_TCP_MD5SIG is not set
++# CONFIG_IPV6 is not set
++# CONFIG_NETWORK_SECMARK is not set
++CONFIG_NETFILTER=y
++# CONFIG_NETFILTER_DEBUG is not set
++CONFIG_NETFILTER_ADVANCED=y
 +
-+	ret = snd_soc_dai_set_fmt(codec_dai, QI_LB60_DAIFMT);
-+	if (ret < 0) {
-+		dev_err(codec->dev, "Failed to set codec dai format: %d\n", ret);
-+		return ret;
-+	}
++#
++# Core Netfilter Configuration
++#
++# CONFIG_NETFILTER_NETLINK_QUEUE is not set
++# CONFIG_NETFILTER_NETLINK_LOG is not set
++# CONFIG_NF_CONNTRACK is not set
++# CONFIG_NETFILTER_XTABLES is not set
++# CONFIG_IP_VS is not set
 +
-+	ret = snd_soc_dai_set_fmt(cpu_dai, QI_LB60_DAIFMT);
-+	if (ret < 0) {
-+		dev_err(codec->dev, "Failed to set cpu dai format: %d\n", ret);
-+		return ret;
-+	}
++#
++# IP: Netfilter Configuration
++#
++# CONFIG_NF_DEFRAG_IPV4 is not set
++# CONFIG_IP_NF_QUEUE is not set
++# CONFIG_IP_NF_IPTABLES is not set
++# CONFIG_IP_NF_ARPTABLES is not set
++# CONFIG_IP_DCCP is not set
++# CONFIG_IP_SCTP is not set
++# CONFIG_RDS is not set
++# CONFIG_TIPC is not set
++CONFIG_ATM=m
++# CONFIG_ATM_CLIP is not set
++# CONFIG_ATM_LANE is not set
++CONFIG_ATM_BR2684=m
++CONFIG_ATM_BR2684_IPFILTER=y
++# CONFIG_L2TP is not set
++# CONFIG_BRIDGE is not set
++# CONFIG_NET_DSA is not set
++# CONFIG_VLAN_8021Q is not set
++# CONFIG_DECNET is not set
++# CONFIG_LLC2 is not set
++# CONFIG_IPX is not set
++# CONFIG_ATALK is not set
++# CONFIG_X25 is not set
++# CONFIG_LAPB is not set
++# CONFIG_ECONET is not set
++# CONFIG_WAN_ROUTER is not set
++# CONFIG_PHONET is not set
++# CONFIG_IEEE802154 is not set
++# CONFIG_NET_SCHED is not set
++# CONFIG_DCB is not set
 +
-+	snd_soc_dapm_new_controls(codec, qi_lb60_widgets, ARRAY_SIZE(qi_lb60_widgets));
++#
++# Network testing
++#
++# CONFIG_NET_PKTGEN is not set
++# CONFIG_HAMRADIO is not set
++# CONFIG_CAN is not set
++# CONFIG_IRDA is not set
++# CONFIG_BT is not set
++# CONFIG_AF_RXRPC is not set
++CONFIG_FIB_RULES=y
++CONFIG_WIRELESS=y
++# CONFIG_CFG80211 is not set
++# CONFIG_LIB80211 is not set
 +
-+	snd_soc_dapm_add_routes(codec, qi_lb60_routes, ARRAY_SIZE(qi_lb60_routes));
++#
++# CFG80211 needs to be enabled for MAC80211
++#
 +
-+	snd_soc_dapm_sync(codec);
++#
++# Some wireless drivers require a rate control algorithm
++#
++# CONFIG_WIMAX is not set
++# CONFIG_RFKILL is not set
++# CONFIG_NET_9P is not set
++# CONFIG_CAIF is not set
 +
-+	return 0;
-+}
++#
++# Device Drivers
++#
 +
-+static struct snd_soc_dai_link qi_lb60_dai = {
-+	.name = "jz4740-codec",
-+	.stream_name = "jz4740-codec",
-+	.cpu_dai = &jz4740_i2s_dai,
-+	.codec_dai = &jz4740_codec_dai,
-+	.init = qi_lb60_codec_init,
-+};
++#
++# Generic Driver Options
++#
++CONFIG_UEVENT_HELPER_PATH="/sbin/hotplug"
++# CONFIG_DEVTMPFS is not set
++CONFIG_STANDALONE=y
++CONFIG_PREVENT_FIRMWARE_BUILD=y
++CONFIG_FW_LOADER=y
++# CONFIG_FIRMWARE_IN_KERNEL is not set
++CONFIG_EXTRA_FIRMWARE=""
++# CONFIG_SYS_HYPERVISOR is not set
++# CONFIG_CONNECTOR is not set
++CONFIG_MTD=y
++# CONFIG_MTD_DEBUG is not set
++# CONFIG_MTD_TESTS is not set
++# CONFIG_MTD_CONCAT is not set
++CONFIG_MTD_PARTITIONS=y
++# CONFIG_MTD_REDBOOT_PARTS is not set
++# CONFIG_MTD_CMDLINE_PARTS is not set
++# CONFIG_MTD_AR7_PARTS is not set
 +
-+static struct snd_soc_card qi_lb60 = {
-+	.name = "QI LB60",
-+	.dai_link = &qi_lb60_dai,
-+	.num_links = 1,
-+	.platform = &jz4740_soc_platform,
-+};
++#
++# User Modules And Translation Layers
++#
++CONFIG_MTD_CHAR=y
++CONFIG_MTD_BLKDEVS=y
++CONFIG_MTD_BLOCK=y
++# CONFIG_FTL is not set
++# CONFIG_NFTL is not set
++# CONFIG_INFTL is not set
++# CONFIG_RFD_FTL is not set
++# CONFIG_SSFDC is not set
++# CONFIG_SM_FTL is not set
++# CONFIG_MTD_OOPS is not set
 +
-+static struct snd_soc_device qi_lb60_snd_devdata = {
-+	.card = &qi_lb60,
-+	.codec_dev = &soc_codec_dev_jz4740_codec,
-+};
++#
++# RAM/ROM/Flash chip drivers
++#
++# CONFIG_MTD_CFI is not set
++# CONFIG_MTD_JEDECPROBE is not set
++CONFIG_MTD_MAP_BANK_WIDTH_1=y
++CONFIG_MTD_MAP_BANK_WIDTH_2=y
++CONFIG_MTD_MAP_BANK_WIDTH_4=y
++# CONFIG_MTD_MAP_BANK_WIDTH_8 is not set
++# CONFIG_MTD_MAP_BANK_WIDTH_16 is not set
++# CONFIG_MTD_MAP_BANK_WIDTH_32 is not set
++CONFIG_MTD_CFI_I1=y
++CONFIG_MTD_CFI_I2=y
++# CONFIG_MTD_CFI_I4 is not set
++# CONFIG_MTD_CFI_I8 is not set
++# CONFIG_MTD_RAM is not set
++# CONFIG_MTD_ROM is not set
++# CONFIG_MTD_ABSENT is not set
 +
-+static struct platform_device *qi_lb60_snd_device;
++#
++# Mapping drivers for chip access
++#
++# CONFIG_MTD_COMPLEX_MAPPINGS is not set
++# CONFIG_MTD_PLATRAM is not set
 +
-+static int __init qi_lb60_init(void)
-+{
-+	int ret;
++#
++# Self-contained MTD device drivers
++#
++# CONFIG_MTD_DATAFLASH is not set
++# CONFIG_MTD_M25P80 is not set
++# CONFIG_MTD_SST25L is not set
++# CONFIG_MTD_SLRAM is not set
++# CONFIG_MTD_PHRAM is not set
++# CONFIG_MTD_MTDRAM is not set
++# CONFIG_MTD_BLOCK2MTD is not set
 +
-+	qi_lb60_snd_device = platform_device_alloc("soc-audio", -1);
++#
++# Disk-On-Chip Device Drivers
++#
++# CONFIG_MTD_DOC2000 is not set
++# CONFIG_MTD_DOC2001 is not set
++# CONFIG_MTD_DOC2001PLUS is not set
++CONFIG_MTD_NAND=y
++CONFIG_MTD_NAND_ECC=y
++# CONFIG_MTD_NAND_ECC_SMC is not set
++# CONFIG_MTD_NAND_VERIFY_WRITE is not set
++# CONFIG_MTD_SM_COMMON is not set
++# CONFIG_MTD_NAND_MUSEUM_IDS is not set
++CONFIG_MTD_NAND_DENALI_SCRATCH_REG_ADDR=0xFF108018
++CONFIG_MTD_NAND_IDS=y
++# CONFIG_MTD_NAND_DISKONCHIP is not set
++# CONFIG_MTD_NAND_NANDSIM is not set
++# CONFIG_MTD_NAND_PLATFORM is not set
++# CONFIG_MTD_ALAUDA is not set
++CONFIG_MTD_NAND_JZ4740=y
++# CONFIG_MTD_ONENAND is not set
 +
-+	if (!qi_lb60_snd_device)
-+		return -ENOMEM;
++#
++# LPDDR flash memory drivers
++#
++# CONFIG_MTD_LPDDR is not set
 +
++#
++# UBI - Unsorted block images
++#
++CONFIG_MTD_UBI=y
++CONFIG_MTD_UBI_WL_THRESHOLD=4096
++CONFIG_MTD_UBI_BEB_RESERVE=1
++# CONFIG_MTD_UBI_GLUEBI is not set
 +
-+	ret = gpio_request(QI_LB60_SND_GPIO, "SND");
-+	if (ret) {
-+		pr_err("qi_lb60 snd: Failed to request SND GPIO(%d): %d\n",
-+				QI_LB60_SND_GPIO, ret);
-+		goto err_device_put;
-+	}
++#
++# UBI debugging options
++#
++# CONFIG_MTD_UBI_DEBUG is not set
++# CONFIG_PARPORT is not set
++CONFIG_BLK_DEV=y
++# CONFIG_BLK_DEV_COW_COMMON is not set
++# CONFIG_BLK_DEV_LOOP is not set
 +
-+	ret = gpio_request(QI_LB60_AMP_GPIO, "AMP");
-+	if (ret) {
-+		pr_err("qi_lb60 snd: Failed to request AMP GPIO(%d): %d\n",
-+				QI_LB60_AMP_GPIO, ret);
-+		goto err_gpio_free_snd;
-+	}
++#
++# DRBD disabled because PROC_FS, INET or CONNECTOR not selected
++#
++# CONFIG_BLK_DEV_NBD is not set
++# CONFIG_BLK_DEV_UB is not set
++# CONFIG_BLK_DEV_RAM is not set
++# CONFIG_CDROM_PKTCDVD is not set
++# CONFIG_ATA_OVER_ETH is not set
++# CONFIG_BLK_DEV_HD is not set
++CONFIG_MISC_DEVICES=y
++# CONFIG_AD525X_DPOT is not set
++# CONFIG_ENCLOSURE_SERVICES is not set
++# CONFIG_TI_DAC7512 is not set
++# CONFIG_C2PORT is not set
 +
-+	gpio_direction_output(JZ_GPIO_PORTB(29), 0);
-+	gpio_direction_output(JZ_GPIO_PORTD(4), 0);
++#
++# EEPROM support
++#
++# CONFIG_EEPROM_AT25 is not set
++# CONFIG_EEPROM_93CX6 is not set
++# CONFIG_IWMC3200TOP is not set
++CONFIG_HAVE_IDE=y
++# CONFIG_IDE is not set
 +
-+	platform_set_drvdata(qi_lb60_snd_device, &qi_lb60_snd_devdata);
-+	qi_lb60_snd_devdata.dev = &qi_lb60_snd_device->dev;
-+	ret = platform_device_add(qi_lb60_snd_device);
-+	if (ret) {
-+		pr_err("qi_lb60 snd: Failed to add snd soc device: %d\n", ret);
-+		goto err_unset_pdata;
-+	}
++#
++# SCSI device support
++#
++CONFIG_SCSI_MOD=y
++# CONFIG_RAID_ATTRS is not set
++# CONFIG_SCSI is not set
++# CONFIG_SCSI_DMA is not set
++# CONFIG_SCSI_NETLINK is not set
++# CONFIG_ATA is not set
++# CONFIG_MD is not set
++CONFIG_NETDEVICES=y
++# CONFIG_DUMMY is not set
++# CONFIG_BONDING is not set
++# CONFIG_MACVLAN is not set
++# CONFIG_EQUALIZER is not set
++# CONFIG_TUN is not set
++# CONFIG_VETH is not set
++# CONFIG_NET_ETHERNET is not set
++# CONFIG_NETDEV_1000 is not set
++# CONFIG_NETDEV_10000 is not set
++CONFIG_WLAN=y
++# CONFIG_USB_ZD1201 is not set
++# CONFIG_HOSTAP is not set
 +
-+	 return 0;
++#
++# Enable WiMAX (Networking options) to see the WiMAX drivers
++#
 +
-+err_unset_pdata:
-+	platform_set_drvdata(qi_lb60_snd_device, NULL);
-+/*err_gpio_free_amp:*/
-+	gpio_free(QI_LB60_AMP_GPIO);
-+err_gpio_free_snd:
-+	gpio_free(QI_LB60_SND_GPIO);
-+err_device_put:
-+	platform_device_put(qi_lb60_snd_device);
++#
++# USB Network Adapters
++#
++# CONFIG_USB_CATC is not set
++# CONFIG_USB_KAWETH is not set
++# CONFIG_USB_PEGASUS is not set
++# CONFIG_USB_RTL8150 is not set
++# CONFIG_USB_USBNET is not set
++# CONFIG_USB_IPHETH is not set
++# CONFIG_WAN is not set
++# CONFIG_ATM_DRIVERS is not set
++# CONFIG_PPP is not set
++# CONFIG_SLIP is not set
++# CONFIG_NETCONSOLE is not set
++# CONFIG_NETPOLL is not set
++# CONFIG_NET_POLL_CONTROLLER is not set
++CONFIG_ISDN=y
++# CONFIG_ISDN_I4L is not set
++# CONFIG_ISDN_CAPI is not set
++# CONFIG_ISDN_DRV_GIGASET is not set
++# CONFIG_MISDN is not set
++# CONFIG_PHONE is not set
 +
-+	return ret;
-+}
-+module_init(qi_lb60_init);
++#
++# Input device support
++#
++CONFIG_INPUT=y
++# CONFIG_INPUT_FF_MEMLESS is not set
++# CONFIG_INPUT_POLLDEV is not set
++# CONFIG_INPUT_SPARSEKMAP is not set
 +
-+static void __exit qi_lb60_exit(void)
-+{
-+	gpio_free(QI_LB60_AMP_GPIO);
-+	gpio_free(QI_LB60_SND_GPIO);
-+	platform_device_unregister(qi_lb60_snd_device);
-+}
-+module_exit(qi_lb60_exit);
++#
++# Userland interfaces
++#
++# CONFIG_INPUT_MOUSEDEV is not set
++# CONFIG_INPUT_JOYDEV is not set
++CONFIG_INPUT_EVDEV=y
++# CONFIG_INPUT_EVBUG is not set
 +
-+MODULE_AUTHOR("Lars-Peter Clausen <lars@metafoo.de>");
-+MODULE_DESCRIPTION("ALSA SoC QI LB60 Audio support");
-+MODULE_LICENSE("GPL v2");
++#
++# Input Device Drivers
++#
++CONFIG_INPUT_KEYBOARD=y
++# CONFIG_KEYBOARD_ATKBD is not set
++# CONFIG_KEYBOARD_LKKBD is not set
++CONFIG_KEYBOARD_GPIO=y
++CONFIG_KEYBOARD_MATRIX=y
++# CONFIG_KEYBOARD_NEWTON is not set
++# CONFIG_KEYBOARD_OPENCORES is not set
++# CONFIG_KEYBOARD_STOWAWAY is not set
++# CONFIG_KEYBOARD_SUNKBD is not set
++# CONFIG_KEYBOARD_XTKBD is not set
++# CONFIG_INPUT_MOUSE is not set
++# CONFIG_INPUT_JOYSTICK is not set
++# CONFIG_INPUT_TABLET is not set
++# CONFIG_INPUT_TOUCHSCREEN is not set
++CONFIG_INPUT_MISC=y
++# CONFIG_INPUT_AD714X is not set
++# CONFIG_INPUT_ATI_REMOTE is not set
++# CONFIG_INPUT_ATI_REMOTE2 is not set
++# CONFIG_INPUT_KEYSPAN_REMOTE is not set
++# CONFIG_INPUT_POWERMATE is not set
++# CONFIG_INPUT_YEALINK is not set
++# CONFIG_INPUT_CM109 is not set
++# CONFIG_INPUT_UINPUT is not set
++# CONFIG_INPUT_GPIO_ROTARY_ENCODER is not set
++
++#
++# Hardware I/O ports
++#
++# CONFIG_SERIO is not set
++# CONFIG_GAMEPORT is not set
++
++#
++# Character devices
++#
++CONFIG_VT=y
++CONFIG_CONSOLE_TRANSLATIONS=y
++CONFIG_VT_CONSOLE=y
++CONFIG_HW_CONSOLE=y
++CONFIG_VT_HW_CONSOLE_BINDING=y
++# CONFIG_DEVKMEM is not set
++# CONFIG_SERIAL_NONSTANDARD is not set
++# CONFIG_N_GSM is not set
++
++#
++# Serial drivers
++#
++CONFIG_SERIAL_8250=y
++CONFIG_SERIAL_8250_CONSOLE=y
++CONFIG_SERIAL_8250_NR_UARTS=2
++CONFIG_SERIAL_8250_RUNTIME_UARTS=2
++# CONFIG_SERIAL_8250_EXTENDED is not set
++
++#
++# Non-8250 serial port support
++#
++# CONFIG_SERIAL_MAX3100 is not set
++CONFIG_SERIAL_CORE=y
++CONFIG_SERIAL_CORE_CONSOLE=y
++# CONFIG_SERIAL_TIMBERDALE is not set
++# CONFIG_SERIAL_ALTERA_JTAGUART is not set
++# CONFIG_SERIAL_ALTERA_UART is not set
++CONFIG_UNIX98_PTYS=y
++# CONFIG_DEVPTS_MULTIPLE_INSTANCES is not set
++CONFIG_LEGACY_PTYS=y
++CONFIG_LEGACY_PTY_COUNT=2
++# CONFIG_IPMI_HANDLER is not set
++# CONFIG_HW_RANDOM is not set
++# CONFIG_R3964 is not set
++# CONFIG_RAW_DRIVER is not set
++# CONFIG_TCG_TPM is not set
++# CONFIG_RAMOOPS is not set
++# CONFIG_I2C is not set
++CONFIG_SPI=y
++CONFIG_SPI_MASTER=y
++
++#
++# SPI Master Controller Drivers
++#
++CONFIG_SPI_BITBANG=y
++CONFIG_SPI_GPIO=y
++# CONFIG_SPI_XILINX is not set
++# CONFIG_SPI_DESIGNWARE is not set
++
++#
++# SPI Protocol Masters
++#
++# CONFIG_SPI_SPIDEV is not set
++# CONFIG_SPI_TLE62X0 is not set
++
++#
++# PPS support
++#
++# CONFIG_PPS is not set
++CONFIG_ARCH_REQUIRE_GPIOLIB=y
++CONFIG_GPIOLIB=y
++# CONFIG_GPIO_SYSFS is not set
++
++#
++# Memory mapped GPIO expanders:
++#
++# CONFIG_GPIO_IT8761E is not set
++
++#
++# I2C GPIO expanders:
++#
++
++#
++# PCI GPIO expanders:
++#
++
++#
++# SPI GPIO expanders:
++#
++# CONFIG_GPIO_MAX7301 is not set
++# CONFIG_GPIO_MCP23S08 is not set
++# CONFIG_GPIO_MC33880 is not set
++
++#
++# AC97 GPIO expanders:
++#
++
++#
++# MODULbus GPIO expanders:
++#
++# CONFIG_W1 is not set
++CONFIG_POWER_SUPPLY=y
++# CONFIG_POWER_SUPPLY_DEBUG is not set
++# CONFIG_PDA_POWER is not set
++# CONFIG_TEST_POWER is not set
++# CONFIG_BATTERY_DS2760 is not set
++CONFIG_BATTERY_JZ4740=y
++CONFIG_HWMON=y
++# CONFIG_HWMON_VID is not set
++# CONFIG_HWMON_DEBUG_CHIP is not set
++
++#
++# Native drivers
++#
++# CONFIG_SENSORS_ADCXX is not set
++# CONFIG_SENSORS_F71805F is not set
++# CONFIG_SENSORS_F71882FG is not set
++# CONFIG_SENSORS_IT87 is not set
++CONFIG_SENSORS_JZ4740=y
++# CONFIG_SENSORS_LM70 is not set
++# CONFIG_SENSORS_MAX1111 is not set
++# CONFIG_SENSORS_PC87360 is not set
++# CONFIG_SENSORS_PC87427 is not set
++# CONFIG_SENSORS_SHT15 is not set
++# CONFIG_SENSORS_SMSC47M1 is not set
++# CONFIG_SENSORS_SMSC47B397 is not set
++# CONFIG_SENSORS_ADS7871 is not set
++# CONFIG_SENSORS_VT1211 is not set
++# CONFIG_SENSORS_W83627HF is not set
++# CONFIG_SENSORS_W83627EHF is not set
++# CONFIG_SENSORS_LIS3_SPI is not set
++# CONFIG_THERMAL is not set
++# CONFIG_WATCHDOG is not set
++CONFIG_SSB_POSSIBLE=y
++
++#
++# Sonics Silicon Backplane
++#
++# CONFIG_SSB is not set
++# CONFIG_MFD_SUPPORT is not set
++# CONFIG_REGULATOR is not set
++# CONFIG_MEDIA_SUPPORT is not set
++
++#
++# Graphics support
++#
++# CONFIG_VGASTATE is not set
++# CONFIG_VIDEO_OUTPUT_CONTROL is not set
++CONFIG_FB=y
++# CONFIG_FIRMWARE_EDID is not set
++# CONFIG_FB_DDC is not set
++# CONFIG_FB_BOOT_VESA_SUPPORT is not set
++# CONFIG_FB_CFB_FILLRECT is not set
++# CONFIG_FB_CFB_COPYAREA is not set
++# CONFIG_FB_CFB_IMAGEBLIT is not set
++# CONFIG_FB_CFB_REV_PIXELS_IN_BYTE is not set
++CONFIG_FB_SYS_FILLRECT=y
++CONFIG_FB_SYS_COPYAREA=y
++CONFIG_FB_SYS_IMAGEBLIT=y
++# CONFIG_FB_FOREIGN_ENDIAN is not set
++# CONFIG_FB_SYS_FOPS is not set
++# CONFIG_FB_SVGALIB is not set
++# CONFIG_FB_MACMODES is not set
++# CONFIG_FB_BACKLIGHT is not set
++# CONFIG_FB_MODE_HELPERS is not set
++# CONFIG_FB_TILEBLITTING is not set
++
++#
++# Frame buffer hardware drivers
++#
++# CONFIG_FB_S1D13XXX is not set
++# CONFIG_FB_VIRTUAL is not set
++# CONFIG_FB_METRONOME is not set
++# CONFIG_FB_MB862XX is not set
++# CONFIG_FB_BROADSHEET is not set
++CONFIG_FB_JZ4740=y
++CONFIG_BACKLIGHT_LCD_SUPPORT=y
++CONFIG_LCD_CLASS_DEVICE=y
++# CONFIG_LCD_L4F00242T03 is not set
++# CONFIG_LCD_LMS283GF05 is not set
++# CONFIG_LCD_LTV350QV is not set
++# CONFIG_LCD_TDO24M is not set
++# CONFIG_LCD_VGG2432A4 is not set
++# CONFIG_LCD_PLATFORM is not set
++# CONFIG_BACKLIGHT_CLASS_DEVICE is not set
++
++#
++# Display device support
++#
++# CONFIG_DISPLAY_SUPPORT is not set
++
++#
++# Console display driver support
++#
++# CONFIG_VGA_CONSOLE is not set
++CONFIG_DUMMY_CONSOLE=y
++CONFIG_FRAMEBUFFER_CONSOLE=y
++# CONFIG_FRAMEBUFFER_CONSOLE_DETECT_PRIMARY is not set
++# CONFIG_FRAMEBUFFER_CONSOLE_ROTATION is not set
++CONFIG_FONTS=y
++# CONFIG_FONT_8x8 is not set
++# CONFIG_FONT_8x16 is not set
++# CONFIG_FONT_6x11 is not set
++# CONFIG_FONT_7x14 is not set
++# CONFIG_FONT_PEARL_8x8 is not set
++# CONFIG_FONT_ACORN_8x8 is not set
++# CONFIG_FONT_MINI_4x6 is not set
++CONFIG_FONT_SUN8x16=y
++# CONFIG_FONT_SUN12x22 is not set
++# CONFIG_FONT_10x18 is not set
++CONFIG_LOGO=y
++# CONFIG_LOGO_LINUX_MONO is not set
++# CONFIG_LOGO_LINUX_VGA16 is not set
++# CONFIG_LOGO_LINUX_CLUT224 is not set
++CONFIG_SOUND=m
++CONFIG_SOUND_OSS_CORE=y
++CONFIG_SOUND_OSS_CORE_PRECLAIM=y
++CONFIG_SND=m
++CONFIG_SND_TIMER=m
++CONFIG_SND_PCM=m
++CONFIG_SND_RAWMIDI=m
++CONFIG_SND_JACK=y
++CONFIG_SND_SEQUENCER=m
++CONFIG_SND_SEQ_DUMMY=m
++CONFIG_SND_OSSEMUL=y
++CONFIG_SND_MIXER_OSS=m
++CONFIG_SND_PCM_OSS=m
++CONFIG_SND_PCM_OSS_PLUGINS=y
++CONFIG_SND_SEQUENCER_OSS=y
++# CONFIG_SND_DYNAMIC_MINORS is not set
++# CONFIG_SND_SUPPORT_OLD_API is not set
++CONFIG_SND_VERBOSE_PROCFS=y
++# CONFIG_SND_VERBOSE_PRINTK is not set
++# CONFIG_SND_DEBUG is not set
++CONFIG_SND_RAWMIDI_SEQ=m
++# CONFIG_SND_OPL3_LIB_SEQ is not set
++# CONFIG_SND_OPL4_LIB_SEQ is not set
++# CONFIG_SND_SBAWE_SEQ is not set
++# CONFIG_SND_EMU10K1_SEQ is not set
++CONFIG_SND_DRIVERS=y
++# CONFIG_SND_DUMMY is not set
++CONFIG_SND_VIRMIDI=m
++# CONFIG_SND_MTPAV is not set
++# CONFIG_SND_SERIAL_U16550 is not set
++# CONFIG_SND_MPU401 is not set
++# CONFIG_SND_SPI is not set
++# CONFIG_SND_MIPS is not set
++CONFIG_SND_USB=y
++# CONFIG_SND_USB_AUDIO is not set
++# CONFIG_SND_USB_UA101 is not set
++# CONFIG_SND_USB_CAIAQ is not set
++CONFIG_SND_SOC=m
++CONFIG_SND_SOC_I2C_AND_SPI=m
++# CONFIG_SND_SOC_ALL_CODECS is not set
++# CONFIG_SOUND_PRIME is not set
++# CONFIG_HID_SUPPORT is not set
++CONFIG_USB_SUPPORT=y
++CONFIG_USB_ARCH_HAS_HCD=y
++CONFIG_USB_ARCH_HAS_OHCI=y
++# CONFIG_USB_ARCH_HAS_EHCI is not set
++CONFIG_USB=y
++# CONFIG_USB_DEBUG is not set
++# CONFIG_USB_ANNOUNCE_NEW_DEVICES is not set
++
++#
++# Miscellaneous USB options
++#
++CONFIG_USB_DEVICEFS=y
++# CONFIG_USB_DEVICE_CLASS is not set
++# CONFIG_USB_DYNAMIC_MINORS is not set
++# CONFIG_USB_OTG_WHITELIST is not set
++# CONFIG_USB_OTG_BLACKLIST_HUB is not set
++# CONFIG_USB_MON is not set
++# CONFIG_USB_WUSB is not set
++# CONFIG_USB_WUSB_CBAF is not set
++
++#
++# USB Host Controller Drivers
++#
++# CONFIG_USB_C67X00_HCD is not set
++# CONFIG_USB_OXU210HP_HCD is not set
++# CONFIG_USB_ISP116X_HCD is not set
++# CONFIG_USB_ISP1760_HCD is not set
++# CONFIG_USB_ISP1362_HCD is not set
++CONFIG_USB_OHCI_HCD=y
++# CONFIG_USB_OHCI_BIG_ENDIAN_DESC is not set
++# CONFIG_USB_OHCI_BIG_ENDIAN_MMIO is not set
++CONFIG_USB_OHCI_LITTLE_ENDIAN=y
++# CONFIG_USB_SL811_HCD is not set
++# CONFIG_USB_R8A66597_HCD is not set
++# CONFIG_USB_HWA_HCD is not set
++
++#
++# USB Device Class drivers
++#
++# CONFIG_USB_ACM is not set
++# CONFIG_USB_PRINTER is not set
++# CONFIG_USB_WDM is not set
++# CONFIG_USB_TMC is not set
++
++#
++# NOTE: USB_STORAGE depends on SCSI but BLK_DEV_SD may
++#
++
++#
++# also be needed; see USB_STORAGE Help for more info
++#
++# CONFIG_USB_LIBUSUAL is not set
++
++#
++# USB Imaging devices
++#
++# CONFIG_USB_MDC800 is not set
++
++#
++# USB port drivers
++#
++# CONFIG_USB_SERIAL is not set
++
++#
++# USB Miscellaneous drivers
++#
++# CONFIG_USB_EMI62 is not set
++# CONFIG_USB_EMI26 is not set
++# CONFIG_USB_ADUTUX is not set
++# CONFIG_USB_SEVSEG is not set
++# CONFIG_USB_RIO500 is not set
++# CONFIG_USB_LEGOTOWER is not set
++# CONFIG_USB_LCD is not set
++# CONFIG_USB_LED is not set
++# CONFIG_USB_CYPRESS_CY7C63 is not set
++# CONFIG_USB_CYTHERM is not set
++# CONFIG_USB_IDMOUSE is not set
++# CONFIG_USB_FTDI_ELAN is not set
++# CONFIG_USB_APPLEDISPLAY is not set
++# CONFIG_USB_LD is not set
++# CONFIG_USB_TRANCEVIBRATOR is not set
++# CONFIG_USB_IOWARRIOR is not set
++# CONFIG_USB_TEST is not set
++# CONFIG_USB_ISIGHTFW is not set
++# CONFIG_USB_ATM is not set
++# CONFIG_USB_GADGET is not set
++
++#
++# OTG and related infrastructure
++#
++# CONFIG_USB_GPIO_VBUS is not set
++# CONFIG_NOP_USB_XCEIV is not set
++CONFIG_MMC=y
++# CONFIG_MMC_DEBUG is not set
++CONFIG_MMC_UNSAFE_RESUME=y
++
++#
++# MMC/SD/SDIO Card Drivers
++#
++CONFIG_MMC_BLOCK=y
++# CONFIG_MMC_BLOCK_BOUNCE is not set
++# CONFIG_SDIO_UART is not set
++# CONFIG_MMC_TEST is not set
++
++#
++# MMC/SD/SDIO Host Controller Drivers
++#
++# CONFIG_MMC_SDHCI is not set
++CONFIG_MMC_JZ4740=y
++# CONFIG_MMC_SPI is not set
++# CONFIG_MEMSTICK is not set
++CONFIG_NEW_LEDS=y
++CONFIG_LEDS_CLASS=y
++
++#
++# LED drivers
++#
++# CONFIG_LEDS_GPIO is not set
++# CONFIG_LEDS_DAC124S085 is not set
++CONFIG_LEDS_PWM=y
++# CONFIG_LEDS_LT3593 is not set
++CONFIG_LEDS_TRIGGERS=y
++
++#
++# LED Triggers
++#
++CONFIG_LEDS_TRIGGER_TIMER=y
++CONFIG_LEDS_TRIGGER_HEARTBEAT=y
++# CONFIG_LEDS_TRIGGER_BACKLIGHT is not set
++# CONFIG_LEDS_TRIGGER_GPIO is not set
++CONFIG_LEDS_TRIGGER_DEFAULT_ON=y
++
++#
++# iptables trigger is under Netfilter config (LED target)
++#
++# CONFIG_ACCESSIBILITY is not set
++CONFIG_RTC_LIB=y
++CONFIG_RTC_CLASS=y
++CONFIG_RTC_HCTOSYS=y
++CONFIG_RTC_HCTOSYS_DEVICE="rtc0"
++# CONFIG_RTC_DEBUG is not set
++
++#
++# RTC interfaces
++#
++CONFIG_RTC_INTF_SYSFS=y
++CONFIG_RTC_INTF_PROC=y
++CONFIG_RTC_INTF_DEV=y
++# CONFIG_RTC_INTF_DEV_UIE_EMUL is not set
++# CONFIG_RTC_DRV_TEST is not set
++
++#
++# SPI RTC drivers
++#
++# CONFIG_RTC_DRV_M41T94 is not set
++# CONFIG_RTC_DRV_DS1305 is not set
++# CONFIG_RTC_DRV_DS1390 is not set
++# CONFIG_RTC_DRV_MAX6902 is not set
++# CONFIG_RTC_DRV_R9701 is not set
++# CONFIG_RTC_DRV_RS5C348 is not set
++# CONFIG_RTC_DRV_DS3234 is not set
++# CONFIG_RTC_DRV_PCF2123 is not set
++
++#
++# Platform RTC drivers
++#
++# CONFIG_RTC_DRV_CMOS is not set
++# CONFIG_RTC_DRV_DS1286 is not set
++# CONFIG_RTC_DRV_DS1511 is not set
++# CONFIG_RTC_DRV_DS1553 is not set
++# CONFIG_RTC_DRV_DS1742 is not set
++# CONFIG_RTC_DRV_STK17TA8 is not set
++# CONFIG_RTC_DRV_M48T86 is not set
++# CONFIG_RTC_DRV_M48T35 is not set
++# CONFIG_RTC_DRV_M48T59 is not set
++# CONFIG_RTC_DRV_MSM6242 is not set
++# CONFIG_RTC_DRV_BQ4802 is not set
++# CONFIG_RTC_DRV_RP5C01 is not set
++# CONFIG_RTC_DRV_V3020 is not set
++
++#
++# on-CPU RTC drivers
++#
++CONFIG_RTC_DRV_JZ4740=y
++# CONFIG_DMADEVICES is not set
++# CONFIG_AUXDISPLAY is not set
++# CONFIG_UIO is not set
++# CONFIG_STAGING is not set
++
++#
++# File systems
++#
++CONFIG_EXT2_FS=y
++# CONFIG_EXT2_FS_XATTR is not set
++# CONFIG_EXT2_FS_XIP is not set
++CONFIG_EXT3_FS=y
++# CONFIG_EXT3_DEFAULTS_TO_ORDERED is not set
++# CONFIG_EXT3_FS_XATTR is not set
++# CONFIG_EXT4_FS is not set
++CONFIG_JBD=y
++# CONFIG_JBD_DEBUG is not set
++# CONFIG_REISERFS_FS is not set
++# CONFIG_JFS_FS is not set
++# CONFIG_FS_POSIX_ACL is not set
++# CONFIG_XFS_FS is not set
++# CONFIG_GFS2_FS is not set
++# CONFIG_OCFS2_FS is not set
++# CONFIG_BTRFS_FS is not set
++# CONFIG_NILFS2_FS is not set
++CONFIG_FILE_LOCKING=y
++CONFIG_FSNOTIFY=y
++# CONFIG_DNOTIFY is not set
++# CONFIG_INOTIFY is not set
++CONFIG_INOTIFY_USER=y
++# CONFIG_QUOTA is not set
++# CONFIG_AUTOFS_FS is not set
++# CONFIG_AUTOFS4_FS is not set
++# CONFIG_FUSE_FS is not set
++
++#
++# Caches
++#
++# CONFIG_FSCACHE is not set
++
++#
++# CD-ROM/DVD Filesystems
++#
++# CONFIG_ISO9660_FS is not set
++# CONFIG_UDF_FS is not set
++
++#
++# DOS/FAT/NT Filesystems
++#
++CONFIG_FAT_FS=y
++# CONFIG_MSDOS_FS is not set
++CONFIG_VFAT_FS=y
++CONFIG_FAT_DEFAULT_CODEPAGE=437
++CONFIG_FAT_DEFAULT_IOCHARSET="iso8859-1"
++# CONFIG_NTFS_FS is not set
++
++#
++# Pseudo filesystems
++#
++CONFIG_PROC_FS=y
++CONFIG_PROC_KCORE=y
++CONFIG_PROC_SYSCTL=y
++# CONFIG_PROC_PAGE_MONITOR is not set
++CONFIG_SYSFS=y
++CONFIG_TMPFS=y
++# CONFIG_TMPFS_POSIX_ACL is not set
++# CONFIG_HUGETLB_PAGE is not set
++# CONFIG_CONFIGFS_FS is not set
++CONFIG_MISC_FILESYSTEMS=y
++# CONFIG_ADFS_FS is not set
++# CONFIG_AFFS_FS is not set
++# CONFIG_HFS_FS is not set
++# CONFIG_HFSPLUS_FS is not set
++# CONFIG_BEFS_FS is not set
++# CONFIG_BFS_FS is not set
++# CONFIG_EFS_FS is not set
++CONFIG_JFFS2_FS=y
++CONFIG_JFFS2_FS_DEBUG=0
++CONFIG_JFFS2_FS_WRITEBUFFER=y
++# CONFIG_JFFS2_FS_WBUF_VERIFY is not set
++CONFIG_JFFS2_SUMMARY=y
++# CONFIG_JFFS2_FS_XATTR is not set
++CONFIG_JFFS2_COMPRESSION_OPTIONS=y
++# CONFIG_JFFS2_ZLIB is not set
++# CONFIG_JFFS2_LZO is not set
++CONFIG_JFFS2_RTIME=y
++# CONFIG_JFFS2_RUBIN is not set
++# CONFIG_JFFS2_CMODE_NONE is not set
++CONFIG_JFFS2_CMODE_PRIORITY=y
++# CONFIG_JFFS2_CMODE_SIZE is not set
++# CONFIG_JFFS2_CMODE_FAVOURLZO is not set
++CONFIG_UBIFS_FS=y
++# CONFIG_UBIFS_FS_XATTR is not set
++CONFIG_UBIFS_FS_ADVANCED_COMPR=y
++CONFIG_UBIFS_FS_LZO=y
++CONFIG_UBIFS_FS_ZLIB=y
++# CONFIG_UBIFS_FS_DEBUG is not set
++# CONFIG_LOGFS is not set
++# CONFIG_CRAMFS is not set
++# CONFIG_SQUASHFS is not set
++# CONFIG_VXFS_FS is not set
++# CONFIG_MINIX_FS is not set
++# CONFIG_OMFS_FS is not set
++# CONFIG_HPFS_FS is not set
++# CONFIG_QNX4FS_FS is not set
++# CONFIG_ROMFS_FS is not set
++# CONFIG_SYSV_FS is not set
++# CONFIG_UFS_FS is not set
++# CONFIG_NETWORK_FILESYSTEMS is not set
++
++#
++# Partition Types
++#
++CONFIG_PARTITION_ADVANCED=y
++# CONFIG_ACORN_PARTITION is not set
++# CONFIG_OSF_PARTITION is not set
++# CONFIG_AMIGA_PARTITION is not set
++# CONFIG_ATARI_PARTITION is not set
++# CONFIG_MAC_PARTITION is not set
++CONFIG_MSDOS_PARTITION=y
++# CONFIG_BSD_DISKLABEL is not set
++# CONFIG_MINIX_SUBPARTITION is not set
++# CONFIG_SOLARIS_X86_PARTITION is not set
++# CONFIG_UNIXWARE_DISKLABEL is not set
++# CONFIG_LDM_PARTITION is not set
++# CONFIG_SGI_PARTITION is not set
++# CONFIG_ULTRIX_PARTITION is not set
++# CONFIG_SUN_PARTITION is not set
++# CONFIG_KARMA_PARTITION is not set
++# CONFIG_EFI_PARTITION is not set
++# CONFIG_SYSV68_PARTITION is not set
++CONFIG_NLS=y
++CONFIG_NLS_DEFAULT="iso8859-1"
++CONFIG_NLS_CODEPAGE_437=y
++CONFIG_NLS_CODEPAGE_737=y
++CONFIG_NLS_CODEPAGE_775=y
++CONFIG_NLS_CODEPAGE_850=y
++CONFIG_NLS_CODEPAGE_852=y
++CONFIG_NLS_CODEPAGE_855=y
++CONFIG_NLS_CODEPAGE_857=y
++CONFIG_NLS_CODEPAGE_860=y
++CONFIG_NLS_CODEPAGE_861=y
++CONFIG_NLS_CODEPAGE_862=y
++CONFIG_NLS_CODEPAGE_863=y
++CONFIG_NLS_CODEPAGE_864=y
++CONFIG_NLS_CODEPAGE_865=y
++CONFIG_NLS_CODEPAGE_866=y
++CONFIG_NLS_CODEPAGE_869=y
++CONFIG_NLS_CODEPAGE_936=y
++CONFIG_NLS_CODEPAGE_950=y
++CONFIG_NLS_CODEPAGE_932=y
++CONFIG_NLS_CODEPAGE_949=y
++CONFIG_NLS_CODEPAGE_874=y
++CONFIG_NLS_ISO8859_8=y
++CONFIG_NLS_CODEPAGE_1250=y
++CONFIG_NLS_CODEPAGE_1251=y
++CONFIG_NLS_ASCII=y
++CONFIG_NLS_ISO8859_1=y
++CONFIG_NLS_ISO8859_2=y
++CONFIG_NLS_ISO8859_3=y
++CONFIG_NLS_ISO8859_4=y
++CONFIG_NLS_ISO8859_5=y
++CONFIG_NLS_ISO8859_6=y
++CONFIG_NLS_ISO8859_7=y
++CONFIG_NLS_ISO8859_9=y
++CONFIG_NLS_ISO8859_13=y
++CONFIG_NLS_ISO8859_14=y
++CONFIG_NLS_ISO8859_15=y
++CONFIG_NLS_KOI8_R=y
++CONFIG_NLS_KOI8_U=y
++CONFIG_NLS_UTF8=y
++# CONFIG_DLM is not set
++
++#
++# Kernel hacking
++#
++CONFIG_TRACE_IRQFLAGS_SUPPORT=y
++CONFIG_PRINTK_TIME=y
++CONFIG_ENABLE_WARN_DEPRECATED=y
++CONFIG_ENABLE_MUST_CHECK=y
++CONFIG_FRAME_WARN=1024
++# CONFIG_MAGIC_SYSRQ is not set
++CONFIG_STRIP_ASM_SYMS=y
++# CONFIG_UNUSED_SYMBOLS is not set
++CONFIG_DEBUG_FS=y
++# CONFIG_HEADERS_CHECK is not set
++# CONFIG_DEBUG_KERNEL is not set
++# CONFIG_DEBUG_MEMORY_INIT is not set
++# CONFIG_LKDTM is not set
++CONFIG_SYSCTL_SYSCALL_CHECK=y
++CONFIG_HAVE_FUNCTION_TRACER=y
++CONFIG_HAVE_FUNCTION_GRAPH_TRACER=y
++CONFIG_HAVE_FUNCTION_TRACE_MCOUNT_TEST=y
++CONFIG_HAVE_DYNAMIC_FTRACE=y
++CONFIG_HAVE_FTRACE_MCOUNT_RECORD=y
++CONFIG_TRACING_SUPPORT=y
++# CONFIG_FTRACE is not set
++# CONFIG_DYNAMIC_DEBUG is not set
++# CONFIG_ATOMIC64_SELFTEST is not set
++# CONFIG_SAMPLES is not set
++CONFIG_HAVE_ARCH_KGDB=y
++CONFIG_EARLY_PRINTK=y
++# CONFIG_CMDLINE_BOOL is not set
++# CONFIG_SPINLOCK_TEST is not set
++
++#
++# Security options
++#
++# CONFIG_KEYS is not set
++# CONFIG_SECURITY is not set
++# CONFIG_SECURITYFS is not set
++# CONFIG_DEFAULT_SECURITY_SELINUX is not set
++# CONFIG_DEFAULT_SECURITY_SMACK is not set
++# CONFIG_DEFAULT_SECURITY_TOMOYO is not set
++CONFIG_DEFAULT_SECURITY_DAC=y
++CONFIG_DEFAULT_SECURITY=""
++CONFIG_CRYPTO=y
++
++#
++# Crypto core or helper
++#
++CONFIG_CRYPTO_ALGAPI=y
++CONFIG_CRYPTO_ALGAPI2=y
++CONFIG_CRYPTO_PCOMP=y
++# CONFIG_CRYPTO_MANAGER is not set
++# CONFIG_CRYPTO_MANAGER2 is not set
++# CONFIG_CRYPTO_GF128MUL is not set
++# CONFIG_CRYPTO_NULL is not set
++# CONFIG_CRYPTO_CRYPTD is not set
++# CONFIG_CRYPTO_AUTHENC is not set
++# CONFIG_CRYPTO_TEST is not set
++
++#
++# Authenticated Encryption with Associated Data
++#
++# CONFIG_CRYPTO_CCM is not set
++# CONFIG_CRYPTO_GCM is not set
++# CONFIG_CRYPTO_SEQIV is not set
++
++#
++# Block modes
++#
++# CONFIG_CRYPTO_CBC is not set
++# CONFIG_CRYPTO_CTR is not set
++# CONFIG_CRYPTO_CTS is not set
++# CONFIG_CRYPTO_ECB is not set
++# CONFIG_CRYPTO_LRW is not set
++# CONFIG_CRYPTO_PCBC is not set
++# CONFIG_CRYPTO_XTS is not set
++
++#
++# Hash modes
++#
++# CONFIG_CRYPTO_HMAC is not set
++# CONFIG_CRYPTO_XCBC is not set
++# CONFIG_CRYPTO_VMAC is not set
++
++#
++# Digest
++#
++# CONFIG_CRYPTO_CRC32C is not set
++# CONFIG_CRYPTO_GHASH is not set
++# CONFIG_CRYPTO_MD4 is not set
++# CONFIG_CRYPTO_MD5 is not set
++# CONFIG_CRYPTO_MICHAEL_MIC is not set
++# CONFIG_CRYPTO_RMD128 is not set
++# CONFIG_CRYPTO_RMD160 is not set
++# CONFIG_CRYPTO_RMD256 is not set
++# CONFIG_CRYPTO_RMD320 is not set
++# CONFIG_CRYPTO_SHA1 is not set
++# CONFIG_CRYPTO_SHA256 is not set
++# CONFIG_CRYPTO_SHA512 is not set
++# CONFIG_CRYPTO_TGR192 is not set
++# CONFIG_CRYPTO_WP512 is not set
++
++#
++# Ciphers
++#
++# CONFIG_CRYPTO_AES is not set
++# CONFIG_CRYPTO_ANUBIS is not set
++# CONFIG_CRYPTO_ARC4 is not set
++# CONFIG_CRYPTO_BLOWFISH is not set
++# CONFIG_CRYPTO_CAMELLIA is not set
++# CONFIG_CRYPTO_CAST5 is not set
++# CONFIG_CRYPTO_CAST6 is not set
++# CONFIG_CRYPTO_DES is not set
++# CONFIG_CRYPTO_FCRYPT is not set
++# CONFIG_CRYPTO_KHAZAD is not set
++# CONFIG_CRYPTO_SALSA20 is not set
++# CONFIG_CRYPTO_SEED is not set
++# CONFIG_CRYPTO_SERPENT is not set
++# CONFIG_CRYPTO_TEA is not set
++# CONFIG_CRYPTO_TWOFISH is not set
++
++#
++# Compression
++#
++CONFIG_CRYPTO_DEFLATE=y
++CONFIG_CRYPTO_ZLIB=y
++CONFIG_CRYPTO_LZO=y
++
++#
++# Random Number Generation
++#
++# CONFIG_CRYPTO_ANSI_CPRNG is not set
++# CONFIG_CRYPTO_HW is not set
++# CONFIG_BINARY_PRINTF is not set
++
++#
++# Library routines
++#
++CONFIG_BITREVERSE=y
++CONFIG_GENERIC_FIND_LAST_BIT=y
++CONFIG_CRC_CCITT=m
++CONFIG_CRC16=y
++# CONFIG_CRC_T10DIF is not set
++# CONFIG_CRC_ITU_T is not set
++CONFIG_CRC32=y
++# CONFIG_CRC7 is not set
++# CONFIG_LIBCRC32C is not set
++CONFIG_ZLIB_INFLATE=y
++CONFIG_ZLIB_DEFLATE=y
++CONFIG_LZO_COMPRESS=y
++CONFIG_LZO_DECOMPRESS=y
++CONFIG_HAS_IOMEM=y
++CONFIG_HAS_IOPORT=y
++CONFIG_HAS_DMA=y
++CONFIG_NLATTR=y
 -- 
 1.5.6.5
 
