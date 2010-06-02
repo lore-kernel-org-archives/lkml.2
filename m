@@ -1,52 +1,152 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932793Ab0FBQiI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jun 2010 12:38:08 -0400
-Received: from fg-out-1718.google.com ([72.14.220.159]:23002 "EHLO
-	fg-out-1718.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752875Ab0FBQiE (ORCPT
+	id S932808Ab0FBQjF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jun 2010 12:39:05 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:57620 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932696Ab0FBQjB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jun 2010 12:38:04 -0400
+	Wed, 2 Jun 2010 12:39:01 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:subject:references
-         :in-reply-to:x-enigmail-version:content-type
-         :content-transfer-encoding;
-        b=aL5RdQO4REJFRZtGL/zVFTPDnAF2ue0PtD7jbvKUuxFTKvtJxM9kxSQG+pMgrz8cHO
-         57JNaa73v3p2FqFfw0NOSJoY6FJyfe9IdevVTSC4VIPWiJf17A3jsergwuJWPnJ2XtXP
-         o0uiKCrZHAgM2uj1od1GSbAzwUo4AKu0Rgv94=
-Message-ID: <4C0688E5.3010902@gmail.com>
-Date: Wed, 02 Jun 2010 18:37:57 +0200
-From: Tejun Heo <htejun@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.1.9) Gecko/20100317 Thunderbird/3.0.4
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:content-transfer-encoding
+         :in-reply-to:user-agent;
+        b=vFb3bFoE6Hr+jeTyTGvLhBNtfgLZAkqR9uZe67U7+8nJtxpByB6zJ5rkk4BXhxBKLi
+         dVdOvuRKHc/HYlWoXx8VYmkK8kSLhe5hei/lmFnLwFcTa9W5Ihx9ZsbpLlrWmy0jTKzf
+         wRimmMqKikjZja9xiwwC08wMLDJv8CmU5LQWs=
+Date: Thu, 3 Jun 2010 01:38:52 +0900
+From: Minchan Kim <minchan.kim@gmail.com>
+To: Dan Magenheimer <dan.magenheimer@oracle.com>
+Cc: chris.mason@oracle.com, viro@zeniv.linux.org.uk, akpm@linux-foundation.org,
+       adilger@sun.com, tytso@mit.edu, mfasheh@suse.com,
+       joel.becker@oracle.com, matthew@wil.cx, linux-btrfs@vger.kernel.org,
+       linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+       linux-ext4@vger.kernel.org, ocfs2-devel@oss.oracle.com,
+       linux-mm@kvack.org, ngupta@vflare.org, jeremy@goop.org,
+       JBeulich@novell.com, kurt.hackel@oracle.com, npiggin@suse.de,
+       dave.mccracken@oracle.com, riel@redhat.com, avi@redhat.com,
+       konrad.wilk@oracle.com
+Subject: Re: [PATCH V2 0/7] Cleancache (was Transcendent Memory): overview
+Message-ID: <20100602163827.GA5450@barrios-desktop>
+References: <20100528173510.GA12166@ca-server1.us.oracle.comAANLkTilV-4_QaNq5O0WSplDx1Oq7JvkgVrEiR1rgf1up@mail.gmail.com>
+ <1d88619a-bb1e-493f-ad96-bf204b60938d@default>
 MIME-Version: 1.0
-To: jeff@garzik.org, linux-ide@vger.kernel.org, jens.axboe@oracle.com,
-       linux-scsi@vger.kernel.org, James.Bottomley@suse.de,
-       linux-kernel@vger.kernel.org, ben@decadent.org.uk, davem@davemloft.net,
-       bzolnier@gmail.com
-Subject: Re: [PATCHSET] block,libata: implement ->unlock_native_capacity()
-References: <1273946974-29131-1-git-send-email-tj@kernel.org>
-In-Reply-To: <1273946974-29131-1-git-send-email-tj@kernel.org>
-X-Enigmail-Version: 1.0.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1d88619a-bb1e-493f-ad96-bf204b60938d@default>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/15/2010 08:09 PM, Tejun Heo wrote:
->  0001-buffer-make-invalidate_bdev-drain-all-percpu-LRU-add.patch
->  0002-block-restart-partition-scan-after-resizing-a-device.patch
->  0003-block-ide-simplify-bdops-set_capacity-to-unlock_nati.patch
->  0004-block-use-struct-parsed_partitions-state-universally.patch
->  0005-block-improve-automatic-native-capacity-unlocking.patch
->  0006-SCSI-implement-sd_unlock_native_capacity.patch
->  0007-libata-use-the-enlarged-capacity-after-late-HPA-unlo.patch
->  0008-libata-implement-on-demand-HPA-unlocking.patch
+Hi, Dan. 
 
-Jeff, now 0001-0005 are in mainline.  Can you please apply 0006-0008?
+On Wed, Jun 02, 2010 at 08:27:48AM -0700, Dan Magenheimer wrote:
+> Hi Minchan --
+> 
+> > I think cleancache approach is cool. :)
+> > I have some suggestions and questions.
+> 
+> Thanks for your interest!
+> 
+> > > If a get_page is successful on a non-shared pool, the page is flushed
+> > (thus
+> > > making cleancache an "exclusive" cache).  On a shared pool, the page
+> > 
+> > Do you have any reason about force "exclusive" on a non-shared pool?
+> > To free memory on pesudo-RAM?
+> > I want to make it "inclusive" by some reason but unfortunately I can't
+> > say why I want it now.
+> 
+> The main reason is to free up memory in pseudo-RAM and to
+> avoid unnecessary cleancache_flush calls.  If you want
+> inclusive, the page can be put immediately following
+> the get.  If put-after-get for inclusive becomes common,
+> the interface could easily be extended to add a "get_no_flush"
+> call.
 
-Thanks.
+Sounds good to me. 
+
+>  
+> > While you mentioned it's "exclusive", cleancache_get_page doesn't
+> > flush the page at below code.
+> > Is it a role of user who implement cleancache_ops->get_page?
+> 
+> Yes, the flush is done by the cleancache implementation.
+> 
+> > If backed device is ram(ie), Could we _move_ the pages from page cache
+> > to cleancache?
+> > I mean I don't want to copy page when get/put operation. we can just
+> > move page in case of backed device "ram". Is it possible?
+> 
+> By "move", do you mean changing the virtual mappings?  Yes,
+> this could be done as long as the source and destination are
+> both directly addressable (that is, true physical RAM), but
+> requires TLB manipulation and has some complicated corner
+> cases.  The copy semantics simplifies the implementation on
+> both the "frontend" and the "backend" and also allows the
+> backend to do fancy things on-the-fly like page compression
+> and page deduplication.
+
+Agree. But I don't mean it. 
+If I use brd as backend, i want to do it follwing as. 
+
+put_page :
+
+remove_from_page_cache(page);
+brd_insert_page(page);
+
+get_page :
+
+brd_lookup_page(page);
+add_to_page_cache(page);
+
+Of course, I know it's impossible without new metadata and modification of 
+page cache handling and it makes front and backend's good layered design. 
+
+What I want is to remove copy overhead when backend is ram and it's also
+part of main memory(ie, we have page descriptor). 
+
+Do you have an idea?
+
+> 
+> > You send the patches which is core of cleancache but I don't see any
+> > use case.
+> > Could you send use case patches with this series?
+> > It could help understand cleancache's benefit.
+> 
+> Do you mean the Xen Transcendent Memory ("tmem") implementation?
+> If so, this is four files in the Xen source tree (common/tmem.c,
+> common/tmem_xen.c, include/xen/tmem.h, include/xen/tmem_xen.h).
+> There is also an html document in the Xen source tree, which can
+> be viewed here:
+> http://oss.oracle.com/projects/tmem/dist/documentation/internals/xen4-internals-v01.html 
+> 
+> Or did you mean a cleancache_ops "backend"?  For tmem, there
+> is one file linux/drivers/xen/tmem.c and it interfaces between
+> the cleancache_ops calls and Xen hypercalls.  It should be in
+> a Xenlinux pv_ops tree soon, or I can email it sooner.
+
+I mean "backend". :) 
+
+> 
+> I am also eagerly awaiting Nitin Gupta's cleancache backend
+> and implementation to do in-kernel page cache compression.
+
+Do Nitin say he will make backend of cleancache for
+page cache compression? 
+
+It would be good feature. 
+I have a interest, too. :)
+
+Thanks, Dan. 
+
+> 
+> Thanks,
+> Dan
 
 -- 
-tejun
+Kind regards,
+Minchan Kim
