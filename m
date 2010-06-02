@@ -1,78 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757558Ab0FBD0t (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Jun 2010 23:26:49 -0400
-Received: from mga11.intel.com ([192.55.52.93]:4033 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755122Ab0FBD0r convert rfc822-to-8bit (ORCPT
+	id S1757361Ab0FBDcG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Jun 2010 23:32:06 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:45697 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755467Ab0FBDcD convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Jun 2010 23:26:47 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.53,344,1272870000"; 
-   d="scan'208";a="572499102"
-From: "Gross, Mark" <mark.gross@intel.com>
-To: =?iso-8859-1?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>
-CC: James Bottomley <James.Bottomley@suse.de>,
-       "Rafael J. Wysocki" <rjw@sisk.pl>,
-       Matthew Garrett <mjg59@srcf.ucam.org>,
-       Thomas Gleixner <tglx@linutronix.de>,
-       Peter Zijlstra <peterz@infradead.org>, "tytso@mit.edu" <tytso@mit.edu>,
+	Tue, 1 Jun 2010 23:32:03 -0400
+MIME-Version: 1.0
+In-Reply-To: <alpine.LFD.2.00.1006011257580.2933@localhost.localdomain>
+References: <20100527222514.0a1710bf@lxorguk.ukuu.org.uk>
+	<Pine.LNX.4.44L0.1005271730180.3239-100000@iolanthe.rowland.org>
+	<20100527230806.4deb6de3@lxorguk.ukuu.org.uk>
+	<20100527220949.GB10602@srcf.ucam.org>
+	<20100527232357.6d14fdb2@lxorguk.ukuu.org.uk>
+	<20100527223605.GB11364@srcf.ucam.org>
+	<20100527235546.09f3ce8a@lxorguk.ukuu.org.uk>
+	<20100528043114.GC26177@thunk.org>
+	<1275030704.32462.11.camel@laptop>
+	<AANLkTikEtlbkT4Ws3H2YGt_9QC46B5dr-b1oxJOcG4GN@mail.gmail.com>
+	<1275120618.27810.12699.camel@twins>
+	<1275149418.4503.128.camel@mulgrave.site>
+	<alpine.LFD.2.00.1005312231120.2933@localhost.localdomain>
+	<1275340869.2823.344.camel@mulgrave.site>
+	<alpine.LFD.2.00.1005312343290.2933@localhost.localdomain>
+	<AANLkTinwvkJRU0JjJdNrGfXWYpQMIr8bO3BZxcXubt_Z@mail.gmail.com>
+	<alpine.LFD.2.00.1006011257580.2933@localhost.localdomain>
+Date: Tue, 1 Jun 2010 20:32:02 -0700
+Message-ID: <AANLkTimTO5n_s9JZAcFJOhMlPMtsOrogx-5S5nykOWtY@mail.gmail.com>
+Subject: Re: [linux-pm] [PATCH 0/8] Suspend block api (version 8)
+From: =?ISO-8859-1?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: James Bottomley <James.Bottomley@suse.de>,
+       Peter Zijlstra <peterz@infradead.org>, tytso@mit.edu,
        LKML <linux-kernel@vger.kernel.org>,
        Florian Mickler <florian@mickler.org>,
        Linux PM <linux-pm@lists.linux-foundation.org>,
        Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
-       "felipe.balbi@nokia.com" <felipe.balbi@nokia.com>,
-       Alan Cox <alan@lxorguk.ukuu.org.uk>,
-       Alan Stern <stern@rowland.harvard.edu>, Neil Brown <neilb@suse.de>
-Date: Tue, 1 Jun 2010 20:26:32 -0700
-Subject: RE: [linux-pm] [PATCH 0/8] Suspend block api (version 8)
-Thread-Topic: [linux-pm] [PATCH 0/8] Suspend block api (version 8)
-Thread-Index: AcsCAdSxIYdSmgiMSjqvSRctxYQLJQAAWRgw
-Message-ID: <CA1BBBBC9359F04AA639128AC0D5D1E9692AAF4F@orsmsx502.amr.corp.intel.com>
-References: <20100527232357.6d14fdb2@lxorguk.ukuu.org.uk>
-	<20100601135102.GA8098@srcf.ucam.org>
-	<1275426085.21962.967.camel@mulgrave.site>	<201006020024.14220.rjw@sisk.pl>
-	<1275431816.21962.1108.camel@mulgrave.site>
-	<AANLkTikObnAZbyOxeYAhXcEbimO3XTTO-HlC9CD_HH6t@mail.gmail.com>
-	<CA1BBBBC9359F04AA639128AC0D5D1E9692AAF29@orsmsx502.amr.corp.intel.com>
- <AANLkTinsgmHh7iLhESPXiTkoW9SL4H8E92-7bARpDxNX@mail.gmail.com>
-In-Reply-To: <AANLkTinsgmHh7iLhESPXiTkoW9SL4H8E92-7bARpDxNX@mail.gmail.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="iso-8859-1"
+       felipe.balbi@nokia.com, Alan Cox <alan@lxorguk.ukuu.org.uk>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
->-----Original Message-----
->From: Arve Hjønnevåg [mailto:arve@android.com]
->Sent: Tuesday, June 01, 2010 8:15 PM
->To: Gross, Mark
->Cc: James Bottomley; Rafael J. Wysocki; Matthew Garrett; Thomas Gleixner;
->Peter Zijlstra; tytso@mit.edu; LKML; Florian Mickler; Linux PM; Linux OMAP
->Mailing List; felipe.balbi@nokia.com; Alan Cox; Alan Stern; Neil Brown
->Subject: Re: [linux-pm] [PATCH 0/8] Suspend block api (version 8)
+2010/6/1 Thomas Gleixner <tglx@linutronix.de>:
 >
->2010/6/1 Gross, Mark <mark.gross@intel.com>:
->...
->>>4. It would be useful to change pm_qos_add_request to not allocate
->>>anything so can add constraints from init functions that currently
->>>cannot fail.
->> [mtg: ] I'm not sure how to do this but I agree it would be good.  I
->guess we could have a block of pm_qos requests pre-allocated statically and
->re-use them.  In practice there will not be more than a handful of requests
->ever.  Dynamic allocation does seem like a bit of a waste.
+> On Mon, 31 May 2010, Arve Hjønnevåg wrote:
 >
->The calling code will have to store a pointer to your structure
->anyway, you may as well have them provide the whole structure.
-[mtg: ] duh!  You are right.  Make the caller's hold the structure.  Its been a long day.  That would be easy todo.
+>> On Mon, May 31, 2010 at 2:46 PM, Thomas Gleixner <tglx@linutronix.de> wrote:
+>> > On Mon, 31 May 2010, James Bottomley wrote:
+>> >>
+>> >> For MSM hardware, it looks possible to unify the S and C states by doing
+>> >> suspend to ram from idle but I'm not sure how much work that is.
+>> >
+>> > On ARM, it's not rocket science and we have in tree support for this
+>> > already (OMAP). I have done the same thing on a Samsung part as a
+>> > prove of concept two years ago and it's really easy as the hardware is
+>> > sane. Hint: It's designed for mobile devices :)
+>> >
+>>
+>> We already enter the same power state from idle and suspend on msm. In
+>> the absence of misbehaving apps, the difference in power consumption
+>> is entirely caused by periodic timers in the user-space framework
+>> _and_ kernel. It only takes a few timers triggering per second (I
+>> think 3 if they do no work) to double the average power consumption on
+>> the G1 if the radio is off. We originally added wakelocks because the
+>> hardware we had at the time had much lower power consumption in
+>> suspend then idle, but we still use suspend because it saves power.
+>
+> So how do you differentiate between timers which _should_ fire and
+> those you do not care about ?
+>
 
---gmross
+Only alarms are allowed to fire while suspended.
+
+> We have mechanisms in place to defer timers so the wakeups are
+> minimized. If that's not enough we need to revisit.
+>
+
+Deferring the the timers forever without stopping the clock can cause
+problems. Our user space code has a lot of timeouts that will trigger
+an error if an app does not respond in time. Freezing everything and
+stopping the clock while suspended is a lot simpler than trying to
+stop individual timers and processes from running.
 
 
+-- 
+Arve Hjønnevåg
