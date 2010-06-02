@@ -1,186 +1,524 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932691Ab0FBQFX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jun 2010 12:05:23 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:65037 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758095Ab0FBQFV (ORCPT
+	id S932709Ab0FBQGJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jun 2010 12:06:09 -0400
+Received: from mail-px0-f174.google.com ([209.85.212.174]:51674 "EHLO
+	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932493Ab0FBQGG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jun 2010 12:05:21 -0400
+	Wed, 2 Jun 2010 12:06:06 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=date:from:to:cc:subject:message-id:references:mime-version
          :content-type:content-disposition:in-reply-to:user-agent;
-        b=sCsfQM7wVgOg1QLn6B+gKJG1reyp1L4iQJ1g7QqPeu5MhORu0k/lpQlkB+lP1meg6K
-         I4b+DRX/hYADleqmeBspx00zRTclPxY76eZx7545/wsCjdWKUCb/GjBW1eqpZGM3S189
-         AT94V9qfvh0YHqblw2wDRjleny7sgOPPX0/UM=
-Date: Thu, 3 Jun 2010 01:05:13 +0900
-From: Minchan Kim <minchan.kim@gmail.com>
-To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
-       Oleg Nesterov <oleg@redhat.com>, David Rientjes <rientjes@google.com>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-       Nick Piggin <npiggin@suse.de>
-Subject: Re: [PATCH 3/5] oom: introduce find_lock_task_mm() to fix !mm
- false positives
-Message-ID: <20100602160513.GC5326@barrios-desktop>
-References: <20100531182526.1843.A69D9226@jp.fujitsu.com>
- <20100531183539.1849.A69D9226@jp.fujitsu.com>
+        b=mBKxhElJBk3oZ9T4mwTTkI3W6fmVQrQhFrM24G7SEYBAK99RduH/g+9fPIlWsntNHf
+         QAl1HUYTih547vc6B4sh/PS27rQwXj8+qFkGuryG8zOdpg6+RAJB5M8sAKLyC9rWybvs
+         8urJiP097sgQnKpnQlxel9qjOlcHNbgFdu1DE=
+Date: Wed, 2 Jun 2010 09:05:51 -0700
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Rabin VINCENT <rabin.vincent@stericsson.com>
+Cc: Samuel Ortiz <sameo@linux.intel.com>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       STEricsson_nomadik_linux <STEricsson_nomadik_linux@list.st.com>,
+       "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
+       Linus WALLEIJ <linus.walleij@stericsson.com>
+Subject: Re: [PATCH 3/3] input: add STMPExxxx keypad driver
+Message-ID: <20100602160551.GB24531@core.coreip.homeip.net>
+References: <1275308236-1775-1-git-send-email-rabin.vincent@stericsson.com>
+ <1275308236-1775-3-git-send-email-rabin.vincent@stericsson.com>
+ <20100601221611.GB17468@core.coreip.homeip.net>
+ <20100602135637.GA18513@bnru02.bnr.st.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100531183539.1849.A69D9226@jp.fujitsu.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20100602135637.GA18513@bnru02.bnr.st.com>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 31, 2010 at 06:36:34PM +0900, KOSAKI Motohiro wrote:
-> From: Oleg Nesterov <oleg@redhat.com>
-> Subject: [PATCH 3/5] oom: introduce find_lock_task_mm() to fix !mm false positives
+On Wed, Jun 02, 2010 at 07:26:37PM +0530, Rabin VINCENT wrote:
+> > > +
+> > > +static int __devexit stmpe_keypad_remove(struct platform_device *pdev)
+> > > +{
+> > > +     struct stmpe_keypad *keypad = platform_get_drvdata(pdev);
+> > > +     int irq = platform_get_irq(pdev, 0);
+> > > +
+> > > +     input_unregister_device(keypad->input);
+> > > +     free_irq(irq, keypad);
+> > 
+> > You want to free IRQ first, before unregisterin the device. Also, is
 > 
-> Almost all ->mm == NUL checks in oom_kill.c are wrong.
+> Done.  I've also changed the probe sequence to register the device
+> before requesting the IRQ.
 > 
-> The current code assumes that the task without ->mm has already
-> released its memory and ignores the process. However this is not
-> necessarily true when this process is multithreaded, other live
-> sub-threads can use this ->mm.
+> > there a way to power down keypad parts?
 > 
-> - Remove the "if (!p->mm)" check in select_bad_process(), it is
->   just wrong.
+> I've added code to do this.
 > 
-> - Add the new helper, find_lock_task_mm(), which finds the live
->   thread which uses the memory and takes task_lock() to pin ->mm
+> > 
+> > > +     platform_set_drvdata(pdev, NULL);
+> > > +     kfree(keypad);
+> > > +
+> > > +     return 0;
+> > > +}
 > 
-> - change oom_badness() to use this helper instead of just checking
->   ->mm != NULL.
+> Updated patch below.
 > 
-> - As David pointed out, select_bad_process() must never choose the
->   task without ->mm, but no matter what badness() returns the
->   task can be chosen if nothing else has been found yet.
-> 
-> Note! This patch is not enough, we need more changes.
-> 
-> 	- badness() was fixed, but oom_kill_task() still ignores
-> 	  the task without ->mm
-> 
-> This will be addressed later.
-> 
-> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
-> Cc: David Rientjes <rientjes@google.com>
-> Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com> [rebase
-> latest -mm and remove some obsoleted description]
-Reviewed-by: Minchan Kim <minchan.kim@gmail.com?
 
-Good catch but I have a nitpick. :)
+Thank you for making the changes. Please merge through MFD tree.
 
-find_lock_task_mm isn't good name of the function, I think. 
-As you know, original goal of the function is to find sub-thread of p
-which is alive(ie, doesn't release mm). 
+Acked-by: Dmitry Torokhov <dtor@mai.ru>
 
-task_lock is important for user of the function but minor.
-
-I suggest following as 
-/*
- * If we find alive thread of process, it returns task_struct of sub thread.
- * Notice. this function calls task_lock. So caller should call task_unlock.
- */
-static struct task_struct *find_alive_subthread(struct task_struct *process)
-{
-... 
-}
-
-I don't forced my suggesion if you suggest much good name.
-Regardless of accepting my suggestion, looks good to me.
-
+> 
+> From c6848c5825d8cadfb22b3a6a7363d50496938293 Mon Sep 17 00:00:00 2001
+> From: Rabin Vincent <rabin.vincent@stericsson.com>
+> Date: Fri, 14 May 2010 13:21:12 +0530
+> Subject: [PATCHv2] input: add STMPExxxx keypad driver
+> 
+> Add an input driver for the keypad on STMPExxxx I/O expanders.  This
+> driver uses the common support provided by the STMPE MFD driver.
+> 
+> Cc: linux-input@vger.kernel.org
+> Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+> Acked-by: Linus Walleij <linus.walleij@stericsson.com>
+> Signed-off-by: Rabin Vincent <rabin.vincent@stericsson.com>
 > ---
->  mm/oom_kill.c |   28 +++++++++++++++++-----------
->  1 files changed, 17 insertions(+), 11 deletions(-)
+>  drivers/input/keyboard/Kconfig        |   10 +
+>  drivers/input/keyboard/Makefile       |    1 +
+>  drivers/input/keyboard/stmpe-keypad.c |  387 +++++++++++++++++++++++++++++++++
+>  3 files changed, 398 insertions(+), 0 deletions(-)
+>  create mode 100644 drivers/input/keyboard/stmpe-keypad.c
 > 
-> diff --git a/mm/oom_kill.c b/mm/oom_kill.c
-> index c87a6f4..162af2e 100644
-> --- a/mm/oom_kill.c
-> +++ b/mm/oom_kill.c
-> @@ -52,6 +52,19 @@ static int has_intersects_mems_allowed(struct task_struct *tsk)
->  	return 0;
->  }
+> diff --git a/drivers/input/keyboard/Kconfig b/drivers/input/keyboard/Kconfig
+> index d8fa5d7..0e57fbc 100644
+> --- a/drivers/input/keyboard/Kconfig
+> +++ b/drivers/input/keyboard/Kconfig
+> @@ -374,6 +374,16 @@ config KEYBOARD_SH_KEYSC
+>  	  To compile this driver as a module, choose M here: the
+>  	  module will be called sh_keysc.
 >  
-> +static struct task_struct *find_lock_task_mm(struct task_struct *p)
-> +{
-> +	struct task_struct *t = p;
-> +	do {
-> +		task_lock(t);
-> +		if (likely(t->mm))
-> +			return t;
-> +		task_unlock(t);
-> +	} while_each_thread(p, t);
+> +config KEYBOARD_STMPE
+> +	tristate "STMPExxxx keypad support"
+> +	depends on MFD_STMPE
+> +	help
+> +	  Say Y here if you want to use the keypad controller on STMPExxx I/O
+> +	  expanders.
 > +
-> +	return NULL;
+> +	  To compile this driver as a module, choose M here: the module will be
+> +	  called stmpe-keypad.
+> +
+>  config KEYBOARD_DAVINCI
+>  	tristate "TI DaVinci Key Scan"
+>  	depends on ARCH_DAVINCI_DM365
+> diff --git a/drivers/input/keyboard/Makefile b/drivers/input/keyboard/Makefile
+> index 4596d0c..af24b07 100644
+> --- a/drivers/input/keyboard/Makefile
+> +++ b/drivers/input/keyboard/Makefile
+> @@ -33,6 +33,7 @@ obj-$(CONFIG_KEYBOARD_PXA27x)		+= pxa27x_keypad.o
+>  obj-$(CONFIG_KEYBOARD_PXA930_ROTARY)	+= pxa930_rotary.o
+>  obj-$(CONFIG_KEYBOARD_QT2160)		+= qt2160.o
+>  obj-$(CONFIG_KEYBOARD_SH_KEYSC)		+= sh_keysc.o
+> +obj-$(CONFIG_KEYBOARD_STMPE)		+= stmpe-keypad.o
+>  obj-$(CONFIG_KEYBOARD_STOWAWAY)		+= stowaway.o
+>  obj-$(CONFIG_KEYBOARD_SUNKBD)		+= sunkbd.o
+>  obj-$(CONFIG_KEYBOARD_TWL4030)		+= twl4030_keypad.o
+> diff --git a/drivers/input/keyboard/stmpe-keypad.c b/drivers/input/keyboard/stmpe-keypad.c
+> new file mode 100644
+> index 0000000..1ef8875
+> --- /dev/null
+> +++ b/drivers/input/keyboard/stmpe-keypad.c
+> @@ -0,0 +1,387 @@
+> +/*
+> + * Copyright (C) ST-Ericsson SA 2010
+> + *
+> + * License Terms: GNU General Public License, version 2
+> + * Author: Rabin Vincent <rabin.vincent@stericsson.com> for ST-Ericsson
+> + */
+> +
+> +#include <linux/module.h>
+> +#include <linux/init.h>
+> +#include <linux/slab.h>
+> +#include <linux/input.h>
+> +#include <linux/interrupt.h>
+> +#include <linux/platform_device.h>
+> +#include <linux/input/matrix_keypad.h>
+> +#include <linux/mfd/stmpe.h>
+> +
+> +/* These are at the same addresses in all STMPE variants */
+> +#define STMPE_KPC_COL			0x60
+> +#define STMPE_KPC_ROW_MSB		0x61
+> +#define STMPE_KPC_ROW_LSB		0x62
+> +#define STMPE_KPC_CTRL_MSB		0x63
+> +#define STMPE_KPC_CTRL_LSB		0x64
+> +#define STMPE_KPC_COMBI_KEY_0		0x65
+> +#define STMPE_KPC_COMBI_KEY_1		0x66
+> +#define STMPE_KPC_COMBI_KEY_2		0x67
+> +#define STMPE_KPC_DATA_BYTE0		0x68
+> +#define STMPE_KPC_DATA_BYTE1		0x69
+> +#define STMPE_KPC_DATA_BYTE2		0x6a
+> +#define STMPE_KPC_DATA_BYTE3		0x6b
+> +#define STMPE_KPC_DATA_BYTE4		0x6c
+> +
+> +#define STMPE_KPC_CTRL_LSB_SCAN		(0x1 << 0)
+> +#define STMPE_KPC_CTRL_LSB_DEBOUNCE	(0x7f << 1)
+> +#define STMPE_KPC_CTRL_MSB_SCAN_COUNT	(0xf << 4)
+> +
+> +#define STMPE_KPC_ROW_MSB_ROWS		0xff
+> +
+> +#define STMPE_KPC_DATA_UP		(0x1 << 7)
+> +#define STMPE_KPC_DATA_ROW		(0xf << 3)
+> +#define STMPE_KPC_DATA_COL		(0x7 << 0)
+> +#define STMPE_KPC_DATA_NOKEY_MASK	0x78
+> +
+> +#define STMPE_KEYPAD_MAX_DEBOUNCE	127
+> +#define STMPE_KEYPAD_MAX_SCAN_COUNT	15
+> +
+> +#define STMPE_KEYPAD_MAX_ROWS		8
+> +#define STMPE_KEYPAD_MAX_COLS		8
+> +#define STMPE_KEYPAD_ROW_SHIFT		3
+> +#define STMPE_KEYPAD_KEYMAP_SIZE	\
+> +	(STMPE_KEYPAD_MAX_ROWS * STMPE_KEYPAD_MAX_COLS)
+> +
+> +/**
+> + * struct stmpe_keypad_variant - model-specific attributes
+> + * @auto_increment: whether the KPC_DATA_BYTE register address
+> + *		    auto-increments on multiple read
+> + * @num_data: number of data bytes
+> + * @num_normal_data: number of normal keys' data bytes
+> + * @max_cols: maximum number of columns supported
+> + * @max_rows: maximum number of rows supported
+> + * @col_gpios: bitmask of gpios which can be used for columns
+> + * @row_gpios: bitmask of gpios which can be used for rows
+> + */
+> +struct stmpe_keypad_variant {
+> +	bool		auto_increment;
+> +	int		num_data;
+> +	int		num_normal_data;
+> +	int		max_cols;
+> +	int		max_rows;
+> +	unsigned int	col_gpios;
+> +	unsigned int	row_gpios;
+> +};
+> +
+> +static const struct stmpe_keypad_variant stmpe_keypad_variants[] = {
+> +	[STMPE1601] = {
+> +		.auto_increment		= true,
+> +		.num_data		= 5,
+> +		.num_normal_data	= 3,
+> +		.max_cols		= 8,
+> +		.max_rows		= 8,
+> +		.col_gpios		= 0x000ff,	/* GPIO 0 - 7 */
+> +		.row_gpios		= 0x0ff00,	/* GPIO 8 - 15 */
+> +	},
+> +	[STMPE2401] = {
+> +		.auto_increment		= false,
+> +		.num_data		= 3,
+> +		.num_normal_data	= 2,
+> +		.max_cols		= 8,
+> +		.max_rows		= 12,
+> +		.col_gpios		= 0x0000ff,	/* GPIO 0 - 7*/
+> +		.row_gpios		= 0x1fef00,	/* GPIO 8-14, 16-20 */
+> +	},
+> +	[STMPE2403] = {
+> +		.auto_increment		= true,
+> +		.num_data		= 5,
+> +		.num_normal_data	= 3,
+> +		.max_cols		= 8,
+> +		.max_rows		= 12,
+> +		.col_gpios		= 0x0000ff,	/* GPIO 0 - 7*/
+> +		.row_gpios		= 0x1fef00,	/* GPIO 8-14, 16-20 */
+> +	},
+> +};
+> +
+> +struct stmpe_keypad {
+> +	struct stmpe *stmpe;
+> +	struct input_dev *input;
+> +	const struct stmpe_keypad_variant *variant;
+> +	const struct stmpe_keypad_platform_data *plat;
+> +
+> +	unsigned int rows;
+> +	unsigned int cols;
+> +
+> +	unsigned short keymap[STMPE_KEYPAD_KEYMAP_SIZE];
+> +};
+> +
+> +static int stmpe_keypad_read_data(struct stmpe_keypad *keypad, u8 *data)
+> +{
+> +	const struct stmpe_keypad_variant *variant = keypad->variant;
+> +	struct stmpe *stmpe = keypad->stmpe;
+> +	int ret;
+> +	int i;
+> +
+> +	if (variant->auto_increment)
+> +		return stmpe_block_read(stmpe, STMPE_KPC_DATA_BYTE0,
+> +					variant->num_data, data);
+> +
+> +	for (i = 0; i < variant->num_data; i++) {
+> +		ret = stmpe_reg_read(stmpe, STMPE_KPC_DATA_BYTE0 + i);
+> +		if (ret < 0)
+> +			return ret;
+> +
+> +		data[i] = ret;
+> +	}
+> +
+> +	return 0;
 > +}
 > +
->  /**
->   * badness - calculate a numeric value for how bad this task has been
->   * @p: task struct of which task we should calculate
-> @@ -74,7 +87,6 @@ static int has_intersects_mems_allowed(struct task_struct *tsk)
->  unsigned long badness(struct task_struct *p, unsigned long uptime)
->  {
->  	unsigned long points, cpu_time, run_time;
-> -	struct mm_struct *mm;
->  	struct task_struct *child;
->  	int oom_adj = p->signal->oom_adj;
->  	struct task_cputime task_time;
-> @@ -84,17 +96,14 @@ unsigned long badness(struct task_struct *p, unsigned long uptime)
->  	if (oom_adj == OOM_DISABLE)
->  		return 0;
->  
-> -	task_lock(p);
-> -	mm = p->mm;
-> -	if (!mm) {
-> -		task_unlock(p);
-> +	p = find_lock_task_mm(p);
-> +	if (!p)
->  		return 0;
-> -	}
->  
->  	/*
->  	 * The memory size of the process is the basis for the badness.
->  	 */
-> -	points = mm->total_vm;
-> +	points = p->mm->total_vm;
->  
->  	/*
->  	 * After this unlock we can no longer dereference local variable `mm'
-> @@ -117,7 +126,7 @@ unsigned long badness(struct task_struct *p, unsigned long uptime)
->  	 */
->  	list_for_each_entry(child, &p->children, sibling) {
->  		task_lock(child);
-> -		if (child->mm != mm && child->mm)
-> +		if (child->mm != p->mm && child->mm)
->  			points += child->mm->total_vm/2 + 1;
->  		task_unlock(child);
->  	}
-> @@ -256,9 +265,6 @@ static struct task_struct *select_bad_process(unsigned long *ppoints,
->  	for_each_process(p) {
->  		unsigned long points;
->  
-> -		/* skip the tasks which have already released their mm. */
-> -		if (!p->mm)
-> -			continue;
->  		/* skip the init task and kthreads */
->  		if (is_global_init(p) || (p->flags & PF_KTHREAD))
->  			continue;
+> +static irqreturn_t stmpe_keypad_irq(int irq, void *dev)
+> +{
+> +	struct stmpe_keypad *keypad = dev;
+> +	struct input_dev *input = keypad->input;
+> +	const struct stmpe_keypad_variant *variant = keypad->variant;
+> +	u8 fifo[variant->num_data];
+> +	int ret;
+> +	int i;
+> +
+> +	ret = stmpe_keypad_read_data(keypad, fifo);
+> +	if (ret < 0)
+> +		return IRQ_NONE;
+> +
+> +	for (i = 0; i < variant->num_normal_data; i++) {
+> +		u8 data = fifo[i];
+> +		int row = (data & STMPE_KPC_DATA_ROW) >> 3;
+> +		int col = data & STMPE_KPC_DATA_COL;
+> +		int code = MATRIX_SCAN_CODE(row, col, STMPE_KEYPAD_ROW_SHIFT);
+> +		bool up = data & STMPE_KPC_DATA_UP;
+> +
+> +		if ((data & STMPE_KPC_DATA_NOKEY_MASK)
+> +			== STMPE_KPC_DATA_NOKEY_MASK)
+> +			continue;
+> +
+> +		input_event(input, EV_MSC, MSC_SCAN, code);
+> +		input_report_key(input, keypad->keymap[code], !up);
+> +		input_sync(input);
+> +	}
+> +
+> +	return IRQ_HANDLED;
+> +}
+> +
+> +static int __devinit stmpe_keypad_altfunc_init(struct stmpe_keypad *keypad)
+> +{
+> +	const struct stmpe_keypad_variant *variant = keypad->variant;
+> +	unsigned int col_gpios = variant->col_gpios;
+> +	unsigned int row_gpios = variant->row_gpios;
+> +	struct stmpe *stmpe = keypad->stmpe;
+> +	unsigned int pins = 0;
+> +	int i;
+> +
+> +	/*
+> +	 * Figure out which pins need to be set to alternate function 1.
+> +	 *
+> +	 * {cols,rows}_gpios are bitmasks of which pins on the chip can be used
+> +	 * for the keypad.
+> +	 *
+> +	 * keypad->{cols,rows} are a bitmask of which pins (of the ones useable
+> +	 * for the keypad) are used on the board.
+> +	 */
+> +
+> +	for (i = 0; i < variant->max_cols; i++) {
+> +		int num = __ffs(col_gpios);
+> +
+> +		if (keypad->cols & (1 << i))
+> +			pins |= 1 << num;
+> +
+> +		col_gpios &= ~(1 << num);
+> +	}
+> +
+> +	for (i = 0; i < variant->max_rows; i++) {
+> +		int num = __ffs(row_gpios);
+> +
+> +		if (keypad->rows & (1 << i))
+> +			pins |= 1 << num;
+> +
+> +		row_gpios &= ~(1 << num);
+> +	}
+> +
+> +	return stmpe_set_altfunc(stmpe, pins, 1);
+> +}
+> +
+> +static int __devinit stmpe_keypad_chip_init(struct stmpe_keypad *keypad)
+> +{
+> +	const struct stmpe_keypad_platform_data *plat = keypad->plat;
+> +	const struct stmpe_keypad_variant *variant = keypad->variant;
+> +	struct stmpe *stmpe = keypad->stmpe;
+> +	int ret;
+> +
+> +	if (plat->debounce_ms > STMPE_KEYPAD_MAX_DEBOUNCE)
+> +		return -EINVAL;
+> +
+> +	if (plat->scan_count > STMPE_KEYPAD_MAX_SCAN_COUNT)
+> +		return -EINVAL;
+> +
+> +	ret = stmpe_set_bits(stmpe, STMPE_SYSCON, STMPE_SYSCON_ENABLE_KPC,
+> +			     STMPE_SYSCON_ENABLE_KPC);
+> +	if (ret < 0)
+> +		return ret;
+> +
+> +	ret = stmpe_keypad_altfunc_init(keypad);
+> +	if (ret < 0)
+> +		return ret;
+> +
+> +	ret = stmpe_reg_write(stmpe, STMPE_KPC_COL, keypad->cols);
+> +	if (ret < 0)
+> +		return ret;
+> +
+> +	ret = stmpe_reg_write(stmpe, STMPE_KPC_ROW_LSB, keypad->rows);
+> +	if (ret < 0)
+> +		return ret;
+> +
+> +	if (variant->max_rows > 8) {
+> +		ret = stmpe_set_bits(stmpe, STMPE_KPC_ROW_MSB,
+> +				     STMPE_KPC_ROW_MSB_ROWS,
+> +				     keypad->rows >> 8);
+> +		if (ret < 0)
+> +			return ret;
+> +	}
+> +
+> +	ret = stmpe_set_bits(stmpe, STMPE_KPC_CTRL_MSB,
+> +			     STMPE_KPC_CTRL_MSB_SCAN_COUNT,
+> +			     plat->scan_count << 4);
+> +	if (ret < 0)
+> +		return ret;
+> +
+> +	return stmpe_set_bits(stmpe, STMPE_KPC_CTRL_LSB,
+> +			      STMPE_KPC_CTRL_LSB_SCAN |
+> +			      STMPE_KPC_CTRL_LSB_DEBOUNCE,
+> +			      STMPE_KPC_CTRL_LSB_SCAN |
+> +			      (plat->debounce_ms << 1));
+> +}
+> +
+> +static int __devinit stmpe_keypad_probe(struct platform_device *pdev)
+> +{
+> +	struct stmpe *stmpe = dev_get_drvdata(pdev->dev.parent);
+> +	struct stmpe_keypad_platform_data *plat;
+> +	struct stmpe_keypad *keypad;
+> +	struct input_dev *input;
+> +	int ret;
+> +	int irq;
+> +	int i;
+> +
+> +	plat = stmpe->pdata->keypad;
+> +	if (!plat)
+> +		return -ENODEV;
+> +
+> +	irq = platform_get_irq(pdev, 0);
+> +	if (irq < 0)
+> +		return irq;
+> +
+> +	keypad = kzalloc(sizeof(struct stmpe_keypad), GFP_KERNEL);
+> +	if (!keypad)
+> +		return -ENOMEM;
+> +
+> +	input = input_allocate_device();
+> +	if (!input) {
+> +		ret = -ENOMEM;
+> +		goto out_freekeypad;
+> +	}
+> +
+> +	input->name = "STMPE keypad";
+> +	input->id.bustype = BUS_I2C;
+> +	input->dev.parent = &pdev->dev;
+> +
+> +	input_set_capability(input, EV_MSC, MSC_SCAN);
+> +
+> +	__set_bit(EV_KEY, input->evbit);
+> +	if (!plat->no_autorepeat)
+> +		__set_bit(EV_REP, input->evbit);
+> +
+> +	input->keycode = keypad->keymap;
+> +	input->keycodesize = sizeof(keypad->keymap[0]);
+> +	input->keycodemax = ARRAY_SIZE(keypad->keymap);
+> +
+> +	matrix_keypad_build_keymap(plat->keymap_data, STMPE_KEYPAD_ROW_SHIFT,
+> +				   input->keycode, input->keybit);
+> +
+> +	for (i = 0; i < plat->keymap_data->keymap_size; i++) {
+> +		unsigned int key = plat->keymap_data->keymap[i];
+> +
+> +		keypad->cols |= 1 << KEY_COL(key);
+> +		keypad->rows |= 1 << KEY_ROW(key);
+> +	}
+> +
+> +	keypad->stmpe = stmpe;
+> +	keypad->plat = plat;
+> +	keypad->input = input;
+> +	keypad->variant = &stmpe_keypad_variants[stmpe->variant];
+> +
+> +	ret = stmpe_keypad_chip_init(keypad);
+> +	if (ret < 0)
+> +		goto out_freeinput;
+> +
+> +	ret = input_register_device(input);
+> +	if (ret) {
+> +		dev_err(&pdev->dev,
+> +			"unable to register input device: %d\n", ret);
+> +		goto out_freeinput;
+> +	}
+> +
+> +	ret = request_threaded_irq(irq, NULL, stmpe_keypad_irq, IRQF_ONESHOT,
+> +				   "stmpe-keypad", keypad);
+> +	if (ret) {
+> +		dev_err(&pdev->dev, "unable to get irq: %d\n", ret);
+> +		goto out_unregisterinput;
+> +	}
+> +
+> +	platform_set_drvdata(pdev, keypad);
+> +
+> +	return 0;
+> +
+> +out_unregisterinput:
+> +	input_unregister_device(input);
+> +	input = NULL;
+> +out_freeinput:
+> +	input_free_device(input);
+> +out_freekeypad:
+> +	kfree(keypad);
+> +	return ret;
+> +}
+> +
+> +static int __devexit stmpe_keypad_remove(struct platform_device *pdev)
+> +{
+> +	struct stmpe_keypad *keypad = platform_get_drvdata(pdev);
+> +	struct stmpe *stmpe = keypad->stmpe;
+> +	int irq = platform_get_irq(pdev, 0);
+> +
+> +	/* Disable the keypad module.  Ignore any errors. */
+> +	stmpe_set_bits(stmpe, STMPE_SYSCON, STMPE_SYSCON_ENABLE_KPC, 0);
+> +
+> +	free_irq(irq, keypad);
+> +	input_unregister_device(keypad->input);
+> +	platform_set_drvdata(pdev, NULL);
+> +	kfree(keypad);
+> +
+> +	return 0;
+> +}
+> +
+> +static struct platform_driver stmpe_keypad_driver = {
+> +	.driver.name	= "stmpe-keypad",
+> +	.driver.owner	= THIS_MODULE,
+> +	.probe		= stmpe_keypad_probe,
+> +	.remove		= __devexit_p(stmpe_keypad_remove),
+> +};
+> +
+> +static int __init stmpe_keypad_init(void)
+> +{
+> +	return platform_driver_register(&stmpe_keypad_driver);
+> +}
+> +module_init(stmpe_keypad_init);
+> +
+> +static void __exit stmpe_keypad_exit(void)
+> +{
+> +	platform_driver_unregister(&stmpe_keypad_driver);
+> +}
+> +module_exit(stmpe_keypad_exit);
+> +
+> +MODULE_LICENSE("GPL v2");
+> +MODULE_DESCRIPTION("STMPExxxx keypad driver");
+> +MODULE_AUTHOR("Rabin Vincent <rabin.vincent@stericsson.com>");
 > -- 
-> 1.6.5.2
+> 1.7.0
 > 
-> 
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
 
 -- 
-Kind regards,
-Minchan Kim
+Dmitry
