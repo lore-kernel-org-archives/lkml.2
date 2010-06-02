@@ -1,111 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933011Ab0FBVMV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jun 2010 17:12:21 -0400
-Received: from mga09.intel.com ([134.134.136.24]:46513 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932979Ab0FBVMR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jun 2010 17:12:17 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.53,348,1272870000"; 
-   d="scan'208";a="626967884"
-Subject: Re: [PATCH] rbtree: undo augmented damage -v2
-From: Suresh Siddha <suresh.b.siddha@intel.com>
-Reply-To: Suresh Siddha <suresh.b.siddha@intel.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Venkatesh Pallipadi <venki@google.com>,
-       "mingo@redhat.com" <mingo@redhat.com>, "hpa@zytor.com" <hpa@zytor.com>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       "tglx@linutronix.de" <tglx@linutronix.de>,
-       "linux-tip-commits@vger.kernel.org" 
-	<linux-tip-commits@vger.kernel.org>,
-       Fabio Checconi <fabio@gandalf.sssup.it>
-In-Reply-To: <1275417720.27810.28160.camel@twins>
-References: <20100210232343.GA11465@linux-os.sc.intel.com>
-	 <tip-17d9ddc72fb8bba0d4f67868c9c612e472a594a9@git.kernel.org>
-	 <1275136178.27810.13539.camel@twins> <1275139902.27810.13737.camel@twins>
-	 <AANLkTimZkyRwP5k290rUr-DUMhsynl9fzBkS68x-57KM@mail.gmail.com>
-	 <1275412748.27810.27883.camel@twins>
-	 <AANLkTilGfY1PnNgpEeB3AQEqTNoDJQfPTxK5LNUYb7ZA@mail.gmail.com>
-	 <1275414172.27810.27961.camel@twins>
-	 <AANLkTil8ly_3P2DgEI9oI_ZbYP6FkwP2lCY2v47iAn9-@mail.gmail.com>
-	 <1275417720.27810.28160.camel@twins>
-Content-Type: text/plain
-Organization: Intel Corp
-Date: Wed, 02 Jun 2010 14:11:14 -0700
-Message-Id: <1275513074.2913.258.camel@sbs-t61.sc.intel.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.26.3 (2.26.3-1.fc11) 
-Content-Transfer-Encoding: 7bit
+	id S933068Ab0FBVM3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jun 2010 17:12:29 -0400
+Received: from smtp-out.google.com ([74.125.121.35]:47204 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932805Ab0FBVMY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Jun 2010 17:12:24 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=mime-version:in-reply-to:references:date:message-id:subject:from:to:
+	cc:content-type:x-system-of-record;
+	b=ISt0+YU27s3smAJrGQNjfwHeZrWTKC0CfHbfZYmNIDn//2JHWoGuWGOoGkOJzS7Dn
+	xrqNm+mGZK38DWd8AMrTA==
+MIME-Version: 1.0
+In-Reply-To: <20100602205855.GA30039@redhat.com>
+References: <20100530013002.GA762@ghc01.ghc.andrew.cmu.edu>
+	<20100530013303.GC762@ghc01.ghc.andrew.cmu.edu>
+	<20100531175242.GA14691@redhat.com>
+	<20100531180446.GA16249@redhat.com>
+	<AANLkTimcrX0TjzDMNJdubR92pAO4IPATbVpyvvVt0qIV@mail.gmail.com>
+	<20100602140659.GA5324@redhat.com>
+	<AANLkTin-T6ij3xf0ceGoCamwcoayxyf0GdAKY6yXDMVl@mail.gmail.com>
+	<20100602202048.GB28663@redhat.com>
+	<AANLkTimrJFiidM8BlUNvmzfapUAv8369R9PYnTscasEf@mail.gmail.com>
+	<20100602205855.GA30039@redhat.com>
+Date: Wed, 2 Jun 2010 14:12:20 -0700
+Message-ID: <AANLkTimfHlapl7mbRyAazWW5q5Wzs23n6i9wIhVtSv6r@mail.gmail.com>
+Subject: Re: [RFC] [PATCH 2/2] cgroups: make procs file writable
+From: Paul Menage <menage@google.com>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Ben Blum <bblum@andrew.cmu.edu>, linux-kernel@vger.kernel.org,
+       containers@lists.linux-foundation.org, akpm@linux-foundation.org,
+       ebiederm@xmission.com, lizf@cn.fujitsu.com, matthltc@us.ibm.com
+Content-Type: text/plain; charset=ISO-8859-1
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-06-01 at 11:42 -0700, Peter Zijlstra wrote:
-> On Tue, 2010-06-01 at 11:09 -0700, Venkatesh Pallipadi wrote:
-> > On Tue, Jun 1, 2010 at 10:42 AM, Peter Zijlstra <peterz@infradead.org> wrote:
-> > > On Tue, 2010-06-01 at 10:34 -0700, Venkatesh Pallipadi wrote:
-> > >>
-> > >> Yes. This will cover all the cases on insert. But on erase, there is
-> > >> still a case where a rotate of sibling node is done during the
-> > >> re-coloration process. There we have a child change on sibling's
-> > >> child. I am not able to think of any easy way to handle that case.
-> > >
-> > > Let me go draw some figures with pen and paper to match up the erase
-> > > path with the rb_augment_erase_begin() code, because I can't quite spot
-> > > the case we're missing.
-> > >
-> > > If you have it handy, ascii art might help..
-> > 
-> > It is this case
-> > 
-> >     P
-> >    / \
-> >   N   S
-> >      / \
-> >     SL SR
-> > 
-> > changing to
-> > 
-> >     P
-> >    / \
-> >   N  SL
-> >       \
-> >        S
-> >         \
-> >         SR
-> 
-> Right, but see: http://en.wikipedia.org/wiki/Red-black_tree
-> That is delete_case5, however then we fall into delete_case6 and perform
-> a left rotation.
-> 
-> So suppose we start with the tree:
-> 
->     P                  P               P                SL
->   /   \               / \             / \               / \
->  D     S      -->    N  S      -->   N   SL     -->    P   S
->   \   / \              / \                \           /     \
->    N SL  SR          SL* SR                S*        N      SR
->                                             \
->                                              SR
-> 
-> and then remove D, delete case 5 and finally delete case 6, * marks red.
-> 
-> rb_augment_erase_begin(D) will return N, and then rb_augment_path(N)
-> will re-augment: N, P, SL and S.
+On Wed, Jun 2, 2010 at 1:58 PM, Oleg Nesterov <oleg@redhat.com> wrote:
+>> The "it" that you're proposing to remove is in fact the code that
+>> handles those races.
+>
+> In that case I confused, and I thought we already agreed that
+> the PF_EXITING check in attach_task_by_pid() is not strictly needed
+> for correctness.
 
+Not quite - something is required for correctness, and the PF_EXITING
+check provides that correctness, with a very small window (between
+setting PF_EXITING and calling cgroup_exit) where we might arguably
+have been able to move the thread but decline to do so because it's
+simpler not to do so and no-one cares. That's the optimization that I
+meant - the data structures are slightly simpler since there's no way
+to tell when a task has passed cgroup_exit(), and instead we just see
+if they've passed PF_EXITING.
 
-      P                       SL
-    /  \                     /  \
-   N    S       --->        N    S
-  /   /  \                 /      \
- C   SL  SR               C        SR
+>
+> Once again, the task can call do_exit() and set PF_EXITING right
+> after the check.
 
-If P needs to be removed, we need to re-augment S also in this case,
-right? It looks like we are not handling this case.
+Yes, the important part is that they haven't set it *before* the check
+in attach_task_by_pid(). If they have set it before that, then they
+could be anywhere in the exit path after PF_EXITING, and we decline to
+move them since it's possible that they've already passed
+cgroup_exit(). If the exiting task has not yet set PF_EXITING, then it
+can't possibly get into the critical section in cgroup_exit() since
+attach_task_by_pid() holds task->alloc_lock.
 
-thanks,
-suresh
-
-
-
+Paul
