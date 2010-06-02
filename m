@@ -1,48 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753289Ab0FBIuX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jun 2010 04:50:23 -0400
-Received: from pfepa.post.tele.dk ([195.41.46.235]:41525 "EHLO
-	pfepa.post.tele.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752166Ab0FBIuV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jun 2010 04:50:21 -0400
-Date: Wed, 2 Jun 2010 10:50:18 +0200
-From: Sam Ravnborg <sam@ravnborg.org>
-To: Am?rico Wang <xiyou.wangcong@gmail.com>
-Cc: Jaswinder Singh Rajput <jaswinderlinux@gmail.com>,
-       Christoph Hellwig <hch@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       the arch/x86 maintainers <x86@kernel.org>,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       mmarek@suse.cz
-Subject: Re: config automatically switches from 32-bit to 64-bit for x86
-Message-ID: <20100602085018.GA6507@merkur.ravnborg.org>
-References: <AANLkTik0PUKP3QLPRbb3nlh034_inmaeVbXy3q5_LQz-@mail.gmail.com> <20100527154916.GA5585@infradead.org> <20100527184653.GA11830@merkur.ravnborg.org> <AANLkTikkZGdf8-WnHQu4dY6WiXH7d0Raak0j-82hrvAA@mail.gmail.com> <20100529111951.GB31550@merkur.ravnborg.org> <AANLkTiku0kPykE30DIQvOD9gauEGZbyeDWXGkLb53sgJ@mail.gmail.com> <20100602082039.GB5103@cr0.nay.redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20100602082039.GB5103@cr0.nay.redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1754161Ab0FBIux (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jun 2010 04:50:53 -0400
+Received: from ist.d-labs.de ([213.239.218.44]:35500 "EHLO mx01.d-labs.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753403Ab0FBIuv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Jun 2010 04:50:51 -0400
+Date: Wed, 2 Jun 2010 10:50:39 +0200
+From: Florian Mickler <florian@mickler.org>
+To: Neil Brown <neilb@suse.de>
+Cc: Arve =?ISO-8859-15?Q?Hj=F8nnev=E5g?= <arve@android.com>,
+       Thomas Gleixner <tglx@linutronix.de>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+       Alan Stern <stern@rowland.harvard.edu>,
+       Felipe Balbi <felipe.balbi@nokia.com>,
+       Peter Zijlstra <peterz@infradead.org>,
+       "Paul@smtp1.linux-foundation.org" <Paul@smtp1.linux-foundation.org>,
+       LKML <linux-kernel@vger.kernel.org>,
+       Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
+       Linux PM <linux-pm@lists.linux-foundation.org>,
+       Alan Cox <alan@lxorguk.ukuu.org.uk>,
+       James Bottomley <James.Bottomley@suse.de>
+Subject: Re: [PATCH] - race-free suspend. Was: Re: [linux-pm] [PATCH 0/8] 
+ Suspend block api (version 8)
+Message-ID: <20100602105039.068c5e00@schatten.dmk.lab>
+In-Reply-To: <20100602180614.729246ea@notabene.brown>
+References: <Pine.LNX.4.44L0.1005271303190.3239-100000@iolanthe.rowland.org>
+	<201006010005.19554.rjw@sisk.pl>
+	<20100601090023.788cabf4@notabene.brown>
+	<201006010232.20263.rjw@sisk.pl>
+	<20100601113309.609349fd@notabene.brown>
+	<alpine.LFD.2.00.1006010340160.2933@localhost.localdomain>
+	<20100601122012.1edeaf48@notabene.brown>
+	<alpine.LFD.2.00.1006011243350.2933@localhost.localdomain>
+	<20100602153235.340a7852@notabene.brown>
+	<AANLkTikVjAf5nHdMx2bcHRAUSkq99s-b5YZCECXIJJLy@mail.gmail.com>
+	<20100602180614.729246ea@notabene.brown>
+X-Mailer: Claws Mail 3.7.5 (GTK+ 2.18.9; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> >>
-> >> Although the patch touches only a generic file this is x86 specific.
-> >>
-> >
-> >Américo Wang, Do you mind handle this kconfig patch.
-> >
-> 
-> 
-> Sorry for the delay.
-> 
-> Usually Michal should take this patch. Cc'ing him.
+On Wed, 2 Jun 2010 18:06:14 +1000
+Neil Brown <neilb@suse.de> wrote:
 
-This is not generic functionality. The patch changes default
-behaviour when building x86 kernes only.
-So IMO it requires ack from the x86 maintainers.
+> I cannot imagine why it would take multiple seconds to scan a keypad.
+> Can you explain that?
+> 
+> Do you mean while keys are held pressed?  Maybe you don't get a wake-up event
+> on key-release?  In that case your user-space daemon could block suspend
+> while there are any pressed keys....  confused.
 
-	Sam
+IIRC, the device sends interrupts only for first key-down and
+last key-up.
+To detect simultaneous key-presses you must actively scan it after the
+first key-down.
+
+
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-omap" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
