@@ -1,78 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752134Ab0FBEq1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jun 2010 00:46:27 -0400
-Received: from SpacedOut.fries.net ([67.64.210.234]:59055 "EHLO
-	SpacedOut.fries.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751758Ab0FBEq0 (ORCPT
+	id S1752009Ab0FBEuB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jun 2010 00:50:01 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:37837 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751489Ab0FBEt7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jun 2010 00:46:26 -0400
-X-Greylist: delayed 860 seconds by postgrey-1.27 at vger.kernel.org; Wed, 02 Jun 2010 00:46:26 EDT
-Date: Tue, 1 Jun 2010 23:31:31 -0500
-From: David Fries <david@fries.net>
-To: linux-kernel@vger.kernel.org, alsa-devel@alsa-project.org
-Cc: Kailang Yang <kailang@realtek.com>, Takashi Iwai <tiwai@suse.de>
-Subject: [PATCH] regression 2.6.35-rc1+ hda realtek missing beep 10ec0883
-Message-ID: <20100602043129.GE22327@spacedout.fries.net>
+	Wed, 2 Jun 2010 00:49:59 -0400
+Date: Tue, 1 Jun 2010 21:44:37 -0700 (PDT)
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Brandon Philips <brandon@ifup.org>
+cc: Rusty Russell <rusty@rustcorp.com.au>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       "Rafael J. Wysocki" <rjw@sisk.pl>, LKML <linux-kernel@vger.kernel.org>,
+       Jon Masters <jonathan@jonmasters.org>, Tejun Heo <htejun@gmail.com>,
+       Masami Hiramatsu <mhiramat@redhat.com>,
+       Kay Sievers <kay.sievers@vrfy.org>
+Subject: Re: [PATCH 2/2] module: fix bne2 "gave up waiting for init of module
+ libcrc32c"
+In-Reply-To: <alpine.LFD.2.00.1006012039570.8175@i5.linux-foundation.org>
+Message-ID: <alpine.LFD.2.00.1006012137390.8175@i5.linux-foundation.org>
+References: <201005252300.07739.rjw@sisk.pl> <201006011051.25636.rusty@rustcorp.com.au> <alpine.LFD.2.00.1005312011490.3637@i5.linux-foundation.org> <201006011452.06843.rusty@rustcorp.com.au> <alpine.LFD.2.00.1006010722160.3637@i5.linux-foundation.org>
+ <alpine.LFD.2.00.1006011052340.8175@i5.linux-foundation.org> <20100601232430.GC10332@jenkins.ifup.org> <alpine.LFD.2.00.1006011638540.8175@i5.linux-foundation.org> <20100602021029.GD10332@jenkins.ifup.org>
+ <alpine.LFD.2.00.1006012039570.8175@i5.linux-foundation.org>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-Greylist: Sender is SPF-compliant, not delayed by milter-greylist-3.0 (SpacedOut.fries.net [127.0.0.1]); Tue, 01 Jun 2010 23:31:46 -0500 (CDT)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: David Fries <david@fries.net>
 
-The PC-Spekaer Beep control worked in 2.6.34, but not 2.6.35-rc1, this
-is the patch that modified that behavior.
-"ALSA: hda - Add parse customize define function for Realtek codecs"
-regression in commit da00c24493bf6ae3772dfe7343dca033ebc75955.
 
-Debug output (after this patch),
-HDA Intel 0000:00:14.2: PCI INT A -> GSI 16 (level, low) -> IRQ 16
-SKU: Nid=0x0 sku_cfg=0x0000140d
-SKU: port_connectivity=0x0
-SKU: enable_pcbeep=0x0
-SKU: check_sum=0x00000000
-SKU: customization=0x00000000
-SKU: external_amp=0x1
-SKU: platform_type=0x1
-SKU: swap=0x0
-SKU: override=0x1
-hda_codec: ALC883: BIOS auto-probing.
-autoconfig: line_outs=1 (0x14/0x0/0x0/0x0/0x0)
-   speaker_outs=0 (0x0/0x0/0x0/0x0/0x0)
-   hp_outs=0 (0x0/0x0/0x0/0x0/0x0)
-   mono: mono_out=0x0
-   dig-out=0x1e/0x0
-   inputs: mic=0x18, fmic=0x0, line=0x1a, fline=0x0, cd=0x1c, aux=0x0
-realtek: Enabling init ASM_ID=0x140d CODEC_ID=10ec0883
-input: HDA Digital PCBeep as /devices/pci0000:00/0000:00:14.2/input/input16
+On Tue, 1 Jun 2010, Linus Torvalds wrote:
+> 
+> (Caveat emptor - I tried to make sure the error cases nest correctly, and 
+> it all compiles, but it's untested. As usual.
 
-Signed-off-by: David Fries <david@fries.net>
-Cc: Kailang Yang <kailang@realtek.com>
-Cc: Takashi Iwai <tiwai@suse.de>
+In fact, I didn't nest it right.
+
+The "free_modinfo()" pairs with the "setup_modinfo()" call, and should go 
+into the "cleanup" error case, not the "sysfs_uninit" error case. IOW, I 
+moved one too many error case cleanup lines.
+
+So in that patch, the "free_modinfo()" call should move back to the 
+cleanup case. Like the appended (still untested - I just stared at the 
+code some more, rather than do anything as mundane as _test_ it) patch.
+
+It may still not be right, of course. But it might be closer.
+
+(That function _really_ should be peeled like an onion, and split into 
+many smaller functions, so that we don't have ten error cases needing 
+unwinding. I like "goto error", but at some point you can't see the 
+unwinding any more, and that function has passed that point a long time 
+ago, I think)
+
+		Linus
+
 ---
-My patch restores both the Beep volume and mute.  I'll let someone
-else determine if this is the correct solution or not.
+ kernel/module.c |   33 ++++++++++++++++++---------------
+ 1 files changed, 18 insertions(+), 15 deletions(-)
 
- sound/pci/hda/patch_realtek.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/sound/pci/hda/patch_realtek.c b/sound/pci/hda/patch_realtek.c
-index 17d4548..c31c8b9 100644
---- a/sound/pci/hda/patch_realtek.c
-+++ b/sound/pci/hda/patch_realtek.c
-@@ -10611,7 +10611,7 @@ static int patch_alc882(struct hda_codec *codec)
+diff --git a/kernel/module.c b/kernel/module.c
+index a1f46a5..135577c 100644
+--- a/kernel/module.c
++++ b/kernel/module.c
+@@ -2198,11 +2198,6 @@ static noinline struct module *load_module(void __user *umod,
+ 		goto free_mod;
+ 	}
  
- 	set_capture_mixer(codec);
+-	if (find_module(mod->name)) {
+-		err = -EEXIST;
+-		goto free_mod;
+-	}
+-
+ 	mod->state = MODULE_STATE_COMING;
  
--	if (spec->cdefine.enable_pcbeep)
-+	if (spec->cdefine.enable_pcbeep || codec->vendor_id == 0x10ec0883)
- 		set_beep_amp(spec, 0x0b, 0x05, HDA_INPUT);
+ 	/* Allow arches to frob section contents and sizes.  */
+@@ -2293,11 +2288,6 @@ static noinline struct module *load_module(void __user *umod,
+ 	/* Now we've moved module, initialize linked lists, etc. */
+ 	module_unload_init(mod);
  
- 	if (board_config == ALC882_AUTO)
--- 
-1.7.1
+-	/* add kobject, so we can reference it. */
+-	err = mod_sysfs_init(mod);
+-	if (err)
+-		goto free_unload;
+-
+ 	/* Set up license info based on the info section */
+ 	set_license(mod, get_modinfo(sechdrs, infoindex, "license"));
+ 
+@@ -2486,16 +2476,28 @@ static noinline struct module *load_module(void __user *umod,
+ 	 * The mutex protects against concurrent writers.
+ 	 */
+ 	mutex_lock(&module_mutex);
++
++	if (find_module(mod->name)) {
++		err = -EEXIST;
++		/* This will also unlock the mutex */
++		goto already_exists;
++	}
++
+ 	list_add_rcu(&mod->list, &modules);
+ 	mutex_unlock(&module_mutex);
+ 
++	/* add kobject, so we can reference it. */
++	err = mod_sysfs_init(mod);
++	if (err)
++		goto unlink;
++
+ 	err = parse_args(mod->name, mod->args, mod->kp, mod->num_kp, NULL);
+ 	if (err < 0)
+-		goto unlink;
++		goto sysfs_uninit;
+ 
+ 	err = mod_sysfs_setup(mod, mod->kp, mod->num_kp);
+ 	if (err < 0)
+-		goto unlink;
++		goto sysfs_uninit;
+ 	add_sect_attrs(mod, hdr->e_shnum, secstrings, sechdrs);
+ 	add_notes_attrs(mod, hdr->e_shnum, secstrings, sechdrs);
+ 
+@@ -2507,18 +2509,19 @@ static noinline struct module *load_module(void __user *umod,
+ 	/* Done! */
+ 	return mod;
+ 
++ sysfs_uninit:
++	kobject_del(&mod->mkobj.kobj);
++	kobject_put(&mod->mkobj.kobj);
+  unlink:
+ 	mutex_lock(&module_mutex);
+ 	/* Unlink carefully: kallsyms could be walking list. */
+ 	list_del_rcu(&mod->list);
++ already_exists:
+ 	mutex_unlock(&module_mutex);
+ 	synchronize_sched();
+ 	module_arch_cleanup(mod);
+  cleanup:
+ 	free_modinfo(mod);
+-	kobject_del(&mod->mkobj.kobj);
+-	kobject_put(&mod->mkobj.kobj);
+- free_unload:
+ 	module_unload_free(mod);
+ #if defined(CONFIG_MODULE_UNLOAD)
+ 	free_percpu(mod->refptr);
