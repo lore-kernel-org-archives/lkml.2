@@ -1,48 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932924Ab0FBUWr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jun 2010 16:22:47 -0400
-Received: from dsl-67-204-24-19.acanac.net ([67.204.24.19]:33868 "EHLO
-	emergent.ellipticsemi.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S932641Ab0FBUWp (ORCPT
+	id S1758619Ab0FBUZE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jun 2010 16:25:04 -0400
+Received: from mail-yw0-f179.google.com ([209.85.211.179]:41911 "EHLO
+	mail-yw0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758526Ab0FBUZB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jun 2010 16:22:45 -0400
-Date: Wed, 2 Jun 2010 16:22:15 -0400
-From: Nick Bowler <nbowler@elliptictech.com>
-To: David John <davidjon@xenontk.org>
-Cc: cworth@cworth.org, Dave Airlie <airlied@linux.ie>,
-       Eric Anholt <eric@anholt.net>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [2.6.35-rc1 Regression] i915: Commit cfecde causes VGA to stay
- off
-Message-ID: <20100602202215.GA2383@elliptictech.com>
-Mail-Followup-To: David John <davidjon@xenontk.org>, cworth@cworth.org,
-	Dave Airlie <airlied@linux.ie>, Eric Anholt <eric@anholt.net>,
-	"linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-References: <4C065423.3000202@xenontk.org>
+	Wed, 2 Jun 2010 16:25:01 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4C065423.3000202@xenontk.org>
-Organization: Elliptic Technologies Inc.
-User-Agent: Mutt/1.5.20 (2009-06-14)
+From: Grant Likely <grant.likely@secretlab.ca>
+Date: Wed, 2 Jun 2010 14:24:38 -0600
+X-Google-Sender-Auth: 4ry82Xvm3amKfEGMO2bEGXVLYdc
+Message-ID: <AANLkTimdqrggRbKC2dZRIuMFe4y_99Oy1TO0oThsWboU@mail.gmail.com>
+Subject: [git pull] OF-related build breakage fixes
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       devicetree-discuss <devicetree-discuss@lists.ozlabs.org>,
+       Michael Guntsche <mike@it-loops.com>,
+       Anatolij Gustschin <agust@denx.de>,
+       Alexandre Bounine <alexandre.bounine@idt.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 18:22 Wed 02 Jun     , David John wrote:
-> Commit cfecde 'drm/i915: Don't enable pipe/plane/VCO early (wait for
-> DPMS on)' causes the external VGA connector to stay off on boot. The
-> display powers up when X is started. I'm guessing an explicit DPMS ON
-> is not done on boot.
+Hi Linus,
 
-It gets worse: my primary (and only) display is VGA, and my monitor
-reports that it has been configured to an invalid mode.  The result is
-no usable display.
+Here's a set of build fixes related to the of_node and of_match_table
+device changes.  All trivial fixes.
 
-> Reverting this commit fixes the issue.
+Thanks,
+g.
 
-Likewise.
+The following changes since commit aef4b9aaae1decc775778903922bd0075cce7a88:
+  Linus Torvalds (1):
+        Merge branch 'next' of git://git.kernel.org/.../benh/powerpc
+
+are available in the git repository at:
+
+  git://git.secretlab.ca/git/linux-2.6 merge
+
+Alexandre Bounine (1):
+      of/powerpc: fix 85xx RapidIO device node pointer
+
+Anatolij Gustschin (3):
+      of/spi: mpc512x_psc_spi.c: Fix build failures
+      of/mtd/nand: mpc5121_nfc.c: Fix build failures
+      of/dma: mpc512x_dma.c: Fix build failures
+
+Grant Likely (3):
+      of/usb: fix build error due to of_node pointer move
+      of/spi: Fix build failure on spi_ppc4xx.c
+      of/rtc: rtc-mpc5121.c: Fix build failures
+
+Michael Guntsche (1):
+      watchdog: Fix build failure with OF changes
+
+ arch/powerpc/sysdev/fsl_rio.c     |    2 +-
+ drivers/dma/mpc512x_dma.c         |   10 +++++-----
+ drivers/mtd/nand/mpc5121_nfc.c    |    8 ++++----
+ drivers/rtc/rtc-mpc5121.c         |   14 ++++++++------
+ drivers/spi/mpc512x_psc_spi.c     |   12 ++++++------
+ drivers/spi/spi_ppc4xx.c          |    2 +-
+ drivers/usb/host/ehci-xilinx-of.c |    2 +-
+ drivers/watchdog/mpc8xxx_wdt.c    |    2 +-
+ 8 files changed, 27 insertions(+), 25 deletions(-)
 
 -- 
-Nick Bowler, Elliptic Technologies (http://www.elliptictech.com/)
+Grant Likely, B.Sc., P.Eng.
+Secret Lab Technologies Ltd.
