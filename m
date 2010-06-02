@@ -1,58 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932317Ab0FBKB4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jun 2010 06:01:56 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:45170 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932147Ab0FBKBy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jun 2010 06:01:54 -0400
-Subject: Re: [PATCH v2 0/3] kmemleak: Fix false positive with special scan
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Hiroshi DOYU <Hiroshi.DOYU@nokia.com>
-Cc: linux-kernel@vger.kernel.org, ext-phil.2.carmody@nokia.com,
-       linux-omap@vger.kernel.org
-In-Reply-To: <1275387911-13030-1-git-send-email-Hiroshi.DOYU@nokia.com>
-References: <1273821401-26578-2-git-send-email-Hiroshi.DOYU@nokia.com>
-	 <1275387911-13030-1-git-send-email-Hiroshi.DOYU@nokia.com>
-Content-Type: text/plain; charset="UTF-8"
-Organization: ARM Limited
-Date: Wed, 02 Jun 2010 11:01:24 +0100
-Message-ID: <1275472884.13743.29.camel@e102109-lin.cambridge.arm.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.1 
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 02 Jun 2010 10:01:26.0596 (UTC) FILETIME=[90819040:01CB023A]
+	id S1757753Ab0FBKEI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jun 2010 06:04:08 -0400
+Received: from 8bytes.org ([88.198.83.132]:49988 "EHLO 8bytes.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752131Ab0FBKEH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Jun 2010 06:04:07 -0400
+Date: Wed, 2 Jun 2010 12:04:04 +0200
+From: Joerg Roedel <joro@8bytes.org>
+To: Avi Kivity <avi@redhat.com>
+Cc: "Michael S. Tsirkin" <mst@redhat.com>, Tom Lyon <pugs@cisco.com>,
+       linux-kernel@vger.kernel.org, kvm@vger.kernel.org, chrisw@sous-sol.org,
+       hjk@linutronix.de, gregkh@suse.de, aafabbri@cisco.com,
+       scofeldm@cisco.com
+Subject: Re: [PATCH] VFIO driver: Non-privileged user level PCI drivers
+Message-ID: <20100602100404.GF964@8bytes.org>
+References: <20100530145309.GO27611@redhat.com> <4C03A285.7060902@redhat.com> <20100531171007.GA6516@redhat.com> <4C04C085.1030107@redhat.com> <20100601095532.GA9178@redhat.com> <4C04E0E0.3070006@redhat.com> <20100601104651.GA9415@redhat.com> <4C050013.2020701@redhat.com> <20100602094527.GD964@8bytes.org> <4C062928.8040003@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4C062928.8040003@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Wed, Jun 02, 2010 at 12:49:28PM +0300, Avi Kivity wrote:
+> On 06/02/2010 12:45 PM, Joerg Roedel wrote:
+>> IOMMU mapped memory can not be swapped out because we can't do demand
+>> paging on io-page-faults with current devices. We have to pin _all_
+>> userspace memory that is mapped into an IOMMU domain.
+>
+> vhost doesn't pin memory.
+>
+> What I proposed is to describe the memory map using an object (fd), and  
+> pass it around to clients that use it: kvm, vhost, vfio.  That way you  
+> maintain the memory map in a central location and broadcast changes to  
+> clients.  Only a vfio client would result in memory being pinned.
 
-Sorry for the delay, I eventually got the time to look at your patches.
+Ah ok, so its only about the database which keeps the mapping
+information.
 
-On Tue, 2010-06-01 at 11:25 +0100, Hiroshi DOYU wrote:
-> There is a false positive case that a pointer is calculated by other
-> methods than the usual container_of macro. "kmemleak_ignore" can cover
-> such a false positive, but it would loose the advantage of memory leak
-> detection. This patch allows kmemleak to work with such false
-> positives by introducing a new special memory block with a specified
-> calculation formula. A client module can register its area with a
-> conversion function, with which function kmemleak scan could calculate
-> a correct pointer.
+> It can still work, but the interface needs to be extended to include  
+> dirty bitmap logging.
 
-While something needs to be done to cover these situations, I'm not so
-convinced about the method as it complicates the code requiring such
-conversion by having to insert two kmemleak hooks and a callback
-function.
+Thats hard to do. I am not sure about VT-d but the AMD IOMMU has no
+dirty-bits in the page-table. And without demand-paging we can't really
+tell what pages a device has written to. The only choice is to mark all
+IOMMU-mapped pages dirty as long as they are mapped.
 
-Can we not add a new prio tree (or just use the existing one) for
-pointer aliases? The advantage is that you only have a single function
-to call, something like kmemleak_add_alias() and you do it at the point
-the value was converted.
-
-Thanks.
-
--- 
-Catalin
+	Joerg
 
