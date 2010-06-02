@@ -1,85 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932435Ab0FBLiu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jun 2010 07:38:50 -0400
-Received: from moutng.kundenserver.de ([212.227.17.10]:55876 "EHLO
+	id S932467Ab0FBLiz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jun 2010 07:38:55 -0400
+Received: from moutng.kundenserver.de ([212.227.17.10]:57006 "EHLO
 	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757897Ab0FBLiq (ORCPT
+	with ESMTP id S932444Ab0FBLiw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jun 2010 07:38:46 -0400
+	Wed, 2 Jun 2010 07:38:52 -0400
 From: Thomas Weber <weber@corscience.de>
 To: linux-omap@vger.kernel.org
-Cc: Kan-Ru Chen <kanru@0xlab.org>, Tony Lindgren <tony@atomide.com>,
+Cc: Thomas Weber <weber@corscience.de>, Tony Lindgren <tony@atomide.com>,
        Russell King <linux@arm.linux.org.uk>,
        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: [PATCHv2 04/11] OMAP2: Devkit8000: Setup LCD reset
-Date: Wed,  2 Jun 2010 13:37:44 +0200
-Message-Id: <1275478671-24563-5-git-send-email-weber@corscience.de>
+Subject: [PATCHv2 10/11] OMAP2: Devkit8000: Remove unused omap_board_config
+Date: Wed,  2 Jun 2010 13:37:50 +0200
+Message-Id: <1275478671-24563-11-git-send-email-weber@corscience.de>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1275478671-24563-1-git-send-email-weber@corscience.de>
 References: <1275478671-24563-1-git-send-email-weber@corscience.de>
-X-Provags-ID: V01U2FsdGVkX1+PA/5qAmHt5tg2X/9D2btg+JTLvScuBR77JB0
- IG3HxC8j2hy6bLIF5pW3gs7xXzyGge4NvEE7deRE2StrVZmatD
- xNVxonJSFmbtoqU0Z1Kig==
+X-Provags-ID: V01U2FsdGVkX1/wwAPkfP5QS0R+Zk/RYT1F68jjEDXERxcOpDk
+ CvsaH4KNJ+BOglDC9X4NSVjsUWOLaFWPlxzvRmAbkMLjdo5OhD
+ seVN75xuA1C2PVBRFfEnA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Kan-Ru Chen <kanru@0xlab.org>
+omap_board_config is no longer used and thats why empty.
+This patch removes the empty omap_board_config.
 
-This patch corrects the LCD reset pin configuration.
-
-Original code from early devkit8000 patch sets the TWL4030 GPIO_1
-to EHCI_nOC and TWL4030_GPIO_MAX+1 to ledA. Indeed these two pins
-are both LCD_PWREN. Setup the lcd reset_gpio properly so it can be
-disabled when other display is turned on.
-
-Signed-off-by: Kan-Ru Chen <kanru@0xlab.org>
+Signed-off-by: Thomas Weber <weber@corscience.de>
 ---
- arch/arm/mach-omap2/board-devkit8000.c |   11 +++++++++++
- 1 files changed, 11 insertions(+), 0 deletions(-)
+ arch/arm/mach-omap2/board-devkit8000.c |    6 ------
+ 1 files changed, 0 insertions(+), 6 deletions(-)
 
 diff --git a/arch/arm/mach-omap2/board-devkit8000.c b/arch/arm/mach-omap2/board-devkit8000.c
-index 17a2517..70552d8 100644
+index dbd16de..a485d39 100644
 --- a/arch/arm/mach-omap2/board-devkit8000.c
 +++ b/arch/arm/mach-omap2/board-devkit8000.c
-@@ -134,11 +134,15 @@ static int devkit8000_panel_enable_lcd(struct omap_dss_device *dssdev)
- 	twl_i2c_write_u8(TWL4030_MODULE_GPIO, 0x80, REG_GPIODATADIR1);
- 	twl_i2c_write_u8(TWL4030_MODULE_LED, 0x0, 0x0);
- 
-+	if (dssdev->reset_gpio != -EINVAL)
-+		gpio_set_value(dssdev->reset_gpio, 1);
- 	return 0;
- }
- 
- static void devkit8000_panel_disable_lcd(struct omap_dss_device *dssdev)
- {
-+	if (dssdev->reset_gpio != -EINVAL)
-+		gpio_set_value(dssdev->reset_gpio, 0);
- }
- 
- static int devkit8000_panel_enable_dvi(struct omap_dss_device *dssdev)
-@@ -183,6 +187,7 @@ static struct omap_dss_device devkit8000_lcd_device = {
- 	.driver_name            = "generic_panel",
- 	.type                   = OMAP_DISPLAY_TYPE_DPI,
- 	.phy.dpi.data_lines     = 24,
-+	.reset_gpio             = -EINVAL, /* will be replaced */
- 	.platform_enable        = devkit8000_panel_enable_lcd,
- 	.platform_disable       = devkit8000_panel_disable_lcd,
+@@ -126,8 +126,6 @@ static struct omap2_hsmmc_info mmc[] = {
+ 	},
+ 	{}	/* Terminator */
  };
-@@ -281,6 +286,12 @@ static int devkit8000_twl_gpio_setup(struct device *dev,
- 	/* TWL4030_GPIO_MAX + 1 == ledB, PMU_STAT (out, active low LED) */
- 	gpio_leds[2].gpio = gpio + TWL4030_GPIO_MAX + 1;
+-static struct omap_board_config_kernel devkit8000_config[] __initdata = {
+-};
  
-+        /* gpio + 1 is "LCD_PWREN" (out, active high) */
-+	devkit8000_lcd_device.reset_gpio = gpio + 1;
-+	gpio_request(devkit8000_lcd_device.reset_gpio, "LCD_PWREN");
-+	/* Disable until needed */
-+	gpio_direction_output(devkit8000_lcd_device.reset_gpio, 0);
-+
- 	/* gpio + 7 is "DVI_PD" (out, active low) */
- 	devkit8000_dvi_device.reset_gpio = gpio + 7;
- 	gpio_request(devkit8000_dvi_device.reset_gpio, "DVI PowerDown");
+ static int devkit8000_panel_enable_lcd(struct omap_dss_device *dssdev)
+ {
+@@ -464,8 +462,6 @@ static struct platform_device keys_gpio = {
+ 
+ static void __init devkit8000_init_irq(void)
+ {
+-	omap_board_config = devkit8000_config;
+-	omap_board_config_size = ARRAY_SIZE(devkit8000_config);
+ 	omap2_init_common_hw(mt46h32m32lf6_sdrc_params,
+ 			     mt46h32m32lf6_sdrc_params);
+ 	omap_init_irq();
+@@ -797,8 +793,6 @@ static void __init devkit8000_init(void)
+ 	devkit8000_i2c_init();
+ 	platform_add_devices(devkit8000_devices,
+ 			ARRAY_SIZE(devkit8000_devices));
+-	omap_board_config = devkit8000_config;
+-	omap_board_config_size = ARRAY_SIZE(devkit8000_config);
+ 
+ 	spi_register_board_info(devkit8000_spi_board_info,
+ 	ARRAY_SIZE(devkit8000_spi_board_info));
 -- 
 1.7.1
 
