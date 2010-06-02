@@ -1,53 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755942Ab0FBDPU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Jun 2010 23:15:20 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:44670 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752498Ab0FBDPT convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Jun 2010 23:15:19 -0400
-MIME-Version: 1.0
-In-Reply-To: <CA1BBBBC9359F04AA639128AC0D5D1E9692AAF29@orsmsx502.amr.corp.intel.com>
-References: <20100527232357.6d14fdb2@lxorguk.ukuu.org.uk>
-	<20100601135102.GA8098@srcf.ucam.org>
-	<1275426085.21962.967.camel@mulgrave.site>
-	<201006020024.14220.rjw@sisk.pl>
-	<1275431816.21962.1108.camel@mulgrave.site>
-	<AANLkTikObnAZbyOxeYAhXcEbimO3XTTO-HlC9CD_HH6t@mail.gmail.com>
-	<CA1BBBBC9359F04AA639128AC0D5D1E9692AAF29@orsmsx502.amr.corp.intel.com>
-Date: Tue, 1 Jun 2010 20:15:17 -0700
-Message-ID: <AANLkTinsgmHh7iLhESPXiTkoW9SL4H8E92-7bARpDxNX@mail.gmail.com>
-Subject: Re: [linux-pm] [PATCH 0/8] Suspend block api (version 8)
-From: =?ISO-8859-1?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>
-To: "Gross, Mark" <mark.gross@intel.com>
-Cc: James Bottomley <James.Bottomley@suse.de>,
-       "Rafael J. Wysocki" <rjw@sisk.pl>,
-       Matthew Garrett <mjg59@srcf.ucam.org>,
-       Thomas Gleixner <tglx@linutronix.de>,
-       Peter Zijlstra <peterz@infradead.org>, "tytso@mit.edu" <tytso@mit.edu>,
+	id S1757502Ab0FBDQD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Jun 2010 23:16:03 -0400
+Received: from ozlabs.org ([203.10.76.45]:52776 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752498Ab0FBDQA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Jun 2010 23:16:00 -0400
+From: Rusty Russell <rusty@rustcorp.com.au>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [PATCH 2/2] module: fix bne2 "gave up waiting for init of module libcrc32c"
+Date: Wed, 2 Jun 2010 12:45:57 +0930
+User-Agent: KMail/1.13.2 (Linux/2.6.32-21-generic; KDE/4.4.2; i686; ; )
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+       Brandon Philips <brandon@ifup.org>, "Rafael J. Wysocki" <rjw@sisk.pl>,
        LKML <linux-kernel@vger.kernel.org>,
-       Florian Mickler <florian@mickler.org>,
-       Linux PM <linux-pm@lists.linux-foundation.org>,
-       Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
-       "felipe.balbi@nokia.com" <felipe.balbi@nokia.com>,
-       Alan Cox <alan@lxorguk.ukuu.org.uk>,
-       Alan Stern <stern@rowland.harvard.edu>, Neil Brown <neilb@suse.de>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+       Jon Masters <jonathan@jonmasters.org>, Tejun Heo <htejun@gmail.com>,
+       Masami Hiramatsu <mhiramat@redhat.com>,
+       Kay Sievers <kay.sievers@vrfy.org>
+References: <201005252300.07739.rjw@sisk.pl> <alpine.LFD.2.00.1005312024320.3637@i5.linux-foundation.org> <201006011449.51587.rusty@rustcorp.com.au>
+In-Reply-To: <201006011449.51587.rusty@rustcorp.com.au>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201006021245.59076.rusty@rustcorp.com.au>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2010/6/1 Gross, Mark <mark.gross@intel.com>:
-...
->>4. It would be useful to change pm_qos_add_request to not allocate
->>anything so can add constraints from init functions that currently
->>cannot fail.
-> [mtg: ] I'm not sure how to do this but I agree it would be good.  I guess we could have a block of pm_qos requests pre-allocated statically and re-use them.  In practice there will not be more than a handful of requests ever.  Dynamic allocation does seem like a bit of a waste.
+On Tue, 1 Jun 2010 02:49:50 pm Rusty Russell wrote:
+> I wonder if we should just get rid of !CONFIG_UNLOAD then?  I have a soft spot
+> for it because it keeps us honest and shows how much shit is there simply for
+> our poor man's pagable kernel.
+> 
+> Let me compile up a kernel with and without and see what it's really doing
+> to us...
 
-The calling code will have to store a pointer to your structure
-anyway, you may as well have them provide the whole structure.
+With a distro-style config (copied Ubuntu then held down Enter on oldconfig)
+it's:
+		Vmlinux	module.o (text/data)	Total module size (text/data)
+With unload	8976331	24144/1036		47255565/3298004
+Without unload	8962022	20551/732		47176064/3222068
+Without modules 8723931
 
--- 
-Arve Hjønnevåg
+So, we pay 14k for module unload support, or 0.2%, and 0.3% across the
+modules themselves.  There's real runtime costs, too, but someone would need
+to annotate and see how often we do inc/dec in a real system.
+
+Not sure that last one is exactly comparable, but it looks like module
+support is a significant cost...
+
+Cheers,
+Rusty.
