@@ -1,54 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751511Ab0FBEcQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jun 2010 00:32:16 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:55460 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751169Ab0FBEcO convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jun 2010 00:32:14 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:date:message-id:subject:from:to:content-type
-         :content-transfer-encoding;
-        b=iBp8YN4QODnuXKeIULPUDN84Nko7LiKD5Lma0pJBS572/rBRezz8pIOl3uVyfb/Xq3
-         ONpDR5dMsBejeqDT3oCfYD2gdAnw6voDJFx2XrnlVm6xZJYCCqyxFPvuYeOdC8ZCwL34
-         YKISucO67fogU2SbTBwmrLoI/eEIpwIRLb3IA=
+	id S1751615Ab0FBEfS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jun 2010 00:35:18 -0400
+Received: from tango.tkos.co.il ([62.219.50.35]:58324 "EHLO tango.tkos.co.il"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751369Ab0FBEfQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Jun 2010 00:35:16 -0400
+Date: Wed, 2 Jun 2010 07:34:47 +0300
+From: Baruch Siach <baruch@tkos.co.il>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Thadeu Lima de Souza Cascardo <cascardo@holoscopio.com>,
+       linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+       Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>,
+       Sascha Hauer <s.hauer@pengutronix.de>
+Subject: Re: [PATCH] fbdev: fix frame buffer devices menu
+Message-ID: <20100602043447.GA12190@jasper.tkos.co.il>
+References: <1274896477-6832-1-git-send-email-cascardo@holoscopio.com>
+ <20100527040329.GA14841@jasper.tkos.co.il>
+ <20100601142806.03c50a49.akpm@linux-foundation.org>
 MIME-Version: 1.0
-Date: Wed, 2 Jun 2010 10:02:13 +0530
-Message-ID: <AANLkTikC61Y9g-WbqwgGDghDSy2XtgraFSRoZYkHRGTG@mail.gmail.com>
-Subject: make ARM=arm menuconfig problem in mainline
-From: Nobin Mathew <nobin.mathew@gmail.com>
-To: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.arm.linux.org.uk
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100601142806.03c50a49.akpm@linux-foundation.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Hi Andrew,
 
-The following entry creates problem in ARM System type menu. I am
-using a Fedora 12 system.
+On Tue, Jun 01, 2010 at 02:28:06PM -0700, Andrew Morton wrote:
+> On Thu, 27 May 2010 07:03:29 +0300
+> Baruch Siach <baruch@tkos.co.il> wrote:
+> 
+> > On Wed, May 26, 2010 at 02:54:37PM -0300, Thadeu Lima de Souza Cascardo wrote:
+> > > Commit f601441916d1e19291d0b4f044b4a7551e2924d0 has inserted the symbol
+> > > HAVE_FB_IMX, which does not depend on FB after the menuconfig FB. This
+> > > breaks the menu, presenting most of the drivers outside of it, when
+> > > using menuconfig.
+> > > 
+> > > Moving the symbol to the start of the file, just like HAVE_FB_ATMEL,
+> > > fixes the problem without breaking it for iMX25 configurations (tested
+> > > with ARCH=arm, no build).
+> > > 
+> > > Cc: Baruch Siach <baruch@tkos.co.il>
+> > > Cc: Uwe Kleine-K__nig <u.kleine-koenig@pengutronix.de>
+> > > Cc: Sascha Hauer <s.hauer@pengutronix.de>
+> > > Signed-off-by: Thadeu Lima de Souza Cascardo <cascardo@holoscopio.com>
+> > 
+> > Acked-by: Baruch Siach <baruch@tkos.co.il>
+> > 
+> 
+> OK, I've been sitting on the below patch
+> (fbdev-fix-kconfig-breakage-in-drivers-video.patch) for months, waiting
+> for Krzysztof to respond to some comment which Baruch made, but
+> Krzysztof seems to have gone quiet.
+> 
+> Could you guys please compare Thadeu's patch with the below and work
+> out which is preferable and whether the new patch has the same coverage
+> as the old one, etc?
 
-Length of bool "Samsung S3C2410, S3C2412, S3C2413, S3C2416, S3C2440,
-S3C2442, S3C2443, S3C2450" is the problem. How can I fix it.
+Krzysztof's patch breaks the fb support for the MX25 platform, so I prefer 
+Thadeu's approach. I have no objection to the
 
-config ARCH_S3C2410
-        bool "Samsung S3C2410, S3C2412, S3C2413, S3C2416, S3C2440,
-S3C2442, S3C2443, S3C2450"
-        select GENERIC_GPIO
-        select ARCH_HAS_CPUFREQ
-        select HAVE_CLK
-        select ARCH_USES_GETTIMEOFFSET
-        help
-          Samsung S3C2410X CPU based systems, such as the Simtec Electronics
-          BAST (<http://www.simtec.co.uk/products/EB110ITX/>), the IPAQ 1940 or
-          the Samsung SMDK2410 development board (and derivatives).
+s/(FB = y) && (SPARC && FB_SBUS)/FB_SBUS/
 
-          Note, the S3C2416 and the S3C2450 are so close that they even share
-          the same SoC ID code. This means that there is no seperate machine
-          directory (no arch/arm/mach-s3c2450) as the S3C2416 was first.
+thing, though.
 
-Thanks
-Nobin
+baruch
+
+> From: Krzysztof Helt <krzysztof.h1@wp.pl>
+> 
+> There are two new options inside the CONFIG_FB section which do not depend
+> on the CONFIG_FB.  This break Kconfig menu layout.
+> 
+> Fix it and reduce few conditions for sparc frame buffers as the FB_SBUS ==
+> ((FB = y) && SPARC).
+> 
+> Signed-off-by: Krzysztof Helt <krzysztof.h1@wp.pl>
+> Acked-by: David S. Miller <davem@davemloft.net>
+> Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+> ---
+> 
+>  drivers/video/Kconfig |   11 ++++-------
+>  1 file changed, 4 insertions(+), 7 deletions(-)
+> 
+> diff -puN drivers/video/Kconfig~fbdev-fix-kconfig-breakage-in-drivers-video drivers/video/Kconfig
+> --- a/drivers/video/Kconfig~fbdev-fix-kconfig-breakage-in-drivers-video
+> +++ a/drivers/video/Kconfig
+> @@ -400,12 +400,9 @@ config FB_SA1100
+>  	  If you plan to use the LCD display with your SA-1100 system, say
+>  	  Y here.
+>  
+> -config HAVE_FB_IMX
+> -	bool
+> -
+>  config FB_IMX
+>  	tristate "Motorola i.MX LCD support"
+> -	depends on FB && (HAVE_FB_IMX || ARCH_MX1 || ARCH_MX2)
+> +	depends on FB && (ARCH_MX1 || ARCH_MX2)
+>  	select FB_CFB_FILLRECT
+>  	select FB_CFB_COPYAREA
+>  	select FB_CFB_IMAGEBLIT
+> @@ -802,7 +799,7 @@ config FB_SBUS
+>  
+>  config FB_BW2
+>  	bool "BWtwo support"
+> -	depends on (FB = y) && (SPARC && FB_SBUS)
+> +	depends on FB_SBUS
+>  	select FB_CFB_FILLRECT
+>  	select FB_CFB_COPYAREA
+>  	select FB_CFB_IMAGEBLIT
+> @@ -811,7 +808,7 @@ config FB_BW2
+>  
+>  config FB_CG3
+>  	bool "CGthree support"
+> -	depends on (FB = y) && (SPARC && FB_SBUS)
+> +	depends on FB_SBUS
+>  	select FB_CFB_FILLRECT
+>  	select FB_CFB_COPYAREA
+>  	select FB_CFB_IMAGEBLIT
+> @@ -820,7 +817,7 @@ config FB_CG3
+>  
+>  config FB_CG6
+>  	bool "CGsix (GX,TurboGX) support"
+> -	depends on (FB = y) && (SPARC && FB_SBUS)
+> +	depends on FB_SBUS
+>  	select FB_CFB_COPYAREA
+>  	select FB_CFB_IMAGEBLIT
+>  	help
+> _
+> 
+
+-- 
+                                                     ~. .~   Tk Open Systems
+=}------------------------------------------------ooO--U--Ooo------------{=
+   - baruch@tkos.co.il - tel: +972.2.679.5364, http://www.tkos.co.il -
