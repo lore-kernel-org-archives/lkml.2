@@ -1,60 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758570Ab0FBUW0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jun 2010 16:22:26 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:33983 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758067Ab0FBUWZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jun 2010 16:22:25 -0400
-Date: Wed, 2 Jun 2010 22:20:49 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Paul Menage <menage@google.com>
-Cc: Ben Blum <bblum@andrew.cmu.edu>, linux-kernel@vger.kernel.org,
-       containers@lists.linux-foundation.org, akpm@linux-foundation.org,
-       ebiederm@xmission.com, lizf@cn.fujitsu.com, matthltc@us.ibm.com
-Subject: Re: [RFC] [PATCH 2/2] cgroups: make procs file writable
-Message-ID: <20100602202048.GB28663@redhat.com>
-References: <20100530013002.GA762@ghc01.ghc.andrew.cmu.edu> <20100530013303.GC762@ghc01.ghc.andrew.cmu.edu> <20100531175242.GA14691@redhat.com> <20100531180446.GA16249@redhat.com> <AANLkTimcrX0TjzDMNJdubR92pAO4IPATbVpyvvVt0qIV@mail.gmail.com> <20100602140659.GA5324@redhat.com> <AANLkTin-T6ij3xf0ceGoCamwcoayxyf0GdAKY6yXDMVl@mail.gmail.com>
+	id S932924Ab0FBUWr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jun 2010 16:22:47 -0400
+Received: from dsl-67-204-24-19.acanac.net ([67.204.24.19]:33868 "EHLO
+	emergent.ellipticsemi.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S932641Ab0FBUWp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Jun 2010 16:22:45 -0400
+Date: Wed, 2 Jun 2010 16:22:15 -0400
+From: Nick Bowler <nbowler@elliptictech.com>
+To: David John <davidjon@xenontk.org>
+Cc: cworth@cworth.org, Dave Airlie <airlied@linux.ie>,
+       Eric Anholt <eric@anholt.net>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [2.6.35-rc1 Regression] i915: Commit cfecde causes VGA to stay
+ off
+Message-ID: <20100602202215.GA2383@elliptictech.com>
+Mail-Followup-To: David John <davidjon@xenontk.org>, cworth@cworth.org,
+	Dave Airlie <airlied@linux.ie>, Eric Anholt <eric@anholt.net>,
+	"linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+References: <4C065423.3000202@xenontk.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <AANLkTin-T6ij3xf0ceGoCamwcoayxyf0GdAKY6yXDMVl@mail.gmail.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <4C065423.3000202@xenontk.org>
+Organization: Elliptic Technologies Inc.
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/02, Paul Menage wrote:
->
-> On Wed, Jun 2, 2010 at 7:06 AM, Oleg Nesterov <oleg@redhat.com> wrote:
-> >
-> > I am not sure. It doesn't hurt when we try to move a thread. But if
-> > we want to move the whole thread group, we should proceed even if the
-> > group leader has already exited and thus has PF_EXITING bit set.
->
-> Hmm, maybe. I could see this being argued both ways. Can the process
-> hang around indefinitely with the leader as a zombie and the other
-> threads still running?
+On 18:22 Wed 02 Jun     , David John wrote:
+> Commit cfecde 'drm/i915: Don't enable pipe/plane/VCO early (wait for
+> DPMS on)' causes the external VGA connector to stay off on boot. The
+> display powers up when X is started. I'm guessing an explicit DPMS ON
+> is not done on boot.
 
-Yes sure. The main thread can exit via sys_exit(), this doesn't affect
-the thread group. Of course, I am not saying this is common practice,
-perhaps no "important" app does this.
+It gets worse: my primary (and only) display is VGA, and my monitor
+reports that it has been configured to an invalid mode.  The result is
+no usable display.
 
-> It wouldn't be that hard to make it possible to avoid relying on
-> PF_EXITING as the check - instead we'd have an exiting_css_set object
-> that have the same pointer set as init_css_set, but would be
-> distinguishable from it as a task->cgroups pointer by virtue of being
-> a different object. Then cgroup_exit() can reassign tasks to point to
-> exiting_css_set rather than init_css_set, and the various checks that
-> are currently made for (task->flags & PF_EXITING) could check for
-> (task->cgroups == exiting_css_set) instead. This would allow task
-> movement further into the exit process.
+> Reverting this commit fixes the issue.
 
-It is too late for me to even try to understand the above ;)
+Likewise.
 
-But I still can't understand why we can't just remove it. Both
-cgroup_attach_task() and cgroup_attach_proc() should handle the
-possible races correctly anyway.
-
-Oleg.
-
+-- 
+Nick Bowler, Elliptic Technologies (http://www.elliptictech.com/)
