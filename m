@@ -1,60 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932969Ab0FBTUY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jun 2010 15:20:24 -0400
-Received: from g1t0026.austin.hp.com ([15.216.28.33]:34449 "EHLO
-	g1t0026.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932932Ab0FBTUW (ORCPT
+	id S933005Ab0FBTUw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jun 2010 15:20:52 -0400
+Received: from sj-iport-5.cisco.com ([171.68.10.87]:10667 "EHLO
+	sj-iport-5.cisco.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932976Ab0FBTUu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jun 2010 15:20:22 -0400
-From: Bjorn Helgaas <bjorn.helgaas@hp.com>
-To: Bert dd <bert.ddecker@gmail.com>
-Subject: Re: Is there a way to change irq numbers of pcie cards ?
-Date: Wed, 2 Jun 2010 13:19:59 -0600
-User-Agent: KMail/1.13.2 (Linux/2.6.32-22-generic; KDE/4.4.2; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org
-References: <AANLkTinfWMJ94pPxjRAx-vgvcqSwE9Hw3kHqEDLazhZ2@mail.gmail.com>
-In-Reply-To: <AANLkTinfWMJ94pPxjRAx-vgvcqSwE9Hw3kHqEDLazhZ2@mail.gmail.com>
+	Wed, 2 Jun 2010 15:20:50 -0400
+Authentication-Results: sj-iport-5.cisco.com; dkim=neutral (message not signed) header.i=none
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AvsEAI9LBkyrR7Ht/2dsb2JhbACeH3GnPJonhRYEg0g
+X-IronPort-AV: E=Sophos;i="4.53,348,1272844800"; 
+   d="scan'208";a="206108663"
+From: Roland Dreier <rdreier@cisco.com>
+To: Dan Carpenter <error27@gmail.com>
+Cc: linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
+Subject: Re: [announce] smatch 1.54
+References: <20100109085325.GE7840@bicker>
+X-Message-Flag: Warning: May contain useful information
+Date: Wed, 02 Jun 2010 12:20:46 -0700
+In-Reply-To: <20100109085325.GE7840@bicker> (Dan Carpenter's message of "Sat,
+	9 Jan 2010 11:53:25 +0300")
+Message-ID: <adahblls0kx.fsf@roland-alpha.cisco.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201006021319.59402.bjorn.helgaas@hp.com>
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[I added linux-pci, where more PCI-savvy people will see it.]
+Hi Dan,
 
-On Wednesday, June 02, 2010 06:08:33 am Bert dd wrote:
-> Hi,
-> Is there a way to change irq numbers of pcie cards ?
-> 
-> I have a supermicro machine with 2 raid cards (lsi 9260-8i and lsi 9260-8e) and
-> one nvidia GTX480 graphics card.
-> The problem is that all these pcie cards are assigned the same irq number,
-> and thus all the interrupts are routed to the same cpu which can not
-> handle this.
-> If I replace the nvidia GTX480 with an older graphics card(too old for
-> our purposes (GTX295)), the graphics card gets a different irq number
-> than the raid cards, the interrups of the graphics card are handled by
-> a different cpu than those of the raid cards, and the read/write speed
-> of the raid increases.
-> I am reading/writing at 2.5 GB/s to the raid and I am uploading
-> textures at 0.5 GB/s to the graphics hardware.
-> Is there a way to change the irq numbers of the pcie cards ?
-> I am using IOAPIC for interrupt routing.
+I'm trying out smatch on some kernel code now.  Neat stuff, but I'm
+seeing some puzzling false positives relating to signedness.  Basically,
+if I have code like:
 
-I would think performance-oriented PCIe devices would be using
-some sort of MSI, but I'm not really an expert in that area.
+	__be16 foo;
+	__u16 bar;
 
-Can you post your /proc/interrupts and complete dmesg log in
-case nobody jumps in with an obvious answer?
+	foo = cpu_to_be16(128);
+	bar = cpu_to_be16(128);
 
-Bjorn
+then the first line warns about 32768 not fitting into foo, but while
+the second line doesn't warn, even though __be16 is just a __bitwise__
+__u16.  I don't understand the sparse / smatch internals so I'm not sure
+why applying __bitwise__ apparently kills the unsigned modifier.  Maybe
+it's an easy fix for you?  Otherwise I'll poke at it a little later.
 
-> I am using ubuntu - kernel version 2.6.31-14-generic.
-> 
-> thanks,
->   Bert De Decker
->   bert.dedecker@uhasselt.be
+Thanks,
+  Roland
+-- 
+Roland Dreier <rolandd@cisco.com> || For corporate legal information go to:
+http://www.cisco.com/web/about/doing_business/legal/cri/index.html
