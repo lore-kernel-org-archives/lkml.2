@@ -1,41 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932673Ab0FBPa4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jun 2010 11:30:56 -0400
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:39565
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932640Ab0FBPay (ORCPT
+	id S932653Ab0FBPcL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jun 2010 11:32:11 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:33239 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758001Ab0FBPcJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jun 2010 11:30:54 -0400
-Date: Wed, 02 Jun 2010 08:31:04 -0700 (PDT)
-Message-Id: <20100602.083104.123416857.davem@davemloft.net>
-To: gabriele.paoloni@intel.com
-Cc: ben@netservers.co.uk, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-       alan@lxorguk.ukuu.org.uk, linux-ppp@vger.kernel.org, paulus@samba.org
-Subject: Re: [PATCH] ppp_generic: fix multilink fragment sizes
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <DF7BB929B28FCF479E888E3D9F8D9E88D3E16B5A@irsmsx502.ger.corp.intel.com>
-References: <4C0670E2.1090708@netservers.co.uk>
-	<1275491094-9526-1-git-send-email-ben@netservers.co.uk>
-	<DF7BB929B28FCF479E888E3D9F8D9E88D3E16B5A@irsmsx502.ger.corp.intel.com>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	Wed, 2 Jun 2010 11:32:09 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=ZiRWC6FeKy0lCLQaTIscSCEISLQ/AYje4Blnxo54V0N6Bb8aHO3jLE3+m94a8hriU8
+         6edQTV/NKPW3AxSGJUR+fYdq0Gno5pCerSmBi+QscEylj5XjD7eVT+I/mM49ZoYeLqaz
+         dEZYTw1Av+VhMIq5pP3Dd1W5ltmUkEy1jqgYY=
+Date: Thu, 3 Jun 2010 00:32:01 +0900
+From: Minchan Kim <minchan.kim@gmail.com>
+To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
+       Oleg Nesterov <oleg@redhat.com>, David Rientjes <rientjes@google.com>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+       Nick Piggin <npiggin@suse.de>
+Subject: Re: [PATCH 1/5] oom: select_bad_process: check PF_KTHREAD instead
+ of !mm to skip kthreads
+Message-ID: <20100602153201.GB5326@barrios-desktop>
+References: <20100531182526.1843.A69D9226@jp.fujitsu.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100531182526.1843.A69D9226@jp.fujitsu.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Paoloni, Gabriele" <gabriele.paoloni@intel.com>
-Date: Wed, 2 Jun 2010 16:17:59 +0100
+On Mon, May 31, 2010 at 06:33:06PM +0900, KOSAKI Motohiro wrote:
+> From: Oleg Nesterov <oleg@redhat.com>
+> Subject: oom: select_bad_process: check PF_KTHREAD instead of !mm to skip kthreads
+> 
+> select_bad_process() thinks a kernel thread can't have ->mm != NULL, this
+> is not true due to use_mm().
+> 
+> Change the code to check PF_KTHREAD.
+> 
+> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+> Acked-by: David Rientjes <rientjes@google.com>
+> Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Reviewed-by: Minchan Kim <minchan.kim@gmail.com>
 
-> The proposed patch looks wrong to me.
-
-Can you please reply to postings properly?  Use the reply function
-of your mail client and do not "top post."
-
-Because of the way you just simply inlined the entirety of Ben's
-patch posting, it ends up looking like a new patch being posted
-on patchwork and this makes more work and analysis for me.
-
-Thanks.
+-- 
+Kind regards,
+Minchan Kim
