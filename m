@@ -1,42 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757591Ab0FBH1f (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jun 2010 03:27:35 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:60652 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757538Ab0FBH1e (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jun 2010 03:27:34 -0400
-Date: Wed, 2 Jun 2010 00:21:46 -0700 (PDT)
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Rusty Russell <rusty@rustcorp.com.au>
-cc: Brandon Philips <brandon@ifup.org>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       "Rafael J. Wysocki" <rjw@sisk.pl>, LKML <linux-kernel@vger.kernel.org>,
-       Jon Masters <jonathan@jonmasters.org>, Tejun Heo <htejun@gmail.com>,
-       Masami Hiramatsu <mhiramat@redhat.com>,
-       Kay Sievers <kay.sievers@vrfy.org>
-Subject: Re: [PATCH 2/2] module: fix bne2 "gave up waiting for init of module
- libcrc32c"
-In-Reply-To: <201006021523.00357.rusty@rustcorp.com.au>
-Message-ID: <alpine.LFD.2.00.1006020006420.8175@i5.linux-foundation.org>
-References: <201005252300.07739.rjw@sisk.pl> <20100602021029.GD10332@jenkins.ifup.org> <alpine.LFD.2.00.1006012039570.8175@i5.linux-foundation.org> <201006021523.00357.rusty@rustcorp.com.au>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S1756914Ab0FBHbx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jun 2010 03:31:53 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:40440 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751350Ab0FBHbv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Jun 2010 03:31:51 -0400
+Message-ID: <4C0608C6.4090901@zytor.com>
+Date: Wed, 02 Jun 2010 00:31:18 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100330 Fedora/3.0.4-1.fc12 Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Bjorn Helgaas <bjorn.helgaas@hp.com>
+CC: Mike Travis <travis@sgi.com>, Ingo Molnar <mingo@redhat.com>,
+       Thomas Gleixner <tglx@linutronix.de>, x86@kernel.org,
+       Jesse Barnes <jbarnes@virtuousgeek.org>,
+       Jacob Pan <jacob.jun.pan@intel.com>, Tejun Heo <tj@kernel.org>,
+       Mike Habeck <habeck@sgi.com>, LKML <linux-kernel@vger.kernel.org>,
+       linux-pci@vger.kernel.org
+Subject: Re: [Patch 1/1] x86 pci: Add option to not assign BAR's if not already
+ assigned
+References: <4BEAF008.9030805@sgi.com> <4C0021DC.60608@zytor.com> <4C039980.3020608@sgi.com> <201006011649.56074.bjorn.helgaas@hp.com>
+In-Reply-To: <201006011649.56074.bjorn.helgaas@hp.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 06/01/2010 03:49 PM, Bjorn Helgaas wrote:
+>>
+>> BIOS still assigns the MMIO BAR's so the devices are alive.
+>
+> I'm sorry; I don't follow this.  BIOS assigns MMIO BARs regardless
+> of whether we have your patch.
+>
 
+I'm assuming that that Mike is implying is that the allocation code runs 
+out of I/O space and as a result shuts down the entire device.
 
-On Wed, 2 Jun 2010, Rusty Russell wrote:
-> 
-> Moved all the sysfs-exposing stuff to the end just after we put in the
-> list (and thus to after the find check).
-
-Yeah, makes more sense that way. No reason to expose anything to sysfs 
-early. And splitting it into two patches makes it easier to follow than 
-the patch I posted. Ack.
-
-			Linus
+	-hpa
