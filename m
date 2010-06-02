@@ -1,167 +1,284 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758791Ab0FBXPy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jun 2010 19:15:54 -0400
-Received: from mga09.intel.com ([134.134.136.24]:24561 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751811Ab0FBXPx convert rfc822-to-8bit (ORCPT
+	id S933220Ab0FBXSS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jun 2010 19:18:18 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:57363 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758223Ab0FBXSR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jun 2010 19:15:53 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.53,349,1272870000"; 
-   d="scan'208";a="523442884"
-From: "Gross, Mark" <mark.gross@intel.com>
-To: Florian Mickler <florian@mickler.org>,
-       James Bottomley <James.Bottomley@suse.de>
-CC: =?iso-8859-1?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>,
-       Neil Brown <neilb@suse.de>, "tytso@mit.edu" <tytso@mit.edu>,
-       Peter Zijlstra <peterz@infradead.org>,
-       LKML <linux-kernel@vger.kernel.org>,
-       Alan Cox <alan@lxorguk.ukuu.org.uk>,
-       Thomas Gleixner <tglx@linutronix.de>,
-       Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
-       Linux PM <linux-pm@lists.linux-foundation.org>,
-       "felipe.balbi@nokia.com" <felipe.balbi@nokia.com>
-Date: Wed, 2 Jun 2010 16:15:05 -0700
-Subject: RE: [linux-pm] [PATCH 0/8] Suspend block api (version 8)
-Thread-Topic: [linux-pm] [PATCH 0/8] Suspend block api (version 8)
-Thread-Index: AcsCqD4klsWWjZHWSDie1L73WHML8QAAEYfQ
-Message-ID: <CA1BBBBC9359F04AA639128AC0D5D1E9692ABC92@orsmsx502.amr.corp.intel.com>
-References: <20100527232357.6d14fdb2@lxorguk.ukuu.org.uk>
-	<20100601135102.GA8098@srcf.ucam.org>
-	<1275426085.21962.967.camel@mulgrave.site>	<201006020024.14220.rjw@sisk.pl>
-	<1275431816.21962.1108.camel@mulgrave.site>
-	<AANLkTikObnAZbyOxeYAhXcEbimO3XTTO-HlC9CD_HH6t@mail.gmail.com>
-	<1275451342.21962.1777.camel@mulgrave.site>
-	<AANLkTilRcFZyYa-0HlaM-6IEZSyar3S9S_cCWSFax2Zo@mail.gmail.com>
-	<1275491111.2799.110.camel@mulgrave.site>
-	<20100602214748.7742e3ae@schatten.dmk.lab>
-	<1275511271.2799.516.camel@mulgrave.site>
- <20100603010607.5baf82a6@schatten.dmk.lab>
-In-Reply-To: <20100603010607.5baf82a6@schatten.dmk.lab>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="iso-8859-1"
-Content-Transfer-Encoding: 8BIT
+	Wed, 2 Jun 2010 19:18:17 -0400
+Date: Thu, 3 Jun 2010 00:18:05 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Jacob Tanenbaum <Jacob.Tanenbaum@logicpd.com>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 1/2] Adding LogicPD OMAP 3530 LV SOM AND OMAP 35X
+Message-ID: <20100602231805.GB12604@n2100.arm.linux.org.uk>
+References: <1275501284-17160-1-git-send-email-Jacob.Tanenbaum@logicpd.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1275501284-17160-1-git-send-email-Jacob.Tanenbaum@logicpd.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Jun 02, 2010 at 01:54:43PM -0400, Jacob Tanenbaum wrote:
+>         Adding LogicPD OMAP3 board support
+> 
+>         Adding support for LogicPD's OMAP 3530 LV SOM and
+>         OMAP 35x Torpedo board.
+> 
+>         Signed-off-by: Jacob Tanenbaum <Jacob.Tanenbaum@logicpd.com>
 
+I assume no OMAP folk have seen this?  It probably makes sense to
+add Cc's for the linux-omap list and Tony Lindgren.
 
->-----Original Message-----
->From: Florian Mickler [mailto:florian@mickler.org]
->Sent: Wednesday, June 02, 2010 4:06 PM
->To: James Bottomley
->Cc: Arve Hjønnevåg; Neil Brown; tytso@mit.edu; Peter Zijlstra; LKML; Alan
->Cox; Gross, Mark; Thomas Gleixner; Linux OMAP Mailing List; Linux PM;
->felipe.balbi@nokia.com
->Subject: Re: [linux-pm] [PATCH 0/8] Suspend block api (version 8)
->
->On Wed, 02 Jun 2010 15:41:11 -0500
->James Bottomley <James.Bottomley@suse.de> wrote:
->
->> On Wed, 2010-06-02 at 21:47 +0200, Florian Mickler wrote:
->> > On Wed, 02 Jun 2010 10:05:11 -0500
->> > James Bottomley <James.Bottomley@suse.de> wrote:
->> >
->> > > On Tue, 2010-06-01 at 21:41 -0700, Arve Hjønnevåg wrote:
->> > > > No, they have to be two separate constraints, otherwise a
->constraint
->> > > > to block suspend would override a constraint to block a low power
->idle
->> > > > mode or the other way around.
->> > >
->> > > Depends.  If you block the system from going into low power idle,
->does
->> > > that mean you still want it to be fully suspended?
->> > >
->> > > If yes, then we do have independent constraints.  If not, they have a
->> > > hierarchy:
->> > >
->> > >       * Fully Interactive (no low power idle or suspend)
->> > >       * Partially Interactive (may go into low power idle but not
->> > >         suspend)
->> > >       * None (may go into low power idle or suspend)
->> > >
->> > > Which is expressable as a ternary constraint.
->> > >
->> > > James
->> > >
->> >
->> > But unblocking suspend at the moment is independent to getting idle.
->> > If you have the requirement to stay in the highest-idle level (i.e.
->> > best latency you can get) that does not (currently) mean, that you can
->> > not suspend.
->>
->> I don't understand that as a reason.  If we looks at this a qos
->> constraints, you're saying that the system may not drop into certain low
->> power states because it might turn something off that's currently being
->> used by a driver or a process.  Suspend is certainly the lowest state of
->> that because it turns everything off, why would it be legal to drop into
->> that?
->>
->> I also couldn't find this notion of separation of idleness power from
->> suspend blocking in the original suspend block patch set ... if you can
->> either tell me where it is, or give me an example of the separated use
->> cases, I'd understand better.
->>
->> > To preserve that explicit fall-through while still having working
->> > run-time-powermanagement I think the qos-constraints need to be
->> > separated.
->>
->> OK, as above, why?  or better yet, just give an example.
->
->Hm. Maybe it is me who doesn't understand.
->
->With proposed patchset:
->1. As soon as we unblock suspend we go down.  (i.e. suspending)
->2. While suspend is blocked, the idle-loop does it's things. (i.e.
->runtime power managment -> can give same power-result as suspend)
->
->possible cases:
->1:
->   - qos-latency-constraints: 1ms,  [here: forbids anything other than
->     C1 idle state.]
->   - suspend is blocked
->
->2: - qos latency-constraints: as in 1
->   - suspend unblocked
->
->3: - qos latency-constraints: infinity, cpu in lowest power state.
->   - suspend is blocked
->
->4: - qos latency-constraints: infinity, cpu in lowest power state.
->   - suspend unblocked
->
->
->in case 2 and 4 we would suspend, regardeless of the qos-latency.
->
->in case 1 and 3 we would stay awake, regardeless of the qos-latency
->constraint.
->
->
->If only one constraint, then case 2 (or 3) wouldn't be possible. But it
->is possible now.
->
->A possible use case as an example?
->(hmm... i'm trying my imagination hard now):
->	Your sound needs low latency, so that could be a cause for the
->	qos-latency constraint.
->
->	And unblocking suspend could nonetheless happen:
->	For example... you have an firefox open and don't want to
->	prevent suspend for that case when the display is turned off
->
->
-[mtg: ] This has been a pain point for the PM_QOS implementation.  They change the constrain back and forth at the transaction level of the i2c driver.  The pm_qos code really wasn't made to deal with such hot path use, as each such change triggers a re-computation of what the aggregate qos request is.
+> diff --git a/arch/arm/mach-omap2/Kconfig b/arch/arm/mach-omap2/Kconfig
+> index 2455dcc..f670faa 100644
+> --- a/arch/arm/mach-omap2/Kconfig
+> +++ b/arch/arm/mach-omap2/Kconfig
+> @@ -69,6 +69,14 @@ config MACH_OMAP_LDP
+>  	depends on ARCH_OMAP3
+>  	select OMAP_PACKAGE_CBB
+>  
+> +config MACH_OMAP3530_LV_SOM
+> +        bool "OMAP3 Logic 3530 LV SOM board"
+> +        depends on ARCH_OMAP3
 
-We've had a number of attempts at fixing this, but I think the proper fix is to bolt a "disable C-states > x" interface into cpu_idle that bypases pm_qos altogether.  Or, perhaps add a new pm_qos API that does the equivalent operation, overriding whatever constraint is active.
+Tabs, not spaces.
 
---mgross
+> +
+> +config MACH_OMAP3_TORPEDO
+> +        bool "OMAP3 Logic 35x Torpedo board"
+> +        depends on ARCH_OMAP3
+> +
+>  config MACH_OVERO
+>  	bool "Gumstix Overo board"
+>  	depends on ARCH_OMAP3
+> diff --git a/arch/arm/mach-omap2/Makefile b/arch/arm/mach-omap2/Makefile
+> index 4b9fc57..77422be 100644
+> --- a/arch/arm/mach-omap2/Makefile
+> +++ b/arch/arm/mach-omap2/Makefile
+> @@ -109,6 +109,10 @@ obj-$(CONFIG_MACH_DEVKIT8000)     	+= board-devkit8000.o \
+>                                             hsmmc.o
+>  obj-$(CONFIG_MACH_OMAP_LDP)		+= board-ldp.o \
+>  					   hsmmc.o
+> +obj-$(CONFIG_MACH_OMAP3530_LV_SOM)      += board-omap3logic.o \
+> +                                           hsmmc.o
+> +obj-$(CONFIG_MACH_OMAP3_TORPEDO)        += board-omap3logic.o \
+> +                                           hsmmc.o
 
+Ditto.
 
+>  obj-$(CONFIG_MACH_OVERO)		+= board-overo.o \
+>  					   hsmmc.o
+>  obj-$(CONFIG_MACH_OMAP3EVM)		+= board-omap3evm.o \
+> diff --git a/arch/arm/mach-omap2/board-omap3logic.c b/arch/arm/mach-omap2/board-omap3logic.c
+> new file mode 100644
+> index 0000000..fe5db85
+> --- /dev/null
+> +++ b/arch/arm/mach-omap2/board-omap3logic.c
+> @@ -0,0 +1,185 @@
+> +/*
+> + * linux/arch/arm/mach-omap2/board-omap3logic.c
+> + *
+> + * Copyright (C) 2010 Li-Pro.Net
+> + * Stephan Linz <linz@li-pro.net>
+> + *
+> + * Copyright (C) 2010 Logic Product Development, Inc.
+> + * Peter Barada <peter.barada@logicpd.com>
+> + *
+> + * Modified from Beagle, EVM, and RX51
+> + *
+> + * This program is free software; you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License version 2 as
+> + * published by the Free Software Foundation.
+> + */
+> +
+> +#include <linux/kernel.h>
+> +#include <linux/init.h>
+> +#include <linux/platform_device.h>
+> +#include <linux/delay.h>
+> +#include <linux/err.h>
+> +#include <linux/clk.h>
+> +#include <linux/io.h>
+> +#include <linux/gpio.h>
+> +
+> +#include <linux/regulator/machine.h>
+> +
+> +#include<linux/i2c/twl.h>
+
+Missing space.
+
+> +
+> +#include <mach/hardware.h>
+> +#include <asm/mach-types.h>
+> +#include <asm/mach/arch.h>
+> +#include <asm/mach/map.h>
+> +
+> +#include "mux.h"
+> +
+> +#include <plat/mux.h>
+> +#include <plat/board.h>
+> +#include <plat/common.h>
+> +#include <plat/gpmc.h>
+> +#include <plat/timer-gp.h>
+> +
+> +/* Micron MT46H32M32LF-6 */
+> +/* FIXME: borrowed from sdram-micron-mt46h32m32lf-6.h because on LogicPD
+> + * boards we can't use the default values -- why? I suspect the reason
+> + * lies in the boot strap code. We correct this part if we have ported
+> + * U-Boot and X-Load. */
+> +#include <plat/sdrc.h>
+
+Blank line here please.
+
+> +static struct omap_sdrc_params mt46h32m32lf6_sdrc_params[] = {
+> +	[0] = {
+> +		.rate	     = 166000000,
+> +		.actim_ctrla = 0xaa9db4c6,
+> +		.actim_ctrlb = 0x00011517,
+> +		.rfr_ctrl    = 0x0004e201,
+> +		.mr	     = 0x00000032,
+> +	},
+> +	[1] = {
+> +		.rate	     = 165941176,
+> +		.actim_ctrla = 0xaa9db4c6,
+> +		.actim_ctrlb = 0x00011517,
+> +		.rfr_ctrl    = 0x0004e201,
+> +		.mr	     = 0x00000032,
+> +	},
+> +	[2] = {
+> +		.rate	     = 83000000,
+> +		.actim_ctrla = 0x8a99b481,
+> +		.actim_ctrlb = 0x00011312,
+> +		.rfr_ctrl    = 0x0003de01,
+> +		.mr	     = 0x00000032,
+> +	},
+> +	[3] = {
+> +		.rate	     = 82970588,
+> +		.actim_ctrla = 0x8a99b481,
+> +		.actim_ctrlb = 0x00011312,
+> +		.rfr_ctrl    = 0x0003de01,
+> +		.mr	     = 0x00000032,
+> +	},
+> +	[4] = {
+> +		.rate	     = 0
+> +	},
+> +};
+> +
+> +static int omap3logic_twl_gpio_setup(struct device *dev,
+> +				unsigned gpio, unsigned ngpio)
+> +{
+> +	return 0;
+> +}
+> +
+> +static struct twl4030_gpio_platform_data omap3logic_gpio_data = {
+> +	.gpio_base	= OMAP_MAX_GPIO_LINES,
+> +	.irq_base	= TWL4030_GPIO_IRQ_BASE,
+> +	.irq_end	= TWL4030_GPIO_IRQ_END,
+> +	.use_leds	= true,
+> +	.pullups	= BIT(1),
+> +	.pulldowns	= BIT(2)  | BIT(6)  | BIT(7)  | BIT(8)
+> +			| BIT(13) | BIT(15) | BIT(16) | BIT(17),
+> +	.setup		= omap3logic_twl_gpio_setup,
+> +};
+> +
+> +static struct twl4030_platform_data omap3logic_twldata = {
+> +	.irq_base	= TWL4030_IRQ_BASE,
+> +	.irq_end	= TWL4030_IRQ_END,
+> +
+> +	/* platform_data for children goes here */
+> +	.gpio		= &omap3logic_gpio_data,
+> +};
+> +
+> +static struct i2c_board_info __initdata omap3logic_i2c_boardinfo[] = {
+> +	{
+> +		I2C_BOARD_INFO("twl4030", 0x48),
+> +		.flags = I2C_CLIENT_WAKE,
+> +		.irq = INT_34XX_SYS_NIRQ,
+> +		.platform_data = &omap3logic_twldata,
+> +	},
+> +};
+> +
+> +static int __init omap3logic_i2c_init(void)
+> +{
+> +	omap_register_i2c_bus(1, 2600, omap3logic_i2c_boardinfo,
+> +				ARRAY_SIZE(omap3logic_i2c_boardinfo));
+> +	return 0;
+> +}
+> +
+> +static struct omap_board_config_kernel omap3logic_config[] __initdata = {
+> +};
+> +
+> +static void __init omap3logic_init_irq(void)
+> +{
+> +	omap_board_config = omap3logic_config;
+> +	omap_board_config_size = ARRAY_SIZE(omap3logic_config);
+> +	omap2_init_common_hw(mt46h32m32lf6_sdrc_params,
+> +				mt46h32m32lf6_sdrc_params);
+> +	omap_init_irq();
+> +#ifdef CONFIG_OMAP_32K_TIMER
+> +	omap2_gp_clockevent_set_gptimer(12);
+> +#endif
+> +	omap_gpio_init();
+> +}
+> +
+> +static struct platform_device *omap3logic_devices[] __initdata = {
+> +};
+
+If there's no platform devices, don't supply this.
+
+> +
+> +static void __init omap3logic_init(void)
+> +{
+> +	omap3logic_i2c_init();
+> +	platform_add_devices(omap3logic_devices,
+> +				ARRAY_SIZE(omap3logic_devices));
+> +	omap_serial_init();
+> +
+> +	/* Ensure SDRC pins are mux'd for self-refresh */
+> +/*	omap_cfg_reg(H16_34XX_SDRC_CKE0);
+> +	omap_cfg_reg(H17_34XX_SDRC_CKE1);
+> +	omap_cfg_reg(SDRC_CKE0);
+> +	omap_cfg_reg(SDRC_CKE1); */
+> +	omap_mux_init_signal("sdrc_cke0", OMAP_PIN_OUTPUT);
+> +	omap_mux_init_signal("sdrc_cke1", OMAP_PIN_OUTPUT);
+> +}
+> +
+> +static void __init omap3logic_map_io(void)
+> +{
+> +	omap2_set_globals_343x();
+> +	omap34xx_map_common_io();
+> +}
+> +
+> +MACHINE_START(OMAP3_TORPEDO, "Logic OMAP3 Torpedo board")
+> +	/* Maintainer: Peter Barada <peterb@logicpd.com> */
+> +	.phys_io	= 0x48000000,
+> +	.io_pg_offst	= ((0xd8000000) >> 18) & 0xfffc,
+> +	.boot_params	= 0x80000100,
+> +	.map_io		= omap3logic_map_io,
+> +	.init_irq	= omap3logic_init_irq,
+> +	.init_machine	= omap3logic_init,
+> +	.timer		= &omap_timer,
+> +MACHINE_END
+> +
+> +MACHINE_START(OMAP3530_LV_SOM, "OMAP Logic 3530 LV SOM board")
+> +	/* Maintainer: Peter Barada <peterb@logicpd.com> */
+> +	.phys_io	= 0x48000000,
+> +	.io_pg_offst	= ((0xd8000000) >> 18) & 0xfffc,
+> +	.boot_params	= 0x80000100,
+> +	.map_io		= omap3logic_map_io,
+> +	.init_irq	= omap3logic_init_irq,
+> +	.init_machine	= omap3logic_init,
+> +	.timer		= &omap_timer,
+> +MACHINE_END
+
+So, the kernel will recognise both of these boards at boot time, but
+fail if the relevant board is not selected in the configuration
+because if (machine_is_xxx()) will be false.
+
+A better thing to do is to wrap these declarations in ifdefs so the
+kernel can issue its standard message rather than mysteriously going
+wrong.
