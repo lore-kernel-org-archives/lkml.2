@@ -1,60 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758700Ab0FBU4m (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jun 2010 16:56:42 -0400
-Received: from sj-iport-6.cisco.com ([171.71.176.117]:9013 "EHLO
-	sj-iport-6.cisco.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757538Ab0FBU4k (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jun 2010 16:56:40 -0400
-Authentication-Results: sj-iport-6.cisco.com; dkim=neutral (message not signed) header.i=none
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AvsEAPJiBkyrRN+J/2dsb2JhbACeInGnNZoehRYEg0g
-X-IronPort-AV: E=Sophos;i="4.53,348,1272844800"; 
-   d="scan'208";a="538952318"
-From: Roland Dreier <rdreier@cisco.com>
-To: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
-       Michal Marek <mmarek@suse.cz>
-Subject: [PATCH] checkkconfigsymbols.sh: Kconfig symbols sometimes have lowercase letters
-X-Message-Flag: Warning: May contain useful information
-Date: Wed, 02 Jun 2010 13:56:36 -0700
-Message-ID: <adazkzdqhkr.fsf@roland-alpha.cisco.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
+	id S1758717Ab0FBVAl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jun 2010 17:00:41 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:30272 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757538Ab0FBVAk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Jun 2010 17:00:40 -0400
+Date: Wed, 2 Jun 2010 22:58:55 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Paul Menage <menage@google.com>
+Cc: Ben Blum <bblum@andrew.cmu.edu>, linux-kernel@vger.kernel.org,
+       containers@lists.linux-foundation.org, akpm@linux-foundation.org,
+       ebiederm@xmission.com, lizf@cn.fujitsu.com, matthltc@us.ibm.com
+Subject: Re: [RFC] [PATCH 2/2] cgroups: make procs file writable
+Message-ID: <20100602205855.GA30039@redhat.com>
+References: <20100530013002.GA762@ghc01.ghc.andrew.cmu.edu> <20100530013303.GC762@ghc01.ghc.andrew.cmu.edu> <20100531175242.GA14691@redhat.com> <20100531180446.GA16249@redhat.com> <AANLkTimcrX0TjzDMNJdubR92pAO4IPATbVpyvvVt0qIV@mail.gmail.com> <20100602140659.GA5324@redhat.com> <AANLkTin-T6ij3xf0ceGoCamwcoayxyf0GdAKY6yXDMVl@mail.gmail.com> <20100602202048.GB28663@redhat.com> <AANLkTimrJFiidM8BlUNvmzfapUAv8369R9PYnTscasEf@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <AANLkTimrJFiidM8BlUNvmzfapUAv8369R9PYnTscasEf@mail.gmail.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quite a few Kconfig symbols contain lowercase letters.  The current
-checkkconfigsymbols.sh code only contains A-Z in the regexp it uses to
-find config symbols in source code, so it comes up with the wrong symbol
-to look for in Kconfig files and then generates false positives when it
-doesn't find that wrong symbol.  For example checking drivers/net
-generates a false positive for MAC89 because the the actual config
-option is MAC89x0.
+On 06/02, Paul Menage wrote:
+>
+> On Wed, Jun 2, 2010 at 1:20 PM, Oleg Nesterov <oleg@redhat.com> wrote:
+> >
+> > Yes sure. The main thread can exit via sys_exit(), this doesn't affect
+> > the thread group. Of course, I am not saying this is common practice,
+> > perhaps no "important" app does this.
+>
+> This check has been in cgroups for quite a while and no-one's
+> complained so far...
 
-Fix this by also adding a-z to the regexp.
+Sure. because currently attach_task_by_pid() works with the single
+thread. But Ben's patch reuses this code to call cgroup_attach_proc().
 
-Signed-off-by: Roland Dreier <rolandd@cisco.com>
----
- scripts/checkkconfigsymbols.sh |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+> > But I still can't understand why we can't just remove it. Both
+> > cgroup_attach_task() and cgroup_attach_proc() should handle the
+> > possible races correctly anyway.
+>
+> The "it" that you're proposing to remove is in fact the code that
+> handles those races.
 
-diff --git a/scripts/checkkconfigsymbols.sh b/scripts/checkkconfigsymbols.sh
-index 46be3c5..2ca49bb 100755
---- a/scripts/checkkconfigsymbols.sh
-+++ b/scripts/checkkconfigsymbols.sh
-@@ -14,7 +14,7 @@ find $paths -name '*.[chS]' -o -name 'Makefile' -o -name 'Makefile*[^~]'| while
- do
- 	# Output the bare Kconfig variable and the filename; the _MODULE part at
- 	# the end is not removed here (would need perl an not-hungry regexp for that).
--	sed -ne 's!^.*\<\(UML_\)\?CONFIG_\([0-9A-Z_]\+\).*!\2 '$i'!p' < $i
-+	sed -ne 's!^.*\<\(UML_\)\?CONFIG_\([0-9A-Za-z_]\+\).*!\2 '$i'!p' < $i
- done | \
- # Smart "sort|uniq" implemented in awk and tuned to collect the names of all
- # files which use a given symbol
+In that case I confused, and I thought we already agreed that
+the PF_EXITING check in attach_task_by_pid() is not strictly needed
+for correctness.
 
--- 
-Roland Dreier <rolandd@cisco.com> || For corporate legal information go to:
-http://www.cisco.com/web/about/doing_business/legal/cri/index.html
+Once again, the task can call do_exit() and set PF_EXITING right
+after the check.
+
+> Anyway, I think this issue is orthogonal to the movability of entire
+> processes - with Ben's patch, an exited-but-not-reaped group leader is
+> immovable either via "tasks" or "cgroup.procs".
+
+Hmm. As I said, I didn't really read this patch. But I thought that
+cgroup_attach_proc() tries to handle this.
+
+Anyway I agree, this is minor and I never pretended I understand
+this code.
+
+
+Hmm. The usage of ->thread_group in ->can_attach() methods doesn't
+look safe to me... but currently bool threadgroup is always false.
+
+Oleg.
+
