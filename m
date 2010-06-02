@@ -1,38 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932762Ab0FBQ1e (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jun 2010 12:27:34 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:44774 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932729Ab0FBQ1c (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jun 2010 12:27:32 -0400
-Date: Wed, 2 Jun 2010 13:07:10 -0300
-From: Marcelo Tosatti <mtosatti@redhat.com>
-To: Glauber Costa <glommer@redhat.com>
-Cc: kvm@vger.kernel.org, linux-kernel@vger.kernel.org, avi@redhat.com,
-       zamsden@redhat.com
-Subject: Re: [PATCH v4] Add Documentation/kvm/msr.txt
-Message-ID: <20100602160710.GC23214@amt.cnet>
-References: <1275394968-16168-1-git-send-email-glommer@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1275394968-16168-1-git-send-email-glommer@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
+	id S932782Ab0FBQeW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jun 2010 12:34:22 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:38663 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932706Ab0FBQeU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Jun 2010 12:34:20 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=vw2sHen9PpDAknaVhB6eTRtSZAsowfVD0IzktydUorOoYSV53/YmkYSSpAGkiZlUBW
+         4F6rONsumYm87QD3rrHFMkTubxxUlcKM652N2UWdGuAC83bWXApmaXw50eb3udY+ObVH
+         gkS7dTquS0jWB6p2HjeErGYwWsEBZNy+CeAS8=
+Subject: Re: [PATCH 2/2] hwmon: (coretemp) Get TjMax value from MSR
+From: Maxim Levitsky <maximlevitsky@gmail.com>
+To: Huaxu Wan <huaxu.wan@linux.intel.com>
+Cc: linux-kernel@vger.kernel.org, lm-sensors@lm-sensors.org,
+       huaxu.wan@intel.com, khali@linux-fr.org
+In-Reply-To: <20100531013950.GA8265@owl>
+References: <20100507095945.GB12190@owl>
+	 <1275111551.3427.4.camel@maxim-laptop>  <20100531013950.GA8265@owl>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 02 Jun 2010 19:34:16 +0300
+Message-ID: <1275496456.32562.4.camel@maxim-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 01, 2010 at 08:22:48AM -0400, Glauber Costa wrote:
-> This patch adds a file that documents the usage of KVM-specific
-> MSRs.
+On Mon, 2010-05-31 at 09:39 +0800, Huaxu Wan wrote: 
+> On 08:39 Sat 29 May, Maxim Levitsky wrote:
+> > On Fri, 2010-05-07 at 17:59 +0800, Huaxu Wan wrote: 
+> > > The MSR IA32_TEMPERATURE_TARGET contains the TjMax value in the newer
+> > > processers.
+> > 
+> > I know that TjMax on my system is 85, and now coretemp reports wrong
+> > temperatures.
+> > First of all BIOS using stupid tricks actualy reports CPU temperature
+> > through ACPI, and assuming it was correct TjMax is 85.
+> > It also shuts down the system if I 'lie' to it that cpu temperature is
+> > 85C.
 > 
-> [ v2: added comments from Randy ]
-> [ v3: added comments from Avi ]
-> [ v4: added information about wallclock alignment ]
+> From the list at [1], the TjMax(Tjunction) of T5450 is 100C. Does anyone
+> here can make a double check?
 > 
-> Signed-off-by: Glauber Costa <glommer@redhat.com>
-> Reviewed-by: Randy Dunlap <randy.dunlap@oracle.com>
+> [1] http://ark.intel.com/Product.aspx?id=30787&processor=T5450&spec-codes=SLA4F
 
-Applied, thanks.
+This is very interesting.
+
+With TjMax 85C, the CPUs idle temperature is reported at around 45~50C
+GPU temperature that is around 60C
+
+BIOS also reports 45~50C.
+
+BIOS hooks an SMI to CPU thermal report, and stores the temperature it
+read in ram, then ACPI code reads it, reports and passes to the EC
+(embedded controller).
+
+If I write myself 85 to embedded controller, systems shuts down.
+(values less that 85, eg 84 don't shut system).
+
+Thats all I know.
+
+Best regards,
+Maxim Levitsky
 
