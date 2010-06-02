@@ -1,144 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757578Ab0FBJaA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jun 2010 05:30:00 -0400
-Received: from mail-px0-f174.google.com ([209.85.212.174]:37351 "EHLO
-	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755992Ab0FBJ36 convert rfc822-to-8bit (ORCPT
+	id S1756772Ab0FBJc7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jun 2010 05:32:59 -0400
+Received: from mail-pz0-f176.google.com ([209.85.222.176]:45447 "EHLO
+	mail-pz0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751329Ab0FBJc6 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jun 2010 05:29:58 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=aFyJ92SHjENISiDQRTFbS6+/lvh/OGxP4py8dQqWBuf20Ot73MPeYtmaCUhEP4KUTs
-         yM5sde4WN2WpyGgXWMjAB2TfXuugQ3osB3swBNv8XR2VCLxjiGQxWIxhfzSfMkfSbrpV
-         HWKR+2G5MeThFbeU6wO9+5lpPOo4Dsu5kWMk8=
+	Wed, 2 Jun 2010 05:32:58 -0400
 MIME-Version: 1.0
-In-Reply-To: <AANLkTinaPmKUx04I1mjNhla4s3S6vmWp8x6eoDTZGRVz@mail.gmail.com>
-References: <1275468694.2545.1.camel@eight.analog.com>
-	<AANLkTinaPmKUx04I1mjNhla4s3S6vmWp8x6eoDTZGRVz@mail.gmail.com>
-Date: Wed, 2 Jun 2010 17:29:55 +0800
-Message-ID: <AANLkTincaxtwu_voxAbEkrOGeB5NWTVvmbHZJsaHpoYJ@mail.gmail.com>
-Subject: Re: [Uclinux-dist-devel] [PATCH v2] regulator: new drivers for AD5398 
-	and AD5821
-From: Sonic Zhang <sonic.adi@gmail.com>
-To: Mike Frysinger <vapier.adi@gmail.com>
-Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-       Liam Girdwood <lrg@slimlogic.co.uk>,
-       uclinux-dist-devel <uclinux-dist-devel@blackfin.uclinux.org>,
-       Linux Kernel <linux-kernel@vger.kernel.org>
+In-Reply-To: <alpine.LFD.2.00.1006021059150.2933@localhost.localdomain>
+References: <Pine.LNX.4.44L0.1005271253240.3239-100000@iolanthe.rowland.org>
+	<201005302202.39511.rjw@sisk.pl>
+	<AANLkTilUQ2AG76nbK6LwI8_7zw0_yMSoAOr9pmuz7xrt@mail.gmail.com>
+	<201005312347.24251.rjw@sisk.pl>
+	<AANLkTilvOgSFTDFtXbjJobMZWxgfvsC97TqC7_a_NHBX@mail.gmail.com>
+	<alpine.LFD.2.00.1006011411200.2933@localhost.localdomain>
+	<AANLkTikZHmF6baP7dEXEGFE8YsbEteRjlhb5wqZX8ll1@mail.gmail.com>
+	<alpine.LFD.2.00.1006020905410.2933@localhost.localdomain>
+	<AANLkTinDm3FIrbS1jqEzW15THmr1hdd7ox0Mllm1VLjZ@mail.gmail.com>
+	<alpine.LFD.2.00.1006021059150.2933@localhost.localdomain>
+Date: Wed, 2 Jun 2010 02:32:57 -0700
+Message-ID: <AANLkTimE1N76sB6UHm4-YMJ97gQ7-Ztndf97dTLdm5nX@mail.gmail.com>
+Subject: Re: [linux-pm] [PATCH 0/8] Suspend block api (version 8)
+From: =?ISO-8859-1?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, Florian Mickler <florian@mickler.org>,
+       Matthew Garrett <mjg59@srcf.ucam.org>,
+       Alan Stern <stern@rowland.harvard.edu>,
+       Peter Zijlstra <peterz@infradead.org>, Paul@smtp1.linux-foundation.org,
+       LKML <linux-kernel@vger.kernel.org>, felipe.balbi@nokia.com,
+       Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
+       Linux PM <linux-pm@lists.linux-foundation.org>,
+       Alan Cox <alan@lxorguk.ukuu.org.uk>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 2, 2010 at 5:02 PM, Mike Frysinger <vapier.adi@gmail.com> wrote:
-> On Wed, Jun 2, 2010 at 04:51, sonic zhang wrote:
->> The AD5398 and AD5821 are single 10-bit DAC with 120 mA output current
->> sink capability. They feature an internal reference and operates from
->> a single 2.7 V to 5.5 V supply.
+2010/6/2 Thomas Gleixner <tglx@linutronix.de>:
+> On Wed, 2 Jun 2010, Arve Hjønnevåg wrote:
+>> 2010/6/2 Thomas Gleixner <tglx@linutronix.de>:
+>> > On Tue, 1 Jun 2010, Arve Hjønnevåg wrote:
+>> >>
+>> >> Because suspend itself causes you to not be idle you cannot abort
+>> >> suspend just because you are not idle anymore.
+>> >
+>> > You still are addicted to the current suspend mechanism. :)
+>> >
 >>
->> This driver supports both the AD5398 and the AD5821.  It adapts into the
->> voltage and current framework.
+>> No I want you to stop confusing low power idle modes with suspend. I
+>> know how to enter low power modes from idle if that low power mode is
+>> not too disruptive.
+>
+> What prevents us from going into a disruptive mode from idle ? I don't
+> see a reason - except crappy ACPI stuff, which I'm happy to ignore.
+>
+
+What do you consider disruptive? Disabling active interrupts? Stopping
+the monotonic clock?
+
+>> > If I understood you correctly then you can shutdown the CPU in idle
+>> > completelty already, but that's not enough due to:
+>> >
+>> >    1) crappy applications keeping the cpu away from idle
+>> >    2) timers firing
+>> >
+>> > Would solving those two issues be sufficient for you or am I missing
+>> > something ?
 >>
->>
->> Signed-off-by: Sonic Zhang <sonic.zhang@analog.com>
+>> Solving those two is enough for current android phones, but it may not
+>> be enough for other android devices.
 >
-> the "From:" doesnt match your s-o-b tag ...
+> In which way ? May not be enough is a pretty vague statement.
+
+They may not be based on hardware that can get to the same power mode
+from idle as suspend. This could be acpi based hardware, it could be
+like the hardware we started with that did not have regular timers
+that could run in the low power mode, or devices could loose their
+state in the lowest power mode.
+
+>
+>> 1 is not solvable (meaning we cannot fix all apps),
+>
+> We can mitigate it with cgroups and confine crap there, i.e. force
+> idle them.
 >
 
-Does this need to be matched? I prefer to discuss via gmail account
-while keep company email in the patch owner information.
+I think using suspend is much simpler. It avoids having to worry about
+dependencies between processes.
 
-> also, this dropped my s-o-b:
-> Signed-off-by: Mike Frysinger <vapier@gentoo.org>
+>> and 2 is difficult to fix since the periodic
+>> work is useful while the device is actually in use. One possible way
+>> to solve 2 is to allow timers on a not-idle clock.
 >
->> +config REGULATOR_AD5398
->> +       tristate "Ananlog Devices AD5398/AD5821 regulators"
+> That's what I had in mind.
 >
-> Analog
+>> Unrelated to Android, I also want to use opportunistic suspend on my
+>> desktop.
 >
->> +       depends on I2C
->> +       help
->> +         This driver supports AD5398 and AD5821 current regulator chips.
->
-> should mention the module name if built as a module
->
->> --- /dev/null
->> +++ b/drivers/regulator/ad5398.c
->> @@ -0,0 +1,285 @@
->> +/*
->> + * ad5398.c  --  Voltage and current regulation for AD5398 and AD5821
->
-> dont think the filename needs to be here
->
->> + */
->> +#include <linux/module.h>
->
-> should prob be a newline between these
->
->> +       /* write the new current value back as well as enable bit */
->> +       ret = ad5398_write_reg(client, (unsigned short)selector);
->
-> the prototype of write_reg takes an unsigned short, so this cast is useless
->
->> +static struct regulator_ops ad5398_ops = {
->> +       .get_current_limit = ad5398_get_current_limit,
->> +       .set_current_limit = ad5398_set_current_limit,
->> +       .enable = ad5398_enable,
->> +       .disable = ad5398_disable,
->> +       .is_enabled = ad5398_is_enabled,
->> +};
->> +
->> +static struct regulator_desc ad5398_reg = {
->
-> not specific to this driver, but it looks like regulator_ops and
-> regulator_desc really should be constified
->
->> +static const struct ad5398_current_data_format ad5398_df = {10, 4};
->> +static const struct ad5398_current_data_format ad5821_df = {10, 4};
->> +
->> +static const struct i2c_device_id ad5398_id[] = {
->> +       { "ad5398", (kernel_ulong_t)&ad5398_df },
->> +       { "ad5821", (kernel_ulong_t)&ad5821_df },
->> +       { }
->> +};
->
-> do you really need sep storage for these _df vars ?
+> I expect that intel/amd fixing their stuff is going to happen way
+> before we sprinkled suspend blockers over a full featured desktop
+> distro.
 >
 
-Yes, this makes probe code simpler.
+You do not need to sprinkle suspend blocker all over the distro for it
+to be useful. You can convert the existing auto-suspend code to use
+opportunistic suspend and all apps that don't use suspend blocker will
+behave as they do today while allowing apps to use suspend blockers to
+keep the system running after the auto-suspend timeout expired.
 
->> +static int ad5398_probe(struct i2c_client *client,
->> +static int ad5398_remove(struct i2c_client *client)
->> +       .remove = ad5398_remove,
->
-> missing hotplug section markings
->
->> +       struct ad5398_current_data_format *df =
->> +                       (struct ad5398_current_data_format *)id->driver_data;
->
-> this too should be const
->
->> +       chip = kzalloc(sizeof(struct ad5398_chip_info), GFP_KERNEL);
->
-> sizeof(*chip)
->
->> +       dev_dbg(&client->dev, "%s regulator driver loaded\n", id->name);
->
-> does the regulator core take care of displaying a notice ?  if not,
-> i'd make this dev_info().  also, this should be "registered", not
-> "loaded".
->
-
-Mark prefers to have it printed only for debugging mode.
-
->> +MODULE_DESCRIPTION("AD5398 and AD5821 current regulator driver");
->> +MODULE_AUTHOR("Sonic Zhang");
->> +MODULE_LICENSE("GPL");
->
-> should there be a MODULE_ALIAS() ?
-> -mike
->
+-- 
+Arve Hjønnevåg
