@@ -1,81 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932560Ab0FBOHB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jun 2010 10:07:01 -0400
-Received: from ozlabs.org ([203.10.76.45]:59434 "EHLO ozlabs.org"
+	id S932545Ab0FBOJk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jun 2010 10:09:40 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:2127 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758242Ab0FBOHA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jun 2010 10:07:00 -0400
-From: Rusty Russell <rusty@rustcorp.com.au>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [PATCH 2/2] module: fix bne2 "gave up waiting for init of module libcrc32c"
-Date: Wed, 2 Jun 2010 23:36:51 +0930
-User-Agent: KMail/1.13.2 (Linux/2.6.32-21-generic; KDE/4.4.2; i686; ; )
-Cc: Brandon Philips <brandon@ifup.org>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       "Rafael J. Wysocki" <rjw@sisk.pl>, LKML <linux-kernel@vger.kernel.org>,
-       Jon Masters <jonathan@jonmasters.org>, Tejun Heo <htejun@gmail.com>,
-       Masami Hiramatsu <mhiramat@redhat.com>,
-       Kay Sievers <kay.sievers@vrfy.org>
-References: <201005252300.07739.rjw@sisk.pl> <201006021523.00357.rusty@rustcorp.com.au> <alpine.LFD.2.00.1006020006420.8175@i5.linux-foundation.org>
-In-Reply-To: <alpine.LFD.2.00.1006020006420.8175@i5.linux-foundation.org>
+	id S932390Ab0FBOJj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Jun 2010 10:09:39 -0400
+Date: Wed, 2 Jun 2010 16:06:59 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Paul Menage <menage@google.com>
+Cc: Ben Blum <bblum@andrew.cmu.edu>, linux-kernel@vger.kernel.org,
+       containers@lists.linux-foundation.org, akpm@linux-foundation.org,
+       ebiederm@xmission.com, lizf@cn.fujitsu.com, matthltc@us.ibm.com
+Subject: Re: [RFC] [PATCH 2/2] cgroups: make procs file writable
+Message-ID: <20100602140659.GA5324@redhat.com>
+References: <20100530013002.GA762@ghc01.ghc.andrew.cmu.edu> <20100530013303.GC762@ghc01.ghc.andrew.cmu.edu> <20100531175242.GA14691@redhat.com> <20100531180446.GA16249@redhat.com> <AANLkTimcrX0TjzDMNJdubR92pAO4IPATbVpyvvVt0qIV@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201006022336.53024.rusty@rustcorp.com.au>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <AANLkTimcrX0TjzDMNJdubR92pAO4IPATbVpyvvVt0qIV@mail.gmail.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2 Jun 2010 04:51:46 pm Linus Torvalds wrote:
-> 
-> On Wed, 2 Jun 2010, Rusty Russell wrote:
-> > 
-> > Moved all the sysfs-exposing stuff to the end just after we put in the
-> > list (and thus to after the find check).
-> 
-> Yeah, makes more sense that way. No reason to expose anything to sysfs 
-> early. And splitting it into two patches makes it easier to follow than 
-> the patch I posted. Ack.
+On 06/01, Paul Menage wrote:
+>
+> On Mon, May 31, 2010 at 11:04 AM, Oleg Nesterov <oleg@redhat.com> wrote:
+> >
+> > And, forgot to mention, I do not understand the PF_EXITING check in
+> > attach_task_by_pid() (and some others).
+> >
+> > At first glance, it buys nothing. PF_EXITING can be set right after
+> > the check.
+>
+> It can, but it's a benign race.
 
-Found another locking issue: the code which verifies we don't export over
-an existing symbol needs to be atomic wrt. adding us to the list.
+Yes,
 
-This will be in tomorrow's linux-next.
+> Moving a non-current thread into a cgroup takes task->alloc_lock and
+> checks for PF_EXITING before manipulating that thread's cgroup links.
+> The exit procedure sets PF_EXITING and then (somewhat later, but
+> guaranteed) moves current to the root cgroups while holding
+> alloc_lock.
 
-And load_module is down to 259 lines.  The label chain at the end is no
-shorter tho :(  I'll leave those cleanups until next merge window.
+Yes sure, I understand this part. cgroup_attach_task() correctly checks
+PF_EXITING under task_lock(), this protects from the case when this
+task has already passed cgroup_exit() which takes this lock too.
 
-The following changes since commit aef4b9aaae1decc775778903922bd0075cce7a88:
-  Linus Torvalds (1):
-        Merge branch 'next' of git://git.kernel.org/.../benh/powerpc
+But. This exactly means that the PF_EXITING check in attach_task_by_pid()
+is not necessary from the correctness pov (while probably can be considered
+as optimization), right?
 
-are available in the git repository at:
+And,
 
-  ssh://master.kernel.org/pub/scm/linux/kernel/git/rusty/linux-2.6 modules
+> so it's fine to refuse to move it to a new cgroup.
 
-Eric Dumazet (1):
-      module: module_unload_init() cleanup
+I am not sure. It doesn't hurt when we try to move a thread. But if
+we want to move the whole thread group, we should proceed even if the
+group leader has already exited and thus has PF_EXITING bit set.
 
-Linus Torvalds (4):
-      module: Make the 'usage' lists be two-way
-      module: move find_module check to end
-      module: refactor load_module
-      module: refactor load_module part 2
+That was my question.
 
-Rusty Russell (9):
-      module: fix kdb's illicit use of struct module_use.
-      module: move sysfs exposure to end of load_module
-      module: Make module sysfs functions private.
-      module: make locking more fine-grained.
-      module: verify_export_symbols under the lock
-      module: fix bne2 "gave up waiting for init of module libcrc32c"
-      module: refactor load_module part 3
-      module: refactor load_module part 4
-      module: refactor load_module part 5
+Oleg.
 
- include/linux/module.h      |   44 +--
- kernel/debug/kdb/kdb_main.c |   12 +-
- kernel/module.c             |  899 +++++++++++++++++++++++++------------------
- 3 files changed, 547 insertions(+), 408 deletions(-)
