@@ -1,82 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758627Ab0FBU1z (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jun 2010 16:27:55 -0400
-Received: from mail.perches.com ([173.55.12.10]:2597 "EHLO mail.perches.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758523Ab0FBU1y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jun 2010 16:27:54 -0400
-Subject: Re: [PATCH] MAINTAINERS: Add staging/b.a.t.m.a.n
-From: Joe Perches <joe@perches.com>
-To: Randy Dunlap <rdunlap@xenotime.net>,
-       Marek Lindner <lindner_marek@yahoo.de>,
-       Simon Wunderlich <siwu@hrz.tu-chemnitz.de>,
-       Andrew Lunn <andrew@lunn.ch>
-Cc: Greg KH <gregkh@suse.de>, devel <devel@driverdev.osuosl.org>,
-       linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>
-In-Reply-To: <20100602131938.cda13ed7.rdunlap@xenotime.net>
-References: <1275498615.23599.12.camel@Joe-Laptop.home>
-	 <20100602185323.GA6600@suse.de> <1275509319.23599.40.camel@Joe-Laptop.home>
-	 <20100602201717.GA8803@suse.de>
-	 <20100602131938.cda13ed7.rdunlap@xenotime.net>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 02 Jun 2010 13:27:52 -0700
-Message-ID: <1275510472.23599.50.camel@Joe-Laptop.home>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	id S1758633Ab0FBUbb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jun 2010 16:31:31 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:37338 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755530Ab0FBUba convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Jun 2010 16:31:30 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=QP/7rnmIzPq7fQVX323AuQzeKns4k9McdjgFGGmSrbnCkXsHNZjZJHHssGBNk0oCQr
+         c3NxZd45WvggrMZxZcFYtXjLMfuSboYEE51Zbnf0IEQwIp8vTzYytSPQ/7QZUVvBNmUg
+         VgMsvk/F9t3zy41DG1/2Cd8CDIO6rQZ21EF2k=
+MIME-Version: 1.0
+In-Reply-To: <1275473482.11579.21.camel@maxim-laptop>
+References: <1275473482.11579.21.camel@maxim-laptop>
+Date: Wed, 2 Jun 2010 13:31:29 -0700
+X-Google-Sender-Auth: k3nqrqTW3Tq2kZgQny-rTU8v-a8
+Message-ID: <AANLkTinc-SoQsbW0uX08ZMypN6_l5uwSVbavnozFE__W@mail.gmail.com>
+Subject: Re: How to tell kernel that a region of memory is reserved (in middle 
+	of ram)?
+From: Yinghai Lu <yinghai@kernel.org>
+To: Maxim Levitsky <maximlevitsky@gmail.com>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-06-02 at 13:19 -0700, Randy Dunlap wrote:
-> On Wed, 2 Jun 2010 13:17:17 -0700 Greg KH wrote:
-> > On Wed, Jun 02, 2010 at 01:08:39PM -0700, Joe Perches wrote:
-> > > On Wed, 2010-06-02 at 11:53 -0700, Greg KH wrote:
-> > > > The TODO file in this directory clearly states who to copy on patches to
-> > > > these files.
-> > > Does anyone look at those? ;)
-> > Yes, they should.
-> > Heck, get_maintainer.pl would have given you the correct people to cc:
-> > as well, why not use that?
+On Wed, Jun 2, 2010 at 3:11 AM, Maxim Levitsky <maximlevitsky@gmail.com> wrote:
+> Hi,
+>
+> I need to reserve a region of ram to store there a ramoops buffer.
+> I need to do so early so kernel doesn't overwrite the existing contents.
+>
+> How to do it?
+>
+> I noticed that doing memmap=20M$0x70000000 crashes the system although
+> it promised to work.
+> Is that a bug?
+>
+> I have 2GB system with following memory map:
+>
+> [    0.000000] BIOS-provided physical RAM map:
+> [    0.000000]  BIOS-e820: 0000000000000000 - 000000000009fc00 (usable)
+> [    0.000000]  BIOS-e820: 000000000009fc00 - 00000000000a0000 (reserved)
+> [    0.000000]  BIOS-e820: 00000000000e0000 - 0000000000100000 (reserved)
+> [    0.000000]  BIOS-e820: 0000000000100000 - 000000007fcfd000 (usable)
+> [    0.000000]  BIOS-e820: 000000007fcfd000 - 000000007fd08000 (reserved)
+> [    0.000000]  BIOS-e820: 000000007fd08000 - 000000007fd52000 (usable)
+> [    0.000000]  BIOS-e820: 000000007fd52000 - 000000007fd55000 (reserved)
+> [    0.000000]  BIOS-e820: 000000007fd55000 - 000000007fdbb000 (usable)
+> [    0.000000]  BIOS-e820: 000000007fdbb000 - 000000007fdbf000 (reserved)
+> [    0.000000]  BIOS-e820: 000000007fdbf000 - 000000007fe70000 (usable)
+> [    0.000000]  BIOS-e820: 000000007fe70000 - 000000007febf000 (ACPI NVS)
+> [    0.000000]  BIOS-e820: 000000007febf000 - 000000007ff00000 (ACPI data)
+> [    0.000000]  BIOS-e820: 000000007ff00000 - 0000000080000000 (reserved)
+> [    0.000000]  BIOS-e820: 00000000e0000000 - 00000000f0000000 (reserved)
+> [    0.000000]  BIOS-e820: 00000000fec00000 - 00000000fec01000 (reserved)
+> [    0.000000]  BIOS-e820: 00000000fed14000 - 00000000fed1a000 (reserved)
+> [    0.000000]  BIOS-e820: 00000000fed1c000 - 00000000fed20000 (reserved)
+> [    0.000000]  BIOS-e820: 00000000fee00000 - 00000000fee01000 (reserved)
+> [    0.000000]  BIOS-e820: 00000000fff00000 - 0000000100000000 (reserved)
+>
 
-I know that script.
-In fact, I did use it with my preferred options.
+kernel version?
 
-> > > Signed-off-by: Joe Perches <joe@perches.com>
-> > > ---
-> > >  MAINTAINERS |    8 ++++++++
-> > >  1 files changed, 8 insertions(+), 0 deletions(-)
-> > > 
-> > > diff --git a/MAINTAINERS b/MAINTAINERS
-> > > index 2652ebc..e25e15a 100644
-> > > --- a/MAINTAINERS
-> > > +++ b/MAINTAINERS
-> > > @@ -5436,6 +5436,14 @@ L:	devel@driverdev.osuosl.org
-> > >  S:	Maintained
-> > >  F:	drivers/staging/
-> > >  
-> > > +STAGING B.A.T.M.A.N.
-> > > +M:	Marek Lindner <lindner_marek@yahoo.de>
-> > > +M:	Simon Wunderlich <siwu@hrz.tu-chemnitz.de>
-> > > +M:	Andrew Lunn <andrew@lunn.ch>
-> > > +L:	b.a.t.m.a.n@lists.open-mesh.net
-> > > +S:	Maintained (one day soon)
-> > > +F:	drivers/staging/batman-adv/
-> > 
-> > Care to at least cc: the people who you are adding to the file?
-> > To not do so is a bit rude, don't you think so?
+you could boot with "debug earlyprintk=ttyS0,115200" to get more info.
 
-twas, oversight.  Apologies to them.
-
-They're already described in a TODO file as the people to cc,
-so I rather doubt they'll mind.
- 
-> > I'm not going to take this, sorry.
-
-You're just being you.
-Perhaps Andrew will take it.
-
-cheers, Joe
-
-
+YH
