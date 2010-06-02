@@ -1,47 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757884Ab0FBNAn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jun 2010 09:00:43 -0400
-Received: from mail2.shareable.org ([80.68.89.115]:39138 "EHLO
-	mail2.shareable.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752933Ab0FBNAk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jun 2010 09:00:40 -0400
-Date: Wed, 2 Jun 2010 14:00:14 +0100
-From: Jamie Lokier <jamie@shareable.org>
-To: Dan Magenheimer <dan.magenheimer@oracle.com>
-Cc: chris.mason@oracle.com, viro@zeniv.linux.org.uk, akpm@linux-foundation.org,
-       adilger@sun.com, tytso@mit.edu, mfasheh@suse.com,
-       joel.becker@oracle.com, matthew@wil.cx, linux-btrfs@vger.kernel.org,
-       linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-       linux-ext4@vger.kernel.org, ocfs2-devel@oss.oracle.com,
-       linux-mm@kvack.org, ngupta@vflare.org, jeremy@goop.org,
-       JBeulich@novell.com, kurt.hackel@oracle.com, npiggin@suse.de,
-       dave.mccracken@oracle.com, riel@redhat.com, avi@redhat.com,
-       konrad.wilk@oracle.com
-Subject: Re: [PATCH V2 0/7] Cleancache (was Transcendent Memory): overview
-Message-ID: <20100602130014.GB7238@shareable.org>
-References: <20100528173510.GA12166@ca-server1.us.oracle.com>
+	id S1757965Ab0FBNCk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jun 2010 09:02:40 -0400
+Received: from 8bytes.org ([88.198.83.132]:46072 "EHLO 8bytes.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757698Ab0FBNCj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Jun 2010 09:02:39 -0400
+Date: Wed, 2 Jun 2010 15:02:38 +0200
+From: Joerg Roedel <joro@8bytes.org>
+To: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: Avi Kivity <avi@redhat.com>, Tom Lyon <pugs@cisco.com>,
+       linux-kernel@vger.kernel.org, kvm@vger.kernel.org, chrisw@sous-sol.org,
+       hjk@linutronix.de, gregkh@suse.de, aafabbri@cisco.com,
+       scofeldm@cisco.com
+Subject: Re: [PATCH] VFIO driver: Non-privileged user level PCI drivers
+Message-ID: <20100602130237.GC11162@8bytes.org>
+References: <20100602094201.GC964@8bytes.org> <20100602095312.GA25335@redhat.com> <20100602101940.GG964@8bytes.org> <20100602102144.GD29023@redhat.com> <20100602103516.GI964@8bytes.org> <20100602103828.GF29023@redhat.com> <20100602111224.GA11033@8bytes.org> <20100602112100.GA29697@redhat.com> <20100602121927.GA11162@8bytes.org> <20100602123417.GA29815@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100528173510.GA12166@ca-server1.us.oracle.com>
-User-Agent: Mutt/1.5.13 (2006-08-11)
+In-Reply-To: <20100602123417.GA29815@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dan Magenheimer wrote:
-> Most important, cleancache is "ephemeral".  Pages which are copied into
-> cleancache have an indefinite lifetime which is completely unknowable
-> by the kernel and so may or may not still be in cleancache at any later time.
-> Thus, as its name implies, cleancache is not suitable for dirty pages.  The
-> pseudo-RAM has complete discretion over what pages to preserve and what
-> pages to discard and when.
+On Wed, Jun 02, 2010 at 03:34:17PM +0300, Michael S. Tsirkin wrote:
+> On Wed, Jun 02, 2010 at 02:19:28PM +0200, Joerg Roedel wrote:
 
-Fwiw, the feature sounds useful to userspace too, for those things
-with memory hungry caches like web browsers.  Any plans to make it
-available to userspace?
+> you normally need device mapped to start DMA.
+> SHARE makes this bug more likely as you allow
+> switching domains: mmap could be done before switching.
 
-Thanks,
--- Jamie
+We need to support domain switching anyway for iommu emulation in a
+guest. So if you consider this to be a problem (I don't) it will not go
+away with your proposal.
+
+> > dev1 = open();
+> > ioctl(dev2, SHARE, dev1);
+> > ioctl(dev3, SHARE, dev1);
+> > ioctl(dev4, SHARE, dev1);
+> > 
+> > So we actually save an ioctl.
+> 
+> I thought we had a BIND ioctl?
+
+I can't remember a BIND ioctl in my proposal. I remember an UNBIND, but
+thats bad naming as you pointed out below. See my statement on this
+below too.
+
+> You undo SHARE with UNBIND?
+
+Thats bad naming, agreed. Lets keep UNSHARE. Point is, we only need one
+parameter to do this which removes any ambiguity:
+
+ioctl(dev1, UNSHARE);
+
+	Joerg
+
