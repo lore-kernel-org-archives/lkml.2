@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758013Ab0FBMXY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jun 2010 08:23:24 -0400
-Received: from crca.org.au ([74.207.252.120]:37125 "EHLO crca.org.au"
+	id S1757834Ab0FBMUA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jun 2010 08:20:00 -0400
+Received: from crca.org.au ([74.207.252.120]:46700 "EHLO crca.org.au"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757938Ab0FBMUN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jun 2010 08:20:13 -0400
+	id S1754753Ab0FBMT6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Jun 2010 08:19:58 -0400
 X-Bogosity: Ham, spamicity=0.000000
 From: Nigel Cunningham <nigel@tuxonice.net>
 To: "Rafael J. Wysocki" <rjw@sisk.pl>,
        Linux PM <linux-pm@lists.linux-foundation.org>,
        LKML <linux-kernel@vger.kernel.org>,
        TuxOnIce-devel <tuxonice-devel@tuxonice.net>
-Subject: [PATCH 07/21] Hibernation: Iterate over sectors not swap entries.
-Date: Wed,  2 Jun 2010 22:19:06 +1000
-Message-Id: <1275481160-31150-8-git-send-email-nigel@tuxonice.net>
+Subject: [PATCH 01/21] Hibernation: Swap iteration functions.
+Date: Wed,  2 Jun 2010 22:19:00 +1000
+Message-Id: <1275481160-31150-2-git-send-email-nigel@tuxonice.net>
 X-Mailer: git-send-email 1.7.0.4
 In-Reply-To: <1275481160-31150-1-git-send-email-nigel@tuxonice.net>
 References: <1275481160-31150-1-git-send-email-nigel@tuxonice.net>
@@ -22,95 +22,67 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Record sectors in extents when allocating storage, and use the
-sector numbers instead of swap offsets as we write the image. If
-we then store these sector extents at the start of the image (as
-following patches will do), we can drop the index pages that are
-interspersed with the image, do fully asynchronous I/O (which
-should give a speed boost) and perhaps also remove some of the
-duplication in the paths for reading and writing pages.
+Add the data structure 'storage_position' and routines that allow
+a caller to iterate over swap in sector order. Note that calling
+reset_storage_pos only resets the position. next_swapdev_block
+must also be called to get the address of the first (and subsequent
+sectors).
 
 Signed-off-by: Nigel Cunningham <nigel@tuxonice.net>
 ---
- kernel/power/swap.c |   25 ++++++++++---------------
- 1 files changed, 10 insertions(+), 15 deletions(-)
+ kernel/power/swap.c |   39 +++++++++++++++++++++++++++++++++++++++
+ 1 files changed, 39 insertions(+), 0 deletions(-)
 
 diff --git a/kernel/power/swap.c b/kernel/power/swap.c
-index 15cbe70..d87f663 100644
+index b0bb217..829f7b4 100644
 --- a/kernel/power/swap.c
 +++ b/kernel/power/swap.c
-@@ -76,14 +76,7 @@ struct swsusp_header {
- static struct swsusp_header *swsusp_header;
+@@ -86,6 +86,45 @@ struct swsusp_extent {
  
- static struct hib_extent_state swap_extents;
--
--static sector_t next_swapdev_block(void)
--{
--	unsigned long res = hib_extent_next(&swap_extents);
--	if (res)
--		res = swapdev_block(root_swap, res);
--	return res;
--}
-+static struct hib_extent_state sector_extents;
+ static struct rb_root swsusp_extents = RB_ROOT;
  
- /**
-  *	alloc_swapdev_block - allocate a swap page and register that it has
-@@ -92,14 +85,16 @@ static sector_t next_swapdev_block(void)
- 
- sector_t alloc_swapdev_block(int swap)
++struct storage_position {
++	struct rb_node *node;
++	struct swsusp_extent *cur_ext;
++	unsigned long offset;
++};
++
++static struct storage_position pos;
++
++static void reset_storage_pos(void)
++{
++	pos.node = rb_first(&swsusp_extents);
++
++	if (!pos.node) {
++		pos.cur_ext = NULL;
++		pos.offset = 0;
++		return;
++	}
++
++	pos.cur_ext = container_of(pos.node, struct swsusp_extent, node);
++	pos.offset = pos.cur_ext->start;
++}
++
++static sector_t next_swapdev_block(void)
++{
++	if (!pos.node)
++		return 0;
++
++	if (pos.cur_ext->end >= pos.offset)
++		return pos.offset++;
++
++	pos.node = rb_next(pos.node);
++	if (!pos.node)
++		return 0;
++
++	pos.cur_ext = container_of(pos.node, struct swsusp_extent, node);
++	pos.offset = pos.cur_ext->start;
++	return pos.offset;
++}
++
+ static int swsusp_extents_insert(unsigned long swap_offset)
  {
--	unsigned long offset;
-+	unsigned long offset, sector;
- 
- 	offset = swp_offset(get_swap_page_of_type(swap));
- 	if (offset) {
--		if (hib_extents_insert(&swap_extents, offset))
-+		sector = swapdev_block(swap, offset);
-+		if (hib_extents_insert(&swap_extents, offset) ||
-+		    hib_extents_insert(&sector_extents, sector))
- 			swap_free(swp_entry(swap, offset));
- 		else
--			return swapdev_block(swap, offset);
-+			return sector;
- 	}
- 	return 0;
- }
-@@ -140,7 +135,7 @@ static int allocate_swap(unsigned int nr_pages)
- 		return 0;
- 	}
- 
--	hib_reset_extent_pos(&swap_extents);
-+	hib_reset_extent_pos(&sector_extents);
- 	return 1;
- }
- 
-@@ -280,7 +275,7 @@ static int get_swap_writer(struct swap_map_handle *handle, unsigned long pages)
- 		ret = -ENOSPC;
- 		goto err_close;
- 	}
--	handle->cur_swap = next_swapdev_block();
-+	handle->cur_swap = hib_extent_next(&sector_extents);
- 	if (!handle->cur_swap) {
- 		ret = -ENOSPC;
- 		goto err_rel;
-@@ -303,7 +298,7 @@ static int swap_write_page(struct swap_map_handle *handle, void *buf,
- 
- 	if (!handle->cur)
- 		return -EINVAL;
--	offset = next_swapdev_block();
-+	offset = hib_extent_next(&sector_extents);
- 	error = write_page(buf, offset, bio_chain);
- 	if (error)
- 		return error;
-@@ -312,7 +307,7 @@ static int swap_write_page(struct swap_map_handle *handle, void *buf,
- 		error = hib_wait_on_bio_chain(bio_chain);
- 		if (error)
- 			goto out;
--		offset = next_swapdev_block();
-+		offset = hib_extent_next(&sector_extents);
- 		if (!offset)
- 			return -ENOSPC;
- 		handle->cur->next_swap = offset;
+ 	struct rb_node **new = &(swsusp_extents.rb_node);
 -- 
 1.7.0.4
 
