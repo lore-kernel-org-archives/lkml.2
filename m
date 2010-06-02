@@ -1,83 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932261Ab0FBJ5j (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jun 2010 05:57:39 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:9971 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752771Ab0FBJ5h (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jun 2010 05:57:37 -0400
-Date: Wed, 2 Jun 2010 12:53:12 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Joerg Roedel <joro@8bytes.org>
-Cc: Avi Kivity <avi@redhat.com>, Tom Lyon <pugs@cisco.com>,
-       linux-kernel@vger.kernel.org, kvm@vger.kernel.org, chrisw@sous-sol.org,
-       hjk@linutronix.de, gregkh@suse.de, aafabbri@cisco.com,
-       scofeldm@cisco.com
-Subject: Re: [PATCH] VFIO driver: Non-privileged user level PCI drivers
-Message-ID: <20100602095312.GA25335@redhat.com>
-References: <20100530124949.GI27611@redhat.com> <4C0261C1.9090204@redhat.com> <20100530130332.GM27611@redhat.com> <4C026497.8070901@redhat.com> <20100530145309.GO27611@redhat.com> <4C03A285.7060902@redhat.com> <20100531171007.GA6516@redhat.com> <4C04C085.1030107@redhat.com> <20100601095532.GA9178@redhat.com> <20100602094201.GC964@8bytes.org>
+	id S1755083Ab0FBKAF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jun 2010 06:00:05 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:35925 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752586Ab0FBKAC convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Jun 2010 06:00:02 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100602094201.GC964@8bytes.org>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <1275471561.27810.30865.camel@twins>
+References: <Pine.LNX.4.44L0.1005271253240.3239-100000@iolanthe.rowland.org>
+	<201005302202.39511.rjw@sisk.pl>
+	<AANLkTilUQ2AG76nbK6LwI8_7zw0_yMSoAOr9pmuz7xrt@mail.gmail.com>
+	<201005312347.24251.rjw@sisk.pl>
+	<AANLkTilvOgSFTDFtXbjJobMZWxgfvsC97TqC7_a_NHBX@mail.gmail.com>
+	<alpine.LFD.2.00.1006011411200.2933@localhost.localdomain>
+	<AANLkTikZHmF6baP7dEXEGFE8YsbEteRjlhb5wqZX8ll1@mail.gmail.com>
+	<alpine.LFD.2.00.1006020905410.2933@localhost.localdomain>
+	<AANLkTinDm3FIrbS1jqEzW15THmr1hdd7ox0Mllm1VLjZ@mail.gmail.com>
+	<1275471561.27810.30865.camel@twins>
+Date: Wed, 2 Jun 2010 03:00:01 -0700
+Message-ID: <AANLkTilLmAb2c9fQwuguzWtjcHfuTZvPUTbUx7vuwFI6@mail.gmail.com>
+Subject: Re: [linux-pm] [PATCH 0/8] Suspend block api (version 8)
+From: =?ISO-8859-1?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+       Florian Mickler <florian@mickler.org>,
+       Matthew Garrett <mjg59@srcf.ucam.org>,
+       Alan Stern <stern@rowland.harvard.edu>, Paul@smtp1.linux-foundation.org,
+       LKML <linux-kernel@vger.kernel.org>, felipe.balbi@nokia.com,
+       Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
+       Linux PM <linux-pm@lists.linux-foundation.org>,
+       Alan Cox <alan@lxorguk.ukuu.org.uk>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 02, 2010 at 11:42:01AM +0200, Joerg Roedel wrote:
-> On Tue, Jun 01, 2010 at 12:55:32PM +0300, Michael S. Tsirkin wrote:
-> 
-> > There seems to be some misunderstanding.  The userspace interface
-> > proposed forces a separate domain per device and forces userspace to
-> > repeat iommu programming for each device.  We are better off sharing a
-> > domain between devices and programming the iommu once.
-> > 
-> > The natural way to do this is to have an iommu driver for programming
-> > iommu.
-> 
-> IMO a seperate iommu-userspace driver is a nightmare for a userspace
-> interface. It is just too complicated to use.
+2010/6/2 Peter Zijlstra <peterz@infradead.org>:
+> On Wed, 2010-06-02 at 01:54 -0700, Arve Hjønnevåg wrote:
+>> No I want you to stop confusing low power idle modes with suspend.
+>
+> I think it is you who is confused. For power management purposes suspend
+> is nothing more but a deep idle state.
 
-One advantage would be that we can reuse the uio framework
-for the devices themselves. So an existing app can just program
-an iommu for DMA and keep using uio for interrupts and access.
+No, idle is transparent, suspend is not.
 
-> We can solve the problem
-> of multiple devices-per-domain with an ioctl which allows binding one
-> uio-device to the address-space on another.
+>
+> (and please don't mention @#$@ up x86 ACPI again, Intel knows, they're
+> fixing it, get over it already).
+>
 
-This would imply switching an iommu domain for a device while
-it could potentially be doing DMA. No idea whether this can be done
-in a safe manner.
-Forcing iommu assignment to be done as a first step seems much saner.
+I don't think it is realistic to drop support for all existing hardware.
 
+>> Unrelated to
+>> Android, I also want to use opportunistic suspend on my desktop.
+>
+> So you're going to sprinkle this suspend blocker shite all over regular
+> userspace?
 
-> Thats much simpler.
-> 
-> 	Joerg
+I have said several times, that regular user-space will not need to be
+modified to maintain their current behavior.
 
+> Why not instead work on getting apps to behave properly and
+> idle when there's nothing to do?
+>
+> After all, if you have the code to add suspend blockers into, you also
+> have the means to fix it being stupid in the first place.
+>
 
-So instead of
-dev = open();
-ioctl(dev, ASSIGN, iommu)
-mmap
-
-and if we for ioctl mmap will fail
-we have
-
-dev = open();
-if (ndevices > 0)
-	ioctl(devices[0], ASSIGN, dev)
-mmap
-
-And if we forget ioctl we get errors from device.
-Seems more complicated to me.
-
-
-There will also always exist the confusion: address space for
-which device are we modifying? With a separate driver for iommu,
-we can safely check that binding is done correctly.
+Why would I add suspend blockers to the code I want to prevent running?
 
 -- 
-MST
+Arve Hjønnevåg
