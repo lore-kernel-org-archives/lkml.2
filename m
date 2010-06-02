@@ -1,74 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755512Ab0FBGRT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jun 2010 02:17:19 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:46080 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752125Ab0FBGRS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jun 2010 02:17:18 -0400
-Date: Tue, 1 Jun 2010 23:16:00 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Doug Doan <dougd@cray.com>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org, andi@firstfloor.org,
-       lee.schermerhorn@hp.com, rientjes@google.com, mel@csn.ul.ie,
-       Andrea Arcangeli <andrea@redhat.com>
-Subject: Re: [PATCH] hugetlb: call mmu notifiers on hugepage cow
-Message-Id: <20100601231600.3b3bf499.akpm@linux-foundation.org>
-In-Reply-To: <4BFED954.8060807@cray.com>
-References: <4BFED954.8060807@cray.com>
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1755747Ab0FBGSS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jun 2010 02:18:18 -0400
+Received: from 0122700014.0.fullrate.dk ([95.166.99.235]:41048 "EHLO kernel.dk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752231Ab0FBGSQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Jun 2010 02:18:16 -0400
+Date: Wed, 2 Jun 2010 08:18:15 +0200
+From: Jens Axboe <jaxboe@fusionio.com>
+To: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+Cc: "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+       "James.Bottomley@suse.de" <James.Bottomley@suse.de>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>
+Subject: Re: [PATCH -mm 0/3] remove useless ISA_DMA_THRESHOLD
+Message-ID: <20100602061815.GH3564@kernel.dk>
+References: <1275289144-28782-1-git-send-email-fujita.tomonori@lab.ntt.co.jp> <20100601182452.GA3564@kernel.dk> <20100602113022I.fujita.tomonori@lab.ntt.co.jp>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100602113022I.fujita.tomonori@lab.ntt.co.jp>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 27 May 2010 13:43:00 -0700 Doug Doan <dougd@cray.com> wrote:
-
+On Tue, Jun 01 2010, FUJITA Tomonori wrote:
+> On Tue, 1 Jun 2010 20:24:52 +0200
+> Jens Axboe <jaxboe@fusionio.com> wrote:
 > 
-> When a copy-on-write occurs, we take one of two paths in handle_mm_fault: 
-> through handle_pte_fault for normal pages, or through hugetlb_fault for huge pages.
+> > On Mon, May 31 2010, FUJITA Tomonori wrote:
+> > > This patchset removes useless ISA_DMA_THRESHOLD:
+> > > 
+> > > - ISA_DMA_THRESHOLD is irrelevant to the majority of architectures but
+> > >   they have to define it.
+> > > 
+> > > - ISA_DMA_THRESHOLD definition is inconsistent on architectures; ISA
+> > >   DMA addressing restriction, DMA addressing restriction or something
+> > >   else.
+> > > 
+> > > - Everyone (except for SCSI) uses dma_mask instead of ancient
+> > >   ISA_DMA_THRESHOLD.
+> > > 
+> > > Only SCSI uses ISA_DMA_THRESHOLD for ancient drivers with non-zero
+> > > unchecked_isa_dma. We can safely remove ISA_DMA_THRESHOLD usage in
+> > > SCSI. So we can clean up ISA_DMA_THRESHOLD on the whole tree.
+> > 
+> > Looks good. James, it's probably easier if I just carry this patch set.
 > 
-> In the normal page case, we eventually get to do_wp_page and call mmu notifiers 
-> via ptep_clear_flush_notify. There is no callout to the mmmu notifiers in the 
-> huge page case. This patch fixes that.
+> Thanks,
 > 
-> Signed-off-by: Doug Doan <dougd@cray.com>
-> ---
+> Any tree works for me, I thought about -mm though.
 > 
-> [patch  text/plain (802B)]
-> --- mm/hugetlb.c.orig	2010-05-27 13:07:58.569546314 -0700
-> +++ mm/hugetlb.c	2010-05-26 14:41:06.449296524 -0700
+> Can you replace [1/3] with the following?
+> 
+> I fixed the subject and the body, s/aha1532/aha1542/;
+> 
+> Somehow I forgot to remove unused BAD_SG_DMA().
 
-(In patch -p1 form, please.  So a/mm/hugetlb.c)
+I'll collect the acks and include this update.
 
-> @@ -2345,11 +2345,17 @@ retry_avoidcopy:
->  	ptep = huge_pte_offset(mm, address & huge_page_mask(h));
->  	if (likely(pte_same(huge_ptep_get(ptep), pte))) {
->  		/* Break COW */
-> +		mmu_notifier_invalidate_range_start(mm,
-> +			address & huge_page_mask(h),
-> +			(address & huge_page_mask(h)) + huge_page_size(h));
->  		huge_ptep_clear_flush(vma, address, ptep);
->  		set_huge_pte_at(mm, address, ptep,
->  				make_huge_pte(vma, new_page, 1));
->  		/* Make the old page be freed below */
->  		new_page = old_page;
-> +		mmu_notifier_invalidate_range_end(mm,
-> +			address & huge_page_mask(h),
-> +			(address & huge_page_mask(h)) + huge_page_size(h));
->  	}
->  	page_cache_release(new_page);
->  	page_cache_release(old_page);
-
-This causes mmu_notifier_invalidate_range_start() to be called under
-page_table_lock.  The immediately preceding code seems to take some
-care to avoid doing that.  I took a quick look at other callsites and
-cannot immediately see other cases where
-mmu_notifier_invalidate_range_start/end() are called under that lock.
-
-This may not introduce bugs with current notifier implementations (I
-didn't check), but it does lessen flexibility?
+-- 
+Jens Axboe
 
