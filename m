@@ -1,102 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754062Ab0FBMip (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jun 2010 08:38:45 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:62541 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751550Ab0FBMin (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jun 2010 08:38:43 -0400
-Date: Wed, 2 Jun 2010 15:34:17 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Joerg Roedel <joro@8bytes.org>
-Cc: Avi Kivity <avi@redhat.com>, Tom Lyon <pugs@cisco.com>,
-       linux-kernel@vger.kernel.org, kvm@vger.kernel.org, chrisw@sous-sol.org,
-       hjk@linutronix.de, gregkh@suse.de, aafabbri@cisco.com,
-       scofeldm@cisco.com
-Subject: Re: [PATCH] VFIO driver: Non-privileged user level PCI drivers
-Message-ID: <20100602123417.GA29815@redhat.com>
-References: <20100601095532.GA9178@redhat.com> <20100602094201.GC964@8bytes.org> <20100602095312.GA25335@redhat.com> <20100602101940.GG964@8bytes.org> <20100602102144.GD29023@redhat.com> <20100602103516.GI964@8bytes.org> <20100602103828.GF29023@redhat.com> <20100602111224.GA11033@8bytes.org> <20100602112100.GA29697@redhat.com> <20100602121927.GA11162@8bytes.org>
+	id S1753497Ab0FBMnF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jun 2010 08:43:05 -0400
+Received: from smtpauth.net4india.com ([202.71.129.41]:58223 "EHLO
+	smtpauth.net4india.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751759Ab0FBMnB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Jun 2010 08:43:01 -0400
+Message-ID: <4C0651FF.2080007@xenontk.org>
+Date: Wed, 02 Jun 2010 18:13:43 +0530
+From: David John <davidjon@xenontk.org>
+Reply-To: davidjon@xenontk.org
+User-Agent: Mozilla/5.0 (X11; X; Linux x86_64; rv:1.9.1.9) Gecko/20100430 Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100602121927.GA11162@8bytes.org>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+To: Jens Axboe <jaxboe@fusionio.com>
+CC: Divyesh Shah <dpshah@google.com>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [2.6.35-rc1 BUG]: Calling sched_clock causes stack trace with
+ DEBUG_PREEMPT
+References: <4C04AC78.3020702@xenontk.org> <4C04BB3F.2030707@xenontk.org> <20100601102319.GL3564@kernel.dk>
+In-Reply-To: <20100601102319.GL3564@kernel.dk>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 02, 2010 at 02:19:28PM +0200, Joerg Roedel wrote:
-> On Wed, Jun 02, 2010 at 02:21:00PM +0300, Michael S. Tsirkin wrote:
-> > On Wed, Jun 02, 2010 at 01:12:25PM +0200, Joerg Roedel wrote:
+On 06/01/2010 03:53 PM, Jens Axboe wrote:
+> On Tue, Jun 01 2010, David John wrote:
+>> On 06/01/2010 12:15 PM, David John wrote:
+>>> Hi,
+>>>
+>>> I get stack traces like the following:
+>>>
+>>> BUG: using smp_processor_id() in preemptible [00000000] code: init/1
+>>> caller is native_sched_clock+0x37/0x6d
+>>> Pid: 1, comm: init Not tainted 2.6.35-rc1 #99
+>>> Call Trace:
+>>> [<ffffffff811c422b>] debug_smp_processor_id+0xd3/0xec
+>>> [<ffffffff81008a1e>] native_sched_clock+0x37/0x6d
+>>> [<ffffffff811a7bfd>] blk_rq_init+0x92/0x9e
+>>> [<ffffffff811a7f2e>] get_request+0x1c8/0x27e
+>>> [<ffffffff811a8011>] get_request_wait+0x2d/0x13c
+>>> [<ffffffff810306ee>] ? get_parent_ip+0x11/0x42
+>>> [<ffffffff81411ea6>] ? add_preempt_count+0xad/0xb1
+>>> [<ffffffff811a83b3>] __make_request+0x293/0x3b8
+>>> [<ffffffff81099737>] ? mempool_alloc_slab+0x10/0x12
+>>> [<ffffffff811a6bc4>] generic_make_request+0x187/0x1ea
+>>> [<ffffffff810306ee>] ? get_parent_ip+0x11/0x42
+>>> [<ffffffff811a6ce5>] submit_bio+0xbe/0xc7
+>>> [<ffffffff810f1f37>] submit_bh+0xef/0x111
+>>> [<ffffffff810f4865>] block_read_full_page+0x1ec/0x20c
+>>> [<ffffffff810f6815>] ? blkdev_get_block+0x0/0x5e
+>>> [<ffffffff81411de6>] ? sub_preempt_count+0x92/0xa5
+>>> [<ffffffff810a0500>] ? __lru_cache_add+0x73/0x93
+>>> [<ffffffff810f6e81>] blkdev_readpage+0x13/0x15
+>>> [<ffffffff8109f981>] __do_page_cache_readahead+0x161/0x194
+>>> [<ffffffff8109f9d0>] ra_submit+0x1c/0x20
+>>> [<ffffffff8109fc5f>] ondemand_readahead+0x1bb/0x1ce
+>>> [<ffffffff810973c9>] ? rcu_read_unlock+0xe/0x29
+>>> [<ffffffff8109fd46>] page_cache_sync_readahead+0x38/0x3a
+>>> [<ffffffff810993c2>] generic_file_aio_read+0x24d/0x57f
+>>> [<ffffffff810cf973>] ? __mem_cgroup_try_charge+0x78/0x46c
+>>> [<ffffffff810d2aa0>] do_sync_read+0xc6/0x103
+>>> [<ffffffff810306ee>] ? get_parent_ip+0x11/0x42
+>>> [<ffffffff810adca5>] ? handle_mm_fault+0x7cb/0x7e5
+>>> [<ffffffff810f69c5>] ? block_ioctl+0x32/0x36
+>>> [<ffffffff81189fcc>] ? selinux_file_permission+0x57/0xae
+>>> [<ffffffff81184524>] ? security_file_permission+0x11/0x13
+>>> [<ffffffff810d34af>] vfs_read+0xa6/0x103
+>>> [<ffffffff810d35c2>] sys_read+0x45/0x69
+>>> [<ffffffff810029ab>] system_call_fastpath+0x16/0x1b
+>>>
+>>> Since with commit 9195291e you call 'set_start_time_ns' from
+>>> 'blk_rq_init' which in turn calls 'sched_clock' with preempt enabled.
+>>> There are other calls to sched_clock in blk-cgroup.c. Maybe they should
+>>> be checked as well?
+>>>
+>>> Regards,
+>>> David.
+>>>
+>>
+>> I see this has been reported. Never mind.
 > 
-> > > Even if it is bound to a domain the userspace driver could program the
-> > > device to do dma to unmapped regions causing io-page-faults. The kernel
-> > > can't do anything about it.
-> > 
-> > It can always corrupt its own memory directly as well :)
-> > But that is not a reason not to detect errors if we can,
-> > and not to make APIs hard to misuse.
-> 
-> Changing the domain of a device while dma can happen is the same type of
-> bug as unmapping potential dma target addresses. We can't catch this
-> kind of misuse.
+> This should fix it for now, if you have time to test, then that would
+> not hurt.
 
-you normally need device mapped to start DMA.
-SHARE makes this bug more likely as you allow
-switching domains: mmap could be done before switching.
+Yes, this works.
 
-> > > > With 10 devices you have 10 extra ioctls.
-> > > 
-> > > And this works implicitly with your proposal?
-> > 
-> > Yes.  so you do:
-> > iommu = open
-> > ioctl(dev1, BIND, iommu)
-> > ioctl(dev2, BIND, iommu)
-> > ioctl(dev3, BIND, iommu)
-> > ioctl(dev4, BIND, iommu)
-> > 
-> > No need to add a SHARE ioctl.
-> 
-> In my proposal this looks like:
-> 
-> 
-> dev1 = open();
-> ioctl(dev2, SHARE, dev1);
-> ioctl(dev3, SHARE, dev1);
-> ioctl(dev4, SHARE, dev1);
-> 
-> So we actually save an ioctl.
+Thanks,
+David.
 
-I thought we had a BIND ioctl?
 
-> > > Remember that we still need to be able to provide seperate mappings
-> > > for each device to support IOMMU emulation for the guest.
-> > 
-> > Generally not true. E.g. guest can enable iommu passthrough
-> > or have domain per a group of devices.
-> 
-> What I meant was that there may me multiple io-addresses spaces
-> necessary for one process. I didn't want to say that every device
-> _needs_ to have its own address space.
-> 
-> > > As I wrote the domain has a reference count and is destroyed only when
-> > > it goes down to zero. This does not happen as long as a device is bound
-> > > to it.
-> > > 
-> > > 	Joerg
-> > 
-> > We were talking about UNSHARE ioctl:
-> > ioctl(dev1, UNSHARE, dev2)
-> > Does it change the domain for dev1 or dev2?
-> > If you make a mistake you get a hard to debug bug.
-> 
-> As I already wrote we would have an UNBIND ioctl which just removes a
-> device from its current domain. UNBIND is better than UNSHARE for
-> exactly the reason you pointed out above. I thought I stated that
-> already.
-> 
-> 	Joerg
 
-You undo SHARE with UNBIND?
+
+
 
