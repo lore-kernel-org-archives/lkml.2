@@ -1,113 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753533Ab0FBIa2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jun 2010 04:30:28 -0400
-Received: from www.tglx.de ([62.245.132.106]:48254 "EHLO www.tglx.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751575Ab0FBIaZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jun 2010 04:30:25 -0400
-Date: Wed, 2 Jun 2010 10:29:14 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: =?ISO-8859-15?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>
-cc: "Rafael J. Wysocki" <rjw@sisk.pl>, Florian Mickler <florian@mickler.org>,
-       Matthew Garrett <mjg59@srcf.ucam.org>,
-       Alan Stern <stern@rowland.harvard.edu>,
-       Peter Zijlstra <peterz@infradead.org>, Paul@smtp1.linux-foundation.org,
-       LKML <linux-kernel@vger.kernel.org>, felipe.balbi@nokia.com,
-       Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
-       Linux PM <linux-pm@lists.linux-foundation.org>,
-       Alan Cox <alan@lxorguk.ukuu.org.uk>
-Subject: Re: [linux-pm] [PATCH 0/8] Suspend block api (version 8)
-In-Reply-To: <AANLkTikZHmF6baP7dEXEGFE8YsbEteRjlhb5wqZX8ll1@mail.gmail.com>
-Message-ID: <alpine.LFD.2.00.1006020905410.2933@localhost.localdomain>
-References: <Pine.LNX.4.44L0.1005271253240.3239-100000@iolanthe.rowland.org> <201005302202.39511.rjw@sisk.pl> <AANLkTilUQ2AG76nbK6LwI8_7zw0_yMSoAOr9pmuz7xrt@mail.gmail.com> <201005312347.24251.rjw@sisk.pl> <AANLkTilvOgSFTDFtXbjJobMZWxgfvsC97TqC7_a_NHBX@mail.gmail.com>
- <alpine.LFD.2.00.1006011411200.2933@localhost.localdomain> <AANLkTikZHmF6baP7dEXEGFE8YsbEteRjlhb5wqZX8ll1@mail.gmail.com>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S1754075Ab0FBIc3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jun 2010 04:32:29 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:62037 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753413Ab0FBIcZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Jun 2010 04:32:25 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :x-enigmail-version:content-type:content-transfer-encoding;
+        b=tdUaIkAFrAsimBnuLhiC9v0/o7Y0Gwwlno5uuLx5WlTffaXmV8Y21mEbf142qaCR7C
+         /MooQXoeaxDMNiF769K4jThvao9Rsk3RedCciMlvJN2yxXo5NQOaT2jxiUpICniu+roU
+         Y0m+wSA6ux8UYboUxLeeFCmPheGG+AqTmsSvw=
+Message-ID: <4C061715.5060700@gmail.com>
+Date: Wed, 02 Jun 2010 10:32:21 +0200
+From: Jiri Slaby <jirislaby@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; cs-CZ; rv:1.9.2.4) Gecko/20100522 SUSE/3.1rc1-2.1 Thunderbird/3.1
 MIME-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="8323328-3244195-1275462694=:2933"
-Content-ID: <alpine.LFD.2.00.1006020922080.2933@localhost.localdomain>
+To: rpurdie@rpsys.net
+CC: linux-input@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
+Subject: INPUT: leds trigger LOCKDEP (GFP_KERNEL alloc inside spinlock)
+X-Enigmail-Version: 1.0
+Content-Type: text/plain; charset=ISO-8859-2
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
+Hi,
 
---8323328-3244195-1275462694=:2933
-Content-Type: TEXT/PLAIN; CHARSET=ISO-8859-15
-Content-Transfer-Encoding: 8BIT
-Content-ID: <alpine.LFD.2.00.1006020922081.2933@localhost.localdomain>
+I get the following warning when booting with lockdep turned on:
+------------[ cut here ]------------
+WARNING: at kernel/lockdep.c:2469 lockdep_trace_alloc+0xbc/0xd0()
+Hardware name: Bochs
+Modules linked in:
+Pid: 1, comm: swapper Not tainted 2.6.34-mm1_64+ #5
+Call Trace:
+ [<ffffffff8106408a>] warn_slowpath_common+0x7a/0xb0
+ [<ffffffff81324826>] ? device_create_vargs+0x56/0x110
+ [<ffffffff810640d5>] warn_slowpath_null+0x15/0x20
+ [<ffffffff8109359c>] lockdep_trace_alloc+0xbc/0xd0
+ [<ffffffff810f65b2>] kmem_cache_alloc+0x32/0xf0
+ [<ffffffff81324826>] device_create_vargs+0x56/0x110
+ [<ffffffff8132490c>] device_create+0x2c/0x30
+ [<ffffffff810828ce>] ? up_read+0x1e/0x40
+ [<ffffffff8142068c>] led_classdev_register+0x2c/0xe0
+ [<ffffffff814213de>] input_led_connect+0x21e/0x2c0
+ [<ffffffff813d2395>] ? input_register_handler+0x25/0x110
+ [<ffffffff813cfd87>] input_attach_handler+0x1c7/0x210
+ [<ffffffff81abc666>] ? input_led_init+0x0/0x12
+ [<ffffffff813d2433>] input_register_handler+0xc3/0x110
+ [<ffffffff81abc666>] ? input_led_init+0x0/0x12
+ [<ffffffff81abc676>] input_led_init+0x10/0x12
+ [<ffffffff810002f9>] do_one_initcall+0x39/0x1a0
+ [<ffffffff81a95d83>] kernel_init+0x16e/0x1f8
+ [<ffffffff8102ab14>] kernel_thread_helper+0x4/0x10
+ [<ffffffff8159917c>] ? restore_args+0x0/0x30
+ [<ffffffff81a95c15>] ? kernel_init+0x0/0x1f8
+ [<ffffffff8102ab10>] ? kernel_thread_helper+0x0/0x10
+---[ end trace e7273345439c18af ]---
+Registered led device: input::numl
 
-On Tue, 1 Jun 2010, Arve Hjønnevåg wrote:
-> 2010/6/1 Thomas Gleixner <tglx@linutronix.de>:
-> > On Mon, 31 May 2010, Arve Hjønnevåg wrote:
-> >
-> >> 2010/5/31 Rafael J. Wysocki <rjw@sisk.pl>:
-> >> > On Monday 31 May 2010, Arve Hjønnevåg wrote:
-> >> >> 2010/5/30 Rafael J. Wysocki <rjw@sisk.pl>:
-> >> > ...
-> >> >>
-> >> >> I think it makes more sense to block suspend while wakeup events are
-> >> >> pending than blocking it everywhere timers are used by code that could
-> >> >> be called while handling wakeup events or other critical work. Also,
-> >> >> even if you did block suspend everywhere timers where used you still
-> >> >> have the race where a wakeup interrupt happens right after you decided
-> >> >> to suspend. In other words, you still need to block suspend in all the
-> >> >> same places as with the current opportunistic suspend code, so what is
-> >> >> the benefit of delaying suspend until idle?
-> >> >
-> >> > Assume for a while that you don't use suspend blockers, OK?  I realize you
-> >> > think that anything else doesn't make sense, but evidently some other people
-> >> > have that opinion about suspend blockers.
-> >> >
-> >>
-> >> It sounded like you were suggesting that initiating suspend from idle
-> >> would somehow avoid the race condition with wakeup events. All I'm
-> >> saying is that you would need to block suspend in all the same places.
-> >> If you don't care about ignoring wakeup events, then sure you can
-> >> initiate suspend from idle.
-> >
-> > And why should you miss a wakeup there ? If you get an interrupt in
-> > the transition, then you are not longer idle.
-> >
-> 
-> Because suspend itself causes you to not be idle you cannot abort
-> suspend just because you are not idle anymore.
 
-You still are addicted to the current suspend mechanism. :)
+It is because input_led_connect makes an atomic context and calls from
+that led_classdev_register. In this function there are several functions
+which might sleep, so this is incorrect.
 
-The whole point of doing it from idle in the form of a deep power
-state is to avoid the massive sh*tload of work which is neccesary to
-run the existing suspend code. But that needs runtime power management
-and tweaks to avoid your timers waking you, etc.
+Is it necessary that input_led_registered_lock is a spinlock? Can't it
+be simply a mutex?
 
-The mechanism you want to use is: suspend no matter what, like closing
-the lid of the laptop, but with a few tweaks around it:
-
-   1) An interrupt on a wakeup source which comes in while the suspend
-      code runs, i.e before you transitioned into wakeup mode, must
-      abort / prevent suspend.
-
-   2) Prevent another attempt to suspend before the event has been
-      delivered and the apps have signaled that they have not longer
-      any work to do.
-
-   As a side effect you confine crappy apps with that mechanism in
-   some way.
-
-In the laptop case we do not want the tweaks as not going into suspend
-might set your backpack on fire.
-
-If I understood you correctly then you can shutdown the CPU in idle
-completelty already, but that's not enough due to:
-
-    1) crappy applications keeping the cpu away from idle
-    2) timers firing
-
-Would solving those two issues be sufficient for you or am I missing
-something ?
-
-Thanks,
-
-	tglx
---8323328-3244195-1275462694=:2933--
+regards,
+-- 
+js
