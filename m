@@ -1,47 +1,373 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932429Ab0FBK0e (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jun 2010 06:26:34 -0400
-Received: from 8bytes.org ([88.198.83.132]:58531 "EHLO 8bytes.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932327Ab0FBK0c (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jun 2010 06:26:32 -0400
-Date: Wed, 2 Jun 2010 12:26:31 +0200
-From: Joerg Roedel <joro@8bytes.org>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: Avi Kivity <avi@redhat.com>, Tom Lyon <pugs@cisco.com>,
-       linux-kernel@vger.kernel.org, kvm@vger.kernel.org, chrisw@sous-sol.org,
-       hjk@linutronix.de, gregkh@suse.de, aafabbri@cisco.com,
-       scofeldm@cisco.com
-Subject: Re: [PATCH] VFIO driver: Non-privileged user level PCI drivers
-Message-ID: <20100602102630.GH964@8bytes.org>
-References: <20100530145309.GO27611@redhat.com> <4C03A285.7060902@redhat.com> <20100531171007.GA6516@redhat.com> <4C04C085.1030107@redhat.com> <20100601095532.GA9178@redhat.com> <4C04E0E0.3070006@redhat.com> <20100601104651.GA9415@redhat.com> <4C050013.2020701@redhat.com> <20100602094527.GD964@8bytes.org> <20100602101534.GC29023@redhat.com>
+	id S932440Ab0FBK1J (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jun 2010 06:27:09 -0400
+Received: from nwd2mail11.analog.com ([137.71.25.57]:52842 "EHLO
+	nwd2mail11.analog.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932327Ab0FBK1H (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Jun 2010 06:27:07 -0400
+X-IronPort-AV: E=Sophos;i="4.53,346,1272859200"; 
+   d="scan'208";a="17387382"
+Subject: [PATCH v3] regulator: new drivers for AD5398 and AD5821
+From: sonic zhang <sonic.adi@gmail.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+       Liam Girdwood <lrg@slimlogic.co.uk>
+CC: Linux Kernel <linux-kernel@vger.kernel.org>,
+       uclinux-dist-devel <uclinux-dist-devel@blackfin.uclinux.org>
+Content-Type: text/plain
+Date: Wed, 2 Jun 2010 18:35:40 +0800
+Message-ID: <1275474940.2640.2.camel@eight.analog.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100602101534.GC29023@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+X-Mailer: Evolution 2.8.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 02, 2010 at 01:15:34PM +0300, Michael S. Tsirkin wrote:
-> One of the issues I see with the current patch is that
-> it uses the mlock rlimit to do this pinning. So this wastes the rlimit
-> for an app that did mlockall already, and also consumes
-> this resource transparently, so an app might call mlock
-> on a small buffer and be surprised that it fails.
-> 
-> Using mmu notifiers might help?
+>From 27fea6701cb4f24e67de3370a0e5e3816ffa75b1 Mon Sep 17 00:00:00 2001
+From: Sonic Zhang <sonic.zhang@analog.com>
+Date: Wed, 2 Jun 2010 18:27:25 +0800
+Subject: [PATCH] regulator: new drivers for AD5398 and AD5821
 
-MMU notifiers are problematic because they are designed for situations
-where we can do demand paging. The invalidate_range_start and
-invalidate_range_end functions are not only called on munmap, they also
-run when mprotect is called (in which case we don't want to tear down
-iommu mappings). So what may happen with mmu notifiers is that we
-accidentially tear down iommu mappings. With demand-paging this is no
-problem because the io-ptes could be re-faulted. But that does not work
-here.
+The AD5398 and AD5821 are single 10-bit DAC with 120 mA output current
+sink capability. They feature an internal reference and operates from
+a single 2.7 V to 5.5 V supply.
 
-	Joerg
+This driver supports both the AD5398 and the AD5821.  It adapts into the
+voltage and current framework.
+
+Signed-off-by: Sonic Zhang <sonic.zhang@analog.com>
+Signed-off-by: Mike Frysinger <vapier@gentoo.org>
+---
+ drivers/regulator/Kconfig  |    6 +
+ drivers/regulator/Makefile |    1 +
+ drivers/regulator/ad5398.c |  287 ++++++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 294 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/regulator/ad5398.c
+
+diff --git a/drivers/regulator/Kconfig b/drivers/regulator/Kconfig
+index 04f2e08..679ea37 100644
+--- a/drivers/regulator/Kconfig
++++ b/drivers/regulator/Kconfig
+@@ -201,5 +201,11 @@ config REGULATOR_88PM8607
+ 	help
+ 	  This driver supports 88PM8607 voltage regulator chips.
+ 
++config REGULATOR_AD5398
++	tristate "Analog Devices AD5398/AD5821 regulators"
++	depends on I2C
++	help
++	  This driver supports AD5398 and AD5821 current regulator chips.
++	  If building into module, its name is ad5398.ko.
+ endif
+ 
+diff --git a/drivers/regulator/Makefile b/drivers/regulator/Makefile
+index 4e7feec..c256668 100644
+--- a/drivers/regulator/Makefile
++++ b/drivers/regulator/Makefile
+@@ -8,6 +8,7 @@ obj-$(CONFIG_REGULATOR_FIXED_VOLTAGE) += fixed.o
+ obj-$(CONFIG_REGULATOR_VIRTUAL_CONSUMER) += virtual.o
+ obj-$(CONFIG_REGULATOR_USERSPACE_CONSUMER) += userspace-consumer.o
+ 
++obj-$(CONFIG_REGULATOR_AD5398) += ad5398.o
+ obj-$(CONFIG_REGULATOR_BQ24022) += bq24022.o
+ obj-$(CONFIG_REGULATOR_DUMMY) += dummy.o
+ obj-$(CONFIG_REGULATOR_LP3971) += lp3971.o
+diff --git a/drivers/regulator/ad5398.c b/drivers/regulator/ad5398.c
+new file mode 100644
+index 0000000..a2703c2
+--- /dev/null
++++ b/drivers/regulator/ad5398.c
+@@ -0,0 +1,286 @@
++/*
++ * Voltage and current regulation for AD5398 and AD5821
++ *
++ * Copyright 2010 Analog Devices Inc.
++ *
++ * Enter bugs at http://blackfin.uclinux.org/
++ *
++ * Licensed under the GPL-2 or later.
++ */
++
++#include <linux/module.h>
++#include <linux/err.h>
++#include <linux/i2c.h>
++#include <linux/slab.h>
++#include <linux/platform_device.h>
++#include <linux/regulator/driver.h>
++#include <linux/regulator/machine.h>
++
++#define AD5398_CURRENT_EN_MASK	0x8000
++
++struct ad5398_chip_info {
++	struct i2c_client *client;
++	int min_uA;
++	int max_uA;
++	unsigned int current_level;
++	unsigned int current_mask;
++	unsigned int current_offset;
++	struct regulator_dev rdev;
++};
++
++static int ad5398_calc_current(struct ad5398_chip_info *chip,
++	unsigned selector)
++{
++	unsigned range_uA = chip->max_uA - chip->min_uA;
++
++	return chip->min_uA + (selector * range_uA / chip->current_level);
++}
++
++static int ad5398_read_reg(struct i2c_client *client, unsigned short *data)
++{
++	unsigned short val;
++	int ret;
++
++	ret = i2c_master_recv(client, (char *)&val, 2);
++	if (ret < 0) {
++		dev_err(&client->dev, "I2C read error\n");
++		return ret;
++	}
++	*data = swab16(val);
++
++	return ret;
++}
++
++static int ad5398_write_reg(struct i2c_client *client, const unsigned short data)
++{
++	unsigned short val;
++	int ret;
++
++	val = swab16(data);
++	ret = i2c_master_send(client, (char *)&val, 2);
++	if (ret < 0)
++		dev_err(&client->dev, "I2C write error\n");
++
++	return ret;
++}
++
++static int ad5398_get_current_limit(struct regulator_dev *rdev)
++{
++	struct ad5398_chip_info *chip = rdev_get_drvdata(rdev);
++	struct i2c_client *client = chip->client;
++	unsigned short data;
++	int ret;
++
++	ret = ad5398_read_reg(client, &data);
++	if (ret < 0)
++		return ret;
++
++	ret = (data & chip->current_mask) >> chip->current_offset;
++
++	return ad5398_calc_current(chip, ret);
++}
++
++static int ad5398_set_current_limit(struct regulator_dev *rdev, int min_uA, int max_uA)
++{
++	struct ad5398_chip_info *chip = rdev_get_drvdata(rdev);
++	struct i2c_client *client = chip->client;
++	unsigned range_uA = chip->max_uA - chip->min_uA;
++	unsigned selector;
++	unsigned short data;
++	int ret;
++
++	if (min_uA > chip->max_uA || max_uA < chip->min_uA)
++		return -EINVAL;
++	if (min_uA < chip->min_uA)
++		min_uA = chip->min_uA;
++
++	selector = ((min_uA - chip->min_uA) * chip->current_level +
++			range_uA - 1) / range_uA;
++	if (ad5398_calc_current(chip, selector) > max_uA)
++		return -EINVAL;
++
++	dev_dbg(&client->dev, "changing current %dmA\n",
++		ad5398_calc_current(chip, selector) / 1000);
++
++	/* read chip enable bit */
++	ret = ad5398_read_reg(client, &data);
++	if (ret < 0)
++		return ret;
++
++	/* prepare register data */
++	selector = (selector << chip->current_offset) & chip->current_mask;
++	selector |= (data & AD5398_CURRENT_EN_MASK);
++
++	/* write the new current value back as well as enable bit */
++	ret = ad5398_write_reg(client, selector);
++
++	return ret;
++}
++
++static int ad5398_is_enabled(struct regulator_dev *rdev)
++{
++	struct ad5398_chip_info *chip = rdev_get_drvdata(rdev);
++	struct i2c_client *client = chip->client;
++	unsigned short data;
++	int ret;
++
++	ret = ad5398_read_reg(client, &data);
++	if (ret < 0)
++		return ret;
++
++	if (data & AD5398_CURRENT_EN_MASK)
++		return 1;
++	else
++		return 0;
++}
++
++static int ad5398_enable(struct regulator_dev *rdev)
++{
++	struct ad5398_chip_info *chip = rdev_get_drvdata(rdev);
++	struct i2c_client *client = chip->client;
++	unsigned short data;
++	int ret;
++
++	ret = ad5398_read_reg(client, &data);
++	if (ret < 0)
++		return ret;
++
++	if (data & AD5398_CURRENT_EN_MASK)
++		return 0;
++
++	data |= AD5398_CURRENT_EN_MASK;
++
++	ret = ad5398_write_reg(client, data);
++
++	return ret;
++}
++
++static int ad5398_disable(struct regulator_dev *rdev)
++{
++	struct ad5398_chip_info *chip = rdev_get_drvdata(rdev);
++	struct i2c_client *client = chip->client;
++	unsigned short data;
++	int ret;
++
++	ret = ad5398_read_reg(client, &data);
++	if (ret < 0)
++		return ret;
++
++	if (!(data & AD5398_CURRENT_EN_MASK))
++		return 0;
++
++	data &= ~AD5398_CURRENT_EN_MASK;
++
++	ret = ad5398_write_reg(client, data);
++
++	return ret;
++}
++
++static const struct regulator_ops ad5398_ops = {
++	.get_current_limit = ad5398_get_current_limit,
++	.set_current_limit = ad5398_set_current_limit,
++	.enable = ad5398_enable,
++	.disable = ad5398_disable,
++	.is_enabled = ad5398_is_enabled,
++};
++
++static const struct regulator_desc ad5398_reg = {
++		.name = "isink",
++		.id = 0,
++		.ops = &ad5398_ops,
++		.type = REGULATOR_CURRENT,
++		.owner = THIS_MODULE,
++};
++
++struct ad5398_current_data_format {
++	int current_bits;
++	int current_offset;
++};
++
++static const struct ad5398_current_data_format df_10_4 = {10, 4};
++
++static const struct i2c_device_id ad5398_id[] = {
++	{ "ad5398", (kernel_ulong_t)&df_10_4 },
++	{ "ad5821", (kernel_ulong_t)&df_10_4 },
++	{ }
++};
++MODULE_DEVICE_TABLE(i2c, ad5398_id);
++
++static int ad5398_probe(struct i2c_client *client,
++		      const struct i2c_device_id *id)
++{
++	struct regulator_dev *rdev;
++	struct regulator_init_data *init_data = client->dev.platform_data;
++	struct ad5398_chip_info *chip;
++	const struct ad5398_current_data_format *df =
++			(struct ad5398_current_data_format *)id->driver_data;
++	int ret;
++
++	if (!init_data)
++		return -EINVAL;
++
++	chip = kzalloc(sizeof(*chip), GFP_KERNEL);
++	if (!chip)
++		return -ENOMEM;
++
++	chip->client = client;
++
++	chip->min_uA = init_data->constraints.min_uA;
++	chip->max_uA = init_data->constraints.max_uA;
++	chip->current_level = 1 << df->current_bits;
++	chip->current_offset = df->current_offset;
++	chip->current_mask = (chip->current_level - 1) << chip->current_offset;
++
++	rdev = regulator_register(&ad5398_reg, &client->dev, init_data, chip);
++	if (IS_ERR(rdev)) {
++		ret = PTR_ERR(rdev);
++		dev_err(&client->dev, "failed to register %s %s\n",
++			id->name, ad5398_reg.name);
++		goto err;
++	}
++
++	i2c_set_clientdata(client, chip);
++	dev_dbg(&client->dev, "%s regulator driver is registered.\n", id->name);
++	return 0;
++
++err:
++	kfree(chip);
++	return ret;
++}
++
++static int ad5398_remove(struct i2c_client *client)
++{
++	struct ad5398_chip_info *chip = i2c_get_clientdata(client);
++
++	regulator_unregister(&chip->rdev);
++	kfree(chip);
++	i2c_set_clientdata(client, NULL);
++
++	return 0;
++}
++
++static struct i2c_driver ad5398_driver = {
++	.probe = ad5398_probe,
++	.remove = __devexit_p(ad5398_remove),
++	.driver		= {
++		.name	= "ad5398",
++	},
++	.id_table	= ad5398_id,
++};
++
++static int __init ad5398_init(void)
++{
++	return i2c_add_driver(&ad5398_driver);
++}
++module_init(ad5398_init);
++
++static void __exit ad5398_exit(void)
++{
++	i2c_del_driver(&ad5398_driver);
++}
++module_exit(ad5398_exit);
++
++MODULE_DESCRIPTION("AD5398 and AD5821 current regulator driver");
++MODULE_AUTHOR("Sonic Zhang");
++MODULE_LICENSE("GPL");
++MODULE_ALIAS("platform:ad5398-regulator");
+-- 
+1.6.0
+
+
 
