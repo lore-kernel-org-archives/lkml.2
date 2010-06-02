@@ -1,88 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758738Ab0FBUlM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jun 2010 16:41:12 -0400
-Received: from casper.infradead.org ([85.118.1.10]:56077 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758690Ab0FBUko (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jun 2010 16:40:44 -0400
-From: Arnaldo Carvalho de Melo <acme@infradead.org>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: linux-kernel@vger.kernel.org, Stephane Eranian <eranian@google.com>,
-       "David S. Miller" <davem@davemloft.net>,
-       =?utf-8?q?Fr=C3=A9d=C3=A9ric=20Weisbecker?= <fweisbec@gmail.com>,
-       Ingo Molnar <mingo@elte.hu>, Paul Mackerras <paulus@samba.org>,
-       Peter Zijlstra <peterz@infradead.org>, Tom Zanussi <tzanussi@gmail.com>,
-       Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 1/4] perf report: Make -D print sampled CPU
-Date: Wed,  2 Jun 2010 17:40:12 -0300
-Message-Id: <1275511215-25703-2-git-send-email-acme@infradead.org>
-X-Mailer: git-send-email 1.6.2.5
-In-Reply-To: <1275511215-25703-1-git-send-email-acme@infradead.org>
-References: <1275511215-25703-1-git-send-email-acme@infradead.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+	id S1758753Ab0FBUlY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jun 2010 16:41:24 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:45913 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758728Ab0FBUlT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Jun 2010 16:41:19 -0400
+Subject: Re: [linux-pm] [PATCH 0/8] Suspend block api (version 8)
+From: James Bottomley <James.Bottomley@suse.de>
+To: Florian Mickler <florian@mickler.org>
+Cc: Arve =?ISO-8859-1?Q?Hj=F8nnev=E5g?= <arve@android.com>,
+       Neil Brown <neilb@suse.de>, tytso@mit.edu,
+       Peter Zijlstra <peterz@infradead.org>,
+       LKML <linux-kernel@vger.kernel.org>,
+       Alan Cox <alan@lxorguk.ukuu.org.uk>, mark.gross@intel.com,
+       Thomas Gleixner <tglx@linutronix.de>,
+       Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
+       Linux PM <linux-pm@lists.linux-foundation.org>, felipe.balbi@nokia.com
+In-Reply-To: <20100602214748.7742e3ae@schatten.dmk.lab>
+References: <20100527232357.6d14fdb2@lxorguk.ukuu.org.uk>
+	 <20100601135102.GA8098@srcf.ucam.org>
+	 <1275426085.21962.967.camel@mulgrave.site> <201006020024.14220.rjw@sisk.pl>
+	 <1275431816.21962.1108.camel@mulgrave.site>
+	 <AANLkTikObnAZbyOxeYAhXcEbimO3XTTO-HlC9CD_HH6t@mail.gmail.com>
+	 <1275451342.21962.1777.camel@mulgrave.site>
+	 <AANLkTilRcFZyYa-0HlaM-6IEZSyar3S9S_cCWSFax2Zo@mail.gmail.com>
+	 <1275491111.2799.110.camel@mulgrave.site>
+	 <20100602214748.7742e3ae@schatten.dmk.lab>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 02 Jun 2010 15:41:11 -0500
+Message-ID: <1275511271.2799.516.camel@mulgrave.site>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.2 
 Content-Transfer-Encoding: 8bit
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
-	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Stephane Eranian <eranian@google.com>
+On Wed, 2010-06-02 at 21:47 +0200, Florian Mickler wrote:
+> On Wed, 02 Jun 2010 10:05:11 -0500
+> James Bottomley <James.Bottomley@suse.de> wrote:
+> 
+> > On Tue, 2010-06-01 at 21:41 -0700, Arve Hjønnevåg wrote:
+> > > No, they have to be two separate constraints, otherwise a constraint
+> > > to block suspend would override a constraint to block a low power idle
+> > > mode or the other way around.
+> > 
+> > Depends.  If you block the system from going into low power idle, does
+> > that mean you still want it to be fully suspended?
+> > 
+> > If yes, then we do have independent constraints.  If not, they have a
+> > hierarchy:
+> > 
+> >       * Fully Interactive (no low power idle or suspend)
+> >       * Partially Interactive (may go into low power idle but not
+> >         suspend)
+> >       * None (may go into low power idle or suspend)
+> > 
+> > Which is expressable as a ternary constraint.
+> > 
+> > James
+> > 
+> 
+> But unblocking suspend at the moment is independent to getting idle.
+> If you have the requirement to stay in the highest-idle level (i.e.
+> best latency you can get) that does not (currently) mean, that you can
+> not suspend.
 
-It is useful to know on which CPU a sample was captured on.
-The information is captured with perf record -R but it was
-not printed out by perf report -D. This patch adds this.
+I don't understand that as a reason.  If we looks at this a qos
+constraints, you're saying that the system may not drop into certain low
+power states because it might turn something off that's currently being
+used by a driver or a process.  Suspend is certainly the lowest state of
+that because it turns everything off, why would it be legal to drop into
+that?
 
-When -R is not used, cpu is set to -1to indicate that
-the CPU is unknown (it is not captured).
+I also couldn't find this notion of separation of idleness power from
+suspend blocking in the original suspend block patch set ... if you can
+either tell me where it is, or give me an example of the separated use
+cases, I'd understand better.
 
-Cc: David S. Miller <davem@davemloft.net>
-Cc: Frédéric Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Tom Zanussi <tzanussi@gmail.com>
-LKML-Reference: <4bff964c.e88cd80a.3106.7d31@mx.google.com>
-Signed-off-by: Stephane Eranian <eranian@google.com>
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/perf/builtin-report.c |    5 +++--
- tools/perf/util/event.c     |    3 ++-
- 2 files changed, 5 insertions(+), 3 deletions(-)
+> To preserve that explicit fall-through while still having working
+> run-time-powermanagement I think the qos-constraints need to be
+> separated. 
 
-diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
-index 3592057..207da18 100644
---- a/tools/perf/builtin-report.c
-+++ b/tools/perf/builtin-report.c
-@@ -157,8 +157,9 @@ static int process_sample_event(event_t *event, struct perf_session *session)
- 
- 	event__parse_sample(event, session->sample_type, &data);
- 
--	dump_printf("(IP, %d): %d/%d: %#Lx period: %Ld\n", event->header.misc,
--		    data.pid, data.tid, data.ip, data.period);
-+	dump_printf("(IP, %d): %d/%d: %#Lx period: %Ld cpu:%d\n",
-+		    event->header.misc, data.pid, data.tid, data.ip,
-+		    data.period, data.cpu);
- 
- 	if (session->sample_type & PERF_SAMPLE_CALLCHAIN) {
- 		unsigned int i;
-diff --git a/tools/perf/util/event.c b/tools/perf/util/event.c
-index 50771b5..58cb96b 100644
---- a/tools/perf/util/event.c
-+++ b/tools/perf/util/event.c
-@@ -770,7 +770,8 @@ int event__parse_sample(event_t *event, u64 type, struct sample_data *data)
- 		u32 *p = (u32 *)array;
- 		data->cpu = *p;
- 		array++;
--	}
-+	} else
-+		data->cpu = -1;
- 
- 	if (type & PERF_SAMPLE_PERIOD) {
- 		data->period = *array;
--- 
-1.6.2.5
+OK, as above, why?  or better yet, just give an example.
+
+> <disclaimer: just from what I read>
+> Provided you can reach the same power state from idle, current suspend
+> could probably also be implemented by just the freezing part and a hint
+> to the idle-loop to provide accelerated fall-through to lowest power. 
+> </disclaimer>
+> 
+> At that point, you could probably merge the constraints. 
+> 
+> But the freezing part is also the hard part, isn't it? (I have no
+> idea. Thomas seems to think about cgroups for that and doing smth about the timers.)
+
+Um, well, as I said, I think using suspend from idle and freezer is
+longer term.  I think if we express the constraints as qos android can
+then use them to gate when to enter S3 .. which is functionally
+equivalent to suspend blockers.  And the vanilla kernel can use them to
+gate power states for the drivers in suspend from idle.
+
+James
+
 
