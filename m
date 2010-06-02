@@ -1,54 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932653Ab0FBPcL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jun 2010 11:32:11 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:33239 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758001Ab0FBPcJ (ORCPT
+	id S932683Ab0FBPgf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jun 2010 11:36:35 -0400
+Received: from www.telegraphics.com.au ([204.15.192.19]:46360 "EHLO
+	mail.telegraphics.com.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932626Ab0FBPge (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jun 2010 11:32:09 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=ZiRWC6FeKy0lCLQaTIscSCEISLQ/AYje4Blnxo54V0N6Bb8aHO3jLE3+m94a8hriU8
-         6edQTV/NKPW3AxSGJUR+fYdq0Gno5pCerSmBi+QscEylj5XjD7eVT+I/mM49ZoYeLqaz
-         dEZYTw1Av+VhMIq5pP3Dd1W5ltmUkEy1jqgYY=
-Date: Thu, 3 Jun 2010 00:32:01 +0900
-From: Minchan Kim <minchan.kim@gmail.com>
-To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
-       Oleg Nesterov <oleg@redhat.com>, David Rientjes <rientjes@google.com>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-       Nick Piggin <npiggin@suse.de>
-Subject: Re: [PATCH 1/5] oom: select_bad_process: check PF_KTHREAD instead
- of !mm to skip kthreads
-Message-ID: <20100602153201.GB5326@barrios-desktop>
-References: <20100531182526.1843.A69D9226@jp.fujitsu.com>
+	Wed, 2 Jun 2010 11:36:34 -0400
+Date: Thu, 3 Jun 2010 01:36:15 +1000 (EST)
+From: Finn Thain <fthain@telegraphics.com.au>
+To: David Miller <davem@davemloft.net>
+cc: geert@linux-m68k.org, joe@perches.com, p_gortmaker@yahoo.com,
+       netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+       linux-m68k@vger.kernel.org
+Subject: Re: [PATCH 2/2] mac8390: raise error logging priority
+In-Reply-To: <20100602.070647.106817718.davem@davemloft.net>
+Message-ID: <alpine.OSX.2.00.1006030122350.270@localhost>
+References: <alpine.OSX.2.00.1005312244520.1490@localhost> <20100531.060225.68146363.davem@davemloft.net> <alpine.OSX.2.00.1006011739160.299@localhost> <20100602.070647.106817718.davem@davemloft.net>
+User-Agent: Alpine 2.00 (OSX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100531182526.1843.A69D9226@jp.fujitsu.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 31, 2010 at 06:33:06PM +0900, KOSAKI Motohiro wrote:
-> From: Oleg Nesterov <oleg@redhat.com>
-> Subject: oom: select_bad_process: check PF_KTHREAD instead of !mm to skip kthreads
-> 
-> select_bad_process() thinks a kernel thread can't have ->mm != NULL, this
-> is not true due to use_mm().
-> 
-> Change the code to check PF_KTHREAD.
-> 
-> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
-> Acked-by: David Rientjes <rientjes@google.com>
-> Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Reviewed-by: Minchan Kim <minchan.kim@gmail.com>
 
--- 
-Kind regards,
-Minchan Kim
+On Wed, 2 Jun 2010, David Miller wrote:
+
+> 
+> Applied, thank you.
+> 
+
+You're welcome.
+
+And I ought to add, thanks, Joe, for your patches.
+
+It is much harder than I had realised to do them right (or for that 
+matter, well enough).
+
+Finn
