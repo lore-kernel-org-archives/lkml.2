@@ -1,57 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758746Ab0FBVCf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jun 2010 17:02:35 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:36716 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758653Ab0FBVCe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jun 2010 17:02:34 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id:
-	references:user-agent:mime-version:content-type:x-system-of-record;
-	b=MdtCVmSza3onJhZL4mji72uxem1patpOQ96kt/5KKTu0eWeN+BVDnNlYmSkCk9AHj
-	NYx2mXdCA48qFp+Fy4prg==
-Date: Wed, 2 Jun 2010 14:02:25 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Oleg Nesterov <oleg@redhat.com>
-cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-       LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-       Nick Piggin <npiggin@suse.de>
-Subject: Re: [PATCH] oom: remove PF_EXITING check completely
-In-Reply-To: <20100602155455.GB9622@redhat.com>
-Message-ID: <alpine.DEB.2.00.1006021359430.32666@chino.kir.corp.google.com>
-References: <20100601093951.2430.A69D9226@jp.fujitsu.com> <20100601201843.GA20732@redhat.com> <20100602200732.F518.A69D9226@jp.fujitsu.com> <20100602155455.GB9622@redhat.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S1758761Ab0FBVEO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jun 2010 17:04:14 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:59309 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758615Ab0FBVEM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Jun 2010 17:04:12 -0400
+Date: Wed, 2 Jun 2010 17:03:32 -0400
+From: Don Zickus <dzickus@redhat.com>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Jiri Slaby <jirislaby@gmail.com>, LKML <linux-kernel@vger.kernel.org>,
+       Linux-pm mailing list <linux-pm@lists.linux-foundation.org>,
+       linux-ide@vger.kernel.org
+Subject: Re: hibernation hangs with ATA errors (lockup_detector bug)
+Message-ID: <20100602210332.GD15159@redhat.com>
+References: <4C03C608.1040600@gmail.com>
+ <20100601135004.GP15159@redhat.com>
+ <4C051D44.7040203@gmail.com>
+ <20100602184459.GA15159@redhat.com>
+ <20100602191336.GA5164@nowhere>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-System-Of-Record: true
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100602191336.GA5164@nowhere>
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2 Jun 2010, Oleg Nesterov wrote:
-
-> > Today, I've thought to make some bandaid patches for this issue. but
-> > yes, I've reached the same conclusion.
-> >
-> > If we think multithread and core dump situation, all fixes are just
-> > bandaid. We can't remove deadlock chance completely.
-> >
-> > The deadlock is certenaly worst result, then, minor PF_EXITING optimization
-> > doesn't have so much worth.
+On Wed, Jun 02, 2010 at 09:13:40PM +0200, Frederic Weisbecker wrote:
+> On Wed, Jun 02, 2010 at 02:44:59PM -0400, Don Zickus wrote:
+> > On Tue, Jun 01, 2010 at 04:46:28PM +0200, Jiri Slaby wrote:
+> > > On 06/01/2010 03:50 PM, Don Zickus wrote:
+> > > > On Mon, May 31, 2010 at 04:22:00PM +0200, Jiri Slaby wrote:
+> > > >> Hi,
+> > > >>
+> > > >> with -next I get the following errors while trying to hibernate in
+> > > >> qemu-kvm after the image is stored on disk:
+> > > > 
+> > > > Is this the host that is hibernating or the guest?
+> > > 
+> > > Guest.
+> > > 
+> > > > KVM guests don't emulate the performance counters, so the nmi piece
+> > > > shouldn't be functioning and the soft lockup piece just sits on top of an
+> > > > hrtimer, so off the top of my head it is hard to imagine it intefering
+> > > > with a sata driver.
+> > > > 
+> > > > I'll need your whole boot up log to see how the lockup detector
+> > > > initialized itself.
+> > 
+> > Ok, so I found out what is causing the problem, not entirely sure why or
+> > what the right fix is, but this patch should do the trick.
+> > 
+> > This is probably one of those fixing the symptoms but not the problem patch,
+> > but I don't know enough about suspend/resume to understand what the real
+> > problem is.
 > 
-> Agreed! I was always wondering if it really helps in practice.
 > 
+> So the problem is that we stop the cpu hotplug notifying, I guess this prevents
+> some ata callbacks to execute in the cpu hotplug notifier and then provoke this
+> crash.
+> 
+> The patch looks ok, but I think you should at least print a message in such
+> case of watchdog failure.
 
-Nack, this certainly does help in practice, it prevents needlessly killing 
-additional tasks when one is exiting and may free memory.  It's much 
-better to defer killing something temporarily if an eligible task (i.e. 
-one that has a high probability of memory allocations on current's nodes 
-or contributing to its memcg) is exiting.
+Well this is already printed and in Jiri's dmesg output
 
-We depend on this check specifically for our use of cpusets, so please 
-don't remove it.
+NMI watchdog failed to create perf event on cpu1: ffffffffffffffed
+
+I could change it to make it more obvious?
+
+Cheers,
+Don
