@@ -1,90 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758434Ab0FBPnk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jun 2010 11:43:40 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:51374 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753643Ab0FBPnj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jun 2010 11:43:39 -0400
-Date: Wed, 2 Jun 2010 17:42:10 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
-       David Rientjes <rientjes@google.com>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-       Nick Piggin <npiggin@suse.de>, Roland McGrath <roland@redhat.com>
-Subject: Re: [PATCH] oom: Make coredump interruptible
-Message-ID: <20100602154210.GA9622@redhat.com>
-References: <20100601093951.2430.A69D9226@jp.fujitsu.com> <20100601201843.GA20732@redhat.com> <20100602221805.F524.A69D9226@jp.fujitsu.com>
+	id S1758446Ab0FBPpf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jun 2010 11:45:35 -0400
+Received: from g1t0027.austin.hp.com ([15.216.28.34]:47599 "EHLO
+	g1t0027.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757606Ab0FBPpc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Jun 2010 11:45:32 -0400
+From: Bjorn Helgaas <bjorn.helgaas@hp.com>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Subject: Re: [Patch 1/1] x86 pci: Add option to not assign BAR's if not already assigned
+Date: Wed, 2 Jun 2010 09:45:08 -0600
+User-Agent: KMail/1.13.2 (Linux/2.6.32-22-generic; KDE/4.4.2; x86_64; ; )
+Cc: Mike Travis <travis@sgi.com>, Ingo Molnar <mingo@redhat.com>,
+       Thomas Gleixner <tglx@linutronix.de>, x86@kernel.org,
+       Jesse Barnes <jbarnes@virtuousgeek.org>,
+       Jacob Pan <jacob.jun.pan@intel.com>, Tejun Heo <tj@kernel.org>,
+       Mike Habeck <habeck@sgi.com>, LKML <linux-kernel@vger.kernel.org>,
+       linux-pci@vger.kernel.org
+References: <4BEAF008.9030805@sgi.com> <201006011649.56074.bjorn.helgaas@hp.com> <4C0608C6.4090901@zytor.com>
+In-Reply-To: <4C0608C6.4090901@zytor.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100602221805.F524.A69D9226@jp.fujitsu.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201006020945.09107.bjorn.helgaas@hp.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(add Roland)
+On Wednesday, June 02, 2010 01:31:18 am H. Peter Anvin wrote:
+> On 06/01/2010 03:49 PM, Bjorn Helgaas wrote:
+> >>
+> >> BIOS still assigns the MMIO BAR's so the devices are alive.
+> >
+> > I'm sorry; I don't follow this.  BIOS assigns MMIO BARs regardless
+> > of whether we have your patch.
+> 
+> I'm assuming that that Mike is implying is that the allocation code runs 
+> out of I/O space and as a result shuts down the entire device.
 
-On 06/02, KOSAKI Motohiro wrote:
->
-> > Otoh, if we make do_coredump() interruptible (and we should do this
-> > in any case), then perhaps the TIF_MEMDIE+PF_COREDUMP is not really
-> > needed? Afaics we always send SIGKILL along with TIF_MEMDIE.
->
-> How is to make per-process oom flag + interruptible coredump?
->
-> this per-process oom flag can be used vmscan shortcut exiting too.
-> (IOW, It can help DavidR mmap_sem issue)
+Yeah, that's why I asked about a deeper problem.  There's not really a
+"shut down this device" flag, so the only way I can think of that we
+might make a device completely unusable is if we release all the device
+resources and then fail to reassign them.
 
-Firstly, this solution is not complete. We should make it really
-interruptible (from user-space too), but we need more changes for
-this (in particular we need to distinguish group-exit/exec cases
-from the explicit SIGKILL case). Let's not discuss this here, this
-is the different story.
+A concrete example, e.g., a dmesg log, would go a long ways toward
+clarifying this.
 
-
-But. I agree very much that it makes sense to add the quick fix
-right now. Even if this fix will be superseded by the "proper"
-fixes later.
-
-> --- a/fs/binfmt_elf.c
-> +++ b/fs/binfmt_elf.c
-> @@ -2038,6 +2038,11 @@ static int elf_core_dump(struct coredump_params *cprm)
->  				page_cache_release(page);
->  			} else
->  				stop = !dump_seek(cprm->file, PAGE_SIZE);
-> +
-> +			/* Now, The process received OOM. Exit soon! */
-> +			if (current->signal->oom_victim)
-> +				stop = 1;
-
-Agreed, most problems with memory allocations should come from this loop.
-
-> --- a/include/linux/sched.h
-> +++ b/include/linux/sched.h
-> @@ -544,6 +544,9 @@ struct signal_struct {
->  	int			notify_count;
->  	struct task_struct	*group_exit_task;
->
-> +	/* true mean the process is OOM-killer victim. */
-> +	bool			oom_victim;
-
-Well, the new word in signal_struct is not nice. It is better to
-set SIGNAL_OOM_XXX in ->signal->flags (this needs ->siglock).
-
-But. I don't think that signal_struct is the right place for the marker.
-
-The thread which actually dumps the core doesn't necessarily belong
-to the same thread group, but it can share ->mm with the selected
-oom victim.
-
-IOW, we should mark ->mm instead (perhaps mm->flags) or mm->core_state.
-This in turn means we need find_lock_task_mm().
-
-What do you think?
-
-Oleg.
-
+Bjorn
