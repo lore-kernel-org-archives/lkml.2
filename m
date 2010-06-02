@@ -1,93 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757025Ab0FBJS1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jun 2010 05:18:27 -0400
-Received: from eu1sys200aog114.obsmtp.com ([207.126.144.137]:47177 "EHLO
-	eu1sys200aog114.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752819Ab0FBJSZ convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jun 2010 05:18:25 -0400
-From: Linus WALLEIJ <linus.walleij@stericsson.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Cc: Bengt JONSSON <bengt.g.jonsson@stericsson.com>,
-       Sundar R IYER <sundar.iyer@stericsson.com>
-Date: Wed, 2 Jun 2010 11:18:00 +0200
-Subject: RFC: Regulator Framework Voltage Setting
-Thread-Topic: Regulator Framework Voltage Setting
-Thread-Index: AcsBp8S1KNjr9l3yTQ2pBMAX/YBYfAAjG1sg
-Message-ID: <CEE6BB42CAD6E947908279175AF8470A025A8A54F4@EXDCVYMBSTM006.EQ1STM.local>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-cr-hashedpuzzle: CNG0 FSD4 FktS HArp HGH4 JH83 KGIQ La7q LbAg MsOr OkHQ
- PXF+ SYLX TZEd UVe8
- VUH/;2;YgByAG8AbwBuAGkAZQBAAG8AcABlAG4AcwBvAHUAcgBjAGUALgB3AG8AbABmAHMAbwBuAG0AaQBjAHIAbwAuAGMAbwBtADsAbABpAG4AdQB4AC0AawBlAHIAbgBlAGwAQAB2AGcAZQByAC4AawBlAHIAbgBlAGwALgBvAHIAZwA=;Sosha1_v1;7;{0DB23768-D772-422A-94BF-4D5DCDB29EA1};bABpAG4AdQBzAC4AdwBhAGwAbABlAGkAagBAAHMAdABlAHIAaQBjAHMAcwBvAG4ALgBjAG8AbQA=;Wed,
- 02 Jun 2010 09:18:00
- GMT;UgBGAEMAOgAgAFIAZQBnAHUAbABhAHQAbwByACAARgByAGEAbQBlAHcAbwByAGsAIABWAG8AbAB0AGEAZwBlACAAUwBlAHQAdABpAG4AZwA=
-x-cr-puzzleid: {0DB23768-D772-422A-94BF-4D5DCDB29EA1}
-acceptlanguage: en-US
-Content-Type: text/plain; charset="Windows-1252"
-Content-Transfer-Encoding: 8BIT
+	id S1757609Ab0FBJYh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jun 2010 05:24:37 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:56848 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752819Ab0FBJYf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Jun 2010 05:24:35 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=anDXa6NmpqueOBGHvG26HDXLH49iKGkxQTITQynpGUk3Gk6TPj1DYPWE2f6+WbHyD/
+         S2yGlm0VPfg8X0BRcFwGUYpl2AUpdwTl+VczxT2SYfC2gpt9pvzDoeaYy6DQhyST9cq1
+         5hblwK189A/q/Zrv6149pZd6JijhPj5vmGhdc=
+Message-ID: <4C0622BF.8070602@gmail.com>
+Date: Wed, 02 Jun 2010 11:22:07 +0200
+From: Marco Stornelli <marco.stornelli@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; it; rv:1.9.1.9) Gecko/20100317 SUSE/3.0.4-1.1.1 Thunderbird/3.0.4
 MIME-Version: 1.0
+To: Maxim Levitsky <maximlevitsky@gmail.com>
+CC: linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: RAMOOPS: few questions
+References: <1275420747.2574.8.camel@maxim-laptop>
+In-Reply-To: <1275420747.2574.8.camel@maxim-laptop>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+Il 01/06/2010 21:32, Maxim Levitsky ha scritto:
+> Hi,
+> 
+> I want to switch over my own patch that does more or less the same that
+> this driver.
+> 
+> As I see this driver uses ioremap to reserve the memory.
+> However, I have a question about how to tell kernel that specific memory
+> region is reserved.
+> 
+> Well, I use now mem=... to do so, but this wastes space, because the
+> region I need can't be near end of the RAM.
+> 
 
-we have a question regarding the regulator_set_voltage function in the 
-regulator framework (drivers/regulator/core.c). The current 
-implementation checks the input min and max arguments against the 
-constraints and then calls the driver set_voltage operation directly 
-without checking the other consumer requests.
+Have you got any particular constraints?
 
-In our view it should respect all consumer voltage settings. Then, the 
-implementation would (roughly) be to iterate through all consumers and 
-make sure all of their latest requests are satisfied.
+> I tried to use 'memmap=20M$0x70000000' on kernel command line, but that
+> just makes kernel reboot.
+> I think its a bug though.
+> 
+> Also, does this driver dupms all kernel log or only panic/oops message?
 
-Our questions:
-- Is this the correct interpretation of the current functionality?
-- Is the proposed behaviour what you would expect?
-- Any other problems to consider?
+It dumps all, but there's a fixed size for each dump, so you can see the
+panic/oops information and the latest prints of the kernel before
+panic/oops.
 
-Below we have given an example to clarify.
+> My patch actually makes kernel store actual printk buffer in fixed
+> location, thus it is very robust. It was rejected though in favour of
+> solution you eventually implemented.
+> 
+> Also I would like to extend your driver to dump old contents of the ram
+> buffer to kernel log, so one wouldn't worry about erasing in on next
+> boot after crash.
+> Don't know when I do that though.
+> 
 
-Best regards,
+ramoops uses a circular buffer of fixed size to store more information.
+The number of "dumps" depends on the region size of memory you use.
 
-Bengt JONSSON
-Sundar R IYER
-Linus WALLEIJ
+Regards,
 
-
-
-Here is an example with three users (consumers) connected to the same 
-regulator_dev:
-
-rdev ------ xreg (User X)
-        |--- yreg (User Y)
-        |--- zreg (User Z)
-
-The users call the regulator framework like this:
-
-1. User X calls regulator_set_voltage(xreg, 2000000, 3000000)
-2. User Y calls regulator_set_voltage(yreg, 2100000, 3100000)
-3. User Z calls regulator_set_voltage(zreg, 1900000, 2900000)
-4. User Y calls regulator_set_voltage(yreg, 1900000, 3100000)
-5. User Z calls regulator_set_voltage(zreg, 1900000, 3100000)
-6. User X calls regulator_set_voltage(xreg, 4000000, 5000000). Here the 
-call should fail.
-
-Assuming there are no constraints, with current implementation, the 
-requests would be sent unchanged to the driver. What we would expect 
-from the regulator framework is this:
-
-1. The framework calls rdev->desc->ops->set_voltage(rdev, 2000000, 3000000)
-2. The framework calls rdev->desc->ops->set_voltage(rdev, 2100000, 3000000)
-3. The framework calls rdev->desc->ops->set_voltage(rdev, 2100000, 2900000)
-4. The framework calls rdev->desc->ops->set_voltage(rdev, 2000000, 2900000)
-5. The framework calls rdev->desc->ops->set_voltage(rdev, 2000000, 3000000)
-6. Failed because the ranges do not overlap.
-
-
+Marco
