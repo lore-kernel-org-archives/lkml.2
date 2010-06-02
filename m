@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932336Ab0FBMUp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jun 2010 08:20:45 -0400
-Received: from crca.org.au ([74.207.252.120]:52988 "EHLO crca.org.au"
+	id S1757967Ab0FBMU0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jun 2010 08:20:26 -0400
+Received: from crca.org.au ([74.207.252.120]:44099 "EHLO crca.org.au"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932203Ab0FBMUl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jun 2010 08:20:41 -0400
+	id S1757944Ab0FBMUP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Jun 2010 08:20:15 -0400
 X-Bogosity: Ham, spamicity=0.000000
 From: Nigel Cunningham <nigel@tuxonice.net>
 To: "Rafael J. Wysocki" <rjw@sisk.pl>,
        Linux PM <linux-pm@lists.linux-foundation.org>,
        LKML <linux-kernel@vger.kernel.org>,
        TuxOnIce-devel <tuxonice-devel@tuxonice.net>
-Subject: [PATCH 16/21] Hibernation: Replace bio chain
-Date: Wed,  2 Jun 2010 22:19:15 +1000
-Message-Id: <1275481160-31150-17-git-send-email-nigel@tuxonice.net>
+Subject: [PATCH 08/21] Hibernation: Stop passing swap_map_handle struct
+Date: Wed,  2 Jun 2010 22:19:07 +1000
+Message-Id: <1275481160-31150-9-git-send-email-nigel@tuxonice.net>
 X-Mailer: git-send-email 1.7.0.4
 In-Reply-To: <1275481160-31150-1-git-send-email-nigel@tuxonice.net>
 References: <1275481160-31150-1-git-send-email-nigel@tuxonice.net>
@@ -22,147 +22,356 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Replace the bio_chain concept with:
-(1) simple atomic_t recording how many pages are in flight
-(2) a wait queue for waiting for all I/O to complete
-(3) a custom completion routine that frees bio structs and pages used
-    for async writes as they complete, undates the atomic_t and
-    wakes any waiters.
+Stop passing the swap_map_handle struct around. It's a local (to the
+file) variable and continuing to pass it around will create ugliness
+as I work to disentangle swap specific functions from block i/o and
+put them in separate files.
 
 Signed-off-by: Nigel Cunningham <nigel@tuxonice.net>
 ---
- kernel/power/block_io.c |   77 ++++++++++++++++++++++++++++------------------
- 1 files changed, 47 insertions(+), 30 deletions(-)
+ kernel/power/swap.c |  135 ++++++++++++++++++++++++---------------------------
+ 1 files changed, 64 insertions(+), 71 deletions(-)
 
-diff --git a/kernel/power/block_io.c b/kernel/power/block_io.c
-index 9028f74..c9569e5 100644
---- a/kernel/power/block_io.c
-+++ b/kernel/power/block_io.c
-@@ -16,23 +16,61 @@
- #include "extents.h"
- #include "block_io.h"
+diff --git a/kernel/power/swap.c b/kernel/power/swap.c
+index d87f663..a038755 100644
+--- a/kernel/power/swap.c
++++ b/kernel/power/swap.c
+@@ -63,6 +63,8 @@ struct swap_map_handle {
+ 	unsigned int k;
+ };
  
--static struct bio *bio_chain;
--
- static char *hib_ppio_buffer;
- static int hib_ppio_buffer_posn;
- int hib_prepare_buffer(void);
- void hib_free_buffer(void);
++static struct swap_map_handle handle;
++
+ static unsigned short root_swap = 0xffff;
  
-+static atomic_t hib_io_in_progress;
-+static DECLARE_WAIT_QUEUE_HEAD(num_in_progress_wait);
-+
-+/**
-+ * hib_end_bio - bio completion function.
-+ * @bio: bio that has completed.
-+ * @err: Error value. Yes, like end_swap_bio_read, we ignore it.
-+ *
-+ * Function called by the block driver from interrupt context when I/O is
-+ * completed. If we were writing the page, we want to free it and will have
-+ * set bio->bi_private to the parameter we should use in telling the page
-+ * allocation accounting code what the page was allocated for. If we're
-+ * reading the page, it will be in the singly linked list made from
-+ * page->private pointers.
-+ **/
-+static void hib_end_bio(struct bio *bio, int err)
-+{
-+	const int uptodate = test_bit(BIO_UPTODATE, &bio->bi_flags);
-+	struct page *page = bio->bi_io_vec[0].bv_page;
-+
-+	if (!uptodate) {
-+		SetPageError(page);
-+		ClearPageUptodate(page);
-+		printk(KERN_ALERT "I/O on swap-device (%u:%u:%Lu)\n",
-+				imajor(bio->bi_bdev->bd_inode),
-+				iminor(bio->bi_bdev->bd_inode),
-+				(unsigned long long)bio->bi_sector);
-+	} else {
-+		SetPageUptodate(page);
-+	}
-+	unlock_page(page);
-+	bio_put(bio);
-+
-+	if (bio->bi_private)
-+		__free_page(page);
-+
-+	atomic_dec(&hib_io_in_progress);
-+	wake_up(&num_in_progress_wait);
-+}
-+
- /**
-  *	submit - submit BIO request.
-  *	@rw:	READ or WRITE.
-  *	@off	physical offset of page.
-  *	@page:	page we're reading or writing.
-- *	@bio_chain: list of pending biod (for async reading)
-+ *	@sync:	whether the i/o should be done synchronously
-  *
-  *	Straight from the textbook - allocate and initialize the bio.
-  *	If we're reading, make sure the page is marked as dirty.
-- *	Then submit it and, if @bio_chain == NULL, wait.
-+ *	Then submit it and, if @sync, wait.
+ struct swsusp_header {
+@@ -171,7 +173,7 @@ struct block_device *hib_resume_bdev;
+  * Saving part
   */
- static int submit(int rw, struct block_device *bdev, sector_t sector,
- 		struct page *page, int sync)
-@@ -43,7 +81,8 @@ static int submit(int rw, struct block_device *bdev, sector_t sector,
- 	bio = bio_alloc(__GFP_WAIT | __GFP_HIGH, 1);
- 	bio->bi_sector = sector;
- 	bio->bi_bdev = bdev;
--	bio->bi_end_io = end_swap_bio_read;
-+	bio->bi_private = (void *) (rw && !sync);
-+	bio->bi_end_io = hib_end_bio;
  
- 	if (bio_add_page(bio, page, PAGE_SIZE, 0) < PAGE_SIZE) {
- 		printk(KERN_ERR "PM: Adding page to bio failed at %llu\n",
-@@ -54,6 +93,7 @@ static int submit(int rw, struct block_device *bdev, sector_t sector,
- 
- 	lock_page(page);
- 	bio_get(bio);
-+	atomic_inc(&hib_io_in_progress);
- 
- 	if (sync) {
- 		submit_bio(bio_rw, bio);
-@@ -64,8 +104,6 @@ static int submit(int rw, struct block_device *bdev, sector_t sector,
- 	} else {
- 		if (rw == READ)
- 			get_page(page);	/* These pages are freed later */
--		bio->bi_private = bio_chain;
--		bio_chain = bio;
- 		submit_bio(bio_rw, bio);
- 	}
- 	return 0;
-@@ -85,29 +123,8 @@ int hib_bio_write_page(pgoff_t page_off, void *addr, int sync)
- 
- int hib_wait_on_bio_chain(void)
+-static int mark_swapfiles(struct swap_map_handle *handle, unsigned int flags)
++static int mark_swapfiles(unsigned int flags)
  {
--	struct bio *bio;
--	struct bio *next_bio;
--	int ret = 0;
--
--	if (bio_chain == NULL)
--		return 0;
--
--	bio = bio_chain;
--
--	while (bio) {
--		struct page *page;
--
--		next_bio = bio->bi_private;
--		page = bio->bi_io_vec[0].bv_page;
--		wait_on_page_locked(page);
--		if (!PageUptodate(page) || PageError(page))
--			ret = -EIO;
--		put_page(page);
--		bio_put(bio);
--		bio = next_bio;
--	}
--	bio_chain = NULL;
--	return ret;
-+	wait_event(num_in_progress_wait, !atomic_read(&hib_io_in_progress));
-+	return 0;
+ 	int error;
+ 
+@@ -180,7 +182,7 @@ static int mark_swapfiles(struct swap_map_handle *handle, unsigned int flags)
+ 	    !memcmp("SWAPSPACE2",swsusp_header->sig, 10)) {
+ 		memcpy(swsusp_header->orig_sig,swsusp_header->sig, 10);
+ 		memcpy(swsusp_header->sig,SWSUSP_SIG, 10);
+-		swsusp_header->image = handle->first_sector;
++		swsusp_header->image = handle.first_sector;
+ 		swsusp_header->flags = flags;
+ 		error = hib_bio_write_page(swsusp_resume_block,
+ 					swsusp_header, NULL);
+@@ -247,14 +249,14 @@ static int write_page(void *buf, sector_t offset, struct bio **bio_chain)
+ 	return hib_bio_write_page(offset, src, bio_chain);
  }
  
- /*
+-static void release_swap_writer(struct swap_map_handle *handle)
++static void release_swap_writer(void)
+ {
+-	if (handle->cur)
+-		free_page((unsigned long)handle->cur);
+-	handle->cur = NULL;
++	if (handle.cur)
++		free_page((unsigned long)handle.cur);
++	handle.cur = NULL;
+ }
+ 
+-static int get_swap_writer(struct swap_map_handle *handle, unsigned long pages)
++static int get_swap_writer(unsigned long pages)
+ {
+ 	int ret;
+ 
+@@ -265,8 +267,8 @@ static int get_swap_writer(struct swap_map_handle *handle, unsigned long pages)
+ 					"swapon -a.\n");
+ 		return ret;
+ 	}
+-	handle->cur = (struct swap_map_page *)get_zeroed_page(GFP_KERNEL);
+-	if (!handle->cur) {
++	handle.cur = (struct swap_map_page *)get_zeroed_page(GFP_KERNEL);
++	if (!handle.cur) {
+ 		ret = -ENOMEM;
+ 		goto err_close;
+ 	}
+@@ -275,74 +277,72 @@ static int get_swap_writer(struct swap_map_handle *handle, unsigned long pages)
+ 		ret = -ENOSPC;
+ 		goto err_close;
+ 	}
+-	handle->cur_swap = hib_extent_next(&sector_extents);
+-	if (!handle->cur_swap) {
++	handle.cur_swap = hib_extent_next(&sector_extents);
++	if (!handle.cur_swap) {
+ 		ret = -ENOSPC;
+ 		goto err_rel;
+ 	}
+-	handle->k = 0;
+-	handle->first_sector = handle->cur_swap;
++	handle.k = 0;
++	handle.first_sector = handle.cur_swap;
+ 	return 0;
+ err_rel:
+-	release_swap_writer(handle);
++	release_swap_writer();
+ err_close:
+ 	swsusp_close(FMODE_WRITE);
+ 	return ret;
+ }
+ 
+-static int swap_write_page(struct swap_map_handle *handle, void *buf,
+-				struct bio **bio_chain)
++static int swap_write_page(void *buf, struct bio **bio_chain)
+ {
+ 	int error = 0;
+ 	sector_t offset;
+ 
+-	if (!handle->cur)
++	if (!handle.cur)
+ 		return -EINVAL;
+ 	offset = hib_extent_next(&sector_extents);
+ 	error = write_page(buf, offset, bio_chain);
+ 	if (error)
+ 		return error;
+-	handle->cur->entries[handle->k++] = offset;
+-	if (handle->k >= MAP_PAGE_ENTRIES) {
++	handle.cur->entries[handle.k++] = offset;
++	if (handle.k >= MAP_PAGE_ENTRIES) {
+ 		error = hib_wait_on_bio_chain(bio_chain);
+ 		if (error)
+ 			goto out;
+ 		offset = hib_extent_next(&sector_extents);
+ 		if (!offset)
+ 			return -ENOSPC;
+-		handle->cur->next_swap = offset;
+-		error = write_page(handle->cur, handle->cur_swap, NULL);
++		handle.cur->next_swap = offset;
++		error = write_page(handle.cur, handle.cur_swap, NULL);
+ 		if (error)
+ 			goto out;
+-		memset(handle->cur, 0, PAGE_SIZE);
+-		handle->cur_swap = offset;
+-		handle->k = 0;
++		memset(handle.cur, 0, PAGE_SIZE);
++		handle.cur_swap = offset;
++		handle.k = 0;
+ 	}
+  out:
+ 	return error;
+ }
+ 
+-static int flush_swap_writer(struct swap_map_handle *handle)
++static int flush_swap_writer(void)
+ {
+-	if (handle->cur && handle->cur_swap)
+-		return write_page(handle->cur, handle->cur_swap, NULL);
++	if (handle.cur && handle.cur_swap)
++		return write_page(handle.cur, handle.cur_swap, NULL);
+ 	else
+ 		return -EINVAL;
+ }
+ 
+-static int swap_writer_finish(struct swap_map_handle *handle,
+-		unsigned int flags, int error)
++static int swap_writer_finish(unsigned int flags, int error)
+ {
+ 	if (!error) {
+-		flush_swap_writer(handle);
++		flush_swap_writer();
+ 		printk(KERN_INFO "PM: S");
+-		error = mark_swapfiles(handle, flags);
++		error = mark_swapfiles(flags);
+ 		printk("|\n");
+ 	}
+ 
+ 	if (error)
+ 		free_all_swap_pages(root_swap);
+-	release_swap_writer(handle);
++	release_swap_writer();
+ 	swsusp_close(FMODE_WRITE);
+ 
+ 	return error;
+@@ -352,8 +352,7 @@ static int swap_writer_finish(struct swap_map_handle *handle,
+  *	save_image - save the suspend image data
+  */
+ 
+-static int save_image(struct swap_map_handle *handle,
+-                      struct snapshot_handle *snapshot,
++static int save_image(struct snapshot_handle *snapshot,
+                       unsigned int nr_to_write)
+ {
+ 	unsigned int m;
+@@ -376,7 +375,7 @@ static int save_image(struct swap_map_handle *handle,
+ 		ret = snapshot_read_next(snapshot);
+ 		if (ret <= 0)
+ 			break;
+-		ret = swap_write_page(handle, data_of(*snapshot), &bio);
++		ret = swap_write_page(data_of(*snapshot), &bio);
+ 		if (ret)
+ 			break;
+ 		if (!(nr_pages % m))
+@@ -407,14 +406,13 @@ static int save_image(struct swap_map_handle *handle,
+ 
+ int swsusp_write(unsigned int flags)
+ {
+-	struct swap_map_handle handle;
+ 	struct snapshot_handle snapshot;
+ 	struct swsusp_info *header;
+ 	unsigned long pages;
+ 	int error;
+ 
+ 	pages = snapshot_get_image_size();
+-	error = get_swap_writer(&handle, pages);
++	error = get_swap_writer(pages);
+ 	if (error) {
+ 		printk(KERN_ERR "PM: Cannot get swap writer\n");
+ 		return error;
+@@ -428,11 +426,11 @@ int swsusp_write(unsigned int flags)
+ 		goto out_finish;
+ 	}
+ 	header = (struct swsusp_info *)data_of(snapshot);
+-	error = swap_write_page(&handle, header, NULL);
++	error = swap_write_page(header, NULL);
+ 	if (!error)
+-		error = save_image(&handle, &snapshot, pages - 1);
++		error = save_image(&snapshot, pages - 1);
+ out_finish:
+-	error = swap_writer_finish(&handle, flags, error);
++	error = swap_writer_finish(flags, error);
+ 	return error;
+ }
+ 
+@@ -441,15 +439,14 @@ out_finish:
+  *	in a file-alike way
+  */
+ 
+-static void release_swap_reader(struct swap_map_handle *handle)
++static void release_swap_reader(void)
+ {
+-	if (handle->cur)
+-		free_page((unsigned long)handle->cur);
+-	handle->cur = NULL;
++	if (handle.cur)
++		free_page((unsigned long)handle.cur);
++	handle.cur = NULL;
+ }
+ 
+-static int get_swap_reader(struct swap_map_handle *handle,
+-		unsigned int *flags_p)
++static int get_swap_reader(unsigned int *flags_p)
+ {
+ 	int error;
+ 
+@@ -458,48 +455,47 @@ static int get_swap_reader(struct swap_map_handle *handle,
+ 	if (!swsusp_header->image) /* how can this happen? */
+ 		return -EINVAL;
+ 
+-	handle->cur = (struct swap_map_page *)get_zeroed_page(__GFP_WAIT | __GFP_HIGH);
+-	if (!handle->cur)
++	handle.cur = (struct swap_map_page *)get_zeroed_page(__GFP_WAIT | __GFP_HIGH);
++	if (!handle.cur)
+ 		return -ENOMEM;
+ 
+-	error = hib_bio_read_page(swsusp_header->image, handle->cur, NULL);
++	error = hib_bio_read_page(swsusp_header->image, handle.cur, NULL);
+ 	if (error) {
+-		release_swap_reader(handle);
++		release_swap_reader();
+ 		return error;
+ 	}
+-	handle->k = 0;
++	handle.k = 0;
+ 	return 0;
+ }
+ 
+-static int swap_read_page(struct swap_map_handle *handle, void *buf,
+-				struct bio **bio_chain)
++static int swap_read_page(void *buf, struct bio **bio_chain)
+ {
+ 	sector_t offset;
+ 	int error;
+ 
+-	if (!handle->cur)
++	if (!handle.cur)
+ 		return -EINVAL;
+-	offset = handle->cur->entries[handle->k];
++	offset = handle.cur->entries[handle.k];
+ 	if (!offset)
+ 		return -EFAULT;
+ 	error = hib_bio_read_page(offset, buf, bio_chain);
+ 	if (error)
+ 		return error;
+-	if (++handle->k >= MAP_PAGE_ENTRIES) {
++	if (++handle.k >= MAP_PAGE_ENTRIES) {
+ 		error = hib_wait_on_bio_chain(bio_chain);
+-		handle->k = 0;
+-		offset = handle->cur->next_swap;
++		handle.k = 0;
++		offset = handle.cur->next_swap;
+ 		if (!offset)
+-			release_swap_reader(handle);
++			release_swap_reader();
+ 		else if (!error)
+-			error = hib_bio_read_page(offset, handle->cur, NULL);
++			error = hib_bio_read_page(offset, handle.cur, NULL);
+ 	}
+ 	return error;
+ }
+ 
+-static int swap_reader_finish(struct swap_map_handle *handle)
++static int swap_reader_finish(void)
+ {
+-	release_swap_reader(handle);
++	release_swap_reader();
+ 
+ 	return 0;
+ }
+@@ -510,9 +506,7 @@ static int swap_reader_finish(struct swap_map_handle *handle)
+  *	(assume there are @nr_pages pages to load)
+  */
+ 
+-static int load_image(struct swap_map_handle *handle,
+-                      struct snapshot_handle *snapshot,
+-                      unsigned int nr_to_read)
++static int load_image(struct snapshot_handle *snapshot, unsigned int nr_to_read)
+ {
+ 	unsigned int m;
+ 	int error = 0;
+@@ -534,7 +528,7 @@ static int load_image(struct swap_map_handle *handle,
+ 		error = snapshot_write_next(snapshot);
+ 		if (error <= 0)
+ 			break;
+-		error = swap_read_page(handle, data_of(*snapshot), &bio);
++		error = swap_read_page(data_of(*snapshot), &bio);
+ 		if (error)
+ 			break;
+ 		if (snapshot->sync_read)
+@@ -569,7 +563,6 @@ static int load_image(struct swap_map_handle *handle,
+ int swsusp_read(unsigned int *flags_p)
+ {
+ 	int error;
+-	struct swap_map_handle handle;
+ 	struct snapshot_handle snapshot;
+ 	struct swsusp_info *header;
+ 
+@@ -578,14 +571,14 @@ int swsusp_read(unsigned int *flags_p)
+ 	if (error < PAGE_SIZE)
+ 		return error < 0 ? error : -EFAULT;
+ 	header = (struct swsusp_info *)data_of(snapshot);
+-	error = get_swap_reader(&handle, flags_p);
++	error = get_swap_reader(flags_p);
+ 	if (error)
+ 		goto end;
+ 	if (!error)
+-		error = swap_read_page(&handle, header, NULL);
++		error = swap_read_page(header, NULL);
+ 	if (!error)
+-		error = load_image(&handle, &snapshot, header->pages - 1);
+-	swap_reader_finish(&handle);
++		error = load_image(&snapshot, header->pages - 1);
++	swap_reader_finish();
+ end:
+ 	if (!error)
+ 		pr_debug("PM: Image successfully loaded\n");
 -- 
 1.7.0.4
 
