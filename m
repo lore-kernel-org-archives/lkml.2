@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932812Ab0FBTEv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jun 2010 15:04:51 -0400
-Received: from smtp-out-182.synserver.de ([212.40.180.182]:1064 "HELO
+	id S932901Ab0FBTGd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jun 2010 15:06:33 -0400
+Received: from smtp-out-182.synserver.de ([212.40.180.182]:1070 "HELO
 	smtp-out-182.synserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1757718Ab0FBTEr (ORCPT
+	with SMTP id S1758402Ab0FBTEs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jun 2010 15:04:47 -0400
+	Wed, 2 Jun 2010 15:04:48 -0400
 X-SynServer-TrustedSrc: 1
 X-SynServer-AuthUser: lars@laprican.de
 X-SynServer-PPID: 28645
@@ -14,185 +14,1188 @@ From: Lars-Peter Clausen <lars@metafoo.de>
 To: Ralf Baechle <ralf@linux-mips.org>
 Cc: linux-mips@linux-mips.org, linux-kernel@vger.kernel.org,
        Lars-Peter Clausen <lars@metafoo.de>
-Subject: [RFC][PATCH 00/26] *** SUBJECT HERE ***
-Date: Wed,  2 Jun 2010 21:02:51 +0200
-Message-Id: <1275505397-16758-1-git-send-email-lars@metafoo.de>
+Subject: [RFC][PATCH 03/26] MIPS: JZ4740: Add clock API support.
+Date: Wed,  2 Jun 2010 21:02:54 +0200
+Message-Id: <1275505397-16758-4-git-send-email-lars@metafoo.de>
 X-Mailer: git-send-email 1.5.6.5
+In-Reply-To: <1275505397-16758-1-git-send-email-lars@metafoo.de>
+References: <1275505397-16758-1-git-send-email-lars@metafoo.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+This patch adds support for managing the clocks found on JZ4740 SoC through
+the Linux clock API.
 
-This patch series adds support for the Ingenic JZ4740 System-on-a-Chip.
-
-The JZ4740 has a mostly MIPS32 4K compatible core (no on cpu timers) and many on
-chip peripherals like RTC, NAND, MMC, OHCI, UDC, ADC, I2C, SPI, AC97, I2S, I2S
-Codec, UART and LCD controller.
-
-The JZ4740 is mostly used in eBooks, PMPs and hand-held consoles.
-This series contains patches for the Qi Ben NanoNote clamshell device as the
-inital supported device.
-
-- Lars
-
---
-
-Lars-Peter Clausen (26):
-  MIPS: Add base support for Ingenic JZ4740 System-on-a-Chip
-  MIPS: jz4740: Add IRQ handler code
-  MIPS: JZ4740: Add clock API support.
-  MIPS: JZ4740: Add timer support
-  MIPS: JZ4740: Add clocksource/clockevent support.
-  MIPS: JZ4740: Add power-management and system reset support
-  MIPS: JZ4740: Add setup code
-  MIPS: JZ4740: Add gpio support
-  MIPS: JZ4740: Add DMA support.
-  MIPS: JZ4740: Add PWM support
-  MIPS: JZ4740: Add serial support
-  MIPS: JZ4740: Add prom support
-  MIPS: JZ4740: Add platform devices
-  MIPS: JZ4740: Add Kbuild files
-  RTC: Add JZ4740 RTC driver
-  fbdev: Add JZ4740 framebuffer driver
-  MTD: Nand: Add JZ4740 NAND driver
-  MMC: Add JZ4740 mmc driver
-  USB: Add JZ4740 ohci support
-  alsa: ASoC: Add JZ4740 codec driver
-  alsa: ASoC: Add JZ4740 ASoC support
-  hwmon: Add JZ4740 ADC driver
-  power: Add JZ4740 battery driver.
-  MIPS: JZ4740: Add qi_lb60 board support
-  MIPS: Add defconfig for the qi_lb60 board
-  alsa: ASoC: JZ4740: Add qi_lb60 board driver
-
- arch/mips/Kconfig                            |   13 +
- arch/mips/Makefile                           |    6 +
- arch/mips/configs/qi_lb60_defconfig          | 1456 ++++++++++++++++++++++++++
- arch/mips/include/asm/bootinfo.h             |    6 +
- arch/mips/include/asm/cpu.h                  |    9 +-
- arch/mips/include/asm/mach-jz4740/base.h     |   28 +
- arch/mips/include/asm/mach-jz4740/clock.h    |   28 +
- arch/mips/include/asm/mach-jz4740/dma.h      |   90 ++
- arch/mips/include/asm/mach-jz4740/gpio.h     |  398 +++++++
- arch/mips/include/asm/mach-jz4740/irq.h      |   55 +
- arch/mips/include/asm/mach-jz4740/platform.h |   36 +
- arch/mips/include/asm/mach-jz4740/timer.h    |   22 +
- arch/mips/include/asm/mach-jz4740/war.h      |   25 +
- arch/mips/jz4740/Kconfig                     |   12 +
- arch/mips/jz4740/Makefile                    |   20 +
- arch/mips/jz4740/board-qi_lb60.c             |  483 +++++++++
- arch/mips/jz4740/clock-debugfs.c             |  109 ++
- arch/mips/jz4740/clock.c                     |  920 ++++++++++++++++
- arch/mips/jz4740/clock.h                     |   76 ++
- arch/mips/jz4740/dma.c                       |  289 +++++
- arch/mips/jz4740/gpio.c                      |  605 +++++++++++
- arch/mips/jz4740/irq.c                       |  170 +++
- arch/mips/jz4740/irq.h                       |   21 +
- arch/mips/jz4740/platform.c                  |  288 +++++
- arch/mips/jz4740/pm.c                        |   56 +
- arch/mips/jz4740/prom.c                      |   69 ++
- arch/mips/jz4740/pwm.c                       |  172 +++
- arch/mips/jz4740/reset.c                     |   81 ++
- arch/mips/jz4740/reset.h                     |    7 +
- arch/mips/jz4740/serial.c                    |   33 +
- arch/mips/jz4740/serial.h                    |   21 +
- arch/mips/jz4740/setup.c                     |   33 +
- arch/mips/jz4740/time.c                      |  144 +++
- arch/mips/jz4740/timer.c                     |   48 +
- arch/mips/jz4740/timer.h                     |  136 +++
- arch/mips/kernel/cpu-probe.c                 |   20 +
- arch/mips/mm/tlbex.c                         |    5 +
- drivers/hwmon/Kconfig                        |   11 +
- drivers/hwmon/Makefile                       |    1 +
- drivers/hwmon/jz4740-adc.c                   |  423 ++++++++
- drivers/mmc/host/Kconfig                     |    8 +
- drivers/mmc/host/Makefile                    |    1 +
- drivers/mmc/host/jz4740_mmc.c                | 1000 ++++++++++++++++++
- drivers/mtd/nand/Kconfig                     |    6 +
- drivers/mtd/nand/Makefile                    |    1 +
- drivers/mtd/nand/jz4740_nand.c               |  442 ++++++++
- drivers/power/Kconfig                        |   11 +
- drivers/power/Makefile                       |    1 +
- drivers/power/jz4740-battery.c               |  359 +++++++
- drivers/rtc/Kconfig                          |   11 +
- drivers/rtc/Makefile                         |    1 +
- drivers/rtc/rtc-jz4740.c                     |  344 ++++++
- drivers/usb/Kconfig                          |    1 +
- drivers/usb/host/ohci-hcd.c                  |    5 +
- drivers/usb/host/ohci-jz4740.c               |  264 +++++
- drivers/video/Kconfig                        |    9 +
- drivers/video/Makefile                       |    1 +
- drivers/video/jz4740_fb.c                    |  818 +++++++++++++++
- include/linux/jz4740-adc.h                   |   25 +
- include/linux/jz4740_fb.h                    |   58 +
- include/linux/mmc/jz4740_mmc.h               |   15 +
- include/linux/mtd/jz4740_nand.h              |   34 +
- include/linux/power/jz4740-battery.h         |   24 +
- sound/soc/Kconfig                            |    1 +
- sound/soc/Makefile                           |    1 +
- sound/soc/codecs/Kconfig                     |    4 +
- sound/soc/codecs/Makefile                    |    2 +
- sound/soc/codecs/jz4740-codec.c              |  502 +++++++++
- sound/soc/codecs/jz4740-codec.h              |   20 +
- sound/soc/jz4740/Kconfig                     |   21 +
- sound/soc/jz4740/Makefile                    |   13 +
- sound/soc/jz4740/jz4740-i2s.c                |  568 ++++++++++
- sound/soc/jz4740/jz4740-i2s.h                |   18 +
- sound/soc/jz4740/jz4740-pcm.c                |  350 ++++++
- sound/soc/jz4740/jz4740-pcm.h                |   22 +
- sound/soc/jz4740/qi_lb60.c                   |  175 +++
- 76 files changed, 11560 insertions(+), 1 deletions(-)
- create mode 100644 arch/mips/configs/qi_lb60_defconfig
- create mode 100644 arch/mips/include/asm/mach-jz4740/base.h
+Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
+---
+ arch/mips/include/asm/mach-jz4740/clock.h |   28 +
+ arch/mips/jz4740/clock-debugfs.c          |  109 ++++
+ arch/mips/jz4740/clock.c                  |  920 +++++++++++++++++++++++++++++
+ arch/mips/jz4740/clock.h                  |   76 +++
+ 4 files changed, 1133 insertions(+), 0 deletions(-)
  create mode 100644 arch/mips/include/asm/mach-jz4740/clock.h
- create mode 100644 arch/mips/include/asm/mach-jz4740/dma.h
- create mode 100644 arch/mips/include/asm/mach-jz4740/gpio.h
- create mode 100644 arch/mips/include/asm/mach-jz4740/irq.h
- create mode 100644 arch/mips/include/asm/mach-jz4740/platform.h
- create mode 100644 arch/mips/include/asm/mach-jz4740/timer.h
- create mode 100644 arch/mips/include/asm/mach-jz4740/war.h
- create mode 100644 arch/mips/jz4740/Kconfig
- create mode 100644 arch/mips/jz4740/Makefile
- create mode 100644 arch/mips/jz4740/board-qi_lb60.c
  create mode 100644 arch/mips/jz4740/clock-debugfs.c
  create mode 100644 arch/mips/jz4740/clock.c
  create mode 100644 arch/mips/jz4740/clock.h
- create mode 100644 arch/mips/jz4740/dma.c
- create mode 100644 arch/mips/jz4740/gpio.c
- create mode 100644 arch/mips/jz4740/irq.c
- create mode 100644 arch/mips/jz4740/irq.h
- create mode 100644 arch/mips/jz4740/platform.c
- create mode 100644 arch/mips/jz4740/pm.c
- create mode 100644 arch/mips/jz4740/prom.c
- create mode 100644 arch/mips/jz4740/pwm.c
- create mode 100644 arch/mips/jz4740/reset.c
- create mode 100644 arch/mips/jz4740/reset.h
- create mode 100644 arch/mips/jz4740/serial.c
- create mode 100644 arch/mips/jz4740/serial.h
- create mode 100644 arch/mips/jz4740/setup.c
- create mode 100644 arch/mips/jz4740/time.c
- create mode 100644 arch/mips/jz4740/timer.c
- create mode 100644 arch/mips/jz4740/timer.h
- create mode 100644 drivers/hwmon/jz4740-adc.c
- create mode 100644 drivers/mmc/host/jz4740_mmc.c
- create mode 100644 drivers/mtd/nand/jz4740_nand.c
- create mode 100644 drivers/power/jz4740-battery.c
- create mode 100644 drivers/rtc/rtc-jz4740.c
- create mode 100644 drivers/usb/host/ohci-jz4740.c
- create mode 100644 drivers/video/jz4740_fb.c
- create mode 100644 include/linux/jz4740-adc.h
- create mode 100644 include/linux/jz4740_fb.h
- create mode 100644 include/linux/mmc/jz4740_mmc.h
- create mode 100644 include/linux/mtd/jz4740_nand.h
- create mode 100644 include/linux/power/jz4740-battery.h
- create mode 100644 sound/soc/codecs/jz4740-codec.c
- create mode 100644 sound/soc/codecs/jz4740-codec.h
- create mode 100644 sound/soc/jz4740/Kconfig
- create mode 100644 sound/soc/jz4740/Makefile
- create mode 100644 sound/soc/jz4740/jz4740-i2s.c
- create mode 100644 sound/soc/jz4740/jz4740-i2s.h
- create mode 100644 sound/soc/jz4740/jz4740-pcm.c
- create mode 100644 sound/soc/jz4740/jz4740-pcm.h
- create mode 100644 sound/soc/jz4740/qi_lb60.c
+
+diff --git a/arch/mips/include/asm/mach-jz4740/clock.h b/arch/mips/include/asm/mach-jz4740/clock.h
+new file mode 100644
+index 0000000..9069727
+--- /dev/null
++++ b/arch/mips/include/asm/mach-jz4740/clock.h
+@@ -0,0 +1,28 @@
++/*
++ *  Copyright (C) 2010, Lars-Peter Clausen <lars@metafoo.de>
++ *
++ *  This program is free software; you can redistribute	 it and/or modify it
++ *  under  the terms of	 the GNU General  Public License as published by the
++ *  Free Software Foundation;  either version 2 of the	License, or (at your
++ *  option) any later version.
++ *
++ *  You should have received a copy of the  GNU General Public License along
++ *  with this program; if not, write  to the Free Software Foundation, Inc.,
++ *  675 Mass Ave, Cambridge, MA 02139, USA.
++ *
++ */
++
++#ifndef __ASM_JZ4740_CLOCK_H__
++#define __ASM_JZ4740_CLOCK_H__
++
++enum jz4740_wait_mode {
++	JZ4740_WAIT_MODE_IDLE,
++	JZ4740_WAIT_MODE_SLEEP,
++};
++
++void jz4740_clock_set_wait_mode(enum jz4740_wait_mode mode);
++
++void jz4740_clock_udc_enable_auto_suspend(void);
++void jz4740_clock_udc_disable_auto_suspend(void);
++
++#endif
+diff --git a/arch/mips/jz4740/clock-debugfs.c b/arch/mips/jz4740/clock-debugfs.c
+new file mode 100644
+index 0000000..993b91b
+--- /dev/null
++++ b/arch/mips/jz4740/clock-debugfs.c
+@@ -0,0 +1,109 @@
++/*
++ *  Copyright (C) 2010, Lars-Peter Clausen <lars@metafoo.de>
++ *  JZ4740 SoC clock support debugfs entries
++ *
++ *  This program is free software; you can redistribute	 it and/or modify it
++ *  under  the terms of	 the GNU General  Public License as published by the
++ *  Free Software Foundation;  either version 2 of the	License, or (at your
++ *  option) any later version.
++ *
++ *  You should have received a copy of the  GNU General Public License along
++ *  with this program; if not, write  to the Free Software Foundation, Inc.,
++ *  675 Mass Ave, Cambridge, MA 02139, USA.
++ *
++ */
++
++#include <linux/kernel.h>
++#include <linux/module.h>
++#include <linux/clk.h>
++#include <linux/err.h>
++
++#include <linux/debugfs.h>
++#include <linux/uaccess.h>
++
++#include <asm/mach-jz4740/clock.h>
++#include "clock.h"
++
++static struct dentry *jz4740_clock_debugfs;
++
++static int jz4740_clock_debugfs_show_enabled(void *data, uint64_t *value)
++{
++	struct clk *clk = data;
++	*value = clk_is_enabled(clk);
++
++	return 0;
++}
++
++static int jz4740_clock_debugfs_set_enabled(void *data, uint64_t value)
++{
++	struct clk *clk = data;
++
++	if (value)
++		return clk_enable(clk);
++	else
++		clk_disable(clk);
++
++	return 0;
++}
++
++DEFINE_SIMPLE_ATTRIBUTE(jz4740_clock_debugfs_ops_enabled,
++	jz4740_clock_debugfs_show_enabled,
++	jz4740_clock_debugfs_set_enabled,
++	"%llu\n");
++
++static int jz4740_clock_debugfs_show_rate(void *data, uint64_t *value)
++{
++	struct clk *clk = data;
++	*value = clk_get_rate(clk);
++
++	return 0;
++}
++
++DEFINE_SIMPLE_ATTRIBUTE(jz4740_clock_debugfs_ops_rate,
++	jz4740_clock_debugfs_show_rate,
++	NULL,
++	"%llu\n");
++
++void jz4740_clock_debugfs_add_clk(struct clk *clk)
++{
++	if (!jz4740_clock_debugfs)
++		return;
++
++	clk->debugfs_entry = debugfs_create_dir(clk->name, jz4740_clock_debugfs);
++	debugfs_create_file("rate", S_IWUGO | S_IRUGO, clk->debugfs_entry, clk,
++				&jz4740_clock_debugfs_ops_rate);
++	debugfs_create_file("enabled", S_IRUGO, clk->debugfs_entry, clk,
++				&jz4740_clock_debugfs_ops_enabled);
++
++	if (clk->parent) {
++		char parent_path[100];
++		snprintf(parent_path, 100, "../%s", clk->parent->name);
++		clk->debugfs_parent_entry = debugfs_create_symlink("parent",
++						clk->debugfs_entry,
++						parent_path);
++	}
++}
++
++/* TODO: Locking */
++void jz4740_clock_debugfs_update_parent(struct clk *clk)
++{
++	if (clk->debugfs_parent_entry)
++		debugfs_remove(clk->debugfs_parent_entry);
++
++	if (clk->parent) {
++		char parent_path[100];
++		snprintf(parent_path, 100, "../%s", clk->parent->name);
++		clk->debugfs_parent_entry = debugfs_create_symlink("parent",
++						clk->debugfs_entry,
++						parent_path);
++	} else {
++		clk->debugfs_parent_entry = NULL;
++	}
++}
++
++void jz4740_clock_debugfs_init(void)
++{
++	jz4740_clock_debugfs = debugfs_create_dir("jz4740-clock", NULL);
++	if (IS_ERR(jz4740_clock_debugfs))
++		jz4740_clock_debugfs = NULL;
++}
+diff --git a/arch/mips/jz4740/clock.c b/arch/mips/jz4740/clock.c
+new file mode 100644
+index 0000000..378f2b0
+--- /dev/null
++++ b/arch/mips/jz4740/clock.c
+@@ -0,0 +1,920 @@
++/*
++ *  Copyright (C) 2010, Lars-Peter Clausen <lars@metafoo.de>
++ *  JZ4740 SoC clock support
++ *
++ *  This program is free software; you can redistribute	 it and/or modify it
++ *  under  the terms of	 the GNU General  Public License as published by the
++ *  Free Software Foundation;  either version 2 of the	License, or (at your
++ *  option) any later version.
++ *
++ *  You should have received a copy of the  GNU General Public License along
++ *  with this program; if not, write  to the Free Software Foundation, Inc.,
++ *  675 Mass Ave, Cambridge, MA 02139, USA.
++ *
++ */
++
++#include <linux/kernel.h>
++#include <linux/errno.h>
++#include <linux/clk.h>
++#include <linux/spinlock.h>
++#include <linux/io.h>
++#include <linux/module.h>
++#include <linux/list.h>
++#include <linux/err.h>
++
++#include <asm/mach-jz4740/clock.h>
++#include <asm/mach-jz4740/base.h>
++
++#include "clock.h"
++
++#define JZ_REG_CLOCK_CTRL	0x00
++#define JZ_REG_CLOCK_LOW_POWER	0x04
++#define JZ_REG_CLOCK_PLL	0x10
++#define JZ_REG_CLOCK_GATE	0x20
++#define JZ_REG_CLOCK_SLEEP_CTRL	0x24
++#define JZ_REG_CLOCK_I2S	0x60
++#define JZ_REG_CLOCK_LCD	0x64
++#define JZ_REG_CLOCK_MMC	0x68
++#define JZ_REG_CLOCK_UHC	0x6C
++#define JZ_REG_CLOCK_SPI	0x74
++
++#define JZ_CLOCK_CTRL_I2S_SRC_PLL	BIT(31)
++#define JZ_CLOCK_CTRL_KO_ENABLE		BIT(30)
++#define JZ_CLOCK_CTRL_UDC_SRC_PLL	BIT(29)
++#define JZ_CLOCK_CTRL_UDIV_MASK		0x1f800000
++#define JZ_CLOCK_CTRL_CHANGE_ENABLE	BIT(22)
++#define JZ_CLOCK_CTRL_PLL_HALF		BIT(21)
++#define JZ_CLOCK_CTRL_LDIV_MASK		0x001f0000
++#define JZ_CLOCK_CTRL_UDIV_OFFSET	23
++#define JZ_CLOCK_CTRL_LDIV_OFFSET	16
++#define JZ_CLOCK_CTRL_MDIV_OFFSET	12
++#define JZ_CLOCK_CTRL_PDIV_OFFSET	 8
++#define JZ_CLOCK_CTRL_HDIV_OFFSET	 4
++#define JZ_CLOCK_CTRL_CDIV_OFFSET	 0
++
++#define JZ_CLOCK_GATE_UART0	BIT(0)
++#define JZ_CLOCK_GATE_TCU	BIT(1)
++#define JZ_CLOCK_GATE_RTC	BIT(2)
++#define JZ_CLOCK_GATE_I2C	BIT(3)
++#define JZ_CLOCK_GATE_SPI	BIT(4)
++#define JZ_CLOCK_GATE_AIC	BIT(5)
++#define JZ_CLOCK_GATE_I2S	BIT(6)
++#define JZ_CLOCK_GATE_MMC	BIT(7)
++#define JZ_CLOCK_GATE_ADC	BIT(8)
++#define JZ_CLOCK_GATE_CIM	BIT(9)
++#define JZ_CLOCK_GATE_LCD	BIT(10)
++#define JZ_CLOCK_GATE_UDC	BIT(11)
++#define JZ_CLOCK_GATE_DMAC	BIT(12)
++#define JZ_CLOCK_GATE_IPU	BIT(13)
++#define JZ_CLOCK_GATE_UHC	BIT(14)
++#define JZ_CLOCK_GATE_UART1	BIT(15)
++
++#define JZ_CLOCK_I2S_DIV_MASK		0x01ff
++
++#define JZ_CLOCK_LCD_DIV_MASK		0x01ff
++
++#define JZ_CLOCK_MMC_DIV_MASK		0x001f
++
++#define JZ_CLOCK_UHC_DIV_MASK		0x000f
++
++#define JZ_CLOCK_SPI_SRC_PLL		BIT(31)
++#define JZ_CLOCK_SPI_DIV_MASK		0x000f
++
++#define JZ_CLOCK_PLL_M_MASK		0x01ff
++#define JZ_CLOCK_PLL_N_MASK		0x001f
++#define JZ_CLOCK_PLL_OD_MASK		0x0003
++#define JZ_CLOCK_PLL_STABLE		BIT(10)
++#define JZ_CLOCK_PLL_BYPASS		BIT(9)
++#define JZ_CLOCK_PLL_ENABLED		BIT(8)
++#define JZ_CLOCK_PLL_STABLIZE_MASK	0x000f
++#define JZ_CLOCK_PLL_M_OFFSET		23
++#define JZ_CLOCK_PLL_N_OFFSET		18
++#define JZ_CLOCK_PLL_OD_OFFSET		16
++
++#define JZ_CLOCK_LOW_POWER_MODE_DOZE BIT(2)
++#define JZ_CLOCK_LOW_POWER_MODE_SLEEP BIT(0)
++
++#define JZ_CLOCK_SLEEP_CTRL_SUSPEND_UHC BIT(7)
++#define JZ_CLOCK_SLEEP_CTRL_ENABLE_UDC BIT(6)
++
++static void __iomem *jz_clock_base;
++static spinlock_t jz_clock_lock;
++static LIST_HEAD(jz_clocks);
++
++struct main_clk {
++	struct clk clk;
++	uint32_t div_offset;
++};
++
++struct divided_clk {
++	struct clk clk;
++	uint32_t reg;
++	uint32_t mask;
++};
++
++struct static_clk {
++	struct clk clk;
++	unsigned long rate;
++};
++
++static uint32_t jz_clk_reg_read(int reg)
++{
++	return readl(jz_clock_base + reg);
++}
++
++static void jz_clk_reg_write_mask(int reg, uint32_t val, uint32_t mask)
++{
++	uint32_t val2;
++
++	spin_lock(&jz_clock_lock);
++	val2 = readl(jz_clock_base + reg);
++	val2 &= ~mask;
++	val2 |= val;
++	writel(val2, jz_clock_base + reg);
++	spin_unlock(&jz_clock_lock);
++}
++
++static void jz_clk_reg_set_bits(int reg, uint32_t mask)
++{
++	uint32_t val;
++
++	spin_lock(&jz_clock_lock);
++	val = readl(jz_clock_base + reg);
++	val |= mask;
++	writel(val, jz_clock_base + reg);
++	spin_unlock(&jz_clock_lock);
++}
++
++static void jz_clk_reg_clear_bits(int reg, uint32_t mask)
++{
++	uint32_t val;
++
++	spin_lock(&jz_clock_lock);
++	val = readl(jz_clock_base + reg);
++	val &= ~mask;
++	writel(val, jz_clock_base + reg);
++	spin_unlock(&jz_clock_lock);
++}
++
++static int jz_clk_enable_gating(struct clk *clk)
++{
++	if (clk->gate_bit == JZ4740_CLK_NOT_GATED)
++		return -EINVAL;
++
++	jz_clk_reg_clear_bits(JZ_REG_CLOCK_GATE, clk->gate_bit);
++	return 0;
++}
++
++static int jz_clk_disable_gating(struct clk *clk)
++{
++	if (clk->gate_bit == JZ4740_CLK_NOT_GATED)
++		return -EINVAL;
++
++	jz_clk_reg_set_bits(JZ_REG_CLOCK_GATE, clk->gate_bit);
++	return 0;
++}
++
++static int jz_clk_is_enabled_gating(struct clk *clk)
++{
++	if (clk->gate_bit == JZ4740_CLK_NOT_GATED)
++		return 1;
++
++	return !(jz_clk_reg_read(JZ_REG_CLOCK_GATE) & clk->gate_bit);
++}
++
++static unsigned long jz_clk_static_get_rate(struct clk *clk)
++{
++	return ((struct static_clk *)clk)->rate;
++}
++
++static int jz_clk_ko_enable(struct clk *clk)
++{
++	jz_clk_reg_set_bits(JZ_REG_CLOCK_CTRL, JZ_CLOCK_CTRL_KO_ENABLE);
++	return 0;
++}
++
++static int jz_clk_ko_disable(struct clk *clk)
++{
++	jz_clk_reg_clear_bits(JZ_REG_CLOCK_CTRL, JZ_CLOCK_CTRL_KO_ENABLE);
++	return 0;
++}
++
++static int jz_clk_ko_is_enabled(struct clk *clk)
++{
++	return !!(jz_clk_reg_read(JZ_REG_CLOCK_CTRL) & JZ_CLOCK_CTRL_KO_ENABLE);
++}
++
++static const int pllno[] = {1, 2, 2, 4};
++
++static unsigned long jz_clk_pll_get_rate(struct clk *clk)
++{
++	uint32_t val;
++	int m;
++	int n;
++	int od;
++
++	val = jz_clk_reg_read(JZ_REG_CLOCK_PLL);
++
++	if (val & JZ_CLOCK_PLL_BYPASS)
++		return clk_get_rate(clk->parent);
++
++	m = ((val >> 23) & 0x1ff) + 2;
++	n = ((val >> 18) & 0x1f) + 2;
++	od = (val >> 16) & 0x3;
++
++	return clk_get_rate(clk->parent) * (m / n) / pllno[od];
++}
++
++static unsigned long jz_clk_pll_half_get_rate(struct clk *clk)
++{
++	uint32_t reg;
++
++	reg = jz_clk_reg_read(JZ_REG_CLOCK_CTRL);
++	if (reg & JZ_CLOCK_CTRL_PLL_HALF)
++		return jz_clk_pll_get_rate(clk->parent);
++	return jz_clk_pll_get_rate(clk->parent) >> 1;
++}
++
++static const int jz_clk_main_divs[] = {1, 2, 3, 4, 6, 8, 12, 16, 24, 32};
++
++static unsigned long jz_clk_main_round_rate(struct clk *clk, unsigned long rate)
++{
++	unsigned long parent_rate = jz_clk_pll_get_rate(clk->parent);
++	int div;
++
++	div = parent_rate / rate;
++	if (div > 32)
++		return parent_rate / 32;
++	else if (div < 1)
++		return parent_rate;
++
++	div &= (0x3 << (ffs(div) - 1));
++
++	return parent_rate / div;
++}
++
++static unsigned long jz_clk_main_get_rate(struct clk *clk)
++{
++	struct main_clk *mclk = (struct main_clk *)clk;
++	uint32_t div;
++
++	div = jz_clk_reg_read(JZ_REG_CLOCK_CTRL);
++
++	div >>= mclk->div_offset;
++	div &= 0xf;
++
++	if (div >= ARRAY_SIZE(jz_clk_main_divs))
++		div = ARRAY_SIZE(jz_clk_main_divs) - 1;
++
++	return jz_clk_pll_get_rate(clk->parent) / jz_clk_main_divs[div];
++}
++
++static int jz_clk_main_set_rate(struct clk *clk, unsigned long rate)
++{
++	struct main_clk *mclk = (struct main_clk *)clk;
++	int i;
++	int div;
++	unsigned long parent_rate = jz_clk_pll_get_rate(clk->parent);
++
++	rate = jz_clk_main_round_rate(clk, rate);
++
++	div = parent_rate / rate;
++
++	i = (ffs(div) - 1) << 1;
++	if (i > 0 && !(div & BIT(i-1)))
++		i -= 1;
++
++	jz_clk_reg_write_mask(JZ_REG_CLOCK_CTRL, i << mclk->div_offset,
++				0xf << mclk->div_offset);
++
++	return 0;
++}
++
++static struct clk_ops jz_clk_static_ops = {
++	.get_rate = jz_clk_static_get_rate,
++	.enable = jz_clk_enable_gating,
++	.disable = jz_clk_disable_gating,
++	.is_enabled = jz_clk_is_enabled_gating,
++};
++
++static struct static_clk jz_clk_ext = {
++	.clk = {
++		.name = "ext",
++		.gate_bit = JZ4740_CLK_NOT_GATED,
++		.ops = &jz_clk_static_ops,
++	},
++};
++
++static struct clk_ops jz_clk_pll_ops = {
++	.get_rate = jz_clk_static_get_rate,
++};
++
++static struct clk jz_clk_pll = {
++	.name = "pll",
++	.parent = &jz_clk_ext.clk,
++	.ops = &jz_clk_pll_ops,
++};
++
++static struct clk_ops jz_clk_pll_half_ops = {
++	.get_rate = jz_clk_pll_half_get_rate,
++};
++
++static struct clk jz_clk_pll_half = {
++	.name = "pll half",
++	.parent = &jz_clk_pll,
++	.ops = &jz_clk_pll_half_ops,
++};
++
++static const struct clk_ops jz_clk_main_ops = {
++	.get_rate = jz_clk_main_get_rate,
++	.set_rate = jz_clk_main_set_rate,
++	.round_rate = jz_clk_main_round_rate,
++};
++
++static struct main_clk jz_clk_cpu = {
++	.clk = {
++		.name = "cclk",
++		.parent = &jz_clk_pll,
++		.ops = &jz_clk_main_ops,
++	},
++	.div_offset = JZ_CLOCK_CTRL_CDIV_OFFSET,
++};
++
++static struct main_clk jz_clk_memory = {
++	.clk = {
++		.name = "mclk",
++		.parent = &jz_clk_pll,
++		.ops = &jz_clk_main_ops,
++	},
++	.div_offset = JZ_CLOCK_CTRL_MDIV_OFFSET,
++};
++
++static struct main_clk jz_clk_high_speed_peripheral = {
++	.clk = {
++		.name = "hclk",
++		.parent = &jz_clk_pll,
++		.ops = &jz_clk_main_ops,
++	},
++	.div_offset = JZ_CLOCK_CTRL_HDIV_OFFSET,
++};
++
++
++static struct main_clk jz_clk_low_speed_peripheral = {
++	.clk = {
++		.name = "pclk",
++		.parent = &jz_clk_pll,
++		.ops = &jz_clk_main_ops,
++	},
++	.div_offset = JZ_CLOCK_CTRL_PDIV_OFFSET,
++};
++
++static const struct clk_ops jz_clk_ko_ops = {
++	.enable = jz_clk_ko_enable,
++	.disable = jz_clk_ko_disable,
++	.is_enabled = jz_clk_ko_is_enabled,
++};
++
++static struct clk jz_clk_ko = {
++	.name = "cko",
++	.parent = &jz_clk_memory.clk,
++	.ops = &jz_clk_ko_ops,
++};
++
++static int jz_clk_spi_set_parent(struct clk *clk, struct clk *parent)
++{
++	if (parent == &jz_clk_pll)
++		jz_clk_reg_set_bits(JZ_CLOCK_SPI_SRC_PLL, JZ_REG_CLOCK_SPI);
++	else if (parent == &jz_clk_ext.clk)
++		jz_clk_reg_clear_bits(JZ_CLOCK_SPI_SRC_PLL, JZ_REG_CLOCK_SPI);
++	else
++		return -EINVAL;
++
++	clk->parent = parent;
++
++	return 0;
++}
++
++static int jz_clk_i2s_set_parent(struct clk *clk, struct clk *parent)
++{
++	if (parent == &jz_clk_pll_half)
++		jz_clk_reg_set_bits(JZ_REG_CLOCK_CTRL, JZ_CLOCK_CTRL_I2S_SRC_PLL);
++	else if (parent == &jz_clk_ext.clk)
++		jz_clk_reg_clear_bits(JZ_REG_CLOCK_CTRL, JZ_CLOCK_CTRL_I2S_SRC_PLL);
++	else
++		return -EINVAL;
++
++	clk->parent = parent;
++
++	return 0;
++}
++
++static int jz_clk_udc_enable(struct clk *clk)
++{
++	jz_clk_reg_set_bits(JZ_REG_CLOCK_SLEEP_CTRL,
++			JZ_CLOCK_SLEEP_CTRL_ENABLE_UDC);
++
++	return 0;
++}
++
++static int jz_clk_udc_disable(struct clk *clk)
++{
++	jz_clk_reg_clear_bits(JZ_REG_CLOCK_SLEEP_CTRL,
++			JZ_CLOCK_SLEEP_CTRL_ENABLE_UDC);
++
++	return 0;
++}
++
++static int jz_clk_udc_is_enabled(struct clk *clk)
++{
++	return !!(jz_clk_reg_read(JZ_REG_CLOCK_SLEEP_CTRL) &
++			JZ_CLOCK_SLEEP_CTRL_ENABLE_UDC);
++}
++static int jz_clk_udc_set_parent(struct clk *clk, struct clk *parent)
++{
++	if (parent == &jz_clk_pll_half)
++		jz_clk_reg_set_bits(JZ_REG_CLOCK_CTRL, JZ_CLOCK_CTRL_UDC_SRC_PLL);
++	else if (parent == &jz_clk_ext.clk)
++		jz_clk_reg_clear_bits(JZ_REG_CLOCK_CTRL, JZ_CLOCK_CTRL_UDC_SRC_PLL);
++	else
++		return -EINVAL;
++
++	clk->parent = parent;
++
++	return 0;
++}
++
++static int jz_clk_udc_set_rate(struct clk *clk, unsigned long rate)
++{
++	int div;
++
++	if (clk->parent == &jz_clk_ext.clk)
++		return -EINVAL;
++
++	div = clk_get_rate(clk->parent) / rate - 1;
++
++	if (div < 0)
++		div = 0;
++	else if (div > 63)
++		div = 63;
++
++	jz_clk_reg_write_mask(JZ_REG_CLOCK_CTRL, div << JZ_CLOCK_CTRL_UDIV_OFFSET,
++				JZ_CLOCK_CTRL_UDIV_MASK);
++	return 0;
++}
++
++static unsigned long jz_clk_udc_get_rate(struct clk *clk)
++{
++	int div;
++
++	if (clk->parent == &jz_clk_ext.clk)
++		return clk_get_rate(clk->parent);
++
++	div = (jz_clk_reg_read(JZ_REG_CLOCK_CTRL) & JZ_CLOCK_CTRL_UDIV_MASK);
++	div >>= JZ_CLOCK_CTRL_UDIV_OFFSET;
++	div += 1;
++
++	return clk_get_rate(clk->parent) / div;
++}
++
++static unsigned long jz_clk_divided_get_rate(struct clk *clk)
++{
++	struct divided_clk *dclk = (struct divided_clk *)clk;
++	int div;
++
++	if (clk->parent == &jz_clk_ext.clk)
++		return clk_get_rate(clk->parent);
++
++	div = (jz_clk_reg_read(dclk->reg) & dclk->mask) + 1;
++
++	return clk_get_rate(clk->parent) / div;
++}
++
++static int jz_clk_divided_set_rate(struct clk *clk, unsigned long rate)
++{
++	struct divided_clk *dclk = (struct divided_clk *)clk;
++	int div;
++
++	if (clk->parent == &jz_clk_ext.clk)
++		return -EINVAL;
++
++	div = clk_get_rate(clk->parent) / rate - 1;
++
++	if (div < 0)
++		div = 0;
++	else if (div > dclk->mask)
++		div = dclk->mask;
++
++	jz_clk_reg_write_mask(dclk->reg, div, dclk->mask);
++
++	return 0;
++}
++
++static unsigned long jz_clk_ldclk_round_rate(struct clk *clk, unsigned long rate)
++{
++	int div;
++	unsigned long parent_rate = jz_clk_pll_half_get_rate(clk->parent);
++
++	if (rate > 150000000)
++		return 150000000;
++
++	div = parent_rate / rate;
++	if (div < 1)
++		div = 1;
++	else if (div > 32)
++		div = 32;
++
++	return parent_rate / div;
++}
++
++static int jz_clk_ldclk_set_rate(struct clk *clk, unsigned long rate)
++{
++	int div;
++
++	if (rate > 150000000)
++		return -EINVAL;
++
++	div = jz_clk_pll_half_get_rate(clk->parent) / rate - 1;
++	if (div < 0)
++		div = 0;
++	else if (div > 31)
++		div = 31;
++
++	jz_clk_reg_write_mask(JZ_REG_CLOCK_CTRL, div << JZ_CLOCK_CTRL_LDIV_OFFSET,
++				JZ_CLOCK_CTRL_LDIV_MASK);
++
++	return 0;
++}
++
++static unsigned long jz_clk_ldclk_get_rate(struct clk *clk)
++{
++	int div;
++
++	div = jz_clk_reg_read(JZ_REG_CLOCK_CTRL) & JZ_CLOCK_CTRL_LDIV_MASK;
++	div >>= JZ_CLOCK_CTRL_LDIV_OFFSET;
++
++	return jz_clk_pll_half_get_rate(clk->parent) / (div + 1);
++}
++
++static const struct clk_ops jz_clk_ops_ld = {
++	.set_rate = jz_clk_ldclk_set_rate,
++	.get_rate = jz_clk_ldclk_get_rate,
++	.round_rate = jz_clk_ldclk_round_rate,
++	.enable = jz_clk_enable_gating,
++	.disable = jz_clk_disable_gating,
++	.is_enabled = jz_clk_is_enabled_gating,
++};
++
++static struct clk jz_clk_ld = {
++	.name = "lcd",
++	.gate_bit = JZ_CLOCK_GATE_LCD,
++	.parent = &jz_clk_pll_half,
++	.ops = &jz_clk_ops_ld,
++};
++
++static const struct clk_ops jz_clk_i2s_ops = {
++	.set_rate = jz_clk_divided_set_rate,
++	.get_rate = jz_clk_divided_get_rate,
++	.enable = jz_clk_enable_gating,
++	.disable = jz_clk_disable_gating,
++	.is_enabled = jz_clk_is_enabled_gating,
++	.set_parent = jz_clk_i2s_set_parent,
++};
++
++static const struct clk_ops jz_clk_spi_ops = {
++	.set_rate = jz_clk_divided_set_rate,
++	.get_rate = jz_clk_divided_get_rate,
++	.enable = jz_clk_enable_gating,
++	.disable = jz_clk_disable_gating,
++	.is_enabled = jz_clk_is_enabled_gating,
++	.set_parent = jz_clk_spi_set_parent,
++};
++
++static const struct clk_ops jz_clk_divided_ops = {
++	.set_rate = jz_clk_divided_set_rate,
++	.get_rate = jz_clk_divided_get_rate,
++	.enable = jz_clk_enable_gating,
++	.disable = jz_clk_disable_gating,
++	.is_enabled = jz_clk_is_enabled_gating,
++};
++
++static struct divided_clk jz4740_clock_divided_clks[] = {
++	{
++		.clk = {
++			.name = "lcd_pclk",
++			.parent = &jz_clk_pll_half,
++			.gate_bit = JZ4740_CLK_NOT_GATED,
++			.ops = &jz_clk_divided_ops,
++		},
++		.reg = JZ_REG_CLOCK_LCD,
++		.mask = JZ_CLOCK_LCD_DIV_MASK,
++	},
++	{
++		.clk = {
++			.name = "i2s",
++			.parent = &jz_clk_ext.clk,
++			.gate_bit = JZ_CLOCK_GATE_I2S,
++			.ops = &jz_clk_i2s_ops,
++		},
++		.reg = JZ_REG_CLOCK_I2S,
++		.mask = JZ_CLOCK_I2S_DIV_MASK,
++	},
++	{
++		.clk = {
++			.name = "spi",
++			.parent = &jz_clk_ext.clk,
++			.gate_bit = JZ_CLOCK_GATE_SPI,
++			.ops = &jz_clk_spi_ops,
++		},
++		.reg = JZ_REG_CLOCK_SPI,
++		.mask = JZ_CLOCK_SPI_DIV_MASK,
++	},
++	{
++		.clk = {
++			.name = "mmc",
++			.parent = &jz_clk_pll_half,
++			.gate_bit = JZ_CLOCK_GATE_MMC,
++			.ops = &jz_clk_divided_ops,
++		},
++		.reg = JZ_REG_CLOCK_MMC,
++		.mask = JZ_CLOCK_MMC_DIV_MASK,
++	},
++	{
++		.clk = {
++			.name = "uhc",
++			.parent = &jz_clk_pll_half,
++			.gate_bit = JZ_CLOCK_GATE_UHC,
++			.ops = &jz_clk_divided_ops,
++		},
++		.reg = JZ_REG_CLOCK_UHC,
++		.mask = JZ_CLOCK_UHC_DIV_MASK,
++	},
++};
++
++static const struct clk_ops jz_clk_udc_ops = {
++	.set_parent = jz_clk_udc_set_parent,
++	.set_rate = jz_clk_udc_set_rate,
++	.get_rate = jz_clk_udc_get_rate,
++	.enable = jz_clk_udc_enable,
++	.disable = jz_clk_udc_disable,
++	.is_enabled = jz_clk_udc_is_enabled,
++};
++
++static const struct clk_ops jz_clk_simple_ops = {
++	.enable = jz_clk_enable_gating,
++	.disable = jz_clk_disable_gating,
++	.is_enabled = jz_clk_is_enabled_gating,
++};
++
++static struct clk jz4740_clock_simple_clks[] = {
++	{
++		.name = "udc",
++		.parent = &jz_clk_ext.clk,
++		.ops = &jz_clk_udc_ops,
++	},
++	{
++		.name = "uart0",
++		.parent = &jz_clk_ext.clk,
++		.gate_bit = JZ_CLOCK_GATE_UART0,
++		.ops = &jz_clk_simple_ops,
++	},
++	{
++		.name = "uart1",
++		.parent = &jz_clk_ext.clk,
++		.gate_bit = JZ_CLOCK_GATE_UART1,
++		.ops = &jz_clk_simple_ops,
++	},
++	{
++		.name = "dma",
++		.parent = &jz_clk_high_speed_peripheral.clk,
++		.gate_bit = JZ_CLOCK_GATE_UART0,
++		.ops = &jz_clk_simple_ops,
++	},
++	{
++		.name = "ipu",
++		.parent = &jz_clk_high_speed_peripheral.clk,
++		.gate_bit = JZ_CLOCK_GATE_IPU,
++		.ops = &jz_clk_simple_ops,
++	},
++	{
++		.name = "adc",
++		.parent = &jz_clk_ext.clk,
++		.gate_bit = JZ_CLOCK_GATE_ADC,
++		.ops = &jz_clk_simple_ops,
++	},
++	{
++		.name = "i2c",
++		.parent = &jz_clk_ext.clk,
++		.gate_bit = JZ_CLOCK_GATE_I2C,
++		.ops = &jz_clk_simple_ops,
++	},
++	{
++		.name = "aic",
++		.parent = &jz_clk_ext.clk,
++		.gate_bit = JZ_CLOCK_GATE_AIC,
++		.ops = &jz_clk_simple_ops,
++	},
++};
++
++static struct static_clk jz_clk_rtc = {
++	.clk = {
++		.name = "rtc",
++		.gate_bit = JZ_CLOCK_GATE_RTC,
++		.ops = &jz_clk_static_ops,
++	},
++	.rate = 32768,
++};
++
++int clk_enable(struct clk *clk)
++{
++	if (!clk->ops->enable)
++		return -EINVAL;
++
++	return clk->ops->enable(clk);
++}
++EXPORT_SYMBOL_GPL(clk_enable);
++
++void clk_disable(struct clk *clk)
++{
++	if (clk->ops->disable)
++		clk->ops->disable(clk);
++}
++EXPORT_SYMBOL_GPL(clk_disable);
++
++int clk_is_enabled(struct clk *clk)
++{
++	if (clk->ops->is_enabled)
++		return clk->ops->is_enabled(clk);
++
++	return 1;
++}
++
++unsigned long clk_get_rate(struct clk *clk)
++{
++	if (clk->ops->get_rate)
++		return clk->ops->get_rate(clk);
++	if (clk->parent)
++		return clk_get_rate(clk->parent);
++
++	return -EINVAL;
++}
++EXPORT_SYMBOL_GPL(clk_get_rate);
++
++int clk_set_rate(struct clk *clk, unsigned long rate)
++{
++	if (!clk->ops->set_rate)
++		return -EINVAL;
++	return clk->ops->set_rate(clk, rate);
++}
++EXPORT_SYMBOL_GPL(clk_set_rate);
++
++long clk_round_rate(struct clk *clk, unsigned long rate)
++{
++	if (clk->ops->round_rate)
++		return clk->ops->round_rate(clk, rate);
++
++	return -EINVAL;
++}
++EXPORT_SYMBOL_GPL(clk_round_rate);
++
++int clk_set_parent(struct clk *clk, struct clk *parent)
++{
++	int ret;
++
++	if (!clk->ops->set_parent)
++		return -EINVAL;
++
++	clk_disable(clk);
++	ret = clk->ops->set_parent(clk, parent);
++	clk_enable(clk);
++
++	jz4740_clock_debugfs_update_parent(clk);
++
++	return ret;
++}
++EXPORT_SYMBOL_GPL(clk_set_parent);
++
++struct clk *clk_get(struct device *dev, const char *name)
++{
++	struct clk *clk;
++
++	list_for_each_entry(clk, &jz_clocks, list) {
++		if (strcmp(clk->name, name) == 0)
++			return clk;
++	}
++	return ERR_PTR(-ENOENT);
++}
++EXPORT_SYMBOL_GPL(clk_get);
++
++void clk_put(struct clk *clk)
++{
++}
++EXPORT_SYMBOL_GPL(clk_put);
++
++
++static inline void clk_add(struct clk *clk)
++{
++	list_add_tail(&clk->list, &jz_clocks);
++
++	jz4740_clock_debugfs_add_clk(clk);
++}
++
++static void clk_register_clks(void)
++{
++	size_t i;
++
++	clk_add(&jz_clk_ext.clk);
++	clk_add(&jz_clk_pll);
++	clk_add(&jz_clk_pll_half);
++	clk_add(&jz_clk_cpu.clk);
++	clk_add(&jz_clk_high_speed_peripheral.clk);
++	clk_add(&jz_clk_low_speed_peripheral.clk);
++	clk_add(&jz_clk_ko);
++	clk_add(&jz_clk_ld);
++	clk_add(&jz_clk_rtc.clk);
++
++	for (i = 0; i < ARRAY_SIZE(jz4740_clock_divided_clks); ++i)
++		clk_add(&jz4740_clock_divided_clks[i].clk);
++
++	for (i = 0; i < ARRAY_SIZE(jz4740_clock_simple_clks); ++i)
++		clk_add(&jz4740_clock_simple_clks[i]);
++}
++
++void jz4740_clock_set_wait_mode(enum jz4740_wait_mode mode)
++{
++	switch (mode) {
++	case JZ4740_WAIT_MODE_IDLE:
++		jz_clk_reg_clear_bits(JZ_REG_CLOCK_LOW_POWER, JZ_CLOCK_LOW_POWER_MODE_SLEEP);
++		break;
++	case JZ4740_WAIT_MODE_SLEEP:
++		jz_clk_reg_set_bits(JZ_REG_CLOCK_LOW_POWER, JZ_CLOCK_LOW_POWER_MODE_SLEEP);
++		break;
++	}
++}
++
++void jz4740_clock_udc_disable_auto_suspend(void)
++{
++	jz_clk_reg_clear_bits(JZ_REG_CLOCK_GATE, JZ_CLOCK_GATE_UDC);
++}
++EXPORT_SYMBOL_GPL(jz4740_clock_udc_disable_auto_suspend);
++
++void jz4740_clock_udc_enable_auto_suspend(void)
++{
++	jz_clk_reg_set_bits(JZ_REG_CLOCK_GATE, JZ_CLOCK_GATE_UDC);
++}
++EXPORT_SYMBOL_GPL(jz4740_clock_udc_enable_auto_suspend);
++
++void jz4740_clock_suspend(void)
++{
++	jz_clk_reg_set_bits(JZ_REG_CLOCK_GATE,
++		JZ_CLOCK_GATE_TCU | JZ_CLOCK_GATE_DMAC | JZ_CLOCK_GATE_UART0);
++
++	jz_clk_reg_clear_bits(JZ_REG_CLOCK_PLL, JZ_CLOCK_PLL_ENABLED);
++}
++
++void jz4740_clock_resume(void)
++{
++	uint32_t pll;
++
++	jz_clk_reg_set_bits(JZ_REG_CLOCK_PLL, JZ_CLOCK_PLL_ENABLED);
++
++	do {
++		pll = jz_clk_reg_read(JZ_REG_CLOCK_PLL);
++	} while (!(pll & JZ_CLOCK_PLL_STABLE));
++
++	jz_clk_reg_clear_bits(JZ_REG_CLOCK_GATE,
++		JZ_CLOCK_GATE_TCU | JZ_CLOCK_GATE_DMAC | JZ_CLOCK_GATE_UART0);
++}
++
++static int jz4740_clock_init(void)
++{
++	uint32_t val;
++
++	jz_clock_base = ioremap(CPHYSADDR(JZ4740_CPM_BASE_ADDR), 0x100);
++	if (!jz_clock_base)
++		return -EBUSY;
++
++	spin_lock_init(&jz_clock_lock);
++
++	jz_clk_ext.rate = jz4740_clock_bdata.ext_rate;
++	jz_clk_rtc.rate = jz4740_clock_bdata.rtc_rate;
++
++	val = jz_clk_reg_read(JZ_REG_CLOCK_SPI);
++
++	if (val & JZ_CLOCK_SPI_SRC_PLL)
++		jz4740_clock_divided_clks[1].clk.parent = &jz_clk_pll_half;
++
++	val = jz_clk_reg_read(JZ_REG_CLOCK_CTRL);
++
++	if (val & JZ_CLOCK_CTRL_I2S_SRC_PLL)
++		jz4740_clock_divided_clks[0].clk.parent = &jz_clk_pll_half;
++
++	if (val & JZ_CLOCK_CTRL_UDC_SRC_PLL)
++		jz4740_clock_simple_clks[0].parent = &jz_clk_pll_half;
++
++	jz4740_clock_debugfs_init();
++
++	clk_register_clks();
++
++	return 0;
++}
++subsys_initcall(jz4740_clock_init);
+diff --git a/arch/mips/jz4740/clock.h b/arch/mips/jz4740/clock.h
+new file mode 100644
+index 0000000..5d07499
+--- /dev/null
++++ b/arch/mips/jz4740/clock.h
+@@ -0,0 +1,76 @@
++/*
++ *  Copyright (C) 2010, Lars-Peter Clausen <lars@metafoo.de>
++ *  JZ4740 SoC clock support
++ *
++ *  This program is free software; you can redistribute	 it and/or modify it
++ *  under  the terms of	 the GNU General  Public License as published by the
++ *  Free Software Foundation;  either version 2 of the	License, or (at your
++ *  option) any later version.
++ *
++ *  You should have received a copy of the  GNU General Public License along
++ *  with this program; if not, write  to the Free Software Foundation, Inc.,
++ *  675 Mass Ave, Cambridge, MA 02139, USA.
++ *
++ */
++
++#ifndef __MIPS_JZ4740_CLOCK_H__
++#define __MIPS_JZ4740_CLOCK_H__
++
++#include <linux/list.h>
++
++struct jz4740_clock_board_data {
++	unsigned long ext_rate;
++	unsigned long rtc_rate;
++};
++
++extern struct jz4740_clock_board_data jz4740_clock_bdata;
++
++void jz4740_clock_suspend(void);
++void jz4740_clock_resume(void);
++
++struct clk;
++
++struct clk_ops {
++	unsigned long (*get_rate)(struct clk *clk);
++	unsigned long (*round_rate)(struct clk *clk, unsigned long rate);
++	int (*set_rate)(struct clk *clk, unsigned long rate);
++	int (*enable)(struct clk *clk);
++	int (*disable)(struct clk *clk);
++	int (*is_enabled)(struct clk *clk);
++
++	int (*set_parent)(struct clk *clk, struct clk *parent);
++
++};
++
++struct clk {
++	const char *name;
++	struct clk *parent;
++
++	uint32_t gate_bit;
++
++	const struct clk_ops *ops;
++
++	struct list_head list;
++
++#ifdef CONFIG_DEBUG_FS
++	struct dentry *debugfs_entry;
++	struct dentry *debugfs_parent_entry;
++#endif
++
++};
++
++#define JZ4740_CLK_NOT_GATED ((uint32_t)-1)
++
++int clk_is_enabled(struct clk *clk);
++
++#ifdef CONFIG_DEBUG_FS
++void jz4740_clock_debugfs_init(void);
++void jz4740_clock_debugfs_add_clk(struct clk *clk);
++void jz4740_clock_debugfs_update_parent(struct clk *clk);
++#else
++static inline void jz4740_clock_debugfs_init(void) {};
++static inline void jz4740_clock_debugfs_add_clk(struct clk *clk) {};
++static inline void jz4740_clock_debugfs_update_parent(struct clk *clk) {};
++#endif
++
++#endif
+-- 
+1.5.6.5
 
