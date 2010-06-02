@@ -1,81 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933101Ab0FBVej (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jun 2010 17:34:39 -0400
-Received: from cavan.codon.org.uk ([93.93.128.6]:42421 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758632Ab0FBVei (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jun 2010 17:34:38 -0400
-Date: Wed, 2 Jun 2010 22:34:29 +0100
-From: Matthew Garrett <mjg59@srcf.ucam.org>
-To: Islam Amer <pharon@gmail.com>
-Cc: linux-kernel@vger.kernel.org, platform-driver-x86@vger.kernel.org,
-       akpm@linux-foundation.org, Rezwanul_Kabir@dell.com
-Subject: Re: Dell Studio 1555 eject key does not work ( small patch to fix
-	included )
-Message-ID: <20100602213429.GA14866@srcf.ucam.org>
-References: <AANLkTinG3jv6o8T00mDTEP5uxf4tKqOwSPEDIUcv4kVG@mail.gmail.com>
+	id S1758774Ab0FBVfL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jun 2010 17:35:11 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:16806 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753654Ab0FBVfI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Jun 2010 17:35:08 -0400
+Date: Wed, 2 Jun 2010 23:33:32 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: David Rientjes <rientjes@google.com>
+Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+       LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+       Nick Piggin <npiggin@suse.de>
+Subject: Re: [PATCH 1/5] oom: select_bad_process: check PF_KTHREAD instead
+	of !mm to skip kthreads
+Message-ID: <20100602213331.GA31949@redhat.com>
+References: <20100601212023.GA24917@redhat.com> <alpine.DEB.2.00.1006011424200.16725@chino.kir.corp.google.com> <20100602223612.F52D.A69D9226@jp.fujitsu.com> <alpine.DEB.2.00.1006021405280.32666@chino.kir.corp.google.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <AANLkTinG3jv6o8T00mDTEP5uxf4tKqOwSPEDIUcv4kVG@mail.gmail.com>
+In-Reply-To: <alpine.DEB.2.00.1006021405280.32666@chino.kir.corp.google.com>
 User-Agent: Mutt/1.5.18 (2008-05-17)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Rez,
+On 06/02, David Rientjes wrote:
+>
+> On Wed, 2 Jun 2010, KOSAKI Motohiro wrote:
+>
+> > > Again, the question is whether or not the fix is rc material or not,
+> > > otherwise there's no difference in the route that it gets upstream: the
+> > > patch is duplicated in both series.  If you feel that this minor issue
+> > > (which has never been reported in at least the last three years and
+> > > doesn't have any side effects other than a couple of millisecond delay
+> > > until unuse_mm() when the oom killer will kill something else) should be
+> > > addressed in 2.6.35-rc2, then that's a conversation to be had with Andrew.
+> >
+> > Well, we have bugfix-at-first development rule. Why do you refuse our
+> > development process?
+>
+> This isn't a bugfix, it simply prevents a recall to the oom killer after
+> the kthread has called unuse_mm().  Please show where any side effects of
+> oom killing a kthread, which cannot exit, as a result of use_mm() causes a
+> problem _anywhere_.
 
-Any thoughts on this?
+I already showed you the side effects, but you removed this part in your
+reply.
 
-On Thu, Jun 03, 2010 at 01:14:09AM +0400, Islam Amer wrote
-> Hello,
-> 
-> Pressing the eject key on my Dell Studio 1555 does not work and dmesg produces
-> this message :
-> dell-wmi: Unknown key 0 pressed
-> 
-> Adding a debugging printk in dell-wmi.c after line 222 like this :
-> 
-> printk(KERN_INFO "dell:wmi 0x%x , 0x%x \n", buffer_entry[1], buffer_entry[2]);
-> 
-> dmesg now shows :
-> 
-> dell:wmi 0x0 , 0xe009
-> dell-wmi: Unknown key 0 pressed
-> 
-> So for some reason buffer_entry[1] is used although it is empty.
-> 
-> Falling back to buffer_entry[2] in case buffer_entry[1] is 0x0 makes
-> the button work.
-> 
-> I suspect it might be better to fix the "dell_new_hk_type" logic though
-> 
-> I had submitted this as
-> https://bugzilla.kernel.org/show_bug.cgi?id=16075 but repeating the
-> information and patch
-> here as per Andrew Morton's suggestion.
-> 
-> 
-> Thanks.
-> 
-> --- linux-sidux-2.6-2.6.34/drivers/platform/x86/dell-wmi.c.orig	2010-06-03
-> 01:02:17.418824168 +0400
-> +++ linux-sidux-2.6-2.6.34/drivers/platform/x86/dell-wmi.c	2010-06-03
-> 01:01:40.641833249 +0400
-> @@ -221,7 +221,7 @@ static void dell_wmi_notify(u32 value, v
->  			return;
->  		}
-> 
-> -		if (dell_new_hk_type)
-> +		if (dell_new_hk_type || buffer_entry[1] == 0x0)
->  			reported_key = (int)buffer_entry[2];
->  		else
->  			reported_key = (int)buffer_entry[1] & 0xffff;
-> 
--- 
-Matthew Garrett | mjg59@srcf.ucam.org
+>From http://marc.info/?l=linux-kernel&m=127542732121077
+
+	It can't die but force_sig() does bad things which shouldn't be done
+	with workqueue thread. Note that it removes SIG_IGN, sets
+	SIGNAL_GROUP_EXIT, makes signal_pending/fatal_signal_pedning true, etc.
+
+A workqueue thread must not run with SIGNAL_GROUP_EXIT set, SIGKILL
+must be ignored, signal_pending() must not be true.
+
+This is bug. It is minor, agreed, currently use_mm() is only used by aio.
+
+Oleg.
+
