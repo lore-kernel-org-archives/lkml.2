@@ -1,180 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753331Ab0FBI3G (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jun 2010 04:29:06 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:54378 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750779Ab0FBI3C convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jun 2010 04:29:02 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=w7Y+qLC2n3f40yLeI5RPjE9rpPHc0dhGYvcYA+9YxdXe//LFHvBMgQ3EprfQQZQzDa
-         dW2rYHYSho/kkTTfNUhVVBC1JEY09eSaAAz/CNcehOVy9UGSNFeTvBBW94sf/Ap8IRwA
-         lddnjiJjspQxlGtWmkhPsCtypxRJoRHuv1O/Q=
+	id S1753533Ab0FBIa2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jun 2010 04:30:28 -0400
+Received: from www.tglx.de ([62.245.132.106]:48254 "EHLO www.tglx.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751575Ab0FBIaZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Jun 2010 04:30:25 -0400
+Date: Wed, 2 Jun 2010 10:29:14 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: =?ISO-8859-15?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>
+cc: "Rafael J. Wysocki" <rjw@sisk.pl>, Florian Mickler <florian@mickler.org>,
+       Matthew Garrett <mjg59@srcf.ucam.org>,
+       Alan Stern <stern@rowland.harvard.edu>,
+       Peter Zijlstra <peterz@infradead.org>, Paul@smtp1.linux-foundation.org,
+       LKML <linux-kernel@vger.kernel.org>, felipe.balbi@nokia.com,
+       Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
+       Linux PM <linux-pm@lists.linux-foundation.org>,
+       Alan Cox <alan@lxorguk.ukuu.org.uk>
+Subject: Re: [linux-pm] [PATCH 0/8] Suspend block api (version 8)
+In-Reply-To: <AANLkTikZHmF6baP7dEXEGFE8YsbEteRjlhb5wqZX8ll1@mail.gmail.com>
+Message-ID: <alpine.LFD.2.00.1006020905410.2933@localhost.localdomain>
+References: <Pine.LNX.4.44L0.1005271253240.3239-100000@iolanthe.rowland.org> <201005302202.39511.rjw@sisk.pl> <AANLkTilUQ2AG76nbK6LwI8_7zw0_yMSoAOr9pmuz7xrt@mail.gmail.com> <201005312347.24251.rjw@sisk.pl> <AANLkTilvOgSFTDFtXbjJobMZWxgfvsC97TqC7_a_NHBX@mail.gmail.com>
+ <alpine.LFD.2.00.1006011411200.2933@localhost.localdomain> <AANLkTikZHmF6baP7dEXEGFE8YsbEteRjlhb5wqZX8ll1@mail.gmail.com>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-In-Reply-To: <20100601143749.GE863@rakim.wolfsonmicro.main>
-References: <1275399239-6788-1-git-send-email-vapier@gentoo.org>
-	<20100601143749.GE863@rakim.wolfsonmicro.main>
-Date: Wed, 2 Jun 2010 16:29:01 +0800
-Message-ID: <AANLkTilsdDIKc0b4YnvfTBvs9aB6W5RZLhrpi1YBGc9m@mail.gmail.com>
-Subject: Re: [PATCH 1/2] regulator: new driver for the AD5398 and AD5821
-From: Sonic Zhang <sonic.adi@gmail.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Mike Frysinger <vapier@gentoo.org>, linux-kernel@vger.kernel.org,
-       Liam Girdwood <lrg@slimlogic.co.uk>,
-       uclinux-dist-devel@blackfin.uclinux.org,
-       Sonic Zhang <sonic.zhang@analog.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: MULTIPART/MIXED; BOUNDARY="8323328-3244195-1275462694=:2933"
+Content-ID: <alpine.LFD.2.00.1006020922080.2933@localhost.localdomain>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 1, 2010 at 10:37 PM, Mark Brown
-<broonie@opensource.wolfsonmicro.com> wrote:
-> On Tue, Jun 01, 2010 at 09:33:58AM -0400, Mike Frysinger wrote:
->> From: Sonic Zhang <sonic.zhang@analog.com>
->
->> This driver supports both the AD5398 and the AD5821.  It adapts into the
->> voltage and current framework.  The generic userspace-consumer and virtual
->
-> Might be useful to put something here saying what these chips do...
->
+  This message is in MIME format.  The first part should be readable text,
+  while the remaining parts are likely unreadable without MIME-aware tools.
 
-OK.
+--8323328-3244195-1275462694=:2933
+Content-Type: TEXT/PLAIN; CHARSET=ISO-8859-15
+Content-Transfer-Encoding: 8BIT
+Content-ID: <alpine.LFD.2.00.1006020922081.2933@localhost.localdomain>
 
->> consumer should be selected to access devices via this driver.
->
-> Please remove the comment about the userspace and virtual consumers from
-> the driver, the driver should support all consumer drivers and the use
-> of userspace consumers will normally be very unusual.
->
+On Tue, 1 Jun 2010, Arve Hjønnevåg wrote:
+> 2010/6/1 Thomas Gleixner <tglx@linutronix.de>:
+> > On Mon, 31 May 2010, Arve Hjønnevåg wrote:
+> >
+> >> 2010/5/31 Rafael J. Wysocki <rjw@sisk.pl>:
+> >> > On Monday 31 May 2010, Arve Hjønnevåg wrote:
+> >> >> 2010/5/30 Rafael J. Wysocki <rjw@sisk.pl>:
+> >> > ...
+> >> >>
+> >> >> I think it makes more sense to block suspend while wakeup events are
+> >> >> pending than blocking it everywhere timers are used by code that could
+> >> >> be called while handling wakeup events or other critical work. Also,
+> >> >> even if you did block suspend everywhere timers where used you still
+> >> >> have the race where a wakeup interrupt happens right after you decided
+> >> >> to suspend. In other words, you still need to block suspend in all the
+> >> >> same places as with the current opportunistic suspend code, so what is
+> >> >> the benefit of delaying suspend until idle?
+> >> >
+> >> > Assume for a while that you don't use suspend blockers, OK?  I realize you
+> >> > think that anything else doesn't make sense, but evidently some other people
+> >> > have that opinion about suspend blockers.
+> >> >
+> >>
+> >> It sounded like you were suggesting that initiating suspend from idle
+> >> would somehow avoid the race condition with wakeup events. All I'm
+> >> saying is that you would need to block suspend in all the same places.
+> >> If you don't care about ignoring wakeup events, then sure you can
+> >> initiate suspend from idle.
+> >
+> > And why should you miss a wakeup there ? If you get an interrupt in
+> > the transition, then you are not longer idle.
+> >
+> 
+> Because suspend itself causes you to not be idle you cannot abort
+> suspend just because you are not idle anymore.
 
-OK.
+You still are addicted to the current suspend mechanism. :)
 
->> +static int ad5398_get(struct regulator_dev *rdev)
->> +{
->> +     struct ad5398_chip_info *chip = rdev_get_drvdata(rdev);
->> +     struct i2c_client *client = chip->client;
->> +     unsigned short data;
->> +     int ret;
->> +
->> +     ret = i2c_master_recv(client, (char *)&data, 2);
->> +     if (ret < 0) {
->> +             dev_err(&client->dev, "I2C read error\n");
->> +             return ret;
->> +     }
->
-> I strongly suggest implementing register I/O functions rather than open
-> coding with the I2C API each time.
->
+The whole point of doing it from idle in the form of a deep power
+state is to avoid the massive sh*tload of work which is neccesary to
+run the existing suspend code. But that needs runtime power management
+and tweaks to avoid your timers waking you, etc.
 
-No problem.
+The mechanism you want to use is: suspend no matter what, like closing
+the lid of the laptop, but with a few tweaks around it:
 
->> +
->> +     ret = (be16_to_cpu(data) & chip->current_mask) >> chip->current_offset;
->> +
->> +     return ad5398_calc_current(chip, ret);
->
-> This function should really have a much clearer name than just plain
-> _get() - it looks like it's intended to read the current limit.
->
->> +static int ad5398_set(struct regulator_dev *rdev, int min_uA, int max_uA)
->> +{
->
-> Same here - this should have a much clearer name saying what's being
-> set.
->
+   1) An interrupt on a wakeup source which comes in while the suspend
+      code runs, i.e before you transitioned into wakeup mode, must
+      abort / prevent suspend.
 
-OK.
+   2) Prevent another attempt to suspend before the event has been
+      delivered and the apps have signaled that they have not longer
+      any work to do.
 
->> +     /* prepare register data */
->> +     selector = (selector << chip->current_offset) & chip->current_mask;
->> +     selector |= (data & CURRENT_EN_MASK);
->
-> This CURRENT_EN_MASK configuration looks fishy, what does that setting
-> do and why is it being unconditionally set?
->
+   As a side effect you confine crappy apps with that mechanism in
+   some way.
 
-CURRENT_EN_MASK is the power on control bit of these current regulator chip.
-It is part of the current value register. It is not touched when
-setting the current value.
+In the laptop case we do not want the tweaks as not going into suspend
+might set your backpack on fire.
 
+If I understood you correctly then you can shutdown the CPU in idle
+completelty already, but that's not enough due to:
 
->> +static struct regulator_ops ad5398_ops = {
->> +     .get_current_limit = ad5398_get,
->> +     .set_current_limit = ad5398_set,
->> +     .enable = ad5398_enable,
->> +     .disable = ad5398_disable,
->> +     .is_enabled = ad5398_is_enabled,
->> +     .set_suspend_enable = ad5398_enable,
->> +     .set_suspend_disable = ad5398_disable,
->
-> If the chip does not have suspend mode configuration it should not
-> supply any suspend mode configuration functions.
->
+    1) crappy applications keeping the cpu away from idle
+    2) timers firing
 
-OK. I will remove them.
+Would solving those two issues be sufficient for you or am I missing
+something ?
 
->> +     i2c_set_clientdata(client, chip);
->> +     dev_info(&client->dev, "%s regulator driver loaded\n", id->name);
->
-> Remove this or tone it down to a debug level print.
->
->> +static int ad5398_remove(struct i2c_client *client)
->> +{
->> +     struct ad5398_chip_info *chip = i2c_get_clientdata(client);
->> +
->> +     if (chip) {
->> +             regulator_unregister(&chip->rdev);
->> +             kfree(chip);
->> +     }
->
-> If you failed to register the regulator you should've failed the probe
-> and therefore this check for chip should not be required.
->
+Thanks,
 
-OK.
-
->> +#define CURRENT_EN_MASK              0x8000
->> +#define CURRENT_BITS_MAX     16
->
-> These defines should be namespaced.
->
-
-No problem.
-
->> +/**
->> + * ad5398_platform_data - platform data for ad5398
->> + * @current_bits: effective bits in register
->> + * @current_offset: offset of effective bits in register
->> + * @ad5398_init_data: regulator init data
->> + */
->> +struct ad5398_platform_data {
->> +     unsigned short current_bits;
->> +     unsigned short current_offset;
->> +     struct regulator_init_data *regulator_data;
->> +};
->
-> Why are the current bits and offset being suppied as platform data?  I
-> would *very* strongly expect that the location of the control in the
-> register will be fixed by the device type and should therefore be
-> figured out by the driver.  Having the machine specifying this seems
-> redundant and error prone.
-
-Yes, define these data format information in driver for each supported
-chip is a better way.
-
-I will send out the new patch soon.
-
-Sonic
-
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
->
+	tglx
+--8323328-3244195-1275462694=:2933--
