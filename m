@@ -1,75 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932344Ab0FBKTT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jun 2010 06:19:19 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:56103 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755143Ab0FBKTS convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jun 2010 06:19:18 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type:content-transfer-encoding;
-        b=XDxHOpCfxXtJFi62+FuIptVsSjRk8BZmD+AWP+rKTMmVeRZW7ukJfzuio+tuqC7UvK
-         QeDSAmR/Cn7AVjS6nwag/SZSBYuWtwlq1zYOqig7HJyva2lno46ZW1uSOavCTBVvYiUs
-         yxZI6u71d2/5gKRTPHQuvg/r5fFyh4DOF57jM=
+	id S932360Ab0FBKTn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jun 2010 06:19:43 -0400
+Received: from 8bytes.org ([88.198.83.132]:58973 "EHLO 8bytes.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932347Ab0FBKTm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Jun 2010 06:19:42 -0400
+Date: Wed, 2 Jun 2010 12:19:40 +0200
+From: Joerg Roedel <joro@8bytes.org>
+To: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: Avi Kivity <avi@redhat.com>, Tom Lyon <pugs@cisco.com>,
+       linux-kernel@vger.kernel.org, kvm@vger.kernel.org, chrisw@sous-sol.org,
+       hjk@linutronix.de, gregkh@suse.de, aafabbri@cisco.com,
+       scofeldm@cisco.com
+Subject: Re: [PATCH] VFIO driver: Non-privileged user level PCI drivers
+Message-ID: <20100602101940.GG964@8bytes.org>
+References: <4C0261C1.9090204@redhat.com> <20100530130332.GM27611@redhat.com> <4C026497.8070901@redhat.com> <20100530145309.GO27611@redhat.com> <4C03A285.7060902@redhat.com> <20100531171007.GA6516@redhat.com> <4C04C085.1030107@redhat.com> <20100601095532.GA9178@redhat.com> <20100602094201.GC964@8bytes.org> <20100602095312.GA25335@redhat.com>
 MIME-Version: 1.0
-In-Reply-To: <AANLkTilZ5jJo8spBdfXBqZmTRfNlq4PQJI5wsn2lBj9Z@mail.gmail.com>
-References: <1275468694.2545.1.camel@eight.analog.com> <AANLkTinaPmKUx04I1mjNhla4s3S6vmWp8x6eoDTZGRVz@mail.gmail.com> 
-	<AANLkTincaxtwu_voxAbEkrOGeB5NWTVvmbHZJsaHpoYJ@mail.gmail.com> 
-	<AANLkTilIweGx1NXLiTuRphex1RMk9DF3Vdva5F-6JDKl@mail.gmail.com> 
-	<AANLkTilZ5jJo8spBdfXBqZmTRfNlq4PQJI5wsn2lBj9Z@mail.gmail.com>
-From: Mike Frysinger <vapier.adi@gmail.com>
-Date: Wed, 2 Jun 2010 06:18:57 -0400
-Message-ID: <AANLkTikLZjLaHSYJ5Z6q8fAxrmTsmnjaUjqlIDPgnz84@mail.gmail.com>
-Subject: Re: [Uclinux-dist-devel] [PATCH v2] regulator: new drivers for AD5398 
-	and AD5821
-To: Sonic Zhang <sonic.adi@gmail.com>
-Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-       Liam Girdwood <lrg@slimlogic.co.uk>,
-       uclinux-dist-devel <uclinux-dist-devel@blackfin.uclinux.org>,
-       Linux Kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100602095312.GA25335@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 2, 2010 at 06:10, Sonic Zhang wrote:
-> On Wed, Jun 2, 2010 at 5:36 PM, Mike Frysinger wrote:
->> On Wed, Jun 2, 2010 at 05:29, Sonic Zhang wrote:
->>> On Wed, Jun 2, 2010 at 5:02 PM, Mike Frysinger wrote:
->>>> On Wed, Jun 2, 2010 at 04:51, sonic zhang wrote:
->>>>> +static const struct ad5398_current_data_format ad5398_df = {10, 4};
->>>>> +static const struct ad5398_current_data_format ad5821_df = {10, 4};
->>>>> +
->>>>> +static const struct i2c_device_id ad5398_id[] = {
->>>>> +       { "ad5398", (kernel_ulong_t)&ad5398_df },
->>>>> +       { "ad5821", (kernel_ulong_t)&ad5821_df },
->>>>> +       { }
->>>>> +};
->>>>
->>>> do you really need sep storage for these _df vars ?
->>>
->>> Yes, this makes probe code simpler.
->>
->> how does it make any difference to the probe code what each id is
->> pointing to ?  it isnt comparing the private data pointers to any
->> other storage pointers.
->>
->> from what i can see, this should give the same exact behavior:
->> static const struct ad5398_current_data_format df_10_4 = {10, 4};
->> static const struct i2c_device_id ad5398_id[] = {
->>       { "ad5398", (kernel_ulong_t)&df_10_4 },
->>       { "ad5821", (kernel_ulong_t)&df_10_4 },
->
-> Yes, the behavior is the same for ad5398 and ad5821. But, if more
-> chips are enabled in this driver, they may differ.
-> This line is used as an example for future chips.
+On Wed, Jun 02, 2010 at 12:53:12PM +0300, Michael S. Tsirkin wrote:
+> On Wed, Jun 02, 2010 at 11:42:01AM +0200, Joerg Roedel wrote:
 
-seems like a weak reason for otherwise useless overhead.  especially
-considering my simpler example should also be pretty obvious to extend
-for future drivers should the need arise.  you're a smart guy and dont
-need things spelled out explicitly.
--mike
+> > IMO a seperate iommu-userspace driver is a nightmare for a userspace
+> > interface. It is just too complicated to use.
+> 
+> One advantage would be that we can reuse the uio framework
+> for the devices themselves. So an existing app can just program
+> an iommu for DMA and keep using uio for interrupts and access.
+
+The driver is called UIO and not U-INTR-MMIO ;-) So I think handling
+IOMMU mappings belongs there.
+
+> > We can solve the problem
+> > of multiple devices-per-domain with an ioctl which allows binding one
+> > uio-device to the address-space on another.
+> 
+> This would imply switching an iommu domain for a device while
+> it could potentially be doing DMA. No idea whether this can be done
+> in a safe manner.
+
+It can. The worst thing that can happen is an io-page-fault.
+
+> Forcing iommu assignment to be done as a first step seems much saner.
+
+If we force it, there is no reason why not doing it implicitly.
+
+We can do something like this then:
+
+dev1 = open();
+ioctl(dev1, IOMMU_MAP, ...); /* creates IOMMU domain and assigns dev1 to
+			        it*/
+
+dev2 = open();
+ioctl(dev2, IOMMU_MAP, ...);
+
+/* Now dev1 and dev2 are in seperate domains */
+
+ioctl(dev2, IOMMU_SHARE, dev1); /* destroys all mapping for dev2 and
+				   assigns it to the same domain as
+				   dev1. Domain has a refcount of two
+				   now */
+
+close(dev1); /* domain refcount goes down to one */
+close(dev2); /* domain refcount is zero and domain gets destroyed */
+
+
+	Joerg
+
