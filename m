@@ -1,52 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756819Ab0FBB4y (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Jun 2010 21:56:54 -0400
-Received: from tundra.namei.org ([65.99.196.166]:33444 "EHLO tundra.namei.org"
+	id S1756805Ab0FBCDy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Jun 2010 22:03:54 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:38662 "EHLO smtps.tip.net.au"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754789Ab0FBB4w (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Jun 2010 21:56:52 -0400
-Date: Wed, 2 Jun 2010 11:56:36 +1000 (EST)
-From: James Morris <jmorris@namei.org>
-To: Dan Carpenter <error27@gmail.com>
-cc: Casey Schaufler <casey@schaufler-ca.com>,
-       "David P. Quigley" <dpquigl@tycho.nsa.gov>,
-       David Howells <dhowells@redhat.com>, Serge Hallyn <serue@us.ibm.com>,
-       linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
-       kernel-janitors@vger.kernel.org
-Subject: Re: [patch] smack: opt_dentry is never null in in
- smack_d_instantiate()
-In-Reply-To: <20100601071404.GH5483@bicker>
-Message-ID: <alpine.LRH.2.00.1006021156230.12305@tundra.namei.org>
-References: <20100601071404.GH5483@bicker>
-User-Agent: Alpine 2.00 (LRH 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1756312Ab0FBCDw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Jun 2010 22:03:52 -0400
+Date: Wed, 2 Jun 2010 12:03:45 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Rusty Russell <rusty@rustcorp.com.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: linux-next: build failure after merge of the rr tree
+Message-Id: <20100602120345.e530c53b.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Wed__2_Jun_2010_12_03_45_+1000_z/Kb8XemOpJ9tjpI"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 1 Jun 2010, Dan Carpenter wrote:
+--Signature=_Wed__2_Jun_2010_12_03_45_+1000_z/Kb8XemOpJ9tjpI
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> This patch removes some unneeded code for if opt_dentry is null because
-> that can never happen.
-> 
-> The function dereferences "opt_dentry" earlier when it checks 
-> "if (opt_dentry->d_parent == opt_dentry) {".  That code was added in
-> 2008.
-> 
-> This function called from security_d_instantiate().  I checked all the 
-> places which call security_d_instantiate() and dentry is always non-null.
-> I also checked the selinux version of this hook and there is a comment
-> which says that dentry should be non-null if called from 
-> d_instantiate().
-> 
-> Signed-off-by: Dan Carpenter <error27@gmail.com>
+Hi Rusty,
 
+After merging the rr tree, today's linux-next build (x86_64 allmodconfig)
+failed like this:
 
-Applied to
-git://git.kernel.org/pub/scm/linux/kernel/git/jmorris/security-testing-2.6#next
+kernel/debug/kdb/kdb_main.c: In function 'kdb_lsmod':
+kernel/debug/kdb/kdb_main.c:1897: error: 'struct module' has no member name=
+d 'modules_which_use_me'
+kernel/debug/kdb/kdb_main.c:1897: error: 'struct module' has no member name=
+d 'modules_which_use_me'
 
--- 
-James Morris
-<jmorris@namei.org>
+I have used the rr tree from next-20100531 again for today.
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
+
+--Signature=_Wed__2_Jun_2010_12_03_45_+1000_z/Kb8XemOpJ9tjpI
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iEYEARECAAYFAkwFvAEACgkQjjKRsyhoI8yJsACdGW3o06xftpv76GBns9TTHeg/
+xl0AnR/b6m0SCt7RAYXiR9RVElgnhjm+
+=XYLr
+-----END PGP SIGNATURE-----
+
+--Signature=_Wed__2_Jun_2010_12_03_45_+1000_z/Kb8XemOpJ9tjpI--
