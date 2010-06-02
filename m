@@ -1,62 +1,178 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758793Ab0FBV4V (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jun 2010 17:56:21 -0400
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:52613 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758647Ab0FBV4U (ORCPT
+	id S1758802Ab0FBV5G (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jun 2010 17:57:06 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:54997 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758669Ab0FBV5E (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jun 2010 17:56:20 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6001"; a="43250911"
-Subject: Re: [GIT PULL] ARM MSM updates for 2.6.35-rc1
-From: Daniel Walker <dwalker@codeaurora.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org
-In-Reply-To: <alpine.LFD.2.00.1006021430100.8175@i5.linux-foundation.org>
-References: <1274997173.10998.21.camel@c-dwalke-linux.qualcomm.com>
-	 <1275511857.27006.6.camel@c-dwalke-linux.qualcomm.com>
-	 <alpine.LFD.2.00.1006021413100.8175@i5.linux-foundation.org>
-	 <alpine.LFD.2.00.1006021430100.8175@i5.linux-foundation.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 02 Jun 2010 14:56:17 -0700
-Message-ID: <1275515777.27006.48.camel@c-dwalke-linux.qualcomm.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	Wed, 2 Jun 2010 17:57:04 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:from:date:message-id:subject:to:content-type;
+        b=YU5GgRWtOsnDM6K9ACiMQdN5Wp87P0IMNa7OoowMoSe2OXLYuMJO3d9KCVlHVDzQCF
+         0HmHjn00CwZHRu0HN6ENSc8Zx3OHkkDtXjuwZkaA514gdW/POAvGGan4JLxqoy5HSTBT
+         Gc4m453XIlwqfX1gHz2Yi1/xJEvF53b/2Z1LM=
+MIME-Version: 1.0
+From: Rafael Tinoco <tinhocas@gmail.com>
+Date: Wed, 2 Jun 2010 18:56:43 -0300
+Message-ID: <AANLkTikfoquMibVsd1dTtrFTDvaKVn1bmL_SfbjyZUoR@mail.gmail.com>
+Subject: [PATCH] task_io_accounting, taskstats
+To: LKML <linux-kernel@vger.kernel.org>, Balbir <balbir@linux.vnet.ibm.com>,
+       Scrum - Linux <scrum-linux@locaweb.com.br>,
+       Juliano Martinez <juliano.martinez@locaweb.com.br>,
+       Gleicon Moraes <gleicon.moraes@locaweb.com.br>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-06-02 at 14:39 -0700, Linus Torvalds wrote:
-> 
-> On Wed, 2 Jun 2010, Linus Torvalds wrote:
-> > 
-> > I got a bit frustrated with ten different ARM pulls per day at one point.
-> 
-> In other words - when I do a "git pull", I really want to feel like there 
-> is some point to it. When I get ten different ARM maintainers asking me to 
-> pull stuff that just looks like noise, I'm just not getting those warm and 
-> fuzzies about them. 
-> 
-> I'm also getting the feeling that now that different arch sub-architecture 
-> maintainers all try to get their stuff in through me, things have actually 
-> gotten worse - there's even less feeling of "somebody is actually trying 
-> to keep track of all this stuff".
-> 
-> I understand why rmk wasn't happy. I'm also not really happy. 
+Hello,
 
-Should all us ARM sub-architecture maintainers get together and make a
-jumbo pull request with everything merged together?
+I'm proposing this patch to extend taskstats capability of
+IO_ACCOUTING based on socket msg size.
+Already discussed with Balbir about it. The idea was to keep the
+"socket" accounting generic.
+Not taking in consideration witch type of socket or protocol is used.
+I'm using this in a user land tool called ustats for uid accounting
+with very low overhead (cn_msg and taskstats through netlink).
 
-Like someone, not you or RMK, would take all the sub-architecture
-requests and put them into a single pull request w/ lots of details as
-to what it all is ..
+Thanks
 
-I know that doesn't solve what you said in the original email, how we
-develop. One thing to remember is that we have tons of ARM device to
-manage, and lots of chip manufactures .. So ARM is pretty diverse. I'm
-not saying we're all perfect however.
+Rafael Tinoco
 
-Daniel
+diff --git a/include/linux/task_io_accounting.h
+b/include/linux/task_io_accounting.h
+index bdf855c..ed54fab 100644
+--- a/include/linux/task_io_accounting.h
++++ b/include/linux/task_io_accounting.h
+@@ -41,5 +41,16 @@ struct task_io_accounting {
+ 	 * information loss in doing that.
+ 	 */
+ 	u64 cancelled_write_bytes;
++
++	/*
++	 * The number of bytes which this task has read from a socket
++	 */
++	u64 read_net_bytes;
++
++        /*
++	 * The number of bytes which this task has written to a socket
++	 */
++	u64 write_net_bytes;
++
+ #endif /* CONFIG_TASK_IO_ACCOUNTING */
+ };
+diff --git a/include/linux/task_io_accounting_ops.h
+b/include/linux/task_io_accounting_ops.h
+index 4d090f9..f28aa4c 100644
+--- a/include/linux/task_io_accounting_ops.h
++++ b/include/linux/task_io_accounting_ops.h
+@@ -12,6 +12,11 @@ static inline void task_io_account_read(size_t bytes)
+ 	current->ioac.read_bytes += bytes;
+ }
+
++static inline void task_io_account_read_net(size_t bytes)
++{
++        current->ioac.read_net_bytes += bytes;
++}
++
+ /*
+  * We approximate number of blocks, because we account bytes only.
+  * A 'block' is 512 bytes
+@@ -26,6 +31,11 @@ static inline void task_io_account_write(size_t bytes)
+ 	current->ioac.write_bytes += bytes;
+ }
+
++static inline void task_io_account_write_net(size_t bytes)
++{
++        current->ioac.write_net_bytes += bytes;
++}
++
+ /*
+  * We approximate number of blocks, because we account bytes only.
+  * A 'block' is 512 bytes
+@@ -59,6 +69,10 @@ static inline void task_io_account_read(size_t bytes)
+ {
+ }
+
++static inline void task_io_account_read_net(size_t bytes)
++{
++}
++
+ static inline unsigned long task_io_get_inblock(const struct task_struct *p)
+ {
+ 	return 0;
+@@ -68,6 +82,10 @@ static inline void task_io_account_write(size_t bytes)
+ {
+ }
+
++static inline void task_io_account_write_net(size_t bytes)
++{
++}
++
+ static inline unsigned long task_io_get_oublock(const struct task_struct *p)
+ {
+ 	return 0;
+diff --git a/include/linux/taskstats.h b/include/linux/taskstats.h
+index 341dddb..5067376 100644
+--- a/include/linux/taskstats.h
++++ b/include/linux/taskstats.h
+@@ -163,6 +163,10 @@ struct taskstats {
+ 	/* Delay waiting for memory reclaim */
+ 	__u64	freepages_count;
+ 	__u64	freepages_delay_total;
++
++        /* Per-task network I/O accounting */
++        __u64   read_net_bytes;         /* bytes of socket read I/O */
++        __u64   write_net_bytes;        /* bytes of socket write I/O */
+ };
 
 
+diff --git a/net/socket.c b/net/socket.c
+index 769c386..93507a3 100644
+--- a/net/socket.c
++++ b/net/socket.c
+@@ -103,6 +103,8 @@
+ #include <linux/sockios.h>
+ #include <linux/atalk.h>
+
++#include <linux/task_io_accounting_ops.h>
++
+ static int sock_no_open(struct inode *irrelevant, struct file *dontcare);
+ static ssize_t sock_aio_read(struct kiocb *iocb, const struct iovec *iov,
+ 			 unsigned long nr_segs, loff_t pos);
+@@ -550,6 +552,9 @@ static inline int __sock_sendmsg(struct kiocb
+*iocb, struct socket *sock,
+ 	if (err)
+ 		return err;
+
++        if(size > 0)
++            task_io_account_read_net(size);
++
+ 	return sock->ops->sendmsg(iocb, sock, msg, size);
+ }
+
+@@ -666,6 +671,7 @@ EXPORT_SYMBOL_GPL(sock_recv_ts_and_drops);
+ static inline int __sock_recvmsg_nosec(struct kiocb *iocb, struct socket *sock,
+ 				       struct msghdr *msg, size_t size, int flags)
+ {
++        int ret = 0;
+ 	struct sock_iocb *si = kiocb_to_siocb(iocb);
+
+ 	si->sock = sock;
+@@ -674,7 +680,12 @@ static inline int __sock_recvmsg_nosec(struct
+kiocb *iocb, struct socket *sock,
+ 	si->size = size;
+ 	si->flags = flags;
+
+-	return sock->ops->recvmsg(iocb, sock, msg, size, flags);
++        ret = sock->ops->recvmsg(iocb, sock, msg, size, flags);
++
++        if(ret > 0)
++            task_io_account_read_net(ret);
++
++        return ret;
+ }
+
+ static inline int __sock_recvmsg(struct kiocb *iocb, struct socket *sock,
