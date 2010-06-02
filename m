@@ -1,38 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932455Ab0FBNlF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jun 2010 09:41:05 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:33369 "EHLO mx2.suse.de"
+	id S932509Ab0FBNln (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jun 2010 09:41:43 -0400
+Received: from cantor.suse.de ([195.135.220.2]:37624 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758095Ab0FBNlC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jun 2010 09:41:02 -0400
-Message-ID: <4C065F6C.7030107@suse.cz>
-Date: Wed, 02 Jun 2010 15:41:00 +0200
-From: Michal Marek <mmarek@suse.cz>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100317 SUSE/3.0.4-1.18 Thunderbird/3.0.4
+	id S1757873Ab0FBNll (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Jun 2010 09:41:41 -0400
+Date: Wed, 2 Jun 2010 23:41:21 +1000
+From: Nick Piggin <npiggin@suse.de>
+To: "Martin K. Petersen" <martin.petersen@oracle.com>
+Cc: Chris Mason <chris.mason@oracle.com>,
+       James Bottomley <James.Bottomley@suse.de>,
+       Matthew Wilcox <matthew@wil.cx>,
+       Christof Schmitt <christof.schmitt@de.ibm.com>,
+       Boaz Harrosh <bharrosh@panasas.com>, linux-scsi@vger.kernel.org,
+       linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
+Subject: Re: Wrong DIF guard tag on ext2 write
+Message-ID: <20100602134121.GD6152@laptop>
+References: <1275399637.21962.11.camel@mulgrave.site>
+ <20100601134951.GM8980@think>
+ <20100601162929.GC32708@parisc-linux.org>
+ <20100601164750.GQ8980@think>
+ <1275411293.21962.387.camel@mulgrave.site>
+ <20100601180905.GR8980@think>
+ <20100601184649.GE9453@laptop>
+ <20100601193528.GV8980@think>
+ <20100602032030.GF9453@laptop>
+ <yq17hmhbmkb.fsf@sermon.lab.mkp.net>
 MIME-Version: 1.0
-To: Li Zefan <lizf@cn.fujitsu.com>
-Cc: Randy Dunlap <randy.dunlap@oracle.com>,
-       Andrew Morton <akpm@linux-foundation.org>, linux-kbuild@vger.kernel.org,
-       LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2 1/8] kconfig: print symbol type in help text
-References: <4BE3AB91.80606@cn.fujitsu.com> <4BECF467.1060600@cn.fujitsu.com> <4BEDB5EA.5000305@suse.cz>
-In-Reply-To: <4BEDB5EA.5000305@suse.cz>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <yq17hmhbmkb.fsf@sermon.lab.mkp.net>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 14.5.2010 22:43, Michal Marek wrote:
-> On 14.5.2010 08:57, Li Zefan wrote:
->> Hi Michal, what do you think about those patches? Seems
->> Randy has had no further comments on them.
+On Wed, Jun 02, 2010 at 09:17:56AM -0400, Martin K. Petersen wrote:
+> >>>>> "Nick" == Nick Piggin <npiggin@suse.de> writes:
 > 
-> Sorry, I've been quite busy this week due to a new arrival in our
-> family. The patches are ok, thank you for your work and Randy for his
-> review! I'll apply them.
+> >> 1) filesystem changed it
+> >> 2) corruption on the wire or in the raid controller
+> >> 3) the page was corrupted while the IO layer was doing the IO.
+> >> 
+> >> 1 and 2 are easy, we bounce, retry and everyone continues on with
+> >> their lives.  With #3, we'll recrc and send the IO down again
+> >> thinking the data is correct when really we're writing garbage.
+> >> 
+> >> How can we tell these three cases apart?
+> 
+> Nick> Do we really need to handle #3? It could have happened before the
+> Nick> checksum was calculated.
+> 
+> Reason #3 is one of the main reasons for having the checksum in the
+> first place.  The whole premise of the data integrity extensions is that
+> the checksum is calculated in close temporal proximity to the data
+> creation.  I.e. eventually in userland.
+> 
+> Filesystems will inevitably have to be integrity-aware for that to work.
+> And it will be their job to keep the data pages stable during DMA.
 
-Applied now.
+Let's just think hard about what windows can actually be closed versus
+how much effort goes in to closing them. I also prefer not to accept
+half-solutions in the kernel because they don't want to implement real
+solutions in hardware (it's pretty hard to checksum and protect all
+kernel data structures by hand).
 
-Michal
+For "normal" writes into pagecache, the data can get corrupted anywhere
+from after it is generated in userspace, during the copy, while it is
+dirty in cache, and while it is being written out.
+
+Closing the while it is dirty, while it is being written back window
+still leaves a pretty big window. Also, how do you handle mmap writes?
+Write protect and checksum the destination page after every store? Or
+leave some window between when the pagecache is dirtied and when it is
+written back? So I don't know whether it's worth putting a lot of effort
+into this case.
+
+If you had an interface for userspace to insert checksums to direct IO
+requests or pagecache ranges, then not only can you close the entire gap
+between userspace data generation, and writeback. But you also can
+handle mmap writes and anything else just fine: userspace knows about
+the concurrency details, so it can add the right checksum (and
+potentially fsync etc) when it's ready.
+
+And the bounce-retry method would be sufficient to handle IO
+transmission errors for normal IOs without being intrusive.
+
