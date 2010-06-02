@@ -1,61 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758256Ab0FBOMl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jun 2010 10:12:41 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:38855 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755184Ab0FBOMk (ORCPT
+	id S1758267Ab0FBOQT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jun 2010 10:16:19 -0400
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:59356
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751778Ab0FBOQS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jun 2010 10:12:40 -0400
-Subject: Re: [PATCH v2 0/3] kmemleak: Fix false positive with special scan
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Hiroshi DOYU <Hiroshi.DOYU@nokia.com>
-Cc: linux-kernel@vger.kernel.org, ext-phil.2.carmody@nokia.com,
-       linux-omap@vger.kernel.org
-In-Reply-To: <20100602.143458.232754971.Hiroshi.DOYU@nokia.com>
-References: <20100602.143458.232754971.Hiroshi.DOYU@nokia.com>
-Content-Type: text/plain; charset="UTF-8"
-Organization: ARM Limited
-Date: Wed, 02 Jun 2010 15:12:29 +0100
-Message-ID: <1275487949.23442.9.camel@e102109-lin.cambridge.arm.com>
+	Wed, 2 Jun 2010 10:16:18 -0400
+Date: Wed, 02 Jun 2010 07:16:28 -0700 (PDT)
+Message-Id: <20100602.071628.233878946.davem@davemloft.net>
+To: root@danielinux.net
+Cc: netdev@vger.kernel.org, kuznet@ms2.inr.ac.ru, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] TCP: tcp_hybla: Fix integer overflow in slow start
+ increment
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1275480124-24383-1-git-send-email-root@danielinux.net>
+References: <1275480124-24383-1-git-send-email-root@danielinux.net>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.28.1 
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 02 Jun 2010 14:12:29.0301 (UTC) FILETIME=[A293F250:01CB025D]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-06-02 at 12:34 +0100, Hiroshi DOYU wrote:
-> From: ext Catalin Marinas <catalin.marinas@arm.com>
-> > Can we not add a new prio tree (or just use the existing one) for
-> > pointer aliases? The advantage is that you only have a single function
-> > to call, something like kmemleak_add_alias() and you do it at the point
-> > the value was converted.
-> 
-> Actually I considered the above aliasing a little bit but I gave up
-> soon.
-> 
-> I was afraid that this method might consume way more memory since this
-> just adds another member for "struct kmemleak_object", but adding a
-> single member for all objects. The number of kmemleak_object is
-> usually numerous.
+From: Daniele Lacamera <root@danielinux.net>
+Date: Wed,  2 Jun 2010 14:02:04 +0200
 
-We could use a different tree with a "struct kmemleak_alias" structure
-which is much smaller. Something like below:
+> From: root <root@kitchen.(none)>
 
-struct kmemleak_alias {
-	struct list_head alias_list;
-	struct prio_tree_node tree_node;
-	struct kmemleak_object *object;
-}
+Please do not include incomplete authorship tags in your patch postings
+like this, I used the more complete one from your email headers.
 
-And an alias_list member would be added to kmemleak_object as well.
+> For large values of rtt, 2^rho operation may overflow u32. Clamp down the increment to 2^16.
+> Signed-off-by: Daniele Lacamera <root@danielinux.net>
 
-Would the alias tree need to allow overlapping? Like different IOMMU
-mappings with the same address (but pointing to different physical
-memory).
-
--- 
-Catalin
-
+Applied, thanks.
