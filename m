@@ -1,76 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758873Ab0FBXdj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jun 2010 19:33:39 -0400
-Received: from mail.gmx.net ([213.165.64.20]:45568 "HELO mail.gmx.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1758161Ab0FBXdh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jun 2010 19:33:37 -0400
-X-Authenticated: #15668376
-X-Provags-ID: V01U2FsdGVkX1+aUa98fGmaYUhCzV9w93g24VEfmJ4fNukxyVlmqN
-	467drY/x7N5kXE
-From: Sven Eckelmann <sven.eckelmann@gmx.de>
-To: Joe Perches <joe@perches.com>
-Subject: Re: [B.A.T.M.A.N.] [PATCH] drivers/staging/batman-adv: Convert MAC_FMT to %pM
-Date: Thu, 3 Jun 2010 01:33:24 +0200
-User-Agent: KMail/1.13.3 (Linux/2.6.34-1-amd64; KDE/4.4.4; x86_64; ; )
-Cc: b.a.t.m.a.n@lists.open-mesh.org, devel <devel@driverdev.osuosl.org>,
-       Andrew Lunn <andrew@lunn.ch>, b.a.t.m.a.n@lists.open-mesh.net,
-       "Greg Kroah-Hartman" <gregkh@suse.de>, linux-kernel@vger.kernel.org,
-       Simon Wunderlich <siwu@hrz.tu-chemnitz.de>,
-       Marek Lindner <lindner_marek@yahoo.de>
-References: <1275509418.23599.42.camel@Joe-Laptop.home> <201006030123.25027.sven.eckelmann@gmx.de> <1275521522.23599.88.camel@Joe-Laptop.home>
-In-Reply-To: <1275521522.23599.88.camel@Joe-Laptop.home>
-MIME-Version: 1.0
-Content-Type: multipart/signed;
-  boundary="nextPart1305233.EJFBN4lapa";
-  protocol="application/pgp-signature";
-  micalg=pgp-sha512
+	id S933260Ab0FBXer (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jun 2010 19:34:47 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:55766 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932518Ab0FBXeq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Jun 2010 19:34:46 -0400
+Date: Wed, 2 Jun 2010 16:33:46 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Doug Doan <dougd@cray.com>
+Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       "andi@firstfloor.org" <andi@firstfloor.org>,
+       "lee.schermerhorn@hp.com" <lee.schermerhorn@hp.com>,
+       "rientjes@google.com" <rientjes@google.com>,
+       "mel@csn.ul.ie" <mel@csn.ul.ie>, Andrea Arcangeli <andrea@redhat.com>
+Subject: Re: [PATCH] hugetlb: call mmu notifiers on hugepage cow
+Message-Id: <20100602163346.b8f8b8a4.akpm@linux-foundation.org>
+In-Reply-To: <4C06E5A6.6@cray.com>
+References: <4BFED954.8060807@cray.com>
+	<20100601231600.3b3bf499.akpm@linux-foundation.org>
+	<4C06E5A6.6@cray.com>
+X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-Message-Id: <201006030133.25522.sven.eckelmann@gmx.de>
-X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---nextPart1305233.EJFBN4lapa
-Content-Type: Text/Plain;
-  charset="us-ascii"
-Content-Transfer-Encoding: quoted-printable
+On Wed, 2 Jun 2010 16:13:42 -0700
+Doug Doan <dougd@cray.com> wrote:
 
-Joe Perches wrote:
-> On Thu, 2010-06-03 at 01:23 +0200, Sven Eckelmann wrote:
-> > You've also changed the output. So you may partly broke batctl too (have
-> > to check that first).
->=20
-> There was no change in output.
-> MAC_FMT output is the same as %pM
+> On 06/01/2010 11:16 PM, Andrew Morton wrote:
+> > On Thu, 27 May 2010 13:43:00 -0700 Doug Doan<dougd@cray.com>  wrote:
+> >
+> >>
+> >> When a copy-on-write occurs, we take one of two paths in handle_mm_fault:
+> >> through handle_pte_fault for normal pages, or through hugetlb_fault for huge pages.
+> >>
+> >> In the normal page case, we eventually get to do_wp_page and call mmu notifiers
+> >> via ptep_clear_flush_notify. There is no callout to the mmmu notifiers in the
+> >> huge page case. This patch fixes that.
+> >>
+> >> Signed-off-by: Doug Doan<dougd@cray.com>
+> >> ---
+> >>
+> >> [patch  text/plain (802B)]
+> >> --- mm/hugetlb.c.orig	2010-05-27 13:07:58.569546314 -0700
+> >> +++ mm/hugetlb.c	2010-05-26 14:41:06.449296524 -0700
+> >
+> > (In patch -p1 form, please.  So a/mm/hugetlb.c)
+> >
+> >> @@ -2345,11 +2345,17 @@ retry_avoidcopy:
+> >>   	ptep = huge_pte_offset(mm, address&  huge_page_mask(h));
+> >>   	if (likely(pte_same(huge_ptep_get(ptep), pte))) {
+> >>   		/* Break COW */
+> >> +		mmu_notifier_invalidate_range_start(mm,
+> >> +			address&  huge_page_mask(h),
+> >> +			(address&  huge_page_mask(h)) + huge_page_size(h));
+> >>   		huge_ptep_clear_flush(vma, address, ptep);
+> >>   		set_huge_pte_at(mm, address, ptep,
+> >>   				make_huge_pte(vma, new_page, 1));
+> >>   		/* Make the old page be freed below */
+> >>   		new_page = old_page;
+> >> +		mmu_notifier_invalidate_range_end(mm,
+> >> +			address&  huge_page_mask(h),
+> >> +			(address&  huge_page_mask(h)) + huge_page_size(h));
+> >>   	}
+> >>   	page_cache_release(new_page);
+> >>   	page_cache_release(old_page);
+> >
+> > This causes mmu_notifier_invalidate_range_start() to be called under
+> > page_table_lock.  The immediately preceding code seems to take some
+> > care to avoid doing that.  I took a quick look at other callsites and
+> > cannot immediately see other cases where
+> > mmu_notifier_invalidate_range_start/end() are called under that lock.
+> >
+> > This may not introduce bugs with current notifier implementations (I
+> > didn't check), but it does lessen flexibility?
+> 
+> In the normal page case, handle_pte_fault calls do_wp_page inside a spinlock on 
+> ptl = pte_lockptr(mm, pmd), which uses mm->page_table_lock if USE_SPLIT_PTLOCKS 
+> is not defined.
+> 
+> I don't understand what you mean by lessen flexibilty.
 
-I meant the other patch :)
+Well, specifically it means that
+mmu_notifier_invalidate_range_start/end() implemetnations can no longer
+take page_table_lock or any lock which nests outside page_table_lock. 
+That lessens flexibility.
 
-Best regards,
-	Sven
-
---nextPart1305233.EJFBN4lapa
-Content-Type: application/pgp-signature; name=signature.asc 
-Content-Description: This is a digitally signed message part.
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iQIcBAABCgAGBQJMBupEAAoJEF2HCgfBJntG1L0P/0mAZue+5DvrGUv56VP1g8Rz
-n96YngWzvBrLUdO3kc6y+Ie+hXz08ycoOiUD0skmbcwBj7vCIV+mmhzp3mKoerPh
-DbH8NvOCfWzNWbz/pBq1HTCcVdh2gQJOvh1D/2GsWXFbsvpFrfYgNR/4lpQiCc+f
-8WbK8yLqya7NQP1JOhiLv/m8khoMovIPYrmUQ4sfOYLwrBL7vRnoXWtViw3dlMYZ
-ZiYkofj8OHWtitTt5dNqB3LfoQn/82yJYscVNRJZ2CoXXPLZUVPfppt+Fj8B9rpi
-wMVfqYW+KujNJUoYSmIJS6ErydkOkoclU62V1etlbOug9fXKaybFHqT16zCtd+oR
-mpCojJcg2aFyKNAUPl3zrWq4miPOJHQnJQU4JWbBAE87ZWS5oN+Eexui6P33CbXI
-9XRIH55k3lc65YSZL5EZ/RAKg99QLyq7OVVvy/e3LpYYSrUZNWBTjODl/K87aA+c
-hhJ5Xrk9BNHkxB7VMsxh1LTS75W2h/erciZDiO5Tlqld8gnfk7tLVR3E1bw/y2d6
-hmGikyPVkJzw30MMxRrzOL2twoO65ktMZaFCrh8HZUaOnIlfq30HfLSwjqBNwIBj
-LmsLGBpZ1mIdzixTN/ttBv6jqHa5/7Own77H0aKghxWsdDYiwHGkvRBFGPIuD7iw
-s9P0rZoafE/xKSBJ6VQS
-=JQ9Z
------END PGP SIGNATURE-----
-
---nextPart1305233.EJFBN4lapa--
+As the other mmu_notifier_invalidate_range_start/end() callsite in this
+function carefully nested those calls outside page_table_lock, perhaps
+that was thought to be a significant thing.
