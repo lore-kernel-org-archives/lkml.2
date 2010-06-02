@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756943Ab0FBIyS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jun 2010 04:54:18 -0400
-Received: from mail.pripojeni.net ([217.66.174.14]:59184 "EHLO
+	id S932167Ab0FBIyZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jun 2010 04:54:25 -0400
+Received: from mail.pripojeni.net ([217.66.174.14]:59181 "EHLO
 	mail.jetsystems.cz" rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org
-	with ESMTP id S1752684Ab0FBIxU (ORCPT
+	with ESMTP id S1752353Ab0FBIxT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jun 2010 04:53:20 -0400
+	Wed, 2 Jun 2010 04:53:19 -0400
 From: Jiri Slaby <jslaby@suse.cz>
 To: rjw@sisk.pl
 Cc: pavel@ucw.cz, linux-pm@lists.linux-foundation.org,
        linux-kernel@vger.kernel.org, jirislaby@gmail.com
-Subject: [PATCH 3/9] PM / Hibernate: user, implement user_ops writer
-Date: Wed,  2 Jun 2010 10:52:42 +0200
-Message-Id: <1275468768-28229-3-git-send-email-jslaby@suse.cz>
+Subject: [PATCH 9/9] PM / Hibernate: move non-swap code to image.c
+Date: Wed,  2 Jun 2010 10:52:48 +0200
+Message-Id: <1275468768-28229-9-git-send-email-jslaby@suse.cz>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1275468768-28229-1-git-send-email-jslaby@suse.cz>
 References: <1275468768-28229-1-git-send-email-jslaby@suse.cz>
@@ -21,259 +21,482 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Switch /dev/snapshot writer to hibernate_io_ops approach so that we
-can do whatever we want with snapshot processing code. All the later
-code changes will be transparent and needn't care about different
-readers/writers.
-
-In this patch only writer is implemented -- for better bisectability
-if something breaks. (The development was easier too, because one
-could break only one part, not both.)
-
-Also, when using this interface, switch to the ops on open/release,
-so they are used.
-
-There are explicit barriers protecting to_do_buffer, because it is
-all done in a producer-consumer fashion:
-PRODUCER (snapshot layer)
-1) to_do_buffer is set
-2) set TODO bit
-3) wake CONSUMER
-4) wait for TODO bit _clear_
-
-CONSUMER (fops->read)
-1) wait for TODO bit
-2) pass to_do_buffer to userspace
-3) clear TODO bit
-4) wake PRODUCER
+Now, when all the swap-independent code was separated, it's time to
+move it into a separate file called image.c. Although snapshot.c is
+image related too, we want to move the snapshot.c code to mm/,
+because it is rather a memory management so that mm people won't
+forget about hibernation. Hence we don't pollute snapshot.c with
+image processing here.
 
 Signed-off-by: Jiri Slaby <jslaby@suse.cz>
 Cc: "Rafael J. Wysocki" <rjw@sisk.pl>
 ---
- kernel/power/user.c |  140 ++++++++++++++++++++++++++++++++++++++++++++++++---
- 1 files changed, 132 insertions(+), 8 deletions(-)
+ kernel/power/Makefile   |    2 +-
+ kernel/power/image.c    |  204 +++++++++++++++++++++++++++++++++++++++++++++++
+ kernel/power/power.h    |    1 -
+ kernel/power/snapshot.c |    2 +-
+ kernel/power/swap.c     |  192 --------------------------------------------
+ 5 files changed, 206 insertions(+), 195 deletions(-)
+ create mode 100644 kernel/power/image.c
 
-diff --git a/kernel/power/user.c b/kernel/power/user.c
-index e819e17..b4610c3 100644
---- a/kernel/power/user.c
-+++ b/kernel/power/user.c
-@@ -23,6 +23,8 @@
- #include <linux/console.h>
- #include <linux/cpu.h>
- #include <linux/freezer.h>
-+#include <linux/mutex.h>
-+#include <linux/wait.h>
- #include <scsi/scsi_scan.h>
+diff --git a/kernel/power/Makefile b/kernel/power/Makefile
+index 524e058..c8f26f0 100644
+--- a/kernel/power/Makefile
++++ b/kernel/power/Makefile
+@@ -9,7 +9,7 @@ obj-$(CONFIG_FREEZER)		+= process.o
+ obj-$(CONFIG_SUSPEND)		+= suspend.o
+ obj-$(CONFIG_PM_TEST_SUSPEND)	+= suspend_test.o
+ obj-$(CONFIG_HIBERNATION)	+= hibernate.o snapshot.o swap.o user.o \
+-				   block_io.o
++				   block_io.o image.o
+ obj-$(CONFIG_HIBERNATION_NVS)	+= hibernate_nvs.o
  
- #include <asm/uaccess.h>
-@@ -61,10 +63,93 @@ static struct snapshot_data {
- 	char frozen;
- 	char ready;
- 	char platform_support;
-+	struct hibernate_io_ops *prev_ops;
- } snapshot_state;
- 
- atomic_t snapshot_device_available = ATOMIC_INIT(1);
- 
-+static struct {
-+	void *buffer; /* buffer to pass through */
-+	struct workqueue_struct *worker; /* the thread initiating read/write */
-+	wait_queue_head_t wait; /* wait for buffer */
-+	wait_queue_head_t done; /* read/write done? */
-+	struct mutex lock; /* protection for buffer */
+ obj-$(CONFIG_MAGIC_SYSRQ)	+= poweroff.o
+diff --git a/kernel/power/image.c b/kernel/power/image.c
+new file mode 100644
+index 0000000..7ebed6b
+--- /dev/null
++++ b/kernel/power/image.c
+@@ -0,0 +1,204 @@
++/*
++ * kernel/power/image.c
++ *
++ * This file provides functions for reading and writing the suspend image.
++ * It is independent of readers/writers (e.g. swap).
++ *
++ * Copyright (C) 1998,2001-2005 Pavel Machek <pavel@suse.cz>
++ * Copyright (C) 2006 Rafael J. Wysocki <rjw@sisk.pl>
++ *
++ * This file is released under the GPLv2.
++ */
 +
-+#define TODO_WORK	1
-+#define TODO_FINISH	2
-+#define TODO_CLOSED	3
-+#define TODO_ERROR	4
-+	DECLARE_BITMAP(flags, 10); /* TODO_* flags defined above */
-+} to_do;
++#include <linux/kernel.h>
++#include <linux/time.h>
 +
-+static unsigned long user_free_space(void)
++#include "power.h"
++
++/**
++ *	save_image - save the suspend image data
++ */
++static int save_image(struct hibernate_io_handle *io_handle,
++		      struct snapshot_handle *snapshot,
++                      unsigned int nr_to_write)
 +{
-+	return ~0UL; /* we have no idea, maybe we will fail later */
++	unsigned int m;
++	int ret;
++	int nr_pages;
++	int err2;
++	struct bio *bio;
++	struct timeval start;
++	struct timeval stop;
++
++	printk(KERN_INFO "PM: Saving image data pages (%u pages) ...     ",
++		nr_to_write);
++	m = nr_to_write / 100;
++	if (!m)
++		m = 1;
++	nr_pages = 0;
++	bio = NULL;
++	do_gettimeofday(&start);
++	while (1) {
++		ret = snapshot_read_next(snapshot);
++		if (ret <= 0)
++			break;
++		ret = hibernate_io_ops->write_page(io_handle,
++				data_of(*snapshot), &bio);
++		if (ret)
++			break;
++		if (!(nr_pages % m))
++			printk(KERN_CONT "\b\b\b\b%3d%%", nr_pages / m);
++		nr_pages++;
++	}
++	err2 = hib_wait_on_bio_chain(&bio);
++	do_gettimeofday(&stop);
++	if (!ret)
++		ret = err2;
++	if (!ret)
++		printk(KERN_CONT "\b\b\b\bdone\n");
++	else
++		printk(KERN_CONT "\n");
++	swsusp_show_speed(&start, &stop, nr_to_write, "Wrote");
++	return ret;
 +}
 +
-+static struct hibernate_io_handle *user_writer_start(void)
++/**
++ *	enough_space - Make sure we have enough space to save the image.
++ *
++ *	Returns TRUE or FALSE after checking the total amount of
++ *	space avaiable from the resume block.
++ */
++static int enough_space(unsigned int nr_pages)
 +{
-+	return hib_io_handle_alloc(0) ? : ERR_PTR(-ENOMEM);
++	unsigned int free_pages = hibernate_io_ops->free_space();
++
++	pr_debug("PM: Free storage pages: %u\n", free_pages);
++	return free_pages > nr_pages + PAGES_FOR_IO;
 +}
 +
-+static int user_write_page(struct hibernate_io_handle *io_handle, void *buf,
-+		struct bio **bio_chain)
++/**
++ *	swsusp_write - Write entire image and metadata.
++ *	@flags: flags to pass to the "boot" kernel in the image header
++ *
++ *	It is important _NOT_ to umount filesystems at this point. We want
++ *	them synced (in case something goes wrong) but we DO not want to mark
++ *	filesystem clean: it is not. (And it does not matter, if we resume
++ *	correctly, we'll mark system clean, anyway.)
++ */
++int swsusp_write(unsigned int flags)
 +{
-+	int err = 0;
++	struct hibernate_io_handle *io_handle;
++	struct snapshot_handle snapshot;
++	unsigned long pages;
++	int error;
 +
-+	if (test_bit(TODO_CLOSED, to_do.flags))
-+		return -EIO;
-+
-+	mutex_lock(&to_do.lock);
-+	to_do.buffer = buf;
-+	mutex_unlock(&to_do.lock);
-+	set_bit(TODO_WORK, to_do.flags);
-+	wake_up_interruptible(&to_do.wait);
-+
-+	wait_event(to_do.done, !test_bit(TODO_WORK, to_do.flags) ||
-+			(err = test_bit(TODO_CLOSED, to_do.flags)));
-+
-+	return err ? -EIO : 0;
-+}
-+
-+static int user_writer_finish(struct hibernate_io_handle *io_handle,
-+		unsigned int flags, int error)
-+{
-+	int err = 0;
-+
-+	if (error)
-+		set_bit(TODO_ERROR, to_do.flags);
-+	set_bit(TODO_FINISH, to_do.flags);
-+	wake_up_interruptible(&to_do.wait);
-+
-+	wait_event(to_do.done, !test_bit(TODO_FINISH, to_do.flags) ||
-+			(err = test_bit(TODO_CLOSED, to_do.flags)));
-+
-+	if (!error && err)
-+		error = -EIO;
-+
++	pages = snapshot_get_image_size();
++	io_handle = hibernate_io_ops->writer_start();
++	if (IS_ERR(io_handle)) {
++		printk(KERN_ERR "PM: Cannot get swap writer\n");
++		return PTR_ERR(io_handle);
++	}
++	if (!enough_space(pages)) {
++		printk(KERN_ERR "PM: Not enough free space for image\n");
++		error = -ENOSPC;
++		goto out_finish;
++	}
++	memset(&snapshot, 0, sizeof(struct snapshot_handle));
++	error = snapshot_write_init(io_handle, &snapshot);
++	if (error) {
++		printk(KERN_ERR "PM: Cannot init writer\n");
++		goto out_finish;
++	}
++	error = save_image(io_handle, &snapshot, pages - 1);
++out_finish:
++	error = hibernate_io_ops->writer_finish(io_handle, flags, error);
 +	return error;
 +}
 +
-+struct hibernate_io_ops user_ops = {
-+	.free_space = user_free_space,
-+
-+	.writer_start = user_writer_start,
-+	.writer_finish = user_writer_finish,
-+	.write_page = user_write_page,
-+};
-+
-+static void snapshot_writer(struct work_struct *work)
++/**
++ *	load_image - load the image
++ *	@handle and the snapshot handle @snapshot
++ *	(assume there are @nr_pages pages to load)
++ */
++static int load_image(struct hibernate_io_handle *io_handle,
++		      struct snapshot_handle *snapshot,
++		      unsigned int nr_to_read)
 +{
-+	int ret;
++	unsigned int m;
++	int error = 0;
++	struct timeval start;
++	struct timeval stop;
++	struct bio *bio;
++	int err2;
++	unsigned nr_pages;
 +
-+	ret = swsusp_write(0);
-+	if (ret)
-+		printk(KERN_ERR "PM: write failed with %d\n", ret);
++	printk(KERN_INFO "PM: Loading image data pages (%u pages) ...     ",
++		nr_to_read);
++	m = nr_to_read / 100;
++	if (!m)
++		m = 1;
++	nr_pages = 0;
++	bio = NULL;
++	do_gettimeofday(&start);
++	for ( ; ; ) {
++		error = hibernate_io_ops->read_page(io_handle,
++				data_of(*snapshot), &bio);
++		if (error)
++			break;
++		if (snapshot->sync_read)
++			error = hib_wait_on_bio_chain(&bio);
++		if (error)
++			break;
++		error = snapshot_write_next(snapshot);
++		if (error >= 0)
++			nr_pages++;
++		if (error <= 0)
++			break;
++		if (!(nr_pages % m))
++			printk("\b\b\b\b%3d%%", nr_pages / m);
++	}
++	err2 = hib_wait_on_bio_chain(&bio);
++	do_gettimeofday(&stop);
++	if (!error)
++		error = err2;
++	if (!error) {
++		printk("\b\b\b\bdone\n");
++		snapshot_write_finalize(snapshot);
++		if (!snapshot_image_loaded(snapshot))
++			error = -ENODATA;
++	} else
++		printk("\n");
++	swsusp_show_speed(&start, &stop, nr_to_read, "Read");
++	return error;
 +}
 +
-+static DECLARE_WORK(snapshot_writer_w, snapshot_writer);
++/**
++ *	swsusp_read - read the hibernation image.
++ *	@flags_p: flags passed by the "frozen" kernel in the image header should
++ *		  be written into this memeory location
++ */
++int swsusp_read(unsigned int *flags_p)
++{
++	int error;
++	struct hibernate_io_handle *io_handle;
++	struct snapshot_handle snapshot;
 +
- static int snapshot_open(struct inode *inode, struct file *filp)
- {
- 	struct snapshot_data *data;
-@@ -115,9 +200,17 @@ static int snapshot_open(struct inode *inode, struct file *filp)
- 	}
- 	if (error)
- 		atomic_inc(&snapshot_device_available);
-+	else {
-+		data->prev_ops = hibernate_io_ops;
-+		hibernate_io_ops = &user_ops;
++	memset(&snapshot, 0, sizeof(struct snapshot_handle));
++	io_handle = hibernate_io_ops->reader_start(flags_p);
++	if (IS_ERR(io_handle)) {
++		error = PTR_ERR(io_handle);
++		goto end;
 +	}
- 	data->frozen = 0;
- 	data->ready = 0;
- 	data->platform_support = 0;
-+	memset(to_do.flags, 0, sizeof(*to_do.flags));
-+	init_waitqueue_head(&to_do.wait);
-+	init_waitqueue_head(&to_do.done);
-+	mutex_init(&to_do.lock);
- 
-  Unlock:
- 	mutex_unlock(&pm_mutex);
-@@ -131,6 +224,10 @@ static int snapshot_release(struct inode *inode, struct file *filp)
- 
- 	mutex_lock(&pm_mutex);
- 
-+	set_bit(TODO_CLOSED, to_do.flags);
-+	wake_up(&to_do.done);
-+	flush_workqueue(to_do.worker);
++	error = snapshot_read_init(io_handle, &snapshot);
++	if (!error)
++		error = load_image(io_handle, &snapshot,
++				snapshot_get_image_size()  - 1);
++	hibernate_io_ops->reader_finish(io_handle);
++end:
++	if (!error)
++		pr_debug("PM: Image successfully loaded\n");
++	else
++		pr_debug("PM: Error %d resuming\n", error);
++	return error;
++}
 +
- 	swsusp_free();
- 	free_basic_memory_bitmaps();
- 	data = filp->private_data;
-@@ -139,6 +236,7 @@ static int snapshot_release(struct inode *inode, struct file *filp)
- 		thaw_processes();
- 	pm_notifier_call_chain(data->mode == O_WRONLY ?
- 			PM_POST_HIBERNATION : PM_POST_RESTORE);
-+	hibernate_io_ops = data->prev_ops;
- 	atomic_inc(&snapshot_device_available);
- 
- 	mutex_unlock(&pm_mutex);
-@@ -152,6 +250,7 @@ static ssize_t snapshot_read(struct file *filp, char __user *buf,
- 	struct snapshot_data *data;
- 	ssize_t res;
- 	loff_t pg_offp = *offp & ~PAGE_MASK;
-+	int fin = 0;
- 
- 	mutex_lock(&pm_mutex);
- 
-@@ -161,18 +260,31 @@ static ssize_t snapshot_read(struct file *filp, char __user *buf,
- 		goto Unlock;
- 	}
- 	if (!pg_offp) { /* on page boundary? */
--		res = snapshot_read_next(&data->handle);
--		if (res <= 0)
-+		res = wait_event_interruptible(to_do.wait,
-+			test_bit(TODO_WORK, to_do.flags) ||
-+			(fin = test_and_clear_bit(TODO_FINISH, to_do.flags)));
-+		if (res)
- 			goto Unlock;
--	} else {
--		res = PAGE_SIZE - pg_offp;
-+		if (test_bit(TODO_ERROR, to_do.flags)) {
-+			res = -EIO;
-+			goto Unlock;
-+		}
-+		if (fin)
-+			goto wake;
- 	}
-+	res = PAGE_SIZE - pg_offp;
- 
--	res = simple_read_from_buffer(buf, count, &pg_offp,
--			data_of(data->handle), res);
-+	mutex_lock(&to_do.lock);
-+	res = simple_read_from_buffer(buf, count, &pg_offp, to_do.buffer, res);
-+	mutex_unlock(&to_do.lock);
- 	if (res > 0)
- 		*offp += res;
- 
-+	if (!(pg_offp & ~PAGE_MASK)) {
-+		clear_bit(TODO_WORK, to_do.flags);
-+wake:
-+		wake_up(&to_do.done);
-+	}
-  Unlock:
- 	mutex_unlock(&pm_mutex);
- 
-@@ -278,8 +390,11 @@ static long snapshot_ioctl(struct file *filp, unsigned int cmd,
- 		error = hibernation_snapshot(data->platform_support);
- 		if (!error)
- 			error = put_user(in_suspend, (int __user *)arg);
--		if (!error)
-+		if (!error) {
-+			if (in_suspend)
-+				queue_work(to_do.worker, &snapshot_writer_w);
- 			data->ready = 1;
-+		}
- 		break;
- 
- 	case SNAPSHOT_ATOMIC_RESTORE:
-@@ -473,7 +588,16 @@ static struct miscdevice snapshot_device = {
- 
- static int __init snapshot_device_init(void)
- {
--	return misc_register(&snapshot_device);
-+	int ret;
-+
-+	to_do.worker = create_singlethread_workqueue("suspend_worker");
-+	if (!to_do.worker)
-+		return -ENOMEM;
-+
-+	ret = misc_register(&snapshot_device);
-+	if (ret)
-+		destroy_workqueue(to_do.worker);
-+	return ret;
+diff --git a/kernel/power/power.h b/kernel/power/power.h
+index 1fdbfe7..ad42a0f 100644
+--- a/kernel/power/power.h
++++ b/kernel/power/power.h
+@@ -169,7 +169,6 @@ struct hibernate_io_ops {
+ 			struct bio **bio_chain);
  };
  
- device_initcall(snapshot_device_init);
+-extern unsigned int snapshot_additional_pages(struct zone *zone);
+ extern unsigned long snapshot_get_image_size(void);
+ extern int snapshot_read_init(struct hibernate_io_handle *io_handle,
+ 		struct snapshot_handle *handle);
+diff --git a/kernel/power/snapshot.c b/kernel/power/snapshot.c
+index 9cd6931..f898820 100644
+--- a/kernel/power/snapshot.c
++++ b/kernel/power/snapshot.c
+@@ -790,7 +790,7 @@ void free_basic_memory_bitmaps(void)
+  *	zone (usually the returned value is greater than the exact number)
+  */
+ 
+-unsigned int snapshot_additional_pages(struct zone *zone)
++static unsigned int snapshot_additional_pages(struct zone *zone)
+ {
+ 	unsigned int res;
+ 
+diff --git a/kernel/power/swap.c b/kernel/power/swap.c
+index f7864bc..585d460 100644
+--- a/kernel/power/swap.c
++++ b/kernel/power/swap.c
+@@ -371,109 +371,6 @@ static int swap_writer_finish(struct hibernate_io_handle *io_handle,
+ 	return error;
+ }
+ 
+-/**
+- *	save_image - save the suspend image data
+- */
+-
+-static int save_image(struct hibernate_io_handle *io_handle,
+-		      struct snapshot_handle *snapshot,
+-                      unsigned int nr_to_write)
+-{
+-	unsigned int m;
+-	int ret;
+-	int nr_pages;
+-	int err2;
+-	struct bio *bio;
+-	struct timeval start;
+-	struct timeval stop;
+-
+-	printk(KERN_INFO "PM: Saving image data pages (%u pages) ...     ",
+-		nr_to_write);
+-	m = nr_to_write / 100;
+-	if (!m)
+-		m = 1;
+-	nr_pages = 0;
+-	bio = NULL;
+-	do_gettimeofday(&start);
+-	while (1) {
+-		ret = snapshot_read_next(snapshot);
+-		if (ret <= 0)
+-			break;
+-		ret = hibernate_io_ops->write_page(io_handle,
+-				data_of(*snapshot), &bio);
+-		if (ret)
+-			break;
+-		if (!(nr_pages % m))
+-			printk(KERN_CONT "\b\b\b\b%3d%%", nr_pages / m);
+-		nr_pages++;
+-	}
+-	err2 = hib_wait_on_bio_chain(&bio);
+-	do_gettimeofday(&stop);
+-	if (!ret)
+-		ret = err2;
+-	if (!ret)
+-		printk(KERN_CONT "\b\b\b\bdone\n");
+-	else
+-		printk(KERN_CONT "\n");
+-	swsusp_show_speed(&start, &stop, nr_to_write, "Wrote");
+-	return ret;
+-}
+-
+-/**
+- *	enough_space - Make sure we have enough space to save the image.
+- *
+- *	Returns TRUE or FALSE after checking the total amount of
+- *	space avaiable from the resume block.
+- */
+-
+-static int enough_space(unsigned int nr_pages)
+-{
+-	unsigned int free_pages = hibernate_io_ops->free_space();
+-
+-	pr_debug("PM: Free storage pages: %u\n", free_pages);
+-	return free_pages > nr_pages + PAGES_FOR_IO;
+-}
+-
+-/**
+- *	swsusp_write - Write entire image and metadata.
+- *	@flags: flags to pass to the "boot" kernel in the image header
+- *
+- *	It is important _NOT_ to umount filesystems at this point. We want
+- *	them synced (in case something goes wrong) but we DO not want to mark
+- *	filesystem clean: it is not. (And it does not matter, if we resume
+- *	correctly, we'll mark system clean, anyway.)
+- */
+-
+-int swsusp_write(unsigned int flags)
+-{
+-	struct hibernate_io_handle *io_handle;
+-	struct snapshot_handle snapshot;
+-	unsigned long pages;
+-	int error;
+-
+-	pages = snapshot_get_image_size();
+-	io_handle = hibernate_io_ops->writer_start();
+-	if (IS_ERR(io_handle)) {
+-		printk(KERN_ERR "PM: Cannot get swap writer\n");
+-		return PTR_ERR(io_handle);
+-	}
+-	if (!enough_space(pages)) {
+-		printk(KERN_ERR "PM: Not enough free space for image\n");
+-		error = -ENOSPC;
+-		goto out_finish;
+-	}
+-	memset(&snapshot, 0, sizeof(struct snapshot_handle));
+-	error = snapshot_write_init(io_handle, &snapshot);
+-	if (error) {
+-		printk(KERN_ERR "PM: Cannot init writer\n");
+-		goto out_finish;
+-	}
+-	error = save_image(io_handle, &snapshot, pages - 1);
+-out_finish:
+-	error = hibernate_io_ops->writer_finish(io_handle, flags, error);
+-	return error;
+-}
+-
+ static unsigned long swap_free_space(void)
+ {
+ 	return count_swap_pages(root_swap, 1);
+@@ -573,95 +470,6 @@ struct hibernate_io_ops swap_ops = {
+ };
+ 
+ /**
+- *	load_image - load the image
+- *	@handle and the snapshot handle @snapshot
+- *	(assume there are @nr_pages pages to load)
+- */
+-
+-static int load_image(struct hibernate_io_handle *io_handle,
+-		      struct snapshot_handle *snapshot,
+-		      unsigned int nr_to_read)
+-{
+-	unsigned int m;
+-	int error = 0;
+-	struct timeval start;
+-	struct timeval stop;
+-	struct bio *bio;
+-	int err2;
+-	unsigned nr_pages;
+-
+-	printk(KERN_INFO "PM: Loading image data pages (%u pages) ...     ",
+-		nr_to_read);
+-	m = nr_to_read / 100;
+-	if (!m)
+-		m = 1;
+-	nr_pages = 0;
+-	bio = NULL;
+-	do_gettimeofday(&start);
+-	for ( ; ; ) {
+-		error = hibernate_io_ops->read_page(io_handle,
+-				data_of(*snapshot), &bio);
+-		if (error)
+-			break;
+-		if (snapshot->sync_read)
+-			error = hib_wait_on_bio_chain(&bio);
+-		if (error)
+-			break;
+-		error = snapshot_write_next(snapshot);
+-		if (error >= 0)
+-			nr_pages++;
+-		if (error <= 0)
+-			break;
+-		if (!(nr_pages % m))
+-			printk("\b\b\b\b%3d%%", nr_pages / m);
+-	}
+-	err2 = hib_wait_on_bio_chain(&bio);
+-	do_gettimeofday(&stop);
+-	if (!error)
+-		error = err2;
+-	if (!error) {
+-		printk("\b\b\b\bdone\n");
+-		snapshot_write_finalize(snapshot);
+-		if (!snapshot_image_loaded(snapshot))
+-			error = -ENODATA;
+-	} else
+-		printk("\n");
+-	swsusp_show_speed(&start, &stop, nr_to_read, "Read");
+-	return error;
+-}
+-
+-/**
+- *	swsusp_read - read the hibernation image.
+- *	@flags_p: flags passed by the "frozen" kernel in the image header should
+- *		  be written into this memeory location
+- */
+-
+-int swsusp_read(unsigned int *flags_p)
+-{
+-	int error;
+-	struct hibernate_io_handle *io_handle;
+-	struct snapshot_handle snapshot;
+-
+-	memset(&snapshot, 0, sizeof(struct snapshot_handle));
+-	io_handle = hibernate_io_ops->reader_start(flags_p);
+-	if (IS_ERR(io_handle)) {
+-		error = PTR_ERR(io_handle);
+-		goto end;
+-	}
+-	error = snapshot_read_init(io_handle, &snapshot);
+-	if (!error)
+-		error = load_image(io_handle, &snapshot,
+-				snapshot_get_image_size()  - 1);
+-	hibernate_io_ops->reader_finish(io_handle);
+-end:
+-	if (!error)
+-		pr_debug("PM: Image successfully loaded\n");
+-	else
+-		pr_debug("PM: Error %d resuming\n", error);
+-	return error;
+-}
+-
+-/**
+  *      swsusp_check - Check for swsusp signature in the resume device
+  */
+ 
 -- 
 1.7.1
 
