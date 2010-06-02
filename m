@@ -1,44 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757681Ab0FBJmF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jun 2010 05:42:05 -0400
-Received: from 8bytes.org ([88.198.83.132]:54220 "EHLO 8bytes.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753509Ab0FBJmE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jun 2010 05:42:04 -0400
-Date: Wed, 2 Jun 2010 11:42:01 +0200
-From: Joerg Roedel <joro@8bytes.org>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: Avi Kivity <avi@redhat.com>, Tom Lyon <pugs@cisco.com>,
-       linux-kernel@vger.kernel.org, kvm@vger.kernel.org, chrisw@sous-sol.org,
-       hjk@linutronix.de, gregkh@suse.de, aafabbri@cisco.com,
-       scofeldm@cisco.com
-Subject: Re: [PATCH] VFIO driver: Non-privileged user level PCI drivers
-Message-ID: <20100602094201.GC964@8bytes.org>
-References: <4C025999.7080706@redhat.com> <20100530124949.GI27611@redhat.com> <4C0261C1.9090204@redhat.com> <20100530130332.GM27611@redhat.com> <4C026497.8070901@redhat.com> <20100530145309.GO27611@redhat.com> <4C03A285.7060902@redhat.com> <20100531171007.GA6516@redhat.com> <4C04C085.1030107@redhat.com> <20100601095532.GA9178@redhat.com>
+	id S932188Ab0FBJnL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jun 2010 05:43:11 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:33931 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755023Ab0FBJnH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Jun 2010 05:43:07 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:date:message-id:subject:from:to:content-type;
+        b=FZzHDABRS16WyHBhSkP6S+zu9chH80XwhK2RZeai/3WmMDK9r4TxzPO5LVhZ8ezjUO
+         3wtx5Ch0aC51Kwr0Lc9ifU5FBydHLeqz2xXf9ktYP/OJP95QV1LABOupCmpD+x16KxOY
+         1sVCpHx0MrVntvTZxz67qN9/BiNjP9xxfjuCo=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100601095532.GA9178@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Date: Wed, 2 Jun 2010 03:43:06 -0600
+Message-ID: <AANLkTimBVo2XadHatpo2_2_ArX6MMgk4Q2-ADw_htXuA@mail.gmail.com>
+Subject: [ANNOUNCE] Cworthy Libraries for Linux Kernel Utils
+From: Jeffrey Merkey <jeffmerkey@gmail.com>
+To: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 01, 2010 at 12:55:32PM +0300, Michael S. Tsirkin wrote:
+I created a cworthy library under ncurses for xterm and linux
+terminals (also works on DOS and Windows too) years back and have
+ported it to .so an .a formats.  Looks like the old NetWare inderface
+and runs on Linux terminals.  Wrote a sample IFCONFIG lookalike with
+the cworthy look alike portal manager that displays the same info as
+IFCONFIG.  May be of use and looks a lot better than the command line.
+ It is not the actual cworthy but recreates the same look and feel and
+supports all the colors you would want with all the fancy menu and
+screen functions.  I donate it to make the kernel utils look better
+and make me feel more at home since NetWare is no more.  I use this
+lib in most of my projects and it was included in the old NWFS but was
+not cleaned up and broken out.  I pthread enabled it and also added
+support for most of the terminals our there (ANSI and dumb not
+supported but the rest are).
 
-> There seems to be some misunderstanding.  The userspace interface
-> proposed forces a separate domain per device and forces userspace to
-> repeat iommu programming for each device.  We are better off sharing a
-> domain between devices and programming the iommu once.
-> 
-> The natural way to do this is to have an iommu driver for programming
-> iommu.
+http://merkeydebugger.googlecode.com/files/cworthy-06-02-2010.tar.gz
 
-IMO a seperate iommu-userspace driver is a nightmare for a userspace
-interface. It is just too complicated to use. We can solve the problem
-of multiple devices-per-domain with an ioctl which allows binding one
-uio-device to the address-space on another. Thats much simpler.
+Enjoy.
 
-	Joerg
-
+Jeff
