@@ -1,80 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933315Ab0FBXSY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jun 2010 19:18:24 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:43526 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933277Ab0FBXSU convert rfc822-to-8bit (ORCPT
+	id S933306Ab0FBXTY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jun 2010 19:19:24 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:39055 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932353Ab0FBXTW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jun 2010 19:18:20 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=t6UETmQ6Z+C698aXCiWdqCyHgN+ibJOwk4/huIHwPJQ6krcJCpUuTlThqaSMXthTZS
-         F0Wr9PfuskxVGSynh62lNf31yBCHACc0XP+tzj2uQW+TbkN5xU+BRAFEk65sXxKzkhAy
-         GFuAaXL8xaSecBq+OtJIXR68vYtcTpiSCqxAo=
+	Wed, 2 Jun 2010 19:19:22 -0400
 MIME-Version: 1.0
-In-Reply-To: <4C05F3BF.6090503@gmail.com>
-References: <20100601192101.GA15086@srcf.ucam.org>
-	<4C056839.8020605@gmail.com>
-	<20100601200704.GA16091@srcf.ucam.org>
-	<4C056AE6.3000409@gmail.com>
-	<20100601202130.GA16391@srcf.ucam.org>
-	<4C056E0C.2030709@gmail.com>
-	<20100601203351.GA16575@srcf.ucam.org>
-	<4C0572B4.6000201@gmail.com>
-	<20100601211219.GA17719@srcf.ucam.org>
-	<4C057AE9.9020307@gmail.com>
-	<20100601212901.GA18390@srcf.ucam.org>
-	<4C057EF0.2030808@gmail.com>
-	<4C05E800.1010400@gmail.com>
-	<4C05F3BF.6090503@gmail.com>
-Date: Wed, 2 Jun 2010 17:18:19 -0600
-Message-ID: <AANLkTinyxtHQrsgvV0CMQZnyEelVnrpCTM05PLAj-ZYx@mail.gmail.com>
-Subject: Re: [PATCH]X86:reboot.c Add some dmi entries to pci_reboot_dmi_table.
-From: Robert Hancock <hancockrwd@gmail.com>
-To: "Justin P. Mattock" <justinmattock@gmail.com>
-Cc: Matthew Garrett <mjg59@srcf.ucam.org>, x86@kernel.org, tglx@linutronix.de,
-       linux-kernel@vger.kernel.org
+From: Marcelo Roberto Jimenez <mroberto@cetuc.puc-rio.br>
+Date: Wed, 2 Jun 2010 20:19:01 -0300
+X-Google-Sender-Auth: 4bYdOBqSIL-kLfXIKa6ix_2yEIA
+Message-ID: <AANLkTilh4NtHS5p3tWbMtIU9MBBC-Md13Aw9_RdL3Ogp@mail.gmail.com>
+Subject: Pull request for nanoengine
+To: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+       linux-pcmcia@lists.infradead.org
+Cc: linux@arm.linux.org.uk, mad_soft@inbox.ru, rpjday@crashcourse.ca,
+       jaswinderrajput@gmail.com, kristoffer.ericson@gmail.com,
+       Dominik Brodowski <linux@dominikbrodowski.net>,
+       Russell King <rmk+kernel@arm.linux.org.uk>,
+       Wolfram Sang <w.sang@pengutronix.de>,
+       Alessandro Zummo <a.zummo@towertech.it>, rtc-linux@googlegroups.com,
+       Andrew Morton <akpm@linux-foundation.org>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 2, 2010 at 12:01 AM, Justin P. Mattock
-<justinmattock@gmail.com> wrote:
->> Can you post the FACP section of the acpidump output from this machine?
->>
->
-> here you go:
->
+Hi,
 
+The following is a compilation of all the patches I have done for the
+nanoengine. Some of these are also valid for SA11xx based machines
+like, e.g, sharp Zaurus.
 
->             Reset Register Supported (V2) : 1
+These are just stable and tested patches, this does not include the
+PCI patches. All of them have been previously submitted to LKML and
+all critics have been included. The patches should be well commented,
+in their changesets, but anyway here goes a quick summary:
 
-> [074h 116 12]               Reset Register : <Generic Address Structure>
-> [074h 116  1]                     Space ID : 01 (SystemIO)
-> [075h 117  1]                    Bit Width : 08
-> [076h 118  1]                   Bit Offset : 00
-> [077h 119  1]                 Access Width : 00
-> [078h 120  8]                      Address : 0000000000000CF9
->
-> [080h 128  1]         Value to cause reset : 06
+1) ARM: mach-sa1100: Put nanoEngine support back in the kernel.
+2) ARM: mach-sa1100: Add a defconfig for nanoEngine.
+3) ARM: mach-sa1100: Fix for compiler warning of uninitialized variable.
+4) ARM: mach-sa1100: Fix checkpatch.pl issues in
+arch/arm/mach-sa1100/cpu-sa1100.c.
+5) ARM: mach-sa1100: Fix checkpatch.pl issues in
+arch/arm/mach-sa1100/cpu-sa1110.c.
+6) ARM: mach-sa1100: Fix checkpatch.pl issues in drivers/rtc/rtc-sa1100.c.
+7) ARM: mach-sa1100: Print the value of RTSR on /proc/drivers/rtc.
+- Self explanatory/trivial patches.
 
-Hmm, so the FADT says the reset register is listed as supported, and
-says writing 0x06 to 0xCF9 is supposed to do it.. That's exactly what
-this should do:
+8) ARM: mach-sa1100: Fix for a nasty initialization bug in the RTSR.
+- Fixes a bug that could cause the system to hang.
 
-#include <sys/io.h>
+9) ARM: mach-sa1100: Better use of the RTC framework for sa11xx.
+- This patch uses the new RTC framework to treat some common ioctl.
 
-int main() {
-    iopl(3);
-    outb(6, 0xcf9);
-    return 0;
-}
+10) ARM: pcmcia: Fix for building DEBUG with sa11xx_base.c as a module.
+- The symbol soc_pcmcia_debug was not beeing exported.
 
-but you said that didn't do anything.. It kind of seems like ACPI
-reboot is busted on this machine then, but then I wonder how Windows
-manages to work..
+11) ARM: pcmcia: Fix checkpatch.pl issues in drivers/pcmcia/soc_common.c
+- Trivial.
+
+12) ARM: pcmcia: Adds nanoEngine PCMCIA support.
+- Adds nanoEngine PCMCIA support for two sockets.
+
+Regards,
+Marcelo.
+
+--
+The following changes since commit aef4b9aaae1decc775778903922bd0075cce7a88:
+
+  Merge branch 'next' of
+git://git.kernel.org/pub/scm/linux/kernel/git/benh/powerpc (2010-06-01
+14:13:14 -0700)
+
+are available in the git repository at:
+
+  git@github.com:mrjimenez/linux-2.6.git nanoengine
+
+Marcelo Roberto Jimenez (12):
+      ARM: mach-sa1100: Put nanoEngine support back in the kernel.
+      ARM: mach-sa1100: Add a defconfig for nanoEngine.
+      ARM: mach-sa1100: Fix for compiler warning of uninitialized variable.
+      ARM: mach-sa1100: Fix checkpatch.pl issues in
+arch/arm/mach-sa1100/cpu-sa1100.c.
+      ARM: mach-sa1100: Fix checkpatch.pl issues in
+arch/arm/mach-sa1100/cpu-sa1110.c.
+      ARM: mach-sa1100: Fix checkpatch.pl issues in drivers/rtc/rtc-sa1100.c.
+      ARM: mach-sa1100: Print the value of RTSR on /proc/drivers/rtc.
+      ARM: mach-sa1100: Fix for a nasty initialization bug in the RTSR.
+      ARM: mach-sa1100: Better use of the RTC framework for sa11xx.
+      ARM: pcmcia: Fix for building DEBUG with sa11xx_base.c as a module.
+      ARM: pcmcia: Fix checkpatch.pl issues in drivers/pcmcia/soc_common.c
+      ARM: pcmcia: Adds nanoEngine PCMCIA support.
+
+ arch/arm/configs/nanoengine_defconfig          | 1396 ++++++++++++++++++++++++
+ arch/arm/mach-sa1100/Kconfig                   |    8 +
+ arch/arm/mach-sa1100/Makefile                  |    2 +
+ arch/arm/mach-sa1100/cpu-sa1100.c              |   56 +-
+ arch/arm/mach-sa1100/cpu-sa1110.c              |   51 +-
+ arch/arm/mach-sa1100/include/mach/nanoengine.h |   30 +
+ arch/arm/mach-sa1100/nanoengine.c              |  115 ++
+ drivers/pcmcia/Makefile                        |    3 +-
+ drivers/pcmcia/sa1100_generic.c                |    3 +
+ drivers/pcmcia/sa1100_generic.h                |    1 +
+ drivers/pcmcia/sa1100_nanoengine.c             |  219 ++++
+ drivers/pcmcia/soc_common.c                    |  129 ++-
+ drivers/rtc/rtc-sa1100.c                       |  153 ++-
+ 13 files changed, 2021 insertions(+), 145 deletions(-)
+ create mode 100644 arch/arm/configs/nanoengine_defconfig
+ create mode 100644 arch/arm/mach-sa1100/include/mach/nanoengine.h
+ create mode 100644 arch/arm/mach-sa1100/nanoengine.c
+ create mode 100644 drivers/pcmcia/sa1100_nanoengine.c
