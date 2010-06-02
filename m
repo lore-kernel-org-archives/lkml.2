@@ -1,103 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758677Ab0FBUkM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jun 2010 16:40:12 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:43669 "EHLO ogre.sisk.pl"
+	id S1757957Ab0FBUk3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jun 2010 16:40:29 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:56375 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758664Ab0FBUkG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jun 2010 16:40:06 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Neil Brown <neilb@suse.de>
-Subject: Re: [PATCH] - race-free suspend.  Was: Re: [linux-pm] [PATCH 0/8] Suspend block api (version 8)
-Date: Wed, 2 Jun 2010 22:41:14 +0200
-User-Agent: KMail/1.12.4 (Linux/2.6.35-rc1-rjw; KDE/4.3.5; x86_64; ; )
-Cc: Thomas Gleixner <tglx@linutronix.de>,
-       Alan Stern <stern@rowland.harvard.edu>,
-       Felipe Balbi <felipe.balbi@nokia.com>,
-       Arve =?iso-8859-1?q?Hj=F8nnev=E5g?= <arve@android.com>,
-       Peter Zijlstra <peterz@infradead.org>,
-       "Paul@smtp1.linux-foundation.org" <Paul@smtp1.linux-foundation.org>,
-       LKML <linux-kernel@vger.kernel.org>,
-       Florian Mickler <florian@mickler.org>,
-       Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
-       Linux PM <linux-pm@lists.linux-foundation.org>,
-       Alan Cox <alan@lxorguk.ukuu.org.uk>,
-       James Bottomley <James.Bottomley@suse.de>
-References: <Pine.LNX.4.44L0.1005271303190.3239-100000@iolanthe.rowland.org> <alpine.LFD.2.00.1006011243350.2933@localhost.localdomain> <20100602153235.340a7852@notabene.brown>
-In-Reply-To: <20100602153235.340a7852@notabene.brown>
+	id S1758646Ab0FBUkY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Jun 2010 16:40:24 -0400
+Date: Wed, 2 Jun 2010 22:38:27 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Roland McGrath <roland@redhat.com>
+Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+       LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
+       David Rientjes <rientjes@google.com>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+       Nick Piggin <npiggin@suse.de>
+Subject: Re: [PATCH] oom: Make coredump interruptible
+Message-ID: <20100602203827.GA29244@redhat.com>
+References: <20100601093951.2430.A69D9226@jp.fujitsu.com> <20100601201843.GA20732@redhat.com> <20100602221805.F524.A69D9226@jp.fujitsu.com> <20100602154210.GA9622@redhat.com> <20100602172956.5A3E34A491@magilla.sf.frob.com> <20100602175325.GA16474@redhat.com> <20100602185812.4B5894A549@magilla.sf.frob.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201006022241.14152.rjw@sisk.pl>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100602185812.4B5894A549@magilla.sf.frob.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 02 June 2010, Neil Brown wrote:
-> On Tue, 1 Jun 2010 12:50:01 +0200 (CEST)
-> Thomas Gleixner <tglx@linutronix.de> wrote:
-> 
-> > On Tue, 1 Jun 2010, Neil Brown wrote:
-> > > 
-> > > I think you have acknowledged that there is a race with suspend - thanks.
-> > > Next step was "can it be closed".
-> > > You seem to suggest that it can, but you describe it as a "work around"
-> > > rather than a "bug fix"...
-> > > 
-> > > Do you agree that the race is a "bug", and therefore it is appropriate to
-> > > "fix" it assuming an acceptable fix can be found (which I think it can)?
-> > 
-> > If we can fix it, yes we definitely should do and not work around it.
-> >  
-> > Thanks,
-> > 
-> > 	tglx
-> 
-> OK.
-> Here is my suggestion.
-> 
-> While I think this patch would actually work, and hope the ugly aspects are
-> reasonably balanced by the simplicity, I present it primarily as a base for
-> improvement.
-> The important part is to present how drivers and user-space can co-operate 
-> to avoid losing wake-events.  The details of what happens in the kernel are
-> certainly up for discussion (as is everything else really of course).
-> 
-> The user-space suspend daemon avoids losing wake-events by using
-> fcntl(F_OWNER) to ensure it gets a signal whenever any important wake-event
-> is ready to be read by user-space.  This may involve:
->   - the one daemon processing all wake events
->   - Both the suspend daemon and the main event handling daemon opening any
->     given device that delivers wake events (this should work with input
->     events ... unless grabbing is needed)
->   - The event handling daemon giving the suspend-daemon's pid as F_OWNER, and
->     using poll/select to get the events itself.
-> 
-> When 'mem' is written to /sys/power/state, suspend_prepare waits in an
-> interruptible wait until any wake-event that might have been initiated before
-> the suspend was request, has had a chance to be queued for user-space and
-> trigger kill_fasync.
-> Currently this wait is a configurable time after the last wake-event was
-> initiated.  This is hackish, but simple and probably adequate.
-> If more precise timing is needed and achievable, that can be added later.  It
-> would be an entirely internal change and would not affect the API further.
-> Some of the code developed for suspend-blockers might be a starting point for
-> this.
-> 
-> Drivers should call pm_suspend_delay() whenever a wake-event occurs.  This
-> simply records the time so that the suspend process knows if there is in fact
-> any need to wait at all.
-> 
-> The delay to wait after the last pm_suspend_delay() is limited to 10 seconds
-> and can be set by kernel parameter suspend_block_delay=number-of-milliseconds
-> It defaults to 2 jiffies (which is possibly too short).
-> 
-> - Would this fix the "bug"??
-> - and address the issues that suspend-blockers was created to address?
-> - or are the requirements on user-space too onerous?
+On 06/02, Roland McGrath wrote:
+>
+> > when select_bad_process() finds the task P to kill it can participate
+> > in the core dump (sleep in exit_mm), but we should somehow inform the
+> > thread which actually dumps the core: P->mm->core_state->dumper.
+>
+> Perhaps it should simply do that: if you would choose P to oom-kill, and
+> P->mm->core_state!=NULL, then choose P->mm->core_state->dumper instead.
 
-In theory wakeup events can also happen after  wait_for_blockers() has returned
-0 and I guess we should rollback the suspend in such cases.
+... to set TIF_MEMDIE which should be checked in elf_core_dump().
 
-Rafael
+Probably yes.
+
+> > Well, we can use TIF_MEMDIE if we chose the right thread, I think.
+> > But perhaps mm->flags |= MMF_OOM is better, it can have other user.
+> > I dunno.
+>
+> This is all the quick hack before get around to just making core dumping
+> fully-interruptible, no?  So we should go with whatever is the simplest
+> change now.
+
+Yes.
+
+> Perhaps this belongs in another thread as you suggested.  But I wonder what
+> we might get just from s/TASK_UNINTERRUPTIBLE/TASK_KILLABLE/ in exit_mm.
+
+Oh. This needs more thinking. Definitely the task sleeping in exit_mm()
+must not exit until core_state->dumper->thread returns from do_coredump().
+If nothing else, the dumper can use its task_struct and it relies on
+the stable core_thread->next list. And right now TASK_KILLABLE can't
+work anyway, it is possible that fatal_signal_pending() is true.
+
+But perhaps we can do something later. Assuming that do_coredump() is
+interruptible, TASK_KILLABLE can make the difference only if the dumper
+belongs to another thread-group.
+
+Oleg.
+
