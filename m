@@ -1,63 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933012Ab0FBTqd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jun 2010 15:46:33 -0400
-Received: from 8bytes.org ([88.198.83.132]:36808 "EHLO 8bytes.org"
+	id S1758616Ab0FBTsD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jun 2010 15:48:03 -0400
+Received: from ist.d-labs.de ([213.239.218.44]:41800 "EHLO mx01.d-labs.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755013Ab0FBTqb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jun 2010 15:46:31 -0400
-Date: Wed, 2 Jun 2010 21:46:30 +0200
-From: Joerg Roedel <joro@8bytes.org>
-To: Tom Lyon <pugs@lyon-about.com>
-Cc: Chris Wright <chrisw@sous-sol.org>, "Michael S. Tsirkin" <mst@redhat.com>,
-       Avi Kivity <avi@redhat.com>, linux-kernel@vger.kernel.org,
-       kvm@vger.kernel.org, hjk@linutronix.de, gregkh@suse.de,
-       aafabbri@cisco.com, scofeldm@cisco.com
-Subject: Re: [PATCH] VFIO driver: Non-privileged user level PCI drivers
-Message-ID: <20100602194630.GF11162@8bytes.org>
-References: <20100601095532.GA9178@redhat.com> <20100602121927.GA11162@8bytes.org> <20100602174615.GV8301@sequoia.sous-sol.org> <201006021109.17838.pugs@lyon-about.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201006021109.17838.pugs@lyon-about.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1758555Ab0FBTsA convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Jun 2010 15:48:00 -0400
+Date: Wed, 2 Jun 2010 21:47:48 +0200
+From: Florian Mickler <florian@mickler.org>
+To: James Bottomley <James.Bottomley@suse.de>
+Cc: Arve =?ISO-8859-15?Q?Hj=F8nnev=E5g?= <arve@android.com>,
+       Neil Brown <neilb@suse.de>, tytso@mit.edu,
+       Peter Zijlstra <peterz@infradead.org>,
+       LKML <linux-kernel@vger.kernel.org>,
+       Alan Cox <alan@lxorguk.ukuu.org.uk>, mark.gross@intel.com,
+       Thomas Gleixner <tglx@linutronix.de>,
+       Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
+       Linux PM <linux-pm@lists.linux-foundation.org>, felipe.balbi@nokia.com
+Subject: Re: [linux-pm] [PATCH 0/8] Suspend block api (version 8)
+Message-ID: <20100602214748.7742e3ae@schatten.dmk.lab>
+In-Reply-To: <1275491111.2799.110.camel@mulgrave.site>
+References: <20100527232357.6d14fdb2@lxorguk.ukuu.org.uk>
+	<20100601135102.GA8098@srcf.ucam.org>
+	<1275426085.21962.967.camel@mulgrave.site>
+	<201006020024.14220.rjw@sisk.pl>
+	<1275431816.21962.1108.camel@mulgrave.site>
+	<AANLkTikObnAZbyOxeYAhXcEbimO3XTTO-HlC9CD_HH6t@mail.gmail.com>
+	<1275451342.21962.1777.camel@mulgrave.site>
+	<AANLkTilRcFZyYa-0HlaM-6IEZSyar3S9S_cCWSFax2Zo@mail.gmail.com>
+	<1275491111.2799.110.camel@mulgrave.site>
+X-Mailer: Claws Mail 3.7.5 (GTK+ 2.18.9; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 02, 2010 at 11:09:17AM -0700, Tom Lyon wrote:
-> On Wednesday 02 June 2010 10:46:15 am Chris Wright wrote:
+On Wed, 02 Jun 2010 10:05:11 -0500
+James Bottomley <James.Bottomley@suse.de> wrote:
 
-> > This is not any hot path, so saving an ioctl shouldn't be a consideration.
-> > Only important consideration is a good API.  I may have lost context here,
-> > but the SHARE API is limited to the vfio fd.  The BIND API expects a new
-> > iommu object.  Are there other uses for this object?  Tom's current vfio
-> > driver exposes a dma mapping interface, would the iommu object expose
-> > one as well?  Current interface is device specific DMA interface for
-> > host device drivers typically mapping in-flight dma buffers, and IOMMU
-> > specific interface for assigned devices typically mapping entire virtual
-> > address space.
+> On Tue, 2010-06-01 at 21:41 -0700, Arve Hjønnevåg wrote:
+> > No, they have to be two separate constraints, otherwise a constraint
+> > to block suspend would override a constraint to block a low power idle
+> > mode or the other way around.
 > 
-> Actually, it a domain object - which may be usable among iommus (Joerg?).
+> Depends.  If you block the system from going into low power idle, does
+> that mean you still want it to be fully suspended?
+> 
+> If yes, then we do have independent constraints.  If not, they have a
+> hierarchy:
+> 
+>       * Fully Interactive (no low power idle or suspend)
+>       * Partially Interactive (may go into low power idle but not
+>         suspend)
+>       * None (may go into low power idle or suspend)
+> 
+> Which is expressable as a ternary constraint.
+> 
+> James
+> 
 
-Yes, this 'iommu' thing is would be a domain object. But sharing among
-iommus is not necessary because the fact that there are multiple iommus
-in the system is hidden by the iommu drivers. This fact is not even
-exposed by the iommu-api. This makes protection domains system global.
+But unblocking suspend at the moment is independent to getting idle.
+If you have the requirement to stay in the highest-idle level (i.e.
+best latency you can get) that does not (currently) mean, that you can
+not suspend.
 
-> However, you can't really do the dma mapping with just the domain because
-> every device supports a different size address space as a master, i.e.,
-> the dma_mask.
+To preserve that explicit fall-through while still having working
+run-time-powermanagement I think the qos-constraints need to be
+separated. 
 
-The dma_mask has to be handled by the device driver. With the
-iommu-mapping interface the driver can specify the target io-address and
-has to consider the dma_mask for that too.
+<disclaimer: just from what I read>
+Provided you can reach the same power state from idle, current suspend
+could probably also be implemented by just the freezing part and a hint
+to the idle-loop to provide accelerated fall-through to lowest power. 
+</disclaimer>
 
-> And I don't know how kvm would deal with devices with varying dma mask support,
-> or why they'd be in the same domain.
+At that point, you could probably merge the constraints. 
 
-KVM does not care about these masks. This is the business of the guest
-device drivers.
+But the freezing part is also the hard part, isn't it? (I have no
+idea. Thomas seems to think about cgroups for that and doing smth about the timers.)
 
-	Joerg
-
+Cheers,
+Flo
