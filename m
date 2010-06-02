@@ -1,37 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758517Ab0FBRae (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jun 2010 13:30:34 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:32369 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756370Ab0FBRac (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jun 2010 13:30:32 -0400
+	id S932866Ab0FBRcW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jun 2010 13:32:22 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:42052 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758191Ab0FBRcS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Jun 2010 13:32:18 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
+        b=VXYbWhVN4p79r/LYIslVycDgZitI+OfPVP/H3AJnRkNvnoTuki5mTTxajn4O8rTL6r
+         nJuRFaVu/Fz+CT85/wmQyYa8FrEN/LEe7LTZ1zFCz+YTB8fJDit/fUKfbfyE6Vel29QA
+         YE0LlW3dZB2o1ydc8awfnT/C4z5A91xsk6k1A=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-From: Roland McGrath <roland@redhat.com>
-To: Oleg Nesterov <oleg@redhat.com>
-X-Fcc: ~/Mail/linus
-Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-       LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
-       David Rientjes <rientjes@google.com>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-       Nick Piggin <npiggin@suse.de>
-Subject: Re: [PATCH] oom: Make coredump interruptible
-In-Reply-To: Oleg Nesterov's message of  Wednesday, 2 June 2010 17:42:10 +0200 <20100602154210.GA9622@redhat.com>
-References: <20100601093951.2430.A69D9226@jp.fujitsu.com>
-	<20100601201843.GA20732@redhat.com>
-	<20100602221805.F524.A69D9226@jp.fujitsu.com>
-	<20100602154210.GA9622@redhat.com>
-Emacs: well, why *shouldn't* you pay property taxes on your editor?
-Message-Id: <20100602172956.5A3E34A491@magilla.sf.frob.com>
-Date: Wed,  2 Jun 2010 10:29:56 -0700 (PDT)
+In-Reply-To: <AANLkTilLXOSb2P_m4uUubmJar2VMFXizzpa_mQ1j8GPz@mail.gmail.com>
+References: <l2k10f740e81004151234t3004275az36e7873493067a8a@mail.gmail.com>
+	<alpine.OSX.2.00.1004161206300.271@localhost>
+	<AANLkTikexlmuunBQ-ydNaD8fkKcLmrsfJSEgvyMJdNqU@mail.gmail.com>
+	<alpine.OSX.2.00.1005290312230.691@localhost>
+	<AANLkTilLXOSb2P_m4uUubmJar2VMFXizzpa_mQ1j8GPz@mail.gmail.com>
+Date: Wed, 2 Jun 2010 19:24:08 +0200
+X-Google-Sender-Auth: cikoQKi9kVLnvBksyTZU9Wg3Wvo
+Message-ID: <AANLkTilqknhgBCXd-5Yxj9U8gDzDfMmmZdwDOvf-8kbH@mail.gmail.com>
+Subject: Re: [PATCH] net: mac8390 - Sort out memory/MMIO accesses and casts 
+	(was: Re: drivers/net/mac8390.c: Remove useless memcpy casting)
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Finn Thain <fthain@telegraphics.com.au>
+Cc: Joe Perches <joe@perches.com>, "David S. Miller" <davem@davemloft.net>,
+       netdev@vger.kernel.org,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       "Linux/m68k" <linux-m68k@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Why not just test TIF_MEMDIE?
+On Sat, May 29, 2010 at 10:03, Geert Uytterhoeven <geert@linux-m68k.org> wrote:
+> On Fri, May 28, 2010 at 19:21, Finn Thain <fthain@telegraphics.com.au> wrote:
+>> On Sun, 23 May 2010, Geert Uytterhoeven wrote:
+>>> >> But here's a better solution. I do not have the hardware to test it,
+>>> >> though. Finn, does it {look OK,work}?
+>>> >
+>>> > It looks fine. I can't test it right now, but I will do so when I get
+>>> > the opportunity.
+>>>
+>>> Any news from the test front?
+>>
+>> This is commit ba0f916ca7ac79356e2ed32a85c3aa8255b104e7, right?
+>
+> Yep.
+>
+>> If so, it tests OK here.
+>
+> Thanks for testing!
 
-Thanks,
-Roland
+David, will you take this one too?
+
+Gr{oetje,eeting}s,
+
+						Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+							    -- Linus Torvalds
