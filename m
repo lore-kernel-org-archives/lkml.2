@@ -1,42 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757095Ab0FBHH3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jun 2010 03:07:29 -0400
-Received: from ringil.hengli.com.au ([216.59.3.182]:39230 "EHLO
-	arnor.apana.org.au" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751799Ab0FBHH2 (ORCPT
+	id S1757212Ab0FBHJa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jun 2010 03:09:30 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:49111 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751862Ab0FBHJ2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jun 2010 03:07:28 -0400
-Date: Wed, 2 Jun 2010 17:07:25 +1000
-From: Herbert Xu <herbert@gondor.hengli.com.au>
-To: Steffen Klassert <steffen.klassert@secunet.com>
-Cc: Mikulas Patocka <mpatocka@redhat.com>,
-       device-mapper development <dm-devel@redhat.com>,
-       linux-kernel@vger.kernel.org, agk@redhat.com, ak@linux.intel.com
-Subject: Re: [dm-devel] [PATCH] DM-CRYPT: Scale to multiple CPUs
-Message-ID: <20100602070725.GA17066@gondor.apana.org.au>
-References: <20100531160425.GA20344@basil.fritz.box> <Pine.LNX.4.64.1005312239520.6372@hs20-bc2-1.build.redhat.com> <20100601043901.GA25693@gondor.apana.org.au> <Pine.LNX.4.64.1006020051540.22695@hs20-bc2-1.build.redhat.com> <20100602051403.GA5784@gondor.apana.org.au> <Pine.LNX.4.64.1006020119540.22695@hs20-bc2-1.build.redhat.com> <20100602060702.GA6319@gondor.apana.org.au> <20100602063033.GS2184@secunet.com>
+	Wed, 2 Jun 2010 03:09:28 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:mime-version:content-type
+         :content-disposition:user-agent;
+        b=xjQ3vnnYWIcGJ0U44c+zA2ZBy08BLBPThrSUFFB+B5znAvElcxRjXpvxoAvwYQujT2
+         rIuRibsg1BjF7P99jZdxP+HsXtEjSC2Lodji0ctMKWjR41dRry2QMHQ1pVS1UeMyPWaj
+         86OmhNE3DIAKuvlolQ5NHcv0rw0rARlRUqmMc=
+Date: Wed, 2 Jun 2010 00:09:23 -0700
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: LKML <linux-kernel@vger.kernel.org>
+Subject: Long playing threaded interrupt handlers
+Message-ID: <20100602070922.GC3713@core.coreip.homeip.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100602063033.GS2184@secunet.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 02, 2010 at 08:30:33AM +0200, Steffen Klassert wrote:
-> 
-> I did that already for one of the older (remote softirq based)
-> version of pcrypt. I just never pushed it out because I was focused
-> on IPsec and the softirq based version I was not that usefull for
-> dm-crypt. Now, that we use workqueues internally, dm-crypt could
-> benefit from pcrypt too. Let me see whether I can respin the old
-> ablkcipher plugin.
+HI Thomas,
 
-Thanks Steffen!
+The threaded IRQ infrastructure that went into the kernel is extremely
+helpful, however in the input land there are quite a few devices that
+require polling after an IRQ has been raised.
+
+Currently most such drivers, instead of threaded interrupts, still use
+[delayed] work to do the polling, and still face the issue of shutting
+down interrupt and scheduled work in a raceless way leaving irq enable
+counter balanced. Is it allowed to have threaded ISR execute for
+extended a amount of time, and do the required polling, provided that
+ISR does certain checks to finish promply in case when we unbind the
+driver or try to suspend the device?
+
+Thanks.
+
 -- 
-Visit Openswan at http://www.openswan.org/
-Email: Herbert Xu ~{PmV>HI~} <herbert@gondor.apana.org.au>
-Home Page: http://gondor.apana.org.au/~herbert/
-PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
+Dmitry
