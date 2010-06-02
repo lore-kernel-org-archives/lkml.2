@@ -1,70 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758114Ab0FBNPi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jun 2010 09:15:38 -0400
-Received: from mail-yw0-f179.google.com ([209.85.211.179]:33716 "EHLO
-	mail-yw0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757704Ab0FBNPh (ORCPT
+	id S932459Ab0FBNTa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jun 2010 09:19:30 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:49833 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758139Ab0FBNTZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jun 2010 09:15:37 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=Hwsxn6Y/ya0L6isrMlCNZxFzRlDfDYb0Al/SmluItfAaSEzMobFM0SBdUB+KS4BRI5
-         rB8WQrVr5T2MsIE8r5APM6k6agwaiBUFLbY/DNMhcipwYVFVirYQ8kpgfGdVkJHiFFDz
-         G1idQg5a/urZR0dueE80httt7V6F49TThyZX4=
+	Wed, 2 Jun 2010 09:19:25 -0400
+To: Nick Piggin <npiggin@suse.de>
+Cc: Chris Mason <chris.mason@oracle.com>,
+       James Bottomley <James.Bottomley@suse.de>,
+       Matthew Wilcox <matthew@wil.cx>,
+       Christof Schmitt <christof.schmitt@de.ibm.com>,
+       Boaz Harrosh <bharrosh@panasas.com>,
+       "Martin K. Petersen" <martin.petersen@oracle.com>,
+       linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
+       linux-fsdevel@vger.kernel.org
+Subject: Re: Wrong DIF guard tag on ext2 write
+From: "Martin K. Petersen" <martin.petersen@oracle.com>
+Organization: Oracle
+References: <1275398876.21962.6.camel@mulgrave.site>
+	<20100601133341.GK8980@think>
+	<1275399637.21962.11.camel@mulgrave.site>
+	<20100601134951.GM8980@think>
+	<20100601162929.GC32708@parisc-linux.org>
+	<20100601164750.GQ8980@think>
+	<1275411293.21962.387.camel@mulgrave.site>
+	<20100601180905.GR8980@think> <20100601184649.GE9453@laptop>
+	<20100601193528.GV8980@think> <20100602032030.GF9453@laptop>
+Date: Wed, 02 Jun 2010 09:17:56 -0400
+In-Reply-To: <20100602032030.GF9453@laptop> (Nick Piggin's message of "Wed, 2
+	Jun 2010 13:20:30 +1000")
+Message-ID: <yq17hmhbmkb.fsf@sermon.lab.mkp.net>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
 MIME-Version: 1.0
-In-Reply-To: <AANLkTikAhJXiKGzyK7j3V7ev_6f2mn8f-A9tDmgdHy9I@mail.gmail.com>
-References: <cover.1275481997.git.mina86@mina86.com>
-	<5e151207bced1e418bcfed136a871d2da47e417e.1275481997.git.mina86@mina86.com>
-	<e4cb4e647e0ebc51956d6581cd930e3d32f29b99.1275481997.git.mina86@mina86.com>
-	<785f09f63fe30ba52ce15fd7cb3f5750aa279ab9.1275481997.git.mina86@mina86.com>
-	<5492eaf531c8a59c7c188b9e341572c9cdaed5f2.1275481997.git.mina86@mina86.com>
-	<17b54e2cc00a7f730483401f06c79c781491dc62.1275481997.git.mina86@mina86.com>
-	<381c3f8318e39caaffa1ecfdf5e3cf13ed59cd27.1275481997.git.mina86@mina86.com>
-	<c8725442e3c5b8c7be2cc381ed69a3dc0283ebe1.1275481997.git.mina86@mina86.com>
-	<AANLkTikAhJXiKGzyK7j3V7ev_6f2mn8f-A9tDmgdHy9I@mail.gmail.com>
-Date: Wed, 2 Jun 2010 21:15:36 +0800
-Message-ID: <AANLkTims9AjUwdEbd_UcLEH3a8_MdmVGiNmtsX137D7Z@mail.gmail.com>
-Subject: Re: [PATCHv3 07/11] USB: gadget: g_multi: added documentation and INF 
-	files
-From: Xiaofan Chen <xiaofanc@gmail.com>
-To: Michal Nazarewicz <m.nazarewicz@samsung.com>
-Cc: linux-usb@vger.kernel.org,
-       David Brownell <dbrownell@users.sourceforge.net>,
-       Kyungmin Park <kyungmin.park@samsung.com>,
-       Marek Szyprowski <m.szyprowski@samsung.com>,
-       linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+X-Auth-Type: Internal IP
+X-Source-IP: acsinet15.oracle.com [141.146.126.227]
+X-CT-RefId: str=0001.0A090209.4C065A54.00FA:SCFMA922111,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 2, 2010 at 9:02 PM, Xiaofan Chen <xiaofanc@gmail.com> wrote:
-> On Wed, Jun 2, 2010 at 8:45 PM, Michal Nazarewicz
-> <m.nazarewicz@samsung.com> wrote:
->
->> +**** Improvements in INF files
->> +
->> +It needs to be noted that we are not Windows driver experts and as
->> +such we do not claim that provided INF files are flawless or that they
->> +will work on each and every Windows versions (they were tested on
->> +Windows XP SP3 only).
->> +
->> +The bottom line is, if you can improve the INF files, please do and
->> +share the results[7]. :)
->
-> Seems to be very true. I think both INF files are very outdated. But
-> I am not familiar with RNDIS to comment on that one.
->
+>>>>> "Nick" == Nick Piggin <npiggin@suse.de> writes:
 
-I can see that the INF file for the USB RNDIS still contains the
-Win98SE/ME section, not so sure if you want to support them.
+>> 1) filesystem changed it
+>> 2) corruption on the wire or in the raid controller
+>> 3) the page was corrupted while the IO layer was doing the IO.
+>> 
+>> 1 and 2 are easy, we bounce, retry and everyone continues on with
+>> their lives.  With #3, we'll recrc and send the IO down again
+>> thinking the data is correct when really we're writing garbage.
+>> 
+>> How can we tell these three cases apart?
 
-For later versions (XP and later), Microsoft has publish the
-proper template.
-http://msdn.microsoft.com/en-us/library/ff570620.aspx
+Nick> Do we really need to handle #3? It could have happened before the
+Nick> checksum was calculated.
+
+Reason #3 is one of the main reasons for having the checksum in the
+first place.  The whole premise of the data integrity extensions is that
+the checksum is calculated in close temporal proximity to the data
+creation.  I.e. eventually in userland.
+
+Filesystems will inevitably have to be integrity-aware for that to work.
+And it will be their job to keep the data pages stable during DMA.
 
 -- 
-Xiaofan http://mcuee.blogspot.com
+Martin K. Petersen	Oracle Linux Engineering
