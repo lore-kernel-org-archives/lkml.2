@@ -1,54 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757502Ab0FBDQD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Jun 2010 23:16:03 -0400
-Received: from ozlabs.org ([203.10.76.45]:52776 "EHLO ozlabs.org"
+	id S1757556Ab0FBDUv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Jun 2010 23:20:51 -0400
+Received: from cantor.suse.de ([195.135.220.2]:48008 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752498Ab0FBDQA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Jun 2010 23:16:00 -0400
-From: Rusty Russell <rusty@rustcorp.com.au>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [PATCH 2/2] module: fix bne2 "gave up waiting for init of module libcrc32c"
-Date: Wed, 2 Jun 2010 12:45:57 +0930
-User-Agent: KMail/1.13.2 (Linux/2.6.32-21-generic; KDE/4.4.2; i686; ; )
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-       Brandon Philips <brandon@ifup.org>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-       LKML <linux-kernel@vger.kernel.org>,
-       Jon Masters <jonathan@jonmasters.org>, Tejun Heo <htejun@gmail.com>,
-       Masami Hiramatsu <mhiramat@redhat.com>,
-       Kay Sievers <kay.sievers@vrfy.org>
-References: <201005252300.07739.rjw@sisk.pl> <alpine.LFD.2.00.1005312024320.3637@i5.linux-foundation.org> <201006011449.51587.rusty@rustcorp.com.au>
-In-Reply-To: <201006011449.51587.rusty@rustcorp.com.au>
+	id S1755428Ab0FBDUt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Jun 2010 23:20:49 -0400
+Date: Wed, 2 Jun 2010 13:20:30 +1000
+From: Nick Piggin <npiggin@suse.de>
+To: Chris Mason <chris.mason@oracle.com>,
+       James Bottomley <James.Bottomley@suse.de>,
+       Matthew Wilcox <matthew@wil.cx>,
+       Christof Schmitt <christof.schmitt@de.ibm.com>,
+       Boaz Harrosh <bharrosh@panasas.com>,
+       "Martin K. Petersen" <martin.petersen@oracle.com>,
+       linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
+       linux-fsdevel@vger.kernel.org
+Subject: Re: Wrong DIF guard tag on ext2 write
+Message-ID: <20100602032030.GF9453@laptop>
+References: <1275398876.21962.6.camel@mulgrave.site>
+ <20100601133341.GK8980@think>
+ <1275399637.21962.11.camel@mulgrave.site>
+ <20100601134951.GM8980@think>
+ <20100601162929.GC32708@parisc-linux.org>
+ <20100601164750.GQ8980@think>
+ <1275411293.21962.387.camel@mulgrave.site>
+ <20100601180905.GR8980@think>
+ <20100601184649.GE9453@laptop>
+ <20100601193528.GV8980@think>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201006021245.59076.rusty@rustcorp.com.au>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100601193528.GV8980@think>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 1 Jun 2010 02:49:50 pm Rusty Russell wrote:
-> I wonder if we should just get rid of !CONFIG_UNLOAD then?  I have a soft spot
-> for it because it keeps us honest and shows how much shit is there simply for
-> our poor man's pagable kernel.
+On Tue, Jun 01, 2010 at 03:35:28PM -0400, Chris Mason wrote:
+> On Wed, Jun 02, 2010 at 04:46:49AM +1000, Nick Piggin wrote:
+> > On Tue, Jun 01, 2010 at 02:09:05PM -0400, Chris Mason wrote:
+> > > On Tue, Jun 01, 2010 at 04:54:53PM +0000, James Bottomley wrote:
+> > > 
+> > > > For self
+> > > > induced errors (as long as we can detect them) I think we can just
+> > > > forget about it ... if the changed page is important, the I/O request
+> > > > gets repeated (modulo the problem of too great a frequency of changes
+> > > > leading to us never successfully writing it) or it gets dropped because
+> > > > the file was truncated or the data deleted for some other reason.
+> > > 
+> > > Sorry, how can we tell the errors that are self induced from the evil
+> > > bit flipping cable induced errors?
+> > 
+> > Block layer should retry it with bounce pages. That would be a lot nicer
+> > than forcing all upper layers to avoid the problem.
+> > 
 > 
-> Let me compile up a kernel with and without and see what it's really doing
-> to us...
+> So the idea is that we have sent down a buffer and it changed in flight.
+> The block layer is going to say: oh look, the crcs don't match, I'll
+> bounce it, recrc it and send again.  But, there are at least 3 reasons the crc
+> will change:
+> 
+> 1) filesystem changed it
+> 2) corruption on the wire or in the raid controller
+> 3) the page was corrupted while the IO layer was doing the IO.
+> 
+> 1 and 2 are easy, we bounce, retry and everyone continues on with
+> their lives.  With #3, we'll recrc and send the IO down again thinking
+> the data is correct when really we're writing garbage.
+> 
+> How can we tell these three cases apart?
 
-With a distro-style config (copied Ubuntu then held down Enter on oldconfig)
-it's:
-		Vmlinux	module.o (text/data)	Total module size (text/data)
-With unload	8976331	24144/1036		47255565/3298004
-Without unload	8962022	20551/732		47176064/3222068
-Without modules 8723931
+Do we really need to handle #3? It could have happened before the
+checksum was calculated.
 
-So, we pay 14k for module unload support, or 0.2%, and 0.3% across the
-modules themselves.  There's real runtime costs, too, but someone would need
-to annotate and see how often we do inc/dec in a real system.
-
-Not sure that last one is exactly comparable, but it looks like module
-support is a significant cost...
-
-Cheers,
-Rusty.
