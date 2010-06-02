@@ -1,74 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933268Ab0FBWbA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jun 2010 18:31:00 -0400
-Received: from qmta14.emeryville.ca.mail.comcast.net ([76.96.27.212]:43597
-	"EHLO qmta14.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932601Ab0FBWa7 (ORCPT
+	id S1758891Ab0FBWfs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jun 2010 18:35:48 -0400
+Received: from mail-gw0-f46.google.com ([74.125.83.46]:39837 "EHLO
+	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758103Ab0FBWfr convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jun 2010 18:30:59 -0400
-X-Greylist: delayed 353 seconds by postgrey-1.27 at vger.kernel.org; Wed, 02 Jun 2010 18:30:59 EDT
-From: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
-Subject: [net-next-2.6 PATCH 1/2] skbuff: add check for non-linear to
-	warn_if_lro and needs_linearize
-To: davem@davemloft.net, mingo@redhat.com, tglx@linutronix.de, hpa@zytor.com
-Cc: x86@kernel.org, linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-       gospo@redhat.com, Alexander Duyck <alexander.h.duyck@intel.com>,
-       Jeff Kirsher <jeffrey.t.kirsher@intel.com>
-Date: Wed, 02 Jun 2010 15:24:37 -0700
-Message-ID: <20100602222230.12962.97260.stgit@localhost.localdomain>
-User-Agent: StGIT/0.14.3
+	Wed, 2 Jun 2010 18:35:47 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=unffhk64rJKTrldXDzQYwqCHwfVBffkI34e7YEK7mDFNNLrORv8inZ0gvWPs5tJJwr
+         lHNey6EWoVX52dQEOjKiySryrlWR1kmpKXTZsQffnzrlSheeGNSvV/Q1XMz/ny4s435E
+         ayYX6sJ/nBizEzvqoZRNnZA0AAxvoZ5zxUqxo=
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <kqld06dbv2ektmqfadr8l3dqtmm6hler2c@4ax.com>
+References: <kqld06dbv2ektmqfadr8l3dqtmm6hler2c@4ax.com>
+Date: Wed, 2 Jun 2010 18:35:45 -0400
+X-Google-Sender-Auth: 3wJuc30jx9EQvCsBHw2sZgrFrMQ
+Message-ID: <AANLkTimaYtD9qzPYmABVg3clxE6KYeo5bgI8Qp_IBr14@mail.gmail.com>
+Subject: Re: How to stop kernel rebooting during startup?
+From: Bob Copeland <me@bobcopeland.com>
+To: Grant Coady <gcoady.lk@gmail.com>
+Cc: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Alexander Duyck <alexander.h.duyck@intel.com>
+On Wed, Jun 2, 2010 at 6:20 PM, Grant Coady <gcoady.lk@gmail.com> wrote:
+> which worked fine on slackware64-13.0, has this behaviour on slack-
+> ware64-13.1.  Because I cannot read the screen before reboot, no idea
+> where to look next, or what is actually happening.
 
-We can avoid an unecessary cache miss by checking if the skb is non-linear
-before accessing gso_size/gso_type in skb_warn_if_lro, the same can also be
-done to avoid a cache miss on nr_frags if data_len is 0.
+Maybe try CONFIG_BOOT_PRINTK_DELAY to see the message?
 
-Signed-off-by: Alexander Duyck <alexander.h.duyck@intel.com>
-Signed-off-by: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
----
-
- include/linux/skbuff.h |    3 ++-
- net/core/dev.c         |    7 ++++---
- 2 files changed, 6 insertions(+), 4 deletions(-)
-
-diff --git a/include/linux/skbuff.h b/include/linux/skbuff.h
-index bf243fc..645e78d 100644
---- a/include/linux/skbuff.h
-+++ b/include/linux/skbuff.h
-@@ -2129,7 +2129,8 @@ static inline bool skb_warn_if_lro(const struct sk_buff *skb)
- 	/* LRO sets gso_size but not gso_type, whereas if GSO is really
- 	 * wanted then gso_type will be set. */
- 	struct skb_shared_info *shinfo = skb_shinfo(skb);
--	if (shinfo->gso_size != 0 && unlikely(shinfo->gso_type == 0)) {
-+	if (skb_is_nonlinear(skb) && shinfo->gso_size != 0 &&
-+	    unlikely(shinfo->gso_type == 0)) {
- 		__skb_warn_lro_forwarding(skb);
- 		return true;
- 	}
-diff --git a/net/core/dev.c b/net/core/dev.c
-index d03470f..9f7c407 100644
---- a/net/core/dev.c
-+++ b/net/core/dev.c
-@@ -2080,9 +2080,10 @@ static inline int __dev_xmit_skb(struct sk_buff *skb, struct Qdisc *q,
- static inline int skb_needs_linearize(struct sk_buff *skb,
- 				      struct net_device *dev)
- {
--	return (skb_has_frags(skb) && !(dev->features & NETIF_F_FRAGLIST)) ||
--	       (skb_shinfo(skb)->nr_frags && (!(dev->features & NETIF_F_SG) ||
--					      illegal_highdma(dev, skb)));
-+	return skb_is_nonlinear(skb) &&
-+	       ((skb_has_frags(skb) && !(dev->features & NETIF_F_FRAGLIST)) ||
-+	        (skb_shinfo(skb)->nr_frags && (!(dev->features & NETIF_F_SG) ||
-+					      illegal_highdma(dev, skb))));
- }
- 
- /**
-
+-- 
+Bob Copeland %% www.bobcopeland.com
