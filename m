@@ -1,139 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751907Ab0FBF3O (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jun 2010 01:29:14 -0400
-Received: from mgw1.diku.dk ([130.225.96.91]:36161 "EHLO mgw1.diku.dk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751128Ab0FBF3M (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jun 2010 01:29:12 -0400
-Date: Wed, 2 Jun 2010 07:29:04 +0200 (CEST)
-From: Julia Lawall <julia@diku.dk>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Joerg Roedel <joerg.roedel@amd.com>, Thomas Gleixner <tglx@linutronix.de>,
-       Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-       x86@kernel.org, iommu@lists.linux-foundation.org,
-       linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-Subject: Re: [PATCH 6/17] arch/x86/kernel: Add missing spin_unlock
-In-Reply-To: <20100601141529.0c99f22c.akpm@linux-foundation.org>
-Message-ID: <Pine.LNX.4.64.1006020727380.18272@ask.diku.dk>
-References: <Pine.LNX.4.64.1005261755260.23743@ask.diku.dk>
- <20100601141529.0c99f22c.akpm@linux-foundation.org>
+	id S1752738Ab0FBFaK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jun 2010 01:30:10 -0400
+Received: from sous-sol.org ([216.99.217.87]:59298 "EHLO sequoia.sous-sol.org"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751128Ab0FBFaI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Jun 2010 01:30:08 -0400
+Date: Tue, 1 Jun 2010 22:29:07 -0700
+From: Chris Wright <chrisw@sous-sol.org>
+To: Avi Kivity <avi@redhat.com>
+Cc: Tom Lyon <pugs@lyon-about.com>, "Michael S. Tsirkin" <mst@redhat.com>,
+       linux-kernel@vger.kernel.org, kvm@vger.kernel.org, chrisw@sous-sol.org,
+       joro@8bytes.org, hjk@linutronix.de, gregkh@suse.de, aafabbri@cisco.com,
+       scofeldm@cisco.com, alex.williamson@redhat.com
+Subject: Re: [PATCH] VFIO driver: Non-privileged user level PCI drivers
+Message-ID: <20100602052907.GT8301@sequoia.sous-sol.org>
+References: <20100530124949.GI27611@redhat.com>
+ <4C04E0E0.3070006@redhat.com>
+ <20100601104651.GA9415@redhat.com>
+ <201006011426.53563.pugs@lyon-about.com>
+ <4C05C925.6080006@redhat.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4C05C925.6080006@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 1 Jun 2010, Andrew Morton wrote:
+* Avi Kivity (avi@redhat.com) wrote:
+> On 06/02/2010 12:26 AM, Tom Lyon wrote:
+> >
+> >I'm not really opposed to multiple devices per domain, but let me point out how I
+> >ended up here.  First, the driver has two ways of mapping pages, one based on the
+> >iommu api and one based on the dma_map_sg api.  With the latter, the system
+> >already allocates a domain per device and there's no way to control it. This was
+> >presumably done to help isolation between drivers.  If there are multiple drivers
+> >in the user level, do we not want the same isoation to apply to them?
+> 
+> In the case of kvm, we don't want isolation between devices, because
+> that doesn't happen on real hardware.
 
-> On Wed, 26 May 2010 17:55:59 +0200 (CEST)
-> Julia Lawall <julia@diku.dk> wrote:
-> 
-> > From: Julia Lawall <julia@diku.dk>
-> > 
-> > Add a spin_unlock missing on the error path.  The locks and unlocks are
-> > balanced in other functions, so it seems that the same should be the case
-> > here.
-> > 
-> > The semantic match that finds this problem is as follows:
-> > (http://coccinelle.lip6.fr/)
-> > 
-> > // <smpl>
-> > @@
-> > expression E1;
-> > @@
-> > 
-> > * spin_lock(E1,...);
-> >   <+... when != E1
-> >   if (...) {
-> >     ... when != E1
-> > *   return ...;
-> >   }
-> >   ...+>
-> > * spin_unlock(E1,...);
-> > // </smpl>
-> > 
-> > Signed-off-by: Julia Lawall <julia@diku.dk>
-> > 
-> > ---
-> >  arch/x86/kernel/amd_iommu.c |    8 ++++++--
-> >  1 file changed, 6 insertions(+), 2 deletions(-)
-> > 
-> > diff --git a/arch/x86/kernel/amd_iommu.c b/arch/x86/kernel/amd_iommu.c
-> > index fa5a147..b98e1cd 100644
-> > --- a/arch/x86/kernel/amd_iommu.c
-> > +++ b/arch/x86/kernel/amd_iommu.c
-> > @@ -1499,12 +1499,16 @@ static int __attach_device(struct device *dev,
-> >  
-> >  	/* Some sanity checks */
-> >  	if (alias_data->domain != NULL &&
-> > -	    alias_data->domain != domain)
-> > +	    alias_data->domain != domain) {
-> > +		spin_unlock(&domain->lock);
-> >  		return -EBUSY;
-> > +	}
-> >  
-> >  	if (dev_data->domain != NULL &&
-> > -	    dev_data->domain != domain)
-> > +	    dev_data->domain != domain) {
-> > +		spin_unlock(&domain->lock);
-> >  		return -EBUSY;
-> > +	}
-> >  
-> >  	/* Do real assignment */
-> >  	if (dev_data->alias != dev) {
-> 
-> The reason why these bugs occur is that we sprinkle multiple `return'
-> statements inside the middle of non-trivial functions.  People miss
-> some or fail to modify some when later changing locking rules and we
-> gain bugs (or, similarly, resource leaks).
-> 
-> So I'd suggest that when fixing such bugs, we also fix their cause.
-> 
-> ie:
-> 
-> --- a/arch/x86/kernel/amd_iommu.c~arch-x86-kernel-add-missing-spin_unlock
-> +++ a/arch/x86/kernel/amd_iommu.c
-> @@ -1487,6 +1487,7 @@ static int __attach_device(struct device
->  			   struct protection_domain *domain)
->  {
->  	struct iommu_dev_data *dev_data, *alias_data;
-> +	int ret;
->  
->  	dev_data   = get_dev_data(dev);
->  	alias_data = get_dev_data(dev_data->alias);
-> @@ -1497,14 +1498,17 @@ static int __attach_device(struct device
->  	/* lock domain */
->  	spin_lock(&domain->lock);
->  
-> +	ret = -EBUSY;
->  	/* Some sanity checks */
->  	if (alias_data->domain != NULL &&
->  	    alias_data->domain != domain)
-> -		return -EBUSY;
-> +		goto out;
->  
->  	if (dev_data->domain != NULL &&
->  	    dev_data->domain != domain)
-> -		return -EBUSY;
-> +		goto out;
-> +
-> +	ret = 0;
->  
->  	/* Do real assignment */
->  	if (dev_data->alias != dev) {
-> @@ -1522,8 +1526,8 @@ static int __attach_device(struct device
->  
->  	/* ready */
->  	spin_unlock(&domain->lock);
-> -
-> -	return 0;
-> +out:
-> +	return ret;
->  }
+Sure it does.  That's exactly what happens when there's an iommu
+involved with bare metal.
 
-I don't have the impression that this actually fixes the problem, only the 
-code structure.  Out should be above the spin_lock, and there should just 
-be one return, of ret.  I will send another patch shortly.
+> So if the guest programs
+> devices to dma to each other, we want that to succeed.
 
-julia
+And it will as long as ATS is enabled (this is a basic requirement
+for PCIe peer-to-peer traffic to succeed with an iommu involved on
+bare metal).
+
+That's how things currently are, i.e. we put all devices belonging to a
+single guest in the same domain.  However, it can be useful to put each
+device belonging to a guest in a unique domain.  Especially as qemu
+grows support for iommu emulation, and guest OSes begin to understand
+how to use a hw iommu.
+
+> >Also, domains are not a very scarce resource - my little core i5 has 256,
+> >and the intel architecture goes to 64K.
+> 
+> But there is a 0.2% of mapped memory per domain cost for the page
+> tables.  For the kvm use case, that could be significant since a
+> guest may have large amounts of memory and large numbers of assigned
+> devices.
+> 
+> >And then there's the fact that it is possible to have multiple disjoint iommus on a system,
+> >so it may not even be possible to bring 2 devices under one domain.
+> 
+> That's indeed a deficiency.
+
+Not sure it's a deficiency.  Typically to share page table mappings
+across multiple iommu's you just have to do update/invalidate to each
+hw iommu that is sharing the mapping.  Alternatively, you can use more
+memory and build/maintain identical mappings (as Tom alludes to below).
+
+> >Given all that, I am inclined to leave it alone until someone has a real problem.
+> >Note that not sharing iommu domains doesn't mean you can't share device memory,
+> >just that you have to do multiple mappings
+> 
+> I think we do have a real problem (though a mild one).
+> 
+> The only issue I see with deferring the solution is that the API
+> becomes gnarly; both the kernel and userspace will have to support
+> both APIs forever.  Perhaps we can implement the new API but defer
+> the actual sharing until later, don't know how much work this saves.
+> Or Alex/Chris can pitch in and help.
+
+It really shouldn't be that complicated to create the API to allow for
+flexible device <-> domain mappings, so I agree, makes sense to do it
+right up front.
+
+thanks,
+-chris
