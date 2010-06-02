@@ -1,72 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757505Ab0FBDA5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Jun 2010 23:00:57 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:64446 "EHLO mx1.redhat.com"
+	id S1757514Ab0FBDDO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Jun 2010 23:03:14 -0400
+Received: from ozlabs.org ([203.10.76.45]:37560 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756387Ab0FBDAz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Jun 2010 23:00:55 -0400
-Message-ID: <4C05C925.6080006@redhat.com>
-Date: Wed, 02 Jun 2010 05:59:49 +0300
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-3.fc13 Thunderbird/3.0.4
+	id S1756387Ab0FBDDM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Jun 2010 23:03:12 -0400
+From: Rusty Russell <rusty@rustcorp.com.au>
+To: Brandon Philips <brandon@ifup.org>
+Subject: Re: [PATCH 2/2] module: fix bne2 "gave up waiting for init of module libcrc32c"
+Date: Wed, 2 Jun 2010 12:33:05 +0930
+User-Agent: KMail/1.13.2 (Linux/2.6.32-21-generic; KDE/4.4.2; i686; ; )
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       "Rafael J. Wysocki" <rjw@sisk.pl>, LKML <linux-kernel@vger.kernel.org>,
+       Jon Masters <jonathan@jonmasters.org>, Tejun Heo <htejun@gmail.com>,
+       Masami Hiramatsu <mhiramat@redhat.com>,
+       Kay Sievers <kay.sievers@vrfy.org>
+References: <201005252300.07739.rjw@sisk.pl> <alpine.LFD.2.00.1006011638540.8175@i5.linux-foundation.org> <20100602021029.GD10332@jenkins.ifup.org>
+In-Reply-To: <20100602021029.GD10332@jenkins.ifup.org>
 MIME-Version: 1.0
-To: Tom Lyon <pugs@lyon-about.com>
-CC: "Michael S. Tsirkin" <mst@redhat.com>, linux-kernel@vger.kernel.org,
-       kvm@vger.kernel.org, chrisw@sous-sol.org, joro@8bytes.org,
-       hjk@linutronix.de, gregkh@suse.de, aafabbri@cisco.com,
-       scofeldm@cisco.com, alex.williamson@redhat.com
-Subject: Re: [PATCH] VFIO driver: Non-privileged user level PCI drivers
-References: <20100530124949.GI27611@redhat.com> <4C04E0E0.3070006@redhat.com> <20100601104651.GA9415@redhat.com> <201006011426.53563.pugs@lyon-about.com>
-In-Reply-To: <201006011426.53563.pugs@lyon-about.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201006021233.09140.rusty@rustcorp.com.au>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/02/2010 12:26 AM, Tom Lyon wrote:
->
-> I'm not really opposed to multiple devices per domain, but let me point out how I
-> ended up here.  First, the driver has two ways of mapping pages, one based on the
-> iommu api and one based on the dma_map_sg api.  With the latter, the system
-> already allocates a domain per device and there's no way to control it. This was
-> presumably done to help isolation between drivers.  If there are multiple drivers
-> in the user level, do we not want the same isoation to apply to them?
->    
+On Wed, 2 Jun 2010 11:40:29 am Brandon Philips wrote:
+> On 16:51 Tue 01 Jun 2010, Linus Torvalds wrote:
+> > On Tue, 1 Jun 2010, Brandon Philips wrote:
+> > > When I tested a Kernel with Rusty's modules branch pulled onto
+> > > 2.6.35-rc1 I got duplicate sysfs path errors:
+> > Hmm. Yeah, the module_mutex used to be held across the whole "find -> add" 
+> > state, but isn't any more.
+> 
+> Right.
+> 
+> > > To fix this we need to make sure that we only have one copy of a
+> > > module going through load_module at a time.  Patch suggestion
+> > > follows which boots without errors. I am sure there is a better
+> > > way to do what it does ;)
+> > 
+> > I think Rusty may have made the lock a bit _too_ finegrained there,
+> > and didn't add it to some places that needed it. It looks, for
+> > example, like PATCH 1/2 actually drops the lock in places where it's
+> > needed ("find_module()" is documented to need it, but now
+> > load_module() didn't hold it at all when it did the find_module()).
+> 
+> Right, I noticed that too and held the lock in the patch I sent.
+> 
+> > Rather than adding a new "module_loading" list, I think we should be
+> > able to just use the existing "modules" list, and just fix up the
+> > locking a bit.
+> >
+> > In fact, maybe we could just move the "look up existing module" a
+> > bit later - optimistically assuming that the module doesn't exist,
+> > and then just undoing the work if it turns out that we were wrong,
+> > just before adding ourselves to the list.
+> >
+> > A patch something like the appended (TOTALLY UNTESTED!)
+> 
+> FWIW, I tried this same idea initially and it breaks because the
+> kobject EEXIST is coming from mod_sysfs_init() which happens further
+> up in load_module() before the list_add_rcu().
 
-In the case of kvm, we don't want isolation between devices, because 
-that doesn't happen on real hardware.  So if the guest programs devices 
-to dma to each other, we want that to succeed.
+I'll take a look.  Linus was right that my lock reduction was overzealous.
 
-> Also, domains are not a very scarce resource - my little core i5 has 256,
-> and the intel architecture goes to 64K.
->    
+The kobject error should be harmless.
 
-But there is a 0.2% of mapped memory per domain cost for the page 
-tables.  For the kvm use case, that could be significant since a guest 
-may have large amounts of memory and large numbers of assigned devices.
+I have a simplified version of your problem (see testing patch); I'll
+see what I can fix...
 
-> And then there's the fact that it is possible to have multiple disjoint iommus on a system,
-> so it may not even be possible to bring 2 devices under one domain.
->    
-
-That's indeed a deficiency.
-
-> Given all that, I am inclined to leave it alone until someone has a real problem.
-> Note that not sharing iommu domains doesn't mean you can't share device memory,
-> just that you have to do multiple mappings
->    
-
-I think we do have a real problem (though a mild one).
-
-The only issue I see with deferring the solution is that the API becomes 
-gnarly; both the kernel and userspace will have to support both APIs 
-forever.  Perhaps we can implement the new API but defer the actual 
-sharing until later, don't know how much work this saves.  Or Alex/Chris 
-can pitch in and help.
-
--- 
-I have a truly marvellous patch that fixes the bug which this
-signature is too narrow to contain.
-
+Thanks!
+Rusty.
