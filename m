@@ -1,64 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757522Ab0FBCvk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Jun 2010 22:51:40 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:7497 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757314Ab0FBCvj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Jun 2010 22:51:39 -0400
-Message-ID: <4C05C722.1010804@redhat.com>
-Date: Wed, 02 Jun 2010 05:51:14 +0300
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-3.fc13 Thunderbird/3.0.4
+	id S1757049Ab0FBC6J (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Jun 2010 22:58:09 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:62298 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1755551Ab0FBC6H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Jun 2010 22:58:07 -0400
+Message-ID: <4C05C91F.5080906@cn.fujitsu.com>
+Date: Wed, 02 Jun 2010 10:59:43 +0800
+From: Miao Xie <miaox@cn.fujitsu.com>
+Reply-To: miaox@cn.fujitsu.com
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; zh-CN; rv:1.9.1.9) Gecko/20100317 Thunderbird/3.0.4
 MIME-Version: 1.0
-To: Andi Kleen <andi@firstfloor.org>
-CC: Gleb Natapov <gleb@redhat.com>, linux-kernel@vger.kernel.org,
-       kvm@vger.kernel.org, hpa@zytor.com, mingo@elte.hu, npiggin@suse.de,
-       tglx@linutronix.de, mtosatti@redhat.com
-Subject: Re: [PATCH] use unfair spinlock when running on hypervisor.
-References: <20100601093515.GH24302@redhat.com> <87sk56ycka.fsf@basil.nowhere.org> <20100601162414.GA6191@redhat.com> <20100601163807.GA11880@basil.fritz.box> <4C053ACC.5020708@redhat.com> <20100601172730.GB11880@basil.fritz.box>
-In-Reply-To: <20100601172730.GB11880@basil.fritz.box>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Chris Mason <chris.mason@oracle.com>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       linux-btrfs@vger.kernel.org,
+       linux-kernel <linux-kernel@vger.kernel.org>,
+       linux-fsdevel@vger.kernel.org
+Subject: Re: [GIT PULL] Btrfs updates
+References: <20100527151515.GA3835@think>
+In-Reply-To: <20100527151515.GA3835@think>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/01/2010 08:27 PM, Andi Kleen wrote:
-> On Tue, Jun 01, 2010 at 07:52:28PM +0300, Avi Kivity wrote:
->    
->> We are running everything on NUMA (since all modern machines are now NUMA).
->>   At what scale do the issues become observable?
->>      
-> On Intel platforms it's visible starting with 4 sockets.
->    
+Hi, Chris
 
-Can you recommend a benchmark that shows bad behaviour?  I'll run it 
-with ticket spinlocks and Gleb's patch.  I have a 4-way Nehalem-EX, 
-presumably the huge number of threads will magnify the problem even more 
-there.
+on 2010-5-27 23:15, Chris Mason wrote: 
+> My commits here are just integrating the two and fixing a few bugs in
+> the result.
+> 
+> Zheng Yan (13) commits (+4076/-2679):
+>     Btrfs: Integrate metadata reservation with start_transaction (+678/-528)
+>     Btrfs: Update metadata reservation for delayed allocation (+232/-415)
+>     Btrfs: Shrink delay allocated space in a synchronized (+88/-121)
+>     Btrfs: Introduce contexts for metadata reservation (+853/-385)
+>     Btrfs: Link block groups of different raid types (+121/-55)
+>     Btrfs: Metadata ENOSPC handling for balance (+1163/-747)
+>     Btrfs: Metadata ENOSPC handling for tree log (+156/-128)
+>     Btrfs: Metadata reservation for orphan inodes (+365/-66)
+>     Btrfs: Pre-allocate space for data relocation (+92/-45)
+>     Btrfs: Introduce global metadata reservation (+241/-76)
+>     Btrfs: Fix block generation verification race (+1/-1)
+>     Btrfs: Kill allocate_wait in space_info (+58/-76)
+>     Btrfs: Kill init_btrfs_i() (+28/-36)
+> 
+> Chris Mason (9) commits (+314/-80):
+>     Btrfs: fix preallocation and nodatacow checks in O_DIRECT (+140/-16)
+>     Btrfs: move O_DIRECT space reservation to btrfs_direct_IO (+8/-6)
+>     Btrfs: don't walk around with task->state != TASK_RUNNING (+4/-3)
+>     Btrfs: use async helpers for DIO write checksumming (+52/-17)
+>     Btrfs: add more error checking to btrfs_dirty_inode (+13/-2)
+>     Btrfs: avoid ENOSPC errors in btrfs_dirty_inode (+11/-3)
+>     Btrfs: rework O_DIRECT enospc handling (+49/-30)
+>     Btrfs: drop verbose enospc printk (+2/-0)
+>     Btrfs: allow unaligned DIO (+35/-3)
+> 
+> Josef Bacik (5) commits (+829/-134):
+>     direct-io: add a hook for the fs to provide its own submit_bio function (+45/-8)
+>     fs: allow short direct-io reads to be completed via buffered IO (+31/-5)
+>     direct-io: do not merge logically non-contiguous requests (+18/-2)
+>     Btrfs: add basic DIO read/write support (+631/-36)
+>     Btrfs: do aio_write instead of write (+104/-83)
+> 
+> Total: (27) commits
+> 
 
->>>> I understand that reason and do not propose to get back to old spinlock
->>>> on physical HW! But with virtualization performance hit is unbearable.
->>>>
->>>>          
->>> Extreme unfairness can be unbearable too.
->>>
->>>        
->> Well, the question is what happens first.  In our experience, vcpu
->> overcommit is a lot more painful.  People will never see the NUMA
->> unfairness issue if they can't use kvm due to the vcpu overcommit problem.
->>      
-> You really have to address both, if you don't fix them both
-> users will eventually into one of them and be unhappy.
->    
+In the following mail, You said that you had put the cleanups which Zhao Lei and I contributed
+into a .35 queue, but I cannot find those patches have been merged into the .35 kernel...
+  http://marc.info/?l=linux-btrfs&m=127049622906168&w=2
 
-That's definitely the long term plan.  I consider Gleb's patch the first 
-step.
+Is there anything wrong with those patches?
 
-Do  you have any idea how we can tackle both problems?
-
--- 
-I have a truly marvellous patch that fixes the bug which this
-signature is too narrow to contain.
+Regards
+Miao
 
