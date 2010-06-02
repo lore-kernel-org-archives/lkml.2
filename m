@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932528Ab0FBLjw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jun 2010 07:39:52 -0400
-Received: from moutng.kundenserver.de ([212.227.126.171]:55497 "EHLO
+	id S932495Ab0FBLjs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jun 2010 07:39:48 -0400
+Received: from moutng.kundenserver.de ([212.227.126.187]:63631 "EHLO
 	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932446Ab0FBLix (ORCPT
+	with ESMTP id S932448Ab0FBLix (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 2 Jun 2010 07:38:53 -0400
 From: Thomas Weber <weber@corscience.de>
@@ -12,57 +12,87 @@ To: linux-omap@vger.kernel.org
 Cc: Thomas Weber <weber@corscience.de>, Tony Lindgren <tony@atomide.com>,
        Russell King <linux@arm.linux.org.uk>,
        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: [PATCHv2 07/11] OMAP2: Devkit8000: Remove en-/disable for tv panel
-Date: Wed,  2 Jun 2010 13:37:47 +0200
-Message-Id: <1275478671-24563-8-git-send-email-weber@corscience.de>
+Subject: [PATCHv2 06/11] OMAP2: Devkit8000: Remove non existing vsim supply
+Date: Wed,  2 Jun 2010 13:37:46 +0200
+Message-Id: <1275478671-24563-7-git-send-email-weber@corscience.de>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1275478671-24563-1-git-send-email-weber@corscience.de>
 References: <1275478671-24563-1-git-send-email-weber@corscience.de>
-X-Provags-ID: V01U2FsdGVkX1+c0WOCul5dz9FkYOBWFsg3htn9AUhW0Bbm8tU
- s0lpuUhu3+aiJ2UJ/tPH1XPlYxYCxCU+N3dj+ENR3+MQfIeJJr
- yN0woEt81cHkN59U9L0FA==
+X-Provags-ID: V01U2FsdGVkX1/bu+5X2gi4tzJprZ4mByjOuU3Y3ET24pVbxiB
+ N8+lAuDq2bXIxKnYlx7N3J6UmkX7dvnz467kaKPPgHMRds7uAm
+ VdjoR9vKKaqfrNbBhAlcg==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-devkit8000_panel_enable_tv and devkit8000_panel_disable_tv are already
-done in DSS2 code. So they are no longer needed in board code.
+The Devkit8000 uses the cost reduced variant tps65930 of the twl4030.
+The TPS65930 only has vdd1, vdd2, vpll1, vio, vmmc1, vdac and vaux2.
+
+vaux2 is not used on Devkit8000.
 
 Signed-off-by: Thomas Weber <weber@corscience.de>
 ---
- arch/arm/mach-omap2/board-devkit8000.c |   12 ------------
- 1 files changed, 0 insertions(+), 12 deletions(-)
+ arch/arm/mach-omap2/board-devkit8000.c |   22 ----------------------
+ 1 files changed, 0 insertions(+), 22 deletions(-)
 
 diff --git a/arch/arm/mach-omap2/board-devkit8000.c b/arch/arm/mach-omap2/board-devkit8000.c
-index 59877b1..095dc7a 100644
+index 8cc8c3b..59877b1 100644
 --- a/arch/arm/mach-omap2/board-devkit8000.c
 +++ b/arch/arm/mach-omap2/board-devkit8000.c
-@@ -158,16 +158,6 @@ static void devkit8000_panel_disable_dvi(struct omap_dss_device *dssdev)
- 		gpio_set_value(dssdev->reset_gpio, 0);
+@@ -168,15 +168,10 @@ static void devkit8000_panel_disable_tv(struct omap_dss_device *dssdev)
+ {
  }
  
--static int devkit8000_panel_enable_tv(struct omap_dss_device *dssdev)
--{
--
--	return 0;
--}
--
--static void devkit8000_panel_disable_tv(struct omap_dss_device *dssdev)
--{
--}
 -
  static struct regulator_consumer_supply devkit8000_vmmc1_supply = {
  	.supply			= "vmmc",
  };
-@@ -201,8 +191,6 @@ static struct omap_dss_device devkit8000_tv_device = {
- 	.driver_name            = "venc",
- 	.type                   = OMAP_DISPLAY_TYPE_VENC,
- 	.phy.venc.type          = OMAP_DSS_VENC_TYPE_SVIDEO,
--	.platform_enable        = devkit8000_panel_enable_tv,
--	.platform_disable       = devkit8000_panel_disable_tv,
+ 
+-static struct regulator_consumer_supply devkit8000_vsim_supply = {
+-	.supply			= "vmmc_aux",
+-};
+-
+ /* ads7846 on SPI */
+ static struct regulator_consumer_supply devkit8000_vio_supplies[] = {
+ 	REGULATOR_SUPPLY("vcc", "spi2.0")
+@@ -281,7 +276,6 @@ static int devkit8000_twl_gpio_setup(struct device *dev,
+ 
+ 	/* link regulators to MMC adapters */
+ 	devkit8000_vmmc1_supply.dev = mmc[0].dev;
+-	devkit8000_vsim_supply.dev = mmc[0].dev;
+ 
+ 	/* TWL4030_GPIO_MAX + 1 == ledB, PMU_STAT (out, active low LED) */
+ 	gpio_leds[2].gpio = gpio + TWL4030_GPIO_MAX + 1;
+@@ -334,21 +328,6 @@ static struct regulator_init_data devkit8000_vmmc1 = {
+ 	.consumer_supplies	= &devkit8000_vmmc1_supply,
  };
  
- 
+-/* VSIM for MMC1 pins DAT4..DAT7 (2 mA, plus card == max 50 mA) */
+-static struct regulator_init_data devkit8000_vsim = {
+-	.constraints = {
+-		.min_uV			= 1800000,
+-		.max_uV			= 3000000,
+-		.valid_modes_mask	= REGULATOR_MODE_NORMAL
+-					| REGULATOR_MODE_STANDBY,
+-		.valid_ops_mask		= REGULATOR_CHANGE_VOLTAGE
+-					| REGULATOR_CHANGE_MODE
+-					| REGULATOR_CHANGE_STATUS,
+-	},
+-	.num_consumer_supplies	= 1,
+-	.consumer_supplies	= &devkit8000_vsim_supply,
+-};
+-
+ /* VDAC for DSS driving S-Video (8 mA unloaded, max 65 mA) */
+ static struct regulator_init_data devkit8000_vdac = {
+ 	.constraints = {
+@@ -414,7 +393,6 @@ static struct twl4030_platform_data devkit8000_twldata = {
+ 	.gpio		= &devkit8000_gpio_data,
+ 	.codec		= &devkit8000_codec_data,
+ 	.vmmc1		= &devkit8000_vmmc1,
+-	.vsim		= &devkit8000_vsim,
+ 	.vdac		= &devkit8000_vdac,
+ 	.vpll1		= &devkit8000_vpll1,
+ 	.vio		= &devkit8000_vio,
 -- 
 1.7.1
 
