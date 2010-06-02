@@ -1,84 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758903Ab0FBWoR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jun 2010 18:44:17 -0400
-Received: from mail-ww0-f46.google.com ([74.125.82.46]:40619 "EHLO
-	mail-ww0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758732Ab0FBWoQ (ORCPT
+	id S933272Ab0FBWpZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jun 2010 18:45:25 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:52590 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758732Ab0FBWpX convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jun 2010 18:44:16 -0400
+	Wed, 2 Jun 2010 18:45:23 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=AFYzqeT8OtgX4WFGdl4N7Ii1ILx+rRpqHDflXPl7H8C1L5lJA2Q9rMiSc4B3WuIahS
-         IJLxS7efrerd9dG1ujNYLlXCmYhoDuwGfof48aPYDhFBj2c7uBwZKBYgSr8YLHMmMRVr
-         UuaJcGoMBi4Lybmg6bMLHVOCN3WxjXxwACmfo=
-Subject: Re: [net-next-2.6 PATCH 2/2] x86: Align skb w/ start of cache line
- on newer core 2/Xeon Arch
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
-Cc: davem@davemloft.net, mingo@redhat.com, tglx@linutronix.de, hpa@zytor.com,
-       x86@kernel.org, linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-       gospo@redhat.com, Alexander Duyck <alexander.h.duyck@intel.com>
-In-Reply-To: <20100602222506.12962.49240.stgit@localhost.localdomain>
-References: <20100602222230.12962.97260.stgit@localhost.localdomain>
-	 <20100602222506.12962.49240.stgit@localhost.localdomain>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 03 Jun 2010 00:44:10 +0200
-Message-ID: <1275518650.29413.43.camel@edumazet-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 8bit
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=A9EtH66o7M9LIklBs2+7jgDvkpfvcTjrNPNpR3wSEkk13zXGnPC3+eg7zo3GKepUJL
+         sfNZEbvU290XYPGJf1Po5Sl9QH1BNdywl6Uh3q2SlwRhd5ptUBXFuIHR5YDQj7UejzwA
+         6qt6ArT0N6dXiIUvgZP6UDU4FX55iyj5Yy4Wc=
+MIME-Version: 1.0
+In-Reply-To: <1275505397-16758-4-git-send-email-lars@metafoo.de>
+References: <1275505397-16758-1-git-send-email-lars@metafoo.de>
+	<1275505397-16758-4-git-send-email-lars@metafoo.de>
+Date: Thu, 3 Jun 2010 08:15:22 +0930
+Message-ID: <AANLkTimVM637peyrPP7dZ3Uy2S-3DAEXspGi-FONcW6p@mail.gmail.com>
+Subject: Re: [RFC][PATCH 03/26] MIPS: JZ4740: Add clock API support.
+From: Graham Gower <graham.gower@gmail.com>
+To: Lars-Peter Clausen <lars@metafoo.de>
+Cc: Ralf Baechle <ralf@linux-mips.org>, linux-mips@linux-mips.org,
+       linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le mercredi 02 juin 2010 Ã  15:25 -0700, Jeff Kirsher a Ã©crit :
-> From: Alexander Duyck <alexander.h.duyck@intel.com>
-> 
-> x86 architectures can handle unaligned accesses in hardware, and it has
-> been shown that unaligned DMA accesses can be expensive on Nehalem
-> architectures.  As such we should overwrite NET_IP_ALIGN and NET_SKB_PAD
-> to resolve this issue.
-> 
-> Signed-off-by: Alexander Duyck <alexander.h.duyck@intel.com>
-> Signed-off-by: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
-> ---
-> 
->  arch/x86/include/asm/system.h |   12 ++++++++++++
->  1 files changed, 12 insertions(+), 0 deletions(-)
-> 
-> diff --git a/arch/x86/include/asm/system.h b/arch/x86/include/asm/system.h
-> index b8fe48e..8acb44e 100644
-> --- a/arch/x86/include/asm/system.h
-> +++ b/arch/x86/include/asm/system.h
-> @@ -457,4 +457,16 @@ static inline void rdtsc_barrier(void)
->  	alternative(ASM_NOP3, "lfence", X86_FEATURE_LFENCE_RDTSC);
->  }
->  
-> +#ifdef CONFIG_MCORE2
-> +/*
-> + * We handle most unaligned accesses in hardware.  On the other hand
-> + * unaligned DMA can be quite expensive on some Nehalem processors.
-> + *
-> + * Based on this we disable the IP header alignment in network drivers.
-> + * We also modify NET_SKB_PAD to be a cacheline in size, thus maintaining
-> + * cacheline alignment of buffers.
-> + */
-> +#define NET_IP_ALIGN	0
-> +#define NET_SKB_PAD	L1_CACHE_BYTES
-> +#endif
->  #endif /* _ASM_X86_SYSTEM_H */
-> 
-> --
+On 3 June 2010 04:32, Lars-Peter Clausen <lars@metafoo.de> wrote:
 
-But... L1_CACHE_BYTES is 64 on MCORE2, so this matches current
-NET_SKB_PAD definition...
+> +       {
+> +               .name = "dma",
+> +               .parent = &jz_clk_high_speed_peripheral.clk,
+> +               .gate_bit = JZ_CLOCK_GATE_UART0,
+> +               .ops = &jz_clk_simple_ops,
+> +       },
 
-#ifndef NET_SKB_PAD
-#define NET_SKB_PAD 64
-#endif
+Presumably this should be JZ_CLOCK_GATE_DMAC.
 
-
-
+-Graham
