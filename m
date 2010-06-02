@@ -1,41 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933089Ab0FBT52 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jun 2010 15:57:28 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:44783 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932897Ab0FBT50 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jun 2010 15:57:26 -0400
-Date: Wed, 2 Jun 2010 11:53:23 -0700
-From: Greg KH <gregkh@suse.de>
-To: Joe Perches <joe@perches.com>
-Cc: devel <devel@driverdev.osuosl.org>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] drivers/staging/batman-adv: Convert MAC_FMT to %pM
-Message-ID: <20100602185323.GA6600@suse.de>
-References: <1275498615.23599.12.camel@Joe-Laptop.home>
+	id S933102Ab0FBT56 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jun 2010 15:57:58 -0400
+Received: from mail-ww0-f46.google.com ([74.125.82.46]:52018 "EHLO
+	mail-ww0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932897Ab0FBT54 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Jun 2010 15:57:56 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=eJBNKxnecHQq05qxAG9EG2v58rqx1g+i8m7tsnkiJZjXb/5CEjvPoPdNEf0Gy7RP8f
+         RiLulZcU+o5OEGB/Mx+RRrJ2ONtfV7ixRHfB3u9Z1zPaLXzqz0kT6ts8OFoiqwwLhJVe
+         2EjdntH6XewP+cg0QSNXs0kvMA2X5ZxXg1GBU=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1275498615.23599.12.camel@Joe-Laptop.home>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20100528155102.GK31073@ZenIV.linux.org.uk>
+References: <20100528155102.GK31073@ZenIV.linux.org.uk>
+Date: Wed, 2 Jun 2010 21:57:54 +0200
+X-Google-Sender-Auth: luHZYICcyAmzgWfz5NTnPaPEYdU
+Message-ID: <AANLkTinPY8R91dQ9hvQETgyUqUc_1rPs_aTUDquAj23z@mail.gmail.com>
+Subject: Re: [git pull] vfs pile, part 2
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Al Viro <viro@zeniv.linux.org.uk>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+       linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 02, 2010 at 10:10:15AM -0700, Joe Perches wrote:
-> Remove the last uses of MAC_FMT
-> 
-> Signed-off-by: Joe Perches <joe@perches.com>
-> ---
->  drivers/staging/batman-adv/main.c              |    3 +-
->  drivers/staging/batman-adv/translation-table.c |   25 ++++-------------------
+On Fri, May 28, 2010 at 17:51, Al Viro <viro@zeniv.linux.org.uk> wrote:
+> Al Viro (5):
+>      remove detritus left by "mm: make read_cache_page synchronous"
 
-The TODO file in this directory clearly states who to copy on patches to
-these files.
+This introduced:
 
-Please resend them to the people there so that they can sync up with the
-other patches they have already sent me.
+| fs/minix/dir.c: In function ‘dir_get_page’:
+| fs/minix/dir.c:79: warning: label ‘fail’ defined but not used
 
-thanks,
+As the whole fail block is now dead code.
 
-greg k-h
+Gr{oetje,eeting}s,
+
+						Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+							    -- Linus Torvalds
