@@ -1,123 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932813Ab0FBXFi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jun 2010 19:05:38 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:58101 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933298Ab0FBXFc convert rfc822-to-8bit (ORCPT
+	id S933305Ab0FBXGX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jun 2010 19:06:23 -0400
+Received: from ist.d-labs.de ([213.239.218.44]:40870 "EHLO mx01.d-labs.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933172Ab0FBXGV convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jun 2010 19:05:32 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=R/InQktcjJS0BeGOo/6vKbXRmqCeYfdsCerLCVL3XkxprYrhvRmNW8akEEtPtqjiPP
-         wEN5E6FNWxAkAYjB9YyQJGw4SGjrC0rYO1QnmBlLXj4nSlMUnlBjIm5znf5byo63lrc9
-         MJcF3iTBzIGvQPBVefZDhzinrRv4jWZH3GZrc=
-MIME-Version: 1.0
-In-Reply-To: <201006021510.52463.tfjellstrom@strangesoft.net>
-References: <201005292046.06344.tfjellstrom@strangesoft.net>
-	<201005301348.50004.tfjellstrom@strangesoft.net>
-	<201005301919.16747.tfjellstrom@strangesoft.net>
-	<201006021510.52463.tfjellstrom@strangesoft.net>
-Date: Wed, 2 Jun 2010 17:05:28 -0600
-Message-ID: <AANLkTingFbJAr9z0AzRJCV23FGVS-UAvIKCr5ULQJawt@mail.gmail.com>
-Subject: Re: failed command FLUSH CACHE EXT (was: Re: via 8237 sata errors)
-From: Robert Hancock <hancockrwd@gmail.com>
-To: Thomas Fjellstrom <tfjellstrom@strangesoft.net>
-Cc: linux-kernel@vger.kernel.org, linux-ide@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 2 Jun 2010 19:06:21 -0400
+Date: Thu, 3 Jun 2010 01:06:07 +0200
+From: Florian Mickler <florian@mickler.org>
+To: James Bottomley <James.Bottomley@suse.de>
+Cc: Arve =?ISO-8859-15?Q?Hj=F8nnev=E5g?= <arve@android.com>,
+       Neil Brown <neilb@suse.de>, tytso@mit.edu,
+       Peter Zijlstra <peterz@infradead.org>,
+       LKML <linux-kernel@vger.kernel.org>,
+       Alan Cox <alan@lxorguk.ukuu.org.uk>, mark.gross@intel.com,
+       Thomas Gleixner <tglx@linutronix.de>,
+       Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
+       Linux PM <linux-pm@lists.linux-foundation.org>, felipe.balbi@nokia.com
+Subject: Re: [linux-pm] [PATCH 0/8] Suspend block api (version 8)
+Message-ID: <20100603010607.5baf82a6@schatten.dmk.lab>
+In-Reply-To: <1275511271.2799.516.camel@mulgrave.site>
+References: <20100527232357.6d14fdb2@lxorguk.ukuu.org.uk>
+	<20100601135102.GA8098@srcf.ucam.org>
+	<1275426085.21962.967.camel@mulgrave.site>
+	<201006020024.14220.rjw@sisk.pl>
+	<1275431816.21962.1108.camel@mulgrave.site>
+	<AANLkTikObnAZbyOxeYAhXcEbimO3XTTO-HlC9CD_HH6t@mail.gmail.com>
+	<1275451342.21962.1777.camel@mulgrave.site>
+	<AANLkTilRcFZyYa-0HlaM-6IEZSyar3S9S_cCWSFax2Zo@mail.gmail.com>
+	<1275491111.2799.110.camel@mulgrave.site>
+	<20100602214748.7742e3ae@schatten.dmk.lab>
+	<1275511271.2799.516.camel@mulgrave.site>
+X-Mailer: Claws Mail 3.7.5 (GTK+ 2.18.9; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=ISO-8859-15
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 2, 2010 at 3:10 PM, Thomas Fjellstrom
-<tfjellstrom@strangesoft.net> wrote:
-> Ok, more testing, I've moved the drives over to the p35 machine semi-
-> permanently, and after a day or so of uptime I got some new errors:
->
-> ata3.00: exception Emask 0x0 SAct 0x0 SErr 0x0 action 0x6 frozen
-> ata3.00: failed command: FLUSH CACHE EXT
-> ata3.00: cmd ea/00:00:00:00:00/00:00:00:00:00/a0 tag 0
->         res 40/00:00:00:00:00/00:00:00:00:00/00 Emask 0x4 (timeout)
-> ata3.00: status: { DRDY }
-> ata3: hard resetting link
-> ata3: link is slow to respond, please be patient (ready=0)
-> ata3: SRST failed (errno=-16)
-> ata3: hard resetting link
-> ata3: link is slow to respond, please be patient (ready=0)
-> ata3: SRST failed (errno=-16)
-> ata3: hard resetting link
-> ata3: link is slow to respond, please be patient (ready=0)
-> ata3: SRST failed (errno=-16)
-> ata3: limiting SATA link speed to 1.5 Gbps
-> ata3: hard resetting link
-> ata3: SRST failed (errno=-16)
-> ata3: reset failed, giving up
-> ata3.00: disabled
-> ata3.00: device reported invalid CHS sector 0
-> ata3: EH complete
-> end_request: I/O error, dev sdc, sector 0
-> sd 2:0:0:0: [sdc] Unhandled error code
-> sd 2:0:0:0: [sdc] Result: hostbyte=DID_BAD_TARGET driverbyte=DRIVER_OK
-> sd 2:0:0:0: [sdc] CDB: Write(10): 2a 00 00 00 07 a7 00 00 08 00
-> end_request: I/O error, dev sdc, sector 1959
-> Buffer I/O error on device dm-0, logical block 189
-> lost page write due to I/O error on dm-0
-> end_request: I/O error, dev sdc, sector 0
-> end_request: I/O error, dev sdc, sector 0
-> JBD2 unexpected failure: do_get_write_access: buffer_uptodate(jh2bh(jh));
-> Possible IO failure.
->
-> end_request: I/O error, dev sdc, sector 0
-> end_request: I/O error, dev sdc, sector 0
-> ------------[ cut here ]------------
-> WARNING: at /home/damentz/src/zen/main/linux-
-> liquorix-2.6-2.6.34/debian/build/source_amd64_none/fs/buffer.c:1199
-> mark_buffer_dirty+0x74/0x90()
-> Hardware name: P5K SE
-> Modules linked in: nfs lockd fscache nfs_acl auth_rpcgss sunrpc ipv6
-> acpi_cpufreq cpufreq_ondemand freq_table cpufreq_conservative
-> cpufreq_userspace cpufreq_powersave af_packet ext3 jbd loop
-> snd_hda_codec_realtek snd_hda_intel snd_hda_codec snd_hwdep snd_pcm_oss
-> snd_mixer_oss snd_pcm rtc_cmos rtc_core snd_timer tpm_tis nvidia(P) tpm
-> rtc_lib tpm_bios evdev snd intel_agp pcspkr asus_atk0110 soundcore i2c_i801
-> snd_page_alloc button i2c_core processor dm_mod raid10 raid456
-> async_raid6_recov async_pq raid6_pq async_xor xor async_memcpy async_tx
-> raid1 raid0 multipath linear md_mod ext4 mbcache jbd2 crc16 usbhid sd_mod
-> ata_generic pata_acpi uhci_hcd ata_piix libata floppy scsi_mod thermal atl1
-> mii ehci_hcd [last unloaded: scsi_wait_scan]
-> Pid: 3283, comm: jbd2/dm-0-8 Tainted: P           2.6.34-0.dmz.8-liquorix-
-> amd64 #1
-> Call Trace:
->  [<ffffffff8103bf23>] ? warn_slowpath_common+0x73/0xb0
->  [<ffffffff81101cd4>] ? mark_buffer_dirty+0x74/0x90
->  [<ffffffffa005a3c9>] ? __jbd2_journal_unfile_buffer+0x9/0x20 [jbd2]
->  [<ffffffffa005d8a3>] ? jbd2_journal_commit_transaction+0xba3/0x12d0 [jbd2]
->  [<ffffffff810542d0>] ? autoremove_wake_function+0x0/0x30
->  [<ffffffffa0061701>] ? kjournald2+0xb1/0x210 [jbd2]
->  [<ffffffff810542d0>] ? autoremove_wake_function+0x0/0x30
->  [<ffffffffa0061650>] ? kjournald2+0x0/0x210 [jbd2]
->  [<ffffffff81053e3e>] ? kthread+0x8e/0xa0
->  [<ffffffff81033e8d>] ? schedule_tail+0x4d/0xf0
->  [<ffffffff81003c94>] ? kernel_thread_helper+0x4/0x10
->  [<ffffffff81053db0>] ? kthread+0x0/0xa0
->  [<ffffffff81003c90>] ? kernel_thread_helper+0x0/0x10
-> ---[ end trace c90e4c710c9ef513 ]---
-> end_request: I/O error, dev sdc, sector 0
->
-> (and plenty more dmesg lines from lvm and ext4/jbd2 screaming about the io
-> commands failing)
->
-> I take it that this means the drive is likely pooched? I'm going to try some
-> more tests, and make sure both of the WD drives are on their own power cable
-> first. but I'm betting now that the drive is just failing. This would make 2
-> out of 4 in the same batch that had issues. The first one would increase the
-> sector reallocated count 4 every hour or so. Now this one fails a flush
-> cache command (and other spurious errors).
->
-> I guess its time to break out the WD diagnostics disk.
+On Wed, 02 Jun 2010 15:41:11 -0500
+James Bottomley <James.Bottomley@suse.de> wrote:
 
-I think it's a fairly safe assumption there's something wrong with the
-drive - it looks like the drive just pretty much stopped talking..
+> On Wed, 2010-06-02 at 21:47 +0200, Florian Mickler wrote:
+> > On Wed, 02 Jun 2010 10:05:11 -0500
+> > James Bottomley <James.Bottomley@suse.de> wrote:
+> > 
+> > > On Tue, 2010-06-01 at 21:41 -0700, Arve Hjønnevåg wrote:
+> > > > No, they have to be two separate constraints, otherwise a constraint
+> > > > to block suspend would override a constraint to block a low power idle
+> > > > mode or the other way around.
+> > > 
+> > > Depends.  If you block the system from going into low power idle, does
+> > > that mean you still want it to be fully suspended?
+> > > 
+> > > If yes, then we do have independent constraints.  If not, they have a
+> > > hierarchy:
+> > > 
+> > >       * Fully Interactive (no low power idle or suspend)
+> > >       * Partially Interactive (may go into low power idle but not
+> > >         suspend)
+> > >       * None (may go into low power idle or suspend)
+> > > 
+> > > Which is expressable as a ternary constraint.
+> > > 
+> > > James
+> > > 
+> > 
+> > But unblocking suspend at the moment is independent to getting idle.
+> > If you have the requirement to stay in the highest-idle level (i.e.
+> > best latency you can get) that does not (currently) mean, that you can
+> > not suspend.
+> 
+> I don't understand that as a reason.  If we looks at this a qos
+> constraints, you're saying that the system may not drop into certain low
+> power states because it might turn something off that's currently being
+> used by a driver or a process.  Suspend is certainly the lowest state of
+> that because it turns everything off, why would it be legal to drop into
+> that?
+> 
+> I also couldn't find this notion of separation of idleness power from
+> suspend blocking in the original suspend block patch set ... if you can
+> either tell me where it is, or give me an example of the separated use
+> cases, I'd understand better.
+> 
+> > To preserve that explicit fall-through while still having working
+> > run-time-powermanagement I think the qos-constraints need to be
+> > separated. 
+> 
+> OK, as above, why?  or better yet, just give an example.
+
+Hm. Maybe it is me who doesn't understand. 
+
+With proposed patchset: 
+1. As soon as we unblock suspend we go down.  (i.e. suspending)
+2. While suspend is blocked, the idle-loop does it's things. (i.e.
+runtime power managment -> can give same power-result as suspend)
+
+possible cases:
+1: 
+   - qos-latency-constraints: 1ms,  [here: forbids anything other than
+     C1 idle state.]
+   - suspend is blocked
+
+2: - qos latency-constraints: as in 1
+   - suspend unblocked
+
+3: - qos latency-constraints: infinity, cpu in lowest power state.
+   - suspend is blocked
+
+4: - qos latency-constraints: infinity, cpu in lowest power state.
+   - suspend unblocked
+
+
+in case 2 and 4 we would suspend, regardeless of the qos-latency.
+
+in case 1 and 3 we would stay awake, regardeless of the qos-latency
+constraint.
+
+
+If only one constraint, then case 2 (or 3) wouldn't be possible. But it
+is possible now. 
+
+A possible use case as an example?
+(hmm... i'm trying my imagination hard now): 
+	Your sound needs low latency, so that could be a cause for the
+	qos-latency constraint. 
+
+	And unblocking suspend could nonetheless happen:
+	For example... you have an firefox open and don't want to
+	prevent suspend for that case when the display is turned off
+
+
+Cheers,
+Flo
+
