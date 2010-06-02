@@ -1,41 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932280Ab0FBJx4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jun 2010 05:53:56 -0400
-Received: from 8bytes.org ([88.198.83.132]:39815 "EHLO 8bytes.org"
+	id S1755263Ab0FBJ5F (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jun 2010 05:57:05 -0400
+Received: from tauceti.net ([62.245.250.166]:57956 "EHLO www.tauceti.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757040Ab0FBJxz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jun 2010 05:53:55 -0400
-Date: Wed, 2 Jun 2010 11:53:54 +0200
-From: Joerg Roedel <joro@8bytes.org>
-To: Tom Lyon <pugs@lyon-about.com>
-Cc: Alex Williamson <alex.williamson@redhat.com>, Avi Kivity <avi@redhat.com>,
-       "Michael S. Tsirkin" <mst@redhat.com>, linux-kernel@vger.kernel.org,
-       kvm@vger.kernel.org, chrisw@sous-sol.org, hjk@linutronix.de,
-       gregkh@suse.de, aafabbri@cisco.com, scofeldm@cisco.com
-Subject: Re: [PATCH] VFIO driver: Non-privileged user level PCI drivers
-Message-ID: <20100602095354.GE964@8bytes.org>
-References: <20100530121944.GH27611@redhat.com> <4C04E0E0.3070006@redhat.com> <1275452987.16980.24.camel@x201> <201006012159.41344.pugs@lyon-about.com>
+	id S1753954Ab0FBJ5B (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Jun 2010 05:57:01 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201006012159.41344.pugs@lyon-about.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Date: Wed, 02 Jun 2010 13:56:58 +0200
+From: kernel <kernel@tauceti.net>
+To: Robert Wimmer <kernel@tauceti.net>
+Cc: Trond Myklebust <Trond.Myklebust@netapp.com>, <mst@redhat.com>,
+       Avi Kivity <avi@redhat.com>, Andrew Morton <akpm@linux-foundation.org>,
+       <linux-mm@kvack.org>, <bugzilla-daemon@bugzilla.kernel.org>,
+       Rusty Russell <rusty@rustcorp.com.au>, Mel Gorman <mel@csn.ul.ie>,
+       <linux-nfs@vger.kernel.org>, <linux-kernel@vger.kernel.org>
+Subject: Re: [Bugme-new] [Bug 15709] New: swapper page allocation failure
+In-Reply-To: <4BFC2CB2.9050305@tauceti.net>
+References: <4BC43097.3060000@tauceti.net> <4BCC52B9.8070200@tauceti.net> <20100419131718.GB16918@redhat.com> <dbf86fc1c370496138b3a74a3c74ec18@tauceti.net> <20100421094249.GC30855@redhat.com> <c638ec9fdee2954ec5a7a2bd405aa2ba@tauceti.net> <20100422100304.GC30532@redhat.com> <4BD12F9C.30802@tauceti.net> <20100425091759.GA9993@redhat.com> <4BD4A917.70702@tauceti.net> <20100425204916.GA12686@redhat.com> <1272284154.4252.34.camel@localhost.localdomain> <4BD5F6C5.8080605@tauceti.net> <1272315854.8984.125.camel@localhost.localdomain> <4BD61147.40709@tauceti.net> <1272324536.16814.45.camel@localhost.localdomain> <4BD76B81.2070606@tauceti.net> <be8a0f012ebb2ae02522998591e6f1a5@tauceti.net> <4BE33259.3000609@tauceti.net> <1273181438.22155.26.camel@localhost.localdomain> <4BEC6A5D.5070304@tauceti.net> <1273785234.22932.14.camel@localhost.localdomain> <a133ef4ed022a00afd40b505719ae3d2@tauceti.net> <4BFC2CB2.9050305@tauceti.net>
+Message-ID: <570793a158a0db68d623d424c38672bd@tauceti.net>
+User-Agent: RoundCube Webmail/0.3.1
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 01, 2010 at 09:59:40PM -0700, Tom Lyon wrote:
-> This is just what I was thinking.  But rather than a get/set, just use two fds.
+Hi Trond,
+
+currently it seems that the problem was 
+fixed by accident... ;-) Since 2.6.34 is now
+in Gentoo portage I thought I should give
+it a try. Using my 2.6.35-r5 .config 
+the 2.6.34 release is now working for 4 hours
+(instead of 5-10 minutes before). Hmmm...
+Hopefully it will run for some more hours
+and days now. Since I've definitely changed
+nothing besides the kernel it must have been
+fixed (hopefully) in one of the 2.6.34-rc's.
+
+If it's still running tomorrow I'll close
+the bug.
+
+Greetings
+Robert
+
+On Tue, 25 May 2010 22:01:54 +0200, Robert Wimmer <kernel@tauceti.net>
+wrote:
+> Hi Trond,
 > 
-> 	ioctl(vfio_fd1, VFIO_SET_DOMAIN, vfio_fd2);
+> just a little reminder ;-)
 > 
-> This may fail if there are really 2 different IOMMUs, so user code must be
-> prepared for failure,  In addition, this is strictlyupwards compatible with 
-> what is there now, so maybe we can add it later.
-
-How can this fail with multiple IOMMUs? This should be handled
-transparently by the IOMMU driver.
-
-	Joerg
-
+> Thanks!
+> Robert
+> 
+> On 05/20/10 09:39, kernel@tauceti.net wrote:
+>> Hi Trond,
+>>
+>> have you had some time to download the wireshark dump?
+>>
+>> Thanks!
+>> Robert
+>>
+>> On Thu, 13 May 2010 17:13:54 -0400, Trond Myklebust
+>> <Trond.Myklebust@netapp.com> wrote:
+>>   
+>>> On Thu, 2010-05-13 at 23:08 +0200, Robert Wimmer wrote: 
+>>>     
+>>>> Finally I've had some time to do the next test.
+>>>> Here is a wireshark dump (~750 MByte):
+>>>> http://213.252.12.93/2.6.34-rc5.cap.gz
+>>>>
+>>>> dmesg output after page allocation failure:
+>>>> https://bugzilla.kernel.org/attachment.cgi?id=26371
+>>>>
+>>>> stack trace before page allocation failure:
+>>>> https://bugzilla.kernel.org/attachment.cgi?id=26369
+>>>>
+>>>> stack trace after page allocation failure:
+>>>> https://bugzilla.kernel.org/attachment.cgi?id=26370
+>>>>
+>>>> I hope the wireshark dump is not to big to download.
+>>>> It was created with
+>>>> tshark -f "tcp port 2049" -i eth0 -w 2.6.34-rc5.cap
+>>>>
+>>>> Thanks!
+>>>> Robert
+>>>>       
+>>> Hi Robert,
+>>>
+>>> I tried the above wireshark dump URL, but it appears to point to an
+>>> empty file.
+>>>
+>>> Cheers
+>>>   Trond
+>>>
