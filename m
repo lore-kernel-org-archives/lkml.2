@@ -1,76 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757556Ab0FBDUv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Jun 2010 23:20:51 -0400
-Received: from cantor.suse.de ([195.135.220.2]:48008 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755428Ab0FBDUt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Jun 2010 23:20:49 -0400
-Date: Wed, 2 Jun 2010 13:20:30 +1000
-From: Nick Piggin <npiggin@suse.de>
-To: Chris Mason <chris.mason@oracle.com>,
-       James Bottomley <James.Bottomley@suse.de>,
-       Matthew Wilcox <matthew@wil.cx>,
-       Christof Schmitt <christof.schmitt@de.ibm.com>,
-       Boaz Harrosh <bharrosh@panasas.com>,
-       "Martin K. Petersen" <martin.petersen@oracle.com>,
-       linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
-       linux-fsdevel@vger.kernel.org
-Subject: Re: Wrong DIF guard tag on ext2 write
-Message-ID: <20100602032030.GF9453@laptop>
-References: <1275398876.21962.6.camel@mulgrave.site>
- <20100601133341.GK8980@think>
- <1275399637.21962.11.camel@mulgrave.site>
- <20100601134951.GM8980@think>
- <20100601162929.GC32708@parisc-linux.org>
- <20100601164750.GQ8980@think>
- <1275411293.21962.387.camel@mulgrave.site>
- <20100601180905.GR8980@think>
- <20100601184649.GE9453@laptop>
- <20100601193528.GV8980@think>
+	id S1757515Ab0FBDXl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Jun 2010 23:23:41 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:47894 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755122Ab0FBDXj convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 1 Jun 2010 23:23:39 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100601193528.GV8980@think>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <alpine.LFD.2.00.1006011411200.2933@localhost.localdomain>
+References: <Pine.LNX.4.44L0.1005271253240.3239-100000@iolanthe.rowland.org>
+	<201005302202.39511.rjw@sisk.pl>
+	<AANLkTilUQ2AG76nbK6LwI8_7zw0_yMSoAOr9pmuz7xrt@mail.gmail.com>
+	<201005312347.24251.rjw@sisk.pl>
+	<AANLkTilvOgSFTDFtXbjJobMZWxgfvsC97TqC7_a_NHBX@mail.gmail.com>
+	<alpine.LFD.2.00.1006011411200.2933@localhost.localdomain>
+Date: Tue, 1 Jun 2010 20:23:38 -0700
+Message-ID: <AANLkTikZHmF6baP7dEXEGFE8YsbEteRjlhb5wqZX8ll1@mail.gmail.com>
+Subject: Re: [linux-pm] [PATCH 0/8] Suspend block api (version 8)
+From: =?ISO-8859-1?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, Florian Mickler <florian@mickler.org>,
+       Matthew Garrett <mjg59@srcf.ucam.org>,
+       Alan Stern <stern@rowland.harvard.edu>,
+       Peter Zijlstra <peterz@infradead.org>, Paul@smtp1.linux-foundation.org,
+       LKML <linux-kernel@vger.kernel.org>, felipe.balbi@nokia.com,
+       Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
+       Linux PM <linux-pm@lists.linux-foundation.org>,
+       Alan Cox <alan@lxorguk.ukuu.org.uk>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 01, 2010 at 03:35:28PM -0400, Chris Mason wrote:
-> On Wed, Jun 02, 2010 at 04:46:49AM +1000, Nick Piggin wrote:
-> > On Tue, Jun 01, 2010 at 02:09:05PM -0400, Chris Mason wrote:
-> > > On Tue, Jun 01, 2010 at 04:54:53PM +0000, James Bottomley wrote:
-> > > 
-> > > > For self
-> > > > induced errors (as long as we can detect them) I think we can just
-> > > > forget about it ... if the changed page is important, the I/O request
-> > > > gets repeated (modulo the problem of too great a frequency of changes
-> > > > leading to us never successfully writing it) or it gets dropped because
-> > > > the file was truncated or the data deleted for some other reason.
-> > > 
-> > > Sorry, how can we tell the errors that are self induced from the evil
-> > > bit flipping cable induced errors?
-> > 
-> > Block layer should retry it with bounce pages. That would be a lot nicer
-> > than forcing all upper layers to avoid the problem.
-> > 
-> 
-> So the idea is that we have sent down a buffer and it changed in flight.
-> The block layer is going to say: oh look, the crcs don't match, I'll
-> bounce it, recrc it and send again.  But, there are at least 3 reasons the crc
-> will change:
-> 
-> 1) filesystem changed it
-> 2) corruption on the wire or in the raid controller
-> 3) the page was corrupted while the IO layer was doing the IO.
-> 
-> 1 and 2 are easy, we bounce, retry and everyone continues on with
-> their lives.  With #3, we'll recrc and send the IO down again thinking
-> the data is correct when really we're writing garbage.
-> 
-> How can we tell these three cases apart?
+2010/6/1 Thomas Gleixner <tglx@linutronix.de>:
+> On Mon, 31 May 2010, Arve Hjønnevåg wrote:
+>
+>> 2010/5/31 Rafael J. Wysocki <rjw@sisk.pl>:
+>> > On Monday 31 May 2010, Arve Hjønnevåg wrote:
+>> >> 2010/5/30 Rafael J. Wysocki <rjw@sisk.pl>:
+>> > ...
+>> >>
+>> >> I think it makes more sense to block suspend while wakeup events are
+>> >> pending than blocking it everywhere timers are used by code that could
+>> >> be called while handling wakeup events or other critical work. Also,
+>> >> even if you did block suspend everywhere timers where used you still
+>> >> have the race where a wakeup interrupt happens right after you decided
+>> >> to suspend. In other words, you still need to block suspend in all the
+>> >> same places as with the current opportunistic suspend code, so what is
+>> >> the benefit of delaying suspend until idle?
+>> >
+>> > Assume for a while that you don't use suspend blockers, OK?  I realize you
+>> > think that anything else doesn't make sense, but evidently some other people
+>> > have that opinion about suspend blockers.
+>> >
+>>
+>> It sounded like you were suggesting that initiating suspend from idle
+>> would somehow avoid the race condition with wakeup events. All I'm
+>> saying is that you would need to block suspend in all the same places.
+>> If you don't care about ignoring wakeup events, then sure you can
+>> initiate suspend from idle.
+>
+> And why should you miss a wakeup there ? If you get an interrupt in
+> the transition, then you are not longer idle.
+>
 
-Do we really need to handle #3? It could have happened before the
-checksum was calculated.
+Because suspend itself causes you to not be idle you cannot abort
+suspend just because you are not idle anymore.
 
+-- 
+Arve Hjønnevåg
