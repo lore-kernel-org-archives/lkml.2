@@ -1,82 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757656Ab0FBJdq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jun 2010 05:33:46 -0400
-Received: from www.tglx.de ([62.245.132.106]:55019 "EHLO www.tglx.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755229Ab0FBJdo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jun 2010 05:33:44 -0400
-Date: Wed, 2 Jun 2010 11:33:05 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: =?ISO-8859-15?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>
-cc: Neil Brown <neilb@suse.de>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-       Alan Stern <stern@rowland.harvard.edu>,
-       Felipe Balbi <felipe.balbi@nokia.com>,
-       Peter Zijlstra <peterz@infradead.org>,
-       "Paul@smtp1.linux-foundation.org" <Paul@smtp1.linux-foundation.org>,
-       LKML <linux-kernel@vger.kernel.org>,
-       Florian Mickler <florian@mickler.org>,
-       Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
-       Linux PM <linux-pm@lists.linux-foundation.org>,
-       Alan Cox <alan@lxorguk.ukuu.org.uk>,
-       James Bottomley <James.Bottomley@suse.de>
-Subject: Re: [PATCH] - race-free suspend. Was: Re: [linux-pm] [PATCH 0/8]
- Suspend block api (version 8)
-In-Reply-To: <AANLkTimISbs4X2YR_Pal9A80mpkNyCy8laWBcOgR2Cl7@mail.gmail.com>
-Message-ID: <alpine.LFD.2.00.1006021117480.2933@localhost.localdomain>
-References: <Pine.LNX.4.44L0.1005271303190.3239-100000@iolanthe.rowland.org> <201006010005.19554.rjw@sisk.pl> <20100601090023.788cabf4@notabene.brown> <201006010232.20263.rjw@sisk.pl> <20100601113309.609349fd@notabene.brown> <alpine.LFD.2.00.1006010340160.2933@localhost.localdomain>
- <20100601122012.1edeaf48@notabene.brown> <alpine.LFD.2.00.1006011243350.2933@localhost.localdomain> <20100602153235.340a7852@notabene.brown> <AANLkTikVjAf5nHdMx2bcHRAUSkq99s-b5YZCECXIJJLy@mail.gmail.com> <20100602180614.729246ea@notabene.brown>
- <AANLkTimISbs4X2YR_Pal9A80mpkNyCy8laWBcOgR2Cl7@mail.gmail.com>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S1757667Ab0FBJhO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jun 2010 05:37:14 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:48916 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753954Ab0FBJhN convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Jun 2010 05:37:13 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type:content-transfer-encoding;
+        b=fYC/djhgQ/J3rPEgsA3noYeonEG/TmB2L9V04F/Tu+0t/L08+dkrHA4UMc7JXpDxjX
+         xcMaasWw9qvFoU55iwy6zHpASZxYksGyQV/gez8o7dIfyQfl5FL/RddIaAF1Bqpnelka
+         5rIbiC3eEE/4WzuAjYdGOPWAxgtiPIewgzog0=
 MIME-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="8323328-206425387-1275471188=:2933"
+In-Reply-To: <AANLkTincaxtwu_voxAbEkrOGeB5NWTVvmbHZJsaHpoYJ@mail.gmail.com>
+References: <1275468694.2545.1.camel@eight.analog.com> <AANLkTinaPmKUx04I1mjNhla4s3S6vmWp8x6eoDTZGRVz@mail.gmail.com> 
+	<AANLkTincaxtwu_voxAbEkrOGeB5NWTVvmbHZJsaHpoYJ@mail.gmail.com>
+From: Mike Frysinger <vapier.adi@gmail.com>
+Date: Wed, 2 Jun 2010 05:36:52 -0400
+Message-ID: <AANLkTilIweGx1NXLiTuRphex1RMk9DF3Vdva5F-6JDKl@mail.gmail.com>
+Subject: Re: [Uclinux-dist-devel] [PATCH v2] regulator: new drivers for AD5398 
+	and AD5821
+To: Sonic Zhang <sonic.adi@gmail.com>
+Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+       Liam Girdwood <lrg@slimlogic.co.uk>,
+       uclinux-dist-devel <uclinux-dist-devel@blackfin.uclinux.org>,
+       Linux Kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
+On Wed, Jun 2, 2010 at 05:29, Sonic Zhang wrote:
+> On Wed, Jun 2, 2010 at 5:02 PM, Mike Frysinger wrote:
+>> On Wed, Jun 2, 2010 at 04:51, sonic zhang wrote:
+>>> The AD5398 and AD5821 are single 10-bit DAC with 120 mA output current
+>>> sink capability. They feature an internal reference and operates from
+>>> a single 2.7 V to 5.5 V supply.
+>>>
+>>> This driver supports both the AD5398 and the AD5821.  It adapts into the
+>>> voltage and current framework.
+>>>
+>>>
+>>> Signed-off-by: Sonic Zhang <sonic.zhang@analog.com>
+>>
+>> the "From:" doesnt match your s-o-b tag ...
+>
+> Does this need to be matched? I prefer to discuss via gmail account
+> while keep company email in the patch owner information.
 
---8323328-206425387-1275471188=:2933
-Content-Type: TEXT/PLAIN; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+so set the From: in the body as the first line like git-send-email does it:
+From: <author info>
 
-On Wed, 2 Jun 2010, Arve Hj�nnev�g wrote:
-> 2010/6/2 Neil Brown <neilb@suse.de>:
-> > There would still need to be some sort of communication between the the
-> > suspend daemon on any event daemon to ensure that the events had been
-> > processed. �This could be very light weight interaction. �The point though is
-> > that with this patch it becomes possible to avoid races. �Possible is better
-> > than impossible.
-> >
-> 
-> We already have a solution. I don't think rejecting our solution but
-> merging a worse solution should be the goal.
+<commit message>
 
-That's not the goal at all. We want a solution which is acceptable for
-android and OTOH does not get into the way of other approaches.
+<other tags>
+---
+  <diffstat>
+..........
 
-The main problem I have is that suspend blockers are only addressing
-one particular problem space of power management.
+>>> +static const struct ad5398_current_data_format ad5398_df = {10, 4};
+>>> +static const struct ad5398_current_data_format ad5821_df = {10, 4};
+>>> +
+>>> +static const struct i2c_device_id ad5398_id[] = {
+>>> +       { "ad5398", (kernel_ulong_t)&ad5398_df },
+>>> +       { "ad5821", (kernel_ulong_t)&ad5821_df },
+>>> +       { }
+>>> +};
+>>
+>> do you really need sep storage for these _df vars ?
+>
+> Yes, this makes probe code simpler.
 
-We have more requirements than that, e.g. an active device transfer
-requires to prevent the idle code to select a deep power state due to
-latency requirements. 
+how does it make any difference to the probe code what each id is
+pointing to ?  it isnt comparing the private data pointers to any
+other storage pointers.
 
-So we then have to implement two mechanisms in the relevant drivers:
-
-   1) telling the idle code to limit latency
-   2) telling the suspend code not to suspend
-
-My main interest is to limit it to one mechanism, which is QoS based
-and let idle and suspend make the appropriate decisions based on that
-information.
-
-Thanks,
-
-	tglx
-
-
-
-
---8323328-206425387-1275471188=:2933--
+from what i can see, this should give the same exact behavior:
+static const struct ad5398_current_data_format df_10_4 = {10, 4};
+static const struct i2c_device_id ad5398_id[] = {
+       { "ad5398", (kernel_ulong_t)&df_10_4 },
+       { "ad5821", (kernel_ulong_t)&df_10_4 },
+-mike
