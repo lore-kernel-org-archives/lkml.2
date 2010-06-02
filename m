@@ -1,58 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752679Ab0FBMhX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jun 2010 08:37:23 -0400
-Received: from crca.org.au ([74.207.252.120]:51555 "EHLO crca.org.au"
+	id S1754062Ab0FBMip (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jun 2010 08:38:45 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:62541 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751616Ab0FBMhV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jun 2010 08:37:21 -0400
-X-Bogosity: Ham, spamicity=0.000000
-Message-ID: <4C065079.1020208@crca.org.au>
-Date: Wed, 02 Jun 2010 22:37:13 +1000
-From: Nigel Cunningham <ncunningham@crca.org.au>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.9) Gecko/20100423 Thunderbird/3.0.4
+	id S1751550Ab0FBMin (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Jun 2010 08:38:43 -0400
+Date: Wed, 2 Jun 2010 15:34:17 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Joerg Roedel <joro@8bytes.org>
+Cc: Avi Kivity <avi@redhat.com>, Tom Lyon <pugs@cisco.com>,
+       linux-kernel@vger.kernel.org, kvm@vger.kernel.org, chrisw@sous-sol.org,
+       hjk@linutronix.de, gregkh@suse.de, aafabbri@cisco.com,
+       scofeldm@cisco.com
+Subject: Re: [PATCH] VFIO driver: Non-privileged user level PCI drivers
+Message-ID: <20100602123417.GA29815@redhat.com>
+References: <20100601095532.GA9178@redhat.com> <20100602094201.GC964@8bytes.org> <20100602095312.GA25335@redhat.com> <20100602101940.GG964@8bytes.org> <20100602102144.GD29023@redhat.com> <20100602103516.GI964@8bytes.org> <20100602103828.GF29023@redhat.com> <20100602111224.GA11033@8bytes.org> <20100602112100.GA29697@redhat.com> <20100602121927.GA11162@8bytes.org>
 MIME-Version: 1.0
-To: Jiri Slaby <jslaby@suse.cz>
-CC: rjw@sisk.pl, linux-pm@lists.linux-foundation.org,
-       linux-kernel@vger.kernel.org, jirislaby@gmail.com
-Subject: Re: [linux-pm] [PATCH 1/9] PM / Hibernate: swap,	switch to hibernate_io_handle
-References: <1275468768-28229-1-git-send-email-jslaby@suse.cz>
-In-Reply-To: <1275468768-28229-1-git-send-email-jslaby@suse.cz>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100602121927.GA11162@8bytes.org>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi.
+On Wed, Jun 02, 2010 at 02:19:28PM +0200, Joerg Roedel wrote:
+> On Wed, Jun 02, 2010 at 02:21:00PM +0300, Michael S. Tsirkin wrote:
+> > On Wed, Jun 02, 2010 at 01:12:25PM +0200, Joerg Roedel wrote:
+> 
+> > > Even if it is bound to a domain the userspace driver could program the
+> > > device to do dma to unmapped regions causing io-page-faults. The kernel
+> > > can't do anything about it.
+> > 
+> > It can always corrupt its own memory directly as well :)
+> > But that is not a reason not to detect errors if we can,
+> > and not to make APIs hard to misuse.
+> 
+> Changing the domain of a device while dma can happen is the same type of
+> bug as unmapping potential dma target addresses. We can't catch this
+> kind of misuse.
 
-On 02/06/10 18:52, Jiri Slaby wrote:
-> Hi,
->
-> I addressed the comments I got on the previous RFC. I left the handles
-> in place, the functions in hibernate_io_ops now works on them. Further
-> I got rid of the memory barriers and minimized global variables as much
-> as possible. Comments welcome.
->
-> --
->
-> Some code, which will be moved out of swap.c, will know nothing about
-> swap. There will be also other than swap writers later, so that it
-> won't make sense at all.
->
-> So introduce a new structure called hibernate_io_handle which
-> currently contains only a pointer to private data, but is independent
-> on I/O reader/writer actually used. Private data are swap_map_handle
-> for now.
->
-> This structure is allocated in _start and freed in _finish. This will
-> correspond to the later introduction of hibernate_io_ops where users
-> will do handle=start->repeat{read/write(handle)}->finish(handle).
-> I.e. they will operate on handle instead of global variables.
+you normally need device mapped to start DMA.
+SHARE makes this bug more likely as you allow
+switching domains: mmap could be done before switching.
 
-I'm starting on appending your patch series to mine (yes, I've given you 
-no time to object :> I'm too keen!)
+> > > > With 10 devices you have 10 extra ioctls.
+> > > 
+> > > And this works implicitly with your proposal?
+> > 
+> > Yes.  so you do:
+> > iommu = open
+> > ioctl(dev1, BIND, iommu)
+> > ioctl(dev2, BIND, iommu)
+> > ioctl(dev3, BIND, iommu)
+> > ioctl(dev4, BIND, iommu)
+> > 
+> > No need to add a SHARE ioctl.
+> 
+> In my proposal this looks like:
+> 
+> 
+> dev1 = open();
+> ioctl(dev2, SHARE, dev1);
+> ioctl(dev3, SHARE, dev1);
+> ioctl(dev4, SHARE, dev1);
+> 
+> So we actually save an ioctl.
 
-Since, in my tree, swap_map pages are history, I'll skip this patch.
+I thought we had a BIND ioctl?
 
-Nigel
+> > > Remember that we still need to be able to provide seperate mappings
+> > > for each device to support IOMMU emulation for the guest.
+> > 
+> > Generally not true. E.g. guest can enable iommu passthrough
+> > or have domain per a group of devices.
+> 
+> What I meant was that there may me multiple io-addresses spaces
+> necessary for one process. I didn't want to say that every device
+> _needs_ to have its own address space.
+> 
+> > > As I wrote the domain has a reference count and is destroyed only when
+> > > it goes down to zero. This does not happen as long as a device is bound
+> > > to it.
+> > > 
+> > > 	Joerg
+> > 
+> > We were talking about UNSHARE ioctl:
+> > ioctl(dev1, UNSHARE, dev2)
+> > Does it change the domain for dev1 or dev2?
+> > If you make a mistake you get a hard to debug bug.
+> 
+> As I already wrote we would have an UNBIND ioctl which just removes a
+> device from its current domain. UNBIND is better than UNSHARE for
+> exactly the reason you pointed out above. I thought I stated that
+> already.
+> 
+> 	Joerg
+
+You undo SHARE with UNBIND?
+
