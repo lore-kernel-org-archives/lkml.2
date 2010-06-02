@@ -1,52 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758437Ab0FBP1p (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jun 2010 11:27:45 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:39198 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757905Ab0FBP1o (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jun 2010 11:27:44 -0400
-Date: Wed, 2 Jun 2010 11:27:22 -0400
-From: John Villalovos <jvillalo@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: x86@kernel.org, Jesse Barnes <jbarnes@virtuousgeek.org>
-Subject: [PATCH] Documentation: Add doc about aerdriver.* parameters to
- kernel-parameters.txt
-Message-ID: <20100602152721.GA8939@linuxjohn.usersys.redhat.com>
-Reply-To: John Villalovos <jvillalo@redhat.com>
+	id S932645Ab0FBP3s (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jun 2010 11:29:48 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:18106 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932541Ab0FBP3n convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Jun 2010 11:29:43 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-12-10)
+Message-ID: <1d88619a-bb1e-493f-ad96-bf204b60938d@default>
+Date: Wed, 2 Jun 2010 08:27:48 -0700 (PDT)
+From: Dan Magenheimer <dan.magenheimer@oracle.com>
+To: Minchan Kim <minchan.kim@gmail.com>
+Cc: chris.mason@oracle.com, viro@zeniv.linux.org.uk, akpm@linux-foundation.org,
+       adilger@sun.com, tytso@mit.edu, mfasheh@suse.com,
+       joel.becker@oracle.com, matthew@wil.cx, linux-btrfs@vger.kernel.org,
+       linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+       linux-ext4@vger.kernel.org, ocfs2-devel@oss.oracle.com,
+       linux-mm@kvack.org, ngupta@vflare.org, jeremy@goop.org,
+       JBeulich@novell.com, kurt.hackel@oracle.com, npiggin@suse.de,
+       dave.mccracken@oracle.com, riel@redhat.com, avi@redhat.com,
+       konrad.wilk@oracle.com
+Subject: RE: [PATCH V2 0/7] Cleancache (was Transcendent Memory): overview
+References: <20100528173510.GA12166@ca-server1.us.oracle.com
+ AANLkTilV-4_QaNq5O0WSplDx1Oq7JvkgVrEiR1rgf1up@mail.gmail.com>
+In-Reply-To: <AANLkTilV-4_QaNq5O0WSplDx1Oq7JvkgVrEiR1rgf1up@mail.gmail.com>
+X-Priority: 3
+X-Mailer: Oracle Beehive Extensions for Outlook 1.5.1.5.2  (401224) [OL
+ 12.0.6514.5000]
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
+X-Auth-Type: Internal IP
+X-Source-IP: acsinet15.oracle.com [141.146.126.227]
+X-CT-RefId: str=0001.0A090209.4C0678B8.00BF:SCFMA922111,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adding documentation about two aerdriver.* command line parameters.
+Hi Minchan --
 
-Signed-off-by: John L. Villalovos <john.l.villalovos@intel.com>
+> I think cleancache approach is cool. :)
+> I have some suggestions and questions.
 
-diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
-index 1808f11..57ff168 100644
---- a/Documentation/kernel-parameters.txt
-+++ b/Documentation/kernel-parameters.txt
-@@ -293,6 +293,19 @@ and is between 256 and 4096 characters. It is defined in the file
- 			Format: <io>,<irq>,<dma>,<mss_io>,<mpu_io>,<mpu_irq>
- 			See also header of sound/oss/aedsp16.c.
+Thanks for your interest!
+
+> > If a get_page is successful on a non-shared pool, the page is flushed
+> (thus
+> > making cleancache an "exclusive" cache).  On a shared pool, the page
+> 
+> Do you have any reason about force "exclusive" on a non-shared pool?
+> To free memory on pesudo-RAM?
+> I want to make it "inclusive" by some reason but unfortunately I can't
+> say why I want it now.
+
+The main reason is to free up memory in pseudo-RAM and to
+avoid unnecessary cleancache_flush calls.  If you want
+inclusive, the page can be put immediately following
+the get.  If put-after-get for inclusive becomes common,
+the interface could easily be extended to add a "get_no_flush"
+call.
  
-+	aerdriver.forceload= [HW,PCIE] Advanced Error Recovery (AER) Root Driver
-+			{ y, n }
-+			y: Force the AER Root driver to load
-+			n: Do not force the AER Root driver to load [DEFAULT]
-+			See also Documentation/PCI/pcieaer-howto.txt
-+
-+	aerdriver.nosourceid= [HW,PCIE]
-+			{ y, n }
-+			y: Use when broken hardware (mostly chipsets) has root
-+			   ports that cannot obtain the reporting source ID.
-+			n: [DEFAULT]
-+			See also Documentation/PCI/pcieaer-howto.txt
-+
- 	agp=		[AGP]
- 			{ off | try_unsupported }
- 			off: disable AGP support
+> While you mentioned it's "exclusive", cleancache_get_page doesn't
+> flush the page at below code.
+> Is it a role of user who implement cleancache_ops->get_page?
+
+Yes, the flush is done by the cleancache implementation.
+
+> If backed device is ram(ie), Could we _move_ the pages from page cache
+> to cleancache?
+> I mean I don't want to copy page when get/put operation. we can just
+> move page in case of backed device "ram". Is it possible?
+
+By "move", do you mean changing the virtual mappings?  Yes,
+this could be done as long as the source and destination are
+both directly addressable (that is, true physical RAM), but
+requires TLB manipulation and has some complicated corner
+cases.  The copy semantics simplifies the implementation on
+both the "frontend" and the "backend" and also allows the
+backend to do fancy things on-the-fly like page compression
+and page deduplication.
+
+> You send the patches which is core of cleancache but I don't see any
+> use case.
+> Could you send use case patches with this series?
+> It could help understand cleancache's benefit.
+
+Do you mean the Xen Transcendent Memory ("tmem") implementation?
+If so, this is four files in the Xen source tree (common/tmem.c,
+common/tmem_xen.c, include/xen/tmem.h, include/xen/tmem_xen.h).
+There is also an html document in the Xen source tree, which can
+be viewed here:
+http://oss.oracle.com/projects/tmem/dist/documentation/internals/xen4-internals-v01.html 
+
+Or did you mean a cleancache_ops "backend"?  For tmem, there
+is one file linux/drivers/xen/tmem.c and it interfaces between
+the cleancache_ops calls and Xen hypercalls.  It should be in
+a Xenlinux pv_ops tree soon, or I can email it sooner.
+
+I am also eagerly awaiting Nitin Gupta's cleancache backend
+and implementation to do in-kernel page cache compression.
+
+Thanks,
+Dan
