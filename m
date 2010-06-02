@@ -1,98 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753497Ab0FBMnF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jun 2010 08:43:05 -0400
-Received: from smtpauth.net4india.com ([202.71.129.41]:58223 "EHLO
-	smtpauth.net4india.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751759Ab0FBMnB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jun 2010 08:43:01 -0400
-Message-ID: <4C0651FF.2080007@xenontk.org>
-Date: Wed, 02 Jun 2010 18:13:43 +0530
-From: David John <davidjon@xenontk.org>
-Reply-To: davidjon@xenontk.org
-User-Agent: Mozilla/5.0 (X11; X; Linux x86_64; rv:1.9.1.9) Gecko/20100430 Thunderbird/3.0.4
+	id S1755138Ab0FBMoj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jun 2010 08:44:39 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:59475 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751759Ab0FBMoh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Jun 2010 08:44:37 -0400
+Message-ID: <4C065232.7000501@suse.cz>
+Date: Wed, 02 Jun 2010 14:44:34 +0200
+From: Michal Marek <mmarek@suse.cz>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100317 SUSE/3.0.4-1.18 Thunderbird/3.0.4
 MIME-Version: 1.0
-To: Jens Axboe <jaxboe@fusionio.com>
-CC: Divyesh Shah <dpshah@google.com>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [2.6.35-rc1 BUG]: Calling sched_clock causes stack trace with
- DEBUG_PREEMPT
-References: <4C04AC78.3020702@xenontk.org> <4C04BB3F.2030707@xenontk.org> <20100601102319.GL3564@kernel.dk>
-In-Reply-To: <20100601102319.GL3564@kernel.dk>
-Content-Type: text/plain; charset=UTF-8
+To: Aristeu Rozanski <aris@redhat.com>
+Cc: Randy Dunlap <randy.dunlap@oracle.com>, linux-kbuild@vger.kernel.org,
+       linux-kernel@vger.kernel.org, davej@redhat.com, kyle@redhat.com,
+       vgoyal@redhat.com, arjan@linux.intel.com
+Subject: Re: [PATCH] kconfig: introduce nonint_oldconfig and	loose_nonint_oldconfig
+ (v3)
+References: <20100413194747.GX31193@redhat.com> <20100413130031.d4dec19b.randy.dunlap@oracle.com> <20100413201759.GY31193@redhat.com> <4BC4D310.6060705@oracle.com> <20100413210352.GA31193@redhat.com> <4BC5C190.3020501@suse.cz> <20100506164834.GL20778@redhat.com>
+In-Reply-To: <20100506164834.GL20778@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/01/2010 03:53 PM, Jens Axboe wrote:
-> On Tue, Jun 01 2010, David John wrote:
->> On 06/01/2010 12:15 PM, David John wrote:
->>> Hi,
->>>
->>> I get stack traces like the following:
->>>
->>> BUG: using smp_processor_id() in preemptible [00000000] code: init/1
->>> caller is native_sched_clock+0x37/0x6d
->>> Pid: 1, comm: init Not tainted 2.6.35-rc1 #99
->>> Call Trace:
->>> [<ffffffff811c422b>] debug_smp_processor_id+0xd3/0xec
->>> [<ffffffff81008a1e>] native_sched_clock+0x37/0x6d
->>> [<ffffffff811a7bfd>] blk_rq_init+0x92/0x9e
->>> [<ffffffff811a7f2e>] get_request+0x1c8/0x27e
->>> [<ffffffff811a8011>] get_request_wait+0x2d/0x13c
->>> [<ffffffff810306ee>] ? get_parent_ip+0x11/0x42
->>> [<ffffffff81411ea6>] ? add_preempt_count+0xad/0xb1
->>> [<ffffffff811a83b3>] __make_request+0x293/0x3b8
->>> [<ffffffff81099737>] ? mempool_alloc_slab+0x10/0x12
->>> [<ffffffff811a6bc4>] generic_make_request+0x187/0x1ea
->>> [<ffffffff810306ee>] ? get_parent_ip+0x11/0x42
->>> [<ffffffff811a6ce5>] submit_bio+0xbe/0xc7
->>> [<ffffffff810f1f37>] submit_bh+0xef/0x111
->>> [<ffffffff810f4865>] block_read_full_page+0x1ec/0x20c
->>> [<ffffffff810f6815>] ? blkdev_get_block+0x0/0x5e
->>> [<ffffffff81411de6>] ? sub_preempt_count+0x92/0xa5
->>> [<ffffffff810a0500>] ? __lru_cache_add+0x73/0x93
->>> [<ffffffff810f6e81>] blkdev_readpage+0x13/0x15
->>> [<ffffffff8109f981>] __do_page_cache_readahead+0x161/0x194
->>> [<ffffffff8109f9d0>] ra_submit+0x1c/0x20
->>> [<ffffffff8109fc5f>] ondemand_readahead+0x1bb/0x1ce
->>> [<ffffffff810973c9>] ? rcu_read_unlock+0xe/0x29
->>> [<ffffffff8109fd46>] page_cache_sync_readahead+0x38/0x3a
->>> [<ffffffff810993c2>] generic_file_aio_read+0x24d/0x57f
->>> [<ffffffff810cf973>] ? __mem_cgroup_try_charge+0x78/0x46c
->>> [<ffffffff810d2aa0>] do_sync_read+0xc6/0x103
->>> [<ffffffff810306ee>] ? get_parent_ip+0x11/0x42
->>> [<ffffffff810adca5>] ? handle_mm_fault+0x7cb/0x7e5
->>> [<ffffffff810f69c5>] ? block_ioctl+0x32/0x36
->>> [<ffffffff81189fcc>] ? selinux_file_permission+0x57/0xae
->>> [<ffffffff81184524>] ? security_file_permission+0x11/0x13
->>> [<ffffffff810d34af>] vfs_read+0xa6/0x103
->>> [<ffffffff810d35c2>] sys_read+0x45/0x69
->>> [<ffffffff810029ab>] system_call_fastpath+0x16/0x1b
->>>
->>> Since with commit 9195291e you call 'set_start_time_ns' from
->>> 'blk_rq_init' which in turn calls 'sched_clock' with preempt enabled.
->>> There are other calls to sched_clock in blk-cgroup.c. Maybe they should
->>> be checked as well?
->>>
->>> Regards,
->>> David.
->>>
->>
->> I see this has been reported. Never mind.
+On 6.5.2010 18:48, Aristeu Rozanski wrote:
+> This patch has been around for a long time in Fedora and Red Hat Enterprise
+> Linux kernels and it may be useful for others. The nonint_oldconfig target
+> will fail and print the unset config options while loose_nonint_oldconfig will
+> simply let the config option unset. They're useful in distro kernel packages
+> where the config files are built using a combination of smaller config files.
 > 
-> This should fix it for now, if you have time to test, then that would
-> not hurt.
+> Arjan van de Ven wrote the initial nonint_config and Roland McGrath added the
+> loose_nonint_oldconfig.
+> 
+> v2:
+> - when -B and -b are used, return "2" so the reason can be distinguished from
+>   other errors
+> v3:
+> - help updated
+> - nonint_oldconfig won't update the config file if options are missing
+> 
+> Signed-off-by: Arjan van de Ven <arjan@redhat.com> [defunct email]
+> Whatevered-by: Kyle McMartin <kyle@redhat.com>
+> Acked-by: Arjan van de Ven <arjan@linux.intel.com>
+> Acked-by: Randy Dunlap <randy.dunlap@oracle.com>
+> Signed-off-by: Aristeu Rozanski <aris@redhat.com>
 
-Yes, this works.
+Sorry for the delay. Applied now.
 
-Thanks,
-David.
-
-
-
-
-
-
+Michal
