@@ -1,161 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756254Ab0FBGbd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jun 2010 02:31:33 -0400
-Received: from TYO201.gate.nec.co.jp ([202.32.8.193]:48167 "EHLO
-	tyo201.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752263Ab0FBGbb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jun 2010 02:31:31 -0400
-Date: Wed, 2 Jun 2010 14:46:39 +0900
-From: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
-To: Andrea Arcangeli <aarcange@redhat.com>
-Cc: linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
-       linux-kernel@vger.kernel.org, Marcelo Tosatti <mtosatti@redhat.com>,
-       Adam Litke <agl@us.ibm.com>, Avi Kivity <avi@redhat.com>,
-       Izik Eidus <ieidus@redhat.com>,
-       Hugh Dickins <hugh.dickins@tiscali.co.uk>,
-       Nick Piggin <npiggin@suse.de>, Rik van Riel <riel@redhat.com>,
-       Mel Gorman <mel@csn.ul.ie>, Dave Hansen <dave@linux.vnet.ibm.com>,
-       Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-       Ingo Molnar <mingo@elte.hu>, Mike Travis <travis@sgi.com>,
-       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-       Christoph Lameter <cl@linux-foundation.org>,
-       Chris Wright <chrisw@sous-sol.org>, bpicco@redhat.com,
-       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-       Balbir Singh <balbir@linux.vnet.ibm.com>,
-       "Michael S. Tsirkin" <mst@redhat.com>,
-       Peter Zijlstra <peterz@infradead.org>,
-       Johannes Weiner <hannes@cmpxchg.org>,
-       Chris Mason <chris.mason@oracle.com>, Borislav Petkov <bp@alien8.de>,
-       Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
-Subject: [RFC][BUGFIX][PATCH 2/2] transhuge-memcg: commit tail pages at
- charge
-Message-Id: <20100602144639.15828b0e.nishimura@mxp.nes.nec.co.jp>
-In-Reply-To: <20100602144438.dc04ece7.nishimura@mxp.nes.nec.co.jp>
-References: <20100521000539.GA5733@random.random>
-	<20100602144438.dc04ece7.nishimura@mxp.nes.nec.co.jp>
-Organization: NEC Soft, Ltd.
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1755743Ab0FBGfn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jun 2010 02:35:43 -0400
+Received: from ozlabs.org ([203.10.76.45]:53579 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752020Ab0FBGfl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Jun 2010 02:35:41 -0400
+From: Rusty Russell <rusty@rustcorp.com.au>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [PATCH 2/2] module: fix bne2 "gave up waiting for init of module libcrc32c"
+Date: Wed, 2 Jun 2010 16:05:36 +0930
+User-Agent: KMail/1.13.2 (Linux/2.6.32-21-generic; KDE/4.4.2; i686; ; )
+Cc: Brandon Philips <brandon@ifup.org>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       "Rafael J. Wysocki" <rjw@sisk.pl>, LKML <linux-kernel@vger.kernel.org>,
+       Jon Masters <jonathan@jonmasters.org>, Tejun Heo <htejun@gmail.com>,
+       Masami Hiramatsu <mhiramat@redhat.com>,
+       Kay Sievers <kay.sievers@vrfy.org>
+References: <201005252300.07739.rjw@sisk.pl> <alpine.LFD.2.00.1006012039570.8175@i5.linux-foundation.org> <alpine.LFD.2.00.1006012137390.8175@i5.linux-foundation.org>
+In-Reply-To: <alpine.LFD.2.00.1006012137390.8175@i5.linux-foundation.org>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201006021605.38817.rusty@rustcorp.com.au>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-By this patch, when a transparent hugepage is charged, not only the head page but
-also all the tail pages are committed, IOW pc->mem_cgroup and pc->flags of tail
-pages are set.
+On Wed, 2 Jun 2010 02:14:37 pm Linus Torvalds wrote:
+> (That function _really_ should be peeled like an onion, and split into 
+> many smaller functions, so that we don't have ten error cases needing 
+> unwinding. I like "goto error", but at some point you can't see the 
+> unwinding any more, and that function has passed that point a long time 
+> ago, I think)
 
-Without this patch:
+Agreed.  Feel free to take a stab at it if you're bored.  Last I tried,
+there wasn't an obvious split point which actually reduced the size of the
+function.
 
-- Tail pages are not linked to any memcg's LRU at splitting. This causes many
-  problems, for example, the charged memcg's directory can never be rmdir'ed
-  because it doesn't have enough pages to scan to make the usage decrease to 0.
-- "rss" field in memory.stat would be incorrect. Moreover, usage_in_bytes in
-  root cgroup is calculated by the stat not by res_counter(since 2.6.32),
-  it would be incorrect too.
+And here's the tree I'm testing now (it compiles, currently rebasing to
+dodge some unrelated -rc1 fs/block weirdness):
 
-Signed-off-by: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index b74bd83..708961a 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -1739,23 +1739,10 @@ struct mem_cgroup *try_get_mem_cgroup_from_page(struct page *page)
-  * commit a charge got by __mem_cgroup_try_charge() and makes page_cgroup to be
-  * USED state. If already USED, uncharge and return.
-  */
--
--static void __mem_cgroup_commit_charge(struct mem_cgroup *mem,
--				       struct page_cgroup *pc,
--				       enum charge_type ctype,
--				       int page_size)
-+static void ____mem_cgroup_commit_charge(struct mem_cgroup *mem,
-+					 struct page_cgroup *pc,
-+					 enum charge_type ctype)
- {
--	/* try_charge() can return NULL to *memcg, taking care of it. */
--	if (!mem)
--		return;
--
--	lock_page_cgroup(pc);
--	if (unlikely(PageCgroupUsed(pc))) {
--		unlock_page_cgroup(pc);
--		mem_cgroup_cancel_charge(mem, page_size);
--		return;
--	}
--
- 	pc->mem_cgroup = mem;
- 	/*
- 	 * We access a page_cgroup asynchronously without lock_page_cgroup().
-@@ -1780,6 +1767,33 @@ static void __mem_cgroup_commit_charge(struct mem_cgroup *mem,
- 	}
- 
- 	mem_cgroup_charge_statistics(mem, pc, true);
-+}
-+
-+static void __mem_cgroup_commit_charge(struct mem_cgroup *mem,
-+				       struct page_cgroup *pc,
-+				       enum charge_type ctype,
-+				       int page_size)
-+{
-+	int i;
-+	int count = page_size >> PAGE_SHIFT;
-+
-+	/* try_charge() can return NULL to *memcg, taking care of it. */
-+	if (!mem)
-+		return;
-+
-+	lock_page_cgroup(pc);
-+	if (unlikely(PageCgroupUsed(pc))) {
-+		unlock_page_cgroup(pc);
-+		mem_cgroup_cancel_charge(mem, page_size);
-+		return;
-+	}
-+
-+	/*
-+	 * we don't need page_cgroup_lock about tail pages, becase they are not
-+	 * accessed by any other context at this point.
-+	 */
-+	for (i = 0; i < count; i++)
-+		____mem_cgroup_commit_charge(mem, pc + i, ctype);
- 
- 	unlock_page_cgroup(pc);
- 	/*
-@@ -2173,6 +2187,8 @@ direct_uncharge:
- static struct mem_cgroup *
- __mem_cgroup_uncharge_common(struct page *page, enum charge_type ctype)
- {
-+	int i;
-+	int count;
- 	struct page_cgroup *pc;
- 	struct mem_cgroup *mem = NULL;
- 	struct mem_cgroup_per_zone *mz;
-@@ -2187,6 +2203,7 @@ __mem_cgroup_uncharge_common(struct page *page, enum charge_type ctype)
- 	if (PageSwapCache(page))
- 		return NULL;
- 
-+	count = page_size >> PAGE_SHIFT;
- 	/*
- 	 * Check if our page_cgroup is valid
- 	 */
-@@ -2222,7 +2239,8 @@ __mem_cgroup_uncharge_common(struct page *page, enum charge_type ctype)
- 		__do_uncharge(mem, ctype, page_size);
- 	if (ctype == MEM_CGROUP_CHARGE_TYPE_SWAPOUT)
- 		mem_cgroup_swap_statistics(mem, true);
--	mem_cgroup_charge_statistics(mem, pc, false);
-+	for (i = 0; i < count; i++)
-+		mem_cgroup_charge_statistics(mem, pc + i, false);
- 
- 	ClearPageCgroupUsed(pc);
- 	/*
-@@ -2238,7 +2256,7 @@ __mem_cgroup_uncharge_common(struct page *page, enum charge_type ctype)
- 	memcg_check_events(mem, page);
- 	/* at swapout, this memcg will be accessed to record to swap */
- 	if (ctype != MEM_CGROUP_CHARGE_TYPE_SWAPOUT)
--		__css_put(&mem->css, page_size >> PAGE_SHIFT);
-+		__css_put(&mem->css, count);
- 
- 	return mem;
- 
+The following changes since commit 67a3e12b05e055c0415c556a315a3d3eb637e29e:
+  Linus Torvalds (1):
+        Linux 2.6.35-rc1
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/rusty/linux-2.6 modules
+
+Eric Dumazet (1):
+      module: module_unload_init() cleanup
+
+Linus Torvalds (2):
+      module: Make the 'usage' lists be two-way
+      module: move find_module check to end
+
+Rusty Russell (6):
+      module: fix reference to mod->percpu after freeing module.
+      module: fix kdb's illicit use of struct module_use.
+      module: move sysfs exposure to end of load_module
+      module: Make module sysfs functions private.
+      module: make locking more fine-grained.
+      module: fix bne2 "gave up waiting for init of module libcrc32c"
+
+ include/linux/module.h      |   44 ++-----
+ kernel/debug/kdb/kdb_main.c |   12 +--
+ kernel/module.c             |  325 ++++++++++++++++++++++++++++---------------
+ 3 files changed, 226 insertions(+), 155 deletions(-)
