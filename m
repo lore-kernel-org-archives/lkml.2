@@ -1,100 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758375Ab0FBO4J (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jun 2010 10:56:09 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:51108 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758357Ab0FBO4D (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jun 2010 10:56:03 -0400
-Date: Wed, 2 Jun 2010 07:50:48 -0700 (PDT)
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Rusty Russell <rusty@rustcorp.com.au>
-cc: Brandon Philips <brandon@ifup.org>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       "Rafael J. Wysocki" <rjw@sisk.pl>, LKML <linux-kernel@vger.kernel.org>,
-       Jon Masters <jonathan@jonmasters.org>, Tejun Heo <htejun@gmail.com>,
-       Masami Hiramatsu <mhiramat@redhat.com>,
-       Kay Sievers <kay.sievers@vrfy.org>
-Subject: Re: [PATCH 2/2] module: fix bne2 "gave up waiting for init of module
- libcrc32c"
-In-Reply-To: <201006022336.53024.rusty@rustcorp.com.au>
-Message-ID: <alpine.LFD.2.00.1006020750330.8175@i5.linux-foundation.org>
-References: <201005252300.07739.rjw@sisk.pl> <201006021523.00357.rusty@rustcorp.com.au> <alpine.LFD.2.00.1006020006420.8175@i5.linux-foundation.org> <201006022336.53024.rusty@rustcorp.com.au>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S1758384Ab0FBO45 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jun 2010 10:56:57 -0400
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:51800 "EHLO e9.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754564Ab0FBO4z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Jun 2010 10:56:55 -0400
+Date: Wed, 2 Jun 2010 07:56:53 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Daniel J Blueman <daniel.blueman@gmail.com>
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] RCU: don't turn off lockdep when find suspicious
+ rcu_dereference_check() usage
+Message-ID: <20100602145653.GA2385@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <AANLkTinNygSdXsg3vAVRHttAMh6nX4tauNKn3XnfQC_x@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <AANLkTinNygSdXsg3vAVRHttAMh6nX4tauNKn3XnfQC_x@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-On Wed, 2 Jun 2010, Rusty Russell wrote:
+On Tue, Jun 01, 2010 at 02:06:13PM +0100, Daniel J Blueman wrote:
+> Hi Paul,
 > 
-> Found another locking issue: the code which verifies we don't export over
-> an existing symbol needs to be atomic wrt. adding us to the list.
+> With 2.6.35-rc1 and your patch in the context below, we still see
+> "include/linux/cgroup.h:534 invoked rcu_dereference_check() without
+> protection!", so need this additional patch:
+> 
+> Acquire read-side RCU lock around task_group() calls, addressing
+> "include/linux/cgroup.h:534 invoked rcu_dereference_check() without
+> protection!" warning.
+> 
+> Signed-off-by: Daniel J Blueman <daniel.blueman@gmail.com>
 
-Yup.
+Thank you, Daniel!  I have queued this for 2.6.35.
 
-And now that I'm looking at that call-chain (to see if it would make sense 
-to use some other more specific lock - doesn't look like it: all the 
-readers are using RCU and this is the only writer), I also give you this 
-trivial one-liner. It changes each_symbol() to not put that constant array 
-on the stack, resulting in changing
+I had to apply the patch by hand due to line wrapping.  Could you please
+check your email-agent settings?  This simple patch was no problem to
+hand apply, but for a larger patch this process would be both tedious
+and error prone.
 
-        movq    $C.388.31095, %rsi      #, tmp85
-        subq    $376, %rsp      #,
-        movq    %rdi, %rbx      # fn, fn
-        leaq    -208(%rbp), %rdi        #, tmp84
-        movq    %rbx, %rdx      # fn,
-        rep movsl
-        xorl    %esi, %esi      #
-        leaq    -208(%rbp), %rdi        #, tmp87
-        movq    %r12, %rcx      # data,
-        call    each_symbol_in_section.clone.0  #
+							Thanx, Paul
 
-into
-
-        xorl    %esi, %esi      #
-        subq    $216, %rsp      #,
-        movq    %rdi, %rbx      # fn, fn  
-        movq    $arr.31078, %rdi        #,
-        call    each_symbol_in_section.clone.0  #
-
-which is not so much about being obviously shorter and simpler because we 
-don't unnecessarily copy that constant array around onto the stack, but 
-also about having a much smaller stack footprint (376 vs 216 bytes - see 
-the update of 'rsp').
-
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
----
-
-Btw, feel free to consider all those peeling patches signed-off-on, since 
-they seem to work.
-
-> And load_module is down to 259 lines.  The label chain at the end is no
-> shorter tho :(  I'll leave those cleanups until next merge window.
-
-I don't think it's necessarily bad to have multiple exit targets (although 
-9 is pushing it), if the thing is short enough that you can fairly easily 
-see how they work. Not that it's quite there yet.
-
-		Linus
----
- kernel/module.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/kernel/module.c b/kernel/module.c
-index 01e8874..2602264 100644
---- a/kernel/module.c
-+++ b/kernel/module.c
-@@ -227,7 +227,7 @@ bool each_symbol(bool (*fn)(const struct symsearch *arr, struct module *owner,
- 			    unsigned int symnum, void *data), void *data)
- {
- 	struct module *mod;
--	const struct symsearch arr[] = {
-+	static const struct symsearch arr[] = {
- 		{ __start___ksymtab, __stop___ksymtab, __start___kcrctab,
- 		  NOT_GPL_ONLY, false },
- 		{ __start___ksymtab_gpl, __stop___ksymtab_gpl,
+> diff --git a/kernel/sched_fair.c b/kernel/sched_fair.c
+> index 217e4a9..50ec9ea 100644
+> --- a/kernel/sched_fair.c
+> +++ b/kernel/sched_fair.c
+> @@ -1241,6 +1241,7 @@ static int wake_affine(struct sched_domain *sd,
+> struct task_struct *p, int sync)
+>  	 * effect of the currently running task from the load
+>  	 * of the current CPU:
+>  	 */
+> +	rcu_read_lock();
+>  	if (sync) {
+>  		tg = task_group(current);
+>  		weight = current->se.load.weight;
+> @@ -1250,6 +1251,7 @@ static int wake_affine(struct sched_domain *sd,
+> struct task_struct *p, int sync)
+>  	}
+> 
+>  	tg = task_group(p);
+> +	rcu_read_unlock();
+>  	weight = p->se.load.weight;
+> 
+>  	imbalance = 100 + (sd->imbalance_pct - 100) / 2;
+> 
+> ---
+> 
+> On Wed, Apr 21, 2010 at 02:35:43PM -0700, Paul E. McKenney wrote:
+>     On Tue, Apr 20, 2010 at 11:38:28AM -0400, Miles Lane wrote:
+>         Excellent. Here are the results on my machine. .config appended.
+>     First, thank you very much for testing this, Miles!
+> 
+> And as Tetsuo Handa pointed out privately, my patch was way broken.
+> 
+> Here is an updated version.
+> 
+> Thanx, Paul
+> 
+> commit b15e561ed91b7a366c3cc635026f3b9ce6483070
+> Author: Paul E. McKenney <paulmck@xxxxxxxxxxxxxxxxxx>
+> Date: Wed Apr 21 14:04:56 2010 -0700
+> 
+> sched: protect __sched_setscheduler() access to cgroups
+> 
+> A given task's cgroups structures must remain while that task is running
+> due to reference counting, so this is presumably a false positive.
+> Updated to reflect feedback from Tetsuo Handa.
+> 
+> Signed-off-by: Paul E. McKenney <paulmck@xxxxxxxxxxxxxxxxxx>
+> 
+> diff --git a/kernel/sched.c b/kernel/sched.c
+> index 14c44ec..f425a2b 100644
+> --- a/kernel/sched.c
+> +++ b/kernel/sched.c
+> @@ -4575,9 +4575,13 @@ recheck:
+> * Do not allow realtime tasks into groups that have no runtime
+> * assigned.
+> */
+> + rcu_read_lock();
+> if (rt_bandwidth_enabled() && rt_policy(policy) &&
+> - task_group(p)->rt_bandwidth.rt_runtime == 0)
+> + task_group(p)->rt_bandwidth.rt_runtime == 0) {
+> + rcu_read_unlock();
+> return -EPERM;
+> + }
+> + rcu_read_unlock();
+> #endif
+> 
+> retval = security_task_setscheduler(p, policy, param);
+> -- 
+> Daniel J Blueman
