@@ -1,214 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932195Ab0FBHty (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jun 2010 03:49:54 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:54315 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753403Ab0FBHtw (ORCPT
+	id S1757573Ab0FBHuz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jun 2010 03:50:55 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:62461 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751564Ab0FBHuv convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jun 2010 03:49:52 -0400
-Date: Wed, 2 Jun 2010 00:45:18 -0700 (PDT)
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Rusty Russell <rusty@rustcorp.com.au>
-cc: Brandon Philips <brandon@ifup.org>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       "Rafael J. Wysocki" <rjw@sisk.pl>, LKML <linux-kernel@vger.kernel.org>,
-       Jon Masters <jonathan@jonmasters.org>, Tejun Heo <htejun@gmail.com>,
-       Masami Hiramatsu <mhiramat@redhat.com>,
-       Kay Sievers <kay.sievers@vrfy.org>
-Subject: Re: [PATCH 2/2] module: fix bne2 "gave up waiting for init of module
- libcrc32c"
-In-Reply-To: <201006021605.38817.rusty@rustcorp.com.au>
-Message-ID: <alpine.LFD.2.00.1006020022000.8175@i5.linux-foundation.org>
-References: <201005252300.07739.rjw@sisk.pl> <alpine.LFD.2.00.1006012039570.8175@i5.linux-foundation.org> <alpine.LFD.2.00.1006012137390.8175@i5.linux-foundation.org> <201006021605.38817.rusty@rustcorp.com.au>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	Wed, 2 Jun 2010 03:50:51 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=ATbyKXTydFM6rA7U34OQX9vvkmRNi7MnS1y8eQLAHq7qFb9srX2SoTBQ1xdEmyUtED
+         SX7E0KLy+KwXVbcFTGiDAyiFHrl+77KQEp4cjebfjWFr7Dnp6F7KEZt7FWJ7zxuQZi9i
+         q2SWDbZL8tNDu2A49eX3iYly8Ui4/nJ7wnto8=
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <4C060224.4090601@nokia.com>
+References: <1271886594-3719-1-git-send-email-zohar@linux.vnet.ibm.com>
+	<alpine.LRH.2.00.1005311017530.24571@tundra.namei.org>
+	<AANLkTil8LHjRT_PMosymmtBb1pxIzkBaWC0ef35DCBUU@mail.gmail.com>
+	<AANLkTil7WvVZ-3zpA0E--fUcHTqul3pnXnPm1xXn_vlH@mail.gmail.com>
+	<1275420536.28134.37.camel@localhost.localdomain>
+	<4C060224.4090601@nokia.com>
+Date: Wed, 2 Jun 2010 12:50:50 +0500
+Message-ID: <AANLkTikuXjWTEfYG2JLNW6znGGKNxzobw3ijCpG7u1xz@mail.gmail.com>
+Subject: Re: [PATCH 00/14] EVM
+From: Shaz <shazalive@gmail.com>
+To: Dmitry Kasatkin <dmitry.kasatkin@nokia.com>
+Cc: ext Mimi Zohar <zohar@linux.vnet.ibm.com>,
+       James Morris <jmorris@namei.org>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       "linux-security-module@vger.kernel.org" 
+	<linux-security-module@vger.kernel.org>,
+       David Safford <safford@watson.ibm.com>,
+       Dave Hansen <dave@linux.vnet.ibm.com>,
+       Arjan van de Ven <arjan@infradead.org>,
+       securityengineeringresearchgroup 
+	<securityengineeringresearchgroup@googlegroups.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Jun 2, 2010 at 12:03 PM, Dmitry Kasatkin
+<dmitry.kasatkin@nokia.com> wrote:
+>
+>
+> On 01/06/10 22:28, ext Mimi Zohar wrote:
+>> On Mon, 2010-05-31 at 15:08 +0500, Shaz wrote:
+>>
+>>>> EVM is based on EA while Aegis does not use EA as far as I can
+>>>> understand from the documentation available. Can we make EVM
+>>>> independent of EA? Even the MAC mechanism is very different then
+>>>> existing LSM based mechanisms.
+>>>>
+>>> Have a look at the following:
+>>>
+>>> http://research.nokia.com/files/NRCTR2008010.pdf
+>>> http://research.nokia.com/files/NRCTR2008007.pdf
+>>> http://lwn.net/Articles/372937/
+>>>
+>> SELinux, Smack, Capabilities, and IMA all use extended attributes. The
+>> purpose of EVM is to detect offline tampering of these security extended
+>> attributes.
 
+MeeGo/Maemo security framework does not use LSM because Maemo/MeeGo
+security framework only focuses at process level MAC and for that they
+use Dazuko as Nokia research report mentions.
 
-On Wed, 2 Jun 2010, Rusty Russell wrote:
-> 
-> Agreed.  Feel free to take a stab at it if you're bored.  Last I tried,
-> there wasn't an obvious split point which actually reduced the size of the
-> function.
+By the way MeeGo 1.0 has no security at the moment so one cannot be
+sure if they are going according to their research or what. They are
+also not opening the internals of their security framework. Not sure
+why if the whole thing is open and Linux Foundation is backing it up.
 
-I'd start from the trivial stuff. There's a fair amount of straight-line 
-code that just makes the function hard to read just because you have to 
-page up and down so far. Some of it is trivial to just create a helper 
-function for. 
+>> The IMA integrity appraisal extension extends IMA with local measurement
+>> appraisal. The extension stores and maintains the file integrity
+>> measurement as an extended attribute 'security.ima', which EVM can be
+>> configured to protect.  Instead of storing the hash measurement as an
+>> extended attribute, the file hashes could be loaded in kernel memory, as
+>> long as the appraise policy is appropriately constrained.
+>>
+>>
+> Hi,
+>
+> Maemo integrity protection solution was based on old DigSig project
+> which was used to verify
+> integrity of executables. Signed integrity measurement was embedded to
+> the ELF header.
+> When we started to develop it EVM was not available.
+>
+> And we decided to use a file to keep hashes and other info.
+>
+> Our goals were
+> 1. Protect also certain data files.
+> digsig worked only with ELF files.
+>
+> 2. Be mobile friendly
+> It seems faster to verify signature of one file with hashes instead of
+> checking signature of every EA.
 
-IOW, things like this.. Pure code movement to peel off some stuff.
+Here Mimi can explain better because I am of the same opinion as yours
+if you mean that all signatures lie in one file and you check it from
+there. Anyways some sort of policy can reduce checking every EA ... I
+guess.
 
-No, this patch on its own doesn't really make anything easier to read, but 
-a handful of these kinds of things might bring down what is currently an 
-almost 500-line function (yeah, really) to the point where it could 
-potentially be just fifty lines (most of which is just calling helper 
-functions, and checking an error case).
+> 3. Persistant to offline attacks
+> EA can be delete. If not all files has EA then it is not possible to
+> detect removal
 
-At that point, it should be possible to see it in one (biggish) window, 
-which would make it a _lot_ easier to follow the cleanup cases.
+Availability of EA on all file systems needs some effort but it's not
+a big deal. I have even seen patches for yaffs2.
 
-Does this make the function smaller in any _absolute_ sense? No. The patch 
-has 6 added lines, because the whole function declaration, braces, empty 
-lines, call site. And the code is obviously not going to be smaller. It 
-would just be a bit more easy to get an overview of.
+> 4. Do not use EA.
+> IIRC it was some problems with EA on our system and we could not use them..
 
-Worth it? I dunno. But currently that 'load_module()' thing does end up 
-being the function from hell. Trying to figure out the nesting of the 
-error cases was a matter of paging up-and-down and trying to remember what 
-particular 'goto' target I was looking for. It _should_ be possible to do 
-better.
+This is a bad excuse :)
 
-		Linus
+> EVM looks very interesting and I would like also to review the code and
+> understand the architecture.
+> We consider possibility to use EVM if it is going to be in the kernel.
 
----
- kernel/module.c |  124 +++++++++++++++++++++++++++++--------------------------
- 1 files changed, 65 insertions(+), 59 deletions(-)
+Please do have a look because we need these features too but in a
+light weight manner. We are trying to make available similar
+functionality for OpenMoko based software stacks.
 
-diff --git a/kernel/module.c b/kernel/module.c
-index d4a55f1..165d97e 100644
---- a/kernel/module.c
-+++ b/kernel/module.c
-@@ -2106,6 +2106,70 @@ static inline void kmemleak_load_module(struct module *mod, Elf_Ehdr *hdr,
- }
- #endif
- 
-+static void find_module_sections(struct module *mod, Elf_Ehdr *hdr, Elf_Shdr *sechdrs, char *secstrings)
-+{
-+	mod->kp = section_objs(hdr, sechdrs, secstrings, "__param",
-+			       sizeof(*mod->kp), &mod->num_kp);
-+	mod->syms = section_objs(hdr, sechdrs, secstrings, "__ksymtab",
-+				 sizeof(*mod->syms), &mod->num_syms);
-+	mod->crcs = section_addr(hdr, sechdrs, secstrings, "__kcrctab");
-+	mod->gpl_syms = section_objs(hdr, sechdrs, secstrings, "__ksymtab_gpl",
-+				     sizeof(*mod->gpl_syms),
-+				     &mod->num_gpl_syms);
-+	mod->gpl_crcs = section_addr(hdr, sechdrs, secstrings, "__kcrctab_gpl");
-+	mod->gpl_future_syms = section_objs(hdr, sechdrs, secstrings,
-+					    "__ksymtab_gpl_future",
-+					    sizeof(*mod->gpl_future_syms),
-+					    &mod->num_gpl_future_syms);
-+	mod->gpl_future_crcs = section_addr(hdr, sechdrs, secstrings,
-+					    "__kcrctab_gpl_future");
-+
-+#ifdef CONFIG_UNUSED_SYMBOLS
-+	mod->unused_syms = section_objs(hdr, sechdrs, secstrings,
-+					"__ksymtab_unused",
-+					sizeof(*mod->unused_syms),
-+					&mod->num_unused_syms);
-+	mod->unused_crcs = section_addr(hdr, sechdrs, secstrings,
-+					"__kcrctab_unused");
-+	mod->unused_gpl_syms = section_objs(hdr, sechdrs, secstrings,
-+					    "__ksymtab_unused_gpl",
-+					    sizeof(*mod->unused_gpl_syms),
-+					    &mod->num_unused_gpl_syms);
-+	mod->unused_gpl_crcs = section_addr(hdr, sechdrs, secstrings,
-+					    "__kcrctab_unused_gpl");
-+#endif
-+#ifdef CONFIG_CONSTRUCTORS
-+	mod->ctors = section_objs(hdr, sechdrs, secstrings, ".ctors",
-+				  sizeof(*mod->ctors), &mod->num_ctors);
-+#endif
-+
-+#ifdef CONFIG_TRACEPOINTS
-+	mod->tracepoints = section_objs(hdr, sechdrs, secstrings,
-+					"__tracepoints",
-+					sizeof(*mod->tracepoints),
-+					&mod->num_tracepoints);
-+#endif
-+#ifdef CONFIG_EVENT_TRACING
-+	mod->trace_events = section_objs(hdr, sechdrs, secstrings,
-+					 "_ftrace_events",
-+					 sizeof(*mod->trace_events),
-+					 &mod->num_trace_events);
-+	/*
-+	 * This section contains pointers to allocated objects in the trace
-+	 * code and not scanning it leads to false positives.
-+	 */
-+	kmemleak_scan_area(mod->trace_events, sizeof(*mod->trace_events) *
-+			   mod->num_trace_events, GFP_KERNEL);
-+#endif
-+#ifdef CONFIG_FTRACE_MCOUNT_RECORD
-+	/* sechdrs[0].sh_size is always zero */
-+	mod->ftrace_callsites = section_objs(hdr, sechdrs, secstrings,
-+					     "__mcount_loc",
-+					     sizeof(*mod->ftrace_callsites),
-+					     &mod->num_ftrace_callsites);
-+#endif
-+}
-+
- /* Allocate and load the module: note that size of section 0 is always
-    zero, and we rely on this for optional sections. */
- static noinline struct module *load_module(void __user *umod,
-@@ -2365,66 +2429,8 @@ static noinline struct module *load_module(void __user *umod,
- 
- 	/* Now we've got everything in the final locations, we can
- 	 * find optional sections. */
--	mod->kp = section_objs(hdr, sechdrs, secstrings, "__param",
--			       sizeof(*mod->kp), &mod->num_kp);
--	mod->syms = section_objs(hdr, sechdrs, secstrings, "__ksymtab",
--				 sizeof(*mod->syms), &mod->num_syms);
--	mod->crcs = section_addr(hdr, sechdrs, secstrings, "__kcrctab");
--	mod->gpl_syms = section_objs(hdr, sechdrs, secstrings, "__ksymtab_gpl",
--				     sizeof(*mod->gpl_syms),
--				     &mod->num_gpl_syms);
--	mod->gpl_crcs = section_addr(hdr, sechdrs, secstrings, "__kcrctab_gpl");
--	mod->gpl_future_syms = section_objs(hdr, sechdrs, secstrings,
--					    "__ksymtab_gpl_future",
--					    sizeof(*mod->gpl_future_syms),
--					    &mod->num_gpl_future_syms);
--	mod->gpl_future_crcs = section_addr(hdr, sechdrs, secstrings,
--					    "__kcrctab_gpl_future");
-+	find_module_sections(mod, hdr, sechdrs, secstrings);
- 
--#ifdef CONFIG_UNUSED_SYMBOLS
--	mod->unused_syms = section_objs(hdr, sechdrs, secstrings,
--					"__ksymtab_unused",
--					sizeof(*mod->unused_syms),
--					&mod->num_unused_syms);
--	mod->unused_crcs = section_addr(hdr, sechdrs, secstrings,
--					"__kcrctab_unused");
--	mod->unused_gpl_syms = section_objs(hdr, sechdrs, secstrings,
--					    "__ksymtab_unused_gpl",
--					    sizeof(*mod->unused_gpl_syms),
--					    &mod->num_unused_gpl_syms);
--	mod->unused_gpl_crcs = section_addr(hdr, sechdrs, secstrings,
--					    "__kcrctab_unused_gpl");
--#endif
--#ifdef CONFIG_CONSTRUCTORS
--	mod->ctors = section_objs(hdr, sechdrs, secstrings, ".ctors",
--				  sizeof(*mod->ctors), &mod->num_ctors);
--#endif
--
--#ifdef CONFIG_TRACEPOINTS
--	mod->tracepoints = section_objs(hdr, sechdrs, secstrings,
--					"__tracepoints",
--					sizeof(*mod->tracepoints),
--					&mod->num_tracepoints);
--#endif
--#ifdef CONFIG_EVENT_TRACING
--	mod->trace_events = section_objs(hdr, sechdrs, secstrings,
--					 "_ftrace_events",
--					 sizeof(*mod->trace_events),
--					 &mod->num_trace_events);
--	/*
--	 * This section contains pointers to allocated objects in the trace
--	 * code and not scanning it leads to false positives.
--	 */
--	kmemleak_scan_area(mod->trace_events, sizeof(*mod->trace_events) *
--			   mod->num_trace_events, GFP_KERNEL);
--#endif
--#ifdef CONFIG_FTRACE_MCOUNT_RECORD
--	/* sechdrs[0].sh_size is always zero */
--	mod->ftrace_callsites = section_objs(hdr, sechdrs, secstrings,
--					     "__mcount_loc",
--					     sizeof(*mod->ftrace_callsites),
--					     &mod->num_ftrace_callsites);
--#endif
- #ifdef CONFIG_MODVERSIONS
- 	if ((mod->num_syms && !mod->crcs)
- 	    || (mod->num_gpl_syms && !mod->gpl_crcs)
+-- 
+Shaz
