@@ -1,104 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757746Ab0FBKer (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jun 2010 06:34:47 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:42902 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757508Ab0FBKeo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jun 2010 06:34:44 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-To: paulmck@linux.vnet.ibm.com, akpm@linux-foundation.org
-Subject: Re: [GIT PULL] rcu: finalize debugobjects, first round of RCU sparse pointer checks
-Cc: kosaki.motohiro@jp.fujitsu.com, mingo@elte.hu,
-       linux-kernel@vger.kernel.org, a.p.zijlstra@chello.nl,
-       tglx@linutronix.de, viro@zeniv.linux.org.uk, benh@kernel.crashing.org,
-       paulus@samba.org, sparse@chrisli.org
-In-Reply-To: <20100601165034.GA9522@linux.vnet.ibm.com>
-References: <20100601165034.GA9522@linux.vnet.ibm.com>
-Message-Id: <20100602192749.F512.A69D9226@jp.fujitsu.com>
+	id S1757822Ab0FBKfT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jun 2010 06:35:19 -0400
+Received: from 8bytes.org ([88.198.83.132]:54545 "EHLO 8bytes.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753497Ab0FBKfR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Jun 2010 06:35:17 -0400
+Date: Wed, 2 Jun 2010 12:35:16 +0200
+From: Joerg Roedel <joro@8bytes.org>
+To: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: Avi Kivity <avi@redhat.com>, Tom Lyon <pugs@cisco.com>,
+       linux-kernel@vger.kernel.org, kvm@vger.kernel.org, chrisw@sous-sol.org,
+       hjk@linutronix.de, gregkh@suse.de, aafabbri@cisco.com,
+       scofeldm@cisco.com
+Subject: Re: [PATCH] VFIO driver: Non-privileged user level PCI drivers
+Message-ID: <20100602103516.GI964@8bytes.org>
+References: <4C026497.8070901@redhat.com> <20100530145309.GO27611@redhat.com> <4C03A285.7060902@redhat.com> <20100531171007.GA6516@redhat.com> <4C04C085.1030107@redhat.com> <20100601095532.GA9178@redhat.com> <20100602094201.GC964@8bytes.org> <20100602095312.GA25335@redhat.com> <20100602101940.GG964@8bytes.org> <20100602102144.GD29023@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
-Content-Transfer-Encoding: 7bit
-X-Mailer: Becky! ver. 2.50.07 [ja]
-Date: Wed,  2 Jun 2010 19:34:41 +0900 (JST)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100602102144.GD29023@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Hello, Ingo,
-> 
-> Here are the final commits from Mathieu's debugobjects series and the
-> first few from Arnd's RCU-pointer sparse series.  The first three remove
-> RCU's (useless) initializations from mm, fs, and powerpc:
-> 
-> mm:	http://lkml.org/lkml/2010/5/18/562
-> fs:	http://lkml.org/lkml/2010/5/18/500
-> powerpc:http://www.mail-archive.com/linuxppc-dev@lists.ozlabs.org/msg43510.html
-> 
-> Kosaki Motohiro agreed that the mm patch should go up -tip, and none of
-> the other maintainers objected to the prospect of their patches going
-> up -tip.
+On Wed, Jun 02, 2010 at 01:21:44PM +0300, Michael S. Tsirkin wrote:
+> On Wed, Jun 02, 2010 at 12:19:40PM +0200, Joerg Roedel wrote:
 
-Andrew, can we hear your opinion? I think this patch series have some
-dependencies, then -tip is best place. If any code confliction occur,
-I promise I'll solve it soon.
+> > It can. The worst thing that can happen is an io-page-fault.
+> 
+> devices might not be able to recover from this.
 
-I think this rcu improvement makes developer happy.
+With the userspace interface a process can create io-page-faults
+anyway if it wants. We can't protect us from this. And the process is
+also responsible to not tear down iommu-mappings that are currently in
+use.
 
+> What you describe below does 3 ioctls for what can be done with 1.
 
-> 
-> The fourth patch removes RCU's initialization definitions, and the final
-> four patches provide the beginnings of Arnd's RCU-pointer sparse checks.
-> 
-> git://git.kernel.org/pub/scm/linux/kernel/git/paulmck/linux-2.6-rcu.git rcu/next
-> 
-> Or, if you prefer this against 2.6.34-rc7 without a merge record:
-> 
-> git://git.kernel.org/pub/scm/linux/kernel/git/paulmck/linux-2.6-rcu.git rcu/next-rc7
-> 
-> If you would rather me rebase this stack against 2.6.35-rc1, let me know!
-> 
-> Either way, once these commits reach mainline, I will submit the next 21
-> commits to their respective trees.  The maintainers have been CCed on the
-> earlier LKML patchsets (http://lkml.org/lkml/2010/5/12/372).  Once these
-> 21 commits hit mainline, I will send you a pull request for the remaining
-> two commits.
-> 
-> Then on to CONFIG_TINY_PREEMPT_RCU.
-> 
-> 							Thanx, Paul
-> 
-> ------------------>
->  Mathieu Desnoyers (2)
-> 	 rcu head remove init
-> 	 tree/tiny rcu: Add debug RCU head objects
-> 
->  Paul E. McKenney (6)
-> 	 powerpc: remove all rcu head initializations
-> 	 fs: remove all rcu head initializations, except on_stack initializations
-> 	 mm: remove all rcu head initializations
-> 	 rcu: add an rcu_dereference_index_check()
-> 	 rcu: add __rcu API for later sparse checking
-> 	 lockdep: Add an in_workqueue_context() lockdep-based test function
-> 
-> 
->  arch/powerpc/mm/pgtable.c |    1 
->  fs/file.c                 |    3 
->  fs/fs-writeback.c         |   31 +++++++-
->  fs/partitions/check.c     |    1 
->  include/linux/compiler.h  |    2 
->  include/linux/rcupdate.h  |   88 ++++++++++++++++++++++-
->  include/linux/workqueue.h |    4 +
->  kernel/rcupdate.c         |  170 ++++++++++++++++++++++++++++++++++++++++++++++
->  kernel/rcutiny.c          |    2 
->  kernel/rcutree.c          |    2 
->  kernel/workqueue.c        |   15 ++++
->  lib/Kconfig.debug         |    6 +
->  mm/backing-dev.c          |    1 
->  mm/slob.c                 |    1 
->  14 files changed, 309 insertions(+), 18 deletions(-)
+The second IOMMU_MAP ioctl is just to show that existing mappings would
+be destroyed if the device is assigned to another address space. Not
+strictly necessary. So we have two ioctls but save one call to create
+the iommu-domain.
 
+> > ioctl(dev2, IOMMU_SHARE, dev1); /* destroys all mapping for dev2 and
+> > 				   assigns it to the same domain as
+> > 				   dev1. Domain has a refcount of two
+> > 				   now */
+> 
+> Or maybe it destroys mapping for dev1?
+> How do you remember?
 
+Because we express here that "dev2 shares the iommu mappings of dev1".
+Thats easy to remember.
+
+> Also, no way to unshare? That seems limiting.
+
+Just left out for simplicity reasons. An IOMMU_UNBIND (no IOMMU_UNSHARE
+because that would require a second parameter) ioctl is certainly also
+required.
+
+	Joerg
 
