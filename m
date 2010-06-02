@@ -1,80 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756903Ab0FBB5v (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 1 Jun 2010 21:57:51 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:58504 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755685Ab0FBB5t (ORCPT
+	id S1756848Ab0FBCLU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 1 Jun 2010 22:11:20 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:51683 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755513Ab0FBCLT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 1 Jun 2010 21:57:49 -0400
-Date: Tue, 1 Jun 2010 18:57:00 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Dave Young <hidave.darkstar@gmail.com>
-Cc: Tejun Heo <tj@kernel.org>, David Howells <dhowells@redhat.com>,
-       davem@davemloft.net, jens.axboe@oracle.com,
-       linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-       viro@zeniv.linux.org.uk, Nick Piggin <nickpiggin@yahoo.com.au>,
-       linux-mm@kvack.org
-Subject: Re: [PATCH] fs: run emergency remount on dedicated workqueue
-Message-Id: <20100601185700.32ed2a0c.akpm@linux-foundation.org>
-In-Reply-To: <AANLkTikhC_cVbuTjSSaOffEH5dpCU-S-JBpcXNk8N2QC@mail.gmail.com>
-References: <25328.1274886067@redhat.com>
-	<4BFE4203.5010803@kernel.org>
-	<20100601164603.39dfedf7.akpm@linux-foundation.org>
-	<AANLkTikhC_cVbuTjSSaOffEH5dpCU-S-JBpcXNk8N2QC@mail.gmail.com>
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 1 Jun 2010 22:11:19 -0400
+Date: Tue, 1 Jun 2010 19:10:29 -0700
+From: Brandon Philips <brandon@ifup.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Rusty Russell <rusty@rustcorp.com.au>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       "Rafael J. Wysocki" <rjw@sisk.pl>, LKML <linux-kernel@vger.kernel.org>,
+       Jon Masters <jonathan@jonmasters.org>, Tejun Heo <htejun@gmail.com>,
+       Masami Hiramatsu <mhiramat@redhat.com>,
+       Kay Sievers <kay.sievers@vrfy.org>
+Subject: Re: [PATCH 2/2] module: fix bne2 "gave up waiting for init of
+ module libcrc32c"
+Message-ID: <20100602021029.GD10332@jenkins.ifup.org>
+References: <201005252300.07739.rjw@sisk.pl>
+ <201006011051.25636.rusty@rustcorp.com.au>
+ <alpine.LFD.2.00.1005312011490.3637@i5.linux-foundation.org>
+ <201006011452.06843.rusty@rustcorp.com.au>
+ <alpine.LFD.2.00.1006010722160.3637@i5.linux-foundation.org>
+ <alpine.LFD.2.00.1006011052340.8175@i5.linux-foundation.org>
+ <20100601232430.GC10332@jenkins.ifup.org>
+ <alpine.LFD.2.00.1006011638540.8175@i5.linux-foundation.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LFD.2.00.1006011638540.8175@i5.linux-foundation.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2 Jun 2010 09:02:40 +0800 Dave Young <hidave.darkstar@gmail.com> wrote:
+On 16:51 Tue 01 Jun 2010, Linus Torvalds wrote:
+> On Tue, 1 Jun 2010, Brandon Philips wrote:
+> > When I tested a Kernel with Rusty's modules branch pulled onto
+> > 2.6.35-rc1 I got duplicate sysfs path errors:
+> Hmm. Yeah, the module_mutex used to be held across the whole "find -> add" 
+> state, but isn't any more.
 
-> ...
+Right.
+
+> > To fix this we need to make sure that we only have one copy of a
+> > module going through load_module at a time.  Patch suggestion
+> > follows which boots without errors. I am sure there is a better
+> > way to do what it does ;)
+> 
+> I think Rusty may have made the lock a bit _too_ finegrained there,
+> and didn't add it to some places that needed it. It looks, for
+> example, like PATCH 1/2 actually drops the lock in places where it's
+> needed ("find_module()" is documented to need it, but now
+> load_module() didn't hold it at all when it did the find_module()).
+
+Right, I noticed that too and held the lock in the patch I sent.
+
+> Rather than adding a new "module_loading" list, I think we should be
+> able to just use the existing "modules" list, and just fix up the
+> locking a bit.
 >
-> > Another possibility might be to change lru_add_drain_all() to use IPI
-> > interrupts rather than schedule_on_each_cpu(). __That would greatly
-> > speed up lru_add_drain_all(). __I don't recall why we did it that way
-> > and I don't immediately see a reason not to. __A few things in core mm
-> > would need to be changed from spin_lock_irq() to spin_lock_irqsave().
-> >
-> > But I do have vague memories that there was a reason for it.
-> >
-> > <It's a huge PITA locating the commit which initially added
-> > lru_add_drain_all()>
-> >
-> > <ten minutes later>
-> >
-> > : tree 05d7615894131a368fc4943f641b11acdd2ae694
-> > : parent e236a166b2bc437769a9b8b5d19186a3761bde48
-> > : author Nick Piggin <npiggin@suse.de> Thu, 19 Jan 2006 09:42:27 -0800
-> > : committer Linus Torvalds <torvalds@g5.osdl.org> Thu, 19 Jan 2006 11:20:17 -0800
-> > :
-> > : [PATCH] mm: migration page refcounting fix
-> > :
-> > : Migration code currently does not take a reference to target page
-> > : properly, so between unlocking the pte and trying to take a new
-> > : reference to the page with isolate_lru_page, anything could happen to
-> > : it.
-> > :
-> > : Fix this by holding the pte lock until we get a chance to elevate the
-> > : refcount.
-> > :
-> > : Other small cleanups while we're here.
-> >
-> > It didn't tell us.
-> >
-> > <looks in the linux-mm archives>
-> >
-> > Nope, no rationale is provided there either.
-> 
-> Maybe this thread?
-> 
-> http://lkml.org/lkml/2008/10/23/226
+> In fact, maybe we could just move the "look up existing module" a
+> bit later - optimistically assuming that the module doesn't exist,
+> and then just undoing the work if it turns out that we were wrong,
+> just before adding ourselves to the list.
+>
+> A patch something like the appended (TOTALLY UNTESTED!)
 
-Close.  There's some talk there of using smp_call_function() (actually
-on_each_cpu()) within lru_add_drain_all(), but nobody seems to have
-tried it.
+FWIW, I tried this same idea initially and it breaks because the
+kobject EEXIST is coming from mod_sysfs_init() which happens further
+up in load_module() before the list_add_rcu().
 
+I also tried the obvious variation of moving the list_add_rcu() up
+to where the find_module is but got:
+
+[    5.495549] sd 0:0:1:0: [sda] 976773168 512-byte logical blocks: (500 GB/465 GiB)
+[    5.496931] ehci_hcd: Unknown symbol usb_hcd_resume_root_hub (err 0)
+[    5.497002] ehci_hcd: Unknown symbol usb_hcd_pci_probe (err 0)
+[    5.497070] ehci_hcd: Unknown symbol usb_hcd_unlink_urb_from_ep (err 0)
+
+Feeling a bit like GoldiLocks I gave up and sent the modules_loading
+patch to illustrate the issue. :)
+
+I will keep working out all the interdependencies to see if I can get
+something to boot without something like the modules_loading list.
+
+Cheers,
+
+	Brandon
+
+> diff --git a/kernel/module.c b/kernel/module.c
+> index a1f46a5..21f7ffa 100644
+> --- a/kernel/module.c
+> +++ b/kernel/module.c
+> @@ -2198,11 +2198,6 @@ static noinline struct module *load_module(void __user *umod,
+>  		goto free_mod;
+>  	}
+>  
+> -	if (find_module(mod->name)) {
+> -		err = -EEXIST;
+> -		goto free_mod;
+> -	}
+> -
+>  	mod->state = MODULE_STATE_COMING;
+>  
+>  	/* Allow arches to frob section contents and sizes.  */
+> @@ -2486,6 +2481,13 @@ static noinline struct module *load_module(void __user *umod,
+>  	 * The mutex protects against concurrent writers.
+>  	 */
+>  	mutex_lock(&module_mutex);
+> +
+> +	if (find_module(mod->name)) {
+> +		err = -EEXIST;
+> +		/* This will also unlock the mutex */
+> +		goto already_exists;
+> +	}
+> +
+>  	list_add_rcu(&mod->list, &modules);
+>  	mutex_unlock(&module_mutex);
+>  
+> @@ -2511,6 +2513,7 @@ static noinline struct module *load_module(void __user *umod,
+>  	mutex_lock(&module_mutex);
+>  	/* Unlink carefully: kallsyms could be walking list. */
+>  	list_del_rcu(&mod->list);
+> + already_exists:
+>  	mutex_unlock(&module_mutex);
+>  	synchronize_sched();
+>  	module_arch_cleanup(mod);
