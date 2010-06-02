@@ -1,46 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932841Ab0FBQ7V (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jun 2010 12:59:21 -0400
-Received: from g4t0017.houston.hp.com ([15.201.24.20]:46081 "EHLO
-	g4t0017.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758205Ab0FBQ7U (ORCPT
+	id S932846Ab0FBRC5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jun 2010 13:02:57 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:44604 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932650Ab0FBRCz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jun 2010 12:59:20 -0400
-From: Bjorn Helgaas <bjorn.helgaas@hp.com>
-To: Yinghai <yinghai.lu@oracle.com>
-Subject: Re: [Bug 16007] x86/pci Oops with CONFIG_SND_HDA_INTEL
-Date: Wed, 2 Jun 2010 10:58:56 -0600
-User-Agent: KMail/1.13.2 (Linux/2.6.32-22-generic; KDE/4.4.2; x86_64; ; )
-Cc: Jesse Barnes <jbarnes@virtuousgeek.org>,
-       Graham Ramsey <ramsey.graham@ntlworld.com>,
-       linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
-       bugzilla-daemon@bugzilla.kernel.org
-References: <4BF40014.30303@ntlworld.com> <4BF48425.2040702@oracle.com> <201005201108.07040.bjorn.helgaas@hp.com>
-In-Reply-To: <201005201108.07040.bjorn.helgaas@hp.com>
+	Wed, 2 Jun 2010 13:02:55 -0400
+Date: Wed, 2 Jun 2010 09:53:02 -0700
+From: Brandon Philips <brandon@ifup.org>
+To: Rusty Russell <rusty@rustcorp.com.au>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       "Rafael J. Wysocki" <rjw@sisk.pl>, LKML <linux-kernel@vger.kernel.org>,
+       Jon Masters <jonathan@jonmasters.org>, Tejun Heo <htejun@gmail.com>,
+       Masami Hiramatsu <mhiramat@redhat.com>,
+       Kay Sievers <kay.sievers@vrfy.org>
+Subject: Re: [PATCH 2/2] module: fix bne2 "gave up waiting for init of
+ module libcrc32c"
+Message-ID: <20100602165302.GI10332@jenkins.ifup.org>
+References: <201005252300.07739.rjw@sisk.pl>
+ <201006021523.00357.rusty@rustcorp.com.au>
+ <alpine.LFD.2.00.1006020006420.8175@i5.linux-foundation.org>
+ <201006022336.53024.rusty@rustcorp.com.au>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201006021058.57361.bjorn.helgaas@hp.com>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201006022336.53024.rusty@rustcorp.com.au>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I think the basic problem is that Yinghai's patch broke your system,
-and this is a regression between 2.6.33 and 2.6.34.
+On 23:36 Wed 02 Jun 2010, Rusty Russell wrote:
+> On Wed, 2 Jun 2010 04:51:46 pm Linus Torvalds wrote:
+> > On Wed, 2 Jun 2010, Rusty Russell wrote:
+> > > 
+> > > Moved all the sysfs-exposing stuff to the end just after we put in the
+> > > list (and thus to after the find check).
+> > 
+> > Yeah, makes more sense that way. No reason to expose anything to sysfs 
+> > early. And splitting it into two patches makes it easier to follow than 
+> > the patch I posted. Ack.
+> 
+> Found another locking issue: the code which verifies we don't export over
+> an existing symbol needs to be atomic wrt. adding us to the list.
+> 
+...
+> are available in the git repository at:
+> 
+>   ssh://master.kernel.org/pub/scm/linux/kernel/git/rusty/linux-2.6 modules
 
-We could use a quirk like yours (which looks fine, BTW) to cover up
-this regression, but I don't like that approach because other machines
-are probably affected by the same issue, and we'd have to find and
-fix them one-by-one.
+I tested this on the machine with the bnx2/libcrc32c issue and it
+works. Feel free to add Tested-by: Brandon Philips <bphilips@suse.de>
 
-I think it'd be better to figure out the problem with 3e3da00c01d
-and fix or revert it.  I said earlier that I wasn't in favor of just
-reverting it, and I still don't like that option because it will
-likely break something.  But Yinghai didn't supply any details about
-the system that 3e3da00c01d fixed, so I don't know how to fix things
-so both that system and yours work.
+Thanks,
 
-I assume that 2.6.34 with 3e3da00c01d reverted will work fine even
-without "pci=use_crs".  Can you try that and attach the dmesg log?
+	Brandon
