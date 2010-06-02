@@ -1,62 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758648Ab0FBUbr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jun 2010 16:31:47 -0400
-Received: from smtp-out.google.com ([74.125.121.35]:32147 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758638Ab0FBUbp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jun 2010 16:31:45 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=mime-version:in-reply-to:references:date:message-id:subject:from:to:
-	cc:content-type:x-system-of-record;
-	b=v8OATVw0t4moyvz5bFKsKN4lHo3gl/3e/lbkh/YmSLM5W656Rkde/q1XEJejAfl6X
-	FB9j5ceqMmvE9DT8aLWCw==
+	id S1758656Ab0FBUju (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jun 2010 16:39:50 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:50210 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752663Ab0FBUjs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Jun 2010 16:39:48 -0400
+Message-ID: <4C06C166.3050201@redhat.com>
+Date: Wed, 02 Jun 2010 22:39:02 +0200
+From: Jes Sorensen <Jes.Sorensen@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-2.fc12 Lightning/1.0b2pre Thunderbird/3.0.4
 MIME-Version: 1.0
-In-Reply-To: <20100602202048.GB28663@redhat.com>
-References: <20100530013002.GA762@ghc01.ghc.andrew.cmu.edu>
-	<20100530013303.GC762@ghc01.ghc.andrew.cmu.edu>
-	<20100531175242.GA14691@redhat.com>
-	<20100531180446.GA16249@redhat.com>
-	<AANLkTimcrX0TjzDMNJdubR92pAO4IPATbVpyvvVt0qIV@mail.gmail.com>
-	<20100602140659.GA5324@redhat.com>
-	<AANLkTin-T6ij3xf0ceGoCamwcoayxyf0GdAKY6yXDMVl@mail.gmail.com>
-	<20100602202048.GB28663@redhat.com>
-Date: Wed, 2 Jun 2010 13:31:41 -0700
-Message-ID: <AANLkTimrJFiidM8BlUNvmzfapUAv8369R9PYnTscasEf@mail.gmail.com>
-Subject: Re: [RFC] [PATCH 2/2] cgroups: make procs file writable
-From: Paul Menage <menage@google.com>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Ben Blum <bblum@andrew.cmu.edu>, linux-kernel@vger.kernel.org,
-       containers@lists.linux-foundation.org, akpm@linux-foundation.org,
-       ebiederm@xmission.com, lizf@cn.fujitsu.com, matthltc@us.ibm.com
+To: Rusty Russell <rusty@rustcorp.com.au>
+CC: "Michael S. Tsirkin" <mst@redhat.com>, qemu-devel@nongnu.org,
+       linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
+       virtualization@lists.linux-foundation.org
+Subject: Re: [Qemu-devel] Re: [PATCHv2-RFC 0/2] virtio: put last seen used
+ index	into ring itself
+References: <cover.1274903328.git.mst@redhat.com> <201005311716.43573.rusty@rustcorp.com.au>
+In-Reply-To: <201005311716.43573.rusty@rustcorp.com.au>
 Content-Type: text/plain; charset=ISO-8859-1
-X-System-Of-Record: true
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 2, 2010 at 1:20 PM, Oleg Nesterov <oleg@redhat.com> wrote:
->
-> Yes sure. The main thread can exit via sys_exit(), this doesn't affect
-> the thread group. Of course, I am not saying this is common practice,
-> perhaps no "important" app does this.
+On 05/31/10 09:46, Rusty Russell wrote:
+> On Thu, 27 May 2010 05:20:35 am Michael S. Tsirkin wrote:
+>> Here's a rewrite of the original patch with a new layout.
+>> I haven't tested it yet so no idea how this performs, but
+>> I think this addresses the cache bounce issue raised by Avi.
+>> Posting for early flames/comments.
+> 
+> Sorry, not without some evidence that it'll actually reduce cacheline
+> bouncing.  I *think* it will, but it's not obvious: the host may keep
+> looking at avail_idx as we're updating last_seen.  Or does qemu always
+> look at both together anyway?
+> 
+> Can someone convince me this is a win?
+> Rusty.
 
-This check has been in cgroups for quite a while and no-one's
-complained so far...
+Hi Rusty,
 
-> But I still can't understand why we can't just remove it. Both
-> cgroup_attach_task() and cgroup_attach_proc() should handle the
-> possible races correctly anyway.
+I ran some tests using the vring index publish patch with virtio_blk.
+The numbers are based on running IOZone on a ramdisk passed to the guest
+via virtio. While I didn't see any throughput improvements, I saw a
+20-30% reduction in the VMExit count for the full run. This was measured
+grabbing the VMExit count prior and after the run and calculating the
+difference.
 
-The "it" that you're proposing to remove is in fact the code that
-handles those races.
+I have the numbers in a PDF, so I will email it to you in private as I
+don't like sending PDFs to the mailing list. However if anybody else
+wants the numbers feel free to ping me off list and I'll forward them.
 
-Anyway, I think this issue is orthogonal to the movability of entire
-processes - with Ben's patch, an exited-but-not-reaped group leader is
-immovable either via "tasks" or "cgroup.procs". Changing the race
-condition handling to allow such movement would be a separate issue.
+Cheers,
+Jes
 
-Paul
-
-Paul
