@@ -1,83 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758788Ab0FBV6c (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jun 2010 17:58:32 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:64354 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758647Ab0FBV6b convert rfc822-to-8bit (ORCPT
+	id S1758814Ab0FBV7y (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jun 2010 17:59:54 -0400
+Received: from s12.ALPHA-c2.vectant.ne.jp ([222.230.51.12]:39509 "EHLO
+	s12.ALPHA-c2.vectant.ne.jp" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1758682Ab0FBV7x (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jun 2010 17:58:31 -0400
+	Wed, 2 Jun 2010 17:59:53 -0400
+Message-Id: <201006022157.AA00420@tamuki.linet.gr.jp>
+From: TAMUKI Shoichi <tamuki@linet.gr.jp>
+Date: Thu, 03 Jun 2010 06:57:01 +0900
+To: Andi Kleen <andi@firstfloor.org>
+Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
+       Anton Blanchard <anton@samba.org>, Andy Green <andy@warmcat.com>,
+       TAMUKI Shoichi <tamuki@linet.gr.jp>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] panic: keep blinking in spite of long spin timer mode
+In-Reply-To: <20100530065522.GA14556@basil.fritz.box>
+References: <20100530065522.GA14556@basil.fritz.box>
 MIME-Version: 1.0
-In-Reply-To: <20100602133910.GA9106@gvim.org>
-References: <AANLkTik_4ezDAQoAQjkpEgwD9SLKeOjDzy2H7T2v6uCP@mail.gmail.com>
-	<Pine.LNX.4.44L0.1005292026080.6300-100000@netrider.rowland.org>
-	<AANLkTikxws5kmFhnBO1MLzE65ETka3Jy0R5ayAKTS1Lc@mail.gmail.com>
-	<201005312338.55109.rjw@sisk.pl>
-	<20100531232617.GF31155@gvim.org>
-	<20100601090737.4bc243d9@schatten.dmk.lab>
-	<20100601140519.GC1281@gvim.org>
-	<AANLkTikF-B23_UWG1O3tlBl4m8NStAJllGhhevNhYZT6@mail.gmail.com>
-	<20100602133910.GA9106@gvim.org>
-Date: Wed, 2 Jun 2010 14:58:30 -0700
-Message-ID: <AANLkTilSU79cnBODXFokzIPB1hRcZBxbwTgTQ59MeKcK@mail.gmail.com>
-Subject: Re: [linux-pm] [PATCH 0/8] Suspend block api (version 8)
-From: =?ISO-8859-1?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>
-To: markgross@thegnar.org
-Cc: Florian Mickler <florian@mickler.org>, 640e9920@gmail.com,
-       "Rafael J. Wysocki" <rjw@sisk.pl>,
-       Alan Stern <stern@rowland.harvard.edu>,
-       Peter Zijlstra <peterz@infradead.org>,
-       Linux PM <linux-pm@lists.linux-foundation.org>,
-       Brian Swetland <swetland@google.com>,
-       Alan Cox <alan@lxorguk.ukuu.org.uk>,
-       Matthew Garrett <mjg59@srcf.ucam.org>,
-       Thomas Gleixner <tglx@linutronix.de>,
-       LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+X-Mailer: AL-Mail32 Version 1.13
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2010/6/2 mark gross <640e9920@gmail.com>:
-> On Tue, Jun 01, 2010 at 08:50:02PM -0700, Arve Hjønnevåg wrote:
->> On Tue, Jun 1, 2010 at 7:05 AM, mark gross <640e9920@gmail.com> wrote:
->> > On Tue, Jun 01, 2010 at 09:07:37AM +0200, Florian Mickler wrote:
->> ...
->> >> +static void update_target_val(int pm_qos_class, s32 val)
->> >> +{
->> >> +     s32 extreme_value;
->> >> +     s32 new_value;
->> >> +     extreme_value = atomic_read(&pm_qos_array[pm_qos_class]->target_value);
->> >> +     new_value = pm_qos_array[pm_qos_class]->comparitor(val,extreme_value);
->> >> +     if (extreme_value != new_value)
->> >> +             atomic_set(&pm_qos_array[pm_qos_class]->target_value,new_value);
->> >> +}
->> >> +
->> >
->> > Only works 1/2 the time, but I like the idea!
->> > It fails to get the righ answer when constraints are reduced.  But, this
->> > idea is a good improvement i'll roll into the next pm_qos update!
->> >
->>
->> I think it would be a better idea to track your constraints with a
->> sorted data structure. That way you can to better than O(n) for both
->> directions. If you have a lot of constraints with the same value, it
->> may even be worthwhile to have a two stage structure where for
->> instance you use a rbtree for the unique values and list for identical
->> constraints.
->
-> I don't agree, we went through this tree vrs list discussion a few times
-> before in other areas of the kernel.  Wherever the list tended to be
-> short, a simple list wins.  However; we can try it, after we have some
-> metrics and stress test cases identified we can measure its effectivenes
-> against.
->
+Hello,
 
-The list is not short. You have all the inactive and active
-constraints on the same list. If you change it to a two level list
-though, the list of unique values (which is the list you have to walk)
-may be short enough for a tree to be overkill.
+Thank you for the suggestion.
 
--- 
-Arve Hjønnevåg
+On Sun, 30 May 2010 08:55:22 +0200 Andi Kleen wrote:
+
+> Thanks for this explanation, makes all sense.
+> But should do these changes by default then, not with a parameter.
+
+Hmm, that will not be acceptable since the control of blinking speed
+becomes difficult with long spin timer mode.
+
+However, I agree to your opinion that it is not the best answer to
+prepare purposely a new parameter for such a rare situation.
+
+> Changing the frequency is ok, the only requirement is that it is
+> visible and different from the frequency kdb uses.
+
+So, I changed that the time calls to mdelay will be automatically
+switched to longer if the speed of blinking is slow enough.  The
+kernel parameter (panic_longspin) becomes no longer necessary.
+
+I will soon post the PATCH v2.
+
+Regards,
+TAMUKI Shoichi
