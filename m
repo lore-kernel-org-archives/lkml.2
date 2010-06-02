@@ -1,71 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932210Ab0FBHpV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jun 2010 03:45:21 -0400
-Received: from hera.kernel.org ([140.211.167.34]:51315 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932170Ab0FBHpT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jun 2010 03:45:19 -0400
-Date: Wed, 2 Jun 2010 07:43:47 GMT
-From: tip-bot for Borislav Petkov <borislav.petkov@amd.com>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-       travis@sgi.com, tglx@linutronix.de, mingo@elte.hu,
-       borislav.petkov@amd.com
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-       travis@sgi.com, tglx@linutronix.de, borislav.petkov@amd.com,
-       mingo@elte.hu
-In-Reply-To: <20100601190455.GA14237@aftab>
-References: <20100601190455.GA14237@aftab>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/urgent] x86, smpboot: Fix cores per node printing on boot
-Message-ID: <tip-4adc8b71cc142f9a7b44b13b99aab38ba897c56f@git.kernel.org>
-Git-Commit-ID: 4adc8b71cc142f9a7b44b13b99aab38ba897c56f
-X-Mailer: tip-git-log-daemon
+	id S932240Ab0FBHpa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jun 2010 03:45:30 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:58850 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932223Ab0FBHp1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Jun 2010 03:45:27 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=WNL8F62T+KtkZC3tVFSeVfbd0jM4ZbEurmTM1fEkAmRYk8IEq1JMgrIM14bhfQzsQT
+         5Gwu9fZiPHtU3Aw1vtE56mI20XcJ2nlOTFBh5/bhx6CCTCxtNUkLchACtkwCvpCbZVx6
+         1R0Jg/O9oRrFpYvFbhlBPBhaV5j2ZIBpZhe5c=
+Date: Wed, 2 Jun 2010 00:45:20 -0700
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: LKML <linux-kernel@vger.kernel.org>
+Subject: Re: Long playing threaded interrupt handlers
+Message-ID: <20100602074520.GI3713@core.coreip.homeip.net>
+References: <20100602070922.GC3713@core.coreip.homeip.net>
+ <alpine.LFD.2.00.1006020913310.2933@localhost.localdomain>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 02 Jun 2010 07:43:48 +0000 (UTC)
+In-Reply-To: <alpine.LFD.2.00.1006020913310.2933@localhost.localdomain>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  4adc8b71cc142f9a7b44b13b99aab38ba897c56f
-Gitweb:     http://git.kernel.org/tip/4adc8b71cc142f9a7b44b13b99aab38ba897c56f
-Author:     Borislav Petkov <borislav.petkov@amd.com>
-AuthorDate: Tue, 1 Jun 2010 21:04:55 +0200
-Committer:  Ingo Molnar <mingo@elte.hu>
-CommitDate: Wed, 2 Jun 2010 09:38:53 +0200
+On Wed, Jun 02, 2010 at 09:19:21AM +0200, Thomas Gleixner wrote:
+> On Wed, 2 Jun 2010, Dmitry Torokhov wrote:
+> 
+> > HI Thomas,
+> > 
+> > The threaded IRQ infrastructure that went into the kernel is extremely
+> > helpful, however in the input land there are quite a few devices that
+> > require polling after an IRQ has been raised.
+> > 
+> > Currently most such drivers, instead of threaded interrupts, still use
+> > [delayed] work to do the polling, and still face the issue of shutting
+> > down interrupt and scheduled work in a raceless way leaving irq enable
+> > counter balanced. Is it allowed to have threaded ISR execute for
+> > extended a amount of time, and do the required polling, provided that
+> > ISR does certain checks to finish promply in case when we unbind the
+> > driver or try to suspend the device?
+> 
+> Sure, why not ?
 
-x86, smpboot: Fix cores per node printing on boot
+Great, that is what I wanted to hear!
 
-Percpu initialization happens now after booting the cores on the
-machine and this causes them all to be displayed as belonging to
-node 0:
+> The only thing we need to think about is when the poll
+> is busy polling for a long time, then we need to lower the irq thread
+> priority to SCHED_OTHER in order not to hog the CPU.
 
-Jun  8 05:57:21 kepek kernel: [    0.106999] Booting Node   0,
-Processors  #1 #2 #3 #4 #5 #6 #7 #8 #9 #10 #11 #12 #13 #14 #15 #16 #17 #18 #19 #20 #21 #22 #23 Ok.
+I don't think the drivers will actively polling for a long time, they
+are likely to poll and then sleep for some time (100-200-300 msecs), so
+typical loop will be:
 
-Use early_cpu_to_node() to get the correct node of each core
-instead.
+handler()
+{
+	while (!shutdown_or_suspend) {
+		poll_device();
 
-Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
-Cc: Mike Travis <travis@sgi.com>
-LKML-Reference: <20100601190455.GA14237@aftab>
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
----
- arch/x86/kernel/smpboot.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+		if (all_up)
+			break;
 
-diff --git a/arch/x86/kernel/smpboot.c b/arch/x86/kernel/smpboot.c
-index 37462f1..c4f33b2 100644
---- a/arch/x86/kernel/smpboot.c
-+++ b/arch/x86/kernel/smpboot.c
-@@ -686,7 +686,7 @@ static void __cpuinit do_fork_idle(struct work_struct *work)
- static void __cpuinit announce_cpu(int cpu, int apicid)
- {
- 	static int current_node = -1;
--	int node = cpu_to_node(cpu);
-+	int node = early_cpu_to_node(cpu);
- 
- 	if (system_state == SYSTEM_BOOTING) {
- 		if (node != current_node) {
+		msleep(poll_interval);
+	}
+
+	return IRQ_HANDLED;
+}
+
+Thanks.
+
+-- 
+Dmitry
