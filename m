@@ -1,68 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757720Ab0FBKLc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jun 2010 06:11:32 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:51914 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751575Ab0FBKLa (ORCPT
+	id S1757793Ab0FBKMt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jun 2010 06:12:49 -0400
+Received: from mail-ww0-f46.google.com ([74.125.82.46]:42883 "EHLO
+	mail-ww0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755143Ab0FBKMr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jun 2010 06:11:30 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:content-type:date:message-id:mime-version:x-mailer
-         :content-transfer-encoding;
-        b=K9xLnsSoqEEhJIgK92j9mxk+vXsTK0Iww8JpAOeoKz/MyTD2JAUF2J3L1iQl4yQ9ZX
-         kSHT+F0sKlVD6BIt6otKzhDsM+oDZ1/NhTHPZE8Vs7RlSecQjykax7WnzSbMhSJTd6za
-         dzGp2qIVrDWmR/J0OFr0qBLgJPrxCj+2E9ka0=
-Subject: How to tell kernel that a region of memory is reserved (in middle
- of ram)?
-From: Maxim Levitsky <maximlevitsky@gmail.com>
-To: linux-kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 02 Jun 2010 13:11:22 +0300
-Message-ID: <1275473482.11579.21.camel@maxim-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	Wed, 2 Jun 2010 06:12:47 -0400
+Message-ID: <4C062E69.8050406@ru.mvista.com>
+Date: Wed, 02 Jun 2010 14:11:53 +0400
+From: Sergei Shtylyov <sshtylyov@mvista.com>
+User-Agent: Thunderbird 2.0.0.24 (Windows/20100228)
+MIME-Version: 1.0
+To: Arnd Bergmann <arnd@arndb.de>
+CC: Greg KH <gregkh@suse.de>, linux-kernel@vger.kernel.org,
+       linux-usb@vger.kernel.org, Frederic Weisbecker <fweisbec@gmail.com>,
+       John Kacur <jkacur@redhat.com>, Andi Kleen <andi@firstfloor.org>,
+       Andi Kleen <ak@linux.intel.com>
+Subject: Re: [PATCH 4/6] USB-BKL: Remove BKL use in uhci-debug
+References: <1275426285-9088-1-git-send-email-arnd@arndb.de> <1275426285-9088-5-git-send-email-arnd@arndb.de>
+In-Reply-To: <1275426285-9088-5-git-send-email-arnd@arndb.de>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Hello.
 
-I need to reserve a region of ram to store there a ramoops buffer.
-I need to do so early so kernel doesn't overwrite the existing contents.
+Arnd Bergmann wrote:
 
-How to do it?
+> From: Andi Kleen <ak@linux.intel.com>
 
-I noticed that doing memmap=20M$0x70000000 crashes the system although
-it promised to work.
-Is that a bug?
+> BKL was not really needed, just came from earlier push downs.
 
-I have 2GB system with following memory map:
+> The only part that's a bit dodgy is the lseek function. Would
+> need another lock or atomic access to fpos on 32bit?
+> Better to have a libfs lseek
 
-[    0.000000] BIOS-provided physical RAM map:
-[    0.000000]  BIOS-e820: 0000000000000000 - 000000000009fc00 (usable)
-[    0.000000]  BIOS-e820: 000000000009fc00 - 00000000000a0000 (reserved)
-[    0.000000]  BIOS-e820: 00000000000e0000 - 0000000000100000 (reserved)
-[    0.000000]  BIOS-e820: 0000000000100000 - 000000007fcfd000 (usable)
-[    0.000000]  BIOS-e820: 000000007fcfd000 - 000000007fd08000 (reserved)
-[    0.000000]  BIOS-e820: 000000007fd08000 - 000000007fd52000 (usable)
-[    0.000000]  BIOS-e820: 000000007fd52000 - 000000007fd55000 (reserved)
-[    0.000000]  BIOS-e820: 000000007fd55000 - 000000007fdbb000 (usable)
-[    0.000000]  BIOS-e820: 000000007fdbb000 - 000000007fdbf000 (reserved)
-[    0.000000]  BIOS-e820: 000000007fdbf000 - 000000007fe70000 (usable)
-[    0.000000]  BIOS-e820: 000000007fe70000 - 000000007febf000 (ACPI NVS)
-[    0.000000]  BIOS-e820: 000000007febf000 - 000000007ff00000 (ACPI data)
-[    0.000000]  BIOS-e820: 000000007ff00000 - 0000000080000000 (reserved)
-[    0.000000]  BIOS-e820: 00000000e0000000 - 00000000f0000000 (reserved)
-[    0.000000]  BIOS-e820: 00000000fec00000 - 00000000fec01000 (reserved)
-[    0.000000]  BIOS-e820: 00000000fed14000 - 00000000fed1a000 (reserved)
-[    0.000000]  BIOS-e820: 00000000fed1c000 - 00000000fed20000 (reserved)
-[    0.000000]  BIOS-e820: 00000000fee00000 - 00000000fee01000 (reserved)
-[    0.000000]  BIOS-e820: 00000000fff00000 - 0000000100000000 (reserved)
+> Signed-off-by: Andi Kleen <ak@linux.intel.com>
 
+[...]
 
-Best regards,
-	Maxim Levitsky
+> diff --git a/drivers/usb/host/uhci-debug.c b/drivers/usb/host/uhci-debug.c
+> index 98cf0b2..b0cf4f8 100644
+> --- a/drivers/usb/host/uhci-debug.c
+> +++ b/drivers/usb/host/uhci-debug.c
 
+[...]
+
+> @@ -539,11 +534,11 @@ static loff_t uhci_debug_lseek(struct file *file, loff_t off, int whence)
+>  		new = file->f_pos + off;
+>  		break;
+>  	}
+> +
+> +	/* XXX: Can size shrink? */
+>  	if (new < 0 || new > up->size) {
+> -		unlock_kernel();
+>  		return -EINVAL;
+>  	}
+
+    Should have dropped {}...
+
+> -	unlock_kernel();
+>  	return (file->f_pos = new);
+>  }
+
+WBR, Sergei
