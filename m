@@ -1,88 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932407Ab0FBLis (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jun 2010 07:38:48 -0400
-Received: from moutng.kundenserver.de ([212.227.17.8]:57637 "EHLO
+	id S932494Ab0FBLkm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jun 2010 07:40:42 -0400
+Received: from moutng.kundenserver.de ([212.227.126.171]:64945 "EHLO
 	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757906Ab0FBLiq (ORCPT
+	with ESMTP id S932327Ab0FBLis (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jun 2010 07:38:46 -0400
+	Wed, 2 Jun 2010 07:38:48 -0400
 From: Thomas Weber <weber@corscience.de>
 To: linux-omap@vger.kernel.org
-Cc: Kan-Ru Chen <kanru@0xlab.org>, Tony Lindgren <tony@atomide.com>,
+Cc: Thomas Weber <weber@corscience.de>, Tony Lindgren <tony@atomide.com>,
        Russell King <linux@arm.linux.org.uk>,
        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: [PATCHv2 03/11] OMAP2: Devkit8000: Enable DVI-D output
-Date: Wed,  2 Jun 2010 13:37:43 +0200
-Message-Id: <1275478671-24563-4-git-send-email-weber@corscience.de>
+Subject: [PATCHv2 01/11] OMAP2: Devkit8000: Cleanup for power supplies
+Date: Wed,  2 Jun 2010 13:37:41 +0200
+Message-Id: <1275478671-24563-2-git-send-email-weber@corscience.de>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1275478671-24563-1-git-send-email-weber@corscience.de>
 References: <1275478671-24563-1-git-send-email-weber@corscience.de>
-X-Provags-ID: V01U2FsdGVkX1/F7/19MGHlJjt3vHdLENTQrUTKjHua+Czlq5T
- X/4GPRyUt+U3x9CmwTg+gYSQBGAqpP0lfTmE94LhCjUXc2koDl
- SFclrhXTFFtlQkBH0hLkQ==
+X-Provags-ID: V01U2FsdGVkX1/GZpC9MQ9RtYLrm/fSrAxrkUlkBw8JmIo0zJY
+ 7awydWmVncLum12cLNY/gcj9vfMhyohePiuBUjvW8yBOg8kDJ7
+ jt4AwdqNt4WNZcrWTtbSQ==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Kan-Ru Chen <kanru@0xlab.org>
+Corrected the wrong power supplies in devkit8000 code.
 
-This patch corrects the DVI-D output setup of Devkit8000
+Add supply for ads7846 to support the new regulator framework for
+touchscreen.
 
-Devkit8000 has different DVI reset pin with the BeagleBoard.
-On Devkit8000 the TWL4030 GPIO_7 is assigned to do the job.
-
-Signed-off-by: Kan-Ru Chen <kanru@0xlab.org>
+Signed-off-by: Thomas Weber <weber@corscience.de>
 ---
- arch/arm/mach-omap2/board-devkit8000.c |   15 +++++++++++++++
- 1 files changed, 15 insertions(+), 0 deletions(-)
+ arch/arm/mach-omap2/board-devkit8000.c |   32 ++++++++++++++++++++++++++------
+ 1 files changed, 26 insertions(+), 6 deletions(-)
 
 diff --git a/arch/arm/mach-omap2/board-devkit8000.c b/arch/arm/mach-omap2/board-devkit8000.c
-index 3bde0e6..17a2517 100644
+index 922b746..08a2a01 100644
 --- a/arch/arm/mach-omap2/board-devkit8000.c
 +++ b/arch/arm/mach-omap2/board-devkit8000.c
-@@ -140,13 +140,18 @@ static int devkit8000_panel_enable_lcd(struct omap_dss_device *dssdev)
- static void devkit8000_panel_disable_lcd(struct omap_dss_device *dssdev)
- {
- }
-+
- static int devkit8000_panel_enable_dvi(struct omap_dss_device *dssdev)
- {
-+	if (dssdev->reset_gpio != -EINVAL)
-+		gpio_set_value(dssdev->reset_gpio, 1);
- 	return 0;
- }
- 
- static void devkit8000_panel_disable_dvi(struct omap_dss_device *dssdev)
- {
-+	if (dssdev->reset_gpio != -EINVAL)
-+		gpio_set_value(dssdev->reset_gpio, 0);
- }
- 
- static int devkit8000_panel_enable_tv(struct omap_dss_device *dssdev)
-@@ -186,6 +191,7 @@ static struct omap_dss_device devkit8000_dvi_device = {
- 	.driver_name            = "generic_panel",
- 	.type                   = OMAP_DISPLAY_TYPE_DPI,
- 	.phy.dpi.data_lines     = 24,
-+	.reset_gpio             = -EINVAL, /* will be replaced */
- 	.platform_enable        = devkit8000_panel_enable_dvi,
- 	.platform_disable       = devkit8000_panel_disable_dvi,
+@@ -168,6 +168,10 @@ static struct regulator_consumer_supply devkit8000_vsim_supply = {
+ 	.supply			= "vmmc_aux",
  };
-@@ -272,6 +278,15 @@ static int devkit8000_twl_gpio_setup(struct device *dev,
- 	devkit8000_vmmc1_supply.dev = mmc[0].dev;
- 	devkit8000_vsim_supply.dev = mmc[0].dev;
  
-+	/* TWL4030_GPIO_MAX + 1 == ledB, PMU_STAT (out, active low LED) */
-+	gpio_leds[2].gpio = gpio + TWL4030_GPIO_MAX + 1;
++/* ads7846 on SPI */
++static struct regulator_consumer_supply devkit8000_vio_supplies[] = {
++	REGULATOR_SUPPLY("vcc", "spi2.0")
++};
+ 
+ static struct omap_dss_device devkit8000_lcd_device = {
+ 	.name                   = "lcd",
+@@ -282,7 +286,7 @@ static struct twl4030_gpio_platform_data devkit8000_gpio_data = {
+ 	.setup		= devkit8000_twl_gpio_setup,
+ };
+ 
+-static struct regulator_consumer_supply devkit8000_vpll2_supplies[] = {
++static struct regulator_consumer_supply devkit8000_vpll1_supplies[] = {
+ 	{
+ 	.supply		= "vdvi",
+ 	.dev		= &devkit8000_lcd_device.dev,
+@@ -337,8 +341,8 @@ static struct regulator_init_data devkit8000_vdac = {
+ 	.consumer_supplies	= &devkit8000_vdda_dac_supply,
+ };
+ 
+-/* VPLL2 for digital video outputs */
+-static struct regulator_init_data devkit8000_vpll2 = {
++/* VPLL1 for digital video outputs */
++static struct regulator_init_data devkit8000_vpll1 = {
+ 	.constraints = {
+ 		.name			= "VDVI",
+ 		.min_uV			= 1800000,
+@@ -348,8 +352,23 @@ static struct regulator_init_data devkit8000_vpll2 = {
+ 		.valid_ops_mask		= REGULATOR_CHANGE_MODE
+ 					| REGULATOR_CHANGE_STATUS,
+ 	},
+-	.num_consumer_supplies	= ARRAY_SIZE(devkit8000_vpll2_supplies),
+-	.consumer_supplies	= devkit8000_vpll2_supplies,
++	.num_consumer_supplies	= ARRAY_SIZE(devkit8000_vpll1_supplies),
++	.consumer_supplies	= devkit8000_vpll1_supplies,
++};
 +
-+	/* gpio + 7 is "DVI_PD" (out, active low) */
-+	devkit8000_dvi_device.reset_gpio = gpio + 7;
-+	gpio_request(devkit8000_dvi_device.reset_gpio, "DVI PowerDown");
-+	/* Disable until needed */
-+	gpio_direction_output(devkit8000_dvi_device.reset_gpio, 0);
-+
- 	return 0;
- }
++/* VAUX4 for ads7846 and nubs */
++static struct regulator_init_data devkit8000_vio = {
++	.constraints = {
++		.min_uV                 = 1800000,
++		.max_uV                 = 1800000,
++		.apply_uV               = true,
++		.valid_modes_mask       = REGULATOR_MODE_NORMAL
++			| REGULATOR_MODE_STANDBY,
++		.valid_ops_mask         = REGULATOR_CHANGE_MODE
++			| REGULATOR_CHANGE_STATUS,
++	},
++	.num_consumer_supplies  = ARRAY_SIZE(devkit8000_vio_supplies),
++	.consumer_supplies      = devkit8000_vio_supplies,
+ };
+ 
+ static struct twl4030_usb_data devkit8000_usb_data = {
+@@ -376,7 +395,8 @@ static struct twl4030_platform_data devkit8000_twldata = {
+ 	.vmmc1		= &devkit8000_vmmc1,
+ 	.vsim		= &devkit8000_vsim,
+ 	.vdac		= &devkit8000_vdac,
+-	.vpll2		= &devkit8000_vpll2,
++	.vpll1		= &devkit8000_vpll1,
++	.vio		= &devkit8000_vio,
+ 	.keypad		= &devkit8000_kp_data,
+ };
  
 -- 
 1.7.1
