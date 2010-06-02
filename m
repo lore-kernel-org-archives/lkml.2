@@ -1,60 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758286Ab0FBRva (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jun 2010 13:51:30 -0400
-Received: from mga01.intel.com ([192.55.52.88]:60176 "EHLO mga01.intel.com"
+	id S932571Ab0FBRy4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jun 2010 13:54:56 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:13851 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755725Ab0FBRv2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jun 2010 13:51:28 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.53,348,1272870000"; 
-   d="scan'208";a="804160985"
-Subject: Re: kernel BUG in iwl-agn-rs.c:2076, WAS: iwlagn + some
- accesspoint == hardlock
-From: reinette chatre <reinette.chatre@intel.com>
-To: Nils Radtke <lkml@Think-Future.de>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>
-In-Reply-To: <20100531201225.GA6327@localhost>
-References: <20100531201225.GA6327@localhost>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 02 Jun 2010 10:51:25 -0700
-Message-ID: <1275501085.2091.28873.camel@rchatre-DESK>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	id S932449Ab0FBRyz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Jun 2010 13:54:55 -0400
+Date: Wed, 2 Jun 2010 19:53:25 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Roland McGrath <roland@redhat.com>
+Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+       LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
+       David Rientjes <rientjes@google.com>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+       Nick Piggin <npiggin@suse.de>
+Subject: Re: [PATCH] oom: Make coredump interruptible
+Message-ID: <20100602175325.GA16474@redhat.com>
+References: <20100601093951.2430.A69D9226@jp.fujitsu.com> <20100601201843.GA20732@redhat.com> <20100602221805.F524.A69D9226@jp.fujitsu.com> <20100602154210.GA9622@redhat.com> <20100602172956.5A3E34A491@magilla.sf.frob.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100602172956.5A3E34A491@magilla.sf.frob.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-05-31 at 13:12 -0700, Nils Radtke wrote:
+On 06/02, Roland McGrath wrote:
+>
+> Why not just test TIF_MEMDIE?
 
-> This line indicates the first timestamp _after_ the crash:
-> May 31 17:35:19 localhost kernel: [   69.488456]
-> 
-> The crash happened after site A and on site B. Just arrived, opened lid and *crash*.
-> 
-> I noticed in iwl-agn-rs.c:2080:
->   BUG_ON(window->average_tpt != ((window->success_ratio *
->         tbl->expected_tpt[index] + 64) / 128));
-> Could that be again the point that hit me today when the machine crashed once?
-> Would you mind changing this into a milder WARN? That way I wouldn't hit the wall 
-> that hard. And I would notice it anyway while skimming the logs as we still are on the
-> hunt. It's more maintainable if it's a WARN in the src instead of me patching it w/ any
-> update..
-> 
-> Wasn't this BUG_ON a WARNING in .33.3? (didn't check..)
+Because it is per-thread.
 
-Seems like you performed the testing without the patch that we used to
-address the hang issue from the beginning of this thread. Please see
-http://marc.info/?l=linux-wireless&m=127290931304496&w=2 - that thread
-also explains why the patch is not in 2.6.34.
+when select_bad_process() finds the task P to kill it can participate
+in the core dump (sleep in exit_mm), but we should somehow inform the
+thread which actually dumps the core: P->mm->core_state->dumper.
 
-I think it is time to move this discussion to a bug report so that it
-can be tracked better. Please open a new bug at
-http://bugzilla.intellinuxwireless.org/
+Well, we can use TIF_MEMDIE if we chose the right thread, I think.
+But perhaps mm->flags |= MMF_OOM is better, it can have other user.
+I dunno.
 
-Reinette
-
-
+Oleg.
 
