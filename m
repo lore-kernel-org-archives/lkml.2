@@ -1,68 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758426Ab0FBPJi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jun 2010 11:09:38 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:60870 "EHLO mx1.redhat.com"
+	id S932592Ab0FBPQX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jun 2010 11:16:23 -0400
+Received: from hera.kernel.org ([140.211.167.34]:58274 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755646Ab0FBPJh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jun 2010 11:09:37 -0400
-Date: Wed, 2 Jun 2010 11:09:04 -0400 (EDT)
-From: Mikulas Patocka <mpatocka@redhat.com>
-X-X-Sender: mpatocka@hs20-bc2-1.build.redhat.com
-To: Linus Torvalds <torvalds@linux-foundation.org>
-cc: linux-kernel@vger.kernel.org
-Subject: [PATCH] Fix colors for Mach64
-Message-ID: <Pine.LNX.4.64.1006021106580.23275@hs20-bc2-1.build.redhat.com>
+	id S932563Ab0FBPQW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Jun 2010 11:16:22 -0400
+Date: Wed, 2 Jun 2010 15:15:52 +0000
+From: Konrad Rzeszutek Wilk <konrad@kernel.org>
+To: torvalds@linux-foundation.org
+Cc: linux-kernel@vger.kernel.org, pjones@redhat.com, lenb@kernel.org,
+       michaelc@cs.wisc.edu
+Subject: [GIT PULL] iBFT features for 2.6.35-rc1
+Message-ID: <20100602151552.GA18899@hera.kernel.org>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.19 (2009-01-05)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 02 Jun 2010 15:15:53 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi
+Hi Linus,
 
-The maintainer is nonexistent, so sending to Linus.
+Please pull:
 
-Mikulas
+	git://git.kernel.org/pub/scm/linux/kernel/git/konrad/ibft-2.6.git for-linus
 
----
+Hopefully I am not too late with a git request for these features.
+This pull requests consists of new features to the iBFT* driver. Specifically:
 
-Use the same color-calculating algorithm as in atyfb_imageblit in this driver
-or in generic cfb_fillrect.
+ - support v1.03 of the spec. The spec in question is available at:
+   ftp://ftp.software.ibm.com/systems/support/bladecenter/iscsi_boot_firmware_table_v1.03.pdf
+ - separate the iBFT parsing from the SysFS interface. Paves the road
+   for the iSCSI hardware NICs to use the SysFS format for a unified look&feel.
 
-This patch fixes bad colors when using an accelerator in 15-bit and 16-bit
-modes.
+These patches have been through a few rounds of review and have been in
+linux-next for weeks now.
 
-Signed-off-by: Mikulas Patocka <mpatocka@redhat.com>
+Thanks,
+Konrad
 
----
- drivers/video/aty/mach64_accel.c |    9 ++++++---
- 1 file changed, 6 insertions(+), 3 deletions(-)
+Konrad Rzeszutek Wilk (1):
+      ibft: For UEFI machines actually do scan ACPI for iBFT.
 
-Index: linux-2.6.31-rc2-devel/drivers/video/aty/mach64_accel.c
-===================================================================
---- linux-2.6.31-rc2-devel.orig/drivers/video/aty/mach64_accel.c	2009-07-07 15:56:15.000000000 +0200
-+++ linux-2.6.31-rc2-devel/drivers/video/aty/mach64_accel.c	2009-07-07 16:08:03.000000000 +0200
-@@ -242,7 +242,7 @@ void atyfb_copyarea(struct fb_info *info
- void atyfb_fillrect(struct fb_info *info, const struct fb_fillrect *rect)
- {
- 	struct atyfb_par *par = (struct atyfb_par *) info->par;
--	u32 color = rect->color, dx = rect->dx, width = rect->width, rotation = 0;
-+	u32 color, dx = rect->dx, width = rect->width, rotation = 0;
- 
- 	if (par->asleep)
- 		return;
-@@ -253,8 +253,11 @@ void atyfb_fillrect(struct fb_info *info
- 		return;
- 	}
- 
--	color |= (rect->color << 8);
--	color |= (rect->color << 16);
-+	if (info->fix.visual == FB_VISUAL_TRUECOLOR ||
-+	    info->fix.visual == FB_VISUAL_DIRECTCOLOR)
-+		color = ((u32 *)(info->pseudo_palette))[rect->color];
-+	else
-+		color = rect->color;
- 
- 	if (info->var.bits_per_pixel == 24) {
- 		/* In 24 bpp, the engine is in 8 bpp - this requires that all */
+Mike Christie (2):
+      ibft: separate ibft parsing from sysfs interface
+      ibft: convert iscsi_ibft module to iscsi boot lib
+
+Peter Jones (2):
+      ibft: Update iBFT handling for v1.03 of the spec.
+      ibft: Use IBFT_SIGN instead of open-coding the search string.
+
+ drivers/firmware/Kconfig            |    9 +
+ drivers/firmware/Makefile           |    1 +
+ drivers/firmware/iscsi_boot_sysfs.c |  481 +++++++++++++++++++++++
+ drivers/firmware/iscsi_ibft.c       |  726 +++++++++++++----------------------
+ drivers/firmware/iscsi_ibft_find.c  |   56 +++-
+ include/linux/iscsi_boot_sysfs.h    |  123 ++++++
+ include/linux/iscsi_ibft.h          |   12 +-
+ 7 files changed, 924 insertions(+), 484 deletions(-)
+ create mode 100644 drivers/firmware/iscsi_boot_sysfs.c
+ create mode 100644 include/linux/iscsi_boot_sysfs.h
+
+* What is iBFT?
+The iBFT is an equivalent to the Boot Flag, except that its geared
+towards iSCSI and hence requires much more information (such as
+the IP of target, passwords, which device to login, etc). iBFT
+is a data structure populated by the BIOS or the NIC to contain this
+so that the OS can read it and login to the iSCSI and present
+the boot device to the initrd for mounting / FS.
+
