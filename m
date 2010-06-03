@@ -1,72 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753533Ab0FCTAA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jun 2010 15:00:00 -0400
-Received: from nwd2mail11.analog.com ([137.71.25.57]:55426 "EHLO
-	nwd2mail11.analog.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750797Ab0FCS76 (ORCPT
+	id S1752995Ab0FCTCE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jun 2010 15:02:04 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:59635 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751646Ab0FCTCB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jun 2010 14:59:58 -0400
-Cc: Mike Frysinger <vapier@gentoo.org>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       Liam Girdwood <lrg@slimlogic.co.uk>,
-       "uclinux-dist-devel@blackfin.uclinux.org" 
-	<uclinux-dist-devel@blackfin.uclinux.org>,
-       "Zhang, Sonic" <Sonic.Zhang@analog.com>
-X-IronPort-AV: E=Sophos;i="4.53,355,1272859200"; 
-   d="scan'208";a="17466837"
-From: Robin Getz <rgetz@blackfin.uclinux.org>
-Organization: Analog Devices, Inc.
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: Re: [PATCH 1/2] regulator: new driver for the AD5398 and AD5821
-Date: Thu, 3 Jun 2010 14:59:53 -0400
-User-Agent: KMail/1.9.5
-References: <1275399239-6788-1-git-send-email-vapier@gentoo.org> <20100601143749.GE863@rakim.wolfsonmicro.main>
-In-Reply-To: <20100601143749.GE863@rakim.wolfsonmicro.main>
+	Thu, 3 Jun 2010 15:02:01 -0400
+Date: Thu, 3 Jun 2010 11:56:53 -0700 (PDT)
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Russell King <rmk@arm.linux.org.uk>
+cc: Kevin Hilman <khilman@deeprootsystems.com>,
+       Daniel Walker <dwalker@codeaurora.org>,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       linux-arm-msm@vger.kernel.org
+Subject: Re: ARM defconfig files
+In-Reply-To: <20100603185333.GD25779@flint.arm.linux.org.uk>
+Message-ID: <alpine.LFD.2.00.1006031153420.8175@i5.linux-foundation.org>
+References: <20100603074548.GA12104@flint.arm.linux.org.uk> <alpine.LFD.2.00.1006030725420.8175@i5.linux-foundation.org> <20100603181010.GA25779@flint.arm.linux.org.uk> <alpine.LFD.2.00.1006031116360.8175@i5.linux-foundation.org>
+ <20100603185333.GD25779@flint.arm.linux.org.uk>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-Message-ID: <201006031459.53275.rgetz@blackfin.uclinux.org>
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 1 Jun 2010 10:37, Mark Brown pondered:
-> On Tue, Jun 01, 2010 at 09:33:58AM -0400, Mike Frysinger wrote:
-> > From: Sonic Zhang <sonic.zhang@analog.com>
+
+
+On Thu, 3 Jun 2010, Russell King wrote:
 > 
-> > This driver supports both the AD5398 and the AD5821.  It adapts into the
-> > voltage and current framework.  The generic userspace-consumer and virtual
-> 
-> Might be useful to put something here saying what these chips do...
+> No amount of reorganising the Kconfig files into a heirarchial manner
+> (which they already are) helps.  Not one bit.  Because they already are.
+> That's not where the problem is.
 
-[snip]
+I don't think you read the whole thread.
 
-> > +/**
-> > + * ad5398_platform_data - platform data for ad5398
-> > + * @current_bits: effective bits in register
-> > + * @current_offset: offset of effective bits in register
-> > + * @ad5398_init_data: regulator init data
-> > + */
-> > +struct ad5398_platform_data {
-> > +	unsigned short current_bits;
-> > +	unsigned short current_offset;
-> > +	struct regulator_init_data *regulator_data;
-> > +};
-> 
-> Why are the current bits and offset being suppied as platform data?  I
-> would *very* strongly expect that the location of the control in the
-> register will be fixed by the device type and should therefore be
-> figured out by the driver.  Having the machine specifying this seems
-> redundant and error prone.
+Earlier on, I explained exactly what I wanted: just add some "select" 
+statements to pickt he things you need per the particular target 
+configuration. You seem to have missed that part.
 
-Since the parts are general purpose (their not PMU, but people use them to 
-build their own PCB defined power management system) - so it depends on the 
-PCB implementation...
+In other words, you _can_ encode the information that is in the 
+xyz_defconfig files by doing it in Kconfig.xyz files instead. But you do 
+it in a human-readable manner. And the hierarchical thing is absolutely 
+required for that - otherwise you'd end up with just another form of the 
+current xyz_defconfig.
 
-http://www.analog.com/ad5398 
-http://www.analog.com/ad5821
-are both I2C D/A Converter, with 120mA sink capability
+See?
 
--Robin
+In other words, you should be able to basically use "make allnoconfig" 
+together with a Kconfig.xyz file input to select _exactly_ the pieces you 
+need, and nothing else.
+
+			Linus
