@@ -1,104 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756699Ab0FCPsj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jun 2010 11:48:39 -0400
-Received: from mga11.intel.com ([192.55.52.93]:61845 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755224Ab0FCPsi convert rfc822-to-8bit (ORCPT
+	id S1756590Ab0FCPyx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jun 2010 11:54:53 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:52572 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754302Ab0FCPyw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jun 2010 11:48:38 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.53,355,1272870000"; 
-   d="scan'208";a="573020918"
-From: "Gross, Mark" <mark.gross@intel.com>
-To: Kevin Hilman <khilman@deeprootsystems.com>,
-       Peter Zijlstra <peterz@infradead.org>
-CC: Alan Cox <alan@lxorguk.ukuu.org.uk>, Florian Mickler <florian@mickler.org>,
-       James Bottomley <James.Bottomley@suse.de>,
-       =?iso-8859-1?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>,
-       Neil Brown <neilb@suse.de>, "tytso@mit.edu" <tytso@mit.edu>,
-       LKML <linux-kernel@vger.kernel.org>,
-       Thomas Gleixner <tglx@linutronix.de>,
-       Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
-       Linux PM <linux-pm@lists.linux-foundation.org>,
-       "felipe.balbi@nokia.com" <felipe.balbi@nokia.com>
-Date: Thu, 3 Jun 2010 07:52:38 -0700
-Subject: RE: [linux-pm] [PATCH 0/8] Suspend block api (version 8)
-Thread-Topic: [linux-pm] [PATCH 0/8] Suspend block api (version 8)
-Thread-Index: AcsDKwjaBiK236F5T0+hG6jMXwbpuAAAKr1g
-Message-ID: <CA1BBBBC9359F04AA639128AC0D5D1E96931D4BB@orsmsx502.amr.corp.intel.com>
-References: <20100527232357.6d14fdb2@lxorguk.ukuu.org.uk>
-	<20100601135102.GA8098@srcf.ucam.org>
-	<1275426085.21962.967.camel@mulgrave.site>	<201006020024.14220.rjw@sisk.pl>
-	<1275431816.21962.1108.camel@mulgrave.site>
-	<AANLkTikObnAZbyOxeYAhXcEbimO3XTTO-HlC9CD_HH6t@mail.gmail.com>
-	<1275451342.21962.1777.camel@mulgrave.site>
-	<AANLkTilRcFZyYa-0HlaM-6IEZSyar3S9S_cCWSFax2Zo@mail.gmail.com>
-	<1275491111.2799.110.camel@mulgrave.site>
-	<20100602214748.7742e3ae@schatten.dmk.lab>
-	<1275511271.2799.516.camel@mulgrave.site>
-	<20100603010607.5baf82a6@schatten.dmk.lab>
-	<CA1BBBBC9359F04AA639128AC0D5D1E9692ABC92@orsmsx502.amr.corp.intel.com>
-	<20100603110312.48a508dc@lxorguk.ukuu.org.uk>
-	<1275559512.27810.35287.camel@twins> <87d3w818ki.fsf@deeprootsystems.com>
-In-Reply-To: <87d3w818ki.fsf@deeprootsystems.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="iso-8859-1"
-Content-Transfer-Encoding: 8BIT
+	Thu, 3 Jun 2010 11:54:52 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=TZQYBtfP0UIMnF6JHHzcMSXW78cC7UVpwFha3yrc8ImDjN18zyRaocHyzlYJM+ZNwR
+         0T6gMMnHpjHVwqlZvIxS7reKMnSkqPc59ZGRE5ySzdQDuA2pXhVtCNF5dC63T6Lg8bkS
+         6Ry3uuMHMGZy7CmJsLUNq2VBSxKYfmev1Jveg=
+Message-ID: <4C07D046.6080601@garzik.org>
+Date: Thu, 03 Jun 2010 11:54:46 -0400
+From: Jeff Garzik <jeff@garzik.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-2.fc12 Thunderbird/3.0.4
 MIME-Version: 1.0
+To: Luming Yu <luming.yu@gmail.com>
+CC: LKML <linux-kernel@vger.kernel.org>, avorontsov@ru.mvista.com
+Subject: Re: 2.6.25-rc1 ahci regression
+References: <AANLkTikWak8i-Kaj-e-EUFWE66tfMmp2UPhGJCKkK1zK@mail.gmail.com>	<4C07561F.5080202@garzik.org> <AANLkTim5UblANgkOj2XNjNw-h2JMKsXRkuMpROpEOlpZ@mail.gmail.com>
+In-Reply-To: <AANLkTim5UblANgkOj2XNjNw-h2JMKsXRkuMpROpEOlpZ@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
->-----Original Message-----
->From: Kevin Hilman [mailto:khilman@deeprootsystems.com]
->Sent: Thursday, June 03, 2010 7:43 AM
->To: Peter Zijlstra
->Cc: Alan Cox; Gross, Mark; Florian Mickler; James Bottomley; Arve
->Hjønnevåg; Neil Brown; tytso@mit.edu; LKML; Thomas Gleixner; Linux OMAP
->Mailing List; Linux PM; felipe.balbi@nokia.com
->Subject: Re: [linux-pm] [PATCH 0/8] Suspend block api (version 8)
->
->Peter Zijlstra <peterz@infradead.org> writes:
->
->> On Thu, 2010-06-03 at 11:03 +0100, Alan Cox wrote:
->>> > [mtg: ] This has been a pain point for the PM_QOS implementation.
->>> They change the constrain back and forth at the transaction level of
->>> the i2c driver.  The pm_qos code really wasn't made to deal with such
->>> hot path use, as each such change triggers a re-computation of what
->>> the aggregate qos request is.
+On 06/03/2010 03:28 AM, Luming Yu wrote:
+> On Thu, Jun 3, 2010 at 3:13 PM, Jeff Garzik<jeff@garzik.org>  wrote:
+>> On 06/03/2010 03:02 AM, Luming Yu wrote:
 >>>
->>> That should be trivial in the usual case because 99% of the time you can
->>> hot path
+>>> Hi there,
 >>>
->>> 	the QoS entry changing is the latest one
->>> 	there have been no other changes
->>> 	If it is valid I can use the cached previous aggregate I cunningly
->>> 		saved in the top QoS entry when I computed the new one
+>>> I happened to notice that the commit 365cfa1ed5 caused the following
+>>> boot error with 2.6.25-rc1
+>>> on a system with ICH10 SATA AHCI controller. It's weird if there is
+>>> really no function changes in the patch.
 >>>
->>> (ie most of the time from the kernel side you have a QoS stack)
+>>> Any ideas?
+>>>
+>>>
+>>> dracut: Starting plymouth daemon
+>>> pata_jmicron 0000:0f:00.0: PCI INT A ->    GSI 16 (level, low) ->    IRQ 16
+>>> scsi0 : pata_jmicron
+>>> Initializing USB Mass Storage driver...
+>>> scsi1 : usb-storage 1-5:1.0
+>>> scsi2 : pata_jmicron
+>>> ata1: PATA max UDMA/100 cmd 0xd040 ctl 0xd030 bmdma 0xd000 irq 16
+>>> ata2: PATA max UDMA/100 cmd 0xd020 ctl 0xd010 bmdma 0xd008 irq 16
+>>> usbcore: registered new interface driver usb-storage
+>>> USB Mass Storage support registered.
+>>> scsi 1:0:0:0: CD-ROM            PepperC  Virtual Disc 1   0.01 PQ: 0 ANSI:
+>>> 3
+>>> sr0: scsi-1 drive
 >>
->> Why would the kernel change the QoS state of a task? Why not have two
->> interacting QoS variables, one for the task, one for the subsystem in
->> question, and the action depends on their relative value?
+>> Your output here does not indicate a boot error, so to what do you refer?
+> sr0: scsi-1 drive
+> Uniform CD-ROM driver Revision: 3.20
 >
->Yes, having a QoS parameter per-subsystem (or even per-device) is very
->important for SoCs that have independently controlled powerdomains.
->If all devices/subsystems in a particular powerdomain have QoS
->parameters that permit, the power state of that powerdomain can be
->lowered independently from system-wide power state and power states of
->other power domains.
->
-This seems similar to that pm_qos generalization into bus drivers we where 
-waving our hands at during the collab summit in April?  We never did get 
-into meaningful detail at that time.
+> Boot has failed, sleeping forever.
 
---mgross
+Your output does not show the driver even printing out version info. 
+Therefore I conclude that you are not loading the driver at all...
+
+You need to load both libahci and ahci modules.
+
+	Jeff
+
+
 
 
