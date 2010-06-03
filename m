@@ -1,34 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751907Ab0FCLyh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jun 2010 07:54:37 -0400
-Received: from web81808.mail.mud.yahoo.com ([68.142.207.173]:25657 "HELO
-	web81808.mail.mud.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1751745Ab0FCLyg (ORCPT
+	id S1751993Ab0FCLzP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jun 2010 07:55:15 -0400
+Received: from buzzloop.caiaq.de ([212.112.241.133]:47125 "EHLO
+	buzzloop.caiaq.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751763Ab0FCLzN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jun 2010 07:54:36 -0400
-X-Greylist: delayed 399 seconds by postgrey-1.27 at vger.kernel.org; Thu, 03 Jun 2010 07:54:36 EDT
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=s1024; d=sbcglobal.net;
-  h=Message-ID:X-YMail-OSG:Received:X-Mailer:Date:From:Subject:To:MIME-Version:Content-Type;
-  b=3/0s4a/S36xyvExe2MlVEoo7Gv5z3tmg4ee6SscK6Qopl5eM3xy9n/BD0NJarwisz2wQihCKaJg2w+S/8dCPArWBr0KilGiASM+hgeAiPKdSU2DYHqmwfnifqhYLimCZdSg/2Rv3r1M8QdIX+bJ90tzG1fE3qL0gWFA5wWr/QvY=;
-Message-ID: <967312.35007.qm@web81808.mail.mud.yahoo.com>
-X-YMail-OSG: 44frZHsVM1ljysv_8EyWgItEIOuoZepdDU7PJ7TN0.CPEk1
- Cc7KfTeajxLBH.HqNNA.wAuLioRUwTFmRQFRSUD4ZAzVTFSuTE8p1FSShhYc
- n9mKkmGUDuKYAOOXY3aoYE0lLG6QT8MTMwRSk8OcowsFLOcnMXJSgT8pWirx
- VMQvGGcxB2_XcuLUxcesAyQ0ynZM.gZA6A9VfFcHpQLupAKc2NIscfeHV3P_
- oSL3bYoYkNvFtSZzcUthr1kUwmg1wGWGfsEGVvWyWpHcGhRnqEJvk6UxoCat
- 216Co2yBGBUDt4bfJeO1kBovO
-X-Mailer: YahooMailClassic/11.0.8 YahooMailWebService/0.8.103.269680
-Date: Thu, 3 Jun 2010 04:47:53 -0700 (PDT)
-From: Promo <dg-robinson@sbcglobal.net>
-Subject: Your e-mail has just been awarded the sum of 950,000 GBP send us your:-
-To: undisclosed recipients:;
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	Thu, 3 Jun 2010 07:55:13 -0400
+From: Daniel Mack <daniel@caiaq.de>
+To: linux-kernel@vger.kernel.org
+Cc: Daniel Mack <daniel@caiaq.de>, Greg Kroah-Hartman <gregkh@suse.de>,
+       Johan Hovold <jhovold@gmail.com>, Alan Cox <alan@linux.intel.com>,
+       linux-usb@vger.kernel.org
+Subject: [PATCH] usb-serial/ftdi_sio: fix DTR/RTS line modes
+Date: Thu,  3 Jun 2010 13:55:02 +0200
+Message-Id: <1275566102-5613-1-git-send-email-daniel@caiaq.de>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Call set_mctrl() and clear_mctrl() according to the flow control mode
+selected. This makes serial communication for FT232 connected devices
+work when CRTSCTS is not set.
 
-Names___Address___Tel____Country__
+This fixes a regression introduced by 4175f3e31 ("tty_port: If we are
+opened non blocking we still need to raise the carrier"). This patch
+calls the low-level driver's dtr_rts() function which consequently sets
+TIOCM_DTR | TIOCM_RTS. A later call to set_termios() without CRTSCTS in
+cflags, however, does not reset these bits, and so data is not actually
+sent out on the serial wire.
+
+Signed-off-by: Daniel Mack <daniel@caiaq.de>
+Cc: Greg Kroah-Hartman <gregkh@suse.de>
+Cc: Johan Hovold <jhovold@gmail.com>
+Cc: Alan Cox <alan@linux.intel.com>
+Cc: linux-usb@vger.kernel.org
+---
+ drivers/usb/serial/ftdi_sio.c |    4 ++++
+ 1 files changed, 4 insertions(+), 0 deletions(-)
+
+diff --git a/drivers/usb/serial/ftdi_sio.c b/drivers/usb/serial/ftdi_sio.c
+index 050211a..79dd1ae 100644
+--- a/drivers/usb/serial/ftdi_sio.c
++++ b/drivers/usb/serial/ftdi_sio.c
+@@ -2005,6 +2005,8 @@ static void ftdi_set_termios(struct tty_struct *tty,
+ 				"urb failed to set to rts/cts flow control\n");
+ 		}
+ 
++		/* raise DTR/RTS */
++		set_mctrl(port, TIOCM_DTR | TIOCM_RTS);
+ 	} else {
+ 		/*
+ 		 * Xon/Xoff code
+@@ -2052,6 +2054,8 @@ static void ftdi_set_termios(struct tty_struct *tty,
+ 			}
+ 		}
+ 
++		/* lower DTR/RTS */
++		clear_mctrl(port, TIOCM_DTR | TIOCM_RTS);
+ 	}
+ 	return;
+ }
+-- 
+1.7.1
+
