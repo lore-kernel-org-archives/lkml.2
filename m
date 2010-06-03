@@ -1,88 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755607Ab0FCUHX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jun 2010 16:07:23 -0400
-Received: from mga05.intel.com ([192.55.52.89]:46267 "EHLO
-	fmsmga101.fm.intel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755239Ab0FCUHU (ORCPT
+	id S1752724Ab0FCUJo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jun 2010 16:09:44 -0400
+Received: from kelvin.asmallorange.com ([207.210.111.10]:36118 "EHLO
+	kelvin.asmallorange.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750924Ab0FCUJn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jun 2010 16:07:20 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.53,356,1272870000"; 
-   d="scan'208";a="573104763"
-Message-ID: <4C080850.1090907@linux.intel.com>
-Date: Thu, 03 Jun 2010 12:53:52 -0700
-From: Arjan van de Ven <arjan@linux.intel.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.1; en-US; rv:1.9.1.9) Gecko/20100317 Thunderbird/3.0.4
+	Thu, 3 Jun 2010 16:09:43 -0400
+Date: Thu, 3 Jun 2010 22:29:03 +0530
+From: Rabin Vincent <rabin@rab.in>
+To: Randy Dunlap <randy.dunlap@oracle.com>
+Cc: mmarek@suse.cz, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] scripts: decodecode: use /bin/bash
+Message-ID: <20100603165902.GA20721@debian>
+References: <1275581686-19745-1-git-send-email-rabin@rab.in>
+ <20100603092458.d0d603e3.randy.dunlap@oracle.com>
 MIME-Version: 1.0
-To: Oleg Nesterov <oleg@redhat.com>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-       Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-       Roland McGrath <roland@redhat.com>,
-       Vegard Nossum <vegard.nossum@gmail.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] x86: make save_stack_address() !CONFIG_FRAME_POINTER
- friendly
-References: <20100603193239.GA31530@redhat.com>
-In-Reply-To: <20100603193239.GA31530@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100603092458.d0d603e3.randy.dunlap@oracle.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - kelvin.asmallorange.com
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - rab.in
+X-Source: 
+X-Source-Args: 
+X-Source-Dir: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 6/3/2010 12:32 PM, Oleg Nesterov wrote:
-> If CONFIG_FRAME_POINTER=n, print_context_stack() shouldn't neglect the
-> non-reliable addresses on stack, this is all we have if dump_trace(bp)
-> is called with the wrong or zero bp.
->
-> For example, /proc/pid/stack doesn't work if CONFIG_FRAME_POINTER=n.
->
-> This patch obviously has no effect if CONFIG_FRAME_POINTER=y, otherwise
-> it reverts 1650743c "x86: don't save unreliable stack trace entries".
->    
+On Thu, Jun 03, 2010 at 09:24:58AM -0700, Randy Dunlap wrote:
+> On Thu,  3 Jun 2010 21:44:46 +0530 Rabin Vincent wrote:
+> 
+> > 5358db ("scripts: add ARM support to decodecode") added a few bashims to
+> > the decodecode script, so explicitly ask for bash.
+> > 
+> > Signed-off-by: Rabin Vincent <rabin@rab.in>
+> > ---
+> > Alternatively, I have a patch to remove the bashisms, if that's preferred.
+> 
+> Yes, that's what we usually prefer to do.
+> Please post it.
 
-would be nice if there was a compile time thing to detect if frame 
-pointers are on ratehr than an ifdef.
+Here it is:
 
-you're now also changing the rules; until now, you would ALWAYS get a 
-backtrace without noise....
-now that's changing quite a bit. How are various tools (like perf and 
-sysprof) going to cope with that?
+>From f729122bcd237f32c9f667e5644c6114ddc795af Mon Sep 17 00:00:00 2001
+From: Rabin Vincent <rabin@rab.in>
+Date: Thu, 3 Jun 2010 21:33:46 +0530
+Subject: [PATCH] scripts: decodecode: remove bashisms
 
-> Also, remove the unnecessary type-cast.
->
-> Signed-off-by: Oleg Nesterov<oleg@redhat.com>
-> ---
->
->   arch/x86/kernel/stacktrace.c |    6 +++++-
->   1 file changed, 5 insertions(+), 1 deletion(-)
->
-> --- 34-rc1/arch/x86/kernel/stacktrace.c~SAVE_STACK_WO_FP	2010-06-03 18:43:27.000000000 +0200
-> +++ 34-rc1/arch/x86/kernel/stacktrace.c	2010-06-03 21:29:52.000000000 +0200
-> @@ -26,8 +26,10 @@ static int save_stack_stack(void *data,
->   static void save_stack_address(void *data, unsigned long addr, int reliable)
->   {
->   	struct stack_trace *trace = data;
-> +#ifdef CONFIG_FRAME_POINTER
->   	if (!reliable)
->   		return;
-> +#endif
->   	if (trace->skip>  0) {
->   		trace->skip--;
->   		return;
-> @@ -39,9 +41,11 @@ static void save_stack_address(void *dat
->   static void
->   save_stack_address_nosched(void *data, unsigned long addr, int reliable)
->   {
-> -	struct stack_trace *trace = (struct stack_trace *)data;
-> +	struct stack_trace *trace = data;
-> +#ifdef CONFIG_FRAME_POINTER
->   	if (!reliable)
->   		return;
-> +#endif
->   	if (in_sched_functions(addr))
->   		return;
->   	if (trace->skip>  0) {
->
->    
+Remove bashisms to make scripts/decodecode work with other shells.
+
+Signed-off-by: Rabin Vincent <rabin@rab.in>
+---
+ scripts/decodecode |   10 +++++-----
+ 1 files changed, 5 insertions(+), 5 deletions(-)
+
+diff --git a/scripts/decodecode b/scripts/decodecode
+index 8b30cc3..18ba881 100755
+--- a/scripts/decodecode
++++ b/scripts/decodecode
+@@ -40,7 +40,7 @@ echo $code
+ code=`echo $code | sed -e 's/.*Code: //'`
+ 
+ width=`expr index "$code" ' '`
+-width=$[($width-1)/2]
++width=$((($width-1)/2))
+ case $width in
+ 1) type=byte ;;
+ 2) type=2byte ;;
+@@ -48,10 +48,10 @@ case $width in
+ esac
+ 
+ disas() {
+-	${CROSS_COMPILE}as $AFLAGS -o $1.o $1.s &> /dev/null
++	${CROSS_COMPILE}as $AFLAGS -o $1.o $1.s > /dev/null 2>&1
+ 
+-	if [ "$ARCH" == "arm" ]; then
+-		if [ $width == 2 ]; then
++	if [ "$ARCH" = "arm" ]; then
++		if [ $width -eq 2 ]; then
+ 			OBJDUMPFLAGS="-M force-thumb"
+ 		fi
+ 
+@@ -59,7 +59,7 @@ disas() {
+ 	fi
+ 
+ 	${CROSS_COMPILE}objdump $OBJDUMPFLAGS -S $1.o | \
+-		grep -v "/tmp\|Disassembly\|\.text\|^$" &> $1.dis
++		grep -v "/tmp\|Disassembly\|\.text\|^$" > $1.dis 2>&1
+ }
+ 
+ marker=`expr index "$code" "\<"`
+-- 
+1.7.1
 
