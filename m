@@ -1,48 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754770Ab0FCNlh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jun 2010 09:41:37 -0400
-Received: from nlpi129.sbcis.sbc.com ([207.115.36.143]:58137 "EHLO
-	nlpi129.prodigy.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753477Ab0FCNlg (ORCPT
+	id S1754803Ab0FCNm5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jun 2010 09:42:57 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:64760 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753477Ab0FCNmz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jun 2010 09:41:36 -0400
-Date: Thu, 3 Jun 2010 08:34:20 -0500 (CDT)
-From: Christoph Lameter <cl@linux-foundation.org>
-X-X-Sender: cl@router.home
-To: Pekka Enberg <penberg@cs.helsinki.fi>
-cc: Randy Dunlap <rdunlap@xenotime.net>,
-       Giangiacomo Mariotti <gg.mariotti@gmail.com>,
-       Bill Davidsen <davidsen@tmr.com>, linux-kernel@vger.kernel.org,
-       linux-mm@kvack.org, x86 maintainers <x86@kernel.org>,
-       Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>
-Subject: Re: Possible bug in 2.6.34 slub
-In-Reply-To: <AANLkTinxOJShwd7xUornVI89BmJnbX9-a7LVWaciNdr5@mail.gmail.com>
-Message-ID: <alpine.DEB.2.00.1006030833070.24954@router.home>
-References: <AANLkTimEFy6VM3InWlqhVooQjKGSD3yBxlgeRbQC2r1L@mail.gmail.com> <20100531165528.35a323fb.rdunlap@xenotime.net> <4C047CF9.9000804@tmr.com> <AANLkTilLq-hn59CBcLnOsnT37ZizQR6MrZX6btKPhfpb@mail.gmail.com> <20100601123959.747228c6.rdunlap@xenotime.net>
- <alpine.DEB.2.00.1006011445100.9438@router.home> <AANLkTinxOJShwd7xUornVI89BmJnbX9-a7LVWaciNdr5@mail.gmail.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Thu, 3 Jun 2010 09:42:55 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=c2anVMyhaMkFLXXvYOXJmNuY9XrYhK4xxkNVYoVx8C8rv5Y5SG90G7pvbwG8uIKsYJ
+         xL+K9kTff2OKD2HqJTeoECmQeiQw7A8H4lkToRmn3G1ribF3VqRbcK0eZsVospKghCda
+         hETzN++M4Nt/kuWd/taWIjDD5d77oxVtKwKWA=
+Subject: Re: [patch v2] fcntl: return -EFAULT if copy_to_user fails
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Takuya Yoshikawa <yoshikawa.takuya@oss.ntt.co.jp>
+Cc: Nick Piggin <npiggin@suse.de>, Jens Axboe <jaxboe@fusionio.com>,
+       Dan Carpenter <error27@gmail.com>, Matthew Wilcox <matthew@wil.cx>,
+       Alexander Viro <viro@zeniv.linux.org.uk>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Oleg Nesterov <oleg@redhat.com>, Greg Kroah-Hartman <gregkh@suse.de>,
+       Peter Zijlstra <a.p.zijlstra@chello.nl>, linux-fsdevel@vger.kernel.org,
+       linux-kernel@vger.kernel.org
+In-Reply-To: <4C07AD0C.8090409@oss.ntt.co.jp>
+References: <20100603100402.GR5483@bicker> <4C07826A.6060302@oss.ntt.co.jp>
+	 <20100603103542.GV5483@bicker> <4C07990A.8080508@fusionio.com>
+	 <4C079D34.5010500@oss.ntt.co.jp> <1275568683.2456.33.camel@edumazet-laptop>
+	 <20100603131031.GM6822@laptop>  <4C07AD0C.8090409@oss.ntt.co.jp>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 03 Jun 2010 15:42:43 +0200
+Message-ID: <1275572563.2456.37.camel@edumazet-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 3 Jun 2010, Pekka Enberg wrote:
+Le jeudi 03 juin 2010 à 22:24 +0900, Takuya Yoshikawa a écrit :
+> (2010/06/03 22:10), Nick Piggin wrote:
+> > On Thu, Jun 03, 2010 at 02:38:03PM +0200, Eric Dumazet wrote:
 
-> On Tue, Jun 1, 2010 at 10:48 PM, Christoph Lameter
-> <cl@linux-foundation.org> wrote:
-> > On Tue, 1 Jun 2010, Randy Dunlap wrote:
+> >> This is really ugly.
+> >>
+> >> static inline int sec_copy_to_user(arg1, arg2, arg3)
+> >> {
+> >> 	int res = copy_to_user(arg1, arg2, arg3);
+> >>
+> >> 	return (res>  0) ? -EFAULT : res;
+> >> }
 > >
-> >> > >>> My cpu is an I7 920, so it has 4 cores and there's hyperthreading
-> >> > >>> enabled, so there are 8 logical cpus. Is this a bug?
+> > It would be unfortunate if it adds more confusion. I'd prefer to have
+> > a sufficiently different name. memcpy_to_user/memcpy_from_user
+> > perhaps?
+> 
+> Then, and memclear_user() ?
+> 
 > >
-> > Yes its a bug in the arch code or BIOS. The system configuration tells us
-> > that there are more possible cpus and therefore the system prepares for
-> > the additional cpus to be activated at some later time.
->
-> I guess we should CC x86 maintainers then!
+> 
 
-Its also a know BIOS problem with Dell f.e. They often indicate more
-potential cpus even if this particular hw configuration cannot do cpu
-hotplug.
+We are interested by the fact that full copy is done, so maybe use the
+'full' prefix ?
+
+fullcopy_to_user() , fullclear_user() ?
+
+
+
