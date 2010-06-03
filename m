@@ -1,93 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933602Ab0FCKIJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jun 2010 06:08:09 -0400
-Received: from mail-ew0-f223.google.com ([209.85.219.223]:59617 "EHLO
-	mail-ew0-f223.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932805Ab0FCKIF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jun 2010 06:08:05 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:mail-followup-to:mime-version
-         :content-type:content-disposition:user-agent;
-        b=Q8VrvsUjz0t+cPUudCI5/rEKzMQ/OQfcwcX1JlZMnuui9aAdx832E6VqnRy623WYjf
-         R4TnJmRX6ofMZ7SEVjz9SbO+kde1qc9SvskHNvHnPfQZFo+4UkntqqgLwBdbjEyK0Dak
-         ueKDJBaGfTFlWV8DfXEblvNq9OOHNRer3y/OY=
-Date: Thu, 3 Jun 2010 12:07:46 +0200
-From: Dan Carpenter <error27@gmail.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-       x86@kernel.org, Suresh Siddha <suresh.b.siddha@intel.com>,
-       Avi Kivity <avi@redhat.com>, Hongjiu Lu <hjl.tools@gmail.com>,
-       linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-Subject: [patch] x86: xsave: cleanup return codes in check_for_xstate()
-Message-ID: <20100603100746.GU5483@bicker>
-Mail-Followup-To: Dan Carpenter <error27@gmail.com>,
-	Thomas Gleixner <tglx@linutronix.de>,
-	Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-	x86@kernel.org, Suresh Siddha <suresh.b.siddha@intel.com>,
-	Avi Kivity <avi@redhat.com>, Hongjiu Lu <hjl.tools@gmail.com>,
-	linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
+	id S933609Ab0FCKLN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jun 2010 06:11:13 -0400
+Received: from mgw2.diku.dk ([130.225.96.92]:54518 "EHLO mgw2.diku.dk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758949Ab0FCKLL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Jun 2010 06:11:11 -0400
+From: Nicolas Palix <npalix@diku.dk>
+To: Michal Marek <mmarek@suse.cz>
+Subject: Re: [PATCH 3/4] Add scripts/coccinelle/kzalloc-simple.cocci
+Date: Thu, 3 Jun 2010 12:11:04 +0200
+User-Agent: KMail/1.13.2 (Linux/2.6.32-22-generic; KDE/4.4.2; i686; ; )
+Cc: Randy Dunlap <rdunlap@xenotime.net>, Roland Dreier <rdreier@cisco.com>,
+       Joe Perches <joe@perches.com>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       "David S. Miller" <davem@davemloft.net>,
+       Sam Ravnborg <sam@ravnborg.org>, Julia Lawall <julia@diku.dk>,
+       Gilles Muller <Gilles.Muller@lip6.fr>, linux-kernel@vger.kernel.org,
+       linux-kbuild@vger.kernel.org, cocci@diku.dk,
+       Wolfram Sang <w.sang@pengutronix.de>,
+       Kernel Janitors <kernel-janitors@vger.kernel.org>
+References: <1273508667-5152-1-git-send-email-npalix@diku.dk> <1273508667-5152-4-git-send-email-npalix@diku.dk> <4C077B2F.8010204@suse.cz>
+In-Reply-To: <4C077B2F.8010204@suse.cz>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Type: Text/Plain;
+  charset="iso-8859-2"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201006031211.05118.npalix@diku.dk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The places which call check_for_xstate() only care about zero or
-non-zero so this patch doesn't change how the code runs, but it's a 
-cleanup.  The main reason for this patch is that I'm looking for places
-which don't return -EFAULT for copy_from_user() failures.
+On Thursday 03 June 2010 11:51:43 Michal Marek wrote:
+> On 10.5.2010 18:24, Nicolas Palix wrote:
+> > +@script:python depends on org@
+> > +p << r.p;
+> > +x << r.x;
+> > +@@
+> > +
+> > +msg="%s" % (x)
+> > +msg_safe=msg.replace("[","@(").replace("]",")")
+> > +coccilib.org.print_todo(p[0], msg_safe)
+> > +
+> > +@script:python depends on report@
+> > +p << r.p;
+> > +x << r.x;
+> > +@@
+> > +
+> > +msg="WARNING: kzalloc should be used for %s, instead of kmalloc/memset" % (x)
+> > +coccilib.report.print_report(p[0], msg_safe)
+> 
+> msg_safe is not defined in this scriptlet, I'm only getting
+> 
+> Traceback (most recent call last):
+>   File "<string>", line 5, in <module>
+> NameError: name 'msg_safe' is not defined
 
-Signed-off-by: Dan Carpenter <error27@gmail.com>
+Oops. Thank you for reporting this.
 
-diff --git a/arch/x86/kernel/xsave.c b/arch/x86/kernel/xsave.c
-index 37e68fc..9801498 100644
---- a/arch/x86/kernel/xsave.c
-+++ b/arch/x86/kernel/xsave.c
-@@ -36,15 +36,14 @@ int check_for_xstate(struct i387_fxsave_struct __user *buf,
- 
- 	err = __copy_from_user(fx_sw_user, &buf->sw_reserved[0],
- 			       sizeof(struct _fpx_sw_bytes));
--
- 	if (err)
--		return err;
-+		return -EFAULT;
- 
- 	/*
- 	 * First Magic check failed.
- 	 */
- 	if (fx_sw_user->magic1 != FP_XSTATE_MAGIC1)
--		return -1;
-+		return -EINVAL;
- 
- 	/*
- 	 * Check for error scenarios.
-@@ -52,19 +51,21 @@ int check_for_xstate(struct i387_fxsave_struct __user *buf,
- 	if (fx_sw_user->xstate_size < min_xstate_size ||
- 	    fx_sw_user->xstate_size > xstate_size ||
- 	    fx_sw_user->xstate_size > fx_sw_user->extended_size)
--		return -1;
-+		return -EINVAL;
- 
- 	err = __get_user(magic2, (__u32 *) (((void *)fpstate) +
- 					    fx_sw_user->extended_size -
- 					    FP_XSTATE_MAGIC2_SIZE));
-+	if (err)
-+		return err;
- 	/*
- 	 * Check for the presence of second magic word at the end of memory
- 	 * layout. This detects the case where the user just copied the legacy
- 	 * fpstate layout with out copying the extended state information
- 	 * in the memory layout.
- 	 */
--	if (err || magic2 != FP_XSTATE_MAGIC2)
--		return -1;
-+	if (magic2 != FP_XSTATE_MAGIC2)
-+		return -EFAULT;
- 
- 	return 0;
- }
+I fixed it for my upcoming submission.
+
+In the meantime, you can replace "msg_safe" by "msg" in the rule
+dedicated to the "report" mode.
+
+That is
+
+coccilib.report.print_report(p[0], msg_safe)
+
+by 
+
+coccilib.report.print_report(p[0], msg
+
+The good point is that you only reach this point if Coccinelle has found
+something to change in the code. So there is some patches to do... ;)
+
+
+> 
+> Michal
+> 
+
+-- 
+Nicolas Palix
+Tel: (+33) 1 44 27 87 25
+Tel: (+33) 6 81 07 91 72
+Web: http://www.diku.dk/~npalix/
