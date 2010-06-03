@@ -1,80 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756286Ab0FCPk2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jun 2010 11:40:28 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:38857 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753824Ab0FCPk0 (ORCPT
+	id S1756539Ab0FCPln (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jun 2010 11:41:43 -0400
+Received: from casper.infradead.org ([85.118.1.10]:52804 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756126Ab0FCPll convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jun 2010 11:40:26 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=MgGjzsraMF6X0x+WHRyri/37t7hqpvHZuddFkqrDIcsyF6Xs4As/B7YSlcITYXEwlC
-         kmVvow6SiNee4ERk9GjzCx83YT23QoI09H0KpoC0Oe/LUBytMr0zAHqb7gWR3sT+YY54
-         1RSTF8K32JBw1zwlWDQm6hP6mQzuE+DajoG5s=
-Date: Thu, 3 Jun 2010 23:45:33 +0800
-From: =?utf-8?Q?Am=C3=A9rico?= Wang <xiyou.wangcong@gmail.com>
-To: Anton Vorontsov <cbouatmailru@gmail.com>
-Cc: Luming Yu <luming.yu@gmail.com>, Jeff Garzik <jeff@garzik.org>,
-       LKML <linux-kernel@vger.kernel.org>, Michal Marek <mmarek@suse.cz>,
-       Sam Ravnborg <sam@ravnborg.org>
-Subject: Re: 2.6.25-rc1 ahci regression
-Message-ID: <20100603154533.GA11525@hack>
-References: <20100603084104.GA17431@oksana.dev.rtsoft.ru> <AANLkTilSNOgD1HrvYBMEsza5-IIeBS1U7AHChO1vJKuf@mail.gmail.com> <AANLkTima_jbwafiHQsncQzdX04ZcjO_8QIpq5UOohi3x@mail.gmail.com> <20100603093923.GA25856@oksana.dev.rtsoft.ru> <AANLkTim8TALR8Ev9KDX4tteXUrQ3oKOcnyMHk9WOdUvG@mail.gmail.com> <20100603131414.GA23520@oksana.dev.rtsoft.ru> <20100603132319.GA4889@oksana.dev.rtsoft.ru> <20100603135031.GA9964@oksana.dev.rtsoft.ru> <AANLkTimRDNiN-rOl-V-WnRiVwXNaZ8sPPmj_TzsNLZmq@mail.gmail.com> <20100603150422.GA31604@oksana.dev.rtsoft.ru>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100603150422.GA31604@oksana.dev.rtsoft.ru>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+	Thu, 3 Jun 2010 11:41:41 -0400
+Subject: Re: [PATCH] - race-free suspend. Was: Re: [linux-pm] [PATCH 0/8]
+ Suspend block api (version 8)
+From: Peter Zijlstra <peterz@infradead.org>
+To: tytso@mit.edu
+Cc: Brian Swetland <swetland@google.com>, Neil Brown <neilb@suse.de>,
+       Arve =?ISO-8859-1?Q?Hj=F8nnev=E5g?= <arve@android.com>,
+       Thomas Gleixner <tglx@linutronix.de>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+       Alan Stern <stern@rowland.harvard.edu>,
+       Felipe Balbi <felipe.balbi@nokia.com>,
+       "Paul@smtp1.linux-foundation.org" <Paul@smtp1.linux-foundation.org>,
+       LKML <linux-kernel@vger.kernel.org>,
+       Florian Mickler <florian@mickler.org>,
+       Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
+       Linux PM <linux-pm@lists.linux-foundation.org>,
+       Alan Cox <alan@lxorguk.ukuu.org.uk>,
+       James Bottomley <James.Bottomley@suse.de>
+In-Reply-To: <20100603142150.GB13179@thunk.org>
+References: <20100601113309.609349fd@notabene.brown>
+	 <alpine.LFD.2.00.1006010340160.2933@localhost.localdomain>
+	 <20100601122012.1edeaf48@notabene.brown>
+	 <alpine.LFD.2.00.1006011243350.2933@localhost.localdomain>
+	 <20100602153235.340a7852@notabene.brown>
+	 <AANLkTikVjAf5nHdMx2bcHRAUSkq99s-b5YZCECXIJJLy@mail.gmail.com>
+	 <20100602180614.729246ea@notabene.brown>
+	 <AANLkTikXy__71nBNW0EFbyL_qNf0nQ68pW9KymWlTk7L@mail.gmail.com>
+	 <20100603163307.721b1c23@notabene.brown>
+	 <AANLkTikuf6bKVHoGRTjrM_2kPtZqUM6J76Z0hNUQxT_3@mail.gmail.com>
+	 <20100603142150.GB13179@thunk.org>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Thu, 03 Jun 2010 17:41:41 +0200
+Message-ID: <1275579701.27810.36036.camel@twins>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 03, 2010 at 07:04:22PM +0400, Anton Vorontsov wrote:
->On Thu, Jun 03, 2010 at 10:13:57PM +0800, Luming Yu wrote:
->> On Thu, Jun 3, 2010 at 9:50 PM, Anton Vorontsov <cbouatmailru@gmail.com> wrote:
->> > On Thu, Jun 03, 2010 at 05:23:19PM +0400, Anton Vorontsov wrote:
->> > [...]
->> >> Oh. It seems I found it. It must be the module order loading
->> >> thing.
->> >>
->> >> Can you try the patch down below?
->> >
->> > OTOH... libahci is a link-time dependency. And the order doesn't
->> > matter here. So you should just have the libahci module in
->> > the initrd (actually, mkinitrd or whatever you use should
->> > have included this automatically).
->> >
->> 
->> Neither ahci nor libachi is automatically included in initrd..
->
->What commands you use to build the kernel and initrd?
->
->> Manually added ahci and libachi into initrd seems to make the problem go away..
->> Any idea why that could happen?
->
->No idea off hand.
->
->Cc'ing Kbuild folks. Question is: is there something wrong with
->writing stuff like this:
->obj-$(CONFIG_SATA_AHCI)         += ahci.o libahci.o
->obj-$(CONFIG_SATA_AHCI_PLATFORM) += ahci_platform.o libahci.o
->as in drivers/ata/Makefile?
->
->It seem to link fine, .ko's are created. But for some reason
->initrd doesn't include these modules for Luming...
->
+On Thu, 2010-06-03 at 10:21 -0400, tytso@mit.edu wrote:
 
-Odd.
-Are these modules exported to /lib/modules/`uname -r`/ directory?
-
-And, Luming, are you using Dracut?
-
-Thanks.
+> And let's be blunt.  If in the future the Android team (which I'm not
+> a member of) decides that they have invested more engineering time
+> than they can justify from a business perspective, the next time
+> someone starts whining on a blog, or on Slashdot, or at a conference,
+> about how "OMG!  Google is forking the kernel!!!", or "Google is
+> making the lives of device driver writers for the embedded world
+> difficult", it will now be possible from a political point of view to
+> point and the hundreds, if not thousands, of e-mail messages of LKML
+> developers wanting to redesign this effort and saying "Nyet!  Nyet!
+> Nyet!" to the original patchset, to point out that Google has a made
+> an effort, and gone far beyond what is required by the GPL.  Not only
+> has the source code been made available, but hundreds of engineering
+> hours have been made trying to accomodate the demands of LKML --- and
+> LKML has said no to suspend blockers/wakelocks.
 
 
--- 
-Live like a child, think like the god.
- 
+In the spirit of being blunt, so what?
+
+We say no for good technical reasons. Also when did it become sensible
+to push features after they were shipped?
+
+It never works to develop stuff like this out-of-tree and then push for
+inclusion. You always get to rewrite (at least 3 times).
+
+If Google indeed decides it doesn't want to play upstream, then sad. But
+I don't see how we would be unjust in complaining about it.
+
+There is more to our community than the letter of the GPL, and you
+should know that. So I really don't see the point of your argument (was
+there one besides the management gibberish?).
