@@ -1,166 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933685Ab0FCCzk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jun 2010 22:55:40 -0400
-Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:59044 "EHLO
-	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933577Ab0FCCzj (ORCPT
+	id S933699Ab0FCC5H (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jun 2010 22:57:07 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:52060 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933577Ab0FCC5D convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jun 2010 22:55:39 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Thu, 3 Jun 2010 11:51:19 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
-       "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       "balbir@linux.vnet.ibm.com" <balbir@linux.vnet.ibm.com>,
-       "nishimura@mxp.nes.nec.co.jp" <nishimura@mxp.nes.nec.co.jp>
-Subject: [PATCH 2/2] memcg make move_task_charge check clearer
-Message-Id: <20100603115119.be29ec13.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <20100603114837.6e6d4d0f.kamezawa.hiroyu@jp.fujitsu.com>
-References: <20100603114837.6e6d4d0f.kamezawa.hiroyu@jp.fujitsu.com>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 2 Jun 2010 22:57:03 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=eeU4nuZ/duPK5o0ANDVbSV1MI8RpXiP6KM/yx6Q8NUtpHiq5QhqSWZFN9q/bHQCJyO
+         AR8LaeVnmfaXoM+37VuN3qdgZUeN2nsnIyiDrPzp4qFjyGIRsesWnufeuyJfcUMqikVT
+         kC7GI4SAisrPBfCsj51okE7cOcEWR6MSy4dRs=
+MIME-Version: 1.0
+In-Reply-To: <20100602103329.GA2457@opensource.wolfsonmicro.com>
+References: <1275468694.2545.1.camel@eight.analog.com>
+	<20100602103329.GA2457@opensource.wolfsonmicro.com>
+Date: Thu, 3 Jun 2010 10:57:02 +0800
+Message-ID: <AANLkTilUfrxL5TQcqV8Bta2tuKWQI5YXSew6Jo8YOljk@mail.gmail.com>
+Subject: Re: [PATCH v2] regulator: new drivers for AD5398 and AD5821
+From: Sonic Zhang <sonic.adi@gmail.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Liam Girdwood <lrg@slimlogic.co.uk>,
+       Linux Kernel <linux-kernel@vger.kernel.org>,
+       uclinux-dist-devel <uclinux-dist-devel@blackfin.uclinux.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+On Wed, Jun 2, 2010 at 6:33 PM, Mark Brown
+<broonie@opensource.wolfsonmicro.com> wrote:
+> On Wed, Jun 02, 2010 at 04:51:34PM +0800, sonic zhang wrote:
+>
+>> +static int ad5398_read_reg(struct i2c_client *client, unsigned short *data)
+>> +{
+>> +     unsigned short val;
+>> +     int ret;
+>> +
+>> +     ret = i2c_master_recv(client, (char *)&val, 2);
+>> +     if (ret < 0) {
+>> +             dev_err(&client->dev, "I2C read error\n");
+>> +             return ret;
+>> +     }
+>> +     *data = swab16(val);
+>
+> Should this not be a be16_to_cpu() or similar rather than an
+> unconditional byte swap?  Presumably the byte swap is not going to be
+> needed if the CPU has the same endianness as the CPU that the system is
+> using.
 
-Now, for checking a memcg is under task-account-moving, we do css_tryget()
-against mc.to and mc.from. But this is just complicating things. This patch
-makes the check easier.
+I made a mistake to mix simple i2c transfer and smbus i2c transfer
+here. For smbus i2c transfer, byte swap is unconditional.
 
-This patch adds a spinlock to move_charge_struct and guard modification
-of mc.to and mc.from. By this, we don't have to think about complicated
-races around this not-critical path.
+>
+>> +     /* read chip enable bit */
+>> +     ret = ad5398_read_reg(client, &data);
+>> +     if (ret < 0)
+>> +             return ret;
+>
+>> +     /* prepare register data */
+>> +     selector = (selector << chip->current_offset) & chip->current_mask;
+>> +     selector |= (data & AD5398_CURRENT_EN_MASK);
+>
+> The reason I was querying this code on the original submission is that
+> it is more normal to write this as something like
+>
+>    data = selector | (data & ~chip->current_mask);
+>
+> ie, to write the code as "set these bits" rather than "preserve these
+> bits".  This is more clearly robust to the reader since it's clear that
+> there aren't other register bits which should be set.
 
-Changelog:
- - removed disable/enable irq.
+OK.
 
-Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
----
- mm/memcontrol.c |   48 ++++++++++++++++++++++++++++--------------------
- 1 file changed, 28 insertions(+), 20 deletions(-)
+>
+>> +       chip->min_uA = init_data->constraints.min_uA;
+>> +       chip->max_uA = init_data->constraints.max_uA;
+>
+> This looks very wrong, especially given that you use the min_uA and
+> max_uA settings to scale the register values being written in to the
+> chip.  I would expect that either the limits would be fixed in the
+> silicon or (if they depend on things like the associated passives which
+> can be configured per-board) that there would be some other setting in
+> the platform data which specifies what's actually being changed.
+>
+> The constraints being specified by the platform should not influence the
+> physical properties of the chip, they control which values are allowed
+> in a particular design (for example, saying that values over a given
+> limit are not allowed due to the limits of the hardware connected to the
+> regulator) and are separate to what the chip is capable of.
+>
 
-Index: mmotm-2.6.34-May21/mm/memcontrol.c
-===================================================================
---- mmotm-2.6.34-May21.orig/mm/memcontrol.c
-+++ mmotm-2.6.34-May21/mm/memcontrol.c
-@@ -268,6 +268,7 @@ enum move_type {
- 
- /* "mc" and its members are protected by cgroup_mutex */
- static struct move_charge_struct {
-+	spinlock_t	  lock; /* for from, to, moving_task */
- 	struct mem_cgroup *from;
- 	struct mem_cgroup *to;
- 	unsigned long precharge;
-@@ -276,6 +277,7 @@ static struct move_charge_struct {
- 	struct task_struct *moving_task;	/* a task moving charges */
- 	wait_queue_head_t waitq;		/* a waitq for other context */
- } mc = {
-+	.lock = __SPIN_LOCK_UNLOCKED(mc.lock),
- 	.waitq = __WAIT_QUEUE_HEAD_INITIALIZER(mc.waitq),
- };
- 
-@@ -1076,26 +1078,25 @@ static unsigned int get_swappiness(struc
- 
- static bool mem_cgroup_under_move(struct mem_cgroup *mem)
- {
--	struct mem_cgroup *from = mc.from;
--	struct mem_cgroup *to = mc.to;
-+	struct mem_cgroup *from;
-+	struct mem_cgroup *to;
- 	bool ret = false;
--
--	if (from == mem || to == mem)
--		return true;
--
--	if (!from || !to || !mem->use_hierarchy)
--		return false;
--
--	rcu_read_lock();
--	if (css_tryget(&from->css)) {
--		ret = css_is_ancestor(&from->css, &mem->css);
--		css_put(&from->css);
--	}
--	if (!ret && css_tryget(&to->css)) {
--		ret = css_is_ancestor(&to->css,	&mem->css);
-+	/*
-+	 * Unlike task_move routines, we access mc.to, mc.from not under
-+	 * mutual exclusion by cgroup_mutex. Here, we take spinlock instead.
-+	 */
-+	spin_lock(&mc.lock);
-+	from = mc.from;
-+	to = mc.to;
-+	if (!from)
-+		goto unlock;
-+	if (from == mem || to == mem
-+	    || (mem->use_hierarchy && css_is_ancestor(&from->css, &mem->css))
-+	    || (mem->use_hierarchy && css_is_ancestor(&to->css,	&mem->css)))
- 		css_put(&to->css);
--	}
--	rcu_read_unlock();
-+		ret = true;
-+unlock:
-+	spin_unlock(&mc.lock);
- 	return ret;
- }
- 
-@@ -4447,11 +4448,13 @@ static int mem_cgroup_precharge_mc(struc
- 
- static void mem_cgroup_clear_mc(void)
- {
-+	struct mem_cgroup *from = mc.from;
-+	struct mem_cgroup *to = mc.to;
-+
- 	/* we must uncharge all the leftover precharges from mc.to */
- 	if (mc.precharge) {
- 		__mem_cgroup_cancel_charge(mc.to, mc.precharge);
- 		mc.precharge = 0;
--		memcg_oom_recover(mc.to);
- 	}
- 	/*
- 	 * we didn't uncharge from mc.from at mem_cgroup_move_account(), so
-@@ -4460,7 +4463,6 @@ static void mem_cgroup_clear_mc(void)
- 	if (mc.moved_charge) {
- 		__mem_cgroup_cancel_charge(mc.from, mc.moved_charge);
- 		mc.moved_charge = 0;
--		memcg_oom_recover(mc.from);
- 	}
- 	/* we must fixup refcnts and charges */
- 	if (mc.moved_swap) {
-@@ -4485,9 +4487,13 @@ static void mem_cgroup_clear_mc(void)
- 
- 		mc.moved_swap = 0;
- 	}
-+	spin_lock(&mc.lock);
- 	mc.from = NULL;
- 	mc.to = NULL;
- 	mc.moving_task = NULL;
-+	spin_unlock(&mc.lock);
-+	memcg_oom_recover(from);
-+	memcg_oom_recover(to);
- 	wake_up_all(&mc.waitq);
- }
- 
-@@ -4516,12 +4522,14 @@ static int mem_cgroup_can_attach(struct 
- 			VM_BUG_ON(mc.moved_charge);
- 			VM_BUG_ON(mc.moved_swap);
- 			VM_BUG_ON(mc.moving_task);
-+			spin_lock(&mc.lock);
- 			mc.from = from;
- 			mc.to = mem;
- 			mc.precharge = 0;
- 			mc.moved_charge = 0;
- 			mc.moved_swap = 0;
- 			mc.moving_task = current;
-+			spin_unlock(&mc.lock);
- 
- 			ret = mem_cgroup_precharge_mc(mm);
- 			if (ret)
+I will predefine the chip physical min max values in the driver and add user
+defined limitation based on both initial constraints and chip spec.
 
+
+Sonic
