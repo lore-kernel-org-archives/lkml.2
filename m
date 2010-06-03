@@ -1,115 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753089Ab0FCMkx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jun 2010 08:40:53 -0400
-Received: from moutng.kundenserver.de ([212.227.126.186]:50392 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752442Ab0FCMkv (ORCPT
+	id S1753226Ab0FCMmR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jun 2010 08:42:17 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:35748 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752753Ab0FCMmP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jun 2010 08:40:51 -0400
-Message-ID: <4C07A2EB.4080006@vlnb.net>
-Date: Thu, 03 Jun 2010 16:41:15 +0400
-From: Vladislav Bolkhovitin <vst@vlnb.net>
-User-Agent: Thunderbird 2.0.0.23 (X11/20090825)
+	Thu, 3 Jun 2010 08:42:15 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=R2cunvxYJRF/eRQicFlEHtMcoSZwVOq3lnCjozoeolhCTNq4Qon+pXndXIWljwryR+
+         hK3i88PS0k5l8qDaOh6Pj1Ko0oFSg1k9EzGDZgeT0hFSDSmjOYR++NYLHoWVvJJ2O9qa
+         Ezy9i5d1W8hLkwlV7YRIkseLnmV1WhYNja1PQ=
+Date: Thu, 3 Jun 2010 14:42:21 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>,
+       Arnaldo Carvalho de Melo <acme@redhat.com>,
+       Paul Mackerras <paulus@samba.org>,
+       Stephane Eranian <eranian@google.com>
+Subject: Re: [GIT PULL] perf crash fix
+Message-ID: <20100603124219.GB5234@nowhere>
+References: <1275534810-1837-1-git-send-regression-fweisbec@gmail.com> <1275552159.27810.34944.camel@twins> <20100603123543.GA5234@nowhere> <1275568831.27810.35654.camel@twins>
 MIME-Version: 1.0
-To: Boaz Harrosh <bharrosh@panasas.com>
-CC: James Bottomley <James.Bottomley@suse.de>,
-       Christof Schmitt <christof.schmitt@de.ibm.com>,
-       "Martin K. Petersen" <martin.petersen@oracle.com>,
-       linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
-       linux-fsdevel@vger.kernel.org, Chris Mason <chris.mason@oracle.com>,
-       Gennadiy Nerubayev <parakie@gmail.com>
-Subject: Re: Wrong DIF guard tag on ext2 write
-References: <20100531112817.GA16260@schmichrtp.mainz.de.ibm.com>	 <yq1iq64kv9f.fsf@sermon.lab.mkp.net>	 <1275318102.2823.47.camel@mulgrave.site> <4C03D5FD.3000202@panasas.com>	 <20100601103041.GA15922@schmichrtp.mainz.de.ibm.com> <1275398876.21962.6.camel@mulgrave.site> <4C078FE2.9000804@vlnb.net> <4C079B07.5020303@panasas.com>
-In-Reply-To: <4C079B07.5020303@panasas.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Provags-ID: V01U2FsdGVkX19O5ClAjoNQCYQK2zoYMKwoNpMAtK+7tZLZRJD
- Eoh+wcvPO/Cv+3AC/lm+AADUpwA1DlAIG0pv/FmvdPcck623UR
- CN5mAK89e1km4HJuom2Yw==
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1275568831.27810.35654.camel@twins>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Boaz Harrosh, on 06/03/2010 04:07 PM wrote:
-> On 06/03/2010 02:20 PM, Vladislav Bolkhovitin wrote:
->> There's one interesting problem here, at least theoretically, with SCSI 
->> or similar transports which allow to have commands queue depth >1 and 
->> allowed to internally reorder queued requests. I don't know the FS/block 
->> layers sufficiently well to tell if sending several requests for the 
->> same page really possible or not, but we can see a real life problem, 
->> which can be well explained if it's possible.
->>
->> The problem could be if the second (rewrite) request (SCSI command) for 
->> the same page queued to the corresponding device before the original 
->> request finished. Since the device allowed to freely reorder requests, 
->> there's a probability that the original write request would hit the 
->> permanent storage *AFTER* the retry request, hence the data changes it's 
->> carrying would be lost, hence welcome data corruption.
->>
+On Thu, Jun 03, 2010 at 02:40:31PM +0200, Peter Zijlstra wrote:
+> On Thu, 2010-06-03 at 14:35 +0200, Frederic Weisbecker wrote:
 > 
-> I might be totally wrong here but I think NCQ can reorder sectors but
-> not writes. That is if the sector is cached in device memory and a later
-> write comes to modify the same sector then the original should be
-> replaced not two values of the same sector be kept in device cache at the
-> same time.
+> > I wanted to, but I thought we could avoid two indirect calls on each
+> > ticks and I was also afraid of breaking start/stop original semantics,
+> > more especially the role of perf_event_stop/start
 > 
-> Failing to do so is a scsi device problem.
+> Right, so you lost the fallback to ->enable/->disable, which would break
+> hardware PMU implementations that didn't actually implement
+> ->start/->stop (pretty much all of them except x86).
 
-SCSI devices supporting Full task management model (almost all) and 
-having QUEUE ALGORITHM MODIFIER bits in Control mode page set to 1 
-allowed to freely reorder any commands with SIMPLE task attribute. If an 
-application wants to maintain order of some commands for such devices, 
-it must issue them with ORDERED task attribute and over a _single_ MPIO 
-path to the device.
 
-Linux neither uses ORDERED attribute, nor honors or enforces anyhow 
-QUEUE ALGORITHM MODIFIER bits, nor takes care to send commands with 
-order dependencies (overlapping writes in our case) over a single MPIO path.
-
-> Please note that page-to-sector is not necessary constant. And the same page
-> might get written at a different sector, next time. But FSs will have to
-> barrier in this case.
-> 
->> For single parallel SCSI or SAS devices such race may look practically 
->> impossible, but for sophisticated clusters when many nodes pretending to 
->> be a single SCSI device in a load balancing configuration, it becomes 
->> very real.
->>
->> The real life problem we can see in an active-active DRBD-setup. In this 
->> configuration 2 nodes act as a single SCST-powered SCSI device and they 
->> both run DRBD to keep their backstorage in-sync. The initiator uses them 
->> as a single multipath device in an active-active round-robin 
->> load-balancing configuration, i.e. sends requests to both nodes in 
->> parallel, then DRBD takes care to replicate the requests to the other node.
->>
->> The problem is that sometimes DRBD complies about concurrent local 
->> writes, like:
->>
->> kernel: drbd0: scsi_tgt0[12503] Concurrent local write detected! 
->> [DISCARD L] new: 144072784s +8192; pending: 144072784s +8192
->>
->> This message means that DRBD detected that both nodes received 
->> overlapping writes on the same block(s) and DRBD can't figure out which 
->> one to store. This is possible only if the initiator sent the second 
->> write request before the first one completed.
-> 
-> It is totally possible in today's code.
-> 
-> DRBD should store the original command_sn of the write and discard
-> the sector with the lower SN. It should appear as a single device
-> to the initiator.
-
-How can it find the SN? The commands were sent over _different_ MPIO 
-paths to the device, so at the moment of the sending all the order 
-information was lost.
-
-Until SCSI generally allowed to preserve ordering information between 
-MPIO paths in such configurations the only way to maintain commands 
-order would be queue draining. Hence, for safety all initiators working 
-with such devices must do it.
-
-But looks like Linux doesn't do it, so unsafe with MPIO clusters?
-
-Vlad
+Indeed.
 
