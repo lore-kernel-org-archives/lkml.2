@@ -1,172 +1,262 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758325Ab0FCI3a (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jun 2010 04:29:30 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:50171 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757905Ab0FCI31 convert rfc822-to-8bit (ORCPT
+	id S1758404Ab0FCIdc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jun 2010 04:33:32 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:35010 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757980Ab0FCIda (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jun 2010 04:29:27 -0400
+	Thu, 3 Jun 2010 04:33:30 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=googlemail.com; s=gamma;
-        h=mime-version:reply-to:in-reply-to:references:from:date:message-id
-         :subject:to:cc:content-type:content-transfer-encoding;
-        b=mKIZhEk92fd2suoy/BwXP1acrCn6f3QMu4PIL9At4Y08DGI0NLjg0Po36Ldu148pnR
-         kgWwPe6zO+SRJ7Y0kRCC3uIeLubNSbRByCY/ggX3neeYYoq93HC6pDjM85EmCP4893Bc
-         0v4Qwm8hRJu1W7H9La30J2BMxLG/TY1ADGArY=
+        d=gmail.com; s=gamma;
+        h=sender:from:to:subject:date:user-agent:cc:references:in-reply-to
+         :organization:mime-version:content-type:content-transfer-encoding
+         :message-id;
+        b=GQNGP7PS34SqA9mEo0lMo3TSRrC1g7kuiC497zsryMZ57fJJGuS2rbr06O3MGkmd2Y
+         oTbNdI/o5UrUbwawk5DA5LJTmwMF65pP5e+CH6LI+7NtC23rUVIzzLQ8uCkpCeWR6t36
+         agFE0SqXtOC7Wzmo7txaVCApCINTfwst0CXkc=
+From: Florian Fainelli <florian@openwrt.org>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Subject: Re: [PATCH v3] x86: CPU detection for RDC System-on-Chip
+Date: Thu, 3 Jun 2010 10:32:12 +0200
+User-Agent: KMail/1.13.2 (Linux/2.6.32-22-server; KDE/4.4.2; x86_64; ; )
+Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, mingo@elte.hu,
+       "linux-kernel" <linux-kernel@vger.kernel.org>, andi@firstfloor.org
+References: <201005161455.34100.florian@openwrt.org> <201005190927.14385.florian@openwrt.org> <201005201658.49187.florian@openwrt.org>
+In-Reply-To: <201005201658.49187.florian@openwrt.org>
+Organization: OpenWrt
 MIME-Version: 1.0
-Reply-To: mtk.manpages@gmail.com
-In-Reply-To: <AANLkTiliVv0RFCeZnUy0PeWS1LNQZGzLSDFnZlf8-hgO@mail.gmail.com>
-References: <20100524070552.GR23411@kernel.dk> <AANLkTikogQtGpO9c94A7YSmP8zdyM8dZBrwJf1nwlR4j@mail.gmail.com> 
-	<20100524173551.GU23411@kernel.dk> <AANLkTimDJjHWKISxnLax3r200Db8OQp_lMKOx14ONgkS@mail.gmail.com> 
-	<20100524175649.GV23411@kernel.dk> <AANLkTim_yrRZG6v1tMPgefeaaI-nUa35Q-mLQpuXWJ1p@mail.gmail.com> 
-	<20100601074534.GL1660@kernel.dk> <AANLkTinGfonivZvofBkMzv53IJZeKbFAEMVpv96BiJ30@mail.gmail.com> 
-	<20100603061039.GD3564@kernel.dk> <AANLkTint7OJvmTn7d7bqTJzsCxV-VlVT46PQWVH-m73g@mail.gmail.com> 
-	<20100603070126.GJ3564@kernel.dk> <AANLkTilwyuE-HiY0vX5askTNi1KoeuKIldmE85WrfIqU@mail.gmail.com> 
-	<AANLkTin2b7qE1zo0fQWIhYIzdV26zNBjHRcNAOELpUfK@mail.gmail.com> 
-	<AANLkTiliVv0RFCeZnUy0PeWS1LNQZGzLSDFnZlf8-hgO@mail.gmail.com>
-From: Michael Kerrisk <mtk.manpages@googlemail.com>
-Date: Thu, 3 Jun 2010 10:29:04 +0200
-Message-ID: <AANLkTime3-0QufhJRx2tBWtirEoPo8aS8Zn5TKwN0i1R@mail.gmail.com>
-Subject: Re: [patch] pipe: add support for shrinking and growing pipes
-To: Jens Axboe <jaxboe@fusionio.com>
-Cc: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       Miklos Szeredi <miklos@szeredi.hu>,
-       "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201006031032.12609.florian@openwrt.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jens,
+On Thursday 20 May 2010 16:58:48 Florian Fainelli wrote:
+> On Wednesday 19 May 2010 09:27:12 Florian Fainelli wrote:
+> > From: Mark Kelly <mark@bifferos.com>
+> > 
+> > The RDC System-on-Chip i486 compatible core does not support the cpuid
+> > instruction and specific detection logic is required for this chip. The
+> > patch below adds proper vendor and SoC type detection.
+> 
+> Is this version acceptable like it is now?
 
-On Thu, Jun 3, 2010 at 9:58 AM, Michael Kerrisk
-<mtk.manpages@googlemail.com> wrote:
-> Hi Jens,
->
-> On Thu, Jun 3, 2010 at 9:48 AM, Michael Kerrisk
-> <mtk.manpages@googlemail.com> wrote:
->> On Thu, Jun 3, 2010 at 9:05 AM, Michael Kerrisk
->> <mtk.manpages@googlemail.com> wrote:
->>> On Thu, Jun 3, 2010 at 9:01 AM, Jens Axboe <jaxboe@fusionio.com> wrote:
->>>> On Thu, Jun 03 2010, Michael Kerrisk wrote:
->>>>> Hi Jens,
->>>>>
->>>>> On Thu, Jun 3, 2010 at 8:10 AM, Jens Axboe <jaxboe@fusionio.com> wrote:
->>>>> > On Wed, Jun 02 2010, Michael Kerrisk wrote:
->>>>> >> On Tue, Jun 1, 2010 at 9:45 AM, Jens Axboe <axboe@kernel.dk> wrote:
->>>>> >> > On Thu, May 27 2010, Michael Kerrisk wrote:
->>>>> >> >> Jens,
->>>>> >> >>
->>>>> >> >> On Mon, May 24, 2010 at 7:56 PM, Jens Axboe <jens.axboe@oracle.com> wrote:
->>>>> >> >> > On Mon, May 24 2010, Michael Kerrisk wrote:
->>>>> >> >> >> On Mon, May 24, 2010 at 7:35 PM, Jens Axboe <jens.axboe@oracle.com> wrote:
->>>>> >> >> >> > On Mon, May 24 2010, Michael Kerrisk wrote:
->>>>> >> >> >> >> > Right, that looks like a thinko.
->>>>> >> >> >> >> >
->>>>> >> >> >> >> > I'll submit a patch changing it to bytes and the agreed API and fix this
->>>>> >> >> >> >> > -Eerror. Thanks for your comments and suggestions!
->>>>> >> >> >> >>
->>>>> >> >> >> >> Thanks. And of course you are welcome. (Please CC linux-api@vger on
->>>>> >> >> >> >> this patche (and all patches that change the API/ABI.)
->>>>> >> >> >> >
->>>>> >> >> >> > The first change is this:
->>>>> >> >> >> >
->>>>> >> >> >> > http://git.kernel.dk/?p=linux-2.6-block.git;a=commit;h=0191f8697bbdfefcd36e7b8dc3eeddfe82893e4b
->>>>> >> >> >> >
->>>>> >> >> >> > and the one dealing with the pages vs bytes API is this:
->>>>> >> >> >> >
->>>>> >> >> >> > http://git.kernel.dk/?p=linux-2.6-block.git;a=commit;h=b9598db3401282bb27b4aef77e3eee12015f7f29
->>>>> >> >> >> >
->>>>> >> >> >> > Not tested yet, will do so before sending in of course.
->>>>> >> >> >>
->>>>> >> >> >> Eyeballing it quickly, these changes look right.
->>>>> >> >> >
->>>>> >> >> > Good, thanks.
->>>>> >> >> >
->>>>> >> >> >> Do you have some test programs you can make available?
->>>>> >> >> >
->>>>> >> >> > Actually I don't, I test it by modifying fio's splice engine to set/get
->>>>> >> >> > the pipe size and test the resulting transfers.
->>>>> >> >>
->>>>> >> >> An afterthought. Do there not also need to be fixes to the /proc
->>>>> >> >> interfaces. I don't think they were included in your revised patches.
->>>>> >> >
->>>>> >> > I think the proc part can be sanely left in pages, since it's just a
->>>>> >> > memory limiter.
->>>>> >>
->>>>> >> I can't see any advantage to using two different units for these
->>>>> >> closely related APIs, and it does seem like it could be a source of
->>>>> >> confusion. Similar APIs that I can think of like RLIMIT_MEMLOCK and
->>>>> >> shmget() SHMMAX that impose per-process memory-related limits use
->>>>> >> bytes. Best to be consistent, don't you think?
->>>>> >
->>>>> > But they are different interfaces.  I think the 'pass in required size,
->>>>> > return actual size' where actual size is >= required size makes sense
->>>>> > for the syscall part, but for an "admin" interface it is more logical to
->>>>> > deal in pages. Perhaps that's just me and the average admin does not
->>>>> > agree. So while it's just detail, it's also an interface so has some
->>>>> > importance. And if there's consensus that bytes is a cleaner interface
->>>>> > on the proc side as well, then lets change it.
->>>>>
->>>>> I'll add one more datapoint to those that I already mentioned.
->>>>> RLIMIT_STACK and RLIMIT_DATA (getrlimit()) is also expressed in bytes.
->>>>>
->>>>> There was only one vaguely related limit that I could find that
->>>>> measured things in pages. Consider these two System V shared memory
->>>>> limits:
->>>>>
->>>>> SHMMAX
->>>>> This is the maximum size (in bytes) of a shared memory segment.
->>>>>
->>>>> SHMALL
->>>>> This is a system-wide limit on the total number of pages of shared memory.
->>>>>
->>>>> But in a way this almost confirms my point. SHMMAX is a limit the
->>>>> governs the behavior of individual processes (like your /proc file),
->>>>> while SHMALL is a limit that governs the behavior of the system as a
->>>>> whole. There is a (sort of) logic to using bytes for one and pages for
->>>>> the other.
->>>>>
->>>>> I think that I've said all I need to say on the topic. I'm inclined to
->>>>> think yours /proc file should use bytes, since it seems consistent
->>>>> with other simialr APIs. Others may confirm, or someone else mught
->>>>> have a different insight.
->>>>
->>>> I'll commit a patch to change it to bytes.
->>>
->>> Thanks Jens.
->>
->> Since I'm going to document the /proc file, it occurred to me... What
->> are you going to call this file now? "pipe_max_pages"  no longer makes
->> sense. "pipe_size_ceiling" may be more expressive than simply
->> "pipe_max".
->
-> So, I'm looking at this interface still more closely now. How about
-> using CAP_SYS_RESOURCE, rather than the hugely overloaded
-> CAP_SYS_ADMIN as the governor for the capability check? Again, it's
-> about consistency. Here's what CAP_SYS_RESOURCE currently governs:
->
->       CAP_SYS_RESOURCE
->              * Use reserved space on ext2 file systems;
->              * make ioctl(2) calls controlling ext3 journaling;
->              * override disk quota limits;
->              * increase resource limits (see setrlimit(2));
->              * override RLIMIT_NPROC resource limit;
->              * raise msg_qbytes limit for a System V message queue
-> above the limit
->                in /proc/sys/kernel/msgmnb (see msgop(2) and msgctl(2)).
->
-> Including the pipe size limit in this list makes sense.
+Ping? Anything that should be reworked?
 
-Another question: What happens if we adjust the capacity of a pipe to
-a value that is smaller than the number of bytes currently in the
-pipe?
+Thank you.
 
-Cheers,
-
-Michael
+> 
+> Thank you for your answer.
+> 
+> > Signed-off-by: Mark Kelly <mark@bifferos.com>
+> > Tested-by: Florian Fainelli <florian@openwrt.org>
+> > ---
+> > Changes from v3:
+> > - read vendor and device id with a single 32-bits read
+> > 
+> > Changes from v2:
+> > - change report url to bugzilla.kernel.org
+> > - set vendor name to RDC even if customer id is not known
+> > 
+> > diff --git a/Documentation/x86/rdc.txt b/Documentation/x86/rdc.txt
+> > new file mode 100644
+> > index 0000000..f3dc7cf
+> > --- /dev/null
+> > +++ b/Documentation/x86/rdc.txt
+> > @@ -0,0 +1,67 @@
+> > +
+> > +Introduction
+> > +============
+> > +
+> > +RDC (http://www.rdc.com.tw) have been manufacturing x86-compatible SoC
+> > +(system-on-chips) for a number of years.  They are not the fastest of
+> > +CPUs (clock speeds ranging from 133-150MHz) but 486SX compatibility
+> > +coupled with very low power consumption[1] and low cost make them ideal
+> > +for embedded applications.
+> > +
+> > +
+> > +Where to find
+> > +=============
+> > +
+> > +RDC chips show up in numerous embedded devices, but be careful since
+> > +many of them will not run Linux 2.6 without significant expertise.
+> > +
+> > +There are several variants of what the linux kernel refers to
+> > generically +as RDC321X:  R8610, R321x, S3282 and AMRISC20000.
+> > +
+> > +R321x: Found in various routers, see the OpenWrt project for details,
+> > +   http://wiki.openwrt.org/oldwiki/rdcport
+> > +
+> > +R8610: Found on the RDC evaluation board
+> > +   http://www.ivankuten.com/system-on-chip-soc/rdc-r8610/
+> > +
+> > +AMRISC20000: Found in the MGB-100 wireless hard disk
+> > +   http://tintuc.no-ip.com/linux/tipps/mgb100/
+> > +
+> > +S3282: Found in various NAS devices, including the Bifferboard
+> > +   http://www.bifferos.com
+> > +
+> > +
+> > +Kernel Configuration
+> > +====================
+> > +
+> > +Add support for this CPU with CONFIG_X86_RDC321X.  Ensure that maths
+> > +emulation is included (CONFIG_MATH_EMULATION selected) and avoid MCE
+> > +(CONFIG_X86_MCE not selected).
+> > +
+> > +
+> > +CPU detection
+> > +=============
+> > +
+> > +None of these chips support the cpuid instruction, so as with some
+> > +other x86 compatible SoCs, we must check the north bridge and look
+> > +for specific 'signature' PCI device config.
+> > +
+> > +If you run a kernel on an unsupported customer id device, please file
+> > +a bug with your customer id to: http://bugzilla.kernel.org/.
+> > +
+> > +Credits
+> > +=======
+> > +
+> > +Many thanks to RDC for providing the customer codes to allow
+> > +detection of all known variants, without which this detection code
+> > +would have been very hard to ascertain.
+> > +
+> > +
+> > +References
+> > +==========
+> > +
+> > +[1] S3282 in certain NAS solutions consumes less than 1W
+> > +
+> > +
+> > +mark@bifferos.com 2009
+> > +
+> > diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+> > index 39e8e10..21b02f2 100644
+> > --- a/arch/x86/Kconfig
+> > +++ b/arch/x86/Kconfig
+> > @@ -419,6 +419,7 @@ config X86_RDC321X
+> > 
+> >  	bool "RDC R-321x SoC"
+> >  	depends on X86_32
+> >  	depends on X86_EXTENDED_PLATFORM
+> > 
+> > +	select PCI
+> > 
+> >  	select M486
+> >  	select X86_REBOOTFIXUPS
+> >  	---help---
+> > 
+> > diff --git a/arch/x86/include/asm/processor.h
+> > b/arch/x86/include/asm/processor.h index 5a51379..eddf979 100644
+> > --- a/arch/x86/include/asm/processor.h
+> > +++ b/arch/x86/include/asm/processor.h
+> > @@ -122,7 +122,8 @@ struct cpuinfo_x86 {
+> > 
+> >  #define X86_VENDOR_CENTAUR	5
+> >  #define X86_VENDOR_TRANSMETA	7
+> >  #define X86_VENDOR_NSC		8
+> > 
+> > -#define X86_VENDOR_NUM		9
+> > +#define X86_VENDOR_RDC		9
+> > +#define X86_VENDOR_NUM		10
+> > 
+> >  #define X86_VENDOR_UNKNOWN	0xff
+> > 
+> > diff --git a/arch/x86/kernel/cpu/Makefile b/arch/x86/kernel/cpu/Makefile
+> > index 3a785da..af2d4a6 100644
+> > --- a/arch/x86/kernel/cpu/Makefile
+> > +++ b/arch/x86/kernel/cpu/Makefile
+> > @@ -25,6 +25,7 @@ obj-$(CONFIG_CPU_SUP_CYRIX_32)		+= cyrix.o
+> > 
+> >  obj-$(CONFIG_CPU_SUP_CENTAUR)		+= centaur.o
+> >  obj-$(CONFIG_CPU_SUP_TRANSMETA_32)	+= transmeta.o
+> >  obj-$(CONFIG_CPU_SUP_UMC_32)		+= umc.o
+> > 
+> > +obj-$(CONFIG_X86_RDC321X)		+= rdc.o
+> > 
+> >  obj-$(CONFIG_PERF_EVENTS)		+= perf_event.o
+> > 
+> > diff --git a/arch/x86/kernel/cpu/rdc.c b/arch/x86/kernel/cpu/rdc.c
+> > new file mode 100644
+> > index 0000000..c2bcdcc
+> > --- /dev/null
+> > +++ b/arch/x86/kernel/cpu/rdc.c
+> > @@ -0,0 +1,73 @@
+> > +/*
+> > + * See Documentation/x86/rdc.txt
+> > + *
+> > + * mark@bifferos.com
+> > + */
+> > +
+> > +#include <linux/pci.h>
+> > +#include <asm/pci-direct.h>
+> > +#include "cpu.h"
+> > +
+> > +
+> > +static void __cpuinit rdc_identify(struct cpuinfo_x86 *c)
+> > +{
+> > +	u32 id;
+> > +	u16 vendor, device;
+> > +	u32 customer_id;
+> > +
+> > +	if (!early_pci_allowed())
+> > +		return;
+> > +
+> > +	/* RDC CPU is SoC (system-on-chip), Northbridge is always present */
+> > +	id = read_pci_config(0, 0, 0, PCI_VENDOR_ID);
+> > +	vendor = id & 0xffff;
+> > +	device = (id >> 16) & 0xffff;
+> > +
+> > +	if (vendor != PCI_VENDOR_ID_RDC || device != 
+PCI_DEVICE_ID_RDC_R6020)
+> > +		return;  /* not RDC */
+> > +	/*
+> > +	 * NB: We could go on and check other devices, e.g. r6040 NIC, but
+> > +	 * that's probably overkill
+> > +	 */
+> > +
+> > +	customer_id = read_pci_config(0, 0, 0, 0x90);
+> > +
+> > +	switch (customer_id) {
+> > +		/* id names are from RDC */
+> > +	case 0x00321000:
+> > +		strcpy(c->x86_model_id, "R3210/R3211");
+> > +		break;
+> > +	case 0x00321001:
+> > +		strcpy(c->x86_model_id, "AMITRISC20000/20010");
+> > +		break;
+> > +	case 0x00321002:
+> > +		strcpy(c->x86_model_id, "R3210X/Edimax");
+> > +		break;
+> > +	case 0x00321003:
+> > +		strcpy(c->x86_model_id, "R3210/Kcodes");
+> > +		break;
+> > +	case 0x00321004:  /* tested */
+> > +		strcpy(c->x86_model_id, "S3282/CodeTek");
+> > +		break;
+> > +	case 0x00321007:
+> > +		strcpy(c->x86_model_id, "R8610");
+> > +		break;
+> > +	default:
+> > +		pr_info("RDC CPU: Unrecognised Customer ID (0x%x) please "
+> > +			"report to: http://bugzilla.kernel.org/\n",
+> > +			customer_id);
+> > +		break;
+> > +	}
+> > +
+> > +	strcpy(c->x86_vendor_id, "RDC");
+> > +	c->x86_vendor = X86_VENDOR_RDC;
+> > +}
+> > +
+> > +static const struct cpu_dev __cpuinitconst rdc_cpu_dev = {
+> > +	.c_vendor	= "RDC",
+> > +	.c_ident	= { "RDC" },
+> > +	.c_identify	= rdc_identify,
+> > +	.c_x86_vendor	= X86_VENDOR_RDC,
+> > +};
+> > +
+> > +cpu_dev_register(rdc_cpu_dev);
