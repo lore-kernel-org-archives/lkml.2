@@ -1,62 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932211Ab0FCQjZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jun 2010 12:39:25 -0400
-Received: from sj-iport-4.cisco.com ([171.68.10.86]:32275 "EHLO
-	sj-iport-4.cisco.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753430Ab0FCQjW (ORCPT
+	id S932201Ab0FCQks (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jun 2010 12:40:48 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:18642 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753430Ab0FCQkq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jun 2010 12:39:22 -0400
-Authentication-Results: sj-iport-4.cisco.com; dkim=neutral (message not signed) header.i=none
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AvsEAL93B0yrR7Ht/2dsb2JhbACeJXGlZ5oUhRYEg0g
-X-IronPort-AV: E=Sophos;i="4.53,355,1272844800"; 
-   d="scan'208";a="138930733"
-From: Roland Dreier <rdreier@cisco.com>
-To: Amerigo Wang <amwang@redhat.com>
-Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-       Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>, davem@davemloft.net,
-       linux-rdma@vger.kernel.org, sean.hefty@intel.com
-Subject: Re: [Patch] infiniband: check local reserved ports
-References: <20100603083106.6047.7657.sendpatchset@localhost.localdomain>
-X-Message-Flag: Warning: May contain useful information
-Date: Thu, 03 Jun 2010 09:39:16 -0700
-In-Reply-To: <20100603083106.6047.7657.sendpatchset@localhost.localdomain>
-	(Amerigo Wang's message of "Thu, 3 Jun 2010 04:27:02 -0400")
-Message-ID: <ada1vcoqde3.fsf@roland-alpha.cisco.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	Thu, 3 Jun 2010 12:40:46 -0400
+Date: Thu, 3 Jun 2010 09:39:03 -0700
+From: Randy Dunlap <randy.dunlap@oracle.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>,
+       platform-driver-x86@vger.kernel.org, Matthew Garrett <mjg@redhat.com>
+Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+       Thadeu Lima de Souza Cascardo <cascardo@holoscopio.com>,
+       Daniel Oliveira Nascimento <don@syst.com.br>
+Subject: [PATCH -next] classmate-laptop: fix for RFKILL=m, CMPC=y
+Message-Id: <20100603093903.d9378c9a.randy.dunlap@oracle.com>
+In-Reply-To: <20100603134753.710a64b3.sfr@canb.auug.org.au>
+References: <20100603134753.710a64b3.sfr@canb.auug.org.au>
+Organization: Oracle Linux Eng.
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-Auth-Type: Internal IP
+X-Source-IP: rcsinet13.oracle.com [148.87.113.125]
+X-CT-RefId: str=0001.0A090201.4C07DB02.01C6:SCFMA4539811,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
- > Since Tetsuo's patch already got merged, now this is the missing part
- > for local port reservation.
- > 
- > Cc: Roland Dreier <rdreier@cisco.com>
- > Cc: Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>
- > Signed-off-by: WANG Cong <amwang@redhat.com>
- > 
- > ---
- > diff --git a/drivers/infiniband/core/cma.c b/drivers/infiniband/core/cma.c
- > index b930b81..7b89bab 100644
- > --- a/drivers/infiniband/core/cma.c
- > +++ b/drivers/infiniband/core/cma.c
- > @@ -1978,6 +1978,7 @@ static int cma_alloc_any_port(struct idr *ps, struct rdma_id_private *id_priv)
- >  	rover = net_random() % remaining + low;
- >  retry:
- >  	if (last_used_port != rover &&
- > +	    !inet_is_reserved_local_port(rover) &&
- >  	    !idr_find(ps, (unsigned short) rover)) {
- >  		int ret = cma_alloc_port(ps, id_priv, rover);
- >  		/*
+From: Randy Dunlap <randy.dunlap@oracle.com>
 
-Should this inet_is_reserved_local_port() test apply to all the "port
-spaces" that this code is handling?  I honestly am ignorant of the
-intended semantics of the new local_reserved_ports stuff, hence my question.
+Fix build error when CONFIG_RFKILL=m and CONFIG_ACPI_CMPC=y:
+classmate-laptop should depend on RFKILL or RFKILL=n.
 
- - R.
--- 
-Roland Dreier <rolandd@cisco.com> || For corporate legal information go to:
-http://www.cisco.com/web/about/doing_business/legal/cri/index.html
+classmate-laptop.c:(.text+0x1351fc): undefined reference to `rfkill_unregister'
+classmate-laptop.c:(.text+0x135204): undefined reference to `rfkill_destroy'
+classmate-laptop.c:(.text+0x135237): undefined reference to `rfkill_set_sw_state'
+classmate-laptop.c:(.text+0x1352b9): undefined reference to `rfkill_alloc'
+classmate-laptop.c:(.text+0x1352ca): undefined reference to `rfkill_register'
+classmate-laptop.c:(.text+0x1352d6): undefined reference to `rfkill_destroy'
+
+Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
+---
+ drivers/platform/x86/Kconfig |    1 +
+ 1 file changed, 1 insertion(+)
+
+--- linux-next-20100603.orig/drivers/platform/x86/Kconfig
++++ linux-next-20100603/drivers/platform/x86/Kconfig
+@@ -520,6 +520,7 @@ config TOSHIBA_BT_RFKILL
+ config ACPI_CMPC
+ 	tristate "CMPC Laptop Extras"
+ 	depends on X86 && ACPI
++	depends on RFKILL || RFKILL=n
+ 	select INPUT
+ 	select BACKLIGHT_CLASS_DEVICE
+ 	default n
