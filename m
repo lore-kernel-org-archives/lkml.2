@@ -1,52 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754873Ab0FCVgK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jun 2010 17:36:10 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:31041 "EHLO mx1.redhat.com"
+	id S1755580Ab0FCVjv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jun 2010 17:39:51 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:36369 "EHLO mail.skyhub.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753998Ab0FCVgI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jun 2010 17:36:08 -0400
-Date: Thu, 3 Jun 2010 23:34:09 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Ingo Molnar <mingo@elte.hu>, Jason Baron <jbaron@redhat.com>,
-       Masami Hiramatsu <mhiramat@redhat.com>,
-       Roland McGrath <roland@redhat.com>, linux-kernel@vger.kernel.org,
-       stable@kernel.org
-Subject: [PATCH 2.6.35/stable] TP_STORE_SIGINFO(SEND_SIG_FORCED) == OOPS
-Message-ID: <20100603213409.GA8307@redhat.com>
+	id S1754817Ab0FCVju (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Jun 2010 17:39:50 -0400
+Date: Thu, 3 Jun 2010 23:39:43 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Arnaldo Carvalho de Melo <acme@infradead.org>
+Cc: Borislav Petkov <bp@amd64.org>, Peter Zijlstra <peterz@infradead.org>,
+       Ingo Molnar <mingo@elte.hu>, Frederic Weisbecker <fweisbec@gmail.com>,
+       Steven Rostedt <rostedt@goodmis.org>, Lin Ming <ming.m.lin@intel.com>,
+       linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] perf: Add persistent events
+Message-ID: <20100603213943.GA25436@liondog.tnic>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	Arnaldo Carvalho de Melo <acme@infradead.org>,
+	Borislav Petkov <bp@amd64.org>,
+	Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+	Frederic Weisbecker <fweisbec@gmail.com>,
+	Steven Rostedt <rostedt@goodmis.org>,
+	Lin Ming <ming.m.lin@intel.com>, linux-kernel@vger.kernel.org
+References: <20100523185411.GA5608@liondog.tnic>
+ <1274642601.1674.1755.camel@laptop>
+ <20100525073246.GA6085@liondog.tnic>
+ <1274799588.5882.1572.camel@twins>
+ <20100528143311.GB9710@elte.hu>
+ <1275059860.27810.9635.camel@twins>
+ <20100528155719.GA10141@kryptos.osrc.amd.com>
+ <1275070030.1645.362.camel@laptop>
+ <20100603134301.GA30880@kryptos.osrc.amd.com>
+ <20100603173242.GD29202@ghostprotocols.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <20100603173242.GD29202@ghostprotocols.net>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-BUG: unable to handle kernel NULL pointer dereference at 0000000000000006
-IP: [<ffffffff8107bd37>] ftrace_raw_event_signal_generate+0x87/0x140
+From: Arnaldo Carvalho de Melo <acme@infradead.org>
+Date: Thu, Jun 03, 2010 at 02:32:42PM -0300
 
-TP_STORE_SIGINFO() forgets about SEND_SIG_FORCED, fix.
+> Em Thu, Jun 03, 2010 at 03:43:01PM +0200, Borislav Petkov escreveu:
+> > From: Peter Zijlstra <peterz@infradead.org>
+> > Date: Fri, May 28, 2010 at 08:07:10PM +0200
+> > > to allocate and attach a buffer to your event (do so for each cpu's MCE
+> > > event).
+> > > 
+> > > After that we still need a way to expose all that to userspace, but at
+> > > least the events will be complete and able to record bits ;-)
+> > 
+> > Yep, so far so good, the kernel side is almost done - this was the
+> > easy part :). So recently I started looking into how the userspace
+> > part could be done most efficiently so that, initially, the RAS daemon
+> > doesn't suck in all of tools/perf when building and depend unnecessary
+> > on libelf etc, and, at the same time, doesn't duplicate functionality
+> > like util/debugfs, get_debugfs_mntpt(), parse_events() maybe later etc.
+> > 
+> > So, the best way to do this, IMHO, is if I start carving out common and
+> > generic functionality into tools/lib/ or tools/util/ or similar so that
+> > perf and ras can share those. And maybe later even other tools. This
+> > could be where we host all the kernel headers stuff which are good for
+> > userspace, i.e. those which are in tools/perf/util/include/linux/
+> > 
+> > Opinions, comments?
+> 
+> Right, that has to be done, I have sample code I want to put in samples/
+> to show how to use the symbol libraries in tools/perf/util/, will take a
+> stab at moving things for tools/lib/.
 
-We should probably export is_si_special() and change TP_STORE_SIGINFO()
-to use it.
+Cool.
 
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
----
+> We'll need a top level Makefile, I guess, so that when asking to build
+> tools/perf, it notices that it has to build tools/lib/, etc.
 
- include/trace/events/signal.h |    3 ++-
- 1 file changed, 2 insertions(+), 1 deletion(-)
+Yep.
 
---- 34-rc1/include/trace/events/signal.h~TP_STORE_SIGINFO	2009-12-18 19:05:38.000000000 +0100
-+++ 34-rc1/include/trace/events/signal.h	2010-06-03 23:24:07.000000000 +0200
-@@ -10,7 +10,8 @@
- 
- #define TP_STORE_SIGINFO(__entry, info)				\
- 	do {							\
--		if (info == SEND_SIG_NOINFO) {			\
-+		if (info == SEND_SIG_NOINFO ||			\
-+		    info == SEND_SIG_FORCED) {			\
- 			__entry->errno	= 0;			\
- 			__entry->code	= SI_USER;		\
- 		} else if (info == SEND_SIG_PRIV) {		\
+> Probably we'll need tools/lib/symbols/, tools/lib/trace/parser/ things
+> like that, I'll start with the symbols part, using a samples/ file I
+> already wrote.
 
+Nice, let me know when you have something ready so that we don't
+duplicate work. Also, I could give it a test run or two and all.
+
+Thanks.
+
+-- 
+Regards/Gruss,
+    Boris.
