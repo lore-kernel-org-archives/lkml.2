@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752905Ab0FCFmM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jun 2010 01:42:12 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:58115 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752022Ab0FCFmJ (ORCPT
+	id S1753129Ab0FCFmX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jun 2010 01:42:23 -0400
+Received: from mail-pz0-f185.google.com ([209.85.222.185]:63273 "EHLO
+	mail-pz0-f185.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752995Ab0FCFmT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jun 2010 01:42:09 -0400
+	Thu, 3 Jun 2010 01:42:19 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=mime-version:sender:date:x-google-sender-auth:message-id:subject
          :from:to:cc:content-type;
-        b=gxnZ80ozRwhpvMeUbhd6GZ1k/GiKvq7TfXvHIoIrBnWkWqpfB9dGa1aq4sEGE8ilFz
-         iypWm9FiJLivMshctRWQTmyyHa078vO89HMOeJprkK/LImcd42DESHlREsIVz4ItCKX4
-         vqM7yiwYiqvM9ZpERcaMqoMibN0jsnrU1UOLQ=
+        b=UFqpgzjd+DdyfWXg3PXyctxBfDAdg9PpS7CJ8CC2xzqn66CtKwpNDbnpEUBv/VXmx5
+         7blkqlsfwyFVDWVHpteB9Ozf51IlI0O099PTsROPKmcaKjcpucY46jlmSLXmzHaaQJXU
+         /LTZoDuQQG9RRxso6hlLPO3lYIlW1rJfEmGAY=
 MIME-Version: 1.0
-Date: Wed, 2 Jun 2010 22:42:08 -0700
-X-Google-Sender-Auth: 9VW3o3tFw6DZ2INndeyrfF9ZsR4
-Message-ID: <AANLkTin0upoLzQUG6AmYgmAc1YlvxqMkYhaKr85oK8Mm@mail.gmail.com>
-Subject: [PATCH 0/6] sctp: add multistream scheduling feature
+Date: Wed, 2 Jun 2010 22:42:18 -0700
+X-Google-Sender-Auth: Xadpsap_SK42e-Fa_Y0Q8P_qt4o
+Message-ID: <AANLkTilgantV3v0T1-ef6ewyinddzfOs1PZW1Re9ZAyQ@mail.gmail.com>
+Subject: [PATCH 1/6] sctp multistream scheduling: declare sctp_sched_ops
 From: Yaogong Wang <ywang15@ncsu.edu>
 To: linux-sctp@vger.kernel.org, Vlad Yasevich <vladislav.yasevich@hp.com>,
        Sridhar Samudrala <sri@us.ibm.com>
@@ -28,43 +28,83 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-SCTP supports multistreaming. This feature solves the head-of-line
-blocking problem of TCP and makes SCTP a proper transport for
-signaling. However, the multistreaming feature of SCTP can be further
-exploited to provide QoS scheduling among streams. This is what we
-want to add in this patch.
+Declare sctp_sched_ops structure and related functions
 
-In the current implementation, multiple streams in an SCTP association
-is scheduled in a first-come-first-serve (FCFS) fashion. We would like
-to augment this simple algorithm with many other scheduling algorithms
-and let the application choose which scheduling they want to use. We
-provide a general interface in the kernel so that different scheduling
-algorithms can be implemented as kernel modules. We also extend the
-SCTP socket API to include a new socket option for applications to
-choose and configure the scheduling they want. This approach is
-inspired by the pluggable TCP congestion control mechanism in the
-Linux kernel.
+Signed-off-by: Yaogong Wang <ywang15@ncsu.edu>
+---
+diff -uprN -X linux-2.6.32.8/Documentation/dontdiff
+linux-2.6.32.8/include/net/sctp/structs.h
+p1/include/net/sctp/structs.h
+--- linux-2.6.32.8/include/net/sctp/structs.h	2010-02-09
+04:57:19.000000000 -0800
++++ p1/include/net/sctp/structs.h	2010-05-28 10:33:12.000000000 -0700
+@@ -320,6 +320,9 @@ struct sctp_sock {
+ 	/* Flags controlling Heartbeat, SACK delay, and Path MTU Discovery. */
+ 	__u32 param_flags;
 
-An application of this feature is as follow: suppose two users are
-chatting with each other over an SCTP-based instant messenger.
-Meantime, they are exchanging photos. So there are two streams in this
-scenario: one for instant messages and the other for photo transfer.
-In the current implementation, the user cannot specify the scheduling
-of the two streams so that the instant messages may be delayed by the
-bulk data transfer when the available bandwidth is limited. With our
-extension, the user could choose priority queue scheduling among the
-streams and put instant messages on the higher priority queue. Thus,
-we can prevent the previous problems and decrease the latency
-experienced by the instant messages. There may be many other possible
-applications of this patch since it provides a general framework to
-implement many possible scheduling algorithms.
++	/* Multistream scheduling  */
++	const struct sctp_sched_ops *sched_ops;
++
+ 	struct sctp_initmsg initmsg;
+ 	struct sctp_rtoinfo rtoinfo;
+ 	struct sctp_paddrparams paddrparam;
+@@ -534,6 +537,36 @@ static inline void sctp_ssn_skip(struct
+ }
 
-All following patches should be applied to kernel 2.6.32.8 sequentially.
+ /*
++ * Interface for adding new SCTP scheduling handlers
++ * This is similar to the pluggable TCP congestion control
++ */
++struct sctp_sched_ops {
++	struct list_head	list;
++
++	/* initialize out_chunk_list (required) */
++	int (*init)(struct sctp_outq *q, gfp_t gfp);
++	/* cleanup out_chunk_list (required) */
++	void (*release)(struct sctp_outq *q);
++	/* enqueue head function (required) */
++	void (*enqueue_head_data)(struct sctp_outq *q, struct sctp_chunk *ch);
++	/* enqueue tail function (required) */
++	void (*enqueue_tail_data)(struct sctp_outq *q, struct sctp_chunk *ch);
++	/* dequeue function (required) */
++	struct sctp_chunk* (*dequeue_data)(struct sctp_outq *q);
++	/* is out_chunk_list empty? (required) */
++	int (*is_empty)(struct sctp_outq *q);
++
++	char 		name[SCTP_SCHED_NAME_MAX];
++	struct module 	*owner;
++};
++
++extern int sctp_register_sched(struct sctp_sched_ops *type);
++extern void sctp_unregister_sched(struct sctp_sched_ops *type);
++
++extern void sctp_cleanup_sched(struct sock *sk);
++extern int sctp_set_sched(struct sock *sk, const char *name);
++
++/*
+  * Pointers to address related SCTP functions.
+  * (i.e. things that depend on the address family.)
+  */
+@@ -1650,6 +1683,9 @@ struct sctp_association {
+ 	/* The largest timeout or RTO value to use in attempting an INIT */
+ 	unsigned long max_init_timeo;
 
---
-========================
-Yaogong Wang, PhD candidate
-Department of Computer Science
-North Carolina State University
-http://www4.ncsu.edu/~ywang15/
-========================
++	/* Multistream scheduling  */
++	const struct sctp_sched_ops *sched_ops;
++
+ 	/* Heartbeat interval: The endpoint sends out a Heartbeat chunk to
+ 	 * the destination address every heartbeat interval. This value
+ 	 * will be inherited by all new transports.
+diff -uprN -X linux-2.6.32.8/Documentation/dontdiff
+linux-2.6.32.8/include/net/sctp/user.h p1/include/net/sctp/user.h
+--- linux-2.6.32.8/include/net/sctp/user.h	2010-02-09 04:57:19.000000000 -0800
++++ p1/include/net/sctp/user.h	2010-05-28 10:52:57.000000000 -0700
+@@ -171,6 +171,8 @@ struct sctp_initmsg {
+ 	__u16 sinit_max_init_timeo;
+ };
+
++#define SCTP_SCHED_NAME_MAX	16
++
+ /*
+  * 5.2.2 SCTP Header Information Structure (SCTP_SNDRCV)
+  *
