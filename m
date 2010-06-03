@@ -1,67 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751763Ab0FCEoz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jun 2010 00:44:55 -0400
-Received: from SMTP.ANDREW.CMU.EDU ([128.2.11.61]:44529 "EHLO
-	smtp.andrew.cmu.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751185Ab0FCEow (ORCPT
+	id S1752041Ab0FCEpe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jun 2010 00:45:34 -0400
+Received: from aeryn.fluff.org.uk ([87.194.8.8]:27641 "EHLO
+	kira.home.fluff.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751325Ab0FCEpb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jun 2010 00:44:52 -0400
-Date: Thu, 3 Jun 2010 00:44:16 -0400
-From: Ben Blum <bblum@andrew.cmu.edu>
-To: Paul Menage <menage@google.com>
-Cc: Oleg Nesterov <oleg@redhat.com>, Ben Blum <bblum@andrew.cmu.edu>,
-       linux-kernel@vger.kernel.org, containers@lists.linux-foundation.org,
-       akpm@linux-foundation.org, ebiederm@xmission.com, lizf@cn.fujitsu.com,
-       matthltc@us.ibm.com
-Subject: Re: [RFC] [PATCH 2/2] cgroups: make procs file writable
-Message-ID: <20100603044416.GB21006@ghc02.ghc.andrew.cmu.edu>
-References: <20100531180446.GA16249@redhat.com>
- <AANLkTimcrX0TjzDMNJdubR92pAO4IPATbVpyvvVt0qIV@mail.gmail.com>
- <20100602140659.GA5324@redhat.com>
- <AANLkTin-T6ij3xf0ceGoCamwcoayxyf0GdAKY6yXDMVl@mail.gmail.com>
- <20100602202048.GB28663@redhat.com>
- <AANLkTimrJFiidM8BlUNvmzfapUAv8369R9PYnTscasEf@mail.gmail.com>
- <20100602205855.GA30039@redhat.com>
- <AANLkTimfHlapl7mbRyAazWW5q5Wzs23n6i9wIhVtSv6r@mail.gmail.com>
- <20100602213832.GB31949@redhat.com>
- <AANLkTimsusetA9B95-LvKsDdAB_PegYH7Zljyi4Doe_q@mail.gmail.com>
+	Thu, 3 Jun 2010 00:45:31 -0400
+Date: Thu, 3 Jun 2010 05:45:12 +0100
+From: Ben Dooks <ben-linux@fluff.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Kevin Hilman <khilman@deeprootsystems.com>,
+       Daniel Walker <dwalker@codeaurora.org>, linux-kernel@vger.kernel.org,
+       linux-arm-msm@vger.kernel.org
+Subject: Re: [GIT PULL] ARM MSM updates for 2.6.35-rc1
+Message-ID: <20100603044512.GA22906@fluff.org.uk>
+References: <1274997173.10998.21.camel@c-dwalke-linux.qualcomm.com>
+ <1275511857.27006.6.camel@c-dwalke-linux.qualcomm.com>
+ <alpine.LFD.2.00.1006021413100.8175@i5.linux-foundation.org>
+ <87d3w9582z.fsf@deeprootsystems.com>
+ <alpine.LFD.2.00.1006021803350.8175@i5.linux-foundation.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <AANLkTimsusetA9B95-LvKsDdAB_PegYH7Zljyi4Doe_q@mail.gmail.com>
+In-Reply-To: <alpine.LFD.2.00.1006021803350.8175@i5.linux-foundation.org>
+X-Disclaimer: These are my own opinions, so there!
 User-Agent: Mutt/1.5.20 (2009-06-14)
-X-PMX-Version: 5.5.9.388399, Antispam-Engine: 2.7.2.376379, Antispam-Data: 2010.6.3.42715
-X-SMTP-Spam-Clean: 8% (
- BODYTEXTP_SIZE_3000_LESS 0, BODY_SIZE_1100_1199 0, BODY_SIZE_2000_LESS 0, BODY_SIZE_5000_LESS 0, BODY_SIZE_7000_LESS 0, __BOUNCE_CHALLENGE_SUBJ 0, __BOUNCE_NDR_SUBJ_EXEMPT 0, __CD 0, __CT 0, __CT_TEXT_PLAIN 0, __HAS_MSGID 0, __MIME_TEXT_ONLY 0, __MIME_VERSION 0, __SANE_MSGID 0, __TO_MALFORMED_2 0, __URI_NO_PATH 0, __URI_NO_WWW 0, __URI_NS , __USER_AGENT 0)
-X-SMTP-Spam-Score: 8%
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 02, 2010 at 03:03:49PM -0700, Paul Menage wrote:
-> On Wed, Jun 2, 2010 at 2:38 PM, Oleg Nesterov <oleg@redhat.com> wrote:
-> >
-> > cgroup_attach_task() does, and this time PF_EXITING is understandable.
-> >
+On Wed, Jun 02, 2010 at 06:20:09PM -0700, Linus Torvalds wrote:
 > 
-> Oh, OK, I was talking about the one in cgroup_attach_task(), which is
-> called by attach_task_by_pid(), and assumed that you were referring to
-> the same one. I'd forgotten about the pre-check in
-> attach_task_by_pid(). Yes, that one could probably be removed without
-> affecting any final outcomes.
+>    am, but I'm willing to do it only if I have a feeling that things are 
+>    under control. And I'm not getting that feeling.
 > 
-> Paul
+>  - TWO HUNDRED THOUSAND lines of arch/arm is just pure garbage, namely the 
+>    defconfig files. Quite frankly, anybody who calls that anything but 
+>    pure "noise" is just misguided and being stupid.
+> 
+> So yes, I do consider a lot of it "noise". When there's two hundred 
+> thousand lines of garbage, and it keeps growing without bounds, something 
+> needs to be done. 
+> 
+> Now, I'm actually considering just getting rid of all the 'defconfig' 
+> files entirely. The x86 model is sane (there's two of them, nobody likely 
+> uses them), but ARM and POWERPC (and to a lesser config SH and MIPS) have 
+> turned the whole concept into a disgusting mess. 
+> 
+> But while POWERPC has abused that thing too, in _other_ respects it has 
+> been much less egregious. 
 
-Yes, I agree. The check should be moved into cgroup_attach_task before
-the ss->can_attach calls, so the "optimization" stays in the case where
-it's wanted.
+unfortunately there are so many different variants of the ARM
+architecture that these defconfigs spring up to ensure that a base
+compile for each one of them is performed. We run an autobuild which
+runs through all these defconfigs and produces a report of what
+happened to allow tracking of build regressions at the moment.
+ 
+> So I can largely fix the defconfig mess on my own (by just using a simple 
+> oneliner shell script to deletes them all) but that really only fixes one 
+> particularly annoying symptom - not the underlying issue. We do need 
+> somebody to maintain the arm platform mess, and actually tries to get some 
+> infrastructure or something in place so that it doesn't explode.
 
-And the use of __task_cred after the exiting check seems safe too if the
-check is gone - from cred.h: "The caller must make sure task doesn't go
-away, either by holding a ref on task or by holding tasklist_lock to
-prevent it from being unlinked." So that means it'd be safe to take a
-reference, task sets exiting and does everything before unhashing, then
-access the cred pointer; since we hold tasklist lock it's the same case.
+Someone should defiently cull the older defconfigs for sepcific
+machines, many of which probably don't get built for mainline.
+~ 
+> > The fact is that ARM-based devices multiply like rabbits, and there is
+> > a huge amount of diversity between the various derivatives.  Also,
+> > support most of these devices has lived out of tree for a long time.
+> > Now that we have a relatively direct path which doesn't require any
+> > single person to have to understand all the mind-numbing details of
+> > all of these ARM-based platforms, it has allowed us to significantly
+> > improve the support for these devices upstream.  Anything that is
+> > common to all devices still goes through RMK.
+> 
+> The thing is, I bet there is way more commonality still to be taken 
+> advantage of.  And even if there isn't, we need somebody who cares, and 
+> doesn't just mindlessly aggregate all the crud. Somebody with the taste to 
+> say "ok, that's just too effin ugly, you need to fix things up" 
+> occasionally.
 
--- Ben
+yes, there is that problem, and many of the big company players have
+yet to really see the necessity in this... It has taken a while now to
+convince the necessary people at Samsung that simply copying and
+modifying existing driver/support is simply not going to fly.
+
+-- 
+Ben (ben@fluff.org, http://www.fluff.org/)
+
+  'a smiley only costs 4 bytes'
