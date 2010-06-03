@@ -1,181 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754135Ab0FCHFi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jun 2010 03:05:38 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:48373 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752148Ab0FCHFg (ORCPT
+	id S1754510Ab0FCHFz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jun 2010 03:05:55 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:59497 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753998Ab0FCHFx convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jun 2010 03:05:36 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Thu, 3 Jun 2010 16:01:19 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
-Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
-       "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       "balbir@linux.vnet.ibm.com" <balbir@linux.vnet.ibm.com>
-Subject: Re: [PATCH 2/2] memcg make move_task_charge check clearer
-Message-Id: <20100603160119.e9ffc342.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <20100603154031.f80fc900.nishimura@mxp.nes.nec.co.jp>
-References: <20100603114837.6e6d4d0f.kamezawa.hiroyu@jp.fujitsu.com>
-	<20100603115119.be29ec13.kamezawa.hiroyu@jp.fujitsu.com>
-	<20100603154031.f80fc900.nishimura@mxp.nes.nec.co.jp>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 3 Jun 2010 03:05:53 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=googlemail.com; s=gamma;
+        h=mime-version:reply-to:in-reply-to:references:from:date:message-id
+         :subject:to:cc:content-type:content-transfer-encoding;
+        b=Ha5xgTL/LhHbHf/feVyC3SRQ1PTASfEvY0Wsshz8tRdcqC08s3LiSP2GjYTuvZoG2K
+         XPQC3+BuAQuyvRkNnrUQubTLMrA+ypxtAVt3J4dfD0tBqBveLY24yqksOzxJMN7hPdMR
+         Mcl7LIKVWDL2gzSxOCICVB7iODWBAUJF+N2UQ=
+MIME-Version: 1.0
+Reply-To: mtk.manpages@gmail.com
+In-Reply-To: <20100603070126.GJ3564@kernel.dk>
+References: <20100524070552.GR23411@kernel.dk> <AANLkTikogQtGpO9c94A7YSmP8zdyM8dZBrwJf1nwlR4j@mail.gmail.com> 
+	<20100524173551.GU23411@kernel.dk> <AANLkTimDJjHWKISxnLax3r200Db8OQp_lMKOx14ONgkS@mail.gmail.com> 
+	<20100524175649.GV23411@kernel.dk> <AANLkTim_yrRZG6v1tMPgefeaaI-nUa35Q-mLQpuXWJ1p@mail.gmail.com> 
+	<20100601074534.GL1660@kernel.dk> <AANLkTinGfonivZvofBkMzv53IJZeKbFAEMVpv96BiJ30@mail.gmail.com> 
+	<20100603061039.GD3564@kernel.dk> <AANLkTint7OJvmTn7d7bqTJzsCxV-VlVT46PQWVH-m73g@mail.gmail.com> 
+	<20100603070126.GJ3564@kernel.dk>
+From: Michael Kerrisk <mtk.manpages@googlemail.com>
+Date: Thu, 3 Jun 2010 09:05:30 +0200
+Message-ID: <AANLkTilwyuE-HiY0vX5askTNi1KoeuKIldmE85WrfIqU@mail.gmail.com>
+Subject: Re: [patch] pipe: add support for shrinking and growing pipes
+To: Jens Axboe <jaxboe@fusionio.com>
+Cc: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       Miklos Szeredi <miklos@szeredi.hu>,
+       "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 3 Jun 2010 15:40:31 +0900
-Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp> wrote:
-		css_put(&to->css);
-> I think this css_put() must be removed too.
-> Except for it, this patch looks good to me.
-> 
-Nice catch. Thank you.
+On Thu, Jun 3, 2010 at 9:01 AM, Jens Axboe <jaxboe@fusionio.com> wrote:
+> On Thu, Jun 03 2010, Michael Kerrisk wrote:
+>> Hi Jens,
+>>
+>> On Thu, Jun 3, 2010 at 8:10 AM, Jens Axboe <jaxboe@fusionio.com> wrote:
+>> > On Wed, Jun 02 2010, Michael Kerrisk wrote:
+>> >> On Tue, Jun 1, 2010 at 9:45 AM, Jens Axboe <axboe@kernel.dk> wrote:
+>> >> > On Thu, May 27 2010, Michael Kerrisk wrote:
+>> >> >> Jens,
+>> >> >>
+>> >> >> On Mon, May 24, 2010 at 7:56 PM, Jens Axboe <jens.axboe@oracle.com> wrote:
+>> >> >> > On Mon, May 24 2010, Michael Kerrisk wrote:
+>> >> >> >> On Mon, May 24, 2010 at 7:35 PM, Jens Axboe <jens.axboe@oracle.com> wrote:
+>> >> >> >> > On Mon, May 24 2010, Michael Kerrisk wrote:
+>> >> >> >> >> > Right, that looks like a thinko.
+>> >> >> >> >> >
+>> >> >> >> >> > I'll submit a patch changing it to bytes and the agreed API and fix this
+>> >> >> >> >> > -Eerror. Thanks for your comments and suggestions!
+>> >> >> >> >>
+>> >> >> >> >> Thanks. And of course you are welcome. (Please CC linux-api@vger on
+>> >> >> >> >> this patche (and all patches that change the API/ABI.)
+>> >> >> >> >
+>> >> >> >> > The first change is this:
+>> >> >> >> >
+>> >> >> >> > http://git.kernel.dk/?p=linux-2.6-block.git;a=commit;h=0191f8697bbdfefcd36e7b8dc3eeddfe82893e4b
+>> >> >> >> >
+>> >> >> >> > and the one dealing with the pages vs bytes API is this:
+>> >> >> >> >
+>> >> >> >> > http://git.kernel.dk/?p=linux-2.6-block.git;a=commit;h=b9598db3401282bb27b4aef77e3eee12015f7f29
+>> >> >> >> >
+>> >> >> >> > Not tested yet, will do so before sending in of course.
+>> >> >> >>
+>> >> >> >> Eyeballing it quickly, these changes look right.
+>> >> >> >
+>> >> >> > Good, thanks.
+>> >> >> >
+>> >> >> >> Do you have some test programs you can make available?
+>> >> >> >
+>> >> >> > Actually I don't, I test it by modifying fio's splice engine to set/get
+>> >> >> > the pipe size and test the resulting transfers.
+>> >> >>
+>> >> >> An afterthought. Do there not also need to be fixes to the /proc
+>> >> >> interfaces. I don't think they were included in your revised patches.
+>> >> >
+>> >> > I think the proc part can be sanely left in pages, since it's just a
+>> >> > memory limiter.
+>> >>
+>> >> I can't see any advantage to using two different units for these
+>> >> closely related APIs, and it does seem like it could be a source of
+>> >> confusion. Similar APIs that I can think of like RLIMIT_MEMLOCK and
+>> >> shmget() SHMMAX that impose per-process memory-related limits use
+>> >> bytes. Best to be consistent, don't you think?
+>> >
+>> > But they are different interfaces.  I think the 'pass in required size,
+>> > return actual size' where actual size is >= required size makes sense
+>> > for the syscall part, but for an "admin" interface it is more logical to
+>> > deal in pages. Perhaps that's just me and the average admin does not
+>> > agree. So while it's just detail, it's also an interface so has some
+>> > importance. And if there's consensus that bytes is a cleaner interface
+>> > on the proc side as well, then lets change it.
+>>
+>> I'll add one more datapoint to those that I already mentioned.
+>> RLIMIT_STACK and RLIMIT_DATA (getrlimit()) is also expressed in bytes.
+>>
+>> There was only one vaguely related limit that I could find that
+>> measured things in pages. Consider these two System V shared memory
+>> limits:
+>>
+>> SHMMAX
+>> This is the maximum size (in bytes) of a shared memory segment.
+>>
+>> SHMALL
+>> This is a system-wide limit on the total number of pages of shared memory.
+>>
+>> But in a way this almost confirms my point. SHMMAX is a limit the
+>> governs the behavior of individual processes (like your /proc file),
+>> while SHMALL is a limit that governs the behavior of the system as a
+>> whole. There is a (sort of) logic to using bytes for one and pages for
+>> the other.
+>>
+>> I think that I've said all I need to say on the topic. I'm inclined to
+>> think yours /proc file should use bytes, since it seems consistent
+>> with other simialr APIs. Others may confirm, or someone else mught
+>> have a different insight.
+>
+> I'll commit a patch to change it to bytes.
 
-> Thank you for cleaning up my dirty code :)
+Thanks Jens.
 
-no problem. create -> bugfix -> clean up is in a wheel of development.
+>> PS I hope you are going to set the lower limit for the /proc file to
+>> 4096B (a page) (?).
+>
+> Yes, I think I'll do that as a separate patch up front.
 
-==
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Okay.
 
-Now, for checking a memcg is under task-account-moving, we do css_tryget()
-against mc.to and mc.from. But this is just complicating things. This patch
-makes the check easier.
+Cheers,
 
-This patch adds a spinlock to move_charge_struct and guard modification
-of mc.to and mc.from. By this, we don't have to think about complicated
-races arount this not-critical path.
+Michael
 
-Changelog:
- - removed disable/enable irq.
- - removed unnecessary css_put()
 
-Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
----
- mm/memcontrol.c |   49 ++++++++++++++++++++++++++++---------------------
- 1 file changed, 28 insertions(+), 21 deletions(-)
-
-Index: mmotm-2.6.34-May21/mm/memcontrol.c
-===================================================================
---- mmotm-2.6.34-May21.orig/mm/memcontrol.c
-+++ mmotm-2.6.34-May21/mm/memcontrol.c
-@@ -268,6 +268,7 @@ enum move_type {
- 
- /* "mc" and its members are protected by cgroup_mutex */
- static struct move_charge_struct {
-+	spinlock_t	  lock; /* for from, to, moving_task */
- 	struct mem_cgroup *from;
- 	struct mem_cgroup *to;
- 	unsigned long precharge;
-@@ -276,6 +277,7 @@ static struct move_charge_struct {
- 	struct task_struct *moving_task;	/* a task moving charges */
- 	wait_queue_head_t waitq;		/* a waitq for other context */
- } mc = {
-+	.lock = __SPIN_LOCK_UNLOCKED(mc.lock),
- 	.waitq = __WAIT_QUEUE_HEAD_INITIALIZER(mc.waitq),
- };
- 
-@@ -1076,26 +1078,24 @@ static unsigned int get_swappiness(struc
- 
- static bool mem_cgroup_under_move(struct mem_cgroup *mem)
- {
--	struct mem_cgroup *from = mc.from;
--	struct mem_cgroup *to = mc.to;
-+	struct mem_cgroup *from;
-+	struct mem_cgroup *to;
- 	bool ret = false;
--
--	if (from == mem || to == mem)
--		return true;
--
--	if (!from || !to || !mem->use_hierarchy)
--		return false;
--
--	rcu_read_lock();
--	if (css_tryget(&from->css)) {
--		ret = css_is_ancestor(&from->css, &mem->css);
--		css_put(&from->css);
--	}
--	if (!ret && css_tryget(&to->css)) {
--		ret = css_is_ancestor(&to->css,	&mem->css);
--		css_put(&to->css);
--	}
--	rcu_read_unlock();
-+	/*
-+	 * Unlike task_move routines, we access mc.to, mc.from not under
-+	 * mutual exclusion by cgroup_mutex. Here, we take spinlock instead.
-+	 */
-+	spin_lock(&mc.lock);
-+	from = mc.from;
-+	to = mc.to;
-+	if (!from)
-+		goto unlock;
-+	if (from == mem || to == mem
-+	    || (mem->use_hierarchy && css_is_ancestor(&from->css, &mem->css))
-+	    || (mem->use_hierarchy && css_is_ancestor(&to->css,	&mem->css)))
-+		ret = true;
-+unlock:
-+	spin_unlock(&mc.lock);
- 	return ret;
- }
- 
-@@ -4447,11 +4447,13 @@ static int mem_cgroup_precharge_mc(struc
- 
- static void mem_cgroup_clear_mc(void)
- {
-+	struct mem_cgroup *from = mc.from;
-+	struct mem_cgroup *to = mc.to;
-+
- 	/* we must uncharge all the leftover precharges from mc.to */
- 	if (mc.precharge) {
- 		__mem_cgroup_cancel_charge(mc.to, mc.precharge);
- 		mc.precharge = 0;
--		memcg_oom_recover(mc.to);
- 	}
- 	/*
- 	 * we didn't uncharge from mc.from at mem_cgroup_move_account(), so
-@@ -4460,7 +4462,6 @@ static void mem_cgroup_clear_mc(void)
- 	if (mc.moved_charge) {
- 		__mem_cgroup_cancel_charge(mc.from, mc.moved_charge);
- 		mc.moved_charge = 0;
--		memcg_oom_recover(mc.from);
- 	}
- 	/* we must fixup refcnts and charges */
- 	if (mc.moved_swap) {
-@@ -4485,9 +4486,13 @@ static void mem_cgroup_clear_mc(void)
- 
- 		mc.moved_swap = 0;
- 	}
-+	spin_lock(&mc.lock);
- 	mc.from = NULL;
- 	mc.to = NULL;
- 	mc.moving_task = NULL;
-+	spin_unlock(&mc.lock);
-+	memcg_oom_recover(from);
-+	memcg_oom_recover(to);
- 	wake_up_all(&mc.waitq);
- }
- 
-@@ -4516,12 +4521,14 @@ static int mem_cgroup_can_attach(struct 
- 			VM_BUG_ON(mc.moved_charge);
- 			VM_BUG_ON(mc.moved_swap);
- 			VM_BUG_ON(mc.moving_task);
-+			spin_lock(&mc.lock);
- 			mc.from = from;
- 			mc.to = mem;
- 			mc.precharge = 0;
- 			mc.moved_charge = 0;
- 			mc.moved_swap = 0;
- 			mc.moving_task = current;
-+			spin_unlock(&mc.lock);
- 
- 			ret = mem_cgroup_precharge_mc(mm);
- 			if (ret)
-
+-- 
+Michael Kerrisk
+Linux man-pages maintainer; http://www.kernel.org/doc/man-pages/
+Author of "The Linux Programming Interface" http://blog.man7.org/
