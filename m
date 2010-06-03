@@ -1,59 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752130Ab0FCMMo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jun 2010 08:12:44 -0400
-Received: from serv2.oss.ntt.co.jp ([222.151.198.100]:38668 "EHLO
-	serv2.oss.ntt.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751322Ab0FCMMn (ORCPT
+	id S1752142Ab0FCMOs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jun 2010 08:14:48 -0400
+Received: from smtp.nokia.com ([192.100.105.134]:19310 "EHLO
+	mgw-mx09.nokia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751232Ab0FCMOr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jun 2010 08:12:43 -0400
-Message-ID: <4C079D34.5010500@oss.ntt.co.jp>
-Date: Thu, 03 Jun 2010 21:16:52 +0900
-From: Takuya Yoshikawa <yoshikawa.takuya@oss.ntt.co.jp>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; ja; rv:1.9.1.9) Gecko/20100317 Thunderbird/3.0.4
-MIME-Version: 1.0
-To: Jens Axboe <jaxboe@fusionio.com>
-CC: Dan Carpenter <error27@gmail.com>, Matthew Wilcox <matthew@wil.cx>,
-       Alexander Viro <viro@zeniv.linux.org.uk>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Oleg Nesterov <oleg@redhat.com>, Greg Kroah-Hartman <gregkh@suse.de>,
-       Peter Zijlstra <a.p.zijlstra@chello.nl>, linux-fsdevel@vger.kernel.org,
-       linux-kernel@vger.kernel.org
-Subject: Re: [patch v2] fcntl: return -EFAULT if copy_to_user fails
-References: <20100603100402.GR5483@bicker> <4C07826A.6060302@oss.ntt.co.jp> <20100603103542.GV5483@bicker> <4C07990A.8080508@fusionio.com>
-In-Reply-To: <4C07990A.8080508@fusionio.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Thu, 3 Jun 2010 08:14:47 -0400
+From: Phil Carmody <ext-phil.2.carmody@nokia.com>
+To: linux@arm.linux.org.uk, catalin.marinas@arm.com
+Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 1/3] ARM: module - simplify code with temporaries
+Date: Thu,  3 Jun 2010 15:17:20 +0300
+Message-Id: <1275567442-11370-2-git-send-email-ext-phil.2.carmody@nokia.com>
+X-Mailer: git-send-email 1.6.0.4
+In-Reply-To: <1275567442-11370-1-git-send-email-ext-phil.2.carmody@nokia.com>
+References: <1275567442-11370-1-git-send-email-ext-phil.2.carmody@nokia.com>
+X-OriginalArrivalTime: 03 Jun 2010 12:14:24.0354 (UTC) FILETIME=[4E089420:01CB0316]
+X-Nokia-AV: Clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2010/06/03 20:59), Jens Axboe wrote:
-> On 2010-06-03 12:35, Dan Carpenter wrote:
->> copy_to_user() returns the number of bytes remaining, but we want to
->> return -EFAULT.
->> 	ret = fcntl(fd, F_SETOWN_EX, NULL);
->> With the original code ret would be 8 here.
->>
->> V2: Takuya Yoshikawa pointed out a similar issue in f_getown_ex()
->
-> Pretty basic bug, how long has this been there?
+Less to read.
 
-IIUC, from the beginning, when these were introduced.
+Signed-off-by: Phil Carmody <ext-phil.2.carmody@nokia.com>
+---
+ arch/arm/kernel/module.c |   14 ++++++++------
+ 1 files changed, 8 insertions(+), 6 deletions(-)
 
-And I recently sent similar bug fixes for other parts.
-
-Ah, I also saw somebody sent cleanup patches using memdup_user() which does
-not reside in uaccess.h.
-
-Though I'm personally using private *_user documentation,
-are there any good official doc for these?
-
-   Takuya
-
-
-
->
-> Acked-by: Jens Axboe<jaxboe@fusionio.com>
->
+diff --git a/arch/arm/kernel/module.c b/arch/arm/kernel/module.c
+index c628bdf..d531a63 100644
+--- a/arch/arm/kernel/module.c
++++ b/arch/arm/kernel/module.c
+@@ -71,17 +71,19 @@ int module_frob_arch_sections(Elf_Ehdr *hdr,
+ 	Elf_Shdr *s, *sechdrs_end = sechdrs + hdr->e_shnum;
+ 
+ 	for (s = sechdrs; s < sechdrs_end; s++) {
+-		if (strcmp(".ARM.exidx.init.text", secstrings + s->sh_name) == 0)
++		char const *secname = secstrings + s->sh_name;
++
++		if (strcmp(".ARM.exidx.init.text", secname) == 0)
+ 			mod->arch.unw_sec_init = s;
+-		else if (strcmp(".ARM.exidx.devinit.text", secstrings + s->sh_name) == 0)
++		else if (strcmp(".ARM.exidx.devinit.text", secname) == 0)
+ 			mod->arch.unw_sec_devinit = s;
+-		else if (strcmp(".ARM.exidx", secstrings + s->sh_name) == 0)
++		else if (strcmp(".ARM.exidx", secname) == 0)
+ 			mod->arch.unw_sec_core = s;
+-		else if (strcmp(".init.text", secstrings + s->sh_name) == 0)
++		else if (strcmp(".init.text", secname) == 0)
+ 			mod->arch.sec_init_text = s;
+-		else if (strcmp(".devinit.text", secstrings + s->sh_name) == 0)
++		else if (strcmp(".devinit.text", secname) == 0)
+ 			mod->arch.sec_devinit_text = s;
+-		else if (strcmp(".text", secstrings + s->sh_name) == 0)
++		else if (strcmp(".text", secname) == 0)
+ 			mod->arch.sec_core_text = s;
+ 	}
+ #endif
+-- 
+1.6.0.4
 
