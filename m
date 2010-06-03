@@ -1,34 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933477Ab0FCBSS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jun 2010 21:18:18 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:49554 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758463Ab0FCBSR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jun 2010 21:18:17 -0400
-Date: Wed, 2 Jun 2010 18:18:14 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Adam Lackorzynski <adam@os.inf.tu-dresden.de>
-Cc: Jacob Pan <jacob.jun.pan@intel.com>, "H. Peter Anvin" <hpa@zytor.com>,
-       linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] x86, i8259: Only register sysdev for real PIC
-Message-Id: <20100602181814.63b173be.akpm@linux-foundation.org>
-In-Reply-To: <20100602113150.GB21413@os.inf.tu-dresden.de>
-References: <20100602113150.GB21413@os.inf.tu-dresden.de>
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S933483Ab0FCBU0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jun 2010 21:20:26 -0400
+Received: from smtp.outflux.net ([198.145.64.163]:44302 "EHLO smtp.outflux.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752309Ab0FCBUY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Jun 2010 21:20:24 -0400
+Date: Wed, 2 Jun 2010 18:18:40 -0700
+From: Kees Cook <kees.cook@canonical.com>
+To: Dave Young <hidave.darkstar@gmail.com>
+Cc: Al Viro <viro@zeniv.linux.org.uk>, Eric Paris <eparis@redhat.com>,
+       Christoph Hellwig <hch@infradead.org>, James Morris <jmorris@namei.org>,
+       linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
+       linux-fsdevel@vger.kernel.org, linux-doc@vger.kernel.org,
+       Randy Dunlap <rdunlap@xenotime.net>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Jiri Kosina <jkosina@suse.cz>,
+       Martin Schwidefsky <schwidefsky@de.ibm.com>,
+       David Howells <dhowells@redhat.com>, Ingo Molnar <mingo@elte.hu>,
+       Peter Zijlstra <a.p.zijlstra@chello.nl>,
+       "Eric W. Biederman" <ebiederm@xmission.com>,
+       Tim Gardner <tim.gardner@canonical.com>,
+       "Serge E. Hallyn" <serue@us.ibm.com>
+Subject: Re: [PATCH v4] fs: allow protected cross-uid sticky symlinks
+Message-ID: <20100603011840.GA4971@outflux.net>
+References: <20100602222302.GC6554@outflux.net>
+ <AANLkTinnzPBlbB6q2v9Bfg55Rum809ko-K0ecWQJwWbB@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <AANLkTinnzPBlbB6q2v9Bfg55Rum809ko-K0ecWQJwWbB@mail.gmail.com>
+Organization: Canonical
+X-HELO: www.outflux.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2 Jun 2010 13:31:50 +0200 Adam Lackorzynski <adam@os.inf.tu-dresden.de> wrote:
+Hi,
 
-> Do not register the sysdev function when the null_legacy_pic is used so
-> that the i8259 resume, suspend and shutdown functions are not called.
+On Thu, Jun 03, 2010 at 08:51:28AM +0800, Dave Young wrote:
+> On Thu, Jun 3, 2010 at 6:23 AM, Kees Cook <kees.cook@canonical.com> wrote:
+> > v2:
+> >  - moved sysctl extern into security.h.
+> 
+> Not in v4?
+> 
+> > v3:
+> >  - move into VFS core.
+> >  - rename sysctl, invert logic.
 
-What are the effects of this change?  Does it fix an oops or a hang, or
-nothing at all, or...?
+Right, as part of the "move out of security/" the sysctl moved to live in
+fs/namei.c (and therefore needed an extern in kernel/sysctl.c).
 
+-Kees
+
+-- 
+Kees Cook
+Ubuntu Security Team
