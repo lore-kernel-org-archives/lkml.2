@@ -1,56 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753699Ab0FCVRi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jun 2010 17:17:38 -0400
-Received: from mho-01-ewr.mailhop.org ([204.13.248.71]:59955 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750970Ab0FCVRh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jun 2010 17:17:37 -0400
-X-Mail-Handler: MailHop Outbound by DynDNS
-X-Originating-IP: 72.249.23.125
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/mailhop/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX18OOZTPVfRaCsnY/DuFVWWa
-Date: Fri, 4 Jun 2010 00:17:09 +0300
-From: Tony Lindgren <tony@atomide.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Russell King <rmk@arm.linux.org.uk>,
-       Daniel Walker <dwalker@codeaurora.org>,
-       Kevin Hilman <khilman@deeprootsystems.com>,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       linux-arm-msm@vger.kernel.org
-Subject: Re: ARM defconfig files
-Message-ID: <20100603211707.GA6499@atomide.com>
-References: <20100603074548.GA12104@flint.arm.linux.org.uk>
- <alpine.LFD.2.00.1006030725420.8175@i5.linux-foundation.org>
- <20100603181010.GA25779@flint.arm.linux.org.uk>
- <alpine.LFD.2.00.1006031116360.8175@i5.linux-foundation.org>
- <20100603185333.GD25779@flint.arm.linux.org.uk>
- <alpine.LFD.2.00.1006031153420.8175@i5.linux-foundation.org>
- <1275593742.23384.48.camel@c-dwalke-linux.qualcomm.com>
- <20100603194559.GF25779@flint.arm.linux.org.uk>
- <alpine.LFD.2.00.1006031305310.8175@i5.linux-foundation.org>
- <alpine.LFD.2.00.1006031317410.8175@i5.linux-foundation.org>
+	id S1753654Ab0FCVU2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jun 2010 17:20:28 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:29861 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751776Ab0FCVU0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Jun 2010 17:20:26 -0400
+Message-ID: <4C081B4A.4060801@redhat.com>
+Date: Thu, 03 Jun 2010 17:14:50 -0400
+From: Prarit Bhargava <prarit@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.5) Gecko/20091210 Fedora/3.0-4.el6 Thunderbird/3.0
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LFD.2.00.1006031317410.8175@i5.linux-foundation.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Yinghai Lu <yinghai.lu@oracle.com>
+CC: Cyrill Gorcunov <gorcunov@gmail.com>, linux-kernel@vger.kernel.org,
+       linux-acpi@vger.kernel.org, mjg@redhat.com, x86@kernel.org,
+       Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
+       Suresh Siddha <suresh.b.siddha@intel.com>
+Subject: Re: [PATCH]: x86: use acpi flags for apic mapping
+References: <20100602192418.2706.35192.sendpatchset@prarit.bos.redhat.com> <20100602194956.GB5264@lenovo> <4C06D91F.2060105@redhat.com> <20100603172126.GA5502@lenovo> <4C07EF69.6050301@redhat.com> <4C0817CE.6050006@oracle.com>
+In-Reply-To: <4C0817CE.6050006@oracle.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Linus Torvalds <torvalds@linux-foundation.org> [100603 23:30]:
-> 
-> and now you'd be able to basically generate a OMAP3EVM .config file by 
-> just running "allnoconfig" on that Kconfig.omap3_evm file. But it would 
-> only have to select the parts that are specific for the EVM platform, 
-> because the generic OMAP3 support would be picked by the Kconfig.omap3 
-> file, which in turn would not have to worry about the generic ARM parts 
-> etc.
-> 
-> See?
 
-Sounds like a good improvment to me.
+> It seems we don't need this patch.
+>
+> so all system should support phys apic mode, but system with less 8 cpus is supposed to support cluster mode for better performance.
+>
+> current kernel will try to use cluster mode if nr_cpus is less than 8.
+>
+> some system have problem like IBM and NCR only support phys apic mode even cpus < 8 ...
+>
+>   
 
-Tony
+What about systems that have set the ACPI values?  We just ignore those
+then?
+
+P.
+
+> Thanks
+>
+> Yinghai
+>
+>   
