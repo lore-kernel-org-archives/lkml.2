@@ -1,25 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753512Ab0FCFmf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jun 2010 01:42:35 -0400
-Received: from mail-pz0-f185.google.com ([209.85.222.185]:63273 "EHLO
-	mail-pz0-f185.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753268Ab0FCFmc (ORCPT
+	id S1753738Ab0FCFmn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jun 2010 01:42:43 -0400
+Received: from mail-px0-f174.google.com ([209.85.212.174]:34265 "EHLO
+	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753545Ab0FCFmi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jun 2010 01:42:32 -0400
+	Thu, 3 Jun 2010 01:42:38 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=mime-version:sender:date:x-google-sender-auth:message-id:subject
          :from:to:cc:content-type;
-        b=LYvFyWXQrYAXx8f+oICsrFpd3FUeydP89MB+GEoiwjKuzUN1nljs+e9wfzFB8XEtHQ
-         70xAJZfk8jpQzPk7sgQc7Kc3GEe54LqZBbnNpE7zxUJe9RMHsLuk7K7DEEmLlq+Gg2HI
-         Y38ygba5bnYC1VmmOGfqfXvSZXG9v1LnodJ1Q=
+        b=EhqS8wJ7XiZAv2bH+hjHkH6hqMOff/jij5Vyiq1kssZjcP00u5N++NWs5Qj2ZLEvaC
+         L25oN/x1r18oH3kI68mHJ0eXG0g5Qfy6GDK+5ITyzmVrb6u03dgwjqtiUfLKEVvFHmU4
+         sRkXcJMshiAXpKJuDG0kNZ/qruKwz9LImJxcM=
 MIME-Version: 1.0
-Date: Wed, 2 Jun 2010 22:42:31 -0700
-X-Google-Sender-Auth: ObEcU16esfbWSpLyYG7eTUWBcJQ
-Message-ID: <AANLkTimiSeJ9L8iECSn0DQZ-OWdEIfLVC22S2ILHbhr3@mail.gmail.com>
-Subject: [PATCH 3/6] sctp multistream scheduling: provide the default FCFS 
-	scheduling
+Date: Wed, 2 Jun 2010 22:42:37 -0700
+X-Google-Sender-Auth: 8SarY9BnOfFrXDYcFIGvjExJwFI
+Message-ID: <AANLkTilW6Ym_vL02rVk4QFPIC3Dr0BC12oAxdjE9RXpf@mail.gmail.com>
+Subject: [PATCH 4/6] sctp multistream scheduling: extend socket API
 From: Yaogong Wang <ywang15@ncsu.edu>
 To: linux-sctp@vger.kernel.org, Vlad Yasevich <vladislav.yasevich@hp.com>,
        Sridhar Samudrala <sri@us.ibm.com>
@@ -29,144 +28,226 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Provide the default FCFS scheduling.
+Augment SCTP socket API with a new socket option to choose and
+configure scheduling algorithm.
 
 Signed-off-by: Yaogong Wang <ywang15@ncsu.edu>
 ---
 diff -uprN -X linux-2.6.32.8/Documentation/dontdiff
-p2/include/net/sctp/structs.h p3/include/net/sctp/structs.h
---- p2/include/net/sctp/structs.h	2010-06-02 13:02:14.000000000 -0700
-+++ p3/include/net/sctp/structs.h	2010-06-02 12:57:24.000000000 -0700
-@@ -181,6 +181,9 @@ extern struct sctp_globals {
- 	__u16 max_instreams;
- 	__u16 max_outstreams;
+p3/include/net/sctp/structs.h p4/include/net/sctp/structs.h
+--- p3/include/net/sctp/structs.h	2010-06-02 12:57:24.000000000 -0700
++++ p4/include/net/sctp/structs.h	2010-06-02 12:58:11.000000000 -0700
+@@ -326,6 +326,8 @@ struct sctp_sock {
 
-+	/* Default scheduling algorithm  */
-+	struct sctp_sched_ops *sched_ops;
-+
- 	/* This is a list of groups of functions for each address
- 	 * family that we support.
- 	 */
-@@ -250,6 +253,7 @@ extern struct sctp_globals {
- #define sctp_hb_interval		(sctp_globals.hb_interval)
- #define sctp_max_instreams		(sctp_globals.max_instreams)
- #define sctp_max_outstreams		(sctp_globals.max_outstreams)
-+#define sctp_default_sched_ops		(sctp_globals.sched_ops)
- #define sctp_address_families		(sctp_globals.address_families)
- #define sctp_ep_hashsize		(sctp_globals.ep_hashsize)
- #define sctp_ep_hashtable		(sctp_globals.ep_hashtable)
-@@ -566,6 +570,8 @@ extern void sctp_unregister_sched(struct
- extern void sctp_cleanup_sched(struct sock *sk);
- extern int sctp_set_sched(struct sock *sk, const char *name);
+ 	/* Multistream scheduling  */
+ 	const struct sctp_sched_ops *sched_ops;
++	__u32 sched_priv_len;
++	__u16 *sched_priv;
 
-+extern struct sctp_sched_ops sctp_fcfs;
+ 	struct sctp_initmsg initmsg;
+ 	struct sctp_rtoinfo rtoinfo;
+@@ -1691,6 +1693,8 @@ struct sctp_association {
+
+ 	/* Multistream scheduling  */
+ 	const struct sctp_sched_ops *sched_ops;
++	__u32 sched_priv_len;
++	__u16 *sched_priv;
+
+ 	/* Heartbeat interval: The endpoint sends out a Heartbeat chunk to
+ 	 * the destination address every heartbeat interval. This value
+diff -uprN -X linux-2.6.32.8/Documentation/dontdiff
+p3/include/net/sctp/user.h p4/include/net/sctp/user.h
+--- p3/include/net/sctp/user.h	2010-05-28 10:59:23.000000000 -0700
++++ p4/include/net/sctp/user.h	2010-05-28 11:54:47.000000000 -0700
+@@ -67,6 +67,8 @@ enum sctp_optname {
+ #define SCTP_ASSOCINFO SCTP_ASSOCINFO
+ 	SCTP_INITMSG,
+ #define SCTP_INITMSG SCTP_INITMSG
++	SCTP_SCHED,
++#define SCTP_SCHED SCTP_SCHED
+ 	SCTP_NODELAY, 	/* Get/set nodelay option. */
+ #define SCTP_NODELAY	SCTP_NODELAY
+ 	SCTP_AUTOCLOSE,
+@@ -171,8 +173,22 @@ struct sctp_initmsg {
+ 	__u16 sinit_max_init_timeo;
+ };
+
++/*
++ * SCTP Scheduling Structure (SCTP_SCHED)
++ *
++ *   cmsg_level    cmsg_type      cmsg_data[]
++ *   ------------  ------------   ----------------------
++ *   IPPROTO_SCTP  SCTP_SCHED     struct sctp_sched
++ *
++ */
+ #define SCTP_SCHED_NAME_MAX	16
+
++struct sctp_sched {
++	char  ssched_name[SCTP_SCHED_NAME_MAX];
++	__u32 ssched_priv_len;
++	__u16 ssched_priv[0];
++};
 +
  /*
-  * Pointers to address related SCTP functions.
-  * (i.e. things that depend on the address family.)
+  * 5.2.2 SCTP Header Information Structure (SCTP_SNDRCV)
+  *
 diff -uprN -X linux-2.6.32.8/Documentation/dontdiff
-p2/net/sctp/protocol.c p3/net/sctp/protocol.c
---- p2/net/sctp/protocol.c	2010-06-02 13:03:58.000000000 -0700
-+++ p3/net/sctp/protocol.c	2010-05-28 11:18:13.000000000 -0700
-@@ -1152,6 +1152,9 @@ SCTP_STATIC __init int sctp_init(void)
- 	sctp_max_instreams    		= SCTP_DEFAULT_INSTREAMS;
- 	sctp_max_outstreams   		= SCTP_DEFAULT_OUTSTREAMS;
+p3/net/sctp/associola.c p4/net/sctp/associola.c
+--- p3/net/sctp/associola.c	2010-06-02 12:57:06.000000000 -0700
++++ p4/net/sctp/associola.c	2010-06-02 12:57:57.000000000 -0700
+@@ -187,6 +187,14 @@ static struct sctp_association *sctp_ass
 
-+	/* Initialize default scheduling algorithm to FCFS */
-+	sctp_default_sched_ops		= &sctp_fcfs;
+ 	/* Multistream scheduling  */
+ 	asoc->sched_ops = sp->sched_ops;
++	asoc->sched_priv_len = sp->sched_priv_len;
++	if (asoc->sched_priv_len) {
++		asoc->sched_priv = kmalloc(asoc->sched_priv_len, gfp);
++		if (!asoc->sched_priv)
++			goto fail_init;
++		memcpy(asoc->sched_priv, sp->sched_priv, asoc->sched_priv_len);
++	} else
++		asoc->sched_priv = NULL;
+
+ 	/* Allocate storage for the ssnmap after the inbound and outbound
+ 	 * streams have been negotiated during Init.
+@@ -464,6 +472,8 @@ static void sctp_association_destroy(str
+ {
+ 	SCTP_ASSERT(asoc->base.dead, "Assoc is not dead", return);
+
++	kfree(asoc->sched_priv);
 +
- 	/* Initialize handle used for association ids. */
- 	idr_init(&sctp_assocs_id);
+ 	sctp_endpoint_put(asoc->ep);
+ 	sock_put(asoc->base.sk);
 
-@@ -1296,6 +1299,11 @@ SCTP_STATIC __init int sctp_init(void)
- 	if (status)
- 		goto err_v6_add_protocol;
-
-+	/* Add FCFS to sctp_sched_list  */
-+	status = sctp_register_sched(&sctp_fcfs);
-+	if (status)
-+		goto err_v6_add_protocol;
-+
- 	status = 0;
- out:
- 	return status;
 diff -uprN -X linux-2.6.32.8/Documentation/dontdiff
-p2/net/sctp/sched.c p3/net/sctp/sched.c
---- p2/net/sctp/sched.c	2010-06-02 12:59:40.000000000 -0700
-+++ p3/net/sctp/sched.c	2010-05-28 11:25:05.000000000 -0700
-@@ -114,3 +114,62 @@ out:
- 	return err;
+p3/net/sctp/socket.c p4/net/sctp/socket.c
+--- p3/net/sctp/socket.c	2010-05-28 12:38:09.000000000 -0700
++++ p4/net/sctp/socket.c	2010-05-28 12:36:37.000000000 -0700
+@@ -2580,6 +2580,50 @@ static int sctp_setsockopt_initmsg(struc
+ 	return 0;
  }
 
-+static int fcfs_init(struct sctp_outq *q, gfp_t gfp)
++/* Set the multistream scheduling algorithm*/
++static int sctp_setsockopt_sched(struct sock *sk, char __user *optval,
++						unsigned int optlen)
 +{
-+	q->out_chunk_list = kmalloc(sizeof(struct list_head), gfp);
-+	if (!q->out_chunk_list)
++	struct sctp_sched *ssched = NULL;
++	struct sctp_sock *sp = sctp_sk(sk);
++	int ret = 0;
++
++	if (optlen < sizeof(struct sctp_sched))
++		return -EINVAL;
++
++	ssched = kmalloc(optlen, GFP_KERNEL);
++	if (!ssched)
 +		return -ENOMEM;
-+	INIT_LIST_HEAD(q->out_chunk_list);
 +
-+	return 0;
-+}
-+
-+static void fcfs_release(struct sctp_outq *q)
-+{
-+	kfree(q->out_chunk_list);
-+}
-+
-+static void fcfs_enqueue_head_data(struct sctp_outq *q,
-+					struct sctp_chunk *ch)
-+{
-+	list_add(&ch->list, q->out_chunk_list);
-+	q->out_qlen += ch->skb->len;
-+	return;
-+}
-+
-+static void fcfs_enqueue_tail_data(struct sctp_outq *q, struct sctp_chunk *ch)
-+{
-+	list_add_tail(&ch->list, q->out_chunk_list);
-+	q->out_qlen += ch->skb->len;
-+	return;
-+}
-+
-+static struct sctp_chunk *fcfs_dequeue_data(struct sctp_outq *q)
-+{
-+	struct sctp_chunk *ch = NULL;
-+
-+	if (!list_empty(q->out_chunk_list)) {
-+		struct list_head *entry = q->out_chunk_list->next;
-+
-+		ch = list_entry(entry, struct sctp_chunk, list);
-+		list_del_init(entry);
-+		q->out_qlen -= ch->skb->len;
++	if (copy_from_user(ssched, optval, optlen)) {
++		ret = -EFAULT;
++		goto out;
 +	}
-+	return ch;
++
++	if (optlen != sizeof(struct sctp_sched) + ssched->ssched_priv_len) {
++		ret = -EINVAL;
++		goto out;
++	}
++
++	ret = sctp_set_sched(sk, ssched->ssched_name);
++	if (ret)
++		goto out;
++	sp->sched_priv_len = ssched->ssched_priv_len;
++	kfree(sp->sched_priv);
++	if (sp->sched_priv_len) {
++		sp->sched_priv = kmalloc(sp->sched_priv_len, GFP_KERNEL);
++		if (!sp->sched_priv) {
++			ret = -ENOMEM;
++			goto out;
++		}
++		memcpy(sp->sched_priv, ssched->ssched_priv, sp->sched_priv_len);
++	}
++
++out:
++	kfree(ssched);
++	return ret;
 +}
 +
-+static inline int fcfs_is_empty(struct sctp_outq *q)
-+{
-+	return list_empty(q->out_chunk_list);
-+}
-+
-+struct sctp_sched_ops sctp_fcfs = {
-+	.name			= "fcfs",
-+	.owner			= THIS_MODULE,
-+	.init			= fcfs_init,
-+	.release		= fcfs_release,
-+	.enqueue_head_data	= fcfs_enqueue_head_data,
-+	.enqueue_tail_data	= fcfs_enqueue_tail_data,
-+	.dequeue_data		= fcfs_dequeue_data,
-+	.is_empty		= fcfs_is_empty,
-+};
-diff -uprN -X linux-2.6.32.8/Documentation/dontdiff
-p2/net/sctp/socket.c p3/net/sctp/socket.c
---- p2/net/sctp/socket.c	2010-06-02 13:00:21.000000000 -0700
-+++ p3/net/sctp/socket.c	2010-05-28 12:38:09.000000000 -0700
-@@ -3642,6 +3642,8 @@ SCTP_STATIC int sctp_init_sock(struct so
+ /*
+  * 7.1.14 Set default send parameters (SCTP_DEFAULT_SEND_PARAM)
+  *
+@@ -3417,6 +3461,9 @@ SCTP_STATIC int sctp_setsockopt(struct s
+ 		retval = sctp_setsockopt_partial_delivery_point(sk, optval, optlen);
+ 		break;
+
++	case SCTP_SCHED:
++		retval = sctp_setsockopt_sched(sk, optval, optlen);
++		break;
+ 	case SCTP_INITMSG:
+ 		retval = sctp_setsockopt_initmsg(sk, optval, optlen);
+ 		break;
+@@ -3642,7 +3689,10 @@ SCTP_STATIC int sctp_init_sock(struct so
  	sp->initmsg.sinit_max_attempts   = sctp_max_retrans_init;
  	sp->initmsg.sinit_max_init_timeo = sctp_rto_max;
 
-+	sp->sched_ops = sctp_default_sched_ops;
-+
++	/* Initialize default scheduling algorithm  */
+ 	sp->sched_ops = sctp_default_sched_ops;
++	sp->sched_priv_len = 0;
++	sp->sched_priv = NULL;
+
  	/* Initialize default RTO related parameters.  These parameters can
  	 * be modified for with the SCTP_RTOINFO socket option.
- 	 */
+@@ -3735,6 +3785,9 @@ SCTP_STATIC void sctp_destroy_sock(struc
+
+ 	SCTP_DEBUG_PRINTK("sctp_destroy_sock(sk: %p)\n", sk);
+
++	sctp_cleanup_sched(sk);
++	kfree(sctp_sk(sk)->sched_priv);
++
+ 	/* Release our hold on the endpoint. */
+ 	ep = sctp_sk(sk)->ep;
+ 	sctp_endpoint_free(ep);
+@@ -4351,6 +4404,35 @@ static int sctp_getsockopt_initmsg(struc
+ 	return 0;
+ }
+
++/* Get the multistream scheduling algorithm*/
++static int sctp_getsockopt_sched(struct sock *sk, int len, char __user *optval,
++							int __user *optlen)
++{
++	struct sctp_sched *ssched;
++	int sz = sizeof(struct sctp_sched) + sctp_sk(sk)->sched_priv_len;
++	int ret = 0;
++
++	if (len < sz)
++		return -EINVAL;
++	if (put_user(sz, optlen))
++		return -EFAULT;
++
++	ssched = kmalloc(sz, GFP_KERNEL);
++	if (!ssched)
++		return -EFAULT;
++	memcpy(ssched->ssched_name, sctp_sk(sk)->sched_ops->name,
++					SCTP_SCHED_NAME_MAX);
++	ssched->ssched_priv_len = sctp_sk(sk)->sched_priv_len;
++	memcpy(ssched->ssched_priv, sctp_sk(sk)->sched_priv,
++					ssched->ssched_priv_len);
++
++	if (copy_to_user(optval, ssched, sz))
++		ret = -EFAULT;
++
++	kfree(ssched);
++	return ret;
++}
++
+ static int sctp_getsockopt_peer_addrs_num_old(struct sock *sk, int len,
+ 					      char __user *optval,
+ 					      int __user *optlen)
+@@ -5605,6 +5687,9 @@ SCTP_STATIC int sctp_getsockopt(struct s
+ 	case SCTP_INITMSG:
+ 		retval = sctp_getsockopt_initmsg(sk, len, optval, optlen);
+ 		break;
++	case SCTP_SCHED:
++		retval = sctp_getsockopt_sched(sk, len, optval, optlen);
++		break;
+ 	case SCTP_GET_PEER_ADDRS_NUM_OLD:
+ 		retval = sctp_getsockopt_peer_addrs_num_old(sk, len, optval,
+ 							    optlen);
