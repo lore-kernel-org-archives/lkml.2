@@ -1,76 +1,174 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933807Ab0FCKWX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jun 2010 06:22:23 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:34832 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933749Ab0FCKWT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jun 2010 06:22:19 -0400
-Date: Thu, 3 Jun 2010 20:22:12 +1000
-From: Nick Piggin <npiggin@suse.de>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: Srivatsa Vaddagiri <vatsa@in.ibm.com>, Avi Kivity <avi@redhat.com>,
-       Gleb Natapov <gleb@redhat.com>, linux-kernel@vger.kernel.org,
-       kvm@vger.kernel.org, hpa@zytor.com, mingo@elte.hu, tglx@linutronix.de,
-       mtosatti@redhat.com
-Subject: Re: [PATCH] use unfair spinlock when running on hypervisor.
-Message-ID: <20100603102212.GF6822@laptop>
-References: <87sk56ycka.fsf@basil.nowhere.org>
- <20100601162414.GA6191@redhat.com>
- <20100601163807.GA11880@basil.fritz.box>
- <4C053ACC.5020708@redhat.com>
- <20100601172730.GB11880@basil.fritz.box>
- <4C05C722.1010804@redhat.com>
- <20100602085055.GA14221@basil.fritz.box>
- <4C061DAB.6000804@redhat.com>
- <20100603042051.GA5953@linux.vnet.ibm.com>
- <20100603085251.GA4166@basil.fritz.box>
+	id S933819Ab0FCKXU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jun 2010 06:23:20 -0400
+Received: from pfepa.post.tele.dk ([195.41.46.235]:51820 "EHLO
+	pfepa.post.tele.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933749Ab0FCKXS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Jun 2010 06:23:18 -0400
+Date: Thu, 3 Jun 2010 12:23:15 +0200
+From: Sam Ravnborg <sam@ravnborg.org>
+To: Nicolas Palix <npalix@diku.dk>, Michal Marek <mmarek@suse.cz>
+Cc: Randy Dunlap <rdunlap@xenotime.net>, Roland Dreier <rdreier@cisco.com>,
+       Joe Perches <joe@perches.com>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       "David S. Miller" <davem@davemloft.net>, Michal Marek <mmarek@suse.cz>,
+       Julia Lawall <julia@diku.dk>, Gilles Muller <Gilles.Muller@lip6.fr>,
+       linux-kernel@vger.kernel.org, linux-kbuild@vger.kernel.org,
+       cocci@diku.dk, Wolfram Sang <w.sang@pengutronix.de>,
+       Kernel Janitors <kernel-janitors@vger.kernel.org>
+Subject: Re: [PATCH 1/4] Add targets to use the Coccinelle checker
+Message-ID: <20100603102315.GA8002@merkur.ravnborg.org>
+References: <1273508667-5152-1-git-send-email-npalix@diku.dk> <1273508667-5152-2-git-send-email-npalix@diku.dk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100603085251.GA4166@basil.fritz.box>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1273508667-5152-2-git-send-email-npalix@diku.dk>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 03, 2010 at 10:52:51AM +0200, Andi Kleen wrote:
-> On Thu, Jun 03, 2010 at 09:50:51AM +0530, Srivatsa Vaddagiri wrote:
-> > On Wed, Jun 02, 2010 at 12:00:27PM +0300, Avi Kivity wrote:
-> > > 
-> > > There are two separate problems: the more general problem is that
-> > > the hypervisor can put a vcpu to sleep while holding a lock, causing
-> > > other vcpus to spin until the end of their time slice.  This can
-> > > only be addressed with hypervisor help.
-> > 
-> > Fyi - I have a early patch ready to address this issue. Basically I am using
-> > host-kernel memory (mmap'ed into guest as io-memory via ivshmem driver) to hint 
-> > host whenever guest is in spin-lock'ed section, which is read by host scheduler 
-> > to defer preemption.
+On Mon, May 10, 2010 at 06:24:24PM +0200, Nicolas Palix wrote:
+> Four targets are added. Each one generates a different
+> output kind: context, patch, org, report.
+> Every SmPL file in 'scripts/coccinelle' is given to the spatch frontend
+> (located in the 'scripts' directory), and applied to the entire
+> source tree.
+
+A little late feedback.
+IIRC all points raised at first review has been addressed - good.
+
 > 
-> Looks like a ni.ce simple way to handle this for the kernel.
-> 
-> However I suspect user space will hit the same issue sooner
-> or later. I assume your way is not easily extensable to futexes?
+> Signed-off-by: Nicolas Palix <npalix@diku.dk>
+> Signed-off-by: Julia Lawall <julia@diku.dk>
+> ---
+>  MAINTAINERS           |   10 ++++++++++
+>  Makefile              |   20 ++++++++++++++++++--
 
-Well userspace has always had the problem, hypervisor or not. So
-sleeping locks obviously help a lot with that.
+The top-level Makefile is already in a very bad shape.
+Adding more stuff there is never good.
 
-But we do hit the problem at times. The MySQL sysbench scalability
-problem was a fine example
+How about adding some infrastructure to support the various tools?
+Something along these lines:
 
-http://ozlabs.org/~anton/linux/sysbench/
+All targets named %check will call a shell script:
+scripts/%check.sh
 
-Performance would tank when threads oversubscribe CPUs because lock
-holders would start getting preempted.
+"make help" will call a script named:
+scripts/helpcheck.sh
 
-This was due to nasty locking in MySQL as well, mind you.
+helpcheck.sh will contain all the ugly details
+about help for the various targets.
 
-There are some ways to improve it. glibc I believe has an option to
-increase thread priority when taking a mutex, which is similar to
-what we have here.
+We need to rename a few seldomly used targets to do this.
+Sample patch for top-level Makefile:
 
-But it's a fairly broad problem for userspace. The resource may not
-be just a lock but it could be IO as well.
-
+diff --git a/Makefile b/Makefile
+index efdc3d0..40bf83e 100644
+--- a/Makefile
++++ b/Makefile
+@@ -412,7 +412,7 @@ endif
+ # of make so .config is not included in this case either (for *config).
  
+ no-dot-config-targets := clean mrproper distclean \
+-			 cscope TAGS tags help %docs check% \
++			 cscope TAGS tags help %docs %check \
+ 			 include/linux/version.h headers_% \
+ 			 kernelrelease kernelversion
+ 
+@@ -1024,10 +1024,6 @@ include/linux/version.h: $(srctree)/Makefile FORCE
+ include/generated/utsrelease.h: include/config/kernel.release FORCE
+ 	$(call filechk,utsrelease.h)
+ 
+-PHONY += headerdep
+-headerdep:
+-	$(Q)find include/ -name '*.h' | xargs --max-args 1 scripts/headerdep.pl
+-
+ # ---------------------------------------------------------------------------
+ 
+ PHONY += depend dep
+@@ -1273,13 +1269,9 @@ help:
+ 	 echo  '                    (default: $(INSTALL_HDR_PATH))'; \
+ 	 echo  ''
+ 	@echo  'Static analysers'
+-	@echo  '  checkstack      - Generate a list of stack hogs'
+-	@echo  '  namespacecheck  - Name space analysis on compiled kernel'
+-	@echo  '  versioncheck    - Sanity check on version.h usage'
+-	@echo  '  includecheck    - Check for duplicate included header files'
++	@$(CONFIG_SHELL)$(srctree)/scripts/helpcheck.sh
+ 	@echo  '  export_report   - List the usages of all exported symbols'
+ 	@echo  '  headers_check   - Sanity check on exported headers'
+-	@echo  '  headerdep       - Detect inclusion cycles in headers'; \
+ 	 echo  ''
+ 	@echo  'Kernel packaging:'
+ 	@$(MAKE) $(build)=$(package-dir) help
+@@ -1427,20 +1419,10 @@ tags TAGS cscope: FORCE
+ 	$(call cmd,tags)
+ 
+ # Scripts to check various things for consistency
++# Call a helper script in scripts/ to do the actual job
+ # ---------------------------------------------------------------------------
+-
+-includecheck:
+-	find * $(RCS_FIND_IGNORE) \
+-		-name '*.[hcS]' -type f -print | sort \
+-		| xargs $(PERL) -w $(srctree)/scripts/checkincludes.pl
+-
+-versioncheck:
+-	find * $(RCS_FIND_IGNORE) \
+-		-name '*.[hcS]' -type f -print | sort \
+-		| xargs $(PERL) -w $(srctree)/scripts/checkversion.pl
+-
+-namespacecheck:
+-	$(PERL) $(srctree)/scripts/namespace.pl
++%check:
++	$(Q)$(CONFIG_SHELL)$(srctree)/scripts/$@.sh
+ 
+ export_report:
+ 	$(PERL) $(srctree)/scripts/export_report.pl
+@@ -1448,20 +1430,7 @@ export_report:
+ endif #ifeq ($(config-targets),1)
+ endif #ifeq ($(mixed-targets),1)
+ 
+-PHONY += checkstack kernelrelease kernelversion
+-
+-# UML needs a little special treatment here.  It wants to use the host
+-# toolchain, so needs $(SUBARCH) passed to checkstack.pl.  Everyone
+-# else wants $(ARCH), including people doing cross-builds, which means
+-# that $(SUBARCH) doesn't work here.
+-ifeq ($(ARCH), um)
+-CHECKSTACK_ARCH := $(SUBARCH)
+-else
+-CHECKSTACK_ARCH := $(ARCH)
+-endif
+-checkstack:
+-	$(OBJDUMP) -d vmlinux $$(find . -name '*.ko') | \
+-	$(PERL) $(src)/scripts/checkstack.pl $(CHECKSTACK_ARCH)
++PHONY += kernelrelease kernelversion
+ 
+ kernelrelease:
+ 	$(if $(wildcard include/config/kernel.release), $(Q)echo $(KERNELRELEASE), \
+
+
+
+A nice simplification of the top-level Mkefile.
+and an opportunity to document some of the
+magic shell commands used by the various tools.
+
+If we do this I know the scripts will sum up to a lot more
+lines but doing it distributed is better.
+And some of the lines would be comments that explains what is
+going on.
+
+An additinal benefit is that we can avoid touching
+the top-level Makefile next time we add a new
+%check target.
+
+As for cocci this would have the the effect that
+new scipts can be made as drop-in - no changes
+in any files. Just add the files to the
+correct directory.
+
+	Sam
