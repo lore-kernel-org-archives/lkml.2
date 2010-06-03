@@ -1,100 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752628Ab0FCGqe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jun 2010 02:46:34 -0400
-Received: from mail-ww0-f46.google.com ([74.125.82.46]:54956 "EHLO
-	mail-ww0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751054Ab0FCGqd (ORCPT
+	id S1753104Ab0FCGqk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jun 2010 02:46:40 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:58996 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751054Ab0FCGqf convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jun 2010 02:46:33 -0400
+	Thu, 3 Jun 2010 02:46:35 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=us2usyqOldxDPopMfERL/zidDR20PX0wR3sdJp47Gmo14iDVfIurVXeqmRnuJpVXf+
-         6WPemJNDWLUdxfsiJBTPVrEHflyeSpp39qsEEWt1Zs4bGkgvE8nsrI172a3/9xprsUEV
-         yPeNO4YQiqxZ7uRpTauecuP1B7IKcfvkJd2H8=
-Subject: Re: [PATCH] kobject: Suppress compiler warning with gcc 3.x
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: =?ISO-8859-1?Q?Am=E9rico?= Wang <xiyou.wangcong@gmail.com>
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
-       Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>,
-       ebiederm@aristanetworks.com, randy.dunlap@oracle.com, gregkh@suse.de,
+        d=googlemail.com; s=gamma;
+        h=mime-version:reply-to:in-reply-to:references:from:date:message-id
+         :subject:to:cc:content-type:content-transfer-encoding;
+        b=BIBCG5ZgVVAr4/qj5z38Yffk6B5rlTP9MMtLeIg74Ry6T+l2tPHCnhNyK41dMsVuVD
+         HAUOKL6rwg+l3CKVILoe6SpTEegouE+ua/jDfOX+oG0/jH/0BYPvFsU5/nL4FW9xLBC9
+         XalaS2aYrDnpTr3MpXhJs/Hin9nBF9vvIv1LM=
+MIME-Version: 1.0
+Reply-To: mtk.manpages@gmail.com
+In-Reply-To: <20100603061039.GD3564@kernel.dk>
+References: <87632e846m.fsf@devron.myhome.or.jp> <AANLkTin42kucqLbErGA4GlGPZEIPQV2DFkiHkEVSYiI9@mail.gmail.com> 
+	<20100524070552.GR23411@kernel.dk> <AANLkTikogQtGpO9c94A7YSmP8zdyM8dZBrwJf1nwlR4j@mail.gmail.com> 
+	<20100524173551.GU23411@kernel.dk> <AANLkTimDJjHWKISxnLax3r200Db8OQp_lMKOx14ONgkS@mail.gmail.com> 
+	<20100524175649.GV23411@kernel.dk> <AANLkTim_yrRZG6v1tMPgefeaaI-nUa35Q-mLQpuXWJ1p@mail.gmail.com> 
+	<20100601074534.GL1660@kernel.dk> <AANLkTinGfonivZvofBkMzv53IJZeKbFAEMVpv96BiJ30@mail.gmail.com> 
+	<20100603061039.GD3564@kernel.dk>
+From: Michael Kerrisk <mtk.manpages@googlemail.com>
+Date: Thu, 3 Jun 2010 08:46:13 +0200
+Message-ID: <AANLkTint7OJvmTn7d7bqTJzsCxV-VlVT46PQWVH-m73g@mail.gmail.com>
+Subject: Re: [patch] pipe: add support for shrinking and growing pipes
+To: Jens Axboe <jaxboe@fusionio.com>
+Cc: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       Miklos Szeredi <miklos@szeredi.hu>, linux-fsdevel@vger.kernel.org,
        linux-kernel@vger.kernel.org
-In-Reply-To: <20100603062314.GB5580@cr0.nay.redhat.com>
-References: <201006030523.o535NA16029042@www262.sakura.ne.jp>
-	 <1275543101.29413.76.camel@edumazet-laptop>
-	 <20100603055515.GA5580@cr0.nay.redhat.com>
-	 <m1y6ewr6vf.fsf@fess.ebiederm.org>
-	 <20100603062314.GB5580@cr0.nay.redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 03 Jun 2010 08:46:27 +0200
-Message-ID: <1275547587.2456.4.camel@edumazet-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le jeudi 03 juin 2010 à 14:23 +0800, Américo Wang a écrit :
-> On Wed, Jun 02, 2010 at 11:02:28PM -0700, Eric W. Biederman wrote:
-> >Américo Wang <xiyou.wangcong@gmail.com> writes:
-> >
-> >> On Thu, Jun 03, 2010 at 07:31:41AM +0200, Eric Dumazet wrote:
-> >>>Le jeudi 03 juin 2010 à 14:23 +0900, Tetsuo Handa a écrit :
-> >>>> Gcc 3.x generates a warning
-> >>>> 
-> >>>>   include/linux/sysfs.h:183: warning: parameter has incomplete type
-> >>>> 
-> >>>> on each file.
-> >>>> Suppress the warning by moving the definition of "enum kobj_ns_type"
-> >>>> to before "#include <linux/sysfs.h>".
-> >>>> 
-> >>>> Signed-off-by: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-> >>>
-> >>>
-> >>>I was about to submit same patch, but I was also reverting 27eabc7cb4b3
-> >>>(sysfs: Don't use enums in inline function declaration.)
-> >>>
-> >>>So that sysfs_exit_ns() prototype is consistent regardless of
-> >>>CONFIG_SYSFS
-> >>>
-> >>>What do you think ?
-> >>>
-> >>
-> >> This looks odd, in sysfs.h we do have a forward declaration of
-> >> enum kobj_ns_type... I am wondering why gcc 3.x doesn't recognize it.
-> >
-> >Because the replacement is an inline, and we are passing the enum by value
-> >gcc wants to see the full definition, at the point where the inline function
-> >is declared.
-> >
-> 
-> But sysfs_exit_ns() is not inlined if CONFIG_SYSFS here.
-> 
+Hi Jens,
 
- 
-# gcc -v
-Reading specs from /usr/lib/gcc/i386-redhat-linux/3.4.6/specs
-Configured with: ../configure --prefix=/usr --mandir=/usr/share/man
---infodir=/usr/share/info --enable-shared --enable-threads=posix
---disable-checking --with-system-zlib --enable-__cxa_atexit
---disable-libunwind-exceptions --enable-java-awt=gtk
---host=i386-redhat-linux
-Thread model: posix
-gcc version 3.4.6 20060404 (Red Hat 3.4.6-10)
+On Thu, Jun 3, 2010 at 8:10 AM, Jens Axboe <jaxboe@fusionio.com> wrote:
+> On Wed, Jun 02 2010, Michael Kerrisk wrote:
+>> On Tue, Jun 1, 2010 at 9:45 AM, Jens Axboe <axboe@kernel.dk> wrote:
+>> > On Thu, May 27 2010, Michael Kerrisk wrote:
+>> >> Jens,
+>> >>
+>> >> On Mon, May 24, 2010 at 7:56 PM, Jens Axboe <jens.axboe@oracle.com> wrote:
+>> >> > On Mon, May 24 2010, Michael Kerrisk wrote:
+>> >> >> On Mon, May 24, 2010 at 7:35 PM, Jens Axboe <jens.axboe@oracle.com> wrote:
+>> >> >> > On Mon, May 24 2010, Michael Kerrisk wrote:
+>> >> >> >> > Right, that looks like a thinko.
+>> >> >> >> >
+>> >> >> >> > I'll submit a patch changing it to bytes and the agreed API and fix this
+>> >> >> >> > -Eerror. Thanks for your comments and suggestions!
+>> >> >> >>
+>> >> >> >> Thanks. And of course you are welcome. (Please CC linux-api@vger on
+>> >> >> >> this patche (and all patches that change the API/ABI.)
+>> >> >> >
+>> >> >> > The first change is this:
+>> >> >> >
+>> >> >> > http://git.kernel.dk/?p=linux-2.6-block.git;a=commit;h=0191f8697bbdfefcd36e7b8dc3eeddfe82893e4b
+>> >> >> >
+>> >> >> > and the one dealing with the pages vs bytes API is this:
+>> >> >> >
+>> >> >> > http://git.kernel.dk/?p=linux-2.6-block.git;a=commit;h=b9598db3401282bb27b4aef77e3eee12015f7f29
+>> >> >> >
+>> >> >> > Not tested yet, will do so before sending in of course.
+>> >> >>
+>> >> >> Eyeballing it quickly, these changes look right.
+>> >> >
+>> >> > Good, thanks.
+>> >> >
+>> >> >> Do you have some test programs you can make available?
+>> >> >
+>> >> > Actually I don't, I test it by modifying fio's splice engine to set/get
+>> >> > the pipe size and test the resulting transfers.
+>> >>
+>> >> An afterthought. Do there not also need to be fixes to the /proc
+>> >> interfaces. I don't think they were included in your revised patches.
+>> >
+>> > I think the proc part can be sanely left in pages, since it's just a
+>> > memory limiter.
+>>
+>> I can't see any advantage to using two different units for these
+>> closely related APIs, and it does seem like it could be a source of
+>> confusion. Similar APIs that I can think of like RLIMIT_MEMLOCK and
+>> shmget() SHMMAX that impose per-process memory-related limits use
+>> bytes. Best to be consistent, don't you think?
+>
+> But they are different interfaces. �I think the 'pass in required size,
+> return actual size' where actual size is >= required size makes sense
+> for the syscall part, but for an "admin" interface it is more logical to
+> deal in pages. Perhaps that's just me and the average admin does not
+> agree. So while it's just detail, it's also an interface so has some
+> importance. And if there's consensus that bytes is a cleaner interface
+> on the proc side as well, then lets change it.
 
+I'll add one more datapoint to those that I already mentioned.
+RLIMIT_STACK and RLIMIT_DATA (getrlimit()) is also expressed in bytes.
 
-# cat try.c
-enum kobj_ns_type;
-void sysfs_exit_ns(enum kobj_ns_type type, const void *tag);
-int main(int argc, char *argv[])
-{
-	return 0;
-}
-# gcc -O2 -Wall -o try try.c
-try.c:2: warning: parameter has incomplete type
-#
+There was only one vaguely related limit that I could find that
+measured things in pages. Consider these two System V shared memory
+limits:
 
+SHMMAX
+This is the maximum size (in bytes) of a shared memory segment.
 
+SHMALL
+This is a system-wide limit on the total number of pages of shared memory.
+
+But in a way this almost confirms my point. SHMMAX is a limit the
+governs the behavior of individual processes (like your /proc file),
+while SHMALL is a limit that governs the behavior of the system as a
+whole. There is a (sort of) logic to using bytes for one and pages for
+the other.
+
+I think that I've said all I need to say on the topic. I'm inclined to
+think yours /proc file should use bytes, since it seems consistent
+with other simialr APIs. Others may confirm, or someone else mught
+have a different insight.
+
+Cheers,
+
+Michael
+
+PS I hope you are going to set the lower limit for the /proc file to
+4096B (a page) (?).
+
+-- 
+Michael Kerrisk
+Linux man-pages maintainer; http://www.kernel.org/doc/man-pages/
+Author of "The Linux Programming Interface" http://blog.man7.org/
