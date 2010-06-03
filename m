@@ -1,105 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755747Ab0FCOgn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jun 2010 10:36:43 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:41768 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755027Ab0FCOgl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jun 2010 10:36:41 -0400
-Subject: Re: [linux-pm] [PATCH 0/8] Suspend block api (version 8)
-From: James Bottomley <James.Bottomley@suse.de>
-To: Arve =?ISO-8859-1?Q?Hj=F8nnev=E5g?= <arve@android.com>
-Cc: markgross@thegnar.org, 640e9920@gmail.com,
-       Peter Zijlstra <peterz@infradead.org>,
-       Brian Swetland <swetland@google.com>, Ingo Molnar <mingo@elte.hu>,
-       LKML <linux-kernel@vger.kernel.org>,
+	id S1755607Ab0FCOmr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jun 2010 10:42:47 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:36010 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754052Ab0FCOmo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Jun 2010 10:42:44 -0400
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, "Gross\, Mark" <mark.gross@intel.com>,
        Florian Mickler <florian@mickler.org>,
-       Linux PM <linux-pm@lists.linux-foundation.org>,
+       James Bottomley <James.Bottomley@suse.de>,
+       Arve =?iso-8859-1?Q?Hj=F8nnev=E5g?= <arve@android.com>,
+       Neil Brown <neilb@suse.de>, "tytso\@mit.edu" <tytso@mit.edu>,
+       LKML <linux-kernel@vger.kernel.org>,
        Thomas Gleixner <tglx@linutronix.de>,
-       Alan Cox <alan@lxorguk.ukuu.org.uk>
-In-Reply-To: <AANLkTikvuqtcGS1UdePRxipSk4S5Vmci2uPfFtzZgx6X@mail.gmail.com>
-References: <AANLkTikxws5kmFhnBO1MLzE65ETka3Jy0R5ayAKTS1Lc@mail.gmail.com>
-	 <201005312338.55109.rjw@sisk.pl> <20100531232617.GF31155@gvim.org>
-	 <20100601090737.4bc243d9@schatten.dmk.lab> <20100601140519.GC1281@gvim.org>
-	 <AANLkTikF-B23_UWG1O3tlBl4m8NStAJllGhhevNhYZT6@mail.gmail.com>
-	 <20100602133910.GA9106@gvim.org>
-	 <AANLkTilSU79cnBODXFokzIPB1hRcZBxbwTgTQ59MeKcK@mail.gmail.com>
-	 <20100603031842.GB11311@gvim.org>
-	 <AANLkTiks7sQBbDnN6QrtGVqSXLob1qCs7VA12LZAWnfM@mail.gmail.com>
-	 <20100603054018.GE11311@gvim.org>
-	 <AANLkTikvuqtcGS1UdePRxipSk4S5Vmci2uPfFtzZgx6X@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 03 Jun 2010 09:36:34 -0500
-Message-ID: <1275575794.5914.74.camel@mulgrave.site>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.2 
-Content-Transfer-Encoding: 8bit
+       Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
+       Linux PM <linux-pm@lists.linux-foundation.org>,
+       "felipe.balbi\@nokia.com" <felipe.balbi@nokia.com>
+Subject: Re: [linux-pm] [PATCH 0/8] Suspend block api (version 8)
+References: <20100527232357.6d14fdb2@lxorguk.ukuu.org.uk>
+	<20100601135102.GA8098@srcf.ucam.org>
+	<1275426085.21962.967.camel@mulgrave.site>
+	<201006020024.14220.rjw@sisk.pl>
+	<1275431816.21962.1108.camel@mulgrave.site>
+	<AANLkTikObnAZbyOxeYAhXcEbimO3XTTO-HlC9CD_HH6t@mail.gmail.com>
+	<1275451342.21962.1777.camel@mulgrave.site>
+	<AANLkTilRcFZyYa-0HlaM-6IEZSyar3S9S_cCWSFax2Zo@mail.gmail.com>
+	<1275491111.2799.110.camel@mulgrave.site>
+	<20100602214748.7742e3ae@schatten.dmk.lab>
+	<1275511271.2799.516.camel@mulgrave.site>
+	<20100603010607.5baf82a6@schatten.dmk.lab>
+	<CA1BBBBC9359F04AA639128AC0D5D1E9692ABC92@orsmsx502.amr.corp.intel.com>
+	<20100603110312.48a508dc@lxorguk.ukuu.org.uk>
+	<1275559512.27810.35287.camel@twins>
+From: Kevin Hilman <khilman@deeprootsystems.com>
+Organization: Deep Root Systems, LLC
+Date: Thu, 03 Jun 2010 07:42:37 -0700
+In-Reply-To: <1275559512.27810.35287.camel@twins> (Peter Zijlstra's message of "Thu\, 03 Jun 2010 12\:05\:12 +0200")
+Message-ID: <87d3w818ki.fsf@deeprootsystems.com>
+User-Agent: Gnus/5.11 (Gnus v5.11) Emacs/22.2 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-06-03 at 00:10 -0700, Arve Hjønnevåg wrote:
-> On Wed, Jun 2, 2010 at 10:40 PM, mark gross <640e9920@gmail.com> wrote:
-> > On Wed, Jun 02, 2010 at 09:54:15PM -0700, Brian Swetland wrote:
-> >> On Wed, Jun 2, 2010 at 8:18 PM, mark gross <640e9920@gmail.com> wrote:
-> >> > On Wed, Jun 02, 2010 at 02:58:30PM -0700, Arve Hjønnevåg wrote:
-> >> >>
-> >> >> The list is not short. You have all the inactive and active
-> >> >> constraints on the same list. If you change it to a two level list
-> >> >> though, the list of unique values (which is the list you have to walk)
-> >> >> may be short enough for a tree to be overkill.
-> >> >
-> >> > what have you seen in practice from the wake-lock stats?
-> >> >
-> >> > I'm having a hard time seeing where you could get more than just a
-> >> > handfull.  However; one could go to a dual list (like the scheduler) and
-> >> > move inactive nodes from an active to inactive list, or we could simply
-> >> > remove them from the list uppon inactivity.  which would would well
-> >> > after I change the api to have the client allocate the memory for the
-> >> > nodes...  BUT, if your moving things in and out of a list a lot, I'm not
-> >> > sure the break even point where changing the structure helps.
-> >> >
-> >> > We'll need to try it.
-> >> >
-> >> > I think we will almost never see more than 10 list elements.
-> >> >
-> >> > --mgross
-> >> >
-> >> >
-> >>
-> >> I see about 80 (based on the batteryinfo dump) on my Nexus One
-> >> (QSD8250, Android Froyo):
-> >
-> > shucks.
-> >
-> > well I think for a pm_qos class that has boolean dynamic range we can
-> > get away with not walking the list on every request update.  we can use
-> > a counter, and the list will be for mostly for stats.
-> >
-> 
-> Did you give any thought to my suggestion to only use one entry per
-> unique value on the first level list and then use secondary lists of
-> identical values. That way if you only have two constraints values the
-> list you have to walk when updating a request will never have more
-> than two entries regardless of how many total request you have.
-> 
-> A request update then becomes something like this:
->   if on primary list {
->     unlink from primary list
->     if secondary list is not empty
->       get next secondary entry and add in same spot on primary list
->   }
->   unlink from secondary list
->   find new spot on primary list
->   if already there
->     add to secondary list
->   else
->     add to primary list
+Peter Zijlstra <peterz@infradead.org> writes:
 
-This is just reinventing hash bucketed lists.  To get the benefits, all
-we do is implement an N state constraint as backed by an N bucketed hash
-list, which the kernel already has all the internal mechanics for.
+> On Thu, 2010-06-03 at 11:03 +0100, Alan Cox wrote:
+>> > [mtg: ] This has been a pain point for the PM_QOS implementation.
+>> They change the constrain back and forth at the transaction level of
+>> the i2c driver.  The pm_qos code really wasn't made to deal with such
+>> hot path use, as each such change triggers a re-computation of what
+>> the aggregate qos request is.
+>> 
+>> That should be trivial in the usual case because 99% of the time you can
+>> hot path
+>> 
+>> 	the QoS entry changing is the latest one
+>> 	there have been no other changes
+>> 	If it is valid I can use the cached previous aggregate I cunningly
+>> 		saved in the top QoS entry when I computed the new one
+>> 
+>> (ie most of the time from the kernel side you have a QoS stack)
+>
+> Why would the kernel change the QoS state of a task? Why not have two
+> interacting QoS variables, one for the task, one for the subsystem in
+> question, and the action depends on their relative value?
 
-James
+Yes, having a QoS parameter per-subsystem (or even per-device) is very
+important for SoCs that have independently controlled powerdomains.
+If all devices/subsystems in a particular powerdomain have QoS
+parameters that permit, the power state of that powerdomain can be
+lowered independently from system-wide power state and power states of
+other power domains.
 
-
+Kevin
