@@ -1,88 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752617Ab0FCSGi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jun 2010 14:06:38 -0400
-Received: from casper.infradead.org ([85.118.1.10]:48952 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750843Ab0FCSGh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jun 2010 14:06:37 -0400
-Date: Thu, 3 Jun 2010 15:06:13 -0300
-From: Arnaldo Carvalho de Melo <acme@infradead.org>
-To: Stephane Eranian <eranian@google.com>
-Cc: linux-kernel@vger.kernel.org, peterz@infradead.org, mingo@elte.hu,
-       paulus@samba.org, davem@davemloft.net, fweisbec@gmail.com,
-       perfmon2-devel@lists.sf.net, eranian@gmail.com, tzanussi@gmail.com
-Subject: Re: how to use perf annotate on the kernel
-Message-ID: <20100603180613.GA10469@ghostprotocols.net>
-References: <AANLkTik2yNxwCHl7FZAyOG4Vt56RlLi59oZR5Jo6o9ox@mail.gmail.com>
- <20100603175445.GC8928@ghostprotocols.net>
+	id S1753175Ab0FCSKF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jun 2010 14:10:05 -0400
+Received: from kroah.org ([198.145.64.141]:39943 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752025Ab0FCSKD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Jun 2010 14:10:03 -0400
+Subject: patch staging-comedi-fixing-ni_labpc-to-mite-dependancy.patch added to gregkh-2.6 tree
+To: linux@blala.de, gregkh@suse.de, linux@kbdbabel.org,
+       linux-kernel@vger.kernel.org, randy.dunlap@oracle.com,
+       sfr@canb.auug.org.au
+From: <gregkh@suse.de>
+Date: Thu, 03 Jun 2010 11:09:15 -0700
+In-Reply-To: <alpine.DEB.1.10.1006031545010.23736@blala.de>
+Message-ID: <12755885553054@site>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100603175445.GC8928@ghostprotocols.net>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
-	See http://www.infradead.org/rpr.html
+Content-Type: text/plain; charset=ANSI_X3.4-1968
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Thu, Jun 03, 2010 at 02:54:45PM -0300, Arnaldo Carvalho de Melo escreveu:
-> Em Thu, Jun 03, 2010 at 07:23:02PM +0200, Stephane Eranian escreveu:
-> > # perf annotate (or annotate -d '[kernel.kallsyms]'?)
-> > Can't annotate __lock_acquire: No vmlinux file was found in the path
-> > 
-> > # perf annotate -k vmlinux
-> > objdump: '[kernel.kallsyms]': No such file
-> 
-> This looks like a bug in how it reports this problem, probably vmlinux
-> is not in the current directory, or it is but has a build-id that
-> doesn't matches the one in the perf.data file.
-> 
-> But the message is wrong, should be like it is in the tui, for this same
-> situation:
-> 
-> 	ui_helpline__puts("No vmlinux file found, can't "
-> 			  "annotate with just a kallsyms file");
-> 
-> > Am I missing something here?
-> 
-> If you don't specify it with --vmlinux/-k it will try to find it in one
-> of these places:
-> 
->         vmlinux_path[vmlinux_path__nr_entries] = strdup("vmlinux");
->         vmlinux_path[vmlinux_path__nr_entries] = strdup("/boot/vmlinux");
->         snprintf(bf, sizeof(bf), "/boot/vmlinux-%s", uts.release);
->         vmlinux_path[vmlinux_path__nr_entries] = strdup(bf);
->         snprintf(bf, sizeof(bf), "/lib/modules/%s/build/vmlinux", uts.release);
->         vmlinux_path[vmlinux_path__nr_entries] = strdup(bf);
->         snprintf(bf, sizeof(bf), "/usr/lib/debug/lib/modules/%s/vmlinux",
->                  uts.release);
->         vmlinux_path[vmlinux_path__nr_entries] = strdup(bf);
-> 
-> It also now looks at /sys/kernel/notes, gets the build-id, and looks up
-> in the build-id cache.
 
-For instance, here using -vvv I get:
+This is a note to let you know that I've just added the patch titled
 
-[root@emilia ~]# perf annotate -vvv memcpy > /dev/null
-build id event received for [kernel.kallsyms]: 310920b54cbbf242dbfa09052f652806d2c73821
-build id event received for /lib64/libtinfo.so.5.7: cd9da7b5b1fcb25ee6b3762bb9fe62f782590fd5
-Looking at the vmlinux_path (6 entries long)
-No build_id in /root/.debug/.build-id/31/0920b54cbbf242dbfa09052f652806d2c73821, ignoring it
-No build_id in vmlinux, ignoring it
-No build_id in /boot/vmlinux, ignoring it
-No build_id in /boot/vmlinux-2.6.35-rc1, ignoring it
-Using /lib/modules/2.6.35-rc1/build/vmlinux for symbols
-hist_entry__inc_addr_samples: ip=0xffffffff811ea69e
-0xffffffff811ea690 memcpy: period++ [ip: 0xffffffff811ea69e, 0xe] => 1
-hist_entry__annotate: filename=/lib/modules/2.6.35-rc1/build/vmlinux, sym=memcpy, start=0xffffffff811ea690, end=0xffffffff811ea730
-annotating [0x187e770] /lib/modules/2.6.35-rc1/build/vmlinux : [0x19b1f70]                         memcpy
-Executing: objdump --start-address=0xffffffff811ea690 --stop-address=0xffffffff811ea730 -dS /lib/modules/2.6.35-rc1/build/vmlinux|grep -v /lib/modules/2.6.35-rc1/build/vmlinux|expand
-[root@emilia ~]# 
+    Subject: Staging: comedi: fixing ni_labpc to mite dependancy
 
-I'm removing all vmlinux from the path so that I can reproduce what you see.
+to my gregkh-2.6 tree.  Its filename is
 
-- Arnaldo
+    staging-comedi-fixing-ni_labpc-to-mite-dependancy.patch
+
+This tree can be found at 
+    http://www.kernel.org/pub/linux/kernel/people/gregkh/gregkh-2.6/patches/
+
+
+>From linux@blala.de  Thu Jun  3 10:33:50 2010
+From: Alexander Kurz <linux@blala.de>
+Date: Thu, 3 Jun 2010 15:50:24 +0400 (MSD)
+Subject: Staging: comedi: fixing ni_labpc to mite dependancy
+To: Randy Dunlap <randy.dunlap@oracle.com>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, Alexander Kurz <linux@kbdbabel.org>, linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>, gregkh@suse.de
+Message-ID: <alpine.DEB.1.10.1006031545010.23736@blala.de>
+
+
+the dependancy of ni_labpc on mite was missing,
+
+Signed-off-by: Alexander Kurz <linux@kbdbabel.org>
+Acked-by: Randy Dunlap <randy.dunlap@oracle.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+
+index 0aa2b0d..79f5f2e 100644
+---
+ drivers/staging/comedi/Kconfig |    1 +
+ 1 file changed, 1 insertion(+)
+
+--- a/drivers/staging/comedi/Kconfig
++++ b/drivers/staging/comedi/Kconfig
+@@ -1281,6 +1281,7 @@ config COMEDI_NI_TIO
+ 
+ config COMEDI_NI_LABPC
+ 	tristate "NI Lab-PC and compatibles ISA and PCI support"
++	depends on COMEDI_MITE
+ 	select COMEDI_8255
+ 	select COMEDI_FC
+ 	default N
+
