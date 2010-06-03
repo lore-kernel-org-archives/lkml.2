@@ -1,143 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754133Ab0FCNXM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jun 2010 09:23:12 -0400
-Received: from moutng.kundenserver.de ([212.227.126.171]:53867 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753066Ab0FCNXJ (ORCPT
+	id S1754208Ab0FCNYi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jun 2010 09:24:38 -0400
+Received: from mail-px0-f174.google.com ([209.85.212.174]:35755 "EHLO
+	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752139Ab0FCNYg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jun 2010 09:23:09 -0400
-Message-ID: <4C07ACD4.2060504@vlnb.net>
-Date: Thu, 03 Jun 2010 17:23:32 +0400
-From: Vladislav Bolkhovitin <vst@vlnb.net>
-User-Agent: Thunderbird 2.0.0.23 (X11/20090825)
+	Thu, 3 Jun 2010 09:24:36 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:reply-to:references:mime-version
+         :content-type:content-disposition:content-transfer-encoding
+         :in-reply-to:user-agent;
+        b=ZNS3uFsmgiyPrlpJFEFLcxrqKqtCCop0XzG+4JnK7Bbc4mhseJJ/5gjzLv+dbLpWc0
+         QLssZTXRPeqm4/q+N3tkc9FJhp2YAN1vPwVIw5kb8drkJZIa8r6yx+Z0YoGUt9zBq1qR
+         2LbO/UN8etXRw/KLLM0gUnjTJJJyq3FH5pWus=
+Date: Thu, 3 Jun 2010 06:24:49 -0700
+From: mark gross <640e9920@gmail.com>
+To: Arve =?iso-8859-1?B?SGr4bm5lduVn?= <arve@android.com>
+Cc: markgross@thegnar.org, Brian Swetland <swetland@google.com>,
+       Florian Mickler <florian@mickler.org>, 640e9920@gmail.com,
+       "Rafael J. Wysocki" <rjw@sisk.pl>,
+       Alan Stern <stern@rowland.harvard.edu>,
+       Peter Zijlstra <peterz@infradead.org>,
+       Linux PM <linux-pm@lists.linux-foundation.org>,
+       Alan Cox <alan@lxorguk.ukuu.org.uk>,
+       Matthew Garrett <mjg59@srcf.ucam.org>,
+       Thomas Gleixner <tglx@linutronix.de>,
+       LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>
+Subject: Re: [linux-pm] [PATCH 0/8] Suspend block api (version 8)
+Message-ID: <20100603132449.GA15595@gvim.org>
+Reply-To: markgross@thegnar.org
+References: <20100531232617.GF31155@gvim.org>
+ <20100601090737.4bc243d9@schatten.dmk.lab>
+ <20100601140519.GC1281@gvim.org>
+ <AANLkTikF-B23_UWG1O3tlBl4m8NStAJllGhhevNhYZT6@mail.gmail.com>
+ <20100602133910.GA9106@gvim.org>
+ <AANLkTilSU79cnBODXFokzIPB1hRcZBxbwTgTQ59MeKcK@mail.gmail.com>
+ <20100603031842.GB11311@gvim.org>
+ <AANLkTiks7sQBbDnN6QrtGVqSXLob1qCs7VA12LZAWnfM@mail.gmail.com>
+ <20100603054018.GE11311@gvim.org>
+ <AANLkTikvuqtcGS1UdePRxipSk4S5Vmci2uPfFtzZgx6X@mail.gmail.com>
 MIME-Version: 1.0
-To: Boaz Harrosh <bharrosh@panasas.com>
-CC: James Bottomley <James.Bottomley@suse.de>,
-       Christof Schmitt <christof.schmitt@de.ibm.com>,
-       "Martin K. Petersen" <martin.petersen@oracle.com>,
-       linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
-       linux-fsdevel@vger.kernel.org, Chris Mason <chris.mason@oracle.com>,
-       Gennadiy Nerubayev <parakie@gmail.com>
-Subject: Re: Wrong DIF guard tag on ext2 write
-References: <20100531112817.GA16260@schmichrtp.mainz.de.ibm.com>	 <yq1iq64kv9f.fsf@sermon.lab.mkp.net>	 <1275318102.2823.47.camel@mulgrave.site> <4C03D5FD.3000202@panasas.com>	 <20100601103041.GA15922@schmichrtp.mainz.de.ibm.com> <1275398876.21962.6.camel@mulgrave.site> <4C078FE2.9000804@vlnb.net> <4C079B07.5020303@panasas.com> <4C07A2EB.4080006@vlnb.net> <4C07A8E9.30608@panasas.com>
-In-Reply-To: <4C07A8E9.30608@panasas.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Provags-ID: V01U2FsdGVkX1/lXgGwz0AbkdPmk0NtAltASDxWQRfGQNhS2g6
- U3YLHhAnaia9CEY8pkWbzLDGqR5RLf/6e0eGf5M23JBmzmbCCr
- 5jwJl6nTDzInpwotX+fIA==
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <AANLkTikvuqtcGS1UdePRxipSk4S5Vmci2uPfFtzZgx6X@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Boaz Harrosh, on 06/03/2010 05:06 PM wrote:
-> On 06/03/2010 03:41 PM, Vladislav Bolkhovitin wrote:
->> Boaz Harrosh, on 06/03/2010 04:07 PM wrote:
->>> On 06/03/2010 02:20 PM, Vladislav Bolkhovitin wrote:
->>>> There's one interesting problem here, at least theoretically, with SCSI 
->>>> or similar transports which allow to have commands queue depth >1 and 
->>>> allowed to internally reorder queued requests. I don't know the FS/block 
->>>> layers sufficiently well to tell if sending several requests for the 
->>>> same page really possible or not, but we can see a real life problem, 
->>>> which can be well explained if it's possible.
->>>>
->>>> The problem could be if the second (rewrite) request (SCSI command) for 
->>>> the same page queued to the corresponding device before the original 
->>>> request finished. Since the device allowed to freely reorder requests, 
->>>> there's a probability that the original write request would hit the 
->>>> permanent storage *AFTER* the retry request, hence the data changes it's 
->>>> carrying would be lost, hence welcome data corruption.
->>>>
->>> I might be totally wrong here but I think NCQ can reorder sectors but
->>> not writes. That is if the sector is cached in device memory and a later
->>> write comes to modify the same sector then the original should be
->>> replaced not two values of the same sector be kept in device cache at the
->>> same time.
->>>
->>> Failing to do so is a scsi device problem.
->> SCSI devices supporting Full task management model (almost all) and 
->> having QUEUE ALGORITHM MODIFIER bits in Control mode page set to 1 
->> allowed to freely reorder any commands with SIMPLE task attribute. If an 
->> application wants to maintain order of some commands for such devices, 
->> it must issue them with ORDERED task attribute and over a _single_ MPIO 
->> path to the device.
->>
->> Linux neither uses ORDERED attribute, nor honors or enforces anyhow 
->> QUEUE ALGORITHM MODIFIER bits, nor takes care to send commands with 
->> order dependencies (overlapping writes in our case) over a single MPIO path.
->>
+On Thu, Jun 03, 2010 at 12:10:03AM -0700, Arve Hjønnevåg wrote:
+> On Wed, Jun 2, 2010 at 10:40 PM, mark gross <640e9920@gmail.com> wrote:
+> > On Wed, Jun 02, 2010 at 09:54:15PM -0700, Brian Swetland wrote:
+> >> On Wed, Jun 2, 2010 at 8:18 PM, mark gross <640e9920@gmail.com> wrote:
+> >> > On Wed, Jun 02, 2010 at 02:58:30PM -0700, Arve Hjønnevåg wrote:
+> >> >>
+> >> >> The list is not short. You have all the inactive and active
+> >> >> constraints on the same list. If you change it to a two level list
+> >> >> though, the list of unique values (which is the list you have to walk)
+> >> >> may be short enough for a tree to be overkill.
+> >> >
+> >> > what have you seen in practice from the wake-lock stats?
+> >> >
+> >> > I'm having a hard time seeing where you could get more than just a
+> >> > handfull.  However; one could go to a dual list (like the scheduler) and
+> >> > move inactive nodes from an active to inactive list, or we could simply
+> >> > remove them from the list uppon inactivity.  which would would well
+> >> > after I change the api to have the client allocate the memory for the
+> >> > nodes...  BUT, if your moving things in and out of a list a lot, I'm not
+> >> > sure the break even point where changing the structure helps.
+> >> >
+> >> > We'll need to try it.
+> >> >
+> >> > I think we will almost never see more than 10 list elements.
+> >> >
+> >> > --mgross
+> >> >
+> >> >
+> >>
+> >> I see about 80 (based on the batteryinfo dump) on my Nexus One
+> >> (QSD8250, Android Froyo):
+> >
+> > shucks.
+> >
+> > well I think for a pm_qos class that has boolean dynamic range we can
+> > get away with not walking the list on every request update.  we can use
+> > a counter, and the list will be for mostly for stats.
+> >
 > 
-> OK I take your word for it. But that sounds stupid to me. I would think
-> that sectors can be ordered. not commands per se. What happen with reads
-> then? do they get to be ordered? I mean a read in between the two writes which
-> value is read? It gets so complicated that only a sector model makes sense
-> to me.
+> Did you give any thought to my suggestion to only use one entry per
+> unique value on the first level list and then use secondary lists of
+> identical values. That way if you only have two constraints values the
 
-Look wider. For a single HDD your way of thinking makes sense. But how 
-about big clusters consisting from many nodes with many clients? In them 
-maintaining internal commands order is generally bad and often a way too 
-expensive for performance.
+I thought you where talking about a active + inactive queue.  Sorry, I
+didn't get what you where talking about.
 
-It's the same as with modern CPUs, where for performance reasons 
-programmers also must live with the commands reorder possibilities and 
-use barriers, when necessary.
-
->>> Please note that page-to-sector is not necessary constant. And the same page
->>> might get written at a different sector, next time. But FSs will have to
->>> barrier in this case.
->>>
->>>> For single parallel SCSI or SAS devices such race may look practically 
->>>> impossible, but for sophisticated clusters when many nodes pretending to 
->>>> be a single SCSI device in a load balancing configuration, it becomes 
->>>> very real.
->>>>
->>>> The real life problem we can see in an active-active DRBD-setup. In this 
->>>> configuration 2 nodes act as a single SCST-powered SCSI device and they 
->>>> both run DRBD to keep their backstorage in-sync. The initiator uses them 
->>>> as a single multipath device in an active-active round-robin 
->>>> load-balancing configuration, i.e. sends requests to both nodes in 
->>>> parallel, then DRBD takes care to replicate the requests to the other node.
->>>>
->>>> The problem is that sometimes DRBD complies about concurrent local 
->>>> writes, like:
->>>>
->>>> kernel: drbd0: scsi_tgt0[12503] Concurrent local write detected! 
->>>> [DISCARD L] new: 144072784s +8192; pending: 144072784s +8192
->>>>
->>>> This message means that DRBD detected that both nodes received 
->>>> overlapping writes on the same block(s) and DRBD can't figure out which 
->>>> one to store. This is possible only if the initiator sent the second 
->>>> write request before the first one completed.
->>> It is totally possible in today's code.
->>>
->>> DRBD should store the original command_sn of the write and discard
->>> the sector with the lower SN. It should appear as a single device
->>> to the initiator.
->> How can it find the SN? The commands were sent over _different_ MPIO 
->> paths to the device, so at the moment of the sending all the order 
->> information was lost.
->>
+> list you have to walk when updating a request will never have more
+> than two entries regardless of how many total request you have.
 > 
-> I'm not hard on the specifics here. But I think the initiator has set
-> the same SN on the two paths, or has incremented them between paths.
-> You said:
-> 
->> The initiator uses them as a single multipath device in an active-active
->> round-robin load-balancing configuration, i.e. sends requests to both nodes
->> in paralle.
-> 
-> So what was the SN sent to each side. Is there a relationship between them
-> or they each advance independently?
-> 
-> If there is a relationship then the targets on two sides should store
-> the SN for later comparison. (Life is hard)
+> A request update then becomes something like this:
+>   if on primary list {
+>     unlink from primary list
+>     if secondary list is not empty
+>       get next secondary entry and add in same spot on primary list
+>   }
+>   unlink from secondary list
+>   find new spot on primary list
+>   if already there
+>     add to secondary list
+>   else
+>     add to primary list
+>
 
-None of SCSI transports carry any SN to other paths (I_T nexuses) 
-related information in internal packets, including iSCSI. It's simply 
-out of SAM. If you need order information between paths, you must use 
-"extensions", like iSCSI MC/S, but they are bad for many other reasons. 
-I summarized it in http://scst.sourceforge.net/mc_s.html.
+I'm still no getting how this will allow me to reduce any aggregated
+constratint re-computation to a list walk of at most 2 nodes.  But, from
+a more specific point of view are you saying:
+change the request struct to be something like:
+struct dual_list_constriaint {
+	struct list primary;
+	struct list secondar;
+	s32 value;
+	...
+} 
 
-Vlad
+then uppon constraint foo update:
 
+if foo->primary not empty:
+	remove foor from primary list
+	if gsecondary is not empty:
+		ordered insert of foo into secondary list 
+		? ordered on constraint value?
+		? Arn't the constraints boolean?
+remove foo from secondary list
+ordered search for insert point of foo into primary list
+if foo in primary:
+	insert foo into secondary list
+else
+	insert foo into primary list
+
+ok I'm not getting it.
+is this a fancy com-sci algorithm I should know about?
+
+--mgross
