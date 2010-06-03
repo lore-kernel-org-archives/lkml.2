@@ -1,24 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756020Ab0FCO7g (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jun 2010 10:59:36 -0400
-Received: from g4t0015.houston.hp.com ([15.201.24.18]:21853 "EHLO
-	g4t0015.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755866Ab0FCO7d (ORCPT
+	id S1756003Ab0FCPBP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jun 2010 11:01:15 -0400
+Received: from g1t0028.austin.hp.com ([15.216.28.35]:2960 "EHLO
+	g1t0028.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755187Ab0FCPBO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jun 2010 10:59:33 -0400
-Message-ID: <4C07C351.8060501@hp.com>
-Date: Thu, 03 Jun 2010 10:59:29 -0400
+	Thu, 3 Jun 2010 11:01:14 -0400
+Message-ID: <4C07C3B8.7020003@hp.com>
+Date: Thu, 03 Jun 2010 11:01:12 -0400
 From: Vlad Yasevich <vladislav.yasevich@hp.com>
 User-Agent: Thunderbird 2.0.0.24 (X11/20100317)
 MIME-Version: 1.0
 To: Yaogong Wang <ywang15@ncsu.edu>
 CC: linux-sctp@vger.kernel.org, Sridhar Samudrala <sri@us.ibm.com>,
        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/6] sctp multistream scheduling: provide pluggable SCTP
- 	scheduling framework
-References: <AANLkTimanFQ-gbcqNnygBvuQiFUk0SJrKFxjiOEAlesi@mail.gmail.com>
-In-Reply-To: <AANLkTimanFQ-gbcqNnygBvuQiFUk0SJrKFxjiOEAlesi@mail.gmail.com>
+Subject: Re: [PATCH 1/6] sctp multistream scheduling: declare sctp_sched_ops
+References: <AANLkTilgantV3v0T1-ef6ewyinddzfOs1PZW1Re9ZAyQ@mail.gmail.com>
+In-Reply-To: <AANLkTilgantV3v0T1-ef6ewyinddzfOs1PZW1Re9ZAyQ@mail.gmail.com>
 X-Enigmail-Version: 0.96.0
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
@@ -31,334 +30,92 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 
 Yaogong Wang wrote:
-> Provide a general interface for implementing new SCTP multistream
-> scheduling algorithms as kernel modules.
+> Declare sctp_sched_ops structure and related functions
 > 
-
-Here is a suggestion.
-
-Create an intermediate patch that turns out_chunk_list into a pointer
-and update the old outqueue code to use it.  This would be patch 2.
-In the description you can say that subsequent patches may have multiple
-data queues.
-
-Then you can introduce FCFS code as patch 3.  Nothing would really use
-it.  It's just a reference.
-
-Then in patch 4, you can introduce this framework and plug the FCFS
-code in.
-
--vlad
-
 > Signed-off-by: Yaogong Wang <ywang15@ncsu.edu>
 > ---
 > diff -uprN -X linux-2.6.32.8/Documentation/dontdiff
-> p1/include/net/sctp/structs.h p2/include/net/sctp/structs.h
-> --- p1/include/net/sctp/structs.h	2010-05-28 10:33:12.000000000 -0700
-> +++ p2/include/net/sctp/structs.h	2010-06-02 13:02:14.000000000 -0700
-> @@ -1158,7 +1158,7 @@ struct sctp_outq {
->  	struct sctp_association *asoc;
-> 
->  	/* Data pending that has never been transmitted.  */
-> -	struct list_head out_chunk_list;
-> +	struct list_head *out_chunk_list;
-> 
->  	unsigned out_qlen;	/* Total length of queued data chunks. */
-> 
-> @@ -1199,7 +1199,7 @@ struct sctp_outq {
->  	char malloced;
->  };
-> 
-> -void sctp_outq_init(struct sctp_association *, struct sctp_outq *);
-> +int sctp_outq_init(struct sctp_association *, struct sctp_outq *, gfp_t gfp);
->  void sctp_outq_teardown(struct sctp_outq *);
->  void sctp_outq_free(struct sctp_outq*);
->  int sctp_outq_tail(struct sctp_outq *, struct sctp_chunk *chunk);
-> diff -uprN -X linux-2.6.32.8/Documentation/dontdiff
-> p1/net/sctp/Makefile p2/net/sctp/Makefile
-> --- p1/net/sctp/Makefile	2010-05-28 10:05:50.000000000 -0700
-> +++ p2/net/sctp/Makefile	2010-06-02 12:55:13.000000000 -0700
-> @@ -9,7 +9,7 @@ sctp-y := sm_statetable.o sm_statefuns.o
->  	  transport.o chunk.o sm_make_chunk.o ulpevent.o \
->  	  inqueue.o outqueue.o ulpqueue.o command.o \
->  	  tsnmap.o bind_addr.o socket.o primitive.o \
-> -	  output.o input.o debug.o ssnmap.o auth.o
-> +	  output.o input.o debug.o ssnmap.o auth.o sched.o
-> 
->  sctp-$(CONFIG_SCTP_DBG_OBJCNT) += objcnt.o
->  sctp-$(CONFIG_PROC_FS) += proc.o
-> diff -uprN -X linux-2.6.32.8/Documentation/dontdiff
-> p1/net/sctp/associola.c p2/net/sctp/associola.c
-> --- p1/net/sctp/associola.c	2010-05-28 10:05:50.000000000 -0700
-> +++ p2/net/sctp/associola.c	2010-06-02 12:56:23.000000000 -0700
-> @@ -185,6 +185,9 @@ static struct sctp_association *sctp_ass
->  	asoc->max_init_timeo =
->  		 msecs_to_jiffies(sp->initmsg.sinit_max_init_timeo);
+> linux-2.6.32.8/include/net/sctp/structs.h
+> p1/include/net/sctp/structs.h
+> --- linux-2.6.32.8/include/net/sctp/structs.h	2010-02-09
+> 04:57:19.000000000 -0800
+> +++ p1/include/net/sctp/structs.h	2010-05-28 10:33:12.000000000 -0700
+> @@ -320,6 +320,9 @@ struct sctp_sock {
+>  	/* Flags controlling Heartbeat, SACK delay, and Path MTU Discovery. */
+>  	__u32 param_flags;
 > 
 > +	/* Multistream scheduling  */
-> +	asoc->sched_ops = sp->sched_ops;
+> +	const struct sctp_sched_ops *sched_ops;
 > +
->  	/* Allocate storage for the ssnmap after the inbound and outbound
->  	 * streams have been negotiated during Init.
->  	 */
-> @@ -280,7 +283,9 @@ static struct sctp_association *sctp_ass
->  	sctp_inq_set_th_handler(&asoc->base.inqueue, sctp_assoc_bh_rcv);
-> 
->  	/* Create an output queue.  */
-> -	sctp_outq_init(asoc, &asoc->outqueue);
-> +	err = sctp_outq_init(asoc, &asoc->outqueue, gfp);
-> +	if (err)
-> +		goto fail_init;
-> 
->  	if (!sctp_ulpq_init(&asoc->ulpq, asoc))
->  		goto fail_init;
-> diff -uprN -X linux-2.6.32.8/Documentation/dontdiff
-> p1/net/sctp/outqueue.c p2/net/sctp/outqueue.c
-> --- p1/net/sctp/outqueue.c	2010-05-28 10:05:50.000000000 -0700
-> +++ p2/net/sctp/outqueue.c	2010-06-02 12:55:13.000000000 -0700
-> @@ -73,38 +73,6 @@ static void sctp_generate_fwdtsn(struct
-> 
->  static int sctp_outq_flush(struct sctp_outq *q, int rtx_timeout);
-> 
-> -/* Add data to the front of the queue. */
-> -static inline void sctp_outq_head_data(struct sctp_outq *q,
-> -					struct sctp_chunk *ch)
-> -{
-> -	list_add(&ch->list, &q->out_chunk_list);
-> -	q->out_qlen += ch->skb->len;
-> -	return;
-> -}
-> -
-> -/* Take data from the front of the queue. */
-> -static inline struct sctp_chunk *sctp_outq_dequeue_data(struct sctp_outq *q)
-> -{
-> -	struct sctp_chunk *ch = NULL;
-> -
-> -	if (!list_empty(&q->out_chunk_list)) {
-> -		struct list_head *entry = q->out_chunk_list.next;
-> -
-> -		ch = list_entry(entry, struct sctp_chunk, list);
-> -		list_del_init(entry);
-> -		q->out_qlen -= ch->skb->len;
-> -	}
-> -	return ch;
-> -}
-> -/* Add data chunk to the end of the queue. */
-> -static inline void sctp_outq_tail_data(struct sctp_outq *q,
-> -				       struct sctp_chunk *ch)
-> -{
-> -	list_add_tail(&ch->list, &q->out_chunk_list);
-> -	q->out_qlen += ch->skb->len;
-> -	return;
-> -}
-> -
->  /*
->   * SFR-CACC algorithm:
->   * D) If count_of_newacks is greater than or equal to 2
-> @@ -201,10 +169,15 @@ static inline int sctp_cacc_skip(struct
->   * You still need to define handlers if you really want to DO
->   * something with this structure...
->   */
-> -void sctp_outq_init(struct sctp_association *asoc, struct sctp_outq *q)
-> +int sctp_outq_init(struct sctp_association *asoc, struct sctp_outq *q,
-> +			gfp_t gfp)
->  {
-> -	q->asoc = asoc;
-> -	INIT_LIST_HEAD(&q->out_chunk_list);
-> +	int err = 0;
-> +
-> +	q->asoc = asoc;
-> +	err = q->asoc->sched_ops->init(q, gfp);
-> +	if (err)
-> +		goto fail_init;
->  	INIT_LIST_HEAD(&q->control_chunk_list);
->  	INIT_LIST_HEAD(&q->retransmit);
->  	INIT_LIST_HEAD(&q->sacked);
-> @@ -217,6 +190,9 @@ void sctp_outq_init(struct sctp_associat
-> 
->  	q->malloced = 0;
->  	q->out_qlen = 0;
-> +
-> +fail_init:
-> +	return err;
+>  	struct sctp_initmsg initmsg;
+>  	struct sctp_rtoinfo rtoinfo;
+>  	struct sctp_paddrparams paddrparam;
+> @@ -534,6 +537,36 @@ static inline void sctp_ssn_skip(struct
 >  }
 > 
->  /* Free the outqueue structure and any related pending chunks.
-> @@ -267,7 +243,7 @@ void sctp_outq_teardown(struct sctp_outq
->  	}
-> 
->  	/* Throw away any leftover data chunks. */
-> -	while ((chunk = sctp_outq_dequeue_data(q)) != NULL) {
-> +	while ((chunk = q->asoc->sched_ops->dequeue_data(q)) != NULL) {
-> 
->  		/* Mark as send failure. */
->  		sctp_chunk_fail(chunk, q->error);
-> @@ -289,6 +265,8 @@ void sctp_outq_free(struct sctp_outq *q)
->  	/* Throw away leftover chunks. */
->  	sctp_outq_teardown(q);
-> 
-> +	q->asoc->sched_ops->release(q);
+
+BTW, is there a reason you decided to through the sched_ops into the association
+and not the queue?  I seems to make more sense to me to put one into the other.
+
+-vlad
+
+>  /*
+> + * Interface for adding new SCTP scheduling handlers
+> + * This is similar to the pluggable TCP congestion control
+> + */
+> +struct sctp_sched_ops {
+> +	struct list_head	list;
 > +
->  	/* If we were kmalloc()'d, free the memory.  */
->  	if (q->malloced)
->  		kfree(q);
-> @@ -334,7 +312,7 @@ int sctp_outq_tail(struct sctp_outq *q,
->  			  sctp_cname(SCTP_ST_CHUNK(chunk->chunk_hdr->type))
->  			  : "Illegal Chunk");
+> +	/* initialize out_chunk_list (required) */
+> +	int (*init)(struct sctp_outq *q, gfp_t gfp);
+> +	/* cleanup out_chunk_list (required) */
+> +	void (*release)(struct sctp_outq *q);
+> +	/* enqueue head function (required) */
+> +	void (*enqueue_head_data)(struct sctp_outq *q, struct sctp_chunk *ch);
+> +	/* enqueue tail function (required) */
+> +	void (*enqueue_tail_data)(struct sctp_outq *q, struct sctp_chunk *ch);
+> +	/* dequeue function (required) */
+> +	struct sctp_chunk* (*dequeue_data)(struct sctp_outq *q);
+> +	/* is out_chunk_list empty? (required) */
+> +	int (*is_empty)(struct sctp_outq *q);
+> +
+> +	char 		name[SCTP_SCHED_NAME_MAX];
+> +	struct module 	*owner;
+> +};
+> +
+> +extern int sctp_register_sched(struct sctp_sched_ops *type);
+> +extern void sctp_unregister_sched(struct sctp_sched_ops *type);
+> +
+> +extern void sctp_cleanup_sched(struct sock *sk);
+> +extern int sctp_set_sched(struct sock *sk, const char *name);
+> +
+> +/*
+>   * Pointers to address related SCTP functions.
+>   * (i.e. things that depend on the address family.)
+>   */
+> @@ -1650,6 +1683,9 @@ struct sctp_association {
+>  	/* The largest timeout or RTO value to use in attempting an INIT */
+>  	unsigned long max_init_timeo;
 > 
-> -			sctp_outq_tail_data(q, chunk);
-> +			q->asoc->sched_ops->enqueue_tail_data(q, chunk);
->  			if (chunk->chunk_hdr->flags & SCTP_DATA_UNORDERED)
->  				SCTP_INC_STATS(SCTP_MIB_OUTUNORDERCHUNKS);
->  			else
-> @@ -922,7 +900,7 @@ static int sctp_outq_flush(struct sctp_o
->  		}
-> 
->  		/* Finally, transmit new packets.  */
-> -		while ((chunk = sctp_outq_dequeue_data(q)) != NULL) {
-> +		while ((chunk = q->asoc->sched_ops->dequeue_data(q)) != NULL) {
->  			/* RFC 2960 6.5 Every DATA chunk MUST carry a valid
->  			 * stream identifier.
->  			 */
-> @@ -996,7 +974,7 @@ static int sctp_outq_flush(struct sctp_o
->  					"not transmit TSN: 0x%x, status: %d\n",
->  					ntohl(chunk->subh.data_hdr->tsn),
->  					status);
-> -				sctp_outq_head_data(q, chunk);
-> +				q->asoc->sched_ops->enqueue_head_data(q, chunk);
->  				goto sctp_flush_out;
->  				break;
-> 
-> @@ -1252,7 +1230,7 @@ int sctp_outq_sack(struct sctp_outq *q,
->  	/* See if all chunks are acked.
->  	 * Make sure the empty queue handler will get run later.
->  	 */
-> -	q->empty = (list_empty(&q->out_chunk_list) &&
-> +	q->empty = (q->asoc->sched_ops->is_empty(q) &&
->  		    list_empty(&q->retransmit));
->  	if (!q->empty)
->  		goto finish;
+> +	/* Multistream scheduling  */
+> +	const struct sctp_sched_ops *sched_ops;
+> +
+>  	/* Heartbeat interval: The endpoint sends out a Heartbeat chunk to
+>  	 * the destination address every heartbeat interval. This value
+>  	 * will be inherited by all new transports.
 > diff -uprN -X linux-2.6.32.8/Documentation/dontdiff
-> p1/net/sctp/sched.c p2/net/sctp/sched.c
-> --- p1/net/sctp/sched.c	1969-12-31 16:00:00.000000000 -0800
-> +++ p2/net/sctp/sched.c	2010-06-02 12:59:40.000000000 -0700
-> @@ -0,0 +1,116 @@
-> +/*
-> + * Plugable SCTP scheduling support and FCFS
-> + * Based on ideas from pluggable TCP congestion control.
-> + *
-> + */
+> linux-2.6.32.8/include/net/sctp/user.h p1/include/net/sctp/user.h
+> --- linux-2.6.32.8/include/net/sctp/user.h	2010-02-09 04:57:19.000000000 -0800
+> +++ p1/include/net/sctp/user.h	2010-05-28 10:52:57.000000000 -0700
+> @@ -171,6 +171,8 @@ struct sctp_initmsg {
+>  	__u16 sinit_max_init_timeo;
+>  };
+> 
+> +#define SCTP_SCHED_NAME_MAX	16
 > +
-> +#include <linux/module.h>
-> +#include <linux/types.h>
-> +#include <linux/list.h>
-> +#include <net/sctp/sctp.h>
-> +
-> +static DEFINE_SPINLOCK(sctp_sched_list_lock);
-> +static LIST_HEAD(sctp_sched_list);
-> +
-> +/* Simple linear search, don't expect many entries! */
-> +static struct sctp_sched_ops *sctp_sched_find(const char *name)
-> +{
-> +	struct sctp_sched_ops *e;
-> +
-> +	list_for_each_entry_rcu(e, &sctp_sched_list, list) {
-> +		if (strcmp(e->name, name) == 0)
-> +			return e;
-> +	}
-> +
-> +	return NULL;
-> +}
-> +
-> +/*
-> + * Attach new scheduling algorithm to the list
-> + * of available options.
-> + */
-> +int sctp_register_sched(struct sctp_sched_ops *sched)
-> +{
-> +	int ret = 0;
-> +
-> +	/* all algorithms must implement enqueue and dequeue ops */
-> +	if (!sched->init || !sched->release || !sched->is_empty
-> +		|| !sched->enqueue_head_data || !sched->enqueue_tail_data
-> +		|| !sched->dequeue_data) {
-> +		printk(KERN_ERR "SCTP %s does not implement required ops\n",
-> +		       sched->name);
-> +		return -EINVAL;
-> +	}
-> +
-> +	spin_lock(&sctp_sched_list_lock);
-> +	if (sctp_sched_find(sched->name)) {
-> +		printk(KERN_NOTICE "SCTP %s already registered\n", sched->name);
-> +		ret = -EEXIST;
-> +	} else {
-> +		list_add_tail_rcu(&sched->list, &sctp_sched_list);
-> +		printk(KERN_INFO "SCTP %s registered\n", sched->name);
-> +	}
-> +	spin_unlock(&sctp_sched_list_lock);
-> +
-> +	return ret;
-> +}
-> +EXPORT_SYMBOL_GPL(sctp_register_sched);
-> +
-> +/*
-> + * Remove scheduling algorithm, called from
-> + * the module's remove function.  Module ref counts are used
-> + * to ensure that this can't be done till all sockets using
-> + * that method are closed.
-> + */
-> +void sctp_unregister_sched(struct sctp_sched_ops *sched)
-> +{
-> +	spin_lock(&sctp_sched_list_lock);
-> +	list_del_rcu(&sched->list);
-> +	spin_unlock(&sctp_sched_list_lock);
-> +}
-> +EXPORT_SYMBOL_GPL(sctp_unregister_sched);
-> +
-> +/* Manage refcounts on socket close. */
-> +void sctp_cleanup_sched(struct sock *sk)
-> +{
-> +	module_put(sctp_sk(sk)->sched_ops->owner);
-> +}
-> +
-> +/* Change scheduling algorithm for socket */
-> +int sctp_set_sched(struct sock *sk, const char *name)
-> +{
-> +	struct sctp_sock *sp = sctp_sk(sk);
-> +	struct sctp_sched_ops *sched;
-> +	int err = 0;
-> +
-> +	rcu_read_lock();
-> +	sched = sctp_sched_find(name);
-> +
-> +	/* no change asking for existing value */
-> +	if (sched == sp->sched_ops)
-> +		goto out;
-> +
-> +#ifdef CONFIG_MODULES
-> +	/* not found attempt to autoload module */
-> +	if (!sched && capable(CAP_NET_ADMIN)) {
-> +		rcu_read_unlock();
-> +		request_module("sctp_%s", name);
-> +		rcu_read_lock();
-> +		sched = sctp_sched_find(name);
-> +	}
-> +#endif
-> +	if (!sched)
-> +		err = -ENOENT;
-> +
-> +	else if (!try_module_get(sched->owner))
-> +		err = -EBUSY;
-> +
-> +	else {
-> +		sctp_cleanup_sched(sk);
-> +		sp->sched_ops = sched;
-> +	}
-> +out:
-> +	rcu_read_unlock();
-> +	return err;
-> +}
-> +
+>  /*
+>   * 5.2.2 SCTP Header Information Structure (SCTP_SNDRCV)
+>   *
 > --
 > To unsubscribe from this list: send the line "unsubscribe linux-sctp" in
 > the body of a message to majordomo@vger.kernel.org
