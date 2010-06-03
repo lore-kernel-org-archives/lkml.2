@@ -1,165 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757052Ab0FCRpM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jun 2010 13:45:12 -0400
-Received: from charlotte.tuxdriver.com ([70.61.120.58]:49541 "EHLO
-	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932180Ab0FCRpK (ORCPT
+	id S932258Ab0FCRr4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jun 2010 13:47:56 -0400
+Received: from void.printf.net ([89.145.121.20]:45558 "EHLO void.printf.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932180Ab0FCRrz convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jun 2010 13:45:10 -0400
-Date: Thu, 3 Jun 2010 13:38:43 -0400
-From: "John W. Linville" <linville@tuxdriver.com>
-To: davem@davemloft.net
-Cc: linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
-       linux-kernel@vger.kernel.org
-Subject: pull request: wireless-2.6 2010-06-03
-Message-ID: <20100603173843.GB14597@tuxdriver.com>
+	Thu, 3 Jun 2010 13:47:55 -0400
+X-Greylist: delayed 1703 seconds by postgrey-1.27 at vger.kernel.org; Thu, 03 Jun 2010 13:47:55 EDT
+From: Chris Ball <cjb@laptop.org>
+To: Adrian Hunter <adrian.hunter@nokia.com>
+Cc: =?utf-8?Q?Micha=C5=82_Miros=C5=82aw?= <mirq-linux@rere.qmqm.pl>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       "linux-mmc\@vger.kernel.org" <linux-mmc@vger.kernel.org>,
+       "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC] [PATCH 1/2] mmc: split mmc_sd_init_card()
+References: <1-1000-12432-1274803827-7569@rere.qmqm.pl>
+	<20100528144027.3c868841.akpm@linux-foundation.org>
+	<20100531155846.GA9493@rere.qmqm.pl> <4C0774A8.2030704@nokia.com>
+Date: Thu, 03 Jun 2010 13:21:23 -0400
+In-Reply-To: <4C0774A8.2030704@nokia.com> (Adrian Hunter's message of "Thu, 03
+	Jun 2010 12:23:52 +0300")
+Message-ID: <m3hblk8224.fsf@pullcord.laptop.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1.90 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-08-17)
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dave,
+Hi,
 
-This is a handful of fixes intended for 2.6.35.  The ath5k patch fixes a
-problem reported by multiple people as "Commit 6b5d11 breaks association
-with WPA enabled APs".  The ones from Johannes fix a locking problem and
-and a problem caused by reading the wrong data location.
+   > That is a bit vague.  An SD card is a memory.  An SDIO "card" is
+   > an I/O connection made using the same physical interface as an SD
+   > card and a very similar protocal to SD cards (at least with
+   > respect to reading and writing).  I do not understand how a card
+   > can be SD and SDIO.  Are you sure you are not talking about a
+   > controller that supports SD and SDIO?  A lot of controllers do
+   > that.
 
-Please let me know if there are problems!
+Adrian, I presume we're talking about something like:
 
-Thanks,
+http://www.arasan.com/products/sd/SD-Combo-Flyer.pdf
 
-John
+Michał, could you let us know which SD-combo device(s) in particular
+you've been working with?
 
----
-
-The following changes since commit a1868dc2878e61778b9d6d8c61d5368e51d68a29:
-  Jeff Kirsher (1):
-        ixgbe: return IXGBE_ERR_RAR_INDEX when out of range
-
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/linville/wireless-2.6.git master
-
-Bruno Randolf (1):
-      ath5k: wake queues on reset
-
-Johannes Berg (2):
-      mac80211: fix blockack-req processing
-      mac80211: fix dialog token allocator
-
- drivers/net/wireless/ath/ath5k/base.c |   17 +++--------------
- net/mac80211/agg-tx.c                 |    6 ++++--
- net/mac80211/rx.c                     |   13 +++++++++++--
- 3 files changed, 18 insertions(+), 18 deletions(-)
-
-diff --git a/drivers/net/wireless/ath/ath5k/base.c b/drivers/net/wireless/ath/ath5k/base.c
-index cc6d41d..2978359 100644
---- a/drivers/net/wireless/ath/ath5k/base.c
-+++ b/drivers/net/wireless/ath/ath5k/base.c
-@@ -222,7 +222,6 @@ static int ath5k_tx(struct ieee80211_hw *hw, struct sk_buff *skb);
- static int ath5k_tx_queue(struct ieee80211_hw *hw, struct sk_buff *skb,
- 		struct ath5k_txq *txq);
- static int ath5k_reset(struct ath5k_softc *sc, struct ieee80211_channel *chan);
--static int ath5k_reset_wake(struct ath5k_softc *sc);
- static int ath5k_start(struct ieee80211_hw *hw);
- static void ath5k_stop(struct ieee80211_hw *hw);
- static int ath5k_add_interface(struct ieee80211_hw *hw,
-@@ -2770,7 +2769,7 @@ ath5k_tasklet_reset(unsigned long data)
- {
- 	struct ath5k_softc *sc = (void *)data;
- 
--	ath5k_reset_wake(sc);
-+	ath5k_reset(sc, sc->curchan);
- }
- 
- /*
-@@ -2941,23 +2940,13 @@ ath5k_reset(struct ath5k_softc *sc, struct ieee80211_channel *chan)
- 	ath5k_beacon_config(sc);
- 	/* intrs are enabled by ath5k_beacon_config */
- 
-+	ieee80211_wake_queues(sc->hw);
-+
- 	return 0;
- err:
- 	return ret;
- }
- 
--static int
--ath5k_reset_wake(struct ath5k_softc *sc)
--{
--	int ret;
--
--	ret = ath5k_reset(sc, sc->curchan);
--	if (!ret)
--		ieee80211_wake_queues(sc->hw);
--
--	return ret;
--}
--
- static int ath5k_start(struct ieee80211_hw *hw)
- {
- 	return ath5k_init(hw->priv);
-diff --git a/net/mac80211/agg-tx.c b/net/mac80211/agg-tx.c
-index c163d0a..98258b7 100644
---- a/net/mac80211/agg-tx.c
-+++ b/net/mac80211/agg-tx.c
-@@ -332,14 +332,16 @@ int ieee80211_start_tx_ba_session(struct ieee80211_sta *pubsta, u16 tid)
- 		IEEE80211_QUEUE_STOP_REASON_AGGREGATION);
- 
- 	spin_unlock(&local->ampdu_lock);
--	spin_unlock_bh(&sta->lock);
- 
--	/* send an addBA request */
-+	/* prepare tid data */
- 	sta->ampdu_mlme.dialog_token_allocator++;
- 	sta->ampdu_mlme.tid_tx[tid]->dialog_token =
- 			sta->ampdu_mlme.dialog_token_allocator;
- 	sta->ampdu_mlme.tid_tx[tid]->ssn = start_seq_num;
- 
-+	spin_unlock_bh(&sta->lock);
-+
-+	/* send AddBA request */
- 	ieee80211_send_addba_request(sdata, pubsta->addr, tid,
- 			 sta->ampdu_mlme.tid_tx[tid]->dialog_token,
- 			 sta->ampdu_mlme.tid_tx[tid]->ssn,
-diff --git a/net/mac80211/rx.c b/net/mac80211/rx.c
-index 6e2a7bc..5e0b654 100644
---- a/net/mac80211/rx.c
-+++ b/net/mac80211/rx.c
-@@ -1818,17 +1818,26 @@ ieee80211_rx_h_ctrl(struct ieee80211_rx_data *rx, struct sk_buff_head *frames)
- 		return RX_CONTINUE;
- 
- 	if (ieee80211_is_back_req(bar->frame_control)) {
-+		struct {
-+			__le16 control, start_seq_num;
-+		} __packed bar_data;
-+
- 		if (!rx->sta)
- 			return RX_DROP_MONITOR;
-+
-+		if (skb_copy_bits(skb, offsetof(struct ieee80211_bar, control),
-+				  &bar_data, sizeof(bar_data)))
-+			return RX_DROP_MONITOR;
-+
- 		spin_lock(&rx->sta->lock);
--		tid = le16_to_cpu(bar->control) >> 12;
-+		tid = le16_to_cpu(bar_data.control) >> 12;
- 		if (!rx->sta->ampdu_mlme.tid_active_rx[tid]) {
- 			spin_unlock(&rx->sta->lock);
- 			return RX_DROP_MONITOR;
- 		}
- 		tid_agg_rx = rx->sta->ampdu_mlme.tid_rx[tid];
- 
--		start_seq_num = le16_to_cpu(bar->start_seq_num) >> 4;
-+		start_seq_num = le16_to_cpu(bar_data.start_seq_num) >> 4;
- 
- 		/* reset session timer */
- 		if (tid_agg_rx->timeout)
+- Chris.
 -- 
-John W. Linville		Someday the world will need a hero, and you
-linville@tuxdriver.com			might be all we have.  Be ready.
+Chris Ball   <cjb@laptop.org>
+One Laptop Per Child
