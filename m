@@ -1,216 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755511Ab0FCQ7G (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jun 2010 12:59:06 -0400
-Received: from mailhost.informatik.uni-hamburg.de ([134.100.9.70]:49340 "EHLO
-	mailhost.informatik.uni-hamburg.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751783Ab0FCQ7C (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jun 2010 12:59:02 -0400
-Message-ID: <4C07DF34.7030401@metafoo.de>
-Date: Thu, 03 Jun 2010 18:58:28 +0200
-From: Lars-Peter Clausen <lars@metafoo.de>
-User-Agent: Mozilla-Thunderbird 2.0.0.24 (X11/20100329)
-MIME-Version: 1.0
-To: Liam Girdwood <lrg@slimlogic.co.uk>
-CC: Ralf Baechle <ralf@linux-mips.org>, linux-mips@linux-mips.org,
-       alsa-devel@alsa-project.org,
-       Mark Brown <broonie@opensource.wolfsonmicro.com>,
-       linux-kernel@vger.kernel.org
-Subject: Re: [alsa-devel] [RFC][PATCH 20/26] alsa: ASoC: Add JZ4740 codec
- driver
-References: <1275505397-16758-1-git-send-email-lars@metafoo.de>         <1275505950-17334-4-git-send-email-lars@metafoo.de> <1275568334.3593.92.camel@odin>
-In-Reply-To: <1275568334.3593.92.camel@odin>
-X-Enigmail-Version: 0.95.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	id S1755772Ab0FCRBm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jun 2010 13:01:42 -0400
+Received: from cantor.suse.de ([195.135.220.2]:51113 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751307Ab0FCRBl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Jun 2010 13:01:41 -0400
+Subject: Re: [linux-pm] [PATCH 0/8] Suspend block api (version 8)
+From: James Bottomley <James.Bottomley@suse.de>
+To: Kevin Hilman <khilman@deeprootsystems.com>
+Cc: "Gross, Mark" <mark.gross@intel.com>,
+       Peter Zijlstra <peterz@infradead.org>,
+       Alan Cox <alan@lxorguk.ukuu.org.uk>,
+       Florian Mickler <florian@mickler.org>,
+       Arve =?ISO-8859-1?Q?Hj=F8nnev=E5g?= <arve@android.com>,
+       Neil Brown <neilb@suse.de>, "tytso@mit.edu" <tytso@mit.edu>,
+       LKML <linux-kernel@vger.kernel.org>,
+       Thomas Gleixner <tglx@linutronix.de>,
+       Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
+       Linux PM <linux-pm@lists.linux-foundation.org>,
+       "felipe.balbi@nokia.com" <felipe.balbi@nokia.com>
+In-Reply-To: <87hblkyrwt.fsf@deeprootsystems.com>
+References: <20100527232357.6d14fdb2@lxorguk.ukuu.org.uk>
+	 <20100601135102.GA8098@srcf.ucam.org>
+	 <1275426085.21962.967.camel@mulgrave.site> <201006020024.14220.rjw@sisk.pl>
+	 <1275431816.21962.1108.camel@mulgrave.site>
+	 <AANLkTikObnAZbyOxeYAhXcEbimO3XTTO-HlC9CD_HH6t@mail.gmail.com>
+	 <1275451342.21962.1777.camel@mulgrave.site>
+	 <AANLkTilRcFZyYa-0HlaM-6IEZSyar3S9S_cCWSFax2Zo@mail.gmail.com>
+	 <1275491111.2799.110.camel@mulgrave.site>
+	 <20100602214748.7742e3ae@schatten.dmk.lab>
+	 <1275511271.2799.516.camel@mulgrave.site>
+	 <20100603010607.5baf82a6@schatten.dmk.lab>
+	 <CA1BBBBC9359F04AA639128AC0D5D1E9692ABC92@orsmsx502.amr.corp.intel.com>
+	 <20100603110312.48a508dc@lxorguk.ukuu.org.uk>
+	 <1275559512.27810.35287.camel@twins> <87d3w818ki.fsf@deeprootsystems.com>
+	 <CA1BBBBC9359F04AA639128AC0D5D1E96931D4BB@orsmsx502.amr.corp.intel.com>
+	 <87hblkyrwt.fsf@deeprootsystems.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 03 Jun 2010 12:01:33 -0500
+Message-ID: <1275584493.5914.247.camel@mulgrave.site>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.2 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Liam Girdwood wrote:
-> On Wed, 2010-06-02 at 21:12 +0200, Lars-Peter Clausen wrote:
->   
->> This patch adds support for the JZ4740 internal codec.
->>
->> Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
->> Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>
->> Cc: Liam Girdwood <lrg@slimlogic.co.uk>
->> Cc: alsa-devel@alsa-project.org
->> ---
->>  sound/soc/codecs/Kconfig        |    4 +
->>  sound/soc/codecs/Makefile       |    2 +
->>  sound/soc/codecs/jz4740-codec.c |  502 +++++++++++++++++++++++++++++++++++++++
->>  sound/soc/codecs/jz4740-codec.h |   20 ++
->>  4 files changed, 528 insertions(+), 0 deletions(-)
->>  create mode 100644 sound/soc/codecs/jz4740-codec.c
->>  create mode 100644 sound/soc/codecs/jz4740-codec.h
->>     
->
-> no need for code in file name here.
->
->   
->> diff --git a/sound/soc/codecs/Kconfig b/sound/soc/codecs/Kconfig
->> index 31ac553..b8008df 100644
->> --- a/sound/soc/codecs/Kconfig
->> +++ b/sound/soc/codecs/Kconfig
->> @@ -23,6 +23,7 @@ config SND_SOC_ALL_CODECS
->>  	select SND_SOC_AK4671 if I2C
->>  	select SND_SOC_CQ0093VC if MFD_DAVINCI_VOICECODEC
->>  	select SND_SOC_CS4270 if I2C
->> +	select SND_SOC_JZ4740 if SOC_JZ4740
->>  	select SND_SOC_MAX9877 if I2C
->>  	select SND_SOC_DA7210 if I2C
->>  	select SND_SOC_PCM3008
->> @@ -269,6 +270,9 @@ config SND_SOC_WM9712
->>  config SND_SOC_WM9713
->>  	tristate
->>  
->> +config SND_SOC_JZ4740_CODEC
->> +	tristate
->> +
->>  # Amp
->>  config SND_SOC_MAX9877
->>  	tristate
->> diff --git a/sound/soc/codecs/Makefile b/sound/soc/codecs/Makefile
->> index 91429ea..4c7ee31 100644
->> --- a/sound/soc/codecs/Makefile
->> +++ b/sound/soc/codecs/Makefile
->> @@ -56,6 +56,7 @@ snd-soc-wm9705-objs := wm9705.o
->>  snd-soc-wm9712-objs := wm9712.o
->>  snd-soc-wm9713-objs := wm9713.o
->>  snd-soc-wm-hubs-objs := wm_hubs.o
->> +snd-soc-jz4740-codec-objs := jz4740-codec.o
->>  
->>     
->
-> Please use the same format here
->
->   
->>  # Amp
->>  snd-soc-max9877-objs := max9877.o
->> @@ -121,6 +122,7 @@ obj-$(CONFIG_SND_SOC_WM9705)	+= snd-soc-wm9705.o
->>  obj-$(CONFIG_SND_SOC_WM9712)	+= snd-soc-wm9712.o
->>  obj-$(CONFIG_SND_SOC_WM9713)	+= snd-soc-wm9713.o
->>  obj-$(CONFIG_SND_SOC_WM_HUBS)	+= snd-soc-wm-hubs.o
->> +obj-$(CONFIG_SND_SOC_JZ4740_CODEC)	+= snd-soc-jz4740-codec.o
->>  
->>     
->
-> ditto.
->   
-Ok, I agree, but the Kconfig symbol should keep the "CODEC" in it,
-otherwise it would clash with the JZ4740 ASoC platform support.
->   
->>  # Amp
->>  obj-$(CONFIG_SND_SOC_MAX9877)	+= snd-soc-max9877.o
->> diff --git a/sound/soc/codecs/jz4740-codec.c b/sound/soc/codecs/jz4740-codec.c
->> new file mode 100644
->> index 0000000..6e4b741
->> --- /dev/null
->> +++ b/sound/soc/codecs/jz4740-codec.c
->> @@ -0,0 +1,502 @@
->> + [...]
->> +static const struct snd_kcontrol_new jz4740_codec_controls[] = {
->> +	SOC_SINGLE("Master Playback Volume", JZ4740_REG_CODEC_2,
->> +			JZ4740_CODEC_2_HEADPHONE_VOLUME_OFFSET, 3, 0),
->> +	SOC_SINGLE("Capture Volume", JZ4740_REG_CODEC_2,
->> +			JZ4740_CODEC_2_INPUT_VOLUME_OFFSET, 31, 0),
->>     
->
-> Is this the master capture volume ?
->   
-Hm, yes.
->   
->> +	SOC_SINGLE("Master Playback Switch", JZ4740_REG_CODEC_1,
->> +			JZ4740_CODEC_1_HEADPHONE_DISABLE_OFFSET, 1, 1),
->> +	SOC_SINGLE("Mic Capture Volume", JZ4740_REG_CODEC_2,
->> +			JZ4740_CODEC_2_MIC_BOOST_GAIN_OFFSET, 3, 0),
->> +};
->> +
->> +static const struct snd_kcontrol_new jz4740_codec_output_controls[] = {
->> +	SOC_DAPM_SINGLE("Bypass Switch", JZ4740_REG_CODEC_1,
->> +			JZ4740_CODEC_1_SW1_ENABLE_OFFSET, 1, 0),
->> +	SOC_DAPM_SINGLE("DAC Switch", JZ4740_REG_CODEC_1,
->> +			JZ4740_CODEC_1_SW2_ENABLE_OFFSET, 1, 0),
->> +};
->> +
->> +static const struct snd_kcontrol_new jz4740_codec_input_controls[] = {
->> +	SOC_DAPM_SINGLE("Line Capture Switch", JZ4740_REG_CODEC_1,
->> +			JZ4740_CODEC_1_LINE_ENABLE_OFFSET, 1, 0),
->> +	SOC_DAPM_SINGLE("Mic Capture Switch", JZ4740_REG_CODEC_1,
->> +			JZ4740_CODEC_1_MIC_ENABLE_OFFSET, 1, 0),
->> +};
->> +
->> +static const struct snd_soc_dapm_widget jz4740_codec_dapm_widgets[] = {
->> +	SND_SOC_DAPM_ADC("ADC", "Capture", JZ4740_REG_CODEC_1,
->> +			JZ4740_CODEC_1_ADC_ENABLE_OFFSET, 0),
->> +	SND_SOC_DAPM_DAC("DAC", "Playback", JZ4740_REG_CODEC_1,
->> +			JZ4740_CODEC_1_DAC_ENABLE_OFFSET, 0),
->> +
->> +	SND_SOC_DAPM_MIXER("Output Mixer", JZ4740_REG_CODEC_1,
->> +			JZ4740_CODEC_1_HEADPHONE_POWER_DOWN_OFFSET, 1,
->> +			jz4740_codec_output_controls,
->> +			ARRAY_SIZE(jz4740_codec_output_controls)),
->> +
->> +	SND_SOC_DAPM_MIXER_NAMED_CTL("Input Mixer", SND_SOC_NOPM, 0, 0,
->> +			jz4740_codec_input_controls,
->> +			ARRAY_SIZE(jz4740_codec_input_controls)),
->> +	SND_SOC_DAPM_MIXER("Line Input", SND_SOC_NOPM, 0, 0, NULL, 0),
->> +
->> +	SND_SOC_DAPM_OUTPUT("LOUT"),
->> +	SND_SOC_DAPM_OUTPUT("ROUT"),
->> +
->> +	SND_SOC_DAPM_INPUT("MIC"),
->> +	SND_SOC_DAPM_INPUT("LIN"),
->> +	SND_SOC_DAPM_INPUT("RIN"),
->> +};
->> +
->> +static const struct snd_soc_dapm_route jz4740_codec_dapm_routes[] = {
->> +
->> +	{"Line Input", NULL, "LIN"},
->> +	{"Line Input", NULL, "RIN"},
->> +
->> +	{"Input Mixer", "Line Capture Switch", "Line Input"},
->> +	{"Input Mixer", "Mic Capture Switch", "MIC"},
->> +
->> +	{"ADC", NULL, "Input Mixer"},
->> +
->> +	{"Output Mixer", "Bypass Switch", "Input Mixer"},
->> +	{"Output Mixer", "DAC Switch", "DAC"},
->> +
->> +	{"LOUT", NULL, "Output Mixer"},
->> +	{"ROUT", NULL, "Output Mixer"},
->> +};
->> +
->> +static int jz4740_codec_hw_params(struct snd_pcm_substream *substream,
->> +	struct snd_pcm_hw_params *params, struct snd_soc_dai *dai)
->> +{
->> +	uint32_t val;
->> +	struct snd_soc_pcm_runtime *rtd = substream->private_data;
->> +	struct snd_soc_device *socdev = rtd->socdev;
->> +	struct snd_soc_codec *codec = socdev->card->codec;
->> +
->> +	switch (params_format(params)) {
->> +	case SNDRV_PCM_FORMAT_S8:
->> +	case SNDRV_PCM_FORMAT_S16_LE:
->> +	case SNDRV_PCM_FORMAT_S18_3LE:
->> +		break;
->> +	default:
->> +		return -EINVAL;
->> +		break;
->> +	}
->>     
->
-> The PCM format check is not required here as core checks this.
->   
-Ok.
->> + [...]
->
-> Thanks
->
-> Liam
->   
+On Thu, 2010-06-03 at 09:58 -0700, Kevin Hilman wrote:
+> "Gross, Mark" <mark.gross@intel.com> writes:
+> 
+> >>-----Original Message-----
+> >>From: Kevin Hilman [mailto:khilman@deeprootsystems.com]
+> >>Sent: Thursday, June 03, 2010 7:43 AM
+> >>To: Peter Zijlstra
+> >>Cc: Alan Cox; Gross, Mark; Florian Mickler; James Bottomley; Arve
+> >>Hjønnevåg; Neil Brown; tytso@mit.edu; LKML; Thomas Gleixner; Linux OMAP
+> >>Mailing List; Linux PM; felipe.balbi@nokia.com
+> >>Subject: Re: [linux-pm] [PATCH 0/8] Suspend block api (version 8)
+> >>
+> >>Peter Zijlstra <peterz@infradead.org> writes:
+> >>
+> >>> On Thu, 2010-06-03 at 11:03 +0100, Alan Cox wrote:
+> >>>> > [mtg: ] This has been a pain point for the PM_QOS implementation.
+> >>>> They change the constrain back and forth at the transaction level of
+> >>>> the i2c driver.  The pm_qos code really wasn't made to deal with such
+> >>>> hot path use, as each such change triggers a re-computation of what
+> >>>> the aggregate qos request is.
+> >>>>
+> >>>> That should be trivial in the usual case because 99% of the time you can
+> >>>> hot path
+> >>>>
+> >>>> 	the QoS entry changing is the latest one
+> >>>> 	there have been no other changes
+> >>>> 	If it is valid I can use the cached previous aggregate I cunningly
+> >>>> 		saved in the top QoS entry when I computed the new one
+> >>>>
+> >>>> (ie most of the time from the kernel side you have a QoS stack)
+> >>>
+> >>> Why would the kernel change the QoS state of a task? Why not have two
+> >>> interacting QoS variables, one for the task, one for the subsystem in
+> >>> question, and the action depends on their relative value?
+> >>
+> >>Yes, having a QoS parameter per-subsystem (or even per-device) is very
+> >>important for SoCs that have independently controlled powerdomains.
+> >>If all devices/subsystems in a particular powerdomain have QoS
+> >>parameters that permit, the power state of that powerdomain can be
+> >>lowered independently from system-wide power state and power states of
+> >>other power domains.
+> >>
+> > This seems similar to that pm_qos generalization into bus drivers we where 
+> > waving our hands at during the collab summit in April?  We never did get 
+> > into meaningful detail at that time.
+> 
+> The hand-waving was around how to generalize it into the driver-model,
+> or PM QoS.  We're already doing this for OMAP, but in an OMAP-specific
+> way, but it's become clear that this is something useful to
+> generalize.
 
-Thanks for reviewing
-- Lars
+Do you have a pointer to the source and description?  It might be useful
+to look at to do a reality check on what we're talking about.
+
+James
+
+
