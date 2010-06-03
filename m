@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753107Ab0FCFso (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jun 2010 01:48:44 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:53060 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752401Ab0FCFsm (ORCPT
+	id S1753381Ab0FCFtx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jun 2010 01:49:53 -0400
+Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:37821 "EHLO
+	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752401Ab0FCFtw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jun 2010 01:48:42 -0400
+	Thu, 3 Jun 2010 01:49:52 -0400
 X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
 From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
 To: "Luis Claudio R. Goncalves" <lclaudio@uudg.org>,
@@ -15,59 +15,60 @@ To: "Luis Claudio R. Goncalves" <lclaudio@uudg.org>,
        Andrew Morton <akpm@linux-foundation.org>,
        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
        Nick Piggin <npiggin@suse.de>
-Subject: [mmotm 0521][PATCH 0/12] various OOM fixes for 2.6.35
+Subject: [PATCH 01/12] oom: select_bad_process: check PF_KTHREAD instead of !mm to skip kthreads
 Cc: kosaki.motohiro@jp.fujitsu.com
-Message-Id: <20100603135106.7247.A69D9226@jp.fujitsu.com>
+In-Reply-To: <20100603135106.7247.A69D9226@jp.fujitsu.com>
+References: <20100603135106.7247.A69D9226@jp.fujitsu.com>
+Message-Id: <20100603144841.724A.A69D9226@jp.fujitsu.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset="US-ASCII"
 Content-Transfer-Encoding: 7bit
 X-Mailer: Becky! ver. 2.50.07 [ja]
-Date: Thu,  3 Jun 2010 14:48:37 +0900 (JST)
+Date: Thu,  3 Jun 2010 14:49:48 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi
+From: Oleg Nesterov <oleg@redhat.com>
 
-This patch series is collection of various OOM bugfixes. I think
-all of patches can send to 2.6.35.
-Recently, David Rientjes and Luis Claudio R. Goncalves posted other
-various imporovement. I'll collect such 2.6.36 items and I plan to 
-push -mm at next week.
+select_bad_process() thinks a kernel thread can't have ->mm != NULL, this
+is not true due to use_mm().
 
-patch lists
--------------------------------------
-oom: select_bad_process: check PF_KTHREAD instead of !mm to skip kthreads
-oom: introduce find_lock_task_mm() to fix !mm false positives
-oom: the points calculation of child processes must use find_lock_task_mm() too
-oom: __oom_kill_task() must use find_lock_task_mm() too
-oom: make oom_unkillable() helper function
-oom: remove warning for in mm-less task __oom_kill_process()
-oom: Fix child process iteration properly
-oom: dump_tasks() use find_lock_task_mm() too
-oom: remove PF_EXITING check completely
-oom: sacrifice child with highest badness score for parent
-oom: remove special handling for pagefault ooms
-oom: give current access to memory reserves if it has been killed
+Change the code to check PF_KTHREAD.
 
-diffstat
-------------
- mm/oom_kill.c |  303 ++++++++++++++++++++++++++++++--------------------------
- 1 files changed, 162 insertions(+), 141 deletions(-)
+Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+Acked-by: David Rientjes <rientjes@google.com>
+Reviewed-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Reviewed-by: Minchan Kim <minchan.kim@gmail.com>
+Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+---
+ mm/oom_kill.c |    9 +++------
+ 1 files changed, 3 insertions(+), 6 deletions(-)
 
-
-
-Changes since last post
--------------------------
-  - Drop Luis's "give the dying task a higher priority" patch
-  - Add "remove PF_EXITING check completely" patch
-  - Drop Oleg's "oom: select_bad_process: PF_EXITING check should 
-    take ->mm into account" because conflict against "remove 
-    PF_EXITING check completely"
-  - Add "oom: sacrifice child with highest badness score for parent"
-  - Add "oom: remove special handling for pagefault ooms"
-  - Add "oom: give current access to memory reserves if it has been killed"
-
+diff --git a/mm/oom_kill.c b/mm/oom_kill.c
+index 709aedf..070b713 100644
+--- a/mm/oom_kill.c
++++ b/mm/oom_kill.c
+@@ -256,14 +256,11 @@ static struct task_struct *select_bad_process(unsigned long *ppoints,
+ 	for_each_process(p) {
+ 		unsigned long points;
+ 
+-		/*
+-		 * skip kernel threads and tasks which have already released
+-		 * their mm.
+-		 */
++		/* skip the tasks which have already released their mm. */
+ 		if (!p->mm)
+ 			continue;
+-		/* skip the init task */
+-		if (is_global_init(p))
++		/* skip the init task and kthreads */
++		if (is_global_init(p) || (p->flags & PF_KTHREAD))
+ 			continue;
+ 		if (mem && !task_in_mem_cgroup(p, mem))
+ 			continue;
+-- 
+1.6.5.2
 
 
 
