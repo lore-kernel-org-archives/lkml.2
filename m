@@ -1,93 +1,378 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932869Ab0FCGEd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jun 2010 02:04:33 -0400
-Received: from mail-px0-f174.google.com ([209.85.212.174]:43111 "EHLO
-	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932819Ab0FCGEb (ORCPT
+	id S932717Ab0FCGKM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jun 2010 02:10:12 -0400
+Received: from TYO202.gate.nec.co.jp ([202.32.8.206]:32918 "EHLO
+	tyo202.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753105Ab0FCGKI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jun 2010 02:04:31 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:reply-to:references:mime-version
-         :content-type:content-disposition:content-transfer-encoding
-         :in-reply-to:user-agent;
-        b=kwpTbeP576su9VTdm27rHVfC7w1hopwk7M1GWFdiZ2tNp5zx05XSxl2fyRolku2zyF
-         jd8DMvB3cNmlGnUOTkJE+GJI67JBzODoGGGGIibdJrFGeIUg3pKNtcYUQURs/tX34keS
-         QBNcFOR4TU4tTYw65wBpNQaO8SnVXfrhzjweQ=
-Date: Wed, 2 Jun 2010 23:04:44 -0700
-From: mark gross <640e9920@gmail.com>
-To: Brian Swetland <swetland@google.com>
-Cc: Neil Brown <neilb@suse.de>, Peter Zijlstra <peterz@infradead.org>,
-       "Paul@smtp1.linux-foundation.org" <Paul@smtp1.linux-foundation.org>,
-       LKML <linux-kernel@vger.kernel.org>,
-       Florian Mickler <florian@mickler.org>,
-       James Bottomley <James.Bottomley@suse.de>,
-       Linux PM <linux-pm@lists.linux-foundation.org>,
-       Thomas Gleixner <tglx@linutronix.de>,
-       Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
-       Felipe Balbi <felipe.balbi@nokia.com>,
-       Alan Cox <alan@lxorguk.ukuu.org.uk>
-Subject: Re: [linux-pm] [PATCH] - race-free suspend. Was: Re: [PATCH 0/8]
- Suspend block api (version 8)
-Message-ID: <20100603060444.GF11311@gvim.org>
-Reply-To: markgross@thegnar.org
-References: <20100601090023.788cabf4@notabene.brown>
- <201006010232.20263.rjw@sisk.pl>
- <20100601113309.609349fd@notabene.brown>
- <alpine.LFD.2.00.1006010340160.2933@localhost.localdomain>
- <20100601122012.1edeaf48@notabene.brown>
- <alpine.LFD.2.00.1006011243350.2933@localhost.localdomain>
- <20100602153235.340a7852@notabene.brown>
- <AANLkTikVjAf5nHdMx2bcHRAUSkq99s-b5YZCECXIJJLy@mail.gmail.com>
- <20100602180614.729246ea@notabene.brown>
- <AANLkTikXy__71nBNW0EFbyL_qNf0nQ68pW9KymWlTk7L@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <AANLkTikXy__71nBNW0EFbyL_qNf0nQ68pW9KymWlTk7L@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Thu, 3 Jun 2010 02:10:08 -0400
+Date: Thu, 3 Jun 2010 15:06:19 +0900
+From: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
+       "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       "balbir@linux.vnet.ibm.com" <balbir@linux.vnet.ibm.com>,
+       Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
+Subject: Re: [PATCH 1/2] memcg clean up try_charge main loop
+Message-Id: <20100603150619.4bbe61bb.nishimura@mxp.nes.nec.co.jp>
+In-Reply-To: <20100603114837.6e6d4d0f.kamezawa.hiroyu@jp.fujitsu.com>
+References: <20100603114837.6e6d4d0f.kamezawa.hiroyu@jp.fujitsu.com>
+Organization: NEC Soft, Ltd.
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 02, 2010 at 11:05:18AM -0700, Brian Swetland wrote:
-> On Wed, Jun 2, 2010 at 1:06 AM, Neil Brown <neilb@suse.de> wrote:
-> > On Wed, 2 Jun 2010 00:05:14 -0700
-> > Arve Hjønnevåg <arve@android.com> wrote:
-> >> > The user-space suspend daemon avoids losing wake-events by using
-> >> > fcntl(F_OWNER) to ensure it gets a signal whenever any important wake-event
-> >> > is ready to be read by user-space.  This may involve:
-> >> >  - the one daemon processing all wake events
-> >>
-> >> Wake up events are not all processed by one daemon.
-> >
-> > Not with your current user-space code, no.  Are you saying that you are not
-> > open to any significant change in the Android user-space code?  That would
-> > make the situation a lot harder to resolve.
+On Thu, 3 Jun 2010 11:48:37 +0900, KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
+> From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 > 
-> There are many wakeup events possible in a typical system --
-> keypresses or other input events, network traffic, telephony events,
-> media events (fill audio buffer, fill video decoder buffer, etc), and
-> I think requiring that all wakeup event processing bottleneck through
-> a single userspace process is non-optimal here.
-
-Um doesn't the android framework bottleneck the user mode lock
-processing through the powermanager and any wake up event processing
-eventually has to grab a lock through this bottleneck anyway?
-
+> mem_cgroup_try_charge() has a big loop in it and seems to be hard to read.
+> Most of routines are for slow path. This patch moves codes out from the
+> loop and make it clear what's done.
 > 
-> The current suspend-blocker proposal already involves userspace
-> changes (it's different than our existing wakelock interface), and
-> we're certainly not opposed to any/all userspace changes on principle,
-> but on the other hand we're not interested in significant reworks of
-> userspace unless they actually improve the situation somehow.  I think
-> bottlenecking events through a central daemon would represent a step
-> backwards.
+> Summary:
+>  - refactoring a function to detect a memcg is under acccount move or not.
+>  - refactoring a function to wait for the end of moving task acct.
+>  - refactoring a main loop('s slow path) as a function and make it clear
+>    why we retry or quit by return code.
+>  - add fatal_signal_pending() check for bypassing charge loops.
+> 
+> Changelog 2010-06-01
+>  - added fatal_signal_pending() to bypass charge loop. This is useful
+>    and valid to do because if signal is fatal, charging against it
+>    isn't very necessary and the user can see smooth kill even under
+>    heavy workload on a memcg.
+> 
+> Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> ---
+>  mm/memcontrol.c |  247 +++++++++++++++++++++++++++++++++-----------------------
+>  1 file changed, 148 insertions(+), 99 deletions(-)
+> 
+> Index: mmotm-2.6.34-May21/mm/memcontrol.c
+> ===================================================================
+> --- mmotm-2.6.34-May21.orig/mm/memcontrol.c
+> +++ mmotm-2.6.34-May21/mm/memcontrol.c
+> @@ -1072,6 +1072,49 @@ static unsigned int get_swappiness(struc
+>  	return swappiness;
+>  }
+>  
+> +/* A routine for testing mem is not under move_account */
+> +
+> +static bool mem_cgroup_under_move(struct mem_cgroup *mem)
+> +{
+> +	struct mem_cgroup *from = mc.from;
+> +	struct mem_cgroup *to = mc.to;
+> +	bool ret = false;
+> +
+> +	if (from == mem || to == mem)
+> +		return true;
+> +
+> +	if (!from || !to || !mem->use_hierarchy)
+> +		return false;
+> +
+> +	rcu_read_lock();
+> +	if (css_tryget(&from->css)) {
+> +		ret = css_is_ancestor(&from->css, &mem->css);
+> +		css_put(&from->css);
+> +	}
+> +	if (!ret && css_tryget(&to->css)) {
+> +		ret = css_is_ancestor(&to->css,	&mem->css);
+> +		css_put(&to->css);
+> +	}
+> +	rcu_read_unlock();
+> +	return ret;
+> +}
+> +
+> +static bool mem_cgroup_wait_acct_move(struct mem_cgroup *mem)
+> +{
+> +	if (mc.moving_task && current != mc.moving_task) {
+> +		if (mem_cgroup_under_move(mem)) {
+> +			DEFINE_WAIT(wait);
+> +			prepare_to_wait(&mc.waitq, &wait, TASK_INTERRUPTIBLE);
+> +			/* moving charge context might have finished. */
+> +			if (mc.moving_task)
+> +				schedule();
+> +			finish_wait(&mc.waitq, &wait);
+> +			return true;
+> +		}
+> +	}
+> +	return false;
+> +}
+> +
+>  static int mem_cgroup_count_children_cb(struct mem_cgroup *mem, void *data)
+>  {
+>  	int *val = data;
+> @@ -1582,16 +1625,83 @@ static int __cpuinit memcg_stock_cpu_cal
+>  	return NOTIFY_OK;
+>  }
+>  
+> +
+> +/* See __mem_cgroup_try_charge() for details */
+> +enum {
+> +	CHARGE_OK,		/* success */
+> +	CHARGE_RETRY,		/* need to retry but retry is not bad */
+> +	CHARGE_NOMEM,		/* we can't do more. return -ENOMEM */
+> +	CHARGE_WOULDBLOCK,	/* GFP_WAIT wasn't set and no enough res. */
+> +	CHARGE_OOM_DIE,		/* the current is killed because of OOM */
+> +};
+> +
+> +static int __mem_cgroup_do_charge(struct mem_cgroup *mem, gfp_t gfp_mask,
+> +				int csize, bool oom_check)
+> +{
+> +	struct mem_cgroup *mem_over_limit;
+> +	struct res_counter *fail_res;
+> +	unsigned long flags = 0;
+> +	int ret;
+> +
+> +	ret = res_counter_charge(&mem->res, csize, &fail_res);
+> +
+> +	if (likely(!ret)) {
+> +		if (!do_swap_account)
+> +			return CHARGE_OK;
+> +		ret = res_counter_charge(&mem->memsw, csize, &fail_res);
+> +		if (likely(!ret))
+> +			return CHARGE_OK;
+> +
+> +		mem_over_limit = mem_cgroup_from_res_counter(fail_res, res);
+> +		flags |= MEM_CGROUP_RECLAIM_NOSWAP;
+> +	} else
+> +		mem_over_limit = mem_cgroup_from_res_counter(fail_res, res);
+> +
+> +	if (csize > PAGE_SIZE) /* change csize and retry */
+> +		return CHARGE_RETRY;
+> +
+> +	if (!(gfp_mask & __GFP_WAIT))
+> +		return CHARGE_WOULDBLOCK;
+> +
+> +	ret = mem_cgroup_hierarchical_reclaim(mem_over_limit, NULL,
+> +					gfp_mask, flags);
+> +	/*
+> +	 * try_to_free_mem_cgroup_pages() might not give us a full
+> +	 * picture of reclaim. Some pages are reclaimed and might be
+> +	 * moved to swap cache or just unmapped from the cgroup.
+> +	 * Check the limit again to see if the reclaim reduced the
+> +	 * current usage of the cgroup before giving up
+> +	 */
+> +	if (ret || mem_cgroup_check_under_limit(mem_over_limit))
+> +		return CHARGE_RETRY;
+> +
+> +	/*
+> +	 * At task move, charge accounts can be doubly counted. So, it's
+> +	 * better to wait until the end of task_move if something is going on.
+> +	 */
+> +	if (mem_cgroup_wait_acct_move(mem_over_limit))
+> +		return CHARGE_RETRY;
+> +
+> +	/* If we don't need to call oom-killer at el, return immediately */
+> +	if (!oom_check)
+> +		return CHARGE_NOMEM;
+> +	/* check OOM */
+> +	if (!mem_cgroup_handle_oom(mem_over_limit, gfp_mask))
+> +		return CHARGE_OOM_DIE;
+> +
+> +	return CHARGE_RETRY;
+> +}
+> +
+>  /*
+>   * Unlike exported interface, "oom" parameter is added. if oom==true,
+>   * oom-killer can be invoked.
+>   */
+> +
+>  static int __mem_cgroup_try_charge(struct mm_struct *mm,
+> -			gfp_t gfp_mask, struct mem_cgroup **memcg, bool oom)
+> +		gfp_t gfp_mask, struct mem_cgroup **memcg, bool oom)
+>  {
+> -	struct mem_cgroup *mem, *mem_over_limit;
+> -	int nr_retries = MEM_CGROUP_RECLAIM_RETRIES;
+> -	struct res_counter *fail_res;
+> +	struct mem_cgroup *mem = NULL;
+> +	int ret = CHARGE_RETRY;
+>  	int csize = CHARGE_SIZE;
+>  
+it would be a nitpick, but how about:
 
-I'm not sure its a step in any direction, but I do understand the
-avoidance of having to rework a lot of code.
+	int ret;
+	...
+	do {
+		...
+	} while (ret != CHARGE_OK);
+?
 
---mgross
+>  	/*
+> @@ -1609,120 +1719,57 @@ static int __mem_cgroup_try_charge(struc
+>  	 * thread group leader migrates. It's possible that mm is not
+>  	 * set, if so charge the init_mm (happens for pagecache usage).
+>  	 */
+> -	mem = *memcg;
+> -	if (likely(!mem)) {
+> +	if (*memcg) {
+> +		mem = *memcg;
+> +		css_get(&mem->css);
+> +	} else {
+>  		mem = try_get_mem_cgroup_from_mm(mm);
+> +		if (unlikely(!mem))
+> +			return 0;
+>  		*memcg = mem;
+> -	} else {
+> -		css_get(&mem->css);
+>  	}
+> -	if (unlikely(!mem))
+> -		return 0;
+>  
+>  	VM_BUG_ON(css_is_removed(&mem->css));
+>  	if (mem_cgroup_is_root(mem))
+>  		goto done;
+>  
+> -	while (1) {
+> -		int ret = 0;
+> -		unsigned long flags = 0;
+> +	while (ret != CHARGE_OK) {
+> +		int nr_oom_retries = MEM_CGROUP_RECLAIM_RETRIES;
+> +		bool oom_check;
+>  
+>  		if (consume_stock(mem))
+> -			goto done;
+> -
+> -		ret = res_counter_charge(&mem->res, csize, &fail_res);
+> -		if (likely(!ret)) {
+> -			if (!do_swap_account)
+> -				break;
+> -			ret = res_counter_charge(&mem->memsw, csize, &fail_res);
+> -			if (likely(!ret))
+> -				break;
+> -			/* mem+swap counter fails */
+> -			res_counter_uncharge(&mem->res, csize);
+> -			flags |= MEM_CGROUP_RECLAIM_NOSWAP;
+> -			mem_over_limit = mem_cgroup_from_res_counter(fail_res,
+> -									memsw);
+> -		} else
+> -			/* mem counter fails */
+> -			mem_over_limit = mem_cgroup_from_res_counter(fail_res,
+> -									res);
+> +			goto done; /* don't need to fill stock */
+> +		/* If killed, bypass charge */
+> +		if (fatal_signal_pending(current))
+> +			goto bypass;
+>  
+> -		/* reduce request size and retry */
+> -		if (csize > PAGE_SIZE) {
+> -			csize = PAGE_SIZE;
+> -			continue;
+> +		oom_check = false;
+> +		if (oom && !nr_oom_retries) {
+> +			oom_check = true;
+> +			nr_oom_retries = MEM_CGROUP_RECLAIM_RETRIES;
+>  		}
+Well, as I said before, nr_oom_retries seems to be reset at the begining of
+this loop every time. Actually, I cannot cause oom even when I set a value
+to limit_in_bytes and run a program which uses more memory than the limit,
+because we never meet !nr_oom_retries here and oom_check will never be set to true.
 
+
+Thanks,
+Daisuke Nishimura.
+
+> -		if (!(gfp_mask & __GFP_WAIT))
+> -			goto nomem;
+>  
+> -		ret = mem_cgroup_hierarchical_reclaim(mem_over_limit, NULL,
+> -						gfp_mask, flags);
+> -		if (ret)
+> -			continue;
+> +		ret = __mem_cgroup_do_charge(mem, gfp_mask, csize, oom_check);
+>  
+> -		/*
+> -		 * try_to_free_mem_cgroup_pages() might not give us a full
+> -		 * picture of reclaim. Some pages are reclaimed and might be
+> -		 * moved to swap cache or just unmapped from the cgroup.
+> -		 * Check the limit again to see if the reclaim reduced the
+> -		 * current usage of the cgroup before giving up
+> -		 *
+> -		 */
+> -		if (mem_cgroup_check_under_limit(mem_over_limit))
+> -			continue;
+> -
+> -		/* try to avoid oom while someone is moving charge */
+> -		if (mc.moving_task && current != mc.moving_task) {
+> -			struct mem_cgroup *from, *to;
+> -			bool do_continue = false;
+> -			/*
+> -			 * There is a small race that "from" or "to" can be
+> -			 * freed by rmdir, so we use css_tryget().
+> -			 */
+> -			from = mc.from;
+> -			to = mc.to;
+> -			if (from && css_tryget(&from->css)) {
+> -				if (mem_over_limit->use_hierarchy)
+> -					do_continue = css_is_ancestor(
+> -							&from->css,
+> -							&mem_over_limit->css);
+> -				else
+> -					do_continue = (from == mem_over_limit);
+> -				css_put(&from->css);
+> -			}
+> -			if (!do_continue && to && css_tryget(&to->css)) {
+> -				if (mem_over_limit->use_hierarchy)
+> -					do_continue = css_is_ancestor(
+> -							&to->css,
+> -							&mem_over_limit->css);
+> -				else
+> -					do_continue = (to == mem_over_limit);
+> -				css_put(&to->css);
+> -			}
+> -			if (do_continue) {
+> -				DEFINE_WAIT(wait);
+> -				prepare_to_wait(&mc.waitq, &wait,
+> -							TASK_INTERRUPTIBLE);
+> -				/* moving charge context might have finished. */
+> -				if (mc.moving_task)
+> -					schedule();
+> -				finish_wait(&mc.waitq, &wait);
+> -				continue;
+> -			}
+> -		}
+> -
+> -		if (!nr_retries--) {
+> +		switch (ret) {
+> +		case CHARGE_OK:
+> +			break;
+> +		case CHARGE_RETRY: /* not in OOM situation but retry */
+> +			csize = PAGE_SIZE;
+> +			break;
+> +		case CHARGE_WOULDBLOCK: /* !__GFP_WAIT */
+> +			goto nomem;
+> +		case CHARGE_NOMEM: /* OOM routine works */
+>  			if (!oom)
+>  				goto nomem;
+> -			if (mem_cgroup_handle_oom(mem_over_limit, gfp_mask)) {
+> -				nr_retries = MEM_CGROUP_RECLAIM_RETRIES;
+> -				continue;
+> -			}
+> -			/* When we reach here, current task is dying .*/
+> -			css_put(&mem->css);
+> +			/* If oom, we never return -ENOMEM */
+> +			nr_oom_retries--;
+> +			break;
+> +		case CHARGE_OOM_DIE: /* Killed by OOM Killer */
+>  			goto bypass;
+>  		}
+>  	}
+> +
+>  	if (csize > PAGE_SIZE)
+>  		refill_stock(mem, csize - PAGE_SIZE);
+>  done:
+> @@ -1731,6 +1778,8 @@ nomem:
+>  	css_put(&mem->css);
+>  	return -ENOMEM;
+>  bypass:
+> +	if (mem)
+> +		css_put(&mem->css);
+>  	*memcg = NULL;
+>  	return 0;
+>  }
+> 
