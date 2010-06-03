@@ -1,67 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933661Ab0FCCa3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jun 2010 22:30:29 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:36573 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933579Ab0FCCa2 convert rfc822-to-8bit (ORCPT
+	id S933664Ab0FCCpE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jun 2010 22:45:04 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:46407 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933579Ab0FCCpB convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jun 2010 22:30:28 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type:content-transfer-encoding;
-        b=T2l4MzT1bSYI5fM3E5XdXVj7JtVJLWmpRXU4aykwmdArdX30oTfqDTwLd3VkVYDaAj
-         2Yspp0E593pUsL4yv71Y9rmPT1ifCxsSgXKZckB6dz39xjJPMLz7IWql/lt+6q3p3PPV
-         h8ypVz+r709JBn0Yda/zevGRiCFrl9SDn47es=
+	Wed, 2 Jun 2010 22:45:01 -0400
 MIME-Version: 1.0
-In-Reply-To: <201006030201.13341.marek.vasut@gmail.com>
-References: <20100305212708.GC21773@elf.ucw.cz> <1268048916.6477.9.camel@utx.utx.cz> 
-	<20100308121634.GA14904@atrey.karlin.mff.cuni.cz> <201006030201.13341.marek.vasut@gmail.com>
-From: Eric Miao <eric.y.miao@gmail.com>
-Date: Thu, 3 Jun 2010 10:30:06 +0800
-Message-ID: <AANLkTikSotOdWIKqPpNi100rsVraIxZp6yZplIvaSo9m@mail.gmail.com>
-Subject: Re: [URGENT] Re: bit errors on spitz + voipac
-To: Marek Vasut <marek.vasut@gmail.com>
-Cc: linux-arm-kernel@lists.infradead.org, Cyril Hrubis <metan@ucw.cz>,
-       Stanislav Brabec <utx@penguin.cz>, dbaryshkov@gmail.com,
-       arminlitzel@web.de, kernel list <linux-kernel@vger.kernel.org>,
-       Dirk@opfer-online.de, lenz@cs.wisc.edu, rpurdie@rpsys.net,
-       omegamoon@gmail.com, Pavel Machek <pavel@ucw.cz>, thommycheck@gmail.com,
-       zaurus-devel@www.linuxtogo.org,
-       Haojian Zhuang <haojian.zhuang@gmail.com>
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <20100602233243.GA27666@core.coreip.homeip.net>
+References: <20100601113309.609349fd@notabene.brown>
+	<alpine.LFD.2.00.1006010340160.2933@localhost.localdomain>
+	<20100601122012.1edeaf48@notabene.brown>
+	<alpine.LFD.2.00.1006011243350.2933@localhost.localdomain>
+	<20100602153235.340a7852@notabene.brown>
+	<AANLkTikVjAf5nHdMx2bcHRAUSkq99s-b5YZCECXIJJLy@mail.gmail.com>
+	<20100602180614.729246ea@notabene.brown>
+	<AANLkTimISbs4X2YR_Pal9A80mpkNyCy8laWBcOgR2Cl7@mail.gmail.com>
+	<20100602210224.6ae2333f@notabene.brown>
+	<20100602210521.54b9cd9b@schatten.dmk.lab>
+	<20100602233243.GA27666@core.coreip.homeip.net>
+Date: Wed, 2 Jun 2010 19:44:59 -0700
+Message-ID: <AANLkTim3WQ6qgBH5Cx5tkf-LPtYZ7L6BN6OZIJpQbET1@mail.gmail.com>
+Subject: Re: [PATCH] - race-free suspend. Was: Re: [linux-pm] [PATCH 0/8] 
+	Suspend block api (version 8)
+From: =?ISO-8859-1?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: Florian Mickler <florian@mickler.org>, Neil Brown <neilb@suse.de>,
+       Thomas Gleixner <tglx@linutronix.de>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+       Alan Stern <stern@rowland.harvard.edu>,
+       Felipe Balbi <felipe.balbi@nokia.com>,
+       Peter Zijlstra <peterz@infradead.org>,
+       "Paul@smtp1.linux-foundation.org" <Paul@smtp1.linux-foundation.org>,
+       LKML <linux-kernel@vger.kernel.org>,
+       Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
+       Linux PM <linux-pm@lists.linux-foundation.org>,
+       Alan Cox <alan@lxorguk.ukuu.org.uk>,
+       James Bottomley <James.Bottomley@suse.de>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 3, 2010 at 8:01 AM, Marek Vasut <marek.vasut@gmail.com> wrote:
-> Dne Po 8. bÅ™ezna 2010 13:16:35 Cyril Hrubis napsal(a):
->> Hi!
+On Wed, Jun 2, 2010 at 4:32 PM, Dmitry Torokhov
+<dmitry.torokhov@gmail.com> wrote:
+> On Wed, Jun 02, 2010 at 09:05:21PM +0200, Florian Mickler wrote:
+>> On Wed, 2 Jun 2010 21:02:24 +1000
+>> Neil Brown <neilb@suse.de> wrote:
+>> >
+>> > And this decision (to block suspend) really needs to be made in the driver,
+>> > not in userspace?
 >>
->> > - And I see display noise while CF Wi-Fi card is active.
->>
->> Forgotten about this one. See for yourself, notice short black vertical
->> lines flashing randomly.
->>
->> http://atrey.karlin.mff.cuni.cz/~metan/outgoing/zaurus_sickness.mpg
+>> Well, it fits. The requirement is a direct consequence of the intimate
+>> knowledge the driver has about the driven devices.
 >
-> This is not only case of spitz. I've seen LCD image falling apart on pxafb on
-> Voipac PXA270 board. The image was like "torn in half and part of it was moved
-> to right, the hole between staying white".
->
-> This happened exactly when I started doing a DMA transfer from a harddrive
-> attached through pata_pxa. It's perfectly replicable. If I disabled DMA and let
-> it run only in PIO, the image was fine.
->
-> I assume the corruption Pavel was seeing is related. My guess is the problems
-> are caused when DMA between the CPU and a companion chip happens. I dunno if the
-> DMA controller doesn't have enough power to supply LCD and the companion chip
-> with data, but that's one of my guesses.
->
-> btw. Adjusting the DMA descriptor length in pata_pxa didn't help.
->
+> That is not really true. A driver does have intimate knowledge of the
+> device, however it does not necessarily have an idea about the data read
+> from the device. Consider the gpio_matrix driver: Arve says that it has
+> to continue scanning matrix once first interrupt arrvies. But it really
+> depends on what key has been pressed - if user pressed KEY_SUSPEND or
+> KEY_POWER it cmight be better if we did not wait for key release but
+> initiated the action right away. The decision on how system reacts to a
+> key press does not belong to the driver but really to userspace.
 
-If there is a FIFO attached, may need the FIFO status when the error happens.
-And a dump of the DMA registers would also be helpful.
+If we just suspend while the keypad scan is active, a second press of
+KEY_POWER would not be able wake the device up. The gpio keypad matrix
+driver has two operating modes. No keys are pressed: all the outputs
+are active so a key press will generate an interrupt in one of the
+inputs. Keys are pressed: Activate a single output at a time so we can
+determine which keys are pressed. The second mode is entered when the
+driver gets an interrupt in the first mode. The first mode is entered
+if the scan detected that no keys are pressed. The driver could be
+modified to stop the scan on suspend and forcibly put the device back
+in no-keys-pressed state, but pressing additional keys connected to
+the same input can no longer generate any events (the input does not
+change).
+
+-- 
+Arve Hjønnevåg
