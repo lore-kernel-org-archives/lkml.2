@@ -1,142 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933824Ab0FCKZL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jun 2010 06:25:11 -0400
-Received: from adelie.canonical.com ([91.189.90.139]:49773 "EHLO
-	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933486Ab0FCKZI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jun 2010 06:25:08 -0400
-From: Jeremy Kerr <jeremy.kerr@canonical.com>
-To: Ben Dooks <ben-linux@fluff.org>
-Subject: Re: [RFC,PATCH 1/2] Add a common struct clk
-Date: Thu, 3 Jun 2010 18:24:50 +0800
-User-Agent: KMail/1.13.2 (Linux/2.6.32-22-generic; KDE/4.4.2; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-       Ben Herrenchmidt <benh@kernel.crashing.org>
-References: <1275479804.137633.565764505843.0.gpush@pororo> <201006031121.21896.jeremy.kerr@canonical.com> <20100603081354.GA4720@trinity.fluff.org>
-In-Reply-To: <20100603081354.GA4720@trinity.fluff.org>
+	id S933834Ab0FCK0Q (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jun 2010 06:26:16 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:59527 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S933486Ab0FCK0O (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Jun 2010 06:26:14 -0400
+Message-ID: <4C078350.7090106@cn.fujitsu.com>
+Date: Thu, 03 Jun 2010 18:26:24 +0800
+From: Lai Jiangshan <laijs@cn.fujitsu.com>
+User-Agent: Thunderbird 2.0.0.6 (Windows/20070728)
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+To: Steven Rostedt <rostedt@goodmis.org>, linux-kernel@vger.kernel.org,
+       Ingo Molnar <mingo@elte.hu>, Frederic Weisbecker <fweisbec@gmail.com>
+Subject: [PATCH] tracing: reduce latency and remove percpu trace_seq
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-Message-Id: <201006031824.53832.jeremy.kerr@canonical.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Ben,
 
-> clk_enable(struct clk *clk)
-> {
-> 	if (clk->parent)
-> 		clk_enable(clk->parent)
-> 	...
-> }
-> 
-> clk_disable(struct clk *clk)
-> {
-> 	...
-> 	if (clk->parent)
-> 		clk_disable(clk->parent)
-> }
-> 
-> I think it is a really bad idea for each implementation to have to worry
-> about this. It sounds like a recipie for people to get wrong, especially
-> if we have a number of these implementations kicking around.
+__print_flags() and __print_symbolic() use percpu trace_seq:
 
-OK, this would mean adding parent to struct clk:
+1) Its memory is allocated at compile time, it wastes memory if we don't use tracing.
+2) It is percpu data and it wastes more memory for multi-cpus system.
+3) It disables preemption when it executes its core routine
+   "trace_seq_printf(s, "%s: ", #call);" and introduces latency.
 
-struct clk {
-	struct clk_operations	*ops;
-	atomic_t				enable_count;
-	struct clk			*parent;
-};
+So we move this trace_seq to struct trace_iterator.
 
-I was originally intending for struct clk to have the absolute minimum of 
-fields, only those necessary for every clock in the system. parent didn't make 
-the cut, as some clocks don't have a parent.
+Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
+---
+ include/linux/ftrace_event.h |    5 +++--
+ include/trace/ftrace.h       |   12 +++---------
+ kernel/trace/trace_output.c  |    3 ---
+ 3 files changed, 6 insertions(+), 14 deletions(-)
+diff --git a/include/linux/ftrace_event.h b/include/linux/ftrace_event.h
+index 3167f2d..25e264d 100644
+--- a/include/linux/ftrace_event.h
++++ b/include/linux/ftrace_event.h
+@@ -11,8 +11,6 @@ struct trace_array;
+ struct tracer;
+ struct dentry;
+ 
+-DECLARE_PER_CPU(struct trace_seq, ftrace_event_seq);
+-
+ struct trace_print_flags {
+ 	unsigned long		mask;
+ 	const char		*name;
+@@ -58,6 +56,9 @@ struct trace_iterator {
+ 	struct ring_buffer_iter	*buffer_iter[NR_CPUS];
+ 	unsigned long		iter_flags;
+ 
++	/* trace_seq for __print_flags() and __print_symbolic() etc. */
++	struct trace_seq	tmp_seq;
++
+ 	/* The below is zeroed out in pipe_read */
+ 	struct trace_seq	seq;
+ 	struct trace_entry	*ent;
+diff --git a/include/trace/ftrace.h b/include/trace/ftrace.h
+index 5a64905..19369db 100644
+--- a/include/trace/ftrace.h
++++ b/include/trace/ftrace.h
+@@ -145,7 +145,7 @@
+  *	struct trace_seq *s = &iter->seq;
+  *	struct ftrace_raw_<call> *field; <-- defined in stage 1
+  *	struct trace_entry *entry;
+- *	struct trace_seq *p;
++ *	struct trace_seq *p = &iter->tmp_seq;
+  *	int ret;
+  *
+  *	entry = iter->ent;
+@@ -157,12 +157,10 @@
+  *
+  *	field = (typeof(field))entry;
+  *
+- *	p = &get_cpu_var(ftrace_event_seq);
+  *	trace_seq_init(p);
+  *	ret = trace_seq_printf(s, "%s: ", <call>);
+  *	if (ret)
+  *		ret = trace_seq_printf(s, <TP_printk> "\n");
+- *	put_cpu();
+  *	if (!ret)
+  *		return TRACE_TYPE_PARTIAL_LINE;
+  *
+@@ -216,7 +214,7 @@ ftrace_raw_output_##call(struct trace_iterator *iter, int flags,	\
+ 	struct trace_seq *s = &iter->seq;				\
+ 	struct ftrace_raw_##call *field;				\
+ 	struct trace_entry *entry;					\
+-	struct trace_seq *p;						\
++	struct trace_seq *p = &iter->tmp_seq;				\
+ 	int ret;							\
+ 									\
+ 	event = container_of(trace_event, struct ftrace_event_call,	\
+@@ -231,12 +229,10 @@ ftrace_raw_output_##call(struct trace_iterator *iter, int flags,	\
+ 									\
+ 	field = (typeof(field))entry;					\
+ 									\
+-	p = &get_cpu_var(ftrace_event_seq);				\
+ 	trace_seq_init(p);						\
+ 	ret = trace_seq_printf(s, "%s: ", event->name);			\
+ 	if (ret)							\
+ 		ret = trace_seq_printf(s, print);			\
+-	put_cpu();							\
+ 	if (!ret)							\
+ 		return TRACE_TYPE_PARTIAL_LINE;				\
+ 									\
+@@ -255,7 +251,7 @@ ftrace_raw_output_##call(struct trace_iterator *iter, int flags,	\
+ 	struct trace_seq *s = &iter->seq;				\
+ 	struct ftrace_raw_##template *field;				\
+ 	struct trace_entry *entry;					\
+-	struct trace_seq *p;						\
++	struct trace_seq *p = &iter->tmp_seq;				\
+ 	int ret;							\
+ 									\
+ 	entry = iter->ent;						\
+@@ -267,12 +263,10 @@ ftrace_raw_output_##call(struct trace_iterator *iter, int flags,	\
+ 									\
+ 	field = (typeof(field))entry;					\
+ 									\
+-	p = &get_cpu_var(ftrace_event_seq);				\
+ 	trace_seq_init(p);						\
+ 	ret = trace_seq_printf(s, "%s: ", #call);			\
+ 	if (ret)							\
+ 		ret = trace_seq_printf(s, print);			\
+-	put_cpu();							\
+ 	if (!ret)							\
+ 		return TRACE_TYPE_PARTIAL_LINE;				\
+ 									\
+diff --git a/kernel/trace/trace_output.c b/kernel/trace/trace_output.c
+index 57c1b45..1ba64d3 100644
+--- a/kernel/trace/trace_output.c
++++ b/kernel/trace/trace_output.c
+@@ -16,9 +16,6 @@
+ 
+ DECLARE_RWSEM(trace_event_mutex);
+ 
+-DEFINE_PER_CPU(struct trace_seq, ftrace_event_seq);
+-EXPORT_PER_CPU_SYMBOL(ftrace_event_seq);
+-
+ static struct hlist_head event_hash[EVENT_HASHSIZE] __read_mostly;
+ 
+ static int next_event_type = __TRACE_LAST_TYPE + 1;
 
-However, lets explore this a little - handling parents in the infrastructure 
-code this may simplify the hardware-specific code somewhat. We'd add the 
-parent-handling stuff to the global clk_enable/clk_disable:
-
-static inline int clk_enable(struct clk *clk)
-{
-	int ret;
-
-	if (atomic_inc(clk->enable_count) != 1))
-		return 0;
-
-	if (clk->parent) {
-		ret = clk_enable(clk->parent);
-		if (ret)
-			goto out_dec;
-	}
-
-	ret = clk->ops->enable(clk)
-	if (!ret)
-		return 0;
-
-out_dec:
-	atomic_dec(clk->enable_count);
-	return ret;
-}
-
-The downside here is that the static inline becomes quite bloated, and we can 
-no longer avoid the atomic operation if there is no enable op. I guess we 
-could add a:
-
-	if (!clk->ops->enable && !clk->parent)
-		return 0;
-
-but now were in serious "don't do that as a inline" territory. So we'd be 
-better off making this a proper function.
-
-[as an aside, I need to add the atomic_dec to the error path of my current 
-code, will respin a new version. But even then, it's small enough to inline]
-
-I think that handling the enable/disable in the hardware-specific op is an 
-acceptable solution. It's only one line of code (or two if you want to check 
-for the presence of a parent first), and is, after all, a hardware-specific 
-property of the clock.
-
-So, we either:
-
-1) keep it as is, with the hw-specific code handling parent enable/disable; or
-
-2) add the parent-handling code to the clock infrastructure and move the core
-   API functions out-of-line.
-
-> As a note, I also left the enable callback in the 'struct clk' instead
-> of in the ops, enable/disable is the most used case of these clock
-> functions, and as such should probably be the easiest to get to.
-
-I strongly disagree on this one. I want all of the ops in one place, not 
-scattered around the API.
-
-> Also, wheras plat-samsung has very few sets of clk_ops sitting about,
-> there are more enable/disable calls, and adding more fields to the
-> clocks to deal with this would add extra space to the kernel.
-
-Sorry, I don't think I understand your point here - you're saying that moving 
-the enable/disable callbacks to struct clk will increase the size of the 
-kernel (which is correct, as there are more struct clks than there are struct 
-clk_operations), so doesn't this provide an argument against doing this?
-
-> > Also, enable and disable in the external clock API have different return
-> > types.
-> 
-> does that really matter?
-
-Only if someone expects a failed disable to be detected by the driver.
-
-> > Either is fine with me - looks like 'ops' is more commonly used:
-> My pref. is for less typing.
-
-OK, will do this in the next revision.
-
-Cheers,
-
-
-Jeremy
