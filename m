@@ -1,72 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752513Ab0FCFXY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jun 2010 01:23:24 -0400
-Received: from www262.sakura.ne.jp ([202.181.97.72]:63919 "EHLO
-	www262.sakura.ne.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750873Ab0FCFXX (ORCPT
+	id S1752538Ab0FCF0F (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jun 2010 01:26:05 -0400
+Received: from mxout12.netvision.net.il ([194.90.6.37]:52304 "EHLO
+	mxout12.netvision.net.il" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750873Ab0FCF0A (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jun 2010 01:23:23 -0400
-Message-Id: <201006030523.o535NA16029042@www262.sakura.ne.jp>
-Subject: [PATCH] kobject: Suppress compiler warning with gcc 3.x
-From: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-To: ebiederm@aristanetworks.com, randy.dunlap@oracle.com, gregkh@suse.de
-Cc: linux-kernel@vger.kernel.org
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7bit
-Date: Thu, 03 Jun 2010 14:23:10 +0900
-Content-Type: text/plain; charset="ISO-2022-JP"
-X-Anti-Virus: K-Prox Anti-Virus Powered by Kaspersky, bases: 03062010 #3951516, status: clean
+	Thu, 3 Jun 2010 01:26:00 -0400
+X-Greylist: delayed 905 seconds by postgrey-1.27 at vger.kernel.org; Thu, 03 Jun 2010 01:26:00 EDT
+MIME-version: 1.0
+Content-transfer-encoding: 7BIT
+Content-type: text/plain; charset=us-ascii
+X-MIMEOLE: Produced By Microsoft Exchange V6.5
+Content-class: urn:content-classes:message
+Subject: [PATCH] HID: Add support to new N-trig firwmare
+Date: Thu, 03 Jun 2010 08:11:44 +0300
+Message-id: <48A28051AC6D7A48B64F28272458190333674B@Exchange-IL.n-trig.com>
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+Thread-topic: [PATCH] HID: Add support to new N-trig firwmare
+Thread-index: AcsC20JRj15twZPMScCchgEYSuUnhA==
+From: Micki Balanga <micki@n-trig.com>
+To: jkosina@suse.cz, chatty@enac.fr, dhprince-devel@yahoo.co.uk
+Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Gcc 3.x generates a warning
+Update hid-ids.h to support new N-trig firmware.
+Product id  0x02 - 0x0A
 
-  include/linux/sysfs.h:183: warning: parameter has incomplete type
-
-on each file.
-Suppress the warning by moving the definition of "enum kobj_ns_type"
-to before "#include <linux/sysfs.h>".
-
-Signed-off-by: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+Signed-off-by: Micki Balanga <micki@n-trig.com>
 ---
- include/linux/kobject.h |   20 ++++++++++----------
- 1 file changed, 10 insertions(+), 10 deletions(-)
+---
+ drivers/hid/hid-core.c |    9 +++++++++
+ drivers/hid/hid-ids.h  |   10 ++++++++++
+ 2 files changed, 19 insertions(+), 0 deletions(-)
 
---- linux-2.6.35-rc1.orig/include/linux/kobject.h
-+++ linux-2.6.35-rc1/include/linux/kobject.h
-@@ -16,6 +16,16 @@
- #ifndef _KOBJECT_H_
- #define _KOBJECT_H_
- 
-+/*
-+ * Namespace types which are used to tag kobjects and sysfs entries.
-+ * Network namespace will likely be the first.
-+ */
-+enum kobj_ns_type {
-+	KOBJ_NS_TYPE_NONE = 0,
-+	KOBJ_NS_TYPE_NET,
-+	KOBJ_NS_TYPES
-+};
+diff --git a/drivers/hid/hid-core.c b/drivers/hid/hid-core.c
+index aa0f7dc..19f627a 100644
+--- a/drivers/hid/hid-core.c
++++ b/drivers/hid/hid-core.c
+@@ -1337,6 +1337,15 @@ static const struct hid_device_id hid_blacklist[]
+= {
+        { HID_USB_DEVICE(USB_VENDOR_ID_MICROSOFT,
+USB_DEVICE_ID_WIRELESS_OPTICAL_DESKTOP_3_0) },
+        { HID_USB_DEVICE(USB_VENDOR_ID_MONTEREY,
+USB_DEVICE_ID_GENIUS_KB29E) },
+        { HID_USB_DEVICE(USB_VENDOR_ID_NTRIG,
+USB_DEVICE_ID_NTRIG_TOUCH_SCREEN) },
++       { HID_USB_DEVICE(USB_VENDOR_ID_NTRIG,
+USB_DEVICE_ID_NTRIG_TOUCH_SCREEN_1) },
++       { HID_USB_DEVICE(USB_VENDOR_ID_NTRIG,
+USB_DEVICE_ID_NTRIG_TOUCH_SCREEN_2) },
++       { HID_USB_DEVICE(USB_VENDOR_ID_NTRIG,
+USB_DEVICE_ID_NTRIG_TOUCH_SCREEN_3) },
++       { HID_USB_DEVICE(USB_VENDOR_ID_NTRIG,
+USB_DEVICE_ID_NTRIG_TOUCH_SCREEN_4) },
++       { HID_USB_DEVICE(USB_VENDOR_ID_NTRIG,
+USB_DEVICE_ID_NTRIG_TOUCH_SCREEN_5) },
++       { HID_USB_DEVICE(USB_VENDOR_ID_NTRIG,
+USB_DEVICE_ID_NTRIG_TOUCH_SCREEN_6) },
++       { HID_USB_DEVICE(USB_VENDOR_ID_NTRIG,
+USB_DEVICE_ID_NTRIG_TOUCH_SCREEN_7) },
++       { HID_USB_DEVICE(USB_VENDOR_ID_NTRIG,
+USB_DEVICE_ID_NTRIG_TOUCH_SCREEN_8) },
++       { HID_USB_DEVICE(USB_VENDOR_ID_NTRIG,
+USB_DEVICE_ID_NTRIG_TOUCH_SCREEN_9) },
+        { HID_USB_DEVICE(USB_VENDOR_ID_ORTEK,
+USB_DEVICE_ID_ORTEK_WKB2000) },
+        { HID_USB_DEVICE(USB_VENDOR_ID_PETALYNX,
+USB_DEVICE_ID_PETALYNX_MAXTER_REMOTE) },
+        { HID_USB_DEVICE(USB_VENDOR_ID_QUANTA,
+USB_DEVICE_ID_QUANTA_OPTICAL_TOUCH) },
+diff --git a/drivers/hid/hid-ids.h b/drivers/hid/hid-ids.h
+index 6af77ed..55fbfd6 100644
+--- a/drivers/hid/hid-ids.h
++++ b/drivers/hid/hid-ids.h
+@@ -391,6 +391,16 @@
+
+ #define USB_VENDOR_ID_NTRIG                0x1b96
+ #define USB_DEVICE_ID_NTRIG_TOUCH_SCREEN   0x0001
++#define USB_DEVICE_ID_NTRIG_TOUCH_SCREEN_1 0x0002
++#define USB_DEVICE_ID_NTRIG_TOUCH_SCREEN_2 0x0003
++#define USB_DEVICE_ID_NTRIG_TOUCH_SCREEN_3 0x0004
++#define USB_DEVICE_ID_NTRIG_TOUCH_SCREEN_4 0x0005
++#define USB_DEVICE_ID_NTRIG_TOUCH_SCREEN_5 0x0006
++#define USB_DEVICE_ID_NTRIG_TOUCH_SCREEN_6 0x0007
++#define USB_DEVICE_ID_NTRIG_TOUCH_SCREEN_7 0x0008
++#define USB_DEVICE_ID_NTRIG_TOUCH_SCREEN_8 0x0009
++#define USB_DEVICE_ID_NTRIG_TOUCH_SCREEN_9 0x000A
 +
- #include <linux/types.h>
- #include <linux/list.h>
- #include <linux/sysfs.h>
-@@ -136,16 +146,6 @@ struct kobj_attribute {
- 
- extern const struct sysfs_ops kobj_sysfs_ops;
- 
--/*
-- * Namespace types which are used to tag kobjects and sysfs entries.
-- * Network namespace will likely be the first.
-- */
--enum kobj_ns_type {
--	KOBJ_NS_TYPE_NONE = 0,
--	KOBJ_NS_TYPE_NET,
--	KOBJ_NS_TYPES
--};
--
- struct sock;
- 
- /*
+
+ #define USB_VENDOR_ID_ONTRAK           0x0a07
+ #define USB_DEVICE_ID_ONTRAK_ADU100    0x0064
+-- 
+1.6.3.3
+
