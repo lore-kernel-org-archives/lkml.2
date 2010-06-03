@@ -1,112 +1,167 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933776Ab0FCD1H (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jun 2010 23:27:07 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:53977 "EHLO mx2.suse.de"
+	id S933781Ab0FCD22 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jun 2010 23:28:28 -0400
+Received: from gir.skynet.ie ([193.1.99.77]:59182 "EHLO gir.skynet.ie"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933730Ab0FCD1F convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jun 2010 23:27:05 -0400
-Date: Thu, 3 Jun 2010 13:26:48 +1000
-From: Neil Brown <neilb@suse.de>
-To: Arve =?UTF-8?B?SGrDuG5uZXbDpWc=?= <arve@android.com>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-       Florian Mickler <florian@mickler.org>,
-       Thomas Gleixner <tglx@linutronix.de>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-       Alan Stern <stern@rowland.harvard.edu>,
-       Felipe Balbi <felipe.balbi@nokia.com>,
-       Peter Zijlstra <peterz@infradead.org>,
-       "Paul@smtp1.linux-foundation.org" <Paul@smtp1.linux-foundation.org>,
-       LKML <linux-kernel@vger.kernel.org>,
-       Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
-       Linux PM <linux-pm@lists.linux-foundation.org>,
-       Alan Cox <alan@lxorguk.ukuu.org.uk>,
-       James Bottomley <James.Bottomley@suse.de>
-Subject: Re: [PATCH] - race-free suspend. Was: Re: [linux-pm] [PATCH 0/8] 
- Suspend block api (version 8)
-Message-ID: <20100603132648.3b1e265e@notabene.brown>
-In-Reply-To: <AANLkTim3WQ6qgBH5Cx5tkf-LPtYZ7L6BN6OZIJpQbET1@mail.gmail.com>
-References: <20100601113309.609349fd@notabene.brown>
-	<alpine.LFD.2.00.1006010340160.2933@localhost.localdomain>
-	<20100601122012.1edeaf48@notabene.brown>
-	<alpine.LFD.2.00.1006011243350.2933@localhost.localdomain>
-	<20100602153235.340a7852@notabene.brown>
-	<AANLkTikVjAf5nHdMx2bcHRAUSkq99s-b5YZCECXIJJLy@mail.gmail.com>
-	<20100602180614.729246ea@notabene.brown>
-	<AANLkTimISbs4X2YR_Pal9A80mpkNyCy8laWBcOgR2Cl7@mail.gmail.com>
-	<20100602210224.6ae2333f@notabene.brown>
-	<20100602210521.54b9cd9b@schatten.dmk.lab>
-	<20100602233243.GA27666@core.coreip.homeip.net>
-	<AANLkTim3WQ6qgBH5Cx5tkf-LPtYZ7L6BN6OZIJpQbET1@mail.gmail.com>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	id S933730Ab0FCD20 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Jun 2010 23:28:26 -0400
+Date: Thu, 3 Jun 2010 04:28:07 +0100 (IST)
+From: Dave Airlie <airlied@linux.ie>
+X-X-Sender: airlied@skynet.skynet.ie
+To: torvalds@linux-foundation.org
+cc: dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org
+Subject: [git pull] drm updates
+Message-ID: <alpine.DEB.2.00.1006030421120.21882@skynet.skynet.ie>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: MULTIPART/MIXED; BOUNDARY="29444707-1877074978-1275535687=:21882"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2 Jun 2010 19:44:59 -0700
-Arve Hjønnevåg <arve@android.com> wrote:
+  This message is in MIME format.  The first part should be readable text,
+  while the remaining parts are likely unreadable without MIME-aware tools.
 
-> On Wed, Jun 2, 2010 at 4:32 PM, Dmitry Torokhov
-> <dmitry.torokhov@gmail.com> wrote:
-> > On Wed, Jun 02, 2010 at 09:05:21PM +0200, Florian Mickler wrote:
-> >> On Wed, 2 Jun 2010 21:02:24 +1000
-> >> Neil Brown <neilb@suse.de> wrote:
-> >> >
-> >> > And this decision (to block suspend) really needs to be made in the driver,
-> >> > not in userspace?
-> >>
-> >> Well, it fits. The requirement is a direct consequence of the intimate
-> >> knowledge the driver has about the driven devices.
-> >
-> > That is not really true. A driver does have intimate knowledge of the
-> > device, however it does not necessarily have an idea about the data read
-> > from the device. Consider the gpio_matrix driver: Arve says that it has
-> > to continue scanning matrix once first interrupt arrvies. But it really
-> > depends on what key has been pressed - if user pressed KEY_SUSPEND or
-> > KEY_POWER it cmight be better if we did not wait for key release but
-> > initiated the action right away. The decision on how system reacts to a
-> > key press does not belong to the driver but really to userspace.
-> 
-> If we just suspend while the keypad scan is active, a second press of
-> KEY_POWER would not be able wake the device up. The gpio keypad matrix
-> driver has two operating modes. No keys are pressed: all the outputs
-> are active so a key press will generate an interrupt in one of the
-> inputs. Keys are pressed: Activate a single output at a time so we can
-> determine which keys are pressed. The second mode is entered when the
-> driver gets an interrupt in the first mode. The first mode is entered
-> if the scan detected that no keys are pressed. The driver could be
-> modified to stop the scan on suspend and forcibly put the device back
-> in no-keys-pressed state, but pressing additional keys connected to
-> the same input can no longer generate any events (the input does not
-> change).
-> 
+--29444707-1877074978-1275535687=:21882
+Content-Type: TEXT/PLAIN; charset=ISO-8859-2
+Content-Transfer-Encoding: 8BIT
 
-Thanks for the detailed explanation.  That helps a lot.
 
-I see that if follows that performing a suspend while keys are pressed would
-not be good, and keys could be pressed for arbitrarily long periods.
-It does not follow that the keypad driver should therefore explicitly disable
-suspend.  It could simply inform user-space that the keypad is in the
-alternate scan mode, so user-space can choose not to enter suspend in at that
-time (i.e. policy in user-space).
+Okay this isn't strictly all fixes, so pushback if you believe its too 
+much.
 
-I can see also how one might want to express this behaviour as a PM_QOS
-constraint (now that I have read a bit about PM_QOS), but I cannot see that
-you would need to.  As the keypad driver is polling during this mode, it
-would presumably set a timer that would fire in the near future, and the very
-existence of this timer (with a duration shorter than the S3 latency) would
-be enough to ensure S3 wasn't automatically entered by PM.
-At most you might use set_timer_slack to give a slightly higher upper bound
-to the timeout.
+vmware update: this is a staging driver and they are backport from a 
+tested vmware tree, so I think they are low risk and align the staging 
+driver with what vmware are working on.
+evergreen command stream checker: lots of lines, but its a baseline to 
+people to experiment on, it doesn't interact with any released userspace 
+code yet so can't regress anything.
 
-So if we take the suspend-from-idle approach, this driver needs no
-annotation, and if we take the 'fix the suspend/wake-event race' then this
-driver needs no special treatment - just enough to close the race, and some
-user-space policy support.
+The rest is nouveau fixes from Ben, some nouveau/switcheroo fixes from me 
+(one for a regression in -rc1), two trivial vgaarb patches, two TTM fixes 
+(one for a regression in -rc1), and some typos in docs.
 
-i.e. it doesn't seem to be a special case.
+The following changes since commit cf22f20ade30f8c03955324aaf27b1049e182600:
+  Dave Airlie (1):
+        drm/radeon: fix the r100/r200 ums block 0 page fix
 
-NeilBrown
+are available in the git repository at:
+
+  ssh://master.kernel.org/pub/scm/linux/kernel/git/airlied/drm-2.6.git drm-linus
+
+Alex Deucher (7):
+      drm/radeon/kms/evergreen: add initial CS parser
+      drm/radeon/kms/pm: add support for SetVoltage cmd table (V2)
+      drm/radeon/kms/pm: enable SetVoltage on r7xx/evergreen
+      drm/radeon/kms/pm: patch default power state with default clocks/voltages on r6xx+
+      drm/radeon/kms/pm: radeon_set_power_state fixes
+      drm/radeon/kms/pm: voltage fixes
+      drm/radeon/kms: make sure display hw is disabled when suspending
+
+Ben Skeggs (8):
+      drm/nouveau: fix POST detection for certain chipsets
+      drm/nv40: allow cold-booting of nv4x chipsets
+      drm/nouveau: don't execute INIT_GPIO unless we're really running the table
+      drm/nv50: fix duallink_possible calculation for DCB 4.0 cards
+      drm/nv50: obey dcb->duallink_possible
+      drm/nouveau: fix dual-link displays when plugged into single-link outputs
+      drm/nv50: use alternate source of SOR_MODE_CTRL for DP hack
+      drm/nv50: cast IGP memory location to u64 before shifting
+
+Dave Airlie (6):
+      drm/nouveau: attempt to get bios from ACPI v3
+      drm/nouveau: fixup confusion over which handle the DSM is hanging off.
+      drm/kms: disable/enable poll around switcheroo on/off
+      Merge branch 'drm-vmware-fixes' into drm-testing
+      Merge branch 'drm-switcheroo-fixes' into drm-testing
+      Merge remote branch 'nouveau/for-airlied' of ../drm-nouveau-next into drm-testing
+
+Jakob Bornecrantz (12):
+      drm/vmwgfx: Assume larger framebuffer max size.
+      drm/vmwgfx: Fix single framebuffer detection.
+      drm/vmwgfx: Make sure to unpin old and pin new framebuffer.
+      drm/vmwgfx: Get connector status from detection function.
+      drm/vmwgfx: Support older hardware.
+      drm/vmwgfx: Remove duplicate member from struct vmw_legacy_display_unit.
+      drm/vmwgfx: Don't use SVGA_REG_ENABLE in modesetting code.
+      drm/vmwgfx: Some modesetting cleanups and fixes.
+      drm/vmwgfx: Unpause overlay on update.
+      drm/vmwgfx: Print warnings in kernel log about bo pinning that fails.
+      drm/vmwgfx: Fix framebuffer modesetting
+      drm/vmwgfx: Allow userspace to change default layout. Bump minor.
+
+Maarten Maathuis (1):
+      drm/nouveau: allow cursor image and position to survive suspend
+
+Marcin Ko�cielnicki (1):
+      drm/nouveau: Add getparam for current PTIMER time.
+
+Nicolas Kaiser (1):
+      drm: fix typos in Linux DRM Developer's Guide
+
+Thomas Hellstrom (6):
+      drm/vmwgfx: Add kernel throttling support. Bump minor.
+      drm/vmwgfx: Reserve first part of VRAM for framebuffer.
+      drm/vmwgfx: Remove some leftover debug messages.
+      drm/ttm: Fix cached TTM page allocation.
+      drm/ttm: Fix ttm_page_alloc.c
+      drm/vmwgfx: Fix vga save / restore with display topology.
+
+Tiago Vignatti (2):
+      vgaarb: convert pr_devel() to pr_debug()
+      vgaarb: use MIT license
+
+ Documentation/DocBook/drm.tmpl              |   12 +-
+ drivers/gpu/drm/drm_crtc_helper.c           |   28 +-
+ drivers/gpu/drm/i915/i915_dma.c             |    4 +-
+ drivers/gpu/drm/nouveau/nouveau_acpi.c      |   71 ++-
+ drivers/gpu/drm/nouveau/nouveau_bios.c      |   71 ++-
+ drivers/gpu/drm/nouveau/nouveau_connector.c |   34 +-
+ drivers/gpu/drm/nouveau/nouveau_crtc.h      |    2 +
+ drivers/gpu/drm/nouveau/nouveau_drv.c       |   29 +
+ drivers/gpu/drm/nouveau/nouveau_drv.h       |    5 +
+ drivers/gpu/drm/nouveau/nouveau_mem.c       |    3 +-
+ drivers/gpu/drm/nouveau/nouveau_state.c     |    6 +
+ drivers/gpu/drm/nouveau/nv04_cursor.c       |    1 +
+ drivers/gpu/drm/nouveau/nv50_cursor.c       |    1 +
+ drivers/gpu/drm/nouveau/nv50_sor.c          |    7 +-
+ drivers/gpu/drm/radeon/Makefile             |    7 +-
+ drivers/gpu/drm/radeon/evergreen.c          |    5 +
+ drivers/gpu/drm/radeon/evergreen_cs.c       | 1356 +++++++++++++++++++++++++++
+ drivers/gpu/drm/radeon/evergreen_reg.h      |    3 +
+ drivers/gpu/drm/radeon/evergreend.h         |  464 +++++++++
+ drivers/gpu/drm/radeon/r600.c               |    6 +
+ drivers/gpu/drm/radeon/radeon.h             |    1 +
+ drivers/gpu/drm/radeon/radeon_asic.c        |    4 +-
+ drivers/gpu/drm/radeon/radeon_asic.h        |    1 +
+ drivers/gpu/drm/radeon/radeon_atombios.c    |   70 ++-
+ drivers/gpu/drm/radeon/radeon_combios.c     |    7 +-
+ drivers/gpu/drm/radeon/radeon_device.c      |    9 +
+ drivers/gpu/drm/radeon/radeon_pm.c          |   75 +-
+ drivers/gpu/drm/radeon/reg_srcs/evergreen   |  611 ++++++++++++
+ drivers/gpu/drm/radeon/rs600.c              |    3 +-
+ drivers/gpu/drm/radeon/rv770.c              |    5 +
+ drivers/gpu/drm/ttm/ttm_page_alloc.c        |   64 +-
+ drivers/gpu/drm/vmwgfx/Makefile             |    2 +-
+ drivers/gpu/drm/vmwgfx/vmwgfx_drv.c         |   24 +-
+ drivers/gpu/drm/vmwgfx/vmwgfx_drv.h         |   49 +-
+ drivers/gpu/drm/vmwgfx/vmwgfx_execbuf.c     |    9 +
+ drivers/gpu/drm/vmwgfx/vmwgfx_fb.c          |   87 +--
+ drivers/gpu/drm/vmwgfx/vmwgfx_fence.c       |  173 ++++
+ drivers/gpu/drm/vmwgfx/vmwgfx_fifo.c        |   23 +-
+ drivers/gpu/drm/vmwgfx/vmwgfx_irq.c         |   17 +-
+ drivers/gpu/drm/vmwgfx/vmwgfx_kms.c         |  203 +++-
+ drivers/gpu/drm/vmwgfx/vmwgfx_kms.h         |    4 +-
+ drivers/gpu/drm/vmwgfx/vmwgfx_ldu.c         |  189 +++-
+ drivers/gpu/drm/vmwgfx/vmwgfx_overlay.c     |    2 +
+ drivers/gpu/vga/vgaarb.c                    |   61 +-
+ include/drm/drm_crtc_helper.h               |    3 +
+ include/drm/nouveau_drm.h                   |    1 +
+ include/drm/vmwgfx_drm.h                    |   26 +
+ include/linux/vgaarb.h                      |   21 +
+ 48 files changed, 3538 insertions(+), 321 deletions(-)
+ create mode 100644 drivers/gpu/drm/radeon/evergreen_cs.c
+ create mode 100644 drivers/gpu/drm/radeon/reg_srcs/evergreen
+ create mode 100644 drivers/gpu/drm/vmwgfx/vmwgfx_fence.c
+--29444707-1877074978-1275535687=:21882--
