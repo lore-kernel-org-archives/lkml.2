@@ -1,125 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755454Ab0FCSbG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jun 2010 14:31:06 -0400
-Received: from e8.ny.us.ibm.com ([32.97.182.138]:38657 "EHLO e8.ny.us.ibm.com"
+	id S1754241Ab0FCSg2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jun 2010 14:36:28 -0400
+Received: from mail2.cray.com ([136.162.64.100]:47805 "EHLO mail2.cray.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751546Ab0FCSbD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jun 2010 14:31:03 -0400
-Date: Thu, 3 Jun 2010 11:30:40 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Li Zefan <lizf@cn.fujitsu.com>
-Cc: Daniel J Blueman <daniel.blueman@gmail.com>,
-       Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] RCU: don't turn off lockdep when find suspicious
- rcu_dereference_check() usage
-Message-ID: <20100603183040.GA2385@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <AANLkTinNygSdXsg3vAVRHttAMh6nX4tauNKn3XnfQC_x@mail.gmail.com>
- <20100602145653.GA2385@linux.vnet.ibm.com>
- <4C07743C.7030204@cn.fujitsu.com>
+	id S1753520Ab0FCSg1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Jun 2010 14:36:27 -0400
+Message-ID: <4C07F5EC.20600@cray.com>
+Date: Thu, 3 Jun 2010 11:35:24 -0700
+From: Doug Doan <dougd@cray.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100423 Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4C07743C.7030204@cn.fujitsu.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: "linux-mm@kvack.org" <linux-mm@kvack.org>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       "andi@firstfloor.org" <andi@firstfloor.org>,
+       "lee.schermerhorn@hp.com" <lee.schermerhorn@hp.com>,
+       "rientjes@google.com" <rientjes@google.com>,
+       "mel@csn.ul.ie" <mel@csn.ul.ie>, Andrea Arcangeli <aarcange@redhat.com>
+Subject: Re: [PATCH] hugetlb: call mmu notifiers on hugepage cow
+References: <4BFED954.8060807@cray.com>	<20100601231600.3b3bf499.akpm@linux-foundation.org>	<4C06E5A6.6@cray.com>	<20100602163346.b8f8b8a4.akpm@linux-foundation.org>	<4C07E800.5010701@cray.com> <20100603111125.8cd6a787.akpm@linux-foundation.org>
+In-Reply-To: <20100603111125.8cd6a787.akpm@linux-foundation.org>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 03, 2010 at 05:22:04PM +0800, Li Zefan wrote:
-> Paul E. McKenney wrote:
-> > On Tue, Jun 01, 2010 at 02:06:13PM +0100, Daniel J Blueman wrote:
-> >> Hi Paul,
-> >>
-> >> With 2.6.35-rc1 and your patch in the context below, we still see
-> >> "include/linux/cgroup.h:534 invoked rcu_dereference_check() without
-> >> protection!", so need this additional patch:
-> >>
-> >> Acquire read-side RCU lock around task_group() calls, addressing
-> >> "include/linux/cgroup.h:534 invoked rcu_dereference_check() without
-> >> protection!" warning.
-> >>
-> >> Signed-off-by: Daniel J Blueman <daniel.blueman@gmail.com>
-> > 
-> > Thank you, Daniel!  I have queued this for 2.6.35.
-> > 
-> > I had to apply the patch by hand due to line wrapping.  Could you please
-> > check your email-agent settings?  This simple patch was no problem to
-> > hand apply, but for a larger patch this process would be both tedious
-> > and error prone.
-> > 
-> > 							Thanx, Paul
-> > 
-> >> diff --git a/kernel/sched_fair.c b/kernel/sched_fair.c
-> >> index 217e4a9..50ec9ea 100644
-> >> --- a/kernel/sched_fair.c
-> >> +++ b/kernel/sched_fair.c
-> >> @@ -1241,6 +1241,7 @@ static int wake_affine(struct sched_domain *sd,
-> >> struct task_struct *p, int sync)
-> >>  	 * effect of the currently running task from the load
-> >>  	 * of the current CPU:
-> >>  	 */
-> >> +	rcu_read_lock();
-> >>  	if (sync) {
-> >>  		tg = task_group(current);
-> >>  		weight = current->se.load.weight;
-> >> @@ -1250,6 +1251,7 @@ static int wake_affine(struct sched_domain *sd,
-> >> struct task_struct *p, int sync)
-> >>  	}
-> >>
-> >>  	tg = task_group(p);
-> >> +	rcu_read_unlock();
-> 
-> Hmmm.. I think it's not safe to access tg after rcu_read_unlock.
+On 06/03/2010 11:11 AM, Andrew Morton wrote:
+> On Thu, 3 Jun 2010 10:36:00 -0700
+> Doug Doan<dougd@cray.com>  wrote:
+>
+>>> Well, specifically it means that
+>>> mmu_notifier_invalidate_range_start/end() implemetnations can no longer
+>>> take page_table_lock or any lock which nests outside page_table_lock.
+>>> That lessens flexibility.
+>>>
+>>> As the other mmu_notifier_invalidate_range_start/end() callsite in this
+>>> function carefully nested those calls outside page_table_lock, perhaps
+>>> that was thought to be a significant thing.
+>>
+>> Here's my rationale: for the normal page case, the invalidation call is done
+>> inside a page_table_lock,
+>
+> It is?  Where does that happen?
 
-It does indeed look unsafe.  How about the following on top of this patch?
+handle_pte_fault() acquires the lock before calling do_wp_page():
 
-> >>  	weight = p->se.load.weight;
-> >>
-> >>  	imbalance = 100 + (sd->imbalance_pct - 100) / 2;
+         ptl = pte_lockptr(mm, pmd);
+         spin_lock(ptl);
+         if (unlikely(!pte_same(*pte, entry)))
+                 goto unlock;
+         if (flags & FAULT_FLAG_WRITE) {
+                 if (!pte_write(entry))
+                         return do_wp_page(mm, vma, address,
+                                         pte, pmd, ptl, entry);
+                 entry = pte_mkdirty(entry);
+         }
 
-Seems worth reviewing the other uses of task_group():
+do_wp_page() calls set_pte_at_notify(), which either calls 
+mmu_notifier_change_pte() or mmu_notifier_invalidate_page().
 
-1.	set_task_rq() -- only a runqueue and a sched_rt_entity leave
-	the RCU read-side critical section.  Runqueues do persist.
-	I don't claim to understand the sched_rt_entity life cycle.
-
-2.	__sched_setscheduler() -- not clear to me that this one is
-	protected to begin with.  If it is somehow correctly protected,
-	it discards the RCU-protected pointer immediately, so is OK
-	otherwise.
-
-3.	cpu_cgroup_destroy() -- ditto.
-
-4.	cpu_shares_read_u64() -- ditto.
-
-5.	print_task() -- protected by rcu_read_lock() and discards the
-	RCU-protected pointer immediately, so this one is OK.
-
-Any task_group() experts able to weigh in on #2, #3, and #4?
-
-							Thanx, Paul
-
-Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-
-diff --git a/kernel/sched_fair.c b/kernel/sched_fair.c
-index 50ec9ea..224ef98 100644
---- a/kernel/sched_fair.c
-+++ b/kernel/sched_fair.c
-@@ -1251,7 +1251,6 @@ static int wake_affine(struct sched_domain *sd, struct task_struct *p, int sync)
- 	}
- 
- 	tg = task_group(p);
--	rcu_read_unlock();
- 	weight = p->se.load.weight;
- 
- 	imbalance = 100 + (sd->imbalance_pct - 100) / 2;
-@@ -1268,6 +1267,7 @@ static int wake_affine(struct sched_domain *sd, struct task_struct *p, int sync)
- 	balanced = !this_load ||
- 		100*(this_load + effective_load(tg, this_cpu, weight, weight)) <=
- 		imbalance*(load + effective_load(tg, prev_cpu, 0, weight));
-+	rcu_read_unlock();
- 
- 	/*
- 	 * If the currently running task will sleep within
+>
+>> so the same should also be done in the huge page case.
+>> Does it really make sense to call invalidation on one hugepage and have another
+>> call invalidate the same hugepage while the first call is still not finished?
