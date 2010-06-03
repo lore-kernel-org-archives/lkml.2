@@ -1,50 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756220Ab0FCVtW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jun 2010 17:49:22 -0400
-Received: from mail.vyatta.com ([76.74.103.46]:51478 "EHLO mail.vyatta.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756113Ab0FCVtU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jun 2010 17:49:20 -0400
-Date: Thu, 3 Jun 2010 14:49:13 -0700
-From: Stephen Hemminger <shemminger@vyatta.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-       Alan Cox <alan@lxorguk.ukuu.org.uk>, linux-kernel@vger.kernel.org
-Subject: Re: floppy driver assumes INITIAL_JIFFIES == 0
-Message-ID: <20100603144913.24828629@nehalam>
-In-Reply-To: <alpine.LFD.2.00.1006031355140.8175@i5.linux-foundation.org>
-References: <20100603101501.5e5d7148@nehalam>
-	<alpine.LFD.2.00.1006031013060.8175@i5.linux-foundation.org>
-	<20100603120313.10a73b20@nehalam>
-	<alpine.LFD.2.00.1006031204470.8175@i5.linux-foundation.org>
-	<alpine.LFD.2.00.1006031355140.8175@i5.linux-foundation.org>
-Organization: Vyatta
-X-Mailer: Claws Mail 3.7.5 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1756142Ab0FCVuR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jun 2010 17:50:17 -0400
+Received: from s12.ALPHA-c2.vectant.ne.jp ([222.230.51.12]:55134 "EHLO
+	s12.ALPHA-c2.vectant.ne.jp" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754835Ab0FCVuP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Jun 2010 17:50:15 -0400
+Message-Id: <201006032149.AA00423@tamuki.linet.gr.jp>
+From: TAMUKI Shoichi <tamuki@linet.gr.jp>
+Date: Fri, 04 Jun 2010 06:49:22 +0900
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Ingo Molnar <mingo@elte.hu>, Anton Blanchard <anton@samba.org>,
+       Andi Kleen <andi@firstfloor.org>, Andy Green <andy@warmcat.com>,
+       TAMUKI Shoichi <tamuki@linet.gr.jp>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] panic: keep blinking in spite of long spin timer mode
+In-Reply-To: <20100602113446.060847eb.akpm@linux-foundation.org>
+References: <20100602113446.060847eb.akpm@linux-foundation.org>
+MIME-Version: 1.0
+X-Mailer: AL-Mail32 Version 1.13
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It seems it isn't related to initial jiffies. 
-Initializing the values (though a good idea), doesn't solve the
-problem. Still failed.  So dazed and confused, went back and reran
-kernel with jiffies=0 showed same problem, just took multiple boots
-to reproduce.
+Hello,
 
->  	for (dr = 0; dr < N_DRIVE; dr++) {
-> @@ -4267,6 +4269,9 @@ static int __init floppy_init(void)
->  		set_bit(FD_DISK_CHANGED_BIT, &UDRS->flags);
->  		set_bit(FD_VERIFY_BIT, &UDRS->flags);
->  		UDRS->fd_device = -1;
-> +		UDRS->last_checked = jiffies;
-> +		UDRS->select_date = jiffies;
-> +		UDRS->spinup_date = jiffies;
->  		floppy_track_buffer = NULL;
->  		max_buffer_sectors = 0;
->  	}
+On Wed, 2 Jun 2010 11:34:46 -0700 Andrew Morton wrote:
 
-So still a race that shows up with KVM (fast floppy?) and manifests
-as floppy_ready or reset_interrupt OOPS.
+> The whole panic-blink setup seems rather poorly thought out.
+> 
+> Would it not be better if a call to (*panic_blink)() were to simply set
+> the state of the LED and then return?  So callers can do
+> 
+> 	int state = 0;
+> 
+> 	for ( ; ; ) {
+> 		(*panic_blink)(state);
+> 		state ^= 1;
+> 		mdelay(MSEC_PER_SEC);
+> 	}
+> 
+> ?
+
+Your proposal is rather simpler than the current patch, indeed.
+
+I carefully went into the proposal:
+
+  - With this implementation, the time to call to mdelay() needs to be
+    variable in order to change the speed of blinking.
+  - It is not desirable that the period to call to touch_nmi_watchdog()
+    or touch_softlockup_watchdog() depends on the speed of blinking.
+  - We would like to leave the room that can be implemented as not only
+    a simple blinking but also as a so-called morse blinking which con-
+    tains useful information when kernel panics.
+
+That being the reason, I will keep the current implementation that the
+time to call mdelay() is a short constant (as 1ms usually).
+
+BTW, there are some sanity checks or something in panic_blink_enter(),
+which need not exist there, so I have moved them to appropriate place.
+
+Thank you for the suggestion.  See you next PATCH v2.
+
+Regards,
+TAMUKI Shoichi
