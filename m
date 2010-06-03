@@ -1,81 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933903Ab0FCKjE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jun 2010 06:39:04 -0400
-Received: from cantor.suse.de ([195.135.220.2]:39513 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933859Ab0FCKjA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jun 2010 06:39:00 -0400
-Date: Thu, 3 Jun 2010 20:38:55 +1000
-From: Nick Piggin <npiggin@suse.de>
-To: Srivatsa Vaddagiri <vatsa@in.ibm.com>
-Cc: Avi Kivity <avi@redhat.com>, Andi Kleen <andi@firstfloor.org>,
-       Gleb Natapov <gleb@redhat.com>, linux-kernel@vger.kernel.org,
-       kvm@vger.kernel.org, hpa@zytor.com, mingo@elte.hu, tglx@linutronix.de,
-       mtosatti@redhat.com
-Subject: Re: [PATCH] use unfair spinlock when running on hypervisor.
-Message-ID: <20100603103855.GG6822@laptop>
-References: <20100601093515.GH24302@redhat.com>
- <87sk56ycka.fsf@basil.nowhere.org>
- <20100601162414.GA6191@redhat.com>
- <20100601163807.GA11880@basil.fritz.box>
- <4C053ACC.5020708@redhat.com>
- <20100601172730.GB11880@basil.fritz.box>
- <4C05C722.1010804@redhat.com>
- <20100602085055.GA14221@basil.fritz.box>
- <4C061DAB.6000804@redhat.com>
- <20100603042051.GA5953@linux.vnet.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100603042051.GA5953@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S933924Ab0FCKmM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jun 2010 06:42:12 -0400
+Received: from casper.infradead.org ([85.118.1.10]:46939 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933762Ab0FCKmH convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Jun 2010 06:42:07 -0400
+Subject: Re: [patch v2] fcntl: return -EFAULT if copy_to_user fails
+From: Peter Zijlstra <peterz@infradead.org>
+To: Dan Carpenter <error27@gmail.com>
+Cc: Takuya Yoshikawa <yoshikawa.takuya@oss.ntt.co.jp>,
+       Matthew Wilcox <matthew@wil.cx>,
+       Alexander Viro <viro@zeniv.linux.org.uk>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Oleg Nesterov <oleg@redhat.com>, Jens Axboe <jens.axboe@oracle.com>,
+       Greg Kroah-Hartman <gregkh@suse.de>, linux-fsdevel@vger.kernel.org,
+       linux-kernel@vger.kernel.org
+In-Reply-To: <20100603103542.GV5483@bicker>
+References: <20100603100402.GR5483@bicker> <4C07826A.6060302@oss.ntt.co.jp>
+	 <20100603103542.GV5483@bicker>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Thu, 03 Jun 2010 12:42:14 +0200
+Message-ID: <1275561734.27810.35399.camel@twins>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 03, 2010 at 09:50:51AM +0530, Srivatsa Vaddagiri wrote:
-> On Wed, Jun 02, 2010 at 12:00:27PM +0300, Avi Kivity wrote:
-> > 
-> > There are two separate problems: the more general problem is that
-> > the hypervisor can put a vcpu to sleep while holding a lock, causing
-> > other vcpus to spin until the end of their time slice.  This can
-> > only be addressed with hypervisor help.
+On Thu, 2010-06-03 at 12:35 +0200, Dan Carpenter wrote:
+> copy_to_user() returns the number of bytes remaining, but we want to
+> return -EFAULT.
+> 	ret = fcntl(fd, F_SETOWN_EX, NULL);
+> With the original code ret would be 8 here.
 > 
-> Fyi - I have a early patch ready to address this issue. Basically I am using
-> host-kernel memory (mmap'ed into guest as io-memory via ivshmem driver) to hint 
-> host whenever guest is in spin-lock'ed section, which is read by host scheduler 
-> to defer preemption.
+> V2: Takuya Yoshikawa pointed out a similar issue in f_getown_ex()
 > 
-> Guest side:
-> 
-> static inline void spin_lock(spinlock_t *lock)
-> {
-> 	raw_spin_lock(&lock->rlock);
-> +       __get_cpu_var(gh_vcpu_ptr)->defer_preempt++;
-> }
-> 
-> static inline void spin_unlock(spinlock_t *lock)
-> {
-> +	__get_cpu_var(gh_vcpu_ptr)->defer_preempt--;
->         raw_spin_unlock(&lock->rlock);
-> }
-> 
-> [similar changes to other spinlock variants]
+> Signed-off-by: Dan Carpenter <error27@gmail.com>
 
-Great, this is a nice way to improve it.
+Acked-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
 
-You might want to consider playing with first taking a ticket, and
-then if we fail to acquire the lock immediately, then increment
-defer_preempt before we start spinning.
-
-The downside of this would be if we waste all our slice on spinning
-and then preempted in the critical section. But with ticket locks
-you can easily see how many entries in the queue in front of you.
-So you could experiment with starting to defer preempt when we
-notice we are getting toward the head of the queue.
-
-Have you also looked at how s390 checks if the owning vcpu is running
-and if so it spins, if not yields to the hypervisor. Something like
-turning it into an adaptive lock. This could be applicable as well.
+> diff --git a/fs/fcntl.c b/fs/fcntl.c
+> index f74d270..51e11bf 100644
+> --- a/fs/fcntl.c
+> +++ b/fs/fcntl.c
+> @@ -274,7 +274,7 @@ static int f_setown_ex(struct file *filp, unsigned long arg)
+>  
+>  	ret = copy_from_user(&owner, owner_p, sizeof(owner));
+>  	if (ret)
+> -		return ret;
+> +		return -EFAULT;
+>  
+>  	switch (owner.type) {
+>  	case F_OWNER_TID:
+> @@ -332,8 +332,11 @@ static int f_getown_ex(struct file *filp, unsigned long arg)
+>  	}
+>  	read_unlock(&filp->f_owner.lock);
+>  
+> -	if (!ret)
+> +	if (!ret) {
+>  		ret = copy_to_user(owner_p, &owner, sizeof(owner));
+> +		if (ret)
+> +			ret = -EFAULT;
+> +	}
+>  	return ret;
+>  }
+>  
 
