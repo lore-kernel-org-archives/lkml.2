@@ -1,243 +1,652 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754438Ab0FCFm6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jun 2010 01:42:58 -0400
-Received: from mail-pz0-f185.google.com ([209.85.222.185]:63273 "EHLO
-	mail-pz0-f185.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754067Ab0FCFmt (ORCPT
+	id S1753056Ab0FCFpi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jun 2010 01:45:38 -0400
+Received: from mail-px0-f174.google.com ([209.85.212.174]:43012 "EHLO
+	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752615Ab0FCFpg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jun 2010 01:42:49 -0400
+	Thu, 3 Jun 2010 01:45:36 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:sender:date:x-google-sender-auth:message-id:subject
-         :from:to:cc:content-type;
-        b=u5+Z1K1jWo7qSw6TWXa4u71juDljHtHdEZPfLUumfPkYlZk4ADlrYszYmOe0PjvOHv
-         XUtDgPf9Umencm3qkSB44+DmCoEdKgbzeA1sDH1R/3uWHTxNKRwtk6ff8PXp5j99VXor
-         HEJObrL0cQfZlf3rb/6Rp/uyPBcE+hyRcxADk=
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=X00SpzNx14XJhYqRaQHjJOoeKfvWUTV97iR7S+BcwmsKxrGF978/XWNCxRPNA0Bda5
+         6cp+ORZjaworlgAGof4ThO/Ep+4EdTcMv3Si3QWE77nlaBrOhLZazQQySUwLJmbXcrb7
+         iPNdv4DlS3u2llmpoXM5kOnNHpCtgpwMBmKoc=
+Message-ID: <4C074171.2080106@gmail.com>
+Date: Thu, 03 Jun 2010 13:45:21 +0800
+From: Wan ZongShun <mcuos.com@gmail.com>
+User-Agent: Thunderbird 2.0.0.24 (X11/20100411)
 MIME-Version: 1.0
-Date: Wed, 2 Jun 2010 22:42:48 -0700
-X-Google-Sender-Auth: ewCxtbrtNsOF1Htjl60S8t7OF2k
-Message-ID: <AANLkTilqwskt5fS2Yc2pa32IMA7QgDdn5latnAkyPpvZ@mail.gmail.com>
-Subject: [PATCH 6/6] sctp multistream scheduling: a sample weighted fair queue 
-	scheduling module
-From: Yaogong Wang <ywang15@ncsu.edu>
-To: linux-sctp@vger.kernel.org, Vlad Yasevich <vladislav.yasevich@hp.com>,
-       Sridhar Samudrala <sri@us.ibm.com>
-Cc: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+To: Lars-Peter Clausen <lars@metafoo.de>
+CC: Ralf Baechle <ralf@linux-mips.org>, linux-mips@linux-mips.org,
+       alsa-devel@alsa-project.org,
+       Mark Brown <broonie@opensource.wolfsonmicro.com>,
+       linux-kernel@vger.kernel.org, Liam Girdwood <lrg@slimlogic.co.uk>
+Subject: Re: [alsa-devel] [RFC][PATCH 20/26] alsa: ASoC: Add JZ4740 codec
+ driver
+References: <1275505397-16758-1-git-send-email-lars@metafoo.de> <1275505950-17334-4-git-send-email-lars@metafoo.de>
+In-Reply-To: <1275505950-17334-4-git-send-email-lars@metafoo.de>
+Content-Type: text/plain; charset=us-ascii; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A sample weighted fair queue scheduling module that uses our interface
+Hi Lars-Peter Clausen,
 
-Signed-off-by: Yaogong Wang <ywang15@ncsu.edu>
----
-diff -uprN -X linux-2.6.32.8/Documentation/dontdiff
-p5/include/net/sctp/structs.h p6/include/net/sctp/structs.h
---- p5/include/net/sctp/structs.h	2010-06-02 12:58:41.000000000 -0700
-+++ p6/include/net/sctp/structs.h	2010-05-28 15:09:31.000000000 -0700
-@@ -1693,6 +1693,7 @@ struct sctp_association {
+Your all the patches have two kinds of 'WARNING:',as following:
 
- 	/* Multistream scheduling  */
- 	const struct sctp_sched_ops *sched_ops;
-+	__u16 *sched_internal;
- 	__u32 sched_priv_len;
- 	__u16 *sched_priv;
+(1)'WARNING: line over 80 characters' and
 
-diff -uprN -X linux-2.6.32.8/Documentation/dontdiff
-p5/net/sctp/Kconfig p6/net/sctp/Kconfig
---- p5/net/sctp/Kconfig	2010-05-28 14:43:17.000000000 -0700
-+++ p6/net/sctp/Kconfig	2010-05-28 15:10:30.000000000 -0700
-@@ -43,6 +43,12 @@ config SCTP_SCHED_PRIO
- 	help
- 	  Use priority queue to schedule among multiple streams
+Please make a line less than 80 characters.
 
-+config SCTP_SCHED_WFQ
-+	tristate "SCTP Multistream Scheduling: Weighted Fair Queue"
-+	default m
-+	help
-+	  Use weighted fair queue to schedule among multiple streams
-+
- config SCTP_DBG_MSG
- 	bool "SCTP: Debug messages"
- 	help
-diff -uprN -X linux-2.6.32.8/Documentation/dontdiff
-p5/net/sctp/Makefile p6/net/sctp/Makefile
---- p5/net/sctp/Makefile	2010-05-28 14:48:08.000000000 -0700
-+++ p6/net/sctp/Makefile	2010-05-28 15:11:02.000000000 -0700
-@@ -12,6 +12,7 @@ sctp-y := sm_statetable.o sm_statefuns.o
- 	  output.o input.o debug.o ssnmap.o auth.o sched.o
+(2)'WARNING: EXPORT_SYMBOL(foo); should immediately follow its function/variable'
 
- obj-$(CONFIG_SCTP_SCHED_PRIO) += sctp_prio.o
-+obj-$(CONFIG_SCTP_SCHED_WFQ) += sctp_wfq.o
- sctp-$(CONFIG_SCTP_DBG_OBJCNT) += objcnt.o
- sctp-$(CONFIG_PROC_FS) += proc.o
- sctp-$(CONFIG_SYSCTL) += sysctl.o
-diff -uprN -X linux-2.6.32.8/Documentation/dontdiff
-p5/net/sctp/associola.c p6/net/sctp/associola.c
---- p5/net/sctp/associola.c	2010-06-02 12:58:27.000000000 -0700
-+++ p6/net/sctp/associola.c	2010-05-28 15:09:37.000000000 -0700
-@@ -195,6 +195,7 @@ static struct sctp_association *sctp_ass
- 		memcpy(asoc->sched_priv, sp->sched_priv, asoc->sched_priv_len);
- 	} else
- 		asoc->sched_priv = NULL;
-+	asoc->sched_internal = NULL;
+I can illustrate by a example,bellow:
 
- 	/* Allocate storage for the ssnmap after the inbound and outbound
- 	 * streams have been negotiated during Init.
-diff -uprN -X linux-2.6.32.8/Documentation/dontdiff
-p5/net/sctp/sctp_wfq.c p6/net/sctp/sctp_wfq.c
---- p5/net/sctp/sctp_wfq.c	1969-12-31 16:00:00.000000000 -0800
-+++ p6/net/sctp/sctp_wfq.c	2010-06-02 13:10:05.000000000 -0700
-@@ -0,0 +1,150 @@
-+/*
-+ * Weighted fair queue scheduling among multiple SCTP streams
-+ */
-+
-+#include <linux/module.h>
-+#include <linux/types.h>
-+#include <linux/list.h>
-+#include <net/sctp/sctp.h>
-+
-+static int quantum = 1500;
-+module_param(quantum, int, 0644);
-+MODULE_PARM_DESC(quantum, "quantum in bytes");
-+
-+/*
-+ * Weighted fair queue internal data structure
-+ *
-+ * implemented using deficit round robin technique
-+ */
-+struct wfq {
-+	__u16	rr_ptr;
-+	__u16	deficit[0];
-+};
-+
-+static int wfq_init(struct sctp_outq *q, gfp_t gfp)
-+{
-+	__u16 i;
-+	struct wfq *internal;
-+
-+	/* initiate out_chunk_list  */
-+	q->out_chunk_list = kmalloc(q->asoc->c.sinit_num_ostreams
-+				 * sizeof(struct list_head), gfp);
-+	if (!q->out_chunk_list)
-+		return -ENOMEM;
-+	for (i = 0; i < q->asoc->c.sinit_num_ostreams; i++)
-+		INIT_LIST_HEAD(&q->out_chunk_list[i]);
-+
-+	/* initiate internal data structure  */
-+	q->asoc->sched_internal = kmalloc(q->asoc->sched_priv_len
-+						+ sizeof(__u16), gfp);
-+	if (!q->asoc->sched_internal) {
-+		kfree(q->out_chunk_list);
-+		return -ENOMEM;
-+	}
-+	internal = (struct wfq *)q->asoc->sched_internal;
-+	internal->rr_ptr = 0;
-+	internal->deficit[0] = q->asoc->sched_priv[0] * quantum;
-+	for (i = 1; i < q->asoc->c.sinit_num_ostreams; i++)
-+		internal->deficit[i] = 0;
-+
-+	return 0;
-+}
-+
-+static void wfq_release(struct sctp_outq *q)
-+{
-+	kfree(q->out_chunk_list);
-+	kfree(q->asoc->sched_internal);
-+	return;
-+}
-+
-+static void wfq_enqueue_head_data(struct sctp_outq *q,
-+					struct sctp_chunk *ch)
-+{
-+	list_add(&ch->list, &q->out_chunk_list[ch->sinfo.sinfo_stream]);
-+	q->out_qlen += ch->skb->len;
-+	return;
-+}
-+
-+static void wfq_enqueue_tail_data(struct sctp_outq *q, struct sctp_chunk *ch)
-+{
-+	list_add_tail(&ch->list, &q->out_chunk_list[ch->sinfo.sinfo_stream]);
-+	q->out_qlen += ch->skb->len;
-+	return;
-+}
-+
-+static struct sctp_chunk *wfq_dequeue_data(struct sctp_outq *q)
-+{
-+	struct sctp_chunk *ch = NULL;
-+	struct wfq *internal = (struct wfq *)q->asoc->sched_internal;
-+	__u16 i, cur = 0;
-+	int flag = 0, hasdata = 0;
-+
-+	for (i = 0; i < q->asoc->c.sinit_num_ostreams || hasdata; i++) {
-+		if (!list_empty(&q->out_chunk_list[internal->rr_ptr])) {
-+			hasdata = 1;
-+			struct list_head *tmp_entry =
-+				q->out_chunk_list[internal->rr_ptr].next;
-+			struct sctp_chunk *tmp_ch =
-+				list_entry(tmp_entry, struct sctp_chunk, list);
-+			if (tmp_ch->skb->len <=
-+				internal->deficit[internal->rr_ptr]) {
-+				internal->deficit[internal->rr_ptr] -=
-+					tmp_ch->skb->len;
-+				cur = internal->rr_ptr;
-+				flag = 1;
-+				break;
-+			}
-+		} else {
-+			internal->deficit[internal->rr_ptr] = 0;
-+		}
-+		internal->rr_ptr = (internal->rr_ptr + 1)
-+						% q->asoc->c.sinit_num_ostreams;
-+		internal->deficit[internal->rr_ptr] +=
-+				q->asoc->sched_priv[internal->rr_ptr] * quantum;
-+	}
-+
-+	if (flag) {
-+		struct list_head *entry = q->out_chunk_list[cur].next;
-+		ch = list_entry(entry, struct sctp_chunk, list);
-+		list_del_init(entry);
-+		q->out_qlen -= ch->skb->len;
-+	}
-+	return ch;
-+}
-+
-+static inline int wfq_is_empty(struct sctp_outq *q)
-+{
-+	__u16 i;
-+	for (i = 0; i < q->asoc->c.sinit_num_ostreams; i++)
-+		if (!list_empty(&q->out_chunk_list[i]))
-+			return 0;
-+	return 1;
-+}
-+
-+static struct sctp_sched_ops sctp_wfq = {
-+	.name			= "wfq",
-+	.owner			= THIS_MODULE,
-+	.init			= wfq_init,
-+	.release		= wfq_release,
-+	.enqueue_head_data	= wfq_enqueue_head_data,
-+	.enqueue_tail_data	= wfq_enqueue_tail_data,
-+	.dequeue_data		= wfq_dequeue_data,
-+	.is_empty		= wfq_is_empty,
-+};
-+
-+static int __init sctp_wfq_register(void)
-+{
-+	return sctp_register_sched(&sctp_wfq);
-+}
-+
-+static void __exit sctp_wfq_unregister(void)
-+{
-+	sctp_unregister_sched(&sctp_wfq);
-+}
-+
-+module_init(sctp_wfq_register);
-+module_exit(sctp_wfq_unregister);
-+
-+MODULE_AUTHOR("Yaogong Wang");
-+MODULE_LICENSE("GPL");
-+MODULE_DESCRIPTION("SCTP Multistream Scheduling: Weighted Fair Queue");
+struct snd_soc_codec_device soc_codec_dev_jz4740_codec = {
+        .probe = jz4740_codec_dev_probe,
+        .remove = jz4740_codec_dev_remove,
+};
+EXPORT_SYMBOL_GPL(soc_codec_dev_jz4740_codec);
+
+I think the ';' should be removed according to 'checkpatch.pl', but Andrew Morton just said the 'warning'
+reason from the checkpatch script's own BUG, so far, I could not get any comments about this.
+
+So, Mark & Liam, any comments regarding this 'checkpatch script's own BUG'?
+
+Lars-Peter Clausen:
+> This patch adds support for the JZ4740 internal codec.
+> 
+> Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
+> Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>
+> Cc: Liam Girdwood <lrg@slimlogic.co.uk>
+> Cc: alsa-devel@alsa-project.org
+> ---
+>  sound/soc/codecs/Kconfig        |    4 +
+>  sound/soc/codecs/Makefile       |    2 +
+>  sound/soc/codecs/jz4740-codec.c |  502 +++++++++++++++++++++++++++++++++++++++
+>  sound/soc/codecs/jz4740-codec.h |   20 ++
+>  4 files changed, 528 insertions(+), 0 deletions(-)
+>  create mode 100644 sound/soc/codecs/jz4740-codec.c
+>  create mode 100644 sound/soc/codecs/jz4740-codec.h
+> 
+> diff --git a/sound/soc/codecs/Kconfig b/sound/soc/codecs/Kconfig
+> index 31ac553..b8008df 100644
+> --- a/sound/soc/codecs/Kconfig
+> +++ b/sound/soc/codecs/Kconfig
+> @@ -23,6 +23,7 @@ config SND_SOC_ALL_CODECS
+>  	select SND_SOC_AK4671 if I2C
+>  	select SND_SOC_CQ0093VC if MFD_DAVINCI_VOICECODEC
+>  	select SND_SOC_CS4270 if I2C
+> +	select SND_SOC_JZ4740 if SOC_JZ4740
+>  	select SND_SOC_MAX9877 if I2C
+>  	select SND_SOC_DA7210 if I2C
+>  	select SND_SOC_PCM3008
+> @@ -269,6 +270,9 @@ config SND_SOC_WM9712
+>  config SND_SOC_WM9713
+>  	tristate
+>  
+> +config SND_SOC_JZ4740_CODEC
+> +	tristate
+> +
+>  # Amp
+>  config SND_SOC_MAX9877
+>  	tristate
+> diff --git a/sound/soc/codecs/Makefile b/sound/soc/codecs/Makefile
+> index 91429ea..4c7ee31 100644
+> --- a/sound/soc/codecs/Makefile
+> +++ b/sound/soc/codecs/Makefile
+> @@ -56,6 +56,7 @@ snd-soc-wm9705-objs := wm9705.o
+>  snd-soc-wm9712-objs := wm9712.o
+>  snd-soc-wm9713-objs := wm9713.o
+>  snd-soc-wm-hubs-objs := wm_hubs.o
+> +snd-soc-jz4740-codec-objs := jz4740-codec.o
+>  
+>  # Amp
+>  snd-soc-max9877-objs := max9877.o
+> @@ -121,6 +122,7 @@ obj-$(CONFIG_SND_SOC_WM9705)	+= snd-soc-wm9705.o
+>  obj-$(CONFIG_SND_SOC_WM9712)	+= snd-soc-wm9712.o
+>  obj-$(CONFIG_SND_SOC_WM9713)	+= snd-soc-wm9713.o
+>  obj-$(CONFIG_SND_SOC_WM_HUBS)	+= snd-soc-wm-hubs.o
+> +obj-$(CONFIG_SND_SOC_JZ4740_CODEC)	+= snd-soc-jz4740-codec.o
+>  
+>  # Amp
+>  obj-$(CONFIG_SND_SOC_MAX9877)	+= snd-soc-max9877.o
+> diff --git a/sound/soc/codecs/jz4740-codec.c b/sound/soc/codecs/jz4740-codec.c
+> new file mode 100644
+> index 0000000..6e4b741
+> --- /dev/null
+> +++ b/sound/soc/codecs/jz4740-codec.c
+> @@ -0,0 +1,502 @@
+> +/*
+> + * Copyright (C) 2009-2010, Lars-Peter Clausen <lars@metafoo.de>
+> + *
+> + * This program is free software; you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License version 2 as
+> + * published by the Free Software Foundation.
+> + *
+> + *  You should have received a copy of the  GNU General Public License along
+> + *  with this program; if not, write  to the Free Software Foundation, Inc.,
+> + *  675 Mass Ave, Cambridge, MA 02139, USA.
+> + *
+> + */
+> +
+> +#include <linux/kernel.h>
+> +#include <linux/module.h>
+> +#include <linux/platform_device.h>
+> +#include <linux/slab.h>
+> +
+> +#include <linux/delay.h>
+> +
+> +#include <sound/core.h>
+> +#include <sound/pcm.h>
+> +#include <sound/pcm_params.h>
+> +#include <sound/initval.h>
+> +#include <sound/soc-dapm.h>
+> +#include <sound/soc.h>
+> +
+> +#define JZ4740_REG_CODEC_1 0x0
+> +#define JZ4740_REG_CODEC_2 0x1
+> +
+> +#define JZ4740_CODEC_1_LINE_ENABLE BIT(29)
+> +#define JZ4740_CODEC_1_MIC_ENABLE BIT(28)
+> +#define JZ4740_CODEC_1_SW1_ENABLE BIT(27)
+> +#define JZ4740_CODEC_1_ADC_ENABLE BIT(26)
+> +#define JZ4740_CODEC_1_SW2_ENABLE BIT(25)
+> +#define JZ4740_CODEC_1_DAC_ENABLE BIT(24)
+> +#define JZ4740_CODEC_1_VREF_DISABLE BIT(20)
+> +#define JZ4740_CODEC_1_VREF_AMP_DISABLE BIT(19)
+> +#define JZ4740_CODEC_1_VREF_PULL_DOWN BIT(18)
+> +#define JZ4740_CODEC_1_VREF_LOW_CURRENT BIT(17)
+> +#define JZ4740_CODEC_1_VREF_HIGH_CURRENT BIT(16)
+> +#define JZ4740_CODEC_1_HEADPHONE_DISABLE BIT(14)
+> +#define JZ4740_CODEC_1_HEADPHONE_AMP_CHANGE_ANY BIT(13)
+> +#define JZ4740_CODEC_1_HEADPHONE_CHANGE BIT(12)
+> +#define JZ4740_CODEC_1_HEADPHONE_PULL_DOWN_M BIT(11)
+> +#define JZ4740_CODEC_1_HEADPHONE_PULL_DOWN_R BIT(10)
+> +#define JZ4740_CODEC_1_HEADPHONE_POWER_DOWN_M BIT(9)
+> +#define JZ4740_CODEC_1_HEADPHONE_POWER_DOWN BIT(8)
+> +#define JZ4740_CODEC_1_SUSPEND BIT(1)
+> +#define JZ4740_CODEC_1_RESET BIT(0)
+> +
+> +#define JZ4740_CODEC_1_LINE_ENABLE_OFFSET 29
+> +#define JZ4740_CODEC_1_MIC_ENABLE_OFFSET 28
+> +#define JZ4740_CODEC_1_SW1_ENABLE_OFFSET 27
+> +#define JZ4740_CODEC_1_ADC_ENABLE_OFFSET 26
+> +#define JZ4740_CODEC_1_SW2_ENABLE_OFFSET 25
+> +#define JZ4740_CODEC_1_DAC_ENABLE_OFFSET 24
+> +#define JZ4740_CODEC_1_HEADPHONE_DISABLE_OFFSET 14
+> +#define JZ4740_CODEC_1_HEADPHONE_POWER_DOWN_OFFSET 8
+> +
+> +#define JZ4740_CODEC_2_INPUT_VOLUME_MASK		0x1f0000
+> +#define JZ4740_CODEC_2_SAMPLE_RATE_MASK			0x000f00
+> +#define JZ4740_CODEC_2_MIC_BOOST_GAIN_MASK		0x000030
+> +#define JZ4740_CODEC_2_HEADPHONE_VOLUME_MASK	0x000003
+> +
+> +#define JZ4740_CODEC_2_INPUT_VOLUME_OFFSET		16
+> +#define JZ4740_CODEC_2_SAMPLE_RATE_OFFSET		 8
+> +#define JZ4740_CODEC_2_MIC_BOOST_GAIN_OFFSET	 4
+> +#define JZ4740_CODEC_2_HEADPHONE_VOLUME_OFFSET	 0
+> +
+> +struct jz4740_codec {
+> +	void __iomem *base;
+> +	struct resource *mem;
+> +
+> +	uint32_t reg_cache[2];
+> +	struct snd_soc_codec codec;
+> +};
+> +
+> +static inline struct jz4740_codec *codec_to_jz4740(struct snd_soc_codec *codec)
+> +{
+> +	return container_of(codec, struct jz4740_codec, codec);
+> +}
+> +
+> +static unsigned int jz4740_codec_read(struct snd_soc_codec *codec, unsigned int reg)
+> +{
+> +	struct jz4740_codec *jz4740_codec = codec_to_jz4740(codec);
+> +	return readl(jz4740_codec->base + (reg << 2));
+> +}
+> +
+> +static int jz4740_codec_write(struct snd_soc_codec *codec, unsigned int reg,
+> +	unsigned int val)
+> +{
+> +	struct jz4740_codec *jz4740_codec = codec_to_jz4740(codec);
+> +	jz4740_codec->reg_cache[reg] = val;
+> +
+> +	writel(val, jz4740_codec->base + (reg << 2));
+> +	return 0;
+> +}
+> +
+> +static const struct snd_kcontrol_new jz4740_codec_controls[] = {
+> +	SOC_SINGLE("Master Playback Volume", JZ4740_REG_CODEC_2,
+> +			JZ4740_CODEC_2_HEADPHONE_VOLUME_OFFSET, 3, 0),
+> +	SOC_SINGLE("Capture Volume", JZ4740_REG_CODEC_2,
+> +			JZ4740_CODEC_2_INPUT_VOLUME_OFFSET, 31, 0),
+> +	SOC_SINGLE("Master Playback Switch", JZ4740_REG_CODEC_1,
+> +			JZ4740_CODEC_1_HEADPHONE_DISABLE_OFFSET, 1, 1),
+> +	SOC_SINGLE("Mic Capture Volume", JZ4740_REG_CODEC_2,
+> +			JZ4740_CODEC_2_MIC_BOOST_GAIN_OFFSET, 3, 0),
+> +};
+> +
+> +static const struct snd_kcontrol_new jz4740_codec_output_controls[] = {
+> +	SOC_DAPM_SINGLE("Bypass Switch", JZ4740_REG_CODEC_1,
+> +			JZ4740_CODEC_1_SW1_ENABLE_OFFSET, 1, 0),
+> +	SOC_DAPM_SINGLE("DAC Switch", JZ4740_REG_CODEC_1,
+> +			JZ4740_CODEC_1_SW2_ENABLE_OFFSET, 1, 0),
+> +};
+> +
+> +static const struct snd_kcontrol_new jz4740_codec_input_controls[] = {
+> +	SOC_DAPM_SINGLE("Line Capture Switch", JZ4740_REG_CODEC_1,
+> +			JZ4740_CODEC_1_LINE_ENABLE_OFFSET, 1, 0),
+> +	SOC_DAPM_SINGLE("Mic Capture Switch", JZ4740_REG_CODEC_1,
+> +			JZ4740_CODEC_1_MIC_ENABLE_OFFSET, 1, 0),
+> +};
+> +
+> +static const struct snd_soc_dapm_widget jz4740_codec_dapm_widgets[] = {
+> +	SND_SOC_DAPM_ADC("ADC", "Capture", JZ4740_REG_CODEC_1,
+> +			JZ4740_CODEC_1_ADC_ENABLE_OFFSET, 0),
+> +	SND_SOC_DAPM_DAC("DAC", "Playback", JZ4740_REG_CODEC_1,
+> +			JZ4740_CODEC_1_DAC_ENABLE_OFFSET, 0),
+> +
+> +	SND_SOC_DAPM_MIXER("Output Mixer", JZ4740_REG_CODEC_1,
+> +			JZ4740_CODEC_1_HEADPHONE_POWER_DOWN_OFFSET, 1,
+> +			jz4740_codec_output_controls,
+> +			ARRAY_SIZE(jz4740_codec_output_controls)),
+> +
+> +	SND_SOC_DAPM_MIXER_NAMED_CTL("Input Mixer", SND_SOC_NOPM, 0, 0,
+> +			jz4740_codec_input_controls,
+> +			ARRAY_SIZE(jz4740_codec_input_controls)),
+> +	SND_SOC_DAPM_MIXER("Line Input", SND_SOC_NOPM, 0, 0, NULL, 0),
+> +
+> +	SND_SOC_DAPM_OUTPUT("LOUT"),
+> +	SND_SOC_DAPM_OUTPUT("ROUT"),
+> +
+> +	SND_SOC_DAPM_INPUT("MIC"),
+> +	SND_SOC_DAPM_INPUT("LIN"),
+> +	SND_SOC_DAPM_INPUT("RIN"),
+> +};
+> +
+> +static const struct snd_soc_dapm_route jz4740_codec_dapm_routes[] = {
+> +
+> +	{"Line Input", NULL, "LIN"},
+> +	{"Line Input", NULL, "RIN"},
+> +
+> +	{"Input Mixer", "Line Capture Switch", "Line Input"},
+> +	{"Input Mixer", "Mic Capture Switch", "MIC"},
+> +
+> +	{"ADC", NULL, "Input Mixer"},
+> +
+> +	{"Output Mixer", "Bypass Switch", "Input Mixer"},
+> +	{"Output Mixer", "DAC Switch", "DAC"},
+> +
+> +	{"LOUT", NULL, "Output Mixer"},
+> +	{"ROUT", NULL, "Output Mixer"},
+> +};
+> +
+> +static int jz4740_codec_hw_params(struct snd_pcm_substream *substream,
+> +	struct snd_pcm_hw_params *params, struct snd_soc_dai *dai)
+> +{
+> +	uint32_t val;
+> +	struct snd_soc_pcm_runtime *rtd = substream->private_data;
+> +	struct snd_soc_device *socdev = rtd->socdev;
+> +	struct snd_soc_codec *codec = socdev->card->codec;
+> +
+> +	switch (params_format(params)) {
+> +	case SNDRV_PCM_FORMAT_S8:
+> +	case SNDRV_PCM_FORMAT_S16_LE:
+> +	case SNDRV_PCM_FORMAT_S18_3LE:
+> +		break;
+> +	default:
+> +		return -EINVAL;
+> +		break;
+> +	}
+> +
+> +	switch (params_rate(params)) {
+> +	case 8000:
+> +		val = 0;
+> +		break;
+> +	case 11025:
+> +		val = 1;
+> +		break;
+> +	case 12000:
+> +		val = 2;
+> +		break;
+> +	case 16000:
+> +		val = 3;
+> +		break;
+> +	case 22050:
+> +		val = 4;
+> +		break;
+> +	case 24000:
+> +		val = 5;
+> +		break;
+> +	case 32000:
+> +		val = 6;
+> +		break;
+> +	case 44100:
+> +		val = 7;
+> +		break;
+> +	case 48000:
+> +		val = 8;
+> +		break;
+> +	default:
+> +		return -EINVAL;
+> +	}
+> +
+> +	val <<= JZ4740_CODEC_2_SAMPLE_RATE_OFFSET;
+> +
+> +	snd_soc_update_bits(codec, JZ4740_REG_CODEC_2,
+> +				JZ4740_CODEC_2_SAMPLE_RATE_MASK, val);
+> +
+> +	return 0;
+> +}
+> +
+> +static int jz4740_codec_set_fmt(struct snd_soc_dai *dai, unsigned int fmt)
+> +{
+> +	switch (fmt & SND_SOC_DAIFMT_MASTER_MASK) {
+> +	case SND_SOC_DAIFMT_CBM_CFM:
+> +		break;
+> +	default:
+> +		return -EINVAL;
+> +	}
+> +
+> +	switch (fmt & SND_SOC_DAIFMT_FORMAT_MASK) {
+> +	case SND_SOC_DAIFMT_I2S:
+> +		break;
+> +	default:
+> +		return -EINVAL;
+> +	}
+> +
+> +	switch (fmt & SND_SOC_DAIFMT_INV_MASK) {
+> +	case SND_SOC_DAIFMT_NB_NF:
+> +		break;
+> +	default:
+> +		return -EINVAL;
+> +	}
+> +
+> +	return 0;
+> +}
+> +
+> +static struct snd_soc_dai_ops jz4740_codec_dai_ops = {
+> +	.hw_params = jz4740_codec_hw_params,
+> +	.set_fmt = jz4740_codec_set_fmt,
+> +};
+> +
+> +struct snd_soc_dai jz4740_codec_dai = {
+> +	.name = "jz-codec",
+> +	.playback = {
+> +		.stream_name = "Playback",
+> +		.channels_min = 2,
+> +		.channels_max = 2,
+> +		.rates = SNDRV_PCM_RATE_8000_48000,
+> +		.formats = SNDRV_PCM_FMTBIT_S16_LE | SNDRV_PCM_FMTBIT_S8,
+> +	},
+> +	.capture = {
+> +		.stream_name = "Capture",
+> +		.channels_min = 2,
+> +		.channels_max = 2,
+> +		.rates = SNDRV_PCM_RATE_8000_48000,
+> +		.formats = SNDRV_PCM_FMTBIT_S16_LE | SNDRV_PCM_FMTBIT_S8,
+> +	},
+> +	.ops = &jz4740_codec_dai_ops,
+> +	.symmetric_rates = 1,
+> +};
+> +EXPORT_SYMBOL_GPL(jz4740_codec_dai);
+> +
+> +static int jz4740_codec_set_bias_level(struct snd_soc_codec *codec,
+> +	enum snd_soc_bias_level level)
+> +{
+> +
+> +	if (codec->bias_level == SND_SOC_BIAS_OFF && level != SND_SOC_BIAS_OFF) {
+> +		snd_soc_update_bits(codec, JZ4740_REG_CODEC_1,
+> +			JZ4740_CODEC_1_RESET, JZ4740_CODEC_1_RESET);
+> +		udelay(2);
+> +
+> +		snd_soc_update_bits(codec, JZ4740_REG_CODEC_1,
+> +			JZ4740_CODEC_1_SUSPEND | JZ4740_CODEC_1_RESET, 0);
+> +	}
+> +	switch (level) {
+> +	case SND_SOC_BIAS_ON:
+> +		snd_soc_update_bits(codec, JZ4740_REG_CODEC_1,
+> +			JZ4740_CODEC_1_VREF_DISABLE |
+> +			JZ4740_CODEC_1_VREF_AMP_DISABLE |
+> +			JZ4740_CODEC_1_HEADPHONE_POWER_DOWN_M |
+> +			JZ4740_CODEC_1_VREF_LOW_CURRENT |
+> +			JZ4740_CODEC_1_VREF_HIGH_CURRENT,
+> +			0);
+> +		break;
+> +	case SND_SOC_BIAS_PREPARE:
+> +		snd_soc_update_bits(codec, JZ4740_REG_CODEC_1,
+> +			JZ4740_CODEC_1_VREF_LOW_CURRENT |
+> +			JZ4740_CODEC_1_VREF_HIGH_CURRENT,
+> +			JZ4740_CODEC_1_VREF_LOW_CURRENT |
+> +			JZ4740_CODEC_1_VREF_HIGH_CURRENT);
+> +		break;
+> +	case SND_SOC_BIAS_STANDBY:
+> +		snd_soc_update_bits(codec, JZ4740_REG_CODEC_1,
+> +			JZ4740_CODEC_1_VREF_DISABLE | JZ4740_CODEC_1_VREF_AMP_DISABLE,
+> +			JZ4740_CODEC_1_VREF_DISABLE | JZ4740_CODEC_1_VREF_AMP_DISABLE);
+> +		break;
+> +	case SND_SOC_BIAS_OFF:
+> +		snd_soc_update_bits(codec, JZ4740_REG_CODEC_1,
+> +			JZ4740_CODEC_1_SUSPEND, JZ4740_CODEC_1_SUSPEND);
+> +		break;
+> +	}
+> +	codec->bias_level = level;
+> +
+> +	return 0;
+> +}
+> +
+> +
+> +static struct snd_soc_codec *jz4740_codec_codec;
+> +
+> +static int jz4740_codec_dev_probe(struct platform_device *pdev)
+> +{
+> +	int ret;
+> +	struct snd_soc_device *socdev = platform_get_drvdata(pdev);
+> +	struct snd_soc_codec *codec = jz4740_codec_codec;
+> +
+> +	BUG_ON(!codec);
+> +
+> +	socdev->card->codec = codec;
+> +
+> +	ret = snd_soc_new_pcms(socdev, SNDRV_DEFAULT_IDX1, SNDRV_DEFAULT_STR1);
+> +	if (ret) {
+> +		dev_err(&pdev->dev, "Failed to create pcms: %d\n", ret);
+> +		return ret;
+> +	}
+> +
+> +	snd_soc_add_controls(codec, jz4740_codec_controls,
+> +		ARRAY_SIZE(jz4740_codec_controls));
+> +
+> +	snd_soc_dapm_new_controls(codec, jz4740_codec_dapm_widgets,
+> +		ARRAY_SIZE(jz4740_codec_dapm_widgets));
+> +
+> +	snd_soc_dapm_add_routes(codec, jz4740_codec_dapm_routes,
+> +		ARRAY_SIZE(jz4740_codec_dapm_routes));
+> +
+> +	snd_soc_dapm_new_widgets(codec);
+> +
+> +	return 0;
+> +}
+> +
+> +static int jz4740_codec_dev_remove(struct platform_device *pdev)
+> +{
+> +	struct snd_soc_device *socdev = platform_get_drvdata(pdev);
+> +	snd_soc_free_pcms(socdev);
+> +	snd_soc_dapm_free(socdev);
+> +
+> +	return 0;
+> +}
+> +
+> +struct snd_soc_codec_device soc_codec_dev_jz4740_codec = {
+> +	.probe = jz4740_codec_dev_probe,
+> +	.remove = jz4740_codec_dev_remove,
+> +};
+> +EXPORT_SYMBOL_GPL(soc_codec_dev_jz4740_codec);
+> +
+> +static int __devinit jz4740_codec_probe(struct platform_device *pdev)
+> +{
+> +	int ret;
+> +	struct jz4740_codec *jz4740_codec;
+> +	struct snd_soc_codec *codec;
+> +
+> +	jz4740_codec = kzalloc(sizeof(*jz4740_codec), GFP_KERNEL);
+> +
+> +	if (!jz4740_codec)
+> +		return -ENOMEM;
+> +
+> +	jz4740_codec->mem = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+> +
+> +	if (!jz4740_codec->mem) {
+> +		dev_err(&pdev->dev, "Failed to get mmio memory resource\n");
+> +		ret = -ENOENT;
+> +		goto err_free_codec;
+> +	}
+> +
+> +	jz4740_codec->mem = request_mem_region(jz4740_codec->mem->start,
+> +				resource_size(jz4740_codec->mem), pdev->name);
+> +
+> +	if (!jz4740_codec->mem) {
+> +		dev_err(&pdev->dev, "Failed to request mmio memory region\n");
+> +		ret = -EBUSY;
+> +		goto err_free_codec;
+> +	}
+> +
+> +	jz4740_codec->base = ioremap(jz4740_codec->mem->start, resource_size(jz4740_codec->mem));
+> +
+> +	if (!jz4740_codec->base) {
+> +		dev_err(&pdev->dev, "Failed to ioremap mmio memory\n");
+> +		ret = -EBUSY;
+> +		goto err_release_mem_region;
+> +	}
+> +
+> +	jz4740_codec_dai.dev = &pdev->dev;
+> +
+> +	codec = &jz4740_codec->codec;
+> +
+> +	codec->dev		= &pdev->dev;
+> +	codec->name		= "jz-codec";
+> +	codec->owner		= THIS_MODULE;
+> +
+> +	codec->read		= jz4740_codec_read;
+> +	codec->write		= jz4740_codec_write;
+> +	codec->set_bias_level	= jz4740_codec_set_bias_level;
+> +	codec->bias_level	= SND_SOC_BIAS_OFF;
+> +
+> +	codec->dai		= &jz4740_codec_dai;
+> +	codec->num_dai		= 1;
+> +
+> +	codec->reg_cache	= jz4740_codec->reg_cache;
+> +	codec->reg_cache_size	= 2;
+> +
+> +	mutex_init(&codec->mutex);
+> +	INIT_LIST_HEAD(&codec->dapm_widgets);
+> +	INIT_LIST_HEAD(&codec->dapm_paths);
+> +
+> +	jz4740_codec_codec = codec;
+> +
+> +	snd_soc_update_bits(codec, JZ4740_REG_CODEC_1,
+> +				JZ4740_CODEC_1_SW2_ENABLE, JZ4740_CODEC_1_SW2_ENABLE);
+> +
+> +
+> +	platform_set_drvdata(pdev, jz4740_codec);
+> +	ret = snd_soc_register_codec(codec);
+> +
+> +	if (ret) {
+> +		dev_err(&pdev->dev, "Failed to register codec\n");
+> +		goto err_iounmap;
+> +	}
+> +
+> +	ret = snd_soc_register_dai(&jz4740_codec_dai);
+> +	if (ret) {
+> +		dev_err(&pdev->dev, "Failed to register codec dai\n");
+> +		goto err_unregister_codec;
+> +	}
+> +
+> +	jz4740_codec_set_bias_level(codec, SND_SOC_BIAS_STANDBY);
+> +
+> +	return 0;
+> +err_unregister_codec:
+> +	snd_soc_unregister_codec(codec);
+> +err_iounmap:
+> +	iounmap(jz4740_codec->base);
+> +err_release_mem_region:
+> +	release_mem_region(jz4740_codec->mem->start, resource_size(jz4740_codec->mem));
+> +err_free_codec:
+> +	kfree(jz4740_codec);
+> +
+> +	return ret;
+> +}
+> +
+> +static int __devexit jz4740_codec_remove(struct platform_device *pdev)
+> +{
+> +	struct jz4740_codec *jz4740_codec = platform_get_drvdata(pdev);
+> +
+> +	snd_soc_unregister_dai(&jz4740_codec_dai);
+> +	snd_soc_unregister_codec(&jz4740_codec->codec);
+> +
+> +	iounmap(jz4740_codec->base);
+> +	release_mem_region(jz4740_codec->mem->start, resource_size(jz4740_codec->mem));
+> +
+> +	platform_set_drvdata(pdev, NULL);
+> +	kfree(jz4740_codec);
+> +
+> +	return 0;
+> +}
+> +
+> +static struct platform_driver jz4740_codec_driver = {
+> +	.probe = jz4740_codec_probe,
+> +	.remove = __devexit_p(jz4740_codec_remove),
+> +	.driver = {
+> +		.name = "jz4740-codec",
+> +		.owner = THIS_MODULE,
+> +	},
+> +};
+> +
+> +static int __init jz4740_codec_init(void)
+> +{
+> +	return platform_driver_register(&jz4740_codec_driver);
+> +}
+> +module_init(jz4740_codec_init);
+> +
+> +static void __exit jz4740_codec_exit(void)
+> +{
+> +	platform_driver_unregister(&jz4740_codec_driver);
+> +}
+> +module_exit(jz4740_codec_exit);
+> +
+> +MODULE_DESCRIPTION("JZ4740 SoC internal codec driver");
+> +MODULE_AUTHOR("Lars-Peter Clausen <lars@metafoo.de>");
+> +MODULE_LICENSE("GPL v2");
+> +MODULE_ALIAS("platform:jz-codec");
+> diff --git a/sound/soc/codecs/jz4740-codec.h b/sound/soc/codecs/jz4740-codec.h
+> new file mode 100644
+> index 0000000..b5a0691
+> --- /dev/null
+> +++ b/sound/soc/codecs/jz4740-codec.h
+> @@ -0,0 +1,20 @@
+> +/*
+> + * Copyright (C) 2009, Lars-Peter Clausen <lars@metafoo.de>
+> + *
+> + * This program is free software; you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License version 2 as
+> + * published by the Free Software Foundation.
+> + *
+> + *  You should have received a copy of the  GNU General Public License along
+> + *  with this program; if not, write  to the Free Software Foundation, Inc.,
+> + *  675 Mass Ave, Cambridge, MA 02139, USA.
+> + *
+> + */
+> +
+> +#ifndef __SND_SOC_CODECS_JZ4740_CODEC_H__
+> +#define __SND_SOC_CODECS_JZ4740_CODEC_H__
+> +
+> +extern struct snd_soc_dai jz4740_codec_dai;
+> +extern struct snd_soc_codec_device soc_codec_dev_jz4740_codec;
+> +
+> +#endif
+
