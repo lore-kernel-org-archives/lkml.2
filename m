@@ -1,69 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756151Ab0FCH2x (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jun 2010 03:28:53 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:35493 "EHLO
+	id S1756747Ab0FCHj2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jun 2010 03:39:28 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:44365 "EHLO
 	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752675Ab0FCH2w convert rfc822-to-8bit (ORCPT
+	with ESMTP id S1755602Ab0FCHj0 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jun 2010 03:28:52 -0400
+	Thu, 3 Jun 2010 03:39:26 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=mime-version:in-reply-to:references:date:message-id:subject:from:to
          :cc:content-type:content-transfer-encoding;
-        b=R1CKn92P5cozymqs82Fn5z400QZtZ9FuzNQvmgyqi424lhlCdOS4PB64EXd9N9g5AD
-         GqH5DPCxOsaza/9FI/4DUdjqmrjhsD+vPEm0qTJOzzQip4ju9n/m+Ear1YvLfbohOvKe
-         bLr41JsQysIt/kkEUItEd1BPu5Q7jHPyjwWiQ=
+        b=F/kNDYPMysjAl8hIrC6dBG5VEpjVyizBXSix6S2S/5zvWv9knBfEVWTjCynFHCjI4g
+         XjtztlG+a68fsx8OuuNrY/2hegUmO5l3Y3diTgrR0jcn0aUYB/qafX1SHrHiGvpdUHEW
+         6g6+QoVvexFfJ7d3D6rRksUz5zdqkJgk3WMTU=
 MIME-Version: 1.0
-In-Reply-To: <4C07561F.5080202@garzik.org>
-References: <AANLkTikWak8i-Kaj-e-EUFWE66tfMmp2UPhGJCKkK1zK@mail.gmail.com>
-	<4C07561F.5080202@garzik.org>
-Date: Thu, 3 Jun 2010 15:28:50 +0800
-Message-ID: <AANLkTim5UblANgkOj2XNjNw-h2JMKsXRkuMpROpEOlpZ@mail.gmail.com>
-Subject: Re: 2.6.25-rc1 ahci regression
-From: Luming Yu <luming.yu@gmail.com>
-To: Jeff Garzik <jeff@garzik.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, avorontsov@ru.mvista.com
+In-Reply-To: <20100603134753.710a64b3.sfr@canb.auug.org.au>
+References: <20100603134753.710a64b3.sfr@canb.auug.org.au>
+Date: Thu, 3 Jun 2010 15:39:25 +0800
+Message-ID: <AANLkTilr92GkR8bfgyjtb8ToYEEAv4oCsFsfsy04HJRU@mail.gmail.com>
+Subject: Re: linux-next: Tree for June 3
+From: Dave Young <hidave.darkstar@gmail.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+       Rusty Russell <rusty@rustcorp.com.au>
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 3, 2010 at 3:13 PM, Jeff Garzik <jeff@garzik.org> wrote:
-> On 06/03/2010 03:02 AM, Luming Yu wrote:
->>
->> Hi there,
->>
->> I happened to notice that the commit 365cfa1ed5 caused the following
->> boot error with 2.6.25-rc1
->> on a system with ICH10 SATA AHCI controller. It's weird if there is
->> really no function changes in the patch.
->>
->> Any ideas?
->>
->>
->> dracut: Starting plymouth daemon
->> pata_jmicron 0000:0f:00.0: PCI INT A ->  GSI 16 (level, low) ->  IRQ 16
->> scsi0 : pata_jmicron
->> Initializing USB Mass Storage driver...
->> scsi1 : usb-storage 1-5:1.0
->> scsi2 : pata_jmicron
->> ata1: PATA max UDMA/100 cmd 0xd040 ctl 0xd030 bmdma 0xd000 irq 16
->> ata2: PATA max UDMA/100 cmd 0xd020 ctl 0xd010 bmdma 0xd008 irq 16
->> usbcore: registered new interface driver usb-storage
->> USB Mass Storage support registered.
->> scsi 1:0:0:0: CD-ROM            PepperC  Virtual Disc 1   0.01 PQ: 0 ANSI:
->> 3
->> sr0: scsi-1 drive
+On Thu, Jun 3, 2010 at 11:47 AM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+> Hi all,
 >
-> Your output here does not indicate a boot error, so to what do you refer?
-sr0: scsi-1 drive
-Uniform CD-ROM driver Revision: 3.20
-
-Boot has failed, sleeping forever.
-
-
-
-
+> Changes since 20100602:
 >
+> My fixes tree contains:
+>      v4l-dvb: update gfp/slab.h includes
+>      arm: update gfp/slab.h includes
+>      davinci: update gfp/slab.h includes
+>      ocfs2: update gfp/slab.h includes
+>      acpi: update gfp/slab.h includes
+>
+> The sh tree lost its build failure.
+>
+> The rr tree lost its build failure.
+>
+> ----------------------------------------------------------------------------
+>
+> I have created today's linux-next tree at
+> git://git.kernel.org/pub/scm/linux/kernel/git/next/linux-next.git
+> (patches at http://www.kernel.org/pub/linux/kernel/v2.6/next/ ).  If you
+> are tracking the linux-next tree using git, you should not use "git pull"
+> to do so as that will try to merge the new linux-next release with the
+> old one.  You should use "git fetch" as mentioned in the FAQ on the wiki
+> (see below).
+>
+
+Hi,
+
+With this build, I got weird module refcount:
+
+bash-3.1$ cat /proc/modules
+radeon 703776 4294967295 - Live 0xffffffffa017c000
+ttm 55891 0 radeon, Live 0xffffffffa0164000
+drm_kms_helper 25154 0 radeon, Live 0xffffffffa015b000
+drm 174333 2 radeon,ttm,drm_kms_helper, Live 0xffffffffa011f000
+fb 45136 1 radeon,drm_kms_helper, Live 0xffffffffa00ff000
+fbdev 861 0 fb, Live 0xffffffffa009e000
+i2c_algo_bit 4925 0 radeon, Live 0xffffffffa0069000
+cfbcopyarea 3229 0 radeon, Live 0xffffffffa0059000
+cfbimgblt 2138 0 radeon, Live 0xffffffffa002c000
+cfbfillrect 3241 0 radeon, Live 0xffffffffa0026000
+tun 13180 2 - Live 0xffffffffa0039000
+kvm_intel 42801 4294967295 - Live 0xffffffffa0112000
+kvm 250629 0 kvm_intel, Live 0xffffffffa00bf000
+dell_wmi 2939 4294967295 - Live 0xffffffffa000e000
+snd_hda_codec_analog 72342 0 - Live 0xffffffffa00ab000
+wmi 7636 0 dell_wmi, Live 0xffffffffa0004000
+e1000e 186408 4294967295 - Live 0xffffffffa006e000
+snd_hda_intel 22245 4294967295 - Live 0xffffffffa0061000
+snd_hda_codec 69600 1 snd_hda_codec_analog,snd_hda_intel, Live 0xffffffffa004600
+0
+snd_hwdep 5914 0 snd_hda_codec, Live 0xffffffffa003e000
+8139too 31275 4294967295 - Live 0xffffffffa002f000
+snd_pcm 70720 1 snd_hda_intel,snd_hda_codec, Live 0xffffffffa0012000
+snd_timer 18357 0 snd_pcm, Live 0xffffffffa0007000
+snd_page_alloc 7365 1 snd_hda_intel,snd_pcm, Live 0xffffffffa0000000
+
+As you can see, some refcount become negtive
+--
+Regards
+dave
