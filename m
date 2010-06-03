@@ -1,100 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933737Ab0FCDKR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jun 2010 23:10:17 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:58213 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933579Ab0FCDKO (ORCPT
+	id S933745Ab0FCDLn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jun 2010 23:11:43 -0400
+Received: from mail-px0-f174.google.com ([209.85.212.174]:48896 "EHLO
+	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933579Ab0FCDLl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jun 2010 23:10:14 -0400
+	Wed, 2 Jun 2010 23:11:41 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:reply-to:references:mime-version
-         :content-type:content-disposition:content-transfer-encoding
-         :in-reply-to:user-agent;
-        b=PkwLsL9i+XzlM5V8jAaO9G5FyXwupx7SLQLi2tMGqN4kWXyyXsd4sOBJBJ2DaW/SS0
-         P3L0aWtansXLyk50HKOwKh2nbrJumcPlUEYoPzIcwmBSUolWF09wrw92NuKuY0MGLNpI
-         jKtbQBBoCmShO1BNT5aDj/SCOGACXQ7/CG83Q=
-Date: Wed, 2 Jun 2010 20:10:24 -0700
-From: mark gross <640e9920@gmail.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: markgross@thegnar.org,
-       Arve =?iso-8859-1?B?SGr4bm5lduVn?= <arve@android.com>,
-       Florian Mickler <florian@mickler.org>, 640e9920@gmail.com,
-       Alan Stern <stern@rowland.harvard.edu>,
-       Peter Zijlstra <peterz@infradead.org>,
-       Linux PM <linux-pm@lists.linux-foundation.org>,
-       Brian Swetland <swetland@google.com>,
-       Alan Cox <alan@lxorguk.ukuu.org.uk>,
-       Matthew Garrett <mjg59@srcf.ucam.org>,
-       Thomas Gleixner <tglx@linutronix.de>,
-       LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>
-Subject: Re: [linux-pm] [PATCH 0/8] Suspend block api (version 8)
-Message-ID: <20100603031024.GA11311@gvim.org>
-Reply-To: markgross@thegnar.org
-References: <AANLkTik_4ezDAQoAQjkpEgwD9SLKeOjDzy2H7T2v6uCP@mail.gmail.com>
- <AANLkTikF-B23_UWG1O3tlBl4m8NStAJllGhhevNhYZT6@mail.gmail.com>
- <20100602133910.GA9106@gvim.org>
- <201006030003.49486.rjw@sisk.pl>
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type;
+        b=PZ+T1+lymmtkAoPgLKVI9iG27JMSZWixAgo9sA/loGOkIY9ygIXeQDBH4PExVNDZRT
+         DUdgrkNVwevexbFfZ8VWGUKbbmuNNqSslgBreJuqBZYAUV4c2lUHVupISlnhhFPQvLtT
+         CmOXp3pkNvCWZSw733DlJzVs9V1x/LFR8cJf0=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <201006030003.49486.rjw@sisk.pl>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <AANLkTilDY61GMGNLezXYLbbe3B8-SvgMOK5L9Q6juETL@mail.gmail.com>
+References: <AANLkTimTm57fvumRXo9pegOY2M78mduBsClwYlmAOzpo@mail.gmail.com> 
+	<20100601183920.GB19955@kroah.com> <EA929A9653AAE14F841771FB1DE5A1365FF3EC130E@rrsmsx501.amr.corp.intel.com> 
+	<AANLkTinmxW5gQUOYJgK67Dc1FdakeXSmuu1hExKKL1qk@mail.gmail.com> 
+	<EA929A9653AAE14F841771FB1DE5A1365FF3F8D431@rrsmsx501.amr.corp.intel.com> 
+	<AANLkTilDY61GMGNLezXYLbbe3B8-SvgMOK5L9Q6juETL@mail.gmail.com>
+From: Frank Pan <frankpzh@gmail.com>
+Date: Thu, 3 Jun 2010 11:11:21 +0800
+Message-ID: <AANLkTilh4P9pcC53J7An3TioIPNk7LAwp9zq1R7jwiCx@mail.gmail.com>
+Subject: Re: Add a helper function in PCI IOV to get VF device
+To: "Williams, Mitch A" <mitch.a.williams@intel.com>
+Cc: Greg KH <greg@kroah.com>, Andrew Morton <akpm@linux-foundation.org>,
+       Jesse Barnes <jbarnes@virtuousgeek.org>,
+       Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>,
+       Yu Zhao <yu.zhao@intel.com>, Chris Wright <chrisw@sous-sol.org>,
+       "Rafael J. Wysocki" <rjw@sisk.pl>,
+       "David S. Miller" <davem@davemloft.net>,
+       Matt Carlson <mcarlson@broadcom.com>,
+       "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 03, 2010 at 12:03:49AM +0200, Rafael J. Wysocki wrote:
-> On Wednesday 02 June 2010, mark gross wrote:
-> > On Tue, Jun 01, 2010 at 08:50:02PM -0700, Arve Hjønnevåg wrote:
-> > > On Tue, Jun 1, 2010 at 7:05 AM, mark gross <640e9920@gmail.com> wrote:
-> > > > On Tue, Jun 01, 2010 at 09:07:37AM +0200, Florian Mickler wrote:
-> > > ...
-> > > >> +static void update_target_val(int pm_qos_class, s32 val)
-> > > >> +{
-> > > >> +     s32 extreme_value;
-> > > >> +     s32 new_value;
-> > > >> +     extreme_value = atomic_read(&pm_qos_array[pm_qos_class]->target_value);
-> > > >> +     new_value = pm_qos_array[pm_qos_class]->comparitor(val,extreme_value);
-> > > >> +     if (extreme_value != new_value)
-> > > >> +             atomic_set(&pm_qos_array[pm_qos_class]->target_value,new_value);
-> > > >> +}
-> > > >> +
-> > > >
-> > > > Only works 1/2 the time, but I like the idea!
-> > > > It fails to get the righ answer when constraints are reduced.  But, this
-> > > > idea is a good improvement i'll roll into the next pm_qos update!
-> > > >
-> > > 
-> > > I think it would be a better idea to track your constraints with a
-> > > sorted data structure. That way you can to better than O(n) for both
-> > > directions. If you have a lot of constraints with the same value, it
-> > > may even be worthwhile to have a two stage structure where for
-> > > instance you use a rbtree for the unique values and list for identical
-> > > constraints.
-> > 
-> > I don't agree, we went through this tree vrs list discussion a few times
-> > before in other areas of the kernel.  Wherever the list tended to be
-> > short, a simple list wins.  However; we can try it, after we have some
-> > metrics and stress test cases identified we can measure its effectivenes
-> > against.
-> 
-> How many different values are there to handle?
->
+> So, when VF has no interface, this path is also unavailable. That's
+> why I say given vf's bdf, one cannot infer pf's.
 
-for the current pm_qos users its tiny.  I've never heard of more than a
-few < 10.  However; for the new "interactive" class to provide suspend
-blocker functionality, I expect the number to be up to 20.
+Sorry I just missed something. Userspace can find pf's bdf by physfn.
 
-but realistically I bet we never get more than 10ish.
+So, the motivation is provide some information about vf from pf driver by sysfs.
 
-One constraint constraint request per module from isr to user mode.
-Once in user mode there would be only a few (assuming Android user
-space) I think just from the power HAL, input HAL, and the RIL.
+I cannot avoid to create one directory for each vf, like vf0, vf1,
+etc. Although userspace can find these directories, but it has no idea
+about which one to use. Userspace just knows vf's bdf, it won't care
+about/know vf's id. So I have the issue to create a symlink from each
+vf's /sys/bus/pci/devices/xxxx/ to their corresponding directories.
 
-Still a pretty small number I don't think we need to worry about scaling
-as much as we need to worry about performance.
+And then comes the issue: PF cannot get VF's bdf in kernel space.
 
---mgross 
+This is not a strange issue, hacking every SR-IOV device can met.
+
+Thanks.
+
+-- 
+Frank Pan
+
+Computer Science and Technology
+Tsinghua University
