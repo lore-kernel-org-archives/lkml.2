@@ -1,167 +1,197 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751726Ab0FCQGY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jun 2010 12:06:24 -0400
-Received: from fxip-0047f.externet.hu ([88.209.222.127]:36780 "EHLO
-	pomaz-ex.szeredi.hu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751250Ab0FCQGX (ORCPT
+	id S1752516Ab0FCQGk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jun 2010 12:06:40 -0400
+Received: from g4t0015.houston.hp.com ([15.201.24.18]:48677 "EHLO
+	g4t0015.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752168Ab0FCQGi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jun 2010 12:06:23 -0400
-To: Jens Axboe <jaxboe@fusionio.com>
-CC: miklos@szeredi.hu, mtk.manpages@gmail.com, linux-kernel@vger.kernel.org
-In-reply-to: <4C0793F6.4070107@fusionio.com> (message from Jens Axboe on Thu,
-	03 Jun 2010 13:37:26 +0200)
-Subject: Re: [patch] pipe: add support for shrinking and growing pipes
-References: <20100524070552.GR23411@kernel.dk> <AANLkTikogQtGpO9c94A7YSmP8zdyM8dZBrwJf1nwlR4j@mail.gmail.com> 	<20100524173551.GU23411@kernel.dk> <AANLkTimDJjHWKISxnLax3r200Db8OQp_lMKOx14ONgkS@mail.gmail.com> 	<20100524175649.GV23411@kernel.dk> <AANLkTim_yrRZG6v1tMPgefeaaI-nUa35Q-mLQpuXWJ1p@mail.gmail.com> 	<20100601074534.GL1660@kernel.dk> <AANLkTinGfonivZvofBkMzv53IJZeKbFAEMVpv96BiJ30@mail.gmail.com> 	<20100603061039.GD3564@kernel.dk> <AANLkTint7OJvmTn7d7bqTJzsCxV-VlVT46PQWVH-m73g@mail.gmail.com> 	<20100603070126.GJ3564@kernel.dk> <AANLkTilwyuE-HiY0vX5askTNi1KoeuKIldmE85WrfIqU@mail.gmail.com> 	<AANLkTin2b7qE1zo0fQWIhYIzdV26zNBjHRcNAOELpUfK@mail.gmail.com> 	<4C078610.6020901@fusionio.com> <AANLkTinhO5oRDPXyXaeAOZU3i55eBKsx4iFMOzwm98na@mail.gmail.com> <AANLkTin_8MU3AbJ_KeXr2uTxtRFJ5ABmBAyigU6m-C6u@mail.gmail.com> <4C078E2B.7090107@fusionio.com> <E1OK8fK-0007Wa-BU@pomaz-ex.szeredi.hu> <4C0793F6.4070107@fusionio.com>
-Message-Id: <E1OKCvz-0008DG-9g@pomaz-ex.szeredi.hu>
-From: Miklos Szeredi <miklos@szeredi.hu>
-Date: Thu, 03 Jun 2010 18:06:19 +0200
+	Thu, 3 Jun 2010 12:06:38 -0400
+Message-ID: <4C07D30C.5090101@hp.com>
+Date: Thu, 03 Jun 2010 12:06:36 -0400
+From: Vlad Yasevich <vladislav.yasevich@hp.com>
+User-Agent: Thunderbird 2.0.0.24 (X11/20100317)
+MIME-Version: 1.0
+To: Yaogong Wang <ywang15@ncsu.edu>
+CC: linux-sctp@vger.kernel.org, Sridhar Samudrala <sri@us.ibm.com>,
+       linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 5/6] sctp multistream scheduling: a sample priority queue
+ 	scheduling module
+References: <AANLkTikV9RSoTIjUNARyrXHG-BdulDR5zIdk8dIVVOHI@mail.gmail.com>
+In-Reply-To: <AANLkTikV9RSoTIjUNARyrXHG-BdulDR5zIdk8dIVVOHI@mail.gmail.com>
+X-Enigmail-Version: 0.96.0
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 03 Jun 2010, Jens Axboe wrote:
-> On 2010-06-03 13:32, Miklos Szeredi wrote:
-> > On Thu, 03 Jun 2010, Jens Axboe wrote:
-> >> I looked at that when I did the original pipe-max-pages, but it seems
-> >> we're not consistent in this regard. Anyway, here's what I came up with.
-> >> Not tested yet, and I hope thunderbird doesn't fsck up the patch.
-> > 
-> > Unfortunately it did (line wrap damage).
+
+
+Yaogong Wang wrote:
+> A sample priority queue scheduling module that uses our interface
 > 
-> I suspected it might. This better?
+> Signed-off-by: Yaogong Wang <ywang15@ncsu.edu>
+> ---
+> diff -uprN -X linux-2.6.32.8/Documentation/dontdiff
+> p4/net/sctp/Kconfig p5/net/sctp/Kconfig
+> --- p4/net/sctp/Kconfig	2010-05-28 11:48:55.000000000 -0700
+> +++ p5/net/sctp/Kconfig	2010-05-28 14:43:17.000000000 -0700
+> @@ -37,6 +37,12 @@ menuconfig IP_SCTP
 > 
-> diff --git a/fs/pipe.c b/fs/pipe.c
-> index f98fae3..f7f62f3 100644
-> --- a/fs/pipe.c
-> +++ b/fs/pipe.c
-> @@ -26,9 +26,14 @@
+>  if IP_SCTP
 > 
->  /*
->   * The max size that a non-root user is allowed to grow the pipe. Can
-> - * be set by root in /proc/sys/fs/pipe-max-pages
-> + * be set by root in /proc/sys/fs/pipe_max_size
->   */
-> -unsigned int pipe_max_pages = PIPE_DEF_BUFFERS * 16;
-> +unsigned int pipe_max_size = 1048576;
+> +config SCTP_SCHED_PRIO
+> +	tristate "SCTP Multistream Scheduling: Priority Queue"
+> +	default m
+> +	help
+> +	  Use priority queue to schedule among multiple streams
 > +
-> +/*
-> + * Minimum pipe size, as required by POSIX
-> + */
-> +unsigned int pipe_min_size = PAGE_SIZE;
+>  config SCTP_DBG_MSG
+>  	bool "SCTP: Debug messages"
+>  	help
+> diff -uprN -X linux-2.6.32.8/Documentation/dontdiff
+> p4/net/sctp/Makefile p5/net/sctp/Makefile
+> --- p4/net/sctp/Makefile	2010-05-28 11:48:55.000000000 -0700
+> +++ p5/net/sctp/Makefile	2010-05-28 14:48:08.000000000 -0700
+> @@ -11,6 +11,7 @@ sctp-y := sm_statetable.o sm_statefuns.o
+>  	  tsnmap.o bind_addr.o socket.o primitive.o \
+>  	  output.o input.o debug.o ssnmap.o auth.o sched.o
 > 
->  /*
->   * We use a start+len construction, which provides full use of the
-> @@ -1156,6 +1161,35 @@ static long pipe_set_size(struct pipe_inode_info *pipe, unsigned long nr_pages)
->  	return nr_pages * PAGE_SIZE;
->  }
-> 
+> +obj-$(CONFIG_SCTP_SCHED_PRIO) += sctp_prio.o
+>  sctp-$(CONFIG_SCTP_DBG_OBJCNT) += objcnt.o
+>  sctp-$(CONFIG_PROC_FS) += proc.o
+>  sctp-$(CONFIG_SYSCTL) += sysctl.o
+> diff -uprN -X linux-2.6.32.8/Documentation/dontdiff
+> p4/net/sctp/sctp_prio.c p5/net/sctp/sctp_prio.c
+> --- p4/net/sctp/sctp_prio.c	1969-12-31 16:00:00.000000000 -0800
+> +++ p5/net/sctp/sctp_prio.c	2010-06-02 13:09:33.000000000 -0700
+> @@ -0,0 +1,108 @@
 > +/*
-> + * Currently we rely on the pipe array holding a power-of-2 number
-> + * of pages.
+> + * Priority queue scheduling among multiple SCTP streams
 > + */
-> +static inline unsigned int round_pipe_size(unsigned int size)
+> +
+> +#include <linux/module.h>
+> +#include <linux/types.h>
+> +#include <linux/list.h>
+> +#include <net/sctp/sctp.h>
+> +
+> +static int zero_high_prio = 1;
+> +module_param(zero_high_prio, int, 0644);
+> +MODULE_PARM_DESC(zero_high_prio, "zero indicates highest priority?");
+> +
+> +static int prio_init(struct sctp_outq *q, gfp_t gfp)
 > +{
-> +	unsigned long nr_pages;
+> +	__u16 i;
+> +	q->out_chunk_list = kmalloc(q->asoc->c.sinit_num_ostreams
+> +				 * sizeof(struct list_head), gfp);
+
+This could end up wasting quite a lot of space since the queue is initialized
+prior to ostreams negotiation.
+
+
+> +	if (!q->out_chunk_list)
+> +		return -ENOMEM;
+> +	for (i = 0; i < q->asoc->c.sinit_num_ostreams; i++)
+> +		INIT_LIST_HEAD(&q->out_chunk_list[i]);
 > +
-> +	nr_pages = (size + PAGE_SIZE - 1) >> PAGE_SHIFT;
-> +	return roundup_pow_of_two(nr_pages) << PAGE_SHIFT;
+> +	return 0;
 > +}
 > +
-> +/*
-> + * This should work even if CONFIG_PROC_FS isn't set, as proc_dointvec_minmax
-> + * will return an error.
-> + */
-> +int pipe_proc_fn(struct ctl_table *table, int write, void __user *buf,
-> +		 size_t *lenp, loff_t *ppos)
+> +static void prio_release(struct sctp_outq *q)
 > +{
-> +	int ret;
-> +
-> +	ret = proc_dointvec_minmax(table, write, buf, lenp, ppos);
-> +	if (ret < 0 || !write)
-> +		return ret;
-> +
-> +	pipe_max_size = round_pipe_size(pipe_max_size);
-> +	return ret;
+> +	kfree(q->out_chunk_list);
+> +	return;
 > +}
 > +
->  long pipe_fcntl(struct file *file, unsigned int cmd, unsigned long arg)
->  {
->  	struct pipe_inode_info *pipe;
-> @@ -1169,23 +1203,19 @@ long pipe_fcntl(struct file *file, unsigned int cmd, unsigned long arg)
-> 
->  	switch (cmd) {
->  	case F_SETPIPE_SZ: {
-> -		unsigned long nr_pages;
-> +		unsigned int size, nr_pages;
-> 
-> -		/*
-> -		 * Currently the array must be a power-of-2 size, so adjust
-> -		 * upwards if needed.
-> -		 */
-> -		nr_pages = (arg + PAGE_SIZE - 1) >> PAGE_SHIFT;
-> -		nr_pages = roundup_pow_of_two(nr_pages);
-> +		size = round_pipe_size(arg);
-> +		nr_pages = size >> PAGE_SHIFT;
-> 
-> -		if (!capable(CAP_SYS_RESOURCE) && nr_pages > pipe_max_pages) {
-> +		if (!capable(CAP_SYS_RESOURCE) && size > pipe_max_size) {
->  			ret = -EPERM;
->  			goto out;
-> -		} else if (nr_pages < 1) {
-> +		} else if (nr_pages < PAGE_SIZE) {
-
-This should either be "nr_pages < 1" or  "size < PAGE_SIZE".
-
-Miklos
-
-
->  			ret = -EINVAL;
->  			goto out;
->  		}
-> -		ret = pipe_set_size(pipe, arg);
-> +		ret = pipe_set_size(pipe, nr_pages);
->  		break;
->  		}
->  	case F_GETPIPE_SZ:
-> diff --git a/include/linux/pipe_fs_i.h b/include/linux/pipe_fs_i.h
-> index 16de393..4457969 100644
-> --- a/include/linux/pipe_fs_i.h
-> +++ b/include/linux/pipe_fs_i.h
-> @@ -139,7 +139,9 @@ void pipe_lock(struct pipe_inode_info *);
->  void pipe_unlock(struct pipe_inode_info *);
->  void pipe_double_lock(struct pipe_inode_info *, struct pipe_inode_info *);
-> 
-> -extern unsigned int pipe_max_pages;
-> +extern unsigned int pipe_max_size, pipe_min_size;
-> +int pipe_proc_fn(struct ctl_table *, int, void __user *, size_t *, loff_t *);
+> +static void prio_enqueue_head_data(struct sctp_outq *q,
+> +					struct sctp_chunk *ch)
+> +{
+> +	list_add(&ch->list, &q->out_chunk_list[ch->sinfo.sinfo_stream]);
+> +	q->out_qlen += ch->skb->len;
+> +	return;
+> +}
 > +
+> +static void prio_enqueue_tail_data(struct sctp_outq *q, struct sctp_chunk *ch)
+> +{
+> +	list_add_tail(&ch->list, &q->out_chunk_list[ch->sinfo.sinfo_stream]);
+> +	q->out_qlen += ch->skb->len;
+> +	return;
+> +}
+> +
+> +static struct sctp_chunk *prio_dequeue_data(struct sctp_outq *q)
+> +{
+> +	struct sctp_chunk *ch = NULL;
+> +	__u16 prio = 0, i, cur = 0;
+> +	int flag = 0;
+> +
+> +	for (i = 0; i < q->asoc->c.sinit_num_ostreams; i++) {
+> +		if (!list_empty(&q->out_chunk_list[i]) && (flag == 0
+> +			|| (zero_high_prio ? q->asoc->sched_priv[i] < prio
+> +			: q->asoc->sched_priv[i] > prio))) {
+
+Can you please simplify this conditional.  Also, the logical operands
+typically end the line, not start it.
+
+> +				cur = i;
+> +				flag = 1;
+> +				prio = q->asoc->sched_priv[i];
+> +		}
+> +	}
+> +
+
+It might be nice to cache the asoc so you don't have to keep dereferencing the
+queue.
+
+Also, isn't there a strong starvation possibility if a higher priority queue
+gets most of data?
+
+-vlad
+
+> +	if (flag) {
+> +		struct list_head *entry = q->out_chunk_list[cur].next;
+> +		ch = list_entry(entry, struct sctp_chunk, list);
+> +		list_del_init(entry);
+> +		q->out_qlen -= ch->skb->len;
+> +	}
+> +	return ch;
+> +}
+> +
+> +static inline int prio_is_empty(struct sctp_outq *q)
+> +{
+> +	__u16 i;
+> +	for (i = 0; i < q->asoc->c.sinit_num_ostreams; i++)
+> +		if (!list_empty(&q->out_chunk_list[i]))
+> +			return 0;
+> +	return 1;
+> +}
+> +
+> +static struct sctp_sched_ops sctp_prio = {
+> +	.name			= "prio",
+> +	.owner			= THIS_MODULE,
+> +	.init			= prio_init,
+> +	.release		= prio_release,
+> +	.enqueue_head_data	= prio_enqueue_head_data,
+> +	.enqueue_tail_data	= prio_enqueue_tail_data,
+> +	.dequeue_data		= prio_dequeue_data,
+> +	.is_empty		= prio_is_empty,
+> +};
+> +
+> +static int __init sctp_prio_register(void)
+> +{
+> +	return sctp_register_sched(&sctp_prio);
+> +}
+> +
+> +static void __exit sctp_prio_unregister(void)
+> +{
+> +	sctp_unregister_sched(&sctp_prio);
+> +}
+> +
+> +module_init(sctp_prio_register);
+> +module_exit(sctp_prio_unregister);
+> +
+> +MODULE_AUTHOR("Yaogong Wang");
+> +MODULE_LICENSE("GPL");
+> +MODULE_DESCRIPTION("SCTP Multistream Scheduling: Priority Queue");
 > 
->  /* Drop the inode semaphore and wait for a pipe event, atomically */
->  void pipe_wait(struct pipe_inode_info *pipe);
-> diff --git a/kernel/sysctl.c b/kernel/sysctl.c
-> index 997080f..2f9b3a6 100644
-> --- a/kernel/sysctl.c
-> +++ b/kernel/sysctl.c
-> @@ -1471,12 +1471,12 @@ static struct ctl_table fs_table[] = {
->  	},
->  #endif
->  	{
-> -		.procname	= "pipe-max-pages",
-> -		.data		= &pipe_max_pages,
-> +		.procname	= "pipe_max_size",
-> +		.data		= &pipe_max_size,
->  		.maxlen		= sizeof(int),
->  		.mode		= 0644,
-> -		.proc_handler	= &proc_dointvec_minmax,
-> -		.extra1		= &two,
-> +		.proc_handler	= &pipe_proc_fn,
-> +		.extra1		= &pipe_min_size,
->  	},
->  /*
->   * NOTE: do not add new entries to this table unless you have read
-> 
-> -- 
-> Jens Axboe
-> 
-> 
+
