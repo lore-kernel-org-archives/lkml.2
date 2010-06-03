@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754172Ab0FCFmu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jun 2010 01:42:50 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:58115 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753148Ab0FCFmn (ORCPT
+	id S1754438Ab0FCFm6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jun 2010 01:42:58 -0400
+Received: from mail-pz0-f185.google.com ([209.85.222.185]:63273 "EHLO
+	mail-pz0-f185.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754067Ab0FCFmt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jun 2010 01:42:43 -0400
+	Thu, 3 Jun 2010 01:42:49 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=mime-version:sender:date:x-google-sender-auth:message-id:subject
          :from:to:cc:content-type;
-        b=ffqnxYfpAiVQ/Anj3x0mO0Ywl2i8FGJr0gdEcch7iZRPsd1HpWLTULHGEZiT3lYqq7
-         uNnrA4+ek4qd4Q/OXl8omHDSKrDgwz+LBvn+ahxPtqeqQaoFyD7K98zqvBRgjolFy8Mg
-         VQp7uF8/A2CoOiyE8RQTAZrJFnonGy7SB66hY=
+        b=u5+Z1K1jWo7qSw6TWXa4u71juDljHtHdEZPfLUumfPkYlZk4ADlrYszYmOe0PjvOHv
+         XUtDgPf9Umencm3qkSB44+DmCoEdKgbzeA1sDH1R/3uWHTxNKRwtk6ff8PXp5j99VXor
+         HEJObrL0cQfZlf3rb/6Rp/uyPBcE+hyRcxADk=
 MIME-Version: 1.0
-Date: Wed, 2 Jun 2010 22:42:42 -0700
-X-Google-Sender-Auth: QealAt2iigblhR9CVyz0pKKinK8
-Message-ID: <AANLkTikV9RSoTIjUNARyrXHG-BdulDR5zIdk8dIVVOHI@mail.gmail.com>
-Subject: [PATCH 5/6] sctp multistream scheduling: a sample priority queue 
+Date: Wed, 2 Jun 2010 22:42:48 -0700
+X-Google-Sender-Auth: ewCxtbrtNsOF1Htjl60S8t7OF2k
+Message-ID: <AANLkTilqwskt5fS2Yc2pa32IMA7QgDdn5latnAkyPpvZ@mail.gmail.com>
+Subject: [PATCH 6/6] sctp multistream scheduling: a sample weighted fair queue 
 	scheduling module
 From: Yaogong Wang <ywang15@ncsu.edu>
 To: linux-sctp@vger.kernel.org, Vlad Yasevich <vladislav.yasevich@hp.com>,
@@ -29,46 +29,70 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A sample priority queue scheduling module that uses our interface
+A sample weighted fair queue scheduling module that uses our interface
 
 Signed-off-by: Yaogong Wang <ywang15@ncsu.edu>
 ---
 diff -uprN -X linux-2.6.32.8/Documentation/dontdiff
-p4/net/sctp/Kconfig p5/net/sctp/Kconfig
---- p4/net/sctp/Kconfig	2010-05-28 11:48:55.000000000 -0700
-+++ p5/net/sctp/Kconfig	2010-05-28 14:43:17.000000000 -0700
-@@ -37,6 +37,12 @@ menuconfig IP_SCTP
+p5/include/net/sctp/structs.h p6/include/net/sctp/structs.h
+--- p5/include/net/sctp/structs.h	2010-06-02 12:58:41.000000000 -0700
++++ p6/include/net/sctp/structs.h	2010-05-28 15:09:31.000000000 -0700
+@@ -1693,6 +1693,7 @@ struct sctp_association {
 
- if IP_SCTP
+ 	/* Multistream scheduling  */
+ 	const struct sctp_sched_ops *sched_ops;
++	__u16 *sched_internal;
+ 	__u32 sched_priv_len;
+ 	__u16 *sched_priv;
 
-+config SCTP_SCHED_PRIO
-+	tristate "SCTP Multistream Scheduling: Priority Queue"
+diff -uprN -X linux-2.6.32.8/Documentation/dontdiff
+p5/net/sctp/Kconfig p6/net/sctp/Kconfig
+--- p5/net/sctp/Kconfig	2010-05-28 14:43:17.000000000 -0700
++++ p6/net/sctp/Kconfig	2010-05-28 15:10:30.000000000 -0700
+@@ -43,6 +43,12 @@ config SCTP_SCHED_PRIO
+ 	help
+ 	  Use priority queue to schedule among multiple streams
+
++config SCTP_SCHED_WFQ
++	tristate "SCTP Multistream Scheduling: Weighted Fair Queue"
 +	default m
 +	help
-+	  Use priority queue to schedule among multiple streams
++	  Use weighted fair queue to schedule among multiple streams
 +
  config SCTP_DBG_MSG
  	bool "SCTP: Debug messages"
  	help
 diff -uprN -X linux-2.6.32.8/Documentation/dontdiff
-p4/net/sctp/Makefile p5/net/sctp/Makefile
---- p4/net/sctp/Makefile	2010-05-28 11:48:55.000000000 -0700
-+++ p5/net/sctp/Makefile	2010-05-28 14:48:08.000000000 -0700
-@@ -11,6 +11,7 @@ sctp-y := sm_statetable.o sm_statefuns.o
- 	  tsnmap.o bind_addr.o socket.o primitive.o \
+p5/net/sctp/Makefile p6/net/sctp/Makefile
+--- p5/net/sctp/Makefile	2010-05-28 14:48:08.000000000 -0700
++++ p6/net/sctp/Makefile	2010-05-28 15:11:02.000000000 -0700
+@@ -12,6 +12,7 @@ sctp-y := sm_statetable.o sm_statefuns.o
  	  output.o input.o debug.o ssnmap.o auth.o sched.o
 
-+obj-$(CONFIG_SCTP_SCHED_PRIO) += sctp_prio.o
+ obj-$(CONFIG_SCTP_SCHED_PRIO) += sctp_prio.o
++obj-$(CONFIG_SCTP_SCHED_WFQ) += sctp_wfq.o
  sctp-$(CONFIG_SCTP_DBG_OBJCNT) += objcnt.o
  sctp-$(CONFIG_PROC_FS) += proc.o
  sctp-$(CONFIG_SYSCTL) += sysctl.o
 diff -uprN -X linux-2.6.32.8/Documentation/dontdiff
-p4/net/sctp/sctp_prio.c p5/net/sctp/sctp_prio.c
---- p4/net/sctp/sctp_prio.c	1969-12-31 16:00:00.000000000 -0800
-+++ p5/net/sctp/sctp_prio.c	2010-06-02 13:09:33.000000000 -0700
-@@ -0,0 +1,108 @@
+p5/net/sctp/associola.c p6/net/sctp/associola.c
+--- p5/net/sctp/associola.c	2010-06-02 12:58:27.000000000 -0700
++++ p6/net/sctp/associola.c	2010-05-28 15:09:37.000000000 -0700
+@@ -195,6 +195,7 @@ static struct sctp_association *sctp_ass
+ 		memcpy(asoc->sched_priv, sp->sched_priv, asoc->sched_priv_len);
+ 	} else
+ 		asoc->sched_priv = NULL;
++	asoc->sched_internal = NULL;
+
+ 	/* Allocate storage for the ssnmap after the inbound and outbound
+ 	 * streams have been negotiated during Init.
+diff -uprN -X linux-2.6.32.8/Documentation/dontdiff
+p5/net/sctp/sctp_wfq.c p6/net/sctp/sctp_wfq.c
+--- p5/net/sctp/sctp_wfq.c	1969-12-31 16:00:00.000000000 -0800
++++ p6/net/sctp/sctp_wfq.c	2010-06-02 13:10:05.000000000 -0700
+@@ -0,0 +1,150 @@
 +/*
-+ * Priority queue scheduling among multiple SCTP streams
++ * Weighted fair queue scheduling among multiple SCTP streams
 + */
 +
 +#include <linux/module.h>
@@ -76,13 +100,26 @@ p4/net/sctp/sctp_prio.c p5/net/sctp/sctp_prio.c
 +#include <linux/list.h>
 +#include <net/sctp/sctp.h>
 +
-+static int zero_high_prio = 1;
-+module_param(zero_high_prio, int, 0644);
-+MODULE_PARM_DESC(zero_high_prio, "zero indicates highest priority?");
++static int quantum = 1500;
++module_param(quantum, int, 0644);
++MODULE_PARM_DESC(quantum, "quantum in bytes");
 +
-+static int prio_init(struct sctp_outq *q, gfp_t gfp)
++/*
++ * Weighted fair queue internal data structure
++ *
++ * implemented using deficit round robin technique
++ */
++struct wfq {
++	__u16	rr_ptr;
++	__u16	deficit[0];
++};
++
++static int wfq_init(struct sctp_outq *q, gfp_t gfp)
 +{
 +	__u16 i;
++	struct wfq *internal;
++
++	/* initiate out_chunk_list  */
 +	q->out_chunk_list = kmalloc(q->asoc->c.sinit_num_ostreams
 +				 * sizeof(struct list_head), gfp);
 +	if (!q->out_chunk_list)
@@ -90,16 +127,30 @@ p4/net/sctp/sctp_prio.c p5/net/sctp/sctp_prio.c
 +	for (i = 0; i < q->asoc->c.sinit_num_ostreams; i++)
 +		INIT_LIST_HEAD(&q->out_chunk_list[i]);
 +
++	/* initiate internal data structure  */
++	q->asoc->sched_internal = kmalloc(q->asoc->sched_priv_len
++						+ sizeof(__u16), gfp);
++	if (!q->asoc->sched_internal) {
++		kfree(q->out_chunk_list);
++		return -ENOMEM;
++	}
++	internal = (struct wfq *)q->asoc->sched_internal;
++	internal->rr_ptr = 0;
++	internal->deficit[0] = q->asoc->sched_priv[0] * quantum;
++	for (i = 1; i < q->asoc->c.sinit_num_ostreams; i++)
++		internal->deficit[i] = 0;
++
 +	return 0;
 +}
 +
-+static void prio_release(struct sctp_outq *q)
++static void wfq_release(struct sctp_outq *q)
 +{
 +	kfree(q->out_chunk_list);
++	kfree(q->asoc->sched_internal);
 +	return;
 +}
 +
-+static void prio_enqueue_head_data(struct sctp_outq *q,
++static void wfq_enqueue_head_data(struct sctp_outq *q,
 +					struct sctp_chunk *ch)
 +{
 +	list_add(&ch->list, &q->out_chunk_list[ch->sinfo.sinfo_stream]);
@@ -107,27 +158,42 @@ p4/net/sctp/sctp_prio.c p5/net/sctp/sctp_prio.c
 +	return;
 +}
 +
-+static void prio_enqueue_tail_data(struct sctp_outq *q, struct sctp_chunk *ch)
++static void wfq_enqueue_tail_data(struct sctp_outq *q, struct sctp_chunk *ch)
 +{
 +	list_add_tail(&ch->list, &q->out_chunk_list[ch->sinfo.sinfo_stream]);
 +	q->out_qlen += ch->skb->len;
 +	return;
 +}
 +
-+static struct sctp_chunk *prio_dequeue_data(struct sctp_outq *q)
++static struct sctp_chunk *wfq_dequeue_data(struct sctp_outq *q)
 +{
 +	struct sctp_chunk *ch = NULL;
-+	__u16 prio = 0, i, cur = 0;
-+	int flag = 0;
++	struct wfq *internal = (struct wfq *)q->asoc->sched_internal;
++	__u16 i, cur = 0;
++	int flag = 0, hasdata = 0;
 +
-+	for (i = 0; i < q->asoc->c.sinit_num_ostreams; i++) {
-+		if (!list_empty(&q->out_chunk_list[i]) && (flag == 0
-+			|| (zero_high_prio ? q->asoc->sched_priv[i] < prio
-+			: q->asoc->sched_priv[i] > prio))) {
-+				cur = i;
++	for (i = 0; i < q->asoc->c.sinit_num_ostreams || hasdata; i++) {
++		if (!list_empty(&q->out_chunk_list[internal->rr_ptr])) {
++			hasdata = 1;
++			struct list_head *tmp_entry =
++				q->out_chunk_list[internal->rr_ptr].next;
++			struct sctp_chunk *tmp_ch =
++				list_entry(tmp_entry, struct sctp_chunk, list);
++			if (tmp_ch->skb->len <=
++				internal->deficit[internal->rr_ptr]) {
++				internal->deficit[internal->rr_ptr] -=
++					tmp_ch->skb->len;
++				cur = internal->rr_ptr;
 +				flag = 1;
-+				prio = q->asoc->sched_priv[i];
++				break;
++			}
++		} else {
++			internal->deficit[internal->rr_ptr] = 0;
 +		}
++		internal->rr_ptr = (internal->rr_ptr + 1)
++						% q->asoc->c.sinit_num_ostreams;
++		internal->deficit[internal->rr_ptr] +=
++				q->asoc->sched_priv[internal->rr_ptr] * quantum;
 +	}
 +
 +	if (flag) {
@@ -139,7 +205,7 @@ p4/net/sctp/sctp_prio.c p5/net/sctp/sctp_prio.c
 +	return ch;
 +}
 +
-+static inline int prio_is_empty(struct sctp_outq *q)
++static inline int wfq_is_empty(struct sctp_outq *q)
 +{
 +	__u16 i;
 +	for (i = 0; i < q->asoc->c.sinit_num_ostreams; i++)
@@ -148,30 +214,30 @@ p4/net/sctp/sctp_prio.c p5/net/sctp/sctp_prio.c
 +	return 1;
 +}
 +
-+static struct sctp_sched_ops sctp_prio = {
-+	.name			= "prio",
++static struct sctp_sched_ops sctp_wfq = {
++	.name			= "wfq",
 +	.owner			= THIS_MODULE,
-+	.init			= prio_init,
-+	.release		= prio_release,
-+	.enqueue_head_data	= prio_enqueue_head_data,
-+	.enqueue_tail_data	= prio_enqueue_tail_data,
-+	.dequeue_data		= prio_dequeue_data,
-+	.is_empty		= prio_is_empty,
++	.init			= wfq_init,
++	.release		= wfq_release,
++	.enqueue_head_data	= wfq_enqueue_head_data,
++	.enqueue_tail_data	= wfq_enqueue_tail_data,
++	.dequeue_data		= wfq_dequeue_data,
++	.is_empty		= wfq_is_empty,
 +};
 +
-+static int __init sctp_prio_register(void)
++static int __init sctp_wfq_register(void)
 +{
-+	return sctp_register_sched(&sctp_prio);
++	return sctp_register_sched(&sctp_wfq);
 +}
 +
-+static void __exit sctp_prio_unregister(void)
++static void __exit sctp_wfq_unregister(void)
 +{
-+	sctp_unregister_sched(&sctp_prio);
++	sctp_unregister_sched(&sctp_wfq);
 +}
 +
-+module_init(sctp_prio_register);
-+module_exit(sctp_prio_unregister);
++module_init(sctp_wfq_register);
++module_exit(sctp_wfq_unregister);
 +
 +MODULE_AUTHOR("Yaogong Wang");
 +MODULE_LICENSE("GPL");
-+MODULE_DESCRIPTION("SCTP Multistream Scheduling: Priority Queue");
++MODULE_DESCRIPTION("SCTP Multistream Scheduling: Weighted Fair Queue");
