@@ -1,79 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752560Ab0FCMP3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jun 2010 08:15:29 -0400
-Received: from smtp.nokia.com ([192.100.105.134]:19311 "EHLO
-	mgw-mx09.nokia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751966Ab0FCMOr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jun 2010 08:14:47 -0400
-From: Phil Carmody <ext-phil.2.carmody@nokia.com>
-To: linux@arm.linux.org.uk, catalin.marinas@arm.com
-Cc: linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 3/3] ARM: module - additional unwind tables for exit/devexit sections
-Date: Thu,  3 Jun 2010 15:17:22 +0300
-Message-Id: <1275567442-11370-4-git-send-email-ext-phil.2.carmody@nokia.com>
-X-Mailer: git-send-email 1.6.0.4
-In-Reply-To: <1275567442-11370-3-git-send-email-ext-phil.2.carmody@nokia.com>
-References: <1275567442-11370-1-git-send-email-ext-phil.2.carmody@nokia.com>
- <1275567442-11370-2-git-send-email-ext-phil.2.carmody@nokia.com>
- <1275567442-11370-3-git-send-email-ext-phil.2.carmody@nokia.com>
-X-OriginalArrivalTime: 03 Jun 2010 12:14:26.0959 (UTC) FILETIME=[4F9611F0:01CB0316]
-X-Nokia-AV: Clean
+	id S1752206Ab0FCMTN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jun 2010 08:19:13 -0400
+Received: from mga09.intel.com ([134.134.136.24]:5484 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751232Ab0FCMTL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Jun 2010 08:19:11 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.53,354,1272870000"; 
+   d="scan'208";a="627158259"
+Date: Thu, 3 Jun 2010 12:32:25 +0100
+From: Alan Cox <alan@linux.intel.com>
+To: Daniel Mack <daniel@caiaq.de>
+Cc: linux-kernel@vger.kernel.org, Greg Kroah-Hartman <gregkh@suse.de>,
+       Johan Hovold <jhovold@gmail.com>, linux-usb@vger.kernel.org
+Subject: Re: [PATCH] usb-serial/ftdi_sio: fix DTR/RTS line modes
+Message-ID: <20100603123225.55f544ff@linux.intel.com>
+In-Reply-To: <1275566102-5613-1-git-send-email-daniel@caiaq.de>
+References: <1275566102-5613-1-git-send-email-daniel@caiaq.de>
+Organization: Intel
+X-Mailer: Claws Mail 3.7.5 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Without these, exit functions cannot be stack-traced, so to speak.
-This implies that module unloads that perform allocations (don't
-laugh) will cause noisy warnings on the console when kmemleak is
-enabled, as it presumes that all code's call chains are traceable.
-Similarly, BUGs and WARN_ONs will give additional console spam.
+On Thu,  3 Jun 2010 13:55:02 +0200
+Daniel Mack <daniel@caiaq.de> wrote:
 
-Signed-off-by: Phil Carmody <ext-phil.2.carmody@nokia.com>
----
- arch/arm/include/asm/module.h |    2 ++
- arch/arm/kernel/module.c      |    8 ++++++++
- 2 files changed, 10 insertions(+), 0 deletions(-)
+> Call set_mctrl() and clear_mctrl() according to the flow control mode
+> selected. This makes serial communication for FT232 connected devices
+> work when CRTSCTS is not set.
+> 
+> This fixes a regression introduced by 4175f3e31 ("tty_port: If we are
+> opened non blocking we still need to raise the carrier"). This patch
+> calls the low-level driver's dtr_rts() function which consequently
+> sets TIOCM_DTR | TIOCM_RTS. A later call to set_termios() without
+> CRTSCTS in cflags, however, does not reset these bits, and so data is
+> not actually sent out on the serial wire.
 
-diff --git a/arch/arm/include/asm/module.h b/arch/arm/include/asm/module.h
-index 2164061..fcff0d2 100644
---- a/arch/arm/include/asm/module.h
-+++ b/arch/arm/include/asm/module.h
-@@ -17,6 +17,8 @@ enum {
- 	ARM_SEC_INIT,
- 	ARM_SEC_DEVINIT,
- 	ARM_SEC_CORE,
-+	ARM_SEC_EXIT,
-+	ARM_SEC_DEVEXIT,
- 	ARM_SEC_MAX,
- };
- struct mod_arch_specific {
-diff --git a/arch/arm/kernel/module.c b/arch/arm/kernel/module.c
-index bcf928e..8eaff1c 100644
---- a/arch/arm/kernel/module.c
-+++ b/arch/arm/kernel/module.c
-@@ -80,12 +80,20 @@ int module_frob_arch_sections(Elf_Ehdr *hdr,
- 			maps[ARM_SEC_DEVINIT].unw_sec = s;
- 		else if (strcmp(".ARM.exidx", secname) == 0)
- 			maps[ARM_SEC_CORE].unw_sec = s;
-+		else if (strcmp(".ARM.exidx.exit.text", secname) == 0)
-+			maps[ARM_SEC_EXIT].unw_sec = s;
-+		else if (strcmp(".ARM.exidx.devexit.text", secname) == 0)
-+			maps[ARM_SEC_DEVEXIT].unw_sec = s;
- 		else if (strcmp(".init.text", secname) == 0)
- 			maps[ARM_SEC_INIT].sec_text = s;
- 		else if (strcmp(".devinit.text", secname) == 0)
- 			maps[ARM_SEC_DEVINIT].sec_text = s;
- 		else if (strcmp(".text", secname) == 0)
- 			maps[ARM_SEC_CORE].sec_text = s;
-+		else if (strcmp(".exit.text", secname) == 0)
-+			maps[ARM_SEC_EXIT].sec_text = s;
-+		else if (strcmp(".devexit.text", secname) == 0)
-+			maps[ARM_SEC_DEVEXIT].sec_text = s;
- 	}
- #endif
- 	return 0;
--- 
-1.6.0.4
-
+If you've got hardware the other end expecting RTS/CTS signals you
+really ought to set CRTSCTS. However you patch makes complete sense in
+terms of which way it is best to end up.
