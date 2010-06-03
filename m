@@ -1,97 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752206Ab0FCRzK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jun 2010 13:55:10 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:51660 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751717Ab0FCRzI (ORCPT
+	id S1757122Ab0FCRzR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jun 2010 13:55:17 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:50392 "EHLO
+	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751857Ab0FCRzN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jun 2010 13:55:08 -0400
-Date: Thu, 3 Jun 2010 14:54:45 -0300
-From: Arnaldo Carvalho de Melo <acme@infradead.org>
-To: Stephane Eranian <eranian@google.com>
-Cc: linux-kernel@vger.kernel.org, peterz@infradead.org, mingo@elte.hu,
-       paulus@samba.org, davem@davemloft.net, fweisbec@gmail.com,
-       perfmon2-devel@lists.sf.net, eranian@gmail.com, tzanussi@gmail.com
-Subject: Re: how to use perf annotate on the kernel
-Message-ID: <20100603175445.GC8928@ghostprotocols.net>
-References: <AANLkTik2yNxwCHl7FZAyOG4Vt56RlLi59oZR5Jo6o9ox@mail.gmail.com>
+	Thu, 3 Jun 2010 13:55:13 -0400
+Date: Thu, 3 Jun 2010 18:55:11 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Lars-Peter Clausen <lars@metafoo.de>
+Cc: Ralf Baechle <ralf@linux-mips.org>, linux-mips@linux-mips.org,
+       linux-kernel@vger.kernel.org, Liam Girdwood <lrg@slimlogic.co.uk>,
+       alsa-devel@alsa-project.org
+Subject: Re: [RFC][PATCH 21/26] alsa: ASoC: Add JZ4740 ASoC support
+Message-ID: <20100603175511.GI2762@rakim.wolfsonmicro.main>
+References: <1275505397-16758-1-git-send-email-lars@metafoo.de>
+ <1275505950-17334-5-git-send-email-lars@metafoo.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <AANLkTik2yNxwCHl7FZAyOG4Vt56RlLi59oZR5Jo6o9ox@mail.gmail.com>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+In-Reply-To: <1275505950-17334-5-git-send-email-lars@metafoo.de>
+X-Cookie: In the next world, you're on your own.
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Thu, Jun 03, 2010 at 07:23:02PM +0200, Stephane Eranian escreveu:
-> Arnaldo,
-> 
-> I am trying to understand how one is supposed
-> to use perf annotate to get sample correlations
-> with kernel symbols.
-> 
-> I do:
-> 
-> # perf record -a -e cycles:k dd if=/dev/zero of=/dev/null count=1000000
-> # perf report
-> 
-> # Events: 14K cycles
-> #
-> # Overhead          Command        Shared Object  Symbol
-> # ........  ...............  ...................  ......
-> #
->      8.76%               dd  [kernel.kallsyms]    [k] __lock_acquire
->      7.49%               dd  [kernel.kallsyms]    [k] sched_clock
-> 
-> # perf annotate (or annotate -d '[kernel.kallsyms]'?)
-> Can't annotate __lock_acquire: No vmlinux file was found in the path
-> 
-> # perf annotate -k vmlinux
-> objdump: '[kernel.kallsyms]': No such file
+On Wed, Jun 02, 2010 at 09:12:27PM +0200, Lars-Peter Clausen wrote:
 
-This looks like a bug in how it reports this problem, probably vmlinux
-is not in the current directory, or it is but has a build-id that
-doesn't matches the one in the perf.data file.
+Again, overall very good.
 
-But the message is wrong, should be like it is in the tui, for this same
-situation:
+> +static int jz4740_i2s_set_clkdiv(struct snd_soc_dai *dai, int div_id, int div)
+> +{
+> +	struct jz4740_i2s *i2s = jz4740_dai_to_i2s(dai);
+> +
+> +	switch (div_id) {
+> +	case JZ4740_I2S_BIT_CLK:
+> +		if (div & 1 || div > 16)
+> +			return -EINVAL;
+> +		jz4740_i2s_write(i2s, JZ_REG_AIC_CLK_DIV, div - 1);
+> +		break;
+> +	default:
+> +		return -EINVAL;
+> +	}
+> +
+> +	return 0;
+> +}
 
-	ui_helpline__puts("No vmlinux file found, can't "
-			  "annotate with just a kallsyms file");
+You can probably figure out the bit clock automatically by default...
 
-> Am I missing something here?
+> +	if (dai->active) {
+> +		conf = jz4740_i2s_read(i2s, JZ_REG_AIC_CONF);
+> +		conf &= ~JZ_AIC_CONF_ENABLE;
+> +		jz4740_i2s_write(i2s, JZ_REG_AIC_CONF, conf);
+> +
+> +		clk_disable(i2s->clk_i2s);
+> +	}
+> +
+> +	clk_disable(i2s->clk_aic);
 
-If you don't specify it with --vmlinux/-k it will try to find it in one
-of these places:
+Might make sense to manage this clock dynamically at runtime too for a
+little extra power saving?
 
-        vmlinux_path[vmlinux_path__nr_entries] = strdup("vmlinux");
-        if (vmlinux_path[vmlinux_path__nr_entries] == NULL)
-                goto out_fail;
-        ++vmlinux_path__nr_entries;
-        vmlinux_path[vmlinux_path__nr_entries] = strdup("/boot/vmlinux");
-        if (vmlinux_path[vmlinux_path__nr_entries] == NULL)
-                goto out_fail;
-        ++vmlinux_path__nr_entries;
-        snprintf(bf, sizeof(bf), "/boot/vmlinux-%s", uts.release);
-        vmlinux_path[vmlinux_path__nr_entries] = strdup(bf);
-        if (vmlinux_path[vmlinux_path__nr_entries] == NULL)
-                goto out_fail;
-        ++vmlinux_path__nr_entries;
-        snprintf(bf, sizeof(bf), "/lib/modules/%s/build/vmlinux", uts.release);
-        vmlinux_path[vmlinux_path__nr_entries] = strdup(bf);
-        if (vmlinux_path[vmlinux_path__nr_entries] == NULL)
-                goto out_fail;
-        ++vmlinux_path__nr_entries;
-        snprintf(bf, sizeof(bf), "/usr/lib/debug/lib/modules/%s/vmlinux",
-                 uts.release);
-        vmlinux_path[vmlinux_path__nr_entries] = strdup(bf);
+> +	i2s->clk_aic = clk_get(&pdev->dev, "aic");
+> +	if (IS_ERR(i2s->clk_aic)) {
+> +		ret = PTR_ERR(i2s->clk_aic);
+> +		goto err_iounmap;
+> +	}
+> +
+> +	i2s->clk_i2s = clk_get(&pdev->dev, "i2s");
+> +	if (IS_ERR(i2s->clk_i2s)) {
+> +		ret = PTR_ERR(i2s->clk_i2s);
+> +		goto err_iounmap;
+> +	}
 
-It also now looks at /sys/kernel/notes, gets the build-id, and looks up
-in the build-id cache.
-
-- Arnaldo
+Ideally you'd free the AIC clock when unwinding (and later stop it after
+it was enabled).  Though since you don't do any error checking after
+this point it's kind of academic :)
