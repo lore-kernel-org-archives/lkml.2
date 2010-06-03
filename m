@@ -1,75 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933065Ab0FCGZV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jun 2010 02:25:21 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:61551 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932771Ab0FCGZS (ORCPT
+	id S933082Ab0FCG0Q (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jun 2010 02:26:16 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:46562 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932876Ab0FCG0I (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jun 2010 02:25:18 -0400
-Message-ID: <4C074ACE.9020704@vflare.org>
-Date: Thu, 03 Jun 2010 11:55:18 +0530
-From: Nitin Gupta <ngupta@vflare.org>
-Reply-To: ngupta@vflare.org
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-3.fc13 Thunderbird/3.0.4
+	Thu, 3 Jun 2010 02:26:08 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+To: "Luis Claudio R. Goncalves" <lclaudio@uudg.org>,
+       LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
+       Oleg Nesterov <oleg@redhat.com>, David Rientjes <rientjes@google.com>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+       Nick Piggin <npiggin@suse.de>
+Subject: [PATCH 10/12] oom: sacrifice child with highest badness score for parent
+Cc: kosaki.motohiro@jp.fujitsu.com
+In-Reply-To: <20100603135106.7247.A69D9226@jp.fujitsu.com>
+References: <20100603135106.7247.A69D9226@jp.fujitsu.com>
+Message-Id: <20100603152518.7265.A69D9226@jp.fujitsu.com>
 MIME-Version: 1.0
-To: Andreas Dilger <andreas.dilger@oracle.com>
-CC: Dan Magenheimer <dan.magenheimer@oracle.com>,
-       Minchan Kim <minchan.kim@gmail.com>, chris.mason@oracle.com,
-       viro@zeniv.linux.org.uk, akpm@linux-foundation.org, adilger@sun.com,
-       tytso@mit.edu, mfasheh@suse.com, joel.becker@oracle.com, matthew@wil.cx,
-       linux-btrfs@vger.kernel.org, linux-kernel@vger.kernel.org,
-       linux-fsdevel@vger.kernel.org, linux-ext4@vger.kernel.org,
-       ocfs2-devel@oss.oracle.com, linux-mm@kvack.org, jeremy@goop.org,
-       JBeulich@novell.com, kurt.hackel@oracle.com, npiggin@suse.de,
-       dave.mccracken@oracle.com, riel@redhat.com, avi@redhat.com,
-       konrad.wilk@oracle.com
-Subject: Re: [PATCH V2 0/7] Cleancache (was Transcendent Memory): overview
-References: <20100528173510.GA12166%ca-server1.us.oracle.comAANLkTilV-4_QaNq5O0WSplDx1Oq7JvkgVrEiR1rgf1up@mail.gmail.com> <489aa002-6d42-4dd5-bb66-81c665f8cdd1@default> <4C07179F.5080106@vflare.org> <3721BEE2-DF2D-452A-8F01-E690E32C6B33@oracle.com>
-In-Reply-To: <3721BEE2-DF2D-452A-8F01-E690E32C6B33@oracle.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset="US-ASCII"
 Content-Transfer-Encoding: 7bit
+X-Mailer: Becky! ver. 2.50.07 [ja]
+Date: Thu,  3 Jun 2010 15:26:05 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/03/2010 10:23 AM, Andreas Dilger wrote:
-> On 2010-06-02, at 20:46, Nitin Gupta wrote:
->> On 06/03/2010 04:32 AM, Dan Magenheimer wrote:
->>>> From: Minchan Kim [mailto:minchan.kim@gmail.com]
->>>
->>>>> I am also eagerly awaiting Nitin Gupta's cleancache backend
->>>>> and implementation to do in-kernel page cache compression.
->>>>
->>>> Do Nitin say he will make backend of cleancache for
->>>> page cache compression?
->>>>
->>>> It would be good feature.
->>>> I have a interest, too. :)
->>>
->>> That was Nitin's plan for his GSOC project when we last discussed
->>> this.  Nitin is on the cc list and can comment if this has
->>> changed.
->>
->> Yes, I have just started work on in-kernel page cache compression
->> backend for cleancache :)
-> 
-> Is there a design doc for this implementation?
+From: David Rientjes <rientjes@google.com>
 
-Its all on physical paper :)
-Anyways, the design is quite simple as it simply has to act on cleancache
-callbacks.
+When a task is chosen for oom kill, the oom killer first attempts to
+sacrifice a child not sharing its parent's memory instead.
+Unfortunately, this often kills in a seemingly random fashion based
+on the ordering of the selected task's child list. Additionally, it
+is not guaranteed at all to free a large amount of memory that we need
+to prevent additional oom killing in the very near future.
 
-> I was thinking it would be quite clever to do compression in, say, 64kB or 128kB chunks in a mapping (to get decent compression) and then write these compressed chunks directly from the page cache to disk in btrfs and/or a revived compressed ext4.
-> 
+Instead, we now only attempt to sacrifice the worst child not sharing
+its parent's memory, if one exists.  The worst child is indicated with
+the highest badness() score.  This serves two advantages: we kill a
+memory-hogging task more often, and we allow the configurable
+/proc/pid/oom_adj value to be considered as a factor in which child to
+kill.
 
-Batching of pages to get good compression ratio seems doable.
+Reviewers may observe that the previous implementation would iterate
+through the children and attempt to kill each until one was successful
+and then the parent if none were found while the new code simply kills
+the most memory-hogging task or the parent.  Note that the only time
+__oom_kill_process() fails, however, is when a child does not have an
+mm or has a /proc/pid/oom_adj of OOM_DISABLE. badness() returns 0 for both
+cases, so the final __oom_kill_process() will always succeed.
 
-However, writing this compressed data (with/without batching) to disk seems
-quite difficult. Pages given out to cleancache are not part of pagecache and
-the disk might also contain uncompressed version of the same data. There is
-also the problem of efficient on-disk structure for storing variable sized
-compressed chunks. I'm not sure how we can deal with all these issues.
+Acked-by: Rik van Riel <riel@redhat.com>
+Acked-by: Nick Piggin <npiggin@suse.de>
+Acked-by: Balbir Singh <balbir@linux.vnet.ibm.com>
+Reviewed-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Reviewed-by: Minchan Kim <minchan.kim@gmail.com>
+Signed-off-by: David Rientjes <rientjes@google.com>
+Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+---
+ mm/oom_kill.c |   23 ++++++++++++++++-------
+ 1 files changed, 16 insertions(+), 7 deletions(-)
 
-Thanks,
-Nitin
+diff --git a/mm/oom_kill.c b/mm/oom_kill.c
+index 5d723fb..e4c6141 100644
+--- a/mm/oom_kill.c
++++ b/mm/oom_kill.c
+@@ -422,26 +422,35 @@ static int oom_kill_process(struct task_struct *p, gfp_t gfp_mask, int order,
+ {
+ 	struct task_struct *c;
+ 	struct task_struct *t = p;
++	struct task_struct *victim = p;
++	unsigned long victim_points = 0;
++	struct timespec uptime;
+ 
+ 	if (printk_ratelimit())
+ 		dump_header(p, gfp_mask, order, mem);
+ 
+-	printk(KERN_ERR "%s: kill process %d (%s) score %li or a child\n",
+-					message, task_pid_nr(p), p->comm, points);
++	pr_err("%s: Kill process %d (%s) with score %lu or sacrifice child\n",
++	       message, task_pid_nr(p), p->comm, points);
+ 
+-	/* Try to kill a child first */
++	do_posix_clock_monotonic_gettime(&uptime);
++	/* Try to sacrifice the worst child first */
+ 	do {
+ 		list_for_each_entry(c, &t->children, sibling) {
++			unsigned long cpoints;
++
+ 			if (c->mm == p->mm)
+ 				continue;
+ 
+-			/* Ok, Kill the child */
+-			if (!__oom_kill_process(c, mem, 1))
+-				return 0;
++			/* badness() returns 0 if the thread is unkillable */
++			cpoints = badness(c, uptime.tv_sec);
++			if (cpoints > victim_points) {
++				victim = c;
++				victim_points = cpoints;
++			}
+ 		}
+ 	} while_each_thread(p, t);
+ 
+-	return __oom_kill_process(p, mem, 1);
++	return __oom_kill_process(victim, mem, 1);
+ }
+ 
+ #ifdef CONFIG_CGROUP_MEM_RES_CTLR
+-- 
+1.6.5.2
+
+
+
