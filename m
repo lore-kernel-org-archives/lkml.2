@@ -1,41 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756144Ab0FCHvG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jun 2010 03:51:06 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:59251 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751911Ab0FCHvD convert rfc822-to-8bit (ORCPT
+	id S1756113Ab0FCHyK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jun 2010 03:54:10 -0400
+Received: from mail-ww0-f46.google.com ([74.125.82.46]:57272 "EHLO
+	mail-ww0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753808Ab0FCHyJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jun 2010 03:51:03 -0400
-Subject: Re: [RFC] oom-kill: give the dying task a higher priority
-From: Peter Zijlstra <peterz@infradead.org>
-To: David Rientjes <rientjes@google.com>
-Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-       "Luis Claudio R. Goncalves" <lclaudio@uudg.org>,
-       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-       Minchan Kim <minchan.kim@gmail.com>, balbir@linux.vnet.ibm.com,
-       Oleg Nesterov <oleg@redhat.com>, linux-kernel@vger.kernel.org,
-       linux-mm@kvack.org, Thomas Gleixner <tglx@linutronix.de>,
-       Mel Gorman <mel@csn.ul.ie>, williams@redhat.com
-In-Reply-To: <alpine.DEB.2.00.1006021410300.32666@chino.kir.corp.google.com>
-References: <20100601173535.GD23428@uudg.org>
-	 <alpine.DEB.2.00.1006011347060.13136@chino.kir.corp.google.com>
-	 <20100602220429.F51E.A69D9226@jp.fujitsu.com>
-	 <alpine.DEB.2.00.1006021410300.32666@chino.kir.corp.google.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Thu, 03 Jun 2010 09:50:49 +0200
-Message-ID: <1275551449.27810.34905.camel@twins>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	Thu, 3 Jun 2010 03:54:09 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=K1rjdnAf09eyL9m5xG2IqPCmLeBt+LWna2nNrewcQDNww0JYQhmGLQgpD2Ug96tZoE
+         SsGN6ewa0FzUp58cl+Eey9ksxDvwkYBZ33N0SrVQcev1QMhb3RGBEdR6oEO+Lx0U8BTM
+         yB8KsobecoYlnsC8zdhQIU5yDHF6hyot5CA5c=
+Date: Thu, 3 Jun 2010 11:54:02 +0400
+From: Anton Vorontsov <cbouatmailru@gmail.com>
+To: Luming Yu <luming.yu@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, jgarzik@redhat.com
+Subject: Re: 2.6.25-rc1 ahci regression
+Message-ID: <20100603075402.GA11093@oksana.dev.rtsoft.ru>
+References: <AANLkTikWak8i-Kaj-e-EUFWE66tfMmp2UPhGJCKkK1zK@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <AANLkTikWak8i-Kaj-e-EUFWE66tfMmp2UPhGJCKkK1zK@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-06-02 at 14:11 -0700, David Rientjes wrote:
+On Thu, Jun 03, 2010 at 03:02:25PM +0800, Luming Yu wrote:
+> Hi there,
 > 
-> And that can reduce the runtime of the thread holding a writelock on 
-> mm->mmap_sem, making the exit actually take longer than without the patch 
-> if its priority is significantly higher, especially on smaller machines. 
+> I happened to notice that the commit 365cfa1ed5 caused the following
+> boot error with 2.6.25-rc1
+> on a system with ICH10 SATA AHCI controller. It's weird if there is
+> really no function changes in the patch.
+> 
+> Any ideas?
+> 
+> 
+> dracut: Starting plymouth daemon
+> pata_jmicron 0000:0f:00.0: PCI INT A -> GSI 16 (level, low) -> IRQ 16
+> scsi0 : pata_jmicron
+> Initializing USB Mass Storage driver...
+> scsi1 : usb-storage 1-5:1.0
+> scsi2 : pata_jmicron
+> ata1: PATA max UDMA/100 cmd 0xd040 ctl 0xd030 bmdma 0xd000 irq 16
+> ata2: PATA max UDMA/100 cmd 0xd020 ctl 0xd010 bmdma 0xd008 irq 16
+> usbcore: registered new interface driver usb-storage
+> USB Mass Storage support registered.
+> scsi 1:0:0:0: CD-ROM            PepperC  Virtual Disc 1   0.01 PQ: 0 ANSI: 3
+> sr0: scsi-1 drive
 
-/me smells an inversion... on -rt we solved those ;-)
+Can you provide full boot log (dmesg) please?
+
+I wonder if you're using ahci.ignore_sss and/or ahci.skip_host_reset
+kernel command line options or module params. You should probably use
+libahci.* for these now.
+
+-- 
+Anton Vorontsov
+email: cbouatmailru@gmail.com
+irc://irc.freenode.net/bd2
