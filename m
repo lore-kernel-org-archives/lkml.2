@@ -1,70 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756775Ab0FCXYH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jun 2010 19:24:07 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:19365 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754907Ab0FCXYF (ORCPT
+	id S1756566Ab0FCX0m (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jun 2010 19:26:42 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:34323 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752772Ab0FCX0k (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jun 2010 19:24:05 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id:
-	references:user-agent:mime-version:content-type:x-system-of-record;
-	b=l7fuMtQwcJy0ULN+U/qr3oB7l0iH8saZS+fkV8rBPz+6RCtSxkY1c27PVllG8oBOo
-	VhvJC9cl/4GqAVAAyZueA==
-Date: Thu, 3 Jun 2010 16:23:57 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Oleg Nesterov <oleg@redhat.com>
-cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-       "Luis Claudio R. Goncalves" <lclaudio@uudg.org>,
-       LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-       Nick Piggin <npiggin@suse.de>
-Subject: Re: [PATCH 09/12] oom: remove PF_EXITING check completely
-In-Reply-To: <20100603221145.GB8511@redhat.com>
-Message-ID: <alpine.DEB.2.00.1006031618230.30302@chino.kir.corp.google.com>
-References: <20100603135106.7247.A69D9226@jp.fujitsu.com> <20100603152436.7262.A69D9226@jp.fujitsu.com> <alpine.DEB.2.00.1006022332320.22441@chino.kir.corp.google.com> <20100603140008.GA3548@redhat.com> <alpine.DEB.2.00.1006031313040.10856@chino.kir.corp.google.com>
- <20100603221145.GB8511@redhat.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Thu, 3 Jun 2010 19:26:40 -0400
+Date: Thu, 3 Jun 2010 16:21:55 -0700 (PDT)
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Stephen Hemminger <shemminger@vyatta.com>
+cc: Andrew Morton <akpm@linux-foundation.org>,
+       Alan Cox <alan@lxorguk.ukuu.org.uk>, linux-kernel@vger.kernel.org
+Subject: Re: floppy driver assumes INITIAL_JIFFIES == 0
+In-Reply-To: <20100603161513.60370e98@nehalam>
+Message-ID: <alpine.LFD.2.00.1006031618510.8175@i5.linux-foundation.org>
+References: <20100603101501.5e5d7148@nehalam> <alpine.LFD.2.00.1006031013060.8175@i5.linux-foundation.org> <20100603120313.10a73b20@nehalam> <alpine.LFD.2.00.1006031204470.8175@i5.linux-foundation.org> <alpine.LFD.2.00.1006031355140.8175@i5.linux-foundation.org>
+ <20100603144913.24828629@nehalam> <alpine.LFD.2.00.1006031455280.8175@i5.linux-foundation.org> <alpine.LFD.2.00.1006031515030.8175@i5.linux-foundation.org> <20100603161513.60370e98@nehalam>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 4 Jun 2010, Oleg Nesterov wrote:
 
-> > > > > Currently, PF_EXITING check is completely broken. because 1) It only
-> > > > > care main-thread and ignore sub-threads
-> > > >
-> > > > Then check the subthreads.
-> > > >
-> >
-> > Did you want to respond to this?
-> 
-> Please explain what you mean. There were already a lot of discussions
-> about mt issues, I do not know what you have in mind.
-> 
 
-Can you check the subthreads to see if they are not PF_EXITING?
-
-> > I'm guessing at the relevancy here because the changelog is extremely
-> > poorly worded (if I were Andrew I would have no idea how important this
-> > patch is based on the description other than the alarmist words of "... is
-> > completely broken)", but if we're concerned about the coredumper not being
-> > able to find adequate resources to allocate memory from, we can give it
-> > access to reserves specifically,
+On Thu, 3 Jun 2010, Stephen Hemminger wrote:
 > 
-> I don't think so. If oom-kill wants to kill the task which dumps the
-> code, it should stop the coredumping and exit.
-> 
+> Maybe putting all back together in a threaded_irq would be safest.
 
-That's a coredump change, not an oom killer change.  If the coredumper 
-needs memory and runs into the oom killer, this PF_EXITING check, which 
-you want to remove, gives it access to memory reserves by setting 
-TIF_MEMDIE so it can quickly finish and die.  This allows it to exit 
-without oom killing anything else because the tasklist scan in the oom 
-killer is not preempted by finding a TIF_MEMDIE task.
+Yes. That floppy driver could easily be a good case for using those 
+threaded irq's. The problem, of course, is to find somebody motivated 
+enough. The code-base really is pretty dang ugly, and it might be hard to 
+do it incrementally, I think.
+
+(And starting from scratch is likely not a great idea either - while 
+_some_ of the ugliness comes from the odd irq-driven state machine code, a 
+lot of it also comes from trying to handle all those floppy formats etc)
+
+			Linus
