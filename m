@@ -1,67 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754241Ab0FCSg2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jun 2010 14:36:28 -0400
-Received: from mail2.cray.com ([136.162.64.100]:47805 "EHLO mail2.cray.com"
+	id S1755329Ab0FCShh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jun 2010 14:37:37 -0400
+Received: from rere.qmqm.pl ([89.167.52.164]:40090 "EHLO rere.qmqm.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753520Ab0FCSg1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jun 2010 14:36:27 -0400
-Message-ID: <4C07F5EC.20600@cray.com>
-Date: Thu, 3 Jun 2010 11:35:24 -0700
-From: Doug Doan <dougd@cray.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100423 Thunderbird/3.0.4
+	id S1753520Ab0FCShf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Jun 2010 14:37:35 -0400
+Date: Thu, 3 Jun 2010 20:37:34 +0200
+From: =?iso-8859-2?Q?Micha=B3_Miros=B3aw?= <mirq-linux@rere.qmqm.pl>
+To: Chris Ball <cjb@laptop.org>
+Cc: Adrian Hunter <adrian.hunter@nokia.com>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC] [PATCH 1/2] mmc: split mmc_sd_init_card()
+Message-ID: <20100603183734.GA9141@rere.qmqm.pl>
+References: <1-1000-12432-1274803827-7569@rere.qmqm.pl> <20100528144027.3c868841.akpm@linux-foundation.org> <20100531155846.GA9493@rere.qmqm.pl> <4C0774A8.2030704@nokia.com> <m3hblk8224.fsf@pullcord.laptop.org>
 MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: "linux-mm@kvack.org" <linux-mm@kvack.org>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       "andi@firstfloor.org" <andi@firstfloor.org>,
-       "lee.schermerhorn@hp.com" <lee.schermerhorn@hp.com>,
-       "rientjes@google.com" <rientjes@google.com>,
-       "mel@csn.ul.ie" <mel@csn.ul.ie>, Andrea Arcangeli <aarcange@redhat.com>
-Subject: Re: [PATCH] hugetlb: call mmu notifiers on hugepage cow
-References: <4BFED954.8060807@cray.com>	<20100601231600.3b3bf499.akpm@linux-foundation.org>	<4C06E5A6.6@cray.com>	<20100602163346.b8f8b8a4.akpm@linux-foundation.org>	<4C07E800.5010701@cray.com> <20100603111125.8cd6a787.akpm@linux-foundation.org>
-In-Reply-To: <20100603111125.8cd6a787.akpm@linux-foundation.org>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=iso-8859-2
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <m3hblk8224.fsf@pullcord.laptop.org>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/03/2010 11:11 AM, Andrew Morton wrote:
-> On Thu, 3 Jun 2010 10:36:00 -0700
-> Doug Doan<dougd@cray.com>  wrote:
->
->>> Well, specifically it means that
->>> mmu_notifier_invalidate_range_start/end() implemetnations can no longer
->>> take page_table_lock or any lock which nests outside page_table_lock.
->>> That lessens flexibility.
->>>
->>> As the other mmu_notifier_invalidate_range_start/end() callsite in this
->>> function carefully nested those calls outside page_table_lock, perhaps
->>> that was thought to be a significant thing.
->>
->> Here's my rationale: for the normal page case, the invalidation call is done
->> inside a page_table_lock,
->
-> It is?  Where does that happen?
+On Thu, Jun 03, 2010 at 01:21:23PM -0400, Chris Ball wrote:
+>    > That is a bit vague.  An SD card is a memory.  An SDIO "card" is
+>    > an I/O connection made using the same physical interface as an SD
+>    > card and a very similar protocal to SD cards (at least with
+>    > respect to reading and writing).  I do not understand how a card
+>    > can be SD and SDIO.  Are you sure you are not talking about a
+>    > controller that supports SD and SDIO?  A lot of controllers do
+>    > that.
+> Adrian, I presume we're talking about something like:
+> http://www.arasan.com/products/sd/SD-Combo-Flyer.pdf
+> Micha³, could you let us know which SD-combo device(s) in particular
+> you've been working with?
 
-handle_pte_fault() acquires the lock before calling do_wp_page():
+The card I'm using is one I'm working on (SDIO-like card interoperating
+with optional SD memory card) and I can't disclose what it really is nor
+when it will be available.
 
-         ptl = pte_lockptr(mm, pmd);
-         spin_lock(ptl);
-         if (unlikely(!pte_same(*pte, entry)))
-                 goto unlock;
-         if (flags & FAULT_FLAG_WRITE) {
-                 if (!pte_write(entry))
-                         return do_wp_page(mm, vma, address,
-                                         pte, pmd, ptl, entry);
-                 entry = pte_mkdirty(entry);
-         }
+Spectec SDG-810 (GPS with micro-SD slot) looks like a similar SD-combo card.
 
-do_wp_page() calls set_pte_at_notify(), which either calls 
-mmu_notifier_change_pte() or mmu_notifier_invalidate_page().
+Answering Adrian's question: SDIO uses separate command set (CMD5 for
+init, CMD52 and CMD53 for IO transactions) than SD memory and so the
+parts can coexist in one card (provided some additional constraints are
+met). The SDIO specification covers the details.
 
->
->> so the same should also be done in the huge page case.
->> Does it really make sense to call invalidation on one hugepage and have another
->> call invalidate the same hugepage while the first call is still not finished?
+Best Regards,
+Micha³ Miros³aw
