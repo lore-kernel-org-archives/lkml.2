@@ -1,42 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751658Ab0FCLqn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jun 2010 07:46:43 -0400
-Received: from cavan.codon.org.uk ([93.93.128.6]:42720 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751322Ab0FCLql (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jun 2010 07:46:41 -0400
-Date: Thu, 3 Jun 2010 12:46:27 +0100
-From: Matthew Garrett <mjg59@srcf.ucam.org>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: "Justin P. Mattock" <justinmattock@gmail.com>,
-       Robert Hancock <hancockrwd@gmail.com>, x86@kernel.org,
-       tglx@linutronix.de, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH]X86:reboot.c Add some dmi entries to
-	pci_reboot_dmi_table.
-Message-ID: <20100603114627.GA29650@srcf.ucam.org>
-References: <4C06ECAA.3060708@gmail.com> <4C06ED18.2010400@gmail.com> <4C06F1DD.8060004@gmail.com> <AANLkTilQuun1jQc394YM4QZtDSVeIwh67_Np0mkRDes4@mail.gmail.com> <4C06F6EA.6090701@gmail.com> <20100603013758.GA18755@srcf.ucam.org> <AANLkTik1cjxh1ItnqBXaxNcwa6we7ccJJZny-mAOAUjD@mail.gmail.com> <4C071048.9040209@gmail.com> <20100603021851.GA19546@srcf.ucam.org> <20100603105438.7b8f3ee8@lxorguk.ukuu.org.uk>
+	id S1751857Ab0FCLu7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jun 2010 07:50:59 -0400
+Received: from vs81.sauer-cs.de ([80.244.252.81]:55437 "EHLO kbdbabel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751726Ab0FCLu6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Jun 2010 07:50:58 -0400
+Date: Thu, 3 Jun 2010 15:50:24 +0400 (MSD)
+From: Alexander Kurz <linux@blala.de>
+X-X-Sender: linux@blala.de
+To: Randy Dunlap <randy.dunlap@oracle.com>
+cc: Stephen Rothwell <sfr@canb.auug.org.au>,
+       Alexander Kurz <linux@kbdbabel.org>, linux-next@vger.kernel.org,
+       LKML <linux-kernel@vger.kernel.org>, gregkh@suse.de
+Subject: [PATCH] staging/comedi: fixing ni_labpc to mite dependancy
+In-Reply-To: <20100602100735.0812c063.randy.dunlap@oracle.com>
+Message-ID: <alpine.DEB.1.10.1006031545010.23736@blala.de>
+References: <20100602151439.6de66132.sfr@canb.auug.org.au> <20100602100735.0812c063.randy.dunlap@oracle.com>
+User-Agent: Alpine 1.10 (DEB 962 2008-03-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100603105438.7b8f3ee8@lxorguk.ukuu.org.uk>
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 03, 2010 at 10:54:38AM +0100, Alan Cox wrote:
+Hi,
+ the dependancy of ni_labpc on mite was missing,
+ it will be fixed with this patch
+ thanks for the report,
+ Alexander
 
-> At least some PCs you need to issue the reboot outb calls on the boot
-> processor so the userspace tests won't be reliable.
+>From d310498ef2a61057c3f28b10bb417238f33e8265 Mon Sep 17 00:00:00 2001
+From: Alexander Kurz <linux@kbdbabel.org>
+Date: Thu, 3 Jun 2010 12:00:37 +0200
+Subject: [PATCH] staging/comedi: fixing ni_labpc to mite dependancy
 
-The cf9 write is supposed to be handled by the chipset rather than via 
-SMM, I believe? The SMM code I've seen for reboots seems to implement 
-the actual reboot by hitting that port itself...
+Signed-off-by: Alexander Kurz <linux@kbdbabel.org>
+---
+ drivers/staging/comedi/Kconfig |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
 
+diff --git a/drivers/staging/comedi/Kconfig b/drivers/staging/comedi/Kconfig
+index 0aa2b0d..79f5f2e 100644
+--- a/drivers/staging/comedi/Kconfig
++++ b/drivers/staging/comedi/Kconfig
+@@ -1272,6 +1272,7 @@ config COMEDI_NI_TIO
+ 
+ config COMEDI_NI_LABPC
+ 	tristate "NI Lab-PC and compatibles ISA and PCI support"
++	depends on COMEDI_MITE
+ 	select COMEDI_8255
+ 	select COMEDI_FC
+ 	default N
 -- 
-Matthew Garrett | mjg59@srcf.ucam.org
+1.7.1
+
+
+On Wed, 2 Jun 2010, Randy Dunlap wrote:
+> On Wed, 2 Jun 2010 15:14:39 +1000 Stephen Rothwell wrote:
+> > 
+> > Changes since 20100601:
+> randconfig build ends with:
+> 
+> ERROR: "mite_list_devices" [drivers/staging/comedi/drivers/ni_labpc.ko] undefined!
+> ERROR: "mite_unsetup" [drivers/staging/comedi/drivers/ni_labpc.ko] undefined!
+> ERROR: "mite_setup" [drivers/staging/comedi/drivers/ni_labpc.ko] undefined!
+> ERROR: "mite_devices" [drivers/staging/comedi/drivers/ni_labpc.ko] undefined!
