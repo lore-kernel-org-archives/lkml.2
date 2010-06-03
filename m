@@ -1,113 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752313Ab0FCQ4n (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jun 2010 12:56:43 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:64529 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750958Ab0FCQ4m (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jun 2010 12:56:42 -0400
-From: Himanshu Chauhan <hschauhan@nulltrace.org>
-To: greg@kroah.com
-Cc: usbip-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org
-Subject: [PATCH][RESEND] staging: usbip: usbip_common: kill rx thread on tx thread creation error.
-Date: Thu,  3 Jun 2010 22:26:18 +0530
-Message-Id: <1275584178-1720-1-git-send-email-hschauhan@nulltrace.org>
-X-Mailer: git-send-email 1.7.0.4
+	id S1752788Ab0FCQ6U (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jun 2010 12:58:20 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:55692 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751398Ab0FCQ6T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Jun 2010 12:58:19 -0400
+Date: Thu, 3 Jun 2010 12:58:09 -0400
+From: Mike Snitzer <snitzer@redhat.com>
+To: Jens Axboe <jaxboe@fusionio.com>
+Cc: Kiyoshi Ueda <k-ueda@ct.jp.nec.com>, dm-devel@redhat.com,
+       linux-kernel@vger.kernel.org, Alasdair Kergon <agk@redhat.com>
+Subject: [PATCH v3] block: avoid unconditionally freeing previously allocated
+ request_queue
+Message-ID: <20100603165809.GA6730@redhat.com>
+References: <1274744795-9825-1-git-send-email-snitzer@redhat.com>
+ <1274744795-9825-3-git-send-email-snitzer@redhat.com>
+ <4BFBB21A.3030105@ct.jp.nec.com>
+ <20100525124912.GA7447@redhat.com>
+ <20100525163455.GA10155@redhat.com>
+ <20100526045219.GB24702@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100526045219.GB24702@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Himanshu Chauhan <hschauhan@nulltrace.org>
+On blk_init_allocated_queue_node failure, only free the request_queue if
+it is wasn't previously allocated outside the block layer
+(e.g. blk_init_queue_node was blk_init_allocated_queue_node caller).
+
+This addresses an interface bug introduced by the following commit:
+01effb0 block: allow initialization of previously allocated request_queue
+
+Otherwise the request_queue may be free'd out from underneath a caller
+that is managing the request_queue directly (e.g. caller uses
+blk_alloc_queue + blk_init_allocated_queue_node).
+
+Signed-off-by: Mike Snitzer <snitzer@redhat.com>
 ---
- drivers/staging/usbip/usbip_common.c |   46 ++++++++++++++++++++++++---------
- 1 files changed, 33 insertions(+), 13 deletions(-)
+ block/blk-core.c |   14 ++++++++------
+ 1 files changed, 8 insertions(+), 6 deletions(-)
 
-diff --git a/drivers/staging/usbip/usbip_common.c b/drivers/staging/usbip/usbip_common.c
-index 5240816..cd20d2b 100644
---- a/drivers/staging/usbip/usbip_common.c
-+++ b/drivers/staging/usbip/usbip_common.c
-@@ -378,48 +378,67 @@ int usbip_thread(void *param)
- 	complete_and_exit(&ut->thread_done, 0);
- }
- 
-+static void stop_rx_thread(struct usbip_device *ud)
-+{
-+	if (ud->tcp_rx.thread != NULL) {
-+		send_sig(SIGKILL, ud->tcp_rx.thread, 1);
-+		wait_for_completion(&ud->tcp_rx.thread_done);
-+		usbip_udbg("rx_thread for ud %p has finished\n", ud);
-+	}
-+}
-+
-+static void stop_tx_thread(struct usbip_device *ud)
-+{
-+	if (ud->tcp_tx.thread != NULL) {
-+		send_sig(SIGKILL, ud->tcp_tx.thread, 1);
-+		wait_for_completion(&ud->tcp_tx.thread_done);
-+		usbip_udbg("tx_thread for ud %p has finished\n", ud);
-+	}
-+}
-+
- int usbip_start_threads(struct usbip_device *ud)
+v3: leverage fact that blk_cleanup_queue will properly free all memory
+    associated with a request_queue (e.g.: q->rq_pool and q->elevator)
+
+diff --git a/block/blk-core.c b/block/blk-core.c
+index 3bc5579..24683a4 100644
+--- a/block/blk-core.c
++++ b/block/blk-core.c
+@@ -570,9 +570,14 @@ EXPORT_SYMBOL(blk_init_queue);
+ struct request_queue *
+ blk_init_queue_node(request_fn_proc *rfn, spinlock_t *lock, int node_id)
  {
- 	/*
- 	 * threads are invoked per one device (per one connection).
- 	 */
- 	struct task_struct *th;
-+	int err = 0;
+-	struct request_queue *q = blk_alloc_queue_node(GFP_KERNEL, node_id);
++	struct request_queue *uninit_q, *q;
  
- 	th = kthread_run(usbip_thread, (void *)&ud->tcp_rx, "usbip");
- 	if (IS_ERR(th)) {
- 		printk(KERN_WARNING
- 			"Unable to start control thread\n");
--		return PTR_ERR(th);
-+		err = PTR_ERR(th);
-+		goto ust_exit;
- 	}
+-	return blk_init_allocated_queue_node(q, rfn, lock, node_id);
++	uninit_q = blk_alloc_queue_node(GFP_KERNEL, node_id);
++	q = blk_init_allocated_queue_node(uninit_q, rfn, lock, node_id);
++	if (!q)
++		blk_cleanup_queue(uninit_q);
 +
- 	th = kthread_run(usbip_thread, (void *)&ud->tcp_tx, "usbip");
- 	if (IS_ERR(th)) {
- 		printk(KERN_WARNING
- 			"Unable to start control thread\n");
--		return PTR_ERR(th);
-+		err = PTR_ERR(th);
-+		goto tx_thread_err;
++	return q;
+ }
+ EXPORT_SYMBOL(blk_init_queue_node);
+ 
+@@ -592,10 +597,8 @@ blk_init_allocated_queue_node(struct request_queue *q, request_fn_proc *rfn,
+ 		return NULL;
+ 
+ 	q->node = node_id;
+-	if (blk_init_free_list(q)) {
+-		kmem_cache_free(blk_requestq_cachep, q);
++	if (blk_init_free_list(q))
+ 		return NULL;
+-	}
+ 
+ 	q->request_fn		= rfn;
+ 	q->prep_rq_fn		= NULL;
+@@ -618,7 +621,6 @@ blk_init_allocated_queue_node(struct request_queue *q, request_fn_proc *rfn,
+ 		return q;
  	}
  
- 	/* confirm threads are starting */
- 	wait_for_completion(&ud->tcp_rx.thread_done);
- 	wait_for_completion(&ud->tcp_tx.thread_done);
-+
- 	return 0;
-+
-+tx_thread_err:
-+	stop_rx_thread(ud);
-+
-+ust_exit:
-+	return err;
+-	blk_put_queue(q);
+ 	return NULL;
  }
- EXPORT_SYMBOL_GPL(usbip_start_threads);
- 
- void usbip_stop_threads(struct usbip_device *ud)
- {
- 	/* kill threads related to this sdev, if v.c. exists */
--	if (ud->tcp_rx.thread != NULL) {
--		send_sig(SIGKILL, ud->tcp_rx.thread, 1);
--		wait_for_completion(&ud->tcp_rx.thread_done);
--		usbip_udbg("rx_thread for ud %p has finished\n", ud);
--	}
--
--	if (ud->tcp_tx.thread != NULL) {
--		send_sig(SIGKILL, ud->tcp_tx.thread, 1);
--		wait_for_completion(&ud->tcp_tx.thread_done);
--		usbip_udbg("tx_thread for ud %p has finished\n", ud);
--	}
-+	stop_rx_thread(ud);
-+	stop_tx_thread(ud);
- }
- EXPORT_SYMBOL_GPL(usbip_stop_threads);
- 
--- 
-1.7.0.4
-
+ EXPORT_SYMBOL(blk_init_allocated_queue_node);
