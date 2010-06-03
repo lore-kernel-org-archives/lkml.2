@@ -1,61 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752688Ab0FCQxb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jun 2010 12:53:31 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:33958 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750970Ab0FCQx3 (ORCPT
+	id S1755844Ab0FCQxh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jun 2010 12:53:37 -0400
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:58135 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753937Ab0FCQxd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jun 2010 12:53:29 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:organization:to:subject:date:user-agent:cc:references
-         :in-reply-to:mime-version:content-type:content-transfer-encoding
-         :message-id;
-        b=Jj958ilFzTlyAn22XyLdyEKoyAEtrobR8dY8JToyQ7i+QFqDSCeMFZsuzrddIqnlum
-         svMkpwWrUOTSso7HL87viX653rOQ7zOcwuRYkjWSa+KLKJA+NZVnQkuTiqYMbFhmzPUa
-         6NoC+1RLWbtFxOAvIUG6/bbOSQIvJSjcnJh4c=
-From: Gene Heskett <gene.heskett@gmail.com>
-Organization: Organization? very little
-To: Greg KH <gregkh@suse.de>
-Subject: Re: [PATCH] usb-serial/ftdi_sio: fix DTR/RTS line modes
-Date: Thu, 3 Jun 2010 12:53:25 -0400
-User-Agent: KMail/1.12.4 (Linux/2.6.34; KDE/4.3.5; x86_64; ; )
-Cc: Daniel Mack <daniel@caiaq.de>, linux-kernel@vger.kernel.org,
-       Johan Hovold <jhovold@gmail.com>, Alan Cox <alan@linux.intel.com>,
-       linux-usb@vger.kernel.org
-References: <1275566102-5613-1-git-send-email-daniel@caiaq.de> <201006031221.56150.gene.heskett@gmail.com> <20100603162655.GA6728@suse.de>
-In-Reply-To: <20100603162655.GA6728@suse.de>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+	Thu, 3 Jun 2010 12:53:33 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6002"; a="43213750"
+Subject: Re: ARM defconfig files
+From: Daniel Walker <dwalker@codeaurora.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Russell King <rmk@arm.linux.org.uk>,
+       Kevin Hilman <khilman@deeprootsystems.com>,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       linux-arm-msm@vger.kernel.org, Vegard Nossum <vegard.nossum@gmail.com>
+In-Reply-To: <alpine.LFD.2.00.1006030725420.8175@i5.linux-foundation.org>
+References: <20100603074548.GA12104@flint.arm.linux.org.uk>
+	 <alpine.LFD.2.00.1006030725420.8175@i5.linux-foundation.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 03 Jun 2010 09:53:23 -0700
+Message-ID: <1275584003.23384.2.camel@c-dwalke-linux.qualcomm.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
-Message-Id: <201006031253.25049.gene.heskett@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 03 June 2010, Greg KH wrote:
->On Thu, Jun 03, 2010 at 12:21:56PM -0400, Gene Heskett wrote:
->> How soon can this get in?  I ask because I have been crippled in all
->> attempts to use an ftdi adaptor to talk to an old legacy machine I have
->> for about that long now. xon/xoff seems completely broken, and 7wire
->> seems to scramble things to the point where no null modem cable I have
->> made (and I have a book on them) will allow the 7wire flow controls to
->> function.
->
->Give it a week or so to get out to all the stable kernel releases.
->
->thanks,
->
->greg k-h
->
-Thanks Greg.
+On Thu, 2010-06-03 at 07:48 -0700, Linus Torvalds wrote:
+> [ Continuation on the "ARM MSM updates" thread ]
+> 
+> On Thu, 3 Jun 2010, Russell King wrote:
+> >
+> > It'd be nice if you'd copy me...
+> 
+> Yeah, the thread started out as a "I got really bored with lots of msm 
+> patches", and then just expanded into what I think is wrong with the 
+> sub-architectures. 
+> 
+> > On the defconfig files, you may not like them - I don't like the
+> > proliferation of them either.  What I've always wanted to see is
+> > one defconfig per class of machines - in other words, one mach-XXX.
+> 
+> I can understand that, but at the same time, I do think that the 
+> "defconfig" file concept as it is now is just broken. To the point of 
+> being unfixable. It's obviously just a copy of the final .config, and it's 
+> fundamentally not really readable (and especially not writable) by humans.
+> 
+> And that all actually made some sense way-back-when, back when it was 
+> originally done - back when our config files were tiny (compared to what 
+> they are now), and when it ended up being the default input for the 
+> config. It just doesn't make much sense any more. The Kconfig files 
+> themselves end up having defaults for the core things, and the non-core 
+> things are too many to list/edit sanely in that format.
+> 
+> So the original reason I want to remove them is that they are very 
+> annoying, but the reasoning that then takes that annoyance and makes me 
+> think seriously about removing them despite the inevitable pain factor is 
+> that I really don't think we can even use the concept for any better 
+> model.
+> 
+> Anything better would _have_ to be totally different. And no, I don't 
+> think your "diffs against a base" model work either, because while it 
+> would make them smaller, it would still make them basically unreadable and 
+> uneditable by any human, which means that it's not something we should 
+> check in - it's a generated file!
 
--- 
-Cheers, Gene
-"There are four boxes to be used in defense of liberty:
- soap, ballot, jury, and ammo. Please use in that order."
--Ed Howdershelt (Author)
-Well, the handwriting is on the floor.
-		-- Joe E. Lewis
+Have you noticed this ..
+
+http://ktrap.org/mailarchive/linux-kernel/2010/5/17/4571130
+
+I'm not sure of the goals, but it sounds like it might be relevant.
+
+Daniel
+
