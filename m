@@ -1,72 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756123Ab0FCPB4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jun 2010 11:01:56 -0400
-Received: from fxip-0047f.externet.hu ([88.209.222.127]:51504 "EHLO
-	pomaz-ex.szeredi.hu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755983Ab0FCPBz (ORCPT
+	id S1755982Ab0FCPE3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jun 2010 11:04:29 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:61831 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755262Ab0FCPE1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jun 2010 11:01:55 -0400
-To: Reinette Chatre <reinette.chatre@intel.com>
-Cc: linux-kernel@vger.kernel.org, linux-wireless@vger.kernel.org
-Subject: iwl3945 oops with latest git
-Message-Id: <E1OKBva-00080h-8E@pomaz-ex.szeredi.hu>
-From: Miklos Szeredi <miklos@szeredi.hu>
-Date: Thu, 03 Jun 2010 17:01:50 +0200
+	Thu, 3 Jun 2010 11:04:27 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=P3wf3EjhEGST33WEz9bhlcX2/5IRSOSADTCLzBQ77B8+3qBJHdcA2oo4bNw+/Zxg1N
+         szZrwEgxwjm//0E3Y4dYLEe3K0hQ9dByaojPTb2NL4WGtOO/b1XgwRA4jd40Yf3g0vR5
+         y7uaRwu7L8yy/twCHyJGHXLsvvYEh+WVWbvN8=
+Date: Thu, 3 Jun 2010 19:04:22 +0400
+From: Anton Vorontsov <cbouatmailru@gmail.com>
+To: Luming Yu <luming.yu@gmail.com>
+Cc: Jeff Garzik <jeff@garzik.org>, LKML <linux-kernel@vger.kernel.org>,
+       Michal Marek <mmarek@suse.cz>, Sam Ravnborg <sam@ravnborg.org>
+Subject: Re: 2.6.25-rc1 ahci regression
+Message-ID: <20100603150422.GA31604@oksana.dev.rtsoft.ru>
+References: <AANLkTil6k_4YwdvLai_VUlVjgz030ctu7djVGHu0qgd2@mail.gmail.com>
+ <20100603084104.GA17431@oksana.dev.rtsoft.ru>
+ <AANLkTilSNOgD1HrvYBMEsza5-IIeBS1U7AHChO1vJKuf@mail.gmail.com>
+ <AANLkTima_jbwafiHQsncQzdX04ZcjO_8QIpq5UOohi3x@mail.gmail.com>
+ <20100603093923.GA25856@oksana.dev.rtsoft.ru>
+ <AANLkTim8TALR8Ev9KDX4tteXUrQ3oKOcnyMHk9WOdUvG@mail.gmail.com>
+ <20100603131414.GA23520@oksana.dev.rtsoft.ru>
+ <20100603132319.GA4889@oksana.dev.rtsoft.ru>
+ <20100603135031.GA9964@oksana.dev.rtsoft.ru>
+ <AANLkTimRDNiN-rOl-V-WnRiVwXNaZ8sPPmj_TzsNLZmq@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <AANLkTimRDNiN-rOl-V-WnRiVwXNaZ8sPPmj_TzsNLZmq@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Thu, Jun 03, 2010 at 10:13:57PM +0800, Luming Yu wrote:
+> On Thu, Jun 3, 2010 at 9:50 PM, Anton Vorontsov <cbouatmailru@gmail.com> wrote:
+> > On Thu, Jun 03, 2010 at 05:23:19PM +0400, Anton Vorontsov wrote:
+> > [...]
+> >> Oh. It seems I found it. It must be the module order loading
+> >> thing.
+> >>
+> >> Can you try the patch down below?
+> >
+> > OTOH... libahci is a link-time dependency. And the order doesn't
+> > matter here. So you should just have the libahci module in
+> > the initrd (actually, mkinitrd or whatever you use should
+> > have included this automatically).
+> >
+> 
+> Neither ahci nor libachi is automatically included in initrd..
 
-This oops comes shortly after booting machine and using wireless
-network.  Reproduced two times now.
+What commands you use to build the kernel and initrd?
 
-Please let me know if you need more info.
+> Manually added ahci and libachi into initrd seems to make the problem go away..
+> Any idea why that could happen?
+
+No idea off hand.
+
+Cc'ing Kbuild folks. Question is: is there something wrong with
+writing stuff like this:
+obj-$(CONFIG_SATA_AHCI)         += ahci.o libahci.o
+obj-$(CONFIG_SATA_AHCI_PLATFORM) += ahci_platform.o libahci.o
+as in drivers/ata/Makefile?
+
+It seem to link fine, .ko's are created. But for some reason
+initrd doesn't include these modules for Luming...
 
 Thanks,
-Miklos
 
-
-BUG: unable to handle kernel NULL pointer dereference at (null)
-IP: [<ffffffffa022738f>] iwl3945_request_scan+0x961/0xd68 [iwl3945]
-PGD 0 
-Oops: 0000 [#1] PREEMPT SMP 
-last sysfs file: /sys/class/rfkill/rfkill1/state
-CPU 0 
-Modules linked in: nfs lockd nfs_acl sunrpc rfcomm sco bnep l2cap acpi_cpufreq mperf nf_conntrack_netbios_ns fuse iwl3945 iwlcore thinkpad_acpi nsc_ircc mac80211 backlight btusb led_class uinput ac irda battery crc_ccitt thermal cfg80211 bluetooth button processor e1000e rfkill kvm_intel kvm
-
-Pid: 1493, comm: iwl3945 Not tainted 2.6.35-rc1-00194-gaef4b9a #76 2007FUG/2007FUG
-RIP: 0010:[<ffffffffa022738f>]  [<ffffffffa022738f>] iwl3945_request_scan+0x961/0xd68 [iwl3945]
-RSP: 0018:ffff8800b4d71d10  EFLAGS: 00010287
-RAX: ffff8800bea80c00 RBX: ffff8800b4171380 RCX: 0000000000000021
-RDX: 0000000000000000 RSI: 0000000000000000 RDI: ffff8800b4171380
-RBP: ffff8800b4d71de0 R08: 000000000000030e R09: 00000000ffffffff
-R10: 000000000ad21900 R11: 0000000000000292 R12: 0000000000000000
-R13: ffff8800b60950f2 R14: 0000000000000000 R15: 0000000000000058
-FS:  0000000000000000(0000) GS:ffff880001a00000(0000) knlGS:0000000000000000
-CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-CR2: 0000000000000000 CR3: 0000000001612000 CR4: 00000000000006f0
-DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-Process iwl3945 (pid: 1493, threadinfo ffff8800b4d70000, task ffff8800b6790940)
-Stack:
- ffff880001a12f40 0000000000012f40 ffff8800b64f8800 ffffffff8161a378
-<0> 0000000000000000 ffff8800b6095000 00578800b4d71e20 0000005800000021
-<0> ffff8800b4d71fd8 00ff8800b4175128 ffff8800b4d71fd8 002188ffb6790940
-Call Trace:
- [<ffffffffa01f9bb5>] iwl_bg_start_internal_scan+0x34f/0x371 [iwlcore]
- [<ffffffff8104e175>] worker_thread+0x1fc/0x2a3
- [<ffffffffa01f9866>] ? iwl_bg_start_internal_scan+0x0/0x371 [iwlcore]
- [<ffffffff81051d96>] ? autoremove_wake_function+0x0/0x34
- [<ffffffff813f4590>] ? _raw_spin_unlock_irqrestore+0x27/0x29
- [<ffffffff8104df79>] ? worker_thread+0x0/0x2a3
- [<ffffffff810518db>] kthread+0x7a/0x82
- [<ffffffff81002c94>] kernel_thread_helper+0x4/0x10
- [<ffffffff81051861>] ? kthread+0x0/0x82
- [<ffffffff81002c90>] ? kernel_thread_helper+0x0/0x10
-Code: 48 b5 00 00 48 89 45 80 48 89 85 70 ff ff ff 41 8d 47 ff 66 89 85 66 ff ff ff e9 43 02 00 00 48 63 55 a8 4c 8b 64 d0 38 8b 55 a4 <41> 39 14 24 0f 85 2a 02 00 00 66 41 8b 54 24 06 48 89 df 41 88 
-RIP  [<ffffffffa022738f>] iwl3945_request_scan+0x961/0xd68 [iwl3945]
- RSP <ffff8800b4d71d10>
-CR2: 0000000000000000
----[ end trace 63fe07b50f147114 ]---
+-- 
+Anton Vorontsov
+email: cbouatmailru@gmail.com
+irc://irc.freenode.net/bd2
