@@ -1,92 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933509Ab0FCBYg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jun 2010 21:24:36 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:38714 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932756Ab0FCBYe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jun 2010 21:24:34 -0400
-Date: Wed, 2 Jun 2010 18:20:09 -0700 (PDT)
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Kevin Hilman <khilman@deeprootsystems.com>
-cc: Daniel Walker <dwalker@codeaurora.org>, linux-kernel@vger.kernel.org,
-       linux-arm-msm@vger.kernel.org
-Subject: Re: [GIT PULL] ARM MSM updates for 2.6.35-rc1
-In-Reply-To: <87d3w9582z.fsf@deeprootsystems.com>
-Message-ID: <alpine.LFD.2.00.1006021803350.8175@i5.linux-foundation.org>
-References: <1274997173.10998.21.camel@c-dwalke-linux.qualcomm.com> <1275511857.27006.6.camel@c-dwalke-linux.qualcomm.com> <alpine.LFD.2.00.1006021413100.8175@i5.linux-foundation.org> <87d3w9582z.fsf@deeprootsystems.com>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1758834Ab0FCB17 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jun 2010 21:27:59 -0400
+Received: from ist.d-labs.de ([213.239.218.44]:38152 "EHLO mx01.d-labs.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750972Ab0FCB16 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Jun 2010 21:27:58 -0400
+Date: Thu, 3 Jun 2010 03:27:46 +0200
+From: Florian Mickler <florian@mickler.org>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: Neil Brown <neilb@suse.de>,
+       Arve =?ISO-8859-15?Q?Hj=F8nnev=E5g?= <arve@android.com>,
+       Thomas Gleixner <tglx@linutronix.de>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+       Alan Stern <stern@rowland.harvard.edu>,
+       Felipe Balbi <felipe.balbi@nokia.com>,
+       Peter Zijlstra <peterz@infradead.org>,
+       "Paul@smtp1.linux-foundation.org" <Paul@smtp1.linux-foundation.org>,
+       LKML <linux-kernel@vger.kernel.org>,
+       Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
+       Linux PM <linux-pm@lists.linux-foundation.org>,
+       Alan Cox <alan@lxorguk.ukuu.org.uk>,
+       James Bottomley <James.Bottomley@suse.de>
+Subject: Re: [PATCH] - race-free suspend. Was: Re: [linux-pm] [PATCH 0/8]
+ Suspend block api (version 8)
+Message-ID: <20100603032746.014f5c07@schatten.dmk.lab>
+In-Reply-To: <20100602233243.GA27666@core.coreip.homeip.net>
+References: <20100601113309.609349fd@notabene.brown>
+	<alpine.LFD.2.00.1006010340160.2933@localhost.localdomain>
+	<20100601122012.1edeaf48@notabene.brown>
+	<alpine.LFD.2.00.1006011243350.2933@localhost.localdomain>
+	<20100602153235.340a7852@notabene.brown>
+	<AANLkTikVjAf5nHdMx2bcHRAUSkq99s-b5YZCECXIJJLy@mail.gmail.com>
+	<20100602180614.729246ea@notabene.brown>
+	<AANLkTimISbs4X2YR_Pal9A80mpkNyCy8laWBcOgR2Cl7@mail.gmail.com>
+	<20100602210224.6ae2333f@notabene.brown>
+	<20100602210521.54b9cd9b@schatten.dmk.lab>
+	<20100602233243.GA27666@core.coreip.homeip.net>
+X-Mailer: Claws Mail 3.7.5 (GTK+ 2.18.9; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, 2 Jun 2010 16:32:44 -0700
+Dmitry Torokhov <dmitry.torokhov@gmail.com> wrote:
 
+> On Wed, Jun 02, 2010 at 09:05:21PM +0200, Florian Mickler wrote:
+> > On Wed, 2 Jun 2010 21:02:24 +1000
+> > Neil Brown <neilb@suse.de> wrote:
+> > > 
+> > > And this decision (to block suspend) really needs to be made in the driver,
+> > > not in userspace?
+> > 
+> > Well, it fits. The requirement is a direct consequence of the intimate
+> > knowledge the driver has about the driven devices.
+> 
+> That is not really true. A driver does have intimate knowledge of the
+> device, however it does not necessarily have an idea about the data read
+> from the device. Consider the gpio_matrix driver: Arve says that it has
+> to continue scanning matrix once first interrupt arrvies. But it really
+> depends on what key has been pressed - if user pressed KEY_SUSPEND or
+> KEY_POWER it cmight be better if we did not wait for key release but
+> initiated the action right away. The decision on how system reacts to a
+> key press does not belong to the driver but really to userspace.
+>  
 
-On Wed, 2 Jun 2010, Kevin Hilman wrote:
->
-> There indeed has been lots of change in mach-davinci, but I wouldn't
-> consider it noise.  In that one mach directory, I support ~10 SoCs in
-> the same family and for each SoC there is at least one board
-> supported.  I'm also a core developer for mach-omap*, and the number
-> of SoCs/boards supported there is equally large.
+I can't follow the gpio_matrix_driver example, but your point is
+obviously true. 
+A device should never register a constraint because of the data it
+handles. That belongs into userspace. Or wherever the data is
+consumed. 
 
-The problem with this is that it's just not maintainable to keep on adding 
-random stuff, especially since I doubt any of it ever gets aged away 
-either.
+I'm obviously not trying to say that a network driver should block
+suspend while I'm on facebook. Or unblock when visiting m$.com. That
+would be absurd. 
 
-arch/arm as-is is already about 800k lines. Compare that to arch/x86, 
-which is less than a third of that. Now, what is the difference?
+But, there are of course places in the kernel, where some kernel code
+listens to data. For example the packet-filtering. Or sysrq-keys.
+But I don't know how that relates to suspend_blockers now... ? 
 
- - x86 has its drivers elsewhere, and they are _discoverable_ and not 
-   hardcoded to some platform. They have often also been useful (to say 
-   the least) to other architecture platforms. That's not always true for 
-   all of them (we do have drivers/platform/x86, but at least that's 
-   maintained separately and is nowhere near the mess that is ARM)
+Mind if I rephrase the quote?
+From: "Well, it fits. The requirement is a direct consequence of the
+intimate knowledge the driver has about the driven devices." 
+To: "It fits, when the requirement is a direct consequence of the
+intimate knowledge the driver has about the driven devices."
 
- - in contrast, ARM seems to be a mess. I realize it's largely because the 
-   hardware companies are so f*cked up, but guys, we need to have some 
-   handle on it too.  I was willing to take the direct merges, and I still 
-   am, but I'm willing to do it only if I have a feeling that things are 
-   under control. And I'm not getting that feeling.
+Cheers,
+Flo
 
- - TWO HUNDRED THOUSAND lines of arch/arm is just pure garbage, namely the 
-   defconfig files. Quite frankly, anybody who calls that anything but 
-   pure "noise" is just misguided and being stupid.
-
-So yes, I do consider a lot of it "noise". When there's two hundred 
-thousand lines of garbage, and it keeps growing without bounds, something 
-needs to be done. 
-
-Now, I'm actually considering just getting rid of all the 'defconfig' 
-files entirely. The x86 model is sane (there's two of them, nobody likely 
-uses them), but ARM and POWERPC (and to a lesser config SH and MIPS) have 
-turned the whole concept into a disgusting mess. 
-
-But while POWERPC has abused that thing too, in _other_ respects it has 
-been much less egregious. 
-
-So I can largely fix the defconfig mess on my own (by just using a simple 
-oneliner shell script to deletes them all) but that really only fixes one 
-particularly annoying symptom - not the underlying issue. We do need 
-somebody to maintain the arm platform mess, and actually tries to get some 
-infrastructure or something in place so that it doesn't explode.
-
-> The fact is that ARM-based devices multiply like rabbits, and there is
-> a huge amount of diversity between the various derivatives.  Also,
-> support most of these devices has lived out of tree for a long time.
-> Now that we have a relatively direct path which doesn't require any
-> single person to have to understand all the mind-numbing details of
-> all of these ARM-based platforms, it has allowed us to significantly
-> improve the support for these devices upstream.  Anything that is
-> common to all devices still goes through RMK.
-
-The thing is, I bet there is way more commonality still to be taken 
-advantage of.  And even if there isn't, we need somebody who cares, and 
-doesn't just mindlessly aggregate all the crud. Somebody with the taste to 
-say "ok, that's just too effin ugly, you need to fix things up" 
-occasionally.
-
-		Linus
+p.s.: tsss.... language... what a broken concept. And yet we have to
+work with it.
