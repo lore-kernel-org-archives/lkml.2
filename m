@@ -1,96 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933908Ab0FCKfM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jun 2010 06:35:12 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:40781 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933843Ab0FCKfK (ORCPT
+	id S933920Ab0FCKgK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jun 2010 06:36:10 -0400
+Received: from mail-ew0-f223.google.com ([209.85.219.223]:54103 "EHLO
+	mail-ew0-f223.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933486Ab0FCKgF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jun 2010 06:35:10 -0400
-From: Luotao Fu <l.fu@pengutronix.de>
-To: Sascha Hauer <kernel@pengutronix.de>
-Cc: linux-fbdev@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-       linux-kernel@vger.kernel.org, Luotao Fu <l.fu@pengutronix.de>
-Subject: [PATCH] imxfb: add flag to avoid disabling clk multiple times
-Date: Thu,  3 Jun 2010 12:34:48 +0200
-Message-Id: <1275561288-20661-1-git-send-email-l.fu@pengutronix.de>
-X-Mailer: git-send-email 1.7.1
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
-X-SA-Exim-Mail-From: l.fu@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	Thu, 3 Jun 2010 06:36:05 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:mail-followup-to:references
+         :mime-version:content-type:content-disposition:in-reply-to
+         :user-agent;
+        b=ZK9aWzJyJ08aa6ChcUHj0/83Bva4cQADsbaQ+Fgy8fQMgnjqq5NJcXUpk4mn29F/Iy
+         T+kPn0f9MHGbv462Kl+jAv9KnA9nsCiKbEcHc4rKfXvNp9DzRraBYsL4pluvlMrneMjY
+         cgzCRB4TPEtsy9FpjFKI5nYJXX0q2wZW2hyWE=
+Date: Thu, 3 Jun 2010 12:35:42 +0200
+From: Dan Carpenter <error27@gmail.com>
+To: Takuya Yoshikawa <yoshikawa.takuya@oss.ntt.co.jp>
+Cc: Matthew Wilcox <matthew@wil.cx>, Alexander Viro <viro@zeniv.linux.org.uk>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Oleg Nesterov <oleg@redhat.com>, Jens Axboe <jens.axboe@oracle.com>,
+       Greg Kroah-Hartman <gregkh@suse.de>,
+       Peter Zijlstra <a.p.zijlstra@chello.nl>, linux-fsdevel@vger.kernel.org,
+       linux-kernel@vger.kernel.org
+Subject: [patch v2] fcntl: return -EFAULT if copy_to_user fails
+Message-ID: <20100603103542.GV5483@bicker>
+Mail-Followup-To: Dan Carpenter <error27@gmail.com>,
+	Takuya Yoshikawa <yoshikawa.takuya@oss.ntt.co.jp>,
+	Matthew Wilcox <matthew@wil.cx>,
+	Alexander Viro <viro@zeniv.linux.org.uk>,
+	Andrew Morton <akpm@linux-foundation.org>,
+	Oleg Nesterov <oleg@redhat.com>, Jens Axboe <jens.axboe@oracle.com>,
+	Greg Kroah-Hartman <gregkh@suse.de>,
+	Peter Zijlstra <a.p.zijlstra@chello.nl>,
+	linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <20100603100402.GR5483@bicker> <4C07826A.6060302@oss.ntt.co.jp>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4C07826A.6060302@oss.ntt.co.jp>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-while the imxfb driver blanks the screen. The clock supply to the framebuffer
-controller is disabled. The same callback to disable the fb is, however, also
-used the remove and shutdown hooks of the imxfb platform driver. This means that
-the imxfb driver can run into a WARN in clock_disable while unloading or
-rebooting, if the screen is blanked previously, since the same clock will be
-than eventually disabled multiple times.  This patch adds a flag to make sure
-that the clock will only be disabled, if it was not already disabled before.
+copy_to_user() returns the number of bytes remaining, but we want to
+return -EFAULT.
+	ret = fcntl(fd, F_SETOWN_EX, NULL);
+With the original code ret would be 8 here.
 
-The remove or shutdown callbacks in the imxfb platform driver call
-imxfb_disable_controller to disable the hardware,
+V2: Takuya Yoshikawa pointed out a similar issue in f_getown_ex()
 
-Signed-off-by: Luotao Fu <l.fu@pengutronix.de>
----
- drivers/video/imxfb.c |   13 +++++++++++--
- 1 files changed, 11 insertions(+), 2 deletions(-)
+Signed-off-by: Dan Carpenter <error27@gmail.com>
 
-diff --git a/drivers/video/imxfb.c b/drivers/video/imxfb.c
-index 17c6b5f..6ef9817 100644
---- a/drivers/video/imxfb.c
-+++ b/drivers/video/imxfb.c
-@@ -35,6 +35,7 @@
+diff --git a/fs/fcntl.c b/fs/fcntl.c
+index f74d270..51e11bf 100644
+--- a/fs/fcntl.c
++++ b/fs/fcntl.c
+@@ -274,7 +274,7 @@ static int f_setown_ex(struct file *filp, unsigned long arg)
  
- #include <mach/imxfb.h>
- #include <mach/hardware.h>
-+#include <mach/clock.h>
+ 	ret = copy_from_user(&owner, owner_p, sizeof(owner));
+ 	if (ret)
+-		return ret;
++		return -EFAULT;
  
- /*
-  * Complain if VAR is out of range.
-@@ -176,6 +177,7 @@ struct imxfb_info {
+ 	switch (owner.type) {
+ 	case F_OWNER_TID:
+@@ -332,8 +332,11 @@ static int f_getown_ex(struct file *filp, unsigned long arg)
+ 	}
+ 	read_unlock(&filp->f_owner.lock);
  
- 	struct imx_fb_videomode *mode;
- 	int			num_modes;
-+	bool			fbclk_disabled;
- 
- 	void (*lcd_power)(int);
- 	void (*backlight_power)(int);
-@@ -466,6 +468,7 @@ static void imxfb_enable_controller(struct imxfb_info *fbi)
- 	writel(RMCR_LCDC_EN, fbi->regs + LCDC_RMCR);
- 
- 	clk_enable(fbi->clk);
-+	fbi->fbclk_disabled = 0;
- 
- 	if (fbi->backlight_power)
- 		fbi->backlight_power(1);
-@@ -482,7 +485,10 @@ static void imxfb_disable_controller(struct imxfb_info *fbi)
- 	if (fbi->lcd_power)
- 		fbi->lcd_power(0);
- 
--	clk_disable(fbi->clk);
-+	if (!fbi->fbclk_disabled) {
-+		fbi->fbclk_disabled = 1;
-+		clk_disable(fbi->clk);
+-	if (!ret)
++	if (!ret) {
+ 		ret = copy_to_user(owner_p, &owner, sizeof(owner));
++		if (ret)
++			ret = -EFAULT;
 +	}
- 
- 	writel(0, fbi->regs + LCDC_RMCR);
+ 	return ret;
  }
-@@ -863,7 +869,10 @@ static int __devexit imxfb_remove(struct platform_device *pdev)
  
- 	iounmap(fbi->regs);
- 	release_mem_region(res->start, resource_size(res));
--	clk_disable(fbi->clk);
-+
-+	if (!fbi->fbclk_disabled)
-+		clk_disable(fbi->clk);
-+
- 	clk_put(fbi->clk);
- 
- 	platform_set_drvdata(pdev, NULL);
--- 
-1.7.1
-
