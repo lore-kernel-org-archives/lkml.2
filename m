@@ -1,63 +1,181 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754163Ab0FCHC3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jun 2010 03:02:29 -0400
-Received: from mail-gw0-f46.google.com ([74.125.83.46]:51257 "EHLO
-	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753998Ab0FCHC1 (ORCPT
+	id S1754135Ab0FCHFi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jun 2010 03:05:38 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:48373 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752148Ab0FCHFg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jun 2010 03:02:27 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:date:message-id:subject:from:to:cc:content-type;
-        b=qut9Ncz1BpMGjVusk49S5/5HQm09k5dh82KEBfpGGQ66HYRFQRXPC7OLnvVAoxF7Y4
-         DK+sSc6QQ122ZvYLJQIc7QHKGbWjkUOk8Mwege5eP//5tJzVCSlSVErzWOBaKr4CUMpQ
-         XEjOIfPpJVSTMcyBjEjaFC1uesfMLdiFNVTMY=
-MIME-Version: 1.0
-Date: Thu, 3 Jun 2010 15:02:25 +0800
-Message-ID: <AANLkTikWak8i-Kaj-e-EUFWE66tfMmp2UPhGJCKkK1zK@mail.gmail.com>
-Subject: 2.6.25-rc1 ahci regression
-From: Luming Yu <luming.yu@gmail.com>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: avorontsov@ru.mvista.com, jgarzik@redhat.com
-Content-Type: text/plain; charset=UTF-8
+	Thu, 3 Jun 2010 03:05:36 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Thu, 3 Jun 2010 16:01:19 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
+Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
+       "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       "balbir@linux.vnet.ibm.com" <balbir@linux.vnet.ibm.com>
+Subject: Re: [PATCH 2/2] memcg make move_task_charge check clearer
+Message-Id: <20100603160119.e9ffc342.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <20100603154031.f80fc900.nishimura@mxp.nes.nec.co.jp>
+References: <20100603114837.6e6d4d0f.kamezawa.hiroyu@jp.fujitsu.com>
+	<20100603115119.be29ec13.kamezawa.hiroyu@jp.fujitsu.com>
+	<20100603154031.f80fc900.nishimura@mxp.nes.nec.co.jp>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi there,
+On Thu, 3 Jun 2010 15:40:31 +0900
+Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp> wrote:
+		css_put(&to->css);
+> I think this css_put() must be removed too.
+> Except for it, this patch looks good to me.
+> 
+Nice catch. Thank you.
 
-I happened to notice that the commit 365cfa1ed5 caused the following
-boot error with 2.6.25-rc1
-on a system with ICH10 SATA AHCI controller. It's weird if there is
-really no function changes in the patch.
+> Thank you for cleaning up my dirty code :)
 
-Any ideas?
+no problem. create -> bugfix -> clean up is in a wheel of development.
 
+==
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 
-dracut: Starting plymouth daemon
-pata_jmicron 0000:0f:00.0: PCI INT A -> GSI 16 (level, low) -> IRQ 16
-scsi0 : pata_jmicron
-Initializing USB Mass Storage driver...
-scsi1 : usb-storage 1-5:1.0
-scsi2 : pata_jmicron
-ata1: PATA max UDMA/100 cmd 0xd040 ctl 0xd030 bmdma 0xd000 irq 16
-ata2: PATA max UDMA/100 cmd 0xd020 ctl 0xd010 bmdma 0xd008 irq 16
-usbcore: registered new interface driver usb-storage
-USB Mass Storage support registered.
-scsi 1:0:0:0: CD-ROM            PepperC  Virtual Disc 1   0.01 PQ: 0 ANSI: 3
-sr0: scsi-1 drive
+Now, for checking a memcg is under task-account-moving, we do css_tryget()
+against mc.to and mc.from. But this is just complicating things. This patch
+makes the check easier.
 
+This patch adds a spinlock to move_charge_struct and guard modification
+of mc.to and mc.from. By this, we don't have to think about complicated
+races arount this not-critical path.
 
+Changelog:
+ - removed disable/enable irq.
+ - removed unnecessary css_put()
 
-commit 365cfa1ed5a36f9bcb9f64c9f0f52155af2e9fef
-Author: Anton Vorontsov <avorontsov@ru.mvista.com>
-Date:   Sun Mar 28 00:22:14 2010 -0400
+Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+---
+ mm/memcontrol.c |   49 ++++++++++++++++++++++++++++---------------------
+ 1 file changed, 28 insertions(+), 21 deletions(-)
 
-    ahci: Move generic code into libahci
+Index: mmotm-2.6.34-May21/mm/memcontrol.c
+===================================================================
+--- mmotm-2.6.34-May21.orig/mm/memcontrol.c
++++ mmotm-2.6.34-May21/mm/memcontrol.c
+@@ -268,6 +268,7 @@ enum move_type {
+ 
+ /* "mc" and its members are protected by cgroup_mutex */
+ static struct move_charge_struct {
++	spinlock_t	  lock; /* for from, to, moving_task */
+ 	struct mem_cgroup *from;
+ 	struct mem_cgroup *to;
+ 	unsigned long precharge;
+@@ -276,6 +277,7 @@ static struct move_charge_struct {
+ 	struct task_struct *moving_task;	/* a task moving charges */
+ 	wait_queue_head_t waitq;		/* a waitq for other context */
+ } mc = {
++	.lock = __SPIN_LOCK_UNLOCKED(mc.lock),
+ 	.waitq = __WAIT_QUEUE_HEAD_INITIALIZER(mc.waitq),
+ };
+ 
+@@ -1076,26 +1078,24 @@ static unsigned int get_swappiness(struc
+ 
+ static bool mem_cgroup_under_move(struct mem_cgroup *mem)
+ {
+-	struct mem_cgroup *from = mc.from;
+-	struct mem_cgroup *to = mc.to;
++	struct mem_cgroup *from;
++	struct mem_cgroup *to;
+ 	bool ret = false;
+-
+-	if (from == mem || to == mem)
+-		return true;
+-
+-	if (!from || !to || !mem->use_hierarchy)
+-		return false;
+-
+-	rcu_read_lock();
+-	if (css_tryget(&from->css)) {
+-		ret = css_is_ancestor(&from->css, &mem->css);
+-		css_put(&from->css);
+-	}
+-	if (!ret && css_tryget(&to->css)) {
+-		ret = css_is_ancestor(&to->css,	&mem->css);
+-		css_put(&to->css);
+-	}
+-	rcu_read_unlock();
++	/*
++	 * Unlike task_move routines, we access mc.to, mc.from not under
++	 * mutual exclusion by cgroup_mutex. Here, we take spinlock instead.
++	 */
++	spin_lock(&mc.lock);
++	from = mc.from;
++	to = mc.to;
++	if (!from)
++		goto unlock;
++	if (from == mem || to == mem
++	    || (mem->use_hierarchy && css_is_ancestor(&from->css, &mem->css))
++	    || (mem->use_hierarchy && css_is_ancestor(&to->css,	&mem->css)))
++		ret = true;
++unlock:
++	spin_unlock(&mc.lock);
+ 	return ret;
+ }
+ 
+@@ -4447,11 +4447,13 @@ static int mem_cgroup_precharge_mc(struc
+ 
+ static void mem_cgroup_clear_mc(void)
+ {
++	struct mem_cgroup *from = mc.from;
++	struct mem_cgroup *to = mc.to;
++
+ 	/* we must uncharge all the leftover precharges from mc.to */
+ 	if (mc.precharge) {
+ 		__mem_cgroup_cancel_charge(mc.to, mc.precharge);
+ 		mc.precharge = 0;
+-		memcg_oom_recover(mc.to);
+ 	}
+ 	/*
+ 	 * we didn't uncharge from mc.from at mem_cgroup_move_account(), so
+@@ -4460,7 +4462,6 @@ static void mem_cgroup_clear_mc(void)
+ 	if (mc.moved_charge) {
+ 		__mem_cgroup_cancel_charge(mc.from, mc.moved_charge);
+ 		mc.moved_charge = 0;
+-		memcg_oom_recover(mc.from);
+ 	}
+ 	/* we must fixup refcnts and charges */
+ 	if (mc.moved_swap) {
+@@ -4485,9 +4486,13 @@ static void mem_cgroup_clear_mc(void)
+ 
+ 		mc.moved_swap = 0;
+ 	}
++	spin_lock(&mc.lock);
+ 	mc.from = NULL;
+ 	mc.to = NULL;
+ 	mc.moving_task = NULL;
++	spin_unlock(&mc.lock);
++	memcg_oom_recover(from);
++	memcg_oom_recover(to);
+ 	wake_up_all(&mc.waitq);
+ }
+ 
+@@ -4516,12 +4521,14 @@ static int mem_cgroup_can_attach(struct 
+ 			VM_BUG_ON(mc.moved_charge);
+ 			VM_BUG_ON(mc.moved_swap);
+ 			VM_BUG_ON(mc.moving_task);
++			spin_lock(&mc.lock);
+ 			mc.from = from;
+ 			mc.to = mem;
+ 			mc.precharge = 0;
+ 			mc.moved_charge = 0;
+ 			mc.moved_swap = 0;
+ 			mc.moving_task = current;
++			spin_unlock(&mc.lock);
+ 
+ 			ret = mem_cgroup_precharge_mc(mm);
+ 			if (ret)
 
-    This patch should contain no functional changes, just moves code
-    around.
-
-    Signed-off-by: Anton Vorontsov <avorontsov@ru.mvista.com>
-    Signed-off-by: Jeff Garzik <jgarzik@redhat.com>
