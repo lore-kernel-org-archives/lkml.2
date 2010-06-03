@@ -1,80 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757122Ab0FCRzR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jun 2010 13:55:17 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:50392 "EHLO
-	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751857Ab0FCRzN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jun 2010 13:55:13 -0400
-Date: Thu, 3 Jun 2010 18:55:11 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Lars-Peter Clausen <lars@metafoo.de>
-Cc: Ralf Baechle <ralf@linux-mips.org>, linux-mips@linux-mips.org,
-       linux-kernel@vger.kernel.org, Liam Girdwood <lrg@slimlogic.co.uk>,
-       alsa-devel@alsa-project.org
-Subject: Re: [RFC][PATCH 21/26] alsa: ASoC: Add JZ4740 ASoC support
-Message-ID: <20100603175511.GI2762@rakim.wolfsonmicro.main>
-References: <1275505397-16758-1-git-send-email-lars@metafoo.de>
- <1275505950-17334-5-git-send-email-lars@metafoo.de>
+	id S1756821Ab0FCRz2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jun 2010 13:55:28 -0400
+Received: from hera.kernel.org ([140.211.167.34]:45916 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752931Ab0FCRzX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Jun 2010 13:55:23 -0400
+Date: Thu, 3 Jun 2010 17:54:48 GMT
+From: tip-bot for Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
+       fweisbec@gmail.com, a.p.zijlstra@chello.nl, tglx@linutronix.de,
+       mingo@elte.hu
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+       fweisbec@gmail.com, a.p.zijlstra@chello.nl, tglx@linutronix.de,
+       mingo@elte.hu
+In-Reply-To: <1275557609.27810.35218.camel@twins>
+References: <1275557609.27810.35218.camel@twins>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/urgent] perf: Fix crash in swevents
+Message-ID: <tip-c6df8d5ab87a246942d138321e1721edbb69f6e1@git.kernel.org>
+Git-Commit-ID: c6df8d5ab87a246942d138321e1721edbb69f6e1
+X-Mailer: tip-git-log-daemon
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-In-Reply-To: <1275505950-17334-5-git-send-email-lars@metafoo.de>
-X-Cookie: In the next world, you're on your own.
-User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Thu, 03 Jun 2010 17:54:50 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 02, 2010 at 09:12:27PM +0200, Lars-Peter Clausen wrote:
+Commit-ID:  c6df8d5ab87a246942d138321e1721edbb69f6e1
+Gitweb:     http://git.kernel.org/tip/c6df8d5ab87a246942d138321e1721edbb69f6e1
+Author:     Peter Zijlstra <a.p.zijlstra@chello.nl>
+AuthorDate: Thu, 3 Jun 2010 11:21:20 +0200
+Committer:  Ingo Molnar <mingo@elte.hu>
+CommitDate: Thu, 3 Jun 2010 17:03:08 +0200
 
-Again, overall very good.
+perf: Fix crash in swevents
 
-> +static int jz4740_i2s_set_clkdiv(struct snd_soc_dai *dai, int div_id, int div)
-> +{
-> +	struct jz4740_i2s *i2s = jz4740_dai_to_i2s(dai);
-> +
-> +	switch (div_id) {
-> +	case JZ4740_I2S_BIT_CLK:
-> +		if (div & 1 || div > 16)
-> +			return -EINVAL;
-> +		jz4740_i2s_write(i2s, JZ_REG_AIC_CLK_DIV, div - 1);
-> +		break;
-> +	default:
-> +		return -EINVAL;
-> +	}
-> +
-> +	return 0;
-> +}
+Frederic reported that because swevents handling doesn't disable IRQs
+anymore, we can get a recursion of perf_adjust_period(), once from
+overflow handling and once from the tick.
 
-You can probably figure out the bit clock automatically by default...
+If both call ->disable, we get a double hlist_del_rcu() and trigger
+a LIST_POISON2 dereference.
 
-> +	if (dai->active) {
-> +		conf = jz4740_i2s_read(i2s, JZ_REG_AIC_CONF);
-> +		conf &= ~JZ_AIC_CONF_ENABLE;
-> +		jz4740_i2s_write(i2s, JZ_REG_AIC_CONF, conf);
-> +
-> +		clk_disable(i2s->clk_i2s);
-> +	}
-> +
-> +	clk_disable(i2s->clk_aic);
+Since we don't actually need to stop/start a swevent to re-programm
+the hardware (lack of hardware to program), simply nop out these
+callbacks for the swevent pmu.
 
-Might make sense to manage this clock dynamically at runtime too for a
-little extra power saving?
+Reported-by: Frederic Weisbecker <fweisbec@gmail.com>
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+LKML-Reference: <1275557609.27810.35218.camel@twins>
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
+---
+ kernel/perf_event.c |   24 +++++++++++++++---------
+ 1 files changed, 15 insertions(+), 9 deletions(-)
 
-> +	i2s->clk_aic = clk_get(&pdev->dev, "aic");
-> +	if (IS_ERR(i2s->clk_aic)) {
-> +		ret = PTR_ERR(i2s->clk_aic);
-> +		goto err_iounmap;
-> +	}
-> +
-> +	i2s->clk_i2s = clk_get(&pdev->dev, "i2s");
-> +	if (IS_ERR(i2s->clk_i2s)) {
-> +		ret = PTR_ERR(i2s->clk_i2s);
-> +		goto err_iounmap;
-> +	}
-
-Ideally you'd free the AIC clock when unwinding (and later stop it after
-it was enabled).  Though since you don't do any error checking after
-this point it's kind of academic :)
+diff --git a/kernel/perf_event.c b/kernel/perf_event.c
+index 858f56f..31d6afe 100644
+--- a/kernel/perf_event.c
++++ b/kernel/perf_event.c
+@@ -4055,13 +4055,6 @@ static void perf_swevent_overflow(struct perf_event *event, u64 overflow,
+ 	}
+ }
+ 
+-static void perf_swevent_unthrottle(struct perf_event *event)
+-{
+-	/*
+-	 * Nothing to do, we already reset hwc->interrupts.
+-	 */
+-}
+-
+ static void perf_swevent_add(struct perf_event *event, u64 nr,
+ 			       int nmi, struct perf_sample_data *data,
+ 			       struct pt_regs *regs)
+@@ -4276,11 +4269,22 @@ static void perf_swevent_disable(struct perf_event *event)
+ 	hlist_del_rcu(&event->hlist_entry);
+ }
+ 
++static void perf_swevent_void(struct perf_event *event)
++{
++}
++
++static int perf_swevent_int(struct perf_event *event)
++{
++	return 0;
++}
++
+ static const struct pmu perf_ops_generic = {
+ 	.enable		= perf_swevent_enable,
+ 	.disable	= perf_swevent_disable,
++	.start		= perf_swevent_int,
++	.stop		= perf_swevent_void,
+ 	.read		= perf_swevent_read,
+-	.unthrottle	= perf_swevent_unthrottle,
++	.unthrottle	= perf_swevent_void, /* hwc->interrupts already reset */
+ };
+ 
+ /*
+@@ -4561,8 +4565,10 @@ static int swevent_hlist_get(struct perf_event *event)
+ static const struct pmu perf_ops_tracepoint = {
+ 	.enable		= perf_trace_enable,
+ 	.disable	= perf_trace_disable,
++	.start		= perf_swevent_int,
++	.stop		= perf_swevent_void,
+ 	.read		= perf_swevent_read,
+-	.unthrottle	= perf_swevent_unthrottle,
++	.unthrottle	= perf_swevent_void,
+ };
+ 
+ static int perf_tp_filter_match(struct perf_event *event,
