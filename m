@@ -1,94 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754854Ab0FCNnK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jun 2010 09:43:10 -0400
-Received: from s15228384.onlinehome-server.info ([87.106.30.177]:46979 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754701Ab0FCNm4 (ORCPT
+	id S1754747Ab0FCNoe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jun 2010 09:44:34 -0400
+Received: from n5-vm0.bullet.mail.gq1.yahoo.com ([67.195.8.62]:26983 "HELO
+	n5-vm0.bullet.mail.gq1.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1751766Ab0FCNoc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jun 2010 09:42:56 -0400
-Date: Thu, 3 Jun 2010 15:43:01 +0200
-From: Borislav Petkov <bp@amd64.org>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Ingo Molnar <mingo@elte.hu>, Borislav Petkov <bp@alien8.de>,
-       Frederic Weisbecker <fweisbec@gmail.com>,
-       Steven Rostedt <rostedt@goodmis.org>,
-       Arnaldo Carvalho de Melo <acme@redhat.com>,
-       Lin Ming <ming.m.lin@intel.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] perf: Add persistent events
-Message-ID: <20100603134301.GA30880@kryptos.osrc.amd.com>
-References: <20100523183353.GB1408@liondog.tnic>
- <1274640047.1674.1731.camel@laptop>
- <20100523185411.GA5608@liondog.tnic>
- <1274642601.1674.1755.camel@laptop>
- <20100525073246.GA6085@liondog.tnic>
- <1274799588.5882.1572.camel@twins>
- <20100528143311.GB9710@elte.hu>
- <1275059860.27810.9635.camel@twins>
- <20100528155719.GA10141@kryptos.osrc.amd.com>
- <1275070030.1645.362.camel@laptop>
+	Thu, 3 Jun 2010 09:44:32 -0400
+X-Yahoo-Newman-Property: ymail-3
+X-Yahoo-Newman-Id: 938332.54916.bm@omp131.mail.gq1.yahoo.com
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
+  s=s1024; d=pacbell.net;
+  h=Message-ID:X-YMail-OSG:Received:X-Mailer:Date:From:Subject:To:Cc:In-Reply-To:MIME-Version:Content-Type;
+  b=4AdjxNBlApOxK3w/Xw4aguA7n1FSNcyPZfCKqZeMzfuey4Vt3w2LQ8JhIsJWppe9qPdLu+9fbSksr/MJ825KmGzsiBbJGaFHd7sETgCNa88UZUudIEnLrCpP3K9qZSQSvKJQ7pJz64HlvqosqnshvCnJ0dH/NP6nAWy3Hu+/P3E=;
+Message-ID: <806772.17066.qm@web180305.mail.gq1.yahoo.com>
+X-YMail-OSG: igoI8.0VM1neTPPFm6KhPeSEkXNikrF8KJZwqWb1b8W7Yyf
+ xBOdUEPIcMOPZEd5qHF2AYDU9p5SLvaf9lJpsjZHfYhRUPao7nFd6u.M7YbR
+ Nl83hm4JzgT5OMQMm4AeXJ23wIpnfV8T2mMAcphE6t.IZGDOdv.Mx4NAetHt
+ qRLltspYaR7JUGYgUxeCJfCwcqqPzdrbxbSk5.OcjZuFNpkdVmoUCotDalqj
+ iwQ7RCoZFyR_JGp56GoHWK8zkAssOdCxxYcnPHZu8EAKSJAhRXdQXk84AiEl
+ gb4y0zDEiKdytGUA5tKo-
+X-Mailer: YahooMailClassic/11.0.8 YahooMailWebService/0.8.103.269680
+Date: Thu, 3 Jun 2010 06:44:31 -0700 (PDT)
+From: David Brownell <david-b@pacbell.net>
+Subject: Re: [linux-pm] [PATCH 0/8] Suspend block api (version 8)
+To: Thomas Gleixner <tglx@linutronix.de>,
+       Florian Mickler <florian@mickler.org>
+Cc: Neil Brown <neilb@suse.de>,
+       "Paul@smtp1.linux-foundation.org" <Paul@smtp1.linux-foundation.org>,
+       LKML <linux-kernel@vger.kernel.org>, Alan@smtp1.linux-foundation.org,
+       Peter Zijlstra <peterz@infradead.org>,
+       Felipe Balbi <felipe.balbi@nokia.com>,
+       Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
+       Linux PM <linux-pm@lists.linux-foundation.org>,
+       Alan Cox <alan@lxorguk.ukuu.org.uk>
+In-Reply-To: <20100601073548.5ed65352@schatten.dmk.lab>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1275070030.1645.362.camel@laptop>
-Organization: Advanced Micro Devices =?iso-8859-1?Q?GmbH?=
-	=?iso-8859-1?Q?=2C_Karl-Hammerschmidt-Str=2E_34=2C_85609_Dornach_bei_M=FC?=
-	=?iso-8859-1?Q?nchen=2C_Gesch=E4ftsf=FChrer=3A_Thomas_M=2E_McCoy=2C_Giuli?=
-	=?iso-8859-1?Q?ano_Meroni=2C_Andrew_Bowd=2C_Sitz=3A_Dornach=2C_Gemeinde_A?=
-	=?iso-8859-1?Q?schheim=2C_Landkreis_M=FCnchen=2C_Registergericht_M=FCnche?=
-	=?iso-8859-1?Q?n=2C?= HRB Nr. 43632
-User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Peter Zijlstra <peterz@infradead.org>
-Date: Fri, May 28, 2010 at 08:07:10PM +0200
 
-> They can be found at:
-> 
-> http://programming.kicks-ass.net/sekrit/patches.tar.bz2
-> 
-> ignore the last 5 patches, those are random hackery.
-> 
-> In particular, look at:
-> 
-> patches/perf-fix-buffer-redirect.patch
-> patches/perf-buffer.patch
-> patches/perf-buffer-init.patch
-> 
-> (they won't apply separately in that order, simply push the full queue
-> until the last one or further)
-> 
-> After that you should be able to add:
-> 
->   buffer = perf_buffer_alloc(nr_pages, watermark, cpu, flags);
->   rcu_assign_pointer(event->buffer, buffer);
-> 
-> to allocate and attach a buffer to your event (do so for each cpu's MCE
-> event).
-> 
-> After that we still need a way to expose all that to userspace, but at
-> least the events will be complete and able to record bits ;-)
+> > > If "suspend" is the thing we are used to via
+> /sys/power/state then the
+> > > race will persist forever except for the suspend blocker workaround,
 
-Yep, so far so good, the kernel side is almost done - this was the
-easy part :). So recently I started looking into how the userspace
-part could be done most efficiently so that, initially, the RAS daemon
-doesn't suck in all of tools/perf when building and depend unnecessary
-on libelf etc, and, at the same time, doesn't duplicate functionality
-like util/debugfs, get_debugfs_mntpt(), parse_events() maybe later etc.
+True, because device wakeups are enabled
+by device.driver.suspend() methods, which are
+invoked towards the end of the activities
+triggered by writing /sys/power/state.
 
-So, the best way to do this, IMHO, is if I start carving out common and
-generic functionality into tools/lib/ or tools/util/ or similar so that
-perf and ras can share those. And maybe later even other tools. This
-could be where we host all the kernel headers stuff which are good for
-userspace, i.e. those which are in tools/perf/util/include/linux/
+Now, there can be platforms (mostly embedded)
+where the drivers adopt a policy that not only
+do they keep their devices in as low a power
+state as practical at all times, but they also
+keep the hardware wakeup mechanisms enabled (they
+may be needed to kick the hardware out of those
+low power states) ...  That is, suspend() might be
+superfluous (a NOP) in those platforms' drivers.
 
-Opinions, comments?
+Such platforms might also be (non-ACPI) ones
+where idle C-states and S3/STR have the same
+power consumption ... but that would be a
+platform-specific issue, not a generic thing
+which all Linux implementations could rely on.
 
--- 
-Regards/Gruss,
-Boris.
+- Dave
 
-Operating Systems Research Center
-Advanced Micro Devices, Inc.
+
