@@ -1,71 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932271Ab0FCHWc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jun 2010 03:22:32 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:61070 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1756453Ab0FCHWa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jun 2010 03:22:30 -0400
-Message-ID: <4C0758C9.7080108@cn.fujitsu.com>
-Date: Thu, 03 Jun 2010 15:24:57 +0800
-From: Li Zefan <lizf@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1b3pre) Gecko/20090513 Fedora/3.0-2.3.beta2.fc11 Thunderbird/3.0b2
+	id S1756151Ab0FCH2x (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jun 2010 03:28:53 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:35493 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752675Ab0FCH2w convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Jun 2010 03:28:52 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=R1CKn92P5cozymqs82Fn5z400QZtZ9FuzNQvmgyqi424lhlCdOS4PB64EXd9N9g5AD
+         GqH5DPCxOsaza/9FI/4DUdjqmrjhsD+vPEm0qTJOzzQip4ju9n/m+Ear1YvLfbohOvKe
+         bLr41JsQysIt/kkEUItEd1BPu5Q7jHPyjwWiQ=
 MIME-Version: 1.0
-To: Michal Marek <mmarek@suse.cz>
-CC: Randy Dunlap <randy.dunlap@oracle.com>,
-       Nobin Mathew <nobin.mathew@gmail.com>, Ben Dooks <ben-linux@fluff.org>,
-       LKML <linux-kernel@vger.kernel.org>, linux-kbuild@vger.kernel.org,
-       linux-arm-kernel@lists.infradead.org
-Subject: [PATCH 2/2] menuconfig: truncate list items
-References: <4C0758B7.5070907@cn.fujitsu.com>
-In-Reply-To: <4C0758B7.5070907@cn.fujitsu.com>
+In-Reply-To: <4C07561F.5080202@garzik.org>
+References: <AANLkTikWak8i-Kaj-e-EUFWE66tfMmp2UPhGJCKkK1zK@mail.gmail.com>
+	<4C07561F.5080202@garzik.org>
+Date: Thu, 3 Jun 2010 15:28:50 +0800
+Message-ID: <AANLkTim5UblANgkOj2XNjNw-h2JMKsXRkuMpROpEOlpZ@mail.gmail.com>
+Subject: Re: 2.6.25-rc1 ahci regression
+From: Luming Yu <luming.yu@gmail.com>
+To: Jeff Garzik <jeff@garzik.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, avorontsov@ru.mvista.com
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Truncate list items to fit in a single line, otherwise those items
-which have long prompts will cover some other items.
+On Thu, Jun 3, 2010 at 3:13 PM, Jeff Garzik <jeff@garzik.org> wrote:
+> On 06/03/2010 03:02 AM, Luming Yu wrote:
+>>
+>> Hi there,
+>>
+>> I happened to notice that the commit 365cfa1ed5 caused the following
+>> boot error with 2.6.25-rc1
+>> on a system with ICH10 SATA AHCI controller. It's weird if there is
+>> really no function changes in the patch.
+>>
+>> Any ideas?
+>>
+>>
+>> dracut: Starting plymouth daemon
+>> pata_jmicron 0000:0f:00.0: PCI INT A ->  GSI 16 (level, low) ->  IRQ 16
+>> scsi0 : pata_jmicron
+>> Initializing USB Mass Storage driver...
+>> scsi1 : usb-storage 1-5:1.0
+>> scsi2 : pata_jmicron
+>> ata1: PATA max UDMA/100 cmd 0xd040 ctl 0xd030 bmdma 0xd000 irq 16
+>> ata2: PATA max UDMA/100 cmd 0xd020 ctl 0xd010 bmdma 0xd008 irq 16
+>> usbcore: registered new interface driver usb-storage
+>> USB Mass Storage support registered.
+>> scsi 1:0:0:0: CD-ROM            PepperC  Virtual Disc 1   0.01 PQ: 0 ANSI:
+>> 3
+>> sr0: scsi-1 drive
+>
+> Your output here does not indicate a boot error, so to what do you refer?
+sr0: scsi-1 drive
+Uniform CD-ROM driver Revision: 3.20
 
-This follows the behavior of menubox.
+Boot has failed, sleeping forever.
 
-Signed-off-by: Li Zefan <lizf@cn.fujitsu.com>
----
- scripts/kconfig/lxdialog/checklist.c |    9 +++++++--
- 1 files changed, 7 insertions(+), 2 deletions(-)
 
-diff --git a/scripts/kconfig/lxdialog/checklist.c b/scripts/kconfig/lxdialog/checklist.c
-index c92a05a..a2eb80f 100644
---- a/scripts/kconfig/lxdialog/checklist.c
-+++ b/scripts/kconfig/lxdialog/checklist.c
-@@ -31,6 +31,10 @@ static int list_width, check_x, item_x;
- static void print_item(WINDOW * win, int choice, int selected)
- {
- 	int i;
-+	char *list_item = malloc(list_width + 1);
-+
-+	strncpy(list_item, item_str(), list_width - item_x);
-+	list_item[list_width - item_x] = '\0';
- 
- 	/* Clear 'residue' of last item */
- 	wattrset(win, dlg.menubox.atr);
-@@ -45,13 +49,14 @@ static void print_item(WINDOW * win, int choice, int selected)
- 		wprintw(win, "(%c)", item_is_tag('X') ? 'X' : ' ');
- 
- 	wattrset(win, selected ? dlg.tag_selected.atr : dlg.tag.atr);
--	mvwaddch(win, choice, item_x, item_str()[0]);
-+	mvwaddch(win, choice, item_x, list_item[0]);
- 	wattrset(win, selected ? dlg.item_selected.atr : dlg.item.atr);
--	waddstr(win, (char *)item_str() + 1);
-+	waddstr(win, list_item + 1);
- 	if (selected) {
- 		wmove(win, choice, check_x + 1);
- 		wrefresh(win);
- 	}
-+	free(list_item);
- }
- 
- /*
--- 
-1.6.3
+
+
+>
