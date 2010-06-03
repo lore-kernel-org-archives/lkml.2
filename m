@@ -1,233 +1,260 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753982Ab0FCNLQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jun 2010 09:11:16 -0400
+	id S1754062Ab0FCNLX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jun 2010 09:11:23 -0400
 Received: from smtp02.citrix.com ([66.165.176.63]:52461 "EHLO
 	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751691Ab0FCNLO (ORCPT
+	with ESMTP id S1751691Ab0FCNLS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jun 2010 09:11:14 -0400
+	Thu, 3 Jun 2010 09:11:18 -0400
 X-IronPort-AV: E=Sophos;i="4.53,354,1272859200"; 
-   d="scan'208";a="99908915"
+   d="scan'208";a="99908923"
 From: stefano.stabellini@eu.citrix.com
 To: linux-kernel@vger.kernel.org
 Cc: Stefano.Stabellini@eu.citrix.com, xen-devel@lists.xensource.com,
        jeremy@goop.org, ddutile@redhat.com, sheng@linux.intel.com,
-       Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
-       Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Subject: [PATCH 01/12] Add support for hvm_op
-Date: Thu,  3 Jun 2010 14:10:34 +0100
-Message-Id: <1275570645-27189-1-git-send-email-stefano.stabellini@eu.citrix.com>
+       Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+       "Yaozu (Eddie) Dong" <eddie.dong@intel.com>
+Subject: [PATCH 02/12] early PV on HVM
+Date: Thu,  3 Jun 2010 14:10:35 +0100
+Message-Id: <1275570645-27189-2-git-send-email-stefano.stabellini@eu.citrix.com>
 X-Mailer: git-send-email 1.7.0.4
-X-OriginalArrivalTime: 03 Jun 2010 13:11:12.0991 (UTC) FILETIME=[3DBD4EF0:01CB031E]
+In-Reply-To: <1275570645-27189-1-git-send-email-stefano.stabellini@eu.citrix.com>
+References: <1275570645-27189-1-git-send-email-stefano.stabellini@eu.citrix.com>
+X-OriginalArrivalTime: 03 Jun 2010 13:11:17.0444 (UTC) FILETIME=[4064C840:01CB031E]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
+From: Sheng Yang <sheng@linux.intel.com>
 
-Signed-off-by: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
-Signed-off-by: Sheng Yang <sheng@linux.intel.com>
+Initialize basic pv on hvm features in xen_guest_init.
+
+The hook in arch/x86/kernel/setup.c can easily be removed using the new
+generic hypervisor independent initialization infrastructure present in
+the linux-2.6-tip tree.
+
 Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+Signed-off-by: Sheng Yang <sheng@linux.intel.com>
+Signed-off-by: Yaozu (Eddie) Dong <eddie.dong@intel.com>
 ---
- arch/x86/include/asm/xen/hypercall.h |    6 ++
- include/xen/hvm.h                    |   24 +++++++++
- include/xen/interface/hvm/hvm_op.h   |   35 ++++++++++++
- include/xen/interface/hvm/params.h   |   95 ++++++++++++++++++++++++++++++++++
- 4 files changed, 160 insertions(+), 0 deletions(-)
- create mode 100644 include/xen/hvm.h
- create mode 100644 include/xen/interface/hvm/hvm_op.h
- create mode 100644 include/xen/interface/hvm/params.h
+ arch/x86/kernel/setup.c           |    2 +
+ arch/x86/xen/enlighten.c          |   86 +++++++++++++++++++++++++++++++++++++
+ drivers/input/xen-kbdfront.c      |    2 +-
+ drivers/video/xen-fbfront.c       |    2 +-
+ drivers/xen/xenbus/xenbus_probe.c |   21 ++++++++-
+ include/xen/xen.h                 |    2 +
+ 6 files changed, 110 insertions(+), 5 deletions(-)
 
-diff --git a/arch/x86/include/asm/xen/hypercall.h b/arch/x86/include/asm/xen/hypercall.h
-index 9c371e4..7fda040 100644
---- a/arch/x86/include/asm/xen/hypercall.h
-+++ b/arch/x86/include/asm/xen/hypercall.h
-@@ -417,6 +417,12 @@ HYPERVISOR_nmi_op(unsigned long op, unsigned long arg)
- 	return _hypercall2(int, nmi_op, op, arg);
- }
+diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
+index c4851ef..ae9b6cb 100644
+--- a/arch/x86/kernel/setup.c
++++ b/arch/x86/kernel/setup.c
+@@ -69,6 +69,7 @@
+ #include <linux/tboot.h>
  
-+static inline unsigned long __must_check
-+HYPERVISOR_hvm_op(int op, void *arg)
+ #include <video/edid.h>
++#include <xen/xen.h>
+ 
+ #include <asm/mtrr.h>
+ #include <asm/apic.h>
+@@ -1032,6 +1033,7 @@ void __init setup_arch(char **cmdline_p)
+ 	probe_nr_irqs_gsi();
+ 
+ 	kvm_guest_init();
++	xen_guest_init();
+ 
+ 	e820_reserve_resources();
+ 	e820_mark_nosave_regions(max_low_pfn);
+diff --git a/arch/x86/xen/enlighten.c b/arch/x86/xen/enlighten.c
+index 65d8d79..c1f6545 100644
+--- a/arch/x86/xen/enlighten.c
++++ b/arch/x86/xen/enlighten.c
+@@ -35,6 +35,7 @@
+ #include <xen/interface/version.h>
+ #include <xen/interface/physdev.h>
+ #include <xen/interface/vcpu.h>
++#include <xen/interface/memory.h>
+ #include <xen/features.h>
+ #include <xen/page.h>
+ #include <xen/hvc-console.h>
+@@ -56,6 +57,7 @@
+ #include <asm/tlbflush.h>
+ #include <asm/reboot.h>
+ #include <asm/stackprotector.h>
++#include <asm/hypervisor.h>
+ 
+ #include "xen-ops.h"
+ #include "mmu.h"
+@@ -1206,3 +1208,87 @@ asmlinkage void __init xen_start_kernel(void)
+ 	x86_64_start_reservations((char *)__pa_symbol(&boot_params));
+ #endif
+ }
++
++static uint32_t xen_cpuid_base(void)
 +{
-+       return _hypercall2(unsigned long, hvm_op, op, arg);
++	uint32_t base, eax, ebx, ecx, edx;
++	char signature[13];
++
++	for (base = 0x40000000; base < 0x40010000; base += 0x100) {
++		cpuid(base, &eax, &ebx, &ecx, &edx);
++		*(uint32_t*)(signature + 0) = ebx;
++		*(uint32_t*)(signature + 4) = ecx;
++		*(uint32_t*)(signature + 8) = edx;
++		signature[12] = 0;
++
++		if (!strcmp("XenVMMXenVMM", signature) && ((eax - base) >= 2))
++			return base;
++	}
++
++	return 0;
 +}
 +
- static inline void
- MULTI_fpu_taskswitch(struct multicall_entry *mcl, int set)
++static int init_hvm_pv_info(int *major, int *minor)
++{
++	uint32_t eax, ebx, ecx, edx, pages, msr, base;
++	u64 pfn;
++
++	base = xen_cpuid_base();
++	if (!base)
++		return -EINVAL;
++
++	cpuid(base + 1, &eax, &ebx, &ecx, &edx);
++
++	*major = eax >> 16;
++	*minor = eax & 0xffff;
++	printk(KERN_INFO "Xen version %d.%d.\n", *major, *minor);
++
++	cpuid(base + 2, &pages, &msr, &ecx, &edx);
++
++	pfn = __pa(hypercall_page);
++	wrmsr_safe(msr, (u32)pfn, (u32)(pfn >> 32));
++
++	xen_setup_features();
++
++	pv_info = xen_info;
++	pv_info.kernel_rpl = 0;
++
++	xen_domain_type = XEN_HVM_DOMAIN;
++
++	return 0;
++}
++
++static void __init init_shared_info(void)
++{
++	struct xen_add_to_physmap xatp;
++	struct shared_info *shared_info_page;
++
++	shared_info_page = (struct shared_info *) alloc_bootmem_pages(PAGE_SIZE);
++	xatp.domid = DOMID_SELF;
++	xatp.idx = 0;
++	xatp.space = XENMAPSPACE_shared_info;
++	xatp.gpfn = __pa(shared_info_page) >> PAGE_SHIFT;
++	if (HYPERVISOR_memory_op(XENMEM_add_to_physmap, &xatp))
++		BUG();
++
++	HYPERVISOR_shared_info = (struct shared_info *)shared_info_page;
++
++	/* Don't do the full vcpu_info placement stuff until we have a
++	   possible map and a non-dummy shared_info. */
++	per_cpu(xen_vcpu, 0) = &HYPERVISOR_shared_info->vcpu_info[0];
++}
++
++void __init xen_guest_init(void)
++{
++	int r;
++	int major, minor;
++
++	if (xen_pv_domain())
++		return;
++
++	r = init_hvm_pv_info(&major, &minor);
++	if (r < 0)
++		return;
++
++	init_shared_info();
++}
+diff --git a/drivers/input/xen-kbdfront.c b/drivers/input/xen-kbdfront.c
+index e140816..7451d78 100644
+--- a/drivers/input/xen-kbdfront.c
++++ b/drivers/input/xen-kbdfront.c
+@@ -339,7 +339,7 @@ static struct xenbus_driver xenkbd_driver = {
+ 
+ static int __init xenkbd_init(void)
  {
-diff --git a/include/xen/hvm.h b/include/xen/hvm.h
-new file mode 100644
-index 0000000..6b0d418
---- /dev/null
-+++ b/include/xen/hvm.h
-@@ -0,0 +1,24 @@
-+/* Simple wrappers around HVM functions */
-+#ifndef XEN_HVM_H__
-+#define XEN_HVM_H__
+-	if (!xen_domain())
++	if (!xen_domain() || xen_hvm_domain())
+ 		return -ENODEV;
+ 
+ 	/* Nothing to do if running in dom0. */
+diff --git a/drivers/video/xen-fbfront.c b/drivers/video/xen-fbfront.c
+index fa97d3e..a105a19 100644
+--- a/drivers/video/xen-fbfront.c
++++ b/drivers/video/xen-fbfront.c
+@@ -684,7 +684,7 @@ static struct xenbus_driver xenfb_driver = {
+ 
+ static int __init xenfb_init(void)
+ {
+-	if (!xen_domain())
++	if (!xen_domain() || xen_hvm_domain())
+ 		return -ENODEV;
+ 
+ 	/* Nothing to do if running in dom0. */
+diff --git a/drivers/xen/xenbus/xenbus_probe.c b/drivers/xen/xenbus/xenbus_probe.c
+index 3479332..0b05b62 100644
+--- a/drivers/xen/xenbus/xenbus_probe.c
++++ b/drivers/xen/xenbus/xenbus_probe.c
+@@ -56,6 +56,8 @@
+ #include <xen/events.h>
+ #include <xen/page.h>
+ 
++#include <xen/hvm.h>
 +
-+#include <xen/interface/hvm/params.h>
-+
-+static inline int hvm_get_parameter(int idx, uint64_t *value)
-+{
-+       struct xen_hvm_param xhv;
-+       int r;
-+
-+       xhv.domid = DOMID_SELF;
-+       xhv.index = idx;
-+       r = HYPERVISOR_hvm_op(HVMOP_get_param, &xhv);
-+       if (r < 0) {
-+               printk(KERN_ERR "cannot get hvm parameter %d: %d.\n",
-+                      idx, r);
-+               return r;
-+       }
-+       *value = xhv.value;
-+       return r;
-+}
-+
-+#endif /* XEN_HVM_H__ */
-diff --git a/include/xen/interface/hvm/hvm_op.h b/include/xen/interface/hvm/hvm_op.h
-new file mode 100644
-index 0000000..73c8c7e
---- /dev/null
-+++ b/include/xen/interface/hvm/hvm_op.h
-@@ -0,0 +1,35 @@
-+/*
-+ * Permission is hereby granted, free of charge, to any person obtaining a copy
-+ * of this software and associated documentation files (the "Software"), to
-+ * deal in the Software without restriction, including without limitation the
-+ * rights to use, copy, modify, merge, publish, distribute, sublicense, and/or
-+ * sell copies of the Software, and to permit persons to whom the Software is
-+ * furnished to do so, subject to the following conditions:
-+ *
-+ * The above copyright notice and this permission notice shall be included in
-+ * all copies or substantial portions of the Software.
-+ *
-+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
-+ * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
-+ * DEALINGS IN THE SOFTWARE.
-+ */
-+
-+#ifndef __XEN_PUBLIC_HVM_HVM_OP_H__
-+#define __XEN_PUBLIC_HVM_HVM_OP_H__
-+
-+/* Get/set subcommands: the second argument of the hypercall is a
-+ * pointer to a xen_hvm_param struct. */
-+#define HVMOP_set_param           0
-+#define HVMOP_get_param           1
-+struct xen_hvm_param {
-+    domid_t  domid;    /* IN */
-+    uint32_t index;    /* IN */
-+    uint64_t value;    /* IN/OUT */
-+};
-+DEFINE_GUEST_HANDLE_STRUCT(xen_hvm_param);
-+
-+#endif /* __XEN_PUBLIC_HVM_HVM_OP_H__ */
-diff --git a/include/xen/interface/hvm/params.h b/include/xen/interface/hvm/params.h
-new file mode 100644
-index 0000000..1888d8c
---- /dev/null
-+++ b/include/xen/interface/hvm/params.h
-@@ -0,0 +1,95 @@
-+/*
-+ * Permission is hereby granted, free of charge, to any person obtaining a copy
-+ * of this software and associated documentation files (the "Software"), to
-+ * deal in the Software without restriction, including without limitation the
-+ * rights to use, copy, modify, merge, publish, distribute, sublicense, and/or
-+ * sell copies of the Software, and to permit persons to whom the Software is
-+ * furnished to do so, subject to the following conditions:
-+ *
-+ * The above copyright notice and this permission notice shall be included in
-+ * all copies or substantial portions of the Software.
-+ *
-+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
-+ * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
-+ * DEALINGS IN THE SOFTWARE.
-+ */
-+
-+#ifndef __XEN_PUBLIC_HVM_PARAMS_H__
-+#define __XEN_PUBLIC_HVM_PARAMS_H__
-+
-+#include "hvm_op.h"
-+
-+/*
-+ * Parameter space for HVMOP_{set,get}_param.
-+ */
-+
-+/*
-+ * How should CPU0 event-channel notifications be delivered?
-+ * val[63:56] == 0: val[55:0] is a delivery GSI (Global System Interrupt).
-+ * val[63:56] == 1: val[55:0] is a delivery PCI INTx line, as follows:
-+ *                  Domain = val[47:32], Bus  = val[31:16],
-+ *                  DevFn  = val[15: 8], IntX = val[ 1: 0]
-+ * val[63:56] == 2: val[7:0] is a vector number.
-+ * If val == 0 then CPU0 event-channel notifications are not delivered.
-+ */
-+#define HVM_PARAM_CALLBACK_IRQ 0
-+
-+#define HVM_PARAM_STORE_PFN    1
-+#define HVM_PARAM_STORE_EVTCHN 2
-+
-+#define HVM_PARAM_PAE_ENABLED  4
-+
-+#define HVM_PARAM_IOREQ_PFN    5
-+
-+#define HVM_PARAM_BUFIOREQ_PFN 6
-+
-+/*
-+ * Set mode for virtual timers (currently x86 only):
-+ *  delay_for_missed_ticks (default):
-+ *   Do not advance a vcpu's time beyond the correct delivery time for
-+ *   interrupts that have been missed due to preemption. Deliver missed
-+ *   interrupts when the vcpu is rescheduled and advance the vcpu's virtual
-+ *   time stepwise for each one.
-+ *  no_delay_for_missed_ticks:
-+ *   As above, missed interrupts are delivered, but guest time always tracks
-+ *   wallclock (i.e., real) time while doing so.
-+ *  no_missed_ticks_pending:
-+ *   No missed interrupts are held pending. Instead, to ensure ticks are
-+ *   delivered at some non-zero rate, if we detect missed ticks then the
-+ *   internal tick alarm is not disabled if the VCPU is preempted during the
-+ *   next tick period.
-+ *  one_missed_tick_pending:
-+ *   Missed interrupts are collapsed together and delivered as one 'late tick'.
-+ *   Guest time always tracks wallclock (i.e., real) time.
-+ */
-+#define HVM_PARAM_TIMER_MODE   10
-+#define HVMPTM_delay_for_missed_ticks    0
-+#define HVMPTM_no_delay_for_missed_ticks 1
-+#define HVMPTM_no_missed_ticks_pending   2
-+#define HVMPTM_one_missed_tick_pending   3
-+
-+/* Boolean: Enable virtual HPET (high-precision event timer)? (x86-only) */
-+#define HVM_PARAM_HPET_ENABLED 11
-+
-+/* Identity-map page directory used by Intel EPT when CR0.PG=0. */
-+#define HVM_PARAM_IDENT_PT     12
-+
-+/* Device Model domain, defaults to 0. */
-+#define HVM_PARAM_DM_DOMAIN    13
-+
-+/* ACPI S state: currently support S0 and S3 on x86. */
-+#define HVM_PARAM_ACPI_S_STATE 14
-+
-+/* TSS used on Intel when CR0.PE=0. */
-+#define HVM_PARAM_VM86_TSS     15
-+
-+/* Boolean: Enable aligning all periodic vpts to reduce interrupts */
-+#define HVM_PARAM_VPT_ALIGN    16
-+
-+#define HVM_NR_PARAMS          17
-+
-+#endif /* __XEN_PUBLIC_HVM_PARAMS_H__ */
+ #include "xenbus_comms.h"
+ #include "xenbus_probe.h"
+ 
+@@ -806,10 +808,23 @@ static int __init xenbus_probe_init(void)
+ 		/* dom0 not yet supported */
+ 	} else {
+ 		xenstored_ready = 1;
+-		xen_store_evtchn = xen_start_info->store_evtchn;
+-		xen_store_mfn = xen_start_info->store_mfn;
++		if (xen_hvm_domain()) {
++			uint64_t v = 0;
++			err = hvm_get_parameter(HVM_PARAM_STORE_EVTCHN, &v);
++			if (err)
++				goto out_error;
++			xen_store_evtchn = (int)v;
++			err = hvm_get_parameter(HVM_PARAM_STORE_PFN, &v);
++			if (err)
++				goto out_error;
++			xen_store_mfn = (unsigned long)v;
++			xen_store_interface = ioremap(xen_store_mfn << PAGE_SHIFT, PAGE_SIZE);
++		} else {
++			xen_store_evtchn = xen_start_info->store_evtchn;
++			xen_store_mfn = xen_start_info->store_mfn;
++			xen_store_interface = mfn_to_virt(xen_store_mfn);
++		}
+ 	}
+-	xen_store_interface = mfn_to_virt(xen_store_mfn);
+ 
+ 	/* Initialize the interface to xenstore. */
+ 	err = xs_init();
+diff --git a/include/xen/xen.h b/include/xen/xen.h
+index a164024..cb8c48b 100644
+--- a/include/xen/xen.h
++++ b/include/xen/xen.h
+@@ -9,8 +9,10 @@ enum xen_domain_type {
+ 
+ #ifdef CONFIG_XEN
+ extern enum xen_domain_type xen_domain_type;
++extern void xen_guest_init(void);
+ #else
+ #define xen_domain_type		XEN_NATIVE
++#define xen_guest_init() do { } while (0)
+ #endif
+ 
+ #define xen_domain()		(xen_domain_type != XEN_NATIVE)
 -- 
 1.7.0.4
 
