@@ -1,74 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754022Ab0FCNUS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jun 2010 09:20:18 -0400
-Received: from serv2.oss.ntt.co.jp ([222.151.198.100]:40933 "EHLO
-	serv2.oss.ntt.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751691Ab0FCNUQ (ORCPT
+	id S1754133Ab0FCNXM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jun 2010 09:23:12 -0400
+Received: from moutng.kundenserver.de ([212.227.126.171]:53867 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753066Ab0FCNXJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jun 2010 09:20:16 -0400
-Message-ID: <4C07AD0C.8090409@oss.ntt.co.jp>
-Date: Thu, 03 Jun 2010 22:24:28 +0900
-From: Takuya Yoshikawa <yoshikawa.takuya@oss.ntt.co.jp>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; ja; rv:1.9.1.9) Gecko/20100317 Thunderbird/3.0.4
+	Thu, 3 Jun 2010 09:23:09 -0400
+Message-ID: <4C07ACD4.2060504@vlnb.net>
+Date: Thu, 03 Jun 2010 17:23:32 +0400
+From: Vladislav Bolkhovitin <vst@vlnb.net>
+User-Agent: Thunderbird 2.0.0.23 (X11/20090825)
 MIME-Version: 1.0
-To: Nick Piggin <npiggin@suse.de>
-CC: Eric Dumazet <eric.dumazet@gmail.com>, Jens Axboe <jaxboe@fusionio.com>,
-       Dan Carpenter <error27@gmail.com>, Matthew Wilcox <matthew@wil.cx>,
-       Alexander Viro <viro@zeniv.linux.org.uk>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Oleg Nesterov <oleg@redhat.com>, Greg Kroah-Hartman <gregkh@suse.de>,
-       Peter Zijlstra <a.p.zijlstra@chello.nl>, linux-fsdevel@vger.kernel.org,
-       linux-kernel@vger.kernel.org
-Subject: Re: [patch v2] fcntl: return -EFAULT if copy_to_user fails
-References: <20100603100402.GR5483@bicker> <4C07826A.6060302@oss.ntt.co.jp> <20100603103542.GV5483@bicker> <4C07990A.8080508@fusionio.com> <4C079D34.5010500@oss.ntt.co.jp> <1275568683.2456.33.camel@edumazet-laptop> <20100603131031.GM6822@laptop>
-In-Reply-To: <20100603131031.GM6822@laptop>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 8bit
+To: Boaz Harrosh <bharrosh@panasas.com>
+CC: James Bottomley <James.Bottomley@suse.de>,
+       Christof Schmitt <christof.schmitt@de.ibm.com>,
+       "Martin K. Petersen" <martin.petersen@oracle.com>,
+       linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
+       linux-fsdevel@vger.kernel.org, Chris Mason <chris.mason@oracle.com>,
+       Gennadiy Nerubayev <parakie@gmail.com>
+Subject: Re: Wrong DIF guard tag on ext2 write
+References: <20100531112817.GA16260@schmichrtp.mainz.de.ibm.com>	 <yq1iq64kv9f.fsf@sermon.lab.mkp.net>	 <1275318102.2823.47.camel@mulgrave.site> <4C03D5FD.3000202@panasas.com>	 <20100601103041.GA15922@schmichrtp.mainz.de.ibm.com> <1275398876.21962.6.camel@mulgrave.site> <4C078FE2.9000804@vlnb.net> <4C079B07.5020303@panasas.com> <4C07A2EB.4080006@vlnb.net> <4C07A8E9.30608@panasas.com>
+In-Reply-To: <4C07A8E9.30608@panasas.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Provags-ID: V01U2FsdGVkX1/lXgGwz0AbkdPmk0NtAltASDxWQRfGQNhS2g6
+ U3YLHhAnaia9CEY8pkWbzLDGqR5RLf/6e0eGf5M23JBmzmbCCr
+ 5jwJl6nTDzInpwotX+fIA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2010/06/03 22:10), Nick Piggin wrote:
-> On Thu, Jun 03, 2010 at 02:38:03PM +0200, Eric Dumazet wrote:
->> Le jeudi 03 juin 2010 à 21:16 +0900, Takuya Yoshikawa a écrit :
->>> (2010/06/03 20:59), Jens Axboe wrote:
->>>> On 2010-06-03 12:35, Dan Carpenter wrote:
->>>>> copy_to_user() returns the number of bytes remaining, but we want to
->>>>> return -EFAULT.
->>>>> 	ret = fcntl(fd, F_SETOWN_EX, NULL);
->>>>> With the original code ret would be 8 here.
->>>>>
->>>>> V2: Takuya Yoshikawa pointed out a similar issue in f_getown_ex()
+Boaz Harrosh, on 06/03/2010 05:06 PM wrote:
+> On 06/03/2010 03:41 PM, Vladislav Bolkhovitin wrote:
+>> Boaz Harrosh, on 06/03/2010 04:07 PM wrote:
+>>> On 06/03/2010 02:20 PM, Vladislav Bolkhovitin wrote:
+>>>> There's one interesting problem here, at least theoretically, with SCSI 
+>>>> or similar transports which allow to have commands queue depth >1 and 
+>>>> allowed to internally reorder queued requests. I don't know the FS/block 
+>>>> layers sufficiently well to tell if sending several requests for the 
+>>>> same page really possible or not, but we can see a real life problem, 
+>>>> which can be well explained if it's possible.
 >>>>
->>>> Pretty basic bug, how long has this been there?
+>>>> The problem could be if the second (rewrite) request (SCSI command) for 
+>>>> the same page queued to the corresponding device before the original 
+>>>> request finished. Since the device allowed to freely reorder requests, 
+>>>> there's a probability that the original write request would hit the 
+>>>> permanent storage *AFTER* the retry request, hence the data changes it's 
+>>>> carrying would be lost, hence welcome data corruption.
+>>>>
+>>> I might be totally wrong here but I think NCQ can reorder sectors but
+>>> not writes. That is if the sector is cached in device memory and a later
+>>> write comes to modify the same sector then the original should be
+>>> replaced not two values of the same sector be kept in device cache at the
+>>> same time.
 >>>
->>> IIUC, from the beginning, when these were introduced.
+>>> Failing to do so is a scsi device problem.
+>> SCSI devices supporting Full task management model (almost all) and 
+>> having QUEUE ALGORITHM MODIFIER bits in Control mode page set to 1 
+>> allowed to freely reorder any commands with SIMPLE task attribute. If an 
+>> application wants to maintain order of some commands for such devices, 
+>> it must issue them with ORDERED task attribute and over a _single_ MPIO 
+>> path to the device.
 >>
->> Maybe copy_to_user() was changed sometime to return a partial count
->> instead of EFAULT ?
->
-> I think it's been like that since first introduced. Some functions
-> do need to know in order to do partial copies.
->
->
->> I do think we should have a set of helper functions, instead of
->> spreading special EFAULT cases in one housand places...
+>> Linux neither uses ORDERED attribute, nor honors or enforces anyhow 
+>> QUEUE ALGORITHM MODIFIER bits, nor takes care to send commands with 
+>> order dependencies (overlapping writes in our case) over a single MPIO path.
 >>
->> This is really ugly.
->>
->> static inline int sec_copy_to_user(arg1, arg2, arg3)
->> {
->> 	int res = copy_to_user(arg1, arg2, arg3);
->>
->> 	return (res>  0) ? -EFAULT : res;
->> }
->
-> It would be unfortunate if it adds more confusion. I'd prefer to have
-> a sufficiently different name. memcpy_to_user/memcpy_from_user
-> perhaps?
+> 
+> OK I take your word for it. But that sounds stupid to me. I would think
+> that sectors can be ordered. not commands per se. What happen with reads
+> then? do they get to be ordered? I mean a read in between the two writes which
+> value is read? It gets so complicated that only a sector model makes sense
+> to me.
 
-Then, and memclear_user() ?
+Look wider. For a single HDD your way of thinking makes sense. But how 
+about big clusters consisting from many nodes with many clients? In them 
+maintaining internal commands order is generally bad and often a way too 
+expensive for performance.
 
->
+It's the same as with modern CPUs, where for performance reasons 
+programmers also must live with the commands reorder possibilities and 
+use barriers, when necessary.
+
+>>> Please note that page-to-sector is not necessary constant. And the same page
+>>> might get written at a different sector, next time. But FSs will have to
+>>> barrier in this case.
+>>>
+>>>> For single parallel SCSI or SAS devices such race may look practically 
+>>>> impossible, but for sophisticated clusters when many nodes pretending to 
+>>>> be a single SCSI device in a load balancing configuration, it becomes 
+>>>> very real.
+>>>>
+>>>> The real life problem we can see in an active-active DRBD-setup. In this 
+>>>> configuration 2 nodes act as a single SCST-powered SCSI device and they 
+>>>> both run DRBD to keep their backstorage in-sync. The initiator uses them 
+>>>> as a single multipath device in an active-active round-robin 
+>>>> load-balancing configuration, i.e. sends requests to both nodes in 
+>>>> parallel, then DRBD takes care to replicate the requests to the other node.
+>>>>
+>>>> The problem is that sometimes DRBD complies about concurrent local 
+>>>> writes, like:
+>>>>
+>>>> kernel: drbd0: scsi_tgt0[12503] Concurrent local write detected! 
+>>>> [DISCARD L] new: 144072784s +8192; pending: 144072784s +8192
+>>>>
+>>>> This message means that DRBD detected that both nodes received 
+>>>> overlapping writes on the same block(s) and DRBD can't figure out which 
+>>>> one to store. This is possible only if the initiator sent the second 
+>>>> write request before the first one completed.
+>>> It is totally possible in today's code.
+>>>
+>>> DRBD should store the original command_sn of the write and discard
+>>> the sector with the lower SN. It should appear as a single device
+>>> to the initiator.
+>> How can it find the SN? The commands were sent over _different_ MPIO 
+>> paths to the device, so at the moment of the sending all the order 
+>> information was lost.
+>>
+> 
+> I'm not hard on the specifics here. But I think the initiator has set
+> the same SN on the two paths, or has incremented them between paths.
+> You said:
+> 
+>> The initiator uses them as a single multipath device in an active-active
+>> round-robin load-balancing configuration, i.e. sends requests to both nodes
+>> in paralle.
+> 
+> So what was the SN sent to each side. Is there a relationship between them
+> or they each advance independently?
+> 
+> If there is a relationship then the targets on two sides should store
+> the SN for later comparison. (Life is hard)
+
+None of SCSI transports carry any SN to other paths (I_T nexuses) 
+related information in internal packets, including iSCSI. It's simply 
+out of SAM. If you need order information between paths, you must use 
+"extensions", like iSCSI MC/S, but they are bad for many other reasons. 
+I summarized it in http://scst.sourceforge.net/mc_s.html.
+
+Vlad
 
