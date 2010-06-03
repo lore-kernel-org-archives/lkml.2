@@ -1,55 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933470Ab0FCA5J (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jun 2010 20:57:09 -0400
-Received: from mail.atheros.com ([12.36.123.2]:62798 "EHLO mail.atheros.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932835Ab0FCA5H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jun 2010 20:57:07 -0400
-From: Sujith <Sujith.Manoharan@atheros.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+	id S932877Ab0FCBIA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jun 2010 21:08:00 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:40169 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757873Ab0FCBH6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Jun 2010 21:07:58 -0400
+X-Authority-Analysis: v=1.1 cv=DT5lrGikL/lNZzMKzbmp3iVCACewI9NZ3q1CIi1KGbI= c=1 sm=0 a=YdTYFX7fcrAA:10 a=hO-oPbc3tlwA:10 a=7U3hwN5JcxgA:10 a=Q9fys5e9bTEA:10 a=gMqfjgEr1zLu/65IO0LwxA==:17 a=meVymXHHAAAA:8 a=BNBCL7ZmXDo9X6TOmqIA:9 a=Z297bneFejyi61UtlMoA:7 a=VdxQ55IkDHpgXThGpATEz6ldjbQA:4 a=PUjeQqilurYA:10 a=JTMqrY5UvyEA:10 a=jeBq3FmKZ4MA:10 a=gMqfjgEr1zLu/65IO0LwxA==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.89.75
+Subject: Re: [RFC 2/5] BKL: remove the BKL from kernel init code
+From: Steven Rostedt <rostedt@goodmis.org>
+Reply-To: rostedt@goodmis.org
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
+       Frederic Weisbecker <fweisbec@gmail.com>,
+       John Kacur <jkacur@redhat.com>, Ingo Molnar <mingo@elte.hu>,
+       Jan Blunck <jblunck@suse.de>
+In-Reply-To: <1275523999-27462-3-git-send-email-arnd@arndb.de>
+References: <1275523999-27462-1-git-send-email-arnd@arndb.de>
+	 <1275523999-27462-3-git-send-email-arnd@arndb.de>
+Content-Type: text/plain; charset="ISO-8859-15"
+Organization: Kihon Technologies Inc.
+Date: Wed, 02 Jun 2010 21:07:55 -0400
+Message-ID: <1275527275.15884.26.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
-Message-ID: <19462.65068.93701.741079@gargle.gargle.HOWL>
-Date: Thu, 3 Jun 2010 06:28:20 +0530
-To: "Luis R. Rodriguez" <mcgrof@gmail.com>
-CC: Marcel Holtmann <marcel@holtmann.org>,
-       "linville@tuxdriver.com" <linville@tuxdriver.com>,
-       "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       "netdev@vger.kernel.org" <netdev@vger.kernel.org>
-Subject: Re: [PATCH 1/8] ath9k: Determine Firmware on probe
-In-Reply-To: <AANLkTiky9UF-aqeZCFleOFSIVw3vDiYbLUdTkkYEWN2B@mail.gmail.com>
-References: <19462.12578.143627.398866@gargle.gargle.HOWL>
-	<AANLkTiky9UF-aqeZCFleOFSIVw3vDiYbLUdTkkYEWN2B@mail.gmail.com>
-X-Mailer: VM 8.1.0 under 23.2.1 (x86_64-unknown-linux-gnu)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Luis R. Rodriguez wrote:
-> I had done some something similar for ar9170 a while back [1] when
-> adding AVM FRITZ support to ar9170 and then got complaints from Marcel
-> on this approach since it requires synching the PCI device IDs in two
-> places. I frankly don't care how we do this but we should try to at
-> least stick to one way of doing this.
+On Thu, 2010-06-03 at 02:13 +0200, Arnd Bergmann wrote:
+> I have shown by code review that no driver takes
+> the BKL at init time any more, so whatever the
+> init code was locking against is no longer there
+> and it is now safe to remove the BKL there.
 > 
-> [1] http://osdir.com/ml/linux-wireless/2009-05/msg01219.html
+> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+> ---
+>  init/main.c          |    5 -----
+>  kernel/trace/trace.c |    8 --------
+>  2 files changed, 0 insertions(+), 13 deletions(-)
+> 
+> diff --git a/init/main.c b/init/main.c
+> index 3bdb152..81821e1 100644
+> --- a/init/main.c
+> +++ b/init/main.c
+> @@ -434,7 +434,6 @@ static noinline void __init_refok rest_init(void)
+>  	rcu_read_lock();
+>  	kthreadd_task = find_task_by_pid_ns(pid, &init_pid_ns);
+>  	rcu_read_unlock();
+> -	unlock_kernel();
+>  
+>  	/*
+>  	 * The boot idle thread must execute schedule()
+> @@ -555,7 +554,6 @@ asmlinkage void __init start_kernel(void)
+>   * Interrupts are still disabled. Do necessary setups, then
+>   * enable them
+>   */
+> -	lock_kernel();
+>  	tick_init();
+>  	boot_cpu_init();
+>  	page_address_init();
+> @@ -819,7 +817,6 @@ static noinline int init_post(void)
+>  	/* need to finish all async __init code before freeing the memory */
+>  	async_synchronize_full();
+>  	free_initmem();
+> -	unlock_kernel();
+>  	mark_rodata_ro();
+>  	system_state = SYSTEM_RUNNING;
+>  	numa_default_policy();
+> @@ -855,8 +852,6 @@ static noinline int init_post(void)
+>  
+>  static int __init kernel_init(void * unused)
+>  {
+> -	lock_kernel();
+> -
+>  	/*
+>  	 * init can allocate pages on any node
+>  	 */
+> diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
+> index 086d363..8047ca5 100644
+> --- a/kernel/trace/trace.c
+> +++ b/kernel/trace/trace.c
+> @@ -734,13 +734,6 @@ __acquires(kernel_lock)
+>  		return -1;
+>  	}
+>  
+> -	/*
+> -	 * When this gets called we hold the BKL which means that
+> -	 * preemption is disabled. Various trace selftests however
+> -	 * need to disable and enable preemption for successful tests.
+> -	 * So we drop the BKL here and grab it after the tests again.
+> -	 */
+> -	unlock_kernel();
 
-I did look at using the device_id table (using USB_DEVICE_VER),
-but our case is like this:
+Acked-by: Steven Rostedt <rostedt@goodmis.org>
 
-* for prodId, version 2.2 load foo_1_1.fw
-* for prodId, version everything else, load foo.fw
+-- Steve
 
-This requires a bit of handling in the driver, hence this patch.
+>  	mutex_lock(&trace_types_lock);
+>  
+>  	tracing_selftest_running = true;
+> @@ -822,7 +815,6 @@ __acquires(kernel_lock)
+>  #endif
+>  
+>   out_unlock:
+> -	lock_kernel();
+>  	return ret;
+>  }
+>  
 
-But thinking about it, will this work ?
 
-USB_DEVICE_VER(vend, 0x7010, 2, 2); [set .driver_info to "foo_1_1.fw]
-USB_DEVICE(vend, 0x7010);           [set .driver_info to "foo.fw"]
-
-That is, will the second registration be the fallback case in case
-bcdLo and bcdHi are _anything_ other than 2.2 ?
-
-Sujith
