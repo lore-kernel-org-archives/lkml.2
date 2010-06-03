@@ -1,102 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757044Ab0FCRt5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jun 2010 13:49:57 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:42613 "EHLO
-	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751348Ab0FCRtz (ORCPT
+	id S1757102Ab0FCRug (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jun 2010 13:50:36 -0400
+Received: from bluebox.CS.Princeton.EDU ([128.112.136.38]:55424 "EHLO
+	bluebox.CS.Princeton.EDU" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756086Ab0FCRuf convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jun 2010 13:49:55 -0400
-Date: Thu, 3 Jun 2010 18:49:53 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Lars-Peter Clausen <lars@metafoo.de>
-Cc: Ralf Baechle <ralf@linux-mips.org>, linux-mips@linux-mips.org,
-       linux-kernel@vger.kernel.org, Liam Girdwood <lrg@slimlogic.co.uk>,
-       alsa-devel@alsa-project.org
-Subject: Re: [RFC][PATCH 20/26] alsa: ASoC: Add JZ4740 codec driver
-Message-ID: <20100603174953.GH2762@rakim.wolfsonmicro.main>
-References: <1275505397-16758-1-git-send-email-lars@metafoo.de>
- <1275505950-17334-4-git-send-email-lars@metafoo.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1275505950-17334-4-git-send-email-lars@metafoo.de>
-X-Cookie: In the next world, you're on your own.
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Thu, 3 Jun 2010 13:50:35 -0400
+Subject: Re: [stable] Boot failure with 2.6.27.46 on Xeon E5620 (Westmere EP)
+Mime-Version: 1.0 (Apple Message framework v1078)
+Content-Type: text/plain; charset=utf-8
+From: "=?utf-8?Q?=22S.=C3=87a=C4=9Flar_Onur=22?=" <caglar@CS.Princeton.EDU>
+In-Reply-To: <20100603164039.GA7177@kroah.com>
+Date: Thu, 3 Jun 2010 13:50:22 -0400
+Cc: Suresh Siddha <suresh.b.siddha@intel.com>,
+       "stable@kernel.org" <stable@kernel.org>,
+       "hpa@zytor.com" <hpa@zytor.com>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       "Song, Youquan" <youquan.song@intel.com>
+Content-Transfer-Encoding: 8BIT
+Message-Id: <B7E1FDC5-6008-45F9-8399-CC51630910C7@CS.Princeton.EDU>
+References: <000954C6-B4AC-4FD8-BA3B-C3B199C7607F@CS.Princeton.EDU> <20100525155307.GA7453@kroah.com> <620C3556-2708-4704-90F3-37DDEF1A404E@CS.Princeton.EDU> <20100525205123.GA14993@kroah.com> <1274833451.2892.574.camel@sbs-t61.sc.intel.com> <2293F1A2-B4DE-4C15-9BAC-CC2E546943D0@CS.Princeton.EDU> <20100603164039.GA7177@kroah.com>
+To: Greg KH <greg@kroah.com>
+X-Mailer: Apple Mail (2.1078)
+X-Proofpoint-Virus-Version: vendor=nai engine=5400 definitions=6002 signatures=622531
+X-Proofpoint-Spam-Reason: safe
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 02, 2010 at 09:12:26PM +0200, Lars-Peter Clausen wrote:
+Hi Greg,
 
-> This patch adds support for the JZ4740 internal codec.
+On Jun 3, 2010, at 12:40 PM, Greg KH wrote:
 
-This looks very good, there are some issues but nothing too major.  I
-may be repeating some things others have said but hopefully not too
-much.
+> On Wed, Jun 02, 2010 at 07:54:29PM -0400, "S.Çağlar Onur" wrote:
+>> Hi Suresh,
+>> 
+>> On May 25, 2010, at 8:24 PM, Suresh Siddha wrote:
+>> 
+>>> On Tue, 2010-05-25 at 13:51 -0700, Greg KH wrote:
+>>>> On Tue, May 25, 2010 at 04:32:16PM -0400, "S.Çağlar Onur" wrote:
+>>>>> Hi Greg,
+>>>>> 
+>>>>> On May 25, 2010, at 11:53 AM, Greg KH wrote:
+>>>>> 
+>>>>>> On Tue, May 25, 2010 at 11:10:28AM -0400, "S.Çağlar Onur" wrote:
+>>>>>>> Hi,
+>>>>>>> 
+>>>>>>> We are observing boot failures [1] & [2] on some of our servers (Dell
+>>>>>>> r410) with 2.6.27-stable kernels. I found following commit in upstream
+>>>>>>> tree via a quick search (but I haven't tried it yet) so I don't know
+>>>>>>> whether I'm on the right track or not. 
+>>>>>>> 
+>>>>>>> Please let me know if anything else is needed...
+>>>>>> 
+>>>>>> Has any .27 kernel worked on these machines?  If so, can you narrow it
+>>>>>> down to the patch that caused the problem?
+>>>>> 
+>>>>> I don't think any .27 kernel worked on those machines before. But in
+>>>>> any case I'll try (I don't have a physical access to those machines as
+>>>>> they are located in China) an older .27 release to see.
+>>>> 
+>>>> Ok, so it isn't a regression, which is what I want to know.
+>>>> 
+>>>> New hardware like this, probably will only work on newer kernel
+>>>> versions, so please use those instead :)
+>>> 
+>>> I can't think of any known issues in 2.6.27 that can lead to this kind
+>>> of boot failure on WSM-EP. Caglar, It will be nice if you can do git
+>>> bisect between working and non-working kernels.
+>> 
+>> Neither 2.6.27 nor 2.6.27.45 not able to boot those servers, according
+>> to the on-site admins the boot stuck at following stage[1].
+> 
+> Good, it's not a regression :)
 
->  snd-soc-wm9712-objs := wm9712.o
->  snd-soc-wm9713-objs := wm9713.o
->  snd-soc-wm-hubs-objs := wm_hubs.o
-> +snd-soc-jz4740-codec-objs := jz4740-codec.o
+Seems so :)
 
-Keep the devices sorted in both Makefile and Kconfig.
+> Care to upgrade to a newer kernel version and see if that works?
 
-> +static int jz4740_codec_set_fmt(struct snd_soc_dai *dai, unsigned int fmt)
-> +{
-> +	switch (fmt & SND_SOC_DAIFMT_MASTER_MASK) {
-> +	case SND_SOC_DAIFMT_CBM_CFM:
-> +		break;
-> +	default:
-> +		return -EINVAL;
-> +	}
+I know 2.6.3x kernels boots those boxes without a problem, that was the first thing that I tried. 
 
-This does nothing except validate some parameters.  Is there actually an
-externally visible DAI for this CODEC?  If it's just integrated into the
-SoC and there's nothing to configure then just omit the DAI
-configuration since it's not even useful to document the signal format.
+In any case, I'll try to find a way to solve that problem as 2.6.27.46 is the kernel that we are using on some nodes of Planet-Lab. If you (any of you) have any ideas/patches/solutions please feel free to share it with me (and I'll let you know If I can find anything). 
 
-> +	.capture = {
-> +		.stream_name = "Capture",
-> +		.channels_min = 2,
-> +		.channels_max = 2,
-> +		.rates = SNDRV_PCM_RATE_8000_48000,
-> +		.formats = SNDRV_PCM_FMTBIT_S16_LE | SNDRV_PCM_FMTBIT_S8,
+> thanks,
+> 
+> greg k-h
 
-You listed an 18 bit format in hw_params - one or other of this and
-hw_params is presumably out of date.
 
-> +static int jz4740_codec_set_bias_level(struct snd_soc_codec *codec,
-> +	enum snd_soc_bias_level level)
-> +{
-> +
-> +	if (codec->bias_level == SND_SOC_BIAS_OFF && level != SND_SOC_BIAS_OFF) {
-> +		snd_soc_update_bits(codec, JZ4740_REG_CODEC_1,
-> +			JZ4740_CODEC_1_RESET, JZ4740_CODEC_1_RESET);
-> +		udelay(2);
+Best regards,
+--
+S.Çağlar Onur <caglar@cs.princeton.edu>
 
-I'd expect to see this as part of the _OFF in the main switch
-statement.
-
-> +	switch (level) {
-> +	case SND_SOC_BIAS_ON:
-> +		snd_soc_update_bits(codec, JZ4740_REG_CODEC_1,
-> +			JZ4740_CODEC_1_VREF_DISABLE |
-> +			JZ4740_CODEC_1_VREF_AMP_DISABLE |
-> +			JZ4740_CODEC_1_HEADPHONE_POWER_DOWN_M |
-> +			JZ4740_CODEC_1_VREF_LOW_CURRENT |
-> +			JZ4740_CODEC_1_VREF_HIGH_CURRENT,
-> +			0);
-
-This looks suspiciously like you should be using DAPM for the headphone
-at least, though if there's only headphone out that's possibly not worth
-it.  Also, are you sure that you want both low and high current VREF
-configuring here?  I'm not clear what these settings do but the way
-they're being managed both here and in _PREPARE seems odd.
-
-> +	codec = &jz4740_codec->codec;
-> +
-> +	codec->dev		= &pdev->dev;
-> +	codec->name		= "jz-codec";
-
-Seems a bit odd to use the part number in some places and not others.
