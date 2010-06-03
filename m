@@ -1,84 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752032Ab0FCMFL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jun 2010 08:05:11 -0400
-Received: from e6.ny.us.ibm.com ([32.97.182.146]:53316 "EHLO e6.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751395Ab0FCMFJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jun 2010 08:05:09 -0400
-Date: Thu, 3 Jun 2010 17:34:50 +0530
-From: Srivatsa Vaddagiri <vatsa@in.ibm.com>
-To: Nick Piggin <npiggin@suse.de>
-Cc: Avi Kivity <avi@redhat.com>, Andi Kleen <andi@firstfloor.org>,
-       Gleb Natapov <gleb@redhat.com>, linux-kernel@vger.kernel.org,
-       kvm@vger.kernel.org, hpa@zytor.com, mingo@elte.hu, tglx@linutronix.de,
-       mtosatti@redhat.com
-Subject: Re: [PATCH] use unfair spinlock when running on hypervisor.
-Message-ID: <20100603120450.GH4035@linux.vnet.ibm.com>
-Reply-To: vatsa@in.ibm.com
-References: <87sk56ycka.fsf@basil.nowhere.org>
- <20100601162414.GA6191@redhat.com>
- <20100601163807.GA11880@basil.fritz.box>
- <4C053ACC.5020708@redhat.com>
- <20100601172730.GB11880@basil.fritz.box>
- <4C05C722.1010804@redhat.com>
- <20100602085055.GA14221@basil.fritz.box>
- <4C061DAB.6000804@redhat.com>
- <20100603042051.GA5953@linux.vnet.ibm.com>
- <20100603103855.GG6822@laptop>
+	id S1752082Ab0FCMHl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jun 2010 08:07:41 -0400
+Received: from daytona.panasas.com ([67.152.220.89]:27893 "EHLO
+	daytona.int.panasas.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1750992Ab0FCMHj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Jun 2010 08:07:39 -0400
+Message-ID: <4C079B07.5020303@panasas.com>
+Date: Thu, 03 Jun 2010 15:07:35 +0300
+From: Boaz Harrosh <bharrosh@panasas.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-2.fc12 Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100603103855.GG6822@laptop>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Vladislav Bolkhovitin <vst@vlnb.net>
+CC: James Bottomley <James.Bottomley@suse.de>,
+       Christof Schmitt <christof.schmitt@de.ibm.com>,
+       "Martin K. Petersen" <martin.petersen@oracle.com>,
+       linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
+       linux-fsdevel@vger.kernel.org, Chris Mason <chris.mason@oracle.com>,
+       Gennadiy Nerubayev <parakie@gmail.com>
+Subject: Re: Wrong DIF guard tag on ext2 write
+References: <20100531112817.GA16260@schmichrtp.mainz.de.ibm.com>	 <yq1iq64kv9f.fsf@sermon.lab.mkp.net>	 <1275318102.2823.47.camel@mulgrave.site> <4C03D5FD.3000202@panasas.com>	 <20100601103041.GA15922@schmichrtp.mainz.de.ibm.com> <1275398876.21962.6.camel@mulgrave.site> <4C078FE2.9000804@vlnb.net>
+In-Reply-To: <4C078FE2.9000804@vlnb.net>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 03 Jun 2010 12:07:37.0838 (UTC) FILETIME=[5BBB28E0:01CB0315]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 03, 2010 at 08:38:55PM +1000, Nick Piggin wrote:
-> > Guest side:
-> > 
-> > static inline void spin_lock(spinlock_t *lock)
-> > {
-> > 	raw_spin_lock(&lock->rlock);
-> > +       __get_cpu_var(gh_vcpu_ptr)->defer_preempt++;
-> > }
-> > 
-> > static inline void spin_unlock(spinlock_t *lock)
-> > {
-> > +	__get_cpu_var(gh_vcpu_ptr)->defer_preempt--;
-> >         raw_spin_unlock(&lock->rlock);
-> > }
-> > 
-> > [similar changes to other spinlock variants]
+On 06/03/2010 02:20 PM, Vladislav Bolkhovitin wrote:
 > 
-> Great, this is a nice way to improve it.
+> There's one interesting problem here, at least theoretically, with SCSI 
+> or similar transports which allow to have commands queue depth >1 and 
+> allowed to internally reorder queued requests. I don't know the FS/block 
+> layers sufficiently well to tell if sending several requests for the 
+> same page really possible or not, but we can see a real life problem, 
+> which can be well explained if it's possible.
 > 
-> You might want to consider playing with first taking a ticket, and
-> then if we fail to acquire the lock immediately, then increment
-> defer_preempt before we start spinning.
->
-> The downside of this would be if we waste all our slice on spinning
-> and then preempted in the critical section. But with ticket locks
-> you can easily see how many entries in the queue in front of you.
-> So you could experiment with starting to defer preempt when we
-> notice we are getting toward the head of the queue.
+> The problem could be if the second (rewrite) request (SCSI command) for 
+> the same page queued to the corresponding device before the original 
+> request finished. Since the device allowed to freely reorder requests, 
+> there's a probability that the original write request would hit the 
+> permanent storage *AFTER* the retry request, hence the data changes it's 
+> carrying would be lost, hence welcome data corruption.
+> 
 
-Mm - my goal is to avoid long spin times in the first place (because the 
-owning vcpu was descheduled at an unfortunate time i.e while it was holding a
-lock). From that sense, I am targetting preemption-defer of lock *holder*
-rather than of lock acquirer. So ideally whenever somebody tries to grab a lock,
-it should be free most of the time, it can be held only if the owner is
-currently running - which means we won't have to spin too long for the lock.
+I might be totally wrong here but I think NCQ can reorder sectors but
+not writes. That is if the sector is cached in device memory and a later
+write comes to modify the same sector then the original should be
+replaced not two values of the same sector be kept in device cache at the
+same time.
 
-> Have you also looked at how s390 checks if the owning vcpu is running
-> and if so it spins, if not yields to the hypervisor. Something like
-> turning it into an adaptive lock. This could be applicable as well.
+Failing to do so is a scsi device problem.
 
-I don't think even s390 does adaptive spinlocks. Also afaik s390 zVM does gang
-scheduling of vcpus, which reduces the severity of this problem very much -
-essentially lock acquirer/holder are run simultaneously on different cpus all
-the time. Gang scheduling is on my list of things to look at much later
-(although I have been warned that its a scalablility nightmare!).
+Please note that page-to-sector is not necessary constant. And the same page
+might get written at a different sector, next time. But FSs will have to
+barrier in this case.
 
-- vatsa
+> For single parallel SCSI or SAS devices such race may look practically 
+> impossible, but for sophisticated clusters when many nodes pretending to 
+> be a single SCSI device in a load balancing configuration, it becomes 
+> very real.
+> 
+> The real life problem we can see in an active-active DRBD-setup. In this 
+> configuration 2 nodes act as a single SCST-powered SCSI device and they 
+> both run DRBD to keep their backstorage in-sync. The initiator uses them 
+> as a single multipath device in an active-active round-robin 
+> load-balancing configuration, i.e. sends requests to both nodes in 
+> parallel, then DRBD takes care to replicate the requests to the other node.
+> 
+> The problem is that sometimes DRBD complies about concurrent local 
+> writes, like:
+> 
+> kernel: drbd0: scsi_tgt0[12503] Concurrent local write detected! 
+> [DISCARD L] new: 144072784s +8192; pending: 144072784s +8192
+> 
+> This message means that DRBD detected that both nodes received 
+> overlapping writes on the same block(s) and DRBD can't figure out which 
+> one to store. This is possible only if the initiator sent the second 
+> write request before the first one completed.
+> 
+
+It is totally possible in today's code.
+
+DRBD should store the original command_sn of the write and discard
+the sector with the lower SN. It should appear as a single device
+to the initiator.
+
+> The topic of the discussion could well explain the cause of that. But, 
+> unfortunately, people who reported it forgot to note which OS they run 
+> on the initiator, i.e. I can't say for sure it's Linux.
+> 
+> Vlad
+> 
+
+Boaz
