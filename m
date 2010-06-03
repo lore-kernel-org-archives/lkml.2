@@ -1,127 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751620Ab0FCRy2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jun 2010 13:54:28 -0400
-Received: from king.tilera.com ([72.1.168.226]:8449 "EHLO king.tilera.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751149Ab0FCRy0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jun 2010 13:54:26 -0400
-Message-ID: <4C07EC4F.6050600@tilera.com>
-Date: Thu, 03 Jun 2010 13:54:23 -0400
-From: Chris Metcalf <cmetcalf@tilera.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.1.9) Gecko/20100317 Thunderbird/3.0.4
+	id S1752206Ab0FCRzK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jun 2010 13:55:10 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:51660 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751717Ab0FCRzI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Jun 2010 13:55:08 -0400
+Date: Thu, 3 Jun 2010 14:54:45 -0300
+From: Arnaldo Carvalho de Melo <acme@infradead.org>
+To: Stephane Eranian <eranian@google.com>
+Cc: linux-kernel@vger.kernel.org, peterz@infradead.org, mingo@elte.hu,
+       paulus@samba.org, davem@davemloft.net, fweisbec@gmail.com,
+       perfmon2-devel@lists.sf.net, eranian@gmail.com, tzanussi@gmail.com
+Subject: Re: how to use perf annotate on the kernel
+Message-ID: <20100603175445.GC8928@ghostprotocols.net>
+References: <AANLkTik2yNxwCHl7FZAyOG4Vt56RlLi59oZR5Jo6o9ox@mail.gmail.com>
 MIME-Version: 1.0
-To: Paul Mundt <lethal@linux-sh.org>
-CC: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
-       torvalds@linux-foundation.org
-Subject: Re: [PATCH 2/8] arch/tile: infrastructure and configuration-related
- files.
-References: <201005200543.o4K5hFRF006079@farm-0002.internal.tilera.com> <201005290333.o4T3XuRo029935@farm-0002.internal.tilera.com> <20100531074759.GC10515@linux-sh.org>
-In-Reply-To: <20100531074759.GC10515@linux-sh.org>
-X-Enigmail-Version: 1.0.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 03 Jun 2010 17:54:24.0890 (UTC) FILETIME=[CDB355A0:01CB0345]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <AANLkTik2yNxwCHl7FZAyOG4Vt56RlLi59oZR5Jo6o9ox@mail.gmail.com>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 5/31/2010 3:47 AM, Paul Mundt wrote:
-> On Fri, May 28, 2010 at 11:09:12PM -0400, Chris Metcalf wrote:
->   
->> +config ZONE_DMA
->> +	def_bool y
->> +
->>     
-> Do you really want ZONE_DMA? Looking through the code it seems like you
-> are just using this in place of ZONE_NORMAL instead of for dealing with
-> any specific DMA limitations.
->   
+Em Thu, Jun 03, 2010 at 07:23:02PM +0200, Stephane Eranian escreveu:
+> Arnaldo,
+> 
+> I am trying to understand how one is supposed
+> to use perf annotate to get sample correlations
+> with kernel symbols.
+> 
+> I do:
+> 
+> # perf record -a -e cycles:k dd if=/dev/zero of=/dev/null count=1000000
+> # perf report
+> 
+> # Events: 14K cycles
+> #
+> # Overhead          Command        Shared Object  Symbol
+> # ........  ...............  ...................  ......
+> #
+>      8.76%               dd  [kernel.kallsyms]    [k] __lock_acquire
+>      7.49%               dd  [kernel.kallsyms]    [k] sched_clock
+> 
+> # perf annotate (or annotate -d '[kernel.kallsyms]'?)
+> Can't annotate __lock_acquire: No vmlinux file was found in the path
+> 
+> # perf annotate -k vmlinux
+> objdump: '[kernel.kallsyms]': No such file
 
-Yes, this dates back to 2.6.18 or so, when I think you had to have it. 
-In any case I've switched it over to ZONE_NORMAL throughout our code
-now, and it seems fine.  Thanks.
+This looks like a bug in how it reports this problem, probably vmlinux
+is not in the current directory, or it is but has a build-id that
+doesn't matches the one in the perf.data file.
 
->> +config CLOCKSOURCE_WATCHDOG
->> +	def_bool y
->> +
->>     
-> Are you also sure that you want this? It doesn't seem like you have any
-> of the clocksource stability issues that x86 does, so it's not obvious
-> why you are enabling this.
->   
+But the message is wrong, should be like it is in the tui, for this same
+situation:
 
-Ah, good catch.  Thanks; I'm not sure where this config option came
-from, but it's gone now.
+	ui_helpline__puts("No vmlinux file found, can't "
+			  "annotate with just a kallsyms file");
 
->> +config ARCH_DISCONTIGMEM_ENABLE
->> +	def_bool y
->> +
->> +config ARCH_DISCONTIGMEM_DEFAULT
->> +	def_bool y
->> +
->>     
-> Have you considered sparsemem instead?
->   
+> Am I missing something here?
 
-I looked at both of them a while ago (2.6.18 or 2.6.26, not sure which),
-and at the time it seemed easier to do discontig.  I vaguely recall
-there was some awkwardness with our architecture when I tried to figure
-out the sparsemem route.  I filed a tracking bug on this issue
-internally so we can revisit it at some point.
+If you don't specify it with --vmlinux/-k it will try to find it in one
+of these places:
 
->> +# SMP is required for Tilera Linux.
->> +config SMP
->> +	def_bool y
->> +
->>     
-> Forcing on SMP is fairly unusual, you do not support booting UP kernels
-> at all?
->   
+        vmlinux_path[vmlinux_path__nr_entries] = strdup("vmlinux");
+        if (vmlinux_path[vmlinux_path__nr_entries] == NULL)
+                goto out_fail;
+        ++vmlinux_path__nr_entries;
+        vmlinux_path[vmlinux_path__nr_entries] = strdup("/boot/vmlinux");
+        if (vmlinux_path[vmlinux_path__nr_entries] == NULL)
+                goto out_fail;
+        ++vmlinux_path__nr_entries;
+        snprintf(bf, sizeof(bf), "/boot/vmlinux-%s", uts.release);
+        vmlinux_path[vmlinux_path__nr_entries] = strdup(bf);
+        if (vmlinux_path[vmlinux_path__nr_entries] == NULL)
+                goto out_fail;
+        ++vmlinux_path__nr_entries;
+        snprintf(bf, sizeof(bf), "/lib/modules/%s/build/vmlinux", uts.release);
+        vmlinux_path[vmlinux_path__nr_entries] = strdup(bf);
+        if (vmlinux_path[vmlinux_path__nr_entries] == NULL)
+                goto out_fail;
+        ++vmlinux_path__nr_entries;
+        snprintf(bf, sizeof(bf), "/usr/lib/debug/lib/modules/%s/vmlinux",
+                 uts.release);
+        vmlinux_path[vmlinux_path__nr_entries] = strdup(bf);
 
-We've written the code to try to support UP, but the couple of times
-we've tried to build with !SMP, there have been some subtle bugs. 
-There's no reason we'd ever sell a chip with a single cpu on it (that I
-can see, anyway), so it's not very pressing to investigate failures in
-this mode, so it's disabled.
+It also now looks at /sys/kernel/notes, gets the build-id, and looks up
+in the build-id cache.
 
->> +config SERIAL_CONSOLE
->> +	def_bool y
->> +
->>     
-> This seems unused and looks like it was just copied over from some other
-> architecture?
->   
-
-Thanks, good catch.
-
->> +menu "Bus options"
->> +
->> +config NO_IOMEM
->> +	bool
->> +	def_bool !PCI
->> +
->>     
-> Have you inverted the logic here? Judging from your I/O routines it's the
-> PIO stuff you want disabled, not MMIO. As such, it's NO_IOPORT that you
-> want. Some of the PCI drivers will still use inb/outb and friends for PCI
-> IO space so disabling it for the !PCI case is fine.
->   
-
-If we don't have PCI, we don't have IOMEM, since our 32-bit chips don't
-support any kind of direct MMIO.  I would also have set NO_IOPORT
-unconditionally, but it turns out some generic code (e.g. some IDE
-stuff) breaks in this case.  At some point I'll investigate this in more
-detail, though probably only after we convert our GPIO-based ATA driver
-to not use IDE at all.
-
-Thanks for your feedback!  I'll put out a [PATCH 9/8] for now to
-hopefully wrap this first set of changes up, and I'm also going to get
-all this stuff into a GIT repository on kernel.org now that I have an
-account there.
-
--- 
-Chris Metcalf, Tilera Corp.
-http://www.tilera.com
-
-
+- Arnaldo
