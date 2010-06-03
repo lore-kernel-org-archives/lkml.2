@@ -1,379 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754650Ab0FCURV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jun 2010 16:17:21 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:45622 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753745Ab0FCURT (ORCPT
+	id S1755060Ab0FCUSo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jun 2010 16:18:44 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:58873 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753745Ab0FCUSm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jun 2010 16:17:19 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type;
-        b=nky40pPKD+763/LDciJlgihpI1nVWKOW/uPnSqUxCGrUormAeGmRtGbj00gQyTO5ZU
-         nfmL0MNlKlP6b8iDh+2U1M30djiQreEg1sffqUSJdlejH46eugY+7TC9GELTEw5wwpz6
-         T0vcVFsYxw3dQ5QaHbSFZEcYdK+qn72rDRGD0=
+	Thu, 3 Jun 2010 16:18:42 -0400
+Date: Thu, 3 Jun 2010 21:18:03 +0100
+From: Russell King <rmk@arm.linux.org.uk>
+To: Daniel Walker <dwalker@codeaurora.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+       Kevin Hilman <khilman@deeprootsystems.com>,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       linux-arm-msm@vger.kernel.org
+Subject: Re: ARM defconfig files
+Message-ID: <20100603201803.GH25779@flint.arm.linux.org.uk>
+References: <alpine.LFD.2.00.1006030725420.8175@i5.linux-foundation.org> <20100603181010.GA25779@flint.arm.linux.org.uk> <alpine.LFD.2.00.1006031116360.8175@i5.linux-foundation.org> <20100603185333.GD25779@flint.arm.linux.org.uk> <alpine.LFD.2.00.1006031153420.8175@i5.linux-foundation.org> <1275593742.23384.48.camel@c-dwalke-linux.qualcomm.com> <20100603194559.GF25779@flint.arm.linux.org.uk> <1275594598.23384.52.camel@c-dwalke-linux.qualcomm.com> <20100603195703.GG25779@flint.arm.linux.org.uk> <1275595608.23384.58.camel@c-dwalke-linux.qualcomm.com>
 MIME-Version: 1.0
-In-Reply-To: <57DF5FDC2DC0634FA2A310BC5B81A68D01DF4CD01E@AUSX7MCPC108.AMER.DELL.COM>
-References: <AANLkTinG3jv6o8T00mDTEP5uxf4tKqOwSPEDIUcv4kVG@mail.gmail.com> 
-	<20100602213429.GA14866@srcf.ucam.org> <57DF5FDC2DC0634FA2A310BC5B81A68D01DF4CD01E@AUSX7MCPC108.AMER.DELL.COM>
-From: Islam Amer <pharon@gmail.com>
-Date: Fri, 4 Jun 2010 00:16:58 +0400
-Message-ID: <AANLkTimIl6UL0HQT1wxRgXuj_m0O3CwMHQIa1xNE1Ax9@mail.gmail.com>
-Subject: Re: Dell Studio 1555 eject key does not work ( small patch to fix 
-	included )
-To: Rezwanul_Kabir@dell.com
-Cc: mjg59@srcf.ucam.org, linux-kernel@vger.kernel.org,
-       platform-driver-x86@vger.kernel.org, akpm@linux-foundation.org
-Content-Type: multipart/mixed; boundary=001636b14523a87a22048825e455
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1275595608.23384.58.camel@c-dwalke-linux.qualcomm.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---001636b14523a87a22048825e455
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
+On Thu, Jun 03, 2010 at 01:06:48PM -0700, Daniel Walker wrote:
+> On Thu, 2010-06-03 at 20:57 +0100, Russell King wrote:
+> > config MACH_HALIBUT
+> > 	bool "Halibut Board (QCT SURF7201A)"
+> > 	select I2C if STD_CONFIG
+> > 	select I2C_WHATEVER if STD_CONFIG
+> > 	...
+> > 
+> > That means if you enable STD_CONFIG, you'll get everything that's required
+> > selected.  If you then disable STD_CONFIG, I believe Kconfig leaves
+> > everything that was selected as still being selected.
+> 
+> I just did a little test, and it doesn't. Kconfig would un-select all
+> the drivers, at least from my test.
 
-Hello,
+That's because it knows what the original state of the symbol is.
+Yes, that's a little undesirable for our behaviour - but it can be
+worked around - by saving and restarting Kconfig.
 
-I suspected the same about dell_new_hk_type, but I am confused that
-the rest of the fn keys work just fine out of the box. The only button
-that didn't work was the eject key.
+Try this:
 
-Attached is the dmidecode output.
+config STD_CONFIG
+	bool "Standard config"
+	default y
 
-Thanks
+config DRIVER_A
+	tristate "Driver A"
 
-On Thu, Jun 3, 2010 at 5:57 AM,  <Rezwanul_Kabir@dell.com> wrote:
->
->>Hi Rez,
->>
->>Any thoughts on this?
->>
->
->
-> =A0From the discussion below, it seems that this system does not implemen=
-t the new
-> WMI scheme ( which is when dell_new_hk_type=3Dtrue is set). So, at issue =
-here is the
-> legacy code. Without knowing exactly why BIOS would behave differently in=
- this particular case,
-> the fix seems arbitrary. Let me see if I can get hold of the BIOS develop=
-er(if possible) and provide feedback in this thread.
->
-> Islam Amer
->
-> =A0 Can you attach dmidecode output from the system here?
->
-> Thanks..
-> =A0 --rez
->
->
->
->
->
->>On Thu, Jun 03, 2010 at 01:14:09AM +0400, Islam Amer wrote
->>> Hello,
->>>
->>> Pressing the eject key on my Dell Studio 1555 does not work
->>and dmesg
->>> produces this message :
->>> dell-wmi: Unknown key 0 pressed
->>>
->>> Adding a debugging printk in dell-wmi.c after line 222 like this :
->>>
->>> printk(KERN_INFO "dell:wmi 0x%x , 0x%x \n", buffer_entry[1],
->>> buffer_entry[2]);
->>>
->>> dmesg now shows :
->>>
->>> dell:wmi 0x0 , 0xe009
->>> dell-wmi: Unknown key 0 pressed
->>>
->>> So for some reason buffer_entry[1] is used although it is empty.
->>>
->>> Falling back to buffer_entry[2] in case buffer_entry[1] is 0x0 makes
->>> the button work.
->>>
->>> I suspect it might be better to fix the "dell_new_hk_type" logic
->>> though
->>>
->>> I had submitted this as
->>> https://bugzilla.kernel.org/show_bug.cgi?id=3D16075 but repeating the
->>> information and patch here as per Andrew Morton's suggestion.
->>>
->>>
->>> Thanks.
->>>
->>> ---
->>linux-sidux-2.6-2.6.34/drivers/platform/x86/dell-wmi.c.orig
->>2010-06-03
->>> 01:02:17.418824168 +0400
->>> +++ linux-sidux-2.6-2.6.34/drivers/platform/x86/dell-wmi.c
->>2010-06-03
->>> 01:01:40.641833249 +0400
->>> @@ -221,7 +221,7 @@ static void dell_wmi_notify(u32 value, v
->>> =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0return;
->>> =A0 =A0 =A0 =A0 =A0 =A0 =A0}
->>>
->>> - =A0 =A0 =A0 =A0 =A0 =A0if (dell_new_hk_type)
->>> + =A0 =A0 =A0 =A0 =A0 =A0if (dell_new_hk_type || buffer_entry[1] =3D=3D=
- 0x0)
->>> =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0reported_key =3D (int)buffer=
-_entry[2];
->>> =A0 =A0 =A0 =A0 =A0 =A0 =A0else
->>> =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0reported_key =3D (int)buffer=
-_entry[1] & 0xffff;
->>>
->>--
->>Matthew Garrett | mjg59@srcf.ucam.org
->>
+config ARM
+	def_bool y
+	select DRIVER_A if STD_CONFIG
 
---001636b14523a87a22048825e455
-Content-Type: text/plain; charset=US-ASCII; name="dell-studio-1555-dmidecode.txt"
-Content-Disposition: attachment; filename="dell-studio-1555-dmidecode.txt"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_ga00yz460
+and in a new directory /path/to/kernel/scripts/kconfig/mconf test.conf
+If you turn off STD_CONFIG immediately, it'll turn off DRIVER_A.
+However, save out the config, and re-run mconf test.conf.  You'll then
+find that DRIVER_A remains set even when STD_CONFIG is turned off.
 
-IyBkbWlkZWNvZGUgMi45ClNNQklPUyAyLjUgcHJlc2VudC4KNTEgc3RydWN0dXJlcyBvY2N1cHlp
-bmcgMTk4NiBieXRlcy4KVGFibGUgYXQgMHgwMDBGMEZCMC4KCkhhbmRsZSAweERBMDAsIERNSSB0
-eXBlIDIxOCwgMjA5IGJ5dGVzCk9FTS1zcGVjaWZpYyBUeXBlCglIZWFkZXIgYW5kIERhdGE6CgkJ
-REEgRDEgMDAgREEgQjIgMDAgRDIgMUIgMUYgMzYgNDAgN0QgMDAgMDAgMDAgMDAKCQkwMCA4MCAw
-MSAxNiAwMCAwMSAwMCA3RiAwMSAxNiAwMCAwMCAwMCA1MiAwMSAxNwoJCTAwIDAxIDAwIDUzIDAx
-IDE3IDAwIDAwIDAwIDdDIDAxIDE4IDAwIDAxIDAwIDdCCgkJMDEgMTggMDAgMDAgMDAgNzUgMDEg
-NzUgMDEgMDEgMDAgNzYgMDEgNzYgMDEgMDEKCQkwMCAyRSAwMCAyNSAwMCAwMCAwMCA2RSAwMCAy
-NSAwMCAwMSAwMCAyRCAwMCAyNQoJCTAwIDAyIDAwIDhBIDAxIDQ4IDAwIDAxIDAwIDg5IDAxIDQ4
-IDAwIDAwIDAwIDlCCgkJMDAgMjMgMDAgMDEgMDAgOUMgMDAgMjMgMDAgMDAgMDAgMTQgMDEgNDYg
-MDAgMDAKCQkwMCAxNSAwMSA0NiAwMCAwMSAwMCAxNiAwMSA0NiAwMCAwMiAwMCA5NCAwMSA0NwoJ
-CTAwIDAxIDAwIDkzIDAxIDQ3IDAwIDAwIDAwIEVBIDAwIDY3IDAwIDAxIDAwIEVCCgkJMDAgNjcg
-MDAgMDAgMDAgMDAgRkUgMDAgMDAgMDAgMDAgMDEgRkUgMDAgMDAgMDEKCQkwMCBBMCBGRSAwMCAw
-MCAwMCAwMCBBMSBGRSAwMCAwMCAwMSAwMCBFMSAwMSAwMQoJCTAwIDAwIDAwIEUyIDAxIDAxIDAw
-IDAxIDAwIEUzIDAxIDAxIDAwIDAyIDAwIERDCgkJMDEgMDIgMDAgMDAgMDAgREQgMDEgMDIgMDAg
-MDEgMDAgRkYgRkYgMDAgMDAgMDAKCQkwMAoKSGFuZGxlIDB4MDAwMSwgRE1JIHR5cGUgMCwgMjQg
-Ynl0ZXMKQklPUyBJbmZvcm1hdGlvbgoJVmVuZG9yOiBEZWxsIEluYy4KCVZlcnNpb246IEEwOAoJ
-UmVsZWFzZSBEYXRlOiAxMS8wNy8yMDA5CglBZGRyZXNzOiAweEUzODEwCglSdW50aW1lIFNpemU6
-IDExNjcyMCBieXRlcwoJUk9NIFNpemU6IDIwNDgga0IKCUNoYXJhY3RlcmlzdGljczoKCQlQQ0kg
-aXMgc3VwcG9ydGVkCgkJUE5QIGlzIHN1cHBvcnRlZAoJCUJJT1MgaXMgdXBncmFkZWFibGUKCQlC
-SU9TIHNoYWRvd2luZyBpcyBhbGxvd2VkCgkJRVNDRCBzdXBwb3J0IGlzIGF2YWlsYWJsZQoJCUJv
-b3QgZnJvbSBDRCBpcyBzdXBwb3J0ZWQKCQlTZWxlY3RhYmxlIGJvb3QgaXMgc3VwcG9ydGVkCgkJ
-QklPUyBST00gaXMgc29ja2V0ZWQKCQlFREQgaXMgc3VwcG9ydGVkCgkJNS4yNSIvMzYwIEtCIGZs
-b3BweSBzZXJ2aWNlcyBhcmUgc3VwcG9ydGVkIChpbnQgMTNoKQoJCTUuMjUiLzEuMiBNQiBmbG9w
-cHkgc2VydmljZXMgYXJlIHN1cHBvcnRlZCAoaW50IDEzaCkKCQkzLjUiLzcyMCBLQiBmbG9wcHkg
-c2VydmljZXMgYXJlIHN1cHBvcnRlZCAoaW50IDEzaCkKCQlQcmludCBzY3JlZW4gc2VydmljZSBp
-cyBzdXBwb3J0ZWQgKGludCA1aCkKCQk4MDQyIGtleWJvYXJkIHNlcnZpY2VzIGFyZSBzdXBwb3J0
-ZWQgKGludCA5aCkKCQlTZXJpYWwgc2VydmljZXMgYXJlIHN1cHBvcnRlZCAoaW50IDE0aCkKCQlQ
-cmludGVyIHNlcnZpY2VzIGFyZSBzdXBwb3J0ZWQgKGludCAxN2gpCgkJQ0dBL21vbm8gdmlkZW8g
-c2VydmljZXMgYXJlIHN1cHBvcnRlZCAoaW50IDEwaCkKCQlBQ1BJIGlzIHN1cHBvcnRlZAoJCVVT
-QiBsZWdhY3kgaXMgc3VwcG9ydGVkCgkJTFMtMTIwIGJvb3QgaXMgc3VwcG9ydGVkCgkJU21hcnQg
-YmF0dGVyeSBpcyBzdXBwb3J0ZWQKCQlCSU9TIGJvb3Qgc3BlY2lmaWNhdGlvbiBpcyBzdXBwb3J0
-ZWQKCQlGdW5jdGlvbiBrZXktaW5pdGlhdGVkIG5ldHdvcmsgYm9vdCBpcyBzdXBwb3J0ZWQKCQlU
-YXJnZXRlZCBjb250ZW50IGRpc3RyaWJ1dGlvbiBpcyBzdXBwb3J0ZWQKCkhhbmRsZSAweDAwMDIs
-IERNSSB0eXBlIDEsIDI3IGJ5dGVzClN5c3RlbSBJbmZvcm1hdGlvbgoJTWFudWZhY3R1cmVyOiBE
-ZWxsIEluYy4KCVByb2R1Y3QgTmFtZTogU3R1ZGlvIDE1NTUKCVZlcnNpb246IEEwOAoJU2VyaWFs
-IE51bWJlcjogR0dTRjdLMQoJVVVJRDogNDQ0NTRDNEMtNDcwMC0xMDUzLTgwNDYtQzdDMDRGMzc0
-QjMxCglXYWtlLXVwIFR5cGU6IFBvd2VyIFN3aXRjaAoJU0tVIE51bWJlcjogTm90IFNwZWNpZmll
-ZAoJRmFtaWx5OiBOb3QgU3BlY2lmaWVkCgpIYW5kbGUgMHgwMDAzLCBETUkgdHlwZSAyLCAxNSBi
-eXRlcwpCYXNlIEJvYXJkIEluZm9ybWF0aW9uCglNYW51ZmFjdHVyZXI6IERlbGwgSW5jLgoJUHJv
-ZHVjdCBOYW1lOiAwRDE3Nk0KCVZlcnNpb246IEEwOAoJU2VyaWFsIE51bWJlcjogLkdHU0Y3SzEu
-Q040ODY0Mzk3STA3ODIuCglBc3NldCBUYWc6ICAgICAgICAgICAKCUZlYXR1cmVzOiBOb25lCglM
-b2NhdGlvbiBJbiBDaGFzc2lzOiBOb3QgU3BlY2lmaWVkCglDaGFzc2lzIEhhbmRsZTogMHhGRkZG
-CglUeXBlOiBVbmtub3duCglDb250YWluZWQgT2JqZWN0IEhhbmRsZXM6IDAKCkhhbmRsZSAweDAw
-MDQsIERNSSB0eXBlIDMsIDE5IGJ5dGVzCkNoYXNzaXMgSW5mb3JtYXRpb24KCU1hbnVmYWN0dXJl
-cjogRGVsbCBJbmMuCglUeXBlOiBQb3J0YWJsZQoJTG9jazogTm90IFByZXNlbnQKCVZlcnNpb246
-IEEwOCAgICAgICAgCglTZXJpYWwgTnVtYmVyOiBHR1NGN0sxCglBc3NldCBUYWc6ICAgICAgICAg
-ICAKCUJvb3QtdXAgU3RhdGU6IFNhZmUKCVBvd2VyIFN1cHBseSBTdGF0ZTogU2FmZQoJVGhlcm1h
-bCBTdGF0ZTogU2FmZQoJU2VjdXJpdHkgU3RhdHVzOiBOb25lCglPRU0gSW5mb3JtYXRpb246IDB4
-MDAwMDAwMDAKCkhhbmRsZSAweDAwMDUsIERNSSB0eXBlIDQsIDQwIGJ5dGVzClByb2Nlc3NvciBJ
-bmZvcm1hdGlvbgoJU29ja2V0IERlc2lnbmF0aW9uOiBVMkUxCglUeXBlOiBDZW50cmFsIFByb2Nl
-c3NvcgoJRmFtaWx5OiA8T1VUIE9GIFNQRUM+CglNYW51ZmFjdHVyZXI6IEludGVsCglJRDogN0Eg
-MDYgMDEgMDAgRkYgRkIgRUIgQkYKCVZlcnNpb246IENQVSBWZXJzaW9uCglWb2x0YWdlOiAzLjMg
-VgoJRXh0ZXJuYWwgQ2xvY2s6IDUzMyBNSHoKCU1heCBTcGVlZDogMjEwMCBNSHoKCUN1cnJlbnQg
-U3BlZWQ6IDIxMDAgTUh6CglTdGF0dXM6IFBvcHVsYXRlZCwgRW5hYmxlZAoJVXBncmFkZTogWklG
-IFNvY2tldAoJTDEgQ2FjaGUgSGFuZGxlOiAweDAwMDYKCUwyIENhY2hlIEhhbmRsZTogMHgwMDA3
-CglMMyBDYWNoZSBIYW5kbGU6IE5vdCBQcm92aWRlZAoJU2VyaWFsIE51bWJlcjogTm90IFNwZWNp
-ZmllZAoJQXNzZXQgVGFnOiBOb3QgU3BlY2lmaWVkCglQYXJ0IE51bWJlcjogTm90IFNwZWNpZmll
-ZAoJQ29yZSBDb3VudDogMgoJQ29yZSBFbmFibGVkOiAyCglUaHJlYWQgQ291bnQ6IDIKCUNoYXJh
-Y3RlcmlzdGljczoKCQk2NC1iaXQgY2FwYWJsZQoKSGFuZGxlIDB4MDAwNiwgRE1JIHR5cGUgNywg
-MTkgYnl0ZXMKQ2FjaGUgSW5mb3JtYXRpb24KCVNvY2tldCBEZXNpZ25hdGlvbjogTDEgQ2FjaGUK
-CUNvbmZpZ3VyYXRpb246IEVuYWJsZWQsIFNvY2tldGVkLCBMZXZlbCAxCglPcGVyYXRpb25hbCBN
-b2RlOiBXcml0ZSBCYWNrCglMb2NhdGlvbjogSW50ZXJuYWwKCUluc3RhbGxlZCBTaXplOiA2NCBL
-QgoJTWF4aW11bSBTaXplOiA2NCBLQgoJU3VwcG9ydGVkIFNSQU0gVHlwZXM6CgkJQnVyc3QKCQlQ
-aXBlbGluZSBCdXJzdAoJCUFzeW5jaHJvbm91cwoJSW5zdGFsbGVkIFNSQU0gVHlwZTogQXN5bmNo
-cm9ub3VzCglTcGVlZDogVW5rbm93bgoJRXJyb3IgQ29ycmVjdGlvbiBUeXBlOiBOb25lCglTeXN0
-ZW0gVHlwZTogRGF0YQoJQXNzb2NpYXRpdml0eTogOC13YXkgU2V0LWFzc29jaWF0aXZlCgpIYW5k
-bGUgMHgwMDA3LCBETUkgdHlwZSA3LCAxOSBieXRlcwpDYWNoZSBJbmZvcm1hdGlvbgoJU29ja2V0
-IERlc2lnbmF0aW9uOiBMMiBDYWNoZQoJQ29uZmlndXJhdGlvbjogRW5hYmxlZCwgU29ja2V0ZWQs
-IExldmVsIDIKCU9wZXJhdGlvbmFsIE1vZGU6IFdyaXRlIEJhY2sKCUxvY2F0aW9uOiBJbnRlcm5h
-bAoJSW5zdGFsbGVkIFNpemU6IDIwNDggS0IKCU1heGltdW0gU2l6ZTogMjA0OCBLQgoJU3VwcG9y
-dGVkIFNSQU0gVHlwZXM6CgkJQnVyc3QKCQlQaXBlbGluZSBCdXJzdAoJCUFzeW5jaHJvbm91cwoJ
-SW5zdGFsbGVkIFNSQU0gVHlwZTogQnVyc3QKCVNwZWVkOiBVbmtub3duCglFcnJvciBDb3JyZWN0
-aW9uIFR5cGU6IE5vbmUKCVN5c3RlbSBUeXBlOiBJbnN0cnVjdGlvbgoJQXNzb2NpYXRpdml0eTog
-OC13YXkgU2V0LWFzc29jaWF0aXZlCgpIYW5kbGUgMHgwMDA4LCBETUkgdHlwZSA4LCA5IGJ5dGVz
-ClBvcnQgQ29ubmVjdG9yIEluZm9ybWF0aW9uCglJbnRlcm5hbCBSZWZlcmVuY2UgRGVzaWduYXRv
-cjogTm90IFNwZWNpZmllZAoJSW50ZXJuYWwgQ29ubmVjdG9yIFR5cGU6IE5vbmUKCUV4dGVybmFs
-IFJlZmVyZW5jZSBEZXNpZ25hdG9yOiBDUlQKCUV4dGVybmFsIENvbm5lY3RvciBUeXBlOiBEQi0x
-NSBmZW1hbGUKCVBvcnQgVHlwZTogVmlkZW8gUG9ydAoKSGFuZGxlIDB4MDAwOSwgRE1JIHR5cGUg
-OCwgOSBieXRlcwpQb3J0IENvbm5lY3RvciBJbmZvcm1hdGlvbgoJSW50ZXJuYWwgUmVmZXJlbmNl
-IERlc2lnbmF0b3I6IEoxQTEKCUludGVybmFsIENvbm5lY3RvciBUeXBlOiBOb25lCglFeHRlcm5h
-bCBSZWZlcmVuY2UgRGVzaWduYXRvcjogS2V5Ym9hcmQKCUV4dGVybmFsIENvbm5lY3RvciBUeXBl
-OiBDaXJjdWxhciBESU4tOCBtYWxlCglQb3J0IFR5cGU6IEtleWJvYXJkIFBvcnQKCkhhbmRsZSAw
-eDAwMEEsIERNSSB0eXBlIDgsIDkgYnl0ZXMKUG9ydCBDb25uZWN0b3IgSW5mb3JtYXRpb24KCUlu
-dGVybmFsIFJlZmVyZW5jZSBEZXNpZ25hdG9yOiBKMUExCglJbnRlcm5hbCBDb25uZWN0b3IgVHlw
-ZTogTm9uZQoJRXh0ZXJuYWwgUmVmZXJlbmNlIERlc2lnbmF0b3I6IFBTLzIgTW91c2UKCUV4dGVy
-bmFsIENvbm5lY3RvciBUeXBlOiBDaXJjdWxhciBESU4tOCBtYWxlCglQb3J0IFR5cGU6IE1vdXNl
-IFBvcnQKCkhhbmRsZSAweDAwMEIsIERNSSB0eXBlIDksIDEzIGJ5dGVzClN5c3RlbSBTbG90IElu
-Zm9ybWF0aW9uCglEZXNpZ25hdGlvbjogUEVHIFNsb3QgSjZCMgoJVHlwZTogMzItYml0IFBDSSBF
-eHByZXNzCglDdXJyZW50IFVzYWdlOiBBdmFpbGFibGUKCUxlbmd0aDogTG9uZwoJSUQ6IDYKCUNo
-YXJhY3RlcmlzdGljczoKCQk1LjAgViBpcyBwcm92aWRlZAoJCTMuMyBWIGlzIHByb3ZpZGVkCgpI
-YW5kbGUgMHgwMDBDLCBETUkgdHlwZSA5LCAxMyBieXRlcwpTeXN0ZW0gU2xvdCBJbmZvcm1hdGlv
-bgoJRGVzaWduYXRpb246IFBDSSBFeHByZXNzIFNsb3QgSjZCMQoJVHlwZTogMzItYml0IFBDSSBF
-eHByZXNzCglDdXJyZW50IFVzYWdlOiBBdmFpbGFibGUKCUxlbmd0aDogTG9uZwoJSUQ6IDcKCUNo
-YXJhY3RlcmlzdGljczoKCQk1LjAgViBpcyBwcm92aWRlZAoJCTMuMyBWIGlzIHByb3ZpZGVkCgpI
-YW5kbGUgMHgwMDBELCBETUkgdHlwZSA5LCAxMyBieXRlcwpTeXN0ZW0gU2xvdCBJbmZvcm1hdGlv
-bgoJRGVzaWduYXRpb246IFBDSSBFeHByZXNzIFNsb3QgSjZEMQoJVHlwZTogMzItYml0IFBDSSBF
-eHByZXNzCglDdXJyZW50IFVzYWdlOiBJbiBVc2UKCUxlbmd0aDogTG9uZwoJSUQ6IDgKCUNoYXJh
-Y3RlcmlzdGljczoKCQk1LjAgViBpcyBwcm92aWRlZAoJCTMuMyBWIGlzIHByb3ZpZGVkCgpIYW5k
-bGUgMHgwMDBFLCBETUkgdHlwZSA5LCAxMyBieXRlcwpTeXN0ZW0gU2xvdCBJbmZvcm1hdGlvbgoJ
-RGVzaWduYXRpb246IFBDSSBFeHByZXNzIFNsb3QgSjhCMwoJVHlwZTogMzItYml0IFBDSSBFeHBy
-ZXNzCglDdXJyZW50IFVzYWdlOiBBdmFpbGFibGUKCUxlbmd0aDogTG9uZwoJSUQ6IDkKCUNoYXJh
-Y3RlcmlzdGljczoKCQk1LjAgViBpcyBwcm92aWRlZAoJCTMuMyBWIGlzIHByb3ZpZGVkCgpIYW5k
-bGUgMHgwMDBGLCBETUkgdHlwZSA5LCAxMyBieXRlcwpTeXN0ZW0gU2xvdCBJbmZvcm1hdGlvbgoJ
-RGVzaWduYXRpb246IFBDSSBFeHByZXNzIFNsb3QgSjhEMQoJVHlwZTogMzItYml0IFBDSSBFeHBy
-ZXNzCglDdXJyZW50IFVzYWdlOiBBdmFpbGFibGUKCUxlbmd0aDogTG9uZwoJSUQ6IDEwCglDaGFy
-YWN0ZXJpc3RpY3M6CgkJNS4wIFYgaXMgcHJvdmlkZWQKCQkzLjMgViBpcyBwcm92aWRlZAoKSGFu
-ZGxlIDB4MDAxMCwgRE1JIHR5cGUgOSwgMTMgYnl0ZXMKU3lzdGVtIFNsb3QgSW5mb3JtYXRpb24K
-CURlc2lnbmF0aW9uOiBQQ0kgRXhwcmVzcyBTbG90IEo3QjEKCVR5cGU6IDMyLWJpdCBQQ0kgRXhw
-cmVzcwoJQ3VycmVudCBVc2FnZTogVW5rbm93bgoJTGVuZ3RoOiBMb25nCglJRDogMAoJQ2hhcmFj
-dGVyaXN0aWNzOgoJCTUuMCBWIGlzIHByb3ZpZGVkCgkJMy4zIFYgaXMgcHJvdmlkZWQKCkhhbmRs
-ZSAweDAwMTEsIERNSSB0eXBlIDksIDEzIGJ5dGVzClN5c3RlbSBTbG90IEluZm9ybWF0aW9uCglE
-ZXNpZ25hdGlvbjogUENJIEV4cHJlc3MgU2xvdCA2CglUeXBlOiAzMi1iaXQgUENJIEV4cHJlc3MK
-CUN1cnJlbnQgVXNhZ2U6IEF2YWlsYWJsZQoJTGVuZ3RoOiBMb25nCglJRDogMTIKCUNoYXJhY3Rl
-cmlzdGljczoKCQk1LjAgViBpcyBwcm92aWRlZAoJCTMuMyBWIGlzIHByb3ZpZGVkCgpIYW5kbGUg
-MHgwMDEyLCBETUkgdHlwZSAxMCwgOCBieXRlcwpPbiBCb2FyZCBEZXZpY2UgMSBJbmZvcm1hdGlv
-bgoJVHlwZTogVmlkZW8KCVN0YXR1czogRW5hYmxlZAoJRGVzY3JpcHRpb246IEludGVsIENhbnRp
-Z2EgR3JhcGhpY3MgICAgICAKT24gQm9hcmQgRGV2aWNlIDIgSW5mb3JtYXRpb24KCVR5cGU6IFNv
-dW5kCglTdGF0dXM6IEVuYWJsZWQKCURlc2NyaXB0aW9uOiBTaWdtYXRlbCA5MjczCgpIYW5kbGUg
-MHgwMDEzLCBETUkgdHlwZSAxMSwgNSBieXRlcwpPRU0gU3RyaW5ncwoJU3RyaW5nIDE6IERlbGwg
-U3lzdGVtCglTdHJpbmcgMjogNQoJU3RyaW5nIDM6IDEzCgpIYW5kbGUgMHgwMDE0LCBETUkgdHlw
-ZSAxNSwgMjkgYnl0ZXMKU3lzdGVtIEV2ZW50IExvZwoJQXJlYSBMZW5ndGg6IDE2IGJ5dGVzCglI
-ZWFkZXIgU3RhcnQgT2Zmc2V0OiAweDAwMDAKCUhlYWRlciBMZW5ndGg6IDE2IGJ5dGVzCglEYXRh
-IFN0YXJ0IE9mZnNldDogMHgwMDEwCglBY2Nlc3MgTWV0aG9kOiBHZW5lcmFsLXB1cnBvc2Ugbm9u
-LXZvbGF0aWxlIGRhdGEgZnVuY3Rpb25zCglBY2Nlc3MgQWRkcmVzczogMHgwMDAwCglTdGF0dXM6
-IFZhbGlkLCBOb3QgRnVsbAoJQ2hhbmdlIFRva2VuOiAweDAwMDAwMDAwCglIZWFkZXIgRm9ybWF0
-OiBUeXBlIDEKCVN1cHBvcnRlZCBMb2cgVHlwZSBEZXNjcmlwdG9yczogMwoJRGVzY3JpcHRvciAx
-OiBQT1NUIGVycm9yCglEYXRhIEZvcm1hdCAxOiBQT1NUIHJlc3VsdHMgYml0bWFwCglEZXNjcmlw
-dG9yIDI6IFNpbmdsZS1iaXQgRUNDIG1lbW9yeSBlcnJvcgoJRGF0YSBGb3JtYXQgMjogTXVsdGlw
-bGUtZXZlbnQKCURlc2NyaXB0b3IgMzogTXVsdGktYml0IEVDQyBtZW1vcnkgZXJyb3IKCURhdGEg
-Rm9ybWF0IDM6IE11bHRpcGxlLWV2ZW50CgpIYW5kbGUgMHgwMDE1LCBETUkgdHlwZSAxNiwgMTUg
-Ynl0ZXMKUGh5c2ljYWwgTWVtb3J5IEFycmF5CglMb2NhdGlvbjogU3lzdGVtIEJvYXJkIE9yIE1v
-dGhlcmJvYXJkCglVc2U6IFN5c3RlbSBNZW1vcnkKCUVycm9yIENvcnJlY3Rpb24gVHlwZTogTm9u
-ZQoJTWF4aW11bSBDYXBhY2l0eTogOCBHQgoJRXJyb3IgSW5mb3JtYXRpb24gSGFuZGxlOiBOb3Qg
-UHJvdmlkZWQKCU51bWJlciBPZiBEZXZpY2VzOiAyCgpIYW5kbGUgMHgwMDE2LCBETUkgdHlwZSAx
-NywgMjcgYnl0ZXMKTWVtb3J5IERldmljZQoJQXJyYXkgSGFuZGxlOiAweDAwMTUKCUVycm9yIElu
-Zm9ybWF0aW9uIEhhbmRsZTogTm8gRXJyb3IKCVRvdGFsIFdpZHRoOiA2NCBiaXRzCglEYXRhIFdp
-ZHRoOiA2NCBiaXRzCglTaXplOiAyMDQ4IE1CCglGb3JtIEZhY3RvcjogU09ESU1NCglTZXQ6IDEK
-CUxvY2F0b3I6IERJTU1fQQoJQmFuayBMb2NhdG9yOiBOb3QgU3BlY2lmaWVkCglUeXBlOiBERFIy
-CglUeXBlIERldGFpbDogU3luY2hyb25vdXMKCVNwZWVkOiA4MDAgTUh6ICgxLjIgbnMpCglNYW51
-ZmFjdHVyZXI6IEFEMDAwMDAwMDAwMDAwMDAKCVNlcmlhbCBOdW1iZXI6IDQ2MzBDMzYyCglBc3Nl
-dCBUYWc6IDQxNDEwOTI1CglQYXJ0IE51bWJlcjogSFlNUDEyNVM2NENQOC1TNiAgCgpIYW5kbGUg
-MHgwMDE3LCBETUkgdHlwZSAxNywgMjcgYnl0ZXMKTWVtb3J5IERldmljZQoJQXJyYXkgSGFuZGxl
-OiAweDAwMTUKCUVycm9yIEluZm9ybWF0aW9uIEhhbmRsZTogTm8gRXJyb3IKCVRvdGFsIFdpZHRo
-OiA2NCBiaXRzCglEYXRhIFdpZHRoOiA2NCBiaXRzCglTaXplOiAyMDQ4IE1CCglGb3JtIEZhY3Rv
-cjogU09ESU1NCglTZXQ6IDEKCUxvY2F0b3I6IERJTU1fQgoJQmFuayBMb2NhdG9yOiBOb3QgU3Bl
-Y2lmaWVkCglUeXBlOiBERFIyCglUeXBlIERldGFpbDogU3luY2hyb25vdXMKCVNwZWVkOiA4MDAg
-TUh6ICgxLjIgbnMpCglNYW51ZmFjdHVyZXI6IEFEMDAwMDAwMDAwMDAwMDAKCVNlcmlhbCBOdW1i
-ZXI6IDQ2ODBDMjQ1CglBc3NldCBUYWc6IDQxNDEwOTI1CglQYXJ0IE51bWJlcjogSFlNUDEyNVM2
-NENQOC1TNiAgCgpIYW5kbGUgMHgwMDE4LCBETUkgdHlwZSAxOCwgMjMgYnl0ZXMKMzItYml0IE1l
-bW9yeSBFcnJvciBJbmZvcm1hdGlvbgoJVHlwZTogT0sKCUdyYW51bGFyaXR5OiBVbmtub3duCglP
-cGVyYXRpb246IFVua25vd24KCVZlbmRvciBTeW5kcm9tZTogVW5rbm93bgoJTWVtb3J5IEFycmF5
-IEFkZHJlc3M6IFVua25vd24KCURldmljZSBBZGRyZXNzOiBVbmtub3duCglSZXNvbHV0aW9uOiBV
-bmtub3duCgpIYW5kbGUgMHgwMDE5LCBETUkgdHlwZSAxOCwgMjMgYnl0ZXMKMzItYml0IE1lbW9y
-eSBFcnJvciBJbmZvcm1hdGlvbgoJVHlwZTogT0sKCUdyYW51bGFyaXR5OiBVbmtub3duCglPcGVy
-YXRpb246IFVua25vd24KCVZlbmRvciBTeW5kcm9tZTogVW5rbm93bgoJTWVtb3J5IEFycmF5IEFk
-ZHJlc3M6IFVua25vd24KCURldmljZSBBZGRyZXNzOiBVbmtub3duCglSZXNvbHV0aW9uOiBVbmtu
-b3duCgpIYW5kbGUgMHgwMDFBLCBETUkgdHlwZSAxOSwgMTUgYnl0ZXMKTWVtb3J5IEFycmF5IE1h
-cHBlZCBBZGRyZXNzCglTdGFydGluZyBBZGRyZXNzOiAweDAwMDAwMDAwMDAwCglFbmRpbmcgQWRk
-cmVzczogMHgwMDBGRkZGRkZGRgoJUmFuZ2UgU2l6ZTogNCBHQgoJUGh5c2ljYWwgQXJyYXkgSGFu
-ZGxlOiAweDAwMTUKCVBhcnRpdGlvbiBXaWR0aDogMAoKSGFuZGxlIDB4MDAxQiwgRE1JIHR5cGUg
-MjAsIDE5IGJ5dGVzCk1lbW9yeSBEZXZpY2UgTWFwcGVkIEFkZHJlc3MKCVN0YXJ0aW5nIEFkZHJl
-c3M6IDB4MDAwMDAwMDAwMDAKCUVuZGluZyBBZGRyZXNzOiAweDAwMDdGRkZGRkZGCglSYW5nZSBT
-aXplOiAyIEdCCglQaHlzaWNhbCBEZXZpY2UgSGFuZGxlOiAweDAwMTYKCU1lbW9yeSBBcnJheSBN
-YXBwZWQgQWRkcmVzcyBIYW5kbGU6IDB4MDAxQQoJUGFydGl0aW9uIFJvdyBQb3NpdGlvbjogMQoJ
-SW50ZXJsZWF2ZWQgRGF0YSBEZXB0aDogMQoKSGFuZGxlIDB4MDAxQywgRE1JIHR5cGUgMjAsIDE5
-IGJ5dGVzCk1lbW9yeSBEZXZpY2UgTWFwcGVkIEFkZHJlc3MKCVN0YXJ0aW5nIEFkZHJlc3M6IDB4
-MDAwODAwMDAwMDAKCUVuZGluZyBBZGRyZXNzOiAweDAwMEZGRkZGRkZGCglSYW5nZSBTaXplOiAy
-IEdCCglQaHlzaWNhbCBEZXZpY2UgSGFuZGxlOiAweDAwMTcKCU1lbW9yeSBBcnJheSBNYXBwZWQg
-QWRkcmVzcyBIYW5kbGU6IDB4MDAxQQoJUGFydGl0aW9uIFJvdyBQb3NpdGlvbjogMQoJSW50ZXJs
-ZWF2ZWQgRGF0YSBEZXB0aDogMQoKSGFuZGxlIDB4MDAxRCwgRE1JIHR5cGUgMjEsIDcgYnl0ZXMK
-QnVpbHQtaW4gUG9pbnRpbmcgRGV2aWNlCglUeXBlOiBUb3VjaCBQYWQKCUludGVyZmFjZTogQnVz
-IE1vdXNlCglCdXR0b25zOiAyCgpIYW5kbGUgMHgwMDFFLCBETUkgdHlwZSAyMiwgMjYgYnl0ZXMK
-UG9ydGFibGUgQmF0dGVyeQoJTG9jYXRpb246IFN5c3RlbSBCYXR0ZXJ5IEJheQoJTWFudWZhY3R1
-cmVyOiBTSU1QTE8gICAgICAgICAgICAgIAoJTmFtZTogU0lNUExPICAgICAgICAgICAgICAKCURl
-c2lnbiBDYXBhY2l0eTogNzgwMDAgbVdoCglEZXNpZ24gVm9sdGFnZTogMTExMDAgbVYKCVNCRFMg
-VmVyc2lvbjogQmF0MTIzCglNYXhpbXVtIEVycm9yOiBVbmtub3duCglTQkRTIFNlcmlhbCBOdW1i
-ZXI6IDAyNDIKCVNCRFMgTWFudWZhY3R1cmUgRGF0ZTogMjAwOS0wNi0yNAoJU0JEUyBDaGVtaXN0
-cnk6IExJT04gIAoJT0VNLXNwZWNpZmljIEluZm9ybWF0aW9uOiAweDAwMDAwMDAxCgpIYW5kbGUg
-MHgwMDFGLCBETUkgdHlwZSAyMywgMTMgYnl0ZXMKU3lzdGVtIFJlc2V0CglTdGF0dXM6IEVuYWJs
-ZWQKCVdhdGNoZG9nIFRpbWVyOiBQcmVzZW50CglCb290IE9wdGlvbjogRG8gTm90IFJlYm9vdAoJ
-Qm9vdCBPcHRpb24gT24gTGltaXQ6IERvIE5vdCBSZWJvb3QKCVJlc2V0IENvdW50OiBVbmtub3du
-CglSZXNldCBMaW1pdDogVW5rbm93bgoJVGltZXIgSW50ZXJ2YWw6IFVua25vd24KCVRpbWVvdXQ6
-IFVua25vd24KCkhhbmRsZSAweDAwMjAsIERNSSB0eXBlIDI0LCA1IGJ5dGVzCkhhcmR3YXJlIFNl
-Y3VyaXR5CglQb3dlci1PbiBQYXNzd29yZCBTdGF0dXM6IERpc2FibGVkCglLZXlib2FyZCBQYXNz
-d29yZCBTdGF0dXM6IFVua25vd24KCUFkbWluaXN0cmF0b3IgUGFzc3dvcmQgU3RhdHVzOiBEaXNh
-YmxlZAoJRnJvbnQgUGFuZWwgUmVzZXQgU3RhdHVzOiBVbmtub3duCgpIYW5kbGUgMHgwMDIxLCBE
-TUkgdHlwZSAyNSwgOSBieXRlcwoJU3lzdGVtIFBvd2VyIENvbnRyb2xzCglOZXh0IFNjaGVkdWxl
-ZCBQb3dlci1vbjogMTItMzEgMjM6NTk6NTkKCkhhbmRsZSAweDAwMjIsIERNSSB0eXBlIDI2LCAy
-MCBieXRlcwpWb2x0YWdlIFByb2JlCglEZXNjcmlwdGlvbjogVm9sdGFnZSBQcm9iZQoJTG9jYXRp
-b246IFByb2Nlc3NvcgoJU3RhdHVzOiBPSwoJTWF4aW11bSBWYWx1ZTogVW5rbm93bgoJTWluaW11
-bSBWYWx1ZTogVW5rbm93bgoJUmVzb2x1dGlvbjogVW5rbm93bgoJVG9sZXJhbmNlOiBVbmtub3du
-CglBY2N1cmFjeTogVW5rbm93bgoJT0VNLXNwZWNpZmljIEluZm9ybWF0aW9uOiAweDAwMDAwMDAw
-CgpIYW5kbGUgMHgwMDIzLCBETUkgdHlwZSAyNywgMTIgYnl0ZXMKQ29vbGluZyBEZXZpY2UKCVRl
-bXBlcmF0dXJlIFByb2JlIEhhbmRsZTogMHgwMDI0CglUeXBlOiBGYW4KCVN0YXR1czogT0sKCU9F
-TS1zcGVjaWZpYyBJbmZvcm1hdGlvbjogMHgwMDAwMDAwMAoKSGFuZGxlIDB4MDAyNCwgRE1JIHR5
-cGUgMjgsIDIwIGJ5dGVzClRlbXBlcmF0dXJlIFByb2JlCglEZXNjcmlwdGlvbjogVGVtcGVyYXR1
-cmUgUHJvYmUKCUxvY2F0aW9uOiBQcm9jZXNzb3IKCVN0YXR1czogT0sKCU1heGltdW0gVmFsdWU6
-IFVua25vd24KCU1pbmltdW0gVmFsdWUgVW5rbm93bgoJUmVzb2x1dGlvbjogVW5rbm93bgoJVG9s
-ZXJhbmNlOiBVbmtub3duCglBY2N1cmFjeTogVW5rbm93bgoJT0VNLXNwZWNpZmljIEluZm9ybWF0
-aW9uOiAweDAwMDAwMDAwCgpIYW5kbGUgMHgwMDI1LCBETUkgdHlwZSAyOSwgMjAgYnl0ZXMKRWxl
-Y3RyaWNhbCBDdXJyZW50IFByb2JlCglEZXNjcmlwdGlvbjogRWxlY3RyaWNhbCBDdXJyZW50IFBy
-b2JlCglMb2NhdGlvbjogUHJvY2Vzc29yCglTdGF0dXM6IE9LCglNYXhpbXVtIFZhbHVlOiBVbmtu
-b3duCglNaW5pbXVtIFZhbHVlOiBVbmtub3duCglSZXNvbHV0aW9uOiBVbmtub3duCglUb2xlcmFu
-Y2U6IFVua25vd24KCUFjY3VyYWN5OiBVbmtub3duCglPRU0tc3BlY2lmaWMgSW5mb3JtYXRpb246
-IDB4MDAwMDAwMDAKCkhhbmRsZSAweDAwMjYsIERNSSB0eXBlIDMwLCA2IGJ5dGVzCk91dC1vZi1i
-YW5kIFJlbW90ZSBBY2Nlc3MKCU1hbnVmYWN0dXJlciBOYW1lOiBJbnRlbAoJSW5ib3VuZCBDb25u
-ZWN0aW9uOiBEaXNhYmxlZAoJT3V0Ym91bmQgQ29ubmVjdGlvbjogRW5hYmxlZAoKSGFuZGxlIDB4
-MDAyNywgRE1JIHR5cGUgMzIsIDIwIGJ5dGVzClN5c3RlbSBCb290IEluZm9ybWF0aW9uCglTdGF0
-dXM6IE5vIGVycm9ycyBkZXRlY3RlZAoKSGFuZGxlIDB4MDAyOCwgRE1JIHR5cGUgMzksIDIyIGJ5
-dGVzClN5c3RlbSBQb3dlciBTdXBwbHkKCVBvd2VyIFVuaXQgR3JvdXA6IDEKCUxvY2F0aW9uOiBU
-byBCZSBEZWZpbmVkIEJ5IE8uRS5NCglOYW1lOiBUbyBCZSBEZWZpbmVkIEJ5IE8uRS5NCglNYW51
-ZmFjdHVyZXI6IFRvIEJlIERlZmluZWQgQnkgTy5FLk0KCVNlcmlhbCBOdW1iZXI6IFRvIEJlIERl
-ZmluZWQgQnkgTy5FLk0KCUFzc2V0IFRhZzogVG8gQmUgRGVmaW5lZCBCeSBPLkUuTQoJTW9kZWwg
-UGFydCBOdW1iZXI6IFRvIEJlIERlZmluZWQgQnkgTy5FLk0KCVJldmlzaW9uOiAyLjUwCglNYXgg
-UG93ZXIgQ2FwYWNpdHk6IFVua25vd24KCVN0YXR1czogUHJlc2VudCwgVW5rbm93bgoJVHlwZTog
-VW5rbm93bgoJSW5wdXQgVm9sdGFnZSBSYW5nZSBTd2l0Y2hpbmc6IFVua25vd24KCVBsdWdnZWQ6
-IFllcwoJSG90IFJlcGxhY2VhYmxlOiBObwoJSW5wdXQgVm9sdGFnZSBQcm9iZSBIYW5kbGU6IDB4
-MDAyMgoJQ29vbGluZyBEZXZpY2UgSGFuZGxlOiAweDAwMjMKCUlucHV0IEN1cnJlbnQgUHJvYmUg
-SGFuZGxlOiAweDAwMjUKCkhhbmRsZSAweEIwMDAsIERNSSB0eXBlIDE3NiwgNSBieXRlcwpPRU0t
-c3BlY2lmaWMgVHlwZQoJSGVhZGVyIGFuZCBEYXRhOgoJCUIwIDA1IDAwIEIwIDAwCgpIYW5kbGUg
-MHhCMTAwLCBETUkgdHlwZSAxNzcsIDEyIGJ5dGVzCk9FTS1zcGVjaWZpYyBUeXBlCglIZWFkZXIg
-YW5kIERhdGE6CgkJQjEgMEMgMDAgQjEgMUEgMDAgMDAgMDAgMDAgMDAgMDAgMDAKCkhhbmRsZSAw
-eEQwMDAsIERNSSB0eXBlIDIwOCwgMTIgYnl0ZXMKT0VNLXNwZWNpZmljIFR5cGUKCUhlYWRlciBh
-bmQgRGF0YToKCQlEMCAwQyAwMCBEMCAwMSAwNSBGRSAwMCBCRSAwMiAwMSAwMgoJU3RyaW5nczoK
-CQkyMDA3MDMxOQoJCTIwMDcwMzE5CgpIYW5kbGUgMHhEMzAwLCBETUkgdHlwZSAyMTEsIDE3IGJ5
-dGVzCk9FTS1zcGVjaWZpYyBUeXBlCglIZWFkZXIgYW5kIERhdGE6CgkJRDMgMTEgMDAgRDMgNDYg
-NzIgNkYgNkUgNzQgMDMgMDIgMDEgMDAgMzEgMzMgMzUKCQkwNAoKSGFuZGxlIDB4RDQwMCwgRE1J
-IHR5cGUgMjEyLCAxNyBieXRlcwpPRU0tc3BlY2lmaWMgVHlwZQoJSGVhZGVyIGFuZCBEYXRhOgoJ
-CUQ0IDExIDAwIEQ0IDcwIDAwIDcxIDAwIDAwIDEwIDJEIDJFIEZGIEZGIDAwIDAwCgkJMDAKCkhh
-bmRsZSAweEQ4MDAsIERNSSB0eXBlIDIxNiwgOSBieXRlcwpPRU0tc3BlY2lmaWMgVHlwZQoJSGVh
-ZGVyIGFuZCBEYXRhOgoJCUQ4IDA5IDAwIEQ4IDAxIDAyIDAxIEYwIDAzCglTdHJpbmdzOgoJCUlu
-dGVsCgkJMTcwNiAgICAgICAgICAgICAgICAgIAoKSGFuZGxlIDB4REMwMCwgRE1JIHR5cGUgMjIw
-LCAyMCBieXRlcwpPRU0tc3BlY2lmaWMgVHlwZQoJSGVhZGVyIGFuZCBEYXRhOgoJCURDIDE0IDAw
-IERDIDAxIEYwIDAwIDAwIDAyIEYwIDAwIDAwIDAzIEYwIDA0IEYwCgkJMDAgMDAgMDAgMDAKCkhh
-bmRsZSAweEREMDAsIERNSSB0eXBlIDIyMSwgMTkgYnl0ZXMKT0VNLXNwZWNpZmljIFR5cGUKCUhl
-YWRlciBhbmQgRGF0YToKCQlERCAxMyAwMCBERCAwMCAwMCAwMCAwMCAwMCAwMCAwMCAwMCAwMCAw
-MCAwMCAwMAoJCTAwIDAwIDAwCgpIYW5kbGUgMHhERTAwLCBETUkgdHlwZSAyMjIsIDE2IGJ5dGVz
-Ck9FTS1zcGVjaWZpYyBUeXBlCglIZWFkZXIgYW5kIERhdGE6CgkJREUgMTAgMDAgREUgMDEgMDIg
-RkYgRkYgMDAgMDAgMDAgMDAgMDAgMDAgMDAgMDAKCkhhbmRsZSAweDAwMzIsIERNSSB0eXBlIDEy
-NywgNCBieXRlcwpFbmQgT2YgVGFibGUKCg==
---001636b14523a87a22048825e455--
+So, Kconfig does have the behaviour we desire but it's not directly
+accessible.
+
+Is it worth persuing?  Will Linus accept this STD_CONFIG idea or did
+his lack of reply to it indicate that he's not something he's willing
+to entertain?
+
+In any case, this is my last mail on the subject.  I won't be replying
+to mail for at least the next four days.
+
+-- 
+Russell King
+ Linux kernel    2.6 ARM Linux   - http://www.arm.linux.org.uk/
+ maintainer of:
