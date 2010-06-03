@@ -1,84 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755942Ab0FCOzL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jun 2010 10:55:11 -0400
-Received: from cantor.suse.de ([195.135.220.2]:46785 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755627Ab0FCOzJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jun 2010 10:55:09 -0400
-Subject: Re: [linux-pm] [PATCH 0/8] Suspend block api (version 8)
-From: James Bottomley <James.Bottomley@suse.de>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-       "Gross, Mark" <mark.gross@intel.com>, Neil Brown <neilb@suse.de>,
-       LKML <linux-kernel@vger.kernel.org>,
-       Florian Mickler <florian@mickler.org>, "tytso@mit.edu" <tytso@mit.edu>,
-       Linux PM <linux-pm@lists.linux-foundation.org>,
-       Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
-       "felipe.balbi@nokia.com" <felipe.balbi@nokia.com>,
-       Alan Cox <alan@lxorguk.ukuu.org.uk>
-In-Reply-To: <alpine.LFD.2.00.1006031602160.2933@localhost.localdomain>
-References: <20100527232357.6d14fdb2@lxorguk.ukuu.org.uk>
-	 <20100601135102.GA8098@srcf.ucam.org>
-	 <1275426085.21962.967.camel@mulgrave.site> <201006020024.14220.rjw@sisk.pl>
-	 <1275431816.21962.1108.camel@mulgrave.site>
-	 <AANLkTikObnAZbyOxeYAhXcEbimO3XTTO-HlC9CD_HH6t@mail.gmail.com>
-	 <1275451342.21962.1777.camel@mulgrave.site>
-	 <AANLkTilRcFZyYa-0HlaM-6IEZSyar3S9S_cCWSFax2Zo@mail.gmail.com>
-	 <1275491111.2799.110.camel@mulgrave.site>
-	 <20100602214748.7742e3ae@schatten.dmk.lab>
-	 <1275511271.2799.516.camel@mulgrave.site>
-	 <20100603010607.5baf82a6@schatten.dmk.lab>
-	 <CA1BBBBC9359F04AA639128AC0D5D1E9692ABC92@orsmsx502.amr.corp.intel.com>
-	 <20100603110312.48a508dc@lxorguk.ukuu.org.uk>
-	 <1275571471.5914.2.camel@mulgrave.site>
-	 <alpine.LFD.2.00.1006031602160.2933@localhost.localdomain>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 03 Jun 2010 09:55:00 -0500
-Message-ID: <1275576900.5914.107.camel@mulgrave.site>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.2 
-Content-Transfer-Encoding: 7bit
+	id S1755926Ab0FCO4q (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jun 2010 10:56:46 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:56832 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754052Ab0FCO4o (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Jun 2010 10:56:44 -0400
+Date: Thu, 3 Jun 2010 07:51:35 -0700 (PDT)
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+cc: Rusty Russell <rusty@rustcorp.com.au>, linux-next@vger.kernel.org,
+       LKML <linux-kernel@vger.kernel.org>
+Subject: Re: linux-next: boot failure with next-20100603
+In-Reply-To: <20100603174251.226da45d.sfr@canb.auug.org.au>
+Message-ID: <alpine.LFD.2.00.1006030748590.8175@i5.linux-foundation.org>
+References: <20100603174251.226da45d.sfr@canb.auug.org.au>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-06-03 at 16:35 +0200, Thomas Gleixner wrote:
-> On Thu, 3 Jun 2010, James Bottomley wrote:
+
+
+On Thu, 3 Jun 2010, Stephen Rothwell wrote:
 > 
-> > On Thu, 2010-06-03 at 11:03 +0100, Alan Cox wrote:
-> > > > [mtg: ] This has been a pain point for the PM_QOS implementation.  They change the constrain back and forth at the transaction level of the i2c driver.  The pm_qos code really wasn't made to deal with such hot path use, as each such change triggers a re-computation of what the aggregate qos request is.
-> > > 
-> > > That should be trivial in the usual case because 99% of the time you can
-> > > hot path
-> > > 
-> > > 	the QoS entry changing is the latest one
-> > > 	there have been no other changes
-> > > 	If it is valid I can use the cached previous aggregate I cunningly
-> > > 		saved in the top QoS entry when I computed the new one
-> > > 
-> > > (ie most of the time from the kernel side you have a QoS stack)
-> > 
-> > It's not just the list based computation: that's trivial to fix, as you
-> > say ... the other problem is the notifier chain, because that's blocking
-> > and could be long.  Could we invoke the notifier through a workqueue?
-> > It doesn't seem to have veto power, so it's pure notification, does it
-> > matter if the notice is delayed (as long as it's in order)?
+> Unable to handle kernel paging request for data at address 0x00330000
+> Faulting instruction address: 0xc0000000000a2f50
+> Oops: Kernel access of bad area, sig: 11 [#1]
+> NIP [c0000000000a2f50] .load_module+0x990/0x1458
+> LR [c0000000000a2f18] .load_module+0x958/0x1458
+> Call Trace:
+> [c00000000228fc20] [c0000000000a2f18] .load_module+0x958/0x1458 (unreliable)
+> [c00000000228fd90] [c0000000000a3a78] .SyS_init_module+0x60/0x244
+> [c00000000228fe30] [c00000000000852c] syscall_exit+0x0/0x40
+> Instruction dump:
+> 7c7a1b78 7fa30040 41dd09cc 39230210 38030220 f9230218 f8030228 f9230210 
+> f8030220 e9230240 38000001 e96d0040 <7c09592e> e80d01b0 f8030230 38800004 
+> ---[ end trace 85cf1caaf6abfc45 ]---
+> udevd-work[2749]: '/sbin/modprobe -b of:NlheaT<NULL>CIBM,lhea' unexpected exit with status 0x000b
 > 
-> It depends on the information type and for a lot of things we might
-> get away without notifiers. 
+> This was followed by several other similaar OOPSes also in load_module.
 > 
-> The only real issue is when you need to get other cores out of their
-> deep idle state to make a new constraint work. That's what we do with
-> the DMA latency notifier right now.
+> I assume that this may have something to do with the module loading
+> fix/cleanup that is in progress ...
 
-But the only DMA latency notifier is cpuidle_latency_notifier.  That
-looks callable from atomic context, so we could have two chains: one
-atomic and one not.
+That's a fairly safe assumption.
 
-The only other notifier in use is the ieee80211_max_network_latency,
-which uses mutexes, so does require user context.
+I can't read PPC oopses in my sleep the way I can do x86, and in 
+particular, I can't pinpoint that to the source code by just decoding the 
+instructions and matching them against what I have. Do you have that 
+binary, and can you do a 'gdb vmlinux' on it, and then have gdb tell you 
+where in load_module "load_module+0x990" and "load_module+0x958" are?
 
-James
-
-
+			Linus
