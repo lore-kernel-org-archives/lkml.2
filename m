@@ -1,53 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932406Ab0FCIXO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jun 2010 04:23:14 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:40752 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756569Ab0FCIXM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jun 2010 04:23:12 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:x-enigmail-version:content-type
-         :content-transfer-encoding;
-        b=SC/n+tlI00A50dOfPnTnfjFEKv56djCgQQslFE3DvHHEHBUv2FbYEwd43cThXcnidJ
-         5njMdwPmaLzn0bbfMTfNUQxLSjmlMfq8mSxm4fLu8L2V57Efjr/8gGFIOBsTixCtduDD
-         ZarUNykSxIi+eMnkRTNQ0FGnaUrJY8q4hiD18=
-Message-ID: <4C07666A.7000705@gmail.com>
-Date: Thu, 03 Jun 2010 10:23:06 +0200
-From: Tejun Heo <htejun@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.1.9) Gecko/20100317 Thunderbird/3.0.4
-MIME-Version: 1.0
-To: Thomas Fjellstrom <tfjellstrom@strangesoft.net>
-CC: Robert Hancock <hancockrwd@gmail.com>, linux-kernel@vger.kernel.org,
-       linux-ide@vger.kernel.org
-Subject: Re: failed command FLUSH CACHE EXT
-References: <201005292046.06344.tfjellstrom@strangesoft.net> <201006021510.52463.tfjellstrom@strangesoft.net> <AANLkTingFbJAr9z0AzRJCV23FGVS-UAvIKCr5ULQJawt@mail.gmail.com> <201006021742.32232.tfjellstrom@strangesoft.net>
-In-Reply-To: <201006021742.32232.tfjellstrom@strangesoft.net>
-X-Enigmail-Version: 1.0.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1758222Ab0FCI1N (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jun 2010 04:27:13 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:2600 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756839Ab0FCI1L (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Jun 2010 04:27:11 -0400
+Date: Thu, 3 Jun 2010 04:27:02 -0400
+From: Amerigo Wang <amwang@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: netdev@vger.kernel.org, Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>,
+       Amerigo Wang <amwang@redhat.com>, Roland Dreier <rdreier@cisco.com>,
+       davem@davemloft.net
+Message-Id: <20100603083106.6047.7657.sendpatchset@localhost.localdomain>
+Subject: [Patch] infiniband: check local reserved ports
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
 
-On 06/03/2010 01:42 AM, Thomas Fjellstrom wrote:
-> I seem to have rather bad luck with hard drives. Every time I buy more than 
-> two, I tend to get one or two failures out of the batch. 25-50% failure rate 
-> almost. Horrible. I at least average 1 dead hard drive a year since I got my 
-> first computer.
+Since Tetsuo's patch already got merged, now this is the missing part
+for local port reservation.
 
-Hmmm... that sounds really high.  Out of how many?  Hard drives do
-fail sometimes but not that easily even if you put it under relatively
-heavy use 24/7.  Maybe there is a common cause - say, instable power,
-vibration, impact or whatever?  Or maybe the universe just doesn't
-like you?  :-)
+Cc: Roland Dreier <rdreier@cisco.com>
+Cc: Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>
+Signed-off-by: WANG Cong <amwang@redhat.com>
 
-Thanks.
-
--- 
-tejun
+---
+diff --git a/drivers/infiniband/core/cma.c b/drivers/infiniband/core/cma.c
+index b930b81..7b89bab 100644
+--- a/drivers/infiniband/core/cma.c
++++ b/drivers/infiniband/core/cma.c
+@@ -1978,6 +1978,7 @@ static int cma_alloc_any_port(struct idr *ps, struct rdma_id_private *id_priv)
+ 	rover = net_random() % remaining + low;
+ retry:
+ 	if (last_used_port != rover &&
++	    !inet_is_reserved_local_port(rover) &&
+ 	    !idr_find(ps, (unsigned short) rover)) {
+ 		int ret = cma_alloc_port(ps, id_priv, rover);
+ 		/*
