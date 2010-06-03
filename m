@@ -1,77 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754494Ab0FCHRm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jun 2010 03:17:42 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:50956 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751871Ab0FCHRj (ORCPT
+	id S1755669Ab0FCHT6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jun 2010 03:19:58 -0400
+Received: from sj-iport-3.cisco.com ([171.71.176.72]:16081 "EHLO
+	sj-iport-3.cisco.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753808Ab0FCHTz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jun 2010 03:17:39 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:content-type:date:message-id:mime-version
-         :x-mailer:content-transfer-encoding;
-        b=Nkz+tXXI5G1YxC2bk7Nsza5Lgv/ZajTSGuQ0oz2hwH5s2qmxe94kPbwEgC+tw16bMd
-         fPopVywDlxlKA1SwLkwwvbXLvnr0U83vjEz1WtkwgaC1fXZwPf+bgleGT1ZiaiLdEU3K
-         W68zUu5RkJPfM7i1dhsmchpPnXvGdYnbbMqJo=
-Subject: [PATCH] acer-wmi/hp-wmi: use platform_device_unregister instead of
-	platform_device_del in module_exit
-From: Axel Lin <axel.lin@gmail.com>
-To: linux-kernel <linux-kernel@vger.kernel.org>
-Cc: Carlos Corbacho <carlos@strangeworlds.co.uk>,
-       Matthew Garrett <mjg@redhat.com>,
-       "John W. Linville" <linville@tuxdriver.com>,
-       Alan Jenkins <alan-jenkins@tuffmail.co.uk>,
-       Len Brown <len.brown@intel.com>,
-       Henrique de Moraes Holschuh <hmh@hmh.eng.br>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       platform-driver-x86@vger.kernel.org
-Content-Type: text/plain
-Date: Thu, 03 Jun 2010 15:18:03 +0800
-Message-Id: <1275549483.16917.2.camel@mola>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.22.3.1 
-Content-Transfer-Encoding: 7bit
+	Thu, 3 Jun 2010 03:19:55 -0400
+Authentication-Results: sj-iport-3.cisco.com; dkim=neutral (message not signed) header.i=none
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AvsEAH70BkyrR7Hu/2dsb2JhbACeKHGlKJoDhRYEg0g
+X-IronPort-AV: E=Sophos;i="4.53,352,1272844800"; 
+   d="scan'208";a="225174736"
+User-Agent: Microsoft-Entourage/12.24.0.100205
+Date: Thu, 03 Jun 2010 00:19:53 -0700
+Subject: Re: [net-next PATCH] drivers/net/enic: Use (pr|netdev)_<level> macro
+ helpers
+From: Scott Feldman <scofeldm@cisco.com>
+To: Joe Perches <joe@perches.com>
+CC: netdev <netdev@vger.kernel.org>, LKML <linux-kernel@vger.kernel.org>
+Message-ID: <C82CA5A9.3677A%scofeldm@cisco.com>
+Thread-Topic: [net-next PATCH] drivers/net/enic: Use (pr|netdev)_<level> macro
+ helpers
+Thread-Index: AcsC7SkVCv9NUkQR8EO3BY1X6/nK1A==
+In-Reply-To: <1275492616.2489.20.camel@Joe-Laptop.home>
+Mime-version: 1.0
+Content-type: text/plain;
+	charset="US-ASCII"
+Content-transfer-encoding: 7bit
+X-OriginalArrivalTime: 03 Jun 2010 07:19:54.0853 (UTC) FILETIME=[2A30B150:01CB02ED]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-platform_device_unregister will also call platform_device_put() to drop reference count.
+On 6/2/10 8:30 AM, "Joe Perches" <joe@perches.com> wrote:
 
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
----
- drivers/platform/x86/acer-wmi.c |    2 +-
- drivers/platform/x86/hp-wmi.c   |    2 +-
- 2 files changed, 2 insertions(+), 2 deletions(-)
+> Compile tested only
+> 
+> Add #define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
+> Remove #define PFX
+> Use pr_<level>
+> Use netdev_<level>
+> Remove trailing periods from most formats
+> 
+> Signed-off-by: Joe Perches <joe@perches.com>
 
-diff --git a/drivers/platform/x86/acer-wmi.c b/drivers/platform/x86/acer-wmi.c
-index 1ea6c43..d3904e5 100644
---- a/drivers/platform/x86/acer-wmi.c
-+++ b/drivers/platform/x86/acer-wmi.c
-@@ -1358,7 +1358,7 @@ static void __exit acer_wmi_exit(void)
- {
- 	remove_sysfs(acer_platform_device);
- 	remove_debugfs();
--	platform_device_del(acer_platform_device);
-+	platform_device_unregister(acer_platform_device);
- 	platform_driver_unregister(&acer_platform_driver);
- 
- 	printk(ACER_INFO "Acer Laptop WMI Extras unloaded\n");
-diff --git a/drivers/platform/x86/hp-wmi.c b/drivers/platform/x86/hp-wmi.c
-index 51c07a0..409115d 100644
---- a/drivers/platform/x86/hp-wmi.c
-+++ b/drivers/platform/x86/hp-wmi.c
-@@ -611,7 +611,7 @@ static void __exit hp_wmi_exit(void)
- 		input_unregister_device(hp_wmi_input_dev);
- 	}
- 	if (hp_wmi_platform_dev) {
--		platform_device_del(hp_wmi_platform_dev);
-+		platform_device_unregister(hp_wmi_platform_dev);
- 		platform_driver_unregister(&hp_wmi_driver);
- 	}
- }
--- 
-1.5.4.3
+Thanks Joe.  I tested it and there are a couple places before the netdev is
+registered where we need dev_<level> rather than netdev_<level>, otherwise
+we get output like:
 
+enic 0000:08:00.0: (unregistered net_device): vNIC MAC addr
+00:25:b5:19:35:8f wq/rq 256/512
 
+I like the dev_name(dev) in there but not the "(unregister net_device)".
+
+Also there where a couple of lines longer than 80 chars.
+
+We can fix up the patch and resubmit if you like.
+
+-scott
 
