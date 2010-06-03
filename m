@@ -1,287 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756352Ab0FCPYf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jun 2010 11:24:35 -0400
-Received: from g6t0184.atlanta.hp.com ([15.193.32.61]:2849 "EHLO
-	g6t0184.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754893Ab0FCPYe (ORCPT
+	id S1756360Ab0FCP2H (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jun 2010 11:28:07 -0400
+Received: from casper.infradead.org ([85.118.1.10]:36879 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756126Ab0FCP2E convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jun 2010 11:24:34 -0400
-Message-ID: <4C07C927.4090901@hp.com>
-Date: Thu, 03 Jun 2010 11:24:23 -0400
-From: Vlad Yasevich <vladislav.yasevich@hp.com>
-User-Agent: Thunderbird 2.0.0.24 (X11/20100317)
-MIME-Version: 1.0
-To: Yaogong Wang <ywang15@ncsu.edu>
-CC: linux-sctp@vger.kernel.org, Sridhar Samudrala <sri@us.ibm.com>,
-       linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 4/6] sctp multistream scheduling: extend socket API
-References: <AANLkTilW6Ym_vL02rVk4QFPIC3Dr0BC12oAxdjE9RXpf@mail.gmail.com>
-In-Reply-To: <AANLkTilW6Ym_vL02rVk4QFPIC3Dr0BC12oAxdjE9RXpf@mail.gmail.com>
-X-Enigmail-Version: 0.96.0
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: AAAAAQAAAAI=
-X-Whitelist: TRUE
+	Thu, 3 Jun 2010 11:28:04 -0400
+Subject: Re: [linux-pm] [PATCH 0/8] Suspend block api (version 8)
+From: Peter Zijlstra <peterz@infradead.org>
+To: Florian Mickler <florian@mickler.org>
+Cc: Arve =?ISO-8859-1?Q?Hj=F8nnev=E5g?= <arve@android.com>,
+       Thomas Gleixner <tglx@linutronix.de>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+       Matthew Garrett <mjg59@srcf.ucam.org>,
+       Alan Stern <stern@rowland.harvard.edu>, Paul@smtp1.linux-foundation.org,
+       LKML <linux-kernel@vger.kernel.org>, felipe.balbi@nokia.com,
+       Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
+       Linux PM <linux-pm@lists.linux-foundation.org>,
+       Alan Cox <alan@lxorguk.ukuu.org.uk>
+In-Reply-To: <20100603161205.73a2b56d@schatten.dmk.lab>
+References: <Pine.LNX.4.44L0.1005271253240.3239-100000@iolanthe.rowland.org>
+	 <201005302202.39511.rjw@sisk.pl>
+	 <AANLkTilUQ2AG76nbK6LwI8_7zw0_yMSoAOr9pmuz7xrt@mail.gmail.com>
+	 <201005312347.24251.rjw@sisk.pl>
+	 <AANLkTilvOgSFTDFtXbjJobMZWxgfvsC97TqC7_a_NHBX@mail.gmail.com>
+	 <alpine.LFD.2.00.1006011411200.2933@localhost.localdomain>
+	 <AANLkTikZHmF6baP7dEXEGFE8YsbEteRjlhb5wqZX8ll1@mail.gmail.com>
+	 <alpine.LFD.2.00.1006020905410.2933@localhost.localdomain>
+	 <AANLkTinDm3FIrbS1jqEzW15THmr1hdd7ox0Mllm1VLjZ@mail.gmail.com>
+	 <1275471561.27810.30865.camel@twins>
+	 <AANLkTilLmAb2c9fQwuguzWtjcHfuTZvPUTbUx7vuwFI6@mail.gmail.com>
+	 <1275474088.27810.31000.camel@twins>
+	 <20100602221309.6da754e7@schatten.dmk.lab>
+	 <1275550802.27810.34863.camel@twins>
+	 <20100603161205.73a2b56d@schatten.dmk.lab>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Thu, 03 Jun 2010 17:28:01 +0200
+Message-ID: <1275578881.27810.35995.camel@twins>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, 2010-06-03 at 16:12 +0200, Florian Mickler wrote:
+> On Thu, 03 Jun 2010 09:40:02 +0200
+> Peter Zijlstra <peterz@infradead.org> wrote:
+> 
+> > Same for firefox, you can teach it to not render animated gifs and run
+> > javascript for invisible tabs, and once the screen-saver kicks in,
+> > nothing is visible (and with X telling apps their window is visible or
+> > not it knows), so it should go idle all of its own.
+> > 
+> > Fix the friggin apps, don't kludge with freezing.
+> 
+> Of course programs should be as smart as possible. But that is an
+> orthogonal problem.
+> 
+> Suppose firefox were fixed. It still needs to fetch my rss feeds every
+> minute, because I'm sad if it doesn't. It just can't be fixed at the
+> application level.
+
+Sure it can, why would it need to fetch RSS feeds when the screen is off
+and nobody could possible see the result? So you can stop the timer when
+you know the window isn't visible or alternatively when the screensaver
+is active, I think most desktops have notification of that as well.
 
 
-Yaogong Wang wrote:
-> Augment SCTP socket API with a new socket option to choose and
-> configure scheduling algorithm.
-> 
-> Signed-off-by: Yaogong Wang <ywang15@ncsu.edu>
-> ---
-> diff -uprN -X linux-2.6.32.8/Documentation/dontdiff
-> p3/include/net/sctp/structs.h p4/include/net/sctp/structs.h
-> --- p3/include/net/sctp/structs.h	2010-06-02 12:57:24.000000000 -0700
-> +++ p4/include/net/sctp/structs.h	2010-06-02 12:58:11.000000000 -0700
-> @@ -326,6 +326,8 @@ struct sctp_sock {
-> 
->  	/* Multistream scheduling  */
->  	const struct sctp_sched_ops *sched_ops;
-> +	__u32 sched_priv_len;
-> +	__u16 *sched_priv;
-> 
->  	struct sctp_initmsg initmsg;
->  	struct sctp_rtoinfo rtoinfo;
-> @@ -1691,6 +1693,8 @@ struct sctp_association {
-> 
->  	/* Multistream scheduling  */
->  	const struct sctp_sched_ops *sched_ops;
-> +	__u32 sched_priv_len;
-> +	__u16 *sched_priv;
-> 
->  	/* Heartbeat interval: The endpoint sends out a Heartbeat chunk to
->  	 * the destination address every heartbeat interval. This value
-> diff -uprN -X linux-2.6.32.8/Documentation/dontdiff
-> p3/include/net/sctp/user.h p4/include/net/sctp/user.h
-> --- p3/include/net/sctp/user.h	2010-05-28 10:59:23.000000000 -0700
-> +++ p4/include/net/sctp/user.h	2010-05-28 11:54:47.000000000 -0700
-> @@ -67,6 +67,8 @@ enum sctp_optname {
->  #define SCTP_ASSOCINFO SCTP_ASSOCINFO
->  	SCTP_INITMSG,
->  #define SCTP_INITMSG SCTP_INITMSG
-> +	SCTP_SCHED,
-> +#define SCTP_SCHED SCTP_SCHED
->  	SCTP_NODELAY, 	/* Get/set nodelay option. */
-
-You can't insert a new option into the middle.  This would change the ordering
-of subsequent options and break the ABI.
-
->  #define SCTP_NODELAY	SCTP_NODELAY
->  	SCTP_AUTOCLOSE,
-> @@ -171,8 +173,22 @@ struct sctp_initmsg {
->  	__u16 sinit_max_init_timeo;
->  };
-> 
-> +/*
-> + * SCTP Scheduling Structure (SCTP_SCHED)
-> + *
-> + *   cmsg_level    cmsg_type      cmsg_data[]
-> + *   ------------  ------------   ----------------------
-> + *   IPPROTO_SCTP  SCTP_SCHED     struct sctp_sched
-> + *
-> + */
->  #define SCTP_SCHED_NAME_MAX	16
-> 
-> +struct sctp_sched {
-> +	char  ssched_name[SCTP_SCHED_NAME_MAX];
-> +	__u32 ssched_priv_len;
-> +	__u16 ssched_priv[0];
-> +};
-> +
-
-Don't document it as ancillary data since it can't be used as such.
-
-Also, should this also have an assoc_id so that it can be set per
-association?
-
->  /*
->   * 5.2.2 SCTP Header Information Structure (SCTP_SNDRCV)
->   *
-> diff -uprN -X linux-2.6.32.8/Documentation/dontdiff
-> p3/net/sctp/associola.c p4/net/sctp/associola.c
-> --- p3/net/sctp/associola.c	2010-06-02 12:57:06.000000000 -0700
-> +++ p4/net/sctp/associola.c	2010-06-02 12:57:57.000000000 -0700
-> @@ -187,6 +187,14 @@ static struct sctp_association *sctp_ass
-> 
->  	/* Multistream scheduling  */
->  	asoc->sched_ops = sp->sched_ops;
-> +	asoc->sched_priv_len = sp->sched_priv_len;
-> +	if (asoc->sched_priv_len) {
-> +		asoc->sched_priv = kmalloc(asoc->sched_priv_len, gfp);
-> +		if (!asoc->sched_priv)
-> +			goto fail_init;
-> +		memcpy(asoc->sched_priv, sp->sched_priv, asoc->sched_priv_len);
-
-use kmemdup()
-
-> +	} else
-> +		asoc->sched_priv = NULL;
-> 
->  	/* Allocate storage for the ssnmap after the inbound and outbound
->  	 * streams have been negotiated during Init.
-> @@ -464,6 +472,8 @@ static void sctp_association_destroy(str
->  {
->  	SCTP_ASSERT(asoc->base.dead, "Assoc is not dead", return);
-> 
-> +	kfree(asoc->sched_priv);
-> +
->  	sctp_endpoint_put(asoc->ep);
->  	sock_put(asoc->base.sk);
-> 
-> diff -uprN -X linux-2.6.32.8/Documentation/dontdiff
-> p3/net/sctp/socket.c p4/net/sctp/socket.c
-> --- p3/net/sctp/socket.c	2010-05-28 12:38:09.000000000 -0700
-> +++ p4/net/sctp/socket.c	2010-05-28 12:36:37.000000000 -0700
-> @@ -2580,6 +2580,50 @@ static int sctp_setsockopt_initmsg(struc
->  	return 0;
->  }
-> 
-> +/* Set the multistream scheduling algorithm*/
-> +static int sctp_setsockopt_sched(struct sock *sk, char __user *optval,
-> +						unsigned int optlen)
-> +{
-> +	struct sctp_sched *ssched = NULL;
-> +	struct sctp_sock *sp = sctp_sk(sk);
-> +	int ret = 0;
-> +
-> +	if (optlen < sizeof(struct sctp_sched))
-> +		return -EINVAL;
-> +
-> +	ssched = kmalloc(optlen, GFP_KERNEL);
-> +	if (!ssched)
-> +		return -ENOMEM;
-> +
-> +	if (copy_from_user(ssched, optval, optlen)) {
-> +		ret = -EFAULT;
-> +		goto out;
-> +	}
-
-use memdup_user().
-
-> +
-> +	if (optlen != sizeof(struct sctp_sched) + ssched->ssched_priv_len) {
-> +		ret = -EINVAL;
-> +		goto out;
-> +	}
-> +
-> +	ret = sctp_set_sched(sk, ssched->ssched_name);
-> +	if (ret)
-> +		goto out;
-> +	sp->sched_priv_len = ssched->ssched_priv_len;
-> +	kfree(sp->sched_priv);
-> +	if (sp->sched_priv_len) {
-> +		sp->sched_priv = kmalloc(sp->sched_priv_len, GFP_KERNEL);
-> +		if (!sp->sched_priv) {
-> +			ret = -ENOMEM;
-> +			goto out;
-> +		}
-> +		memcpy(sp->sched_priv, ssched->ssched_priv, sp->sched_priv_len);
-> +	}
-> +
-> +out:
-> +	kfree(ssched);
-> +	return ret;
-> +}
-> +
->  /*
->   * 7.1.14 Set default send parameters (SCTP_DEFAULT_SEND_PARAM)
->   *
-> @@ -3417,6 +3461,9 @@ SCTP_STATIC int sctp_setsockopt(struct s
->  		retval = sctp_setsockopt_partial_delivery_point(sk, optval, optlen);
->  		break;
-> 
-> +	case SCTP_SCHED:
-> +		retval = sctp_setsockopt_sched(sk, optval, optlen);
-> +		break;
->  	case SCTP_INITMSG:
->  		retval = sctp_setsockopt_initmsg(sk, optval, optlen);
->  		break;
-> @@ -3642,7 +3689,10 @@ SCTP_STATIC int sctp_init_sock(struct so
->  	sp->initmsg.sinit_max_attempts   = sctp_max_retrans_init;
->  	sp->initmsg.sinit_max_init_timeo = sctp_rto_max;
-> 
-> +	/* Initialize default scheduling algorithm  */
->  	sp->sched_ops = sctp_default_sched_ops;
-> +	sp->sched_priv_len = 0;
-> +	sp->sched_priv = NULL;
-> 
-
-This part should be in the framework patch.  That way assoc will actually
-inherit the proper pointer.
-
-
->  	/* Initialize default RTO related parameters.  These parameters can
->  	 * be modified for with the SCTP_RTOINFO socket option.
-> @@ -3735,6 +3785,9 @@ SCTP_STATIC void sctp_destroy_sock(struc
-> 
->  	SCTP_DEBUG_PRINTK("sctp_destroy_sock(sk: %p)\n", sk);
-> 
-> +	sctp_cleanup_sched(sk);
-> +	kfree(sctp_sk(sk)->sched_priv);
-> +
->  	/* Release our hold on the endpoint. */
->  	ep = sctp_sk(sk)->ep;
->  	sctp_endpoint_free(ep);
-> @@ -4351,6 +4404,35 @@ static int sctp_getsockopt_initmsg(struc
->  	return 0;
->  }
-> 
-> +/* Get the multistream scheduling algorithm*/
-> +static int sctp_getsockopt_sched(struct sock *sk, int len, char __user *optval,
-> +							int __user *optlen)
-> +{
-> +	struct sctp_sched *ssched;
-> +	int sz = sizeof(struct sctp_sched) + sctp_sk(sk)->sched_priv_len;
-> +	int ret = 0;
-> +
-> +	if (len < sz)
-> +		return -EINVAL;
-> +	if (put_user(sz, optlen))
-> +		return -EFAULT;
-> +
-> +	ssched = kmalloc(sz, GFP_KERNEL);
-> +	if (!ssched)
-> +		return -EFAULT;
-> +	memcpy(ssched->ssched_name, sctp_sk(sk)->sched_ops->name,
-> +					SCTP_SCHED_NAME_MAX);
-> +	ssched->ssched_priv_len = sctp_sk(sk)->sched_priv_len;
-> +	memcpy(ssched->ssched_priv, sctp_sk(sk)->sched_priv,
-> +					ssched->ssched_priv_len);
-> +
-> +	if (copy_to_user(optval, ssched, sz))
-> +		ret = -EFAULT;
-> +
-
-Don't forget to also copy out the sz to let user know how long the data
-is.
-
--vlad
-
-> +	kfree(ssched);
-> +	return ret;
-> +}
-> +
->  static int sctp_getsockopt_peer_addrs_num_old(struct sock *sk, int len,
->  					      char __user *optval,
->  					      int __user *optlen)
-> @@ -5605,6 +5687,9 @@ SCTP_STATIC int sctp_getsockopt(struct s
->  	case SCTP_INITMSG:
->  		retval = sctp_getsockopt_initmsg(sk, len, optval, optlen);
->  		break;
-> +	case SCTP_SCHED:
-> +		retval = sctp_getsockopt_sched(sk, len, optval, optlen);
-> +		break;
->  	case SCTP_GET_PEER_ADDRS_NUM_OLD:
->  		retval = sctp_getsockopt_peer_addrs_num_old(sk, len, optval,
->  							    optlen);
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-sctp" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
