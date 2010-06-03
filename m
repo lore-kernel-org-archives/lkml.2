@@ -1,51 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750841Ab0FCEGO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jun 2010 00:06:14 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:37776 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750708Ab0FCEGF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jun 2010 00:06:05 -0400
-From: Wolfram Sang <w.sang@pengutronix.de>
-To: devicetree-discuss@ozlabs.org
-Cc: linux-kernel@vger.kernel.org,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       Wolfram Sang <w.sang@pengutronix.de>,
-       Grant Likely <grant.likely@secretlab.ca>
-Subject: [PATCH 1/2] of/powerpc: fix fsl_msi device node pointer
-Date: Thu,  3 Jun 2010 06:03:46 +0200
-Message-Id: <1275537827-28921-1-git-send-email-w.sang@pengutronix.de>
-X-Mailer: git-send-email 1.7.0
-In-Reply-To: <AANLkTikNcAvyHf1yHPweNBVSCSPNmq-JaEOgYW2FYUGJ@mail.gmail.com>
-References: <AANLkTikNcAvyHf1yHPweNBVSCSPNmq-JaEOgYW2FYUGJ@mail.gmail.com>
-X-SA-Exim-Connect-IP: 2001:6f8:1178:4:5054:ff:fe8d:eefb
-X-SA-Exim-Mail-From: w.sang@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	id S1751223Ab0FCEVA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jun 2010 00:21:00 -0400
+Received: from e6.ny.us.ibm.com ([32.97.182.146]:40477 "EHLO e6.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750925Ab0FCEU7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Jun 2010 00:20:59 -0400
+Date: Thu, 3 Jun 2010 09:50:51 +0530
+From: Srivatsa Vaddagiri <vatsa@in.ibm.com>
+To: Avi Kivity <avi@redhat.com>
+Cc: Andi Kleen <andi@firstfloor.org>, Gleb Natapov <gleb@redhat.com>,
+       linux-kernel@vger.kernel.org, kvm@vger.kernel.org, hpa@zytor.com,
+       mingo@elte.hu, npiggin@suse.de, tglx@linutronix.de, mtosatti@redhat.com
+Subject: Re: [PATCH] use unfair spinlock when running on hypervisor.
+Message-ID: <20100603042051.GA5953@linux.vnet.ibm.com>
+Reply-To: vatsa@in.ibm.com
+References: <20100601093515.GH24302@redhat.com>
+ <87sk56ycka.fsf@basil.nowhere.org>
+ <20100601162414.GA6191@redhat.com>
+ <20100601163807.GA11880@basil.fritz.box>
+ <4C053ACC.5020708@redhat.com>
+ <20100601172730.GB11880@basil.fritz.box>
+ <4C05C722.1010804@redhat.com>
+ <20100602085055.GA14221@basil.fritz.box>
+ <4C061DAB.6000804@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4C061DAB.6000804@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Wolfram Sang <w.sang@pengutronix.de>
-Cc: Grant Likely <grant.likely@secretlab.ca>
----
- arch/powerpc/sysdev/fsl_msi.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+On Wed, Jun 02, 2010 at 12:00:27PM +0300, Avi Kivity wrote:
+> 
+> There are two separate problems: the more general problem is that
+> the hypervisor can put a vcpu to sleep while holding a lock, causing
+> other vcpus to spin until the end of their time slice.  This can
+> only be addressed with hypervisor help.
 
-diff --git a/arch/powerpc/sysdev/fsl_msi.c b/arch/powerpc/sysdev/fsl_msi.c
-index 0f5bee9..962c2d8 100644
---- a/arch/powerpc/sysdev/fsl_msi.c
-+++ b/arch/powerpc/sysdev/fsl_msi.c
-@@ -347,7 +347,7 @@ static int __devinit fsl_of_msi_probe(struct of_device *dev,
- 		goto error_out;
- 	}
- 	offset = 0;
--	p = of_get_property(dev->node, "msi-available-ranges", &len);
-+	p = of_get_property(dev->dev.of_node, "msi-available-ranges", &len);
- 	if (p)
- 		offset = *p / IRQS_PER_MSI_REG;
- 
--- 
-1.7.0
+Fyi - I have a early patch ready to address this issue. Basically I am using
+host-kernel memory (mmap'ed into guest as io-memory via ivshmem driver) to hint 
+host whenever guest is in spin-lock'ed section, which is read by host scheduler 
+to defer preemption.
+
+Guest side:
+
+static inline void spin_lock(spinlock_t *lock)
+{
+	raw_spin_lock(&lock->rlock);
++       __get_cpu_var(gh_vcpu_ptr)->defer_preempt++;
+}
+
+static inline void spin_unlock(spinlock_t *lock)
+{
++	__get_cpu_var(gh_vcpu_ptr)->defer_preempt--;
+        raw_spin_unlock(&lock->rlock);
+}
+
+[similar changes to other spinlock variants]
+
+Host side:
+
+
+@@ -860,6 +866,17 @@ check_preempt_tick(struct cfs_rq *cfs_rq
+ 	ideal_runtime = sched_slice(cfs_rq, curr);
+ 	delta_exec = curr->sum_exec_runtime - curr->prev_sum_exec_runtime;
+ 	if (delta_exec > ideal_runtime) {
++		if ((sched_feat(DEFER_PREEMPT)) && (rq_of(cfs_rq)->curr->ghptr)) {
++			int defer_preempt =  rq_of(cfs_rq)->curr->ghptr->defer_preempt;
++			if (((defer_preempt & 0xFFFF0000) == 0xfeed0000) && ((defer_preempt & 0x0000FFFF) != 0)) {
++				if  ((rq_of(cfs_rq)->curr->grace_defer++ < sysctl_sched_preempt_defer_count)) {
++					rq_of(cfs_rq)->defer_preempt++;
++					return;
++				} else
++					rq_of(cfs_rq)->force_preempt++;
++			}
++		}
+ 		resched_task(rq_of(cfs_rq)->curr);
+ 		/*
+ 		 * The current task ran long enough, ensure it doesn't get
+
+[similar changes introduced at other preemption points in sched_fair.c]
+
+
+Note that guest can only request preemption to be deferred (and not disabled via
+this mechanism). I have seen good improvement (~15%) in kern compile benchmark 
+with sysctl_sched_preempt_defer_count set to a low value of just 2 (i.e we can 
+defer preemption by maximum two ticks). I intend to cleanup and post the patches
+pretty soon for comments.
+
+One pathological case where this may actually hurt is routines in guest like 
+flush_tlb_others_ipi() which take a spinlock and then enter a while() loop
+waiting for other cpus to ack something. In this case, deferring preemption just
+because guest is in critical section actually hurts! Hopefully the upper bound
+for deferring preemtion and the fact that such routines may not be frequently
+hit should help alleviate such situations.
+
+- vatsa
 
