@@ -1,49 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932920Ab0FCGXx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jun 2010 02:23:53 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:2780 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932340Ab0FCGXv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jun 2010 02:23:51 -0400
-Message-ID: <4C074A64.1000009@redhat.com>
-Date: Thu, 03 Jun 2010 09:23:32 +0300
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-3.fc13 Thunderbird/3.0.4
+	id S932989Ab0FCGYp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jun 2010 02:24:45 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:54587 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932567Ab0FCGYn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Jun 2010 02:24:43 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+To: "Luis Claudio R. Goncalves" <lclaudio@uudg.org>,
+       LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
+       Oleg Nesterov <oleg@redhat.com>, David Rientjes <rientjes@google.com>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+       Nick Piggin <npiggin@suse.de>
+Subject: [PATCH 08/12] oom: dump_tasks() use find_lock_task_mm() too
+Cc: kosaki.motohiro@jp.fujitsu.com
+In-Reply-To: <20100603135106.7247.A69D9226@jp.fujitsu.com>
+References: <20100603135106.7247.A69D9226@jp.fujitsu.com>
+Message-Id: <20100603152350.725F.A69D9226@jp.fujitsu.com>
 MIME-Version: 1.0
-To: Chris Wright <chrisw@sous-sol.org>
-CC: Joerg Roedel <joro@8bytes.org>, "Michael S. Tsirkin" <mst@redhat.com>,
-       Tom Lyon <pugs@cisco.com>, linux-kernel@vger.kernel.org,
-       kvm@vger.kernel.org, hjk@linutronix.de, gregkh@suse.de,
-       aafabbri@cisco.com, scofeldm@cisco.com
-Subject: Re: [PATCH] VFIO driver: Non-privileged user level PCI drivers
-References: <20100601095532.GA9178@redhat.com> <20100602094201.GC964@8bytes.org> <20100602095312.GA25335@redhat.com> <20100602101940.GG964@8bytes.org> <20100602102144.GD29023@redhat.com> <20100602103516.GI964@8bytes.org> <20100602103828.GF29023@redhat.com> <20100602111224.GA11033@8bytes.org> <20100602112100.GA29697@redhat.com> <20100602121927.GA11162@8bytes.org> <20100602174615.GV8301@sequoia.sous-sol.org>
-In-Reply-To: <20100602174615.GV8301@sequoia.sous-sol.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Type: text/plain; charset="US-ASCII"
 Content-Transfer-Encoding: 7bit
+X-Mailer: Becky! ver. 2.50.07 [ja]
+Date: Thu,  3 Jun 2010 15:24:36 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/02/2010 08:46 PM, Chris Wright wrote:
-> The BIND API expects a new
-> iommu object.  Are there other uses for this object?
+dump_task() should use find_lock_task_mm() too. It is necessary for
+protecting task-exiting race.
 
-Both kvm and vhost use similar memory maps, so they could use the new 
-object (without invoking the iommu unless they want dma).
+Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+---
+ mm/oom_kill.c |   37 ++++++++++++++++++++-----------------
+ 1 files changed, 20 insertions(+), 17 deletions(-)
 
-> Tom's current vfio
-> driver exposes a dma mapping interface, would the iommu object expose
-> one as well?  Current interface is device specific DMA interface for
-> host device drivers typically mapping in-flight dma buffers, and IOMMU
-> specific interface for assigned devices typically mapping entire virtual
-> address space.
->    
-
-A per-request mapping sounds like a device API since it would only 
-affect that device (whereas the address space API affects multiple devices).
-
+diff --git a/mm/oom_kill.c b/mm/oom_kill.c
+index 35a2ecc..6360c56 100644
+--- a/mm/oom_kill.c
++++ b/mm/oom_kill.c
+@@ -345,35 +345,38 @@ static struct task_struct *select_bad_process(unsigned long *ppoints,
+  */
+ static void dump_tasks(const struct mem_cgroup *mem)
+ {
+-	struct task_struct *g, *p;
++	struct task_struct *p;
++	struct task_struct *task;
+ 
+ 	printk(KERN_INFO "[ pid ]   uid  tgid total_vm      rss cpu oom_adj "
+ 	       "name\n");
+-	do_each_thread(g, p) {
+-		struct mm_struct *mm;
+ 
+-		if (mem && !task_in_mem_cgroup(p, mem))
++	for_each_process(p) {
++		/*
++		 * We don't have is_global_init() check here, because the old
++		 * code do that. printing init process is not big matter. But 
++		 * we don't hope to make unnecessary compatiblity breaking.
++		 */
++		if (p->flags & PF_KTHREAD)
+ 			continue;
+-		if (!thread_group_leader(p))
++		if (mem && !task_in_mem_cgroup(p, mem))
+ 			continue;
+ 
+-		task_lock(p);
+-		mm = p->mm;
+-		if (!mm) {
++		task = find_lock_task_mm(p);
++		if (!task)
+ 			/*
+-			 * total_vm and rss sizes do not exist for tasks with no
+-			 * mm so there's no need to report them; they can't be
+-			 * oom killed anyway.
++			 * Probably oom vs task-exiting race was happen and ->mm
++			 * have been detached. thus there's no need to report them;
++			 * they can't be oom killed anyway.
+ 			 */
+-			task_unlock(p);
+ 			continue;
+-		}
++
+ 		printk(KERN_INFO "[%5d] %5d %5d %8lu %8lu %3d     %3d %s\n",
+-		       p->pid, __task_cred(p)->uid, p->tgid, mm->total_vm,
+-		       get_mm_rss(mm), (int)task_cpu(p), p->signal->oom_adj,
++		       task->pid, __task_cred(task)->uid, task->tgid, task->mm->total_vm,
++		       get_mm_rss(task->mm), (int)task_cpu(task), task->signal->oom_adj,
+ 		       p->comm);
+-		task_unlock(p);
+-	} while_each_thread(g, p);
++		task_unlock(task);
++	}
+ }
+ 
+ static void dump_header(struct task_struct *p, gfp_t gfp_mask, int order,
 -- 
-I have a truly marvellous patch that fixes the bug which this
-signature is too narrow to contain.
+1.6.5.2
+
+
 
