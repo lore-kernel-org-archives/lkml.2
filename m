@@ -1,49 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932133Ab0FCQOz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jun 2010 12:14:55 -0400
-Received: from mail-pz0-f185.google.com ([209.85.222.185]:64049 "EHLO
-	mail-pz0-f185.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932079Ab0FCQOn (ORCPT
+	id S1756893Ab0FCQOg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jun 2010 12:14:36 -0400
+Received: from e28smtp06.in.ibm.com ([122.248.162.6]:36290 "EHLO
+	e28smtp06.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756718Ab0FCQOb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jun 2010 12:14:43 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:from:to:cc:subject:date:message-id:x-mailer;
-        b=xMVu3PUGXwjVqsPy5pF9y3881QRikezngsQ+UHwUArIRi7sJCLverKW9vGL1FAwfFm
-         mn1CqcBAncw+0sQcHccCvwLWoVtK0vTFIDtz/O3vwQ7EWmz81W0Mq+10DZYVlGd87noE
-         VVGk4Borta/0tzaK0yAocnyobCZYKR+8jceZ0=
-From: Rabin Vincent <rabin@rab.in>
-To: mmarek@suse.cz
-Cc: linux-kernel@vger.kernel.org, Rabin Vincent <rabin@rab.in>
-Subject: [PATCH] scripts: decodecode: use /bin/bash
-Date: Thu,  3 Jun 2010 21:44:46 +0530
-Message-Id: <1275581686-19745-1-git-send-email-rabin@rab.in>
-X-Mailer: git-send-email 1.7.1
+	Thu, 3 Jun 2010 12:14:31 -0400
+From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+To: hch@infradead.org, viro@zeniv.linux.org.uk, adilger@sun.com,
+       corbet@lwn.net, serue@us.ibm.com, neilb@suse.de, hooanon05@yahoo.co.jp,
+       bfields@fieldses.org
+Cc: linux-fsdevel@vger.kernel.org, sfrench@us.ibm.com, philippe.deniel@CEA.FR,
+       linux-kernel@vger.kernel.org,
+       "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+Subject: [PATCH -V13 05/11] vfs: Support null pathname in readlink
+Date: Thu,  3 Jun 2010 21:44:11 +0530
+Message-Id: <1275581657-7232-6-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.7.1.236.g81fa0
+In-Reply-To: <1275581657-7232-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+References: <1275581657-7232-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-5358db ("scripts: add ARM support to decodecode") added a few bashims to
-the decodecode script, so explicitly ask for bash.
+From: NeilBrown <neilb@suse.de>
 
-Signed-off-by: Rabin Vincent <rabin@rab.in>
+This enables to use readlink to get the link target name
+from a file descriptor point to the link. This can be used
+with open_by_handle syscall that returns a file descriptor for a link.
+We can then use this file descriptor to get the target name.
+
+Signed-off-by: NeilBrown <neilb@suse.de>
+Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
 ---
-Alternatively, I have a patch to remove the bashisms, if that's preferred.
+ fs/stat.c |   30 ++++++++++++++++++++++--------
+ 1 files changed, 22 insertions(+), 8 deletions(-)
 
- scripts/decodecode |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/scripts/decodecode b/scripts/decodecode
-index 8b30cc3..405cfac 100755
---- a/scripts/decodecode
-+++ b/scripts/decodecode
-@@ -1,4 +1,4 @@
--#!/bin/sh
-+#!/bin/bash
- # Disassemble the Code: line in Linux oopses
- # usage: decodecode < oops.file
- #
+diff --git a/fs/stat.c b/fs/stat.c
+index c4ecd52..49b95a7 100644
+--- a/fs/stat.c
++++ b/fs/stat.c
+@@ -284,26 +284,40 @@ SYSCALL_DEFINE2(newfstat, unsigned int, fd, struct stat __user *, statbuf)
+ SYSCALL_DEFINE4(readlinkat, int, dfd, const char __user *, pathname,
+ 		char __user *, buf, int, bufsiz)
+ {
+-	struct path path;
+-	int error;
++	int error = 0;
++	struct path path, *pp;
++	struct file *file = NULL;
+ 
+ 	if (bufsiz <= 0)
+ 		return -EINVAL;
+ 
+-	error = user_path_at(dfd, pathname, 0, &path);
++	if (pathname == NULL && dfd != AT_FDCWD) {
++		file = fget(dfd);
++
++		if (file)
++			pp = &file->f_path;
++		else
++			error = -EBADF;
++	} else {
++		error = user_path_at(dfd, pathname, 0, &path);
++		pp = &path;
++	}
+ 	if (!error) {
+-		struct inode *inode = path.dentry->d_inode;
++		struct inode *inode = pp->dentry->d_inode;
+ 
+ 		error = -EINVAL;
+ 		if (inode->i_op->readlink) {
+-			error = security_inode_readlink(path.dentry);
++			error = security_inode_readlink(pp->dentry);
+ 			if (!error) {
+-				touch_atime(path.mnt, path.dentry);
+-				error = inode->i_op->readlink(path.dentry,
++				touch_atime(pp->mnt, pp->dentry);
++				error = inode->i_op->readlink(pp->dentry,
+ 							      buf, bufsiz);
+ 			}
+ 		}
+-		path_put(&path);
++		if (file)
++			fput(file);
++		else
++			path_put(&path);
+ 	}
+ 	return error;
+ }
 -- 
-1.7.1
+1.7.1.236.g81fa0
 
