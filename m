@@ -1,59 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932201Ab0FCQks (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jun 2010 12:40:48 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:18642 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753430Ab0FCQkq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jun 2010 12:40:46 -0400
-Date: Thu, 3 Jun 2010 09:39:03 -0700
-From: Randy Dunlap <randy.dunlap@oracle.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>,
-       platform-driver-x86@vger.kernel.org, Matthew Garrett <mjg@redhat.com>
-Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-       Thadeu Lima de Souza Cascardo <cascardo@holoscopio.com>,
-       Daniel Oliveira Nascimento <don@syst.com.br>
-Subject: [PATCH -next] classmate-laptop: fix for RFKILL=m, CMPC=y
-Message-Id: <20100603093903.d9378c9a.randy.dunlap@oracle.com>
-In-Reply-To: <20100603134753.710a64b3.sfr@canb.auug.org.au>
-References: <20100603134753.710a64b3.sfr@canb.auug.org.au>
-Organization: Oracle Linux Eng.
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-Auth-Type: Internal IP
-X-Source-IP: rcsinet13.oracle.com [148.87.113.125]
-X-CT-RefId: str=0001.0A090201.4C07DB02.01C6:SCFMA4539811,ss=1,fgs=0
+	id S932229Ab0FCQn1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jun 2010 12:43:27 -0400
+Received: from kroah.org ([198.145.64.141]:38564 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754569Ab0FCQn0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Jun 2010 12:43:26 -0400
+Date: Thu, 3 Jun 2010 09:40:39 -0700
+From: Greg KH <greg@kroah.com>
+To: =?utf-8?B?Uy7Dh2HEn2xhcg==?= Onur <caglar@CS.Princeton.EDU>
+Cc: Suresh Siddha <suresh.b.siddha@intel.com>,
+       "stable@kernel.org" <stable@kernel.org>,
+       "hpa@zytor.com" <hpa@zytor.com>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       "Song, Youquan" <youquan.song@intel.com>
+Subject: Re: [stable] Boot failure with 2.6.27.46 on Xeon E5620 (Westmere
+ EP)
+Message-ID: <20100603164039.GA7177@kroah.com>
+References: <000954C6-B4AC-4FD8-BA3B-C3B199C7607F@CS.Princeton.EDU>
+ <20100525155307.GA7453@kroah.com>
+ <620C3556-2708-4704-90F3-37DDEF1A404E@CS.Princeton.EDU>
+ <20100525205123.GA14993@kroah.com>
+ <1274833451.2892.574.camel@sbs-t61.sc.intel.com>
+ <2293F1A2-B4DE-4C15-9BAC-CC2E546943D0@CS.Princeton.EDU>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <2293F1A2-B4DE-4C15-9BAC-CC2E546943D0@CS.Princeton.EDU>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Randy Dunlap <randy.dunlap@oracle.com>
+On Wed, Jun 02, 2010 at 07:54:29PM -0400, "S.Çağlar Onur" wrote:
+> Hi Suresh,
+> 
+> On May 25, 2010, at 8:24 PM, Suresh Siddha wrote:
+> 
+> > On Tue, 2010-05-25 at 13:51 -0700, Greg KH wrote:
+> >> On Tue, May 25, 2010 at 04:32:16PM -0400, "S.Çağlar Onur" wrote:
+> >>> Hi Greg,
+> >>> 
+> >>> On May 25, 2010, at 11:53 AM, Greg KH wrote:
+> >>> 
+> >>>> On Tue, May 25, 2010 at 11:10:28AM -0400, "S.Çağlar Onur" wrote:
+> >>>>> Hi,
+> >>>>> 
+> >>>>> We are observing boot failures [1] & [2] on some of our servers (Dell
+> >>>>> r410) with 2.6.27-stable kernels. I found following commit in upstream
+> >>>>> tree via a quick search (but I haven't tried it yet) so I don't know
+> >>>>> whether I'm on the right track or not. 
+> >>>>> 
+> >>>>> Please let me know if anything else is needed...
+> >>>> 
+> >>>> Has any .27 kernel worked on these machines?  If so, can you narrow it
+> >>>> down to the patch that caused the problem?
+> >>> 
+> >>> I don't think any .27 kernel worked on those machines before. But in
+> >>> any case I'll try (I don't have a physical access to those machines as
+> >>> they are located in China) an older .27 release to see.
+> >> 
+> >> Ok, so it isn't a regression, which is what I want to know.
+> >> 
+> >> New hardware like this, probably will only work on newer kernel
+> >> versions, so please use those instead :)
+> > 
+> > I can't think of any known issues in 2.6.27 that can lead to this kind
+> > of boot failure on WSM-EP. Caglar, It will be nice if you can do git
+> > bisect between working and non-working kernels.
+> 
+> Neither 2.6.27 nor 2.6.27.45 not able to boot those servers, according
+> to the on-site admins the boot stuck at following stage[1].
 
-Fix build error when CONFIG_RFKILL=m and CONFIG_ACPI_CMPC=y:
-classmate-laptop should depend on RFKILL or RFKILL=n.
+Good, it's not a regression :)
 
-classmate-laptop.c:(.text+0x1351fc): undefined reference to `rfkill_unregister'
-classmate-laptop.c:(.text+0x135204): undefined reference to `rfkill_destroy'
-classmate-laptop.c:(.text+0x135237): undefined reference to `rfkill_set_sw_state'
-classmate-laptop.c:(.text+0x1352b9): undefined reference to `rfkill_alloc'
-classmate-laptop.c:(.text+0x1352ca): undefined reference to `rfkill_register'
-classmate-laptop.c:(.text+0x1352d6): undefined reference to `rfkill_destroy'
+Care to upgrade to a newer kernel version and see if that works?
 
-Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
----
- drivers/platform/x86/Kconfig |    1 +
- 1 file changed, 1 insertion(+)
+thanks,
 
---- linux-next-20100603.orig/drivers/platform/x86/Kconfig
-+++ linux-next-20100603/drivers/platform/x86/Kconfig
-@@ -520,6 +520,7 @@ config TOSHIBA_BT_RFKILL
- config ACPI_CMPC
- 	tristate "CMPC Laptop Extras"
- 	depends on X86 && ACPI
-+	depends on RFKILL || RFKILL=n
- 	select INPUT
- 	select BACKLIGHT_CLASS_DEVICE
- 	default n
+greg k-h
