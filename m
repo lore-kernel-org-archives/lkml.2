@@ -1,63 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755797Ab0FCHNr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jun 2010 03:13:47 -0400
-Received: from mail-yw0-f179.google.com ([209.85.211.179]:36736 "EHLO
-	mail-yw0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755521Ab0FCHNo (ORCPT
+	id S1754494Ab0FCHRm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jun 2010 03:17:42 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:50956 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751871Ab0FCHRj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jun 2010 03:13:44 -0400
+	Thu, 3 Jun 2010 03:17:39 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=sender:message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=DPADNXZUK9hltmVJQrAxHFr1wPel0CtzXFVjR2y5n0NKmRzUM9+NkcGm/N1+BBqnOi
-         7w42w0+TdPDDx/KgiHe1U1zZCalbXjpYuMS+X23gVLSiDLU9L5reqIs+bGCo6jSzSXDB
-         ttxtJK4Jr/txz84hGU+OFTJ51e+hMIcPtMejM=
-Message-ID: <4C07561F.5080202@garzik.org>
-Date: Thu, 03 Jun 2010 03:13:35 -0400
-From: Jeff Garzik <jeff@garzik.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-2.fc12 Thunderbird/3.0.4
-MIME-Version: 1.0
-To: Luming Yu <luming.yu@gmail.com>
-CC: LKML <linux-kernel@vger.kernel.org>, avorontsov@ru.mvista.com
-Subject: Re: 2.6.25-rc1 ahci regression
-References: <AANLkTikWak8i-Kaj-e-EUFWE66tfMmp2UPhGJCKkK1zK@mail.gmail.com>
-In-Reply-To: <AANLkTikWak8i-Kaj-e-EUFWE66tfMmp2UPhGJCKkK1zK@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+        h=subject:from:to:cc:content-type:date:message-id:mime-version
+         :x-mailer:content-transfer-encoding;
+        b=Nkz+tXXI5G1YxC2bk7Nsza5Lgv/ZajTSGuQ0oz2hwH5s2qmxe94kPbwEgC+tw16bMd
+         fPopVywDlxlKA1SwLkwwvbXLvnr0U83vjEz1WtkwgaC1fXZwPf+bgleGT1ZiaiLdEU3K
+         W68zUu5RkJPfM7i1dhsmchpPnXvGdYnbbMqJo=
+Subject: [PATCH] acer-wmi/hp-wmi: use platform_device_unregister instead of
+	platform_device_del in module_exit
+From: Axel Lin <axel.lin@gmail.com>
+To: linux-kernel <linux-kernel@vger.kernel.org>
+Cc: Carlos Corbacho <carlos@strangeworlds.co.uk>,
+       Matthew Garrett <mjg@redhat.com>,
+       "John W. Linville" <linville@tuxdriver.com>,
+       Alan Jenkins <alan-jenkins@tuffmail.co.uk>,
+       Len Brown <len.brown@intel.com>,
+       Henrique de Moraes Holschuh <hmh@hmh.eng.br>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       platform-driver-x86@vger.kernel.org
+Content-Type: text/plain
+Date: Thu, 03 Jun 2010 15:18:03 +0800
+Message-Id: <1275549483.16917.2.camel@mola>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.22.3.1 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/03/2010 03:02 AM, Luming Yu wrote:
-> Hi there,
->
-> I happened to notice that the commit 365cfa1ed5 caused the following
-> boot error with 2.6.25-rc1
-> on a system with ICH10 SATA AHCI controller. It's weird if there is
-> really no function changes in the patch.
->
-> Any ideas?
->
->
-> dracut: Starting plymouth daemon
-> pata_jmicron 0000:0f:00.0: PCI INT A ->  GSI 16 (level, low) ->  IRQ 16
-> scsi0 : pata_jmicron
-> Initializing USB Mass Storage driver...
-> scsi1 : usb-storage 1-5:1.0
-> scsi2 : pata_jmicron
-> ata1: PATA max UDMA/100 cmd 0xd040 ctl 0xd030 bmdma 0xd000 irq 16
-> ata2: PATA max UDMA/100 cmd 0xd020 ctl 0xd010 bmdma 0xd008 irq 16
-> usbcore: registered new interface driver usb-storage
-> USB Mass Storage support registered.
-> scsi 1:0:0:0: CD-ROM            PepperC  Virtual Disc 1   0.01 PQ: 0 ANSI: 3
-> sr0: scsi-1 drive
+platform_device_unregister will also call platform_device_put() to drop reference count.
 
-Your output here does not indicate a boot error, so to what do you refer?
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+---
+ drivers/platform/x86/acer-wmi.c |    2 +-
+ drivers/platform/x86/hp-wmi.c   |    2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
 
-	Jeff
-
+diff --git a/drivers/platform/x86/acer-wmi.c b/drivers/platform/x86/acer-wmi.c
+index 1ea6c43..d3904e5 100644
+--- a/drivers/platform/x86/acer-wmi.c
++++ b/drivers/platform/x86/acer-wmi.c
+@@ -1358,7 +1358,7 @@ static void __exit acer_wmi_exit(void)
+ {
+ 	remove_sysfs(acer_platform_device);
+ 	remove_debugfs();
+-	platform_device_del(acer_platform_device);
++	platform_device_unregister(acer_platform_device);
+ 	platform_driver_unregister(&acer_platform_driver);
+ 
+ 	printk(ACER_INFO "Acer Laptop WMI Extras unloaded\n");
+diff --git a/drivers/platform/x86/hp-wmi.c b/drivers/platform/x86/hp-wmi.c
+index 51c07a0..409115d 100644
+--- a/drivers/platform/x86/hp-wmi.c
++++ b/drivers/platform/x86/hp-wmi.c
+@@ -611,7 +611,7 @@ static void __exit hp_wmi_exit(void)
+ 		input_unregister_device(hp_wmi_input_dev);
+ 	}
+ 	if (hp_wmi_platform_dev) {
+-		platform_device_del(hp_wmi_platform_dev);
++		platform_device_unregister(hp_wmi_platform_dev);
+ 		platform_driver_unregister(&hp_wmi_driver);
+ 	}
+ }
+-- 
+1.5.4.3
 
 
 
