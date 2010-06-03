@@ -1,135 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753104Ab0FCGqk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jun 2010 02:46:40 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:58996 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751054Ab0FCGqf convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jun 2010 02:46:35 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=googlemail.com; s=gamma;
-        h=mime-version:reply-to:in-reply-to:references:from:date:message-id
-         :subject:to:cc:content-type:content-transfer-encoding;
-        b=BIBCG5ZgVVAr4/qj5z38Yffk6B5rlTP9MMtLeIg74Ry6T+l2tPHCnhNyK41dMsVuVD
-         HAUOKL6rwg+l3CKVILoe6SpTEegouE+ua/jDfOX+oG0/jH/0BYPvFsU5/nL4FW9xLBC9
-         XalaS2aYrDnpTr3MpXhJs/Hin9nBF9vvIv1LM=
+	id S1753046Ab0FCGux (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jun 2010 02:50:53 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:55027 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1751054Ab0FCGut (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Jun 2010 02:50:49 -0400
+Message-ID: <4C07515D.9030505@cn.fujitsu.com>
+Date: Thu, 03 Jun 2010 14:53:17 +0800
+From: Li Zefan <lizf@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1b3pre) Gecko/20090513 Fedora/3.0-2.3.beta2.fc11 Thunderbird/3.0b2
 MIME-Version: 1.0
-Reply-To: mtk.manpages@gmail.com
-In-Reply-To: <20100603061039.GD3564@kernel.dk>
-References: <87632e846m.fsf@devron.myhome.or.jp> <AANLkTin42kucqLbErGA4GlGPZEIPQV2DFkiHkEVSYiI9@mail.gmail.com> 
-	<20100524070552.GR23411@kernel.dk> <AANLkTikogQtGpO9c94A7YSmP8zdyM8dZBrwJf1nwlR4j@mail.gmail.com> 
-	<20100524173551.GU23411@kernel.dk> <AANLkTimDJjHWKISxnLax3r200Db8OQp_lMKOx14ONgkS@mail.gmail.com> 
-	<20100524175649.GV23411@kernel.dk> <AANLkTim_yrRZG6v1tMPgefeaaI-nUa35Q-mLQpuXWJ1p@mail.gmail.com> 
-	<20100601074534.GL1660@kernel.dk> <AANLkTinGfonivZvofBkMzv53IJZeKbFAEMVpv96BiJ30@mail.gmail.com> 
-	<20100603061039.GD3564@kernel.dk>
-From: Michael Kerrisk <mtk.manpages@googlemail.com>
-Date: Thu, 3 Jun 2010 08:46:13 +0200
-Message-ID: <AANLkTint7OJvmTn7d7bqTJzsCxV-VlVT46PQWVH-m73g@mail.gmail.com>
-Subject: Re: [patch] pipe: add support for shrinking and growing pipes
-To: Jens Axboe <jaxboe@fusionio.com>
-Cc: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       Miklos Szeredi <miklos@szeredi.hu>, linux-fsdevel@vger.kernel.org,
-       linux-kernel@vger.kernel.org
+To: Randy Dunlap <randy.dunlap@oracle.com>
+CC: Ben Dooks <ben-linux@fluff.org>, Nobin Mathew <nobin.mathew@gmail.com>,
+       linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+       linux-kbuild@vger.kernel.org
+Subject: Re: [TEMP PATCH v2] Re: make ARM=arm menuconfig problem in mainline
+References: <AANLkTikC61Y9g-WbqwgGDghDSy2XtgraFSRoZYkHRGTG@mail.gmail.com> <AANLkTilEYHVHJrj_KgF48OYCSEUcsKLi57Q_Y73d9va-@mail.gmail.com> <20100602085748.6771e025.randy.dunlap@oracle.com> <AANLkTilpzeYVExQfLgpVmS3bPvb_h3kmWaatidekI-0r@mail.gmail.com> <4C068BAA.4030004@oracle.com> <20100603002526.GV4720@trinity.fluff.org> <4C07017A.50007@oracle.com>
+In-Reply-To: <4C07017A.50007@oracle.com>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jens,
-
-On Thu, Jun 3, 2010 at 8:10 AM, Jens Axboe <jaxboe@fusionio.com> wrote:
-> On Wed, Jun 02 2010, Michael Kerrisk wrote:
->> On Tue, Jun 1, 2010 at 9:45 AM, Jens Axboe <axboe@kernel.dk> wrote:
->> > On Thu, May 27 2010, Michael Kerrisk wrote:
->> >> Jens,
->> >>
->> >> On Mon, May 24, 2010 at 7:56 PM, Jens Axboe <jens.axboe@oracle.com> wrote:
->> >> > On Mon, May 24 2010, Michael Kerrisk wrote:
->> >> >> On Mon, May 24, 2010 at 7:35 PM, Jens Axboe <jens.axboe@oracle.com> wrote:
->> >> >> > On Mon, May 24 2010, Michael Kerrisk wrote:
->> >> >> >> > Right, that looks like a thinko.
->> >> >> >> >
->> >> >> >> > I'll submit a patch changing it to bytes and the agreed API and fix this
->> >> >> >> > -Eerror. Thanks for your comments and suggestions!
->> >> >> >>
->> >> >> >> Thanks. And of course you are welcome. (Please CC linux-api@vger on
->> >> >> >> this patche (and all patches that change the API/ABI.)
->> >> >> >
->> >> >> > The first change is this:
->> >> >> >
->> >> >> > http://git.kernel.dk/?p=linux-2.6-block.git;a=commit;h=0191f8697bbdfefcd36e7b8dc3eeddfe82893e4b
->> >> >> >
->> >> >> > and the one dealing with the pages vs bytes API is this:
->> >> >> >
->> >> >> > http://git.kernel.dk/?p=linux-2.6-block.git;a=commit;h=b9598db3401282bb27b4aef77e3eee12015f7f29
->> >> >> >
->> >> >> > Not tested yet, will do so before sending in of course.
->> >> >>
->> >> >> Eyeballing it quickly, these changes look right.
->> >> >
->> >> > Good, thanks.
->> >> >
->> >> >> Do you have some test programs you can make available?
->> >> >
->> >> > Actually I don't, I test it by modifying fio's splice engine to set/get
->> >> > the pipe size and test the resulting transfers.
->> >>
->> >> An afterthought. Do there not also need to be fixes to the /proc
->> >> interfaces. I don't think they were included in your revised patches.
->> >
->> > I think the proc part can be sanely left in pages, since it's just a
->> > memory limiter.
+Randy Dunlap wrote:
+> On 06/02/10 17:25, Ben Dooks wrote:
+>> On Wed, Jun 02, 2010 at 09:49:46AM -0700, Randy Dunlap wrote:
+>>> On 06/02/10 09:08, Nobin Mathew wrote:
+>>>> On Wed, Jun 2, 2010 at 9:27 PM, Randy Dunlap <randy.dunlap@oracle.com> wrote:
+>>>>> On Wed, 2 Jun 2010 20:04:28 +0530 Nobin Mathew wrote:
+>>>>>
+>>>>>> adding linux-arm-kernel@lists.infradead.org
+>>>>>>
+>>>>>> Hi,
+>>>>>>
+>>>>>> The following entry creates problem in ARM System type menu. I am
+>>>>>> using a Fedora 12 system.
+>>>>> What kind of problem does it create?
+>>>>> It seems to work for me (on f11, not f12).
+>>>>> Does it have something to do with F12 specifically?
+>>>>>
+>>>>>
+>>>>>> Length of bool "Samsung S3C2410, S3C2412, S3C2413, S3C2416, S3C2440,
+>>>>>> S3C2442, S3C2443, S3C2450" is the problem. How can I fix it.
+>>>>> Describe the problem, please.
+>>> [please don't top-post]
 >>
->> I can't see any advantage to using two different units for these
->> closely related APIs, and it does seem like it could be a source of
->> confusion. Similar APIs that I can think of like RLIMIT_MEMLOCK and
->> shmget() SHMMAX that impose per-process memory-related limits use
->> bytes. Best to be consistent, don't you think?
->
-> But they are different interfaces.  I think the 'pass in required size,
-> return actual size' where actual size is >= required size makes sense
-> for the syscall part, but for an "admin" interface it is more logical to
-> deal in pages. Perhaps that's just me and the average admin does not
-> agree. So while it's just detail, it's also an interface so has some
-> importance. And if there's consensus that bytes is a cleaner interface
-> on the proc side as well, then lets change it.
+>> I can think of several solutions, the first being to remove the S3C prefix
+>> friom all these.
+>>
+>> S3C24XX is not acceptable, there's S3C series that are either too old to
+>> be bothered with, or don't fit under this architecture.
+> 
+> and not in the current kernel tree?
+> I did not find any others in the current tree....
+> 
+>> how about Samsung S3C: 2410,2412/3,2416,2440/2442,2443,2450
+> 
+> OK, that works.
+> 
+> For kbuild/kconfig people:  run:
+> make ARCH=arm O=test menuconfig
+> 
+> and then select System Type & ARM system type.  The kconfig "choice" menu at this
+> point looks empty.  It seems to be just a text windowing/display problem.
+> Pressing the down/up arrow keys will display the choices, although not where they
+> should be displayed in the rectangle, and they can be selected there.
+> 
 
-I'll add one more datapoint to those that I already mentioned.
-RLIMIT_STACK and RLIMIT_DATA (getrlimit()) is also expressed in bytes.
+I've found out the cause of this bug, and I'll cook up a patch soon. ;)
 
-There was only one vaguely related limit that I could find that
-measured things in pages. Consider these two System V shared memory
-limits:
-
-SHMMAX
-This is the maximum size (in bytes) of a shared memory segment.
-
-SHMALL
-This is a system-wide limit on the total number of pages of shared memory.
-
-But in a way this almost confirms my point. SHMMAX is a limit the
-governs the behavior of individual processes (like your /proc file),
-while SHMALL is a limit that governs the behavior of the system as a
-whole. There is a (sort of) logic to using bytes for one and pages for
-the other.
-
-I think that I've said all I need to say on the topic. I'm inclined to
-think yours /proc file should use bytes, since it seems consistent
-with other simialr APIs. Others may confirm, or someone else mught
-have a different insight.
-
-Cheers,
-
-Michael
-
-PS I hope you are going to set the lower limit for the /proc file to
-4096B (a page) (?).
-
--- 
-Michael Kerrisk
-Linux man-pages maintainer; http://www.kernel.org/doc/man-pages/
-Author of "The Linux Programming Interface" http://blog.man7.org/
