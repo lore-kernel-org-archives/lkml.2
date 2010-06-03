@@ -1,70 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756225Ab0FCRaO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jun 2010 13:30:14 -0400
-Received: from charlotte.tuxdriver.com ([70.61.120.58]:55947 "EHLO
-	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753403Ab0FCRaL (ORCPT
+	id S1756348Ab0FCRab (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jun 2010 13:30:31 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:50409 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753403Ab0FCRa0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jun 2010 13:30:11 -0400
-Date: Thu, 3 Jun 2010 13:21:15 -0400
-From: "John W. Linville" <linville@tuxdriver.com>
-To: Randy Dunlap <randy.dunlap@oracle.com>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-wireless@vger.kernel.org,
-       linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-       reinette.chatre@intel.com
-Subject: Re: linux-next: Tree for June 3 (iwlwifi)
-Message-ID: <20100603172114.GA14597@tuxdriver.com>
-References: <20100603134753.710a64b3.sfr@canb.auug.org.au>
- <20100603085501.ac113779.randy.dunlap@oracle.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100603085501.ac113779.randy.dunlap@oracle.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
+	Thu, 3 Jun 2010 13:30:26 -0400
+Subject: Re: [RFC][PATCH 21/26] alsa: ASoC: Add JZ4740 ASoC support
+From: Liam Girdwood <lrg@slimlogic.co.uk>
+To: Lars-Peter Clausen <lars@metafoo.de>
+Cc: Ralf Baechle <ralf@linux-mips.org>, linux-mips@linux-mips.org,
+       linux-kernel@vger.kernel.org,
+       Mark Brown <broonie@opensource.wolfsonmicro.com>,
+       alsa-devel@alsa-project.org
+In-Reply-To: <4C07E37A.40502@metafoo.de>
+References: <1275505397-16758-1-git-send-email-lars@metafoo.de>
+	 <1275505950-17334-5-git-send-email-lars@metafoo.de>
+	 <1275569309.3593.106.camel@odin>  <4C07DD48.2050503@metafoo.de>
+	 <1275584609.3118.26.camel@odin>  <4C07E37A.40502@metafoo.de>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 03 Jun 2010 18:25:00 +0100
+Message-ID: <1275585900.3118.29.camel@odin>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 03, 2010 at 08:55:01AM -0700, Randy Dunlap wrote:
-> On Thu, 3 Jun 2010 13:47:53 +1000 Stephen Rothwell wrote:
+On Thu, 2010-06-03 at 19:16 +0200, Lars-Peter Clausen wrote:
+> Liam Girdwood wrote:
+> > On Thu, 2010-06-03 at 18:50 +0200, Lars-Peter Clausen wrote:
+> >   
+> >>>> +    config = snd_soc_dai_get_dma_data(rtd->dai->cpu_dai,
+> >>>>         
+> >> substream);
+> >>     
+> >>>> +    if (!prtd->dma) {
+> >>>> +            const char *dma_channel_name;
+> >>>> +            if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK)
+> >>>> +                    dma_channel_name = "PCM Playback";
+> >>>> +            else
+> >>>> +                    dma_channel_name = "PCM Capture";
+> >>>> +
+> >>>> +            prtd->dma = jz4740_dma_request(substream,
+> >>>>         
+> >> dma_channel_name);
+> >>     
+> >>>>     
+> >>>>         
+> >>> dma_channel_name variable is not required here. Just use the const
+> >>>       
+> >> char
+> >>     
+> >>> * directly.
+> >>>
+> >>>   
+> >>>       
+> >> I actually had it like that before, but I think it is much more readable
+> >> in its current form.
+> >>     
+> >
+> > I disagree, having the char pointer here just adds an extra level of
+> > indirection and costs an extra two lines of code. 
+> >
+> > Liam 
+> >   
+> Hi
 > 
-> > Hi all,
-> > 
-> > Changes since 20100602:
+> Could you give an concrete example of how you would code it?
 > 
-> 
-> when CONFIG_IWLAGN=n:
-> 
-> drivers/net/wireless/iwlwifi/iwl-rx.c:254: error: 'struct iwl_priv' has no member named '_agn'
-> drivers/net/wireless/iwlwifi/iwl-rx.c:303: error: 'struct iwl_priv' has no member named '_agn'
-> drivers/net/wireless/iwlwifi/iwl-rx.c:304: error: 'struct iwl_priv' has no member named '_agn'
-> drivers/net/wireless/iwlwifi/iwl-rx.c:305: error: 'struct iwl_priv' has no member named '_agn'
-> drivers/net/wireless/iwlwifi/iwl-rx.c:306: error: 'struct iwl_priv' has no member named '_agn'
-> 
-> and many more.
-> 
-> Haven't we seen this movie before?
 
-Ugh...caused be this:
+Sure,
 
-commit a2064b7a4a22d118087898e4308670da7ac07911
-Author: Wey-Yi Guy <wey-yi.w.guy@intel.com>
-Date:   Fri Apr 30 14:21:48 2010 -0700
+if (!prtd->dma) {
+          if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK)
+                   prtd->dma = jz4740_dma_request(substream, "PCM Playback");
+          else
+                   prtd->dma = jz4740_dma_request(substream, "PCM Capture");
+}
 
-    iwlwifi: move _agn statistics related structure
-    
-    agn and 3945 has different statistics_notif data structure; since 3945
-    has it statistics_notif data structure inside the _3945 portion of
-    iwl_priv, it make sense to move the agn statistics_notif into _agn portion.
-    
-    Signed-off-by: Wey-Yi Guy <wey-yi.w.guy@intel.com>
-    Signed-off-by: Reinette Chatre <reinette.chatre@intel.com>
+Liam
 
-Since iwl-rx.o is part of iwlcore.ko, this change seems wrong.
-Reinette, any reason why I shouldn't just revert it?
-
-John
 -- 
-John W. Linville		Someday the world will need a hero, and you
-linville@tuxdriver.com			might be all we have.  Be ready.
+Freelance Developer, SlimLogic Ltd
+ASoC and Voltage Regulator Maintainer.
+http://www.slimlogic.co.uk
+
