@@ -1,68 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753968Ab0FCNHy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jun 2010 09:07:54 -0400
-Received: from smtp.eu.citrix.com ([62.200.22.115]:28296 "EHLO
-	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752823Ab0FCNHw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jun 2010 09:07:52 -0400
-X-IronPort-AV: E=Sophos;i="4.53,354,1272844800"; 
-   d="scan'208";a="227938"
-Date: Thu, 3 Jun 2010 14:07:33 +0100
-From: Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>
-X-X-Sender: sstabellini@kaball-desktop
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-CC: Jeremy Fitzhardinge <jeremy@goop.org>,
-       "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-       Don Dutile <ddutile@redhat.com>, Sheng Yang <sheng@linux.intel.com>,
-       Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>
-Subject: [PATCH 0/12] PV on HVM Xen
-Message-ID: <alpine.DEB.2.00.1006011435570.3401@kaball-desktop>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S1753582Ab0FCNKy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jun 2010 09:10:54 -0400
+Received: from cantor.suse.de ([195.135.220.2]:43802 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752573Ab0FCNKx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Jun 2010 09:10:53 -0400
+Date: Thu, 3 Jun 2010 23:10:31 +1000
+From: Nick Piggin <npiggin@suse.de>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: Takuya Yoshikawa <yoshikawa.takuya@oss.ntt.co.jp>,
+       Jens Axboe <jaxboe@fusionio.com>, Dan Carpenter <error27@gmail.com>,
+       Matthew Wilcox <matthew@wil.cx>,
+       Alexander Viro <viro@zeniv.linux.org.uk>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Oleg Nesterov <oleg@redhat.com>, Greg Kroah-Hartman <gregkh@suse.de>,
+       Peter Zijlstra <a.p.zijlstra@chello.nl>, linux-fsdevel@vger.kernel.org,
+       linux-kernel@vger.kernel.org
+Subject: Re: [patch v2] fcntl: return -EFAULT if copy_to_user fails
+Message-ID: <20100603131031.GM6822@laptop>
+References: <20100603100402.GR5483@bicker>
+ <4C07826A.6060302@oss.ntt.co.jp>
+ <20100603103542.GV5483@bicker>
+ <4C07990A.8080508@fusionio.com>
+ <4C079D34.5010500@oss.ntt.co.jp>
+ <1275568683.2456.33.camel@edumazet-laptop>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1275568683.2456.33.camel@edumazet-laptop>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
-the last update on the PV on HVM Xen series contains the following
-changes:
+On Thu, Jun 03, 2010 at 02:38:03PM +0200, Eric Dumazet wrote:
+> Le jeudi 03 juin 2010 à 21:16 +0900, Takuya Yoshikawa a écrit :
+> > (2010/06/03 20:59), Jens Axboe wrote:
+> > > On 2010-06-03 12:35, Dan Carpenter wrote:
+> > >> copy_to_user() returns the number of bytes remaining, but we want to
+> > >> return -EFAULT.
+> > >> 	ret = fcntl(fd, F_SETOWN_EX, NULL);
+> > >> With the original code ret would be 8 here.
+> > >>
+> > >> V2: Takuya Yoshikawa pointed out a similar issue in f_getown_ex()
+> > >
+> > > Pretty basic bug, how long has this been there?
+> > 
+> > IIUC, from the beginning, when these were introduced.
+> 
+> Maybe copy_to_user() was changed sometime to return a partial count
+> instead of EFAULT ?
 
-- some variables and functions have been renamed following Jeremy's
-suggestions, in particular:
-s/init_shared_info/xen_hvm_init_shared_info
-s/xen_platform_pci/xen_platform_pci_enabled
-s/UNPLUG_/XEN_UNPLUG_
+I think it's been like that since first introduced. Some functions
+do need to know in order to do partial copies.
 
-- the two platform_pci.h header files have been merged and the useless
-intro has been removed;
+ 
+> I do think we should have a set of helper functions, instead of
+> spreading special EFAULT cases in one housand places...
+> 
+> This is really ugly.
+> 
+> static inline int sec_copy_to_user(arg1, arg2, arg3)
+> {
+> 	int res = copy_to_user(arg1, arg2, arg3);
+> 
+> 	return (res > 0) ? -EFAULT : res;
+> }
 
-- the xen platform pci product number and driver versions have been made
-static;
+It would be unfortunate if it adds more confusion. I'd prefer to have
+a sufficiently different name. memcpy_to_user/memcpy_from_user
+perhaps?
 
-- the description on the VIRQ_TIMER patch has been improved;
-
-- a new patch to fix hpet behaviour has been introduced: hpet_disable is
-called unconditionally on machine shutdown, and doesn't check whether
-hpet has been actually enabled, causing trouble if it hasn't;
-
-- the vector callback patch has been improved: we don't use the ipi
-vector anymore but we allocate our own so that we can avoid useless and
-expensive vlapic acks.
-
-
-Meanwhile the vector callback patch for xen has been checked into
-xen-unstable, so you don't need a separate patch for xen anymore to take
-full advantage of this patch series.
-
-A git tree is available here:
-
-git://xenbits.xen.org/people/sstabellini/linux-pvhvm.git
-
-branch name 2.6.34-pvhvm-v3.
-
-Cheers,
-
-Stefano
