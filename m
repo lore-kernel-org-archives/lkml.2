@@ -1,58 +1,169 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755926Ab0FCO4q (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jun 2010 10:56:46 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:56832 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754052Ab0FCO4o (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jun 2010 10:56:44 -0400
-Date: Thu, 3 Jun 2010 07:51:35 -0700 (PDT)
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-cc: Rusty Russell <rusty@rustcorp.com.au>, linux-next@vger.kernel.org,
-       LKML <linux-kernel@vger.kernel.org>
-Subject: Re: linux-next: boot failure with next-20100603
-In-Reply-To: <20100603174251.226da45d.sfr@canb.auug.org.au>
-Message-ID: <alpine.LFD.2.00.1006030748590.8175@i5.linux-foundation.org>
-References: <20100603174251.226da45d.sfr@canb.auug.org.au>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S1755679Ab0FCO7Z (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jun 2010 10:59:25 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:42555 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753490Ab0FCO7X (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Jun 2010 10:59:23 -0400
+Message-ID: <4C07C321.8010000@redhat.com>
+Date: Thu, 03 Jun 2010 16:58:41 +0200
+From: Edward Shishkin <edward@redhat.com>
+User-Agent: Thunderbird 2.0.0.23 (X11/20090825)
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: The development of BTRFS <linux-btrfs@vger.kernel.org>,
+       LKML <linux-kernel@vger.kernel.org>, linux-fsdevel@vger.kernel.org
+CC: Chris Mason <chris.mason@oracle.com>, Ric Wheeler <rwheeler@redhat.com>,
+       Andrew Morton <akpm@linux-foundation.org>
+Subject: Unbound(?) internal fragmentation in Btrfs
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hello everyone.
+
+I was asked to review/evaluate Btrfs for using in enterprise
+systems and the below are my first impressions (linux-2.6.33).
+
+The first test I have made was filling an empty 659M (/dev/sdb2)
+btrfs partition (mounted to /mnt) with 2K files:
+
+# for i in $(seq 1000000); \
+do dd if=/dev/zero of=/mnt/file_$i bs=2048 count=1; done
+(terminated after getting "No space left on device" reports).
+
+# ls /mnt | wc -l
+59480
+
+So, I got the "dirty" utilization 59480*2048 / (659*1024*1024) = 0.17,
+and the first obvious question is "hey, where are other 83% of my
+disk space???" I looked at the btrfs storage tree (fs_tree) and was
+shocked with the situation on the leaf level. The Appendix B shows
+5 adjacent btrfs leafs, which have the same parent.
+
+For example, look at the leaf 29425664: "items 1 free space 3892"
+(of 4096!!). Note, that this "free" space (3892) is _dead_: any
+attempts to write to the file system will result in "No space left
+on device".
+
+Internal fragmentation (see Appendix A) of those 5 leafs is
+(1572+3892+1901+3666+1675)/4096*5 = 0.62. This is even worse then
+ext4 and xfs: The last ones in this example will show fragmentation
+near zero with blocksize <= 2K. Even with 4K blocksize they will
+show better utilization 0.50 (against 0.38 in btrfs)!
+
+I have a small question for btrfs developers: Why do you folks put
+"inline extents", xattr, etc items of variable size to the B-tree
+in spite of the fact that B-tree is a data structure NOT for variable
+sized records? This disadvantage of B-trees was widely discussed.
+For example, maestro D. Knuth warned about this issue long time
+ago (see Appendix C).
+
+It is a well known fact that internal fragmentation of classic Bayer's
+B-trees is restricted by the value 0.50 (see Appendix C). However it
+takes place only if your tree contains records of the _same_ length
+(for example, extent pointers). Once you put to your B-tree records
+of variable length (restricted only by leaf size, like btrfs "inline
+extents"), your tree LOSES this boundary. Moreover, even worse:
+it is clear, that in this case utilization of B-tree scales as zero(!).
+That said, for every small E and for every amount of data N we
+can construct a consistent B-tree, which contains data N and has
+utilization worse then E. I.e. from the standpoint of utilization
+such trees can be completely degenerated.
+
+That said, the very important property of B-trees, which guarantees
+non-zero utilization, has been lost, and I don't see in Btrfs code any
+substitution for this property. In other words, where is a formal
+guarantee that all disk space of our users won't be eaten by internal
+fragmentation? I consider such guarantee as a *necessary* condition
+for putting a file system to production.
+
+Any technical comments are welcome.
+
+Thanks,
+Edward.
 
 
-On Thu, 3 Jun 2010, Stephen Rothwell wrote:
-> 
-> Unable to handle kernel paging request for data at address 0x00330000
-> Faulting instruction address: 0xc0000000000a2f50
-> Oops: Kernel access of bad area, sig: 11 [#1]
-> NIP [c0000000000a2f50] .load_module+0x990/0x1458
-> LR [c0000000000a2f18] .load_module+0x958/0x1458
-> Call Trace:
-> [c00000000228fc20] [c0000000000a2f18] .load_module+0x958/0x1458 (unreliable)
-> [c00000000228fd90] [c0000000000a3a78] .SyS_init_module+0x60/0x244
-> [c00000000228fe30] [c00000000000852c] syscall_exit+0x0/0x40
-> Instruction dump:
-> 7c7a1b78 7fa30040 41dd09cc 39230210 38030220 f9230218 f8030228 f9230210 
-> f8030220 e9230240 38000001 e96d0040 <7c09592e> e80d01b0 f8030230 38800004 
-> ---[ end trace 85cf1caaf6abfc45 ]---
-> udevd-work[2749]: '/sbin/modprobe -b of:NlheaT<NULL>CIBM,lhea' unexpected exit with status 0x000b
-> 
-> This was followed by several other similaar OOPSes also in load_module.
-> 
-> I assume that this may have something to do with the module loading
-> fix/cleanup that is in progress ...
+Appendix A.
+-----------
+Glossary
 
-That's a fairly safe assumption.
+1. Utilization of data and(or) metadata storage.
 
-I can't read PPC oopses in my sleep the way I can do x86, and in 
-particular, I can't pinpoint that to the source code by just decoding the 
-instructions and matching them against what I have. Do you have that 
-binary, and can you do a 'gdb vmlinux' on it, and then have gdb tell you 
-where in load_module "load_module+0x990" and "load_module+0x958" are?
+The fraction A/B, where
+A is total size in bytes of stored data and(or) metadata.
+B = N * S, where
+N is number of blocks occupied by stored data and(or) metadata.
+S is block size in bytes.
 
-			Linus
+2. Internal fragmentation of data and(or) metadata storage.
+
+difference (1 - U), where U is utilization.
+
+
+Appendix B.
+-----------
+a "period" in the dump of the fs_tree (btrfs-debug-tree /dev/sdb2)
+
+...
+
+leaf 29982720 items 4 free space 1572 generation 8 owner 5
+fs uuid 50268d9d-2a53-4f4d-b3a3-4fbff74dd956
+chunk uuid 963ba49a-bb2b-48a3-9b35-520d857aade6
+        item 0 key (319 XATTR_ITEM 3817753667) itemoff 3917 itemsize 78
+                location key (0 UNKNOWN 0) type 8
+                namelen 16 datalen 32 name: security.selinux
+        item 1 key (319 EXTENT_DATA 0) itemoff 1848 itemsize 2069
+                inline extent data size 2048 ram 2048 compress 0
+        item 2 key (320 INODE_ITEM 0) itemoff 1688 itemsize 160
+                inode generation 8 size 2048 block group 29360128 mode 
+100644 links 1
+        item 3 key (320 INODE_REF 256) itemoff 1672 itemsize 16
+                inode ref index 65 namelen 6 name: file64
+leaf 29425664 items 1 free space 3892 generation 8 owner 5
+fs uuid 50268d9d-2a53-4f4d-b3a3-4fbff74dd956
+chunk uuid 963ba49a-bb2b-48a3-9b35-520d857aade6
+        item 0 key (320 XATTR_ITEM 3817753667) itemoff 3917 itemsize 78
+                location key (0 UNKNOWN 0) type 8
+                namelen 16 datalen 32 name: security.selinux
+leaf 29990912 items 1 free space 1901 generation 8 owner 5
+fs uuid 50268d9d-2a53-4f4d-b3a3-4fbff74dd956
+chunk uuid 963ba49a-bb2b-48a3-9b35-520d857aade6
+        item 0 key (320 EXTENT_DATA 0) itemoff 1926 itemsize 2069
+                inline extent data size 2048 ram 2048 compress 0
+leaf 29986816 items 3 free space 3666 generation 8 owner 5
+fs uuid 50268d9d-2a53-4f4d-b3a3-4fbff74dd956
+chunk uuid 963ba49a-bb2b-48a3-9b35-520d857aade6
+        item 0 key (321 INODE_ITEM 0) itemoff 3835 itemsize 160
+                inode generation 8 size 2048 block group 29360128 mode 
+100644 links 1
+        item 1 key (321 INODE_REF 256) itemoff 3819 itemsize 16
+                inode ref index 66 namelen 6 name: file65
+        item 2 key (321 XATTR_ITEM 3817753667) itemoff 3741 itemsize 78
+                location key (0 UNKNOWN 0) type 8
+                namelen 16 datalen 32 name: security.selinux
+leaf 29995008 items 3 free space 1675 generation 8 owner 5
+fs uuid 50268d9d-2a53-4f4d-b3a3-4fbff74dd956
+chunk uuid 963ba49a-bb2b-48a3-9b35-520d857aade6
+        item 0 key (321 EXTENT_DATA 0) itemoff 1926 itemsize 2069
+                inline extent data size 2048 ram 2048 compress 0
+        item 1 key (322 INODE_ITEM 0) itemoff 1766 itemsize 160
+                inode generation 8 size 2048 block group 29360128 mode 
+100644 links 1
+        item 2 key (322 INODE_REF 256) itemoff 1750 itemsize 16
+                inode ref index 67 namelen 6 name: file66
+...
+
+Appendix C.
+-----------
+
+D.E. Knuth, The Art of Computer Programming, vol. 3 (Sorting and Searching),
+Addison-Wesley, Reading, MA, 1973.
+
+-- 
+Edward O. Shishkin
+Principal Software Engineer
+Red Hat Czech
+
