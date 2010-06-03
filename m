@@ -1,110 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756577Ab0FCHmC (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jun 2010 03:42:02 -0400
-Received: from mail-ww0-f46.google.com ([74.125.82.46]:46922 "EHLO
-	mail-ww0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752148Ab0FCHmA convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jun 2010 03:42:00 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=Sfzr+2vTT1cfnzrRU7/uLapFKWKhiNHLzjTkbIe1+28e9e3F6N3Zx143DZcOCvJ5SB
-         ubhsBQYDT1pMALbpsGRlj977mrwRcHLkvoQAOqY1diG/9K/KGXKAaxhsxnkwTYYcajD2
-         NrcTTbMit68pa7kl9LPPeHfTub0+c8TjYgHrs=
-MIME-Version: 1.0
-In-Reply-To: <1275523999-27462-5-git-send-email-arnd@arndb.de>
-References: <1275523999-27462-1-git-send-email-arnd@arndb.de>
-	<1275523999-27462-5-git-send-email-arnd@arndb.de>
-Date: Thu, 3 Jun 2010 09:41:58 +0200
-X-Google-Sender-Auth: pv2Os_25ctBDAHvCZ45vkKz1Ghc
-Message-ID: <AANLkTil4-BDiE-zwlNaGHm_rEWQroR0F-3fpc7BW366k@mail.gmail.com>
-Subject: Re: [RFC 4/5] BKL: use no BKL in llseek
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
-       Frederic Weisbecker <fweisbec@gmail.com>,
-       John Kacur <jkacur@redhat.com>, Ingo Molnar <mingo@elte.hu>,
-       Jan Blunck <jblunck@suse.de>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	id S1757232Ab0FCHnB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jun 2010 03:43:01 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:60744 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752148Ab0FCHm7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Jun 2010 03:42:59 -0400
+Date: Thu, 3 Jun 2010 17:42:51 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Rusty Russell <rusty@rustcorp.com.au>
+Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+       Linus <torvalds@linux-foundation.org>
+Subject: linux-next: boot failure with next-20100603
+Message-Id: <20100603174251.226da45d.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Thu__3_Jun_2010_17_42_51_+1000_7HjbrSiUjkpw2oNA"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 3, 2010 at 02:13, Arnd Bergmann <arnd@arndb.de> wrote:
-> We have shown that the BKL in default_llseek and other
-> llseek operations never protects against concurrent access
-> from another function:
+--Signature=_Thu__3_Jun_2010_17_42_51_+1000_7HjbrSiUjkpw2oNA
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> --- a/drivers/zorro/proc.c
-> +++ b/drivers/zorro/proc.c
-> @@ -23,7 +23,7 @@ proc_bus_zorro_lseek(struct file *file, loff_t off, int whence)
->  {
->        loff_t new = -1;
->
-> -       lock_kernel();
-> +       mutex_lock(&file->f_dentry->d_inode->i_mutex);
->        switch (whence) {
->        case 0:
->                new = off;
-> @@ -36,10 +36,10 @@ proc_bus_zorro_lseek(struct file *file, loff_t off, int whence)
->                break;
->        }
->        if (new < 0 || new > sizeof(struct ConfigDev)) {
-> -               unlock_kernel();
-> +               mutex_unlock(&file->f_dentry->d_inode->i_mutex);
->                return -EINVAL;
->        }
-> -       unlock_kernel();
-> +       mutex_unlock(&file->f_dentry->d_inode->i_mutex);
->        return (file->f_pos = new);
->  }
+Hi Rusty,
 
-I was about to fix this like drivers/pci/proc.c handles it
-(origiginally I cloned it from that fil
-anyway).
-Compared to your version, that also moves the setting of file->f_pos
-inside the mutex,
-which is probably also needed in other places...
+Today's linux-next produced these messages during the boot of a Power7
+box:
 
-> --- a/drivers/pnp/isapnp/proc.c
-> +++ b/drivers/pnp/isapnp/proc.c
-> @@ -32,7 +32,7 @@ static loff_t isapnp_proc_bus_lseek(struct file *file, loff_t off, int whence)
->  {
->        loff_t new = -1;
->
-> -       lock_kernel();
-> +       mutex_lock(&file->f_dentry->d_inode->i_mutex);
->        switch (whence) {
->        case 0:
->                new = off;
-> @@ -45,10 +45,10 @@ static loff_t isapnp_proc_bus_lseek(struct file *file, loff_t off, int whence)
->                break;
->        }
->        if (new < 0 || new > 256) {
-> -               unlock_kernel();
-> +               mutex_unlock(&file->f_dentry->d_inode->i_mutex);
->                return -EINVAL;
->        }
-> -       unlock_kernel();
-> +       mutex_unlock(&file->f_dentry->d_inode->i_mutex);
->        return (file->f_pos = new);
+Starting udev: udevd[2739]: udev: missing sysfs features; please update the=
+ kernel or disable the kernel's CONFIG_SYSFS_DEPRECATED option; udev may fa=
+il to work correctly
 
-... like here?
+%GUnable to handle kernel paging request for data at address 0x00330000
+Faulting instruction address: 0xc0000000000a2f50
+Oops: Kernel access of bad area, sig: 11 [#1]
+SMP NR_CPUS=3D128 NUMA pSeries
+last sysfs file: /sys/block/sda/uevent
+Modules linked in:
+NIP: c0000000000a2f50 LR: c0000000000a2f18 CTR: 0000000000000000
+REGS: c00000000228f9a0 TRAP: 0300   Not tainted  (2.6.35-rc1-autokern1-next=
+-20100603)
+MSR: 8000000000009032 <EE,ME,IR,DR>  CR: 44422448  XER: 20000001
+DAR: 0000000000330000, DSISR: 0000000042000000
+TASK =3D c0000000fbe1ae40[2855] 'modprobe' THREAD: c00000000228c000 CPU: 12
+GPR00: 0000000000000001 c00000000228fc20 c00000000099f620 d0000000010b7040=
+=20
+GPR04: d0000000010a4dac 0000000000000005 0000000000000000 0000000000000223=
+=20
+GPR08: 6c6f635f72656769 0000000000000000 0000000000000020 0000000000330000=
+=20
+GPR12: d9fb876c951b89f3 c00000000f331800 0000000000012510 0000000000010320=
+=20
+GPR16: 000000000000002a 0000000000000012 0000000000000000 c0000000fb90cc00=
+=20
+GPR20: 0000000000000010 0000000000000021 0000000000000029 d000000001098b68=
+=20
+GPR24: d000000001098ba8 c000000002174800 d0000000010b7040 d000000001097fb9=
+=20
+GPR28: d000000001088000 d000000001098128 c00000000092d120 d0000000010b7040=
+=20
+NIP [c0000000000a2f50] .load_module+0x990/0x1458
+LR [c0000000000a2f18] .load_module+0x958/0x1458
+Call Trace:
+[c00000000228fc20] [c0000000000a2f18] .load_module+0x958/0x1458 (unreliable)
+[c00000000228fd90] [c0000000000a3a78] .SyS_init_module+0x60/0x244
+[c00000000228fe30] [c00000000000852c] syscall_exit+0x0/0x40
+Instruction dump:
+7c7a1b78 7fa30040 41dd09cc 39230210 38030220 f9230218 f8030228 f9230210=20
+f8030220 e9230240 38000001 e96d0040 <7c09592e> e80d01b0 f8030230 38800004=20
+---[ end trace 85cf1caaf6abfc45 ]---
+udevd-work[2749]: '/sbin/modprobe -b of:NlheaT<NULL>CIBM,lhea' unexpected e=
+xit with status 0x000b
 
->  }
+This was followed by several other similaar OOPSes also in load_module.
 
-Gr{oetje,eeting}s,
+I assume that this may have something to do with the module loading
+fix/cleanup that is in progress ...
 
-						Geert
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
 
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+--Signature=_Thu__3_Jun_2010_17_42_51_+1000_7HjbrSiUjkpw2oNA
+Content-Type: application/pgp-signature
 
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-							    -- Linus Torvalds
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iEYEARECAAYFAkwHXPsACgkQjjKRsyhoI8w4igCcC/sQcH9ykEU3fWCOnwtoQlKc
+mgsAn1ujSWyeW7DCx18pVdeAQpfKcF0U
+=wYph
+-----END PGP SIGNATURE-----
+
+--Signature=_Thu__3_Jun_2010_17_42_51_+1000_7HjbrSiUjkpw2oNA--
