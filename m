@@ -1,61 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756828Ab0FCQ0N (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jun 2010 12:26:13 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:36449 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756556Ab0FCQ0L (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jun 2010 12:26:11 -0400
-Date: Thu, 3 Jun 2010 09:24:58 -0700
-From: Randy Dunlap <randy.dunlap@oracle.com>
-To: Rabin Vincent <rabin@rab.in>
-Cc: mmarek@suse.cz, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] scripts: decodecode: use /bin/bash
-Message-Id: <20100603092458.d0d603e3.randy.dunlap@oracle.com>
-In-Reply-To: <1275581686-19745-1-git-send-email-rabin@rab.in>
-References: <1275581686-19745-1-git-send-email-rabin@rab.in>
-Organization: Oracle Linux Eng.
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-Auth-Type: Internal IP
-X-Source-IP: acsinet15.oracle.com [141.146.126.227]
-X-CT-RefId: str=0001.0A090201.4C07D76E.01AE:SCFMA922111,ss=1,fgs=0
+	id S932090Ab0FCQ10 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jun 2010 12:27:26 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:45822 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756556Ab0FCQ1X (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Jun 2010 12:27:23 -0400
+Date: Fri, 4 Jun 2010 02:27:18 +1000
+From: Nick Piggin <npiggin@suse.de>
+To: Chris Mason <chris.mason@oracle.com>,
+       "Martin K. Petersen" <martin.petersen@oracle.com>,
+       James Bottomley <James.Bottomley@suse.de>,
+       Matthew Wilcox <matthew@wil.cx>,
+       Christof Schmitt <christof.schmitt@de.ibm.com>,
+       Boaz Harrosh <bharrosh@panasas.com>, linux-scsi@vger.kernel.org,
+       linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
+Subject: Re: Wrong DIF guard tag on ext2 write
+Message-ID: <20100603162718.GR6822@laptop>
+References: <20100601162929.GC32708@parisc-linux.org>
+ <20100601164750.GQ8980@think>
+ <1275411293.21962.387.camel@mulgrave.site>
+ <20100601180905.GR8980@think>
+ <20100601184649.GE9453@laptop>
+ <20100601193528.GV8980@think>
+ <20100602032030.GF9453@laptop>
+ <yq17hmhbmkb.fsf@sermon.lab.mkp.net>
+ <20100602134121.GD6152@laptop>
+ <20100603154634.GC8980@think>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100603154634.GC8980@think>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu,  3 Jun 2010 21:44:46 +0530 Rabin Vincent wrote:
-
-> 5358db ("scripts: add ARM support to decodecode") added a few bashims to
-> the decodecode script, so explicitly ask for bash.
+On Thu, Jun 03, 2010 at 11:46:34AM -0400, Chris Mason wrote:
+> On Wed, Jun 02, 2010 at 11:41:21PM +1000, Nick Piggin wrote:
+> > On Wed, Jun 02, 2010 at 09:17:56AM -0400, Martin K. Petersen wrote:
+> > > >>>>> "Nick" == Nick Piggin <npiggin@suse.de> writes:
+> > > 
+> > > >> 1) filesystem changed it
+> > > >> 2) corruption on the wire or in the raid controller
+> > > >> 3) the page was corrupted while the IO layer was doing the IO.
+> > > >> 
+> > > >> 1 and 2 are easy, we bounce, retry and everyone continues on with
+> > > >> their lives.  With #3, we'll recrc and send the IO down again
+> > > >> thinking the data is correct when really we're writing garbage.
+> > > >> 
+> > > >> How can we tell these three cases apart?
+> > > 
+> > > Nick> Do we really need to handle #3? It could have happened before the
+> > > Nick> checksum was calculated.
+> > > 
+> > > Reason #3 is one of the main reasons for having the checksum in the
+> > > first place.  The whole premise of the data integrity extensions is that
+> > > the checksum is calculated in close temporal proximity to the data
+> > > creation.  I.e. eventually in userland.
+> > > 
+> > > Filesystems will inevitably have to be integrity-aware for that to work.
+> > > And it will be their job to keep the data pages stable during DMA.
+> > 
+> > Let's just think hard about what windows can actually be closed versus
+> > how much effort goes in to closing them. I also prefer not to accept
+> > half-solutions in the kernel because they don't want to implement real
+> > solutions in hardware (it's pretty hard to checksum and protect all
+> > kernel data structures by hand).
+> > 
+> > For "normal" writes into pagecache, the data can get corrupted anywhere
+> > from after it is generated in userspace, during the copy, while it is
+> > dirty in cache, and while it is being written out.
 > 
-> Signed-off-by: Rabin Vincent <rabin@rab.in>
-> ---
-> Alternatively, I have a patch to remove the bashisms, if that's preferred.
-
-Yes, that's what we usually prefer to do.
-Please post it.
-
-
->  scripts/decodecode |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
+> This is why the DIF/DIX spec has the idea of a crc generated in userland
+> when the data is generated.  At any rate the basic idea is to crc early
+> but not often...recalculating the crc after we hand our precious memory
+> to the evil device driver does weaken the end-to-end integrity checks.
 > 
-> diff --git a/scripts/decodecode b/scripts/decodecode
-> index 8b30cc3..405cfac 100755
-> --- a/scripts/decodecode
-> +++ b/scripts/decodecode
-> @@ -1,4 +1,4 @@
-> -#!/bin/sh
-> +#!/bin/bash
->  # Disassemble the Code: line in Linux oopses
->  # usage: decodecode < oops.file
->  #
-> -- 
+> What I don't want to do is weaken the basic DIF/DIX structure by letting
+> the lower recrc stuff as they find faults.  It would be fine if we had
+> some definitive way to say: the FS raced, just recrc, but we really
+> don't.
+
+That's true but a naive kernel crc cannot do better than the
+user/kernel boundary (and has very big problems even doing that well
+with mmap, get_user_pages, concurrent dirtying). So we are already
+resigned there to a best effort approach.
+
+Since we fundamentally can't have end-to-end protection then, it's
+much harder to argue for significant complexity just to close the
+hole a little.
+
+So if we do the block layer retries in response to concurrent writes, it
+opens the window there a little bit, but remember only a small
+proportion of writes will require retries, and for that proportion, the
+window is only opening a small amount.
+
+As far as I know, we're not checksumming at the usercopy point, but the
+writeback point, so we have a vastly bigger window there already.
 
 
----
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+> > Closing the while it is dirty, while it is being written back window
+> > still leaves a pretty big window. Also, how do you handle mmap writes?
+> > Write protect and checksum the destination page after every store? Or
+> > leave some window between when the pagecache is dirtied and when it is
+> > written back? So I don't know whether it's worth putting a lot of effort
+> > into this case.
+> 
+> So, changing gears to how do we protect filesystem page cache pages
+> instead of the generic idea of dif/dix, btrfs crcs just before writing,
+> which does leave a pretty big window for the page to get corrupted.
+> The storage layer shouldn't care or know about that though, we hand it a
+> crc and it makes sure data matching that crc goes to the media.
+
+I'm not totally against freezing redirtying events during writeback,
+but as long as there is a huge window of the page sitting dirty in
+pagecache, it's not worth much if any complexity.
+
+Also I don't think we can deal with memory errors and scribbles just by
+crcing dirty data. The calculations generating the data could get
+corrupted. Data can be corrupted on its way back from the device to
+userspace. Dirty memory writeback is usually only a small part of the
+entire data transformation process.
+
+
+> > If you had an interface for userspace to insert checksums to direct IO
+> > requests or pagecache ranges, then not only can you close the entire gap
+> > between userspace data generation, and writeback. But you also can
+> > handle mmap writes and anything else just fine: userspace knows about
+> > the concurrency details, so it can add the right checksum (and
+> > potentially fsync etc) when it's ready.
+> 
+> Yeah, I do agree here.
+
+After protecting writeback from IO bus and wire errors, I think this
+would be the most productive thing to work on. Obviously this feature is
+being pushed by databases and such that really want to pass checksums
+all the way from userspace. Block retrying is _not_ needed or wanted
+here of course.
+
+After that is done, it might be worth coming back to see if
+regular pagecache can be protected any better. I just think that's
+the highest hanging fruit at the moment.
+
