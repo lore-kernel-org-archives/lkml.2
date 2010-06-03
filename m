@@ -1,48 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754989Ab0FCKuS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jun 2010 06:50:18 -0400
-Received: from mo-p00-ob.rzone.de ([81.169.146.161]:8433 "EHLO
-	mo-p00-ob.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753214Ab0FCKuQ (ORCPT
+	id S1752022Ab0FCKyB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jun 2010 06:54:01 -0400
+Received: from ringil.hengli.com.au ([216.59.3.182]:56567 "EHLO
+	arnor.apana.org.au" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1750845Ab0FCKx7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jun 2010 06:50:16 -0400
-X-RZG-AUTH: :PmMGcFK8W/5pU+Ks2M0NQC5NPKGZSjWcOhfQxYOYw6/VECD6LtnnCVwaCh0=
-X-RZG-CLASS-ID: mo00
-Message-ID: <4C0788E1.2030905@au-79.de>
-Date: Thu, 03 Jun 2010 12:50:09 +0200
-From: Robert Goldner <robert@au-79.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.9) Gecko/20100515 Icedove/3.0.4
+	Thu, 3 Jun 2010 06:53:59 -0400
+Date: Thu, 3 Jun 2010 20:53:56 +1000
+From: Herbert Xu <herbert@gondor.hengli.com.au>
+To: Alexander Shishkin <virtuoso@slind.org>
+Cc: linux-kernel@vger.kernel.org, linux-crypto@vger.kernel.org
+Subject: Re: [PATCH] crypto: add an option to disable cryptoalgos'
+	self-tests
+Message-ID: <20100603105356.GC31063@gondor.apana.org.au>
+References: <20100526004357.GE20073@gondor.apana.org.au> <1274866114-15817-1-git-send-email-virtuoso@slind.org>
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org
-Subject: staging RT2870 removed /etc/Wireless/... configuration files
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1274866114-15817-1-git-send-email-virtuoso@slind.org>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Wed, May 26, 2010 at 12:28:34PM +0300, Alexander Shishkin wrote:
+> By default, CONFIG_CRYPTO_MANAGER_TESTS will be enabled and thus
+> self-tests will still run, but it is now possible to disable them
+> to gain some time during bootup.
+> 
+> Signed-off-by: Alexander Shishkin <virtuoso@slind.org>
+> CC: Herbert Xu <herbert@gondor.apana.org.au>
+> CC: linux-kernel@vger.kernel.org
+> CC: linux-crypto@vger.kernel.org
 
-I know that questions/notificatins about stating drivers are not 100%
-welcome on this mailing list, but I see no other possibiliy to solve my
-problem.
-
-I used (very sucessful) a wireless-USB adapter (ID 148f:2770 Ralink
-Technology, Corp.) with 2.6.32 and rt2870sta staging driver. I eddited
-/etc/Wireless/RT2870STA/RT2870STA.dat to get n-speed running (with
-success, according to many Howtos). I got speed rates ~235M (acc. to
-iwconfig and also tested).
-
-Now I tryed to change to 2.6.34 (thanks for all the work), but I only
-got 54M. After checking serveral changelogs I read that the uggly
-configuration by /etc/Wireless... was dropped in 2.6.33, and I´m not
-able to find any hint how to enhance the wireless configuration to
-n-seed again.
-
-So any help/hint is welcome.
-
-Best regards
-
-Robert
-
+Patch applied.  Thanks a lot!
+-- 
+Visit Openswan at http://www.openswan.org/
+Email: Herbert Xu ~{PmV>HI~} <herbert@gondor.apana.org.au>
+Home Page: http://gondor.apana.org.au/~herbert/
+PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
