@@ -1,102 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751223Ab0FCEVA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jun 2010 00:21:00 -0400
-Received: from e6.ny.us.ibm.com ([32.97.182.146]:40477 "EHLO e6.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750925Ab0FCEU7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jun 2010 00:20:59 -0400
-Date: Thu, 3 Jun 2010 09:50:51 +0530
-From: Srivatsa Vaddagiri <vatsa@in.ibm.com>
-To: Avi Kivity <avi@redhat.com>
-Cc: Andi Kleen <andi@firstfloor.org>, Gleb Natapov <gleb@redhat.com>,
-       linux-kernel@vger.kernel.org, kvm@vger.kernel.org, hpa@zytor.com,
-       mingo@elte.hu, npiggin@suse.de, tglx@linutronix.de, mtosatti@redhat.com
-Subject: Re: [PATCH] use unfair spinlock when running on hypervisor.
-Message-ID: <20100603042051.GA5953@linux.vnet.ibm.com>
-Reply-To: vatsa@in.ibm.com
-References: <20100601093515.GH24302@redhat.com>
- <87sk56ycka.fsf@basil.nowhere.org>
- <20100601162414.GA6191@redhat.com>
- <20100601163807.GA11880@basil.fritz.box>
- <4C053ACC.5020708@redhat.com>
- <20100601172730.GB11880@basil.fritz.box>
- <4C05C722.1010804@redhat.com>
- <20100602085055.GA14221@basil.fritz.box>
- <4C061DAB.6000804@redhat.com>
+	id S1751422Ab0FCEYd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jun 2010 00:24:33 -0400
+Received: from 124x34x33x190.ap124.ftth.ucom.ne.jp ([124.34.33.190]:44248 "EHLO
+	master.linux-sh.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750945Ab0FCEYa (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Jun 2010 00:24:30 -0400
+Date: Thu, 3 Jun 2010 13:24:06 +0900
+From: Paul Mundt <lethal@linux-sh.org>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Alan Stern <stern@rowland.harvard.edu>,
+       Peter Zijlstra <peterz@infradead.org>,
+       Alan Cox <alan@lxorguk.ukuu.org.uk>, Arve Hj?nnev?g <arve@android.com>,
+       Paul@smtp1.linux-foundation.org, LKML <linux-kernel@vger.kernel.org>,
+       Florian Mickler <florian@mickler.org>, felipe.balbi@nokia.com,
+       Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
+       Linux PM <linux-pm@lists.linux-foundation.org>
+Subject: Re: [linux-pm] [PATCH 0/8] Suspend block api (version 8)
+Message-ID: <20100603042403.GC20028@linux-sh.org>
+References: <Pine.LNX.4.44L0.1005271141410.3239-100000@iolanthe.rowland.org> <alpine.LFD.2.00.1005271751240.3032@localhost.localdomain>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4C061DAB.6000804@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <alpine.LFD.2.00.1005271751240.3032@localhost.localdomain>
+User-Agent: Mutt/1.5.13 (2006-08-11)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 02, 2010 at 12:00:27PM +0300, Avi Kivity wrote:
+On Thu, May 27, 2010 at 06:06:43PM +0200, Thomas Gleixner wrote:
+> On Thu, 27 May 2010, Alan Stern wrote:
+> > And to answer Thomas's question: The whole reason for having in-kernel 
+> > suspend blockers is so that userspace can tell the system to suspend 
+> > without losing wakeup events.
+> > 
+> > Suppose a key is pressed just as a user program writes "mem" to
+> > /sys/power/state.  The keyboard driver handles the keystroke and queues
+> > an input event.  Then the system suspends and doesn't wake up until
+> > some other event occurs -- even though the keypress was an important
+> > one and it should have prevented the system from suspending.
+> > 
+> > With in-kernel suspend blockers and opportunistic suspend, this 
+> > scenario is prevented.  That is their raison-d'etre.
 > 
-> There are two separate problems: the more general problem is that
-> the hypervisor can put a vcpu to sleep while holding a lock, causing
-> other vcpus to spin until the end of their time slice.  This can
-> only be addressed with hypervisor help.
+> I tend to disagree. You are still looking at suspend as some extra
+> esoteric mechanism. We should stop doing this and look at suspend (to
+> RAM) as an additional deep idle state, which is well defined in terms
+> of power savings and wakeup latency. That's what I think opportunistic
+> suspend is all about. Now if you look at our current idle states in
+> x86 the incoming keystroke is never lost. 
+> 
+For systems with runtime PM and deep idle states in cpuidle suspend is
+already fairly opportunistic. If sleep states (including suspend to RAM
+and CPU off) are factored in to cpuidle then it's very easy to get in to
+situations where everything simply shuts off automatically, which can be
+problematic if a platform doesn't expose any external wakeup sources.
 
-Fyi - I have a early patch ready to address this issue. Basically I am using
-host-kernel memory (mmap'ed into guest as io-memory via ivshmem driver) to hint 
-host whenever guest is in spin-lock'ed section, which is read by host scheduler 
-to defer preemption.
+Platforms still need to be able to establish some heuristics, whether
+this is via blocking certain state transitions or simply defining a
+maximum acceptable suspend depth irrespective of latency (at least we
+presently don't have a clean interface for preventing entry in to
+impossible to recover from idle states outside of latency hints via PM
+QoS, or at least not one that I'm aware of).
 
-Guest side:
-
-static inline void spin_lock(spinlock_t *lock)
-{
-	raw_spin_lock(&lock->rlock);
-+       __get_cpu_var(gh_vcpu_ptr)->defer_preempt++;
-}
-
-static inline void spin_unlock(spinlock_t *lock)
-{
-+	__get_cpu_var(gh_vcpu_ptr)->defer_preempt--;
-        raw_spin_unlock(&lock->rlock);
-}
-
-[similar changes to other spinlock variants]
-
-Host side:
-
-
-@@ -860,6 +866,17 @@ check_preempt_tick(struct cfs_rq *cfs_rq
- 	ideal_runtime = sched_slice(cfs_rq, curr);
- 	delta_exec = curr->sum_exec_runtime - curr->prev_sum_exec_runtime;
- 	if (delta_exec > ideal_runtime) {
-+		if ((sched_feat(DEFER_PREEMPT)) && (rq_of(cfs_rq)->curr->ghptr)) {
-+			int defer_preempt =  rq_of(cfs_rq)->curr->ghptr->defer_preempt;
-+			if (((defer_preempt & 0xFFFF0000) == 0xfeed0000) && ((defer_preempt & 0x0000FFFF) != 0)) {
-+				if  ((rq_of(cfs_rq)->curr->grace_defer++ < sysctl_sched_preempt_defer_count)) {
-+					rq_of(cfs_rq)->defer_preempt++;
-+					return;
-+				} else
-+					rq_of(cfs_rq)->force_preempt++;
-+			}
-+		}
- 		resched_task(rq_of(cfs_rq)->curr);
- 		/*
- 		 * The current task ran long enough, ensure it doesn't get
-
-[similar changes introduced at other preemption points in sched_fair.c]
-
-
-Note that guest can only request preemption to be deferred (and not disabled via
-this mechanism). I have seen good improvement (~15%) in kern compile benchmark 
-with sysctl_sched_preempt_defer_count set to a low value of just 2 (i.e we can 
-defer preemption by maximum two ticks). I intend to cleanup and post the patches
-pretty soon for comments.
-
-One pathological case where this may actually hurt is routines in guest like 
-flush_tlb_others_ipi() which take a spinlock and then enter a while() loop
-waiting for other cpus to ack something. In this case, deferring preemption just
-because guest is in critical section actually hurts! Hopefully the upper bound
-for deferring preemtion and the fact that such routines may not be frequently
-hit should help alleviate such situations.
-
-- vatsa
-
+On the other hand, while this isn't that difficult for the UP case it
+does pose more problems for the SMP case. Presently the suspend paths
+(suspend-to-RAM/hibernate/kexec jump) all deal with disabling and
+enabling of non-boot CPUs via CPU hotplug explicitly, which will clear
+them from the online CPU map. We would have to rework the semantics a bit
+if cpuidle were also permitted to opportunistically offline CPUs.
