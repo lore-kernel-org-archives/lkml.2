@@ -1,80 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756243Ab0FCR1F (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jun 2010 13:27:05 -0400
-Received: from smtp-out.google.com ([74.125.121.35]:24542 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752750Ab0FCR1C convert rfc822-to-8bit (ORCPT
+	id S1756225Ab0FCRaO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jun 2010 13:30:14 -0400
+Received: from charlotte.tuxdriver.com ([70.61.120.58]:55947 "EHLO
+	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753403Ab0FCRaL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jun 2010 13:27:02 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=mime-version:in-reply-to:references:date:message-id:subject:from:to:
-	cc:content-type:content-transfer-encoding:x-system-of-record;
-	b=Jf8oZ9YqIwV0zOyi1CvgnKxNPxWC1/QxM4w0GWJ75ObO2LVJGHPc8rLOLLYc3I5Hl
-	3DJl4IEKRai3Hkl/NR2dg==
+	Thu, 3 Jun 2010 13:30:11 -0400
+Date: Thu, 3 Jun 2010 13:21:15 -0400
+From: "John W. Linville" <linville@tuxdriver.com>
+To: Randy Dunlap <randy.dunlap@oracle.com>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-wireless@vger.kernel.org,
+       linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+       reinette.chatre@intel.com
+Subject: Re: linux-next: Tree for June 3 (iwlwifi)
+Message-ID: <20100603172114.GA14597@tuxdriver.com>
+References: <20100603134753.710a64b3.sfr@canb.auug.org.au>
+ <20100603085501.ac113779.randy.dunlap@oracle.com>
 MIME-Version: 1.0
-In-Reply-To: <20100603133646.GF15595@gvim.org>
-References: <20100601113309.609349fd@notabene.brown>
-	<alpine.LFD.2.00.1006010340160.2933@localhost.localdomain>
-	<20100601122012.1edeaf48@notabene.brown>
-	<alpine.LFD.2.00.1006011243350.2933@localhost.localdomain>
-	<20100602153235.340a7852@notabene.brown>
-	<AANLkTikVjAf5nHdMx2bcHRAUSkq99s-b5YZCECXIJJLy@mail.gmail.com>
-	<20100602180614.729246ea@notabene.brown>
-	<AANLkTikXy__71nBNW0EFbyL_qNf0nQ68pW9KymWlTk7L@mail.gmail.com>
-	<20100603060444.GF11311@gvim.org>
-	<AANLkTilml9GM2GmJhlB39oqDk6oPnLSSfiQAinpCpAbt@mail.gmail.com>
-	<20100603133646.GF15595@gvim.org>
-Date: Thu, 3 Jun 2010 10:26:58 -0700
-Message-ID: <AANLkTinbLQNRyDC2PRUwoVXMF16RLHa2xZl3gJr-ftgB@mail.gmail.com>
-Subject: Re: [linux-pm] [PATCH] - race-free suspend. Was: Re: [PATCH 0/8] 
-	Suspend block api (version 8)
-From: Brian Swetland <swetland@google.com>
-To: markgross@thegnar.org
-Cc: Neil Brown <neilb@suse.de>, Peter Zijlstra <peterz@infradead.org>,
-       "Paul@smtp1.linux-foundation.org" <Paul@smtp1.linux-foundation.org>,
-       LKML <linux-kernel@vger.kernel.org>,
-       Florian Mickler <florian@mickler.org>,
-       James Bottomley <James.Bottomley@suse.de>,
-       Linux PM <linux-pm@lists.linux-foundation.org>,
-       Thomas Gleixner <tglx@linutronix.de>,
-       Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
-       Felipe Balbi <felipe.balbi@nokia.com>,
-       Alan Cox <alan@lxorguk.ukuu.org.uk>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100603085501.ac113779.randy.dunlap@oracle.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 3, 2010 at 6:36 AM, mark gross <640e9920@gmail.com> wrote:
-> On Wed, Jun 02, 2010 at 11:12:39PM -0700, Brian Swetland wrote:
->> On Wed, Jun 2, 2010 at 11:04 PM, mark gross <640e9920@gmail.com> wrote:
->> >>
->> >> There are many wakeup events possible in a typical system --
->> >> keypresses or other input events, network traffic, telephony events,
->> >> media events (fill audio buffer, fill video decoder buffer, etc), and
->> >> I think requiring that all wakeup event processing bottleneck through
->> >> a single userspace process is non-optimal here.
->> >
->> > Um doesn't the android framework bottleneck the user mode lock
->> > processing through the powermanager and any wake up event processing
->> > eventually has to grab a lock through this bottleneck anyway?
->>
->> For "high level" framework/application level wakelocks, yes, but lower
->> level components beneath the java api layer use the kernel interface
->> directly.
->>
-> Oh.  I thought everything went through
-> hardware/libhardware_legacy/power/power.c
-> who else is hitting /sys/power/* in the android user mode then?
+On Thu, Jun 03, 2010 at 08:55:01AM -0700, Randy Dunlap wrote:
+> On Thu, 3 Jun 2010 13:47:53 +1000 Stephen Rothwell wrote:
+> 
+> > Hi all,
+> > 
+> > Changes since 20100602:
+> 
+> 
+> when CONFIG_IWLAGN=n:
+> 
+> drivers/net/wireless/iwlwifi/iwl-rx.c:254: error: 'struct iwl_priv' has no member named '_agn'
+> drivers/net/wireless/iwlwifi/iwl-rx.c:303: error: 'struct iwl_priv' has no member named '_agn'
+> drivers/net/wireless/iwlwifi/iwl-rx.c:304: error: 'struct iwl_priv' has no member named '_agn'
+> drivers/net/wireless/iwlwifi/iwl-rx.c:305: error: 'struct iwl_priv' has no member named '_agn'
+> drivers/net/wireless/iwlwifi/iwl-rx.c:306: error: 'struct iwl_priv' has no member named '_agn'
+> 
+> and many more.
+> 
+> Haven't we seen this movie before?
 
-I believe everything does -- that's the thin wrapper around the kernel
-interface (which will have to change slightly to meet the
-suspend_blocker device/fd vs wakelock proc/sys interface, etc), which
-is used by the powermanager service, the RIL, and any other low level
-code.  At the App/Service level, wakelocks are provided by a java
-level API that is a remote interface to the powermanager.
+Ugh...caused be this:
 
-Brian
+commit a2064b7a4a22d118087898e4308670da7ac07911
+Author: Wey-Yi Guy <wey-yi.w.guy@intel.com>
+Date:   Fri Apr 30 14:21:48 2010 -0700
+
+    iwlwifi: move _agn statistics related structure
+    
+    agn and 3945 has different statistics_notif data structure; since 3945
+    has it statistics_notif data structure inside the _3945 portion of
+    iwl_priv, it make sense to move the agn statistics_notif into _agn portion.
+    
+    Signed-off-by: Wey-Yi Guy <wey-yi.w.guy@intel.com>
+    Signed-off-by: Reinette Chatre <reinette.chatre@intel.com>
+
+Since iwl-rx.o is part of iwlcore.ko, this change seems wrong.
+Reinette, any reason why I shouldn't just revert it?
+
+John
+-- 
+John W. Linville		Someday the world will need a hero, and you
+linville@tuxdriver.com			might be all we have.  Be ready.
