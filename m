@@ -1,126 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753033Ab0FCTNc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jun 2010 15:13:32 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:38132 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752615Ab0FCTNb (ORCPT
+	id S1753357Ab0FCTRV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jun 2010 15:17:21 -0400
+Received: from pluto.express.org ([64.62.190.206]:42837 "EHLO
+	pluto.express.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751967Ab0FCTRT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jun 2010 15:13:31 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:date:message-id:subject:from:to:content-type;
-        b=OJoO6yJ01E6A93ztCijoruO6MMlS3ctwkVJFhIkxk2oROkX1IuFdesMEmLAbCn541F
-         1+gBGurn4412ltl5v9KLT3LiPGdIkw8xVNfzAS/7RlcX8cVTJSET+oueLV/PTziIUBoN
-         PQGTpxn/ALGrBcEgWl5mceFfajihRsIS7tQP4=
+	Thu, 3 Jun 2010 15:17:19 -0400
+X-Greylist: delayed 2929 seconds by postgrey-1.27 at vger.kernel.org; Thu, 03 Jun 2010 15:17:19 EDT
+Date: Thu, 3 Jun 2010 14:28:30 -0400 (EDT)
+From: "William R. Lorenz" <wrl@express.org>
+To: linux-kernel@vger.kernel.org
+Subject: dm-multipath + libcheckers/tur.c instability
+Message-ID: <Pine.LNX.4.64.1005271951350.22612@pluto.express.org>
 MIME-Version: 1.0
-Date: Fri, 4 Jun 2010 03:13:29 +0800
-Message-ID: <AANLkTilhvjn1ypRoKs2CxJdA1zDkaT5i64vh0ZtfjwMk@mail.gmail.com>
-Subject: How do I ignore the changes made by CVS keyword substitution 
-	efficiently?
-From: Lin Mac <mkl0301@gmail.com>
-To: Git Mailing List <git@vger.kernel.org>, linux-kernel@vger.kernel.org
-Content-Type: multipart/mixed; boundary=00504502ad2c72506604882500f2
+Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---00504502ad2c72506604882500f2
-Content-Type: text/plain; charset=ISO-8859-1
+Hello,
 
-Hi,
+I have an interesting issue where dm-multipath marks one path (out of 
+many) as down and multipath-tools' tur checker brings it back up, repeat.
 
-I'm merging kernel from others, and they used CVS to manage their
-code, and so do some part of linux kernel. Unfortunatly CVS would
-substitude the keywords in the source, result in unecessary changes in
-the code, like the one in the following diff. In fact, there are
-around 1174 of CVS keywords in the kernel source. I don't want those
-useless changes to get into my tree.
+   May 27 22:21:45 box kernel: sd_init_command: disk=sdah, block=12411960, count=8
+   May 27 22:21:45 box kernel: Finishing 8 sectors
+   May 27 22:21:45 box kernel: Retry with 0xffff8103138da080
+   May 27 22:21:45 box kernel: device-mapper: multipath: Failing path 66:16.
+   May 27 22:21:57 box kernel: sd_ioctl: disk=sdah, cmd=0x2285
+   May 27 22:21:57 box multipathd: sdah: tur checker reports path is up
+   May 27 22:21:57 box kernel: sd_ioctl: disk=sdah, cmd=0x2285
+     [... repeat sd_ioctl ...]
+   May 27 22:22:20 box kernel: sd_init_command: disk=sdah, block=12412744, count=72
+   May 27 22:22:20 box kernel: Finishing 72 sectors
+   May 27 22:22:20 box kernel: Retry with 0xffff8104983ece40
+   May 27 22:22:20 box kernel: device-mapper: multipath: Failing path 66:16.
+   May 27 22:22:27 box kernel: sd_ioctl: disk=sdah, cmd=0x2285
+   May 27 22:22:27 box multipathd: sdah: tur checker reports path is up
+   May 27 22:22:27 box kernel: sd_ioctl: disk=sdah, cmd=0x2285
+     [... repeat sd_ioctl ...]
+   [... REPEAT sequence ...]
 
-Currently I use the attached scripts to as a basic filter, which could
-filter out 1-line changes by CVS keyword in a patch. But I still have
-to handle other cases (multi-line changes, $Log, which would result in
-log of latest commit) myself.
+(This logging is via `echo 0xffffffff >/proc/sys/dev/scsi/logging_level`.)
+While this particular sdah path is down, others are up and working well:
 
-Do you have better idea to get this task done?
+   mpathc (360050768019081c13700000000000112) dm-2 IBM,2145
+   [size=10G][features=1 queue_if_no_path][hwhandler=0]
+   \_ round-robin 0 [prio=100][active]
+    \_ 1:0:1:7 sdah 66:16  [failed][ready] <=-- bad path
+    \_ 0:0:0:7 sdg  8:96   [active][ready]
+   \_ round-robin 0 [prio=20][enabled]
+    \_ 0:0:1:7 sdv  65:80  [active][ready]
+    \_ 1:0:0:7 sdw  65:96  [active][ready]
 
-diff --git a/kernels/linux-2.6.31.1-cavm1/Documentation/cris/README
-b/kernels/linux-2.6.31.1-cavm1/Documentation/cris/README
-index d9b0868..c7bb74b 100644
---- a/kernels/linux-2.6.31.1-cavm1/Documentation/cris/README
-+++ b/kernels/linux-2.6.31.1-cavm1/Documentation/cris/README
-@@ -1,6 +1,6 @@
- Linux 2.4 on the CRIS architecture
- ==================================
--$Id: README,v 1.7 2001/04/19 12:38:32 bjornw Exp $
-+$Id: README,v 1.1 2010-05-14 09:47:54 XXXXXXXX Exp $
+The bad path toggles between active/ready and failed states depending on 
+the time it's sampled.  When failed, its counterpart handles I/O requests:
 
- This is a port of Linux 2.4 to Axis Communications ETRAX 100LX embedded
- network CPU. For more information about CRIS and ETRAX please see further
-@@ -103,7 +103,7 @@ block: queued sectors max/low 9109kB/3036kB, 64
-slots per queue
- ETRAX 100LX 10/100MBit ethernet v2.0 (c) 2000 Axis Communications AB
- eth0 initialized
- eth0: changed MAC to 00:40:8C:CD:00:00
--ETRAX 100LX serial-driver $Revision: 1.7 $, (c) 2000 Axis Communications AB
-+ETRAX 100LX serial-driver $Revision: 1.1 $, (c) 2000 Axis Communications AB
- ttyS0 at 0xb0000060 is a builtin UART with DMA
- ttyS1 at 0xb0000068 is a builtin UART with DMA
- ttyS2 at 0xb0000070 is a builtin UART with DMA
-@@ -133,7 +133,7 @@ Default gateway is 10.13.9.1
- Hostname is bbox1
- Telnetd starting, using port 23.
-   using /bin/sash as shell.
--sftpd[15]: sftpd $Revision: 1.7 $ starting up
-+sftpd[15]: sftpd $Revision: 1.1 $ starting up
+   May 27 22:22:20 box kernel: sd_init_command: disk=sdg, block=12412744, count=72
+   May 27 22:22:20 box kernel: sdg : block=12412744
+   May 27 22:22:20 box kernel: sdg : writing 72/72 512 byte blocks.
+   May 27 22:22:20 box kernel: scsi_add_timer: scmd: ffff8103138dab00, time: 15000, (ffffffff880062a5)
+   May 27 22:22:20 box kernel: sd 0:0:0:7: send 0xffff8103138dab00                  sd 0:0:0:7:
+   May 27 22:22:20 box kernel:         command: Write(10): 2a 00 00 bd 67 48 00 00 48 00
+   May 27 22:22:20 box kernel: buffer = 0xffff8103611f4e00, bufflen = 36864, done = 0xffffffff8802e6a6, queuecommand 0xffffffff88053250
+   May 27 22:22:20 box kernel: leaving scsi_dispatch_cmnd()
+   May 27 22:22:20 box kernel: scsi_delete_timer: scmd: ffff8103138dab00, rtn: 1
+   May 27 22:22:20 box kernel: sd 0:0:0:7: done 0xffff8103138dab00 SUCCESS        0 sd 0:0:0:7:
 
---00504502ad2c72506604882500f2
-Content-Type: application/octet-stream; 
-	name="undo-cvs-tag-one-line-chage.pl"
-Content-Disposition: attachment; filename="undo-cvs-tag-one-line-chage.pl"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_g9zxt4500
+I've tracked this down in the kernel code -- it seems things get here, at 
+which point of the conditions in the if() below cause the logged error:
 
-IyEvdXNyL2Jpbi9wZXJsCiMgLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0t
-LS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0t
-LS0tCnN1YiByZXBsYWNlCiAgIHsKICAgICAgJGkgPSAwOwogICAgICBwcmludCAkXzsKICAgICAg
-d2hpbGUoMSkKICAgICAgICAgewogICAgICAgICAgICAkbGluZSA9IDxGTj47CiAgICAgICAgICAg
-IHByaW50ICRsaW5lOwogICAgICAgICAgICBpZigkbGluZSA9fiAnXi0uKlwkKFJldmlzaW9ufExv
-Z3xJZHxEYXRlfEhlYWRlcnxBdXRob3J8TG9ja2VyfE5hbWV8UkNTZmlsZXxTb3VyY2V8U3RhdGUp
-LipcJCcgKQogICAgICAgICAgICAgICB7CiAgICAgICAgICAgICAgICAgICRsaW5lMiA9IDxGTj47
-CiAgICAgICAgICAgICAgICAgIGlmKCAkbGluZTIgPX4gJ15cKy4qXCQoUmV2aXNpb258TG9nfElk
-fERhdGV8SGVhZGVyfEF1dGhvcnxMb2NrZXJ8TmFtZXxSQ1NmaWxlfFNvdXJjZXxTdGF0ZSk6Lipc
-JCcpewogICAgICAgICAgICAgICAgICAgICAgJGxpbmUyID0gJGxpbmU7CiAgICAgICAgICAgICAg
-ICAgICAgICAkbGluZTIgPX4gcy8tLysvOwogICAgICAgICAgICAgICAgICB9CiAgICAgICAgICAg
-ICAgICAgIHByaW50ICRsaW5lMjsKICAgICAgICAgICAgICAgICAgcmV0dXJuOwogICAgICAgICAg
-ICAgICB9CiAgICAgICAgICAgICRpKys7CiAgICAgICAgICAgIGlmKCRpPj01KXtyZXR1cm47fQog
-ICAgICAgICB9CiAgIH0KIyAtLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0t
-LS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0t
-LS0KJGZuID0gQEFSR1ZbMF07CiMgLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0t
-LS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0t
-LS0tLS0tCmlmKCFkZWZpbmVkKCRmbikpCiAgIHsKICAgICAgcHJpbnQgIlxuTm8gRmlsZW5hbWUg
-IVxuXG4iOwogICAgICBwcmludCAidXNhZ2U6ICQwIFwkZmlsZW5hbWVcblxuIjsKICAgICAgZXhp
-dDsKICAgfQojIC0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0t
-LS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLQpvcGVu
-KEZOLCRmbik7CndoaWxlKDxGTj4pCiAgIHsKICAgICAgaWYoJF89fiAiXF5AQCIpeyZyZXBsYWNl
-KCk7fQogICAgICBlbHNle3ByaW50ICRfO30KICAgfQpjbG9zZShGTik7CiMgLS0tLS0tLS0tLS0t
-LS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0t
-LS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tCg==
---00504502ad2c72506604882500f2
-Content-Type: application/x-sh; name="refine.sh"
-Content-Disposition: attachment; filename="refine.sh"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_g9zxtac41
+   if (!sdp || !scsi_device_online(sdp) ||
+       block + blk_rq_sectors(rq) > get_capacity(disk)) {
+           SCSI_LOG_HLQUEUE(2, scmd_printk(KERN_INFO, SCpnt,
+                                           "Finishing %u sectors\n",
+                                           blk_rq_sectors(rq)));
+           SCSI_LOG_HLQUEUE(2, scmd_printk(KERN_INFO, SCpnt,
+                                           "Retry with 0x%p\n", SCpnt));
+           goto out;
+   }
 
-IyEvYmluL3NoCgppZiBbICJ4eCQxIiA9ICJ4eCIgXSA7IHRoZW4gZWNobyBuZWVkIHRhcmdldCBw
-YXRjaC4uLjsgZXhpdCAxOyBmaTsKaWYgWyAieHgkMiIgPSAieHgiIF0gOyB0aGVuIGVjaG8gbmVl
-ZCBvdXRwdXQgcGF0Y2guLi47IGV4aXQgMTsgZmk7CgpUT19ESVI9YGRpcm5hbWUgJDBgOwoKcm0g
-dG1wMCB0bXAxIHRtcDIKY3AgJDEgdG1wMCAKdG91Y2ggdG1wMQpjb3VudD0xOwoKZ2l0IHJlc2V0
-IC0taGFyZCAxPi9kZXYvbnVsbCAgfHwgZXhpdCAxCndoaWxlICEgY21wIHRtcDAgdG1wMSAxPi9k
-ZXYvbnVsbCA7IGRvIAplY2hvICRjb3VudCAuLi4KY3AgdG1wMCB0bXAxIDsKJHtUT19ESVJ9L3Vu
-ZG8tY3ZzLXRhZy1vbmUtbGluZS1jaGFnZS5wbCB0bXAxID4gdG1wMiA7CmdpdCByZXNldCAtLWhh
-cmQgMT4vZGV2L251bGwgIHx8IGV4aXQgMQppZiAhIHBhdGNoIC1pIHRtcDIgLXAgMyAtZiAxPi9k
-ZXYvbnVsbDsgdGhlbiAgZWNobyBwYXRjaCBmYWlsZWQuLi47ZXhpdCAxIDsgZmkKZ2l0IGRpZmYg
-LiA+IHRtcDA7CmNvdW50PSQoKCRjb3VudCsxKSkKZG9uZTsKCmVjaG8gZG9uZS4uLi4KZ2l0IHJl
-c2V0IC0taGFyZCAxPi9kZXYvbnVsbCB8fCBleGl0IDEKY3AgdG1wMCAkMiAtdgo=
---00504502ad2c72506604882500f2--
+Then tur comes around, checks the device and marks the PATH_UP, repeat.
+
+This has happened on more than one server, in more than one datacenter. 
+Backend storage in all cases is an IBM SAN Volume Controller (IBM SVC 
+2145) with a Brocade FC fabric.  Unfortunately, this isn't a reproducible 
+problem; however, I do have a server that's currently exhibiting this 
+issue.  Either re-zoning the LUNs or disconnecting and reconnecting the 
+fibre corrects the issue, and I suspect this is because it forces the 
+initator to re-PLOGI to the SCSI target, although this is not certain.
+
+Why the difference between tur's check and scsi_device_online(), assuming 
+this is the condition that triggers the if() above?  Also, is there any 
+additional debugging info I can capture to further isolate this issue?
+
+It seems to me the path should be up or down, but not flapping.
+
+Thanks in advance,
+
+
+--
+William R. Lorenz
