@@ -1,75 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932596Ab0FCIlL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jun 2010 04:41:11 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:34239 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932473Ab0FCIlI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jun 2010 04:41:08 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=Z7ftT5Umb6qkSIHjzwN179ZZArg0NIhFyG30/2SlWrapDCBT33T9UlL7QP6c/LtHvF
-         A8nd5np1T/7mPPTfAjh7SfVnnq+Qi+up49O6Kv8MA6+mzOq+LvxmipQ+w7F9dePs03wP
-         yDHP1DbZ5Ws1FGQQ3TnAgMNuJ+orqpgp/uypU=
-Date: Thu, 3 Jun 2010 12:41:04 +0400
-From: Anton Vorontsov <cbouatmailru@gmail.com>
-To: Luming Yu <luming.yu@gmail.com>
-Cc: Jeff Garzik <jeff@garzik.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: 2.6.25-rc1 ahci regression
-Message-ID: <20100603084104.GA17431@oksana.dev.rtsoft.ru>
-References: <AANLkTikWak8i-Kaj-e-EUFWE66tfMmp2UPhGJCKkK1zK@mail.gmail.com>
- <20100603075402.GA11093@oksana.dev.rtsoft.ru>
- <AANLkTil6k_4YwdvLai_VUlVjgz030ctu7djVGHu0qgd2@mail.gmail.com>
+	id S932821Ab0FCIlT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jun 2010 04:41:19 -0400
+Received: from troy.hostgo.com ([64.62.143.130]:58626 "EHLO troy.hostgo.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932698Ab0FCIlP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Jun 2010 04:41:15 -0400
+From: Thomas Fjellstrom <tfjellstrom@strangesoft.net>
+To: Tejun Heo <htejun@gmail.com>
+Subject: Re: failed command FLUSH CACHE EXT
+Date: Thu, 3 Jun 2010 02:41:10 -0600
+User-Agent: KMail/1.13.3 (Linux/2.6.34-0.dmz.6-liquorix-amd64; KDE/4.4.3; x86_64; ; )
+Cc: Robert Hancock <hancockrwd@gmail.com>, linux-kernel@vger.kernel.org,
+       linux-ide@vger.kernel.org
+References: <201005292046.06344.tfjellstrom@strangesoft.net> <201006021742.32232.tfjellstrom@strangesoft.net> <4C07666A.7000705@gmail.com>
+In-Reply-To: <4C07666A.7000705@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <AANLkTil6k_4YwdvLai_VUlVjgz030ctu7djVGHu0qgd2@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201006030241.11102.tfjellstrom@strangesoft.net>
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - troy.hostgo.com
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - strangesoft.net
+X-Source: 
+X-Source-Args: 
+X-Source-Dir: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 03, 2010 at 04:11:57PM +0800, Luming Yu wrote:
-> On Thu, Jun 3, 2010 at 3:54 PM, Anton Vorontsov <cbouatmailru@gmail.com> wrote:
-[...]
-> >> I happened to notice that the commit 365cfa1ed5 caused the following
-> >> boot error with 2.6.25-rc1
-[...]
-> > Can you provide full boot log (dmesg) please?
-[...]
+On June 3, 2010, Tejun Heo wrote:
+> Hello,
+> 
+> On 06/03/2010 01:42 AM, Thomas Fjellstrom wrote:
+> > I seem to have rather bad luck with hard drives. Every time I buy more
+> > than two, I tend to get one or two failures out of the batch. 25-50%
+> > failure rate almost. Horrible. I at least average 1 dead hard drive a
+> > year since I got my first computer.
+> 
+> Hmmm... that sounds really high.  Out of how many?  Hard drives do
+> fail sometimes but not that easily even if you put it under relatively
+> heavy use 24/7.  Maybe there is a common cause - say, instable power,
+> vibration, impact or whatever?  Or maybe the universe just doesn't
+> like you?  :-)
+> 
+> Thanks.
 
-I don't see any AHCI devices probed.
+I think its a combination of factors. But mainly, early on I was cheap. UBER 
+cheap, nor did I know that a power supply is probably the /most/ important 
+component in a machine. If it helps I've also had many motherboards, tons of 
+ram, and some misc other parts fail over the years as well, but I've 
+probably gone through more hard drives than anything else.
 
-[...]
-> ------------[ cut here ]------------
-> WARNING: at fs/sysfs/dir.c:451 sysfs_add_one+0xc9/0x130()
-> Hardware name: X8DTN
-> sysfs: cannot create duplicate filename
-> '/devices/pci0000:00/0000:00:1c.4/0000:0f:00.0/slot'
+Let me see if I can count all of them... 
 
-This looks suspicious.
+1x6G   - failed
+1x40G  - failed
+4x80G  - 2 failed (PSU kill)
+2x160G - 1 failed (used drives anyhow, don't really count)
+4x320G - 2 failed (DOA, well after a week each)
+4x640G - 1-2 failed (can't really remember the circumstances with these...)
+6x1T   - 1 failed (DOA)
+4x2T   - 2 failed (1 DOA, 1 after a year)
 
-> usb 1-5: New USB device found, idVendor=14dd, idProduct=0002
+So about half.
 
-(...this is async USB stuff, doesn't matter...)
+I mostly blame my cheapness when I was younger. Bad PSU's can cause a lot of 
+problems. I've since stopped buying and using cheap power supplies. And it 
+has so far made a difference in death count. If I skip the DOA drives, only 
+one 1TB, 1 2TB and 1 640 failed. Thats far better than a 50% mortality rate.
 
-> Modules linked in:
-> Pid: 1, comm: swapper Not tainted 2.6.35-rc1 #1
-> Call Trace:
->  [<ffffffff8105ed8f>] warn_slowpath_common+0x7f/0xc0
->  [<ffffffff8105ee86>] warn_slowpath_fmt+0x46/0x50
->  [<ffffffff811ad969>] sysfs_add_one+0xc9/0x130
->  [<ffffffff811ae0f8>] sysfs_do_create_link+0xd8/0x1a0
->  [<ffffffff811ae1f3>] sysfs_create_link+0x13/0x20
->  [<ffffffff81236466>] pci_create_sysfs_dev_files+0x3d6/0x5f0
+That list may not be entirely accurate, it spans over 10 years of hd use. I 
+can barely remember what I did the day before, let alone the details of 
+things that happened 10 years ago.
 
-Anyway, I just tried to move code around from libahci.c
-back to ahci.c by hand, to verify that there are actually
-no code changes, and there isn't.
-
-So, I wonder, have you actually bisected the thing correctly?
-Does "git reset --hard 365cfa1ed5^" actually help and does
-"git reset --hard 365cfa1ed5" actually break things?
+-- 
+Thomas Fjellstrom
+tfjellstrom@strangesoft.net
