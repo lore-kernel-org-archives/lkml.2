@@ -1,68 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756438Ab0FCQ3q (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jun 2010 12:29:46 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:58338 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751721Ab0FCQ3o (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jun 2010 12:29:44 -0400
-Date: Thu, 3 Jun 2010 09:24:19 -0700 (PDT)
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Rusty Russell <rusty@rustcorp.com.au>
-cc: Brandon Philips <brandon@ifup.org>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       "Rafael J. Wysocki" <rjw@sisk.pl>, LKML <linux-kernel@vger.kernel.org>,
-       Jon Masters <jonathan@jonmasters.org>, Tejun Heo <htejun@gmail.com>,
-       Masami Hiramatsu <mhiramat@redhat.com>,
-       Kay Sievers <kay.sievers@vrfy.org>
-Subject: Re: [PATCH 2/2] module: fix bne2 "gave up waiting for init of module
- libcrc32c"
-In-Reply-To: <201006031450.53576.rusty@rustcorp.com.au>
-Message-ID: <alpine.LFD.2.00.1006030916520.8175@i5.linux-foundation.org>
-References: <201005252300.07739.rjw@sisk.pl> <201006022336.53024.rusty@rustcorp.com.au> <alpine.LFD.2.00.1006021038200.8175@i5.linux-foundation.org> <201006031450.53576.rusty@rustcorp.com.au>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S1756928Ab0FCQaN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jun 2010 12:30:13 -0400
+Received: from fieldses.org ([174.143.236.118]:39789 "EHLO fieldses.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751912Ab0FCQaK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Jun 2010 12:30:10 -0400
+Date: Thu, 3 Jun 2010 12:30:01 -0400
+To: Boaz Harrosh <bharrosh@panasas.com>
+Cc: Christof Schmitt <christof.schmitt@de.ibm.com>, linux-scsi@vger.kernel.org,
+       linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+       lsf10-pc@lists.linuxfoundation.org, Nick Piggin <npiggin@suse.de>,
+       Al Viro <viro@ZenIV.linux.org.uk>, Chris Mason <chris.mason@oracle.com>,
+       James Bottomley <James.Bottomley@HansenPartnership.com>,
+       "Martin K. Petersen" <martin.petersen@oracle.com>,
+       Ric Wheeler <rwheeler@redhat.com>,
+       Matthew Wilcox <willy@linux.intel.com>,
+       Vladislav Bolkhovitin <vst@vlnb.net>, Christoph Hellwig <hch@lst.de>
+Subject: Re: [Lsf10-pc] [LFS/VM TOPIC] Stable pages while IO (was Wrong DIF
+	guard tag on ext2 write)
+Message-ID: <20100603163001.GF24994@fieldses.org>
+References: <20100531112817.GA16260@schmichrtp.mainz.de.ibm.com> <4C07D3D0.8010500@panasas.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4C07D3D0.8010500@panasas.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
+From: "J. Bruce Fields" <bfields@fieldses.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-On Thu, 3 Jun 2010, Rusty Russell wrote:
+On Thu, Jun 03, 2010 at 07:09:52PM +0300, Boaz Harrosh wrote:
+> [Topic]
+> How to not let pages change while in IO
 > 
-> However, you're right that it has potential.  I'll rename module_info to
-> load_info if you don't mind tho: contains more semantic punch IMHO.
+> [Abstract]
+> As seen in a long thread on the fsdvel scsi mailing lists. Lots of
+> people have headaches and sleep less nights because individual pages
+> can change while in IO and/or DMA. Though each one as slightly different
+> needs, the mechanics look to be the same.
+> 
+> People that care:
+> - Mirror and RAID people that need on disk consistency.
+> - Network storage that wants data checksum.
 
-Umm. One problem is that you will almost certainly eventually want to 
-expose that to the architecture "fixup" routines (ie things like 
-module_frob_arch_sections(), arch_mod_section_prepend()), and at that 
-point "load_info" is a horribly bad structure name, since it would show 
-up in <linux/module.h> and thus be exported all over.
+Yes, nfs/rpcsec_gss code is an example of code that tries to sign pages
+containing data that could change underneath us.  I don't know if we've
+seen it in practice.
 
-At least call it "struct module_load_info". But yes, I do agree that the 
-"load" part is important.
+--b.
 
-> On top of this, I'm right now closing on another ideal of mine: encapsulate
-> all the "before we move module" into one function.  That before vs. after
-> always made me nervous...
-
-Yeah, that should be trivial, and I agree that it would be good to not 
-have "mod" mean two things in the same function. Especially with all the 
-"goto failure-case", and some of the failure cases using "mod", it is a 
-bit scary for it to point into the (before movement) 'hdr+len' structure, 
-and then (after movement) into the relocated module allocations.
-
-I looked at that particularly when doing that whole
-
-	mod = setup_module_info(&info);
-	if (IS_ERR(mod)) {
-		err = PTR_ERR(mod);
-		goto free_hdr;
-	}
-
-thing, because that made "mod" have _three_ totally different values 
-(error, before, after) when jumping out to the failure paths. 
-
-		Linus
+> - DIF/DIX people
+> - ...
+> 
+> I for one know nothing of the subject but am a RAID person and would
+> like a solution that does not force me to copy the complete data load.
+> 
+> Please lets get all the VM VFS and drivers people in one room and see
+> if we can have a Linux solution to this problem
+> 
+> Boaz
+> _______________________________________________
+> Lsf10-pc mailing list
+> Lsf10-pc@lists.linux-foundation.org
+> https://lists.linux-foundation.org/mailman/listinfo/lsf10-pc
