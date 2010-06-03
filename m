@@ -1,51 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755536Ab0FCSla (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jun 2010 14:41:30 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:38939 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753707Ab0FCSl3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jun 2010 14:41:29 -0400
-Date: Thu, 3 Jun 2010 19:41:04 +0100
-From: Russell King <rmk@arm.linux.org.uk>
-To: Daniel Walker <dwalker@codeaurora.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-       Kevin Hilman <khilman@deeprootsystems.com>,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       linux-arm-msm@vger.kernel.org
-Subject: Re: ARM defconfig files
-Message-ID: <20100603184104.GC25779@flint.arm.linux.org.uk>
-References: <20100603074548.GA12104@flint.arm.linux.org.uk> <alpine.LFD.2.00.1006030725420.8175@i5.linux-foundation.org> <20100603181010.GA25779@flint.arm.linux.org.uk> <1275589230.23384.19.camel@c-dwalke-linux.qualcomm.com>
+	id S1755743Ab0FCSmJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jun 2010 14:42:09 -0400
+Received: from smtp.outflux.net ([198.145.64.163]:51082 "EHLO smtp.outflux.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753990Ab0FCSmG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Jun 2010 14:42:06 -0400
+Date: Thu, 3 Jun 2010 11:40:54 -0700
+From: Kees Cook <kees.cook@canonical.com>
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: Dave Young <hidave.darkstar@gmail.com>, Al Viro <viro@zeniv.linux.org.uk>,
+       Eric Paris <eparis@redhat.com>, Christoph Hellwig <hch@infradead.org>,
+       James Morris <jmorris@namei.org>, linux-kernel@vger.kernel.org,
+       linux-security-module@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+       linux-doc@vger.kernel.org, Randy Dunlap <rdunlap@xenotime.net>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Jiri Kosina <jkosina@suse.cz>,
+       Martin Schwidefsky <schwidefsky@de.ibm.com>,
+       David Howells <dhowells@redhat.com>, Ingo Molnar <mingo@elte.hu>,
+       Peter Zijlstra <a.p.zijlstra@chello.nl>,
+       "Eric W. Biederman" <ebiederm@xmission.com>,
+       Tim Gardner <tim.gardner@canonical.com>,
+       "Serge E. Hallyn" <serue@us.ibm.com>
+Subject: Re: [PATCH v6] fs: allow protected cross-uid sticky symlinks
+Message-ID: <20100603184054.GA4714@outflux.net>
+References: <20100603080158.GE4971@outflux.net>
+ <20100603104149.78402075@lxorguk.ukuu.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1275589230.23384.19.camel@c-dwalke-linux.qualcomm.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <20100603104149.78402075@lxorguk.ukuu.org.uk>
+Organization: Canonical
+X-HELO: www.outflux.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 03, 2010 at 11:20:30AM -0700, Daniel Walker wrote:
-> I don't see how we can do without defconfigs altogether tho. I mean , if
-> you want to run a Beagle board or a Nexus one we can't just give the
-> users a slim ARM config and let them troll through 1000's of drivers
-> trying to find just those ones that work on their given board.
+On Thu, Jun 03, 2010 at 10:41:49AM +0100, Alan Cox wrote:
+> > Past objections and rebuttals could be summarized as:
+> 
+> You've forgotten to update this with the list of the objections from your
+> last few days postings.
 
-Well, Linus does have a point - I can't start a new with Kconfig and
-generate a working defconfig first time mainly because of the
-thounds of options there.
+I didn't think the recent discussions added anything thematically new.
+"It changes how symlinks work" is a variation on "breaks POSIX", and
+"should be done with per-user /tmp" is a variabtion on "userspace should
+fix it".  I can certainly reword the commit log, though.
 
-What I can do is get the ARM side of the configuration right, since
-for the majority of cases the only thing that needs doing is selecting
-the platform class and the board itself.
+> You've forgotten to update it as suggested so its a security policy
 
-The problem comes with driver configuration, where you have to go
-through lots of menus to find all the drivers for the platform/SoC.
-That's the tedious bit, and more often than not it takes several
-attempts to get everything that's necessary.
+It is a sysctl with a CONFIG, which is what Eric Paris was asking for.
+I apologize if I missed something, but if there are further improvements
+desired, I'm happy to add patches.
+
+> Do you plan to post this daily until we get fed up of seeing it ?
+
+I plan on getting this functionality into the kernel.  As such, whenever
+I've been directed to improve it before it will be accepted, I will send
+an updated version.  Having the lifecycle of this patch blocking on me
+seems counter-productive and slightly rude.
+
+At this point, I believe I've addressed the specific concerns that Al Viro,
+Eric Paris, and a few others pointed out.  What else needs fixing?
+
+Thanks,
+
+-Kees
 
 -- 
-Russell King
- Linux kernel    2.6 ARM Linux   - http://www.arm.linux.org.uk/
- maintainer of:
+Kees Cook
+Ubuntu Security Team
