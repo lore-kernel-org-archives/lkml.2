@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753646Ab0FCQJA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jun 2010 12:09:00 -0400
-Received: from e28smtp03.in.ibm.com ([122.248.162.3]:34910 "EHLO
-	e28smtp03.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752954Ab0FCQI6 (ORCPT
+	id S1756596Ab0FCQKc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jun 2010 12:10:32 -0400
+Received: from e28smtp05.in.ibm.com ([122.248.162.5]:49647 "EHLO
+	e28smtp05.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753440Ab0FCQJB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jun 2010 12:08:58 -0400
+	Thu, 3 Jun 2010 12:09:01 -0400
 From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
 To: hch@infradead.org, viro@zeniv.linux.org.uk, adilger@sun.com,
        corbet@lwn.net, serue@us.ibm.com, neilb@suse.de, hooanon05@yahoo.co.jp,
@@ -14,9 +14,9 @@ To: hch@infradead.org, viro@zeniv.linux.org.uk, adilger@sun.com,
 Cc: linux-fsdevel@vger.kernel.org, sfrench@us.ibm.com, philippe.deniel@CEA.FR,
        linux-kernel@vger.kernel.org,
        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-Subject: [PATCH 06/11] ext4: Copy fs UUID to superblock
-Date: Thu,  3 Jun 2010 21:38:36 +0530
-Message-Id: <1275581321-5861-7-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+Subject: [PATCH 07/11] x86: Add new syscalls for x86_32
+Date: Thu,  3 Jun 2010 21:38:37 +0530
+Message-Id: <1275581321-5861-8-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.1.236.g81fa0
 In-Reply-To: <1275581321-5861-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
 References: <1275581321-5861-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
@@ -24,28 +24,44 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This enables userspace application to find the file system
-UUID using sys_name_to_handle_at syscall
+This patch adds sys_name_to_handle_at and sys_open_by_handle_at
+syscalls to x86_32
 
 Acked-by: Serge Hallyn <serue@us.ibm.com>
 Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
 ---
- fs/ext4/super.c |    2 ++
- 1 files changed, 2 insertions(+), 0 deletions(-)
+ arch/x86/include/asm/unistd_32.h   |    4 +++-
+ arch/x86/kernel/syscall_table_32.S |    2 ++
+ 2 files changed, 5 insertions(+), 1 deletions(-)
 
-diff --git a/fs/ext4/super.c b/fs/ext4/super.c
-index 4e8983a..f2bd1bc 100644
---- a/fs/ext4/super.c
-+++ b/fs/ext4/super.c
-@@ -2816,6 +2816,8 @@ static int ext4_fill_super(struct super_block *sb, void *data, int silent)
- 	sb->s_qcop = &ext4_qctl_operations;
- 	sb->dq_op = &ext4_quota_operations;
- #endif
-+	memcpy(sb->s_uuid, es->s_uuid, sizeof(es->s_uuid));
-+
- 	INIT_LIST_HEAD(&sbi->s_orphan); /* unlinked but open files */
- 	mutex_init(&sbi->s_orphan_lock);
- 	mutex_init(&sbi->s_resize_lock);
+diff --git a/arch/x86/include/asm/unistd_32.h b/arch/x86/include/asm/unistd_32.h
+index beb9b5f..06890db 100644
+--- a/arch/x86/include/asm/unistd_32.h
++++ b/arch/x86/include/asm/unistd_32.h
+@@ -343,10 +343,12 @@
+ #define __NR_rt_tgsigqueueinfo	335
+ #define __NR_perf_event_open	336
+ #define __NR_recvmmsg		337
++#define __NR_name_to_handle_at	338
++#define __NR_open_by_handle_at  339
+ 
+ #ifdef __KERNEL__
+ 
+-#define NR_syscalls 338
++#define NR_syscalls 340
+ 
+ #define __ARCH_WANT_IPC_PARSE_VERSION
+ #define __ARCH_WANT_OLD_READDIR
+diff --git a/arch/x86/kernel/syscall_table_32.S b/arch/x86/kernel/syscall_table_32.S
+index 8b37293..646717f 100644
+--- a/arch/x86/kernel/syscall_table_32.S
++++ b/arch/x86/kernel/syscall_table_32.S
+@@ -337,3 +337,5 @@ ENTRY(sys_call_table)
+ 	.long sys_rt_tgsigqueueinfo	/* 335 */
+ 	.long sys_perf_event_open
+ 	.long sys_recvmmsg
++	.long sys_name_to_handle_at
++	.long sys_open_by_handle_at	/* 339 */
 -- 
 1.7.1.236.g81fa0
 
