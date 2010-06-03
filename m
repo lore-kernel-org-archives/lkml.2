@@ -1,52 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754934Ab0FCUcQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jun 2010 16:32:16 -0400
-Received: from smtp-out.google.com ([74.125.121.35]:27139 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752857Ab0FCUcP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jun 2010 16:32:15 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id:
-	references:user-agent:mime-version:content-type:x-system-of-record;
-	b=uCV7uCOF5ZhovC1hP+pTUExtO8Y8IwY7bu6+2AmybiPQqPgt8O6mmcEvZLjCv9QZ8
-	3bvpvBwRFHnA/pNrnQXVw==
-Date: Thu, 3 Jun 2010 13:32:03 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Peter Zijlstra <peterz@infradead.org>
-cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-       "Luis Claudio R. Goncalves" <lclaudio@uudg.org>,
-       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-       Minchan Kim <minchan.kim@gmail.com>, balbir@linux.vnet.ibm.com,
-       Oleg Nesterov <oleg@redhat.com>, linux-kernel@vger.kernel.org,
-       linux-mm@kvack.org, Thomas Gleixner <tglx@linutronix.de>,
-       Mel Gorman <mel@csn.ul.ie>, williams@redhat.com
-Subject: Re: [RFC] oom-kill: give the dying task a higher priority
-In-Reply-To: <1275551449.27810.34905.camel@twins>
-Message-ID: <alpine.DEB.2.00.1006031327480.10856@chino.kir.corp.google.com>
-References: <20100601173535.GD23428@uudg.org> <alpine.DEB.2.00.1006011347060.13136@chino.kir.corp.google.com> <20100602220429.F51E.A69D9226@jp.fujitsu.com> <alpine.DEB.2.00.1006021410300.32666@chino.kir.corp.google.com> <1275551449.27810.34905.camel@twins>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S1755580Ab0FCUdZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jun 2010 16:33:25 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:29688 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755391Ab0FCUdY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Jun 2010 16:33:24 -0400
+Date: Thu, 3 Jun 2010 22:31:55 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Arjan van de Ven <arjan@linux.intel.com>,
+       Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
+       Roland McGrath <roland@redhat.com>,
+       Vegard Nossum <vegard.nossum@gmail.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] x86: make save_stack_address()
+	!CONFIG_FRAME_POINTER friendly
+Message-ID: <20100603203155.GA1163@redhat.com>
+References: <20100603193239.GA31530@redhat.com> <4C080850.1090907@linux.intel.com> <20100603200655.GE5234@nowhere>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-System-Of-Record: true
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100603200655.GE5234@nowhere>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 3 Jun 2010, Peter Zijlstra wrote:
+On 06/03, Frederic Weisbecker wrote:
+>
+> On Thu, Jun 03, 2010 at 12:53:52PM -0700, Arjan van de Ven wrote:
+> > On 6/3/2010 12:32 PM, Oleg Nesterov wrote:
+> >> If CONFIG_FRAME_POINTER=n, print_context_stack() shouldn't neglect the
+> >> non-reliable addresses on stack, this is all we have if dump_trace(bp)
+> >> is called with the wrong or zero bp.
+> >>
+> >> For example, /proc/pid/stack doesn't work if CONFIG_FRAME_POINTER=n.
+> >>
+> >> This patch obviously has no effect if CONFIG_FRAME_POINTER=y, otherwise
+> >> it reverts 1650743c "x86: don't save unreliable stack trace entries".
+> >
+> > would be nice if there was a compile time thing to detect if frame
+> > pointers are on ratehr than an ifdef.
+>
+> I wanted to suggest that too, but since only one place got the ifdef
+> after the second patch.
+>
+> But yeah, something like this could be reused:
+>
+> 	if (reliable_frame_pointer(reliable))
+> 		return ...;
 
-> > And that can reduce the runtime of the thread holding a writelock on 
-> > mm->mmap_sem, making the exit actually take longer than without the patch 
-> > if its priority is significantly higher, especially on smaller machines. 
-> 
-> /me smells an inversion... on -rt we solved those ;-)
-> 
+Do you mean it makes sense to add the helper which depends on
+FRAME_POINTER ?
 
-Right, but I don't see how increasing an oom killed tasks priority to a 
-divine priority doesn't impact the priorities of other tasks which may be 
-blocking the exit of that task, namely a coredumper or holder of 
-mm->mmap_sem.  This patch also doesn't address how it negatively impacts 
-the priorities of jobs running in different cpusets (although sharing the 
-same cpus) because one cpuset is oom.
+> > you're now also changing the rules; until now, you would ALWAYS get a
+> > backtrace without noise....
+> > now that's changing quite a bit. How are various tools (like perf and
+> > sysprof) going to cope with that?
+>
+>
+>
+> perf and sysprof have their own stacktrace ops, so they aren't affected.
+> I think the rest is /proc/pid/task, lockdep, latencytop, ftrace, kmemleak,
+> etc...
+>
+> For the kernel parts it's in fact desired.
+> And with ftrace we are changing some rules, but this is desired too, without
+> frame pointers we would have nothing anyway. And it's quite easy to
+> find out a stacktrace is not entirely reliable at a glance.
+
+Frederic, Arjan. Honestly, I have no opinion if this change makes
+things better or worse for, say, lockdep.
+
+But note that this only affects the !CONFIG_FRAME_POINTER case.
+Looking into Kconfig's I don't even understand how the bug reporters
+managed to set CONFIG_STACKTRACE without !CONFIG_FRAME_POINTER.
+
+So, should I redo this patch to fix /proc/pid/stack ? Say, we
+can change the meaning of stack_trace-<skip, if it is < 0, then
+save_stack_address() ignores reliable. Yes, this is hack.
+
+Oleg.
+
