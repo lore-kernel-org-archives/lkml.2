@@ -1,146 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754208Ab0FCNYi (ORCPT <rfc822;w@1wt.eu>);
+	id S1754317Ab0FCNYk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jun 2010 09:24:40 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:39879 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754213Ab0FCNYi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 3 Jun 2010 09:24:38 -0400
-Received: from mail-px0-f174.google.com ([209.85.212.174]:35755 "EHLO
-	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752139Ab0FCNYg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jun 2010 09:24:36 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:reply-to:references:mime-version
-         :content-type:content-disposition:content-transfer-encoding
-         :in-reply-to:user-agent;
-        b=ZNS3uFsmgiyPrlpJFEFLcxrqKqtCCop0XzG+4JnK7Bbc4mhseJJ/5gjzLv+dbLpWc0
-         QLssZTXRPeqm4/q+N3tkc9FJhp2YAN1vPwVIw5kb8drkJZIa8r6yx+Z0YoGUt9zBq1qR
-         2LbO/UN8etXRw/KLLM0gUnjTJJJyq3FH5pWus=
-Date: Thu, 3 Jun 2010 06:24:49 -0700
-From: mark gross <640e9920@gmail.com>
-To: Arve =?iso-8859-1?B?SGr4bm5lduVn?= <arve@android.com>
-Cc: markgross@thegnar.org, Brian Swetland <swetland@google.com>,
-       Florian Mickler <florian@mickler.org>, 640e9920@gmail.com,
-       "Rafael J. Wysocki" <rjw@sisk.pl>,
-       Alan Stern <stern@rowland.harvard.edu>,
-       Peter Zijlstra <peterz@infradead.org>,
-       Linux PM <linux-pm@lists.linux-foundation.org>,
-       Alan Cox <alan@lxorguk.ukuu.org.uk>,
-       Matthew Garrett <mjg59@srcf.ucam.org>,
-       Thomas Gleixner <tglx@linutronix.de>,
-       LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>
 Subject: Re: [linux-pm] [PATCH 0/8] Suspend block api (version 8)
-Message-ID: <20100603132449.GA15595@gvim.org>
-Reply-To: markgross@thegnar.org
-References: <20100531232617.GF31155@gvim.org>
- <20100601090737.4bc243d9@schatten.dmk.lab>
- <20100601140519.GC1281@gvim.org>
- <AANLkTikF-B23_UWG1O3tlBl4m8NStAJllGhhevNhYZT6@mail.gmail.com>
- <20100602133910.GA9106@gvim.org>
- <AANLkTilSU79cnBODXFokzIPB1hRcZBxbwTgTQ59MeKcK@mail.gmail.com>
- <20100603031842.GB11311@gvim.org>
- <AANLkTiks7sQBbDnN6QrtGVqSXLob1qCs7VA12LZAWnfM@mail.gmail.com>
- <20100603054018.GE11311@gvim.org>
- <AANLkTikvuqtcGS1UdePRxipSk4S5Vmci2uPfFtzZgx6X@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <AANLkTikvuqtcGS1UdePRxipSk4S5Vmci2uPfFtzZgx6X@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+From: James Bottomley <James.Bottomley@suse.de>
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: "Gross, Mark" <mark.gross@intel.com>,
+       Florian Mickler <florian@mickler.org>,
+       Arve =?ISO-8859-1?Q?Hj=F8nnev=E5g?= <arve@android.com>,
+       Neil Brown <neilb@suse.de>, "tytso@mit.edu" <tytso@mit.edu>,
+       Peter Zijlstra <peterz@infradead.org>,
+       LKML <linux-kernel@vger.kernel.org>,
+       Thomas Gleixner <tglx@linutronix.de>,
+       Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
+       Linux PM <linux-pm@lists.linux-foundation.org>,
+       "felipe.balbi@nokia.com" <felipe.balbi@nokia.com>
+In-Reply-To: <20100603110312.48a508dc@lxorguk.ukuu.org.uk>
+References: <20100527232357.6d14fdb2@lxorguk.ukuu.org.uk>
+	 <20100601135102.GA8098@srcf.ucam.org>
+	 <1275426085.21962.967.camel@mulgrave.site> <201006020024.14220.rjw@sisk.pl>
+	 <1275431816.21962.1108.camel@mulgrave.site>
+	 <AANLkTikObnAZbyOxeYAhXcEbimO3XTTO-HlC9CD_HH6t@mail.gmail.com>
+	 <1275451342.21962.1777.camel@mulgrave.site>
+	 <AANLkTilRcFZyYa-0HlaM-6IEZSyar3S9S_cCWSFax2Zo@mail.gmail.com>
+	 <1275491111.2799.110.camel@mulgrave.site>
+	 <20100602214748.7742e3ae@schatten.dmk.lab>
+	 <1275511271.2799.516.camel@mulgrave.site>
+	 <20100603010607.5baf82a6@schatten.dmk.lab>
+	 <CA1BBBBC9359F04AA639128AC0D5D1E9692ABC92@orsmsx502.amr.corp.intel.com>
+	 <20100603110312.48a508dc@lxorguk.ukuu.org.uk>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 03 Jun 2010 08:24:31 -0500
+Message-ID: <1275571471.5914.2.camel@mulgrave.site>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 03, 2010 at 12:10:03AM -0700, Arve Hjønnevåg wrote:
-> On Wed, Jun 2, 2010 at 10:40 PM, mark gross <640e9920@gmail.com> wrote:
-> > On Wed, Jun 02, 2010 at 09:54:15PM -0700, Brian Swetland wrote:
-> >> On Wed, Jun 2, 2010 at 8:18 PM, mark gross <640e9920@gmail.com> wrote:
-> >> > On Wed, Jun 02, 2010 at 02:58:30PM -0700, Arve Hjønnevåg wrote:
-> >> >>
-> >> >> The list is not short. You have all the inactive and active
-> >> >> constraints on the same list. If you change it to a two level list
-> >> >> though, the list of unique values (which is the list you have to walk)
-> >> >> may be short enough for a tree to be overkill.
-> >> >
-> >> > what have you seen in practice from the wake-lock stats?
-> >> >
-> >> > I'm having a hard time seeing where you could get more than just a
-> >> > handfull.  However; one could go to a dual list (like the scheduler) and
-> >> > move inactive nodes from an active to inactive list, or we could simply
-> >> > remove them from the list uppon inactivity.  which would would well
-> >> > after I change the api to have the client allocate the memory for the
-> >> > nodes...  BUT, if your moving things in and out of a list a lot, I'm not
-> >> > sure the break even point where changing the structure helps.
-> >> >
-> >> > We'll need to try it.
-> >> >
-> >> > I think we will almost never see more than 10 list elements.
-> >> >
-> >> > --mgross
-> >> >
-> >> >
-> >>
-> >> I see about 80 (based on the batteryinfo dump) on my Nexus One
-> >> (QSD8250, Android Froyo):
-> >
-> > shucks.
-> >
-> > well I think for a pm_qos class that has boolean dynamic range we can
-> > get away with not walking the list on every request update.  we can use
-> > a counter, and the list will be for mostly for stats.
-> >
+On Thu, 2010-06-03 at 11:03 +0100, Alan Cox wrote:
+> > [mtg: ] This has been a pain point for the PM_QOS implementation.  They change the constrain back and forth at the transaction level of the i2c driver.  The pm_qos code really wasn't made to deal with such hot path use, as each such change triggers a re-computation of what the aggregate qos request is.
 > 
-> Did you give any thought to my suggestion to only use one entry per
-> unique value on the first level list and then use secondary lists of
-> identical values. That way if you only have two constraints values the
-
-I thought you where talking about a active + inactive queue.  Sorry, I
-didn't get what you where talking about.
-
-> list you have to walk when updating a request will never have more
-> than two entries regardless of how many total request you have.
+> That should be trivial in the usual case because 99% of the time you can
+> hot path
 > 
-> A request update then becomes something like this:
->   if on primary list {
->     unlink from primary list
->     if secondary list is not empty
->       get next secondary entry and add in same spot on primary list
->   }
->   unlink from secondary list
->   find new spot on primary list
->   if already there
->     add to secondary list
->   else
->     add to primary list
->
+> 	the QoS entry changing is the latest one
+> 	there have been no other changes
+> 	If it is valid I can use the cached previous aggregate I cunningly
+> 		saved in the top QoS entry when I computed the new one
+> 
+> (ie most of the time from the kernel side you have a QoS stack)
 
-I'm still no getting how this will allow me to reduce any aggregated
-constratint re-computation to a list walk of at most 2 nodes.  But, from
-a more specific point of view are you saying:
-change the request struct to be something like:
-struct dual_list_constriaint {
-	struct list primary;
-	struct list secondar;
-	s32 value;
-	...
-} 
+It's not just the list based computation: that's trivial to fix, as you
+say ... the other problem is the notifier chain, because that's blocking
+and could be long.  Could we invoke the notifier through a workqueue?
+It doesn't seem to have veto power, so it's pure notification, does it
+matter if the notice is delayed (as long as it's in order)?
 
-then uppon constraint foo update:
+> > We've had a number of attempts at fixing this, but I think the proper fix is to bolt a "disable C-states > x" interface into cpu_idle that bypases pm_qos altogether.  Or, perhaps add a new pm_qos API that does the equivalent operation, overriding whatever constraint is active.
+> 
+> We need some of this anyway for deep power saving because there is
+> hardware which can't wake from soem states, which in turn means if that
+> device is active we need to be above the state in question.
 
-if foo->primary not empty:
-	remove foor from primary list
-	if gsecondary is not empty:
-		ordered insert of foo into secondary list 
-		? ordered on constraint value?
-		? Arn't the constraints boolean?
-remove foo from secondary list
-ordered search for insert point of foo into primary list
-if foo in primary:
-	insert foo into secondary list
-else
-	insert foo into primary list
+James
 
-ok I'm not getting it.
-is this a fancy com-sci algorithm I should know about?
 
---mgross
