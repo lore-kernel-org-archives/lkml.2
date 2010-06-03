@@ -1,55 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758478Ab0FCJWl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jun 2010 05:22:41 -0400
-Received: from smtp134.mail.ukl.yahoo.com ([77.238.184.65]:24707 "HELO
-	smtp134.mail.ukl.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1751850Ab0FCJWj (ORCPT
+	id S933431Ab0FCJYP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jun 2010 05:24:15 -0400
+Received: from smtp.nokia.com ([192.100.122.230]:44764 "EHLO
+	mgw-mx03.nokia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751850Ab0FCJYN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jun 2010 05:22:39 -0400
-X-Greylist: delayed 401 seconds by postgrey-1.27 at vger.kernel.org; Thu, 03 Jun 2010 05:22:39 EDT
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=s1024; d=yahoo.de;
-  h=Received:X-Yahoo-SMTP:X-YMail-OSG:X-Yahoo-Newman-Property:From:To:Subject:Date:User-Agent:Cc:References:In-Reply-To:MIME-Version:Content-Type:Content-Transfer-Encoding:Message-Id;
-  b=hH+Amhaqk2VSSwLm/8brcjB438vVJ5ZFMVxK32c4AqKtIFoIANzmsfiDHD9v+DPDdreokUpikP66jRIOkugWcrlg9yfOglK2YOZeOyecerEge7voQOlfH2GvGE79njL3WMm3B+tQRuUVJtohZYHjxqlPIdyBKB08dimbgw+Mqz8=  ;
-X-Yahoo-SMTP: tW.h3tiswBBMXO2coYcbPigGD5Lt6zY_.Zc-
-X-YMail-OSG: kIJc334VM1lVkgnMNY_WwQULydkH0aVHSmkJyFEK6VzY_g8Wy7q8WqzhfTGraYw1u2uiKSLlF43zyOcB0I_wBnDk5P9hXyHGgkjJCQZkfohXc4.9GN60T811CaaeH3Tnn0rYbLvw4AAPyIVXoDFXTbykig1JX6d_Rc__I9Ov16fZEn0IsSLNr6Y99w.xiU_Z6MhyvQ8CWu8KiHeJ3xAcPXhz.CtZMzCCShNUTGRaqhuMvA--
-X-Yahoo-Newman-Property: ymail-3
-From: Marek Lindner <lindner_marek@yahoo.de>
-To: b.a.t.m.a.n@lists.open-mesh.org, linux-kernel@vger.kernel.org
-Subject: Re: [B.A.T.M.A.N.] [PATCH] drivers/staging/batman-adv: Convert MAC_FMT to %pM
-Date: Thu, 3 Jun 2010 17:15:53 +0800
-User-Agent: KMail/1.13.3 (Linux/2.6.32-5-686; KDE/4.4.3; i686; ; )
-Cc: Joe Perches <joe@perches.com>, Sven Eckelmann <sven.eckelmann@gmx.de>,
-       devel <devel@driverdev.osuosl.org>,
-       "Greg Kroah-Hartman" <gregkh@suse.de>,
-       Simon Wunderlich <siwu@hrz.tu-chemnitz.de>
-References: <1275509418.23599.42.camel@Joe-Laptop.home> <201006030156.42370.sven.eckelmann@gmx.de> <1275524401.23599.116.camel@Joe-Laptop.home>
-In-Reply-To: <1275524401.23599.116.camel@Joe-Laptop.home>
+	Thu, 3 Jun 2010 05:24:13 -0400
+Message-ID: <4C0774A8.2030704@nokia.com>
+Date: Thu, 03 Jun 2010 12:23:52 +0300
+From: Adrian Hunter <adrian.hunter@nokia.com>
+User-Agent: Thunderbird 2.0.0.24 (X11/20100411)
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201006031715.54584.lindner_marek@yahoo.de>
+To: =?ISO-8859-2?Q?Micha=B3_Miros=B3aw?= <mirq-linux@rere.qmqm.pl>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+       "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC] [PATCH 1/2] mmc: split mmc_sd_init_card()
+References: <1-1000-12432-1274803827-7569@rere.qmqm.pl> <20100528144027.3c868841.akpm@linux-foundation.org> <20100531155846.GA9493@rere.qmqm.pl>
+In-Reply-To: <20100531155846.GA9493@rere.qmqm.pl>
+Content-Type: text/plain; charset=ISO-8859-2; format=flowed
+Content-Transfer-Encoding: 8bit
+X-OriginalArrivalTime: 03 Jun 2010 09:23:52.0774 (UTC) FILETIME=[7B895E60:01CB02FE]
+X-Nokia-AV: Clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 03 June 2010 08:20:01 Joe Perches wrote:
-> The patch changes the prefix from "batman-adv:" to "batman_adv: "
-> so yes, it would break as-is.
+Micha³ Miros³aw wrote:
+> Thanks for your review!
 > 
-> I think the concept is broken though, I believe dmesg output
-> specifically is not guaranteed to remain stable, and batman should
-> use some other, perhaps private, logger based on ethtool events.
+> On Fri, May 28, 2010 at 02:40:27PM -0700, Andrew Morton wrote:
+>> On Tue, 25 May 2010 18:10:28 +0200 (CEST)
+>> Micha__ Miros__aw <mirq-linux@rere.qmqm.pl> wrote:
+>>> This is needed to avoid code duplication in SD-combo support.
+>> hm.  Perhaps you could have told us a bit more about it than this.
+>>> +int mmc_sd_get_cid(struct mmc_host *host, u32 ocr, u32 *cid)
+>>> +int mmc_sd_get_csd(struct mmc_host *host, struct mmc_card *card)
+>>> +int mmc_sd_setup_card(struct mmc_host *host, struct mmc_card *card,
+>>> +unsigned mmc_sd_get_max_clock(struct mmc_card *card)
+>>> +void mmc_sd_go_highspeed(struct mmc_card *card)
+>> These are global symbols, but they are not exported to (other) modules.
+>> That's odd.  I'd have expected to see them either `static' or
+>> EXPORT_MODULE()d.
+> 
+> This is all contained in mmc_core.ko and needs not be exported to other
+> modules. A SD-combo card is a SD (memory) and SDIO in one package - the
+> only changes needed are in initialization sequence, after which both
+> parts are mostly independent.
 
-I think changing a dash to an underscore is not such a big deal (I did not 
-check the rest of the patch yet). But I'm interested to hear more about your 
-"private logger" idea because the current solution is far from being perfect. 
-As we have to debug the routing protocol every now and then it would be very 
-helpful to get direct access to some internal logging facility. In fact, that 
-existed before (inside of /proc) but was removed to be more compliant with the 
-linux kernel and the existing log facilities.
+That is a bit vague.  An SD card is a memory.  An SDIO "card" is an
+I/O connection made using the same physical interface as an SD card
+and a very similar protocal to SD cards (at least with respect to
+reading and writing).  I do not understand how a card can be SD and
+SDIO.  Are you sure you are not talking about a controller that supports
+SD and SDIO?  A lot of controllers do that.
 
-Regards,
-Marek
+> 
+>> I'll take the lack of a signed-off-by: and the "RFC" as signal to not
+>> apply these patches.
+> 
+> I would like for this to get tested by other people first, but it looks
+> like not many kernel developers use SD combo cards.
+> 
+> I'll resend the patches after applying your suggestions from the other
+> mail.
+> 
+> Best Regards,
+> Micha³ Miros³aw
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-mmc" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
+
