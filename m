@@ -1,112 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755715Ab0FCUnv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jun 2010 16:43:51 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:55323 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754833Ab0FCUnu (ORCPT
+	id S1756029Ab0FCUok (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jun 2010 16:44:40 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:44368 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753072Ab0FCUoi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jun 2010 16:43:50 -0400
-Date: Thu, 3 Jun 2010 13:43:10 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Kevin Cernekee <cernekee@gmail.com>
-Cc: Paul Mundt <lethal@linux-sh.org>, mingo@elte.hu,
-       simon.kagstrom@netinsight.net, David.Woodhouse@intel.com,
-       rgetz@analog.com, linux-kernel@vger.kernel.org,
-       linux-mips@linux-mips.org
-Subject: Re: [PATCH v2] printk: fix delayed messages from CPU hotplug events
-Message-Id: <20100603134310.b5bae74e.akpm@linux-foundation.org>
-In-Reply-To: <AANLkTinY8Htz2bb2I_oN5iWtAjxuDkGzAvX_4TbtmKBh@mail.gmail.com>
-References: <ede63b5a20af951c755736f035d1e787772d7c28@localhost>
-	<20100601031528.GC15411@linux-sh.org>
-	<AANLkTinY8Htz2bb2I_oN5iWtAjxuDkGzAvX_4TbtmKBh@mail.gmail.com>
-X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Thu, 3 Jun 2010 16:44:38 -0400
+Message-ID: <4C0813D7.7080900@oracle.com>
+Date: Thu, 03 Jun 2010 13:43:03 -0700
+From: Yinghai Lu <yinghai.lu@oracle.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100317 SUSE/3.0.4-1.1.1 Thunderbird/3.0.4
+MIME-Version: 1.0
+To: Jesse Barnes <jbarnes@virtuousgeek.org>
+CC: Bjorn Helgaas <bjorn.helgaas@hp.com>,
+       Yannick Roehlly <yannick.roehlly@free.fr>,
+       "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: [PATCH -v2] pci: clear bridge resource size if BIOS assign bad one
+References: <bug-16009-13546@https.bugzilla.kernel.org/> <201005191637.13177.bjorn.helgaas@hp.com> <201005202236.20444.bjorn.helgaas@hp.com> <201006021536.43333.bjorn.helgaas@hp.com> <4C070ECA.2020309@oracle.com>
+In-Reply-To: <4C070ECA.2020309@oracle.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
+X-Auth-Type: Internal IP
+X-Source-IP: acsinet15.oracle.com [141.146.126.227]
+X-CT-RefId: str=0001.0A090205.4C081432.01C8:SCFMA922111,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 31 May 2010 21:04:42 -0700
-Kevin Cernekee <cernekee@gmail.com> wrote:
 
-> On Mon, May 31, 2010 at 8:15 PM, Paul Mundt <lethal@linux-sh.org> wrote:
-> > If this is to be entirely restricted to CPU hotplug then you could use
-> > the hotcpu notifier here instead of the open-coded cpu notifier directly,
-> > the former wraps to the latter in the CPU hotplug case and is simply a
-> > nop for the regular SMP case.
-> 
-> I ran some tests and saw the same problem during the regular MIPS SMP
-> boot.  i.e. adding "while (1) { }" at the end of __cpu_up() prevents
-> any of the probing/calibration messages originating on CPU1 from ever
-> being echoed to the console.  Adding the semaphore code before the
-> while loop caused the CPU1 messages to reappear.
-> 
-> Under normal circumstances you won't ever notice the problem at boot
-> time, because printing "Brought up %ld CPUs" has the undocumented side
-> effect of flushing out any messages that got stuck during SMP init.
-> And if that printk() wasn't there, the next one (from NET, PCI, SCSI,
-> ...) would surely take its place.
-> 
-> But in the case of MIPS CPU hotplug, there is no such printk() at the
-> end, and so our luck runs out.
+Make sure We can reject wrong size from BIOS.
 
-no....  What Paul means is "please use hotcpu_notifier".  It's a
-higher-level interface which yields a smaller vmlinux if
-CONFIG_HOTPLUG_CPU=n.  grep around for some examples...
+https://bugzilla.kernel.org/show_bug.cgi?id=16009
+Yannick found that video does not work with 2.6.34
 
+the root cause:
+BIOS assigned wrong range to pci bridge.  and before 2.6.34 kernel will
+just get range that is needed.
+for 2.6.34.
+|	d65245c PCI: don't shrink bridge resources
+will try to range size is bigger than old one.
+(used by boot stage multi-try to get big BAR size for pci bridge,
+ and pcie hotplug to get big range)
 
-other comments:
+So try to 0 for old size for pci bridge in this boot stage case.
+
+Reported-by: Yannick <yannick.roehlly@free.fr>
+Analyzed-by: Bjorn Helgaas <bjorn.helgaas@hp.com>
+Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+
+---
+ arch/microblaze/pci/pci-common.c        |    1 +
+ arch/mn10300/unit-asb2305/pci-asb2305.c |    1 +
+ arch/powerpc/kernel/pci-common.c        |    1 +
+ arch/x86/pci/i386.c                     |    1 +
+ 4 files changed, 4 insertions(+)
+
+Index: linux-2.6/arch/x86/pci/i386.c
+===================================================================
+--- linux-2.6.orig/arch/x86/pci/i386.c
++++ linux-2.6/arch/x86/pci/i386.c
+@@ -136,6 +136,7 @@ static void __init pcibios_allocate_bus_
+ 					 * child resource allocations in this
+ 					 * range.
+ 					 */
++					r->start = r->end = 0;
+ 					r->flags = 0;
+ 				}
+ 			}
+Index: linux-2.6/arch/microblaze/pci/pci-common.c
+===================================================================
+--- linux-2.6.orig/arch/microblaze/pci/pci-common.c
++++ linux-2.6/arch/microblaze/pci/pci-common.c
+@@ -1277,6 +1277,7 @@ void pcibios_allocate_bus_resources(stru
+ 		printk(KERN_WARNING "PCI: Cannot allocate resource region "
+ 		       "%d of PCI bridge %d, will remap\n", i, bus->number);
+ clear_resource:
++		res->start = res->end = 0;
+ 		res->flags = 0;
+ 	}
  
->  /**
-> + * console_cpu_notify - print deferred console messages after CPU hotplug
-> + *
-> + * If printk() is called from a CPU that is not online yet, the messages
-> + * will be spooled but will not show up on the console.  This function is
-> + * called when a new CPU comes online and ensures that any such output
-> + * gets printed.
-> + */
-
-It's conventional (although boring and usually useless) to kerneldocify
-the arguments also.
-
-> +static int __cpuinit console_cpu_notify(struct notifier_block *self,
-> +	unsigned long action, void *hcpu)
-> +{
-> +	switch (action) {
-> +	case CPU_ONLINE:
-> +	case CPU_UP_CANCELED:
-> +		if (try_acquire_console_sem() == 0)
-> +			release_console_sem();
-> +	}
-> +	return NOTIFY_OK;
-> +}
-
-Would prefer to see acquire_console_sem() used here.  Because
-try_acquire_console_sem() might simply fail, and the messages still get
-stuck.  Possible?  If "not possible" then "needs a code comment".
-
-> +static struct notifier_block __cpuinitdata console_nb = {
-> +	.notifier_call		= console_cpu_notify,
-> +};
-> +
-> +static int __init console_notifier_init(void)
-> +{
-> +	register_cpu_notifier(&console_nb);
-> +	return 0;
-> +}
-> +late_initcall(console_notifier_init);
-
-We don't really need two late_initcall() functions in printk.c.  We'd
-save a few bytes by renaming disable_boot_consoles() to
-printk_late_init() or something, then adding the hotcpu_notifier() call
-there.
-
-otoh, that's a bit of a reduction in source-level quality.
-
-otoh2, perhaps late_initcall() was inappropriate for
-console_notifier_init().  Why not do it earlier?
-
-I'll let you decide ;)
-
+Index: linux-2.6/arch/mn10300/unit-asb2305/pci-asb2305.c
+===================================================================
+--- linux-2.6.orig/arch/mn10300/unit-asb2305/pci-asb2305.c
++++ linux-2.6/arch/mn10300/unit-asb2305/pci-asb2305.c
+@@ -117,6 +117,7 @@ static void __init pcibios_allocate_bus_
+ 					 * Invalidate the resource to prevent
+ 					 * child resource allocations in this
+ 					 * range. */
++					r->start = r->end = 0;
+ 					r->flags = 0;
+ 				}
+ 			}
+Index: linux-2.6/arch/powerpc/kernel/pci-common.c
+===================================================================
+--- linux-2.6.orig/arch/powerpc/kernel/pci-common.c
++++ linux-2.6/arch/powerpc/kernel/pci-common.c
+@@ -1309,6 +1309,7 @@ void pcibios_allocate_bus_resources(stru
+ 		printk(KERN_WARNING "PCI: Cannot allocate resource region "
+ 		       "%d of PCI bridge %d, will remap\n", i, bus->number);
+ clear_resource:
++		res->start = res->end = 0;
+ 		res->flags = 0;
+ 	}
+ 
