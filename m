@@ -1,81 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755060Ab0FCN4H (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jun 2010 09:56:07 -0400
-Received: from ist.d-labs.de ([213.239.218.44]:44108 "EHLO mx01.d-labs.de"
+	id S1754216Ab0FCOCK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jun 2010 10:02:10 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:49638 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752955Ab0FCN4F convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jun 2010 09:56:05 -0400
-Date: Thu, 3 Jun 2010 15:55:52 +0200
-From: Florian Mickler <florian@mickler.org>
-To: Arve =?ISO-8859-15?Q?Hj=F8nnev=E5g?= <arve@android.com>
-Cc: markgross@thegnar.org, Brian Swetland <swetland@google.com>,
-       640e9920@gmail.com, "Rafael J. Wysocki" <rjw@sisk.pl>,
-       Alan Stern <stern@rowland.harvard.edu>,
-       Peter Zijlstra <peterz@infradead.org>,
-       Linux PM <linux-pm@lists.linux-foundation.org>,
-       Alan Cox <alan@lxorguk.ukuu.org.uk>,
-       Matthew Garrett <mjg59@srcf.ucam.org>,
-       Thomas Gleixner <tglx@linutronix.de>,
-       LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>
-Subject: Re: [linux-pm] [PATCH 0/8] Suspend block api (version 8)
-Message-ID: <20100603155552.24c38afc@schatten.dmk.lab>
-In-Reply-To: <AANLkTikvuqtcGS1UdePRxipSk4S5Vmci2uPfFtzZgx6X@mail.gmail.com>
-References: <AANLkTikxws5kmFhnBO1MLzE65ETka3Jy0R5ayAKTS1Lc@mail.gmail.com>
-	<201005312338.55109.rjw@sisk.pl>
-	<20100531232617.GF31155@gvim.org>
-	<20100601090737.4bc243d9@schatten.dmk.lab>
-	<20100601140519.GC1281@gvim.org>
-	<AANLkTikF-B23_UWG1O3tlBl4m8NStAJllGhhevNhYZT6@mail.gmail.com>
-	<20100602133910.GA9106@gvim.org>
-	<AANLkTilSU79cnBODXFokzIPB1hRcZBxbwTgTQ59MeKcK@mail.gmail.com>
-	<20100603031842.GB11311@gvim.org>
-	<AANLkTiks7sQBbDnN6QrtGVqSXLob1qCs7VA12LZAWnfM@mail.gmail.com>
-	<20100603054018.GE11311@gvim.org>
-	<AANLkTikvuqtcGS1UdePRxipSk4S5Vmci2uPfFtzZgx6X@mail.gmail.com>
-X-Mailer: Claws Mail 3.7.5 (GTK+ 2.18.9; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: 8BIT
+	id S1753937Ab0FCOCH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Jun 2010 10:02:07 -0400
+Date: Thu, 3 Jun 2010 16:00:08 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: David Rientjes <rientjes@google.com>
+Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+       "Luis Claudio R. Goncalves" <lclaudio@uudg.org>,
+       LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+       Nick Piggin <npiggin@suse.de>
+Subject: Re: [PATCH 09/12] oom: remove PF_EXITING check completely
+Message-ID: <20100603140008.GA3548@redhat.com>
+References: <20100603135106.7247.A69D9226@jp.fujitsu.com> <20100603152436.7262.A69D9226@jp.fujitsu.com> <alpine.DEB.2.00.1006022332320.22441@chino.kir.corp.google.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.00.1006022332320.22441@chino.kir.corp.google.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 3 Jun 2010 00:10:03 -0700
-Arve Hjønnevåg <arve@android.com> wrote:
-
-> On Wed, Jun 2, 2010 at 10:40 PM, mark gross <640e9920@gmail.com> wrote:
-
-> > well I think for a pm_qos class that has boolean dynamic range we can
-> > get away with not walking the list on every request update.  we can use
-> > a counter, and the list will be for mostly for stats.
+On 06/02, David Rientjes wrote:
+>
+> On Thu, 3 Jun 2010, KOSAKI Motohiro wrote:
+>
+> > Currently, PF_EXITING check is completely broken. because 1) It only
+> > care main-thread and ignore sub-threads
+>
+> Then check the subthreads.
+>
+> > 2) If user enable core-dump
+> > feature, it can makes deadlock because the task during coredump ignore
+> > SIGKILL.
 > >
-> 
-> Did you give any thought to my suggestion to only use one entry per
-> unique value on the first level list and then use secondary lists of
-> identical values. That way if you only have two constraints values the
-> list you have to walk when updating a request will never have more
-> than two entries regardless of how many total request you have.
-> 
-> A request update then becomes something like this:
->   if on primary list {
->     unlink from primary list
->     if secondary list is not empty
->       get next secondary entry and add in same spot on primary list
->   }
->   unlink from secondary list
->   find new spot on primary list
->   if already there
->     add to secondary list
->   else
->     add to primary list
-> 
+>
+> It may ignore SIGKILL, but does not ignore fatal_signal_pending() being
+> true
 
-Yes. I think that would be good. If we keep the primary list sorted,
-then this becomes a nice priority queue implementation which does 
-GetMax in constant time and Insert and Delete in logarithmic
-complexity to the number of different values.
+Wrong.
 
-Cheers,
-Flo
+Unless the oom victim is exactly the thread which dumps the core,
+fatal_signal_pending() won't be true for the dumper. Even if the
+victim and the dumper are from the same group, this thread group
+already has SIGNAL_GROUP_EXIT. And if they do not belong to the
+same group, SIGKILL has even less effect.
+
+Even if we chose the right thread we can race with
+clear_thread_flag(TIF_SIGPENDING), but fatal_signal_pending()
+checks signal_pending().
+
+> which gives it access to memory reserves with my patchset
+
+__get_user_pages() already checks fatal_signal_pending(), this
+is where the dumper allocates the memory (mostly).
+
+And I am not sure I understand the "access to memory reserves",
+the dumper should just stop if oom-kill decides it should die,
+it can use a lot more memory if it doesn't stop.
+
+> Nacked-by: David Rientjes <rientjes@google.com>
+
+Kosaki removes the code which only pretends to work, but it doesn't
+and leads to problems.
+
+If you think we need this check, imho it is better to make the patch
+which adds the "right" code with the nice changelog explaining how
+this code works.
+
+
+Just my opinion, I know very little about oom logic/needs/problems,
+you can ignore me.
+
+Oleg.
+
