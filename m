@@ -1,96 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754181Ab0FCT2b (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jun 2010 15:28:31 -0400
-Received: from mailhost.informatik.uni-hamburg.de ([134.100.9.70]:56426 "EHLO
-	mailhost.informatik.uni-hamburg.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753331Ab0FCT2a (ORCPT
+	id S1754576Ab0FCTak (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jun 2010 15:30:40 -0400
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:45366
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754092Ab0FCTai (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jun 2010 15:28:30 -0400
-Message-ID: <4C080230.1070909@metafoo.de>
-Date: Thu, 03 Jun 2010 21:27:44 +0200
-From: Lars-Peter Clausen <lars@metafoo.de>
-User-Agent: Mozilla-Thunderbird 2.0.0.24 (X11/20100329)
-MIME-Version: 1.0
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-CC: Ralf Baechle <ralf@linux-mips.org>, linux-mips@linux-mips.org,
-       linux-kernel@vger.kernel.org, Liam Girdwood <lrg@slimlogic.co.uk>,
-       alsa-devel@alsa-project.org
-Subject: Re: [RFC][PATCH 21/26] alsa: ASoC: Add JZ4740 ASoC support
-References: <1275505397-16758-1-git-send-email-lars@metafoo.de> <1275505950-17334-5-git-send-email-lars@metafoo.de> <20100603175511.GI2762@rakim.wolfsonmicro.main>
-In-Reply-To: <20100603175511.GI2762@rakim.wolfsonmicro.main>
-X-Enigmail-Version: 0.95.0
-Content-Type: text/plain; charset=us-ascii
+	Thu, 3 Jun 2010 15:30:38 -0400
+Date: Thu, 03 Jun 2010 12:30:48 -0700 (PDT)
+Message-Id: <20100603.123048.226791381.davem@davemloft.net>
+To: linville@tuxdriver.com
+Cc: linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+       linux-kernel@vger.kernel.org
+Subject: Re: pull request: wireless-2.6 2010-06-03
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20100603173843.GB14597@tuxdriver.com>
+References: <20100603173843.GB14597@tuxdriver.com>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Mark Brown wrote:
-> On Wed, Jun 02, 2010 at 09:12:27PM +0200, Lars-Peter Clausen wrote:
->
-> Again, overall very good.
->
->   
->> +static int jz4740_i2s_set_clkdiv(struct snd_soc_dai *dai, int div_id, int div)
->> +{
->> +	struct jz4740_i2s *i2s = jz4740_dai_to_i2s(dai);
->> +
->> +	switch (div_id) {
->> +	case JZ4740_I2S_BIT_CLK:
->> +		if (div & 1 || div > 16)
->> +			return -EINVAL;
->> +		jz4740_i2s_write(i2s, JZ_REG_AIC_CLK_DIV, div - 1);
->> +		break;
->> +	default:
->> +		return -EINVAL;
->> +	}
->> +
->> +	return 0;
->> +}
->>     
->
-> You can probably figure out the bit clock automatically by default...
->   
-Hm, yes, you are right.
->   
->> +	if (dai->active) {
->> +		conf = jz4740_i2s_read(i2s, JZ_REG_AIC_CONF);
->> +		conf &= ~JZ_AIC_CONF_ENABLE;
->> +		jz4740_i2s_write(i2s, JZ_REG_AIC_CONF, conf);
->> +
->> +		clk_disable(i2s->clk_i2s);
->> +	}
->> +
->> +	clk_disable(i2s->clk_aic);
->>     
->
-> Might make sense to manage this clock dynamically at runtime too for a
-> little extra power saving?
->   
-I think I tried it once and the power savings were marginal. On the
-other hand each callback would have to make sure the clock is enabled
-before accessing registers and disabling it again if it was disabled.
->   
->> +	i2s->clk_aic = clk_get(&pdev->dev, "aic");
->> +	if (IS_ERR(i2s->clk_aic)) {
->> +		ret = PTR_ERR(i2s->clk_aic);
->> +		goto err_iounmap;
->> +	}
->> +
->> +	i2s->clk_i2s = clk_get(&pdev->dev, "i2s");
->> +	if (IS_ERR(i2s->clk_i2s)) {
->> +		ret = PTR_ERR(i2s->clk_i2s);
->> +		goto err_iounmap;
->> +	}
->>     
->
-> Ideally you'd free the AIC clock when unwinding (and later stop it after
-> it was enabled).  Though since you don't do any error checking after
-> this point it's kind of academic :)
->
->   
-It should at least freed if the i2s clock is not found.
+From: "John W. Linville" <linville@tuxdriver.com>
+Date: Thu, 3 Jun 2010 13:38:43 -0400
 
-- Lars
+> This is a handful of fixes intended for 2.6.35.  The ath5k patch fixes a
+> problem reported by multiple people as "Commit 6b5d11 breaks association
+> with WPA enabled APs".  The ones from Johannes fix a locking problem and
+> and a problem caused by reading the wrong data location.
+> 
+> Please let me know if there are problems!
 
+Pulled, thanks John!
