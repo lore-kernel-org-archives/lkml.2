@@ -1,62 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751984Ab0FCEsP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jun 2010 00:48:15 -0400
-Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:35399 "EHLO
-	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750883Ab0FCEsO (ORCPT
+	id S1751938Ab0FCEv7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jun 2010 00:51:59 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:40538 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750883Ab0FCEv5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jun 2010 00:48:14 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-To: David Rientjes <rientjes@google.com>
-Subject: Re: [PATCH] oom: remove PF_EXITING check completely
-Cc: kosaki.motohiro@jp.fujitsu.com, Oleg Nesterov <oleg@redhat.com>,
-       LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-       Nick Piggin <npiggin@suse.de>
-In-Reply-To: <alpine.DEB.2.00.1006021359430.32666@chino.kir.corp.google.com>
-References: <20100602155455.GB9622@redhat.com> <alpine.DEB.2.00.1006021359430.32666@chino.kir.corp.google.com>
-Message-Id: <20100603120814.7242.A69D9226@jp.fujitsu.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
-Content-Transfer-Encoding: 7bit
-X-Mailer: Becky! ver. 2.50.07 [ja]
-Date: Thu,  3 Jun 2010 13:48:09 +0900 (JST)
+	Thu, 3 Jun 2010 00:51:57 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=c6I/Svx/c8xKhvD0DlpIpilf/7gIDZTFWiS1R/Y5ZH52Cewx2cgwNMaKNCzqBxHXDt
+         ygiOeDFESs2Oi2gIqDppeTTTTFrKa0KqzyXOF/g8V6C8RgVeSSXkl1tdHBZLCpCmYv2s
+         0jC0crjFZ1A/1ZzRWTCWfeSkJUnN1i8n9YgCE=
+Subject: Re: [PATCH] use unfair spinlock when running on hypervisor.
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: vatsa@in.ibm.com
+Cc: Avi Kivity <avi@redhat.com>, Andi Kleen <andi@firstfloor.org>,
+       Gleb Natapov <gleb@redhat.com>, linux-kernel@vger.kernel.org,
+       kvm@vger.kernel.org, hpa@zytor.com, mingo@elte.hu, npiggin@suse.de,
+       tglx@linutronix.de, mtosatti@redhat.com
+In-Reply-To: <20100603042051.GA5953@linux.vnet.ibm.com>
+References: <20100601093515.GH24302@redhat.com>
+	 <87sk56ycka.fsf@basil.nowhere.org> <20100601162414.GA6191@redhat.com>
+	 <20100601163807.GA11880@basil.fritz.box> <4C053ACC.5020708@redhat.com>
+	 <20100601172730.GB11880@basil.fritz.box> <4C05C722.1010804@redhat.com>
+	 <20100602085055.GA14221@basil.fritz.box> <4C061DAB.6000804@redhat.com>
+	 <20100603042051.GA5953@linux.vnet.ibm.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 03 Jun 2010 06:51:51 +0200
+Message-ID: <1275540711.29413.63.camel@edumazet-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> On Wed, 2 Jun 2010, Oleg Nesterov wrote:
-> 
-> > > Today, I've thought to make some bandaid patches for this issue. but
-> > > yes, I've reached the same conclusion.
-> > >
-> > > If we think multithread and core dump situation, all fixes are just
-> > > bandaid. We can't remove deadlock chance completely.
-> > >
-> > > The deadlock is certenaly worst result, then, minor PF_EXITING optimization
-> > > doesn't have so much worth.
+Le jeudi 03 juin 2010 à 09:50 +0530, Srivatsa Vaddagiri a écrit :
+> On Wed, Jun 02, 2010 at 12:00:27PM +0300, Avi Kivity wrote:
 > > 
-> > Agreed! I was always wondering if it really helps in practice.
-> > 
+> > There are two separate problems: the more general problem is that
+> > the hypervisor can put a vcpu to sleep while holding a lock, causing
+> > other vcpus to spin until the end of their time slice.  This can
+> > only be addressed with hypervisor help.
 > 
-> Nack, this certainly does help in practice, it prevents needlessly killing 
-> additional tasks when one is exiting and may free memory.  It's much 
-> better to defer killing something temporarily if an eligible task (i.e. 
-> one that has a high probability of memory allocations on current's nodes 
-> or contributing to its memcg) is exiting.
+> Fyi - I have a early patch ready to address this issue. Basically I am using
+> host-kernel memory (mmap'ed into guest as io-memory via ivshmem driver) to hint 
+> host whenever guest is in spin-lock'ed section, which is read by host scheduler 
+> to defer preemption.
 > 
-> We depend on this check specifically for our use of cpusets, so please 
-> don't remove it.
+> Guest side:
+> 
+> static inline void spin_lock(spinlock_t *lock)
+> {
+> 	raw_spin_lock(&lock->rlock);
+> +       __get_cpu_var(gh_vcpu_ptr)->defer_preempt++;
 
-Your claim violate our development process. Oleg pointed this check
-doesn't only work well, but also can makes deadlock. So, We certinally
-need anything fix. then, I'll remove this check completely at 2.6.35
-timeframe.
+1) __this_cpu_inc() should be faster
 
-But this doesn't mean we refuse you make better patch at all. I expect
-we can merge very soon if you make such patch.
+2) Isnt a bit late to do this increment _after_
+raw_spin_lock(&lock->rlock);
+
+> }
+> 
+> static inline void spin_unlock(spinlock_t *lock)
+> {
+> +	__get_cpu_var(gh_vcpu_ptr)->defer_preempt--;
+>         raw_spin_unlock(&lock->rlock);
+> }
+
 
 
