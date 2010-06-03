@@ -1,174 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933819Ab0FCKXU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jun 2010 06:23:20 -0400
-Received: from pfepa.post.tele.dk ([195.41.46.235]:51820 "EHLO
-	pfepa.post.tele.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933749Ab0FCKXS (ORCPT
+	id S933824Ab0FCKZL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jun 2010 06:25:11 -0400
+Received: from adelie.canonical.com ([91.189.90.139]:49773 "EHLO
+	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933486Ab0FCKZI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jun 2010 06:23:18 -0400
-Date: Thu, 3 Jun 2010 12:23:15 +0200
-From: Sam Ravnborg <sam@ravnborg.org>
-To: Nicolas Palix <npalix@diku.dk>, Michal Marek <mmarek@suse.cz>
-Cc: Randy Dunlap <rdunlap@xenotime.net>, Roland Dreier <rdreier@cisco.com>,
-       Joe Perches <joe@perches.com>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       "David S. Miller" <davem@davemloft.net>, Michal Marek <mmarek@suse.cz>,
-       Julia Lawall <julia@diku.dk>, Gilles Muller <Gilles.Muller@lip6.fr>,
-       linux-kernel@vger.kernel.org, linux-kbuild@vger.kernel.org,
-       cocci@diku.dk, Wolfram Sang <w.sang@pengutronix.de>,
-       Kernel Janitors <kernel-janitors@vger.kernel.org>
-Subject: Re: [PATCH 1/4] Add targets to use the Coccinelle checker
-Message-ID: <20100603102315.GA8002@merkur.ravnborg.org>
-References: <1273508667-5152-1-git-send-email-npalix@diku.dk> <1273508667-5152-2-git-send-email-npalix@diku.dk>
+	Thu, 3 Jun 2010 06:25:08 -0400
+From: Jeremy Kerr <jeremy.kerr@canonical.com>
+To: Ben Dooks <ben-linux@fluff.org>
+Subject: Re: [RFC,PATCH 1/2] Add a common struct clk
+Date: Thu, 3 Jun 2010 18:24:50 +0800
+User-Agent: KMail/1.13.2 (Linux/2.6.32-22-generic; KDE/4.4.2; x86_64; ; )
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+       Ben Herrenchmidt <benh@kernel.crashing.org>
+References: <1275479804.137633.565764505843.0.gpush@pororo> <201006031121.21896.jeremy.kerr@canonical.com> <20100603081354.GA4720@trinity.fluff.org>
+In-Reply-To: <20100603081354.GA4720@trinity.fluff.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1273508667-5152-2-git-send-email-npalix@diku.dk>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201006031824.53832.jeremy.kerr@canonical.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 10, 2010 at 06:24:24PM +0200, Nicolas Palix wrote:
-> Four targets are added. Each one generates a different
-> output kind: context, patch, org, report.
-> Every SmPL file in 'scripts/coccinelle' is given to the spatch frontend
-> (located in the 'scripts' directory), and applied to the entire
-> source tree.
+Hi Ben,
 
-A little late feedback.
-IIRC all points raised at first review has been addressed - good.
-
+> clk_enable(struct clk *clk)
+> {
+> 	if (clk->parent)
+> 		clk_enable(clk->parent)
+> 	...
+> }
 > 
-> Signed-off-by: Nicolas Palix <npalix@diku.dk>
-> Signed-off-by: Julia Lawall <julia@diku.dk>
-> ---
->  MAINTAINERS           |   10 ++++++++++
->  Makefile              |   20 ++++++++++++++++++--
+> clk_disable(struct clk *clk)
+> {
+> 	...
+> 	if (clk->parent)
+> 		clk_disable(clk->parent)
+> }
+> 
+> I think it is a really bad idea for each implementation to have to worry
+> about this. It sounds like a recipie for people to get wrong, especially
+> if we have a number of these implementations kicking around.
 
-The top-level Makefile is already in a very bad shape.
-Adding more stuff there is never good.
+OK, this would mean adding parent to struct clk:
 
-How about adding some infrastructure to support the various tools?
-Something along these lines:
+struct clk {
+	struct clk_operations	*ops;
+	atomic_t				enable_count;
+	struct clk			*parent;
+};
 
-All targets named %check will call a shell script:
-scripts/%check.sh
+I was originally intending for struct clk to have the absolute minimum of 
+fields, only those necessary for every clock in the system. parent didn't make 
+the cut, as some clocks don't have a parent.
 
-"make help" will call a script named:
-scripts/helpcheck.sh
+However, lets explore this a little - handling parents in the infrastructure 
+code this may simplify the hardware-specific code somewhat. We'd add the 
+parent-handling stuff to the global clk_enable/clk_disable:
 
-helpcheck.sh will contain all the ugly details
-about help for the various targets.
+static inline int clk_enable(struct clk *clk)
+{
+	int ret;
 
-We need to rename a few seldomly used targets to do this.
-Sample patch for top-level Makefile:
+	if (atomic_inc(clk->enable_count) != 1))
+		return 0;
 
-diff --git a/Makefile b/Makefile
-index efdc3d0..40bf83e 100644
---- a/Makefile
-+++ b/Makefile
-@@ -412,7 +412,7 @@ endif
- # of make so .config is not included in this case either (for *config).
- 
- no-dot-config-targets := clean mrproper distclean \
--			 cscope TAGS tags help %docs check% \
-+			 cscope TAGS tags help %docs %check \
- 			 include/linux/version.h headers_% \
- 			 kernelrelease kernelversion
- 
-@@ -1024,10 +1024,6 @@ include/linux/version.h: $(srctree)/Makefile FORCE
- include/generated/utsrelease.h: include/config/kernel.release FORCE
- 	$(call filechk,utsrelease.h)
- 
--PHONY += headerdep
--headerdep:
--	$(Q)find include/ -name '*.h' | xargs --max-args 1 scripts/headerdep.pl
--
- # ---------------------------------------------------------------------------
- 
- PHONY += depend dep
-@@ -1273,13 +1269,9 @@ help:
- 	 echo  '                    (default: $(INSTALL_HDR_PATH))'; \
- 	 echo  ''
- 	@echo  'Static analysers'
--	@echo  '  checkstack      - Generate a list of stack hogs'
--	@echo  '  namespacecheck  - Name space analysis on compiled kernel'
--	@echo  '  versioncheck    - Sanity check on version.h usage'
--	@echo  '  includecheck    - Check for duplicate included header files'
-+	@$(CONFIG_SHELL)$(srctree)/scripts/helpcheck.sh
- 	@echo  '  export_report   - List the usages of all exported symbols'
- 	@echo  '  headers_check   - Sanity check on exported headers'
--	@echo  '  headerdep       - Detect inclusion cycles in headers'; \
- 	 echo  ''
- 	@echo  'Kernel packaging:'
- 	@$(MAKE) $(build)=$(package-dir) help
-@@ -1427,20 +1419,10 @@ tags TAGS cscope: FORCE
- 	$(call cmd,tags)
- 
- # Scripts to check various things for consistency
-+# Call a helper script in scripts/ to do the actual job
- # ---------------------------------------------------------------------------
--
--includecheck:
--	find * $(RCS_FIND_IGNORE) \
--		-name '*.[hcS]' -type f -print | sort \
--		| xargs $(PERL) -w $(srctree)/scripts/checkincludes.pl
--
--versioncheck:
--	find * $(RCS_FIND_IGNORE) \
--		-name '*.[hcS]' -type f -print | sort \
--		| xargs $(PERL) -w $(srctree)/scripts/checkversion.pl
--
--namespacecheck:
--	$(PERL) $(srctree)/scripts/namespace.pl
-+%check:
-+	$(Q)$(CONFIG_SHELL)$(srctree)/scripts/$@.sh
- 
- export_report:
- 	$(PERL) $(srctree)/scripts/export_report.pl
-@@ -1448,20 +1430,7 @@ export_report:
- endif #ifeq ($(config-targets),1)
- endif #ifeq ($(mixed-targets),1)
- 
--PHONY += checkstack kernelrelease kernelversion
--
--# UML needs a little special treatment here.  It wants to use the host
--# toolchain, so needs $(SUBARCH) passed to checkstack.pl.  Everyone
--# else wants $(ARCH), including people doing cross-builds, which means
--# that $(SUBARCH) doesn't work here.
--ifeq ($(ARCH), um)
--CHECKSTACK_ARCH := $(SUBARCH)
--else
--CHECKSTACK_ARCH := $(ARCH)
--endif
--checkstack:
--	$(OBJDUMP) -d vmlinux $$(find . -name '*.ko') | \
--	$(PERL) $(src)/scripts/checkstack.pl $(CHECKSTACK_ARCH)
-+PHONY += kernelrelease kernelversion
- 
- kernelrelease:
- 	$(if $(wildcard include/config/kernel.release), $(Q)echo $(KERNELRELEASE), \
+	if (clk->parent) {
+		ret = clk_enable(clk->parent);
+		if (ret)
+			goto out_dec;
+	}
+
+	ret = clk->ops->enable(clk)
+	if (!ret)
+		return 0;
+
+out_dec:
+	atomic_dec(clk->enable_count);
+	return ret;
+}
+
+The downside here is that the static inline becomes quite bloated, and we can 
+no longer avoid the atomic operation if there is no enable op. I guess we 
+could add a:
+
+	if (!clk->ops->enable && !clk->parent)
+		return 0;
+
+but now were in serious "don't do that as a inline" territory. So we'd be 
+better off making this a proper function.
+
+[as an aside, I need to add the atomic_dec to the error path of my current 
+code, will respin a new version. But even then, it's small enough to inline]
+
+I think that handling the enable/disable in the hardware-specific op is an 
+acceptable solution. It's only one line of code (or two if you want to check 
+for the presence of a parent first), and is, after all, a hardware-specific 
+property of the clock.
+
+So, we either:
+
+1) keep it as is, with the hw-specific code handling parent enable/disable; or
+
+2) add the parent-handling code to the clock infrastructure and move the core
+   API functions out-of-line.
+
+> As a note, I also left the enable callback in the 'struct clk' instead
+> of in the ops, enable/disable is the most used case of these clock
+> functions, and as such should probably be the easiest to get to.
+
+I strongly disagree on this one. I want all of the ops in one place, not 
+scattered around the API.
+
+> Also, wheras plat-samsung has very few sets of clk_ops sitting about,
+> there are more enable/disable calls, and adding more fields to the
+> clocks to deal with this would add extra space to the kernel.
+
+Sorry, I don't think I understand your point here - you're saying that moving 
+the enable/disable callbacks to struct clk will increase the size of the 
+kernel (which is correct, as there are more struct clks than there are struct 
+clk_operations), so doesn't this provide an argument against doing this?
+
+> > Also, enable and disable in the external clock API have different return
+> > types.
+> 
+> does that really matter?
+
+Only if someone expects a failed disable to be detected by the driver.
+
+> > Either is fine with me - looks like 'ops' is more commonly used:
+> My pref. is for less typing.
+
+OK, will do this in the next revision.
+
+Cheers,
 
 
-
-A nice simplification of the top-level Mkefile.
-and an opportunity to document some of the
-magic shell commands used by the various tools.
-
-If we do this I know the scripts will sum up to a lot more
-lines but doing it distributed is better.
-And some of the lines would be comments that explains what is
-going on.
-
-An additinal benefit is that we can avoid touching
-the top-level Makefile next time we add a new
-%check target.
-
-As for cocci this would have the the effect that
-new scipts can be made as drop-in - no changes
-in any files. Just add the files to the
-correct directory.
-
-	Sam
+Jeremy
