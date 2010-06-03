@@ -1,117 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758957Ab0FCBQJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jun 2010 21:16:09 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:59537 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757816Ab0FCBQG convert rfc822-to-8bit (ORCPT
+	id S933473Ab0FCBQh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jun 2010 21:16:37 -0400
+Received: from fg-out-1718.google.com ([72.14.220.159]:20529 "EHLO
+	fg-out-1718.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758189Ab0FCBQf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jun 2010 21:16:06 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=mime-version:in-reply-to:references:date:message-id:subject:from:to:
-	cc:content-type:content-transfer-encoding:x-system-of-record;
-	b=mVG5leUeMBjlkN4PhUWm0GV6hRnGtjDxEPSRpGqQfIcxAsh80BdngzyUORjsdqbZy
-	NShJ7QQ+Ysf9Z14lTOyOQ==
-MIME-Version: 1.0
-In-Reply-To: <1275513074.2913.258.camel@sbs-t61.sc.intel.com>
-References: <20100210232343.GA11465@linux-os.sc.intel.com>
-	<tip-17d9ddc72fb8bba0d4f67868c9c612e472a594a9@git.kernel.org>
-	<1275136178.27810.13539.camel@twins>
-	<1275139902.27810.13737.camel@twins>
-	<AANLkTimZkyRwP5k290rUr-DUMhsynl9fzBkS68x-57KM@mail.gmail.com>
-	<1275412748.27810.27883.camel@twins>
-	<AANLkTilGfY1PnNgpEeB3AQEqTNoDJQfPTxK5LNUYb7ZA@mail.gmail.com>
-	<1275414172.27810.27961.camel@twins>
-	<AANLkTil8ly_3P2DgEI9oI_ZbYP6FkwP2lCY2v47iAn9-@mail.gmail.com>
-	<1275417720.27810.28160.camel@twins>
-	<1275513074.2913.258.camel@sbs-t61.sc.intel.com>
-Date: Wed, 2 Jun 2010 18:15:59 -0700
-Message-ID: <AANLkTim9MqwWx4v51joJ1m_wjfn_bggEFPsjxsR6TBgY@mail.gmail.com>
-Subject: Re: [PATCH] rbtree: undo augmented damage -v2
-From: Venkatesh Pallipadi <venki@google.com>
-To: Suresh Siddha <suresh.b.siddha@intel.com>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-       "mingo@redhat.com" <mingo@redhat.com>, "hpa@zytor.com" <hpa@zytor.com>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       "tglx@linutronix.de" <tglx@linutronix.de>,
-       "linux-tip-commits@vger.kernel.org" 
-	<linux-tip-commits@vger.kernel.org>,
-       Fabio Checconi <fabio@gandalf.sssup.it>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+	Wed, 2 Jun 2010 21:16:35 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
+        b=Ziu0bI3ecoL/NkOaATxZIDO/aTbkSCm8h9Lh5x1VR+waqBJYiKhxU4SznSFKracEz3
+         Wdh54opbcjiB4iulLILJhMguPzpsy3DnVELDYci9oOAs6UpdLsN7HDemzky6XOQmY7EZ
+         Qn5/vF3Gv9c+zQlUkFlMHOyui/h2Byk1A/lPs=
+From: Maxim Levitsky <maximlevitsky@gmail.com>
+To: Philip Langdale <philipl@overt.org>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>,
+       Maxim Levitsky <maximlevitsky@gmail.com>, adq_dvb@lidskialf.net,
+       "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>
+Subject: [PATCH] mmc: make sdhci work with ricoh mmc controller
+Date: Thu,  3 Jun 2010 04:16:27 +0300
+Message-Id: <1275527787-3783-1-git-send-email-maximlevitsky@gmail.com>
+X-Mailer: git-send-email 1.7.0.4
+In-Reply-To: <1275516180.30272.4.camel@maxim-laptop>
+References: <1275516180.30272.4.camel@maxim-laptop>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 2, 2010 at 2:11 PM, Suresh Siddha <suresh.b.siddha@intel.com> wrote:
-> On Tue, 2010-06-01 at 11:42 -0700, Peter Zijlstra wrote:
->> On Tue, 2010-06-01 at 11:09 -0700, Venkatesh Pallipadi wrote:
->> > On Tue, Jun 1, 2010 at 10:42 AM, Peter Zijlstra <peterz@infradead.org> wrote:
->> > > On Tue, 2010-06-01 at 10:34 -0700, Venkatesh Pallipadi wrote:
->> > >>
->> > >> Yes. This will cover all the cases on insert. But on erase, there is
->> > >> still a case where a rotate of sibling node is done during the
->> > >> re-coloration process. There we have a child change on sibling's
->> > >> child. I am not able to think of any easy way to handle that case.
->> > >
->> > > Let me go draw some figures with pen and paper to match up the erase
->> > > path with the rb_augment_erase_begin() code, because I can't quite spot
->> > > the case we're missing.
->> > >
->> > > If you have it handy, ascii art might help..
->> >
->> > It is this case
->> >
->> >     P
->> >    / \
->> >   N   S
->> >      / \
->> >     SL SR
->> >
->> > changing to
->> >
->> >     P
->> >    / \
->> >   N  SL
->> >       \
->> >        S
->> >         \
->> >         SR
->>
->> Right, but see: http://en.wikipedia.org/wiki/Red-black_tree
->> That is delete_case5, however then we fall into delete_case6 and perform
->> a left rotation.
->>
->> So suppose we start with the tree:
->>
->>     P                  P               P                SL
->>   /   \               / \             / \               / \
->>  D     S      -->    N  S      -->   N   SL     -->    P   S
->>   \   / \              / \                \           /     \
->>    N SL  SR          SL* SR                S*        N      SR
->>                                             \
->>                                              SR
->>
->> and then remove D, delete case 5 and finally delete case 6, * marks red.
->>
->> rb_augment_erase_begin(D) will return N, and then rb_augment_path(N)
->> will re-augment: N, P, SL and S.
->
->
->      P                       SL
->    /  \                     /  \
->   N    S       --->        N    S
->  /   /  \                 /      \
->  C   SL  SR               C        SR
->
-> If P needs to be removed, we need to re-augment S also in this case,
-> right? It looks like we are not handling this case.
->
+The current way of disabling it is not well tested by vendor
+and has all kinds of bugs that show up on resume from ram/disk.
 
-rb_augment_erase_begin() should take care of that. In this case, it
-will return S as the deepest node and we start the walk-back-to-root
-from there.
+Old way of disabling is still supported by
+continuing to use CONFIG_MMC_RICOH_MMC.
 
-Thanks,
-Venki
+Based on 'http://list.drzeus.cx/pipermail/sdhci-devel/2007-December/002085.html'
+
+Signed-off-by: Maxim Levitsky <maximlevitsky@gmail.com>
+CC: adq_dvb@lidskialf.net
+CC: linux-mmc@vger.kernel.org <linux-mmc@vger.kernel.org>
+---
+ drivers/mmc/host/sdhci-pci.c |   34 ++++++++++++++++++++++++++++++++++
+ drivers/mmc/host/sdhci.c     |    5 ++++-
+ drivers/mmc/host/sdhci.h     |    2 ++
+ 3 files changed, 40 insertions(+), 1 deletions(-)
+
+diff --git a/drivers/mmc/host/sdhci-pci.c b/drivers/mmc/host/sdhci-pci.c
+index 65483fd..3843780 100644
+--- a/drivers/mmc/host/sdhci-pci.c
++++ b/drivers/mmc/host/sdhci-pci.c
+@@ -17,6 +17,7 @@
+ #include <linux/pci.h>
+ #include <linux/dma-mapping.h>
+ #include <linux/slab.h>
++#include <linux/device.h>
+ 
+ #include <linux/mmc/host.h>
+ 
+@@ -85,6 +86,26 @@ static int ricoh_probe(struct sdhci_pci_chip *chip)
+ 	    chip->pdev->subsystem_vendor == PCI_VENDOR_ID_SONY)
+ 		chip->quirks |= SDHCI_QUIRK_NO_CARD_NO_RESET;
+ 
++	/* To disable hardware races against MMC part */
++	device_disable_async_suspend(&chip->pci_dev->dev);
++	return 0;
++}
++
++static int ricoh_mmc_probe_slot(struct sdhci_pci_slot *slot)
++{
++	slot->host->caps =
++		((0x21 << SDHCI_TIMEOUT_CLK_SHIFT)
++			& SDHCI_TIMEOUT_CLK_MASK) |
++
++		((0x21 << SDHCI_CLOCK_BASE_SHIFT)
++			& SDHCI_CLOCK_BASE_MASK) |
++
++		SDHCI_TIMEOUT_CLK_UNIT |
++		SDHCI_CAN_VDD_330 |
++		SDHCI_CAN_DO_SDMA ;
++
++	/* To disable hardware races against SDHC part */
++	device_disable_async_suspend(&slot->chip->pci_dev->dev);
+ 	return 0;
+ }
+ 
+@@ -95,6 +116,11 @@ static const struct sdhci_pci_fixes sdhci_ricoh = {
+ 			  SDHCI_QUIRK_CLOCK_BEFORE_RESET,
+ };
+ 
++static const struct sdhci_pci_fixes sdhci_ricoh_mmc = {
++	.probe_slot	= ricoh_mmc_probe_slot,
++	.quirks		= SDHCI_QUIRK_NO_CARD_NO_RESET,
++};
++
+ static const struct sdhci_pci_fixes sdhci_ene_712 = {
+ 	.quirks		= SDHCI_QUIRK_SINGLE_POWER_WRITE |
+ 			  SDHCI_QUIRK_BROKEN_DMA,
+@@ -374,6 +400,14 @@ static const struct pci_device_id pci_ids[] __devinitdata = {
+ 	},
+ 
+ 	{
++		.vendor         = PCI_VENDOR_ID_RICOH,
++		.device         = 0x843,
++		.subvendor      = PCI_ANY_ID,
++		.subdevice      = PCI_ANY_ID,
++		.driver_data    = (kernel_ulong_t)&sdhci_ricoh_mmc,
++	},
++
++	{
+ 		.vendor		= PCI_VENDOR_ID_ENE,
+ 		.device		= PCI_DEVICE_ID_ENE_CB712_SD,
+ 		.subvendor	= PCI_ANY_ID,
+diff --git a/drivers/mmc/host/sdhci.c b/drivers/mmc/host/sdhci.c
+index c6d1bd8..dbd9367 100644
+--- a/drivers/mmc/host/sdhci.c
++++ b/drivers/mmc/host/sdhci.c
+@@ -1687,7 +1687,10 @@ int sdhci_add_host(struct sdhci_host *host)
+ 			host->version);
+ 	}
+ 
+-	caps = sdhci_readl(host, SDHCI_CAPABILITIES);
++	if (host->caps)
++		caps = host->caps;
++	else
++		caps = sdhci_readl(host, SDHCI_CAPABILITIES);
+ 
+ 	if (host->quirks & SDHCI_QUIRK_FORCE_DMA)
+ 		host->flags |= SDHCI_USE_SDMA;
+diff --git a/drivers/mmc/host/sdhci.h b/drivers/mmc/host/sdhci.h
+index c846813..b41581a 100644
+--- a/drivers/mmc/host/sdhci.h
++++ b/drivers/mmc/host/sdhci.h
+@@ -292,6 +292,8 @@ struct sdhci_host {
+ 
+ 	struct timer_list	timer;		/* Timer for timeouts */
+ 
++	unsigned int		caps;		/* Alternative capabilities */
++
+ 	unsigned long		private[0] ____cacheline_aligned;
+ };
+ 
+-- 
+1.7.0.4
+
