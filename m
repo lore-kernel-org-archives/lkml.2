@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750977Ab0FCEGS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jun 2010 00:06:18 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:37778 "EHLO
+	id S1750841Ab0FCEGO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jun 2010 00:06:14 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:37776 "EHLO
 	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750770Ab0FCEGL (ORCPT
+	with ESMTP id S1750708Ab0FCEGF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jun 2010 00:06:11 -0400
+	Thu, 3 Jun 2010 00:06:05 -0400
 From: Wolfram Sang <w.sang@pengutronix.de>
 To: devicetree-discuss@ozlabs.org
 Cc: linux-kernel@vger.kernel.org,
        Linus Torvalds <torvalds@linux-foundation.org>,
        Wolfram Sang <w.sang@pengutronix.de>,
        Grant Likely <grant.likely@secretlab.ca>
-Subject: [PATCH 2/2] of/crypto: n2_core: fix build breakage
-Date: Thu,  3 Jun 2010 06:03:47 +0200
-Message-Id: <1275537827-28921-2-git-send-email-w.sang@pengutronix.de>
+Subject: [PATCH 1/2] of/powerpc: fix fsl_msi device node pointer
+Date: Thu,  3 Jun 2010 06:03:46 +0200
+Message-Id: <1275537827-28921-1-git-send-email-w.sang@pengutronix.de>
 X-Mailer: git-send-email 1.7.0
 In-Reply-To: <AANLkTikNcAvyHf1yHPweNBVSCSPNmq-JaEOgYW2FYUGJ@mail.gmail.com>
 References: <AANLkTikNcAvyHf1yHPweNBVSCSPNmq-JaEOgYW2FYUGJ@mail.gmail.com>
@@ -30,67 +30,22 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 Signed-off-by: Wolfram Sang <w.sang@pengutronix.de>
 Cc: Grant Likely <grant.likely@secretlab.ca>
 ---
- drivers/crypto/n2_core.c |   12 ++++++------
- 1 files changed, 6 insertions(+), 6 deletions(-)
+ arch/powerpc/sysdev/fsl_msi.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/crypto/n2_core.c b/drivers/crypto/n2_core.c
-index 8566be8..3f813d3 100644
---- a/drivers/crypto/n2_core.c
-+++ b/drivers/crypto/n2_core.c
-@@ -1398,7 +1398,7 @@ static int find_devino_index(struct of_device *dev, struct spu_mdesc_info *ip,
- 
- 	intr = ip->ino_table[i].intr;
- 
--	dev_intrs = of_get_property(dev->node, "interrupts", NULL);
-+	dev_intrs = of_get_property(dev->dev.of_node, "interrupts", NULL);
- 	if (!dev_intrs)
- 		return -ENODEV;
- 
-@@ -1574,7 +1574,7 @@ static int spu_mdesc_walk_arcs(struct mdesc_handle *mdesc,
- 		id = mdesc_get_property(mdesc, tgt, "id", NULL);
- 		if (table[*id] != NULL) {
- 			dev_err(&dev->dev, "%s: SPU cpu slot already set.\n",
--				dev->node->full_name);
-+				dev->dev.of_node->full_name);
- 			return -EINVAL;
- 		}
- 		cpu_set(*id, p->sharing);
-@@ -1595,7 +1595,7 @@ static int handle_exec_unit(struct spu_mdesc_info *ip, struct list_head *list,
- 	p = kzalloc(sizeof(struct spu_queue), GFP_KERNEL);
- 	if (!p) {
- 		dev_err(&dev->dev, "%s: Could not allocate SPU queue.\n",
--			dev->node->full_name);
-+			dev->dev.of_node->full_name);
- 		return -ENOMEM;
+diff --git a/arch/powerpc/sysdev/fsl_msi.c b/arch/powerpc/sysdev/fsl_msi.c
+index 0f5bee9..962c2d8 100644
+--- a/arch/powerpc/sysdev/fsl_msi.c
++++ b/arch/powerpc/sysdev/fsl_msi.c
+@@ -347,7 +347,7 @@ static int __devinit fsl_of_msi_probe(struct of_device *dev,
+ 		goto error_out;
  	}
+ 	offset = 0;
+-	p = of_get_property(dev->node, "msi-available-ranges", &len);
++	p = of_get_property(dev->dev.of_node, "msi-available-ranges", &len);
+ 	if (p)
+ 		offset = *p / IRQS_PER_MSI_REG;
  
-@@ -1684,7 +1684,7 @@ static int __devinit grab_mdesc_irq_props(struct mdesc_handle *mdesc,
- 	const unsigned int *reg;
- 	u64 node;
- 
--	reg = of_get_property(dev->node, "reg", NULL);
-+	reg = of_get_property(dev->dev.of_node, "reg", NULL);
- 	if (!reg)
- 		return -ENODEV;
- 
-@@ -1836,7 +1836,7 @@ static int __devinit n2_crypto_probe(struct of_device *dev,
- 
- 	n2_spu_driver_version();
- 
--	full_name = dev->node->full_name;
-+	full_name = dev->dev.of_node->full_name;
- 	pr_info("Found N2CP at %s\n", full_name);
- 
- 	np = alloc_n2cp();
-@@ -1948,7 +1948,7 @@ static int __devinit n2_mau_probe(struct of_device *dev,
- 
- 	n2_spu_driver_version();
- 
--	full_name = dev->node->full_name;
-+	full_name = dev->dev.of_node->full_name;
- 	pr_info("Found NCP at %s\n", full_name);
- 
- 	mp = alloc_ncp();
 -- 
 1.7.0
 
