@@ -1,81 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933664Ab0FCCpE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jun 2010 22:45:04 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:46407 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933579Ab0FCCpB convert rfc822-to-8bit (ORCPT
+	id S933677Ab0FCCsy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jun 2010 22:48:54 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:62573 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933577Ab0FCCsw convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jun 2010 22:45:01 -0400
+	Wed, 2 Jun 2010 22:48:52 -0400
 MIME-Version: 1.0
-In-Reply-To: <20100602233243.GA27666@core.coreip.homeip.net>
-References: <20100601113309.609349fd@notabene.brown>
-	<alpine.LFD.2.00.1006010340160.2933@localhost.localdomain>
-	<20100601122012.1edeaf48@notabene.brown>
-	<alpine.LFD.2.00.1006011243350.2933@localhost.localdomain>
-	<20100602153235.340a7852@notabene.brown>
-	<AANLkTikVjAf5nHdMx2bcHRAUSkq99s-b5YZCECXIJJLy@mail.gmail.com>
-	<20100602180614.729246ea@notabene.brown>
-	<AANLkTimISbs4X2YR_Pal9A80mpkNyCy8laWBcOgR2Cl7@mail.gmail.com>
-	<20100602210224.6ae2333f@notabene.brown>
-	<20100602210521.54b9cd9b@schatten.dmk.lab>
-	<20100602233243.GA27666@core.coreip.homeip.net>
-Date: Wed, 2 Jun 2010 19:44:59 -0700
-Message-ID: <AANLkTim3WQ6qgBH5Cx5tkf-LPtYZ7L6BN6OZIJpQbET1@mail.gmail.com>
-Subject: Re: [PATCH] - race-free suspend. Was: Re: [linux-pm] [PATCH 0/8] 
-	Suspend block api (version 8)
-From: =?ISO-8859-1?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: Florian Mickler <florian@mickler.org>, Neil Brown <neilb@suse.de>,
-       Thomas Gleixner <tglx@linutronix.de>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-       Alan Stern <stern@rowland.harvard.edu>,
-       Felipe Balbi <felipe.balbi@nokia.com>,
-       Peter Zijlstra <peterz@infradead.org>,
-       "Paul@smtp1.linux-foundation.org" <Paul@smtp1.linux-foundation.org>,
-       LKML <linux-kernel@vger.kernel.org>,
-       Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
-       Linux PM <linux-pm@lists.linux-foundation.org>,
-       Alan Cox <alan@lxorguk.ukuu.org.uk>,
-       James Bottomley <James.Bottomley@suse.de>
-Content-Type: text/plain; charset=ISO-8859-1
+Message-ID: <57b44b18-0754-445d-af8c-9b3b1da6bd0e@default>
+Date: Wed, 2 Jun 2010 19:47:14 -0700 (PDT)
+From: Dan Magenheimer <dan.magenheimer@oracle.com>
+To: Jeremy Fitzhardinge <jeremy@goop.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>, chris.mason@oracle.com,
+       viro@zeniv.linux.org.uk, adilger@Sun.COM, tytso@mit.edu,
+       mfasheh@suse.com, joel.becker@oracle.com, matthew@wil.cx,
+       linux-btrfs@vger.kernel.org, linux-kernel@vger.kernel.org,
+       linux-fsdevel@vger.kernel.org, linux-ext4@vger.kernel.org,
+       ocfs2-devel@oss.oracle.com, linux-mm@kvack.org, ngupta@vflare.org,
+       JBeulich@novell.com, kurt.hackel@oracle.com, npiggin@suse.de,
+       dave.mccracken@oracle.com, riel@redhat.com, avi@redhat.com,
+       konrad.wilk@oracle.com
+Subject: RE: [PATCH V2 2/7] Cleancache (was Transcendent Memory): core files
+References: <20100528173550.GA12219@ca-server1.us.oracle.com>
+ <20100602122900.6c893a6a.akpm@linux-foundation.org>
+ <0be9e88e-7b0d-471d-8d49-6dc593dd43be@default 4C06F571.3050306@goop.org>
+In-Reply-To: <4C06F571.3050306@goop.org>
+X-Priority: 3
+X-Mailer: Oracle Beehive Extensions for Outlook 1.5.1.5.2  (401224) [OL
+ 12.0.6514.5000]
+Content-Type: text/plain; charset=us-ascii
 Content-Transfer-Encoding: 8BIT
+X-Auth-Type: Internal IP
+X-Source-IP: acsinet15.oracle.com [141.146.126.227]
+X-CT-RefId: str=0001.0A090205.4C0717FB.016D:SCFMA922111,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 2, 2010 at 4:32 PM, Dmitry Torokhov
-<dmitry.torokhov@gmail.com> wrote:
-> On Wed, Jun 02, 2010 at 09:05:21PM +0200, Florian Mickler wrote:
->> On Wed, 2 Jun 2010 21:02:24 +1000
->> Neil Brown <neilb@suse.de> wrote:
->> >
->> > And this decision (to block suspend) really needs to be made in the driver,
->> > not in userspace?
->>
->> Well, it fits. The requirement is a direct consequence of the intimate
->> knowledge the driver has about the driven devices.
->
-> That is not really true. A driver does have intimate knowledge of the
-> device, however it does not necessarily have an idea about the data read
-> from the device. Consider the gpio_matrix driver: Arve says that it has
-> to continue scanning matrix once first interrupt arrvies. But it really
-> depends on what key has been pressed - if user pressed KEY_SUSPEND or
-> KEY_POWER it cmight be better if we did not wait for key release but
-> initiated the action right away. The decision on how system reacts to a
-> key press does not belong to the driver but really to userspace.
+> > It is intended that there be different flavours but only
+> > one can be used in any running kernel.  A driver file/module
+> > claims the cleancache_ops pointer (and should check to ensure
+> > it is not already claimed).  And if nobody claims cleancache_ops,
+> > the hooks should be as non-intrusive as possible.
+> >
+> > Also note that the operations occur on the order of the number
+> > of I/O's, so definitely a lot, but "zillion" may be a bit high. :-)
+> >
+> > If you think this is a showstoppper, it could be changed
+> > to be bound only at compile-time, but then (I think) the claimer
+> > could never be a dynamically-loadable module.
+> 
+> Andrew is suggesting that rather than making cleancache_ops a pointer
+> to
+> a structure, just make it a structure, so that calling a function is a
+> matter of cleancache_ops.func rather than cleancache_ops->func, thereby
+> avoiding a pointer dereference.
 
-If we just suspend while the keypad scan is active, a second press of
-KEY_POWER would not be able wake the device up. The gpio keypad matrix
-driver has two operating modes. No keys are pressed: all the outputs
-are active so a key press will generate an interrupt in one of the
-inputs. Keys are pressed: Activate a single output at a time so we can
-determine which keys are pressed. The second mode is entered when the
-driver gets an interrupt in the first mode. The first mode is entered
-if the scan detected that no keys are pressed. The driver could be
-modified to stop the scan on suspend and forcibly put the device back
-in no-keys-pressed state, but pressing additional keys connected to
-the same input can no longer generate any events (the input does not
-change).
+OK, I see.  So the claimer of the cleancache_ops structure
+just fills in all of the func fields individually?  That
+would work too.  IIUC it wouldn't save any instructions
+when cleancache_ops is unclaimed because it is still necessary
+to check a func pointer against NULL, but would save an extra
+pointer indirection and possible cache miss for every use
+of any func when it is claimed.
 
--- 
-Arve Hjønnevåg
+I'll change that for next rev.
+
+Thanks and sorry I misunderstood!
+Dan
