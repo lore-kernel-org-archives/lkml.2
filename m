@@ -1,88 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755469Ab0FCObE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jun 2010 10:31:04 -0400
-Received: from ist.d-labs.de ([213.239.218.44]:59915 "EHLO mx01.d-labs.de"
+	id S1755538Ab0FCOf7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jun 2010 10:35:59 -0400
+Received: from www.tglx.de ([62.245.132.106]:58459 "EHLO www.tglx.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754061Ab0FCObB convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jun 2010 10:31:01 -0400
-Date: Thu, 3 Jun 2010 16:30:49 +0200
-From: Florian Mickler <florian@mickler.org>
-To: markgross@thegnar.org
-Cc: 640e9920@gmail.com,
-       Arve =?ISO-8859-15?Q?Hj=F8nnev=E5g?= <arve@android.com>,
-       Brian Swetland <swetland@google.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-       Alan Stern <stern@rowland.harvard.edu>,
+	id S1755397Ab0FCOfx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Jun 2010 10:35:53 -0400
+Date: Thu, 3 Jun 2010 16:35:12 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: James Bottomley <James.Bottomley@suse.de>
+cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, "Gross, Mark" <mark.gross@intel.com>,
+       Florian Mickler <florian@mickler.org>,
+       =?ISO-8859-15?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>,
+       Neil Brown <neilb@suse.de>, "tytso@mit.edu" <tytso@mit.edu>,
        Peter Zijlstra <peterz@infradead.org>,
+       LKML <linux-kernel@vger.kernel.org>,
+       Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
        Linux PM <linux-pm@lists.linux-foundation.org>,
-       Alan Cox <alan@lxorguk.ukuu.org.uk>,
-       Matthew Garrett <mjg59@srcf.ucam.org>,
-       Thomas Gleixner <tglx@linutronix.de>,
-       LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>
+       "felipe.balbi@nokia.com" <felipe.balbi@nokia.com>
 Subject: Re: [linux-pm] [PATCH 0/8] Suspend block api (version 8)
-Message-ID: <20100603163049.4eba1574@schatten.dmk.lab>
-In-Reply-To: <20100603132449.GA15595@gvim.org>
-References: <20100531232617.GF31155@gvim.org>
-	<20100601090737.4bc243d9@schatten.dmk.lab>
-	<20100601140519.GC1281@gvim.org>
-	<AANLkTikF-B23_UWG1O3tlBl4m8NStAJllGhhevNhYZT6@mail.gmail.com>
-	<20100602133910.GA9106@gvim.org>
-	<AANLkTilSU79cnBODXFokzIPB1hRcZBxbwTgTQ59MeKcK@mail.gmail.com>
-	<20100603031842.GB11311@gvim.org>
-	<AANLkTiks7sQBbDnN6QrtGVqSXLob1qCs7VA12LZAWnfM@mail.gmail.com>
-	<20100603054018.GE11311@gvim.org>
-	<AANLkTikvuqtcGS1UdePRxipSk4S5Vmci2uPfFtzZgx6X@mail.gmail.com>
-	<20100603132449.GA15595@gvim.org>
-X-Mailer: Claws Mail 3.7.5 (GTK+ 2.18.9; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: 8BIT
+In-Reply-To: <1275571471.5914.2.camel@mulgrave.site>
+Message-ID: <alpine.LFD.2.00.1006031602160.2933@localhost.localdomain>
+References: <20100527232357.6d14fdb2@lxorguk.ukuu.org.uk>  <20100601135102.GA8098@srcf.ucam.org>  <1275426085.21962.967.camel@mulgrave.site> <201006020024.14220.rjw@sisk.pl>  <1275431816.21962.1108.camel@mulgrave.site>  <AANLkTikObnAZbyOxeYAhXcEbimO3XTTO-HlC9CD_HH6t@mail.gmail.com>
+  <1275451342.21962.1777.camel@mulgrave.site>  <AANLkTilRcFZyYa-0HlaM-6IEZSyar3S9S_cCWSFax2Zo@mail.gmail.com>  <1275491111.2799.110.camel@mulgrave.site>  <20100602214748.7742e3ae@schatten.dmk.lab>  <1275511271.2799.516.camel@mulgrave.site> 
+ <20100603010607.5baf82a6@schatten.dmk.lab>  <CA1BBBBC9359F04AA639128AC0D5D1E9692ABC92@orsmsx502.amr.corp.intel.com>  <20100603110312.48a508dc@lxorguk.ukuu.org.uk> <1275571471.5914.2.camel@mulgrave.site>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 3 Jun 2010 06:24:49 -0700
-mark gross <640e9920@gmail.com> wrote:
+On Thu, 3 Jun 2010, James Bottomley wrote:
 
-> On Thu, Jun 03, 2010 at 12:10:03AM -0700, Arve Hjønnevåg wrote:
-
-> ok I'm not getting it.
-> is this a fancy com-sci algorithm I should know about?
+> On Thu, 2010-06-03 at 11:03 +0100, Alan Cox wrote:
+> > > [mtg: ] This has been a pain point for the PM_QOS implementation.  They change the constrain back and forth at the transaction level of the i2c driver.  The pm_qos code really wasn't made to deal with such hot path use, as each such change triggers a re-computation of what the aggregate qos request is.
+> > 
+> > That should be trivial in the usual case because 99% of the time you can
+> > hot path
+> > 
+> > 	the QoS entry changing is the latest one
+> > 	there have been no other changes
+> > 	If it is valid I can use the cached previous aggregate I cunningly
+> > 		saved in the top QoS entry when I computed the new one
+> > 
+> > (ie most of the time from the kernel side you have a QoS stack)
 > 
-> --mgross
+> It's not just the list based computation: that's trivial to fix, as you
+> say ... the other problem is the notifier chain, because that's blocking
+> and could be long.  Could we invoke the notifier through a workqueue?
+> It doesn't seem to have veto power, so it's pure notification, does it
+> matter if the notice is delayed (as long as it's in order)?
 
-I think you are at an advantage if you have studied fancy com-sci for
-this? Here is an example:
+It depends on the information type and for a lot of things we might
+get away without notifiers. 
 
-say you have 5 constraints: 
-qos1 with a value of 10
-qos2 with 5
-qos3 with 10
-qos4 with 11
+The only real issue is when you need to get other cores out of their
+deep idle state to make a new constraint work. That's what we do with
+the DMA latency notifier right now.
 
-Now, you hash that list by the qos-values:
+Thanks,
 
-11    ---- 10 	----- 5 
-|	   |  	      |
-qos4	   qos3       qos2
-	   |
-	   qos1
-
-
-To compute the maximum you just walk the "----" list.
-
-To reduce qos4 from 11 to 5 you remove it from its "|" list and
-prepend it to the corresponding "|" list.  (4 Pointer adjustments +
-searching the "-----" list for the right place to insert.  
-
-result:
-
-10 ---- 5
-|	|
-qos3	qos4
-|	|
-qos1	qos2
-
-Cheers,
-Flo
+	tglx
