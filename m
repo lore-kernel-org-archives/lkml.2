@@ -1,94 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757102Ab0FCRug (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jun 2010 13:50:36 -0400
-Received: from bluebox.CS.Princeton.EDU ([128.112.136.38]:55424 "EHLO
-	bluebox.CS.Princeton.EDU" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756086Ab0FCRuf convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jun 2010 13:50:35 -0400
-Subject: Re: [stable] Boot failure with 2.6.27.46 on Xeon E5620 (Westmere EP)
-Mime-Version: 1.0 (Apple Message framework v1078)
-Content-Type: text/plain; charset=utf-8
-From: "=?utf-8?Q?=22S.=C3=87a=C4=9Flar_Onur=22?=" <caglar@CS.Princeton.EDU>
-In-Reply-To: <20100603164039.GA7177@kroah.com>
-Date: Thu, 3 Jun 2010 13:50:22 -0400
-Cc: Suresh Siddha <suresh.b.siddha@intel.com>,
-       "stable@kernel.org" <stable@kernel.org>,
-       "hpa@zytor.com" <hpa@zytor.com>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       "Song, Youquan" <youquan.song@intel.com>
-Content-Transfer-Encoding: 8BIT
-Message-Id: <B7E1FDC5-6008-45F9-8399-CC51630910C7@CS.Princeton.EDU>
-References: <000954C6-B4AC-4FD8-BA3B-C3B199C7607F@CS.Princeton.EDU> <20100525155307.GA7453@kroah.com> <620C3556-2708-4704-90F3-37DDEF1A404E@CS.Princeton.EDU> <20100525205123.GA14993@kroah.com> <1274833451.2892.574.camel@sbs-t61.sc.intel.com> <2293F1A2-B4DE-4C15-9BAC-CC2E546943D0@CS.Princeton.EDU> <20100603164039.GA7177@kroah.com>
-To: Greg KH <greg@kroah.com>
-X-Mailer: Apple Mail (2.1078)
-X-Proofpoint-Virus-Version: vendor=nai engine=5400 definitions=6002 signatures=622531
-X-Proofpoint-Spam-Reason: safe
+	id S932291Ab0FCRxN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jun 2010 13:53:13 -0400
+Received: from kroah.org ([198.145.64.141]:58941 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757122Ab0FCRxJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Jun 2010 13:53:09 -0400
+Date: Thu, 3 Jun 2010 10:42:03 -0700
+From: Greg KH <greg@kroah.com>
+To: Mike Frysinger <vapier@gentoo.org>
+Cc: linux-serial@vger.kernel.org, Greg Kroah-Hartman <gregkh@suse.de>,
+       Alan Cox <alan@lxorguk.ukuu.org.uk>,
+       uclinux-dist-devel@blackfin.uclinux.org, linux-kernel@vger.kernel.org,
+       Graf Yang <graf.yang@analog.com>
+Subject: Re: [PATCH 1/2] serial: bfin_5xx: IRDA is not affected by anomaly
+ 05000230
+Message-ID: <20100603174203.GE9307@kroah.com>
+References: <1275305372-20523-1-git-send-email-vapier@gentoo.org>
+ <20100603174131.GD9307@kroah.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100603174131.GD9307@kroah.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Greg,
-
-On Jun 3, 2010, at 12:40 PM, Greg KH wrote:
-
-> On Wed, Jun 02, 2010 at 07:54:29PM -0400, "S.Çağlar Onur" wrote:
->> Hi Suresh,
->> 
->> On May 25, 2010, at 8:24 PM, Suresh Siddha wrote:
->> 
->>> On Tue, 2010-05-25 at 13:51 -0700, Greg KH wrote:
->>>> On Tue, May 25, 2010 at 04:32:16PM -0400, "S.Çağlar Onur" wrote:
->>>>> Hi Greg,
->>>>> 
->>>>> On May 25, 2010, at 11:53 AM, Greg KH wrote:
->>>>> 
->>>>>> On Tue, May 25, 2010 at 11:10:28AM -0400, "S.Çağlar Onur" wrote:
->>>>>>> Hi,
->>>>>>> 
->>>>>>> We are observing boot failures [1] & [2] on some of our servers (Dell
->>>>>>> r410) with 2.6.27-stable kernels. I found following commit in upstream
->>>>>>> tree via a quick search (but I haven't tried it yet) so I don't know
->>>>>>> whether I'm on the right track or not. 
->>>>>>> 
->>>>>>> Please let me know if anything else is needed...
->>>>>> 
->>>>>> Has any .27 kernel worked on these machines?  If so, can you narrow it
->>>>>> down to the patch that caused the problem?
->>>>> 
->>>>> I don't think any .27 kernel worked on those machines before. But in
->>>>> any case I'll try (I don't have a physical access to those machines as
->>>>> they are located in China) an older .27 release to see.
->>>> 
->>>> Ok, so it isn't a regression, which is what I want to know.
->>>> 
->>>> New hardware like this, probably will only work on newer kernel
->>>> versions, so please use those instead :)
->>> 
->>> I can't think of any known issues in 2.6.27 that can lead to this kind
->>> of boot failure on WSM-EP. Caglar, It will be nice if you can do git
->>> bisect between working and non-working kernels.
->> 
->> Neither 2.6.27 nor 2.6.27.45 not able to boot those servers, according
->> to the on-site admins the boot stuck at following stage[1].
+On Thu, Jun 03, 2010 at 10:41:31AM -0700, Greg KH wrote:
+> On Mon, May 31, 2010 at 07:29:31AM -0400, Mike Frysinger wrote:
+> > From: Graf Yang <graf.yang@analog.com>
+> > 
+> > Anomaly 05000230 (over sampling of the UART STOP bit) applies only when
+> > the peripheral is operating in UART mode.  So drop the anomaly handling
+> > when the UART is in IRDA mode.
+> > 
+> > Signed-off-by: Graf Yang <graf.yang@analog.com>
+> > Signed-off-by: Mike Frysinger <vapier@gentoo.org>
+> > ---
+> >  drivers/serial/bfin_5xx.c |    7 ++++++-
+> >  1 files changed, 6 insertions(+), 1 deletions(-)
+> > 
+> > diff --git a/drivers/serial/bfin_5xx.c b/drivers/serial/bfin_5xx.c
+> > index 96f7e74..a78652b 100644
+> > --- a/drivers/serial/bfin_5xx.c
+> > +++ b/drivers/serial/bfin_5xx.c
+> > @@ -869,7 +869,12 @@ bfin_serial_set_termios(struct uart_port *port, struct ktermios *termios,
+> >  	}
+> >  
+> >  	baud = uart_get_baud_rate(port, termios, old, 0, port->uartclk/16);
+> > -	quot = uart_get_divisor(port, baud) - ANOMALY_05000230;
+> > +	quot = uart_get_divisor(port, baud);
+> > +
+> > +	/* If discipline is not IRDA, apply ANOMALY_05000230 */
+> > +	if (termios->c_line != N_IRDA)
+> > +		quot -= ANOMALY_05000230;
+> > +
 > 
-> Good, it's not a regression :)
+> This can't be applied to the current tree, did you make it backwards?
 
-Seems so :)
-
-> Care to upgrade to a newer kernel version and see if that works?
-
-I know 2.6.3x kernels boots those boxes without a problem, that was the first thing that I tried. 
-
-In any case, I'll try to find a way to solve that problem as 2.6.27.46 is the kernel that we are using on some nodes of Planet-Lab. If you (any of you) have any ideas/patches/solutions please feel free to share it with me (and I'll let you know If I can find anything). 
-
-> thanks,
-> 
-> greg k-h
-
-
-Best regards,
---
-S.Çağlar Onur <caglar@cs.princeton.edu>
-
+Crap, that's because I already had it in my tree, doh...
