@@ -1,19 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753175Ab0FCSKF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jun 2010 14:10:05 -0400
-Received: from kroah.org ([198.145.64.141]:39943 "EHLO coco.kroah.org"
+	id S1753552Ab0FCSKI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jun 2010 14:10:08 -0400
+Received: from kroah.org ([198.145.64.141]:39955 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752025Ab0FCSKD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jun 2010 14:10:03 -0400
-Subject: patch staging-comedi-fixing-ni_labpc-to-mite-dependancy.patch added to gregkh-2.6 tree
-To: linux@blala.de, gregkh@suse.de, linux@kbdbabel.org,
-       linux-kernel@vger.kernel.org, randy.dunlap@oracle.com,
+	id S1753112Ab0FCSKF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Jun 2010 14:10:05 -0400
+Subject: patch staging-phison-depends-on-ata_bmdma.patch added to gregkh-2.6 tree
+To: randy.dunlap@oracle.com, gregkh@suse.de, linux-kernel@vger.kernel.org,
        sfr@canb.auug.org.au
 From: <gregkh@suse.de>
-Date: Thu, 03 Jun 2010 11:09:15 -0700
-In-Reply-To: <alpine.DEB.1.10.1006031545010.23736@blala.de>
-Message-ID: <12755885553054@site>
+Date: Thu, 03 Jun 2010 11:09:16 -0700
+In-Reply-To: <20100526103002.ac2c6703.randy.dunlap@oracle.com>
+Message-ID: <12755885561990@site>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=ANSI_X3.4-1968
 Content-Transfer-Encoding: 8bit
@@ -24,44 +23,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 This is a note to let you know that I've just added the patch titled
 
-    Subject: Staging: comedi: fixing ni_labpc to mite dependancy
+    Subject: Staging: phison: depends on ATA_BMDMA
 
 to my gregkh-2.6 tree.  Its filename is
 
-    staging-comedi-fixing-ni_labpc-to-mite-dependancy.patch
+    staging-phison-depends-on-ata_bmdma.patch
 
 This tree can be found at 
     http://www.kernel.org/pub/linux/kernel/people/gregkh/gregkh-2.6/patches/
 
 
->From linux@blala.de  Thu Jun  3 10:33:50 2010
-From: Alexander Kurz <linux@blala.de>
-Date: Thu, 3 Jun 2010 15:50:24 +0400 (MSD)
-Subject: Staging: comedi: fixing ni_labpc to mite dependancy
-To: Randy Dunlap <randy.dunlap@oracle.com>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, Alexander Kurz <linux@kbdbabel.org>, linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>, gregkh@suse.de
-Message-ID: <alpine.DEB.1.10.1006031545010.23736@blala.de>
+>From randy.dunlap@oracle.com  Tue Jun  1 14:14:50 2010
+From: Randy Dunlap <randy.dunlap@oracle.com>
+Date: Wed, 26 May 2010 10:30:02 -0700
+Subject: Staging: phison: depends on ATA_BMDMA
+To: Stephen Rothwell <sfr@canb.auug.org.au>, gregkh@suse.de
+Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>, evan_ko@phison.com
+Message-ID: <20100526103002.ac2c6703.randy.dunlap@oracle.com>
 
 
-the dependancy of ni_labpc on mite was missing,
+From: Randy Dunlap <randy.dunlap@oracle.com>
 
-Signed-off-by: Alexander Kurz <linux@kbdbabel.org>
-Acked-by: Randy Dunlap <randy.dunlap@oracle.com>
+phison uses interfaces and data that are built only when
+ATA_BMDMA is enabled, so it should depend on that symbol.
+
+drivers/staging/phison/phison.c:43: error: implicit declaration of function 'ATA_BMDMA_SHT'
+drivers/staging/phison/phison.c:43: error: initializer element is not constant
+drivers/staging/phison/phison.c:43: error: (near initialization for 'phison_sht.module')
+drivers/staging/phison/phison.c:47: error: 'ata_bmdma_port_ops' undeclared here (not in a function)
+
+Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
+Cc: evan_ko@phison.com
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
-index 0aa2b0d..79f5f2e 100644
 ---
- drivers/staging/comedi/Kconfig |    1 +
- 1 file changed, 1 insertion(+)
+ drivers/staging/phison/Kconfig |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
---- a/drivers/staging/comedi/Kconfig
-+++ b/drivers/staging/comedi/Kconfig
-@@ -1281,6 +1281,7 @@ config COMEDI_NI_TIO
- 
- config COMEDI_NI_LABPC
- 	tristate "NI Lab-PC and compatibles ISA and PCI support"
-+	depends on COMEDI_MITE
- 	select COMEDI_8255
- 	select COMEDI_FC
- 	default N
+--- a/drivers/staging/phison/Kconfig
++++ b/drivers/staging/phison/Kconfig
+@@ -1,5 +1,5 @@
+ config IDE_PHISON
+ 	tristate "PCIE ATA PS5000 IDE support"
+-	depends on PCI && ATA && ATA_SFF
++	depends on PCI && ATA && ATA_SFF && ATA_BMDMA
+ 	---help---
+ 	  This is an experimental driver for PS5000 IDE driver.
 
