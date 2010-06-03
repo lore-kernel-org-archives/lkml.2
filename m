@@ -1,57 +1,166 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933703Ab0FCCxU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jun 2010 22:53:20 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:38533 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933637Ab0FCCxR (ORCPT
+	id S933685Ab0FCCzk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jun 2010 22:55:40 -0400
+Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:59044 "EHLO
+	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933577Ab0FCCzj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jun 2010 22:53:17 -0400
-Message-ID: <4C07179F.5080106@vflare.org>
-Date: Thu, 03 Jun 2010 08:16:55 +0530
-From: Nitin Gupta <ngupta@vflare.org>
-Reply-To: ngupta@vflare.org
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-3.fc13 Thunderbird/3.0.4
-MIME-Version: 1.0
-To: Dan Magenheimer <dan.magenheimer@oracle.com>
-CC: Minchan Kim <minchan.kim@gmail.com>, chris.mason@oracle.com,
-       viro@zeniv.linux.org.uk, akpm@linux-foundation.org, adilger@Sun.COM,
-       tytso@mit.edu, mfasheh@suse.com, joel.becker@oracle.com, matthew@wil.cx,
-       linux-btrfs@vger.kernel.org, linux-kernel@vger.kernel.org,
-       linux-fsdevel@vger.kernel.org, linux-ext4@vger.kernel.org,
-       ocfs2-devel@oss.oracle.com, linux-mm@kvack.org, jeremy@goop.org,
-       JBeulich@novell.com, kurt.hackel@oracle.com, npiggin@suse.de,
-       dave.mccracken@oracle.com, riel@redhat.com, avi@redhat.com,
-       konrad.wilk@oracle.com
-Subject: Re: [PATCH V2 0/7] Cleancache (was Transcendent Memory): overview
-References: <20100528173510.GA12166@ca-server1.us.oracle.comAANLkTilV-4_QaNq5O0WSplDx1Oq7JvkgVrEiR1rgf1up@mail.gmail.com> <1d88619a-bb1e-493f-ad96-bf204b60938d@default 20100602163827.GA5450@barrios-desktop> <489aa002-6d42-4dd5-bb66-81c665f8cdd1@default>
-In-Reply-To: <489aa002-6d42-4dd5-bb66-81c665f8cdd1@default>
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 2 Jun 2010 22:55:39 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Thu, 3 Jun 2010 11:51:19 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
+       "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       "balbir@linux.vnet.ibm.com" <balbir@linux.vnet.ibm.com>,
+       "nishimura@mxp.nes.nec.co.jp" <nishimura@mxp.nes.nec.co.jp>
+Subject: [PATCH 2/2] memcg make move_task_charge check clearer
+Message-Id: <20100603115119.be29ec13.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <20100603114837.6e6d4d0f.kamezawa.hiroyu@jp.fujitsu.com>
+References: <20100603114837.6e6d4d0f.kamezawa.hiroyu@jp.fujitsu.com>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/03/2010 04:32 AM, Dan Magenheimer wrote:
->> From: Minchan Kim [mailto:minchan.kim@gmail.com]
-> 
->>> I am also eagerly awaiting Nitin Gupta's cleancache backend
->>> and implementation to do in-kernel page cache compression.
->>
->> Do Nitin say he will make backend of cleancache for
->> page cache compression?
->>
->> It would be good feature.
->> I have a interest, too. :)
-> 
-> That was Nitin's plan for his GSOC project when we last discussed
-> this.  Nitin is on the cc list and can comment if this has
-> changed.
-> 
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 
+Now, for checking a memcg is under task-account-moving, we do css_tryget()
+against mc.to and mc.from. But this is just complicating things. This patch
+makes the check easier.
 
-Yes, I have just started work on in-kernel page cache compression
-backend for cleancache :)
+This patch adds a spinlock to move_charge_struct and guard modification
+of mc.to and mc.from. By this, we don't have to think about complicated
+races around this not-critical path.
 
-Thanks,
-Nitin
+Changelog:
+ - removed disable/enable irq.
+
+Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+---
+ mm/memcontrol.c |   48 ++++++++++++++++++++++++++++--------------------
+ 1 file changed, 28 insertions(+), 20 deletions(-)
+
+Index: mmotm-2.6.34-May21/mm/memcontrol.c
+===================================================================
+--- mmotm-2.6.34-May21.orig/mm/memcontrol.c
++++ mmotm-2.6.34-May21/mm/memcontrol.c
+@@ -268,6 +268,7 @@ enum move_type {
+ 
+ /* "mc" and its members are protected by cgroup_mutex */
+ static struct move_charge_struct {
++	spinlock_t	  lock; /* for from, to, moving_task */
+ 	struct mem_cgroup *from;
+ 	struct mem_cgroup *to;
+ 	unsigned long precharge;
+@@ -276,6 +277,7 @@ static struct move_charge_struct {
+ 	struct task_struct *moving_task;	/* a task moving charges */
+ 	wait_queue_head_t waitq;		/* a waitq for other context */
+ } mc = {
++	.lock = __SPIN_LOCK_UNLOCKED(mc.lock),
+ 	.waitq = __WAIT_QUEUE_HEAD_INITIALIZER(mc.waitq),
+ };
+ 
+@@ -1076,26 +1078,25 @@ static unsigned int get_swappiness(struc
+ 
+ static bool mem_cgroup_under_move(struct mem_cgroup *mem)
+ {
+-	struct mem_cgroup *from = mc.from;
+-	struct mem_cgroup *to = mc.to;
++	struct mem_cgroup *from;
++	struct mem_cgroup *to;
+ 	bool ret = false;
+-
+-	if (from == mem || to == mem)
+-		return true;
+-
+-	if (!from || !to || !mem->use_hierarchy)
+-		return false;
+-
+-	rcu_read_lock();
+-	if (css_tryget(&from->css)) {
+-		ret = css_is_ancestor(&from->css, &mem->css);
+-		css_put(&from->css);
+-	}
+-	if (!ret && css_tryget(&to->css)) {
+-		ret = css_is_ancestor(&to->css,	&mem->css);
++	/*
++	 * Unlike task_move routines, we access mc.to, mc.from not under
++	 * mutual exclusion by cgroup_mutex. Here, we take spinlock instead.
++	 */
++	spin_lock(&mc.lock);
++	from = mc.from;
++	to = mc.to;
++	if (!from)
++		goto unlock;
++	if (from == mem || to == mem
++	    || (mem->use_hierarchy && css_is_ancestor(&from->css, &mem->css))
++	    || (mem->use_hierarchy && css_is_ancestor(&to->css,	&mem->css)))
+ 		css_put(&to->css);
+-	}
+-	rcu_read_unlock();
++		ret = true;
++unlock:
++	spin_unlock(&mc.lock);
+ 	return ret;
+ }
+ 
+@@ -4447,11 +4448,13 @@ static int mem_cgroup_precharge_mc(struc
+ 
+ static void mem_cgroup_clear_mc(void)
+ {
++	struct mem_cgroup *from = mc.from;
++	struct mem_cgroup *to = mc.to;
++
+ 	/* we must uncharge all the leftover precharges from mc.to */
+ 	if (mc.precharge) {
+ 		__mem_cgroup_cancel_charge(mc.to, mc.precharge);
+ 		mc.precharge = 0;
+-		memcg_oom_recover(mc.to);
+ 	}
+ 	/*
+ 	 * we didn't uncharge from mc.from at mem_cgroup_move_account(), so
+@@ -4460,7 +4463,6 @@ static void mem_cgroup_clear_mc(void)
+ 	if (mc.moved_charge) {
+ 		__mem_cgroup_cancel_charge(mc.from, mc.moved_charge);
+ 		mc.moved_charge = 0;
+-		memcg_oom_recover(mc.from);
+ 	}
+ 	/* we must fixup refcnts and charges */
+ 	if (mc.moved_swap) {
+@@ -4485,9 +4487,13 @@ static void mem_cgroup_clear_mc(void)
+ 
+ 		mc.moved_swap = 0;
+ 	}
++	spin_lock(&mc.lock);
+ 	mc.from = NULL;
+ 	mc.to = NULL;
+ 	mc.moving_task = NULL;
++	spin_unlock(&mc.lock);
++	memcg_oom_recover(from);
++	memcg_oom_recover(to);
+ 	wake_up_all(&mc.waitq);
+ }
+ 
+@@ -4516,12 +4522,14 @@ static int mem_cgroup_can_attach(struct 
+ 			VM_BUG_ON(mc.moved_charge);
+ 			VM_BUG_ON(mc.moved_swap);
+ 			VM_BUG_ON(mc.moving_task);
++			spin_lock(&mc.lock);
+ 			mc.from = from;
+ 			mc.to = mem;
+ 			mc.precharge = 0;
+ 			mc.moved_charge = 0;
+ 			mc.moved_swap = 0;
+ 			mc.moving_task = current;
++			spin_unlock(&mc.lock);
+ 
+ 			ret = mem_cgroup_precharge_mc(mm);
+ 			if (ret)
+
