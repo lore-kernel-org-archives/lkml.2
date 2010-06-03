@@ -1,63 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756131Ab0FCWiJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jun 2010 18:38:09 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:56148 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755263Ab0FCWiI (ORCPT
+	id S1756149Ab0FCWjL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jun 2010 18:39:11 -0400
+Received: from rhlx01.hs-esslingen.de ([129.143.116.10]:58540 "EHLO
+	rhlx01.hs-esslingen.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754819Ab0FCWjJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jun 2010 18:38:08 -0400
-Date: Thu, 3 Jun 2010 15:33:23 -0700 (PDT)
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Stephen Hemminger <shemminger@vyatta.com>
-cc: Andrew Morton <akpm@linux-foundation.org>,
+	Thu, 3 Jun 2010 18:39:09 -0400
+X-Greylist: delayed 368 seconds by postgrey-1.27 at vger.kernel.org; Thu, 03 Jun 2010 18:39:09 EDT
+Date: Fri, 4 Jun 2010 00:32:59 +0200
+From: Andreas Mohr <andi@lisas.de>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
        Alan Cox <alan@lxorguk.ukuu.org.uk>, linux-kernel@vger.kernel.org
 Subject: Re: floppy driver assumes INITIAL_JIFFIES == 0
-In-Reply-To: <alpine.LFD.2.00.1006031455280.8175@i5.linux-foundation.org>
-Message-ID: <alpine.LFD.2.00.1006031515030.8175@i5.linux-foundation.org>
-References: <20100603101501.5e5d7148@nehalam> <alpine.LFD.2.00.1006031013060.8175@i5.linux-foundation.org> <20100603120313.10a73b20@nehalam> <alpine.LFD.2.00.1006031204470.8175@i5.linux-foundation.org> <alpine.LFD.2.00.1006031355140.8175@i5.linux-foundation.org>
- <20100603144913.24828629@nehalam> <alpine.LFD.2.00.1006031455280.8175@i5.linux-foundation.org>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+Message-ID: <20100603223259.GA4085@rhlx01.hs-esslingen.de>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LFD.2.00.1006031013060.8175@i5.linux-foundation.org>
+X-Priority: none
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+> I do wonder a bit why you even care. You can't even buy non-USB floppy 
+> drives any more (and even the USB ones are really really hard to find), 
+> and judging by my experiences, they don't last long enough for there to
+> be much of a legacy base.
 
+http://such001.reichelt.de/?SID=31BKCyV6wQAR8AAHJNE7U6761b7ea498b06ffe19b1e0abcdc120b;ACTION=444
+http://www.kmelektronik.de/shop/index.php?show=subgroup&group=53&subgroup=117&Sort=2
+http://www.arlt.com/index.php?cl=search&searchparam=floppy
 
-On Thu, 3 Jun 2010, Linus Torvalds wrote:
->
-> > So still a race that shows up with KVM (fast floppy?) and manifests
-> > as floppy_ready or reset_interrupt OOPS.
-> 
-> Yes, it's quite possible that the Linux floppy driver is simply broken by 
-> any floppy device that basically responds immediately to a command with an 
-> interrupt. And considering how few people use floppies, I do expect that 
-> driver to get _worse_ rather than better in the future.
+Up to 10 items each, beige, black, USB, silver, which would you want?
+And those are not some shops selling shady rotten scrap hardware...
+(rather, these are 3 tests I launched, with a hit rate of 3 out of 3).
 
-Having looked at that driver some more, I can inf act pretty much 
-guarantee it. The locking is rather baroque. It has a "floppy_lock", but 
-that only protects certain small parts. In particular, it looks like the 
-irq handler and the timers do _not_ take it, and that's where most of the 
-real work is done.
+OK, a cheap shot certainly, but that's just to show that one's opinion
+of what hardware to make use of pretty much never is universal.
 
-And in fact, that does look broken. The interrupt handler really does a 
-"schedule_work()" to schedule the actual handler outside of irq context, 
-and I don't see any serialization between the timers that file and the 
-handler running.
+Plus I'm certain that some (forensics) folks would appreciate a floppy
+driver that remains in semi-working state even in newer (i.e., current)
+kernel versions in some decades, since that widens the narrow window
+of often conflicting version compatibility and software
+that those people will probably encounter
+(with their 3 to 5 system environment emulators stacked on top of each other ;)
+in their rather progressed times...
 
-That driver used to be this state machine that ran entirely from interrupt 
-context, where one interrupt handler would set the state for the next one 
-(that's what the "do_floppy" thing is for). But then it became bottom 
-halves, and now it's using schedule_work() instead - and at the same time, 
-the _timers_ haven't really changed. Those run in timer context, and can 
-thus interrupt the work thing.
+</rant>,
 
-It always was a disgusting driver. Now it's just even more so. And yes, 
-I'm sure it's full of races that are largely hidden by the fact that real 
-floppy hardware is so slow that you can never hit them.
-
-Looking too much at that driver will cause PTSD.  I have to look away.
-
-			Linus
+Andreas Mohr
