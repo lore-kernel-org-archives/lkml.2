@@ -1,95 +1,185 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757992Ab0FCICI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jun 2010 04:02:08 -0400
-Received: from ch-smtp02.sth.basefarm.net ([80.76.149.213]:52248 "EHLO
+	id S1758067Ab0FCICP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jun 2010 04:02:15 -0400
+Received: from ch-smtp02.sth.basefarm.net ([80.76.149.213]:52345 "EHLO
 	ch-smtp02.sth.basefarm.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757653Ab0FCICB (ORCPT
+	by vger.kernel.org with ESMTP id S1757973Ab0FCICI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jun 2010 04:02:01 -0400
+	Thu, 3 Jun 2010 04:02:08 -0400
 From: "Henrik Rydberg" <rydberg@euromail.se>
 To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
 Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
        Jiri Kosina <jkosina@suse.cz>, Mika Kuoppala <mika.kuoppala@nokia.com>,
        Benjamin Tissoires <tissoire@cena.fr>, Rafi Rubin <rafi@seas.upenn.edu>,
        Henrik Rydberg <rydberg@euromail.se>
-Subject: [PATCH 4/4] input: Use driver hint to compute the evdev buffer size
-Date: Thu,  3 Jun 2010 10:01:02 +0200
-Message-Id: <1275552062-8153-5-git-send-email-rydberg@euromail.se>
+Subject: [PATCH 2/4] input: evdev: Use multi-reader buffer to save space (rev3)
+Date: Thu,  3 Jun 2010 10:01:00 +0200
+Message-Id: <1275552062-8153-3-git-send-email-rydberg@euromail.se>
 X-Mailer: git-send-email 1.6.3.3
-In-Reply-To: <1275552062-8153-4-git-send-email-rydberg@euromail.se>
+In-Reply-To: <1275552062-8153-2-git-send-email-rydberg@euromail.se>
 References: <1275552062-8153-1-git-send-email-rydberg@euromail.se>
  <1275552062-8153-2-git-send-email-rydberg@euromail.se>
- <1275552062-8153-3-git-send-email-rydberg@euromail.se>
- <1275552062-8153-4-git-send-email-rydberg@euromail.se>
 X-Originating-IP: 83.248.196.134
-X-Scan-Result: No virus found in message 1OK5N0-0000zO-77.
-X-Scan-Signature: ch-smtp02.sth.basefarm.net 1OK5N0-0000zO-77 e46dd4e5c6bc6a7dbba5ebdcc12ce92e
+X-Scan-Result: No virus found in message 1OK5Mo-0000lH-9d.
+X-Scan-Signature: ch-smtp02.sth.basefarm.net 1OK5Mo-0000lH-9d 0fe30b1dd082e2e883eae6f6d73fb906
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Some devices, in particular MT devices, produce a lot of data.  This
-leads to a high frequency of lost packets in evdev, which by default
-uses a fairly small event buffer. Let the drivers hint the average
-number of events per packet for the device by calling the
-input_set_events_per_packet(), and use that information when computing
-the evdev buffer size.
+Preparing for larger buffer needs, convert the current per-client
+circular buffer to a single buffer with multiple clients. Use the
+buflock mechanism, where clients wait during buffer collision only.
 
 Signed-off-by: Henrik Rydberg <rydberg@euromail.se>
 ---
- drivers/input/evdev.c |    5 ++++-
- include/linux/input.h |    7 +++++++
- 2 files changed, 11 insertions(+), 1 deletions(-)
+ drivers/input/evdev.c |   57 ++++++++++++++++++++++++-------------------------
+ 1 files changed, 28 insertions(+), 29 deletions(-)
 
 diff --git a/drivers/input/evdev.c b/drivers/input/evdev.c
-index 2e2a339..f08b1d2 100644
+index 2ee6c7a..7f0c7da 100644
 --- a/drivers/input/evdev.c
 +++ b/drivers/input/evdev.c
-@@ -11,6 +11,7 @@
- #define EVDEV_MINOR_BASE	64
- #define EVDEV_MINORS		32
- #define EVDEV_MIN_BUFFER_SIZE	64
-+#define EVDEV_BUF_PACKETS	8
+@@ -21,6 +21,7 @@
+ #include <linux/major.h>
+ #include <linux/device.h>
+ #include "input-compat.h"
++#include "buflock.h"
  
- #include <linux/poll.h>
- #include <linux/sched.h>
-@@ -790,7 +791,9 @@ static void evdev_cleanup(struct evdev *evdev)
+ struct evdev {
+ 	int exist;
+@@ -33,13 +34,13 @@ struct evdev {
+ 	spinlock_t client_lock; /* protects client_list */
+ 	struct mutex mutex;
+ 	struct device dev;
++	struct buflock_writer writer;
++	struct input_event buffer[EVDEV_BUFFER_SIZE];
+ };
  
- static int evdev_compute_buffer_size(struct input_dev *dev)
+ struct evdev_client {
+-	struct input_event buffer[EVDEV_BUFFER_SIZE];
+-	int head;
+-	int tail;
+-	spinlock_t buffer_lock; /* protects access to buffer, head and tail */
++	struct buflock_reader reader;
++	spinlock_t entry_lock; /* protects reentrant fops reads */
+ 	struct fasync_struct *fasync;
+ 	struct evdev *evdev;
+ 	struct list_head node;
+@@ -48,18 +49,12 @@ struct evdev_client {
+ static struct evdev *evdev_table[EVDEV_MINORS];
+ static DEFINE_MUTEX(evdev_table_mutex);
+ 
+-static void evdev_pass_event(struct evdev_client *client,
+-			     struct input_event *event)
++static inline void evdev_sync_event(struct evdev_client *client,
++				    struct evdev *evdev, int type)
  {
--	return EVDEV_MIN_BUFFER_SIZE;
-+	int nev = dev->hint_events_per_packet * EVDEV_BUF_PACKETS;
-+	nev = max(nev, EVDEV_MIN_BUFFER_SIZE);
-+	return roundup_pow_of_two(nev);
+-	/*
+-	 * Interrupts are disabled, just acquire the lock
+-	 */
+-	spin_lock(&client->buffer_lock);
+-	client->buffer[client->head++] = *event;
+-	client->head &= EVDEV_BUFFER_SIZE - 1;
+-	spin_unlock(&client->buffer_lock);
+-
+-	if (event->type == EV_SYN)
++	/* sync reader, no locks required */
++	buflock_sync_reader(client->reader, evdev->writer);
++	if (type == EV_SYN)
+ 		kill_fasync(&client->fasync, SIGIO, POLL_IN);
  }
  
- /*
-diff --git a/include/linux/input.h b/include/linux/input.h
-index bd00786..35b015d 100644
---- a/include/linux/input.h
-+++ b/include/linux/input.h
-@@ -1162,6 +1162,8 @@ struct input_dev {
- 	unsigned long ffbit[BITS_TO_LONGS(FF_CNT)];
- 	unsigned long swbit[BITS_TO_LONGS(SW_CNT)];
+@@ -78,14 +73,17 @@ static void evdev_event(struct input_handle *handle,
+ 	event.code = code;
+ 	event.value = value;
  
-+	unsigned int hint_events_per_packet;
++	/* lock-less write */
++	buflock_write(evdev->writer, evdev->buffer, EVDEV_BUFFER_SIZE, event);
 +
- 	unsigned int keycodemax;
- 	unsigned int keycodesize;
- 	void *keycode;
-@@ -1439,6 +1441,11 @@ static inline void input_mt_slot(struct input_dev *dev, int slot)
+ 	rcu_read_lock();
  
- void input_set_capability(struct input_dev *dev, unsigned int type, unsigned int code);
+ 	client = rcu_dereference(evdev->grab);
+ 	if (client)
+-		evdev_pass_event(client, &event);
++		evdev_sync_event(client, evdev, type);
+ 	else
+ 		list_for_each_entry_rcu(client, &evdev->client_list, node)
+-			evdev_pass_event(client, &event);
++			evdev_sync_event(client, evdev, type);
  
-+static inline void input_set_events_per_packet(struct input_dev *dev, int nev)
-+{
-+	dev->hint_events_per_packet = nev;
-+}
-+
- static inline void input_set_abs_params(struct input_dev *dev, int axis, int min, int max, int fuzz, int flat)
+ 	rcu_read_unlock();
+ 
+@@ -269,7 +267,7 @@ static int evdev_open(struct inode *inode, struct file *file)
+ 		goto err_put_evdev;
+ 	}
+ 
+-	spin_lock_init(&client->buffer_lock);
++	spin_lock_init(&client->entry_lock);
+ 	client->evdev = evdev;
+ 	evdev_attach_client(evdev, client);
+ 
+@@ -325,19 +323,19 @@ static ssize_t evdev_write(struct file *file, const char __user *buffer,
+ }
+ 
+ static int evdev_fetch_next_event(struct evdev_client *client,
++				  struct evdev *evdev,
+ 				  struct input_event *event)
  {
- 	dev->absmin[axis] = min;
+ 	int have_event;
+ 
+-	spin_lock_irq(&client->buffer_lock);
++	spin_lock_irq(&client->entry_lock);
+ 
+-	have_event = client->head != client->tail;
+-	if (have_event) {
+-		*event = client->buffer[client->tail++];
+-		client->tail &= EVDEV_BUFFER_SIZE - 1;
+-	}
++	have_event = !buflock_reader_empty(client->reader);
++	if (have_event)
++		buflock_read(client->reader, evdev->writer,
++			     evdev->buffer, EVDEV_BUFFER_SIZE, *event);
+ 
+-	spin_unlock_irq(&client->buffer_lock);
++	spin_unlock_irq(&client->entry_lock);
+ 
+ 	return have_event;
+ }
+@@ -353,12 +351,12 @@ static ssize_t evdev_read(struct file *file, char __user *buffer,
+ 	if (count < input_event_size())
+ 		return -EINVAL;
+ 
+-	if (client->head == client->tail && evdev->exist &&
++	if (buflock_reader_empty(client->reader) && evdev->exist &&
+ 	    (file->f_flags & O_NONBLOCK))
+ 		return -EAGAIN;
+ 
+ 	retval = wait_event_interruptible(evdev->wait,
+-		client->head != client->tail || !evdev->exist);
++		!buflock_reader_empty(client->reader) || !evdev->exist);
+ 	if (retval)
+ 		return retval;
+ 
+@@ -366,7 +364,7 @@ static ssize_t evdev_read(struct file *file, char __user *buffer,
+ 		return -ENODEV;
+ 
+ 	while (retval + input_event_size() <= count &&
+-	       evdev_fetch_next_event(client, &event)) {
++	       evdev_fetch_next_event(client, evdev, &event)) {
+ 
+ 		if (input_event_to_user(buffer + retval, &event))
+ 			return -EFAULT;
+@@ -384,7 +382,8 @@ static unsigned int evdev_poll(struct file *file, poll_table *wait)
+ 	struct evdev *evdev = client->evdev;
+ 
+ 	poll_wait(file, &evdev->wait, wait);
+-	return ((client->head == client->tail) ? 0 : (POLLIN | POLLRDNORM)) |
++	return (buflock_reader_empty(client->reader) ? 0 :
++		(POLLIN | POLLRDNORM)) |
+ 		(evdev->exist ? 0 : (POLLHUP | POLLERR));
+ }
+ 
 -- 
 1.6.3.3
 
