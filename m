@@ -1,112 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755060Ab0FCS1o (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jun 2010 14:27:44 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:45946 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752410Ab0FCS1m (ORCPT
+	id S1755031Ab0FCSaj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jun 2010 14:30:39 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:59988 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752134Ab0FCSai (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jun 2010 14:27:42 -0400
-Date: Thu, 3 Jun 2010 11:25:42 -0700
-From: Randy Dunlap <randy.dunlap@oracle.com>
-To: Rabin Vincent <rabin@rab.in>
-Cc: mmarek@suse.cz, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] scripts: decodecode: use /bin/bash
-Message-Id: <20100603112542.326a45b7.randy.dunlap@oracle.com>
-In-Reply-To: <20100603171812.GA23367@debian>
-References: <1275581686-19745-1-git-send-email-rabin@rab.in>
-	<20100603092458.d0d603e3.randy.dunlap@oracle.com>
-	<20100603171812.GA23367@debian>
-Organization: Oracle Linux Eng.
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-Auth-Type: Internal IP
-X-Source-IP: acsinet15.oracle.com [141.146.126.227]
-X-CT-RefId: str=0001.0A090205.4C07F3E8.0083:SCFMA922111,ss=1,fgs=0
+	Thu, 3 Jun 2010 14:30:38 -0400
+Date: Thu, 3 Jun 2010 19:30:31 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Daniel Walker <dwalker@codeaurora.org>,
+       Russell King <rmk@arm.linux.org.uk>,
+       Kevin Hilman <khilman@deeprootsystems.com>,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       linux-arm-msm@vger.kernel.org
+Subject: Re: ARM defconfig files
+Message-ID: <20100603183030.GY31073@ZenIV.linux.org.uk>
+References: <20100603074548.GA12104@flint.arm.linux.org.uk>
+ <alpine.LFD.2.00.1006030725420.8175@i5.linux-foundation.org>
+ <20100603181010.GA25779@flint.arm.linux.org.uk>
+ <1275589230.23384.19.camel@c-dwalke-linux.qualcomm.com>
+ <alpine.LFD.2.00.1006031119440.8175@i5.linux-foundation.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LFD.2.00.1006031119440.8175@i5.linux-foundation.org>
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 3 Jun 2010 22:48:12 +0530 Rabin Vincent wrote:
-
-> On Thu, Jun 03, 2010 at 09:24:58AM -0700, Randy Dunlap wrote:
-> > On Thu,  3 Jun 2010 21:44:46 +0530 Rabin Vincent wrote:
+On Thu, Jun 03, 2010 at 11:21:59AM -0700, Linus Torvalds wrote:
+> 
+> 
+> On Thu, 3 Jun 2010, Daniel Walker wrote:
 > > 
-> > > 5358db ("scripts: add ARM support to decodecode") added a few bashims to
-> > > the decodecode script, so explicitly ask for bash.
-> > > 
-> > > Signed-off-by: Rabin Vincent <rabin@rab.in>
-> > > ---
-> > > Alternatively, I have a patch to remove the bashisms, if that's preferred.
-> > 
-> > Yes, that's what we usually prefer to do.
-> > Please post it.
+> > I don't see how we can do without defconfigs altogether tho. I mean , if
+> > you want to run a Beagle board or a Nexus one we can't just give the
+> > users a slim ARM config and let them troll through 1000's of drivers
+> > trying to find just those ones that work on their given board.
 > 
-> Here it is:
-
-Works for me.  Thanks.
-
-
-> From f729122bcd237f32c9f667e5644c6114ddc795af Mon Sep 17 00:00:00 2001
-> From: Rabin Vincent <rabin@rab.in>
-> Date: Thu, 3 Jun 2010 21:33:46 +0530
-> Subject: [PATCH] scripts: decodecode: remove bashisms
+> Well, you also don't need the full defconfig's with the kernel.
 > 
-> Remove bashisms to make scripts/decodecode work with other shells.
+> Right now they are just noise. They actually _hide_ things, because 
+> diffstat (and dirstat) information becomes pointless, and the diffs become 
+> totally unreadable by any human (trust me - when the choice is between 
+> "search for next relevant diff" or "blast it, I can't be bothered with 
+> walking through this crap", quite often the choice is the latter).
 > 
-> Signed-off-by: Rabin Vincent <rabin@rab.in>
-> ---
->  scripts/decodecode |   10 +++++-----
->  1 files changed, 5 insertions(+), 5 deletions(-)
-> 
-> diff --git a/scripts/decodecode b/scripts/decodecode
-> index 8b30cc3..18ba881 100755
-> --- a/scripts/decodecode
-> +++ b/scripts/decodecode
-> @@ -40,7 +40,7 @@ echo $code
->  code=`echo $code | sed -e 's/.*Code: //'`
->  
->  width=`expr index "$code" ' '`
-> -width=$[($width-1)/2]
-> +width=$((($width-1)/2))
->  case $width in
->  1) type=byte ;;
->  2) type=2byte ;;
-> @@ -48,10 +48,10 @@ case $width in
->  esac
->  
->  disas() {
-> -	${CROSS_COMPILE}as $AFLAGS -o $1.o $1.s &> /dev/null
-> +	${CROSS_COMPILE}as $AFLAGS -o $1.o $1.s > /dev/null 2>&1
->  
-> -	if [ "$ARCH" == "arm" ]; then
-> -		if [ $width == 2 ]; then
-> +	if [ "$ARCH" = "arm" ]; then
-> +		if [ $width -eq 2 ]; then
->  			OBJDUMPFLAGS="-M force-thumb"
->  		fi
->  
-> @@ -59,7 +59,7 @@ disas() {
->  	fi
->  
->  	${CROSS_COMPILE}objdump $OBJDUMPFLAGS -S $1.o | \
-> -		grep -v "/tmp\|Disassembly\|\.text\|^$" &> $1.dis
-> +		grep -v "/tmp\|Disassembly\|\.text\|^$" > $1.dis 2>&1
->  }
->  
->  marker=`expr index "$code" "\<"`
-> -- 
-> 1.7.1
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+> So they are an actual burden on real development.
 
-
----
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+BTW, can't we switch to processing them with cpp?  That'd cut down on the
+churn big way, AFAICS, not to mention reducing the odds of missing some
+of them on such changes, etc.
