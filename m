@@ -1,80 +1,175 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751963Ab0FCGnN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jun 2010 02:43:13 -0400
-Received: from smtp-out.google.com ([74.125.121.35]:16487 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751054Ab0FCGnJ convert rfc822-to-8bit (ORCPT
+	id S1752263Ab0FCGnv (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jun 2010 02:43:51 -0400
+Received: from TYO201.gate.nec.co.jp ([202.32.8.193]:52233 "EHLO
+	tyo201.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751221Ab0FCGnt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jun 2010 02:43:09 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=mime-version:in-reply-to:references:date:message-id:subject:from:to:
-	cc:content-type:content-transfer-encoding:x-system-of-record;
-	b=GcUADVHyLKH8ImCY2v/bnrB1iuVBKbNyHtH7fL45ytXQlxnv2s0KeksjTMOV44M1Q
-	IGjYBZueSzINfEnRU8cPw==
-MIME-Version: 1.0
-In-Reply-To: <20100603163307.721b1c23@notabene.brown>
-References: <Pine.LNX.4.44L0.1005271303190.3239-100000@iolanthe.rowland.org>
-	<201006010005.19554.rjw@sisk.pl>
-	<20100601090023.788cabf4@notabene.brown>
-	<201006010232.20263.rjw@sisk.pl>
-	<20100601113309.609349fd@notabene.brown>
-	<alpine.LFD.2.00.1006010340160.2933@localhost.localdomain>
-	<20100601122012.1edeaf48@notabene.brown>
-	<alpine.LFD.2.00.1006011243350.2933@localhost.localdomain>
-	<20100602153235.340a7852@notabene.brown>
-	<AANLkTikVjAf5nHdMx2bcHRAUSkq99s-b5YZCECXIJJLy@mail.gmail.com>
-	<20100602180614.729246ea@notabene.brown>
-	<AANLkTikXy__71nBNW0EFbyL_qNf0nQ68pW9KymWlTk7L@mail.gmail.com>
-	<20100603163307.721b1c23@notabene.brown>
-Date: Wed, 2 Jun 2010 23:43:06 -0700
-Message-ID: <AANLkTikuf6bKVHoGRTjrM_2kPtZqUM6J76Z0hNUQxT_3@mail.gmail.com>
-Subject: Re: [PATCH] - race-free suspend. Was: Re: [linux-pm] [PATCH 0/8] 
-	Suspend block api (version 8)
-From: Brian Swetland <swetland@google.com>
-To: Neil Brown <neilb@suse.de>
-Cc: =?UTF-8?B?QXJ2ZSBIasO4bm5ldsOlZw==?= <arve@android.com>,
-       Thomas Gleixner <tglx@linutronix.de>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-       Alan Stern <stern@rowland.harvard.edu>,
-       Felipe Balbi <felipe.balbi@nokia.com>,
-       Peter Zijlstra <peterz@infradead.org>,
-       "Paul@smtp1.linux-foundation.org" <Paul@smtp1.linux-foundation.org>,
-       LKML <linux-kernel@vger.kernel.org>,
-       Florian Mickler <florian@mickler.org>,
-       Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
-       Linux PM <linux-pm@lists.linux-foundation.org>,
-       Alan Cox <alan@lxorguk.ukuu.org.uk>,
-       James Bottomley <James.Bottomley@suse.de>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+	Thu, 3 Jun 2010 02:43:49 -0400
+Date: Thu, 3 Jun 2010 15:40:31 +0900
+From: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
+       "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       "balbir@linux.vnet.ibm.com" <balbir@linux.vnet.ibm.com>,
+       Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
+Subject: Re: [PATCH 2/2] memcg make move_task_charge check clearer
+Message-Id: <20100603154031.f80fc900.nishimura@mxp.nes.nec.co.jp>
+In-Reply-To: <20100603115119.be29ec13.kamezawa.hiroyu@jp.fujitsu.com>
+References: <20100603114837.6e6d4d0f.kamezawa.hiroyu@jp.fujitsu.com>
+	<20100603115119.be29ec13.kamezawa.hiroyu@jp.fujitsu.com>
+Organization: NEC Soft, Ltd.
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 2, 2010 at 11:33 PM, Neil Brown <neilb@suse.de> wrote:
->>
->> The current suspend-blocker proposal already involves userspace
->> changes (it's different than our existing wakelock interface), and
->> we're certainly not opposed to any/all userspace changes on principle,
->> but on the other hand we're not interested in significant reworks of
->> userspace unless they actually improve the situation somehow.  I think
->> bottlenecking events through a central daemon would represent a step
->> backwards.
->
-> I guess it becomes an question of economics for you then.  Does the cost of
-> whatever user-space changes are required exceed the value of using an upstream
-> kernel?  Both the cost and the value would be very hard to estimate in
-> advance.  I don't envy you the decision...
+On Thu, 3 Jun 2010 11:51:19 +0900, KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
+> From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> 
+> Now, for checking a memcg is under task-account-moving, we do css_tryget()
+> against mc.to and mc.from. But this is just complicating things. This patch
+> makes the check easier.
+> 
+> This patch adds a spinlock to move_charge_struct and guard modification
+> of mc.to and mc.from. By this, we don't have to think about complicated
+> races around this not-critical path.
+> 
+> Changelog:
+>  - removed disable/enable irq.
+> 
+> Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> ---
+>  mm/memcontrol.c |   48 ++++++++++++++++++++++++++++--------------------
+>  1 file changed, 28 insertions(+), 20 deletions(-)
+> 
+> Index: mmotm-2.6.34-May21/mm/memcontrol.c
+> ===================================================================
+> --- mmotm-2.6.34-May21.orig/mm/memcontrol.c
+> +++ mmotm-2.6.34-May21/mm/memcontrol.c
+> @@ -268,6 +268,7 @@ enum move_type {
+>  
+>  /* "mc" and its members are protected by cgroup_mutex */
+>  static struct move_charge_struct {
+> +	spinlock_t	  lock; /* for from, to, moving_task */
+>  	struct mem_cgroup *from;
+>  	struct mem_cgroup *to;
+>  	unsigned long precharge;
+> @@ -276,6 +277,7 @@ static struct move_charge_struct {
+>  	struct task_struct *moving_task;	/* a task moving charges */
+>  	wait_queue_head_t waitq;		/* a waitq for other context */
+>  } mc = {
+> +	.lock = __SPIN_LOCK_UNLOCKED(mc.lock),
+>  	.waitq = __WAIT_QUEUE_HEAD_INITIALIZER(mc.waitq),
+>  };
+>  
+> @@ -1076,26 +1078,25 @@ static unsigned int get_swappiness(struc
+>  
+>  static bool mem_cgroup_under_move(struct mem_cgroup *mem)
+>  {
+> -	struct mem_cgroup *from = mc.from;
+> -	struct mem_cgroup *to = mc.to;
+> +	struct mem_cgroup *from;
+> +	struct mem_cgroup *to;
+>  	bool ret = false;
+> -
+> -	if (from == mem || to == mem)
+> -		return true;
+> -
+> -	if (!from || !to || !mem->use_hierarchy)
+> -		return false;
+> -
+> -	rcu_read_lock();
+> -	if (css_tryget(&from->css)) {
+> -		ret = css_is_ancestor(&from->css, &mem->css);
+> -		css_put(&from->css);
+> -	}
+> -	if (!ret && css_tryget(&to->css)) {
+> -		ret = css_is_ancestor(&to->css,	&mem->css);
+> +	/*
+> +	 * Unlike task_move routines, we access mc.to, mc.from not under
+> +	 * mutual exclusion by cgroup_mutex. Here, we take spinlock instead.
+> +	 */
+> +	spin_lock(&mc.lock);
+> +	from = mc.from;
+> +	to = mc.to;
+> +	if (!from)
+> +		goto unlock;
+> +	if (from == mem || to == mem
+> +	    || (mem->use_hierarchy && css_is_ancestor(&from->css, &mem->css))
+> +	    || (mem->use_hierarchy && css_is_ancestor(&to->css,	&mem->css)))
+>  		css_put(&to->css);
+I think this css_put() must be removed too.
+Except for it, this patch looks good to me.
 
-Well, at this point we've invested more engineering hours in the
-various rewrites of this (single) patchset and discussion around it
-than we have spent on rebasing our trees on roughly every other
-mainline release since 2.6.16 or so, across five years of Android
-development.  We think there's some good value to be had (all the
-usual reasons) by heading upstream, so we're still discussing these
-patches and exploring alternatives, but yes, from one way of looking
-at it, it'd certainly be cheaper to just keep maintaining our own
-trees.
+Thank you for cleaning up my dirty code :)
 
-Brian
+Thanks,
+Daisuke Nishimura.
+
+> -	}
+> -	rcu_read_unlock();
+> +		ret = true;
+> +unlock:
+> +	spin_unlock(&mc.lock);
+>  	return ret;
+>  }
+>  
+> @@ -4447,11 +4448,13 @@ static int mem_cgroup_precharge_mc(struc
+>  
+>  static void mem_cgroup_clear_mc(void)
+>  {
+> +	struct mem_cgroup *from = mc.from;
+> +	struct mem_cgroup *to = mc.to;
+> +
+>  	/* we must uncharge all the leftover precharges from mc.to */
+>  	if (mc.precharge) {
+>  		__mem_cgroup_cancel_charge(mc.to, mc.precharge);
+>  		mc.precharge = 0;
+> -		memcg_oom_recover(mc.to);
+>  	}
+>  	/*
+>  	 * we didn't uncharge from mc.from at mem_cgroup_move_account(), so
+> @@ -4460,7 +4463,6 @@ static void mem_cgroup_clear_mc(void)
+>  	if (mc.moved_charge) {
+>  		__mem_cgroup_cancel_charge(mc.from, mc.moved_charge);
+>  		mc.moved_charge = 0;
+> -		memcg_oom_recover(mc.from);
+>  	}
+>  	/* we must fixup refcnts and charges */
+>  	if (mc.moved_swap) {
+> @@ -4485,9 +4487,13 @@ static void mem_cgroup_clear_mc(void)
+>  
+>  		mc.moved_swap = 0;
+>  	}
+> +	spin_lock(&mc.lock);
+>  	mc.from = NULL;
+>  	mc.to = NULL;
+>  	mc.moving_task = NULL;
+> +	spin_unlock(&mc.lock);
+> +	memcg_oom_recover(from);
+> +	memcg_oom_recover(to);
+>  	wake_up_all(&mc.waitq);
+>  }
+>  
+> @@ -4516,12 +4522,14 @@ static int mem_cgroup_can_attach(struct 
+>  			VM_BUG_ON(mc.moved_charge);
+>  			VM_BUG_ON(mc.moved_swap);
+>  			VM_BUG_ON(mc.moving_task);
+> +			spin_lock(&mc.lock);
+>  			mc.from = from;
+>  			mc.to = mem;
+>  			mc.precharge = 0;
+>  			mc.moved_charge = 0;
+>  			mc.moved_swap = 0;
+>  			mc.moving_task = current;
+> +			spin_unlock(&mc.lock);
+>  
+>  			ret = mem_cgroup_precharge_mc(mm);
+>  			if (ret)
+> 
