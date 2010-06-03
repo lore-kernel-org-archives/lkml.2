@@ -1,67 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753897Ab0FCMvA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jun 2010 08:51:00 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:38939 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753767Ab0FCMu6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jun 2010 08:50:58 -0400
-Date: Thu, 3 Jun 2010 09:50:35 -0300
-From: Arnaldo Carvalho de Melo <acme@infradead.org>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org,
-       "David S. Miller" <davem@davemloft.net>,
-       =?iso-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>,
-       Michal Marek <mmarek@suse.cz>, Mike Galbraith <efault@gmx.de>,
-       Paul Mackerras <paulus@samba.org>,
-       Peter Zijlstra <peterz@infradead.org>, Sam Ravnborg <sam@ravnborg.org>,
-       Stephane Eranian <eranian@google.com>, Tom Zanussi <tzanussi@gmail.com>
-Subject: Re: [PATCH 3/4] perf tools: Make target to generate self contained
-	source tarball
-Message-ID: <20100603125035.GA29202@ghostprotocols.net>
-References: <1275511215-25703-1-git-send-email-acme@infradead.org> <1275511215-25703-4-git-send-email-acme@infradead.org> <87k4qgxzdm.fsf@basil.nowhere.org>
+	id S1753779Ab0FCMxF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jun 2010 08:53:05 -0400
+Received: from ozlabs.org ([203.10.76.45]:53629 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752385Ab0FCMxB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Jun 2010 08:53:01 -0400
+From: Rusty Russell <rusty@rustcorp.com.au>
+To: Dave Young <hidave.darkstar@gmail.com>
+Subject: Re: linux-next: Tree for June 3
+Date: Thu, 3 Jun 2010 22:22:56 +0930
+User-Agent: KMail/1.13.2 (Linux/2.6.32-21-generic; KDE/4.4.2; i686; ; )
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+       LKML <linux-kernel@vger.kernel.org>,
+       Linus Torvalds <torvalds@linux-foundation.org>
+References: <20100603134753.710a64b3.sfr@canb.auug.org.au> <AANLkTilr92GkR8bfgyjtb8ToYEEAv4oCsFsfsy04HJRU@mail.gmail.com> <AANLkTim6v2s-Q5BndAKLOZKaA1wYgbU3UKJwNy-6Jkki@mail.gmail.com>
+In-Reply-To: <AANLkTim6v2s-Q5BndAKLOZKaA1wYgbU3UKJwNy-6Jkki@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <87k4qgxzdm.fsf@basil.nowhere.org>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.19 (2009-01-05)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201006032222.57411.rusty@rustcorp.com.au>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Thu, Jun 03, 2010 at 11:02:29AM +0200, Andi Kleen escreveu:
-> > Arnaldo Carvalho de Melo <acme@infradead.org> writes:
-> > Useful for when people want to try some version of the perf tools and don't
-> > wants to download the kernel tarball.
+On Thu, 3 Jun 2010 05:30:09 pm Dave Young wrote:
+> Seems for some module drop reference of 0 in following code of init_module:
 > 
-> Does this also finally allow to build perf in a separate objdir like
-> the rest of the kernel?
+>        /* Drop initial reference. */
+>         module_put(mod);
 
-This is how I build it:
+Thanks Dave, good bug report.
 
-make O=~/git/build/perf -j9 -C tools/perf install
+It was "module: refactor load_module part 4" where I initialized 
+the per-cpu pointer before allocating it:
 
-was done a few months ago, in:
+static int module_unload_init(struct module *mod)
+{
+...
+	/* Hold reference count during initialization. */
+	__this_cpu_write(mod->refptr->incs, 1);
+...
+	mod->refptr = alloc_percpu(struct module_ref);
+...
 
-commit c29ede615fd35a640e771fbbb1778e915fac43a7
-Author: Arnaldo Carvalho de Melo <acme@redhat.com>
-Date:   Sat Mar 27 14:30:45 2010 -0300
+This also explains Stephen's crash during module load (which was more
+expected since refptr is NULL, though percpu ptrs don't work that way).
 
-    perf tools: Allow specifying O= to build files in a separate directory
-    
-    Avoiding polluting the source tree with build files.
-    
-    Reported-by: Steven Rostedt <rostedt@goodmis.org>
-    Cc: Steven Rostedt <rostedt@goodmis.org>
-    Cc: Frédéric Weisbecker <fweisbec@gmail.com>
-    Cc: Mike Galbraith <efault@gmx.de>
-    Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-    Cc: Paul Mackerras <paulus@samba.org>
-    Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+I've fixed it (by reversing the order of those lines) for tomorrow's
+linux-next.
 
-- Arnaldo
+Thanks!
+Rusty.
