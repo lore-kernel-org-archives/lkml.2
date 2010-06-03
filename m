@@ -1,71 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755409Ab0FCO24 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jun 2010 10:28:56 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:41132 "EHLO mx1.redhat.com"
+	id S1755429Ab0FCO3m (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jun 2010 10:29:42 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:41606 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755243Ab0FCO2r (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jun 2010 10:28:47 -0400
-Date: Thu, 3 Jun 2010 16:27:17 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: David Rientjes <rientjes@google.com>
-Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-       LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-       Nick Piggin <npiggin@suse.de>
-Subject: Re: [PATCH 1/5] oom: select_bad_process: check PF_KTHREAD instead
-	of !mm to skip kthreads
-Message-ID: <20100603142717.GC3548@redhat.com>
-References: <20100601212023.GA24917@redhat.com> <alpine.DEB.2.00.1006011424200.16725@chino.kir.corp.google.com> <20100602223612.F52D.A69D9226@jp.fujitsu.com> <alpine.DEB.2.00.1006021405280.32666@chino.kir.corp.google.com> <20100602213331.GA31949@redhat.com> <alpine.DEB.2.00.1006021437010.4765@chino.kir.corp.google.com>
+	id S1754061Ab0FCO3l (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Jun 2010 10:29:41 -0400
+Date: Thu, 3 Jun 2010 07:27:31 -0700
+From: Greg KH <gregkh@suse.de>
+To: Daniel Mack <daniel@caiaq.de>
+Cc: linux-kernel@vger.kernel.org, Johan Hovold <jhovold@gmail.com>,
+       Alan Cox <alan@linux.intel.com>, linux-usb@vger.kernel.org
+Subject: Re: [PATCH] usb-serial/ftdi_sio: fix DTR/RTS line modes
+Message-ID: <20100603142731.GA17732@suse.de>
+References: <1275566102-5613-1-git-send-email-daniel@caiaq.de>
+ <20100603115727.GY2695@buzzloop.caiaq.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.00.1006021437010.4765@chino.kir.corp.google.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <20100603115727.GY2695@buzzloop.caiaq.de>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/02, David Rientjes wrote:
->
-> On Wed, 2 Jun 2010, Oleg Nesterov wrote:
->
-> > > This isn't a bugfix, it simply prevents a recall to the oom killer after
-> > > the kthread has called unuse_mm().  Please show where any side effects of
-> > > oom killing a kthread, which cannot exit, as a result of use_mm() causes a
-> > > problem _anywhere_.
-> >
-> > I already showed you the side effects, but you removed this part in your
-> > reply.
-> >
-> > From http://marc.info/?l=linux-kernel&m=127542732121077
-> >
-> > 	It can't die but force_sig() does bad things which shouldn't be done
-> > 	with workqueue thread. Note that it removes SIG_IGN, sets
-> > 	SIGNAL_GROUP_EXIT, makes signal_pending/fatal_signal_pedning true, etc.
-> >
-> > A workqueue thread must not run with SIGNAL_GROUP_EXIT set, SIGKILL
-> > must be ignored, signal_pending() must not be true.
-> >
-> > This is bug. It is minor, agreed, currently use_mm() is only used by aio.
->
-> It's a problem that would probably never happen in practice because
+On Thu, Jun 03, 2010 at 01:57:27PM +0200, Daniel Mack wrote:
+> On Thu, Jun 03, 2010 at 01:55:02PM +0200, Daniel Mack wrote:
+> > Call set_mctrl() and clear_mctrl() according to the flow control mode
+> > selected. This makes serial communication for FT232 connected devices
+> > work when CRTSCTS is not set.
+> > 
+> > This fixes a regression introduced by 4175f3e31 ("tty_port: If we are
+> > opened non blocking we still need to raise the carrier"). This patch
+> > calls the low-level driver's dtr_rts() function which consequently sets
+> > TIOCM_DTR | TIOCM_RTS. A later call to set_termios() without CRTSCTS in
+> > cflags, however, does not reset these bits, and so data is not actually
+> > sent out on the serial wire.
+> > 
+> > Signed-off-by: Daniel Mack <daniel@caiaq.de>
+> > Cc: Greg Kroah-Hartman <gregkh@suse.de>
+> > Cc: Johan Hovold <jhovold@gmail.com>
+> > Cc: Alan Cox <alan@linux.intel.com>
+> > Cc: linux-usb@vger.kernel.org
+> 
+> Oops. I forgot to Cc: stable@kernel.org.
+> This is in fact broken since 2.6.31-something.
 
-No need to convince me this bug is minor. I repeated this every time.
-I only argued with the "isn't a bugfix, no side effects".
+Thanks for letting me know, I'll add that marking to the patch when I
+queue it up.
 
-> considered the ideal task to kill.  If you think this is rc material, then
-> push it to Andrew and say that.
+thanks,
 
-No, I don't think it is strictly necessary to push this fix into rc.
-But I don't understand why this matters. And in any case, when it comes
-to oom, I am in no position to make any authoritative decisions.
-
-
-David, I don't understand why do you refuse to re-diff your changes
-on top of Kosaki's work. If nothing else, this will help to review
-your changes.
-
-Oleg.
-
+greg k-h
