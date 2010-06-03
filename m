@@ -1,79 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756059Ab0FCTuF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jun 2010 15:50:05 -0400
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:60802 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754366Ab0FCTuB (ORCPT
+	id S1756208Ab0FCTuO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jun 2010 15:50:14 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:4699 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754366Ab0FCTuJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jun 2010 15:50:01 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6002"; a="43230640"
-Subject: Re: ARM defconfig files
-From: Daniel Walker <dwalker@codeaurora.org>
-To: Russell King <rmk@arm.linux.org.uk>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-       Kevin Hilman <khilman@deeprootsystems.com>,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       linux-arm-msm@vger.kernel.org
-In-Reply-To: <20100603194559.GF25779@flint.arm.linux.org.uk>
-References: <20100603074548.GA12104@flint.arm.linux.org.uk>
-	 <alpine.LFD.2.00.1006030725420.8175@i5.linux-foundation.org>
-	 <20100603181010.GA25779@flint.arm.linux.org.uk>
-	 <alpine.LFD.2.00.1006031116360.8175@i5.linux-foundation.org>
-	 <20100603185333.GD25779@flint.arm.linux.org.uk>
-	 <alpine.LFD.2.00.1006031153420.8175@i5.linux-foundation.org>
-	 <1275593742.23384.48.camel@c-dwalke-linux.qualcomm.com>
-	 <20100603194559.GF25779@flint.arm.linux.org.uk>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 03 Jun 2010 12:49:58 -0700
-Message-ID: <1275594598.23384.52.camel@c-dwalke-linux.qualcomm.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	Thu, 3 Jun 2010 15:50:09 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=mime-version:in-reply-to:references:date:message-id:subject:from:to:
+	cc:content-type:x-system-of-record;
+	b=UGdE1yHDUNkhx3OsQa0tk94XXfA/sij+yhLlZdIhKkEqNj0o6xz1BUmZ6xp8I/Anu
+	QWIHX7xz1ta0d7macppPg==
+MIME-Version: 1.0
+In-Reply-To: <20100603193045.GA7188@elte.hu>
+References: <20100603193045.GA7188@elte.hu>
+Date: Thu, 3 Jun 2010 12:50:02 -0700
+Message-ID: <AANLkTinsOF3wnxsruR0TvjBAQcHks4tf0ay_sM2xB_p4@mail.gmail.com>
+Subject: Re: suspend blockers & Android integration
+From: Brian Swetland <swetland@google.com>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: tytso@mit.edu, Neil Brown <neilb@suse.de>,
+       "Arve Hj?nnev?g" <arve@android.com>,
+       Thomas Gleixner <tglx@linutronix.de>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+       Alan Stern <stern@rowland.harvard.edu>,
+       Felipe Balbi <felipe.balbi@nokia.com>,
+       Peter Zijlstra <peterz@infradead.org>,
+       LKML <linux-kernel@vger.kernel.org>,
+       Florian Mickler <florian@mickler.org>,
+       Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
+       Linux PM <linux-pm@lists.linux-foundation.org>,
+       Alan Cox <alan@lxorguk.ukuu.org.uk>,
+       James Bottomley <James.Bottomley@suse.de>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       Peter Zijlstra <a.p.zijlstra@chello.nl>
+Content-Type: text/plain; charset=UTF-8
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-06-03 at 20:45 +0100, Russell King wrote:
-> On Thu, Jun 03, 2010 at 12:35:42PM -0700, Daniel Walker wrote:
-> > On Thu, 2010-06-03 at 11:56 -0700, Linus Torvalds wrote:
-> > > 
-> > > On Thu, 3 Jun 2010, Russell King wrote:
-> > > > 
-> > > > No amount of reorganising the Kconfig files into a heirarchial manner
-> > > > (which they already are) helps.  Not one bit.  Because they already are.
-> > > > That's not where the problem is.
-> > > 
-> > > I don't think you read the whole thread.
-> > > 
-> > > Earlier on, I explained exactly what I wanted: just add some "select" 
-> > > statements to pickt he things you need per the particular target 
-> > > configuration. You seem to have missed that part.
-> > > 
-> > > In other words, you _can_ encode the information that is in the 
-> > > xyz_defconfig files by doing it in Kconfig.xyz files instead. But you do 
-> > > it in a human-readable manner. And the hierarchical thing is absolutely 
-> > > required for that - otherwise you'd end up with just another form of the 
-> > > current xyz_defconfig.
-> > > 
-> > > See?
-> > > 
-> > > In other words, you should be able to basically use "make allnoconfig" 
-> > > together with a Kconfig.xyz file input to select _exactly_ the pieces you 
-> > > need, and nothing else.
-> > 
-> > If you did this for drivers, what about disabling a driver? If we used
-> > "select" wouldn't that force all the drivers on without allowing it to
-> > be unselected?
-> 
-> I already covered that in my (ignored) email where I brought up a
-> "STD_CONFIG" config symbol, which could be disabled to turn off all
-> these additional "select"s.
+On Thu, Jun 3, 2010 at 12:30 PM, Ingo Molnar <mingo@elte.hu> wrote:
+>
+> Sadly the response from the Android team has been 100% uncompromising: either
+> suspend blockers or nothing.
 
-I didn't ignore it, I guess I just didn't fully understand it ..
+Well, we're willing to accept something that gives us the same
+functionality (thus rewriting the api several times to meet various
+objections, current discussions around
+constraint-based-implementations / pm-qos, etc).  We believe we're
+solving a real problem here and have not seen a counter-proposal that
+accomplishes the same.
 
-So your saying it would drop all the selects, but keep the selected
-options in tact? Or it would just turn off all the selected options?
+Suggestions such as "just yell at developers for writing bad apps" or
+"it's the user's fault if they install a lousy app" or "make your app
+marketplace more restrictive" are not helpful.  The technical
+discussions around alternatives are more so (though I do feel like
+we're going in circles in places), which again is why we're still here
+talking about this (that and Arve is about a billion times more
+patient and persistent than I am).
 
-Daniel
+We're not interested in massively rearchitecting our userspace to
+accomplish this (and the "rewrite your userspace!" proposals I've seen
+have had race conditions and/or significant more complexity than the
+wakelock model).
 
+...
+
+> Also, why did the Android team start its contributions with such a difficult
+> and controversial kernel feature?
+
+We started here because it's possibly the only api level change we
+have -- almost everything else is driver or subarch type work or
+controversial but entirely self-contained (like the binder, which I
+would be shocked to see ever hit mainline).  Assertions have been made
+that because the "android kernel" (not a term I like -- linux is
+linux, we have some assorted patches on top) has this feature it
+represents a difficulty for silicon vendors trying to support both
+Android projects and OEMs and mainline:
+
+See: http://www.kroah.com/log/linux/android-kernel-problems.html and
+various other rants about the evil terrible android forks, etc.
+
+So, we figure, let's sort out the hard problem first and then move on
+with our lives.
+
+> There is absolutely _zero_ technical reason why the Android team should
+> present this as as an all-or-nothing effort. Why not merge hw drivers first
+> (with suspend blockers commented or stubbed out), to reduce the fork distance?
+
+If that's the case then there is no problem and people could stop
+yelling at us and just submit their drivers.  Awesome.
+
+I can't speak for all the nameless silicon vendors Greg represents,
+that we apparently are preventing from doing this (how? I don't
+know!), etc, but for my team maintaining multiple versions of drivers
+is a headache, we'd rather square away the wakelock debate first and
+figure something out there, as it just seems like a more logical
+approach.  Maybe we're crazy.
+
+> Really, i myself have controversial kernel features pending all the time. They
+> dont go upstream for a few kernel releases - over a year sometimes - and
+> sometimes they never go upstream.
+>
+> But the fact that some feature of mine is pending doesnt give me the right to
+> go away sulking, it doesnt mean i will block the whole flow of patches in
+> retaliation (as you seem to suggest Google will now have the right to do) - i
+> simply try to work it out.
+
+We're not blocking anything.  Hell, if people want drivers we wrote
+upstream and we're not fast enough for 'em, we publish everything via
+android.git.kernel.org, pretty aggressively rebase to follow latest
+mainline, and release everything under GPLv2, ready-to-go.  We have to
+ship though, and as long as the version we maintain has the features
+we need to ship and the mainline version doesn't, we're going to ship
+based on our version, but this really shouldn't be surprising to
+anyone.
+
+> Lets be reasonable and work it all out, ok?
+
+We're trying.
+
+I do feel like we're suffering from lack of a clear "how do we move
+forward" path, and in particular from an environment where every time
+we do a bunch of work to address one set of concerns and entirely new
+set of people pop up with different concerns (sometimes contradicting
+the last round of changes we were asked to make, etc, etc).
+
+Brian
