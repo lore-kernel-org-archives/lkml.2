@@ -1,96 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752700Ab0FCMfz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jun 2010 08:35:55 -0400
-Received: from mail-ww0-f46.google.com ([74.125.82.46]:49352 "EHLO
-	mail-ww0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752663Ab0FCMfx (ORCPT
+	id S1752738Ab0FCMiM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jun 2010 08:38:12 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:42347 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751499Ab0FCMiJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jun 2010 08:35:53 -0400
+	Thu, 3 Jun 2010 08:38:09 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=UchEIf3TtGC0MYEzaP5+rbQy/4qFGEEwDuBjQtmpFpbpkEm9bJuGiR1+aR5IMAnWca
-         xK2Lfz53pP6ZBVNZABlQsb8iKt8ZLBDYIdm37HIH4tg0AOrL/U7JruhZ0O2XJhNwjGyT
-         It8pm1SEiCKP8VLMgZqcOJyKWKq4w6/m9lkpg=
-Date: Thu, 3 Jun 2010 14:35:46 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>,
-       Arnaldo Carvalho de Melo <acme@redhat.com>,
-       Paul Mackerras <paulus@samba.org>,
-       Stephane Eranian <eranian@google.com>
-Subject: Re: [GIT PULL] perf crash fix
-Message-ID: <20100603123543.GA5234@nowhere>
-References: <1275534810-1837-1-git-send-regression-fweisbec@gmail.com> <1275552159.27810.34944.camel@twins>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1275552159.27810.34944.camel@twins>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=ZxVic8q/HyHJiGsCIoZslpQUZaiOnLKRnl18GXNDgny9MaY44myKmd4OK+oYi1HoJg
+         c8VybTQzOX1H0JA6czu8o8w9DVX0zw94/Ii/CzYIomsy1vSzzofd89CmZEQLoBx6jjuP
+         kRYkdwJ1EuQ0swE6TCZpnGIZ76QQuxMRMwnVA=
+Subject: Re: [patch v2] fcntl: return -EFAULT if copy_to_user fails
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Takuya Yoshikawa <yoshikawa.takuya@oss.ntt.co.jp>
+Cc: Jens Axboe <jaxboe@fusionio.com>, Dan Carpenter <error27@gmail.com>,
+       Matthew Wilcox <matthew@wil.cx>,
+       Alexander Viro <viro@zeniv.linux.org.uk>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Oleg Nesterov <oleg@redhat.com>, Greg Kroah-Hartman <gregkh@suse.de>,
+       Peter Zijlstra <a.p.zijlstra@chello.nl>, linux-fsdevel@vger.kernel.org,
+       linux-kernel@vger.kernel.org
+In-Reply-To: <4C079D34.5010500@oss.ntt.co.jp>
+References: <20100603100402.GR5483@bicker> <4C07826A.6060302@oss.ntt.co.jp>
+	 <20100603103542.GV5483@bicker> <4C07990A.8080508@fusionio.com>
+	 <4C079D34.5010500@oss.ntt.co.jp>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 03 Jun 2010 14:38:03 +0200
+Message-ID: <1275568683.2456.33.camel@edumazet-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 03, 2010 at 10:02:39AM +0200, Peter Zijlstra wrote:
-> On Thu, 2010-06-03 at 05:13 +0200, Frederic Weisbecker wrote:
+Le jeudi 03 juin 2010 à 21:16 +0900, Takuya Yoshikawa a écrit :
+> (2010/06/03 20:59), Jens Axboe wrote:
+> > On 2010-06-03 12:35, Dan Carpenter wrote:
+> >> copy_to_user() returns the number of bytes remaining, but we want to
+> >> return -EFAULT.
+> >> 	ret = fcntl(fd, F_SETOWN_EX, NULL);
+> >> With the original code ret would be 8 here.
+> >>
+> >> V2: Takuya Yoshikawa pointed out a similar issue in f_getown_ex()
+> >
+> > Pretty basic bug, how long has this been there?
 > 
-> > diff --git a/kernel/perf_event.c b/kernel/perf_event.c
-> > index 858f56f..b666d7d 100644
-> > --- a/kernel/perf_event.c
-> > +++ b/kernel/perf_event.c
-> > @@ -1510,20 +1510,16 @@ do {					\
-> >  	return div64_u64(dividend, divisor);
-> >  }
-> >  
-> > -static void perf_event_stop(struct perf_event *event)
-> > +static void perf_event_stop_hwevent(struct perf_event *event)
-> >  {
-> > -	if (!event->pmu->stop)
-> > -		return event->pmu->disable(event);
-> > -
-> > -	return event->pmu->stop(event);
-> > +	if (event->pmu->stop && !is_software_event(event))
-> > +		return event->pmu->stop(event);
-> >  }
-> >  
-> > -static int perf_event_start(struct perf_event *event)
-> > +static int perf_event_start_hwevent(struct perf_event *event)
-> >  {
-> > -	if (!event->pmu->start)
-> > -		return event->pmu->enable(event);
-> > -
-> > -	return event->pmu->start(event);
-> > +	if (event->pmu->start && !is_software_event(event))
-> > +		return event->pmu->start(event);
-> >  }
-> >  
-> >  static void perf_adjust_period(struct perf_event *event, u64 nsec, u64 count)
-> > @@ -1546,9 +1542,9 @@ static void perf_adjust_period(struct perf_event *event, u64 nsec, u64 count)
-> >  
-> >  	if (atomic64_read(&hwc->period_left) > 8*sample_period) {
-> >  		perf_disable();
-> > -		perf_event_stop(event);
-> > +		perf_event_stop_hwevent(event);
-> >  		atomic64_set(&hwc->period_left, 0);
-> > -		perf_event_start(event);
-> > +		perf_event_start_hwevent(event);
-> >  		perf_enable();
-> >  	}
-> >  }
-> 
-> Urhm,. isn't is much easier to simply give the software events a NOP
-> stop/start callback?
+> IIUC, from the beginning, when these were introduced.
+
+Maybe copy_to_user() was changed sometime to return a partial count
+instead of EFAULT ?
+
+I do think we should have a set of helper functions, instead of
+spreading special EFAULT cases in one housand places...
+
+This is really ugly.
+
+static inline int sec_copy_to_user(arg1, arg2, arg3)
+{
+	int res = copy_to_user(arg1, arg2, arg3);
+
+	return (res > 0) ? -EFAULT : res;
+}
 
 
-I wanted to, but I thought we could avoid two indirect calls on each
-ticks and I was also afraid of breaking start/stop original semantics,
-more especially the role of perf_event_stop/start
-
-
-But that's about quite small details. I'm ok with your patch (the version
-that also handles trace events ;)
-
-Thanks.
 
