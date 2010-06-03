@@ -1,171 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932426Ab0FCFxy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jun 2010 01:53:54 -0400
-Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:37975 "EHLO
-	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932121Ab0FCFxx (ORCPT
+	id S932586Ab0FCGCg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jun 2010 02:02:36 -0400
+Received: from out02.mta.xmission.com ([166.70.13.232]:33586 "EHLO
+	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932356Ab0FCGCf convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jun 2010 01:53:53 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-To: "Luis Claudio R. Goncalves" <lclaudio@uudg.org>,
-       LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
-       Oleg Nesterov <oleg@redhat.com>, David Rientjes <rientjes@google.com>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-       Nick Piggin <npiggin@suse.de>
-Subject: [PATCH 05/12] oom: make oom_unkillable() helper function
-Cc: kosaki.motohiro@jp.fujitsu.com
-In-Reply-To: <20100603135106.7247.A69D9226@jp.fujitsu.com>
-References: <20100603135106.7247.A69D9226@jp.fujitsu.com>
-Message-Id: <20100603145221.7256.A69D9226@jp.fujitsu.com>
+	Thu, 3 Jun 2010 02:02:35 -0400
+To: =?utf-8?Q?Am=C3=A9rico?= Wang <xiyou.wangcong@gmail.com>
+Cc: Eric Dumazet <eric.dumazet@gmail.com>,
+       Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>,
+       ebiederm@aristanetworks.com, randy.dunlap@oracle.com, gregkh@suse.de,
+       linux-kernel@vger.kernel.org
+References: <201006030523.o535NA16029042@www262.sakura.ne.jp>
+	<1275543101.29413.76.camel@edumazet-laptop>
+	<20100603055515.GA5580@cr0.nay.redhat.com>
+From: ebiederm@xmission.com (Eric W. Biederman)
+Date: Wed, 02 Jun 2010 23:02:28 -0700
+In-Reply-To: <20100603055515.GA5580@cr0.nay.redhat.com> (=?utf-8?Q?=22Am?=
+ =?utf-8?Q?=C3=A9rico?= Wang"'s message of "Thu\, 3 Jun 2010 13\:55\:15
+ +0800")
+Message-ID: <m1y6ewr6vf.fsf@fess.ebiederm.org>
+User-Agent: Gnus/5.11 (Gnus v5.11) Emacs/22.2 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
-Content-Transfer-Encoding: 7bit
-X-Mailer: Becky! ver. 2.50.07 [ja]
-Date: Thu,  3 Jun 2010 14:53:29 +0900 (JST)
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
+X-XM-SPF: eid=;;;mid=;;;hst=in02.mta.xmission.com;;;ip=67.188.5.249;;;frm=ebiederm@xmission.com;;;spf=neutral
+X-SA-Exim-Connect-IP: 67.188.5.249
+X-SA-Exim-Rcpt-To: xiyou.wangcong@gmail.com, linux-kernel@vger.kernel.org, gregkh@suse.de, randy.dunlap@oracle.com, ebiederm@aristanetworks.com, penguin-kernel@I-love.SAKURA.ne.jp, eric.dumazet@gmail.com
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-DCC: XMission; sa02 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: =?ISO-8859-1?Q?;Am=c3=a9rico Wang <xiyou.wangcong@gmail.com>?=
+X-Spam-Relay-Country: 
+X-Spam-Report: * -1.8 ALL_TRUSTED Passed through trusted hosts only via SMTP
+	*  1.5 XMNoVowels Alpha-numberic number with no vowels
+	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
+	* -3.0 BAYES_00 BODY: Bayesian spam probability is 0 to 1%
+	*      [score: 0.0000]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa02 1397; Body=1 Fuz1=1 Fuz2=1]
+	*  0.0 XM_SPF_Neutral SPF-Neutral
+	*  0.4 UNTRUSTED_Relay Comes from a non-trusted relay
+Subject: Re: [PATCH] kobject: Suppress compiler warning with gcc 3.x
+X-SA-Exim-Version: 4.2.1 (built Thu, 25 Oct 2007 00:26:12 +0000)
+X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now, sysctl_oom_kill_allocating_task case and CONSTRAINT_MEMORY_POLICY
-case don't call select_bad_process(). then, oom_kill_process() need
-very similar unkillable tasks.
+Américo Wang <xiyou.wangcong@gmail.com> writes:
 
-This patch unify it.
+> On Thu, Jun 03, 2010 at 07:31:41AM +0200, Eric Dumazet wrote:
+>>Le jeudi 03 juin 2010 à 14:23 +0900, Tetsuo Handa a écrit :
+>>> Gcc 3.x generates a warning
+>>> 
+>>>   include/linux/sysfs.h:183: warning: parameter has incomplete type
+>>> 
+>>> on each file.
+>>> Suppress the warning by moving the definition of "enum kobj_ns_type"
+>>> to before "#include <linux/sysfs.h>".
+>>> 
+>>> Signed-off-by: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+>>
+>>
+>>I was about to submit same patch, but I was also reverting 27eabc7cb4b3
+>>(sysfs: Don't use enums in inline function declaration.)
+>>
+>>So that sysfs_exit_ns() prototype is consistent regardless of
+>>CONFIG_SYSFS
+>>
+>>What do you think ?
+>>
+>
+> This looks odd, in sysfs.h we do have a forward declaration of
+> enum kobj_ns_type... I am wondering why gcc 3.x doesn't recognize it.
 
-Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
----
- mm/oom_kill.c |   62 ++++++++++++++++++++++++--------------------------------
- 1 files changed, 27 insertions(+), 35 deletions(-)
-
-diff --git a/mm/oom_kill.c b/mm/oom_kill.c
-index 79845f4..618cf44 100644
---- a/mm/oom_kill.c
-+++ b/mm/oom_kill.c
-@@ -250,6 +250,21 @@ static enum oom_constraint constrained_alloc(struct zonelist *zonelist,
- }
- #endif
- 
-+static int oom_unkillable(struct task_struct *p, struct mem_cgroup *mem)
-+{
-+	/* skip the init task and kthreads */
-+	if (is_global_init(p) || (p->flags & PF_KTHREAD))
-+		return 1;
-+
-+	if (mem && !task_in_mem_cgroup(p, mem))
-+		return 1;
-+
-+	if (p->signal->oom_adj == OOM_DISABLE)
-+		return 1;
-+
-+	return 0;
-+}
-+
- /*
-  * Simple selection loop. We chose the process with the highest
-  * number of 'points'. We expect the caller will lock the tasklist.
-@@ -268,10 +283,7 @@ static struct task_struct *select_bad_process(unsigned long *ppoints,
- 	for_each_process(p) {
- 		unsigned long points;
- 
--		/* skip the init task and kthreads */
--		if (is_global_init(p) || (p->flags & PF_KTHREAD))
--			continue;
--		if (mem && !task_in_mem_cgroup(p, mem))
-+		if (oom_unkillable(p, mem))
- 			continue;
- 
- 		/*
-@@ -304,9 +316,6 @@ static struct task_struct *select_bad_process(unsigned long *ppoints,
- 			*ppoints = ULONG_MAX;
- 		}
- 
--		if (p->signal->oom_adj == OOM_DISABLE)
--			continue;
--
- 		points = badness(p, uptime.tv_sec);
- 		if (points > *ppoints || !chosen) {
- 			chosen = p;
-@@ -386,20 +395,18 @@ static void dump_header(struct task_struct *p, gfp_t gfp_mask, int order,
-  * flag though it's unlikely that  we select a process with CAP_SYS_RAW_IO
-  * set.
-  */
--static void __oom_kill_task(struct task_struct *p, int verbose)
-+static int __oom_kill_process(struct task_struct *p, struct mem_cgroup *mem,
-+			      int verbose)
- {
--	if (is_global_init(p)) {
--		WARN_ON(1);
--		printk(KERN_WARNING "tried to kill init!\n");
--		return;
--	}
-+	if (oom_unkillable(p, mem))
-+		return 1;
- 
- 	p = find_lock_task_mm(p);
- 	if (!p) {
- 		WARN_ON(1);
- 		printk(KERN_WARNING "tried to kill an mm-less task %d (%s)!\n",
- 			task_pid_nr(p), p->comm);
--		return;
-+		return 1;
- 	}
- 
- 	if (verbose)
-@@ -420,22 +427,6 @@ static void __oom_kill_task(struct task_struct *p, int verbose)
- 	set_tsk_thread_flag(p, TIF_MEMDIE);
- 
- 	force_sig(SIGKILL, p);
--}
--
--static int oom_kill_task(struct task_struct *p)
--{
--	/* WARNING: mm may not be dereferenced since we did not obtain its
--	 * value from get_task_mm(p).  This is OK since all we need to do is
--	 * compare mm to q->mm below.
--	 *
--	 * Furthermore, even if mm contains a non-NULL value, p->mm may
--	 * change to NULL at any time since we do not hold task_lock(p).
--	 * However, this is of no concern to us.
--	 */
--	if (!p->mm || p->signal->oom_adj == OOM_DISABLE)
--		return 1;
--
--	__oom_kill_task(p, 1);
- 
- 	return 0;
- }
-@@ -454,7 +445,7 @@ static int oom_kill_process(struct task_struct *p, gfp_t gfp_mask, int order,
- 	 * its children or threads, just set TIF_MEMDIE so it can die quickly
- 	 */
- 	if (p->flags & PF_EXITING) {
--		__oom_kill_task(p, 0);
-+		__oom_kill_process(p, mem, 0);
- 		return 0;
- 	}
- 
-@@ -465,12 +456,13 @@ static int oom_kill_process(struct task_struct *p, gfp_t gfp_mask, int order,
- 	list_for_each_entry(c, &p->children, sibling) {
- 		if (c->mm == p->mm)
- 			continue;
--		if (mem && !task_in_mem_cgroup(c, mem))
--			continue;
--		if (!oom_kill_task(c))
-+
-+		/* Ok, Kill the child */
-+		if (!__oom_kill_process(c, mem, 1))
- 			return 0;
- 	}
--	return oom_kill_task(p);
-+
-+	return __oom_kill_process(p, mem, 1);
- }
- 
- #ifdef CONFIG_CGROUP_MEM_RES_CTLR
--- 
-1.6.5.2
+Because the replacement is an inline, and we are passing the enum by value
+gcc wants to see the full definition, at the point where the inline function
+is declared.
 
 
-
+Eric
