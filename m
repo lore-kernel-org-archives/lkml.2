@@ -1,90 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756348Ab0FCRab (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jun 2010 13:30:31 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:50409 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753403Ab0FCRa0 (ORCPT
+	id S1756404Ab0FCRbr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jun 2010 13:31:47 -0400
+Received: from avexcashub1.qlogic.com ([198.70.193.61]:55433 "EHLO
+	avexcashub1.qlogic.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755497Ab0FCRbp convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jun 2010 13:30:26 -0400
-Subject: Re: [RFC][PATCH 21/26] alsa: ASoC: Add JZ4740 ASoC support
-From: Liam Girdwood <lrg@slimlogic.co.uk>
-To: Lars-Peter Clausen <lars@metafoo.de>
-Cc: Ralf Baechle <ralf@linux-mips.org>, linux-mips@linux-mips.org,
-       linux-kernel@vger.kernel.org,
-       Mark Brown <broonie@opensource.wolfsonmicro.com>,
-       alsa-devel@alsa-project.org
-In-Reply-To: <4C07E37A.40502@metafoo.de>
-References: <1275505397-16758-1-git-send-email-lars@metafoo.de>
-	 <1275505950-17334-5-git-send-email-lars@metafoo.de>
-	 <1275569309.3593.106.camel@odin>  <4C07DD48.2050503@metafoo.de>
-	 <1275584609.3118.26.camel@odin>  <4C07E37A.40502@metafoo.de>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 03 Jun 2010 18:25:00 +0100
-Message-ID: <1275585900.3118.29.camel@odin>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	Thu, 3 Jun 2010 13:31:45 -0400
+From: Anirban Chakraborty <anirban.chakraborty@qlogic.com>
+To: Randy Dunlap <randy.dunlap@oracle.com>
+CC: Stephen Rothwell <sfr@canb.auug.org.au>, netdev <netdev@vger.kernel.org>,
+       "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
+       LKML <linux-kernel@vger.kernel.org>,
+       Linux Driver <Linux-Driver@qlogic.com>
+Date: Thu, 3 Jun 2010 10:31:40 -0700
+Subject: Re: linux-next: Tree for June 3 (qlcnic)
+Thread-Topic: linux-next: Tree for June 3 (qlcnic)
+Thread-Index: AcsDQqMNdEYJUl7SSN6WIa9ZgcBfsg==
+Message-ID: <4A3D4210-F6CF-4D74-A21A-F6AA4A287445@qlogic.com>
+References: <20100603134753.710a64b3.sfr@canb.auug.org.au>
+ <20100603084618.387a39fa.randy.dunlap@oracle.com>
+In-Reply-To: <20100603084618.387a39fa.randy.dunlap@oracle.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-06-03 at 19:16 +0200, Lars-Peter Clausen wrote:
-> Liam Girdwood wrote:
-> > On Thu, 2010-06-03 at 18:50 +0200, Lars-Peter Clausen wrote:
-> >   
-> >>>> +    config = snd_soc_dai_get_dma_data(rtd->dai->cpu_dai,
-> >>>>         
-> >> substream);
-> >>     
-> >>>> +    if (!prtd->dma) {
-> >>>> +            const char *dma_channel_name;
-> >>>> +            if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK)
-> >>>> +                    dma_channel_name = "PCM Playback";
-> >>>> +            else
-> >>>> +                    dma_channel_name = "PCM Capture";
-> >>>> +
-> >>>> +            prtd->dma = jz4740_dma_request(substream,
-> >>>>         
-> >> dma_channel_name);
-> >>     
-> >>>>     
-> >>>>         
-> >>> dma_channel_name variable is not required here. Just use the const
-> >>>       
-> >> char
-> >>     
-> >>> * directly.
-> >>>
-> >>>   
-> >>>       
-> >> I actually had it like that before, but I think it is much more readable
-> >> in its current form.
-> >>     
-> >
-> > I disagree, having the char pointer here just adds an extra level of
-> > indirection and costs an extra two lines of code. 
-> >
-> > Liam 
-> >   
-> Hi
+
+On Jun 3, 2010, at 8:46 AM, Randy Dunlap wrote:
+
+> On Thu, 3 Jun 2010 13:47:53 +1000 Stephen Rothwell wrote:
 > 
-> Could you give an concrete example of how you would code it?
+>> Hi all,
+>> 
+>> Changes since 20100602:
+> 
+> 
+> when CONFIG_INET=n:
+> 
+> ERROR: "qlcnicvf_set_ilb_mode" [drivers/net/qlcnic/qlcnic.ko] undefined!
+> ERROR: "qlcnicvf_config_bridged_mode" [drivers/net/qlcnic/qlcnic.ko] undefined!
+> ERROR: "qlcnicvf_config_led" [drivers/net/qlcnic/qlcnic.ko] undefined!
+> ERROR: "qlcnicvf_clear_ilb_mode" [drivers/net/qlcnic/qlcnic.ko] undefined!
+> ERROR: "qlcnicvf_start_firmware" [drivers/net/qlcnic/qlcnic.ko] undefined!
+> 
+> full config is attached.
 > 
 
-Sure,
+Sorry about that. I will send fix right away.
 
-if (!prtd->dma) {
-          if (substream->stream == SNDRV_PCM_STREAM_PLAYBACK)
-                   prtd->dma = jz4740_dma_request(substream, "PCM Playback");
-          else
-                   prtd->dma = jz4740_dma_request(substream, "PCM Capture");
-}
-
-Liam
-
--- 
-Freelance Developer, SlimLogic Ltd
-ASoC and Voltage Regulator Maintainer.
-http://www.slimlogic.co.uk
+thanks,
+Anirban
 
