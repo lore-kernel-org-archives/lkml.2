@@ -1,277 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755644Ab0FCOnn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jun 2010 10:43:43 -0400
-Received: from g6t0184.atlanta.hp.com ([15.193.32.61]:39177 "EHLO
-	g6t0184.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755061Ab0FCOnm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jun 2010 10:43:42 -0400
-Message-ID: <4C07BF9B.4000301@hp.com>
-Date: Thu, 03 Jun 2010 10:43:39 -0400
-From: Vlad Yasevich <vladislav.yasevich@hp.com>
-User-Agent: Thunderbird 2.0.0.24 (X11/20100317)
+	id S1755515Ab0FCOo7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jun 2010 10:44:59 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:24545 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755128Ab0FCOo6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Jun 2010 10:44:58 -0400
+Date: Thu, 3 Jun 2010 16:43:21 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Ben Blum <bblum@andrew.cmu.edu>
+Cc: linux-kernel@vger.kernel.org, containers@lists.linux-foundation.org,
+       akpm@linux-foundation.org, ebiederm@xmission.com, lizf@cn.fujitsu.com,
+       matthltc@us.ibm.com, menage@google.com
+Subject: Re: [RFC] [PATCH 2/2] cgroups: make procs file writable
+Message-ID: <20100603144321.GA6284@redhat.com>
+References: <20100530013002.GA762@ghc01.ghc.andrew.cmu.edu> <20100530013303.GC762@ghc01.ghc.andrew.cmu.edu> <20100531175242.GA14691@redhat.com> <20100603045629.GC21006@ghc02.ghc.andrew.cmu.edu>
 MIME-Version: 1.0
-To: Wei Yongjun <yjwei@cn.fujitsu.com>
-CC: Yaogong Wang <ywang15@ncsu.edu>, linux-sctp@vger.kernel.org,
-       Sridhar Samudrala <sri@us.ibm.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 4/6] sctp multistream scheduling: extend socket API
-References: <AANLkTilW6Ym_vL02rVk4QFPIC3Dr0BC12oAxdjE9RXpf@mail.gmail.com> <4C0764F7.7030300@cn.fujitsu.com>
-In-Reply-To: <4C0764F7.7030300@cn.fujitsu.com>
-X-Enigmail-Version: 0.96.0
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: AAAAAQAAAAI=
-X-Whitelist: TRUE
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100603045629.GC21006@ghc02.ghc.andrew.cmu.edu>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 06/03, Ben Blum wrote:
+>
+> On Mon, May 31, 2010 at 07:52:42PM +0200, Oleg Nesterov wrote:
+> >
+> > OK, the caller has a reference to the argument, leader,
+> >
+> > > +	leader = leader->group_leader;
+> >
+> > But why it is safe to use leader->group_leader if we race with exec?
+>
+> This line means "let's try to find who the leader is", since
+> attach_task_by_pid doesn't grab it for us. It's not "safe", and we still
+> check if it's really the leader later (just before the 'commit point').
 
+It is not safe to even dereference this memory, it can point to nowhere.
+I do not remember how this patch does "check if it's really the leader later",
+but in any case this is too late: iirc at least can_attach(leader) was called.
 
-Wei Yongjun wrote:
->> Augment SCTP socket API with a new socket option to choose and
->> configure scheduling algorithm.
->>
->> Signed-off-by: Yaogong Wang <ywang15@ncsu.edu>
->> ---
->> diff -uprN -X linux-2.6.32.8/Documentation/dontdiff
->> p3/include/net/sctp/structs.h p4/include/net/sctp/structs.h
->> --- p3/include/net/sctp/structs.h	2010-06-02 12:57:24.000000000 -0700
->> +++ p4/include/net/sctp/structs.h	2010-06-02 12:58:11.000000000 -0700
->> @@ -326,6 +326,8 @@ struct sctp_sock {
->>
->>  	/* Multistream scheduling  */
->>  	const struct sctp_sched_ops *sched_ops;
->> +	__u32 sched_priv_len;
->> +	__u16 *sched_priv;
->>   
->>  	struct sctp_initmsg initmsg;
->>  	struct sctp_rtoinfo rtoinfo;
->> @@ -1691,6 +1693,8 @@ struct sctp_association {
->>
->>  	/* Multistream scheduling  */
->>  	const struct sctp_sched_ops *sched_ops;
->> +	__u32 sched_priv_len;
->> +	__u16 *sched_priv;
->>   
-> 
-> I also see you add "__u16 *sched_internal;" to asoc, those are
-> the sche base values, and are different between sche.
-> The socket and assoc may not want to know the detail, raw data
-> is enough for them, and if we want to add a new sche, we do
-> not change the struct sctp_sock or struct sctp_association every
-> time.
+> Note that before this line 'leader' doesn't really mean the leader -
 
-I agree.  These should probably go into sched_ops.
+Yes,
 
--vlad
+> perhaps i should rename the variables :P
+>
+> But maybe I also want to grab a reference on the new task?
 
-> 
->>  	/* Heartbeat interval: The endpoint sends out a Heartbeat chunk to
->>  	 * the destination address every heartbeat interval. This value
->> diff -uprN -X linux-2.6.32.8/Documentation/dontdiff
->> p3/include/net/sctp/user.h p4/include/net/sctp/user.h
->> --- p3/include/net/sctp/user.h	2010-05-28 10:59:23.000000000 -0700
->> +++ p4/include/net/sctp/user.h	2010-05-28 11:54:47.000000000 -0700
->> @@ -67,6 +67,8 @@ enum sctp_optname {
->>  #define SCTP_ASSOCINFO SCTP_ASSOCINFO
->>  	SCTP_INITMSG,
->>  #define SCTP_INITMSG SCTP_INITMSG
->> +	SCTP_SCHED,
->> +#define SCTP_SCHED SCTP_SCHED
->>  	SCTP_NODELAY, 	/* Get/set nodelay option. */
->>  #define SCTP_NODELAY	SCTP_NODELAY
->>  	SCTP_AUTOCLOSE,
->> @@ -171,8 +173,22 @@ struct sctp_initmsg {
->>  	__u16 sinit_max_init_timeo;
->>  };
->>
->> +/*
->> + * SCTP Scheduling Structure (SCTP_SCHED)
->> + *
->> + *   cmsg_level    cmsg_type      cmsg_data[]
->> + *   ------------  ------------   ----------------------
->> + *   IPPROTO_SCTP  SCTP_SCHED     struct sctp_sched
->> + *
->> + */
->>  #define SCTP_SCHED_NAME_MAX	16
->>
->> +struct sctp_sched {
->> +	char  ssched_name[SCTP_SCHED_NAME_MAX];
->> +	__u32 ssched_priv_len;
->> +	__u16 ssched_priv[0];
->> +};
->> +
->>  /*
->>   * 5.2.2 SCTP Header Information Structure (SCTP_SNDRCV)
->>   *
->> diff -uprN -X linux-2.6.32.8/Documentation/dontdiff
->> p3/net/sctp/associola.c p4/net/sctp/associola.c
->> --- p3/net/sctp/associola.c	2010-06-02 12:57:06.000000000 -0700
->> +++ p4/net/sctp/associola.c	2010-06-02 12:57:57.000000000 -0700
->> @@ -187,6 +187,14 @@ static struct sctp_association *sctp_ass
->>
->>  	/* Multistream scheduling  */
->>  	asoc->sched_ops = sp->sched_ops;
->> +	asoc->sched_priv_len = sp->sched_priv_len;
->> +	if (asoc->sched_priv_len) {
->> +		asoc->sched_priv = kmalloc(asoc->sched_priv_len, gfp);
->> +		if (!asoc->sched_priv)
->> +			goto fail_init;
->> +		memcpy(asoc->sched_priv, sp->sched_priv, asoc->sched_priv_len);
->> +	} else
->> +		asoc->sched_priv = NULL;
->>
->>  	/* Allocate storage for the ssnmap after the inbound and outbound
->>  	 * streams have been negotiated during Init.
->> @@ -464,6 +472,8 @@ static void sctp_association_destroy(str
->>  {
->>  	SCTP_ASSERT(asoc->base.dead, "Assoc is not dead", return);
->>
->> +	kfree(asoc->sched_priv);
->> +
->>  	sctp_endpoint_put(asoc->ep);
->>  	sock_put(asoc->base.sk);
->>
->> diff -uprN -X linux-2.6.32.8/Documentation/dontdiff
->> p3/net/sctp/socket.c p4/net/sctp/socket.c
->> --- p3/net/sctp/socket.c	2010-05-28 12:38:09.000000000 -0700
->> +++ p4/net/sctp/socket.c	2010-05-28 12:36:37.000000000 -0700
->> @@ -2580,6 +2580,50 @@ static int sctp_setsockopt_initmsg(struc
->>  	return 0;
->>  }
->>
->> +/* Set the multistream scheduling algorithm*/
->> +static int sctp_setsockopt_sched(struct sock *sk, char __user *optval,
->> +						unsigned int optlen)
->> +{
->> +	struct sctp_sched *ssched = NULL;
->> +	struct sctp_sock *sp = sctp_sk(sk);
->> +	int ret = 0;
->> +
->> +	if (optlen < sizeof(struct sctp_sched))
->> +		return -EINVAL;
->> +
->> +	ssched = kmalloc(optlen, GFP_KERNEL);
->> +	if (!ssched)
->> +		return -ENOMEM;
->> +
->> +	if (copy_from_user(ssched, optval, optlen)) {
->> +		ret = -EFAULT;
->> +		goto out;
->> +	}
->> +
->> +	if (optlen != sizeof(struct sctp_sched) + ssched->ssched_priv_len) {
->> +		ret = -EINVAL;
->> +		goto out;
->> +	}
->> +
->> +	ret = sctp_set_sched(sk, ssched->ssched_name);
->> +	if (ret)
->> +		goto out;
->> +	sp->sched_priv_len = ssched->ssched_priv_len;
->> +	kfree(sp->sched_priv);
->> +	if (sp->sched_priv_len) {
->> +		sp->sched_priv = kmalloc(sp->sched_priv_len, GFP_KERNEL);
->> +		if (!sp->sched_priv) {
->> +			ret = -ENOMEM;
->> +			goto out;
->> +		}
->> +		memcpy(sp->sched_priv, ssched->ssched_priv, sp->sched_priv_len);
->> +	}
->> +
->> +out:
->> +	kfree(ssched);
->> +	return ret;
->> +}
->> +
->>  /*
->>   * 7.1.14 Set default send parameters (SCTP_DEFAULT_SEND_PARAM)
->>   *
->> @@ -3417,6 +3461,9 @@ SCTP_STATIC int sctp_setsockopt(struct s
->>  		retval = sctp_setsockopt_partial_delivery_point(sk, optval, optlen);
->>  		break;
->>
->> +	case SCTP_SCHED:
->> +		retval = sctp_setsockopt_sched(sk, optval, optlen);
->> +		break;
->>  	case SCTP_INITMSG:
->>  		retval = sctp_setsockopt_initmsg(sk, optval, optlen);
->>  		break;
->> @@ -3642,7 +3689,10 @@ SCTP_STATIC int sctp_init_sock(struct so
->>  	sp->initmsg.sinit_max_attempts   = sctp_max_retrans_init;
->>  	sp->initmsg.sinit_max_init_timeo = sctp_rto_max;
->>
->> +	/* Initialize default scheduling algorithm  */
->>  	sp->sched_ops = sctp_default_sched_ops;
->> +	sp->sched_priv_len = 0;
->> +	sp->sched_priv = NULL;
->>
->>  	/* Initialize default RTO related parameters.  These parameters can
->>  	 * be modified for with the SCTP_RTOINFO socket option.
->> @@ -3735,6 +3785,9 @@ SCTP_STATIC void sctp_destroy_sock(struc
->>
->>  	SCTP_DEBUG_PRINTK("sctp_destroy_sock(sk: %p)\n", sk);
->>
->> +	sctp_cleanup_sched(sk);
->> +	kfree(sctp_sk(sk)->sched_priv);
->> +
->>  	/* Release our hold on the endpoint. */
->>  	ep = sctp_sk(sk)->ep;
->>  	sctp_endpoint_free(ep);
->> @@ -4351,6 +4404,35 @@ static int sctp_getsockopt_initmsg(struc
->>  	return 0;
->>  }
->>
->> +/* Get the multistream scheduling algorithm*/
->> +static int sctp_getsockopt_sched(struct sock *sk, int len, char __user *optval,
->> +							int __user *optlen)
->> +{
->> +	struct sctp_sched *ssched;
->> +	int sz = sizeof(struct sctp_sched) + sctp_sk(sk)->sched_priv_len;
->> +	int ret = 0;
->> +
->> +	if (len < sz)
->> +		return -EINVAL;
->> +	if (put_user(sz, optlen))
->> +		return -EFAULT;
->> +
->> +	ssched = kmalloc(sz, GFP_KERNEL);
->> +	if (!ssched)
->> +		return -EFAULT;
->> +	memcpy(ssched->ssched_name, sctp_sk(sk)->sched_ops->name,
->> +					SCTP_SCHED_NAME_MAX);
->> +	ssched->ssched_priv_len = sctp_sk(sk)->sched_priv_len;
->> +	memcpy(ssched->ssched_priv, sctp_sk(sk)->sched_priv,
->> +					ssched->ssched_priv_len);
->> +
->> +	if (copy_to_user(optval, ssched, sz))
->> +		ret = -EFAULT;
->> +
->> +	kfree(ssched);
->> +	return ret;
->> +}
->> +
->>  static int sctp_getsockopt_peer_addrs_num_old(struct sock *sk, int len,
->>  					      char __user *optval,
->>  					      int __user *optlen)
->> @@ -5605,6 +5687,9 @@ SCTP_STATIC int sctp_getsockopt(struct s
->>  	case SCTP_INITMSG:
->>  		retval = sctp_getsockopt_initmsg(sk, len, optval, optlen);
->>  		break;
->> +	case SCTP_SCHED:
->> +		retval = sctp_getsockopt_sched(sk, len, optval, optlen);
->> +		break;
->>  	case SCTP_GET_PEER_ADDRS_NUM_OLD:
->>  		retval = sctp_getsockopt_peer_addrs_num_old(sk, len, optval,
->>  							    optlen);
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->> Please read the FAQ at  http://www.tux.org/lkml/
->>
->>
->>   
-> 
+Of course.
+
+Not that I really understand why this task must be ->group_leader at
+this point.
+
+> > > +	list_for_each_entry_rcu(tsk, &leader->thread_group, thread_group) {
+> >
+> > Even if we didn't change "leader" above, this is not safe in theory.
+> > We already discussed this, list_for_each_rcu(head) is only safe when
+> > we know that "head" itself is valid.
+> >
+> > Suppose that this leader exits, then leader->thread_group.next exits
+> > too before we take rcu_read_lock().
+>
+> Why is that a problem? I thought leader->thread_group is supposed to
+> stay sane as long as leader is the leader.
+
+Unless we race with exec/exit. Yes, this race is very unlikely.
+
+> This looks like it needs a check to see if 'leader' is still really the
+> leader, but nothing more.
+
+Or you can check pid_alive(). Again, you don't really need ->group_leader
+to iterate over thread-group.
+
+> > > +	oldcgrp = task_cgroup_from_root(leader, root);
+> > > +	if (cgrp != oldcgrp) {
+> > > +		retval = cgroup_task_migrate(cgrp, oldcgrp, leader, true);
+> > > +		BUG_ON(retval != 0 && retval != -ESRCH);
+> > > +	}
+> > > +	/* Now iterate over each thread in the group. */
+> > > +	list_for_each_entry_rcu(tsk, &leader->thread_group, thread_group) {
+> > > +		BUG_ON(tsk->signal != leader->signal);
+> > > +		/* leave current thread as it is if it's already there */
+> > > +		oldcgrp = task_cgroup_from_root(tsk, root);
+> > > +		if (cgrp == oldcgrp)
+> > > +			continue;
+> > > +		/* we don't care whether these threads are exiting */
+> > > +		retval = cgroup_task_migrate(cgrp, oldcgrp, tsk, true);
+> > > +		BUG_ON(retval != 0 && retval != -ESRCH);
+> > > +	}
+> >
+> > This looks strange. Why do we move leader outside of the loop ?
+> > Of course, list_for_each_entry() can't work to move all sub-threads,
+> > but "do while_each_thread()" can.
+>
+> do/while_each_thread oves over all threads in the system, rather than
+> just the threadgroup... this isn't supposed to be a fast operation, but
+> that seems like overkill.
+
+What are you talking about? ;)
+
+do/while_each_thread iterates over threadgroup.
+
+Oleg.
+
