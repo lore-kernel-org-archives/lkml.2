@@ -1,54 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933414Ab0FCAVL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jun 2010 20:21:11 -0400
-Received: from claw.goop.org ([74.207.240.146]:41489 "EHLO claw.goop.org"
+	id S933380Ab0FCAZm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jun 2010 20:25:42 -0400
+Received: from trinity.fluff.org ([89.16.178.74]:42074 "EHLO trinity.fluff.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933348Ab0FCAVI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jun 2010 20:21:08 -0400
-Message-ID: <4C06F571.3050306@goop.org>
-Date: Wed, 02 Jun 2010 17:21:05 -0700
-From: Jeremy Fitzhardinge <jeremy@goop.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-2.fc12 Lightning/1.0b2pre Thunderbird/3.0.4
+	id S933344Ab0FCAZl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 2 Jun 2010 20:25:41 -0400
+Date: Thu, 3 Jun 2010 01:25:27 +0100
+From: Ben Dooks <ben-linux@fluff.org>
+To: Randy Dunlap <randy.dunlap@oracle.com>
+Cc: Nobin Mathew <nobin.mathew@gmail.com>, linux-kernel@vger.kernel.org,
+       linux-arm-kernel@lists.infradead.org, linux-kbuild@vger.kernel.org,
+       Ben Dooks <ben-linux@fluff.org>
+Subject: Re: [TEMP PATCH] Re: make ARM=arm menuconfig problem in mainline
+Message-ID: <20100603002526.GV4720@trinity.fluff.org>
+References: <AANLkTikC61Y9g-WbqwgGDghDSy2XtgraFSRoZYkHRGTG@mail.gmail.com> <AANLkTilEYHVHJrj_KgF48OYCSEUcsKLi57Q_Y73d9va-@mail.gmail.com> <20100602085748.6771e025.randy.dunlap@oracle.com> <AANLkTilpzeYVExQfLgpVmS3bPvb_h3kmWaatidekI-0r@mail.gmail.com> <4C068BAA.4030004@oracle.com>
 MIME-Version: 1.0
-To: Dan Magenheimer <dan.magenheimer@oracle.com>
-CC: Andrew Morton <akpm@linux-foundation.org>, chris.mason@oracle.com,
-       viro@zeniv.linux.org.uk, adilger@Sun.COM, tytso@mit.edu,
-       mfasheh@suse.com, joel.becker@oracle.com, matthew@wil.cx,
-       linux-btrfs@vger.kernel.org, linux-kernel@vger.kernel.org,
-       linux-fsdevel@vger.kernel.org, linux-ext4@vger.kernel.org,
-       ocfs2-devel@oss.oracle.com, linux-mm@kvack.org, ngupta@vflare.org,
-       JBeulich@novell.com, kurt.hackel@oracle.com, npiggin@suse.de,
-       dave.mccracken@oracle.com, riel@redhat.com, avi@redhat.com,
-       konrad.wilk@oracle.com
-Subject: Re: [PATCH V2 2/7] Cleancache (was Transcendent Memory): core files
-References: <20100528173550.GA12219@ca-server1.us.oracle.com 20100602122900.6c893a6a.akpm@linux-foundation.org> <0be9e88e-7b0d-471d-8d49-6dc593dd43be@default>
-In-Reply-To: <0be9e88e-7b0d-471d-8d49-6dc593dd43be@default>
-X-Enigmail-Version: 1.0.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4C068BAA.4030004@oracle.com>
+X-Disclaimer: These are my views alone.
+X-URL: http://www.fluff.org/
+User-Agent: Mutt/1.5.18 (2008-05-17)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: ben@trinity.fluff.org
+X-SA-Exim-Scanned: No (on trinity.fluff.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/02/2010 05:06 PM, Dan Magenheimer wrote:
-> It is intended that there be different flavours but only
-> one can be used in any running kernel.  A driver file/module
-> claims the cleancache_ops pointer (and should check to ensure
-> it is not already claimed).  And if nobody claims cleancache_ops,
-> the hooks should be as non-intrusive as possible.
->
-> Also note that the operations occur on the order of the number
-> of I/O's, so definitely a lot, but "zillion" may be a bit high. :-)
->
-> If you think this is a showstoppper, it could be changed
-> to be bound only at compile-time, but then (I think) the claimer
-> could never be a dynamically-loadable module.
->   
+On Wed, Jun 02, 2010 at 09:49:46AM -0700, Randy Dunlap wrote:
+> On 06/02/10 09:08, Nobin Mathew wrote:
+> > 
+> > On Wed, Jun 2, 2010 at 9:27 PM, Randy Dunlap <randy.dunlap@oracle.com> wrote:
+> >> On Wed, 2 Jun 2010 20:04:28 +0530 Nobin Mathew wrote:
+> >>
+> >>> adding linux-arm-kernel@lists.infradead.org
+> >>>
+> >>> Hi,
+> >>>
+> >>> The following entry creates problem in ARM System type menu. I am
+> >>> using a Fedora 12 system.
+> >>
+> >> What kind of problem does it create?
+> >> It seems to work for me (on f11, not f12).
+> >> Does it have something to do with F12 specifically?
+> >>
+> >>
+> >>> Length of bool "Samsung S3C2410, S3C2412, S3C2413, S3C2416, S3C2440,
+> >>> S3C2442, S3C2443, S3C2450" is the problem. How can I fix it.
+> >>
+> >> Describe the problem, please.
+> 
+> [please don't top-post]
 
-Andrew is suggesting that rather than making cleancache_ops a pointer to
-a structure, just make it a structure, so that calling a function is a
-matter of cleancache_ops.func rather than cleancache_ops->func, thereby
-avoiding a pointer dereference.
 
-    J
+I can think of several solutions, the first being to remove the S3C prefix
+friom all these.
+
+S3C24XX is not acceptable, there's S3C series that are either too old to
+be bothered with, or don't fit under this architecture.
+
+how about Samsung S3C: 2410,2412/3,2416,2440/2442,2443,2450
+
+ 
+> > Sorry if attachments are not allowed, when I go to select ARM system
+> > type(OMAP, Davinci etc), I am not seeing any entries there in the pop
+> > up window. When I remove  bool "Samsung S3C2410, S3C2412, S3C2413,
+> > S3C2416, S3C2440,
+> >>> S3C2442, S3C2443, S3C2450"  it is working fine. I feel it is something to do with length of that string.
+> > 
+> > Thanks
+> > Nobin
+> 
+> 
+> OK, I see that now.  Well, it is some kind of problem.
+> Adding cc to linux-kbuild mailing list.
+> 
+> 
+> The patch below fixes the problem temporarily, but the bool string length does
+> seem to be a problem.
+> 
+> Thanks for your report.
+> 
+> -- 
+> From: Randy Dunlap <randy.dunlap@oracle.com>
+> 
+> The bool "long string" causes the choices not to be displayed,
+> so temporarily change it to a shorter string until a real fix
+> is found.
+> 
+> Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
+> Reported-by: Nobin Mathew <nobin.mathew@gmail.com>
+> Cc: Ben Dooks <ben-linux@fluff.org>
+> ---
+>  arch/arm/Kconfig |    2 +-
+>  1 file changed, 1 insertion(+), 1 deletion(-)
+> 
+> --- linux-next-20100602.orig/arch/arm/Kconfig
+> +++ linux-next-20100602/arch/arm/Kconfig
+> @@ -629,7 +629,7 @@ config ARCH_SA1100
+>  	  Support for StrongARM 11x0 based boards.
+>  
+>  config ARCH_S3C2410
+> -	bool "Samsung S3C2410, S3C2412, S3C2413, S3C2416, S3C2440, S3C2442, S3C2443, S3C2450"
+> +	bool "Samsung S3C24xx"
+>  	select GENERIC_GPIO
+>  	select ARCH_HAS_CPUFREQ
+>  	select HAVE_CLK
+
+-- 
+-- 
+Ben
+
+Q:      What's a light-year?
+A:      One-third less calories than a regular year.
+
