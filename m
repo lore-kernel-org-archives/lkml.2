@@ -1,110 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753897Ab0FCSSK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jun 2010 14:18:10 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:31565 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752404Ab0FCSSH convert rfc822-to-8bit (ORCPT
+	id S1754502Ab0FCSUe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jun 2010 14:20:34 -0400
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:10005 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751191Ab0FCSUd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jun 2010 14:18:07 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=mime-version:in-reply-to:references:date:message-id:subject:from:to:
-	cc:content-type:content-transfer-encoding:x-system-of-record;
-	b=m6VVGmsnWrE4LlfISKLL+N8Aki+r5c18K8exYpf2gyV5LFf/3TpQUGEurxNLjj5IR
-	Z8hhfMTepAyXPE82m8B2w==
-MIME-Version: 1.0
-In-Reply-To: <20100603181103.GB10469@ghostprotocols.net>
-References: <AANLkTik2yNxwCHl7FZAyOG4Vt56RlLi59oZR5Jo6o9ox@mail.gmail.com>
-	<20100603175445.GC8928@ghostprotocols.net>
-	<20100603180613.GA10469@ghostprotocols.net>
-	<20100603181103.GB10469@ghostprotocols.net>
-Date: Thu, 3 Jun 2010 20:18:04 +0200
-Message-ID: <AANLkTincvUH7p-aHsDZoThUQn_eZkdbq3A8bM5i5ytpo@mail.gmail.com>
-Subject: Re: how to use perf annotate on the kernel
-From: Stephane Eranian <eranian@google.com>
-To: Arnaldo Carvalho de Melo <acme@infradead.org>
-Cc: linux-kernel@vger.kernel.org, peterz@infradead.org, mingo@elte.hu,
-       paulus@samba.org, davem@davemloft.net, fweisbec@gmail.com,
-       perfmon2-devel@lists.sf.net, eranian@gmail.com, tzanussi@gmail.com
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+	Thu, 3 Jun 2010 14:20:33 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6002"; a="43222752"
+Subject: Re: ARM defconfig files
+From: Daniel Walker <dwalker@codeaurora.org>
+To: Russell King <rmk@arm.linux.org.uk>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+       Kevin Hilman <khilman@deeprootsystems.com>,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       linux-arm-msm@vger.kernel.org
+In-Reply-To: <20100603181010.GA25779@flint.arm.linux.org.uk>
+References: <20100603074548.GA12104@flint.arm.linux.org.uk>
+	 <alpine.LFD.2.00.1006030725420.8175@i5.linux-foundation.org>
+	 <20100603181010.GA25779@flint.arm.linux.org.uk>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 03 Jun 2010 11:20:30 -0700
+Message-ID: <1275589230.23384.19.camel@c-dwalke-linux.qualcomm.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-perf annotate __lock_acquire -k /home/eranian/perfmon/official/tip/build/vmlinux
-build id event received for [kernel.kallsyms]:
-5c110a704293a259fbe11158dc1b25107ad7a23e
-build id event received for
-/lib/modules/2.6.35-rc1-tip/kernel/arch/x86/kernel/cpu/cpufreq/mperf.ko:
-cb5
-build id event received for
-/lib/modules/2.6.35-rc1-tip/kernel/drivers/cpufreq/cpufreq_ondemand.ko:
-cdb5
-Using /home/eranian/perfmon/official/tip/build/vmlinux for symbols
-hist_entry__inc_addr_samples: ip=0xffffffff81073b36
-0xffffffff81073b30 __lock_acquire: period++ [ip: 0xffffffff81073b36, 0x6] => 1
-hist_entry__inc_addr_samples: ip=0xffffffff81073c94
+On Thu, 2010-06-03 at 19:10 +0100, Russell King wrote:
 
-But in the end I get:
-objdump: '[kernel.kallsyms]': No such file
+> config STD_CONFIG
+> 	bool "Enable me to generate a standard configuration for your platform"
+> 
+> and then have platforms conditionally select everything that's
+> appropriate for their use.  That provides a way to avoid the ages old
+> issue of select forcing options on, but the user still being presented
+> with the option and being told the only possible value for it is 'y'.
+> 
+> And yes, it _is_ necessary - because if you want to turn off something
+> on the platform - eg, you're not using MMC and MMC fails to build -
+> you can still end up with a working configuration at the end of the
+> day.
 
+Check out the SAT solver link I quoted in the prior email.. That sounds
+like a really interesting solution. The defconfigs would ultimately hold
+just what's unique to a given board, then the solver would figure out
+what to else to enable just from those unique properties.
 
-------------------------------------------------
- Percent |      Source code & Disassembly of [kernel.kallsyms]
-------------------------------------------------
+So we would still have defconfigs , but they would not have loads of
+duplication like they do now.
 
+I don't see how we can do without defconfigs altogether tho. I mean , if
+you want to run a Beagle board or a Nexus one we can't just give the
+users a slim ARM config and let them troll through 1000's of drivers
+trying to find just those ones that work on their given board.
 
-On Thu, Jun 3, 2010 at 8:11 PM, Arnaldo Carvalho de Melo
-<acme@infradead.org> wrote:
-> Em Thu, Jun 03, 2010 at 03:06:13PM -0300, Arnaldo Carvalho de Melo escreveu:
->> For instance, here using -vvv I get:
->>
->> [root@emilia ~]# perf annotate -vvv memcpy > /dev/null
->> build id event received for [kernel.kallsyms]: 310920b54cbbf242dbfa09052f652806d2c73821
->> build id event received for /lib64/libtinfo.so.5.7: cd9da7b5b1fcb25ee6b3762bb9fe62f782590fd5
->> Looking at the vmlinux_path (6 entries long)
->> No build_id in /root/.debug/.build-id/31/0920b54cbbf242dbfa09052f652806d2c73821, ignoring it
->> No build_id in vmlinux, ignoring it
->> No build_id in /boot/vmlinux, ignoring it
->> No build_id in /boot/vmlinux-2.6.35-rc1, ignoring it
->> Using /lib/modules/2.6.35-rc1/build/vmlinux for symbols
->> hist_entry__inc_addr_samples: ip=0xffffffff811ea69e
->> 0xffffffff811ea690 memcpy: period++ [ip: 0xffffffff811ea69e, 0xe] => 1
->> hist_entry__annotate: filename=/lib/modules/2.6.35-rc1/build/vmlinux, sym=memcpy, start=0xffffffff811ea690, end=0xffffffff811ea730
->> annotating [0x187e770] /lib/modules/2.6.35-rc1/build/vmlinux : [0x19b1f70]                         memcpy
->> Executing: objdump --start-address=0xffffffff811ea690 --stop-address=0xffffffff811ea730 -dS /lib/modules/2.6.35-rc1/build/vmlinux|grep -v /lib/modules/2.6.35-rc1/build/vmlinux|expand
->> [root@emilia ~]#
->>
->> I'm removing all vmlinux from the path so that I can reproduce what you see.
->
-> [root@emilia ~]# mv /lib/modules/2.6.35-rc1/build/vmlinux /lib/modules/2.6.35-rc1/build/vmlinux.OFF
-> [root@emilia ~]# perf annotate -vvv memcpy > /dev/null
-> build id event received for [kernel.kallsyms]: 310920b54cbbf242dbfa09052f652806d2c73821
-> build id event received for /lib64/libtinfo.so.5.7: cd9da7b5b1fcb25ee6b3762bb9fe62f782590fd5
-> Looking at the vmlinux_path (6 entries long)
-> No build_id in /root/.debug/.build-id/31/0920b54cbbf242dbfa09052f652806d2c73821, ignoring it
-> No build_id in vmlinux, ignoring it
-> No build_id in /boot/vmlinux, ignoring it
-> No build_id in /boot/vmlinux-2.6.35-rc1, ignoring it
-> No build_id in /lib/modules/2.6.35-rc1/build/vmlinux, ignoring it
-> No build_id in /usr/lib/debug/lib/modules/2.6.35-rc1/vmlinux, ignoring it
-> Using /proc/kallsyms for symbols
-> [root@emilia ~]#
-> [root@emilia ~]# vi ~/.perfconfig
-> [root@emilia ~]# cat ~/.perfconfig
-> [tui]
->
->        report = on
->        annotate = off
-> [root@emilia ~]# perf annotate memcpy
-> [root@emilia ~]# perf annotate memcpy
-> [root@emilia ~]# perf annotate -k vmlinux memcpy
-> [kernel.kallsyms] with build id 310920b54cbbf242dbfa09052f652806d2c73821 not found, continuing without symbols
->
->        Yeah, these error messages suckz, will work on having proper messages
-> for these cases :-\
->
-> - Arnaldo
->
+Daniel
+
