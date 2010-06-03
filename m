@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932104Ab0FCQOo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jun 2010 12:14:44 -0400
-Received: from e28smtp01.in.ibm.com ([122.248.162.1]:40599 "EHLO
+	id S932066Ab0FCQOm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jun 2010 12:14:42 -0400
+Received: from e28smtp01.in.ibm.com ([122.248.162.1]:40592 "EHLO
 	e28smtp01.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752317Ab0FCQOl (ORCPT
+	with ESMTP id S1752618Ab0FCQOj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jun 2010 12:14:41 -0400
+	Thu, 3 Jun 2010 12:14:39 -0400
 From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
 To: hch@infradead.org, viro@zeniv.linux.org.uk, adilger@sun.com,
        corbet@lwn.net, serue@us.ibm.com, neilb@suse.de, hooanon05@yahoo.co.jp,
@@ -14,9 +14,9 @@ To: hch@infradead.org, viro@zeniv.linux.org.uk, adilger@sun.com,
 Cc: linux-fsdevel@vger.kernel.org, sfrench@us.ibm.com, philippe.deniel@CEA.FR,
        linux-kernel@vger.kernel.org,
        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-Subject: [PATCH -V13 11/11] vfs: Support null pathname in linkat
-Date: Thu,  3 Jun 2010 21:44:17 +0530
-Message-Id: <1275581657-7232-12-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+Subject: [PATCH -V13 10/11] vfs: Support null pathname in faccessat
+Date: Thu,  3 Jun 2010 21:44:16 +0530
+Message-Id: <1275581657-7232-11-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.1.236.g81fa0
 In-Reply-To: <1275581657-7232-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
 References: <1275581657-7232-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
@@ -24,86 +24,80 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This enables to use linkat to create hardlinks from a
-file descriptor pointing to the file. This can be used
+This enables to use faccessat to get the access check details
+from a file descriptor pointing to the file. This can be used
 with open_by_handle syscall that returns a file descriptor.
 
 Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
 ---
- fs/namei.c |   31 +++++++++++++++++++++++--------
- 1 files changed, 23 insertions(+), 8 deletions(-)
+ fs/open.c |   27 ++++++++++++++++++++-------
+ 1 files changed, 20 insertions(+), 7 deletions(-)
 
-diff --git a/fs/namei.c b/fs/namei.c
-index 417bf53..8b1cc23 100644
---- a/fs/namei.c
-+++ b/fs/namei.c
-@@ -2533,16 +2533,27 @@ SYSCALL_DEFINE5(linkat, int, olddfd, const char __user *, oldname,
+diff --git a/fs/open.c b/fs/open.c
+index 3cff394..8998f2e 100644
+--- a/fs/open.c
++++ b/fs/open.c
+@@ -288,7 +288,8 @@ SYSCALL_DEFINE3(faccessat, int, dfd, const char __user *, filename, int, mode)
  {
- 	struct dentry *new_dentry;
- 	struct nameidata nd;
--	struct path old_path;
-+	struct path old_path, *old_pathp;
+ 	const struct cred *old_cred;
+ 	struct cred *override_cred;
+-	struct path path;
 +	struct file *file = NULL;
- 	int error;
- 	char *to;
++	struct path path, *pp;
+ 	struct inode *inode;
+ 	int res;
  
- 	if ((flags & ~AT_SYMLINK_FOLLOW) != 0)
- 		return -EINVAL;
+@@ -312,12 +313,21 @@ SYSCALL_DEFINE3(faccessat, int, dfd, const char __user *, filename, int, mode)
+ 	}
  
--	error = user_path_at(olddfd, oldname,
--			     flags & AT_SYMLINK_FOLLOW ? LOOKUP_FOLLOW : 0,
--			     &old_path);
-+	if (oldname == NULL && olddfd != AT_FDCWD) {
-+		file = fget(olddfd);
+ 	old_cred = override_creds(override_cred);
+-
+-	res = user_path_at(dfd, filename, LOOKUP_FOLLOW, &path);
++	if (filename == NULL  && dfd != AT_FDCWD) {
++		file = fget(dfd);
 +		if (file) {
-+			old_pathp = &file->f_path;
-+			error = 0;
++			pp = &file->f_path;
++			res = 0;
 +		} else
-+			error = -EBADF;
++			res = -EBADF;
 +	} else {
-+		error = user_path_at(olddfd, oldname,
-+				flags & AT_SYMLINK_FOLLOW ? LOOKUP_FOLLOW : 0,
-+				&old_path);
-+		old_pathp = &old_path;
++		res = user_path_at(dfd, filename, LOOKUP_FOLLOW, &path);
++		pp = &path;
 +	}
- 	if (error)
- 		return error;
- 
-@@ -2550,7 +2561,7 @@ SYSCALL_DEFINE5(linkat, int, olddfd, const char __user *, oldname,
- 	if (error)
+ 	if (res)
  		goto out;
- 	error = -EXDEV;
--	if (old_path.mnt != nd.path.mnt)
-+	if (old_pathp->mnt != nd.path.mnt)
- 		goto out_release;
- 	new_dentry = lookup_create(&nd, 0);
- 	error = PTR_ERR(new_dentry);
-@@ -2559,10 +2570,11 @@ SYSCALL_DEFINE5(linkat, int, olddfd, const char __user *, oldname,
- 	error = mnt_want_write(nd.path.mnt);
- 	if (error)
- 		goto out_dput;
--	error = security_path_link(old_path.dentry, &nd.path, new_dentry);
-+	error = security_path_link(old_pathp->dentry, &nd.path, new_dentry);
- 	if (error)
- 		goto out_drop_write;
--	error = vfs_link(old_path.dentry, nd.path.dentry->d_inode, new_dentry);
-+	error = vfs_link(old_pathp->dentry,
-+			nd.path.dentry->d_inode, new_dentry);
- out_drop_write:
- 	mnt_drop_write(nd.path.mnt);
- out_dput:
-@@ -2573,7 +2585,10 @@ out_release:
- 	path_put(&nd.path);
- 	putname(to);
- out:
--	path_put(&old_path);
+ 
+-	inode = path.dentry->d_inode;
++	inode = pp->dentry->d_inode;
+ 
+ 	if ((mode & MAY_EXEC) && S_ISREG(inode->i_mode)) {
+ 		/*
+@@ -325,7 +335,7 @@ SYSCALL_DEFINE3(faccessat, int, dfd, const char __user *, filename, int, mode)
+ 		 * with the "noexec" flag.
+ 		 */
+ 		res = -EACCES;
+-		if (path.mnt->mnt_flags & MNT_NOEXEC)
++		if (pp->mnt->mnt_flags & MNT_NOEXEC)
+ 			goto out_path_release;
+ 	}
+ 
+@@ -343,11 +353,14 @@ SYSCALL_DEFINE3(faccessat, int, dfd, const char __user *, filename, int, mode)
+ 	 * inherently racy and know that the fs may change
+ 	 * state before we even see this result.
+ 	 */
+-	if (__mnt_is_readonly(path.mnt))
++	if (__mnt_is_readonly(pp->mnt))
+ 		res = -EROFS;
+ 
+ out_path_release:
+-	path_put(&path);
 +	if (file)
 +		fput(file);
 +	else
-+		path_put(&old_path);
- 
- 	return error;
- }
++		path_put(&path);
+ out:
+ 	revert_creds(old_cred);
+ 	put_cred(override_cred);
 -- 
 1.7.1.236.g81fa0
 
