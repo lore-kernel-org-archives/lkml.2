@@ -1,110 +1,287 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756296Ab0FCPXT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jun 2010 11:23:19 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:60348 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755867Ab0FCPXS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jun 2010 11:23:18 -0400
-Date: Thu, 3 Jun 2010 17:21:43 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: "Luis Claudio R. Goncalves" <lclaudio@uudg.org>,
-       LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
-       David Rientjes <rientjes@google.com>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-       Nick Piggin <npiggin@suse.de>
-Subject: Re: [PATCH 08/12] oom: dump_tasks() use find_lock_task_mm() too
-Message-ID: <20100603152143.GA8005@redhat.com>
-References: <20100603135106.7247.A69D9226@jp.fujitsu.com> <20100603152350.725F.A69D9226@jp.fujitsu.com>
+	id S1756352Ab0FCPYf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jun 2010 11:24:35 -0400
+Received: from g6t0184.atlanta.hp.com ([15.193.32.61]:2849 "EHLO
+	g6t0184.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754893Ab0FCPYe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Jun 2010 11:24:34 -0400
+Message-ID: <4C07C927.4090901@hp.com>
+Date: Thu, 03 Jun 2010 11:24:23 -0400
+From: Vlad Yasevich <vladislav.yasevich@hp.com>
+User-Agent: Thunderbird 2.0.0.24 (X11/20100317)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100603152350.725F.A69D9226@jp.fujitsu.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: Yaogong Wang <ywang15@ncsu.edu>
+CC: linux-sctp@vger.kernel.org, Sridhar Samudrala <sri@us.ibm.com>,
+       linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 4/6] sctp multistream scheduling: extend socket API
+References: <AANLkTilW6Ym_vL02rVk4QFPIC3Dr0BC12oAxdjE9RXpf@mail.gmail.com>
+In-Reply-To: <AANLkTilW6Ym_vL02rVk4QFPIC3Dr0BC12oAxdjE9RXpf@mail.gmail.com>
+X-Enigmail-Version: 0.96.0
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Brightmail-Tracker: AAAAAQAAAAI=
+X-Whitelist: TRUE
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/03, KOSAKI Motohiro wrote:
->
-> dump_task() should use find_lock_task_mm() too. It is necessary for
-> protecting task-exiting race.
 
-This patch also replaces the pointless do_each_thread() with
-for_each_process(), good.
 
-Reviewed-by: Oleg Nesterov <oleg@redhat.com>
-
-> Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Yaogong Wang wrote:
+> Augment SCTP socket API with a new socket option to choose and
+> configure scheduling algorithm.
+> 
+> Signed-off-by: Yaogong Wang <ywang15@ncsu.edu>
 > ---
->  mm/oom_kill.c |   37 ++++++++++++++++++++-----------------
->  1 files changed, 20 insertions(+), 17 deletions(-)
+> diff -uprN -X linux-2.6.32.8/Documentation/dontdiff
+> p3/include/net/sctp/structs.h p4/include/net/sctp/structs.h
+> --- p3/include/net/sctp/structs.h	2010-06-02 12:57:24.000000000 -0700
+> +++ p4/include/net/sctp/structs.h	2010-06-02 12:58:11.000000000 -0700
+> @@ -326,6 +326,8 @@ struct sctp_sock {
 > 
-> diff --git a/mm/oom_kill.c b/mm/oom_kill.c
-> index 35a2ecc..6360c56 100644
-> --- a/mm/oom_kill.c
-> +++ b/mm/oom_kill.c
-> @@ -345,35 +345,38 @@ static struct task_struct *select_bad_process(unsigned long *ppoints,
->   */
->  static void dump_tasks(const struct mem_cgroup *mem)
->  {
-> -	struct task_struct *g, *p;
-> +	struct task_struct *p;
-> +	struct task_struct *task;
->  
->  	printk(KERN_INFO "[ pid ]   uid  tgid total_vm      rss cpu oom_adj "
->  	       "name\n");
-> -	do_each_thread(g, p) {
-> -		struct mm_struct *mm;
->  
-> -		if (mem && !task_in_mem_cgroup(p, mem))
-> +	for_each_process(p) {
-> +		/*
-> +		 * We don't have is_global_init() check here, because the old
-> +		 * code do that. printing init process is not big matter. But 
-> +		 * we don't hope to make unnecessary compatiblity breaking.
-> +		 */
-> +		if (p->flags & PF_KTHREAD)
->  			continue;
-> -		if (!thread_group_leader(p))
-> +		if (mem && !task_in_mem_cgroup(p, mem))
->  			continue;
->  
-> -		task_lock(p);
-> -		mm = p->mm;
-> -		if (!mm) {
-> +		task = find_lock_task_mm(p);
-> +		if (!task)
->  			/*
-> -			 * total_vm and rss sizes do not exist for tasks with no
-> -			 * mm so there's no need to report them; they can't be
-> -			 * oom killed anyway.
-> +			 * Probably oom vs task-exiting race was happen and ->mm
-> +			 * have been detached. thus there's no need to report them;
-> +			 * they can't be oom killed anyway.
->  			 */
-> -			task_unlock(p);
->  			continue;
-> -		}
+>  	/* Multistream scheduling  */
+>  	const struct sctp_sched_ops *sched_ops;
+> +	__u32 sched_priv_len;
+> +	__u16 *sched_priv;
+> 
+>  	struct sctp_initmsg initmsg;
+>  	struct sctp_rtoinfo rtoinfo;
+> @@ -1691,6 +1693,8 @@ struct sctp_association {
+> 
+>  	/* Multistream scheduling  */
+>  	const struct sctp_sched_ops *sched_ops;
+> +	__u32 sched_priv_len;
+> +	__u16 *sched_priv;
+> 
+>  	/* Heartbeat interval: The endpoint sends out a Heartbeat chunk to
+>  	 * the destination address every heartbeat interval. This value
+> diff -uprN -X linux-2.6.32.8/Documentation/dontdiff
+> p3/include/net/sctp/user.h p4/include/net/sctp/user.h
+> --- p3/include/net/sctp/user.h	2010-05-28 10:59:23.000000000 -0700
+> +++ p4/include/net/sctp/user.h	2010-05-28 11:54:47.000000000 -0700
+> @@ -67,6 +67,8 @@ enum sctp_optname {
+>  #define SCTP_ASSOCINFO SCTP_ASSOCINFO
+>  	SCTP_INITMSG,
+>  #define SCTP_INITMSG SCTP_INITMSG
+> +	SCTP_SCHED,
+> +#define SCTP_SCHED SCTP_SCHED
+>  	SCTP_NODELAY, 	/* Get/set nodelay option. */
+
+You can't insert a new option into the middle.  This would change the ordering
+of subsequent options and break the ABI.
+
+>  #define SCTP_NODELAY	SCTP_NODELAY
+>  	SCTP_AUTOCLOSE,
+> @@ -171,8 +173,22 @@ struct sctp_initmsg {
+>  	__u16 sinit_max_init_timeo;
+>  };
+> 
+> +/*
+> + * SCTP Scheduling Structure (SCTP_SCHED)
+> + *
+> + *   cmsg_level    cmsg_type      cmsg_data[]
+> + *   ------------  ------------   ----------------------
+> + *   IPPROTO_SCTP  SCTP_SCHED     struct sctp_sched
+> + *
+> + */
+>  #define SCTP_SCHED_NAME_MAX	16
+> 
+> +struct sctp_sched {
+> +	char  ssched_name[SCTP_SCHED_NAME_MAX];
+> +	__u32 ssched_priv_len;
+> +	__u16 ssched_priv[0];
+> +};
 > +
->  		printk(KERN_INFO "[%5d] %5d %5d %8lu %8lu %3d     %3d %s\n",
-> -		       p->pid, __task_cred(p)->uid, p->tgid, mm->total_vm,
-> -		       get_mm_rss(mm), (int)task_cpu(p), p->signal->oom_adj,
-> +		       task->pid, __task_cred(task)->uid, task->tgid, task->mm->total_vm,
-> +		       get_mm_rss(task->mm), (int)task_cpu(task), task->signal->oom_adj,
->  		       p->comm);
-> -		task_unlock(p);
-> -	} while_each_thread(g, p);
-> +		task_unlock(task);
-> +	}
+
+Don't document it as ancillary data since it can't be used as such.
+
+Also, should this also have an assoc_id so that it can be set per
+association?
+
+>  /*
+>   * 5.2.2 SCTP Header Information Structure (SCTP_SNDRCV)
+>   *
+> diff -uprN -X linux-2.6.32.8/Documentation/dontdiff
+> p3/net/sctp/associola.c p4/net/sctp/associola.c
+> --- p3/net/sctp/associola.c	2010-06-02 12:57:06.000000000 -0700
+> +++ p4/net/sctp/associola.c	2010-06-02 12:57:57.000000000 -0700
+> @@ -187,6 +187,14 @@ static struct sctp_association *sctp_ass
+> 
+>  	/* Multistream scheduling  */
+>  	asoc->sched_ops = sp->sched_ops;
+> +	asoc->sched_priv_len = sp->sched_priv_len;
+> +	if (asoc->sched_priv_len) {
+> +		asoc->sched_priv = kmalloc(asoc->sched_priv_len, gfp);
+> +		if (!asoc->sched_priv)
+> +			goto fail_init;
+> +		memcpy(asoc->sched_priv, sp->sched_priv, asoc->sched_priv_len);
+
+use kmemdup()
+
+> +	} else
+> +		asoc->sched_priv = NULL;
+> 
+>  	/* Allocate storage for the ssnmap after the inbound and outbound
+>  	 * streams have been negotiated during Init.
+> @@ -464,6 +472,8 @@ static void sctp_association_destroy(str
+>  {
+>  	SCTP_ASSERT(asoc->base.dead, "Assoc is not dead", return);
+> 
+> +	kfree(asoc->sched_priv);
+> +
+>  	sctp_endpoint_put(asoc->ep);
+>  	sock_put(asoc->base.sk);
+> 
+> diff -uprN -X linux-2.6.32.8/Documentation/dontdiff
+> p3/net/sctp/socket.c p4/net/sctp/socket.c
+> --- p3/net/sctp/socket.c	2010-05-28 12:38:09.000000000 -0700
+> +++ p4/net/sctp/socket.c	2010-05-28 12:36:37.000000000 -0700
+> @@ -2580,6 +2580,50 @@ static int sctp_setsockopt_initmsg(struc
+>  	return 0;
 >  }
->  
->  static void dump_header(struct task_struct *p, gfp_t gfp_mask, int order,
-> -- 
-> 1.6.5.2
 > 
+> +/* Set the multistream scheduling algorithm*/
+> +static int sctp_setsockopt_sched(struct sock *sk, char __user *optval,
+> +						unsigned int optlen)
+> +{
+> +	struct sctp_sched *ssched = NULL;
+> +	struct sctp_sock *sp = sctp_sk(sk);
+> +	int ret = 0;
+> +
+> +	if (optlen < sizeof(struct sctp_sched))
+> +		return -EINVAL;
+> +
+> +	ssched = kmalloc(optlen, GFP_KERNEL);
+> +	if (!ssched)
+> +		return -ENOMEM;
+> +
+> +	if (copy_from_user(ssched, optval, optlen)) {
+> +		ret = -EFAULT;
+> +		goto out;
+> +	}
+
+use memdup_user().
+
+> +
+> +	if (optlen != sizeof(struct sctp_sched) + ssched->ssched_priv_len) {
+> +		ret = -EINVAL;
+> +		goto out;
+> +	}
+> +
+> +	ret = sctp_set_sched(sk, ssched->ssched_name);
+> +	if (ret)
+> +		goto out;
+> +	sp->sched_priv_len = ssched->ssched_priv_len;
+> +	kfree(sp->sched_priv);
+> +	if (sp->sched_priv_len) {
+> +		sp->sched_priv = kmalloc(sp->sched_priv_len, GFP_KERNEL);
+> +		if (!sp->sched_priv) {
+> +			ret = -ENOMEM;
+> +			goto out;
+> +		}
+> +		memcpy(sp->sched_priv, ssched->ssched_priv, sp->sched_priv_len);
+> +	}
+> +
+> +out:
+> +	kfree(ssched);
+> +	return ret;
+> +}
+> +
+>  /*
+>   * 7.1.14 Set default send parameters (SCTP_DEFAULT_SEND_PARAM)
+>   *
+> @@ -3417,6 +3461,9 @@ SCTP_STATIC int sctp_setsockopt(struct s
+>  		retval = sctp_setsockopt_partial_delivery_point(sk, optval, optlen);
+>  		break;
 > 
+> +	case SCTP_SCHED:
+> +		retval = sctp_setsockopt_sched(sk, optval, optlen);
+> +		break;
+>  	case SCTP_INITMSG:
+>  		retval = sctp_setsockopt_initmsg(sk, optval, optlen);
+>  		break;
+> @@ -3642,7 +3689,10 @@ SCTP_STATIC int sctp_init_sock(struct so
+>  	sp->initmsg.sinit_max_attempts   = sctp_max_retrans_init;
+>  	sp->initmsg.sinit_max_init_timeo = sctp_rto_max;
+> 
+> +	/* Initialize default scheduling algorithm  */
+>  	sp->sched_ops = sctp_default_sched_ops;
+> +	sp->sched_priv_len = 0;
+> +	sp->sched_priv = NULL;
 > 
 
+This part should be in the framework patch.  That way assoc will actually
+inherit the proper pointer.
+
+
+>  	/* Initialize default RTO related parameters.  These parameters can
+>  	 * be modified for with the SCTP_RTOINFO socket option.
+> @@ -3735,6 +3785,9 @@ SCTP_STATIC void sctp_destroy_sock(struc
+> 
+>  	SCTP_DEBUG_PRINTK("sctp_destroy_sock(sk: %p)\n", sk);
+> 
+> +	sctp_cleanup_sched(sk);
+> +	kfree(sctp_sk(sk)->sched_priv);
+> +
+>  	/* Release our hold on the endpoint. */
+>  	ep = sctp_sk(sk)->ep;
+>  	sctp_endpoint_free(ep);
+> @@ -4351,6 +4404,35 @@ static int sctp_getsockopt_initmsg(struc
+>  	return 0;
+>  }
+> 
+> +/* Get the multistream scheduling algorithm*/
+> +static int sctp_getsockopt_sched(struct sock *sk, int len, char __user *optval,
+> +							int __user *optlen)
+> +{
+> +	struct sctp_sched *ssched;
+> +	int sz = sizeof(struct sctp_sched) + sctp_sk(sk)->sched_priv_len;
+> +	int ret = 0;
+> +
+> +	if (len < sz)
+> +		return -EINVAL;
+> +	if (put_user(sz, optlen))
+> +		return -EFAULT;
+> +
+> +	ssched = kmalloc(sz, GFP_KERNEL);
+> +	if (!ssched)
+> +		return -EFAULT;
+> +	memcpy(ssched->ssched_name, sctp_sk(sk)->sched_ops->name,
+> +					SCTP_SCHED_NAME_MAX);
+> +	ssched->ssched_priv_len = sctp_sk(sk)->sched_priv_len;
+> +	memcpy(ssched->ssched_priv, sctp_sk(sk)->sched_priv,
+> +					ssched->ssched_priv_len);
+> +
+> +	if (copy_to_user(optval, ssched, sz))
+> +		ret = -EFAULT;
+> +
+
+Don't forget to also copy out the sz to let user know how long the data
+is.
+
+-vlad
+
+> +	kfree(ssched);
+> +	return ret;
+> +}
+> +
+>  static int sctp_getsockopt_peer_addrs_num_old(struct sock *sk, int len,
+>  					      char __user *optval,
+>  					      int __user *optlen)
+> @@ -5605,6 +5687,9 @@ SCTP_STATIC int sctp_getsockopt(struct s
+>  	case SCTP_INITMSG:
+>  		retval = sctp_getsockopt_initmsg(sk, len, optval, optlen);
+>  		break;
+> +	case SCTP_SCHED:
+> +		retval = sctp_getsockopt_sched(sk, len, optval, optlen);
+> +		break;
+>  	case SCTP_GET_PEER_ADDRS_NUM_OLD:
+>  		retval = sctp_getsockopt_peer_addrs_num_old(sk, len, optval,
+>  							    optlen);
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-sctp" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
