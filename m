@@ -1,51 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755969Ab0FCVpA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jun 2010 17:45:00 -0400
-Received: from sj-iport-5.cisco.com ([171.68.10.87]:62729 "EHLO
-	sj-iport-5.cisco.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753998Ab0FCVo7 (ORCPT
+	id S1755645Ab0FCVsm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jun 2010 17:48:42 -0400
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:31878 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753486Ab0FCVsk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jun 2010 17:44:59 -0400
-Authentication-Results: sj-iport-5.cisco.com; dkim=neutral (message not signed) header.i=none
-X-IronPort-AV: E=Sophos;i="4.53,357,1272844800"; 
-   d="scan'208";a="206869295"
-From: Tom Lyon <pugs@lyon-about.com>
-To: Avi Kivity <avi@redhat.com>
-Subject: Re: [PATCH] VFIO driver: Non-privileged user level PCI drivers
-Date: Thu, 3 Jun 2010 14:41:38 -0700
-User-Agent: KMail/1.9.9
-Cc: Chris Wright <chrisw@sous-sol.org>, Joerg Roedel <joro@8bytes.org>,
-       "Michael S. Tsirkin" <mst@redhat.com>, linux-kernel@vger.kernel.org,
-       kvm@vger.kernel.org, hjk@linutronix.de, gregkh@suse.de,
-       aafabbri@cisco.com, scofeldm@cisco.com
-References: <20100601095532.GA9178@redhat.com> <20100602174615.GV8301@sequoia.sous-sol.org> <4C074A64.1000009@redhat.com>
-In-Reply-To: <4C074A64.1000009@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain;
-  charset="iso-8859-1"
+	Thu, 3 Jun 2010 17:48:40 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6002"; a="43241298"
+Subject: Re: ARM defconfig files
+From: Daniel Walker <dwalker@codeaurora.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Russell King <rmk@arm.linux.org.uk>,
+       Kevin Hilman <khilman@deeprootsystems.com>,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       linux-arm-msm@vger.kernel.org
+In-Reply-To: <alpine.LFD.2.00.1006031317410.8175@i5.linux-foundation.org>
+References: <20100603074548.GA12104@flint.arm.linux.org.uk>
+	 <alpine.LFD.2.00.1006030725420.8175@i5.linux-foundation.org>
+	 <20100603181010.GA25779@flint.arm.linux.org.uk>
+	 <alpine.LFD.2.00.1006031116360.8175@i5.linux-foundation.org>
+	 <20100603185333.GD25779@flint.arm.linux.org.uk>
+	 <alpine.LFD.2.00.1006031153420.8175@i5.linux-foundation.org>
+	 <1275593742.23384.48.camel@c-dwalke-linux.qualcomm.com>
+	 <20100603194559.GF25779@flint.arm.linux.org.uk>
+	 <alpine.LFD.2.00.1006031305310.8175@i5.linux-foundation.org>
+	 <alpine.LFD.2.00.1006031317410.8175@i5.linux-foundation.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 03 Jun 2010 14:48:37 -0700
+Message-ID: <1275601717.23384.168.camel@c-dwalke-linux.qualcomm.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-Message-Id: <201006031441.38799.pugs@lyon-about.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-OK, in the interest of making progress, I am about to embark on the following:
+On Thu, 2010-06-03 at 13:31 -0700, Linus Torvalds wrote:
+> and now you'd be able to basically generate a OMAP3EVM .config file by 
+> just running "allnoconfig" on that Kconfig.omap3_evm file. But it would 
+> only have to select the parts that are specific for the EVM platform, 
+> because the generic OMAP3 support would be picked by the Kconfig.omap3 
+> file, which in turn would not have to worry about the generic ARM parts 
+> etc.
+> 
+> See?
 
-1. Create a user-iommu-domain driver - opening it will give a new empty domain.
-    Ultimately this can also populate sysfs with the state of its world, which would
-    also be a good addition to the base iommu stuff.
-    If someone closes the fd while in use, the domain stays valid anyway until users
-    drop off.
+We could just alias commands so when the user runs
 
-2. Add DOMAIN_SET and DOMAIN_UNSET ioctls to the vfio driver.  Require that
-   a domain be set before using the VFIO_DMA_MAP_IOVA ioctl (this is the one
-   that KVM wants).  However, the VFIO_DMA_MAP_ANYWHERE ioctl is the one
-   which uses the dma_sg interface which has no expicit control of domains. I
-   intend to keep it the way it is, but expect only non-hypervisor programs would
-   want to use it.
+"make ARCH=arm omap3_evm_defconfig"
 
-3. Clean up the docs and other nits that folks have found.
+it would just do whatever this command does ,
 
-Comments? 
+"KBUILD_KCONFIG=arch/arm/configs/Kconfig.omap3_evm make allnoconfig"
+
+but those Kconfigs wouldn't be in "make menuconfig" it would just exist
+to generate the defconfigs, or the .config .. So Kconfig.omap3_evm
+basically becomes the defconfig.
+
+That doesn't seem un-reasonable. Although the solver to me seems more
+elegant and we're getting the solver for some other reasons it seems
+(unrelated to this defconfig issue).
+
+Daniel
+
+
