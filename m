@@ -1,64 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752101Ab0FCTJE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jun 2010 15:09:04 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:52449 "EHLO
-	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1750797Ab0FCTJB (ORCPT
+	id S1753033Ab0FCTNc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jun 2010 15:13:32 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:38132 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752615Ab0FCTNb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jun 2010 15:09:01 -0400
-Date: Thu, 3 Jun 2010 20:08:59 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Robin Getz <rgetz@blackfin.uclinux.org>
-Cc: Mike Frysinger <vapier@gentoo.org>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       Liam Girdwood <lrg@slimlogic.co.uk>,
-       "uclinux-dist-devel@blackfin.uclinux.org" 
-	<uclinux-dist-devel@blackfin.uclinux.org>,
-       "Zhang, Sonic" <Sonic.Zhang@analog.com>
-Subject: Re: [PATCH 1/2] regulator: new driver for the AD5398 and AD5821
-Message-ID: <20100603190858.GK2762@rakim.wolfsonmicro.main>
-References: <1275399239-6788-1-git-send-email-vapier@gentoo.org>
- <20100601143749.GE863@rakim.wolfsonmicro.main>
- <201006031459.53275.rgetz@blackfin.uclinux.org>
+	Thu, 3 Jun 2010 15:13:31 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:date:message-id:subject:from:to:content-type;
+        b=OJoO6yJ01E6A93ztCijoruO6MMlS3ctwkVJFhIkxk2oROkX1IuFdesMEmLAbCn541F
+         1+gBGurn4412ltl5v9KLT3LiPGdIkw8xVNfzAS/7RlcX8cVTJSET+oueLV/PTziIUBoN
+         PQGTpxn/ALGrBcEgWl5mceFfajihRsIS7tQP4=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201006031459.53275.rgetz@blackfin.uclinux.org>
-X-Cookie: In the next world, you're on your own.
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Date: Fri, 4 Jun 2010 03:13:29 +0800
+Message-ID: <AANLkTilhvjn1ypRoKs2CxJdA1zDkaT5i64vh0ZtfjwMk@mail.gmail.com>
+Subject: How do I ignore the changes made by CVS keyword substitution 
+	efficiently?
+From: Lin Mac <mkl0301@gmail.com>
+To: Git Mailing List <git@vger.kernel.org>, linux-kernel@vger.kernel.org
+Content-Type: multipart/mixed; boundary=00504502ad2c72506604882500f2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 03, 2010 at 02:59:53PM -0400, Robin Getz wrote:
-> On Tue 1 Jun 2010 10:37, Mark Brown pondered:
+--00504502ad2c72506604882500f2
+Content-Type: text/plain; charset=ISO-8859-1
 
-> > Why are the current bits and offset being suppied as platform data?  I
-> > would *very* strongly expect that the location of the control in the
-> > register will be fixed by the device type and should therefore be
-> > figured out by the driver.  Having the machine specifying this seems
-> > redundant and error prone.
+Hi,
 
-> Since the parts are general purpose (their not PMU, but people use them to 
-> build their own PCB defined power management system) - so it depends on the 
-> PCB implementation...
+I'm merging kernel from others, and they used CVS to manage their
+code, and so do some part of linux kernel. Unfortunatly CVS would
+substitude the keywords in the source, result in unecessary changes in
+the code, like the one in the following diff. In fact, there are
+around 1174 of CVS keywords in the kernel source. I don't want those
+useless changes to get into my tree.
 
-Please look more closely at what's actually being done by the code here.
-This is controlling the location of the bitfields in the register map.
-It would be exceptionally unusal for the PCB design and layout to affect
-the register map of the device at all - this will be fixed in silicon no
-matter how the system is wired up.  Even without a regulator framework
-there would be no need to specify where the bitfields in the register
-map are located via platform data.
+Currently I use the attached scripts to as a basic filter, which could
+filter out 1-line changes by CVS keyword in a patch. But I still have
+to handle other cases (multi-line changes, $Log, which would result in
+log of latest commit) myself.
 
-As far as system specific integration goes the regulator driver should
-only be worrying about the properties of the chip, other parts of the
-regulator API handle the board-specific setup.
+Do you have better idea to get this task done?
 
-> http://www.analog.com/ad5398 
-> http://www.analog.com/ad5821
-> are both I2C D/A Converter, with 120mA sink capability
+diff --git a/kernels/linux-2.6.31.1-cavm1/Documentation/cris/README
+b/kernels/linux-2.6.31.1-cavm1/Documentation/cris/README
+index d9b0868..c7bb74b 100644
+--- a/kernels/linux-2.6.31.1-cavm1/Documentation/cris/README
++++ b/kernels/linux-2.6.31.1-cavm1/Documentation/cris/README
+@@ -1,6 +1,6 @@
+ Linux 2.4 on the CRIS architecture
+ ==================================
+-$Id: README,v 1.7 2001/04/19 12:38:32 bjornw Exp $
++$Id: README,v 1.1 2010-05-14 09:47:54 XXXXXXXX Exp $
 
-This is not at all unusual for drivers/regulator except in that it's a
-current regulator and voltage regulators are very much more common.
+ This is a port of Linux 2.4 to Axis Communications ETRAX 100LX embedded
+ network CPU. For more information about CRIS and ETRAX please see further
+@@ -103,7 +103,7 @@ block: queued sectors max/low 9109kB/3036kB, 64
+slots per queue
+ ETRAX 100LX 10/100MBit ethernet v2.0 (c) 2000 Axis Communications AB
+ eth0 initialized
+ eth0: changed MAC to 00:40:8C:CD:00:00
+-ETRAX 100LX serial-driver $Revision: 1.7 $, (c) 2000 Axis Communications AB
++ETRAX 100LX serial-driver $Revision: 1.1 $, (c) 2000 Axis Communications AB
+ ttyS0 at 0xb0000060 is a builtin UART with DMA
+ ttyS1 at 0xb0000068 is a builtin UART with DMA
+ ttyS2 at 0xb0000070 is a builtin UART with DMA
+@@ -133,7 +133,7 @@ Default gateway is 10.13.9.1
+ Hostname is bbox1
+ Telnetd starting, using port 23.
+   using /bin/sash as shell.
+-sftpd[15]: sftpd $Revision: 1.7 $ starting up
++sftpd[15]: sftpd $Revision: 1.1 $ starting up
+
+--00504502ad2c72506604882500f2
+Content-Type: application/octet-stream; 
+	name="undo-cvs-tag-one-line-chage.pl"
+Content-Disposition: attachment; filename="undo-cvs-tag-one-line-chage.pl"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_g9zxt4500
+
+IyEvdXNyL2Jpbi9wZXJsCiMgLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0t
+LS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0t
+LS0tCnN1YiByZXBsYWNlCiAgIHsKICAgICAgJGkgPSAwOwogICAgICBwcmludCAkXzsKICAgICAg
+d2hpbGUoMSkKICAgICAgICAgewogICAgICAgICAgICAkbGluZSA9IDxGTj47CiAgICAgICAgICAg
+IHByaW50ICRsaW5lOwogICAgICAgICAgICBpZigkbGluZSA9fiAnXi0uKlwkKFJldmlzaW9ufExv
+Z3xJZHxEYXRlfEhlYWRlcnxBdXRob3J8TG9ja2VyfE5hbWV8UkNTZmlsZXxTb3VyY2V8U3RhdGUp
+LipcJCcgKQogICAgICAgICAgICAgICB7CiAgICAgICAgICAgICAgICAgICRsaW5lMiA9IDxGTj47
+CiAgICAgICAgICAgICAgICAgIGlmKCAkbGluZTIgPX4gJ15cKy4qXCQoUmV2aXNpb258TG9nfElk
+fERhdGV8SGVhZGVyfEF1dGhvcnxMb2NrZXJ8TmFtZXxSQ1NmaWxlfFNvdXJjZXxTdGF0ZSk6Lipc
+JCcpewogICAgICAgICAgICAgICAgICAgICAgJGxpbmUyID0gJGxpbmU7CiAgICAgICAgICAgICAg
+ICAgICAgICAkbGluZTIgPX4gcy8tLysvOwogICAgICAgICAgICAgICAgICB9CiAgICAgICAgICAg
+ICAgICAgIHByaW50ICRsaW5lMjsKICAgICAgICAgICAgICAgICAgcmV0dXJuOwogICAgICAgICAg
+ICAgICB9CiAgICAgICAgICAgICRpKys7CiAgICAgICAgICAgIGlmKCRpPj01KXtyZXR1cm47fQog
+ICAgICAgICB9CiAgIH0KIyAtLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0t
+LS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0t
+LS0KJGZuID0gQEFSR1ZbMF07CiMgLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0t
+LS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0t
+LS0tLS0tCmlmKCFkZWZpbmVkKCRmbikpCiAgIHsKICAgICAgcHJpbnQgIlxuTm8gRmlsZW5hbWUg
+IVxuXG4iOwogICAgICBwcmludCAidXNhZ2U6ICQwIFwkZmlsZW5hbWVcblxuIjsKICAgICAgZXhp
+dDsKICAgfQojIC0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0t
+LS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLQpvcGVu
+KEZOLCRmbik7CndoaWxlKDxGTj4pCiAgIHsKICAgICAgaWYoJF89fiAiXF5AQCIpeyZyZXBsYWNl
+KCk7fQogICAgICBlbHNle3ByaW50ICRfO30KICAgfQpjbG9zZShGTik7CiMgLS0tLS0tLS0tLS0t
+LS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0t
+LS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tLS0tCg==
+--00504502ad2c72506604882500f2
+Content-Type: application/x-sh; name="refine.sh"
+Content-Disposition: attachment; filename="refine.sh"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_g9zxtac41
+
+IyEvYmluL3NoCgppZiBbICJ4eCQxIiA9ICJ4eCIgXSA7IHRoZW4gZWNobyBuZWVkIHRhcmdldCBw
+YXRjaC4uLjsgZXhpdCAxOyBmaTsKaWYgWyAieHgkMiIgPSAieHgiIF0gOyB0aGVuIGVjaG8gbmVl
+ZCBvdXRwdXQgcGF0Y2guLi47IGV4aXQgMTsgZmk7CgpUT19ESVI9YGRpcm5hbWUgJDBgOwoKcm0g
+dG1wMCB0bXAxIHRtcDIKY3AgJDEgdG1wMCAKdG91Y2ggdG1wMQpjb3VudD0xOwoKZ2l0IHJlc2V0
+IC0taGFyZCAxPi9kZXYvbnVsbCAgfHwgZXhpdCAxCndoaWxlICEgY21wIHRtcDAgdG1wMSAxPi9k
+ZXYvbnVsbCA7IGRvIAplY2hvICRjb3VudCAuLi4KY3AgdG1wMCB0bXAxIDsKJHtUT19ESVJ9L3Vu
+ZG8tY3ZzLXRhZy1vbmUtbGluZS1jaGFnZS5wbCB0bXAxID4gdG1wMiA7CmdpdCByZXNldCAtLWhh
+cmQgMT4vZGV2L251bGwgIHx8IGV4aXQgMQppZiAhIHBhdGNoIC1pIHRtcDIgLXAgMyAtZiAxPi9k
+ZXYvbnVsbDsgdGhlbiAgZWNobyBwYXRjaCBmYWlsZWQuLi47ZXhpdCAxIDsgZmkKZ2l0IGRpZmYg
+LiA+IHRtcDA7CmNvdW50PSQoKCRjb3VudCsxKSkKZG9uZTsKCmVjaG8gZG9uZS4uLi4KZ2l0IHJl
+c2V0IC0taGFyZCAxPi9kZXYvbnVsbCB8fCBleGl0IDEKY3AgdG1wMCAkMiAtdgo=
+--00504502ad2c72506604882500f2--
