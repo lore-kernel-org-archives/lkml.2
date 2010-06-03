@@ -1,48 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755805Ab0FCOun (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jun 2010 10:50:43 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:56701 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755404Ab0FCOum (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jun 2010 10:50:42 -0400
-Date: Thu, 3 Jun 2010 16:48:10 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Ben Blum <bblum@andrew.cmu.edu>
-Cc: Paul Menage <menage@google.com>, linux-kernel@vger.kernel.org,
-       containers@lists.linux-foundation.org, akpm@linux-foundation.org,
-       ebiederm@xmission.com, lizf@cn.fujitsu.com, matthltc@us.ibm.com
-Subject: Re: [RFC] [PATCH 2/2] cgroups: make procs file writable
-Message-ID: <20100603144810.GB6284@redhat.com>
-References: <20100530013303.GC762@ghc01.ghc.andrew.cmu.edu> <20100531175242.GA14691@redhat.com> <20100531180446.GA16249@redhat.com> <AANLkTimcrX0TjzDMNJdubR92pAO4IPATbVpyvvVt0qIV@mail.gmail.com> <20100602140659.GA5324@redhat.com> <AANLkTin-T6ij3xf0ceGoCamwcoayxyf0GdAKY6yXDMVl@mail.gmail.com> <20100602202048.GB28663@redhat.com> <AANLkTimrJFiidM8BlUNvmzfapUAv8369R9PYnTscasEf@mail.gmail.com> <20100602205855.GA30039@redhat.com> <20100603044001.GA21006@ghc02.ghc.andrew.cmu.edu>
+	id S1755901Ab0FCOvS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jun 2010 10:51:18 -0400
+Received: from mail.gmx.net ([213.165.64.20]:49299 "HELO mail.gmx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1755843Ab0FCOvN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Jun 2010 10:51:13 -0400
+X-Authenticated: #15668376
+X-Provags-ID: V01U2FsdGVkX1/k7SUrCqTkBW0aTiLQ8pVs44d1ncMqYts9oDxXSw
+	4w0wQpWpLXa4KI
+From: Sven Eckelmann <sven.eckelmann@gmx.de>
+To: b.a.t.m.a.n@lists.open-mesh.org
+Subject: Re: [B.A.T.M.A.N.] [PATCH] drivers/staging/batman-adv: Convert MAC_FMT to %pM
+Date: Thu, 3 Jun 2010 15:58:29 +0200
+User-Agent: KMail/1.13.3 (Linux/2.6.34-1-amd64; KDE/4.4.4; x86_64; ; )
+Cc: Joe Perches <joe@perches.com>, Marek Lindner <lindner_marek@yahoo.de>,
+       Simon Wunderlich <siwu@hrz.tu-chemnitz.de>,
+       Andrew Lunn <andrew@lunn.ch>, "Greg Kroah-Hartman" <gregkh@suse.de>,
+       devel <devel@driverdev.osuosl.org>, b.a.t.m.a.n@lists.open-mesh.net,
+       linux-kernel@vger.kernel.org
+References: <1275509418.23599.42.camel@Joe-Laptop.home>
+In-Reply-To: <1275509418.23599.42.camel@Joe-Laptop.home>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100603044001.GA21006@ghc02.ghc.andrew.cmu.edu>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Type: multipart/signed;
+  boundary="nextPart8129949.8OlROn3zHO";
+  protocol="application/pgp-signature";
+  micalg=pgp-sha512
+Content-Transfer-Encoding: 7bit
+Message-Id: <201006031558.36936.sven.eckelmann@gmx.de>
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/03, Ben Blum wrote:
->
-> On Wed, Jun 02, 2010 at 10:58:55PM +0200, Oleg Nesterov wrote:
-> > Hmm. The usage of ->thread_group in ->can_attach() methods doesn't
-> > look safe to me... but currently bool threadgroup is always false.
->
-> I recall putting a rcu_read_lock() around that part and being assured
-> that made it safe. But I don't remember the details. Maybe taking
-> tasklist_lock is necessary?
+--nextPart8129949.8OlROn3zHO
+Content-Type: Text/Plain;
+  charset="us-ascii"
+Content-Transfer-Encoding: quoted-printable
 
-rcu_read_lock() is not enough, see another email I sent.
+Joe Perches wrote:
+> Remove the last uses of MAC_FMT
+>=20
+> Signed-off-by: Joe Perches <joe@perches.com>
+> ---
+>  drivers/staging/batman-adv/main.c              |    3 +-
+>  drivers/staging/batman-adv/translation-table.c |   25
+> ++++------------------- 2 files changed, 6 insertions(+), 22 deletions(-)
 
-Once again.
+Just noticed that this patch collides with another one which is waiting in=
+=20
+GregKH's queue. I will try to rewrite it on top of that. I hope that this i=
+s=20
+ok for you.
 
-	rcu_read_lock()
-	list_for_each_rcu(tsk->thread_group)
+Best regards,
+	Sven
 
-assumes that at least tsk->thread_group->next can't point to nowhere,
-this is not true. This memory can go away _before_ we take rcu lock.
+--nextPart8129949.8OlROn3zHO
+Content-Type: application/pgp-signature; name=signature.asc 
+Content-Description: This is a digitally signed message part.
 
-Oleg.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
 
+iQIcBAABCgAGBQJMB7UGAAoJEF2HCgfBJntG5uEQAL4dRnjbahN6EinvUsOyp8so
+elB7rxfPCt7z1gxUXKpuoYiSHTQYUurjsWJFuJViXkdOZ+0nnmkMNsplUPCB8t/z
+mWv/soU9PiNijUgvMTEiK1+PTkIIS0xtGssGl323kkVDYt+3Ru3fgDPNVs+Tm6CC
++fFz2p1qp/Te6D/7CBsX66GDUI73Fd0sQWmD0+NSAP403mdgCulWS8nN/oiHVpdr
+rwNHGvCQZlPXaGkIcCl9C9PIKeIBAtkhey04IMS+C1c6sI5Es9Usr1y0Pl+MA4to
+EI93zRUcmhNyslknRddLhssa4PRAwmgNcprBvP1vbk3NYQdLe9VppUCrgigzujX4
+JwK2y7crLXQc89G0KipFBPbWkHVyoInIL5J07nzikHjmnaeJEsX4V/6AgIwxwbMt
+r6lDfC4aHXT6LeJQx7RVIUkRrPLAEwOvZsbjom6/5Sc4CAkaA0aAUKy0VXSsjXdO
+c+1xkc5JVxYlzoKi+FdohnsQxg+/ZN/vwAYmd0J6gbhYTkszbze69K+iNXs5bYHn
+6rZX4NFvnEAtLOUJXD00RDq6l31ZdwlAVmExAdZ8z43qiB41vRgpCnEwZnEoREU+
++ezUtYnB1FVx9+QVswHJ0oHNqityNCpq9b/aqdKncX38ilOUkRC0LvBfeteBttev
+xMa54O8pfsfWsuYEohQu
+=FALl
+-----END PGP SIGNATURE-----
+
+--nextPart8129949.8OlROn3zHO--
