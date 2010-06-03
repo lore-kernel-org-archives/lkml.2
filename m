@@ -1,123 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755907Ab0FCOx5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jun 2010 10:53:57 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:48093 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755627Ab0FCOxz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jun 2010 10:53:55 -0400
-Date: Thu, 3 Jun 2010 07:48:18 -0700 (PDT)
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Russell King <rmk@arm.linux.org.uk>
-cc: Kevin Hilman <khilman@deeprootsystems.com>,
-       Daniel Walker <dwalker@codeaurora.org>,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       linux-arm-msm@vger.kernel.org
-Subject: Re: ARM defconfig files
-In-Reply-To: <20100603074548.GA12104@flint.arm.linux.org.uk>
-Message-ID: <alpine.LFD.2.00.1006030725420.8175@i5.linux-foundation.org>
-References: <20100603074548.GA12104@flint.arm.linux.org.uk>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1755942Ab0FCOzL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jun 2010 10:55:11 -0400
+Received: from cantor.suse.de ([195.135.220.2]:46785 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755627Ab0FCOzJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Jun 2010 10:55:09 -0400
+Subject: Re: [linux-pm] [PATCH 0/8] Suspend block api (version 8)
+From: James Bottomley <James.Bottomley@suse.de>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+       "Gross, Mark" <mark.gross@intel.com>, Neil Brown <neilb@suse.de>,
+       LKML <linux-kernel@vger.kernel.org>,
+       Florian Mickler <florian@mickler.org>, "tytso@mit.edu" <tytso@mit.edu>,
+       Linux PM <linux-pm@lists.linux-foundation.org>,
+       Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
+       "felipe.balbi@nokia.com" <felipe.balbi@nokia.com>,
+       Alan Cox <alan@lxorguk.ukuu.org.uk>
+In-Reply-To: <alpine.LFD.2.00.1006031602160.2933@localhost.localdomain>
+References: <20100527232357.6d14fdb2@lxorguk.ukuu.org.uk>
+	 <20100601135102.GA8098@srcf.ucam.org>
+	 <1275426085.21962.967.camel@mulgrave.site> <201006020024.14220.rjw@sisk.pl>
+	 <1275431816.21962.1108.camel@mulgrave.site>
+	 <AANLkTikObnAZbyOxeYAhXcEbimO3XTTO-HlC9CD_HH6t@mail.gmail.com>
+	 <1275451342.21962.1777.camel@mulgrave.site>
+	 <AANLkTilRcFZyYa-0HlaM-6IEZSyar3S9S_cCWSFax2Zo@mail.gmail.com>
+	 <1275491111.2799.110.camel@mulgrave.site>
+	 <20100602214748.7742e3ae@schatten.dmk.lab>
+	 <1275511271.2799.516.camel@mulgrave.site>
+	 <20100603010607.5baf82a6@schatten.dmk.lab>
+	 <CA1BBBBC9359F04AA639128AC0D5D1E9692ABC92@orsmsx502.amr.corp.intel.com>
+	 <20100603110312.48a508dc@lxorguk.ukuu.org.uk>
+	 <1275571471.5914.2.camel@mulgrave.site>
+	 <alpine.LFD.2.00.1006031602160.2933@localhost.localdomain>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 03 Jun 2010 09:55:00 -0500
+Message-ID: <1275576900.5914.107.camel@mulgrave.site>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, 2010-06-03 at 16:35 +0200, Thomas Gleixner wrote:
+> On Thu, 3 Jun 2010, James Bottomley wrote:
+> 
+> > On Thu, 2010-06-03 at 11:03 +0100, Alan Cox wrote:
+> > > > [mtg: ] This has been a pain point for the PM_QOS implementation.  They change the constrain back and forth at the transaction level of the i2c driver.  The pm_qos code really wasn't made to deal with such hot path use, as each such change triggers a re-computation of what the aggregate qos request is.
+> > > 
+> > > That should be trivial in the usual case because 99% of the time you can
+> > > hot path
+> > > 
+> > > 	the QoS entry changing is the latest one
+> > > 	there have been no other changes
+> > > 	If it is valid I can use the cached previous aggregate I cunningly
+> > > 		saved in the top QoS entry when I computed the new one
+> > > 
+> > > (ie most of the time from the kernel side you have a QoS stack)
+> > 
+> > It's not just the list based computation: that's trivial to fix, as you
+> > say ... the other problem is the notifier chain, because that's blocking
+> > and could be long.  Could we invoke the notifier through a workqueue?
+> > It doesn't seem to have veto power, so it's pure notification, does it
+> > matter if the notice is delayed (as long as it's in order)?
+> 
+> It depends on the information type and for a lot of things we might
+> get away without notifiers. 
+> 
+> The only real issue is when you need to get other cores out of their
+> deep idle state to make a new constraint work. That's what we do with
+> the DMA latency notifier right now.
 
-[ Continuation on the "ARM MSM updates" thread ]
+But the only DMA latency notifier is cpuidle_latency_notifier.  That
+looks callable from atomic context, so we could have two chains: one
+atomic and one not.
 
-On Thu, 3 Jun 2010, Russell King wrote:
->
-> It'd be nice if you'd copy me...
+The only other notifier in use is the ieee80211_max_network_latency,
+which uses mutexes, so does require user context.
 
-Yeah, the thread started out as a "I got really bored with lots of msm 
-patches", and then just expanded into what I think is wrong with the 
-sub-architectures. 
+James
 
-> On the defconfig files, you may not like them - I don't like the
-> proliferation of them either.  What I've always wanted to see is
-> one defconfig per class of machines - in other words, one mach-XXX.
 
-I can understand that, but at the same time, I do think that the 
-"defconfig" file concept as it is now is just broken. To the point of 
-being unfixable. It's obviously just a copy of the final .config, and it's 
-fundamentally not really readable (and especially not writable) by humans.
-
-And that all actually made some sense way-back-when, back when it was 
-originally done - back when our config files were tiny (compared to what 
-they are now), and when it ended up being the default input for the 
-config. It just doesn't make much sense any more. The Kconfig files 
-themselves end up having defaults for the core things, and the non-core 
-things are too many to list/edit sanely in that format.
-
-So the original reason I want to remove them is that they are very 
-annoying, but the reasoning that then takes that annoyance and makes me 
-think seriously about removing them despite the inevitable pain factor is 
-that I really don't think we can even use the concept for any better 
-model.
-
-Anything better would _have_ to be totally different. And no, I don't 
-think your "diffs against a base" model work either, because while it 
-would make them smaller, it would still make them basically unreadable and 
-uneditable by any human, which means that it's not something we should 
-check in - it's a generated file!
-
-And I do think our kernel configurator language already should basically 
-have the expressive power to do it *sanely*. We already support including 
-other files, which is a requirement for any hierarchical model.
-
-So I _think_ whatever "mach-xyz" file _should_ do something like
-
-	# Kconfig file for OMAP4ABCXYZ chip
-
-	.. set the particulars for this _particular_ chip,
-	   ie select the particular drivers on this chip ..
-
-	include "chip-family-details" (ie maybe "base OMAP details")
-
-	include "architecture-family-details" (ie ARM Kconfig)
-
-see? Not one flat file, and very much not something generated.
-
-And I actually suspect we could do it with our current Kconfig file model. 
-IOW, in the arch/arm/Kconfig file, I think it should be doable to have 
-basically a
-
-	choice
-		prompt "ARM platform"
-
-	config ARM_PLATFORM_OMAP
-		bool PLATFORM_OMAP
-
-	config ARM_PLATFORM_MSM
-		bool PLATFORM_MSM
-	...
-	endchoice
-
-	if ARK_PLATFORM_OMAP
-	 include "Kconfig.omap"	# this will further have choices for OMAP versions
-	elif ARM_PLATFORM_...
-
-and then the individual "Kconfig.platform" files could select certain 
-options, and then do a "include Kconfig.cpu" which would actually be the 
-_current_ top-level arch/arm/Kconfig.
-
-Or something. See? Making it hierarchical (so that each individual 
-Kconfig.xyz file only handles a certain level of detail, and it doesn't 
-grow unboundedly) and making it fundamentally human readable/writable 
-would be a really good thing.
-
-NOTE NOTE NOTE! I'm not at all saying it has to be done like the above 
-with the current Kconfig language. The above is more of a "this is how we 
-_could_ do it, and it would be a big conceptual improvement". 
-
-And I don't think we can get there from here unless I at some point say "I 
-just removed the xyz_defconfig files", at which point people will curse me 
-and stumble about until they actually come up with something better.
-
-Of course, if the ARM people do something proactive like the above 
-_before_ I remove the defconfig files, I won't complain.
-
-		Linus
