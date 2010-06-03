@@ -1,38 +1,265 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932348Ab0FCLLQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jun 2010 07:11:16 -0400
-Received: from 0122700014.0.fullrate.dk ([95.166.99.235]:59261 "EHLO kernel.dk"
+	id S1753558Ab0FCLM6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jun 2010 07:12:58 -0400
+Received: from 0122700014.0.fullrate.dk ([95.166.99.235]:59301 "EHLO kernel.dk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932228Ab0FCLLP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jun 2010 07:11:15 -0400
-Message-ID: <4C078DC5.2040008@fusionio.com>
-Date: Thu, 03 Jun 2010 13:11:01 +0200
+	id S1752848Ab0FCLM5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Jun 2010 07:12:57 -0400
+Message-ID: <4C078E2B.7090107@fusionio.com>
+Date: Thu, 03 Jun 2010 13:12:43 +0200
 From: Jens Axboe <jaxboe@fusionio.com>
 User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100423 Thunderbird/3.0.4
 MIME-Version: 1.0
 To: "mtk.manpages@gmail.com" <mtk.manpages@gmail.com>
 CC: linux-kernel@vger.kernel.org
 Subject: Re: [patch] pipe: add support for shrinking and growing pipes
-References: <20100524070552.GR23411@kernel.dk> <AANLkTikogQtGpO9c94A7YSmP8zdyM8dZBrwJf1nwlR4j@mail.gmail.com> 	<20100524173551.GU23411@kernel.dk> <AANLkTimDJjHWKISxnLax3r200Db8OQp_lMKOx14ONgkS@mail.gmail.com> 	<20100524175649.GV23411@kernel.dk> <AANLkTim_yrRZG6v1tMPgefeaaI-nUa35Q-mLQpuXWJ1p@mail.gmail.com> 	<20100601074534.GL1660@kernel.dk> <AANLkTinGfonivZvofBkMzv53IJZeKbFAEMVpv96BiJ30@mail.gmail.com> 	<20100603061039.GD3564@kernel.dk> <AANLkTint7OJvmTn7d7bqTJzsCxV-VlVT46PQWVH-m73g@mail.gmail.com> 	<20100603070126.GJ3564@kernel.dk> <AANLkTilwyuE-HiY0vX5askTNi1KoeuKIldmE85WrfIqU@mail.gmail.com> 	<AANLkTin2b7qE1zo0fQWIhYIzdV26zNBjHRcNAOELpUfK@mail.gmail.com> 	<AANLkTiliVv0RFCeZnUy0PeWS1LNQZGzLSDFnZlf8-hgO@mail.gmail.com> 	<4C07862D.4090709@fusionio.com> <AANLkTincO5thcP-yASUtIV41TtY3ZmG9YSU-J5nT2sFg@mail.gmail.com>
-In-Reply-To: <AANLkTincO5thcP-yASUtIV41TtY3ZmG9YSU-J5nT2sFg@mail.gmail.com>
+References: <20100524070552.GR23411@kernel.dk> <AANLkTikogQtGpO9c94A7YSmP8zdyM8dZBrwJf1nwlR4j@mail.gmail.com> 	<20100524173551.GU23411@kernel.dk> <AANLkTimDJjHWKISxnLax3r200Db8OQp_lMKOx14ONgkS@mail.gmail.com> 	<20100524175649.GV23411@kernel.dk> <AANLkTim_yrRZG6v1tMPgefeaaI-nUa35Q-mLQpuXWJ1p@mail.gmail.com> 	<20100601074534.GL1660@kernel.dk> <AANLkTinGfonivZvofBkMzv53IJZeKbFAEMVpv96BiJ30@mail.gmail.com> 	<20100603061039.GD3564@kernel.dk> <AANLkTint7OJvmTn7d7bqTJzsCxV-VlVT46PQWVH-m73g@mail.gmail.com> 	<20100603070126.GJ3564@kernel.dk> <AANLkTilwyuE-HiY0vX5askTNi1KoeuKIldmE85WrfIqU@mail.gmail.com> 	<AANLkTin2b7qE1zo0fQWIhYIzdV26zNBjHRcNAOELpUfK@mail.gmail.com> 	<4C078610.6020901@fusionio.com> <AANLkTinhO5oRDPXyXaeAOZU3i55eBKsx4iFMOzwm98na@mail.gmail.com> <AANLkTin_8MU3AbJ_KeXr2uTxtRFJ5ABmBAyigU6m-C6u@mail.gmail.com>
+In-Reply-To: <AANLkTin_8MU3AbJ_KeXr2uTxtRFJ5ABmBAyigU6m-C6u@mail.gmail.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(Readding linux-kernel, switching to a new mailer after more than a
-decade of mutt isn't easy...)
-
-On 2010-06-03 12:58, Michael Kerrisk wrote:
-
->> the CAP_SYS_ADMIN was basically just
->> grabbed out of thin air.
+On 2010-06-03 13:00, Michael Kerrisk wrote:
+> On Thu, Jun 3, 2010 at 12:56 PM, Michael Kerrisk
+> <mtk.manpages@googlemail.com> wrote:
+>> On Thu, Jun 3, 2010 at 12:38 PM, Jens Axboe <jaxboe@fusionio.com> wrote:
+>>> On 2010-06-03 09:48, Michael Kerrisk wrote:
+>>>> On Thu, Jun 3, 2010 at 9:05 AM, Michael Kerrisk
+>>>> <mtk.manpages@googlemail.com> wrote:
+>>>>> On Thu, Jun 3, 2010 at 9:01 AM, Jens Axboe <jaxboe@fusionio.com> wrote:
+>>>>>> On Thu, Jun 03 2010, Michael Kerrisk wrote:
+>>>>>>> Hi Jens,
+>>>>>>>
+>>>>>>> On Thu, Jun 3, 2010 at 8:10 AM, Jens Axboe <jaxboe@fusionio.com> wrote:
+>>>>>>>> On Wed, Jun 02 2010, Michael Kerrisk wrote:
+>>>>>>>>> On Tue, Jun 1, 2010 at 9:45 AM, Jens Axboe <axboe@kernel.dk> wrote:
+>>>>>>>>>> On Thu, May 27 2010, Michael Kerrisk wrote:
+>>>>>>>>>>> Jens,
+>>>>>>>>>>>
+>>>>>>>>>>> On Mon, May 24, 2010 at 7:56 PM, Jens Axboe <jens.axboe@oracle.com> wrote:
+>>>>>>>>>>>> On Mon, May 24 2010, Michael Kerrisk wrote:
+>>>>>>>>>>>>> On Mon, May 24, 2010 at 7:35 PM, Jens Axboe <jens.axboe@oracle.com> wrote:
+>>>>>>>>>>>>>> On Mon, May 24 2010, Michael Kerrisk wrote:
+>>>>>>>>>>>>>>>> Right, that looks like a thinko.
+>>>>>>>>>>>>>>>>
+>>>>>>>>>>>>>>>> I'll submit a patch changing it to bytes and the agreed API and fix this
+>>>>>>>>>>>>>>>> -Eerror. Thanks for your comments and suggestions!
+>>>>>>>>>>>>>>>
+>>>>>>>>>>>>>>> Thanks. And of course you are welcome. (Please CC linux-api@vger on
+>>>>>>>>>>>>>>> this patche (and all patches that change the API/ABI.)
+>>>>>>>>>>>>>>
+>>>>>>>>>>>>>> The first change is this:
+>>>>>>>>>>>>>>
+>>>>>>>>>>>>>> http://git.kernel.dk/?p=linux-2.6-block.git;a=commit;h=0191f8697bbdfefcd36e7b8dc3eeddfe82893e4b
+>>>>>>>>>>>>>>
+>>>>>>>>>>>>>> and the one dealing with the pages vs bytes API is this:
+>>>>>>>>>>>>>>
+>>>>>>>>>>>>>> http://git.kernel.dk/?p=linux-2.6-block.git;a=commit;h=b9598db3401282bb27b4aef77e3eee12015f7f29
+>>>>>>>>>>>>>>
+>>>>>>>>>>>>>> Not tested yet, will do so before sending in of course.
+>>>>>>>>>>>>>
+>>>>>>>>>>>>> Eyeballing it quickly, these changes look right.
+>>>>>>>>>>>>
+>>>>>>>>>>>> Good, thanks.
+>>>>>>>>>>>>
+>>>>>>>>>>>>> Do you have some test programs you can make available?
+>>>>>>>>>>>>
+>>>>>>>>>>>> Actually I don't, I test it by modifying fio's splice engine to set/get
+>>>>>>>>>>>> the pipe size and test the resulting transfers.
+>>>>>>>>>>>
+>>>>>>>>>>> An afterthought. Do there not also need to be fixes to the /proc
+>>>>>>>>>>> interfaces. I don't think they were included in your revised patches.
+>>>>>>>>>>
+>>>>>>>>>> I think the proc part can be sanely left in pages, since it's just a
+>>>>>>>>>> memory limiter.
+>>>>>>>>>
+>>>>>>>>> I can't see any advantage to using two different units for these
+>>>>>>>>> closely related APIs, and it does seem like it could be a source of
+>>>>>>>>> confusion. Similar APIs that I can think of like RLIMIT_MEMLOCK and
+>>>>>>>>> shmget() SHMMAX that impose per-process memory-related limits use
+>>>>>>>>> bytes. Best to be consistent, don't you think?
+>>>>>>>>
+>>>>>>>> But they are different interfaces.  I think the 'pass in required size,
+>>>>>>>> return actual size' where actual size is >= required size makes sense
+>>>>>>>> for the syscall part, but for an "admin" interface it is more logical to
+>>>>>>>> deal in pages. Perhaps that's just me and the average admin does not
+>>>>>>>> agree. So while it's just detail, it's also an interface so has some
+>>>>>>>> importance. And if there's consensus that bytes is a cleaner interface
+>>>>>>>> on the proc side as well, then lets change it.
+>>>>>>>
+>>>>>>> I'll add one more datapoint to those that I already mentioned.
+>>>>>>> RLIMIT_STACK and RLIMIT_DATA (getrlimit()) is also expressed in bytes.
+>>>>>>>
+>>>>>>> There was only one vaguely related limit that I could find that
+>>>>>>> measured things in pages. Consider these two System V shared memory
+>>>>>>> limits:
+>>>>>>>
+>>>>>>> SHMMAX
+>>>>>>> This is the maximum size (in bytes) of a shared memory segment.
+>>>>>>>
+>>>>>>> SHMALL
+>>>>>>> This is a system-wide limit on the total number of pages of shared memory.
+>>>>>>>
+>>>>>>> But in a way this almost confirms my point. SHMMAX is a limit the
+>>>>>>> governs the behavior of individual processes (like your /proc file),
+>>>>>>> while SHMALL is a limit that governs the behavior of the system as a
+>>>>>>> whole. There is a (sort of) logic to using bytes for one and pages for
+>>>>>>> the other.
+>>>>>>>
+>>>>>>> I think that I've said all I need to say on the topic. I'm inclined to
+>>>>>>> think yours /proc file should use bytes, since it seems consistent
+>>>>>>> with other simialr APIs. Others may confirm, or someone else mught
+>>>>>>> have a different insight.
+>>>>>>
+>>>>>> I'll commit a patch to change it to bytes.
+>>>>>
+>>>>> Thanks Jens.
+>>>>
+>>>> Since I'm going to document the /proc file, it occurred to me... What
+>>>> are you going to call this file now? "pipe_max_pages"  no longer makes
+>>>> sense. "pipe_size_ceiling" may be more expressive than simply
+>>>> "pipe_max".
+>>>
+>>> pipe_max_size?
+>>
+>> Okay too.
 > 
-> Which explains why CAP_SYS_ADMIN has become the mess it is today ;-)
+> Better use dashes in the name, of course.
 
-Definitely true :-)
+I looked at that when I did the original pipe-max-pages, but it seems
+we're not consistent in this regard. Anyway, here's what I came up with.
+Not tested yet, and I hope thunderbird doesn't fsck up the patch.
+
+diff --git a/fs/pipe.c b/fs/pipe.c
+index f98fae3..f7f62f3 100644
+--- a/fs/pipe.c
++++ b/fs/pipe.c
+@@ -26,9 +26,14 @@
+
+ /*
+  * The max size that a non-root user is allowed to grow the pipe. Can
+- * be set by root in /proc/sys/fs/pipe-max-pages
++ * be set by root in /proc/sys/fs/pipe_max_size
+  */
+-unsigned int pipe_max_pages = PIPE_DEF_BUFFERS * 16;
++unsigned int pipe_max_size = 1048576;
++
++/*
++ * Minimum pipe size, as required by POSIX
++ */
++unsigned int pipe_min_size = PAGE_SIZE;
+
+ /*
+  * We use a start+len construction, which provides full use of the
+@@ -1156,6 +1161,35 @@ static long pipe_set_size(struct pipe_inode_info
+*pipe, unsigned long nr_pages)
+ 	return nr_pages * PAGE_SIZE;
+ }
+
++/*
++ * Currently we rely on the pipe array holding a power-of-2 number
++ * of pages.
++ */
++static inline unsigned int round_pipe_size(unsigned int size)
++{
++	unsigned long nr_pages;
++
++	nr_pages = (size + PAGE_SIZE - 1) >> PAGE_SHIFT;
++	return roundup_pow_of_two(nr_pages) << PAGE_SHIFT;
++}
++
++/*
++ * This should work even if CONFIG_PROC_FS isn't set, as
+proc_dointvec_minmax
++ * will return an error.
++ */
++int pipe_proc_fn(struct ctl_table *table, int write, void __user *buf,
++		 size_t *lenp, loff_t *ppos)
++{
++	int ret;
++
++	ret = proc_dointvec_minmax(table, write, buf, lenp, ppos);
++	if (ret < 0 || !write)
++		return ret;
++
++	pipe_max_size = round_pipe_size(pipe_max_size);
++	return ret;
++}
++
+ long pipe_fcntl(struct file *file, unsigned int cmd, unsigned long arg)
+ {
+ 	struct pipe_inode_info *pipe;
+@@ -1169,23 +1203,19 @@ long pipe_fcntl(struct file *file, unsigned int
+cmd, unsigned long arg)
+
+ 	switch (cmd) {
+ 	case F_SETPIPE_SZ: {
+-		unsigned long nr_pages;
++		unsigned int size, nr_pages;
+
+-		/*
+-		 * Currently the array must be a power-of-2 size, so adjust
+-		 * upwards if needed.
+-		 */
+-		nr_pages = (arg + PAGE_SIZE - 1) >> PAGE_SHIFT;
+-		nr_pages = roundup_pow_of_two(nr_pages);
++		size = round_pipe_size(arg);
++		nr_pages = size >> PAGE_SHIFT;
+
+-		if (!capable(CAP_SYS_RESOURCE) && nr_pages > pipe_max_pages) {
++		if (!capable(CAP_SYS_RESOURCE) && size > pipe_max_size) {
+ 			ret = -EPERM;
+ 			goto out;
+-		} else if (nr_pages < 1) {
++		} else if (nr_pages < PAGE_SIZE) {
+ 			ret = -EINVAL;
+ 			goto out;
+ 		}
+-		ret = pipe_set_size(pipe, arg);
++		ret = pipe_set_size(pipe, nr_pages);
+ 		break;
+ 		}
+ 	case F_GETPIPE_SZ:
+diff --git a/include/linux/pipe_fs_i.h b/include/linux/pipe_fs_i.h
+index 16de393..4457969 100644
+--- a/include/linux/pipe_fs_i.h
++++ b/include/linux/pipe_fs_i.h
+@@ -139,7 +139,9 @@ void pipe_lock(struct pipe_inode_info *);
+ void pipe_unlock(struct pipe_inode_info *);
+ void pipe_double_lock(struct pipe_inode_info *, struct pipe_inode_info *);
+
+-extern unsigned int pipe_max_pages;
++extern unsigned int pipe_max_size, pipe_min_size;
++int pipe_proc_fn(struct ctl_table *, int, void __user *, size_t *,
+loff_t *);
++
+
+ /* Drop the inode semaphore and wait for a pipe event, atomically */
+ void pipe_wait(struct pipe_inode_info *pipe);
+diff --git a/kernel/sysctl.c b/kernel/sysctl.c
+index 997080f..2f9b3a6 100644
+--- a/kernel/sysctl.c
++++ b/kernel/sysctl.c
+@@ -1471,12 +1471,12 @@ static struct ctl_table fs_table[] = {
+ 	},
+ #endif
+ 	{
+-		.procname	= "pipe-max-pages",
+-		.data		= &pipe_max_pages,
++		.procname	= "pipe_max_size",
++		.data		= &pipe_max_size,
+ 		.maxlen		= sizeof(int),
+ 		.mode		= 0644,
+-		.proc_handler	= &proc_dointvec_minmax,
+-		.extra1		= &two,
++		.proc_handler	= &pipe_proc_fn,
++		.extra1		= &pipe_min_size,
+ 	},
+ /*
+  * NOTE: do not add new entries to this table unless you have read
 
 -- 
 Jens Axboe
