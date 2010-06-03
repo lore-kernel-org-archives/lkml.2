@@ -1,65 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933520Ab0FCJaF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jun 2010 05:30:05 -0400
-Received: from one.firstfloor.org ([213.235.205.2]:40865 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758559Ab0FCJaD (ORCPT
+	id S933617Ab0FCJcJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jun 2010 05:32:09 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:39802 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933569Ab0FCJcH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jun 2010 05:30:03 -0400
-To: Vitaly Mayatskikh <v.mayatskih@gmail.com>
-Cc: Vivek Goyal <vgoyal@redhat.com>, linux-kernel@vger.kernel.org,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-       "H. Peter Anvin" <hpa@zytor.com>, Randy Dunlap <rdunlap@xenotime.net>
-Subject: Re: [PATCH 0/5] kdump: extract log buffer and registers from	vmcore on NMI button pressing
-From: Andi Kleen <andi@firstfloor.org>
-References: <1275464359-1566-1-git-send-email-v.mayatskih@gmail.com>
-	<20100602151611.GA3174@redhat.com> <87iq60a3rh.wl%vmayatsk@redhat.com>
-Date: Thu, 03 Jun 2010 11:30:01 +0200
-In-Reply-To: <87iq60a3rh.wl%vmayatsk@redhat.com> (Vitaly Mayatskikh's message of "Thu\, 03 Jun 2010 11\:01\:38 +0200")
-Message-ID: <87d3w8xy3q.fsf@basil.nowhere.org>
-User-Agent: Gnus/5.11 (Gnus v5.11) Emacs/22.3 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	Thu, 3 Jun 2010 05:32:07 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=h/tJRqNrCAY4L12KyLco9dFiKPz9aDZLUXiCFx71P++83Ad/M1sFVx20KAZvDcGu6c
+         AuBisJOGvqzfAxjc8T8hBXZApuhLoxcWvLemeJtwZBytGpvo0olOxkBLrNlb5hCEdnh7
+         JOs5fxP5oiKi4U+ueE052zOA2TYsHVa4hh0KM=
+Subject: Re: [PATCH] kobject: Suppress compiler warning with gcc 3.x
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: =?ISO-8859-1?Q?Am=E9rico?= Wang <xiyou.wangcong@gmail.com>
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
+       Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>,
+       ebiederm@aristanetworks.com, randy.dunlap@oracle.com, gregkh@suse.de,
+       linux-kernel@vger.kernel.org
+In-Reply-To: <20100603085711.GD5580@cr0.nay.redhat.com>
+References: <201006030523.o535NA16029042@www262.sakura.ne.jp>
+	 <1275543101.29413.76.camel@edumazet-laptop>
+	 <20100603055515.GA5580@cr0.nay.redhat.com>
+	 <m1y6ewr6vf.fsf@fess.ebiederm.org>
+	 <20100603062314.GB5580@cr0.nay.redhat.com>
+	 <m1k4qgr54j.fsf@fess.ebiederm.org>
+	 <20100603085711.GD5580@cr0.nay.redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 03 Jun 2010 11:32:02 +0200
+Message-ID: <1275557522.2456.27.camel@edumazet-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Vitaly Mayatskikh <v.mayatskih@gmail.com> writes:
->
-> Obviously, this change doesn't help if 2nd kernel is not able to
-> boot. But there are other problems, which may prevent vmcore to be
-> captured. For example, machine has RAM > HDD and it may save vmcore
-> only over network. If network fails (e.g., due to bugs in NIC drivers
-> or NFS, what is not so rare), and dump capture environment is
-> non-interactive, or it doesn't have development tools like `crash',
-> there's no chance even to guess what has happened.
+Le jeudi 03 juin 2010 à 16:57 +0800, Américo Wang a écrit :
 
-In this case you don't need NMI, sysrq or some /sys trigger
-is good enough.
+> 
+> Yeah.
+> 
+> However, this compile warning only appears in gcc 3.x
+> and it seems it's a fault of gcc 3.x, not the code. I am wondering
+> if we need to fix it.
+> 
 
-NMI would be only needed if the crash kernel is completely
-hosed too.
+I believe gcc-3 was born before the code you mention.
 
-> Other possibilities of failure may include broken RAID controller,
-> HDD, RAM. NMI button in such situations is a last chance to see old
-> log.
+We can keep ability to compile kernel on old gcc for very litle care.
 
-The big problem is that the NMI is used by more and more subsystems,
-and several of them tend to eat all NMIs, so the leftovers are less and
-less.  Overall I would not consider it reliable.
-
-Also NMI buttons are not actually all that common.
-
-I'm also not sure you really need the analysis in kernel space.
-
-Why not have a user space program that does a quick analysis
-of the previous vmcore and dumps a summary only?  In fact 
-I suspect crash can already do that.
-
--Andi
+Lets do it please, unless there is a real show-stopper, not because
+we feel gcc-3 is 'old'
 
 
--- 
-ak@linux.intel.com -- Speaking for myself only.
