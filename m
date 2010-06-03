@@ -1,74 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933581Ab0FCCFd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jun 2010 22:05:33 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:51512 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933549Ab0FCCFb convert rfc822-to-8bit (ORCPT
+	id S933592Ab0FCCFy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jun 2010 22:05:54 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:34895 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933549Ab0FCCFx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jun 2010 22:05:31 -0400
+	Wed, 2 Jun 2010 22:05:53 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=IDMaQMHAU0cLmmI3xXaX2soj2wfmjM3/1L/l6hlm2gmpw7hab+iG0Kuyu+MlDg0qan
-         ffjBROOI4MMOGUGFceVd57ohtZDlkYGQkkUDZCd5Uz5PzbDO1qHeA4YW84QSwJ8bdPr2
-         3RErynB8vfl3NAxQcsisCjAhbjh9oD080Dh38=
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=MktQ0SvFW8CYtCkRGB6C8CDgEEnpyCJSiY/IRCzRjLcjGoPP0/bjHEjJhhMhmd9gX0
+         besvErCSF/fLavS2Y66d+LCbgAKpApvR4AvODOlg2RFfygIlPaMiAelkB1OgbUDO01LH
+         7DaYTF3QdY/WAzXJi4n4vliPFmddpf1q2MqVc=
+Message-ID: <4C070E16.6080301@gmail.com>
+Date: Wed, 02 Jun 2010 19:06:14 -0700
+From: "Justin P. Mattock" <justinmattock@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.4pre) Gecko/20091114 Lightning/1.0pre Thunderbird/3.0b4
 MIME-Version: 1.0
-In-Reply-To: <4C070CB4.2030304@gmail.com>
-References: <20100601212901.GA18390@srcf.ucam.org>
-	<4C057EF0.2030808@gmail.com>
-	<4C05E800.1010400@gmail.com>
-	<4C05F3BF.6090503@gmail.com>
-	<AANLkTinyxtHQrsgvV0CMQZnyEelVnrpCTM05PLAj-ZYx@mail.gmail.com>
-	<4C06ECAA.3060708@gmail.com>
-	<4C06ED18.2010400@gmail.com>
-	<4C06F1DD.8060004@gmail.com>
-	<AANLkTilQuun1jQc394YM4QZtDSVeIwh67_Np0mkRDes4@mail.gmail.com>
-	<4C06F6EA.6090701@gmail.com>
-	<20100603013758.GA18755@srcf.ucam.org>
-	<AANLkTik1cjxh1ItnqBXaxNcwa6we7ccJJZny-mAOAUjD@mail.gmail.com>
-	<4C070CB4.2030304@gmail.com>
-Date: Wed, 2 Jun 2010 20:05:29 -0600
-Message-ID: <AANLkTimADCKDJkcAnHQ6uN9vzTWJixB0Dk1YVO8LdI7W@mail.gmail.com>
-Subject: Re: [PATCH]X86:reboot.c Add some dmi entries to pci_reboot_dmi_table.
-From: Robert Hancock <hancockrwd@gmail.com>
-To: "Justin P. Mattock" <justinmattock@gmail.com>
-Cc: Matthew Garrett <mjg59@srcf.ucam.org>, x86@kernel.org, tglx@linutronix.de,
+To: Matthew Garrett <mjg59@srcf.ucam.org>
+CC: Robert Hancock <hancockrwd@gmail.com>, x86@kernel.org, tglx@linutronix.de,
        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Subject: Re: [PATCH]X86:reboot.c Add some dmi entries to	pci_reboot_dmi_table.
+References: <4C05E800.1010400@gmail.com> <4C05F3BF.6090503@gmail.com> <AANLkTinyxtHQrsgvV0CMQZnyEelVnrpCTM05PLAj-ZYx@mail.gmail.com> <4C06ECAA.3060708@gmail.com> <4C06ED18.2010400@gmail.com> <4C06F1DD.8060004@gmail.com> <AANLkTilQuun1jQc394YM4QZtDSVeIwh67_Np0mkRDes4@mail.gmail.com> <4C06F6EA.6090701@gmail.com> <20100603013758.GA18755@srcf.ucam.org> <AANLkTik1cjxh1ItnqBXaxNcwa6we7ccJJZny-mAOAUjD@mail.gmail.com> <20100603015659.GA19123@srcf.ucam.org>
+In-Reply-To: <20100603015659.GA19123@srcf.ucam.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 2, 2010 at 8:00 PM, Justin P. Mattock
-<justinmattock@gmail.com> wrote:
-> On 06/02/2010 06:47 PM, Robert Hancock wrote:
->>
->> On Wed, Jun 2, 2010 at 7:37 PM, Matthew Garrett<mjg59@srcf.ucam.org>
->>  wrote:
->>>
->>> On Wed, Jun 02, 2010 at 05:27:22PM -0700, Justin P. Mattock wrote:
->>>>
->>>> On 06/02/2010 05:20 PM, Robert Hancock wrote:
->>>>>
->>>>> #include<unistd.h>
->>>>>
->>>>> int main() {
->>>>>          iopl(3);
->>>>>          outb(2, 0xcf9);
->>>>>          sleep(1);
->>>>>          outb(6, 0xcf9);
->>>>>          return 0;
->>>>> }
->>>>>
->>>>> That's basically what PCI reboot does.
->>>>
->>>> the above code reboot's the machine as it should..
->>>> I can look at that(need to take a break first though)
->>>> and see..
->>>
+On 06/02/2010 06:56 PM, Matthew Garrett wrote:
+> On Wed, Jun 02, 2010 at 07:47:17PM -0600, Robert Hancock wrote:
+>> On Wed, Jun 2, 2010 at 7:37 PM, Matthew Garrett<mjg59@srcf.ucam.org>  wrote:
 >>> That's pretty infuriating. The ACPI-provided definition doesn't work,
 >>> and there's no ACPI mechanism for expressing the more complex cf9
 >>> behaviour. Windows doesn't appear to special case this, so we're
@@ -77,20 +42,41 @@ On Wed, Jun 2, 2010 at 8:00 PM, Justin P. Mattock
 >>
 >> Do these Macs even have a PC keyboard controller? A recent thread on
 >> PS/2 keyboard/mouse controller probing suggests they may not..
->>
+>
+> Possibly an SMM trap...
+>
 >> Justin, what happens if you try the simple outb(6, 0xcf9) test program
 >> multiple times, does that do anything?
->>
 >
+> Huh. That might work, yes. Windows does the ACPI write, an i8042 write,
+> the ACPI write, another i8042 write and then gives up. If that happens
+> sufficiently quickly, this might get us somewhere. Justin, can you try:
 >
-> this reboots the system
->
+> #include<sys/io.h>
+> #include<unistd.h>
 >
 > int main() {
->           iopl(3);
->           outb(6, 0xcf9);
->           return 0;
+> 	iopl(3);
+> 	outb(6, 0xcf9);
+> 	usleep(100);
+> 	outb(6, 0xcf9);
+> 	return 0;
 > }
+>
+> and see if that reboots?
+>
 
-On a single try, or multiple times? (You tried that one before once
-and it didn't work, right?)
+
+this thing is wacked out
+this just rebooted the system:
+
+int main() {
+            iopl(3);
+            outb(6, 0xcf9);
+            return 0;
+}
+
+and now it's motionless
+(just a command prompt).
+
+Justin P. Mattock
