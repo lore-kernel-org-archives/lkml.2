@@ -1,143 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933732Ab0FCDHU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jun 2010 23:07:20 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:59839 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933620Ab0FCDHS convert rfc822-to-8bit (ORCPT
+	id S933737Ab0FCDKR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jun 2010 23:10:17 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:58213 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933579Ab0FCDKO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jun 2010 23:07:18 -0400
+	Wed, 2 Jun 2010 23:10:14 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:reply-to:references:mime-version
+         :content-type:content-disposition:content-transfer-encoding
+         :in-reply-to:user-agent;
+        b=PkwLsL9i+XzlM5V8jAaO9G5FyXwupx7SLQLi2tMGqN4kWXyyXsd4sOBJBJ2DaW/SS0
+         P3L0aWtansXLyk50HKOwKh2nbrJumcPlUEYoPzIcwmBSUolWF09wrw92NuKuY0MGLNpI
+         jKtbQBBoCmShO1BNT5aDj/SCOGACXQ7/CG83Q=
+Date: Wed, 2 Jun 2010 20:10:24 -0700
+From: mark gross <640e9920@gmail.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: markgross@thegnar.org,
+       Arve =?iso-8859-1?B?SGr4bm5lduVn?= <arve@android.com>,
+       Florian Mickler <florian@mickler.org>, 640e9920@gmail.com,
+       Alan Stern <stern@rowland.harvard.edu>,
+       Peter Zijlstra <peterz@infradead.org>,
+       Linux PM <linux-pm@lists.linux-foundation.org>,
+       Brian Swetland <swetland@google.com>,
+       Alan Cox <alan@lxorguk.ukuu.org.uk>,
+       Matthew Garrett <mjg59@srcf.ucam.org>,
+       Thomas Gleixner <tglx@linutronix.de>,
+       LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>
+Subject: Re: [linux-pm] [PATCH 0/8] Suspend block api (version 8)
+Message-ID: <20100603031024.GA11311@gvim.org>
+Reply-To: markgross@thegnar.org
+References: <AANLkTik_4ezDAQoAQjkpEgwD9SLKeOjDzy2H7T2v6uCP@mail.gmail.com>
+ <AANLkTikF-B23_UWG1O3tlBl4m8NStAJllGhhevNhYZT6@mail.gmail.com>
+ <20100602133910.GA9106@gvim.org>
+ <201006030003.49486.rjw@sisk.pl>
 MIME-Version: 1.0
-From: Grant Likely <grant.likely@secretlab.ca>
-Date: Wed, 2 Jun 2010 21:06:54 -0600
-X-Google-Sender-Auth: jfHCrWV6_qESp5aQAJQiwSeBe1M
-Message-ID: <AANLkTikNcAvyHf1yHPweNBVSCSPNmq-JaEOgYW2FYUGJ@mail.gmail.com>
-Subject: [git pull] (updated) OF-related build breakage fixes
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Cc: devicetree-discuss <devicetree-discuss@lists.ozlabs.org>,
-       Anatolij Gustschin <agust@denx.de>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <201006030003.49486.rjw@sisk.pl>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Updated pull request.  Added more fixes from Anatolij of the same sort.
-
-g.
-
-The following changes since commit aef4b9aaae1decc775778903922bd0075cce7a88:
-  Linus Torvalds (1):
-        Merge branch 'next' of git://git.kernel.org/.../benh/powerpc
-
-are available in the git repository at:
-
-  git://git.secretlab.ca/git/linux-2.6 merge
-
-Alexandre Bounine (1):
-      of/powerpc: fix 85xx RapidIO device node pointer
-
-Anatolij Gustschin (12):
-      of/spi: mpc512x_psc_spi.c: Fix build failures
-      of/mtd/nand: mpc5121_nfc.c: Fix build failures
-      of/dma: mpc512x_dma.c: Fix build failures
-      of/pcmcia: m8xx_pcmcia.c: Fix build failures
-      of/video: fix build breakage in FB drivers
-      of/mtd: nand: fix build breakage in drivers
-      of/dma: fix build breakage in ppc4xx adma driver
-      of/crypto: crypto4xx_core.c: fix build breakage
-      of/usb: fsl_qe_udc.c: fix build breakage
-      of/net: fs_enet/mii-bitbang.c: fix build breakage
-      of/edac: fix build breakage in drivers
-      of/watchdog: gef_wdt.c: fix build breakage
-
-Grant Likely (3):
-      of/usb: fix build error due to of_node pointer move
-      of/spi: Fix build failure on spi_ppc4xx.c
-      of/rtc: rtc-mpc5121.c: Fix build failures
-
-Michael Guntsche (1):
-      watchdog: Fix build failure with OF changes
-
- arch/powerpc/sysdev/fsl_rio.c        |    2 +-
- drivers/crypto/amcc/crypto4xx_core.c |    6 +++---
- drivers/dma/mpc512x_dma.c            |   10 +++++-----
- drivers/dma/ppc4xx/adma.c            |    4 ++--
- drivers/edac/mpc85xx_edac.c          |   12 ++++++------
- drivers/edac/ppc4xx_edac.c           |    6 +++---
- drivers/mtd/nand/fsl_upm.c           |   17 +++++++++--------
- drivers/mtd/nand/mpc5121_nfc.c       |    8 ++++----
- drivers/mtd/nand/socrates_nand.c     |    4 ++--
- drivers/net/fs_enet/mii-bitbang.c    |    4 ++--
- drivers/pcmcia/m8xx_pcmcia.c         |    4 ++--
- drivers/rtc/rtc-mpc5121.c            |   14 ++++++++------
- drivers/spi/mpc512x_psc_spi.c        |   12 ++++++------
- drivers/spi/spi_ppc4xx.c             |    2 +-
- drivers/usb/gadget/fsl_qe_udc.c      |    4 ++--
- drivers/usb/host/ehci-xilinx-of.c    |    2 +-
- drivers/video/bw2.c                  |    2 +-
- drivers/video/cg14.c                 |    2 +-
- drivers/video/cg3.c                  |    2 +-
- drivers/video/leo.c                  |    2 +-
- drivers/video/mb862xx/mb862xxfb.c    |    2 +-
- drivers/video/p9100.c                |    2 +-
- drivers/video/tcx.c                  |    2 +-
- drivers/watchdog/gef_wdt.c           |    2 +-
- drivers/watchdog/mpc8xxx_wdt.c       |    2 +-
- 25 files changed, 66 insertions(+), 63 deletions(-)
-
-
-On Wed, Jun 2, 2010 at 2:24 PM, Grant Likely <grant.likely@secretlab.ca> wrote:
-> Hi Linus,
->
-> Here's a set of build fixes related to the of_node and of_match_table
-> device changes.  All trivial fixes.
->
-> Thanks,
-> g.
->
-> The following changes since commit aef4b9aaae1decc775778903922bd0075cce7a88:
->  Linus Torvalds (1):
->        Merge branch 'next' of git://git.kernel.org/.../benh/powerpc
->
-> are available in the git repository at:
->
->  git://git.secretlab.ca/git/linux-2.6 merge
->
-> Alexandre Bounine (1):
->      of/powerpc: fix 85xx RapidIO device node pointer
->
-> Anatolij Gustschin (3):
->      of/spi: mpc512x_psc_spi.c: Fix build failures
->      of/mtd/nand: mpc5121_nfc.c: Fix build failures
->      of/dma: mpc512x_dma.c: Fix build failures
->
-> Grant Likely (3):
->      of/usb: fix build error due to of_node pointer move
->      of/spi: Fix build failure on spi_ppc4xx.c
->      of/rtc: rtc-mpc5121.c: Fix build failures
->
-> Michael Guntsche (1):
->      watchdog: Fix build failure with OF changes
->
->  arch/powerpc/sysdev/fsl_rio.c     |    2 +-
->  drivers/dma/mpc512x_dma.c         |   10 +++++-----
->  drivers/mtd/nand/mpc5121_nfc.c    |    8 ++++----
->  drivers/rtc/rtc-mpc5121.c         |   14 ++++++++------
->  drivers/spi/mpc512x_psc_spi.c     |   12 ++++++------
->  drivers/spi/spi_ppc4xx.c          |    2 +-
->  drivers/usb/host/ehci-xilinx-of.c |    2 +-
->  drivers/watchdog/mpc8xxx_wdt.c    |    2 +-
->  8 files changed, 27 insertions(+), 25 deletions(-)
->
-> --
-> Grant Likely, B.Sc., P.Eng.
-> Secret Lab Technologies Ltd.
+On Thu, Jun 03, 2010 at 12:03:49AM +0200, Rafael J. Wysocki wrote:
+> On Wednesday 02 June 2010, mark gross wrote:
+> > On Tue, Jun 01, 2010 at 08:50:02PM -0700, Arve Hjønnevåg wrote:
+> > > On Tue, Jun 1, 2010 at 7:05 AM, mark gross <640e9920@gmail.com> wrote:
+> > > > On Tue, Jun 01, 2010 at 09:07:37AM +0200, Florian Mickler wrote:
+> > > ...
+> > > >> +static void update_target_val(int pm_qos_class, s32 val)
+> > > >> +{
+> > > >> +     s32 extreme_value;
+> > > >> +     s32 new_value;
+> > > >> +     extreme_value = atomic_read(&pm_qos_array[pm_qos_class]->target_value);
+> > > >> +     new_value = pm_qos_array[pm_qos_class]->comparitor(val,extreme_value);
+> > > >> +     if (extreme_value != new_value)
+> > > >> +             atomic_set(&pm_qos_array[pm_qos_class]->target_value,new_value);
+> > > >> +}
+> > > >> +
+> > > >
+> > > > Only works 1/2 the time, but I like the idea!
+> > > > It fails to get the righ answer when constraints are reduced.  But, this
+> > > > idea is a good improvement i'll roll into the next pm_qos update!
+> > > >
+> > > 
+> > > I think it would be a better idea to track your constraints with a
+> > > sorted data structure. That way you can to better than O(n) for both
+> > > directions. If you have a lot of constraints with the same value, it
+> > > may even be worthwhile to have a two stage structure where for
+> > > instance you use a rbtree for the unique values and list for identical
+> > > constraints.
+> > 
+> > I don't agree, we went through this tree vrs list discussion a few times
+> > before in other areas of the kernel.  Wherever the list tended to be
+> > short, a simple list wins.  However; we can try it, after we have some
+> > metrics and stress test cases identified we can measure its effectivenes
+> > against.
+> 
+> How many different values are there to handle?
 >
 
+for the current pm_qos users its tiny.  I've never heard of more than a
+few < 10.  However; for the new "interactive" class to provide suspend
+blocker functionality, I expect the number to be up to 20.
 
+but realistically I bet we never get more than 10ish.
 
--- 
-Grant Likely, B.Sc., P.Eng.
-Secret Lab Technologies Ltd.
+One constraint constraint request per module from isr to user mode.
+Once in user mode there would be only a few (assuming Android user
+space) I think just from the power HAL, input HAL, and the RIL.
+
+Still a pretty small number I don't think we need to worry about scaling
+as much as we need to worry about performance.
+
+--mgross 
