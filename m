@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932148Ab0FCX4Y (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jun 2010 19:56:24 -0400
-Received: from bld-mail13.adl6.internode.on.net ([150.101.137.98]:40250 "EHLO
+	id S1757007Ab0FCX4T (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jun 2010 19:56:19 -0400
+Received: from bld-mail17.adl2.internode.on.net ([150.101.137.102]:55315 "EHLO
 	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1756418Ab0FCX4J (ORCPT
+	with ESMTP id S1756325Ab0FCX4H (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jun 2010 19:56:09 -0400
+	Thu, 3 Jun 2010 19:56:07 -0400
 From: Dave Chinner <david@fromorbit.com>
 To: linux-fsdevel@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org, xfs@oss.sgi.com, akpm@linux-foundation.org
-Subject: [PATCH 5/6] xfs: remove nr_to_write writeback windup.
-Date: Fri,  4 Jun 2010 09:55:27 +1000
-Message-Id: <1275609328-12514-6-git-send-email-david@fromorbit.com>
+Subject: [PATCH 6/6] writeback: limit write_cache_pages integrity scanning to current EOF
+Date: Fri,  4 Jun 2010 09:55:28 +1000
+Message-Id: <1275609328-12514-7-git-send-email-david@fromorbit.com>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1275609328-12514-1-git-send-email-david@fromorbit.com>
 References: <1275609328-12514-1-git-send-email-david@fromorbit.com>
@@ -22,35 +22,60 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Dave Chinner <dchinner@redhat.com>
 
-Now that the background flush code has been fixed, we shouldn't need to
-silently multiply the wbc->nr_to_write to get good writeback. Remove
-that code.
+sync can currently take a really long time if a concurrent writer is
+extending a file. The problem is that the dirty pages on the address
+space grow in the same direction as write_cache_pages scans, so if
+the writer keeps ahead of writeback, the writeback will not
+terminate until the writer stops adding dirty pages.
+
+For a data integrity sync, we only need to write the pages dirty at
+the time we start the writeback, so we can stop scanning once we get
+to the page that was at the end of the file at the time the scan
+started.
+
+This will prevent operations like copying a large file preventing
+sync from completing as it will not write back pages that were
+dirtied after the sync was started. This does not impact the
+existing integrity guarantees, as any dirty page (old or new)
+within the EOF range at the start of the scan will still be
+captured.
+
+This patch will not prevent sync from blocking on large writes into
+holes. That requires more complex intervention while this patch only
+addresses the common append-case of this sync holdoff.
 
 Signed-off-by: Dave Chinner <dchinner@redhat.com>
-Reviewed-by: Christoph Hellwig <hch@lst.de>
 ---
- fs/xfs/linux-2.6/xfs_aops.c |    8 --------
- 1 files changed, 0 insertions(+), 8 deletions(-)
+ mm/page-writeback.c |   15 +++++++++++++++
+ 1 files changed, 15 insertions(+), 0 deletions(-)
 
-diff --git a/fs/xfs/linux-2.6/xfs_aops.c b/fs/xfs/linux-2.6/xfs_aops.c
-index 089eaca..4c89db3 100644
---- a/fs/xfs/linux-2.6/xfs_aops.c
-+++ b/fs/xfs/linux-2.6/xfs_aops.c
-@@ -1366,14 +1366,6 @@ xfs_vm_writepage(
- 	if (!page_has_buffers(page))
- 		create_empty_buffers(page, 1 << inode->i_blkbits, 0);
- 
--
--	/*
--	 *  VM calculation for nr_to_write seems off.  Bump it way
--	 *  up, this gets simple streaming writes zippy again.
--	 *  To be reviewed again after Jens' writeback changes.
--	 */
--	wbc->nr_to_write *= 4;
--
- 	/*
- 	 * Convert delayed allocate, unwritten or unmapped space
- 	 * to real space and flush out to disk.
+diff --git a/mm/page-writeback.c b/mm/page-writeback.c
+index 0fe713d..c97e973 100644
+--- a/mm/page-writeback.c
++++ b/mm/page-writeback.c
+@@ -855,7 +855,22 @@ int write_cache_pages(struct address_space *mapping,
+ 		if (wbc->range_start == 0 && wbc->range_end == LLONG_MAX)
+ 			range_whole = 1;
+ 		cycled = 1; /* ignore range_cyclic tests */
++
++		/*
++		 * If this is a data integrity sync, cap the writeback to the
++		 * current end of file. Any extension to the file that occurs
++		 * after this is a new write and we don't need to write those
++		 * pages out to fulfil our data integrity requirements. If we
++		 * try to write them out, we can get stuck in this scan until
++		 * the concurrent writer stops adding dirty pages and extending
++		 * EOF.
++		 */
++		if (wbc->sync_mode == WB_SYNC_ALL &&
++		    wbc->range_end == LLONG_MAX) {
++			end = i_size_read(mapping->host) >> PAGE_CACHE_SHIFT;
++		}
+ 	}
++
+ retry:
+ 	done_index = index;
+ 	while (!done && (index <= end)) {
 -- 
 1.7.1
 
