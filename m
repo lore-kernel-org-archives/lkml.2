@@ -1,53 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932258Ab0FCRr4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jun 2010 13:47:56 -0400
-Received: from void.printf.net ([89.145.121.20]:45558 "EHLO void.printf.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932180Ab0FCRrz convert rfc822-to-8bit (ORCPT
+	id S1757044Ab0FCRt5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jun 2010 13:49:57 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:42613 "EHLO
+	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751348Ab0FCRtz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jun 2010 13:47:55 -0400
-X-Greylist: delayed 1703 seconds by postgrey-1.27 at vger.kernel.org; Thu, 03 Jun 2010 13:47:55 EDT
-From: Chris Ball <cjb@laptop.org>
-To: Adrian Hunter <adrian.hunter@nokia.com>
-Cc: =?utf-8?Q?Micha=C5=82_Miros=C5=82aw?= <mirq-linux@rere.qmqm.pl>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       "linux-mmc\@vger.kernel.org" <linux-mmc@vger.kernel.org>,
-       "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC] [PATCH 1/2] mmc: split mmc_sd_init_card()
-References: <1-1000-12432-1274803827-7569@rere.qmqm.pl>
-	<20100528144027.3c868841.akpm@linux-foundation.org>
-	<20100531155846.GA9493@rere.qmqm.pl> <4C0774A8.2030704@nokia.com>
-Date: Thu, 03 Jun 2010 13:21:23 -0400
-In-Reply-To: <4C0774A8.2030704@nokia.com> (Adrian Hunter's message of "Thu, 03
-	Jun 2010 12:23:52 +0300")
-Message-ID: <m3hblk8224.fsf@pullcord.laptop.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1.90 (gnu/linux)
+	Thu, 3 Jun 2010 13:49:55 -0400
+Date: Thu, 3 Jun 2010 18:49:53 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Lars-Peter Clausen <lars@metafoo.de>
+Cc: Ralf Baechle <ralf@linux-mips.org>, linux-mips@linux-mips.org,
+       linux-kernel@vger.kernel.org, Liam Girdwood <lrg@slimlogic.co.uk>,
+       alsa-devel@alsa-project.org
+Subject: Re: [RFC][PATCH 20/26] alsa: ASoC: Add JZ4740 codec driver
+Message-ID: <20100603174953.GH2762@rakim.wolfsonmicro.main>
+References: <1275505397-16758-1-git-send-email-lars@metafoo.de>
+ <1275505950-17334-4-git-send-email-lars@metafoo.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1275505950-17334-4-git-send-email-lars@metafoo.de>
+X-Cookie: In the next world, you're on your own.
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Wed, Jun 02, 2010 at 09:12:26PM +0200, Lars-Peter Clausen wrote:
 
-   > That is a bit vague.  An SD card is a memory.  An SDIO "card" is
-   > an I/O connection made using the same physical interface as an SD
-   > card and a very similar protocal to SD cards (at least with
-   > respect to reading and writing).  I do not understand how a card
-   > can be SD and SDIO.  Are you sure you are not talking about a
-   > controller that supports SD and SDIO?  A lot of controllers do
-   > that.
+> This patch adds support for the JZ4740 internal codec.
 
-Adrian, I presume we're talking about something like:
+This looks very good, there are some issues but nothing too major.  I
+may be repeating some things others have said but hopefully not too
+much.
 
-http://www.arasan.com/products/sd/SD-Combo-Flyer.pdf
+>  snd-soc-wm9712-objs := wm9712.o
+>  snd-soc-wm9713-objs := wm9713.o
+>  snd-soc-wm-hubs-objs := wm_hubs.o
+> +snd-soc-jz4740-codec-objs := jz4740-codec.o
 
-Michał, could you let us know which SD-combo device(s) in particular
-you've been working with?
+Keep the devices sorted in both Makefile and Kconfig.
 
-- Chris.
--- 
-Chris Ball   <cjb@laptop.org>
-One Laptop Per Child
+> +static int jz4740_codec_set_fmt(struct snd_soc_dai *dai, unsigned int fmt)
+> +{
+> +	switch (fmt & SND_SOC_DAIFMT_MASTER_MASK) {
+> +	case SND_SOC_DAIFMT_CBM_CFM:
+> +		break;
+> +	default:
+> +		return -EINVAL;
+> +	}
+
+This does nothing except validate some parameters.  Is there actually an
+externally visible DAI for this CODEC?  If it's just integrated into the
+SoC and there's nothing to configure then just omit the DAI
+configuration since it's not even useful to document the signal format.
+
+> +	.capture = {
+> +		.stream_name = "Capture",
+> +		.channels_min = 2,
+> +		.channels_max = 2,
+> +		.rates = SNDRV_PCM_RATE_8000_48000,
+> +		.formats = SNDRV_PCM_FMTBIT_S16_LE | SNDRV_PCM_FMTBIT_S8,
+
+You listed an 18 bit format in hw_params - one or other of this and
+hw_params is presumably out of date.
+
+> +static int jz4740_codec_set_bias_level(struct snd_soc_codec *codec,
+> +	enum snd_soc_bias_level level)
+> +{
+> +
+> +	if (codec->bias_level == SND_SOC_BIAS_OFF && level != SND_SOC_BIAS_OFF) {
+> +		snd_soc_update_bits(codec, JZ4740_REG_CODEC_1,
+> +			JZ4740_CODEC_1_RESET, JZ4740_CODEC_1_RESET);
+> +		udelay(2);
+
+I'd expect to see this as part of the _OFF in the main switch
+statement.
+
+> +	switch (level) {
+> +	case SND_SOC_BIAS_ON:
+> +		snd_soc_update_bits(codec, JZ4740_REG_CODEC_1,
+> +			JZ4740_CODEC_1_VREF_DISABLE |
+> +			JZ4740_CODEC_1_VREF_AMP_DISABLE |
+> +			JZ4740_CODEC_1_HEADPHONE_POWER_DOWN_M |
+> +			JZ4740_CODEC_1_VREF_LOW_CURRENT |
+> +			JZ4740_CODEC_1_VREF_HIGH_CURRENT,
+> +			0);
+
+This looks suspiciously like you should be using DAPM for the headphone
+at least, though if there's only headphone out that's possibly not worth
+it.  Also, are you sure that you want both low and high current VREF
+configuring here?  I'm not clear what these settings do but the way
+they're being managed both here and in _PREPARE seems odd.
+
+> +	codec = &jz4740_codec->codec;
+> +
+> +	codec->dev		= &pdev->dev;
+> +	codec->name		= "jz-codec";
+
+Seems a bit odd to use the part number in some places and not others.
