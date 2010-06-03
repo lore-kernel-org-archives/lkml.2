@@ -1,116 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932877Ab0FCBIA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jun 2010 21:08:00 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:40169 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757873Ab0FCBH6 (ORCPT
+	id S932973Ab0FCBOU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jun 2010 21:14:20 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:35635 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757816Ab0FCBOT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jun 2010 21:07:58 -0400
-X-Authority-Analysis: v=1.1 cv=DT5lrGikL/lNZzMKzbmp3iVCACewI9NZ3q1CIi1KGbI= c=1 sm=0 a=YdTYFX7fcrAA:10 a=hO-oPbc3tlwA:10 a=7U3hwN5JcxgA:10 a=Q9fys5e9bTEA:10 a=gMqfjgEr1zLu/65IO0LwxA==:17 a=meVymXHHAAAA:8 a=BNBCL7ZmXDo9X6TOmqIA:9 a=Z297bneFejyi61UtlMoA:7 a=VdxQ55IkDHpgXThGpATEz6ldjbQA:4 a=PUjeQqilurYA:10 a=JTMqrY5UvyEA:10 a=jeBq3FmKZ4MA:10 a=gMqfjgEr1zLu/65IO0LwxA==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.89.75
-Subject: Re: [RFC 2/5] BKL: remove the BKL from kernel init code
-From: Steven Rostedt <rostedt@goodmis.org>
-Reply-To: rostedt@goodmis.org
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
-       Frederic Weisbecker <fweisbec@gmail.com>,
-       John Kacur <jkacur@redhat.com>, Ingo Molnar <mingo@elte.hu>,
-       Jan Blunck <jblunck@suse.de>
-In-Reply-To: <1275523999-27462-3-git-send-email-arnd@arndb.de>
-References: <1275523999-27462-1-git-send-email-arnd@arndb.de>
-	 <1275523999-27462-3-git-send-email-arnd@arndb.de>
-Content-Type: text/plain; charset="ISO-8859-15"
-Organization: Kihon Technologies Inc.
-Date: Wed, 02 Jun 2010 21:07:55 -0400
-Message-ID: <1275527275.15884.26.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	Wed, 2 Jun 2010 21:14:19 -0400
+Message-ID: <4C07017A.50007@oracle.com>
+Date: Wed, 02 Jun 2010 18:12:26 -0700
+From: Randy Dunlap <randy.dunlap@oracle.com>
+Organization: Oracle Linux Engineering
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.5) Gecko/20091209 Fedora/3.0-3.fc11 Thunderbird/3.0
+MIME-Version: 1.0
+To: Ben Dooks <ben-linux@fluff.org>
+CC: Nobin Mathew <nobin.mathew@gmail.com>, linux-kernel@vger.kernel.org,
+       linux-arm-kernel@lists.infradead.org, linux-kbuild@vger.kernel.org
+Subject: Re: [TEMP PATCH v2] Re: make ARM=arm menuconfig problem in mainline
+References: <AANLkTikC61Y9g-WbqwgGDghDSy2XtgraFSRoZYkHRGTG@mail.gmail.com> <AANLkTilEYHVHJrj_KgF48OYCSEUcsKLi57Q_Y73d9va-@mail.gmail.com> <20100602085748.6771e025.randy.dunlap@oracle.com> <AANLkTilpzeYVExQfLgpVmS3bPvb_h3kmWaatidekI-0r@mail.gmail.com> <4C068BAA.4030004@oracle.com> <20100603002526.GV4720@trinity.fluff.org>
+In-Reply-To: <20100603002526.GV4720@trinity.fluff.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
+X-Auth-Type: Internal IP
+X-Source-IP: acsinet15.oracle.com [141.146.126.227]
+X-CT-RefId: str=0001.0A090204.4C0701DA.016B:SCFMA922111,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-06-03 at 02:13 +0200, Arnd Bergmann wrote:
-> I have shown by code review that no driver takes
-> the BKL at init time any more, so whatever the
-> init code was locking against is no longer there
-> and it is now safe to remove the BKL there.
+On 06/02/10 17:25, Ben Dooks wrote:
+> On Wed, Jun 02, 2010 at 09:49:46AM -0700, Randy Dunlap wrote:
+>> On 06/02/10 09:08, Nobin Mathew wrote:
+>>>
+>>> On Wed, Jun 2, 2010 at 9:27 PM, Randy Dunlap <randy.dunlap@oracle.com> wrote:
+>>>> On Wed, 2 Jun 2010 20:04:28 +0530 Nobin Mathew wrote:
+>>>>
+>>>>> adding linux-arm-kernel@lists.infradead.org
+>>>>>
+>>>>> Hi,
+>>>>>
+>>>>> The following entry creates problem in ARM System type menu. I am
+>>>>> using a Fedora 12 system.
+>>>>
+>>>> What kind of problem does it create?
+>>>> It seems to work for me (on f11, not f12).
+>>>> Does it have something to do with F12 specifically?
+>>>>
+>>>>
+>>>>> Length of bool "Samsung S3C2410, S3C2412, S3C2413, S3C2416, S3C2440,
+>>>>> S3C2442, S3C2443, S3C2450" is the problem. How can I fix it.
+>>>>
+>>>> Describe the problem, please.
+>>
+>> [please don't top-post]
 > 
-> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-> ---
->  init/main.c          |    5 -----
->  kernel/trace/trace.c |    8 --------
->  2 files changed, 0 insertions(+), 13 deletions(-)
 > 
-> diff --git a/init/main.c b/init/main.c
-> index 3bdb152..81821e1 100644
-> --- a/init/main.c
-> +++ b/init/main.c
-> @@ -434,7 +434,6 @@ static noinline void __init_refok rest_init(void)
->  	rcu_read_lock();
->  	kthreadd_task = find_task_by_pid_ns(pid, &init_pid_ns);
->  	rcu_read_unlock();
-> -	unlock_kernel();
->  
->  	/*
->  	 * The boot idle thread must execute schedule()
-> @@ -555,7 +554,6 @@ asmlinkage void __init start_kernel(void)
->   * Interrupts are still disabled. Do necessary setups, then
->   * enable them
->   */
-> -	lock_kernel();
->  	tick_init();
->  	boot_cpu_init();
->  	page_address_init();
-> @@ -819,7 +817,6 @@ static noinline int init_post(void)
->  	/* need to finish all async __init code before freeing the memory */
->  	async_synchronize_full();
->  	free_initmem();
-> -	unlock_kernel();
->  	mark_rodata_ro();
->  	system_state = SYSTEM_RUNNING;
->  	numa_default_policy();
-> @@ -855,8 +852,6 @@ static noinline int init_post(void)
->  
->  static int __init kernel_init(void * unused)
->  {
-> -	lock_kernel();
-> -
->  	/*
->  	 * init can allocate pages on any node
->  	 */
-> diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
-> index 086d363..8047ca5 100644
-> --- a/kernel/trace/trace.c
-> +++ b/kernel/trace/trace.c
-> @@ -734,13 +734,6 @@ __acquires(kernel_lock)
->  		return -1;
->  	}
->  
-> -	/*
-> -	 * When this gets called we hold the BKL which means that
-> -	 * preemption is disabled. Various trace selftests however
-> -	 * need to disable and enable preemption for successful tests.
-> -	 * So we drop the BKL here and grab it after the tests again.
-> -	 */
-> -	unlock_kernel();
+> I can think of several solutions, the first being to remove the S3C prefix
+> friom all these.
+> 
+> S3C24XX is not acceptable, there's S3C series that are either too old to
+> be bothered with, or don't fit under this architecture.
 
-Acked-by: Steven Rostedt <rostedt@goodmis.org>
+and not in the current kernel tree?
+I did not find any others in the current tree....
 
--- Steve
+> how about Samsung S3C: 2410,2412/3,2416,2440/2442,2443,2450
 
->  	mutex_lock(&trace_types_lock);
->  
->  	tracing_selftest_running = true;
-> @@ -822,7 +815,6 @@ __acquires(kernel_lock)
->  #endif
->  
->   out_unlock:
-> -	lock_kernel();
->  	return ret;
->  }
->  
+OK, that works.
+
+For kbuild/kconfig people:  run:
+make ARCH=arm O=test menuconfig
+
+and then select System Type & ARM system type.  The kconfig "choice" menu at this
+point looks empty.  It seems to be just a text windowing/display problem.
+Pressing the down/up arrow keys will display the choices, although not where they
+should be displayed in the rectangle, and they can be selected there.
 
 
+>>> Sorry if attachments are not allowed, when I go to select ARM system
+>>> type(OMAP, Davinci etc), I am not seeing any entries there in the pop
+>>> up window. When I remove  bool "Samsung S3C2410, S3C2412, S3C2413,
+>>> S3C2416, S3C2440,
+>>>>> S3C2442, S3C2443, S3C2450"  it is working fine. I feel it is something to do with length of that string.
+>>>
+>>> Thanks
+>>> Nobin
+>>
+>>
+>> OK, I see that now.  Well, it is some kind of problem.
+>> Adding cc to linux-kbuild mailing list.
+>>
+>>
+>> The patch below fixes the problem temporarily, but the bool string length does
+>> seem to be a problem.
+>>
+>> Thanks for your report.
+
+
+---
+From: Randy Dunlap <randy.dunlap@oracle.com>
+
+"bool <long string>" causes kconfig choices not to be displayed
+correctly, so temporarily change it to a shorter string until a real
+fix is found.
+
+Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
+Reported-by: Nobin Mathew <nobin.mathew@gmail.com>
+Cc: Ben Dooks <ben-linux@fluff.org>
+---
+ arch/arm/Kconfig |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+--- linux-next-20100602.orig/arch/arm/Kconfig
++++ linux-next-20100602/arch/arm/Kconfig
+@@ -629,7 +629,7 @@ config ARCH_SA1100
+ 	  Support for StrongARM 11x0 based boards.
+ 
+ config ARCH_S3C2410
+-	bool "Samsung S3C2410, S3C2412, S3C2413, S3C2416, S3C2440, S3C2442, S3C2443, S3C2450"
++	bool "Samsung S3C: 2410,2412/3,2416,2440/2442,2443,2450"
+ 	select GENERIC_GPIO
+ 	select ARCH_HAS_CPUFREQ
+ 	select HAVE_CLK
