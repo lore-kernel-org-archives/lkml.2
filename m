@@ -1,52 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755536Ab0FCVoL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jun 2010 17:44:11 -0400
-Received: from smtp-out04.alice.it ([85.37.17.100]:2507 "EHLO
-	smtp-out04.alice.it" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753745Ab0FCVoK (ORCPT
+	id S1755969Ab0FCVpA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jun 2010 17:45:00 -0400
+Received: from sj-iport-5.cisco.com ([171.68.10.87]:62729 "EHLO
+	sj-iport-5.cisco.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753998Ab0FCVo7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jun 2010 17:44:10 -0400
-Date: Thu, 3 Jun 2010 23:43:10 +0200
-From: Giuliano Pochini <pochini@shiny.it>
-To: linux-kernel@vger.kernel.org
-Subject: [PATCH] Fix divide by 0 in echoaudio driver
-Message-ID: <20100603234310.5f87dc89@Jay>
-X-Mailer: Claws Mail 3.7.5 (GTK+ 2.14.7; powerpc-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Thu, 3 Jun 2010 17:44:59 -0400
+Authentication-Results: sj-iport-5.cisco.com; dkim=neutral (message not signed) header.i=none
+X-IronPort-AV: E=Sophos;i="4.53,357,1272844800"; 
+   d="scan'208";a="206869295"
+From: Tom Lyon <pugs@lyon-about.com>
+To: Avi Kivity <avi@redhat.com>
+Subject: Re: [PATCH] VFIO driver: Non-privileged user level PCI drivers
+Date: Thu, 3 Jun 2010 14:41:38 -0700
+User-Agent: KMail/1.9.9
+Cc: Chris Wright <chrisw@sous-sol.org>, Joerg Roedel <joro@8bytes.org>,
+       "Michael S. Tsirkin" <mst@redhat.com>, linux-kernel@vger.kernel.org,
+       kvm@vger.kernel.org, hjk@linutronix.de, gregkh@suse.de,
+       aafabbri@cisco.com, scofeldm@cisco.com
+References: <20100601095532.GA9178@redhat.com> <20100602174615.GV8301@sequoia.sous-sol.org> <4C074A64.1000009@redhat.com>
+In-Reply-To: <4C074A64.1000009@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 03 Jun 2010 21:44:06.0993 (UTC) FILETIME=[E4795C10:01CB0365]
+Content-Disposition: inline
+Message-Id: <201006031441.38799.pugs@lyon-about.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+OK, in the interest of making progress, I am about to embark on the following:
 
-This patch has already been merged in 2.6.34:
-http://git.kernel.org/?p=linux/kernel/git/stable/linux-2.6.34.y.git;a=commitdiff;h=b721e68bdc5b39c51bf6a1469f8d3663fbe03243
+1. Create a user-iommu-domain driver - opening it will give a new empty domain.
+    Ultimately this can also populate sysfs with the state of its world, which would
+    also be a good addition to the base iommu stuff.
+    If someone closes the fd while in use, the domain stays valid anyway until users
+    drop off.
 
-Since it fixes a /0 in the irq handler, please consider including it also
-in the next maintenance release of 2.6.33.
+2. Add DOMAIN_SET and DOMAIN_UNSET ioctls to the vfio driver.  Require that
+   a domain be set before using the VFIO_DMA_MAP_IOVA ioctl (this is the one
+   that KVM wants).  However, the VFIO_DMA_MAP_ANYWHERE ioctl is the one
+   which uses the dma_sg interface which has no expicit control of domains. I
+   intend to keep it the way it is, but expect only non-hypervisor programs would
+   want to use it.
 
-This patch is against 2.6.33.5.
+3. Clean up the docs and other nits that folks have found.
 
-
-Signed-off-by: Giuliano Pochini <pochini@shiny.it>
-
---- a/sound/pci/echoaudio/echoaudio.c	2010-06-03 22:23:21.000000000 +0100
-+++ b/sound/pci/echoaudio/echoaudio.c	2010-06-03 22:48:33.000000000 +0100
-@@ -1821,7 +1821,9 @@ static irqreturn_t snd_echo_interrupt(in
- 	/* The hardware doesn't tell us which substream caused the irq,
- 	thus we have to check all running substreams. */
- 	for (ss = 0; ss < DSP_MAXPIPES; ss++) {
--		if ((substream = chip->substream[ss])) {
-+		substream = chip->substream[ss];
-+		if (substream && ((struct audiopipe *)substream->runtime->
-+				private_data)->state == PIPE_STATE_STARTED) {
- 			period = pcm_pointer(substream) /
- 				substream->runtime->period_size;
- 			if (period != chip->last_period[ss]) {
-
-
--- 
-Giuliano.
+Comments? 
