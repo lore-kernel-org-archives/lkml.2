@@ -1,82 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932821Ab0FCIlT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jun 2010 04:41:19 -0400
-Received: from troy.hostgo.com ([64.62.143.130]:58626 "EHLO troy.hostgo.com"
+	id S932913Ab0FCIm2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jun 2010 04:42:28 -0400
+Received: from mga11.intel.com ([192.55.52.93]:6793 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932698Ab0FCIlP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jun 2010 04:41:15 -0400
-From: Thomas Fjellstrom <tfjellstrom@strangesoft.net>
-To: Tejun Heo <htejun@gmail.com>
-Subject: Re: failed command FLUSH CACHE EXT
-Date: Thu, 3 Jun 2010 02:41:10 -0600
-User-Agent: KMail/1.13.3 (Linux/2.6.34-0.dmz.6-liquorix-amd64; KDE/4.4.3; x86_64; ; )
-Cc: Robert Hancock <hancockrwd@gmail.com>, linux-kernel@vger.kernel.org,
-       linux-ide@vger.kernel.org
-References: <201005292046.06344.tfjellstrom@strangesoft.net> <201006021742.32232.tfjellstrom@strangesoft.net> <4C07666A.7000705@gmail.com>
-In-Reply-To: <4C07666A.7000705@gmail.com>
+	id S932565Ab0FCImZ convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Jun 2010 04:42:25 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.53,353,1272870000"; 
+   d="scan'208";a="572951657"
+From: "Paoloni, Gabriele" <gabriele.paoloni@intel.com>
+To: Ben McKeegan <ben@netservers.co.uk>
+CC: "davem@davemloft.net" <davem@davemloft.net>,
+       "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       "alan@lxorguk.ukuu.org.uk" <alan@lxorguk.ukuu.org.uk>,
+       "linux-ppp@vger.kernel.org" <linux-ppp@vger.kernel.org>,
+       "paulus@samba.org" <paulus@samba.org>
+Date: Thu, 3 Jun 2010 09:41:59 +0100
+Subject: RE: [PATCH] ppp_generic: fix multilink fragment sizes
+Thread-Topic: [PATCH] ppp_generic: fix multilink fragment sizes
+Thread-Index: AcsCbBBt+o2TVgRDSECWcUfeDYlibwAims+g
+Message-ID: <DF7BB929B28FCF479E888E3D9F8D9E88D3E1706A@irsmsx502.ger.corp.intel.com>
+References: <4C0670E2.1090708@netservers.co.uk>
+ <1275491094-9526-1-git-send-email-ben@netservers.co.uk>
+ <DF7BB929B28FCF479E888E3D9F8D9E88D3E16B5A@irsmsx502.ger.corp.intel.com>
+ <4C067EF7.9040609@netservers.co.uk>
+In-Reply-To: <4C067EF7.9040609@netservers.co.uk>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201006030241.11102.tfjellstrom@strangesoft.net>
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - troy.hostgo.com
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - strangesoft.net
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On June 3, 2010, Tejun Heo wrote:
-> Hello,
-> 
-> On 06/03/2010 01:42 AM, Thomas Fjellstrom wrote:
-> > I seem to have rather bad luck with hard drives. Every time I buy more
-> > than two, I tend to get one or two failures out of the batch. 25-50%
-> > failure rate almost. Horrible. I at least average 1 dead hard drive a
-> > year since I got my first computer.
-> 
-> Hmmm... that sounds really high.  Out of how many?  Hard drives do
-> fail sometimes but not that easily even if you put it under relatively
-> heavy use 24/7.  Maybe there is a common cause - say, instable power,
-> vibration, impact or whatever?  Or maybe the universe just doesn't
-> like you?  :-)
-> 
-> Thanks.
+Hi
 
-I think its a combination of factors. But mainly, early on I was cheap. UBER 
-cheap, nor did I know that a power supply is probably the /most/ important 
-component in a machine. If it helps I've also had many motherboards, tons of 
-ram, and some misc other parts fail over the years as well, but I've 
-probably gone through more hard drives than anything else.
+I agree with you about replacing totlen with len (actually the previous one was quite bad).
+I think we don't need to round up anyway and nbigger is doing his job I think. Basically we are giving just one more byte to the first nbigger free channels and for the rest the integer division will round down automatically.
 
-Let me see if I can count all of them... 
+For example say you have before transmitting 5 free channels and len is 83bytes
 
-1x6G   - failed
-1x40G  - failed
-4x80G  - 2 failed (PSU kill)
-2x160G - 1 failed (used drives anyhow, don't really count)
-4x320G - 2 failed (DOA, well after a week each)
-4x640G - 1-2 failed (can't really remember the circumstances with these...)
-6x1T   - 1 failed (DOA)
-4x2T   - 2 failed (1 DOA, 1 after a year)
+nbigger will be (ln 1284) 83%5=3
 
-So about half.
+the frame will be split as follows: 17 - 17 - 17 - 16 - 16
 
-I mostly blame my cheapness when I was younger. Bad PSU's can cause a lot of 
-problems. I've since stopped buying and using cheap power supplies. And it 
-has so far made a difference in death count. If I skip the DOA drives, only 
-one 1TB, 1 2TB and 1 640 failed. Thats far better than a 50% mortality rate.
+Since for the first three iterations the channel to tx on will get an extra byte (ln1427) and nbigger will be decreased by one (ln1428).
 
-That list may not be entirely accurate, it spans over 10 years of hd use. I 
-can barely remember what I did the day before, let alone the details of 
-things that happened 10 years ago.
+The only change I would make to the code is to replace totlen with len @ln1425
 
--- 
-Thomas Fjellstrom
-tfjellstrom@strangesoft.net
+Now if you agree either me or you can submit a new patch.
+
+Regards
+
+Gabriele Paoloni   
+
+>-----Original Message-----
+>From: Ben McKeegan [mailto:ben@netservers.co.uk]
+>Sent: 02 June 2010 16:56
+>To: Paoloni, Gabriele
+>Cc: davem@davemloft.net; netdev@vger.kernel.org; linux-
+>kernel@vger.kernel.org; alan@lxorguk.ukuu.org.uk; linux-
+>ppp@vger.kernel.org; paulus@samba.org
+>Subject: Re: [PATCH] ppp_generic: fix multilink fragment sizes
+>
+>Paoloni, Gabriele wrote:
+>> The proposed patch looks wrong to me.
+>>
+>> nbigger is already doing the job; I didn't use DIV_ROUND_UP because in
+>general we don't have always to roundup, otherwise we would exceed the
+>total bandwidth.
+>
+>I was basing this on the original code prior to your patch, which used
+>DIV_ROUND_UP to get the fragment size.  Looking more closely I see your
+>point, the original code was starting with the larger fragment size and
+>decrementing rather than starting with the smaller size and incrementing
+>as your code does, so that makes sense.
+>
+>
+>>
+>>  		flen = len;
+>>  		if (nfree > 0) {
+>>  			if (pch->speed == 0) {
+>> -				flen = totlen/nfree;
+>> +				if (nfree > 1)
+>> +					flen = DIV_ROUND_UP(len, nfree);
+>>  				if (nbigger > 0) {
+>>  					flen++;
+>>  					nbigger--;
+>
+>The important change here is the use of 'len' instead of 'totlen'.
+>'nfree' and 'len' should decrease roughly proportionally with each
+>iteration of the loop whereas 'totlen' remains unchanged.  Thus
+>(totlen/nfree) gets bigger on each iteration whereas len/nfree should
+>give roughly the same.  However, without rounding up here I'm not sure
+>the logic is right either, since the side effect of nbigger is to make
+>len decrease faster so it is not quite proportional to the decrease in
+>nfree.  Is there a risk of ending up on the nfree == 1 iteration with
+>flen == len - 1 and thus generating a superfluous extra 1 byte long
+>fragment?  This would be a far worse situation than a slight imbalance
+>in the size of the fragments.
+>
+>Perhaps the solution is to go back to a precalculated fragment size for
+>the pch->speed == 0 case as per original code?
+>
+>Regards,
+>Ben.
+--------------------------------------------------------------
+Intel Shannon Limited
+Registered in Ireland
+Registered Office: Collinstown Industrial Park, Leixlip, County Kildare
+Registered Number: 308263
+Business address: Dromore House, East Park, Shannon, Co. Clare
+
+This e-mail and any attachments may contain confidential material for the sole use of the intended recipient(s). Any review or distribution by others is strictly prohibited. If you are not the intended recipient, please contact the sender and delete all copies.
+
+
