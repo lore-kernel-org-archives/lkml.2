@@ -1,57 +1,154 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932275Ab0FCLG6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jun 2010 07:06:58 -0400
-Received: from casper.infradead.org ([85.118.1.10]:34296 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932100Ab0FCLG4 (ORCPT
+	id S932293Ab0FCLK3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jun 2010 07:10:29 -0400
+Received: from smtp.nokia.com ([192.100.122.230]:26368 "EHLO
+	mgw-mx03.nokia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752848Ab0FCLK2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jun 2010 07:06:56 -0400
-Subject: Re: [PATCH] use unfair spinlock when running on hypervisor.
-From: David Woodhouse <dwmw2@infradead.org>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: john cooper <john.cooper@third-harmonic.com>, Avi Kivity <avi@redhat.com>,
-       Gleb Natapov <gleb@redhat.com>, linux-kernel@vger.kernel.org,
-       kvm@vger.kernel.org, hpa@zytor.com, mingo@elte.hu, npiggin@suse.de,
-       tglx@linutronix.de, mtosatti@redhat.com,
-       john cooper <john.cooper@redhat.com>
-In-Reply-To: <20100601193659.GC11880@basil.fritz.box>
-References: <20100601093515.GH24302@redhat.com>
-	 <87sk56ycka.fsf@basil.nowhere.org> <20100601162414.GA6191@redhat.com>
-	 <20100601163807.GA11880@basil.fritz.box> <4C053ACC.5020708@redhat.com>
-	 <4C05493F.1040107@third-harmonic.com>
-	 <20100601193659.GC11880@basil.fritz.box>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 03 Jun 2010 12:06:39 +0100
-Message-ID: <1275563199.2383.1873.camel@macbook.infradead.org>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.1.2 (2.30.1.2-6.fc13) 
-Content-Transfer-Encoding: 7bit
-X-SRS-Rewrite: SMTP reverse-path rewritten from <dwmw2@infradead.org> by casper.infradead.org
-	See http://www.infradead.org/rpr.html
+	Thu, 3 Jun 2010 07:10:28 -0400
+From: felipe.balbi@nokia.com
+To: linux-kernel@vger.kernel.org
+Cc: Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
+       Tony Lindgren <tony@atomide.com>,
+       Roman Tereshonkov <roman.tereshonkov@nokia.com>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       David Brownell <david-b@pacbell.net>,
+       Grant Likely <grant.likely@secretlab.ca>,
+       Felipe Balbi <felipe.balbi@nokia.com>
+Subject: [PATCH] spi: omap2_mcspi: make use of dev_vdbg()
+Date: Thu,  3 Jun 2010 14:09:01 +0300
+Message-Id: <1275563341-31078-1-git-send-email-felipe.balbi@nokia.com>
+X-Mailer: git-send-email 1.7.1
+X-OriginalArrivalTime: 03 Jun 2010 11:09:41.0924 (UTC) FILETIME=[43ECC640:01CB030D]
+X-Nokia-AV: Clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-06-01 at 21:36 +0200, Andi Kleen wrote:
-> > Collecting the contention/usage statistics on a per spinlock
-> > basis seems complex.  I believe a practical approximation
-> > to this are adaptive mutexes where upon hitting a spin
-> > time threshold, punt and let the scheduler reconcile fairness.
-> 
-> That would probably work, except: how do you get the
-> adaptive spinlock into a paravirt op without slowing
-> down a standard kernel?
+From: Felipe Balbi <felipe.balbi@nokia.com>
 
-It only ever comes into play in the case where the spinlock is contended
-anyway -- surely it shouldn't be _that_ much of a performance issue?
+dev_vdbg() is only compiled when VERBOSE is defined, so
+there's no need to wrap dev_dbg() on #ifdef VERBOSE .. #endif
+as we can use dev_vdbg() directly.
 
-See the way that ppc64 handles it -- on a machine with overcommitted
-virtual cpus, it will call __spin_yield (arch/powerpc/lib/locks.c) on
-contention, which may cause the virtual CPU to donate its hypervisor
-timeslice to the vCPU which is actually holding the lock in question.
+Signed-off-by: Felipe Balbi <felipe.balbi@nokia.com>
+---
+ drivers/spi/omap2_mcspi.c |   36 +++++++++---------------------------
+ 1 files changed, 9 insertions(+), 27 deletions(-)
 
+diff --git a/drivers/spi/omap2_mcspi.c b/drivers/spi/omap2_mcspi.c
+index b3a94ca..d703927 100644
+--- a/drivers/spi/omap2_mcspi.c
++++ b/drivers/spi/omap2_mcspi.c
+@@ -489,10 +489,8 @@ omap2_mcspi_txrx_pio(struct spi_device *spi, struct spi_transfer *xfer)
+ 					dev_err(&spi->dev, "TXS timed out\n");
+ 					goto out;
+ 				}
+-#ifdef VERBOSE
+-				dev_dbg(&spi->dev, "write-%d %02x\n",
++				dev_vdbg(&spi->dev, "write-%d %02x\n",
+ 						word_len, *tx);
+-#endif
+ 				__raw_writel(*tx++, tx_reg);
+ 			}
+ 			if (rx != NULL) {
+@@ -506,10 +504,8 @@ omap2_mcspi_txrx_pio(struct spi_device *spi, struct spi_transfer *xfer)
+ 				    (l & OMAP2_MCSPI_CHCONF_TURBO)) {
+ 					omap2_mcspi_set_enable(spi, 0);
+ 					*rx++ = __raw_readl(rx_reg);
+-#ifdef VERBOSE
+-					dev_dbg(&spi->dev, "read-%d %02x\n",
++					dev_vdbg(&spi->dev, "read-%d %02x\n",
+ 						    word_len, *(rx - 1));
+-#endif
+ 					if (mcspi_wait_for_reg_bit(chstat_reg,
+ 						OMAP2_MCSPI_CHSTAT_RXS) < 0) {
+ 						dev_err(&spi->dev,
+@@ -522,10 +518,8 @@ omap2_mcspi_txrx_pio(struct spi_device *spi, struct spi_transfer *xfer)
+ 				}
+ 
+ 				*rx++ = __raw_readl(rx_reg);
+-#ifdef VERBOSE
+-				dev_dbg(&spi->dev, "read-%d %02x\n",
++				dev_vdbg(&spi->dev, "read-%d %02x\n",
+ 						word_len, *(rx - 1));
+-#endif
+ 			}
+ 		} while (c);
+ 	} else if (word_len <= 16) {
+@@ -542,10 +536,8 @@ omap2_mcspi_txrx_pio(struct spi_device *spi, struct spi_transfer *xfer)
+ 					dev_err(&spi->dev, "TXS timed out\n");
+ 					goto out;
+ 				}
+-#ifdef VERBOSE
+-				dev_dbg(&spi->dev, "write-%d %04x\n",
++				dev_vdbg(&spi->dev, "write-%d %04x\n",
+ 						word_len, *tx);
+-#endif
+ 				__raw_writel(*tx++, tx_reg);
+ 			}
+ 			if (rx != NULL) {
+@@ -559,10 +551,8 @@ omap2_mcspi_txrx_pio(struct spi_device *spi, struct spi_transfer *xfer)
+ 				    (l & OMAP2_MCSPI_CHCONF_TURBO)) {
+ 					omap2_mcspi_set_enable(spi, 0);
+ 					*rx++ = __raw_readl(rx_reg);
+-#ifdef VERBOSE
+-					dev_dbg(&spi->dev, "read-%d %04x\n",
++					dev_vdbg(&spi->dev, "read-%d %04x\n",
+ 						    word_len, *(rx - 1));
+-#endif
+ 					if (mcspi_wait_for_reg_bit(chstat_reg,
+ 						OMAP2_MCSPI_CHSTAT_RXS) < 0) {
+ 						dev_err(&spi->dev,
+@@ -575,10 +565,8 @@ omap2_mcspi_txrx_pio(struct spi_device *spi, struct spi_transfer *xfer)
+ 				}
+ 
+ 				*rx++ = __raw_readl(rx_reg);
+-#ifdef VERBOSE
+-				dev_dbg(&spi->dev, "read-%d %04x\n",
++				dev_vdbg(&spi->dev, "read-%d %04x\n",
+ 						word_len, *(rx - 1));
+-#endif
+ 			}
+ 		} while (c);
+ 	} else if (word_len <= 32) {
+@@ -595,10 +583,8 @@ omap2_mcspi_txrx_pio(struct spi_device *spi, struct spi_transfer *xfer)
+ 					dev_err(&spi->dev, "TXS timed out\n");
+ 					goto out;
+ 				}
+-#ifdef VERBOSE
+-				dev_dbg(&spi->dev, "write-%d %08x\n",
++				dev_vdbg(&spi->dev, "write-%d %08x\n",
+ 						word_len, *tx);
+-#endif
+ 				__raw_writel(*tx++, tx_reg);
+ 			}
+ 			if (rx != NULL) {
+@@ -612,10 +598,8 @@ omap2_mcspi_txrx_pio(struct spi_device *spi, struct spi_transfer *xfer)
+ 				    (l & OMAP2_MCSPI_CHCONF_TURBO)) {
+ 					omap2_mcspi_set_enable(spi, 0);
+ 					*rx++ = __raw_readl(rx_reg);
+-#ifdef VERBOSE
+-					dev_dbg(&spi->dev, "read-%d %08x\n",
++					dev_vdbg(&spi->dev, "read-%d %08x\n",
+ 						    word_len, *(rx - 1));
+-#endif
+ 					if (mcspi_wait_for_reg_bit(chstat_reg,
+ 						OMAP2_MCSPI_CHSTAT_RXS) < 0) {
+ 						dev_err(&spi->dev,
+@@ -628,10 +612,8 @@ omap2_mcspi_txrx_pio(struct spi_device *spi, struct spi_transfer *xfer)
+ 				}
+ 
+ 				*rx++ = __raw_readl(rx_reg);
+-#ifdef VERBOSE
+-				dev_dbg(&spi->dev, "read-%d %08x\n",
++				dev_vdbg(&spi->dev, "read-%d %08x\n",
+ 						word_len, *(rx - 1));
+-#endif
+ 			}
+ 		} while (c);
+ 	}
 -- 
-David Woodhouse                            Open Source Technology Centre
-David.Woodhouse@intel.com                              Intel Corporation
+1.7.1
 
