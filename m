@@ -1,81 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755901Ab0FCOvS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jun 2010 10:51:18 -0400
-Received: from mail.gmx.net ([213.165.64.20]:49299 "HELO mail.gmx.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1755843Ab0FCOvN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jun 2010 10:51:13 -0400
-X-Authenticated: #15668376
-X-Provags-ID: V01U2FsdGVkX1/k7SUrCqTkBW0aTiLQ8pVs44d1ncMqYts9oDxXSw
-	4w0wQpWpLXa4KI
-From: Sven Eckelmann <sven.eckelmann@gmx.de>
-To: b.a.t.m.a.n@lists.open-mesh.org
-Subject: Re: [B.A.T.M.A.N.] [PATCH] drivers/staging/batman-adv: Convert MAC_FMT to %pM
-Date: Thu, 3 Jun 2010 15:58:29 +0200
-User-Agent: KMail/1.13.3 (Linux/2.6.34-1-amd64; KDE/4.4.4; x86_64; ; )
-Cc: Joe Perches <joe@perches.com>, Marek Lindner <lindner_marek@yahoo.de>,
-       Simon Wunderlich <siwu@hrz.tu-chemnitz.de>,
-       Andrew Lunn <andrew@lunn.ch>, "Greg Kroah-Hartman" <gregkh@suse.de>,
-       devel <devel@driverdev.osuosl.org>, b.a.t.m.a.n@lists.open-mesh.net,
-       linux-kernel@vger.kernel.org
-References: <1275509418.23599.42.camel@Joe-Laptop.home>
-In-Reply-To: <1275509418.23599.42.camel@Joe-Laptop.home>
+	id S1755907Ab0FCOx5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jun 2010 10:53:57 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:48093 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755627Ab0FCOxz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Jun 2010 10:53:55 -0400
+Date: Thu, 3 Jun 2010 07:48:18 -0700 (PDT)
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Russell King <rmk@arm.linux.org.uk>
+cc: Kevin Hilman <khilman@deeprootsystems.com>,
+       Daniel Walker <dwalker@codeaurora.org>,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       linux-arm-msm@vger.kernel.org
+Subject: Re: ARM defconfig files
+In-Reply-To: <20100603074548.GA12104@flint.arm.linux.org.uk>
+Message-ID: <alpine.LFD.2.00.1006030725420.8175@i5.linux-foundation.org>
+References: <20100603074548.GA12104@flint.arm.linux.org.uk>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: multipart/signed;
-  boundary="nextPart8129949.8OlROn3zHO";
-  protocol="application/pgp-signature";
-  micalg=pgp-sha512
-Content-Transfer-Encoding: 7bit
-Message-Id: <201006031558.36936.sven.eckelmann@gmx.de>
-X-Y-GMX-Trusted: 0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---nextPart8129949.8OlROn3zHO
-Content-Type: Text/Plain;
-  charset="us-ascii"
-Content-Transfer-Encoding: quoted-printable
 
-Joe Perches wrote:
-> Remove the last uses of MAC_FMT
->=20
-> Signed-off-by: Joe Perches <joe@perches.com>
-> ---
->  drivers/staging/batman-adv/main.c              |    3 +-
->  drivers/staging/batman-adv/translation-table.c |   25
-> ++++------------------- 2 files changed, 6 insertions(+), 22 deletions(-)
+[ Continuation on the "ARM MSM updates" thread ]
 
-Just noticed that this patch collides with another one which is waiting in=
-=20
-GregKH's queue. I will try to rewrite it on top of that. I hope that this i=
-s=20
-ok for you.
+On Thu, 3 Jun 2010, Russell King wrote:
+>
+> It'd be nice if you'd copy me...
 
-Best regards,
-	Sven
+Yeah, the thread started out as a "I got really bored with lots of msm 
+patches", and then just expanded into what I think is wrong with the 
+sub-architectures. 
 
---nextPart8129949.8OlROn3zHO
-Content-Type: application/pgp-signature; name=signature.asc 
-Content-Description: This is a digitally signed message part.
+> On the defconfig files, you may not like them - I don't like the
+> proliferation of them either.  What I've always wanted to see is
+> one defconfig per class of machines - in other words, one mach-XXX.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
+I can understand that, but at the same time, I do think that the 
+"defconfig" file concept as it is now is just broken. To the point of 
+being unfixable. It's obviously just a copy of the final .config, and it's 
+fundamentally not really readable (and especially not writable) by humans.
 
-iQIcBAABCgAGBQJMB7UGAAoJEF2HCgfBJntG5uEQAL4dRnjbahN6EinvUsOyp8so
-elB7rxfPCt7z1gxUXKpuoYiSHTQYUurjsWJFuJViXkdOZ+0nnmkMNsplUPCB8t/z
-mWv/soU9PiNijUgvMTEiK1+PTkIIS0xtGssGl323kkVDYt+3Ru3fgDPNVs+Tm6CC
-+fFz2p1qp/Te6D/7CBsX66GDUI73Fd0sQWmD0+NSAP403mdgCulWS8nN/oiHVpdr
-rwNHGvCQZlPXaGkIcCl9C9PIKeIBAtkhey04IMS+C1c6sI5Es9Usr1y0Pl+MA4to
-EI93zRUcmhNyslknRddLhssa4PRAwmgNcprBvP1vbk3NYQdLe9VppUCrgigzujX4
-JwK2y7crLXQc89G0KipFBPbWkHVyoInIL5J07nzikHjmnaeJEsX4V/6AgIwxwbMt
-r6lDfC4aHXT6LeJQx7RVIUkRrPLAEwOvZsbjom6/5Sc4CAkaA0aAUKy0VXSsjXdO
-c+1xkc5JVxYlzoKi+FdohnsQxg+/ZN/vwAYmd0J6gbhYTkszbze69K+iNXs5bYHn
-6rZX4NFvnEAtLOUJXD00RDq6l31ZdwlAVmExAdZ8z43qiB41vRgpCnEwZnEoREU+
-+ezUtYnB1FVx9+QVswHJ0oHNqityNCpq9b/aqdKncX38ilOUkRC0LvBfeteBttev
-xMa54O8pfsfWsuYEohQu
-=FALl
------END PGP SIGNATURE-----
+And that all actually made some sense way-back-when, back when it was 
+originally done - back when our config files were tiny (compared to what 
+they are now), and when it ended up being the default input for the 
+config. It just doesn't make much sense any more. The Kconfig files 
+themselves end up having defaults for the core things, and the non-core 
+things are too many to list/edit sanely in that format.
 
---nextPart8129949.8OlROn3zHO--
+So the original reason I want to remove them is that they are very 
+annoying, but the reasoning that then takes that annoyance and makes me 
+think seriously about removing them despite the inevitable pain factor is 
+that I really don't think we can even use the concept for any better 
+model.
+
+Anything better would _have_ to be totally different. And no, I don't 
+think your "diffs against a base" model work either, because while it 
+would make them smaller, it would still make them basically unreadable and 
+uneditable by any human, which means that it's not something we should 
+check in - it's a generated file!
+
+And I do think our kernel configurator language already should basically 
+have the expressive power to do it *sanely*. We already support including 
+other files, which is a requirement for any hierarchical model.
+
+So I _think_ whatever "mach-xyz" file _should_ do something like
+
+	# Kconfig file for OMAP4ABCXYZ chip
+
+	.. set the particulars for this _particular_ chip,
+	   ie select the particular drivers on this chip ..
+
+	include "chip-family-details" (ie maybe "base OMAP details")
+
+	include "architecture-family-details" (ie ARM Kconfig)
+
+see? Not one flat file, and very much not something generated.
+
+And I actually suspect we could do it with our current Kconfig file model. 
+IOW, in the arch/arm/Kconfig file, I think it should be doable to have 
+basically a
+
+	choice
+		prompt "ARM platform"
+
+	config ARM_PLATFORM_OMAP
+		bool PLATFORM_OMAP
+
+	config ARM_PLATFORM_MSM
+		bool PLATFORM_MSM
+	...
+	endchoice
+
+	if ARK_PLATFORM_OMAP
+	 include "Kconfig.omap"	# this will further have choices for OMAP versions
+	elif ARM_PLATFORM_...
+
+and then the individual "Kconfig.platform" files could select certain 
+options, and then do a "include Kconfig.cpu" which would actually be the 
+_current_ top-level arch/arm/Kconfig.
+
+Or something. See? Making it hierarchical (so that each individual 
+Kconfig.xyz file only handles a certain level of detail, and it doesn't 
+grow unboundedly) and making it fundamentally human readable/writable 
+would be a really good thing.
+
+NOTE NOTE NOTE! I'm not at all saying it has to be done like the above 
+with the current Kconfig language. The above is more of a "this is how we 
+_could_ do it, and it would be a big conceptual improvement". 
+
+And I don't think we can get there from here unless I at some point say "I 
+just removed the xyz_defconfig files", at which point people will curse me 
+and stumble about until they actually come up with something better.
+
+Of course, if the ARM people do something proactive like the above 
+_before_ I remove the defconfig files, I won't complain.
+
+		Linus
