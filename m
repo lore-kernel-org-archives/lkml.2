@@ -1,96 +1,33 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753540Ab0FCLTn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jun 2010 07:19:43 -0400
-Received: from moutng.kundenserver.de ([212.227.17.9]:51618 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752312Ab0FCLTl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jun 2010 07:19:41 -0400
-Message-ID: <4C078FE2.9000804@vlnb.net>
-Date: Thu, 03 Jun 2010 15:20:02 +0400
-From: Vladislav Bolkhovitin <vst@vlnb.net>
-User-Agent: Thunderbird 2.0.0.23 (X11/20090825)
+	id S1751620Ab0FCLVo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jun 2010 07:21:44 -0400
+Received: from cantor.suse.de ([195.135.220.2]:40578 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750823Ab0FCLVk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Jun 2010 07:21:40 -0400
+Message-ID: <4C079042.8040302@suse.cz>
+Date: Thu, 03 Jun 2010 13:21:38 +0200
+From: Michal Marek <mmarek@suse.cz>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100317 SUSE/3.0.4-1.18 Thunderbird/3.0.4
 MIME-Version: 1.0
-To: James Bottomley <James.Bottomley@suse.de>
-CC: Christof Schmitt <christof.schmitt@de.ibm.com>,
-       Boaz Harrosh <bharrosh@panasas.com>,
-       "Martin K. Petersen" <martin.petersen@oracle.com>,
-       linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
-       linux-fsdevel@vger.kernel.org, Chris Mason <chris.mason@oracle.com>,
-       Gennadiy Nerubayev <parakie@gmail.com>
-Subject: Re: Wrong DIF guard tag on ext2 write
-References: <20100531112817.GA16260@schmichrtp.mainz.de.ibm.com>	 <yq1iq64kv9f.fsf@sermon.lab.mkp.net>	 <1275318102.2823.47.camel@mulgrave.site> <4C03D5FD.3000202@panasas.com>	 <20100601103041.GA15922@schmichrtp.mainz.de.ibm.com> <1275398876.21962.6.camel@mulgrave.site>
-In-Reply-To: <1275398876.21962.6.camel@mulgrave.site>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Provags-ID: V01U2FsdGVkX1+j/10u8wAZkf516MzTe/Ni0I6dU1+5u59qLqd
- lMcQYepOmb4E8tHqKogOH1R8mNf07gs9TqZVzbrwPU0sb65a9a
- yUlNNQzBTDhKA902IceZw==
+To: =?UTF-8?B?Um9nw6lyaW8gQnJpdG8=?= <rbrito@ime.usp.br>
+Cc: linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/3] scripts: Add homepage field to debian/control file
+References: <1275434524-2025-1-git-send-email-rbrito@ime.usp.br>
+In-Reply-To: <1275434524-2025-1-git-send-email-rbrito@ime.usp.br>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-James Bottomley, on 06/01/2010 05:27 PM wrote:
-> On Tue, 2010-06-01 at 12:30 +0200, Christof Schmitt wrote:
->> What is the best strategy to continue with the invalid guard tags on
->> write requests? Should this be fixed in the filesystems?
+On 2.6.2010 01:22, Rogério Brito wrote:
+> This helps when the user sees information of the packages on package
+> managers like aptitude.
 > 
-> For write requests, as long as the page dirty bit is still set, it's
-> safe to drop the request, since it's already going to be repeated.  What
-> we probably want is an error code we can return that the layer that sees
-> both the request and the page flags can make the call.
-> 
->> Another idea would be to pass invalid guard tags on write requests
->> down to the hardware, expect an "invalid guard tag" error and report
->> it to the block layer where a new checksum is generated and the
->> request is issued again. Basically implement a retry through the whole
->> I/O stack. But this also sounds complicated.
-> 
-> No, no ... as long as the guard tag is wrong because the fs changed the
-> page, the write request for the updated page will already be queued or
-> in-flight, so there's no need to retry.
+> Signed-off-by: Rogério Brito <rbrito@ime.usp.br>
 
-There's one interesting problem here, at least theoretically, with SCSI 
-or similar transports which allow to have commands queue depth >1 and 
-allowed to internally reorder queued requests. I don't know the FS/block 
-layers sufficiently well to tell if sending several requests for the 
-same page really possible or not, but we can see a real life problem, 
-which can be well explained if it's possible.
+Thanks, I've applied all your three patches.
 
-The problem could be if the second (rewrite) request (SCSI command) for 
-the same page queued to the corresponding device before the original 
-request finished. Since the device allowed to freely reorder requests, 
-there's a probability that the original write request would hit the 
-permanent storage *AFTER* the retry request, hence the data changes it's 
-carrying would be lost, hence welcome data corruption.
-
-For single parallel SCSI or SAS devices such race may look practically 
-impossible, but for sophisticated clusters when many nodes pretending to 
-be a single SCSI device in a load balancing configuration, it becomes 
-very real.
-
-The real life problem we can see in an active-active DRBD-setup. In this 
-configuration 2 nodes act as a single SCST-powered SCSI device and they 
-both run DRBD to keep their backstorage in-sync. The initiator uses them 
-as a single multipath device in an active-active round-robin 
-load-balancing configuration, i.e. sends requests to both nodes in 
-parallel, then DRBD takes care to replicate the requests to the other node.
-
-The problem is that sometimes DRBD complies about concurrent local 
-writes, like:
-
-kernel: drbd0: scsi_tgt0[12503] Concurrent local write detected! 
-[DISCARD L] new: 144072784s +8192; pending: 144072784s +8192
-
-This message means that DRBD detected that both nodes received 
-overlapping writes on the same block(s) and DRBD can't figure out which 
-one to store. This is possible only if the initiator sent the second 
-write request before the first one completed.
-
-The topic of the discussion could well explain the cause of that. But, 
-unfortunately, people who reported it forgot to note which OS they run 
-on the initiator, i.e. I can't say for sure it's Linux.
-
-Vlad
-
+Michal
