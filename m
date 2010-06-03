@@ -1,70 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758614Ab0FCJ0U (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jun 2010 05:26:20 -0400
-Received: from e34.co.us.ibm.com ([32.97.110.152]:43218 "EHLO
-	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758102Ab0FCJ0T (ORCPT
+	id S1758653Ab0FCJ0h (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jun 2010 05:26:37 -0400
+Received: from casper.infradead.org ([85.118.1.10]:39681 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758102Ab0FCJ0e convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jun 2010 05:26:19 -0400
-Date: Thu, 3 Jun 2010 14:56:13 +0530
-From: Srivatsa Vaddagiri <vatsa@in.ibm.com>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: Avi Kivity <avi@redhat.com>, Gleb Natapov <gleb@redhat.com>,
-       linux-kernel@vger.kernel.org, kvm@vger.kernel.org, hpa@zytor.com,
-       mingo@elte.hu, npiggin@suse.de, tglx@linutronix.de, mtosatti@redhat.com
-Subject: Re: [PATCH] use unfair spinlock when running on hypervisor.
-Message-ID: <20100603092612.GE4035@linux.vnet.ibm.com>
-Reply-To: vatsa@in.ibm.com
-References: <87sk56ycka.fsf@basil.nowhere.org>
- <20100601162414.GA6191@redhat.com>
- <20100601163807.GA11880@basil.fritz.box>
- <4C053ACC.5020708@redhat.com>
- <20100601172730.GB11880@basil.fritz.box>
- <4C05C722.1010804@redhat.com>
- <20100602085055.GA14221@basil.fritz.box>
- <4C061DAB.6000804@redhat.com>
- <20100603042051.GA5953@linux.vnet.ibm.com>
- <20100603085251.GA4166@basil.fritz.box>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100603085251.GA4166@basil.fritz.box>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Thu, 3 Jun 2010 05:26:34 -0400
+Subject: Re: [GIT PULL] perf crash fix
+From: Peter Zijlstra <peterz@infradead.org>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>,
+       Arnaldo Carvalho de Melo <acme@redhat.com>,
+       Paul Mackerras <paulus@samba.org>,
+       Stephane Eranian <eranian@google.com>
+In-Reply-To: <1275534810-1837-1-git-send-regression-fweisbec@gmail.com>
+References: <1275534810-1837-1-git-send-regression-fweisbec@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Thu, 03 Jun 2010 11:26:42 +0200
+Message-ID: <1275557202.27810.35201.camel@twins>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 03, 2010 at 10:52:51AM +0200, Andi Kleen wrote:
-> > Fyi - I have a early patch ready to address this issue. Basically I am using
-> > host-kernel memory (mmap'ed into guest as io-memory via ivshmem driver) to hint 
-> > host whenever guest is in spin-lock'ed section, which is read by host scheduler 
-> > to defer preemption.
-> 
-> Looks like a ni.ce simple way to handle this for the kernel.
+On Thu, 2010-06-03 at 05:13 +0200, Frederic Weisbecker wrote:
+>     What happens here is a double pmu->disable() due to a race between
+>     two perf_adjust_period().
+>     
+>     We first overflow a page fault event and then re-adjust the period.
+>     When we reset the period_left, we stop the pmu by removing the
+>     perf event from the software event hlist. And just before we
+>     re-enable it, we are interrupted by a sched tick that also tries to
+>     re-adjust the period. There we eventually disable the event a second
+>     time, which leads to a double hlist_del_rcu() that ends up
+>     dereferencing LIST_POISON2.
+>     
+>     In fact, the goal of embracing the reset of the period_left with
+>     a pmu:stop() and pmu:start() is only relevant to hardware events. We
+>     want them to reprogram the next period interrupt.
+>     
+>     But this is useless for software events. They have their own way to
+>     handle the period left, and in a non-racy way. They don't need to
+>     be stopped here.
+>     
+>     So, use a new pair of perf_event_stop/start_hwevent that only stop
+>     and restart hardware events in this path.
+>     
+>     The race won't happen with hardware events as sched ticks can't
+>     happen during nmis. 
 
-The idea is not new. It has been discussed for example at [1].
+I've queued the below.
 
-> However I suspect user space will hit the same issue sooner
-> or later. I assume your way is not easily extensable to futexes?
+---
+Subject: perf: Fix crash in swevents
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Date: Thu Jun 03 11:21:20 CEST 2010
 
-I had thought that most userspace lock implementation avoid spinning for long
-times? i.e they would spin for a short while and sleep beyond a threshold?
-If that is the case, we shouldn't be burning lot of cycles unnecessarily
-spinning in userspace ..
+Frederic reported that because swevents handling doesn't disable IRQs
+anymore, we can get a recursion of perf_adjust_period(), once from
+overflow handling and once from the tick.
 
-> So do you defer during the whole spinlock region or just during the spin?
-> 
-> I assume the the first?
+If both call ->disable, we get a double hlist_del_rcu() and trigger
+a LIST_POISON2 dereference.
 
-My current implementation just blindly defers by a tick and checks if it is safe
-to preempt in the next tick - otherwise gives more grace ticks until the
-threshold is crossed (after which we forcibly preempt it).
+Since we don't actually need to stop/start a swevent to re-programm
+the hardware (lack of hardware to program), simply nop out these
+callbacks for the swevent pmu.
 
-In future, I was thinking that host scheduler can hint back to guest that it was
-given some "grace" time which can be used in guest to yield when it comes out of
-the locked section.
+Reported-by: Frederic Weisbecker <fweisbec@gmail.com>
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+---
+ kernel/perf_event.c |   15 +++++++--------
+ 1 file changed, 7 insertions(+), 8 deletions(-)
 
-- vatsa
+Index: linux-2.6/kernel/perf_event.c
+===================================================================
+--- linux-2.6.orig/kernel/perf_event.c
++++ linux-2.6/kernel/perf_event.c
+@@ -4055,13 +4055,6 @@ static void perf_swevent_overflow(struct
+ 	}
+ }
+ 
+-static void perf_swevent_unthrottle(struct perf_event *event)
+-{
+-	/*
+-	 * Nothing to do, we already reset hwc->interrupts.
+-	 */
+-}
+-
+ static void perf_swevent_add(struct perf_event *event, u64 nr,
+ 			       int nmi, struct perf_sample_data *data,
+ 			       struct pt_regs *regs)
+@@ -4276,11 +4269,17 @@ static void perf_swevent_disable(struct 
+ 	hlist_del_rcu(&event->hlist_entry);
+ }
+ 
++static void perf_swevent_nop(struct perf_event *event)
++{
++}
++
+ static const struct pmu perf_ops_generic = {
+ 	.enable		= perf_swevent_enable,
+ 	.disable	= perf_swevent_disable,
++	.start		= perf_swevent_nop,
++	.stop		= perf_swevent_nop,
+ 	.read		= perf_swevent_read,
+-	.unthrottle	= perf_swevent_unthrottle,
++	.unthrottle	= perf_swevent_nop, /* hwc->interrupts already reset */
+ };
+ 
+ /*
 
-1.  http://l4ka.org/publications/2004/Towards-Scalable-Multiprocessor-Virtual-Machines-VM04.pdf
