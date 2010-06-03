@@ -1,83 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933718Ab0FCC54 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 2 Jun 2010 22:57:56 -0400
-Received: from mail-px0-f174.google.com ([209.85.212.174]:45655 "EHLO
-	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933579Ab0FCC5y convert rfc822-to-8bit (ORCPT
+	id S933732Ab0FCDHU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 2 Jun 2010 23:07:20 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:59839 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933620Ab0FCDHS convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 2 Jun 2010 22:57:54 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type:content-transfer-encoding;
-        b=lG+ZOeS7zht0wNXzXRIlTPHvOkTj3ushwvaQoTBHiJQvz2YdWQdPS6uDjfnVj0l5ZI
-         qVE26INgFeR1HQXMOPgPsrzt1RlDXRdXfSglqqsjLnlDdhfUO92tzQ+I5/ZO3jhjzHP3
-         2iddO3mhK5lyggXxTNwPFmrSICjCYgCEAoiKU=
+	Wed, 2 Jun 2010 23:07:18 -0400
 MIME-Version: 1.0
-In-Reply-To: <EA929A9653AAE14F841771FB1DE5A1365FF3F8D431@rrsmsx501.amr.corp.intel.com>
-References: <AANLkTimTm57fvumRXo9pegOY2M78mduBsClwYlmAOzpo@mail.gmail.com> 
-	<20100601183920.GB19955@kroah.com> <EA929A9653AAE14F841771FB1DE5A1365FF3EC130E@rrsmsx501.amr.corp.intel.com> 
-	<AANLkTinmxW5gQUOYJgK67Dc1FdakeXSmuu1hExKKL1qk@mail.gmail.com> 
-	<EA929A9653AAE14F841771FB1DE5A1365FF3F8D431@rrsmsx501.amr.corp.intel.com>
-From: Frank Pan <frankpzh@gmail.com>
-Date: Thu, 3 Jun 2010 10:57:34 +0800
-Message-ID: <AANLkTilDY61GMGNLezXYLbbe3B8-SvgMOK5L9Q6juETL@mail.gmail.com>
-Subject: Re: Add a helper function in PCI IOV to get VF device
-To: "Williams, Mitch A" <mitch.a.williams@intel.com>
-Cc: Greg KH <greg@kroah.com>, Andrew Morton <akpm@linux-foundation.org>,
-       Jesse Barnes <jbarnes@virtuousgeek.org>,
-       Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>,
-       Yu Zhao <yu.zhao@intel.com>, Chris Wright <chrisw@sous-sol.org>,
-       "Rafael J. Wysocki" <rjw@sisk.pl>,
-       "David S. Miller" <davem@davemloft.net>,
-       Matt Carlson <mcarlson@broadcom.com>,
-       "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
+From: Grant Likely <grant.likely@secretlab.ca>
+Date: Wed, 2 Jun 2010 21:06:54 -0600
+X-Google-Sender-Auth: jfHCrWV6_qESp5aQAJQiwSeBe1M
+Message-ID: <AANLkTikNcAvyHf1yHPweNBVSCSPNmq-JaEOgYW2FYUGJ@mail.gmail.com>
+Subject: [git pull] (updated) OF-related build breakage fixes
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Cc: devicetree-discuss <devicetree-discuss@lists.ozlabs.org>,
+       Anatolij Gustschin <agust@denx.de>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-hi Mitch,
+Updated pull request.  Added more fixes from Anatolij of the same sort.
 
-> Frank, I'm not sure what you're trying to accomplish here. All of the information you need is already in sysfs. Given the PF device, you can look at /sys/class/net/ethX/device/virtfnX to get the bus/device/function of each of the VF devices.
+g.
 
-Yes, that's the most funny part. Sysfs can only be traversed in
-usespace. So the thing userspace knows isn't known by driver(pf driver
-have no idea about vf's bdf), while the thing driver knows isn't known
-by userspace(one cannot infer pf's bdf from vf's bdf).
-Please think kernel/userspace as 2 system, they can hardly communicate
-these informations. IMHO give a syscall/ioctl telling these is funny
-and strange.
+The following changes since commit aef4b9aaae1decc775778903922bd0075cce7a88:
+  Linus Torvalds (1):
+        Merge branch 'next' of git://git.kernel.org/.../benh/powerpc
 
-> If the VF driver is loaded in your kernel, then given the bus/device/function of the vf device, you can look at /sys/class/net/ethX/device/virtfnX/net to see which interface corresponds to that VF.
+are available in the git repository at:
 
-VF driver will never be loaded on physical machine, it can only be
-loaded in a virtual machine. On a physical machine, VF won't have any
-interface.
+  git://git.secretlab.ca/git/linux-2.6 merge
 
-> Furthermore, if the VF driver is loaded, you can find the PF device by looking at /sys/class/net/ethX/device/physfn, and you can find out which interface it is by looking at /sys/class/net/ethX/device/physfn/net
+Alexandre Bounine (1):
+      of/powerpc: fix 85xx RapidIO device node pointer
 
-So, when VF has no interface, this path is also unavailable. That's
-why I say given vf's bdf, one cannot infer pf's.
+Anatolij Gustschin (12):
+      of/spi: mpc512x_psc_spi.c: Fix build failures
+      of/mtd/nand: mpc5121_nfc.c: Fix build failures
+      of/dma: mpc512x_dma.c: Fix build failures
+      of/pcmcia: m8xx_pcmcia.c: Fix build failures
+      of/video: fix build breakage in FB drivers
+      of/mtd: nand: fix build breakage in drivers
+      of/dma: fix build breakage in ppc4xx adma driver
+      of/crypto: crypto4xx_core.c: fix build breakage
+      of/usb: fsl_qe_udc.c: fix build breakage
+      of/net: fs_enet/mii-bitbang.c: fix build breakage
+      of/edac: fix build breakage in drivers
+      of/watchdog: gef_wdt.c: fix build breakage
 
-> The current PF drivers (both ixgbe and igb) do not directly manipulate sysfs at all, so there is no /sys/class/net/ethX/vfX. If you see this setup, you are using a very, very old version of the igb driver, which is not supported at all. Please upgrade to a recent kernel/driver combination.
+Grant Likely (3):
+      of/usb: fix build error due to of_node pointer move
+      of/spi: Fix build failure on spi_ppc4xx.c
+      of/rtc: rtc-mpc5121.c: Fix build failures
 
-You are right, vfX is not available now. Anyway, I'm hacking igb
-driver to provide informations about vf into userspace. When driver
-don't know vf's bdf and userspace don't know pf's bdf, this thing
-cannot be done. That's the motivation of this patch.
+Michael Guntsche (1):
+      watchdog: Fix build failure with OF changes
 
-Don't forget another one: PF cannot access VF's PCI space. This is
-also a <maybe common> use case. I need this to dump/change the VF's
-PCI space.
+ arch/powerpc/sysdev/fsl_rio.c        |    2 +-
+ drivers/crypto/amcc/crypto4xx_core.c |    6 +++---
+ drivers/dma/mpc512x_dma.c            |   10 +++++-----
+ drivers/dma/ppc4xx/adma.c            |    4 ++--
+ drivers/edac/mpc85xx_edac.c          |   12 ++++++------
+ drivers/edac/ppc4xx_edac.c           |    6 +++---
+ drivers/mtd/nand/fsl_upm.c           |   17 +++++++++--------
+ drivers/mtd/nand/mpc5121_nfc.c       |    8 ++++----
+ drivers/mtd/nand/socrates_nand.c     |    4 ++--
+ drivers/net/fs_enet/mii-bitbang.c    |    4 ++--
+ drivers/pcmcia/m8xx_pcmcia.c         |    4 ++--
+ drivers/rtc/rtc-mpc5121.c            |   14 ++++++++------
+ drivers/spi/mpc512x_psc_spi.c        |   12 ++++++------
+ drivers/spi/spi_ppc4xx.c             |    2 +-
+ drivers/usb/gadget/fsl_qe_udc.c      |    4 ++--
+ drivers/usb/host/ehci-xilinx-of.c    |    2 +-
+ drivers/video/bw2.c                  |    2 +-
+ drivers/video/cg14.c                 |    2 +-
+ drivers/video/cg3.c                  |    2 +-
+ drivers/video/leo.c                  |    2 +-
+ drivers/video/mb862xx/mb862xxfb.c    |    2 +-
+ drivers/video/p9100.c                |    2 +-
+ drivers/video/tcx.c                  |    2 +-
+ drivers/watchdog/gef_wdt.c           |    2 +-
+ drivers/watchdog/mpc8xxx_wdt.c       |    2 +-
+ 25 files changed, 66 insertions(+), 63 deletions(-)
 
-Thanks for reply.
+
+On Wed, Jun 2, 2010 at 2:24 PM, Grant Likely <grant.likely@secretlab.ca> wrote:
+> Hi Linus,
+>
+> Here's a set of build fixes related to the of_node and of_match_table
+> device changes.  All trivial fixes.
+>
+> Thanks,
+> g.
+>
+> The following changes since commit aef4b9aaae1decc775778903922bd0075cce7a88:
+>  Linus Torvalds (1):
+>        Merge branch 'next' of git://git.kernel.org/.../benh/powerpc
+>
+> are available in the git repository at:
+>
+>  git://git.secretlab.ca/git/linux-2.6 merge
+>
+> Alexandre Bounine (1):
+>      of/powerpc: fix 85xx RapidIO device node pointer
+>
+> Anatolij Gustschin (3):
+>      of/spi: mpc512x_psc_spi.c: Fix build failures
+>      of/mtd/nand: mpc5121_nfc.c: Fix build failures
+>      of/dma: mpc512x_dma.c: Fix build failures
+>
+> Grant Likely (3):
+>      of/usb: fix build error due to of_node pointer move
+>      of/spi: Fix build failure on spi_ppc4xx.c
+>      of/rtc: rtc-mpc5121.c: Fix build failures
+>
+> Michael Guntsche (1):
+>      watchdog: Fix build failure with OF changes
+>
+>  arch/powerpc/sysdev/fsl_rio.c     |    2 +-
+>  drivers/dma/mpc512x_dma.c         |   10 +++++-----
+>  drivers/mtd/nand/mpc5121_nfc.c    |    8 ++++----
+>  drivers/rtc/rtc-mpc5121.c         |   14 ++++++++------
+>  drivers/spi/mpc512x_psc_spi.c     |   12 ++++++------
+>  drivers/spi/spi_ppc4xx.c          |    2 +-
+>  drivers/usb/host/ehci-xilinx-of.c |    2 +-
+>  drivers/watchdog/mpc8xxx_wdt.c    |    2 +-
+>  8 files changed, 27 insertions(+), 25 deletions(-)
+>
+> --
+> Grant Likely, B.Sc., P.Eng.
+> Secret Lab Technologies Ltd.
+>
+
+
 
 -- 
-Frank Pan
-
-Computer Science and Technology
-Tsinghua University
+Grant Likely, B.Sc., P.Eng.
+Secret Lab Technologies Ltd.
