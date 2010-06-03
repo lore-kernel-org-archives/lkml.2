@@ -1,49 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758821Ab0FCKDa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jun 2010 06:03:30 -0400
-Received: from ringil.hengli.com.au ([216.59.3.182]:35507 "EHLO
-	arnor.apana.org.au" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752507Ab0FCKD2 (ORCPT
+	id S1758961Ab0FCKEV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jun 2010 06:04:21 -0400
+Received: from mail-ew0-f223.google.com ([209.85.219.223]:37400 "EHLO
+	mail-ew0-f223.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758097Ab0FCKET (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jun 2010 06:03:28 -0400
-Date: Thu, 3 Jun 2010 20:03:09 +1000
-From: Herbert Xu <herbert@gondor.hengli.com.au>
-To: David Miller <davem@davemloft.net>
-Cc: w.sang@pengutronix.de, devicetree-discuss@ozlabs.org,
-       linux-kernel@vger.kernel.org, torvalds@linux-foundation.org,
-       grant.likely@secretlab.ca, linux-crypto@vger.kernel.org
-Subject: Re: [PATCH 2/2] of/crypto: n2_core: fix build breakage
-Message-ID: <20100603100309.GA30618@gondor.apana.org.au>
-References: <AANLkTikNcAvyHf1yHPweNBVSCSPNmq-JaEOgYW2FYUGJ@mail.gmail.com> <1275537827-28921-2-git-send-email-w.sang@pengutronix.de> <20100603.024902.139551876.davem@davemloft.net>
+	Thu, 3 Jun 2010 06:04:19 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:mail-followup-to:mime-version
+         :content-type:content-disposition:user-agent;
+        b=BaQ2RvbLfLXDDKIWMQvIFuk6QVIA1kCgYRSFi/+GL9MgHHo/3ryZwOSCpnTVk7sHNZ
+         Ic3sImeheV8bKYTbl4pmqjcYs03US1QTm9B+ltLgUrGLtXFFhJhBCSvKwxoE/MbV0GRT
+         hm6pLtWCOByzgRorJZZg8gEz06Eua20XMozB4=
+Date: Thu, 3 Jun 2010 12:04:02 +0200
+From: Dan Carpenter <error27@gmail.com>
+To: Matthew Wilcox <matthew@wil.cx>
+Cc: Alexander Viro <viro@zeniv.linux.org.uk>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Oleg Nesterov <oleg@redhat.com>, Jens Axboe <jens.axboe@oracle.com>,
+       Greg Kroah-Hartman <gregkh@suse.de>,
+       Peter Zijlstra <a.p.zijlstra@chello.nl>, linux-fsdevel@vger.kernel.org,
+       linux-kernel@vger.kernel.org
+Subject: [patch] fcntl: return -EFAULT if copy_to_user fails
+Message-ID: <20100603100402.GR5483@bicker>
+Mail-Followup-To: Dan Carpenter <error27@gmail.com>,
+	Matthew Wilcox <matthew@wil.cx>,
+	Alexander Viro <viro@zeniv.linux.org.uk>,
+	Andrew Morton <akpm@linux-foundation.org>,
+	Oleg Nesterov <oleg@redhat.com>, Jens Axboe <jens.axboe@oracle.com>,
+	Greg Kroah-Hartman <gregkh@suse.de>,
+	Peter Zijlstra <a.p.zijlstra@chello.nl>,
+	linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100603.024902.139551876.davem@davemloft.net>
 User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 03, 2010 at 02:49:02AM -0700, David Miller wrote:
-> From: Wolfram Sang <w.sang@pengutronix.de>
-> Date: Thu,  3 Jun 2010 06:03:47 +0200
-> 
-> > Signed-off-by: Wolfram Sang <w.sang@pengutronix.de>
-> > Cc: Grant Likely <grant.likely@secretlab.ca>
-> 
-> Herbert you really need to push your pending crypto tree stuff to
-> Linus, this is the second time this build fix has been posted just
-> today alone and it's in your tree since last week :-)
+copy_to_user() returns the number of bytes remaining, but we want to
+return -EFAULT.
 
-Sorry, I hadn't realised that the breakage was in the main tree
-as opposed to linux-next.
+	ret = fcntl(fd, F_SETOWN_EX, NULL);
 
-I'll push it out now.
+With the original code ret would be 8 here.
 
-Thanks,
--- 
-Visit Openswan at http://www.openswan.org/
-Email: Herbert Xu ~{PmV>HI~} <herbert@gondor.apana.org.au>
-Home Page: http://gondor.apana.org.au/~herbert/
-PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
+Signed-off-by: Dan Carpenter <error27@gmail.com>
+
+diff --git a/fs/fcntl.c b/fs/fcntl.c
+index f74d270..0ea7b0f 100644
+--- a/fs/fcntl.c
++++ b/fs/fcntl.c
+@@ -274,7 +274,7 @@ static int f_setown_ex(struct file *filp, unsigned long arg)
+ 
+ 	ret = copy_from_user(&owner, owner_p, sizeof(owner));
+ 	if (ret)
+-		return ret;
++		return -EFAULT;
+ 
+ 	switch (owner.type) {
+ 	case F_OWNER_TID:
