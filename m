@@ -1,57 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758827Ab0FCJvq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jun 2010 05:51:46 -0400
-Received: from cantor.suse.de ([195.135.220.2]:38400 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758639Ab0FCJvo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jun 2010 05:51:44 -0400
-Message-ID: <4C077B2F.8010204@suse.cz>
-Date: Thu, 03 Jun 2010 11:51:43 +0200
-From: Michal Marek <mmarek@suse.cz>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100317 SUSE/3.0.4-1.18 Thunderbird/3.0.4
-MIME-Version: 1.0
-To: Nicolas Palix <npalix@diku.dk>
-Cc: Randy Dunlap <rdunlap@xenotime.net>, Roland Dreier <rdreier@cisco.com>,
-       Joe Perches <joe@perches.com>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       "David S. Miller" <davem@davemloft.net>,
-       Sam Ravnborg <sam@ravnborg.org>, Julia Lawall <julia@diku.dk>,
-       Gilles Muller <Gilles.Muller@lip6.fr>, linux-kernel@vger.kernel.org,
-       linux-kbuild@vger.kernel.org, cocci@diku.dk,
-       Wolfram Sang <w.sang@pengutronix.de>,
-       Kernel Janitors <kernel-janitors@vger.kernel.org>
-Subject: Re: [PATCH 3/4] Add scripts/coccinelle/kzalloc-simple.cocci
-References: <1273508667-5152-1-git-send-email-npalix@diku.dk> <1273508667-5152-4-git-send-email-npalix@diku.dk>
-In-Reply-To: <1273508667-5152-4-git-send-email-npalix@diku.dk>
-Content-Type: text/plain; charset=ISO-8859-2
+	id S1758851Ab0FCJzd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jun 2010 05:55:33 -0400
+Received: from smtp.nokia.com ([192.100.122.233]:54066 "EHLO
+	mgw-mx06.nokia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758097Ab0FCJzc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Jun 2010 05:55:32 -0400
+Date: Thu, 03 Jun 2010 12:54:56 +0300 (EEST)
+Message-Id: <20100603.125456.212694217.Hiroshi.DOYU@nokia.com>
+To: catalin.marinas@arm.com
+Cc: linux-kernel@vger.kernel.org, ext-phil.2.carmody@nokia.com,
+       linux-omap@vger.kernel.org
+Subject: Re: [PATCH v2 0/3] kmemleak: Fix false positive with special scan
+From: Hiroshi DOYU <Hiroshi.DOYU@nokia.com>
+In-Reply-To: <1275487949.23442.9.camel@e102109-lin.cambridge.arm.com>
+References: <20100602.143458.232754971.Hiroshi.DOYU@nokia.com>
+	<1275487949.23442.9.camel@e102109-lin.cambridge.arm.com>
+X-Mailer: Mew version 6.2 on Emacs 22.2 / Mule 5.0 (SAKAKI)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 03 Jun 2010 09:55:03.0454 (UTC) FILETIME=[D68C7BE0:01CB0302]
+X-Nokia-AV: Clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 10.5.2010 18:24, Nicolas Palix wrote:
-> +@script:python depends on org@
-> +p << r.p;
-> +x << r.x;
-> +@@
-> +
-> +msg="%s" % (x)
-> +msg_safe=msg.replace("[","@(").replace("]",")")
-> +coccilib.org.print_todo(p[0], msg_safe)
-> +
-> +@script:python depends on report@
-> +p << r.p;
-> +x << r.x;
-> +@@
-> +
-> +msg="WARNING: kzalloc should be used for %s, instead of kmalloc/memset" % (x)
-> +coccilib.report.print_report(p[0], msg_safe)
+From: ext Catalin Marinas <catalin.marinas@arm.com>
+Subject: Re: [PATCH v2 0/3] kmemleak: Fix false positive with special scan
+Date: Wed, 2 Jun 2010 16:12:29 +0200
 
-msg_safe is not defined in this scriptlet, I'm only getting
+> On Wed, 2010-06-02 at 12:34 +0100, Hiroshi DOYU wrote:
+>> From: ext Catalin Marinas <catalin.marinas@arm.com>
+>> > Can we not add a new prio tree (or just use the existing one) for
+>> > pointer aliases? The advantage is that you only have a single function
+>> > to call, something like kmemleak_add_alias() and you do it at the point
+>> > the value was converted.
+>> 
+>> Actually I considered the above aliasing a little bit but I gave up
+>> soon.
+>> 
+>> I was afraid that this method might consume way more memory since this
+>> just adds another member for "struct kmemleak_object", but adding a
+>> single member for all objects. The number of kmemleak_object is
+>> usually numerous.
+> 
+> We could use a different tree with a "struct kmemleak_alias" structure
+> which is much smaller. Something like below:
+> 
+> struct kmemleak_alias {
+> 	struct list_head alias_list;
+> 	struct prio_tree_node tree_node;
+> 	struct kmemleak_object *object;
+> }
 
-Traceback (most recent call last):
-  File "<string>", line 5, in <module>
-NameError: name 'msg_safe' is not defined
+The above seems to be better than I thought. I'll give this a try.
 
-Michal
+> And an alias_list member would be added to kmemleak_object as well.
+>
+> Would the alias tree need to allow overlapping? Like different IOMMU
+> mappings with the same address (but pointing to different physical
+> memory).
+
+Not for omap iommu.
+
+omap iommu can have multiple instances, multiple devices can have each
+own address spaces respectively. This doesn't affect this kmemleak
+false positive.
