@@ -1,53 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756088Ab0FCVtQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jun 2010 17:49:16 -0400
-Received: from king.tilera.com ([72.1.168.226]:16030 "EHLO king.tilera.com"
+	id S1756220Ab0FCVtW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jun 2010 17:49:22 -0400
+Received: from mail.vyatta.com ([76.74.103.46]:51478 "EHLO mail.vyatta.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753745Ab0FCVtO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jun 2010 17:49:14 -0400
-Message-ID: <4C08233E.6080405@tilera.com>
-Date: Thu, 03 Jun 2010 17:48:46 -0400
-From: Chris Metcalf <cmetcalf@tilera.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.1.9) Gecko/20100317 Thunderbird/3.0.4
-MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>
-CC: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
-       torvalds@linux-foundation.org, Stephen Rothwell <sfr@canb.auug.org.au>
-Subject: Re: [PATCH 0/8] revised patch for arch/tile/ support
-References: <201005200543.o4K5hFRF006079@farm-0002.internal.tilera.com> <201005290333.o4T3Xjse029917@farm-0002.internal.tilera.com> <201005291329.10941.arnd@arndb.de> <201006032240.31963.arnd@arndb.de>
-In-Reply-To: <201006032240.31963.arnd@arndb.de>
-X-Enigmail-Version: 1.0.1
-Content-Type: text/plain; charset=ISO-8859-15
+	id S1756113Ab0FCVtU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Jun 2010 17:49:20 -0400
+Date: Thu, 3 Jun 2010 14:49:13 -0700
+From: Stephen Hemminger <shemminger@vyatta.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+       Alan Cox <alan@lxorguk.ukuu.org.uk>, linux-kernel@vger.kernel.org
+Subject: Re: floppy driver assumes INITIAL_JIFFIES == 0
+Message-ID: <20100603144913.24828629@nehalam>
+In-Reply-To: <alpine.LFD.2.00.1006031355140.8175@i5.linux-foundation.org>
+References: <20100603101501.5e5d7148@nehalam>
+	<alpine.LFD.2.00.1006031013060.8175@i5.linux-foundation.org>
+	<20100603120313.10a73b20@nehalam>
+	<alpine.LFD.2.00.1006031204470.8175@i5.linux-foundation.org>
+	<alpine.LFD.2.00.1006031355140.8175@i5.linux-foundation.org>
+Organization: Vyatta
+X-Mailer: Claws Mail 3.7.5 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 03 Jun 2010 21:49:13.0661 (UTC) FILETIME=[9B432ED0:01CB0366]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 6/3/2010 4:40 PM, Arnd Bergmann wrote:
-> You evidently didn't make it into -rc1, probably because Linus considered
-> your submission to be too late, or possibly because some of the bigger
-> patches got lost in an email filter.
->
-> To go forward with your architecture, I suggest that you start adding it
-> to the linux-next tree. Until you have a git tree, the easiest way
-> to do that is to put a tarball in quilt format at a http url under
-> your control, and ask Stephen to include that.
->
-> Feel free to add a 'Reviewed-by: Arnd Bergmann <arnd@arndb.de>' to your
-> existing patches, and do your further work as patches on top of that.
->   
+It seems it isn't related to initial jiffies. 
+Initializing the values (though a good idea), doesn't solve the
+problem. Still failed.  So dazed and confused, went back and reran
+kernel with jiffies=0 showed same problem, just took multiple boots
+to reproduce.
 
-I will plan to push the commits I have mailed to LKML up to a tree on
-kernel.org, since I now have an account there, probably tomorrow.  I'll
-send an email to Stephen with a pointer and see where it goes from there.
+>  	for (dr = 0; dr < N_DRIVE; dr++) {
+> @@ -4267,6 +4269,9 @@ static int __init floppy_init(void)
+>  		set_bit(FD_DISK_CHANGED_BIT, &UDRS->flags);
+>  		set_bit(FD_VERIFY_BIT, &UDRS->flags);
+>  		UDRS->fd_device = -1;
+> +		UDRS->last_checked = jiffies;
+> +		UDRS->select_date = jiffies;
+> +		UDRS->spinup_date = jiffies;
+>  		floppy_track_buffer = NULL;
+>  		max_buffer_sectors = 0;
+>  	}
 
-And Arnd, many thanks -- it's confusing to navigate the jungle of how
-code actually makes it into the kernel, and a little help goes a long way!
-
--- 
-Chris Metcalf, Tilera Corp.
-http://www.tilera.com
-
-
+So still a race that shows up with KVM (fast floppy?) and manifests
+as floppy_ready or reset_interrupt OOPS.
