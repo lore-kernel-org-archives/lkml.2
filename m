@@ -1,93 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933300Ab0FCGdY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jun 2010 02:33:24 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:57624 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932279Ab0FCGdW convert rfc822-to-8bit (ORCPT
+	id S933366Ab0FCGfB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jun 2010 02:35:01 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:33812 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932279Ab0FCGe6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jun 2010 02:33:22 -0400
-Date: Thu, 3 Jun 2010 16:33:07 +1000
-From: Neil Brown <neilb@suse.de>
-To: Brian Swetland <swetland@google.com>
-Cc: Arve =?UTF-8?B?SGrDuG5uZXbDpWc=?= <arve@android.com>,
-       Thomas Gleixner <tglx@linutronix.de>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-       Alan Stern <stern@rowland.harvard.edu>,
-       Felipe Balbi <felipe.balbi@nokia.com>,
-       Peter Zijlstra <peterz@infradead.org>,
-       "Paul@smtp1.linux-foundation.org" <Paul@smtp1.linux-foundation.org>,
-       LKML <linux-kernel@vger.kernel.org>,
-       Florian Mickler <florian@mickler.org>,
-       Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
-       Linux PM <linux-pm@lists.linux-foundation.org>,
-       Alan Cox <alan@lxorguk.ukuu.org.uk>,
-       James Bottomley <James.Bottomley@suse.de>
-Subject: Re: [PATCH] - race-free suspend. Was: Re: [linux-pm] [PATCH 0/8] 
- Suspend block api (version 8)
-Message-ID: <20100603163307.721b1c23@notabene.brown>
-In-Reply-To: <AANLkTikXy__71nBNW0EFbyL_qNf0nQ68pW9KymWlTk7L@mail.gmail.com>
-References: <Pine.LNX.4.44L0.1005271303190.3239-100000@iolanthe.rowland.org>
-	<201006010005.19554.rjw@sisk.pl>
-	<20100601090023.788cabf4@notabene.brown>
-	<201006010232.20263.rjw@sisk.pl>
-	<20100601113309.609349fd@notabene.brown>
-	<alpine.LFD.2.00.1006010340160.2933@localhost.localdomain>
-	<20100601122012.1edeaf48@notabene.brown>
-	<alpine.LFD.2.00.1006011243350.2933@localhost.localdomain>
-	<20100602153235.340a7852@notabene.brown>
-	<AANLkTikVjAf5nHdMx2bcHRAUSkq99s-b5YZCECXIJJLy@mail.gmail.com>
-	<20100602180614.729246ea@notabene.brown>
-	<AANLkTikXy__71nBNW0EFbyL_qNf0nQ68pW9KymWlTk7L@mail.gmail.com>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Thu, 3 Jun 2010 02:34:58 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id:
+	references:user-agent:mime-version:content-type:x-system-of-record;
+	b=JkgvGdxYtQR3lWdKjzzW7JxXH3z7BiO+42LpI6/j+oPgyThAwXmyhLA8hUzHa92yY
+	z0fXgnPzwPkSoWVMmH64A==
+Date: Wed, 2 Jun 2010 23:34:52 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+cc: "Luis Claudio R. Goncalves" <lclaudio@uudg.org>,
+       LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
+       Oleg Nesterov <oleg@redhat.com>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+       Nick Piggin <npiggin@suse.de>
+Subject: Re: [PATCH 09/12] oom: remove PF_EXITING check completely
+In-Reply-To: <20100603152436.7262.A69D9226@jp.fujitsu.com>
+Message-ID: <alpine.DEB.2.00.1006022332320.22441@chino.kir.corp.google.com>
+References: <20100603135106.7247.A69D9226@jp.fujitsu.com> <20100603152436.7262.A69D9226@jp.fujitsu.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2 Jun 2010 11:05:18 -0700
-Brian Swetland <swetland@google.com> wrote:
+On Thu, 3 Jun 2010, KOSAKI Motohiro wrote:
 
-> On Wed, Jun 2, 2010 at 1:06 AM, Neil Brown <neilb@suse.de> wrote:
-> > On Wed, 2 Jun 2010 00:05:14 -0700
-> > Arve Hjønnevåg <arve@android.com> wrote:
-> >> > The user-space suspend daemon avoids losing wake-events by using
-> >> > fcntl(F_OWNER) to ensure it gets a signal whenever any important wake-event
-> >> > is ready to be read by user-space.  This may involve:
-> >> >  - the one daemon processing all wake events
-> >>
-> >> Wake up events are not all processed by one daemon.
-> >
-> > Not with your current user-space code, no.  Are you saying that you are not
-> > open to any significant change in the Android user-space code?  That would
-> > make the situation a lot harder to resolve.
+> Currently, PF_EXITING check is completely broken. because 1) It only
+> care main-thread and ignore sub-threads
+
+Then check the subthreads.
+
+> 2) If user enable core-dump
+> feature, it can makes deadlock because the task during coredump ignore
+> SIGKILL.
 > 
-> There are many wakeup events possible in a typical system --
-> keypresses or other input events, network traffic, telephony events,
-> media events (fill audio buffer, fill video decoder buffer, etc), and
-> I think requiring that all wakeup event processing bottleneck through
-> a single userspace process is non-optimal here.
 
-Just to be clear: I'm not suggesting all wake-events need to go through one
-process.  That was just one example of how the interface I proposed could be
-used.  There were two other examples.
-However one process would need to know about any wakeup event that happens.
-I don't think that needs to be a significant bottleneck, but I don't really
-know enough about all the requirement to try devising a demonstration.
+It may ignore SIGKILL, but does not ignore fatal_signal_pending() being 
+true which gives it access to memory reserves with my patchset so that it 
+may quickly finish.
 
+> The deadlock is certenaly worst result, then, minor PF_EXITING
+> optimization worth is relatively ignorable.
 > 
-> The current suspend-blocker proposal already involves userspace
-> changes (it's different than our existing wakelock interface), and
-> we're certainly not opposed to any/all userspace changes on principle,
-> but on the other hand we're not interested in significant reworks of
-> userspace unless they actually improve the situation somehow.  I think
-> bottlenecking events through a central daemon would represent a step
-> backwards.
+> This patch removes it.
+> 
+> Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+> Acked-by: Oleg Nesterov <oleg@redhat.com>
 
-I guess it becomes an question of economics for you then.  Does the cost of
-whatever user-space changes are required exceed the value of using an upstream
-kernel?  Both the cost and the value would be very hard to estimate in
-advance.  I don't envy you the decision...
+Nacked-by: David Rientjes <rientjes@google.com>
 
-NeilBrown
+You have no real world experience in using the oom killer for memory 
+containment and don't understand how critical it is to protect other 
+vital system tasks that are needlessly killed as the result of this patch.
