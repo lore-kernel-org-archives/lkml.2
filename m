@@ -1,41 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757026Ab0FCIOT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jun 2010 04:14:19 -0400
-Received: from casper.infradead.org ([85.118.1.10]:47362 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751510Ab0FCION convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jun 2010 04:14:13 -0400
-Subject: Re: [linux-pm] [PATCH 0/8] Suspend block api (version 8)
-From: Peter Zijlstra <peterz@infradead.org>
-To: Brian Swetland <swetland@google.com>
-Cc: Paul Mundt <lethal@linux-sh.org>, Thomas Gleixner <tglx@linutronix.de>,
-       Alan Stern <stern@rowland.harvard.edu>,
-       Alan Cox <alan@lxorguk.ukuu.org.uk>, Arve Hj?nnev?g <arve@android.com>,
-       Paul@smtp1.linux-foundation.org, LKML <linux-kernel@vger.kernel.org>,
-       Florian Mickler <florian@mickler.org>, felipe.balbi@nokia.com,
-       Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
-       Linux PM <linux-pm@lists.linux-foundation.org>
-In-Reply-To: <AANLkTinxP73uOG4XtnTtS1LZnWDvvgpAFN5Uv_xdKEwk@mail.gmail.com>
-References: <Pine.LNX.4.44L0.1005271141410.3239-100000@iolanthe.rowland.org>
-	 <alpine.LFD.2.00.1005271751240.3032@localhost.localdomain>
-	 <20100603042403.GC20028@linux-sh.org>
-	 <AANLkTinxP73uOG4XtnTtS1LZnWDvvgpAFN5Uv_xdKEwk@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Thu, 03 Jun 2010 10:14:01 +0200
-Message-ID: <1275552841.27810.34984.camel@twins>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	id S1758099Ab0FCIOe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jun 2010 04:14:34 -0400
+Received: from crca.org.au ([74.207.252.120]:41883 "EHLO crca.org.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757936Ab0FCIOa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Jun 2010 04:14:30 -0400
+X-Bogosity: Ham, spamicity=0.000000
+Message-ID: <4C07645D.1060409@crca.org.au>
+Date: Thu, 03 Jun 2010 18:14:21 +1000
+From: Nigel Cunningham <ncunningham@crca.org.au>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.9) Gecko/20100423 Thunderbird/3.0.4
+MIME-Version: 1.0
+To: Pavel Machek <pavel@ucw.cz>
+CC: pm list <linux-pm@lists.linux-foundation.org>,
+       LKML <linux-kernel@vger.kernel.org>,
+       TuxOnIce-devel <tuxonice-devel@tuxonice.net>
+Subject: Re: [linux-pm] Proposal for a new algorithm for reading & writing
+ a hibernation image.
+References: <4BE7475A.8030901@crca.org.au> <20100530052546.GA25287@ucw.cz>
+In-Reply-To: <20100530052546.GA25287@ucw.cz>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-06-02 at 23:58 -0700, Brian Swetland wrote:
-> 
-> I haven't poked around too much with how things work in SMP
-> environments -- are there per-cpu idle threads? 
+Hi.
 
-Yes, and we recently grew the infrastructure for asymmetric MP in the
-processing capacity sense.
+On 30/05/10 15:25, Pavel Machek wrote:
+> Hi!
+>
+>> 2. Prior to writing any of the image, also set up new 4k page tables
+>> such that an attempt to make a change to any of the pages we're about to
+>> write to disk will result in a page fault, giving us an opportunity to
+>> flag the page as needing an atomic copy later. Once this is done, write
+>> protection for the page can be disabled and the write that caused the
+>> fault allowed to proceed.
+>
+> Tricky.
+>
+> page faulting code touches memory, too...
+
+Yeah. I realise we'd need to make the pages that are used to record the 
+faults be unprotected themselves. I'm imagining a bitmap for that.
+
+Do you see any reason that it could be inherently impossible? That's 
+what I really want to know before (potentially) wasting time trying it.
+
+Regards,
+
+Nigel
