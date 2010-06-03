@@ -1,119 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932621Ab0FCIC2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jun 2010 04:02:28 -0400
-Received: from ch-smtp02.sth.basefarm.net ([80.76.149.213]:52491 "EHLO
-	ch-smtp02.sth.basefarm.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757973Ab0FCICW (ORCPT
+	id S1757866Ab0FCICn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jun 2010 04:02:43 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:58504 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757349Ab0FCICg convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jun 2010 04:02:22 -0400
-From: "Henrik Rydberg" <rydberg@euromail.se>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-       Jiri Kosina <jkosina@suse.cz>, Mika Kuoppala <mika.kuoppala@nokia.com>,
-       Benjamin Tissoires <tissoire@cena.fr>, Rafi Rubin <rafi@seas.upenn.edu>,
-       Henrik Rydberg <rydberg@euromail.se>
-Subject: [PATCH 3/4] input: evdev: Convert to dynamic event buffer (rev3)
-Date: Thu,  3 Jun 2010 10:01:01 +0200
-Message-Id: <1275552062-8153-4-git-send-email-rydberg@euromail.se>
-X-Mailer: git-send-email 1.6.3.3
-In-Reply-To: <1275552062-8153-3-git-send-email-rydberg@euromail.se>
-References: <1275552062-8153-1-git-send-email-rydberg@euromail.se>
- <1275552062-8153-2-git-send-email-rydberg@euromail.se>
- <1275552062-8153-3-git-send-email-rydberg@euromail.se>
-X-Originating-IP: 83.248.196.134
-X-Scan-Result: No virus found in message 1OK5Mu-0000tb-7y.
-X-Scan-Signature: ch-smtp02.sth.basefarm.net 1OK5Mu-0000tb-7y e25adbad41877d93ed15e070f89d9980
+	Thu, 3 Jun 2010 04:02:36 -0400
+Subject: Re: [GIT PULL] perf crash fix
+From: Peter Zijlstra <peterz@infradead.org>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>,
+       Arnaldo Carvalho de Melo <acme@redhat.com>,
+       Paul Mackerras <paulus@samba.org>,
+       Stephane Eranian <eranian@google.com>
+In-Reply-To: <1275534810-1837-1-git-send-regression-fweisbec@gmail.com>
+References: <1275534810-1837-1-git-send-regression-fweisbec@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Thu, 03 Jun 2010 10:02:39 +0200
+Message-ID: <1275552159.27810.34944.camel@twins>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Allocate the event buffer dynamically, and prepare to compute the
-buffer size in a separate function. This patch defines the size
-computation to be identical to the current code, and does not contain
-any logical changes.
+On Thu, 2010-06-03 at 05:13 +0200, Frederic Weisbecker wrote:
 
-Signed-off-by: Henrik Rydberg <rydberg@euromail.se>
----
- drivers/input/evdev.c |   23 +++++++++++++++++++----
- 1 files changed, 19 insertions(+), 4 deletions(-)
+> diff --git a/kernel/perf_event.c b/kernel/perf_event.c
+> index 858f56f..b666d7d 100644
+> --- a/kernel/perf_event.c
+> +++ b/kernel/perf_event.c
+> @@ -1510,20 +1510,16 @@ do {					\
+>  	return div64_u64(dividend, divisor);
+>  }
+>  
+> -static void perf_event_stop(struct perf_event *event)
+> +static void perf_event_stop_hwevent(struct perf_event *event)
+>  {
+> -	if (!event->pmu->stop)
+> -		return event->pmu->disable(event);
+> -
+> -	return event->pmu->stop(event);
+> +	if (event->pmu->stop && !is_software_event(event))
+> +		return event->pmu->stop(event);
+>  }
+>  
+> -static int perf_event_start(struct perf_event *event)
+> +static int perf_event_start_hwevent(struct perf_event *event)
+>  {
+> -	if (!event->pmu->start)
+> -		return event->pmu->enable(event);
+> -
+> -	return event->pmu->start(event);
+> +	if (event->pmu->start && !is_software_event(event))
+> +		return event->pmu->start(event);
+>  }
+>  
+>  static void perf_adjust_period(struct perf_event *event, u64 nsec, u64 count)
+> @@ -1546,9 +1542,9 @@ static void perf_adjust_period(struct perf_event *event, u64 nsec, u64 count)
+>  
+>  	if (atomic64_read(&hwc->period_left) > 8*sample_period) {
+>  		perf_disable();
+> -		perf_event_stop(event);
+> +		perf_event_stop_hwevent(event);
+>  		atomic64_set(&hwc->period_left, 0);
+> -		perf_event_start(event);
+> +		perf_event_start_hwevent(event);
+>  		perf_enable();
+>  	}
+>  }
 
-diff --git a/drivers/input/evdev.c b/drivers/input/evdev.c
-index 7f0c7da..2e2a339 100644
---- a/drivers/input/evdev.c
-+++ b/drivers/input/evdev.c
-@@ -10,7 +10,7 @@
- 
- #define EVDEV_MINOR_BASE	64
- #define EVDEV_MINORS		32
--#define EVDEV_BUFFER_SIZE	64
-+#define EVDEV_MIN_BUFFER_SIZE	64
- 
- #include <linux/poll.h>
- #include <linux/sched.h>
-@@ -35,7 +35,8 @@ struct evdev {
- 	struct mutex mutex;
- 	struct device dev;
- 	struct buflock_writer writer;
--	struct input_event buffer[EVDEV_BUFFER_SIZE];
-+	unsigned int bufsize;
-+	struct input_event *buffer;
- };
- 
- struct evdev_client {
-@@ -74,7 +75,7 @@ static void evdev_event(struct input_handle *handle,
- 	event.value = value;
- 
- 	/* lock-less write */
--	buflock_write(evdev->writer, evdev->buffer, EVDEV_BUFFER_SIZE, event);
-+	buflock_write(evdev->writer, evdev->buffer, evdev->bufsize, event);
- 
- 	rcu_read_lock();
- 
-@@ -121,6 +122,7 @@ static void evdev_free(struct device *dev)
- 	struct evdev *evdev = container_of(dev, struct evdev, dev);
- 
- 	input_put_device(evdev->handle.dev);
-+	kfree(evdev->buffer);
- 	kfree(evdev);
+Urhm,. isn't is much easier to simply give the software events a NOP
+stop/start callback?
+
+ kernel/perf_event.c |    6 ++++++
+ 1 files changed, 6 insertions(+), 0 deletions(-)
+
+diff --git a/kernel/perf_event.c b/kernel/perf_event.c
+index 858f56f..16c99e1 100644
+--- a/kernel/perf_event.c
++++ b/kernel/perf_event.c
+@@ -4276,9 +4276,15 @@ static void perf_swevent_disable(struct perf_event *event)
+ 	hlist_del_rcu(&event->hlist_entry);
  }
  
-@@ -333,7 +335,7 @@ static int evdev_fetch_next_event(struct evdev_client *client,
- 	have_event = !buflock_reader_empty(client->reader);
- 	if (have_event)
- 		buflock_read(client->reader, evdev->writer,
--			     evdev->buffer, EVDEV_BUFFER_SIZE, *event);
-+			     evdev->buffer, evdev->bufsize, *event);
- 
- 	spin_unlock_irq(&client->entry_lock);
- 
-@@ -786,6 +788,11 @@ static void evdev_cleanup(struct evdev *evdev)
- 	}
- }
- 
-+static int evdev_compute_buffer_size(struct input_dev *dev)
++static void perf_swevent_nop(struct perf_event *event)
 +{
-+	return EVDEV_MIN_BUFFER_SIZE;
 +}
 +
- /*
-  * Create new evdev device. Note that input core serializes calls
-  * to connect and disconnect so we don't need to lock evdev_table here.
-@@ -830,6 +837,14 @@ static int evdev_connect(struct input_handler *handler, struct input_dev *dev,
- 	evdev->dev.release = evdev_free;
- 	device_initialize(&evdev->dev);
- 
-+	evdev->bufsize = evdev_compute_buffer_size(dev);
-+	evdev->buffer = kzalloc(evdev->bufsize * sizeof(struct input_event),
-+				GFP_KERNEL);
-+	if (!evdev->buffer) {
-+		error = -ENOMEM;
-+		goto err_free_evdev;
-+	}
-+
- 	error = input_register_handle(&evdev->handle);
- 	if (error)
- 		goto err_free_evdev;
--- 
-1.6.3.3
+ static const struct pmu perf_ops_generic = {
+ 	.enable		= perf_swevent_enable,
+ 	.disable	= perf_swevent_disable,
++	.start		= perf_swevent_nop,
++	.stop		= perf_swevent_nop,
+ 	.read		= perf_swevent_read,
+ 	.unthrottle	= perf_swevent_unthrottle,
+ };
 
