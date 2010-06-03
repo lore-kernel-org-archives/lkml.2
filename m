@@ -1,123 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756003Ab0FCPBP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jun 2010 11:01:15 -0400
-Received: from g1t0028.austin.hp.com ([15.216.28.35]:2960 "EHLO
-	g1t0028.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755187Ab0FCPBO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jun 2010 11:01:14 -0400
-Message-ID: <4C07C3B8.7020003@hp.com>
-Date: Thu, 03 Jun 2010 11:01:12 -0400
-From: Vlad Yasevich <vladislav.yasevich@hp.com>
-User-Agent: Thunderbird 2.0.0.24 (X11/20100317)
+	id S1756088Ab0FCPBd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jun 2010 11:01:33 -0400
+Received: from cantor.suse.de ([195.135.220.2]:47113 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756044Ab0FCPBb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Jun 2010 11:01:31 -0400
+Date: Thu, 3 Jun 2010 07:45:04 -0700
+From: Greg KH <gregkh@suse.de>
+To: Marek Lindner <lindner_marek@yahoo.de>
+Cc: b.a.t.m.a.n@lists.open-mesh.org, linux-kernel@vger.kernel.org,
+       Joe Perches <joe@perches.com>, Sven Eckelmann <sven.eckelmann@gmx.de>,
+       devel <devel@driverdev.osuosl.org>,
+       Simon Wunderlich <siwu@hrz.tu-chemnitz.de>
+Subject: Re: [B.A.T.M.A.N.] [PATCH] drivers/staging/batman-adv: Convert
+ MAC_FMT to %pM
+Message-ID: <20100603144504.GC17831@suse.de>
+References: <1275509418.23599.42.camel@Joe-Laptop.home>
+ <201006030156.42370.sven.eckelmann@gmx.de>
+ <1275524401.23599.116.camel@Joe-Laptop.home>
+ <201006031715.54584.lindner_marek@yahoo.de>
 MIME-Version: 1.0
-To: Yaogong Wang <ywang15@ncsu.edu>
-CC: linux-sctp@vger.kernel.org, Sridhar Samudrala <sri@us.ibm.com>,
-       linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/6] sctp multistream scheduling: declare sctp_sched_ops
-References: <AANLkTilgantV3v0T1-ef6ewyinddzfOs1PZW1Re9ZAyQ@mail.gmail.com>
-In-Reply-To: <AANLkTilgantV3v0T1-ef6ewyinddzfOs1PZW1Re9ZAyQ@mail.gmail.com>
-X-Enigmail-Version: 0.96.0
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: AAAAAQAAAAI=
-X-Whitelist: TRUE
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201006031715.54584.lindner_marek@yahoo.de>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Jun 03, 2010 at 05:15:53PM +0800, Marek Lindner wrote:
+> On Thursday 03 June 2010 08:20:01 Joe Perches wrote:
+> > The patch changes the prefix from "batman-adv:" to "batman_adv: "
+> > so yes, it would break as-is.
+> > 
+> > I think the concept is broken though, I believe dmesg output
+> > specifically is not guaranteed to remain stable, and batman should
+> > use some other, perhaps private, logger based on ethtool events.
+> 
+> I think changing a dash to an underscore is not such a big deal (I did not 
+> check the rest of the patch yet). But I'm interested to hear more about your 
+> "private logger" idea because the current solution is far from being perfect. 
+> As we have to debug the routing protocol every now and then it would be very 
+> helpful to get direct access to some internal logging facility. In fact, that 
+> existed before (inside of /proc) but was removed to be more compliant with the 
+> linux kernel and the existing log facilities.
 
+You can always use debugfs if you like for something like this.
 
-Yaogong Wang wrote:
-> Declare sctp_sched_ops structure and related functions
-> 
-> Signed-off-by: Yaogong Wang <ywang15@ncsu.edu>
-> ---
-> diff -uprN -X linux-2.6.32.8/Documentation/dontdiff
-> linux-2.6.32.8/include/net/sctp/structs.h
-> p1/include/net/sctp/structs.h
-> --- linux-2.6.32.8/include/net/sctp/structs.h	2010-02-09
-> 04:57:19.000000000 -0800
-> +++ p1/include/net/sctp/structs.h	2010-05-28 10:33:12.000000000 -0700
-> @@ -320,6 +320,9 @@ struct sctp_sock {
->  	/* Flags controlling Heartbeat, SACK delay, and Path MTU Discovery. */
->  	__u32 param_flags;
-> 
-> +	/* Multistream scheduling  */
-> +	const struct sctp_sched_ops *sched_ops;
-> +
->  	struct sctp_initmsg initmsg;
->  	struct sctp_rtoinfo rtoinfo;
->  	struct sctp_paddrparams paddrparam;
-> @@ -534,6 +537,36 @@ static inline void sctp_ssn_skip(struct
->  }
-> 
+Or tie into the profile/perf subsystem, that might be even easier.
 
-BTW, is there a reason you decided to through the sched_ops into the association
-and not the queue?  I seems to make more sense to me to put one into the other.
+thanks,
 
--vlad
-
->  /*
-> + * Interface for adding new SCTP scheduling handlers
-> + * This is similar to the pluggable TCP congestion control
-> + */
-> +struct sctp_sched_ops {
-> +	struct list_head	list;
-> +
-> +	/* initialize out_chunk_list (required) */
-> +	int (*init)(struct sctp_outq *q, gfp_t gfp);
-> +	/* cleanup out_chunk_list (required) */
-> +	void (*release)(struct sctp_outq *q);
-> +	/* enqueue head function (required) */
-> +	void (*enqueue_head_data)(struct sctp_outq *q, struct sctp_chunk *ch);
-> +	/* enqueue tail function (required) */
-> +	void (*enqueue_tail_data)(struct sctp_outq *q, struct sctp_chunk *ch);
-> +	/* dequeue function (required) */
-> +	struct sctp_chunk* (*dequeue_data)(struct sctp_outq *q);
-> +	/* is out_chunk_list empty? (required) */
-> +	int (*is_empty)(struct sctp_outq *q);
-> +
-> +	char 		name[SCTP_SCHED_NAME_MAX];
-> +	struct module 	*owner;
-> +};
-> +
-> +extern int sctp_register_sched(struct sctp_sched_ops *type);
-> +extern void sctp_unregister_sched(struct sctp_sched_ops *type);
-> +
-> +extern void sctp_cleanup_sched(struct sock *sk);
-> +extern int sctp_set_sched(struct sock *sk, const char *name);
-> +
-> +/*
->   * Pointers to address related SCTP functions.
->   * (i.e. things that depend on the address family.)
->   */
-> @@ -1650,6 +1683,9 @@ struct sctp_association {
->  	/* The largest timeout or RTO value to use in attempting an INIT */
->  	unsigned long max_init_timeo;
-> 
-> +	/* Multistream scheduling  */
-> +	const struct sctp_sched_ops *sched_ops;
-> +
->  	/* Heartbeat interval: The endpoint sends out a Heartbeat chunk to
->  	 * the destination address every heartbeat interval. This value
->  	 * will be inherited by all new transports.
-> diff -uprN -X linux-2.6.32.8/Documentation/dontdiff
-> linux-2.6.32.8/include/net/sctp/user.h p1/include/net/sctp/user.h
-> --- linux-2.6.32.8/include/net/sctp/user.h	2010-02-09 04:57:19.000000000 -0800
-> +++ p1/include/net/sctp/user.h	2010-05-28 10:52:57.000000000 -0700
-> @@ -171,6 +171,8 @@ struct sctp_initmsg {
->  	__u16 sinit_max_init_timeo;
->  };
-> 
-> +#define SCTP_SCHED_NAME_MAX	16
-> +
->  /*
->   * 5.2.2 SCTP Header Information Structure (SCTP_SNDRCV)
->   *
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-sctp" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
+greg k-h
