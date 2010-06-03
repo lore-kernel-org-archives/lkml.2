@@ -1,86 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933609Ab0FCKLN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jun 2010 06:11:13 -0400
-Received: from mgw2.diku.dk ([130.225.96.92]:54518 "EHLO mgw2.diku.dk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758949Ab0FCKLL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1758981Ab0FCKLL (ORCPT <rfc822;w@1wt.eu>);
 	Thu, 3 Jun 2010 06:11:11 -0400
-From: Nicolas Palix <npalix@diku.dk>
-To: Michal Marek <mmarek@suse.cz>
-Subject: Re: [PATCH 3/4] Add scripts/coccinelle/kzalloc-simple.cocci
-Date: Thu, 3 Jun 2010 12:11:04 +0200
-User-Agent: KMail/1.13.2 (Linux/2.6.32-22-generic; KDE/4.4.2; i686; ; )
-Cc: Randy Dunlap <rdunlap@xenotime.net>, Roland Dreier <rdreier@cisco.com>,
-       Joe Perches <joe@perches.com>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       "David S. Miller" <davem@davemloft.net>,
-       Sam Ravnborg <sam@ravnborg.org>, Julia Lawall <julia@diku.dk>,
-       Gilles Muller <Gilles.Muller@lip6.fr>, linux-kernel@vger.kernel.org,
-       linux-kbuild@vger.kernel.org, cocci@diku.dk,
-       Wolfram Sang <w.sang@pengutronix.de>,
-       Kernel Janitors <kernel-janitors@vger.kernel.org>
-References: <1273508667-5152-1-git-send-email-npalix@diku.dk> <1273508667-5152-4-git-send-email-npalix@diku.dk> <4C077B2F.8010204@suse.cz>
-In-Reply-To: <4C077B2F.8010204@suse.cz>
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:52927 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758558Ab0FCKLJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Jun 2010 06:11:09 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=ggZfhE+coxt3Z4F19ti1l+63u+6rDGRaL18JFm0PK7cSO8FavQvpfTOAVPm33ldT9q
+         yQmmolRZg+FSIybhTVe4tY1eu82E+sb2IRl8qX4i5DCRzNoMlRHNj5oB4u8Yzb894eQn
+         CEP2FuIyr4KVJPaS5qCiOzDQvwEUr/3+BpBRs=
+Message-ID: <4C077FD1.1030707@gmail.com>
+Date: Thu, 03 Jun 2010 03:11:29 -0700
+From: "Justin P. Mattock" <justinmattock@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.4pre) Gecko/20091114 Lightning/1.0pre Thunderbird/3.0b4
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-2"
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+CC: Matthew Garrett <mjg59@srcf.ucam.org>,
+       Robert Hancock <hancockrwd@gmail.com>, x86@kernel.org,
+       tglx@linutronix.de, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH]X86:reboot.c Add some dmi entries to pci_reboot_dmi_table.
+References: <4C05F3BF.6090503@gmail.com>	<AANLkTinyxtHQrsgvV0CMQZnyEelVnrpCTM05PLAj-ZYx@mail.gmail.com>	<4C06ECAA.3060708@gmail.com>	<4C06ED18.2010400@gmail.com>	<4C06F1DD.8060004@gmail.com>	<AANLkTilQuun1jQc394YM4QZtDSVeIwh67_Np0mkRDes4@mail.gmail.com>	<4C06F6EA.6090701@gmail.com>	<20100603013758.GA18755@srcf.ucam.org>	<AANLkTik1cjxh1ItnqBXaxNcwa6we7ccJJZny-mAOAUjD@mail.gmail.com>	<4C071048.9040209@gmail.com>	<20100603021851.GA19546@srcf.ucam.org> <20100603105438.7b8f3ee8@lxorguk.ukuu.org.uk>
+In-Reply-To: <20100603105438.7b8f3ee8@lxorguk.ukuu.org.uk>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-Message-Id: <201006031211.05118.npalix@diku.dk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 03 June 2010 11:51:43 Michal Marek wrote:
-> On 10.5.2010 18:24, Nicolas Palix wrote:
-> > +@script:python depends on org@
-> > +p << r.p;
-> > +x << r.x;
-> > +@@
-> > +
-> > +msg="%s" % (x)
-> > +msg_safe=msg.replace("[","@(").replace("]",")")
-> > +coccilib.org.print_todo(p[0], msg_safe)
-> > +
-> > +@script:python depends on report@
-> > +p << r.p;
-> > +x << r.x;
-> > +@@
-> > +
-> > +msg="WARNING: kzalloc should be used for %s, instead of kmalloc/memset" % (x)
-> > +coccilib.report.print_report(p[0], msg_safe)
-> 
-> msg_safe is not defined in this scriptlet, I'm only getting
-> 
-> Traceback (most recent call last):
->   File "<string>", line 5, in <module>
-> NameError: name 'msg_safe' is not defined
-
-Oops. Thank you for reporting this.
-
-I fixed it for my upcoming submission.
-
-In the meantime, you can replace "msg_safe" by "msg" in the rule
-dedicated to the "report" mode.
-
-That is
-
-coccilib.report.print_report(p[0], msg_safe)
-
-by 
-
-coccilib.report.print_report(p[0], msg
-
-The good point is that you only reach this point if Coccinelle has found
-something to change in the code. So there is some patches to do... ;)
+On 06/03/2010 02:54 AM, Alan Cox wrote:
+> On Thu, 3 Jun 2010 03:18:51 +0100
+> Matthew Garrett<mjg59@srcf.ucam.org>  wrote:
+>
+>> On Wed, Jun 02, 2010 at 07:15:36PM -0700, Justin P. Mattock wrote:
+>>> as soon as I change:
+>>>
+>>> int main() {
+>>> 	iopl(3);
+>>> 	outb(6, 0xcf9);
+>>> 	usleep(100);
+>>> 	outb(6, 0xcf9);
+>>> 	return 0;
+>>> }
+>>> (the above gave a command prompt
+>>> with numerous tries)
+>>
+>> Ok, so it's not that straghtforward. Sigh. There's various hacky
+>> workarounds we could do here, but Windows doesn't seem to do them so I
+>> lean towards suspecting that there's something wrong with our keyboard
+>> controller reboot mechanism. I'll try doing some more tracing.
+>
+> At least some PCs you need to issue the reboot outb calls on the boot
+> processor so the userspace tests won't be reliable.
+>
 
 
-> 
-> Michal
-> 
+well.. the userspace is unreliable from over here..
+but if were looking at the issue we might as well
+look at the whole problem at hand..
+i.g. solving the problem with apple, and solving the
+problem with the others..(basically getting rid of this
+whole dmi entry list all together..(or at-least most of it)..
 
--- 
-Nicolas Palix
-Tel: (+33) 1 44 27 87 25
-Tel: (+33) 6 81 07 91 72
-Web: http://www.diku.dk/~npalix/
+but might be a bit much..
+
+Justin P. Mattock
