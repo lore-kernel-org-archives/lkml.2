@@ -1,103 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932066Ab0FCQOm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jun 2010 12:14:42 -0400
-Received: from e28smtp01.in.ibm.com ([122.248.162.1]:40592 "EHLO
-	e28smtp01.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752618Ab0FCQOj (ORCPT
+	id S932133Ab0FCQOz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jun 2010 12:14:55 -0400
+Received: from mail-pz0-f185.google.com ([209.85.222.185]:64049 "EHLO
+	mail-pz0-f185.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932079Ab0FCQOn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jun 2010 12:14:39 -0400
-From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-To: hch@infradead.org, viro@zeniv.linux.org.uk, adilger@sun.com,
-       corbet@lwn.net, serue@us.ibm.com, neilb@suse.de, hooanon05@yahoo.co.jp,
-       bfields@fieldses.org
-Cc: linux-fsdevel@vger.kernel.org, sfrench@us.ibm.com, philippe.deniel@CEA.FR,
-       linux-kernel@vger.kernel.org,
-       "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-Subject: [PATCH -V13 10/11] vfs: Support null pathname in faccessat
-Date: Thu,  3 Jun 2010 21:44:16 +0530
-Message-Id: <1275581657-7232-11-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
-X-Mailer: git-send-email 1.7.1.236.g81fa0
-In-Reply-To: <1275581657-7232-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
-References: <1275581657-7232-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+	Thu, 3 Jun 2010 12:14:43 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:from:to:cc:subject:date:message-id:x-mailer;
+        b=xMVu3PUGXwjVqsPy5pF9y3881QRikezngsQ+UHwUArIRi7sJCLverKW9vGL1FAwfFm
+         mn1CqcBAncw+0sQcHccCvwLWoVtK0vTFIDtz/O3vwQ7EWmz81W0Mq+10DZYVlGd87noE
+         VVGk4Borta/0tzaK0yAocnyobCZYKR+8jceZ0=
+From: Rabin Vincent <rabin@rab.in>
+To: mmarek@suse.cz
+Cc: linux-kernel@vger.kernel.org, Rabin Vincent <rabin@rab.in>
+Subject: [PATCH] scripts: decodecode: use /bin/bash
+Date: Thu,  3 Jun 2010 21:44:46 +0530
+Message-Id: <1275581686-19745-1-git-send-email-rabin@rab.in>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This enables to use faccessat to get the access check details
-from a file descriptor pointing to the file. This can be used
-with open_by_handle syscall that returns a file descriptor.
+5358db ("scripts: add ARM support to decodecode") added a few bashims to
+the decodecode script, so explicitly ask for bash.
 
-Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
+Signed-off-by: Rabin Vincent <rabin@rab.in>
 ---
- fs/open.c |   27 ++++++++++++++++++++-------
- 1 files changed, 20 insertions(+), 7 deletions(-)
+Alternatively, I have a patch to remove the bashisms, if that's preferred.
 
-diff --git a/fs/open.c b/fs/open.c
-index 3cff394..8998f2e 100644
---- a/fs/open.c
-+++ b/fs/open.c
-@@ -288,7 +288,8 @@ SYSCALL_DEFINE3(faccessat, int, dfd, const char __user *, filename, int, mode)
- {
- 	const struct cred *old_cred;
- 	struct cred *override_cred;
--	struct path path;
-+	struct file *file = NULL;
-+	struct path path, *pp;
- 	struct inode *inode;
- 	int res;
- 
-@@ -312,12 +313,21 @@ SYSCALL_DEFINE3(faccessat, int, dfd, const char __user *, filename, int, mode)
- 	}
- 
- 	old_cred = override_creds(override_cred);
--
--	res = user_path_at(dfd, filename, LOOKUP_FOLLOW, &path);
-+	if (filename == NULL  && dfd != AT_FDCWD) {
-+		file = fget(dfd);
-+		if (file) {
-+			pp = &file->f_path;
-+			res = 0;
-+		} else
-+			res = -EBADF;
-+	} else {
-+		res = user_path_at(dfd, filename, LOOKUP_FOLLOW, &path);
-+		pp = &path;
-+	}
- 	if (res)
- 		goto out;
- 
--	inode = path.dentry->d_inode;
-+	inode = pp->dentry->d_inode;
- 
- 	if ((mode & MAY_EXEC) && S_ISREG(inode->i_mode)) {
- 		/*
-@@ -325,7 +335,7 @@ SYSCALL_DEFINE3(faccessat, int, dfd, const char __user *, filename, int, mode)
- 		 * with the "noexec" flag.
- 		 */
- 		res = -EACCES;
--		if (path.mnt->mnt_flags & MNT_NOEXEC)
-+		if (pp->mnt->mnt_flags & MNT_NOEXEC)
- 			goto out_path_release;
- 	}
- 
-@@ -343,11 +353,14 @@ SYSCALL_DEFINE3(faccessat, int, dfd, const char __user *, filename, int, mode)
- 	 * inherently racy and know that the fs may change
- 	 * state before we even see this result.
- 	 */
--	if (__mnt_is_readonly(path.mnt))
-+	if (__mnt_is_readonly(pp->mnt))
- 		res = -EROFS;
- 
- out_path_release:
--	path_put(&path);
-+	if (file)
-+		fput(file);
-+	else
-+		path_put(&path);
- out:
- 	revert_creds(old_cred);
- 	put_cred(override_cred);
+ scripts/decodecode |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/scripts/decodecode b/scripts/decodecode
+index 8b30cc3..405cfac 100755
+--- a/scripts/decodecode
++++ b/scripts/decodecode
+@@ -1,4 +1,4 @@
+-#!/bin/sh
++#!/bin/bash
+ # Disassemble the Code: line in Linux oopses
+ # usage: decodecode < oops.file
+ #
 -- 
-1.7.1.236.g81fa0
+1.7.1
 
