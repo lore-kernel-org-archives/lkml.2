@@ -1,48 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755326Ab0FCVce (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jun 2010 17:32:34 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:64516 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754710Ab0FCVcb (ORCPT
+	id S1755452Ab0FCVeF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jun 2010 17:34:05 -0400
+Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:55134 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754091Ab0FCVeD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jun 2010 17:32:31 -0400
-Message-ID: <4C081F0C.8060504@oracle.com>
-Date: Thu, 03 Jun 2010 14:30:52 -0700
-From: Yinghai Lu <yinghai.lu@oracle.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100317 SUSE/3.0.4-1.1.1 Thunderbird/3.0.4
+	Thu, 3 Jun 2010 17:34:03 -0400
+X-Mail-Handler: MailHop Outbound by DynDNS
+X-Originating-IP: 72.249.23.125
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/mailhop/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX18ajK8na0TDVQp1IeRDNOZy
+Date: Fri, 4 Jun 2010 00:33:39 +0300
+From: Tony Lindgren <tony@atomide.com>
+To: Russell King <rmk@arm.linux.org.uk>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+       Kevin Hilman <khilman@deeprootsystems.com>,
+       Daniel Walker <dwalker@codeaurora.org>,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       linux-arm-msm@vger.kernel.org
+Subject: Re: ARM defconfig files
+Message-ID: <20100603213337.GB6499@atomide.com>
+References: <20100603074548.GA12104@flint.arm.linux.org.uk>
+ <alpine.LFD.2.00.1006030725420.8175@i5.linux-foundation.org>
+ <20100603164623.GM30622@atomide.com>
+ <20100603181303.GB25779@flint.arm.linux.org.uk>
 MIME-Version: 1.0
-To: Prarit Bhargava <prarit@redhat.com>
-CC: Cyrill Gorcunov <gorcunov@gmail.com>, linux-kernel@vger.kernel.org,
-       linux-acpi@vger.kernel.org, mjg@redhat.com, x86@kernel.org,
-       Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
-       Suresh Siddha <suresh.b.siddha@intel.com>
-Subject: Re: [PATCH]: x86: use acpi flags for apic mapping
-References: <20100602192418.2706.35192.sendpatchset@prarit.bos.redhat.com> <20100602194956.GB5264@lenovo> <4C06D91F.2060105@redhat.com> <20100603172126.GA5502@lenovo> <4C07EF69.6050301@redhat.com> <4C0817CE.6050006@oracle.com> <4C081B4A.4060801@redhat.com>
-In-Reply-To: <4C081B4A.4060801@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Auth-Type: Internal IP
-X-Source-IP: rcsinet15.oracle.com [148.87.113.117]
-X-CT-RefId: str=0001.0A090202.4C081F59.01A1:SCFMA4539811,ss=1,fgs=0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100603181303.GB25779@flint.arm.linux.org.uk>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/03/2010 02:14 PM, Prarit Bhargava wrote:
+* Russell King <rmk@arm.linux.org.uk> [100603 21:07]:
+> On Thu, Jun 03, 2010 at 07:46:23PM +0300, Tony Lindgren wrote:
+> > Compiling in multiple ARM platforms is trickier, we would have to get
+> > rid of the duplicate defines like NR_IRQS, then have some common clock
+> > framework etc. Then figure out some way to get rid of Makefile.boot.
+> > Russell probably has some other things in mind that would have to be
+> > changed to make this happen.
 > 
->> It seems we don't need this patch.
->>
->> so all system should support phys apic mode, but system with less 8 cpus is supposed to support cluster mode for better performance.
->>
->> current kernel will try to use cluster mode if nr_cpus is less than 8.
->>
->> some system have problem like IBM and NCR only support phys apic mode even cpus < 8 ...
->>
->>   
-> 
-> What about systems that have set the ACPI values?  We just ignore those
-> then?
-we checked the value to see if it only support phys apic mode.
+> - Find someway to handle the wide variety of interrupt controllers.
+> - Be able to handle any multitude of V:P translations, including non-linear
+>   alongside linear transations.
+> - Different PAGE_OFFSETs
+> - Different kernel VM layouts allowing for a variety of different ioremap
+>   region sizes
 
-Yinghai
+Some of these could be handled by allowing building a seprate instance
+for each platform compiled in. Maybe we could set them up with symlinks.
+
+How about a minimal generic relocatable ARM kernel and then we load the
+platform support as a module from ramdisk? :)
+ 
+> and so the list goes on...
+
+Yeah..
+ 
+> > That way maybe you can wait a bit longer for the other defconfigs
+> > and as an extra bonus I won't get flamed for removing these omap
+> > defconfigs ;)
+> 
+> Note that Linus is talking about removing all but one or two ARM
+> defconfigs - which means your omap3_defconfig will probably be
+> eventually culled.
+
+Yes but I also think we need to do something about this.
+
+Regards,
+
+Tony
