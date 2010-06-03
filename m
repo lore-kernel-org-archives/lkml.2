@@ -1,146 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933834Ab0FCK0Q (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jun 2010 06:26:16 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:59527 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S933486Ab0FCK0O (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jun 2010 06:26:14 -0400
-Message-ID: <4C078350.7090106@cn.fujitsu.com>
-Date: Thu, 03 Jun 2010 18:26:24 +0800
-From: Lai Jiangshan <laijs@cn.fujitsu.com>
-User-Agent: Thunderbird 2.0.0.6 (Windows/20070728)
+	id S933873Ab0FCKcN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jun 2010 06:32:13 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:65129 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933843Ab0FCKcL convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Jun 2010 06:32:11 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=UK78qZLDD56jAQ3iQ5m34k1myf7AMjAqm5RIQmEvQM2VnnkVtV5ZB4irvKm5ZHKiHK
+         dF8GR6SnTEiUAvzPIwz/Y4tj2OKkwboQ7Ke8+Z0Wr+gk/lGlmWSNuFQ75rZIetzqH78G
+         O1dQb7G9W6FkR4CBSeKx/HDMxP9WjxGcZZwi0=
 MIME-Version: 1.0
-To: Steven Rostedt <rostedt@goodmis.org>, linux-kernel@vger.kernel.org,
-       Ingo Molnar <mingo@elte.hu>, Frederic Weisbecker <fweisbec@gmail.com>
-Subject: [PATCH] tracing: reduce latency and remove percpu trace_seq
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <87ljaw1obm.fsf@erwin.mina86.com>
+References: <cover.1275481997.git.mina86@mina86.com>
+	<5e151207bced1e418bcfed136a871d2da47e417e.1275481997.git.mina86@mina86.com>
+	<e4cb4e647e0ebc51956d6581cd930e3d32f29b99.1275481997.git.mina86@mina86.com>
+	<785f09f63fe30ba52ce15fd7cb3f5750aa279ab9.1275481997.git.mina86@mina86.com>
+	<5492eaf531c8a59c7c188b9e341572c9cdaed5f2.1275481997.git.mina86@mina86.com>
+	<17b54e2cc00a7f730483401f06c79c781491dc62.1275481997.git.mina86@mina86.com>
+	<381c3f8318e39caaffa1ecfdf5e3cf13ed59cd27.1275481997.git.mina86@mina86.com>
+	<c8725442e3c5b8c7be2cc381ed69a3dc0283ebe1.1275481997.git.mina86@mina86.com>
+	<AANLkTikAhJXiKGzyK7j3V7ev_6f2mn8f-A9tDmgdHy9I@mail.gmail.com>
+	<op.vdojfktu7p4s8u@pikus>
+	<AANLkTinwDV9Egrfy_ml998vWIKWs5AasrJMrgxIWOrCo@mail.gmail.com>
+	<AANLkTikKgpm5j453ApJoMeskZdac8iXTBODzb-lCpMT1@mail.gmail.com>
+	<87ljaw1obm.fsf@erwin.mina86.com>
+Date: Thu, 3 Jun 2010 18:32:09 +0800
+Message-ID: <AANLkTilxtSiDG0PptXHiaeN6gcRPYPX70xHCSRPljbxA@mail.gmail.com>
+Subject: Re: [PATCHv3 07/11] USB: gadget: g_multi: added documentation and INF 
+	files
+From: Xiaofan Chen <xiaofanc@gmail.com>
+To: Michal Nazarewicz <mina86@mina86.com>
+Cc: =?ISO-8859-2?Q?Micha=B3_Nazarewicz?= <m.nazarewicz@samsung.com>,
+       linux-usb@vger.kernel.org,
+       David Brownell <dbrownell@users.sourceforge.net>,
+       Kyungmin Park <kyungmin.park@samsung.com>,
+       Marek Szyprowski <m.szyprowski@samsung.com>,
+       linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Jun 3, 2010 at 5:02 PM, Michal Nazarewicz <mina86@mina86.com> wrote:
+>> So if your employer (Samsung) or others is quite nice and submit the
+>> driver package (the inf and cat file for CDC-ACM) for WHQL and got
+>> approved, in the future, users of the inf file will not see the red color
+>> warning. This might be desired for corporate customers.
+>
+> I *personally* see how it may be a problem for _any_ corporation since
+> singing is like saying "yes, we guarantee it won't destroy your computer
+> nor it will summon demons" and by releasing signed driver you in effect
+> loose control over it.  Again, further signature investigations are on
+> my TODO list.
+>
 
-__print_flags() and __print_symbolic() use percpu trace_seq:
+As I mentioned before, WHQL submission is not necessary for
+drivers using usbser.sys. It will work under 32bit/64bit Windows.
+The warning just scares some innocent customers.
 
-1) Its memory is allocated at compile time, it wastes memory if we don't use tracing.
-2) It is percpu data and it wastes more memory for multi-cpus system.
-3) It disables preemption when it executes its core routine
-   "trace_seq_printf(s, "%s: ", #call);" and introduces latency.
+You do not need the catalog file here. Those vendors who likes to get
+the WHQL can pay the money to get it (for their particular VID/PID).
 
-So we move this trace_seq to struct trace_iterator.
+For drivers like libusb-win32 (libusb0.sys), it is a big problem since
+you can not load it under 64bit Vista/Win7. libusb-win32 is quite
+nice project to port Linux libusb based application to Windows.
+So we in the libusb-win32 project plan to get the money through
+donation to buy the digital certificate so that it can work under
+64bit Vista/Win7 and users can load it (with the red warning
+since the driver package are not signed with the digital
+certificate, inf file is part of the driver package). Corporate
+users of libusb-win32 (eg: Atmel) can choose to go for WHQL so that
+their users will not see the red warning.
+(ref: http://sourceforge.net/news/?group_id=78138 )
 
-Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
----
- include/linux/ftrace_event.h |    5 +++--
- include/trace/ftrace.h       |   12 +++---------
- kernel/trace/trace_output.c  |    3 ---
- 3 files changed, 6 insertions(+), 14 deletions(-)
-diff --git a/include/linux/ftrace_event.h b/include/linux/ftrace_event.h
-index 3167f2d..25e264d 100644
---- a/include/linux/ftrace_event.h
-+++ b/include/linux/ftrace_event.h
-@@ -11,8 +11,6 @@ struct trace_array;
- struct tracer;
- struct dentry;
- 
--DECLARE_PER_CPU(struct trace_seq, ftrace_event_seq);
--
- struct trace_print_flags {
- 	unsigned long		mask;
- 	const char		*name;
-@@ -58,6 +56,9 @@ struct trace_iterator {
- 	struct ring_buffer_iter	*buffer_iter[NR_CPUS];
- 	unsigned long		iter_flags;
- 
-+	/* trace_seq for __print_flags() and __print_symbolic() etc. */
-+	struct trace_seq	tmp_seq;
-+
- 	/* The below is zeroed out in pipe_read */
- 	struct trace_seq	seq;
- 	struct trace_entry	*ent;
-diff --git a/include/trace/ftrace.h b/include/trace/ftrace.h
-index 5a64905..19369db 100644
---- a/include/trace/ftrace.h
-+++ b/include/trace/ftrace.h
-@@ -145,7 +145,7 @@
-  *	struct trace_seq *s = &iter->seq;
-  *	struct ftrace_raw_<call> *field; <-- defined in stage 1
-  *	struct trace_entry *entry;
-- *	struct trace_seq *p;
-+ *	struct trace_seq *p = &iter->tmp_seq;
-  *	int ret;
-  *
-  *	entry = iter->ent;
-@@ -157,12 +157,10 @@
-  *
-  *	field = (typeof(field))entry;
-  *
-- *	p = &get_cpu_var(ftrace_event_seq);
-  *	trace_seq_init(p);
-  *	ret = trace_seq_printf(s, "%s: ", <call>);
-  *	if (ret)
-  *		ret = trace_seq_printf(s, <TP_printk> "\n");
-- *	put_cpu();
-  *	if (!ret)
-  *		return TRACE_TYPE_PARTIAL_LINE;
-  *
-@@ -216,7 +214,7 @@ ftrace_raw_output_##call(struct trace_iterator *iter, int flags,	\
- 	struct trace_seq *s = &iter->seq;				\
- 	struct ftrace_raw_##call *field;				\
- 	struct trace_entry *entry;					\
--	struct trace_seq *p;						\
-+	struct trace_seq *p = &iter->tmp_seq;				\
- 	int ret;							\
- 									\
- 	event = container_of(trace_event, struct ftrace_event_call,	\
-@@ -231,12 +229,10 @@ ftrace_raw_output_##call(struct trace_iterator *iter, int flags,	\
- 									\
- 	field = (typeof(field))entry;					\
- 									\
--	p = &get_cpu_var(ftrace_event_seq);				\
- 	trace_seq_init(p);						\
- 	ret = trace_seq_printf(s, "%s: ", event->name);			\
- 	if (ret)							\
- 		ret = trace_seq_printf(s, print);			\
--	put_cpu();							\
- 	if (!ret)							\
- 		return TRACE_TYPE_PARTIAL_LINE;				\
- 									\
-@@ -255,7 +251,7 @@ ftrace_raw_output_##call(struct trace_iterator *iter, int flags,	\
- 	struct trace_seq *s = &iter->seq;				\
- 	struct ftrace_raw_##template *field;				\
- 	struct trace_entry *entry;					\
--	struct trace_seq *p;						\
-+	struct trace_seq *p = &iter->tmp_seq;				\
- 	int ret;							\
- 									\
- 	entry = iter->ent;						\
-@@ -267,12 +263,10 @@ ftrace_raw_output_##call(struct trace_iterator *iter, int flags,	\
- 									\
- 	field = (typeof(field))entry;					\
- 									\
--	p = &get_cpu_var(ftrace_event_seq);				\
- 	trace_seq_init(p);						\
- 	ret = trace_seq_printf(s, "%s: ", #call);			\
- 	if (ret)							\
- 		ret = trace_seq_printf(s, print);			\
--	put_cpu();							\
- 	if (!ret)							\
- 		return TRACE_TYPE_PARTIAL_LINE;				\
- 									\
-diff --git a/kernel/trace/trace_output.c b/kernel/trace/trace_output.c
-index 57c1b45..1ba64d3 100644
---- a/kernel/trace/trace_output.c
-+++ b/kernel/trace/trace_output.c
-@@ -16,9 +16,6 @@
- 
- DECLARE_RWSEM(trace_event_mutex);
- 
--DEFINE_PER_CPU(struct trace_seq, ftrace_event_seq);
--EXPORT_PER_CPU_SYMBOL(ftrace_event_seq);
--
- static struct hlist_head event_hash[EVENT_HASHSIZE] __read_mostly;
- 
- static int next_event_type = __TRACE_LAST_TYPE + 1;
+usbser.sys is already signed by Microsoft, so you will not
+face such issue. Same thing for the drivers of USB RNDIS.
 
+-- 
+Xiaofan http://mcuee.blogspot.com
