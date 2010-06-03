@@ -1,43 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754934Ab0FCHLu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jun 2010 03:11:50 -0400
-Received: from mga09.intel.com ([134.134.136.24]:31209 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751440Ab0FCHLs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jun 2010 03:11:48 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.53,352,1272870000"; 
-   d="scan'208";a="523542919"
-Message-ID: <4C0755B7.8030304@linux.intel.com>
-Date: Thu, 03 Jun 2010 09:11:51 +0200
-From: "H. Peter Anvin" <hpa@linux.intel.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-2.fc12 Thunderbird/3.0.4
-MIME-Version: 1.0
-To: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-CC: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] x86, cpufeature: Suppress compiler warning with gcc 3.x
-References: <201006030452.o534qPZa022225@www262.sakura.ne.jp>
-In-Reply-To: <201006030452.o534qPZa022225@www262.sakura.ne.jp>
-Content-Type: text/plain; charset=ISO-2022-JP
-Content-Transfer-Encoding: 7bit
+	id S1754701Ab0FCHNi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jun 2010 03:13:38 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:48063 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751792Ab0FCHNg convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Jun 2010 03:13:36 -0400
+Subject: Re: [PATCH] rbtree: undo augmented damage -v2
+From: Peter Zijlstra <peterz@infradead.org>
+To: Suresh Siddha <suresh.b.siddha@intel.com>
+Cc: Venkatesh Pallipadi <venki@google.com>,
+       "mingo@redhat.com" <mingo@redhat.com>, "hpa@zytor.com" <hpa@zytor.com>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       "tglx@linutronix.de" <tglx@linutronix.de>,
+       "linux-tip-commits@vger.kernel.org" 
+	<linux-tip-commits@vger.kernel.org>,
+       Fabio Checconi <fabio@gandalf.sssup.it>
+In-Reply-To: <1275513074.2913.258.camel@sbs-t61.sc.intel.com>
+References: <20100210232343.GA11465@linux-os.sc.intel.com>
+	 <tip-17d9ddc72fb8bba0d4f67868c9c612e472a594a9@git.kernel.org>
+	 <1275136178.27810.13539.camel@twins> <1275139902.27810.13737.camel@twins>
+	 <AANLkTimZkyRwP5k290rUr-DUMhsynl9fzBkS68x-57KM@mail.gmail.com>
+	 <1275412748.27810.27883.camel@twins>
+	 <AANLkTilGfY1PnNgpEeB3AQEqTNoDJQfPTxK5LNUYb7ZA@mail.gmail.com>
+	 <1275414172.27810.27961.camel@twins>
+	 <AANLkTil8ly_3P2DgEI9oI_ZbYP6FkwP2lCY2v47iAn9-@mail.gmail.com>
+	 <1275417720.27810.28160.camel@twins>
+	 <1275513074.2913.258.camel@sbs-t61.sc.intel.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Thu, 03 Jun 2010 09:13:46 +0200
+Message-ID: <1275549226.27810.34762.camel@twins>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/03/2010 06:52 AM, Tetsuo Handa wrote:
-> Gcc 3.x generates a warning
+On Wed, 2010-06-02 at 14:11 -0700, Suresh Siddha wrote:
+>       P                       SL
+>     /  \                     /  \
+>    N    S       --->        N    S
+>   /   /  \                 /      \
+>  C   SL  SR               C        SR
 > 
->    arch/x86/include/asm/cpufeature.h: In function `__static_cpu_has':
->    arch/x86/include/asm/cpufeature.h:315: warning: asm operand 1 probably doesn't match constraints
-> 
-> on each file.
-> But static_cpu_has() for gcc 3.x does not need __static_cpu_has().
-> 
-> Signed-off-by: Tetsuo Handa<penguin-kernel@I-love.SAKURA.ne.jp>
+> If P needs to be removed, we need to re-augment S also in this case,
+> right? It looks like we are not handling this case.
 
-Patch already queued for this.
 
-Why are you trying to compile a current kernel with gcc 3.x?
+rb_augment_erase_begin(P) will return S if I read the code right, so
+rb_augment_path(S) will the re-augment S, SL, N.
 
-	-hpa
+
