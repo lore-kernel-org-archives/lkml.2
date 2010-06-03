@@ -1,175 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752263Ab0FCGnv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jun 2010 02:43:51 -0400
-Received: from TYO201.gate.nec.co.jp ([202.32.8.193]:52233 "EHLO
-	tyo201.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751221Ab0FCGnt (ORCPT
+	id S1752628Ab0FCGqe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jun 2010 02:46:34 -0400
+Received: from mail-ww0-f46.google.com ([74.125.82.46]:54956 "EHLO
+	mail-ww0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751054Ab0FCGqd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jun 2010 02:43:49 -0400
-Date: Thu, 3 Jun 2010 15:40:31 +0900
-From: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
-       "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       "balbir@linux.vnet.ibm.com" <balbir@linux.vnet.ibm.com>,
-       Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
-Subject: Re: [PATCH 2/2] memcg make move_task_charge check clearer
-Message-Id: <20100603154031.f80fc900.nishimura@mxp.nes.nec.co.jp>
-In-Reply-To: <20100603115119.be29ec13.kamezawa.hiroyu@jp.fujitsu.com>
-References: <20100603114837.6e6d4d0f.kamezawa.hiroyu@jp.fujitsu.com>
-	<20100603115119.be29ec13.kamezawa.hiroyu@jp.fujitsu.com>
-Organization: NEC Soft, Ltd.
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.10.14; i686-pc-mingw32)
+	Thu, 3 Jun 2010 02:46:33 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=us2usyqOldxDPopMfERL/zidDR20PX0wR3sdJp47Gmo14iDVfIurVXeqmRnuJpVXf+
+         6WPemJNDWLUdxfsiJBTPVrEHflyeSpp39qsEEWt1Zs4bGkgvE8nsrI172a3/9xprsUEV
+         yPeNO4YQiqxZ7uRpTauecuP1B7IKcfvkJd2H8=
+Subject: Re: [PATCH] kobject: Suppress compiler warning with gcc 3.x
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: =?ISO-8859-1?Q?Am=E9rico?= Wang <xiyou.wangcong@gmail.com>
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
+       Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>,
+       ebiederm@aristanetworks.com, randy.dunlap@oracle.com, gregkh@suse.de,
+       linux-kernel@vger.kernel.org
+In-Reply-To: <20100603062314.GB5580@cr0.nay.redhat.com>
+References: <201006030523.o535NA16029042@www262.sakura.ne.jp>
+	 <1275543101.29413.76.camel@edumazet-laptop>
+	 <20100603055515.GA5580@cr0.nay.redhat.com>
+	 <m1y6ewr6vf.fsf@fess.ebiederm.org>
+	 <20100603062314.GB5580@cr0.nay.redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 03 Jun 2010 08:46:27 +0200
+Message-ID: <1275547587.2456.4.camel@edumazet-laptop>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 3 Jun 2010 11:51:19 +0900, KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
-> From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Le jeudi 03 juin 2010 à 14:23 +0800, Américo Wang a écrit :
+> On Wed, Jun 02, 2010 at 11:02:28PM -0700, Eric W. Biederman wrote:
+> >Américo Wang <xiyou.wangcong@gmail.com> writes:
+> >
+> >> On Thu, Jun 03, 2010 at 07:31:41AM +0200, Eric Dumazet wrote:
+> >>>Le jeudi 03 juin 2010 à 14:23 +0900, Tetsuo Handa a écrit :
+> >>>> Gcc 3.x generates a warning
+> >>>> 
+> >>>>   include/linux/sysfs.h:183: warning: parameter has incomplete type
+> >>>> 
+> >>>> on each file.
+> >>>> Suppress the warning by moving the definition of "enum kobj_ns_type"
+> >>>> to before "#include <linux/sysfs.h>".
+> >>>> 
+> >>>> Signed-off-by: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+> >>>
+> >>>
+> >>>I was about to submit same patch, but I was also reverting 27eabc7cb4b3
+> >>>(sysfs: Don't use enums in inline function declaration.)
+> >>>
+> >>>So that sysfs_exit_ns() prototype is consistent regardless of
+> >>>CONFIG_SYSFS
+> >>>
+> >>>What do you think ?
+> >>>
+> >>
+> >> This looks odd, in sysfs.h we do have a forward declaration of
+> >> enum kobj_ns_type... I am wondering why gcc 3.x doesn't recognize it.
+> >
+> >Because the replacement is an inline, and we are passing the enum by value
+> >gcc wants to see the full definition, at the point where the inline function
+> >is declared.
+> >
 > 
-> Now, for checking a memcg is under task-account-moving, we do css_tryget()
-> against mc.to and mc.from. But this is just complicating things. This patch
-> makes the check easier.
+> But sysfs_exit_ns() is not inlined if CONFIG_SYSFS here.
 > 
-> This patch adds a spinlock to move_charge_struct and guard modification
-> of mc.to and mc.from. By this, we don't have to think about complicated
-> races around this not-critical path.
-> 
-> Changelog:
->  - removed disable/enable irq.
-> 
-> Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> ---
->  mm/memcontrol.c |   48 ++++++++++++++++++++++++++++--------------------
->  1 file changed, 28 insertions(+), 20 deletions(-)
-> 
-> Index: mmotm-2.6.34-May21/mm/memcontrol.c
-> ===================================================================
-> --- mmotm-2.6.34-May21.orig/mm/memcontrol.c
-> +++ mmotm-2.6.34-May21/mm/memcontrol.c
-> @@ -268,6 +268,7 @@ enum move_type {
->  
->  /* "mc" and its members are protected by cgroup_mutex */
->  static struct move_charge_struct {
-> +	spinlock_t	  lock; /* for from, to, moving_task */
->  	struct mem_cgroup *from;
->  	struct mem_cgroup *to;
->  	unsigned long precharge;
-> @@ -276,6 +277,7 @@ static struct move_charge_struct {
->  	struct task_struct *moving_task;	/* a task moving charges */
->  	wait_queue_head_t waitq;		/* a waitq for other context */
->  } mc = {
-> +	.lock = __SPIN_LOCK_UNLOCKED(mc.lock),
->  	.waitq = __WAIT_QUEUE_HEAD_INITIALIZER(mc.waitq),
->  };
->  
-> @@ -1076,26 +1078,25 @@ static unsigned int get_swappiness(struc
->  
->  static bool mem_cgroup_under_move(struct mem_cgroup *mem)
->  {
-> -	struct mem_cgroup *from = mc.from;
-> -	struct mem_cgroup *to = mc.to;
-> +	struct mem_cgroup *from;
-> +	struct mem_cgroup *to;
->  	bool ret = false;
-> -
-> -	if (from == mem || to == mem)
-> -		return true;
-> -
-> -	if (!from || !to || !mem->use_hierarchy)
-> -		return false;
-> -
-> -	rcu_read_lock();
-> -	if (css_tryget(&from->css)) {
-> -		ret = css_is_ancestor(&from->css, &mem->css);
-> -		css_put(&from->css);
-> -	}
-> -	if (!ret && css_tryget(&to->css)) {
-> -		ret = css_is_ancestor(&to->css,	&mem->css);
-> +	/*
-> +	 * Unlike task_move routines, we access mc.to, mc.from not under
-> +	 * mutual exclusion by cgroup_mutex. Here, we take spinlock instead.
-> +	 */
-> +	spin_lock(&mc.lock);
-> +	from = mc.from;
-> +	to = mc.to;
-> +	if (!from)
-> +		goto unlock;
-> +	if (from == mem || to == mem
-> +	    || (mem->use_hierarchy && css_is_ancestor(&from->css, &mem->css))
-> +	    || (mem->use_hierarchy && css_is_ancestor(&to->css,	&mem->css)))
->  		css_put(&to->css);
-I think this css_put() must be removed too.
-Except for it, this patch looks good to me.
 
-Thank you for cleaning up my dirty code :)
+ 
+# gcc -v
+Reading specs from /usr/lib/gcc/i386-redhat-linux/3.4.6/specs
+Configured with: ../configure --prefix=/usr --mandir=/usr/share/man
+--infodir=/usr/share/info --enable-shared --enable-threads=posix
+--disable-checking --with-system-zlib --enable-__cxa_atexit
+--disable-libunwind-exceptions --enable-java-awt=gtk
+--host=i386-redhat-linux
+Thread model: posix
+gcc version 3.4.6 20060404 (Red Hat 3.4.6-10)
 
-Thanks,
-Daisuke Nishimura.
 
-> -	}
-> -	rcu_read_unlock();
-> +		ret = true;
-> +unlock:
-> +	spin_unlock(&mc.lock);
->  	return ret;
->  }
->  
-> @@ -4447,11 +4448,13 @@ static int mem_cgroup_precharge_mc(struc
->  
->  static void mem_cgroup_clear_mc(void)
->  {
-> +	struct mem_cgroup *from = mc.from;
-> +	struct mem_cgroup *to = mc.to;
-> +
->  	/* we must uncharge all the leftover precharges from mc.to */
->  	if (mc.precharge) {
->  		__mem_cgroup_cancel_charge(mc.to, mc.precharge);
->  		mc.precharge = 0;
-> -		memcg_oom_recover(mc.to);
->  	}
->  	/*
->  	 * we didn't uncharge from mc.from at mem_cgroup_move_account(), so
-> @@ -4460,7 +4463,6 @@ static void mem_cgroup_clear_mc(void)
->  	if (mc.moved_charge) {
->  		__mem_cgroup_cancel_charge(mc.from, mc.moved_charge);
->  		mc.moved_charge = 0;
-> -		memcg_oom_recover(mc.from);
->  	}
->  	/* we must fixup refcnts and charges */
->  	if (mc.moved_swap) {
-> @@ -4485,9 +4487,13 @@ static void mem_cgroup_clear_mc(void)
->  
->  		mc.moved_swap = 0;
->  	}
-> +	spin_lock(&mc.lock);
->  	mc.from = NULL;
->  	mc.to = NULL;
->  	mc.moving_task = NULL;
-> +	spin_unlock(&mc.lock);
-> +	memcg_oom_recover(from);
-> +	memcg_oom_recover(to);
->  	wake_up_all(&mc.waitq);
->  }
->  
-> @@ -4516,12 +4522,14 @@ static int mem_cgroup_can_attach(struct 
->  			VM_BUG_ON(mc.moved_charge);
->  			VM_BUG_ON(mc.moved_swap);
->  			VM_BUG_ON(mc.moving_task);
-> +			spin_lock(&mc.lock);
->  			mc.from = from;
->  			mc.to = mem;
->  			mc.precharge = 0;
->  			mc.moved_charge = 0;
->  			mc.moved_swap = 0;
->  			mc.moving_task = current;
-> +			spin_unlock(&mc.lock);
->  
->  			ret = mem_cgroup_precharge_mc(mm);
->  			if (ret)
-> 
+# cat try.c
+enum kobj_ns_type;
+void sysfs_exit_ns(enum kobj_ns_type type, const void *tag);
+int main(int argc, char *argv[])
+{
+	return 0;
+}
+# gcc -O2 -Wall -o try try.c
+try.c:2: warning: parameter has incomplete type
+#
+
+
