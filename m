@@ -1,55 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753357Ab0FCLGA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jun 2010 07:06:00 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:55762 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752333Ab0FCLF7 (ORCPT
+	id S932275Ab0FCLG6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jun 2010 07:06:58 -0400
+Received: from casper.infradead.org ([85.118.1.10]:34296 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932100Ab0FCLG4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jun 2010 07:05:59 -0400
-Date: Thu, 3 Jun 2010 12:05:33 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Jeremy Kerr <jeremy.kerr@canonical.com>
-Cc: Ben Dooks <ben-linux@fluff.org>,
-       Ben Herrenchmidt <benh@kernel.crashing.org>,
-       linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [RFC,PATCH 1/2] Add a common struct clk
-Message-ID: <20100603110533.GB7127@n2100.arm.linux.org.uk>
-References: <1275479804.137633.565764505843.0.gpush@pororo> <201006031121.21896.jeremy.kerr@canonical.com> <20100603081354.GA4720@trinity.fluff.org> <201006031824.53832.jeremy.kerr@canonical.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201006031824.53832.jeremy.kerr@canonical.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+	Thu, 3 Jun 2010 07:06:56 -0400
+Subject: Re: [PATCH] use unfair spinlock when running on hypervisor.
+From: David Woodhouse <dwmw2@infradead.org>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: john cooper <john.cooper@third-harmonic.com>, Avi Kivity <avi@redhat.com>,
+       Gleb Natapov <gleb@redhat.com>, linux-kernel@vger.kernel.org,
+       kvm@vger.kernel.org, hpa@zytor.com, mingo@elte.hu, npiggin@suse.de,
+       tglx@linutronix.de, mtosatti@redhat.com,
+       john cooper <john.cooper@redhat.com>
+In-Reply-To: <20100601193659.GC11880@basil.fritz.box>
+References: <20100601093515.GH24302@redhat.com>
+	 <87sk56ycka.fsf@basil.nowhere.org> <20100601162414.GA6191@redhat.com>
+	 <20100601163807.GA11880@basil.fritz.box> <4C053ACC.5020708@redhat.com>
+	 <4C05493F.1040107@third-harmonic.com>
+	 <20100601193659.GC11880@basil.fritz.box>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 03 Jun 2010 12:06:39 +0100
+Message-ID: <1275563199.2383.1873.camel@macbook.infradead.org>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.1.2 (2.30.1.2-6.fc13) 
+Content-Transfer-Encoding: 7bit
+X-SRS-Rewrite: SMTP reverse-path rewritten from <dwmw2@infradead.org> by casper.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 03, 2010 at 06:24:50PM +0800, Jeremy Kerr wrote:
-> OK, this would mean adding parent to struct clk:
+On Tue, 2010-06-01 at 21:36 +0200, Andi Kleen wrote:
+> > Collecting the contention/usage statistics on a per spinlock
+> > basis seems complex.  I believe a practical approximation
+> > to this are adaptive mutexes where upon hitting a spin
+> > time threshold, punt and let the scheduler reconcile fairness.
 > 
-> struct clk {
-> 	struct clk_operations	*ops;
-> 	atomic_t				enable_count;
+> That would probably work, except: how do you get the
+> adaptive spinlock into a paravirt op without slowing
+> down a standard kernel?
 
-I don't think it makes sense for this to be an atomic type.
+It only ever comes into play in the case where the spinlock is contended
+anyway -- surely it shouldn't be _that_ much of a performance issue?
 
-> static inline int clk_enable(struct clk *clk)
-> {
-> 	int ret;
-> 
-> 	if (atomic_inc(clk->enable_count) != 1))
-> 		return 0;
+See the way that ppc64 handles it -- on a machine with overcommitted
+virtual cpus, it will call __spin_yield (arch/powerpc/lib/locks.c) on
+contention, which may cause the virtual CPU to donate its hypervisor
+timeslice to the vCPU which is actually holding the lock in question.
 
-Okay, so what if we sleep at this point, and someone else comes along
-and calls clk_enable(), which'll merely increment the count and return.
+-- 
+David Woodhouse                            Open Source Technology Centre
+David.Woodhouse@intel.com                              Intel Corporation
 
-Unfortunately, the clock is still disabled at that point - which is a
-violation of what's supposed to happen.
-
-Or to put it another way, the above method results in clk_enable()
-sometimes returning with the clock enabled and sometimes with the
-clock still disabled.
-
-That's not nice behaviour for drivers which may need the clock enabled
-to read/write the device registers.
