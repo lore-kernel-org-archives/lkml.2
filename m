@@ -1,123 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753927Ab0FCHBa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jun 2010 03:01:30 -0400
-Received: from 0122700014.0.fullrate.dk ([95.166.99.235]:57538 "EHLO kernel.dk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752148Ab0FCHB2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jun 2010 03:01:28 -0400
-Date: Thu, 3 Jun 2010 09:01:26 +0200
-From: Jens Axboe <jaxboe@fusionio.com>
-To: "mtk.manpages@gmail.com" <mtk.manpages@gmail.com>
-Cc: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       Miklos Szeredi <miklos@szeredi.hu>,
-       "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [patch] pipe: add support for shrinking and growing pipes
-Message-ID: <20100603070126.GJ3564@kernel.dk>
-References: <20100524070552.GR23411@kernel.dk> <AANLkTikogQtGpO9c94A7YSmP8zdyM8dZBrwJf1nwlR4j@mail.gmail.com> <20100524173551.GU23411@kernel.dk> <AANLkTimDJjHWKISxnLax3r200Db8OQp_lMKOx14ONgkS@mail.gmail.com> <20100524175649.GV23411@kernel.dk> <AANLkTim_yrRZG6v1tMPgefeaaI-nUa35Q-mLQpuXWJ1p@mail.gmail.com> <20100601074534.GL1660@kernel.dk> <AANLkTinGfonivZvofBkMzv53IJZeKbFAEMVpv96BiJ30@mail.gmail.com> <20100603061039.GD3564@kernel.dk> <AANLkTint7OJvmTn7d7bqTJzsCxV-VlVT46PQWVH-m73g@mail.gmail.com>
+	id S1754163Ab0FCHC3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jun 2010 03:02:29 -0400
+Received: from mail-gw0-f46.google.com ([74.125.83.46]:51257 "EHLO
+	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753998Ab0FCHC1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Jun 2010 03:02:27 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:date:message-id:subject:from:to:cc:content-type;
+        b=qut9Ncz1BpMGjVusk49S5/5HQm09k5dh82KEBfpGGQ66HYRFQRXPC7OLnvVAoxF7Y4
+         DK+sSc6QQ122ZvYLJQIc7QHKGbWjkUOk8Mwege5eP//5tJzVCSlSVErzWOBaKr4CUMpQ
+         XEjOIfPpJVSTMcyBjEjaFC1uesfMLdiFNVTMY=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <AANLkTint7OJvmTn7d7bqTJzsCxV-VlVT46PQWVH-m73g@mail.gmail.com>
+Date: Thu, 3 Jun 2010 15:02:25 +0800
+Message-ID: <AANLkTikWak8i-Kaj-e-EUFWE66tfMmp2UPhGJCKkK1zK@mail.gmail.com>
+Subject: 2.6.25-rc1 ahci regression
+From: Luming Yu <luming.yu@gmail.com>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: avorontsov@ru.mvista.com, jgarzik@redhat.com
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 03 2010, Michael Kerrisk wrote:
-> Hi Jens,
-> 
-> On Thu, Jun 3, 2010 at 8:10 AM, Jens Axboe <jaxboe@fusionio.com> wrote:
-> > On Wed, Jun 02 2010, Michael Kerrisk wrote:
-> >> On Tue, Jun 1, 2010 at 9:45 AM, Jens Axboe <axboe@kernel.dk> wrote:
-> >> > On Thu, May 27 2010, Michael Kerrisk wrote:
-> >> >> Jens,
-> >> >>
-> >> >> On Mon, May 24, 2010 at 7:56 PM, Jens Axboe <jens.axboe@oracle.com> wrote:
-> >> >> > On Mon, May 24 2010, Michael Kerrisk wrote:
-> >> >> >> On Mon, May 24, 2010 at 7:35 PM, Jens Axboe <jens.axboe@oracle.com> wrote:
-> >> >> >> > On Mon, May 24 2010, Michael Kerrisk wrote:
-> >> >> >> >> > Right, that looks like a thinko.
-> >> >> >> >> >
-> >> >> >> >> > I'll submit a patch changing it to bytes and the agreed API and fix this
-> >> >> >> >> > -Eerror. Thanks for your comments and suggestions!
-> >> >> >> >>
-> >> >> >> >> Thanks. And of course you are welcome. (Please CC linux-api@vger on
-> >> >> >> >> this patche (and all patches that change the API/ABI.)
-> >> >> >> >
-> >> >> >> > The first change is this:
-> >> >> >> >
-> >> >> >> > http://git.kernel.dk/?p=linux-2.6-block.git;a=commit;h=0191f8697bbdfefcd36e7b8dc3eeddfe82893e4b
-> >> >> >> >
-> >> >> >> > and the one dealing with the pages vs bytes API is this:
-> >> >> >> >
-> >> >> >> > http://git.kernel.dk/?p=linux-2.6-block.git;a=commit;h=b9598db3401282bb27b4aef77e3eee12015f7f29
-> >> >> >> >
-> >> >> >> > Not tested yet, will do so before sending in of course.
-> >> >> >>
-> >> >> >> Eyeballing it quickly, these changes look right.
-> >> >> >
-> >> >> > Good, thanks.
-> >> >> >
-> >> >> >> Do you have some test programs you can make available?
-> >> >> >
-> >> >> > Actually I don't, I test it by modifying fio's splice engine to set/get
-> >> >> > the pipe size and test the resulting transfers.
-> >> >>
-> >> >> An afterthought. Do there not also need to be fixes to the /proc
-> >> >> interfaces. I don't think they were included in your revised patches.
-> >> >
-> >> > I think the proc part can be sanely left in pages, since it's just a
-> >> > memory limiter.
-> >>
-> >> I can't see any advantage to using two different units for these
-> >> closely related APIs, and it does seem like it could be a source of
-> >> confusion. Similar APIs that I can think of like RLIMIT_MEMLOCK and
-> >> shmget() SHMMAX that impose per-process memory-related limits use
-> >> bytes. Best to be consistent, don't you think?
-> >
-> > But they are different interfaces.  I think the 'pass in required size,
-> > return actual size' where actual size is >= required size makes sense
-> > for the syscall part, but for an "admin" interface it is more logical to
-> > deal in pages. Perhaps that's just me and the average admin does not
-> > agree. So while it's just detail, it's also an interface so has some
-> > importance. And if there's consensus that bytes is a cleaner interface
-> > on the proc side as well, then lets change it.
-> 
-> I'll add one more datapoint to those that I already mentioned.
-> RLIMIT_STACK and RLIMIT_DATA (getrlimit()) is also expressed in bytes.
-> 
-> There was only one vaguely related limit that I could find that
-> measured things in pages. Consider these two System V shared memory
-> limits:
-> 
-> SHMMAX
-> This is the maximum size (in bytes) of a shared memory segment.
-> 
-> SHMALL
-> This is a system-wide limit on the total number of pages of shared memory.
-> 
-> But in a way this almost confirms my point. SHMMAX is a limit the
-> governs the behavior of individual processes (like your /proc file),
-> while SHMALL is a limit that governs the behavior of the system as a
-> whole. There is a (sort of) logic to using bytes for one and pages for
-> the other.
-> 
-> I think that I've said all I need to say on the topic. I'm inclined to
-> think yours /proc file should use bytes, since it seems consistent
-> with other simialr APIs. Others may confirm, or someone else mught
-> have a different insight.
+Hi there,
 
-I'll commit a patch to change it to bytes.
+I happened to notice that the commit 365cfa1ed5 caused the following
+boot error with 2.6.25-rc1
+on a system with ICH10 SATA AHCI controller. It's weird if there is
+really no function changes in the patch.
 
-> PS I hope you are going to set the lower limit for the /proc file to
-> 4096B (a page) (?).
+Any ideas?
 
-Yes, I think I'll do that as a separate patch up front.
 
--- 
-Jens Axboe
+dracut: Starting plymouth daemon
+pata_jmicron 0000:0f:00.0: PCI INT A -> GSI 16 (level, low) -> IRQ 16
+scsi0 : pata_jmicron
+Initializing USB Mass Storage driver...
+scsi1 : usb-storage 1-5:1.0
+scsi2 : pata_jmicron
+ata1: PATA max UDMA/100 cmd 0xd040 ctl 0xd030 bmdma 0xd000 irq 16
+ata2: PATA max UDMA/100 cmd 0xd020 ctl 0xd010 bmdma 0xd008 irq 16
+usbcore: registered new interface driver usb-storage
+USB Mass Storage support registered.
+scsi 1:0:0:0: CD-ROM            PepperC  Virtual Disc 1   0.01 PQ: 0 ANSI: 3
+sr0: scsi-1 drive
 
+
+
+commit 365cfa1ed5a36f9bcb9f64c9f0f52155af2e9fef
+Author: Anton Vorontsov <avorontsov@ru.mvista.com>
+Date:   Sun Mar 28 00:22:14 2010 -0400
+
+    ahci: Move generic code into libahci
+
+    This patch should contain no functional changes, just moves code
+    around.
+
+    Signed-off-by: Anton Vorontsov <avorontsov@ru.mvista.com>
+    Signed-off-by: Jeff Garzik <jgarzik@redhat.com>
