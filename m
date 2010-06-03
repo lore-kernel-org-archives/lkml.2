@@ -1,54 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754384Ab0FCSMo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jun 2010 14:12:44 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:48495 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752692Ab0FCSMl (ORCPT
+	id S1754424Ab0FCSNd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jun 2010 14:13:33 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:43684 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752025Ab0FCSNc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jun 2010 14:12:41 -0400
-Date: Thu, 3 Jun 2010 11:11:25 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Doug Doan <dougd@cray.com>
-Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       "andi@firstfloor.org" <andi@firstfloor.org>,
-       "lee.schermerhorn@hp.com" <lee.schermerhorn@hp.com>,
-       "rientjes@google.com" <rientjes@google.com>,
-       "mel@csn.ul.ie" <mel@csn.ul.ie>, Andrea Arcangeli <andrea@redhat.com>
-Subject: Re: [PATCH] hugetlb: call mmu notifiers on hugepage cow
-Message-Id: <20100603111125.8cd6a787.akpm@linux-foundation.org>
-In-Reply-To: <4C07E800.5010701@cray.com>
-References: <4BFED954.8060807@cray.com>
-	<20100601231600.3b3bf499.akpm@linux-foundation.org>
-	<4C06E5A6.6@cray.com>
-	<20100602163346.b8f8b8a4.akpm@linux-foundation.org>
-	<4C07E800.5010701@cray.com>
-X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 3 Jun 2010 14:13:32 -0400
+Date: Thu, 3 Jun 2010 19:13:03 +0100
+From: Russell King <rmk@arm.linux.org.uk>
+To: Tony Lindgren <tony@atomide.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+       Kevin Hilman <khilman@deeprootsystems.com>,
+       Daniel Walker <dwalker@codeaurora.org>,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       linux-arm-msm@vger.kernel.org
+Subject: Re: ARM defconfig files
+Message-ID: <20100603181303.GB25779@flint.arm.linux.org.uk>
+References: <20100603074548.GA12104@flint.arm.linux.org.uk> <alpine.LFD.2.00.1006030725420.8175@i5.linux-foundation.org> <20100603164623.GM30622@atomide.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100603164623.GM30622@atomide.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 3 Jun 2010 10:36:00 -0700
-Doug Doan <dougd@cray.com> wrote:
+On Thu, Jun 03, 2010 at 07:46:23PM +0300, Tony Lindgren wrote:
+> Compiling in multiple ARM platforms is trickier, we would have to get
+> rid of the duplicate defines like NR_IRQS, then have some common clock
+> framework etc. Then figure out some way to get rid of Makefile.boot.
+> Russell probably has some other things in mind that would have to be
+> changed to make this happen.
 
-> > Well, specifically it means that
-> > mmu_notifier_invalidate_range_start/end() implemetnations can no longer
-> > take page_table_lock or any lock which nests outside page_table_lock.
-> > That lessens flexibility.
-> >
-> > As the other mmu_notifier_invalidate_range_start/end() callsite in this
-> > function carefully nested those calls outside page_table_lock, perhaps
-> > that was thought to be a significant thing.
-> 
-> Here's my rationale: for the normal page case, the invalidation call is done 
-> inside a page_table_lock,
+- Find someway to handle the wide variety of interrupt controllers.
+- Be able to handle any multitude of V:P translations, including non-linear
+  alongside linear transations.
+- Different PAGE_OFFSETs
+- Different kernel VM layouts allowing for a variety of different ioremap
+  region sizes
 
-It is?  Where does that happen?
+and so the list goes on...
 
-> so the same should also be done in the huge page case. 
-> Does it really make sense to call invalidation on one hugepage and have another 
-> call invalidate the same hugepage while the first call is still not finished?
+> That way maybe you can wait a bit longer for the other defconfigs
+> and as an extra bonus I won't get flamed for removing these omap
+> defconfigs ;)
+
+Note that Linus is talking about removing all but one or two ARM
+defconfigs - which means your omap3_defconfig will probably be
+eventually culled.
+
+-- 
+Russell King
+ Linux kernel    2.6 ARM Linux   - http://www.arm.linux.org.uk/
+ maintainer of:
