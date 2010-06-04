@@ -1,53 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752088Ab0FDGIq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jun 2010 02:08:46 -0400
-Received: from e28smtp08.in.ibm.com ([122.248.162.8]:51051 "EHLO
-	e28smtp08.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751562Ab0FDGIo (ORCPT
+	id S1752105Ab0FDGPL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jun 2010 02:15:11 -0400
+Received: from smtp.nokia.com ([192.100.122.233]:65057 "EHLO
+	mgw-mx06.nokia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751239Ab0FDGPJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jun 2010 02:08:44 -0400
-From: "Aneesh Kumar K. V" <aneesh.kumar@linux.vnet.ibm.com>
-To: Dave Chinner <david@fromorbit.com>
-Cc: hch@infradead.org, viro@zeniv.linux.org.uk, adilger@sun.com,
-       corbet@lwn.net, serue@us.ibm.com, neilb@suse.de, hooanon05@yahoo.co.jp,
-       bfields@fieldses.org, linux-fsdevel@vger.kernel.org, sfrench@us.ibm.com,
-       philippe.deniel@CEA.FR, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH -V13 0/11] Generic name to handle and open by handle syscalls
-In-Reply-To: <20100604054328.GA20641@dastard>
-References: <1275581657-7232-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <20100604054328.GA20641@dastard>
-User-Agent: Notmuch/ (http://notmuchmail.org) Emacs/24.0.50.1 (i686-pc-linux-gnu)
-Date: Fri, 04 Jun 2010 11:38:39 +0530
-Message-ID: <877hmfib2w.fsf@linux.vnet.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	Fri, 4 Jun 2010 02:15:09 -0400
+Subject: Re: linux-next: manual merge of the wireless tree with the net tree
+From: Luciano Coelho <luciano.coelho@nokia.com>
+To: ext Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: "John W. Linville" <linville@tuxdriver.com>,
+       "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       "Oikarinen Juuso (Nokia-D/Tampere)" <juuso.oikarinen@nokia.com>,
+       Eric Dumazet <eric.dumazet@gmail.com>,
+       David Miller <davem@davemloft.net>,
+       "netdev@vger.kernel.org" <netdev@vger.kernel.org>
+In-Reply-To: <20100604114801.df31fb50.sfr@canb.auug.org.au>
+References: <20100604114801.df31fb50.sfr@canb.auug.org.au>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 04 Jun 2010 09:14:24 +0300
+Message-ID: <1275632064.15894.18.camel@chilepepper>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.1 
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 04 Jun 2010 06:14:27.0466 (UTC) FILETIME=[2FB2BEA0:01CB03AD]
+X-Nokia-AV: Clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 4 Jun 2010 15:43:28 +1000, Dave Chinner <david@fromorbit.com> wrote:
-> On Thu, Jun 03, 2010 at 09:44:06PM +0530, Aneesh Kumar K.V wrote:
-> > Hi,
-> > 
-> > The below set of patches implement open by handle support using exportfs
-> > operations. This allows user space application to map a file name to file 
-> > handle and later open the file using handle. This should be usable
-> > for userspace NFS [1] and 9P server [2]. XFS already support this with the ioctls
-> > XFS_IOC_PATH_TO_HANDLE and XFS_IOC_OPEN_BY_HANDLE.
-> .....
-> > Example program: (x86_32). (x86_64 would need a different syscall number)
+On Fri, 2010-06-04 at 03:48 +0200, ext Stephen Rothwell wrote:
+> Hi John,
 > 
-> [snip test program]
+> Today's linux-next merge of the wireless tree got a conflict in
+> drivers/net/wireless/wl12xx/wl1271.h
+> drivers/net/wireless/wl12xx/wl1271_cmd.h between commit
+> ba2d3587912f82d1ab4367975b1df460db60fb1e ("drivers/net: use __packed
+> annotation") from the net tree and commit
+> eb70eb723b489dd4e233e22e47d993f59858cdd8 ("wl1271: Update handling of the
+> NVS file / INI parameters") from the wireless tree.
 > 
-> Just a thought - can you write a set of tests using this (or
-> similar) test program and integrate them into xfstests?
-> 
-> That will help ensure correctness when implementing the API in other
-> filesystems (e.g. XFS ;), as well as provide some level of assurance
-> that we'll notice when we break the code...
-> 
+> I fixed up some if it (see below) and can carry the fixes as necessary.
+> The latter patch also moved some of the structures to another file
+> (drivers/net/wireless/wl12xx/wl1271_ini.h), so they will need fixing up
+> there.
 
-Will do. I also have test that test for different open flags with
-open_by_handle_at. Will add those tests also.
+Acked-by: Luciano Coelho <luciano.coelho@nokia.com>
 
--aneesh
+Thanks for the merge.  I'll submit a new patch fixing the annotation
+from the structs that were moved.
+
+-- 
+Cheers,
+Luca.
+
