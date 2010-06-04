@@ -1,75 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755498Ab0FDKEN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jun 2010 06:04:13 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:56544 "EHLO mx2.mail.elte.hu"
+	id S1753265Ab0FDKGX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jun 2010 06:06:23 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:3942 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753933Ab0FDKEL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jun 2010 06:04:11 -0400
-Date: Fri, 4 Jun 2010 12:03:06 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: tytso@mit.edu, Brian Swetland <swetland@google.com>,
-       Neil Brown <neilb@suse.de>, Arve Hj?nnev?g <arve@android.com>,
-       Thomas Gleixner <tglx@linutronix.de>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-       Alan Stern <stern@rowland.harvard.edu>,
-       Felipe Balbi <felipe.balbi@nokia.com>,
-       LKML <linux-kernel@vger.kernel.org>,
-       Florian Mickler <florian@mickler.org>,
-       Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
-       Linux PM <linux-pm@lists.linux-foundation.org>,
-       Alan Cox <alan@lxorguk.ukuu.org.uk>,
-       James Bottomley <James.Bottomley@suse.de>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       Kevin Hilman <khilman@deeprootsystems.com>,
-       "H. Peter Anvin" <hpa@zytor.com>,
-       Arjan van de Ven <arjan@infradead.org>
-Subject: Re: suspend blockers & Android integration
-Message-ID: <20100604100306.GB3324@elte.hu>
-References: <20100603193045.GA7188@elte.hu>
- <20100603231153.GA11302@elte.hu>
- <20100603232302.GA16184@elte.hu>
- <1275644619.27810.39462.camel@twins>
- <1275645245.27810.39493.camel@twins>
+	id S1750785Ab0FDKGV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Jun 2010 06:06:21 -0400
+Date: Fri, 4 Jun 2010 12:04:16 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: David Rientjes <rientjes@google.com>
+Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+       "Luis Claudio R. Goncalves" <lclaudio@uudg.org>,
+       LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+       Nick Piggin <npiggin@suse.de>
+Subject: Re: [PATCH 09/12] oom: remove PF_EXITING check completely
+Message-ID: <20100604100416.GB8569@redhat.com>
+References: <20100603135106.7247.A69D9226@jp.fujitsu.com> <20100603152436.7262.A69D9226@jp.fujitsu.com> <alpine.DEB.2.00.1006022332320.22441@chino.kir.corp.google.com> <20100603140008.GA3548@redhat.com> <alpine.DEB.2.00.1006031313040.10856@chino.kir.corp.google.com> <20100603221145.GB8511@redhat.com> <alpine.DEB.2.00.1006031618230.30302@chino.kir.corp.google.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1275645245.27810.39493.camel@twins>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
-	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
-	[score: 0.0000]
+In-Reply-To: <alpine.DEB.2.00.1006031618230.30302@chino.kir.corp.google.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 06/03, David Rientjes wrote:
+>
+> On Fri, 4 Jun 2010, Oleg Nesterov wrote:
+>
+> > > > > > Currently, PF_EXITING check is completely broken. because 1) It only
+> > > > > > care main-thread and ignore sub-threads
+> > > > >
+> > > > > Then check the subthreads.
+> > > > >
+> > >
+> > > Did you want to respond to this?
+> >
+> > Please explain what you mean. There were already a lot of discussions
+> > about mt issues, I do not know what you have in mind.
+>
+> Can you check the subthreads to see if they are not PF_EXITING?
 
-* Peter Zijlstra <peterz@infradead.org> wrote:
+To detect the process with the dead group leader?
 
-> On Fri, 2010-06-04 at 11:43 +0200, Peter Zijlstra wrote:
-> > I still believe containment is a cgroup problem. The freeze/snapshot/resume
-> > container folks seem to face many of the same problems. Including the
-> > pending timer one I suspect. Lets solve it there. 
-> 
-> While talking to Thomas about this, we'd probably need a CLOCK_MONOTONIC 
-> namespace to pull this off, so that resumed apps don't see the jump in 
-> absolute time.
-> 
-> This would also help with locating the relevant timers, since they'd be on 
-> the related timer base.
+Yes, we can. We already discussed this. Probably it is better to check
+PF_EXITING and signal_group_exit().
 
-Ok - this looks workable, and looks technically isolated that can be pursued 
-as a separate module of this whole topic.
+> > > I'm guessing at the relevancy here because the changelog is extremely
+> > > poorly worded (if I were Andrew I would have no idea how important this
+> > > patch is based on the description other than the alarmist words of "... is
+> > > completely broken)", but if we're concerned about the coredumper not being
+> > > able to find adequate resources to allocate memory from, we can give it
+> > > access to reserves specifically,
+> >
+> > I don't think so. If oom-kill wants to kill the task which dumps the
+> > code, it should stop the coredumping and exit.
+>
+> That's a coredump change, not an oom killer change.
 
-> The only 'interesting' issue I can see here is that if you create 1000 
-> CLOCK_MONOTONIC namepaces, we'd need to have a tree of trees in order to 
-> efficiently find the leftmost timer.
+Yes. do_coredump() should be fixed. This is not trivial (and needs the
+subtle changes outside of fs/exec.c), we are looking for the simple fix
+for now.
 
-Realistically Android userspace would create just a single such namespace for 
-all the untrusted/unknown/uncontrolled apps, right?
+> If the coredumper
+> needs memory and runs into the oom killer, this PF_EXITING check, which
+> you want to remove, gives it access to memory reserves by setting
+> TIF_MEMDIE so it can quickly finish and die.  This allows it to exit
+> without oom killing anything else because the tasklist scan in the oom
+> killer is not preempted by finding a TIF_MEMDIE task.
 
-	Ingo
+David, sorry. I already tried to explain (at least twice) that TIF_MEMDIE
+(or SIGKILL even if do_coredump() was interruptible) can not help unless
+you find the right thread, this is not trivial even if we forget about
+CLONE_VM tasks.
+
+And personally I disagree that it should use memory reserves, but this
+doesn't matter.
+
+
+Let's stop this. You shouldn't convince me. I am not the author of this
+patch, and I said many times that I do not pretend I understand oom-kill
+needs. I jumped into this discussion because your initial objection
+(fatal_signal_pending() should fix the problems) was technically wrong.
+
+Oleg.
+
