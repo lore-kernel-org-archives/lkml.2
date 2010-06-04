@@ -1,60 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752050Ab0FDEv7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jun 2010 00:51:59 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:36307 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750867Ab0FDEv6 (ORCPT
+	id S1752095Ab0FDExl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jun 2010 00:53:41 -0400
+Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:57725 "EHLO
+	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751781Ab0FDExj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jun 2010 00:51:58 -0400
-Date: Thu, 3 Jun 2010 21:46:01 -0700 (PDT)
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Arjan van de Ven <arjan@infradead.org>
-cc: Ingo Molnar <mingo@elte.hu>, tytso@mit.edu,
-       Brian Swetland <swetland@google.com>, Neil Brown <neilb@suse.de>,
-       Arve Hj?nnev?g <arve@android.com>, Thomas Gleixner <tglx@linutronix.de>,
-       "Rafael J. Wysocki" <rjw@sisk.pl>,
-       Alan Stern <stern@rowland.harvard.edu>,
-       Felipe Balbi <felipe.balbi@nokia.com>,
-       Peter Zijlstra <peterz@infradead.org>,
-       LKML <linux-kernel@vger.kernel.org>,
-       Florian Mickler <florian@mickler.org>,
-       Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
-       Linux PM <linux-pm@lists.linux-foundation.org>,
-       Alan Cox <alan@lxorguk.ukuu.org.uk>,
-       James Bottomley <James.Bottomley@suse.de>,
-       Peter Zijlstra <a.p.zijlstra@chello.nl>,
-       Kevin Hilman <khilman@deeprootsystems.com>,
-       "H. Peter Anvin" <hpa@zytor.com>
-Subject: Re: suspend blockers & Android integration
-In-Reply-To: <20100603204521.09808a7f@infradead.org>
-Message-ID: <alpine.LFD.2.00.1006032141060.8175@i5.linux-foundation.org>
-References: <20100603193045.GA7188@elte.hu> <20100603231153.GA11302@elte.hu> <20100603232302.GA16184@elte.hu> <alpine.LFD.2.00.1006031630300.8175@i5.linux-foundation.org> <20100603234634.GA21831@elte.hu> <alpine.LFD.2.00.1006031856420.8175@i5.linux-foundation.org>
- <alpine.LFD.2.00.1006031917500.8175@i5.linux-foundation.org> <20100603204521.09808a7f@infradead.org>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	Fri, 4 Jun 2010 00:53:39 -0400
+X-Mail-Handler: MailHop Outbound by DynDNS
+X-Originating-IP: 72.249.23.125
+X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/mailhop/outbound_abuse.html for abuse reporting information)
+X-MHO-User: U2FsdGVkX18skNtZoISabDmBpDg4LZrZ
+Date: Fri, 4 Jun 2010 07:53:02 +0300
+From: Tony Lindgren <tony@atomide.com>
+To: Kevin Hilman <khilman@deeprootsystems.com>
+Cc: Russell King <rmk@arm.linux.org.uk>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       Daniel Walker <dwalker@codeaurora.org>,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       linux-arm-msm@vger.kernel.org
+Subject: Re: ARM defconfig files
+Message-ID: <20100604045300.GC6499@atomide.com>
+References: <20100603074548.GA12104@flint.arm.linux.org.uk>
+ <alpine.LFD.2.00.1006030725420.8175@i5.linux-foundation.org>
+ <20100603164623.GM30622@atomide.com>
+ <20100603181303.GB25779@flint.arm.linux.org.uk>
+ <8739x3ir2v.fsf@deeprootsystems.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <8739x3ir2v.fsf@deeprootsystems.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-On Thu, 3 Jun 2010, Arjan van de Ven wrote:
+* Kevin Hilman <khilman@deeprootsystems.com> [100604 03:17]:
+> Russell King <rmk@arm.linux.org.uk> writes:
 > 
-> And because there's then no power saving (but a performance cost), it's
-> actually a negative for battery life/total energy.
+> > On Thu, Jun 03, 2010 at 07:46:23PM +0300, Tony Lindgren wrote:
+> >> Compiling in multiple ARM platforms is trickier, we would have to get
+> >> rid of the duplicate defines like NR_IRQS, then have some common clock
+> >> framework etc. Then figure out some way to get rid of Makefile.boot.
+> >> Russell probably has some other things in mind that would have to be
+> >> changed to make this happen.
+> >
+> > - Find someway to handle the wide variety of interrupt controllers.
+> > - Be able to handle any multitude of V:P translations, including non-linear
+> >   alongside linear transations.
+> > - Different PAGE_OFFSETs
+> > - Different kernel VM layouts allowing for a variety of different ioremap
+> >   region sizes
+> >
+> > and so the list goes on...
+> >
+> 
+> - Support for ARMv5, v6 and v7 in the same kernel image.
+> 
+> On davinci, we've recently run into the problem where a new SoC in the
+> family is largely the same in terms of common HW blocks ands shared
+> peripherals with other davincis, but they upgraded from ARMv5 to
+> ARMv6.  Attempting to build a single kernel that supports ARMv5 and
+> ARMv6 uncovered a pile of assumptions that v5 and v6 would never be in
+> the same kernel.
 
-Including the UP optimizations we do (ie lock prefix removal)? It's 
-possible that I'm just biased by benchmarks, and it's true that Intel has 
-been getting lots better, but the locking costs are very noticeable 
-performance-wise on some benchmarks.
+Yeah we should sort that out, otherwise more things are slowly added
+that makes it harder to do.
 
-And several CPU's have been held back from going into deepest sleep states 
-by stupid firmware and/or platform bugs.
+Regards,
 
-But hey, if it's not going to help, and people have tried it, I guess I'll 
-have to believe it.
-
-		Linus
-
+Tony
