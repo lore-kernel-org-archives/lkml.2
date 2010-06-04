@@ -1,95 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752108Ab0FDEyp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jun 2010 00:54:45 -0400
-Received: from mail-pz0-f185.google.com ([209.85.222.185]:57174 "EHLO
-	mail-pz0-f185.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750867Ab0FDEyn (ORCPT
+	id S1752300Ab0FDEyw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jun 2010 00:54:52 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:45760 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752121Ab0FDEyu convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jun 2010 00:54:43 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:content-transfer-encoding
-         :in-reply-to:user-agent;
-        b=fNSd0W61BjeSyuKc5WbyYLVgjBSmjI7ZLgo/QLccnK9BgAyi/oKVr5AIbU/9xbqP+y
-         LmTyZCsvy8a01oWcRa0Vzm5ryUHRcv3Oe0vDkAg0Fq0y6A8I3/GmbgI+wyg0zUAUowWA
-         XvtNOesRy8bW6BLLCKL1gWm8cN50c8fTAcAIk=
-Date: Fri, 4 Jun 2010 12:58:38 +0800
-From: =?utf-8?Q?Am=C3=A9rico?= Wang <xiyou.wangcong@gmail.com>
-To: Luming Yu <luming.yu@gmail.com>
-Cc: =?utf-8?Q?Am=C3=A9rico?= Wang <xiyou.wangcong@gmail.com>,
-       Anton Vorontsov <cbouatmailru@gmail.com>, Jeff Garzik <jeff@garzik.org>,
-       LKML <linux-kernel@vger.kernel.org>, Michal Marek <mmarek@suse.cz>,
-       Sam Ravnborg <sam@ravnborg.org>
-Subject: Re: 2.6.25-rc1 ahci regression
-Message-ID: <20100604045838.GE5167@cr0.nay.redhat.com>
-References: <AANLkTima_jbwafiHQsncQzdX04ZcjO_8QIpq5UOohi3x@mail.gmail.com>
- <20100603093923.GA25856@oksana.dev.rtsoft.ru>
- <AANLkTim8TALR8Ev9KDX4tteXUrQ3oKOcnyMHk9WOdUvG@mail.gmail.com>
- <20100603131414.GA23520@oksana.dev.rtsoft.ru>
- <20100603132319.GA4889@oksana.dev.rtsoft.ru>
- <20100603135031.GA9964@oksana.dev.rtsoft.ru>
- <AANLkTimRDNiN-rOl-V-WnRiVwXNaZ8sPPmj_TzsNLZmq@mail.gmail.com>
- <20100603150422.GA31604@oksana.dev.rtsoft.ru>
- <20100603154533.GA11525@hack>
- <AANLkTil9qF3gGg1Ev4CQsMHkb6ZdUU6OVh_fZHAyNqcX@mail.gmail.com>
+	Fri, 4 Jun 2010 00:54:50 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <AANLkTil9qF3gGg1Ev4CQsMHkb6ZdUU6OVh_fZHAyNqcX@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20100603232302.GA16184@elte.hu>
+References: <20100603193045.GA7188@elte.hu>
+	<20100603231153.GA11302@elte.hu>
+	<20100603232302.GA16184@elte.hu>
+Date: Thu, 3 Jun 2010 21:54:50 -0700
+Message-ID: <AANLkTikZP3bmckpfb_jUdG7qZO5W9DgpZ79ugtSZaEpt@mail.gmail.com>
+Subject: Re: suspend blockers & Android integration
+From: =?ISO-8859-1?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: tytso@mit.edu, Brian Swetland <swetland@google.com>,
+       Neil Brown <neilb@suse.de>, Thomas Gleixner <tglx@linutronix.de>,
+       "Rafael J. Wysocki" <rjw@sisk.pl>,
+       Alan Stern <stern@rowland.harvard.edu>,
+       Felipe Balbi <felipe.balbi@nokia.com>,
+       Peter Zijlstra <peterz@infradead.org>,
+       LKML <linux-kernel@vger.kernel.org>,
+       Florian Mickler <florian@mickler.org>,
+       Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
+       Linux PM <linux-pm@lists.linux-foundation.org>,
+       Alan Cox <alan@lxorguk.ukuu.org.uk>,
+       James Bottomley <James.Bottomley@suse.de>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       Peter Zijlstra <a.p.zijlstra@chello.nl>,
+       Kevin Hilman <khilman@deeprootsystems.com>,
+       "H. Peter Anvin" <hpa@zytor.com>,
+       Arjan van de Ven <arjan@infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 03, 2010 at 11:48:08PM +0800, Luming Yu wrote:
->On Thu, Jun 3, 2010 at 11:45 PM, AmÃ©rico Wang <xiyou.wangcong@gmail.com> wrote:
->> On Thu, Jun 03, 2010 at 07:04:22PM +0400, Anton Vorontsov wrote:
->>>On Thu, Jun 03, 2010 at 10:13:57PM +0800, Luming Yu wrote:
->>>> On Thu, Jun 3, 2010 at 9:50 PM, Anton Vorontsov <cbouatmailru@gmail.com> wrote:
->>>> > On Thu, Jun 03, 2010 at 05:23:19PM +0400, Anton Vorontsov wrote:
->>>> > [...]
->>>> >> Oh. It seems I found it. It must be the module order loading
->>>> >> thing.
->>>> >>
->>>> >> Can you try the patch down below?
->>>> >
->>>> > OTOH... libahci is a link-time dependency. And the order doesn't
->>>> > matter here. So you should just have the libahci module in
->>>> > the initrd (actually, mkinitrd or whatever you use should
->>>> > have included this automatically).
->>>> >
->>>>
->>>> Neither ahci nor libachi is automatically included in initrd..
->>>
->>>What commands you use to build the kernel and initrd?
->>>
->>>> Manually added ahci and libachi into initrd seems to make the problem go away..
->>>> Any idea why that could happen?
->>>
->>>No idea off hand.
->>>
->>>Cc'ing Kbuild folks. Question is: is there something wrong with
->>>writing stuff like this:
->>>obj-$(CONFIG_SATA_AHCI) Â  Â  Â  Â  += ahci.o libahci.o
->>>obj-$(CONFIG_SATA_AHCI_PLATFORM) += ahci_platform.o libahci.o
->>>as in drivers/ata/Makefile?
->>>
->>>It seem to link fine, .ko's are created. But for some reason
->>>initrd doesn't include these modules for Luming...
->>>
->>
->> Odd.
->> Are these modules exported to /lib/modules/`uname -r`/ directory?
+On Thu, Jun 3, 2010 at 4:23 PM, Ingo Molnar <mingo@elte.hu> wrote:
+...
+>  - Controlled auto-suspend: drivers (such as input) could on wakeup
+>   automatically set the 'minimum wakeup latency' value of wakee tasks to a
+>   lower value. This automatically prevents another auto-suspend in the near
+>   future: up to the point the wakee task increases its latency (via the
+>   scheduler syscall) again and allows suspend again.
 >
->mkinitrd ... --with=ahic --with=libahci works for me
->
->>
->> And, Luming, are you using Dracut?
->>
->yes, I have dracut installed
 
-Hmm, this looks like a problem of dracut than kbuild...
-I don't know why mkinitrd/dracut missed ahci here.
+How do you clear the latency value in a safe way? If another wakeup
+event happens right after your wakee task is done processing the last
+event and decides to increase its latency, auto suspend will be
+allowed even though you have an unprocessed wakeup event. Also how do
+you know which task will read the event if it is not already waiting
+for it?
+
+
+>   This means there will be no surprise suspends for a task that may take a
+>   bit longer than usual to finish its work. [ Detail: this would only be done
+>   for tasks that have a non-default (non-infinity) task->latency value - to
+>   prevent the input driver from lowering latency values (and preventing
+>   future suspends) just because some unaware apps are running and using input
+>   drivers. ]
+
+Don't you need two inifinity values for this?
+
+-- 
+Arve Hjønnevåg
