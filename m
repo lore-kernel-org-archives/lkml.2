@@ -1,62 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756254Ab0FDOrQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jun 2010 10:47:16 -0400
-Received: from msux-gh1-uea02.nsa.gov ([63.239.65.40]:57727 "EHLO
-	msux-gh1-uea02.nsa.gov" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755586Ab0FDOrP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jun 2010 10:47:15 -0400
-X-Greylist: delayed 1102 seconds by postgrey-1.27 at vger.kernel.org; Fri, 04 Jun 2010 10:47:15 EDT
-Subject: Re: [PATCH 04/14] evm: re-release
-From: Stephen Smalley <sds@tycho.nsa.gov>
-To: Mimi Zohar <zohar@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
-       James Morris <jmorris@namei.org>,
-       David Safford <safford@watson.ibm.com>,
-       Dave Hansen <dave@linux.vnet.ibm.com>, Mimi Zohar <zohar@us.ibm.com>
-In-Reply-To: <1271886594-3719-5-git-send-email-zohar@linux.vnet.ibm.com>
-References: <1271886594-3719-1-git-send-email-zohar@linux.vnet.ibm.com>
-	 <1271886594-3719-5-git-send-email-zohar@linux.vnet.ibm.com>
-Content-Type: text/plain; charset="UTF-8"
-Organization: National Security Agency
-Date: Fri, 04 Jun 2010 10:28:50 -0400
-Message-ID: <1275661730.21231.32.camel@moss-pluto.epoch.ncsc.mil>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
-Content-Transfer-Encoding: 7bit
+	id S1756394Ab0FDOtk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jun 2010 10:49:40 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:57500 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756031Ab0FDOtj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Jun 2010 10:49:39 -0400
+Date: Fri, 4 Jun 2010 10:49:21 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: =?iso-8859-1?Q?Am=E9rico?= Wang <xiyou.wangcong@gmail.com>
+Cc: Andi Kleen <andi@firstfloor.org>,
+       Vitaly Mayatskikh <v.mayatskih@gmail.com>, linux-kernel@vger.kernel.org,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+       "H. Peter Anvin" <hpa@zytor.com>, Randy Dunlap <rdunlap@xenotime.net>
+Subject: Re: [PATCH 0/5] kdump: extract log buffer and registers from
+	vmcore on NMI button pressing
+Message-ID: <20100604144921.GG4111@redhat.com>
+References: <1275464359-1566-1-git-send-email-v.mayatskih@gmail.com> <20100602151611.GA3174@redhat.com> <87iq60a3rh.wl%vmayatsk@redhat.com> <87d3w8xy3q.fsf@basil.nowhere.org> <874ohkuwhs.wl%vmayatsk@redhat.com> <20100603151347.GC4166@basil.fritz.box> <20100604094936.GA5975@cr0.nay.redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20100604094936.GA5975@cr0.nay.redhat.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-04-21 at 17:49 -0400, Mimi Zohar wrote:
-> EVM protects a file's security extended attributes against integrity
-> attacks. It maintains an HMAC-sha1 value across the extended attributes,
-> storing the value as the extended attribute 'security.evm'. EVM has gone
-> through a number of iterations, initially as an LSM module, subsequently
-> as a LIM integrity provider, and now, when co-located with a security_
-> hook, embedded directly in the security_ hook, similar to IMA.
+On Fri, Jun 04, 2010 at 05:49:36PM +0800, Américo Wang wrote:
+> On Thu, Jun 03, 2010 at 05:13:47PM +0200, Andi Kleen wrote:
+> >> > NMI would be only needed if the crash kernel is completely
+> >> > hosed too.
+> >> 
+> >> That's the case.
+> >
+> >You're saying it booted but is hosed after boot?
+> >
+> >That seems like a very obscure case. Is that really common?
+> >
 > 
-> This is the first part of a local file integrity verification system.
-> While this part does authenticate the selected extended attributes, and
-> cryptographically bind them to the inode, coming extensions will bind
-> other directory and inode metadata for more complete protection.  The
-> set of protected security extended attributes is configured at compile.
+> Actually, I met two of this kind of cases recently.
 > 
-> EVM depends on the Kernel Key Retention System to provide it with the
-> kernel master key for the HMAC operation.  The kernel master key is
-> securely loaded onto the root's keyring, typically by 'loadkernkey',
-> which either uses the TPM sealed secret key, if available, or a
-> password requested from the console.  To signal EVM, that the key has
-> been loaded onto the keyring, 'echo 1 > <securityfs>/evm'. This is
-> normally done in the initrd, which has already been measured as part
-> of the trusted boot. (Refer to http://linux-ima.sourceforge.net/#EVM.)
+> One was stucked in early_idt_hander() during booting the second kernel,
+> the other one is even worse, I even can't find where it hangs.
 
-I don't remember this dependency on the kernel key system in prior
-incarnations of EVM.  Can you explain the rationale for using it, and
-the implications?
+If you can't initialize the idt, will NMI work?
 
--- 
-Stephen Smalley
-National Security Agency
+I think we need to fix those cases instead of creating another NMI
+handler. To handle cases like network is not up or there is not sufficient
+space on disk, a user space utility in kdump initrd should work.
+
+Thanks
+Vivek
 
