@@ -1,129 +1,158 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751912Ab0FDRzV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jun 2010 13:55:21 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:27463 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751328Ab0FDRzT (ORCPT
-	<rfc822;<linux-kernel@vger.kernel.org>>);
-	Fri, 4 Jun 2010 13:55:19 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: albert_herranz@yahoo.es, fujita.tomonori@lab.ntt.co.jp,
-       akpm@linux-foundation.org
-Cc: linux-kernel@vger.kernel.org, jeremy@goop.org,
-       iommu@lists.linux-foundation.org, linux@arm.linux.org.uk,
-       dwmw2@infradead.org, chrisw@sous-sol.org, Ian.Campbell@eu.citrix.com
-Subject: [PATCH 2/5] swiotlb: add the swiotlb initialization function with iotlb memory
-Date: Fri,  4 Jun 2010 13:52:32 -0400
-Message-Id: <1275673955-30267-3-git-send-email-konrad.wilk@oracle.com>
-X-Mailer: git-send-email 1.6.2.5
-In-Reply-To: <1275673955-30267-2-git-send-email-konrad.wilk@oracle.com>
-References: <1275673955-30267-1-git-send-email-konrad.wilk@oracle.com>
- <1275673955-30267-2-git-send-email-konrad.wilk@oracle.com>
-X-Auth-Type: Internal IP
-X-Source-IP: acsinet15.oracle.com [141.146.126.227]
-X-CT-RefId: str=0001.0A090202.4C093DBE.01D2:SCFMA922111,ss=1,fgs=0
+	id S1752121Ab0FDR6f (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jun 2010 13:58:35 -0400
+Received: from mail-px0-f174.google.com ([209.85.212.174]:55650 "EHLO
+	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751265Ab0FDR6d (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Jun 2010 13:58:33 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=TxAxaDRL9RZ7b1VDHUtxE0yg7JMn8jAQ9uqhth0cMyPm6Jp1gWPJy9ShGBllalcg2C
+         x2KyBhs3LgdddRtDq4jsnaImuaUNLWtK0c8uNKjwSfDc5pWCaj7A/2QOaLmllWI1kV6R
+         2QTiMEqDccbwhOpJ7I97ch0GSOh7s3VSL8qM4=
+Date: Fri, 4 Jun 2010 10:58:28 -0700
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Bjorn Helgaas <bjorn.helgaas@hp.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+       linux-acpi@vger.kernel.org, Len Brown <lenb@kernel.org>
+Subject: Re: [PATCH] PNPACPI: cope with invalid device IDs
+Message-ID: <20100604175828.GA17135@core.coreip.homeip.net>
+References: <20100604080432.16068.31159.stgit@localhost.localdomain>
+ <201006041123.25141.bjorn.helgaas@hp.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201006041123.25141.bjorn.helgaas@hp.com>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+On Fri, Jun 04, 2010 at 11:23:22AM -0600, Bjorn Helgaas wrote:
+> On Friday, June 04, 2010 02:04:32 am Dmitry Torokhov wrote:
+> > If primary ID (HID) is invalid try locating first valid ID on compatible
+> > ID list before giving up. This helps, for example, to recognize i8042 AUX
+> > port on Sony Vaio VPCZ1 which uses SNYSYN0003 as HID.
+> 
+> Is there a bugzilla report or mailing list discussion you could point
+> to here (in the changelog)?
+> 
+> > Tested-by: Jan-Hendrik Zab <jan@jhz.name>
+> > Signed-off-by: Dmitry Torokhov <dtor@mail.ru>
+> > ---
+> > 
+> >  drivers/pnp/pnpacpi/core.c |   27 +++++++++++++++++++++++----
+> >  1 files changed, 23 insertions(+), 4 deletions(-)
+> > 
+> > diff --git a/drivers/pnp/pnpacpi/core.c b/drivers/pnp/pnpacpi/core.c
+> > index f7ff628..1bf1677 100644
+> > --- a/drivers/pnp/pnpacpi/core.c
+> > +++ b/drivers/pnp/pnpacpi/core.c
+> > @@ -28,7 +28,7 @@
+> >  #include "../base.h"
+> >  #include "pnpacpi.h"
+> >  
+> > -static int num = 0;
+> > +static int num;
+> 
+> Unrelated change, but OK by me :-)
+> 
+> >  /* We need only to blacklist devices that have already an acpi driver that
+> >   * can't use pnp layer. We don't need to blacklist device that are directly
+> > @@ -157,11 +157,24 @@ struct pnp_protocol pnpacpi_protocol = {
+> >  };
+> >  EXPORT_SYMBOL(pnpacpi_protocol);
+> >  
+> > +static char *pnpacpi_get_id(struct acpi_device *device)
+> > +{
+> > +	struct acpi_hardware_id *id;
+> > +
+> > +	list_for_each_entry(id, &device->pnp.ids, list) {
+> > +		if (ispnpidacpi(id->id))
+> > +			return id->id;
+> > +	}
+> > +
+> > +	return NULL;
+> > +}
+> > +
+> >  static int __init pnpacpi_add_device(struct acpi_device *device)
+> >  {
+> >  	acpi_handle temp = NULL;
+> >  	acpi_status status;
+> >  	struct pnp_dev *dev;
+> > +	char *pnpid;
+> >  	struct acpi_hardware_id *id;
+> >  
+> >  	/*
+> > @@ -169,11 +182,17 @@ static int __init pnpacpi_add_device(struct acpi_device *device)
+> >  	 * driver should not be loaded.
+> >  	 */
+> >  	status = acpi_get_handle(device->handle, "_CRS", &temp);
+> > -	if (ACPI_FAILURE(status) || !ispnpidacpi(acpi_device_hid(device)) ||
+> > -	    is_exclusive_device(device) || (!device->status.present))
+> > +	if (ACPI_FAILURE(status))
+> > +		return 0;
+> > +
+> > +	pnpid = pnpacpi_get_id(device);
+> > +	if (!pnpid)
+> > +		return 0;
+> 
+> This part (run ispnpidacpi() on all _HIDs & _CIDs, not just on _HID,
+> so we'll now build a PNPACPI device for things with an invalid _HID
+> but a valid _CID) makes sense to me and is probably required for the
+> i8042 PNP driver to claim the device.
+> 
+> > +
+> > +	if (!is_exclusive_device(device) || !device->status.present)
+> >  		return 0;
+> >  
+> > -	dev = pnp_alloc_dev(&pnpacpi_protocol, num, acpi_device_hid(device));
+> > +	dev = pnp_alloc_dev(&pnpacpi_protocol, num, pnpid);
+> 
+> I'm curious about this part.  Does it fix something?
+> 
+> Let's say this device has _HID=SNYSYN0003, _CID=PNP0F13.
+> 
+> Previously, we didn't make a PNP device at all because SNYSYN0003 is
+> invalid.  Now, we'll make a device, exclude SNYSYN0003 from the PNP ID
+> list, and it looks like the loop farther down will add PNP0f13 again,
+> so we'll end up with "PNP0f13 PNP0f13" (I think I mentioned this when
+> reviewing an earlier version of the patch :-)).
+> 
+> With the original pnp_alloc_dev(acpi_device_hid()) call, we'll probably
+> end up with "SNYsyn0 PNP0f13".  That's clearly wrong, too.
+> 
+> For now, I think the best fix is to keep this pnp_alloc_dev() call change
+> and adjust the loop so it doesn't add "pnpid" again, so we end up with
+> just "PNP0f13".
+>
 
-This enables the caller to initialize swiotlb with its own iotlb
-memory.
+Riiight... I remember I promised you to fix it and that is what I had in
+some other patch:
 
-[v2: changed ..with_tlb to ..with_tbl]
+@@ -223,7 +224,7 @@ static int __init pnpacpi_add_device(struct
+acpi_device *device)
+                pnpacpi_parse_resource_option_data(dev);
+ 
+        list_for_each_entry(id, &device->pnp.ids, list) {
+-               if (!strcmp(id->id, acpi_device_hid(device)))
++               if (!strcmp(id->id, pnpid))
+                        continue;
+                if (!ispnpidacpi(id->id))
+                        continue;
 
-Signed-off-by: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
-Reviewed-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Tested-by: Albert Herranz <albert_herranz@yahoo.es>
----
- include/linux/swiotlb.h |    1 +
- lib/swiotlb.c           |   48 +++++++++++++++++++++++++++++-----------------
- 2 files changed, 31 insertions(+), 18 deletions(-)
+The problem is that I forgot to fold it into the original one... I'll
+fix it later tonight and resend.
 
-diff --git a/include/linux/swiotlb.h b/include/linux/swiotlb.h
-index 81a4e21..b406261 100644
---- a/include/linux/swiotlb.h
-+++ b/include/linux/swiotlb.h
-@@ -23,6 +23,7 @@ extern int swiotlb_force;
- #define IO_TLB_SHIFT 11
- 
- extern void swiotlb_init(int verbose);
-+extern void swiotlb_init_with_tbl(char *tlb, unsigned long nslabs, int verbose);
- 
- extern void
- *swiotlb_alloc_coherent(struct device *hwdev, size_t size,
-diff --git a/lib/swiotlb.c b/lib/swiotlb.c
-index 783aff0..ec61e15 100644
---- a/lib/swiotlb.c
-+++ b/lib/swiotlb.c
-@@ -140,28 +140,14 @@ void swiotlb_print_info(void)
- 	       (unsigned long long)pend);
- }
- 
--/*
-- * Statically reserve bounce buffer space and initialize bounce buffer data
-- * structures for the software IO TLB used to implement the DMA API.
-- */
--void __init
--swiotlb_init_with_default_size(size_t default_size, int verbose)
-+void __init swiotlb_init_with_tbl(char *tlb, unsigned long nslabs, int verbose)
- {
- 	unsigned long i, bytes;
- 
--	if (!io_tlb_nslabs) {
--		io_tlb_nslabs = (default_size >> IO_TLB_SHIFT);
--		io_tlb_nslabs = ALIGN(io_tlb_nslabs, IO_TLB_SEGSIZE);
--	}
-+	bytes = nslabs << IO_TLB_SHIFT;
- 
--	bytes = io_tlb_nslabs << IO_TLB_SHIFT;
--
--	/*
--	 * Get IO TLB memory from the low pages
--	 */
--	io_tlb_start = alloc_bootmem_low_pages(bytes);
--	if (!io_tlb_start)
--		panic("Cannot allocate SWIOTLB buffer");
-+	io_tlb_nslabs = nslabs;
-+	io_tlb_start = tlb;
- 	io_tlb_end = io_tlb_start + bytes;
- 
- 	/*
-@@ -185,6 +171,32 @@ swiotlb_init_with_default_size(size_t default_size, int verbose)
- 		swiotlb_print_info();
- }
- 
-+/*
-+ * Statically reserve bounce buffer space and initialize bounce buffer data
-+ * structures for the software IO TLB used to implement the DMA API.
-+ */
-+void __init
-+swiotlb_init_with_default_size(size_t default_size, int verbose)
-+{
-+	unsigned long bytes;
-+
-+	if (!io_tlb_nslabs) {
-+		io_tlb_nslabs = (default_size >> IO_TLB_SHIFT);
-+		io_tlb_nslabs = ALIGN(io_tlb_nslabs, IO_TLB_SEGSIZE);
-+	}
-+
-+	bytes = io_tlb_nslabs << IO_TLB_SHIFT;
-+
-+	/*
-+	 * Get IO TLB memory from the low pages
-+	 */
-+	io_tlb_start = alloc_bootmem_low_pages(bytes);
-+	if (!io_tlb_start)
-+		panic("Cannot allocate SWIOTLB buffer");
-+
-+	swiotlb_init_with_tbl(io_tlb_start, io_tlb_nslabs, verbose);
-+}
-+
- void __init
- swiotlb_init(int verbose)
- {
+> In the long term, I wonder if it'd be better to quit checking the ID for
+> validity and make pnp_id.id a pointer rather than an array, so we could
+> have "SNYSYN0003 PNP0f13" as PNP IDs for this device.  I bet that's what
+> Windows does. 
+> 
+
 -- 
-1.6.2.5
-
+Dmitry
