@@ -1,50 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751930Ab0FDP3O (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jun 2010 11:29:14 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:54958 "EHLO mx2.suse.de"
+	id S1751980Ab0FDPca (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jun 2010 11:32:30 -0400
+Received: from cantor.suse.de ([195.135.220.2]:60015 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751267Ab0FDP3N (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jun 2010 11:29:13 -0400
-Date: Fri, 4 Jun 2010 08:27:23 -0700
-From: Greg KH <gregkh@suse.de>
-To: Wan ZongShun <mcuos.com@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] lib: fix a memory leak risk
-Message-ID: <20100604152723.GA25400@suse.de>
-References: <4C08D498.5090503@gmail.com>
+	id S1751487Ab0FDPc2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Jun 2010 11:32:28 -0400
+Date: Fri, 4 Jun 2010 17:32:10 +0200
+From: Jan Kara <jack@suse.cz>
+To: Dave Chinner <david@fromorbit.com>
+Cc: Chris Mason <chris.mason@oracle.com>, Nick Piggin <npiggin@suse.de>,
+       "Martin K. Petersen" <martin.petersen@oracle.com>,
+       James Bottomley <James.Bottomley@suse.de>,
+       Matthew Wilcox <matthew@wil.cx>,
+       Christof Schmitt <christof.schmitt@de.ibm.com>,
+       Boaz Harrosh <bharrosh@panasas.com>, linux-scsi@vger.kernel.org,
+       linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
+Subject: Re: Wrong DIF guard tag on ext2 write
+Message-ID: <20100604153210.GE3414@quack.suse.cz>
+References: <20100601164750.GQ8980@think>
+ <1275411293.21962.387.camel@mulgrave.site>
+ <20100601180905.GR8980@think>
+ <20100601184649.GE9453@laptop>
+ <20100601193528.GV8980@think>
+ <20100602032030.GF9453@laptop>
+ <yq17hmhbmkb.fsf@sermon.lab.mkp.net>
+ <20100602134121.GD6152@laptop>
+ <20100603154634.GC8980@think>
+ <20100604020243.GE19651@dastard>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4C08D498.5090503@gmail.com>
+In-Reply-To: <20100604020243.GE19651@dastard>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 04, 2010 at 06:25:28PM +0800, Wan ZongShun wrote:
-> The netlink_kernel_create failed will arouse memory leak,
-> this patch is to add the 'kfree(ue_sk)' here.
+On Fri 04-06-10 12:02:43, Dave Chinner wrote:
+> On Thu, Jun 03, 2010 at 11:46:34AM -0400, Chris Mason wrote:
+> > On Wed, Jun 02, 2010 at 11:41:21PM +1000, Nick Piggin wrote:
+> > > Closing the while it is dirty, while it is being written back window
+> > > still leaves a pretty big window. Also, how do you handle mmap writes?
+> > > Write protect and checksum the destination page after every store? Or
+> > > leave some window between when the pagecache is dirtied and when it is
+> > > written back? So I don't know whether it's worth putting a lot of effort
+> > > into this case.
+> > 
+> > So, changing gears to how do we protect filesystem page cache pages
+> > instead of the generic idea of dif/dix, btrfs crcs just before writing,
+> > which does leave a pretty big window for the page to get corrupted.
+> > The storage layer shouldn't care or know about that though, we hand it a
+> > crc and it makes sure data matching that crc goes to the media.
 > 
-> Signed-off-by: Wan ZongShun <mcuos.com@gmail.com>
-> 
-> ---
->  lib/kobject_uevent.c |    1 +
->  1 files changed, 1 insertions(+), 0 deletions(-)
-> 
-> diff --git a/lib/kobject_uevent.c b/lib/kobject_uevent.c
-> index 59c1551..08e15f7 100644
-> --- a/lib/kobject_uevent.c
-> +++ b/lib/kobject_uevent.c
-> @@ -378,6 +378,7 @@ static int uevent_net_init(struct net *net)
->  	if (!ue_sk->sk) {
->  		printk(KERN_ERR
->  		       "kobject_uevent: unable to create netlink socket!\n");
-> +		kfree(ue_sk);
+> I think the only way to get accurate CRCs is to stop modifications
+> from occurring while the page is under writeback. i.e. when a page
+> transitions from dirty to writeback we need to unmap any writable
+> mappings on the page, and then any new modifications (either by the
+> write() path or through ->fault) need to block waiting for
+> page writeback to complete before they can proceed...
+  Actually, we already write-protect the page in clear_page_dirty_for_io
+so the first part already happens. Any filesystem can do
+wait_on_page_writeback() in its ->page_mkwrite function so even the second
+part shouldn't be hard. I'm just a bit worried about the performance
+implications / hidden deadlocks...
+  Also we'd have to wait_on_page_writeback() in ->write_begin function to
+protect against ordinary writes  but that's the easy part...
 
-Sorry, others already sent this patch in before you, it's already in the
-linux-next tree, and is going to Linus later today.
-
-thanks,
-
-greg k-h
+									Honza
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
