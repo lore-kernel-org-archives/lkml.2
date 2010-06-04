@@ -1,62 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756389Ab0FDQ5t (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jun 2010 12:57:49 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:41145 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755399Ab0FDQ5q (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jun 2010 12:57:46 -0400
-Date: Fri, 4 Jun 2010 09:56:51 -0700
-From: Randy Dunlap <randy.dunlap@oracle.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>, linux-wireless@vger.kernel.org
-Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: linux-next: Tree for June 4 (mac80211)
-Message-Id: <20100604095651.5f59119e.randy.dunlap@oracle.com>
-In-Reply-To: <20100604153006.fa15c770.sfr@canb.auug.org.au>
-References: <20100604153006.fa15c770.sfr@canb.auug.org.au>
-Organization: Oracle Linux Eng.
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-Auth-Type: Internal IP
-X-Source-IP: acsinet15.oracle.com [141.146.126.227]
-X-CT-RefId: str=0001.0A090202.4C093086.002C:SCFMA922111,ss=1,fgs=0
+	id S1755292Ab0FDRDj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jun 2010 13:03:39 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:57934 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753361Ab0FDRDi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Jun 2010 13:03:38 -0400
+Date: Fri, 4 Jun 2010 10:03:31 -0700
+From: Greg KH <gregkh@suse.de>
+To: Daniel Mack <daniel@caiaq.de>
+Cc: linux-kernel@vger.kernel.org, "Rafael J. Wysocki" <rjw@sisk.pl>,
+       Len Brown <len.brown@intel.com>, Magnus Damm <damm@igel.co.jp>,
+       Alan Stern <stern@rowland.harvard.edu>,
+       Randy Dunlap <randy.dunlap@oracle.com>,
+       linux-pm@lists.linux-foundation.org
+Subject: Re: [PATCH] drivers/base/power: be more verbose in device_pm_add()
+Message-ID: <20100604170331.GA3144@suse.de>
+References: <1275653834-9132-1-git-send-email-daniel@caiaq.de>
+ <20100604164527.GA27034@suse.de>
+ <20100604165037.GG2695@buzzloop.caiaq.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100604165037.GG2695@buzzloop.caiaq.de>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 4 Jun 2010 15:30:06 +1000 Stephen Rothwell wrote:
-
-> Hi all,
+On Fri, Jun 04, 2010 at 06:50:37PM +0200, Daniel Mack wrote:
+> On Fri, Jun 04, 2010 at 09:45:27AM -0700, Greg KH wrote:
+> > On Fri, Jun 04, 2010 at 02:17:14PM +0200, Daniel Mack wrote:
+> > > If a parentless device was added during a PM transaction, developers
+> > > might want to know which device caused the troube. Hence, output the
+> > > kobject's name in this case.
+> > > 
+> > > Signed-off-by: Daniel Mack <daniel@caiaq.de>
+> > > Cc: Rafael J. Wysocki <rjw@sisk.pl>
+> > > Cc: Len Brown <len.brown@intel.com>
+> > > Cc: Greg Kroah-Hartman <gregkh@suse.de>
+> > > Cc: Magnus Damm <damm@igel.co.jp>
+> > > Cc: Alan Stern <stern@rowland.harvard.edu>
+> > > Cc: Randy Dunlap <randy.dunlap@oracle.com>
+> > > Cc: linux-pm@lists.linux-foundation.org
+> > > ---
+> > >  drivers/base/power/main.c |    2 +-
+> > >  1 files changed, 1 insertions(+), 1 deletions(-)
+> > > 
+> > > diff --git a/drivers/base/power/main.c b/drivers/base/power/main.c
+> > > index 941fcb8..9e9fe6a 100644
+> > > --- a/drivers/base/power/main.c
+> > > +++ b/drivers/base/power/main.c
+> > > @@ -98,7 +98,7 @@ void device_pm_add(struct device *dev)
+> > >  		 * transition is in progress in order to avoid leaving them
+> > >  		 * unhandled down the road
+> > >  		 */
+> > > -		dev_WARN(dev, "Parentless device registered during a PM transaction\n");
+> > > +		dev_WARN(dev, "Parentless device registered during a PM transaction: %s\n", kobject_name(&dev->kobj));
+> > 
+> > Doesn'tthe dev_WARN call already print the name of the device?  Why
+> > print it twice?
 > 
-> Changes since 20100603:
+> Erm, no it didn't. Should it have? This is what I saw:
 > 
-> My fixes tree contains:
->       v4l-dvb: update gfp/slab.h includes
->       arm: update gfp/slab.h includes
->       davinci: update gfp/slab.h includes
->       ocfs2: update gfp/slab.h includes
->       acpi: update gfp/slab.h includes
-> 
-> The wireless tree gained a conflict against the net tree.
-> 
-> The rr tree gained a build failure for which I applied a patch.
+> [    0.880646] Parentless device registered during a PM transaction
 
+You should have gotten more information than just that single line,
+right?  Like a full backtrace to the driver that did the offending
+thing?
 
-when CONFIG_INET is not enabled:
+It should also have had a "Device: 'device_name_here'" on the line
+before this one, right?
 
+Can you send the full output that happened here?
 
-ERROR: "register_inetaddr_notifier" [net/mac80211/mac80211.ko] undefined!
-ERROR: "unregister_inetaddr_notifier" [net/mac80211/mac80211.ko] undefined!
+thanks,
 
-or
-
-(.text+0xb9585): undefined reference to `unregister_inetaddr_notifier'
-(.text+0xb9b84): undefined reference to `register_inetaddr_notifier'
-
-
----
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+greg k-h
