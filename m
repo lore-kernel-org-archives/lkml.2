@@ -1,105 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932411Ab0FDPOi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jun 2010 11:14:38 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:23276 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756228Ab0FDPOg convert rfc822-to-8bit (ORCPT
+	id S932357Ab0FDPTr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jun 2010 11:19:47 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:55989 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751523Ab0FDPTq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jun 2010 11:14:36 -0400
-MIME-Version: 1.0
-Message-ID: <16b4dcd5-95d8-4cb0-885d-0189ef90c02b@default>
-Date: Fri, 4 Jun 2010 08:13:14 -0700 (PDT)
-From: Dan Magenheimer <dan.magenheimer@oracle.com>
-To: Minchan Kim <minchan.kim@gmail.com>
-Cc: chris.mason@oracle.com, viro@zeniv.linux.org.uk, akpm@linux-foundation.org,
-       adilger@Sun.COM, tytso@mit.edu, mfasheh@suse.com,
-       joel.becker@oracle.com, matthew@wil.cx, linux-btrfs@vger.kernel.org,
-       linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-       linux-ext4@vger.kernel.org, ocfs2-devel@oss.oracle.com,
-       linux-mm@kvack.org, ngupta@vflare.org, jeremy@goop.org,
-       JBeulich@novell.com, kurt.hackel@oracle.com, npiggin@suse.de,
-       dave.mccracken@oracle.com, riel@redhat.com, avi@redhat.com,
-       konrad.wilk@oracle.com
-Subject: RE: [PATCH V2 3/7] Cleancache (was Transcendent Memory): VFS hooks
-References: <20100528173610.GA12270@ca-server1.us.oracle.com
- 20100604132948.GC1879@barrios-desktop>
-In-Reply-To: <20100604132948.GC1879@barrios-desktop>
-X-Priority: 3
-X-Mailer: Oracle Beehive Extensions for Outlook 1.5.1.5.2  (401224) [OL
- 12.0.6514.5000]
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 8BIT
-X-Auth-Type: Internal IP
-X-Source-IP: acsinet15.oracle.com [141.146.126.227]
-X-CT-RefId: str=0001.0A090202.4C091823.0098:SCFMA922111,ss=1,fgs=0
+	Fri, 4 Jun 2010 11:19:46 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=cQOegh+1co1ZWBTiWH5BuHZjjC32b4fC2Qy4bgup4KgJkvIXLXuOT7tt9SOnzV+9Yk
+         qLSNvehCfG98HEoBQeu9toFCYRx1qCCx028LfljM1dPiXPnpiEVDP3VoFzVynU4fsU/z
+         hFhjHUCpJqXl3/XNxVQqcx+KT726ABZE40jqo=
+Subject: Re: [linux-pm] Is it supposed to be ok to call del_gendisk while
+ userspace is frozen?
+From: Maxim Levitsky <maximlevitsky@gmail.com>
+To: Alan Stern <stern@rowland.harvard.edu>
+Cc: Pavel Machek <pavel@ucw.cz>, Jens Axboe <jens.axboe@oracle.com>,
+       "Rafael J. Wysocki" <rjw@sisk.pl>,
+       linux-pm <linux-pm@lists.linux-foundation.org>,
+       linux-kernel <linux-kernel@vger.kernel.org>,
+       Andrew Morton <akpm@linux-foundation.org>
+In-Reply-To: <Pine.LNX.4.44L0.1006041052570.1794-100000@iolanthe.rowland.org>
+References: <Pine.LNX.4.44L0.1006041052570.1794-100000@iolanthe.rowland.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 04 Jun 2010 18:19:38 +0300
+Message-ID: <1275664778.4596.1.camel@maxim-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Hi, Dan.
-> I reviewed quickly. So I may be wrong. :)
-
-Hi Minchan --
-
-Thanks for your thorough review!  I don't think anyone
-else yet has examined the semantics of the cleancache
-patch as deeply as you have.  Excellent!
-
-> > +	/*
-> > +	 * if we're uptodate, flush out into the cleancache, otherwise
-> > +	 * invalidate any existing cleancache entries.  We can't leave
-> > +	 * stale data around in the cleancache once our page is gone
-> > +	 */
-> > +	if (PageUptodate(page))
-> > +		cleancache_put_page(page);
-> > +	else
-> > +		cleancache_flush_page(mapping, page);
+On Fri, 2010-06-04 at 10:59 -0400, Alan Stern wrote: 
+> On Fri, 4 Jun 2010, Maxim Levitsky wrote:
 > 
-> I doubt it's right place related to PFRA.
-
-I agree it doesn't seem to be the right place, but it does work
-and there doesn't seem to be a better place.
- 
-> 1)
-> You mentiond PFRA in you description and I understood cleancache has
-> a cold clean page which is evicted by reclaimer.
-> But __remove_from_page_cache can be called by other call sites.
+> > On Thu, 2010-03-04 at 14:53 +0100, Pavel Machek wrote: 
+> > > Hi!
+> > > 
+> > > > > journalling assumptions broken: commit block is there, but previous
+> > > > > blocks are not intact. Data loss.
+> > > > > 
+> > > > > ...and that was the first I could think about. Lets not do
+> > > > >  this. Barriers were invented for a reason.
+> > > > 
+> > > > Very well.  Then we still need a solution to the original problem:  
+> > > > Devices sometimes need to be unregistered during resume, but
+> > > > del_gendisk() blocks on the writeback thread, which is frozen until
+> > > > after the resume finishes.  How do you suggest this be fixed?
+> > > 
+> > > Avoid unregistering device during resume. Instead, return errors until
+> > > resume is done and you can call del_gendisk? 
+> > 
+> > This won't help ether. The same driver needs to unregister perfectly
+> > working device on suspend, because the user might replace the card
+> > during suspend and fool the os.
+> > There is a setting, CONFIG_MMC_UNSAFE_RESUME and I use it, but it isn't
+> > default.
 > 
-> For example, shmem_write page calls it for moving the page from page
-> cache
-> to swap cache. Although there isn't the page in page cache, it is in
-> swap cache.
-> So next read/write of shmem until swapout happens can be read/write in
-> swap cache.
+> People have generally agreed that the best answer is to have 
+> del_gendisk always thaw the writeback thread.
+Now the question is how to do that? :-)
+
+Best regards,
+Maxim Levitsky
+
 > 
-> I didn't looked into whole of callsites. But please review again them.
+> > Anyway to revive that old thread, how about introducing new
+> > del_gendisk_no_sync?
+> > 
+> > A less safe version of del_gendisk, but which won't sync the filesystem.
+> > Since driver knows that card is gone, there is no point of syncing it.
+> > 
+> > (the sync is done by invalidate_partition, so some flag should be
+> > propagated to it).
+> 
+> That might work for mmc, but it wouldn't help other drivers subject to
+> the same problem.
+> 
+> Besides, it's subject to races.  What if the card _isn't_ gone, but for 
+> some other reason the driver wants to unregister the device at a time 
+> when the writeback thread is frozen?
+> 
+> Alan Stern
+> 
 
-I think the "if (PageUptodate(page))" eliminates all the cases
-where bad things can happen.
-
-Note that there may be cases where some unnecessary puts/flushes
-occur.  The focus of the patch is on correctness first; it may
-be possible to increase performance (marginally) in the future by
-reducing unnecessary cases.
-
-> 3) Please consider system memory pressure.
-> And I hope Nitin consider this, too.
-
-This is definitely very important but remember that cleancache
-provides a great deal of flexibility:  Any page in cleancache
-can be thrown away at any time as every page is clean!  It
-can even accept a page and throw it away immediately.  Clearly
-the backend needs to do this intelligently so this will
-take some policy work.
-
-Since I saw you sent a separate response to Nitin, I'll
-let him answer for his in-kernel page cache compression
-work.  The solution to the similar problem for Xen is
-described in the tmem internals document that I think
-I pointed to earlier here:
-http://oss.oracle.com/projects/tmem/documentation/internals/ 
-
-Thanks,
-Dan
 
