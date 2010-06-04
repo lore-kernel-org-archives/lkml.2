@@ -1,59 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932350Ab0FDOZc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jun 2010 10:25:32 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:62733 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754168Ab0FDOZb (ORCPT
+	id S932428Ab0FDOZv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jun 2010 10:25:51 -0400
+Received: from ksp.mff.cuni.cz ([195.113.26.206]:39948 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S932293Ab0FDOZu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jun 2010 10:25:31 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=HruoRZYdSnVDHWdvliugX5kCX1e19C8BDB4QPBTn0he8kzO5pWLq2v6o8kAz2yCGzg
-         IB6EUmbpLOISp+GhBO2GJLO3nLR2GCxw5xHbBFhWFpj0VvzJa/6XQ0Kkm6rqit5jz7hG
-         fjzAmR171mn8FgtiitAtkrkgSeYshb5kL5Xzo=
-Subject: Re: [patch 2/4] lglock: introduce special lglock and brlock spin
- locks
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Nick Piggin <npiggin@suse.de>
-Cc: Al Viro <viro@ZenIV.linux.org.uk>, linux-kernel@vger.kernel.org,
-       linux-fsdevel@vger.kernel.org,
-       "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-       Frank Mayhar <fmayhar@google.com>, John Stultz <johnstul@us.ibm.com>,
-       Andi Kleen <ak@linux.intel.com>
-In-Reply-To: <20100604141318.GC26335@laptop>
-References: <20100604064307.737085373@suse.de>
-	 <20100604072618.400686656@suse.de>
-	 <1275638163.2482.2.camel@edumazet-laptop>  <20100604141318.GC26335@laptop>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 04 Jun 2010 16:24:25 +0200
-Message-ID: <1275661465.2482.174.camel@edumazet-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 8bit
+	Fri, 4 Jun 2010 10:25:50 -0400
+Date: Fri, 4 Jun 2010 16:24:39 +0200
+From: Pavel Machek <pavel@ucw.cz>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: Dan Magenheimer <dan.magenheimer@oracle.com>,
+       Arjan van de Ven <arjan@infradead.org>,
+       Venkatesh Pallipadi <venki@google.com>, Ingo Molnar <mingo@elte.hu>,
+       Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
+       chris.mason@oracle.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] x86: Export tsc related information in sysfs
+Message-ID: <20100604142439.GC1760@ucw.cz>
+References: <1273887635-27610-1-git-send-email-venki@google.com>
+ <87tyq9mqrz.fsf@basil.nowhere.org>
+ <e07ac2f3-4a82-41d9-aa41-49a94435e7b7@default>
+ <20100517102635.GB20761@basil.fritz.box>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100517102635.GB20761@basil.fritz.box>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le samedi 05 juin 2010 à 00:13 +1000, Nick Piggin a écrit :
-> On Fri, Jun 04, 2010 at 09:56:03AM +0200, Eric Dumazet wrote:
+Hi!
 
-> > IMHO some changes in Documentation/ would be needed
+> > Yes, understood.  But the kernel doesn't expose a "gettimeofday
+> > performance sucks" flag either.  If it did (or in the case of
+> > the patch, if tsc_reliable is zero) the application could at least
+> > choose to turn off the 10000-100000 timestamps/second and log
+> > a message saying "you are running on old hardware so you get
+> > fewer features".
 > 
-> I wonder where, and what?
+> I don't think anyone would object to exporting such a flag if 
+> it's cleanly designed.
 > 
->  
+> Getting the semantics right for that might be somewhat tricky
+> though. How is "slow" defined?
 
-Documentation/memory-barriers.txt (around line 1111)
+Well... if you want to know how fast gettimeofday is, perhaps doing
 
-Documentation/spinlocks.txt  (change its name ?)
+gettimeofday(); gettimeofday();
 
-Section 1 : spinlocks
+is good enough?
 
-Section 2 : rwlocks
+If not, perhaps you can export 'how many clocks is gettimeofday
+ expected to take' variable somewhere, but...
 
-Section 3 : lglock/brlock  ?
+								Pavel
 
 
+> > A CPU-hotplugable system is a good example of a case where
+> > the kernel should expose that tsc_reliable is 0.  (I've heard
+> 
+> That would mean that a large class of systems which
+> are always hotplug capable (even if it's not used) 
+> would never get fast TSC time.
+> 
+> Wasn't the goal here to be faster? 
+> 
+> > anecdotally that CPU hotplug into a QPI or Hypertransport system
+> > will have some other interesting challenges, so may require some
+> > special kernel parameters anyway.)  Even if tsc_reliable were
+> > only enabled if a "no-cpu_hotplug" kernel parameter is set,
+> > that is still useful.  And with cores-per-socket (and even
+> > nodes-per-socket) going up seemingly every day, multi-socket
+> > systems will likely be an ever smaller percentage of new
+> > systems.
+> 
+> Still the people running them will expect as good performance
+> as possible.
+> 
+> -Andi
+> 
+
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
