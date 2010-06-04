@@ -1,46 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752679Ab0FDG5Q (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jun 2010 02:57:16 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:61309 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1751409Ab0FDG5N (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jun 2010 02:57:13 -0400
-Message-ID: <4C08A3C0.3090106@cn.fujitsu.com>
-Date: Fri, 04 Jun 2010 14:57:04 +0800
-From: Lai Jiangshan <laijs@cn.fujitsu.com>
-User-Agent: Thunderbird 2.0.0.6 (Windows/20070728)
+	id S1752542Ab0FDG7X (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jun 2010 02:59:23 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:39726 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751967Ab0FDG7W (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Jun 2010 02:59:22 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=fK0BL6OYdyu1NEF6gWrRf7pNT9MWibBfXTCP+iKwDBZpi6FbJQAexVY8REJB82q/O/
+         j6AHa6WxbQwjg0DRMcrstfXDQ+2SzjEKdCqjN3AatoQO9LZmiP1CEIZ5ySVzjKBW4G+I
+         /CEzGhoxNmmxwGjkOnF8KHr3StivjWYFcHJ8g=
+Date: Thu, 3 Jun 2010 23:59:15 -0700
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Henrik Rydberg <rydberg@euromail.se>
+Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+       Jiri Kosina <jkosina@suse.cz>, Mika Kuoppala <mika.kuoppala@nokia.com>,
+       Benjamin Tissoires <tissoire@cena.fr>, Rafi Rubin <rafi@seas.upenn.edu>
+Subject: Re: [PATCH 0/4] input: evdev: Dynamic buffers (rev3)
+Message-ID: <20100604065915.GF21239@core.coreip.homeip.net>
+References: <1275552062-8153-1-git-send-email-rydberg@euromail.se>
 MIME-Version: 1.0
-To: Steven Rostedt <rostedt@goodmis.org>
-CC: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Thomas Gleixner <tglx@linutronix.de>,
-       Frederic Weisbecker <fweisbec@gmail.com>
-Subject: Re: [PATCH 2/2] tracing: Remove ftrace_preempt_disable/enable
-References: <20100604013506.159506222@goodmis.org> <20100604013557.373837407@goodmis.org>
-In-Reply-To: <20100604013557.373837407@goodmis.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1275552062-8153-1-git-send-email-rydberg@euromail.se>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Steven Rostedt wrote:
-> From: Steven Rostedt <srostedt@redhat.com>
+Hi Henrik,
+
+On Thu, Jun 03, 2010 at 10:00:58AM +0200, Henrik Rydberg wrote:
+> Dmitry,
+> 
+> Please find enclosed the third version of the evdev buffer patches.
+> 
+> This version has one more patch; the locking mechanism has been broken
+> out into its own file, buflock.h, adding a fair amount of
+> documentation. The mechanism has been moderately tested, showing
+> graceful dropping of packets as the buffer size gets smaller and the
+> number of simultaneous readers gets larger.
+> 
+> In the second patch, the per-client buffer is replaced by the buflock
+> reader, and the spinlock name is changed to reflect the reduced area
+> it covers. The third patch only has trivial changes, and the fourth
+> patch is unchanged, but included for completeness.
 > 
 
-Acked-by: Lai Jiangshan <laijs@cn.fujitsu.com>
+I think the patchet moves things in the right direction, however I am
+unsure at the moment about buflock implementation. Any chance you coudl
+redo the series without the buflock (with readers taking dev->event_lock
+for now) and once buflock is sorted we can switch to is as a followup).
 
+Thanks.
 
-I think we may need to ensure need_resched() notrace:
-
--static inline int need_resched(void)
-+static __always_inline int need_resched(void)
-
--static inline int test_ti_thread_flag(struct thread_info *ti, int flag)
-+static __always_inline int test_ti_thread_flag(struct thread_info *ti, int flag)
-
-...
-
-I believe compiler will always inline them, It just looks nicer when use __always_inline.
-
+-- 
+Dmitry
