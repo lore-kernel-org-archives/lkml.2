@@ -1,90 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932247Ab0FDCmT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jun 2010 22:42:19 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:53420 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S932180Ab0FDCmS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jun 2010 22:42:18 -0400
-Message-ID: <4C0868A0.5080508@cn.fujitsu.com>
-Date: Fri, 04 Jun 2010 10:44:48 +0800
-From: Li Zefan <lizf@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1b3pre) Gecko/20090513 Fedora/3.0-2.3.beta2.fc11 Thunderbird/3.0b2
+	id S932317Ab0FDCna (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jun 2010 22:43:30 -0400
+Received: from mail-px0-f174.google.com ([209.85.212.174]:40101 "EHLO
+	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932079Ab0FDCn1 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Jun 2010 22:43:27 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type:content-transfer-encoding;
+        b=AG16vMkHvjZOrFGdh/xaPU3C8YCG69PeAj5Q66Zu++SWzb7Ax9MSgSZGB2XYTni3kG
+         p891PLKT7BBvTfYhbgthRUnqDQG022vYMDjuJILFDrUiLkWwVyeGu3bAw9ydPYTlaqUa
+         eNk3Xe50Gs9+dK9jZNM3dOoduKd6byX+c4EvY=
 MIME-Version: 1.0
-To: paulmck@linux.vnet.ibm.com
-CC: Daniel J Blueman <daniel.blueman@gmail.com>,
-       Linux Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] RCU: don't turn off lockdep when find suspicious rcu_dereference_check()
- usage
-References: <AANLkTinNygSdXsg3vAVRHttAMh6nX4tauNKn3XnfQC_x@mail.gmail.com> <20100602145653.GA2385@linux.vnet.ibm.com> <4C07743C.7030204@cn.fujitsu.com> <20100603183040.GA2385@linux.vnet.ibm.com>
-In-Reply-To: <20100603183040.GA2385@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20100603175643.GY8301@sequoia.sous-sol.org>
+References: <AANLkTimTm57fvumRXo9pegOY2M78mduBsClwYlmAOzpo@mail.gmail.com> 
+	<20100601183920.GB19955@kroah.com> <EA929A9653AAE14F841771FB1DE5A1365FF3EC130E@rrsmsx501.amr.corp.intel.com> 
+	<AANLkTinmxW5gQUOYJgK67Dc1FdakeXSmuu1hExKKL1qk@mail.gmail.com> 
+	<EA929A9653AAE14F841771FB1DE5A1365FF3F8D431@rrsmsx501.amr.corp.intel.com> 
+	<AANLkTilDY61GMGNLezXYLbbe3B8-SvgMOK5L9Q6juETL@mail.gmail.com> 
+	<20100603175643.GY8301@sequoia.sous-sol.org>
+From: Frank Pan <frankpzh@gmail.com>
+Date: Fri, 4 Jun 2010 10:43:07 +0800
+Message-ID: <AANLkTil7ZIqfdYeNA1dkfIDoKPeWU-FIArR-n-1HjqEz@mail.gmail.com>
+Subject: Re: Add a helper function in PCI IOV to get VF device
+To: Chris Wright <chrisw@sous-sol.org>
+Cc: "Williams, Mitch A" <mitch.a.williams@intel.com>, Greg KH <greg@kroah.com>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Jesse Barnes <jbarnes@virtuousgeek.org>,
+       Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>,
+       "Rafael J. Wysocki" <rjw@sisk.pl>,
+       "David S. Miller" <davem@davemloft.net>,
+       Matt Carlson <mcarlson@broadcom.com>,
+       "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Seems worth reviewing the other uses of task_group():
-> 
-> 1.	set_task_rq() -- only a runqueue and a sched_rt_entity leave
-> 	the RCU read-side critical section.  Runqueues do persist.
-> 	I don't claim to understand the sched_rt_entity life cycle.
-> 
-> 2.	__sched_setscheduler() -- not clear to me that this one is
-> 	protected to begin with.  If it is somehow correctly protected,
-> 	it discards the RCU-protected pointer immediately, so is OK
-> 	otherwise.
-> 
-> 3.	cpu_cgroup_destroy() -- ditto.
-> 
-> 4.	cpu_shares_read_u64() -- ditto.
-> 
-> 5.	print_task() -- protected by rcu_read_lock() and discards the
-> 	RCU-protected pointer immediately, so this one is OK.
-> 
-> Any task_group() experts able to weigh in on #2, #3, and #4?
-> 
+> VF is often loaded on the physical machine.  There's also a networking
+> specific mechanism for querying and configuring a VF via the PF.
+? I don't really understand. What do you mean load? I don't think
+physical machine is able to use it as a hardware device.
 
-#3 and #4 are safe, because it's not calling task_group(), but
-cgroup_tg():
+> While your patch is simple, it's unclear to me what your end goal is.
+> The patch itself only adds a function. if you showed how you are
+> planning to use it, that would really help.
+Currently my hack is applied on 2.6.18 because of xen's limitation. As
+Mitch says, igb driver is significantly different with recent ones. On
+the other hand, my hack just exposes several PCI configuration and
+MMIO registers to the sysfs, you will only understand the use case
+when you also see the userspace hacks.
 
-	struct task_group *tg = cgroup_tg(cgrp);
+> It's especially confusing that you are comparing your patch with
+> symlinks visible in sysfs.
+That's my fault. The most recent reply explains it.
 
-As long as it's safe to access cgrp, it's safe to access tg.
+Thanks for reply.
 
-> 							Thanx, Paul
-> 
-> Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-> 
-> diff --git a/kernel/sched_fair.c b/kernel/sched_fair.c
-> index 50ec9ea..224ef98 100644
-> --- a/kernel/sched_fair.c
-> +++ b/kernel/sched_fair.c
-> @@ -1251,7 +1251,6 @@ static int wake_affine(struct sched_domain *sd, struct task_struct *p, int sync)
->  	}
->  
->  	tg = task_group(p);
-> -	rcu_read_unlock();
->  	weight = p->se.load.weight;
->  
->  	imbalance = 100 + (sd->imbalance_pct - 100) / 2;
-> @@ -1268,6 +1267,7 @@ static int wake_affine(struct sched_domain *sd, struct task_struct *p, int sync)
->  	balanced = !this_load ||
->  		100*(this_load + effective_load(tg, this_cpu, weight, weight)) <=
->  		imbalance*(load + effective_load(tg, prev_cpu, 0, weight));
-> +	rcu_read_unlock();
->  
+-- 
+Frank Pan
 
-This is fine.
-
-Another way is :
-
-rcu_read_lock();
-tg = task_group(p);
-css_get(&tg->css);
-rcu_read_unlock();
-
-/* do something */
-...
-
-css_put(&tg->css);
+Computer Science and Technology
+Tsinghua University
