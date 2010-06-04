@@ -1,46 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751551Ab0FDFRP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jun 2010 01:17:15 -0400
-Received: from smtp.nokia.com ([192.100.122.230]:29724 "EHLO
-	mgw-mx03.nokia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751505Ab0FDFRN (ORCPT
+	id S1751487Ab0FDFUb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jun 2010 01:20:31 -0400
+Received: from smtp.nokia.com ([192.100.105.134]:22033 "EHLO
+	mgw-mx09.nokia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750896Ab0FDFU3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jun 2010 01:17:13 -0400
-Subject: Re: [PATCHv4 17/17] writeback: lessen sync_supers wakeup count
-From: Artem Bityutskiy <dedekind1@gmail.com>
-Reply-To: dedekind1@gmail.com
-To: Al Viro <viro@ZenIV.linux.org.uk>
-Cc: LKML <linux-kernel@vger.kernel.org>, Jens Axboe <jens.axboe@oracle.com>,
-       linux-fsdevel@vger.kernel.org
-In-Reply-To: <20100604042606.GA31073@ZenIV.linux.org.uk>
-References: <1274795352-3551-1-git-send-email-dedekind1@gmail.com>
-	 <1274795352-3551-18-git-send-email-dedekind1@gmail.com>
-	 <20100527065041.GA31073@ZenIV.linux.org.uk>
-	 <1275314820.2678.153.camel@localhost>
-	 <20100604042606.GA31073@ZenIV.linux.org.uk>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 04 Jun 2010 08:13:34 +0300
-Message-ID: <1275628414.25847.2.camel@localhost>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.1.2 (2.30.1.2-6.fc13) 
-Content-Transfer-Encoding: 8bit
-X-OriginalArrivalTime: 04 Jun 2010 05:15:40.0230 (UTC) FILETIME=[F94D3E60:01CB03A4]
+	Fri, 4 Jun 2010 01:20:29 -0400
+Date: Fri, 4 Jun 2010 08:18:38 +0300
+From: Felipe Balbi <felipe.balbi@nokia.com>
+To: ext Grant Likely <grant.likely@secretlab.ca>
+Cc: Tony Lindgren <tony@atomide.com>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       Russell King <rmk@arm.linux.org.uk>,
+       Daniel Walker <dwalker@codeaurora.org>,
+       Kevin Hilman <khilman@deeprootsystems.com>,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>
+Subject: Re: ARM defconfig files
+Message-ID: <20100604051838.GA21510@nokia.com>
+Reply-To: felipe.balbi@nokia.com
+References: <20100603181010.GA25779@flint.arm.linux.org.uk>
+ <alpine.LFD.2.00.1006031116360.8175@i5.linux-foundation.org>
+ <20100603185333.GD25779@flint.arm.linux.org.uk>
+ <alpine.LFD.2.00.1006031153420.8175@i5.linux-foundation.org>
+ <1275593742.23384.48.camel@c-dwalke-linux.qualcomm.com>
+ <20100603194559.GF25779@flint.arm.linux.org.uk>
+ <alpine.LFD.2.00.1006031305310.8175@i5.linux-foundation.org>
+ <alpine.LFD.2.00.1006031317410.8175@i5.linux-foundation.org>
+ <20100603211707.GA6499@atomide.com>
+ <AANLkTin1UYFfstxPQpmUXawyX1YRqr-PMDCwjFRsJtR_@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii; format=flowed
+Content-Disposition: inline
+In-Reply-To: <AANLkTin1UYFfstxPQpmUXawyX1YRqr-PMDCwjFRsJtR_@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-OriginalArrivalTime: 04 Jun 2010 05:19:41.0197 (UTC) FILETIME=[88EDE3D0:01CB03A5]
 X-Nokia-AV: Clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2010-06-04 at 05:26 +0100, Al Viro wrote:
-> I suspect that most of those used to rely on lock_super() way back.
-> In case of ext2_sync_super() we probably want just to move ->s_dirt = 0
-> into the very beginning; no serialization is really needed beyond (_maybe_)
-> some barriers.  No idea about affs, needs to be checked.
+On Fri, Jun 04, 2010 at 12:15:45AM +0200, ext Grant Likely wrote:
+>On Thu, Jun 3, 2010 at 3:17 PM, Tony Lindgren <tony@atomide.com> wrote:
+>> * Linus Torvalds <torvalds@linux-foundation.org> [100603 23:30]:
+>>>
+>>> and now you'd be able to basically generate a OMAP3EVM .config file by
+>>> just running "allnoconfig" on that Kconfig.omap3_evm file. But it would
+>>> only have to select the parts that are specific for the EVM platform,
+>>> because the generic OMAP3 support would be picked by the Kconfig.omap3
+>>> file, which in turn would not have to worry about the generic ARM parts
+>>> etc.
+>>>
+>>> See?
+>>
+>> Sounds like a good improvment to me.
+>
+>(as one who just finishing updating powerpc defconfigs...) ditto here.
+> I'd be happy to be rid of all the existing ppc defconfigs.
+>
+>I like the Kconfig approach, but to be useful (at least for me) there
+>would need to be a way to get Kconfig to complain about things like
+>broken selects as in your example.
 
-Yeah, moving s_dirt to the beginning should work. I think the same
-should be done for affs. I'll look at other FS-es WRT this as well.
+Still selects needs to be improved so we have a 'select_module' option 
+that would make that driver a module instead of built-in.
 
 -- 
-Best Regards,
-Artem Bityutskiy (Артём Битюцкий)
+balbi
 
+DefectiveByDesign.org
