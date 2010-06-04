@@ -1,66 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751537Ab0FDE0K (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jun 2010 00:26:10 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:37731 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751312Ab0FDE0I (ORCPT
+	id S1751554Ab0FDEbI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jun 2010 00:31:08 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:55905 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751306Ab0FDEbG convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jun 2010 00:26:08 -0400
-Date: Fri, 4 Jun 2010 05:26:06 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Artem Bityutskiy <dedekind1@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Jens Axboe <jens.axboe@oracle.com>,
-       linux-fsdevel@vger.kernel.org
-Subject: Re: [PATCHv4 17/17] writeback: lessen sync_supers wakeup count
-Message-ID: <20100604042606.GA31073@ZenIV.linux.org.uk>
-References: <1274795352-3551-1-git-send-email-dedekind1@gmail.com>
- <1274795352-3551-18-git-send-email-dedekind1@gmail.com>
- <20100527065041.GA31073@ZenIV.linux.org.uk>
- <1275314820.2678.153.camel@localhost>
+	Fri, 4 Jun 2010 00:31:06 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=GjYenLuU67GVtzgI3SZ9TclglAiXDcAnuk+RBHsF25NGXhM4F4hCQ0K9a5+QGBghvp
+         oFnGLoMLAaX8ibkMIIDqpaYupc/0GixBemsL30afn8m/81RHjAHLRyvXS+DsgFX91VLu
+         dAP/XfuTPamlpLJw1qzgNmaKZnghUOe8vSkxA=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1275314820.2678.153.camel@localhost>
-User-Agent: Mutt/1.5.20 (2009-08-17)
+In-Reply-To: <AANLkTikBtcHTAE-4JrpOM4GGa45MCcVRKs6vK0YMBATc@mail.gmail.com>
+References: <1275623379.1515.1.camel@eight.analog.com>
+	<AANLkTikBtcHTAE-4JrpOM4GGa45MCcVRKs6vK0YMBATc@mail.gmail.com>
+Date: Fri, 4 Jun 2010 12:31:03 +0800
+Message-ID: <AANLkTikOo3qjHVmmOT7IsFGRas6-EqsDWzKoUGyqPCBD@mail.gmail.com>
+Subject: Re: [Uclinux-dist-devel] [PATCH v5] regulator: new drivers for AD5398 
+	and AD5821
+From: Sonic Zhang <sonic.adi@gmail.com>
+To: Mike Frysinger <vapier.adi@gmail.com>
+Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+       Liam Girdwood <lrg@slimlogic.co.uk>,
+       uclinux-dist-devel <uclinux-dist-devel@blackfin.uclinux.org>,
+       Linux Kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 31, 2010 at 05:07:00PM +0300, Artem Bityutskiy wrote:
-> you requested me to review s_dirt usage, well, I'm trying now. One thing
-> I do not understand is s_dirt serialization, which seems to be just
-> absent in some FSes. I checked affs and ext2. E.g., affs does:
-> 
-> affs_alloc_block()
-> {
->         mark_buffer_dirty(bh);
->         sb->s_dirt = 1;
-> }
-> 
-> vs
-> 
-> affs_write_super()
-> {
-> 	affs_commit_super();
-> 	/* YYY: what if sb is marked as dirty right here? */
-> 	sb->s_dirt = 0;
-> }
-> 
-> vs
-> 
-> /* This wakes up periodically */
-> sync_super()
-> {
-> 	if (sb->s_root && sb->s_dirt)
-> 		sb->s_op->write_super(sb);
-> }
-> 
-> ext2 seems to be doing something similar. It seems to me that FSes
-> should serialize s_dirt changes somehow, but they don't? Why this is not
-> a problem?
+On Fri, Jun 4, 2010 at 11:46 AM, Mike Frysinger <vapier.adi@gmail.com> wrote:
+> On Thu, Jun 3, 2010 at 23:49, sonic zhang wrote:
+>> +static const struct regulator_ops ad5398_ops = {
+>> +static const struct regulator_desc ad5398_reg = {
+>
+> when i said these should be const, this isnt something that can start
+> with the drivers.  the core needs to be fixed first.  otherwise these
+> simply trigger warnings.
+> -mike
+>
 
-I suspect that most of those used to rely on lock_super() way back.
-In case of ext2_sync_super() we probably want just to move ->s_dirt = 0
-into the very beginning; no serialization is really needed beyond (_maybe_)
-some barriers.  No idea about affs, needs to be checked.
+This is a typo error.
+
+Sonic
