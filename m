@@ -1,49 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757400Ab0FDWmc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jun 2010 18:42:32 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:50474 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757165Ab0FDWmb (ORCPT
+	id S1757353Ab0FDWuq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jun 2010 18:50:46 -0400
+Received: from mga01.intel.com ([192.55.52.88]:44590 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751530Ab0FDWuo convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jun 2010 18:42:31 -0400
-Date: Fri, 4 Jun 2010 15:37:01 -0700 (PDT)
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Jens Axboe <jaxboe@fusionio.com>
-cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       Philipp Reisner <philipp.reisner@linbit.com>,
-       Lars Ellenberg <lars.ellenberg@linbit.com>
-Subject: Re: [GIT PULL] block/IO bits for 2.6.35-rc1
-In-Reply-To: <4C08F758.7070009@fusionio.com>
-Message-ID: <alpine.LFD.2.00.1006041531340.8175@i5.linux-foundation.org>
-References: <4C08F758.7070009@fusionio.com>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	Fri, 4 Jun 2010 18:50:44 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.53,363,1272870000"; 
+   d="scan'208";a="804883524"
+From: "Luck, Tony" <tony.luck@intel.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: Rusty Russell <rusty@rustcorp.com.au>,
+       Dave Young <hidave.darkstar@gmail.com>,
+       Stephen Rothwell <sfr@canb.auug.org.au>,
+       "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
+       LKML <linux-kernel@vger.kernel.org>
+Date: Fri, 4 Jun 2010 15:50:41 -0700
+Subject: RE: linux-next: Tree for June 3
+Thread-Topic: linux-next: Tree for June 3
+Thread-Index: AcsEMsfjJb3LN2sZRwWRDfzzClcI6gAAxBiw
+Message-ID: <987664A83D2D224EAE907B061CE93D530114C3DE4D@orsmsx505.amr.corp.intel.com>
+References: <20100603134753.710a64b3.sfr@canb.auug.org.au>
+ <AANLkTilr92GkR8bfgyjtb8ToYEEAv4oCsFsfsy04HJRU@mail.gmail.com>
+ <AANLkTim6v2s-Q5BndAKLOZKaA1wYgbU3UKJwNy-6Jkki@mail.gmail.com>
+ <201006032222.57411.rusty@rustcorp.com.au>
+ <AANLkTikN_3oLIFQ0CRiLwXUV79myy_aqriezdCgnZHFT@mail.gmail.com>
+ <alpine.LFD.2.00.1006041255210.8175@i5.linux-foundation.org>
+ <987664A83D2D224EAE907B061CE93D530114C3DC47@orsmsx505.amr.corp.intel.com>
+ <alpine.LFD.2.00.1006041452130.8175@i5.linux-foundation.org>
+In-Reply-To: <alpine.LFD.2.00.1006041452130.8175@i5.linux-foundation.org>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+> Does this fix it? I stopped looking for other possible causes when I found 
+> this one.
 
+It gets rid of the oops. So that's good.  Something is still
+hokey in linux-next land though because no modules get loaded.
+So no ehci/uhci available :-(
 
-On Fri, 4 Jun 2010, Jens Axboe wrote:
->
-> - A drbd update.
+No obvious looking error messages on the console.
 
-Can we agree to just stop this? 
+-Tony
+---
+ kernel/module.c |    3 ++-
+ 1 files changed, 2 insertions(+), 1 deletions(-)
 
-During the merge window, please. The drbd fiasco has been going on too 
-long for me to believe in the whole "a few more fixes" thing.
-
-If it's a security issue, or a major oops, take it. But don't send me 
-"updates" or stuff "just to make it work", since it never has before.
-
-It's not a regression that drbd is in bad shape. So don't try to make it 
-out to be one. And if it's not a regression or a major oops/security 
-issue, it goes into the NEXT MERGE WINDOW.
-
-Yes, I'm annoyed. Somebody needs to call out the drbd crud. I really don't 
-want _any_ more drbd crap after the merge window. If I see any more, I'll 
-stop pulling. Comprende?
-
-			Linus
+diff --git a/kernel/module.c b/kernel/module.c
+index 69a3f12..9a0b275 100644
+--- a/kernel/module.c
++++ b/kernel/module.c
+@@ -2653,9 +2653,10 @@ static struct module *load_module(void __user *umod,
+ 	module_unload_free(mod);
+  free_module:
+ 	module_deallocate(mod, &info);
++	mod = ERR_PTR(err);
+  free_copy:
+ 	free_copy(&info);
+-	return ERR_PTR(err);
++	return mod;
+ }
+ 
+ /* Call module constructors. */
