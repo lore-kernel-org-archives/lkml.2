@@ -1,36 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756856Ab0FDAuh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jun 2010 20:50:37 -0400
-Received: from 124x34x33x190.ap124.ftth.ucom.ne.jp ([124.34.33.190]:47682 "EHLO
-	master.linux-sh.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756588Ab0FDAug (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jun 2010 20:50:36 -0400
-Date: Fri, 4 Jun 2010 09:50:10 +0900
-From: Paul Mundt <lethal@linux-sh.org>
-To: Chris Metcalf <cmetcalf@tilera.com>
-Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
-       torvalds@linux-foundation.org, fujita.tomonori@lab.ntt.co.jp
-Subject: Re: [PATCH] arch/tile: respond to reviews of the second code submission.
-Message-ID: <20100604005010.GC31868@linux-sh.org>
-References: <201005290334.o4T3Y1FX029944@farm-0002.internal.tilera.com> <201006032141.o53LfZC9019335@lab-15.internal.tilera.com>
+	id S1756920Ab0FDAzL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jun 2010 20:55:11 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:57338 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1756805Ab0FDAzJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Jun 2010 20:55:09 -0400
+Message-ID: <4C084F7F.9060802@cn.fujitsu.com>
+Date: Fri, 04 Jun 2010 08:57:35 +0800
+From: Li Zefan <lizf@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1b3pre) Gecko/20090513 Fedora/3.0-2.3.beta2.fc11 Thunderbird/3.0b2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201006032141.o53LfZC9019335@lab-15.internal.tilera.com>
-User-Agent: Mutt/1.5.13 (2006-08-11)
+To: Randy Dunlap <randy.dunlap@oracle.com>
+CC: Michal Marek <mmarek@suse.cz>, Nobin Mathew <nobin.mathew@gmail.com>,
+       Ben Dooks <ben-linux@fluff.org>, LKML <linux-kernel@vger.kernel.org>,
+       linux-kbuild@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 2/2] menuconfig: truncate list items
+References: <4C0758B7.5070907@cn.fujitsu.com> <4C0758C9.7080108@cn.fujitsu.com> <4C07D932.4040404@oracle.com>
+In-Reply-To: <4C07D932.4040404@oracle.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 03, 2010 at 05:32:17PM -0400, Chris Metcalf wrote:
-> This change addresses DMA-related comments by FUJITA Tomonori
-> <fujita.tomonori@lab.ntt.co.jp> and Kconfig-related comments by Paul
-> Mundt <lethal@linux-sh.org>.
+Randy Dunlap wrote:
+> On 06/03/10 00:24, Li Zefan wrote:
+>> Truncate list items to fit in a single line, otherwise those items
+>> which have long prompts will cover some other items.
+>>
+>> This follows the behavior of menubox.
+>>
+>> Signed-off-by: Li Zefan <lizf@cn.fujitsu.com>
 > 
-> Signed-off-by: Chris Metcalf <cmetcalf@tilera.com>
+> Thanks :)
+> 
+> Tested-by: Randy Dunlap <randy.dunlap@oracle.com>
+> 
+> Ben, the Samsung S3C24* prompt still gets truncated with this patch (when using
+> an 80-column wide xterm).  If you care about seeing all of the models,
+> you might want to shorten the prompt.
+> 
 
-Looks good to me. Feel free to add my reviewed-by to the series.
+An alterative is to print the truncated string and end it with "...":
 
-Reviewed-by: Paul Mundt <lethal@linux-sh.org>
+( ) Samsung S3C2410, S3C2412, S3C2413, S3C2416, S3C2440...
+
+
+
