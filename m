@@ -1,57 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756510Ab0FDAVI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jun 2010 20:21:08 -0400
-Received: from casper.infradead.org ([85.118.1.10]:38608 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751913Ab0FDAVG (ORCPT
+	id S1756779Ab0FDAXL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jun 2010 20:23:11 -0400
+Received: from mail-pz0-f185.google.com ([209.85.222.185]:62756 "EHLO
+	mail-pz0-f185.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751913Ab0FDAXH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jun 2010 20:21:06 -0400
-Date: Thu, 3 Jun 2010 21:20:39 -0300
-From: Arnaldo Carvalho de Melo <acme@infradead.org>
-To: Stephane Eranian <eranian@google.com>
-Cc: linux-kernel@vger.kernel.org, peterz@infradead.org, mingo@elte.hu,
-       paulus@samba.org, davem@davemloft.net, fweisbec@gmail.com,
-       perfmon2-devel@lists.sf.net, eranian@gmail.com, tzanussi@gmail.com
-Subject: Re: how to use perf annotate on the kernel
-Message-ID: <20100604002039.GC10469@ghostprotocols.net>
-References: <AANLkTik2yNxwCHl7FZAyOG4Vt56RlLi59oZR5Jo6o9ox@mail.gmail.com>
- <20100603175445.GC8928@ghostprotocols.net>
- <20100603180613.GA10469@ghostprotocols.net>
- <20100603181103.GB10469@ghostprotocols.net>
- <AANLkTincvUH7p-aHsDZoThUQn_eZkdbq3A8bM5i5ytpo@mail.gmail.com>
+	Thu, 3 Jun 2010 20:23:07 -0400
+To: Russell King <rmk@arm.linux.org.uk>
+Cc: Tony Lindgren <tony@atomide.com>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       Daniel Walker <dwalker@codeaurora.org>,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       linux-arm-msm@vger.kernel.org
+Subject: Re: ARM defconfig files
+References: <20100603074548.GA12104@flint.arm.linux.org.uk>
+	<alpine.LFD.2.00.1006030725420.8175@i5.linux-foundation.org>
+	<20100603164623.GM30622@atomide.com>
+	<20100603181303.GB25779@flint.arm.linux.org.uk>
+From: Kevin Hilman <khilman@deeprootsystems.com>
+Organization: Deep Root Systems, LLC
+Date: Thu, 03 Jun 2010 17:23:04 -0700
+In-Reply-To: <20100603181303.GB25779@flint.arm.linux.org.uk> (Russell King's message of "Thu\, 3 Jun 2010 19\:13\:03 +0100")
+Message-ID: <8739x3ir2v.fsf@deeprootsystems.com>
+User-Agent: Gnus/5.11 (Gnus v5.11) Emacs/22.2 (gnu/linux)
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTincvUH7p-aHsDZoThUQn_eZkdbq3A8bM5i5ytpo@mail.gmail.com>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
-	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Thu, Jun 03, 2010 at 08:18:04PM +0200, Stephane Eranian escreveu:
-> perf annotate __lock_acquire -k /home/eranian/perfmon/official/tip/build/vmlinux
-> build id event received for [kernel.kallsyms]:
-> 5c110a704293a259fbe11158dc1b25107ad7a23e
-> build id event received for
-> /lib/modules/2.6.35-rc1-tip/kernel/arch/x86/kernel/cpu/cpufreq/mperf.ko:
-> cb5
-> build id event received for
-> /lib/modules/2.6.35-rc1-tip/kernel/drivers/cpufreq/cpufreq_ondemand.ko:
-> cdb5
-> Using /home/eranian/perfmon/official/tip/build/vmlinux for symbols
-> hist_entry__inc_addr_samples: ip=0xffffffff81073b36
-> 0xffffffff81073b30 __lock_acquire: period++ [ip: 0xffffffff81073b36, 0x6] => 1
-> hist_entry__inc_addr_samples: ip=0xffffffff81073c94
-> 
-> But in the end I get:
-> objdump: '[kernel.kallsyms]': No such file
+Russell King <rmk@arm.linux.org.uk> writes:
 
-Reproduced, working on it now. I've been testing only with vmlinux in
-the path it searches for, not by directly specifying it, will get that
-fixed, thanks,
+> On Thu, Jun 03, 2010 at 07:46:23PM +0300, Tony Lindgren wrote:
+>> Compiling in multiple ARM platforms is trickier, we would have to get
+>> rid of the duplicate defines like NR_IRQS, then have some common clock
+>> framework etc. Then figure out some way to get rid of Makefile.boot.
+>> Russell probably has some other things in mind that would have to be
+>> changed to make this happen.
+>
+> - Find someway to handle the wide variety of interrupt controllers.
+> - Be able to handle any multitude of V:P translations, including non-linear
+>   alongside linear transations.
+> - Different PAGE_OFFSETs
+> - Different kernel VM layouts allowing for a variety of different ioremap
+>   region sizes
+>
+> and so the list goes on...
+>
 
-- Arnaldo
+- Support for ARMv5, v6 and v7 in the same kernel image.
+
+On davinci, we've recently run into the problem where a new SoC in the
+family is largely the same in terms of common HW blocks ands shared
+peripherals with other davincis, but they upgraded from ARMv5 to
+ARMv6.  Attempting to build a single kernel that supports ARMv5 and
+ARMv6 uncovered a pile of assumptions that v5 and v6 would never be in
+the same kernel.
+
+Kevin
