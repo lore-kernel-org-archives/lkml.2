@@ -1,58 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932247Ab0FDCX7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jun 2010 22:23:59 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:51967 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S932071Ab0FDCX6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jun 2010 22:23:58 -0400
-Message-ID: <4C086452.1070005@cn.fujitsu.com>
-Date: Fri, 04 Jun 2010 10:26:26 +0800
-From: Li Zefan <lizf@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1b3pre) Gecko/20090513 Fedora/3.0-2.3.beta2.fc11 Thunderbird/3.0b2
-MIME-Version: 1.0
-To: rostedt@goodmis.org
-CC: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
-       Frederic Weisbecker <fweisbec@gmail.com>,
-       "Martin K. Petersen" <martin.petersen@oracle.com>,
-       Kei Tokunaga <tokunaga.keiich@jp.fujitsu.com>,
-       James Bottomley <James.Bottomley@suse.de>,
-       Tomohiro Kusumi <kusumi.tomohiro@jp.fujitsu.com>,
-       Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
-Subject: Re: [PATCH][GIT PULL][v2.6.35] tracing/events: Convert format output
- to seq_file
-References: <1275594103.15884.35.camel@gandalf.stny.rr.com>	 <4C0860DE.5020609@cn.fujitsu.com> <1275617591.15884.67.camel@gandalf.stny.rr.com>
-In-Reply-To: <1275617591.15884.67.camel@gandalf.stny.rr.com>
-Content-Type: text/plain; charset=ISO-8859-15
+	id S932289Ab0FDCYQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jun 2010 22:24:16 -0400
+Received: from lennier.cc.vt.edu ([198.82.162.213]:35525 "EHLO
+	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932071Ab0FDCYN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Jun 2010 22:24:13 -0400
+X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.2
+To: Andrew Morton <akpm@linux-foundation.org>, Len Brown <len.brown@intel.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: mmotm 2010-06-03-16-36 uploaded
+In-Reply-To: Your message of "Thu, 03 Jun 2010 16:36:51 PDT."
+             <201006040005.o5405Afw023296@imap1.linux-foundation.org>
+From: Valdis.Kletnieks@vt.edu
+References: <201006040005.o5405Afw023296@imap1.linux-foundation.org>
+Mime-Version: 1.0
+Content-Type: multipart/signed; boundary="==_Exmh_1275618190_4915P";
+	 micalg=pgp-sha1; protocol="application/pgp-signature"
 Content-Transfer-Encoding: 7bit
+Date: Thu, 03 Jun 2010 22:23:11 -0400
+Message-ID: <11930.1275618191@localhost>
+X-Mirapoint-Received-SPF: 128.173.34.98 localhost Valdis.Kletnieks@vt.edu 2 pass
+X-Mirapoint-IP-Reputation: reputation=neutral-1,
+	source=Fixed,
+	refid=n/a,
+	actions=MAILHURDLE SPF TAG
+X-Junkmail-Info: (45) HELO_LOCALHOST
+X-Junkmail-Status: score=45/50, host=vivi.cc.vt.edu
+X-Junkmail-SD-Raw: score=unknown,
+	refid=str=0001.0A020208.4C08638F.0190,ss=1,fgs=0,
+	ip=0.0.0.0,
+	so=2009-09-22 00:05:22,
+	dmn=2009-09-10 00:05:08,
+	mode=multiengine
+X-Junkmail-IWF: false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Steven Rostedt wrote:
-> On Fri, 2010-06-04 at 10:11 +0800, Li Zefan wrote:
->>> +static void *f_start(struct seq_file *m, loff_t *pos)
->>> +{
->>> +	loff_t l = 1;
->>> +	void *p;
->>> +
->>> +	/* Start by showing the header */
->>> +	if (!*pos) {
->>> +		(*pos)++;
->> We shoudn't increment *pos in start() handler. It's a common mistake when
->> using seqfile. 
-> 
-> And a common mistake I do :-p
-> 
-> I'll rebase it with the fix.
-> 
->> What we need to do in start() is move the pointer to postion *pos.
-> 
-> So the rest is OK then? All that is needed is the removal of *pos++ ?
-> 
+--==_Exmh_1275618190_4915P
+Content-Type: text/plain; charset=us-ascii
 
-I think you should also change "loff_t l = 1" to "loff_t l = 0". :)
+On Thu, 03 Jun 2010 16:36:51 PDT, akpm@linux-foundation.org said:
+> The mm-of-the-moment snapshot 2010-06-03-16-36 has been uploaded to
 
-Otherwise:
+Not strictly a -mm problemn, but I just noticed it.
 
-Reviewed-by: Li Zefan <lizf@cn.fujitsu.com>
+In drivers/idle/Kconfig, we see:
+
+  Cpuidle Driver for Intel Processors (INTEL_IDLE) [N/m/y/?] (NEW) ?
+
+CONFIG_INTEL_IDLE:
+
+Enable intel_idle, a cpuidle driver that includes knowledge of
+native Intel hardware idle features.  The acpi_idle driver
+can be configured at the same time, in order to handle
+processors intel_idle does not support.
+
+I think we wanted a s/acpi_idle/processor_idle/ there?
+
+--==_Exmh_1275618190_4915P
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+Comment: Exmh version 2.5 07/13/2001
+
+iD8DBQFMCGOOcC3lWbTT17ARAl0fAKDOkA/h8lIlYu93PtKY4eb6qM0d8ACfR39s
+0JG6aDGyIDXSl/j2kDAql94=
+=iT9t
+-----END PGP SIGNATURE-----
+
+--==_Exmh_1275618190_4915P--
+
