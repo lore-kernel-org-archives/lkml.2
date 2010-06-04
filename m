@@ -1,118 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752936Ab0FDQGR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jun 2010 12:06:17 -0400
-Received: from mail-pz0-f185.google.com ([209.85.222.185]:57101 "EHLO
-	mail-pz0-f185.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750849Ab0FDQGP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jun 2010 12:06:15 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=iU0qFX7YbWtiQUBO1yAnVZt4gaUsAzZPlQeBkfyWMYJlBKlZcPLv8Bt+R8MJRmlNNj
-         Y/0TCJhOIi8RKqcRQGZowlF+y22rCm2JXL2PYyj26xQu4o0wpfaODizwvpetwwjgh7Zp
-         pVtiJoRDJRHIcJPECHKYcfave+oDWNLM2jvps=
-Date: Sat, 5 Jun 2010 01:06:01 +0900
-From: Minchan Kim <minchan.kim@gmail.com>
-To: Dan Magenheimer <dan.magenheimer@oracle.com>
-Cc: chris.mason@oracle.com, viro@zeniv.linux.org.uk, akpm@linux-foundation.org,
-       adilger@Sun.COM, tytso@mit.edu, mfasheh@suse.com,
-       joel.becker@oracle.com, matthew@wil.cx, linux-btrfs@vger.kernel.org,
-       linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-       linux-ext4@vger.kernel.org, ocfs2-devel@oss.oracle.com,
-       linux-mm@kvack.org, ngupta@vflare.org, jeremy@goop.org,
-       JBeulich@novell.com, kurt.hackel@oracle.com, npiggin@suse.de,
-       dave.mccracken@oracle.com, riel@redhat.com, avi@redhat.com,
-       konrad.wilk@oracle.com
-Subject: Re: [PATCH V2 3/7] Cleancache (was Transcendent Memory): VFS hooks
-Message-ID: <20100604160601.GE1879@barrios-desktop>
-References: <20100528173610.GA12270@ca-server1.us.oracle.com20100604132948.GC1879@barrios-desktop>
- <16b4dcd5-95d8-4cb0-885d-0189ef90c02b@default>
+	id S1752883Ab0FDQL5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jun 2010 12:11:57 -0400
+Received: from csmtp1.one.com ([195.47.247.21]:34725 "EHLO csmtp1.one.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751897Ab0FDQLz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Jun 2010 12:11:55 -0400
+Message-ID: <4C0925C3.5060403@bitmath.org>
+Date: Fri, 04 Jun 2010 18:11:47 +0200
+From: Henrik Rydberg <rydberg@bitmath.org>
+User-Agent: Thunderbird 2.0.0.24 (X11/20100411)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <16b4dcd5-95d8-4cb0-885d-0189ef90c02b@default>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+CC: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+       Jiri Kosina <jkosina@suse.cz>, Mika Kuoppala <mika.kuoppala@nokia.com>,
+       Benjamin Tissoires <tissoire@cena.fr>, Rafi Rubin <rafi@seas.upenn.edu>
+Subject: Re: [PATCH 0/4] input: evdev: Dynamic buffers (rev3)
+References: <1275552062-8153-1-git-send-email-rydberg@euromail.se> <20100604065915.GF21239@core.coreip.homeip.net>
+In-Reply-To: <20100604065915.GF21239@core.coreip.homeip.net>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 04, 2010 at 08:13:14AM -0700, Dan Magenheimer wrote:
-> > 1)
-> > You mentiond PFRA in you description and I understood cleancache has
-> > a cold clean page which is evicted by reclaimer.
-> > But __remove_from_page_cache can be called by other call sites.
-> > 
-> > For example, shmem_write page calls it for moving the page from page
-> > cache
-> > to swap cache. Although there isn't the page in page cache, it is in
-> > swap cache.
-> > So next read/write of shmem until swapout happens can be read/write in
-> > swap cache.
-> > 
-> > I didn't looked into whole of callsites. But please review again them.
+Dmitry Torokhov wrote:
+> Hi Henrik,
+[...]
 > 
-> I think the "if (PageUptodate(page))" eliminates all the cases
-> where bad things can happen.
-
-I missed it. my fisrt concern has gone. :)
-
+> I think the patchet moves things in the right direction, however I am
+> unsure at the moment about buflock implementation. Any chance you coudl
+> redo the series without the buflock (with readers taking dev->event_lock
+> for now) and once buflock is sorted we can switch to is as a followup).
 > 
-> Note that there may be cases where some unnecessary puts/flushes
-> occur.  The focus of the patch is on correctness first; it may
-> be possible to increase performance (marginally) in the future by
-> reducing unnecessary cases.
-
-I think it wouldn't be marginally. It depends on implementation
-of backend. 
-I think frontend would be better to notify to backend in 
-only exact place. As your descrption, we can call it in shrink_page_list
-with some check or change __remove_mapping which adding a argument to tell
-"this is calling of reclaim path". 
-
-> 
-> > 3) Please consider system memory pressure.
-> > And I hope Nitin consider this, too.
-> 
-> This is definitely very important but remember that cleancache
-> provides a great deal of flexibility:  Any page in cleancache
-> can be thrown away at any time as every page is clean!  It
-> can even accept a page and throw it away immediately.  Clearly
-> the backend needs to do this intelligently so this will
-> take some policy work.
-
-I admit design goal of cleancache is to give a greate deal of flexibility. 
-But I think system memory pressure(ie, direct reclaim and even OOM) is 
-exceptional. Whenever we implement various backend, every backend(non-virtual
-environemnt)have to implement policy which deal with system memory 
-pressure emergency to prevent system hang, I think. 
-
-And backend might need some hack to know the situation. It's horrible.
-So I hope frontend gives little information to backend, at least. 
-
-If some backend don't need it, it can just ignore. 
-But if some backend need it, it can be a big deal. :)
-
-> 
-> Since I saw you sent a separate response to Nitin, I'll
-> let him answer for his in-kernel page cache compression
-> work.  The solution to the similar problem for Xen is
-> described in the tmem internals document that I think
-> I pointed to earlier here:
-> http://oss.oracle.com/projects/tmem/documentation/internals/ 
-
-I will read it when I have a time. 
-Thanks for quick reply but I can't. 
-It's time to sleep and weekend. 
-See you soon and have a nice weekend. 
-
-> 
-> Thanks,
-> Dan
+> Thanks.
 > 
 
--- 
-Kind regards,
-Minchan Kim
+Good idea, I will do that.
+
+Thanks,
+Henrik
+
