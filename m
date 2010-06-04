@@ -1,60 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755588Ab0FDRKa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jun 2010 13:10:30 -0400
-Received: from e32.co.us.ibm.com ([32.97.110.150]:59320 "EHLO
-	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752965Ab0FDRK3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jun 2010 13:10:29 -0400
-Message-ID: <4C09337E.3070504@linux.vnet.ibm.com>
-Date: Fri, 04 Jun 2010 10:10:22 -0700
-From: Corey Ashford <cjashfor@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.1.9) Gecko/20100317 Thunderbird/3.0.4
+	id S1756539Ab0FDRMP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jun 2010 13:12:15 -0400
+Received: from cantor.suse.de ([195.135.220.2]:34864 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753298Ab0FDRMN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Jun 2010 13:12:13 -0400
+Date: Fri, 4 Jun 2010 19:11:52 +0200
+From: Jan Kara <jack@suse.cz>
+To: "J. Bruce Fields" <bfields@fieldses.org>
+Cc: Jan Kara <jack@suse.cz>, Boaz Harrosh <bharrosh@panasas.com>,
+       Vladislav Bolkhovitin <vst@vlnb.net>,
+       "Martin K. Petersen" <martin.petersen@oracle.com>,
+       linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
+       James Bottomley <James.Bottomley@HansenPartnership.com>,
+       Christof Schmitt <christof.schmitt@de.ibm.com>,
+       lsf10-pc@lists.linuxfoundation.org, Al Viro <viro@ZenIV.linux.org.uk>,
+       linux-fsdevel@vger.kernel.org, Matthew Wilcox <willy@linux.intel.com>,
+       Ric Wheeler <rwheeler@redhat.com>, Christoph Hellwig <hch@lst.de>
+Subject: Re: [Lsf10-pc] [LFS/VM TOPIC] Stable pages while IO (was Wrong DIF
+ guard tag on ext2 write)
+Message-ID: <20100604171151.GH3414@quack.suse.cz>
+References: <20100531112817.GA16260@schmichrtp.mainz.de.ibm.com>
+ <4C07D3D0.8010500@panasas.com>
+ <20100604162332.GF3414@quack.suse.cz>
+ <20100604163009.GF10153@fieldses.org>
 MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
-       Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: Re: perf: tools/perf/design.txt is badly out of date
-References: <4C083D2C.5070204@linux.vnet.ibm.com> <1275644908.27810.39476.camel@twins>
-In-Reply-To: <1275644908.27810.39476.camel@twins>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100604163009.GF10153@fieldses.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Maybe the file should at least move to the normal burial ground for docs, Documentation, rather than where it is today tools/perf.  Perhaps there it would be easier for people to find and correct.
+On Fri 04-06-10 12:30:09, J. Bruce Fields wrote:
+> On Fri, Jun 04, 2010 at 06:23:32PM +0200, Jan Kara wrote:
+> > On Thu 03-06-10 19:09:52, Boaz Harrosh wrote:
+> > > [Topic]
+> > > How to not let pages change while in IO
+> > > 
+> > > [Abstract]
+> > > As seen in a long thread on the fsdvel scsi mailing lists. Lots of
+> > > people have headaches and sleep less nights because individual pages
+> > > can change while in IO and/or DMA. Though each one as slightly different
+> > > needs, the mechanics look to be the same.
+> >   Hmm, I don't think it's really about "how to not let pages change" - that
+> > is doable by using wait_on_page_writeback() in ->page_mkwrite and
+> > ->write_begin.
+> 
+> Will the same work for the NFS server checksumming page data in read
+> replies?
+  Currently it won't. The above relies on the fact that when we clear dirty
+page flag in clear_page_dirty_for_io we also write-protect the page.
+Moreover I suppose you don't set PageWriteback when serving a content from
+a page...
+  But an elegant way to solve this would IMHO be to do:
+	lock_page(page);
+	if (page_mkclean(page))
+		set_page_dirty(page);
+  and now you can be sure that until you unlock the page it cannot be
+modified because both ->page_mkwrite and ->write_begin need page lock
+before they can go and modify a page...
 
-On 6/4/2010 2:48 AM, Peter Zijlstra wrote:
-> On Thu, 2010-06-03 at 16:39 -0700, Corey Ashford wrote:
->> I had a glance at tools/perf/design.txt the other day, and it
->> appears to be pretty far out of date.
->>
->> Is design.txt a document that you want to keep the current way for
->> historical reasons [and the up-to-date documentation placed somewhere
->> else], or one that should be maintained?
->>
->> I'm wondering if some/all of this documentation should move into
->> include/linux/perf_event.h
-> 
-> Its the ineffiteble fate of everything Documentation/ to be out-dated.
-> But yeah, that file will be woefully inaccurate by now.
-> 
-> Yeah, I think making perf_event.h more explanatory would be good. But I
-> don't think we want to go overboard there either, if comments get too
-> large and unwieldy they tend to bitrot just as hard as Documentation/
-> 
-> 
-
+									Honza	
 -- 
-Regards,
-
-- Corey
-
-Corey Ashford
-Software Engineer
-IBM Linux Technology Center, Linux Toolchain
-Beaverton, OR 
-503-578-3507 
-cjashfor@us.ibm.com
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
