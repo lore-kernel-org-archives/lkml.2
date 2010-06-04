@@ -1,112 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754851Ab0FDJRM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jun 2010 05:17:12 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:42314 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754402Ab0FDJRJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jun 2010 05:17:09 -0400
-Date: Fri, 4 Jun 2010 11:17:07 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Micki Balanga <micki@n-trig.com>
-Cc: chatty@enac.fr, dhprince-devel@yahoo.co.uk, linux-input@vger.kernel.org,
-       linux-kernel@vger.kernel.org, Rafi Rubin <rafi@seas.upenn.edu>
-Subject: Re: [PATCH] HID: Add support to new N-trig firwmare
-In-Reply-To: <48A28051AC6D7A48B64F28272458190333674B@Exchange-IL.n-trig.com>
-Message-ID: <alpine.LNX.2.00.1006041115480.12271@pobox.suse.cz>
-References: <48A28051AC6D7A48B64F28272458190333674B@Exchange-IL.n-trig.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1754983Ab0FDJVF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jun 2010 05:21:05 -0400
+Received: from flounder.pepperfish.net ([87.237.62.181]:40580 "EHLO
+	flounder.pepperfish.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753504Ab0FDJVE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Jun 2010 05:21:04 -0400
+X-Greylist: delayed 3193 seconds by postgrey-1.27 at vger.kernel.org; Fri, 04 Jun 2010 05:21:03 EDT
+Date: Fri, 4 Jun 2010 09:27:46 +0100
+From: Vincent Sanders <vince@kyllikki.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [GIT PULL] ARM MSM updates for 2.6.35-rc1
+Message-ID: <20100604082746.GA10021@kyllikki.org>
+References: <1274997173.10998.21.camel@c-dwalke-linux.qualcomm.com> <1275511857.27006.6.camel@c-dwalke-linux.qualcomm.com> <alpine.LFD.2.00.1006021413100.8175@i5.linux-foundation.org> <87d3w9582z.fsf@deeprootsystems.com> <alpine.LFD.2.00.1006021803350.8175@i5.linux-foundation.org>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="UugvWAfsgieZRqgk"
+Content-Disposition: inline
+In-Reply-To: <alpine.LFD.2.00.1006021803350.8175@i5.linux-foundation.org>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 3 Jun 2010, Micki Balanga wrote:
 
-> Update hid-ids.h to support new N-trig firmware.
-> Product id  0x02 - 0x0A
+--UugvWAfsgieZRqgk
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-[ adding Rafi Rubin to CC ]
+On Wed, Jun 02, 2010 at 06:20:09PM -0700, Linus Torvalds wrote:
+>=20
+>=20
 
-Hi Micki,
+snip
 
-thanks a lot for the update. Your mail client line-wrapped the patch 
-though, so I couldn't apply it without having to fix all the wrapped lines 
-manually. Could you please fix it and resend? (or send it as attachment if 
-your mail client can't be configured not to damage the patch if put 
-in-line)?
+>=20
+>  - TWO HUNDRED THOUSAND lines of arch/arm is just pure garbage, namely th=
+e=20
+>    defconfig files. Quite frankly, anybody who calls that anything but=20
+>    pure "noise" is just misguided and being stupid.
+>=20
 
-Thanks.
+For some hard data which might be useful in arguments on this you
+might want to reference
 
-> Signed-off-by: Micki Balanga <micki@n-trig.com>
-> ---
-> ---
->  drivers/hid/hid-core.c |    9 +++++++++
->  drivers/hid/hid-ids.h  |   10 ++++++++++
->  2 files changed, 19 insertions(+), 0 deletions(-)
-> 
-> diff --git a/drivers/hid/hid-core.c b/drivers/hid/hid-core.c
-> index aa0f7dc..19f627a 100644
-> --- a/drivers/hid/hid-core.c
-> +++ b/drivers/hid/hid-core.c
-> @@ -1337,6 +1337,15 @@ static const struct hid_device_id hid_blacklist[]
-> = {
->         { HID_USB_DEVICE(USB_VENDOR_ID_MICROSOFT,
-> USB_DEVICE_ID_WIRELESS_OPTICAL_DESKTOP_3_0) },
->         { HID_USB_DEVICE(USB_VENDOR_ID_MONTEREY,
-> USB_DEVICE_ID_GENIUS_KB29E) },
->         { HID_USB_DEVICE(USB_VENDOR_ID_NTRIG,
-> USB_DEVICE_ID_NTRIG_TOUCH_SCREEN) },
-> +       { HID_USB_DEVICE(USB_VENDOR_ID_NTRIG,
-> USB_DEVICE_ID_NTRIG_TOUCH_SCREEN_1) },
-> +       { HID_USB_DEVICE(USB_VENDOR_ID_NTRIG,
-> USB_DEVICE_ID_NTRIG_TOUCH_SCREEN_2) },
-> +       { HID_USB_DEVICE(USB_VENDOR_ID_NTRIG,
-> USB_DEVICE_ID_NTRIG_TOUCH_SCREEN_3) },
-> +       { HID_USB_DEVICE(USB_VENDOR_ID_NTRIG,
-> USB_DEVICE_ID_NTRIG_TOUCH_SCREEN_4) },
-> +       { HID_USB_DEVICE(USB_VENDOR_ID_NTRIG,
-> USB_DEVICE_ID_NTRIG_TOUCH_SCREEN_5) },
-> +       { HID_USB_DEVICE(USB_VENDOR_ID_NTRIG,
-> USB_DEVICE_ID_NTRIG_TOUCH_SCREEN_6) },
-> +       { HID_USB_DEVICE(USB_VENDOR_ID_NTRIG,
-> USB_DEVICE_ID_NTRIG_TOUCH_SCREEN_7) },
-> +       { HID_USB_DEVICE(USB_VENDOR_ID_NTRIG,
-> USB_DEVICE_ID_NTRIG_TOUCH_SCREEN_8) },
-> +       { HID_USB_DEVICE(USB_VENDOR_ID_NTRIG,
-> USB_DEVICE_ID_NTRIG_TOUCH_SCREEN_9) },
->         { HID_USB_DEVICE(USB_VENDOR_ID_ORTEK,
-> USB_DEVICE_ID_ORTEK_WKB2000) },
->         { HID_USB_DEVICE(USB_VENDOR_ID_PETALYNX,
-> USB_DEVICE_ID_PETALYNX_MAXTER_REMOTE) },
->         { HID_USB_DEVICE(USB_VENDOR_ID_QUANTA,
-> USB_DEVICE_ID_QUANTA_OPTICAL_TOUCH) },
-> diff --git a/drivers/hid/hid-ids.h b/drivers/hid/hid-ids.h
-> index 6af77ed..55fbfd6 100644
-> --- a/drivers/hid/hid-ids.h
-> +++ b/drivers/hid/hid-ids.h
-> @@ -391,6 +391,16 @@
-> 
->  #define USB_VENDOR_ID_NTRIG                0x1b96
->  #define USB_DEVICE_ID_NTRIG_TOUCH_SCREEN   0x0001
-> +#define USB_DEVICE_ID_NTRIG_TOUCH_SCREEN_1 0x0002
-> +#define USB_DEVICE_ID_NTRIG_TOUCH_SCREEN_2 0x0003
-> +#define USB_DEVICE_ID_NTRIG_TOUCH_SCREEN_3 0x0004
-> +#define USB_DEVICE_ID_NTRIG_TOUCH_SCREEN_4 0x0005
-> +#define USB_DEVICE_ID_NTRIG_TOUCH_SCREEN_5 0x0006
-> +#define USB_DEVICE_ID_NTRIG_TOUCH_SCREEN_6 0x0007
-> +#define USB_DEVICE_ID_NTRIG_TOUCH_SCREEN_7 0x0008
-> +#define USB_DEVICE_ID_NTRIG_TOUCH_SCREEN_8 0x0009
-> +#define USB_DEVICE_ID_NTRIG_TOUCH_SCREEN_9 0x000A
-> +
-> 
->  #define USB_VENDOR_ID_ONTRAK           0x0a07
->  #define USB_DEVICE_ID_ONTRAK_ADU100    0x0064
-> -- 
-> 1.6.3.3
-> 
+http://armlinux.simtec.co.uk/reports/kautobuild-5year-report.pdf
+http://armlinux.simtec.co.uk/reports/kautobuild-5year-stats.ods
 
--- 
-Jiri Kosina
-SUSE Labs, Novell Inc.
+The written report is not complete as I had hoped to have an
+announcement about the autobuilder fifth aniverasry soon. Perhaps this
+will be useful in keeping some default configurations which give us
+maximal coverage.
+
+I provide this purely for information, I do not intend to upset you
+futher on this subject, pretty please do not shoot the messenger ;-)
+
+--=20
+Regards Vincent
+
+
+--UugvWAfsgieZRqgk
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+Content-Disposition: inline
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.9 (GNU/Linux)
+
+iD8DBQFMCLkCiUwwPOvjHvURArjsAJ9GxtjgR4hgTFiO7gZwsJixUhWuPwCgn8ww
+j8OrkgLXwNwatokR5NKLvPs=
+=hhKA
+-----END PGP SIGNATURE-----
+
+--UugvWAfsgieZRqgk--
