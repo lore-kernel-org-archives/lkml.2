@@ -1,56 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754618Ab0FDLQy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jun 2010 07:16:54 -0400
-Received: from ozlabs.org ([203.10.76.45]:40837 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751344Ab0FDLQx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jun 2010 07:16:53 -0400
-From: Rusty Russell <rusty@rustcorp.com.au>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Subject: Re: [PATCHv3 1/2] virtio: support layout with avail ring before idx
-Date: Fri, 4 Jun 2010 20:46:49 +0930
-User-Agent: KMail/1.13.2 (Linux/2.6.32-22-generic; KDE/4.4.2; i686; ; )
-Cc: linux-kernel@vger.kernel.org, virtualization@lists.linux-foundation.org,
-       kvm@vger.kernel.org, qemu-devel@nongnu.org,
+	id S1752163Ab0FDLUY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jun 2010 07:20:24 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:49976 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751344Ab0FDLUX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Jun 2010 07:20:23 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=vAiK0wVQZXhu0z/AyrM9t5UojUMHJYV645j4BTi5zMppMS7a67tAkXcov5y8irJx0D
+         OGQF7UseYGbNdbCOBPM1aaUfU+sM+rqJSIdosZvZogv5znK6+5ZMCIGrKmn1TfqCCe3S
+         yU5r0VfablSkOr78KaTOIjLd3oCQxjKP5G8DU=
+Subject: Re: [linux-pm] Is it supposed to be ok to call del_gendisk while
+ userspace is frozen?
+From: Maxim Levitsky <maximlevitsky@gmail.com>
+To: Pavel Machek <pavel@ucw.cz>
+Cc: Alan Stern <stern@rowland.harvard.edu>, Jens Axboe <jens.axboe@oracle.com>,
+       "Rafael J. Wysocki" <rjw@sisk.pl>,
+       linux-pm <linux-pm@lists.linux-foundation.org>,
+       linux-kernel <linux-kernel@vger.kernel.org>,
        Andrew Morton <akpm@linux-foundation.org>
-References: <cover.1275403477.git.mst@redhat.com> <201006041204.57973.rusty@rustcorp.com.au> <20100604103543.GA22270@redhat.com>
-In-Reply-To: <20100604103543.GA22270@redhat.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+In-Reply-To: <20100304135337.GC12191@atrey.karlin.mff.cuni.cz>
+References: <20100303215056.GB2579@ucw.cz>
+	 <Pine.LNX.4.44L0.1003031720530.1380-100000@iolanthe.rowland.org>
+	 <20100304135337.GC12191@atrey.karlin.mff.cuni.cz>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 04 Jun 2010 14:20:16 +0300
+Message-ID: <1275650416.3403.5.camel@maxim-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
-Message-Id: <201006042046.49872.rusty@rustcorp.com.au>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 4 Jun 2010 08:05:43 pm Michael S. Tsirkin wrote:
-> On Fri, Jun 04, 2010 at 12:04:57PM +0930, Rusty Russell wrote:
-> > On Wed, 2 Jun 2010 12:17:12 am Michael S. Tsirkin wrote:
-> > > This adds an (unused) option to put available ring before control (avail
-> > > index, flags), and adds padding between index and flags. This avoids
-> > > cache line sharing between control and ring, and also makes it possible
-> > > to extend avail control without incurring extra cache misses.
+On Thu, 2010-03-04 at 14:53 +0100, Pavel Machek wrote: 
+> Hi!
+> 
+> > > journalling assumptions broken: commit block is there, but previous
+> > > blocks are not intact. Data loss.
 > > > 
-> > > Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+> > > ...and that was the first I could think about. Lets not do
+> > >  this. Barriers were invented for a reason.
 > > 
-> > No no no no.  254?  You're trying to Morton me![1]
+> > Very well.  Then we still need a solution to the original problem:  
+> > Devices sometimes need to be unregistered during resume, but
+> > del_gendisk() blocks on the writeback thread, which is frozen until
+> > after the resume finishes.  How do you suggest this be fixed?
 > 
-> Hmm, I wonder what will we do if we want a 3rd field on
-> a separate chacheline. But ok.
-> 
-> > How's this (untested):
-> 
-> I think we also want to put flags there as well,
-> they are used on interrupt path, together with last used index.
+> Avoid unregistering device during resume. Instead, return errors until
+> resume is done and you can call del_gendisk? 
 
-I'm uncomfortable with moving a field.
+This won't help ether. The same driver needs to unregister perfectly
+working device on suspend, because the user might replace the card
+during suspend and fool the os.
+There is a setting, CONFIG_MMC_UNSAFE_RESUME and I use it, but it isn't
+default.
 
-We haven't done that before and I wonder what will break with old code.
+Anyway to revive that old thread, how about introducing new
+del_gendisk_no_sync?
 
-Should we instead just abandon the flags field and use last_used only?
-Or, more radically, put flags == last_used when the feature is on?
+A less safe version of del_gendisk, but which won't sync the filesystem.
+Since driver knows that card is gone, there is no point of syncing it.
 
-Thoughts?
-Rusty.
+(the sync is done by invalidate_partition, so some flag should be
+propagated to it).
+
+
+
+Best regards,
+Maxim Levitsky
+
