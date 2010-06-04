@@ -1,53 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752108Ab0FDVFo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jun 2010 17:05:44 -0400
-Received: from mail-yw0-f187.google.com ([209.85.211.187]:56801 "EHLO
-	mail-yw0-f187.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751397Ab0FDVFm convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jun 2010 17:05:42 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type:content-transfer-encoding;
-        b=PjYC0QLN1Zey4g2KOUgpfAhmha/Rk6oUtXcW4MUqHNrW/zPHt4dBQgxI5HkGIVTR9Z
-         MwUNcAa1djQAymoLV8OGsffiimZL7zkP0WO8yQuiELM+pCfoZMW0zHC/y6KlzHlMt/Z3
-         Gu/nolOK/edLKa9eidGP2n2N6MJjqeILIdoP8=
+	id S1753952Ab0FDVHZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jun 2010 17:07:25 -0400
+Received: from kroah.org ([198.145.64.141]:42851 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751562Ab0FDVHY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Jun 2010 17:07:24 -0400
+Date: Fri, 4 Jun 2010 14:07:10 -0700
+From: Greg KH <greg@kroah.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Nitin Gupta <ngupta@vflare.org>, Pekka Enberg <penberg@cs.helsinki.fi>,
+       Minchan Kim <minchan.kim@gmail.com>, Ed Tomlinson <edt@aei.ca>,
+       Hugh Dickins <hugh.dickins@tiscali.co.uk>, Cyp <cyp561@gmail.com>,
+       driverdev <devel@driverdev.osuosl.org>,
+       linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 2/4] Rename ramzswap files to zram
+Message-ID: <20100604210710.GA8163@kroah.com>
+References: <1275379286-10453-1-git-send-email-ngupta@vflare.org>
+ <1275379286-10453-3-git-send-email-ngupta@vflare.org>
+ <20100604123246.3e11022e.akpm@linux-foundation.org>
 MIME-Version: 1.0
-In-Reply-To: <20100604210313.GB7912@kroah.com>
-References: <20100604204455.GD19761@kroah.com> <AANLkTilwzoUlastS0M9OMKuWgwmDE3VXdf2LCJxf50dV@mail.gmail.com> 
-	<20100604210313.GB7912@kroah.com>
-From: Mike Frysinger <vapier.adi@gmail.com>
-Date: Fri, 4 Jun 2010 17:05:20 -0400
-Message-ID: <AANLkTil9ucQcI5e3T3DgEeKOW99enBQksGqGy4htMIPB@mail.gmail.com>
-Subject: Re: [GIT PATCH] STAGING fixes and new drivers for 2.6.35-git
-To: Greg KH <greg@kroah.com>
-Cc: Linus Torvalds <torvalds@osdl.org>, Andrew Morton <akpm@osdl.org>,
-       linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100604123246.3e11022e.akpm@linux-foundation.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 4, 2010 at 17:03, Greg KH wrote:
-> On Fri, Jun 04, 2010 at 04:48:23PM -0400, Mike Frysinger wrote:
->> On Fri, Jun 4, 2010 at 16:44, Greg KH wrote:
->> > apatard@mandriva.com (1):
->> >      staging: Add framebuffer driver for XGI chipsets
->>
->> does the staging tree not require properly formatted git patches ?
->
-> "properly formatted" how?
->
-> Yes, there are coding style issues in there, that's one of the reasons
-> it's in the staging tree :)
->
-> Or are you referring to something else?
+On Fri, Jun 04, 2010 at 12:32:46PM -0700, Andrew Morton wrote:
+> On Tue,  1 Jun 2010 13:31:24 +0530
+> Nitin Gupta <ngupta@vflare.org> wrote:
+> 
+> > Related changes:
+> >  - Modify revelant Kconfig and Makefile accordingly.
+> >  - Change include filenames in code.
+> >  - Remove dependency on CONFIG_SWAP in Kconfig as zram usage
+> > is no longer limited to swap disks.
+> > 
+> > Signed-off-by: Nitin Gupta <ngupta@vflare.org>
+> > ---
+> >  drivers/staging/Kconfig                            |    2 +-
+> >  drivers/staging/Makefile                           |    2 +-
+> >  drivers/staging/ramzswap/Kconfig                   |   21 ---------------
+> >  drivers/staging/ramzswap/Makefile                  |    3 --
+> >  drivers/staging/zram/Kconfig                       |   28 ++++++++++++++++++++
+> >  drivers/staging/zram/Makefile                      |    3 ++
+> >  drivers/staging/{ramzswap => zram}/xvmalloc.c      |    0
+> >  drivers/staging/{ramzswap => zram}/xvmalloc.h      |    0
+> >  drivers/staging/{ramzswap => zram}/xvmalloc_int.h  |    0
+> >  .../{ramzswap/ramzswap.txt => zram/zram.txt}       |    0
+> >  .../{ramzswap/ramzswap_drv.c => zram/zram_drv.c}   |    2 +-
+> >  .../{ramzswap/ramzswap_drv.h => zram/zram_drv.h}   |    2 +-
+> >  .../ramzswap_ioctl.h => zram/zram_ioctl.h}         |    0
+> >  13 files changed, 35 insertions(+), 28 deletions(-)
+> >  delete mode 100644 drivers/staging/ramzswap/Kconfig
+> >  delete mode 100644 drivers/staging/ramzswap/Makefile
+> >  create mode 100644 drivers/staging/zram/Kconfig
+> >  create mode 100644 drivers/staging/zram/Makefile
+> >  rename drivers/staging/{ramzswap => zram}/xvmalloc.c (100%)
+> >  rename drivers/staging/{ramzswap => zram}/xvmalloc.h (100%)
+> >  rename drivers/staging/{ramzswap => zram}/xvmalloc_int.h (100%)
+> >  rename drivers/staging/{ramzswap/ramzswap.txt => zram/zram.txt} (100%)
+> >  rename drivers/staging/{ramzswap/ramzswap_drv.c => zram/zram_drv.c} (99%)
+> >  rename drivers/staging/{ramzswap/ramzswap_drv.h => zram/zram_drv.h} (99%)
+> >  rename drivers/staging/{ramzswap/ramzswap_ioctl.h => zram/zram_ioctl.h} (100%)
+> 
+> This is a git-specific thing and doesn't do anything useful for people
+> who use plain-old-patch(1) (eg: Greg and me).
+> 
+> Obviously we can manually type in the commands and put the massive
+> file-moving diff together, but it's a bit of a pain.
+> 
+> Maybe Greg has some magic automated way of turning these into regular
+> patches, but I don't.
 
-this guy clearly hasnt set his author field.  there is no proper name
-here, just an e-mail address.  looking through the current commits in
-the staging tree, i see similar errors, some of which are even in the
-s-o-b tag.
--mike
+No I don't :(
+
+But for the staging tree, I've started to use git, so I should be able
+to apply this.  I'll try it out next week when I get to the "here's
+what's going into .36" series of patches sent to me.
+
+thanks,
+
+greg k-h
