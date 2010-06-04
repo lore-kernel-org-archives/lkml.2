@@ -1,87 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755139Ab0FDJd5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jun 2010 05:33:57 -0400
-Received: from e23smtp02.au.ibm.com ([202.81.31.144]:42770 "EHLO
-	e23smtp02.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754650Ab0FDJdz (ORCPT
+	id S1755128Ab0FDJgx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jun 2010 05:36:53 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:51575 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754469Ab0FDJgu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jun 2010 05:33:55 -0400
-Message-ID: <4C08C87E.6030004@in.ibm.com>
-Date: Fri, 04 Jun 2010 15:03:50 +0530
-From: Sachin Sant <sachinp@in.ibm.com>
-User-Agent: Thunderbird 2.0.0.22 (X11/20090609)
+	Fri, 4 Jun 2010 05:36:50 -0400
+Message-ID: <4C08C931.3080306@vflare.org>
+Date: Fri, 04 Jun 2010 15:06:49 +0530
+From: Nitin Gupta <ngupta@vflare.org>
+Reply-To: ngupta@vflare.org
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-3.fc13 Thunderbird/3.0.4
 MIME-Version: 1.0
-To: linux-next@vger.kernel.org
-CC: Stephen Rothwell <sfr@canb.auug.org.au>,
-       LKML <linux-kernel@vger.kernel.org>,
-       Rusty Russell <rusty@rustcorp.com.au>
-Subject: [-next June 4] Boot failure on x86_64,PPC64
-References: <20100604153006.fa15c770.sfr@canb.auug.org.au>
-In-Reply-To: <20100604153006.fa15c770.sfr@canb.auug.org.au>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Dan Magenheimer <dan.magenheimer@oracle.com>
+CC: andreas.dilger@oracle.com, Minchan Kim <minchan.kim@gmail.com>,
+       chris.mason@oracle.com, viro@zeniv.linux.org.uk,
+       akpm@linux-foundation.org, adilger@sun.com, tytso@mit.edu,
+       mfasheh@suse.com, joel.becker@oracle.com, matthew@wil.cx,
+       linux-btrfs@vger.kernel.org, linux-kernel@vger.kernel.org,
+       linux-fsdevel@vger.kernel.org, linux-ext4@vger.kernel.org,
+       ocfs2-devel@oss.oracle.com, linux-mm@kvack.org, jeremy@goop.org,
+       JBeulich@novell.com, kurt.hackel@oracle.com, npiggin@suse.de,
+       dave.mccracken@oracle.com, riel@redhat.com, avi@redhat.com,
+       konrad.wilk@oracle.com
+Subject: Re: [PATCH V2 0/7] Cleancache (was Transcendent Memory): overview
+References: <20100528173510.GA12166%ca-server1.us.oracle.comAANLkTilV-4_QaNq5O0WSplDx1Oq7JvkgVrEiR1rgf1up@mail.gmail.com> <489aa002-6d42-4dd5-bb66-81c665f8cdd1@default> <4C07179F.5080106@vflare.org> <3721BEE2-DF2D-452A-8F01-E690E32C6B33@oracle.com 4C074ACE.9020704@vflare.org> <6e97a82a-c754-493e-bbf5-58f0bb6a18b5@default>
+In-Reply-To: <6e97a82a-c754-493e-bbf5-58f0bb6a18b5@default>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Today's next failed to boot on variety of hardware (x86_64,PPC64)
-with following messages :
-
-doing fast boot
-
-scsi_mod: module_layout: kernel tainted.
-
-Disabling lock debugging due to kernel taint
-
-scsi_mod: module license 'unspecified' taints kernel.
-
-scsi_mod: Unknown symbol add_uevent_var (err 0)
-
-scsi_mod: Unknown symbol blk_queue_rq_timed_out (err 0)
-
-scsi_mod: Unknown symbol blk_end_request_err (err 0)
-
-scsi_mod: Unknown symbol device_schedule_callback_owner (err 0)
-
-scsi_mod: Unknown symbol dev_set_name (err 0)
-
-
-........ <SNIP> ......
-
-WARNING: Error iscsi_transport_sas: Unknown symbol scsi_mode_sense (err 0)
-
-Inserting scsi_moscsi_transport_sas: Unknown symbol dev_set_name (err 0)
-
-d (/lib/modules/scsi_transport_sas: Unknown symbol transport_remove_device (err 0)
-
-2.6.35-rc1-autotscsi_transport_sas: Unknown symbol scsi_get_vpd_page (err 0)
-
-est-next-2010060scsi_transport_sas: Unknown symbol device_initialize (err 0)
-
-4/kernel/driversscsi_transport_sas: Unknown symbol device_for_each_child (err 0)
-
-/scsi/scsi_mod.kscsi_transport_sas: Unknown symbol get_device (err 0)
-
-o): Unknown symbscsi_transport_sas: Unknown symbol bsg_unregister_queue (err 0)
-
-ol in module, orscsi_transport_sas: Unknown symbol transport_setup_device (err 0)
-
- unknown parametscsi_transport_sas: Unknown symbol put_device (err 0)
-
-and many more scsi_mod related messages. 
-Yesterday's problem of OOPS during init/load_module seem to have disappeared.
-
-Thanks
--Sachin 
+On 06/03/2010 09:13 PM, Dan Magenheimer wrote:
+>> On 06/03/2010 10:23 AM, Andreas Dilger wrote:
+>>> On 2010-06-02, at 20:46, Nitin Gupta wrote:
+>>
+>>> I was thinking it would be quite clever to do compression in, say,
+>>> 64kB or 128kB chunks in a mapping (to get decent compression) and
+>>> then write these compressed chunks directly from the page cache
+>>> to disk in btrfs and/or a revived compressed ext4.
+>>
+>> Batching of pages to get good compression ratio seems doable.
+> 
+> Is there evidence that batching a set of random individual 4K
+> pages will have a significantly better compression ratio than
+> compressing the pages separately?  I certainly understand that
+> if the pages are from the same file, compression is likely to
+> be better, but pages evicted from the page cache (which is
+> the source for all cleancache_puts) are likely to be quite a
+> bit more random than that, aren't they?
+> 
 
 
--- 
+Batching of pages from random files may not be so effective but
+it would be interesting to collect some data for this. Still,
+per-inode batching of pages seems doable and this should help
+us get over this problem.
 
----------------------------------
-Sachin Sant
-IBM Linux Technology Center
-India Systems and Technology Labs
-Bangalore, India
----------------------------------
-
+Thanks,
+Nitin
