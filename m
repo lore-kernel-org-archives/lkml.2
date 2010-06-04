@@ -1,54 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754061Ab0FDSUf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jun 2010 14:20:35 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:43763 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753647Ab0FDSUc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jun 2010 14:20:32 -0400
-Date: Fri, 4 Jun 2010 12:18:25 -0300
-From: Marcelo Tosatti <mtosatti@redhat.com>
-To: Lai Jiangshan <laijs@cn.fujitsu.com>
-Cc: Avi Kivity <avi@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-       kvm@vger.kernel.org
-Subject: Re: [PATCH] kvm: rework remove-write-access for a slot
-Message-ID: <20100604151825.GA11087@amt.cnet>
-References: <4C061C16.9040208@cn.fujitsu.com>
- <4C063E01.7040206@redhat.com>
- <4C08B5D0.6090104@cn.fujitsu.com>
+	id S1754087Ab0FDS0i (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jun 2010 14:26:38 -0400
+Received: from mail-gw0-f46.google.com ([74.125.83.46]:58302 "EHLO
+	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751239Ab0FDS0h convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Jun 2010 14:26:37 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :content-type:content-transfer-encoding;
+        b=HIhx5cMsPUltmsCtManoKmaW1csJap6ciQf3DjX/t+TNyfPTtVTzg0bjILkLKI0xuG
+         6OlsuQq+63NFqb1MGKjRrWhEK6hwK3+1ZV6RVWppYeBv9vubm5F05hXPBMPZXJMGoxIe
+         /tTp4VgUMpLP+by/6NWz4yDd7HYyDU4q3JbK8=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4C08B5D0.6090104@cn.fujitsu.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
+In-Reply-To: <20100604180225.GA2439@elliptictech.com>
+References: <Pine.LNX.4.64.1006041547530.2447@boston.corp.fedex.com>
+	<20100604180225.GA2439@elliptictech.com>
+Date: Sat, 5 Jun 2010 02:26:36 +0800
+Message-ID: <AANLkTikOvkqJFgI-TnKmzWALlOF29Dga719yhiGU0w7K@mail.gmail.com>
+Subject: Re: Commit 9b8c4a0b215e603497daebe8ecbc9b1f0f035808 broken X11 
+	pointer
+From: Jeff Chua <jeff.chua.linux@gmail.com>
+To: Jeff Chua <jeff.chua.linux@gmail.com>,
+       Chris Wilson <chris@chris-wilson.co.uk>, Eric Anholt <eric@anholt.net>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       Linux Kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 04, 2010 at 04:14:08PM +0800, Lai Jiangshan wrote:
-> Avi Kivity wrote:
-> > On 06/02/2010 11:53 AM, Lai Jiangshan wrote:
-> >> Current code uses slot_bitmap to find ptes who map a page
-> >> from the memory slot, it is not precise: some ptes in the shadow page
-> >> are not map any page from the memory slot.
-> >>
-> >> This patch uses rmap to find the ptes precisely, and remove
-> >> the unused slot_bitmap.
+On Sat, Jun 5, 2010 at 2:02 AM, Nick Bowler <nbowler@elliptictech.com> wrote:
+> On 15:53 Fri 04 Jun     , Jeff Chua wrote:
+>> The following commit broke X11 mouse pointer. Symptom is "mouse pointer"
+>> on X11 cannot change "shape" when positioned to the frames of xterm
+>> window.
+>>
+>> Reverting it makes it work again.
+>>
+>> commit 9b8c4a0b215e603497daebe8ecbc9b1f0f035808
+>
+> Should be fixed by the patch attached to this bug:
+>
+>  https://bugs.freedesktop.org/show_bug.cgi?id=28335
 
-Note that the current code is precise: memslot_id does unalias_gfn.
+Nick,
 
-> > Patch looks good; a couple of comments:
-> > 
-> > - We might see a slowdown with !tdp, since we no longer have locality. 
-> > Each page will map to an spte in a different page.  However, it's still
-> > worth it in my opinion.
-> 
-> Yes, this patch hurts the cache since we no longer have locality.
-> And if most pages of the slot are not mapped(rmap_next(kvm, rmapp, NULL)==NULL),
-> this patch will worse than old method I think.
+Thanks again for the pointer! And yes, the patch fixes the problem.
+However, it hasn't make its way to Linus's tree yet.
 
-Can you get some numbers before/after patch, with/without lots of shadow
-pages instantiated? Better with large amount of memory for the guest.
-
-Because shrinking kvm_mmu_page is good.
-
+Thanks,
+Jeff.
