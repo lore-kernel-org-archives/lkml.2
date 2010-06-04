@@ -1,90 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754261Ab0FDKkP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jun 2010 06:40:15 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:55125 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753968Ab0FDKkM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jun 2010 06:40:12 -0400
-Date: Fri, 4 Jun 2010 13:35:43 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Rusty Russell <rusty@rustcorp.com.au>
-Cc: linux-kernel@vger.kernel.org, virtualization@lists.linux-foundation.org,
-       kvm@vger.kernel.org, qemu-devel@nongnu.org,
-       Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCHv3 1/2] virtio: support layout with avail ring before idx
-Message-ID: <20100604103543.GA22270@redhat.com>
-References: <cover.1275403477.git.mst@redhat.com> <10a74b58c908bad64ff890c881e2b2de88687f0e.1275403477.git.mst@redhat.com> <201006041204.57973.rusty@rustcorp.com.au>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201006041204.57973.rusty@rustcorp.com.au>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+	id S1754423Ab0FDKmJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jun 2010 06:42:09 -0400
+Received: from ganesha.gnumonks.org ([213.95.27.120]:56798 "EHLO
+	ganesha.gnumonks.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754168Ab0FDKmF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Jun 2010 06:42:05 -0400
+From: Kukjin Kim <kgene.kim@samsung.com>
+To: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Cc: ben-linux@fluff.org, Kukjin Kim <kgene.kim@samsung.com>
+Subject: [PATCH 1/2] MAINTAINERS: update files for SAMSUNG ARM ARCHITECTURES
+Date: Fri,  4 Jun 2010 19:36:33 +0900
+Message-Id: <1275647794-30634-1-git-send-email-kgene.kim@samsung.com>
+X-Mailer: git-send-email 1.6.2.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 04, 2010 at 12:04:57PM +0930, Rusty Russell wrote:
-> On Wed, 2 Jun 2010 12:17:12 am Michael S. Tsirkin wrote:
-> > This adds an (unused) option to put available ring before control (avail
-> > index, flags), and adds padding between index and flags. This avoids
-> > cache line sharing between control and ring, and also makes it possible
-> > to extend avail control without incurring extra cache misses.
-> > 
-> > Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
-> 
-> No no no no.  254?  You're trying to Morton me![1]
+Signed-off-by: Kukjin Kim <kgene.kim@samsung.com>
+---
+ MAINTAINERS |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-Hmm, I wonder what will we do if we want a 3rd field on
-a separate chacheline. But ok.
+diff --git a/MAINTAINERS b/MAINTAINERS
+index a73dd80..1d41149 100644
+--- a/MAINTAINERS
++++ b/MAINTAINERS
+@@ -899,7 +899,7 @@ M:	Ben Dooks <ben-linux@fluff.org>
+ L:	linux-arm-kernel@lists.infradead.org (moderated for non-subscribers)
+ W:	http://www.fluff.org/ben/linux/
+ S:	Maintained
+-F:	arch/arm/plat-s3c/
++F:	arch/arm/plat-samsung/
+ F:	arch/arm/plat-s3c24xx/
+ 
+ ARM/S3C2410 ARM ARCHITECTURE
+-- 
+1.6.2.5
 
-> How's this (untested):
-
-I think we also want to put flags there as well,
-they are used on interrupt path, together with last used index.
-
-> diff --git a/include/linux/virtio_ring.h b/include/linux/virtio_ring.h
-> --- a/include/linux/virtio_ring.h
-> +++ b/include/linux/virtio_ring.h
-> @@ -74,8 +74,8 @@ struct vring {
->  /* The standard layout for the ring is a continuous chunk of memory which looks
->   * like this.  We assume num is a power of 2.
->   *
-> - * struct vring
-> - * {
-> + * struct vring {
-> + *	*** The driver writes to this part.
->   *	// The actual descriptors (16 bytes each)
->   *	struct vring_desc desc[num];
->   *
-> @@ -84,9 +84,11 @@ struct vring {
->   *	__u16 avail_idx;
->   *	__u16 available[num];
->   *
-> - *	// Padding to the next align boundary.
-> + *	// Padding so used_flags is on the next align boundary.
->   *	char pad[];
-> + *	__u16 last_used; // On a cacheline of its own.
->   *
-> + *	*** The device writes to this part.
->   *	// A ring of used descriptor heads with free-running index.
->   *	__u16 used_flags;
->   *	__u16 used_idx;
-> @@ -110,6 +112,12 @@ static inline unsigned vring_size(unsign
->  		+ sizeof(__u16) * 2 + sizeof(struct vring_used_elem) * num;
->  }
->  
-> +/* Last used index sits at the very end of the driver part of the struct */
-> +static inline __u16 *vring_last_used_idx(const struct vring *vr)
-> +{
-> +	return (__u16 *)vr->used - 1;
-> +}
-> +
->  #ifdef __KERNEL__
->  #include <linux/irqreturn.h>
->  struct virtio_device;
-> 
-> Cheers,
-> Rusty.
-> [1] Andrew Morton has this technique where he posts a solution so ugly it
->     forces others to fix it properly.  Ego-roping, basically.
