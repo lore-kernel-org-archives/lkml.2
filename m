@@ -1,46 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755236Ab0FDMDr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jun 2010 08:03:47 -0400
-Received: from hera.kernel.org ([140.211.167.34]:47202 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751850Ab0FDMDq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jun 2010 08:03:46 -0400
-Message-ID: <4C08EB74.8070300@kernel.org>
-Date: Fri, 04 Jun 2010 14:03:00 +0200
-From: Tejun Heo <tj@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.1.9) Gecko/20100317 Thunderbird/3.0.4
-MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: mingo@elte.hu, linux-kernel@vger.kernel.org, rusty@rustcorp.com.au,
-       paulus@samba.org, acme@redhat.com, Paul Menage <menage@google.com>
-Subject: Re: [PATCH UPDATED 2/4] sched: adjust when cpu_active and cpuset
- configurations are updated during cpu on/offlining
-References: <1275332199-28082-1-git-send-email-tj@kernel.org>	 <1275332199-28082-3-git-send-email-tj@kernel.org>	 <1275407846.27810.27627.camel@twins>  <4C053C39.9070405@kernel.org>	 <1275412835.27810.27887.camel@twins>  <4C0680DB.9010503@kernel.org> <1275652701.27810.39745.camel@twins>
-In-Reply-To: <1275652701.27810.39745.camel@twins>
-X-Enigmail-Version: 1.0.1
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 04 Jun 2010 12:03:01 +0000 (UTC)
+	id S1755474Ab0FDMHW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jun 2010 08:07:22 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:45542 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753511Ab0FDMHT convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Jun 2010 08:07:19 -0400
+Subject: Re: suspend blockers & Android integration
+From: Peter Zijlstra <peterz@infradead.org>
+To: Arve =?ISO-8859-1?Q?Hj=F8nnev=E5g?= <arve@android.com>
+Cc: Ingo Molnar <mingo@elte.hu>, tytso@mit.edu,
+       Brian Swetland <swetland@google.com>, Neil Brown <neilb@suse.de>,
+       Thomas Gleixner <tglx@linutronix.de>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+       Alan Stern <stern@rowland.harvard.edu>,
+       Felipe Balbi <felipe.balbi@nokia.com>,
+       LKML <linux-kernel@vger.kernel.org>,
+       Florian Mickler <florian@mickler.org>,
+       Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
+       Linux PM <linux-pm@lists.linux-foundation.org>,
+       Alan Cox <alan@lxorguk.ukuu.org.uk>,
+       James Bottomley <James.Bottomley@suse.de>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       Kevin Hilman <khilman@deeprootsystems.com>,
+       "H. Peter Anvin" <hpa@zytor.com>,
+       Arjan van de Ven <arjan@infradead.org>
+In-Reply-To: <AANLkTinQyzzeF-NOAjrAqqQXqKjFJhx85nI4uyBGRtWd@mail.gmail.com>
+References: <20100603193045.GA7188@elte.hu> <20100603231153.GA11302@elte.hu>
+	 <20100603232302.GA16184@elte.hu>
+	 <AANLkTikZP3bmckpfb_jUdG7qZO5W9DgpZ79ugtSZaEpt@mail.gmail.com>
+	 <20100604071354.GA14451@elte.hu>
+	 <AANLkTimH4ihf3QqtKFpfGXRKtO55PrUuff9JYtaEBG44@mail.gmail.com>
+	 <20100604083423.GD15181@elte.hu>
+	 <AANLkTinQyzzeF-NOAjrAqqQXqKjFJhx85nI4uyBGRtWd@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Fri, 04 Jun 2010 14:06:50 +0200
+Message-ID: <1275653210.27810.39762.camel@twins>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/04/2010 01:58 PM, Peter Zijlstra wrote:
->> * Rollback on failure.
->>
->> * cpuset/sched_domain don't expect to be called before smp
->>   configuration is complete.  If hardcoded into cpu_up/down(),
->>   condition checks need to be added so that they're skipped if the
->>   system is bringing up the cpus for the first time.
->>
->> Works fine here w/ CPUSET enabled and disabled.
+On Fri, 2010-06-04 at 01:56 -0700, Arve Hjønnevåg wrote:
+> On Fri, Jun 4, 2010 at 1:34 AM, Ingo Molnar <mingo@elte.hu> wrote:
+> >
+> > * Arve Hj?nnev?g <arve@android.com> wrote:
+> >
+> >> > [...]
+> >> >
+> >> > Why do you need to track input wakeups? It's rather fragile and rather
+> >> > unnecessary [...]
+> >>
+> >> Because we have keys that should always turn the screen on, but the problem
+> >> is not specific to input events. If we enabled a wakeup event it usually
+> >> means we need this event to always work, not just when the system is fully
+> >> awake or fully suspended.
+> >
+> > Hm, i cannot follow that generic claim. Could you please point out the problem
+> > to me via a specific example? Which task does what, what undesirable thing
+> > happens where, etc.
+> >
 > 
-> OK, this looks good. 
+> We have many wakeup events, and some of them are invisible to the
+> user. For instance on the Nexus One wake up every 10 minutes monitor
+> the battery health. 
 
-Cool, can I add your acked-by's to and send them towards Ingo?
+> If the user presses a key right after this work
+> has finished and we did not block suspend until userspace could
+> process this key event, we risk suspending before we could turn the
+> screen on, which to the user looks like the key did not work. 
 
-Thanks.
+> Another
+> example, the user pressed the power key which turns the screen off and
+> allows suspend. We initiate suspend and a phone call comes in. If we
+> don't block suspend until we processed the incoming phone call
+> notification, the phone may never ring (some devices will send a new
+> message every few seconds for this, so on those devices it would just
+> delay the ringing).
 
--- 
-tejun
+Right, so in the proposed scheme all these tasks would be executed by
+trusted processes, and trusted processes will never get frozen and so
+will never be delayed in processing these events.
+
+Only untrusted code will be frozen. And trusted processes are reliable
+for thawing the untrusted processes and delivering events to it.
+
+Trusted processes are assumed to be sane and idle when there is nothing
+for them to do, allowing the machine to go into deep idle states.
+
