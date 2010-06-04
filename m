@@ -1,66 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757052Ab0FDB1G (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jun 2010 21:27:06 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:46697 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756779Ab0FDB1E (ORCPT
+	id S932098Ab0FDBbT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jun 2010 21:31:19 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:54223 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756856Ab0FDBbR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jun 2010 21:27:04 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Fri, 4 Jun 2010 10:22:46 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
-Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-       "balbir@linux.vnet.ibm.com" <balbir@linux.vnet.ibm.com>
-Subject: Re: [BUGFIX][PATCH] memcg fix wake up in oom wait queue
-Message-Id: <20100604102246.c37858fb.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <20100604100811.31c45828.nishimura@mxp.nes.nec.co.jp>
-References: <20100603172353.b5375879.kamezawa.hiroyu@jp.fujitsu.com>
-	<20100604100811.31c45828.nishimura@mxp.nes.nec.co.jp>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 3 Jun 2010 21:31:17 -0400
+To: Nick Piggin <npiggin@suse.de>
+Cc: "Martin K. Petersen" <martin.petersen@oracle.com>,
+       Chris Mason <chris.mason@oracle.com>,
+       James Bottomley <James.Bottomley@suse.de>,
+       Matthew Wilcox <matthew@wil.cx>,
+       Christof Schmitt <christof.schmitt@de.ibm.com>,
+       Boaz Harrosh <bharrosh@panasas.com>, linux-scsi@vger.kernel.org,
+       linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
+Subject: Re: Wrong DIF guard tag on ext2 write
+From: "Martin K. Petersen" <martin.petersen@oracle.com>
+Organization: Oracle
+References: <1275399637.21962.11.camel@mulgrave.site>
+	<20100601134951.GM8980@think>
+	<20100601162929.GC32708@parisc-linux.org>
+	<20100601164750.GQ8980@think>
+	<1275411293.21962.387.camel@mulgrave.site>
+	<20100601180905.GR8980@think> <20100601184649.GE9453@laptop>
+	<20100601193528.GV8980@think> <20100602032030.GF9453@laptop>
+	<yq17hmhbmkb.fsf@sermon.lab.mkp.net> <20100602134121.GD6152@laptop>
+Date: Thu, 03 Jun 2010 21:30:06 -0400
+In-Reply-To: <20100602134121.GD6152@laptop> (Nick Piggin's message of "Wed, 2
+	Jun 2010 23:41:21 +1000")
+Message-ID: <yq17hmfy481.fsf@sermon.lab.mkp.net>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+X-Auth-Type: Internal IP
+X-Source-IP: acsinet15.oracle.com [141.146.126.227]
+X-CT-RefId: str=0001.0A090201.4C08575E.0049:SCFMA922111,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 4 Jun 2010 10:08:11 +0900
-Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp> wrote:
+>>>>> "Nick" == Nick Piggin <npiggin@suse.de> writes:
 
-> On Thu, 3 Jun 2010 17:23:53 +0900, KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
-> > Very sorry that my test wasn't enough and delayed.
-> > 
-> > ==
-> > From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> > 
-> > OOM-waitqueue should be waken up when oom_disable is canceled.
-> > This is a fix for
-> >  memcg-oom-kill-disable-and-oom-status.patch
-> > 
-> > How to test:
-> >  Create a cgroup A...
-> >  1. set memory.limit and memory.memsw.limit to be small value
-> >  2. echo 1 > /cgroup/A/memory.oom_control, this disables oom-kill.
-> >  3. run a program which must cause OOM.
-> > 
-> > A program executed in 3 will sleep by oom_waiqueue in memcg.
-> > Then, how to wake it up is problem.
-> > 
-> >  1. echo 0 > /cgroup/A/memory.oom_control (enable OOM-killer)
-> >  2. echo big mem > /cgroup/A/memory.memsw.limit_in_bytes(allow more swap)
-> > etc..
-> > 
-> > Without the patch, a task in slept can not be waken up.
-> > 
-> 
-> Acked-by: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
-> 
-Thanks. I'll try to rebase this onto the latest mmotm.
+Nick,
 
--Kame
+>> Filesystems will inevitably have to be integrity-aware for that to
+>> work.  And it will be their job to keep the data pages stable during
+>> DMA.
 
+Nick> Closing the while it is dirty, while it is being written back
+Nick> window still leaves a pretty big window. Also, how do you handle
+Nick> mmap writes?  Write protect and checksum the destination page
+Nick> after every store? Or leave some window between when the pagecache
+Nick> is dirtied and when it is written back? So I don't know whether
+Nick> it's worth putting a lot of effort into this case.
+
+I'm mostly interested in the cases where the filesystem acts as a
+conduit for integrity metadata from user space. 
+
+I agree the corruption windows inside the kernel are only of moderate
+interest.  No filesystems have added support for explicitly protecting a
+bio because the block layer's function to do so automatically is just a
+few function calls away.
+
+-- 
+Martin K. Petersen	Oracle Linux Engineering
