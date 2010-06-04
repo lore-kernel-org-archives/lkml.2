@@ -1,68 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752883Ab0FDKSx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jun 2010 06:18:53 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:51072 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751328Ab0FDKSw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jun 2010 06:18:52 -0400
-Date: Fri, 4 Jun 2010 12:18:48 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Al Viro <viro@ZenIV.linux.org.uk>
-Cc: Changli Gao <xiaosuo@gmail.com>, linux-fsdevel@vger.kernel.org,
-       linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] fs: optimize mpage_readpage()
-Message-ID: <20100604101848.GA6367@a1.tnic>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	Al Viro <viro@ZenIV.linux.org.uk>, Changli Gao <xiaosuo@gmail.com>,
-	linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-References: <1275095926-18345-1-git-send-email-xiaosuo@gmail.com>
- <20100529121019.GA25092@liondog.tnic>
- <20100604071906.GC31073@ZenIV.linux.org.uk>
- <20100604081322.GA31027@liondog.tnic>
- <20100604083031.GE31073@ZenIV.linux.org.uk>
+	id S1753361Ab0FDKZo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jun 2010 06:25:44 -0400
+Received: from mail-px0-f174.google.com ([209.85.212.174]:41292 "EHLO
+	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751960Ab0FDKZn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Jun 2010 06:25:43 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:subject
+         :content-type:content-transfer-encoding;
+        b=G52WH0Pw5L8zJeJ+c+8kwlaAGjyDt7HyTKBYUletPzISxpDQSd5Tbsw3Pf+grKkrCC
+         c0GBV/sHJA+4mxuSPyJEMiR8He13yRopAuYDxs7D8wEGmbeaRvWxXzbNuuPPxkrySTQE
+         zeCD3sGBX5FEV3SctLixfQ7kiQARu5i9yshC0=
+Message-ID: <4C08D498.5090503@gmail.com>
+Date: Fri, 04 Jun 2010 18:25:28 +0800
+From: Wan ZongShun <mcuos.com@gmail.com>
+User-Agent: Thunderbird 2.0.0.24 (X11/20100411)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20100604083031.GE31073@ZenIV.linux.org.uk>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: LKML <linux-kernel@vger.kernel.org>, Greg Kroah-Hartman <gregkh@suse.de>
+Subject: [PATCH] lib: fix a memory leak risk
+Content-Type: text/plain; charset=GB2312
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Al Viro <viro@ZenIV.linux.org.uk>
-Date: Fri, Jun 04, 2010 at 09:30:31AM +0100
+The netlink_kernel_create failed will arouse memory leak,
+this patch is to add the 'kfree(ue_sk)' here.
 
-> On Fri, Jun 04, 2010 at 10:13:22AM +0200, Borislav Petkov wrote:
-> > > > > -	bio = do_mpage_readpage(bio, page, 1, &last_block_in_bio,
-> > > > > +	bio = do_mpage_readpage(NULL, page, 1, &last_block_in_bio,
-> 
-> > Right, the uninitialized warning above happens when you remove the NULL
-> > assignment, i.e.
-> > 
-> > struct bio *bio;
-> > 
-> > ...
-> > 
-> > bio = do_mpage_readpage(bio, ...)
-> 
-> WTF?  His patch does *NOT* leave you with bio = do_mpage_readpage(bio, ...),
-> it replaces that with bio = do_mpage_readpage(NULL, ...).
-> 
-> Which variant has produced a warning?
-> 
-> > But(!), in the mpage_readpage(), bio _absolutely_ has to be NULL because
-> > it is checked if being so later in do_mpage_readpage(), so this one is a
-> > complete different story.
-> > 
-> > To cut a long story short, you're correct, gcc is b0rked when warning
-> > about passing addresses of variables to functions which only write to
-> > them.
-> 
-> To make it even shorter, you've misapplied the patch.  Correct?
+Signed-off-by: Wan ZongShun <mcuos.com@gmail.com>
 
-Yes.
+---
+ lib/kobject_uevent.c |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
 
+diff --git a/lib/kobject_uevent.c b/lib/kobject_uevent.c
+index 59c1551..08e15f7 100644
+--- a/lib/kobject_uevent.c
++++ b/lib/kobject_uevent.c
+@@ -378,6 +378,7 @@ static int uevent_net_init(struct net *net)
+ 	if (!ue_sk->sk) {
+ 		printk(KERN_ERR
+ 		       "kobject_uevent: unable to create netlink socket!\n");
++		kfree(ue_sk);
+ 		return -ENODEV;
+ 	}
+ 	mutex_lock(&uevent_sock_mutex);
 -- 
-Regards/Gruss,
-Boris.
+1.6.3.3
