@@ -1,185 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754840Ab0FDLx5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jun 2010 07:53:57 -0400
-Received: from fxip-0047f.externet.hu ([88.209.222.127]:49412 "EHLO
+	id S1754817Ab0FDLzm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jun 2010 07:55:42 -0400
+Received: from fxip-0047f.externet.hu ([88.209.222.127]:49417 "EHLO
 	pomaz-ex.szeredi.hu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753915Ab0FDLx4 (ORCPT
+	with ESMTP id S1753915Ab0FDLzl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jun 2010 07:53:56 -0400
+	Fri, 4 Jun 2010 07:55:41 -0400
 To: Al Viro <viro@ZenIV.linux.org.uk>,
        Andrew Morton <akpm@linux-foundation.org>
-CC: John Johansen <john.johansen@canonical.com>,
-       Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>,
-       linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-In-reply-to: <E1OKVRc-0002Zk-Sc@pomaz-ex.szeredi.hu> (message from Miklos
-	Szeredi on Fri, 04 Jun 2010 13:52:12 +0200)
-Subject: [PATCH 2/2] vfs: show unreachable paths in getcwd and proc
-References: <E1OKVRc-0002Zk-Sc@pomaz-ex.szeredi.hu>
-Message-Id: <E1OKVT4-0002bA-KD@pomaz-ex.szeredi.hu>
+CC: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] vfs: remove unused MNT_STRICTATIME
+Message-Id: <E1OKVUr-0002cV-Te@pomaz-ex.szeredi.hu>
 From: Miklos Szeredi <miklos@szeredi.hu>
-Date: Fri, 04 Jun 2010 13:53:42 +0200
+Date: Fri, 04 Jun 2010 13:55:33 +0200
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Miklos Szeredi <mszeredi@suse.cz>
 
-Prepend "(unreachable)" to path strings if the path is not reachable
-from the current root.
-
-Two places updated are
- - the return string from getcwd()
- - and symlinks under /proc/$PID.
-
-Other uses of d_path() are left unchanged (we know that some old
-software crashes if /proc/mounts is changed).
+Commit d0adde574b8487ef30f69e2d08bba769e4be513f added MNT_STRICTATIME
+but it isn't actually used (MS_STRICTATIME clears MNT_RELATIME and
+MNT_NOATIME rather than setting any mount flag).
 
 Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
 ---
- fs/dcache.c            |   82 +++++++++++++++++++++++++++++++++++++++++--------
- fs/proc/base.c         |    2 -
- include/linux/dcache.h |    1 
- 3 files changed, 72 insertions(+), 13 deletions(-)
+ fs/namespace.c        |    1 -
+ include/linux/mount.h |    1 -
+ 2 files changed, 2 deletions(-)
 
-Index: linux-2.6/fs/dcache.c
+Index: linux-2.6/fs/namespace.c
 ===================================================================
---- linux-2.6.orig/fs/dcache.c	2010-05-27 12:22:21.000000000 +0200
-+++ linux-2.6/fs/dcache.c	2010-05-27 12:22:24.000000000 +0200
-@@ -1957,6 +1957,33 @@ int __d_path(const struct path *path, st
- 	return error;
- }
- 
-+static void current_root(struct path *root)
-+{
-+	read_lock(&current->fs->lock);
-+	*root = current->fs->root;
-+	path_get(root);
-+	read_unlock(&current->fs->lock);
-+}
-+
-+static int __d_path_with_deleted(const struct path *path, struct path *root,
-+				 char **buffer, int *buflen)
-+{
-+	int error;
-+
-+	prepend(buffer, buflen, "\0", 1);
-+	if (d_unlinked(path->dentry)) {
-+		error = prepend(buffer, buflen, " (deleted)", 10);
-+		if (error)
-+			return error;
-+	}
-+	return __d_path(path, root, buffer, buflen);
-+}
-+
-+static int prepend_unreachable(char **buffer, int *buflen)
-+{
-+	return prepend(buffer, buflen, "(unreachable)", 13);
-+}
-+
- /**
-  * d_path - return the path of a dentry
-  * @path: path to report
-@@ -1990,27 +2017,51 @@ char *d_path(const struct path *path, ch
- 	if (path->dentry->d_op && path->dentry->d_op->d_dname)
- 		return path->dentry->d_op->d_dname(path->dentry, buf, buflen);
- 
--	read_lock(&current->fs->lock);
--	root = current->fs->root;
--	path_get(&root);
--	read_unlock(&current->fs->lock);
-+	current_root(&root);
- 	spin_lock(&dcache_lock);
- 	ptr = buf + buflen;
--	prepend(&ptr, &buflen, "\0", 1);
--	if (d_unlinked(path->dentry)) {
--		error = prepend(&ptr, &buflen, " (deleted)", 10);
--		if (error)
--			goto out;
--	}
- 	tmp = root;
--	error = __d_path(path, &tmp, &ptr, &buflen);
--out:
-+	error = __d_path_with_deleted(path, &tmp, &ptr, &buflen);
- 	spin_unlock(&dcache_lock);
- 	path_put(&root);
- 	return error ? ERR_PTR(error) : ptr;
- }
- EXPORT_SYMBOL(d_path);
- 
-+/**
-+ * d_path_with_unreachable - return the path of a dentry
-+ * @path: path to report
-+ * @buf: buffer to return value in
-+ * @buflen: buffer length
-+ *
-+ * The difference from d_path() is that this prepends "(unreachable)"
-+ * to paths which are unreachable from the current process' root.
-+ */
-+char *d_path_with_unreachable(const struct path *path, char *buf, int buflen)
-+{
-+	char *ptr;
-+	struct path root;
-+	struct path tmp;
-+	int error;
-+
-+	if (path->dentry->d_op && path->dentry->d_op->d_dname)
-+		return path->dentry->d_op->d_dname(path->dentry, buf, buflen);
-+
-+	current_root(&root);
-+	spin_lock(&dcache_lock);
-+	ptr = buf + buflen;
-+	tmp = root;
-+	error = __d_path_with_deleted(path, &tmp, &ptr, &buflen);
-+	if (!error) {
-+		if (tmp.dentry != root.dentry || tmp.mnt != root.mnt)
-+			error = prepend_unreachable(&ptr, &buflen);
-+	}
-+
-+	spin_unlock(&dcache_lock);
-+	path_put(&root);
-+	return error ? ERR_PTR(error) : ptr;
-+}
-+
- /*
-  * Helper function for dentry_operations.d_dname() members
-  */
-@@ -2118,6 +2169,13 @@ SYSCALL_DEFINE2(getcwd, char __user *, b
- 		if (error)
- 			goto out;
- 
-+		/* Unreachable from current root */
-+		if (tmp.dentry != root.dentry || tmp.mnt != root.mnt) {
-+			error = prepend_unreachable(&cwd, &buflen);
-+			if (error)
-+				goto out;
-+		}
-+
- 		error = -ERANGE;
- 		len = PAGE_SIZE + page - cwd;
- 		if (len <= size) {
-Index: linux-2.6/include/linux/dcache.h
+--- linux-2.6.orig/fs/namespace.c	2010-05-25 16:18:55.000000000 +0200
++++ linux-2.6/fs/namespace.c	2010-05-28 14:21:57.000000000 +0200
+@@ -783,7 +783,6 @@ static void show_mnt_opts(struct seq_fil
+ 		{ MNT_NOATIME, ",noatime" },
+ 		{ MNT_NODIRATIME, ",nodiratime" },
+ 		{ MNT_RELATIME, ",relatime" },
+-		{ MNT_STRICTATIME, ",strictatime" },
+ 		{ 0, NULL }
+ 	};
+ 	const struct proc_fs_info *fs_infop;
+Index: linux-2.6/include/linux/mount.h
 ===================================================================
---- linux-2.6.orig/include/linux/dcache.h	2010-05-27 12:13:48.000000000 +0200
-+++ linux-2.6/include/linux/dcache.h	2010-05-27 12:22:24.000000000 +0200
-@@ -315,6 +315,7 @@ extern char *dynamic_dname(struct dentry
+--- linux-2.6.orig/include/linux/mount.h	2010-05-25 16:18:56.000000000 +0200
++++ linux-2.6/include/linux/mount.h	2010-05-28 14:21:57.000000000 +0200
+@@ -27,7 +27,6 @@ struct mnt_namespace;
+ #define MNT_NODIRATIME	0x10
+ #define MNT_RELATIME	0x20
+ #define MNT_READONLY	0x40	/* does the user want this to be r/o? */
+-#define MNT_STRICTATIME 0x80
  
- extern int __d_path(const struct path *path, struct path *root, char **, int *);
- extern char *d_path(const struct path *, char *, int);
-+extern char *d_path_with_unreachable(const struct path *, char *, int);
- extern char *dentry_path(struct dentry *, char *, int);
- 
- /* Allocation counts.. */
-Index: linux-2.6/fs/proc/base.c
-===================================================================
---- linux-2.6.orig/fs/proc/base.c	2010-05-27 11:53:55.000000000 +0200
-+++ linux-2.6/fs/proc/base.c	2010-05-27 12:22:24.000000000 +0200
-@@ -1438,7 +1438,7 @@ static int do_proc_readlink(struct path
- 	if (!tmp)
- 		return -ENOMEM;
- 
--	pathname = d_path(path, tmp, PAGE_SIZE);
-+	pathname = d_path_with_unreachable(path, tmp, PAGE_SIZE);
- 	len = PTR_ERR(pathname);
- 	if (IS_ERR(pathname))
- 		goto out;
+ #define MNT_SHRINKABLE	0x100
+ #define MNT_WRITE_HOLD	0x200
