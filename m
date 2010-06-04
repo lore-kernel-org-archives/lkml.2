@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932524Ab0FDUuL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jun 2010 16:50:11 -0400
-Received: from kroah.org ([198.145.64.141]:44011 "EHLO coco.kroah.org"
+	id S932419Ab0FDUuI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jun 2010 16:50:08 -0400
+Received: from kroah.org ([198.145.64.141]:44018 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756981Ab0FDUsB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jun 2010 16:48:01 -0400
+	id S932167Ab0FDUsD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Jun 2010 16:48:03 -0400
 From: Greg Kroah-Hartman <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org
-Cc: Graf Yang <graf.yang@analog.com>, Mike Frysinger <vapier@gentoo.org>,
+Cc: Dan Carpenter <error27@gmail.com>, stable <stable@kernel.org>,
        Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [PATCH 03/11] serial: bfin_5xx: IRDA is not affected by anomaly 05000230
-Date: Fri,  4 Jun 2010 13:47:49 -0700
-Message-Id: <1275684477-20172-3-git-send-email-gregkh@suse.de>
+Subject: [PATCH 05/11] TTY/n_gsm: potential double lock
+Date: Fri,  4 Jun 2010 13:47:51 -0700
+Message-Id: <1275684477-20172-5-git-send-email-gregkh@suse.de>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <20100604204445.GB19761@kroah.com>
 References: <20100604204445.GB19761@kroah.com>
@@ -20,37 +20,62 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Graf Yang <graf.yang@analog.com>
+From: Dan Carpenter <error27@gmail.com>
 
-Anomaly 05000230 (over sampling of the UART STOP bit) applies only when
-the peripheral is operating in UART mode.  So drop the anomaly handling
-when the UART is in IRDA mode.
+In gsm_dlci_data_kick() we call gsm_dlci_data_sweep() with the
+"gsm->tx_lock" held so we can't lock it again inside
+gsm_dlci_data_sweep().  I removed that lock from and added one to
+gsmld_write_wakeup() instead.  The sweep function is only called from
+those two places.
 
-Signed-off-by: Graf Yang <graf.yang@analog.com>
-Signed-off-by: Mike Frysinger <vapier@gentoo.org>
+Signed-off-by: Dan Carpenter <error27@gmail.com>
+Acked-by: Alan Cox <alan@linux.intel.com>
+Cc: stable <stable@kernel.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 ---
- drivers/serial/bfin_5xx.c |    7 ++++++-
- 1 files changed, 6 insertions(+), 1 deletions(-)
+ drivers/char/n_gsm.c |    9 +++++----
+ 1 files changed, 5 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/serial/bfin_5xx.c b/drivers/serial/bfin_5xx.c
-index 96f7e74..a78652b 100644
---- a/drivers/serial/bfin_5xx.c
-+++ b/drivers/serial/bfin_5xx.c
-@@ -869,7 +869,12 @@ bfin_serial_set_termios(struct uart_port *port, struct ktermios *termios,
+diff --git a/drivers/char/n_gsm.c b/drivers/char/n_gsm.c
+index c4161d5..e4089c4 100644
+--- a/drivers/char/n_gsm.c
++++ b/drivers/char/n_gsm.c
+@@ -904,9 +904,7 @@ static void gsm_dlci_data_sweep(struct gsm_mux *gsm)
+ 	int len;
+ 	/* Priority ordering: We should do priority with RR of the groups */
+ 	int i = 1;
+-	unsigned long flags;
+ 
+-	spin_lock_irqsave(&gsm->tx_lock, flags);
+ 	while (i < NUM_DLCI) {
+ 		struct gsm_dlci *dlci;
+ 
+@@ -927,7 +925,6 @@ static void gsm_dlci_data_sweep(struct gsm_mux *gsm)
+ 		if (len == 0)
+ 			i++;
  	}
+-	spin_unlock_irqrestore(&gsm->tx_lock, flags);
+ }
  
- 	baud = uart_get_baud_rate(port, termios, old, 0, port->uartclk/16);
--	quot = uart_get_divisor(port, baud) - ANOMALY_05000230;
-+	quot = uart_get_divisor(port, baud);
-+
-+	/* If discipline is not IRDA, apply ANOMALY_05000230 */
-+	if (termios->c_line != N_IRDA)
-+		quot -= ANOMALY_05000230;
-+
- 	spin_lock_irqsave(&uart->port.lock, flags);
+ /**
+@@ -2230,12 +2227,16 @@ static int gsmld_open(struct tty_struct *tty)
+ static void gsmld_write_wakeup(struct tty_struct *tty)
+ {
+ 	struct gsm_mux *gsm = tty->disc_data;
++	unsigned long flags;
  
- 	UART_SET_ANOMALY_THRESHOLD(uart, USEC_PER_SEC / baud * 15);
+ 	/* Queue poll */
+ 	clear_bit(TTY_DO_WRITE_WAKEUP, &tty->flags);
+ 	gsm_data_kick(gsm);
+-	if (gsm->tx_bytes < TX_THRESH_LO)
++	if (gsm->tx_bytes < TX_THRESH_LO) {
++		spin_lock_irqsave(&gsm->tx_lock, flags);
+ 		gsm_dlci_data_sweep(gsm);
++		spin_unlock_irqrestore(&gsm->tx_lock, flags);
++	}
+ }
+ 
+ /**
 -- 
 1.7.1
 
