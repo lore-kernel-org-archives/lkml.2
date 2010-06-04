@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756616Ab0FDUpI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jun 2010 16:45:08 -0400
-Received: from kroah.org ([198.145.64.141]:43904 "EHLO coco.kroah.org"
+	id S1756469Ab0FDUpF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jun 2010 16:45:05 -0400
+Received: from kroah.org ([198.145.64.141]:43901 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753897Ab0FDUpD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1753414Ab0FDUpD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 4 Jun 2010 16:45:03 -0400
-Date: Fri, 4 Jun 2010 13:44:45 -0700
+Date: Fri, 4 Jun 2010 13:44:36 -0700
 From: Greg KH <gregkh@suse.de>
 To: Linus Torvalds <torvalds@linux-foundation.org>,
        Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org
-Subject: [GIT PATCH] TTY and serial fixes for .35-git
-Message-ID: <20100604204445.GB19761@kroah.com>
+Cc: linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org
+Subject: [GIT PATCH] USB fixes for 2.6.35-git
+Message-ID: <20100604204436.GA19761@kroah.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
@@ -21,16 +21,18 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Here are some tty and serial driver bugfixes and new device id patches
-for your .35-git tree.
+Here are a few USB bugfixes for your 2.6.35-git tree.
+
+The majority are for the s3c gadget driver, and the xhci host
+controller, with a smattering of other bugfixes.
 
 Please pull from:
-	master.kernel.org:/pub/scm/linux/kernel/git/gregkh/tty-2.6.git/
+	master.kernel.org:/pub/scm/linux/kernel/git/gregkh/usb-2.6.git/
 
-These patches have been in the linux-next tree and -mm tree.
+Most of these patches have been in the linux-next and mm trees.
 
-Patches will be sent to the linux-kernel mailing list, if anyone wants
-to see them.
+The full patches will be sent to the linux-usb mailing list, if anyone
+wants to see them.
 
 thanks,
 
@@ -38,43 +40,57 @@ greg k-h
 
 ------------
 
- drivers/char/n_gsm.c         |    9 +++--
- drivers/char/vt.c            |    2 +-
- drivers/char/vt_ioctl.c      |    4 ++-
- drivers/serial/8250_pci.c    |   71 ++++++++++++++++++++++++++++++++++++++++++
- drivers/serial/altera_uart.c |   44 ++++++++------------------
- drivers/serial/bfin_5xx.c    |    9 ++++-
- drivers/serial/msm_serial.c  |   21 ++----------
- drivers/serial/msm_serial.h  |   56 +++++++++++++++++++++++++++++++++
- drivers/serial/serial_cs.c   |   18 +++++++++-
- 9 files changed, 175 insertions(+), 59 deletions(-)
+ drivers/usb/class/cdc-acm.c          |    6 ++-
+ drivers/usb/core/driver.c            |    2 +
+ drivers/usb/gadget/Kconfig           |    1 +
+ drivers/usb/gadget/s3c-hsotg.c       |   57 ++++++++++++++++++++++++++++++++++
+ drivers/usb/host/ehci-hcd.c          |   20 ++++++++++--
+ drivers/usb/host/isp1362.h           |    2 +-
+ drivers/usb/host/xhci-pci.c          |    2 +
+ drivers/usb/host/xhci-ring.c         |   31 ++++++++++++++++++-
+ drivers/usb/host/xhci.c              |   57 +++++++++++++++++++++++++++++-----
+ drivers/usb/host/xhci.h              |   12 +++++++
+ drivers/usb/serial/digi_acceleport.c |    3 +-
+ drivers/usb/serial/ftdi_sio.c        |    4 ++
+ drivers/usb/serial/mos7840.c         |    1 -
+ 13 files changed, 180 insertions(+), 18 deletions(-)
 
 ---------------
 
-Abhijeet Dharmapurikar (1):
-      msm_serial: fix serial on trout
+Alan Stern (1):
+      USB: unbind all interfaces before rebinding them
 
-Alexander Kurz (1):
-      serial_cs: add and sort IDs for serial and modem cards
+Axel Lin (1):
+      USB: cdc-acm: fix resource reclaim in error path of acm_probe
 
-Dan Carpenter (2):
-      TTY/n_gsm: potential double lock
-      vt_ioctl: return -EFAULT on copy_from_user errors
+Ben Dooks (3):
+      USB: s3c-hsotg: Ensure TX FIFO addresses setup when initialising FIFOs
+      USB: s3c-hsotg: SoftDisconnect minimum 3ms
+      USB: s3c-hsotg: Ensure FIFOs are fully flushed after layout
 
-Frank Pan (1):
-      tty: fix a little bug in scrup, vt.c
+Daniel Mack (1):
+      USB: ftdi_sio: fix DTR/RTS line modes
 
-Graf Yang (1):
-      serial: bfin_5xx: IRDA is not affected by anomaly 05000230
+Grant Likely (1):
+      usb: fix ehci_hcd build failure when both generic-OF and xilinx is selected
 
-Sonic Zhang (1):
-      serial: bfin_5xx: fix typo in IER check
+Johan Hovold (1):
+      USB: mos7840: fix null-pointer dereference
 
-Tobias Klauser (3):
-      altera_uart: Don't take spinlock in already protected functions
-      altera_uart: Simplify altera_uart_console_putc
-      serial: altera_uart: Proper section for altera_uart_remove
+Julia Lawall (1):
+      USB: serial: digi_acceleport: Eliminate a NULL pointer dereference
 
-Yegor Yefremov (1):
-      serial: add support for various Titan PCI cards
+Maurus Cuelenaere (1):
+      USB: s3c_hsotg: define USB_GADGET_DUALSPEED in Kconfig
+
+Mike Frysinger (1):
+      USB: isp1362: fix inw warning on Blackfin systems
+
+Sarah Sharp (3):
+      USB: xhci: Wait for controller to be ready after reset.
+      USB: xhci: Wait for host to start running.
+      USB: xhci: Print NEC firmware version.
+
+Thomas Abraham (1):
+      USB: s3c: Enable soft disconnect during initialization
 
