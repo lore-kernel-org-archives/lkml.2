@@ -1,219 +1,223 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932194Ab0FDNaD (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jun 2010 09:30:03 -0400
-Received: from mail-px0-f174.google.com ([209.85.212.174]:38155 "EHLO
-	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756086Ab0FDN37 (ORCPT
+	id S1756010Ab0FDNnS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jun 2010 09:43:18 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:49697 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754168Ab0FDNnP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jun 2010 09:29:59 -0400
+	Fri, 4 Jun 2010 09:43:15 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=Q58ScV5UqtB+VSHABNVJ5kO0nDHtPNWLvvqJjJfa9paeQJiwfIg73mKIVH2KpEASfP
-         7F1cgZ6VgaUWNEsQIvX9RWhfQJYuvKPR/MjN7BjKo9NXg2u5rmdnQYsrgAcfRwScs04/
-         QEX5BaxVYHYODsJm7dfLxKKvB+SwVhQlhGmVQ=
-Date: Fri, 4 Jun 2010 22:29:48 +0900
-From: Minchan Kim <minchan.kim@gmail.com>
-To: Dan Magenheimer <dan.magenheimer@oracle.com>
-Cc: chris.mason@oracle.com, viro@zeniv.linux.org.uk, akpm@linux-foundation.org,
-       adilger@sun.com, tytso@mit.edu, mfasheh@suse.com,
-       joel.becker@oracle.com, matthew@wil.cx, linux-btrfs@vger.kernel.org,
-       linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-       linux-ext4@vger.kernel.org, ocfs2-devel@oss.oracle.com,
-       linux-mm@kvack.org, ngupta@vflare.org, jeremy@goop.org,
-       JBeulich@novell.com, kurt.hackel@oracle.com, npiggin@suse.de,
-       dave.mccracken@oracle.com, riel@redhat.com, avi@redhat.com,
-       konrad.wilk@oracle.com
-Subject: Re: [PATCH V2 3/7] Cleancache (was Transcendent Memory): VFS hooks
-Message-ID: <20100604132948.GC1879@barrios-desktop>
-References: <20100528173610.GA12270@ca-server1.us.oracle.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100528173610.GA12270@ca-server1.us.oracle.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+        h=message-id:date:from:to:cc:subject;
+        b=aS9dzqU4H889J4l2yeAKlWIUEvUKmyIvwyEkia9BbRvg6QQTCBZm+TXYzxPLVM9zHE
+         jT8fY0wTwmTog2iY5bXze5loyGcIWPrsQB+AwOudRiEAUfvPjNw3dEbt+e5qSpe9FZWF
+         1QY6Bsvfmc4ZqJYty44d1Cog1UIEQgzEU5Jsg=
+Message-ID: <4c0902ef.0a41df0a.6c86.2df0@mx.google.com>
+Date: Fri, 04 Jun 2010 16:43:27 +0300
+From: Dmytro Milinevskyy <milinevskyy@gmail.com>
+To: ath5k-devel@venema.h4ckr.net
+Cc: Jiri Slaby <jirislaby@gmail.com>, Nick Kossifidis <mickflemm@gmail.com>,
+       "Luis R. Rodriguez" <lrodriguez@atheros.com>,
+       Bob Copeland <me@bobcopeland.com>,
+       "John W. Linville" <linville@tuxdriver.com>,
+       GeunSik Lim <geunsik.lim@samsung.com>,
+       Greg Kroah-Hartman <gregkh@suse.de>, Lukas Turek <8an@praha12.net>,
+       Mark Hindley <mark@hindley.org.uk>,
+       Johannes Berg <johannes@sipsolutions.net>,
+       Jiri Kosina <jkosina@suse.cz>, Kalle Valo <kalle.valo@iki.fi>,
+       Keng-Yu Lin <keng-yu.lin@canonical.com>,
+       Luca Verdesca <magooz@salug.it>, Shahar Or <shahar@shahar-or.co.il>,
+       linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+       linux-kernel@vger.kernel.org
+Subject: [PATCH] [ath5k][leds] Ability to disable leds support. If leds support enabled do not force mac802.11 leds layer selection.
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi, Dan. 
-I reviewed quickly. So I may be wrong. :) 
+Hi!
 
-On Fri, May 28, 2010 at 10:36:10AM -0700, Dan Magenheimer wrote:
-> [PATCH V2 3/7] Cleancache (was Transcendent Memory): VFS hooks
-> 
-> Implement core hooks in VFS for: initializing cleancache
-> per filesystem; capturing clean pages evicted by page cache;
-> attempting to get pages from cleancache before filesystem
-> read; and ensuring coherency between pagecache, disk,
-> and cleancache.  All hooks become no-ops if CONFIG_CLEANCACHE
-> is unset, or become compare-pointer-to-NULL if
-> CONFIG_CLEANCACHE is set but no cleancache "backend" has
-> claimed cleancache_ops.
-> 
-> Signed-off-by: Chris Mason <chris.mason@oracle.com>
-> Signed-off-by: Dan Magenheimer <dan.magenheimer@oracle.com>
-> 
-> Diffstat:
->  fs/buffer.c                              |    5 +++++
->  fs/mpage.c                               |    7 +++++++
->  fs/super.c                               |    8 ++++++++
->  mm/filemap.c                             |   11 +++++++++++
->  mm/truncate.c                            |   10 ++++++++++
->  5 files changed, 41 insertions(+)
-> 
-> --- linux-2.6.34/fs/super.c	2010-05-16 15:17:36.000000000 -0600
-> +++ linux-2.6.34-cleancache/fs/super.c	2010-05-24 12:15:20.000000000 -0600
-> @@ -38,6 +38,7 @@
->  #include <linux/mutex.h>
->  #include <linux/file.h>
->  #include <linux/backing-dev.h>
-> +#include <linux/cleancache.h>
->  #include <asm/uaccess.h>
->  #include "internal.h"
->  
-> @@ -105,6 +106,7 @@ static struct super_block *alloc_super(s
->  		s->s_qcop = sb_quotactl_ops;
->  		s->s_op = &default_op;
->  		s->s_time_gran = 1000000000;
-> +		s->cleancache_poolid = -1;
->  	}
->  out:
->  	return s;
-> @@ -195,6 +197,11 @@ void deactivate_super(struct super_block
->  		vfs_dq_off(s, 0);
->  		down_write(&s->s_umount);
->  		fs->kill_sb(s);
-> +		if (s->cleancache_poolid > 0) {
-> +			int cleancache_poolid = s->cleancache_poolid;
-> +			s->cleancache_poolid = -1; /* avoid races */
-> +			cleancache_flush_fs(cleancache_poolid);
-> +		}
->  		put_filesystem(fs);
->  		put_super(s);
->  	}
-> @@ -221,6 +228,7 @@ void deactivate_locked_super(struct supe
->  		spin_unlock(&sb_lock);
->  		vfs_dq_off(s, 0);
->  		fs->kill_sb(s);
-> +		cleancache_flush_fs(s->cleancache_poolid);
->  		put_filesystem(fs);
->  		put_super(s);
->  	} else {
-> --- linux-2.6.34/fs/buffer.c	2010-05-16 15:17:36.000000000 -0600
-> +++ linux-2.6.34-cleancache/fs/buffer.c	2010-05-24 12:14:44.000000000 -0600
-> @@ -41,6 +41,7 @@
->  #include <linux/bitops.h>
->  #include <linux/mpage.h>
->  #include <linux/bit_spinlock.h>
-> +#include <linux/cleancache.h>
->  
->  static int fsync_buffers_list(spinlock_t *lock, struct list_head *list);
->  
-> @@ -276,6 +277,10 @@ void invalidate_bdev(struct block_device
->  
->  	invalidate_bh_lrus();
->  	invalidate_mapping_pages(mapping, 0, -1);
-> +	/* 99% of the time, we don't need to flush the cleancache on the bdev.
-> +	 * But, for the strange corners, lets be cautious
-> +	 */
-> +	cleancache_flush_inode(mapping);
->  }
->  EXPORT_SYMBOL(invalidate_bdev);
->  
-> --- linux-2.6.34/fs/mpage.c	2010-05-16 15:17:36.000000000 -0600
-> +++ linux-2.6.34-cleancache/fs/mpage.c	2010-05-24 12:29:28.000000000 -0600
-> @@ -27,6 +27,7 @@
->  #include <linux/writeback.h>
->  #include <linux/backing-dev.h>
->  #include <linux/pagevec.h>
-> +#include <linux/cleancache.h>
->  
->  /*
->   * I/O completion handler for multipage BIOs.
-> @@ -286,6 +287,12 @@ do_mpage_readpage(struct bio *bio, struc
->  		SetPageMappedToDisk(page);
->  	}
->  
-> +	if (fully_mapped && blocks_per_page == 1 && !PageUptodate(page) &&
-> +	    cleancache_get_page(page) == CLEANCACHE_GET_PAGE_SUCCESS) {
-> +		SetPageUptodate(page);
-> +		goto confused;
-> +	}
-> +
->  	/*
->  	 * This page will go to BIO.  Do we need to send this BIO off first?
->  	 */
-> --- linux-2.6.34/mm/filemap.c	2010-05-16 15:17:36.000000000 -0600
-> +++ linux-2.6.34-cleancache/mm/filemap.c	2010-05-24 12:14:44.000000000 -0600
-> @@ -34,6 +34,7 @@
->  #include <linux/hardirq.h> /* for BUG_ON(!in_atomic()) only */
->  #include <linux/memcontrol.h>
->  #include <linux/mm_inline.h> /* for page_is_file_cache() */
-> +#include <linux/cleancache.h>
->  #include "internal.h"
->  
->  /*
-> @@ -119,6 +120,16 @@ void __remove_from_page_cache(struct pag
->  {
->  	struct address_space *mapping = page->mapping;
->  
-> +	/*
-> +	 * if we're uptodate, flush out into the cleancache, otherwise
-> +	 * invalidate any existing cleancache entries.  We can't leave
-> +	 * stale data around in the cleancache once our page is gone
-> +	 */
-> +	if (PageUptodate(page))
-> +		cleancache_put_page(page);
-> +	else
-> +		cleancache_flush_page(mapping, page);
-> +
->  	radix_tree_delete(&mapping->page_tree, page->index);
+Here is the patch to disable ath5k leds support on build stage.
+However if the leds support was enabled do not force selection of 802.11 leds layer.
+Depency on LEDS_CLASS is kept.
 
-I doubt it's right place related to PFRA.
+Suggestion given by Pavel Roskin and Bob Copeland applied.
 
-1)
-You mentiond PFRA in you description and I understood cleancache has 
-a cold clean page which is evicted by reclaimer. 
-But __remove_from_page_cache can be called by other call sites.
+Regards,
 
-For example, shmem_write page calls it for moving the page from page cache
-to swap cache. Although there isn't the page in page cache, it is in swap cache.
-So next read/write of shmem until swapout happens can be read/write in swap cache. 
+--Dima
 
-I didn't looked into whole of callsites. But please review again them. 
+---
+ drivers/net/wireless/ath/ath5k/Kconfig  |   12 +++++++++---
+ drivers/net/wireless/ath/ath5k/Makefile |    2 +-
+ drivers/net/wireless/ath/ath5k/ath5k.h  |   22 ++++++++++++++++++++++
+ drivers/net/wireless/ath/ath5k/base.h   |   13 +++++++++----
+ drivers/net/wireless/ath/ath5k/gpio.c   |    2 ++
+ 5 files changed, 43 insertions(+), 8 deletions(-)
 
-2) 
-While I review this, I found GFP_ATOMIC of add_to_swap_cache. 
-I don't know why it is in there. But at least when you review them, 
-please consider gfp_flag of the context. 
-
-If PFRA is going on, it means there is system memory pressure. 
-So we can't allocate page easily. So each functions cold be use GFP_NOIO, 
-GFP_NOFS, GFP_ATOMIC and so one. It means your backend can't call alloc_pages 
-freely. 
-
-I think it's the best if you call your hooks in no limited place. 
-Maybe you already have done it. :)
-
-3)
-Please consider system memory pressure. 
-Without this, PFRA might reclaim the page but cleancache's backend(non-virtualized)
-may consume another page for putting clean page. It could change system behivor 
-althought it can reduce I/O cost. 
-I don't know which is important. Let us discuss it in another thread in next chance. 
-
-In this thread, my concern is that we need new hook which notify urgent memory
-reclaim. (ex, direct reclaim) 
-I think at least if system momory pressure is high, backend need to free own 
-cache memory. Of course, backend can monitor it but it's awkward. 
-I think frontend should it. 
-
-And I hope Nitin consider this, too. 
-
-
+diff --git a/drivers/net/wireless/ath/ath5k/Kconfig b/drivers/net/wireless/ath/ath5k/Kconfig
+index eb83b7b..29f4572 100644
+--- a/drivers/net/wireless/ath/ath5k/Kconfig
++++ b/drivers/net/wireless/ath/ath5k/Kconfig
+@@ -1,9 +1,6 @@
+ config ATH5K
+ 	tristate "Atheros 5xxx wireless cards support"
+ 	depends on PCI && MAC80211
+-	select MAC80211_LEDS
+-	select LEDS_CLASS
+-	select NEW_LEDS
+ 	---help---
+ 	  This module adds support for wireless adapters based on
+ 	  Atheros 5xxx chipset.
+@@ -18,6 +15,15 @@ config ATH5K
+ 	  If you choose to build a module, it'll be called ath5k. Say M if
+ 	  unsure.
+ 
++
++config ATH5K_LEDS
++	tristate "Atheros 5xxx wireless cards LEDs support"
++	depends on ATH5K
++	select NEW_LEDS
++	select LEDS_CLASS
++	---help---
++	  Atheros 5xxx LED support.
++
+ config ATH5K_DEBUG
+ 	bool "Atheros 5xxx debugging"
+ 	depends on ATH5K
+diff --git a/drivers/net/wireless/ath/ath5k/Makefile b/drivers/net/wireless/ath/ath5k/Makefile
+index cc09595..6d552dd 100644
+--- a/drivers/net/wireless/ath/ath5k/Makefile
++++ b/drivers/net/wireless/ath/ath5k/Makefile
+@@ -10,8 +10,8 @@ ath5k-y				+= phy.o
+ ath5k-y				+= reset.o
+ ath5k-y				+= attach.o
+ ath5k-y				+= base.o
+-ath5k-y				+= led.o
+ ath5k-y				+= rfkill.o
+ ath5k-y				+= ani.o
+ ath5k-$(CONFIG_ATH5K_DEBUG)	+= debug.o
++ath5k-$(CONFIG_ATH5K_LEDS) += led.o
+ obj-$(CONFIG_ATH5K)		+= ath5k.o
+diff --git a/drivers/net/wireless/ath/ath5k/ath5k.h b/drivers/net/wireless/ath/ath5k/ath5k.h
+index 2785946..bb7e09a 100644
+--- a/drivers/net/wireless/ath/ath5k/ath5k.h
++++ b/drivers/net/wireless/ath/ath5k/ath5k.h
+@@ -1148,11 +1148,27 @@ struct ath5k_hw {
+ int ath5k_hw_attach(struct ath5k_softc *sc);
+ void ath5k_hw_detach(struct ath5k_hw *ah);
+ 
++#ifdef CONFIG_ATH5K_LEDS
+ /* LED functions */
+ int ath5k_init_leds(struct ath5k_softc *sc);
+ void ath5k_led_enable(struct ath5k_softc *sc);
+ void ath5k_led_off(struct ath5k_softc *sc);
+ void ath5k_unregister_leds(struct ath5k_softc *sc);
++#else
++static inline int ath5k_init_leds(struct ath5k_softc *sc)
++{
++	return 0;
++}
++static inline void ath5k_led_enable(struct ath5k_softc *sc)
++{
++}
++static inline void ath5k_led_off(struct ath5k_softc *sc)
++{
++}
++static inline void ath5k_unregister_leds(struct ath5k_softc *sc)
++{
++}
++#endif
+ 
+ /* Reset Functions */
+ int ath5k_hw_nic_wakeup(struct ath5k_hw *ah, int flags, bool initial);
+@@ -1233,7 +1249,13 @@ int ath5k_hw_set_slot_time(struct ath5k_hw *ah, unsigned int slot_time);
+ int ath5k_hw_init_desc_functions(struct ath5k_hw *ah);
+ 
+ /* GPIO Functions */
++#ifdef CONFIG_ATH5K_LEDS
+ void ath5k_hw_set_ledstate(struct ath5k_hw *ah, unsigned int state);
++#else
++static inline void ath5k_hw_set_ledstate(struct ath5k_hw *ah, unsigned int state)
++{
++}
++#endif
+ int ath5k_hw_set_gpio_input(struct ath5k_hw *ah, u32 gpio);
+ int ath5k_hw_set_gpio_output(struct ath5k_hw *ah, u32 gpio);
+ u32 ath5k_hw_get_gpio(struct ath5k_hw *ah, u32 gpio);
+diff --git a/drivers/net/wireless/ath/ath5k/base.h b/drivers/net/wireless/ath/ath5k/base.h
+index 56221bc..97b26c1 100644
+--- a/drivers/net/wireless/ath/ath5k/base.h
++++ b/drivers/net/wireless/ath/ath5k/base.h
+@@ -86,6 +86,7 @@ struct ath5k_txq {
+ 
+ #define ATH5K_LED_MAX_NAME_LEN 31
+ 
++#ifdef CONFIG_ATH5K_LEDS
+ /*
+  * State for LED triggers
+  */
+@@ -95,6 +96,7 @@ struct ath5k_led
+ 	struct ath5k_softc *sc;			/* driver state */
+ 	struct led_classdev led_dev;		/* led classdev */
+ };
++#endif
+ 
+ /* Rfkill */
+ struct ath5k_rfkill {
+@@ -186,9 +188,6 @@ struct ath5k_softc {
+ 
+ 	u8			bssidmask[ETH_ALEN];
+ 
+-	unsigned int		led_pin,	/* GPIO pin for driving LED */
+-				led_on;		/* pin setting for LED on */
+-
+ 	struct tasklet_struct	restq;		/* reset tasklet */
+ 
+ 	unsigned int		rxbufsize;	/* rx size based on mtu */
+@@ -196,7 +195,6 @@ struct ath5k_softc {
+ 	spinlock_t		rxbuflock;
+ 	u32			*rxlink;	/* link ptr in last RX desc */
+ 	struct tasklet_struct	rxtq;		/* rx intr tasklet */
+-	struct ath5k_led	rx_led;		/* rx led */
+ 
+ 	struct list_head	txbuf;		/* transmit buffer */
+ 	spinlock_t		txbuflock;
+@@ -204,7 +202,14 @@ struct ath5k_softc {
+ 	struct ath5k_txq	txqs[AR5K_NUM_TX_QUEUES];	/* tx queues */
+ 	struct ath5k_txq	*txq;		/* main tx queue */
+ 	struct tasklet_struct	txtq;		/* tx intr tasklet */
++
++
++#ifdef CONFIG_ATH5K_LEDS
++	unsigned int		led_pin,	/* GPIO pin for driving LED */
++				led_on;		/* pin setting for LED on */
++	struct ath5k_led	rx_led;		/* rx led */
+ 	struct ath5k_led	tx_led;		/* tx led */
++#endif
+ 
+ 	struct ath5k_rfkill	rf_kill;
+ 
+diff --git a/drivers/net/wireless/ath/ath5k/gpio.c b/drivers/net/wireless/ath/ath5k/gpio.c
+index 64a27e7..9e757b3 100644
+--- a/drivers/net/wireless/ath/ath5k/gpio.c
++++ b/drivers/net/wireless/ath/ath5k/gpio.c
+@@ -25,6 +25,7 @@
+ #include "debug.h"
+ #include "base.h"
+ 
++#ifdef CONFIG_ATH5K_LEDS
+ /*
+  * Set led state
+  */
+@@ -76,6 +77,7 @@ void ath5k_hw_set_ledstate(struct ath5k_hw *ah, unsigned int state)
+ 	else
+ 		AR5K_REG_ENABLE_BITS(ah, AR5K_PCICFG, led_5210);
+ }
++#endif
+ 
+ /*
+  * Set GPIO inputs
 -- 
-Kind regards,
-Minchan Kim
+1.7.1
+
