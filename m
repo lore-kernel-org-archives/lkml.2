@@ -1,84 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756931Ab0FDCK2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jun 2010 22:10:28 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:47402 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755901Ab0FDCK1 (ORCPT
+	id S1757050Ab0FDCLM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jun 2010 22:11:12 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:64543 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755901Ab0FDCLK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jun 2010 22:10:27 -0400
-Date: Thu, 3 Jun 2010 19:10:23 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Dave Young <hidave.darkstar@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Len Brown <lenb@kernel.org>,
-       pm list <linux-pm@lists.linux-foundation.org>,
-       Thomas Renninger <trenn@suse.de>
-Subject: Re: mmotm 2010-06-03-16-36 uploaded
-Message-Id: <20100603191023.96d74346.akpm@linux-foundation.org>
-In-Reply-To: <AANLkTikDzAHHH62Wti1D-iV7pqa6u24BDgigIYO5JZJR@mail.gmail.com>
-References: <201006040005.o5405Afw023296@imap1.linux-foundation.org>
-	<AANLkTilX_Fbc_pR1jtgQJsvu7RbMfgyhJYCxqV725T18@mail.gmail.com>
-	<20100603185401.1851c94e.akpm@linux-foundation.org>
-	<AANLkTikDzAHHH62Wti1D-iV7pqa6u24BDgigIYO5JZJR@mail.gmail.com>
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+	Thu, 3 Jun 2010 22:11:10 -0400
+X-Authority-Analysis: v=1.1 cv=DT5lrGikL/lNZzMKzbmp3iVCACewI9NZ3q1CIi1KGbI= c=1 sm=0 a=PrV_ml3jdBcA:10 a=yQWWgrYGNuUA:10 a=7U3hwN5JcxgA:10 a=Q9fys5e9bTEA:10 a=gMqfjgEr1zLu/65IO0LwxA==:17 a=VwQbUJbxAAAA:8 a=20KFwNOVAAAA:8 a=qkXcoXxcMv0mUtqM5rMA:9 a=QPHa6bOalSxeIxWhT9fok8iMLXsA:4 a=PUjeQqilurYA:10 a=jEp0ucaQiEUA:10 a=gMqfjgEr1zLu/65IO0LwxA==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.89.75
+Subject: Re: [PATCH][GIT PULL][v2.6.35] tracing/events: Convert format
+ output to seq_file
+From: Steven Rostedt <rostedt@goodmis.org>
+Reply-To: rostedt@goodmis.org
+To: Li Zefan <lizf@cn.fujitsu.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
+       Frederic Weisbecker <fweisbec@gmail.com>,
+       "Martin K. Petersen" <martin.petersen@oracle.com>,
+       Kei Tokunaga <tokunaga.keiich@jp.fujitsu.com>,
+       James Bottomley <James.Bottomley@suse.de>,
+       Tomohiro Kusumi <kusumi.tomohiro@jp.fujitsu.com>,
+       Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+In-Reply-To: <4C08594E.2000703@cn.fujitsu.com>
+References: <1275594103.15884.35.camel@gandalf.stny.rr.com>
+	 <4C08594E.2000703@cn.fujitsu.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+Organization: Kihon Technologies Inc.
+Date: Thu, 03 Jun 2010 22:11:08 -0400
+Message-ID: <1275617468.15884.65.camel@gandalf.stny.rr.com>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 4 Jun 2010 10:02:57 +0800 Dave Young <hidave.darkstar@gmail.com> wrote:
-
-> On Fri, Jun 4, 2010 at 9:54 AM, Andrew Morton <akpm@linux-foundation.org> wrote:
-> > On Fri, 4 Jun 2010 09:41:58 +0800 Dave Young <hidave.darkstar@gmail.com> wrote:
-> >
-> >> On Fri, Jun 4, 2010 at 7:36 AM, __<akpm@linux-foundation.org> wrote:
-> >> > The mm-of-the-moment snapshot 2010-06-03-16-36 has been uploaded to
-> >> >
-> >> > __ http://userweb.kernel.org/~akpm/mmotm/
-> >> >
-> >>
-> >> Hi, intel_idle build fails:
-> >>
-> >> drivers/idle/intel_idle.c: In function ___intel_idle___:
-> >> drivers/idle/intel_idle.c:234: error: too few arguments to function ___trace_power
-> >> _start___
-> >> make[2]: *** [drivers/idle/intel_idle.o] Error 1
-> >> make[1]: *** [drivers/idle] Error 2
-> >> make[1]: *** Waiting for unfinished jobs....
-> >>
-> >
-> > Caused by
-> > x86-cpufreq-make-trace_power_frequency-cpufreq-driver-independent.patch
-> > which changed trace_power_start().
-> >
-> > drivers/idle/intel_idle.c wasn't there when Thomas wrote that patch.
-> >
-> > this, I guess:
-> >
-> > --- a/drivers/idle/intel_idle.c~x86-cpufreq-make-trace_power_frequency-cpufreq-driver-independent-fix
-> > +++ a/drivers/idle/intel_idle.c
-> > @@ -231,7 +231,7 @@ static int intel_idle(struct cpuidle_dev
-> >
-> > __ __ __ __stop_critical_timings();
-> > __#ifndef MODULE
-> > - __ __ __ trace_power_start(POWER_CSTATE, (eax >> 4) + 1);
-> > + __ __ __ trace_power_start(POWER_CSTATE, (eax >> 4) + 1, cpu);
-> > __#endif
-> > __ __ __ __if (!need_resched()) {
-> >
+On Fri, 2010-06-04 at 09:39 +0800, Li Zefan wrote:
+> Steven Rostedt wrote:
+> > Ingo,
+> > 
+> > Please pull the latest tip/perf/urgent tree, which can be found at:
+> > 
+> >   git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-2.6-trace.git
+> > tip/perf/urgent
+> > 
+> > 
+> > Steven Rostedt (1):
+> >       tracing/events: Convert format output to seq_file
+> > 
+> > ----
+> >  kernel/trace/trace_events.c |  208 +++++++++++++++++++++++++++++--------------
+> >  1 files changed, 142 insertions(+), 66 deletions(-)
+> > ---------------------------
+> > commit 0953fa1f774105fcd6150282b7b9ea7763090f64
+> > Author: Steven Rostedt <srostedt@redhat.com>
+> > Date:   Thu Jun 3 15:21:34 2010 -0400
+> > 
+> >     tracing/events: Convert format output to seq_file
+> >     
 > 
-> With one more param "cpu", fails with "too many arguments":
+> This patch seriously conflicts with my patch that extracts common fields
+> from every trace event to a global list, which is already in your perf/core2
+> branch. Should I rebase and resend it?
 > 
->   CC      drivers/idle/intel_idle.o
-> drivers/idle/intel_idle.c: In function ___intel_idle___:
-> drivers/idle/intel_idle.c:234: error: too many arguments to function
-> ___trace_power_start___
-> make[2]: *** [drivers/idle/intel_idle.o] Error 1
-> make[1]: *** [drivers/idle] Error 2
-> make[1]: *** Waiting for unfinished jobs....
 
-hm, It Works For Me.  I suspect you applied my patch to mainline, not
-to -mm.
+Ah sorry. No don't.
+
+We held off your patches to after the merge window. I even reminded Ingo
+to pull them in earlier today. But I forgot that these changes would
+conflict with yours.
+
+Ingo and I were not sure if your patches were too much for the end of
+the merge window, so we held off on them.
+
+This patch set was created when I noticed that the SCSI tracepoints
+failed the size limit in the format, and I worked to fix them.
+
+We may still try to push your patches in -rc. I'll do the conflict
+resolution, and make it perf/core-4.
+
+IOW, don't worry about it, I'll do the worrying ;-)
+
+Thanks!
+
+-- Steve
+
 
