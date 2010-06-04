@@ -1,63 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755128Ab0FDJgx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jun 2010 05:36:53 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:51575 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754469Ab0FDJgu (ORCPT
+	id S1755271Ab0FDJoX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jun 2010 05:44:23 -0400
+Received: from casper.infradead.org ([85.118.1.10]:35113 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755203Ab0FDJoW convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jun 2010 05:36:50 -0400
-Message-ID: <4C08C931.3080306@vflare.org>
-Date: Fri, 04 Jun 2010 15:06:49 +0530
-From: Nitin Gupta <ngupta@vflare.org>
-Reply-To: ngupta@vflare.org
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-3.fc13 Thunderbird/3.0.4
-MIME-Version: 1.0
-To: Dan Magenheimer <dan.magenheimer@oracle.com>
-CC: andreas.dilger@oracle.com, Minchan Kim <minchan.kim@gmail.com>,
-       chris.mason@oracle.com, viro@zeniv.linux.org.uk,
-       akpm@linux-foundation.org, adilger@sun.com, tytso@mit.edu,
-       mfasheh@suse.com, joel.becker@oracle.com, matthew@wil.cx,
-       linux-btrfs@vger.kernel.org, linux-kernel@vger.kernel.org,
-       linux-fsdevel@vger.kernel.org, linux-ext4@vger.kernel.org,
-       ocfs2-devel@oss.oracle.com, linux-mm@kvack.org, jeremy@goop.org,
-       JBeulich@novell.com, kurt.hackel@oracle.com, npiggin@suse.de,
-       dave.mccracken@oracle.com, riel@redhat.com, avi@redhat.com,
-       konrad.wilk@oracle.com
-Subject: Re: [PATCH V2 0/7] Cleancache (was Transcendent Memory): overview
-References: <20100528173510.GA12166%ca-server1.us.oracle.comAANLkTilV-4_QaNq5O0WSplDx1Oq7JvkgVrEiR1rgf1up@mail.gmail.com> <489aa002-6d42-4dd5-bb66-81c665f8cdd1@default> <4C07179F.5080106@vflare.org> <3721BEE2-DF2D-452A-8F01-E690E32C6B33@oracle.com 4C074ACE.9020704@vflare.org> <6e97a82a-c754-493e-bbf5-58f0bb6a18b5@default>
-In-Reply-To: <6e97a82a-c754-493e-bbf5-58f0bb6a18b5@default>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Fri, 4 Jun 2010 05:44:22 -0400
+Subject: Re: suspend blockers & Android integration
+From: Peter Zijlstra <peterz@infradead.org>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: tytso@mit.edu, Brian Swetland <swetland@google.com>,
+       Neil Brown <neilb@suse.de>, Arve Hj?nnev?g <arve@android.com>,
+       Thomas Gleixner <tglx@linutronix.de>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+       Alan Stern <stern@rowland.harvard.edu>,
+       Felipe Balbi <felipe.balbi@nokia.com>,
+       LKML <linux-kernel@vger.kernel.org>,
+       Florian Mickler <florian@mickler.org>,
+       Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
+       Linux PM <linux-pm@lists.linux-foundation.org>,
+       Alan Cox <alan@lxorguk.ukuu.org.uk>,
+       James Bottomley <James.Bottomley@suse.de>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       Kevin Hilman <khilman@deeprootsystems.com>,
+       "H. Peter Anvin" <hpa@zytor.com>,
+       Arjan van de Ven <arjan@infradead.org>
+In-Reply-To: <20100603232302.GA16184@elte.hu>
+References: <20100603193045.GA7188@elte.hu> <20100603231153.GA11302@elte.hu>
+	 <20100603232302.GA16184@elte.hu>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Fri, 04 Jun 2010 11:43:39 +0200
+Message-ID: <1275644619.27810.39462.camel@twins>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/03/2010 09:13 PM, Dan Magenheimer wrote:
->> On 06/03/2010 10:23 AM, Andreas Dilger wrote:
->>> On 2010-06-02, at 20:46, Nitin Gupta wrote:
->>
->>> I was thinking it would be quite clever to do compression in, say,
->>> 64kB or 128kB chunks in a mapping (to get decent compression) and
->>> then write these compressed chunks directly from the page cache
->>> to disk in btrfs and/or a revived compressed ext4.
->>
->> Batching of pages to get good compression ratio seems doable.
-> 
-> Is there evidence that batching a set of random individual 4K
-> pages will have a significantly better compression ratio than
-> compressing the pages separately?  I certainly understand that
-> if the pages are from the same file, compression is likely to
-> be better, but pages evicted from the page cache (which is
-> the source for all cleancache_puts) are likely to be quite a
-> bit more random than that, aren't they?
-> 
+On Fri, 2010-06-04 at 01:23 +0200, Ingo Molnar wrote:
+> Btw., i'd like to summarize the scheduler based suspend scheme proposed by
+> Thomas Gleixner, Peter Zijlstra and myself. I found no good summary of it in
+> the big thread, and there are also new elements of the proposal:
 
+Just to clarify, my proposition doesn't go much further than treating
+'suspend' as a genuine idle state (on suitable hardware, which x86 isn't).
 
-Batching of pages from random files may not be so effective but
-it would be interesting to collect some data for this. Still,
-per-inode batching of pages seems doable and this should help
-us get over this problem.
+> - Create a 'deep idle' mode that suspends. This, if all constraints
+>    are met, is triggered by the scheduler automatically: just like the other
+>    idle modes are triggered currently. This approach fixes the wakeup
+>    races because an incoming wakeup event will set need_resched() and
+>    abort the suspend.
+>
 
-Thanks,
-Nitin
+Right, so 'suspend' as idle seems (at least on UP/arm) a very sensible
+idea.  On SMP current suspend hot-unplugs all but the boot cpu, I'm not
+sure we need to do that, since if the system is genuinely idle, what races
+are there?
+
+And if its not idle...
+
+>   ( This mode can even use the existing suspend code to bring stuff down,
+>      therefore it also solves the pending timer problem and works even on
+>      PC style x86. )
+
+You cannot solve the pending timer issue from idle, unless you allow idle
+to stop clock_monotonic, which would change idle semantics, and that is not
+something I can say is a good idea.
+
+You want all idle states to have the same semantics, otherwise things just
+get way too confusing.
+
+> - Solve crappy app confinement via the scheduler:
+>
+>    A first proposal was to use the existing cgroup mechanism,
+
+I still believe containment is a cgroup problem. The freeze/snapshot/resume
+container folks seem to face many of the same problems. Including the
+pending timer one I suspect. Lets solve it there.
+
+>  - Controlled auto-suspend: drivers (such as input) could on wakeup
+>    automatically set the 'minimum wakeup latency' value of wakee tasks to a
+>    lower value. This automatically prevents another auto-suspend in the near
+>    future: up to the point the wakee task increases its latency (via the
+>    scheduler syscall) again and allows suspend again.
+
+I think treating wakeups special like that is a mistake. I also think the
+kernel should never adjust a task's QoS attributes, the user set them in
+the expectation of them being respected.
+
+I'm not really sure about the interaction between wakeups and untrusted
+apps. It seems to me that an untrusted app needs a trusted intermediate
+anyway, that intermediate can be responsible for freezing/unfreezing of the
+untrusted app.
+
+So either the app asks for suspend blockers through the intermediate, or it's
+cgroup is managed by the intermediate -- should work out to the same end
+result, right?
+
