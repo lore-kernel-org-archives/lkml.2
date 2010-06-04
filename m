@@ -1,51 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932240Ab0FDBmA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jun 2010 21:42:00 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:36380 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757086Ab0FDBl7 convert rfc822-to-8bit (ORCPT
+	id S932275Ab0FDBnr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jun 2010 21:43:47 -0400
+Received: from adelie.canonical.com ([91.189.90.139]:33859 "EHLO
+	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932133Ab0FDBnq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jun 2010 21:41:59 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=PlOfQAjk7mfC528JPBtZlvLbSR29N9smFEu1GiLf1ADvTBJmY6368/47tNsdw/ldY4
-         JldLmTlv5usweK6h9cSlmVTNuHtrtzjssHLrExVMFZY15tHKbs3/qQGGnTanQhlczGZ1
-         rYqat8NGcREnwaWQAhI9aIUMbD7eA+fpsJHxU=
+	Thu, 3 Jun 2010 21:43:46 -0400
+From: Jeremy Kerr <jeremy.kerr@canonical.com>
+To: Ben Dooks <ben-linux@fluff.org>
+Subject: Re: [RFC,PATCH 1/2] Add a common struct clk
+Date: Fri, 4 Jun 2010 09:43:31 +0800
+User-Agent: KMail/1.13.2 (Linux/2.6.32-22-generic; KDE/4.4.2; x86_64; ; )
+Cc: "Russell King - ARM Linux" <linux@arm.linux.org.uk>,
+       Ben Herrenchmidt <benh@kernel.crashing.org>,
+       linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+References: <1275479804.137633.565764505843.0.gpush@pororo> <20100603110533.GB7127@n2100.arm.linux.org.uk> <20100604000605.GF4720@trinity.fluff.org>
+In-Reply-To: <20100604000605.GF4720@trinity.fluff.org>
 MIME-Version: 1.0
-In-Reply-To: <201006040005.o5405Afw023296@imap1.linux-foundation.org>
-References: <201006040005.o5405Afw023296@imap1.linux-foundation.org>
-Date: Fri, 4 Jun 2010 09:41:58 +0800
-Message-ID: <AANLkTilX_Fbc_pR1jtgQJsvu7RbMfgyhJYCxqV725T18@mail.gmail.com>
-Subject: Re: mmotm 2010-06-03-16-36 uploaded
-From: Dave Young <hidave.darkstar@gmail.com>
-To: akpm@linux-foundation.org
-Cc: mm-commits@vger.kernel.org, linux-kernel@vger.kernel.org,
-       Len Brown <lenb@kernel.org>,
-       pm list <linux-pm@lists.linux-foundation.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201006040943.32527.jeremy.kerr@canonical.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 4, 2010 at 7:36 AM,  <akpm@linux-foundation.org> wrote:
-> The mm-of-the-moment snapshot 2010-06-03-16-36 has been uploaded to
->
->   http://userweb.kernel.org/~akpm/mmotm/
->
+Hi Ben,
 
-Hi, intel_idle build fails:
+> As an addendum to Russell's comments, we need to specify the behaviour
+> with resepect to what happens about clock stabilisation as well, if the
+> clock we enabled takes time to stabilise, then should we wait?
 
-drivers/idle/intel_idle.c: In function ‘intel_idle’:
-drivers/idle/intel_idle.c:234: error: too few arguments to function ‘trace_power
-_start’
-make[2]: *** [drivers/idle/intel_idle.o] Error 1
-make[1]: *** [drivers/idle] Error 2
-make[1]: *** Waiting for unfinished jobs....
+Yes. If we're going to the effort of ensuring that the clock is enabled before 
+clk_enable returns, we should also guarantee that the clock is fully-
+functional.
 
--- 
-Regards
-dave
+If that takes some time, then that's just the cost of ensuring correct 
+behaviour.
+
+Cheers,
+
+
+Jeremy
