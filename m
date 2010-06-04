@@ -1,84 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757233Ab0FDCfB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jun 2010 22:35:01 -0400
-Received: from ozlabs.org ([203.10.76.45]:32933 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756997Ab0FDCfA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jun 2010 22:35:00 -0400
-From: Rusty Russell <rusty@rustcorp.com.au>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Subject: Re: [PATCHv3 1/2] virtio: support layout with avail ring before idx
-Date: Fri, 4 Jun 2010 12:04:57 +0930
-User-Agent: KMail/1.13.2 (Linux/2.6.32-22-generic; KDE/4.4.2; i686; ; )
-Cc: linux-kernel@vger.kernel.org, virtualization@lists.linux-foundation.org,
-       kvm@vger.kernel.org, qemu-devel@nongnu.org,
-       Andrew Morton <akpm@linux-foundation.org>
-References: <cover.1275403477.git.mst@redhat.com> <10a74b58c908bad64ff890c881e2b2de88687f0e.1275403477.git.mst@redhat.com>
-In-Reply-To: <10a74b58c908bad64ff890c881e2b2de88687f0e.1275403477.git.mst@redhat.com>
+	id S932247Ab0FDCmT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jun 2010 22:42:19 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:53420 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S932180Ab0FDCmS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Jun 2010 22:42:18 -0400
+Message-ID: <4C0868A0.5080508@cn.fujitsu.com>
+Date: Fri, 04 Jun 2010 10:44:48 +0800
+From: Li Zefan <lizf@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1b3pre) Gecko/20090513 Fedora/3.0-2.3.beta2.fc11 Thunderbird/3.0b2
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+To: paulmck@linux.vnet.ibm.com
+CC: Daniel J Blueman <daniel.blueman@gmail.com>,
+       Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] RCU: don't turn off lockdep when find suspicious rcu_dereference_check()
+ usage
+References: <AANLkTinNygSdXsg3vAVRHttAMh6nX4tauNKn3XnfQC_x@mail.gmail.com> <20100602145653.GA2385@linux.vnet.ibm.com> <4C07743C.7030204@cn.fujitsu.com> <20100603183040.GA2385@linux.vnet.ibm.com>
+In-Reply-To: <20100603183040.GA2385@linux.vnet.ibm.com>
+Content-Type: text/plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
-Message-Id: <201006041204.57973.rusty@rustcorp.com.au>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2 Jun 2010 12:17:12 am Michael S. Tsirkin wrote:
-> This adds an (unused) option to put available ring before control (avail
-> index, flags), and adds padding between index and flags. This avoids
-> cache line sharing between control and ring, and also makes it possible
-> to extend avail control without incurring extra cache misses.
+> Seems worth reviewing the other uses of task_group():
 > 
-> Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+> 1.	set_task_rq() -- only a runqueue and a sched_rt_entity leave
+> 	the RCU read-side critical section.  Runqueues do persist.
+> 	I don't claim to understand the sched_rt_entity life cycle.
+> 
+> 2.	__sched_setscheduler() -- not clear to me that this one is
+> 	protected to begin with.  If it is somehow correctly protected,
+> 	it discards the RCU-protected pointer immediately, so is OK
+> 	otherwise.
+> 
+> 3.	cpu_cgroup_destroy() -- ditto.
+> 
+> 4.	cpu_shares_read_u64() -- ditto.
+> 
+> 5.	print_task() -- protected by rcu_read_lock() and discards the
+> 	RCU-protected pointer immediately, so this one is OK.
+> 
+> Any task_group() experts able to weigh in on #2, #3, and #4?
+> 
 
-No no no no.  254?  You're trying to Morton me![1]
+#3 and #4 are safe, because it's not calling task_group(), but
+cgroup_tg():
 
-How's this (untested):
+	struct task_group *tg = cgroup_tg(cgrp);
 
-diff --git a/include/linux/virtio_ring.h b/include/linux/virtio_ring.h
---- a/include/linux/virtio_ring.h
-+++ b/include/linux/virtio_ring.h
-@@ -74,8 +74,8 @@ struct vring {
- /* The standard layout for the ring is a continuous chunk of memory which looks
-  * like this.  We assume num is a power of 2.
-  *
-- * struct vring
-- * {
-+ * struct vring {
-+ *	*** The driver writes to this part.
-  *	// The actual descriptors (16 bytes each)
-  *	struct vring_desc desc[num];
-  *
-@@ -84,9 +84,11 @@ struct vring {
-  *	__u16 avail_idx;
-  *	__u16 available[num];
-  *
-- *	// Padding to the next align boundary.
-+ *	// Padding so used_flags is on the next align boundary.
-  *	char pad[];
-+ *	__u16 last_used; // On a cacheline of its own.
-  *
-+ *	*** The device writes to this part.
-  *	// A ring of used descriptor heads with free-running index.
-  *	__u16 used_flags;
-  *	__u16 used_idx;
-@@ -110,6 +112,12 @@ static inline unsigned vring_size(unsign
- 		+ sizeof(__u16) * 2 + sizeof(struct vring_used_elem) * num;
- }
- 
-+/* Last used index sits at the very end of the driver part of the struct */
-+static inline __u16 *vring_last_used_idx(const struct vring *vr)
-+{
-+	return (__u16 *)vr->used - 1;
-+}
-+
- #ifdef __KERNEL__
- #include <linux/irqreturn.h>
- struct virtio_device;
+As long as it's safe to access cgrp, it's safe to access tg.
 
-Cheers,
-Rusty.
-[1] Andrew Morton has this technique where he posts a solution so ugly it
-    forces others to fix it properly.  Ego-roping, basically.
+> 							Thanx, Paul
+> 
+> Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> 
+> diff --git a/kernel/sched_fair.c b/kernel/sched_fair.c
+> index 50ec9ea..224ef98 100644
+> --- a/kernel/sched_fair.c
+> +++ b/kernel/sched_fair.c
+> @@ -1251,7 +1251,6 @@ static int wake_affine(struct sched_domain *sd, struct task_struct *p, int sync)
+>  	}
+>  
+>  	tg = task_group(p);
+> -	rcu_read_unlock();
+>  	weight = p->se.load.weight;
+>  
+>  	imbalance = 100 + (sd->imbalance_pct - 100) / 2;
+> @@ -1268,6 +1267,7 @@ static int wake_affine(struct sched_domain *sd, struct task_struct *p, int sync)
+>  	balanced = !this_load ||
+>  		100*(this_load + effective_load(tg, this_cpu, weight, weight)) <=
+>  		imbalance*(load + effective_load(tg, prev_cpu, 0, weight));
+> +	rcu_read_unlock();
+>  
+
+This is fine.
+
+Another way is :
+
+rcu_read_lock();
+tg = task_group(p);
+css_get(&tg->css);
+rcu_read_unlock();
+
+/* do something */
+...
+
+css_put(&tg->css);
