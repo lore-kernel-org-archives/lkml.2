@@ -1,68 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932329Ab0FDDJu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jun 2010 23:09:50 -0400
-Received: from cantor.suse.de ([195.135.220.2]:38152 "EHLO mx1.suse.de"
+	id S932389Ab0FDDK3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jun 2010 23:10:29 -0400
+Received: from clueserver.org ([65.102.45.174]:36504 "EHLO clueserver.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932161Ab0FDDJs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jun 2010 23:09:48 -0400
-Date: Fri, 4 Jun 2010 13:09:43 +1000
-From: Nick Piggin <npiggin@suse.de>
-To: "Martin K. Petersen" <martin.petersen@oracle.com>
-Cc: Chris Mason <chris.mason@oracle.com>,
-       James Bottomley <James.Bottomley@suse.de>,
-       Matthew Wilcox <matthew@wil.cx>,
-       Christof Schmitt <christof.schmitt@de.ibm.com>,
-       Boaz Harrosh <bharrosh@panasas.com>, linux-scsi@vger.kernel.org,
-       linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
-Subject: Re: Wrong DIF guard tag on ext2 write
-Message-ID: <20100604030943.GA26335@laptop>
-References: <1275411293.21962.387.camel@mulgrave.site>
- <20100601180905.GR8980@think>
- <20100601184649.GE9453@laptop>
- <20100601193528.GV8980@think>
- <20100602032030.GF9453@laptop>
- <yq17hmhbmkb.fsf@sermon.lab.mkp.net>
- <20100602134121.GD6152@laptop>
- <20100603154634.GC8980@think>
- <20100603162718.GR6822@laptop>
- <yq1y6evwox1.fsf@sermon.lab.mkp.net>
+	id S932180Ab0FDDK2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Jun 2010 23:10:28 -0400
+X-Greylist: delayed 625 seconds by postgrey-1.27 at vger.kernel.org; Thu, 03 Jun 2010 23:10:28 EDT
+Date: Thu, 3 Jun 2010 20:00:02 -0700 (PDT)
+From: alan <alan@clueserver.org>
+X-X-Sender: alan@blackbox.fnordora.org
+To: linux-kernel@vger.kernel.org
+Subject: modpost segfaults with 32bit compile on 64 bit version of Fedora 13
+Message-ID: <Pine.LNX.4.64.1006031952370.30918@blackbox.fnordora.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <yq1y6evwox1.fsf@sermon.lab.mkp.net>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 03, 2010 at 09:46:02PM -0400, Martin K. Petersen wrote:
-> >>>>> "Nick" == Nick Piggin <npiggin@suse.de> writes:
-> 
-> Nick> Also I don't think we can deal with memory errors and scribbles
-> Nick> just by crcing dirty data. The calculations generating the data
-> Nick> could get corrupted.
-> 
-> Yep, the goal is to make the window as small as possible.
-> 
-> 
-> Nick> Data can be corrupted on its way back from the device to
-> Nick> userspace.
-> 
-> We also get a CRC back from the storage.  So the (integrity-aware)
-> application is also able to check on read.
 
-Well that's nice :)
+I have reported this to the Fedora bugzilla. Not getting much traction on 
+the problem. Maybe someone here has an idea.
 
+I have a x86_64 version of Fedora 13. I try and build a kernel under i386 
+and modpost segfaults every time. (Works fine on Fedora 12 and gcc 4.4.3.)
 
-> Nick> Obviously this feature is being pushed by databases and such that
-> Nick> really want to pass checksums all the way from userspace. Block
-> Nick> retrying is _not_ needed or wanted here of course.
-> 
-> Nope.  The integrity error is bubbled all the way up to the database and
-> we can decide to retry, recreate or error out depending on what we find
-> when we do validation checks on the data buffer and the integrity
-> metadata.
+It does not matter if I use "make ARCH=x86", i386 and make, or any other 
+32 bit compile I have tried.
 
-By block retrying, I just meant the bounce / re-checksum approach.
+Here is the gcc info:
 
+gcc -v
+Using built-in specs.
+Target: x86_64-redhat-linux
+Configured with: ../configure --prefix=/usr --mandir=/usr/share/man 
+--infodir=/usr/share/info 
+--with-bugurl=http://bugzilla.redhat.com/bugzilla --enable-bootstrap 
+--enable-shared --enable-threads=posix --enable-checking=release 
+--with-system-zlib --enable-__cxa_atexit --disable-libunwind-exceptions 
+--enable-gnu-unique-object 
+--enable-languages=c,c++,objc,obj-c++,java,fortran,ada 
+--enable-java-awt=gtk --disable-dssi 
+--with-java-home=/usr/lib/jvm/java-1.5.0-gcj-1.5.0.0/jre 
+--enable-libgcj-multifile --enable-java-maintainer-mode 
+--with-ecj-jar=/usr/share/java/eclipse-ecj.jar --disable-libjava-multilib 
+--with-ppl --with-cloog --with-tune=generic --with-arch_32=i686 
+--build=x86_64-redhat-linux
+Thread model: posix
+gcc version 4.4.4 20100503 (Red Hat 4.4.4-2) (GCC)
+
+This works under Fedora 12, but not under 13 with the exact same code and 
+commands. I have tested with 2.6.35-rc1, as well as other versions.
+
+Any idea what they mangled in gcc 4.4.4 to cause this? So far the Fedora 
+people have claimed "it is a kernel problem".
+
+Thanks.
+
+-- 
+Truth is stranger than fiction because fiction has to make sense.
