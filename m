@@ -1,93 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755203Ab0FDKy6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jun 2010 06:54:58 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:43249 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754228Ab0FDKys (ORCPT
+	id S1755158Ab0FDK4T (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jun 2010 06:56:19 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:49187 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754289Ab0FDK4R convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jun 2010 06:54:48 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-To: Oleg Nesterov <oleg@redhat.com>
-Subject: [PATCH 13/12] oom: dump_header() need tasklist_lock
-Cc: kosaki.motohiro@jp.fujitsu.com,
-       "Luis Claudio R. Goncalves" <lclaudio@uudg.org>,
-       LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
-       David Rientjes <rientjes@google.com>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-       Nick Piggin <npiggin@suse.de>
-In-Reply-To: <20100603152652.GA8743@redhat.com>
-References: <20100603152350.725F.A69D9226@jp.fujitsu.com> <20100603152652.GA8743@redhat.com>
-Message-Id: <20100604120844.72A4.A69D9226@jp.fujitsu.com>
+	Fri, 4 Jun 2010 06:56:17 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :content-type:content-transfer-encoding;
+        b=MyxXKGdY6P+2vxJ0AkRtstdyFI9n4f7tBxw1sTkyoYBG9rF2IkiQnHOADYK1ZMCDJ+
+         RVwDTmQffjY/N8N1XOKNvolYPVZwkLLO5A6TvH6OdlAiES/+raWWP0yFhgNQtmimbYGx
+         9S0TgV2t6O9Ecv8+FlRJvYfls7UP9iNQMMudE=
 MIME-Version: 1.0
-Content-Type: text/plain; charset="ISO-2022-JP"
-Content-Transfer-Encoding: 7bit
-X-Mailer: Becky! ver. 2.50.07 [ja]
-Date: Fri,  4 Jun 2010 19:54:42 +0900 (JST)
+In-Reply-To: <20100520204810.GA19188@think>
+References: <20100520204810.GA19188@think>
+Date: Fri, 4 Jun 2010 12:56:16 +0200
+Message-ID: <AANLkTinifUTnjypY-h6Vv2qV9O7O4ZOFurxtrEr-3Rig@mail.gmail.com>
+Subject: Re: [PATCH RFC] reduce runqueue lock contention
+From: Stijn Devriendt <highguy@gmail.com>
+To: Chris Mason <chris.mason@oracle.com>, Ingo Molnar <mingo@elte.hu>,
+       peterz@infradead.org, axboe@kernel.dk, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> (off-topic)
-> 
-> out_of_memory() calls dump_header()->dump_tasks() lockless, we
-> need tasklist.
+On Thu, May 20, 2010 at 10:48 PM, Chris Mason <chris.mason@oracle.com> wrote:
+> I think we probably want to add a way to wait just for a little while as
+> a more lightweight operation (less balancing etc) but this patch doesn't
+> do that.  It only tries to make the act of waking someone up less
+> expensive by avoiding the runqueue lock when we're on a different CPU
+> than the process we want to wake.
+>
+> I do this with a per-runqueue list and some cmpxchg tricks.  Basically
+> all the other CPUs will toss a given process they want to wakeup onto
+> the destination per-runqueue list.  Later on, when that runqueue is
+> finding a new task to run, it processes the list in bulk.
 
-Makes perfectly sense. Thank you!
+I actually have the reverse lying around somewhere (even more broken, probably)
+to allow nested wakeups from the scheduler.
 
+The issue I want to tackle is waking up processes when others go to sleep.
+This means try_to_wake_up() from inside the runqueue lock.
 
-================================================================
-Commit 1b604d75(oom: dump stack and VM state when oom killer panics)
-added dump_header() call to three places. But It forgot to add
-the tasklist_lock. Now, dump_header() is called without the lock.
-It is obviously inadequate.
+I used a simple per_cpu taskqueue where tasks are put on when waking
+during schedule(). At the end of schedule() I empty the list and reschedule
+as one of the newly woken tasks may be higher prio.
 
-This patch fixes it.
+I'm wondering if both approaches can be merged by checking this list before
+and after every schedule().
 
-Suggested-by: Oleg Nesterov <oleg@redhat.com>
-Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
----
- mm/oom_kill.c |    5 ++++-
- 1 files changed, 4 insertions(+), 1 deletions(-)
-
-diff --git a/mm/oom_kill.c b/mm/oom_kill.c
-index ad85e1b..2678a04 100644
---- a/mm/oom_kill.c
-+++ b/mm/oom_kill.c
-@@ -600,8 +600,8 @@ retry:
- 
- 	/* Found nothing?!?! Either we hang forever, or we panic. */
- 	if (!p) {
--		read_unlock(&tasklist_lock);
- 		dump_header(NULL, gfp_mask, order, NULL);
-+		read_unlock(&tasklist_lock);
- 		panic("Out of memory and no killable processes...\n");
- 	}
- 
-@@ -633,7 +633,9 @@ void out_of_memory(struct zonelist *zonelist, gfp_t gfp_mask,
- 		return;
- 
- 	if (sysctl_panic_on_oom == 2) {
-+		read_lock(&tasklist_lock);
- 		dump_header(NULL, gfp_mask, order, NULL);
-+		read_unlock(&tasklist_lock);
- 		panic("out of memory. Compulsory panic_on_oom is selected.\n");
- 	}
- 
-@@ -664,6 +666,7 @@ void out_of_memory(struct zonelist *zonelist, gfp_t gfp_mask,
- 	case CONSTRAINT_NONE:
- 		if (sysctl_panic_on_oom) {
- 			dump_header(NULL, gfp_mask, order, NULL);
-+			read_unlock(&tasklist_lock);
- 			panic("out of memory. panic_on_oom is selected\n");
- 		}
- 		/* Fall-through */
--- 
-1.6.5.2
-
-
-
-
-
+Stijn
