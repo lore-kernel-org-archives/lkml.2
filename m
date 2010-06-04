@@ -1,293 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753271Ab0FDHai (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jun 2010 03:30:38 -0400
-Received: from ozlabs.org ([203.10.76.45]:59899 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752730Ab0FDHaR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jun 2010 03:30:17 -0400
-Content-Type: text/plain; charset="us-ascii"
-MIME-Version: 1.0
-Content-Transfer-Encoding: 7bit
-Subject: [RFC,PATCH 1/2] Add a common struct clk
-Message-Id: <1275636608.607067.417709988883.1.gpush@pororo>
-In-Reply-To: <1275636608.606606.450179637764.0.gpush@pororo>
-To: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Cc: Ben Herrenchmidt <benh@kernel.crashing.org>
-From: Jeremy Kerr <jeremy.kerr@canonical.com>
-Date: Fri, 04 Jun 2010 15:30:08 +0800
+	id S1752772Ab0FDHe6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jun 2010 03:34:58 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:55685 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751952Ab0FDHe4 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Jun 2010 03:34:56 -0400
+Subject: Re: [PATCH 1/4] kernel: local_irq_{save,restore}_nmi()
+From: Peter Zijlstra <peterz@infradead.org>
+To: Paul Mundt <lethal@linux-sh.org>
+Cc: David Miller <davem@davemloft.net>, linux-kernel@vger.kernel.org,
+       linux-arch@vger.kernel.org, sparclinux@vger.kernel.org
+In-Reply-To: <20100604050347.GE31868@linux-sh.org>
+References: <20100409.160135.35854399.davem@davemloft.net>
+	 <20100604050347.GE31868@linux-sh.org>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Fri, 04 Jun 2010 09:35:15 +0200
+Message-ID: <1275636915.27810.38912.camel@twins>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We currently have 21 definitions of struct clk in the ARM architecture,
-each defined on a per-platform basis. This makes it difficult to define
-platform- (or architecture-) independent clock sources without making
-assumptions about struct clk, and impossible to compile two
-platforms with different struct clks into a single image.
+On Fri, 2010-06-04 at 14:03 +0900, Paul Mundt wrote:
+> On Fri, Apr 09, 2010 at 04:01:35PM -0700, David Miller wrote:
+> > 
+> > Provide local_irq_{save,restore}_nmi() which will allow us to help
+> > architectures that implement NMIs using IRQ priorities like SPARC64
+> > does.
+> > 
+> > Sparc uses IRQ prio 15 for NMIs and implements local_irq_disable() as
+> > disable <= 14. However if you do that while inside an NMI you re-
+> > enable the NMI priority again, causing all kinds of fun.
+> > 
+> > A more solid implementation would first check the disable level and
+> > never lower it, however that is more costly and would slow down the
+> > rest of the kernel for no particular reason.
+> > 
+> > Therefore introduce local_irq_save_nmi() which can implement this
+> > slower but more solid scheme and dis-allow local_irq_save() from NMI
+> > context.
+> > 
+> > Suggested-by: David Miller <davem@davemloft.net>
+> > Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> > Signed-off-by: David S. Miller <davem@davemloft.net>
+> 
+> Are there any updates for this patch series? I would like to make use of
+> this on SH as well, but it seems these haven't hit upstream yet.
 
-This change is an effort to unify struct clk where possible, by defining
-a common struct clk, containing a set of clock operations. Different
-clock implementations can set their own operations, and have a standard
-interface for generic code. The callback interface is exposed to the
-kernel proper, while the clock implementations only need to be seen by
-the platform internals.
+Dave found a better solution, see:
 
-This allows us to share clock code among platforms, and makes it
-possible to dynamically create clock devices in platform-independent
-code.
+  b4f4372f96e0573d752d9e45beda02fabf716cc8
+  0c25e9e6cbe7b233bb91d14d0e2c258bf8e6ec83
+  c011f80ba0912486fe51dd2b3f71d9b33a151188
 
-Platforms can enable the generic struct clock through
-CONFIG_USE_COMMON_STRUCT_CLK. In this case, the clock infrastructure
-consists of a common struct clk:
 
-struct clk {
-	const struct clk_ops	*ops;
-	unsigned int		enable_count;
-	struct mutex		mutex;
-};
-
-And a set of clock operations (defined per type of clock):
-
-struct clk_operations {
-       int             (*enable)(struct clk *);
-       void            (*disable)(struct clk *);
-       unsigned long   (*get_rate)(struct clk *);
-       [...]
-};
-
-To define a hardware-specific clock, machine code can "subclass" the
-struct clock into a new struct (adding any device-specific data), and
-provide a set of operations:
-
-struct clk_foo {
-	struct clk	clk;
-	void __iomem	*some_register;
-};
-
-struct clk_operations clk_foo_ops = {
-	.get_rate = clk_foo_get_rate,
-};
-
-The common clock definitions are based on a development patch from Ben
-Herrenschmidt <benh@kernel.crashing.org>.
-
-Signed-off-by: Jeremy Kerr <jeremy.kerr@canonical.com>
-
----
- arch/Kconfig        |    3 
- include/linux/clk.h |  159 ++++++++++++++++++++++++++++++++++++--------
- 2 files changed, 135 insertions(+), 27 deletions(-)
-
-diff --git a/arch/Kconfig b/arch/Kconfig
-index acda512..2458b5e 100644
---- a/arch/Kconfig
-+++ b/arch/Kconfig
-@@ -151,4 +151,7 @@ config HAVE_MIXED_BREAKPOINTS_REGS
- config HAVE_USER_RETURN_NOTIFIER
- 	bool
- 
-+config USE_COMMON_STRUCT_CLK
-+	bool
-+
- source "kernel/gcov/Kconfig"
-diff --git a/include/linux/clk.h b/include/linux/clk.h
-index 1d37f42..bb6957a 100644
---- a/include/linux/clk.h
-+++ b/include/linux/clk.h
-@@ -3,6 +3,7 @@
-  *
-  *  Copyright (C) 2004 ARM Limited.
-  *  Written by Deep Blue Solutions Limited.
-+ *  Copyright (c) 2010 Jeremy Kerr <jeremy.kerr@canonical.com>
-  *
-  * This program is free software; you can redistribute it and/or modify
-  * it under the terms of the GNU General Public License version 2 as
-@@ -11,36 +12,125 @@
- #ifndef __LINUX_CLK_H
- #define __LINUX_CLK_H
- 
--struct device;
-+#include <linux/err.h>
-+#include <linux/mutex.h>
- 
--/*
-- * The base API.
-+#ifdef CONFIG_USE_COMMON_STRUCT_CLK
-+
-+/* If we're using the common struct clk, we define the base clk object here,
-+ * which will be 'subclassed' by device-specific implementations. For example:
-+ *
-+ *  struct clk_foo {
-+ *      struct clk;
-+ *      [device specific fields]
-+ *  };
-+ *
-+ * We define the common clock API through a set of static inlines that call the
-+ * corresponding clk_operations. The API is exactly the same as that documented
-+ * in the !CONFIG_USE_COMMON_STRUCT_CLK case.
-  */
- 
-+struct clk {
-+	const struct clk_ops	*ops;
-+	unsigned int		enable_count;
-+	struct mutex		mutex;
-+};
-+
-+#define INIT_CLK(name, o) \
-+	{ .ops = &o, .enable_count = 0, \
-+		.mutex = __MUTEX_INITIALIZER(name.mutex) }
-+
-+struct clk_ops {
-+       int             (*enable)(struct clk *);
-+       void            (*disable)(struct clk *);
-+       unsigned long   (*get_rate)(struct clk *);
-+       void            (*put)(struct clk *);
-+       long            (*round_rate)(struct clk *, unsigned long);
-+       int             (*set_rate)(struct clk *, unsigned long);
-+       int             (*set_parent)(struct clk *, struct clk *);
-+       struct clk*     (*get_parent)(struct clk *);
-+};
-+
-+static inline int clk_enable(struct clk *clk)
-+{
-+	int ret = 0;
-+
-+	if (!clk->ops->enable)
-+		return 0;
-+
-+	mutex_lock(&clk->mutex);
-+	if (!clk->enable_count)
-+		ret = clk->ops->enable(clk);
-+
-+	if (!ret)
-+		clk->enable_count++;
-+	mutex_unlock(&clk->mutex);
-+
-+	return ret;
-+}
-+
-+static inline void clk_disable(struct clk *clk)
-+{
-+	if (!clk->ops->enable)
-+		return;
-+
-+	mutex_lock(&clk->mutex);
-+
-+	if (!--clk->enable_count)
-+		clk->ops->disable(clk);
-+
-+	mutex_unlock(&clk->mutex);
-+}
-+
-+static inline unsigned long clk_get_rate(struct clk *clk)
-+{
-+	if (clk->ops->get_rate)
-+		return clk->ops->get_rate(clk);
-+	return 0;
-+}
-+
-+static inline void clk_put(struct clk *clk)
-+{
-+	if (clk->ops->put)
-+		clk->ops->put(clk);
-+}
-+
-+static inline long clk_round_rate(struct clk *clk, unsigned long rate)
-+{
-+	if (clk->ops->round_rate)
-+		return clk->ops->round_rate(clk, rate);
-+	return -ENOSYS;
-+}
-+
-+static inline int clk_set_rate(struct clk *clk, unsigned long rate)
-+{
-+	if (clk->ops->set_rate)
-+		return clk->ops->set_rate(clk, rate);
-+	return -ENOSYS;
-+}
-+
-+static inline int clk_set_parent(struct clk *clk, struct clk *parent)
-+{
-+	if (clk->ops->set_parent)
-+		return clk->ops->set_parent(clk, parent);
-+	return -ENOSYS;
-+}
-+
-+static inline struct clk *clk_get_parent(struct clk *clk)
-+{
-+	if (clk->ops->get_parent)
-+		return clk->ops->get_parent(clk);
-+	return ERR_PTR(-ENOSYS);
-+}
-+
-+#else /* !CONFIG_USE_COMMON_STRUCT_CLK */
- 
- /*
-- * struct clk - an machine class defined object / cookie.
-+ * Global clock object, actual structure is declared per-machine
-  */
- struct clk;
- 
- /**
-- * clk_get - lookup and obtain a reference to a clock producer.
-- * @dev: device for clock "consumer"
-- * @id: clock comsumer ID
-- *
-- * Returns a struct clk corresponding to the clock producer, or
-- * valid IS_ERR() condition containing errno.  The implementation
-- * uses @dev and @id to determine the clock consumer, and thereby
-- * the clock producer.  (IOW, @id may be identical strings, but
-- * clk_get may return different clock producers depending on @dev.)
-- *
-- * Drivers must assume that the clock source is not enabled.
-- *
-- * clk_get should not be called from within interrupt context.
-- */
--struct clk *clk_get(struct device *dev, const char *id);
--
--/**
-  * clk_enable - inform the system when the clock source should be running.
-  * @clk: clock source
-  *
-@@ -83,12 +173,6 @@ unsigned long clk_get_rate(struct clk *clk);
-  */
- void clk_put(struct clk *clk);
- 
--
--/*
-- * The remaining APIs are optional for machine class support.
-- */
--
--
- /**
-  * clk_round_rate - adjust a rate to the exact rate a clock can provide
-  * @clk: clock source
-@@ -125,6 +209,27 @@ int clk_set_parent(struct clk *clk, struct clk *parent);
-  */
- struct clk *clk_get_parent(struct clk *clk);
- 
-+#endif /* !CONFIG_USE_COMMON_STRUCT_CLK */
-+
-+struct device;
-+
-+/**
-+ * clk_get - lookup and obtain a reference to a clock producer.
-+ * @dev: device for clock "consumer"
-+ * @id: clock comsumer ID
-+ *
-+ * Returns a struct clk corresponding to the clock producer, or
-+ * valid IS_ERR() condition containing errno.  The implementation
-+ * uses @dev and @id to determine the clock consumer, and thereby
-+ * the clock producer.  (IOW, @id may be identical strings, but
-+ * clk_get may return different clock producers depending on @dev.)
-+ *
-+ * Drivers must assume that the clock source is not enabled.
-+ *
-+ * clk_get should not be called from within interrupt context.
-+ */
-+struct clk *clk_get(struct device *dev, const char *id);
-+
- /**
-  * clk_get_sys - get a clock based upon the device name
-  * @dev_id: device name
