@@ -1,73 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752905Ab0FDHrN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jun 2010 03:47:13 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:36494 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752149Ab0FDHrJ (ORCPT
+	id S1753110Ab0FDHs4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jun 2010 03:48:56 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:51341 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752665Ab0FDHsy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jun 2010 03:47:09 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:mime-version:content-type
-         :content-disposition:user-agent;
-        b=mWqIRCk4mC+lDChtMhwcC0f1qV1krpqCdkP08+HMvWg11YAi4grI1xMCds4lvZkxND
-         MPuWGJCyXNTxv5qB3J+3x6Y//N7OTlUpM7wpeCu4uFlx6TLfWpodjjWKfz8nPQ5qWIPR
-         bQykqX6O3+QNxVgAp0z4HIKDv2hPswpxYbP1U=
-Date: Fri, 4 Jun 2010 00:47:01 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-       linux-input@vger.kernel.org
-Subject: [git pull] Input updates for 2.6.35-rc1
-Message-ID: <20100604074701.GH21239@core.coreip.homeip.net>
+	Fri, 4 Jun 2010 03:48:54 -0400
+Date: Fri, 4 Jun 2010 03:48:53 -0400
+From: Christoph Hellwig <hch@infradead.org>
+To: Dave Chinner <david@fromorbit.com>
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+       xfs@oss.sgi.com, akpm@linux-foundation.org
+Subject: Re: [PATCH 4/6] writeback: pay attention to wbc->nr_to_write in
+	write_cache_pages
+Message-ID: <20100604074852.GA4448@infradead.org>
+References: <1275609328-12514-1-git-send-email-david@fromorbit.com> <1275609328-12514-5-git-send-email-david@fromorbit.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-12-10)
+In-Reply-To: <1275609328-12514-5-git-send-email-david@fromorbit.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+Looks good.  Can please get this in ASAP, including -stable?
 
-Please pull from:
+> This commit adds a ->writepage tracepoint inside write_cache_pages() (how the
+> above trace was generated) and does the revert manually leaving the subsequent
+> bug fixes intact. ext4 is not affected by this as a previous commit in the
+> series stops ext4 from using the generic function.
 
-	git://git.kernel.org/pub/scm/linux/kernel/git/dtor/input.git for-linus
-or
-	master.kernel.org:/pub/scm/linux/kernel/git/dtor/input.git for-linus
-
-to receive updates for the input subsystem.
-
-Changelog:
----------
-
-Dan Carpenter (1):
-      Input: tps6507x-ts - a couple work queue cleanups
-
-Dmitry Torokhov (1):
-      Input: ads7846 - fix compiler warning in ads7846_probe()
-
-Mark Brown (2):
-      Input: s3c2410_ts - fix build error due to ADC Kconfig rename
-      Input: s3c2410_ts - tone down logging
-
-Ping Cheng (1):
-      Input: wacom - add Cintiq 21UX2 and Intuos4 WL
-
-
-Diffstat:
---------
-
- drivers/input/tablet/wacom_sys.c        |    1 -
- drivers/input/tablet/wacom_wac.c        |   73 +++++++++++++++++++++++++------
- drivers/input/tablet/wacom_wac.h        |    1 +
- drivers/input/touchscreen/Kconfig       |    2 +-
- drivers/input/touchscreen/ads7846.c     |    2 +-
- drivers/input/touchscreen/s3c2410_ts.c  |    2 +-
- drivers/input/touchscreen/tps6507x-ts.c |   12 ++---
- 7 files changed, 67 insertions(+), 26 deletions(-)
-
--- 
-Dmitry
+It doesn't anymore now that you've split it out..
 
