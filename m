@@ -1,78 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932366Ab0FDONl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jun 2010 10:13:41 -0400
-Received: from cantor.suse.de ([195.135.220.2]:57447 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756119Ab0FDONk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jun 2010 10:13:40 -0400
-Date: Sat, 5 Jun 2010 00:13:18 +1000
-From: Nick Piggin <npiggin@suse.de>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: Al Viro <viro@ZenIV.linux.org.uk>, linux-kernel@vger.kernel.org,
-       linux-fsdevel@vger.kernel.org,
-       "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-       Frank Mayhar <fmayhar@google.com>, John Stultz <johnstul@us.ibm.com>,
-       Andi Kleen <ak@linux.intel.com>
-Subject: Re: [patch 2/4] lglock: introduce special lglock and brlock spin
- locks
-Message-ID: <20100604141318.GC26335@laptop>
-References: <20100604064307.737085373@suse.de>
- <20100604072618.400686656@suse.de>
- <1275638163.2482.2.camel@edumazet-laptop>
+	id S932394Ab0FDOPU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jun 2010 10:15:20 -0400
+Received: from charlotte.tuxdriver.com ([70.61.120.58]:43312 "EHLO
+	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755921Ab0FDOPT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Jun 2010 10:15:19 -0400
+Date: Fri, 4 Jun 2010 10:09:19 -0400
+From: "John W. Linville" <linville@tuxdriver.com>
+To: Dmytro Milinevskyy <milinevskyy@gmail.com>
+Cc: Jiri Slaby <jirislaby@gmail.com>, Nick Kossifidis <mickflemm@gmail.com>,
+       "Luis R. Rodriguez" <lrodriguez@atheros.com>,
+       Bob Copeland <me@bobcopeland.com>,
+       GeunSik Lim <geunsik.lim@samsung.com>,
+       Greg Kroah-Hartman <gregkh@suse.de>, Lukas Turek <8an@praha12.net>,
+       Mark Hindley <mark@hindley.org.uk>,
+       Johannes Berg <johannes@sipsolutions.net>,
+       Jiri Kosina <jkosina@suse.cz>, Kalle Valo <kalle.valo@iki.fi>,
+       Keng-Yu Lin <keng-yu.lin@canonical.com>,
+       Luca Verdesca <magooz@salug.it>, Shahar Or <shahar@shahar-or.co.il>,
+       linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+       linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] [ath5k][leds] Ability to disable leds support. If leds
+ support enabled do not force mac802.11 leds layer selection.
+Message-ID: <20100604140919.GA2492@tuxdriver.com>
+References: <4c0804e2.0c3ddf0a.2771.10f7@mx.google.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1275638163.2482.2.camel@edumazet-laptop>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <4c0804e2.0c3ddf0a.2771.10f7@mx.google.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 04, 2010 at 09:56:03AM +0200, Eric Dumazet wrote:
-> Le vendredi 04 juin 2010 à 16:43 +1000, Nick Piggin a écrit :
-> > pièce jointe document texte brut (kernel-introduce-brlock.patch)
-> > This patch introduces "local-global" locks (lglocks). These can be used to:
-> > 
-> > - Provide fast exclusive access to per-CPU data, with exclusive access to
-> >   another CPU's data allowed but possibly subject to contention, and to provide
-> >   very slow exclusive access to all per-CPU data.
-> > - Or to provide very fast and scalable read serialisation, and to provide
-> >   very slow exclusive serialisation of data (not necessarily per-CPU data).
-> > 
-> > Brlocks are also implemented as a short-hand notation for the latter use
-> > case.
-> > 
-> > Thanks to Paul for local/global naming convention.
-> > 
-> > Cc: linux-kernel@vger.kernel.org
-> > Cc: linux-fsdevel@vger.kernel.org
-> > Cc: Al Viro <viro@ZenIV.linux.org.uk>
-> > Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-> > Cc: Frank Mayhar <fmayhar@google.com>,
-> > Cc: John Stultz <johnstul@us.ibm.com>
-> > Cc: Andi Kleen <ak@linux.intel.com>
-> > Signed-off-by: Nick Piggin <npiggin@suse.de>
-> > ---
-> >  include/linux/lglock.h |  165 +++++++++++++++++++++++++++++++++++++++++++++++++
-> >  1 file changed, 165 insertions(+)
-> > 
+On Thu, Jun 03, 2010 at 10:39:30PM +0300, Dmytro Milinevskyy wrote:
+> Hi!
 > 
-> IMHO some changes in Documentation/ would be needed
-
-I wonder where, and what?
-
- 
-> > + void name##_global_lock(void) {					\
-> > +	int i;								\
-> > +	preempt_disable();						\
-> > +	rwlock_acquire(&name##_lock_dep_map, 0, 0, _RET_IP_);		\
-> > +	for_each_online_cpu(i) {					\
+> Here is the patch to disable ath5k leds support on build stage.
+> However if the leds support was enabled do not force selection of 802.11 leds layer.
+> Depency on LEDS_CLASS is kept.
 > 
-> for_each_possible_cpu()
+> Suggestion given by Pavel Roskin and Bob Copeland applied.
+> 
+> Regards,
+> 
+> --Dima
 
-Oh good spotting. brlock does not need this but lglock does if it
-protects offline cpu data too. Maybe better to move file handles in
-the event of hotplug.
+Needs at least a Signed-off-by line, and preferrably a changelog that
+explains what the patch is doing and (especially) why it is necessary.
 
+John
+-- 
+John W. Linville		Someday the world will need a hero, and you
+linville@tuxdriver.com			might be all we have.  Be ready.
