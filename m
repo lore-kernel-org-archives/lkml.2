@@ -1,35 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756717Ab0FDAsK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jun 2010 20:48:10 -0400
-Received: from h5.dl5rb.org.uk ([81.2.74.5]:40367 "EHLO h5.dl5rb.org.uk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755767Ab0FDAsI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jun 2010 20:48:08 -0400
-Date: Fri, 4 Jun 2010 01:47:41 +0100
-From: Ralf Baechle <ralf@linux-mips.org>
-To: Lars-Peter Clausen <lars@metafoo.de>
-Cc: linux-mips@linux-mips.org, linux-kernel@vger.kernel.org
-Subject: Re: [RFC][PATCH 14/26] MIPS: JZ4740: Add Kbuild files
-Message-ID: <20100604004741.GA4021@linux-mips.org>
-References: <1275505397-16758-1-git-send-email-lars@metafoo.de>
- <1275505832-17185-6-git-send-email-lars@metafoo.de>
+	id S1756856Ab0FDAuh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jun 2010 20:50:37 -0400
+Received: from 124x34x33x190.ap124.ftth.ucom.ne.jp ([124.34.33.190]:47682 "EHLO
+	master.linux-sh.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756588Ab0FDAug (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Jun 2010 20:50:36 -0400
+Date: Fri, 4 Jun 2010 09:50:10 +0900
+From: Paul Mundt <lethal@linux-sh.org>
+To: Chris Metcalf <cmetcalf@tilera.com>
+Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
+       torvalds@linux-foundation.org, fujita.tomonori@lab.ntt.co.jp
+Subject: Re: [PATCH] arch/tile: respond to reviews of the second code submission.
+Message-ID: <20100604005010.GC31868@linux-sh.org>
+References: <201005290334.o4T3Y1FX029944@farm-0002.internal.tilera.com> <201006032141.o53LfZC9019335@lab-15.internal.tilera.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1275505832-17185-6-git-send-email-lars@metafoo.de>
-User-Agent: Mutt/1.5.20 (2009-08-17)
+In-Reply-To: <201006032141.o53LfZC9019335@lab-15.internal.tilera.com>
+User-Agent: Mutt/1.5.13 (2006-08-11)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 02, 2010 at 09:10:30PM +0200, Lars-Peter Clausen wrote:
+On Thu, Jun 03, 2010 at 05:32:17PM -0400, Chris Metcalf wrote:
+> This change addresses DMA-related comments by FUJITA Tomonori
+> <fujita.tomonori@lab.ntt.co.jp> and Kconfig-related comments by Paul
+> Mundt <lethal@linux-sh.org>.
+> 
+> Signed-off-by: Chris Metcalf <cmetcalf@tilera.com>
 
-> This patch adds the Kbuild files for the JZ4740 architecture and adds JZ4740
-> support to the MIPS Kbuild files.
+Looks good to me. Feel free to add my reviewed-by to the series.
 
-Checkout the changes to the way MIPS platform Makefiles are implemented in
-the linux-queue tree.  This new structure will be mandatory for all new
-platforms.
-
-  Ralf
+Reviewed-by: Paul Mundt <lethal@linux-sh.org>
