@@ -1,80 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756920Ab0FDVap (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jun 2010 17:30:45 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:45179 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754596Ab0FDVao (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jun 2010 17:30:44 -0400
-Date: Fri, 4 Jun 2010 13:48:53 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: David Howells <dhowells@redhat.com>
-Cc: torvalds@linux-foundation.org, uclinux-dev@uclinux.org,
-       linux-kernel@vger.kernel.org, uclinux-dist-devel@blackfin.uclinux.org,
-       Mike Frysinger <vapier@gentoo.org>
-Subject: Re: [PATCH] NOMMU: Add '[stack]' label to /proc/pid/maps output
-Message-Id: <20100604134853.b6ca10f9.akpm@linux-foundation.org>
-In-Reply-To: <20100601185937.5188.77506.stgit@warthog.procyon.org.uk>
-References: <20100601185937.5188.77506.stgit@warthog.procyon.org.uk>
-X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1756497Ab0FDVc4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jun 2010 17:32:56 -0400
+Received: from king.tilera.com ([72.1.168.226]:44609 "EHLO king.tilera.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751511Ab0FDVcy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Jun 2010 17:32:54 -0400
+Message-ID: <4C097104.3080406@tilera.com>
+Date: Fri, 04 Jun 2010 17:32:52 -0400
+From: Chris Metcalf <cmetcalf@tilera.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.1.9) Gecko/20100317 Thunderbird/3.0.4
+MIME-Version: 1.0
+To: Arnd Bergmann <arnd@arndb.de>, Stephen Rothwell <sfr@canb.auug.org.au>
+CC: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
+       torvalds@linux-foundation.org
+Subject: Re: [PATCH 0/8] revised patch for arch/tile/ support
+References: <201005200543.o4K5hFRF006079@farm-0002.internal.tilera.com> <201005290333.o4T3Xjse029917@farm-0002.internal.tilera.com> <201005291329.10941.arnd@arndb.de> <201006032240.31963.arnd@arndb.de>
+In-Reply-To: <201006032240.31963.arnd@arndb.de>
+X-Enigmail-Version: 1.0.1
+Content-Type: text/plain; charset=ISO-8859-15
 Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 04 Jun 2010 21:32:53.0993 (UTC) FILETIME=[7DBF7590:01CB042D]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 01 Jun 2010 19:59:37 +0100
-David Howells <dhowells@redhat.com> wrote:
+On 6/3/2010 4:40 PM, Arnd Bergmann wrote:
+> You evidently didn't make it into -rc1, probably because Linus considered
+> your submission to be too late, or possibly because some of the bigger
+> patches got lost in an email filter.
+>
+> To go forward with your architecture, I suggest that you start adding it
+> to the linux-next tree. Until you have a git tree, the easiest way
+> to do that is to put a tarball in quilt format at a http url under
+> your control, and ask Stephen to include that.
+>   
 
-> From: Mike Frysinger <vapier@gentoo.org>
-> 
-> Add support to the NOMMU /proc/pid/maps file to show which mapping is the stack
-> of the original thread after execve.  This is largely based on the MMU code.
-> Subsidiary thread stacks are not indicated.
-> 
-> For FDPIC, we now get:
-> 
-> 	root:/> cat /proc/self/maps
-> 	02064000-02067ccc rw-p 0004d000 00:01 22         /bin/busybox
-> 	0206e000-0206f35c rw-p 00006000 00:01 295        /lib/ld-uClibc.so.0
-> 	025f0000-025f6f0c r-xs 00000000 00:01 295        /lib/ld-uClibc.so.0
-> 	02680000-026ba6b0 r-xs 00000000 00:01 297        /lib/libc.so.0
-> 	02700000-0274d384 r-xs 00000000 00:01 22         /bin/busybox
-> 	02816000-02817000 rw-p 00000000 00:00 0
-> 	02848000-0284c0d8 rw-p 00000000 00:00 0
-> 	02860000-02880000 rw-p 00000000 00:00 0          [stack]
-> 
-> The semi-downside here is that for FLAT, we get:
-> 
-> 	root:/> cat /proc/155/maps
-> 	029f0000-029f9000 rwxp 00000000 00:00 0          [stack]
-> 
-> The reason being that FLAT combines a whole lot of stuff into one map
-> (including the stack).  But this isn't any worse than the current output (which
-> is nothing), so screw it.
-> 
+I've set up a GIT tree for the Tilera architecture support here:
 
-So it's a non-back-compatible change which can a) break nommu-only
-userspace and b) unbreak mmu-tested userspace which gets run on nommu.
+git://git.kernel.org/pub/scm/linux/kernel/git/cmetcalf/linux-tile.git
 
-ho hum, we suck.  They can send us the bill.
+I kept the commit to fix up the "generic" unistd.h ABI and added Arnd's
+Acked-by to the commit message, and I combined the v2 Tilera-specific
+series of patches along with responses to the v2 patches into a single
+commit, with appropriate Acked-by and Reviewed-by based on what folks
+had said.
 
-> --- a/fs/proc/task_nommu.c
-> +++ b/fs/proc/task_nommu.c
-> @@ -122,11 +122,20 @@ int task_statm(struct mm_struct *mm, int *shared, int *text,
->  	return size;
->  }
->  
-> +static void pad_len_spaces(struct seq_file *m, int len)
-> +{
-> +	len = 25 + sizeof(void*) * 6 - len;
-> +	if (len < 1)
-> +		len = 1;
-> +	seq_printf(m, "%*c", len, ' ');
-> +}
+Stephen, in an ideal world you could add this repository to your set of
+things you pull from into linux-next, and going forward I would then be
+the gatekeeper for "arch/tile/" changes.  I'll plan to continue mailing
+the diffs to LKML for public review, and push them up to git.kernel.org
+after feedback has died down and they are ready to go to linux-next. 
+Does that sound good to you?
 
-hm, copy-n-paste alert.
+Many thanks!
+
+-- 
+Chris Metcalf, Tilera Corp.
+http://www.tilera.com
 
 
