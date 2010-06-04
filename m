@@ -1,81 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755326Ab0FDSr1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jun 2010 14:47:27 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:44434 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751239Ab0FDSrZ convert rfc822-to-8bit (ORCPT
+	id S1752077Ab0FDTLh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jun 2010 15:11:37 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:56430 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751672Ab0FDTLg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jun 2010 14:47:25 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=ND50y00pGbTG0vpqlOEMsTAfT8iXOszhcFBM/ALFG4t6vqA1ebYhZxXkgpbS/W7ntM
-         KL0Jjia2g1OoFTDymjxLlgLsRIOmiLzL2VEHOorw5JB7SHaZSd4TdJYp5oTliHLB1GI3
-         zFI+Te5RRThv2Y4b9GhG8oGly4LJUv1c30DdE=
-MIME-Version: 1.0
-In-Reply-To: <1275664158.3205.27.camel@localhost.localdomain>
-References: <1271886594-3719-1-git-send-email-zohar@linux.vnet.ibm.com>
-	<alpine.LRH.2.00.1005311017530.24571@tundra.namei.org>
-	<AANLkTil8LHjRT_PMosymmtBb1pxIzkBaWC0ef35DCBUU@mail.gmail.com>
-	<AANLkTil7WvVZ-3zpA0E--fUcHTqul3pnXnPm1xXn_vlH@mail.gmail.com>
-	<1275420536.28134.37.camel@localhost.localdomain>
-	<4C060224.4090601@nokia.com>
-	<AANLkTikuXjWTEfYG2JLNW6znGGKNxzobw3ijCpG7u1xz@mail.gmail.com>
-	<4C062092.2030608@nokia.com>
-	<1275487340.3068.74.camel@localhost.localdomain>
-	<AANLkTinIVaTocIgStpwKlXDByS7Z9t_OxJDYg0DoUMIN@mail.gmail.com>
-	<1275664158.3205.27.camel@localhost.localdomain>
-Date: Fri, 4 Jun 2010 23:47:24 +0500
-Message-ID: <AANLkTik6Ww6zM2LaNzgX5TSGOaxnK-VLQNVP-D0dtVJi@mail.gmail.com>
-Subject: Re: [PATCH 00/14] EVM
-From: Shaz <shazalive@gmail.com>
-To: Mimi Zohar <zohar@linux.vnet.ibm.com>
-Cc: Dmitry Kasatkin <dmitry.kasatkin@nokia.com>,
-       James Morris <jmorris@namei.org>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       "linux-security-module@vger.kernel.org" 
-	<linux-security-module@vger.kernel.org>,
-       David Safford <safford@watson.ibm.com>,
-       Dave Hansen <dave@linux.vnet.ibm.com>,
-       Arjan van de Ven <arjan@infradead.org>,
-       securityengineeringresearchgroup 
-	<securityengineeringresearchgroup@googlegroups.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Fri, 4 Jun 2010 15:11:36 -0400
+Date: Fri, 4 Jun 2010 12:10:41 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Nitin Gupta <ngupta@vflare.org>
+Cc: Greg KH <greg@kroah.com>, Pekka Enberg <penberg@cs.helsinki.fi>,
+       Minchan Kim <minchan.kim@gmail.com>, Ed Tomlinson <edt@aei.ca>,
+       Hugh Dickins <hugh.dickins@tiscali.co.uk>, Cyp <cyp561@gmail.com>,
+       driverdev <devel@driverdev.osuosl.org>,
+       linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/4] Support generic I/O requests
+Message-Id: <20100604121041.1b88b0af.akpm@linux-foundation.org>
+In-Reply-To: <1275379286-10453-2-git-send-email-ngupta@vflare.org>
+References: <1275379286-10453-1-git-send-email-ngupta@vflare.org>
+	<1275379286-10453-2-git-send-email-ngupta@vflare.org>
+X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 4, 2010 at 8:09 PM, Mimi Zohar <zohar@linux.vnet.ibm.com> wrote:
-> On Fri, 2010-06-04 at 11:53 +0500, Shaz wrote:
->> > Yes, verifying one file containing the hashes would be faster than
->> > verifying individual hashes stored as extended attributes (xattrs), but
->> > this does not take into account that files on a running system are being
+On Tue,  1 Jun 2010 13:31:23 +0530
+Nitin Gupta <ngupta@vflare.org> wrote:
 
-What if the sensitive files (binary or data) are compared with IMA
-measurements after trusted boot or at anytime a stakeholder wants to?
-The comparisons made with IMA will be the sha1 (or ....) of the files
-stored in that one verification file. The stakeholder's key determines
-which measurements can be compared by her (privacy protection and
-confidentiality). Better use this key for an equivalence mechanism for
-the factor of performance. The stakeholder's key as an identity can
-help to make remote attestation more sensible as well. And here you
-will be moving towards TCG MPWG standards .....
+> Currently, ramzwap devices (/dev/ramzswapX) can only
+> be used as swap disks since it was hard-coded to consider
+> only the first request in bio vector.
+> 
+> Now, we iterate over all the segments in an incoming
+> bio which allows us to handle all kinds of I/O requests.
+> 
+> ramzswap devices can still handle PAGE_SIZE aligned and
+> multiple of PAGE_SIZE sized I/O requests only. To ensure
+> that we get always get such requests only, we set following
+> request_queue attributes to PAGE_SIZE:
+>  - physical_block_size
+>  - logical_block_size
+>  - io_min
+>  - io_opt
+> 
+> Note: physical and logical block sizes were already set
+> equal to PAGE_SIZE and that seems to be sufficient to get
+> PAGE_SIZE aligned I/O.
+> 
+> Since we are no longer limited to handling swap requests
+> only, the next few patches rename ramzswap to zram. So,
+> the devices will then be called /dev/zram{0, 1, 2, ...}
 
-Combine this with SELinux or some RBAC mechanism and hopefully you
-will get something closer to what MeeGo is trying to achieve. Consider
-a trusted package manager with a registry sort of functionality for
-files and it's owners and users and you've got a complete solution.
+Thanks for doing this - I think it's for the best..
 
-The worst part is that achieving performance is tough, while space is
-not a serious issue.
+> Usage/Examples:
+>  1) Use as /tmp storage
+>  - mkfs.ext4 /dev/zram0
+>  - mount /dev/zram0 /tmp
 
->> > modified or added. On a small form factor, the number of files is
->> > limited, but would this scale well? In addition, what protects that one
->> > file containing all the hashes from being modified?  So, if you limit
+hm, how does that work?  The "device" will only handle page-sized and
+page-aligned requests, won't it?  Can you walk us through what happens
+when the fs does a 512-byte I/O?
 
+>  - Double caching: We can potentially waste memory by having
+> two copies of a page -- one in page cache (uncompress) and
+> second in the device memory (compressed). However, during
+> reclaim, clean page cache pages are quickly freed, so this
+> does not seem to be a big problem.
 
--- 
-Shaz
+Yes, clean pagecache is cheap.  But what happens when the pagecache
+copy of the page gets modified?
+
+Or is it the case that once a compressed page gets copied out to
+pagecache, the compressed version is never used again?  If so, the
+memory could be synchronously freed, so I guess I don't understand what
+you mean here.
+
+>  - Stale data: Not all filesystems support issuing 'discard'
+> requests to underlying block devices. So, if such filesystems
+> are used over zram devices, we can accumulate lot of stale
+> data in memory. Even for filesystems to do support discard
+> (example, ext4), we need to see how effective it is.
+
+Can you walk us through how zram uses discard requests?
