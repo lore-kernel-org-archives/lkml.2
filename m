@@ -1,46 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751757Ab0FDFhF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jun 2010 01:37:05 -0400
-Received: from ozlabs.org ([203.10.76.45]:51156 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750969Ab0FDFhD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jun 2010 01:37:03 -0400
-From: Rusty Russell <rusty@rustcorp.com.au>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Subject: Re: linux-next: build failure after merge of the final tree (rr tree related)
-Date: Fri, 4 Jun 2010 15:06:59 +0930
-User-Agent: KMail/1.13.2 (Linux/2.6.32-22-generic; KDE/4.4.2; i686; ; )
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-References: <20100604144933.86b3f2a8.sfr@canb.auug.org.au>
-In-Reply-To: <20100604144933.86b3f2a8.sfr@canb.auug.org.au>
+	id S1751912Ab0FDFnq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jun 2010 01:43:46 -0400
+Received: from bld-mail18.adl2.internode.on.net ([150.101.137.103]:55158 "EHLO
+	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1750970Ab0FDFno (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Jun 2010 01:43:44 -0400
+Date: Fri, 4 Jun 2010 15:43:28 +1000
+From: Dave Chinner <david@fromorbit.com>
+To: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+Cc: hch@infradead.org, viro@zeniv.linux.org.uk, adilger@sun.com,
+       corbet@lwn.net, serue@us.ibm.com, neilb@suse.de, hooanon05@yahoo.co.jp,
+       bfields@fieldses.org, linux-fsdevel@vger.kernel.org, sfrench@us.ibm.com,
+       philippe.deniel@CEA.FR, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH -V13 0/11] Generic name to handle and open by handle
+ syscalls
+Message-ID: <20100604054328.GA20641@dastard>
+References: <1275581657-7232-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201006041506.59887.rusty@rustcorp.com.au>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1275581657-7232-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 4 Jun 2010 02:19:33 pm Stephen Rothwell wrote:
-> Hi Rusty,
+On Thu, Jun 03, 2010 at 09:44:06PM +0530, Aneesh Kumar K.V wrote:
+> Hi,
 > 
-> After merging the final tree, today's linux-next build (powerpc
-> ppc44x_defconfig) failed like this:
-> 
-> kernel/module.c: In function 'post_relocation':
-> kernel/module.c:2526: error: 'struct module' has no member named 'percpu_size'
-> 
-> Caused by commit fc77407bc287ed250f9355fda435df5f78b45885 ("module:
-> simplify per-cpu handling a little").
-> 
-> This build has CONFIG_SMP not set
+> The below set of patches implement open by handle support using exportfs
+> operations. This allows user space application to map a file name to file 
+> handle and later open the file using handle. This should be usable
+> for userspace NFS [1] and 9P server [2]. XFS already support this with the ioctls
+> XFS_IOC_PATH_TO_HANDLE and XFS_IOC_OPEN_BY_HANDLE.
+.....
+> Example program: (x86_32). (x86_64 would need a different syscall number)
 
-Actually, I think that cleanup is broken.  If someone were to have relocations
-inside their per-cpu area, the relocation code would smash something random.
+[snip test program]
 
-So, a doubly bad idea.  I've dropped the commit.
+Just a thought - can you write a set of tests using this (or
+similar) test program and integrate them into xfstests?
 
-Thanks!
-Rusty.
+That will help ensure correctness when implementing the API in other
+filesystems (e.g. XFS ;), as well as provide some level of assurance
+that we'll notice when we break the code...
+
+Cheers,
+
+Dave.
+
+-- 
+Dave Chinner
+david@fromorbit.com
