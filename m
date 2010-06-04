@@ -1,77 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757169Ab0FDCc3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jun 2010 22:32:29 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:34778 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752168Ab0FDCc2 (ORCPT
+	id S1757226Ab0FDCdN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jun 2010 22:33:13 -0400
+Received: from bld-mail18.adl2.internode.on.net ([150.101.137.103]:47706 "EHLO
+	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1757007Ab0FDCdM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jun 2010 22:32:28 -0400
-Date: Thu, 3 Jun 2010 19:26:50 -0700 (PDT)
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Ingo Molnar <mingo@elte.hu>
-cc: tytso@mit.edu, Brian Swetland <swetland@google.com>,
-       Neil Brown <neilb@suse.de>, Arve Hj?nnev?g <arve@android.com>,
-       Thomas Gleixner <tglx@linutronix.de>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-       Alan Stern <stern@rowland.harvard.edu>,
-       Felipe Balbi <felipe.balbi@nokia.com>,
-       Peter Zijlstra <peterz@infradead.org>,
-       LKML <linux-kernel@vger.kernel.org>,
-       Florian Mickler <florian@mickler.org>,
-       Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
-       Linux PM <linux-pm@lists.linux-foundation.org>,
-       Alan Cox <alan@lxorguk.ukuu.org.uk>,
-       James Bottomley <James.Bottomley@suse.de>,
-       Peter Zijlstra <a.p.zijlstra@chello.nl>,
-       Kevin Hilman <khilman@deeprootsystems.com>,
-       "H. Peter Anvin" <hpa@zytor.com>,
-       Arjan van de Ven <arjan@infradead.org>
-Subject: Re: suspend blockers & Android integration
-In-Reply-To: <alpine.LFD.2.00.1006031856420.8175@i5.linux-foundation.org>
-Message-ID: <alpine.LFD.2.00.1006031917500.8175@i5.linux-foundation.org>
-References: <20100603193045.GA7188@elte.hu> <20100603231153.GA11302@elte.hu> <20100603232302.GA16184@elte.hu> <alpine.LFD.2.00.1006031630300.8175@i5.linux-foundation.org> <20100603234634.GA21831@elte.hu>
- <alpine.LFD.2.00.1006031856420.8175@i5.linux-foundation.org>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	Thu, 3 Jun 2010 22:33:12 -0400
+Date: Fri, 4 Jun 2010 12:32:53 +1000
+From: Dave Chinner <david@fromorbit.com>
+To: "Martin K. Petersen" <martin.petersen@oracle.com>
+Cc: Christof Schmitt <christof.schmitt@de.ibm.com>, linux-scsi@vger.kernel.org,
+       linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
+Subject: Re: Wrong DIF guard tag on ext2 write
+Message-ID: <20100604023253.GF19651@dastard>
+References: <20100531112817.GA16260@schmichrtp.mainz.de.ibm.com>
+ <yq1iq64kv9f.fsf@sermon.lab.mkp.net>
+ <20100531144648.GA19068@schmichrtp.mainz.de.ibm.com>
+ <yq11vcqlwp8.fsf@sermon.lab.mkp.net>
+ <20100602133748.GA11196@schmichrtp.mainz.de.ibm.com>
+ <20100602232039.GA8287@dastard>
+ <yq139x3y411.fsf@sermon.lab.mkp.net>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <yq139x3y411.fsf@sermon.lab.mkp.net>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-On Thu, 3 Jun 2010, Linus Torvalds wrote:
+On Thu, Jun 03, 2010 at 09:34:18PM -0400, Martin K. Petersen wrote:
+> >>>>> "Dave" == Dave Chinner <david@fromorbit.com> writes:
 > 
-> so I'd like to see the opportunistc suspend thing think about CPU 
-> offlining
+> Dave> If you are running DIF hardware, then XFS is only OK for direct
+> Dave> IO.  XFS will still get torn writes if you are overwriting
+> Dave> buffered data (either by write() or mmap()) because there are no
+> Dave> interlocks to prevent cached pages under writeback from being
+> Dave> modified while DMA is being performed.....
+> 
+> Didn't you use to wait_on_page_writeback() in page_mkwrite()?
 
-Side note: one reason for me being somewhat interested in the CPU 
-offlining is that I think the Android kind of opportunistic suspend is 
-_not_ likely something I'd like to see on a desktop. But an the 
-"opportunistic CPU offliner"? That might _well_ be useful even outside of 
-any other suspend activity.
+The generic implementation of ->page_mkwrite  (block_page_mkwrite())
+which XFS uses has never had a wait_on_page_writeback() call in it.
+There's no call in the generic write paths, either, hence my comment
+that only direct IO on XFS will work.
 
-If the system is idle (or almost idle) for long times, I would heartily 
-recommend actively shutting down unused cores. Some CPU's are hopefully 
-smart enough to not even need that kind of software management, but I 
-suspect even the really smart ones might be able to take advantage of the 
-kernel saying: "I'm shutting you down, you don't have to worry about 
-latency AT ALL, because I'm keeping another CPU active to do any real 
-work".
+It should be noted that metadata updates in XFS are already
+protected against torn writes - buffers are held locked during IO,
+and can only be modified while holding the lock. Hence the only
+problem that needs solving for XFS to make full use of DIF/DIX is
+getting the page cache paths to not modify pages under IO...
 
-I'd also be interested to see if it could even improve single-thread 
-performance if we end up doing the whole SMP->UP "lock" prefix rewriting 
-when the system is idle enough that we'd be better off running just a 
-single core. I dunno - just throwing that out there.
 
-Anyway, the only reason I think this is related is literally because I 
-think that if we know there is only a single CPU active, I think the 
-actual "real" opportunistic suspend is easier. Suddenly you don't have to 
-worry about what happens on other run-queues etc, and whether another CPU 
-is just about to create a suspend block etc.
+Cheers,
 
-So I think they tie together, although it's mostly tangential. And as 
-mentioned, I think a opportunistic CPU suspend part is more relevant 
-outside of Android, and thus perhaps more widely interesting.
-
-			Linus
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
