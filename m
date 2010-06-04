@@ -1,91 +1,337 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932366Ab0FDDWq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jun 2010 23:22:46 -0400
-Received: from vms173007pub.verizon.net ([206.46.173.7]:64097 "EHLO
-	vms173007pub.verizon.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932167Ab0FDDWo (ORCPT
+	id S1757248Ab0FDD1K (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jun 2010 23:27:10 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:34630 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756749Ab0FDD1I (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jun 2010 23:22:44 -0400
-Date: Thu, 03 Jun 2010 23:22:28 -0400 (EDT)
-From: Len Brown <lenb@kernel.org>
-X-X-Sender: lenb@localhost.localdomain
-To: H Peter Anvin <hpa@zytor.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-       Dave Jones <davej@redhat.com>,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       linux-acpi@vger.kernel.org, Venkatesh Pallipadi <venki@google.com>
-Subject: [PATCH] x86: Look for IA32_ENERGY_PERF_BIAS support - v3
-In-reply-to: <20100304231547.654246000@intel.com>
-Message-id: <alpine.LFD.2.00.1006032310160.6669@localhost.localdomain>
-References: <20100304231454.247805000@intel.com>
- <20100304231547.654246000@intel.com>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
-MIME-version: 1.0
-Content-type: TEXT/PLAIN; charset=US-ASCII
+	Thu, 3 Jun 2010 23:27:08 -0400
+X-Authority-Analysis: v=1.1 cv=xm0otvE9/LjRWYlyDrHfx7zP0/MGCmNk7gQgTP1ehto= c=1 sm=0 a=iHOon_RiDusA:10 a=UBIxAjGgU1YA:10 a=7U3hwN5JcxgA:10 a=Q9fys5e9bTEA:10 a=gMqfjgEr1zLu/65IO0LwxA==:17 a=VwQbUJbxAAAA:8 a=20KFwNOVAAAA:8 a=omOdbC7AAAAA:8 a=yPCof4ZbAAAA:8 a=meVymXHHAAAA:8 a=Z1bp_h1cUeaBkOXGOqsA:9 a=f6jLHrc0z4XScq6cKUQA:7 a=wosSKe_PEAYCy0FgTKeMDO_uNd8A:4 a=PUjeQqilurYA:10 a=jEp0ucaQiEUA:10 a=7DSvI1NPTFQA:10 a=0kPLrQdw3YYA:10 a=jeBq3FmKZ4MA:10 a=gMqfjgEr1zLu/65IO0LwxA==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.89.75
+Subject: [PATCH v2][GIT PULL][v2.6.35] tracing/events: Convert format
+ output to seq_file
+From: Steven Rostedt <rostedt@goodmis.org>
+Reply-To: rostedt@goodmis.org
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: Ingo Molnar <mingo@elte.hu>, Frederic Weisbecker <fweisbec@gmail.com>,
+       "Martin K. Petersen" <martin.petersen@oracle.com>,
+       Kei Tokunaga <tokunaga.keiich@jp.fujitsu.com>,
+       James Bottomley <James.Bottomley@suse.de>,
+       Tomohiro Kusumi <kusumi.tomohiro@jp.fujitsu.com>,
+       Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>,
+       Li Zefan <lizf@cn.fujitsu.com>
+In-Reply-To: <1275594103.15884.35.camel@gandalf.stny.rr.com>
+References: <1275594103.15884.35.camel@gandalf.stny.rr.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+Organization: Kihon Technologies Inc.
+Date: Thu, 03 Jun 2010 23:27:06 -0400
+Message-ID: <1275622026.15884.72.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From:  Venkatesh Pallipadi <venki@google.com>
 
-The new IA32_ENERGY_PERF_BIAS MSR allows system software to give
-hardware a hint whether OS policy favors more power saving,
-or more performance.  This allows the OS to have some influence
-on internal hardware power/performance tradeoffs where the OS
-has previously had no influence.
+Ingo,
 
-The support for this feature is indicated by CPUID.06H.ECX.bit3,
-as documented in the Intel Architectures Software Developer's Manual.
+Please pull the latest tip/perf/urgent-2 tree, which can be found at:
 
-This patch discovers support of this feature and displays it
-as "epb" in /proc/cpuinfo.
+  git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-2.6-trace.git
+tip/perf/urgent-2
 
-Signed-off-by: Venkatesh Pallipadi <venki@google.com>
-Signed-off-by: Len Brown <len.brown@intel.com>
----
-lenb: v3 refreshes venki's original patch to apply to 2.6.35-rc1
 
- arch/x86/include/asm/cpufeature.h          |    1 +
- arch/x86/include/asm/msr-index.h           |    2 ++
- arch/x86/kernel/cpu/addon_cpuid_features.c |    1 +
- 3 files changed, 4 insertions(+), 0 deletions(-)
+Steven Rostedt (1):
+      tracing/events: Convert format output to seq_file
 
-Index: linus/arch/x86/include/asm/cpufeature.h
-===================================================================
---- linus.orig/arch/x86/include/asm/cpufeature.h
-+++ linus/arch/x86/include/asm/cpufeature.h
-@@ -162,6 +162,7 @@
- #define X86_FEATURE_IDA		(7*32+ 0) /* Intel Dynamic Acceleration */
- #define X86_FEATURE_ARAT	(7*32+ 1) /* Always Running APIC Timer */
- #define X86_FEATURE_CPB		(7*32+ 2) /* AMD Core Performance Boost */
-+#define X86_FEATURE_EPB		(7*32+ 3) /* IA32_ENERGY_PERF_BIAS support */
+----
+ kernel/trace/trace_events.c |  208 +++++++++++++++++++++++++++++--------------
+ 1 files changed, 141 insertions(+), 67 deletions(-)
+---------------------------
+commit bcaa10360f3b2a623453a9fb10ef77aafeef8bb6
+Author: Steven Rostedt <srostedt@redhat.com>
+Date:   Thu Jun 3 15:21:34 2010 -0400
+
+    tracing/events: Convert format output to seq_file
+    
+    Two new events were added that broke the current format output.
+    
+    Both from the SCSI system: scsi_dispatch_cmd_done and scsi_dispatch_cmd_timeout
+    
+    The reason is that their print_fmt exceeded a page size. Since the output
+    of the format used simple_read_from_buffer and trace_seq, it was limited
+    to a page size in output.
+    
+    This patch converts the printing of the format of an event into seq_file,
+    which allows greater than a page size to be shown.
+    
+    I diffed all event formats comparing the output with and without this
+    patch. All matched except for the above two, which showed just:
+    
+      FORMAT TOO BIG
+    
+    without this patch, but now properly displays the output with this patch.
+    
+    v2: Remove updating *pos in seq start function.
+       [ Thanks to Li Zefan for pointing that out ]
+    
+    Reviewed-by: Li Zefan <lizf@cn.fujitsu.com>
+    Cc: Martin K. Petersen <martin.petersen@oracle.com>
+    Cc: Kei Tokunaga <tokunaga.keiich@jp.fujitsu.com>
+    Cc: James Bottomley <James.Bottomley@suse.de>
+    Cc: Tomohiro Kusumi <kusumi.tomohiro@jp.fujitsu.com>
+    Cc: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+    Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+
+diff --git a/kernel/trace/trace_events.c b/kernel/trace/trace_events.c
+index 53cffc0..45a8968 100644
+--- a/kernel/trace/trace_events.c
++++ b/kernel/trace/trace_events.c
+@@ -29,6 +29,8 @@ DEFINE_MUTEX(event_mutex);
  
- /* Virtualization flags: Linux defined */
- #define X86_FEATURE_TPR_SHADOW  (8*32+ 0) /* Intel TPR Shadow */
-Index: linus/arch/x86/include/asm/msr-index.h
-===================================================================
---- linus.orig/arch/x86/include/asm/msr-index.h
-+++ linus/arch/x86/include/asm/msr-index.h
-@@ -238,6 +238,8 @@
+ LIST_HEAD(ftrace_events);
  
- #define MSR_IA32_TEMPERATURE_TARGET	0x000001a2
- 
-+#define MSR_IA32_ENERGY_PERF_BIAS	0x000001b0
++#define COMMON_FIELD_COUNT	5
 +
- /* MISC_ENABLE bits: architectural */
- #define MSR_IA32_MISC_ENABLE_FAST_STRING	(1ULL << 0)
- #define MSR_IA32_MISC_ENABLE_TCC		(1ULL << 1)
-Index: linus/arch/x86/kernel/cpu/addon_cpuid_features.c
-===================================================================
---- linus.orig/arch/x86/kernel/cpu/addon_cpuid_features.c
-+++ linus/arch/x86/kernel/cpu/addon_cpuid_features.c
-@@ -33,6 +33,7 @@ void __cpuinit init_scattered_cpuid_feat
- 		{ X86_FEATURE_IDA,   		CR_EAX, 1, 0x00000006 },
- 		{ X86_FEATURE_ARAT,  		CR_EAX, 2, 0x00000006 },
- 		{ X86_FEATURE_APERFMPERF,	CR_ECX, 0, 0x00000006 },
-+		{ X86_FEATURE_EPB,		CR_ECX, 3, 0x00000006 },
- 		{ X86_FEATURE_CPB,   		CR_EDX, 9, 0x80000007 },
- 		{ X86_FEATURE_NPT,   		CR_EDX, 0, 0x8000000a },
- 		{ X86_FEATURE_LBRV,  		CR_EDX, 1, 0x8000000a },
+ struct list_head *
+ trace_get_fields(struct ftrace_event_call *event_call)
+ {
+@@ -544,85 +546,155 @@ out:
+ 	return ret;
+ }
+ 
+-static ssize_t
+-event_format_read(struct file *filp, char __user *ubuf, size_t cnt,
+-		  loff_t *ppos)
++enum {
++	FORMAT_HEADER		= 1,
++	FORMAT_PRINTFMT		= 2,
++};
++
++static void *f_next(struct seq_file *m, void *v, loff_t *pos)
+ {
+-	struct ftrace_event_call *call = filp->private_data;
++	struct ftrace_event_call *call = m->private;
+ 	struct ftrace_event_field *field;
+ 	struct list_head *head;
+-	struct trace_seq *s;
+-	int common_field_count = 5;
+-	char *buf;
+-	int r = 0;
+-
+-	if (*ppos)
+-		return 0;
++	loff_t index = *pos;
+ 
+-	s = kmalloc(sizeof(*s), GFP_KERNEL);
+-	if (!s)
+-		return -ENOMEM;
++	(*pos)++;
+ 
+-	trace_seq_init(s);
++	head = trace_get_fields(call);
+ 
+-	trace_seq_printf(s, "name: %s\n", call->name);
+-	trace_seq_printf(s, "ID: %d\n", call->event.type);
+-	trace_seq_printf(s, "format:\n");
++	switch ((unsigned long)v) {
++	case FORMAT_HEADER:
+ 
+-	head = trace_get_fields(call);
+-	list_for_each_entry_reverse(field, head, link) {
+-		/*
+-		 * Smartly shows the array type(except dynamic array).
+-		 * Normal:
+-		 *	field:TYPE VAR
+-		 * If TYPE := TYPE[LEN], it is shown:
+-		 *	field:TYPE VAR[LEN]
+-		 */
+-		const char *array_descriptor = strchr(field->type, '[');
+-
+-		if (!strncmp(field->type, "__data_loc", 10))
+-			array_descriptor = NULL;
+-
+-		if (!array_descriptor) {
+-			r = trace_seq_printf(s, "\tfield:%s %s;\toffset:%u;"
+-					"\tsize:%u;\tsigned:%d;\n",
+-					field->type, field->name, field->offset,
+-					field->size, !!field->is_signed);
+-		} else {
+-			r = trace_seq_printf(s, "\tfield:%.*s %s%s;\toffset:%u;"
+-					"\tsize:%u;\tsigned:%d;\n",
+-					(int)(array_descriptor - field->type),
+-					field->type, field->name,
+-					array_descriptor, field->offset,
+-					field->size, !!field->is_signed);
+-		}
++		if (unlikely(list_empty(head)))
++			return NULL;
+ 
+-		if (--common_field_count == 0)
+-			r = trace_seq_printf(s, "\n");
++		field = list_entry(head->prev, struct ftrace_event_field, link);
++		return field;
+ 
+-		if (!r)
+-			break;
++	case FORMAT_PRINTFMT:
++		/* all done */
++		return NULL;
+ 	}
+ 
+-	if (r)
+-		r = trace_seq_printf(s, "\nprint fmt: %s\n",
+-				call->print_fmt);
++	/*
++	 * To separate common fields from event fields, the
++	 * LSB is set on the first event field. Clear it in case.
++	 */
++	v = (void *)((unsigned long)v & ~1L);
+ 
+-	if (!r) {
+-		/*
+-		 * ug!  The format output is bigger than a PAGE!!
+-		 */
+-		buf = "FORMAT TOO BIG\n";
+-		r = simple_read_from_buffer(ubuf, cnt, ppos,
+-					      buf, strlen(buf));
+-		goto out;
++	field = v;
++	if (field->link.prev == head)
++		return (void *)FORMAT_PRINTFMT;
++
++	field = list_entry(field->link.prev, struct ftrace_event_field, link);
++
++	/* Set the LSB to notify f_show to print an extra newline */
++	if (index == COMMON_FIELD_COUNT)
++		field = (struct ftrace_event_field *)
++			((unsigned long)field | 1);
++
++	return field;
++}
++
++static void *f_start(struct seq_file *m, loff_t *pos)
++{
++	loff_t l = 0;
++	void *p;
++
++	/* Start by showing the header */
++	if (!*pos)
++		return (void *)FORMAT_HEADER;
++
++	p = (void *)FORMAT_HEADER;
++	do {
++		p = f_next(m, p, &l);
++	} while (p && l < *pos);
++
++	return p;
++}
++
++static int f_show(struct seq_file *m, void *v)
++{
++	struct ftrace_event_call *call = m->private;
++	struct ftrace_event_field *field;
++	const char *array_descriptor;
++
++	switch ((unsigned long)v) {
++	case FORMAT_HEADER:
++		seq_printf(m, "name: %s\n", call->name);
++		seq_printf(m, "ID: %d\n", call->event.type);
++		seq_printf(m, "format:\n");
++		return 0;
++
++	case FORMAT_PRINTFMT:
++		seq_printf(m, "\nprint fmt: %s\n",
++			   call->print_fmt);
++		return 0;
+ 	}
+ 
+-	r = simple_read_from_buffer(ubuf, cnt, ppos,
+-				    s->buffer, s->len);
+- out:
+-	kfree(s);
+-	return r;
++	/*
++	 * To separate common fields from event fields, the
++	 * LSB is set on the first event field. Clear it and
++	 * print a newline if it is set.
++	 */
++	if ((unsigned long)v & 1) {
++		seq_putc(m, '\n');
++		v = (void *)((unsigned long)v & ~1L);
++	}
++
++	field = v;
++
++	/*
++	 * Smartly shows the array type(except dynamic array).
++	 * Normal:
++	 *	field:TYPE VAR
++	 * If TYPE := TYPE[LEN], it is shown:
++	 *	field:TYPE VAR[LEN]
++	 */
++	array_descriptor = strchr(field->type, '[');
++
++	if (!strncmp(field->type, "__data_loc", 10))
++		array_descriptor = NULL;
++
++	if (!array_descriptor)
++		seq_printf(m, "\tfield:%s %s;\toffset:%u;\tsize:%u;\tsigned:%d;\n",
++			   field->type, field->name, field->offset,
++			   field->size, !!field->is_signed);
++	else
++		seq_printf(m, "\tfield:%.*s %s%s;\toffset:%u;\tsize:%u;\tsigned:%d;\n",
++			   (int)(array_descriptor - field->type),
++			   field->type, field->name,
++			   array_descriptor, field->offset,
++			   field->size, !!field->is_signed);
++
++	return 0;
++}
++
++static void f_stop(struct seq_file *m, void *p)
++{
++}
++
++static const struct seq_operations trace_format_seq_ops = {
++	.start		= f_start,
++	.next		= f_next,
++	.stop		= f_stop,
++	.show		= f_show,
++};
++
++static int trace_format_open(struct inode *inode, struct file *file)
++{
++	struct ftrace_event_call *call = inode->i_private;
++	struct seq_file *m;
++	int ret;
++
++	ret = seq_open(file, &trace_format_seq_ops);
++	if (ret < 0)
++		return ret;
++
++	m = file->private_data;
++	m->private = call;
++
++	return 0;
+ }
+ 
+ static ssize_t
+@@ -820,8 +892,10 @@ static const struct file_operations ftrace_enable_fops = {
+ };
+ 
+ static const struct file_operations ftrace_event_format_fops = {
+-	.open = tracing_open_generic,
+-	.read = event_format_read,
++	.open = trace_format_open,
++	.read = seq_read,
++	.llseek = seq_lseek,
++	.release = seq_release,
+ };
+ 
+ static const struct file_operations ftrace_event_id_fops = {
+
 
