@@ -1,60 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752772Ab0FDHe6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jun 2010 03:34:58 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:55685 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751952Ab0FDHe4 convert rfc822-to-8bit (ORCPT
+	id S1752723Ab0FDHht (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jun 2010 03:37:49 -0400
+Received: from mail-px0-f174.google.com ([209.85.212.174]:50965 "EHLO
+	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751952Ab0FDHhs convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jun 2010 03:34:56 -0400
-Subject: Re: [PATCH 1/4] kernel: local_irq_{save,restore}_nmi()
-From: Peter Zijlstra <peterz@infradead.org>
-To: Paul Mundt <lethal@linux-sh.org>
-Cc: David Miller <davem@davemloft.net>, linux-kernel@vger.kernel.org,
-       linux-arch@vger.kernel.org, sparclinux@vger.kernel.org
-In-Reply-To: <20100604050347.GE31868@linux-sh.org>
-References: <20100409.160135.35854399.davem@davemloft.net>
-	 <20100604050347.GE31868@linux-sh.org>
-Content-Type: text/plain; charset="UTF-8"
+	Fri, 4 Jun 2010 03:37:48 -0400
+MIME-Version: 1.0
+In-Reply-To: <20100604071354.GA14451@elte.hu>
+References: <20100603193045.GA7188@elte.hu>
+	<20100603231153.GA11302@elte.hu>
+	<20100603232302.GA16184@elte.hu>
+	<AANLkTikZP3bmckpfb_jUdG7qZO5W9DgpZ79ugtSZaEpt@mail.gmail.com>
+	<20100604071354.GA14451@elte.hu>
+Date: Fri, 4 Jun 2010 00:37:48 -0700
+Message-ID: <AANLkTimH4ihf3QqtKFpfGXRKtO55PrUuff9JYtaEBG44@mail.gmail.com>
+Subject: Re: suspend blockers & Android integration
+From: =?ISO-8859-1?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: tytso@mit.edu, Brian Swetland <swetland@google.com>,
+       Neil Brown <neilb@suse.de>, Thomas Gleixner <tglx@linutronix.de>,
+       "Rafael J. Wysocki" <rjw@sisk.pl>,
+       Alan Stern <stern@rowland.harvard.edu>,
+       Felipe Balbi <felipe.balbi@nokia.com>,
+       Peter Zijlstra <peterz@infradead.org>,
+       LKML <linux-kernel@vger.kernel.org>,
+       Florian Mickler <florian@mickler.org>,
+       Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
+       Linux PM <linux-pm@lists.linux-foundation.org>,
+       Alan Cox <alan@lxorguk.ukuu.org.uk>,
+       James Bottomley <James.Bottomley@suse.de>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       Peter Zijlstra <a.p.zijlstra@chello.nl>,
+       Kevin Hilman <khilman@deeprootsystems.com>,
+       "H. Peter Anvin" <hpa@zytor.com>,
+       Arjan van de Ven <arjan@infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
-Date: Fri, 04 Jun 2010 09:35:15 +0200
-Message-ID: <1275636915.27810.38912.camel@twins>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2010-06-04 at 14:03 +0900, Paul Mundt wrote:
-> On Fri, Apr 09, 2010 at 04:01:35PM -0700, David Miller wrote:
-> > 
-> > Provide local_irq_{save,restore}_nmi() which will allow us to help
-> > architectures that implement NMIs using IRQ priorities like SPARC64
-> > does.
-> > 
-> > Sparc uses IRQ prio 15 for NMIs and implements local_irq_disable() as
-> > disable <= 14. However if you do that while inside an NMI you re-
-> > enable the NMI priority again, causing all kinds of fun.
-> > 
-> > A more solid implementation would first check the disable level and
-> > never lower it, however that is more costly and would slow down the
-> > rest of the kernel for no particular reason.
-> > 
-> > Therefore introduce local_irq_save_nmi() which can implement this
-> > slower but more solid scheme and dis-allow local_irq_save() from NMI
-> > context.
-> > 
-> > Suggested-by: David Miller <davem@davemloft.net>
-> > Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> > Signed-off-by: David S. Miller <davem@davemloft.net>
-> 
-> Are there any updates for this patch series? I would like to make use of
-> this on SH as well, but it seems these haven't hit upstream yet.
+On Fri, Jun 4, 2010 at 12:13 AM, Ingo Molnar <mingo@elte.hu> wrote:
+>
+> * Arve Hj?nnev?g <arve@android.com> wrote:
+>
+>> On Thu, Jun 3, 2010 at 4:23 PM, Ingo Molnar <mingo@elte.hu> wrote:
+>> ...
+>> > ?- Controlled auto-suspend: drivers (such as input) could on wakeup
+>> > ? automatically set the 'minimum wakeup latency' value of wakee tasks to a
+>> > ? lower value. This automatically prevents another auto-suspend in the near
+>> > ? future: up to the point the wakee task increases its latency (via the
+>> > ? scheduler syscall) again and allows suspend again.
+>> >
+>>
+>> How do you clear the latency value in a safe way? If another wakeup event
+>> happens right after your wakee task is done processing the last event and
+>> decides to increase its latency, auto suspend will be allowed even though
+>> you have an unprocessed wakeup event. Also how do you know which task will
+>> read the event if it is not already waiting for it?
+>
+> The easiest solution would be to not do any of that initially. (If it's ever a
+> concern we could subtract/add without destroying the nesting property)
+>
+> Why do you need to track input wakeups? It's rather fragile and rather
 
-Dave found a better solution, see:
+Because we have keys that should always turn the screen on, but the
+problem is not specific to input events. If we enabled a wakeup event
+it usually means we need this event to always work, not just when the
+system is fully awake or fully suspended.
 
-  b4f4372f96e0573d752d9e45beda02fabf716cc8
-  0c25e9e6cbe7b233bb91d14d0e2c258bf8e6ec83
-  c011f80ba0912486fe51dd2b3f71d9b33a151188
+> unnecessary - the idle drivers know it very well how to not go into the
+> deepest idle mode already today. We wont hit C8 on laptops when you are using
+> the desktop.
+>
+
+The whole point allow the use of suspend.
+
+>> > ? This means there will be no surprise suspends for a task that may take a
+>> > ? bit longer than usual to finish its work. [ Detail: this would only be done
+>> > ? for tasks that have a non-default (non-infinity) task->latency value - to
+>> > ? prevent the input driver from lowering latency values (and preventing
+>> > ? future suspends) just because some unaware apps are running and using input
+>> > ? drivers. ]
+>>
+>> Don't you need two inifinity values for this?
+>
+> Yes - any value above the max idle latency in the system will do.
+>
+> Thanks,
+>
+>        Ingo
+>
 
 
+
+-- 
+Arve Hjønnevåg
