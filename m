@@ -1,113 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754366Ab0FDUIE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jun 2010 16:08:04 -0400
-Received: from g6t0186.atlanta.hp.com ([15.193.32.63]:41339 "EHLO
-	g6t0186.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751537Ab0FDUIB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jun 2010 16:08:01 -0400
-Date: Fri, 4 Jun 2010 15:12:48 -0500
-From: Mike Miller <mike.miller@hp.com>
+	id S1754899Ab0FDUJF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jun 2010 16:09:05 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:27980 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753533Ab0FDUJD (ORCPT
+	<rfc822;<linux-kernel@vger.kernel.org>>);
+	Fri, 4 Jun 2010 16:09:03 -0400
+Date: Fri, 4 Jun 2010 16:06:04 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 To: Andrew Morton <akpm@linux-foundation.org>,
-       Jens Axboe <jens.axboe@kernel.dk>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-       LKML-scsi <linux-scsi@vger.kernel.org>, dab@hp.com,
-       scameron@beardog.cce.hp.com, gerry.morong@hp.com, mike.miller@hp.com,
-       scott.benesh@hp.com, scott.stacy.teel@hp.com, tom.lawler@hp.com,
-       mikem@beardog.cce.hp.com
-Subject: [PATCH 3/5] cciss: move next_command function from ifdef
-Message-ID: <20100604201248.GC30870@beardog.cce.hp.com>
-Mime-Version: 1.0
+       Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: albert_herranz@yahoo.es, fujita.tomonori@lab.ntt.co.jp,
+       linux-kernel@vger.kernel.org, jeremy@goop.org,
+       iommu@lists.linux-foundation.org, linux@arm.linux.org.uk,
+       dwmw2@infradead.org, chrisw@sous-sol.org, Ian.Campbell@eu.citrix.com
+Subject: Re: [PATCH] swiotlb-0.8.2^H3: seperation of physical/virtual
+	address translation and core memory allocation.
+Message-ID: <20100604200604.GA17645@phenom.dumpdata.com>
+References: <1275673955-30267-1-git-send-email-konrad.wilk@oracle.com> <20100604114250.b28f288a.akpm@linux-foundation.org>
+MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.4.2.2i
+In-Reply-To: <20100604114250.b28f288a.akpm@linux-foundation.org>
+User-Agent: Mutt/1.5.19 (2009-01-05)
+X-Auth-Type: Internal IP
+X-Source-IP: acsinet15.oracle.com [141.146.126.227]
+X-CT-RefId: str=0001.0A090205.4C095CF2.0060:SCFMA922111,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Patch 3 of 5
-cciss: the definition of next_command also ended up in wrong place
-It ended up inside an "#ifdef CONFIG_PROCFS". Already caught by Randy Dunlap
-and a couple others. Tried to put it somewhere that made sense.
+> > in your -mm tree.
+> 
+> I don't put individual git trees into -mm any more - I get them from
+> linux-next.
 
-Thanks, Randy.
+Ahh. OK.
+> 
+> I could grab the individual patches but I don't see that this gains
+> anyone anything.  I'd suggest that you ask Stephen to include this tree
+> in linux-next then ask Linus to pull it into 2.6.36-rc1.
 
-From: Mike Miller <mike.miller@hp.com>
+Stephen,
 
-Signed-off-by: Mike Miller <mike.miller@hp.com>
-Cc: Stephen M. Cameron <scameron@beardog.cce.hp.com>, iss_storagedev@hp.com
----
- drivers/block/cciss.c |   45 +++++++++++++++++++++++----------------------
- 1 files changed, 23 insertions(+), 22 deletions(-)
+I was wondering if you wouldn't mind including the following git tree
+in your linux-next?
 
-diff --git a/drivers/block/cciss.c b/drivers/block/cciss.c
-index 156ea36..10a0268 100644
---- a/drivers/block/cciss.c
-+++ b/drivers/block/cciss.c
-@@ -213,6 +213,7 @@ static void cciss_hba_release(struct device *dev);
- static void cciss_device_release(struct device *dev);
- static void cciss_free_gendisk(ctlr_info_t *h, int drv_index);
- static void cciss_free_drive_info(ctlr_info_t *h, int drv_index);
-+static inline u32 next_command(ctlr_info_t *h);
- 
- /* performant mode helper functions */
- static void  calc_bucket_map(int *bucket, int num_buckets, int nsgs,
-@@ -374,28 +375,6 @@ static const char *raid_label[] = { "0", "4", "1(1+0)", "5", "5+1", "ADG",
- 
- #ifdef CONFIG_PROC_FS
- 
--static inline u32 next_command(ctlr_info_t *h)
--{
--	u32 a;
--
--	if (unlikely(h->transMethod != CFGTBL_Trans_Performant))
--		return h->access.command_completed(h);
--
--	if ((*(h->reply_pool_head) & 1) == (h->reply_pool_wraparound)) {
--		a = *(h->reply_pool_head); /* Next cmd in ring buffer */
--		(h->reply_pool_head)++;
--		h->commands_outstanding--;
--	} else {
--		a = FIFO_EMPTY;
--	}
--	/* Check for wraparound */
--	if (h->reply_pool_head == (h->reply_pool + h->max_commands)) {
--		h->reply_pool_head = h->reply_pool;
--		h->reply_pool_wraparound ^= 1;
--	}
--	return a;
--}
--
- /*
-  * Report information about this controller.
-  */
-@@ -3411,6 +3390,28 @@ static inline void finish_cmd(ctlr_info_t *h, CommandList_struct *c,
- #endif
- }
- 
-+static inline u32 next_command(ctlr_info_t *h)
-+{
-+	u32 a;
-+
-+	if (unlikely(h->transMethod != CFGTBL_Trans_Performant))
-+		return h->access.command_completed(h);
-+
-+	if ((*(h->reply_pool_head) & 1) == (h->reply_pool_wraparound)) {
-+		a = *(h->reply_pool_head); /* Next cmd in ring buffer */
-+		(h->reply_pool_head)++;
-+		h->commands_outstanding--;
-+	} else {
-+		a = FIFO_EMPTY;
-+	}
-+	/* Check for wraparound */
-+	if (h->reply_pool_head == (h->reply_pool + h->max_commands)) {
-+		h->reply_pool_head = h->reply_pool;
-+		h->reply_pool_wraparound ^= 1;
-+	}
-+	return a;
-+}
-+
- /* process completion of an indexed ("direct lookup") command */
- static inline u32 process_indexed_cmd(ctlr_info_t *h, u32 raw_tag)
- {
+git://git.kernel.org/pub/scm/linux/kernel/git/konrad/swiotlb-2.6.git
+
+The patches are in the MAIN branch (and also in swiotlb-0.8.3).
+
+They have the Tested-by, Signed-off-by, and Acked-by signatures.
+
+Andrew,
+> > [nice description]
+
+Thank you.
+> 
+> The sad thing is that this description will get lost because it isn't
+.. snip..
+> and then follow it with the specific description for [patch 1/n].  I
+> suggest that you make such change in this tree.
+
+Done!
+> 
+> It's not a very good solution because anyone who is looking at [patch
+.. snip ..
+> "see <patch name> for a description of this work" or similar.
+
+Done!
+> 
+> Even better would be if git understood this workflow - if it was able
+> to take commentary-only commits and to bidirectionally link those
+> commentaries to the invividual commits which they describe.
+> 
+..snip.
+> mixture of "enum dma_data_direction dir" and "enum dma_data_direction
+> direction", which could be cleaned up.
+
+Oh, good catch. Fixed that.
