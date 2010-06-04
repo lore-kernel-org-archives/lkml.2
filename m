@@ -1,69 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932317Ab0FDCna (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jun 2010 22:43:30 -0400
-Received: from mail-px0-f174.google.com ([209.85.212.174]:40101 "EHLO
-	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932079Ab0FDCn1 convert rfc822-to-8bit (ORCPT
+	id S1757216Ab0FDDCk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jun 2010 23:02:40 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:59132 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757027Ab0FDDCj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jun 2010 22:43:27 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type:content-transfer-encoding;
-        b=AG16vMkHvjZOrFGdh/xaPU3C8YCG69PeAj5Q66Zu++SWzb7Ax9MSgSZGB2XYTni3kG
-         p891PLKT7BBvTfYhbgthRUnqDQG022vYMDjuJILFDrUiLkWwVyeGu3bAw9ydPYTlaqUa
-         eNk3Xe50Gs9+dK9jZNM3dOoduKd6byX+c4EvY=
-MIME-Version: 1.0
-In-Reply-To: <20100603175643.GY8301@sequoia.sous-sol.org>
-References: <AANLkTimTm57fvumRXo9pegOY2M78mduBsClwYlmAOzpo@mail.gmail.com> 
-	<20100601183920.GB19955@kroah.com> <EA929A9653AAE14F841771FB1DE5A1365FF3EC130E@rrsmsx501.amr.corp.intel.com> 
-	<AANLkTinmxW5gQUOYJgK67Dc1FdakeXSmuu1hExKKL1qk@mail.gmail.com> 
-	<EA929A9653AAE14F841771FB1DE5A1365FF3F8D431@rrsmsx501.amr.corp.intel.com> 
-	<AANLkTilDY61GMGNLezXYLbbe3B8-SvgMOK5L9Q6juETL@mail.gmail.com> 
-	<20100603175643.GY8301@sequoia.sous-sol.org>
-From: Frank Pan <frankpzh@gmail.com>
-Date: Fri, 4 Jun 2010 10:43:07 +0800
-Message-ID: <AANLkTil7ZIqfdYeNA1dkfIDoKPeWU-FIArR-n-1HjqEz@mail.gmail.com>
-Subject: Re: Add a helper function in PCI IOV to get VF device
-To: Chris Wright <chrisw@sous-sol.org>
-Cc: "Williams, Mitch A" <mitch.a.williams@intel.com>, Greg KH <greg@kroah.com>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Jesse Barnes <jbarnes@virtuousgeek.org>,
-       Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>,
-       "Rafael J. Wysocki" <rjw@sisk.pl>,
-       "David S. Miller" <davem@davemloft.net>,
-       Matt Carlson <mcarlson@broadcom.com>,
-       "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Thu, 3 Jun 2010 23:02:39 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Fri, 4 Jun 2010 11:58:20 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
+Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+       "balbir@linux.vnet.ibm.com" <balbir@linux.vnet.ibm.com>
+Subject: [BUGFIX][PATCH] memcg fix wake up in oom wait queue
+Message-Id: <20100604115820.d7ec1008.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <20100604100811.31c45828.nishimura@mxp.nes.nec.co.jp>
+References: <20100603172353.b5375879.kamezawa.hiroyu@jp.fujitsu.com>
+	<20100604100811.31c45828.nishimura@mxp.nes.nec.co.jp>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> VF is often loaded on the physical machine.  There's also a networking
-> specific mechanism for querying and configuring a VF via the PF.
-? I don't really understand. What do you mean load? I don't think
-physical machine is able to use it as a hardware device.
+Tested on mmotm-2010-06-03 and works well.
+==
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 
-> While your patch is simple, it's unclear to me what your end goal is.
-> The patch itself only adds a function. if you showed how you are
-> planning to use it, that would really help.
-Currently my hack is applied on 2.6.18 because of xen's limitation. As
-Mitch says, igb driver is significantly different with recent ones. On
-the other hand, my hack just exposes several PCI configuration and
-MMIO registers to the sysfs, you will only understand the use case
-when you also see the userspace hacks.
+OOM-waitqueue should be waken up when oom_disable is canceled.
+This is a fix for
+ memcg-oom-kill-disable-and-oom-status.patch
 
-> It's especially confusing that you are comparing your patch with
-> symlinks visible in sysfs.
-That's my fault. The most recent reply explains it.
+How to test:
+ Create a cgroup A...
+ 1. set memory.limit and memory.memsw.limit to be small value
+ 2. echo 1 > /cgroup/A/memory.oom_control, this disables oom-kill.
+ 3. run a program which must cause OOM.
 
-Thanks for reply.
+A program executed in 3 will sleep by oom_waiqueue in memcg.
+Then, how to wake it up is problem.
 
--- 
-Frank Pan
+ 1. echo 0 > /cgroup/A/memory.oom_control (enable OOM-killer)
+ 2. echo big mem > /cgroup/A/memory.memsw.limit_in_bytes(allow more swap)
+etc..
 
-Computer Science and Technology
-Tsinghua University
+Without the patch, a task in slept can not be waken up.
+
+Changelog: 2010/06/04
+Rebased onto mmotm-2010-06-03-16-36
+
+Acked-by: Acked-by: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
+Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+---
+ mm/memcontrol.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
+
+Index: mmotm-2.6.34-Jun6/mm/memcontrol.c
+===================================================================
+--- mmotm-2.6.34-Jun6.orig/mm/memcontrol.c
++++ mmotm-2.6.34-Jun6/mm/memcontrol.c
+@@ -1370,7 +1370,7 @@ static void memcg_wakeup_oom(struct mem_
+ 
+ static void memcg_oom_recover(struct mem_cgroup *mem)
+ {
+-	if (mem->oom_kill_disable && atomic_read(&mem->oom_lock))
++	if (atomic_read(&mem->oom_lock))
+ 		memcg_wakeup_oom(mem);
+ }
+ 
+@@ -3781,6 +3781,8 @@ static int mem_cgroup_oom_control_write(
+ 		return -EINVAL;
+ 	}
+ 	mem->oom_kill_disable = val;
++	if (!val)
++		memcg_oom_recover(mem);
+ 	cgroup_unlock();
+ 	return 0;
+ }
+
