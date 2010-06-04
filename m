@@ -1,50 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753613Ab0FDLgS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jun 2010 07:36:18 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:57745 "EHLO mx1.redhat.com"
+	id S1753475Ab0FDLml (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jun 2010 07:42:41 -0400
+Received: from fanny.its.uu.se ([130.238.4.241]:40648 "EHLO fanny.its.uu.se"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752394Ab0FDLgR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jun 2010 07:36:17 -0400
-Date: Fri, 4 Jun 2010 13:34:25 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: Roland McGrath <roland@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-       linux-mm <linux-mm@kvack.org>, David Rientjes <rientjes@google.com>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-       Nick Piggin <npiggin@suse.de>
-Subject: Re: [PATCH] oom: Make coredump interruptible
-Message-ID: <20100604113425.GA13801@redhat.com>
-References: <20100602185812.4B5894A549@magilla.sf.frob.com> <20100602203827.GA29244@redhat.com> <20100604194635.72D3.A69D9226@jp.fujitsu.com> <20100604112721.GA12582@redhat.com>
+	id S1751451Ab0FDLmj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Jun 2010 07:42:39 -0400
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100604112721.GA12582@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Transfer-Encoding: 7bit
+Message-ID: <19464.59051.727647.820630@pilspetsen.it.uu.se>
+Date: Fri, 4 Jun 2010 13:42:35 +0200
+From: Mikael Pettersson <mikpe@it.uu.se>
+To: linux-kernel@vger.kernel.org
+Subject: [PATCH] compiler-gcc.h: gcc-4.5 needs noclone and noinline on __naked functions
+X-Mailer: VM 7.17 under Emacs 20.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/04, Oleg Nesterov wrote:
->
-> (I'd suggest you to add a note into the changelog, to explain
->  that the new flag makes sense even without coredump problems).
+A __naked function is defined in C but with a body completely
+implemented by asm(), including any prologue and epilogue.  These
+asm() bodies expect standard calling conventions for parameter
+passing.  Older GCCs implement that correctly, but 4.[56] currently
+do not, see GCC PR44290.  In the Linux kernel this breaks ARM,
+causing most arch/arm/mm/copypage-*.c modules to get miscompiled,
+resulting in kernel crashes during bootup.
 
-And. May I ask you to add another note into the changelog?
+Part of the kernel fix is to augment the __naked function attribute
+to also imply noinline and noclone.  This patch implements that, and
+has been verified to fix boot failures with gcc-4.5 compiled 2.6.34
+and 2.6.35-rc1 kernels.  The patch is a no-op with older GCCs.
 
-> > @@ -410,6 +409,8 @@ static int __oom_kill_process(struct task_struct *p, struct mem_cgroup *mem,
-> >  	 */
-> >  	p->rt.time_slice = HZ;
-> >  	set_tsk_thread_flag(p, TIF_MEMDIE);
-> > +	set_bit(MMF_OOM_KILLED, &p->mm->flags);
+Signed-off-by: Mikael Pettersson <mikpe@it.uu.se>
+Signed-off-by: Khem Raj <raj.khem@gmail.com>
+Cc: stable@kernel.org
+---
+This part of the fix touches code outside of arch/arm/ so RMK asked
+me to send it via LKML.  Another fix for broken asm() is also needed
+on some machine types, but that's handled via the ARM tree.
 
-I think the changelog should explain that, if we race with fork(),
-this flag can't leak into the child's new mm. mm_init() filters
-the bits outside of MMF_INIT_MASK.
+I can't find an obvious maintainer for include/linux/compiler-gcc.h.
+Does any core system maintainer want to handle this, or should I
+resend with cc: Linus?
 
-If we race with exec, it can't leak because mm_alloc() does
-memset(0).
+ include/linux/compiler-gcc.h  |   10 +++++++++-
+ include/linux/compiler-gcc4.h |    4 ++++
+ 2 files changed, 13 insertions(+), 1 deletion(-)
 
-Oleg.
-
+diff -rupN linux-2.6.35-rc1/include/linux/compiler-gcc.h linux-2.6.35-rc1.arm-gcc45-attribute-naked/include/linux/compiler-gcc.h
+--- linux-2.6.35-rc1/include/linux/compiler-gcc.h	2010-02-25 14:45:04.000000000 +0100
++++ linux-2.6.35-rc1.arm-gcc45-attribute-naked/include/linux/compiler-gcc.h	2010-06-01 20:18:33.000000000 +0200
+@@ -58,8 +58,12 @@
+  * naked functions because then mcount is called without stack and frame pointer
+  * being set up and there is no chance to restore the lr register to the value
+  * before mcount was called.
++ *
++ * The asm() bodies of naked functions often depend on standard calling conventions,
++ * therefore they must be noinline and noclone.  GCC 4.[56] currently fail to enforce
++ * this, so we must do so ourselves.  See GCC PR44290.
+  */
+-#define __naked				__attribute__((naked)) notrace
++#define __naked				__attribute__((naked)) noinline __noclone notrace
+ 
+ #define __noreturn			__attribute__((noreturn))
+ 
+@@ -85,3 +89,7 @@
+ #define _gcc_header(x) __gcc_header(linux/compiler-gcc##x.h)
+ #define gcc_header(x) _gcc_header(x)
+ #include gcc_header(__GNUC__)
++
++#if !defined(__noclone)
++#define __noclone	/* not needed */
++#endif
+diff -rupN linux-2.6.35-rc1/include/linux/compiler-gcc4.h linux-2.6.35-rc1.arm-gcc45-attribute-naked/include/linux/compiler-gcc4.h
+--- linux-2.6.35-rc1/include/linux/compiler-gcc4.h	2010-02-25 14:45:04.000000000 +0100
++++ linux-2.6.35-rc1.arm-gcc45-attribute-naked/include/linux/compiler-gcc4.h	2010-06-01 20:18:33.000000000 +0200
+@@ -48,6 +48,10 @@
+  * unreleased.  Really, we need to have autoconf for the kernel.
+  */
+ #define unreachable() __builtin_unreachable()
++
++/* Mark a function definition as prohibited from being cloned. */
++#define __noclone	__attribute__((__noclone__))
++
+ #endif
+ 
+ #endif
