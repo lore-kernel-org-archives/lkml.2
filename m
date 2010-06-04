@@ -1,54 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932453Ab0FDUsM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jun 2010 16:48:12 -0400
-Received: from kroah.org ([198.145.64.141]:44033 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757021Ab0FDUsF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jun 2010 16:48:05 -0400
-From: Greg Kroah-Hartman <gregkh@suse.de>
-To: linux-kernel@vger.kernel.org
-Cc: Frank Pan <frankpzh@gmail.com>, stable <stable@kernel.org>,
-       Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [PATCH 08/11] tty: fix a little bug in scrup, vt.c
-Date: Fri,  4 Jun 2010 13:47:54 -0700
-Message-Id: <1275684477-20172-8-git-send-email-gregkh@suse.de>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <20100604204445.GB19761@kroah.com>
-References: <20100604204445.GB19761@kroah.com>
+	id S932492Ab0FDUsr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jun 2010 16:48:47 -0400
+Received: from mail-yw0-f187.google.com ([209.85.211.187]:33857 "EHLO
+	mail-yw0-f187.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932464Ab0FDUso convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Jun 2010 16:48:44 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type:content-transfer-encoding;
+        b=GD2SLFQyla/w1DgzJNK8dvzuWaH9E1YEvElfX2qQdcRip4p94SwcRaBvjIN2AtiL1i
+         SLopehVyUhehRGeoW6Q5alSOSqWHldMmBJ8FZUJ4KEqiIC3wG1qucaa7SHQk3rD2ILct
+         9ZE/Lexck04tkFbElWAFJU9v5Qck0qEdsnLUM=
+MIME-Version: 1.0
+In-Reply-To: <20100604204455.GD19761@kroah.com>
+References: <20100604204455.GD19761@kroah.com>
+From: Mike Frysinger <vapier.adi@gmail.com>
+Date: Fri, 4 Jun 2010 16:48:23 -0400
+Message-ID: <AANLkTilwzoUlastS0M9OMKuWgwmDE3VXdf2LCJxf50dV@mail.gmail.com>
+Subject: Re: [GIT PATCH] STAGING fixes and new drivers for 2.6.35-git
+To: Greg KH <greg@kroah.com>
+Cc: Linus Torvalds <torvalds@osdl.org>, Andrew Morton <akpm@osdl.org>,
+       linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Frank Pan <frankpzh@gmail.com>
+On Fri, Jun 4, 2010 at 16:44, Greg KH wrote:
+> apatard@mandriva.com (1):
+>      staging: Add framebuffer driver for XGI chipsets
 
-The code uses vc->vc_cols instead of vc->vc_size_row by mistake, it
-will cause half of the region which is going to clear remain
-uncleared.
-The issue happens in background consoles, so it's hard to observe.
-
-Frank Pan
-
-Signed-off-by: Frank Pan <frankpzh@gmail.com>
-Cc: stable <stable@kernel.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
----
- drivers/char/vt.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/drivers/char/vt.c b/drivers/char/vt.c
-index 7cdb6ee..1296c42 100644
---- a/drivers/char/vt.c
-+++ b/drivers/char/vt.c
-@@ -304,7 +304,7 @@ static void scrup(struct vc_data *vc, unsigned int t, unsigned int b, int nr)
- 	d = (unsigned short *)(vc->vc_origin + vc->vc_size_row * t);
- 	s = (unsigned short *)(vc->vc_origin + vc->vc_size_row * (t + nr));
- 	scr_memmovew(d, s, (b - t - nr) * vc->vc_size_row);
--	scr_memsetw(d + (b - t - nr) * vc->vc_cols, vc->vc_video_erase_char,
-+	scr_memsetw(d + (b - t - nr) * vc->vc_size_row, vc->vc_video_erase_char,
- 		    vc->vc_size_row * nr);
- }
- 
--- 
-1.7.1
-
+does the staging tree not require properly formatted git patches ?
+-mike
