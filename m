@@ -1,48 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754298Ab0FDKmH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jun 2010 06:42:07 -0400
-Received: from ganesha.gnumonks.org ([213.95.27.120]:56799 "EHLO
-	ganesha.gnumonks.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754076Ab0FDKmF (ORCPT
+	id S1755110Ab0FDKmb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jun 2010 06:42:31 -0400
+Received: from one.firstfloor.org ([213.235.205.2]:55727 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754895Ab0FDKm3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jun 2010 06:42:05 -0400
-From: Kukjin Kim <kgene.kim@samsung.com>
-To: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Cc: ben-linux@fluff.org, Kukjin Kim <kgene.kim@samsung.com>
-Subject: [PATCH 2/2] MAINTAINERS: add maintainer for SAMSUNG ARM ARCHITECTURES
-Date: Fri,  4 Jun 2010 19:36:34 +0900
-Message-Id: <1275647794-30634-2-git-send-email-kgene.kim@samsung.com>
-X-Mailer: git-send-email 1.6.2.5
-In-Reply-To: <1275647794-30634-1-git-send-email-kgene.kim@samsung.com>
-References: <1275647794-30634-1-git-send-email-kgene.kim@samsung.com>
+	Fri, 4 Jun 2010 06:42:29 -0400
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Arjan van de Ven <arjan@infradead.org>, tytso@mit.edu,
+       Peter Zijlstra <a.p.zijlstra@chello.nl>,
+       Florian Mickler <florian@mickler.org>, Neil Brown <neilb@suse.de>,
+       Brian Swetland <swetland@google.com>, "H. Peter Anvin" <hpa@zytor.com>,
+       LKML <linux-kernel@vger.kernel.org>,
+       Peter Zijlstra <peterz@infradead.org>,
+       James Bottomley <James.Bottomley@suse.de>,
+       Alan Cox <alan@lxorguk.ukuu.org.uk>,
+       Linux PM <linux-pm@lists.linux-foundation.org>,
+       Ingo Molnar <mingo@elte.hu>,
+       Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
+       Thomas Gleixner <tglx@linutronix.de>,
+       Felipe Balbi <felipe.balbi@nokia.com>
+Subject: Re: suspend blockers & Android integration
+From: Andi Kleen <andi@firstfloor.org>
+References: <20100603193045.GA7188@elte.hu> <20100603231153.GA11302@elte.hu>
+	<20100603232302.GA16184@elte.hu>
+	<alpine.LFD.2.00.1006031630300.8175@i5.linux-foundation.org>
+	<20100603234634.GA21831@elte.hu>
+	<alpine.LFD.2.00.1006031856420.8175@i5.linux-foundation.org>
+	<alpine.LFD.2.00.1006031917500.8175@i5.linux-foundation.org>
+	<20100603204521.09808a7f@infradead.org>
+	<alpine.LFD.2.00.1006032141060.8175@i5.linux-foundation.org>
+Date: Fri, 04 Jun 2010 12:42:26 +0200
+In-Reply-To: <alpine.LFD.2.00.1006032141060.8175@i5.linux-foundation.org> (Linus Torvalds's message of "Thu\, 3 Jun 2010 21\:46\:01 -0700 \(PDT\)")
+Message-ID: <8739x3xenh.fsf@basil.nowhere.org>
+User-Agent: Gnus/5.11 (Gnus v5.11) Emacs/22.3 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Kukjin Kim <kgene.kim@samsung.com>
----
- MAINTAINERS |    2 ++
- 1 files changed, 2 insertions(+), 0 deletions(-)
+Linus Torvalds <torvalds@linux-foundation.org> writes:
 
-diff --git a/MAINTAINERS b/MAINTAINERS
-index 1d41149..f4e4c61 100644
---- a/MAINTAINERS
-+++ b/MAINTAINERS
-@@ -896,11 +896,13 @@ S:	Maintained
- 
- ARM/SAMSUNG ARM ARCHITECTURES
- M:	Ben Dooks <ben-linux@fluff.org>
-+M:	Kukjin Kim <kgene.kim@samsung.com>
- L:	linux-arm-kernel@lists.infradead.org (moderated for non-subscribers)
- W:	http://www.fluff.org/ben/linux/
- S:	Maintained
- F:	arch/arm/plat-samsung/
- F:	arch/arm/plat-s3c24xx/
-+F:	arch/arm/plat-s5p/
- 
- ARM/S3C2410 ARM ARCHITECTURE
- M:	Ben Dooks <ben-linux@fluff.org>
+> On Thu, 3 Jun 2010, Arjan van de Ven wrote:
+>> 
+>> And because there's then no power saving (but a performance cost), it's
+>> actually a negative for battery life/total energy.
+>
+> Including the UP optimizations we do (ie lock prefix removal)? It's 
+
+Those only help the kernel and most workloads do not do enough kernel
+execution for it to really matter, but spend most of their
+time in user space.
+
+Even if as kernel programmers we often have a different view, in most
+cases most cycles are in user space :)
+
+-Andi
 -- 
-1.6.2.5
-
+ak@linux.intel.com -- Speaking for myself only.
