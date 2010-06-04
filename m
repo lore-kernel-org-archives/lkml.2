@@ -1,69 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753112Ab0FDTUU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jun 2010 15:20:20 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:51896 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751770Ab0FDTUS (ORCPT
+	id S1752783Ab0FDT0b (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jun 2010 15:26:31 -0400
+Received: from vms173013pub.verizon.net ([206.46.173.13]:37232 "EHLO
+	vms173013pub.verizon.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751770Ab0FDT0a (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jun 2010 15:20:18 -0400
-Date: Fri, 4 Jun 2010 12:19:57 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Minchan Kim <minchan.kim@gmail.com>
-Cc: Nitin Gupta <ngupta@vflare.org>, Greg KH <greg@kroah.com>,
-       Pekka Enberg <penberg@cs.helsinki.fi>, Ed Tomlinson <edt@aei.ca>,
-       Hugh Dickins <hugh.dickins@tiscali.co.uk>, Cyp <cyp561@gmail.com>,
-       driverdev <devel@driverdev.osuosl.org>,
-       linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/4] Support generic I/O requests
-Message-Id: <20100604121957.d9bc55ae.akpm@linux-foundation.org>
-In-Reply-To: <AANLkTimjc8eZY2IqbeZUR7VsWVspZ4ilUz3LPAUIiZuU@mail.gmail.com>
-References: <1275379286-10453-1-git-send-email-ngupta@vflare.org>
-	<1275379286-10453-2-git-send-email-ngupta@vflare.org>
-	<AANLkTimjc8eZY2IqbeZUR7VsWVspZ4ilUz3LPAUIiZuU@mail.gmail.com>
-X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Fri, 4 Jun 2010 15:26:30 -0400
+Date: Fri, 04 Jun 2010 15:26:25 -0400 (EDT)
+From: Len Brown <lenb@kernel.org>
+X-X-Sender: lenb@localhost.localdomain
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: sfi-devel@simplefirmware.org,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: [git pull request] SFI patch for 2.6.31-rc1
+Message-id: <alpine.LFD.2.00.1006041524380.4073@localhost.localdomain>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+MIME-version: 1.0
+Content-type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2 Jun 2010 15:20:13 +0900
-Minchan Kim <minchan.kim@gmail.com> wrote:
+Hi Linus,
 
-> P.S)
-> Why don't you send this series to -mm?
-> I don't know any patches have to go linux-next and any patches have to
-> go --mmotm.
+please pull from: 
 
-The code lives in drivers/staging/ at present.  That's Greg's tree.
+git://git.kernel.org/pub/scm/linux/kernel/git/lenb/linux-sfi-2.6.git sfi-release
 
-> I thought zram is related to memory management a little bit.
-> 
-> What's the criteria?
+This will update the file shown below.
 
-Yes, and this is something which bothers me a bit about the -staging
-process.  Code gets in there largely under the radar of the people who
-work in that area.  It gets "matured" for a while and the developer
-thinks it's all ready to go into "mainline" and ....  then what? 
-Someone needs to yank the code out of -staging and tell the interested
-parties "hey, look at this".  And at this stage, they might say "hell
-no", or request large changes and the developer who thought everything
-was all ready to go would be justifiably upset.
+thanks!
 
-Obviously, this hasn't happened (much) with zram (partly because I
-happened to notice it), but the potential is there.
-
-I'm not sure what a good solution is, really.  Obviously it would be
-better if such code went straight into the subsystem maintainer's tree
-on day one and got worked on there.  But if that process was working
-efficiently, we wouldn't have ever needed ./staging/.
-
-So I suppose we (ie: Greg ;)) should identify the destination
-maintainer at the outset and make sure that the maintainer(s) and the
-subsystem mailing list are kept in the loop on all developments, and
-that they're aware that this code is headed their way.  Perhaps that's
-already happening and I missed it.
+--
+Len Brown
+Intel Open Source Technology Center
 
 
+ps. individual patches are available on sfi-devel@simplefirmware.org
+and a consolidated plain patch is available here:
+http://ftp.kernel.org/pub/linux/kernel/people/lenb/sfi/patches/2.6.35/acpi-sfi-release-20100428-2.6.35-rc1.diff.gz
+
+ drivers/sfi/sfi_core.c |    4 +++-
+ 1 files changed, 3 insertions(+), 1 deletions(-)
+
+through these commits:
+
+Dan Carpenter (1):
+      SFI: do not return freed pointer
+
+with this log:
+
+commit e29df91e67428c1a651d18df6ec047fcb30282d3
+Author: Dan Carpenter <error27@gmail.com>
+Date:   Fri May 28 12:33:15 2010 +0200
+
+    SFI: do not return freed pointer
+    
+    We never actually use the return value of sfi_sysfs_install_table() but
+    it still seems wrong to return a freed pointer.
+    
+    Signed-off-by: Dan Carpenter <error27@gmail.com>
+    Signed-off-by: Len Brown <len.brown@intel.com>
