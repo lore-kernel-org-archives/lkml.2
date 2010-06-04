@@ -1,166 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755674Ab0FDNOm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jun 2010 09:14:42 -0400
-Received: from g1t0029.austin.hp.com ([15.216.28.36]:1884 "EHLO
-	g1t0029.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754096Ab0FDNOk (ORCPT
+	id S1755784Ab0FDNWw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jun 2010 09:22:52 -0400
+Received: from mail-px0-f174.google.com ([209.85.212.174]:46732 "EHLO
+	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755462Ab0FDNWu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jun 2010 09:14:40 -0400
-Date: Fri, 4 Jun 2010 08:19:26 -0500
-From: scameron@beardog.cce.hp.com
-To: akpm@linux-foundation.org
-Cc: mm-commits@vger.kernel.org, mike.miller@hp.com, jens.axboe@oracle.com,
-       linux-kernel@vger.kernel.org, scameron@beardog.cce.hp.com
-Subject: Re: + cciss-add-performant-mode-support-for-stars-sirius.patch added to -mm tree
-Message-ID: <20100604131926.GO17187@beardog.cce.hp.com>
-References: <201006021958.o52Jw7CY013718@imap1.linux-foundation.org>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201006021958.o52Jw7CY013718@imap1.linux-foundation.org>
-User-Agent: Mutt/1.4.2.2i
+	Fri, 4 Jun 2010 09:22:50 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:message-id:date:from:user-agent:mime-version:to:subject
+         :content-type:content-transfer-encoding;
+        b=dpWd2hAL1APEEyqCHds+an8hyjzp4oEutJUv3gvJm4F72EGTSUxCwKf77Jp1ID3LLe
+         68xSULVLEYbvc3RCL3fJLJhH+UoEPSzOoCMZtOGCSwHKW2iZODwgrc0mNNsqb/kFHmNk
+         rZfEkLxSAgZwKDQoSKjKSWUTov71pVfpKMHQo=
+Message-ID: <4C08FE3C.2010509@lwfinger.net>
+Date: Fri, 04 Jun 2010 08:23:08 -0500
+From: Larry Finger <Larry.Finger@lwfinger.net>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100317 SUSE/3.0.4-1.20 Thunderbird/3.0.4
+MIME-Version: 1.0
+To: LKML <linux-kernel@vger.kernel.org>
+Subject: WARNING in __mark_inode_dirty for 2.6.35-rc1-00324-gad84563
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 02, 2010 at 12:58:06PM -0700, akpm@linux-foundation.org wrote:
-> 
-> The patch titled
->      cciss: add performant mode support for Stars/Sirius
-> has been added to the -mm tree.  Its filename is
->      cciss-add-performant-mode-support-for-stars-sirius.patch
-> 
+As reported in Bug #16122, I get the following warning when booting
+2.6.25-rc1 from either Linus's mainline tree, or Linville's
+wireless-testing tree. The traceback is as follows:
 
-[...snip...]  see my comments below.
-
-> 
-> ------------------------------------------------------
-> Subject: cciss: add performant mode support for Stars/Sirius
-> From: Mike Miller <mike.miller@hp.com>
-> 
-> Add a mode of controller operation called Performant Mode.  Even though
-> cciss has been deprecated in favor of hpsa there are new controllers due
-> out next year that HP must support in older vendor distros.  Vendors
-> require all fixes/features be upstream.  These new controllers support
-> only 16 commands in simple mode but support up to 1024 in performant mode.
-> This requires us to add this support at this late date.
-> 
-> The performant mode transport minimizes host PCI accesses by performinf
-> many completions per read.  PCI writes are posted so the host can write
-> then immediately get off the bus not waiting for the writwe to complete to
-> the target.  In the context of performant mode the host read out to a
-> controller pulls all posted writes into host memory ensuring the reply
-> queue is coherent.
-> 
-> Signed-off-by: Mike Miller <mike.miller@hp.com>
-> Cc: Stephen M. Cameron <scameron@beardog.cce.hp.com>
-> Cc: Jens Axboe <jens.axboe@oracle.com>
-> Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-> ---
-> 
->  drivers/block/cciss.c      |  267 ++++++++++++++++++++++++++++-------
->  drivers/block/cciss.h      |  109 +++++++++++++-
->  drivers/block/cciss_cmd.h  |   34 +++-
->  drivers/block/cciss_scsi.c |    6 
->  4 files changed, 353 insertions(+), 63 deletions(-)
-> 
-> diff -puN drivers/block/cciss.c~cciss-add-performant-mode-support-for-stars-sirius drivers/block/cciss.c
-> --- a/drivers/block/cciss.c~cciss-add-performant-mode-support-for-stars-sirius
-> +++ a/drivers/block/cciss.c
-> @@ -206,6 +206,11 @@ static void cciss_device_release(struct 
->  static void cciss_free_gendisk(ctlr_info_t *h, int drv_index);
->  static void cciss_free_drive_info(ctlr_info_t *h, int drv_index);
->  
-
-[...snip...]
-
-> +	set_performant_mode(h, c);
->  	spin_lock_irqsave(&h->lock, flags);
->  	addQ(&h->reqQ, c);
->  	h->Qdepth++;
-> @@ -350,6 +366,28 @@ static const char *raid_label[] = { "0",
->  
->  #ifdef CONFIG_PROC_FS
->  
-> +static inline u32 next_command(ctlr_info_t *h)
-> +{
-
-"next_command(...)" should not be inside "#ifdef CONFIG_PROC_FS"
-
-[... snip...]
-
->  		dma_prefetch |= 0x8000;
-> @@ -3944,38 +4140,8 @@ static int __devinit cciss_pci_init(ctlr
->  	}
->  
->  #ifdef CCISS_DEBUG
->  	return 0;
-
-[...snip...]
-
->  
->  err_out_free_res:
-> @@ -3984,6 +4150,7 @@ err_out_free_res:
->  	 * Smart Array controllers that pci_enable_device does not undo
->  	 */
->  	pci_release_regions(pdev);
-> +	cciss_put_controller_into_performant_mode(c);
->  	return err;
-
-^^^ This is calling cciss_put_controller_into_performant_mode() in
-the error code path of cciss_pci_init(), and not in the main initialization
-code path.  That cannot be correct.
-
-[...snip...]
-
->  
->  static void __devexit cciss_remove_one(struct pci_dev *pdev)
-> @@ -4575,7 +4741,6 @@ static int __init cciss_init(void)
->  	 * array of them, the size must be a multiple of 8 bytes.
-
-^^^ "8 bytes" is no longer correct in the above comment,
-should be COMMANDLIST_ALIGNMENT (which is 32 now).
-
->  	 */
->  	BUILD_BUG_ON(sizeof(CommandList_struct) % COMMANDLIST_ALIGNMENT);
-> -
->  	printk(KERN_INFO DRIVER_NAME "\n");
->  
-
-[...snip...]
-
-> @@ -173,12 +174,15 @@ typedef struct _SGDescriptor_struct {
->   * PAD_64 can be adjusted independently as needed for 32-bit
->   * and 64-bits systems.
->   */
-> -#define COMMANDLIST_ALIGNMENT (8)
-> +#define COMMANDLIST_ALIGNMENT (32)
->  #define IS_64_BIT ((sizeof(long) - 4)/4)
->  #define IS_32_BIT (!IS_64_BIT)
-> -#define PAD_32 (0)
-> +#define PAD_32 (32)
-
-^^^ if it's supposed to be aligned at 32 bit boundary
-(which it is) then PAD_32 should be 0, not 32, if 32 works.
-
-[...snip...]
-
-> @@ -213,6 +213,8 @@ scsi_cmd_stack_setup(int ctlr, struct cc
->  
->  	/* Check alignment, see cciss_cmd.h near CommandList_struct def. */
->  	BUILD_BUG_ON((sizeof(*stk->pool) % COMMANDLIST_ALIGNMENT) != 0);
-> +	/* printk(KERN_WARNING "cciss_scsi.c: 0x%08x 0x%08x 0x%08x\n",
-> +			0xdeadbeef, sizeof(*stk->pool), 0xbeefdead); */
-
-^^^ this looks like debug code left in by mistake.
-
->  	/* pci_alloc_consistent guarantees 32-bit DMA address will be used */
->  	stk->pool = (struct cciss_scsi_cmd_stack_elem_t *)
->  		pci_alloc_consistent(hba[ctlr]->pdev, size, &stk->cmd_pool_handle);
-> _
-> 
-
-
--- steve
-
+[   16.480278] ------------[ cut here ]------------
+[   16.480288] WARNING: at fs/fs-writeback.c:1142
+__mark_inode_dirty+0x103/0x170()
+[   16.480291] Hardware name: HP Pavilion dv2700 Notebook PC
+[   16.480293] Modules linked in: loop(+) dm_mod ide_cd_mod cdrom
+snd_hda_codec_conexant arc4 ecb b43 ide_pci_generic rng_core mac80211
+cfg80211 rfkill snd_hda_intel led_class snd_hda_codec ssb snd_pcm
+mmc_core snd_timer amd74xx pcmcia k8temp snd i2c_nforce2 ide_core
+soundcore serio_raw hwmon sg pcmcia_core joydev snd_page_alloc forcedeth
+i2c_core ac battery button ext3 jbd mbcache ohci_hcd sd_mod ehci_hcd
+usbcore fan processor ahci libahci libata scsi_mod thermal
+[   16.480344] Pid: 2432, comm: udisks-part-id Not tainted
+2.6.35-rc1-Linus-00324-gad84563 #202
+[   16.480347] Call Trace:
+[   16.480354]  [<ffffffff8104623a>] warn_slowpath_common+0x7a/0xb0
+[   16.480358]  [<ffffffff81046285>] warn_slowpath_null+0x15/0x20
+[   16.480362]  [<ffffffff81128f53>] __mark_inode_dirty+0x103/0x170
+[   16.480367]  [<ffffffff8111d6cd>] touch_atime+0x12d/0x170
+[   16.480372]  [<ffffffff810ca131>] generic_file_aio_read+0x5c1/0x720
+[   16.480377]  [<ffffffff810e49d8>] ? handle_mm_fault+0x718/0x8b0
+[   16.480381]  [<ffffffff81107302>] do_sync_read+0xd2/0x110
+[   16.480387]  [<ffffffff8107ab85>] ? trace_hardirqs_on_caller+0x145/0x190
+[   16.480391]  [<ffffffff8107abdd>] ? trace_hardirqs_on+0xd/0x10
+[   16.480394]  [<ffffffff81107a23>] vfs_read+0xb3/0x170
+[   16.480399]  [<ffffffff81002d1c>] ? sysret_check+0x27/0x62
+[   16.480403]  [<ffffffff81107b2c>] sys_read+0x4c/0x80
+[   16.480407]  [<ffffffff81002ceb>] system_call_fastpath+0x16/0x1b
+[   16.480410] ---[ end trace f16a433c45bd0baa ]---
