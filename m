@@ -1,86 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754475Ab0FDRHs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jun 2010 13:07:48 -0400
-Received: from buzzloop.caiaq.de ([212.112.241.133]:38081 "EHLO
-	buzzloop.caiaq.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751567Ab0FDRHq (ORCPT
+	id S1756280Ab0FDRIR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jun 2010 13:08:17 -0400
+Received: from ppsw-33.csi.cam.ac.uk ([131.111.8.133]:38468 "EHLO
+	ppsw-33.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752069Ab0FDRIP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jun 2010 13:07:46 -0400
-Date: Fri, 4 Jun 2010 19:07:41 +0200
-From: Daniel Mack <daniel@caiaq.de>
-To: Greg KH <gregkh@suse.de>
-Cc: linux-kernel@vger.kernel.org, "Rafael J. Wysocki" <rjw@sisk.pl>,
-       Len Brown <len.brown@intel.com>, Magnus Damm <damm@igel.co.jp>,
-       Alan Stern <stern@rowland.harvard.edu>,
-       Randy Dunlap <randy.dunlap@oracle.com>,
-       linux-pm@lists.linux-foundation.org
-Subject: Re: [PATCH] drivers/base/power: be more verbose in device_pm_add()
-Message-ID: <20100604170741.GH2695@buzzloop.caiaq.de>
-References: <1275653834-9132-1-git-send-email-daniel@caiaq.de>
- <20100604164527.GA27034@suse.de>
- <20100604165037.GG2695@buzzloop.caiaq.de>
- <20100604170331.GA3144@suse.de>
+	Fri, 4 Jun 2010 13:08:15 -0400
+X-Cam-AntiVirus: no malware found
+X-Cam-SpamDetails: not scanned
+X-Cam-ScannerInfo: http://www.cam.ac.uk/cs/email/scanner/
+Message-ID: <4C093317.1090606@cam.ac.uk>
+Date: Fri, 04 Jun 2010 18:08:39 +0100
+From: Jonathan Cameron <jic23@cam.ac.uk>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100426 Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100604170331.GA3144@suse.de>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Henrik Rydberg <rydberg@bitmath.org>
+CC: Dmitry Torokhov <dmitry.torokhov@gmail.com>, linux-input@vger.kernel.org,
+       linux-kernel@vger.kernel.org, Jiri Kosina <jkosina@suse.cz>,
+       Mika Kuoppala <mika.kuoppala@nokia.com>,
+       Benjamin Tissoires <tissoire@cena.fr>, Rafi Rubin <rafi@seas.upenn.edu>,
+       Oleg Nesterov <oleg@redhat.com>
+Subject: Re: [PATCH 1/4] input: Introduce buflock, a one-to-many circular
+ buffer mechanism
+References: <1275552062-8153-1-git-send-email-rydberg@euromail.se> <1275552062-8153-2-git-send-email-rydberg@euromail.se> <20100604065658.GE21239@core.coreip.homeip.net> <4C08BCB5.7020201@bitmath.org>
+In-Reply-To: <4C08BCB5.7020201@bitmath.org>
+X-Enigmail-Version: 1.0
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 04, 2010 at 10:03:31AM -0700, Greg KH wrote:
-> On Fri, Jun 04, 2010 at 06:50:37PM +0200, Daniel Mack wrote:
-> > Erm, no it didn't. Should it have? This is what I saw:
-> >
-> > [    0.880646] Parentless device registered during a PM transaction
->
-> You should have gotten more information than just that single line,
-> right?  Like a full backtrace to the driver that did the offending
-> thing?
->
-> It should also have had a "Device: 'device_name_here'" on the line
-> before this one, right?
->
-> Can you send the full output that happened here?
+On 06/04/10 09:43, Henrik Rydberg wrote:
+> Hi Dmitry,
+>>> +struct buflock_writer {
+>>> +	unsigned int head;
+>>> +	unsigned int next_head;
+>>> +};
+>>
+>> Since there can be only one writer thread should we just create "struct
+>> buflock" and pull head and next head into it along with the buffer
+>> itself and element size?
+> 
+> It is possible, but there are some arguments against it:
+> 
+> 1. What type to give the buffer?
+> 2. Static or dynamic buffering?
+> 3. Can size be both a compile-time constant and a variable?
+> 
+> In short, I think that by _not_ including the actual buffer, the method
+> ultimately becomes more useful.
+> 
+>> Also, maybe we could extend kfifo with the notion of multiple readers?
+> 
+> If merging the data and algorithm as you suggest, that would be a logical step,
+> yes. To me, the most ideal would be to modify split the kfifo into data, writers
+> and readers. But that would require api changes.
+> 
+>>
+>> In any case, it shoudl not live in include/linux/input/ as it may be
+>> useful ouside of input subsystem.
+> 
+> Agreed.
+I've just opened a debate on linux-iio about whether we want our event infrastructure to
+support multiple readers. If enough people care, then this looks like some infrastructure
+we will be wanting to use as well so I would definitely support putting this outside 
+of input.
 
-Sorry, of course. Here is the trace:
-
-[    0.880567] ------------[ cut here ]------------
-[    0.880622] WARNING: at drivers/base/power/main.c:101 device_pm_add+0x94/0xd8()
-[    0.880639] Device: ieee80211
-[    0.880646] Parentless device registered during a PM transaction
-[    0.880660] Modules linked in: eeti_ts libertas_sdio libertas pxamci ds2760_battery w1_ds2760 wire
-[    0.880754] [<c00493a0>] (unwind_backtrace+0x0/0xec) from [<c0056db0>] (warn_slowpath_common+0x4c/0x7c)
-[    0.880793] [<c0056db0>] (warn_slowpath_common+0x4c/0x7c) from [<c0056e74>] (warn_slowpath_fmt+0x30/0x40)
-[    0.880829] [<c0056e74>] (warn_slowpath_fmt+0x30/0x40) from [<c01d4cc8>] (device_pm_add+0x94/0xd8)
-[    0.880875] [<c01d4cc8>] (device_pm_add+0x94/0xd8) from [<c01ce4dc>] (device_add+0x350/0x510)
-[    0.880910] [<c01ce4dc>] (device_add+0x350/0x510) from [<c032d500>] (wiphy_register+0x1ac/0x298)
-[    0.881033] [<c032d500>] (wiphy_register+0x1ac/0x298) from [<bf0285dc>] (lbs_cfg_register+0x54/0x9c [libertas])
-[    0.881142] [<bf0285dc>] (lbs_cfg_register+0x54/0x9c [libertas]) from [<bf02c228>] (lbs_start_card+0xa0/0x130 [libertas])
-[    0.881226] [<bf02c228>] (lbs_start_card+0xa0/0x130 [libertas]) from [<bf040b94>] (if_sdio_probe+0x84c/0x954 [libertas_sdio])
-[    0.881276] [<bf040b94>] (if_sdio_probe+0x84c/0x954 [libertas_sdio]) from [<c024fd98>] (sdio_bus_probe+0xcc/0xe8)
-[    0.881322] [<c024fd98>] (sdio_bus_probe+0xcc/0xe8) from [<c01d069c>] (driver_probe_device+0xb4/0x198)
-[    0.881359] [<c01d069c>] (driver_probe_device+0xb4/0x198) from [<c01cfc08>] (bus_for_each_drv+0x4c/0x8c)
-[    0.881396] [<c01cfc08>] (bus_for_each_drv+0x4c/0x8c) from [<c01d08d4>] (device_attach+0x54/0x70)
-[    0.881430] [<c01d08d4>] (device_attach+0x54/0x70) from [<c01cfa2c>] (bus_probe_device+0x28/0x50)
-[    0.881464] [<c01cfa2c>] (bus_probe_device+0x28/0x50) from [<c01ce510>] (device_add+0x384/0x510)
-[    0.881496] [<c01ce510>] (device_add+0x384/0x510) from [<c024fbd4>] (sdio_add_func+0x38/0x54)
-[    0.881527] [<c024fbd4>] (sdio_add_func+0x38/0x54) from [<c024f28c>] (mmc_attach_sdio+0x21c/0x2a8)
-[    0.881581] [<c024f28c>] (mmc_attach_sdio+0x21c/0x2a8) from [<c024b97c>] (mmc_rescan+0x1ec/0x28c)
-[    0.881624] [<c024b97c>] (mmc_rescan+0x1ec/0x28c) from [<c0067a60>] (worker_thread+0x168/0x1f0)
-[    0.881667] [<c0067a60>] (worker_thread+0x168/0x1f0) from [<c006abd8>] (kthread+0x78/0x80)
-[    0.881720] [<c006abd8>] (kthread+0x78/0x80) from [<c00458bc>] (kernel_thread_exit+0x0/0x8)
-[    0.881742] ---[ end trace 919a8d4b06013c07 ]---
-
-I've been looking for the string 'phy1' in this dump and couldn't find
-it. Hence I considered adding it.
-
-But ... the backtrace should give enought of a hint, you're right.
-
-Feel free to drop the patch then.
-
-Thanks,
-Daniel
-
+Jonathan
