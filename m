@@ -1,77 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932675Ab0FDXAo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jun 2010 19:00:44 -0400
-Received: from mail-yw0-f187.google.com ([209.85.211.187]:48824 "EHLO
-	mail-yw0-f187.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932654Ab0FDXAk convert rfc822-to-8bit (ORCPT
+	id S932880Ab0FDXCN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jun 2010 19:02:13 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:59828 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932666Ab0FDXCL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jun 2010 19:00:40 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type:content-transfer-encoding;
-        b=JZT345tJp0YicNCZSA1eiSoxExEhs7Udu7kpOSKrWx/lnorMxL8C3mPePVwAJMk9ie
-         cHNxzyBZgiuNgGia/XsVyExZMoKHQlUU9n+AaVj3WVQuA7DEjnoFs9AgmvUYxxkUnvNE
-         u/22huW3kL2/5sjyKgQhdUm91sxnDU994zadw=
+	Fri, 4 Jun 2010 19:02:11 -0400
+Date: Fri, 4 Jun 2010 15:57:13 -0700 (PDT)
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: "Luck, Tony" <tony.luck@intel.com>
+cc: Rusty Russell <rusty@rustcorp.com.au>,
+       Dave Young <hidave.darkstar@gmail.com>,
+       Stephen Rothwell <sfr@canb.auug.org.au>,
+       "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
+       LKML <linux-kernel@vger.kernel.org>
+Subject: RE: linux-next: Tree for June 3
+In-Reply-To: <987664A83D2D224EAE907B061CE93D530114C3DE4D@orsmsx505.amr.corp.intel.com>
+Message-ID: <alpine.LFD.2.00.1006041548480.8175@i5.linux-foundation.org>
+References: <20100603134753.710a64b3.sfr@canb.auug.org.au> <AANLkTilr92GkR8bfgyjtb8ToYEEAv4oCsFsfsy04HJRU@mail.gmail.com> <AANLkTim6v2s-Q5BndAKLOZKaA1wYgbU3UKJwNy-6Jkki@mail.gmail.com> <201006032222.57411.rusty@rustcorp.com.au>
+ <AANLkTikN_3oLIFQ0CRiLwXUV79myy_aqriezdCgnZHFT@mail.gmail.com> <alpine.LFD.2.00.1006041255210.8175@i5.linux-foundation.org> <987664A83D2D224EAE907B061CE93D530114C3DC47@orsmsx505.amr.corp.intel.com> <alpine.LFD.2.00.1006041452130.8175@i5.linux-foundation.org>
+ <987664A83D2D224EAE907B061CE93D530114C3DE4D@orsmsx505.amr.corp.intel.com>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-In-Reply-To: <20100604134853.b6ca10f9.akpm@linux-foundation.org>
-References: <20100601185937.5188.77506.stgit@warthog.procyon.org.uk> 
-	<20100604134853.b6ca10f9.akpm@linux-foundation.org>
-From: Mike Frysinger <vapier.adi@gmail.com>
-Date: Fri, 4 Jun 2010 19:00:19 -0400
-Message-ID: <AANLkTilAeLC6SZVPpy4upQsyoeN0SpqbJ3lwrYPU00I5@mail.gmail.com>
-Subject: Re: [Uclinux-dist-devel] [PATCH] NOMMU: Add '[stack]' label to 
-	/proc/pid/maps output
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: David Howells <dhowells@redhat.com>, uclinux-dev@uclinux.org,
-       linux-kernel@vger.kernel.org, uclinux-dist-devel@blackfin.uclinux.org,
-       torvalds@linux-foundation.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 4, 2010 at 16:48, Andrew Morton wrote:
-> On Tue, 01 Jun 2010 19:59:37 +0100 David Howells wrote:
->> From: Mike Frysinger <vapier@gentoo.org>
->>
->> Add support to the NOMMU /proc/pid/maps file to show which mapping is the stack
->> of the original thread after execve.  This is largely based on the MMU code.
->> Subsidiary thread stacks are not indicated.
->>
->> For FDPIC, we now get:
->>
->>       root:/> cat /proc/self/maps
->>       02064000-02067ccc rw-p 0004d000 00:01 22         /bin/busybox
->>       0206e000-0206f35c rw-p 00006000 00:01 295        /lib/ld-uClibc.so.0
->>       025f0000-025f6f0c r-xs 00000000 00:01 295        /lib/ld-uClibc.so.0
->>       02680000-026ba6b0 r-xs 00000000 00:01 297        /lib/libc.so.0
->>       02700000-0274d384 r-xs 00000000 00:01 22         /bin/busybox
->>       02816000-02817000 rw-p 00000000 00:00 0
->>       02848000-0284c0d8 rw-p 00000000 00:00 0
->>       02860000-02880000 rw-p 00000000 00:00 0          [stack]
->>
->> The semi-downside here is that for FLAT, we get:
->>
->>       root:/> cat /proc/155/maps
->>       029f0000-029f9000 rwxp 00000000 00:00 0          [stack]
->>
->> The reason being that FLAT combines a whole lot of stuff into one map
->> (including the stack).  But this isn't any worse than the current output (which
->> is nothing), so screw it.
->
-> So it's a non-back-compatible change which can a) break nommu-only
-> userspace and b) unbreak mmu-tested userspace which gets run on nommu.
 
-i dont see how it breaks anything really.  any code that parses the
-maps file has to account for an optional label in the maps output.
 
-i guess if someone wrote some code that does something special with
-"[stack]", then behavior would change with FLAT files, but that's
-pretty unlikely i would think.  plus, FLAT is not ELF and as such, its
-layout in memory is highly unlike any existing ELF layout.  so someone
-would already have to be writing a custom handler for FLAT files which
-means they account for the "one blob is everything" layout.
--mike
+On Fri, 4 Jun 2010, Luck, Tony wrote:
+> 
+> It gets rid of the oops. So that's good.  Something is still
+> hokey in linux-next land though because no modules get loaded.
+> So no ehci/uhci available :-(
+
+So maybe the error (the one that caused us to exit and caused the oops due 
+to the wrong return value) is the one that now causes it to not load.
+
+I note that ia64 has a pretty big/complex module_frob_arch_sections(). 
+Many architectures (like x86) has a trivial one ("return 0;"), and there 
+might be some ordering differences in the setup that only matter with 
+architectures that do odd things there..
+
+		Linus
