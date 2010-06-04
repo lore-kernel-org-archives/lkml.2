@@ -1,47 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756995Ab0FDA6A (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jun 2010 20:58:00 -0400
-Received: from tundra.namei.org ([65.99.196.166]:41199 "EHLO tundra.namei.org"
+	id S1756928Ab0FDBCI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jun 2010 21:02:08 -0400
+Received: from ozlabs.org ([203.10.76.45]:42588 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756683Ab0FDA56 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jun 2010 20:57:58 -0400
-Date: Fri, 4 Jun 2010 10:57:51 +1000 (EST)
-From: James Morris <jmorris@namei.org>
-To: Mimi Zohar <zohar@linux.vnet.ibm.com>
-cc: Shaz <shazalive@gmail.com>, linux-kernel@vger.kernel.org,
-       linux-security-module@vger.kernel.org,
-       David Safford <safford@watson.ibm.com>,
-       Dave Hansen <dave@linux.vnet.ibm.com>,
-       Arjan van de Ven <arjan@infradead.org>,
-       securityengineeringresearchgroup 
-	<securityengineeringresearchgroup@googlegroups.com>
-Subject: Re: [PATCH 00/14] EVM
-In-Reply-To: <1275420536.28134.37.camel@localhost.localdomain>
-Message-ID: <alpine.LRH.2.00.1006041052450.1003@tundra.namei.org>
-References: <1271886594-3719-1-git-send-email-zohar@linux.vnet.ibm.com>  <alpine.LRH.2.00.1005311017530.24571@tundra.namei.org>  <AANLkTil8LHjRT_PMosymmtBb1pxIzkBaWC0ef35DCBUU@mail.gmail.com>  <AANLkTil7WvVZ-3zpA0E--fUcHTqul3pnXnPm1xXn_vlH@mail.gmail.com>
- <1275420536.28134.37.camel@localhost.localdomain>
-User-Agent: Alpine 2.00 (LRH 1167 2008-08-23)
+	id S1756551Ab0FDBCG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Jun 2010 21:02:06 -0400
+From: Rusty Russell <rusty@rustcorp.com.au>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [PATCH 2/2] module: fix bne2 "gave up waiting for init of module libcrc32c"
+Date: Fri, 4 Jun 2010 10:32:03 +0930
+User-Agent: KMail/1.13.2 (Linux/2.6.32-22-generic; KDE/4.4.2; i686; ; )
+Cc: Brandon Philips <brandon@ifup.org>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       "Rafael J. Wysocki" <rjw@sisk.pl>, LKML <linux-kernel@vger.kernel.org>,
+       Jon Masters <jonathan@jonmasters.org>, Tejun Heo <htejun@gmail.com>,
+       Masami Hiramatsu <mhiramat@redhat.com>,
+       Kay Sievers <kay.sievers@vrfy.org>
+References: <201005252300.07739.rjw@sisk.pl> <201006031450.53576.rusty@rustcorp.com.au> <alpine.LFD.2.00.1006030916520.8175@i5.linux-foundation.org>
+In-Reply-To: <alpine.LFD.2.00.1006030916520.8175@i5.linux-foundation.org>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201006041032.04323.rusty@rustcorp.com.au>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 1 Jun 2010, Mimi Zohar wrote:
+On Fri, 4 Jun 2010 01:54:19 am Linus Torvalds wrote:
+> 
+> On Thu, 3 Jun 2010, Rusty Russell wrote:
+> > 
+> > However, you're right that it has potential.  I'll rename module_info to
+> > load_info if you don't mind tho: contains more semantic punch IMHO.
+> 
+> Umm. One problem is that you will almost certainly eventually want to 
+> expose that to the architecture "fixup" routines (ie things like 
+> module_frob_arch_sections(), arch_mod_section_prepend()), and at that 
+> point "load_info" is a horribly bad structure name, since it would show 
+> up in <linux/module.h> and thus be exported all over.
+> 
+> At least call it "struct module_load_info". But yes, I do agree that the 
+> "load" part is important.
 
-> SELinux, Smack, Capabilities, and IMA all use extended attributes. The
-> purpose of EVM is to detect offline tampering of these security extended
-> attributes.
+Looking at the arch code, it has the advantage that it's self-contained.
+They've been pleasantly undemanding from the core over the years; I think
+archs doing tricky things with elf prefer to parse the object themselves
+anyway.  And I'm not sure they want to revisit it, either.
 
-One issue mentioned to me off-list is that if EVM is only protecting 
-against offline attacks, why not just encrypt the entire volume ?
+So I don't think we'd win much from changing them.  I'm wrong later, I'll
+prepend "module_" to the struct name as an internal change then hit them
+all.
 
-This would provide confidentiality and integrity protection for all data 
-and metadata, rather than just integrity for xattr metadata.
+> I looked at that particularly when doing that whole
+> 
+> 	mod = setup_module_info(&info);
+> 	if (IS_ERR(mod)) {
+> 		err = PTR_ERR(mod);
+> 		goto free_hdr;
+> 	}
+> 
+> thing, because that made "mod" have _three_ totally different values 
+> (error, before, after) when jumping out to the failure paths. 
 
+Yep, it now is back to sanity.  Let's see if today's linux-next is
+happy.
 
-- James
--- 
-James Morris
-<jmorris@namei.org>
+If so, do you want just the fixes or the whole refactoring too, while
+it's nice and fresh?
+
+Thanks!
+Rusty.
