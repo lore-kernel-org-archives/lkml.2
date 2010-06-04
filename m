@@ -1,132 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932373Ab0FDOYE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jun 2010 10:24:04 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:52821 "EHLO mx2.suse.de"
+	id S932414Ab0FDOYS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jun 2010 10:24:18 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:52840 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932153Ab0FDOYB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jun 2010 10:24:01 -0400
-Subject: Re: [linux-pm] [PATCH 0/8] Suspend block api (version 8)
+	id S932384Ab0FDOYP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Jun 2010 10:24:15 -0400
+Subject: Re: suspend blockers & Android integration
 From: James Bottomley <James.Bottomley@suse.de>
-To: Arve =?ISO-8859-1?Q?Hj=F8nnev=E5g?= <arve@android.com>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, markgross@thegnar.org,
-       640e9920@gmail.com, Peter Zijlstra <peterz@infradead.org>,
-       Brian Swetland <swetland@google.com>, Ingo Molnar <mingo@elte.hu>,
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Brian Swetland <swetland@google.com>, tytso@mit.edu,
+       Neil Brown <neilb@suse.de>, Arve Hj?nnev?g <arve@android.com>,
+       Thomas Gleixner <tglx@linutronix.de>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+       Alan Stern <stern@rowland.harvard.edu>,
+       Felipe Balbi <felipe.balbi@nokia.com>,
+       Peter Zijlstra <peterz@infradead.org>,
        LKML <linux-kernel@vger.kernel.org>,
        Florian Mickler <florian@mickler.org>,
+       Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
        Linux PM <linux-pm@lists.linux-foundation.org>,
-       Thomas Gleixner <tglx@linutronix.de>,
-       Alan Cox <alan@lxorguk.ukuu.org.uk>
-In-Reply-To: <AANLkTimiIyT2TxV5BhhtXwKNKUN9Pa5Bl8YtcoJpHNsw@mail.gmail.com>
-References: <AANLkTikxws5kmFhnBO1MLzE65ETka3Jy0R5ayAKTS1Lc@mail.gmail.com>
-	 <AANLkTikvuqtcGS1UdePRxipSk4S5Vmci2uPfFtzZgx6X@mail.gmail.com>
-	 <1275575794.5914.74.camel@mulgrave.site> <201006032305.58082.rjw@sisk.pl>
-	 <AANLkTimiIyT2TxV5BhhtXwKNKUN9Pa5Bl8YtcoJpHNsw@mail.gmail.com>
+       Alan Cox <alan@lxorguk.ukuu.org.uk>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       Peter Zijlstra <a.p.zijlstra@chello.nl>
+In-Reply-To: <20100604095917.GA3324@elte.hu>
+References: <20100603193045.GA7188@elte.hu>
+	 <AANLkTinsOF3wnxsruR0TvjBAQcHks4tf0ay_sM2xB_p4@mail.gmail.com>
+	 <20100604075722.GA15181@elte.hu>
+	 <AANLkTiksGnpL8tkcc5eScWHrGoijyZNUwZik5lXmU_TS@mail.gmail.com>
+	 <20100604085513.GE15181@elte.hu>
+	 <AANLkTinphtxn-8pGTYv_mBxKFMa7jU8i1yNbHrs50Vzl@mail.gmail.com>
+	 <20100604095917.GA3324@elte.hu>
 Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 04 Jun 2010 09:23:10 -0500
-Message-ID: <1275661390.4455.31.camel@mulgrave.site>
+Date: Fri, 04 Jun 2010 09:24:06 -0500
+Message-ID: <1275661446.4455.33.camel@mulgrave.site>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.28.2 
-Content-Transfer-Encoding: 8bit
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-06-03 at 21:07 -0700, Arve Hjønnevåg wrote:
-> On Thu, Jun 3, 2010 at 2:05 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> > On Thursday 03 June 2010, James Bottomley wrote:
-> >> On Thu, 2010-06-03 at 00:10 -0700, Arve Hjønnevåg wrote:
-> >> > On Wed, Jun 2, 2010 at 10:40 PM, mark gross <640e9920@gmail.com> wrote:
-> >> > > On Wed, Jun 02, 2010 at 09:54:15PM -0700, Brian Swetland wrote:
-> >> > >> On Wed, Jun 2, 2010 at 8:18 PM, mark gross <640e9920@gmail.com> wrote:
-> >> > >> > On Wed, Jun 02, 2010 at 02:58:30PM -0700, Arve Hjønnevåg wrote:
-> >> > >> >>
-> >> > >> >> The list is not short. You have all the inactive and active
-> >> > >> >> constraints on the same list. If you change it to a two level list
-> >> > >> >> though, the list of unique values (which is the list you have to walk)
-> >> > >> >> may be short enough for a tree to be overkill.
-> >> > >> >
-> >> > >> > what have you seen in practice from the wake-lock stats?
-> >> > >> >
-> >> > >> > I'm having a hard time seeing where you could get more than just a
-> >> > >> > handfull.  However; one could go to a dual list (like the scheduler) and
-> >> > >> > move inactive nodes from an active to inactive list, or we could simply
-> >> > >> > remove them from the list uppon inactivity.  which would would well
-> >> > >> > after I change the api to have the client allocate the memory for the
-> >> > >> > nodes...  BUT, if your moving things in and out of a list a lot, I'm not
-> >> > >> > sure the break even point where changing the structure helps.
-> >> > >> >
-> >> > >> > We'll need to try it.
-> >> > >> >
-> >> > >> > I think we will almost never see more than 10 list elements.
-> >> > >> >
-> >> > >> > --mgross
-> >> > >> >
-> >> > >> >
-> >> > >>
-> >> > >> I see about 80 (based on the batteryinfo dump) on my Nexus One
-> >> > >> (QSD8250, Android Froyo):
-> >> > >
-> >> > > shucks.
-> >> > >
-> >> > > well I think for a pm_qos class that has boolean dynamic range we can
-> >> > > get away with not walking the list on every request update.  we can use
-> >> > > a counter, and the list will be for mostly for stats.
-> >> > >
-> >> >
-> >> > Did you give any thought to my suggestion to only use one entry per
-> >> > unique value on the first level list and then use secondary lists of
-> >> > identical values. That way if you only have two constraints values the
-> >> > list you have to walk when updating a request will never have more
-> >> > than two entries regardless of how many total request you have.
-> >> >
-> >> > A request update then becomes something like this:
-> >> >   if on primary list {
-> >> >     unlink from primary list
-> >> >     if secondary list is not empty
-> >> >       get next secondary entry and add in same spot on primary list
-> >> >   }
-> >> >   unlink from secondary list
-> >> >   find new spot on primary list
-> >> >   if already there
-> >> >     add to secondary list
-> >> >   else
-> >> >     add to primary list
-> >>
-> >> This is just reinventing hash bucketed lists.  To get the benefits, all
-> >> we do is implement an N state constraint as backed by an N bucketed hash
-> >> list, which the kernel already has all the internal mechanics for.
-> >
-> > Agreed.
-> >
+On Fri, 2010-06-04 at 11:59 +0200, Ingo Molnar wrote:
+> * Brian Swetland <swetland@google.com> wrote:
+> > On Fri, Jun 4, 2010 at 1:55 AM, Ingo Molnar <mingo@elte.hu> wrote:
+> > > * Brian Swetland <swetland@google.com> wrote:
+[...]
+> > > In any case, this is not to suggest that the suspend-blocker bits are 
+> > > 'impossible' to merge. I just say that if you start with your most 
+> > > difficult feature you should not be surprised to be on the receiving end 
+> > > of a 1000+ mails flamewar on lkml ;-)
+> > 
+> > Yeah, I do understand that we're not making it easy for ourselves here.  I 
+> > think we hit the point where Rafael and Matthew signed off on things and 
+> > thought "aha, linux-pm maintainers are happy, now we're getting somewhere" 
+> > only to realize the light at the end of the tunnel was a bit further out 
+> > than we anticipated ^^
 > 
-> No, a hash is used for quick lookup of a specific value, not to find
-> an extreme value.
+> That's a well-known problem on lkml: the light at the end of the tunnel was 
+> the other train ;-)
+> 
+> Anyway, i'm not pessimistic at all: _some_ sort of scheme appears to be 
+> crystalising out today. Everyone seems to agree now that the main usecases are 
+> indeed useful and need handling one way or another - the rest is really just 
+> technological discussions how to achieve the mostly-agreed-upon end goal.
 
-If you only have N possible values an N bucket hash list is rather
-efficient (provided N is small).  But I would agree that knowing what N
-is represents an API change, and since plists can do this without
-changing the API, they're better.
+It's still not clear to me whether everyone's revolving around to using
+the current suspend block API because it's orthogonal to all other
+mechanisms and is therefore separate from the kernel (and can be
+compiled out if you don't want it).  Or whether re-expressing what the
+android drivers want (minimum idle states and suspend block) in pm_qos
+terms which others can use is the way to go.  I think the latter, but
+I'd like to know what other people think (because I'm not wedded to this
+preference).
 
->  It is however extremely similar to plists. The only
-> difference is that plists link all the secondary lists together.
+> The worst situation are features where one side says 'we dont need this kind 
+> of functionality at all' - IMO auto/opportunistic-suspend isnt in that 
+> situation, fortunately.
 
-Right, so they would solve the *current* problem exactly.
-
->  If we
-> want to have constraints that autoexpire, then keeping the secondary
-> lists separate allows the same optimization as I did for
-> wakelock/suspend_blocker timeouts where no timer is active if an
-> (equal or stricter) non-expiring constraint is active.
-
-But this is a future discussion and not part of the patch.  The way open
-source works is that we sort out the best implementation for the current
-conditions.  If the implementation has to change because of future
-stuff, then we change it when the future stuff comes along.  Changing
-implementations is easy (they don't have any externally visible impact).
-Changing the in-kernel API is slightly harder, but easily doable.  It's
-only changing the user visible ABI that we worry about and try not to
-do.
+Great ... because deprecating the problem has been one of the persistent
+memes by some people on this huge thread.
 
 James
 
