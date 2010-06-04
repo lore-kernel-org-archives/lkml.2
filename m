@@ -1,157 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757027Ab0FDBHt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jun 2010 21:07:49 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:34541 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756842Ab0FDBHs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jun 2010 21:07:48 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :content-type;
-        b=wBv3nT5TZGR3CaFM4iuvPcUpLTCzcz2TlHrKmSc///HGz0nYH9KEt+wu69n5kpcABm
-         iqhVN9QgnTbW7zvVwXPLcWleSE3gyZrOKAcDNVRwtWEj353hvGtg15MDUGkkiw6dEUrr
-         7P/F0DuVM0xOK6DrAkYVXBxToYJrcaD0DSVhU=
+	id S932112Ab0FDBII (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jun 2010 21:08:08 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:54400 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1756856Ab0FDBIE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Jun 2010 21:08:04 -0400
+Message-ID: <4C085289.9040000@cn.fujitsu.com>
+Date: Fri, 04 Jun 2010 09:10:33 +0800
+From: Li Zefan <lizf@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1b3pre) Gecko/20090513 Fedora/3.0-2.3.beta2.fc11 Thunderbird/3.0b2
 MIME-Version: 1.0
-In-Reply-To: <AANLkTikfoquMibVsd1dTtrFTDvaKVn1bmL_SfbjyZUoR@mail.gmail.com>
-References: <AANLkTikfoquMibVsd1dTtrFTDvaKVn1bmL_SfbjyZUoR@mail.gmail.com>
-From: Rafael Tinoco <tinhocas@gmail.com>
-Date: Thu, 3 Jun 2010 22:07:27 -0300
-Message-ID: <AANLkTil6K_FWXG8UGKmswebrvbKAzK74UDaOPNx0C5ri@mail.gmail.com>
-Subject: Re: [PATCH] task_io_accounting, taskstats
-To: LKML <linux-kernel@vger.kernel.org>, Balbir <balbir@linux.vnet.ibm.com>,
-       Scrum - Linux <scrum-linux@locaweb.com.br>,
-       Juliano Martinez <juliano.martinez@locaweb.com.br>,
-       Gleicon Moraes <gleicon.moraes@locaweb.com.br>
-Content-Type: multipart/mixed; boundary=0016e6471878800ba7048829f3e7
+To: Dave Chinner <david@fromorbit.com>
+CC: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+       xfs@oss.sgi.com, akpm@linux-foundation.org
+Subject: Re: [PATCH 1/6] writeback: initial tracing support
+References: <1275609328-12514-1-git-send-email-david@fromorbit.com> <1275609328-12514-2-git-send-email-david@fromorbit.com>
+In-Reply-To: <1275609328-12514-2-git-send-email-david@fromorbit.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---0016e6471878800ba7048829f3e7
-Content-Type: text/plain; charset=UTF-8
+> +TRACE_EVENT(writeback_queue,
+> +
+> +	TP_PROTO(struct backing_dev_info *bdi, struct wb_writeback_args *args),
+> +
+> +	TP_ARGS(bdi, args),
+> +
+> +	TP_STRUCT__entry(
+> +		__array(char,		name,		16)
+> +		__field(long,		nr_pages)
+> +		__field(int,		sb)
+> +		__field(int,		sync_mode)
+> +		__field(int,		for_kupdate)
+> +		__field(int,		range_cyclic)
+> +		__field(int,		for_background)
+> +	),
+> +
+> +	TP_fast_assign(
+> +		strncpy(__entry->name, dev_name(bdi->dev), 16);
 
-Balbir, sorry Ive made a mistake sending the patch, it was an
-incomplete and wrong diff.
-And Ive fixed all the "tab" and signed-off-by issues.
+Should use strlcpy() ?
 
-[inaddy][macbook][linux-2.6.33.5]$ ./scripts/checkpatch.pl
-/home/inaddy/codes/ustats/us_2.6.33.x.patch
-total: 0 errors, 0 warnings, 125 lines checked
+> +		__entry->nr_pages	= args->nr_pages;
+> +		__entry->sb		= !!args->sb;
+> +		__entry->for_kupdate	= args->for_kupdate;
+> +		__entry->range_cyclic	= args->range_cyclic;
+> +		__entry->for_background	= args->for_background;
+> +	),
+> +
+> +	TP_printk("%s: pages=%ld, sb=%d, kupdate=%d, range_cyclic=%d "
+> +		  "for_background=%d", __entry->name, __entry->nr_pages,
+> +			__entry->sb, __entry->for_kupdate,
+> +			__entry->range_cyclic, __entry->for_background)
+> +);
+> +
+> +TRACE_EVENT(writeback_sched,
+> +
+> +	TP_PROTO(struct backing_dev_info *bdi, struct bdi_work *work,
+> +		 const char *msg),
+> +
+> +	TP_ARGS(bdi, work, msg),
+> +
+> +	TP_STRUCT__entry(
+> +		__array(char,			name,		16)
+> +		__field(unsigned int,		work)
+> +		__array(char,			task,		8)
+> +	),
+> +
+> +	TP_fast_assign(
+> +		strncpy(__entry->name, dev_name(bdi->dev), 16);
 
-Tests to confirm patch is working, commands:
+ditto
 
-# netcat -l -p 8080
-# cat /etc/passwd | netcat localhost 8080
-# cat /etc/passwd | wc -c
-1126
+> +		__entry->work = (unsigned long) work & 0xffff;
+> +		snprintf(__entry->task, 8, "%s", msg);
+> +	),
+> +
+> +	TP_printk("work=%x, task=%s", __entry->work, __entry->task)
+> +);
 
-# ./ustatsd (getting the 1126 bytes read and written for the netcat cmds)
+...
 
-proc_event_exit: pid 3704 uid 0 (ucpu: 4000) (scpu: 0) (rdisk: 0)
-(wdisk: 0) (rnet: 0) (wnet: 1126) (comm: netcat)
-proc_event_exit: pid 3702 uid 0 (ucpu: 4000) (scpu: 0) (rdisk: 0)
-(wdisk: 0) (rnet: 1126) (wnet: 0) (comm: netcat)
+> +TRACE_EVENT(writeback_bdi_register,
+> +
+> +	TP_PROTO(const char *name, int start),
+> +
+> +	TP_ARGS(name, start),
+> +
+> +	TP_STRUCT__entry(
+> +		__array(char,	name,		16)
+> +		__field(int,	start)
+> +	),
+> +
+> +	TP_fast_assign(
+> +		strncpy(__entry->name, name, 16);
 
+ditto
 
-The attached patch is working. Ill be releasing in this same mail
-thread the userland code.
-
-I'll send another email with [PATCH] to the maintainer and to the list.
-
-Thank you.
-
-Rafael Tinoco
-
---0016e6471878800ba7048829f3e7
-Content-Type: text/x-patch; charset=US-ASCII; name="us_2.6.33.x.patch"
-Content-Disposition: attachment; filename="us_2.6.33.x.patch"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_ga0az2fe0
-
-U2lnbmVkLW9mZi1ieTogUmFmYWVsIERhdmlkIFRpbm9jbyA8dGluaG9jYXNAZ21haWwuY29tPgpk
-aWZmIC0tZ2l0IGEvaW5jbHVkZS9saW51eC90YXNrX2lvX2FjY291bnRpbmcuaCBiL2luY2x1ZGUv
-bGludXgvdGFza19pb19hY2NvdW50aW5nLmgKaW5kZXggYmRmODU1Yy4uYmQ0NWI5MiAxMDA2NDQK
-LS0tIGEvaW5jbHVkZS9saW51eC90YXNrX2lvX2FjY291bnRpbmcuaAorKysgYi9pbmNsdWRlL2xp
-bnV4L3Rhc2tfaW9fYWNjb3VudGluZy5oCkBAIC00MSw1ICs0MSwxMiBAQCBzdHJ1Y3QgdGFza19p
-b19hY2NvdW50aW5nIHsKIAkgKiBpbmZvcm1hdGlvbiBsb3NzIGluIGRvaW5nIHRoYXQuCiAJICov
-CiAJdTY0IGNhbmNlbGxlZF93cml0ZV9ieXRlczsKKworCS8qIFRoZSBudW1iZXIgb2YgYnl0ZXMg
-d2hpY2ggdGhpcyB0YXNrIGhhcyByZWFkIGZyb20gYSBzb2NrZXQgKi8KKwl1NjQgcmVhZF9uZXRf
-Ynl0ZXM7CisKKwkvKiBUaGUgbnVtYmVyIG9mIGJ5dGVzIHdoaWNoIHRoaXMgdGFzayBoYXMgd3Jp
-dHRlbiB0byBhIHNvY2tldCAqLworCXU2NCB3cml0ZV9uZXRfYnl0ZXM7CisKICNlbmRpZiAvKiBD
-T05GSUdfVEFTS19JT19BQ0NPVU5USU5HICovCiB9OwpkaWZmIC0tZ2l0IGEvaW5jbHVkZS9saW51
-eC90YXNrX2lvX2FjY291bnRpbmdfb3BzLmggYi9pbmNsdWRlL2xpbnV4L3Rhc2tfaW9fYWNjb3Vu
-dGluZ19vcHMuaAppbmRleCA0ZDA5MGY5Li5lZTg0MTZmIDEwMDY0NAotLS0gYS9pbmNsdWRlL2xp
-bnV4L3Rhc2tfaW9fYWNjb3VudGluZ19vcHMuaAorKysgYi9pbmNsdWRlL2xpbnV4L3Rhc2tfaW9f
-YWNjb3VudGluZ19vcHMuaApAQCAtMTIsNiArMTIsMTEgQEAgc3RhdGljIGlubGluZSB2b2lkIHRh
-c2tfaW9fYWNjb3VudF9yZWFkKHNpemVfdCBieXRlcykKIAljdXJyZW50LT5pb2FjLnJlYWRfYnl0
-ZXMgKz0gYnl0ZXM7CiB9CiAKK3N0YXRpYyBpbmxpbmUgdm9pZCB0YXNrX2lvX2FjY291bnRfcmVh
-ZF9uZXQoc2l6ZV90IGJ5dGVzKQoreworCWN1cnJlbnQtPmlvYWMucmVhZF9uZXRfYnl0ZXMgKz0g
-Ynl0ZXM7Cit9CisKIC8qCiAgKiBXZSBhcHByb3hpbWF0ZSBudW1iZXIgb2YgYmxvY2tzLCBiZWNh
-dXNlIHdlIGFjY291bnQgYnl0ZXMgb25seS4KICAqIEEgJ2Jsb2NrJyBpcyA1MTIgYnl0ZXMKQEAg
-LTI2LDYgKzMxLDExIEBAIHN0YXRpYyBpbmxpbmUgdm9pZCB0YXNrX2lvX2FjY291bnRfd3JpdGUo
-c2l6ZV90IGJ5dGVzKQogCWN1cnJlbnQtPmlvYWMud3JpdGVfYnl0ZXMgKz0gYnl0ZXM7CiB9CiAK
-K3N0YXRpYyBpbmxpbmUgdm9pZCB0YXNrX2lvX2FjY291bnRfd3JpdGVfbmV0KHNpemVfdCBieXRl
-cykKK3sKKwljdXJyZW50LT5pb2FjLndyaXRlX25ldF9ieXRlcyArPSBieXRlczsKK30KKwogLyoK
-ICAqIFdlIGFwcHJveGltYXRlIG51bWJlciBvZiBibG9ja3MsIGJlY2F1c2Ugd2UgYWNjb3VudCBi
-eXRlcyBvbmx5LgogICogQSAnYmxvY2snIGlzIDUxMiBieXRlcwpAQCAtNTksNiArNjksMTAgQEAg
-c3RhdGljIGlubGluZSB2b2lkIHRhc2tfaW9fYWNjb3VudF9yZWFkKHNpemVfdCBieXRlcykKIHsK
-IH0KIAorc3RhdGljIGlubGluZSB2b2lkIHRhc2tfaW9fYWNjb3VudF9yZWFkX25ldChzaXplX3Qg
-Ynl0ZXMpCit7Cit9CisKIHN0YXRpYyBpbmxpbmUgdW5zaWduZWQgbG9uZyB0YXNrX2lvX2dldF9p
-bmJsb2NrKGNvbnN0IHN0cnVjdCB0YXNrX3N0cnVjdCAqcCkKIHsKIAlyZXR1cm4gMDsKQEAgLTY4
-LDYgKzgyLDEwIEBAIHN0YXRpYyBpbmxpbmUgdm9pZCB0YXNrX2lvX2FjY291bnRfd3JpdGUoc2l6
-ZV90IGJ5dGVzKQogewogfQogCitzdGF0aWMgaW5saW5lIHZvaWQgdGFza19pb19hY2NvdW50X3dy
-aXRlX25ldChzaXplX3QgYnl0ZXMpCit7Cit9CisKIHN0YXRpYyBpbmxpbmUgdW5zaWduZWQgbG9u
-ZyB0YXNrX2lvX2dldF9vdWJsb2NrKGNvbnN0IHN0cnVjdCB0YXNrX3N0cnVjdCAqcCkKIHsKIAly
-ZXR1cm4gMDsKZGlmZiAtLWdpdCBhL2luY2x1ZGUvbGludXgvdGFza3N0YXRzLmggYi9pbmNsdWRl
-L2xpbnV4L3Rhc2tzdGF0cy5oCmluZGV4IDM0MWRkZGIuLmIwYzU5OTAgMTAwNjQ0Ci0tLSBhL2lu
-Y2x1ZGUvbGludXgvdGFza3N0YXRzLmgKKysrIGIvaW5jbHVkZS9saW51eC90YXNrc3RhdHMuaApA
-QCAtMTYzLDYgKzE2MywxMCBAQCBzdHJ1Y3QgdGFza3N0YXRzIHsKIAkvKiBEZWxheSB3YWl0aW5n
-IGZvciBtZW1vcnkgcmVjbGFpbSAqLwogCV9fdTY0CWZyZWVwYWdlc19jb3VudDsKIAlfX3U2NAlm
-cmVlcGFnZXNfZGVsYXlfdG90YWw7CisKKwkvKiBQZXItdGFzayBuZXR3b3JrIEkvTyBhY2NvdW50
-aW5nICovCisJX191NjQgICByZWFkX25ldF9ieXRlczsgICAgICAgICAvKiBieXRlcyBvZiBzb2Nr
-ZXQgcmVhZCBJL08gKi8KKwlfX3U2NCAgIHdyaXRlX25ldF9ieXRlczsgICAgICAgIC8qIGJ5dGVz
-IG9mIHNvY2tldCB3cml0ZSBJL08gKi8KIH07CiAKIApkaWZmIC0tZ2l0IGEva2VybmVsL3RzYWNj
-dC5jIGIva2VybmVsL3RzYWNjdC5jCmluZGV4IDAwZDU5ZDAuLmIyNzllNjkgMTAwNjQ0Ci0tLSBh
-L2tlcm5lbC90c2FjY3QuYworKysgYi9rZXJuZWwvdHNhY2N0LmMKQEAgLTEwNCwxMCArMTA0LDE0
-IEBAIHZvaWQgeGFjY3RfYWRkX3RzayhzdHJ1Y3QgdGFza3N0YXRzICpzdGF0cywgc3RydWN0IHRh
-c2tfc3RydWN0ICpwKQogCXN0YXRzLT5yZWFkX2J5dGVzCT0gcC0+aW9hYy5yZWFkX2J5dGVzOwog
-CXN0YXRzLT53cml0ZV9ieXRlcwk9IHAtPmlvYWMud3JpdGVfYnl0ZXM7CiAJc3RhdHMtPmNhbmNl
-bGxlZF93cml0ZV9ieXRlcyA9IHAtPmlvYWMuY2FuY2VsbGVkX3dyaXRlX2J5dGVzOworCXN0YXRz
-LT5yZWFkX25ldF9ieXRlcwk9IHAtPmlvYWMucmVhZF9uZXRfYnl0ZXM7CisJc3RhdHMtPndyaXRl
-X25ldF9ieXRlcwk9IHAtPmlvYWMud3JpdGVfbmV0X2J5dGVzOwogI2Vsc2UKIAlzdGF0cy0+cmVh
-ZF9ieXRlcwk9IDA7CiAJc3RhdHMtPndyaXRlX2J5dGVzCT0gMDsKIAlzdGF0cy0+Y2FuY2VsbGVk
-X3dyaXRlX2J5dGVzID0gMDsKKwlzdGF0cy0+cmVhZF9uZXRfYnl0ZXMJPSAwOworCXN0YXRzLT53
-cml0ZV9uZXRfYnl0ZXMJPSAwOwogI2VuZGlmCiB9CiAjdW5kZWYgS0IKZGlmZiAtLWdpdCBhL25l
-dC9zb2NrZXQuYyBiL25ldC9zb2NrZXQuYwppbmRleCA3NjljMzg2Li5kZDdkYmI2IDEwMDY0NAot
-LS0gYS9uZXQvc29ja2V0LmMKKysrIGIvbmV0L3NvY2tldC5jCkBAIC04Nyw2ICs4Nyw3IEBACiAj
-aW5jbHVkZSA8bGludXgvd2lyZWxlc3MuaD4KICNpbmNsdWRlIDxsaW51eC9uc3Byb3h5Lmg+CiAj
-aW5jbHVkZSA8bGludXgvbWFnaWMuaD4KKyNpbmNsdWRlIDxsaW51eC90YXNrX2lvX2FjY291bnRp
-bmdfb3BzLmg+CiAKICNpbmNsdWRlIDxhc20vdWFjY2Vzcy5oPgogI2luY2x1ZGUgPGFzbS91bmlz
-dGQuaD4KQEAgLTUzOCw2ICs1MzksNyBAQCBFWFBPUlRfU1lNQk9MKHNvY2tfdHhfdGltZXN0YW1w
-KTsKIHN0YXRpYyBpbmxpbmUgaW50IF9fc29ja19zZW5kbXNnKHN0cnVjdCBraW9jYiAqaW9jYiwg
-c3RydWN0IHNvY2tldCAqc29jaywKIAkJCQkgc3RydWN0IG1zZ2hkciAqbXNnLCBzaXplX3Qgc2l6
-ZSkKIHsKKwlpbnQgcmV0OwogCXN0cnVjdCBzb2NrX2lvY2IgKnNpID0ga2lvY2JfdG9fc2lvY2Io
-aW9jYik7CiAJaW50IGVycjsKIApAQCAtNTUwLDcgKzU1MiwxMiBAQCBzdGF0aWMgaW5saW5lIGlu
-dCBfX3NvY2tfc2VuZG1zZyhzdHJ1Y3Qga2lvY2IgKmlvY2IsIHN0cnVjdCBzb2NrZXQgKnNvY2ss
-CiAJaWYgKGVycikKIAkJcmV0dXJuIGVycjsKIAotCXJldHVybiBzb2NrLT5vcHMtPnNlbmRtc2co
-aW9jYiwgc29jaywgbXNnLCBzaXplKTsKKwlyZXQgPSBzb2NrLT5vcHMtPnNlbmRtc2coaW9jYiwg
-c29jaywgbXNnLCBzaXplKTsKKworCWlmIChyZXQgPiAwKQorCQl0YXNrX2lvX2FjY291bnRfd3Jp
-dGVfbmV0KHJldCk7CisKKwlyZXR1cm4gcmV0OwogfQogCiBpbnQgc29ja19zZW5kbXNnKHN0cnVj
-dCBzb2NrZXQgKnNvY2ssIHN0cnVjdCBtc2doZHIgKm1zZywgc2l6ZV90IHNpemUpCkBAIC02NjYs
-NiArNjczLDcgQEAgRVhQT1JUX1NZTUJPTF9HUEwoc29ja19yZWN2X3RzX2FuZF9kcm9wcyk7CiBz
-dGF0aWMgaW5saW5lIGludCBfX3NvY2tfcmVjdm1zZ19ub3NlYyhzdHJ1Y3Qga2lvY2IgKmlvY2Is
-IHN0cnVjdCBzb2NrZXQgKnNvY2ssCiAJCQkJICAgICAgIHN0cnVjdCBtc2doZHIgKm1zZywgc2l6
-ZV90IHNpemUsIGludCBmbGFncykKIHsKKwlpbnQgcmV0ID0gMDsKIAlzdHJ1Y3Qgc29ja19pb2Ni
-ICpzaSA9IGtpb2NiX3RvX3Npb2NiKGlvY2IpOwogCiAJc2ktPnNvY2sgPSBzb2NrOwpAQCAtNjc0
-LDcgKzY4MiwxMiBAQCBzdGF0aWMgaW5saW5lIGludCBfX3NvY2tfcmVjdm1zZ19ub3NlYyhzdHJ1
-Y3Qga2lvY2IgKmlvY2IsIHN0cnVjdCBzb2NrZXQgKnNvY2ssCiAJc2ktPnNpemUgPSBzaXplOwog
-CXNpLT5mbGFncyA9IGZsYWdzOwogCi0JcmV0dXJuIHNvY2stPm9wcy0+cmVjdm1zZyhpb2NiLCBz
-b2NrLCBtc2csIHNpemUsIGZsYWdzKTsKKwlyZXQgPSBzb2NrLT5vcHMtPnJlY3Ztc2coaW9jYiwg
-c29jaywgbXNnLCBzaXplLCBmbGFncyk7CisKKwlpZiAocmV0ID4gMCkKKwkJdGFza19pb19hY2Nv
-dW50X3JlYWRfbmV0KHJldCk7CisKKwlyZXR1cm4gcmV0OwogfQogCiBzdGF0aWMgaW5saW5lIGlu
-dCBfX3NvY2tfcmVjdm1zZyhzdHJ1Y3Qga2lvY2IgKmlvY2IsIHN0cnVjdCBzb2NrZXQgKnNvY2ss
-Cg==
---0016e6471878800ba7048829f3e7--
+> +		__entry->start = start;
+> +	),
+> +
+> +	TP_printk("%s: %s", __entry->name,
+> +			__entry->start ? "registered" : "unregistered")
+> +);
