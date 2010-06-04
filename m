@@ -1,57 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751845Ab0FDEj3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jun 2010 00:39:29 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:55476 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751451Ab0FDEj1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jun 2010 00:39:27 -0400
-Date: Fri, 4 Jun 2010 05:39:06 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Kees Cook <kees.cook@canonical.com>
-Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>,
-       Dave Young <hidave.darkstar@gmail.com>, Eric Paris <eparis@redhat.com>,
-       Christoph Hellwig <hch@infradead.org>, James Morris <jmorris@namei.org>,
-       linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
-       linux-fsdevel@vger.kernel.org, linux-doc@vger.kernel.org,
-       Randy Dunlap <rdunlap@xenotime.net>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Jiri Kosina <jkosina@suse.cz>,
-       Martin Schwidefsky <schwidefsky@de.ibm.com>,
-       David Howells <dhowells@redhat.com>, Ingo Molnar <mingo@elte.hu>,
-       Peter Zijlstra <a.p.zijlstra@chello.nl>,
-       "Eric W. Biederman" <ebiederm@xmission.com>,
-       Tim Gardner <tim.gardner@canonical.com>,
-       "Serge E. Hallyn" <serue@us.ibm.com>
-Subject: Re: [PATCH v6] fs: allow protected cross-uid sticky symlinks
-Message-ID: <20100604043906.GB31073@ZenIV.linux.org.uk>
-References: <20100603080158.GE4971@outflux.net>
- <20100603104149.78402075@lxorguk.ukuu.org.uk>
- <20100603184054.GA4714@outflux.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100603184054.GA4714@outflux.net>
-User-Agent: Mutt/1.5.20 (2009-08-17)
+	id S1751825Ab0FDEmc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jun 2010 00:42:32 -0400
+Received: from usul.saidi.cx ([204.11.33.34]:60564 "EHLO usul.overt.org"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1750999Ab0FDEmb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Jun 2010 00:42:31 -0400
+Date: Thu, 3 Jun 2010 21:42:23 -0700
+From: Philip Langdale <philipl@overt.org>
+To: Maxim Levitsky <maximlevitsky@gmail.com>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>, adq_dvb@lidskialf.net,
+       "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>
+Subject: Re: [PATCH] mmc: make sdhci work with ricoh mmc controller
+Message-ID: <20100603214223.61325b5d@fido5>
+In-Reply-To: <1275586531.2594.3.camel@maxim-laptop>
+References: <1275516180.30272.4.camel@maxim-laptop>
+	<1275527787-3783-1-git-send-email-maximlevitsky@gmail.com>
+	<20100603091113.7b1d6fc0@fido5>
+	<1275582709.2563.19.camel@maxim-laptop>
+	<20100603093914.3397ac42@fido5>
+	<20100603100510.37d02c2b@fido5>
+	<1275586531.2594.3.camel@maxim-laptop>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-SA-Do-Not-RunX1: Yes
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 03, 2010 at 11:40:54AM -0700, Kees Cook wrote:
+On Thu, 03 Jun 2010 20:35:31 +0300
+Maxim Levitsky <maximlevitsky@gmail.com> wrote:
 
-> At this point, I believe I've addressed the specific concerns that Al Viro,
-> Eric Paris, and a few others pointed out.  What else needs fixing?
+> On Thu, 2010-06-03 at 10:05 -0700, Philip Langdale wrote: 
+> > On Thu, 3 Jun 2010 09:39:14 -0700
+> > Philip Langdale <philipl@overt.org> wrote:
+> > 
+> > > > > 
+> > > > > Have you been able to establish if 4bit and high-speed
+> > > > > operations work correctly through the MMC controller? I note
+> > > > > that you didn't set SDHCI_CAN_DO_HISPD.
+> > > > Didn't test that yet, will do.
+> > > > I hope my MMCPlus card can do high-speed.
+> > > 
+> > > I should get a chance today to test this as well; I'll let you
+> > > know what I see.
+> > > 
+> > 
+> > Ok, I was able to try it out and setting HISPD works and 4bit seems
+> > to work too. My MMCplus cards run at the same speed with either
+> > controller.
+> I too confirm that.
 
-The hell you have.  Let me spell it out for you:
+On this subject:
 
-1) You _still_ have not posted the analysis of changes it causes, let alone
-explained why they are the right thing to do.
+1) Would it make sense to have the hard-coded caps reflect the full
+set of caps you see on the sdhci side?
 
-2) You are still doing that for each symlink, no matter where in the path
-it might be.  Do (1) and you'll see why it is a BS.
+2) We ought to be able to set the MMC high-speed flag for this
+controller; I've tried it out and it works fine. The default sdhci
+code will never set this flag. I think it would need to an additional
+quirk. Pierre argued against setting it on the basis that SD high speed
+has slightly different timings; I haven't seen hardware where this
+has been an issue.
 
-3) You have not bothered to explain why e.g. stat(2) should fail on such
-symlinks.  Nevermind figuring out which syscalls need that and which do
-not.  Again, (1) would be the starting point required for the rest.  And
-it is needed to decide how to deal with these checks.  Really.
+> However that suspend/resume race is tough one.
+> The problem seems that controller doesn't like both devices to be
+> poked at same time, and normally they won't, but here on resume both
+> are tested for a card, and this is done asynchronously by mmc core.
+> 
+> I will get to bottom of this sooner or later (I hope).
+
+Hmm. So, if the issue is the test, then you should be able to serialize
+in mmc core instead of forcing sync resume in general. An ugly way would
+be a quirk that says to serialize all card tests if the controller is
+present in the system. In practice it would be fine as systems won't
+have arbitrary other sdhci controllers if they have this ricoh mmc
+thing. But yes, it isn't clean. :-P
+
+--phil
