@@ -1,128 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753010Ab0FDRzn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jun 2010 13:55:43 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:27657 "EHLO
+	id S1753438Ab0FDRzr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jun 2010 13:55:47 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:27663 "EHLO
 	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752246Ab0FDRzk (ORCPT
+	with ESMTP id S1753038Ab0FDRzo (ORCPT
 	<rfc822;<linux-kernel@vger.kernel.org>>);
-	Fri, 4 Jun 2010 13:55:40 -0400
+	Fri, 4 Jun 2010 13:55:44 -0400
 From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 To: albert_herranz@yahoo.es, fujita.tomonori@lab.ntt.co.jp,
        akpm@linux-foundation.org
 Cc: linux-kernel@vger.kernel.org, jeremy@goop.org,
        iommu@lists.linux-foundation.org, linux@arm.linux.org.uk,
-       dwmw2@infradead.org, chrisw@sous-sol.org, Ian.Campbell@eu.citrix.com,
-       Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Subject: [PATCH 3/5] swiotlb: Make internal bookkeeping functions have 'swiotlb_tbl' prefix.
-Date: Fri,  4 Jun 2010 13:52:33 -0400
-Message-Id: <1275673955-30267-4-git-send-email-konrad.wilk@oracle.com>
+       dwmw2@infradead.org, chrisw@sous-sol.org, Ian.Campbell@eu.citrix.com
+Subject: [PATCH] swiotlb-0.8.2: seperation of physical/virtual address translation and core memory allocation.
+Date: Fri,  4 Jun 2010 13:52:30 -0400
+Message-Id: <1275673955-30267-1-git-send-email-konrad.wilk@oracle.com>
 X-Mailer: git-send-email 1.6.2.5
-In-Reply-To: <1275673955-30267-3-git-send-email-konrad.wilk@oracle.com>
-References: <1275673955-30267-1-git-send-email-konrad.wilk@oracle.com>
- <1275673955-30267-2-git-send-email-konrad.wilk@oracle.com>
- <1275673955-30267-3-git-send-email-konrad.wilk@oracle.com>
 X-Auth-Type: Internal IP
 X-Source-IP: acsinet15.oracle.com [141.146.126.227]
-X-CT-RefId: str=0001.0A090203.4C093DDB.00D8:SCFMA922111,ss=1,fgs=0
+X-CT-RefId: str=0001.0A090207.4C093DCD.0054:SCFMA922111,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The functions that operate on io_tlb_list/io_tlb_start/io_tlb_orig_addr
-have the prefix 'swiotlb_tbl' now.
+Please include the following patches, located at this git tree:
 
-Signed-off-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Acked-by: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
-Tested-by: Albert Herranz <albert_herranz@yahoo.es>
----
- lib/swiotlb.c |   24 +++++++++++++-----------
- 1 files changed, 13 insertions(+), 11 deletions(-)
+git://git.kernel.org/pub/scm/linux/kernel/git/konrad/swiotlb-2.6.git swiotlb-0.8.2
 
-diff --git a/lib/swiotlb.c b/lib/swiotlb.c
-index ec61e15..1fc15bf 100644
---- a/lib/swiotlb.c
-+++ b/lib/swiotlb.c
-@@ -61,8 +61,8 @@ enum dma_sync_target {
- int swiotlb_force;
- 
- /*
-- * Used to do a quick range check in unmap_single and
-- * sync_single_*, to see if the memory was in fact allocated by this
-+ * Used to do a quick range check in swiotlb_tbl_unmap_single and
-+ * swiotlb_tbl_sync_single_*, to see if the memory was in fact allocated by this
-  * API.
-  */
- static char *io_tlb_start, *io_tlb_end;
-@@ -492,7 +492,8 @@ map_single(struct device *hwdev, phys_addr_t phys, size_t size, int dir)
-  * dma_addr is the kernel virtual address of the bounce buffer to unmap.
-  */
- static void
--do_unmap_single(struct device *hwdev, char *dma_addr, size_t size, int dir)
-+swiotlb_tbl_unmap_single(struct device *hwdev, char *dma_addr, size_t size,
-+			int dir)
- {
- 	unsigned long flags;
- 	int i, count, nslots = ALIGN(size, 1 << IO_TLB_SHIFT) >> IO_TLB_SHIFT;
-@@ -532,7 +533,7 @@ do_unmap_single(struct device *hwdev, char *dma_addr, size_t size, int dir)
- }
- 
- static void
--sync_single(struct device *hwdev, char *dma_addr, size_t size,
-+swiotlb_tbl_sync_single(struct device *hwdev, char *dma_addr, size_t size,
- 	    int dir, int target)
- {
- 	int index = (dma_addr - io_tlb_start) >> IO_TLB_SHIFT;
-@@ -580,8 +581,8 @@ swiotlb_alloc_coherent(struct device *hwdev, size_t size,
- 	}
- 	if (!ret) {
- 		/*
--		 * We are either out of memory or the device can't DMA
--		 * to GFP_DMA memory; fall back on map_single(), which
-+		 * We are either out of memory or the device can't DMA to
-+		 * GFP_DMA memory; fall back on map_single(), which
- 		 * will grab memory from the lowest available address range.
- 		 */
- 		ret = map_single(hwdev, 0, size, DMA_FROM_DEVICE);
-@@ -599,7 +600,7 @@ swiotlb_alloc_coherent(struct device *hwdev, size_t size,
- 		       (unsigned long long)dev_addr);
- 
- 		/* DMA_TO_DEVICE to avoid memcpy in unmap_single */
--		do_unmap_single(hwdev, ret, size, DMA_TO_DEVICE);
-+		swiotlb_tbl_unmap_single(hwdev, ret, size, DMA_TO_DEVICE);
- 		return NULL;
- 	}
- 	*dma_handle = dev_addr;
-@@ -617,8 +618,8 @@ swiotlb_free_coherent(struct device *hwdev, size_t size, void *vaddr,
- 	if (!is_swiotlb_buffer(paddr))
- 		free_pages((unsigned long)vaddr, get_order(size));
- 	else
--		/* DMA_TO_DEVICE to avoid memcpy in unmap_single */
--		do_unmap_single(hwdev, vaddr, size, DMA_TO_DEVICE);
-+		/* DMA_TO_DEVICE to avoid memcpy in swiotlb_tbl_unmap_single */
-+		swiotlb_tbl_unmap_single(hwdev, vaddr, size, DMA_TO_DEVICE);
- }
- EXPORT_SYMBOL(swiotlb_free_coherent);
- 
-@@ -708,7 +709,7 @@ static void unmap_single(struct device *hwdev, dma_addr_t dev_addr,
- 	BUG_ON(dir == DMA_NONE);
- 
- 	if (is_swiotlb_buffer(paddr)) {
--		do_unmap_single(hwdev, phys_to_virt(paddr), size, dir);
-+		swiotlb_tbl_unmap_single(hwdev, phys_to_virt(paddr), size, dir);
- 		return;
- 	}
- 
-@@ -751,7 +752,8 @@ swiotlb_sync_single(struct device *hwdev, dma_addr_t dev_addr,
- 	BUG_ON(dir == DMA_NONE);
- 
- 	if (is_swiotlb_buffer(paddr)) {
--		sync_single(hwdev, phys_to_virt(paddr), size, dir, target);
-+		swiotlb_tbl_sync_single(hwdev, phys_to_virt(paddr), size, dir,
-+				       target);
- 		return;
- 	}
- 
--- 
-1.6.2.5
+in your -mm tree.
+
+Attached is a set of patches that separate the address translation
+(virt_to_phys, virt_to_bus, etc) and allocation of the SWIOTLB buffer
+from the SWIOTLB library.
+
+Since the last posting [v8.1] I've done:
+ - Rolled-up the last two patches in one.
+ - Rebased against linus latest. That meant dealing with swiotlb_sync_single_range_* changes.
+ - added Acked-by: Fujita Tomonori and Tested-by: Albert Herranz
+[v7-v8 changes:]
+ - Minimized the list of exported functions.
+ - Integrated Fujita's patches and changed "swiotlb_tlb" to "swiotlb_tbl" in them.
+[v6-v7 changes:]
+ - Minimized the amount of exported functions/variable with a prefix of: "swiotbl_tbl".
+ - Made the usage of 'int dir' to be 'enum dma_data_direction'.
+[v5-v6 changes:]
+ - Made the exported functions/variables have the 'swiotlb_bk' prefix.
+ - dropped the checkpatches/other reworks
+
+.. and the writeup for this set set of patches:
+
+The idea behind this set of patches is to make it possible to have separate
+mechanisms for translating virtual to physical or virtual to DMA addresses
+on platforms which need an SWIOTLB, and where physical != PCI bus address
+and also able to allocate the core IOTLB memory outside SWIOTLB.
+
+One customers of this is the pv-ops project, which can switch between
+different modes of operation depending on the environment it is running in:
+bare-metal or virtualized (Xen for now). Another is the Wii DMA - used to
+implement the MEM2 DMA facility needed by its EHCI controller (for details:
+http://lkml.org/lkml/2010/5/18/303)
+
+On bare-metal SWIOTLB is used when there are no hardware IOMMU. In virtualized
+environment it used when PCI pass-through(*1) is enabled for the guest. The problems
+with PCI pass-through is that the guest's idea of PFN's is not the real thing.
+To fix that, there is translation layer for PFN->machine frame number and vice-versa.
+To bubble that up to the SWIOTLB layer there are two possible solutions.
+
+One solution has been to wholesale copy the SWIOTLB, stick it in
+arch/x86/xen/swiotlb.c and modify the virt_to_phys, phys_to_virt and others
+to use the Xen address translation functions. Unfortunately, since the kernel can
+run on bare-metal, there would be big code overlap with the real SWIOTLB.
+(git://git.kernel.org/pub/scm/linux/kernel/git/jeremy/xen.git xen/dom0/swiotlb-new)
+
+Another approach, which this set of patches explores, is to abstract the
+address translation and address determination functions away from the
+SWIOTLB book-keeping functions. This way the core SWIOTLB library functions
+are present in one place, while the address related functions are in
+a separate library that can be loaded when running under non-bare-metal platform.
+
+The changes since commit 9dda696f0de87a2e5cfabb147e28c76b7d3c6846:
+Linus Torvalds:
+    Merge branch 'release' of git://git.kernel.org/pub/scm/linux/kernel/git/aegl/linux-2.6
+
+are as follow:
+
+FUJITA Tomonori (2):
+      swiotlb: add swiotlb_tbl_map_single library function
+      swiotlb: add the swiotlb initialization function with iotlb memory
+
+Konrad Rzeszutek Wilk (3):
+      swiotlb: Make internal bookkeeping functions have 'swiotlb_tbl' prefix.
+      swiotlb: search and replace "int dir" with "enum dma_data_direction dir"
+      swiotlb: Make swiotlb bookkeeping functions visible in the header file.
+
+ include/linux/swiotlb.h |   27 +++++++++-
+ lib/swiotlb.c           |  137 ++++++++++++++++++++++++++++-------------------
+ 2 files changed, 106 insertions(+), 58 deletions(-)
+
+
+*1: PCI passthrough:
+Haven't posted those yet. Located at:
+git://git.kernel.org/pub/scm/linux/kernel/git/konrad/xen.git pv/pcifront-2.6.34
 
