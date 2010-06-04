@@ -1,74 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753827Ab0FDQaZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jun 2010 12:30:25 -0400
-Received: from fieldses.org ([174.143.236.118]:54113 "EHLO fieldses.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750880Ab0FDQaY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jun 2010 12:30:24 -0400
-Date: Fri, 4 Jun 2010 12:30:09 -0400
-To: Jan Kara <jack@suse.cz>
-Cc: Boaz Harrosh <bharrosh@panasas.com>, Vladislav Bolkhovitin <vst@vlnb.net>,
-       "Martin K. Petersen" <martin.petersen@oracle.com>,
-       linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
-       James Bottomley <James.Bottomley@HansenPartnership.com>,
-       Christof Schmitt <christof.schmitt@de.ibm.com>,
-       lsf10-pc@lists.linuxfoundation.org, Al Viro <viro@ZenIV.linux.org.uk>,
-       linux-fsdevel@vger.kernel.org, Matthew Wilcox <willy@linux.intel.com>,
-       Ric Wheeler <rwheeler@redhat.com>, Christoph Hellwig <hch@lst.de>
-Subject: Re: [Lsf10-pc] [LFS/VM TOPIC] Stable pages while IO (was Wrong DIF
-	guard tag on ext2 write)
-Message-ID: <20100604163009.GF10153@fieldses.org>
-References: <20100531112817.GA16260@schmichrtp.mainz.de.ibm.com> <4C07D3D0.8010500@panasas.com> <20100604162332.GF3414@quack.suse.cz>
+	id S1754005Ab0FDQc3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jun 2010 12:32:29 -0400
+Received: from relay01.mx.bawue.net ([193.7.176.67]:50843 "EHLO
+	relay01.mx.bawue.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750880Ab0FDQc2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Jun 2010 12:32:28 -0400
+Date: Fri, 4 Jun 2010 18:32:18 +0200
+From: Nils Radtke <lkml@Think-Future.de>
+To: linville@tuxdriver.com
+Cc: reinette.chatre@intel.com, linux-kernel@vger.kernel.org,
+       linux-wireless@vger.kernel.org
+Subject: Re: [PATCH] iwlwifi: recalculate average tpt if not current
+Message-ID: <20100604163218.GA28003@localhost>
+Reply-To: Nils Radtke <lkml@Think-Future.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100604162332.GF3414@quack.suse.cz>
-User-Agent: Mutt/1.5.18 (2008-05-17)
-From: "J. Bruce Fields" <bfields@fieldses.org>
+X-Url: http://www.Think-Future.de
+X-Editor: Vi it! http://www.vim.org
+X-Bkp: p2mi
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 04, 2010 at 06:23:32PM +0200, Jan Kara wrote:
-> On Thu 03-06-10 19:09:52, Boaz Harrosh wrote:
-> > [Topic]
-> > How to not let pages change while in IO
+  Hi John,
+
+http://marc.info/?l=linux-wireless&m=127317062320707&w=2 :
+> > > The BUG_ON was introduced by:
+> > > commit 3110bef78cb4282c58245bc8fd6d95d9ccb19749
+> > > Author: Guy Cohen <guy.cohen@intel.com>
+> > > Date:   Tue Sep 9 10:54:54 2008 +0800
+> > > 
+> > >     iwlwifi: Added support for 3 antennas
+> > > 
+> > > ... the portion adding the BUG_ON is reverted since we are encountering the error
+> > > and BUG_ON was created with assumption that error is not encountered.
+> > > 
+> > > Signed-off-by: Reinette Chatre <reinette.chatre@intel.com>
+> > > ---
 > > 
-> > [Abstract]
-> > As seen in a long thread on the fsdvel scsi mailing lists. Lots of
-> > people have headaches and sleep less nights because individual pages
-> > can change while in IO and/or DMA. Though each one as slightly different
-> > needs, the mechanics look to be the same.
->   Hmm, I don't think it's really about "how to not let pages change" - that
-> is doable by using wait_on_page_writeback() in ->page_mkwrite and
-> ->write_begin.
-
-Will the same work for the NFS server checksumming page data in read
-replies?
-
---b.
-
-> I think the discussion is more about whether we should do it
-> or whether we should rechecksum and resubmit IO in case of checksum failure
-> as Nick proposed...
+> > I noticed this patch in your wireless-next-2.6 pull request. Since it is
+> > addressing a system hang issue, could it perhaps be included in
+> > wireless-2.6 also? I should have included the bug report reference for
+> > this purpose, sorry ... it is
+> > https://bugzilla.redhat.com/show_bug.cgi?id=588021
 > 
-> 								Honza
-> > People that care:
-> > - Mirror and RAID people that need on disk consistency.
-> > - Network storage that wants data checksum.
-> > - DIF/DIX people
-> > - ...
-> > 
-> > I for one know nothing of the subject but am a RAID person and would
-> > like a solution that does not force me to copy the complete data load.
-> > 
-> > Please lets get all the VM VFS and drivers people in one room and see
-> > if we can have a Linux solution to this problem
-> -- 
-> Jan Kara <jack@suse.cz>
-> SUSE Labs, CR
-> _______________________________________________
-> Lsf10-pc mailing list
-> Lsf10-pc@lists.linux-foundation.org
-> https://lists.linux-foundation.org/mailman/listinfo/lsf10-pc
+> I didn't send it that way because a) that code has been there for a
+> really long time; and b) the reporter couldn't reliably reproduce
+> the bug and therefore can't reliably test the fix.  While I agree
+> that the fix looks harmless, no update is zero-risk.
+> 
+> Can you reliably hit that code?  Has it been tested enough that we
+> should risk holding-up 2.6.34's release for it?
+I'm one of those _very reliably_ hitting this BUG. I can tell how 
+annoying it is. I have to backport the patch w/ every kernel release
+to be able to use the wireless link _at all_. So please consider
+it as somewhat urgent to get the patch included. 
+
+I'm still in contact w/ Reinette regularly to get those problems fixed.
+It involves physically moving around the city for testing any modification
+so this working is slowly processing as it takes every time an enormous 
+amount of time to do so. Work in (slow) progress, but it's alive..
+C.f. http://permalink.gmane.org/gmane.linux.kernel/992941
+
+BTW, https://bugzilla.redhat.com/show_bug.cgi?id=588021 this isn't fixed.
+Maybe RH did fix it. kernel.org sources haven't. This is a blocker ever 
+since.
+
+  Cheers,
+
+      Nils
+
+
