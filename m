@@ -1,88 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757125Ab0FDCNP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jun 2010 22:13:15 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:64732 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751677Ab0FDCNN (ORCPT
+	id S932167Ab0FDCNz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jun 2010 22:13:55 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:33529 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751677Ab0FDCNy convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jun 2010 22:13:13 -0400
-X-Authority-Analysis: v=1.1 cv=xm0otvE9/LjRWYlyDrHfx7zP0/MGCmNk7gQgTP1ehto= c=1 sm=0 a=PrV_ml3jdBcA:10 a=yQWWgrYGNuUA:10 a=7U3hwN5JcxgA:10 a=Q9fys5e9bTEA:10 a=gMqfjgEr1zLu/65IO0LwxA==:17 a=nJFUfH9sVRbywR1TkBcA:9 a=EVo11fOrKt8HSDK26bgA:7 a=y3IkeJKY4ymWyS5jgKVHQXdKIXMA:4 a=PUjeQqilurYA:10 a=gMqfjgEr1zLu/65IO0LwxA==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.89.75
-Subject: Re: [PATCH][GIT PULL][v2.6.35] tracing/events: Convert format
- output to seq_file
-From: Steven Rostedt <rostedt@goodmis.org>
-Reply-To: rostedt@goodmis.org
-To: Li Zefan <lizf@cn.fujitsu.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
-       Frederic Weisbecker <fweisbec@gmail.com>,
-       "Martin K. Petersen" <martin.petersen@oracle.com>,
-       Kei Tokunaga <tokunaga.keiich@jp.fujitsu.com>,
-       James Bottomley <James.Bottomley@suse.de>,
-       Tomohiro Kusumi <kusumi.tomohiro@jp.fujitsu.com>,
-       Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
-In-Reply-To: <4C0860DE.5020609@cn.fujitsu.com>
-References: <1275594103.15884.35.camel@gandalf.stny.rr.com>
-	 <4C0860DE.5020609@cn.fujitsu.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-Organization: Kihon Technologies Inc.
-Date: Thu, 03 Jun 2010 22:13:11 -0400
-Message-ID: <1275617591.15884.67.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	Thu, 3 Jun 2010 22:13:54 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=aBcjt1vZ+FJuDgmGJ6+FwpG/Ss0H35Y1DP9dMIX9Rqugc4BIXDRQH1/IBKyGS9Fgyj
+         8z5Rx/pgjEwGXvb/QnH5mo/FAiXJrPRx4Aa5qGyiosx1ObWYu9ezWYlvUyIwsOWouU+g
+         m69DX2oRi2jqMpluVO0PHqp5nfko3teFkMRsM=
+MIME-Version: 1.0
+In-Reply-To: <20100603191023.96d74346.akpm@linux-foundation.org>
+References: <201006040005.o5405Afw023296@imap1.linux-foundation.org>
+	<AANLkTilX_Fbc_pR1jtgQJsvu7RbMfgyhJYCxqV725T18@mail.gmail.com>
+	<20100603185401.1851c94e.akpm@linux-foundation.org>
+	<AANLkTikDzAHHH62Wti1D-iV7pqa6u24BDgigIYO5JZJR@mail.gmail.com>
+	<20100603191023.96d74346.akpm@linux-foundation.org>
+Date: Fri, 4 Jun 2010 10:13:52 +0800
+Message-ID: <AANLkTik5xtRYSdUGogmBBW2V3t1D42QeTnQrmkMSAXWr@mail.gmail.com>
+Subject: Re: mmotm 2010-06-03-16-36 uploaded
+From: Dave Young <hidave.darkstar@gmail.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, Len Brown <lenb@kernel.org>,
+       pm list <linux-pm@lists.linux-foundation.org>,
+       Thomas Renninger <trenn@suse.de>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2010-06-04 at 10:11 +0800, Li Zefan wrote:
-> > +static void *f_start(struct seq_file *m, loff_t *pos)
-> > +{
-> > +	loff_t l = 1;
-> > +	void *p;
-> > +
-> > +	/* Start by showing the header */
-> > +	if (!*pos) {
-> > +		(*pos)++;
-> 
-> We shoudn't increment *pos in start() handler. It's a common mistake when
-> using seqfile. 
+On Fri, Jun 4, 2010 at 10:10 AM, Andrew Morton
+<akpm@linux-foundation.org> wrote:
+> On Fri, 4 Jun 2010 10:02:57 +0800 Dave Young <hidave.darkstar@gmail.com> wrote:
+>
+>> On Fri, Jun 4, 2010 at 9:54 AM, Andrew Morton <akpm@linux-foundation.org> wrote:
+>> > On Fri, 4 Jun 2010 09:41:58 +0800 Dave Young <hidave.darkstar@gmail.com> wrote:
+>> >
+>> >> On Fri, Jun 4, 2010 at 7:36 AM, __<akpm@linux-foundation.org> wrote:
+>> >> > The mm-of-the-moment snapshot 2010-06-03-16-36 has been uploaded to
+>> >> >
+>> >> > __ http://userweb.kernel.org/~akpm/mmotm/
+>> >> >
+>> >>
+>> >> Hi, intel_idle build fails:
+>> >>
+>> >> drivers/idle/intel_idle.c: In function ___intel_idle___:
+>> >> drivers/idle/intel_idle.c:234: error: too few arguments to function ___trace_power
+>> >> _start___
+>> >> make[2]: *** [drivers/idle/intel_idle.o] Error 1
+>> >> make[1]: *** [drivers/idle] Error 2
+>> >> make[1]: *** Waiting for unfinished jobs....
+>> >>
+>> >
+>> > Caused by
+>> > x86-cpufreq-make-trace_power_frequency-cpufreq-driver-independent.patch
+>> > which changed trace_power_start().
+>> >
+>> > drivers/idle/intel_idle.c wasn't there when Thomas wrote that patch.
+>> >
+>> > this, I guess:
+>> >
+>> > --- a/drivers/idle/intel_idle.c~x86-cpufreq-make-trace_power_frequency-cpufreq-driver-independent-fix
+>> > +++ a/drivers/idle/intel_idle.c
+>> > @@ -231,7 +231,7 @@ static int intel_idle(struct cpuidle_dev
+>> >
+>> > __ __ __ __stop_critical_timings();
+>> > __#ifndef MODULE
+>> > - __ __ __ trace_power_start(POWER_CSTATE, (eax >> 4) + 1);
+>> > + __ __ __ trace_power_start(POWER_CSTATE, (eax >> 4) + 1, cpu);
+>> > __#endif
+>> > __ __ __ __if (!need_resched()) {
+>> >
+>>
+>> With one more param "cpu", fails with "too many arguments":
+>>
+>>   CC      drivers/idle/intel_idle.o
+>> drivers/idle/intel_idle.c: In function ___intel_idle___:
+>> drivers/idle/intel_idle.c:234: error: too many arguments to function
+>> ___trace_power_start___
+>> make[2]: *** [drivers/idle/intel_idle.o] Error 1
+>> make[1]: *** [drivers/idle] Error 2
+>> make[1]: *** Waiting for unfinished jobs....
+>
+> hm, It Works For Me.  I suspect you applied my patch to mainline, not
+> to -mm.
+>
 
-And a common mistake I do :-p
+oops, you are right, I applied to different tree.
 
-I'll rebase it with the fix.
+Tested, it works
 
-> 
-> What we need to do in start() is move the pointer to postion *pos.
-
-So the rest is OK then? All that is needed is the removal of *pos++ ?
-
-Thanks,
-
--- Steve
-
-> 
-> > +		return (void *)FORMAT_HEADER;
-> >  	}
-> >  
-> > -	if (r)
-> > -		r = trace_seq_printf(s, "\nprint fmt: %s\n",
-> > -				call->print_fmt);
-> > +	p = (void *)FORMAT_HEADER;
-> > +	do {
-> > +		p = f_next(m, p, &l);
-> > +	} while (p && l < *pos);
-> >  
-> > -	if (!r) {
-> > -		/*
-> > -		 * ug!  The format output is bigger than a PAGE!!
-> > -		 */
-> > -		buf = "FORMAT TOO BIG\n";
-> > -		r = simple_read_from_buffer(ubuf, cnt, ppos,
-> > -					      buf, strlen(buf));
-> > -		goto out;
-> > +	return p;
-> > +}
-
-
+-- 
+Regards
+dave
