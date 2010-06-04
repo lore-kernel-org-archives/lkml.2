@@ -1,122 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932293Ab0FDPF5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jun 2010 11:05:57 -0400
-Received: from usul.saidi.cx ([204.11.33.34]:35414 "EHLO usul.overt.org"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752354Ab0FDPF4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jun 2010 11:05:56 -0400
-Date: Fri, 4 Jun 2010 08:05:51 -0700
-From: Philip Langdale <philipl@overt.org>
-To: Maxim Levitsky <maximlevitsky@gmail.com>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>, adq_dvb@lidskialf.net,
-       "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>
-Subject: Re: [PATCH] mmc: make sdhci work with ricoh mmc controller
-Message-ID: <20100604080551.3dba90af@fido5>
-In-Reply-To: <1275646048.26010.22.camel@maxim-laptop>
-References: <1275516180.30272.4.camel@maxim-laptop>
-	<1275527787-3783-1-git-send-email-maximlevitsky@gmail.com>
-	<20100603091113.7b1d6fc0@fido5>
-	<1275582709.2563.19.camel@maxim-laptop>
-	<20100603093914.3397ac42@fido5>
-	<20100603100510.37d02c2b@fido5>
-	<1275586531.2594.3.camel@maxim-laptop>
-	<20100603214223.61325b5d@fido5>
-	<1275646048.26010.22.camel@maxim-laptop>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+	id S1756489Ab0FDPH4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jun 2010 11:07:56 -0400
+Received: from ist.d-labs.de ([213.239.218.44]:53835 "EHLO mx01.d-labs.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932163Ab0FDPHy convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Jun 2010 11:07:54 -0400
+Date: Fri, 4 Jun 2010 17:07:38 +0200
+From: Florian Mickler <florian@mickler.org>
+To: James Bottomley <James.Bottomley@suse.de>
+Cc: Ingo Molnar <mingo@elte.hu>, Brian Swetland <swetland@google.com>,
+       tytso@mit.edu, Neil Brown <neilb@suse.de>,
+       Arve Hj?nnev?g <arve@android.com>, Thomas Gleixner <tglx@linutronix.de>,
+       "Rafael J. Wysocki" <rjw@sisk.pl>,
+       Alan Stern <stern@rowland.harvard.edu>,
+       Felipe Balbi <felipe.balbi@nokia.com>,
+       Peter Zijlstra <peterz@infradead.org>,
+       LKML <linux-kernel@vger.kernel.org>,
+       Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
+       Linux PM <linux-pm@lists.linux-foundation.org>,
+       Alan Cox <alan@lxorguk.ukuu.org.uk>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: suspend blockers & Android integration
+Message-ID: <20100604170738.75c7436e@schatten.dmk.lab>
+In-Reply-To: <1275661446.4455.33.camel@mulgrave.site>
+References: <20100603193045.GA7188@elte.hu>
+	<AANLkTinsOF3wnxsruR0TvjBAQcHks4tf0ay_sM2xB_p4@mail.gmail.com>
+	<20100604075722.GA15181@elte.hu>
+	<AANLkTiksGnpL8tkcc5eScWHrGoijyZNUwZik5lXmU_TS@mail.gmail.com>
+	<20100604085513.GE15181@elte.hu>
+	<AANLkTinphtxn-8pGTYv_mBxKFMa7jU8i1yNbHrs50Vzl@mail.gmail.com>
+	<20100604095917.GA3324@elte.hu>
+	<1275661446.4455.33.camel@mulgrave.site>
+X-Mailer: Claws Mail 3.7.5 (GTK+ 2.18.9; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-SA-Do-Not-RunX1: Yes
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 04 Jun 2010 13:07:28 +0300
-Maxim Levitsky <maximlevitsky@gmail.com> wrote:
+On Fri, 04 Jun 2010 09:24:06 -0500
+James Bottomley <James.Bottomley@suse.de> wrote:
 
+> On Fri, 2010-06-04 at 11:59 +0200, Ingo Molnar wrote:
+> > Anyway, i'm not pessimistic at all: _some_ sort of scheme appears to be 
+> > crystalising out today. Everyone seems to agree now that the main usecases are 
+> > indeed useful and need handling one way or another - the rest is really just 
+> > technological discussions how to achieve the mostly-agreed-upon end goal.
+> 
+> It's still not clear to me whether everyone's revolving around to using
+> the current suspend block API because it's orthogonal to all other
+> mechanisms and is therefore separate from the kernel (and can be
+> compiled out if you don't want it).  Or whether re-expressing what the
+> android drivers want (minimum idle states and suspend block) in pm_qos
+> terms which others can use is the way to go.  I think the latter, but
+> I'd like to know what other people think (because I'm not wedded to this
+> preference).
 
-> > 
-> > On this subject:
-> > 
-> > 1) Would it make sense to have the hard-coded caps reflect the full
-> > set of caps you see on the sdhci side?
-> This would be ugly cause two driver instances would have to talk one
-> with another. A global variable will be necessary.
+I'd like to know that also. 
+I have a patch to add pm_qos_add_request_nonblock function, so it is
+possible to register an pm_qos constraint by passing preallocated
+memory to it. 
 
-Instead of doing it at runtime, we could read them offline and then
-write them in. Of course, I suspect there's some variation in
-capabilities of Ricoh parts - I know there's at least two generations
-of MMC controllers with the same PCI IDs. :-/
- 
-> 
-> > 
-> > 2) We ought to be able to set the MMC high-speed flag for this
-> > controller; I've tried it out and it works fine. The default sdhci
-> > code will never set this flag. I think it would need to an
-> > additional quirk. Pierre argued against setting it on the basis
-> > that SD high speed has slightly different timings; I haven't seen
-> > hardware where this has been an issue.
-> > 
-> > > However that suspend/resume race is tough one.
-> > > The problem seems that controller doesn't like both devices to be
-> > > poked at same time, and normally they won't, but here on resume
-> > > both are tested for a card, and this is done asynchronously by
-> > > mmc core.
-> > > 
-> > > I will get to bottom of this sooner or later (I hope).
-> > 
-> > Hmm. So, if the issue is the test, then you should be able to
-> > serialize in mmc core instead of forcing sync resume in general. An
-> > ugly way would be a quirk that says to serialize all card tests if
-> > the controller is present in the system. In practice it would be
-> > fine as systems won't have arbitrary other sdhci controllers if
-> > they have this ricoh mmc thing. But yes, it isn't clean. :-P
-> This seems to be worse that I thought.
-> The problem is that mmc controller tells that card is removed on
-> resume (after a while it reappears)
-> 
-> This brings a question though, are MMC and SD cards electrically
-> different?
-> If not them its interesting how the controller distinguishes between
-> them.
+Notifying should be possible to do from atomic contexts via
+async_schedule()?
 
-They are not. I suspect the controller pokes the card using SPI mode
-just enough to tell them apart.
- 
-> 
-> This isn't a show stopper though, cause the cards are
-> removed/reinserted anyway unless CONFIG_MMC_UNSAFE_RESUME is set.
-> The fact that this triggers system hang is another story, and sooner
-> or later will be fixed ether by some hack in mmc code or by making
-> del_gendisk not hang when userspace is frozen.
-> 
-> 
-> It not due to interleaving, because I tried binding sdhci-pci to only
-> mmc interface, and yet same problem happens.
-> 
-> Magically, if async suspend is disabled everything works, and it well
-> tested. and that despite me disabling async suspend on all 4
-> functions. (And I know that this works, and makes pm core suspend
-> them in order from 0 to 4 and synchronously.
-> I tried adding large delays to simulate delays caused by waiting for
-> other devices, but it didn't help.
-> 
-> I''l get to bottom of this.
+The scalability issues of pm_qos can be adressed by using plists for
+all pm_qos_class'es. Or by having the different pm_qos_class'es provide
+their own implementations for the update and get operations. 
 
-I'm not familiar with what pm core allows but can you tell it to
-serialise the functions but still handle the device asynchronously?
-That would still allow the maximum possible asynchrony.
+Cheers,
+Flo
 
 > 
+> James
 > 
-> > 
-> > --phil
-> 
-> 
-> 
-
-
-
-
---phil
