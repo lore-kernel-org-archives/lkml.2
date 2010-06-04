@@ -1,223 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756010Ab0FDNnS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jun 2010 09:43:18 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:49697 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754168Ab0FDNnP (ORCPT
+	id S932098Ab0FDNpi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jun 2010 09:45:38 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:51701 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755573Ab0FDNpf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jun 2010 09:43:15 -0400
+	Fri, 4 Jun 2010 09:45:35 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=message-id:date:from:to:cc:subject;
-        b=aS9dzqU4H889J4l2yeAKlWIUEvUKmyIvwyEkia9BbRvg6QQTCBZm+TXYzxPLVM9zHE
-         jT8fY0wTwmTog2iY5bXze5loyGcIWPrsQB+AwOudRiEAUfvPjNw3dEbt+e5qSpe9FZWF
-         1QY6Bsvfmc4ZqJYty44d1Cog1UIEQgzEU5Jsg=
-Message-ID: <4c0902ef.0a41df0a.6c86.2df0@mx.google.com>
-Date: Fri, 04 Jun 2010 16:43:27 +0300
-From: Dmytro Milinevskyy <milinevskyy@gmail.com>
-To: ath5k-devel@venema.h4ckr.net
-Cc: Jiri Slaby <jirislaby@gmail.com>, Nick Kossifidis <mickflemm@gmail.com>,
-       "Luis R. Rodriguez" <lrodriguez@atheros.com>,
-       Bob Copeland <me@bobcopeland.com>,
-       "John W. Linville" <linville@tuxdriver.com>,
-       GeunSik Lim <geunsik.lim@samsung.com>,
-       Greg Kroah-Hartman <gregkh@suse.de>, Lukas Turek <8an@praha12.net>,
-       Mark Hindley <mark@hindley.org.uk>,
-       Johannes Berg <johannes@sipsolutions.net>,
-       Jiri Kosina <jkosina@suse.cz>, Kalle Valo <kalle.valo@iki.fi>,
-       Keng-Yu Lin <keng-yu.lin@canonical.com>,
-       Luca Verdesca <magooz@salug.it>, Shahar Or <shahar@shahar-or.co.il>,
-       linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
-       linux-kernel@vger.kernel.org
-Subject: [PATCH] [ath5k][leds] Ability to disable leds support. If leds support enabled do not force mac802.11 leds layer selection.
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=WUQeqm7u3gSD3DAe7083eBgLj/3ht+D4aeb2xMJZ1EZO8dN5TgQSXcVwVy6P7Z82hz
+         S9eL4MunseoWfFoHNAc8+Ui4wlEgYovUPhINcAWrifvkKneFTzpa8shlPTe1P4Muf6dS
+         b6pjz3d7RRAjiNUd2JLaF76VxKg3KAOnYUKdk=
+Date: Fri, 4 Jun 2010 22:45:24 +0900
+From: Minchan Kim <minchan.kim@gmail.com>
+To: Nitin Gupta <ngupta@vflare.org>
+Cc: Dan Magenheimer <dan.magenheimer@oracle.com>, andreas.dilger@oracle.com,
+       chris.mason@oracle.com, viro@zeniv.linux.org.uk,
+       akpm@linux-foundation.org, adilger@sun.com, tytso@mit.edu,
+       mfasheh@suse.com, joel.becker@oracle.com, matthew@wil.cx,
+       linux-btrfs@vger.kernel.org, linux-kernel@vger.kernel.org,
+       linux-fsdevel@vger.kernel.org, linux-ext4@vger.kernel.org,
+       ocfs2-devel@oss.oracle.com, linux-mm@kvack.org, jeremy@goop.org,
+       JBeulich@novell.com, kurt.hackel@oracle.com, npiggin@suse.de,
+       dave.mccracken@oracle.com, riel@redhat.com, avi@redhat.com,
+       konrad.wilk@oracle.com
+Subject: Re: [PATCH V2 0/7] Cleancache (was Transcendent Memory): overview
+Message-ID: <20100604134524.GD1879@barrios-desktop>
+References: <20100528173510.GA12166%ca-server1.us.oracle.comAANLkTilV-4_QaNq5O0WSplDx1Oq7JvkgVrEiR1rgf1up@mail.gmail.com>
+ <489aa002-6d42-4dd5-bb66-81c665f8cdd1@default>
+ <4C07179F.5080106@vflare.org>
+ <3721BEE2-DF2D-452A-8F01-E690E32C6B33@oracle.com4C074ACE.9020704@vflare.org>
+ <6e97a82a-c754-493e-bbf5-58f0bb6a18b5@default>
+ <4C08C931.3080306@vflare.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4C08C931.3080306@vflare.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
+Hi, Nitin. 
 
-Here is the patch to disable ath5k leds support on build stage.
-However if the leds support was enabled do not force selection of 802.11 leds layer.
-Depency on LEDS_CLASS is kept.
+I am happy to hear you started this work. 
 
-Suggestion given by Pavel Roskin and Bob Copeland applied.
+On Fri, Jun 04, 2010 at 03:06:49PM +0530, Nitin Gupta wrote:
+> On 06/03/2010 09:13 PM, Dan Magenheimer wrote:
+> >> On 06/03/2010 10:23 AM, Andreas Dilger wrote:
+> >>> On 2010-06-02, at 20:46, Nitin Gupta wrote:
+> >>
+> >>> I was thinking it would be quite clever to do compression in, say,
+> >>> 64kB or 128kB chunks in a mapping (to get decent compression) and
+> >>> then write these compressed chunks directly from the page cache
+> >>> to disk in btrfs and/or a revived compressed ext4.
+> >>
+> >> Batching of pages to get good compression ratio seems doable.
+> > 
+> > Is there evidence that batching a set of random individual 4K
+> > pages will have a significantly better compression ratio than
+> > compressing the pages separately?  I certainly understand that
+> > if the pages are from the same file, compression is likely to
+> > be better, but pages evicted from the page cache (which is
+> > the source for all cleancache_puts) are likely to be quite a
+> > bit more random than that, aren't they?
+> > 
+> 
+> 
+> Batching of pages from random files may not be so effective but
+> it would be interesting to collect some data for this. Still,
+> per-inode batching of pages seems doable and this should help
+> us get over this problem.
 
-Regards,
+1)
+Please, consider system memory pressure case. 
+In such case, we have to release compressed cache pages. 
+Or it would be better to discard not-good-compression pages 
+when you compress it. 
 
---Dima
+2)
+This work is related to page reclaiming.
+Page reclaiming is to make free memory. 
+But this work might free memory little than old. 
+I admit your concept is good in terms of I/O cost. 
+But we might discard more clean pages than old if you want to 
+do batching of pages for good compression.
 
----
- drivers/net/wireless/ath/ath5k/Kconfig  |   12 +++++++++---
- drivers/net/wireless/ath/ath5k/Makefile |    2 +-
- drivers/net/wireless/ath/ath5k/ath5k.h  |   22 ++++++++++++++++++++++
- drivers/net/wireless/ath/ath5k/base.h   |   13 +++++++++----
- drivers/net/wireless/ath/ath5k/gpio.c   |    2 ++
- 5 files changed, 43 insertions(+), 8 deletions(-)
+3)
+testcase. 
 
-diff --git a/drivers/net/wireless/ath/ath5k/Kconfig b/drivers/net/wireless/ath/ath5k/Kconfig
-index eb83b7b..29f4572 100644
---- a/drivers/net/wireless/ath/ath5k/Kconfig
-+++ b/drivers/net/wireless/ath/ath5k/Kconfig
-@@ -1,9 +1,6 @@
- config ATH5K
- 	tristate "Atheros 5xxx wireless cards support"
- 	depends on PCI && MAC80211
--	select MAC80211_LEDS
--	select LEDS_CLASS
--	select NEW_LEDS
- 	---help---
- 	  This module adds support for wireless adapters based on
- 	  Atheros 5xxx chipset.
-@@ -18,6 +15,15 @@ config ATH5K
- 	  If you choose to build a module, it'll be called ath5k. Say M if
- 	  unsure.
- 
-+
-+config ATH5K_LEDS
-+	tristate "Atheros 5xxx wireless cards LEDs support"
-+	depends on ATH5K
-+	select NEW_LEDS
-+	select LEDS_CLASS
-+	---help---
-+	  Atheros 5xxx LED support.
-+
- config ATH5K_DEBUG
- 	bool "Atheros 5xxx debugging"
- 	depends on ATH5K
-diff --git a/drivers/net/wireless/ath/ath5k/Makefile b/drivers/net/wireless/ath/ath5k/Makefile
-index cc09595..6d552dd 100644
---- a/drivers/net/wireless/ath/ath5k/Makefile
-+++ b/drivers/net/wireless/ath/ath5k/Makefile
-@@ -10,8 +10,8 @@ ath5k-y				+= phy.o
- ath5k-y				+= reset.o
- ath5k-y				+= attach.o
- ath5k-y				+= base.o
--ath5k-y				+= led.o
- ath5k-y				+= rfkill.o
- ath5k-y				+= ani.o
- ath5k-$(CONFIG_ATH5K_DEBUG)	+= debug.o
-+ath5k-$(CONFIG_ATH5K_LEDS) += led.o
- obj-$(CONFIG_ATH5K)		+= ath5k.o
-diff --git a/drivers/net/wireless/ath/ath5k/ath5k.h b/drivers/net/wireless/ath/ath5k/ath5k.h
-index 2785946..bb7e09a 100644
---- a/drivers/net/wireless/ath/ath5k/ath5k.h
-+++ b/drivers/net/wireless/ath/ath5k/ath5k.h
-@@ -1148,11 +1148,27 @@ struct ath5k_hw {
- int ath5k_hw_attach(struct ath5k_softc *sc);
- void ath5k_hw_detach(struct ath5k_hw *ah);
- 
-+#ifdef CONFIG_ATH5K_LEDS
- /* LED functions */
- int ath5k_init_leds(struct ath5k_softc *sc);
- void ath5k_led_enable(struct ath5k_softc *sc);
- void ath5k_led_off(struct ath5k_softc *sc);
- void ath5k_unregister_leds(struct ath5k_softc *sc);
-+#else
-+static inline int ath5k_init_leds(struct ath5k_softc *sc)
-+{
-+	return 0;
-+}
-+static inline void ath5k_led_enable(struct ath5k_softc *sc)
-+{
-+}
-+static inline void ath5k_led_off(struct ath5k_softc *sc)
-+{
-+}
-+static inline void ath5k_unregister_leds(struct ath5k_softc *sc)
-+{
-+}
-+#endif
- 
- /* Reset Functions */
- int ath5k_hw_nic_wakeup(struct ath5k_hw *ah, int flags, bool initial);
-@@ -1233,7 +1249,13 @@ int ath5k_hw_set_slot_time(struct ath5k_hw *ah, unsigned int slot_time);
- int ath5k_hw_init_desc_functions(struct ath5k_hw *ah);
- 
- /* GPIO Functions */
-+#ifdef CONFIG_ATH5K_LEDS
- void ath5k_hw_set_ledstate(struct ath5k_hw *ah, unsigned int state);
-+#else
-+static inline void ath5k_hw_set_ledstate(struct ath5k_hw *ah, unsigned int state)
-+{
-+}
-+#endif
- int ath5k_hw_set_gpio_input(struct ath5k_hw *ah, u32 gpio);
- int ath5k_hw_set_gpio_output(struct ath5k_hw *ah, u32 gpio);
- u32 ath5k_hw_get_gpio(struct ath5k_hw *ah, u32 gpio);
-diff --git a/drivers/net/wireless/ath/ath5k/base.h b/drivers/net/wireless/ath/ath5k/base.h
-index 56221bc..97b26c1 100644
---- a/drivers/net/wireless/ath/ath5k/base.h
-+++ b/drivers/net/wireless/ath/ath5k/base.h
-@@ -86,6 +86,7 @@ struct ath5k_txq {
- 
- #define ATH5K_LED_MAX_NAME_LEN 31
- 
-+#ifdef CONFIG_ATH5K_LEDS
- /*
-  * State for LED triggers
-  */
-@@ -95,6 +96,7 @@ struct ath5k_led
- 	struct ath5k_softc *sc;			/* driver state */
- 	struct led_classdev led_dev;		/* led classdev */
- };
-+#endif
- 
- /* Rfkill */
- struct ath5k_rfkill {
-@@ -186,9 +188,6 @@ struct ath5k_softc {
- 
- 	u8			bssidmask[ETH_ALEN];
- 
--	unsigned int		led_pin,	/* GPIO pin for driving LED */
--				led_on;		/* pin setting for LED on */
--
- 	struct tasklet_struct	restq;		/* reset tasklet */
- 
- 	unsigned int		rxbufsize;	/* rx size based on mtu */
-@@ -196,7 +195,6 @@ struct ath5k_softc {
- 	spinlock_t		rxbuflock;
- 	u32			*rxlink;	/* link ptr in last RX desc */
- 	struct tasklet_struct	rxtq;		/* rx intr tasklet */
--	struct ath5k_led	rx_led;		/* rx led */
- 
- 	struct list_head	txbuf;		/* transmit buffer */
- 	spinlock_t		txbuflock;
-@@ -204,7 +202,14 @@ struct ath5k_softc {
- 	struct ath5k_txq	txqs[AR5K_NUM_TX_QUEUES];	/* tx queues */
- 	struct ath5k_txq	*txq;		/* main tx queue */
- 	struct tasklet_struct	txtq;		/* tx intr tasklet */
-+
-+
-+#ifdef CONFIG_ATH5K_LEDS
-+	unsigned int		led_pin,	/* GPIO pin for driving LED */
-+				led_on;		/* pin setting for LED on */
-+	struct ath5k_led	rx_led;		/* rx led */
- 	struct ath5k_led	tx_led;		/* tx led */
-+#endif
- 
- 	struct ath5k_rfkill	rf_kill;
- 
-diff --git a/drivers/net/wireless/ath/ath5k/gpio.c b/drivers/net/wireless/ath/ath5k/gpio.c
-index 64a27e7..9e757b3 100644
---- a/drivers/net/wireless/ath/ath5k/gpio.c
-+++ b/drivers/net/wireless/ath/ath5k/gpio.c
-@@ -25,6 +25,7 @@
- #include "debug.h"
- #include "base.h"
- 
-+#ifdef CONFIG_ATH5K_LEDS
- /*
-  * Set led state
-  */
-@@ -76,6 +77,7 @@ void ath5k_hw_set_ledstate(struct ath5k_hw *ah, unsigned int state)
- 	else
- 		AR5K_REG_ENABLE_BITS(ah, AR5K_PCICFG, led_5210);
- }
-+#endif
- 
- /*
-  * Set GPIO inputs
+As I mentioned, it could be good in terms of I/O cost. 
+But it could change system's behavior due to page consumption of backend. 
+so many page scanning/reclaiming could be happen. 
+It means hot pages can be discarded with this patch.
+But it's a just guessing. 
+So we need number with testcase we can measure I/O and system 
+responsivness. 
+
+> 
+> Thanks,
+> Nitin
+
 -- 
-1.7.1
-
+Kind regards,
+Minchan Kim
