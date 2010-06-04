@@ -1,59 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932317Ab0FDOu2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jun 2010 10:50:28 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:57013 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1756153Ab0FDOu1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jun 2010 10:50:27 -0400
-Date: Fri, 4 Jun 2010 10:50:26 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Ingo Molnar <mingo@elte.hu>
-cc: tytso@mit.edu, Brian Swetland <swetland@google.com>,
-       Neil Brown <neilb@suse.de>, Arve Hj?nnev?g <arve@android.com>,
-       Thomas Gleixner <tglx@linutronix.de>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-       Felipe Balbi <felipe.balbi@nokia.com>,
-       Peter Zijlstra <peterz@infradead.org>,
-       LKML <linux-kernel@vger.kernel.org>,
-       Florian Mickler <florian@mickler.org>,
-       Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
-       Linux PM <linux-pm@lists.linux-foundation.org>,
-       Alan Cox <alan@lxorguk.ukuu.org.uk>,
-       James Bottomley <James.Bottomley@suse.de>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       Kevin Hilman <khilman@deeprootsystems.com>,
-       "H. Peter Anvin" <hpa@zytor.com>,
-       Arjan van de Ven <arjan@infradead.org>
-Subject: Re: suspend blockers & Android integration
-In-Reply-To: <20100604003934.GA5221@elte.hu>
-Message-ID: <Pine.LNX.4.44L0.1006041042410.1794-100000@iolanthe.rowland.org>
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S932266Ab0FDOxh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jun 2010 10:53:37 -0400
+Received: from e6.ny.us.ibm.com ([32.97.182.146]:34743 "EHLO e6.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755586Ab0FDOxf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Jun 2010 10:53:35 -0400
+Subject: Re: [PATCH 04/14] evm: re-release
+From: Mimi Zohar <zohar@linux.vnet.ibm.com>
+To: Stephen Smalley <sds@tycho.nsa.gov>
+Cc: linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
+       James Morris <jmorris@namei.org>,
+       David Safford <safford@watson.ibm.com>,
+       Dave Hansen <dave@linux.vnet.ibm.com>, Mimi Zohar <zohar@us.ibm.com>
+In-Reply-To: <1275661730.21231.32.camel@moss-pluto.epoch.ncsc.mil>
+References: <1271886594-3719-1-git-send-email-zohar@linux.vnet.ibm.com>
+	 <1271886594-3719-5-git-send-email-zohar@linux.vnet.ibm.com>
+	 <1275661730.21231.32.camel@moss-pluto.epoch.ncsc.mil>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 04 Jun 2010 10:53:32 -0400
+Message-ID: <1275663212.3205.12.camel@localhost.localdomain>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 4 Jun 2010, Ingo Molnar wrote:
-
-> Note that this does not necessarily have to be implemented as 'execute suspend 
-> from the idle task' code: scheduling from the idle task, while can certainly 
-> be made to work, is a somewhat recursive concept that we might want to avoid 
-> for robustness reasons.
+On Fri, 2010-06-04 at 10:28 -0400, Stephen Smalley wrote:
+> On Wed, 2010-04-21 at 17:49 -0400, Mimi Zohar wrote:
+> > EVM protects a file's security extended attributes against integrity
+> > attacks. It maintains an HMAC-sha1 value across the extended attributes,
+> > storing the value as the extended attribute 'security.evm'. EVM has gone
+> > through a number of iterations, initially as an LSM module, subsequently
+> > as a LIM integrity provider, and now, when co-located with a security_
+> > hook, embedded directly in the security_ hook, similar to IMA.
+> > 
+> > This is the first part of a local file integrity verification system.
+> > While this part does authenticate the selected extended attributes, and
+> > cryptographically bind them to the inode, coming extensions will bind
+> > other directory and inode metadata for more complete protection.  The
+> > set of protected security extended attributes is configured at compile.
+> > 
+> > EVM depends on the Kernel Key Retention System to provide it with the
+> > kernel master key for the HMAC operation.  The kernel master key is
+> > securely loaded onto the root's keyring, typically by 'loadkernkey',
+> > which either uses the TPM sealed secret key, if available, or a
+> > password requested from the console.  To signal EVM, that the key has
+> > been loaded onto the keyring, 'echo 1 > <securityfs>/evm'. This is
+> > normally done in the initrd, which has already been measured as part
+> > of the trusted boot. (Refer to http://linux-ima.sourceforge.net/#EVM.)
 > 
-> Instead, the 'deepest idle' (suspend) method could consist of a wakeup of a 
-> kernel thread (or of any of the existing kernel threads such as the migration 
-> thread) - which kernel thread then does a race-free suspend: it offlines all 
-> but one CPU [on platforms that need that] and then initiates the suspend - but 
-> aborts the attempt if there's any sign of wakeup activity.
+> I don't remember this dependency on the kernel key system in prior
+> incarnations of EVM.  Can you explain the rationale for using it, and
+> the implications?
 
-Out of morbid curiosity...  A typical sign of wakeup activity is a
-thread becoming runnable because of expiration of a kernel timer or an
-I/O completion interrupt.  How would the "race-free suspend" thread
-detect this sort of thing?  Indeed, isn't the inability to detect these 
-part of what makes the existing suspend implementation (the freezer in 
-particular) not race-free?
+This changed very early on, so that people without a TPM could 'play'
+with it.
 
-Alan Stern
+Mimi
+
 
