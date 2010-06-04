@@ -1,89 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752077Ab0FDTLh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jun 2010 15:11:37 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:56430 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751672Ab0FDTLg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jun 2010 15:11:36 -0400
-Date: Fri, 4 Jun 2010 12:10:41 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Nitin Gupta <ngupta@vflare.org>
-Cc: Greg KH <greg@kroah.com>, Pekka Enberg <penberg@cs.helsinki.fi>,
-       Minchan Kim <minchan.kim@gmail.com>, Ed Tomlinson <edt@aei.ca>,
-       Hugh Dickins <hugh.dickins@tiscali.co.uk>, Cyp <cyp561@gmail.com>,
-       driverdev <devel@driverdev.osuosl.org>,
-       linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 1/4] Support generic I/O requests
-Message-Id: <20100604121041.1b88b0af.akpm@linux-foundation.org>
-In-Reply-To: <1275379286-10453-2-git-send-email-ngupta@vflare.org>
-References: <1275379286-10453-1-git-send-email-ngupta@vflare.org>
-	<1275379286-10453-2-git-send-email-ngupta@vflare.org>
-X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1752264Ab0FDTP1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jun 2010 15:15:27 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:6599 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751672Ab0FDTPZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Jun 2010 15:15:25 -0400
+Date: Fri, 4 Jun 2010 21:13:08 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Henrik Rydberg <rydberg@bitmath.org>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, linux-input@vger.kernel.org,
+       linux-kernel@vger.kernel.org, Jiri Kosina <jkosina@suse.cz>,
+       Mika Kuoppala <mika.kuoppala@nokia.com>,
+       Benjamin Tissoires <tissoire@cena.fr>, Rafi Rubin <rafi@seas.upenn.edu>
+Subject: Re: [PATCH 1/4] input: Introduce buflock, a one-to-many circular
+	buffer mechanism
+Message-ID: <20100604191308.GA10942@redhat.com>
+References: <1275552062-8153-1-git-send-email-rydberg@euromail.se> <1275552062-8153-2-git-send-email-rydberg@euromail.se> <20100604065658.GE21239@core.coreip.homeip.net> <4C08BCB5.7020201@bitmath.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4C08BCB5.7020201@bitmath.org>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue,  1 Jun 2010 13:31:23 +0530
-Nitin Gupta <ngupta@vflare.org> wrote:
+On 06/04, Henrik Rydberg wrote:
+>
+> additional eyes would be very helpful
 
-> Currently, ramzwap devices (/dev/ramzswapX) can only
-> be used as swap disks since it was hard-coded to consider
-> only the first request in bio vector.
-> 
-> Now, we iterate over all the segments in an incoming
-> bio which allows us to handle all kinds of I/O requests.
-> 
-> ramzswap devices can still handle PAGE_SIZE aligned and
-> multiple of PAGE_SIZE sized I/O requests only. To ensure
-> that we get always get such requests only, we set following
-> request_queue attributes to PAGE_SIZE:
->  - physical_block_size
->  - logical_block_size
->  - io_min
->  - io_opt
-> 
-> Note: physical and logical block sizes were already set
-> equal to PAGE_SIZE and that seems to be sufficient to get
-> PAGE_SIZE aligned I/O.
-> 
-> Since we are no longer limited to handling swap requests
-> only, the next few patches rename ramzswap to zram. So,
-> the devices will then be called /dev/zram{0, 1, 2, ...}
+I am puzzled. I don't understand what this patch does at all ;)
 
-Thanks for doing this - I think it's for the best..
+Could you please provide a simple example or answer my questions?
 
-> Usage/Examples:
->  1) Use as /tmp storage
->  - mkfs.ext4 /dev/zram0
->  - mount /dev/zram0 /tmp
+> >> + * During normal operation, with adequate buffer size, this method will not
+> >> + * block, regardless of the number of concurrent readers.
 
-hm, how does that work?  The "device" will only handle page-sized and
-page-aligned requests, won't it?  Can you walk us through what happens
-when the fs does a 512-byte I/O?
+I don't understand this "regardless of the number of concurrent" comment.
+buflock_read(br) modifies br.tail, it can't be used lockless.
 
->  - Double caching: We can potentially waste memory by having
-> two copies of a page -- one in page cache (uncompress) and
-> second in the device memory (compressed). However, during
-> reclaim, clean page cache pages are quickly freed, so this
-> does not seem to be a big problem.
+Or, do you mean that every reader should use its own buflock_reader?
 
-Yes, clean pagecache is cheap.  But what happens when the pagecache
-copy of the page gets modified?
+If yes. Afaics, we have one buflock_writer, and one buf "connected"
+to this buflock_writer. In that case I don't understand why this
+buf doesn't live in "struct buflock_writer", it can be char[].
+This way both read/write macros do not need buf and size args.
+typeof(item) could be used for read/write into this buf.
 
-Or is it the case that once a compressed page gets copied out to
-pagecache, the compressed version is never used again?  If so, the
-memory could be synchronously freed, so I guess I don't understand what
-you mean here.
+But still I can't understand how this all works.
 
->  - Stale data: Not all filesystems support issuing 'discard'
-> requests to underlying block devices. So, if such filesystems
-> are used over zram devices, we can accumulate lot of stale
-> data in memory. Even for filesystems to do support discard
-> (example, ext4), we need to see how effective it is.
+> >> +#define buflock_read(br, bw, buf, size, item)			\
+> >> +	do {								\
+> >> +		unsigned int _h, _nh;					\
+> >> +		do {							\
+> >> +			_h = bw.head;					\
+> >> +			smp_rmb();					\
+> >> +			item = buf[br.tail];				\
+> >> +			smp_rmb();					\
+> >> +			_nh = bw.next_head;				\
+> >> +			smp_rmb();					\
+> >> +		} while (unlikely(br.tail - _h < _nh - _h));		\
+> >> +		br.tail = (br.tail + 1) & ((size) - 1);			\
+> >> +	} while (0)
 
-Can you walk us through how zram uses discard requests?
+How can the reader know there is something new/valid in buf it
+can read?
+
+I guess it should call buflock_sync_reader() at least once, to
+"attach" to the writer/buf, and then check buflock_reader_empty() ?
+
+But. If the reader calls buflock_read() constantly, sooner or
+later buflock_reader_empty() becomes T again.
+
+Probably the reader should call buflock_sync_reader() + check
+buflock_reader_empty() == F every time before buflock_read() ?
+
+In this case I do not understand why do we have 2 separate
+helpers, and why do we need buflock_reader->head.
+
+Perhaps it is writer who calls buflock_sync_reader() and tells
+the reader it has the new data? In this case I do not understand
+the "feeding many readers" part.
+
+
+
+And in any case I do not understand which guarantees this API
+provides.
+
+Whatever we do, buflock_read() can race with the writer and read
+the invalid item.
+
+Suppose that buflock_read(br, item) gets the preemption "inside" of
+item = buf[br.tail] asignment.
+
+The writer calls buflock_write() SIZE times.
+
+The reader resumes, continues its memcpy() operation, and suceeds.
+
+But the "item" it returns is not consistent, it is neither the old
+value nor the new.
+
+No?
+
+Oleg.
+
