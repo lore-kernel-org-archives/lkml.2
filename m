@@ -1,56 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754886Ab0FDQhG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jun 2010 12:37:06 -0400
-Received: from csmtp1.one.com ([195.47.247.21]:32811 "EHLO csmtp1.one.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754660Ab0FDQhC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jun 2010 12:37:02 -0400
-Message-ID: <4C092BA7.507@bitmath.org>
-Date: Fri, 04 Jun 2010 18:36:55 +0200
-From: Henrik Rydberg <rydberg@bitmath.org>
-User-Agent: Thunderbird 2.0.0.24 (X11/20100411)
-MIME-Version: 1.0
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-CC: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-       Jiri Kosina <jkosina@suse.cz>, Mika Kuoppala <mika.kuoppala@nokia.com>,
-       Benjamin Tissoires <tissoire@cena.fr>, Rafi Rubin <rafi@seas.upenn.edu>,
-       Oleg Nesterov <oleg@redhat.com>
-Subject: Re: [PATCH 1/4] input: Introduce buflock, a one-to-many circular
- buffer mechanism
-References: <1275552062-8153-1-git-send-email-rydberg@euromail.se> <1275552062-8153-2-git-send-email-rydberg@euromail.se> <20100604065658.GE21239@core.coreip.homeip.net>
-In-Reply-To: <20100604065658.GE21239@core.coreip.homeip.net>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1754618Ab0FDQmb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jun 2010 12:42:31 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:29875 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753913Ab0FDQma (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Jun 2010 12:42:30 -0400
+Date: Fri, 4 Jun 2010 09:41:37 -0700
+From: Randy Dunlap <randy.dunlap@oracle.com>
+To: linux-kernel@vger.kernel.org
+Cc: akpm@linux-foundation.org, Mike Miller <mike.miller@hp.com>
+Subject: [PATCH -mmotm] cciss: fix build for CONFIG_PROC_FS=n
+Message-Id: <20100604094137.0702daa1.randy.dunlap@oracle.com>
+In-Reply-To: <201006040005.o5405Afw023296@imap1.linux-foundation.org>
+References: <201006040005.o5405Afw023296@imap1.linux-foundation.org>
+Organization: Oracle Linux Eng.
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
+X-Auth-Type: Internal IP
+X-Source-IP: acsinet15.oracle.com [141.146.126.227]
+X-CT-RefId: str=0001.0A090201.4C092CEA.014D:SCFMA922111,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->> +#define buflock_write(bw, buf, size, item)				\
->> +	do {								\
->> +		bw.next_head = (bw.head + 1) & ((size) - 1);		\
->> +		smp_wmb();						\
-> 
-> Why do we need the write barrier here?
+From: Randy Dunlap <randy.dunlap@oracle.com>
 
-I believe my first answer to this question was foggy indeed, so allow me to go
-again, with a time line:
+Fix build for CONFIG_PROC_FS not enabled; fixes this build error:
+drivers/block/cciss.c:3422: error: implicit declaration of function 'next_command'
 
-Scenario 1, correct write order:
+Looks like the next_command() function was added at a bad location
+in cciss-add-performant-mode-support-for-stars-sirius.patch.
 
-writer              store_next_head   store_buf        store_head
-reader  load_head   load_buf       load_next_head
+Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
+Cc: Mike Miller <mike.miller@hp.com>
+---
+ drivers/block/cciss.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-Result: head != next_head, incoherent read detected
-
-Scenario 2, incorrect write order:
-
-writer              store_buf         store_next_head  store_head
-reader  load_head   load_buf       load_next_head
-
-Result: head == next_head, incoherent read not detected
-
-Based on the assumption that scenario 2 could happen if the smp_wmb() is not
-present, the barrier is needed.
-
-Henrik
+--- mmotm-2010-0603-1636.orig/drivers/block/cciss.c
++++ mmotm-2010-0603-1636/drivers/block/cciss.c
+@@ -372,8 +372,6 @@ static const char *raid_label[] = { "0",
+ };
+ #define RAID_UNKNOWN (sizeof(raid_label) / sizeof(raid_label[0])-1)
+ 
+-#ifdef CONFIG_PROC_FS
+-
+ static inline u32 next_command(ctlr_info_t *h)
+ {
+ 	u32 a;
+@@ -396,6 +394,8 @@ static inline u32 next_command(ctlr_info
+ 	return a;
+ }
+ 
++#ifdef CONFIG_PROC_FS
++
+ /*
+  * Report information about this controller.
+  */
