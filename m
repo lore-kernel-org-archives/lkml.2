@@ -1,40 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756602Ab0FDPLE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jun 2010 11:11:04 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:58777 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756399Ab0FDPLC (ORCPT
+	id S1756639Ab0FDPMV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jun 2010 11:12:21 -0400
+Received: from mail.elliptictech.com ([209.217.122.41]:59838 "EHLO
+	emergent.ellipticsemi.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1756325Ab0FDPMU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jun 2010 11:11:02 -0400
-Date: Fri, 4 Jun 2010 11:10:57 -0400
-From: Christoph Hellwig <hch@infradead.org>
-To: Nick Piggin <npiggin@suse.de>
-Cc: Christoph Hellwig <hch@infradead.org>, Al Viro <viro@ZenIV.linux.org.uk>,
-       linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-       Frank Mayhar <fmayhar@google.com>, John Stultz <johnstul@us.ibm.com>,
-       Andi Kleen <ak@linux.intel.com>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
-       "Eric W. Biederman" <ebiederm@xmission.com>,
-       Greg Kroah-Hartman <gregkh@suse.de>
-Subject: Re: [patch 1/4] fs: cleanup files_lock
-Message-ID: <20100604151057.GA11991@infradead.org>
-References: <20100604064307.737085373@suse.de> <20100604072618.227745945@suse.de> <20100604083818.GA9987@infradead.org> <20100604142052.GD26335@laptop>
+	Fri, 4 Jun 2010 11:12:20 -0400
+Date: Fri, 4 Jun 2010 11:12:03 -0400
+From: Nick Bowler <nbowler@elliptictech.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Andreas Mohr <andi@lisas.de>, Andrew Morton <akpm@linux-foundation.org>,
+       Alan Cox <alan@lxorguk.ukuu.org.uk>, linux-kernel@vger.kernel.org
+Subject: Re: floppy driver assumes INITIAL_JIFFIES == 0
+Message-ID: <20100604151203.GA19468@elliptictech.com>
+Mail-Followup-To: Linus Torvalds <torvalds@linux-foundation.org>,
+	Andreas Mohr <andi@lisas.de>,
+	Andrew Morton <akpm@linux-foundation.org>,
+	Alan Cox <alan@lxorguk.ukuu.org.uk>, linux-kernel@vger.kernel.org
+References: <20100603223259.GA4085@rhlx01.hs-esslingen.de>
+ <alpine.LFD.2.00.1006031535570.8175@i5.linux-foundation.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100604142052.GD26335@laptop>
-User-Agent: Mutt/1.5.19 (2009-01-05)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+In-Reply-To: <alpine.LFD.2.00.1006031535570.8175@i5.linux-foundation.org>
+Organization: Elliptic Technologies Inc.
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jun 05, 2010 at 12:20:52AM +1000, Nick Piggin wrote:
-> Well it is already a special case, I just switched it to using a
-> different lock for its private list. I wanted to keep surgery to
-> a minimum.
+On 15:40 Thu 03 Jun     , Linus Torvalds wrote:
+> Although one comment says it all:
+> 
+> 	Cons: I ordered 5. After 45 days 3 of them have failed. Too late to return.
+> 
+> so apparently you do need to order a lot of them to keep them going ;)
 
-You make it even more special.  Really, the right thing here is to
-fix that hack for real.
+I actually still have a real floppy drive in my primary desktop.  Bought
+it new in 2001, and it still worked when I used it (once!) in fall 2008.
 
+That being said, it would have been quite frustrating if Linux oopsed
+when I tried to use this piece of hardware.  It was frustrating enough
+to even find a single disk to put in it :).
+
+-- 
+Nick Bowler, Elliptic Technologies (http://www.elliptictech.com/)
