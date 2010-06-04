@@ -1,199 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755299Ab0FDJ41 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jun 2010 05:56:27 -0400
-Received: from mgw2.diku.dk ([130.225.96.92]:50564 "EHLO mgw2.diku.dk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754092Ab0FDJ4Z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jun 2010 05:56:25 -0400
-From: Nicolas Palix <npalix@diku.dk>
-To: Sam Ravnborg <sam@ravnborg.org>
-Subject: Re: [PATCH 1/4] Add targets to use the Coccinelle checker
-Date: Fri, 4 Jun 2010 11:56:20 +0200
-User-Agent: KMail/1.13.2 (Linux/2.6.32-22-generic; KDE/4.4.2; i686; ; )
-Cc: Michal Marek <mmarek@suse.cz>, Randy Dunlap <rdunlap@xenotime.net>,
-       Roland Dreier <rdreier@cisco.com>, Joe Perches <joe@perches.com>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       "David S. Miller" <davem@davemloft.net>, Julia Lawall <julia@diku.dk>,
-       Gilles Muller <Gilles.Muller@lip6.fr>, linux-kernel@vger.kernel.org,
-       linux-kbuild@vger.kernel.org, cocci@diku.dk,
-       Wolfram Sang <w.sang@pengutronix.de>,
-       Kernel Janitors <kernel-janitors@vger.kernel.org>
-References: <1273508667-5152-1-git-send-email-npalix@diku.dk> <1273508667-5152-2-git-send-email-npalix@diku.dk> <20100603102315.GA8002@merkur.ravnborg.org>
-In-Reply-To: <20100603102315.GA8002@merkur.ravnborg.org>
+	id S1755343Ab0FDJ7G (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jun 2010 05:59:06 -0400
+Received: from 80-190-117-144.ip-home.de ([80.190.117.144]:46534 "EHLO
+	bu3sch.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754014Ab0FDJ7E (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Jun 2010 05:59:04 -0400
+X-Greylist: delayed 1608 seconds by postgrey-1.27 at vger.kernel.org; Fri, 04 Jun 2010 05:59:04 EDT
+Message-ID: <4C08C811.6090709@bu3sch.de>
+Date: Fri, 04 Jun 2010 11:32:01 +0200
+From: =?ISO-8859-1?Q?Michael_B=FCsch?= <mb@bu3sch.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux ppc; en-US; rv:1.9.1.9) Gecko/20100515 Icedove/3.0.4
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+To: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+CC: akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+       linville@tuxdriver.com
+Subject: Re: mmotm 2010-06-03-16-36 uploaded
+References: <201006040005.o5405Afw023296@imap1.linux-foundation.org>	<20100604101329D.fujita.tomonori@lab.ntt.co.jp>	<20100603183410.bf61f113.akpm@linux-foundation.org> <20100604111434N.fujita.tomonori@lab.ntt.co.jp> (sfid-20100604_041624_219992_FFFFFFFFBCAAF085)
+In-Reply-To: <20100604111434N.fujita.tomonori@lab.ntt.co.jp> (sfid-20100604_041624_219992_FFFFFFFFBCAAF085)
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-Message-Id: <201006041156.20714.npalix@diku.dk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 03 June 2010 12:23:15 Sam Ravnborg wrote:
-> On Mon, May 10, 2010 at 06:24:24PM +0200, Nicolas Palix wrote:
-> > Four targets are added. Each one generates a different
-> > output kind: context, patch, org, report.
-> > Every SmPL file in 'scripts/coccinelle' is given to the spatch frontend
-> > (located in the 'scripts' directory), and applied to the entire
-> > source tree.
-> 
-> A little late feedback.
-> IIRC all points raised at first review has been addressed - good.
-> 
-> > 
-> > Signed-off-by: Nicolas Palix <npalix@diku.dk>
-> > Signed-off-by: Julia Lawall <julia@diku.dk>
-> > ---
-> >  MAINTAINERS           |   10 ++++++++++
-> >  Makefile              |   20 ++++++++++++++++++--
-> 
-> The top-level Makefile is already in a very bad shape.
-> Adding more stuff there is never good.
-> 
-> How about adding some infrastructure to support the various tools?
-> Something along these lines:
-> 
-> All targets named %check will call a shell script:
-> scripts/%check.sh
-> 
-> "make help" will call a script named:
-> scripts/helpcheck.sh
-> 
-> helpcheck.sh will contain all the ugly details
-> about help for the various targets.
-> 
-> We need to rename a few seldomly used targets to do this.
-> Sample patch for top-level Makefile:
-> 
-> diff --git a/Makefile b/Makefile
-> index efdc3d0..40bf83e 100644
-> --- a/Makefile
-> +++ b/Makefile
-> @@ -412,7 +412,7 @@ endif
->  # of make so .config is not included in this case either (for *config).
->  
->  no-dot-config-targets := clean mrproper distclean \
-> -			 cscope TAGS tags help %docs check% \
-> +			 cscope TAGS tags help %docs %check \
->  			 include/linux/version.h headers_% \
->  			 kernelrelease kernelversion
->  
-> @@ -1024,10 +1024,6 @@ include/linux/version.h: $(srctree)/Makefile FORCE
->  include/generated/utsrelease.h: include/config/kernel.release FORCE
->  	$(call filechk,utsrelease.h)
->  
-> -PHONY += headerdep
-> -headerdep:
-> -	$(Q)find include/ -name '*.h' | xargs --max-args 1 scripts/headerdep.pl
-> -
->  # ---------------------------------------------------------------------------
->  
->  PHONY += depend dep
-> @@ -1273,13 +1269,9 @@ help:
->  	 echo  '                    (default: $(INSTALL_HDR_PATH))'; \
->  	 echo  ''
->  	@echo  'Static analysers'
-> -	@echo  '  checkstack      - Generate a list of stack hogs'
-> -	@echo  '  namespacecheck  - Name space analysis on compiled kernel'
-> -	@echo  '  versioncheck    - Sanity check on version.h usage'
-> -	@echo  '  includecheck    - Check for duplicate included header files'
-> +	@$(CONFIG_SHELL)$(srctree)/scripts/helpcheck.sh
->  	@echo  '  export_report   - List the usages of all exported symbols'
->  	@echo  '  headers_check   - Sanity check on exported headers'
-> -	@echo  '  headerdep       - Detect inclusion cycles in headers'; \
->  	 echo  ''
->  	@echo  'Kernel packaging:'
->  	@$(MAKE) $(build)=$(package-dir) help
-> @@ -1427,20 +1419,10 @@ tags TAGS cscope: FORCE
->  	$(call cmd,tags)
->  
->  # Scripts to check various things for consistency
-> +# Call a helper script in scripts/ to do the actual job
->  # ---------------------------------------------------------------------------
-> -
-> -includecheck:
-> -	find * $(RCS_FIND_IGNORE) \
-> -		-name '*.[hcS]' -type f -print | sort \
-> -		| xargs $(PERL) -w $(srctree)/scripts/checkincludes.pl
-> -
-> -versioncheck:
-> -	find * $(RCS_FIND_IGNORE) \
-> -		-name '*.[hcS]' -type f -print | sort \
-> -		| xargs $(PERL) -w $(srctree)/scripts/checkversion.pl
-> -
-> -namespacecheck:
-> -	$(PERL) $(srctree)/scripts/namespace.pl
-> +%check:
-> +	$(Q)$(CONFIG_SHELL)$(srctree)/scripts/$@.sh
->  
->  export_report:
->  	$(PERL) $(srctree)/scripts/export_report.pl
-> @@ -1448,20 +1430,7 @@ export_report:
->  endif #ifeq ($(config-targets),1)
->  endif #ifeq ($(mixed-targets),1)
->  
-> -PHONY += checkstack kernelrelease kernelversion
-> -
-> -# UML needs a little special treatment here.  It wants to use the host
-> -# toolchain, so needs $(SUBARCH) passed to checkstack.pl.  Everyone
-> -# else wants $(ARCH), including people doing cross-builds, which means
-> -# that $(SUBARCH) doesn't work here.
-> -ifeq ($(ARCH), um)
-> -CHECKSTACK_ARCH := $(SUBARCH)
-> -else
-> -CHECKSTACK_ARCH := $(ARCH)
-> -endif
-> -checkstack:
-> -	$(OBJDUMP) -d vmlinux $$(find . -name '*.ko') | \
-> -	$(PERL) $(src)/scripts/checkstack.pl $(CHECKSTACK_ARCH)
-> +PHONY += kernelrelease kernelversion
->  
->  kernelrelease:
->  	$(if $(wildcard include/config/kernel.release), $(Q)echo $(KERNELRELEASE), \
-> 
-> 
-> 
-> A nice simplification of the top-level Mkefile.
-> and an opportunity to document some of the
-> magic shell commands used by the various tools.
-> 
-> If we do this I know the scripts will sum up to a lot more
-> lines but doing it distributed is better.
-> And some of the lines would be comments that explains what is
-> going on.
-> 
-> An additinal benefit is that we can avoid touching
-> the top-level Makefile next time we add a new
-> %check target.
-> 
-> As for cocci this would have the the effect that
-> new scipts can be made as drop-in - no changes
-> in any files. Just add the files to the
-> correct directory.
-> 
-> 	Sam
-> 
+On 06/04/2010 04:16 AM, FUJITA Tomonori wrote:
+> On Thu, 3 Jun 2010 18:34:10 -0700
+> Andrew Morton<akpm@linux-foundation.org>  wrote:
+>
+>> On Fri, 4 Jun 2010 10:14:27 +0900 FUJITA Tomonori<fujita.tomonori@lab.ntt.co.jp>  wrote:
+>>
+>>> On Thu, 03 Jun 2010 16:36:51 -0700
+>>> akpm@linux-foundation.org wrote:
+>>>
+>>>> The mm-of-the-moment snapshot 2010-06-03-16-36 has been uploaded to
+>>>>
+>>>>     http://userweb.kernel.org/~akpm/mmotm/
+>>>>
+>>>> and will soon be available at
+>>>>
+>>>>     git://zen-kernel.org/kernel/mmotm.git
+>>>>
+>>>> It contains the following patches against 2.6.35-rc1:
+>>>
+>>> (snip)
+>>>
+>>>> ssb-add-dma_dev-to-ssb_device-structure.patch
+>>>> b43legacy-replace-the-ssb_dma-api-with-the-generic-dma-api.patch
+>>>> b43-replace-the-ssb_dma-api-with-the-generic-dma-api.patch
+>>>> b44-replace-the-ssb_dma-api-with-the-generic-dma-api.patch
+>>>> ssb-remove-the-ssb-dma-api.patch
+>>>
+>>> Is there any reason why the above patches are still in -mm (i.e. not
+>>> merged in the previous merge window)?
+>>
+>> Two lines earlier:
+>>
+>> # propagate these:
+>>
+>> is akpm shorthand for "send these through maintainers".
+>>
+>> I prefer to go that way if the patch isn't urgent, just to get a bit
+>> more attention and review.  If the patch has a maintainer ack already
+>> then I'll often merge it directly.
+>>
+>>> I got an ACK on the first patch to ssb core from the ssb maintainer,
+>>> ACKs on the second and third to b43legacy and b43 from the maintainer.
+>>>
+>>> http://marc.info/?t=126621151900002&r=1&w=2
+>>
+>> And none of the above patches were sent to me with acked-by:s, and
+>> nobody sent new acked-by:s, so I didn't know this!
+>
+> Oh, sorry.
+>
+>> I guess John is the conduit for all five of the above so I'll send them
+>> to him now and he might decide to squeak them into 2.6.35.
+>
+> Thanks. They aren't urgent. 2.6.26 is fine.
+>
+>
+>> But before I do that, please send me an email telling me who acked each
+>> patch and I'll update that info.
+>
+> The first version included the first, second, third, and forth
+> patches' changes:
+> http://marc.info/?l=linux-netdev&m=126621140418564&w=2
+>
+> Michael Buesch<mb@bu3sch.de>  acked:
+> http://marc.info/?l=linux-kernel&m=126623288409638&w=2
+>
+> David S. Miller<davem@davemloft.net>  also acked:
+> http://marc.info/?l=linux-netdev&m=126621509421648&w=2
+>
+> Larry Finger<Larry.Finger@lwfinger.net>  acked the changes to
+> b43legacy and b43 (the second and third patches now):
+> http://marc.info/?l=linux-kernel&m=126634755930224&w=2
 
-Hi,
-
-I am not sure to understand your suggestion.
-
-Should I make this change and integrate it into my patch series
-or it is something to do later ?
-
-In doing so, I will have to select the 'mode' in a different way.
-I was thinking of renaming my targets in one of the following forms
-or using an environment variable:
-
-make cocci-report-check
-make report-coccicheck
-make coccicheck MODE=report
-
-Do you have any preference ?
+I'm a bit nervous, however, whether these patches are tested on all 
+platforms that ssb supports. Especially embedded.
+However, there is not a huge problem if a breakage is introduced into 
+the mainline kernel here. We hardly use mainline for embedded anyway. 
+Some patches are basically always needed.
+So from my point of view it is OK to merge these patches, if they are 
+tested on i386, x86/64. The rest may be sorted out later in the rc cycle 
+(or even -stable, for embedded).
 
 -- 
-Nicolas Palix
-Tel: (+33) 1 44 27 87 25
-Tel: (+33) 6 81 07 91 72
-Web: http://www.diku.dk/~npalix/
+Greetings Michael.
