@@ -1,74 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932267Ab0FDC2x (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jun 2010 22:28:53 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:46611 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757040Ab0FDC2v convert rfc822-to-8bit (ORCPT
+	id S1757169Ab0FDCc3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jun 2010 22:32:29 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:34778 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752168Ab0FDCc2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jun 2010 22:28:51 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type:content-transfer-encoding;
-        b=b9ushosSytx9KHy23tBLNc7yRKky9/f9L+REzJS4PrBSEVGIY42TDHD9F5cvFODoUf
-         chkcikVU6zZujRHGD2GNSqGIsrk3n2qI0JQXnkSqLg+1jv91zpXT2rIFWxydERFmLP98
-         2o4CuQ/UeCEVUdb7SMX+2zWqFxF2PccmehPlI=
+	Thu, 3 Jun 2010 22:32:28 -0400
+Date: Thu, 3 Jun 2010 19:26:50 -0700 (PDT)
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Ingo Molnar <mingo@elte.hu>
+cc: tytso@mit.edu, Brian Swetland <swetland@google.com>,
+       Neil Brown <neilb@suse.de>, Arve Hj?nnev?g <arve@android.com>,
+       Thomas Gleixner <tglx@linutronix.de>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+       Alan Stern <stern@rowland.harvard.edu>,
+       Felipe Balbi <felipe.balbi@nokia.com>,
+       Peter Zijlstra <peterz@infradead.org>,
+       LKML <linux-kernel@vger.kernel.org>,
+       Florian Mickler <florian@mickler.org>,
+       Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
+       Linux PM <linux-pm@lists.linux-foundation.org>,
+       Alan Cox <alan@lxorguk.ukuu.org.uk>,
+       James Bottomley <James.Bottomley@suse.de>,
+       Peter Zijlstra <a.p.zijlstra@chello.nl>,
+       Kevin Hilman <khilman@deeprootsystems.com>,
+       "H. Peter Anvin" <hpa@zytor.com>,
+       Arjan van de Ven <arjan@infradead.org>
+Subject: Re: suspend blockers & Android integration
+In-Reply-To: <alpine.LFD.2.00.1006031856420.8175@i5.linux-foundation.org>
+Message-ID: <alpine.LFD.2.00.1006031917500.8175@i5.linux-foundation.org>
+References: <20100603193045.GA7188@elte.hu> <20100603231153.GA11302@elte.hu> <20100603232302.GA16184@elte.hu> <alpine.LFD.2.00.1006031630300.8175@i5.linux-foundation.org> <20100603234634.GA21831@elte.hu>
+ <alpine.LFD.2.00.1006031856420.8175@i5.linux-foundation.org>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-In-Reply-To: <EA929A9653AAE14F841771FB1DE5A1365FF3FF358C@rrsmsx501.amr.corp.intel.com>
-References: <AANLkTimTm57fvumRXo9pegOY2M78mduBsClwYlmAOzpo@mail.gmail.com> 
-	<20100601183920.GB19955@kroah.com> <EA929A9653AAE14F841771FB1DE5A1365FF3EC130E@rrsmsx501.amr.corp.intel.com> 
-	<AANLkTinmxW5gQUOYJgK67Dc1FdakeXSmuu1hExKKL1qk@mail.gmail.com> 
-	<EA929A9653AAE14F841771FB1DE5A1365FF3F8D431@rrsmsx501.amr.corp.intel.com> 
-	<AANLkTilDY61GMGNLezXYLbbe3B8-SvgMOK5L9Q6juETL@mail.gmail.com> 
-	<AANLkTilh4P9pcC53J7An3TioIPNk7LAwp9zq1R7jwiCx@mail.gmail.com> 
-	<EA929A9653AAE14F841771FB1DE5A1365FF3FF358C@rrsmsx501.amr.corp.intel.com>
-From: Frank Pan <frankpzh@gmail.com>
-Date: Fri, 4 Jun 2010 10:28:30 +0800
-Message-ID: <AANLkTinsbP04d9qlgGCx1JXIrFkb6ls-iUWduuhRq5_b@mail.gmail.com>
-Subject: Re: Add a helper function in PCI IOV to get VF device
-To: "Williams, Mitch A" <mitch.a.williams@intel.com>
-Cc: Greg KH <greg@kroah.com>, Andrew Morton <akpm@linux-foundation.org>,
-       Jesse Barnes <jbarnes@virtuousgeek.org>,
-       Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>,
-       Yu Zhao <yu.zhao@intel.com>, Chris Wright <chrisw@sous-sol.org>,
-       "Rafael J. Wysocki" <rjw@sisk.pl>,
-       "David S. Miller" <davem@davemloft.net>,
-       Matt Carlson <mcarlson@broadcom.com>,
-       "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Frank, I still don't understand what you're trying to do here. What's the use case? What is the end goal that you're trying to get to?
->
-> What information do you need about the VF, and why?  SR-IOV works properly today without this stuff.
->
-> If we can understand what you're trying to do, then maybe we can help.
 
-Sorry, I used to think of this issue is common, but maybe not.
-I'm hacking igb to add support of VF migration. Migration is emerging
-as a standard of PCI IOV, but has not implemented in intel 82576(igb).
-The idea is interact with VF's MMIO/PCI configuration in the physical
-machine, which only PF's driver exists.
 
-This work started by userspace. All I know is the PCI BDF of the VF,
-because give BDF to the VMM is enough to assign a VF to a VM.
-So here comes the first issue, neither userspace nor PF driver knows
-the map from VF's ID to BDF. My plan is communicating with PF's driver
-by sysfs, so I repeatly complain about the sysfs issue.
-PF can access VF's BAR when it knows VF's ID. On the other hand, PF
-can access VF's PCI configuration only when if knows VF's BDF. This is
-the second issue. Even when userspace calculated and gave it an id, PF
-driver still cannot access the PCI configuration of VF.
+On Thu, 3 Jun 2010, Linus Torvalds wrote:
+> 
+> so I'd like to see the opportunistc suspend thing think about CPU 
+> offlining
 
-Really thanks for your help. I'm new on both kernel scope and English scope. :)
+Side note: one reason for me being somewhat interested in the CPU 
+offlining is that I think the Android kind of opportunistic suspend is 
+_not_ likely something I'd like to see on a desktop. But an the 
+"opportunistic CPU offliner"? That might _well_ be useful even outside of 
+any other suspend activity.
 
--- 
-Frank Pan
+If the system is idle (or almost idle) for long times, I would heartily 
+recommend actively shutting down unused cores. Some CPU's are hopefully 
+smart enough to not even need that kind of software management, but I 
+suspect even the really smart ones might be able to take advantage of the 
+kernel saying: "I'm shutting you down, you don't have to worry about 
+latency AT ALL, because I'm keeping another CPU active to do any real 
+work".
 
-Computer Science and Technology
-Tsinghua University
+I'd also be interested to see if it could even improve single-thread 
+performance if we end up doing the whole SMP->UP "lock" prefix rewriting 
+when the system is idle enough that we'd be better off running just a 
+single core. I dunno - just throwing that out there.
+
+Anyway, the only reason I think this is related is literally because I 
+think that if we know there is only a single CPU active, I think the 
+actual "real" opportunistic suspend is easier. Suddenly you don't have to 
+worry about what happens on other run-queues etc, and whether another CPU 
+is just about to create a suspend block etc.
+
+So I think they tie together, although it's mostly tangential. And as 
+mentioned, I think a opportunistic CPU suspend part is more relevant 
+outside of Android, and thus perhaps more widely interesting.
+
+			Linus
