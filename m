@@ -1,85 +1,167 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756880Ab0FDVrP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jun 2010 17:47:15 -0400
-Received: from www.tglx.de ([62.245.132.106]:37990 "EHLO www.tglx.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752726Ab0FDVrO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jun 2010 17:47:14 -0400
-Date: Fri, 4 Jun 2010 23:46:59 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Esben Haabendal <eha@doredevelopment.dk>
-cc: linux-kernel@vger.kernel.org, maz@misterjones.org, mingo@elte.hu,
-       joachim.eastwood@jotron.com
-Subject: Re: [RFC][PATCH] irq: support IRQ_NESTED_THREAD with non-threaded
- interrupt handlers
-In-Reply-To: <1275686352.2970.2.camel@eha.doredevelopment.dk>
-Message-ID: <alpine.LFD.2.00.1006042343150.2933@localhost.localdomain>
-References: <1275686352.2970.2.camel@eha.doredevelopment.dk>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1756866Ab0FDVxU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jun 2010 17:53:20 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:46190 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751827Ab0FDVxT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Jun 2010 17:53:19 -0400
+Date: Fri, 4 Jun 2010 14:53:04 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Baruch Siach <baruch@tkos.co.il>
+Cc: rtc-linux@googlegroups.com, linux-kernel@vger.kernel.org,
+       Alessandro Zummo <a.zummo@towertech.it>
+Subject: Re: [PATCH] rtc: driver for the DryIce block found in i.MX25 chips
+Message-Id: <20100604145304.b2cfca17.akpm@linux-foundation.org>
+In-Reply-To: <0173f18c60cb4d1f8a0d123da6cd3cfca0224788.1275456869.git.baruch@tkos.co.il>
+References: <0173f18c60cb4d1f8a0d123da6cd3cfca0224788.1275456869.git.baruch@tkos.co.il>
+X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 4 Jun 2010, Esben Haabendal wrote:
+On Wed,  2 Jun 2010 08:37:21 +0300
+Baruch Siach <baruch@tkos.co.il> wrote:
 
-> set_irq_nested_thread() might be called by interrupt controller to
-> supported nested irq thread handling, and with this change, drivers
-> with non-threaded irq handlers can still use the irqs.
+> This driver is based on code from Freescale which accompanies their i.MX25 PDK
+> board, with some cleanup.
 
-What's the problem you are trying to solve ? The above changelog is
-not very useful ?
+Do we know who at freescale worked on this?  Are there any signoffs or
+attributions we could be adding?
 
-Thanks,
-
-	tglx
- 
-> Signed-off-by: Esben Haabendal <eha@doredevelopment.dk>
-> ---
->  kernel/irq/chip.c   |    9 ++++++++-
->  kernel/irq/manage.c |    4 +---
->  2 files changed, 9 insertions(+), 4 deletions(-)
-> 
-> diff --git a/kernel/irq/chip.c b/kernel/irq/chip.c
-> index b7091d5..8202993 100644
-> --- a/kernel/irq/chip.c
-> +++ b/kernel/irq/chip.c
-> @@ -405,7 +405,14 @@ void handle_nested_irq(unsigned int irq)
->  	desc->status |= IRQ_INPROGRESS;
->  	raw_spin_unlock_irq(&desc->lock);
->  
-> -	action_ret = action->thread_fn(action->irq, action->dev_id);
-> +	if (desc->status & IRQ_NESTED_THREAD && action->thread_fn)
-> +		action_ret = action->thread_fn(action->irq, action->dev_id);
-> +	else {
-> +		local_irq_disable();
-> +		action_ret = action->handler(action->irq, action->dev_id);
-> +		local_irq_enable();
-> +	}
+>
+> ...
+>
+> +static inline void di_int_enable(struct imxdi_dev *imxdi, u32 intr)
+> +{
+> +	unsigned long flags;
 > +
->  	if (!noirqdebug)
->  		note_interrupt(irq, desc, action_ret);
->  
-> diff --git a/kernel/irq/manage.c b/kernel/irq/manage.c
-> index 3164ba7..e7bca04 100644
-> --- a/kernel/irq/manage.c
-> +++ b/kernel/irq/manage.c
-> @@ -681,10 +681,8 @@ __setup_irq(unsigned int irq, struct irq_desc *desc, struct irqaction *new)
->  	 * Check whether the interrupt nests into another interrupt
->  	 * thread.
->  	 */
-> -	nested = desc->status & IRQ_NESTED_THREAD;
-> +	nested = (desc->status & IRQ_NESTED_THREAD) && new->thread_fn;
->  	if (nested) {
-> -		if (!new->thread_fn)
-> -			return -EINVAL;
->  		/*
->  		 * Replace the primary handler which was provided from
->  		 * the driver for non nested interrupt handling by the
-> -- 
-> 1.7.1
-> 
-> 
-> 
+> +	spin_lock_irqsave(&imxdi->irq_lock, flags);
+> +	__raw_writel(__raw_readl(imxdi->ioaddr + DIER) | intr,
+> +			imxdi->ioaddr + DIER);
+> +	spin_unlock_irqrestore(&imxdi->irq_lock, flags);
+> +}
+> +
+> +/*
+> + * disable a dryice interrupt
+> + */
+> +static inline void di_int_disable(struct imxdi_dev *imxdi, u32 intr)
+> +{
+> +	unsigned long flags;
+> +
+> +	spin_lock_irqsave(&imxdi->irq_lock, flags);
+> +	__raw_writel(__raw_readl(imxdi->ioaddr + DIER) & ~intr,
+> +			imxdi->ioaddr + DIER);
+> +	spin_unlock_irqrestore(&imxdi->irq_lock, flags);
+> +}
+
+You may find that you'll end up with a smaller and faster driver if
+these are uninlined.
+
+You may well find that gcc went and uninlined them anwyay.
+
+> +/*
+> + * This function attempts to clear the dryice write-error flag.
+> + *
+> + * A dryice write error is similar to a bus fault and should not occur in
+> + * normal operation.  Clearing the flag requires another write, so the root
+> + * cause of the problem may need to be fixed before the flag can be cleared.
+> + */
+> +static void clear_write_error(struct imxdi_dev *imxdi)
+> +{
+> +	int cnt;
+> +
+> +	dev_warn(&imxdi->pdev->dev, "WARNING: Register write error!\n");
+> +
+> +	for (;;) {
+> +		/* clear the write error flag */
+> +		__raw_writel(DSR_WEF, imxdi->ioaddr + DSR);
+> +
+> +		/* wait for it to take effect */
+> +		for (cnt = 0; cnt < 100; cnt++) {
+> +			if ((__raw_readl(imxdi->ioaddr + DSR) & DSR_WEF) == 0)
+> +				return;
+> +			udelay(10);
+> +		}
+> +		dev_err(&imxdi->pdev->dev,
+> +			"ERROR: Cannot clear write-error flag!\n");
+> +	}
+> +}
+
+The potential infinite loop is a worry.
+
+> +/*
+> + * Write a dryice register and wait until it completes.
+> + *
+> + * This function uses interrupts to determine when the
+> + * write has completed.
+> + */
+> +static int di_write_wait(struct imxdi_dev *imxdi, u32 val, int reg)
+> +{
+> +	int ret;
+> +	int rc = 0;
+> +
+> +	/* serialize register writes */
+> +	mutex_lock(&imxdi->write_mutex);
+> +
+> +	/* enable the write-complete interrupt */
+> +	di_int_enable(imxdi, DIER_WCIE);
+> +
+> +	imxdi->dsr = 0;
+> +
+> +	/* do the register write */
+> +	__raw_writel(val, imxdi->ioaddr + reg);
+> +
+> +	/* wait for the write to finish */
+> +	ret = wait_event_interruptible_timeout(imxdi->write_wait,
+> +			imxdi->dsr & (DSR_WCF | DSR_WEF), msecs_to_jiffies(1));
+
+This wait will terminate immediately if the calling task has
+signal_pending().
+
+> +	if (ret == 0)
+> +		dev_warn(&imxdi->pdev->dev,
+> +				"Write-wait timeout "
+> +				"val = 0x%08x reg = 0x%08x\n", val, reg);
+
+But the code incorrectly assumes that the hardware signalled readiness.
+
+> +	/* check for write error */
+> +	if (imxdi->dsr & DSR_WEF) {
+> +		clear_write_error(imxdi);
+> +		rc = -EIO;
+> +	}
+> +	mutex_unlock(&imxdi->write_mutex);
+> +	return rc;
+> +}
+> +
+>
+> ...
+>
+> +static int __devexit dryice_rtc_remove(struct platform_device *pdev)
+> +{
+> +	struct imxdi_dev *imxdi = platform_get_drvdata(pdev);
+> +
+> +	flush_scheduled_work();
+
+We only need to wait for imxdi->work to complete, so a simple
+flush_work() would suffice here.
+
+> +	/* mask all interrupts */
+> +	__raw_writel(0, imxdi->ioaddr + DIER);
+> +
+> +	rtc_device_unregister(imxdi->rtc);
+> +
+> +	clk_disable(imxdi->clk);
+> +	clk_put(imxdi->clk);
+> +
+> +	return 0;
+> +}
+>
+> ...
+>
+
