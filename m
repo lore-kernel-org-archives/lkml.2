@@ -1,99 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757214Ab0FDWKF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jun 2010 18:10:05 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:50793 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754289Ab0FDWKB (ORCPT
+	id S1757262Ab0FDWNX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jun 2010 18:13:23 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:47857 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756893Ab0FDWNW convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jun 2010 18:10:01 -0400
-Date: Fri, 4 Jun 2010 15:05:01 -0700 (PDT)
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: "Luck, Tony" <tony.luck@intel.com>
-cc: Rusty Russell <rusty@rustcorp.com.au>,
-       Dave Young <hidave.darkstar@gmail.com>,
-       Stephen Rothwell <sfr@canb.auug.org.au>,
-       "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
-       LKML <linux-kernel@vger.kernel.org>
-Subject: RE: linux-next: Tree for June 3
-In-Reply-To: <987664A83D2D224EAE907B061CE93D530114C3DC47@orsmsx505.amr.corp.intel.com>
-Message-ID: <alpine.LFD.2.00.1006041452130.8175@i5.linux-foundation.org>
-References: <20100603134753.710a64b3.sfr@canb.auug.org.au> <AANLkTilr92GkR8bfgyjtb8ToYEEAv4oCsFsfsy04HJRU@mail.gmail.com> <AANLkTim6v2s-Q5BndAKLOZKaA1wYgbU3UKJwNy-6Jkki@mail.gmail.com> <201006032222.57411.rusty@rustcorp.com.au>
- <AANLkTikN_3oLIFQ0CRiLwXUV79myy_aqriezdCgnZHFT@mail.gmail.com> <alpine.LFD.2.00.1006041255210.8175@i5.linux-foundation.org> <987664A83D2D224EAE907B061CE93D530114C3DC47@orsmsx505.amr.corp.intel.com>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	Fri, 4 Jun 2010 18:13:22 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:subject:date:user-agent:cc:references:in-reply-to
+         :mime-version:content-type:content-transfer-encoding:message-id;
+        b=aZXUD+esVZOljq2ruXczPCkAtY9Eo1EkOl6SNkpCyr4miAG6vfs1IjGUltF4TFI8J+
+         EGsGhvKuWE2M+icee8kv2Hy4SNrOmlFIfXwzFYRNbHf2sY1xRoA8qZxjjddRQLod1GWM
+         sTnD3mLvoA656Q7u9GcYiD/pk/FTtpVnjoNJI=
+From: Eric Lacombe <goretux@gmail.com>
+To: Zhenyu Wang <zhenyuw@linux.intel.com>, Len Brown <lenb@kernel.org>,
+       Dave Airlie <airlied@linux.ie>
+Subject: [BUG] ACPI/dynamic-hybrid-graphics (?) on Vaio VPCZ11 - screen does not light up on resume [was: Re: Intel Arrandale IGP - screen does not light up on resume]
+Date: Sat, 5 Jun 2010 00:13:17 +0200
+User-Agent: KMail/1.13.3 (Linux/2.6.34-custom; KDE/4.4.4; x86_64; ; )
+Cc: linux-kernel@vger.kernel.org
+References: <201005310142.40209.goretux@gmail.com>
+In-Reply-To: <201005310142.40209.goretux@gmail.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 8BIT
+Message-Id: <201006050013.17653.goretux@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi, (the introduction is at the end of this one, it comes from a previous mail 
+sent to Zhenyu Wang)
 
+I was thinking that it could come from bogus ACPI tables.
 
-On Fri, 4 Jun 2010, Luck, Tony wrote:
+Someone said to me (from sony-vaio-z-series@lists.launchpad.net) that with a 
+patched BIOS (that someone does and that I don't really want to test) that 
+allows to access a more advanced menu from my laptop, it will allows to have 
+the switch button (that switches between nvidia chipset and Intel IGP) behave 
+statically and not dynamically as it does now.
+And it seems that with its laptop he was able to resume correctly from the 
+nvidia chipset.
+
+I added Dave Airlie, as I know he played with hybrid-graphics (by the way 
+switcheroo make crashed my laptop)
+
+I could send to you my DSDT if it could give you some clues on what screwed 
+things up. Just ask to me.
+
+If someone has any idea, I could do some tests, try some patchs ?
+And as always feel free to ask me more information if you need.
+
+Best regards,
+
+	Eric
+
+Le lundi 31 mai 2010 01:42:39, Eric Lacombe a écrit :
+> Hi,
 > 
-> This almost always means that we dereferenced a NULL pointer ... though
-> any access into the bottom PAGE_SIZE of kernel virtual address space
-> will result in this trap.  This happens on ia64 because we have a "NaT"
-> page mapped at 0x0 so that speculative loads that chase NULL pointers
-> at the end of lists behave more rationally.
+> I've got a problem with my laptop (powered by i7 Arrandale, it's a Sony
+> Vaio Z11Z9E), when I resume from "suspend to ram" my screen does not light
+> up. X uses the Intel IGP.
+> Maybe it is an issue with the driver of the IGP of the Core i7 Arrandale?
 > 
-> Sadly I don't have the actual address. The register that was used
-> for the dereference isn't included in the OOPS output.
-
-Ok, so it confirms just that load_module() has returned a pointer that is 
-either NULL or at least within PAGE_SIZE-552.
-
-It could be a negative error pointer (and the offset of 552 turns it into 
-the NULL page), but that's what the whole IS_ERR() thing checks for, so 
-that's not the case.
-
-So the
-
-	if (err)
-		return ERR_PTR(err);
-
-case does seem pretty likely (most of them with a "goto <error-case>", but 
-some directly. Many of them have the stricter form of "if (err < 0)", but 
-there's a number that do not.
-
-And in fact, I think I see the bad one:
-
-        /* Figure out module layout, and allocate all the memory. */
-        mod = layout_and_allocate(&info);
-        if (IS_ERR(mod))
-                goto free_copy;
-
-which looks fine, but "free_copy:" expects the error number in "err", 
-which is what the other error cases do.
-
-I think this was introduced by Rusty's commit 5d3f5be82944 ("module: 
-layout_and_allocate"), and here's a suggested fix.. The easiest fix is to 
-actually change the "free_copy" target to return "mod" as the above goto 
-expects, and then just do a conversion before the fall-through from the 
-other error cases (that have it in 'err').
-
-Does this fix it? I stopped looking for other possible causes when I found 
-this one.
-
-		Linus
-
----
- kernel/module.c |    3 ++-
- 1 files changed, 2 insertions(+), 1 deletions(-)
-
-diff --git a/kernel/module.c b/kernel/module.c
-index 69a3f12..9a0b275 100644
---- a/kernel/module.c
-+++ b/kernel/module.c
-@@ -2653,9 +2653,10 @@ static struct module *load_module(void __user *umod,
- 	module_unload_free(mod);
-  free_module:
- 	module_deallocate(mod, &info);
-+	mod = ERR_PTR(err);
-  free_copy:
- 	free_copy(&info);
--	return ERR_PTR(err);
-+	return mod;
- }
- 
- /* Call module constructors. */
+> I currently use Linux 2.6.34, and have tested 2.6.33 and 2.6.32 (I see on
+> google that there were some problems about Intel IGP and blackscreen. I was
+> hit by them too at that time)
+> 
+> If you have any suggestions or if you want me to test any patch, I would be
+> glad to do so.
+> Feel free to ask me any information I could provide to you about this
+> problem.
+> 
+> Best regards,
+> 
+> 	Eric
