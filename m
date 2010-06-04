@@ -1,103 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753021Ab0FDIEn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jun 2010 04:04:43 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:57595 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752563Ab0FDIEj (ORCPT
+	id S1753157Ab0FDIMT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jun 2010 04:12:19 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:36603 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752584Ab0FDIMQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jun 2010 04:04:39 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:subject:to:cc:date:message-id:user-agent:mime-version
-         :content-type:content-transfer-encoding;
-        b=JaMMRMk5RVSj4kTXT3DukBRnvHVYtbIHxQt30EOasJcFGFDdvcA9aG9PDer3B8ZDWQ
-         1Q38GiTMmMI+u8I6BWoTneoBwDs1oZam3HVylQpIwPYaru1BuhaQZlkfGUmJr5ggvw/q
-         /auOE4+8/WC0ge/lw96viRBt71TehRixV90qk=
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Subject: [PATCH] PNPACPI: cope with invalid device IDs
-To: Bjorn Helgaas <bjorn.helgaas@hp.com>,
-       Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org,
-       Len Brown <lenb@kernel.org>
-Date: Fri, 04 Jun 2010 01:04:32 -0700
-Message-ID: <20100604080432.16068.31159.stgit@localhost.localdomain>
-User-Agent: StGIT/0.14.3
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+	Fri, 4 Jun 2010 04:12:16 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Fri, 4 Jun 2010 17:07:57 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+       "linux-mm@kvack.org" <linux-mm@kvack.org>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+       "balbir@linux.vnet.ibm.com" <balbir@linux.vnet.ibm.com>
+Subject: Re: [BUGFIX][PATCH] memcg fix wake up in oom wait queue
+Message-Id: <20100604170757.14af6bb5.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <20100604115820.d7ec1008.kamezawa.hiroyu@jp.fujitsu.com>
+References: <20100603172353.b5375879.kamezawa.hiroyu@jp.fujitsu.com>
+	<20100604100811.31c45828.nishimura@mxp.nes.nec.co.jp>
+	<20100604115820.d7ec1008.kamezawa.hiroyu@jp.fujitsu.com>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If primary ID (HID) is invalid try locating first valid ID on compatible
-ID list before giving up. This helps, for example, to recognize i8042 AUX
-port on Sony Vaio VPCZ1 which uses SNYSYN0003 as HID.
+On Fri, 4 Jun 2010 11:58:20 +0900
+KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
 
-Tested-by: Jan-Hendrik Zab <jan@jhz.name>
-Signed-off-by: Dmitry Torokhov <dtor@mail.ru>
----
+> Tested on mmotm-2010-06-03 and works well.
+> ==
+> From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> 
+> OOM-waitqueue should be waken up when oom_disable is canceled.
+> This is a fix for
+>  memcg-oom-kill-disable-and-oom-status.patch
+> 
+Sorry, I found linux-2.6.git has the oom_control patch, so this patch
+should be against linux-2.6.git. But maybe no HUNK, I think.
 
- drivers/pnp/pnpacpi/core.c |   27 +++++++++++++++++++++++----
- 1 files changed, 23 insertions(+), 4 deletions(-)
-
-diff --git a/drivers/pnp/pnpacpi/core.c b/drivers/pnp/pnpacpi/core.c
-index f7ff628..1bf1677 100644
---- a/drivers/pnp/pnpacpi/core.c
-+++ b/drivers/pnp/pnpacpi/core.c
-@@ -28,7 +28,7 @@
- #include "../base.h"
- #include "pnpacpi.h"
- 
--static int num = 0;
-+static int num;
- 
- /* We need only to blacklist devices that have already an acpi driver that
-  * can't use pnp layer. We don't need to blacklist device that are directly
-@@ -157,11 +157,24 @@ struct pnp_protocol pnpacpi_protocol = {
- };
- EXPORT_SYMBOL(pnpacpi_protocol);
- 
-+static char *pnpacpi_get_id(struct acpi_device *device)
-+{
-+	struct acpi_hardware_id *id;
-+
-+	list_for_each_entry(id, &device->pnp.ids, list) {
-+		if (ispnpidacpi(id->id))
-+			return id->id;
-+	}
-+
-+	return NULL;
-+}
-+
- static int __init pnpacpi_add_device(struct acpi_device *device)
- {
- 	acpi_handle temp = NULL;
- 	acpi_status status;
- 	struct pnp_dev *dev;
-+	char *pnpid;
- 	struct acpi_hardware_id *id;
- 
- 	/*
-@@ -169,11 +182,17 @@ static int __init pnpacpi_add_device(struct acpi_device *device)
- 	 * driver should not be loaded.
- 	 */
- 	status = acpi_get_handle(device->handle, "_CRS", &temp);
--	if (ACPI_FAILURE(status) || !ispnpidacpi(acpi_device_hid(device)) ||
--	    is_exclusive_device(device) || (!device->status.present))
-+	if (ACPI_FAILURE(status))
-+		return 0;
-+
-+	pnpid = pnpacpi_get_id(device);
-+	if (!pnpid)
-+		return 0;
-+
-+	if (!is_exclusive_device(device) || !device->status.present)
- 		return 0;
- 
--	dev = pnp_alloc_dev(&pnpacpi_protocol, num, acpi_device_hid(device));
-+	dev = pnp_alloc_dev(&pnpacpi_protocol, num, pnpid);
- 	if (!dev)
- 		return -ENOMEM;
- 
+Regards,
+-Kame
 
