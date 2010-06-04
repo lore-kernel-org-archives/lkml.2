@@ -1,61 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932266Ab0FDDDO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jun 2010 23:03:14 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:58643 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757071Ab0FDDDM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jun 2010 23:03:12 -0400
-X-Authority-Analysis: v=1.1 cv=DT5lrGikL/lNZzMKzbmp3iVCACewI9NZ3q1CIi1KGbI= c=1 sm=0 a=XL1Npt1c_1MA:10 a=yQWWgrYGNuUA:10 a=7U3hwN5JcxgA:10 a=Q9fys5e9bTEA:10 a=gMqfjgEr1zLu/65IO0LwxA==:17 a=UM6lsJRAT-N35CRzOUgA:9 a=wwXcmPa1lBVkV70qnC3x_VqrKqkA:4 a=PUjeQqilurYA:10 a=gMqfjgEr1zLu/65IO0LwxA==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.89.75
-Subject: Re: [PATCH] tracing: reduce latency and remove percpu trace_seq
-From: Steven Rostedt <rostedt@goodmis.org>
-Reply-To: rostedt@goodmis.org
-To: Lai Jiangshan <laijs@cn.fujitsu.com>
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
-       Frederic Weisbecker <fweisbec@gmail.com>,
-       Theodore Tso <tedtso@gmail.com>, Theodore Tso <tytso@mit.edu>
-In-Reply-To: <4C0863BD.6000307@cn.fujitsu.com>
-References: <4C078350.7090106@cn.fujitsu.com>
-	 <1275572170.15884.30.camel@gandalf.stny.rr.com>
-	 <4C0863BD.6000307@cn.fujitsu.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-Organization: Kihon Technologies Inc.
-Date: Thu, 03 Jun 2010 23:03:10 -0400
-Message-ID: <1275620590.15884.70.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	id S932357Ab0FDDER (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jun 2010 23:04:17 -0400
+Received: from n10-vm0.bullet.mail.in.yahoo.com ([202.86.4.194]:32606 "HELO
+	n10-vm0.bullet.mail.in.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S932280Ab0FDDEN convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Jun 2010 23:04:13 -0400
+X-Yahoo-Newman-Property: ymail-3
+X-Yahoo-Newman-Id: 937757.15214.bm@omp105.mail.in2.yahoo.com
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
+  s=s1024; d=yahoo.com;
+  h=Message-ID:X-YMail-OSG:Received:X-Mailer:References:Date:From:Subject:To:In-Reply-To:MIME-Version:Content-Type:Content-Transfer-Encoding;
+  b=gu2fs+q6feBXfGctB0k8vaFD945PaOR3puGNDSPUjXpBoPqjj48v4w/wCjk5YL22uhS2eFrJ8nZ7j1q9CTJ+Cebuc3i3KZE17CEJfV3fnWc+hv4X6cIV1gr8GWxhNW0dbxPJnLrgQxBdClkzbFDOPbjToPhqVrpYn1UH70WvA34=;
+Message-ID: <831753.25032.qm@web95619.mail.in.yahoo.com>
+X-YMail-OSG: Iq1LspMVM1kCksXOp7dBZSoYYrEKB6ndSuENj6yzTkKGNCh
+ GZoqsE_916evck.8id7.Lu9BJx6uPJ4E2nvqpwm2qHAv9swPpgLn0uGyvVHh
+ HDx9VMxhMfQHDH7utudYiGtriAFT_36hb7myRtUFzlOYVOKFbZO.YWD8FnON
+ 7s_yTozEcSRvmz.voSdJAKWVKPuXibbs3VyQuVYDkqz_LEPxqPEbnNaz1HjV
+ dxWQmKm86.b0-
+X-Mailer: YahooMailRC/397.8 YahooMailWebService/0.8.103.269680
+References: <324779.32661.qm@web95608.mail.in.yahoo.com>
+Date: Fri, 4 Jun 2010 08:34:10 +0530 (IST)
+From: Oza Oza <ozaoza1982@yahoo.com>
+Subject: Re: [PROPOSAL] NMI & register clash handling infrastructure
+To: linux-kernel@vger.kernel.org
+In-Reply-To: <324779.32661.qm@web95608.mail.in.yahoo.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2010-06-04 at 10:23 +0800, Lai Jiangshan wrote:
-> Steven Rostedt wrote:
-> 
-> > 
-> > The "print" in the trace_seq_printf() is the TP_printk() field of the
-> > TRACE_EVENT. I believe that there were some events (ext4?) that did
-> > things that required preemption disabled.
-> > 
-> 
-> It seems that ext4 has no such events.
-> I find jbd2_dev_to_name() in the TP_printk() field of ext4's tracepoints.
-> And it seems that jbd2_dev_to_name() requires preemption enabled and sleepable.
-> 
-> Maybe there were some events did things that required preemption disabled.
-> But No document ensure TP_printk() preemption disabled, such events should
-> be fixed, I think.
+Hi,
 
-Well, I had a private email conversation with Ted last year where IIRC,
-adding the preempt disable would fix things.
 
-I'd like to make sure Ted is OK with removing that before we do so.
+This is my first post to the group, please excuse me, If I unknowingly miss to follow writing ethics.
 
-Ted?
+Proposal/Need: 
 
--- Steve
+I was working on providing accurate process usage support, and writing a kernel module, 
+I configured cpu-core-unhalted-event and configured LVT (local vector table) with NMI (non-maskable interrupt), and surprisingly Oprofile stopped working, 
+Then I realized, that set_nmi_call back just overwrites nmi_callback function pointer. 
+
+My proposal/idea/thinking is; 
+have a kernel module which accepts NMI registration from any kernel component, and providing support to the the any kernel service which basically need to service NMI.
+It may not only supports this, but also can provide central infrastructure which has capabilities such as granting MSR (model specific register) access to the the modules, which may avoid potential clash of MSRs (e.g. two modules are trying to configure same MSR), control NMI registration-unregisteration events etc..
+
+I am not sure, whether this is a good idea or bad idea, but I thought it adds flexibility and some value addition in kernel, 
+and I find this place precisely right to post this idea. 
+
+Any feedback/suggestions/additions would be appreciated. 
+
+Regards,
+Oza.
+
+
+
+--
+To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+the body of a message to majordomo@vger.kernel.org
+More majordomo info at  http://vger.kernel.org/majordomo-info.html
+Please read the FAQ at  http://www.tux.org/lkml/
+
+
 
 
