@@ -1,86 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751229Ab0FDFMS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jun 2010 01:12:18 -0400
-Received: from mga02.intel.com ([134.134.136.20]:63327 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750729Ab0FDFMQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jun 2010 01:12:16 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.53,359,1272870000"; 
-   d="scan'208";a="523886573"
-Subject: Re: iwl3945 dies (oops) in post 2.6.34 kernels
-From: Abhijeet Kolekar <abhijeet.kolekar@intel.com>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: "John W. Linville" <linville@tuxdriver.com>,
-       Johannes Berg <johannes@sipsolutions.net>,
-       "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
-       LKML <linux-kernel@vger.kernel.org>
-In-Reply-To: <20100604050836.GA21239@core.coreip.homeip.net>
-References: <20100525163920.GA2730@core.coreip.homeip.net>
-	 <1274806916.18861.0.camel@jlt3.sipsolutions.net>
-	 <1274807302.7494.1.camel@abhi-desktop>
-	 <201005251027.32778.dmitry.torokhov@gmail.com>
-	 <20100604050836.GA21239@core.coreip.homeip.net>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 03 Jun 2010 22:08:46 -0700
-Message-ID: <1275628126.3225.5.camel@abhi-desktop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
-Content-Transfer-Encoding: 7bit
+	id S1751267Ab0FDFQG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jun 2010 01:16:06 -0400
+Received: from [69.28.251.93] ([69.28.251.93]:48235 "EHLO b32.net"
+	rhost-flags-FAIL-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1750775Ab0FDFQE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Jun 2010 01:16:04 -0400
+From: Kevin Cernekee <cernekee@gmail.com>
+To: <mingo@elte.hu>, <akpm@linux-foundation.org>,
+       <simon.kagstrom@netinsight.net>, <David.Woodhouse@intel.com>,
+       <lethal@linux-sh.org>
+Cc: <linux-kernel@vger.kernel.org>, <linux-mips@linux-mips.org>
+Date: Thu, 3 Jun 2010 22:11:25 -0700
+Subject: [PATCH v3] printk: fix delayed messages from CPU hotplug events
+Message-Id: <ee1bf4f9c158983acad0a4548229586128afad67@localhost>
+User-Agent: vim 7.2
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-06-03 at 22:08 -0700, Dmitry Torokhov wrote:
-> On Tue, May 25, 2010 at 10:27:31AM -0700, Dmitry Torokhov wrote:
-> > On Tuesday 25 May 2010 10:08:22 am Abhijeet Kolekar wrote:
-> > > On Tue, 2010-05-25 at 10:01 -0700, Johannes Berg wrote:
-> > > > On Tue, 2010-05-25 at 09:39 -0700, Dmitry Torokhov wrote:
-> > > > > Hi,
-> > > > > 
-> > > > > I am getting the following crashers in iwl3945 after updating to
-> > > > > post-2.6.34 kernels. This is with the pull from Linus's tree as of last
-> > > > > night (the taint is from nvidia module):
-> > > > > 
-> > > > > [ 3330.630734] general protection fault: 0000 [#1] PREEMPT SMP
-> > > > > [ 3330.630752] last sysfs file: /sys/devices/platform/dock.0/docked
-> > > > > [ 3330.630761] CPU 0
-> > > > > [ 3330.630766] Modules linked in: cryptd aes_x86_64 aes_generic fuse
-> > > > > rfcomm sco bnep l2cap autofs4 coretemp hwmon sunrpc ppdev parport_pc
-> > > > > parport acpi_cpufreq mperf uinput nvidia(P) snd_hda_codec_idt arc4
-> > > > > snd_hda_intel ecb snd_hda_codec snd_hwdep iwl3945 joydev snd_seq
-> > > > > snd_seq_device snd_pcm iwlcore mac80211 snd_timer cfg80211 snd psmouse
-> > > > > iTCO_wdt dell_wmi iTCO_vendor_support serio_raw tg3 battery
-> > > > > dell_laptop dcdbas soundcore snd_page_alloc btusb bluetooth video
-> > > > > pcspkr mac_hid ac wmi libphy firewire_ohci i2c_i801 firewire_core
-> > > > > yenta_socket crc_itu_t ohci_hcd [last unloaded: microcode] [
-> > > > > 3330.630950]
-> > > > > [ 3330.630958] Pid: 455, comm: iwl3945 Tainted: P            2.6.35-rc0
-> > > > > #293 0WM416/Latitude D630 [ 3330.630967] RIP:
-> > > > > 0010:[<ffffffffa01e70d3>]  [<ffffffffa01e70d3>]
-> > > > > iwl3945_get_channels_for_scan+0xe3/0x460 [iwl3945]
-> > > > 
-> > > > http://bugzilla.intellinuxwireless.org/show_bug.cgi?id=2208
-> > > 
-> > > Can you please try this patch and report your findings?
-> > > 
-> > > http://bugzilla.intellinuxwireless.org/attachment.cgi?id=2447
-> > > 
-> > 
-> > Thanks, will try both this patch and the one John mention. Later tonight
-> > though.
-> > 
-> 
-> John,
-> 
-> Any chnace that 2nd patch be merged upstream? Without it my iwl3945
-> craps out regularly.
-> 
-It is merged in iwlwifi-2.6. It will be sent for upstream submission.
+[Changes from v2:
 
-Abhijeet
-> Thanks!
-> 
+Use hotcpu_notifier - fix will only apply to hotplug events, not
+initial SMP boot
 
+Kerneldocify function arguments
+
+Use acquire_console_sem() instead of try_acquire_console_sem()
+
+Reuse the existing disable_boot_consoles() initcall instead of making a
+new one]
+
+When a secondary CPU is being brought up, it is not uncommon for
+printk() to be invoked when cpu_online(smp_processor_id()) == 0.  The
+case that I witnessed personally was on MIPS:
+
+http://lkml.org/lkml/2010/5/30/4
+
+If (can_use_console() == 0), printk() will spool its output to log_buf
+and it will be visible in "dmesg", but that output will NOT be echoed to
+the console until somebody calls release_console_sem() from a CPU that
+is online.  Therefore, the boot time messages from the new CPU can get
+stuck in "limbo" for a long time, and might suddenly appear on the
+screen when a completely unrelated event (e.g. "eth0: link is down")
+occurs.
+
+This patch modifies the console code so that any pending messages are
+automatically flushed out to the console whenever a CPU hotplug
+operation completes successfully or aborts.
+
+The issue was seen on 2.6.34.
+
+Signed-off-by: Kevin Cernekee <cernekee@gmail.com>
+---
+ kernel/printk.c |   34 ++++++++++++++++++++++++++++++++--
+ 1 files changed, 32 insertions(+), 2 deletions(-)
+
+diff --git a/kernel/printk.c b/kernel/printk.c
+index 444b770..1748519 100644
+--- a/kernel/printk.c
++++ b/kernel/printk.c
+@@ -37,6 +37,8 @@
+ #include <linux/ratelimit.h>
+ #include <linux/kmsg_dump.h>
+ #include <linux/syslog.h>
++#include <linux/cpu.h>
++#include <linux/notifier.h>
+ 
+ #include <asm/uaccess.h>
+ 
+@@ -985,6 +987,33 @@ void resume_console(void)
+ }
+ 
+ /**
++ * console_cpu_notify - print deferred console messages after CPU hotplug
++ * @self: notifier struct
++ * @action: CPU hotplug event
++ * @hcpu: unused
++ *
++ * If printk() is called from a CPU that is not online yet, the messages
++ * will be spooled but will not show up on the console.  This function is
++ * called when a new CPU comes online (or fails to come up), and ensures
++ * that any such output gets printed.
++ */
++static int __cpuinit console_cpu_notify(struct notifier_block *self,
++	unsigned long action, void *hcpu)
++{
++	switch (action) {
++	case CPU_ONLINE:
++	case CPU_UP_CANCELED:
++		acquire_console_sem();
++		release_console_sem();
++	}
++	return NOTIFY_OK;
++}
++
++static struct notifier_block __cpuinitdata console_nb = {
++	.notifier_call		= console_cpu_notify,
++};
++
++/**
+  * acquire_console_sem - lock the console system for exclusive use.
+  *
+  * Acquires a semaphore which guarantees that the caller has
+@@ -1371,7 +1400,7 @@ int unregister_console(struct console *console)
+ }
+ EXPORT_SYMBOL(unregister_console);
+ 
+-static int __init disable_boot_consoles(void)
++static int __init printk_late_init(void)
+ {
+ 	struct console *con;
+ 
+@@ -1382,9 +1411,10 @@ static int __init disable_boot_consoles(void)
+ 			unregister_console(con);
+ 		}
+ 	}
++	register_hotcpu_notifier(&console_nb);
+ 	return 0;
+ }
+-late_initcall(disable_boot_consoles);
++late_initcall(printk_late_init);
+ 
+ #if defined CONFIG_PRINTK
+ 
+-- 
+1.7.0.4
 
