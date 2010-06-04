@@ -1,68 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752637Ab0FDHTL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jun 2010 03:19:11 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:50267 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751409Ab0FDHTJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jun 2010 03:19:09 -0400
-Date: Fri, 4 Jun 2010 08:19:06 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Borislav Petkov <bp@alien8.de>, Changli Gao <xiaosuo@gmail.com>,
-       linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] fs: optimize mpage_readpage()
-Message-ID: <20100604071906.GC31073@ZenIV.linux.org.uk>
-References: <1275095926-18345-1-git-send-email-xiaosuo@gmail.com>
- <20100529121019.GA25092@liondog.tnic>
+	id S1752466Ab0FDHXG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jun 2010 03:23:06 -0400
+Received: from cantor.suse.de ([195.135.220.2]:44128 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751239Ab0FDHXE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Jun 2010 03:23:04 -0400
+Message-ID: <4C08A9D0.8000505@suse.cz>
+Date: Fri, 04 Jun 2010 09:22:56 +0200
+From: Michal Marek <mmarek@suse.cz>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100317 SUSE/3.0.4 Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100529121019.GA25092@liondog.tnic>
-User-Agent: Mutt/1.5.20 (2009-08-17)
+To: =?ISO-8859-1?Q?Am=E9rico_Wang?= <xiyou.wangcong@gmail.com>
+Cc: alan <alan@clueserver.org>, linux-kernel@vger.kernel.org
+Subject: Re: Additional info on modpost segfault
+References: <Pine.LNX.4.64.1006032008220.30918@blackbox.fnordora.org> <20100604045118.GC5167@cr0.nay.redhat.com>
+In-Reply-To: <20100604045118.GC5167@cr0.nay.redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, May 29, 2010 at 02:10:19PM +0200, Borislav Petkov wrote:
-> > -	struct bio *bio = NULL;
-> > +	struct bio *bio;
-> >  	sector_t last_block_in_bio = 0;
-> >  	struct buffer_head map_bh;
-> >  	unsigned long first_logical_block = 0;
-> >  
-> >  	map_bh.b_state = 0;
-> >  	map_bh.b_size = 0;
-> > -	bio = do_mpage_readpage(bio, page, 1, &last_block_in_bio,
-> > +	bio = do_mpage_readpage(NULL, page, 1, &last_block_in_bio,
-> >  			&map_bh, &first_logical_block, get_block);
-> >  	if (bio)
-> >  		mpage_bio_submit(READ, bio);
+On 4.6.2010 06:51, Américo Wang wrote:
+> On Thu, Jun 03, 2010 at 08:10:30PM -0700, alan wrote:
+>> Missed adding the actual segfault message:
+>>
+>>  LD      drivers/usb/built-in.o
+>>  LD      drivers/built-in.o
+>>  LD      vmlinux.o
+>>  MODPOST vmlinux.o
+>> /bin/sh: line 1: 20665 Segmentation fault      (core dumped)
+>> scripts/mod/modpost -o
+>> /home/alan/GitTrees/linux-2.6-mid-ref/Module.symvers -S vmlinux.o
+>> make[1]: *** [vmlinux.o] Error 139
+>> make: *** [vmlinux.o] Error 2
+>>
+>> I have looked at the gcc 4.4.4 changelog and I can't see anything
+>> that should cause this.
+>>
 > 
-> Nope, I don't think that's a good idea.
-> 
-> On the one hand, this is a trick to shut up gcc:
-> 
-> fs/mpage.c: In function ???mpage_readpage???:
-> fs/mpage.c:419: warning: ???bio??? is used uninitialized in this function
+> Hmm, you need to find which program segfaults here.
 
-File a bug against your version of gcc, then.  The very first operation
-involving bio is assignment to it; if gcc complains about that, it's
-extremely fscked up.
+It's the modpost command run on vmlinux.o. Alan, can you try
+$ gdb --args scripts/mod/modpost -o Module.symvers -S vmlinux.o
+(gdb) r
+(wait for the segfault)
+(gdb) bt full
 
-Said that, I don't see how could that be an optimization.  Recent gcc is
-apparently b0rken in dead stores elimination, but that seems to be
-triggered by passing address of variable to another function later on [1];
-nothing of that kind happens here.
+and post the backtrace?
 
-[1] gcc 4.3 and later (at least) fails to eliminate the first assignment in
-int foo(void)
-{
-	extern int f(void);
-	extern int g(int *);
-	int x;
-	x = 0;
-	x = f();
-	return g(&x);
-}
-with any optimization level (and apparently on any target).
+Thanks,
+Michal
