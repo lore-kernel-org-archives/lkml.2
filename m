@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756114Ab0FDN4p (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jun 2010 09:56:45 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:51484 "EHLO song.cn.fujitsu.com"
+	id S1756182Ab0FDN5a (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jun 2010 09:57:30 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:57344 "EHLO song.cn.fujitsu.com"
 	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1755013Ab0FDN4o (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jun 2010 09:56:44 -0400
-Message-ID: <4C090543.5080808@cn.fujitsu.com>
-Date: Fri, 04 Jun 2010 21:53:07 +0800
+	id S1755911Ab0FDN53 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Jun 2010 09:57:29 -0400
+Message-ID: <4C090572.5010109@cn.fujitsu.com>
+Date: Fri, 04 Jun 2010 21:53:54 +0800
 From: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
 User-Agent: Thunderbird 2.0.0.24 (Windows/20100228)
 MIME-Version: 1.0
 To: Avi Kivity <avi@redhat.com>
 CC: Marcelo Tosatti <mtosatti@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
        KVM list <kvm@vger.kernel.org>
-Subject: [PATCH v2 2/7] KVM: MMU: introduce some macros to cleanup hlist traverseing
+Subject: [PATCH v2 3/7] KVM: MMU: split the operations of kvm_mmu_zap_page()
 References: <4C090511.60206@cn.fujitsu.com>
 In-Reply-To: <4C090511.60206@cn.fujitsu.com>
 Content-Type: text/plain; charset=UTF-8
@@ -23,243 +23,145 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Introduce for_each_gfn_sp() and for_each_gfn_indirect_valid_sp() to
-cleanup hlist traverseing
+Using kvm_mmu_prepare_zap_page() and kvm_mmu_commit_zap_page() to
+split kvm_mmu_zap_page() function, then we can:
+
+- traverse hlist safely
+- easily to gather remote tlb flush which occurs during page zapped
+
+Those feature can be used in the later patches
 
 Signed-off-by: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
 ---
- arch/x86/kvm/mmu.c |  122 ++++++++++++++++++++--------------------------------
- 1 files changed, 47 insertions(+), 75 deletions(-)
+ arch/x86/kvm/mmu.c      |   52 ++++++++++++++++++++++++++++++++++++++--------
+ arch/x86/kvm/mmutrace.h |    2 +-
+ 2 files changed, 44 insertions(+), 10 deletions(-)
 
 diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
-index e962f26..75bd6df 100644
+index 75bd6df..a64c0e0 100644
 --- a/arch/x86/kvm/mmu.c
 +++ b/arch/x86/kvm/mmu.c
-@@ -1201,6 +1201,17 @@ static void kvm_unlink_unsync_page(struct kvm *kvm, struct kvm_mmu_page *sp)
+@@ -916,6 +916,7 @@ static int is_empty_shadow_page(u64 *spt)
+ static void kvm_mmu_free_page(struct kvm *kvm, struct kvm_mmu_page *sp)
+ {
+ 	ASSERT(is_empty_shadow_page(sp->spt));
++	hlist_del(&sp->hash_link);
+ 	list_del(&sp->link);
+ 	__free_page(virt_to_page(sp->spt));
+ 	if (!sp->role.direct)
+@@ -1200,6 +1201,10 @@ static void kvm_unlink_unsync_page(struct kvm *kvm, struct kvm_mmu_page *sp)
+ }
  
  static int kvm_mmu_zap_page(struct kvm *kvm, struct kvm_mmu_page *sp);
++static int kvm_mmu_prepare_zap_page(struct kvm *kvm, struct kvm_mmu_page *sp,
++				    struct list_head *invalid_list);
++static void kvm_mmu_commit_zap_page(struct kvm *kvm,
++				    struct list_head *invalid_list);
  
-+#define for_each_gfn_sp(kvm, sp, gfn, pos, n)				\
-+  hlist_for_each_entry_safe(sp, pos, n,					\
-+   &(kvm)->arch.mmu_page_hash[kvm_page_table_hashfn(gfn)], hash_link)	\
-+	if ((sp)->gfn != (gfn)) {} else
-+
-+#define for_each_gfn_indirect_valid_sp(kvm, sp, gfn, pos, n)		\
-+  hlist_for_each_entry_safe(sp, pos, n,					\
-+   &(kvm)->arch.mmu_page_hash[kvm_page_table_hashfn(gfn)], hash_link)	\
-+		if ((sp)->gfn != (gfn) || (sp)->role.direct ||		\
-+			(sp)->role.invalid) {} else
-+
- static int __kvm_sync_page(struct kvm_vcpu *vcpu, struct kvm_mmu_page *sp,
- 			   bool clear_unsync)
- {
-@@ -1244,16 +1255,12 @@ static int kvm_sync_page(struct kvm_vcpu *vcpu, struct kvm_mmu_page *sp)
- /* @gfn should be write-protected at the call site */
- static void kvm_sync_pages(struct kvm_vcpu *vcpu,  gfn_t gfn)
- {
--	struct hlist_head *bucket;
- 	struct kvm_mmu_page *s;
- 	struct hlist_node *node, *n;
--	unsigned index;
- 	bool flush = false;
- 
--	index = kvm_page_table_hashfn(gfn);
--	bucket = &vcpu->kvm->arch.mmu_page_hash[index];
--	hlist_for_each_entry_safe(s, node, n, bucket, hash_link) {
--		if (s->gfn != gfn || !s->unsync || s->role.invalid)
-+	for_each_gfn_indirect_valid_sp(vcpu->kvm, s, gfn, node, n) {
-+		if (!s->unsync)
- 			continue;
- 
- 		WARN_ON(s->role.level != PT_PAGE_TABLE_LEVEL);
-@@ -1365,9 +1372,7 @@ static struct kvm_mmu_page *kvm_mmu_get_page(struct kvm_vcpu *vcpu,
- 					     u64 *parent_pte)
- {
- 	union kvm_mmu_page_role role;
--	unsigned index;
- 	unsigned quadrant;
--	struct hlist_head *bucket;
- 	struct kvm_mmu_page *sp;
- 	struct hlist_node *node, *tmp;
- 	bool need_sync = false;
-@@ -1383,36 +1388,34 @@ static struct kvm_mmu_page *kvm_mmu_get_page(struct kvm_vcpu *vcpu,
- 		quadrant &= (1 << ((PT32_PT_BITS - PT64_PT_BITS) * level)) - 1;
- 		role.quadrant = quadrant;
- 	}
--	index = kvm_page_table_hashfn(gfn);
--	bucket = &vcpu->kvm->arch.mmu_page_hash[index];
--	hlist_for_each_entry_safe(sp, node, tmp, bucket, hash_link)
--		if (sp->gfn == gfn) {
--			if (!need_sync && sp->unsync)
--				need_sync = true;
-+	for_each_gfn_sp(vcpu->kvm, sp, gfn, node, tmp) {
-+		if (!need_sync && sp->unsync)
-+			need_sync = true;
- 
--			if (sp->role.word != role.word)
--				continue;
-+		if (sp->role.word != role.word)
-+			continue;
- 
--			if (sp->unsync && kvm_sync_page_transient(vcpu, sp))
--				break;
-+		if (sp->unsync && kvm_sync_page_transient(vcpu, sp))
-+			break;
- 
--			mmu_page_add_parent_pte(vcpu, sp, parent_pte);
--			if (sp->unsync_children) {
--				set_bit(KVM_REQ_MMU_SYNC, &vcpu->requests);
--				kvm_mmu_mark_parents_unsync(sp);
--			} else if (sp->unsync)
--				kvm_mmu_mark_parents_unsync(sp);
-+		mmu_page_add_parent_pte(vcpu, sp, parent_pte);
-+		if (sp->unsync_children) {
-+			set_bit(KVM_REQ_MMU_SYNC, &vcpu->requests);
-+			kvm_mmu_mark_parents_unsync(sp);
-+		} else if (sp->unsync)
-+			kvm_mmu_mark_parents_unsync(sp);
- 
--			trace_kvm_mmu_get_page(sp, false);
--			return sp;
--		}
-+		trace_kvm_mmu_get_page(sp, false);
-+		return sp;
-+	}
- 	++vcpu->kvm->stat.mmu_cache_miss;
- 	sp = kvm_mmu_alloc_page(vcpu, parent_pte, direct);
- 	if (!sp)
- 		return sp;
- 	sp->gfn = gfn;
- 	sp->role = role;
--	hlist_add_head(&sp->hash_link, bucket);
-+	hlist_add_head(&sp->hash_link,
-+		&vcpu->kvm->arch.mmu_page_hash[kvm_page_table_hashfn(gfn)]);
- 	if (!direct) {
- 		if (rmap_write_protect(vcpu->kvm, gfn))
- 			kvm_flush_remote_tlbs(vcpu->kvm);
-@@ -1617,46 +1620,34 @@ void kvm_mmu_change_mmu_pages(struct kvm *kvm, unsigned int kvm_nr_mmu_pages)
- 
- static int kvm_mmu_unprotect_page(struct kvm *kvm, gfn_t gfn)
- {
--	unsigned index;
--	struct hlist_head *bucket;
- 	struct kvm_mmu_page *sp;
- 	struct hlist_node *node, *n;
- 	int r;
- 
- 	pgprintk("%s: looking for gfn %lx\n", __func__, gfn);
- 	r = 0;
--	index = kvm_page_table_hashfn(gfn);
--	bucket = &kvm->arch.mmu_page_hash[index];
- restart:
--	hlist_for_each_entry_safe(sp, node, n, bucket, hash_link)
--		if (sp->gfn == gfn && !sp->role.direct && !sp->role.invalid) {
--			pgprintk("%s: gfn %lx role %x\n", __func__, gfn,
--				 sp->role.word);
--			r = 1;
--			if (kvm_mmu_zap_page(kvm, sp))
--				goto restart;
--		}
-+	for_each_gfn_indirect_valid_sp(kvm, sp, gfn, node, n) {
-+		pgprintk("%s: gfn %lx role %x\n", __func__, gfn,
-+			 sp->role.word);
-+		r = 1;
-+		if (kvm_mmu_zap_page(kvm, sp))
-+			goto restart;
-+	}
- 	return r;
+ #define for_each_gfn_sp(kvm, sp, gfn, pos, n)				\
+   hlist_for_each_entry_safe(sp, pos, n,					\
+@@ -1530,7 +1535,8 @@ static void kvm_mmu_unlink_parents(struct kvm *kvm, struct kvm_mmu_page *sp)
  }
  
- static void mmu_unshadow(struct kvm *kvm, gfn_t gfn)
+ static int mmu_zap_unsync_children(struct kvm *kvm,
+-				   struct kvm_mmu_page *parent)
++				   struct kvm_mmu_page *parent,
++				   struct list_head *invalid_list)
  {
--	unsigned index;
--	struct hlist_head *bucket;
- 	struct kvm_mmu_page *sp;
- 	struct hlist_node *node, *nn;
+ 	int i, zapped = 0;
+ 	struct mmu_page_path parents;
+@@ -1544,7 +1550,7 @@ static int mmu_zap_unsync_children(struct kvm *kvm,
+ 		struct kvm_mmu_page *sp;
  
--	index = kvm_page_table_hashfn(gfn);
--	bucket = &kvm->arch.mmu_page_hash[index];
- restart:
--	hlist_for_each_entry_safe(sp, node, nn, bucket, hash_link) {
--		if (sp->gfn == gfn && !sp->role.direct
--		    && !sp->role.invalid) {
--			pgprintk("%s: zap %lx %x\n",
--				 __func__, gfn, sp->role.word);
--			if (kvm_mmu_zap_page(kvm, sp))
--				goto restart;
--		}
-+	for_each_gfn_indirect_valid_sp(kvm, sp, gfn, node, nn) {
-+		pgprintk("%s: zap %lx %x\n",
-+			 __func__, gfn, sp->role.word);
-+		if (kvm_mmu_zap_page(kvm, sp))
-+			goto restart;
- 	}
- }
- 
-@@ -1799,17 +1790,11 @@ static void __kvm_unsync_page(struct kvm_vcpu *vcpu, struct kvm_mmu_page *sp)
- 
- static void kvm_unsync_pages(struct kvm_vcpu *vcpu,  gfn_t gfn)
- {
--	struct hlist_head *bucket;
- 	struct kvm_mmu_page *s;
- 	struct hlist_node *node, *n;
--	unsigned index;
--
--	index = kvm_page_table_hashfn(gfn);
--	bucket = &vcpu->kvm->arch.mmu_page_hash[index];
- 
--	hlist_for_each_entry_safe(s, node, n, bucket, hash_link) {
--		if (s->gfn != gfn || s->role.direct || s->unsync ||
--		      s->role.invalid)
-+	for_each_gfn_indirect_valid_sp(vcpu->kvm, s, gfn, node, n) {
-+		if (s->unsync)
- 			continue;
- 		WARN_ON(s->role.level != PT_PAGE_TABLE_LEVEL);
- 		__kvm_unsync_page(vcpu, s);
-@@ -1819,18 +1804,11 @@ static void kvm_unsync_pages(struct kvm_vcpu *vcpu,  gfn_t gfn)
- static int mmu_need_write_protect(struct kvm_vcpu *vcpu, gfn_t gfn,
- 				  bool can_unsync)
- {
--	unsigned index;
--	struct hlist_head *bucket;
- 	struct kvm_mmu_page *s;
- 	struct hlist_node *node, *n;
- 	bool need_unsync = false;
- 
--	index = kvm_page_table_hashfn(gfn);
--	bucket = &vcpu->kvm->arch.mmu_page_hash[index];
--	hlist_for_each_entry_safe(s, node, n, bucket, hash_link) {
--		if (s->gfn != gfn || s->role.direct || s->role.invalid)
--			continue;
--
-+	for_each_gfn_indirect_valid_sp(vcpu->kvm, s, gfn, node, n) {
- 		if (s->role.level != PT_PAGE_TABLE_LEVEL)
- 			return 1;
- 
-@@ -2701,8 +2679,6 @@ void kvm_mmu_pte_write(struct kvm_vcpu *vcpu, gpa_t gpa,
- 	gfn_t gfn = gpa >> PAGE_SHIFT;
- 	struct kvm_mmu_page *sp;
- 	struct hlist_node *node, *n;
--	struct hlist_head *bucket;
--	unsigned index;
- 	u64 entry, gentry;
- 	u64 *spte;
- 	unsigned offset = offset_in_page(gpa);
-@@ -2770,13 +2746,9 @@ void kvm_mmu_pte_write(struct kvm_vcpu *vcpu, gpa_t gpa,
- 			vcpu->arch.last_pte_updated = NULL;
+ 		for_each_sp(pages, sp, parents, i) {
+-			kvm_mmu_zap_page(kvm, sp);
++			kvm_mmu_prepare_zap_page(kvm, sp, invalid_list);
+ 			mmu_pages_clear_parents(&parents);
+ 			zapped++;
  		}
- 	}
--	index = kvm_page_table_hashfn(gfn);
--	bucket = &vcpu->kvm->arch.mmu_page_hash[index];
+@@ -1554,16 +1560,16 @@ static int mmu_zap_unsync_children(struct kvm *kvm,
+ 	return zapped;
+ }
  
- restart:
--	hlist_for_each_entry_safe(sp, node, n, bucket, hash_link) {
--		if (sp->gfn != gfn || sp->role.direct || sp->role.invalid)
--			continue;
-+	for_each_gfn_indirect_valid_sp(vcpu->kvm, sp, gfn, node, n) {
- 		pte_size = sp->role.cr4_pae ? 8 : 4;
- 		misaligned = (offset ^ (offset + bytes - 1)) & ~(pte_size - 1);
- 		misaligned |= bytes < 4;
+-static int kvm_mmu_zap_page(struct kvm *kvm, struct kvm_mmu_page *sp)
++static int kvm_mmu_prepare_zap_page(struct kvm *kvm, struct kvm_mmu_page *sp,
++				    struct list_head *invalid_list)
+ {
+ 	int ret;
+ 
+-	trace_kvm_mmu_zap_page(sp);
++	trace_kvm_mmu_prepare_zap_page(sp);
+ 	++kvm->stat.mmu_shadow_zapped;
+-	ret = mmu_zap_unsync_children(kvm, sp);
++	ret = mmu_zap_unsync_children(kvm, sp, invalid_list);
+ 	kvm_mmu_page_unlink_children(kvm, sp);
+ 	kvm_mmu_unlink_parents(kvm, sp);
+-	kvm_flush_remote_tlbs(kvm);
+ 	if (!sp->role.invalid && !sp->role.direct)
+ 		unaccount_shadowed(kvm, sp->gfn);
+ 	if (sp->unsync)
+@@ -1571,17 +1577,45 @@ static int kvm_mmu_zap_page(struct kvm *kvm, struct kvm_mmu_page *sp)
+ 	if (!sp->root_count) {
+ 		/* Count self */
+ 		ret++;
+-		hlist_del(&sp->hash_link);
+-		kvm_mmu_free_page(kvm, sp);
++		list_move(&sp->link, invalid_list);
+ 	} else {
+-		sp->role.invalid = 1;
+ 		list_move(&sp->link, &kvm->arch.active_mmu_pages);
+ 		kvm_reload_remote_mmus(kvm);
+ 	}
++
++	sp->role.invalid = 1;
+ 	kvm_mmu_reset_last_pte_updated(kvm);
+ 	return ret;
+ }
+ 
++static void kvm_mmu_commit_zap_page(struct kvm *kvm,
++				    struct list_head *invalid_list)
++{
++	struct kvm_mmu_page *sp;
++
++	if (list_empty(invalid_list))
++		return;
++
++	kvm_flush_remote_tlbs(kvm);
++
++	do {
++		sp = list_first_entry(invalid_list, struct kvm_mmu_page, link);
++		WARN_ON(!sp->role.invalid || sp->root_count);
++		kvm_mmu_free_page(kvm, sp);
++	} while (!list_empty(invalid_list));
++
++}
++
++static int kvm_mmu_zap_page(struct kvm *kvm, struct kvm_mmu_page *sp)
++{
++	LIST_HEAD(invalid_list);
++	int ret;
++
++	ret = kvm_mmu_prepare_zap_page(kvm, sp, &invalid_list);
++	kvm_mmu_commit_zap_page(kvm, &invalid_list);
++	return ret;
++}
++
+ /*
+  * Changing the number of mmu pages allocated to the vm
+  * Note: if kvm_nr_mmu_pages is too small, you will get dead lock
+diff --git a/arch/x86/kvm/mmutrace.h b/arch/x86/kvm/mmutrace.h
+index 42f07b1..3aab0f0 100644
+--- a/arch/x86/kvm/mmutrace.h
++++ b/arch/x86/kvm/mmutrace.h
+@@ -190,7 +190,7 @@ DEFINE_EVENT(kvm_mmu_page_class, kvm_mmu_unsync_page,
+ 	TP_ARGS(sp)
+ );
+ 
+-DEFINE_EVENT(kvm_mmu_page_class, kvm_mmu_zap_page,
++DEFINE_EVENT(kvm_mmu_page_class, kvm_mmu_prepare_zap_page,
+ 	TP_PROTO(struct kvm_mmu_page *sp),
+ 
+ 	TP_ARGS(sp)
 -- 
 1.6.1.2
 
