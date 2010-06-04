@@ -1,47 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755545Ab0FDMHa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jun 2010 08:07:30 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:45551 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753511Ab0FDMH2 convert rfc822-to-8bit (ORCPT
+	id S1754205Ab0FDMRb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jun 2010 08:17:31 -0400
+Received: from buzzloop.caiaq.de ([212.112.241.133]:56026 "EHLO
+	buzzloop.caiaq.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751683Ab0FDMRa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jun 2010 08:07:28 -0400
-Subject: Re: [PATCH UPDATED 2/4] sched: adjust when cpu_active and cpuset
- configurations are updated during cpu on/offlining
-From: Peter Zijlstra <peterz@infradead.org>
-To: Tejun Heo <tj@kernel.org>
-Cc: mingo@elte.hu, linux-kernel@vger.kernel.org, rusty@rustcorp.com.au,
-       paulus@samba.org, acme@redhat.com, Paul Menage <menage@google.com>
-In-Reply-To: <4C08EB74.8070300@kernel.org>
-References: <1275332199-28082-1-git-send-email-tj@kernel.org>
-	 <1275332199-28082-3-git-send-email-tj@kernel.org>
-	 <1275407846.27810.27627.camel@twins>  <4C053C39.9070405@kernel.org>
-	 <1275412835.27810.27887.camel@twins>  <4C0680DB.9010503@kernel.org>
-	 <1275652701.27810.39745.camel@twins>  <4C08EB74.8070300@kernel.org>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Fri, 04 Jun 2010 14:07:37 +0200
-Message-ID: <1275653257.27810.39763.camel@twins>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	Fri, 4 Jun 2010 08:17:30 -0400
+From: Daniel Mack <daniel@caiaq.de>
+To: linux-kernel@vger.kernel.org
+Cc: Daniel Mack <daniel@caiaq.de>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+       Len Brown <len.brown@intel.com>, Greg Kroah-Hartman <gregkh@suse.de>,
+       Magnus Damm <damm@igel.co.jp>, Alan Stern <stern@rowland.harvard.edu>,
+       Randy Dunlap <randy.dunlap@oracle.com>,
+       linux-pm@lists.linux-foundation.org
+Subject: [PATCH] drivers/base/power: be more verbose in device_pm_add()
+Date: Fri,  4 Jun 2010 14:17:14 +0200
+Message-Id: <1275653834-9132-1-git-send-email-daniel@caiaq.de>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2010-06-04 at 14:03 +0200, Tejun Heo wrote:
-> On 06/04/2010 01:58 PM, Peter Zijlstra wrote:
-> >> * Rollback on failure.
-> >>
-> >> * cpuset/sched_domain don't expect to be called before smp
-> >>   configuration is complete.  If hardcoded into cpu_up/down(),
-> >>   condition checks need to be added so that they're skipped if the
-> >>   system is bringing up the cpus for the first time.
-> >>
-> >> Works fine here w/ CPUSET enabled and disabled.
-> > 
-> > OK, this looks good. 
-> 
-> Cool, can I add your acked-by's to and send them towards Ingo?
+If a parentless device was added during a PM transaction, developers
+might want to know which device caused the troube. Hence, output the
+kobject's name in this case.
 
-Yes.
+Signed-off-by: Daniel Mack <daniel@caiaq.de>
+Cc: Rafael J. Wysocki <rjw@sisk.pl>
+Cc: Len Brown <len.brown@intel.com>
+Cc: Greg Kroah-Hartman <gregkh@suse.de>
+Cc: Magnus Damm <damm@igel.co.jp>
+Cc: Alan Stern <stern@rowland.harvard.edu>
+Cc: Randy Dunlap <randy.dunlap@oracle.com>
+Cc: linux-pm@lists.linux-foundation.org
+---
+ drivers/base/power/main.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/drivers/base/power/main.c b/drivers/base/power/main.c
+index 941fcb8..9e9fe6a 100644
+--- a/drivers/base/power/main.c
++++ b/drivers/base/power/main.c
+@@ -98,7 +98,7 @@ void device_pm_add(struct device *dev)
+ 		 * transition is in progress in order to avoid leaving them
+ 		 * unhandled down the road
+ 		 */
+-		dev_WARN(dev, "Parentless device registered during a PM transaction\n");
++		dev_WARN(dev, "Parentless device registered during a PM transaction: %s\n", kobject_name(&dev->kobj));
+ 	}
+ 
+ 	list_add_tail(&dev->power.entry, &dpm_list);
+-- 
+1.7.1
+
