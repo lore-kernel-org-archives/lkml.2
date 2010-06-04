@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757050Ab0FDCLM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jun 2010 22:11:12 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:64543 "EHLO
+	id S1757125Ab0FDCNP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jun 2010 22:13:15 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:64732 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755901Ab0FDCLK (ORCPT
+	with ESMTP id S1751677Ab0FDCNN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jun 2010 22:11:10 -0400
-X-Authority-Analysis: v=1.1 cv=DT5lrGikL/lNZzMKzbmp3iVCACewI9NZ3q1CIi1KGbI= c=1 sm=0 a=PrV_ml3jdBcA:10 a=yQWWgrYGNuUA:10 a=7U3hwN5JcxgA:10 a=Q9fys5e9bTEA:10 a=gMqfjgEr1zLu/65IO0LwxA==:17 a=VwQbUJbxAAAA:8 a=20KFwNOVAAAA:8 a=qkXcoXxcMv0mUtqM5rMA:9 a=QPHa6bOalSxeIxWhT9fok8iMLXsA:4 a=PUjeQqilurYA:10 a=jEp0ucaQiEUA:10 a=gMqfjgEr1zLu/65IO0LwxA==:117
+	Thu, 3 Jun 2010 22:13:13 -0400
+X-Authority-Analysis: v=1.1 cv=xm0otvE9/LjRWYlyDrHfx7zP0/MGCmNk7gQgTP1ehto= c=1 sm=0 a=PrV_ml3jdBcA:10 a=yQWWgrYGNuUA:10 a=7U3hwN5JcxgA:10 a=Q9fys5e9bTEA:10 a=gMqfjgEr1zLu/65IO0LwxA==:17 a=nJFUfH9sVRbywR1TkBcA:9 a=EVo11fOrKt8HSDK26bgA:7 a=y3IkeJKY4ymWyS5jgKVHQXdKIXMA:4 a=PUjeQqilurYA:10 a=gMqfjgEr1zLu/65IO0LwxA==:117
 X-Cloudmark-Score: 0
 X-Originating-IP: 74.67.89.75
 Subject: Re: [PATCH][GIT PULL][v2.6.35] tracing/events: Convert format
@@ -22,13 +22,13 @@ Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
        James Bottomley <James.Bottomley@suse.de>,
        Tomohiro Kusumi <kusumi.tomohiro@jp.fujitsu.com>,
        Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
-In-Reply-To: <4C08594E.2000703@cn.fujitsu.com>
+In-Reply-To: <4C0860DE.5020609@cn.fujitsu.com>
 References: <1275594103.15884.35.camel@gandalf.stny.rr.com>
-	 <4C08594E.2000703@cn.fujitsu.com>
+	 <4C0860DE.5020609@cn.fujitsu.com>
 Content-Type: text/plain; charset="ISO-8859-15"
 Organization: Kihon Technologies Inc.
-Date: Thu, 03 Jun 2010 22:11:08 -0400
-Message-ID: <1275617468.15884.65.camel@gandalf.stny.rr.com>
+Date: Thu, 03 Jun 2010 22:13:11 -0400
+Message-ID: <1275617591.15884.67.camel@gandalf.stny.rr.com>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
@@ -36,54 +36,53 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2010-06-04 at 09:39 +0800, Li Zefan wrote:
-> Steven Rostedt wrote:
-> > Ingo,
-> > 
-> > Please pull the latest tip/perf/urgent tree, which can be found at:
-> > 
-> >   git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-2.6-trace.git
-> > tip/perf/urgent
-> > 
-> > 
-> > Steven Rostedt (1):
-> >       tracing/events: Convert format output to seq_file
-> > 
-> > ----
-> >  kernel/trace/trace_events.c |  208 +++++++++++++++++++++++++++++--------------
-> >  1 files changed, 142 insertions(+), 66 deletions(-)
-> > ---------------------------
-> > commit 0953fa1f774105fcd6150282b7b9ea7763090f64
-> > Author: Steven Rostedt <srostedt@redhat.com>
-> > Date:   Thu Jun 3 15:21:34 2010 -0400
-> > 
-> >     tracing/events: Convert format output to seq_file
-> >     
+On Fri, 2010-06-04 at 10:11 +0800, Li Zefan wrote:
+> > +static void *f_start(struct seq_file *m, loff_t *pos)
+> > +{
+> > +	loff_t l = 1;
+> > +	void *p;
+> > +
+> > +	/* Start by showing the header */
+> > +	if (!*pos) {
+> > +		(*pos)++;
 > 
-> This patch seriously conflicts with my patch that extracts common fields
-> from every trace event to a global list, which is already in your perf/core2
-> branch. Should I rebase and resend it?
+> We shoudn't increment *pos in start() handler. It's a common mistake when
+> using seqfile. 
+
+And a common mistake I do :-p
+
+I'll rebase it with the fix.
+
 > 
+> What we need to do in start() is move the pointer to postion *pos.
 
-Ah sorry. No don't.
+So the rest is OK then? All that is needed is the removal of *pos++ ?
 
-We held off your patches to after the merge window. I even reminded Ingo
-to pull them in earlier today. But I forgot that these changes would
-conflict with yours.
-
-Ingo and I were not sure if your patches were too much for the end of
-the merge window, so we held off on them.
-
-This patch set was created when I noticed that the SCSI tracepoints
-failed the size limit in the format, and I worked to fix them.
-
-We may still try to push your patches in -rc. I'll do the conflict
-resolution, and make it perf/core-4.
-
-IOW, don't worry about it, I'll do the worrying ;-)
-
-Thanks!
+Thanks,
 
 -- Steve
+
+> 
+> > +		return (void *)FORMAT_HEADER;
+> >  	}
+> >  
+> > -	if (r)
+> > -		r = trace_seq_printf(s, "\nprint fmt: %s\n",
+> > -				call->print_fmt);
+> > +	p = (void *)FORMAT_HEADER;
+> > +	do {
+> > +		p = f_next(m, p, &l);
+> > +	} while (p && l < *pos);
+> >  
+> > -	if (!r) {
+> > -		/*
+> > -		 * ug!  The format output is bigger than a PAGE!!
+> > -		 */
+> > -		buf = "FORMAT TOO BIG\n";
+> > -		r = simple_read_from_buffer(ubuf, cnt, ppos,
+> > -					      buf, strlen(buf));
+> > -		goto out;
+> > +	return p;
+> > +}
 
 
