@@ -1,52 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751889Ab0FDErX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jun 2010 00:47:23 -0400
-Received: from mail-px0-f174.google.com ([209.85.212.174]:60418 "EHLO
-	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751321Ab0FDErW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jun 2010 00:47:22 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=gCekVo9dvJMuzahSBTQaQ2y+Zc+9qPjxBpfrn/YABJ1O1FUhNDBzYlB/Esp7mNT0OB
-         4zHY5CFj9uM+cJCnpbKiaG2/7ca81wzFcvFJz0ssHyrXHoACEsWvoZrRNB2qGb3mn8bL
-         iNJJPR0tpGHWwqoTyQlBo6sS33ulOG9r50RTM=
-Date: Fri, 4 Jun 2010 12:51:18 +0800
-From: =?utf-8?Q?Am=C3=A9rico?= Wang <xiyou.wangcong@gmail.com>
-To: alan <alan@clueserver.org>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: Additional info on modpost segfault
-Message-ID: <20100604045118.GC5167@cr0.nay.redhat.com>
-References: <Pine.LNX.4.64.1006032008220.30918@blackbox.fnordora.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <Pine.LNX.4.64.1006032008220.30918@blackbox.fnordora.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1751930Ab0FDEti (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jun 2010 00:49:38 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:39828 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750867Ab0FDEtg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Jun 2010 00:49:36 -0400
+Date: Fri, 4 Jun 2010 14:49:33 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Rusty Russell <rusty@rustcorp.com.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: linux-next: build failure after merge of the final tree (rr tree
+ related)
+Message-Id: <20100604144933.86b3f2a8.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 03, 2010 at 08:10:30PM -0700, alan wrote:
->Missed adding the actual segfault message:
->
->  LD      drivers/usb/built-in.o
->  LD      drivers/built-in.o
->  LD      vmlinux.o
->  MODPOST vmlinux.o
->/bin/sh: line 1: 20665 Segmentation fault      (core dumped)
->scripts/mod/modpost -o
->/home/alan/GitTrees/linux-2.6-mid-ref/Module.symvers -S vmlinux.o
->make[1]: *** [vmlinux.o] Error 139
->make: *** [vmlinux.o] Error 2
->
->I have looked at the gcc 4.4.4 changelog and I can't see anything
->that should cause this.
->
+Hi Rusty,
 
-Hmm, you need to find which program segfaults here.
+After merging the final tree, today's linux-next build (powerpc
+ppc44x_defconfig) failed like this:
 
-What does 'file the_core_file_your_got' say?
+kernel/module.c: In function 'post_relocation':
+kernel/module.c:2526: error: 'struct module' has no member named 'percpu_size'
+
+Caused by commit fc77407bc287ed250f9355fda435df5f78b45885 ("module:
+simplify per-cpu handling a little").
+
+This build has CONFIG_SMP not set ... I applied the following patch:
+
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+Date: Fri, 4 Jun 2010 14:41:21 +1000
+Subject: [PATCH] module: don't reference percpu stuff in UP
+
+Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
+---
+ kernel/module.c |    2 ++
+ 1 files changed, 2 insertions(+), 0 deletions(-)
+
+diff --git a/kernel/module.c b/kernel/module.c
+index 69a3f12..da0213a 100644
+--- a/kernel/module.c
++++ b/kernel/module.c
+@@ -2523,7 +2523,9 @@ static int post_relocation(struct module *mod, const struct load_info *info)
+ 	sort_extable(mod->extable, mod->extable + mod->num_exentries);
+ 
+ 	/* Copy relocated percpu area over. */
++#ifdef CONFIG_SMP
+ 	percpu_modcopy(mod, info->orig_percpu, mod->percpu_size);
++#endif
+ 
+ 	/* Setup kallsyms-specific fields. */
+ 	add_kallsyms(mod, info);
+-- 
+1.7.1
+
+
+-- 
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
