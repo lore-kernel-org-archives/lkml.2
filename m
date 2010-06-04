@@ -1,143 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755521Ab0FDMxm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jun 2010 08:53:42 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:43695 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754073Ab0FDMxk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jun 2010 08:53:40 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=RdzGuMUYxuRiHzC/4KOqJnYrHGKdqg429d4Euj2w0Mb/941g+NsOIXVS8jVUXRIyJZ
-         ypnappW53Njxlm2+p2sZK4aPvYORVF008fTLr3hJgqtvEAwcLEfCaHshXy2kx/9uYVzK
-         EipKQxj3TRMb6Kjh36GCDjNbMlV0FB/8dAMqk=
-Subject: Re: [2.6.35-rc1] page alloc failure order:1, mode:0x4020
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Michael Guntsche <mike@it-loops.com>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>,
-       netdev <netdev@vger.kernel.org>
-In-Reply-To: <20100604092025.GA96690@trillian.comsick.at>
-References: <20100604092025.GA96690@trillian.comsick.at>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 04 Jun 2010 14:53:34 +0200
-Message-ID: <1275656014.2482.169.camel@edumazet-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 8bit
+	id S1755793Ab0FDMxt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jun 2010 08:53:49 -0400
+Received: from 0122700014.0.fullrate.dk ([95.166.99.235]:39212 "EHLO kernel.dk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755674Ab0FDMxr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Jun 2010 08:53:47 -0400
+Message-ID: <4C08F758.7070009@fusionio.com>
+Date: Fri, 04 Jun 2010 14:53:44 +0200
+From: Jens Axboe <jaxboe@fusionio.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100423 Thunderbird/3.0.4
+MIME-Version: 1.0
+To: torvalds@linux-foundation.org
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: [GIT PULL] block/IO bits for 2.6.35-rc1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le vendredi 04 juin 2010 à 11:20 +0200, Michael Guntsche a écrit :
-> Hi list,
-> 
-> Testing 2.6.35-rc1 on my powerpc based routerboard I saw the following page allocation
-> error happening during an apt-get update with a semi loaded wlan
-> interface
-> 
-> [309611.189267] __alloc_pages_slowpath: 52 callbacks suppressed
-> [309611.194959] gzip: page allocation failure. order:1, mode:0x4020
-> [309611.200981] Call Trace:
-> [309611.203547] [c399bc50] [c0008144] show_stack+0x48/0x15c (unreliable)
-> [309611.210041] [c399bc80] [c006268c] __alloc_pages_nodemask+0x3d4/0x52c
-> [309611.216512] [c399bd20] [c008619c] __slab_alloc+0x560/0x570
-> [309611.222111] [c399bd60] [c0086a98] __kmalloc_track_caller+0xd4/0x104
-> [309611.228505] [c399bd80] [c01dd220] __alloc_skb+0x64/0x124
-> [309611.233944] [c399bda0] [c994e034] ath_rxbuf_alloc+0x34/0xbc [ath]
-> [309611.240178] [c399bdc0] [c9a1ec9c] ath_rx_tasklet+0x480/0x7c4 [ath9k]
-> [309611.246658] [c399be80] [c9a1dae0] ath9k_tasklet+0x114/0x13c [ath9k]
-> [309611.253055] [c399bea0] [c002532c] tasklet_action+0x88/0x104
-> [309611.258746] [c399bec0] [c0025e30] __do_softirq+0xb4/0x134
-> [309611.264261] [c399bf00] [c0005ec4] do_softirq+0x58/0x5c
-> [309611.269514] [c399bf10] [c0025c20] irq_exit+0x7c/0x9c
-> [309611.274591] [c399bf20] [c0005f64] do_IRQ+0x9c/0xb4
-> [309611.279509] [c399bf40] [c00117d8] ret_from_except+0x0/0x14
-> [309611.285112] --- Exception: 501 at 0xff31f0c
-> [309611.285121]     LR = 0xff32548
-> [309611.292536] Mem-Info:
-> [309611.294899] DMA per-cpu:
-> [309611.297528] CPU    0: hi:   42, btch:   7 usd:  18
-> [309611.302444] active_anon:1040 inactive_anon:1160 isolated_anon:0
-> [309611.302455]  active_file:14871 inactive_file:9440 isolated_file:0
-> [309611.302467]  unevictable:491 dirty:1258 writeback:0 unstable:0
-> [309611.302478]  free:628 slab_reclaimable:832 slab_unreclaimable:2312
-> [309611.302490]  mapped:2254 shmem:36 pagetables:202 bounce:0
-> [309611.332409] DMA free:2512kB min:1440kB low:1800kB high:2160kB active_anon:4160kB inactive_anon:4640kB active_file:59484kB inactive_file:37760kB unevictable:1964kB isolated(anon):0kB isolated(file):0kB present:130048kB mlocked:1964kB dirty:5032kB writeback:0kB mapped:9016kB shmem:144kB slab_reclaimable:3328kB slab_unreclaimable:9248kB kernel_stack:528kB pagetables:808kB unstable:0kB bounce:0kB writeback_tmp:0kB pages_scanned:0 all_unreclaimable? no
-> [309611.372230] lowmem_reserve[]: 0 0 0
-> [309611.375835] DMA: 596*4kB 14*8kB 1*16kB 0*32kB 0*64kB 0*128kB 0*256kB 0*512kB 0*1024kB 0*2048kB 0*4096kB = 2512kB
-> [309611.386215] 24770 total pagecache pages
-> [309611.390147] 0 pages in swap cache
-> [309611.393559] Swap cache stats: add 0, delete 0, find 0/0
-> [309611.398884] Free swap  = 0kB
-> [309611.401857] Total swap = 0kB
-> [309611.411877] 32768 pages RAM
-> [309611.414765] 1228 pages reserved
-> [309611.418000] 27690 pages shared
-> [309611.421147] 8802 pages non-shared
-> [309611.424560] SLUB: Unable to allocate memory on node -1 (gfp=0x20)
-> [309611.430764]   cache: kmalloc-8192, object size: 8192, buffer size: 8192, default order: 3, min order: 1
-> [309611.440276]   node 0: slabs: 155, objs: 620, free: 0
-> [309611.445439] skbuff alloc of size 3872 failed
+Hi,
 
-order-1 allocations are unfortunate, since this hardware should use
-order-0 ones if possible, and it seems it was its goal.
+These are a bunch of updates for 2.6.35-rc1. The major components:
 
-3872 (0xF20) comes from 
+- Revert of the two writeback fixes that made WB_SYNC_NONE
+  writeback from umount actually work. They apparently cause
+  problems for Christoph, so revert them until we figure this
+  out.
 
-#define IEEE80211_MAX_MPDU_LEN     (3840 + FCS_LEN +
-	(IEEE80211_WEP_IVLEN +  \
-	IEEE80211_WEP_KIDLEN + \
-	IEEE80211_WEP_CRCLEN))
+- Updates to the pipe fcntl F_{GET,SET}PIPE_SZ interface to
+  reflect the discussion with Michael. The major bits there
+  are allowing for just 1 page in the pipe, change of capability
+  required to enlarge a pipe beyond the system setting, and
+  change of the /proc/sys/fs/pipe-max-pages to be in bytes
+  like the fcntl API. The latter also renames the file to
+  pipe-max-size to reflect that.
 
-common->rx_bufsize = roundup(IEEE80211_MAX_MPDU_LEN +
-	ah->caps.rx_status_len,
-	min(common->cachelsz, (u16)64));
+- A drbd update.
 
-Then __dev_alloc_skb() adds two more blocs :
+- The rest are minor fixes, like discard support for brd to
+  ease testing of that and some memory consumption improvements
+  for CFQ.
 
-NET_SKB_PAD  (64 bytes on your platform ?)
+Please pull.
 
-sizeof(struct skb_shared_info) 
-(on 32bit : 0x104 ... oh well that might be the problem : it is rounded
-to 0x140)
+  git://git.kernel.dk/linux-2.6-block.git for-linus
 
+Andrea Gelmini (1):
+      drbd: removed duplicated #includes
 
-And ath driver adds common->cachelsz  (I dont know its value)
+Dan Carpenter (1):
+      cciss: call BUG() earlier
 
--> more than 4096 bytes
+Jens Axboe (9):
+      pipe: F_SETPIPE_SZ should return -EPERM for non-root
+      pipe: make F_{GET,SET}PIPE_SZ deal with byte sizes
+      Revert "writeback: ensure that WB_SYNC_NONE writeback with sb pinned is sync"
+      Revert "writeback: fix WB_SYNC_NONE writeback from umount"
+      block: disable preemption before using sched_clock()
+      Merge branch 'master' into for-linus
+      pipe: adjust minimum pipe size to 1 page
+      pipe: change the privilege required for growing a pipe beyond system max
+      pipe: change /proc/sys/fs/pipe-max-pages to byte sized interface
 
-1) Maybe rx_bufsize should not include the roundup() since 
-ath_rxbuf_alloc() also do an alignment adjustment ?
+Konstantin Khlebnikov (2):
+      cfq-iosched: remove dead_key from cfq_io_context
+      cfq-iosched: compact io_context radix_tree
 
-2) We should try to reduce skb_shared_info by four bytes.
+Lars Ellenberg (5):
+      drbd: improve network latency, TCP_QUICKACK
+      drbd: need to set socket bufsize early to take effect
+      drbd: improve usage of MSG_MORE
+      drbd: fix hang on local read errors while disconnected
+      drbd: use drbd specific ratelimit instead of global printk_ratelimit
 
-Could you try this patch ?
+Mike Snitzer (3):
+      block: Adjust elv_iosched_show to return "none" for bio-based DM
+      block: avoid unconditionally freeing previously allocated request_queue
+      block: make blk_init_free_list and elevator_init idempotent
 
+Nick Piggin (2):
+      fs/splice.c: fix mapping_gfp_mask usage
+      brd: support discard
 
-We make sure rx_bufsize + various overhead <= PAGE_SIZE
-But I am not sure its legal for the hardware...
+Philipp Reisner (4):
+      drbd: Revert "drbd: Create new current UUID as late as possible"
+      drbd: Removed the now empty w_io_error() function
+      drbd: Reduce verbosity
+      Preparing 8.3.8rc2
 
-diff --git a/drivers/net/wireless/ath/ath9k/recv.c b/drivers/net/wireless/ath/ath9k/recv.c
-index ca6065b..0a0dc3a 100644
---- a/drivers/net/wireless/ath/ath9k/recv.c
-+++ b/drivers/net/wireless/ath/ath9k/recv.c
-@@ -226,10 +226,10 @@ static int ath_rx_edma_init(struct ath_softc *sc, int nbufs)
- 	u32 size;
- 
- 
--	common->rx_bufsize = roundup(IEEE80211_MAX_MPDU_LEN +
--				     ah->caps.rx_status_len,
--				     min(common->cachelsz, (u16)64));
--
-+	size = roundup(IEEE80211_MAX_MPDU_LEN + ah->caps.rx_status_len,
-+		       min(common->cachelsz, (u16)64));
-+	common->rx_bufsize = max_t(u32, size,
-+				   SKB_MAX_ORDER(NET_SKB_PAD + common->cachelsz, 0));
- 	ath9k_hw_set_rx_bufsize(ah, common->rx_bufsize -
- 				    ah->caps.rx_status_len);
- 
+Shaohua Li (1):
+      cfq-iosched: fix an oops caused by slab leak
 
+ block/blk-core.c                   |   20 +++++--
+ block/cfq-iosched.c                |  101 ++++++++++++++++++++++++++++--------
+ block/elevator.c                   |    8 ++-
+ drivers/block/brd.c                |   53 ++++++++++++++++++-
+ drivers/block/cciss_scsi.c         |    2 +-
+ drivers/block/drbd/drbd_int.h      |   14 +----
+ drivers/block/drbd/drbd_main.c     |   68 +++++++++---------------
+ drivers/block/drbd/drbd_receiver.c |   45 ++++++++--------
+ drivers/block/drbd/drbd_req.c      |   54 +++++--------------
+ drivers/block/drbd/drbd_req.h      |    1 +
+ drivers/block/drbd/drbd_worker.c   |   24 +--------
+ fs/fs-writeback.c                  |   64 ++++++-----------------
+ fs/pipe.c                          |   77 +++++++++++++++++++---------
+ fs/splice.c                        |    2 +-
+ fs/sync.c                          |    2 +-
+ include/linux/backing-dev.h        |    2 +-
+ include/linux/blkdev.h             |    9 +++
+ include/linux/drbd.h               |    2 +-
+ include/linux/iocontext.h          |    1 -
+ include/linux/pipe_fs_i.h          |    4 +-
+ include/linux/writeback.h          |   10 ----
+ kernel/sysctl.c                    |    8 ++--
+ mm/page-writeback.c                |    4 +-
+ 23 files changed, 311 insertions(+), 264 deletions(-)
+
+-- 
+Jens Axboe
 
