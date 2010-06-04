@@ -1,82 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752842Ab0FDSIh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jun 2010 14:08:37 -0400
-Received: from g5t0008.atlanta.hp.com ([15.192.0.45]:32111 "EHLO
-	g5t0008.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751409Ab0FDSIg convert rfc822-to-8bit (ORCPT
+	id S1752676Ab0FDSPM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jun 2010 14:15:12 -0400
+Received: from charlotte.tuxdriver.com ([70.61.120.58]:43800 "EHLO
+	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751239Ab0FDSPK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jun 2010 14:08:36 -0400
-From: "Miller, Mike (OS Dev)" <Mike.Miller@hp.com>
-To: Randy Dunlap <randy.dunlap@oracle.com>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-CC: "akpm@linux-foundation.org" <akpm@linux-foundation.org>
-Date: Fri, 4 Jun 2010 18:07:00 +0000
-Subject: RE: [PATCH -mmotm] cciss: fix build for CONFIG_PROC_FS=n
-Thread-Topic: [PATCH -mmotm] cciss: fix build for CONFIG_PROC_FS=n
-Thread-Index: AcsEBOdToZ92b+ITTHmV94bH5ugQUQAC7P5g
-Message-ID: <0F5B06BAB751E047AB5C87D1F77A77887D01432795@GVW0547EXC.americas.hpqcorp.net>
-References: <201006040005.o5405Afw023296@imap1.linux-foundation.org>
- <20100604094137.0702daa1.randy.dunlap@oracle.com>
-In-Reply-To: <20100604094137.0702daa1.randy.dunlap@oracle.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Fri, 4 Jun 2010 14:15:10 -0400
+Date: Fri, 4 Jun 2010 14:03:28 -0400
+From: "John W. Linville" <linville@tuxdriver.com>
+To: Nils Radtke <lkml@Think-Future.de>
+Cc: reinette.chatre@intel.com, linux-kernel@vger.kernel.org,
+       linux-wireless@vger.kernel.org, stable@kernel.org
+Subject: Re: [PATCH] iwlwifi: recalculate average tpt if not current
+Message-ID: <20100604180328.GB2492@tuxdriver.com>
+References: <20100604163218.GA28003@localhost>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100604163218.GA28003@localhost>
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
- 
+On Fri, Jun 04, 2010 at 06:32:18PM +0200, Nils Radtke wrote:
+>   Hi John,
+> 
+> http://marc.info/?l=linux-wireless&m=127317062320707&w=2 :
+> > > > The BUG_ON was introduced by:
+> > > > commit 3110bef78cb4282c58245bc8fd6d95d9ccb19749
+> > > > Author: Guy Cohen <guy.cohen@intel.com>
+> > > > Date:   Tue Sep 9 10:54:54 2008 +0800
+> > > > 
+> > > >     iwlwifi: Added support for 3 antennas
+> > > > 
+> > > > ... the portion adding the BUG_ON is reverted since we are encountering the error
+> > > > and BUG_ON was created with assumption that error is not encountered.
+> > > > 
+> > > > Signed-off-by: Reinette Chatre <reinette.chatre@intel.com>
+> > > > ---
+> > > 
+> > > I noticed this patch in your wireless-next-2.6 pull request. Since it is
+> > > addressing a system hang issue, could it perhaps be included in
+> > > wireless-2.6 also? I should have included the bug report reference for
+> > > this purpose, sorry ... it is
+> > > https://bugzilla.redhat.com/show_bug.cgi?id=588021
+> > 
+> > I didn't send it that way because a) that code has been there for a
+> > really long time; and b) the reporter couldn't reliably reproduce
+> > the bug and therefore can't reliably test the fix.  While I agree
+> > that the fix looks harmless, no update is zero-risk.
+> > 
+> > Can you reliably hit that code?  Has it been tested enough that we
+> > should risk holding-up 2.6.34's release for it?
+> I'm one of those _very reliably_ hitting this BUG. I can tell how 
+> annoying it is. I have to backport the patch w/ every kernel release
+> to be able to use the wireless link _at all_. So please consider
+> it as somewhat urgent to get the patch included. 
+> 
+> I'm still in contact w/ Reinette regularly to get those problems fixed.
+> It involves physically moving around the city for testing any modification
+> so this working is slowly processing as it takes every time an enormous 
+> amount of time to do so. Work in (slow) progress, but it's alive..
+> C.f. http://permalink.gmane.org/gmane.linux.kernel/992941
+> 
+> BTW, https://bugzilla.redhat.com/show_bug.cgi?id=588021 this isn't fixed.
+> Maybe RH did fix it. kernel.org sources haven't. This is a blocker ever 
+> since.
 
-> -----Original Message-----
-> From: Randy Dunlap [mailto:randy.dunlap@oracle.com] 
-> Sent: Friday, June 04, 2010 11:42 AM
-> To: linux-kernel@vger.kernel.org
-> Cc: akpm@linux-foundation.org; Miller, Mike (OS Dev)
-> Subject: [PATCH -mmotm] cciss: fix build for CONFIG_PROC_FS=n
-> 
-> From: Randy Dunlap <randy.dunlap@oracle.com>
-> 
-> Fix build for CONFIG_PROC_FS not enabled; fixes this build error:
-> drivers/block/cciss.c:3422: error: implicit declaration of 
-> function 'next_command'
-> 
-> Looks like the next_command() function was added at a bad 
-> location in cciss-add-performant-mode-support-for-stars-sirius.patch.
-> 
-> Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
+The patch is in linux-2.6.  I suppose it could go to stable@kernel.org.
 
-Thanks, Randy. But I'm working on that plus a couple other miscues.
+commit 3d79b2a9eeaa066b35c49fbb17e3156a3c482c3e
+Author: Reinette Chatre <reinette.chatre@intel.com>
+Date:   Mon May 3 10:55:07 2010 -0700
 
--- mikem
+    iwlwifi: recalculate average tpt if not current
+    
+    We currently have this check as a BUG_ON, which is being hit by people.
+    Previously it was an error with a recalculation if not current, return that
+    code.
+    
+    The BUG_ON was introduced by:
+    commit 3110bef78cb4282c58245bc8fd6d95d9ccb19749
+    Author: Guy Cohen <guy.cohen@intel.com>
+    Date:   Tue Sep 9 10:54:54 2008 +0800
+    
+        iwlwifi: Added support for 3 antennas
+    
+    ... the portion adding the BUG_ON is reverted since we are encountering the 
+    and BUG_ON was created with assumption that error is not encountered.
+    
+    Signed-off-by: Reinette Chatre <reinette.chatre@intel.com>
+    Signed-off-by: John W. Linville <linville@tuxdriver.com>
 
-> Cc: Mike Miller <mike.miller@hp.com>
-> ---
->  drivers/block/cciss.c |    4 ++--
->  1 file changed, 2 insertions(+), 2 deletions(-)
-> 
-> --- mmotm-2010-0603-1636.orig/drivers/block/cciss.c
-> +++ mmotm-2010-0603-1636/drivers/block/cciss.c
-> @@ -372,8 +372,6 @@ static const char *raid_label[] = { "0",  
-> };  #define RAID_UNKNOWN (sizeof(raid_label) / 
-> sizeof(raid_label[0])-1)
->  
-> -#ifdef CONFIG_PROC_FS
-> -
->  static inline u32 next_command(ctlr_info_t *h)  {
->  	u32 a;
-> @@ -396,6 +394,8 @@ static inline u32 next_command(ctlr_info
->  	return a;
->  }
->  
-> +#ifdef CONFIG_PROC_FS
-> +
->  /*
->   * Report information about this controller.
->   */
-> 
+-- 
+John W. Linville		Someday the world will need a hero, and you
+linville@tuxdriver.com			might be all we have.  Be ready.
