@@ -1,83 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751499Ab0FDRgP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jun 2010 13:36:15 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:55846 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750732Ab0FDRgO (ORCPT
+	id S1751536Ab0FDRql (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jun 2010 13:46:41 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:46509 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750746Ab0FDRqk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jun 2010 13:36:14 -0400
-Date: Fri, 4 Jun 2010 14:35:52 -0300
-From: Arnaldo Carvalho de Melo <acme@infradead.org>
-To: Michal Marek <mmarek@suse.cz>
-Cc: Sam Ravnborg <sam@ravnborg.org>, "David S. Miller" <davem@davemloft.net>,
-       =?iso-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>,
-       Ingo Molnar <mingo@elte.hu>, Mike Galbraith <efault@gmx.de>,
-       Paul Mackerras <paulus@samba.org>,
-       Peter Zijlstra <peterz@infradead.org>,
-       Stephane Eranian <eranian@google.com>, Tom Zanussi <tzanussi@gmail.com>,
-       Eduardo Habkost <ehabkost@redhat.com>,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2 1/1] perf tools: Make target to generate self
- contained source tarball
-Message-ID: <20100604173552.GA875@ghostprotocols.net>
-References: <20100528185357.GA28009@ghostprotocols.net>
- <20100529072948.GE16257@merkur.ravnborg.org>
- <20100531174207.GB3481@ghostprotocols.net>
- <4C0417EC.8050906@suse.cz>
- <20100531230639.GD3481@ghostprotocols.net>
- <4C04E0EA.8010100@suse.cz>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4C04E0EA.8010100@suse.cz>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+	Fri, 4 Jun 2010 13:46:40 -0400
+From: Himanshu Chauhan <hschauhan@nulltrace.org>
+To: greg@kroah.com
+Cc: usbip-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org
+Subject: [PATCH] staging: usbip: usbip_common: kill rx thread on tx thread creation error.
+Date: Fri,  4 Jun 2010 23:16:27 +0530
+Message-Id: <1275673587-1660-1-git-send-email-hschauhan@nulltrace.org>
+X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Tue, Jun 01, 2010 at 12:28:58PM +0200, Michal Marek escreveu:
-> On 1.6.2010 01:06, Arnaldo Carvalho de Melo wrote:
-> > Well, what about the other aspects of the patch, is this the only issue
-> > you have found with it?
-> 
-> The patch is OK.
-> 
-> Acked-by: Michal Marek <mmarek@suse.cz>
+Hi Greg,
 
-Argh, there was one last detail, so that we don't require that the
-kernel be configured first, and as we don't use KERNELRELEASE at all in
-the -src-pkg targets, would that be OK with you too?
+This is an updated patch after rebasing my branch to recently updated master.
 
-[acme@emilia linux-2.6-tip]$ git diff Makefile 
-diff --git a/Makefile b/Makefile
-index 0ab0c6f..6e186a1 100644
---- a/Makefile
-+++ b/Makefile
-@@ -1215,6 +1215,8 @@ distclean: mrproper
- # rpm target kept for backward compatibility
- package-dir    := $(srctree)/scripts/package
+Himanshu
+
+Signed-off-by: Himanshu Chauhan <hschauhan@nulltrace.org>
+
+---
+ drivers/staging/usbip/usbip_common.c |   46 ++++++++++++++++++++++++---------
+ 1 files changed, 33 insertions(+), 13 deletions(-)
+
+diff --git a/drivers/staging/usbip/usbip_common.c b/drivers/staging/usbip/usbip_common.c
+index 5240816..cd20d2b 100644
+--- a/drivers/staging/usbip/usbip_common.c
++++ b/drivers/staging/usbip/usbip_common.c
+@@ -378,47 +378,67 @@ int usbip_thread(void *param)
+ 	complete_and_exit(&ut->thread_done, 0);
+ }
  
-+%src-pkg: FORCE
-+       $(Q)$(MAKE) $(build)=$(package-dir) $@
- %pkg: include/config/kernel.release FORCE
-        $(Q)$(MAKE) $(build)=$(package-dir) $@
- rpm: include/config/kernel.release FORCE
-[acme@emilia linux-2.6-tip]$
++static void stop_rx_thread(struct usbip_device *ud)
++{
++	if (ud->tcp_rx.thread != NULL) {
++		send_sig(SIGKILL, ud->tcp_rx.thread, 1);
++		wait_for_completion(&ud->tcp_rx.thread_done);
++		usbip_udbg("rx_thread for ud %p has finished\n", ud);
++	}
++}
++
++static void stop_tx_thread(struct usbip_device *ud)
++{
++	if (ud->tcp_tx.thread != NULL) {
++		send_sig(SIGKILL, ud->tcp_tx.thread, 1);
++		wait_for_completion(&ud->tcp_tx.thread_done);
++		usbip_udbg("tx_thread for ud %p has finished\n", ud);
++	}
++}
++
+ int usbip_start_threads(struct usbip_device *ud)
+ {
+ 	/*
+ 	 * threads are invoked per one device (per one connection).
+ 	 */
+ 	struct task_struct *th;
++	int err = 0;
+ 
+ 	th = kthread_run(usbip_thread, (void *)&ud->tcp_rx, "usbip");
+ 	if (IS_ERR(th)) {
+ 		printk(KERN_WARNING
+ 			"Unable to start control thread\n");
+-		return PTR_ERR(th);
++		err = PTR_ERR(th);
++		goto ust_exit;
+ 	}
++
+ 	th = kthread_run(usbip_thread, (void *)&ud->tcp_tx, "usbip");
+ 	if (IS_ERR(th)) {
+ 		printk(KERN_WARNING
+ 			"Unable to start control thread\n");
+-		return PTR_ERR(th);
++		err = PTR_ERR(th);
++		goto tx_thread_err;
+ 	}
+ 
+ 	/* confirm threads are starting */
+ 	wait_for_completion(&ud->tcp_rx.thread_done);
+ 	wait_for_completion(&ud->tcp_tx.thread_done);
++	
+ 	return 0;
++
++tx_thread_err:
++	stop_rx_thread(ud);
++
++ust_exit:
++	return err;
+ }
+ EXPORT_SYMBOL_GPL(usbip_start_threads);
+ 
+ void usbip_stop_threads(struct usbip_device *ud)
+ {
+ 	/* kill threads related to this sdev, if v.c. exists */
+-	if (ud->tcp_rx.thread != NULL) {
+-		send_sig(SIGKILL, ud->tcp_rx.thread, 1);
+-		wait_for_completion(&ud->tcp_rx.thread_done);
+-		usbip_udbg("rx_thread for ud %p has finished\n", ud);
+-	}
+-
+-	if (ud->tcp_tx.thread != NULL) {
+-		send_sig(SIGKILL, ud->tcp_tx.thread, 1);
+-		wait_for_completion(&ud->tcp_tx.thread_done);
+-		usbip_udbg("tx_thread for ud %p has finished\n", ud);
+-	}
++	stop_rx_thread(ud);
++	stop_tx_thread(ud);
+ }
+ EXPORT_SYMBOL_GPL(usbip_stop_threads);
+ 
+-- 
+1.7.0.4
 
-On a make mrproper'ed kernel we get:
-
-a linux-2.6-tip]$ LANG= make perf-tarbz2-src-pkg
-/bin/sh: include/config/kernel.release: No such file or directory
-make: *** [include/config/kernel.release] Error 1
-[acme@emilia linux-2.6-tip]$
-
-:-\
-
-If you're ok with it, I'll add it as a follow on patch that I'll send
-via Ingo.
-
-- Arnaldo
