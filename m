@@ -1,66 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932367Ab0FDDEn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jun 2010 23:04:43 -0400
-Received: from n13-vm0.bullet.mail.in.yahoo.com ([202.86.5.183]:30758 "HELO
-	n13-vm0.bullet.mail.in.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S932346Ab0FDDEk convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jun 2010 23:04:40 -0400
-X-Yahoo-Newman-Property: ymail-3
-X-Yahoo-Newman-Id: 589272.73894.bm@omp109.mail.in2.yahoo.com
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=s1024; d=yahoo.com;
-  h=Message-ID:X-YMail-OSG:Received:X-Mailer:Date:From:Subject:To:MIME-Version:Content-Type:Content-Transfer-Encoding;
-  b=wi21B8YviufKhUbsq5A+55c0RDtwNzvd91TQScDJkq7A739G3VovE9+jKucAnsH+ZCfVfN7hEZ9CAliXTH+jqjmZDXt3wZjYisIDED+fzaBW5H++NKNLObMnFiD8LzpISlhGOQvjPmlsi3K1B0cuAN0smL+sr37XUQ44J+QaCqs=;
-Message-ID: <498215.15423.qm@web95620.mail.in.yahoo.com>
-X-YMail-OSG: FbouzFEVM1mU5PpPH57EfwthQC792r4bBUyW8wx_q69WrFv
- ikGctirg1H4Ez7v53ie3DPNta_jE6rDHj9vPEaf9jTipZGtzdZSwbCMHVX.l
- kuDIxkWXCHf.ocJVklx6t5wn_KovSYkk4HpuxPDaACoXgmCsvt16bUm7pjyH
- JhX_vMAQWCMesvsEZHtomyfIuyn.GGVJgq2cXEZ_pm9gvTojznFTgMninx7g
- gB2ezyUhv730-
-X-Mailer: YahooMailRC/397.8 YahooMailWebService/0.8.103.269680
-Date: Fri, 4 Jun 2010 08:34:37 +0530 (IST)
-From: Oza Oza <ozaoza1982@yahoo.com>
-Subject: Re: [PROPOSAL] NMI & register clash handling infrastructure
-To: linux-kernel@vger.kernel.org
+	id S932329Ab0FDDJu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jun 2010 23:09:50 -0400
+Received: from cantor.suse.de ([195.135.220.2]:38152 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932161Ab0FDDJs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Jun 2010 23:09:48 -0400
+Date: Fri, 4 Jun 2010 13:09:43 +1000
+From: Nick Piggin <npiggin@suse.de>
+To: "Martin K. Petersen" <martin.petersen@oracle.com>
+Cc: Chris Mason <chris.mason@oracle.com>,
+       James Bottomley <James.Bottomley@suse.de>,
+       Matthew Wilcox <matthew@wil.cx>,
+       Christof Schmitt <christof.schmitt@de.ibm.com>,
+       Boaz Harrosh <bharrosh@panasas.com>, linux-scsi@vger.kernel.org,
+       linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
+Subject: Re: Wrong DIF guard tag on ext2 write
+Message-ID: <20100604030943.GA26335@laptop>
+References: <1275411293.21962.387.camel@mulgrave.site>
+ <20100601180905.GR8980@think>
+ <20100601184649.GE9453@laptop>
+ <20100601193528.GV8980@think>
+ <20100602032030.GF9453@laptop>
+ <yq17hmhbmkb.fsf@sermon.lab.mkp.net>
+ <20100602134121.GD6152@laptop>
+ <20100603154634.GC8980@think>
+ <20100603162718.GR6822@laptop>
+ <yq1y6evwox1.fsf@sermon.lab.mkp.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <yq1y6evwox1.fsf@sermon.lab.mkp.net>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Thu, Jun 03, 2010 at 09:46:02PM -0400, Martin K. Petersen wrote:
+> >>>>> "Nick" == Nick Piggin <npiggin@suse.de> writes:
+> 
+> Nick> Also I don't think we can deal with memory errors and scribbles
+> Nick> just by crcing dirty data. The calculations generating the data
+> Nick> could get corrupted.
+> 
+> Yep, the goal is to make the window as small as possible.
+> 
+> 
+> Nick> Data can be corrupted on its way back from the device to
+> Nick> userspace.
+> 
+> We also get a CRC back from the storage.  So the (integrity-aware)
+> application is also able to check on read.
+
+Well that's nice :)
 
 
-This is my first post to the group, please excuse me, If I unknowingly miss to follow writing ethics.
+> Nick> Obviously this feature is being pushed by databases and such that
+> Nick> really want to pass checksums all the way from userspace. Block
+> Nick> retrying is _not_ needed or wanted here of course.
+> 
+> Nope.  The integrity error is bubbled all the way up to the database and
+> we can decide to retry, recreate or error out depending on what we find
+> when we do validation checks on the data buffer and the integrity
+> metadata.
 
-Proposal/Need: 
-
-I was working on providing accurate process usage support, and writing a kernel module, 
-I configured cpu-core-unhalted-event and configured LVT (local vector table) with NMI (non-maskable interrupt), and surprisingly Oprofile stopped working, 
-Then I realized, that set_nmi_call back just overwrites nmi_callback function pointer. 
-
-My proposal/idea/thinking is; 
-have a kernel module which accepts NMI registration from any kernel component, and providing support to the the any kernel service which basically need to service NMI.
-It may not only supports this, but also can provide central infrastructure which has capabilities such as granting MSR (model specific register) access to the the modules, which may avoid potential clash of MSRs (e.g. two modules are trying to configure same MSR), control NMI registration-unregisteration events etc..
-
-I am not sure, whether this is a good idea or bad idea, but I thought it adds flexibility and some value addition in kernel, 
-and I find this place precisely right to post this idea. 
-
-Any feedback/suggestions/additions would be appreciated. 
-
-Regards,
-Oza.
-
-
-
---
-To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-the body of a message to majordomo@vger.kernel.org
-More majordomo info at  http://vger.kernel.org/majordomo-info.html
-Please read the FAQ at  http://www.tux.org/lkml/
-
-
+By block retrying, I just meant the bounce / re-checksum approach.
 
