@@ -1,90 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753265Ab0FDKGX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jun 2010 06:06:23 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:3942 "EHLO mx1.redhat.com"
+	id S1753089Ab0FDKG5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jun 2010 06:06:57 -0400
+Received: from mxout2.iskon.hr ([213.191.128.81]:59560 "EHLO mxout2.iskon.hr"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750785Ab0FDKGV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jun 2010 06:06:21 -0400
-Date: Fri, 4 Jun 2010 12:04:16 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: David Rientjes <rientjes@google.com>
-Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-       "Luis Claudio R. Goncalves" <lclaudio@uudg.org>,
-       LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-       Nick Piggin <npiggin@suse.de>
-Subject: Re: [PATCH 09/12] oom: remove PF_EXITING check completely
-Message-ID: <20100604100416.GB8569@redhat.com>
-References: <20100603135106.7247.A69D9226@jp.fujitsu.com> <20100603152436.7262.A69D9226@jp.fujitsu.com> <alpine.DEB.2.00.1006022332320.22441@chino.kir.corp.google.com> <20100603140008.GA3548@redhat.com> <alpine.DEB.2.00.1006031313040.10856@chino.kir.corp.google.com> <20100603221145.GB8511@redhat.com> <alpine.DEB.2.00.1006031618230.30302@chino.kir.corp.google.com>
+	id S1751967Ab0FDKGy convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Jun 2010 06:06:54 -0400
+X-Greylist: delayed 650 seconds by postgrey-1.27 at vger.kernel.org; Fri, 04 Jun 2010 06:06:54 EDT
+X-Remote-IP: 89.164.135.144
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.00.1006031618230.30302@chino.kir.corp.google.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+From: "info@citytaxi.com.hr" <mladen7676@gmail.com>
+Reply-To: info@citytaxi.com.hr
+To: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: SmartSend.2.0.109
+Date: Fri, 4 Jun 2010 11:55:34 +0200
+Message-ID: <4362530838163270320837@test-pc>
+X-PerlMX-Spam: Gauge=IIIIIIII, Probability=8%, Report='
+ EMPTY_BODY 0.1, FORGED_FROM_GMAIL 0.1, BODYTEXTP_SIZE_3000_LESS 0, BODY_SIZE_1000_LESS 0, BODY_SIZE_10_99 0, BODY_SIZE_2000_LESS 0, BODY_SIZE_5000_LESS 0, BODY_SIZE_7000_LESS 0, INVALID_MSGID_NO_FQDN 0, SMALL_BODY 0, SUBJ_MISSING 0, TO_NO_NAME 0, __CT 0, __CTE 0, __CT_TEXT_PLAIN 0, __FRAUD_WEBMAIL 0, __FRAUD_WEBMAIL_FROM 0, __FROM_GMAIL 0, __HAS_MSGID 0, __HAS_X_MAILER 0, __MIME_TEXT_ONLY 0, __MIME_VERSION 0, __PHISH_SPEAR_STRUCTURE_1 0, __SANE_MSGID 0, __SUBJ_MISSING 0, __TO_MALFORMED_2 0'
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/03, David Rientjes wrote:
->
-> On Fri, 4 Jun 2010, Oleg Nesterov wrote:
->
-> > > > > > Currently, PF_EXITING check is completely broken. because 1) It only
-> > > > > > care main-thread and ignore sub-threads
-> > > > >
-> > > > > Then check the subthreads.
-> > > > >
-> > >
-> > > Did you want to respond to this?
-> >
-> > Please explain what you mean. There were already a lot of discussions
-> > about mt issues, I do not know what you have in mind.
->
-> Can you check the subthreads to see if they are not PF_EXITING?
-
-To detect the process with the dead group leader?
-
-Yes, we can. We already discussed this. Probably it is better to check
-PF_EXITING and signal_group_exit().
-
-> > > I'm guessing at the relevancy here because the changelog is extremely
-> > > poorly worded (if I were Andrew I would have no idea how important this
-> > > patch is based on the description other than the alarmist words of "... is
-> > > completely broken)", but if we're concerned about the coredumper not being
-> > > able to find adequate resources to allocate memory from, we can give it
-> > > access to reserves specifically,
-> >
-> > I don't think so. If oom-kill wants to kill the task which dumps the
-> > code, it should stop the coredumping and exit.
->
-> That's a coredump change, not an oom killer change.
-
-Yes. do_coredump() should be fixed. This is not trivial (and needs the
-subtle changes outside of fs/exec.c), we are looking for the simple fix
-for now.
-
-> If the coredumper
-> needs memory and runs into the oom killer, this PF_EXITING check, which
-> you want to remove, gives it access to memory reserves by setting
-> TIF_MEMDIE so it can quickly finish and die.  This allows it to exit
-> without oom killing anything else because the tasklist scan in the oom
-> killer is not preempted by finding a TIF_MEMDIE task.
-
-David, sorry. I already tried to explain (at least twice) that TIF_MEMDIE
-(or SIGKILL even if do_coredump() was interruptible) can not help unless
-you find the right thread, this is not trivial even if we forget about
-CLONE_VM tasks.
-
-And personally I disagree that it should use memory reserves, but this
-doesn't matter.
-
-
-Let's stop this. You shouldn't convince me. I am not the author of this
-patch, and I said many times that I do not pretend I understand oom-kill
-needs. I jumped into this discussion because your initial objection
-(fatal_signal_pending() should fix the problems) was technically wrong.
-
-Oleg.
-
+you spy fuck!
