@@ -1,315 +1,176 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753935Ab0FDI2I (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jun 2010 04:28:08 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:64079 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753312Ab0FDI2E (ORCPT
+	id S1754005Ab0FDIaK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jun 2010 04:30:10 -0400
+Received: from smtp-out.google.com ([74.125.121.35]:32468 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753527Ab0FDIaF convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jun 2010 04:28:04 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:date:message-id:subject:from:to:content-type;
-        b=YASxGS68cRb2ggZfswkiOgUUvF2iR7eBbJy93f+hQ9eHp6Y9mbeB3or33RfFLiHxQJ
-         LDhbu6WS8JihcQWkHxZECDE4W73c5GUO9OQ5+EZW2ft78+s+guy9cwIncKG2xXXm0scw
-         aTNixXn58zfupwH2NnIwL9nRjiOzomXS9q8xM=
+	Fri, 4 Jun 2010 04:30:05 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=mime-version:in-reply-to:references:date:message-id:subject:from:to:
+	cc:content-type:content-transfer-encoding:x-system-of-record;
+	b=dbnbzWCd2B7bECjthgrX1CPUHgWFbwYm6Kev8DWIhiOczv4u5ab4Bm3jXdgWHwY0/
+	rbqY4PvPi5/cHJMYtCjUg==
 MIME-Version: 1.0
-Date: Fri, 4 Jun 2010 16:27:54 +0800
-Message-ID: <AANLkTilb4QNYznFeJVfMmvPAlBY-B02EY0i0d7NK9X7O@mail.gmail.com>
-Subject: mmotm 2010-06-03-16-36 lots of suspected kmemleak
-From: Dave Young <hidave.darkstar@gmail.com>
-To: Andrew Morton <akpm@linux-foundation.org>,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       linux-mm@kvack.org
+In-Reply-To: <20100604075722.GA15181@elte.hu>
+References: <20100603193045.GA7188@elte.hu>
+	<AANLkTinsOF3wnxsruR0TvjBAQcHks4tf0ay_sM2xB_p4@mail.gmail.com>
+	<20100604075722.GA15181@elte.hu>
+Date: Fri, 4 Jun 2010 01:29:56 -0700
+Message-ID: <AANLkTiksGnpL8tkcc5eScWHrGoijyZNUwZik5lXmU_TS@mail.gmail.com>
+Subject: Re: suspend blockers & Android integration
+From: Brian Swetland <swetland@google.com>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: tytso@mit.edu, Neil Brown <neilb@suse.de>,
+       "Arve Hj?nnev?g" <arve@android.com>,
+       Thomas Gleixner <tglx@linutronix.de>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+       Alan Stern <stern@rowland.harvard.edu>,
+       Felipe Balbi <felipe.balbi@nokia.com>,
+       Peter Zijlstra <peterz@infradead.org>,
+       LKML <linux-kernel@vger.kernel.org>,
+       Florian Mickler <florian@mickler.org>,
+       Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
+       Linux PM <linux-pm@lists.linux-foundation.org>,
+       Alan Cox <alan@lxorguk.ukuu.org.uk>,
+       James Bottomley <James.Bottomley@suse.de>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       Peter Zijlstra <a.p.zijlstra@chello.nl>
 Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Fri, Jun 4, 2010 at 12:57 AM, Ingo Molnar <mingo@elte.hu> wrote:
+> * Brian Swetland <swetland@google.com> wrote:
+>>
+>> We started here because it's possibly the only api level change we have --
+>> almost everything else is driver or subarch type work or controversial but
+>> entirely self-contained (like the binder, which I would be shocked to see
+>> ever hit mainline). [...]
+>
+> So why arent those bits mainline? It's a 1000 times easier to get drivers and
+> small improvements and non-ABI changes upstream.
+>
+> After basically two years of growing your fork (and some attempts to get your
+> drivers into drivers/staging/ - from where they have meanwhile dropped out
+> again) you re-started with the worst possible thing to merge: a big and
+> difficult kernel feature affecting many subsystems. Why?
 
-With mmotm 2010-06-03-16-36, I gots tuns of kmemleaks
+Because a large number of our drivers depend on it.
 
-[  667.904928] kmemleak: 3179 new suspected memory leaks (see
-/sys/kernel/debug/kmemleak)
-[ 1270.774766] kmemleak: 24037 new suspected memory leaks (see
-/sys/kernel/debug/kmemleak)
-[ 1873.679754] kmemleak: 2256 new suspected memory leaks (see
-/sys/kernel/debug/kmemleak)
+> This is one of the fundamental problems here. People simply dont know you,
+> because you have not worked with us much - and hence they dont trust you
+> positively out of box - they are neutral at best.
+>
+> And believe me, it's hard enough to get difficult features upstream if people
+> _do_ know you and when they positively _do_ trust you ... Arent you talking to
+> Andrew Morton about how to do these things properly? This is kernel
+> contribution 101 really.
+>
+>> [...]  Assertions have been made that because the "android kernel" (not a
+>> term I like -- linux is linux, we have some assorted patches on top) [...]
+>
+> I've been tracking android-common and android-msm for a while and i have to
+> say that it shows a very lackluster attitude towards upstream:
+>
+>  - The latest branches i can see are v2.6.32 based today. We are in the
+>   v2.6.35 stabilization cycle and are developing v2.6.36. I.e. your upstream
+>   base is about a year too old.
 
-unreferenced object 0xdf8f9700 (size 128):
-  comm "swapper", pid 1, jiffies 4294877413 (age 1491.496s)
-  hex dump (first 32 bytes):
-    00 00 00 e0 ff ff bf fe 40 df 99 df 00 02 00 00  ........@.......
-    00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
-  backtrace:
-    [<c149338a>] kmemleak_alloc+0x4a/0x83
-    [<c10c2259>] __kmalloc+0x147/0x16b
-    [<c14a2c3e>] pci_acpi_scan_root+0x135/0x1cc
-    [<c1497fe6>] acpi_pci_root_add+0x159/0x261
-    [<c12b4414>] acpi_device_probe+0x44/0xfa
-    [<c13234ac>] driver_probe_device+0x108/0x22b
-    [<c1323616>] __driver_attach+0x47/0x63
-    [<c1322d1b>] bus_for_each_dev+0x3d/0x67
-    [<c1323267>] driver_attach+0x14/0x16
-    [<c13226cc>] bus_add_driver+0xc4/0x20f
-    [<c132386f>] driver_register+0x8b/0xeb
-    [<c12b586d>] acpi_bus_register_driver+0x3a/0x3d
-    [<c1787429>] acpi_pci_root_init+0x1b/0x2a
-    [<c1001139>] do_one_initcall+0x4c/0x13f
-    [<c176237e>] kernel_init+0x132/0x1b3
-    [<c1002dfa>] kernel_thread_helper+0x6/0x10
-unreferenced object 0xdf99df40 (size 16):
-  comm "swapper", pid 1, jiffies 4294877413 (age 1491.496s)
-  hex dump (first 16 bytes):
-    50 43 49 20 42 75 73 20 30 30 30 30 3a 30 30 00  PCI Bus 0000:00.
-  backtrace:
-    [<c149338a>] kmemleak_alloc+0x4a/0x83
-    [<c10c2259>] __kmalloc+0x147/0x16b
-    [<c1289078>] kvasprintf+0x28/0x45
-    [<c12890a6>] kasprintf+0x11/0x13
-    [<c14a2c5a>] pci_acpi_scan_root+0x151/0x1cc
-    [<c1497fe6>] acpi_pci_root_add+0x159/0x261
-    [<c12b4414>] acpi_device_probe+0x44/0xfa
-    [<c13234ac>] driver_probe_device+0x108/0x22b
-    [<c1323616>] __driver_attach+0x47/0x63
-    [<c1322d1b>] bus_for_each_dev+0x3d/0x67
-    [<c1323267>] driver_attach+0x14/0x16
-    [<c13226cc>] bus_add_driver+0xc4/0x20f
-    [<c132386f>] driver_register+0x8b/0xeb
-    [<c12b586d>] acpi_bus_register_driver+0x3a/0x3d
-    [<c1787429>] acpi_pci_root_init+0x1b/0x2a
-    [<c1001139>] do_one_initcall+0x4c/0x13f
-unreferenced object 0xdfa7d800 (size 2048):
-  comm "swapper", pid 1, jiffies 4294877624 (age 1490.796s)
-  hex dump (first 32 bytes):
-    00 75 ff ff f4 ff ff ff f4 ff ff ff f4 ff ff ff  .u..............
-    f4 ff ff ff c4 ff ff ff c4 ff ff ff f4 ff ff ff  ................
-  backtrace:
-    [<c149338a>] kmemleak_alloc+0x4a/0x83
-    [<c10c2259>] __kmalloc+0x147/0x16b
-    [<c10c4a87>] kzalloc+0xb/0xd
-    [<c10c4aa1>] pcpu_mem_alloc+0x18/0x35
-    [<c10c53af>] pcpu_extend_area_map+0x1c/0xaa
-    [<c10c55c5>] pcpu_alloc+0x188/0x735
-    [<c10c5b8b>] __alloc_percpu+0xa/0xf
-    [<c129133e>] __percpu_counter_init+0x42/0x92
-    [<c10a9b3d>] bdi_init+0x114/0x15f
-    [<c12721b9>] blk_alloc_queue_node+0x60/0x167
-    [<c12722cb>] blk_alloc_queue+0xb/0xd
-    [<c132c91f>] loop_alloc+0x6c/0x149
-    [<c178b778>] loop_init+0x83/0x16c
-    [<c1001139>] do_one_initcall+0x4c/0x13f
-    [<c176237e>] kernel_init+0x132/0x1b3
-    [<c1002dfa>] kernel_thread_helper+0x6/0x10
-unreferenced object 0xdf24e9d8 (size 8):
-  comm "swapper", pid 1, jiffies 4294878263 (age 1488.670s)
-  hex dump (first 8 bytes):
-    30 00 24 df 00 00 00 00                          0.$.....
-  backtrace:
-    [<c149338a>] kmemleak_alloc+0x4a/0x83
-    [<c10c2259>] __kmalloc+0x147/0x16b
-    [<c1289078>] kvasprintf+0x28/0x45
-    [<c1281579>] kobject_set_name_vargs+0x21/0x50
-    [<c12815c0>] kobject_add_varg+0x18/0x41
-    [<c128164e>] kobject_add+0x43/0x49
-    [<c13f89f7>] add_sysfs_fw_map_entry+0x56/0x6f
-    [<c179054c>] memmap_init+0x12/0x2c
-    [<c1001139>] do_one_initcall+0x4c/0x13f
-    [<c176237e>] kernel_init+0x132/0x1b3
-    [<c1002dfa>] kernel_thread_helper+0x6/0x10
-    [<ffffffff>] 0xffffffff
-unreferenced object 0xdf24e9e8 (size 8):
-  comm "swapper", pid 1, jiffies 4294878263 (age 1488.670s)
-  hex dump (first 8 bytes):
-    31 00 24 df 00 00 00 00                          1.$.....
-  backtrace:
-    [<c149338a>] kmemleak_alloc+0x4a/0x83
-    [<c10c2259>] __kmalloc+0x147/0x16b
-    [<c1289078>] kvasprintf+0x28/0x45
-    [<c1281579>] kobject_set_name_vargs+0x21/0x50
-    [<c12815c0>] kobject_add_varg+0x18/0x41
-    [<c128164e>] kobject_add+0x43/0x49
-    [<c13f89f7>] add_sysfs_fw_map_entry+0x56/0x6f
-    [<c179054c>] memmap_init+0x12/0x2c
-    [<c1001139>] do_one_initcall+0x4c/0x13f
-    [<c176237e>] kernel_init+0x132/0x1b3
-    [<c1002dfa>] kernel_thread_helper+0x6/0x10
-    [<ffffffff>] 0xffffffff
-unreferenced object 0xdf24e9f8 (size 8):
-  comm "swapper", pid 1, jiffies 4294878263 (age 1488.673s)
-  hex dump (first 8 bytes):
-    32 00 24 df 00 00 00 00                          2.$.....
-  backtrace:
-    [<c149338a>] kmemleak_alloc+0x4a/0x83
-    [<c10c2259>] __kmalloc+0x147/0x16b
-    [<c1289078>] kvasprintf+0x28/0x45
-    [<c1281579>] kobject_set_name_vargs+0x21/0x50
-    [<c12815c0>] kobject_add_varg+0x18/0x41
-    [<c128164e>] kobject_add+0x43/0x49
-    [<c13f89f7>] add_sysfs_fw_map_entry+0x56/0x6f
-    [<c179054c>] memmap_init+0x12/0x2c
-    [<c1001139>] do_one_initcall+0x4c/0x13f
-    [<c176237e>] kernel_init+0x132/0x1b3
-    [<c1002dfa>] kernel_thread_helper+0x6/0x10
-    [<ffffffff>] 0xffffffff
-unreferenced object 0xdf24ea08 (size 8):
-  comm "swapper", pid 1, jiffies 4294878263 (age 1488.673s)
-  hex dump (first 8 bytes):
-    33 00 24 df 00 00 00 00                          3.$.....
-  backtrace:
-    [<c149338a>] kmemleak_alloc+0x4a/0x83
-    [<c10c2259>] __kmalloc+0x147/0x16b
-    [<c1289078>] kvasprintf+0x28/0x45
-    [<c1281579>] kobject_set_name_vargs+0x21/0x50
-    [<c12815c0>] kobject_add_varg+0x18/0x41
-    [<c128164e>] kobject_add+0x43/0x49
-    [<c13f89f7>] add_sysfs_fw_map_entry+0x56/0x6f
-    [<c179054c>] memmap_init+0x12/0x2c
-    [<c1001139>] do_one_initcall+0x4c/0x13f
-    [<c176237e>] kernel_init+0x132/0x1b3
-    [<c1002dfa>] kernel_thread_helper+0x6/0x10
-    [<ffffffff>] 0xffffffff
-unreferenced object 0xdf24ea18 (size 8):
-  comm "swapper", pid 1, jiffies 4294878263 (age 1488.673s)
-  hex dump (first 8 bytes):
-    34 00 24 df 00 00 00 00                          4.$.....
-  backtrace:
-    [<c149338a>] kmemleak_alloc+0x4a/0x83
-    [<c10c2259>] __kmalloc+0x147/0x16b
-    [<c1289078>] kvasprintf+0x28/0x45
-    [<c1281579>] kobject_set_name_vargs+0x21/0x50
-    [<c12815c0>] kobject_add_varg+0x18/0x41
-    [<c128164e>] kobject_add+0x43/0x49
-    [<c13f89f7>] add_sysfs_fw_map_entry+0x56/0x6f
-    [<c179054c>] memmap_init+0x12/0x2c
-    [<c1001139>] do_one_initcall+0x4c/0x13f
-    [<c176237e>] kernel_init+0x132/0x1b3
-    [<c1002dfa>] kernel_thread_helper+0x6/0x10
-    [<ffffffff>] 0xffffffff
-unreferenced object 0xdf24ea28 (size 8):
-  comm "swapper", pid 1, jiffies 4294878263 (age 1488.673s)
-  hex dump (first 8 bytes):
-    35 00 24 df 00 00 00 00                          5.$.....
-  backtrace:
-    [<c149338a>] kmemleak_alloc+0x4a/0x83
-    [<c10c2259>] __kmalloc+0x147/0x16b
-    [<c1289078>] kvasprintf+0x28/0x45
-    [<c1281579>] kobject_set_name_vargs+0x21/0x50
-    [<c12815c0>] kobject_add_varg+0x18/0x41
-    [<c128164e>] kobject_add+0x43/0x49
-    [<c13f89f7>] add_sysfs_fw_map_entry+0x56/0x6f
-    [<c179054c>] memmap_init+0x12/0x2c
-    [<c1001139>] do_one_initcall+0x4c/0x13f
-    [<c176237e>] kernel_init+0x132/0x1b3
-    [<c1002dfa>] kernel_thread_helper+0x6/0x10
-    [<ffffffff>] 0xffffffff
-unreferenced object 0xdec4e0c0 (size 44):
-  comm "init", pid 1, jiffies 4294878357 (age 1488.363s)
-  hex dump (first 32 bytes):
-    02 02 00 00 ad 4e ad de ff ff ff ff ff ff ff ff  .....N..........
-    98 c2 d8 c1 00 00 00 00 3c 7d 63 c1 30 e0 c4 de  ........<}c.0...
-  backtrace:
-    [<c149338a>] kmemleak_alloc+0x4a/0x83
-    [<c10c1aca>] kmem_cache_alloc+0xde/0x12a
-    [<c10b4217>] anon_vma_fork+0x31/0x88
-    [<c102c71d>] dup_mm+0x1d3/0x38f
-    [<c102d20d>] copy_process+0x8ce/0xf39
-    [<c102d990>] do_fork+0x118/0x295
-    [<c1007fe0>] sys_clone+0x1f/0x24
-    [<c10029b1>] ptregs_clone+0x15/0x24
-    [<ffffffff>] 0xffffffff
-unreferenced object 0xdec4e240 (size 44):
-  comm "init", pid 768, jiffies 4294878359 (age 1488.356s)
-  hex dump (first 32 bytes):
-    fc fc 00 00 ad 4e ad de ff ff ff ff ff ff ff ff  .....N..........
-    98 c2 d8 c1 00 00 00 00 3c 7d 63 c1 40 e2 c4 de  ........<}c.@...
-  backtrace:
-    [<c149338a>] kmemleak_alloc+0x4a/0x83
-    [<c10c1aca>] kmem_cache_alloc+0xde/0x12a
-    [<c10b42e0>] anon_vma_prepare+0x72/0x12e
-    [<c10ad3e1>] handle_mm_fault+0x153/0x60d
-    [<c10ada62>] __get_user_pages+0x1c7/0x2c6
-    [<c10adbd3>] get_user_pages+0x39/0x41
-    [<c10cc80a>] get_arg_page+0x33/0x83
-    [<c10cc922>] copy_strings+0xc8/0x165
-    [<c10cc9db>] copy_strings_kernel+0x1c/0x2b
-    [<c10cdd10>] do_execve+0x14d/0x257
-    [<c1007f13>] sys_execve+0x2b/0x53
-    [<c1002946>] ptregs_execve+0x12/0x18
-    [<ffffffff>] 0xffffffff
-unreferenced object 0xdec4e210 (size 44):
-  comm "rc.S", pid 768, jiffies 4294878359 (age 1488.356s)
-  hex dump (first 32 bytes):
-    eb eb 00 00 ad 4e ad de ff ff ff ff ff ff ff ff  .....N..........
-    98 c2 d8 c1 00 00 00 00 3c 7d 63 c1 10 e2 c4 de  ........<}c.....
-  backtrace:
-    [<c149338a>] kmemleak_alloc+0x4a/0x83
-    [<c10c1aca>] kmem_cache_alloc+0xde/0x12a
-    [<c10b42e0>] anon_vma_prepare+0x72/0x12e
-    [<c10abad2>] __do_fault+0x73/0x307
-    [<c10ad52a>] handle_mm_fault+0x29c/0x60d
-    [<c14b046e>] do_page_fault+0x2ee/0x304
-    [<c14ae177>] error_code+0x6b/0x70
-    [<c10f94c3>] load_elf_binary+0x6d7/0x111c
-    [<c10cca88>] search_binary_handler+0x9e/0x20c
-    [<c10f7917>] load_script+0x177/0x188
-    [<c10cca88>] search_binary_handler+0x9e/0x20c
-    [<c10cdd6a>] do_execve+0x1a7/0x257
-    [<c1007f13>] sys_execve+0x2b/0x53
-    [<c1002946>] ptregs_execve+0x12/0x18
-    [<ffffffff>] 0xffffffff
-unreferenced object 0xdec4e1e0 (size 44):
-  comm "rc.S", pid 768, jiffies 4294878360 (age 1488.353s)
-  hex dump (first 32 bytes):
-    e5 e5 00 00 ad 4e ad de ff ff ff ff ff ff ff ff  .....N..........
-    98 c2 d8 c1 00 00 00 00 3c 7d 63 c1 e0 e1 c4 de  ........<}c.....
-  backtrace:
-    [<c149338a>] kmemleak_alloc+0x4a/0x83
-    [<c10c1aca>] kmem_cache_alloc+0xde/0x12a
-    [<c10b42e0>] anon_vma_prepare+0x72/0x12e
-    [<c10abad2>] __do_fault+0x73/0x307
-    [<c10ad52a>] handle_mm_fault+0x29c/0x60d
-    [<c14b046e>] do_page_fault+0x2ee/0x304
-    [<c14ae177>] error_code+0x6b/0x70
-    [<c10f9782>] load_elf_binary+0x996/0x111c
-    [<c10cca88>] search_binary_handler+0x9e/0x20c
-    [<c10f7917>] load_script+0x177/0x188
-    [<c10cca88>] search_binary_handler+0x9e/0x20c
-    [<c10cdd6a>] do_execve+0x1a7/0x257
-    [<c1007f13>] sys_execve+0x2b/0x53
-    [<c1002946>] ptregs_execve+0x12/0x18
-    [<ffffffff>] 0xffffffff
-unreferenced object 0xdec4e1b0 (size 44):
-  comm "rc.S", pid 768, jiffies 4294878360 (age 1488.356s)
-  hex dump (first 32 bytes):
-    fe fe 00 00 ad 4e ad de ff ff ff ff ff ff ff ff  .....N..........
-    98 c2 d8 c1 00 00 00 00 3c 7d 63 c1 b0 e1 c4 de  ........<}c.....
-  backtrace:
-    [<c149338a>] kmemleak_alloc+0x4a/0x83
-    [<c10c1aca>] kmem_cache_alloc+0xde/0x12a
-    [<c10b42e0>] anon_vma_prepare+0x72/0x12e
-    [<c10ad3e1>] handle_mm_fault+0x153/0x60d
-    [<c14b046e>] do_page_fault+0x2ee/0x304
-    [<c14ae177>] error_code+0x6b/0x70
-    [<ffffffff>] 0xffffffff
-unreferenced object 0xdec4e180 (size 44):
-  comm "rc.S", pid 768, jiffies 4294878360 (age 1488.356s)
-  hex dump (first 32 bytes):
-    fe fe 00 00 ad 4e ad de ff ff ff ff ff ff ff ff  .....N..........
-    98 c2 d8 c1 00 00 00 00 3c 7d 63 c1 80 e1 c4 de  ........<}c.....
-  backtrace:
-    [<c149338a>] kmemleak_alloc+0x4a/0x83
-    [<c10c1aca>] kmem_cache_alloc+0xde/0x12a
-    [<c10b42e0>] anon_vma_prepare+0x72/0x12e
-    [<c10abad2>] __do_fault+0x73/0x307
-    [<c10ad52a>] handle_mm_fault+0x29c/0x60d
-    [<c14b046e>] do_page_fault+0x2ee/0x304
-    [<c14ae177>] error_code+0x6b/0x70
-    [<ffffffff>] 0xffffffff
+We have some branch naming confusion and work going on in
+experimental, but our active work right now is against 2.6.34 and
+2.6.35-rc.  The tegra2 work has been very aggressively following
+mainline (rebasing against 2.6.34rc as they were getting underway),
+and we've been sending those patches out for review, in hopes of
+getting that tree off on a better foot.
 
-[snip similar vma issue .....]
+>
+>  - The last commit is a couple of weeks old AFAICS.
+>
+>  - The diffstat of android-common/android-2.6.32 is:
+>
+>      890 files changed, 39962 insertions(+), 6286 deletions(-)
+>
+>   Those assorted patches have spread over nearly a thousand files. FYI, by
+>   the looks of it you are facing an exponentially worsening maintenance
+>   overhead curve here.
+>
+> Is there perhaps some other tree i should be following? I'm looking at:
+>
+>  [remote "android-msm"]
+>         url = git://android.git.kernel.org/kernel/msm.git
+>         fetch = +refs/heads/*:refs/remotes/android-msm/*
+>  [remote "android-common"]
+>         url = git://android.git.kernel.org/kernel/common.git
+>         fetch = +refs/heads/*:refs/remotes/android-common/*
+>
+> Btw., the commits i've glanced at looked mostly clean and well structured, so
+> i see no fundamental reason why this couldn't be done better.
 
--- 
-Regards
-dave
+I think the fundamental issue we keep bumping into is the turnaround
+time on patch review / inclusion (again we're trying to get things
+going much earlier on tegra2 to hopefully have less pain there).  We
+aim for kernel style compliance (though we're not perfect and we make
+our share of mistakes), but previously when I tried sending mach-msm
+stuff out, it seemed infeasible to send 30-60+ patches, so we'd start
+with 5-10, feedback would trickle in over the course of a week, I'd
+respin, etc.  After a couple weeks some stuff would get picked up
+toward a merge window but the rest would have to wait.  And then we
+hit crunch to ship, etc, and get behind.
+
+Totally our fault that we're not just constantly pushing patches (and
+we're trying to get a fulltime engineer or two just to work on
+upstream related stuff), but we rapidly hit the point where what we're
+sending up is a drop in the bucket compared to the work we're doing
+and things keep diverging, etc.
+
+I'm told this happens to everyone, is common, etc.  We're (seriously)
+a small team, trying to ship multiple products a year and keep our
+head above water here, and unfortunately that means we keep tabling
+these projects until we can find some cycles to give it another go and
+the delta grows.
+
+>> So, we figure, let's sort out the hard problem first and then move on with
+>> our lives.
+>
+> Well, my suggestion would be to first build up a path towards upstream, build
+> up trust, reduce your very high cross section to mainline - and do the most
+> difficult bits last.
+
+Having to maintain two versions of about half our driver code because
+we depend on an ABI not in mainline is a significant factor for us --
+it's difficult to have what's going upstream lag behind our active
+work (basically we have to maintain two different trees -- one for
+mainline one for ship) already, but having these codelines also be
+different makes it worse for us.
+
+> Especially 'move on with our lives' suggests that you just want to get rid of
+> this ABI divergence and continue-as-usual with the pattern of non-cooperation,
+> hm?
+
+I'd like to make some forward progress either to get something
+wakelock-ish in and shift to whatever that api is, or to get a clear
+"no not going to happen" and deal with the fallout there.
+
+...
+
+Sadly, for mach-msm, we're now further out due to maintainership
+shifts (Daniel stepped up to do msm stuff, is pushing up some hybrid
+of our work and Qualcomm's work that doesn't seem to really fit with
+either, and I have no idea how to sanely get our stuff to sit on top
+of that).  I'd love to find some time to sit down, clean up the whole
+msm tree for 8x50/7x30 which is (largely) pretty clean, and is
+extremely stable and shippable, and try to get it into a patch series
+and headed upstream, but we're now colliding with the upstream
+mach-msm which has gone off in a different direction, etc.
+
+Anyway, we continue to try to figure out how to make stuff work better
+(again, trying some different approaches with tegra2), but so far the
+process of getting code upstream has been extremely time intensive and
+rather frustrating and it remains unclear who can sign off on what and
+how many hoops different people will keep asking us to jump through.
+
+Brian
