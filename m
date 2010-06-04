@@ -1,68 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932232Ab0FDBrd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 3 Jun 2010 21:47:33 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:41871 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757070Ab0FDBrc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 3 Jun 2010 21:47:32 -0400
-To: Nick Piggin <npiggin@suse.de>
-Cc: Chris Mason <chris.mason@oracle.com>,
-       "Martin K. Petersen" <martin.petersen@oracle.com>,
-       James Bottomley <James.Bottomley@suse.de>,
-       Matthew Wilcox <matthew@wil.cx>,
-       Christof Schmitt <christof.schmitt@de.ibm.com>,
-       Boaz Harrosh <bharrosh@panasas.com>, linux-scsi@vger.kernel.org,
-       linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
-Subject: Re: Wrong DIF guard tag on ext2 write
-From: "Martin K. Petersen" <martin.petersen@oracle.com>
-Organization: Oracle
-References: <20100601162929.GC32708@parisc-linux.org>
-	<20100601164750.GQ8980@think>
-	<1275411293.21962.387.camel@mulgrave.site>
-	<20100601180905.GR8980@think> <20100601184649.GE9453@laptop>
-	<20100601193528.GV8980@think> <20100602032030.GF9453@laptop>
-	<yq17hmhbmkb.fsf@sermon.lab.mkp.net> <20100602134121.GD6152@laptop>
-	<20100603154634.GC8980@think> <20100603162718.GR6822@laptop>
-Date: Thu, 03 Jun 2010 21:46:02 -0400
-In-Reply-To: <20100603162718.GR6822@laptop> (Nick Piggin's message of "Fri, 4
-	Jun 2010 02:27:18 +1000")
-Message-ID: <yq1y6evwox1.fsf@sermon.lab.mkp.net>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-X-Auth-Type: Internal IP
-X-Source-IP: rcsinet15.oracle.com [148.87.113.117]
-X-CT-RefId: str=0001.0A090209.4C085B2D.008E:SCFMA4539811,ss=1,fgs=0
+	id S932314Ab0FDBsI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 3 Jun 2010 21:48:08 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:33522 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932071Ab0FDBsG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 3 Jun 2010 21:48:06 -0400
+Date: Fri, 4 Jun 2010 11:48:01 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: "John W. Linville" <linville@tuxdriver.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+       Juuso Oikarinen <juuso.oikarinen@nokia.com>,
+       Luciano Coelho <luciano.coelho@nokia.com>,
+       Eric Dumazet <eric.dumazet@gmail.com>,
+       David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>
+Subject: linux-next: manual merge of the wireless tree with the net tree
+Message-Id: <20100604114801.df31fb50.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>>>> "Nick" == Nick Piggin <npiggin@suse.de> writes:
+Hi John,
 
-Nick> Also I don't think we can deal with memory errors and scribbles
-Nick> just by crcing dirty data. The calculations generating the data
-Nick> could get corrupted.
+Today's linux-next merge of the wireless tree got a conflict in
+drivers/net/wireless/wl12xx/wl1271.h
+drivers/net/wireless/wl12xx/wl1271_cmd.h between commit
+ba2d3587912f82d1ab4367975b1df460db60fb1e ("drivers/net: use __packed
+annotation") from the net tree and commit
+eb70eb723b489dd4e233e22e47d993f59858cdd8 ("wl1271: Update handling of the
+NVS file / INI parameters") from the wireless tree.
 
-Yep, the goal is to make the window as small as possible.
-
-
-Nick> Data can be corrupted on its way back from the device to
-Nick> userspace.
-
-We also get a CRC back from the storage.  So the (integrity-aware)
-application is also able to check on read.
-
-
-Nick> Obviously this feature is being pushed by databases and such that
-Nick> really want to pass checksums all the way from userspace. Block
-Nick> retrying is _not_ needed or wanted here of course.
-
-Nope.  The integrity error is bubbled all the way up to the database and
-we can decide to retry, recreate or error out depending on what we find
-when we do validation checks on the data buffer and the integrity
-metadata.
-
+I fixed up some if it (see below) and can carry the fixes as necessary.
+The latter patch also moved some of the structures to another file
+(drivers/net/wireless/wl12xx/wl1271_ini.h), so they will need fixing up
+there.
 -- 
-Martin K. Petersen	Oracle Linux Engineering
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+diff --cc drivers/net/wireless/wl12xx/wl1271_cmd.h
+index d88faf9,68001df..0000000
+--- a/drivers/net/wireless/wl12xx/wl1271_cmd.h
++++ b/drivers/net/wireless/wl12xx/wl1271_cmd.h
+@@@ -439,25 -439,31 +439,31 @@@ struct wl1271_general_parms_cmd 
+  
+  	struct wl1271_cmd_test_header test;
+  
+- 	u8 params[WL1271_NVS_GENERAL_PARAMS_SIZE];
+- 	s8 reserved[23];
+- } __packed;
++ 	struct wl1271_ini_general_params general_params;
+  
+- #define WL1271_STAT_RADIO_PARAMS_5_SIZE    29
+- #define WL1271_DYN_RADIO_PARAMS_5_SIZE    104
++ 	u8 sr_debug_table[WL1271_INI_MAX_SMART_REFLEX_PARAM];
++ 	u8 sr_sen_n_p;
++ 	u8 sr_sen_n_p_gain;
++ 	u8 sr_sen_nrn;
++ 	u8 sr_sen_prn;
++ 	u8 padding[3];
+ -} __attribute__ ((packed));
+++} __packed;
+  
+  struct wl1271_radio_parms_cmd {
+  	struct wl1271_cmd_header header;
+  
+  	struct wl1271_cmd_test_header test;
+  
+- 	u8 stat_radio_params[WL1271_NVS_STAT_RADIO_PARAMS_SIZE];
+- 	u8 stat_radio_params_5[WL1271_STAT_RADIO_PARAMS_5_SIZE];
++ 	/* Static radio parameters */
++ 	struct wl1271_ini_band_params_2 static_params_2;
++ 	struct wl1271_ini_band_params_5 static_params_5;
+  
+- 	u8 dyn_radio_params[WL1271_NVS_DYN_RADIO_PARAMS_SIZE];
+- 	u8 reserved;
+- 	u8 dyn_radio_params_5[WL1271_DYN_RADIO_PARAMS_5_SIZE];
++ 	/* Dynamic radio parameters */
++ 	struct wl1271_ini_fem_params_2 dyn_params_2;
++ 	u8 padding2;
++ 	struct wl1271_ini_fem_params_5 dyn_params_5;
++ 	u8 padding3[2];
+ -} __attribute__ ((packed));
+ +} __packed;
+  
+  struct wl1271_cmd_cal_channel_tune {
+  	struct wl1271_cmd_header header;
