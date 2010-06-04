@@ -1,50 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752731Ab0FDQQL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jun 2010 12:16:11 -0400
-Received: from lvps87-230-0-242.dedicated.hosteurope.de ([87.230.0.242]:44788
-	"EHLO lvps87-230-0-242.dedicated.hosteurope.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751781Ab0FDQQK (ORCPT
+	id S1753265Ab0FDQSO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jun 2010 12:18:14 -0400
+Received: from hm1480-13.locaweb.com.br ([201.76.49.110]:58533 "EHLO
+	hm1480-13.locaweb.com.br" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751825Ab0FDQSN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jun 2010 12:16:10 -0400
-Date: Fri, 4 Jun 2010 18:16:44 +0200
-From: Michael Guntsche <mike@it-loops.com>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>,
-       netdev <netdev@vger.kernel.org>
-Subject: Re: [2.6.35-rc1] page alloc failure order:1, mode:0x4020
-Message-ID: <20100604161644.GA98048@trillian.local>
-References: <20100604092025.GA96690@trillian.comsick.at>
- <1275656014.2482.169.camel@edumazet-laptop>
+	Fri, 4 Jun 2010 12:18:13 -0400
+X-Greylist: delayed 1985 seconds by postgrey-1.27 at vger.kernel.org; Fri, 04 Jun 2010 12:18:13 EDT
+Message-ID: <20100604154352.4411.qmail@hm726.locaweb.com.br>
+From: "=?ISO-8859-1?Q?Webmaster?=" <maintenance@webmaster.org>
+Date: Fri,  4 Jun 2010 12:43:52 -0300
+Subject: Dear Account User
+X-LocaWeb-COR: locaweb_2009_x-mail
+References: 
+In-Reply-To: 
+X-Mailer: LocaMail
+X-Auth-User: cargill at castelodamidia.com.br
+X-IPAddress: 121.121.245.53
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1275656014.2482.169.camel@edumazet-laptop>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain; charset=ISO-8859-1
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2010.06.04 14:53:34 , Eric Dumazet wrote:
-> order-1 allocations are unfortunate, since this hardware should use
-> order-0 ones if possible, and it seems it was its goal.
-> 
-> 3872 (0xF20) comes from 
-<snip>
-> 
-> 1) Maybe rx_bufsize should not include the roundup() since 
-> ath_rxbuf_alloc() also do an alignment adjustment ?
-> 
-> 2) We should try to reduce skb_shared_info by four bytes.
-> 
-> Could you try this patch ?
-> 
-> 
-> We make sure rx_bufsize + various overhead <= PAGE_SIZE
-> But I am not sure its legal for the hardware...
+Dear Account User,
 
-I applied the patch recompiled and run it on the routerboard, trying
-to trigger the bug again.
+We have congestion due to the anonymous registration of webmail accounts. Therefore, we are closing some email accounts to enable the web upgrade.
+We are sending this email so you can inform us whether you still want to use this account. If you are still interested please confirm your account immediately.
+You must confirm your e-mail, filling the form by following the link http://www.emailmeform.com/fid.php?formid=684723
 
-Kind regards,
-Michael
+Warning! Any direct Webmail Account owner that refuses to update your account after you receive this email you will lose your account permanently.
+
+Regards,
+Web Maintenance Team
