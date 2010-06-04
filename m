@@ -1,347 +1,329 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752793Ab0FDH2g (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jun 2010 03:28:36 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:39412 "EHLO mx2.suse.de"
+	id S1752689Ab0FDH2f (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jun 2010 03:28:35 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:39410 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752374Ab0FDH2d (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1752318Ab0FDH2d (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 4 Jun 2010 03:28:33 -0400
-Message-Id: <20100604072618.227745945@suse.de>
+Message-Id: <20100604072618.596073356@suse.de>
 User-Agent: quilt/0.48-4.4
-Date: Fri, 04 Jun 2010 16:43:08 +1000
+Date: Fri, 04 Jun 2010 16:43:10 +1000
 From: Nick Piggin <npiggin@suse.de>
 To: Al Viro <viro@ZenIV.linux.org.uk>
 Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
        Frank Mayhar <fmayhar@google.com>, John Stultz <johnstul@us.ibm.com>,
-       Andi Kleen <ak@linux.intel.com>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
        "Eric W. Biederman" <ebiederm@xmission.com>,
-       Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [patch 1/4] fs: cleanup files_lock
+       Tim Chen <tim.c.chen@linux.intel.com>, Andi Kleen <ak@linux.intel.com>
+Subject: [patch 3/4] fs: scale files_lock
 References: <20100604064307.737085373@suse.de>
-Content-Disposition: inline; filename=fs-files_list-improve.patch
+Content-Disposition: inline; filename=fs-files_lock-scale.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Lock tty_files with a new spinlock, tty_files_lock; provide helpers to
-manipulate the per-sb files list; unexport the files_lock spinlock.
+Improve scalability of files_lock by adding per-cpu, per-sb files lists,
+protected with an lglock. The lglock provides fast access to the per-cpu
+lists to add and remove files. It also provides a snapshot of all the
+per-cpu lists (although this is very slow).
+
+One difficulty with this approach is that a file can be removed from the list
+by another CPU. We must track which per-cpu list the file is on.  Scalability
+could suffer if files are frequently removed from different cpu's list.
+
+However loads with frequent removal of files imply short interval between
+adding and removing the files, and the scheduler attempts to avoid moving
+processes too far away. Also, even in the case of cross-CPU removal, the
+hardware has much more opportunity to parallelise cacheline transfers with N
+cachelines than with 1.
+
+A worst-case test of 1 CPU allocating files subsequently being freed by N CPUs
+degenerates to contending on a single lock, which is no worse than before. When
+more than one CPU are allocating files, even if they are always freed by
+different CPUs, there will be more parallelism than the single-lock case.
+
+
+Testing results:
+
+On a 2 socket, 8 core opteron, I measure the number of times the lock is taken
+to remove the file, the number of times it is removed by the same CPU that
+added it, and the number of times it is removed by the same node that added it.
+
+Booting:    locks=  25049 cpu-hits=  23174 (92.5%) node-hits=  23945 (95.6%)
+kbuild -j16 locks=2281913 cpu-hits=2208126 (96.8%) node-hits=2252674 (98.7%)
+dbench 64   locks=4306582 cpu-hits=4287247 (99.6%) node-hits=4299527 (99.8%)
+
+So a file is removed from the same CPU it was added by over 90% of the time.
+It remains within the same node 95% of the time.
+
+
+Tim Chen run some numbers for a 64 thread Nehalem system performing a compile.
+
+                throughput
+2.6.34-rc2      24.5
++patch          24.9
+
+                us      sys     idle    IO wait (in %)
+2.6.34-rc2      51.25   28.25   17.25   3.25
++patch          53.75   18.5    19      8.75
+
+So significantly less CPU time spent in kernel code, higher idle time and
+slightly higher throughput.
+
+
+Single threaded performance difference was within the noise of even my
+microbenchmarks. That is not to say one does not exist, the code is
+larger and more memory accesses required.
 
 Cc: linux-kernel@vger.kernel.org
 Cc: linux-fsdevel@vger.kernel.org
 Cc: Al Viro <viro@ZenIV.linux.org.uk>
 Cc: Frank Mayhar <fmayhar@google.com>,
 Cc: John Stultz <johnstul@us.ibm.com>
-Cc: Andi Kleen <ak@linux.intel.com>,
-Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>,
 Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
-Acked-by: Andi Kleen <ak@linux.intel.com>
-Acked-by: Greg Kroah-Hartman <gregkh@suse.de>
+Cc: Tim Chen <tim.c.chen@linux.intel.com>
+Cc: Andi Kleen <ak@linux.intel.com>
 Signed-off-by: Nick Piggin <npiggin@suse.de>
 ---
- drivers/char/pty.c       |    6 +++++-
- drivers/char/tty_io.c    |   26 ++++++++++++++++++--------
- fs/file_table.c          |   42 ++++++++++++++++++------------------------
- fs/open.c                |    4 ++--
- include/linux/fs.h       |    7 ++-----
- include/linux/tty.h      |    1 +
- security/selinux/hooks.c |    4 ++--
- 7 files changed, 48 insertions(+), 42 deletions(-)
+ fs/file_table.c    |   99 +++++++++++++++++++++++++++++++++++++++++++----------
+ fs/super.c         |   18 +++++++++
+ include/linux/fs.h |    7 +++
+ 3 files changed, 106 insertions(+), 18 deletions(-)
 
-Index: linux-2.6/drivers/char/pty.c
-===================================================================
---- linux-2.6.orig/drivers/char/pty.c
-+++ linux-2.6/drivers/char/pty.c
-@@ -650,7 +650,11 @@ static int __ptmx_open(struct inode *ino
- 
- 	set_bit(TTY_PTY_LOCK, &tty->flags); /* LOCK THE SLAVE */
- 	filp->private_data = tty;
--	file_move(filp, &tty->tty_files);
-+
-+	file_sb_list_del(filp); /* __dentry_open has put it on the sb list */
-+	spin_lock(&tty_files_lock);
-+	list_add(&filp->f_u.fu_list, &tty->tty_files);
-+	spin_unlock(&tty_files_lock);
- 
- 	retval = devpts_pty_new(inode, tty->link);
- 	if (retval)
-Index: linux-2.6/drivers/char/tty_io.c
-===================================================================
---- linux-2.6.orig/drivers/char/tty_io.c
-+++ linux-2.6/drivers/char/tty_io.c
-@@ -136,6 +136,9 @@ LIST_HEAD(tty_drivers);			/* linked list
- DEFINE_MUTEX(tty_mutex);
- EXPORT_SYMBOL(tty_mutex);
- 
-+/* Spinlock to protect the tty->tty_files list */
-+DEFINE_SPINLOCK(tty_files_lock);
-+
- static ssize_t tty_read(struct file *, char __user *, size_t, loff_t *);
- static ssize_t tty_write(struct file *, const char __user *, size_t, loff_t *);
- ssize_t redirected_tty_write(struct file *, const char __user *,
-@@ -234,11 +237,11 @@ static int check_tty_count(struct tty_st
- 	struct list_head *p;
- 	int count = 0;
- 
--	file_list_lock();
-+	spin_lock(&tty_files_lock);
- 	list_for_each(p, &tty->tty_files) {
- 		count++;
- 	}
--	file_list_unlock();
-+	spin_unlock(&tty_files_lock);
- 	if (tty->driver->type == TTY_DRIVER_TYPE_PTY &&
- 	    tty->driver->subtype == PTY_TYPE_SLAVE &&
- 	    tty->link && tty->link->count)
-@@ -517,7 +520,7 @@ static void do_tty_hangup(struct work_st
- 	lock_kernel();
- 	check_tty_count(tty, "do_tty_hangup");
- 
--	file_list_lock();
-+	spin_lock(&tty_files_lock);
- 	/* This breaks for file handles being sent over AF_UNIX sockets ? */
- 	list_for_each_entry(filp, &tty->tty_files, f_u.fu_list) {
- 		if (filp->f_op->write == redirected_tty_write)
-@@ -528,7 +531,7 @@ static void do_tty_hangup(struct work_st
- 		tty_fasync(-1, filp, 0);	/* can't block */
- 		filp->f_op = &hung_up_tty_fops;
- 	}
--	file_list_unlock();
-+	spin_unlock(&tty_files_lock);
- 
- 	tty_ldisc_hangup(tty);
- 
-@@ -1419,9 +1422,9 @@ static void release_one_tty(struct work_
- 	tty_driver_kref_put(driver);
- 	module_put(driver->owner);
- 
--	file_list_lock();
-+	spin_lock(&tty_files_lock);
- 	list_del_init(&tty->tty_files);
--	file_list_unlock();
-+	spin_unlock(&tty_files_lock);
- 
- 	put_pid(tty->pgrp);
- 	put_pid(tty->session);
-@@ -1666,7 +1669,10 @@ int tty_release(struct inode *inode, str
- 	 *  - do_tty_hangup no longer sees this file descriptor as
- 	 *    something that needs to be handled for hangups.
- 	 */
--	file_kill(filp);
-+	spin_lock(&tty_files_lock);
-+	BUG_ON(list_empty(&filp->f_u.fu_list));
-+	list_del_init(&filp->f_u.fu_list);
-+	spin_unlock(&tty_files_lock);
- 	filp->private_data = NULL;
- 
- 	/*
-@@ -1835,7 +1841,11 @@ got_driver:
- 	}
- 
- 	filp->private_data = tty;
--	file_move(filp, &tty->tty_files);
-+	BUG_ON(list_empty(&filp->f_u.fu_list));
-+	file_sb_list_del(filp); /* __dentry_open has put it on the sb list */
-+	spin_lock(&tty_files_lock);
-+	list_add(&filp->f_u.fu_list, &tty->tty_files);
-+	spin_unlock(&tty_files_lock);
- 	check_tty_count(tty, "tty_open");
- 	if (tty->driver->type == TTY_DRIVER_TYPE_PTY &&
- 	    tty->driver->subtype == PTY_TYPE_MASTER)
 Index: linux-2.6/fs/file_table.c
 ===================================================================
 --- linux-2.6.orig/fs/file_table.c
 +++ linux-2.6/fs/file_table.c
-@@ -32,8 +32,7 @@ struct files_stat_struct files_stat = {
+@@ -20,7 +20,9 @@
+ #include <linux/cdev.h>
+ #include <linux/fsnotify.h>
+ #include <linux/sysctl.h>
++#include <linux/lglock.h>
+ #include <linux/percpu_counter.h>
++#include <linux/percpu.h>
+ #include <linux/ima.h>
+ 
+ #include <asm/atomic.h>
+@@ -32,7 +34,8 @@ struct files_stat_struct files_stat = {
  	.max_files = NR_FILE
  };
  
--/* public. Not pretty! */
--__cacheline_aligned_in_smp DEFINE_SPINLOCK(files_lock);
-+static __cacheline_aligned_in_smp DEFINE_SPINLOCK(files_lock);
+-static __cacheline_aligned_in_smp DEFINE_SPINLOCK(files_lock);
++DECLARE_LGLOCK(files_lglock);
++DEFINE_LGLOCK(files_lglock);
  
  /* SLAB cache for file structures */
  static struct kmem_cache *filp_cachep __read_mostly;
-@@ -249,7 +248,7 @@ static void __fput(struct file *file)
- 		cdev_put(inode->i_cdev);
- 	fops_put(file->f_op);
- 	put_pid(file->f_owner.pid);
--	file_kill(file);
-+	file_sb_list_del(file);
- 	if (file->f_mode & FMODE_WRITE)
- 		drop_file_write_access(file);
- 	file->f_path.dentry = NULL;
-@@ -319,31 +318,29 @@ struct file *fget_light(unsigned int fd,
- 	return file;
- }
- 
--
- void put_filp(struct file *file)
- {
- 	if (atomic_long_dec_and_test(&file->f_count)) {
- 		security_file_free(file);
--		file_kill(file);
-+		file_sb_list_del(file);
- 		file_free(file);
+@@ -327,30 +330,89 @@ void put_filp(struct file *file)
  	}
  }
  
--void file_move(struct file *file, struct list_head *list)
-+void file_sb_list_add(struct file *file, struct super_block *sb)
++/* helper for file_sb_list_add to reduce ifdefs */
++static inline void __file_sb_list_add(struct file *file, struct super_block *sb)
++{
++	struct list_head *list;
++#ifdef CONFIG_SMP
++	int cpu;
++	cpu = smp_processor_id();
++	file->f_sb_list_cpu = cpu;
++	list = per_cpu_ptr(sb->s_files, cpu);
++#else
++	list = &sb->s_files;
++#endif
++	list_add(&file->f_u.fu_list, list);
++}
++
++/**
++ * file_sb_list_add - add a file to the sb's file list
++ * @file: file to add
++ * @sb: sb to add it to
++ *
++ * Use this function to associate a file with the superblock of the inode it
++ * refers to.
++ */
+ void file_sb_list_add(struct file *file, struct super_block *sb)
  {
--	if (!list)
--		return;
--	file_list_lock();
--	list_move(&file->f_u.fu_list, list);
--	file_list_unlock();
-+	spin_lock(&files_lock);
-+	BUG_ON(!list_empty(&file->f_u.fu_list));
-+	list_add(&file->f_u.fu_list, &sb->s_files);
-+	spin_unlock(&files_lock);
+-	spin_lock(&files_lock);
+-	BUG_ON(!list_empty(&file->f_u.fu_list));
+-	list_add(&file->f_u.fu_list, &sb->s_files);
+-	spin_unlock(&files_lock);
++	lg_local_lock(files_lglock);
++	__file_sb_list_add(file, sb);
++	lg_local_unlock(files_lglock);
  }
  
--void file_kill(struct file *file)
-+void file_sb_list_del(struct file *file)
++/**
++ * file_sb_list_del - remove a file from the sb's file list
++ * @file: file to remove
++ * @sb: sb to remove it from
++ *
++ * Use this function to remove a file from its superblock.
++ */
+ void file_sb_list_del(struct file *file)
  {
  	if (!list_empty(&file->f_u.fu_list)) {
--		file_list_lock();
-+		spin_lock(&files_lock);
+-		spin_lock(&files_lock);
++		lg_local_lock_cpu(files_lglock, file->f_sb_list_cpu);
  		list_del_init(&file->f_u.fu_list);
--		file_list_unlock();
-+		spin_unlock(&files_lock);
+-		spin_unlock(&files_lock);
++		lg_local_unlock_cpu(files_lglock, file->f_sb_list_cpu);
  	}
  }
  
-@@ -352,7 +349,7 @@ int fs_may_remount_ro(struct super_block
++#ifdef CONFIG_SMP
++
++/*
++ * These macros iterate all files on all CPUs for a given superblock.
++ * files_lglock must be held globally.
++ */
++#define do_file_list_for_each_entry(__sb, __file)		\
++{								\
++	int i;							\
++	for_each_possible_cpu(i) {				\
++		struct list_head *list;				\
++		list = per_cpu_ptr((__sb)->s_files, i);		\
++		list_for_each_entry((__file), list, f_u.fu_list)
++
++#define while_file_list_for_each_entry				\
++	}							\
++}
++
++#else
++
++#define do_file_list_for_each_entry(__sb, __file)		\
++{								\
++	struct list_head *list;					\
++	list = &(sb)->s_files;					\
++	list_for_each_entry((__file), list, f_u.fu_list)
++
++#define while_file_list_for_each_entry				\
++}
++
++#endif
++
+ int fs_may_remount_ro(struct super_block *sb)
+ {
  	struct file *file;
- 
+-
  	/* Check that no files are currently opened for writing. */
--	file_list_lock();
-+	spin_lock(&files_lock);
- 	list_for_each_entry(file, &sb->s_files, f_u.fu_list) {
+-	spin_lock(&files_lock);
+-	list_for_each_entry(file, &sb->s_files, f_u.fu_list) {
++	lg_global_lock(files_lglock);
++	do_file_list_for_each_entry(sb, file) {
  		struct inode *inode = file->f_path.dentry->d_inode;
  
-@@ -364,10 +361,10 @@ int fs_may_remount_ro(struct super_block
+ 		/* File with pending delete? */
+@@ -360,11 +422,11 @@ int fs_may_remount_ro(struct super_block
+ 		/* Writeable file? */
  		if (S_ISREG(inode->i_mode) && (file->f_mode & FMODE_WRITE))
  			goto too_bad;
- 	}
--	file_list_unlock();
-+	spin_unlock(&files_lock);
+-	}
+-	spin_unlock(&files_lock);
++	} while_file_list_for_each_entry;
++	lg_global_unlock(files_lglock);
  	return 1; /* Tis' cool bro. */
  too_bad:
--	file_list_unlock();
-+	spin_unlock(&files_lock);
+-	spin_unlock(&files_lock);
++	lg_global_unlock(files_lglock);
  	return 0;
  }
  
-@@ -383,7 +380,7 @@ void mark_files_ro(struct super_block *s
+@@ -380,8 +442,8 @@ void mark_files_ro(struct super_block *s
  	struct file *f;
  
  retry:
--	file_list_lock();
-+	spin_lock(&files_lock);
- 	list_for_each_entry(f, &sb->s_files, f_u.fu_list) {
+-	spin_lock(&files_lock);
+-	list_for_each_entry(f, &sb->s_files, f_u.fu_list) {
++	lg_global_lock(files_lglock);
++	do_file_list_for_each_entry(sb, f) {
  		struct vfsmount *mnt;
  		if (!S_ISREG(f->f_path.dentry->d_inode->i_mode))
-@@ -399,16 +396,13 @@ retry:
- 			continue;
+ 		       continue;
+@@ -397,12 +459,12 @@ retry:
  		file_release_write(f);
  		mnt = mntget(f->f_path.mnt);
--		file_list_unlock();
--		/*
--		 * This can sleep, so we can't hold
--		 * the file_list_lock() spinlock.
--		 */
-+		/* This can sleep, so we can't hold the spinlock. */
-+		spin_unlock(&files_lock);
+ 		/* This can sleep, so we can't hold the spinlock. */
+-		spin_unlock(&files_lock);
++		lg_global_unlock(files_lglock);
  		mnt_drop_write(mnt);
  		mntput(mnt);
  		goto retry;
- 	}
--	file_list_unlock();
-+	spin_unlock(&files_lock);
+-	}
+-	spin_unlock(&files_lock);
++	} while_file_list_for_each_entry;
++	lg_global_unlock(files_lglock);
  }
  
  void __init files_init(unsigned long mempages)
-Index: linux-2.6/fs/open.c
+@@ -422,5 +484,6 @@ void __init files_init(unsigned long mem
+ 	if (files_stat.max_files < NR_FILE)
+ 		files_stat.max_files = NR_FILE;
+ 	files_defer_init();
++	lg_lock_init(files_lglock);
+ 	percpu_counter_init(&nr_files, 0);
+ } 
+Index: linux-2.6/fs/super.c
 ===================================================================
---- linux-2.6.orig/fs/open.c
-+++ linux-2.6/fs/open.c
-@@ -675,7 +675,7 @@ static struct file *__dentry_open(struct
- 	f->f_path.mnt = mnt;
- 	f->f_pos = 0;
- 	f->f_op = fops_get(inode->i_fop);
--	file_move(f, &inode->i_sb->s_files);
-+	file_sb_list_add(f, inode->i_sb);
- 
- 	error = security_dentry_open(f, cred);
- 	if (error)
-@@ -721,7 +721,7 @@ cleanup_all:
- 			mnt_drop_write(mnt);
+--- linux-2.6.orig/fs/super.c
++++ linux-2.6/fs/super.c
+@@ -54,7 +54,22 @@ static struct super_block *alloc_super(s
+ 			s = NULL;
+ 			goto out;
  		}
- 	}
--	file_kill(f);
-+	file_sb_list_del(f);
- 	f->f_path.dentry = NULL;
- 	f->f_path.mnt = NULL;
- cleanup_file:
++#ifdef CONFIG_SMP
++		s->s_files = alloc_percpu(struct list_head);
++		if (!s->s_files) {
++			security_sb_free(s);
++			kfree(s);
++			s = NULL;
++			goto out;
++		} else {
++			int i;
++
++			for_each_possible_cpu(i)
++				INIT_LIST_HEAD(per_cpu_ptr(s->s_files, i));
++		}
++#else
+ 		INIT_LIST_HEAD(&s->s_files);
++#endif
+ 		INIT_LIST_HEAD(&s->s_instances);
+ 		INIT_HLIST_HEAD(&s->s_anon);
+ 		INIT_LIST_HEAD(&s->s_inodes);
+@@ -108,6 +123,9 @@ out:
+  */
+ static inline void destroy_super(struct super_block *s)
+ {
++#ifdef CONFIG_SMP
++	free_percpu(s->s_files);
++#endif
+ 	security_sb_free(s);
+ 	kfree(s->s_subtype);
+ 	kfree(s->s_options);
 Index: linux-2.6/include/linux/fs.h
 ===================================================================
 --- linux-2.6.orig/include/linux/fs.h
 +++ linux-2.6/include/linux/fs.h
-@@ -949,9 +949,6 @@ struct file {
- 	unsigned long f_mnt_write_state;
- #endif
- };
--extern spinlock_t files_lock;
--#define file_list_lock() spin_lock(&files_lock);
--#define file_list_unlock() spin_unlock(&files_lock);
+@@ -925,6 +925,9 @@ struct file {
+ #define f_vfsmnt	f_path.mnt
+ 	const struct file_operations	*f_op;
+ 	spinlock_t		f_lock;  /* f_ep_links, f_flags, no IRQ */
++#ifdef CONFIG_SMP
++	int			f_sb_list_cpu;
++#endif
+ 	atomic_long_t		f_count;
+ 	unsigned int 		f_flags;
+ 	fmode_t			f_mode;
+@@ -1339,7 +1342,11 @@ struct super_block {
  
- #define get_file(x)	atomic_long_inc(&(x)->f_count)
- #define fput_atomic(x)	atomic_long_add_unless(&(x)->f_count, -1, 1)
-@@ -2182,8 +2179,8 @@ static inline void insert_inode_hash(str
- 	__insert_inode_hash(inode, inode->i_ino);
- }
- 
--extern void file_move(struct file *f, struct list_head *list);
--extern void file_kill(struct file *f);
-+extern void file_sb_list_add(struct file *f, struct super_block *sb);
-+extern void file_sb_list_del(struct file *f);
- #ifdef CONFIG_BLOCK
- struct bio;
- extern void submit_bio(int, struct bio *);
-Index: linux-2.6/security/selinux/hooks.c
-===================================================================
---- linux-2.6.orig/security/selinux/hooks.c
-+++ linux-2.6/security/selinux/hooks.c
-@@ -2219,7 +2219,7 @@ static inline void flush_unauthorized_fi
- 
- 	tty = get_current_tty();
- 	if (tty) {
--		file_list_lock();
-+		spin_lock(&tty_files_lock);
- 		if (!list_empty(&tty->tty_files)) {
- 			struct inode *inode;
- 
-@@ -2235,7 +2235,7 @@ static inline void flush_unauthorized_fi
- 				drop_tty = 1;
- 			}
- 		}
--		file_list_unlock();
-+		spin_unlock(&tty_files_lock);
- 		tty_kref_put(tty);
- 	}
- 	/* Reset controlling tty. */
-Index: linux-2.6/include/linux/tty.h
-===================================================================
---- linux-2.6.orig/include/linux/tty.h
-+++ linux-2.6/include/linux/tty.h
-@@ -467,6 +467,7 @@ extern struct tty_struct *tty_pair_get_t
- extern struct tty_struct *tty_pair_get_pty(struct tty_struct *tty);
- 
- extern struct mutex tty_mutex;
-+extern spinlock_t tty_files_lock;
- 
- extern void tty_write_unlock(struct tty_struct *tty);
- extern int tty_write_lock(struct tty_struct *tty, int ndelay);
+ 	struct list_head	s_inodes;	/* all inodes */
+ 	struct hlist_head	s_anon;		/* anonymous dentries for (nfs) exporting */
++#ifdef CONFIG_SMP
++	struct list_head __percpu *s_files;
++#else
+ 	struct list_head	s_files;
++#endif
+ 	/* s_dentry_lru and s_nr_dentry_unused are protected by dcache_lock */
+ 	struct list_head	s_dentry_lru;	/* unused dentry lru */
+ 	int			s_nr_dentry_unused;	/* # of dentry on lru */
 
 
