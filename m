@@ -1,45 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752972Ab0FDHoA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jun 2010 03:44:00 -0400
-Received: from hera.kernel.org ([140.211.167.34]:40164 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752563Ab0FDHn7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jun 2010 03:43:59 -0400
-Message-ID: <4C08AEA5.1050406@kernel.org>
-Date: Fri, 04 Jun 2010 09:43:33 +0200
-From: Tejun Heo <tj@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.1.9) Gecko/20100317 Thunderbird/3.0.4
+	id S1752905Ab0FDHrN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jun 2010 03:47:13 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:36494 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752149Ab0FDHrJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Jun 2010 03:47:09 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:mime-version:content-type
+         :content-disposition:user-agent;
+        b=mWqIRCk4mC+lDChtMhwcC0f1qV1krpqCdkP08+HMvWg11YAi4grI1xMCds4lvZkxND
+         MPuWGJCyXNTxv5qB3J+3x6Y//N7OTlUpM7wpeCu4uFlx6TLfWpodjjWKfz8nPQ5qWIPR
+         bQykqX6O3+QNxVgAp0z4HIKDv2hPswpxYbP1U=
+Date: Fri, 4 Jun 2010 00:47:01 -0700
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+       linux-input@vger.kernel.org
+Subject: [git pull] Input updates for 2.6.35-rc1
+Message-ID: <20100604074701.GH21239@core.coreip.homeip.net>
 MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: mingo@elte.hu, linux-kernel@vger.kernel.org, rusty@rustcorp.com.au,
-       paulus@samba.org, acme@redhat.com, Paul Menage <menage@google.com>
-Subject: Re: [PATCH UPDATED 2/4] sched: adjust when cpu_active and cpuset
- configurations are updated during cpu on/offlining
-References: <1275332199-28082-1-git-send-email-tj@kernel.org>	 <1275332199-28082-3-git-send-email-tj@kernel.org>	 <1275407846.27810.27627.camel@twins>  <4C053C39.9070405@kernel.org> <1275412835.27810.27887.camel@twins> <4C0680DB.9010503@kernel.org>
-In-Reply-To: <4C0680DB.9010503@kernel.org>
-X-Enigmail-Version: 1.0.1
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 04 Jun 2010 07:43:35 +0000 (UTC)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/02/2010 06:03 PM, Tejun Heo wrote:
-> Okay, how about this one?  Using notifiers seems better for the
-> following reasons.
-> 
-> * Rollback on failure.
-> 
-> * cpuset/sched_domain don't expect to be called before smp
->   configuration is complete.  If hardcoded into cpu_up/down(),
->   condition checks need to be added so that they're skipped if the
->   system is bringing up the cpus for the first time.
-> 
-> Works fine here w/ CPUSET enabled and disabled.
+Hi Linus,
 
-Ping. Peter.
+Please pull from:
+
+	git://git.kernel.org/pub/scm/linux/kernel/git/dtor/input.git for-linus
+or
+	master.kernel.org:/pub/scm/linux/kernel/git/dtor/input.git for-linus
+
+to receive updates for the input subsystem.
+
+Changelog:
+---------
+
+Dan Carpenter (1):
+      Input: tps6507x-ts - a couple work queue cleanups
+
+Dmitry Torokhov (1):
+      Input: ads7846 - fix compiler warning in ads7846_probe()
+
+Mark Brown (2):
+      Input: s3c2410_ts - fix build error due to ADC Kconfig rename
+      Input: s3c2410_ts - tone down logging
+
+Ping Cheng (1):
+      Input: wacom - add Cintiq 21UX2 and Intuos4 WL
+
+
+Diffstat:
+--------
+
+ drivers/input/tablet/wacom_sys.c        |    1 -
+ drivers/input/tablet/wacom_wac.c        |   73 +++++++++++++++++++++++++------
+ drivers/input/tablet/wacom_wac.h        |    1 +
+ drivers/input/touchscreen/Kconfig       |    2 +-
+ drivers/input/touchscreen/ads7846.c     |    2 +-
+ drivers/input/touchscreen/s3c2410_ts.c  |    2 +-
+ drivers/input/touchscreen/tps6507x-ts.c |   12 ++---
+ 7 files changed, 67 insertions(+), 26 deletions(-)
 
 -- 
-tejun
+Dmitry
+
