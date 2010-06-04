@@ -1,55 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754177Ab0FDKkG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jun 2010 06:40:06 -0400
-Received: from mail-ew0-f223.google.com ([209.85.219.223]:56080 "EHLO
-	mail-ew0-f223.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753915Ab0FDKkE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jun 2010 06:40:04 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:mail-followup-to:mime-version
-         :content-type:content-disposition:user-agent;
-        b=JUz7FUMwuAzsvbsyQj9yN4TQws0ZwmCNkaUKD0+GsigUBfiwqIVxhi71Ja2bBM+ca8
-         QdLiqJKVMNls2Y//DBdfxU9DC/WYe0BQ4891sKnPeq+o6mS/t3kvX7rDRze84l6LZ/aE
-         zYGpVtemjRdzEfpKG4YNkD/oOQ5GYvgOhKWzQ=
-Date: Fri, 4 Jun 2010 12:39:51 +0200
-From: Dan Carpenter <error27@gmail.com>
-To: Greg Kroah-Hartman <gregkh@suse.de>
-Cc: Bartlomiej Zolnierkiewicz <bzolnier@gmail.com>, devel@driverdev.osuosl.org,
-       linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-Subject: [patch] Staging: rc2860: return -EFAULT on copy_to_user errors
-Message-ID: <20100604103951.GE5483@bicker>
-Mail-Followup-To: Dan Carpenter <error27@gmail.com>,
-	Greg Kroah-Hartman <gregkh@suse.de>,
-	Bartlomiej Zolnierkiewicz <bzolnier@gmail.com>,
-	devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-	kernel-janitors@vger.kernel.org
+	id S1754261Ab0FDKkP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jun 2010 06:40:15 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:55125 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753968Ab0FDKkM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Jun 2010 06:40:12 -0400
+Date: Fri, 4 Jun 2010 13:35:43 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Rusty Russell <rusty@rustcorp.com.au>
+Cc: linux-kernel@vger.kernel.org, virtualization@lists.linux-foundation.org,
+       kvm@vger.kernel.org, qemu-devel@nongnu.org,
+       Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCHv3 1/2] virtio: support layout with avail ring before idx
+Message-ID: <20100604103543.GA22270@redhat.com>
+References: <cover.1275403477.git.mst@redhat.com> <10a74b58c908bad64ff890c881e2b2de88687f0e.1275403477.git.mst@redhat.com> <201006041204.57973.rusty@rustcorp.com.au>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <201006041204.57973.rusty@rustcorp.com.au>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-copy_to_user() returns the number of bytes remaining but we want to
-return a negative error code.  This is in the ioctl handler and the
-error code gets passed to userspace.
+On Fri, Jun 04, 2010 at 12:04:57PM +0930, Rusty Russell wrote:
+> On Wed, 2 Jun 2010 12:17:12 am Michael S. Tsirkin wrote:
+> > This adds an (unused) option to put available ring before control (avail
+> > index, flags), and adds padding between index and flags. This avoids
+> > cache line sharing between control and ring, and also makes it possible
+> > to extend avail control without incurring extra cache misses.
+> > 
+> > Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+> 
+> No no no no.  254?  You're trying to Morton me![1]
 
-Signed-off-by: Dan Carpenter <error27@gmail.com>
+Hmm, I wonder what will we do if we want a 3rd field on
+a separate chacheline. But ok.
 
-diff --git a/drivers/staging/rt2860/sta_ioctl.c b/drivers/staging/rt2860/sta_ioctl.c
-index 112da7a..6b8268d 100644
---- a/drivers/staging/rt2860/sta_ioctl.c
-+++ b/drivers/staging/rt2860/sta_ioctl.c
-@@ -2522,6 +2522,8 @@ int rt28xx_sta_ioctl(IN struct net_device *net_dev,
- 			Status =
- 			    copy_to_user(erq->pointer, pAd->nickname,
- 					 erq->length);
-+			if (Status)
-+				Status = -EFAULT;
- 			break;
- 		}
- 	case SIOCGIWRATE:	/*get default bit rate (bps) */
+> How's this (untested):
+
+I think we also want to put flags there as well,
+they are used on interrupt path, together with last used index.
+
+> diff --git a/include/linux/virtio_ring.h b/include/linux/virtio_ring.h
+> --- a/include/linux/virtio_ring.h
+> +++ b/include/linux/virtio_ring.h
+> @@ -74,8 +74,8 @@ struct vring {
+>  /* The standard layout for the ring is a continuous chunk of memory which looks
+>   * like this.  We assume num is a power of 2.
+>   *
+> - * struct vring
+> - * {
+> + * struct vring {
+> + *	*** The driver writes to this part.
+>   *	// The actual descriptors (16 bytes each)
+>   *	struct vring_desc desc[num];
+>   *
+> @@ -84,9 +84,11 @@ struct vring {
+>   *	__u16 avail_idx;
+>   *	__u16 available[num];
+>   *
+> - *	// Padding to the next align boundary.
+> + *	// Padding so used_flags is on the next align boundary.
+>   *	char pad[];
+> + *	__u16 last_used; // On a cacheline of its own.
+>   *
+> + *	*** The device writes to this part.
+>   *	// A ring of used descriptor heads with free-running index.
+>   *	__u16 used_flags;
+>   *	__u16 used_idx;
+> @@ -110,6 +112,12 @@ static inline unsigned vring_size(unsign
+>  		+ sizeof(__u16) * 2 + sizeof(struct vring_used_elem) * num;
+>  }
+>  
+> +/* Last used index sits at the very end of the driver part of the struct */
+> +static inline __u16 *vring_last_used_idx(const struct vring *vr)
+> +{
+> +	return (__u16 *)vr->used - 1;
+> +}
+> +
+>  #ifdef __KERNEL__
+>  #include <linux/irqreturn.h>
+>  struct virtio_device;
+> 
+> Cheers,
+> Rusty.
+> [1] Andrew Morton has this technique where he posts a solution so ugly it
+>     forces others to fix it properly.  Ego-roping, basically.
