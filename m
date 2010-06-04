@@ -1,88 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752564Ab0FDHNr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jun 2010 03:13:47 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:52200 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751409Ab0FDHNp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jun 2010 03:13:45 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=references:in-reply-to:mime-version:content-type:message-id
-         :content-transfer-encoding:cc:from:subject:date:to:x-mailer;
-        b=o3KXwS1RpfFvgFgyt3U5PxltBvWnRBNCUkh5RJhbhQ4Y1dRWd3WtC05aJMV/xys8M5
-         v+Emj3okvIi0qnBYW8t/5UCcm0qn8kg+5TR/YYojzJN95proYErEGugdL8FcFoC6MvQz
-         ndvc6nHfqAQi2n2wyAqaBLBCsxVESDC9yTuIQ=
-References: <AANLkTilhvjn1ypRoKs2CxJdA1zDkaT5i64vh0ZtfjwMk@mail.gmail.com>
-In-Reply-To: <AANLkTilhvjn1ypRoKs2CxJdA1zDkaT5i64vh0ZtfjwMk@mail.gmail.com>
-Mime-Version: 1.0 (Apple Message framework v1068)
-Content-Type: text/plain; charset=us-ascii; format=flowed; delsp=yes
-Message-Id: <9461742A-69F6-4220-9FAC-CB07AB2293B8@gmail.com>
-Content-Transfer-Encoding: 7bit
-Cc: Git Mailing List <git@vger.kernel.org>, linux-kernel@vger.kernel.org
-From: Steven Michalske <smichalske@gmail.com>
-Subject: Re: How do I ignore the changes made by CVS keyword substitution efficiently?
-Date: Fri, 4 Jun 2010 00:13:41 -0700
-To: Lin Mac <mkl0301@gmail.com>
-X-Mailer: Apple Mail (2.1068)
+	id S1752731Ab0FDHOj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jun 2010 03:14:39 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:56032 "EHLO mx2.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752636Ab0FDHOi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Jun 2010 03:14:38 -0400
+Date: Fri, 4 Jun 2010 09:13:54 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Arve Hj?nnev?g <arve@android.com>
+Cc: tytso@mit.edu, Brian Swetland <swetland@google.com>,
+       Neil Brown <neilb@suse.de>, Thomas Gleixner <tglx@linutronix.de>,
+       "Rafael J. Wysocki" <rjw@sisk.pl>,
+       Alan Stern <stern@rowland.harvard.edu>,
+       Felipe Balbi <felipe.balbi@nokia.com>,
+       Peter Zijlstra <peterz@infradead.org>,
+       LKML <linux-kernel@vger.kernel.org>,
+       Florian Mickler <florian@mickler.org>,
+       Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
+       Linux PM <linux-pm@lists.linux-foundation.org>,
+       Alan Cox <alan@lxorguk.ukuu.org.uk>,
+       James Bottomley <James.Bottomley@suse.de>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       Peter Zijlstra <a.p.zijlstra@chello.nl>,
+       Kevin Hilman <khilman@deeprootsystems.com>,
+       "H. Peter Anvin" <hpa@zytor.com>,
+       Arjan van de Ven <arjan@infradead.org>
+Subject: Re: suspend blockers & Android integration
+Message-ID: <20100604071354.GA14451@elte.hu>
+References: <20100603193045.GA7188@elte.hu>
+ <20100603231153.GA11302@elte.hu>
+ <20100603232302.GA16184@elte.hu>
+ <AANLkTikZP3bmckpfb_jUdG7qZO5W9DgpZ79ugtSZaEpt@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <AANLkTikZP3bmckpfb_jUdG7qZO5W9DgpZ79ugtSZaEpt@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
+	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
+	[score: 0.0001]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Look into the git attributes and filters, make a clean command that  
-strips out the cvs/svn keywords.
 
-On Jun 3, 2010, at 12:13 PM, Lin Mac wrote:
+* Arve Hj?nnev?g <arve@android.com> wrote:
 
-> Hi,
->
-> I'm merging kernel from others, and they used CVS to manage their
-> code, and so do some part of linux kernel. Unfortunatly CVS would
-> substitude the keywords in the source, result in unecessary changes in
-> the code, like the one in the following diff. In fact, there are
-> around 1174 of CVS keywords in the kernel source. I don't want those
-> useless changes to get into my tree.
->
-> Currently I use the attached scripts to as a basic filter, which could
-> filter out 1-line changes by CVS keyword in a patch. But I still have
-> to handle other cases (multi-line changes, $Log, which would result in
-> log of latest commit) myself.
->
-> Do you have better idea to get this task done?
->
-> diff --git a/kernels/linux-2.6.31.1-cavm1/Documentation/cris/README
-> b/kernels/linux-2.6.31.1-cavm1/Documentation/cris/README
-> index d9b0868..c7bb74b 100644
-> --- a/kernels/linux-2.6.31.1-cavm1/Documentation/cris/README
-> +++ b/kernels/linux-2.6.31.1-cavm1/Documentation/cris/README
-> @@ -1,6 +1,6 @@
-> Linux 2.4 on the CRIS architecture
-> ==================================
-> -$Id: README,v 1.7 2001/04/19 12:38:32 bjornw Exp $
-> +$Id: README,v 1.1 2010-05-14 09:47:54 XXXXXXXX Exp $
->
-> This is a port of Linux 2.4 to Axis Communications ETRAX 100LX  
-> embedded
-> network CPU. For more information about CRIS and ETRAX please see  
-> further
-> @@ -103,7 +103,7 @@ block: queued sectors max/low 9109kB/3036kB, 64
-> slots per queue
-> ETRAX 100LX 10/100MBit ethernet v2.0 (c) 2000 Axis Communications AB
-> eth0 initialized
-> eth0: changed MAC to 00:40:8C:CD:00:00
-> -ETRAX 100LX serial-driver $Revision: 1.7 $, (c) 2000 Axis  
-> Communications AB
-> +ETRAX 100LX serial-driver $Revision: 1.1 $, (c) 2000 Axis  
-> Communications AB
-> ttyS0 at 0xb0000060 is a builtin UART with DMA
-> ttyS1 at 0xb0000068 is a builtin UART with DMA
-> ttyS2 at 0xb0000070 is a builtin UART with DMA
-> @@ -133,7 +133,7 @@ Default gateway is 10.13.9.1
-> Hostname is bbox1
-> Telnetd starting, using port 23.
->   using /bin/sash as shell.
-> -sftpd[15]: sftpd $Revision: 1.7 $ starting up
-> +sftpd[15]: sftpd $Revision: 1.1 $ starting up
-> <undo-cvs-tag-one-line-chage.pl><refine.sh>
+> On Thu, Jun 3, 2010 at 4:23 PM, Ingo Molnar <mingo@elte.hu> wrote:
+> ...
+> > ?- Controlled auto-suspend: drivers (such as input) could on wakeup
+> > ? automatically set the 'minimum wakeup latency' value of wakee tasks to a
+> > ? lower value. This automatically prevents another auto-suspend in the near
+> > ? future: up to the point the wakee task increases its latency (via the
+> > ? scheduler syscall) again and allows suspend again.
+> >
+> 
+> How do you clear the latency value in a safe way? If another wakeup event 
+> happens right after your wakee task is done processing the last event and 
+> decides to increase its latency, auto suspend will be allowed even though 
+> you have an unprocessed wakeup event. Also how do you know which task will 
+> read the event if it is not already waiting for it?
 
+The easiest solution would be to not do any of that initially. (If it's ever a 
+concern we could subtract/add without destroying the nesting property)
+
+Why do you need to track input wakeups? It's rather fragile and rather 
+unnecessary - the idle drivers know it very well how to not go into the 
+deepest idle mode already today. We wont hit C8 on laptops when you are using 
+the desktop.
+
+> > ? This means there will be no surprise suspends for a task that may take a
+> > ? bit longer than usual to finish its work. [ Detail: this would only be done
+> > ? for tasks that have a non-default (non-infinity) task->latency value - to
+> > ? prevent the input driver from lowering latency values (and preventing
+> > ? future suspends) just because some unaware apps are running and using input
+> > ? drivers. ]
+> 
+> Don't you need two inifinity values for this?
+
+Yes - any value above the max idle latency in the system will do.
+
+Thanks,
+
+	Ingo
