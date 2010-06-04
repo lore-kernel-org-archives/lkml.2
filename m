@@ -1,62 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756278Ab0FDU02 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jun 2010 16:26:28 -0400
-Received: from igw2.watson.ibm.com ([129.34.20.6]:37294 "EHLO
-	igw2.watson.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753897Ab0FDU0Y convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jun 2010 16:26:24 -0400
-Subject: Re: [ProbableSpam] Re: [PATCH 00/14] EVM
-From: David Safford <safford@watson.ibm.com>
-To: James Morris <jmorris@namei.org>
-Cc: Mimi Zohar <zohar@linux.vnet.ibm.com>, Shaz <shazalive@gmail.com>,
-       linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
-       Dave Hansen <dave@linux.vnet.ibm.com>,
-       Arjan van de Ven <arjan@infradead.org>,
-       securityengineeringresearchgroup 
-	<securityengineeringresearchgroup@googlegroups.com>
-In-Reply-To: <alpine.LRH.2.00.1006041052450.1003@tundra.namei.org>
-References: <1271886594-3719-1-git-send-email-zohar@linux.vnet.ibm.com>
-	 <alpine.LRH.2.00.1005311017530.24571@tundra.namei.org>
-	 <AANLkTil8LHjRT_PMosymmtBb1pxIzkBaWC0ef35DCBUU@mail.gmail.com>
-	 <AANLkTil7WvVZ-3zpA0E--fUcHTqul3pnXnPm1xXn_vlH@mail.gmail.com>
-	 <1275420536.28134.37.camel@localhost.localdomain>
-	 <alpine.LRH.2.00.1006041052450.1003@tundra.namei.org>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Fri, 04 Jun 2010 16:25:55 -0400
-Message-ID: <1275683155.2644.91.camel@localhost.localdomain>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.1.2 (2.30.1.2-6.fc13) 
+	id S1756616Ab0FDUpI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jun 2010 16:45:08 -0400
+Received: from kroah.org ([198.145.64.141]:43904 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753897Ab0FDUpD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Jun 2010 16:45:03 -0400
+Date: Fri, 4 Jun 2010 13:44:45 -0700
+From: Greg KH <gregkh@suse.de>
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+       Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org
+Subject: [GIT PATCH] TTY and serial fixes for .35-git
+Message-ID: <20100604204445.GB19761@kroah.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2010-06-04 at 10:57 +1000, James Morris wrote:
-> On Tue, 1 Jun 2010, Mimi Zohar wrote:
-> 
-> > SELinux, Smack, Capabilities, and IMA all use extended attributes. The
-> > purpose of EVM is to detect offline tampering of these security extended
-> > attributes.
-> 
-> One issue mentioned to me off-list is that if EVM is only protecting 
-> against offline attacks, why not just encrypt the entire volume ?
-> 
-> This would provide confidentiality and integrity protection for all data 
-> and metadata, rather than just integrity for xattr metadata.
+Here are some tty and serial driver bugfixes and new device id patches
+for your .35-git tree.
 
-Software whole disk encryption is slower, and doesn't really provide
-integrity protection. While there are encryption modes, such as
-IAPM (Integrity Aware Parallelizable Mode) which can provide both
-confidentially and integrity guarantees, they are hard to use for
-random access devices. An example attack is replaying previously
-valid encrypted blocks, to revert to a previous version with a known 
-vulnerabiity. With EVM, these attacks can be defeated
-efficiently with directory level binding. (This is on our TODO list).
+Please pull from:
+	master.kernel.org:/pub/scm/linux/kernel/git/gregkh/tty-2.6.git/
 
-With encryption in the hard disk, the performance is less of an issue,
-but the integrity problem is still there. Plus, most systems don't
-have the encrypting drives, and need a software solution.
+These patches have been in the linux-next tree and -mm tree.
 
-dave
+Patches will be sent to the linux-kernel mailing list, if anyone wants
+to see them.
+
+thanks,
+
+greg k-h
+
+------------
+
+ drivers/char/n_gsm.c         |    9 +++--
+ drivers/char/vt.c            |    2 +-
+ drivers/char/vt_ioctl.c      |    4 ++-
+ drivers/serial/8250_pci.c    |   71 ++++++++++++++++++++++++++++++++++++++++++
+ drivers/serial/altera_uart.c |   44 ++++++++------------------
+ drivers/serial/bfin_5xx.c    |    9 ++++-
+ drivers/serial/msm_serial.c  |   21 ++----------
+ drivers/serial/msm_serial.h  |   56 +++++++++++++++++++++++++++++++++
+ drivers/serial/serial_cs.c   |   18 +++++++++-
+ 9 files changed, 175 insertions(+), 59 deletions(-)
+
+---------------
+
+Abhijeet Dharmapurikar (1):
+      msm_serial: fix serial on trout
+
+Alexander Kurz (1):
+      serial_cs: add and sort IDs for serial and modem cards
+
+Dan Carpenter (2):
+      TTY/n_gsm: potential double lock
+      vt_ioctl: return -EFAULT on copy_from_user errors
+
+Frank Pan (1):
+      tty: fix a little bug in scrup, vt.c
+
+Graf Yang (1):
+      serial: bfin_5xx: IRDA is not affected by anomaly 05000230
+
+Sonic Zhang (1):
+      serial: bfin_5xx: fix typo in IER check
+
+Tobias Klauser (3):
+      altera_uart: Don't take spinlock in already protected functions
+      altera_uart: Simplify altera_uart_console_putc
+      serial: altera_uart: Proper section for altera_uart_remove
+
+Yegor Yefremov (1):
+      serial: add support for various Titan PCI cards
+
