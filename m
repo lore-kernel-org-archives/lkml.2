@@ -1,75 +1,329 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757482Ab0FETi0 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Jun 2010 15:38:26 -0400
-Received: from fg-out-1718.google.com ([72.14.220.155]:22997 "EHLO
-	fg-out-1718.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757161Ab0FETiX convert rfc822-to-8bit (ORCPT
+	id S1757126Ab0FETkx (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Jun 2010 15:40:53 -0400
+Received: from mail-px0-f174.google.com ([209.85.212.174]:45708 "EHLO
+	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754588Ab0FETkw convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Jun 2010 15:38:23 -0400
+	Sat, 5 Jun 2010 15:40:52 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=AWs3RRz8W830ovcPQUtIOUC7zNqg3Gf2Pk36zoQqb6chZllmJ6qcjM2jhjvLfKfrke
-         ovlcpExBcXbvPrE0dhIRz8zAZgfNZdIl2qX5c6I/6YD/dtkYPI+N9Xp8jufBKxmic5pC
-         qKRpCV1RZB8/bhyemV/hM+i7k2/+zrnxXPFAk=
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=ncoJx5cHyp7KJsAvbRYllnlN1XL3SIiw27rc0M+S2uTExTAye1pbZopJb01XqAFCil
+         LL2Px7WWR9hDHb/2/aerM1z2CagYBqXRJHT/jhqofCaOWPvI/tRVrcEcjPg0SGt+DsRV
+         UFfk/vKEwxrpNjEhxtTYAPiKv1WHOLPCMKqL0=
 MIME-Version: 1.0
-In-Reply-To: <20100605181816.7aae71c7@hina.wild-wind.fr.eu.org>
-References: <1275686352.2970.2.camel@eha.doredevelopment.dk>
-	<alpine.LFD.2.00.1006042343150.2933@localhost.localdomain>
-	<AANLkTilb7---Qg1oLwzanKP1RGe04fkAXDtZzz0w9MGz@mail.gmail.com>
-	<20100605151031.2d562268@hina.wild-wind.fr.eu.org>
-	<AANLkTilUGOVPBtdl2KB2nrbra8uBO8q4AX0v57hCtr_9@mail.gmail.com>
-	<20100605181816.7aae71c7@hina.wild-wind.fr.eu.org>
-Date: Sat, 5 Jun 2010 21:38:20 +0200
-Message-ID: <AANLkTimqTQ9FbewtwoVZiwinPFne8MWPowuJDjMgODW2@mail.gmail.com>
-Subject: Re: [RFC][PATCH] irq: support IRQ_NESTED_THREAD with non-threaded 
-	interrupt handlers
-From: Esben Haabendal <esbenhaabendal@gmail.com>
-To: Marc Zyngier <maz@misterjones.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>,
-       Esben Haabendal <eha@doredevelopment.dk>, linux-kernel@vger.kernel.org,
-       mingo@elte.hu, joachim.eastwood@jotron.com
+In-Reply-To: <4C07C927.4090901@hp.com>
+References: <AANLkTilW6Ym_vL02rVk4QFPIC3Dr0BC12oAxdjE9RXpf@mail.gmail.com>
+	<4C07C927.4090901@hp.com>
+Date: Sat, 5 Jun 2010 12:40:51 -0700
+X-Google-Sender-Auth: BY3vxculyQlNLogxtgJ8IRn_uBA
+Message-ID: <AANLkTilGROAVnKE5odR6qy6LrVjPSHxkqCrPhAtHtjlQ@mail.gmail.com>
+Subject: Re: [PATCH 4/6] sctp multistream scheduling: extend socket API
+From: Yaogong Wang <ywang15@ncsu.edu>
+To: Vlad Yasevich <vladislav.yasevich@hp.com>
+Cc: linux-sctp@vger.kernel.org, Sridhar Samudrala <sri@us.ibm.com>,
+       linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->> What is the plan here, should all drivers change from
->> request_any_context_irq() at some point in time?
+On Thu, Jun 3, 2010 at 8:24 AM, Vlad Yasevich <vladislav.yasevich@hp.com> wrote:
 >
-> All? Probably not. Only the few where the need arises, and after carefully
-> checking that you're not introducing a horrible race condition somewhere
-> (threaded handlers are running with interrupts enabled...).
+>
+> Yaogong Wang wrote:
+>> Augment SCTP socket API with a new socket option to choose and
+>> configure scheduling algorithm.
+>>
+>> Signed-off-by: Yaogong Wang <ywang15@ncsu.edu>
+>> ---
+>> diff -uprN -X linux-2.6.32.8/Documentation/dontdiff
+>> p3/include/net/sctp/structs.h p4/include/net/sctp/structs.h
+>> --- p3/include/net/sctp/structs.h     2010-06-02 12:57:24.000000000 -0700
+>> +++ p4/include/net/sctp/structs.h     2010-06-02 12:58:11.000000000 -0700
+>> @@ -326,6 +326,8 @@ struct sctp_sock {
+>>
+>>       /* Multistream scheduling  */
+>>       const struct sctp_sched_ops *sched_ops;
+>> +     __u32 sched_priv_len;
+>> +     __u16 *sched_priv;
+>>
+>>       struct sctp_initmsg initmsg;
+>>       struct sctp_rtoinfo rtoinfo;
+>> @@ -1691,6 +1693,8 @@ struct sctp_association {
+>>
+>>       /* Multistream scheduling  */
+>>       const struct sctp_sched_ops *sched_ops;
+>> +     __u32 sched_priv_len;
+>> +     __u16 *sched_priv;
+>>
+>>       /* Heartbeat interval: The endpoint sends out a Heartbeat chunk to
+>>        * the destination address every heartbeat interval. This value
+>> diff -uprN -X linux-2.6.32.8/Documentation/dontdiff
+>> p3/include/net/sctp/user.h p4/include/net/sctp/user.h
+>> --- p3/include/net/sctp/user.h        2010-05-28 10:59:23.000000000 -0700
+>> +++ p4/include/net/sctp/user.h        2010-05-28 11:54:47.000000000 -0700
+>> @@ -67,6 +67,8 @@ enum sctp_optname {
+>>  #define SCTP_ASSOCINFO SCTP_ASSOCINFO
+>>       SCTP_INITMSG,
+>>  #define SCTP_INITMSG SCTP_INITMSG
+>> +     SCTP_SCHED,
+>> +#define SCTP_SCHED SCTP_SCHED
+>>       SCTP_NODELAY,   /* Get/set nodelay option. */
+>
+> You can't insert a new option into the middle.  This would change the ordering
+> of subsequent options and break the ABI.
+>
+>>  #define SCTP_NODELAY SCTP_NODELAY
+>>       SCTP_AUTOCLOSE,
+>> @@ -171,8 +173,22 @@ struct sctp_initmsg {
+>>       __u16 sinit_max_init_timeo;
+>>  };
+>>
+>> +/*
+>> + * SCTP Scheduling Structure (SCTP_SCHED)
+>> + *
+>> + *   cmsg_level    cmsg_type      cmsg_data[]
+>> + *   ------------  ------------   ----------------------
+>> + *   IPPROTO_SCTP  SCTP_SCHED     struct sctp_sched
+>> + *
+>> + */
+>>  #define SCTP_SCHED_NAME_MAX  16
+>>
+>> +struct sctp_sched {
+>> +     char  ssched_name[SCTP_SCHED_NAME_MAX];
+>> +     __u32 ssched_priv_len;
+>> +     __u16 ssched_priv[0];
+>> +};
+>> +
+>
+> Don't document it as ancillary data since it can't be used as such.
+>
+> Also, should this also have an assoc_id so that it can be set per
+> association?
 
-Yes, and that is exactly one of the issues I wanted to address with the patch.
-If you have a driver which uses an interrupt handler, which is designed
-and tested in interrupt context, you really have to take care before turning
-it into a threaded interrupt handler.
+There is an important design issue here: when should the user set this
+socket option?
 
-But if you have a slow interrupt controller which uses nested threaded
-interrupt handler, then it should be safe to let the interrupt handler
-run within the interrupt controllers thread, but with interrupts disabled.
+My current assumption is that the user choose the scheduling algorithm
+after declaring the socket but before the establishment of any
+association. Therefore, the granularity of control is socket-based
+rather than association-based. In one-to-many style socket case, all
+associations inherit the scheduling algorithm of the socket. The
+problems with this approach are:
+1. Cannot specify different scheduling algorithm for each association
+under the same socket
+2. Since the option is set before the establishment of any
+association, it doesn't know how many streams would be negotiated. It
+could only consult initmsg for the intended number of outgoing
+streams.
 
-Yes, it is propably better to rewrite the handler to be able to run
-threaded, but the same could be said without the slow interrupt
-handler. So unless all interrupt handlers should be rewritten
-as threaded handlers, I don't see why it should not be possible
-to just run a non-threaded interrupt handler, in a threaded
-interrupt controllers thread, but with interrupts disabled.
+If we go with the association-based approach, the above problems can
+be solved. But the question is: in this case, when should the user set
+this option? In one-to-many style socket, associations are implicitly
+established. There isn't a point where association is established but
+data transfer hasn't started yet so that the user can choose the
+scheduling algorithm. Any suggestion on this dilemma?
 
-Carefully checking for horrible race condition in a driver that you
-really did not otherwise needed to work on is asking for
-quite a bit, and I fear that this approach is doomed to actually
-cause the horrible race conditions, because the checking
-will be done by people without sufficient insight in the driver
-in question.
+>
+>>  /*
+>>   * 5.2.2 SCTP Header Information Structure (SCTP_SNDRCV)
+>>   *
+>> diff -uprN -X linux-2.6.32.8/Documentation/dontdiff
+>> p3/net/sctp/associola.c p4/net/sctp/associola.c
+>> --- p3/net/sctp/associola.c   2010-06-02 12:57:06.000000000 -0700
+>> +++ p4/net/sctp/associola.c   2010-06-02 12:57:57.000000000 -0700
+>> @@ -187,6 +187,14 @@ static struct sctp_association *sctp_ass
+>>
+>>       /* Multistream scheduling  */
+>>       asoc->sched_ops = sp->sched_ops;
+>> +     asoc->sched_priv_len = sp->sched_priv_len;
+>> +     if (asoc->sched_priv_len) {
+>> +             asoc->sched_priv = kmalloc(asoc->sched_priv_len, gfp);
+>> +             if (!asoc->sched_priv)
+>> +                     goto fail_init;
+>> +             memcpy(asoc->sched_priv, sp->sched_priv, asoc->sched_priv_len);
+>
+> use kmemdup()
+>
+>> +     } else
+>> +             asoc->sched_priv = NULL;
+>>
+>>       /* Allocate storage for the ssnmap after the inbound and outbound
+>>        * streams have been negotiated during Init.
+>> @@ -464,6 +472,8 @@ static void sctp_association_destroy(str
+>>  {
+>>       SCTP_ASSERT(asoc->base.dead, "Assoc is not dead", return);
+>>
+>> +     kfree(asoc->sched_priv);
+>> +
+>>       sctp_endpoint_put(asoc->ep);
+>>       sock_put(asoc->base.sk);
+>>
+>> diff -uprN -X linux-2.6.32.8/Documentation/dontdiff
+>> p3/net/sctp/socket.c p4/net/sctp/socket.c
+>> --- p3/net/sctp/socket.c      2010-05-28 12:38:09.000000000 -0700
+>> +++ p4/net/sctp/socket.c      2010-05-28 12:36:37.000000000 -0700
+>> @@ -2580,6 +2580,50 @@ static int sctp_setsockopt_initmsg(struc
+>>       return 0;
+>>  }
+>>
+>> +/* Set the multistream scheduling algorithm*/
+>> +static int sctp_setsockopt_sched(struct sock *sk, char __user *optval,
+>> +                                             unsigned int optlen)
+>> +{
+>> +     struct sctp_sched *ssched = NULL;
+>> +     struct sctp_sock *sp = sctp_sk(sk);
+>> +     int ret = 0;
+>> +
+>> +     if (optlen < sizeof(struct sctp_sched))
+>> +             return -EINVAL;
+>> +
+>> +     ssched = kmalloc(optlen, GFP_KERNEL);
+>> +     if (!ssched)
+>> +             return -ENOMEM;
+>> +
+>> +     if (copy_from_user(ssched, optval, optlen)) {
+>> +             ret = -EFAULT;
+>> +             goto out;
+>> +     }
+>
+> use memdup_user().
+>
+>> +
+>> +     if (optlen != sizeof(struct sctp_sched) + ssched->ssched_priv_len) {
+>> +             ret = -EINVAL;
+>> +             goto out;
+>> +     }
+>> +
+>> +     ret = sctp_set_sched(sk, ssched->ssched_name);
+>> +     if (ret)
+>> +             goto out;
+>> +     sp->sched_priv_len = ssched->ssched_priv_len;
+>> +     kfree(sp->sched_priv);
+>> +     if (sp->sched_priv_len) {
+>> +             sp->sched_priv = kmalloc(sp->sched_priv_len, GFP_KERNEL);
+>> +             if (!sp->sched_priv) {
+>> +                     ret = -ENOMEM;
+>> +                     goto out;
+>> +             }
+>> +             memcpy(sp->sched_priv, ssched->ssched_priv, sp->sched_priv_len);
+>> +     }
+>> +
+>> +out:
+>> +     kfree(ssched);
+>> +     return ret;
+>> +}
+>> +
+>>  /*
+>>   * 7.1.14 Set default send parameters (SCTP_DEFAULT_SEND_PARAM)
+>>   *
+>> @@ -3417,6 +3461,9 @@ SCTP_STATIC int sctp_setsockopt(struct s
+>>               retval = sctp_setsockopt_partial_delivery_point(sk, optval, optlen);
+>>               break;
+>>
+>> +     case SCTP_SCHED:
+>> +             retval = sctp_setsockopt_sched(sk, optval, optlen);
+>> +             break;
+>>       case SCTP_INITMSG:
+>>               retval = sctp_setsockopt_initmsg(sk, optval, optlen);
+>>               break;
+>> @@ -3642,7 +3689,10 @@ SCTP_STATIC int sctp_init_sock(struct so
+>>       sp->initmsg.sinit_max_attempts   = sctp_max_retrans_init;
+>>       sp->initmsg.sinit_max_init_timeo = sctp_rto_max;
+>>
+>> +     /* Initialize default scheduling algorithm  */
+>>       sp->sched_ops = sctp_default_sched_ops;
+>> +     sp->sched_priv_len = 0;
+>> +     sp->sched_priv = NULL;
+>>
+>
+> This part should be in the framework patch.  That way assoc will actually
+> inherit the proper pointer.
+>
+>
+>>       /* Initialize default RTO related parameters.  These parameters can
+>>        * be modified for with the SCTP_RTOINFO socket option.
+>> @@ -3735,6 +3785,9 @@ SCTP_STATIC void sctp_destroy_sock(struc
+>>
+>>       SCTP_DEBUG_PRINTK("sctp_destroy_sock(sk: %p)\n", sk);
+>>
+>> +     sctp_cleanup_sched(sk);
+>> +     kfree(sctp_sk(sk)->sched_priv);
+>> +
+>>       /* Release our hold on the endpoint. */
+>>       ep = sctp_sk(sk)->ep;
+>>       sctp_endpoint_free(ep);
+>> @@ -4351,6 +4404,35 @@ static int sctp_getsockopt_initmsg(struc
+>>       return 0;
+>>  }
+>>
+>> +/* Get the multistream scheduling algorithm*/
+>> +static int sctp_getsockopt_sched(struct sock *sk, int len, char __user *optval,
+>> +                                                     int __user *optlen)
+>> +{
+>> +     struct sctp_sched *ssched;
+>> +     int sz = sizeof(struct sctp_sched) + sctp_sk(sk)->sched_priv_len;
+>> +     int ret = 0;
+>> +
+>> +     if (len < sz)
+>> +             return -EINVAL;
+>> +     if (put_user(sz, optlen))
+>> +             return -EFAULT;
+>> +
+>> +     ssched = kmalloc(sz, GFP_KERNEL);
+>> +     if (!ssched)
+>> +             return -EFAULT;
+>> +     memcpy(ssched->ssched_name, sctp_sk(sk)->sched_ops->name,
+>> +                                     SCTP_SCHED_NAME_MAX);
+>> +     ssched->ssched_priv_len = sctp_sk(sk)->sched_priv_len;
+>> +     memcpy(ssched->ssched_priv, sctp_sk(sk)->sched_priv,
+>> +                                     ssched->ssched_priv_len);
+>> +
+>> +     if (copy_to_user(optval, ssched, sz))
+>> +             ret = -EFAULT;
+>> +
+>
+> Don't forget to also copy out the sz to let user know how long the data
+> is.
+>
+> -vlad
+>
+>> +     kfree(ssched);
+>> +     return ret;
+>> +}
+>> +
+>>  static int sctp_getsockopt_peer_addrs_num_old(struct sock *sk, int len,
+>>                                             char __user *optval,
+>>                                             int __user *optlen)
+>> @@ -5605,6 +5687,9 @@ SCTP_STATIC int sctp_getsockopt(struct s
+>>       case SCTP_INITMSG:
+>>               retval = sctp_getsockopt_initmsg(sk, len, optval, optlen);
+>>               break;
+>> +     case SCTP_SCHED:
+>> +             retval = sctp_getsockopt_sched(sk, len, optval, optlen);
+>> +             break;
+>>       case SCTP_GET_PEER_ADDRS_NUM_OLD:
+>>               retval = sctp_getsockopt_peer_addrs_num_old(sk, len, optval,
+>>                                                           optlen);
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-sctp" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>>
+>
 
-/Esben
+
+
 -- 
-Esben Haabendal, Senior Software Consultant
-DoréDevelopment ApS, Ved Stranden 1, 9560 Hadsund, DK-Denmark
-Phone: +45 51 92 53 93, E-mail: eha@doredevelopment.dk
-WWW: http://www.doredevelopment.dk
+========================
+Yaogong Wang, PhD candidate
+Department of Computer Science
+North Carolina State University
+http://www4.ncsu.edu/~ywang15/
+========================
