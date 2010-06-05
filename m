@@ -1,124 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757614Ab0FEUOw (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Jun 2010 16:14:52 -0400
-Received: from www.tglx.de ([62.245.132.106]:54275 "EHLO www.tglx.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752649Ab0FEUOv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Jun 2010 16:14:51 -0400
-Date: Sat, 5 Jun 2010 22:14:29 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Esben Haabendal <esbenhaabendal@gmail.com>
-cc: Marc Zyngier <maz@misterjones.org>,
-       Esben Haabendal <eha@doredevelopment.dk>, linux-kernel@vger.kernel.org,
-       mingo@elte.hu, joachim.eastwood@jotron.com
-Subject: Re: [RFC][PATCH] irq: support IRQ_NESTED_THREAD with non-threaded
- interrupt handlers
-In-Reply-To: <AANLkTimcB9vRqnNYyBh6hjHXZHcmFvw72MZUEIGfeexq@mail.gmail.com>
-Message-ID: <alpine.LFD.2.00.1006052155100.2933@localhost.localdomain>
-References: <1275686352.2970.2.camel@eha.doredevelopment.dk> <alpine.LFD.2.00.1006042343150.2933@localhost.localdomain> <AANLkTilb7---Qg1oLwzanKP1RGe04fkAXDtZzz0w9MGz@mail.gmail.com> <20100605151031.2d562268@hina.wild-wind.fr.eu.org>
- <alpine.LFD.2.00.1006051732270.2933@localhost.localdomain> <AANLkTimlSBEhl58CNuScKjxbqdTwTYgqo7vrHTcd1x9G@mail.gmail.com> <alpine.LFD.2.00.1006051915290.2933@localhost.localdomain> <AANLkTimcB9vRqnNYyBh6hjHXZHcmFvw72MZUEIGfeexq@mail.gmail.com>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S1757505Ab0FEU0b (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Jun 2010 16:26:31 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:39458 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754707Ab0FEU03 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 5 Jun 2010 16:26:29 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=xWAzAMlAmGlyQjTntrrVpbaknnaLOgVToKl4yauvstmkJul8vFpLZkfPtVLFfJs7Pn
+         u7K9MQKKWPZeqsbhPRbFrp9HuhnlSeKQm5AbhuhTWUIcrFakaHAGmJxkJdeN/Yyg9mYP
+         bcg8p24opBesk5fBhuWnNTKew8DsnzNNUe/z8=
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <20100605220143.08774900@schatten.dmk.lab>
+References: <Pine.LNX.4.44L0.1005271253240.3239-100000@iolanthe.rowland.org>
+	<201005302202.39511.rjw@sisk.pl>
+	<AANLkTilUQ2AG76nbK6LwI8_7zw0_yMSoAOr9pmuz7xrt@mail.gmail.com>
+	<201005312347.24251.rjw@sisk.pl>
+	<AANLkTilvOgSFTDFtXbjJobMZWxgfvsC97TqC7_a_NHBX@mail.gmail.com>
+	<alpine.LFD.2.00.1006011411200.2933@localhost.localdomain>
+	<AANLkTikZHmF6baP7dEXEGFE8YsbEteRjlhb5wqZX8ll1@mail.gmail.com>
+	<alpine.LFD.2.00.1006020905410.2933@localhost.localdomain>
+	<AANLkTinDm3FIrbS1jqEzW15THmr1hdd7ox0Mllm1VLjZ@mail.gmail.com>
+	<1275471561.27810.30865.camel@twins>
+	<AANLkTilLmAb2c9fQwuguzWtjcHfuTZvPUTbUx7vuwFI6@mail.gmail.com>
+	<AANLkTikna-Vs_phy2VrJs0I8gIsdSmwuxTJ67gQ_2oTt@mail.gmail.com>
+	<20100605220143.08774900@schatten.dmk.lab>
+Date: Sat, 5 Jun 2010 23:26:27 +0300
+Message-ID: <AANLkTindQjsQRMUkxKNx-NqSiMlxUirmK2GO6zE7n0rf@mail.gmail.com>
+Subject: Re: [linux-pm] [PATCH 0/8] Suspend block api (version 8)
+From: Felipe Contreras <felipe.contreras@gmail.com>
+To: Florian Mickler <florian@mickler.org>
+Cc: =?UTF-8?B?QXJ2ZSBIasO4bm5ldsOlZw==?= <arve@android.com>,
+       Peter Zijlstra <peterz@infradead.org>,
+       Thomas Gleixner <tglx@linutronix.de>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+       Matthew Garrett <mjg59@srcf.ucam.org>,
+       Alan Stern <stern@rowland.harvard.edu>, Paul@smtp1.linux-foundation.org,
+       LKML <linux-kernel@vger.kernel.org>, felipe.balbi@nokia.com,
+       Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
+       Linux PM <linux-pm@lists.linux-foundation.org>,
+       Alan Cox <alan@lxorguk.ukuu.org.uk>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 5 Jun 2010, Esben Haabendal wrote:
-> On Sat, Jun 5, 2010 at 8:52 PM, Thomas Gleixner <tglx@linutronix.de> wrote:
-> > Esben,
-> >
-> > On Sat, 5 Jun 2010, Esben Haabendal wrote:
-> >
-> >> On Sat, Jun 5, 2010 at 5:33 PM, Thomas Gleixner <tglx@linutronix.de> wrote:
-> >> > On Sat, 5 Jun 2010, Marc Zyngier wrote:
-> >> >> You may want to give request_any_context_irq() a try (available since the
-> >> >> latest merge window). It still requires your driver to be changed, but it
-> >> >> should then work in both threaded and non-threaded cases.
-> >> >
-> >> > And it nicely annotates that somebody looked at the driver in
-> >> > question. That's the rule of least surprise and does not impose checks
-> >> > on the fast path.
-> >>
-> >> What in particular should I be looking for in a driver before changing
-> >> from request_irq() to request_any_context_irq() ?
-> >
-> > Whether the irq handler relies on interrupts being disabled is the
-> > most important thing. There are other constraints like
-> > enable_irq/disable_irq calls from the driver code, which are not
-> > allowed to run in atomic context for interrupt hanging of a i2c irq
-> > controller.
-> 
-> Yes, I were hit by this also.
-> 
-> The phy interrupt handler calls disable_irq, which does not work
-> with an i2c irq controller (ie. the genirc buslock mutex), and I specifically
-> got rid of the buslock for pca9535 driver (powerpc only, though).
+On Sat, Jun 5, 2010 at 11:01 PM, Florian Mickler <florian@mickler.org> wrote:
+> On Sat, 5 Jun 2010 20:44:24 +0300
+> Felipe Contreras <felipe.contreras@gmail.com> wrote:
+>
+>> 2010/6/2 Arve Hjønnevåg <arve@android.com>:
+>> > 2010/6/2 Peter Zijlstra <peterz@infradead.org>:
+>> >> (and please don't mention @#$@ up x86 ACPI again, Intel knows, they're
+>> >> fixing it, get over it already).
+>> >>
+>> >
+>> > I don't think it is realistic to drop support for all existing hardware.
+>>
+>> We are talking about mainline here, there's no support for suspend
+>> blockers, so nothing is dropped.
+>>
+>> In the mind of everybody, suspend blockers is for opportunistic
+>> suspend, which only makes sense on sensible hw (not current x86). So
+>> in the mind of everybody, x86 should be out of scope for the analysis
+>> of suspend blockers.
+>>
+>> Are you seriously suggesting that one of the strong arguments in favor
+>> of suspend blockers is x86 usage (nobody agrees)? If not, then drop
+>> it.
+>
+> I think they have an advantage over the
+> 30-minute-screensaver-then-suspend that current desktops do. Because
+> you can define what keeps the system up. I.e. the
+> screensaver/powermanager is not limited to keyboard- and
+> mouse-inactivity.
 
-And that's the fundamentally wrong approach.
- 
-> This is really a drawback of the genirq buslock IMHO.
+What prevents you from defining other things keeping the system up
+right now? Nothing. It's up to user-space to decide when to suspend.
+In fact applications already block suspend; Transmission has the
+option to block suspend when downloading torrents.
 
-No, it avoids races even on UP. It's there for a reason and there was
-a huge discussion about this last year.
+>> If I enable suspend blockers on my laptop, I have to modify my
+>> user-space. Otherwise my system will behave horribly.
+>>
+>
+> In the simplest case you have a shell script which takes a suspend
+> blocker and reads from stdinput. When you write "mem" to it, it
+> releases the suspend blocker and acquires it back again. Voila, forced
+> suspend reimplemented on top of opportunistic suspend.
+>
+> That wasn't hard, was it?
 
-Just because you have not hit the problem yet does not make it non
-existant.
+Not hard, but still a modification of user-space, and a pretty bad one
+because it will prevent typical forced suspend, and typical suspend
+delaying (like with Transmission). Supposing the opportunistic suspend
+doesn't block the forced suspend, still, absolutely nothing will be
+achieved by enabling suspend blockers.
 
-> >> As for not checking in the fast path, it should be noted that this is "only"
-> >> in handle_nested_irq(), which is only used in few interupt controller
-> >> drivers, all of which I assume are generally not considered very "fast".
-> >
-> > Fair enough. Still I fundamentaly dislike the automagic handling of
-> > this and especially the irq disabled portion of it.
-> 
-> Yes, it would be better to not have irq disabled.
-> But not really much worse than with other interrupt controllers,
-> where the handler would be running in interrupt context anyway.
+If you want to take even a minimal advantage of suspend blockers you
+need serious modifications to user-space.
 
-That's a totally different playground.
- 
-> So until all handlers are rewritten to run threaded, I believe
-> something like the proposed patch will give value to people
-> with i2c irq controllers. Hopefully, not to many people are unlucky
-> enough to have this, but anyway...
+Supposing there's a perfect usage of suspend blockers from user-space
+on current x86 platforms (in theory Android would have that), is the
+benefit that big to consider this a strong argument in favor of
+suspend blockers? Considering the small amount of x86 platforms using
+Android (is there any?), the fact that nobody else will use suspend
+blockers, and that x86 is already being fixed (as mentioned many times
+before) so dynamic PM is possible, I don't think we should be
+considering current x86 at all for suspend blockers.
 
-No it does not, as it just encourages people to disable buslocks and
-do simliar shitty crap. 
- 
-> >> Unless all interrupt handlers should be rewritten to be able to in both
-> >> thread and interrupt context, I fail to se the conflict between the patch
-> >> proposed and the work being done on request_any_context_irq().
-> >
-> > It's not a question of conflict. It's a question of semantics.
-> >
-> > We had and still have enough surprises in preempt-rt where we force
-> > thread all handlers which were caused by various assumptions in the
-> > handler code. I really prefer that the system yells in such a case
-> > instead of letting run people into hard to debug problems silently.
-> 
-> I fully appreciate that.  And for exactly that reason (combined with
-> a tight timeschedule), I really just need to have the phy interrupt handler
-> running unchanged with the i2c irq controller.
-
-Yeah, and at the same time you rip out the buslock. Why are you not
-sending this patch as well ? Simply because you know that it is
-utterly wrong and a horrible hack. 
-
-But at the same time you want to sell me a patch which rips out the
-prevention mechanism for your hack. 
-
-The time you spent to fiddle with the generic code and ripping out the
-buslock is probably more than it had taken to make the PHY driver
-thread safe.
-
-The buslock is there for a reason and if you can't use the code with
-the disable/enable_irq() in the atomic context, then this needs to be
-fixed there if you need to run the irq handler in thread context.
-
-Sorry, no dice.
-
-Thanks,
-
-	tglx
+-- 
+Felipe Contreras
