@@ -1,83 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752359Ab0FERo1 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Jun 2010 13:44:27 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:57577 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750752Ab0FERo0 convert rfc822-to-8bit (ORCPT
+	id S1754036Ab0FESBu (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Jun 2010 14:01:50 -0400
+Received: from e32.co.us.ibm.com ([32.97.110.150]:55561 "EHLO
+	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751530Ab0FESBt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Jun 2010 13:44:26 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=WIfnbSjuPtW3jUNDcoVAmm0HoX9mudU0bMsq72XT6ueIdiHHCuhwAYMqISFuHdal8t
-         qoWIbbhMMK0MSjYt8E64vxNjOgwOPBZd3M4x1qnmf0HGFFquKr1exRinUZjD0Fd6MBFn
-         GSNkdEqhb881gZxVllYyLpf9feprtTvnlZD2I=
-MIME-Version: 1.0
-In-Reply-To: <AANLkTilLmAb2c9fQwuguzWtjcHfuTZvPUTbUx7vuwFI6@mail.gmail.com>
-References: <Pine.LNX.4.44L0.1005271253240.3239-100000@iolanthe.rowland.org>
-	<201005302202.39511.rjw@sisk.pl>
-	<AANLkTilUQ2AG76nbK6LwI8_7zw0_yMSoAOr9pmuz7xrt@mail.gmail.com>
-	<201005312347.24251.rjw@sisk.pl>
-	<AANLkTilvOgSFTDFtXbjJobMZWxgfvsC97TqC7_a_NHBX@mail.gmail.com>
-	<alpine.LFD.2.00.1006011411200.2933@localhost.localdomain>
-	<AANLkTikZHmF6baP7dEXEGFE8YsbEteRjlhb5wqZX8ll1@mail.gmail.com>
-	<alpine.LFD.2.00.1006020905410.2933@localhost.localdomain>
-	<AANLkTinDm3FIrbS1jqEzW15THmr1hdd7ox0Mllm1VLjZ@mail.gmail.com>
-	<1275471561.27810.30865.camel@twins>
-	<AANLkTilLmAb2c9fQwuguzWtjcHfuTZvPUTbUx7vuwFI6@mail.gmail.com>
-Date: Sat, 5 Jun 2010 20:44:24 +0300
-Message-ID: <AANLkTikna-Vs_phy2VrJs0I8gIsdSmwuxTJ67gQ_2oTt@mail.gmail.com>
-Subject: Re: [linux-pm] [PATCH 0/8] Suspend block api (version 8)
-From: Felipe Contreras <felipe.contreras@gmail.com>
-To: =?UTF-8?B?QXJ2ZSBIasO4bm5ldsOlZw==?= <arve@android.com>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-       Thomas Gleixner <tglx@linutronix.de>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-       Florian Mickler <florian@mickler.org>,
-       Matthew Garrett <mjg59@srcf.ucam.org>,
-       Alan Stern <stern@rowland.harvard.edu>, Paul@smtp1.linux-foundation.org,
-       LKML <linux-kernel@vger.kernel.org>, felipe.balbi@nokia.com,
-       Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
-       Linux PM <linux-pm@lists.linux-foundation.org>,
-       Alan Cox <alan@lxorguk.ukuu.org.uk>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Sat, 5 Jun 2010 14:01:49 -0400
+Subject: Re: [RFC][PATCH 5/6] Cleanup hrtimer.c's direct access to
+ wall_to_monotonic
+From: john stultz <johnstul@us.ibm.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>
+In-Reply-To: <201006051223.06000.arnd@arndb.de>
+References: <1275706406-8111-1-git-send-email-johnstul@us.ibm.com>
+	 <1275706406-8111-5-git-send-email-johnstul@us.ibm.com>
+	 <1275706406-8111-6-git-send-email-johnstul@us.ibm.com>
+	 <201006051223.06000.arnd@arndb.de>
+Content-Type: text/plain; charset="UTF-8"
+Date: Sat, 05 Jun 2010 11:01:45 -0700
+Message-ID: <1275760905.1734.2.camel@work-vm>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2010/6/2 Arve Hjønnevåg <arve@android.com>:
-> 2010/6/2 Peter Zijlstra <peterz@infradead.org>:
->> (and please don't mention @#$@ up x86 ACPI again, Intel knows, they're
->> fixing it, get over it already).
->>
->
-> I don't think it is realistic to drop support for all existing hardware.
+On Sat, 2010-06-05 at 12:23 +0200, Arnd Bergmann wrote:
+> On Saturday 05 June 2010, John Stultz wrote:
+> >         do {
+> >                 seq = read_seqbegin(&xtime_lock);
+> >                 xts = __current_kernel_time();
+> > -               tom = wall_to_monotonic;
+> > +               tom = __get_wall_to_monotonic();
+> >         } while (read_seqretry(&xtime_lock, seq));
+> >  
+> 
+> Would it make sense to also limit the use of xtime_lock to the
+> timekeeping code? I suppose you could merge the various accessors
+> (current_kernel_time, get_monotonic_coarse, __current_kernel_time,
+> __get_wall_to_monotonic) with a single function doing
 
-We are talking about mainline here, there's no support for suspend
-blockers, so nothing is dropped.
+Yep. I hope to keep chipping at it to get there. 
 
-In the mind of everybody, suspend blockers is for opportunistic
-suspend, which only makes sense on sensible hw (not current x86). So
-in the mind of everybody, x86 should be out of scope for the analysis
-of suspend blockers.
+However xtime_lock protects a bit more then just the timekeeping
+internals, and its currently not limiting the rework I'm hoping to do
+with the timekeeping internal structures. So little bits at a time. :)
 
-Are you seriously suggesting that one of the strong arguments in favor
-of suspend blockers is x86 usage (nobody agrees)? If not, then drop
-it.
+thanks
+-john
 
->>> Unrelated to
->>> Android, I also want to use opportunistic suspend on my desktop.
->>
->> So you're going to sprinkle this suspend blocker shite all over regular
->> userspace?
->
-> I have said several times, that regular user-space will not need to be
-> modified to maintain their current behavior.
 
-If I enable suspend blockers on my laptop, I have to modify my
-user-space. Otherwise my system will behave horribly.
 
--- 
-Felipe Contreras
+
