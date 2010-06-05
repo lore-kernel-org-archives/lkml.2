@@ -1,55 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933441Ab0FEOKn (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Jun 2010 10:10:43 -0400
-Received: from inca-roads.misterjones.org ([213.251.177.50]:54209 "EHLO
-	inca-roads.misterjones.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933424Ab0FEOKj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Jun 2010 10:10:39 -0400
-Date: Sat, 5 Jun 2010 15:10:31 +0100
-From: Marc Zyngier <maz@misterjones.org>
-To: Esben Haabendal <esbenhaabendal@gmail.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>,
-       Esben Haabendal <eha@doredevelopment.dk>, linux-kernel@vger.kernel.org,
-       mingo@elte.hu, joachim.eastwood@jotron.com
-Subject: Re: [RFC][PATCH] irq: support IRQ_NESTED_THREAD with non-threaded 
- interrupt handlers
-Message-ID: <20100605151031.2d562268@hina.wild-wind.fr.eu.org>
-In-Reply-To: <AANLkTilb7---Qg1oLwzanKP1RGe04fkAXDtZzz0w9MGz@mail.gmail.com>
-References: <1275686352.2970.2.camel@eha.doredevelopment.dk>
-	<alpine.LFD.2.00.1006042343150.2933@localhost.localdomain>
-	<AANLkTilb7---Qg1oLwzanKP1RGe04fkAXDtZzz0w9MGz@mail.gmail.com>
-Organization: Metropolis -- Nowhere
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.12.12; x86_64-pc-linux-gnu)
+	id S933414Ab0FEOK3 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Jun 2010 10:10:29 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:51067 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933319Ab0FEOK1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 5 Jun 2010 10:10:27 -0400
+Date: Sun, 6 Jun 2010 00:10:17 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Chris Metcalf <cmetcalf@tilera.com>
+Cc: Arnd Bergmann <arnd@arndb.de>, linux-kernel@vger.kernel.org,
+       linux-arch@vger.kernel.org, torvalds@linux-foundation.org
+Subject: Re: [PATCH 0/8] revised patch for arch/tile/ support
+Message-Id: <20100606001017.eec90e38.sfr@canb.auug.org.au>
+In-Reply-To: <4C0A5180.9010702@tilera.com>
+References: <201005200543.o4K5hFRF006079@farm-0002.internal.tilera.com>
+	<201005290333.o4T3Xjse029917@farm-0002.internal.tilera.com>
+	<201005291329.10941.arnd@arndb.de>
+	<201006032240.31963.arnd@arndb.de>
+	<4C097104.3080406@tilera.com>
+	<20100605225605.4e44d4e4.sfr@canb.auug.org.au>
+	<4C0A5180.9010702@tilera.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-SA-Exim-Connect-IP: 93.97.26.37
-X-SA-Exim-Rcpt-To: esbenhaabendal@gmail.com, tglx@linutronix.de, eha@doredevelopment.dk, linux-kernel@vger.kernel.org, mingo@elte.hu, joachim.eastwood@jotron.com
-X-SA-Exim-Mail-From: maz@misterjones.org
-X-SA-Exim-Scanned: No (on inca-roads.misterjones.org); SAEximRunCond expanded to false
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Sun__6_Jun_2010_00_10_17_+1000_QUIoclj_vyxIPtge"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 5 Jun 2010 15:56:01 +0200
-Esben Haabendal <esbenhaabendal@gmail.com> wrote:
+--Signature=_Sun__6_Jun_2010_00_10_17_+1000_QUIoclj_vyxIPtge
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> I have a board with an I2C PCA9535 chip with two PHY interrupt lines
-> hooked up to. The pca953x driver calls set_irq_nested_thread on all
-> irq's on initialization. The PHY driver then calls request_irq, and has
-> no idea that it should actually be using a threaded handler.
-> 
-> With this patch, the PHY driver is able to work in this scenario
-> without changes (and so should any other driver using request_irq).
+Hi Chris,
 
-You may want to give request_any_context_irq() a try (available since the
-latest merge window). It still requires your driver to be changed, but it
-should then work in both threaded and non-threaded cases.
+On Sat, 05 Jun 2010 09:30:40 -0400 Chris Metcalf <cmetcalf@tilera.com> wrot=
+e:
+>
+> Thanks, Stephen.  One question: has linux-next reached the point where
+> Linus pulls from it automatically during each merge window, or should I
+> still ask Linus explicitly to pull for the 2.6.36 merge window?
 
-	M.
--- 
-Enforcement officers may use a hand-held detection device to measure both
-the direction and the strength of a TV signal. This makes it easy for us
-to locate TV receiving equipment in even the hardest-to-reach places.
+You need to ask Linus to pull your tree when you are ready.
+
+P.S. I noticed that you just added a commit with no Signed-off-by ...
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
+
+--Signature=_Sun__6_Jun_2010_00_10_17_+1000_QUIoclj_vyxIPtge
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iEYEARECAAYFAkwKWskACgkQjjKRsyhoI8zQHACcDAJTgFUQZO6T3Pn66wZ88P34
+a8oAn0Klv9UtalNkXG/3pyabFh0ibTM0
+=jj7D
+-----END PGP SIGNATURE-----
+
+--Signature=_Sun__6_Jun_2010_00_10_17_+1000_QUIoclj_vyxIPtge--
