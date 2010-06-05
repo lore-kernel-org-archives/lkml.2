@@ -1,120 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933241Ab0FEMBt (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Jun 2010 08:01:49 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:54134 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752779Ab0FEMBs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Jun 2010 08:01:48 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=tUohx/ksmIsePrkfvmc6hS4cpTAYgvD4CrPtORsGz5zWtOLspF6mMomESsNN0WcabB
-         VthlEF0nzjMRpr0ZNn/AhTynPQtLbhCOngWhbOCF4cipQU/l0gVU9sNag/aH7vakvlfF
-         TSaJVkuhAQ5Q0FszHb+FuGN1Z7MXPghxEZjEo=
-MIME-Version: 1.0
-In-Reply-To: <20100602013839.GB17579@us.ibm.com>
-References: <AANLkTimDfbJkAuoK1-asvk8Ub9C9QBkK5RkzLR3ilJUY@mail.gmail.com>
-	<20100601193230.GA17579@us.ibm.com>
-	<AANLkTinxCKl7RVe62UhIpNe5EriCufkgaih2D2mLLmC4@mail.gmail.com>
-	<20100602013839.GB17579@us.ibm.com>
-Date: Sat, 5 Jun 2010 07:58:45 -0400
-Message-ID: <AANLkTilcyaHmhKPsAXOdbrxFfxDeAc97AvuB_WX8VA7b@mail.gmail.com>
-Subject: Re: [PATCH v21 011/100] eclone (11/11): Document sys_eclone
-From: Albert Cahalan <acahalan@gmail.com>
-To: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>, randy.dunlap@oracle.com,
-       linuxppc-dev@lists.ozlabs.org
-Content-Type: text/plain; charset=ISO-8859-1
+	id S933272Ab0FEMHm (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Jun 2010 08:07:42 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:34066 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933033Ab0FEMHl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 5 Jun 2010 08:07:41 -0400
+Date: Sat, 5 Jun 2010 22:07:27 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, albert_herranz@yahoo.es,
+       fujita.tomonori@lab.ntt.co.jp, linux-kernel@vger.kernel.org,
+       jeremy@goop.org, iommu@lists.linux-foundation.org,
+       linux@arm.linux.org.uk, dwmw2@infradead.org, chrisw@sous-sol.org,
+       Ian.Campbell@eu.citrix.com
+Subject: Re: [PATCH] swiotlb-0.8.2^H3: seperation of physical/virtual
+ address translation and core memory allocation.
+Message-Id: <20100605220727.4138e85f.sfr@canb.auug.org.au>
+In-Reply-To: <20100604200604.GA17645@phenom.dumpdata.com>
+References: <1275673955-30267-1-git-send-email-konrad.wilk@oracle.com>
+	<20100604114250.b28f288a.akpm@linux-foundation.org>
+	<20100604200604.GA17645@phenom.dumpdata.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Sat__5_Jun_2010_22_07_27_+1000_kRzbT+CjTYhwtap8"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 1, 2010 at 9:38 PM, Sukadev Bhattiprolu
-<sukadev@linux.vnet.ibm.com> wrote:
-> | Come on, seriously, you know it's ia64 and hppa that
-> | have issues. Maybe the nommu ports also have issues.
-> |
-> | The only portable way to specify the stack is base and offset,
-> | with flags or magic values for "share" and "kernel managed".
+--Signature=_Sat__5_Jun_2010_22_07_27_+1000_kRzbT+CjTYhwtap8
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
+
+Hi Konrad,
+
+On Fri, 4 Jun 2010 16:06:04 -0400 Konrad Rzeszutek Wilk <konrad.wilk@oracle=
+.com> wrote:
 >
-> Ah, ok, we have not yet ported to IA64 and I see now where the #ifdef
-> comes in.
->
-> But are you saying that we should force x86 and other architectures to
-> specify base and offset for eclone() even though they currently specify
-> just the stack pointer to clone() ?
+> I was wondering if you wouldn't mind including the following git tree
+> in your linux-next?
+>=20
+> git://git.kernel.org/pub/scm/linux/kernel/git/konrad/swiotlb-2.6.git
+>=20
+> The patches are in the MAIN branch (and also in swiotlb-0.8.3).
 
-Even for x86, it's an easier API. Callers would be specifying
-two numbers they already have: the argument and return value
-for malloc. Currently the numbers must be added together,
-destroying information, except on hppa (must not add size)
-and ia64 (must use what I'm proposing already).
+OK, I have added the master branch of that tree.  It will appear in
+linux-next from Monday.
 
-This also provides the opportunity for the kernel (perhaps not
-in the initial implementation) to have a bit of extra info about
-some processes. The info could be supplied to gdb, used to
-harden the system against some types of security exploits,
-presented in /proc, and so on.
+> They have the Tested-by, Signed-off-by, and Acked-by signatures.
 
-> That would remove the ifdef, but could be a big change to applications
-> on x86 and other architectures.
+Could you move the Signed-off-by etc lines to the bottom of the commit
+message if that first commit, please?
 
-It's no change at all until somebody decides to use the new
-system call. At that point, you're making changes anyway.
-It's certainly not a big change compared to eclone() itself.
+Thanks for adding your subsystem tree as a participant of linux-next.  As
+you may know, this is not a judgment of your code.  The purpose of
+linux-next is for integration testing and to lower the impact of
+conflicts between subsystems in the next merge window.=20
 
-> | > I don't understand how "making up some numbers (pids) that will work"
-> | > is more portable/cleaner than the proposed eclone().
-> |
-> | It isolates the cross-platform problems to an obscure tool
-> | instead of polluting the kernel interface that everybody uses.
->
-> Sure, there was talk about using an approach like /proc/<pid>/next_pid
-> where you write your target pid into the file and the next time you
-> fork() you get that target pid. But it was considered racy and ugly.
+You will need to ensure that the patches/commits in your tree/series have
+been:
+     * submitted under GPL v2 (or later) and include the Contributor's
+	Signed-off-by,
+     * posted to the relevant mailing list,
+     * reviewed by you (or another maintainer of your subsystem tree),
+     * successfully unit tested, and=20
+     * destined for the current or next Linux merge window.
 
-Oh, you misunderstood what I meant by making up numbers
-and I didn't catch it. I wasn't meaning PID numbers. I was meaning
-stack numbers for processes that your strange tool is restarting.
+Basically, this should be just what you would send to Linus (or ask him
+to fetch).  It is allowed to be rebased if you deem it necessary.
 
-You ignored my long-ago request to use base/size to specify
-the stack. My guess was that this was because you're focused
-on restarting processes, many of which will lack stack base info.
-I thus suggested that you handle this obscure legacy case by
-making up some reasonable numbers.
+--=20
+Cheers,
+Stephen Rothwell=20
+sfr@canb.auug.org.au
 
-For example, suppose a process allocates 0x40000000 to
-0x7fffffff (a 1 GiB chunk) and uses 0x50000000 to 0x5fffffff as
-a thread stack. If done using the old clone() syscall on i386,
-you're only told that 0x5fffffff is the last stack address. You
-know nothing of 0x50000000. Your tool can see the size and
-base of the whole mapping though, so 0x40000000...0x5fffffff
-is a reasonable place to assume the stack lives. You therefore
-call eclone with base=0x40000000 size=0x2000000 when
-restarting the process.
+Legal Stuff:
+By participating in linux-next, your subsystem tree contributions are
+public and will be included in the linux-next trees.  You may be sent
+e-mail messages indicating errors or other issues when the
+patches/commits from your subsystem tree are merged and tested in
+linux-next.  These messages may also be cross-posted to the linux-next
+mailing list, the linux-kernel mailing list, etc.  The linux-next tree
+project and IBM (my employer) make no warranties regarding the linux-next
+project, the testing procedures, the results, the e-mails, etc.  If you
+don't agree to these ground rules, let me know and I'll remove your tree
+from participation in linux-next.
 
-For everybody NOT writing an obscure tool to restart processes,
-my requested change eliminates #ifdef mess and/or needless
-failure to support some architectures.
+--Signature=_Sat__5_Jun_2010_22_07_27_+1000_kRzbT+CjTYhwtap8
+Content-Type: application/pgp-signature
 
-Right now user code must be like this:
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
 
-base=malloc(size);
-#if defined(__hppa__)
-tid=clone(fn,base,flags,arg);
-#elif defined(__ia64__)
-tid=clone2(fn,base,size,flags,arg);
-#else
-tid=clone(fn,base+size,flags,arg);
-#endif
+iEYEARECAAYFAkwKPf8ACgkQjjKRsyhoI8wbfQCfRSCMdnocpPSjUPB6varhpc6A
+1jIAn0lj6jwIulITj/k0UsA/kdSneMo8
+=MCF1
+-----END PGP SIGNATURE-----
 
-The man page is likewise messy.
-
-Note that if clone2 were available for all architectures,
-we wouldn't have this mess. Let's not perpetuate the
-mistakes that led to the mess. Please provide an API
-that, like clone2, uses base and size. It'll work for every
-architecture. It'll even be less trouble to document.
+--Signature=_Sat__5_Jun_2010_22_07_27_+1000_kRzbT+CjTYhwtap8--
