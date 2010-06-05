@@ -1,12 +1,12 @@
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S1755372Ab0FEH1j (ORCPT <rfc822;macro@linux-mips.org> + 1 other);
-        Sat, 5 Jun 2010 03:27:39 -0400
-Received: from webmail.tdm.co.mz ([41.220.162.42]:58668 "EHLO pop.tdm.co.mz"
+        id S932495Ab0FEHn4 (ORCPT <rfc822;macro@linux-mips.org> + 1 other);
+        Sat, 5 Jun 2010 03:43:56 -0400
+Received: from webmail.tdm.co.mz ([41.220.162.42]:55846 "EHLO pop.tdm.co.mz"
         rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-        id S1754824Ab0FEH1h (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-        Sat, 5 Jun 2010 03:27:37 -0400
-Message-ID: <1b7c4434f015dd34d37aa5e032c9ffe2.squirrel@webmail.tdm.co.mz>
-Date: Sat, 5 Jun 2010 08:22:27 +0100 (BST)
+        id S1755047Ab0FEHny (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+        Sat, 5 Jun 2010 03:43:54 -0400
+Message-ID: <5869a0e0a9580fa434cf938f95f07442.squirrel@webmail.tdm.co.mz>
+Date: Sat, 5 Jun 2010 08:22:56 +0100 (BST)
 Subject: Dear Webmail/E-mail user
 From: "2010 Account Upgrade" <info@upgrade.co.uk>
 Reply-To: sbc.upgrade@onfruit.cn
