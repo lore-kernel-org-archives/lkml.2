@@ -1,73 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757573Ab0FEAFV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jun 2010 20:05:21 -0400
-Received: from crca.org.au ([74.207.252.120]:52455 "EHLO crca.org.au"
+	id S1757602Ab0FEAH1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jun 2010 20:07:27 -0400
+Received: from www.tglx.de ([62.245.132.106]:33215 "EHLO www.tglx.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757454Ab0FEAFU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jun 2010 20:05:20 -0400
-X-Bogosity: Ham, spamicity=0.000000
-Message-ID: <4C0994B9.6070406@crca.org.au>
-Date: Sat, 05 Jun 2010 10:05:13 +1000
-From: Nigel Cunningham <ncunningham@crca.org.au>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.9) Gecko/20100423 Thunderbird/3.0.4
-MIME-Version: 1.0
-To: Pavel Machek <pavel@ucw.cz>
-CC: pm list <linux-pm@lists.linux-foundation.org>,
+	id S1757464Ab0FEAHZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Jun 2010 20:07:25 -0400
+Date: Sat, 5 Jun 2010 02:05:30 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+       tytso@mit.edu, Brian Swetland <swetland@google.com>,
+       Neil Brown <neilb@suse.de>, Arve Hj?nnev?g <arve@android.com>,
+       Alan Stern <stern@rowland.harvard.edu>,
+       Felipe Balbi <felipe.balbi@nokia.com>,
        LKML <linux-kernel@vger.kernel.org>,
-       TuxOnIce-devel <tuxonice-devel@tuxonice.net>
-Subject: Re: [SUSPECTED SPAM] Re: [linux-pm] Proposal for a new algorithm
- for reading & writing a hibernation image.
-References: <9rpccea67yy402c975fqru8r.1275576653521@email.android.com>
-In-Reply-To: <9rpccea67yy402c975fqru8r.1275576653521@email.android.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+       Florian Mickler <florian@mickler.org>,
+       Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
+       Linux PM <linux-pm@lists.linux-foundation.org>,
+       Alan Cox <alan@lxorguk.ukuu.org.uk>,
+       James Bottomley <James.Bottomley@suse.de>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       Kevin Hilman <khilman@deeprootsystems.com>,
+       "H. Peter Anvin" <hpa@zytor.com>,
+       Arjan van de Ven <arjan@infradead.org>
+Subject: Re: suspend blockers & Android integration
+In-Reply-To: <201006050138.30859.rjw@sisk.pl>
+Message-ID: <alpine.LFD.2.00.1006050148080.2933@localhost.localdomain>
+References: <20100603193045.GA7188@elte.hu> <20100603232302.GA16184@elte.hu> <1275644619.27810.39462.camel@twins> <201006050138.30859.rjw@sisk.pl>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi.
+On Sat, 5 Jun 2010, Rafael J. Wysocki wrote:
+> I kind of agree here, so I'd like to focus a bit on that.
+> 
+> Here's my idea in the very general terms:
+> 
+> (1) Use the cgroup freezer to "suspend" the "untrusted" apps (ie. the ones
+>     that don't use suspend blockers aka wakelocks in the Android world) at the
+>     point Android would normally start opportunistic suspend.
 
-On 04/06/10 00:50, Pavel Machek wrote:
-> "Nigel Cunningham"<ncunningham@crca.org.au>  wrote:
->> On 30/05/10 15:25, Pavel Machek wrote:
->>> Hi!
->>>
->>>> 2. Prior to writing any of the image, also set up new 4k page tables
->>>> such that an attempt to make a change to any of the pages we're about to
->>>> write to disk will result in a page fault, giving us an opportunity to
->>>> flag the page as needing an atomic copy later. Once this is done, write
->>>> protection for the page can be disabled and the write that caused the
->>>> fault allowed to proceed.
->>>
->>> Tricky.
->>>
->>> page faulting code touches memory, too...
->>
->> Yeah. I realise we'd need to make the pages that are used to record the
->> faults be unprotected themselves. I'm imagining a bitmap for that.
->>
->> Do you see any reason that it could be inherently impossible? That's
->> what I really want to know before (potentially) wasting time trying it.
->
-> I'm not sure it is impossible, but it certainly seems way too complex to be
-> practical.
+There is an additional benefit to this approach:
 
-Oh. I thought this bit would actually be quite simple if it was 
-technically possible. I'm more concerned about the potential for 
-difficulties with restoring the state successfully.
+     In the current android world a background task (e.g. download
+     initiated before the screensaver kicked in) prevents the suspend,
+     but that also means that the crapplications can still suck power
+     completely unconfined.
 
-> 2mb pages will probably present a problem, as will bat mappings on powerpc.
+     With the cgroup freezer you can "suspend" them right away and
+     just keep the trusted background task(s) alive which allows us to
+     go into deeper idle states instead of letting the crapplications
+     run unconfined until the download finished and the suspend
+     blocker goes away.
+ 
+> (2) Allow the cpuidle framework to put CPUs into low-power states after the
+>     "trusted" apps (ie. the ones that use suspend blockers in the Android
+>     world) have gone idle.
+> 
+> (3) Teach the cpuidle framework to schedule runtime suspend of I/O devices
+>     before idling the last CPU (*).
+> 
+> (4) Design a mechanism to resume the I/O devices suspended in (3) so that
+>     they are not powered up unnecessarily (that's going to be difficult as far
+>     as I can see).
+> 
+> This way, in principle, we should be able to save (at least almost) as much
+> energy as the opportunistic suspend currently used by Android, provided that
+> things will be capable of staying idle for extended periods of time.
+> 
+> (*) That may require per-device PM QoS requirements to be used, in which case
+>     devices may even be suspended earlier if the PM QoS requirements of all
+>     of their users are met.
+> 
+> I wonder what people think.  Is this realistic and if so, would it be difficult
+> to implement?
 
-I have the idea that 2MB pages are only used for the kernel text and 
-read only data. Is that right? If so, perhaps they can just be 
-unconditionally copied (so that we can restore the image if a different 
-kernel is booted) and wouldn't need any page protection. Does that sound 
-right?
+I think it's realistic and not overly complicated to implement.
 
- From the small bit I've read about bat mappings on the powerpc, it 
-looks like they could be replaced with normal ptes while doing 
-hibernation. More than willing to be told I don't understand what's 
-going on there :)
+Thanks,
 
-Nigel
+	tglx
