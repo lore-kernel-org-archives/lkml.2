@@ -1,53 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756246Ab0FELjq (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Jun 2010 07:39:46 -0400
-Received: from cantor.suse.de ([195.135.220.2]:57324 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751940Ab0FELjp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Jun 2010 07:39:45 -0400
-Date: Sat, 5 Jun 2010 21:39:30 +1000
-From: Nick Piggin <npiggin@suse.de>
-To: Christoph Hellwig <hch@infradead.org>
-Cc: Al Viro <viro@ZenIV.linux.org.uk>, linux-kernel@vger.kernel.org,
-       linux-fsdevel@vger.kernel.org, Alan Cox <alan@lxorguk.ukuu.org.uk>
-Subject: Re: [PATCH, RFC] tty: stop abusing file->f_u.fu_list
-Message-ID: <20100605113930.GH26335@laptop>
-References: <20100604064307.737085373@suse.de>
- <20100604072618.227745945@suse.de>
- <20100604183934.GA2309@infradead.org>
+	id S933239Ab0FELuQ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Jun 2010 07:50:16 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:62675 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932938Ab0FELuO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 5 Jun 2010 07:50:14 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=DigwKV8P7x0teW875qKzqccD8wtrpupEC2ako48nBnNwidfyZrAmOCIN/BHgzrz75b
+         cxMtv4iypPtXyrP1mkkjVMTdCq0lFeoqsfTXBvjm+je2EQlcHo/OcbuXnI6eE1rgIx2V
+         iq3QBQ1EuYyRqB4liyZKVJpqOrVjj9X5u1Jbc=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100604183934.GA2309@infradead.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20100602013839.GB17579@us.ibm.com>
+References: <AANLkTimDfbJkAuoK1-asvk8Ub9C9QBkK5RkzLR3ilJUY@mail.gmail.com>
+	<20100601193230.GA17579@us.ibm.com>
+	<AANLkTinxCKl7RVe62UhIpNe5EriCufkgaih2D2mLLmC4@mail.gmail.com>
+	<20100602013839.GB17579@us.ibm.com>
+Date: Sat, 5 Jun 2010 07:49:34 -0400
+Message-ID: <AANLkTimd7vzaOgOr_M8Lvt4Eo6ehfNvOJGu7aiTn83z1@mail.gmail.com>
+Subject: Re: [PATCH v21 011/100] eclone (11/11): Document sys_eclone
+From: Albert Cahalan <acahalan@gmail.com>
+To: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>, randy.dunlap@oracle.com,
+       linuxppc-dev@lists.ozlabs.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 04, 2010 at 02:39:34PM -0400, Christoph Hellwig wrote:
-> The ttry code currently abuses the file anchor for the per-sb file list
-> to track instances of a given tty.  But there's no good reason for
-> that, we can just install a proxy object in file->private that gets
-> added to the list and points to the tty and keep the list away from
-> VFS internals.
+On Tue, Jun 1, 2010 at 9:38 PM, Sukadev Bhattiprolu
+<sukadev@linux.vnet.ibm.com> wrote:
+> | Come on, seriously, you know it's ia64 and hppa that
+> | have issues. Maybe the nommu ports also have issues.
+> |
+> | The only portable way to specify the stack is base and offset,
+> | with flags or magic values for "share" and "kernel managed".
+>
+> Ah, ok, we have not yet ported to IA64 and I see now where the #ifdef
+> comes in.
+>
+> But are you saying that we should force x86 and other architectures to
+> specify base and offset for eclone() even though they currently specify
+> just the stack pointer to clone() ?
 
-Well thanks for this. Yes it is an obviously nicer way to do it, so
-tty doesn't have to know what vfs uses files list for.
+Even for x86, it's an easier API. Callers would be specifying
+two numbers they already have: the argument and return value
+for malloc. Currently the numbers must be added together,
+destroying information, except on hppa (must not add size)
+and ia64 (must use what I'm proposing already).
 
- 
-> Note that I've just if 0'd the selinux mess poking into it.  While we
-> could trivially port it to the new code by making the tty_private
-> structure public this code is just too revolting to be kept around.
-> It would never have been there anyway if a person with some amount of
-> clue had ever reviewed the selinux code.  And no, it's not just the
-> tty portion, the rest of that function is just as bad.
+This also provides the opportunity for the kernel (perhaps not
+in the initial implementation) to have a bit of extra info about
+some processes. The info could be supplied to gdb, used to
+harden the system against some types of security exploits,
+presented in /proc, and so on.
 
-Why is it a mess? Just because of the conceptual nastiness of checking
-a tty object via a random one of its inodes? How would be a better way
-to do this?
+> That would remove the ifdef, but could be a big change to applications
+> on x86 and other architectures.
 
-I think for a first pass, a simple conversion for all code would be good
-for me because then it stops blocking the scaling patch. (and it's
-more bisectable).
+It's no change at all until somebody decides to use the new
+system call. At that point, you're making changes anyway.
+It's certainly not a big change compared to eclone() itself.
 
+> | > I don't understand how "making up some numbers (pids) that will work"
+> | > is more portable/cleaner than the proposed eclone().
+> |
+> | It isolates the cross-platform problems to an obscure tool
+> | instead of polluting the kernel interface that everybody uses.
+>
+> Sure, there was talk about using an approach like /proc/<pid>/next_pid
+> where you write your target pid into the file and the next time you
+> fork() you get that target pid. But it was considered racy and ugly.
+
+Oh, you misunderstood what I meant by making up numbers
+and I didn't catch it. I wasn't meaning PID numbers. I was meaning
+stack numbers for processes that your strange tool is restarting.
+
+You ignored my long-ago request to use base/size to specify
+the stack. My guess was that this was because you're focused
+on restarting processes, many of which will lack stack base info.
+I thus suggested that you handle this obscure legacy case by
+making up some reasonable numbers.
+
+For example, suppose a process allocates 0x40000000 to
+0x7fffffff (a 1 GiB chunk) and uses 0x50000000 to 0x5fffffff as
+a thread stack. If done using the old clone() syscall on i386,
+you're only told that 0x5fffffff is the last stack address. You
+know nothing of 0x50000000. Your tool can see the size and
+base of the whole mapping though, so 0x40000000...0x5fffffff
+is a reasonable place to assume the stack lives. You therefore
+call eclone with base=0x40000000 size=0x2000000 when
+restarting the process.
+
+For everybody NOT writing an obscure tool to restart processes,
+my requested change eliminates #ifdef mess and/or needless
+failure to support some architectures.
+
+Right now user code must be like this:
+
+base=malloc(size);
+#if defined(__hppa__)
+tid=clone(fn,base,flags,arg);
+#elif defined(__ia64__)
+tid=clone2(fn,base,size,flags,arg);
+#else
+tid=clone(fn,base+size,flags,arg);
+#endif
+
+The man page is likewise messy.
+
+Note that if clone2 were available for all architectures,
+we wouldn't have this mess. Let's not perpetuate the
+mistakes that led to the mess. Please provide an API
+that, like clone2, uses base and size. It'll work for every
+architecture. It'll even be less trouble to document.
