@@ -1,55 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932694Ab0FEJhN (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Jun 2010 05:37:13 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:56522 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932656Ab0FEJhL convert rfc822-to-8bit (ORCPT
+	id S932744Ab0FEJyP (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Jun 2010 05:54:15 -0400
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:46384
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932654Ab0FEJyN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Jun 2010 05:37:11 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=BIeW5mSL1saByZwc7c6Vz/cS/iOu7Daq0CV1j47FFvHo7L2Pv4j68DiKGOZkXyZnaa
-         pw9twuWwJSGfrdtTQlrHgpErxrftja01dqOHc/wYeF1Yb7JpwE/bwiOcXpnfejpuUX5f
-         138TzUKgqYPRUHT+/+qkfSUR79b8kvUEZAgY0=
-MIME-Version: 1.0
-In-Reply-To: <1275652843.27810.39750.camel@twins>
-References: <20100520204810.GA19188@think>
-	<AANLkTinifUTnjypY-h6Vv2qV9O7O4ZOFurxtrEr-3Rig@mail.gmail.com>
-	<1275652843.27810.39750.camel@twins>
-Date: Sat, 5 Jun 2010 11:37:09 +0200
-Message-ID: <AANLkTikomDB_9v7G5baRszSZiV3mydDmIuYZm78r0P6d@mail.gmail.com>
-Subject: Re: [PATCH RFC] reduce runqueue lock contention
-From: Stijn Devriendt <highguy@gmail.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Chris Mason <chris.mason@oracle.com>, Ingo Molnar <mingo@elte.hu>,
-       axboe@kernel.dk, linux-kernel@vger.kernel.org,
-       Tejun Heo <tj@kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Sat, 5 Jun 2010 05:54:13 -0400
+Date: Sat, 05 Jun 2010 02:54:23 -0700 (PDT)
+Message-Id: <20100605.025423.258132771.davem@davemloft.net>
+To: jeffrey.t.kirsher@intel.com
+Cc: mingo@redhat.com, tglx@linutronix.de, hpa@zytor.com, x86@kernel.org,
+       linux-kernel@vger.kernel.org, netdev@vger.kernel.org, gospo@redhat.com,
+       alexander.h.duyck@intel.com
+Subject: Re: [net-next-2.6 PATCH 1/2] skbuff: add check for non-linear to
+ warn_if_lro and needs_linearize
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20100602222230.12962.97260.stgit@localhost.localdomain>
+References: <20100602222230.12962.97260.stgit@localhost.localdomain>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 4, 2010 at 2:00 PM, Peter Zijlstra <peterz@infradead.org> wrote:
-> On Fri, 2010-06-04 at 12:56 +0200, Stijn Devriendt wrote:
->
->> The issue I want to tackle is waking up processes when others go to sleep.
->> This means try_to_wake_up() from inside the runqueue lock.
->
->
-> Tejun did something for that:
->
->  http://lkml.org/lkml/2010/5/13/136
->
->
->
+From: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
+Date: Wed, 02 Jun 2010 15:24:37 -0700
 
-The difference with what I have is that Tejun's threads are guaranteed
-to be local
-and on the same CPU/runqueue avoiding runqueue deadlocks. My code can be
-used to wake up any thread as I basically defer waking up untill after
-the runqueue
-lock is released.
+> From: Alexander Duyck <alexander.h.duyck@intel.com>
+> 
+> We can avoid an unecessary cache miss by checking if the skb is non-linear
+> before accessing gso_size/gso_type in skb_warn_if_lro, the same can also be
+> done to avoid a cache miss on nr_frags if data_len is 0.
+> 
+> Signed-off-by: Alexander Duyck <alexander.h.duyck@intel.com>
+> Signed-off-by: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
+
+Applied.
