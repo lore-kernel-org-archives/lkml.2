@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932211Ab0FEG7y (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Jun 2010 02:59:54 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:39845 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754507Ab0FEG7w (ORCPT
+	id S932522Ab0FEHoU (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Jun 2010 03:44:20 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:64003 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755047Ab0FEHoS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Jun 2010 02:59:52 -0400
-Message-ID: <4C09F5F0.6020902@vflare.org>
-Date: Sat, 05 Jun 2010 12:30:00 +0530
+	Sat, 5 Jun 2010 03:44:18 -0400
+Message-ID: <4C0A005A.10607@vflare.org>
+Date: Sat, 05 Jun 2010 13:14:26 +0530
 From: Nitin Gupta <ngupta@vflare.org>
 Reply-To: ngupta@vflare.org
 User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-3.fc13 Thunderbird/3.0.4
@@ -19,78 +19,88 @@ CC: Greg KH <greg@kroah.com>, Pekka Enberg <penberg@cs.helsinki.fi>,
        Hugh Dickins <hugh.dickins@tiscali.co.uk>, Cyp <cyp561@gmail.com>,
        driverdev <devel@driverdev.osuosl.org>,
        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/4] Rename ramzswap files to zram
-References: <1275379286-10453-1-git-send-email-ngupta@vflare.org>	<1275379286-10453-3-git-send-email-ngupta@vflare.org> <20100604123246.3e11022e.akpm@linux-foundation.org>
-In-Reply-To: <20100604123246.3e11022e.akpm@linux-foundation.org>
+Subject: Re: [PATCH 1/4] Support generic I/O requests
+References: <1275379286-10453-1-git-send-email-ngupta@vflare.org>	<1275379286-10453-2-git-send-email-ngupta@vflare.org> <20100604121041.1b88b0af.akpm@linux-foundation.org>
+In-Reply-To: <20100604121041.1b88b0af.akpm@linux-foundation.org>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/05/2010 01:02 AM, Andrew Morton wrote:
-> On Tue,  1 Jun 2010 13:31:24 +0530
+On 06/05/2010 12:40 AM, Andrew Morton wrote:
+> On Tue,  1 Jun 2010 13:31:23 +0530
 > Nitin Gupta <ngupta@vflare.org> wrote:
 > 
->> Related changes:
->>  - Modify revelant Kconfig and Makefile accordingly.
->>  - Change include filenames in code.
->>  - Remove dependency on CONFIG_SWAP in Kconfig as zram usage
->> is no longer limited to swap disks.
->>
->> Signed-off-by: Nitin Gupta <ngupta@vflare.org>
->> ---
->>  drivers/staging/Kconfig                            |    2 +-
->>  drivers/staging/Makefile                           |    2 +-
->>  drivers/staging/ramzswap/Kconfig                   |   21 ---------------
->>  drivers/staging/ramzswap/Makefile                  |    3 --
->>  drivers/staging/zram/Kconfig                       |   28 ++++++++++++++++++++
->>  drivers/staging/zram/Makefile                      |    3 ++
->>  drivers/staging/{ramzswap => zram}/xvmalloc.c      |    0
->>  drivers/staging/{ramzswap => zram}/xvmalloc.h      |    0
->>  drivers/staging/{ramzswap => zram}/xvmalloc_int.h  |    0
->>  .../{ramzswap/ramzswap.txt => zram/zram.txt}       |    0
->>  .../{ramzswap/ramzswap_drv.c => zram/zram_drv.c}   |    2 +-
->>  .../{ramzswap/ramzswap_drv.h => zram/zram_drv.h}   |    2 +-
->>  .../ramzswap_ioctl.h => zram/zram_ioctl.h}         |    0
->>  13 files changed, 35 insertions(+), 28 deletions(-)
->>  delete mode 100644 drivers/staging/ramzswap/Kconfig
->>  delete mode 100644 drivers/staging/ramzswap/Makefile
->>  create mode 100644 drivers/staging/zram/Kconfig
->>  create mode 100644 drivers/staging/zram/Makefile
->>  rename drivers/staging/{ramzswap => zram}/xvmalloc.c (100%)
->>  rename drivers/staging/{ramzswap => zram}/xvmalloc.h (100%)
->>  rename drivers/staging/{ramzswap => zram}/xvmalloc_int.h (100%)
->>  rename drivers/staging/{ramzswap/ramzswap.txt => zram/zram.txt} (100%)
->>  rename drivers/staging/{ramzswap/ramzswap_drv.c => zram/zram_drv.c} (99%)
->>  rename drivers/staging/{ramzswap/ramzswap_drv.h => zram/zram_drv.h} (99%)
->>  rename drivers/staging/{ramzswap/ramzswap_ioctl.h => zram/zram_ioctl.h} (100%)
+
+>> Usage/Examples:
+>>  1) Use as /tmp storage
+>>  - mkfs.ext4 /dev/zram0
+>>  - mount /dev/zram0 /tmp
 > 
-> This is a git-specific thing and doesn't do anything useful for people
-> who use plain-old-patch(1) (eg: Greg and me).
-> 
-> Obviously we can manually type in the commands and put the massive
-> file-moving diff together, but it's a bit of a pain.
-> 
-> Maybe Greg has some magic automated way of turning these into regular
-> patches, but I don't.
-> 
+> hm, how does that work?  The "device" will only handle page-sized and
+> page-aligned requests, won't it?  Can you walk us through what happens
+> when the fs does a 512-byte I/O?
 > 
 
-I used 'git-format-patch -M' as it should be easier to review
-(as suggested by Arnd).
+Yes, it still handles page-size aligned, n*page_size sized I/O requests.
 
-Anyways, I'm was not sure if I should be sending normal (non-git-specific)
-version of these patches again. So, uploaded them here instead:
+Unfortunately, I don't know much of vfs/filesystem details, so I could not
+trace out the exact path. But, given that we set logical and physical sector
+size to PAGE_SIZE, the block layer (and filesytem) should make sure that we
+get correctly aligned, correctly sized I/O requests. I just discovered this
+fact through experimentation and didn't know making it a generic device is
+actually this easy.
 
-single monolithic patch:
-http://compcache.googlecode.com/hg/sub-projects/mainline/zramv2_2.6.35-rc1.patch
+Given that I lack detailed knowledge in this area, there may be some corner
+cases where we may get unaligned I/O requests (in which case we simply return
+I/O error) but successful run of 'dd' and 'iozone' tests (links in patch 0/4)
+increased my confidence in this :)
 
-or, if you prefer patch series:
-http://compcache.googlecode.com/hg/sub-projects/mainline/zramv2_patch_series
+The only change that was needed to make it generic device was to
+iterate over all bio segments (earlier it was hard-coded to handle
+just the first one).
 
-Thanks,
+>>  - Double caching: We can potentially waste memory by having
+>> two copies of a page -- one in page cache (uncompress) and
+>> second in the device memory (compressed). However, during
+>> reclaim, clean page cache pages are quickly freed, so this
+>> does not seem to be a big problem.
+> 
+> Yes, clean pagecache is cheap.  But what happens when the pagecache
+> copy of the page gets modified?
+> 
+
+Dirty pages are periodically flushed to disk (zram in this case) and
+then it becomes clean again.
+
+> Or is it the case that once a compressed page gets copied out to
+> pagecache, the compressed version is never used again?  If so, the
+> memory could be synchronously freed, so I guess I don't understand what
+> you mean here.
+
+We cannot free a page as soon as it is decompressed and added to page cache.
+When a clean page is reclaimed, it is simply freed and not written out to
+disk and thus, we will end up losing this data.
+
+The only opportunity to free a (compressed) disk page is when filesystem
+issues a block discard request or, when used as a swap disk, we get a swap
+slot free notification (a callback for this was recently added to
+struct block_device_operations).
+
+> 
+>>  - Stale data: Not all filesystems support issuing 'discard'
+>> requests to underlying block devices. So, if such filesystems
+>> are used over zram devices, we can accumulate lot of stale
+>> data in memory. Even for filesystems to do support discard
+>> (example, ext4), we need to see how effective it is.
+> 
+> Can you walk us through how zram uses discard requests?
+> 
+
+I could not get discard working (yet), so support for this was
+removed from these patches. I hope to include it soon.
+
+Thanks for your feedback.
 Nitin
-
-
 
