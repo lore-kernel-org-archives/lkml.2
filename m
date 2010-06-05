@@ -1,206 +1,161 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933534Ab0FEOMs (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Jun 2010 10:12:48 -0400
-Received: from outbound-mail02.westnet.com.au ([203.10.1.243]:25121 "EHLO
-	outbound-mail02.westnet.com.au" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933458Ab0FEOMf (ORCPT
+	id S933533Ab0FEONb (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Jun 2010 10:13:31 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:60072 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933407Ab0FEOMo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Jun 2010 10:12:35 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AlJPAA74CUw6B9wNPGdsb2JhbACHb5ZlDAEBAQE1LbAXjTGFFwSDSA
-X-IronPort-AV: E=Sophos;i="4.53,366,1272816000"; 
-   d="scan'208";a="82293885"
-From: Mike Gilks <mike.kernel@gilksonline.com>
-To: gregkh@suse.de, mchehab@redhat.com, julia@diku.dk, joe@perches.com
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-       Mike Gilks <kernel.online@gilksonline.com>
-Subject: [PATCH 06/13] fixed checkpatch.pl issues to line 300
-Date: Sat,  5 Jun 2010 22:12:30 +0800
-Message-Id: <1275747158-31375-7-git-send-email-mike.kernel@gilksonline.com>
-X-Mailer: git-send-email 1.6.3.3
-In-Reply-To: <1275747158-31375-6-git-send-email-mike.kernel@gilksonline.com>
-References: <1275747158-31375-1-git-send-email-mike.kernel@gilksonline.com>
- <1275747158-31375-2-git-send-email-mike.kernel@gilksonline.com>
- <1275747158-31375-3-git-send-email-mike.kernel@gilksonline.com>
- <1275747158-31375-4-git-send-email-mike.kernel@gilksonline.com>
- <1275747158-31375-5-git-send-email-mike.kernel@gilksonline.com>
- <1275747158-31375-6-git-send-email-mike.kernel@gilksonline.com>
+	Sat, 5 Jun 2010 10:12:44 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=pXADIt22yHr+qxlv0ntJ1SJj1e1mqVyj/Z1l2vOBKO3X9ZM5RmfVkjYG3cUsFZ6Sti
+         ldszWALH69/SX4UvR/8E0f0ps8mzPS+gMXpjsEUbf1p2FdpMYzh1PNkgtUUOIdmGeAjx
+         6wS7hBh5oq8KtT/NsVEY0hUeodKCdwZbCuFmk=
+MIME-Version: 1.0
+In-Reply-To: <20100603211707.GA6499@atomide.com>
+References: <20100603074548.GA12104@flint.arm.linux.org.uk>
+	<alpine.LFD.2.00.1006030725420.8175@i5.linux-foundation.org>
+	<20100603181010.GA25779@flint.arm.linux.org.uk>
+	<alpine.LFD.2.00.1006031116360.8175@i5.linux-foundation.org>
+	<20100603185333.GD25779@flint.arm.linux.org.uk>
+	<alpine.LFD.2.00.1006031153420.8175@i5.linux-foundation.org>
+	<1275593742.23384.48.camel@c-dwalke-linux.qualcomm.com>
+	<20100603194559.GF25779@flint.arm.linux.org.uk>
+	<alpine.LFD.2.00.1006031305310.8175@i5.linux-foundation.org>
+	<alpine.LFD.2.00.1006031317410.8175@i5.linux-foundation.org>
+	<20100603211707.GA6499@atomide.com>
+Date: Sat, 5 Jun 2010 17:12:42 +0300
+Message-ID: <AANLkTilSBWeYTV6YlLK4XdoBsSFSVvtJIRmJxAdNu92U@mail.gmail.com>
+Subject: Re: ARM defconfig files
+From: Felipe Contreras <felipe.contreras@gmail.com>
+To: Tony Lindgren <tony@atomide.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+       Russell King <rmk@arm.linux.org.uk>,
+       Daniel Walker <dwalker@codeaurora.org>,
+       Kevin Hilman <khilman@deeprootsystems.com>,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       linux-arm-msm@vger.kernel.org, Vegard Nossum <vegard.nossum@gmail.com>
+Content-Type: multipart/mixed; boundary=0016e6d58c316e0a9c0488490897
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Mike Gilks <kernel.online@gilksonline.com>
+--0016e6d58c316e0a9c0488490897
+Content-Type: text/plain; charset=UTF-8
 
----
- drivers/staging/rtl8192u/r8192U_core.c |   56 +++++++++++++-------------------
- 1 files changed, 23 insertions(+), 33 deletions(-)
+On Fri, Jun 4, 2010 at 12:17 AM, Tony Lindgren <tony@atomide.com> wrote:
+> * Linus Torvalds <torvalds@linux-foundation.org> [100603 23:30]:
+>>
+>> and now you'd be able to basically generate a OMAP3EVM .config file by
+>> just running "allnoconfig" on that Kconfig.omap3_evm file. But it would
+>> only have to select the parts that are specific for the EVM platform,
+>> because the generic OMAP3 support would be picked by the Kconfig.omap3
+>> file, which in turn would not have to worry about the generic ARM parts
+>> etc.
+>>
+>> See?
+>
+> Sounds like a good improvment to me.
 
-diff --git a/drivers/staging/rtl8192u/r8192U_core.c b/drivers/staging/rtl8192u/r8192U_core.c
-index 7bfbbfe..ac620a5 100644
---- a/drivers/staging/rtl8192u/r8192U_core.c
-+++ b/drivers/staging/rtl8192u/r8192U_core.c
-@@ -236,7 +236,7 @@ static void rtl819x_set_channel_map(u8 channel_plan, struct r8192_priv *priv)
- 				if (ChannelPlan[channel_plan].Channel[i] <
- 					min_chan || ChannelPlan[channel_plan].
- 							Channel[i] > max_chan)
--				break;
-+					break;
- 			GET_DOT11D_INFO(ieee)->channel_map[ChannelPlan
- 						[channel_plan].Channel[i]] = 1;
- 			}
-@@ -268,7 +268,7 @@ static void rtl819x_set_channel_map(u8 channel_plan, struct r8192_priv *priv)
- 		_pdrvinfo->RxRate == DESC90_RATE2M ||\
- 		_pdrvinfo->RxRate == DESC90_RATE5_5M ||\
- 		_pdrvinfo->RxRate == DESC90_RATE11M) &&\
--		!_pdrvinfo->RxHT\
-+		!_pdrvinfo->RxHT
- 
- 
- void CamResetAllEntry(struct net_device *dev)
-@@ -285,8 +285,7 @@ void CamResetAllEntry(struct net_device *dev)
- 	 */
- 	/* debug
- 	 *DbgPrint("========================================\n");
--	 *DbgPrint("                            Call ResetAllEntry"
--	 *		"                                              \n");
-+	 *DbgPrint("                            Call ResetAllEntry\n");
- 	 *DbgPrint("========================================\n\n");
- 	 */
- 	ulcommand |= BIT31|BIT30;
-@@ -297,12 +296,12 @@ void CamResetAllEntry(struct net_device *dev)
- void write_cam(struct net_device *dev, u8 addr, u32 data)
- {
- 	write_nic_dword(dev, WCAMI, data);
--	write_nic_dword(dev, RWCAM, BIT31|BIT16|(addr&0xff) );
-+	write_nic_dword(dev, RWCAM, BIT31|BIT16|(addr&0xff));
- }
- 
- u32 read_cam(struct net_device *dev, u8 addr)
- {
--	write_nic_dword(dev, RWCAM, 0x80000000|(addr&0xff) );
-+	write_nic_dword(dev, RWCAM, 0x80000000|(addr&0xff));
- 	return read_nic_dword(dev, 0xa8);
- }
- 
-@@ -316,8 +315,7 @@ void write_nic_byte_E(struct net_device *dev, int indx, u8 data)
- 			       RTL8187_REQ_SET_REGS, RTL8187_REQT_WRITE,
- 			       indx|0xfe00, 0, &data, 1, HZ / 2);
- 
--	if (status < 0)
--	{
-+	if (status < 0) {
- 		printk("write_nic_byte_E TimeOut! status:%d\n", status);
- 	}
- }
-@@ -333,14 +331,14 @@ u8 read_nic_byte_E(struct net_device *dev, int indx)
- 			       RTL8187_REQ_GET_REGS, RTL8187_REQT_READ,
- 			       indx|0xfe00, 0, &data, 1, HZ / 2);
- 
--	if (status < 0)
--	{
-+	if (status < 0) {
- 		printk("read_nic_byte_E TimeOut! status:%d\n", status);
- 	}
- 
- 	return data;
- }
--//as 92U has extend page from 4 to 16, so modify functions below.
-+
-+/* as 92U has extend page from 4 to 16, so modify functions below. */
- void write_nic_byte(struct net_device *dev, int indx, u8 data)
- {
- 	int status;
-@@ -350,20 +348,18 @@ void write_nic_byte(struct net_device *dev, int indx, u8 data)
- 
- 	status = usb_control_msg(udev, usb_sndctrlpipe(udev, 0),
- 			       RTL8187_REQ_SET_REGS, RTL8187_REQT_WRITE,
--			       (indx&0xff)|0xff00, (indx>>8)&0x0f, &data, 1, HZ / 2);
-+				       (indx&0xff)|0xff00, (indx>>8)&0x0f,
-+							&data, 1, HZ / 2);
- 
--	if (status < 0)
--	{
-+	if (status < 0) {
- 		printk("write_nic_byte TimeOut! status:%d\n", status);
- 	}
- 
- 
- }
- 
--
- void write_nic_word(struct net_device *dev, int indx, u16 data)
- {
--
- 	int status;
- 
- 	struct r8192_priv *priv = (struct r8192_priv *)ieee80211_priv(dev);
-@@ -371,34 +367,30 @@ void write_nic_word(struct net_device *dev, int indx, u16 data)
- 
- 	status = usb_control_msg(udev, usb_sndctrlpipe(udev, 0),
- 			       RTL8187_REQ_SET_REGS, RTL8187_REQT_WRITE,
--			       (indx&0xff)|0xff00, (indx>>8)&0x0f, &data, 2, HZ / 2);
-+					(indx&0xff)|0xff00, (indx>>8)&0x0f,
-+							&data, 2, HZ / 2);
- 
--	if (status < 0)
--	{
-+	if (status < 0) {
- 		printk("write_nic_word TimeOut! status:%d\n", status);
- 	}
- 
- }
- 
--
- void write_nic_dword(struct net_device *dev, int indx, u32 data)
- {
--
- 	int status;
- 
- 	struct r8192_priv *priv = (struct r8192_priv *)ieee80211_priv(dev);
- 	struct usb_device *udev = priv->udev;
- 
- 	status = usb_control_msg(udev, usb_sndctrlpipe(udev, 0),
--			       RTL8187_REQ_SET_REGS, RTL8187_REQT_WRITE,
--			       (indx&0xff)|0xff00, (indx>>8)&0x0f, &data, 4, HZ / 2);
-+				RTL8187_REQ_SET_REGS, RTL8187_REQT_WRITE,
-+					(indx&0xff)|0xff00, (indx>>8)&0x0f,
-+							&data, 4, HZ / 2);
- 
--
--	if (status < 0)
--	{
-+	if (status < 0) {
- 		printk("write_nic_dword TimeOut! status:%d\n", status);
- 	}
--
- }
- 
- 
-@@ -411,19 +403,17 @@ u8 read_nic_byte(struct net_device *dev, int indx)
- 	struct usb_device *udev = priv->udev;
- 
- 	status = usb_control_msg(udev, usb_rcvctrlpipe(udev, 0),
--			       RTL8187_REQ_GET_REGS, RTL8187_REQT_READ,
--			       (indx&0xff)|0xff00, (indx>>8)&0x0f, &data, 1, HZ / 2);
-+				RTL8187_REQ_GET_REGS, RTL8187_REQT_READ,
-+					(indx&0xff)|0xff00, (indx>>8)&0x0f,
-+							&data, 1, HZ / 2);
- 
--	if (status < 0)
--	{
-+	if (status < 0) {
- 		printk("read_nic_byte TimeOut! status:%d\n", status);
- 	}
- 
- 	return data;
- }
- 
--
--
- u16 read_nic_word(struct net_device *dev, int indx)
- {
- 	u16 data;
+How about instead of using full defconfigs, we use minimal ones and
+let the rest be determined with defaults.
+
+For example, omap3_beagle.baseconfig would have something like:
+CONFIG_MACH_OMAP3_BEAGLE=y
+CONFIG_ARCH_OMAP=y
+CONFIG_ARCH_OMAP3=y
+CONFIG_ARCH_OMAP3430=y
+CONFIG_AEABI=y
+CONFIG_EMBEDDED=y
+CONFIG_ARCH_OMAP_OTG=y
+CONFIG_OMAP_MUX=n
+CONFIG_OMAP_32K_TIMER=y
+CONFIG_OMAP_DM_TIMER=y
+CONFIG_INPUT_MOUSE=n
+
+You copy that to the .config, and then do:
+echo "" | make ARCH=arm oldconfig
+
+The result would be exactly the same as we have now. With the SAT
+resolver I think it should be possible to automatically simply the
+current defconfigs. (CC'ing Vegard for comments)
+
+I'm attaching a simplified base config, that I used to test this, and
+the result is an exact match of the current omap3_beagle_defconfig.
+
 -- 
-1.6.3.3
+Felipe Contreras
 
+--0016e6d58c316e0a9c0488490897
+Content-Type: application/octet-stream; name="omap3_beagle.config"
+Content-Disposition: attachment; filename="omap3_beagle.config"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_ga2ivbxx0
+
+Q09ORklHX01BQ0hfT01BUDNfQkVBR0xFPXkKCiMgdGhlc2Ugc2hvdWxkIGJlIGF1dG9tYXRpYwpD
+T05GSUdfQVJDSF9PTUFQPXkKQ09ORklHX0FSQ0hfT01BUDM9eQpDT05GSUdfQVJDSF9PTUFQMzQz
+MD15CgojIHByb2JhYmx5IHRoaXMgdG9vCkNPTkZJR19BRUFCST15CgpDT05GSUdfRVhQRVJJTUVO
+VEFMPXkKQ09ORklHX01PRFVMRVM9eQpDT05GSUdfTU9EVUxFX1VOTE9BRD15CkNPTkZJR19NT0RW
+RVJTSU9OUz15CkNPTkZJR19NT0RVTEVfU1JDVkVSU0lPTl9BTEw9eQpDT05GSUdfRlJFRVpFUj15
+CgpDT05GSUdfU1lTVklQQz15CkNPTkZJR19CU0RfUFJPQ0VTU19BQ0NUPXkKQ09ORklHX0xPR19C
+VUZfU0hJRlQ9MTQKQ09ORklHX0tBTExTWU1TX0VYVFJBX1BBU1M9eQpDT05GSUdfQkxLX0RFVl9J
+TklUUkQ9eQpDT05GSUdfRU1CRURERUQ9eQpDT05GSUdfU0xBQj15CgpDT05GSUdfQVJDSF9WRVJT
+QVRJTEU9bgpDT05GSUdfQkxLX0RFVl9CU0c9bgpDT05GSUdfU1lTQ1RMX1NZU0NBTEw9bgpDT05G
+SUdfTkFNRVNQQUNFUz1uCkNPTkZJR19SRF9CWklQMj1uCkNPTkZJR19SRF9MWk1BPW4KQ09ORklH
+X1JEX0xaTz1uCgpDT05GSUdfQVJDSF9PTUFQX09URz15CkNPTkZJR19PTUFQXzMyS19USU1FUj15
+CkNPTkZJR19PTUFQX01VWD1uCkNPTkZJR19PTUFQX01DQlNQPW4KQ09ORklHX09NQVBfRE1fVElN
+RVI9eQoKQ09ORklHX05PX0haPXkKQ09ORklHX0hJR0hfUkVTX1RJTUVSUz15CgpDT05GSUdfRlBF
+X05XRlBFPXkKQ09ORklHX1ZGUD15CkNPTkZJR19WRlB2Mz15CgpDT05GSUdfQklORk1UX01JU0M9
+eQoKQ09ORklHX1BNPXkKQ09ORklHX1BNX1JVTlRJTUU9eQoKQ09ORklHX05FVD15CkNPTkZJR19Q
+QUNLRVQ9eQpDT05GSUdfVU5JWD15CkNPTkZJR19ORVRfS0VZPXkKQ09ORklHX0lORVQ9eQpDT05G
+SUdfSVBfUE5QPXkKQ09ORklHX0lQX1BOUF9ESENQPXkKQ09ORklHX0lQX1BOUF9CT09UUD15CkNP
+TkZJR19JUF9QTlBfUkFSUD15CkNPTkZJR19JTkVUX1RVTk5FTD1uCkNPTkZJR19JTkVUX0xSTz1u
+CgpDT05GSUdfSVBWNj1uCgpDT05GSUdfRldfTE9BREVSPW4KQ09ORklHX01URD15CkNPTkZJR19N
+VERfUEFSVElUSU9OUz15CgpDT05GSUdfTVREX0NIQVI9eQpDT05GSUdfTVREX0JMS0RFVlM9eQpD
+T05GSUdfTVREX0JMT0NLPXkKQ09ORklHX01URF9OQU5EPXkKCkNPTkZJR19CTEtfREVWX0xPT1A9
+eQpDT05GSUdfQkxLX0RFVl9SQU09eQoKIyBub3QgbmVlZGVkLCByaWdodD8KQ09ORklHX0JMS19E
+RVZfUkFNX1NJWkU9MTYzODQKCkNPTkZJR19NSVNDX0RFVklDRVM9bgoKIyBjZHJvbT8gc2VyaW91
+c2x5PwpDT05GSUdfU0NTST15CkNPTkZJR19CTEtfREVWX1NEPXkKCkNPTkZJR19ORVRERVZJQ0VT
+PXkKCiMgdGhlc2Ugc2hvdWxkIGJlIG9mZiBieSBkZWZhdWx0CkNPTkZJR19ORVRERVZfMTAwMD1u
+CkNPTkZJR19ORVRERVZfMTAwMDA9bgpDT05GSUdfSU5QVVRfTU9VU0VERVY9bgpDT05GSUdfSU5Q
+VVRfS0VZQk9BUkQ9bgpDT05GSUdfSU5QVVRfTU9VU0U9bgpDT05GSUdfTEVHQUNZX1BUWVM9bgoK
+Q09ORklHX1NFUklPPW4KQ09ORklHX1NFUklBTF84MjUwPXkKQ09ORklHX1NFUklBTF84MjUwX0NP
+TlNPTEU9eQpDT05GSUdfU0VSSUFMXzgyNTBfRVhURU5ERUQ9eQpDT05GSUdfU0VSSUFMXzgyNTBf
+TUFOWV9QT1JUUz15CkNPTkZJR19TRVJJQUxfODI1MF9TSEFSRV9JUlE9eQpDT05GSUdfU0VSSUFM
+XzgyNTBfREVURUNUX0lSUT15CkNPTkZJR19TRVJJQUxfODI1MF9SU0E9eQoKIyBjb3VsZCB0aGlz
+IGJlIGF1dG9tYXRpYz8KQ09ORklHX1NFUklBTF84MjUwX05SX1VBUlRTPTMyCgpDT05GSUdfSFdf
+UkFORE9NPXkKQ09ORklHX0kyQz15CkNPTkZJR19JMkNfQ0hBUkRFVj15CgojIHRoaXMgc2hvdWxk
+IGJlIGF1dG9tYXRpYywgcmlnaHQ/CkNPTkZJR19JMkNfT01BUD15CgpDT05GSUdfUkVHVUxBVE9S
+PXkKCiMgc2hvdWxkIGJlIG9uIGJ5IGRlZmF1bHQgb2Ygb21hcDMsIG5vPwpDT05GSUdfR1BJT19U
+V0w0MDMwPXkKQ09ORklHX1RXTDQwMzBfQ09SRT15CkNPTkZJR19SRUdVTEFUT1JfVFdMNDAzMD15
+CgpDT05GSUdfSFdNT049bgoKQ09ORklHX0ZCPXkKQ09ORklHX0ZCX09NQVA9eSAjIHNob3VsZCBk
+ZXBlbmQgb24gRkIKQ09ORklHX1ZHQV9DT05TT0xFPW4gIyBzaG91bGQgYmUgYXV0bwpDT05GSUdf
+RlJBTUVCVUZGRVJfQ09OU09MRT15CkNPTkZJR19GUkFNRUJVRkZFUl9DT05TT0xFX1JPVEFUSU9O
+PXkKCiMgYXJlIHRoZXNlIG5lZWRlZD8KQ09ORklHX0ZPTlRTPXkKQ09ORklHX0ZPTlRfOHg4PXkK
+Q09ORklHX0ZPTlRfOHgxNj15CgpDT05GSUdfSElEX1NVUFBPUlQ9bgoKQ09ORklHX1VTQj15CkNP
+TkZJR19VU0JfREVWSUNFRlM9eQpDT05GSUdfVVNCX1NVU1BFTkQ9eQpDT05GSUdfVVNCX09URz15
+CkNPTkZJR19VU0JfTU9OPXkKCkNPTkZJR19VU0JfRUhDSV9IQ0Q9eQpDT05GSUdfVVNCX0VIQ0lf
+Uk9PVF9IVUJfVFQ9eQpDT05GSUdfVVNCX01VU0JfSERSQz15CkNPTkZJR19VU0JfTVVTQl9PVEc9
+eQpDT05GSUdfVVNCX01VU0JfSE9TVD1uCkNPTkZJR19VU0JfR0FER0VUX01VU0JfSERSQz15CkNP
+TkZJR19VU0JfR0FER0VUPXkKQ09ORklHX1VTQl9PVEdfV0hJVEVMSVNUPW4KCiMgdXNlZnVsIG9u
+IGJlYWdsZWJvYXJkCkNPTkZJR19VU0JfRVRIPW0KCkNPTkZJR19UV0w0MDMwX1VTQj15CgpDT05G
+SUdfTU1DPXkKQ09ORklHX01NQ19PTUFQX0hTPXkKCkNPTkZJR19SVENfQ0xBU1M9eQoKQ09ORklH
+X0VYVDJfRlM9eQpDT05GSUdfRVhUM19GUz15CkNPTkZJR19FWFQzX0ZTX1hBVFRSPW4KCkNPTkZJ
+R19JTk9USUZZPXkKQ09ORklHX1FVT1RBPXkKQ09ORklHX1FVT1RBX1RSRUU9eQpDT05GSUdfUUZN
+VF9WMj15CgpDT05GSUdfRkFUX0ZTPXkKQ09ORklHX01TRE9TX0ZTPXkKQ09ORklHX1ZGQVRfRlM9
+eQpDT05GSUdfVE1QRlM9eQpDT05GSUdfSkZGUzJfRlM9eQpDT05GSUdfTkZTX0ZTPXkKQ09ORklH
+X05GU19WMz15CkNPTkZJR19ORlNfVjQ9eQpDT05GSUdfUk9PVF9ORlM9eQoKQ09ORklHX1BBUlRJ
+VElPTl9BRFZBTkNFRD15CgpDT05GSUdfTkxTX0NPREVQQUdFXzQzNz15CkNPTkZJR19OTFNfSVNP
+ODg1OV8xPXkKCkNPTkZJR19NQUdJQ19TWVNSUT15CkNPTkZJR19ERUJVR19LRVJORUw9eQpDT05G
+SUdfREVCVUdfTVVURVhFUz15CkNPTkZJR19ERUJVR19CVUdWRVJCT1NFPW4KQ09ORklHX0RFQlVH
+X0lORk89eQoKQ09ORklHX0ZUUkFDRT1uCgpDT05GSUdfQ1JZUFRPX0VDQj1tCkNPTkZJR19DUllQ
+VE9fUENCQz1tCgpDT05GSUdfQ1JZUFRPX0NSQzMyQz15CkNPTkZJR19DUkNfQ0NJVFQ9eQpDT05G
+SUdfTElCQ1JDMzJDPXkKCiMgc3lzdGVtLXNwZWNpZmljCkNPTkZJR19VRVZFTlRfSEVMUEVSX1BB
+VEg9Ii9zYmluL2hvdHBsdWciCkNPTkZJR19DTURMSU5FPSJyb290PS9kZXYvbmZzIG5mc3Jvb3Q9
+MTkyLjE2OC4wLjE6L2hvbWUvdXNlci9idWlsZHJvb3QgaXA9MTkyLjE2OC4wLjI6MTkyLjE2OC4w
+LjE6MTkyLjE2OC4wLjE6MjU1LjI1NS4yNTUuMDp0Z3Q6ZXRoMDpvZmYgcncgY29uc29sZT10dHlT
+MiwxMTUyMDBuOCIK
+--0016e6d58c316e0a9c0488490897--
