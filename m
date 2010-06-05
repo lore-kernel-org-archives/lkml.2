@@ -1,112 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756360Ab0FENry (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Jun 2010 09:47:54 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:52088 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754367Ab0FENrw convert rfc822-to-8bit (ORCPT
+	id S933362Ab0FEN4H (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Jun 2010 09:56:07 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:58723 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756112Ab0FEN4F convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Jun 2010 09:47:52 -0400
+	Sat, 5 Jun 2010 09:56:05 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=mime-version:in-reply-to:references:date:message-id:subject:from:to
          :cc:content-type:content-transfer-encoding;
-        b=JQbhFvgMg57i6zhl4xtDOLOTaRBEfZlGAxLoU+pAmDXMm6zpsn5kfO8Wy9N/gO7oi+
-         r4EDArfVuodUcWc2tKSuWJK+XembYAamHgShgvzbx81aXYQgR8e8zlyiILchndhNx6a9
-         gnxpaDMcBUezpuvDqHPj1LTPoD0wR7OGLo1Zs=
+        b=B9HVYCeiXksoRr/R6F3rLs58QaqYc2uijCg6PGaFGdwregV+yDVTe24dKb3gVkoTy+
+         BxiprKLiyUR6Bmg0vU4HyckbabVUKAvyPFEjUaeQ1gc6L6OzUw/yBbovgTf6AGggOqVe
+         kvLbfMiw6OwvoohHxpF+zeTI6TKM+nm/cGMtw=
 MIME-Version: 1.0
-In-Reply-To: <alpine.LFD.2.00.1006031317410.8175@i5.linux-foundation.org>
-References: <20100603074548.GA12104@flint.arm.linux.org.uk>
-	<alpine.LFD.2.00.1006030725420.8175@i5.linux-foundation.org>
-	<20100603181010.GA25779@flint.arm.linux.org.uk>
-	<alpine.LFD.2.00.1006031116360.8175@i5.linux-foundation.org>
-	<20100603185333.GD25779@flint.arm.linux.org.uk>
-	<alpine.LFD.2.00.1006031153420.8175@i5.linux-foundation.org>
-	<1275593742.23384.48.camel@c-dwalke-linux.qualcomm.com>
-	<20100603194559.GF25779@flint.arm.linux.org.uk>
-	<alpine.LFD.2.00.1006031305310.8175@i5.linux-foundation.org>
-	<alpine.LFD.2.00.1006031317410.8175@i5.linux-foundation.org>
-Date: Sat, 5 Jun 2010 16:47:50 +0300
-Message-ID: <AANLkTim4ubr2R_lvxnKzdskkIO33ucdHBBAlPwVfRWGa@mail.gmail.com>
-Subject: Re: ARM defconfig files
-From: Felipe Contreras <felipe.contreras@gmail.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Russell King <rmk@arm.linux.org.uk>,
-       Daniel Walker <dwalker@codeaurora.org>,
-       Kevin Hilman <khilman@deeprootsystems.com>,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       linux-arm-msm@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <alpine.LFD.2.00.1006042343150.2933@localhost.localdomain>
+References: <1275686352.2970.2.camel@eha.doredevelopment.dk>
+	<alpine.LFD.2.00.1006042343150.2933@localhost.localdomain>
+Date: Sat, 5 Jun 2010 15:56:01 +0200
+Message-ID: <AANLkTilb7---Qg1oLwzanKP1RGe04fkAXDtZzz0w9MGz@mail.gmail.com>
+Subject: Re: [RFC][PATCH] irq: support IRQ_NESTED_THREAD with non-threaded 
+	interrupt handlers
+From: Esben Haabendal <esbenhaabendal@gmail.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Esben Haabendal <eha@doredevelopment.dk>, linux-kernel@vger.kernel.org,
+       maz@misterjones.org, mingo@elte.hu, joachim.eastwood@jotron.com
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jun 3, 2010 at 11:31 PM, Linus Torvalds
-<torvalds@linux-foundation.org> wrote:
-> On Thu, 3 Jun 2010, Linus Torvalds wrote:
+I have a board with an I2C PCA9535 chip with two PHY interrupt lines
+hooked up to. The pca953x driver calls set_irq_nested_thread on all
+irq's on initialization. The PHY driver then calls request_irq, and has
+no idea that it should actually be using a threaded handler.
+
+With this patch, the PHY driver is able to work in this scenario
+without changes (and so should any other driver using request_irq).
+
+/Esben
+
+On Fri, Jun 4, 2010 at 11:46 PM, Thomas Gleixner <tglx@linutronix.de> wrote:
+> On Fri, 4 Jun 2010, Esben Haabendal wrote:
+>
+>> set_irq_nested_thread() might be called by interrupt controller to
+>> supported nested irq thread handling, and with this change, drivers
+>> with non-threaded irq handlers can still use the irqs.
+>
+> What's the problem you are trying to solve ? The above changelog is
+> not very useful ?
+>
+> Thanks,
+>
+>        tglx
+>
+>> Signed-off-by: Esben Haabendal <eha@doredevelopment.dk>
+>> ---
+>>  kernel/irq/chip.c   |    9 ++++++++-
+>>  kernel/irq/manage.c |    4 +---
+>>  2 files changed, 9 insertions(+), 4 deletions(-)
 >>
->> I apparently haven't explained myself enough, because what you keep on
->> harping on is not something I consider acceptable.
+>> diff --git a/kernel/irq/chip.c b/kernel/irq/chip.c
+>> index b7091d5..8202993 100644
+>> --- a/kernel/irq/chip.c
+>> +++ b/kernel/irq/chip.c
+>> @@ -405,7 +405,14 @@ void handle_nested_irq(unsigned int irq)
+>>       desc->status |= IRQ_INPROGRESS;
+>>       raw_spin_unlock_irq(&desc->lock);
 >>
->> STD_CONFIG is pointless. It's pointless because the solution to what
->> you call STD_CONFIG would be to just NOT USING the special Kconfig.xyz
->> file at all.
+>> -     action_ret = action->thread_fn(action->irq, action->dev_id);
+>> +     if (desc->status & IRQ_NESTED_THREAD && action->thread_fn)
+>> +             action_ret = action->thread_fn(action->irq, action->dev_id);
+>> +     else {
+>> +             local_irq_disable();
+>> +             action_ret = action->handler(action->irq, action->dev_id);
+>> +             local_irq_enable();
+>> +     }
+>> +
+>>       if (!noirqdebug)
+>>               note_interrupt(irq, desc, action_ret);
+>>
+>> diff --git a/kernel/irq/manage.c b/kernel/irq/manage.c
+>> index 3164ba7..e7bca04 100644
+>> --- a/kernel/irq/manage.c
+>> +++ b/kernel/irq/manage.c
+>> @@ -681,10 +681,8 @@ __setup_irq(unsigned int irq, struct irq_desc *desc, struct irqaction *new)
+>>        * Check whether the interrupt nests into another interrupt
+>>        * thread.
+>>        */
+>> -     nested = desc->status & IRQ_NESTED_THREAD;
+>> +     nested = (desc->status & IRQ_NESTED_THREAD) && new->thread_fn;
+>>       if (nested) {
+>> -             if (!new->thread_fn)
+>> -                     return -EINVAL;
+>>               /*
+>>                * Replace the primary handler which was provided from
+>>                * the driver for non nested interrupt handling by the
+>> --
+>> 1.7.1
+>>
+>>
+>>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 >
-> To make this _really_ concrete, let me actually give you an example (but
-> broken and pointless) example Kconfig file, in order to _avoid_ having a
-> def_config file.
->
-> I do it by generating it. Let's say that I want a x86 configuration that
-> has USB enabled. I can basically _ask_ the Kconfig machinery to generate
-> that with something like this:
->
-> Â - create a "Mykconfig" file:
->
-> Â  Â  Â  Â config MYCONFIG
-> Â  Â  Â  Â  Â  Â  Â  Â bool
-> Â  Â  Â  Â  Â  Â  Â  Â default y
-> Â  Â  Â  Â  Â  Â  Â  Â select USB
->
-> Â  Â  Â  Â source arch/x86/Kconfig
->
-> and then I just do
->
-> Â  Â  Â  Â KBUILD_KCONFIG=Mykconfig make allnoconfig
->
-> and look what appears in the .config file. In fact, do this:
->
-> Â  Â  Â  Â make allnoconfig
-> Â  Â  Â  Â cp .config no-config
-> Â  Â  Â  Â KBUILD_KCONFIG=Mykconfig make allnoconfig
-> Â  Â  Â  Â cp .config my-config
-> Â  Â  Â  Â diff -u no-config my-config
->
-> to see the point of it all.
->
-> Now, the above is a _trivial_ one. And it's actually broken, because I
-> should not have forced CONFIG_USB (it depends on CONFIG_USB_SUPPORT).
 
-And that's precisely the problem that his approach doesn't solve: dependencies.
 
----
-config MYCONFIG
-	bool
-	default y
-	select MACH_OMAP3_BEAGLE
-
-source arch/arm/Kconfig
----
-
-Is the same as:
----
-source arch/arm/Kconfig
----
-
-With the SAT resolver it would be possible to have a .satconfig:
-CONFIG_MACH_OMAP3_BEAGLE=y
-
-And let the resolver figure everything out back from there.
 
 -- 
-Felipe Contreras
+Esben Haabendal, Senior Software Consultant
+DoréDevelopment ApS, Ved Stranden 1, 9560 Hadsund, DK-Denmark
+Phone: +45 51 92 53 93, E-mail: eha@doredevelopment.dk
+WWW: http://www.doredevelopment.dk
