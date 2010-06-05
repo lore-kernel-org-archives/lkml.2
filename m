@@ -1,71 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756920Ab0FECya (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jun 2010 22:54:30 -0400
-Received: from e34.co.us.ibm.com ([32.97.110.152]:45608 "EHLO
-	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755722Ab0FECxa (ORCPT
+	id S1756264Ab0FEC6a (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jun 2010 22:58:30 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:55166 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752676Ab0FEC63 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jun 2010 22:53:30 -0400
-From: John Stultz <johnstul@us.ibm.com>
-To: linux-kernel@vger.kernel.org
-Cc: John Stultz <johnstul@us.ibm.com>, Jeff Dike <jdike@addtoit.com>,
-       Thomas Gleixner <tglx@linutronix.de>
-Subject: [RFC][PATCH 4/6] Convert um to use read_persistent_clock
-Date: Fri,  4 Jun 2010 19:53:24 -0700
-Message-Id: <1275706406-8111-5-git-send-email-johnstul@us.ibm.com>
-X-Mailer: git-send-email 1.6.0.4
-In-Reply-To: <1275706406-8111-4-git-send-email-johnstul@us.ibm.com>
-References: <1275706406-8111-1-git-send-email-johnstul@us.ibm.com>
- <1275706406-8111-2-git-send-email-johnstul@us.ibm.com>
- <1275706406-8111-3-git-send-email-johnstul@us.ibm.com>
- <1275706406-8111-4-git-send-email-johnstul@us.ibm.com>
+	Fri, 4 Jun 2010 22:58:29 -0400
+Date: Sat, 5 Jun 2010 03:58:27 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
+Subject: [git pull] vfs/fs for -rc2
+Message-ID: <20100605025827.GI31073@ZenIV.linux.org.uk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch converts the um arch to use read_persistent_clock().
-This allows it to avoid accessing xtime and wall_to_monotonic
-directly.
+Fixes and two really obvious cleanups; please pull from
+git://git.kernel.org/pub/scm/linux/kernel/git/viro/vfs-2.6.git/ for-linus
 
-This patch is un-tested, so any help by testers or maintainers would
-be greatly appreciated!
+Shortlog:
+Al Viro (2):
+      mqueue doesn't need make_bad_inode()
+      fix the deadlock in qib_fs
 
-Signed-off-by: John Stultz <johnstul@us.ibm.com>
-CC: Jeff Dike <jdike@addtoit.com>
-CC: Thomas Gleixner <tglx@linutronix.de>
----
- arch/um/kernel/time.c |   13 +++++++------
- 1 files changed, 7 insertions(+), 6 deletions(-)
+Andrew Hendry (1):
+      Minix: Clean up left over label
 
-diff --git a/arch/um/kernel/time.c b/arch/um/kernel/time.c
-index c8b9c46..2b8b262 100644
---- a/arch/um/kernel/time.c
-+++ b/arch/um/kernel/time.c
-@@ -102,16 +102,17 @@ static void __init setup_itimer(void)
- 	clockevents_register_device(&itimer_clockevent);
- }
- 
-+void read_persistent_clock(struct timespec *ts)
-+{
-+	nsecs = os_nsecs();
-+	set_normalized_timespec(ts, nsecs / NSEC_PER_SEC,
-+				nsecs % NSEC_PER_SEC);
-+}
-+
- void __init time_init(void)
- {
- 	long long nsecs;
- 
- 	timer_init();
--
--	nsecs = os_nsecs();
--	set_normalized_timespec(&wall_to_monotonic, -nsecs / NSEC_PER_SEC,
--				-nsecs % NSEC_PER_SEC);
--	set_normalized_timespec(&xtime, nsecs / NSEC_PER_SEC,
--				nsecs % NSEC_PER_SEC);
- 	late_time_init = setup_itimer;
- }
--- 
-1.6.0.4
+Dan Carpenter (1):
+      fcntl: return -EFAULT if copy_to_user fails
 
+Nick Piggin (2):
+      fix setattr error handling in sysfs, configfs
+      fix truncate inode time modification breakage
+
+Roberto Sassu (1):
+      wrong type for 'magic' argument in simple_fill_super()
+
+Diffsstat:
+ drivers/infiniband/hw/qib/qib_fs.c |    4 +---
+ fs/configfs/inode.c                |    9 ++++-----
+ fs/ext2/inode.c                    |    2 +-
+ fs/fcntl.c                         |    7 +++++--
+ fs/libfs.c                         |    3 ++-
+ fs/minix/dir.c                     |    4 ----
+ fs/sysfs/inode.c                   |    6 ++++--
+ include/linux/fs.h                 |    2 +-
+ ipc/mqueue.c                       |    1 -
+ mm/shmem.c                         |    5 +++--
+ 10 files changed, 21 insertions(+), 22 deletions(-)
