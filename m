@@ -1,198 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932512Ab0FEAgR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jun 2010 20:36:17 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:47611 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932389Ab0FEAgQ (ORCPT
+	id S932573Ab0FEAjT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jun 2010 20:39:19 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:65490 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932389Ab0FEAjS convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jun 2010 20:36:16 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=x9yuj0o9yyh879Irb5Y/G3dPAnPXL91MIs6jfuf3B17MDvgC5ClZz5exkypleWwlNR
-         qDbFI16foluQDQyHzOF6CNvxhGng0TkOLu1xPyBxWI6r0aT54P++tsf6xqilhoMuMMID
-         fVA2TviR+ztrKD9sIumzmXMuMpfmva27MjA0A=
-Subject: Re: [SUSPECTED SPAM] Re: [linux-pm] Proposal for a new algorithm
- for reading & writing a hibernation image.
-From: Maxim Levitsky <maximlevitsky@gmail.com>
-To: Nigel Cunningham <ncunningham@crca.org.au>
-Cc: Pavel Machek <pavel@ucw.cz>, pm list <linux-pm@lists.linux-foundation.org>,
+	Fri, 4 Jun 2010 20:39:18 -0400
+MIME-Version: 1.0
+In-Reply-To: <alpine.LFD.2.00.1006050148080.2933@localhost.localdomain>
+References: <20100603193045.GA7188@elte.hu>
+	<20100603232302.GA16184@elte.hu>
+	<1275644619.27810.39462.camel@twins>
+	<201006050138.30859.rjw@sisk.pl>
+	<alpine.LFD.2.00.1006050148080.2933@localhost.localdomain>
+Date: Fri, 4 Jun 2010 17:39:17 -0700
+Message-ID: <AANLkTikGDSzaENwg_0BAtsYf3ulGd_6sGPR30WsvUxMi@mail.gmail.com>
+Subject: Re: suspend blockers & Android integration
+From: =?ISO-8859-1?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, Peter Zijlstra <peterz@infradead.org>,
+       Ingo Molnar <mingo@elte.hu>, tytso@mit.edu,
+       Brian Swetland <swetland@google.com>, Neil Brown <neilb@suse.de>,
+       Alan Stern <stern@rowland.harvard.edu>,
+       Felipe Balbi <felipe.balbi@nokia.com>,
        LKML <linux-kernel@vger.kernel.org>,
-       TuxOnIce-devel <tuxonice-devel@tuxonice.net>
-In-Reply-To: <4C09930E.20306@crca.org.au>
-References: <9rpccea67yy402c975fqru8r.1275576653521@email.android.com>
-	 <1275694775.3853.29.camel@maxim-laptop>  <4C09930E.20306@crca.org.au>
-Content-Type: text/plain; charset="UTF-8"
-Date: Sat, 05 Jun 2010 03:36:09 +0300
-Message-ID: <1275698169.10045.8.camel@maxim-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+       Florian Mickler <florian@mickler.org>,
+       Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
+       Linux PM <linux-pm@lists.linux-foundation.org>,
+       Alan Cox <alan@lxorguk.ukuu.org.uk>,
+       James Bottomley <James.Bottomley@suse.de>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       Kevin Hilman <khilman@deeprootsystems.com>,
+       "H. Peter Anvin" <hpa@zytor.com>,
+       Arjan van de Ven <arjan@infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2010-06-05 at 09:58 +1000, Nigel Cunningham wrote: 
-> Hi Maxim.
-> 
-> On 05/06/10 09:39, Maxim Levitsky wrote:
-> > On Thu, 2010-06-03 at 16:50 +0200, Pavel Machek wrote:
-> >>
-> >> "Nigel Cunningham"<ncunningham@crca.org.au>  wrote:
-> >>
-> >>> Hi.
-> >>>
-> >>> On 30/05/10 15:25, Pavel Machek wrote:
-> >>>> Hi!
-> >>>>
-> >>>>> 2. Prior to writing any of the image, also set up new 4k page tables
-> >>>>> such that an attempt to make a change to any of the pages we're about to
-> >>>>> write to disk will result in a page fault, giving us an opportunity to
-> >>>>> flag the page as needing an atomic copy later. Once this is done, write
-> >>>>> protection for the page can be disabled and the write that caused the
-> >>>>> fault allowed to proceed.
-> >>>>
-> >>>> Tricky.
-> >>>>
-> >>>> page faulting code touches memory, too...
-> >>>
-> >>> Yeah. I realise we'd need to make the pages that are used to record the
-> >>> faults be unprotected themselves. I'm imagining a bitmap for that.
-> >>>
-> >>> Do you see any reason that it could be inherently impossible? That's
-> >>> what I really want to know before (potentially) wasting time trying it.
-> >>
-> >> I'm not sure it is impossible, but it certainly seems way too complex to be
-> >> practical.
-> >>
-> >> 2mb pages will probably present a problem, as will bat mappings on powerpc.
-> >
-> >
-> > Some time ago, after tuxonce caused medium fs corruption twice on my
-> > root filesystem (superblock gone for example), I was thinking too about
-> > how to make it safe to save whole memory.
-> 
-> I'd be asking why you got the corruption. On the odd occasion where it 
-> has been reported, it's usually been because the person didn't set up 
-> their initramfs correctly (resumed after mounting filesystems). Is there 
-> any chance that you did that?
-> 
-> > Your tuxonice is so fast that it resembles suspend to ram.
-> 
-> That depends on hard drive speed and CPU speed. I've just gotten a new 
-> SSD drive, and can understand your statement now, but I wouldn't have 
-> said the same beforehand.
-Nope, I have a slow laptop drive.
+On Fri, Jun 4, 2010 at 5:05 PM, Thomas Gleixner <tglx@linutronix.de> wrote:
+> On Sat, 5 Jun 2010, Rafael J. Wysocki wrote:
+>> I kind of agree here, so I'd like to focus a bit on that.
+>>
+>> Here's my idea in the very general terms:
+>>
+>> (1) Use the cgroup freezer to "suspend" the "untrusted" apps (ie. the ones
+>>     that don't use suspend blockers aka wakelocks in the Android world) at the
+>>     point Android would normally start opportunistic suspend.
+>
+> There is an additional benefit to this approach:
+>
+>     In the current android world a background task (e.g. download
+>     initiated before the screensaver kicked in) prevents the suspend,
+>     but that also means that the crapplications can still suck power
+>     completely unconfined.
+>
 
-> 
-> > I have radically different proposal.
-> >
-> >
-> > Lets create a kind of self-contained very small operation system that
-> > will know to do just one thing, write the memory to disk.
-> >> From now on I am calling this OS, a suspend module.
-> > Physically its code can be contained in linux kernel, or loaded as a
-> > module.
-> >
-> >
-> > Let see how things will work first:
-> >
-> > 1. Linux loads the suspend module to memory (if it is inside kernel
-> > image, that becomes unnecessary)
-> >
-> > At that point, its even possible to add some user plug-ins to that
-> > module for example to draw splash screen. Of course all such plug-ins
-> > must be root approved.
-> >
-> >
-> > 2. Linux turns off all devices, but hard disk.
-> > Drivers for hard drives will register for this exception.
-> >
-> >
-> > 3. Linux creates a list of memory areas to save (or exclude from save,
-> > doesn't matter)
-> >
-> > 4. Linux creates a list of hard disk sectors that will contain the
-> > image.
-> > This ensures support for swap partition and swap files as well.
-> >
-> > 5. Linux allocates small 'scratch space'
-> > Of course if memory is very tight, some swapping can happen, but that
-> > isn't significant.
-> >
-> >
-> > 6. Linux creates new page tables that cover: the suspend module, both of
-> > above lists, scratch space, and (optionally) the framebuffer RW,
-> > and rest of memory RO.
-> >
-> > 7. Linux switches to new page table, and passes control to that module.
-> > Even if the module wanted to it won't be able to change system memory.
-> > It won't even know how to do so.
-> >
-> > 8. Module optionally encrypts and/or compresses (and saves result to
-> > scratch page)
-> >
-> > 9. Module uses very simplified disk drivers to write the memory to disk.
-> > These drivers can even omit using interrupts because there is nothing
-> > else to do.
-> > It can also draw progress bar on framebuffer using optional plugin
-> >
-> > 10. Module passes control back to linux, which just shuts system off.
-> 
-> Sounds a lot like kexec based hibernation that was suggested a year or 
-> two back. Have you thought about resuming, too? That's the trickier part 
-> of the process.
-Why its tricky?
+Yes this can happen. It is usually only a big problem when you combine
+an (trusted) application that has a bug that blocks suspend forever
+with an application that wakes up too often for us to enter low power
+idle modes.
 
-We can just reseve say 25 MB of memory and make resuming kernel only use
-it for all its needs.
+>     With the cgroup freezer you can "suspend" them right away and
+>     just keep the trusted background task(s) alive which allows us to
+>     go into deeper idle states instead of letting the crapplications
+>     run unconfined until the download finished and the suspend
+>     blocker goes away.
+>
 
+Yes this would be better, but I want it in addition to suspend, not
+instead of it. It is also unclear if our user-space code could easily
+make use of it since our trusted code calls into untrusted code.
 
+>> (2) Allow the cpuidle framework to put CPUs into low-power states after the
+>>     "trusted" apps (ie. the ones that use suspend blockers in the Android
+>>     world) have gone idle.
+>>
 
+As far as I know this is what we already have on hardware that supports it.
 
-> 
-> > Now what code will be in the module:
-> >
-> > 1. Optional compression&  encryption - easy
-> > 2. Draw modules, also optional and easy
-> >
-> >
-> > 3. New disk drivers.
-> > This is the hard part, but if we cover libata and ahci, we will cover
-> > the common case.
-> > Other cases can be handled by existing code that saved 1/2 of ram.
-> 
-> To my mind, supporting only some hardware isn't an option.
+>> (3) Teach the cpuidle framework to schedule runtime suspend of I/O devices
+>>     before idling the last CPU (*).
+>>
 
+I don't think we need this for android phones. We already put I/O
+devices in low power modes when they are not in use.
 
-> 
-> > 4. Arch specific code. Since it doesn't deal with interrupts nor memory
-> > managment, it won't be lot of code.
-> > Again standard swsusp can be used for arches that that module wasn't
-> > ported to.
-> 
-> Perhaps I'm being a pessimist, but it sounds to me like this is going to 
-> be a way bigger project than you're allowing for.
-I also thinks so. This is just an idea.
+>> (4) Design a mechanism to resume the I/O devices suspended in (3) so that
+>>     they are not powered up unnecessarily (that's going to be difficult as far
+>>     as I can see).
+>>
+>> This way, in principle, we should be able to save (at least almost) as much
+>> energy as the opportunistic suspend currently used by Android, provided that
+>> things will be capable of staying idle for extended periods of time.
 
+The main reason we use suspend is that the system does not stay idle
+for extened periods of time. If this gets fixed, and our if user-space
+framework can deal with a subset of processes being frozen (this is a
+big if) this solution may work, but it does not help us today.
 
-To add a comment on your idea.
+>>
+>> (*) That may require per-device PM QoS requirements to be used, in which case
+>>     devices may even be suspended earlier if the PM QoS requirements of all
+>>     of their users are met.
+>>
+>> I wonder what people think.  Is this realistic and if so, would it be difficult
+>> to implement?
+>
+> I think it's realistic and not overly complicated to implement.
+>
 
-I think is is possible to use page faults to see which memory regions
-changed. Actually its is very interesting idea.
+The kernel support can be easily implemented on most arm hardware, I
+don't know if it can work on most existing x86 hardware. It does not
+give us the same power savings as suspend with existing software, but
+it can handle bad apps better (assuming you don't combine
+opportunistic suspend and cgroup freezing). The biggest hurdle is how
+to handle dependencies between processes that gets frozen and
+processes that don't get frozen.
 
-You just need to install your own page fault handler, and make sure it
-doesn't touch any memory.
-Of course the sucky part will be how to edit the page tables.
-You might need to write your own code to do so to be sure.
-And this has to be arch specific.
-
-Since userspace is frozen, you can be sure that faults can only be
-caused by access to WO memory or kernel bugs.
-
-
-Best regards,
-Maxim Levitsky
-
+-- 
+Arve Hjønnevåg
