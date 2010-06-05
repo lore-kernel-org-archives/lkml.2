@@ -1,25 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933564Ab0FEOM5 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Jun 2010 10:12:57 -0400
+	id S933550Ab0FEOMy (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Jun 2010 10:12:54 -0400
 Received: from outbound-mail02.westnet.com.au ([203.10.1.243]:5147 "EHLO
 	outbound-mail02.westnet.com.au" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933485Ab0FEOMk (ORCPT
+	by vger.kernel.org with ESMTP id S933466Ab0FEOMi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Jun 2010 10:12:40 -0400
+	Sat, 5 Jun 2010 10:12:38 -0400
 X-IronPort-Anti-Spam-Filtered: true
 X-IronPort-Anti-Spam-Result: AlJPAA74CUw6B9wNPGdsb2JhbACHb5ZlDAEBAQE1LbAXjTGFFwSDSA
 X-IronPort-AV: E=Sophos;i="4.53,366,1272816000"; 
-   d="scan'208";a="82293897"
+   d="scan'208";a="82293889"
 From: Mike Gilks <mike.kernel@gilksonline.com>
 To: gregkh@suse.de, mchehab@redhat.com, julia@diku.dk, joe@perches.com
 Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
        Mike Gilks <mike.kernel@gilksonline.com>
-Subject: [PATCH 12/13] staging: rtl8192u: remove C99 comments in file r8192U_core.c Patch to remove C99 style comments from file r8192U_core.c Completed until line 5072
-Date: Sat,  5 Jun 2010 22:12:36 +0800
-Message-Id: <1275747158-31375-13-git-send-email-mike.kernel@gilksonline.com>
+Subject: [PATCH 09/13] staging: rtl8192u: fix checkpatch.pl issues to line 800 Fixed most problems pointed out by checkpatch.pl in file r8192U_core.c up to line 800
+Date: Sat,  5 Jun 2010 22:12:33 +0800
+Message-Id: <1275747158-31375-10-git-send-email-mike.kernel@gilksonline.com>
 X-Mailer: git-send-email 1.6.3.3
-In-Reply-To: <1275747158-31375-12-git-send-email-mike.kernel@gilksonline.com>
+In-Reply-To: <1275747158-31375-9-git-send-email-mike.kernel@gilksonline.com>
 References: <1275747158-31375-1-git-send-email-mike.kernel@gilksonline.com>
  <1275747158-31375-2-git-send-email-mike.kernel@gilksonline.com>
  <1275747158-31375-3-git-send-email-mike.kernel@gilksonline.com>
@@ -29,295 +29,383 @@ References: <1275747158-31375-1-git-send-email-mike.kernel@gilksonline.com>
  <1275747158-31375-7-git-send-email-mike.kernel@gilksonline.com>
  <1275747158-31375-8-git-send-email-mike.kernel@gilksonline.com>
  <1275747158-31375-9-git-send-email-mike.kernel@gilksonline.com>
- <1275747158-31375-10-git-send-email-mike.kernel@gilksonline.com>
- <1275747158-31375-11-git-send-email-mike.kernel@gilksonline.com>
- <1275747158-31375-12-git-send-email-mike.kernel@gilksonline.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Mike Gilks <mike.kernel@gilksonline.com>
 ---
- drivers/staging/rtl8192u/r8192U_core.c |  116 +++++++++++++++++--------------
- 1 files changed, 64 insertions(+), 52 deletions(-)
+ drivers/staging/rtl8192u/r8192U_core.c |  186 ++++++++++++++------------------
+ 1 files changed, 83 insertions(+), 103 deletions(-)
 
 diff --git a/drivers/staging/rtl8192u/r8192U_core.c b/drivers/staging/rtl8192u/r8192U_core.c
-index d4498fe..895f748 100644
+index 09f5747..26f671f 100644
 --- a/drivers/staging/rtl8192u/r8192U_core.c
 +++ b/drivers/staging/rtl8192u/r8192U_core.c
-@@ -4683,13 +4683,13 @@ void UpdateRxPktTimeStamp8190 (struct net_device *dev, struct ieee80211_rx_stats
+@@ -517,72 +517,58 @@ static int proc_get_registers(char *page, char **start,
+ 			  int *eof, void *data)
+ {
+ 	struct net_device *dev = data;
+-//	struct r8192_priv *priv = (struct r8192_priv *)ieee80211_priv(dev);
++	/* struct r8192_priv *priv =
++	 *(struct r8192_priv *)ieee80211_priv(dev);
++	 */
+ 
+ 	int len = 0;
+-	int i,n;
++	int i, n;
+ 
+-	int max=0xff;
++	int max = 0xff;
+ 
+ 	/* This dump the current register page */
+ len += snprintf(page + len, count - len,
+ 			"\n####################page 0##################\n ");
+ 
+-	for(n=0;n<=max;)
+-	{
+-		//printk( "\nD: %2x> ", n);
+-		len += snprintf(page + len, count - len,
+-			"\nD:  %2x > ",n);
+-
+-		for(i=0;i<16 && n<=max;i++,n++)
+-		len += snprintf(page + len, count - len,
+-			"%2x ",read_nic_byte(dev,0x000|n));
++	for (n = 0; n <= max; ) {
++		/* printk( "\nD: %2x> ", n); */
++		len += snprintf(page + len, count - len, "\nD:  %2x > ", n);
+ 
+-		//	printk("%2x ",read_nic_byte(dev,n));
++		for (i = 0; i < 16 && n <= max; i++, n++)
++			len += snprintf(page + len, count - len, "%2x ",
++						read_nic_byte(dev, 0x000|n));
++			/* printk("%2x ",read_nic_byte(dev,n)); */
+ 	}
+ len += snprintf(page + len, count - len,
+ 			"\n####################page 1##################\n ");
+-	for(n=0;n<=max;)
+-	{
+-		//printk( "\nD: %2x> ", n);
+-		len += snprintf(page + len, count - len,
+-			"\nD:  %2x > ",n);
+-
+-		for(i=0;i<16 && n<=max;i++,n++)
+-		len += snprintf(page + len, count - len,
+-			"%2x ",read_nic_byte(dev,0x100|n));
++	for (n = 0; n <= max; ) {
++		/* printk( "\nD: %2x> ", n); */
++		len += snprintf(page + len, count - len, "\nD:  %2x > ", n);
+ 
+-		//      printk("%2x ",read_nic_byte(dev,n));
++		for (i = 0; i < 16 && n <= max; i++, n++)
++			len += snprintf(page + len, count - len, "%2x ",
++						read_nic_byte(dev, 0x100|n));
++			/* printk("%2x ",read_nic_byte(dev,n)); */
+ 	}
+ len += snprintf(page + len, count - len,
+ 			"\n####################page 3##################\n ");
+-	for(n=0;n<=max;)
+-	{
+-		//printk( "\nD: %2x> ", n);
+-		len += snprintf(page + len, count - len,
+-			"\nD:  %2x > ",n);
+-
+-		for(i=0;i<16 && n<=max;i++,n++)
+-		len += snprintf(page + len, count - len,
+-			"%2x ",read_nic_byte(dev,0x300|n));
++	for (n = 0; n <= max; ) {
++		/* printk( "\nD: %2x> ", n); */
++		len += snprintf(page + len, count - len, "\nD:  %2x > ", n);
+ 
+-		//      printk("%2x ",read_nic_byte(dev,n));
++		for (i = 0; i < 16 && n <= max; i++, n++)
++			len += snprintf(page + len, count - len, "%2x ",
++						read_nic_byte(dev, 0x300|n));
++			/* printk("%2x ",read_nic_byte(dev,n)); */
+ 	}
+ 
+-
+-	len += snprintf(page + len, count - len,"\n");
++	len += snprintf(page + len, count - len, "\n");
+ 	*eof = 1;
+ 	return len;
+-
+ }
+ 
+-
+-
+-
+-
+-static int proc_get_stats_tx(char *page, char **start,
+-			  off_t offset, int count,
+-			  int *eof, void *data)
++static int proc_get_stats_tx(char *page, char **start, off_t offset, int count,
++							  int *eof, void *data)
+ {
+ 	struct net_device *dev = data;
+ 	struct r8192_priv *priv = (struct r8192_priv *)ieee80211_priv(dev);
+@@ -602,23 +588,23 @@ static int proc_get_stats_tx(char *page, char **start,
+ 		"TX MANAGE priority error int: %lu\n"
+ 		"TX BEACON priority ok int: %lu\n"
+ 		"TX BEACON priority error int: %lu\n"
+-//		"TX high priority ok int: %lu\n"
+-//		"TX high priority failed error int: %lu\n"
++		/* "TX high priority ok int: %lu\n" */
++		/* "TX high priority failed error int: %lu\n" */
+ 		"TX queue resume: %lu\n"
+ 		"TX queue stopped?: %d\n"
+ 		"TX fifo overflow: %lu\n"
+-//		"TX beacon: %lu\n"
++		/* "TX beacon: %lu\n" */
+ 		"TX VI queue: %d\n"
+ 		"TX VO queue: %d\n"
+ 		"TX BE queue: %d\n"
+ 		"TX BK queue: %d\n"
+-//		"TX HW queue: %d\n"
++		/* "TX HW queue: %d\n" */
+ 		"TX VI dropped: %lu\n"
+ 		"TX VO dropped: %lu\n"
+ 		"TX BE dropped: %lu\n"
+ 		"TX BK dropped: %lu\n"
+ 		"TX total data packets %lu\n",
+-//		"TX beacon aborted: %lu\n",
++		/* "TX beacon aborted: %lu\n", */
+ 		priv->stats.txviokint,
+ 		priv->stats.txvierr,
+ 		priv->stats.txvookint,
+@@ -631,23 +617,23 @@ static int proc_get_stats_tx(char *page, char **start,
+ 		priv->stats.txmanageerr,
+ 		priv->stats.txbeaconokint,
+ 		priv->stats.txbeaconerr,
+-//		priv->stats.txhpokint,
+-//		priv->stats.txhperr,
++		/* priv->stats.txhpokint, */
++		/* priv->stats.txhperr, */
+ 		priv->stats.txresumed,
+ 		netif_queue_stopped(dev),
+ 		priv->stats.txoverflow,
+-//		priv->stats.txbeacon,
++		/* priv->stats.txbeacon, */
+ 		atomic_read(&(priv->tx_pending[VI_PRIORITY])),
+ 		atomic_read(&(priv->tx_pending[VO_PRIORITY])),
+ 		atomic_read(&(priv->tx_pending[BE_PRIORITY])),
+ 		atomic_read(&(priv->tx_pending[BK_PRIORITY])),
+-//		read_nic_byte(dev, TXFIFOCOUNT),
++		/* read_nic_byte(dev, TXFIFOCOUNT), */
+ 		priv->stats.txvidrop,
+ 		priv->stats.txvodrop,
+ 		priv->stats.txbedrop,
+ 		priv->stats.txbkdrop,
+ 		priv->stats.txdatapkt
+-//		priv->stats.txbeaconerr
++		/* priv->stats.txbeaconerr */
+ 		);
+ 
+ 	*eof = 1;
+@@ -656,9 +642,8 @@ static int proc_get_stats_tx(char *page, char **start,
+ 
+ 
+ 
+-static int proc_get_stats_rx(char *page, char **start,
+-			  off_t offset, int count,
+-			  int *eof, void *data)
++static int proc_get_stats_rx(char *page, char **start, off_t offset, int count,
++							int *eof, void *data)
+ {
+ 	struct net_device *dev = data;
+ 	struct r8192_priv *priv = (struct r8192_priv *)ieee80211_priv(dev);
+@@ -676,13 +661,14 @@ static int proc_get_stats_rx(char *page, char **start,
+ 	*eof = 1;
+ 	return len;
+ }
++
+ void rtl8192_proc_module_init(void)
+ {
+ 	RT_TRACE(COMP_INIT, "Initializing proc filesystem");
+-	rtl8192_proc=create_proc_entry(RTL819xU_MODULE_NAME, S_IFDIR, init_net.proc_net);
++	rtl8192_proc = create_proc_entry(RTL819xU_MODULE_NAME, S_IFDIR,
++							init_net.proc_net);
+ }
+ 
+-
+ void rtl8192_proc_module_remove(void)
+ {
+ 	remove_proc_entry(RTL819xU_MODULE_NAME, init_net.proc_net);
+@@ -695,21 +681,20 @@ void rtl8192_proc_remove_one(struct net_device *dev)
+ 
+ 
+ 	if (priv->dir_dev) {
+-	//	remove_proc_entry("stats-hw", priv->dir_dev);
++		/* remove_proc_entry("stats-hw", priv->dir_dev); */
+ 		remove_proc_entry("stats-tx", priv->dir_dev);
+ 		remove_proc_entry("stats-rx", priv->dir_dev);
+-	//	remove_proc_entry("stats-ieee", priv->dir_dev);
++		/* remove_proc_entry("stats-ieee", priv->dir_dev); */
+ 		remove_proc_entry("stats-ap", priv->dir_dev);
+ 		remove_proc_entry("registers", priv->dir_dev);
+-	//	remove_proc_entry("cck-registers",priv->dir_dev);
+-	//	remove_proc_entry("ofdm-registers",priv->dir_dev);
+-		//remove_proc_entry(dev->name, rtl8192_proc);
++		/* remove_proc_entry("cck-registers",priv->dir_dev); */
++		/* remove_proc_entry("ofdm-registers",priv->dir_dev); */
++		/* remove_proc_entry(dev->name, rtl8192_proc); */
+ 		remove_proc_entry("wlan0", rtl8192_proc);
+ 		priv->dir_dev = NULL;
  	}
  }
  
--//by amy 080606
-+/* by amy 080606 */
- 
--long rtl819x_translate_todbm(u8 signal_strength_index	)// 0-100 index.
-+long rtl819x_translate_todbm(u8 signal_strength_index	)/* 0-100 index. */
+-
+ void rtl8192_proc_init_one(struct net_device *dev)
  {
- 	long	signal_power; // in dBm.
- 
--	// Translate to dBm (x=0.5y-95).
-+	/* Translate to dBm (x=0.5y-95). */
- 	signal_power = (long)((signal_strength_index + 1) >> 1);
- 	signal_power -= 95;
- 
-@@ -4698,15 +4698,16 @@ long rtl819x_translate_todbm(u8 signal_strength_index	)// 0-100 index.
- 
- 
- /* 2008/01/22 MH We can not delcare RSSI/EVM total value of sliding window to
--    be a local static. Otherwise, it may increase when we return from S3/S4. The
--    value will be kept in memory or disk. We must delcare the value in adapter
--    and it will be reinitialized when return from S3/S4. */
-+ * be a local static. Otherwise, it may increase when we return from S3/S4. The
-+ * value will be kept in memory or disk. We must delcare the value in adapter
-+ * and it will be reinitialized when return from S3/S4.
-+ */
- void rtl8192_process_phyinfo(struct r8192_priv * priv,u8* buffer, struct ieee80211_rx_stats * pprevious_stats, struct ieee80211_rx_stats * pcurrent_stats)
- {
- 	bool bcheck = false;
- 	u8	rfpath;
- 	u32	nspatial_stream, tmp_val;
--	//u8	i;
-+	/* u8	i; */
- 	static u32 slide_rssi_index=0, slide_rssi_statistics=0;
- 	static u32 slide_evm_index=0, slide_evm_statistics=0;
- 	static u32 last_rssi=0, last_evm=0;
-@@ -4721,14 +4722,14 @@ void rtl8192_process_phyinfo(struct r8192_priv * priv,u8* buffer, struct ieee802
- 	sc = le16_to_cpu(hdr->seq_ctl);
- 	frag = WLAN_GET_SEQ_FRAG(sc);
- 	seq = WLAN_GET_SEQ_SEQ(sc);
--	//cosa add 04292008 to record the sequence number
-+	/* cosa add 04292008 to record the sequence number */
- 	pcurrent_stats->Seq_Num = seq;
--	//
--	// Check whether we should take the previous packet into accounting
--	//
-+
-+	/* Check whether we should take the previous packet into accounting */
-+
- 	if(!pprevious_stats->bIsAMPDU)
- 	{
--		// if previous packet is not aggregated packet
-+		/* if previous packet is not aggregated packet */
- 		bcheck = true;
- 	}else
- 	{
-@@ -4747,13 +4748,13 @@ void rtl8192_process_phyinfo(struct r8192_priv * priv,u8* buffer, struct ieee802
- 	if(slide_rssi_index >= PHY_RSSI_SLID_WIN_MAX)
- 		slide_rssi_index = 0;
- 
--	// <1> Showed on UI for user, in dbm
-+	/* <1> Showed on UI for user, in dbm */
- 	tmp_val = priv->stats.slide_rssi_total/slide_rssi_statistics;
- 	priv->stats.signal_strength = rtl819x_translate_todbm((u8)tmp_val);
- 	pcurrent_stats->rssi = priv->stats.signal_strength;
--	//
--	// If the previous packet does not match the criteria, neglect it
--	//
-+
-+	/* If the previous packet does not match the criteria, neglect it */
-+
- 	if(!pprevious_stats->bPacketMatchBSSID)
- 	{
- 		if(!pprevious_stats->bToSelfBA)
-@@ -4764,18 +4765,21 @@ void rtl8192_process_phyinfo(struct r8192_priv * priv,u8* buffer, struct ieee802
+ 	struct proc_dir_entry *e;
+@@ -718,27 +703,24 @@ void rtl8192_proc_init_one(struct net_device *dev)
+ 					  S_IFDIR | S_IRUGO | S_IXUGO,
+ 					  rtl8192_proc);
+ 	if (!priv->dir_dev) {
+-		RT_TRACE(COMP_ERR, "Unable to initialize /proc/net/rtl8192/%s\n",
+-		      dev->name);
++		RT_TRACE(COMP_ERR, "Unable to initialize "
++					"/proc/net/rtl8192/%s\n", dev->name);
  		return;
+ 	}
+ 	e = create_proc_read_entry("stats-rx", S_IFREG | S_IRUGO,
+ 				   priv->dir_dev, proc_get_stats_rx, dev);
  
- 
--	//rtl8190_process_cck_rxpathsel(priv,pprevious_stats);//only rtl8190 supported
-+	/* rtl8190_process_cck_rxpathsel(priv,pprevious_stats); */
-+	/* only rtl8190 supported */
-+
-+
-+	/* Check RSSI */
- 
--	//
--	// Check RSSI
--	//
- 	priv->stats.num_process_phyinfo++;
- 
- 	/* record the general signal strength to the sliding window. */
- 
- 
--	// <2> Showed on UI for engineering
--	// hardware does not provide rssi information for each rf path in CCK
-+	/* <2> Showed on UI for engineering */
-+	/* hardware does not provide rssi information for each rf path
-+	 *							 in CCK
-+	 */
- 	if(!pprevious_stats->bIsCCK && (pprevious_stats->bPacketToSelf || pprevious_stats->bToSelfBA))
- 	{
- 		for (rfpath = RF90_PATH_A; rfpath < priv->NumTotalRFPath; rfpath++)
-@@ -4783,11 +4787,11 @@ void rtl8192_process_phyinfo(struct r8192_priv * priv,u8* buffer, struct ieee802
- 		     if (!rtl8192_phy_CheckIsLegalRFPath(priv->ieee80211->dev, rfpath))
- 				 continue;
- 
--			//Fixed by Jacken 2008-03-20
-+			/* Fixed by Jacken 2008-03-20 */
- 			if(priv->stats.rx_rssi_percentage[rfpath] == 0)
- 			{
- 				priv->stats.rx_rssi_percentage[rfpath] = pprevious_stats->RxMIMOSignalStrength[rfpath];
--				//DbgPrint("MIMO RSSI initialize \n");
-+				/* DbgPrint("MIMO RSSI initialize \n"); */
- 			}
- 			if(pprevious_stats->RxMIMOSignalStrength[rfpath]  > priv->stats.rx_rssi_percentage[rfpath])
- 			{
-@@ -4806,28 +4810,34 @@ void rtl8192_process_phyinfo(struct r8192_priv * priv,u8* buffer, struct ieee802
- 		}
+ 	if (!e) {
+-		RT_TRACE(COMP_ERR,"Unable to initialize "
+-		      "/proc/net/rtl8192/%s/stats-rx\n",
+-		      dev->name);
++		RT_TRACE(COMP_ERR, "Unable to initialize "
++				"/proc/net/rtl8192/%s/stats-rx\n", dev->name);
  	}
  
-+	/*  Check PWDB. */
+-
+ 	e = create_proc_read_entry("stats-tx", S_IFREG | S_IRUGO,
+ 				   priv->dir_dev, proc_get_stats_tx, dev);
  
--	//
--	// Check PWDB.
--	//
- 	RT_TRACE(COMP_RXDESC, "Smooth %s PWDB = %d\n",
- 				pprevious_stats->bIsCCK? "CCK": "OFDM",
- 				pprevious_stats->RxPWDBAll);
- 
- 	if(pprevious_stats->bPacketBeacon)
- 	{
--/* record the beacon pwdb to the sliding window. */
-+		/* record the beacon pwdb to the sliding window. */
- 		if(slide_beacon_adc_pwdb_statistics++ >= PHY_Beacon_RSSI_SLID_WIN_MAX)
- 		{
- 			slide_beacon_adc_pwdb_statistics = PHY_Beacon_RSSI_SLID_WIN_MAX;
- 			last_beacon_adc_pwdb = priv->stats.Slide_Beacon_pwdb[slide_beacon_adc_pwdb_index];
- 			priv->stats.Slide_Beacon_Total -= last_beacon_adc_pwdb;
--			//DbgPrint("slide_beacon_adc_pwdb_index = %d, last_beacon_adc_pwdb = %d, Adapter->RxStats.Slide_Beacon_Total = %d\n",
--			//	slide_beacon_adc_pwdb_index, last_beacon_adc_pwdb, Adapter->RxStats.Slide_Beacon_Total);
-+			/* DbgPrint("slide_beacon_adc_pwdb_index = %d, "
-+			 *		"last_beacon_adc_pwdb = %d, Adapter->"
-+			 *		"RxStats.Slide_Beacon_Total = %d\n",
-+			 *		slide_beacon_adc_pwdb_index,
-+			 *		last_beacon_adc_pwdb, Adapter->
-+			 *		RxStats.Slide_Beacon_Total);
-+			 */
- 		}
- 		priv->stats.Slide_Beacon_Total += pprevious_stats->RxPWDBAll;
- 		priv->stats.Slide_Beacon_pwdb[slide_beacon_adc_pwdb_index] = pprevious_stats->RxPWDBAll;
--		//DbgPrint("slide_beacon_adc_pwdb_index = %d, pPreviousRfd->Status.RxPWDBAll = %d\n", slide_beacon_adc_pwdb_index, pPreviousRfd->Status.RxPWDBAll);
-+		/* DbgPrint("slide_beacon_adc_pwdb_index = %d, pPreviousRfd->"
-+		 *	"Status.RxPWDBAll = %d\n", slide_beacon_adc_pwdb_index,
-+		 *			pPreviousRfd->Status.RxPWDBAll);
-+		 */
- 		slide_beacon_adc_pwdb_index++;
- 		if(slide_beacon_adc_pwdb_index >= PHY_Beacon_RSSI_SLID_WIN_MAX)
- 			slide_beacon_adc_pwdb_index = 0;
-@@ -4843,10 +4853,10 @@ void rtl8192_process_phyinfo(struct r8192_priv * priv,u8* buffer, struct ieee802
- 
- 	if(pprevious_stats->bPacketToSelf || pprevious_stats->bPacketBeacon || pprevious_stats->bToSelfBA)
- 	{
--		if(priv->undecorated_smoothed_pwdb < 0)	// initialize
-+		if(priv->undecorated_smoothed_pwdb < 0)	/* initialize */
- 		{
- 			priv->undecorated_smoothed_pwdb = pprevious_stats->RxPWDBAll;
--			//DbgPrint("First pwdb initialize \n");
-+			/* DbgPrint("First pwdb initialize \n"); */
- 		}
- 		if(pprevious_stats->RxPWDBAll > (u32)priv->undecorated_smoothed_pwdb)
- 		{
-@@ -4864,9 +4874,8 @@ void rtl8192_process_phyinfo(struct r8192_priv * priv,u8* buffer, struct ieee802
- 
+ 	if (!e) {
+ 		RT_TRACE(COMP_ERR, "Unable to initialize "
+-		      "/proc/net/rtl8192/%s/stats-tx\n",
+-		      dev->name);
++				"/proc/net/rtl8192/%s/stats-tx\n", dev->name);
  	}
  
--	//
--	// Check EVM
--	//
-+
-+	/* Check EVM */
- 	/* record the general EVM to the sliding window. */
- 	if(pprevious_stats->SignalQuality == 0)
- 	{
-@@ -4886,21 +4895,23 @@ void rtl8192_process_phyinfo(struct r8192_priv * priv,u8* buffer, struct ieee802
- 			if(slide_evm_index >= PHY_RSSI_SLID_WIN_MAX)
- 				slide_evm_index = 0;
+ 	e = create_proc_read_entry("stats-ap", S_IFREG | S_IRUGO,
+@@ -746,43 +728,42 @@ void rtl8192_proc_init_one(struct net_device *dev)
  
--			// <1> Showed on UI for user, in percentage.
-+			/* <1> Showed on UI for user, in percentage. */
- 			tmp_val = priv->stats.slide_evm_total/slide_evm_statistics;
- 			priv->stats.signal_quality = tmp_val;
--			//cosa add 10/11/2007, Showed on UI for user in Windows Vista, for Link quality.
-+			/* cosa add 10/11/2007, Showed on UI for user in Windows Vista, for Link quality. */
- 			priv->stats.last_signal_strength_inpercent = tmp_val;
- 		}
+ 	if (!e) {
+ 		RT_TRACE(COMP_ERR, "Unable to initialize "
+-		      "/proc/net/rtl8192/%s/stats-ap\n",
+-		      dev->name);
++			      "/proc/net/rtl8192/%s/stats-ap\n", dev->name);
+ 	}
  
--		// <2> Showed on UI for engineering
-+		/* <2> Showed on UI for engineering */
- 		if(pprevious_stats->bPacketToSelf || pprevious_stats->bPacketBeacon || pprevious_stats->bToSelfBA)
- 		{
--			for(nspatial_stream = 0; nspatial_stream<2 ; nspatial_stream++) // 2 spatial stream
-+			for(nspatial_stream = 0; nspatial_stream<2 ; nspatial_stream++)
-+				/* 2 spatial stream */
- 			{
- 				if(pprevious_stats->RxMIMOSignalQuality[nspatial_stream] != -1)
- 				{
--					if(priv->stats.rx_evm_percentage[nspatial_stream] == 0)	// initialize
-+					if(priv->stats.rx_evm_percentage[nspatial_stream] == 0)
-+						/* initialize */
- 					{
- 						priv->stats.rx_evm_percentage[nspatial_stream] = pprevious_stats->RxMIMOSignalQuality[nspatial_stream];
- 					}
-@@ -4969,11 +4980,11 @@ rtl819x_evm_dbtopercentage(
- 		ret_val = 100;
-     return(ret_val);
+ 	e = create_proc_read_entry("registers", S_IFREG | S_IRUGO,
+ 				   priv->dir_dev, proc_get_registers, dev);
+ 	if (!e) {
+ 		RT_TRACE(COMP_ERR, "Unable to initialize "
+-		      "/proc/net/rtl8192/%s/registers\n",
+-		      dev->name);
++		      "/proc/net/rtl8192/%s/registers\n", dev->name);
+ 	}
  }
--//
--//	Description:
--// 	We want good-looking for signal strength/quality
--//	2007/7/19 01:09, by cosa.
--//
-+
-+	/* Description:
-+	 *We want good-looking for signal strength/quality
-+	 *2007/7/19 01:09, by cosa.
-+	 */
- long
- rtl819x_signal_scale_mapping(
- 	long currsig
-@@ -4981,7 +4992,7 @@ rtl819x_signal_scale_mapping(
+ /****************************************************************************
+-   -----------------------------MISC STUFF-------------------------
+-*****************************************************************************/
++ *   -----------------------------MISC STUFF-------------------------
++ ****************************************************************************
++ */
+ 
+ /* this is only for debugging */
+ void print_buffer(u32 *buffer, int len)
  {
- 	long retsig;
+ 	int i;
+-	u8 *buf =(u8*)buffer;
++	u8 *buf = (u8 *)buffer;
  
--	// Step 1. Scale mapping.
-+	/* Step 1. Scale mapping. */
- 	if(currsig >= 61 && currsig <= 100)
- 	{
- 		retsig = 90 + ((currsig - 60) / 4);
-@@ -5037,18 +5048,19 @@ static void rtl8192_query_rxphystatus(
- 	bool bToSelfBA
- 	)
+-	printk("ASCII BUFFER DUMP (len: %x):\n",len);
++	printk("ASCII BUFFER DUMP (len: %x):\n", len);
+ 
+-	for(i=0;i<len;i++)
+-		printk("%c",buf[i]);
++	for (i = 0; i < len; i++)
++		printk("%c", buf[i]);
+ 
+-	printk("\nBINARY BUFFER DUMP (len: %x):\n",len);
++	printk("\nBINARY BUFFER DUMP (len: %x):\n", len);
+ 
+-	for(i=0;i<len;i++)
+-		printk("%x",buf[i]);
++	for (i = 0; i < len; i++)
++		printk("%x", buf[i]);
+ 
+ 	printk("\n");
+ }
+ 
+-//short check_nic_enough_desc(struct net_device *dev, priority_t priority)
+-short check_nic_enough_desc(struct net_device *dev,int queue_index)
++/* short check_nic_enough_desc(struct net_device *dev, priority_t priority) */
++short check_nic_enough_desc(struct net_device *dev, int queue_index)
  {
--	//PRT_RFD_STATUS		pRtRfdStatus = &(pRfd->Status);
-+	/* PRT_RFD_STATUS		pRtRfdStatus = &(pRfd->Status); */
- 	phy_sts_ofdm_819xusb_t*	pofdm_buf;
- 	phy_sts_cck_819xusb_t	*	pcck_buf;
- 	phy_ofdm_rx_status_rxsc_sgien_exintfflag* prxsc;
- 	u8				*prxpkt;
- 	u8				i, max_spatial_stream, tmp_rxsnr, tmp_rxevm, rxsc_sgien_exflg;
- 	char				rx_pwr[4], rx_pwr_all=0;
--	//long				rx_avg_pwr = 0;
-+	/* long				rx_avg_pwr = 0; */
- 	char				rx_snrX, rx_evmX;
- 	u8				evm, pwdb_all;
--	u32				RSSI, total_rssi=0;//, total_evm=0;
--//	long				signal_strength_index = 0;
-+	u32				RSSI, total_rssi=0;
-+						/* , total_evm=0; */
-+	/* long				signal_strength_index = 0; */
- 	u8				is_cck_rate=0;
- 	u8				rf_rx_num = 0;
+ 	struct r8192_priv *priv = ieee80211_priv(dev);
+ 	int used = atomic_read(&priv->tx_pending[queue_index]);
+@@ -793,19 +774,19 @@ short check_nic_enough_desc(struct net_device *dev,int queue_index)
+ void tx_timeout(struct net_device *dev)
+ {
+ 	struct r8192_priv *priv = ieee80211_priv(dev);
+-	//rtl8192_commit(dev);
++	/* rtl8192_commit(dev); */
  
-@@ -5057,7 +5069,7 @@ static void rtl8192_query_rxphystatus(
+ 	schedule_work(&priv->reset_wq);
+-	//DMESG("TXTIMEOUT");
++	/* DMESG("TXTIMEOUT"); */
+ }
  
- 	is_cck_rate = rx_hal_is_cck_rate(pdrvinfo);
+-
+ /* this is only for debug */
+ void dump_eprom(struct net_device *dev)
+ {
+ 	int i;
+-	for(i=0; i<63; i++)
+-		RT_TRACE(COMP_EPROM, "EEPROM addr %x : %x", i, eprom_read(dev,i));
++	for (i = 0; i < 63; i++)
++		RT_TRACE(COMP_EPROM, "EEPROM addr %x : %x", i,
++							eprom_read(dev, i));
+ }
  
--	// Record it for next packet processing
-+	/* Record it for next packet processing */
- 	memset(precord_stats, 0, sizeof(struct ieee80211_rx_stats));
- 	pstats->bPacketMatchBSSID = precord_stats->bPacketMatchBSSID = bpacket_match_bssid;
- 	pstats->bPacketToSelf = precord_stats->bPacketToSelf = bpacket_toself;
+ /* this is only for debug */
+@@ -813,23 +794,22 @@ void rtl8192_dump_reg(struct net_device *dev)
+ {
+ 	int i;
+ 	int n;
+-	int max=0x1ff;
++	int max = 0x1ff;
+ 
+ 	RT_TRACE(COMP_PHY, "Dumping NIC register map");
+ 
+-	for(n=0;n<=max;)
+-	{
+-		printk( "\nD: %2x> ", n);
+-		for(i=0;i<16 && n<=max;i++,n++)
+-			printk("%2x ",read_nic_byte(dev,n));
++	for (n = 0; n <= max; ) {
++		printk("\nD: %2x> ", n);
++		for (i = 0; i < 16 && n <= max; i++, n++)
++			printk("%2x ", read_nic_byte(dev, n));
+ 	}
+ 	printk("\n");
+ }
+ 
+ /****************************************************************************
+-      ------------------------------HW STUFF---------------------------
+-*****************************************************************************/
+-
++ *    ------------------------------HW STUFF---------------------------
++ ****************************************************************************
++ */
+ 
+ void rtl8192_set_mode(struct net_device *dev,int mode)
+ {
 -- 
 1.6.3.3
 
