@@ -1,98 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757451Ab0FEDhm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jun 2010 23:37:42 -0400
-Received: from crca.org.au ([74.207.252.120]:53079 "EHLO crca.org.au"
+	id S1751529Ab0FEEBe (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Jun 2010 00:01:34 -0400
+Received: from ozlabs.org ([203.10.76.45]:40895 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756162Ab0FEDhl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jun 2010 23:37:41 -0400
-X-Bogosity: Ham, spamicity=0.000000
-Message-ID: <4C09C662.2020705@crca.org.au>
-Date: Sat, 05 Jun 2010 13:37:06 +1000
-From: Nigel Cunningham <ncunningham@crca.org.au>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.9) Gecko/20100423 Thunderbird/3.0.4
+	id S1750894Ab0FEEBc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 5 Jun 2010 00:01:32 -0400
+From: Rusty Russell <rusty@rustcorp.com.au>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: linux-next: Tree for June 3
+Date: Sat, 5 Jun 2010 13:31:25 +0930
+User-Agent: KMail/1.13.2 (Linux/2.6.32-22-generic; KDE/4.4.2; i686; ; )
+Cc: "Luck, Tony" <tony.luck@intel.com>, Dave Young <hidave.darkstar@gmail.com>,
+       Stephen Rothwell <sfr@canb.auug.org.au>,
+       "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
+       LKML <linux-kernel@vger.kernel.org>
+References: <20100603134753.710a64b3.sfr@canb.auug.org.au> <201006051209.51664.rusty@rustcorp.com.au> <201006051221.38088.rusty@rustcorp.com.au>
+In-Reply-To: <201006051221.38088.rusty@rustcorp.com.au>
 MIME-Version: 1.0
-To: Maxim Levitsky <maximlevitsky@gmail.com>
-CC: Pavel Machek <pavel@ucw.cz>, pm list <linux-pm@lists.linux-foundation.org>,
-       LKML <linux-kernel@vger.kernel.org>,
-       TuxOnIce-devel <tuxonice-devel@tuxonice.net>
-Subject: Re: [SUSPECTED SPAM] Re: [linux-pm] Proposal for a new algorithm
- for reading & writing a hibernation image.
-References: <9rpccea67yy402c975fqru8r.1275576653521@email.android.com>	 <1275694775.3853.29.camel@maxim-laptop>  <4C09930E.20306@crca.org.au>	 <1275698169.10045.8.camel@maxim-laptop> <1275698720.10045.15.camel@maxim-laptop>
-In-Reply-To: <1275698720.10045.15.camel@maxim-laptop>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201006051331.26359.rusty@rustcorp.com.au>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi.
+On Sat, 5 Jun 2010 12:21:37 pm Rusty Russell wrote:
+> On Sat, 5 Jun 2010 12:09:51 pm Rusty Russell wrote:
+> > Here's a tree with all current fixes: still no module load?
+> 
+> Erk, terminally broken tree.  Will re-xmit once fixed...
 
-On 05/06/10 10:45, Maxim Levitsky wrote:
-> On Sat, 2010-06-05 at 03:36 +0300, Maxim Levitsky wrote:
->> On Sat, 2010-06-05 at 09:58 +1000, Nigel Cunningham wrote:
->>> Hi Maxim.
->>>
->>> On 05/06/10 09:39, Maxim Levitsky wrote:
->>>> On Thu, 2010-06-03 at 16:50 +0200, Pavel Machek wrote:
->>>>>
->>>>> "Nigel Cunningham"<ncunningham@crca.org.au>   wrote:
->>>>>
->>>>>> Hi.
->>>>>>
->>>>>> On 30/05/10 15:25, Pavel Machek wrote:
->>>>>>> Hi!
->>>>>>>
->>>>>>>> 2. Prior to writing any of the image, also set up new 4k page tables
->>>>>>>> such that an attempt to make a change to any of the pages we're about to
->>>>>>>> write to disk will result in a page fault, giving us an opportunity to
->>>>>>>> flag the page as needing an atomic copy later. Once this is done, write
->>>>>>>> protection for the page can be disabled and the write that caused the
->>>>>>>> fault allowed to proceed.
->>>>>>>
->>>>>>> Tricky.
->>>>>>>
->>>>>>> page faulting code touches memory, too...
->>>>>>
->>>>>> Yeah. I realise we'd need to make the pages that are used to record the
->>>>>> faults be unprotected themselves. I'm imagining a bitmap for that.
->>>>>>
->>>>>> Do you see any reason that it could be inherently impossible? That's
->>>>>> what I really want to know before (potentially) wasting time trying it.
->>>>>
->>>>> I'm not sure it is impossible, but it certainly seems way too complex to be
->>>>> practical.
->>>>>
->>>>> 2mb pages will probably present a problem, as will bat mappings on powerpc.
->>>>
->>>>
->>>> Some time ago, after tuxonce caused medium fs corruption twice on my
->>>> root filesystem (superblock gone for example), I was thinking too about
->>>> how to make it safe to save whole memory.
->>>
->>> I'd be asking why you got the corruption. On the odd occasion where it
->>> has been reported, it's usually been because the person didn't set up
->>> their initramfs correctly (resumed after mounting filesystems). Is there
->>> any chance that you did that?
-> I didn't use any initramfs.
-> I did use kernel modesetting and nouveau.
-> I used ext4.
-> The corruption happened after normal suspend.
+I'd introduced a bug with MODVERSIONS=y in "module: refactor out section
+header rewriting".  Not doing too well on this...
 
-What's 'normal suspend'?
+Fixed that, too (see below for fix if curious).
 
-> I replaces swsusp with tuxonice.
->
-> Anyway, some more or less verified method must be used to save memory
-> because fs corruption is too scary thing to have.
+This time for sure!
+	git://git.kernel.org/pub/scm/linux/kernel/git/rusty/linux-2.6.git module
 
-Agreed.
+Subject: module: refactor out section header rewriting: FIX modversions
 
-> I can't say it scared me that much 'cause I had dealt with worse
-> corruptions before, but being thrown to  "grub rescue>" on boot is not
-> pleasant thing to see.
+We can't do the find_sec after removing the SHF_ALLOC flags; it won't
+find the sections.
 
-Oh, I agree and don't want anyone to ever experience corruption because 
-of TuxOnIce. Unfortunately my wishes don't just happen :)
+Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
+---
+ kernel/module.c |   12 ++++++------
+ 1 file changed, 6 insertions(+), 6 deletions(-)
 
-Nigel
+diff --git a/kernel/module.c b/kernel/module.c
+--- a/kernel/module.c
++++ b/kernel/module.c
+@@ -2217,11 +2217,13 @@ static int rewrite_section_headers(struc
+ 		if (strstarts(info->secstrings+shdr->sh_name, ".exit"))
+ 			shdr->sh_flags &= ~(unsigned long)SHF_ALLOC;
+ #endif
+-		/* Don't keep modinfo and version sections. */
+-		if (!strcmp(info->secstrings+shdr->sh_name, "__versions")
+-		    || !strcmp(info->secstrings+shdr->sh_name, ".modinfo"))
+-			shdr->sh_flags &= ~(unsigned long)SHF_ALLOC;
+ 	}
++
++	/* Track but don't keep modinfo and version sections. */
++	info->index.vers = find_sec(info->hdr, info->sechdrs, info->secstrings, "__versions");
++	info->index.info = find_sec(info->hdr, info->sechdrs, info->secstrings, ".modinfo");
++	info->sechdrs[info->index.info].sh_flags &= ~(unsigned long)SHF_ALLOC;
++	info->sechdrs[info->index.vers].sh_flags &= ~(unsigned long)SHF_ALLOC;
+ 	return 0;
+ }
+ 
+@@ -2274,8 +2276,6 @@ static struct module *setup_load_info(st
+ 		return ERR_PTR(-ENOEXEC);
+ 	}
+ 
+-	info->index.vers = find_sec(info->hdr, info->sechdrs, info->secstrings, "__versions");
+-	info->index.info = find_sec(info->hdr, info->sechdrs, info->secstrings, ".modinfo");
+ 	info->index.pcpu = find_pcpusec(info->hdr, info->sechdrs, info->secstrings);
+ 
+ 	/* Check module struct version now, before we try to use module. */
