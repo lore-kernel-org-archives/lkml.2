@@ -1,74 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932679Ab0FERSW (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Jun 2010 13:18:22 -0400
-Received: from inca-roads.misterjones.org ([213.251.177.50]:42594 "EHLO
-	inca-roads.misterjones.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753145Ab0FERSU (ORCPT
+	id S932717Ab0FERVL (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Jun 2010 13:21:11 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:48757 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932448Ab0FERVI convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Jun 2010 13:18:20 -0400
-Date: Sat, 5 Jun 2010 18:18:16 +0100
-From: Marc Zyngier <maz@misterjones.org>
-To: Esben Haabendal <esbenhaabendal@gmail.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>,
-       Esben Haabendal <eha@doredevelopment.dk>, linux-kernel@vger.kernel.org,
-       mingo@elte.hu, joachim.eastwood@jotron.com
-Subject: Re: [RFC][PATCH] irq: support IRQ_NESTED_THREAD with non-threaded 
- interrupt handlers
-Message-ID: <20100605181816.7aae71c7@hina.wild-wind.fr.eu.org>
-In-Reply-To: <AANLkTilUGOVPBtdl2KB2nrbra8uBO8q4AX0v57hCtr_9@mail.gmail.com>
-References: <1275686352.2970.2.camel@eha.doredevelopment.dk>
-	<alpine.LFD.2.00.1006042343150.2933@localhost.localdomain>
-	<AANLkTilb7---Qg1oLwzanKP1RGe04fkAXDtZzz0w9MGz@mail.gmail.com>
-	<20100605151031.2d562268@hina.wild-wind.fr.eu.org>
-	<AANLkTilUGOVPBtdl2KB2nrbra8uBO8q4AX0v57hCtr_9@mail.gmail.com>
-Organization: Metropolis -- Nowhere
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.12.12; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-SA-Exim-Connect-IP: 93.97.26.37
-X-SA-Exim-Rcpt-To: esbenhaabendal@gmail.com, tglx@linutronix.de, eha@doredevelopment.dk, linux-kernel@vger.kernel.org, mingo@elte.hu, joachim.eastwood@jotron.com
-X-SA-Exim-Mail-From: maz@misterjones.org
-X-SA-Exim-Scanned: No (on inca-roads.misterjones.org); SAEximRunCond expanded to false
+	Sat, 5 Jun 2010 13:21:08 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:organization:to:subject:date:user-agent:cc:references
+         :in-reply-to:mime-version:content-type:content-transfer-encoding
+         :message-id;
+        b=OuVi/Ff4NUXM+zYOsHU/NnD4+SQctQ712zqXNPQ5k44rbag/WxQDdyqJ4areBNcfuK
+         8+a+Rqy9zgFGfEf5VkIPUZvC1gcPuZ1a2zWkgO+DE12JeC9XlZ84Gd88A3dq9iTjWB2r
+         eYAAt/foDIDj6B/ESnZSDEckn9K+i4y5N1yEo=
+From: Marek Vasut <marek.vasut@gmail.com>
+Organization: Hack&Dev
+To: linux-arm-kernel@lists.infradead.org
+Subject: Re: pxa300 - DDRAM base value
+Date: Sat, 5 Jun 2010 19:19:17 +0200
+User-Agent: KMail/1.13.3 (Linux/2.6.33-2-amd64; KDE/4.4.3; x86_64; ; )
+Cc: balakrishnan <balakrishnan@e-consystems.com>, linux-kernel@vger.kernel.org,
+       Maharajan <maharajan@e-consystems.com>,
+       Eric Miao <eric.y.miao@gmail.com>
+References: <1275371058.7001.35.camel@balakrishnan-desktop>
+In-Reply-To: <1275371058.7001.35.camel@balakrishnan-desktop>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 8BIT
+Message-Id: <201006051919.17738.marek.vasut@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 5 Jun 2010 18:53:53 +0200
-Esben Haabendal <esbenhaabendal@gmail.com> wrote:
-
-> On Sat, Jun 5, 2010 at 4:10 PM, Marc Zyngier <maz@misterjones.org> wrote:
-> > On Sat, 5 Jun 2010 15:56:01 +0200
-> > Esben Haabendal <esbenhaabendal@gmail.com> wrote:
-> >
-> >> I have a board with an I2C PCA9535 chip with two PHY interrupt lines
-> >> hooked up to. The pca953x driver calls set_irq_nested_thread on all
-> >> irq's on initialization. The PHY driver then calls request_irq, and has
-> >> no idea that it should actually be using a threaded handler.
-> >>
-> >> With this patch, the PHY driver is able to work in this scenario
-> >> without changes (and so should any other driver using request_irq).
-> >
-> > You may want to give request_any_context_irq() a try (available since
-> > the latest merge window). It still requires your driver to be changed,
-> > but it should then work in both threaded and non-threaded cases.
+Dne Út 1. června 2010 07:44:18 balakrishnan napsal(a):
+> I am working on pxa300 based development board and using Linux 2.6.34.
+> This Linux kernel already has support for following boards
+> 1. zylonite_pxa300
+> 2. cm-x300
+> 3. colibri-pxa300
+> 4. littleton
 > 
-> The problem is not in "my" driver, but in the phy driver framework in this
-> particular case.
+> My doubt is that pxa300 based boards are using "0xa0000000"  as DDRAM
+> base and PHYS_OFFSET is also defined in
+> "arch/arm/mach-pxa/include/mach/memory.h" as 0xa0000000.
+> But in our board  DDR is mapped in 0x80000000. Does it make any
+> problem?. Because after mmu is turned ON, my board is hanging.
+> 
+> "zreladdr-y   := 0x80008000" is defined in
+> "arch/arm/mach-pxa/Makefile.boot" file .
+> my machine_desc is as follows
+> .phys_io        = 0x40000000,
+> .io_pg_offst    = (io_p2v(0x40000000) >> 18) & 0xfffc,
+> .boot_params    = 0x80000100,
+> 
 
-To me, any driver/subsystem/whatever qualifies as "yours" if you're taking
-care of it ;-).
+Try editing both arch/arm/mach-pxa/Makefile.boot and 
+arch/arm/mach/pxa/include/mach/memory.h
 
-> What is the plan here, should all drivers change from
-> request_any_context_irq() at some point in time?
+> With Thanks
+> J.Balakrishnan
 
-All? Probably not. Only the few where the need arises, and after carefully
-checking that you're not introducing a horrible race condition somewhere
-(threaded handlers are running with interrupts enabled...).
-
-	M.
--- 
-Enforcement officers may use a hand-held detection device to measure both
-the direction and the strength of a TV signal. This makes it easy for us
-to locate TV receiving equipment in even the hardest-to-reach places.
+The 0x80000000 should be aliased to 0xa0000000, but looking into the PXA docs, 
+it is only on pxa320. Eric, any ideas on this ?
