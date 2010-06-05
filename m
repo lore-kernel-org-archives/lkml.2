@@ -1,27 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933423Ab0FEWKs (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Jun 2010 18:10:48 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:39784 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933087Ab0FEWKr convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Jun 2010 18:10:47 -0400
-MIME-Version: 1.0
-In-Reply-To: <201006052025.11526.rjw@sisk.pl>
-References: <20100603193045.GA7188@elte.hu>
-	<20100605011826.GB21016@count0.beaverton.ibm.com>
-	<AANLkTim3MMfJ6oa9OhUJch_v1qGyxSfrfxF3zDZhxqHk@mail.gmail.com>
-	<201006052025.11526.rjw@sisk.pl>
-Date: Sat, 5 Jun 2010 15:10:46 -0700
-Message-ID: <AANLkTilP0uyJRuUq6BlVeHDydPYi4oJsf37VvSAixwgN@mail.gmail.com>
-Subject: Re: suspend blockers & Android integration
-From: =?ISO-8859-1?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Matt Helsley <matthltc@us.ibm.com>, Thomas Gleixner <tglx@linutronix.de>,
-       Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-       tytso@mit.edu, Brian Swetland <swetland@google.com>,
-       Neil Brown <neilb@suse.de>, Alan Stern <stern@rowland.harvard.edu>,
+	id S933440Ab0FEWMn (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Jun 2010 18:12:43 -0400
+Received: from www.tglx.de ([62.245.132.106]:40888 "EHLO www.tglx.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932711Ab0FEWMl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 5 Jun 2010 18:12:41 -0400
+Date: Sun, 6 Jun 2010 00:11:06 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: =?ISO-8859-15?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>
+cc: "Rafael J. Wysocki" <rjw@sisk.pl>, Peter Zijlstra <peterz@infradead.org>,
+       Ingo Molnar <mingo@elte.hu>, tytso@mit.edu,
+       Brian Swetland <swetland@google.com>, Neil Brown <neilb@suse.de>,
+       Alan Stern <stern@rowland.harvard.edu>,
        Felipe Balbi <felipe.balbi@nokia.com>,
        LKML <linux-kernel@vger.kernel.org>,
        Florian Mickler <florian@mickler.org>,
@@ -33,77 +24,142 @@ Cc: Matt Helsley <matthltc@us.ibm.com>, Thomas Gleixner <tglx@linutronix.de>,
        Kevin Hilman <khilman@deeprootsystems.com>,
        "H. Peter Anvin" <hpa@zytor.com>,
        Arjan van de Ven <arjan@infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Subject: Re: suspend blockers & Android integration
+In-Reply-To: <AANLkTinD39rI47innPbGz1Gi8PsXV5HqkmaQuJ70oQ63@mail.gmail.com>
+Message-ID: <alpine.LFD.2.00.1006052348200.2933@localhost.localdomain>
+References: <20100603193045.GA7188@elte.hu> <20100603232302.GA16184@elte.hu> <1275644619.27810.39462.camel@twins> <201006050138.30859.rjw@sisk.pl> <alpine.LFD.2.00.1006050148080.2933@localhost.localdomain> <AANLkTikGDSzaENwg_0BAtsYf3ulGd_6sGPR30WsvUxMi@mail.gmail.com>
+ <alpine.LFD.2.00.1006050246350.2933@localhost.localdomain> <AANLkTikU21xF49Z-_Lnrq7U7buNmqw_gyEEST8LuN24z@mail.gmail.com> <alpine.LFD.2.00.1006051736040.2933@localhost.localdomain> <AANLkTinD39rI47innPbGz1Gi8PsXV5HqkmaQuJ70oQ63@mail.gmail.com>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: MULTIPART/MIXED; BOUNDARY="8323328-2022448962-1275775868=:2933"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2010/6/5 Rafael J. Wysocki <rjw@sisk.pl>:
-> On Saturday 05 June 2010, Arve Hjønnevåg wrote:
->> 2010/6/4 Matt Helsley <matthltc@us.ibm.com>:
->> > On Fri, Jun 04, 2010 at 05:39:17PM -0700, Arve Hjønnevåg wrote:
->> >> On Fri, Jun 4, 2010 at 5:05 PM, Thomas Gleixner <tglx@linutronix.de> wrote:
->> >> > On Sat, 5 Jun 2010, Rafael J. Wysocki wrote:
->> >
->> > <snip>
->> >
->> >>
->> >> >     With the cgroup freezer you can "suspend" them right away and
->> >> >     just keep the trusted background task(s) alive which allows us to
->> >> >     go into deeper idle states instead of letting the crapplications
->> >> >     run unconfined until the download finished and the suspend
->> >> >     blocker goes away.
->> >> >
->> >>
->> >> Yes this would be better, but I want it in addition to suspend, not
->> >> instead of it. It is also unclear if our user-space code could easily
->> >> make use of it since our trusted code calls into untrusted code.
->> >>
->> >
->> > Perhaps I'm misunderstanding, but suspend and the cgroup freezer
->> > interoperate well today -- you don't have to choose one or the other.
->> > If you've discovered otherwise I'd consider it a bug and would like to
->> > hear more about it.
->> >
->>
->> I'm not aware of any bug with combining both, but we cannot use
->> suspend at all without suspend blockers in the kernel (since wakeup
->> events may be ignored)
->
-> The more I think of it, the more it appears to me that the problem of
-> lost wakeup events can actually be solved without suspend blockers.
-> I'll send a bunch of patches to address this issue, probably tomorrow.
->
+  This message is in MIME format.  The first part should be readable text,
+  while the remaining parts are likely unreadable without MIME-aware tools.
 
-I know of two ways to prevent lost wakeup events. Reset a timeout
-every time you receive a wakeup event or prevents suspend until you
-know the event has been fully processed. Does your solution fall onto
-one of these two categories, or do you have a third way?
+--8323328-2022448962-1275775868=:2933
+Content-Type: TEXT/PLAIN; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 
->> and I don't know how we can safely freeze
->> cgroups without funneling all potential wakeup events through a
->> process that never gets frozen.
->
-> If your untrusted apps get called by the trusted ones, they aren't really
-> untrusted in the first place.
->
-That is not a correct statement. A trusted apps can call into an
-untrusted app, it just has to validate the response and handle not
-getting a response at all. There are also different levels of trust. I
-may have trusted an app to provide a contact pictures, but not trusted
-it to block suspend. When the phone rings the app will be called to
-provide the picture for the incoming call dialog, but if it is frozen
-at this point the more trusted app that handles the incoming phone
-call will not be able to get the picture.
+On Sat, 5 Jun 2010, Arve Hjønnevåg wrote:
+> 2010/6/5 Thomas Gleixner <tglx@linutronix.de>:
+> > B1;2005;0cOn Fri, 4 Jun 2010, Arve Hjønnevåg wrote:
+> >> > Why is it a BUG in the trusted app, when I initiate a download and put
+> >> > the phone down ?
+> >> >
+> >>
+> >> It is not, but we have had bugs where a trusted app does not unblock
+> >> suspend after some failure case where it is no longer making any
+> >> progress.
+> >
+> > Well, that's simply an application bug which sucks battery with or
+> > without suspend blockers. So it's unrelated to the freezing of
+> > untrusted apps while a trusted app still works in the background
+> > before allowing the machine to suspend.
+> >
+> 
+> It is not unrelated if the trusted app has stopped working but still
+> blocks suspend. The battery drains when you combine them.
 
-> From what you're saying it follows that you're not really willing to accept
-> any solution different to your suspend blockers.  Is that really the case?
->
-I don't think that is a fair way to put it. We need to support our
-user-space framework and I have not seen an alternative solution that
-clearly will work (other than replacing suspend_blockers with pm_qos
-constraints that do the same thing).
+What you are describing is a problem which is not solvable either way.
+If you take the lock and do not release it you're not going to
+suspend. I never claimed that any other mechanism resolves this.
 
--- 
-Arve Hjønnevåg
+But this is not related to the fact that freezing crap while running a
+sane background task is going to save you power vs. an approach where
+running a sane background task allows crap to consume power unconfined
+until it is done.
+
+> >> > That download might take a minute or two, but that's not an
+> >> > justification for the crapplication to run unconfined and prevent
+> >> > lower power states.
+> >> >
+> >>
+> >> I agree, but this is not a simple problem to solve.
+> >
+> > Not with suspend blockers, but with cgroup confinement of crap, it's
+> > straight forward.
+> >
+> 
+> I don't think is is straight forward. If the a process in the frozen
+> group holds a resource that a process in the unfrozen group needs, how
+> do deal with that?
+
+I'm going to fix the framework which puts the group into freeze state
+w/o making sure that there is no held shared resource. Come on it's
+not rocket science.
+ 
+> >> Yes I don't know everything our user-space stack is doing, but I do
+> >> know that it makes many calls between processes (and in both
+> >> directions). As far as I know it uses timeouts when calling into
+> >> untrusted code, so a misbehaving application will cause an error
+> >> dialog to pop up asking if the user if it should wait longer or
+> >> terminate the application.
+> >
+> > Sigh, the more I learn about the details of android and it's violation
+> > of all sane engineering principles the more I understand why you
+> > invented a huge nail to push through all layers in order to bring the
+> > system into idle at all. And yes, you need a sledge hammer to drive
+> > that big nail through everything, so you are using the right tool.
+> >
+> > Seriously, the cross app call goes through your framework, which
+> > already knows, that the untrusted part is frozen. So it can deal
+> > nicely with it in any way you want including unfreezing.
+> 
+> Cross app calls do not go through a central process.
+
+It's not about a central process, it goes through your framework,
+which should be able to deal with it. If not, it's a design failure
+which needs to be fixed at the place where the failure happened.
+ 
+> >>
+> >> How can it be fixed? The user presses the back button, the framework
+> >> determines that app A is in the foreground and send the key to app A,
+> >> app A decides that it it does not have anything internal to go back to
+> >> and tells the framework to switch back to the previous app. If the
+> >> user presses the back key again, the framework does not know which app
+> >> this key should go to until app A has finished processing the first
+> >> key press.
+> >
+> > Errm, what has this to do with frozen apps? If your system is
+> > handling input events then there are no frozen apps and even if they
+> > are frozen your framework can unfreeze them _before_ talking to them.
+> >
+> > So which unfixable problem are you describing with the above example ?
+> >
+> 
+> You are claiming that trusted code should not have any dependencies on
+> untrusted code. I gave you a visible example of such a dependency and
+> want you to tell me how you can avoid this dependency. Since you are
+> claiming that our user-space framework is fundamentally broken if it
+> has to wait for untrusted code, I don't think it is unreasonable for
+> you to answer this. Or do you think it is valid to communicate with
+> untrusted code when the screen is on but not when it is off.
+
+It does not matter whether the screen is off or not. If you need to
+call into that untrusted app from your trusted app and you know about
+the might be frozen state then you can deal with it.
+
+So taking your example:
+
+Event happens and gets delivered to the framework
+
+      framework selects A because it is in the foreground
+      
+      if (A is frozen)
+      	 unfreeze(A)
+
+      deliver_event_to(A)
+
+It's that simple.
+
+If your framework cannot deal with that simple problem then you have a
+much more serious problem already.
+
+Thanks,
+
+	tglx
+
+--8323328-2022448962-1275775868=:2933--
