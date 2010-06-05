@@ -1,77 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757692Ab0FEUh2 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Jun 2010 16:37:28 -0400
-Received: from ist.d-labs.de ([213.239.218.44]:36586 "EHLO mx01.d-labs.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755244Ab0FEUh1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Jun 2010 16:37:27 -0400
-Date: Sat, 5 Jun 2010 22:37:08 +0200
-From: Florian Mickler <florian@mickler.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Ingo Molnar <mingo@elte.hu>, tytso@mit.edu,
-       Brian Swetland <swetland@google.com>, Neil Brown <neilb@suse.de>,
-       Arve Hj?nnev?g <arve@android.com>, Thomas Gleixner <tglx@linutronix.de>,
-       "Rafael J. Wysocki" <rjw@sisk.pl>,
-       Alan Stern <stern@rowland.harvard.edu>,
-       Felipe Balbi <felipe.balbi@nokia.com>,
-       Peter Zijlstra <peterz@infradead.org>,
-       LKML <linux-kernel@vger.kernel.org>,
-       Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
-       Linux PM <linux-pm@lists.linux-foundation.org>,
-       Alan Cox <alan@lxorguk.ukuu.org.uk>,
-       James Bottomley <James.Bottomley@suse.de>,
-       Peter Zijlstra <a.p.zijlstra@chello.nl>,
-       Kevin Hilman <khilman@deeprootsystems.com>,
-       "H. Peter Anvin" <hpa@zytor.com>,
-       Arjan van de Ven <arjan@infradead.org>
-Subject: Re: suspend blockers & Android integration
-Message-ID: <20100605223708.7d8ff451@schatten.dmk.lab>
-In-Reply-To: <alpine.LFD.2.00.1006031856420.8175@i5.linux-foundation.org>
-References: <20100603193045.GA7188@elte.hu>
-	<20100603231153.GA11302@elte.hu>
-	<20100603232302.GA16184@elte.hu>
-	<alpine.LFD.2.00.1006031630300.8175@i5.linux-foundation.org>
-	<20100603234634.GA21831@elte.hu>
-	<alpine.LFD.2.00.1006031856420.8175@i5.linux-foundation.org>
-X-Mailer: Claws Mail 3.7.5 (GTK+ 2.18.9; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S932620Ab0FEUjn (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Jun 2010 16:39:43 -0400
+Received: from mail-ww0-f46.google.com ([74.125.82.46]:36956 "EHLO
+	mail-ww0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932163Ab0FEUjm convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 5 Jun 2010 16:39:42 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=V7x0mUOpJ3uNaatDDNltDJ7mtCN2f2PjPZXmHF9BQRmMSYZMIIPDbWg11jYWFcVGHJ
+         WC2GMa9LhuhvcJDfON5fur9jHnst+BhoOjZe/2WAnwgh/CJk4bRtsxAaMicBA0/AzV+c
+         Phje9GKYT7Lxhj8NJ48K/Vw/zRW7HtYBc95Tg=
+MIME-Version: 1.0
+In-Reply-To: <201005241600.o4OG0QuA012887@hera.kernel.org>
+References: <201005241600.o4OG0QuA012887@hera.kernel.org>
+Date: Sat, 5 Jun 2010 22:39:40 +0200
+X-Google-Sender-Auth: K9Icgkzu5EGapas79CwS8W0ae9k
+Message-ID: <AANLkTil7N3ZJclwotDQVt-8IYKudZ5mqPbyH906Cd4IJ@mail.gmail.com>
+Subject: Re: drivers: Push down BKL into various drivers
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Arnd Bergmann <arnd@arndb.de>, Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 3 Jun 2010 19:16:55 -0700 (PDT)
-Linus Torvalds <torvalds@linux-foundation.org> wrote:
+On Mon, May 24, 2010 at 18:00, Linux Kernel Mailing List
+<linux-kernel@vger.kernel.org> wrote:
+> diff --git a/drivers/input/misc/hp_sdc_rtc.c b/drivers/input/misc/hp_sdc_rtc.c
+> index ad730e1..e00a1cc 100644
+> --- a/drivers/input/misc/hp_sdc_rtc.c
+> +++ b/drivers/input/misc/hp_sdc_rtc.c
+> @@ -43,6 +43,7 @@
+>  #include <linux/proc_fs.h>
+>  #include <linux/poll.h>
+>  #include <linux/rtc.h>
+> +#include <linux/smp_lock.h>
+>  #include <linux/semaphore.h>
+>
+>  MODULE_AUTHOR("Brian S. Julin <bri@calyx.com>");
+> @@ -64,8 +65,8 @@ static DECLARE_WAIT_QUEUE_HEAD(hp_sdc_rtc_wait);
+>  static ssize_t hp_sdc_rtc_read(struct file *file, char __user *buf,
+>                               size_t count, loff_t *ppos);
+>
+> -static int hp_sdc_rtc_ioctl(struct inode *inode, struct file *file,
+> -                           unsigned int cmd, unsigned long arg);
+> +static long hp_sdc_rtc_unlocked_ioctl(struct file *file,
+> +                                     unsigned int cmd, unsigned long arg);
+>
+>  static unsigned int hp_sdc_rtc_poll(struct file *file, poll_table *wait);
+>
+> @@ -512,7 +513,7 @@ static int hp_sdc_rtc_read_proc(char *page, char **start, off_t off,
+>         return len;
+>  }
+>
+> -static int hp_sdc_rtc_ioctl(struct inode *inode, struct file *file,
+> +static int hp_sdc_rtc_ioctl(struct file *file,
+>                            unsigned int cmd, unsigned long arg)
+>  {
+>  #if 1
+> @@ -659,14 +660,27 @@ static int hp_sdc_rtc_ioctl(struct inode *inode, struct file *file,
+>  #endif
+>  }
+>
+> +static long hp_sdc_rtc_unlocked_ioctl(struct file *file,
+> +                                     unsigned int cmd, unsigned long arg)
+> +{
+> +       int ret;
+> +
+> +       lock_kernel();
+> +       ret = hp_sdc_rtc_ioctl(file, cmd, arg);
+> +       unlock_kernel();
+> +
+> +       return ret;
+> +}
+> +
+> +
+>  static const struct file_operations hp_sdc_rtc_fops = {
+> -        .owner =       THIS_MODULE,
+> -        .llseek =      no_llseek,
+> -        .read =                hp_sdc_rtc_read,
+> -        .poll =                hp_sdc_rtc_poll,
+> -        .ioctl =       hp_sdc_rtc_ioctl,
+> -        .open =                hp_sdc_rtc_open,
+> -        .fasync =      hp_sdc_rtc_fasync,
+> +        .owner =               THIS_MODULE,
+> +        .llseek =              no_llseek,
+> +        .read =                        hp_sdc_rtc_read,
+> +        .poll =                        hp_sdc_rtc_poll,
+> +        .unlocked_ioctl =      hp_sdc_rtc_ioctl,
+> +        .open =                        hp_sdc_rtc_open,
+> +        .fasync =              hp_sdc_rtc_fasync,
+>  };
+>
+>  static struct miscdevice hp_sdc_rtc_dev = {
 
-> The thing is, unless there is some _really_ deep other reason to do 
-> something like this, I still think it's total overdesign to push any 
-> knowledge/choices like this into the scheduler. I'd rather keep things way 
-> more independent, less tied to each other and to deep kernel subsystems.
-> 
-> IOW, my personal opinion is that somethng like a suspend (blocker or not) 
-> decision simply shouldn't be important enough to be tied into the 
-> scheduler. Especially not if it could just be its own layer.
-> 
-> That said, as far as I know, the Android people have mostly been looking 
-> at the suspend angle from a single-core standpoint. And I'm not at all 
-> convinced that they should hijack the existing "/sys/power/state" thing 
-> which is what I think they do now.
-> 
-> And those two things go together. The /sys/power/state thing is a global 
-> suspend - which I don't think is appropriate for a opportunistic thing in 
-> the first place, especially for multi-core.
-> 
+Something went wrong with this one:
 
-This sounds right. 
+| drivers/input/misc/hp_sdc_rtc.c:681: warning: initialization from
+incompatible pointer type
+| drivers/input/misc/hp_sdc_rtc.c:665: warning:
+‘hp_sdc_rtc_unlocked_ioctl’ defined but not used
 
-If there is soo much need for a better solution, it will emerge. With
-merged suspend blockers or not.
+(detected while debugging my script to find compiler warning regressions)
 
-Just my 2 cents.
+Gr{oetje,eeting}s,
 
-> 			Linus
+						Geert
 
-Cheers,
-Flo
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+							    -- Linus Torvalds
