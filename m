@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933115Ab0FEKKz (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Jun 2010 06:10:55 -0400
+	id S933131Ab0FEKLS (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Jun 2010 06:11:18 -0400
 Received: from mga01.intel.com ([192.55.52.88]:65455 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932877Ab0FEKHI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Jun 2010 06:07:08 -0400
+	id S932872Ab0FEKHG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 5 Jun 2010 06:07:06 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.53,366,1272870000"; 
-   d="scan'208";a="804988060"
+   d="scan'208";a="804988053"
 From: xiaohui.xin@intel.com
 To: netdev@vger.kernel.org, kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
        mst@redhat.com, mingo@elte.hu, davem@davemloft.net,
        herbert@gondor.hengli.com.au, jdike@linux.intel.com
 Cc: Xin Xiaohui <xiaohui.xin@intel.com>
-Subject: [RFC PATCH v7 10/19] Don't do skb recycle, if device use external buffer.
-Date: Sat,  5 Jun 2010 18:14:49 +0800
-Message-Id: <1275732899-5423-10-git-send-email-xiaohui.xin@intel.com>
+Subject: [RFC PATCH v7 09/19] Ignore room skb_reserve() when device is using external buffer.
+Date: Sat,  5 Jun 2010 18:14:48 +0800
+Message-Id: <1275732899-5423-9-git-send-email-xiaohui.xin@intel.com>
 X-Mailer: git-send-email 1.5.4.4
-In-Reply-To: <1275732899-5423-9-git-send-email-xiaohui.xin@intel.com>
+In-Reply-To: <1275732899-5423-8-git-send-email-xiaohui.xin@intel.com>
 References: <1275732899-5423-1-git-send-email-xiaohui.xin@intel.com>
  <1275732899-5423-2-git-send-email-xiaohui.xin@intel.com>
  <1275732899-5423-3-git-send-email-xiaohui.xin@intel.com>
@@ -27,37 +27,43 @@ References: <1275732899-5423-1-git-send-email-xiaohui.xin@intel.com>
  <1275732899-5423-6-git-send-email-xiaohui.xin@intel.com>
  <1275732899-5423-7-git-send-email-xiaohui.xin@intel.com>
  <1275732899-5423-8-git-send-email-xiaohui.xin@intel.com>
- <1275732899-5423-9-git-send-email-xiaohui.xin@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Xin Xiaohui <xiaohui.xin@intel.com>
 
+Make the skb->data and skb->head from external buffer
+to be consistent, we ignore the room reserved by driver
+for kernel skb.
+
 Signed-off-by: Xin Xiaohui <xiaohui.xin@intel.com>
 Signed-off-by: Zhao Yu <yzhao81new@gmail.com>
 Reviewed-by: Jeff Dike <jdike@linux.intel.com>
 ---
- net/core/skbuff.c |    6 ++++++
- 1 files changed, 6 insertions(+), 0 deletions(-)
+ include/linux/skbuff.h |    9 +++++++++
+ 1 files changed, 9 insertions(+), 0 deletions(-)
 
-diff --git a/net/core/skbuff.c b/net/core/skbuff.c
-index 38d19d0..37587f0 100644
---- a/net/core/skbuff.c
-+++ b/net/core/skbuff.c
-@@ -553,6 +553,12 @@ int skb_recycle_check(struct sk_buff *skb, int skb_size)
- 	if (skb_shared(skb) || skb_cloned(skb))
- 		return 0;
- 
-+	/* if the device wants to do mediate passthru, the skb may
-+	 * get external buffer, so don't recycle
+diff --git a/include/linux/skbuff.h b/include/linux/skbuff.h
+index 5ff8c27..193b259 100644
+--- a/include/linux/skbuff.h
++++ b/include/linux/skbuff.h
+@@ -1200,6 +1200,15 @@ static inline int skb_tailroom(const struct sk_buff *skb)
+  */
+ static inline void skb_reserve(struct sk_buff *skb, int len)
+ {
++	/* Since skb_reserve() is only for an empty buffer,
++	 * and when the skb is getting external buffer, we cannot
++	 * retain the external buffer has the same reserved space
++	 * in the header which kernel allocatd skb has, so have to
++	 * ignore this. And we have recorded the external buffer
++	 * info in the destructor_arg field, so use it as indicator.
 +	 */
-+	if (dev_is_mpassthru(skb->dev))
-+		return 0;
-+
- 	skb_release_head_state(skb);
- 	shinfo = skb_shinfo(skb);
- 	atomic_set(&shinfo->dataref, 1);
++	if (skb_shinfo(skb)->destructor_arg)
++		return;
+ 	skb->data += len;
+ 	skb->tail += len;
+ }
 -- 
 1.5.4.4
 
