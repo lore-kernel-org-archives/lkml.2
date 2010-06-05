@@ -1,67 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933399Ab0FEVxP (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Jun 2010 17:53:15 -0400
-Received: from ist.d-labs.de ([213.239.218.44]:36510 "EHLO mx01.d-labs.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933039Ab0FEVxN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Jun 2010 17:53:13 -0400
-Date: Sat, 5 Jun 2010 23:52:57 +0200
-From: Florian Mickler <florian@mickler.org>
-To: Felipe Contreras <felipe.contreras@gmail.com>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, Peter Zijlstra <peterz@infradead.org>,
-       James Bottomley <James.Bottomley@suse.de>,
-       Arve =?ISO-8859-15?Q?Hj=F8nnev=E5g?= <arve@android.com>, tytso@mit.edu,
+	id S933423Ab0FEWKs (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Jun 2010 18:10:48 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:39784 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933087Ab0FEWKr convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 5 Jun 2010 18:10:47 -0400
+MIME-Version: 1.0
+In-Reply-To: <201006052025.11526.rjw@sisk.pl>
+References: <20100603193045.GA7188@elte.hu>
+	<20100605011826.GB21016@count0.beaverton.ibm.com>
+	<AANLkTim3MMfJ6oa9OhUJch_v1qGyxSfrfxF3zDZhxqHk@mail.gmail.com>
+	<201006052025.11526.rjw@sisk.pl>
+Date: Sat, 5 Jun 2010 15:10:46 -0700
+Message-ID: <AANLkTilP0uyJRuUq6BlVeHDydPYi4oJsf37VvSAixwgN@mail.gmail.com>
+Subject: Re: suspend blockers & Android integration
+From: =?ISO-8859-1?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Matt Helsley <matthltc@us.ibm.com>, Thomas Gleixner <tglx@linutronix.de>,
+       Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+       tytso@mit.edu, Brian Swetland <swetland@google.com>,
+       Neil Brown <neilb@suse.de>, Alan Stern <stern@rowland.harvard.edu>,
+       Felipe Balbi <felipe.balbi@nokia.com>,
        LKML <linux-kernel@vger.kernel.org>,
-       Linux PM <linux-pm@lists.linux-foundation.org>,
-       Thomas Gleixner <tglx@linutronix.de>,
+       Florian Mickler <florian@mickler.org>,
        Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
-       felipe.balbi@nokia.com, Alan Cox <alan@lxorguk.ukuu.org.uk>
-Subject: Re: [linux-pm] [PATCH 0/8] Suspend block api (version 8)
-Message-ID: <20100605235257.7d1329ec@schatten.dmk.lab>
-In-Reply-To: <AANLkTikp1Z9mGOaLf_oE_3qCL7U4oeHaPSp6zkp4eEfL@mail.gmail.com>
-References: <20100527222514.0a1710bf@lxorguk.ukuu.org.uk>
-	<1275149418.4503.128.camel@mulgrave.site>
-	<1275156734.1645.496.camel@laptop>
-	<201005312314.12391.rjw@sisk.pl>
-	<AANLkTil4DLUciWMVmCiiygS2Y1vLZu0Lnfys-w4q3L7W@mail.gmail.com>
-	<20100605214939.49dd0ee0@schatten.dmk.lab>
-	<AANLkTikp1Z9mGOaLf_oE_3qCL7U4oeHaPSp6zkp4eEfL@mail.gmail.com>
-X-Mailer: Claws Mail 3.7.5 (GTK+ 2.18.9; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+       Linux PM <linux-pm@lists.linux-foundation.org>,
+       Alan Cox <alan@lxorguk.ukuu.org.uk>,
+       James Bottomley <James.Bottomley@suse.de>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       Kevin Hilman <khilman@deeprootsystems.com>,
+       "H. Peter Anvin" <hpa@zytor.com>,
+       Arjan van de Ven <arjan@infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 5 Jun 2010 22:56:45 +0300
-Felipe Contreras <felipe.contreras@gmail.com> wrote:
+2010/6/5 Rafael J. Wysocki <rjw@sisk.pl>:
+> On Saturday 05 June 2010, Arve Hjønnevåg wrote:
+>> 2010/6/4 Matt Helsley <matthltc@us.ibm.com>:
+>> > On Fri, Jun 04, 2010 at 05:39:17PM -0700, Arve Hjønnevåg wrote:
+>> >> On Fri, Jun 4, 2010 at 5:05 PM, Thomas Gleixner <tglx@linutronix.de> wrote:
+>> >> > On Sat, 5 Jun 2010, Rafael J. Wysocki wrote:
+>> >
+>> > <snip>
+>> >
+>> >>
+>> >> >     With the cgroup freezer you can "suspend" them right away and
+>> >> >     just keep the trusted background task(s) alive which allows us to
+>> >> >     go into deeper idle states instead of letting the crapplications
+>> >> >     run unconfined until the download finished and the suspend
+>> >> >     blocker goes away.
+>> >> >
+>> >>
+>> >> Yes this would be better, but I want it in addition to suspend, not
+>> >> instead of it. It is also unclear if our user-space code could easily
+>> >> make use of it since our trusted code calls into untrusted code.
+>> >>
+>> >
+>> > Perhaps I'm misunderstanding, but suspend and the cgroup freezer
+>> > interoperate well today -- you don't have to choose one or the other.
+>> > If you've discovered otherwise I'd consider it a bug and would like to
+>> > hear more about it.
+>> >
+>>
+>> I'm not aware of any bug with combining both, but we cannot use
+>> suspend at all without suspend blockers in the kernel (since wakeup
+>> events may be ignored)
+>
+> The more I think of it, the more it appears to me that the problem of
+> lost wakeup events can actually be solved without suspend blockers.
+> I'll send a bunch of patches to address this issue, probably tomorrow.
+>
 
-> On Sat, Jun 5, 2010 at 10:49 PM, Florian Mickler <florian@mickler.org> wrote:
-> > On Sat, 5 Jun 2010 20:16:33 +0300
-> > Felipe Contreras <felipe.contreras@gmail.com> wrote:
-> >> New users will see it has low score; they will not install it. That's
-> >> a network effect.
-> >>
-> >> Having users is the quintessential reason people write code.
-> >
-> > That is nice. But how does it impact the problem that suspend blockers
-> > solve? And why do suspend blockers interfere with that?
-> 
-> It doesn't, I don't know why people keep bringing this argument, I
-> just though it should not be left open as a valid one.
-> 
-> I should have mentioned that this is indeed irrelevant.
-> 
+I know of two ways to prevent lost wakeup events. Reset a timeout
+every time you receive a wakeup event or prevents suspend until you
+know the event has been fully processed. Does your solution fall onto
+one of these two categories, or do you have a third way?
 
-Uh! I found out how this is relevant to the suspend blockers case.
-Because not having users means that the bugs don't get fixed.
-Whereas in the suspend blockers case the users can use the app and get
-the bugs fixed. 
+>> and I don't know how we can safely freeze
+>> cgroups without funneling all potential wakeup events through a
+>> process that never gets frozen.
+>
+> If your untrusted apps get called by the trusted ones, they aren't really
+> untrusted in the first place.
+>
+That is not a correct statement. A trusted apps can call into an
+untrusted app, it just has to validate the response and handle not
+getting a response at all. There are also different levels of trust. I
+may have trusted an app to provide a contact pictures, but not trusted
+it to block suspend. When the phone rings the app will be called to
+provide the picture for the incoming call dialog, but if it is frozen
+at this point the more trusted app that handles the incoming phone
+call will not be able to get the picture.
 
-Cheers,
-Flo
+> From what you're saying it follows that you're not really willing to accept
+> any solution different to your suspend blockers.  Is that really the case?
+>
+I don't think that is a fair way to put it. We need to support our
+user-space framework and I have not seen an alternative solution that
+clearly will work (other than replacing suspend_blockers with pm_qos
+constraints that do the same thing).
 
-p.s.: I really wished you would focus more on solving the
-problem and not on dismissing it.
+-- 
+Arve Hjønnevåg
