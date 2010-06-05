@@ -1,17 +1,31 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757602Ab0FEAH1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jun 2010 20:07:27 -0400
-Received: from www.tglx.de ([62.245.132.106]:33215 "EHLO www.tglx.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757464Ab0FEAHZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 4 Jun 2010 20:07:25 -0400
-Date: Sat, 5 Jun 2010 02:05:30 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-       tytso@mit.edu, Brian Swetland <swetland@google.com>,
-       Neil Brown <neilb@suse.de>, Arve Hj?nnev?g <arve@android.com>,
+	id S1757610Ab0FEAKu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jun 2010 20:10:50 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:55317 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757464Ab0FEAKt convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 4 Jun 2010 20:10:49 -0400
+MIME-Version: 1.0
+In-Reply-To: <1275653210.27810.39762.camel@twins>
+References: <20100603193045.GA7188@elte.hu>
+	<20100603231153.GA11302@elte.hu>
+	<20100603232302.GA16184@elte.hu>
+	<AANLkTikZP3bmckpfb_jUdG7qZO5W9DgpZ79ugtSZaEpt@mail.gmail.com>
+	<20100604071354.GA14451@elte.hu>
+	<AANLkTimH4ihf3QqtKFpfGXRKtO55PrUuff9JYtaEBG44@mail.gmail.com>
+	<20100604083423.GD15181@elte.hu>
+	<AANLkTinQyzzeF-NOAjrAqqQXqKjFJhx85nI4uyBGRtWd@mail.gmail.com>
+	<1275653210.27810.39762.camel@twins>
+Date: Fri, 4 Jun 2010 17:10:48 -0700
+Message-ID: <AANLkTinyjBa0KYfFz3_EFbC65hoQFwFINlTDYjCe-wM3@mail.gmail.com>
+Subject: Re: suspend blockers & Android integration
+From: =?ISO-8859-1?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Ingo Molnar <mingo@elte.hu>, tytso@mit.edu,
+       Brian Swetland <swetland@google.com>, Neil Brown <neilb@suse.de>,
+       Thomas Gleixner <tglx@linutronix.de>, "Rafael J. Wysocki" <rjw@sisk.pl>,
        Alan Stern <stern@rowland.harvard.edu>,
        Felipe Balbi <felipe.balbi@nokia.com>,
        LKML <linux-kernel@vger.kernel.org>,
@@ -24,63 +38,71 @@ cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
        Kevin Hilman <khilman@deeprootsystems.com>,
        "H. Peter Anvin" <hpa@zytor.com>,
        Arjan van de Ven <arjan@infradead.org>
-Subject: Re: suspend blockers & Android integration
-In-Reply-To: <201006050138.30859.rjw@sisk.pl>
-Message-ID: <alpine.LFD.2.00.1006050148080.2933@localhost.localdomain>
-References: <20100603193045.GA7188@elte.hu> <20100603232302.GA16184@elte.hu> <1275644619.27810.39462.camel@twins> <201006050138.30859.rjw@sisk.pl>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 5 Jun 2010, Rafael J. Wysocki wrote:
-> I kind of agree here, so I'd like to focus a bit on that.
-> 
-> Here's my idea in the very general terms:
-> 
-> (1) Use the cgroup freezer to "suspend" the "untrusted" apps (ie. the ones
->     that don't use suspend blockers aka wakelocks in the Android world) at the
->     point Android would normally start opportunistic suspend.
+2010/6/4 Peter Zijlstra <peterz@infradead.org>:
+> On Fri, 2010-06-04 at 01:56 -0700, Arve Hjønnevåg wrote:
+>> On Fri, Jun 4, 2010 at 1:34 AM, Ingo Molnar <mingo@elte.hu> wrote:
+>> >
+>> > * Arve Hj?nnev?g <arve@android.com> wrote:
+>> >
+>> >> > [...]
+>> >> >
+>> >> > Why do you need to track input wakeups? It's rather fragile and rather
+>> >> > unnecessary [...]
+>> >>
+>> >> Because we have keys that should always turn the screen on, but the problem
+>> >> is not specific to input events. If we enabled a wakeup event it usually
+>> >> means we need this event to always work, not just when the system is fully
+>> >> awake or fully suspended.
+>> >
+>> > Hm, i cannot follow that generic claim. Could you please point out the problem
+>> > to me via a specific example? Which task does what, what undesirable thing
+>> > happens where, etc.
+>> >
+>>
+>> We have many wakeup events, and some of them are invisible to the
+>> user. For instance on the Nexus One wake up every 10 minutes monitor
+>> the battery health.
+>
+>> If the user presses a key right after this work
+>> has finished and we did not block suspend until userspace could
+>> process this key event, we risk suspending before we could turn the
+>> screen on, which to the user looks like the key did not work.
+>
+>> Another
+>> example, the user pressed the power key which turns the screen off and
+>> allows suspend. We initiate suspend and a phone call comes in. If we
+>> don't block suspend until we processed the incoming phone call
+>> notification, the phone may never ring (some devices will send a new
+>> message every few seconds for this, so on those devices it would just
+>> delay the ringing).
+>
+> Right, so in the proposed scheme all these tasks would be executed by
+> trusted processes, and trusted processes will never get frozen and so
+> will never be delayed in processing these events.
+>
 
-There is an additional benefit to this approach:
+There are many proposes schemes. I assume you mean freezing only
+untrusted processes and nothing else.
 
-     In the current android world a background task (e.g. download
-     initiated before the screensaver kicked in) prevents the suspend,
-     but that also means that the crapplications can still suck power
-     completely unconfined.
+> Only untrusted code will be frozen. And trusted processes are reliable
+> for thawing the untrusted processes and delivering events to it.
+>
 
-     With the cgroup freezer you can "suspend" them right away and
-     just keep the trusted background task(s) alive which allows us to
-     go into deeper idle states instead of letting the crapplications
-     run unconfined until the download finished and the suspend
-     blocker goes away.
- 
-> (2) Allow the cpuidle framework to put CPUs into low-power states after the
->     "trusted" apps (ie. the ones that use suspend blockers in the Android
->     world) have gone idle.
-> 
-> (3) Teach the cpuidle framework to schedule runtime suspend of I/O devices
->     before idling the last CPU (*).
-> 
-> (4) Design a mechanism to resume the I/O devices suspended in (3) so that
->     they are not powered up unnecessarily (that's going to be difficult as far
->     as I can see).
-> 
-> This way, in principle, we should be able to save (at least almost) as much
-> energy as the opportunistic suspend currently used by Android, provided that
-> things will be capable of staying idle for extended periods of time.
-> 
-> (*) That may require per-device PM QoS requirements to be used, in which case
->     devices may even be suspended earlier if the PM QoS requirements of all
->     of their users are met.
-> 
-> I wonder what people think.  Is this realistic and if so, would it be difficult
-> to implement?
+I have two problems with this. I don't want to funnel all events
+trough trusted processes, and I also want to freeze trusted processes.
 
-I think it's realistic and not overly complicated to implement.
+> Trusted processes are assumed to be sane and idle when there is nothing
+> for them to do, allowing the machine to go into deep idle states.
+>
 
-Thanks,
+Neither the kernel nor our trusted user-space code currently meets
+this criteria.
 
-	tglx
+-- 
+Arve Hjønnevåg
