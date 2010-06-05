@@ -1,104 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933743Ab0FEQvU (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Jun 2010 12:51:20 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:53594 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933666Ab0FEQvT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Jun 2010 12:51:19 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:mime-version:content-type
-         :content-disposition:user-agent;
-        b=VLmWfhRSUkkRiM/bJcNaYRRftYuupkmTpA9SyznU79ZXJeLkCArBlQdVAji4QdxZ/M
-         dsUclfSNlhFslvzz2T9mOCIe5A/Q8DqwSvy3wAIEYjSq7TLZmP8zrTRfyktqBRki1g/v
-         dw4u7+C/Mj7TCQNVVGB185G/MmJBeHF0Rqs1I=
-Date: Sat, 5 Jun 2010 18:49:42 +0200
-From: Marcin Slusarz <marcin.slusarz@gmail.com>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Pekka Paalanen <pq@iki.fi>, Stuart Bennett <stuart@freedesktop.org>,
-       Christoph Bumiller <e0425955@student.tuwien.ac.at>,
-       Shinpei KATO <shinpei@il.is.s.u-tokyo.ac.jp>,
-       nouveau@lists.freedesktop.org, x86@kernel.org
-Subject: [PATCH] kmmio/mmiotrace: fix double free of kmmio_fault_pages
-Message-ID: <20100605164919.GA2816@joi.lan>
+	id S933753Ab0FEQvq (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Jun 2010 12:51:46 -0400
+Received: from vs81.sauer-cs.de ([80.244.252.81]:43029 "EHLO kbdbabel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933666Ab0FEQvo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 5 Jun 2010 12:51:44 -0400
+Date: Sat, 5 Jun 2010 20:50:57 +0400 (MSD)
+From: Alexander Kurz <linux@blala.de>
+X-X-Sender: linux@vs81.sauer-cs.de
+To: Borislav Petkov <bp@amd64.org>
+cc: Randy Dunlap <randy.dunlap@oracle.com>,
+       Stephen Rothwell <sfr@canb.auug.org.au>,
+       Alexander Kurz <linux@kbdbabel.org>, linux-next@vger.kernel.org,
+       LKML <linux-kernel@vger.kernel.org>, gregkh@suse.de
+Subject: Re: linux-next: Tree for June 2 (staging/comedi)
+In-Reply-To: <20100603091555.GA25287@aftab>
+Message-ID: <alpine.DEB.1.10.1006052043140.21893@vs81.sauer-cs.de>
+References: <20100602151439.6de66132.sfr@canb.auug.org.au> <20100602100735.0812c063.randy.dunlap@oracle.com> <20100603091555.GA25287@aftab>
+User-Agent: Alpine 1.10 (DEB 962 2008-03-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-After every iounmap mmiotrace has to free kmmio_fault_pages, but it
-can't do it directly, so it defers freeing by RCU.
+Hi,
+could you please repeat the test on 2.6.35-rc1-git3 or later
 
-It usually works, but when mmiotraced code calls ioremap-iounmap
-multiple times without sleeping between (so RCU won't kick in and
-start freeing) it can be given the same virtual address, so at
-every iounmap mmiotrace will schedule the same pages for release.
-Obviously it will explode on second free.
+On Thu, 3 Jun 2010, Borislav Petkov wrote:
+> I get a different set of errors with 2.6.35-rc1:
+> 
+> ERROR: "cfc_write_array_to_buffer" [drivers/staging/comedi/drivers/usbduxfast.ko] undefined!
+> ERROR: "cfc_write_array_to_buffer" [drivers/staging/comedi/drivers/comedi_test.ko] undefined!
+was caused by
+> CONFIG_COMEDI_FC=y
+and is fixed in 824196248c1f28aa7d151fd5b11d76182c751f19
+by adding COMEDI_FC depends on COMEDI.
+CONFIG_COMEDI_FC=m would be correct.
 
-Fix it by marking kmmio_fault_pages which are scheduled for release
-and not adding them second time.
+> ERROR: "subdev_8255_cleanup" [drivers/staging/comedi/drivers/das08.ko] undefined!
+> ERROR: "subdev_8255_init" [drivers/staging/comedi/drivers/das08.ko] undefined! 
+CONFIG_COMEDI_8255=m should have been set.
+this should be as well fixed in 824196248c1f28aa7d151fd5b11d76182c751f19 
+by pulling das08 out of the ISA group.
 
-Signed-off-by: Marcin Slusarz <marcin.slusarz@gmail.com>
-Cc: Pekka Paalanen <pq@iki.fi>
-Cc: Stuart Bennett <stuart@freedesktop.org>
----
- arch/x86/mm/kmmio.c |   16 +++++++++++++---
- 1 files changed, 13 insertions(+), 3 deletions(-)
-
-diff --git a/arch/x86/mm/kmmio.c b/arch/x86/mm/kmmio.c
-index 5d0e67f..e5d5e2c 100644
---- a/arch/x86/mm/kmmio.c
-+++ b/arch/x86/mm/kmmio.c
-@@ -45,6 +45,8 @@ struct kmmio_fault_page {
- 	 * Protected by kmmio_lock, when linked into kmmio_page_table.
- 	 */
- 	int count;
-+
-+	bool scheduled_for_release;
- };
- 
- struct kmmio_delayed_release {
-@@ -398,8 +400,11 @@ static void release_kmmio_fault_page(unsigned long page,
- 	BUG_ON(f->count < 0);
- 	if (!f->count) {
- 		disarm_kmmio_fault_page(f);
--		f->release_next = *release_list;
--		*release_list = f;
-+		if (!f->scheduled_for_release) {
-+			f->release_next = *release_list;
-+			*release_list = f;
-+			f->scheduled_for_release = true;
-+		}
- 	}
- }
- 
-@@ -471,8 +476,10 @@ static void remove_kmmio_fault_pages(struct rcu_head *head)
- 			prevp = &f->release_next;
- 		} else {
- 			*prevp = f->release_next;
-+			f->release_next = NULL;
-+			f->scheduled_for_release = false;
- 		}
--		f = f->release_next;
-+		f = *prevp;
- 	}
- 	spin_unlock_irqrestore(&kmmio_lock, flags);
- 
-@@ -510,6 +517,9 @@ void unregister_kmmio_probe(struct kmmio_probe *p)
- 	kmmio_count--;
- 	spin_unlock_irqrestore(&kmmio_lock, flags);
- 
-+	if (!release_list)
-+		return;
-+
- 	drelease = kmalloc(sizeof(*drelease), GFP_ATOMIC);
- 	if (!drelease) {
- 		pr_crit("leaking kmmio_fault_page objects.\n");
--- 
-1.7.1
-
+thanks, Alexander
