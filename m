@@ -1,40 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933483Ab0FEPjy (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Jun 2010 11:39:54 -0400
-Received: from cantor.suse.de ([195.135.220.2]:33746 "EHLO mx1.suse.de"
+	id S1757593Ab0FEPkt (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Jun 2010 11:40:49 -0400
+Received: from LUNGE.MIT.EDU ([18.54.1.69]:40478 "EHLO lunge.queued.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757398Ab0FEPjx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Jun 2010 11:39:53 -0400
-Date: Sat, 5 Jun 2010 17:39:48 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Pavel Machek <pavel@ucw.cz>, Cesar Eduardo Barros <cesarb@cesarb.net>,
-       linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] kernel/power/swap.c: fix typos in comments
-In-Reply-To: <201006050007.34624.rjw@sisk.pl>
-Message-ID: <alpine.LNX.2.00.1006051739360.12271@pobox.suse.cz>
-References: <1274921340-4894-1-git-send-email-cesarb@cesarb.net> <20100527044511.GA19625@elf.ucw.cz> <alpine.LNX.2.00.1006041605420.12271@pobox.suse.cz> <201006050007.34624.rjw@sisk.pl>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1757490Ab0FEPkr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 5 Jun 2010 11:40:47 -0400
+Date: Sat, 5 Jun 2010 11:40:42 -0400
+From: Andres Salomon <dilinger@queued.net>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, tglx@linutronix.de, mingo@redhat.com,
+       hpa@zytor.com, x86@kernel.org
+Subject: [PATCH] x86: use __ASSEMBLY__ rather than __ASSEMBLER__
+Message-ID: <20100605114042.35ac69c1@dev.queued.net>
+X-Mailer: Claws Mail 3.7.5 (GTK+ 2.12.12; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 5 Jun 2010, Rafael J. Wysocki wrote:
 
-> > > > Signed-off-by: Cesar Eduardo Barros <cesarb@cesarb.net>
-> > > 
-> > > ACK.
-> > 
-> > Doesn't seem to be present in linux-next as of today, so I have queued it 
-> > in my tree.
-> 
-> I'm going to take it, but I guess you'll notice?
+As Ingo pointed out in a separate patch, we should be using __ASSEMBLY__.
+Make that the case in pgtable headers.
 
-No problem, dropped from my tree now.
+Signed-off-by: Andres Salomon <dilinger@queued.net>
+---
+ arch/x86/include/asm/pgtable_32_types.h |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
+diff --git a/arch/x86/include/asm/pgtable_32_types.h b/arch/x86/include/asm/pgtable_32_types.h
+index 5f52bb0..1b4f19e 100644
+--- a/arch/x86/include/asm/pgtable_32_types.h
++++ b/arch/x86/include/asm/pgtable_32_types.h
+@@ -26,7 +26,7 @@
+  */
+ #define VMALLOC_OFFSET	(8 * 1024 * 1024)
+ 
+-#ifndef __ASSEMBLER__
++#ifndef __ASSEMBLY__
+ extern bool __vmalloc_start_set; /* set once high_memory is set */
+ #endif
+ 
 -- 
-Jiri Kosina
-SUSE Labs, Novell Inc.
+1.5.6.5
+
