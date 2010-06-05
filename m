@@ -1,107 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756658Ab0FECxf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 4 Jun 2010 22:53:35 -0400
-Received: from e5.ny.us.ibm.com ([32.97.182.145]:40037 "EHLO e5.ny.us.ibm.com"
+	id S1756307Ab0FECxc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 4 Jun 2010 22:53:32 -0400
+Received: from e3.ny.us.ibm.com ([32.97.182.143]:41367 "EHLO e3.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755306Ab0FECx3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1755085Ab0FECx3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 4 Jun 2010 22:53:29 -0400
 From: John Stultz <johnstul@us.ibm.com>
 To: linux-kernel@vger.kernel.org
-Cc: John Stultz <johnstul@us.ibm.com>, Thomas Gleixner <tglx@linutronix.de>
-Subject: [RFC][PATCH 5/6] Cleanup hrtimer.c's direct access to wall_to_monotonic
-Date: Fri,  4 Jun 2010 19:53:25 -0700
-Message-Id: <1275706406-8111-6-git-send-email-johnstul@us.ibm.com>
+Cc: John Stultz <johnstul@us.ibm.com>, Anton Blanchard <anton@samba.org>,
+       Paul Mackerras <paulus@samba.org>, Thomas Gleixner <tglx@linutronix.de>
+Subject: [RFC][PATCH 1/6] powerpc: Simplify update_vsyscall
+Date: Fri,  4 Jun 2010 19:53:21 -0700
+Message-Id: <1275706406-8111-2-git-send-email-johnstul@us.ibm.com>
 X-Mailer: git-send-email 1.6.0.4
-In-Reply-To: <1275706406-8111-5-git-send-email-johnstul@us.ibm.com>
+In-Reply-To: <1275706406-8111-1-git-send-email-johnstul@us.ibm.com>
 References: <1275706406-8111-1-git-send-email-johnstul@us.ibm.com>
- <1275706406-8111-2-git-send-email-johnstul@us.ibm.com>
- <1275706406-8111-3-git-send-email-johnstul@us.ibm.com>
- <1275706406-8111-4-git-send-email-johnstul@us.ibm.com>
- <1275706406-8111-5-git-send-email-johnstul@us.ibm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Provides an accessor function to replace hrtimer.c's
-direct access of wall_to_monotonic.
+Currently powerpc's update_vsyscall calls an inline update_gtod.
+However, both are straightforward, and there are no other users,
+so this patch merges update_gtod into update_vsyscall.
 
-This will allow wall_to_monotonic to be made static as
-planned in Documentation/feature-removal-schedule.txt
+Compiles, but otherwise untested.
 
+Cc: Anton Blanchard <anton@samba.org>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>
 Signed-off-by: John Stultz <johnstul@us.ibm.com>
-CC: Thomas Gleixner <tglx@linutronix.de>
 ---
- include/linux/time.h      |    3 ++-
- kernel/hrtimer.c          |    9 ++++-----
- kernel/time/timekeeping.c |    5 +++++
- 3 files changed, 11 insertions(+), 6 deletions(-)
+ arch/powerpc/kernel/time.c |   55 ++++++++++++++++++++------------------------
+ 1 files changed, 25 insertions(+), 30 deletions(-)
 
-diff --git a/include/linux/time.h b/include/linux/time.h
-index ea3559f..d18edd8 100644
---- a/include/linux/time.h
-+++ b/include/linux/time.h
-@@ -110,7 +110,8 @@ extern int timekeeping_suspended;
+diff --git a/arch/powerpc/kernel/time.c b/arch/powerpc/kernel/time.c
+index 0441bbd..6fcd648 100644
+--- a/arch/powerpc/kernel/time.c
++++ b/arch/powerpc/kernel/time.c
+@@ -423,30 +423,6 @@ void udelay(unsigned long usecs)
+ }
+ EXPORT_SYMBOL(udelay);
  
- unsigned long get_seconds(void);
- struct timespec current_kernel_time(void);
--struct timespec __current_kernel_time(void); /* does not hold xtime_lock */
-+struct timespec __current_kernel_time(void); /* does not take xtime_lock */
-+struct timespec __get_wall_to_monotonic(void); /* does not take xtime_lock */
- struct timespec get_monotonic_coarse(void);
- 
- #define CURRENT_TIME		(current_kernel_time())
-diff --git a/kernel/hrtimer.c b/kernel/hrtimer.c
-index 5c69e99..809f48c 100644
---- a/kernel/hrtimer.c
-+++ b/kernel/hrtimer.c
-@@ -90,7 +90,7 @@ static void hrtimer_get_softirq_time(struct hrtimer_cpu_base *base)
- 	do {
- 		seq = read_seqbegin(&xtime_lock);
- 		xts = __current_kernel_time();
--		tom = wall_to_monotonic;
-+		tom = __get_wall_to_monotonic();
- 	} while (read_seqretry(&xtime_lock, seq));
- 
- 	xtim = timespec_to_ktime(xts);
-@@ -612,7 +612,7 @@ static int hrtimer_reprogram(struct hrtimer *timer,
- static void retrigger_next_event(void *arg)
+-static inline void update_gtod(u64 new_tb_stamp, u64 new_stamp_xsec,
+-			       u64 new_tb_to_xs)
+-{
+-	/*
+-	 * tb_update_count is used to allow the userspace gettimeofday code
+-	 * to assure itself that it sees a consistent view of the tb_to_xs and
+-	 * stamp_xsec variables.  It reads the tb_update_count, then reads
+-	 * tb_to_xs and stamp_xsec and then reads tb_update_count again.  If
+-	 * the two values of tb_update_count match and are even then the
+-	 * tb_to_xs and stamp_xsec values are consistent.  If not, then it
+-	 * loops back and reads them again until this criteria is met.
+-	 * We expect the caller to have done the first increment of
+-	 * vdso_data->tb_update_count already.
+-	 */
+-	vdso_data->tb_orig_stamp = new_tb_stamp;
+-	vdso_data->stamp_xsec = new_stamp_xsec;
+-	vdso_data->tb_to_xs = new_tb_to_xs;
+-	vdso_data->wtom_clock_sec = wall_to_monotonic.tv_sec;
+-	vdso_data->wtom_clock_nsec = wall_to_monotonic.tv_nsec;
+-	vdso_data->stamp_xtime = xtime;
+-	smp_wmb();
+-	++(vdso_data->tb_update_count);
+-}
+-
+ #ifdef CONFIG_SMP
+ unsigned long profile_pc(struct pt_regs *regs)
  {
- 	struct hrtimer_cpu_base *base;
--	struct timespec realtime_offset;
-+	struct timespec realtime_offset, wtm;
- 	unsigned long seq;
+@@ -876,7 +852,7 @@ static cycle_t timebase_read(struct clocksource *cs)
+ void update_vsyscall(struct timespec *wall_time, struct clocksource *clock,
+ 		     u32 mult)
+ {
+-	u64 t2x, stamp_xsec;
++	u64 new_tb_to_xs, new_stamp_xsec;
  
- 	if (!hrtimer_hres_active())
-@@ -620,10 +620,9 @@ static void retrigger_next_event(void *arg)
+ 	if (clock != &clocksource_timebase)
+ 		return;
+@@ -887,11 +863,30 @@ void update_vsyscall(struct timespec *wall_time, struct clocksource *clock,
  
- 	do {
- 		seq = read_seqbegin(&xtime_lock);
--		set_normalized_timespec(&realtime_offset,
--					-wall_to_monotonic.tv_sec,
--					-wall_to_monotonic.tv_nsec);
-+		wtm = __get_wall_to_monotonic();
- 	} while (read_seqretry(&xtime_lock, seq));
-+	set_normalized_timespec(&realtime_offset, -wtm.tv_sec, -wtm.tv_nsec);
- 
- 	base = &__get_cpu_var(hrtimer_bases);
- 
-diff --git a/kernel/time/timekeeping.c b/kernel/time/timekeeping.c
-index fdfdeb6..8600218 100644
---- a/kernel/time/timekeeping.c
-+++ b/kernel/time/timekeeping.c
-@@ -905,6 +905,11 @@ struct timespec __current_kernel_time(void)
- 	return xtime;
+ 	/* XXX this assumes clock->shift == 22 */
+ 	/* 4611686018 ~= 2^(20+64-22) / 1e9 */
+-	t2x = (u64) mult * 4611686018ULL;
+-	stamp_xsec = (u64) xtime.tv_nsec * XSEC_PER_SEC;
+-	do_div(stamp_xsec, 1000000000);
+-	stamp_xsec += (u64) xtime.tv_sec * XSEC_PER_SEC;
+-	update_gtod(clock->cycle_last, stamp_xsec, t2x);
++	new_tb_to_xs = (u64) mult * 4611686018ULL;
++	new_stamp_xsec = (u64) xtime.tv_nsec * XSEC_PER_SEC;
++	do_div(new_stamp_xsec, 1000000000);
++	new_stamp_xsec += (u64) xtime.tv_sec * XSEC_PER_SEC;
++
++	/*
++	 * tb_update_count is used to allow the userspace gettimeofday code
++	 * to assure itself that it sees a consistent view of the tb_to_xs and
++	 * stamp_xsec variables.  It reads the tb_update_count, then reads
++	 * tb_to_xs and stamp_xsec and then reads tb_update_count again.  If
++	 * the two values of tb_update_count match and are even then the
++	 * tb_to_xs and stamp_xsec values are consistent.  If not, then it
++	 * loops back and reads them again until this criteria is met.
++	 * We expect the caller to have done the first increment of
++	 * vdso_data->tb_update_count already.
++	 */
++	vdso_data->tb_orig_stamp = clock->cycle_last;
++	vdso_data->stamp_xsec = new_stamp_xsec;
++	vdso_data->tb_to_xs = new_tb_to_xs;
++	vdso_data->wtom_clock_sec = wall_to_monotonic.tv_sec;
++	vdso_data->wtom_clock_nsec = wall_to_monotonic.tv_nsec;
++	vdso_data->stamp_xtime = xtime;
++	smp_wmb();
++	++(vdso_data->tb_update_count);
  }
  
-+struct timespec __get_wall_to_monotonic(void)
-+{
-+	return wall_to_monotonic;
-+}
-+
- struct timespec current_kernel_time(void)
- {
- 	struct timespec now;
+ void update_vsyscall_tz(void)
 -- 
 1.6.0.4
 
