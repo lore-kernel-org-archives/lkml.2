@@ -1,126 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933284Ab0FEKij (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Jun 2010 06:38:39 -0400
-Received: from outbound-mail03.westnet.com.au ([203.10.1.244]:3094 "EHLO
-	outbound-mail03.westnet.com.au" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933095Ab0FEKgY (ORCPT
+	id S1755886Ab0FELKh (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Jun 2010 07:10:37 -0400
+Received: from smtp-out11.han.skanova.net ([195.67.226.200]:34134 "EHLO
+	smtp-out11.han.skanova.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751940Ab0FELKg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Jun 2010 06:36:24 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AlJPAPbECUw6B9wNPGdsb2JhbACHb5ZlDAEBAQE1LbAkjUSFFwSDSA
-X-IronPort-AV: E=Sophos;i="4.53,366,1272816000"; 
-   d="scan'208";a="77635026"
-From: Mike Gilks <mike.kernel@gilksonline.com>
-To: gregkh@suse.de, mchehab@redhat.com, julia@diku.dk, joe@perches.com
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-       Mike Gilks <kernel.online@gilksonline.com>
-Subject: [PATCH 04/12] checkpatch.pl issues removed to line 296
-Date: Sat,  5 Jun 2010 18:36:19 +0800
-Message-Id: <1275734187-26583-5-git-send-email-mike.kernel@gilksonline.com>
+	Sat, 5 Jun 2010 07:10:36 -0400
+X-Greylist: delayed 346 seconds by postgrey-1.27 at vger.kernel.org; Sat, 05 Jun 2010 07:10:35 EDT
+From: "Henrik Rydberg" <rydberg@euromail.se>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+       Jiri Kosina <jkosina@suse.cz>, Mika Kuoppala <mika.kuoppala@nokia.com>,
+       Benjamin Tissoires <tissoire@cena.fr>, Rafi Rubin <rafi@seas.upenn.edu>,
+       Henrik Rydberg <rydberg@euromail.se>
+Subject: [PATCH 0/3] input: evdev: Dynamic buffers (rev4)
+Date: Sat,  5 Jun 2010 13:04:26 +0200
+Message-Id: <1275735869-2185-1-git-send-email-rydberg@euromail.se>
 X-Mailer: git-send-email 1.6.3.3
-In-Reply-To: <1275734187-26583-4-git-send-email-mike.kernel@gilksonline.com>
-References: <1275734187-26583-1-git-send-email-mike.kernel@gilksonline.com>
- <1275734187-26583-2-git-send-email-mike.kernel@gilksonline.com>
- <1275734187-26583-3-git-send-email-mike.kernel@gilksonline.com>
- <1275734187-26583-4-git-send-email-mike.kernel@gilksonline.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Mike Gilks <kernel.online@gilksonline.com>
+Dmitry,
+
+Please find enclosed the fourth version of the evdev buffer patches.
+
+This version implements buffer locking using event_lock as you
+suggested, such that we can proceed with fixing the evdev buffer
+problem independently from providing a suitable one-to-many buffer.
+
+The first patch converts the per-client buffers to a common buffer,
+and adds a fixme since the code is expected to be further
+improved. The second and third patch includes your review comments.
+
+Thanks,
+Henrik
 
 ---
- drivers/staging/rtl8192u/r8192U_core.c |   47 ++++++++++++++++++-------------
- 1 files changed, 27 insertions(+), 20 deletions(-)
 
-diff --git a/drivers/staging/rtl8192u/r8192U_core.c b/drivers/staging/rtl8192u/r8192U_core.c
-index ba9df82..7bfbbfe 100644
---- a/drivers/staging/rtl8192u/r8192U_core.c
-+++ b/drivers/staging/rtl8192u/r8192U_core.c
-@@ -202,7 +202,7 @@ static CHANNEL_LIST ChannelPlan[] = {
- 
- static void rtl819x_set_channel_map(u8 channel_plan, struct r8192_priv *priv)
- {
--	int i, max_chan =- 1, min_chan = -1;
-+	int i, max_chan = -1, min_chan = -1;
- 	struct ieee80211_device *ieee = priv->ieee80211;
- 	switch (channel_plan) {
- 	case COUNTRY_CODE_FCC:
-@@ -232,12 +232,12 @@ static void rtl819x_set_channel_map(u8 channel_plan, struct r8192_priv *priv)
- 			memset(GET_DOT11D_INFO(ieee)->channel_map, 0,
- 				sizeof(GET_DOT11D_INFO(ieee)->channel_map));
- 			/* Set new channel map */
--			for (i = 0;i<ChannelPlan[channel_plan].Len; i++) {
-+			for (i = 0; i < ChannelPlan[channel_plan].Len; i++) {
- 				if (ChannelPlan[channel_plan].Channel[i] <
- 					min_chan || ChannelPlan[channel_plan].
- 							Channel[i] > max_chan)
- 				break;
--				GET_DOT11D_INFO(ieee)->channel_map[ChannelPlan
-+			GET_DOT11D_INFO(ieee)->channel_map[ChannelPlan
- 						[channel_plan].Channel[i]] = 1;
- 			}
- 		}
-@@ -259,34 +259,41 @@ static void rtl819x_set_channel_map(u8 channel_plan, struct r8192_priv *priv)
- }
- #endif
- 
--#define eqMacAddr(a,b) ( ((a)[0]==(b)[0] && (a)[1]==(b)[1] && (a)[2]==(b)[2] && (a)[3]==(b)[3] && (a)[4]==(b)[4] && (a)[5]==(b)[5]) ? 1:0 )
-+#define eqMacAddr(a, b)(((a)[0] == (b)[0] && (a)[1] == (b)[1] && (a)[2] ==\
-+	(b)[2] && (a)[3] == (b)[3] && (a)[4] == (b)[4] && (a)[5] == (b)[5])\
-+								 ? 1 : 0)
- 
--#define 	rx_hal_is_cck_rate(_pdrvinfo)\
--			(_pdrvinfo->RxRate == DESC90_RATE1M ||\
--			_pdrvinfo->RxRate == DESC90_RATE2M ||\
--			_pdrvinfo->RxRate == DESC90_RATE5_5M ||\
--			_pdrvinfo->RxRate == DESC90_RATE11M) &&\
--			!_pdrvinfo->RxHT\
-+#define	rx_hal_is_cck_rate(_pdrvinfo)\
-+		(_pdrvinfo->RxRate == DESC90_RATE1M ||\
-+		_pdrvinfo->RxRate == DESC90_RATE2M ||\
-+		_pdrvinfo->RxRate == DESC90_RATE5_5M ||\
-+		_pdrvinfo->RxRate == DESC90_RATE11M) &&\
-+		!_pdrvinfo->RxHT\
- 
- 
- void CamResetAllEntry(struct net_device *dev)
- {
- 	u32 ulcommand = 0;
--	//2004/02/11  In static WEP, OID_ADD_KEY or OID_ADD_WEP are set before STA associate to AP.
--	// However, ResetKey is called on OID_802_11_INFRASTRUCTURE_MODE and MlmeAssociateRequest
--	// In this condition, Cam can not be reset because upper layer will not set this static key again.
--	//if(Adapter->EncAlgorithm == WEP_Encryption)
--	//      return;
--//debug
--	//DbgPrint("========================================\n");
--	//DbgPrint("                            Call ResetAllEntry                                              \n");
--	//DbgPrint("========================================\n\n");
-+	/* 2004/02/11  In static WEP, OID_ADD_KEY or OID_ADD_WEP are set before
-+	 * STA associate to AP.
-+	 * However, ResetKey is called on OID_802_11_INFRASTRUCTURE_MODE and
-+	 * MlmeAssociateRequest
-+	 * In this condition, Cam can not be reset because upper layer will not
-+	 * set this static key again.
-+	 *if(Adapter->EncAlgorithm == WEP_Encryption)
-+	 *	return;
-+	 */
-+	/* debug
-+	 *DbgPrint("========================================\n");
-+	 *DbgPrint("                            Call ResetAllEntry"
-+	 *		"                                              \n");
-+	 *DbgPrint("========================================\n\n");
-+	 */
- 	ulcommand |= BIT31|BIT30;
- 	write_nic_dword(dev, RWCAM, ulcommand);
- 
- }
- 
--
- void write_cam(struct net_device *dev, u8 addr, u32 data)
- {
- 	write_nic_dword(dev, WCAMI, data);
--- 
-1.6.3.3
+Henrik Rydberg (3):
+  input: evdev: Use multi-reader buffer to save space (rev4)
+  input: evdev: Convert to dynamic event buffer (rev4)
+  input: Use driver hint to compute the evdev buffer size (rev2)
+
+ drivers/input/evdev.c |   68 +++++++++++++++++++++++++++++++++----------------
+ include/linux/input.h |   17 ++++++++++++
+ 2 files changed, 63 insertions(+), 22 deletions(-)
 
