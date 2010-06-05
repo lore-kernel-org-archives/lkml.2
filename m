@@ -1,135 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932912Ab0FEVG6 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Jun 2010 17:06:58 -0400
-Received: from ppsw-32.csi.cam.ac.uk ([131.111.8.132]:53012 "EHLO
-	ppsw-32.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932658Ab0FEVG5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Jun 2010 17:06:57 -0400
-X-Cam-AntiVirus: no malware found
-X-Cam-SpamDetails: not scanned
-X-Cam-ScannerInfo: http://www.cam.ac.uk/cs/email/scanner/
-Message-ID: <4C0ABC75.9020908@jic23.retrosnub.co.uk>
-Date: Sat, 05 Jun 2010 22:07:01 +0100
-From: Jonathan Cameron <kernel@jic23.retrosnub.co.uk>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100426 Thunderbird/3.0.4
-MIME-Version: 1.0
-To: Lars-Peter Clausen <lars@metafoo.de>
-CC: linux-mips@linux-mips.org, linux-kernel@vger.kernel.org,
-       Ralf Baechle <ralf@linux-mips.org>, lm-sensors@lm-sensors.org
-Subject: Re: [lm-sensors] [RFC][PATCH 22/26] hwmon: Add JZ4740 ADC driver
-References: <1275505397-16758-1-git-send-email-lars@metafoo.de>	<1275505950-17334-6-git-send-email-lars@metafoo.de>	<4C0A87F1.8000201@jic23.retrosnub.co.uk> <4C0AA0CA.9020808@metafoo.de>
-In-Reply-To: <4C0AA0CA.9020808@metafoo.de>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S932926Ab0FEVL7 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Jun 2010 17:11:59 -0400
+Received: from ist.d-labs.de ([213.239.218.44]:42964 "EHLO mx01.d-labs.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932702Ab0FEVL5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 5 Jun 2010 17:11:57 -0400
+Date: Sat, 5 Jun 2010 23:11:41 +0200
+From: Florian Mickler <florian@mickler.org>
+To: Felipe Contreras <felipe.contreras@gmail.com>
+Cc: Arve =?ISO-8859-15?Q?Hj=F8nnev=E5g?= <arve@android.com>,
+       Peter Zijlstra <peterz@infradead.org>,
+       Thomas Gleixner <tglx@linutronix.de>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+       Matthew Garrett <mjg59@srcf.ucam.org>,
+       Alan Stern <stern@rowland.harvard.edu>, Paul@smtp1.linux-foundation.org,
+       LKML <linux-kernel@vger.kernel.org>, felipe.balbi@nokia.com,
+       Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
+       Linux PM <linux-pm@lists.linux-foundation.org>,
+       Alan Cox <alan@lxorguk.ukuu.org.uk>
+Subject: Re: [linux-pm] [PATCH 0/8] Suspend block api (version 8)
+Message-ID: <20100605231141.52de0df7@schatten.dmk.lab>
+In-Reply-To: <AANLkTindQjsQRMUkxKNx-NqSiMlxUirmK2GO6zE7n0rf@mail.gmail.com>
+References: <Pine.LNX.4.44L0.1005271253240.3239-100000@iolanthe.rowland.org>
+	<201005302202.39511.rjw@sisk.pl>
+	<AANLkTilUQ2AG76nbK6LwI8_7zw0_yMSoAOr9pmuz7xrt@mail.gmail.com>
+	<201005312347.24251.rjw@sisk.pl>
+	<AANLkTilvOgSFTDFtXbjJobMZWxgfvsC97TqC7_a_NHBX@mail.gmail.com>
+	<alpine.LFD.2.00.1006011411200.2933@localhost.localdomain>
+	<AANLkTikZHmF6baP7dEXEGFE8YsbEteRjlhb5wqZX8ll1@mail.gmail.com>
+	<alpine.LFD.2.00.1006020905410.2933@localhost.localdomain>
+	<AANLkTinDm3FIrbS1jqEzW15THmr1hdd7ox0Mllm1VLjZ@mail.gmail.com>
+	<1275471561.27810.30865.camel@twins>
+	<AANLkTilLmAb2c9fQwuguzWtjcHfuTZvPUTbUx7vuwFI6@mail.gmail.com>
+	<AANLkTikna-Vs_phy2VrJs0I8gIsdSmwuxTJ67gQ_2oTt@mail.gmail.com>
+	<20100605220143.08774900@schatten.dmk.lab>
+	<AANLkTindQjsQRMUkxKNx-NqSiMlxUirmK2GO6zE7n0rf@mail.gmail.com>
+X-Mailer: Claws Mail 3.7.5 (GTK+ 2.18.9; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/05/10 20:08, Lars-Peter Clausen wrote:
-> Hi
-> 
-> Jonathan Cameron wrote:
->> On 06/02/10 20:12, Lars-Peter Clausen wrote:
->>   
->>> This patch adds support for the ADC module on JZ4740 SoCs.
->>>
->>> Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
->>> Cc: lm-sensors@lm-sensors.org
->>> ---
->>>  drivers/hwmon/Kconfig      |   11 ++
->>>  drivers/hwmon/Makefile     |    1 +
->>>  drivers/hwmon/jz4740-adc.c |  423 ++++++++++++++++++++++++++++++++++++++++++++
->>>  include/linux/jz4740-adc.h |   25 +++
->>>  4 files changed, 460 insertions(+), 0 deletions(-)
->>>  create mode 100644 drivers/hwmon/jz4740-adc.c
->>>  create mode 100644 include/linux/jz4740-adc.h
->>>     
->> Hi, I'm just wondering of one wants the majority of this driver to sit in hwmon?
->>
->> Looks to me like a fairly classic case for something that might be best implemented
->> as an mfd with the hwmon, touchscreen and battery drivers separately hanging off that.
->> You might well have someone who needs the battery driver to work, but doesn't care
->> about hwmon and so doesn't want to build that bit in... 
->>
->> Just an immediate thought.  Perhaps this is the best way to do things...
->>   
-> I've thought about it before and rejected the idea at that time, because
-> I thought it will add more abstraction then actually needed.
-> But at that time the adc driver was not a hwmon driver yet and thus
-> didn't pull in the whole hwmon framework if you only wanted to use the
-> battery driver.
-> But the more I'm thinking about it now it might actually make sense to
-> move the common code to a MFD driver.
->> Also after a quick look.  How is it used by the touchscreen driver?
->> If not, please remove the reference from kconfig until it it is true.
->>   
-> There is no touchscreen driver yet. But if I'm going to remove the
-> reference I'm pretty sure that someone will come up and ask why it
-> actually is necessary to have a separate driver instead of putting all
-> the code into the battery driver.
-Fair enough.  Perhaps a comment for the patch rather than in Kconfig
-as it currently is.  People will enable it then go 'Why can't I now
-enable the touchscreen driver?'
+On Sat, 5 Jun 2010 23:26:27 +0300
+Felipe Contreras <felipe.contreras@gmail.com> wrote:
 
->> Few other bits and bobs inline.
->>   
->>>
->>> diff --git a/drivers/hwmon/jz4740-adc.c b/drivers/hwmon/jz4740-adc.c
->>> new file mode 100644
->>> index 0000000..635dfe9
->>> --- /dev/null
->>> +++ b/drivers/hwmon/jz4740-adc.c
->>> @@ -0,0 +1,423 @@
->>> + [...]
->>> +static ssize_t jz4740_adc_read_adcin(struct device *dev,
->>> +					struct device_attribute *dev_attr,
->>> +					char *buf)
->>> +{
->>> +	struct jz4740_adc *adc = dev_get_drvdata(dev);
->>> +	unsigned long t;
->>> +	uint16_t val;
->>> +
->>> +	jz4740_adc_clk_enable(adc);
->>> +
->>>     
->> Is there a possible race here?
->>   
-> Where exactly?
-I can't recall off the top of my head if sysfs attributes can having multiple
-simultaneous readers. If they can then thread two is just past the next line.
-Whilst the earlier thread has passed the t = wait.... line as the interrupt has
-fired.  The irq is then disabled by thread 1 whilst thread 2 enables the adc.
-Clearly the timeout will prevent any serious issues but the 2nd thread is going
-to falsely wait a second I think... ?
->>> +	jz4740_adc_enable_irq(adc, JZ_ADC_IRQ_ADCIN);
->>> +	jz4740_adc_enable_adc(adc, JZ_ADC_ENABLE_ADCIN);
->>> +
->>> +	t = wait_for_completion_interruptible_timeout(&adc->adc_completion,
->>> +							HZ);
->>> +
->>> +	jz4740_adc_disable_irq(adc, JZ_ADC_IRQ_ADCIN);
->>> +
->>> +	if (t <= 0) {
->>> +		jz4740_adc_disable_adc(adc, JZ_ADC_ENABLE_ADCIN);
->>> +		return t ? t : -ETIMEDOUT;
->>> +	}
->>> +
->>> +	val = readw(adc->base + JZ_REG_ADC_ADCIN);
->>> +	jz4740_adc_clk_disable(adc);
->>> +
->>>     
->> Does this device really use units of milivolts? (standard in hwmon).
->> I couldn't confirm either way via quick googling.
->>   
-> Hm, right, it does not. Interestingly the datasheet does not tell the
-> unit of the returned data, but I found a formula in the datasheet for a
-> similar SoC.
->>> +	return sprintf(buf, "%d\n", val);
->>> +}
->>> +
->>> + [...]
->>>     
-> Thanks for reviewing the patch.
-You are welcome.
+> Supposing there's a perfect usage of suspend blockers from user-space
+> on current x86 platforms (in theory Android would have that), is the
+> benefit that big to consider this a strong argument in favor of
+> suspend blockers? Considering the small amount of x86 platforms using
+> Android (is there any?), the fact that nobody else will use suspend
+> blockers, and that x86 is already being fixed (as mentioned many times
+> before) so dynamic PM is possible, I don't think we should be
+> considering current x86 at all for suspend blockers.
+
+A solution for the desktop to deprecate having to shut down the
+machine would not be that bad, wouldn;t it? (Why have I to shut down
+my machine anyway?) 
+
+In my opinion such a decision (when to shutdown) has to be guided by
+userspace knowledge.
+Future x86 hardware is to be fixed (as I read in this discussion), so
+using suspend blockers could be the tool of choice. 
+
+But alright. Let's be a little bit more focused on the present
+situation:
+
+1) There currently is no other solution.
+2) It is a first stepping stone to bringing android to mainline.
+3) Any "perfect" solution will emerge anyway. As there are so many
+people with so strong opinions engaged in this discussion, I'm
+confident.
+4) If there is a better solution, android will shurely adapt it as
+soon as it is there. 
+
+Cheers,
+Flo
