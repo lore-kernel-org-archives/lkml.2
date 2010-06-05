@@ -1,125 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933457Ab0FEWNJ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Jun 2010 18:13:09 -0400
-Received: from mailhost.informatik.uni-hamburg.de ([134.100.9.70]:42621 "EHLO
-	mailhost.informatik.uni-hamburg.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932711Ab0FEWNH (ORCPT
+	id S933455Ab0FEWUx (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Jun 2010 18:20:53 -0400
+Received: from casper.infradead.org ([85.118.1.10]:42337 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933099Ab0FEWUv convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Jun 2010 18:13:07 -0400
-Message-ID: <4C0ACBC6.6050209@metafoo.de>
-Date: Sun, 06 Jun 2010 00:12:22 +0200
-From: Lars-Peter Clausen <lars@metafoo.de>
-User-Agent: Mozilla-Thunderbird 2.0.0.24 (X11/20100329)
-MIME-Version: 1.0
-To: Jonathan Cameron <kernel@jic23.retrosnub.co.uk>
-CC: linux-mips@linux-mips.org, linux-kernel@vger.kernel.org,
-       Ralf Baechle <ralf@linux-mips.org>, lm-sensors@lm-sensors.org
-Subject: Re: [lm-sensors] [RFC][PATCH 22/26] hwmon: Add JZ4740 ADC driver
-References: <1275505397-16758-1-git-send-email-lars@metafoo.de> <1275505950-17334-6-git-send-email-lars@metafoo.de>     <4C0A87F1.8000201@jic23.retrosnub.co.uk> <4C0AA0CA.9020808@metafoo.de> <4C0ABC75.9020908@jic23.retrosnub.co.uk>
-In-Reply-To: <4C0ABC75.9020908@jic23.retrosnub.co.uk>
-X-Enigmail-Version: 0.95.0
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Sat, 5 Jun 2010 18:20:51 -0400
+Date: Sat, 5 Jun 2010 15:23:26 -0700
+From: Arjan van de Ven <arjan@infradead.org>
+To: Arve =?UTF-8?B?SGrDuG5uZXbDpWc=?= <arve@android.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+       tytso@mit.edu, Brian Swetland <swetland@google.com>,
+       Neil Brown <neilb@suse.de>, Thomas Gleixner <tglx@linutronix.de>,
+       "Rafael J. Wysocki" <rjw@sisk.pl>,
+       Alan Stern <stern@rowland.harvard.edu>,
+       Felipe Balbi <felipe.balbi@nokia.com>,
+       LKML <linux-kernel@vger.kernel.org>,
+       Florian Mickler <florian@mickler.org>,
+       Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
+       Linux PM <linux-pm@lists.linux-foundation.org>,
+       Alan Cox <alan@lxorguk.ukuu.org.uk>,
+       James Bottomley <James.Bottomley@suse.de>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       Kevin Hilman <khilman@deeprootsystems.com>,
+       "H. Peter Anvin" <hpa@zytor.com>
+Subject: Re: suspend blockers & Android integration
+Message-ID: <20100605152326.7ccd5160@infradead.org>
+In-Reply-To: <AANLkTimEwznq9c_8lkuBMxEQ-42rdvpZEqA9Y71Cu-qC@mail.gmail.com>
+References: <20100603193045.GA7188@elte.hu>
+	<20100603231153.GA11302@elte.hu>
+	<20100603232302.GA16184@elte.hu>
+	<AANLkTikZP3bmckpfb_jUdG7qZO5W9DgpZ79ugtSZaEpt@mail.gmail.com>
+	<20100604071354.GA14451@elte.hu>
+	<AANLkTimH4ihf3QqtKFpfGXRKtO55PrUuff9JYtaEBG44@mail.gmail.com>
+	<20100604083423.GD15181@elte.hu>
+	<AANLkTinQyzzeF-NOAjrAqqQXqKjFJhx85nI4uyBGRtWd@mail.gmail.com>
+	<1275653210.27810.39762.camel@twins>
+	<AANLkTinyjBa0KYfFz3_EFbC65hoQFwFINlTDYjCe-wM3@mail.gmail.com>
+	<1275731653.27810.41078.camel@twins>
+	<20100605092851.6ee15f13@infradead.org>
+	<AANLkTimEwznq9c_8lkuBMxEQ-42rdvpZEqA9Y71Cu-qC@mail.gmail.com>
+Organization: Intel
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; i386-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
+X-SRS-Rewrite: SMTP reverse-path rewritten from <arjan@infradead.org> by casper.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Jonathan Cameron wrote:
-> On 06/05/10 20:08, Lars-Peter Clausen wrote:
->   
->> Hi
->>
->> Jonathan Cameron wrote:
->>     
->>> On 06/02/10 20:12, Lars-Peter Clausen wrote:
->>>   
->>>       
->>>> This patch adds support for the ADC module on JZ4740 SoCs.
->>>>
->>>> Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
->>>> Cc: lm-sensors@lm-sensors.org
->>>> ---
->>>>  drivers/hwmon/Kconfig      |   11 ++
->>>>  drivers/hwmon/Makefile     |    1 +
->>>>  drivers/hwmon/jz4740-adc.c |  423 ++++++++++++++++++++++++++++++++++++++++++++
->>>>  include/linux/jz4740-adc.h |   25 +++
->>>>  4 files changed, 460 insertions(+), 0 deletions(-)
->>>>  create mode 100644 drivers/hwmon/jz4740-adc.c
->>>>  create mode 100644 include/linux/jz4740-adc.h
->>>>     
->>>>         
->>> Hi, I'm just wondering of one wants the majority of this driver to sit in hwmon?
->>>
->>> Looks to me like a fairly classic case for something that might be best implemented
->>> as an mfd with the hwmon, touchscreen and battery drivers separately hanging off that.
->>> You might well have someone who needs the battery driver to work, but doesn't care
->>> about hwmon and so doesn't want to build that bit in... 
->>>
->>> Just an immediate thought.  Perhaps this is the best way to do things...
->>>   
->>>       
->> I've thought about it before and rejected the idea at that time, because
->> I thought it will add more abstraction then actually needed.
->> But at that time the adc driver was not a hwmon driver yet and thus
->> didn't pull in the whole hwmon framework if you only wanted to use the
->> battery driver.
->> But the more I'm thinking about it now it might actually make sense to
->> move the common code to a MFD driver.
->>     
->>> Also after a quick look.  How is it used by the touchscreen driver?
->>> If not, please remove the reference from kconfig until it it is true.
->>>   
->>>       
->> There is no touchscreen driver yet. But if I'm going to remove the
->> reference I'm pretty sure that someone will come up and ask why it
->> actually is necessary to have a separate driver instead of putting all
->> the code into the battery driver.
->>     
-> Fair enough.  Perhaps a comment for the patch rather than in Kconfig
-> as it currently is.  People will enable it then go 'Why can't I now
-> enable the touchscreen driver?'
->
->   
-I guess that will work.
->>> Few other bits and bobs inline.
->>>   
->>>       
->>>> diff --git a/drivers/hwmon/jz4740-adc.c b/drivers/hwmon/jz4740-adc.c
->>>> new file mode 100644
->>>> index 0000000..635dfe9
->>>> --- /dev/null
->>>> +++ b/drivers/hwmon/jz4740-adc.c
->>>> @@ -0,0 +1,423 @@
->>>> + [...]
->>>> +static ssize_t jz4740_adc_read_adcin(struct device *dev,
->>>> +					struct device_attribute *dev_attr,
->>>> +					char *buf)
->>>> +{
->>>> +	struct jz4740_adc *adc = dev_get_drvdata(dev);
->>>> +	unsigned long t;
->>>> +	uint16_t val;
->>>> +
->>>> +	jz4740_adc_clk_enable(adc);
->>>> +
->>>>     
->>>>         
->>> Is there a possible race here?
->>>   
->>>       
->> Where exactly?
->>     
-> I can't recall off the top of my head if sysfs attributes can having multiple
-> simultaneous readers. If they can then thread two is just past the next line.
-> Whilst the earlier thread has passed the t = wait.... line as the interrupt has
-> fired.  The irq is then disabled by thread 1 whilst thread 2 enables the adc.
-> Clearly the timeout will prevent any serious issues but the 2nd thread is going
-> to falsely wait a second I think... ?
->   
-Hm, right. I didn't thought of that. There can be multiple simultaneous
-reads.
-Actually there are multiple issues with concurrent reads from adcin pin,
-I guess the whole function should be protected by a mutex.
-And additionally the clock is not turned off in case of an error.
+On Sat, 5 Jun 2010 14:26:14 -0700
+Arve Hjønnevåg <arve@android.com> wrote:
 
-- Lars
+> On Sat, Jun 5, 2010 at 9:28 AM, Arjan van de Ven
+> <arjan@infradead.org> wrote:
+> > On Sat, 05 Jun 2010 11:54:13 +0200
+> > Peter Zijlstra <peterz@infradead.org> wrote:
+> >
+> >> On Fri, 2010-06-04 at 17:10 -0700, Arve Hjønnevåg wrote:
+> >> > > Trusted processes are assumed to be sane and idle when there is
+> >> > > nothing for them to do, allowing the machine to go into deep
+> >> > > idle states.
+> >> > >
+> >> >
+> >> > Neither the kernel nor our trusted user-space code currently
+> >> > meets this criteria.
+> >>
+> >> Then both need fixing. Really, that's the only sane approach.
+> >
+> > fwiw... in MeeGo we're seeing quite good idle times (> 1 seconds)
+> > without really bad hacks.
+> >
+> 
+> We clearly have different standards for what we consider good. We
+> measure time suspended in minutes or hours, not seconds, and waking up
+> every second or two causes a noticeable decrease in battery life on
+> the hardware we have today.
+
+I guess I'm spoiled working with (unreleased) hardware that knows how
+to power gate ;-)
+
+
+> 
+> > the kernel has a set of infrastructure already to help here (range
+> > timers, with which you can wakeup-limit untrusted userspace crap),
+> > timer slack for legacy background timers, etc etc.
+> 
+> Range timers allows the kernel to align different timers so they don't
+> each bring the cpu out of idle individually. They do not eliminate
+> timers or make individual timers fire less often.
+
+you're incorrect.
+With range timers you can control the rate at which timers fire just
+fine. 
+
+For example if the Adobe Flash player puts a timer every 10
+milliseconds (yes it does that), and you give it a 3.99 seconds range,
+it will fire its timers every 4 seconds.... unless other activity
+happens independently, at which point it'll align with that instead.
+
+
+
+-- 
+Arjan van de Ven 	Intel Open Source Technology Centre
+For development, discussion and tips for power savings, 
+visit http://www.lesswatts.org
