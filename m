@@ -1,25 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932871Ab0FEKHG (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Jun 2010 06:07:06 -0400
+	id S933153Ab0FEKMH (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Jun 2010 06:12:07 -0400
 Received: from mga01.intel.com ([192.55.52.88]:64909 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932751Ab0FEKGz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Jun 2010 06:06:55 -0400
+	id S932845Ab0FEKHB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 5 Jun 2010 06:07:01 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.53,366,1272870000"; 
-   d="scan'208";a="804988017"
+   d="scan'208";a="804988038"
 From: xiaohui.xin@intel.com
 To: netdev@vger.kernel.org, kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
        mst@redhat.com, mingo@elte.hu, davem@davemloft.net,
        herbert@gondor.hengli.com.au, jdike@linux.intel.com
 Cc: Xin Xiaohui <xiaohui.xin@intel.com>
-Subject: [RFC PATCH v7 02/19] Add a new struct for device to manipulate external buffer.
-Date: Sat,  5 Jun 2010 18:14:41 +0800
-Message-Id: <1275732899-5423-2-git-send-email-xiaohui.xin@intel.com>
+Subject: [RFC PATCH v7 06/19] Add a function to indicate if device use external buffer.
+Date: Sat,  5 Jun 2010 18:14:45 +0800
+Message-Id: <1275732899-5423-6-git-send-email-xiaohui.xin@intel.com>
 X-Mailer: git-send-email 1.5.4.4
-In-Reply-To: <1275732899-5423-1-git-send-email-xiaohui.xin@intel.com>
+In-Reply-To: <1275732899-5423-5-git-send-email-xiaohui.xin@intel.com>
 References: <1275732899-5423-1-git-send-email-xiaohui.xin@intel.com>
+ <1275732899-5423-2-git-send-email-xiaohui.xin@intel.com>
+ <1275732899-5423-3-git-send-email-xiaohui.xin@intel.com>
+ <1275732899-5423-4-git-send-email-xiaohui.xin@intel.com>
+ <1275732899-5423-5-git-send-email-xiaohui.xin@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -30,46 +34,25 @@ Signed-off-by: Xin Xiaohui <xiaohui.xin@intel.com>
 Signed-off-by: Zhao Yu <yzhao81new@gmail.com>
 Reviewed-by: Jeff Dike <jdike@linux.intel.com>
 ---
- include/linux/netdevice.h |   19 ++++++++++++++++++-
- 1 files changed, 18 insertions(+), 1 deletions(-)
+ include/linux/netdevice.h |    5 +++++
+ 1 files changed, 5 insertions(+), 0 deletions(-)
 
 diff --git a/include/linux/netdevice.h b/include/linux/netdevice.h
-index fa8b476..bae725c 100644
+index 31d9c4a..0cb78f4 100644
 --- a/include/linux/netdevice.h
 +++ b/include/linux/netdevice.h
-@@ -530,6 +530,22 @@ struct netdev_queue {
- 	unsigned long		tx_dropped;
- } ____cacheline_aligned_in_smp;
+@@ -1602,6 +1602,11 @@ extern void netdev_mp_port_detach(struct net_device *dev);
+ extern int netdev_mp_port_prep(struct net_device *dev,
+ 			struct mpassthru_port *port);
  
-+/* Add a structure in structure net_device, the new field is
-+ * named as mp_port. It's for mediate passthru (zero-copy).
-+ * It contains the capability for the net device driver,
-+ * a socket, and an external buffer creator, external means
-+ * skb buffer belongs to the device may not be allocated from
-+ * kernel space.
-+ */
-+struct mpassthru_port	{
-+	int		hdr_len;
-+	int		data_len;
-+	int		npages;
-+	unsigned	flags;
-+	struct socket	*sock;
-+	struct skb_external_page *(*ctor)(struct mpassthru_port *,
-+				struct sk_buff *, int);
-+};
- 
- /*
-  * This structure defines the management hooks for network devices.
-@@ -952,7 +968,8 @@ struct net_device {
- 	struct macvlan_port	*macvlan_port;
- 	/* GARP */
- 	struct garp_port	*garp_port;
--
-+	/* mpassthru */
-+	struct mpassthru_port	*mp_port;
- 	/* class/net/name entry */
- 	struct device		dev;
- 	/* space for optional device, statistics, and wireless sysfs groups */
++static inline bool dev_is_mpassthru(struct net_device *dev)
++{
++	return (dev && dev->mp_port);
++}
++
+ static inline void napi_free_frags(struct napi_struct *napi)
+ {
+ 	kfree_skb(napi->skb);
 -- 
 1.5.4.4
 
