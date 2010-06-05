@@ -1,56 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754036Ab0FESBu (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Jun 2010 14:01:50 -0400
-Received: from e32.co.us.ibm.com ([32.97.110.150]:55561 "EHLO
-	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751530Ab0FESBt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Jun 2010 14:01:49 -0400
-Subject: Re: [RFC][PATCH 5/6] Cleanup hrtimer.c's direct access to
- wall_to_monotonic
-From: john stultz <johnstul@us.ibm.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>
-In-Reply-To: <201006051223.06000.arnd@arndb.de>
-References: <1275706406-8111-1-git-send-email-johnstul@us.ibm.com>
-	 <1275706406-8111-5-git-send-email-johnstul@us.ibm.com>
-	 <1275706406-8111-6-git-send-email-johnstul@us.ibm.com>
-	 <201006051223.06000.arnd@arndb.de>
-Content-Type: text/plain; charset="UTF-8"
-Date: Sat, 05 Jun 2010 11:01:45 -0700
-Message-ID: <1275760905.1734.2.camel@work-vm>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	id S1754817Ab0FESKZ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Jun 2010 14:10:25 -0400
+Received: from smtp.gentoo.org ([140.211.166.183]:32836 "EHLO smtp.gentoo.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751693Ab0FESKW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 5 Jun 2010 14:10:22 -0400
+From: Mike Frysinger <vapier@gentoo.org>
+To: Tim Abbott <tabbott@ksplice.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH 2/2] Blackfin: use smaller rootfs alignment
+Date: Sat,  5 Jun 2010 14:14:46 -0400
+Message-Id: <1275761686-4996-2-git-send-email-vapier@gentoo.org>
+X-Mailer: git-send-email 1.7.1
+In-Reply-To: <1275761686-4996-1-git-send-email-vapier@gentoo.org>
+References: <1275761686-4996-1-git-send-email-vapier@gentoo.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2010-06-05 at 12:23 +0200, Arnd Bergmann wrote:
-> On Saturday 05 June 2010, John Stultz wrote:
-> >         do {
-> >                 seq = read_seqbegin(&xtime_lock);
-> >                 xts = __current_kernel_time();
-> > -               tom = wall_to_monotonic;
-> > +               tom = __get_wall_to_monotonic();
-> >         } while (read_seqretry(&xtime_lock, seq));
-> >  
-> 
-> Would it make sense to also limit the use of xtime_lock to the
-> timekeeping code? I suppose you could merge the various accessors
-> (current_kernel_time, get_monotonic_coarse, __current_kernel_time,
-> __get_wall_to_monotonic) with a single function doing
+No need for the rootfs to be aligned to a page since we load it up and
+free it during boot.
 
-Yep. I hope to keep chipping at it to get there. 
+Signed-off-by: Mike Frysinger <vapier@gentoo.org>
+---
+ arch/blackfin/kernel/vmlinux.lds.S |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-However xtime_lock protects a bit more then just the timekeeping
-internals, and its currently not limiting the rework I'm hoping to do
-with the timekeeping internal structures. So little bits at a time. :)
-
-thanks
--john
-
-
-
+diff --git a/arch/blackfin/kernel/vmlinux.lds.S b/arch/blackfin/kernel/vmlinux.lds.S
+index 984c781..622d780 100644
+--- a/arch/blackfin/kernel/vmlinux.lds.S
++++ b/arch/blackfin/kernel/vmlinux.lds.S
+@@ -158,7 +158,7 @@ SECTIONS
+ 		INIT_CALLS
+ 		CON_INITCALL
+ 		SECURITY_INITCALL
+-		INIT_RAM_FS
++		INIT_RAMFS(4)
+ 
+ 		. = ALIGN(4);
+ 		___per_cpu_load = .;
+-- 
+1.7.1
 
