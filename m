@@ -1,48 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933377Ab0FENaq (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Jun 2010 09:30:46 -0400
-Received: from king.tilera.com ([72.1.168.226]:56939 "EHLO king.tilera.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933319Ab0FENao (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Jun 2010 09:30:44 -0400
-Message-ID: <4C0A5180.9010702@tilera.com>
-Date: Sat, 05 Jun 2010 09:30:40 -0400
-From: Chris Metcalf <cmetcalf@tilera.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.1.9) Gecko/20100317 Thunderbird/3.0.4
+	id S1756360Ab0FENry (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Jun 2010 09:47:54 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:52088 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754367Ab0FENrw convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 5 Jun 2010 09:47:52 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=JQbhFvgMg57i6zhl4xtDOLOTaRBEfZlGAxLoU+pAmDXMm6zpsn5kfO8Wy9N/gO7oi+
+         r4EDArfVuodUcWc2tKSuWJK+XembYAamHgShgvzbx81aXYQgR8e8zlyiILchndhNx6a9
+         gnxpaDMcBUezpuvDqHPj1LTPoD0wR7OGLo1Zs=
 MIME-Version: 1.0
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-CC: Arnd Bergmann <arnd@arndb.de>, linux-kernel@vger.kernel.org,
-       linux-arch@vger.kernel.org, torvalds@linux-foundation.org
-Subject: Re: [PATCH 0/8] revised patch for arch/tile/ support
-References: <201005200543.o4K5hFRF006079@farm-0002.internal.tilera.com>	<201005290333.o4T3Xjse029917@farm-0002.internal.tilera.com>	<201005291329.10941.arnd@arndb.de>	<201006032240.31963.arnd@arndb.de>	<4C097104.3080406@tilera.com> <20100605225605.4e44d4e4.sfr@canb.auug.org.au>
-In-Reply-To: <20100605225605.4e44d4e4.sfr@canb.auug.org.au>
-X-Enigmail-Version: 1.0.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 05 Jun 2010 13:30:43.0039 (UTC) FILETIME=[4BF7F6F0:01CB04B3]
+In-Reply-To: <alpine.LFD.2.00.1006031317410.8175@i5.linux-foundation.org>
+References: <20100603074548.GA12104@flint.arm.linux.org.uk>
+	<alpine.LFD.2.00.1006030725420.8175@i5.linux-foundation.org>
+	<20100603181010.GA25779@flint.arm.linux.org.uk>
+	<alpine.LFD.2.00.1006031116360.8175@i5.linux-foundation.org>
+	<20100603185333.GD25779@flint.arm.linux.org.uk>
+	<alpine.LFD.2.00.1006031153420.8175@i5.linux-foundation.org>
+	<1275593742.23384.48.camel@c-dwalke-linux.qualcomm.com>
+	<20100603194559.GF25779@flint.arm.linux.org.uk>
+	<alpine.LFD.2.00.1006031305310.8175@i5.linux-foundation.org>
+	<alpine.LFD.2.00.1006031317410.8175@i5.linux-foundation.org>
+Date: Sat, 5 Jun 2010 16:47:50 +0300
+Message-ID: <AANLkTim4ubr2R_lvxnKzdskkIO33ucdHBBAlPwVfRWGa@mail.gmail.com>
+Subject: Re: ARM defconfig files
+From: Felipe Contreras <felipe.contreras@gmail.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Russell King <rmk@arm.linux.org.uk>,
+       Daniel Walker <dwalker@codeaurora.org>,
+       Kevin Hilman <khilman@deeprootsystems.com>,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       linux-arm-msm@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 6/5/2010 8:56 AM, Stephen Rothwell wrote:
-> On Fri, 04 Jun 2010 17:32:52 -0400 Chris Metcalf <cmetcalf@tilera.com> wrote:
->   
->> I've set up a GIT tree for the Tilera architecture support here:
->> git://git.kernel.org/pub/scm/linux/kernel/git/cmetcalf/linux-tile.git
+On Thu, Jun 3, 2010 at 11:31 PM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
+> On Thu, 3 Jun 2010, Linus Torvalds wrote:
 >>
->> [...]
->>     
-> That sounds pretty good.  I have added the master branch from that tree
-> and it will appear in linux-next from Monday.
->   
+>> I apparently haven't explained myself enough, because what you keep on
+>> harping on is not something I consider acceptable.
+>>
+>> STD_CONFIG is pointless. It's pointless because the solution to what
+>> you call STD_CONFIG would be to just NOT USING the special Kconfig.xyz
+>> file at all.
+>
+> To make this _really_ concrete, let me actually give you an example (but
+> broken and pointless) example Kconfig file, in order to _avoid_ having a
+> def_config file.
+>
+> I do it by generating it. Let's say that I want a x86 configuration that
+> has USB enabled. I can basically _ask_ the Kconfig machinery to generate
+> that with something like this:
+>
+>  - create a "Mykconfig" file:
+>
+>        config MYCONFIG
+>                bool
+>                default y
+>                select USB
+>
+>        source arch/x86/Kconfig
+>
+> and then I just do
+>
+>        KBUILD_KCONFIG=Mykconfig make allnoconfig
+>
+> and look what appears in the .config file. In fact, do this:
+>
+>        make allnoconfig
+>        cp .config no-config
+>        KBUILD_KCONFIG=Mykconfig make allnoconfig
+>        cp .config my-config
+>        diff -u no-config my-config
+>
+> to see the point of it all.
+>
+> Now, the above is a _trivial_ one. And it's actually broken, because I
+> should not have forced CONFIG_USB (it depends on CONFIG_USB_SUPPORT).
 
-Thanks, Stephen.  One question: has linux-next reached the point where
-Linus pulls from it automatically during each merge window, or should I
-still ask Linus explicitly to pull for the 2.6.36 merge window?
+And that's precisely the problem that his approach doesn't solve: dependencies.
+
+---
+config MYCONFIG
+	bool
+	default y
+	select MACH_OMAP3_BEAGLE
+
+source arch/arm/Kconfig
+---
+
+Is the same as:
+---
+source arch/arm/Kconfig
+---
+
+With the SAT resolver it would be possible to have a .satconfig:
+CONFIG_MACH_OMAP3_BEAGLE=y
+
+And let the resolver figure everything out back from there.
 
 -- 
-Chris Metcalf, Tilera Corp.
-http://www.tilera.com
-
-
+Felipe Contreras
