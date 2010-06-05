@@ -1,104 +1,185 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933705Ab0FEQjK (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Jun 2010 12:39:10 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:46851 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933641Ab0FEQjJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Jun 2010 12:39:09 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=N+28lVpf3mJqMbSxbzjp4gzc6mYN5NdPTZNy4qzk1ucLMi6AmEAKc/NsbbIOZDJeC5
-         P12juKXepba7znSEP3A0ejt7hhEA8jOse+4l8M6pHViC8Q4jQg56wtClSkDDmM1aIlin
-         HeSSYnYBhLUtlJeGqHwuTNgH4q2CWvsbzdhPI=
-MIME-Version: 1.0
-In-Reply-To: <alpine.LFD.2.00.1006050734370.8175@i5.linux-foundation.org>
-References: <20100603074548.GA12104@flint.arm.linux.org.uk>
-	<alpine.LFD.2.00.1006030725420.8175@i5.linux-foundation.org>
-	<20100603181010.GA25779@flint.arm.linux.org.uk>
-	<alpine.LFD.2.00.1006031116360.8175@i5.linux-foundation.org>
-	<20100603185333.GD25779@flint.arm.linux.org.uk>
-	<alpine.LFD.2.00.1006031153420.8175@i5.linux-foundation.org>
-	<1275593742.23384.48.camel@c-dwalke-linux.qualcomm.com>
-	<20100603194559.GF25779@flint.arm.linux.org.uk>
-	<alpine.LFD.2.00.1006031305310.8175@i5.linux-foundation.org>
-	<alpine.LFD.2.00.1006031317410.8175@i5.linux-foundation.org>
-	<20100603211707.GA6499@atomide.com>
-	<AANLkTilSBWeYTV6YlLK4XdoBsSFSVvtJIRmJxAdNu92U@mail.gmail.com>
-	<alpine.LFD.2.00.1006050734370.8175@i5.linux-foundation.org>
-Date: Sat, 5 Jun 2010 19:39:07 +0300
-Message-ID: <AANLkTinl_D5ZRaSru6B-Hq4ciAi4CTXhDtDG33AdWWW6@mail.gmail.com>
-Subject: Re: ARM defconfig files
-From: Felipe Contreras <felipe.contreras@gmail.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Tony Lindgren <tony@atomide.com>, Russell King <rmk@arm.linux.org.uk>,
-       Daniel Walker <dwalker@codeaurora.org>,
+	id S933725Ab0FEQuf (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Jun 2010 12:50:35 -0400
+Received: from www.tglx.de ([62.245.132.106]:35531 "EHLO www.tglx.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933666Ab0FEQue (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 5 Jun 2010 12:50:34 -0400
+Date: Sat, 5 Jun 2010 18:47:43 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: =?ISO-8859-15?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>
+cc: "Rafael J. Wysocki" <rjw@sisk.pl>, Peter Zijlstra <peterz@infradead.org>,
+       Ingo Molnar <mingo@elte.hu>, tytso@mit.edu,
+       Brian Swetland <swetland@google.com>, Neil Brown <neilb@suse.de>,
+       Alan Stern <stern@rowland.harvard.edu>,
+       Felipe Balbi <felipe.balbi@nokia.com>,
+       LKML <linux-kernel@vger.kernel.org>,
+       Florian Mickler <florian@mickler.org>,
+       Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
+       Linux PM <linux-pm@lists.linux-foundation.org>,
+       Alan Cox <alan@lxorguk.ukuu.org.uk>,
+       James Bottomley <James.Bottomley@suse.de>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
        Kevin Hilman <khilman@deeprootsystems.com>,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       linux-arm-msm@vger.kernel.org, Vegard Nossum <vegard.nossum@gmail.com>
-Content-Type: text/plain; charset=UTF-8
+       "H. Peter Anvin" <hpa@zytor.com>,
+       Arjan van de Ven <arjan@infradead.org>
+Subject: Re: suspend blockers & Android integration
+In-Reply-To: <AANLkTikU21xF49Z-_Lnrq7U7buNmqw_gyEEST8LuN24z@mail.gmail.com>
+Message-ID: <alpine.LFD.2.00.1006051736040.2933@localhost.localdomain>
+References: <20100603193045.GA7188@elte.hu> <20100603232302.GA16184@elte.hu> <1275644619.27810.39462.camel@twins> <201006050138.30859.rjw@sisk.pl> <alpine.LFD.2.00.1006050148080.2933@localhost.localdomain> <AANLkTikGDSzaENwg_0BAtsYf3ulGd_6sGPR30WsvUxMi@mail.gmail.com>
+ <alpine.LFD.2.00.1006050246350.2933@localhost.localdomain> <AANLkTikU21xF49Z-_Lnrq7U7buNmqw_gyEEST8LuN24z@mail.gmail.com>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: MULTIPART/MIXED; BOUNDARY="8323328-852715769-1275756468=:2933"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jun 5, 2010 at 5:39 PM, Linus Torvalds
-<torvalds@linux-foundation.org> wrote:
-> On Sat, 5 Jun 2010, Felipe Contreras wrote:
->>
->> How about instead of using full defconfigs, we use minimal ones and
->> let the rest be determined with defaults.
->
-> I wouldn't mind that either, but there needs to be some way to check that
-> they _are_ minimal. Which is more complicated than even SAT, afaik.
+  This message is in MIME format.  The first part should be readable text,
+  while the remaining parts are likely unreadable without MIME-aware tools.
 
-I don't think so. The SAT should be able to come up with a minimal
-config for 'CONFIG_MACH_OMAP3_BEAGLE=y', and then a minimal config for
-whatever is in omap3_beagle_defconfig. The diff is either unnecessary,
-or the Kconfig files are missing some 'default y if whatever'. You fix
-the Kconfig files, and then use the resulting minimal config.
+--8323328-852715769-1275756468=:2933
+Content-Type: TEXT/PLAIN; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 
-> So the reason I don't like the "minimal defconfig" notion is that a
-> "regular defconfig" will work equally well, and lazy people will thus not
-> bother to make it minimal (because it's work) and instead just pick the
-> full config output.
->
-> And we're all lazy. So gearing the process towards something that makes it
-> easy for lazy cases to do the wrong thing is a bad thing.
+B1;2005;0cOn Fri, 4 Jun 2010, Arve Hjønnevåg wrote:
 
-Yes, that's why I lean toward the solution that creates an ideal
-config with the minimal effort: SAT with a single
-CONFIG_MACH_OMAP3_BEAGLE=y. Then you don't need defconfigs at all.
+> 2010/6/4 Thomas Gleixner <tglx@linutronix.de>:
+> > Arve,
+> >
+> > On Fri, 4 Jun 2010, Arve Hjønnevåg wrote:
+> >
+> >> On Fri, Jun 4, 2010 at 5:05 PM, Thomas Gleixner <tglx@linutronix.de> wrote:
+> >> > On Sat, 5 Jun 2010, Rafael J. Wysocki wrote:
+> >> >> I kind of agree here, so I'd like to focus a bit on that.
+> >> >>
+> >> >> Here's my idea in the very general terms:
+> >> >>
+> >> >> (1) Use the cgroup freezer to "suspend" the "untrusted" apps (ie. the ones
+> >> >>     that don't use suspend blockers aka wakelocks in the Android world) at the
+> >> >>     point Android would normally start opportunistic suspend.
+> >> >
+> >> > There is an additional benefit to this approach:
+> >> >
+> >> >     In the current android world a background task (e.g. download
+> >> >     initiated before the screensaver kicked in) prevents the suspend,
+> >> >     but that also means that the crapplications can still suck power
+> >> >     completely unconfined.
+> >> >
+> >>
+> >> Yes this can happen. It is usually only a big problem when you combine
+> >> an (trusted) application that has a bug that blocks suspend forever
+> >> with an application that wakes up too often for us to enter low power
+> >> idle modes.
+> >
+> > Why is it a BUG in the trusted app, when I initiate a download and put
+> > the phone down ?
+> >
+> 
+> It is not, but we have had bugs where a trusted app does not unblock
+> suspend after some failure case where it is no longer making any
+> progress.
 
-> We also don't have any way to "source" these config files from each other,
-> so there's no way from within such a config file to say "use the basic
-> omap3 defaults an then just add this on top". You can do it by
-> concatenating several such files manually from the Makefile or whatever
-> script, of course, but then you end up with the files themselves not
-> actually describing what they do.
+Well, that's simply an application bug which sucks battery with or
+without suspend blockers. So it's unrelated to the freezing of
+untrusted apps while a trusted app still works in the background
+before allowing the machine to suspend.
+ 
+> > That download might take a minute or two, but that's not an
+> > justification for the crapplication to run unconfined and prevent
+> > lower power states.
+> >
+> 
+> I agree, but this is not a simple problem to solve.
 
-I don't really see the big need for hierarchical configs. When you do
-'make ARCH=arm' you are already including all the arm stuff, so
-there's no need for an ARM base config. Then you would need some
-platform stuff like OMAP3, but if you do CONFIG_ARCH_OMAP3=y, and
-there are proper 'default y if ARCH_OMAP3' in the Kconfigs, you don't
-need any base config either. The rest of the stuff is truly specific
-to the boards.
+Not with suspend blockers, but with cgroup confinement of crap, it's
+straight forward.
 
-If there's a need to include other configs, I'm sure we can come with
-markups to include them and have a parser script that generates the
-.config.
+> >> >     With the cgroup freezer you can "suspend" them right away and
+> >> >     just keep the trusted background task(s) alive which allows us to
+> >> >     go into deeper idle states instead of letting the crapplications
+> >> >     run unconfined until the download finished and the suspend
+> >> >     blocker goes away.
+> >> >
+> >>
+> >> Yes this would be better, but I want it in addition to suspend, not
+> >> instead of it. It is also unclear if our user-space code could easily
+> >> make use of it since our trusted code calls into untrusted code.
+> >
+> > Sorry, that's really the worst argument I saw in this whole
+> > discussion.
+> >
+> > You're basically saying, that you have no idea what your user space
+> > stack is doing and you do not care at all as long as your suspend
+> > blocker scheme makes things work somehow.
+> >
+> 
+> Yes I don't know everything our user-space stack is doing, but I do
+> know that it makes many calls between processes (and in both
+> directions). As far as I know it uses timeouts when calling into
+> untrusted code, so a misbehaving application will cause an error
+> dialog to pop up asking if the user if it should wait longer or
+> terminate the application.
 
-> That's why I suggested the Kconfig format instead. It's the exact same
-> idea, but it's a "before pre-processing" format that already supports
-> including other files.
+Sigh, the more I learn about the details of android and it's violation
+of all sane engineering principles the more I understand why you
+invented a huge nail to push through all layers in order to bring the
+system into idle at all. And yes, you need a sledge hammer to drive
+that big nail through everything, so you are using the right tool.
 
-Yes, although I don't like the format (it looks clearly designed for
-something else), it's another possibility. However, I don't think
-"allnoconfig" makes sense because that would ignore the default hints
-already present in Kconfig files.
+Seriously, the cross app call goes through your framework, which
+already knows, that the untrusted part is frozen. So it can deal
+nicely with it in any way you want including unfreezing.
 
--- 
-Felipe Contreras
+> > Up to that point, I really tried hard to step back from my initial
+> > "OMG, promoting crap is a nono" reaction and work with you on a
+> > sensible technical solution to confine crap and make it aligned with
+> > other efforts in this area.
+> >
+> > So now, after I spent a reasonable amount of time (as you did) to
+> > understand what your requirements are, you come up with another
+> > restriction which is so outside of any level of sanity, that I'm at
+> > the point of giving up and just going into NAK mode.
+> >
+> 
+> I don't think this is a new restriction. Both Brian and I have
+> mentioned that we have a lot of dependencies between processes.
+> 
+> > Can you please answer the following question:
+> >
+> >    What is the point of having the distinction of "trusted" and
+> >    "untrusted" when you have no way to prevent "trusted" code calling
+> >    "into "untrusted" code ?
+> >
+> 
+> Trusted code that calls into untrusted code has to deal with the
+> untrusted code not responding, but we only want to pop up a message
+> that the application is not responding if it is misbehaving, not just
+> because it was frozen though no fault of its own.
+
+See above.
+ 
+> > That's violating any sense of abstraction and layering and makes it
+> > entirely clear that the only way you can deal with your own design
+> > failure is a big hammer which you need to force into the kernel.
+> >
+> 
+> How can it be fixed? The user presses the back button, the framework
+> determines that app A is in the foreground and send the key to app A,
+> app A decides that it it does not have anything internal to go back to
+> and tells the framework to switch back to the previous app. If the
+> user presses the back key again, the framework does not know which app
+> this key should go to until app A has finished processing the first
+> key press.
+
+Errm, what has this to do with frozen apps? If your system is
+handling input events then there are no frozen apps and even if they
+are frozen your framework can unfreeze them _before_ talking to them.
+
+So which unfixable problem are you describing with the above example ?
+
+Thanks,
+
+	tglx
+--8323328-852715769-1275756468=:2933--
