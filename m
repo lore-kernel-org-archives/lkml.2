@@ -1,60 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933177Ab0FEKNK (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Jun 2010 06:13:10 -0400
-Received: from mga01.intel.com ([192.55.52.88]:64909 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932802Ab0FEKG6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Jun 2010 06:06:58 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.53,366,1272870000"; 
-   d="scan'208";a="804988028"
-From: xiaohui.xin@intel.com
-To: netdev@vger.kernel.org, kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
-       mst@redhat.com, mingo@elte.hu, davem@davemloft.net,
-       herbert@gondor.hengli.com.au, jdike@linux.intel.com
-Cc: Xin Xiaohui <xiaohui.xin@intel.com>
-Subject: [RFC PATCH v7 04/19] Add a ndo_mp_port_prep pointer to net_device_ops.
-Date: Sat,  5 Jun 2010 18:14:43 +0800
-Message-Id: <1275732899-5423-4-git-send-email-xiaohui.xin@intel.com>
-X-Mailer: git-send-email 1.5.4.4
-In-Reply-To: <1275732899-5423-3-git-send-email-xiaohui.xin@intel.com>
-References: <1275732899-5423-1-git-send-email-xiaohui.xin@intel.com>
- <1275732899-5423-2-git-send-email-xiaohui.xin@intel.com>
- <1275732899-5423-3-git-send-email-xiaohui.xin@intel.com>
+	id S932895Ab0FEKXQ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Jun 2010 06:23:16 -0400
+Received: from moutng.kundenserver.de ([212.227.126.186]:52440 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932813Ab0FEKXP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 5 Jun 2010 06:23:15 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: John Stultz <johnstul@us.ibm.com>
+Subject: Re: [RFC][PATCH 5/6] Cleanup hrtimer.c's direct access to wall_to_monotonic
+Date: Sat, 5 Jun 2010 12:23:05 +0200
+User-Agent: KMail/1.12.2 (Linux/2.6.31-19-generic; KDE/4.3.2; x86_64; ; )
+Cc: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>
+References: <1275706406-8111-1-git-send-email-johnstul@us.ibm.com> <1275706406-8111-5-git-send-email-johnstul@us.ibm.com> <1275706406-8111-6-git-send-email-johnstul@us.ibm.com>
+In-Reply-To: <1275706406-8111-6-git-send-email-johnstul@us.ibm.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201006051223.06000.arnd@arndb.de>
+X-Provags-ID: V01U2FsdGVkX19zG2UVpZBfHwHTokf8japCRt5Ovpt6BX2M/gO
+ rL2HoV3hkhqFAx84uflqsIGKU/y/FoPCZULBL7LBflxHGK+7h+
+ FVIH3Hz1I24+q8MFwo9rw==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Xin Xiaohui <xiaohui.xin@intel.com>
+On Saturday 05 June 2010, John Stultz wrote:
+>         do {
+>                 seq = read_seqbegin(&xtime_lock);
+>                 xts = __current_kernel_time();
+> -               tom = wall_to_monotonic;
+> +               tom = __get_wall_to_monotonic();
+>         } while (read_seqretry(&xtime_lock, seq));
+>  
 
-If the driver want to allocate external buffers,
-then it can export it's capability, as the skb
-buffer header length, the page length can be DMA, etc.
-The external buffers owner may utilize this.
+Would it make sense to also limit the use of xtime_lock to the
+timekeeping code? I suppose you could merge the various accessors
+(current_kernel_time, get_monotonic_coarse, __current_kernel_time,
+__get_wall_to_monotonic) with a single function doing
 
-Signed-off-by: Xin Xiaohui <xiaohui.xin@intel.com>
-Signed-off-by: Zhao Yu <yzhao81new@gmail.com>
-Reviewed-by: Jeff Dike <jdike@linux.intel.com>
----
- include/linux/netdevice.h |    4 ++++
- 1 files changed, 4 insertions(+), 0 deletions(-)
+struct timespec current_kernel_time(struct timespec *tomono)
+{
+        struct timespec now;
+        unsigned long seq;
 
-diff --git a/include/linux/netdevice.h b/include/linux/netdevice.h
-index efb575a..183c786 100644
---- a/include/linux/netdevice.h
-+++ b/include/linux/netdevice.h
-@@ -707,6 +707,10 @@ struct net_device_ops {
- 	int			(*ndo_fcoe_get_wwn)(struct net_device *dev,
- 						    u64 *wwn, int type);
- #endif
-+#if defined(CONFIG_MEDIATE_PASSTHRU) || defined(CONFIG_MEDIATE_PASSTHRU_MODULE)
-+	int			(*ndo_mp_port_prep)(struct net_device *dev,
-+						struct mpassthru_port *port);
-+#endif
- };
- 
- /*
--- 
-1.5.4.4
+        do {
+                seq = read_seqbegin(&xtime_lock);
+		if (tomono)
+			wall_to_monotonic;
+                now = xtime;
+        } while (read_seqretry(&xtime_lock, seq));
 
+        return now;
+}
+
+	Arnd
