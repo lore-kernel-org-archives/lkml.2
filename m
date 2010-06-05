@@ -1,50 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757525Ab0FEPeG (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Jun 2010 11:34:06 -0400
-Received: from www.tglx.de ([62.245.132.106]:33979 "EHLO www.tglx.de"
+	id S933483Ab0FEPjy (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Jun 2010 11:39:54 -0400
+Received: from cantor.suse.de ([195.135.220.2]:33746 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752001Ab0FEPeC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Jun 2010 11:34:02 -0400
-Date: Sat, 5 Jun 2010 17:33:41 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Marc Zyngier <maz@misterjones.org>
-cc: Esben Haabendal <esbenhaabendal@gmail.com>,
-       Esben Haabendal <eha@doredevelopment.dk>, linux-kernel@vger.kernel.org,
-       mingo@elte.hu, joachim.eastwood@jotron.com
-Subject: Re: [RFC][PATCH] irq: support IRQ_NESTED_THREAD with non-threaded
- interrupt handlers
-In-Reply-To: <20100605151031.2d562268@hina.wild-wind.fr.eu.org>
-Message-ID: <alpine.LFD.2.00.1006051732270.2933@localhost.localdomain>
-References: <1275686352.2970.2.camel@eha.doredevelopment.dk> <alpine.LFD.2.00.1006042343150.2933@localhost.localdomain> <AANLkTilb7---Qg1oLwzanKP1RGe04fkAXDtZzz0w9MGz@mail.gmail.com> <20100605151031.2d562268@hina.wild-wind.fr.eu.org>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S1757398Ab0FEPjx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 5 Jun 2010 11:39:53 -0400
+Date: Sat, 5 Jun 2010 17:39:48 +0200 (CEST)
+From: Jiri Kosina <jkosina@suse.cz>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Pavel Machek <pavel@ucw.cz>, Cesar Eduardo Barros <cesarb@cesarb.net>,
+       linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] kernel/power/swap.c: fix typos in comments
+In-Reply-To: <201006050007.34624.rjw@sisk.pl>
+Message-ID: <alpine.LNX.2.00.1006051739360.12271@pobox.suse.cz>
+References: <1274921340-4894-1-git-send-email-cesarb@cesarb.net> <20100527044511.GA19625@elf.ucw.cz> <alpine.LNX.2.00.1006041605420.12271@pobox.suse.cz> <201006050007.34624.rjw@sisk.pl>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 5 Jun 2010, Marc Zyngier wrote:
+On Sat, 5 Jun 2010, Rafael J. Wysocki wrote:
 
-> On Sat, 5 Jun 2010 15:56:01 +0200
-> Esben Haabendal <esbenhaabendal@gmail.com> wrote:
-> 
-> > I have a board with an I2C PCA9535 chip with two PHY interrupt lines
-> > hooked up to. The pca953x driver calls set_irq_nested_thread on all
-> > irq's on initialization. The PHY driver then calls request_irq, and has
-> > no idea that it should actually be using a threaded handler.
+> > > > Signed-off-by: Cesar Eduardo Barros <cesarb@cesarb.net>
+> > > 
+> > > ACK.
 > > 
-> > With this patch, the PHY driver is able to work in this scenario
-> > without changes (and so should any other driver using request_irq).
+> > Doesn't seem to be present in linux-next as of today, so I have queued it 
+> > in my tree.
 > 
-> You may want to give request_any_context_irq() a try (available since the
-> latest merge window). It still requires your driver to be changed, but it
-> should then work in both threaded and non-threaded cases.
+> I'm going to take it, but I guess you'll notice?
 
-And it nicely annotates that somebody looked at the driver in
-question. That's the rule of least surprise and does not impose checks
-on the fast path.
+No problem, dropped from my tree now.
 
-Thanks,
-
-	tglx
+-- 
+Jiri Kosina
+SUSE Labs, Novell Inc.
