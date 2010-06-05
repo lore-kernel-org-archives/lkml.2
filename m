@@ -1,73 +1,190 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752446Ab0FEEuv (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Jun 2010 00:50:51 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:60833 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752256Ab0FEEuu (ORCPT
+	id S1752606Ab0FEFXc (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Jun 2010 01:23:32 -0400
+Received: from mail-pz0-f185.google.com ([209.85.222.185]:38403 "EHLO
+	mail-pz0-f185.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752092Ab0FEFXa convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Jun 2010 00:50:50 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:content-type:date:message-id:mime-version
-         :x-mailer:content-transfer-encoding;
-        b=TB2R2SNMJCKM3vlfCSWYqmngDpakXD5y3NC/YyMKu46g9yUUDlspYpp152AoKmzIG/
-         2pW0L4ZJfbWDvdwrk5ylIY1CliLre5n/2JeUnRRBrgdjBLbVEvZfgjnktkOQ5Yih3HKK
-         eQQUHr4fBh/ZVigYn6XoXpR5Jf+jfbg5YVu+w=
-Subject: [PATCH] remove pointless debug printk in rt_ioctl_giwscan()
-From: Giangiacomo Mariotti <giangiacomo.mariotti@gmail.com>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: gregkh@suse.de, bzolnier@gmail.com, roel.kluin@gmail.com,
-       devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset="UTF-8"
-Date: Sat, 05 Jun 2010 06:41:49 +0200
-Message-ID: <1275712909.8509.25.camel@debian-hell>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.1.2 
-Content-Transfer-Encoding: 7bit
+	Sat, 5 Jun 2010 01:23:30 -0400
+MIME-Version: 1.0
+In-Reply-To: <alpine.LFD.2.00.1006050246350.2933@localhost.localdomain>
+References: <20100603193045.GA7188@elte.hu>
+	<20100603232302.GA16184@elte.hu>
+	<1275644619.27810.39462.camel@twins>
+	<201006050138.30859.rjw@sisk.pl>
+	<alpine.LFD.2.00.1006050148080.2933@localhost.localdomain>
+	<AANLkTikGDSzaENwg_0BAtsYf3ulGd_6sGPR30WsvUxMi@mail.gmail.com>
+	<alpine.LFD.2.00.1006050246350.2933@localhost.localdomain>
+Date: Fri, 4 Jun 2010 22:23:29 -0700
+Message-ID: <AANLkTikU21xF49Z-_Lnrq7U7buNmqw_gyEEST8LuN24z@mail.gmail.com>
+Subject: Re: suspend blockers & Android integration
+From: =?ISO-8859-1?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, Peter Zijlstra <peterz@infradead.org>,
+       Ingo Molnar <mingo@elte.hu>, tytso@mit.edu,
+       Brian Swetland <swetland@google.com>, Neil Brown <neilb@suse.de>,
+       Alan Stern <stern@rowland.harvard.edu>,
+       Felipe Balbi <felipe.balbi@nokia.com>,
+       LKML <linux-kernel@vger.kernel.org>,
+       Florian Mickler <florian@mickler.org>,
+       Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
+       Linux PM <linux-pm@lists.linux-foundation.org>,
+       Alan Cox <alan@lxorguk.ukuu.org.uk>,
+       James Bottomley <James.Bottomley@suse.de>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       Kevin Hilman <khilman@deeprootsystems.com>,
+       "H. Peter Anvin" <hpa@zytor.com>,
+       Arjan van de Ven <arjan@infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This debug printk is only useful if you're debugging the staging drivers
-2860 e 2870, but, if you're just using them, it becomes really annoying, because
-it uselessly clobbers the kernel log. I guess this patch shouldn't really get merged,
-but it's more like a request to remove these annoying debugging messages for normal users.
-If I get any suggestion on how to implement this in a way acceptable to get it merged, I'll
-be happy to create the "good" version  of the patch.
+2010/6/4 Thomas Gleixner <tglx@linutronix.de>:
+> Arve,
+>
+> On Fri, 4 Jun 2010, Arve Hjønnevåg wrote:
+>
+>> On Fri, Jun 4, 2010 at 5:05 PM, Thomas Gleixner <tglx@linutronix.de> wrote:
+>> > On Sat, 5 Jun 2010, Rafael J. Wysocki wrote:
+>> >> I kind of agree here, so I'd like to focus a bit on that.
+>> >>
+>> >> Here's my idea in the very general terms:
+>> >>
+>> >> (1) Use the cgroup freezer to "suspend" the "untrusted" apps (ie. the ones
+>> >>     that don't use suspend blockers aka wakelocks in the Android world) at the
+>> >>     point Android would normally start opportunistic suspend.
+>> >
+>> > There is an additional benefit to this approach:
+>> >
+>> >     In the current android world a background task (e.g. download
+>> >     initiated before the screensaver kicked in) prevents the suspend,
+>> >     but that also means that the crapplications can still suck power
+>> >     completely unconfined.
+>> >
+>>
+>> Yes this can happen. It is usually only a big problem when you combine
+>> an (trusted) application that has a bug that blocks suspend forever
+>> with an application that wakes up too often for us to enter low power
+>> idle modes.
+>
+> Why is it a BUG in the trusted app, when I initiate a download and put
+> the phone down ?
+>
 
-Thanks,
+It is not, but we have had bugs where a trusted app does not unblock
+suspend after some failure case where it is no longer making any
+progress.
 
-Giangiacomo
+> That download might take a minute or two, but that's not an
+> justification for the crapplication to run unconfined and prevent
+> lower power states.
+>
 
->From b24cc30ddad0bcd9a1fe00a7ecdd5dba4a3a4d06 Mon Sep 17 00:00:00 2001
-From: Giangiacomo Mariotti <giangiacomo.mariotti@gmail.com>
-Date: Sat, 5 Jun 2010 05:39:58 +0200
-Subject: [PATCH] remove pointless debug printk in rt_ioctl_giwscan()
+I agree, but this is not a simple problem to solve.
+
+>> >     With the cgroup freezer you can "suspend" them right away and
+>> >     just keep the trusted background task(s) alive which allows us to
+>> >     go into deeper idle states instead of letting the crapplications
+>> >     run unconfined until the download finished and the suspend
+>> >     blocker goes away.
+>> >
+>>
+>> Yes this would be better, but I want it in addition to suspend, not
+>> instead of it. It is also unclear if our user-space code could easily
+>> make use of it since our trusted code calls into untrusted code.
+>
+> Sorry, that's really the worst argument I saw in this whole
+> discussion.
+>
+> You're basically saying, that you have no idea what your user space
+> stack is doing and you do not care at all as long as your suspend
+> blocker scheme makes things work somehow.
+>
+
+Yes I don't know everything our user-space stack is doing, but I do
+know that it makes many calls between processes (and in both
+directions). As far as I know it uses timeouts when calling into
+untrusted code, so a misbehaving application will cause an error
+dialog to pop up asking if the user if it should wait longer or
+terminate the application.
+
+> Up to that point, I really tried hard to step back from my initial
+> "OMG, promoting crap is a nono" reaction and work with you on a
+> sensible technical solution to confine crap and make it aligned with
+> other efforts in this area.
+>
+> So now, after I spent a reasonable amount of time (as you did) to
+> understand what your requirements are, you come up with another
+> restriction which is so outside of any level of sanity, that I'm at
+> the point of giving up and just going into NAK mode.
+>
+
+I don't think this is a new restriction. Both Brian and I have
+mentioned that we have a lot of dependencies between processes.
+
+> Can you please answer the following question:
+>
+>    What is the point of having the distinction of "trusted" and
+>    "untrusted" when you have no way to prevent "trusted" code calling
+>    "into "untrusted" code ?
+>
+
+Trusted code that calls into untrusted code has to deal with the
+untrusted code not responding, but we only want to pop up a message
+that the application is not responding if it is misbehaving, not just
+because it was frozen though no fault of its own.
+
+> That's violating any sense of abstraction and layering and makes it
+> entirely clear that the only way you can deal with your own design
+> failure is a big hammer which you need to force into the kernel.
+>
+
+How can it be fixed? The user presses the back button, the framework
+determines that app A is in the foreground and send the key to app A,
+app A decides that it it does not have anything internal to go back to
+and tells the framework to switch back to the previous app. If the
+user presses the back key again, the framework does not know which app
+this key should go to until app A has finished processing the first
+key press.
+
+> Sorry, no. I'm perfectly willing to make progress on that, as long as
+> we walk on a sane ground. But abusing the kernel for fixing basic
+> engineering problems in the user space side of affairs is completely
+> out of discussion.
+>
+>> >> I wonder what people think.  Is this realistic and if so, would it be difficult
+>> >> to implement?
+>> >
+>> > I think it's realistic and not overly complicated to implement.
+>> >
+>>
+>> The kernel support can be easily implemented on most arm hardware, I
+>> don't know if it can work on most existing x86 hardware. It does not
+>
+> It does not matter. Even Intel folks told you more than once, that x86
+
+How does it not matter. Are dropping support for existing x86 hardware
+once the new hardware comes out?
+
+> hardware is going to be fixed pretty soon. Hint: that's crucial to
+> their business ....
+>
+>> give us the same power savings as suspend with existing software, but
+>> it can handle bad apps better (assuming you don't combine
+>> opportunistic suspend and cgroup freezing). The biggest hurdle is how
+>> to handle dependencies between processes that gets frozen and
+>> processes that don't get frozen.
+>
+> See above.
+>
+> Thanks,
+>
+>        tglx
 
 
-Signed-off-by: Giangiacomo Mariotti <giangiacomo.mariotti@gmail.com>
----
- drivers/staging/rt2860/sta_ioctl.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/staging/rt2860/sta_ioctl.c b/drivers/staging/rt2860/sta_ioctl.c
-index de4b627..f9aa6f2 100644
---- a/drivers/staging/rt2860/sta_ioctl.c
-+++ b/drivers/staging/rt2860/sta_ioctl.c
-@@ -1116,9 +1116,9 @@ int rt_ioctl_giwscan(struct net_device *dev,
- 
- 	data->length = current_ev - extra;
- 	pAdapter->StaCfg.bScanReqIsFromWebUI = FALSE;
--	DBGPRINT(RT_DEBUG_ERROR,
-+	/*DBGPRINT(RT_DEBUG_ERROR,
- 		 ("===>rt_ioctl_giwscan. %d(%d) BSS returned, data->length = %d\n",
--		  i, pAdapter->ScanTab.BssNr, data->length));
-+		  i, pAdapter->ScanTab.BssNr, data->length));*/
- 	return 0;
- }
- 
 -- 
-1.7.1
-
-
+Arve Hjønnevåg
