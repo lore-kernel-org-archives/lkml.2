@@ -1,88 +1,237 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757632Ab0FEUCB (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Jun 2010 16:02:01 -0400
-Received: from ist.d-labs.de ([213.239.218.44]:42368 "EHLO mx01.d-labs.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752523Ab0FEUB7 convert rfc822-to-8bit (ORCPT
+	id S932405Ab0FEUDL (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Jun 2010 16:03:11 -0400
+Received: from mail-px0-f174.google.com ([209.85.212.174]:59697 "EHLO
+	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754205Ab0FEUDI convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Jun 2010 16:01:59 -0400
-Date: Sat, 5 Jun 2010 22:01:43 +0200
-From: Florian Mickler <florian@mickler.org>
-To: Felipe Contreras <felipe.contreras@gmail.com>
-Cc: Arve =?ISO-8859-15?Q?Hj=F8nnev=E5g?= <arve@android.com>,
-       Peter Zijlstra <peterz@infradead.org>,
-       Thomas Gleixner <tglx@linutronix.de>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-       Matthew Garrett <mjg59@srcf.ucam.org>,
-       Alan Stern <stern@rowland.harvard.edu>, Paul@smtp1.linux-foundation.org,
-       LKML <linux-kernel@vger.kernel.org>, felipe.balbi@nokia.com,
-       Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
-       Linux PM <linux-pm@lists.linux-foundation.org>,
-       Alan Cox <alan@lxorguk.ukuu.org.uk>
-Subject: Re: [linux-pm] [PATCH 0/8] Suspend block api (version 8)
-Message-ID: <20100605220143.08774900@schatten.dmk.lab>
-In-Reply-To: <AANLkTikna-Vs_phy2VrJs0I8gIsdSmwuxTJ67gQ_2oTt@mail.gmail.com>
-References: <Pine.LNX.4.44L0.1005271253240.3239-100000@iolanthe.rowland.org>
-	<201005302202.39511.rjw@sisk.pl>
-	<AANLkTilUQ2AG76nbK6LwI8_7zw0_yMSoAOr9pmuz7xrt@mail.gmail.com>
-	<201005312347.24251.rjw@sisk.pl>
-	<AANLkTilvOgSFTDFtXbjJobMZWxgfvsC97TqC7_a_NHBX@mail.gmail.com>
-	<alpine.LFD.2.00.1006011411200.2933@localhost.localdomain>
-	<AANLkTikZHmF6baP7dEXEGFE8YsbEteRjlhb5wqZX8ll1@mail.gmail.com>
-	<alpine.LFD.2.00.1006020905410.2933@localhost.localdomain>
-	<AANLkTinDm3FIrbS1jqEzW15THmr1hdd7ox0Mllm1VLjZ@mail.gmail.com>
-	<1275471561.27810.30865.camel@twins>
-	<AANLkTilLmAb2c9fQwuguzWtjcHfuTZvPUTbUx7vuwFI6@mail.gmail.com>
-	<AANLkTikna-Vs_phy2VrJs0I8gIsdSmwuxTJ67gQ_2oTt@mail.gmail.com>
-X-Mailer: Claws Mail 3.7.5 (GTK+ 2.18.9; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=ISO-8859-15
+	Sat, 5 Jun 2010 16:03:08 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=TWh8leIldTafmJvLeD4AagLS/SI/no2yBm2ux1aBs6LQ6rV1VQsHyFHnQDlgjslxN8
+         rDac+TWrryJZLO4VUG2TPXLD9eDZtZjMDT+2y6/UzKFC9ipH8Du4Q8gAs7kPhJfirGGy
+         NnVjfcA1ayR5YAtntxa0dK/tZx0LuuLcmIkKE=
+MIME-Version: 1.0
+In-Reply-To: <4C07D30C.5090101@hp.com>
+References: <AANLkTikV9RSoTIjUNARyrXHG-BdulDR5zIdk8dIVVOHI@mail.gmail.com>
+	<4C07D30C.5090101@hp.com>
+Date: Sat, 5 Jun 2010 13:03:07 -0700
+X-Google-Sender-Auth: i6NkJASavKkktTeLTE_Zdes_OaI
+Message-ID: <AANLkTik5jr2ciX_7sT2uHIsNraZf-d0P_0HBLhln2RMT@mail.gmail.com>
+Subject: Re: [PATCH 5/6] sctp multistream scheduling: a sample priority queue 
+	scheduling module
+From: Yaogong Wang <ywang15@ncsu.edu>
+To: Vlad Yasevich <vladislav.yasevich@hp.com>
+Cc: linux-sctp@vger.kernel.org, Sridhar Samudrala <sri@us.ibm.com>,
+       linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 5 Jun 2010 20:44:24 +0300
-Felipe Contreras <felipe.contreras@gmail.com> wrote:
+On Thu, Jun 3, 2010 at 9:06 AM, Vlad Yasevich <vladislav.yasevich@hp.com> wrote:
+>
+>
+> Yaogong Wang wrote:
+>> A sample priority queue scheduling module that uses our interface
+>>
+>> Signed-off-by: Yaogong Wang <ywang15@ncsu.edu>
+>> ---
+>> diff -uprN -X linux-2.6.32.8/Documentation/dontdiff
+>> p4/net/sctp/Kconfig p5/net/sctp/Kconfig
+>> --- p4/net/sctp/Kconfig       2010-05-28 11:48:55.000000000 -0700
+>> +++ p5/net/sctp/Kconfig       2010-05-28 14:43:17.000000000 -0700
+>> @@ -37,6 +37,12 @@ menuconfig IP_SCTP
+>>
+>>  if IP_SCTP
+>>
+>> +config SCTP_SCHED_PRIO
+>> +     tristate "SCTP Multistream Scheduling: Priority Queue"
+>> +     default m
+>> +     help
+>> +       Use priority queue to schedule among multiple streams
+>> +
+>>  config SCTP_DBG_MSG
+>>       bool "SCTP: Debug messages"
+>>       help
+>> diff -uprN -X linux-2.6.32.8/Documentation/dontdiff
+>> p4/net/sctp/Makefile p5/net/sctp/Makefile
+>> --- p4/net/sctp/Makefile      2010-05-28 11:48:55.000000000 -0700
+>> +++ p5/net/sctp/Makefile      2010-05-28 14:48:08.000000000 -0700
+>> @@ -11,6 +11,7 @@ sctp-y := sm_statetable.o sm_statefuns.o
+>>         tsnmap.o bind_addr.o socket.o primitive.o \
+>>         output.o input.o debug.o ssnmap.o auth.o sched.o
+>>
+>> +obj-$(CONFIG_SCTP_SCHED_PRIO) += sctp_prio.o
+>>  sctp-$(CONFIG_SCTP_DBG_OBJCNT) += objcnt.o
+>>  sctp-$(CONFIG_PROC_FS) += proc.o
+>>  sctp-$(CONFIG_SYSCTL) += sysctl.o
+>> diff -uprN -X linux-2.6.32.8/Documentation/dontdiff
+>> p4/net/sctp/sctp_prio.c p5/net/sctp/sctp_prio.c
+>> --- p4/net/sctp/sctp_prio.c   1969-12-31 16:00:00.000000000 -0800
+>> +++ p5/net/sctp/sctp_prio.c   2010-06-02 13:09:33.000000000 -0700
+>> @@ -0,0 +1,108 @@
+>> +/*
+>> + * Priority queue scheduling among multiple SCTP streams
+>> + */
+>> +
+>> +#include <linux/module.h>
+>> +#include <linux/types.h>
+>> +#include <linux/list.h>
+>> +#include <net/sctp/sctp.h>
+>> +
+>> +static int zero_high_prio = 1;
+>> +module_param(zero_high_prio, int, 0644);
+>> +MODULE_PARM_DESC(zero_high_prio, "zero indicates highest priority?");
+>> +
+>> +static int prio_init(struct sctp_outq *q, gfp_t gfp)
+>> +{
+>> +     __u16 i;
+>> +     q->out_chunk_list = kmalloc(q->asoc->c.sinit_num_ostreams
+>> +                              * sizeof(struct list_head), gfp);
+>
+> This could end up wasting quite a lot of space since the queue is initialized
+> prior to ostreams negotiation.
+>
 
-> 2010/6/2 Arve Hjønnevåg <arve@android.com>:
-> > 2010/6/2 Peter Zijlstra <peterz@infradead.org>:
-> >> (and please don't mention @#$@ up x86 ACPI again, Intel knows, they're
-> >> fixing it, get over it already).
-> >>
-> >
-> > I don't think it is realistic to drop support for all existing hardware.
-> 
-> We are talking about mainline here, there's no support for suspend
-> blockers, so nothing is dropped.
-> 
-> In the mind of everybody, suspend blockers is for opportunistic
-> suspend, which only makes sense on sensible hw (not current x86). So
-> in the mind of everybody, x86 should be out of scope for the analysis
-> of suspend blockers.
-> 
-> Are you seriously suggesting that one of the strong arguments in favor
-> of suspend blockers is x86 usage (nobody agrees)? If not, then drop
-> it.
+I agree. Refer to my discussion on the design issue of when to set the
+socket option.
 
-I think they have an advantage over the
-30-minute-screensaver-then-suspend that current desktops do. Because
-you can define what keeps the system up. I.e. the
-screensaver/powermanager is not limited to keyboard- and
-mouse-inactivity.
+>
+>> +     if (!q->out_chunk_list)
+>> +             return -ENOMEM;
+>> +     for (i = 0; i < q->asoc->c.sinit_num_ostreams; i++)
+>> +             INIT_LIST_HEAD(&q->out_chunk_list[i]);
+>> +
+>> +     return 0;
+>> +}
+>> +
+>> +static void prio_release(struct sctp_outq *q)
+>> +{
+>> +     kfree(q->out_chunk_list);
+>> +     return;
+>> +}
+>> +
+>> +static void prio_enqueue_head_data(struct sctp_outq *q,
+>> +                                     struct sctp_chunk *ch)
+>> +{
+>> +     list_add(&ch->list, &q->out_chunk_list[ch->sinfo.sinfo_stream]);
+>> +     q->out_qlen += ch->skb->len;
+>> +     return;
+>> +}
+>> +
+>> +static void prio_enqueue_tail_data(struct sctp_outq *q, struct sctp_chunk *ch)
+>> +{
+>> +     list_add_tail(&ch->list, &q->out_chunk_list[ch->sinfo.sinfo_stream]);
+>> +     q->out_qlen += ch->skb->len;
+>> +     return;
+>> +}
+>> +
+>> +static struct sctp_chunk *prio_dequeue_data(struct sctp_outq *q)
+>> +{
+>> +     struct sctp_chunk *ch = NULL;
+>> +     __u16 prio = 0, i, cur = 0;
+>> +     int flag = 0;
+>> +
+>> +     for (i = 0; i < q->asoc->c.sinit_num_ostreams; i++) {
+>> +             if (!list_empty(&q->out_chunk_list[i]) && (flag == 0
+>> +                     || (zero_high_prio ? q->asoc->sched_priv[i] < prio
+>> +                     : q->asoc->sched_priv[i] > prio))) {
+>
+> Can you please simplify this conditional.  Also, the logical operands
+> typically end the line, not start it.
 
-> If I enable suspend blockers on my laptop, I have to modify my
-> user-space. Otherwise my system will behave horribly.
-> 
+will do it
 
-In the simplest case you have a shell script which takes a suspend
-blocker and reads from stdinput. When you write "mem" to it, it
-releases the suspend blocker and acquires it back again. Voila, forced
-suspend reimplemented on top of opportunistic suspend.
+>
+>> +                             cur = i;
+>> +                             flag = 1;
+>> +                             prio = q->asoc->sched_priv[i];
+>> +             }
+>> +     }
+>> +
+>
+> It might be nice to cache the asoc so you don't have to keep dereferencing the
+> queue.
+>
 
-That wasn't hard, was it? 
+If I move sched_ops from sctp_association to sctp_outq as per your
+suggestion, the problem is automatically solved.
 
-Cheers,
-Flo
- 
+> Also, isn't there a strong starvation possibility if a higher priority queue
+> gets most of data?
+>
 
+Yes, starvation is possible in this algorithm. However, the philosophy
+is that, as the user chooses the scheduling algorithm, he should be
+aware of this. If he doesn't want this, he may use other scheduling
+algorithms or implement his own. We provide mechanism. The user
+decides his policy.
+
+Yaogong
+
+> -vlad
+>
+>> +     if (flag) {
+>> +             struct list_head *entry = q->out_chunk_list[cur].next;
+>> +             ch = list_entry(entry, struct sctp_chunk, list);
+>> +             list_del_init(entry);
+>> +             q->out_qlen -= ch->skb->len;
+>> +     }
+>> +     return ch;
+>> +}
+>> +
+>> +static inline int prio_is_empty(struct sctp_outq *q)
+>> +{
+>> +     __u16 i;
+>> +     for (i = 0; i < q->asoc->c.sinit_num_ostreams; i++)
+>> +             if (!list_empty(&q->out_chunk_list[i]))
+>> +                     return 0;
+>> +     return 1;
+>> +}
+>> +
+>> +static struct sctp_sched_ops sctp_prio = {
+>> +     .name                   = "prio",
+>> +     .owner                  = THIS_MODULE,
+>> +     .init                   = prio_init,
+>> +     .release                = prio_release,
+>> +     .enqueue_head_data      = prio_enqueue_head_data,
+>> +     .enqueue_tail_data      = prio_enqueue_tail_data,
+>> +     .dequeue_data           = prio_dequeue_data,
+>> +     .is_empty               = prio_is_empty,
+>> +};
+>> +
+>> +static int __init sctp_prio_register(void)
+>> +{
+>> +     return sctp_register_sched(&sctp_prio);
+>> +}
+>> +
+>> +static void __exit sctp_prio_unregister(void)
+>> +{
+>> +     sctp_unregister_sched(&sctp_prio);
+>> +}
+>> +
+>> +module_init(sctp_prio_register);
+>> +module_exit(sctp_prio_unregister);
+>> +
+>> +MODULE_AUTHOR("Yaogong Wang");
+>> +MODULE_LICENSE("GPL");
+>> +MODULE_DESCRIPTION("SCTP Multistream Scheduling: Priority Queue");
+>>
+>
+>
+
+
+
+-- 
+========================
+Yaogong Wang, PhD candidate
+Department of Computer Science
+North Carolina State University
+http://www4.ncsu.edu/~ywang15/
+========================
