@@ -1,80 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752068Ab0FEEKd (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Jun 2010 00:10:33 -0400
-Received: from ozlabs.org ([203.10.76.45]:39037 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750717Ab0FEEKc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Jun 2010 00:10:32 -0400
-From: Rusty Russell <rusty@rustcorp.com.au>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Subject: Re: [PATCHv3 1/2] virtio: support layout with avail ring before idx
-Date: Sat, 5 Jun 2010 13:40:26 +0930
-User-Agent: KMail/1.13.2 (Linux/2.6.32-22-generic; KDE/4.4.2; i686; ; )
-Cc: linux-kernel@vger.kernel.org, virtualization@lists.linux-foundation.org,
-       kvm@vger.kernel.org, qemu-devel@nongnu.org,
-       Andrew Morton <akpm@linux-foundation.org>
-References: <cover.1275403477.git.mst@redhat.com> <201006042046.49872.rusty@rustcorp.com.au> <20100604114205.GA22599@redhat.com>
-In-Reply-To: <20100604114205.GA22599@redhat.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+	id S1752446Ab0FEEuv (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Jun 2010 00:50:51 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:60833 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752256Ab0FEEuu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 5 Jun 2010 00:50:50 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:content-type:date:message-id:mime-version
+         :x-mailer:content-transfer-encoding;
+        b=TB2R2SNMJCKM3vlfCSWYqmngDpakXD5y3NC/YyMKu46g9yUUDlspYpp152AoKmzIG/
+         2pW0L4ZJfbWDvdwrk5ylIY1CliLre5n/2JeUnRRBrgdjBLbVEvZfgjnktkOQ5Yih3HKK
+         eQQUHr4fBh/ZVigYn6XoXpR5Jf+jfbg5YVu+w=
+Subject: [PATCH] remove pointless debug printk in rt_ioctl_giwscan()
+From: Giangiacomo Mariotti <giangiacomo.mariotti@gmail.com>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: gregkh@suse.de, bzolnier@gmail.com, roel.kluin@gmail.com,
+       devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset="UTF-8"
+Date: Sat, 05 Jun 2010 06:41:49 +0200
+Message-ID: <1275712909.8509.25.camel@debian-hell>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.1.2 
 Content-Transfer-Encoding: 7bit
-Message-Id: <201006051340.27194.rusty@rustcorp.com.au>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 4 Jun 2010 09:12:05 pm Michael S. Tsirkin wrote:
-> On Fri, Jun 04, 2010 at 08:46:49PM +0930, Rusty Russell wrote:
-> > I'm uncomfortable with moving a field.
-> > 
-> > We haven't done that before and I wonder what will break with old code.
-> 
-> With e.g. my patch, We only do this conditionally when bit is negotitated.
+This debug printk is only useful if you're debugging the staging drivers
+2860 e 2870, but, if you're just using them, it becomes really annoying, because
+it uselessly clobbers the kernel log. I guess this patch shouldn't really get merged,
+but it's more like a request to remove these annoying debugging messages for normal users.
+If I get any suggestion on how to implement this in a way acceptable to get it merged, I'll
+be happy to create the "good" version  of the patch.
 
-Of course, but see this change:
+Thanks,
 
-commit ef688e151c00e5d529703be9a04fd506df8bc54e
-Author: Rusty Russell <rusty@rustcorp.com.au>
-Date:   Fri Jun 12 22:16:35 2009 -0600
+Giangiacomo
 
-    virtio: meet virtio spec by finalizing features before using device
-    
-    Virtio devices are supposed to negotiate features before they start using
-    the device, but the current code doesn't do this.  This is because the
-    driver's probe() function invariably has to add buffers to a virtqueue,
-    or probe the disk (virtio_blk).
-    
-    This currently doesn't matter since no existing backend is strict about
-    the feature negotiation.  But it's possible to imagine a future feature
-    which completely changes how a device operates: in this case, we'd need
-    to acknowledge it before using the device.
-    
-    Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
+>From b24cc30ddad0bcd9a1fe00a7ecdd5dba4a3a4d06 Mon Sep 17 00:00:00 2001
+From: Giangiacomo Mariotti <giangiacomo.mariotti@gmail.com>
+Date: Sat, 5 Jun 2010 05:39:58 +0200
+Subject: [PATCH] remove pointless debug printk in rt_ioctl_giwscan()
 
-Now, this isn't impossible to overcome: we know that if they use the ring
-before completing feature negotiation then they don't understand the new
-format.
 
-But we have to be aware of that on the qemu side.  Are we?
+Signed-off-by: Giangiacomo Mariotti <giangiacomo.mariotti@gmail.com>
+---
+ drivers/staging/rt2860/sta_ioctl.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-> > Should we instead just abandon the flags field and use last_used only?
-> > Or, more radically, put flags == last_used when the feature is on?
-> > 
-> > Thoughts?
-> > Rusty.
-> 
-> Hmm, e.g. with TX and virtio net, we almost never want interrupts,
-> whatever the index value.
+diff --git a/drivers/staging/rt2860/sta_ioctl.c b/drivers/staging/rt2860/sta_ioctl.c
+index de4b627..f9aa6f2 100644
+--- a/drivers/staging/rt2860/sta_ioctl.c
++++ b/drivers/staging/rt2860/sta_ioctl.c
+@@ -1116,9 +1116,9 @@ int rt_ioctl_giwscan(struct net_device *dev,
+ 
+ 	data->length = current_ev - extra;
+ 	pAdapter->StaCfg.bScanReqIsFromWebUI = FALSE;
+-	DBGPRINT(RT_DEBUG_ERROR,
++	/*DBGPRINT(RT_DEBUG_ERROR,
+ 		 ("===>rt_ioctl_giwscan. %d(%d) BSS returned, data->length = %d\n",
+-		  i, pAdapter->ScanTab.BssNr, data->length));
++		  i, pAdapter->ScanTab.BssNr, data->length));*/
+ 	return 0;
+ }
+ 
+-- 
+1.7.1
 
-Good point.  OK, I give in, I'll take your patch which moves the fields
-to the end.  Is that your preference?
 
-Please be careful with the qemu side though...
-
-It's not inconceivable that I'll write that virtio cacheline simulator this
-(coming) week, too...
-
-Thanks.
-Rusty.
