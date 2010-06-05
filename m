@@ -1,73 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933594Ab0FEWvD (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Jun 2010 18:51:03 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:55538 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933125Ab0FEWvA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Jun 2010 18:51:00 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Brian Swetland <swetland@google.com>
-Subject: Re: suspend blockers & Android integration
-Date: Sun, 6 Jun 2010 00:52:21 +0200
-User-Agent: KMail/1.12.4 (Linux/2.6.35-rc1-rjw; KDE/4.3.5; x86_64; ; )
-Cc: Arjan van de Ven <arjan@infradead.org>,
-       Arve =?utf-8?q?Hj=C3=B8nnev=C3=A5g?= <arve@android.com>,
-       Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-       tytso@mit.edu, Neil Brown <neilb@suse.de>,
-       Thomas Gleixner <tglx@linutronix.de>,
-       Alan Stern <stern@rowland.harvard.edu>,
-       Felipe Balbi <felipe.balbi@nokia.com>,
-       LKML <linux-kernel@vger.kernel.org>,
-       Florian Mickler <florian@mickler.org>,
-       Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
-       Linux PM <linux-pm@lists.linux-foundation.org>,
-       Alan Cox <alan@lxorguk.ukuu.org.uk>,
-       James Bottomley <James.Bottomley@suse.de>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       Kevin Hilman <khilman@deeprootsystems.com>,
-       "H. Peter Anvin" <hpa@zytor.com>,
-       Andrew Morton <akpm@linux-foundation.org>
-References: <20100603193045.GA7188@elte.hu> <20100605152326.7ccd5160@infradead.org> <AANLkTinRH52dSTPCAO9k1yEFup1LLYizeinunxeTBzbQ@mail.gmail.com>
-In-Reply-To: <AANLkTinRH52dSTPCAO9k1yEFup1LLYizeinunxeTBzbQ@mail.gmail.com>
+	id S933605Ab0FEWys (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Jun 2010 18:54:48 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:47230 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933125Ab0FEWyq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 5 Jun 2010 18:54:46 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type;
+        b=mdxdweVm2BCFgXy146qN/ENuwrFQ1PcgpXKSzWYmPfN3/Rk/hNZpQBiOWtMQIr4TZH
+         M7Ay+FoEInl60CAU2QdhwtaxdOwuJLf7slczYqsx2V0yEUaBC+9CL3ZKucAQxnCYi81L
+         ydkxWxJL0D1DWlFYydAyLizLURRpkW/lu9RFE=
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201006060052.21501.rjw@sisk.pl>
+In-Reply-To: <20100604152324.1fa28f2f@nehalam>
+References: <AANLkTinSjJsqNvEhJZIE6cJxEkBtg-DO2dqZWMczUy2i@mail.gmail.com> 
+	<AANLkTik1isTBolg4IDchOlmKqXOLjQoobZrJ-9bb8ZL5@mail.gmail.com> 
+	<20100604152324.1fa28f2f@nehalam>
+From: "Luis R. Rodriguez" <mcgrof@gmail.com>
+Date: Sat, 5 Jun 2010 15:54:25 -0700
+Message-ID: <AANLkTin1s5HCp795WwAgvMbC0PWK0cv7CBmCmY_D3EOW@mail.gmail.com>
+Subject: Re: Ethernet drivers wiki page
+To: Stephen Hemminger <shemminger@vyatta.com>
+Cc: netdev@vger.kernel.org, "H. Peter Anvin" <hpa@kernel.org>,
+       Johannes Berg <johannes@sipsolutions.net>, linux-kernel@vger.kernel.org,
+       "Luis R. Rodriguez" <mcgrof@gmail.com>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sunday 06 June 2010, Brian Swetland wrote:
-> On Sat, Jun 5, 2010 at 3:23 PM, Arjan van de Ven <arjan@infradead.org> wrote:
-> >>
-> >> We clearly have different standards for what we consider good. We
-> >> measure time suspended in minutes or hours, not seconds, and waking up
-> >> every second or two causes a noticeable decrease in battery life on
-> >> the hardware we have today.
-> >
-> > I guess I'm spoiled working with (unreleased) hardware that knows how
-> > to power gate ;-)
-> 
-> I'm continually surprised by answers like this.  We run on hardware
-> that power gates very aggressively and draws in the neighborhood of
-> 1-2mA at the battery when in the lowest state (3-5mA while the radio
-> is connected to the network and paging).  Waking up out of that lowest
-> state and executing code every few seconds or (worse) several times a
-> second) will raise your average power consumption.  Being able to stay
-> parked at the very bottom for minutes or hours at a time when nothing
-> "interesting" is happening is very useful and can have a significant
-> impact on overall battery life.
+On Fri, Jun 4, 2010 at 3:23 PM, Stephen Hemminger <shemminger@vyatta.com> wrote:
+> On Fri, 4 Jun 2010 15:04:17 -0700
+> "Luis R. Rodriguez" <mcgrof@gmail.com> wrote:
+>
+>> On Fri, Jun 4, 2010 at 2:52 PM, Luis R. Rodriguez <mcgrof@gmail.com> wrote:
+>> > Where can I start adding documentation for our Ethernet drivers
+>> > upstream? I was hoping for a wiki but I don't think we have a netdev
+>> > one yet. Shall we create one or piggy back on something else? I'm
+>> > reviewing:
+>> >
+>> > https://wiki.kernel.org/
+>> >
+>> > FWIW, I want to see something like this:
+>> >
+>> > http://wireless.kernel.org/en/users/Drivers
+>> >
+>> > But for ethernet.
+>>
+>> Since I've stuffed a few ethernet drivers on compat-wireless I might
+>> as well start carrying more. So now we'd have 802.11, Bluetooth and
+>> Ethernet all backported using the same framework, automatically, down
+>> to at least the oldest stable kernel supported listed on kernel.org
+>> and using all a generic compat module.
+>>
+>> I want to document all this crap.
+>
+> Why not Documentation/networking in kernel source?
 
-Yes, and if you look at the approach I proposed in this very thread
-(http://lkml.org/lkml/2010/6/4/368), it goes exactly in this direction.
+I think a wiki works better for this sort of documentation, the
+documentation I intend on writing is for end users, not developers.
+Users tend to also search on google, not the kernel source.
 
-And I think it is superior to the opportunistic suspend framework you have
-right now, because, for example, it doesn't require you to carry out full
-system resume and full system suspend every once a while to check battery
-status.
+> There is already documentation there though much of it is out of date.
 
-And guess what, suspending and resuming the whole system actually uses energy.
+I think its because a git tree works well for code, but not for
+documentation. Technically I'm even an advocate for developer
+documentation on wikis too though.
 
-Rafael
+> This has the advantage of having change log and matching kernel version.
+
+With Ethernet I'd just stuff all new drivers into the wiki as they go
+into linux-next, after all the drivers would be available immediately
+even for use on older kernels, so the information would be up to date,
+we could just annotate as per what kernel release what feature went or
+what chipsets were supported. For example, see:
+
+http://wireless.kernel.org/en/users/Drivers/ath9k#supported_chipsets
+
+  Luis
