@@ -1,153 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933159Ab0FELLi (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Jun 2010 07:11:38 -0400
-Received: from smtp-out11.han.skanova.net ([195.67.226.200]:34425 "EHLO
-	smtp-out11.han.skanova.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932741Ab0FELLg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Jun 2010 07:11:36 -0400
-From: "Henrik Rydberg" <rydberg@euromail.se>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-       Jiri Kosina <jkosina@suse.cz>, Mika Kuoppala <mika.kuoppala@nokia.com>,
-       Benjamin Tissoires <tissoire@cena.fr>, Rafi Rubin <rafi@seas.upenn.edu>,
-       Henrik Rydberg <rydberg@euromail.se>
-Subject: [PATCH 1/3] input: evdev: Use multi-reader buffer to save space (rev4)
-Date: Sat,  5 Jun 2010 13:04:27 +0200
-Message-Id: <1275735869-2185-2-git-send-email-rydberg@euromail.se>
-X-Mailer: git-send-email 1.6.3.3
-In-Reply-To: <1275735869-2185-1-git-send-email-rydberg@euromail.se>
-References: <1275735869-2185-1-git-send-email-rydberg@euromail.se>
+	id S933124Ab0FELRR (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Jun 2010 07:17:17 -0400
+Received: from relay1.sgi.com ([192.48.179.29]:40388 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932792Ab0FELRP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 5 Jun 2010 07:17:15 -0400
+From: Alex Elder <aelder@sgi.com>
+Message-Id: <201006051117.o55BH8KB006254@stout.americas.sgi.com>
+Date: Sat, 05 Jun 2010 06:17:07 -0500
+To: torvalds@linux-foundation.org
+Subject: [GIT PULL] XFS update for 2.6.35-rc2
+Cc: linux-kernel@vger.kernel.org, xfs@oss.sgi.com, akpm@linux-foundation.org
+User-Agent: Heirloom mailx 12.4 7/29/08
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Preparing for larger buffer needs, convert the current per-client
-circular buffer to a single buffer with multiple clients. Ideally, there
-should be a mechanism where clients wait during buffer collision only.
-Meanwhile, let clients take the dev->event_lock, which is already held
-during buffer writes.
+The following changes since commit 7f0d384cafabfbb56663ee6944c18fc0450fc5d6:
 
-Signed-off-by: Henrik Rydberg <rydberg@euromail.se>
----
- drivers/input/evdev.c |   46 ++++++++++++++++++++++++++--------------------
- 1 files changed, 26 insertions(+), 20 deletions(-)
+  Merge branch 'for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/viro/vfs-2.6 (2010-06-04 21:12:39 -0700)
 
-diff --git a/drivers/input/evdev.c b/drivers/input/evdev.c
-index 2ee6c7a..7117589 100644
---- a/drivers/input/evdev.c
-+++ b/drivers/input/evdev.c
-@@ -33,13 +33,13 @@ struct evdev {
- 	spinlock_t client_lock; /* protects client_list */
- 	struct mutex mutex;
- 	struct device dev;
-+	int head;
-+	struct input_event buffer[EVDEV_BUFFER_SIZE];
- };
- 
- struct evdev_client {
--	struct input_event buffer[EVDEV_BUFFER_SIZE];
- 	int head;
- 	int tail;
--	spinlock_t buffer_lock; /* protects access to buffer, head and tail */
- 	struct fasync_struct *fasync;
- 	struct evdev *evdev;
- 	struct list_head node;
-@@ -48,18 +48,13 @@ struct evdev_client {
- static struct evdev *evdev_table[EVDEV_MINORS];
- static DEFINE_MUTEX(evdev_table_mutex);
- 
--static void evdev_pass_event(struct evdev_client *client,
--			     struct input_event *event)
-+static inline void evdev_sync_event(struct evdev_client *client,
-+				    struct evdev *evdev, int type)
- {
--	/*
--	 * Interrupts are disabled, just acquire the lock
--	 */
--	spin_lock(&client->buffer_lock);
--	client->buffer[client->head++] = *event;
--	client->head &= EVDEV_BUFFER_SIZE - 1;
--	spin_unlock(&client->buffer_lock);
--
--	if (event->type == EV_SYN)
-+	/* sync the reader such that it never becomes empty */
-+	if (client->tail != evdev->head)
-+		client->head = evdev->head;
-+	if (type == EV_SYN)
- 		kill_fasync(&client->fasync, SIGIO, POLL_IN);
- }
- 
-@@ -78,14 +73,18 @@ static void evdev_event(struct input_handle *handle,
- 	event.code = code;
- 	event.value = value;
- 
-+	/* dev->event_lock held */
-+	evdev->buffer[evdev->head] = event;
-+	evdev->head = (evdev->head + 1) & (EVDEV_BUFFER_SIZE - 1);
-+
- 	rcu_read_lock();
- 
- 	client = rcu_dereference(evdev->grab);
- 	if (client)
--		evdev_pass_event(client, &event);
-+		evdev_sync_event(client, evdev, type);
- 	else
- 		list_for_each_entry_rcu(client, &evdev->client_list, node)
--			evdev_pass_event(client, &event);
-+			evdev_sync_event(client, evdev, type);
- 
- 	rcu_read_unlock();
- 
-@@ -269,7 +268,6 @@ static int evdev_open(struct inode *inode, struct file *file)
- 		goto err_put_evdev;
- 	}
- 
--	spin_lock_init(&client->buffer_lock);
- 	client->evdev = evdev;
- 	evdev_attach_client(evdev, client);
- 
-@@ -325,19 +323,27 @@ static ssize_t evdev_write(struct file *file, const char __user *buffer,
- }
- 
- static int evdev_fetch_next_event(struct evdev_client *client,
-+				  struct evdev *evdev,
- 				  struct input_event *event)
- {
-+	struct input_dev *dev = evdev->handle.dev;
- 	int have_event;
- 
--	spin_lock_irq(&client->buffer_lock);
-+	/*
-+	 * FIXME: taking event_lock protects against reentrant fops
-+	 * reads and provides sufficient buffer locking. However,
-+	 * clients should not block writes, and having multiple clients
-+	 * waiting for each other is suboptimal.
-+	 */
-+	spin_lock_irq(&dev->event_lock);
- 
- 	have_event = client->head != client->tail;
- 	if (have_event) {
--		*event = client->buffer[client->tail++];
-+		*event = evdev->buffer[client->tail++];
- 		client->tail &= EVDEV_BUFFER_SIZE - 1;
- 	}
- 
--	spin_unlock_irq(&client->buffer_lock);
-+	spin_unlock_irq(&dev->event_lock);
- 
- 	return have_event;
- }
-@@ -366,7 +372,7 @@ static ssize_t evdev_read(struct file *file, char __user *buffer,
- 		return -ENODEV;
- 
- 	while (retval + input_event_size() <= count &&
--	       evdev_fetch_next_event(client, &event)) {
-+	       evdev_fetch_next_event(client, evdev, &event)) {
- 
- 		if (input_event_to_user(buffer + retval, &event))
- 			return -EFAULT;
--- 
-1.6.3.3
+are available in the git repository at:
 
+  git://oss.sgi.com/xfs/xfs for-linus
+
+Alex Elder (1):
+      Merge branch 'master' into for-linus
+
+Christoph Hellwig (6):
+      xfs: cleanup log reservation calculactions
+      xfs: clean up xlog_align
+      xfs: fix access to upper inodes without inode64
+      xfs: remove done roadmap item from xfs-delayed-logging-design.txt
+      xfs: skip writeback from reclaim context
+      xfs: improve xfs_isilocked
+
+Dave Chinner (3):
+      xfs: Check new inode size is OK before preallocating
+      xfs: fix might_sleep() warning when initialising per-ag tree
+      xfs: fix race in inode cluster freeing failing to stale inodes
+
+Eric Sandeen (2):
+      xfs: replace E2BIG with EFBIG where appropriate
+      xfs: be more explicit if RT mount fails due to config
+
+Huang Weiyi (2):
+      xfs: xfs_trace.c: remove duplicated #include
+      xfs: remove duplicated #include
+
+Julia Lawall (1):
+      fs/xfs/quota: Add missing mutex_unlock
+
+Li Zefan (1):
+      xfs: convert more trace events to DEFINE_EVENT
+
+ .../filesystems/xfs-delayed-logging-design.txt     |    5 -
+ fs/xfs/linux-2.6/xfs_aops.c                        |   15 +
+ fs/xfs/linux-2.6/xfs_iops.c                        |   16 +-
+ fs/xfs/linux-2.6/xfs_quotaops.c                    |    1 -
+ fs/xfs/linux-2.6/xfs_sync.c                        |    9 -
+ fs/xfs/linux-2.6/xfs_trace.c                       |    1 -
+ fs/xfs/linux-2.6/xfs_trace.h                       |  356 ++++++++--------
+ fs/xfs/quota/xfs_qm.c                              |    4 +-
+ fs/xfs/xfs_ag.h                                    |    1 -
+ fs/xfs/xfs_iget.c                                  |   29 +-
+ fs/xfs/xfs_inode.c                                 |  144 +++----
+ fs/xfs/xfs_log_recover.c                           |   11 +-
+ fs/xfs/xfs_mount.c                                 |   68 ++--
+ fs/xfs/xfs_rtalloc.c                               |    4 +-
+ fs/xfs/xfs_rtalloc.h                               |   11 +-
+ fs/xfs/xfs_trans.c                                 |  446 ++++++++++++++++++--
+ fs/xfs/xfs_trans.h                                 |  411 ------------------
+ fs/xfs/xfs_vnodeops.c                              |    2 +-
+ 18 files changed, 736 insertions(+), 798 deletions(-)
