@@ -1,41 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932744Ab0FEJyP (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Jun 2010 05:54:15 -0400
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:46384
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932654Ab0FEJyN (ORCPT
+	id S932780Ab0FEJym (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Jun 2010 05:54:42 -0400
+Received: from casper.infradead.org ([85.118.1.10]:43879 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932734Ab0FEJyj convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Jun 2010 05:54:13 -0400
-Date: Sat, 05 Jun 2010 02:54:23 -0700 (PDT)
-Message-Id: <20100605.025423.258132771.davem@davemloft.net>
-To: jeffrey.t.kirsher@intel.com
-Cc: mingo@redhat.com, tglx@linutronix.de, hpa@zytor.com, x86@kernel.org,
-       linux-kernel@vger.kernel.org, netdev@vger.kernel.org, gospo@redhat.com,
-       alexander.h.duyck@intel.com
-Subject: Re: [net-next-2.6 PATCH 1/2] skbuff: add check for non-linear to
- warn_if_lro and needs_linearize
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20100602222230.12962.97260.stgit@localhost.localdomain>
-References: <20100602222230.12962.97260.stgit@localhost.localdomain>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+	Sat, 5 Jun 2010 05:54:39 -0400
+Subject: Re: suspend blockers & Android integration
+From: Peter Zijlstra <peterz@infradead.org>
+To: Arve =?ISO-8859-1?Q?Hj=F8nnev=E5g?= <arve@android.com>
+Cc: Ingo Molnar <mingo@elte.hu>, tytso@mit.edu,
+       Brian Swetland <swetland@google.com>, Neil Brown <neilb@suse.de>,
+       Thomas Gleixner <tglx@linutronix.de>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+       Alan Stern <stern@rowland.harvard.edu>,
+       Felipe Balbi <felipe.balbi@nokia.com>,
+       LKML <linux-kernel@vger.kernel.org>,
+       Florian Mickler <florian@mickler.org>,
+       Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
+       Linux PM <linux-pm@lists.linux-foundation.org>,
+       Alan Cox <alan@lxorguk.ukuu.org.uk>,
+       James Bottomley <James.Bottomley@suse.de>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       Kevin Hilman <khilman@deeprootsystems.com>,
+       "H. Peter Anvin" <hpa@zytor.com>,
+       Arjan van de Ven <arjan@infradead.org>
+In-Reply-To: <AANLkTinyjBa0KYfFz3_EFbC65hoQFwFINlTDYjCe-wM3@mail.gmail.com>
+References: <20100603193045.GA7188@elte.hu> <20100603231153.GA11302@elte.hu>
+	 <20100603232302.GA16184@elte.hu>
+	 <AANLkTikZP3bmckpfb_jUdG7qZO5W9DgpZ79ugtSZaEpt@mail.gmail.com>
+	 <20100604071354.GA14451@elte.hu>
+	 <AANLkTimH4ihf3QqtKFpfGXRKtO55PrUuff9JYtaEBG44@mail.gmail.com>
+	 <20100604083423.GD15181@elte.hu>
+	 <AANLkTinQyzzeF-NOAjrAqqQXqKjFJhx85nI4uyBGRtWd@mail.gmail.com>
+	 <1275653210.27810.39762.camel@twins>
+	 <AANLkTinyjBa0KYfFz3_EFbC65hoQFwFINlTDYjCe-wM3@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Sat, 05 Jun 2010 11:54:13 +0200
+Message-ID: <1275731653.27810.41078.camel@twins>
 Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+X-Mailer: Evolution 2.28.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
-Date: Wed, 02 Jun 2010 15:24:37 -0700
-
-> From: Alexander Duyck <alexander.h.duyck@intel.com>
+On Fri, 2010-06-04 at 17:10 -0700, Arve Hjønnevåg wrote:
+> > Trusted processes are assumed to be sane and idle when there is nothing
+> > for them to do, allowing the machine to go into deep idle states.
+> >
 > 
-> We can avoid an unecessary cache miss by checking if the skb is non-linear
-> before accessing gso_size/gso_type in skb_warn_if_lro, the same can also be
-> done to avoid a cache miss on nr_frags if data_len is 0.
-> 
-> Signed-off-by: Alexander Duyck <alexander.h.duyck@intel.com>
-> Signed-off-by: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
+> Neither the kernel nor our trusted user-space code currently meets
+> this criteria. 
 
-Applied.
+Then both need fixing. Really, that's the only sane approach.
