@@ -1,53 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932641Ab0FEJGG (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Jun 2010 05:06:06 -0400
-Received: from hera.kernel.org ([140.211.167.34]:34055 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932576Ab0FEJGE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Jun 2010 05:06:04 -0400
-Message-ID: <4C0A1369.9010601@kernel.org>
-Date: Sat, 05 Jun 2010 11:05:45 +0200
-From: Tejun Heo <tj@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.1.9) Gecko/20100317 Thunderbird/3.0.4
+	id S932694Ab0FEJhN (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Jun 2010 05:37:13 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:56522 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932656Ab0FEJhL convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 5 Jun 2010 05:37:11 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=BIeW5mSL1saByZwc7c6Vz/cS/iOu7Daq0CV1j47FFvHo7L2Pv4j68DiKGOZkXyZnaa
+         pw9twuWwJSGfrdtTQlrHgpErxrftja01dqOHc/wYeF1Yb7JpwE/bwiOcXpnfejpuUX5f
+         138TzUKgqYPRUHT+/+qkfSUR79b8kvUEZAgY0=
 MIME-Version: 1.0
-To: Mikael Bouillot <hmajxxlh@corbac.com>
-CC: Miklos Szeredi <mszeredi@suse.cz>, lkml <linux-kernel@vger.kernel.org>,
-       fuse-devel@lists.sourceforge.net
-Subject: Re: OSS Proxy Jack slave
-References: <20100601092456.GA23572@alia.nute.net> <4C066CF4.2050902@gmail.com> <20100605085045.GA5630@alia.nute.net>
-In-Reply-To: <20100605085045.GA5630@alia.nute.net>
-X-Enigmail-Version: 1.0.1
+In-Reply-To: <1275652843.27810.39750.camel@twins>
+References: <20100520204810.GA19188@think>
+	<AANLkTinifUTnjypY-h6Vv2qV9O7O4ZOFurxtrEr-3Rig@mail.gmail.com>
+	<1275652843.27810.39750.camel@twins>
+Date: Sat, 5 Jun 2010 11:37:09 +0200
+Message-ID: <AANLkTikomDB_9v7G5baRszSZiV3mydDmIuYZm78r0P6d@mail.gmail.com>
+Subject: Re: [PATCH RFC] reduce runqueue lock contention
+From: Stijn Devriendt <highguy@gmail.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Chris Mason <chris.mason@oracle.com>, Ingo Molnar <mingo@elte.hu>,
+       axboe@kernel.dk, linux-kernel@vger.kernel.org,
+       Tejun Heo <tj@kernel.org>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Sat, 05 Jun 2010 09:05:47 +0000 (UTC)
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On Fri, Jun 4, 2010 at 2:00 PM, Peter Zijlstra <peterz@infradead.org> wrote:
+> On Fri, 2010-06-04 at 12:56 +0200, Stijn Devriendt wrote:
+>
+>> The issue I want to tackle is waking up processes when others go to sleep.
+>> This means try_to_wake_up() from inside the runqueue lock.
+>
+>
+> Tejun did something for that:
+>
+>  http://lkml.org/lkml/2010/5/13/136
+>
+>
+>
 
-(cc'ing Miklos and mailing lists)
-
-On 06/05/2010 10:50 AM, Mikael Bouillot wrote:
-> Just a quick question: have you reached some form of understanding
-> with Miklos Szeredi over the direct mmap in FUSE issue?
-> 
-> I've read the thread from February 2010, and though most of the
-> kernel material fly way over my head, I've got the general idea.
-> 
-> FUSD has had mmap support since around the time I started using
-> oss2jack, so I don't know exactly how many apps I use require it
-> (besides Quake3). I'll put a printf in my oss2jack's mmap() to
-> see what I'll be missing.
-> 
-> I could use a patched FUSE, but stopping to have to maintain a
-> piece of out-of-tree kernel code was The. Whole. Point. of
-> switching from FUSD to a CUSE-based system T_T
-
-Miklos, any update on the mmap interface?
-
-Thanks.
-
--- 
-tejun
+The difference with what I have is that Tejun's threads are guaranteed
+to be local
+and on the same CPU/runqueue avoiding runqueue deadlocks. My code can be
+used to wake up any thread as I basically defer waking up untill after
+the runqueue
+lock is released.
