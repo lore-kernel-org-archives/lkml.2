@@ -1,184 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933541Ab0FEOOd (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Jun 2010 10:14:33 -0400
-Received: from outbound-mail02.westnet.com.au ([203.10.1.243]:25121 "EHLO
-	outbound-mail02.westnet.com.au" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933463Ab0FEOMh (ORCPT
+	id S1756875Ab0FEOpp (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Jun 2010 10:45:45 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:49408 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756532Ab0FEOpo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Jun 2010 10:12:37 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AlJPAA74CUw6B9wNPGdsb2JhbACHb5ZlDAEBAQE1LbAXjTGFFwSDSA
-X-IronPort-AV: E=Sophos;i="4.53,366,1272816000"; 
-   d="scan'208";a="82293888"
-From: Mike Gilks <mike.kernel@gilksonline.com>
-To: gregkh@suse.de, mchehab@redhat.com, julia@diku.dk, joe@perches.com
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-       Mike Gilks <mike.kernel@gilksonline.com>
-Subject: [PATCH 08/13] staging: rtl8192u: fix checkpatch.pl issues to line 514
-Date: Sat,  5 Jun 2010 22:12:32 +0800
-Message-Id: <1275747158-31375-9-git-send-email-mike.kernel@gilksonline.com>
-X-Mailer: git-send-email 1.6.3.3
-In-Reply-To: <1275747158-31375-8-git-send-email-mike.kernel@gilksonline.com>
-References: <1275747158-31375-1-git-send-email-mike.kernel@gilksonline.com>
- <1275747158-31375-2-git-send-email-mike.kernel@gilksonline.com>
- <1275747158-31375-3-git-send-email-mike.kernel@gilksonline.com>
- <1275747158-31375-4-git-send-email-mike.kernel@gilksonline.com>
- <1275747158-31375-5-git-send-email-mike.kernel@gilksonline.com>
- <1275747158-31375-6-git-send-email-mike.kernel@gilksonline.com>
- <1275747158-31375-7-git-send-email-mike.kernel@gilksonline.com>
- <1275747158-31375-8-git-send-email-mike.kernel@gilksonline.com>
+	Sat, 5 Jun 2010 10:45:44 -0400
+Date: Sat, 5 Jun 2010 07:39:54 -0700 (PDT)
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Felipe Contreras <felipe.contreras@gmail.com>
+cc: Tony Lindgren <tony@atomide.com>, Russell King <rmk@arm.linux.org.uk>,
+       Daniel Walker <dwalker@codeaurora.org>,
+       Kevin Hilman <khilman@deeprootsystems.com>,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       linux-arm-msm@vger.kernel.org, Vegard Nossum <vegard.nossum@gmail.com>
+Subject: Re: ARM defconfig files
+In-Reply-To: <AANLkTilSBWeYTV6YlLK4XdoBsSFSVvtJIRmJxAdNu92U@mail.gmail.com>
+Message-ID: <alpine.LFD.2.00.1006050734370.8175@i5.linux-foundation.org>
+References: <20100603074548.GA12104@flint.arm.linux.org.uk> <alpine.LFD.2.00.1006030725420.8175@i5.linux-foundation.org> <20100603181010.GA25779@flint.arm.linux.org.uk> <alpine.LFD.2.00.1006031116360.8175@i5.linux-foundation.org> <20100603185333.GD25779@flint.arm.linux.org.uk>
+ <alpine.LFD.2.00.1006031153420.8175@i5.linux-foundation.org> <1275593742.23384.48.camel@c-dwalke-linux.qualcomm.com> <20100603194559.GF25779@flint.arm.linux.org.uk> <alpine.LFD.2.00.1006031305310.8175@i5.linux-foundation.org>
+ <alpine.LFD.2.00.1006031317410.8175@i5.linux-foundation.org> <20100603211707.GA6499@atomide.com> <AANLkTilSBWeYTV6YlLK4XdoBsSFSVvtJIRmJxAdNu92U@mail.gmail.com>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fixed most problems pointed out by checkpatch.pl in file r8192U_core.c
-up to line 500
 
-Signed-off-by: Mike Gilks <mike.kernel@gilksonline.com>
----
- drivers/staging/rtl8192u/r8192U_core.c |   73 ++++++++++++-------------------
- 1 files changed, 28 insertions(+), 45 deletions(-)
 
-diff --git a/drivers/staging/rtl8192u/r8192U_core.c b/drivers/staging/rtl8192u/r8192U_core.c
-index ae388f7..09f5747 100644
---- a/drivers/staging/rtl8192u/r8192U_core.c
-+++ b/drivers/staging/rtl8192u/r8192U_core.c
-@@ -413,14 +413,12 @@ u16 read_nic_word(struct net_device *dev, int indx)
- 	struct usb_device *udev = priv->udev;
- 
- 	status = usb_control_msg(udev, usb_rcvctrlpipe(udev, 0),
--			       RTL8187_REQ_GET_REGS, RTL8187_REQT_READ,
--			       (indx&0xff)|0xff00, (indx>>8)&0x0f, &data, 2, HZ / 2);
-+				       RTL8187_REQ_GET_REGS, RTL8187_REQT_READ,
-+				       (indx&0xff)|0xff00, (indx>>8)&0x0f,
-+							&data, 2, HZ / 2);
- 
- 	if (status < 0)
--	{
- 		printk("read_nic_word TimeOut! status:%d\n", status);
--	}
--
- 
- 	return data;
- }
-@@ -434,13 +432,10 @@ u16 read_nic_word_E(struct net_device *dev, int indx)
- 
- 	status = usb_control_msg(udev, usb_rcvctrlpipe(udev, 0),
- 			       RTL8187_REQ_GET_REGS, RTL8187_REQT_READ,
--			       indx|0xfe00, 0, &data, 2, HZ / 2);
-+				       indx|0xfe00, 0, &data, 2, HZ / 2);
- 
- 	if (status < 0)
--	{
- 		printk("read_nic_word TimeOut! status:%d\n", status);
--	}
--
- 
- 	return data;
- }
-@@ -449,31 +444,29 @@ u32 read_nic_dword(struct net_device *dev, int indx)
- {
- 	u32 data;
- 	int status;
--//	int result;
-+	/* int result; */
- 
- 	struct r8192_priv *priv = (struct r8192_priv *)ieee80211_priv(dev);
- 	struct usb_device *udev = priv->udev;
- 
- 	status = usb_control_msg(udev, usb_rcvctrlpipe(udev, 0),
--			       RTL8187_REQ_GET_REGS, RTL8187_REQT_READ,
--			       (indx&0xff)|0xff00, (indx>>8)&0x0f, &data, 4, HZ / 2);
--//	if(0 != result) {
--//	  printk(KERN_WARNING "read size of data = %d\, date = %d\n", result, data);
--//	}
-+				       RTL8187_REQ_GET_REGS, RTL8187_REQT_READ,
-+					(indx&0xff)|0xff00, (indx>>8)&0x0f,
-+							&data, 4, HZ / 2);
-+	/* if(0 != result) {
-+	 *	printk(KERN_WARNING "read size of data = %d\, date = %d\n",
-+	 *							 result, data);
-+	 * }
-+	 */
- 
- 	if (status < 0)
--	{
- 		printk("read_nic_dword TimeOut! status:%d\n", status);
--	}
--
--
- 
- 	return data;
- }
- 
--
--//u8 read_phy_cck(struct net_device *dev, u8 adr);
--//u8 read_phy_ofdm(struct net_device *dev, u8 adr);
-+/* u8 read_phy_cck(struct net_device *dev, u8 adr); */
-+/* u8 read_phy_ofdm(struct net_device *dev, u8 adr); */
- /* this might still called in what was the PHY rtl8185/rtl8192 common code
-  * plans are to possibilty turn it again in one common code...
-  */
-@@ -481,26 +474,22 @@ inline void force_pci_posting(struct net_device *dev)
- {
- }
- 
--
- static struct net_device_stats *rtl8192_stats(struct net_device *dev);
- void rtl8192_commit(struct net_device *dev);
--//void rtl8192_restart(struct net_device *dev);
-+/* void rtl8192_restart(struct net_device *dev); */
- void rtl8192_restart(struct work_struct *work);
--//void rtl8192_rq_tx_ack(struct work_struct *work);
--
-+/* void rtl8192_rq_tx_ack(struct work_struct *work); */
- void watch_dog_timer_callback(unsigned long data);
- 
- /****************************************************************************
--   -----------------------------PROCFS STUFF-------------------------
--*****************************************************************************/
--
--static struct proc_dir_entry *rtl8192_proc = NULL;
--
-+ *   -----------------------------PROCFS STUFF-------------------------
-+*****************************************************************************
-+ */
- 
-+static struct proc_dir_entry *rtl8192_proc;
- 
--static int proc_get_stats_ap(char *page, char **start,
--			  off_t offset, int count,
--			  int *eof, void *data)
-+static int proc_get_stats_ap(char *page, char **start, off_t offset, int count,
-+							int *eof, void *data)
- {
- 	struct net_device *dev = data;
- 	struct r8192_priv *priv = (struct r8192_priv *)ieee80211_priv(dev);
-@@ -511,18 +500,12 @@ static int proc_get_stats_ap(char *page, char **start,
- 
- 	list_for_each_entry(target, &ieee->network_list, list) {
- 
--		len += snprintf(page + len, count - len,
--		"%s ", target->ssid);
--
--		if(target->wpa_ie_len>0 || target->rsn_ie_len>0){
--			len += snprintf(page + len, count - len,
--			"WPA\n");
--		}
--		else{
--			len += snprintf(page + len, count - len,
--			"non_WPA\n");
--		}
-+		len += snprintf(page + len, count - len, "%s ", target->ssid);
- 
-+		if (target->wpa_ie_len > 0 || target->rsn_ie_len > 0)
-+			len += snprintf(page + len, count - len, "WPA\n");
-+		else
-+			len += snprintf(page + len, count - len, "non_WPA\n");
- 	}
- 
- 	*eof = 1;
--- 
-1.6.3.3
+On Sat, 5 Jun 2010, Felipe Contreras wrote:
+> 
+> How about instead of using full defconfigs, we use minimal ones and
+> let the rest be determined with defaults.
 
+I wouldn't mind that either, but there needs to be some way to check that 
+they _are_ minimal. Which is more complicated than even SAT, afaik. 
+
+So the reason I don't like the "minimal defconfig" notion is that a 
+"regular defconfig" will work equally well, and lazy people will thus not 
+bother to make it minimal (because it's work) and instead just pick the 
+full config output.
+
+And we're all lazy. So gearing the process towards something that makes it 
+easy for lazy cases to do the wrong thing is a bad thing.
+
+We also don't have any way to "source" these config files from each other, 
+so there's no way from within such a config file to say "use the basic 
+omap3 defaults an then just add this on top". You can do it by 
+concatenating several such files manually from the Makefile or whatever 
+script, of course, but then you end up with the files themselves not 
+actually describing what they do.
+
+That's why I suggested the Kconfig format instead. It's the exact same 
+idea, but it's a "before pre-processing" format that already supports 
+including other files.
+
+		Linus
