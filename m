@@ -1,53 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933618Ab0FEW5f (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Jun 2010 18:57:35 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:59074 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933468Ab0FEW5e (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Jun 2010 18:57:34 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:date:message-id:subject:from:to:content-type;
-        b=u6TUzU19YMZMT1Qe2sSLvrr65lLKdRU/GDWyoPrAd15m86a/QhaHJD+INSEaGDmhTb
-         97dAtZWNPQTuCGywbzdy4sUsOVWeQjkTbk4Pv3VpVieM+RrbM0UpIWBtjEOq8GvgEist
-         kpt048kkkfq71POrTSwjuwJq64fU6cnVqYw9I=
+	id S933629Ab0FEXBs (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Jun 2010 19:01:48 -0400
+Received: from crca.org.au ([74.207.252.120]:49850 "EHLO crca.org.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933511Ab0FEXBr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 5 Jun 2010 19:01:47 -0400
+X-Bogosity: Ham, spamicity=0.000348
+Message-ID: <4C0AD754.7060800@crca.org.au>
+Date: Sun, 06 Jun 2010 09:01:40 +1000
+From: Nigel Cunningham <ncunningham@crca.org.au>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.9) Gecko/20100423 Thunderbird/3.0.4
 MIME-Version: 1.0
-Date: Sat, 5 Jun 2010 16:57:33 -0600
-Message-ID: <AANLkTink4RNS3UsfRjyj3DfIH0wEeAj1wtKzBUgbvU8m@mail.gmail.com>
-Subject: 2.6.34 general comments
-From: Jeffrey Merkey <jeffmerkey@gmail.com>
-To: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+To: Theodore Tso <tytso@MIT.EDU>
+CC: Pavel Machek <pavel@ucw.cz>, pm list <linux-pm@lists.linux-foundation.org>,
+       LKML <linux-kernel@vger.kernel.org>,
+       TuxOnIce-devel <tuxonice-devel@tuxonice.net>
+Subject: Re: [TuxOnIce-devel] [SUSPECTED SPAM] Re: [linux-pm] Proposal for
+ a new algorithm for reading & writing a hibernation image.
+References: <9rpccea67yy402c975fqru8r.1275576653521@email.android.com> <4C0994B9.6070406@crca.org.au> <88D03BC9-5E85-482D-9431-F1CE4C958C9B@mit.edu>
+In-Reply-To: <88D03BC9-5E85-482D-9431-F1CE4C958C9B@mit.edu>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Seeing a lot of file system corruption with temporary files on EXT3.
-/root/.viminfo gets trashed a lot if the system is not shut down.
-EXT3 recovery during boot produces corrupted files.  Does not happen
-on 2.6.28.
+Hi.
 
-Seeing system lockups on my Compaq Presario 2200 even after just
-letting it boot up and not even logging in.
+On 05/06/10 22:59, Theodore Tso wrote:
+>
+> On Jun 4, 2010, at 8:05 PM, Nigel Cunningham wrote:
+>>> 2mb pages will probably present a problem, as will bat mappings on powerpc.
+>>
+>> I have the idea that 2MB pages are only used for the kernel text and read only data. Is that right? If so, perhaps they can just be unconditionally copied (so that we can restore the image if a different kernel is booted) and wouldn't need any page protection. Does that sound right?
+>
+> No, hugepages are available for use by userspace programs.
+>
+> See: https://lwn.net/Articles/374424/
 
-Seeing the /boot/grub/grub.conf file getting trashed and replaced with
-binary junk during EXT3 recovery if system not shutdown properly.
+Ta!
 
-At any rate, I am not accustomed to seeing file system corruption in
-EXT3 like I am seeing even when I abuse the shit out of the system
-like I normally do during development
-of kernel modules.
+I'll take a look.
 
-Overall, performance on 2.6.34 is a lot better then I have ever seen
-before on Linux with disk I/O and the kernel behaves a lot better with
-heavy IO.  So that's a plus.
-
-Also, the hw_breakpoint subsystem has a lot of issues with other
-debuggers using the notify_die handlers since it hooks first.
-resident debuggers are just broken if it is left active.  Clearing of
-DR6 in traps.c under x86 also is troublesome and will break any
-loadable debugger.  a better approach may be needed.
-
-Jeff
+Nigel
