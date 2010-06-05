@@ -1,59 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755999Ab0FERBv (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Jun 2010 13:01:51 -0400
-Received: from fg-out-1718.google.com ([72.14.220.152]:43356 "EHLO
-	fg-out-1718.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754537Ab0FERBt (ORCPT
+	id S1756177Ab0FEREc (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Jun 2010 13:04:32 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:45680 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753145Ab0FEREa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Jun 2010 13:01:49 -0400
+	Sat, 5 Jun 2010 13:04:30 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=mime-version:in-reply-to:references:date:message-id:subject:from:to
          :cc:content-type;
-        b=Pq4wN6ozGFP4qVTCgfeQd8Tz4PWiOJ/L1om9b+NimEDT6yHuqP855/lhASh8SyVc5t
-         7xDSDKlOTYX3OJNomlID3i8pDcGGwlst5lM3nDiNcg1UYcafXIut3qgYMp0oL66MAwO8
-         Y9j6BdcgfXSw7Tgu8CkOkXsaquGsignbxy1Xc=
+        b=TMCsDFIl0nIFT0H9eGUOCpwCzdtKV1h459MwbTPtJhzhc62E3QmfmxFNBPWoE+N6it
+         VnsJu2Ff2d44Q2nYFBCwbLBqz/NMO8MVxPhNKSwFTmU6KuoZzlgzxnk0HNl+MwnVUEs5
+         aei0LaNdb8PtAOxNrECamx/khQDnE8eCrGmow=
 MIME-Version: 1.0
-In-Reply-To: <alpine.LFD.2.00.1006051732270.2933@localhost.localdomain>
-References: <1275686352.2970.2.camel@eha.doredevelopment.dk>
-	<alpine.LFD.2.00.1006042343150.2933@localhost.localdomain>
-	<AANLkTilb7---Qg1oLwzanKP1RGe04fkAXDtZzz0w9MGz@mail.gmail.com>
-	<20100605151031.2d562268@hina.wild-wind.fr.eu.org>
-	<alpine.LFD.2.00.1006051732270.2933@localhost.localdomain>
-Date: Sat, 5 Jun 2010 19:01:47 +0200
-Message-ID: <AANLkTimlSBEhl58CNuScKjxbqdTwTYgqo7vrHTcd1x9G@mail.gmail.com>
-Subject: Re: [RFC][PATCH] irq: support IRQ_NESTED_THREAD with non-threaded 
-	interrupt handlers
-From: Esben Haabendal <esbenhaabendal@gmail.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Marc Zyngier <maz@misterjones.org>,
-       Esben Haabendal <eha@doredevelopment.dk>, linux-kernel@vger.kernel.org,
-       mingo@elte.hu, joachim.eastwood@jotron.com
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <20100531224732.2073828d@schatten.dmk.lab>
+References: <20100527222514.0a1710bf@lxorguk.ukuu.org.uk>
+	<Pine.LNX.4.44L0.1005271730180.3239-100000@iolanthe.rowland.org>
+	<20100527230806.4deb6de3@lxorguk.ukuu.org.uk>
+	<20100527220949.GB10602@srcf.ucam.org>
+	<20100527232357.6d14fdb2@lxorguk.ukuu.org.uk>
+	<20100527223605.GB11364@srcf.ucam.org>
+	<20100527235546.09f3ce8a@lxorguk.ukuu.org.uk>
+	<20100528043114.GC26177@thunk.org>
+	<1275030704.32462.11.camel@laptop>
+	<AANLkTikEtlbkT4Ws3H2YGt_9QC46B5dr-b1oxJOcG4GN@mail.gmail.com>
+	<1275120618.27810.12699.camel@twins>
+	<1275149418.4503.128.camel@mulgrave.site>
+	<1275156734.1645.496.camel@laptop>
+	<20100531221219.212bf119@schatten.dmk.lab>
+	<20100531224732.2073828d@schatten.dmk.lab>
+Date: Sat, 5 Jun 2010 20:04:28 +0300
+Message-ID: <AANLkTinPUNer7XhAqS4VSWhOxqjEjaHtr76EK5tzYYjJ@mail.gmail.com>
+Subject: Re: [linux-pm] [PATCH 0/8] Suspend block api (version 8)
+From: Felipe Contreras <felipe.contreras@gmail.com>
+To: Florian Mickler <florian@mickler.org>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+       James Bottomley <James.Bottomley@suse.de>,
+       =?UTF-8?B?QXJ2ZSBIasO4bm5ldsOlZw==?= <arve@android.com>, tytso@mit.edu,
+       LKML <linux-kernel@vger.kernel.org>,
+       Linux PM <linux-pm@lists.linux-foundation.org>,
+       Thomas Gleixner <tglx@linutronix.de>,
+       Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
+       felipe.balbi@nokia.com, Alan Cox <alan@lxorguk.ukuu.org.uk>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jun 5, 2010 at 5:33 PM, Thomas Gleixner <tglx@linutronix.de> wrote:
-> On Sat, 5 Jun 2010, Marc Zyngier wrote:
->> You may want to give request_any_context_irq() a try (available since the
->> latest merge window). It still requires your driver to be changed, but it
->> should then work in both threaded and non-threaded cases.
+On Mon, May 31, 2010 at 11:47 PM, Florian Mickler <florian@mickler.org> wrote:
+> On Mon, 31 May 2010 22:12:19 +0200
+> Florian Mickler <florian@mickler.org> wrote:
+>> If I have a simple shell script then I don't wanna jump through
+>> hoops just to please your fragile kernel.
 >
-> And it nicely annotates that somebody looked at the driver in
-> question. That's the rule of least surprise and does not impose checks
-> on the fast path.
+> Also why should that code on one device kill my uptime and on the
+> other machine (my wall-plugged desktop) work just well? That doesn't
+> sound right.
 
-What in particular should I be looking for in a driver before changing
-from request_irq() to request_any_context_irq() ?
+Sounds perfectly right to me; one code runs perfectly fine on one
+machine, and on the other doesn't even compile. Well, sure, it wasn't
+written with that use-case in mind.
 
-As for not checking in the fast path, it should be noted that this is "only"
-in handle_nested_irq(), which is only used in few interupt controller
-drivers, all of which I assume are generally not considered very "fast".
+> Clearly opportunistic suspend is a workaround for battery-driven devices
+> and no general solution. But it is not specific to android. At least
+> not inherently. It could be useful for any embedded or mobile device
+> where you can clearly distinguish important functions from convenience
+> functions.
 
-Unless all interrupt handlers should be rewritten to be able to in both
-thread and interrupt context, I fail to se the conflict between the patch
-proposed and the work being done on request_any_context_irq().
+Yes, it could, but why go for the hacky solution when we know how to
+achieve the ideal one?
 
-/Esben
+> I really can't understand the whole _fundamental_ opposition to this
+> design choice.
+
+Nobody is using it, except Android. Nobody will use it, except Android.
+
+I have seen recent proposals that don't require changing the whole
+user-space. That might actually be used by other players.
+
+-- 
+Felipe Contreras
