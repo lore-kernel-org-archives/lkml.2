@@ -1,88 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933062Ab0FEVZM (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Jun 2010 17:25:12 -0400
-Received: from www.tglx.de ([62.245.132.106]:51117 "EHLO www.tglx.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755828Ab0FEVZK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Jun 2010 17:25:10 -0400
-Date: Sat, 5 Jun 2010 23:24:40 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Florian Mickler <florian@mickler.org>
-cc: Felipe Contreras <felipe.contreras@gmail.com>,
-       =?ISO-8859-15?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>,
-       Peter Zijlstra <peterz@infradead.org>,
+	id S933106Ab0FEV0R (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Jun 2010 17:26:17 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:36670 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932649Ab0FEV0Q convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 5 Jun 2010 17:26:16 -0400
+MIME-Version: 1.0
+In-Reply-To: <20100605092851.6ee15f13@infradead.org>
+References: <20100603193045.GA7188@elte.hu>
+	<20100603231153.GA11302@elte.hu>
+	<20100603232302.GA16184@elte.hu>
+	<AANLkTikZP3bmckpfb_jUdG7qZO5W9DgpZ79ugtSZaEpt@mail.gmail.com>
+	<20100604071354.GA14451@elte.hu>
+	<AANLkTimH4ihf3QqtKFpfGXRKtO55PrUuff9JYtaEBG44@mail.gmail.com>
+	<20100604083423.GD15181@elte.hu>
+	<AANLkTinQyzzeF-NOAjrAqqQXqKjFJhx85nI4uyBGRtWd@mail.gmail.com>
+	<1275653210.27810.39762.camel@twins>
+	<AANLkTinyjBa0KYfFz3_EFbC65hoQFwFINlTDYjCe-wM3@mail.gmail.com>
+	<1275731653.27810.41078.camel@twins>
+	<20100605092851.6ee15f13@infradead.org>
+Date: Sat, 5 Jun 2010 14:26:14 -0700
+Message-ID: <AANLkTimEwznq9c_8lkuBMxEQ-42rdvpZEqA9Y71Cu-qC@mail.gmail.com>
+Subject: Re: suspend blockers & Android integration
+From: =?ISO-8859-1?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>
+To: Arjan van de Ven <arjan@infradead.org>
+Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+       tytso@mit.edu, Brian Swetland <swetland@google.com>,
+       Neil Brown <neilb@suse.de>, Thomas Gleixner <tglx@linutronix.de>,
        "Rafael J. Wysocki" <rjw@sisk.pl>,
-       Matthew Garrett <mjg59@srcf.ucam.org>,
-       Alan Stern <stern@rowland.harvard.edu>, Paul@smtp1.linux-foundation.org,
-       LKML <linux-kernel@vger.kernel.org>, felipe.balbi@nokia.com,
+       Alan Stern <stern@rowland.harvard.edu>,
+       Felipe Balbi <felipe.balbi@nokia.com>,
+       LKML <linux-kernel@vger.kernel.org>,
+       Florian Mickler <florian@mickler.org>,
        Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
        Linux PM <linux-pm@lists.linux-foundation.org>,
-       Alan Cox <alan@lxorguk.ukuu.org.uk>
-Subject: Re: [linux-pm] [PATCH 0/8] Suspend block api (version 8)
-In-Reply-To: <20100605231141.52de0df7@schatten.dmk.lab>
-Message-ID: <alpine.LFD.2.00.1006052318050.2933@localhost.localdomain>
-References: <Pine.LNX.4.44L0.1005271253240.3239-100000@iolanthe.rowland.org> <201005302202.39511.rjw@sisk.pl> <AANLkTilUQ2AG76nbK6LwI8_7zw0_yMSoAOr9pmuz7xrt@mail.gmail.com> <201005312347.24251.rjw@sisk.pl> <AANLkTilvOgSFTDFtXbjJobMZWxgfvsC97TqC7_a_NHBX@mail.gmail.com>
- <alpine.LFD.2.00.1006011411200.2933@localhost.localdomain> <AANLkTikZHmF6baP7dEXEGFE8YsbEteRjlhb5wqZX8ll1@mail.gmail.com> <alpine.LFD.2.00.1006020905410.2933@localhost.localdomain> <AANLkTinDm3FIrbS1jqEzW15THmr1hdd7ox0Mllm1VLjZ@mail.gmail.com>
- <1275471561.27810.30865.camel@twins> <AANLkTilLmAb2c9fQwuguzWtjcHfuTZvPUTbUx7vuwFI6@mail.gmail.com> <AANLkTikna-Vs_phy2VrJs0I8gIsdSmwuxTJ67gQ_2oTt@mail.gmail.com> <20100605220143.08774900@schatten.dmk.lab> <AANLkTindQjsQRMUkxKNx-NqSiMlxUirmK2GO6zE7n0rf@mail.gmail.com>
- <20100605231141.52de0df7@schatten.dmk.lab>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+       Alan Cox <alan@lxorguk.ukuu.org.uk>,
+       James Bottomley <James.Bottomley@suse.de>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       Kevin Hilman <khilman@deeprootsystems.com>,
+       "H. Peter Anvin" <hpa@zytor.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 5 Jun 2010, Florian Mickler wrote:
-> On Sat, 5 Jun 2010 23:26:27 +0300
-> Felipe Contreras <felipe.contreras@gmail.com> wrote:
-> 
-> > Supposing there's a perfect usage of suspend blockers from user-space
-> > on current x86 platforms (in theory Android would have that), is the
-> > benefit that big to consider this a strong argument in favor of
-> > suspend blockers? Considering the small amount of x86 platforms using
-> > Android (is there any?), the fact that nobody else will use suspend
-> > blockers, and that x86 is already being fixed (as mentioned many times
-> > before) so dynamic PM is possible, I don't think we should be
-> > considering current x86 at all for suspend blockers.
-> 
-> A solution for the desktop to deprecate having to shut down the
-> machine would not be that bad, wouldn;t it? (Why have I to shut down
-> my machine anyway?) 
-> 
-> In my opinion such a decision (when to shutdown) has to be guided by
-> userspace knowledge.
-> Future x86 hardware is to be fixed (as I read in this discussion), so
-> using suspend blockers could be the tool of choice. 
-> 
-> But alright. Let's be a little bit more focused on the present
-> situation:
-> 
-> 1) There currently is no other solution.
+On Sat, Jun 5, 2010 at 9:28 AM, Arjan van de Ven <arjan@infradead.org> wrote:
+> On Sat, 05 Jun 2010 11:54:13 +0200
+> Peter Zijlstra <peterz@infradead.org> wrote:
+>
+>> On Fri, 2010-06-04 at 17:10 -0700, Arve Hjønnevåg wrote:
+>> > > Trusted processes are assumed to be sane and idle when there is
+>> > > nothing for them to do, allowing the machine to go into deep idle
+>> > > states.
+>> > >
+>> >
+>> > Neither the kernel nor our trusted user-space code currently meets
+>> > this criteria.
+>>
+>> Then both need fixing. Really, that's the only sane approach.
+>
+> fwiw... in MeeGo we're seeing quite good idle times (> 1 seconds)
+> without really bad hacks.
+>
 
-Wrong. The solutions are there, just being refused.
+We clearly have different standards for what we consider good. We
+measure time suspended in minutes or hours, not seconds, and waking up
+every second or two causes a noticeable decrease in battery life on
+the hardware we have today.
 
-> 2) It is a first stepping stone to bringing android to mainline.
+> the kernel has a set of infrastructure already to help here (range
+> timers, with which you can wakeup-limit untrusted userspace crap),
+> timer slack for legacy background timers, etc etc.
 
-Crap. Once we have an userspace API we are bound to it. Period. 
+Range timers allows the kernel to align different timers so they don't
+each bring the cpu out of idle individually. They do not eliminate
+timers or make individual timers fire less often. For example if you
+have 10 timers that fire every second on an idle system, without range
+timers you will most likely have to bring the cpu out of idle 10 times
+a second, but with range timers you have a chance of waking up only
+once a second (I say a chance here, since if they are identical they
+will just chase each other and never catch up).
 
-Also there is no technical reason why the whole driver stack cannot
-be merged w/o the suspend blockers.
+>
+> getting to 10 seconds is not in the range of impossibilities to be
+> honest... and that's even without doing things like putting untrusted
 
-> 3) Any "perfect" solution will emerge anyway. As there are so many
-> people with so strong opinions engaged in this discussion, I'm
-> confident.
+That is still far short of what we get with suspend (in terms of time).
 
-Yes, and that needs cooperation and compromises from both sides and
-not just blindly defining that there is no other solution.
+> junk (read: Appstore apps) into a cgroup and do wakeup limiting and cpu
+> time limiting on a cgroup level....
+>
+>
+> --
+> Arjan van de Ven        Intel Open Source Technology Centre
+> For development, discussion and tips for power savings,
+> visit http://www.lesswatts.org
+>
 
-> 4) If there is a better solution, android will shurely adapt it as
-> soon as it is there. 
 
-Sure, after we accepted the crap there is no incentive at all.
 
-Stop that advertising campaing already.
-
-No thanks,
-
-	tglx
+-- 
+Arve Hjønnevåg
