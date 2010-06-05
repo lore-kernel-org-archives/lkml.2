@@ -1,117 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752792Ab0FEFZD (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Jun 2010 01:25:03 -0400
-Received: from sh.osrg.net ([192.16.179.4]:56431 "EHLO sh.osrg.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752092Ab0FEFZA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Jun 2010 01:25:00 -0400
-Date: Sat, 05 Jun 2010 14:24:54 +0900 (JST)
-Message-Id: <20100605.142454.18033406.ryusuke@osrg.net>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org,
-       Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>,
-       linux-nilfs@vger.kernel.org
-Subject: [GIT PULL] nilfs2 fixes
-From: Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>
-X-Mailer: Mew version 5.2 on Emacs 22.2 / Mule 5.0 (SAKAKI)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-3.0 (sh.osrg.net [192.16.179.4]); Sat, 05 Jun 2010 14:24:55 +0900 (JST)
+	id S1753032Ab0FEFfL (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Jun 2010 01:35:11 -0400
+Received: from mail-px0-f174.google.com ([209.85.212.174]:36595 "EHLO
+	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752644Ab0FEFfI convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 5 Jun 2010 01:35:08 -0400
+MIME-Version: 1.0
+In-Reply-To: <20100605011826.GB21016@count0.beaverton.ibm.com>
+References: <20100603193045.GA7188@elte.hu>
+	<20100603232302.GA16184@elte.hu>
+	<1275644619.27810.39462.camel@twins>
+	<201006050138.30859.rjw@sisk.pl>
+	<alpine.LFD.2.00.1006050148080.2933@localhost.localdomain>
+	<AANLkTikGDSzaENwg_0BAtsYf3ulGd_6sGPR30WsvUxMi@mail.gmail.com>
+	<20100605011826.GB21016@count0.beaverton.ibm.com>
+Date: Fri, 4 Jun 2010 22:35:06 -0700
+Message-ID: <AANLkTim3MMfJ6oa9OhUJch_v1qGyxSfrfxF3zDZhxqHk@mail.gmail.com>
+Subject: Re: suspend blockers & Android integration
+From: =?ISO-8859-1?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>
+To: Matt Helsley <matthltc@us.ibm.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+       Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+       tytso@mit.edu, Brian Swetland <swetland@google.com>,
+       Neil Brown <neilb@suse.de>, Alan Stern <stern@rowland.harvard.edu>,
+       Felipe Balbi <felipe.balbi@nokia.com>,
+       LKML <linux-kernel@vger.kernel.org>,
+       Florian Mickler <florian@mickler.org>,
+       Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
+       Linux PM <linux-pm@lists.linux-foundation.org>,
+       Alan Cox <alan@lxorguk.ukuu.org.uk>,
+       James Bottomley <James.Bottomley@suse.de>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       Kevin Hilman <khilman@deeprootsystems.com>,
+       "H. Peter Anvin" <hpa@zytor.com>,
+       Arjan van de Ven <arjan@infradead.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+2010/6/4 Matt Helsley <matthltc@us.ibm.com>:
+> On Fri, Jun 04, 2010 at 05:39:17PM -0700, Arve Hjønnevåg wrote:
+>> On Fri, Jun 4, 2010 at 5:05 PM, Thomas Gleixner <tglx@linutronix.de> wrote:
+>> > On Sat, 5 Jun 2010, Rafael J. Wysocki wrote:
+>
+> <snip>
+>
+>>
+>> >     With the cgroup freezer you can "suspend" them right away and
+>> >     just keep the trusted background task(s) alive which allows us to
+>> >     go into deeper idle states instead of letting the crapplications
+>> >     run unconfined until the download finished and the suspend
+>> >     blocker goes away.
+>> >
+>>
+>> Yes this would be better, but I want it in addition to suspend, not
+>> instead of it. It is also unclear if our user-space code could easily
+>> make use of it since our trusted code calls into untrusted code.
+>>
+>
+> Perhaps I'm misunderstanding, but suspend and the cgroup freezer
+> interoperate well today -- you don't have to choose one or the other.
+> If you've discovered otherwise I'd consider it a bug and would like to
+> hear more about it.
+>
 
-please pull from:
+I'm not aware of any bug with combining both, but we cannot use
+suspend at all without suspend blockers in the kernel (since wakeup
+events may be ignored) and I don't know how we can safely freeze
+cgroups without funneling all potential wakeup events through a
+process that never gets frozen.
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/ryusuke/nilfs2.git for-linus
+> <snip>
+>
+>> it can handle bad apps better (assuming you don't combine
+>> opportunistic suspend and cgroup freezing).
+>
+> I don't see why that would be a problem. The cgroup freezer works
+> independently of the suspend freezer -- even with suspend blockers.
+> So my hunch is this is really the same as the next problem you refer to:
+>
+>> The biggest hurdle is how
+>> to handle dependencies between processes that gets frozen and
+>> processes that don't get frozen.
+>
+> I'm not sure it covers everything you want, but it should be possible to
+> identify some of those so long as you know which process you're
+> communicating with.
+>
+> A trusted app can look up the freezer cgroup of a target app in /proc, then
+> look at the cgroup's freezer.state file. If it's FREEZING or FROZEN then
+> you've very likely got a "bad" dependency.
+>
 
-to grab the following fixes.  A style fix and a cleanup, both of which
-are against changes in rc1.
+I don't think they are "bad" dependencies. Our framework has to
+communicate with apps.
 
-Thanks,
+> For example, say a trusted app plans on doing a blocking read() to fetch
+> the output of an untrusted app via a pipe. Assuming we know the untrusted
+> app's pid we could then check the dependency and determine that we're likely
+> to block because the untrusted app's freezer cgroup is FREEZING or FROZEN.
+> (certain to block if we see FROZEN)
+>
+> That said, it involves quite a few system calls compared to a simple read()
+> from the pipe. So my guess is it would be a debugging tool at best -- not
+> something you always have enabled.
+>
+> It may even be possible to make an lsof-like debugging tool to do that from
+> outside both apps.
+>
+> Cheers,
+>        -Matt Helsley
+>
 
-Ryusuke Konishi
---
-The following changes since commit 67a3e12b05e055c0415c556a315a3d3eb637e29e:
-  Linus Torvalds (1):
-        Linux 2.6.35-rc1
-
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/ryusuke/nilfs2.git for-linus
-
-Ryusuke Konishi (2):
-      nilfs2: fix style issue in nilfs_destroy_cachep
-      nilfs2: remove obsolete declarations of cache constructor and destructor
-
- fs/nilfs2/btree.h   |    2 --
- fs/nilfs2/segbuf.h  |    2 --
- fs/nilfs2/segment.h |    2 --
- fs/nilfs2/super.c   |    8 ++++----
- 4 files changed, 4 insertions(+), 10 deletions(-)
-
-diff --git a/fs/nilfs2/btree.h b/fs/nilfs2/btree.h
-index af638d5..43c8c5b 100644
---- a/fs/nilfs2/btree.h
-+++ b/fs/nilfs2/btree.h
-@@ -75,8 +75,6 @@ struct nilfs_btree_path {
- 
- extern struct kmem_cache *nilfs_btree_path_cache;
- 
--int nilfs_btree_path_cache_init(void);
--void nilfs_btree_path_cache_destroy(void);
- int nilfs_btree_init(struct nilfs_bmap *);
- int nilfs_btree_convert_and_insert(struct nilfs_bmap *, __u64, __u64,
- 				   const __u64 *, const __u64 *, int);
-diff --git a/fs/nilfs2/segbuf.h b/fs/nilfs2/segbuf.h
-index fdf1c3b..85fbb66 100644
---- a/fs/nilfs2/segbuf.h
-+++ b/fs/nilfs2/segbuf.h
-@@ -127,8 +127,6 @@ struct nilfs_segment_buffer {
- 
- extern struct kmem_cache *nilfs_segbuf_cachep;
- 
--int __init nilfs_init_segbuf_cache(void);
--void nilfs_destroy_segbuf_cache(void);
- struct nilfs_segment_buffer *nilfs_segbuf_new(struct super_block *);
- void nilfs_segbuf_free(struct nilfs_segment_buffer *);
- void nilfs_segbuf_map(struct nilfs_segment_buffer *, __u64, unsigned long,
-diff --git a/fs/nilfs2/segment.h b/fs/nilfs2/segment.h
-index dca1423..01e20db 100644
---- a/fs/nilfs2/segment.h
-+++ b/fs/nilfs2/segment.h
-@@ -221,8 +221,6 @@ enum {
- extern struct kmem_cache *nilfs_transaction_cachep;
- 
- /* segment.c */
--extern int nilfs_init_transaction_cache(void);
--extern void nilfs_destroy_transaction_cache(void);
- extern void nilfs_relax_pressure_in_lock(struct super_block *);
- 
- extern int nilfs_construct_segment(struct super_block *);
-diff --git a/fs/nilfs2/super.c b/fs/nilfs2/super.c
-index 03b34b7..414ef68 100644
---- a/fs/nilfs2/super.c
-+++ b/fs/nilfs2/super.c
-@@ -1130,13 +1130,13 @@ static void nilfs_segbuf_init_once(void *obj)
- 
- static void nilfs_destroy_cachep(void)
- {
--	 if (nilfs_inode_cachep)
-+	if (nilfs_inode_cachep)
- 		kmem_cache_destroy(nilfs_inode_cachep);
--	 if (nilfs_transaction_cachep)
-+	if (nilfs_transaction_cachep)
- 		kmem_cache_destroy(nilfs_transaction_cachep);
--	 if (nilfs_segbuf_cachep)
-+	if (nilfs_segbuf_cachep)
- 		kmem_cache_destroy(nilfs_segbuf_cachep);
--	 if (nilfs_btree_path_cache)
-+	if (nilfs_btree_path_cache)
- 		kmem_cache_destroy(nilfs_btree_path_cache);
- }
- 
+-- 
+Arve Hjønnevåg
