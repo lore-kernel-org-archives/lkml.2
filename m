@@ -1,126 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933446Ab0FEO4V (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Jun 2010 10:56:21 -0400
-Received: from mail-ww0-f46.google.com ([74.125.82.46]:33185 "EHLO
-	mail-ww0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933305Ab0FEO4T (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Jun 2010 10:56:19 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=GggHTZfzAaTlRehWQx+TPFTxNoXB/ZXAGKJFJ9CLyEhFlMH+pjCf10QKlWqHspCmFk
-         XO9Ra/XUlSYlhmYLK16IrLLZcFNn2MohNR8Sn6R7TP+5D2nPlJEUdkB9aKGpD4bHEPsK
-         Lcp1rtkTzozOaraoKMtBmPsAbBosho1mElyxU=
-Subject: Re: [RFC PATCH v7 11/19] Use callback to deal with
- skb_release_data() specially.
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: xiaohui.xin@intel.com
-Cc: netdev@vger.kernel.org, kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
-       mst@redhat.com, mingo@elte.hu, davem@davemloft.net,
-       herbert@gondor.hengli.com.au, jdike@linux.intel.com
-In-Reply-To: <1275732899-5423-11-git-send-email-xiaohui.xin@intel.com>
-References: <1275732899-5423-1-git-send-email-xiaohui.xin@intel.com>
-	 <1275732899-5423-2-git-send-email-xiaohui.xin@intel.com>
-	 <1275732899-5423-3-git-send-email-xiaohui.xin@intel.com>
-	 <1275732899-5423-4-git-send-email-xiaohui.xin@intel.com>
-	 <1275732899-5423-5-git-send-email-xiaohui.xin@intel.com>
-	 <1275732899-5423-6-git-send-email-xiaohui.xin@intel.com>
-	 <1275732899-5423-7-git-send-email-xiaohui.xin@intel.com>
-	 <1275732899-5423-8-git-send-email-xiaohui.xin@intel.com>
-	 <1275732899-5423-9-git-send-email-xiaohui.xin@intel.com>
-	 <1275732899-5423-10-git-send-email-xiaohui.xin@intel.com>
-	 <1275732899-5423-11-git-send-email-xiaohui.xin@intel.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Sat, 05 Jun 2010 16:56:13 +0200
-Message-ID: <1275749773.5238.244.camel@edumazet-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 8bit
+	id S1757418Ab0FEPFr (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Jun 2010 11:05:47 -0400
+Received: from THUNK.ORG ([69.25.196.29]:44622 "EHLO thunker.thunk.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754292Ab0FEPFq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 5 Jun 2010 11:05:46 -0400
+Date: Sat, 5 Jun 2010 11:05:23 -0400
+From: tytso@mit.edu
+To: Jan Kara <jack@suse.cz>
+Cc: Dave Chinner <david@fromorbit.com>, Nick Piggin <npiggin@suse.de>,
+       Josef Bacik <josef@redhat.com>, linux-fsdevel@vger.kernel.org,
+       chris.mason@oracle.com, hch@infradead.org, akpm@linux-foundation.org,
+       linux-kernel@vger.kernel.org
+Subject: Re: [RFC] new ->perform_write fop
+Message-ID: <20100605150523.GB9159@thunk.org>
+Mail-Followup-To: tytso@mit.edu, Jan Kara <jack@suse.cz>,
+	Dave Chinner <david@fromorbit.com>, Nick Piggin <npiggin@suse.de>,
+	Josef Bacik <josef@redhat.com>, linux-fsdevel@vger.kernel.org,
+	chris.mason@oracle.com, hch@infradead.org,
+	akpm@linux-foundation.org, linux-kernel@vger.kernel.org
+References: <20100518080503.GF2150@dastard>
+ <20100518104351.GF2516@laptop>
+ <20100518122714.GG2150@dastard>
+ <20100518150912.GI2516@laptop>
+ <20100519235054.GS8120@dastard>
+ <20100520201232.GP3395@quack.suse.cz>
+ <20100520230524.GU8120@dastard>
+ <20100521185846.GD10149@quack.suse.cz>
+ <20100522002759.GA8120@dastard>
+ <20100524092034.GA3287@quack.suse.cz>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100524092034.GA3287@quack.suse.cz>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on thunker.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le samedi 05 juin 2010 à 18:14 +0800, xiaohui.xin@intel.com a écrit :
-> From: Xin Xiaohui <xiaohui.xin@intel.com>
-> 
-> If buffer is external, then use the callback to destruct
-> buffers.
-> 
-> Signed-off-by: Xin Xiaohui <xiaohui.xin@intel.com>
-> Signed-off-by: Zhao Yu <yzhao81new@gmail.com>
-> Reviewed-by: Jeff Dike <jdike@linux.intel.com>
-> ---
->  net/core/skbuff.c |   11 +++++++++++
->  1 files changed, 11 insertions(+), 0 deletions(-)
-> 
-> diff --git a/net/core/skbuff.c b/net/core/skbuff.c
-> index 37587f0..418457c 100644
-> --- a/net/core/skbuff.c
-> +++ b/net/core/skbuff.c
-> @@ -385,6 +385,11 @@ static void skb_clone_fraglist(struct sk_buff *skb)
->  
->  static void skb_release_data(struct sk_buff *skb)
->  {
-> +	/* check if the skb has external buffers, we have use destructor_arg
-> +	 * here to indicate
-> +	 */
-> +	struct skb_external_page *ext_page = skb_shinfo(skb)->destructor_arg;
-> +
+On Mon, May 24, 2010 at 11:20:34AM +0200, Jan Kara wrote:
+>   Yes, exactly. I just wanted to point out that AFAICS ext4 can implement
+> proper error recovery without a need for 'punch' operation. So after all
+> Nick's copy page-by-page should be plausible at least for ext4.
 
-Oh well. This is v7 of your series, and nobody complained yet ?
+Sorry for my late response to this thread; I've been busy catching up
+on another of other fronts, so I didn't have a chance to go through
+this thread until now.
 
-This is a new cache miss on a _critical_ path.
+First of all, I'm not against implementing a 'punch' operation for
+ext4; I've actually toyed with this idea before.
 
+Secondly, I'm not sure it's really necessary; we already have a code
+path (which I was planning on making be the default when I have a
+chance to rewrite ext4_writepages) where the blocks are initially
+allocated with the 'uninitialized' flag in the extent tree; this is
+the same flag used for fallocate(2) support when we allocate blocks
+without filling in the data blocks.  Then, when the block I/O
+completes, we use the block I/O callback to clear the uninit flag in
+the extent tree.  This is currently used to avoid safely avoid locking
+in the read path, which is needed to speed up access for extremely
+fast (think Fusion I/O-like) flash devices.
 
->  	if (!skb->cloned ||
->  	    !atomic_sub_return(skb->nohdr ? (1 << SKB_DATAREF_SHIFT) + 1 : 1,
->  			       &skb_shinfo(skb)->dataref)) {
-> @@ -397,6 +402,12 @@ static void skb_release_data(struct sk_buff *skb)
->  		if (skb_has_frags(skb))
->  			skb_drop_fraglist(skb);
->  
-> +		/* if the skb has external buffers, use destructor here,
-> +		 * since after that skb->head will be kfree, in case skb->head
-> +		 * from external buffer cannot use kfree to destroy.
-> +		 */
+I was already thinking about using this trick in my planned
+ext4_writepages() rewrite, and if it turns out we have common code
+that also assumes that file systems can do the equivalent fallocate(2)
+and can clear the uninitialized bit on a callback, I think that makes
+ext4 fairly similar to what XFS does, at least at the high level,
+doesn't it?
 
-Why not deferring here the access to skb_shinfo(skb)->destructor_arg ?
+Note that strictly speaking this isn't a 'punch' operation in this
+case; it's rather an fallocate(2) and don't convert the extent to mark
+the data blocks as valid on error, which is not quite the same as a
+'punch' operation.
 
-> +		if (dev_is_mpassthru(skb->dev) && ext_page && ext_page->dtor)
-> +			ext_page->dtor(ext_page);
->  		kfree(skb->head);
->  	}
->  }
+Am I missing something?
 
-if (dev_is_mpassthru(skb->dev)) {
-	struct skb_external_page *ext_page =
-				skb_shinfo(skb)->destructor_arg;
-	if (ext_page && ext_page->dtor)
-		ext_page->dtor(ext_page);
-}
-
-destructor_arg should me moved before frags[] if you really want to use it.
-
-diff --git a/include/linux/skbuff.h b/include/linux/skbuff.h
-index bf243fc..b136d90 100644
---- a/include/linux/skbuff.h
-+++ b/include/linux/skbuff.h
-@@ -202,10 +202,11 @@ struct skb_shared_info {
-         */
-        atomic_t        dataref;
- 
--       skb_frag_t      frags[MAX_SKB_FRAGS];
-        /* Intermediate layers must ensure that destructor_arg
-         * remains valid until skb destructor */
-        void *          destructor_arg;
-+
-+       skb_frag_t      frags[MAX_SKB_FRAGS];
- };
- 
- /* We divide dataref into two halves.  The higher 16 bits hold references
-
-
-
+					- Ted
