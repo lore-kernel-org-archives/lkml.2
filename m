@@ -1,183 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933188Ab0FELfW (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Jun 2010 07:35:22 -0400
-Received: from outbound-mail04.westnet.com.au ([203.10.1.245]:43626 "EHLO
-	outbound-mail04.westnet.com.au" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756209Ab0FELfQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Jun 2010 07:35:16 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AlJPAAbTCUw6B9wNPGdsb2JhbACHb5ZlDAEBAQE1LbAcjUSFFwSDSA
-X-IronPort-AV: E=Sophos;i="4.53,366,1272816000"; 
-   d="scan'208";a="43679107"
-From: Mike Gilks <mike.kernel@gilksonline.com>
-To: gregkh@suse.de, mchehab@redhat.com, julia@diku.dk, joe@perches.com
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-       Mike Gilks <kernel.online@gilksonline.com>,
-       Mike Gilks <mike.kernel@gilksonline.com>
-Subject: [PATCH 01/12] Fixed checkpatch.pl issues to Line 172 Fixed most problems pointed out by checkpatch.pl in file r8192U_core.c up to line 172
-Date: Sat,  5 Jun 2010 19:35:06 +0800
-Message-Id: <1275737706-26798-2-git-send-email-mike.kernel@gilksonline.com>
-X-Mailer: git-send-email 1.6.3.3
-In-Reply-To: <1275737706-26798-1-git-send-email-mike.kernel@gilksonline.com>
-References: <1275737706-26798-1-git-send-email-mike.kernel@gilksonline.com>
+	id S1756246Ab0FELjq (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Jun 2010 07:39:46 -0400
+Received: from cantor.suse.de ([195.135.220.2]:57324 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751940Ab0FELjp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 5 Jun 2010 07:39:45 -0400
+Date: Sat, 5 Jun 2010 21:39:30 +1000
+From: Nick Piggin <npiggin@suse.de>
+To: Christoph Hellwig <hch@infradead.org>
+Cc: Al Viro <viro@ZenIV.linux.org.uk>, linux-kernel@vger.kernel.org,
+       linux-fsdevel@vger.kernel.org, Alan Cox <alan@lxorguk.ukuu.org.uk>
+Subject: Re: [PATCH, RFC] tty: stop abusing file->f_u.fu_list
+Message-ID: <20100605113930.GH26335@laptop>
+References: <20100604064307.737085373@suse.de>
+ <20100604072618.227745945@suse.de>
+ <20100604183934.GA2309@infradead.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100604183934.GA2309@infradead.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Mike Gilks <kernel.online@gilksonline.com>
+On Fri, Jun 04, 2010 at 02:39:34PM -0400, Christoph Hellwig wrote:
+> The ttry code currently abuses the file anchor for the per-sb file list
+> to track instances of a given tty.  But there's no good reason for
+> that, we can just install a proxy object in file->private that gets
+> added to the list and points to the tty and keep the list away from
+> VFS internals.
 
-Signed-off-by: Mike Gilks <mike.kernel@gilksonline.com>
----
- drivers/staging/rtl8192u/r8192U_core.c |   95 ++++++++++++++++---------------
- 1 files changed, 49 insertions(+), 46 deletions(-)
+Well thanks for this. Yes it is an obviously nicer way to do it, so
+tty doesn't have to know what vfs uses files list for.
 
-diff --git a/drivers/staging/rtl8192u/r8192U_core.c b/drivers/staging/rtl8192u/r8192U_core.c
-index 2bede27..dd42a35 100644
---- a/drivers/staging/rtl8192u/r8192U_core.c
-+++ b/drivers/staging/rtl8192u/r8192U_core.c
-@@ -25,12 +25,12 @@
-  */
  
- #ifndef CONFIG_FORCE_HARD_FLOAT
--double __floatsidf (int i) { return i; }
--unsigned int __fixunsdfsi (double d) { return d; }
--double __adddf3(double a, double b) { return a+b; }
--double __addsf3(float a, float b) { return a+b; }
--double __subdf3(double a, double b) { return a-b; }
--double __extendsfdf2(float a) {return a;}
-+double __floatsidf(int i) {return i; }
-+unsigned int __fixunsdfsi(double d) {return d; }
-+double __adddf3(double a, double b) {return a+b; }
-+double __addsf3(float a, float b) {return a+b; }
-+double __subdf3(double a, double b) {return a-b; }
-+double __extendsfdf2(float a) {return a; }
- #endif
- 
- #undef LOOP_TEST
-@@ -58,20 +58,20 @@ double __extendsfdf2(float a) {return a;}
- 
- #define CONFIG_RTL8192_IO_MAP
- 
--#include <asm/uaccess.h>
-+#include <linux/uaccess.h>
- #include "r8192U_hw.h"
- #include "r8192U.h"
--#include "r8190_rtl8256.h" /* RTL8225 Radio frontend */
--#include "r8180_93cx6.h"   /* Card EEPROM */
-+#include "r8190_rtl8256.h"	/* RTL8225 Radio frontend */
-+#include "r8180_93cx6.h"	/* Card EEPROM */
- #include "r8192U_wx.h"
--#include "r819xU_phy.h" //added by WB 4.30.2008
-+#include "r819xU_phy.h"		/* added by WB 4.30.2008 */
- #include "r819xU_phyreg.h"
- #include "r819xU_cmdpkt.h"
- #include "r8192U_dm.h"
--//#include "r8192xU_phyreg.h"
-+/*#include "r8192xU_phyreg.h" */
- #include <linux/usb.h>
- #include <linux/slab.h>
--// FIXME: check if 2.6.7 is ok
-+/* FIXME: check if 2.6.7 is ok */
- 
- #ifdef CONFIG_RTL8192_PM
- #include "r8192_pm.h"
-@@ -80,27 +80,30 @@ double __extendsfdf2(float a) {return a;}
- #ifdef ENABLE_DOT11D
- #include "dot11d.h"
- #endif
--//set here to open your trace code. //WB
--u32 rt_global_debug_component = \
--			//	COMP_INIT    	|
--//				COMP_DBG	|
--			//	COMP_EPROM   	|
--//				COMP_PHY	|
--			//	COMP_RF		|
--//				COMP_FIRMWARE	|
--//				COMP_CH		|
--			//	COMP_POWER_TRACKING |
--//				COMP_RATE	|
--			//	COMP_TXAGC	|
--		//		COMP_TRACE	|
--				COMP_DOWN	|
--		//		COMP_RECV	|
--		//              COMP_SWBW	|
--				COMP_SEC	|
--	//			COMP_RESET	|
--		//		COMP_SEND	|
--			//	COMP_EVENTS	|
--				COMP_ERR ; //always open err flags on
-+/* set here to open your trace code. //WB */
-+u32 rt_global_debug_component =
-+				/*COMP_INIT		|
-+				 *COMP_DBG		|
-+				 *COMP_EPROM		|
-+				 *COMP_PHY		|
-+				 *COMP_RF		|
-+				 *COMP_FIRMWARE		|
-+				 *COMP_CH		|
-+				 *COMP_POWER_TRACKING	|
-+				 *COMP_RATE		|
-+				 *COMP_TXAGC		|
-+				 *COMP_TRACE		|
-+				 */
-+				COMP_DOWN		|
-+				/*COMP_RECV		|
-+				 *COMP_SWBW		|
-+				 */
-+				COMP_SEC		|
-+				/*COMP_RESET		|
-+				 *COMP_SEND		|
-+				 *COMP_EVENTS		|
-+				 */
-+				COMP_ERR ;	/* always open err flags on */
- 
- #define TOTAL_CAM_ENTRY 32
- #define CAM_CONTENT_COUNT 8
-@@ -129,21 +132,21 @@ MODULE_VERSION("V 1.1");
- MODULE_DEVICE_TABLE(usb, rtl8192_usb_id_tbl);
- MODULE_DESCRIPTION("Linux driver for Realtek RTL8192 USB WiFi cards");
- 
--static char* ifname = "wlan%d";
--static int hwwep = 1;  //default use hw. set 0 to use software security
-+static char *ifname = "wlan%d";
-+static int hwwep = 1;	/* default use hw. set 0 to use software security */
- static int channels = 0x3fff;
- 
-+module_param(ifname, charp, S_IRUGO|S_IWUSR);
-+/*module_param(hwseqnum,int, S_IRUGO|S_IWUSR); */
-+module_param(hwwep, int, S_IRUGO|S_IWUSR);
-+module_param(channels, int, S_IRUGO|S_IWUSR);
- 
--
--module_param(ifname, charp, S_IRUGO|S_IWUSR );
--//module_param(hwseqnum,int, S_IRUGO|S_IWUSR);
--module_param(hwwep,int, S_IRUGO|S_IWUSR);
--module_param(channels,int, S_IRUGO|S_IWUSR);
--
--MODULE_PARM_DESC(ifname," Net interface name, wlan%d=default");
--//MODULE_PARM_DESC(hwseqnum," Try to use hardware 802.11 header sequence numbers. Zero=default");
--MODULE_PARM_DESC(hwwep," Try to use hardware security support. ");
--MODULE_PARM_DESC(channels," Channel bitmask for specific locales. NYI");
-+MODULE_PARM_DESC(ifname, " Net interface name, wlan%d=default");
-+/*MODULE_PARM_DESC(hwseqnum, " Try to use hardware 802.11 header sequence
-+ * numbers. Zero=default");
-+ */
-+MODULE_PARM_DESC(hwwep, " Try to use hardware security support. ");
-+MODULE_PARM_DESC(channels, " Channel bitmask for specific locales. NYI");
- 
- static int __devinit rtl8192_usb_probe(struct usb_interface *intf,
- 			 const struct usb_device_id *id);
-@@ -160,7 +163,7 @@ static struct usb_driver rtl8192_usb_driver = {
- 	.resume		= rtl8192_resume,                 /* PM resume fn  */
- #else
- 	.suspend	= NULL,				  /* PM suspend fn */
--	.resume      	= NULL,				  /* PM resume fn  */
-+	.resume		= NULL,				  /* PM resume fn  */
- #endif
- };
- 
--- 
-1.6.3.3
+> Note that I've just if 0'd the selinux mess poking into it.  While we
+> could trivially port it to the new code by making the tty_private
+> structure public this code is just too revolting to be kept around.
+> It would never have been there anyway if a person with some amount of
+> clue had ever reviewed the selinux code.  And no, it's not just the
+> tty portion, the rest of that function is just as bad.
+
+Why is it a mess? Just because of the conceptual nastiness of checking
+a tty object via a random one of its inodes? How would be a better way
+to do this?
+
+I think for a first pass, a simple conversion for all code would be good
+for me because then it stops blocking the scaling patch. (and it's
+more bisectable).
 
