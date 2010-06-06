@@ -1,109 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754420Ab0FFJEr (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Jun 2010 05:04:47 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:57614 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751543Ab0FFJEp (ORCPT
+	id S1754587Ab0FFJHI (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Jun 2010 05:07:08 -0400
+Received: from webbox4.loswebos.de ([213.187.93.205]:46705 "EHLO
+	webbox4.loswebos.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754164Ab0FFJHG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Jun 2010 05:04:45 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=ADFWXvuXCKmkWpLPO9NmBbJ9i4ik3HQCd3l7fTXlQ5FzifNgddrwp/WJLDCQS38no/
-         4LILfOF/7t7QJdyshvAhSqWgitYTFhNz2SuBCFvTzxVDjyhxEY/LOSulfvXSYIPRJ46F
-         FWZefhKiXvyOCnqUNFMTHryXgQ/x0VsnU5ErA=
+	Sun, 6 Jun 2010 05:07:06 -0400
+X-Greylist: delayed 433 seconds by postgrey-1.27 at vger.kernel.org; Sun, 06 Jun 2010 05:07:06 EDT
+Date: Sun, 6 Jun 2010 10:59:30 +0200
+From: Marc Koschewski <marc@osknowledge.org>
+To: Linux-LKLM <linux-kernel@vger.kernel.org>
+Subject: [2.6.35-rc1-marc-00691-g7f0d384] Oops in dup_mm
+Message-ID: <20100606085930.GA10311@shmoo>
 MIME-Version: 1.0
-In-Reply-To: <201006052228.03025.linux@rainbow-software.org>
-References: <201006042201.29872.linux@rainbow-software.org>
-	<87vd9yjpj4.fsf@pollan.anholt.net>
-	<201006052228.03025.linux@rainbow-software.org>
-Date: Sun, 6 Jun 2010 19:04:44 +1000
-Message-ID: <AANLkTinLPi93TvXcudNKPPWQaiD6xUrqvEESoxHnlIif@mail.gmail.com>
-Subject: Re: regression: 2.6.35-rc1 hangs on i865G with KMS
-From: Dave Airlie <airlied@gmail.com>
-To: Ondrej Zary <linux@rainbow-software.org>
-Cc: Eric Anholt <eric@anholt.net>, David Airlie <airlied@linux.ie>,
-       dri-devel@lists.freedesktop.org,
-       Kernel development list <linux-kernel@vger.kernel.org>
-Content-Type: multipart/mixed; boundary=0003255768eeec64f5048858d85b
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+X-PGP-Fingerprint: D514 7DC1 B5F5 8989 083E  38C9 5ECF E5BD 3430 ABF5
+X-PGP-Key: http://www.osknowledge.org/~marc/pubkey.asc
+X-Operating-System: Linux shmoo 2.6.35-rc1-marc-00261-g03cd373
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---0003255768eeec64f5048858d85b
-Content-Type: text/plain; charset=ISO-8859-1
+Hi folks,
 
-On Sun, Jun 6, 2010 at 6:28 AM, Ondrej Zary <linux@rainbow-software.org> wrote:
-> On Saturday 05 June 2010 02:23:27 Eric Anholt wrote:
->> On Fri, 4 Jun 2010 22:01:28 +0200, Ondrej Zary <linux@rainbow-software.org> wrote:
->> > Hello,
->> > I'm testing 2.6.35-rc1 kernel on Asus P4P800-VM (i865G chipset). After
->> > loading i915 module, the screen goes blank and the kernel hangs
->> > completely (same with 2.6.35-rc1-git2). This does not happen with
->> > "i915.modeset=0" parameter.
->> >
->> > This problem does not appear with 2.6.34. Is this a known regression?
->>
->> Not known as far as I know -- we'd enjoy a bisect with a bug report on
->> bugs.freedesktop.org.
+this morning I got a new Oops introduced. The system is overall 'slower', the
+framebuffer is not re-drawn (nouveau, which works perfectly until 2.6.35-rc1-marc-00261-g03cd373)
+and init is unable to send KILL and TERM when shuting down the machine. Shutdown
+was further processes after hitting PWRBTN but still the box wasn't shutdown
+completely.
 
-Can you try the attached patch?
 
-Dave.
+Jun  6 10:38:33 shmoo kernel: [  309.342010] Oops: 0002 [#1] 
+Jun  6 10:38:33 shmoo kernel: [  309.342010] last sysfs file: /sys/devices/pci0000:00/0000:00:1d.2/usb2/2-1/2-1:1.0/bInterfaceClass
+Jun  6 10:38:33 shmoo kernel: [  309.342010] Modules linked in: vboxnetflt vboxnetadp vboxdrv ipv6 af_packet snd_seq_dummy snd_seq_oss snd_seq_midi_event snd_seq snd_seq_device snd_pcm_oss snd_mixer_oss tun serial_cs i8k cpufreq_userspace cpufreq_powersave cpufreq_ondemand bluetooth acpi_cpufreq freq_table mperf p54pci p54common mac80211 mousedev cfg80211 usbmouse firewire_ohci ch7006 snd_intel8x0 rfkill usbhid firewire_core prism54 snd_intel8x0m nouveau snd_ac97_codec crc_itu_t ttm rtc_cmos ohci1394 pcmcia video rtc_core drm_kms_helper ieee1394 ac97_bus intel_rng dcdbas uhci_hcd psmouse evdev serio_raw rtc_lib yenta_socket pcmcia_rsrc pcmcia_core snd_pcm snd_timer sg rng_core usbcore output snd intel_agp 3c59x mii soundcore snd_page_alloc
+Jun  6 10:38:33 shmoo kernel: [  309.342010] 
+Jun  6 10:38:33 shmoo kernel: [  309.342010] Pid: 2400, comm: preload Tainted: G       A    2.6.35-rc1-marc-00691-g7f0d384 #1 Inspiron 8200            /Inspiron 8200                   
+Jun  6 10:38:33 shmoo kernel: [  309.342010] EIP: 0060:[<b0170431>] EFLAGS: 00010282 CPU: 0
+Jun  6 10:38:33 shmoo kernel: [  309.342010] EIP is at anon_vma_fork+0x79/0x9a
+Jun  6 10:38:33 shmoo kernel: [  309.342010] EAX: f61b7d40 EBX: f68963c8 ECX: f61b7d50 EDX: 0e200e20
+Jun  6 10:38:33 shmoo kernel: [  309.342010] ESI: f61b0738 EDI: f61b073c EBP: f6043eb4 ESP: f6043ea8
+Jun  6 10:38:33 shmoo kernel: [  309.342010]  DS: 007b ES: 007b FS: 0000 GS: 0033 SS: 0068
+Jun  6 10:38:33 shmoo kernel: [  309.342010] Process preload (pid: 2400, ti=f6043000 task=f7092f40 task.ti=f6043000)
+Jun  6 10:38:33 shmoo kernel: [  309.342010] Stack:
+Jun  6 10:38:33 shmoo kernel: [  309.342010]  f68963c8 f6073f98 f689641c f6043ef8 b011fcd3 f6896338 f69ca938 f69ca338
+Jun  6 10:38:33 shmoo kernel: [  309.342010] <0> f7092f40 f7092f40 f689638c f6896390 f6896380 00000001 f6073f44 f69ca300
+Jun  6 10:38:33 shmoo kernel: [  309.342010] <0> f69ca900 f7096740 f69dde40 f70658c0 f6043f34 b01206b9 b043e0a0 f6043f20
+Jun  6 10:38:33 shmoo kernel: [  309.342010] Call Trace:
+Jun  6 10:38:33 shmoo kernel: [  309.342010]  [<b011fcd3>] ? dup_mm+0x1bd/0x3c0
+Jun  6 10:38:33 shmoo kernel: [  309.342010]  [<b01206b9>] ? copy_process+0x789/0xbc5
+Jun  6 10:38:33 shmoo kernel: [  309.342010]  [<b011f0d0>] ? check_preempt_wakeup+0x66/0xab
+Jun  6 10:38:33 shmoo kernel: [  309.342010]  [<b0120b60>] ? do_fork+0x6b/0x2f9
+Jun  6 10:38:33 shmoo kernel: [  309.342010]  [<b011d67f>] ? __dequeue_entity+0x31/0x35
+Jun  6 10:38:33 shmoo kernel: [  309.342010]  [<b0108376>] ? sys_clone+0x2b/0x32
+Jun  6 10:38:33 shmoo kernel: [  309.342010]  [<b01029dd>] ? ptregs_clone+0x15/0x38
+Jun  6 10:38:33 shmoo kernel: [  309.342010]  [<b0102910>] ? sysenter_do_call+0x12/0x26
+Jun  6 10:38:33 shmoo kernel: [  309.342010] Code: 18 89 70 04 8d 50 08 8b 4b 34 89 51 04 89 48 08 8d 4b 34 89 48 0c 89 53 34 8d 48 10 8b 56 08 89 4e 08 8d 7e 04 89 78 10 89 50 14 <89> 0a 89 73 3c 31 c0 eb 8f 89 f0 e8 44 fe ff ff 89 d8 e8 4e fe 
+Jun  6 10:38:33 shmoo kernel: [  309.342010] EIP: [<b0170431>] anon_vma_fork+0x79/0x9a SS:ESP 0068:f6043ea8
+Jun  6 10:38:33 shmoo kernel: [  309.342010] CR2: 000000000e200e20
+Jun  6 10:38:33 shmoo kernel: [  309.344889] ---[ end trace a44762bd457c0179 ]---
 
---0003255768eeec64f5048858d85b
-Content-Type: application/octet-stream; 
-	name="0001-drm-i915-fix-oops-on-single-crtc-devices.patch"
-Content-Disposition: attachment; 
-	filename="0001-drm-i915-fix-oops-on-single-crtc-devices.patch"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_ga3n8bv60
+Jun  6 10:38:40 shmoo kernel: [  315.772559] BUG: unable to handle kernel paging request at 0e200e20
+Jun  6 10:38:40 shmoo kernel: [  315.772637] IP: [<b0170373>] anon_vma_clone+0x59/0x9e
+Jun  6 10:38:40 shmoo kernel: [  315.772692] *pde = 00000000 
+Jun  6 10:38:40 shmoo kernel: [  315.772724] Oops: 0002 [#2] 
+Jun  6 10:38:40 shmoo kernel: [  315.772755] last sysfs file: /sys/devices/pci0000:00/0000:00:1d.2/usb2/2-1/2-1:1.0/bInterfaceClass
+Jun  6 10:38:40 shmoo kernel: [  315.772814] Modules linked in: vboxnetflt vboxnetadp vboxdrv ipv6 af_packet snd_seq_dummy snd_seq_oss snd_seq_midi_event snd_seq snd_seq_device snd_pcm_oss snd_mixer_oss tun serial_cs i8k cpufreq_userspace cpufreq_powersave cpufreq_ondemand bluetooth acpi_cpufreq freq_table mperf p54pci p54common mac80211 mousedev cfg80211 usbmouse firewire_ohci ch7006 snd_intel8x0 rfkill usbhid firewire_core prism54 snd_intel8x0m nouveau snd_ac97_codec crc_itu_t ttm rtc_cmos ohci1394 pcmcia video rtc_core drm_kms_helper ieee1394 ac97_bus intel_rng dcdbas uhci_hcd psmouse evdev serio_raw rtc_lib yenta_socket pcmcia_rsrc pcmcia_core snd_pcm snd_timer sg rng_core usbcore output snd intel_agp 3c59x mii soundcore snd_page_alloc
+Jun  6 10:38:40 shmoo kernel: [  315.773009] 
+Jun  6 10:38:40 shmoo kernel: [  315.773009] Pid: 2770, comm: login Tainted: G      DA    2.6.35-rc1-marc-00691-g7f0d384 #1 Inspiron 8200            /Inspiron 8200                   
+Jun  6 10:38:40 shmoo kernel: [  315.773009] EIP: 0060:[<b0170373>] EFLAGS: 00210296 CPU: 0
+Jun  6 10:38:40 shmoo kernel: [  315.773009] EIP is at anon_vma_clone+0x59/0x9e
+Jun  6 10:38:40 shmoo kernel: [  315.773009] EAX: f60be8d8 EBX: f61cbb18 ECX: 0e200e20 EDX: f61b06a0
+Jun  6 10:38:40 shmoo kernel: [  315.773009] ESI: f69ab860 EDI: f60be8e8 EBP: f69cfea0 ESP: f69cfe8c
+Jun  6 10:38:40 shmoo kernel: [  315.773009]  DS: 007b ES: 007b FS: 0000 GS: 0033 SS: 0068
+Jun  6 10:38:40 shmoo kernel: [  315.773009] Process login (pid: 2770, ti=f69cf000 task=f60cb780 task.ti=f69cf000)
+Jun  6 10:38:40 shmoo kernel: [  315.773009] Stack:
+Jun  6 10:38:40 shmoo kernel: [  315.773009]  f69ab894 f61c5840 f69ab860 f61c5860 f69ab8b4 f69cfeb4 b01703d5 f69ab860
+Jun  6 10:38:40 shmoo kernel: [  315.773009] <0> f61c5860 f69ab8b4 f69cfef8 b011fcd3 f60d2c14 f6893738 f6893938 f60cb780
+Jun  6 10:38:40 shmoo kernel: [  315.773009] <0> f60cb780 f69ab824 f69ab828 f69ab818 00000001 f61c580c f6893900 f6893700
+Jun  6 10:38:40 shmoo kernel: [  315.773009] Call Trace:
+Jun  6 10:38:40 shmoo kernel: [  315.773009]  [<b01703d5>] ? anon_vma_fork+0x1d/0x9a
+Jun  6 10:38:40 shmoo kernel: [  315.773009]  [<b011fcd3>] ? dup_mm+0x1bd/0x3c0
+Jun  6 10:38:40 shmoo kernel: [  315.773009]  [<b01206b9>] ? copy_process+0x789/0xbc5
+Jun  6 10:38:40 shmoo kernel: [  315.773009]  [<b0163d73>] ? shmem_notify_change+0xee/0x13e
+Jun  6 10:38:40 shmoo kernel: [  315.773009]  [<b0120b60>] ? do_fork+0x6b/0x2f9
+Jun  6 10:38:40 shmoo kernel: [  315.773009]  [<b021b034>] ? copy_to_user+0x2e/0x11a
+Jun  6 10:38:40 shmoo kernel: [  315.773009]  [<b012abae>] ? sys_rt_sigaction+0x5f/0x80
+Jun  6 10:38:40 shmoo kernel: [  315.773009]  [<b0108376>] ? sys_clone+0x2b/0x32
+Jun  6 10:38:40 shmoo kernel: [  315.773009]  [<b01029dd>] ? ptregs_clone+0x15/0x38
+Jun  6 10:38:40 shmoo kernel: [  315.773009]  [<b0102910>] ? sysenter_do_call+0x12/0x26
+Jun  6 10:38:40 shmoo kernel: [  315.773009] Code: 30 89 50 04 8d 48 08 8b 7e 34 89 4f 04 89 78 08 8b 7d ec 89 78 0c 89 4e 34 8d 78 10 8b 4a 08 89 7a 08 83 c2 04 89 50 10 89 48 14 <89> 39 8b 43 0c 8d 58 f8 8b 53 0c 0f 18 02 90 39 45 f0 74 27 ba 
+Jun  6 10:38:40 shmoo kernel: [  315.773009] EIP: [<b0170373>] anon_vma_clone+0x59/0x9e SS:ESP 0068:f69cfe8c
+Jun  6 10:38:40 shmoo kernel: [  315.773009] CR2: 000000000e200e20
+Jun  6 10:38:40 shmoo kernel: [  315.779177] ---[ end trace a44762bd457c017a ]---
 
-RnJvbSA4ZjkyNzYzMDQ3NjYyMDU1MjhhODVlMzEzNGE1MTI2ZmVhMzZlMGM2IE1vbiBTZXAgMTcg
-MDA6MDA6MDAgMjAwMQpGcm9tOiBEYXZlIEFpcmxpZSA8YWlybGllZEByZWRoYXQuY29tPgpEYXRl
-OiBTdW4sIDYgSnVuIDIwMTAgMTg6NTk6NDEgKzEwMDAKU3ViamVjdDogW1BBVENIXSBkcm0vaTkx
-NTogZml4IG9vcHMgb24gc2luZ2xlIGNydGMgZGV2aWNlcy4KCk15IGZiIHJld29yayBkaWRuJ3Qg
-cmVtZW1iZXIgYWJvdXQgdGhlIDg0LzY1cy4KClJlcG9ydGVkLWJ5OiBPbmRyZWogWmFyeSA8bGlu
-dXhAcmFpbmJvdy1zb2Z0d2FyZS5vcmc+ClNpZ25lZC1vZmYtYnk6IERhdmUgQWlybGllIDxhaXJs
-aWVkQHJlZGhhdC5jb20+Ci0tLQogZHJpdmVycy9ncHUvZHJtL2k5MTUvaTkxNV9kcnYuaCAgICAg
-IHwgICAgMSArCiBkcml2ZXJzL2dwdS9kcm0vaTkxNS9pbnRlbF9kaXNwbGF5LmMgfCAgICA5ICsr
-KystLS0tLQogZHJpdmVycy9ncHUvZHJtL2k5MTUvaW50ZWxfZmIuYyAgICAgIHwgICAgMiArLQog
-MyBmaWxlcyBjaGFuZ2VkLCA2IGluc2VydGlvbnMoKyksIDYgZGVsZXRpb25zKC0pCgpkaWZmIC0t
-Z2l0IGEvZHJpdmVycy9ncHUvZHJtL2k5MTUvaTkxNV9kcnYuaCBiL2RyaXZlcnMvZ3B1L2RybS9p
-OTE1L2k5MTVfZHJ2LmgKaW5kZXggN2Y3OTdlZi4uYWM3YTQ0MiAxMDA2NDQKLS0tIGEvZHJpdmVy
-cy9ncHUvZHJtL2k5MTUvaTkxNV9kcnYuaAorKysgYi9kcml2ZXJzL2dwdS9kcm0vaTkxNS9pOTE1
-X2Rydi5oCkBAIC0yODksNiArMjg5LDcgQEAgdHlwZWRlZiBzdHJ1Y3QgZHJtX2k5MTVfcHJpdmF0
-ZSB7CiAJc3RydWN0IG1lbV9ibG9jayAqYWdwX2hlYXA7CiAJdW5zaWduZWQgaW50IHNyMDEsIGFk
-cGEsIHBwY3IsIGR2b2IsIGR2b2MsIGx2ZHM7CiAJaW50IHZibGFua19waXBlOworCWludCBudW1f
-cGlwZTsKIAogCS8qIEZvciBoYW5nY2hlY2sgdGltZXIgKi8KICNkZWZpbmUgRFJNX0k5MTVfSEFO
-R0NIRUNLX1BFUklPRCA3NSAvKiBpbiBqaWZmaWVzICovCmRpZmYgLS1naXQgYS9kcml2ZXJzL2dw
-dS9kcm0vaTkxNS9pbnRlbF9kaXNwbGF5LmMgYi9kcml2ZXJzL2dwdS9kcm0vaTkxNS9pbnRlbF9k
-aXNwbGF5LmMKaW5kZXggOGM2NjhlMy4uMDg0YTQ4NCAxMDA2NDQKLS0tIGEvZHJpdmVycy9ncHUv
-ZHJtL2k5MTUvaW50ZWxfZGlzcGxheS5jCisrKyBiL2RyaXZlcnMvZ3B1L2RybS9pOTE1L2ludGVs
-X2Rpc3BsYXkuYwpAQCAtNTMxMCw3ICs1MzEwLDYgQEAgc3RhdGljIHZvaWQgaW50ZWxfaW5pdF9k
-aXNwbGF5KHN0cnVjdCBkcm1fZGV2aWNlICpkZXYpCiB2b2lkIGludGVsX21vZGVzZXRfaW5pdChz
-dHJ1Y3QgZHJtX2RldmljZSAqZGV2KQogewogCXN0cnVjdCBkcm1faTkxNV9wcml2YXRlICpkZXZf
-cHJpdiA9IGRldi0+ZGV2X3ByaXZhdGU7Ci0JaW50IG51bV9waXBlOwogCWludCBpOwogCiAJZHJt
-X21vZGVfY29uZmlnX2luaXQoZGV2KTsKQEAgLTUzNDAsMTMgKzUzMzksMTMgQEAgdm9pZCBpbnRl
-bF9tb2Rlc2V0X2luaXQoc3RydWN0IGRybV9kZXZpY2UgKmRldikKIAkJZGV2LT5tb2RlX2NvbmZp
-Zy5mYl9iYXNlID0gcGNpX3Jlc291cmNlX3N0YXJ0KGRldi0+cGRldiwgMCk7CiAKIAlpZiAoSVNf
-TU9CSUxFKGRldikgfHwgSVNfSTlYWChkZXYpKQotCQludW1fcGlwZSA9IDI7CisJCWRldl9wcml2
-LT5udW1fcGlwZSA9IDI7CiAJZWxzZQotCQludW1fcGlwZSA9IDE7CisJCWRldl9wcml2LT5udW1f
-cGlwZSA9IDE7CiAJRFJNX0RFQlVHX0tNUygiJWQgZGlzcGxheSBwaXBlJXMgYXZhaWxhYmxlLlxu
-IiwKLQkJICBudW1fcGlwZSwgbnVtX3BpcGUgPiAxID8gInMiIDogIiIpOworCQkgICAgICBkZXZf
-cHJpdi0+bnVtX3BpcGUsIGRldl9wcml2LT5udW1fcGlwZSA+IDEgPyAicyIgOiAiIik7CiAKLQlm
-b3IgKGkgPSAwOyBpIDwgbnVtX3BpcGU7IGkrKykgeworCWZvciAoaSA9IDA7IGkgPCBkZXZfcHJp
-di0+bnVtX3BpcGU7IGkrKykgewogCQlpbnRlbF9jcnRjX2luaXQoZGV2LCBpKTsKIAl9CiAKZGlm
-ZiAtLWdpdCBhL2RyaXZlcnMvZ3B1L2RybS9pOTE1L2ludGVsX2ZiLmMgYi9kcml2ZXJzL2dwdS9k
-cm0vaTkxNS9pbnRlbF9mYi5jCmluZGV4IDZmNTNjZjcuLjA1M2Q2ZjkgMTAwNjQ0Ci0tLSBhL2Ry
-aXZlcnMvZ3B1L2RybS9pOTE1L2ludGVsX2ZiLmMKKysrIGIvZHJpdmVycy9ncHUvZHJtL2k5MTUv
-aW50ZWxfZmIuYwpAQCAtMjQ5LDcgKzI0OSw3IEBAIGludCBpbnRlbF9mYmRldl9pbml0KHN0cnVj
-dCBkcm1fZGV2aWNlICpkZXYpCiAJZGV2X3ByaXYtPmZiZGV2ID0gaWZiZGV2OwogCWlmYmRldi0+
-aGVscGVyLmZ1bmNzID0gJmludGVsX2ZiX2hlbHBlcl9mdW5jczsKIAotCWRybV9mYl9oZWxwZXJf
-aW5pdChkZXYsICZpZmJkZXYtPmhlbHBlciwgMiwKKwlkcm1fZmJfaGVscGVyX2luaXQoZGV2LCAm
-aWZiZGV2LT5oZWxwZXIsIGRldl9wcml2LT5udW1fcGlwZSwKIAkJCSAgIElOVEVMRkJfQ09OTl9M
-SU1JVCk7CiAKIAlkcm1fZmJfaGVscGVyX3NpbmdsZV9hZGRfYWxsX2Nvbm5lY3RvcnMoJmlmYmRl
-di0+aGVscGVyKTsKLS0gCjEuNi42LjEKCg==
---0003255768eeec64f5048858d85b--
+HTH,
+	Marc
+
+-- 
+Marc Koschewski
