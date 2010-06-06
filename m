@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933876Ab0FFAGc (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Jun 2010 20:06:32 -0400
-Received: from www.tglx.de ([62.245.132.106]:34306 "EHLO www.tglx.de"
+	id S933884Ab0FFAUp (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Jun 2010 20:20:45 -0400
+Received: from www.tglx.de ([62.245.132.106]:55265 "EHLO www.tglx.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933840Ab0FFAGa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Jun 2010 20:06:30 -0400
-Date: Sun, 6 Jun 2010 02:04:46 +0200 (CEST)
+	id S933756Ab0FFAUo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 5 Jun 2010 20:20:44 -0400
+Date: Sun, 6 Jun 2010 02:19:40 +0200 (CEST)
 From: Thomas Gleixner <tglx@linutronix.de>
 To: =?ISO-8859-15?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>
 cc: "Rafael J. Wysocki" <rjw@sisk.pl>, Peter Zijlstra <peterz@infradead.org>,
@@ -26,13 +26,13 @@ cc: "Rafael J. Wysocki" <rjw@sisk.pl>, Peter Zijlstra <peterz@infradead.org>,
        Arjan van de Ven <arjan@infradead.org>
 Subject: Re: suspend blockers & Android integration
 In-Reply-To: <AANLkTikmWDHYJ8wWF2cZapbkHHjV09R39I37yvQXFmor@mail.gmail.com>
-Message-ID: <alpine.LFD.2.00.1006060148470.2933@localhost.localdomain>
+Message-ID: <alpine.LFD.2.00.1006060208320.2933@localhost.localdomain>
 References: <20100603193045.GA7188@elte.hu> <20100603232302.GA16184@elte.hu> <1275644619.27810.39462.camel@twins> <201006050138.30859.rjw@sisk.pl> <alpine.LFD.2.00.1006050148080.2933@localhost.localdomain> <AANLkTikGDSzaENwg_0BAtsYf3ulGd_6sGPR30WsvUxMi@mail.gmail.com>
  <alpine.LFD.2.00.1006050246350.2933@localhost.localdomain> <AANLkTikU21xF49Z-_Lnrq7U7buNmqw_gyEEST8LuN24z@mail.gmail.com> <alpine.LFD.2.00.1006051736040.2933@localhost.localdomain> <AANLkTinD39rI47innPbGz1Gi8PsXV5HqkmaQuJ70oQ63@mail.gmail.com>
  <alpine.LFD.2.00.1006052348200.2933@localhost.localdomain> <AANLkTikmWDHYJ8wWF2cZapbkHHjV09R39I37yvQXFmor@mail.gmail.com>
 User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="8323328-387115346-1275782688=:2933"
+Content-Type: MULTIPART/MIXED; BOUNDARY="8323328-1891524831-1275783585=:2933"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -40,56 +40,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
   This message is in MIME format.  The first part should be readable text,
   while the remaining parts are likely unreadable without MIME-aware tools.
 
---8323328-387115346-1275782688=:2933
+--8323328-1891524831-1275783585=:2933
 Content-Type: TEXT/PLAIN; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
 
 On Sat, 5 Jun 2010, Arve Hjønnevåg wrote:
 > 2010/6/5 Thomas Gleixner <tglx@linutronix.de>:
-> > On Sat, 5 Jun 2010, Arve Hjønnevåg wrote:
-> >> >> > That download might take a minute or two, but that's not an
-> >> >> > justification for the crapplication to run unconfined and prevent
-> >> >> > lower power states.
-> >> >> >
-> >> >>
-> >> >> I agree, but this is not a simple problem to solve.
-> >> >
-> >> > Not with suspend blockers, but with cgroup confinement of crap, it's
-> >> > straight forward.
+> >> > Well, that's simply an application bug which sucks battery with or
+> >> > without suspend blockers. So it's unrelated to the freezing of
+> >> > untrusted apps while a trusted app still works in the background
+> >> > before allowing the machine to suspend.
 > >> >
 > >>
-> >> I don't think is is straight forward. If the a process in the frozen
-> >> group holds a resource that a process in the unfrozen group needs, how
-> >> do deal with that?
+> >> It is not unrelated if the trusted app has stopped working but still
+> >> blocks suspend. The battery drains when you combine them.
 > >
-> > I'm going to fix the framework which puts the group into freeze state
-> > w/o making sure that there is no held shared resource. Come on it's
-> > not rocket science.
+> > What you are describing is a problem which is not solvable either way.
+> > If you take the lock and do not release it you're not going to
+> > suspend. I never claimed that any other mechanism resolves this.
 > >
-> 
-> I'm not sure which framework you are talking about here, but I don't
-> think there is a single framework that knows about all shared
-> resources.
+> Whether you claimed it or not, this is the only case where using
+> cgroups would have a significant power saving over what we get with
+> suspend. The trusted app is idle and the untrusted app is frozen, so
+> we enter a low power mode from idle.
 
-Damn, it's not me talking about "our framework", you are mentioning
-when it fits your needs.
+Nothing else was what I said and depending on the usage pattern this
+can be significant. Just you converted a perfectly sensible technical
+argument into a quibble about BUGs in applicatins which are not
+confinable by defintion.
+ 
+> > But this is not related to the fact that freezing crap while running a
+> > sane background task is going to save you power vs. an approach where
+> > running a sane background task allows crap to consume power unconfined
+> > until it is done.
+> >
+> If the task that is blocking suspend is using the cpu anyway, then the
+> bad app does not increase the power consumption nearly as much as if
+> the task that blocked suspend is idle.
 
-If you do not have a clearly defined user space framework, then we
-talk about a completely random conglomeration of applications which
-need to be brought into submission by some global brute force
-approach.
-
-I'm tired of this, really. You just use terminlology as it fits to
-defend the complete design failure of android. But you fail to trick
-me :)
-
-Can you please explain in a consistent way how the application stack
-and the underlying framework (which exists according to android docs)
-is handling events and how the separation of trust level works ?
-
-We need to know that, otherwise we turn in circles forever.
-
+That's utter bullshit. If the app missed to release the supsend
+blocker then your crappy "while(1);" app is killing you in no time,
+while the same frozen crappy "while(1);" does no harm at all.
+ 
 Thanks,
 
 	tglx
---8323328-387115346-1275782688=:2933--
+--8323328-1891524831-1275783585=:2933--
