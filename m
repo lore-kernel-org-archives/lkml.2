@@ -1,77 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753322Ab0FFIA0 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Jun 2010 04:00:26 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:58006 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752593Ab0FFIAY convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Jun 2010 04:00:24 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:reply-to:to:subject:date:user-agent:cc:references:in-reply-to
-         :mime-version:content-type:content-transfer-encoding:message-id;
-        b=IpwCa8atmB3g/rqi8EvDzZvPGPHwVftCgT032ap1OCjoLPCOC1mlkJzZQm/7IkIuzK
-         sbPvE4GmnzeStmDPvgJxx4SVwXRnE2zXKqQFJ5hD0zvuqkf42HEDFqLb+WS2Nps1Wgmq
-         7KPOR/+r49ac/ybn5N/fM0C8JhlE9wlqug5rE=
-From: Maciej Rutecki <maciej.rutecki@gmail.com>
-Reply-To: maciej.rutecki@gmail.com
-To: Shirish Pargaonkar <shirishpargaonkar@gmail.com>
-Subject: Re: wait_even_interruptible_timeout(), signal, spin_lock() = system hang
-Date: Sun, 6 Jun 2010 10:00:19 +0200
-User-Agent: KMail/1.12.4 (Linux/2.6.34; KDE/4.3.4; i686; ; )
-Cc: linux-kernel@vger.kernel.org,
-       "linux-fsdevel" <linux-fsdevel@vger.kernel.org>
-References: <AANLkTiliRFydAhxH2-Dp1RKuz6sq7vgWIcMvLMi68ftg@mail.gmail.com>
-In-Reply-To: <AANLkTiliRFydAhxH2-Dp1RKuz6sq7vgWIcMvLMi68ftg@mail.gmail.com>
+	id S1753364Ab0FFIGr (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Jun 2010 04:06:47 -0400
+Received: from mail.lang.hm ([64.81.33.126]:53249 "EHLO bifrost.lang.hm"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752616Ab0FFIGm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 6 Jun 2010 04:06:42 -0400
+Date: Sun, 6 Jun 2010 01:04:46 -0700 (PDT)
+From: david@lang.hm
+X-X-Sender: dlang@asgard.lang.hm
+To: Brian Swetland <swetland@google.com>
+cc: Ingo Molnar <mingo@elte.hu>, tytso@mit.edu, Neil Brown <neilb@suse.de>,
+       Arve Hj?nnev?g <arve@android.com>, Thomas Gleixner <tglx@linutronix.de>,
+       "Rafael J. Wysocki" <rjw@sisk.pl>,
+       Alan Stern <stern@rowland.harvard.edu>,
+       Felipe Balbi <felipe.balbi@nokia.com>,
+       Peter Zijlstra <peterz@infradead.org>,
+       LKML <linux-kernel@vger.kernel.org>,
+       Florian Mickler <florian@mickler.org>,
+       Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
+       Linux PM <linux-pm@lists.linux-foundation.org>,
+       Alan Cox <alan@lxorguk.ukuu.org.uk>,
+       James Bottomley <James.Bottomley@suse.de>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: suspend blockers & Android integration
+In-Reply-To: <AANLkTinphtxn-8pGTYv_mBxKFMa7jU8i1yNbHrs50Vzl@mail.gmail.com>
+Message-ID: <alpine.DEB.2.01.1006060100290.17462@asgard.lang.hm>
+References: <20100603193045.GA7188@elte.hu> <AANLkTinsOF3wnxsruR0TvjBAQcHks4tf0ay_sM2xB_p4@mail.gmail.com> <20100604075722.GA15181@elte.hu> <AANLkTiksGnpL8tkcc5eScWHrGoijyZNUwZik5lXmU_TS@mail.gmail.com> <20100604085513.GE15181@elte.hu>
+ <AANLkTinphtxn-8pGTYv_mBxKFMa7jU8i1yNbHrs50Vzl@mail.gmail.com>
+User-Agent: Alpine 2.01 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 8BIT
-Message-Id: <201006061000.19503.maciej.rutecki@gmail.com>
+Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I created a Bugzilla entry at 
-https://bugzilla.kernel.org/show_bug.cgi?id=16139
-for your bug report, please add your address to the CC list in there, thanks!
+On Fri, 4 Jun 2010, Brian Swetland wrote:
 
-On piątek, 28 maja 2010 o 18:44:46 Shirish Pargaonkar wrote:
-> After this sequence of calls, system hangs (smp, x86 box based with
-> .34 kernel), can ping only.
-> I have not been able to break in with Alt Sysrq t, working on that
-> 
->         rc = wait_event_interruptible_timeout(ses->server->response_q,
->                         (midQ->midState != MID_REQUEST_SUBMITTED),
->  timeout); if (rc < 0) {
->                 cFYI(1, ("command 0x%x interrupted", midQ->command));
->                 return -1;
->         }
-> 
-> and when function that invoking function after coming out with ERESTARTSYS
-> (I kill the command with Ctrl C) calls
->  spin_lock(&GlobalMid_Lock);
-> 
-> system hangs.  If I sleep before return -1 (e.g. msleep(1), no hang)
-> 
-> I do not have to use wait_event_interruptible_timeout and no such problems
->  with wait_event_timeout, it is only when signal/interrupt is involved, I
->  run into this problem
-> 
-> Any pointers/ideas what could be happening, would be really really
->  appreciated.
-> 
-> Regards,
-> 
-> Shirish
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
+> Yeah, I do understand that we're not making it easy for ourselves
+> here.  I think we hit the point where Rafael and Matthew signed off on
+> things and thought "aha, linux-pm maintainers are happy, now we're
+> getting somewhere" only to realize the light at the end of the tunnel
+> was a bit further out than we anticipated ^^
 
--- 
-Maciej Rutecki
-http://www.maciek.unixy.pl
+What you missed is that the linux-pm maintainers have relativly little 
+weight in getting things into the kernel. They are gatekeeper, so until 
+they approve it there is basically no chance of getting in, but even 
+changes that they develop and push frequently have a uphill battle to get 
+into the kernel, especially if they would end up touching all drivers. 
+There have been several proposals by the pm team that have been shot down 
+much more completely than wavelocks.
+
+David Lang
