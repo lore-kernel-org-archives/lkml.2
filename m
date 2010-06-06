@@ -1,39 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933863Ab0FFACS (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Jun 2010 20:02:18 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:33176 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933788Ab0FFACR convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Jun 2010 20:02:17 -0400
-MIME-Version: 1.0
-In-Reply-To: <20100605163411.6c561fbf@infradead.org>
-References: <20100603193045.GA7188@elte.hu>
-	<20100603231153.GA11302@elte.hu>
-	<20100603232302.GA16184@elte.hu>
-	<AANLkTikZP3bmckpfb_jUdG7qZO5W9DgpZ79ugtSZaEpt@mail.gmail.com>
-	<20100604071354.GA14451@elte.hu>
-	<AANLkTimH4ihf3QqtKFpfGXRKtO55PrUuff9JYtaEBG44@mail.gmail.com>
-	<20100604083423.GD15181@elte.hu>
-	<AANLkTinQyzzeF-NOAjrAqqQXqKjFJhx85nI4uyBGRtWd@mail.gmail.com>
-	<1275653210.27810.39762.camel@twins>
-	<AANLkTinyjBa0KYfFz3_EFbC65hoQFwFINlTDYjCe-wM3@mail.gmail.com>
-	<1275731653.27810.41078.camel@twins>
-	<20100605092851.6ee15f13@infradead.org>
-	<AANLkTimEwznq9c_8lkuBMxEQ-42rdvpZEqA9Y71Cu-qC@mail.gmail.com>
-	<20100605152326.7ccd5160@infradead.org>
-	<AANLkTil0XV8EDK8WWody7f-L5ou4p_a3O_T6dTjWB12C@mail.gmail.com>
-	<20100605163411.6c561fbf@infradead.org>
-Date: Sat, 5 Jun 2010 17:02:16 -0700
-Message-ID: <AANLkTikUtdy63ip30P022eDmcZHyV_3blkQQ9UVHwJfg@mail.gmail.com>
-Subject: Re: suspend blockers & Android integration
-From: =?ISO-8859-1?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>
-To: Arjan van de Ven <arjan@infradead.org>
-Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-       tytso@mit.edu, Brian Swetland <swetland@google.com>,
-       Neil Brown <neilb@suse.de>, Thomas Gleixner <tglx@linutronix.de>,
-       "Rafael J. Wysocki" <rjw@sisk.pl>,
+	id S933876Ab0FFAGc (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Jun 2010 20:06:32 -0400
+Received: from www.tglx.de ([62.245.132.106]:34306 "EHLO www.tglx.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933840Ab0FFAGa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 5 Jun 2010 20:06:30 -0400
+Date: Sun, 6 Jun 2010 02:04:46 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: =?ISO-8859-15?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>
+cc: "Rafael J. Wysocki" <rjw@sisk.pl>, Peter Zijlstra <peterz@infradead.org>,
+       Ingo Molnar <mingo@elte.hu>, tytso@mit.edu,
+       Brian Swetland <swetland@google.com>, Neil Brown <neilb@suse.de>,
        Alan Stern <stern@rowland.harvard.edu>,
        Felipe Balbi <felipe.balbi@nokia.com>,
        LKML <linux-kernel@vger.kernel.org>,
@@ -44,44 +22,74 @@ Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
        James Bottomley <James.Bottomley@suse.de>,
        Linus Torvalds <torvalds@linux-foundation.org>,
        Kevin Hilman <khilman@deeprootsystems.com>,
-       "H. Peter Anvin" <hpa@zytor.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+       "H. Peter Anvin" <hpa@zytor.com>,
+       Arjan van de Ven <arjan@infradead.org>
+Subject: Re: suspend blockers & Android integration
+In-Reply-To: <AANLkTikmWDHYJ8wWF2cZapbkHHjV09R39I37yvQXFmor@mail.gmail.com>
+Message-ID: <alpine.LFD.2.00.1006060148470.2933@localhost.localdomain>
+References: <20100603193045.GA7188@elte.hu> <20100603232302.GA16184@elte.hu> <1275644619.27810.39462.camel@twins> <201006050138.30859.rjw@sisk.pl> <alpine.LFD.2.00.1006050148080.2933@localhost.localdomain> <AANLkTikGDSzaENwg_0BAtsYf3ulGd_6sGPR30WsvUxMi@mail.gmail.com>
+ <alpine.LFD.2.00.1006050246350.2933@localhost.localdomain> <AANLkTikU21xF49Z-_Lnrq7U7buNmqw_gyEEST8LuN24z@mail.gmail.com> <alpine.LFD.2.00.1006051736040.2933@localhost.localdomain> <AANLkTinD39rI47innPbGz1Gi8PsXV5HqkmaQuJ70oQ63@mail.gmail.com>
+ <alpine.LFD.2.00.1006052348200.2933@localhost.localdomain> <AANLkTikmWDHYJ8wWF2cZapbkHHjV09R39I37yvQXFmor@mail.gmail.com>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: MULTIPART/MIXED; BOUNDARY="8323328-387115346-1275782688=:2933"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2010/6/5 Arjan van de Ven <arjan@infradead.org>:
-> On Sat, 5 Jun 2010 15:39:44 -0700
-> Arve Hjønnevåg <arve@android.com> wrote:
->
->> >
->> > For example if the Adobe Flash player puts a timer every 10
->> > milliseconds (yes it does that), and you give it a 3.99 seconds
->> > range, it will fire its timers every 4 seconds.... unless other
->> > activity happens independently, at which point it'll align with
->> > that instead.
->> >
->>
->> If you do that what you are delivering is nowhere close to what the
->> app asked for.
->
-> yeah it feels a little bit suspended
->
->> You don't need range timers for this, you could just as
->> well add 4 seconds to all normal timers.
->
-> .. with the difference that with range timers, you naturally align with
-> other activity, so if there's system level activity, the AVERAGE service
-> the app gets is better by a LOT than just adding 4 seconds always.
->
-> but you knew that.... just doesn't help your case.
+  This message is in MIME format.  The first part should be readable text,
+  while the remaining parts are likely unreadable without MIME-aware tools.
 
-So you are saying it is safe to use range timers to radically change
-the requested timer interval because it does not actually get to the
-value that you changed it so. But you are also saying that this will
-allow the system to stay idle for that long. Something does not add
-up.
+--8323328-387115346-1275782688=:2933
+Content-Type: TEXT/PLAIN; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 
--- 
-Arve Hjønnevåg
+On Sat, 5 Jun 2010, Arve Hjønnevåg wrote:
+> 2010/6/5 Thomas Gleixner <tglx@linutronix.de>:
+> > On Sat, 5 Jun 2010, Arve Hjønnevåg wrote:
+> >> >> > That download might take a minute or two, but that's not an
+> >> >> > justification for the crapplication to run unconfined and prevent
+> >> >> > lower power states.
+> >> >> >
+> >> >>
+> >> >> I agree, but this is not a simple problem to solve.
+> >> >
+> >> > Not with suspend blockers, but with cgroup confinement of crap, it's
+> >> > straight forward.
+> >> >
+> >>
+> >> I don't think is is straight forward. If the a process in the frozen
+> >> group holds a resource that a process in the unfrozen group needs, how
+> >> do deal with that?
+> >
+> > I'm going to fix the framework which puts the group into freeze state
+> > w/o making sure that there is no held shared resource. Come on it's
+> > not rocket science.
+> >
+> 
+> I'm not sure which framework you are talking about here, but I don't
+> think there is a single framework that knows about all shared
+> resources.
+
+Damn, it's not me talking about "our framework", you are mentioning
+when it fits your needs.
+
+If you do not have a clearly defined user space framework, then we
+talk about a completely random conglomeration of applications which
+need to be brought into submission by some global brute force
+approach.
+
+I'm tired of this, really. You just use terminlology as it fits to
+defend the complete design failure of android. But you fail to trick
+me :)
+
+Can you please explain in a consistent way how the application stack
+and the underlying framework (which exists according to android docs)
+is handling events and how the separation of trust level works ?
+
+We need to know that, otherwise we turn in circles forever.
+
+Thanks,
+
+	tglx
+--8323328-387115346-1275782688=:2933--
