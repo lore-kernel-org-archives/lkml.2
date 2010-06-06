@@ -1,45 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752842Ab0FFTD0 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Jun 2010 15:03:26 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:57866 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752327Ab0FFTDY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Jun 2010 15:03:24 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Maxim Levitsky <maximlevitsky@gmail.com>
-Subject: Re: [linux-pm] [SUSPECTED SPAM] Re: Proposal for a new algorithm 
- =?utf-8?q?for=09reading_=26_writing_a_hibernation?= image.
-Date: Sun, 6 Jun 2010 21:04:55 +0200
-User-Agent: KMail/1.12.4 (Linux/2.6.35-rc1-rjw; KDE/4.3.5; x86_64; ; )
-Cc: Nigel Cunningham <ncunningham@crca.org.au>,
-       pm list <linux-pm@lists.linux-foundation.org>,
-       LKML <linux-kernel@vger.kernel.org>,
-       "TuxOnIce-devel" <tuxonice-devel@tuxonice.net>
-References: <9rpccea67yy402c975fqru8r.1275576653521@email.android.com> <201006061557.20482.rjw@sisk.pl> <1275839650.5331.2.camel@maxim-laptop>
-In-Reply-To: <1275839650.5331.2.camel@maxim-laptop>
+	id S1753087Ab0FFTFx (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Jun 2010 15:05:53 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:32843 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752451Ab0FFTFv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 6 Jun 2010 15:05:51 -0400
+Date: Sun, 6 Jun 2010 15:05:25 -0400
+From: Christoph Hellwig <hch@infradead.org>
+To: James Bottomley <James.Bottomley@suse.de>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
+       Florian Mickler <florian@mickler.org>,
+       Vitaly Wool <vitalywool@gmail.com>,
+       Brian Swetland <swetland@google.com>, Arve Hj?nnev?g <arve@android.com>,
+       Arjan van de Ven <arjan@infradead.org>, tytso@mit.edu,
+       Peter Zijlstra <peterz@infradead.org>, "H. Peter Anvin" <hpa@zytor.com>,
+       LKML <linux-kernel@vger.kernel.org>, Neil Brown <neilb@suse.de>,
+       Linux PM <linux-pm@lists.linux-foundation.org>,
+       Ingo Molnar <mingo@elte.hu>,
+       Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       Felipe Balbi <felipe.balbi@nokia.com>
+Subject: Re: [linux-pm] suspend blockers & Android integration
+Message-ID: <20100606190525.GA20517@infradead.org>
+References: <1275834706.7227.545.camel@mulgrave.site>
+ <alpine.LFD.2.00.1006061725000.2933@localhost.localdomain>
+ <1275844114.7227.552.camel@mulgrave.site>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201006062104.55869.rjw@sisk.pl>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1275844114.7227.552.camel@mulgrave.site>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sunday 06 June 2010, Maxim Levitsky wrote:
-> On Sun, 2010-06-06 at 15:57 +0200, Rafael J. Wysocki wrote: 
-> > On Sunday 06 June 2010, Maxim Levitsky wrote:
-...
-> > So how TuxOnIce helps here?
-> Very simple.
-> 
-> With swsusp, I can save 750MB (memory) + 250 Vram (vram)
-> With full memory save I can save (1750 MB of memory) + 250 MB of
-> vram....
+On Sun, Jun 06, 2010 at 12:08:34PM -0500, James Bottomley wrote:
+> Well, we sort of tried this when Greg pulled some of them into the
+> staging tree.  The problem is that without the annotations, the drivers
+> are still different, and patches won't apply, so, unsurprisingly, they
+> didn't get improved or even maintained.
 
-So what about being able to save 1600 MB total instead of the 2 GB
-(which is what we're talking about in case that's not clear)?  Would it
-be _that_ _much_ worse?
+Err, the biggest pile in staging was meta drivers like the binder or
+some oom killer magic which are flat out braindead and wrong and have
+no chance going into mainline anyway.  That's something different from
+real hardware drivers, although a few of those made it into staging as
+well if I remember correctly.
 
-Rafael
