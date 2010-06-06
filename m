@@ -1,36 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752780Ab0FFH4e (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Jun 2010 03:56:34 -0400
-Received: from web81101.mail.mud.yahoo.com ([68.142.199.93]:48499 "HELO
-	web81101.mail.mud.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1752046Ab0FFH4d convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Jun 2010 03:56:33 -0400
-X-Greylist: delayed 401 seconds by postgrey-1.27 at vger.kernel.org; Sun, 06 Jun 2010 03:56:32 EDT
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=s1024; d=sbcglobal.net;
-  h=Message-ID:X-YMail-OSG:Received:X-Mailer:Date:From:Reply-To:To:MIME-Version:Content-Type:Content-Transfer-Encoding;
-  b=SH7gDz8hC6z+EJXi81iY6dSV3uLvf18U122padZxZGTzSTeB3Y13wY0Vkl1lE5L1R9DHTCBFt+h4KeDeCr4wdK32JtZoh25YfD1b0FUfEHR97ADScc1dLYJjcYE42Oy1nxDkrisnsK4RV/M33Lzlm1IrxrsKCAR4qG5JB8FpR2Q=;
-Message-ID: <883489.32590.qm@web81101.mail.mud.yahoo.com>
-X-YMail-OSG: QUnTD0sVM1kiGAhfXfI7HNj_iVnnE1KclgID.9RtMYUSbDt
- 1NZ08fqzmqcDDIKjSo..dKxalJvxBXOogo1wooZGGbNfolpVvgPdiJPYVGe6
- cwZOfcBO4FkmWoklmWx8VqL8wZZNeBMTI_ly1DC8Nu3UCkS.Zi07AAcTA2xG
- kQ.MW1WLghf3J1uZGKS1yoIgqP0VRTCDr9Ei2.r0xLsby9NWJI_IAVAc0Qz_
- aBn.iCoTKyWiMCDGlYAoXy1yC6U4XDDpcPOHcc.aSKFQxgYX43chMeKRW8w-
- -
-X-Mailer: YahooMailRC/397.8 YahooMailWebService/0.8.103.269680
-Date: Sun, 6 Jun 2010 00:49:49 -0700 (PDT)
-From: EuroMillions Promo <lmchunter@sbcglobal.net>
-Reply-To: EuroMillions Promo <alexanderdarlin@9.cn>
-To: undisclosed recipients:;
+	id S1752940Ab0FFH7u (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Jun 2010 03:59:50 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:46212 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752260Ab0FFH7s (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 6 Jun 2010 03:59:48 -0400
+Date: Sun, 6 Jun 2010 17:59:43 +1000
+From: Nick Piggin <npiggin@suse.de>
+To: tytso@mit.edu, Jan Kara <jack@suse.cz>, Dave Chinner <david@fromorbit.com>,
+       Josef Bacik <josef@redhat.com>, linux-fsdevel@vger.kernel.org,
+       chris.mason@oracle.com, hch@infradead.org, akpm@linux-foundation.org,
+       linux-kernel@vger.kernel.org
+Subject: Re: [RFC] new ->perform_write fop
+Message-ID: <20100606075943.GL26335@laptop>
+References: <20100518104351.GF2516@laptop>
+ <20100518122714.GG2150@dastard>
+ <20100518150912.GI2516@laptop>
+ <20100519235054.GS8120@dastard>
+ <20100520201232.GP3395@quack.suse.cz>
+ <20100520230524.GU8120@dastard>
+ <20100521185846.GD10149@quack.suse.cz>
+ <20100522002759.GA8120@dastard>
+ <20100524092034.GA3287@quack.suse.cz>
+ <20100605150523.GB9159@thunk.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100605150523.GB9159@thunk.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-You Have Won £2,500,000.00 GBP in the EuroMillions Promo.
-Names.
-Tel. 
+On Sat, Jun 05, 2010 at 11:05:23AM -0400, tytso@mit.edu wrote:
+> On Mon, May 24, 2010 at 11:20:34AM +0200, Jan Kara wrote:
+> >   Yes, exactly. I just wanted to point out that AFAICS ext4 can implement
+> > proper error recovery without a need for 'punch' operation. So after all
+> > Nick's copy page-by-page should be plausible at least for ext4.
+> 
+> Sorry for my late response to this thread; I've been busy catching up
+> on another of other fronts, so I didn't have a chance to go through
+> this thread until now.
+> 
+> First of all, I'm not against implementing a 'punch' operation for
+> ext4; I've actually toyed with this idea before.
+> 
+> Secondly, I'm not sure it's really necessary; we already have a code
+> path (which I was planning on making be the default when I have a
+> chance to rewrite ext4_writepages) where the blocks are initially
+> allocated with the 'uninitialized' flag in the extent tree; this is
+> the same flag used for fallocate(2) support when we allocate blocks
+> without filling in the data blocks.  Then, when the block I/O
+> completes, we use the block I/O callback to clear the uninit flag in
+> the extent tree.  This is currently used to avoid safely avoid locking
+> in the read path, which is needed to speed up access for extremely
+> fast (think Fusion I/O-like) flash devices.
+> 
+> I was already thinking about using this trick in my planned
+> ext4_writepages() rewrite, and if it turns out we have common code
+> that also assumes that file systems can do the equivalent fallocate(2)
+> and can clear the uninitialized bit on a callback, I think that makes
+> ext4 fairly similar to what XFS does, at least at the high level,
+> doesn't it?
+> 
+> Note that strictly speaking this isn't a 'punch' operation in this
+> case; it's rather an fallocate(2) and don't convert the extent to mark
+> the data blocks as valid on error, which is not quite the same as a
+> 'punch' operation.
+> 
+> Am I missing something?
+
+No this is fine, it's actually better than a punch operation from
+error recovery point of view because it wouldn't require further
+modifications to to filesystem in the error case.
+
+AFAIKS this 'uninitialised blocks' approach seems to be the most
+optimal way to do block allocations that are not tightly coupled
+with the pagecache.
+
+Do you mean the ext4's file_write path?
+
