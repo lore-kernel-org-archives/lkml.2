@@ -1,21 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753687Ab0FFTYT (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Jun 2010 15:24:19 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:60155 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752593Ab0FFTYS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Jun 2010 15:24:18 -0400
-Date: Sun, 6 Jun 2010 15:24:05 -0400
-From: Christoph Hellwig <hch@infradead.org>
+	id S1753728Ab0FFT2l (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Jun 2010 15:28:41 -0400
+Received: from www.tglx.de ([62.245.132.106]:43405 "EHLO www.tglx.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752593Ab0FFT2k (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 6 Jun 2010 15:28:40 -0400
+Date: Sun, 6 Jun 2010 21:26:30 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
 To: Brian Swetland <swetland@google.com>
-Cc: Christoph Hellwig <hch@infradead.org>,
-       James Bottomley <James.Bottomley@suse.de>,
-       Thomas Gleixner <tglx@linutronix.de>,
+cc: James Bottomley <James.Bottomley@suse.de>,
        Alan Cox <alan@lxorguk.ukuu.org.uk>,
        Florian Mickler <florian@mickler.org>,
-       Vitaly Wool <vitalywool@gmail.com>, Arve Hj?nnev?g <arve@android.com>,
+       Vitaly Wool <vitalywool@gmail.com>,
+       =?ISO-8859-15?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>,
        Arjan van de Ven <arjan@infradead.org>, tytso@mit.edu,
        Peter Zijlstra <peterz@infradead.org>, "H. Peter Anvin" <hpa@zytor.com>,
        LKML <linux-kernel@vger.kernel.org>, Neil Brown <neilb@suse.de>,
@@ -25,54 +23,46 @@ Cc: Christoph Hellwig <hch@infradead.org>,
        Linus Torvalds <torvalds@linux-foundation.org>,
        Felipe Balbi <felipe.balbi@nokia.com>
 Subject: Re: [linux-pm] suspend blockers & Android integration
-Message-ID: <20100606192405.GA7559@infradead.org>
-References: <1275834706.7227.545.camel@mulgrave.site>
- <alpine.LFD.2.00.1006061725000.2933@localhost.localdomain>
- <1275844114.7227.552.camel@mulgrave.site>
- <20100606190525.GA20517@infradead.org>
- <AANLkTikKx-gXCGtNo3woHLCpBoEQ7hG9Jbiq3hwUTW_w@mail.gmail.com>
+In-Reply-To: <AANLkTilRbTVbjAt9uodpzecHLUmcDQEKT_EVpjyrSIwn@mail.gmail.com>
+Message-ID: <alpine.LFD.2.00.1006062114550.2933@localhost.localdomain>
+References: <1275834706.7227.545.camel@mulgrave.site> <alpine.LFD.2.00.1006061725000.2933@localhost.localdomain> <1275844114.7227.552.camel@mulgrave.site> <alpine.LFD.2.00.1006061932240.2933@localhost.localdomain>
+ <AANLkTilRbTVbjAt9uodpzecHLUmcDQEKT_EVpjyrSIwn@mail.gmail.com>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTikKx-gXCGtNo3woHLCpBoEQ7hG9Jbiq3hwUTW_w@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jun 06, 2010 at 12:15:10PM -0700, Brian Swetland wrote:
-> I was shocked when Greg pulled the binder driver and some of the other
-> "generic" android drivers into staging, because it was always my
-> assumption that nobody upstream would want them.  We did get some
-> bugfixes for the binder driver (thanks!) but the general reaction was
-> pretty much the same as yours here.  I then was relatively unsurprised
-> when it was dropped (we find it useful, upstream finds it useless, not
-> much else to say).
+On Sun, 6 Jun 2010, Brian Swetland wrote:
+
+> On Sun, Jun 6, 2010 at 11:04 AM, Thomas Gleixner <tglx@linutronix.de> wrote:
+> >>
+> >> Right, so the sooner we make it easier for the drivers to use the kernel
+> >> as their main repository, the better.
+> >
+> > Yep, the fastest way is to provide two stub inlines in pm.h and let
+> > the driver flood come in.
 > 
-> The various SoC peripheral drivers are, I suspect, much less
-> contentious (modulo suspend blocker usage and any necessary kernel
-> style cleanup).
+> As mentioned previously, we didn't know this was an option (stubs
+> without an implementation behind them).  If it is, and thus we can
 
-Yes.  That's what makes me wonder about some parts of the discussion
-here.  Getting the drivers for one or more of the android plattforms
-in is not a problem.  I'd say it could have easily been done with the
-manweeks spent arguing in this and related threads.
+That's what Greg did when he pulled stuff into staging, but there is
+no reason not to do it outside of staging as well. We can simply put
+the stub functions into Documentation/feature-removal.txt to ensure
+that we don't forget about them :)
 
-The much bigger issues is to get android userspace running on a more
-or less vanilla kernel, that is withoutthe  binder, without the rather
-interesting group ID based security hack^H^H^H^Hmodel, without the
-suspend blocker userspace API and so on, and so on.
+> simplify the driver merging process short-term while sorting out a
+> long-term implementation or replacement for suspend blockers, then I
+> think we're making real progress.
 
-So for people who really care about running a mainline kernel on their
-android device doing that part first on a generic ARM board in qemu
-might be much better first step work.   On the other hand I've heard
-that various hardware vendors or parties closed to them are rather
-annoyed by their drivers beeing stuck in the android tree - but that
-can be easily solved by getting removing the suspend blockers (at least
-temporarily), cleaning up a few bits here and there and getting them in.
+Yes, that way we do not lose the annotations. Replacing them, ripping
+them out or whatever we agree on, is a nobrainer.
 
-It's not rocket science to get support for ARM SOC number 1654 into the
-mainline kernel.
+But it gets the drivers into the tree, so they are usable outside of
+android as well and the delta between android and mainline shrinks
+significantly.
 
+Thanks,
+
+	tglx
