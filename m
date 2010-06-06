@@ -1,107 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756881Ab0FFOEu (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Jun 2010 10:04:50 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:57005 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756185Ab0FFOEt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Jun 2010 10:04:49 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Nigel Cunningham <ncunningham@crca.org.au>
-Subject: Re: [linux-pm] [SUSPECTED SPAM] Re: Proposal for a new algorithm for reading & writing a hibernation image.
-Date: Sun, 6 Jun 2010 16:06:02 +0200
-User-Agent: KMail/1.12.4 (Linux/2.6.35-rc1-rjw; KDE/4.3.5; x86_64; ; )
-Cc: Maxim Levitsky <maximlevitsky@gmail.com>,
-       pm list <linux-pm@lists.linux-foundation.org>,
-       LKML <linux-kernel@vger.kernel.org>,
-       "TuxOnIce-devel" <tuxonice-devel@tuxonice.net>
-References: <9rpccea67yy402c975fqru8r.1275576653521@email.android.com> <201006060120.45682.rjw@sisk.pl> <4C0B47D8.2070807@crca.org.au>
-In-Reply-To: <4C0B47D8.2070807@crca.org.au>
+	id S1756947Ab0FFOYv (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Jun 2010 10:24:51 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:48131 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756561Ab0FFOYt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 6 Jun 2010 10:24:49 -0400
+Date: Sun, 6 Jun 2010 07:19:24 -0700 (PDT)
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Torsten Kaiser <just.for.lkml@googlemail.com>
+cc: Alex Deucher <alexdeucher@gmail.com>,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       Tejun Heo <tj@kernel.org>, Jeff Garzik <jgarzik@redhat.com>
+Subject: Re: Linux 2.6.35-rc2
+In-Reply-To: <AANLkTinpHAK3-qj26KSLLhMB5UUDT5I9aSkrxJeRRsSl@mail.gmail.com>
+Message-ID: <alpine.LFD.2.00.1006060710570.3515@i5.linux-foundation.org>
+References: <alpine.LFD.2.00.1006052050100.3515@i5.linux-foundation.org> <AANLkTinpHAK3-qj26KSLLhMB5UUDT5I9aSkrxJeRRsSl@mail.gmail.com>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201006061606.02403.rjw@sisk.pl>
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sunday 06 June 2010, Nigel Cunningham wrote:
-> Hi Rafael.
 
-Hi,
 
-> On 06/06/10 09:20, Rafael J. Wysocki wrote:
-> > On Sunday 06 June 2010, Nigel Cunningham wrote:
-...
-> > I'm not talking about dropping the page cache, but about keeping it in place
-> > and saving as a part of the image - later.  The part I think is too complicated
-> > is the re-using of that memory for creating the "atomic" image.  That in my
-> > opinion really goes too far and causes things to be excessively fragile -
-> > without a really good reason (it is like "we do that because we can" IMO).
+On Sun, 6 Jun 2010, Torsten Kaiser wrote:
 > 
-> First, it's not fragile.
+> The first problem that shows up is, that after the KMS switches to the
+> correct video mode (1280x1024 for an DVI attached LCD), the display
+> begins to flicker. Every 1..2 seconds (guesstimated) the display turns
+> off and on again. Something in the new powersaving?
 
-Well, I obviously don't agree and I'm not convinced by the arguments below.
+Or maybe a borderline display timing that the display has trouble syncing 
+up with? 
 
-> All it depends on is the freezer being 
-> effective, just as the other parts of hibernation depend on the freezer 
-> being effective. Checksumming has been used to confirm that the contents 
-> of memory haven't changed prior to this page fault idea. I can think of 
-> examples where pages have been found to have changed, but they're few 
-> and far between, and easily addressed by resaving the affected pages in 
-> the atomic copy.
+> The second problem is more serious, an OOPS and after that the system
+> hangs. Ctrl+Alt+Del did not initiate a shutdown, although the magic
+> SysRq still party worked (A first SysRq+S worked, but SysRq+U or a
+> second SysRq+S after that did not. SysRq+B still rebooted)
+
+This one looks very much like ATA. Added Jeff and Tejun to the cc.
+
+Jeff, Tejun, anything ring a bell?
+
+		Linus
+
+> [   90.040053] general protection fault: 0000 [#1] SMP
+> [   90.045062] last sysfs file: /sys/devices/pci0000:00/0000:00:06.0/0000:05:06.0/resource
+> [   90.050007] CPU 0
+> [   90.050007] Modules linked in: sg
+> [   90.050007]
+> [   90.050007] Pid: 335, comm: kblockd/0 Not tainted 2.6.35-rc2 #1 KFN5-D SLI/KFN5-D SLI
+> [   90.050007] RIP: 0010:[<ffffffff8135aa64>]  [<ffffffff8135aa64>] ata_find_dev+0x24/0x90
+> [   90.050007] RSP: 0018:ffff88007ffdbda0  EFLAGS: 00010082
+> [   90.050007] RAX: 0720072007200720 RBX: ffff88007ffc7000 RCX: 0720072007202558
+> [   90.050007] RDX: ffff880007009e38 RSI: 0000000000000000 RDI: ffff880007008000
+> [   90.050007] RBP: ffff880006cef700 R08: 0000000000000001 R09: 0000000000000008
+> [   90.050007] R10: 0000000000000000 R11: ffff88000723edb0 R12: ffff88007f3a3800
+> [   90.050007] R13: ffff880007008000 R14: ffffffff81340f80 R15: ffff88007ffc7138
+> [   90.050007] FS:  00007f558bc58700(0000) GS:ffff880001c00000(0000) knlGS:0000000000000000
+> [   90.050007] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+> [   90.050007] CR2: 00007fffa9653000 CR3: 0000000006429000 CR4: 00000000000006f0
+> [   90.050007] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+> [   90.050007] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+> [   90.050007] Process kblockd/0 (pid: 335, threadinfo ffff88007ffda000, task ffff88007ff8a7d0)
+> [   90.050007] Stack:
+> [   90.050007]  ffffffff8135ab25 ffffffff8135e7cb ffff880006cef700 ffff88007f3a3800
+> [   90.050007] <0> ffff88000723ecd0 0000000000000287 ffff88007ffc7048 ffffffff81341c49
+> [   90.050007] <0> ffff88000723ecd0 ffff88007ffc7000 ffff880007290000 ffff88000723ecd0
+> [   90.050007] Call Trace:
+> [   90.050007]  [<ffffffff8135ab25>] ? ata_scsi_find_dev+0x5/0x30
+> [   90.050007]  [<ffffffff8135e7cb>] ? ata_scsi_queuecmd+0x4b/0x2c0
+> [   90.050007]  [<ffffffff81341c49>] ? scsi_dispatch_cmd+0xd9/0x210
+> [   90.050007]  [<ffffffff81348530>] ? scsi_request_fn+0x300/0x3e0
+> [   90.050007]  [<ffffffff811e31e0>] ? blk_unplug_work+0x0/0x20
+> [   90.050007]  [<ffffffff811e4624>] ? generic_unplug_device+0x24/0x30
+> [   90.050007]  [<ffffffff8104ca6b>] ? worker_thread+0xeb/0x180
+> [   90.050007]  [<ffffffff81050690>] ? autoremove_wake_function+0x0/0x30
+> [   90.050007]  [<ffffffff8104c980>] ? worker_thread+0x0/0x180
+> [   90.050007]  [<ffffffff810501fe>] ? kthread+0x8e/0xa0
+> [   90.050007]  [<ffffffff81003194>] ? kernel_thread_helper+0x4/0x10
+> [   90.050007]  [<ffffffff81050170>] ? kthread+0x0/0xa0
+> [   90.050007]  [<ffffffff81003190>] ? kernel_thread_helper+0x0/0x10
+> [   90.050007] Code: 1f 84 00 00 00 00 00 8b 87 00 29 00 00 85 c0 75
+> 46 48 8b 87 38 1e 00 00 48 8d 97 38 1e 00 00 48 8d 88 38 1e 00 00 48
+> 39 ca 74 4c <48> 3b 90 f8 28 00 00 74 43 ba 01 00 00 00 39 d6 7d 47 48
+> 63 f6
+> [   90.050007] RIP  [<ffffffff8135aa64>] ata_find_dev+0x24/0x90
+> [   90.050007]  RSP <ffff88007ffdbda0>
+> [   90.050007] ---[ end trace c14df2a6b8b3b357 ]---
 > 
-> Second, it's not done without reason or simply because we can. It's done 
-> because it's been proven to make it more likely for us to be able to 
-> hibernate successfully in the first place AND gives us a more responsive 
-> system post-resume.
 > 
-> We haven't mentioned the first part so far, so let me go into more 
-> detail there. The problem with not doing things the TuxOnIce way is that 
-> you when you have more than (say) 80% of memory in use, you MUST free 
-> memory. Depending upon your workload, that simply might not be possible. 
-> In other cases, the only way to free memory might be to swap it out, but 
-> you're then reducing the amount of storage available for the image, 
-> which means you have to free more memory again, which means... For 
-> maximum reliability, you need an algorithm wherein you can save the 
-> contents of memory as they are at the start of the cycle.
+> (gdb) list *0xffffffff8135aa64
+> 0xffffffff8135aa64 is in ata_find_dev (include/linux/libata.h:1201).
+> 1196            return ap->nr_pmp_links != 0;
+> 1197    }
+> 1198
+> 1199    static inline int ata_is_host_link(const struct ata_link *link)
+> 1200    {
+> 1201            return link == &link->ap->link || link == link->ap->slave_link;
+> 1202    }
+> 1203    #else /* CONFIG_SATA_PMP */
+> 1204    static inline bool sata_pmp_supported(struct ata_port *ap)
+> 1205    {
 > 
-...
-> >> I do agree that doing a single atomic copy and saving the result makes
-> >> for a simpler algorithm, but I've always been of the opinion that we're
-> >> writing code to satisfy real work needs and desires, not our own desires
-> >> for simpler or easier to understand algorithms. Doing the bare minimum
-> >> isn't an option for me.
-> >
-> > I'm not talking about that!
-> >
-> > In short, if your observation that the page cache doesn't really change during
-> > hibernation is correct, then it should be possible to avoid making an atomic
-> > copy of it and to save it directly from its original locations.  I think that
-> > would allow us to save about 80% of memory in the majority of cases without
-> > the entire complexity that makes things extremely fragile and depends haevily
-> > on the current (undocumented) behavior of our mm subsystem that _happens_
-> > to be favourable to TuxOnIce.  HTH
+> CONFIG_SATA_PMP ist set to 'y', because my SiI 3132 should be PMP
+> capable. (But there are only two normal hdds attached to this
+> controller)
 > 
-> I'm not sure what this current undocumented behaviour is.
-
-Easy.  The behavior that allows you to use memory used for the page cache
-hibernation without the risk of it being overwritten in the process.  This is
-not documented anywhere and I don't think it'll ever be.
-
-> All I'm relying on is the freezer working and the mm subsystem not deciding to 
-> free process pages or LRU for no good reason.
-
-It's more than just freeing them.  In fact you need a guarantee that their
-contents won't be modified over the entire hibernation in a way that you don't
-control.  There's no such guarantee at the moment I know of, so you have to
-assume that that won't happen, which is _exactly_ relying on undocumented
-behavior that's not guaranteed to change in future.
-
-> Remember that kswapd is also frozen.
-
-But some day it may turn out that it would be better not to freeze it for some
-reason.  If we go the TuxOnIce route, that won't ever be possible I think.
-
-Rafael
+> Please ask, if you need more information or have something to try for me.
+> 
+> Thanks
+> 
+> Torsten
+> 
