@@ -1,85 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933974Ab0FFCtM (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Jun 2010 22:49:12 -0400
-Received: from netrider.rowland.org ([192.131.102.5]:49809 "HELO
-	netrider.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S933958Ab0FFCtK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Jun 2010 22:49:10 -0400
-Date: Sat, 5 Jun 2010 22:49:09 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@netrider.rowland.org
-To: =?ISO-8859-1?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>
-cc: "Rafael J. Wysocki" <rjw@sisk.pl>, Matt Helsley <matthltc@us.ibm.com>,
-       Thomas Gleixner <tglx@linutronix.de>,
-       Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-       <tytso@mit.edu>, Brian Swetland <swetland@google.com>,
-       Neil Brown <neilb@suse.de>, Felipe Balbi <felipe.balbi@nokia.com>,
-       LKML <linux-kernel@vger.kernel.org>,
-       Florian Mickler <florian@mickler.org>,
-       Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
-       Linux PM <linux-pm@lists.linux-foundation.org>,
-       Alan Cox <alan@lxorguk.ukuu.org.uk>,
-       James Bottomley <James.Bottomley@suse.de>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
+	id S934027Ab0FFD3q (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Jun 2010 23:29:46 -0400
+Received: from mail.lang.hm ([64.81.33.126]:58335 "EHLO bifrost.lang.hm"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S934005Ab0FFD3o (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 5 Jun 2010 23:29:44 -0400
+Date: Sat, 5 Jun 2010 20:28:51 -0700 (PDT)
+From: david@lang.hm
+X-X-Sender: dlang@asgard.lang.hm
+To: Russell King <rmk@arm.linux.org.uk>
+cc: Linus Torvalds <torvalds@linux-foundation.org>,
        Kevin Hilman <khilman@deeprootsystems.com>,
-       "H. Peter Anvin" <hpa@zytor.com>,
-       Arjan van de Ven <arjan@infradead.org>
-Subject: Re: suspend blockers & Android integration
-In-Reply-To: <AANLkTikXUTZE1vesD-Ccn8VhPjhBYYS0Tw_Pq9u5nnq7@mail.gmail.com>
-Message-ID: <Pine.LNX.4.44L0.1006052233100.22666-100000@netrider.rowland.org>
+       Daniel Walker <dwalker@codeaurora.org>,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       linux-arm-msm@vger.kernel.org
+Subject: Re: ARM defconfig files
+In-Reply-To: <20100603185333.GD25779@flint.arm.linux.org.uk>
+Message-ID: <alpine.DEB.2.01.1006052021300.17462@asgard.lang.hm>
+References: <20100603074548.GA12104@flint.arm.linux.org.uk> <alpine.LFD.2.00.1006030725420.8175@i5.linux-foundation.org> <20100603181010.GA25779@flint.arm.linux.org.uk> <alpine.LFD.2.00.1006031116360.8175@i5.linux-foundation.org>
+ <20100603185333.GD25779@flint.arm.linux.org.uk>
+User-Agent: Alpine 2.01 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 5 Jun 2010, Arve Hjønnevåg wrote:
+On Thu, 3 Jun 2010, Russell King wrote:
 
-> Yes, we can keep all our user space suspend blockers and thaw the
-> frozen cgroup when any suspend blocker is held, but this would
-> eliminate any power advantage that freezing a cgroup has over using
-> suspend to freeze all processes. Without annotating the drivers to
-> block the cgroup freezing in the same places as we now block suspend,
-> it also prevents processes in the cgroup that we freeze from directly
-> consuming wakup events.
+> On Thu, Jun 03, 2010 at 11:18:05AM -0700, Linus Torvalds wrote:
+>>
+>>
+>> On Thu, 3 Jun 2010, Russell King wrote:
+>>>
+>>> Umm.  I don't think you've actually looked at the Kconfig files if you're
+>>> writing this, because that's precisely what we already do.
+>>
+>> .. but if you do this _right_, then the defconfig files would be
+>> unnecessary.
+>>
+>> That's my point. If you are right, then I can remove the defconfig files
+>> entirely. Are you ready for that?
+>
+> Absolutely no way are we ready for that.
+>
+>> And if you aren't ready for that, then what was the point of your email?
+>
+> Linus, don't make this personal.
+>
+> The problem is NOT "what options which are found under the arch/arm tree
+> do I need".
+>
+> The problem is "what options throughout the rest of the kernel do I need
+> to result in a usable kernel".
 
-The driver annotations don't need to block the cgroup freezing.  They
-just need to keep the system running long enough to awaken a thread
-that will handle the wakeup event.  (See below.)  A pm-qos constraint 
-is good enough for this.
+What do you define as useable?
 
-> If you are referring to the approach that we don't use suspend but
-> freeze a cgroup instead, this only solves the problem of bad apps. It
-> does not help pause timers in trusted user space code and in the
-> kernel, so it does not lower our average power consumption.
+at two extremes:
 
-You can solve this problem if you restructure your "trusted" apps in
-the right way.  Require a trusted app to guarantee that whenever it
-doesn't hold any suspend blockers, it will do nothing but wait (in a
-poll() system call for example) for a wakeup event.  When the event
-occurs, it must then activate a suspend blocker.
+do you mean a kernel that fully supports the board and all it's features?
 
-Better yet, make it more fine-grained.  Instead of trusted apps, have
-trusted threads.  Freeze the untrusted threads along with everything
-else, and require the trusted threads to satisfy this guarantee.
+do you mean a kernel that will compile and boot, but may not be able to 
+talk to the outside world as it doesn't know about any I/O that the chip 
+may have.
 
-In this way, while the system is idle no user timers will get renewed.
-Kernel timers are another matter, but we should be able to handle them.  
-There's nothing Android-specific about wanting to reduce kernel timer 
-wakeups while in a low-power mode.
+I don't think that defconfig can work for the first case (every single 
+system would hae it's own defconfig, which just doesn't scale)
 
-> And, it
-> does not solve the problem for systems that enters lower power states
-> from suspend than it can from idle. The last point my not be relevant
-> to android anymore, but desktop systems already have auto suspend and
-> it would be preferable to have a race free kernel api for this.
+and I'm not sure the second is very useful (and it should be covered by 
+the kconfig defaults)
 
-This is an entirely different matter from the rest of the discussion.
-It would be better to consider this separately after Android's current
-problems have been addressed.
+if you are looking for something in between, where do you draw the line?
 
-Alan Stern
+back when linux ran on x86 with IDE only, defconfig made a lot of sense, 
+but that was because the hardware was very standardized, nowdays even in 
+the x6 space there is enough variation that it's questionable how useful a 
+defconfig is.
 
+What would be far better would be some tool that would take some hardware 
+defintition (either autodetecting from a currenlty running system on x86, 
+or from the device_tree stuff that's being worked on for other 
+architectures) and create a kernel config from that that would fully 
+support the hardware detected.
+
+David Lang
+
+> No amount of reorganising the Kconfig files into a heirarchial manner
+> (which they already are) helps.  Not one bit.  Because they already are.
+> That's not where the problem is.
+>
+> For instance, if I have platform A, I know it has an RTC.  How do I know
+> which of the 37 RTC drivers the kernel configuration presents me with to
+> select?  Am I really expected to open up the platform and read the
+> device numbers off all the chips (some of which being surface mount are
+> abbreviated) and work out that it's a TWL4030 RTC that I should be using?
+>
+> That's just one instance - and there's probably many more just like that.
+> Just look at "multifunction drivers" for another case in point.  How the
+> hell do I know what multifunction driver is appropriate for a platform?
+>
+> Ditto "Power supply support".
+>
+> The list goes endlessly on.  All those things I've mentioned are all
+> _outside_ of arch/arm.  That's where the _real_ problem is.  Solve that
+> problem so that it's easier for people to configure the kernel, and then
+> we don't need the multitude defconfig files.
+>
+> That's the problem which the defconfigs are solving today.
+>
+>
