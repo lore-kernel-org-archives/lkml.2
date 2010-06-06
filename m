@@ -1,111 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754244Ab0FFT6R (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Jun 2010 15:58:17 -0400
-Received: from smtp-out.google.com ([74.125.121.35]:7135 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751579Ab0FFT6P convert rfc822-to-8bit (ORCPT
+	id S1754458Ab0FFUXh (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Jun 2010 16:23:37 -0400
+Received: from mail.pripojeni.net ([217.66.174.14]:46597 "EHLO
+	mail.jetsystems.cz" rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org
+	with ESMTP id S1754045Ab0FFUXg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Jun 2010 15:58:15 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=mime-version:in-reply-to:references:date:message-id:subject:from:to:
-	cc:content-type:content-transfer-encoding;
-	b=CWU4LoyM+T0E+3dgMxzDomJDuxBAMCNwvK4bjMrONDrvydaiwzzvuJDeuIH7xjlmC
-	Rzx4BqiPRMz3Fj9DxiUzA==
-MIME-Version: 1.0
-In-Reply-To: <20100606192405.GA7559@infradead.org>
-References: <1275834706.7227.545.camel@mulgrave.site>
-	<alpine.LFD.2.00.1006061725000.2933@localhost.localdomain>
-	<1275844114.7227.552.camel@mulgrave.site>
-	<20100606190525.GA20517@infradead.org>
-	<AANLkTikKx-gXCGtNo3woHLCpBoEQ7hG9Jbiq3hwUTW_w@mail.gmail.com>
-	<20100606192405.GA7559@infradead.org>
-Date: Sun, 6 Jun 2010 12:58:10 -0700
-Message-ID: <AANLkTikA0ihlbehyyN-zQ3mN4WmlZJYBSRTYV8SbDhSr@mail.gmail.com>
-Subject: Re: [linux-pm] suspend blockers & Android integration
-From: Brian Swetland <swetland@google.com>
-To: Christoph Hellwig <hch@infradead.org>
-Cc: James Bottomley <James.Bottomley@suse.de>,
-       Thomas Gleixner <tglx@linutronix.de>,
-       Alan Cox <alan@lxorguk.ukuu.org.uk>,
-       Florian Mickler <florian@mickler.org>,
-       Vitaly Wool <vitalywool@gmail.com>, "Arve Hj?nnev?g" <arve@android.com>,
-       Arjan van de Ven <arjan@infradead.org>, tytso@mit.edu,
-       Peter Zijlstra <peterz@infradead.org>, "H. Peter Anvin" <hpa@zytor.com>,
-       LKML <linux-kernel@vger.kernel.org>, Neil Brown <neilb@suse.de>,
-       Linux PM <linux-pm@lists.linux-foundation.org>,
-       Ingo Molnar <mingo@elte.hu>,
-       Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       Felipe Balbi <felipe.balbi@nokia.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Sun, 6 Jun 2010 16:23:36 -0400
+From: Jiri Slaby <jslaby@suse.cz>
+To: akpm@linux-foundation.org
+Cc: adobriyan@gmail.com, nhorman@tuxdriver.com, oleg@redhat.com,
+       linux-kernel@vger.kernel.org, jirislaby@gmail.com
+Subject: Re: [PATCH v3 06/11] rlimits: do security check under task_lock
+Date: Sun,  6 Jun 2010 22:23:03 +0200
+Message-Id: <1275855783-27316-1-git-send-email-jslaby@suse.cz>
+X-Mailer: git-send-email 1.7.1
+In-Reply-To: <20100513155621.51ca77a4.akpm@linux-foundation.org>
+References: <20100513155621.51ca77a4.akpm@linux-foundation.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jun 6, 2010 at 12:24 PM, Christoph Hellwig <hch@infradead.org> wrote:
->
-> Yes.  That's what makes me wonder about some parts of the discussion
-> here.  Getting the drivers for one or more of the android plattforms
-> in is not a problem.  I'd say it could have easily been done with the
-> manweeks spent arguing in this and related threads.
->
-> The much bigger issues is to get android userspace running on a more
-> or less vanilla kernel, that is withoutthe  binder, without the rather
-> interesting group ID based security hack^H^H^H^Hmodel, without the
-> suspend blocker userspace API and so on, and so on.
+Andrew Morton wrote:
+> On Mon, 10 May 2010 20:00:46 +0200
+> Jiri Slaby <jslaby@suse.cz> wrote:
+> > @@ -1309,11 +1305,13 @@ int do_setrlimit(struct task_struct *tsk, unsigned int resource,
+> >  
+> >  	old_rlim = tsk->signal->rlim + resource;
+> >  	task_lock(tsk->group_leader);
+> > -	if ((new_rlim->rlim_max <= old_rlim->rlim_max) ||
+> > -				capable(CAP_SYS_RESOURCE))
+> > -		*old_rlim = *new_rlim;
+> > -	else
+> > +	if ((new_rlim->rlim_max > old_rlim->rlim_max) &&
+> > +				!capable(CAP_SYS_RESOURCE))
+> >  		retval = -EPERM;
+> > +	if (!retval)
+> > +		retval = security_task_setrlimit(tsk, resource, new_rlim);
+> 
+> I looked at the amount of code which exists under
+> security_task_setrlimit() and nearly died.  Please convince me that it
+> is correct to do all that work under tasklist_lock, and that it is also
+> maintainable.
 
-Somebody will have to broker a deal with the frameworks/apps folks to
-get rid of the binder.  They like it a lot.  Of course if somebody
-built a drop-in replacement for the userspace side that didn't require
-a kernel driver, had the same performance characteristics, solved the
-same problems, etc, they could probably make an argument for it (or
-just provide it as a drop-in replacement for people who want a more
-"pure" linux underneath Android, even if we didn't pick it up).
+When I wrote this code, I looked how it is done in the current code
+and redid what others, including getioprio, setnice and task_kill
+(this one even with task_lock write-locked) do. I need the lock
+to protect task->signal (which is checked inside the security
+function) from disappearing.
 
-The group ID stuff works incredibly well for gating device access --
-we ensure that devices that need access from various processes end up
-with perms like 0660 root audio (say for a raw audio interface), and
-then we assure that processes which have the "may use audio hardware"
-permission are executed with audio as an additional group.  We ended
-up using the same model to control socket, raw socket, and bt socket
-access because at the time we could not find a reasonable way to grant
-or exclude such permissions on a process by process basis.
-Maintaining about 20-30 lines of diffs to make that work was not a bad
-tradeoff (and we don't expect those patches to go upstream).  If
-there's a way to accomplish this without patching the kernel, we're
-all ears.
+> > +	if (!retval)
+> > +		*old_rlim = *new_rlim;
+> >  	task_unlock(tsk->group_leader);
+> >  
+> >  	if (retval || resource != RLIMIT_CPU)
+> 
+> Yikes, so the locking around all that selinux code becomes even more
+> brutal.  How much rope are you tying around the selinux developers'
+> hands here?
 
-While we do maintain some assorted patches to core code (like the
-permissions thing), we strongly prefer to keep our work localized to
-drivers (generic to android or specific to hardware), and try to
-migrate to common kernel features when possible, submit patches (like
-work Mike Chan is doing around cpufreq and power measurement), etc.
-Patches to core code cause more headaches when we rebase up to new
-kernel versions, after all.
+I agree with that and didn't find a better solution than is attached
+here.
 
-> So for people who really care about running a mainline kernel on their
-> android device doing that part first on a generic ARM board in qemu
-> might be much better first step work.
+--
+The code performed in security_task_setrlimit is very long when
+CONFIG_SECURITY is enabled. Don't execute the function under
+alloc_lock, unlock it temporarily and check whether the limits changed
+in the meantime while the lock was not held. If yes, redo do check.
 
-> On the other hand I've heard
-> that various hardware vendors or parties closed to them are rather
-> annoyed by their drivers beeing stuck in the android tree - but that
-> can be easily solved by getting removing the suspend blockers (at least
-> temporarily), cleaning up a few bits here and there and getting them in.
+Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+---
+ kernel/sys.c |   39 +++++++++++++++++++++++++++++++++++----
+ 1 files changed, 35 insertions(+), 4 deletions(-)
 
-This continues to baffle me.  If we (Google) are such a headache, why
-not just route around us.  The drivers we've written are GPLv2, the
-source is out there for anyone who wants it, etc.  The drivers other
-people have written we have no control over at all. From my point of
-view it'd be an annoyance if somebody took the code we wrote, modified
-it heavily, and pushed it upstream, but fundamentally I can't stop
-that from happening other than by pushing it upstream myself, first.
+diff --git a/kernel/sys.c b/kernel/sys.c
+index d7fcd4a..48cb21d 100644
+--- a/kernel/sys.c
++++ b/kernel/sys.c
+@@ -1304,12 +1304,37 @@ static void rlim64_to_rlim(const struct rlimit64 *rlim64, struct rlimit *rlim)
+ 		rlim->rlim_max = (unsigned long)rlim64->rlim_max;
+ }
+ 
++/**
++ * check_security_task_setrlimit_unlocked - calls security_task_setrlimit
++ *
++ * But security_task_setrlimit is complex with much of code, so that we don't
++ * want to call it while holding the task_lock. We temporarily unlock the lock
++ * and after the check we test whether the limits changed in the meantime.
++ */
++static int check_security_task_setrlimit_unlocked(struct task_struct *tsk,
++		unsigned int resource, struct rlimit *new_rlim,
++		struct rlimit *old_rlim)
++{
++	struct rlimit rlim;
++	int ret;
++
++	memcpy(&rlim, old_rlim, sizeof(rlim));
++
++	task_unlock(tsk->group_leader);
++	ret = security_task_setrlimit(tsk, resource, new_rlim);
++	task_lock(tsk->group_leader);
++
++	if (!ret && memcmp(&rlim, old_rlim, sizeof(rlim)))
++		return -EAGAIN;
++	return ret;
++}
++
+ /* make sure you are allowed to change @tsk limits before calling this */
+ int do_prlimit(struct task_struct *tsk, unsigned int resource,
+ 		struct rlimit *new_rlim, struct rlimit *old_rlim)
+ {
+ 	struct rlimit *rlim;
+-	int retval = 0;
++	int retval;
+ 
+ 	if (resource >= RLIM_NLIMITS)
+ 		return -EINVAL;
+@@ -1339,13 +1364,19 @@ int do_prlimit(struct task_struct *tsk, unsigned int resource,
+ 
+ 	rlim = tsk->signal->rlim + resource;
+ 	task_lock(tsk->group_leader);
++again:
++	retval = 0;
+ 	if (new_rlim) {
+ 		if ((new_rlim->rlim_max > rlim->rlim_max) &&
+ 					!capable(CAP_SYS_RESOURCE))
+ 			retval = -EPERM;
+-		if (!retval)
+-			retval = security_task_setrlimit(tsk, resource,
+-					new_rlim);
++		if (!retval) {
++			retval = check_security_task_setrlimit_unlocked(tsk,
++					resource, new_rlim, rlim);
++			if (retval == -EAGAIN) {
++				goto again;
++			}
++		}
+ 	}
+ 	if (!retval) {
+ 		if (old_rlim)
+-- 
+1.7.1
 
-Blaming me because you want me to send your drivers upstream and I'm
-not doing it or not doing it fast enough or not doing it the way you
-like does not seem very productive.  I'm not a gatekeeper for patch
-submission to the mainline kernel.
 
-Brian
