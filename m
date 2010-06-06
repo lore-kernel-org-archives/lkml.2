@@ -1,120 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755090Ab0FFKAu (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Jun 2010 06:00:50 -0400
-Received: from mail-gw0-f46.google.com ([74.125.83.46]:42043 "EHLO
-	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751474Ab0FFKAt convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Jun 2010 06:00:49 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=W80HpPKSmSjxAsI6nF5YBD3Xx6rec7XKlN9Ld8wK20vtsl2MZoIi7HRNC3M6Rhp92v
-         gxq8kbKIMeatw1lkRiBYcZRwC/PfCPn3jeyfkkp2dhyKp/EytqN+Y2KUj4xwsK9R3sPr
-         TNFTztdB2xD30kVGx5CsYJ/Pnq3vmQvBsAtaE=
-MIME-Version: 1.0
-In-Reply-To: <AANLkTilQ1k78dDCYadOa1Wiyjm2nsBcRpxwdpGvYcf8z@mail.gmail.com>
-References: <20100603193045.GA7188@elte.hu>
-	<20100603231153.GA11302@elte.hu>
-	<20100603232302.GA16184@elte.hu>
-	<AANLkTikZP3bmckpfb_jUdG7qZO5W9DgpZ79ugtSZaEpt@mail.gmail.com>
-	<20100604071354.GA14451@elte.hu>
-	<AANLkTimH4ihf3QqtKFpfGXRKtO55PrUuff9JYtaEBG44@mail.gmail.com>
-	<20100604083423.GD15181@elte.hu>
-	<AANLkTinQyzzeF-NOAjrAqqQXqKjFJhx85nI4uyBGRtWd@mail.gmail.com>
-	<1275653210.27810.39762.camel@twins>
-	<AANLkTinyjBa0KYfFz3_EFbC65hoQFwFINlTDYjCe-wM3@mail.gmail.com>
-	<1275731653.27810.41078.camel@twins>
-	<20100605092851.6ee15f13@infradead.org>
-	<AANLkTimEwznq9c_8lkuBMxEQ-42rdvpZEqA9Y71Cu-qC@mail.gmail.com>
-	<AANLkTimKknOurmCffOpHjc1FjrP2MKf10pBwEEbLJPg_@mail.gmail.com>
-	<AANLkTil1NCX91bWhpXHtC88Opr29mNjdhXD9RXQ6DI0y@mail.gmail.com>
-	<AANLkTin1Za3GvfIKbcZdx6TzjIHzCvsg5uaY_Vk4nJIh@mail.gmail.com>
-	<AANLkTilQ1k78dDCYadOa1Wiyjm2nsBcRpxwdpGvYcf8z@mail.gmail.com>
-Date: Sun, 6 Jun 2010 12:00:47 +0200
-Message-ID: <AANLkTin7oM3gVwHbIHWqYV8yeC6bbQ4q2jDDxAgz3DwQ@mail.gmail.com>
-Subject: Re: [linux-pm] suspend blockers & Android integration
-From: Vitaly Wool <vitalywool@gmail.com>
-To: Brian Swetland <swetland@google.com>
-Cc: =?ISO-8859-1?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>,
-       Arjan van de Ven <arjan@infradead.org>, tytso@mit.edu,
+	id S1755273Ab0FFKCQ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Jun 2010 06:02:16 -0400
+Received: from www.tglx.de ([62.245.132.106]:52634 "EHLO www.tglx.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754186Ab0FFKCO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 6 Jun 2010 06:02:14 -0400
+Date: Sun, 6 Jun 2010 12:01:29 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: =?ISO-8859-15?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>
+cc: "Rafael J. Wysocki" <rjw@sisk.pl>, Peter Zijlstra <peterz@infradead.org>,
+       Ingo Molnar <mingo@elte.hu>, tytso@mit.edu,
+       Brian Swetland <swetland@google.com>, Neil Brown <neilb@suse.de>,
+       Alan Stern <stern@rowland.harvard.edu>,
+       Felipe Balbi <felipe.balbi@nokia.com>,
+       LKML <linux-kernel@vger.kernel.org>,
        Florian Mickler <florian@mickler.org>,
-       Peter Zijlstra <peterz@infradead.org>, "H. Peter Anvin" <hpa@zytor.com>,
-       LKML <linux-kernel@vger.kernel.org>, Neil Brown <neilb@suse.de>,
-       James Bottomley <James.Bottomley@suse.de>,
-       Alan Cox <alan@lxorguk.ukuu.org.uk>,
-       Linux PM <linux-pm@lists.linux-foundation.org>,
-       Ingo Molnar <mingo@elte.hu>,
        Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
+       Linux PM <linux-pm@lists.linux-foundation.org>,
+       Alan Cox <alan@lxorguk.ukuu.org.uk>,
+       James Bottomley <James.Bottomley@suse.de>,
        Linus Torvalds <torvalds@linux-foundation.org>,
-       Thomas Gleixner <tglx@linutronix.de>,
-       Felipe Balbi <felipe.balbi@nokia.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+       Kevin Hilman <khilman@deeprootsystems.com>,
+       "H. Peter Anvin" <hpa@zytor.com>,
+       Arjan van de Ven <arjan@infradead.org>
+Subject: Re: suspend blockers & Android integration
+In-Reply-To: <AANLkTilxr9vsMmE7LLoOcTIlhXLctWolC2VAsVeoLgnW@mail.gmail.com>
+Message-ID: <alpine.LFD.2.00.1006061144350.2933@localhost.localdomain>
+References: <20100603193045.GA7188@elte.hu> <20100603232302.GA16184@elte.hu> <1275644619.27810.39462.camel@twins> <201006050138.30859.rjw@sisk.pl> <alpine.LFD.2.00.1006050148080.2933@localhost.localdomain> <AANLkTikGDSzaENwg_0BAtsYf3ulGd_6sGPR30WsvUxMi@mail.gmail.com>
+ <alpine.LFD.2.00.1006050246350.2933@localhost.localdomain> <AANLkTikU21xF49Z-_Lnrq7U7buNmqw_gyEEST8LuN24z@mail.gmail.com> <alpine.LFD.2.00.1006051736040.2933@localhost.localdomain> <AANLkTinD39rI47innPbGz1Gi8PsXV5HqkmaQuJ70oQ63@mail.gmail.com>
+ <alpine.LFD.2.00.1006052348200.2933@localhost.localdomain> <AANLkTikmWDHYJ8wWF2cZapbkHHjV09R39I37yvQXFmor@mail.gmail.com> <alpine.LFD.2.00.1006060220400.2933@localhost.localdomain> <AANLkTilxr9vsMmE7LLoOcTIlhXLctWolC2VAsVeoLgnW@mail.gmail.com>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: MULTIPART/MIXED; BOUNDARY="8323328-1857924037-1275818491=:2933"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jun 6, 2010 at 11:21 AM, Brian Swetland <swetland@google.com> wrote:
->
-> The common case for a phone is to be sitting around.  Even for heavy
-> smartphone users, unless they power on, use the device screen-on for 4
-> hours solid or whatnot and drain the battery straight away, the device
-> is going to spend a significant portion of its operating time in
-> screen-off standby modes (conserving power for when you take a call,
-> browse the web, etc).
+  This message is in MIME format.  The first part should be readable text,
+  while the remaining parts are likely unreadable without MIME-aware tools.
 
-Sure, but my point was, some non-trivial (still kind of natural for a
-smartphone) activities with the device will prevent it from suspending
-for quite some time. Even worse, the suspend wakelock will keep the
-whole kernel active, as opposed to powering off unused devices
-separately as it's done in runtime PM. Yep, I know about the "early
-suspend" type of thing; yet it's excess, not mainlined and lacks
-granularity.
+--8323328-1857924037-1275818491=:2933
+Content-Type: TEXT/PLAIN; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 
-> For typical users on typical android devices, this means the device
-> stays suspended for 5-10 minutes at a time, coming up for air when a
-> network packet (mail sync, im, etc) or alarm (battery monitor) wakes
-> the device briefly.  Obviously with the right combination of bad apps
-> you will see a device suspending more rarely.
+On Sat, 5 Jun 2010, Arve Hjønnevåg wrote:
+> 2010/6/5 Thomas Gleixner <tglx@linutronix.de>:
+> > On Sat, 5 Jun 2010, Arve Hjønnevåg wrote:
+> >> That is too simple. You also have to prevent A from being frozen while
+> >> it is processing the event or the result would be the same as if it
+> >> was frozen beforehand.
+> >
+> > The framework decides when to freeze the app in the first place (as
+> > your framework does now when it decides to suspend)
+> >
+> >     So it knows whether the app is frozen or not.
+> >
+> >     So it knows damend well whether it processed the event or not.
+> >
+> 
+> Our user-space code is not single-threaded. So just because an app was
+> not frozen when you checked does not mean it will remain unfrozen. We
+> can use the same user-space wakelock api we have now to prevent
+> freezing apps instead of preventing suspend, but we loose any
+> advantage we get from freezing just a subset of processes this way.
 
-Wasn't that you who stated that you so successfully tolerate bad apps
-with opportunistic suspend that anything of the kind should not really
-be the case? :)
+Errm. That does not matter whether its single threaded or not. And
+right, you have to prevent that it gets frozen while you are calling
+into it.
 
->> E. g. when the wireless is connected to an AP, it takes a wake lock
->> which is released on 15 minutes touchscreen inactivity timeout, as far
->> as I can tell. So:
->>
->> * the system will never hit suspend during this period;
->> * if the download was ongoing and had not been completed during this
->> period, it will be terminated.
->
-> I'm pretty sure the wifi subsystem does not actually take a wakelock
-> while its connected -- it does have an alarm to spin down wifi after
-> 15 minutes (by default, and user disableable) largely due to power
-> inefficiencies in the wifi solution in some early devices.
+But that does not change the fact that you can do finer grained power
+control even in the case when suspend is impossible because a
+background application has work to finish and does that without
+requiring interaction with the frozen part.
 
-Oh? How does it make sure it's not powered off while scanning for APs,
-for instance?
+That's what I pointed out in the first place and you just argue in
+circles why it is impossible to do so.
 
-> Users do like that to work too -- I recall Arve leaving a device in
-> his filing cabinet with the radio off while he was out of the country
-> for three weeks once, and him discovering it was still running with
-> something like 25% battery remaining when he returned.
+Let me recapitulate:
 
-So what you're actually up to is that a user should restart the phone
-and turn the radio off if he wants to find it running when he's back
-from a long business trip or something. Nice...
+   Full on state:	No difference because everything runs
+   Full suspend state:	No difference because everything is down
 
-> In any case, I'm saying that suspending for minutes at a time
-> (typical, 10s of minutes or more in some cases, hours in others), does
-> happen and it does represent an improvement over suspending or
-> otherwise entering your lowest power state for seconds at a time.
+   Screen off, background work active:
 
-That's for sure, if _all_ the other parameters *are* *equal*. This is
-obviously not the case.
+   	  Suspend blocker held by the active background work lets
+   	  other applications which are unrelated consume CPU cycles
+   	  and power.
 
-~Vitaly
+	  versus
+
+	  Frozen apps restrict the CPU cycles and power consumption to
+	  the background work (if there are no interactions with
+	  frozen tasks) and therefor save more power than the on/off
+	  approach.
+
+	  If your user space stack cannot be distangled that way, then
+	  it's a problem of your user space stack and not changing the
+	  fact, that a well designedd system allows you to do that.
+
+Any objections ?
+
+Thanks,
+
+	tglx
+
+
+
+
+
+
+
+--8323328-1857924037-1275818491=:2933--
