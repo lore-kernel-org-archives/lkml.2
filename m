@@ -1,33 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757112Ab0FFK62 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Jun 2010 06:58:28 -0400
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:58811 "EHLO
-	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755621Ab0FFK60 (ORCPT
+	id S933806Ab0FFLE3 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Jun 2010 07:04:29 -0400
+Received: from mail-gw0-f46.google.com ([74.125.83.46]:45750 "EHLO
+	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756015Ab0FFLE0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Jun 2010 06:58:26 -0400
-Date: Sun, 6 Jun 2010 12:05:57 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Florian Mickler <florian@mickler.org>
-Cc: Vitaly Wool <vitalywool@gmail.com>, Brian Swetland <swetland@google.com>,
-       Arve =?ISO-8859-14?B?SGr4bm5lduVn?= <arve@android.com>,
-       Arjan van de Ven <arjan@infradead.org>, tytso@mit.edu,
-       Peter Zijlstra <peterz@infradead.org>, "H. Peter Anvin" <hpa@zytor.com>,
-       LKML <linux-kernel@vger.kernel.org>, Neil Brown <neilb@suse.de>,
-       James Bottomley <James.Bottomley@suse.de>,
-       Linux PM <linux-pm@lists.linux-foundation.org>,
-       Ingo Molnar <mingo@elte.hu>,
-       Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       Thomas Gleixner <tglx@linutronix.de>,
-       Felipe Balbi <felipe.balbi@nokia.com>
-Subject: Re: [linux-pm] suspend blockers & Android integration
-Message-ID: <20100606120557.72356de9@lxorguk.ukuu.org.uk>
-In-Reply-To: <20100606124601.2f1f6714@schatten.dmk.lab>
+	Sun, 6 Jun 2010 07:04:26 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=sz7UUdubO2Vs+NvA/dR33kVpBEl5kkEaspl7RDOko5EO7ZgOAbs294OrlwSVYRixfG
+         t1awd5p0xjDxgsZzAUT/d8YxXFJ0GOsd3SUZ1B3CHZATXcDZ/EQC0JkZmD7ouplzYtsn
+         nY1V299DqjmM70b3PGbcyrKEngSrUmWwAtnc4=
+MIME-Version: 1.0
+In-Reply-To: <20100606124949.539fa636@schatten.dmk.lab>
 References: <20100603193045.GA7188@elte.hu>
-	<20100603231153.GA11302@elte.hu>
-	<20100603232302.GA16184@elte.hu>
 	<AANLkTikZP3bmckpfb_jUdG7qZO5W9DgpZ79ugtSZaEpt@mail.gmail.com>
 	<20100604071354.GA14451@elte.hu>
 	<AANLkTimH4ihf3QqtKFpfGXRKtO55PrUuff9JYtaEBG44@mail.gmail.com>
@@ -43,39 +32,47 @@ References: <20100603193045.GA7188@elte.hu>
 	<AANLkTin1Za3GvfIKbcZdx6TzjIHzCvsg5uaY_Vk4nJIh@mail.gmail.com>
 	<AANLkTilQ1k78dDCYadOa1Wiyjm2nsBcRpxwdpGvYcf8z@mail.gmail.com>
 	<AANLkTin7oM3gVwHbIHWqYV8yeC6bbQ4q2jDDxAgz3DwQ@mail.gmail.com>
-	<20100606124601.2f1f6714@schatten.dmk.lab>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	<alpine.DEB.2.01.1006060305060.17462@asgard.lang.hm>
+	<AANLkTinW-X5m85rUcqP-lrEdfBikVclJWgqiWDkpxnAc@mail.gmail.com>
+	<20100606124949.539fa636@schatten.dmk.lab>
+Date: Sun, 6 Jun 2010 12:57:10 +0200
+Message-ID: <AANLkTin2ULTBRpTdX6rWuBOKCzPTFMMAJLz4NDUPb6al@mail.gmail.com>
+Subject: Re: [linux-pm] suspend blockers & Android integration
+From: Vitaly Wool <vitalywool@gmail.com>
+To: Florian Mickler <florian@mickler.org>
+Cc: david@lang.hm, Brian Swetland <swetland@google.com>,
+       =?ISO-8859-1?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>,
+       Arjan van de Ven <arjan@infradead.org>, tytso@mit.edu,
+       Peter Zijlstra <peterz@infradead.org>, "H. Peter Anvin" <hpa@zytor.com>,
+       LKML <linux-kernel@vger.kernel.org>, Neil Brown <neilb@suse.de>,
+       James Bottomley <James.Bottomley@suse.de>,
+       Alan Cox <alan@lxorguk.ukuu.org.uk>,
+       Linux PM <linux-pm@lists.linux-foundation.org>,
+       Ingo Molnar <mingo@elte.hu>,
+       Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       Thomas Gleixner <tglx@linutronix.de>,
+       Felipe Balbi <felipe.balbi@nokia.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 6 Jun 2010 12:46:01 +0200
-Florian Mickler <florian@mickler.org> wrote:
+2010/6/6 Florian Mickler <florian@mickler.org>:
 
-> On Sun, 6 Jun 2010 12:00:47 +0200
-> Vitaly Wool <vitalywool@gmail.com> wrote:
-> 
-> > Even worse, the suspend wakelock will keep the
-> > whole kernel active, as opposed to powering off unused devices
-> > separately as it's done in runtime PM. 
-> 
-> That is not true. While the kernel is not suspended it does
-> runtime pm.
+> Suspend_blockers allow the system to suspend ("mem">/sys/power/state
+> suspend), when the userspace decides that the device is not in use.
 
-On several of our platforms runtime PM already includes suspend so a
-suspend wakelock does interfere with existing power managemet at that
-level (not to mention the maintenance mess it causes).
+Sorry. What? Blockers allow the system to suspend?
 
-This is one of the reasons you want QoS information, it provides
-parameters by which the power management code can make a decision.
-Suspend blocksers simply don't have sufficient variety to manage the
-direction of power policy.
+> So implementing suspend_blockers support does not impact any
+> optimizations done to either system A nor system B.
 
-If Android chooses to abuse the QoS information for crude suspend
-blocking then that is fine, it doesn't interfere with doing the job
-'properly' on other systems or its use for realtime work on other boxes.
+Suspend blockers by themselves are of no use. Completely. So any talks
+on suspend blockers separated from the sleep policy are completely
+pointless.
+The suspend blockers are of use when the userspace tries to blindly
+freeze the tasks to enter the suspend state. This way of hammering the
+system down obviously impacts everything.
 
-Alan
+~Vitaly
