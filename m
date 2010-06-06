@@ -1,77 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934139Ab0FFQMq (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Jun 2010 12:12:46 -0400
-Received: from daytona.panasas.com ([67.152.220.89]:22300 "EHLO
-	daytona.int.panasas.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S932198Ab0FFQMp (ORCPT
+	id S934136Ab0FFQPo (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Jun 2010 12:15:44 -0400
+Received: from smtp-out-195.synserver.de ([212.40.180.195]:1028 "HELO
+	smtp-out-192.synserver.de" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with SMTP id S932198Ab0FFQPn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Jun 2010 12:12:45 -0400
-Message-ID: <4C0BC8F9.2050306@panasas.com>
-Date: Sun, 06 Jun 2010 19:12:41 +0300
-From: Boaz Harrosh <bharrosh@panasas.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-2.fc12 Thunderbird/3.0.4
+	Sun, 6 Jun 2010 12:15:43 -0400
+X-SynServer-TrustedSrc: 1
+X-SynServer-AuthUser: markus@trippelsdorf.de
+X-SynServer-PPID: 27060
+Date: Sun, 6 Jun 2010 18:15:41 +0200
+From: Markus Trippelsdorf <markus@trippelsdorf.de>
+To: Sachin Sant <sachinp@in.ibm.com>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>, linux-mm@kvack.org,
+       Linux/PPC Development <linuxppc-dev@ozlabs.org>
+Subject: Re: 2.6.35-rc2 : OOPS with LTP memcg regression test run.
+Message-ID: <20100606161541.GA1808@arch.tripp.de>
 MIME-Version: 1.0
-To: Artem Bityutskiy <dedekind1@gmail.com>
-CC: Al Viro <viro@ZenIV.linux.org.uk>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       LKML <linux-kernel@vger.kernel.org>, linux-fsdevel@vger.kernel.org,
-       Artem Bityutskiy <Artem.Bityutskiy@nokia.com>
-Subject: Re: [PATCHv5 10/16] exofs: fix race condition in marking SB dirty
-References: <1275835829-1478-1-git-send-email-dedekind1@gmail.com> <1275835829-1478-11-git-send-email-dedekind1@gmail.com>
-In-Reply-To: <1275835829-1478-11-git-send-email-dedekind1@gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 06 Jun 2010 16:12:44.0280 (UTC) FILETIME=[18B15F80:01CB0593]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100606154048.GJ31073@ZenIV.linux.org.uk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/06/2010 05:50 PM, Artem Bityutskiy wrote:
-> From: Artem Bityutskiy <Artem.Bityutskiy@nokia.com>
-> 
-> When synchronizing the superblock, exofs first initiates the SB write
-> (a) and then marks the superblock as clean (b). However, meanwhile
-> (between (a) and (b)) someone else can modify the superblock and
-> mark it as dirty. This would be a race condition, and the result
-> would be that we'd end up with a modified superblock which would
-> nevertheless be marked as clean (because of (b)). This means that
-> 'sync_supers()' would never call our '->write_super()', at least
-> not until yet another SB change happens.
-> 
-> This patch fixes this race condition by marking the superblock as
-> clean before initiating the write operation.
-> 
-> Signed-off-by: Artem Bityutskiy <Artem.Bityutskiy@nokia.com>
-> Cc: Boaz Harrosh <bharrosh@panasas.com>
 
-Ack-by: Boaz Harrosh <bharrosh@panasas.com>
+>> And few more of these. Previous snapshot release 2.6.35-rc1-git5(6c5de280b6...)
+>> was good.
+>
+>That's very odd, since
+>; git diff --stat 6c5de280b6..v2.6.35-rc2         
+> Makefile                             |    2 +-
+> drivers/gpu/drm/i915/intel_display.c |    9 +++++++
+> fs/ext4/inode.c                      |   40 +++++++++++++++++++--------------
+> fs/ext4/move_extent.c                |    3 ++
+> 4 files changed, 36 insertions(+), 18 deletions(-)
+>
+>and nothing of that looks like good candidates...
 
-Grate fix thanks
-Boaz
+I may have the same problem on my machine.
+(See also the thread: ext4 2.6.35-rc2 regression (ext4: Make sure the MOVE_EXT ioctl...))
 
-> ---
->  fs/exofs/super.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
-> 
-> diff --git a/fs/exofs/super.c b/fs/exofs/super.c
-> index 74ccbdc..0b432b9 100644
-> --- a/fs/exofs/super.c
-> +++ b/fs/exofs/super.c
-> @@ -219,6 +219,7 @@ int exofs_sync_fs(struct super_block *sb, int wait)
->  	 *       the fscb->s_dev_table_oid member. There is no read-modify-write
->  	 *       here.
->  	 */
-> +	sb_mark_clean(sb);
->  	ios->length = offsetof(struct exofs_fscb, s_dev_table_oid);
->  	memset(fscb, 0, ios->length);
->  	fscb->s_nextid = cpu_to_le64(sbi->s_nextid);
-> @@ -237,7 +238,6 @@ int exofs_sync_fs(struct super_block *sb, int wait)
->  		EXOFS_ERR("%s: exofs_sbi_write failed.\n", __func__);
->  		goto out;
->  	}
-> -	sb_mark_clean(sb);
->  
->  out:
->  	EXOFS_DBGMSG("s_nextid=0x%llx ret=%d\n", _LLU(sbi->s_nextid), ret);
-
+general protection fault: 0000 [#1] SMP
+last sysfs file: /sys/devices/pci0000:00/0000:00:11.0/host2/target2:0:0/2:0:0:0/block/sdb/size
+CPU 2
+Pid: 1683, comm: iptables-restor Not tainted 2.6.35-rc2-00033-gcc1f375 #46 M4A78T-E/System Product Name
+RIP: 0010:[<ffffffff810cc6e6>]  [<ffffffff810cc6e6>] kmem_cache_alloc+0x59/0xda
+RSP: 0018:ffff88011c993d78  EFLAGS: 00010002
+RAX: 0000000000000000 RBX: 0720072007200720 RCX: ffffffff810bd4c9
+RDX: 00007f076cee3000 RSI: 00000000000000d0 RDI: ffff88011fc01800
+RBP: ffff88011c993db8 R08: ffff880001b13f48 R09: 0000000000000000
+R10: ffff88011d387c00 R11: ffff88011c983930 R12: ffff88011fc01800
+R13: 0000000000000202 R14: 00000000000000d0 R15: 00000000000000d0
+FS:  00007f076dc43700(0000) GS:ffff880001b00000(0000) knlGS:0000000000000000
+CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+CR2: 00007f8595d364f8 CR3: 000000011b8b0000 CR4: 00000000000006e0
+DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+Process iptables-restor (pid: 1683, threadinfo ffff88011c992000, task ffff88011ec09610)
+Stack:
+ffff88011d387c10 ffff88011c983930 ffff88011c993d98 000000000000fffa
+<0> ffff88011d387bd0 00007f076cee3000 ffff88011f77ea40 0000000000000000
+<0> ffff88011c993e08 ffffffff810bd4c9 ffff88011b8f5cc0 ffffffff810bd639
+Call Trace:
+[<ffffffff810bd4c9>] __split_vma+0x33/0x18d
+[<ffffffff810bd639>] ? vma_merge+0x16/0x1fc
+[<ffffffff810bdc01>] split_vma+0x23/0x28
+[<ffffffff810bf572>] mprotect_fixup+0x146/0x54c
+[<ffffffff810befff>] ? do_mmap_pgoff+0x2a4/0x2fe
+[<ffffffff810bfaf0>] sys_mprotect+0x178/0x1f4
+[<ffffffff8102b93b>] system_call_fastpath+0x16/0x1b
+Code: 65 4c 8b 04 25 88 d4 00 00 48 8b 07 49 01 c0 49 8b 18 48 85 db 75 10 83 ca ff 44 89 f6 e8 58 fa ff ff 48 89 c3 eb 0b 48 63 47 18 <48> 8b 04 03 49 89 00 41 55 9d 48 85 db 74 15 41 81 e6 00 80 00
+RIP  [<ffffffff810cc6e6>] kmem_cache_alloc+0x59/0xda
+RSP <ffff88011c993d78>
+---[ end trace e2fb1ccd3cb9dd77 ]---
+-- 
+Markus
