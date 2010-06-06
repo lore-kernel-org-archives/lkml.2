@@ -1,69 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753032Ab0FFTW2 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Jun 2010 15:22:28 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:61804 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752072Ab0FFTW1 (ORCPT
+	id S1753687Ab0FFTYT (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Jun 2010 15:24:19 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:60155 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752593Ab0FFTYS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Jun 2010 15:22:27 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:reply-to:to:cc:in-reply-to:references:content-type
-         :date:message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=cn1foPGo/2OP2Tx6QguDXmSUJYrR7nqRyYqZa8fb1WZXkQ8T9i3FUVICZQm2vUW3q3
-         jtEKi9GoGMkdWDar0NSs5altYZplGBFP0eTik51ujU16Yjcz4Y7pGMA8SiBQ/ebHEZZi
-         /NV/tzoAhn4YpKDHcU6VthBOGCsg8WHsi8U/Y=
-Subject: Re: [PATCHv5 04/16] VFS: add memory barrier to sb_mark_clean and
- sb_mark_dirty
-From: Artem Bityutskiy <dedekind1@gmail.com>
-Reply-To: dedekind1@gmail.com
-To: Al Viro <viro@ZenIV.linux.org.uk>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-       LKML <linux-kernel@vger.kernel.org>, linux-fsdevel@vger.kernel.org,
-       Artem Bityutskiy <Artem.Bityutskiy@nokia.com>
-In-Reply-To: <1275844581.17909.2.camel@localhost.localdomain>
-References: <1275835829-1478-1-git-send-email-dedekind1@gmail.com>
-	 <1275835829-1478-5-git-send-email-dedekind1@gmail.com>
-	 <1275844581.17909.2.camel@localhost.localdomain>
-Content-Type: text/plain; charset="UTF-8"
-Date: Sun, 06 Jun 2010 22:22:22 +0300
-Message-Id: <1275852142.17909.7.camel@localhost.localdomain>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.26.3 (2.26.3-1.fc11) 
-Content-Transfer-Encoding: 8bit
+	Sun, 6 Jun 2010 15:24:18 -0400
+Date: Sun, 6 Jun 2010 15:24:05 -0400
+From: Christoph Hellwig <hch@infradead.org>
+To: Brian Swetland <swetland@google.com>
+Cc: Christoph Hellwig <hch@infradead.org>,
+       James Bottomley <James.Bottomley@suse.de>,
+       Thomas Gleixner <tglx@linutronix.de>,
+       Alan Cox <alan@lxorguk.ukuu.org.uk>,
+       Florian Mickler <florian@mickler.org>,
+       Vitaly Wool <vitalywool@gmail.com>, Arve Hj?nnev?g <arve@android.com>,
+       Arjan van de Ven <arjan@infradead.org>, tytso@mit.edu,
+       Peter Zijlstra <peterz@infradead.org>, "H. Peter Anvin" <hpa@zytor.com>,
+       LKML <linux-kernel@vger.kernel.org>, Neil Brown <neilb@suse.de>,
+       Linux PM <linux-pm@lists.linux-foundation.org>,
+       Ingo Molnar <mingo@elte.hu>,
+       Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       Felipe Balbi <felipe.balbi@nokia.com>
+Subject: Re: [linux-pm] suspend blockers & Android integration
+Message-ID: <20100606192405.GA7559@infradead.org>
+References: <1275834706.7227.545.camel@mulgrave.site>
+ <alpine.LFD.2.00.1006061725000.2933@localhost.localdomain>
+ <1275844114.7227.552.camel@mulgrave.site>
+ <20100606190525.GA20517@infradead.org>
+ <AANLkTikKx-gXCGtNo3woHLCpBoEQ7hG9Jbiq3hwUTW_w@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <AANLkTikKx-gXCGtNo3woHLCpBoEQ7hG9Jbiq3hwUTW_w@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2010-06-06 at 20:16 +0300, Artem Bityutskiy wrote:
-> On Sun, 2010-06-06 at 17:50 +0300, Artem Bityutskiy wrote:
-> >  void sb_mark_dirty(struct super_block *sb);
-> >  static inline void sb_mark_clean(struct super_block *sb)
-> >  {
-> >  	sb->s_dirty = 0;
-> > +	/*
-> > +	 * Normally FSes first unset the sb->s_dirty flag, and then start
-> > +	 * synchronizing the SB. The memory barrier ensures this order.
-> > +	 */
-> > +	smp_mb();
-> ...
-> >  void sb_mark_dirty(struct super_block *sb)
-> >  {
-> > +	/*
-> > +	 * Normally FSes modify the SB, and then mark it as dirty. The memory
-> > +	 * barrier ensures this order.
-> > +	 */
-> > +	smp_mb();
-> ...
+On Sun, Jun 06, 2010 at 12:15:10PM -0700, Brian Swetland wrote:
+> I was shocked when Greg pulled the binder driver and some of the other
+> "generic" android drivers into staging, because it was always my
+> assumption that nobody upstream would want them.  We did get some
+> bugfixes for the binder driver (thanks!) but the general reaction was
+> pretty much the same as yours here.  I then was relatively unsurprised
+> when it was dropped (we find it useful, upstream finds it useless, not
+> much else to say).
 > 
-> Hmm, these ones should be 'mb()', not 'smp_mb()'.
+> The various SoC peripheral drivers are, I suspect, much less
+> contentious (modulo suspend blocker usage and any necessary kernel
+> style cleanup).
 
-Actually no, sorry, I completely missed that all memory barriers are a
-compiler barriers. I thought smp_mb() is nought, which is not true -
-smp_mb() is a barrier() on UP.
+Yes.  That's what makes me wonder about some parts of the discussion
+here.  Getting the drivers for one or more of the android plattforms
+in is not a problem.  I'd say it could have easily been done with the
+manweeks spent arguing in this and related threads.
 
--- 
-Best Regards,
-Artem Bityutskiy (Артём Битюцкий)
+The much bigger issues is to get android userspace running on a more
+or less vanilla kernel, that is withoutthe  binder, without the rather
+interesting group ID based security hack^H^H^H^Hmodel, without the
+suspend blocker userspace API and so on, and so on.
+
+So for people who really care about running a mainline kernel on their
+android device doing that part first on a generic ARM board in qemu
+might be much better first step work.   On the other hand I've heard
+that various hardware vendors or parties closed to them are rather
+annoyed by their drivers beeing stuck in the android tree - but that
+can be easily solved by getting removing the suspend blockers (at least
+temporarily), cleaning up a few bits here and there and getting them in.
+
+It's not rocket science to get support for ARM SOC number 1654 into the
+mainline kernel.
 
