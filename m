@@ -1,70 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753442Ab0FFIRY (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Jun 2010 04:17:24 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:49000 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752260Ab0FFIRV convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Jun 2010 04:17:21 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type:content-transfer-encoding;
-        b=OAlM3tjCleh202qZB6FTh+mCwhZ/xPecHf87Y91j6ObjEWkEgZOhznSpLeT249Mo7e
-         LUNGVE8ge02TiiLy7MIF1RiuwDkf8VsfV2NqpdlQP9un4O0463cAFpEHYdSH6KQnwoV8
-         DCVlJIRYz8pKWF3PJIOt8RwN3R0pk4jev5iSs=
+	id S1753687Ab0FFIRj (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Jun 2010 04:17:39 -0400
+Received: from mail.lang.hm ([64.81.33.126]:54005 "EHLO bifrost.lang.hm"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753480Ab0FFIRf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 6 Jun 2010 04:17:35 -0400
+Date: Sun, 6 Jun 2010 01:16:34 -0700 (PDT)
+From: david@lang.hm
+X-X-Sender: dlang@asgard.lang.hm
+To: Arjan van de Ven <arjan@infradead.org>
+cc: Linus Torvalds <torvalds@linux-foundation.org>,
+       Ingo Molnar <mingo@elte.hu>, tytso@mit.edu,
+       Brian Swetland <swetland@google.com>, Neil Brown <neilb@suse.de>,
+       Arve Hj?nnev?g <arve@android.com>, Thomas Gleixner <tglx@linutronix.de>,
+       "Rafael J. Wysocki" <rjw@sisk.pl>,
+       Alan Stern <stern@rowland.harvard.edu>,
+       Felipe Balbi <felipe.balbi@nokia.com>,
+       Peter Zijlstra <peterz@infradead.org>,
+       LKML <linux-kernel@vger.kernel.org>,
+       Florian Mickler <florian@mickler.org>,
+       Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
+       Linux PM <linux-pm@lists.linux-foundation.org>,
+       Alan Cox <alan@lxorguk.ukuu.org.uk>,
+       James Bottomley <James.Bottomley@suse.de>,
+       Peter Zijlstra <a.p.zijlstra@chello.nl>,
+       Kevin Hilman <khilman@deeprootsystems.com>,
+       "H. Peter Anvin" <hpa@zytor.com>
+Subject: Re: suspend blockers & Android integration
+In-Reply-To: <20100603204521.09808a7f@infradead.org>
+Message-ID: <alpine.DEB.2.01.1006060114240.17462@asgard.lang.hm>
+References: <20100603193045.GA7188@elte.hu> <20100603231153.GA11302@elte.hu> <20100603232302.GA16184@elte.hu> <alpine.LFD.2.00.1006031630300.8175@i5.linux-foundation.org> <20100603234634.GA21831@elte.hu> <alpine.LFD.2.00.1006031856420.8175@i5.linux-foundation.org>
+ <alpine.LFD.2.00.1006031917500.8175@i5.linux-foundation.org> <20100603204521.09808a7f@infradead.org>
+User-Agent: Alpine 2.01 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-In-Reply-To: <201006051919.17738.marek.vasut@gmail.com>
-References: <1275371058.7001.35.camel@balakrishnan-desktop> 
-	<201006051919.17738.marek.vasut@gmail.com>
-From: Eric Miao <eric.y.miao@gmail.com>
-Date: Sun, 6 Jun 2010 16:17:00 +0800
-Message-ID: <AANLkTil5TWYILcdp872as8S8LMqQWhPYWLt7cxs2lUm5@mail.gmail.com>
-Subject: Re: pxa300 - DDRAM base value
-To: Marek Vasut <marek.vasut@gmail.com>
-Cc: linux-arm-kernel@lists.infradead.org,
-       balakrishnan <balakrishnan@e-consystems.com>,
-       linux-kernel@vger.kernel.org, Maharajan <maharajan@e-consystems.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jun 6, 2010 at 1:19 AM, Marek Vasut <marek.vasut@gmail.com> wrote:
-> Dne Út 1. června 2010 07:44:18 balakrishnan napsal(a):
->> I am working on pxa300 based development board and using Linux 2.6.34.
->> This Linux kernel already has support for following boards
->> 1. zylonite_pxa300
->> 2. cm-x300
->> 3. colibri-pxa300
->> 4. littleton
->>
->> My doubt is that pxa300 based boards are using "0xa0000000"  as DDRAM
->> base and PHYS_OFFSET is also defined in
->> "arch/arm/mach-pxa/include/mach/memory.h" as 0xa0000000.
->> But in our board  DDR is mapped in 0x80000000. Does it make any
->> problem?. Because after mmu is turned ON, my board is hanging.
->>
->> "zreladdr-y   := 0x80008000" is defined in
->> "arch/arm/mach-pxa/Makefile.boot" file .
->> my machine_desc is as follows
->> .phys_io        = 0x40000000,
->> .io_pg_offst    = (io_p2v(0x40000000) >> 18) & 0xfffc,
->> .boot_params    = 0x80000100,
->>
->
-> Try editing both arch/arm/mach-pxa/Makefile.boot and
-> arch/arm/mach/pxa/include/mach/memory.h
->
->> With Thanks
->> J.Balakrishnan
->
-> The 0x80000000 should be aliased to 0xa0000000, but looking into the PXA docs,
-> it is only on pxa320. Eric, any ideas on this ?
->
+On Thu, 3 Jun 2010, Arjan van de Ven wrote:
 
-Should be working on pxa300/310 as well. If it doesn't, check you bootloader
-to make sure the mapping is OK, and memory doesn't exceed
-(0xa000_0000 - 0x8000_0000).
+> On Thu, 3 Jun 2010 19:26:50 -0700 (PDT)
+> Linus Torvalds <torvalds@linux-foundation.org> wrote:
+>
+>>
+>> If the system is idle (or almost idle) for long times, I would
+>> heartily recommend actively shutting down unused cores. Some CPU's
+>> are hopefully smart enough to not even need that kind of software
+>> management, but I suspect even the really smart ones might be able to
+>> take advantage of the kernel saying: "I'm shutting you down, you
+>> don't have to worry about latency AT ALL, because I'm keeping another
+>> CPU active to do any real work".
+>
+> sadly the reality is that "offline" is actually the same as "deepest C
+> state". At best.
+>
+> As far as I can see, this is at least true for all Intel and AMD cpus.
+>
+> And because there's then no power saving (but a performance cost), it's
+> actually a negative for battery life/total energy.
+
+I believe that this assumes you are in the 'race to idle' situation where 
+when you finish your work you can shutdown. If the work is ongoing you may 
+never shutdown.
+
+Also, what about the new CPUs where you can ramp up the clockspeed on some 
+cores if you hsut down other cores? that couls also benifit individual 
+threads.
+
+David Lang
