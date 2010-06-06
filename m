@@ -1,46 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758085Ab0FFPxH (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Jun 2010 11:53:07 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:51850 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757973Ab0FFPxE (ORCPT
+	id S934024Ab0FFPyR (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Jun 2010 11:54:17 -0400
+Received: from fg-out-1718.google.com ([72.14.220.155]:24516 "EHLO
+	fg-out-1718.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757973Ab0FFPyQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Jun 2010 11:53:04 -0400
+	Sun, 6 Jun 2010 11:54:16 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:x-enigmail-version:content-type
-         :content-transfer-encoding;
-        b=GBgntwgihrSkE8l2OD6dE9hEYat4WtFRr52C2uD/h90qD0ZIAQuxhPyBKst8U9ZjJc
-         vT7PxrGSrH+t61DkEPzCVOwzvXKBw/Hc2rjVW+bAE53TgqZvL8lvnsXDhsSPnW2htcjs
-         YpT2d9DPyjpvStj6LjLooIKjkl96qDle9Md40=
-Message-ID: <4C0BC45A.6080104@gmail.com>
-Date: Sun, 06 Jun 2010 17:52:58 +0200
-From: Tejun Heo <htejun@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.1.9) Gecko/20100317 Thunderbird/3.0.4
-MIME-Version: 1.0
-To: Torsten Kaiser <just.for.lkml@googlemail.com>
-CC: Linus Torvalds <torvalds@linux-foundation.org>,
-       Alex Deucher <alexdeucher@gmail.com>,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       Jeff Garzik <jgarzik@redhat.com>
-Subject: Re: Linux 2.6.35-rc2
-References: <alpine.LFD.2.00.1006052050100.3515@i5.linux-foundation.org> <AANLkTinpHAK3-qj26KSLLhMB5UUDT5I9aSkrxJeRRsSl@mail.gmail.com> <alpine.LFD.2.00.1006060710570.3515@i5.linux-foundation.org> <4C0BC35C.8070003@kernel.org>
-In-Reply-To: <4C0BC35C.8070003@kernel.org>
-X-Enigmail-Version: 1.0.1
-Content-Type: text/plain; charset=ISO-8859-1
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=K8MOPQZTRsGTv8AiVewDBsOYJYTOlhNCi+t+hjZfD0qwACyh3/4AW5Ge2oaSNjH+KY
+         5QQaxlrBcPp7+buipYV+88EwpwR/4Nz0d3nOOoILPsgMLoasmbO5qw1MN8mMTGBZRxpb
+         xp8xNuWWBFtttG9iE2S+kfEOrX6VgG3hSMKpc=
+Subject: Re: [linux-pm] [SUSPECTED SPAM] Re: Proposal for a new algorithm 
+ for	reading & writing a hibernation image.
+From: Maxim Levitsky <maximlevitsky@gmail.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Nigel Cunningham <ncunningham@crca.org.au>,
+       pm list <linux-pm@lists.linux-foundation.org>,
+       LKML <linux-kernel@vger.kernel.org>,
+       TuxOnIce-devel <tuxonice-devel@tuxonice.net>
+In-Reply-To: <201006061557.20482.rjw@sisk.pl>
+References: <9rpccea67yy402c975fqru8r.1275576653521@email.android.com>
+	 <201006052121.45816.rjw@sisk.pl> <1275784828.17835.4.camel@maxim-laptop>
+	 <201006061557.20482.rjw@sisk.pl>
+Content-Type: text/plain; charset="UTF-8"
+Date: Sun, 06 Jun 2010 18:54:10 +0300
+Message-ID: <1275839650.5331.2.camel@maxim-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/06/2010 05:48 PM, Tejun Heo wrote:
-> Can you please try w/o KMS just in case?
+On Sun, 2010-06-06 at 15:57 +0200, Rafael J. Wysocki wrote: 
+> On Sunday 06 June 2010, Maxim Levitsky wrote:
+> > On Sat, 2010-06-05 at 21:21 +0200, Rafael J. Wysocki wrote: 
+> > > On Saturday 05 June 2010, Maxim Levitsky wrote:
+> > > > On Sat, 2010-06-05 at 20:45 +0200, Rafael J. Wysocki wrote: 
+> > > > > On Saturday 05 June 2010, Nigel Cunningham wrote:
+> > > > > > Hi again.
+> > > > > > 
+> > > > > > As I think about this more, I reckon we could run into problems at 
+> > > > > > resume time with reloading the image. Even if some bits aren't modified 
+> > > > > > as we're writing the image, they still might need to be atomically 
+> > > > > > restored. If we make the atomic restore part too small, we might not be 
+> > > > > > able to do that.
+> > > > > > 
+> > > > > > So perhaps the best thing would be to stick with the way TuxOnIce splits 
+> > > > > > the image at the moment (page cache / process pages vs 'rest'), but 
+> > > > > > using this faulting mechanism to ensure we do get all the pages that are 
+> > > > > > changed while writing the first part of the image.
+> > > > > 
+> > > > > I still don't quite understand why you insist on saving the page cache data
+> > > > > upfront and re-using the memory occupied by them for another purpose.  If you
+> > > > > dropped that requirement, I'd really have much less of a problem with the
+> > > > > TuxOnIce's approach.
+> > > > Because its the biggest advantage?
+> > > 
+> > > It isn't in fact.
+> > > 
+> > > > Really saving whole memory makes huge difference.
+> > > 
+> > > You don't have to save the _whole_ memory to get the same speed (you don't
+> > > do that anyway, but the amount of data you don't put into the image with
+> > > TuxOnIce is smaller).  Something like 80% would be just sufficient IMO and
+> > > then (a) the level of complications involved would drop significantly and (2)
+> > > you'd be able to use the image-reading code already in the kernel without
+> > > any modifications.  It really looks like a win-win to me, doesn't it?
+> > 
+> > 
+> > Well, in fact on modern systems its not possible to save 100% of ram
+> > even if we save it all because of video memory.
+> > Look I got 256MB of video ram, and when compiz is used I say most of it
+> > is used, and its isn't going to be magically preserved during suspend.
+> > So system still has to free about 256MB of memory before suspend (which
+> > means around 80% percent of ram is saved in best case :-) )
+> 
+> So how TuxOnIce helps here?
+Very simple.
 
-Also, does it always crash the same way?
+With swsusp, I can save 750MB (memory) + 250 Vram (vram)
+With full memory save I can save (1750 MB of memory) + 250 MB of
+vram....
 
-Thanks.
+Of course save of vram sure can be made non atomic....
 
--- 
-tejun
+
+Best regards,
+Maxim Levitsky
+
