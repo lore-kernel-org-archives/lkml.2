@@ -1,64 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933869Ab0FFLRw (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Jun 2010 07:17:52 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:57713 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756015Ab0FFLRu convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Jun 2010 07:17:50 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=BRWiF/5bE+eKx2kd5lIGAXA6cHhnSlrkmFli6o5HN2w6YZi54f8rHoPO945BG4OE4Q
-         99ucDtmXXAwd2ZwtjrKgczw6asWE/KFQGi4qEzdSGRYlS34Nal9nAJ9v7R1PCUeUiUXu
-         Zp33UUc4JlvU/cLKYVt+QLdld6/eKfzt1DswE=
+	id S1757765Ab0FFLSh (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Jun 2010 07:18:37 -0400
+Received: from mail.issp.bas.bg ([195.96.236.10]:54838 "EHLO mail.issp.bas.bg"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755438Ab0FFLSg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 6 Jun 2010 07:18:36 -0400
+From: Marin Mitov <mitov@issp.bas.bg>
+Organization: Institute of Solid State Physics
+To: "Greg Kroah-Hartman" <greg@kroah.com>
+Subject: [BUG][PATCH]staging/dt3155v4l: correcting a pointer mismatch bug and cleanups
+Date: Sun, 6 Jun 2010 14:16:07 +0300
+User-Agent: KMail/1.13.3 (Linux/2.6.34-rc7; KDE/4.4.3; x86_64; ; )
+Cc: linux-kernel@vger.kernel.org
 MIME-Version: 1.0
-In-Reply-To: <201006052252.21168.arnd@arndb.de>
-References: <201005241600.o4OG0QuA012887@hera.kernel.org>
-	<AANLkTil7N3ZJclwotDQVt-8IYKudZ5mqPbyH906Cd4IJ@mail.gmail.com>
-	<201006052252.21168.arnd@arndb.de>
-Date: Sun, 6 Jun 2010 13:17:48 +0200
-X-Google-Sender-Auth: ol5x6m4M1agAHORa2bmoNwPy-BA
-Message-ID: <AANLkTil4itZpw4k1Jr93BiivFQvSv6_e09CAgiNiziUJ@mail.gmail.com>
-Subject: Re: hp_sdc_rtc: fix broken ioctl conversion
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: Text/Plain;
+  charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201006061416.08283.mitov@issp.bas.bg>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jun 5, 2010 at 22:52, Arnd Bergmann <arnd@arndb.de> wrote:
-> Commit 55929332c92 "drivers: Push down BKL into various drivers"
-> introduced a regression in hp_sdc_rtc, caused by a missing
-> change of the .unlocked_ioctl pointer to the newly introduced
-> function.
->
-> On Saturday 05 June 2010, Geert Uytterhoeven wrote:
->> Something went wrong with this one:
->>
->> | drivers/input/misc/hp_sdc_rtc.c:681: warning: initialization from
->> incompatible pointer type
->> | drivers/input/misc/hp_sdc_rtc.c:665: warning:
->> ‘hp_sdc_rtc_unlocked_ioctl’ defined but not used
->
-> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+Hi Greg,
 
-Acked-by: Geert Uytterhoeven <geert@linux-m68k.org>
+The third argument of dma_alloc_coherent() is of type dma_addr_t and is defined
+as u64 for x86_64, while the member 'device_base' of struct dma_coherent_mem is
+defined as u32.
 
-Gr{oetje,eeting}s,
+While at it, clean up the code. Now if dev->dma_mem != NULL all the fields/members
+are already properly initialized.
 
-						Geert
+Please apply.
 
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+Thanks
 
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-							    -- Linus Torvalds
+Marin Mitov
+
+Signed-off-by: Marin Mitov <mitov@issp.bas.bg>
+
+===========================================================================
+--- a/drivers/staging/dt3155v4l/dt3155v4l.c	2010-06-06 08:52:06.000000000 +0300
++++ b/drivers/staging/dt3155v4l/dt3155v4l.c	2010-06-06 12:05:32.000000000 +0300
+@@ -1008,6 +1008,8 @@
+ static int __devinit
+ dt3155_alloc_coherent(struct device *dev, size_t size, int flags)
+ {
++	struct dma_coherent_mem *mem;
++	dma_addr_t dev_base;
+ 	int pages = size >> PAGE_SHIFT;
+ 	int bitmap_size = BITS_TO_LONGS(pages) * sizeof(long);
+ 
+@@ -1018,25 +1020,28 @@
+ 	if (dev->dma_mem)
+ 		goto out;
+ 
+-	dev->dma_mem = kzalloc(sizeof(struct dma_coherent_mem), GFP_KERNEL);
+-	if (!dev->dma_mem)
++	mem = kzalloc(sizeof(*mem), GFP_KERNEL);
++	if (!mem)
+ 		goto out;
+-	dev->dma_mem->bitmap = kzalloc(bitmap_size, GFP_KERNEL);
+-	if (!dev->dma_mem->bitmap)
++	mem->virt_base = dma_alloc_coherent(dev, size, &dev_base,
++							DT3155_COH_FLAGS);
++	if (!mem->virt_base)
++		goto err_alloc_coherent;
++	mem->bitmap = kzalloc(bitmap_size, GFP_KERNEL);
++	if (!mem->bitmap)
+ 		goto err_bitmap;
+ 
+-	dev->dma_mem->virt_base = dma_alloc_coherent(dev, size,
+-				&dev->dma_mem->device_base, DT3155_COH_FLAGS);
+-	if (!dev->dma_mem->virt_base)
+-		goto err_coherent;
+-	dev->dma_mem->size = pages;
+-	dev->dma_mem->flags = flags;
++	/* coherent_dma_mask is already set to 32 bits */
++	mem->device_base = dev_base;
++	mem->size = pages;
++	mem->flags = flags;
++	dev->dma_mem = mem;
+ 	return DMA_MEMORY_MAP;
+ 
+-err_coherent:
+-	kfree(dev->dma_mem->bitmap);
+ err_bitmap:
+-	kfree(dev->dma_mem);
++	dma_free_coherent(dev, size, mem->virt_base, dev_base);
++err_alloc_coherent:
++	kfree(mem);
+ out:
+ 	return 0;
+ }
