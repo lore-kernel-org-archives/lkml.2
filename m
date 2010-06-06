@@ -1,55 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757911Ab0FFNeu (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Jun 2010 09:34:50 -0400
-Received: from cavan.codon.org.uk ([93.93.128.6]:57236 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756344Ab0FFNet (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Jun 2010 09:34:49 -0400
-Date: Sun, 6 Jun 2010 14:34:19 +0100
-From: Matthew Garrett <mjg59@srcf.ucam.org>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: Florian Mickler <florian@mickler.org>, Vitaly Wool <vitalywool@gmail.com>,
-       Brian Swetland <swetland@google.com>,
-       Arve =?iso-8859-1?B?SGr4bm5lduVn?= <arve@android.com>,
-       Arjan van de Ven <arjan@infradead.org>, tytso@mit.edu,
-       Peter Zijlstra <peterz@infradead.org>, "H. Peter Anvin" <hpa@zytor.com>,
-       LKML <linux-kernel@vger.kernel.org>, Neil Brown <neilb@suse.de>,
-       James Bottomley <James.Bottomley@suse.de>,
-       Linux PM <linux-pm@lists.linux-foundation.org>,
-       Ingo Molnar <mingo@elte.hu>,
-       Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       Thomas Gleixner <tglx@linutronix.de>,
-       Felipe Balbi <felipe.balbi@nokia.com>
-Subject: Re: [linux-pm] suspend blockers & Android integration
-Message-ID: <20100606133419.GB8513@srcf.ucam.org>
-References: <1275731653.27810.41078.camel@twins> <20100605092851.6ee15f13@infradead.org> <AANLkTimEwznq9c_8lkuBMxEQ-42rdvpZEqA9Y71Cu-qC@mail.gmail.com> <AANLkTimKknOurmCffOpHjc1FjrP2MKf10pBwEEbLJPg_@mail.gmail.com> <AANLkTil1NCX91bWhpXHtC88Opr29mNjdhXD9RXQ6DI0y@mail.gmail.com> <AANLkTin1Za3GvfIKbcZdx6TzjIHzCvsg5uaY_Vk4nJIh@mail.gmail.com> <AANLkTilQ1k78dDCYadOa1Wiyjm2nsBcRpxwdpGvYcf8z@mail.gmail.com> <AANLkTin7oM3gVwHbIHWqYV8yeC6bbQ4q2jDDxAgz3DwQ@mail.gmail.com> <20100606124601.2f1f6714@schatten.dmk.lab> <20100606120557.72356de9@lxorguk.ukuu.org.uk>
+	id S1757879Ab0FFNow (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Jun 2010 09:44:52 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:37870 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756386Ab0FFNov (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 6 Jun 2010 09:44:51 -0400
+Message-ID: <4C0BA627.5010005@redhat.com>
+Date: Sun, 06 Jun 2010 16:44:07 +0300
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-3.fc13 Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100606120557.72356de9@lxorguk.ukuu.org.uk>
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+To: Chris Wright <chrisw@sous-sol.org>
+CC: Joerg Roedel <joro@8bytes.org>, "Michael S. Tsirkin" <mst@redhat.com>,
+       Tom Lyon <pugs@cisco.com>, linux-kernel@vger.kernel.org,
+       kvm@vger.kernel.org, hjk@linutronix.de, gregkh@suse.de,
+       aafabbri@cisco.com, scofeldm@cisco.com
+Subject: Re: [PATCH] VFIO driver: Non-privileged user level PCI drivers
+References: <20100531171007.GA6516@redhat.com> <4C04C085.1030107@redhat.com> <20100601095532.GA9178@redhat.com> <4C04E0E0.3070006@redhat.com> <20100601104651.GA9415@redhat.com> <4C050013.2020701@redhat.com> <20100602094527.GD964@8bytes.org> <4C062928.8040003@redhat.com> <20100602100404.GF964@8bytes.org> <4C063ECB.8010706@redhat.com> <20100602165321.GU8301@sequoia.sous-sol.org>
+In-Reply-To: <20100602165321.GU8301@sequoia.sous-sol.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jun 06, 2010 at 12:05:57PM +0100, Alan Cox wrote:
-> On Sun, 6 Jun 2010 12:46:01 +0200
-> Florian Mickler <florian@mickler.org> wrote:
-> > That is not true. While the kernel is not suspended it does
-> > runtime pm.
-> 
-> On several of our platforms runtime PM already includes suspend so a
-> suspend wakelock does interfere with existing power managemet at that
-> level (not to mention the maintenance mess it causes).
+On 06/02/2010 07:53 PM, Chris Wright wrote:
+> * Avi Kivity (avi@redhat.com) wrote:
+>    
+>> The interface would only work for clients which support it: kvm,
+>> vhost, and iommu/devices with restartable dma.
+>>      
+> BTW, there is no such thing as restartable dma.  There is a provision in
+> new specs (read: no real hardware) that allows a device to request pages
+> before using them.  So it's akin to demand paging, but the demand is an
+> explicit request rather than a page fault.
+>    
 
-No, it doesn't. Android on omap will enter the mpu/core off state from 
-the idle loop even if a suspend block is held.
+Thanks for the correction.
 
 -- 
-Matthew Garrett | mjg59@srcf.ucam.org
+error compiling committee.c: too many arguments to function
+
