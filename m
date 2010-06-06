@@ -1,124 +1,173 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933938Ab0FFBqB (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Jun 2010 21:46:01 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:63849 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933768Ab0FFBp7 convert rfc822-to-8bit (ORCPT
+	id S933964Ab0FFCVQ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Jun 2010 22:21:16 -0400
+Received: from straum.hexapodia.org ([207.7.131.186]:54791 "EHLO
+	straum.hexapodia.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933954Ab0FFCVP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Jun 2010 21:45:59 -0400
+	Sat, 5 Jun 2010 22:21:15 -0400
+Date: Sat, 5 Jun 2010 19:21:15 -0700
+From: Andy Isaacson <adi@hexapodia.org>
+To: linux-kernel@vger.kernel.org, Chris Wilson <chris@chris-wilson.co.uk>,
+       Eric Anholt <eric@anholt.net>, dri-devel@lists.sourceforge.net
+Subject: [2.6.35-rc regression] i915: cursor corruption on Arrandale caused
+	by 9b8c4a0b215e
+Message-ID: <20100606022115.GA26686@hexapodia.org>
 MIME-Version: 1.0
-In-Reply-To: <alpine.LFD.2.00.1006060220400.2933@localhost.localdomain>
-References: <20100603193045.GA7188@elte.hu>
-	<20100603232302.GA16184@elte.hu>
-	<1275644619.27810.39462.camel@twins>
-	<201006050138.30859.rjw@sisk.pl>
-	<alpine.LFD.2.00.1006050148080.2933@localhost.localdomain>
-	<AANLkTikGDSzaENwg_0BAtsYf3ulGd_6sGPR30WsvUxMi@mail.gmail.com>
-	<alpine.LFD.2.00.1006050246350.2933@localhost.localdomain>
-	<AANLkTikU21xF49Z-_Lnrq7U7buNmqw_gyEEST8LuN24z@mail.gmail.com>
-	<alpine.LFD.2.00.1006051736040.2933@localhost.localdomain>
-	<AANLkTinD39rI47innPbGz1Gi8PsXV5HqkmaQuJ70oQ63@mail.gmail.com>
-	<alpine.LFD.2.00.1006052348200.2933@localhost.localdomain>
-	<AANLkTikmWDHYJ8wWF2cZapbkHHjV09R39I37yvQXFmor@mail.gmail.com>
-	<alpine.LFD.2.00.1006060220400.2933@localhost.localdomain>
-Date: Sat, 5 Jun 2010 18:45:58 -0700
-Message-ID: <AANLkTilxr9vsMmE7LLoOcTIlhXLctWolC2VAsVeoLgnW@mail.gmail.com>
-Subject: Re: suspend blockers & Android integration
-From: =?ISO-8859-1?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, Peter Zijlstra <peterz@infradead.org>,
-       Ingo Molnar <mingo@elte.hu>, tytso@mit.edu,
-       Brian Swetland <swetland@google.com>, Neil Brown <neilb@suse.de>,
-       Alan Stern <stern@rowland.harvard.edu>,
-       Felipe Balbi <felipe.balbi@nokia.com>,
-       LKML <linux-kernel@vger.kernel.org>,
-       Florian Mickler <florian@mickler.org>,
-       Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
-       Linux PM <linux-pm@lists.linux-foundation.org>,
-       Alan Cox <alan@lxorguk.ukuu.org.uk>,
-       James Bottomley <James.Bottomley@suse.de>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       Kevin Hilman <khilman@deeprootsystems.com>,
-       "H. Peter Anvin" <hpa@zytor.com>,
-       Arjan van de Ven <arjan@infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: multipart/mixed; boundary="a8Wt8u1KmwUX3Y2C"
+Content-Disposition: inline
+X-GPG-Fingerprint: 1914 0645 FD53 C18E EEEF C402 4A69 B1F3 68D2 A63F
+X-GPG-Key-URL: http://web.hexapodia.org/~adi/gpg.txt
+X-Domestic-Surveillance: money launder bomb tax evasion
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2010/6/5 Thomas Gleixner <tglx@linutronix.de>:
-> On Sat, 5 Jun 2010, Arve Hjønnevåg wrote:
->> 2010/6/5 Thomas Gleixner <tglx@linutronix.de>:
->> > On Sat, 5 Jun 2010, Arve Hjønnevåg wrote:
->> >> 2010/6/5 Thomas Gleixner <tglx@linutronix.de>:
->> >> > B1;2005;0cOn Fri, 4 Jun 2010, Arve Hjønnevåg wrote:
->> >> Cross app calls do not go through a central process.
->> >
->> > It's not about a central process, it goes through your framework,
->> > which should be able to deal with it. If not, it's a design failure
->> > which needs to be fixed at the place where the failure happened.
->> >
->> >> >>
->> >> >> How can it be fixed? The user presses the back button, the framework
->> >> >> determines that app A is in the foreground and send the key to app A,
->> >> >> app A decides that it it does not have anything internal to go back to
->> >> >> and tells the framework to switch back to the previous app. If the
->> >> >> user presses the back key again, the framework does not know which app
->> >> >> this key should go to until app A has finished processing the first
->> >> >> key press.
->> >> >
->> >> > Errm, what has this to do with frozen apps? If your system is
->> >> > handling input events then there are no frozen apps and even if they
->> >> > are frozen your framework can unfreeze them _before_ talking to them.
->> >> >
->> >> > So which unfixable problem are you describing with the above example ?
->> >> >
->> >>
->> >> You are claiming that trusted code should not have any dependencies on
->> >> untrusted code. I gave you a visible example of such a dependency and
->> >> want you to tell me how you can avoid this dependency. Since you are
->> >> claiming that our user-space framework is fundamentally broken if it
->> >> has to wait for untrusted code, I don't think it is unreasonable for
->> >> you to answer this. Or do you think it is valid to communicate with
->> >> untrusted code when the screen is on but not when it is off.
->> >
->> > It does not matter whether the screen is off or not. If you need to
->> > call into that untrusted app from your trusted app and you know about
->> > the might be frozen state then you can deal with it.
->> >
->> > So taking your example:
->> >
->> > Event happens and gets delivered to the framework
->> >
->> >      framework selects A because it is in the foreground
->> >
->> >      if (A is frozen)
->> >         unfreeze(A)
->> >
->> >      deliver_event_to(A)
->> >
->> > It's that simple.
->> >
->>
->> That is too simple. You also have to prevent A from being frozen while
->> it is processing the event or the result would be the same as if it
->> was frozen beforehand.
->
-> The framework decides when to freeze the app in the first place (as
-> your framework does now when it decides to suspend)
->
->     So it knows whether the app is frozen or not.
->
->     So it knows damend well whether it processed the event or not.
->
 
-Our user-space code is not single-threaded. So just because an app was
-not frozen when you checked does not mean it will remain unfrozen. We
-can use the same user-space wakelock api we have now to prevent
-freezing apps instead of preventing suspend, but we loose any
-advantage we get from freezing just a subset of processes this way.
+--a8Wt8u1KmwUX3Y2C
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 
--- 
-Arve Hjønnevåg
+My x201s (Core i7 L640 according to /proc/cpuinfo) running -rc1 exhibits
+cursor corruption when changing the cursor image (such as when moving
+out of xterm onto the desktop).  Bisection pointed to 9b8c4a0b215e and
+reverting that on top of 03cd373981 fixed the problem.  I'm running
+fvwm2 with xterm as my primary X client; the driver is
+
+xserver-xorg-video-intel             2:2.9.1-4
+
+The corruption generally goes away within a second or two, and seems to
+consist of the previous cursor image interleaved with the new cursor
+image on a row-by-row basis.  Some kind of cache flush issue?
+
+I've attached a JPG of a corrupted cursor.
+
+-andy
+
+--a8Wt8u1KmwUX3Y2C
+Content-Type: image/jpeg
+Content-Disposition: attachment; filename="IMG_0378.JPG"
+Content-Transfer-Encoding: base64
+
+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
+AAAAAAAAAAAAAAAAkAMAAFYBAAB2AQAAjAAAABoCAADKAAAApAAAAD4AAAD7DwAA+w8AAAEA
+AAABAAAAAwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAHUZAADcGgAAAAAAAP//AAAAAAAA
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAAAAAAaAAAADQAAAHcfg2NgAAIACQABAEAOsApkAGQAEgAAAAAAAAAAAAAA
+AAAAAAAAEgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+AAAAAAAAAAAgAAEAAAACAAIAAgACAAAAAAAAAAAAAAAAAAAAAAAAAIoAAQAAAAQACAAAAAAA
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAAAAAAAAKABAAAAABAACAABAAEAgALgAQAAAAAAAAAAAAAIAIABAAAAAAAA
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+CAAAAAAAAAAKAAAA//8AAAAAqbm/6RTQGHuo/iqqOR+nlwgAAAAAAAEAAAAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAKo3ACQBAACAvykA2wAAAEAO
+AABADgAABAABAAIABAAAAFI5OAACAAcABAAAADAxMDABEAMAAQAAAEAOAAACEAMAAQAAALAK
+AAAAAAAABgADAQMAAQAAAAYAAAAaAQUAAQAAAEoNAAAbAQUAAQAAAFINAAAoAQMAAQAAAAIA
+AAABAgQAAQAAAFoNAAACAgQAAQAAAJsEAAAAAAAAtAAAAAEAAAC0AAAAAQAAAP/Y/+AAEEpG
+SUYAAQEAAAEAAQAA/9sAQwAIBgYHBgUIBwcHCQkICgwUDQwLCwwZEhMPFB0aHx4dGhwcICQu
+JyAiLCMcHCg3KSwwMTQ0NB8nOT04MjwuMzQy/9sAQwEJCQkMCwwYDQ0YMiEcITIyMjIyMjIy
+MjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIy/8AAEQgAOQBAAwEi
+AAIRAQMRAf/EAB8AAAEFAQEBAQEBAAAAAAAAAAABAgMEBQYHCAkKC//EALUQAAIBAwMCBAMF
+BQQEAAABfQECAwAEEQUSITFBBhNRYQcicRQygZGhCCNCscEVUtHwJDNicoIJChYXGBkaJSYn
+KCkqNDU2Nzg5OkNERUZHSElKU1RVVldYWVpjZGVmZ2hpanN0dXZ3eHl6g4SFhoeIiYqSk5SV
+lpeYmZqio6Slpqeoqaqys7S1tre4ubrCw8TFxsfIycrS09TV1tfY2drh4uPk5ebn6Onq8fLz
+9PX29/j5+v/EAB8BAAMBAQEBAQEBAQEAAAAAAAABAgMEBQYHCAkKC//EALURAAIBAgQEAwQH
+BQQEAAECdwABAgMRBAUhMQYSQVEHYXETIjKBCBRCkaGxwQkjM1LwFWJy0QoWJDThJfEXGBka
+JicoKSo1Njc4OTpDREVGR0hJSlNUVVZXWFlaY2RlZmdoaWpzdHV2d3h5eoKDhIWGh4iJipKT
+lJWWl5iZmqKjpKWmp6ipqrKztLW2t7i5usLDxMXGx8jJytLT1NXW19jZ2uLj5OXm5+jp6vLz
+9PX29/j5+v/aAAwDAQACEQMRAD8A8JAo6CgZIzTlFUIUL3pCtdzZ/Dq7udFtdRa+s4vtMZeK
+J3+ZvYD1rmtV0PUdHdFv7WSAuMrvGMitvYTceZLQz9rG/LcySOaCM1IV6GmEYNZWLuN6UoB6
+0GjOKQwGacvXHTNJ2oHUGgD0n+1rHU/h1HFdXBi1fTCFs1jbBZe5p39v6/o+n2a67ape2V8p
+aOW4USShO+0npXK+GdYOlatDKRH5bHZIZF3AIeCa6DxlpM7a3ZGwMkum3YH2Dc+R2z16DNdV
+ObasjlnCKfqSTaR4S1eznvbHUV0vyUP+j3B3vI3rx0rgZIpPLLlTtzjODivbdC8KWOk6TNHr
+WhLe6mW3ANJxsx0B6fhXJeLfE2m3nhk6JY6J/Z4S6EmS+cEA5GPxq3HmjeRMJpS5Ynm+CD6U
+nepHBDUg9643udiG859qUUUvekBJGxDdM+1ew+BgPFHh9Ir+aI3GnXCC2ZyFMacZA/KvGwcG
+rdvc+WpG9hzngkVpTnysyqw5lY9c1bxtJofju/sZJFm07zQcrhjGx/iH+FQ+LPDdv4ktP7U0
++aM3e3duB4mHv6MewryZp83DOO59a6fw14wvNBbEEcdxDncsM/3Ub+8PQ1tCtZ26GH1flV1u
+crdQSwXEkMyNHIjbWVhgg1BWjq9/JqWq3N7KqJJO5dlToDWfWFS3N7p1RvbUOMUh9qSnCoLD
+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
+
+--a8Wt8u1KmwUX3Y2C--
