@@ -1,24 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757926Ab0FFOxn (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Jun 2010 10:53:43 -0400
-Received: from smtp.nokia.com ([192.100.122.233]:50206 "EHLO
-	mgw-mx06.nokia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934007Ab0FFOxg (ORCPT
+	id S934114Ab0FFOzg (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Jun 2010 10:55:36 -0400
+Received: from smtp.nokia.com ([192.100.105.134]:18237 "EHLO
+	mgw-mx09.nokia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757942Ab0FFOxn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Jun 2010 10:53:36 -0400
+	Sun, 6 Jun 2010 10:53:43 -0400
 From: Artem Bityutskiy <dedekind1@gmail.com>
 To: Al Viro <viro@ZenIV.linux.org.uk>
 Cc: Andrew Morton <akpm@linux-foundation.org>,
        LKML <linux-kernel@vger.kernel.org>, linux-fsdevel@vger.kernel.org,
-       Artem Bityutskiy <Artem.Bityutskiy@nokia.com>
-Subject: [PATCHv5 07/16] AFFS: fix race condition in marking SB dirty
-Date: Sun,  6 Jun 2010 17:50:20 +0300
-Message-Id: <1275835829-1478-8-git-send-email-dedekind1@gmail.com>
+       Artem Bityutskiy <Artem.Bityutskiy@nokia.com>,
+       Roman Zippel <zippel@linux-m68k.org>
+Subject: [PATCHv5 05/16] AFFS: clean up dirty flag usage
+Date: Sun,  6 Jun 2010 17:50:18 +0300
+Message-Id: <1275835829-1478-6-git-send-email-dedekind1@gmail.com>
 X-Mailer: git-send-email 1.7.0.1
 In-Reply-To: <1275835829-1478-1-git-send-email-dedekind1@gmail.com>
 References: <1275835829-1478-1-git-send-email-dedekind1@gmail.com>
-X-OriginalArrivalTime: 06 Jun 2010 14:53:22.0590 (UTC) FILETIME=[028123E0:01CB0588]
+X-OriginalArrivalTime: 06 Jun 2010 14:53:18.0778 (UTC) FILETIME=[003B79A0:01CB0588]
 X-Nokia-AV: Clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,51 +27,62 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Artem Bityutskiy <Artem.Bityutskiy@nokia.com>
 
-When synchronizing the superblock, AFFS first initiates the SB write
-(a) and then marks the superblock as clean (b). However, meanwhile
-(between (a) and (b)) someone else can modify the superblock and
-mark it as dirty. This would be a race condition, and the result
-would be that we'd end up with a modified superblock which would
-nevertheless be marked as clean (because of (b)). This means that
-'sync_supers()' would never call our '->write_super()', at least
-not until yet another SB change happens.
+In 'affs_write_super()': remove ancient and wrong commented code,
+remove unneeded 'clean' variable, so the function becomes a bit
+cleaner and simpler.
 
-This patch fixes this race condition by marking the superblock as
-clean before initiating the write operation.
+In 'affs_remount(): remove unnecessary SB dirty flag changes.
 
 Signed-off-by: Artem Bityutskiy <Artem.Bityutskiy@nokia.com>
+Cc: Roman Zippel <zippel@linux-m68k.org>
 ---
- fs/affs/super.c |    3 +--
- 1 files changed, 1 insertions(+), 2 deletions(-)
+ fs/affs/super.c |   23 +++++------------------
+ 1 files changed, 5 insertions(+), 18 deletions(-)
 
 diff --git a/fs/affs/super.c b/fs/affs/super.c
-index a1e0f10..e93a1e3 100644
+index e391eed..ea00518 100644
 --- a/fs/affs/super.c
 +++ b/fs/affs/super.c
-@@ -32,6 +32,7 @@ affs_commit_super(struct super_block *sb, int wait, int clean)
- 	struct buffer_head *bh = sbi->s_root_bh;
- 	struct affs_root_tail *tail = AFFS_ROOT_TAIL(sb, bh);
- 
-+	sb_mark_clean(sb);
- 	tail->bm_flag = cpu_to_be32(clean);
- 	secs_to_datestamp(get_seconds(), &tail->disk_change);
- 	affs_fix_checksum(sb, bh);
-@@ -66,7 +67,6 @@ affs_write_super(struct super_block *sb)
- 	lock_super(sb);
- 	if (!(sb->s_flags & MS_RDONLY))
- 		affs_commit_super(sb, 1, 2);
--	sb_mark_clean(sb);
- 	unlock_super(sb);
- 
- 	pr_debug("AFFS: write_super() at %lu, clean=2\n", get_seconds());
-@@ -77,7 +77,6 @@ affs_sync_fs(struct super_block *sb, int wait)
+@@ -61,24 +61,13 @@ affs_put_super(struct super_block *sb)
+ static void
+ affs_write_super(struct super_block *sb)
  {
+-	int clean = 2;
+-
  	lock_super(sb);
- 	affs_commit_super(sb, wait, 2);
--	sb_mark_clean(sb);
+-	if (!(sb->s_flags & MS_RDONLY)) {
+-		//	if (sbi->s_bitmap[i].bm_bh) {
+-		//		if (buffer_dirty(sbi->s_bitmap[i].bm_bh)) {
+-		//			clean = 0;
+-		affs_commit_super(sb, clean);
+-		/* redo until bitmap synced */
+-		if (clean)
+-			sb_mark_clean(sb);
+-		else
+-			sb_mark_dirty(sb);
+-	} else
+-		sb_mark_clean(sb);
++	if (!(sb->s_flags & MS_RDONLY))
++		affs_commit_super(sb, 2);
++	sb_mark_clean(sb);
  	unlock_super(sb);
- 	return 0;
+ 
+-	pr_debug("AFFS: write_super() at %lu, clean=%d\n", get_seconds(), clean);
++	pr_debug("AFFS: write_super() at %lu, clean=2\n", get_seconds());
  }
+ 
+ static int
+@@ -558,9 +547,7 @@ affs_remount(struct super_block *sb, int *flags, char *data)
+ 		return 0;
+ 	}
+ 	if (*flags & MS_RDONLY) {
+-		sb_mark_dirty(sb);
+-		while (sb_is_dirty(sb))
+-			affs_write_super(sb);
++		affs_write_super(sb);
+ 		affs_free_bitmap(sb);
+ 	} else
+ 		res = affs_init_bitmap(sb, flags);
 -- 
 1.7.0.1
 
