@@ -1,92 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752095Ab0FFWxa (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Jun 2010 18:53:30 -0400
-Received: from gabe.freedesktop.org ([131.252.210.177]:35505 "EHLO
-	gabe.freedesktop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751782Ab0FFWx3 (ORCPT
+	id S1752118Ab0FFXHY (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Jun 2010 19:07:24 -0400
+Received: from mail-ww0-f46.google.com ([74.125.82.46]:47556 "EHLO
+	mail-ww0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750762Ab0FFXHW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Jun 2010 18:53:29 -0400
-From: Eric Anholt <eric@anholt.net>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [git pull] drm-intel changes for 2.6.35-rc1
-In-Reply-To: <alpine.LFD.2.00.1006052048430.3515@i5.linux-foundation.org>
-References: <871vcqihj2.fsf@pollan.anholt.net> <alpine.LFD.2.00.1006050902160.3593@i5.linux-foundation.org> <alpine.LFD.2.00.1006052048430.3515@i5.linux-foundation.org>
-User-Agent: Notmuch/0.3.1-16-g417274d (http://notmuchmail.org) Emacs/23.2.1 (i486-pc-linux-gnu)
-Date: Sun, 06 Jun 2010 15:53:20 -0700
-Message-ID: <87fx0zg4db.fsf@pollan.anholt.net>
-MIME-Version: 1.0
-Content-Type: multipart/signed; boundary="=-=-=";
-	micalg=pgp-sha1; protocol="application/pgp-signature"
+	Sun, 6 Jun 2010 19:07:22 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=A9BzGQEpRuymB4qBpPpN28g3/3krZeFo4d0MMs4scERsrG9Kqz/udZFaeXeuTvquZE
+         UmsmYLh1kTPC/e+pnQDyhLL8oM3MuaQg94/PhRPC31ATST1W99nN5qHVAE1sRya9/o6a
+         J+9dKauJIPoeX9ZhDqEoKIh9Q2Auqeg+8IZ6U=
+From: Neil Munro <neilmunro@gmail.com>
+To: gregkh@suse.de, wfp5p@virginia.edu
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+       Niadh <neilmunro@gmail.com>
+Subject: [PATCH] Staging: RT2860 Fixed all errors in mlme.h and all but one in rtmp.h.
+Date: Mon,  7 Jun 2010 00:09:18 +0100
+Message-Id: <1275865758-7840-1-git-send-email-neilmunro@gmail.com>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---=-=-=
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: quoted-printable
+From: Niadh <neilmunro@gmail.com>
 
-On Sat, 5 Jun 2010 20:49:53 -0700 (PDT), Linus Torvalds <torvalds@linux-fou=
-ndation.org> wrote:
->=20
->=20
-> On Sat, 5 Jun 2010, Linus Torvalds wrote:
-> >=20
-> > Eric - I want to do an -rc2 later today, and the current intel graphics=
-=20
-> > code has the known problems with cursors not changing right. Can you se=
-nd=20
-> > me the patch/pull request so that we can get that particular regression=
-=20
-> > fixed before I release -rc2?
->=20
-> Oh well. I didn't hear back, so I just took the patch from the bugzilla=20
-> entry, since I see (saw) the problem myself, and refuse to do an -rc that=
-=20
-> has some bug that affects me and that I can verify personally.
->=20
-> It's commit e7b526bb85.
+I have fixed all errors in mlme.h and fixed all bar one in rtmp.h.
+I think I can fix rtmp.h too by moving a brace up two lines, I just dont know if it will work.
+If someone can confirm it will work I will change it.
 
-Sorry about that, I was offline yesterday, and had been intending to
-pull-request on Monday.  Here's 3 more changes I had queued:
-
-The following changes since commit aef4b9aaae1decc775778903922bd0075cce7a88:
-
-  Merge branch 'next' of git://git.kernel.org/pub/scm/linux/kernel/git/benh=
-/powerpc (2010-06-01 14:13:14 -0700)
-
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/anholt/drm-intel for-linus
-
-Adam Jackson (1):
-      drm/i915/gen4: Fix interrupt setup ordering
-
-Carl Worth (1):
-      Revert "drm/i915: Don't enable pipe/plane/VCO early (wait for DPMS on=
-)."
-
-Chris Wilson (1):
-      drm/i915: Move non-phys cursors into the GTT
-
-Dave M=C3=BCller (1):
-      drm/i915: Use RSEN instead of HTPLG for tfp410 monitor detection.
-
- drivers/gpu/drm/i915/dvo_tfp410.c    |    2 +-
- drivers/gpu/drm/i915/i915_irq.c      |   50 +++++++++++++++---------------=
+Signed-off-by: Neil Munro <neilmunro@gmail.com>
 ---
- drivers/gpu/drm/i915/intel_display.c |   14 +++++++++
- 3 files changed, 38 insertions(+), 28 deletions(-)
+ drivers/staging/rt2860/mlme.h |   21 ++++++++++-----------
+ drivers/staging/rt2860/rtmp.h |    4 ++--
+ 2 files changed, 12 insertions(+), 13 deletions(-)
 
---=-=-=
-Content-Type: application/pgp-signature
+diff --git a/drivers/staging/rt2860/mlme.h b/drivers/staging/rt2860/mlme.h
+index 99c9362..01414c3 100644
+--- a/drivers/staging/rt2860/mlme.h
++++ b/drivers/staging/rt2860/mlme.h
+@@ -31,7 +31,7 @@
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
+ 	Revision History:
+ 	Who			When			What
+-	--------	----------		----------------------------------------------
++	--------	----------		------------------------------
+ 	John Chang	2003-08-28		Created
+ 	John Chang  2004-09-06      modified for RT2600
 
-iEYEARECAAYFAkwMJuAACgkQHUdvYGzw6vcc3gCeNMtAOhjLcw7zQ2N5SHnYbSbX
-BkYAn015arI+bKtKHb04yxaYnd/q0iNo
-=g6LS
------END PGP SIGNATURE-----
---=-=-=--
+@@ -50,7 +50,7 @@
+ #define MLME_TASK_EXEC_INTV         100/*200*/	/* */
+ #define LEAD_TIME                   5
+ #define MLME_TASK_EXEC_MULTIPLE       10  /*5*/	/* MLME_TASK_EXEC_MULTIPLE * MLME_TASK_EXEC_INTV = 1 sec */
+-#define REORDER_EXEC_INTV         	100	/* 0.1 sec */
++#define REORDER_EXEC_INTV		100	/* 0.1 sec */
+
+ /* The definition of Radar detection duration region */
+ #define CE		0
+@@ -60,7 +60,7 @@
+ #define JAP_W56	4
+ #define MAX_RD_REGION 5
+
+-#define BEACON_LOST_TIME            4 * OS_HZ	/* 2048 msec = 2 sec */
++#define BEACON_LOST_TIME            (4 * OS_HZ)	/* 2048 msec = 2 sec */
+
+ #define DLS_TIMEOUT                 1200	/* unit: msec */
+ #define AUTH_TIMEOUT                300	/* unit: msec */
+@@ -119,8 +119,8 @@
+ #define MAC_ADDR_IS_GROUP(Addr)       (((Addr[0]) & 0x01))
+ #define MAC_ADDR_HASH(Addr)            (Addr[0] ^ Addr[1] ^ Addr[2] ^ Addr[3] ^ Addr[4] ^ Addr[5])
+ #define MAC_ADDR_HASH_INDEX(Addr)      (MAC_ADDR_HASH(Addr) % HASH_TABLE_SIZE)
+-#define TID_MAC_HASH(Addr,TID)            (TID^Addr[0] ^ Addr[1] ^ Addr[2] ^ Addr[3] ^ Addr[4] ^ Addr[5])
+-#define TID_MAC_HASH_INDEX(Addr,TID)      (TID_MAC_HASH(Addr,TID) % HASH_TABLE_SIZE)
++#define TID_MAC_HASH(Addr, TID)            (TID^Addr[0] ^ Addr[1] ^ Addr[2] ^ Addr[3] ^ Addr[4] ^ Addr[5])
++#define TID_MAC_HASH_INDEX(Addr, TID)      (TID_MAC_HASH(Addr, TID) % HASH_TABLE_SIZE)
+
+ /* LED Control */
+ /* assoiation ON. one LED ON. another blinking when TX, OFF when idle */
+@@ -145,7 +145,7 @@
+ #define CAP_IS_DSSS_OFDM(x)              (((x) & 0x2000) != 0)
+ #define CAP_IS_DELAY_BA(x)               (((x) & 0x4000) != 0)	/* 802.11e d9 */
+
+-#define CAP_GENERATE(ess,ibss,priv,s_pre,s_slot,spectrum)  (((ess) ? 0x0001 : 0x0000) | ((ibss) ? 0x0002 : 0x0000) | ((priv) ? 0x0010 : 0x0000) | ((s_pre) ? 0x0020 : 0x0000) | ((s_slot) ? 0x0400 : 0x0000) | ((spectrum) ? 0x0100 : 0x0000))
++#define CAP_GENERATE(ess, ibss, priv, s_pre, s_slot, spectrum)  (((ess) ? 0x0001 : 0x0000) | ((ibss) ? 0x0002 : 0x0000) | ((priv) ? 0x0010 : 0x0000) | ((s_pre) ? 0x0020 : 0x0000) | ((s_slot) ? 0x0400 : 0x0000) | ((spectrum) ? 0x0100 : 0x0000))
+
+ #define ERP_IS_NON_ERP_PRESENT(x)        (((x) & 0x01) != 0)	/* 802.11g */
+ #define ERP_IS_USE_PROTECTION(x)         (((x) & 0x02) != 0)	/* 802.11g */
+@@ -154,9 +154,9 @@
+ #define DRS_TX_QUALITY_WORST_BOUND       8	/* 3  // just test by gary */
+ #define DRS_PENALTY                      8
+
+-#define BA_NOTUSE 	2
++#define BA_NOTUSE	2
+ /*BA Policy subfiled value in ADDBA frame */
+-#define IMMED_BA 	1
++#define IMMED_BA	1
+ #define DELAY_BA	0
+
+ /* BA Initiator subfield in DELBA frame */
+@@ -176,8 +176,7 @@
+
+ /* reset all OneSecTx counters */
+ #define RESET_ONE_SEC_TX_CNT(__pEntry) \
+-if (((__pEntry)) != NULL) \
+-{ \
++if (((__pEntry)) != NULL) { \
+ 	(__pEntry)->OneSecTxRetryOkCount = 0; \
+ 	(__pEntry)->OneSecTxFailCount = 0; \
+ 	(__pEntry)->OneSecTxNoRetryOkCount = 0; \
+@@ -846,7 +845,7 @@ struct rt_mlme_queue {
+ 	struct rt_mlme_queue_elem Entry[MAX_LEN_OF_MLME_QUEUE];
+ };
+
+-typedef void(*STATE_MACHINE_FUNC) (void * Adaptor, struct rt_mlme_queue_elem *Elem);
++typedef void(*STATE_MACHINE_FUNC) (void *Adaptor, struct rt_mlme_queue_elem *Elem);
+
+ struct rt_state_machine {
+ 	unsigned long Base;
+diff --git a/drivers/staging/rt2860/rtmp.h b/drivers/staging/rt2860/rtmp.h
+index 82b6e78..282935c 100644
+--- a/drivers/staging/rt2860/rtmp.h
++++ b/drivers/staging/rt2860/rtmp.h
+@@ -2511,7 +2511,7 @@ void RTMPWriteTxWI(struct rt_rtmp_adapter *pAd, struct rt_txwi * pTxWI, IN BOOLE
+ 		   u8 TID,
+ 		   u8 TxRate,
+ 		   u8 Txopmode,
+-		   IN BOOLEAN CfAck, IN HTTRANSMIT_SETTING * pTransmit);
++		   IN BOOLEAN CfAck, IN HTTRANSMIT_SETTING *pTransmit);
+
+ void RTMPWriteTxWI_Data(struct rt_rtmp_adapter *pAd,
+ 			struct rt_txwi *pTxWI, struct rt_tx_blk *pTxBlk);
+@@ -3059,7 +3059,7 @@ BOOLEAN PeerBeaconAndProbeRspSanity(struct rt_rtmp_adapter *pAd,
+ 				    u16 *pBeaconPeriod,
+ 				    u8 *pChannel,
+ 				    u8 *pNewChannel,
+-				    OUT LARGE_INTEGER * pTimestamp,
++				    OUT LARGE_INTEGER *pTimestamp,
+ 				    struct rt_cf_parm *pCfParm,
+ 				    u16 *pAtimWin,
+ 				    u16 *pCapabilityInfo,
+--
+1.7.1
+
