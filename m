@@ -1,114 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755273Ab0FFKCQ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Jun 2010 06:02:16 -0400
-Received: from www.tglx.de ([62.245.132.106]:52634 "EHLO www.tglx.de"
+	id S1754825Ab0FFKNu (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Jun 2010 06:13:50 -0400
+Received: from mail.lang.hm ([64.81.33.126]:42204 "EHLO bifrost.lang.hm"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754186Ab0FFKCO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Jun 2010 06:02:14 -0400
-Date: Sun, 6 Jun 2010 12:01:29 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: =?ISO-8859-15?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>
-cc: "Rafael J. Wysocki" <rjw@sisk.pl>, Peter Zijlstra <peterz@infradead.org>,
-       Ingo Molnar <mingo@elte.hu>, tytso@mit.edu,
-       Brian Swetland <swetland@google.com>, Neil Brown <neilb@suse.de>,
-       Alan Stern <stern@rowland.harvard.edu>,
-       Felipe Balbi <felipe.balbi@nokia.com>,
-       LKML <linux-kernel@vger.kernel.org>,
+	id S1751140Ab0FFKNt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 6 Jun 2010 06:13:49 -0400
+Date: Sun, 6 Jun 2010 03:12:59 -0700 (PDT)
+From: david@lang.hm
+X-X-Sender: dlang@asgard.lang.hm
+To: Vitaly Wool <vitalywool@gmail.com>
+cc: Brian Swetland <swetland@google.com>,
+       =?ISO-8859-15?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>,
+       Arjan van de Ven <arjan@infradead.org>, tytso@mit.edu,
        Florian Mickler <florian@mickler.org>,
-       Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
-       Linux PM <linux-pm@lists.linux-foundation.org>,
-       Alan Cox <alan@lxorguk.ukuu.org.uk>,
+       Peter Zijlstra <peterz@infradead.org>, "H. Peter Anvin" <hpa@zytor.com>,
+       LKML <linux-kernel@vger.kernel.org>, Neil Brown <neilb@suse.de>,
        James Bottomley <James.Bottomley@suse.de>,
+       Alan Cox <alan@lxorguk.ukuu.org.uk>,
+       Linux PM <linux-pm@lists.linux-foundation.org>,
+       Ingo Molnar <mingo@elte.hu>,
+       Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
        Linus Torvalds <torvalds@linux-foundation.org>,
-       Kevin Hilman <khilman@deeprootsystems.com>,
-       "H. Peter Anvin" <hpa@zytor.com>,
-       Arjan van de Ven <arjan@infradead.org>
-Subject: Re: suspend blockers & Android integration
-In-Reply-To: <AANLkTilxr9vsMmE7LLoOcTIlhXLctWolC2VAsVeoLgnW@mail.gmail.com>
-Message-ID: <alpine.LFD.2.00.1006061144350.2933@localhost.localdomain>
-References: <20100603193045.GA7188@elte.hu> <20100603232302.GA16184@elte.hu> <1275644619.27810.39462.camel@twins> <201006050138.30859.rjw@sisk.pl> <alpine.LFD.2.00.1006050148080.2933@localhost.localdomain> <AANLkTikGDSzaENwg_0BAtsYf3ulGd_6sGPR30WsvUxMi@mail.gmail.com>
- <alpine.LFD.2.00.1006050246350.2933@localhost.localdomain> <AANLkTikU21xF49Z-_Lnrq7U7buNmqw_gyEEST8LuN24z@mail.gmail.com> <alpine.LFD.2.00.1006051736040.2933@localhost.localdomain> <AANLkTinD39rI47innPbGz1Gi8PsXV5HqkmaQuJ70oQ63@mail.gmail.com>
- <alpine.LFD.2.00.1006052348200.2933@localhost.localdomain> <AANLkTikmWDHYJ8wWF2cZapbkHHjV09R39I37yvQXFmor@mail.gmail.com> <alpine.LFD.2.00.1006060220400.2933@localhost.localdomain> <AANLkTilxr9vsMmE7LLoOcTIlhXLctWolC2VAsVeoLgnW@mail.gmail.com>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+       Thomas Gleixner <tglx@linutronix.de>,
+       Felipe Balbi <felipe.balbi@nokia.com>
+Subject: Re: [linux-pm] suspend blockers & Android integration
+In-Reply-To: <AANLkTin7oM3gVwHbIHWqYV8yeC6bbQ4q2jDDxAgz3DwQ@mail.gmail.com>
+Message-ID: <alpine.DEB.2.01.1006060305060.17462@asgard.lang.hm>
+References: <20100603193045.GA7188@elte.hu> <20100603231153.GA11302@elte.hu> <20100603232302.GA16184@elte.hu> <AANLkTikZP3bmckpfb_jUdG7qZO5W9DgpZ79ugtSZaEpt@mail.gmail.com> <20100604071354.GA14451@elte.hu> <AANLkTimH4ihf3QqtKFpfGXRKtO55PrUuff9JYtaEBG44@mail.gmail.com>
+ <20100604083423.GD15181@elte.hu> <AANLkTinQyzzeF-NOAjrAqqQXqKjFJhx85nI4uyBGRtWd@mail.gmail.com> <1275653210.27810.39762.camel@twins> <AANLkTinyjBa0KYfFz3_EFbC65hoQFwFINlTDYjCe-wM3@mail.gmail.com> <1275731653.27810.41078.camel@twins> <20100605092851.6ee15f13@infradead.org>
+ <AANLkTimEwznq9c_8lkuBMxEQ-42rdvpZEqA9Y71Cu-qC@mail.gmail.com> <AANLkTimKknOurmCffOpHjc1FjrP2MKf10pBwEEbLJPg_@mail.gmail.com> <AANLkTil1NCX91bWhpXHtC88Opr29mNjdhXD9RXQ6DI0y@mail.gmail.com> <AANLkTin1Za3GvfIKbcZdx6TzjIHzCvsg5uaY_Vk4nJIh@mail.gmail.com>
+ <AANLkTilQ1k78dDCYadOa1Wiyjm2nsBcRpxwdpGvYcf8z@mail.gmail.com> <AANLkTin7oM3gVwHbIHWqYV8yeC6bbQ4q2jDDxAgz3DwQ@mail.gmail.com>
+User-Agent: Alpine 2.01 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="8323328-1857924037-1275818491=:2933"
+Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
+On Sun, 6 Jun 2010, Vitaly Wool wrote:
 
---8323328-1857924037-1275818491=:2933
-Content-Type: TEXT/PLAIN; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+> On Sun, Jun 6, 2010 at 11:21 AM, Brian Swetland <swetland@google.com> wrote:
+>> In any case, I'm saying that suspending for minutes at a time
+>> (typical, 10s of minutes or more in some cases, hours in others), does
+>> happen and it does represent an improvement over suspending or
+>> otherwise entering your lowest power state for seconds at a time.
+>
+> That's for sure, if _all_ the other parameters *are* *equal*. This is
+> obviously not the case.
 
-On Sat, 5 Jun 2010, Arve Hjønnevåg wrote:
-> 2010/6/5 Thomas Gleixner <tglx@linutronix.de>:
-> > On Sat, 5 Jun 2010, Arve Hjønnevåg wrote:
-> >> That is too simple. You also have to prevent A from being frozen while
-> >> it is processing the event or the result would be the same as if it
-> >> was frozen beforehand.
-> >
-> > The framework decides when to freeze the app in the first place (as
-> > your framework does now when it decides to suspend)
-> >
-> >     So it knows whether the app is frozen or not.
-> >
-> >     So it knows damend well whether it processed the event or not.
-> >
-> 
-> Our user-space code is not single-threaded. So just because an app was
-> not frozen when you checked does not mean it will remain unfrozen. We
-> can use the same user-space wakelock api we have now to prevent
-> freezing apps instead of preventing suspend, but we loose any
-> advantage we get from freezing just a subset of processes this way.
+and while it will represent an improvement, is the cost worth the 
+relativly minor benifit that going from 10s of seconds of sleep to 10s of 
+minuites of sleep give you?
 
-Errm. That does not matter whether its single threaded or not. And
-right, you have to prevent that it gets frozen while you are calling
-into it.
+a system that wakes up every 10 seconds, but only wakes the portion of the 
+system needed for the wakeup can easily outlast one that wakes up far less 
+frequently, but when it's awake is fully awake.
 
-But that does not change the fact that you can do finer grained power
-control even in the case when suspend is impossible because a
-background application has work to finish and does that without
-requiring interaction with the frozen part.
+as an example (taken from this thread).
 
-That's what I pointed out in the first place and you just argue in
-circles why it is impossible to do so.
+system A needs to wake up to get a battery reading, store it and go 
+back to sleep, It does so every 10 seconds. But when it does so it only 
+runs the one process and then goes back to sleep.
 
-Let me recapitulate:
+system B has the same need, but wakes up every 10 minutes. but when it 
+does so it fully wakes up and this allows the mail app to power up the 
+radio, connect to the Internet and start checking for new mail before 
+oppurtunistic sleep shuts things down (causing the mail check to fail)
 
-   Full on state:	No difference because everything runs
-   Full suspend state:	No difference because everything is down
+System A will last considerably longer on a battery than System B.
 
-   Screen off, background work active:
-
-   	  Suspend blocker held by the active background work lets
-   	  other applications which are unrelated consume CPU cycles
-   	  and power.
-
-	  versus
-
-	  Frozen apps restrict the CPU cycles and power consumption to
-	  the background work (if there are no interactions with
-	  frozen tasks) and therefor save more power than the on/off
-	  approach.
-
-	  If your user space stack cannot be distangled that way, then
-	  it's a problem of your user space stack and not changing the
-	  fact, that a well designedd system allows you to do that.
-
-Any objections ?
-
-Thanks,
-
-	tglx
-
-
-
-
-
-
-
---8323328-1857924037-1275818491=:2933--
+David Lang
