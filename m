@@ -1,41 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752957Ab0FFHYX (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Jun 2010 03:24:23 -0400
-Received: from asmtpout017.mac.com ([17.148.16.92]:51232 "EHLO
-	asmtpout017.mac.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752590Ab0FFHYV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Jun 2010 03:24:21 -0400
-X-Greylist: delayed 3601 seconds by postgrey-1.27 at vger.kernel.org; Sun, 06 Jun 2010 03:24:21 EDT
-MIME-version: 1.0
-Content-transfer-encoding: 7BIT
-Content-type: text/plain; charset=ISO-8859-1
-X-Proofpoint-Spam-Details: rule=notspam policy=default score=1 spamscore=1
- ipscore=0 phishscore=0 bulkscore=0 adultscore=0 classifier=spam adjust=0
- reason=mlx engine=6.0.2-1004200000 definitions=main-1006050236
-X-Proofpoint-Virus-Version: vendor=fsecure
- engine=1.12.8161:2.4.5,1.2.40,4.0.166
- definitions=2010-06-06_01:2010-02-06,2010-06-06,2010-06-05 signatures=0
-X-Proofpoint-Spam-Details: rule=notspam policy=default score=9 spamscore=9
- ipscore=0 phishscore=18 bulkscore=0 adultscore=0 classifier=spam adjust=0
- reason=mlx engine=6.0.2-1004200000 definitions=main-1006050236
-X-Proofpoint-Virus-Version: vendor=fsecure
- engine=1.12.8161:2.4.5,1.2.40,4.0.166
- definitions=2010-06-06_01:2010-02-06,2010-06-06,2010-06-05 signatures=0
-Date: Sat, 05 Jun 2010 23:24:11 -0700
-From: Levy Marawa <llvy3@me.com>
-Message-id: <38611905061635974236965575036902935039-Webmail@me.com>
-Subject: Thank You
-X-Originating-IP: 41.213.41.170
-To: Undisclosed recipients:;
+	id S1753134Ab0FFH0w (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Jun 2010 03:26:52 -0400
+Received: from mga02.intel.com ([134.134.136.20]:49146 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752874Ab0FFH0v (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 6 Jun 2010 03:26:51 -0400
+Message-Id: <89khjo$fk2k1t@orsmga002.jf.intel.com>
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.53,371,1272870000"; 
+   d="scan'208";a="524374077"
+Date: Sun, 06 Jun 2010 08:26:46 +0100
+To: Andy Isaacson <adi@hexapodia.org>, linux-kernel@vger.kernel.org,
+       Eric Anholt <eric@anholt.net>, dri-devel@lists.sourceforge.net
+Subject: Re: [2.6.35-rc regression] i915: cursor corruption on Arrandale caused by 9b8c4a0b215e
+References: <20100606022115.GA26686@hexapodia.org>
+From: Chris Wilson <chris@chris-wilson.co.uk>
+In-Reply-To: <20100606022115.GA26686@hexapodia.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I work in the audit section of a bank where I discovered $14.5M left in an account by a demised client.The funds have never been applied for since the death of the client because they are lodged in an investment account.This is an opportunity to grab. Can we work together? I need you to get back to me.
+On Sat, 5 Jun 2010 19:21:15 -0700, Andy Isaacson <adi@hexapodia.org> wrote:
+> My x201s (Core i7 L640 according to /proc/cpuinfo) running -rc1 exhibits
+> cursor corruption when changing the cursor image (such as when moving
+> out of xterm onto the desktop).  Bisection pointed to 9b8c4a0b215e and
+> reverting that on top of 03cd373981 fixed the problem.  I'm running
+> fvwm2 with xterm as my primary X client; the driver is
+> 
+> xserver-xorg-video-intel             2:2.9.1-4
+> 
+> The corruption generally goes away within a second or two, and seems to
+> consist of the previous cursor image interleaved with the new cursor
+> image on a row-by-row basis.  Some kind of cache flush issue?
 
-Levy Marawa.
+Exactly; a missing move-to-GTT-domain causing the cursor data to remain in
+the CPU cache.
 
+https://bugs.freedesktop.org/show_bug.cgi?id=28335
 
-
+-- 
+Chris Wilson, Intel Open Source Technology Centre
