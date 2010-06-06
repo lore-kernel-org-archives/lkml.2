@@ -1,66 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934047Ab0FFQEb (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Jun 2010 12:04:31 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:1651 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932080Ab0FFQEa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Jun 2010 12:04:30 -0400
-Message-ID: <4C0BC709.5040307@redhat.com>
-Date: Sun, 06 Jun 2010 19:04:25 +0300
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-3.fc13 Thunderbird/3.0.4
+	id S1758101Ab0FFQIY (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Jun 2010 12:08:24 -0400
+Received: from e28smtp05.in.ibm.com ([122.248.162.5]:52491 "EHLO
+	e28smtp05.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756766Ab0FFQIW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 6 Jun 2010 12:08:22 -0400
+Message-ID: <4C0BC7F0.8030109@in.ibm.com>
+Date: Sun, 06 Jun 2010 21:38:16 +0530
+From: Sachin Sant <sachinp@in.ibm.com>
+User-Agent: Thunderbird 2.0.0.22 (X11/20090609)
 MIME-Version: 1.0
-To: Lai Jiangshan <laijs@cn.fujitsu.com>
-CC: Marcelo Tosatti <mtosatti@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-       kvm@vger.kernel.org
-Subject: Re: [PATCH] kvm: rework remove-write-access for a slot
-References: <4C061C16.9040208@cn.fujitsu.com> <4C063E01.7040206@redhat.com> <4C08B5D0.6090104@cn.fujitsu.com>
-In-Reply-To: <4C08B5D0.6090104@cn.fujitsu.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+To: linux-kernel <linux-kernel@vger.kernel.org>
+CC: linux-mm@kvack.org
+Subject: 2.6.35-rc2: GPF while executing libhugetlbfs tests on x86_64
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/04/2010 11:14 AM, Lai Jiangshan wrote:
->
->
->> - I thought of a different approach to write protection: write protect
->> the L4 sptes, on write fault add write permission to the L4 spte and
->> write protect the L3 sptes that it points to, etc.  This method can use
->> the slot bitmap to reduce the number of write faults.  However we can
->> reintroduce the slot bitmap if/when we use the method, this shouldn't
->> block the patch.
->>      
-> It is very a good approach and it is blazing fast.
->
-> I have no time to implement it currently,
-> could you update it into the TODO list?
->    
+While executing libhugetlbfs tests against 2.6.35-rc2 on
+a x86_64 box came across the following GPF
 
-Done.
+eneral protection fault: 0000 [#1] SMP
+last sysfs file: /sys/devices/system/cpu/cpu3/cache/index2/shared_cpu_map
+CPU 3
+Modules linked in: ipv6 mperf fuse loop dm_mod sr_mod cdrom usb_storage sg i2c_piix4 rtc_cmos bnx2 k8temp pcspkr serio_raw mptctl i2c_core rtc_core rtc_lib shpchp button pci_hotplug usbhid hid ohci_hcd ehci_hcd sd_mod crc_t10dif usbcore edd ext3 jbd fan thermal processor thermal_sys hwmon mptsas mptscsih mptbase scsi_transport_sas scsi_mod
 
->>> +static void rmapp_remove_write_access(struct kvm *kvm, unsigned long
->>> *rmapp)
->>> +{
->>> +    u64 *spte = rmap_next(kvm, rmapp, NULL);
->>> +
->>> +    while (spte) {
->>> +        /* avoid RMW */
->>> +        if (is_writable_pte(*spte))
->>> +            *spte&= ~PT_WRITABLE_MASK;
->>>        
->> Must use an atomic operation here to avoid losing dirty or accessed bit.
->>
->>      
-> Atomic operation is too expensive, I retained the comment "/* avoid RMW */"
-> and wait someone take a good approach for it.
->    
+Pid: 20232, comm: autotest Not tainted 2.6.35-rc2-autotest #1 Server Blade/BladeCenter LS21 -[79716AA]-
+RIP: 0010:[<ffffffff813968ca>]  [<ffffffff813968ca>] _raw_spin_lock+0x9/0x20
+RSP: 0018:ffff880126e43d88  EFLAGS: 00010202
+RAX: 0000000000010000 RBX: 0720072007200720 RCX: 0000000000000000
+RDX: 0000000000000011 RSI: ffff8801293a7470 RDI: 0720072007200720
+RBP: ffff880126e43d88 R08: ffff8801279df270 R09: 09f911029d74e35b
+R10: 09f911029d74e35b R11: dead000000100100 R12: ffff8801278cae00
+R13: 0720072007200710 R14: ffff8801297e71f8 R15: 0000000000000000
+FS:  00007f461d6866f0(0000) GS:ffff880006180000(0000) knlGS:0000000055731b00
+CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+CR2: 00007f461d45a7b8 CR3: 0000000001713000 CR4: 00000000000006e0
+DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+Process autotest (pid: 20232, threadinfo ffff880126e42000, task ffff8801297e4190)
+Stack:
+ ffff880126e43db8 ffffffff810f6b80 ffff8801297ae858 ffff8801297e7190
+<0> ffff8801297e7190 00007f461940e000 ffff880126e43e08 ffffffff810f025e
+<0> 00000000ffffffff 0000000000000000 ffff88000618d690 ffff88000618d690
+Call Trace:
+ [<ffffffff810f6b80>] unlink_anon_vmas+0x37/0xf2
+ [<ffffffff810f025e>] free_pgtables+0x5f/0xc9
+ [<ffffffff810f1ac1>] exit_mmap+0xe6/0x141
+ [<ffffffff81064a6d>] mmput+0x39/0xdb
+ [<ffffffff81068b4b>] exit_mm+0x119/0x126
+ [<ffffffff8106a3bb>] do_exit+0x225/0x721
+ [<ffffffff8106a928>] do_group_exit+0x71/0x9a
+ [<ffffffff8106a963>] sys_exit_group+0x12/0x16
+ [<ffffffff8102896b>] system_call_fastpath+0x16/0x1b
+Code: c2 c1 c0 10 39 c2 8d 90 00 00 01 00 75 04 f0 0f b1 17 0f 94 c2 0f b6 c2 85 c0 c9 0f 95 c0 0f b6 c0 c3 55 b8 00 00 01 00 48 89 e5 <f0> 0f c1 07 0f b7 d0 c1 e8 10 39 c2 74 07 f3 90 0f b7 17 eb f5
+RIP  [<ffffffff813968ca>] _raw_spin_lock+0x9/0x20
+ RSP <ffff880126e43d88>
+---[ end trace 844bcf9372ef8fa1 ]---
+Clocksource tsc unstable (delta = 4398037966381 ns)
+Fixing recursive fault but reboot is needed!
 
-You are right, it is an existing problem.  I just posted a patchset 
-which fixes the problem, when it's merged please rebase on top.
+Previous snapshot release (2.6.35-rc1-git5 6c5de280b6..) was good.
+I am using version 2.8 of libhugetlbfs tests from
+http://sourceforge.net/projects/libhugetlbfs/files/
+
+thanks
+-Sachin
+
 
 -- 
-error compiling committee.c: too many arguments to function
+
+---------------------------------
+Sachin Sant
+IBM Linux Technology Center
+India Systems and Technology Labs
+Bangalore, India
+---------------------------------
 
