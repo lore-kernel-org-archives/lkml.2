@@ -1,118 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756947Ab0FFOYv (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Jun 2010 10:24:51 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:48131 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756561Ab0FFOYt (ORCPT
+	id S1757930Ab0FFOZq (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Jun 2010 10:25:46 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:63142 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757858Ab0FFOZp convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Jun 2010 10:24:49 -0400
-Date: Sun, 6 Jun 2010 07:19:24 -0700 (PDT)
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Torsten Kaiser <just.for.lkml@googlemail.com>
-cc: Alex Deucher <alexdeucher@gmail.com>,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       Tejun Heo <tj@kernel.org>, Jeff Garzik <jgarzik@redhat.com>
-Subject: Re: Linux 2.6.35-rc2
-In-Reply-To: <AANLkTinpHAK3-qj26KSLLhMB5UUDT5I9aSkrxJeRRsSl@mail.gmail.com>
-Message-ID: <alpine.LFD.2.00.1006060710570.3515@i5.linux-foundation.org>
-References: <alpine.LFD.2.00.1006052050100.3515@i5.linux-foundation.org> <AANLkTinpHAK3-qj26KSLLhMB5UUDT5I9aSkrxJeRRsSl@mail.gmail.com>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	Sun, 6 Jun 2010 10:25:45 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=TFDoV+smT/8c2jLxTRxir/+GMHRxnvn7woEM6wd3T1SlWFDb6dB1avnFQfZVKShmY2
+         tm8oQf0rYfk2xK6GMvWVDMcfMmljKO/4Yx4/QoqqJaoiY6vpeqx3fiKfQ4xI9sqdr09a
+         Qb0/Jeasnk4jMdoOVraFvOXNEEqalweROcEWk=
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <201006061000.19503.maciej.rutecki@gmail.com>
+References: <AANLkTiliRFydAhxH2-Dp1RKuz6sq7vgWIcMvLMi68ftg@mail.gmail.com>
+	<201006061000.19503.maciej.rutecki@gmail.com>
+Date: Sun, 6 Jun 2010 09:25:43 -0500
+Message-ID: <AANLkTimegTM5Mslu4JJn18lc5cGkoN7z67m8WOtulbW5@mail.gmail.com>
+Subject: Re: wait_even_interruptible_timeout(), signal, spin_lock() = system 
+	hang
+From: Shirish Pargaonkar <shirishpargaonkar@gmail.com>
+To: maciej.rutecki@gmail.com
+Cc: linux-kernel@vger.kernel.org,
+       linux-fsdevel <linux-fsdevel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sun, Jun 6, 2010 at 3:00 AM, Maciej Rutecki <maciej.rutecki@gmail.com> wrote:
+> I created a Bugzilla entry at
+> https://bugzilla.kernel.org/show_bug.cgi?id=16139
+> for your bug report, please add your address to the CC list in there, thanks!
+>
+> On piątek, 28 maja 2010 o 18:44:46 Shirish Pargaonkar wrote:
+>> After this sequence of calls, system hangs (smp, x86 box based with
+>> .34 kernel), can ping only.
+>> I have not been able to break in with Alt Sysrq t, working on that
+>>
+>>         rc = wait_event_interruptible_timeout(ses->server->response_q,
+>>                         (midQ->midState != MID_REQUEST_SUBMITTED),
+>>  timeout); if (rc < 0) {
+>>                 cFYI(1, ("command 0x%x interrupted", midQ->command));
+>>                 return -1;
+>>         }
+>>
+>> and when function that invoking function after coming out with ERESTARTSYS
+>> (I kill the command with Ctrl C) calls
+>>  spin_lock(&GlobalMid_Lock);
+>>
+>> system hangs.  If I sleep before return -1 (e.g. msleep(1), no hang)
+>>
+>> I do not have to use wait_event_interruptible_timeout and no such problems
+>>  with wait_event_timeout, it is only when signal/interrupt is involved, I
+>>  run into this problem
+>>
+>> Any pointers/ideas what could be happening, would be really really
+>>  appreciated.
+>>
+>> Regards,
+>>
+>> Shirish
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>> Please read the FAQ at  http://www.tux.org/lkml/
+>>
+>
+> --
+> Maciej Rutecki
+> http://www.maciek.unixy.pl
+>
 
+Thanks. Shaggy told me what I think is happening should not be for
+following reasons.
 
-On Sun, 6 Jun 2010, Torsten Kaiser wrote:
-> 
-> The first problem that shows up is, that after the KMS switches to the
-> correct video mode (1280x1024 for an DVI attached LCD), the display
-> begins to flicker. Every 1..2 seconds (guesstimated) the display turns
-> off and on again. Something in the new powersaving?
+"The process doesn't receive the signal in the
+kernel unless it specifically checks for it, or it exits a system call.
+There shouldn't be a spinlock held in either situation.
+"
 
-Or maybe a borderline display timing that the display has trouble syncing 
-up with? 
+I will update the bug as well.
 
-> The second problem is more serious, an OOPS and after that the system
-> hangs. Ctrl+Alt+Del did not initiate a shutdown, although the magic
-> SysRq still party worked (A first SysRq+S worked, but SysRq+U or a
-> second SysRq+S after that did not. SysRq+B still rebooted)
+Regards,
 
-This one looks very much like ATA. Added Jeff and Tejun to the cc.
-
-Jeff, Tejun, anything ring a bell?
-
-		Linus
-
-> [   90.040053] general protection fault: 0000 [#1] SMP
-> [   90.045062] last sysfs file: /sys/devices/pci0000:00/0000:00:06.0/0000:05:06.0/resource
-> [   90.050007] CPU 0
-> [   90.050007] Modules linked in: sg
-> [   90.050007]
-> [   90.050007] Pid: 335, comm: kblockd/0 Not tainted 2.6.35-rc2 #1 KFN5-D SLI/KFN5-D SLI
-> [   90.050007] RIP: 0010:[<ffffffff8135aa64>]  [<ffffffff8135aa64>] ata_find_dev+0x24/0x90
-> [   90.050007] RSP: 0018:ffff88007ffdbda0  EFLAGS: 00010082
-> [   90.050007] RAX: 0720072007200720 RBX: ffff88007ffc7000 RCX: 0720072007202558
-> [   90.050007] RDX: ffff880007009e38 RSI: 0000000000000000 RDI: ffff880007008000
-> [   90.050007] RBP: ffff880006cef700 R08: 0000000000000001 R09: 0000000000000008
-> [   90.050007] R10: 0000000000000000 R11: ffff88000723edb0 R12: ffff88007f3a3800
-> [   90.050007] R13: ffff880007008000 R14: ffffffff81340f80 R15: ffff88007ffc7138
-> [   90.050007] FS:  00007f558bc58700(0000) GS:ffff880001c00000(0000) knlGS:0000000000000000
-> [   90.050007] CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-> [   90.050007] CR2: 00007fffa9653000 CR3: 0000000006429000 CR4: 00000000000006f0
-> [   90.050007] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-> [   90.050007] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-> [   90.050007] Process kblockd/0 (pid: 335, threadinfo ffff88007ffda000, task ffff88007ff8a7d0)
-> [   90.050007] Stack:
-> [   90.050007]  ffffffff8135ab25 ffffffff8135e7cb ffff880006cef700 ffff88007f3a3800
-> [   90.050007] <0> ffff88000723ecd0 0000000000000287 ffff88007ffc7048 ffffffff81341c49
-> [   90.050007] <0> ffff88000723ecd0 ffff88007ffc7000 ffff880007290000 ffff88000723ecd0
-> [   90.050007] Call Trace:
-> [   90.050007]  [<ffffffff8135ab25>] ? ata_scsi_find_dev+0x5/0x30
-> [   90.050007]  [<ffffffff8135e7cb>] ? ata_scsi_queuecmd+0x4b/0x2c0
-> [   90.050007]  [<ffffffff81341c49>] ? scsi_dispatch_cmd+0xd9/0x210
-> [   90.050007]  [<ffffffff81348530>] ? scsi_request_fn+0x300/0x3e0
-> [   90.050007]  [<ffffffff811e31e0>] ? blk_unplug_work+0x0/0x20
-> [   90.050007]  [<ffffffff811e4624>] ? generic_unplug_device+0x24/0x30
-> [   90.050007]  [<ffffffff8104ca6b>] ? worker_thread+0xeb/0x180
-> [   90.050007]  [<ffffffff81050690>] ? autoremove_wake_function+0x0/0x30
-> [   90.050007]  [<ffffffff8104c980>] ? worker_thread+0x0/0x180
-> [   90.050007]  [<ffffffff810501fe>] ? kthread+0x8e/0xa0
-> [   90.050007]  [<ffffffff81003194>] ? kernel_thread_helper+0x4/0x10
-> [   90.050007]  [<ffffffff81050170>] ? kthread+0x0/0xa0
-> [   90.050007]  [<ffffffff81003190>] ? kernel_thread_helper+0x0/0x10
-> [   90.050007] Code: 1f 84 00 00 00 00 00 8b 87 00 29 00 00 85 c0 75
-> 46 48 8b 87 38 1e 00 00 48 8d 97 38 1e 00 00 48 8d 88 38 1e 00 00 48
-> 39 ca 74 4c <48> 3b 90 f8 28 00 00 74 43 ba 01 00 00 00 39 d6 7d 47 48
-> 63 f6
-> [   90.050007] RIP  [<ffffffff8135aa64>] ata_find_dev+0x24/0x90
-> [   90.050007]  RSP <ffff88007ffdbda0>
-> [   90.050007] ---[ end trace c14df2a6b8b3b357 ]---
-> 
-> 
-> (gdb) list *0xffffffff8135aa64
-> 0xffffffff8135aa64 is in ata_find_dev (include/linux/libata.h:1201).
-> 1196            return ap->nr_pmp_links != 0;
-> 1197    }
-> 1198
-> 1199    static inline int ata_is_host_link(const struct ata_link *link)
-> 1200    {
-> 1201            return link == &link->ap->link || link == link->ap->slave_link;
-> 1202    }
-> 1203    #else /* CONFIG_SATA_PMP */
-> 1204    static inline bool sata_pmp_supported(struct ata_port *ap)
-> 1205    {
-> 
-> CONFIG_SATA_PMP ist set to 'y', because my SiI 3132 should be PMP
-> capable. (But there are only two normal hdds attached to this
-> controller)
-> 
-> Please ask, if you need more information or have something to try for me.
-> 
-> Thanks
-> 
-> Torsten
-> 
+Shirish
