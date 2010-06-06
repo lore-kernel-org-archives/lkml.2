@@ -1,87 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756466Ab0FFRDf (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Jun 2010 13:03:35 -0400
-Received: from mail-gw0-f46.google.com ([74.125.83.46]:60782 "EHLO
-	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753873Ab0FFRDe convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Jun 2010 13:03:34 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=fADxxZfgYz5uSnl5f3wxSmn/71abNjhg7ESoq5RtIdF9XjJWfVW20/6X3jujzsBuaf
-         BxdQ4Y+3mDDCRg3RRYWp/NNJredBYDfXgQ/LUse2qYfyfWhyNADNXAd/jj9MI1JTla/X
-         SIAOJeTQfiDdiHvkywSMEBIYmF4dJIS7qIN6s=
-MIME-Version: 1.0
-In-Reply-To: <AANLkTil5TWYILcdp872as8S8LMqQWhPYWLt7cxs2lUm5@mail.gmail.com>
-References: <1275371058.7001.35.camel@balakrishnan-desktop>
-	<201006051919.17738.marek.vasut@gmail.com>
-	<AANLkTil5TWYILcdp872as8S8LMqQWhPYWLt7cxs2lUm5@mail.gmail.com>
-Date: Sun, 6 Jun 2010 20:03:32 +0300
-Message-ID: <AANLkTikMTZ8bl_B0kvowJmtKyRrPbF7Qds3YMeVCWw7E@mail.gmail.com>
-Subject: Re: pxa300 - DDRAM base value
-From: Mike Rapoport <mike.rapoport@gmail.com>
-To: Eric Miao <eric.y.miao@gmail.com>
-Cc: Marek Vasut <marek.vasut@gmail.com>, linux-arm-kernel@lists.infradead.org,
-       balakrishnan <balakrishnan@e-consystems.com>,
-       linux-kernel@vger.kernel.org, Maharajan <maharajan@e-consystems.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	id S1757973Ab0FFRIq (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Jun 2010 13:08:46 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:33737 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755837Ab0FFRIo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 6 Jun 2010 13:08:44 -0400
+Subject: Re: [linux-pm] suspend blockers & Android integration
+From: James Bottomley <James.Bottomley@suse.de>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, Florian Mickler <florian@mickler.org>,
+       Vitaly Wool <vitalywool@gmail.com>,
+       Brian Swetland <swetland@google.com>,
+       Arve =?ISO-8859-1?Q?Hj=F8nnev=E5g?= <arve@android.com>,
+       Arjan van de Ven <arjan@infradead.org>, tytso@mit.edu,
+       Peter Zijlstra <peterz@infradead.org>, "H. Peter Anvin" <hpa@zytor.com>,
+       LKML <linux-kernel@vger.kernel.org>, Neil Brown <neilb@suse.de>,
+       Linux PM <linux-pm@lists.linux-foundation.org>,
+       Ingo Molnar <mingo@elte.hu>,
+       Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       Felipe Balbi <felipe.balbi@nokia.com>
+In-Reply-To: <alpine.LFD.2.00.1006061725000.2933@localhost.localdomain>
+References: <1275834706.7227.545.camel@mulgrave.site>
+	 <alpine.LFD.2.00.1006061725000.2933@localhost.localdomain>
+Content-Type: text/plain; charset="UTF-8"
+Date: Sun, 06 Jun 2010 12:08:34 -0500
+Message-ID: <1275844114.7227.552.camel@mulgrave.site>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jun 6, 2010 at 11:17 AM, Eric Miao <eric.y.miao@gmail.com> wrote:
-> On Sun, Jun 6, 2010 at 1:19 AM, Marek Vasut <marek.vasut@gmail.com> wrote:
->> Dne Út 1. června 2010 07:44:18 balakrishnan napsal(a):
->>> I am working on pxa300 based development board and using Linux 2.6.34.
->>> This Linux kernel already has support for following boards
->>> 1. zylonite_pxa300
->>> 2. cm-x300
->>> 3. colibri-pxa300
->>> 4. littleton
->>>
->>> My doubt is that pxa300 based boards are using "0xa0000000"  as DDRAM
->>> base and PHYS_OFFSET is also defined in
->>> "arch/arm/mach-pxa/include/mach/memory.h" as 0xa0000000.
->>> But in our board  DDR is mapped in 0x80000000. Does it make any
->>> problem?. Because after mmu is turned ON, my board is hanging.
->>>
->>> "zreladdr-y   := 0x80008000" is defined in
->>> "arch/arm/mach-pxa/Makefile.boot" file .
->>> my machine_desc is as follows
->>> .phys_io        = 0x40000000,
->>> .io_pg_offst    = (io_p2v(0x40000000) >> 18) & 0xfffc,
->>> .boot_params    = 0x80000100,
->>>
->>
->> Try editing both arch/arm/mach-pxa/Makefile.boot and
->> arch/arm/mach/pxa/include/mach/memory.h
->>
->>> With Thanks
->>> J.Balakrishnan
->>
->> The 0x80000000 should be aliased to 0xa0000000, but looking into the PXA docs,
->> it is only on pxa320. Eric, any ideas on this ?
->>
->
-> Should be working on pxa300/310 as well. If it doesn't, check you bootloader
-> to make sure the mapping is OK, and memory doesn't exceed
-> (0xa000_0000 - 0x8000_0000).
+On Sun, 2010-06-06 at 17:46 +0200, Thomas Gleixner wrote:
+> On Sun, 6 Jun 2010, James Bottomley wrote:
+> >
+> >      3. We've lost sight of one of the original goals, which was to
+> >         bring the android tree close enough to the kernel so that the
+> >         android downstream driver and board producers don't have to
+> >         choose between the android kernel and vanilla kernel.
+> 
+> There are two ways to do that w/o creating a dependcy on anything.
+> 
+> 1) merge the drivers w/o the suspend_blockers. It's not rocket science
+>    to have a patch which brings them back for android.
 
-works on CM-X300 with both pxa300 and pxa310
+Well, we sort of tried this when Greg pulled some of them into the
+staging tree.  The problem is that without the annotations, the drivers
+are still different, and patches won't apply, so, unsurprisingly, they
+didn't get improved or even maintained.
 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
->
+> 2) merge the drivers with empty stub implementations for annotation.
+>    android just has to patch in the real one.
+
+That's also possible.  This time, we would have a cosmetically closer
+tree ... however, what's in the kernel wouldn't be compilable for
+android ... which is where all the downstream wants to test, so they'd
+still be building for the android tree ... we just might have an easier
+time of it picking up their fixes.
+
+> While I'd prefer #1, I' not in the way of #2.
+
+I think 1 is unviable ... I'm not opposed to 2 but I'd like to try to
+get the kernel really closer to android before we go for the cosmetic
+only option.
+
+> Both ways can get the drivers into the kernel and it could/should have
+> been done right from the beginning, but now we face a situation where
+> drivers are held hostage.
+> 
+> Then we can sit down more relaxed and fix the stuff in a way which
+> makes both sides happy. If we manage to replace them, we can deprecate
+> the stub implementation and remove it after a grace period. If we
+> rename them it's not an issue either. We can rename them right away to
+> a qos interface, but that does not really make a difference.
+> 
+> What we really want to avoid is implementing an user space contract in
+> a frenzy which binds us forever.
+
+Well, that's why the QoS proposal ... it already has a userspace API ...
+we'd just be extending it for statistics, which looks like a wothwhile
+goal independent of android anyway.
+
+> It's not the suspend_blockers which are the causing the nightmare,
+> it's solely the drivers itself especially when there are different
+> implementations in both trees. And frankly, the drivers in android are
+> not in a shape which makes them flood in within 2 weeks. That's
+> serious work to get them brushed up and polished. So that gives us
+> quite a period of time to solve the suspend problem.
+
+Right, so the sooner we make it easier for the drivers to use the kernel
+as their main repository, the better.
+
+James
 
 
-
--- 
-	Sincerely Yours,
-		Mike.
