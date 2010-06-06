@@ -1,118 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758150Ab0FFSFR (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Jun 2010 14:05:17 -0400
-Received: from www.tglx.de ([62.245.132.106]:41546 "EHLO www.tglx.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756740Ab0FFSFH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Jun 2010 14:05:07 -0400
-Date: Sun, 6 Jun 2010 20:04:17 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: James Bottomley <James.Bottomley@suse.de>
-cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, Florian Mickler <florian@mickler.org>,
-       Vitaly Wool <vitalywool@gmail.com>,
-       Brian Swetland <swetland@google.com>,
-       =?ISO-8859-15?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>,
-       Arjan van de Ven <arjan@infradead.org>, tytso@mit.edu,
-       Peter Zijlstra <peterz@infradead.org>, "H. Peter Anvin" <hpa@zytor.com>,
-       LKML <linux-kernel@vger.kernel.org>, Neil Brown <neilb@suse.de>,
-       Linux PM <linux-pm@lists.linux-foundation.org>,
-       Ingo Molnar <mingo@elte.hu>,
-       Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
+	id S1755592Ab0FFSQN (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Jun 2010 14:16:13 -0400
+Received: from pfepb.post.tele.dk ([195.41.46.236]:37586 "EHLO
+	pfepb.post.tele.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751680Ab0FFSQM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 6 Jun 2010 14:16:12 -0400
+Date: Sun, 6 Jun 2010 20:16:07 +0200
+From: Sam Ravnborg <sam@ravnborg.org>
+To: Nicolas Palix <npalix@diku.dk>
+Cc: Randy Dunlap <rdunlap@xenotime.net>, Roland Dreier <rdreier@cisco.com>,
+       Joe Perches <joe@perches.com>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       "David S. Miller" <davem@davemloft.net>, Michal Marek <mmarek@suse.cz>,
+       Julia Lawall <julia@diku.dk>, Gilles Muller <Gilles.Muller@lip6.fr>,
+       linux-kernel@vger.kernel.org, linux-kbuild@vger.kernel.org,
+       cocci@diku.dk, Wolfram Sang <w.sang@pengutronix.de>,
+       Kernel Janitors <kernel-janitors@vger.kernel.org>,
+       Am?rico Wang <xiyou.wangcong@gmail.com>,
+       Andy Isaacson <adi@hexapodia.org>,
        Linus Torvalds <torvalds@linux-foundation.org>,
-       Felipe Balbi <felipe.balbi@nokia.com>
-Subject: Re: [linux-pm] suspend blockers & Android integration
-In-Reply-To: <1275844114.7227.552.camel@mulgrave.site>
-Message-ID: <alpine.LFD.2.00.1006061932240.2933@localhost.localdomain>
-References: <1275834706.7227.545.camel@mulgrave.site>  <alpine.LFD.2.00.1006061725000.2933@localhost.localdomain> <1275844114.7227.552.camel@mulgrave.site>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+       Pekka Enberg <penberg@cs.helsinki.fi>, walter harms <wharms@bfs.de>,
+       Joerg Roedel <joro@8bytes.org>, Jan Engelhardt <jengelh@medozas.de>
+Subject: Re: [PATCH 1/7] Add a target to use the Coccinelle checker
+Message-ID: <20100606181607.GA15535@merkur.ravnborg.org>
+References: <1275837307-4283-1-git-send-email-npalix@diku.dk> <1275837307-4283-2-git-send-email-npalix@diku.dk>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1275837307-4283-2-git-send-email-npalix@diku.dk>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-James,
-
-On Sun, 6 Jun 2010, James Bottomley wrote:
-
-> On Sun, 2010-06-06 at 17:46 +0200, Thomas Gleixner wrote:
-> > On Sun, 6 Jun 2010, James Bottomley wrote:
-> > >
-> > >      3. We've lost sight of one of the original goals, which was to
-> > >         bring the android tree close enough to the kernel so that the
-> > >         android downstream driver and board producers don't have to
-> > >         choose between the android kernel and vanilla kernel.
-> > 
-> > There are two ways to do that w/o creating a dependcy on anything.
-> > 
-> > 1) merge the drivers w/o the suspend_blockers. It's not rocket science
-> >    to have a patch which brings them back for android.
+On Sun, Jun 06, 2010 at 05:15:01PM +0200, Nicolas Palix wrote:
+> A 'coccicheck' target is added. It can be called with four different
+> modes. Each one generates a different kind of output, i.e. context,
+> patch, org, report, according to the corresponding mode to be
+> activated.
 > 
-> Well, we sort of tried this when Greg pulled some of them into the
-> staging tree.  The problem is that without the annotations, the drivers
-> are still different, and patches won't apply, so, unsurprisingly, they
-> didn't get improved or even maintained.
+> The new target calls the 'coccicheck' front-end in the 'scripts'
+> directory with the MODE argument. Every SmPL file in the
+> subdirectories of 'scripts/coccinelle' is then given to the front-end
+> and applied to the entire source tree.
 > 
-> > 2) merge the drivers with empty stub implementations for annotation.
-> >    android just has to patch in the real one.
+> The four modes behave as follows:
 > 
-> That's also possible.  This time, we would have a cosmetically closer
-> tree ... however, what's in the kernel wouldn't be compilable for
-> android ... which is where all the downstream wants to test, so they'd
-> still be building for the android tree ... we just might have an easier
-> time of it picking up their fixes.
-
-The downstream users will be bound to the android tree anyway until
-the full set of drivers for a given platform is completely merged. So
-optimistically that would be 2.6.36, which gives us a couple of
-months to sort out the whole thing.
-
-Once a driver is merged mainline and the android tree switched over to
-use the mainline version, fixes can be sent both ways and that's not a
-real problem.
-
-> > While I'd prefer #1, I' not in the way of #2.
+> 'report' generates a list in the following format:
+>   file:line:column-column: message
 > 
-> I think 1 is unviable ... I'm not opposed to 2 but I'd like to try to
-> get the kernel really closer to android before we go for the cosmetic
-> only option.
+> 'patch' proposes a fix, when possible.
 > 
-> > Both ways can get the drivers into the kernel and it could/should have
-> > been done right from the beginning, but now we face a situation where
-> > drivers are held hostage.
-> > 
-> > Then we can sit down more relaxed and fix the stuff in a way which
-> > makes both sides happy. If we manage to replace them, we can deprecate
-> > the stub implementation and remove it after a grace period. If we
-> > rename them it's not an issue either. We can rename them right away to
-> > a qos interface, but that does not really make a difference.
-> > 
-> > What we really want to avoid is implementing an user space contract in
-> > a frenzy which binds us forever.
+> 'context' highlights lines of interest and their context in a
+> diff-like style. Lines of interest are indicated with '-'.
 > 
-> Well, that's why the QoS proposal ... it already has a userspace API ...
-> we'd just be extending it for statistics, which looks like a wothwhile
-> goal independent of android anyway.
-
-Right, but there is no dependency for the driver merge on that.
- 
-> > It's not the suspend_blockers which are the causing the nightmare,
-> > it's solely the drivers itself especially when there are different
-> > implementations in both trees. And frankly, the drivers in android are
-> > not in a shape which makes them flood in within 2 weeks. That's
-> > serious work to get them brushed up and polished. So that gives us
-> > quite a period of time to solve the suspend problem.
+> 'org' generates a report in the Org mode format of Emacs.
 > 
-> Right, so the sooner we make it easier for the drivers to use the kernel
-> as their main repository, the better.
+> Signed-off-by: Nicolas Palix <npalix@diku.dk>
+> Signed-off-by: Julia Lawall <julia@diku.dk>
 
-Yep, the fastest way is to provide two stub inlines in pm.h and let
-the driver flood come in.
+Hi Nicolas.
 
-I think all of us involved in that can do with a break, where we sit
-back, calm down and rethink w/o time pressure.
+This is almost what I had in mind - thanks.
 
-Thanks,
+Most importantly it no longer add all the stuff
+to the top-level Makefile but defer this to a script.
 
-	tglx
+If/when we decide to move all the checkers to scripts/*
+we can do the last adjustments.
+
+Acked-by: Sam Ravnborg <sam@ravnborg.org>
+
+	Sam
