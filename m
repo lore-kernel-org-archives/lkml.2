@@ -1,59 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755194Ab0FFVy4 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Jun 2010 17:54:56 -0400
-Received: from zinan.dashjr.org ([173.242.112.54]:52030 "EHLO zinan.dashjr.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754036Ab0FFVyy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Jun 2010 17:54:54 -0400
-From: "Luke-Jr" <luke@dashjr.org>
-To: tomi.valkeinen@nokia.com, slapin@ossfans.org
-Subject: OMAP video compile error; regression from 2.6.33-rc4 onward (including current master)
-Date: Sun, 6 Jun 2010 16:52:25 -0500
-User-Agent: KMail/1.12.4 (Linux/2.6.32-gentoo; KDE/4.3.5; x86_64; ; )
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       linux-omap@vger.kernel.org
-X-PGP-Key-Fingerprint: CE5A D56A 36CC 69FA E7D2 3558 665F C11D D53E 9583
-X-PGP-Key-ID: 665FC11DD53E9583
-X-PGP-Keyserver: x-hkp://subkeys.pgp.bet
+	id S1755446Ab0FFVzf (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Jun 2010 17:55:35 -0400
+Received: from mail-ew0-f223.google.com ([209.85.219.223]:60698 "EHLO
+	mail-ew0-f223.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754587Ab0FFVze convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 6 Jun 2010 17:55:34 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=Rb+KuZIvxyUr+cm512BFdYTxrYNcV3vssAt8SX3+oYpkhw6Fb7A+narVmx7AaJvzJp
+         2BX8McxrGqMPqzo1qDu2FPSbnMO0VQWVyvvJ08uMnHc7CHZxlYYgPEJ6VqXaQsfdC2WX
+         HfIdGBa9i2nSD5OVDSnO2Bi3nAbWOSd5FHrvo=
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201006061652.39248.luke@dashjr.org>
+In-Reply-To: <201006062104.55869.rjw@sisk.pl>
+References: <9rpccea67yy402c975fqru8r.1275576653521@email.android.com>
+	<201006061557.20482.rjw@sisk.pl>
+	<1275839650.5331.2.camel@maxim-laptop>
+	<201006062104.55869.rjw@sisk.pl>
+Date: Sun, 6 Jun 2010 22:55:32 +0100
+Message-ID: <AANLkTim9CNFMMVQaghrzK3JnQlGmTewgarT01HP6cEtd@mail.gmail.com>
+Subject: Re: [linux-pm] [SUSPECTED SPAM] Re: Proposal for a new algorithm for 
+	reading & writing a hibernation image.
+From: Pedro Ribeiro <pedrib@gmail.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Maxim Levitsky <maximlevitsky@gmail.com>,
+       Nigel Cunningham <ncunningham@crca.org.au>,
+       pm list <linux-pm@lists.linux-foundation.org>,
+       LKML <linux-kernel@vger.kernel.org>,
+       TuxOnIce-devel <tuxonice-devel@tuxonice.net>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This doesn't even build, so I don't know how it was tested... Reverting the 
-offending commit (simple, but does require conflict resolution) at least lets 
-it compile, but I haven't tested whether it alone is enough to work in 
-practise yet... hoping Tomi might provide a real fix. Maybe even in time for 
-2.6.35 final? :)
+On 6 June 2010 20:04, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> On Sunday 06 June 2010, Maxim Levitsky wrote:
+>> On Sun, 2010-06-06 at 15:57 +0200, Rafael J. Wysocki wrote:
+>> > On Sunday 06 June 2010, Maxim Levitsky wrote:
+> ...
+>> > So how TuxOnIce helps here?
+>> Very simple.
+>>
+>> With swsusp, I can save 750MB (memory) + 250 Vram (vram)
+>> With full memory save I can save (1750 MB of memory) + 250 MB of
+>> vram....
+>
 
-https://bugzilla.kernel.org/show_bug.cgi?id=16144
+I am completely unaware of the technical difficulties of saving the
+whole memory vs 80% of it, but from my experience with TuxOnIce I
+fully agree with Nigel on saving the whole memory.
 
-CC      drivers/video/omap/rfbi.o                                               
-drivers/video/omap/rfbi.c: In function 'rfbi_get_clocks':                       
-drivers/video/omap/rfbi.c:86: error: 'dispc' undeclared (first use in this
-function)
-drivers/video/omap/rfbi.c:86: error: (Each undeclared identifier is reported
-only once
-drivers/video/omap/rfbi.c:86: error: for each function it appears in.)          
-make[1]: *** [drivers/video/omap/rfbi.o] Error 1                                
-make: *** [drivers/video/omap/rfbi.o] Error 2                                   
+The fact is that the whole system is much more responsive than when
+using swsusp. No doubt about that, I can tell you that TuxOnIce really
+changed the way I use my computer. I only used swsusp when I really
+needed because of the lagginess starting up, and TuxOnIce changed it.
 
-The 'dispc' referred to herein is and has always been defined in
-drivers/video/omap/dispc.c as an anonymous struct.
+I have a laptop computer which I have to shutdown every night and open
+every morning. It has 4GB of ram and I usually have 3.5 to 3.8 in use
+all the time. With TuxOnIce I can restart my work every morning in
+under 25 seconds, exactly where I left it, without any delays or
+lagginess.
 
-Broken in...
-commit f778a12dd33200513596a0d4d3ba4d5f09e79c09
-Author: Tomi Valkeinen <tomi.valkeinen@nokia.com>
-Date:   Wed Dec 16 13:18:07 2009 +0200
+Its kind of hard to express in words, but really, this gave me a
+completely different view of how to use a computer. Of course you can
+compare it to S2R, but this consumes energy, no matter how little -
+this has an environmental and financial cost which will only increase
+in the future.
 
-    OMAP: OMAPFB: fix clk_get for RFBI
+> So what about being able to save 1600 MB total instead of the 2 GB
+> (which is what we're talking about in case that's not clear)?  Would it
+> be _that_ _much_ worse?
 
-    omapfb platform device was still used to get clocks inside rfbi.c
+No it wouldn't be much worse. But there will still be some lagginess,
+some delay, some sort of annoying disk activity compared to NO delay,
+NO lagginess, in short, you have your computer _exactly_ the way you
+left it when you left it when you hibernated. And the difference is
+noticeable.
 
-    Signed-off-by: Tomi Valkeinen <tomi.valkeinen@nokia.com>
-    Tested-by: Sergey Lapin <slapin@ossfans.org>
+>
+> Rafael
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+>
+
+
+Sorry to jump in the thread, but I just wanted to give my end user perspective.
+
+Regards,
+Pedro
