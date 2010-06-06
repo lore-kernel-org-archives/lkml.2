@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933183Ab0FFOxb (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Jun 2010 10:53:31 -0400
-Received: from smtp.nokia.com ([192.100.122.233]:50183 "EHLO
+	id S934022Ab0FFOxg (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Jun 2010 10:53:36 -0400
+Received: from smtp.nokia.com ([192.100.122.233]:50200 "EHLO
 	mgw-mx06.nokia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757944Ab0FFOxY (ORCPT
+	with ESMTP id S1757857Ab0FFOxc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Jun 2010 10:53:24 -0400
+	Sun, 6 Jun 2010 10:53:32 -0400
 From: Artem Bityutskiy <dedekind1@gmail.com>
 To: Al Viro <viro@ZenIV.linux.org.uk>
 Cc: Andrew Morton <akpm@linux-foundation.org>,
        LKML <linux-kernel@vger.kernel.org>, linux-fsdevel@vger.kernel.org,
        Artem Bityutskiy <Artem.Bityutskiy@nokia.com>
-Subject: [PATCHv5 02/16] VFS: rename s_dirt to s_dirty
-Date: Sun,  6 Jun 2010 17:50:15 +0300
-Message-Id: <1275835829-1478-3-git-send-email-dedekind1@gmail.com>
+Subject: [PATCHv5 06/16] AFFS: wait for sb synchronization when needed
+Date: Sun,  6 Jun 2010 17:50:19 +0300
+Message-Id: <1275835829-1478-7-git-send-email-dedekind1@gmail.com>
 X-Mailer: git-send-email 1.7.0.1
 In-Reply-To: <1275835829-1478-1-git-send-email-dedekind1@gmail.com>
 References: <1275835829-1478-1-git-send-email-dedekind1@gmail.com>
-X-OriginalArrivalTime: 06 Jun 2010 14:53:12.0599 (UTC) FILETIME=[FC8CA270:01CB0587]
+X-OriginalArrivalTime: 06 Jun 2010 14:53:20.0521 (UTC) FILETIME=[01456F90:01CB0588]
 X-Nokia-AV: Clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,46 +26,71 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Artem Bityutskiy <Artem.Bityutskiy@nokia.com>
 
-... in order to make sure no one accesses the "s_dirt" flag
-direclty - this should help to identify build errors earlier.
+AFFS does not ever wait for superblock synchronization in
+->put_super(), ->write_super, and ->sync_fs().
+
+However, it should wait for synchronization in ->put_super() because
+it is about to be unmounted, in ->write_super() because this is
+periodic SB synchronization berformed from a separate kernel thread,
+and in ->sync_fs() it should respect the 'wait' flag. This patch fixes
+this.
 
 Signed-off-by: Artem Bityutskiy <Artem.Bityutskiy@nokia.com>
 ---
- include/linux/fs.h |    8 ++++----
- 1 files changed, 4 insertions(+), 4 deletions(-)
+ fs/affs/super.c |   12 +++++++-----
+ 1 files changed, 7 insertions(+), 5 deletions(-)
 
-diff --git a/include/linux/fs.h b/include/linux/fs.h
-index 68ca1b0..1688464 100644
---- a/include/linux/fs.h
-+++ b/include/linux/fs.h
-@@ -1319,7 +1319,7 @@ extern spinlock_t sb_lock;
- struct super_block {
- 	struct list_head	s_list;		/* Keep this first */
- 	dev_t			s_dev;		/* search index; _not_ kdev_t */
--	unsigned char		s_dirt;
-+	unsigned char		s_dirty;
- 	unsigned char		s_blocksize_bits;
- 	unsigned long		s_blocksize;
- 	loff_t			s_maxbytes;	/* Max file size */
-@@ -1785,15 +1785,15 @@ extern void simple_set_mnt(struct vfsmount *mnt, struct super_block *sb);
+diff --git a/fs/affs/super.c b/fs/affs/super.c
+index ea00518..a1e0f10 100644
+--- a/fs/affs/super.c
++++ b/fs/affs/super.c
+@@ -26,7 +26,7 @@ static int affs_statfs(struct dentry *dentry, struct kstatfs *buf);
+ static int affs_remount (struct super_block *sb, int *flags, char *data);
  
- static inline void sb_mark_dirty(struct super_block *sb)
+ static void
+-affs_commit_super(struct super_block *sb, int clean)
++affs_commit_super(struct super_block *sb, int wait, int clean)
  {
--	sb->s_dirt = 1;
-+	sb->s_dirty = 1;
- }
- static inline void sb_mark_clean(struct super_block *sb)
- {
--	sb->s_dirt = 0;
-+	sb->s_dirty = 0;
- }
- static inline int sb_is_dirty(struct super_block *sb)
- {
--	return sb->s_dirt;
-+	return sb->s_dirty;
+ 	struct affs_sb_info *sbi = AFFS_SB(sb);
+ 	struct buffer_head *bh = sbi->s_root_bh;
+@@ -36,6 +36,8 @@ affs_commit_super(struct super_block *sb, int clean)
+ 	secs_to_datestamp(get_seconds(), &tail->disk_change);
+ 	affs_fix_checksum(sb, bh);
+ 	mark_buffer_dirty(bh);
++	if (wait)
++		sync_dirty_buffer(bh);
  }
  
- /* Alas, no aliases. Too much hassle with bringing module.h everywhere */
+ static void
+@@ -46,8 +48,8 @@ affs_put_super(struct super_block *sb)
+ 
+ 	lock_kernel();
+ 
+-	if (!(sb->s_flags & MS_RDONLY))
+-		affs_commit_super(sb, 1);
++	if (!(sb->s_flags & MS_RDONLY) && sb_is_dirty(sb))
++		affs_commit_super(sb, 1, 1);
+ 
+ 	kfree(sbi->s_prefix);
+ 	affs_free_bitmap(sb);
+@@ -63,7 +65,7 @@ affs_write_super(struct super_block *sb)
+ {
+ 	lock_super(sb);
+ 	if (!(sb->s_flags & MS_RDONLY))
+-		affs_commit_super(sb, 2);
++		affs_commit_super(sb, 1, 2);
+ 	sb_mark_clean(sb);
+ 	unlock_super(sb);
+ 
+@@ -74,7 +76,7 @@ static int
+ affs_sync_fs(struct super_block *sb, int wait)
+ {
+ 	lock_super(sb);
+-	affs_commit_super(sb, 2);
++	affs_commit_super(sb, wait, 2);
+ 	sb_mark_clean(sb);
+ 	unlock_super(sb);
+ 	return 0;
 -- 
 1.7.0.1
 
