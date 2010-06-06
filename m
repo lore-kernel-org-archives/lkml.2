@@ -1,97 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755446Ab0FFVzf (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Jun 2010 17:55:35 -0400
-Received: from mail-ew0-f223.google.com ([209.85.219.223]:60698 "EHLO
-	mail-ew0-f223.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754587Ab0FFVze convert rfc822-to-8bit (ORCPT
+	id S1755603Ab0FFWEo (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Jun 2010 18:04:44 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:53900 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754561Ab0FFWEn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Jun 2010 17:55:34 -0400
+	Sun, 6 Jun 2010 18:04:43 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=Rb+KuZIvxyUr+cm512BFdYTxrYNcV3vssAt8SX3+oYpkhw6Fb7A+narVmx7AaJvzJp
-         2BX8McxrGqMPqzo1qDu2FPSbnMO0VQWVyvvJ08uMnHc7CHZxlYYgPEJ6VqXaQsfdC2WX
-         HfIdGBa9i2nSD5OVDSnO2Bi3nAbWOSd5FHrvo=
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=Yu55rlIdZebhDcQ0FI6YaLawZy1+WdTI/Jj4oCTaT88RhzCivzyjoSbVjvI9B9gJYO
+         pqEsnpr9RfdVdnpYp2//3rJNvXaeCu+LT6ZvHDRzHbY4k+7cvdVQWprqED+U89SnO0BJ
+         CCvpVZh3j0ybLRX0XG2U2CLX3BN88Uhh0VFCU=
+Message-ID: <4C0C1B90.6080407@gmail.com>
+Date: Sun, 06 Jun 2010 15:05:04 -0700
+From: "Justin P. Mattock" <justinmattock@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.4pre) Gecko/20091114 Lightning/1.0pre Thunderbird/3.0b4
 MIME-Version: 1.0
-In-Reply-To: <201006062104.55869.rjw@sisk.pl>
-References: <9rpccea67yy402c975fqru8r.1275576653521@email.android.com>
-	<201006061557.20482.rjw@sisk.pl>
-	<1275839650.5331.2.camel@maxim-laptop>
-	<201006062104.55869.rjw@sisk.pl>
-Date: Sun, 6 Jun 2010 22:55:32 +0100
-Message-ID: <AANLkTim9CNFMMVQaghrzK3JnQlGmTewgarT01HP6cEtd@mail.gmail.com>
-Subject: Re: [linux-pm] [SUSPECTED SPAM] Re: Proposal for a new algorithm for 
-	reading & writing a hibernation image.
-From: Pedro Ribeiro <pedrib@gmail.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Maxim Levitsky <maximlevitsky@gmail.com>,
-       Nigel Cunningham <ncunningham@crca.org.au>,
-       pm list <linux-pm@lists.linux-foundation.org>,
-       LKML <linux-kernel@vger.kernel.org>,
-       TuxOnIce-devel <tuxonice-devel@tuxonice.net>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: Jiri Slaby <jslaby@suse.cz>
+CC: frankpzh@gmail.com, Greg KH <gregkh@suse.de>,
+       =?ISO-8859-1?Q?Ortwin_?= =?ISO-8859-1?Q?Gl=FCck?= <odi@odi.ch>,
+       linux-kernel@vger.kernel.org, jirislaby@gmail.com
+Subject: Re: BUG kmalloc-4096: Poison overwritten (2.6.35-rc2)
+References: <4C0C0DD8.5030106@gmail.com> <1275860015-6643-1-git-send-email-jslaby@suse.cz>
+In-Reply-To: <1275860015-6643-1-git-send-email-jslaby@suse.cz>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 6 June 2010 20:04, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> On Sunday 06 June 2010, Maxim Levitsky wrote:
->> On Sun, 2010-06-06 at 15:57 +0200, Rafael J. Wysocki wrote:
->> > On Sunday 06 June 2010, Maxim Levitsky wrote:
-> ...
->> > So how TuxOnIce helps here?
->> Very simple.
+On 06/06/2010 02:33 PM, Jiri Slaby wrote:
+> On 06/06/2010 11:06 PM, Justin P. Mattock wrote:
+>> On 06/05/2010 11:27 PM, Jiri Slaby wrote:
+>>> On 06/06/2010 08:12 AM, Justin P. Mattock wrote:
+>>>> =============================================================================
+>>>>
+>>>>
+>>>> [    0.002046] BUG kmalloc-4096: Poison overwritten
+>>>> [    0.002051]
+>>>> -----------------------------------------------------------------------------
+>>>>
+>>>>
+>>>> [    0.002052]
+>>>> [    0.002063] INFO: 0xffff88003ec09e00-0xffff88003ec09e9f. First byte
+>>>> 0x20 instead of 0x6b
+>>>> [    0.002073] INFO: Slab 0xffffea0000dba1c0 objects=7 used=1
+>>>> fp=0xffff88003ec09048 flags=0x40000000000040c3
+>>>> [    0.002082] INFO: Object 0xffff88003ec09048 @offset=4168
+>>>> fp=0xffff88003ec0a090
+>>>> [    0.002083]
+>>>> [    0.002093] Bytes b4 0xffff88003ec09038:  00 00 00 00 00 00 00 00 5a
+>>>> 5a 5a 5a 5a 5a 5a 5a ........ZZZZZZZZ
+>>>> [    0.002114]   Object 0xffff88003ec09048:  6b 6b 6b 6b 6b 6b 6b 6b 6b
+>>>> 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
+>>> ...
+>>>> 6b 6b 6b 6b 6b 6b 6b kkkkkkkkkkkkkkkk
+>>>> [    0.002999]   Object 0xffff88003ec09df8:  6b 6b 6b 6b 6b 6b 6b 6b 20
+>>>> 07 20 07 20 07 20 07 kkkkkkkk........
+>>>> [    0.002999]   Object 0xffff88003ec09e08:  20 07 20 07 20 07 20 07 20
+>>>> 07 20 07 20 07 20 07 ................
+>>>> [    0.002999]   Object 0xffff88003ec09e18:  20 07 20 07 20 07 20 07 20
+>>>> 07 20 07 20 07 20 07 ................
+>>>> [    0.002999]   Object 0xffff88003ec09e28:  20 07 20 07 20 07 20 07 20
+>>>> 07 20 07 20 07 20 07 ................
+>>>> [    0.002999]   Object 0xffff88003ec09e38:  20 07 20 07 20 07 20 07 20
+>>>> 07 20 07 20 07 20 07 ................
+>>>> [    0.002999]   Object 0xffff88003ec09e48:  20 07 20 07 20 07 20 07 20
+>>>> 07 20 07 20 07 20 07 ................
+>>>> [    0.002999]   Object 0xffff88003ec09e58:  20 07 20 07 20 07 20 07 20
+>>>> 07 20 07 20 07 20 07 ................
+>>>> [    0.002999]   Object 0xffff88003ec09e68:  20 07 20 07 20 07 20 07 20
+>>>> 07 20 07 20 07 20 07 ................
+>>>> [    0.002999]   Object 0xffff88003ec09e78:  20 07 20 07 20 07 20 07 20
+>>>> 07 20 07 20 07 20 07 ................
+>>>> [    0.002999]   Object 0xffff88003ec09e88:  20 07 20 07 20 07 20 07 20
+>>>> 07 20 07 20 07 20 07 ................
+>>>> [    0.002999]   Object 0xffff88003ec09e98:  20 07 20 07 20 07 20 07 6b
+>>>> 6b 6b 6b 6b 6b 6b 6b ........kkkkkkkk
+>>>> [    0.002999]   Object 0xffff88003ec09ea8:  6b 6b 6b 6b 6b 6b 6b 6b 6b
+>>>
+>>> Just guessing, grey spaces which should go to video ram?
+>>>
 >>
->> With swsusp, I can save 750MB (memory) + 250 Vram (vram)
->> With full memory save I can save (1750 MB of memory) + 250 MB of
->> vram....
+>>
+>> o.k. I bisected this down to this commit:
+>> 962400e8fd29
+>> reverting gets dmesg to not
+>> have a Poison overwritten..
 >
-
-I am completely unaware of the technical difficulties of saving the
-whole memory vs 80% of it, but from my experience with TuxOnIce I
-fully agree with Nigel on saving the whole memory.
-
-The fact is that the whole system is much more responsive than when
-using swsusp. No doubt about that, I can tell you that TuxOnIce really
-changed the way I use my computer. I only used swsusp when I really
-needed because of the lagginess starting up, and TuxOnIce changed it.
-
-I have a laptop computer which I have to shutdown every night and open
-every morning. It has 4GB of ram and I usually have 3.5 to 3.8 in use
-all the time. With TuxOnIce I can restart my work every morning in
-under 25 seconds, exactly where I left it, without any delays or
-lagginess.
-
-Its kind of hard to express in words, but really, this gave me a
-completely different view of how to use a computer. Of course you can
-compare it to S2R, but this consumes energy, no matter how little -
-this has an environmental and financial cost which will only increase
-in the future.
-
-> So what about being able to save 1600 MB total instead of the 2 GB
-> (which is what we're talking about in case that's not clear)?  Would it
-> be _that_ _much_ worse?
-
-No it wouldn't be much worse. But there will still be some lagginess,
-some delay, some sort of annoying disk activity compared to NO delay,
-NO lagginess, in short, you have your computer _exactly_ the way you
-left it when you left it when you hibernated. And the difference is
-noticeable.
-
+> This definitely makes sense.
 >
-> Rafael
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+>> as for the screen blankness I think this
+>> did cause it..keep in mind the blankness(black)
+>> is not everytime(every so often)
+>> here's some images of it:
+>> http://www.flickr.com/photos/44066293@N08/4676350524/
+>> http://www.flickr.com/photos/44066293@N08/4676350016/
 >
+> Yes, as I guessed, the "grey spaces" were written to some random space
+> instead of video ram where they should overwrite (clear) the characters
+> which you see on the pictures.
+>
+> Does the patch below help?
+>
+> ---
+>   drivers/char/vt.c |    4 ++--
+>   1 files changed, 2 insertions(+), 2 deletions(-)
+>
+> diff --git a/drivers/char/vt.c b/drivers/char/vt.c
+> index 1296c42..e123958 100644
+> --- a/drivers/char/vt.c
+> +++ b/drivers/char/vt.c
+> @@ -304,8 +304,8 @@ static void scrup(struct vc_data *vc, unsigned int t, unsigned int b, int nr)
+>   	d = (unsigned short *)(vc->vc_origin + vc->vc_size_row * t);
+>   	s = (unsigned short *)(vc->vc_origin + vc->vc_size_row * (t + nr));
+>   	scr_memmovew(d, s, (b - t - nr) * vc->vc_size_row);
+> -	scr_memsetw(d + (b - t - nr) * vc->vc_size_row, vc->vc_video_erase_char,
+> -		    vc->vc_size_row * nr);
+> +	scr_memsetw((void *)d + (b - t - nr) * vc->vc_size_row,
+> +			vc->vc_video_erase_char, vc->vc_size_row * nr);
+>   }
+>
+>   static void scrdown(struct vc_data *vc, unsigned int t, unsigned int b, int nr)
 
 
-Sorry to jump in the thread, but I just wanted to give my end user perspective.
+o.k. applied the above patch,
+and yes I dont see the Poison overwritten
+in dmesg, as well as the messages in the
+pics that I uploaded..
 
-Regards,
-Pedro
+so I can say that the above fixes the issue
+(will monitor the system the remainder
+of the day to see if anything happens..)
+
+Reported-and-Bisected-By: Justin P. Mattock <justinmattock@gmail.com>
+
+cheers,
+
+Justin P. Mattock
