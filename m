@@ -1,51 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757118Ab0FFRsT (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Jun 2010 13:48:19 -0400
-Received: from cavan.codon.org.uk ([93.93.128.6]:54776 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752039Ab0FFRsR (ORCPT
+	id S933087Ab0FFRt2 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Jun 2010 13:49:28 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:43223 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756808Ab0FFRt1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Jun 2010 13:48:17 -0400
-Date: Sun, 6 Jun 2010 18:48:12 +0100
-From: Matthew Garrett <mjg59@srcf.ucam.org>
-To: Vitaly Wool <vitalywool@gmail.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [linux-pm] suspend blockers & Android integration
-Message-ID: <20100606174812.GA13640@srcf.ucam.org>
-References: <AANLkTilQ1k78dDCYadOa1Wiyjm2nsBcRpxwdpGvYcf8z@mail.gmail.com> <AANLkTin7oM3gVwHbIHWqYV8yeC6bbQ4q2jDDxAgz3DwQ@mail.gmail.com> <20100606133130.GA8513@srcf.ucam.org> <AANLkTimXTgZS_fZQa8hjIptJrCn756gF_xakT1IQiLWa@mail.gmail.com> <20100606152946.GA11351@srcf.ucam.org> <AANLkTilOq_5yUW1AIMH1qSE699gyRUTlzGPUVc4CrReY@mail.gmail.com> <20100606164326.GA12570@srcf.ucam.org> <AANLkTim0JD4V0RTc6CRIADypqYhQo3JYp3dJs0l7g7Ps@mail.gmail.com> <20100606173146.GA13432@srcf.ucam.org> <AANLkTimCd4AUk1wBBcnX9WKvpKA6sNfs8-4Qqb5wMaNH@mail.gmail.com>
+	Sun, 6 Jun 2010 13:49:27 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:x-enigmail-version:content-type
+         :content-transfer-encoding;
+        b=T20NvXHEVkFA9UhDxvb+fM1kfj1VGqWkQP9uslEpf6bsTaRrJs7T42ckAlc2QfVf1U
+         icyc49eSk1T/TcO06s9RONOPXjhzDsX3oqrTjzU/Cvo5mRWashwLxkwvXUpJA3mWEvII
+         S32DaH/qKqJLVLkqPRiiXbX3/Mg/sDBZNJCrI=
+Message-ID: <4C0BDFA4.8070708@gmail.com>
+Date: Sun, 06 Jun 2010 19:49:24 +0200
+From: Jiri Slaby <jirislaby@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; cs-CZ; rv:1.9.2.4) Gecko/20100527 SUSE/3.1rc1-3.3 Thunderbird/3.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTimCd4AUk1wBBcnX9WKvpKA6sNfs8-4Qqb5wMaNH@mail.gmail.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+To: =?ISO-8859-1?Q?Ortwin_Gl=FCck?= <odi@odi.ch>
+CC: linux-kernel@vger.kernel.org, Justin Mattock <justinmattock@gmail.com>
+Subject: Re: BUG: Bad page map 2.6.35-rc2
+References: <4C0BCC22.8010107@odi.ch>
+In-Reply-To: <4C0BCC22.8010107@odi.ch>
+X-Enigmail-Version: 1.0
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jun 06, 2010 at 07:37:59PM +0200, Vitaly Wool wrote:
-> 2010/6/6 Matthew Garrett <mjg59@srcf.ucam.org>:
-> > On Sun, Jun 06, 2010 at 07:21:49PM +0200, Vitaly Wool wrote:
-> >> 2010/6/6 Matthew Garrett <mjg59@srcf.ucam.org>:
-> >>
-> >> > Suspend blocks prevent system suspend, not any per-device suspend.
-> >>
-> >> Can you suspend a device which is holding a wake lock?
-> >
-> > Yes. Suspend blocks are orthogonal to runtime PM.
+On 06/06/2010 06:26 PM, Ortwin Glück wrote:
+> After booting ntp was consuming 100% CPU. strace gave nothing. Sending it a TERM
+> spew the following into syslog. Ran it through ksymoops.
 > 
-> That's nice, but that means that it can hold the wake lock
-> indefinitely. Brilliant design, I'd say.
+> 
+> Jun  6 18:08:39 mithril kernel: BUG: Bad page map in process ntpd  pte:07200720
 
-Putting a device in a low power state doesn't mean you can't run code in 
-the driver. If a device generates an event and that event gets handled 
-by the driver, the driver can take a suspend block and then release it 
-when userspace reads the event. It's perfectly valid for the device to 
-go into a low power state in the meantime. When I say that these things 
-are orthogonal, I really do mean it.
+Hmm, again 0720 pattern. It's very likely the same as
+http://lkml.org/lkml/2010/6/6/7
 
 -- 
-Matthew Garrett | mjg59@srcf.ucam.org
+js
