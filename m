@@ -1,154 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756515Ab0FFO5Y (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Jun 2010 10:57:24 -0400
-Received: from smtp.nokia.com ([192.100.105.134]:18213 "EHLO
-	mgw-mx09.nokia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757953Ab0FFOx0 (ORCPT
+	id S1757970Ab0FFPCk (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Jun 2010 11:02:40 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:47199 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756410Ab0FFPCi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Jun 2010 10:53:26 -0400
-From: Artem Bityutskiy <dedekind1@gmail.com>
-To: Al Viro <viro@ZenIV.linux.org.uk>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-       LKML <linux-kernel@vger.kernel.org>, linux-fsdevel@vger.kernel.org,
-       Artem Bityutskiy <Artem.Bityutskiy@nokia.com>
-Subject: [PATCHv5 03/16] writeback: lessen sync_supers wakeup count
-Date: Sun,  6 Jun 2010 17:50:16 +0300
-Message-Id: <1275835829-1478-4-git-send-email-dedekind1@gmail.com>
-X-Mailer: git-send-email 1.7.0.1
-In-Reply-To: <1275835829-1478-1-git-send-email-dedekind1@gmail.com>
-References: <1275835829-1478-1-git-send-email-dedekind1@gmail.com>
-X-OriginalArrivalTime: 06 Jun 2010 14:53:14.0318 (UTC) FILETIME=[FD92EEE0:01CB0587]
-X-Nokia-AV: Clean
+	Sun, 6 Jun 2010 11:02:38 -0400
+X-Authority-Analysis: v=1.1 cv=xm0otvE9/LjRWYlyDrHfx7zP0/MGCmNk7gQgTP1ehto= c=1 sm=0 a=PjWTFMnUE30A:10 a=0qYQvVkOOIcA:10 a=7U3hwN5JcxgA:10 a=Q9fys5e9bTEA:10 a=gMqfjgEr1zLu/65IO0LwxA==:17 a=VwQbUJbxAAAA:8 a=_CZM5PbzeyGrWGBg_lkA:9 a=LwWDxPOHPdrNFfrAic1-oT8iDZIA:4 a=PUjeQqilurYA:10 a=gMqfjgEr1zLu/65IO0LwxA==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.89.75
+Subject: Re: Perf trace event parse errors for KVM events
+From: Steven Rostedt <rostedt@goodmis.org>
+Reply-To: rostedt@goodmis.org
+To: Avi Kivity <avi@redhat.com>
+Cc: Stefan Hajnoczi <stefanha@gmail.com>, linux-perf-users@vger.kernel.org,
+       linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
+       Frederic Weisbecker <fweisbec@gmail.com>,
+       Marcelo Tosatti <mtosatti@redhat.com>,
+       Peter Zijlstra <a.p.zijlstra@chello.nl>,
+       Stefan Hajnoczi <stefanha@linux.vnet.ibm.com>,
+       Johannes Berg <johannes.berg@intel.com>,
+       Darren Hart <darren@dvhart.com>
+In-Reply-To: <4C0B577F.9050506@redhat.com>
+References: <20100526123443.GB8905@stefan-thinkpad.transitives.com>
+	 <AANLkTil8BiuzrmacV7Lpx1wES0EvLSiVmcfwtSY6Zis2@mail.gmail.com>
+	 <1275083157.22648.593.camel@gandalf.stny.rr.com>
+	 <4C00FF9B.9000107@redhat.com>
+	 <1275139177.22648.610.camel@gandalf.stny.rr.com>
+	 <4C021D7E.1060705@redhat.com>
+	 <1275228182.15884.1.camel@gandalf.stny.rr.com>
+	 <4C027131.2010309@redhat.com>
+	 <1275233656.15884.4.camel@gandalf.stny.rr.com>
+	 <4C04C739.8050607@redhat.com>
+	 <1275393544.15884.19.camel@gandalf.stny.rr.com>
+	 <4C04FF65.8020408@redhat.com>
+	 <1275602225.15884.47.camel@gandalf.stny.rr.com>
+	 <4C0B577F.9050506@redhat.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+Organization: Kihon Technologies Inc.
+Date: Sun, 06 Jun 2010 11:02:35 -0400
+Message-ID: <1275836555.15884.83.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Artem Bityutskiy <Artem.Bityutskiy@nokia.com>
+On Sun, 2010-06-06 at 11:08 +0300, Avi Kivity wrote:
 
-The 'sync_supers' thread wakes up every 5 seconds (by default) and
-writes back all super blocks. It keeps waking up even if there
-are no dirty super-blocks. For many file-systems the superblock
-becomes dirty very rarely, if ever, so 'sync_supers' does not do
-anything most of the time.
+> > Also, I kicked this off in kernelshark, and it made no difference that I
+> > can see. This is because kernelshark only evaluates the viewable area of
+> > the screen.
+> >    
+> 
+> Neat.  Can it also search?  Where can I find it? <googles, finds, gawks>
+> 
 
-This patch improves 'sync_supers' and makes it sleep if all superblocks
-are clean and there is nothing to do. This helps saving the power.
-This optimization is important for small battery-powered devices.
+It's in the same repo as trace-cmd:
 
-The locking scheme was provided by Nick Piggin <npiggin@suse.de>
+git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/trace-cmd.git
 
-Signed-off-by: Artem Bityutskiy <Artem.Bityutskiy@nokia.com>
----
- include/linux/fs.h |    5 +----
- mm/backing-dev.c   |   40 ++++++++++++++++++++++++++++++++--------
- 2 files changed, 33 insertions(+), 12 deletions(-)
+I'm still working on it. The latest is in the branch kernelshark-devel.
 
-diff --git a/include/linux/fs.h b/include/linux/fs.h
-index 1688464..ca1e993 100644
---- a/include/linux/fs.h
-+++ b/include/linux/fs.h
-@@ -1783,10 +1783,7 @@ extern int get_sb_pseudo(struct file_system_type *, char *,
- 	struct vfsmount *mnt);
- extern void simple_set_mnt(struct vfsmount *mnt, struct super_block *sb);
- 
--static inline void sb_mark_dirty(struct super_block *sb)
--{
--	sb->s_dirty = 1;
--}
-+void sb_mark_dirty(struct super_block *sb);
- static inline void sb_mark_clean(struct super_block *sb)
- {
- 	sb->s_dirty = 0;
-diff --git a/mm/backing-dev.c b/mm/backing-dev.c
-index 660a87a..d751284 100644
---- a/mm/backing-dev.c
-+++ b/mm/backing-dev.c
-@@ -45,6 +45,7 @@ LIST_HEAD(bdi_pending_list);
- 
- static struct task_struct *sync_supers_tsk;
- static struct timer_list sync_supers_timer;
-+static unsigned long supers_dirty __read_mostly;
- 
- static int bdi_sync_supers(void *);
- static void sync_supers_timer_fn(unsigned long);
-@@ -251,7 +252,6 @@ static int __init default_bdi_init(void)
- 
- 	init_timer(&sync_supers_timer);
- 	setup_timer(&sync_supers_timer, sync_supers_timer_fn, 0);
--	bdi_arm_supers_timer();
- 
- 	err = bdi_init(&default_backing_dev_info);
- 	if (!err)
-@@ -350,6 +350,21 @@ static void bdi_flush_io(struct backing_dev_info *bdi)
- 	writeback_inodes_wbc(&wbc);
- }
- 
-+void sb_mark_dirty(struct super_block *sb)
-+{
-+	sb->s_dirty = 1;
-+	/*
-+	 * sb->s_dirty store must be visible to sync_supers before we load
-+	 * supers_dirty in case we need to re-arm the timer.
-+	 */
-+	smp_mb();
-+	if (likely(supers_dirty))
-+		return;
-+	supers_dirty = 1;
-+	bdi_arm_supers_timer();
-+}
-+EXPORT_SYMBOL_GPL(sb_mark_dirty);
-+
- /*
-  * kupdated() used to do this. We cannot do it from the bdi_forker_task()
-  * or we risk deadlocking on ->s_umount. The longer term solution would be
-@@ -362,10 +377,20 @@ static int bdi_sync_supers(void *unused)
- 
- 	while (!kthread_should_stop()) {
- 		set_current_state(TASK_INTERRUPTIBLE);
-+		if (supers_dirty)
-+			bdi_arm_supers_timer();
- 		schedule();
- 
-+		supers_dirty = 0;
- 		/*
--		 * Do this periodically, like kupdated() did before.
-+		 * supers_dirty store must be visible to sb_mark_dirty() before
-+		 * sync_supers runs (which loads ->s_dirty), so a barrier is
-+		 * needed.
-+		 */
-+		smp_mb();
-+		/*
-+		 * sync_supers() used to do this periodically, but now we
-+		 * wake up only if there are dirty superblocks.
- 		 */
- 		sync_supers();
- 	}
-@@ -373,6 +398,11 @@ static int bdi_sync_supers(void *unused)
- 	return 0;
- }
- 
-+static void sync_supers_timer_fn(unsigned long unused)
-+{
-+	wake_up_process(sync_supers_tsk);
-+}
-+
- void bdi_arm_supers_timer(void)
- {
- 	unsigned long next;
-@@ -384,12 +414,6 @@ void bdi_arm_supers_timer(void)
- 	mod_timer(&sync_supers_timer, round_jiffies_up(next));
- }
- 
--static void sync_supers_timer_fn(unsigned long unused)
--{
--	wake_up_process(sync_supers_tsk);
--	bdi_arm_supers_timer();
--}
--
- static int bdi_forker_task(void *ptr)
- {
- 	struct bdi_writeback *me = ptr;
--- 
-1.7.0.1
+And yes, it does searches.
+
+-- Steve
+
 
