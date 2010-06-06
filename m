@@ -1,153 +1,161 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754945Ab0FFVYx (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Jun 2010 17:24:53 -0400
-Received: from fg-out-1718.google.com ([72.14.220.157]:31416 "EHLO
-	fg-out-1718.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754042Ab0FFVYv (ORCPT
+	id S1754908Ab0FFV26 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Jun 2010 17:28:58 -0400
+Received: from host83.b4.nw.com.tr ([77.245.147.83]:35021 "EHLO
+	srv72999s1.trdns.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754182Ab0FFV25 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Jun 2010 17:24:51 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=YLcdP8qx4cWvJTlb80BnoxneSC7wXnsVUCUvGW9l+4eBtaOKOBIOTsvNY7FF7tr52u
-         U0Iz2/pNMRFfx0X94eJtnvIznB2CIhPG8cmB4Ca0cO8+8zsEazBssWAJdrbQYOLtVVRy
-         m2WnvCj3+NGn+R/atKs4zbKOUk7cs2ynDSEWY=
-Subject: Re: [PATCH] mmc: make sdhci work with ricoh mmc controller
-From: Maxim Levitsky <maximlevitsky@gmail.com>
-To: Philip Langdale <philipl@overt.org>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>, adq_dvb@lidskialf.net,
-       "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>
-In-Reply-To: <1275665602.4596.14.camel@maxim-laptop>
-References: <1275516180.30272.4.camel@maxim-laptop>
-	 <1275527787-3783-1-git-send-email-maximlevitsky@gmail.com>
-	 <20100603091113.7b1d6fc0@fido5> <1275582709.2563.19.camel@maxim-laptop>
-	 <20100603093914.3397ac42@fido5> <20100603100510.37d02c2b@fido5>
-	 <1275586531.2594.3.camel@maxim-laptop> <20100603214223.61325b5d@fido5>
-	 <1275646048.26010.22.camel@maxim-laptop>  <20100604080551.3dba90af@fido5>
-	 <1275665602.4596.14.camel@maxim-laptop>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 07 Jun 2010 00:24:35 +0300
-Message-ID: <1275859475.3151.4.camel@maxim-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	Sun, 6 Jun 2010 17:28:57 -0400
+Reply-To: karayolu-y@gmail.com
+Message-ID: <17febea0fc814eac9a71da7d1b1378b3@gmail.com>
+From: "Trafik Karayolu" <karayolu-y@gmail.com>
+To: <linux-kernel@vger.kernel.org>
+Subject: =?iso-8859-9?B?VHJhZmlrIEthcmF5b2x1IFn2bmV0bWVsafBpLA==?=
+Date: Mon, 7 Jun 2010 00:27:55 +0300
+MIME-Version: 1.0
+Content-Type: text/plain;
+	charset="iso-8859-9"
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2010-06-04 at 18:33 +0300, Maxim Levitsky wrote: 
-> On Fri, 2010-06-04 at 08:05 -0700, Philip Langdale wrote: 
-> > On Fri, 04 Jun 2010 13:07:28 +0300
-> > Maxim Levitsky <maximlevitsky@gmail.com> wrote:
-> > 
-> > 
-> > > > 
-> > > > On this subject:
-> > > > 
-> > > > 1) Would it make sense to have the hard-coded caps reflect the full
-> > > > set of caps you see on the sdhci side?
-> > > This would be ugly cause two driver instances would have to talk one
-> > > with another. A global variable will be necessary.
-> > 
-> > Instead of doing it at runtime, we could read them offline and then
-> > write them in. Of course, I suspect there's some variation in
-> > capabilities of Ricoh parts - I know there's at least two generations
-> > of MMC controllers with the same PCI IDs. :-/
-> Nothing against that, although the caps on main controller are broken
-> too, since it doesn't advertise DMA support...
-> 
-> > 
-> > > 
-> > > > 
-> > > > 2) We ought to be able to set the MMC high-speed flag for this
-> > > > controller; I've tried it out and it works fine. The default sdhci
-> > > > code will never set this flag. I think it would need to an
-> > > > additional quirk. Pierre argued against setting it on the basis
-> > > > that SD high speed has slightly different timings; I haven't seen
-> > > > hardware where this has been an issue.
-> > > > 
-> > > > > However that suspend/resume race is tough one.
-> > > > > The problem seems that controller doesn't like both devices to be
-> > > > > poked at same time, and normally they won't, but here on resume
-> > > > > both are tested for a card, and this is done asynchronously by
-> > > > > mmc core.
-> > > > > 
-> > > > > I will get to bottom of this sooner or later (I hope).
-> > > > 
-> > > > Hmm. So, if the issue is the test, then you should be able to
-> > > > serialize in mmc core instead of forcing sync resume in general. An
-> > > > ugly way would be a quirk that says to serialize all card tests if
-> > > > the controller is present in the system. In practice it would be
-> > > > fine as systems won't have arbitrary other sdhci controllers if
-> > > > they have this ricoh mmc thing. But yes, it isn't clean. :-P
-> > > This seems to be worse that I thought.
-> > > The problem is that mmc controller tells that card is removed on
-> > > resume (after a while it reappears)
-> > > 
-> > > This brings a question though, are MMC and SD cards electrically
-> > > different?
-> > > If not them its interesting how the controller distinguishes between
-> > > them.
-> > 
-> > They are not. I suspect the controller pokes the card using SPI mode
-> > just enough to tell them apart.
-> >  
-> > > 
-> > > This isn't a show stopper though, cause the cards are
-> > > removed/reinserted anyway unless CONFIG_MMC_UNSAFE_RESUME is set.
-> > > The fact that this triggers system hang is another story, and sooner
-> > > or later will be fixed ether by some hack in mmc code or by making
-> > > del_gendisk not hang when userspace is frozen.
-> > > 
-> > > 
-> > > It not due to interleaving, because I tried binding sdhci-pci to only
-> > > mmc interface, and yet same problem happens.
-> > > 
-> > > Magically, if async suspend is disabled everything works, and it well
-> > > tested. and that despite me disabling async suspend on all 4
-> > > functions. (And I know that this works, and makes pm core suspend
-> > > them in order from 0 to 4 and synchronously.
-> > > I tried adding large delays to simulate delays caused by waiting for
-> > > other devices, but it didn't help.
-> > > 
-> > > I''l get to bottom of this.
-> > 
-> > I'm not familiar with what pm core allows but can you tell it to
-> > serialise the functions but still handle the device asynchronously?
-> > That would still allow the maximum possible asynchrony.
-> I did that, and I am quite confident that its timing that makes the
-> difference.
-> (Or, and this is the worst thing to happen, there is an unrelated device
-> that must be enabled before mmc....)
-> 
-> Since controller like I suspected from the beginning pokes at the card,
-> it might be tricky to keep mmc card alive after suspend.
-> I leave this problem as is for now, and in future when I finish exams, I
-> am going to understand exactly what is going on.
-> 
-> Still, despite that feel I have just opened a can of worms, still I
-> think that its better to stick to the way things are done in windows
-> because hackish or not, things were tested by vendor well enough.
-> 
-> And just to think that all the trouble is literally due to
-> Microsoft..... grrrrrr.
+T.MERKEZÝ
 
 
-Found the case.
-The problem was just that we need to wait a bit for mmc device to
-appear.
-It probably pokes the card to see if it is mmc or not.
+HER TÜRLÜ KAMYON, KAMYONET, OTOBÜS,MÝNÜBÜS,ÇEKÝCÝ, YARI RÖMORK, TANKER V.B. ARAÇLARI KULLANAN SÜRÜCÜLER, 10.06.2010 TARÝHÝNE KADAR SRC VE PSÝKOTEKNÝK BELGESÝ ALMAK ZORUNDADIRLAR. (25.02.2003 EHLÝYETE VE SSK GÝRÝÞÝNE SAHÝP OLANLAR, SRC BELGESÝNÝ EÐÝTÝME VE SINAVA KATILMAKSIZIN DOÐRUDAN ALMA HAKKINA SAHÝPTÝRLER. 
 
-Now the reader is prefect.
-(Well, there is still hang if card is really removed on resume due to
-problem in linux (and it is pure software issue). The fix is more or
-less known, so I tackle this after exams.
-And of course memstick part that I more or less reverse engineer.
-Again later I will write a driver.
+SRC ve PSÝKOTEKNÝK BELGELERÝ 09.06.2010 TARÝHÝNE KADAR SORULMAZ 10.06.2010 TARÝHÝNDEN SONRA TRAFÝKTE YAPILACAK UYGULAMALARDA 
+SRC VE PSÝKOTEKNÝK BELGESÝ BULUNDURMAYAN SÜRÜCÜLERE VE ARAÇ SAHÝPLERÝNE CEZAÝ ÝÞLEM UYGULANACAKTIR. 
 
-Best regards,
-Maxim Levitsky
+DÝKKAT!! SON MÜRACAAT TARÝHÝ 10.06.2010 
+
+
+SRC EÐÝTÝM; 
+
+25.02.2003 ÖNCESÝ EHLÝYETÝ VE SSK'SI OLMAYAN SÜRÜCÜLERÝNÝZ 28 SAAT'LÝK EÐÝTÝME VE BAKANLIÐIN AÇTIÐI SINAVA KATILIP %60 BAÞARI SAÐLAYIP BELGELERÝNÝ ALABÝLECEKLER, 
+
+
+(1) - (ÝÞVERENLERE) 10.06.2010- TARÝHÝ ÝTÝBARÝYLE ÞOFÖRLERÝNÝZÝN ÝÞLERÝNE DEVAM EDEBÝLMELERÝ ÝÇÝN MUTLAK SURETTE SRC VE PSÝKOTEKNÝK BELGELERÝ ÜZERÝNDE DURMALIDIRLAR. AKSÝ HALDE SÜRÜCÜ ARKADAÞA CEZAÝ ÝÞLEM UYGULANDIÐI GÝBÝ ARAÇTA BAÐLANACAKTIR. 
+
+(2) - (SÜRÜCÜ ARKADAÞLARA )10.06.2010-TARÝHÝ ÝTÝBARÝYLE ÝÞVERENLER PSÝKOTEKNÝK BELGESÝ OLMAYAN SÜRÜCÜLERE ARAÇLARINI VEREMEYECEKLERÝ ÝÇÝN ÝÞÝ BIRAKMANIZ DAHÝ SÖZ KONUSU OLABÝLÝR, BU SEBEPTEN DOLAYI BÝRAN ÖNCE KAYDINIZI YAPTIRIP BELGENÝZÝ ALINIZ. 
+
+
+
+HATIRLATMA ! 
+YAPILACAK UYGULAMALARDA SRC VE PSÝKOTEKNÝK BELGESÝ BULUNDURMAMASI DURUMUNDA (FÝRMA'YA 5000YTL SÜRÜCÜ ARKADAÞLARA 250YTL) CEZAÝ ÝÞLEM UYGULANACAKTIR. 
+
+
+
+ÖNEMLÝ NOT LÜTFEN OKUYUN : 
+TRAFÝK KAZSINA KARIÞAN SÜRÜCÜNÜN PSÝKOTEKNÝK DEÐERLENDÝRME BELGESÝ YOK ÝSE SÝGORTA ÞÝRKETLERÝ TARAFINDAN HASAR ÖDEMESÝ YAPILMAMAKTADIR. 
+
+KISACASI SÜRÜCÜLERÝNÝZÝN BELGELERÝNÝN OLMAMASI DÝREKT OLARAK FÝRMANIZI ETKÝLEMEKTEDÝR. 
+
+PSÝKOTEKNÝK BELGESÝ NEDÝR? 
+
+Çalýþma psikolojisinin bir dalý olan psikoteknik deðerlendirme, bireyin belirli bir iþteki yeterliliðinin ortaya konmasý amacýyla, gerekli bedensel ve zihinsel özelliklerinin testler aracýlýðýyla ölçülmesidir. Baþka bir deyiþle psikoteknik deðerlendirme, bireyin belirli bir iþe uygun olup olmadýðýný anlamaya yönelik olarak tasarlanmýþ bir inceleme-deðerlendirme yöntemidir. 
+
+
+SRC BELGESÝ NEDÝR? 
+
+SRC Mesleki Yeterlilik belgesi; Ulaþtýrma Bakanlýðýnca firmalara kayýtlý araçlarý kullanan sürücülerin almasý Gereken zorunlu bir belgedir. 
+Sürücü (Src): Karayolunda motorlu bir aracý veya taþýtý sevk ve idare eden kiþiyi, ifade eder. 
+
+
+DENETÝM YAPACAK BÝRÝMLER; 
+
+ULAÞTIRMA BAKANLIÐINA BAÐLI 30 BÝN SÝVÝL MEMUR,JANDARMA TRAFÝK, 
+TRAFÝK POLÝSÝ,TRAFÝK ZABITASI 
+----------------------------------------------------------------------------- 
+UYGULAMA 
+
+SÜRÜCÜLERDE PSÝKOTEKNÝK DEÐERLENDÝRME 
+
+Sürücülerin güvenli araç kullanmalarýný saðlayan zihinsel özelliklerinin (algý, dikkat, hafýza, muhakeme vb.); Psikomotor yetenek ve becerilerinin (tepki hýzý, göz, el, ayak koordinasyonu vb.); tutum-davranýþ, alýþkanlýk ve kiþilik özelliklerinin (risk alma, saldýrganlýk, sorumluluk, öz kontrol vb.) ölçülmesi ve sürücülük açýsýndan uygunluðu-yeterliliði hakkýnda bir sonuca varýlmasýdýr. 
+
+Standart, tarafsýz, Bilimsel, Deðerlendirme 
+
+Psikoteknik merkezimiz güler yüzlü personeli ve beþ ayrý þubesiyle müþteri odaklý Tarafsýz ,Standart ve Bilimsel kriterlere uygun olarak Psikoteknik deðerlendirme, Psikiyatri muayenesi ve sürücü davranýþ analiziyle sizlere hizmet vermektedir. 
+
+(GEÇ KALMADAN BELGELERÝNÝZÝ ALIN) 
+
+FÝRMANIZ ADINA KAYITLI ARAÇLARINIZ VAR ÝSE ARACINIZI KULLANAN SÜRÜCÜ ARKADAÞALARIN SRC VE PSÝKOTEKNÝK BELGESÝYLE TRAFÝÐE ÇIKILMASI ULAÞTIRMA BAKANLIÐI TARAFINDAN ZORUNLU KILINMIÞTIR. 
+
+
+YÖNETMELÝKLER 
+
+25.02.2004 tarih ve 25384 sayýlý resmi gazetede yayýnlanan KARAYOLU TAÞIMA YÖNETMELÝÐÝ 60. maddesi 'e' bendine göre profesyonel sürücülere Psikoteknik degerlendirme yapmaktadýr. Ayný yönetmeliðin 73 üncü maddesine göre bu deðerlendirmeyi yaptýrmayan sürücüleri çalýþtýran firmalar için para cezasý, yetki belgesinin iptali ile ceza koþullarý belirtilmiþtir. 
+
+
+ÝLGÝLÝ KANUN RESMÝ GAZETE'DE YAYINLANMIÞTIR. 
+
+25.02.2004 tarih ve 25384 sayýlý Resmi Gazete(KTY Aslý) 
+
+08.09.2004 tarih ve 25577 sayýlý Resmi Gazete(1.Deðiþiklik) 
+
+15.12.2004 tarih ve 25671 sayýlý Resmi Gazete(2.Deðiþiklik) 
+
+26.02.2005 tarih ve 25739 sayýlý Resmi Gazete(3.Deðiþiklik) 
+
+09.09. 2005tarih ve 25931 sayýlý Resmi Gazete(4.Deðiþiklik) 
+
+18.01.2006 tarihi ve 26053 sayýlý Resmi Gazete(5.Deðiþiklik) 
+
+
+SRC BELGESÝ VE PSÝKOTEKNÝK TEST YAPTIRMANIZ YASA GEREÐÝ ZORUNLUDUR 
+
+T.C Ulaþtýrma Bakanlýðý 4925 Sayýlý Karayolu Kanunu 
+
+Bu yazý T.C. ULAÞTIRMA BAKANLIÐI Resmi sitesinden alýnmýþtýr. 
+
+http://www.kugm.gov.tr/ 
+
+
+
+Not: Hafta Sonu Açýk Olmayan Psikoteknik Merkezlerimiz Denetimler Baþlayacaðýdan 
+
+Cumartesi ve Pazar Günleride Açýk Olup Hizmet Vermektedir. 
+
+
+Not:Sürücülerin merkezlerimizde daha rahat ve hýzlý bir þekilde testten geçebilmesi için 
+
+gelmeden önce mutlaka randevu alýnmasý gerekmektedir. 
+
+
+ÖNEMLÝ NOT: RANDEVUSUZ GELENLERE ÝÞLEM YAPILMAZ GELEN TÜM SÜRÜCÜ ARKADAÞLARIN RANDEVU ALMASI ZORUNLU. 
+
+
+GEREKLÝ EVRAKLAR; 
+
+
+Src Belgesi Gerkli Evraklar: 3 Resim, Kimlik fotokopisi, Ehliyet fotokopisi 
+
+Psikoteknik Belgesi Gerkli Evraklar: 3 Resim, Kimlik fotokopisi, Ehliyet fotokopisi 
+
+Not:Evraklarýnýzý hazýrladýktan sonra lütfen bizimle irtibata geçiniz. 
+
+
+Konu Hakkýnda Detaylý Bilgi'yi ve Randevunuzu 
+
+Müþteri Danýþmanýmýz 
+
+Lokman' Bey'den Alabilirsiniz. 
+
+
+
+ÝLETÝÞÝM : 12 SAAT ULAÞABÝLECEÐÝNÝZ ÝLGÝLÝ TELEFONLAR. 
+
+GSM : 0532.603.00.50 
+             0554.979.32.93 
+
+
+E-mail : 
+info@srcpsikoteknikmerkezi.com 
+lokman@srcpsikoteknikmerkezi.com 
+
+www.srcpsikoteknikmerkezi.com
+
 
 
