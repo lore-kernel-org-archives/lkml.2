@@ -1,86 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757734Ab0FFLP7 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Jun 2010 07:15:59 -0400
-Received: from mail.lang.hm ([64.81.33.126]:59550 "EHLO bifrost.lang.hm"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755438Ab0FFLP5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Jun 2010 07:15:57 -0400
-Date: Sun, 6 Jun 2010 04:14:09 -0700 (PDT)
-From: david@lang.hm
-X-X-Sender: dlang@asgard.lang.hm
-To: Florian Mickler <florian@mickler.org>
-cc: Vitaly Wool <vitalywool@gmail.com>, Brian Swetland <swetland@google.com>,
-       =?ISO-8859-15?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>,
-       Arjan van de Ven <arjan@infradead.org>, tytso@mit.edu,
-       Peter Zijlstra <peterz@infradead.org>, "H. Peter Anvin" <hpa@zytor.com>,
-       LKML <linux-kernel@vger.kernel.org>, Neil Brown <neilb@suse.de>,
-       James Bottomley <James.Bottomley@suse.de>,
-       Alan Cox <alan@lxorguk.ukuu.org.uk>,
-       Linux PM <linux-pm@lists.linux-foundation.org>,
-       Ingo Molnar <mingo@elte.hu>,
-       Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       Thomas Gleixner <tglx@linutronix.de>,
-       Felipe Balbi <felipe.balbi@nokia.com>
-Subject: Re: [linux-pm] suspend blockers & Android integration
-In-Reply-To: <20100606124949.539fa636@schatten.dmk.lab>
-Message-ID: <alpine.DEB.2.01.1006060410050.17462@asgard.lang.hm>
-References: <20100603193045.GA7188@elte.hu> <20100604071354.GA14451@elte.hu> <AANLkTimH4ihf3QqtKFpfGXRKtO55PrUuff9JYtaEBG44@mail.gmail.com> <20100604083423.GD15181@elte.hu> <AANLkTinQyzzeF-NOAjrAqqQXqKjFJhx85nI4uyBGRtWd@mail.gmail.com> <1275653210.27810.39762.camel@twins>
- <AANLkTinyjBa0KYfFz3_EFbC65hoQFwFINlTDYjCe-wM3@mail.gmail.com> <1275731653.27810.41078.camel@twins> <20100605092851.6ee15f13@infradead.org> <AANLkTimEwznq9c_8lkuBMxEQ-42rdvpZEqA9Y71Cu-qC@mail.gmail.com> <AANLkTimKknOurmCffOpHjc1FjrP2MKf10pBwEEbLJPg_@mail.gmail.com>
- <AANLkTil1NCX91bWhpXHtC88Opr29mNjdhXD9RXQ6DI0y@mail.gmail.com> <AANLkTin1Za3GvfIKbcZdx6TzjIHzCvsg5uaY_Vk4nJIh@mail.gmail.com> <AANLkTilQ1k78dDCYadOa1Wiyjm2nsBcRpxwdpGvYcf8z@mail.gmail.com> <AANLkTin7oM3gVwHbIHWqYV8yeC6bbQ4q2jDDxAgz3DwQ@mail.gmail.com>
- <alpine.DEB.2.01.1006060305060.17462@asgard.lang.hm> <AANLkTinW-X5m85rUcqP-lrEdfBikVclJWgqiWDkpxnAc@mail.gmail.com> <20100606124949.539fa636@schatten.dmk.lab>
-User-Agent: Alpine 2.01 (DEB 1266 2009-07-14)
+	id S933869Ab0FFLRw (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Jun 2010 07:17:52 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:57713 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756015Ab0FFLRu convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 6 Jun 2010 07:17:50 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=BRWiF/5bE+eKx2kd5lIGAXA6cHhnSlrkmFli6o5HN2w6YZi54f8rHoPO945BG4OE4Q
+         99ucDtmXXAwd2ZwtjrKgczw6asWE/KFQGi4qEzdSGRYlS34Nal9nAJ9v7R1PCUeUiUXu
+         Zp33UUc4JlvU/cLKYVt+QLdld6/eKfzt1DswE=
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
+In-Reply-To: <201006052252.21168.arnd@arndb.de>
+References: <201005241600.o4OG0QuA012887@hera.kernel.org>
+	<AANLkTil7N3ZJclwotDQVt-8IYKudZ5mqPbyH906Cd4IJ@mail.gmail.com>
+	<201006052252.21168.arnd@arndb.de>
+Date: Sun, 6 Jun 2010 13:17:48 +0200
+X-Google-Sender-Auth: ol5x6m4M1agAHORa2bmoNwPy-BA
+Message-ID: <AANLkTil4itZpw4k1Jr93BiivFQvSv6_e09CAgiNiziUJ@mail.gmail.com>
+Subject: Re: hp_sdc_rtc: fix broken ioctl conversion
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 6 Jun 2010, Florian Mickler wrote:
-
-> On Sun, 6 Jun 2010 12:19:08 +0200
-> Vitaly Wool <vitalywool@gmail.com> wrote:
+On Sat, Jun 5, 2010 at 22:52, Arnd Bergmann <arnd@arndb.de> wrote:
+> Commit 55929332c92 "drivers: Push down BKL into various drivers"
+> introduced a regression in hp_sdc_rtc, caused by a missing
+> change of the .unlocked_ioctl pointer to the newly introduced
+> function.
 >
->> 2010/6/6  <david@lang.hm>:
+> On Saturday 05 June 2010, Geert Uytterhoeven wrote:
+>> Something went wrong with this one:
 >>
->>> as an example (taken from this thread).
->>>
->>> system A needs to wake up to get a battery reading, store it and go back to
->>> sleep, It does so every 10 seconds. But when it does so it only runs the one
->>> process and then goes back to sleep.
->>>
->>> system B has the same need, but wakes up every 10 minutes. but when it does
->>> so it fully wakes up and this allows the mail app to power up the radio,
->>> connect to the Internet and start checking for new mail before oppurtunistic
->>> sleep shuts things down (causing the mail check to fail)
->>>
->>> System A will last considerably longer on a battery than System B.
->>
->> Exactly, thanks for pointing out the specific example :)
->>
->> ~Vitaly
+>> | drivers/input/misc/hp_sdc_rtc.c:681: warning: initialization from
+>> incompatible pointer type
+>> | drivers/input/misc/hp_sdc_rtc.c:665: warning:
+>> ‘hp_sdc_rtc_unlocked_ioctl’ defined but not used
 >
-> This does not affect suspend_blockers nor does suspend_blockers
-> interfere with that.
->
-> Suspend_blockers allow the system to suspend ("mem">/sys/power/state
-> suspend), when the userspace decides that the device is not in use.
->
-> So implementing suspend_blockers support does not impact any
-> optimizations done to either system A nor system B.
+> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
 
-Actually, it does.
+Acked-by: Geert Uytterhoeven <geert@linux-m68k.org>
 
-system A is what's being proposed by kernel developers, where the 
-untrusted stuff is in a different cgroup and what puts the system to sleep 
-is 'normal' power management. It doesn't sleep as long, but when it wakes 
-up the untrusted stuff is still frozen, so it doesn't stay awake long, or 
-do very much.
+Gr{oetje,eeting}s,
 
-System B is suspend blockers where you are either awake or asleep, and 
-when you wake up you wake up fully, but oppertunistic sleep can interrupt 
-untrusted processes at any time. The system sleeps longer (as fewer things 
-can wake it), but when it wakes up it's fully awake.
+						Geert
 
-David Lang
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+							    -- Linus Torvalds
