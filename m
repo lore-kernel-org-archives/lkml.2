@@ -1,72 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932074Ab0FFOna (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Jun 2010 10:43:30 -0400
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:38285 "EHLO e9.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756570Ab0FFOn2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Jun 2010 10:43:28 -0400
-Date: Sun, 6 Jun 2010 07:43:22 -0700
-From: Matt Helsley <matthltc@us.ibm.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Arve =?iso-8859-1?B?SGr4bm5lduVn?= <arve@android.com>,
-       "Rafael J. Wysocki" <rjw@sisk.pl>,
-       Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-       tytso@mit.edu, Brian Swetland <swetland@google.com>,
-       Neil Brown <neilb@suse.de>, Alan Stern <stern@rowland.harvard.edu>,
-       Felipe Balbi <felipe.balbi@nokia.com>,
-       LKML <linux-kernel@vger.kernel.org>,
-       Florian Mickler <florian@mickler.org>,
-       Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
-       Linux PM <linux-pm@lists.linux-foundation.org>,
-       Alan Cox <alan@lxorguk.ukuu.org.uk>,
-       James Bottomley <James.Bottomley@suse.de>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       Kevin Hilman <khilman@deeprootsystems.com>,
-       "H. Peter Anvin" <hpa@zytor.com>,
-       Arjan van de Ven <arjan@infradead.org>
-Subject: Re: suspend blockers & Android integration
-Message-ID: <20100606144322.GC21016@count0.beaverton.ibm.com>
-References: <AANLkTikGDSzaENwg_0BAtsYf3ulGd_6sGPR30WsvUxMi@mail.gmail.com>
- <alpine.LFD.2.00.1006050246350.2933@localhost.localdomain>
- <AANLkTikU21xF49Z-_Lnrq7U7buNmqw_gyEEST8LuN24z@mail.gmail.com>
- <alpine.LFD.2.00.1006051736040.2933@localhost.localdomain>
- <AANLkTinD39rI47innPbGz1Gi8PsXV5HqkmaQuJ70oQ63@mail.gmail.com>
- <alpine.LFD.2.00.1006052348200.2933@localhost.localdomain>
- <AANLkTikmWDHYJ8wWF2cZapbkHHjV09R39I37yvQXFmor@mail.gmail.com>
- <alpine.LFD.2.00.1006060148470.2933@localhost.localdomain>
- <AANLkTikdM79nmARagK9gLveMWEiT6rlk44UELes1k8Ch@mail.gmail.com>
- <alpine.LFD.2.00.1006061202351.2933@localhost.localdomain>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <alpine.LFD.2.00.1006061202351.2933@localhost.localdomain>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1757936Ab0FFOxO (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Jun 2010 10:53:14 -0400
+Received: from smtp.nokia.com ([192.100.105.134]:18180 "EHLO
+	mgw-mx09.nokia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756570Ab0FFOxN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 6 Jun 2010 10:53:13 -0400
+From: Artem Bityutskiy <dedekind1@gmail.com>
+To: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+       LKML <linux-kernel@vger.kernel.org>, linux-fsdevel@vger.kernel.org
+Subject: [PATCHv5 00/16] kill unnecessary SB sync wake-ups + cleanups
+Date: Sun,  6 Jun 2010 17:50:13 +0300
+Message-Id: <1275835829-1478-1-git-send-email-dedekind1@gmail.com>
+X-Mailer: git-send-email 1.7.0.1
+X-OriginalArrivalTime: 06 Jun 2010 14:53:07.0200 (UTC) FILETIME=[F954D000:01CB0587]
+X-Nokia-AV: Clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jun 06, 2010 at 12:36:21PM +0200, Thomas Gleixner wrote:
-> On Sat, 5 Jun 2010, Arve Hj�nnev�g wrote:
+Hi,
 
-<snip>
+here is the v5 of the SB sync wakups killing patches, the v4 submission can be
+found here: http://marc.info/?l=linux-fsdevel&m=127479544728442&w=2
 
-> > events like input event go though a single thread in our system
-> > process, while other events like network packets (which are also
-> > wakeup events) goes directly to the app.
+Changes since v4:
 
-If you want to wake up cgroup-frozen tasks for these fds perhaps your
-framework can fcnt(fd, F_SETOWN, <p[g]id>) to send SIGIO to a
-userspace-suspend-blocker thread/process/process group. When IO comes in, the
-suspend blocker is signalled which then unfreezes the cgroup of the frozen
-untrusted task. SIGIO works on pipes, fifos, sockets, ttys, and ptys --
-many of which are precisely the kinds of things that would connect [trusted
-and untrusted] apps. Notably absent (last I checked): inotify fds, signalfd,
-timerfd, eventfd, filesystem fds and likely more.
+- use 'sb_mark_dirty()', 'sb_mark_clean()' and 'sb_is_dirty()' names as
+  per Andrew's request
+- use lighter locking scheme requested by Al and Andrew and provided by
+  Nick Piggin
+- various clean-ups as a result of validation of 's_dirt' usage in FSes
+  as was requested by Al. To be frank, my energy ended at some point, and
+  I did not really validate reiserfs, sysv, UDF and UFS. The former is very
+  sub-standard, and the latter are ancient code and I dared not touching it.
 
-Incidentally, this is just to show that it's not impossible to implement
-"wakeups" for cgroup-frozen tasks in userspace.
+The structure of the patch series
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Cheers,
-	-Matt Helsley
+1. The first patch introduces s_dirt wrappers and makes all FSes use them.
+   Previously I submitted per-FS patches, but now I've folded them all into
+   one.
+2. Patch 3 implements the whole logic which prevents unnecessary wake-ups.
+
+Then go various clean-ups which I have to do to get upstreamed :-) Note, the
+changes described below do not go in exactly this order in the patch series.
+
+3. I've cleaned up AFFS and tested it.
+4. Removed unneeded (IMO) code from BFS and tested.
+5. Due to races between ->write_super and entities which modify the SB, it
+   is possible to end up with a modified SB, but nevertheless marked as clean.
+   So I added some more memory barriers and fixed AFFS, exofs, ext2, ext4,
+   and HFS. Tested only AFFS.
+6. Ancient FSes disrespect the wait flag in ->sync_fs(). They also do not
+   wait for the buffers in ->put_super(), which is wrong AFAIU, because we
+   are being unmounted, so we have to make sure the stuff was submitted
+   to the HW. I fix this in AFFS, HFS, and HFSPLUS.
+
+It looks like sysv, UFS and UDF also do not wait for the buffers in
+->put_super, but I did not dare modifying them... I already made too man
+modifications in the code I do not know well enough.
+
+Please, review the cleanups - I tested only AFFS and BFS (the rest is only
+compile-tested), and I am not really sure the 'wait for buffers' changes are
+correct.
+
+-- 
+Best Regards,
+Artem Bityutskiy (Артём Битюцкий)
