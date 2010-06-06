@@ -1,173 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933964Ab0FFCVQ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Jun 2010 22:21:16 -0400
-Received: from straum.hexapodia.org ([207.7.131.186]:54791 "EHLO
-	straum.hexapodia.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933954Ab0FFCVP (ORCPT
+	id S933974Ab0FFCtM (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Jun 2010 22:49:12 -0400
+Received: from netrider.rowland.org ([192.131.102.5]:49809 "HELO
+	netrider.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S933958Ab0FFCtK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Jun 2010 22:21:15 -0400
-Date: Sat, 5 Jun 2010 19:21:15 -0700
-From: Andy Isaacson <adi@hexapodia.org>
-To: linux-kernel@vger.kernel.org, Chris Wilson <chris@chris-wilson.co.uk>,
-       Eric Anholt <eric@anholt.net>, dri-devel@lists.sourceforge.net
-Subject: [2.6.35-rc regression] i915: cursor corruption on Arrandale caused
-	by 9b8c4a0b215e
-Message-ID: <20100606022115.GA26686@hexapodia.org>
+	Sat, 5 Jun 2010 22:49:10 -0400
+Date: Sat, 5 Jun 2010 22:49:09 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@netrider.rowland.org
+To: =?ISO-8859-1?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>
+cc: "Rafael J. Wysocki" <rjw@sisk.pl>, Matt Helsley <matthltc@us.ibm.com>,
+       Thomas Gleixner <tglx@linutronix.de>,
+       Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+       <tytso@mit.edu>, Brian Swetland <swetland@google.com>,
+       Neil Brown <neilb@suse.de>, Felipe Balbi <felipe.balbi@nokia.com>,
+       LKML <linux-kernel@vger.kernel.org>,
+       Florian Mickler <florian@mickler.org>,
+       Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
+       Linux PM <linux-pm@lists.linux-foundation.org>,
+       Alan Cox <alan@lxorguk.ukuu.org.uk>,
+       James Bottomley <James.Bottomley@suse.de>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       Kevin Hilman <khilman@deeprootsystems.com>,
+       "H. Peter Anvin" <hpa@zytor.com>,
+       Arjan van de Ven <arjan@infradead.org>
+Subject: Re: suspend blockers & Android integration
+In-Reply-To: <AANLkTikXUTZE1vesD-Ccn8VhPjhBYYS0Tw_Pq9u5nnq7@mail.gmail.com>
+Message-ID: <Pine.LNX.4.44L0.1006052233100.22666-100000@netrider.rowland.org>
 MIME-Version: 1.0
-Content-Type: multipart/mixed; boundary="a8Wt8u1KmwUX3Y2C"
-Content-Disposition: inline
-X-GPG-Fingerprint: 1914 0645 FD53 C18E EEEF C402 4A69 B1F3 68D2 A63F
-X-GPG-Key-URL: http://web.hexapodia.org/~adi/gpg.txt
-X-Domestic-Surveillance: money launder bomb tax evasion
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Type: TEXT/PLAIN; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sat, 5 Jun 2010, Arve Hjønnevåg wrote:
 
---a8Wt8u1KmwUX3Y2C
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+> Yes, we can keep all our user space suspend blockers and thaw the
+> frozen cgroup when any suspend blocker is held, but this would
+> eliminate any power advantage that freezing a cgroup has over using
+> suspend to freeze all processes. Without annotating the drivers to
+> block the cgroup freezing in the same places as we now block suspend,
+> it also prevents processes in the cgroup that we freeze from directly
+> consuming wakup events.
 
-My x201s (Core i7 L640 according to /proc/cpuinfo) running -rc1 exhibits
-cursor corruption when changing the cursor image (such as when moving
-out of xterm onto the desktop).  Bisection pointed to 9b8c4a0b215e and
-reverting that on top of 03cd373981 fixed the problem.  I'm running
-fvwm2 with xterm as my primary X client; the driver is
+The driver annotations don't need to block the cgroup freezing.  They
+just need to keep the system running long enough to awaken a thread
+that will handle the wakeup event.  (See below.)  A pm-qos constraint 
+is good enough for this.
 
-xserver-xorg-video-intel             2:2.9.1-4
+> If you are referring to the approach that we don't use suspend but
+> freeze a cgroup instead, this only solves the problem of bad apps. It
+> does not help pause timers in trusted user space code and in the
+> kernel, so it does not lower our average power consumption.
 
-The corruption generally goes away within a second or two, and seems to
-consist of the previous cursor image interleaved with the new cursor
-image on a row-by-row basis.  Some kind of cache flush issue?
+You can solve this problem if you restructure your "trusted" apps in
+the right way.  Require a trusted app to guarantee that whenever it
+doesn't hold any suspend blockers, it will do nothing but wait (in a
+poll() system call for example) for a wakeup event.  When the event
+occurs, it must then activate a suspend blocker.
 
-I've attached a JPG of a corrupted cursor.
+Better yet, make it more fine-grained.  Instead of trusted apps, have
+trusted threads.  Freeze the untrusted threads along with everything
+else, and require the trusted threads to satisfy this guarantee.
 
--andy
+In this way, while the system is idle no user timers will get renewed.
+Kernel timers are another matter, but we should be able to handle them.  
+There's nothing Android-specific about wanting to reduce kernel timer 
+wakeups while in a low-power mode.
 
---a8Wt8u1KmwUX3Y2C
-Content-Type: image/jpeg
-Content-Disposition: attachment; filename="IMG_0378.JPG"
-Content-Transfer-Encoding: base64
+> And, it
+> does not solve the problem for systems that enters lower power states
+> from suspend than it can from idle. The last point my not be relevant
+> to android anymore, but desktop systems already have auto suspend and
+> it would be preferable to have a race free kernel api for this.
 
-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
-AAAAAAAAAAAAAAAAkAMAAFYBAAB2AQAAjAAAABoCAADKAAAApAAAAD4AAAD7DwAA+w8AAAEA
-AAABAAAAAwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAHUZAADcGgAAAAAAAP//AAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAaAAAADQAAAHcfg2NgAAIACQABAEAOsApkAGQAEgAAAAAAAAAAAAAA
-AAAAAAAAEgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAgAAEAAAACAAIAAgACAAAAAAAAAAAAAAAAAAAAAAAAAIoAAQAAAAQACAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAKABAAAAABAACAABAAEAgALgAQAAAAAAAAAAAAAIAIABAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-CAAAAAAAAAAKAAAA//8AAAAAqbm/6RTQGHuo/iqqOR+nlwgAAAAAAAEAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAKo3ACQBAACAvykA2wAAAEAO
-AABADgAABAABAAIABAAAAFI5OAACAAcABAAAADAxMDABEAMAAQAAAEAOAAACEAMAAQAAALAK
-AAAAAAAABgADAQMAAQAAAAYAAAAaAQUAAQAAAEoNAAAbAQUAAQAAAFINAAAoAQMAAQAAAAIA
-AAABAgQAAQAAAFoNAAACAgQAAQAAAJsEAAAAAAAAtAAAAAEAAAC0AAAAAQAAAP/Y/+AAEEpG
-SUYAAQEAAAEAAQAA/9sAQwAIBgYHBgUIBwcHCQkICgwUDQwLCwwZEhMPFB0aHx4dGhwcICQu
-JyAiLCMcHCg3KSwwMTQ0NB8nOT04MjwuMzQy/9sAQwEJCQkMCwwYDQ0YMiEcITIyMjIyMjIy
-MjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIy/8AAEQgAOQBAAwEi
-AAIRAQMRAf/EAB8AAAEFAQEBAQEBAAAAAAAAAAABAgMEBQYHCAkKC//EALUQAAIBAwMCBAMF
-BQQEAAABfQECAwAEEQUSITFBBhNRYQcicRQygZGhCCNCscEVUtHwJDNicoIJChYXGBkaJSYn
-KCkqNDU2Nzg5OkNERUZHSElKU1RVVldYWVpjZGVmZ2hpanN0dXZ3eHl6g4SFhoeIiYqSk5SV
-lpeYmZqio6Slpqeoqaqys7S1tre4ubrCw8TFxsfIycrS09TV1tfY2drh4uPk5ebn6Onq8fLz
-9PX29/j5+v/EAB8BAAMBAQEBAQEBAQEAAAAAAAABAgMEBQYHCAkKC//EALURAAIBAgQEAwQH
-BQQEAAECdwABAgMRBAUhMQYSQVEHYXETIjKBCBRCkaGxwQkjM1LwFWJy0QoWJDThJfEXGBka
-JicoKSo1Njc4OTpDREVGR0hJSlNUVVZXWFlaY2RlZmdoaWpzdHV2d3h5eoKDhIWGh4iJipKT
-lJWWl5iZmqKjpKWmp6ipqrKztLW2t7i5usLDxMXGx8jJytLT1NXW19jZ2uLj5OXm5+jp6vLz
-9PX29/j5+v/aAAwDAQACEQMRAD8A8JAo6CgZIzTlFUIUL3pCtdzZ/Dq7udFtdRa+s4vtMZeK
-J3+ZvYD1rmtV0PUdHdFv7WSAuMrvGMitvYTceZLQz9rG/LcySOaCM1IV6GmEYNZWLuN6UoB6
-0GjOKQwGacvXHTNJ2oHUGgD0n+1rHU/h1HFdXBi1fTCFs1jbBZe5p39v6/o+n2a67ape2V8p
-aOW4USShO+0npXK+GdYOlatDKRH5bHZIZF3AIeCa6DxlpM7a3ZGwMkum3YH2Dc+R2z16DNdV
-ObasjlnCKfqSTaR4S1eznvbHUV0vyUP+j3B3vI3rx0rgZIpPLLlTtzjODivbdC8KWOk6TNHr
-WhLe6mW3ANJxsx0B6fhXJeLfE2m3nhk6JY6J/Z4S6EmS+cEA5GPxq3HmjeRMJpS5Ynm+CD6U
-nepHBDUg9643udiG859qUUUvekBJGxDdM+1ew+BgPFHh9Ir+aI3GnXCC2ZyFMacZA/KvGwcG
-rdvc+WpG9hzngkVpTnysyqw5lY9c1bxtJofju/sZJFm07zQcrhjGx/iH+FQ+LPDdv4ktP7U0
-+aM3e3duB4mHv6MewryZp83DOO59a6fw14wvNBbEEcdxDncsM/3Ub+8PQ1tCtZ26GH1flV1u
-crdQSwXEkMyNHIjbWVhgg1BWjq9/JqWq3N7KqJJO5dlToDWfWFS3N7p1RvbUOMUh9qSnCoLD
-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
+This is an entirely different matter from the rest of the discussion.
+It would be better to consider this separately after Android's current
+problems have been addressed.
 
---a8Wt8u1KmwUX3Y2C--
+Alan Stern
+
