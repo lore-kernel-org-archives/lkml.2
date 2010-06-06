@@ -1,27 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933854Ab0FEX4m (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 5 Jun 2010 19:56:42 -0400
-Received: from mail-px0-f174.google.com ([209.85.212.174]:40118 "EHLO
-	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933756Ab0FEX4j convert rfc822-to-8bit (ORCPT
+	id S933863Ab0FFACS (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 5 Jun 2010 20:02:18 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:33176 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933788Ab0FFACR convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 5 Jun 2010 19:56:39 -0400
+	Sat, 5 Jun 2010 20:02:17 -0400
 MIME-Version: 1.0
-In-Reply-To: <201006060044.16950.rjw@sisk.pl>
+In-Reply-To: <20100605163411.6c561fbf@infradead.org>
 References: <20100603193045.GA7188@elte.hu>
-	<alpine.LFD.2.00.1006051736040.2933@localhost.localdomain>
-	<AANLkTinD39rI47innPbGz1Gi8PsXV5HqkmaQuJ70oQ63@mail.gmail.com>
-	<201006060044.16950.rjw@sisk.pl>
-Date: Sat, 5 Jun 2010 16:56:38 -0700
-Message-ID: <AANLkTikrPTvkXZM2yybiDfkHraRkw4oCH9nC8R4d3KS5@mail.gmail.com>
+	<20100603231153.GA11302@elte.hu>
+	<20100603232302.GA16184@elte.hu>
+	<AANLkTikZP3bmckpfb_jUdG7qZO5W9DgpZ79ugtSZaEpt@mail.gmail.com>
+	<20100604071354.GA14451@elte.hu>
+	<AANLkTimH4ihf3QqtKFpfGXRKtO55PrUuff9JYtaEBG44@mail.gmail.com>
+	<20100604083423.GD15181@elte.hu>
+	<AANLkTinQyzzeF-NOAjrAqqQXqKjFJhx85nI4uyBGRtWd@mail.gmail.com>
+	<1275653210.27810.39762.camel@twins>
+	<AANLkTinyjBa0KYfFz3_EFbC65hoQFwFINlTDYjCe-wM3@mail.gmail.com>
+	<1275731653.27810.41078.camel@twins>
+	<20100605092851.6ee15f13@infradead.org>
+	<AANLkTimEwznq9c_8lkuBMxEQ-42rdvpZEqA9Y71Cu-qC@mail.gmail.com>
+	<20100605152326.7ccd5160@infradead.org>
+	<AANLkTil0XV8EDK8WWody7f-L5ou4p_a3O_T6dTjWB12C@mail.gmail.com>
+	<20100605163411.6c561fbf@infradead.org>
+Date: Sat, 5 Jun 2010 17:02:16 -0700
+Message-ID: <AANLkTikUtdy63ip30P022eDmcZHyV_3blkQQ9UVHwJfg@mail.gmail.com>
 Subject: Re: suspend blockers & Android integration
 From: =?ISO-8859-1?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Thomas Gleixner <tglx@linutronix.de>,
-       Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+To: Arjan van de Ven <arjan@infradead.org>
+Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
        tytso@mit.edu, Brian Swetland <swetland@google.com>,
-       Neil Brown <neilb@suse.de>, Alan Stern <stern@rowland.harvard.edu>,
+       Neil Brown <neilb@suse.de>, Thomas Gleixner <tglx@linutronix.de>,
+       "Rafael J. Wysocki" <rjw@sisk.pl>,
+       Alan Stern <stern@rowland.harvard.edu>,
        Felipe Balbi <felipe.balbi@nokia.com>,
        LKML <linux-kernel@vger.kernel.org>,
        Florian Mickler <florian@mickler.org>,
@@ -31,240 +44,44 @@ Cc: Thomas Gleixner <tglx@linutronix.de>,
        James Bottomley <James.Bottomley@suse.de>,
        Linus Torvalds <torvalds@linux-foundation.org>,
        Kevin Hilman <khilman@deeprootsystems.com>,
-       "H. Peter Anvin" <hpa@zytor.com>,
-       Arjan van de Ven <arjan@infradead.org>,
-       Andrew Morton <akpm@linux-foundation.org>
+       "H. Peter Anvin" <hpa@zytor.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2010/6/5 Rafael J. Wysocki <rjw@sisk.pl>:
-> On Saturday 05 June 2010, Arve Hjønnevåg wrote:
->> 2010/6/5 Thomas Gleixner <tglx@linutronix.de>:
->> > B1;2005;0cOn Fri, 4 Jun 2010, Arve Hjønnevåg wrote:
+2010/6/5 Arjan van de Ven <arjan@infradead.org>:
+> On Sat, 5 Jun 2010 15:39:44 -0700
+> Arve Hjønnevåg <arve@android.com> wrote:
+>
 >> >
->> >> 2010/6/4 Thomas Gleixner <tglx@linutronix.de>:
->> >> > Arve,
->> >> >
->> >> > On Fri, 4 Jun 2010, Arve Hjønnevåg wrote:
->> >> >
->> >> >> On Fri, Jun 4, 2010 at 5:05 PM, Thomas Gleixner <tglx@linutronix.de> wrote:
->> >> >> > On Sat, 5 Jun 2010, Rafael J. Wysocki wrote:
->> >> >> >> I kind of agree here, so I'd like to focus a bit on that.
->> >> >> >>
->> >> >> >> Here's my idea in the very general terms:
->> >> >> >>
->> >> >> >> (1) Use the cgroup freezer to "suspend" the "untrusted" apps (ie. the ones
->> >> >> >>     that don't use suspend blockers aka wakelocks in the Android world) at the
->> >> >> >>     point Android would normally start opportunistic suspend.
->> >> >> >
->> >> >> > There is an additional benefit to this approach:
->> >> >> >
->> >> >> >     In the current android world a background task (e.g. download
->> >> >> >     initiated before the screensaver kicked in) prevents the suspend,
->> >> >> >     but that also means that the crapplications can still suck power
->> >> >> >     completely unconfined.
->> >> >> >
->> >> >>
->> >> >> Yes this can happen. It is usually only a big problem when you combine
->> >> >> an (trusted) application that has a bug that blocks suspend forever
->> >> >> with an application that wakes up too often for us to enter low power
->> >> >> idle modes.
->> >> >
->> >> > Why is it a BUG in the trusted app, when I initiate a download and put
->> >> > the phone down ?
->> >> >
->> >>
->> >> It is not, but we have had bugs where a trusted app does not unblock
->> >> suspend after some failure case where it is no longer making any
->> >> progress.
->> >
->> > Well, that's simply an application bug which sucks battery with or
->> > without suspend blockers. So it's unrelated to the freezing of
->> > untrusted apps while a trusted app still works in the background
->> > before allowing the machine to suspend.
+>> > For example if the Adobe Flash player puts a timer every 10
+>> > milliseconds (yes it does that), and you give it a 3.99 seconds
+>> > range, it will fire its timers every 4 seconds.... unless other
+>> > activity happens independently, at which point it'll align with
+>> > that instead.
 >> >
 >>
->> It is not unrelated if the trusted app has stopped working but still
->> blocks suspend. The battery drains when you combine them.
->>
->> >> > That download might take a minute or two, but that's not an
->> >> > justification for the crapplication to run unconfined and prevent
->> >> > lower power states.
->> >> >
->> >>
->> >> I agree, but this is not a simple problem to solve.
->> >
->> > Not with suspend blockers, but with cgroup confinement of crap, it's
->> > straight forward.
->> >
->>
->> I don't think is is straight forward. If the a process in the frozen
->> group holds a resource that a process in the unfrozen group needs, how
->> do deal with that?
+>> If you do that what you are delivering is nowhere close to what the
+>> app asked for.
 >
-> That depends a good deal on what you mean by holding a resource.
+> yeah it feels a little bit suspended
 >
+>> You don't need range timers for this, you could just as
+>> well add 4 seconds to all normal timers.
+>
+> .. with the difference that with range timers, you naturally align with
+> other activity, so if there's system level activity, the AVERAGE service
+> the app gets is better by a LOT than just adding 4 seconds always.
+>
+> but you knew that.... just doesn't help your case.
 
-I'm not sure why that matters. Any resource held by a frozen process
-could cause problems whether it is something like being the current
-foreground app or a mutex in shared memory.
-
-> Generally, however, if your "trusted" processes depend on the processes you
-> don't trust, then either the former should not be trusted, or the latter should
-> be trusted.
->
-There are different levels of trust. Trusted processes often need to
-wait for an untrusted process to release a resource for the untrusted
-process to behave correctly, but the trusted process can revoke the
-resource if the untrusted process does not comply in time.
-
->> >> >> >     With the cgroup freezer you can "suspend" them right away and
->> >> >> >     just keep the trusted background task(s) alive which allows us to
->> >> >> >     go into deeper idle states instead of letting the crapplications
->> >> >> >     run unconfined until the download finished and the suspend
->> >> >> >     blocker goes away.
->> >> >> >
->> >> >>
->> >> >> Yes this would be better, but I want it in addition to suspend, not
->> >> >> instead of it. It is also unclear if our user-space code could easily
->> >> >> make use of it since our trusted code calls into untrusted code.
->> >> >
->> >> > Sorry, that's really the worst argument I saw in this whole
->> >> > discussion.
->> >> >
->> >> > You're basically saying, that you have no idea what your user space
->> >> > stack is doing and you do not care at all as long as your suspend
->> >> > blocker scheme makes things work somehow.
->> >> >
->> >>
->> >> Yes I don't know everything our user-space stack is doing, but I do
->> >> know that it makes many calls between processes (and in both
->> >> directions). As far as I know it uses timeouts when calling into
->> >> untrusted code, so a misbehaving application will cause an error
->> >> dialog to pop up asking if the user if it should wait longer or
->> >> terminate the application.
->> >
->> > Sigh, the more I learn about the details of android and it's violation
->> > of all sane engineering principles the more I understand why you
->> > invented a huge nail to push through all layers in order to bring the
->> > system into idle at all. And yes, you need a sledge hammer to drive
->> > that big nail through everything, so you are using the right tool.
->> >
->> > Seriously, the cross app call goes through your framework, which
->> > already knows, that the untrusted part is frozen. So it can deal
->> > nicely with it in any way you want including unfreezing.
->>
->> Cross app calls do not go through a central process.
->
-> Well, yeah.
->
-> Arve, we're still learning you have some more requirements we had no idea
-
-What new requirement are you talking about. Did you assume all our
-user-space ipc calls went though a single process?
-
-> about before and such that _only_ the suspend blockers (or wakelocks) framework
-> is suitable to satisfy them.  I don't realistically think we can make any
-> progress this way.
->
->> >> > Up to that point, I really tried hard to step back from my initial
->> >> > "OMG, promoting crap is a nono" reaction and work with you on a
->> >> > sensible technical solution to confine crap and make it aligned with
->> >> > other efforts in this area.
->> >> >
->> >> > So now, after I spent a reasonable amount of time (as you did) to
->> >> > understand what your requirements are, you come up with another
->> >> > restriction which is so outside of any level of sanity, that I'm at
->> >> > the point of giving up and just going into NAK mode.
->> >> >
->> >>
->> >> I don't think this is a new restriction. Both Brian and I have
->> >> mentioned that we have a lot of dependencies between processes.
->
-> Which is not the same as "the dependencies are such that they can't be
-> taken into account in any way other than by using wakelocks (or suspend
-> blockers)".
->
->> >> > Can you please answer the following question:
->> >> >
->> >> >    What is the point of having the distinction of "trusted" and
->> >> >    "untrusted" when you have no way to prevent "trusted" code calling
->> >> >    "into "untrusted" code ?
->> >> >
->> >>
->> >> Trusted code that calls into untrusted code has to deal with the
->> >> untrusted code not responding, but we only want to pop up a message
->> >> that the application is not responding if it is misbehaving, not just
->> >> because it was frozen though no fault of its own.
->
-> When Android starts opportunistic suspend, all applications are frozen,
-> "trusted" as well as "untrusted", right?  So, after they are all frozen, none
-> of them can do anything to prevent suspend from happening, right?
-
-Not if you mean when we write to /sys/power/state. Processes are not
-frozen until the last suspend blocker is released.
-
->
-> Now, in my proposed approach the "untrusted" apps are frozen exactly at the
-> point Android would start opportunistic suspend and they wouldn't be able
-> to do anything about that anyway.  So if one of your "trusted" apps depends
-> on the "untrusted" ones in a way that you describe, you alread have a bug
-> (the "trusted" app cannot prevent automatic suspend from happening even if it
-> wants, because it depends on an "untrusted" app that has just been frozen).
->
-
-I don't think what you said here is correct. If a wakeup event happens
-all processed are unfrozen since the driver blocks suspend. The app
-that reads this event blocks suspend before reading it. If it was busy
-talking to a less trusted app when the event happened it still works
-since all apps are running at this point.
-
->> >> > That's violating any sense of abstraction and layering and makes it
->> >> > entirely clear that the only way you can deal with your own design
->> >> > failure is a big hammer which you need to force into the kernel.
->> >> >
->> >>
->> >> How can it be fixed? The user presses the back button, the framework
->> >> determines that app A is in the foreground and send the key to app A,
->> >> app A decides that it it does not have anything internal to go back to
->> >> and tells the framework to switch back to the previous app. If the
->> >> user presses the back key again, the framework does not know which app
->> >> this key should go to until app A has finished processing the first
->> >> key press.
->> >
->> > Errm, what has this to do with frozen apps? If your system is
->> > handling input events then there are no frozen apps and even if they
->> > are frozen your framework can unfreeze them _before_ talking to them.
->> >
->> > So which unfixable problem are you describing with the above example ?
->> >
->>
->> You are claiming that trusted code should not have any dependencies on
->> untrusted code.
->
-> Not "any".  It shouldn't have dependencies that make a difference between
-> "trusted" and "untrusted".
->
-> Think of security, for example.  A root-owned process surely can exchange data
-> with processes owned by non-root users, but it shouldn't blindly accept any
-> data these processes give it.
->
-> Your wakelock-holding application is a counterpart of the root-owned process
-> above.  It can exchange data with processes that don't take wakelocks, but not
-> in such a way that would prevent them from taking wakelocks if necessary
-> (or from dropping wakelocks if no longer needed from their point of view).
->
-> If this condition is satisfied, then I claim you won't have any problems with
-> freezing the "untrusted" apps upfront.  If this condition is not satisfied, in
-> turn, your framework already doesn't work.
-
-The problem is that properly working untrusted apps may get treated as
-non-working apps and killed because they were frozen and did not
-respond. Also this is not invisible to the user as the system usually
-gives the app several seconds to respond.
+So you are saying it is safe to use range timers to radically change
+the requested timer interval because it does not actually get to the
+value that you changed it so. But you are also saying that this will
+allow the system to stay idle for that long. Something does not add
+up.
 
 -- 
 Arve Hjønnevåg
