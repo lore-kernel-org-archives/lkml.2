@@ -1,107 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755399Ab0FGGwY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jun 2010 02:52:24 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:51668 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753370Ab0FGGwW convert rfc822-to-8bit (ORCPT
+	id S932125Ab0FGGxb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jun 2010 02:53:31 -0400
+Received: from mail-px0-f174.google.com ([209.85.212.174]:56972 "EHLO
+	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753370Ab0FGGxa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jun 2010 02:52:22 -0400
+	Mon, 7 Jun 2010 02:53:30 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=VbC6O0TLTd3LhEclFjVyTRnxN8lwfpQPzLdw3TVCcGxQ4KL0MHqSMoGW3YdQDWkjPs
-         ap9icD9Tko+gbmoS5HyD+/I7bYu7RR23MsW0yZ96UA+aDQkRQaw/WCw6EoOF5BsYH+IB
-         D6XdPUE0ELuqrlGkTPU6P8HUsAnFQNe+Lg5Fc=
+        h=date:from:to:cc:subject:message-id:mime-version:content-type
+         :content-disposition:user-agent;
+        b=VpWV56vXO0yqvmLs3BpvbGXdv30v0J8FLOXVHozbKmg0JVmbM1fKnhNineJPK9Qbts
+         yuOEYqgkKZoHL0Tl/lNPhiB4HnTm/XI3b3SkfxYfa5nB3DJBIWOKdlk3XuAgphuggI3T
+         qCTo068mFZKPzKtDdezLqkSFzBN29lZwkYKCI=
+Date: Sun, 6 Jun 2010 23:53:24 -0700
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Greg Thelen <gthelen@google.com>, Michal Marek <mmarek@suse.cz>
+Cc: LKML <linux-kernel@vger.kernel.org>
+Subject: Running make install over sshfs is painful now
+Message-ID: <20100607065324.GA25590@core.coreip.homeip.net>
 MIME-Version: 1.0
-In-Reply-To: <AANLkTilJYxYHc7yBsCATQviYmfeAkmEk4LK-ZGJHpMsx@mail.gmail.com>
-References: <alpine.LFD.2.00.1006052050100.3515@i5.linux-foundation.org>
-	<AANLkTinpHAK3-qj26KSLLhMB5UUDT5I9aSkrxJeRRsSl@mail.gmail.com>
-	<alpine.LFD.2.00.1006060710570.3515@i5.linux-foundation.org>
-	<AANLkTilD2n0QQrdN814XKAjDl5a_AbaRIZ0LUAOhKksL@mail.gmail.com>
-	<AANLkTimdQJGXt3_7B47FNB3_1cTq9NazWZxR4HdShogj@mail.gmail.com>
-	<AANLkTil-1OgnnzgL7U0PNQi4G8B2QFDa6BEH4mWqdkhL@mail.gmail.com>
-	<AANLkTimjxjINEtM3rIHVk_prI-_UTgkpIVhgbQ0V6rG4@mail.gmail.com>
-	<AANLkTilJYxYHc7yBsCATQviYmfeAkmEk4LK-ZGJHpMsx@mail.gmail.com>
-Date: Mon, 7 Jun 2010 16:52:21 +1000
-Message-ID: <AANLkTimbsgJ4BKIiwE-D1McBOIuxyQ14Qq-IUZR6aTmv@mail.gmail.com>
-Subject: Re: Linux 2.6.35-rc2
-From: Dave Airlie <airlied@gmail.com>
-To: Alex Deucher <alexdeucher@gmail.com>
-Cc: Torsten Kaiser <just.for.lkml@googlemail.com>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 7, 2010 at 4:32 PM, Alex Deucher <alexdeucher@gmail.com> wrote:
-> On Mon, Jun 7, 2010 at 2:22 AM, Dave Airlie <airlied@gmail.com> wrote:
->> On Mon, Jun 7, 2010 at 4:09 PM, Torsten Kaiser
->> <just.for.lkml@googlemail.com> wrote:
->>> On Mon, Jun 7, 2010 at 7:58 AM, Alex Deucher <alexdeucher@gmail.com> wrote:
->>>> On Sun, Jun 6, 2010 at 11:04 AM, Torsten Kaiser
->>>> <just.for.lkml@googlemail.com> wrote:
->>>>> [CC:Jeff+Tejun not removed, because you might want to look at the
->>>>> attached dmesgs]
->>>>>
->>>>> On Sun, Jun 6, 2010 at 4:19 PM, Linus Torvalds
->>>>> <torvalds@linux-foundation.org> wrote:
->>>>>> On Sun, 6 Jun 2010, Torsten Kaiser wrote:
->>>>>>>
->>>>>>> The first problem that shows up is, that after the KMS switches to the
->>>>>>> correct video mode (1280x1024 for an DVI attached LCD), the display
->>>>>>> begins to flicker. Every 1..2 seconds (guesstimated) the display turns
->>>>>>> off and on again. Something in the new powersaving?
->>>>>>
->>>>>> Or maybe a borderline display timing that the display has trouble syncing
->>>>>> up with?
->>>>>
->>>>> With 2.6.34 and any previous KMS kernels the output was always stable.
->>>>> (I think, I switch to the radeon KMS on 2.6.32)
->>>>> The onscreen menu of the monitor showed 1280x1024@60.2Hz for
->>>>> 2.6.35-rc2, if I recall correctly.
->>>>> Now back on 2.6.34 its 1280x1024@59.9Hz.
->>>>
->>>> The pm code shouldn't have any affect as your system only has one
->>>> power state, so it never kicks in.  It sounds like a display pll
->>>> problem, but there haven't been any changes to that code since 2.6.34.
->>>>  Any chance you could bisect it?
->>>
->>> Not really. -rc1 did not boot for me (although if I disable v4l that
->>> might work), and there is this memory corruption error.
->>>
->>> Regarding the PLLs, did you see this mail? It contains the
->>> drm.debug=15 output from 2.6.34 and 2.6.35-rc2.
->>> http://lkml.org/lkml/2010/6/6/126
->>>
->>> The debug output from radeon_set_pll looks identical. But in 2.6.35 a
->>> call to [drm:radeon_legacy_tmds_int_dpms], seems new.
->>>
->>> The switchoff intervall is ~10 seconds, not 1..2 as I guessed in the first mail.
->>> Any idea if there is something in the KMS code that triggers at this intervall?
->>
->> The new mode probing code happens every 10 seconds, though we
->> shouldn't be turning anything on or off with it.
->>
->> So I suspect the DAC detection table might be doing bad things on your
->> hardware, we have had a problem where the dac detect table on one DAC
->> would turn the other one off which clearly wasn't what we wanted to
->> see.
->> ,
->
-> The x300 is a non-atom card, so it uses the legacy load detection
-> routines which do mess with some of the crtc regs.
->
+Hi,
 
-Okay I see it now, I'm amazed that I was seeing this issue last week
-and blaming it on something complete different and only seeing it on
-one card.
+With the following commit running "make modules_install install" over
+sshfs (and I suppose nfs) is extremely painful:
 
-I expect its the same problem I'll try and track down a proper fix for
-it tomorrow.
+commit fb994ecc2b1c214951366c2ba5d8b121f0010d1f
+Author: Greg Thelen <gthelen@google.com>
+Date:   Wed May 5 10:41:44 2010 -0700
 
-Dave.
+    kbuild: Fix checking of scm-identifier variable
+    
+    I'm looking Makefile in the -mm branch (dated 2010-04-28-16-53) and
+    seeing what looks like a bug in the checking of scm-identifier.  The
+    "ifneq ($scm-identifier)" seems to always execute "ifeq
+    ($(LOCALVERSION,)) ...".  This patch fixes the checking of
+    scm-identifier.
+    
+    Signed-off-by: Greg Thelen <gthelen@google.com>
+    Acked-by: David Rientjes <rientjes@google.com>
+    Signed-off-by: Michal Marek <mmarek@suse.cz>
+
+I compile my kernel on my workstation and then mount working tree over
+sshfs and install on my laptop over wireless. It worked well for the
+last few years but the latest changeset slows this process down to a
+crawl - traversing git repository over the network is not the fastest
+process out there. Any cfhance we could generate the tag at compile time
+as opposed to install time?
+
+Thanks.
+
+-- 
+Dmitry
