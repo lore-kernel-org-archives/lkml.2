@@ -1,94 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754036Ab0FGVQd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jun 2010 17:16:33 -0400
-Received: from cantor.suse.de ([195.135.220.2]:55792 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751896Ab0FGVQc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jun 2010 17:16:32 -0400
-Date: Mon, 7 Jun 2010 23:16:30 +0200
-From: Michal Marek <mmarek@suse.cz>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, LKML <linux-kernel@vger.kernel.org>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Eric Miao <eric.y.miao@gmail.com>
-Subject: Re: [kbuild regression, post-rc1] Remote installation over
- read-only NFS broken
-Message-ID: <20100607211630.GA3902@sepie.suse.cz>
-References: <201006071110.26245.rjw@sisk.pl>
- <alpine.LFD.2.00.1006070732170.3515@i5.linux-foundation.org>
+	id S1753409Ab0FGVXb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jun 2010 17:23:31 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:55633 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752750Ab0FGVX3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Jun 2010 17:23:29 -0400
+Date: Mon, 7 Jun 2010 14:17:23 -0700 (PDT)
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: David Woodhouse <dwmw2@infradead.org>
+cc: Al Viro <viro@ZenIV.linux.org.uk>, Dave Airlie <airlied@linux.ie>,
+       dri-devel@lists.freedesktop.org,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [git pull] drm fixes
+In-Reply-To: <1275939165.17903.5100.camel@macbook.infradead.org>
+Message-ID: <alpine.LFD.2.00.1006071409320.4506@i5.linux-foundation.org>
+References: <alpine.DEB.2.00.1006070404510.29029@skynet.skynet.ie>  <alpine.LFD.2.00.1006071057300.3515@i5.linux-foundation.org>  <20100607182640.GL31073@ZenIV.linux.org.uk>  <alpine.LFD.2.00.1006071146451.3515@i5.linux-foundation.org>
+ <1275939165.17903.5100.camel@macbook.infradead.org>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LFD.2.00.1006070732170.3515@i5.linux-foundation.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 07, 2010 at 07:41:42AM -0700, Linus Torvalds wrote:
+
+
+On Mon, 7 Jun 2010, David Woodhouse wrote:
 > 
-> 
-> On Mon, 7 Jun 2010, Rafael J. Wysocki wrote:
-> > 
-> > Namely, I build kernels on a central machine and export the build directory
-> > along with the kernel sources over read-only NFS to test boxes.  Then, on the
-> > test boxes I run "make modules_install", copy the kernel to /boot, run mkinitrd
-> > and so on.  Now, after your commit above the "make modules_install" command on
-> > the test boxes doesn't work any more, because it tries to write to the build
-> > directory, which is mounted read-only.
-> > 
-> > Please fix or revert.
-> 
-> Ahh. It's broken for another reason too. Even if it's a writable 
-> filesystem, it means that there's a lot of files that get written by root 
-> (since you have to be root to do the install). Which is very 
-> uncomfortable, and we've tried very hard to avoid that.
+> The fix is fairly trivial. There's a "big" patch to fs/jffs2/dir.c which
+> accounts for the bulk of my pull request, but if you look harder you'll
+> see it's mostly just a bunch of removing 'return ret;' and adding 
+> 'goto fail;' so the error cleanup happens properly.
 
-I can fix both issues by the below patch, but then it reintroduces the
-issue Eric reported to me with the original approach:
+So that's the part I'm worried about.
 
-| And indeed it's strange - while scripts/Makefile.build doesn't fail
-| since
-| there seems to be a script that generates some Makefiles in between
-| the build process, I'll get this figured out to see what is the root
-| cause.
+I'm going to be hardnosed, but I'm _not_ going to so hardnosed as to worry 
+about some oneliner DocBook patch. It's not about being anal to quite that 
+degree, that would be silly. But the dir.c change is what I end up 
+worrying about.
 
-(the whole thread is at http://lkml.org/lkml/2010/1/6/16).  Eric, does
-the above still hold, i.e. if you apply the below patch, does
-scripts/Makefile.modbuiltin fail again? If so, is it possible to fix the
-driver build process instead?
+It's not at all clear why it's good to change
 
-Here is the patch:
+	jffs2_clear_inode(inode);
 
-Subject: [PATCH] kbuild: Generate modules.builtin in make modules
+into
 
-Generating the file in make modules_install was broken as well, because
-it didn't work in a readonly filesystem and otherwise it generated a
-root-owned file which is not wanted.
+	make_bad_inode(inode);
+	iput(inode);
 
-Reported-by: Rafael J. Wysocki <rjw@sisk.pl>
-Signed-off-by: Michal Marek <mmarek@suse.cz>
+and that changelog doesn't really explain it either ("fix leak"? Ok, I can 
+see the iput() fixing the leak - but you also did that jffs2_clear_inode() 
+change, and that has no explanation what-so-ever.
 
-diff --git a/Makefile b/Makefile
-index efdc3d0..2735465 100644
---- a/Makefile
-+++ b/Makefile
-@@ -1095,7 +1095,7 @@ all: modules
- #	using awk while concatenating to the final file.
- 
- PHONY += modules
--modules: $(vmlinux-dirs) $(if $(KBUILD_BUILTIN),vmlinux)
-+modules: $(vmlinux-dirs) $(if $(KBUILD_BUILTIN),vmlinux) modules.builtin
- 	$(Q)$(AWK) '!x[$$0]++' $(vmlinux-dirs:%=$(objtree)/%/modules.order) > $(objtree)/modules.order
- 	@$(kecho) '  Building modules, stage 2.';
- 	$(Q)$(MAKE) -f $(srctree)/scripts/Makefile.modpost
-@@ -1117,7 +1117,7 @@ PHONY += modules_install
- modules_install: _modinst_ _modinst_post
- 
- PHONY += _modinst_
--_modinst_: modules.builtin
-+_modinst_:
- 	@if [ -z "`$(DEPMOD) -V 2>/dev/null | grep module-init-tools`" ]; then \
- 		echo "Warning: you may need to install module-init-tools"; \
- 		echo "See http://www.codemonkey.org.uk/docs/post-halloween-2.6.txt";\
+So is this a safe thing that definitely fixes a serious bug? I am left 
+with no good way to judge.
+
+			Linus
