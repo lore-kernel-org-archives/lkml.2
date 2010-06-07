@@ -1,61 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753082Ab0FGAB7 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Jun 2010 20:01:59 -0400
-Received: from netrider.rowland.org ([192.131.102.5]:43174 "HELO
-	netrider.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752296Ab0FGAB6 (ORCPT
+	id S1752942Ab0FGAI4 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Jun 2010 20:08:56 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:44988 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751395Ab0FGAIy convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Jun 2010 20:01:58 -0400
-Date: Sun, 6 Jun 2010 20:01:56 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@netrider.rowland.org
-To: Matthew Garrett <mjg59@srcf.ucam.org>
-cc: Vitaly Wool <vitalywool@gmail.com>, Neil Brown <neilb@suse.de>,
-       <tytso@mit.edu>, Peter Zijlstra <peterz@infradead.org>,
-       Brian Swetland <swetland@google.com>,
-       Felipe Balbi <felipe.balbi@nokia.com>,
-       LKML <linux-kernel@vger.kernel.org>,
-       Florian Mickler <florian@mickler.org>,
-       James Bottomley <James.Bottomley@suse.de>,
-       Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
-       Linux PM <linux-pm@lists.linux-foundation.org>,
-       Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       Ingo Molnar <mingo@elte.hu>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
-       Arjan van de Ven <arjan@infradead.org>
-Subject: Re: [linux-pm] suspend blockers & Android integration
-In-Reply-To: <20100606152946.GA11351@srcf.ucam.org>
-Message-ID: <Pine.LNX.4.44L0.1006061956510.4894-100000@netrider.rowland.org>
+	Sun, 6 Jun 2010 20:08:54 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=RnqCYwd+zDb4seSMmigjzIhkDumrMPY/rR8Ldt5U6WE0DUtdQRMQ1LG2V0MtLKsSFd
+         9HjxiwO4t1SXOwZ2D9h07ZEz0rK8RsAYPJ++rW3jZm+D+NHeCGZBFvphGLf76DbS8/kI
+         xwIaEBAsXraelmXBFNwHZAMdIe7soRqU7mxDY=
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <4C0C22C4.3010705@orcon.net.nz>
+References: <4C0C22C4.3010705@orcon.net.nz>
+Date: Sun, 6 Jun 2010 20:08:51 -0400
+Message-ID: <AANLkTim9aWVzb7v5fnS6x3ghMU2_tpaLlbZu3SKXV_0R@mail.gmail.com>
+Subject: Re: 2.6.35-rc2 compilation error on Alpha
+From: Matt Turner <mattst88@gmail.com>
+To: Michael Cree <mcree@orcon.net.nz>
+Cc: linux-kernel@vger.kernel.org, Borislav Petkov <borislav.petkov@amd.com>,
+       "H. Peter Anvin" <hpa@zytor.com>, linux-alpha@vger.kernel.org
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 6 Jun 2010, Matthew Garrett wrote:
+On Sun, Jun 6, 2010 at 6:35 PM, Michael Cree <mcree@orcon.net.nz> wrote:
+> When compiling 2.6.35-rc2 for Alpha architecture the following compiler
+> error is seen:
+>
+>  CC      arch/alpha/kernel/asm-offsets.s
+> In file included from include/linux/kernel.h:17,
+>                 from include/linux/sched.h:54,
+>                 from arch/alpha/kernel/asm-offsets.c:9:
+> include/linux/bitops.h: In function ‘hweight_long’:
+> include/linux/bitops.h:49: error: implicit declaration of function
+> ‘__arch_hweight32’
+>
+> Cheers
+> Michael.
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-alpha" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>
 
-> The difference between idle-based suspend and opportunistic suspend is 
-> that the former will continue to wake up for timers and will never be 
-> entered if something is using CPU, whereas the latter will be entered 
-> whenever no suspend blocks are held. The problem with opportunistic 
-> suspend is that you might make the decision to suspend simultaneusly 
-> with a wakeup event being received. Suspend blocks facilitate 
-> synchronisation between the kernel and userspace to ensure that all such 
-> events have been consumed and handld appropriately.
+Yeah, it was a stupid typo in
+1527bc8b928dd1399c3d3467dd47d9ede210978a. I've fixed it and put the
+patch in my tree for Linus.
 
-Remember that suspend takes place in several phases, the first of which 
-is to freeze tasks.  The phases can be controlled individually by the 
-process carrying out a suspend, and there's nothing to prevent you from 
-stopping after the freezer phase.  Devices won't get powered down, but 
-Android uses aggressive runtime power management for its devices 
-anyway.
+Unfortunately, there's another compile error--PCI breakage. I'll do this too...
 
-If you do this then the synchronization can be carried out entirely
-from userspace, with no need for kernel modifications such as suspend
-blockers. And since Android can reach essentially the same low-power
-state from idle as from suspend, it appears that they really don't need
-any kernel changes at all.
-
-Alan Stern
-
+Thanks,
+Matt
