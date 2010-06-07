@@ -1,66 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753518Ab0FGTAO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jun 2010 15:00:14 -0400
-Received: from charlotte.tuxdriver.com ([70.61.120.58]:35867 "EHLO
-	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752368Ab0FGTAM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jun 2010 15:00:12 -0400
-From: "John W. Linville" <linville@tuxdriver.com>
-To: linux-wireless@vger.kernel.org
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-       linux-kernel@vger.kernel.org, Randy Dunlap <randy.dunlap@oracle.com>,
-       "John W. Linville" <linville@tuxdriver.com>
-Subject: [PATCH] iwlwifi: fix-up botched revert
-Date: Mon,  7 Jun 2010 14:49:36 -0400
-Message-Id: <1275936576-15590-1-git-send-email-linville@tuxdriver.com>
-X-Mailer: git-send-email 1.6.6.1
-In-Reply-To: <20100607090230.deed8bd1.randy.dunlap@oracle.com>
-References: <20100607090230.deed8bd1.randy.dunlap@oracle.com>
+	id S1753582Ab0FGTCj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jun 2010 15:02:39 -0400
+Received: from mail.atheros.com ([12.36.123.2]:12298 "EHLO mail.atheros.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752390Ab0FGTCi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Jun 2010 15:02:38 -0400
+Date: Mon, 7 Jun 2010 12:02:36 -0700
+From: "Luis R. Rodriguez" <lrodriguez@atheros.com>
+To: Joe Perches <joe@perches.com>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
+       linux-wireless <linux-wireless@vger.kernel.org>,
+       Luis Rodriguez <Luis.Rodriguez@atheros.com>
+Subject: Re: [PATCH 11/17] MAINTAINERS: Add STAGING - OTUS 802.11n USB
+ WIRELESS DRIVER
+Message-ID: <20100607190236.GD29505@tux>
+References: <cover.1275935090.git.joe@perches.com>
+ <de848b7990a8a691068c8761543a321f4df3f759.1275935091.git.joe@perches.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <de848b7990a8a691068c8761543a321f4df3f759.1275935091.git.joe@perches.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In the revert of "iwlwifi: move _agn statistics related structure", I
-need to use CONFIG_IWLWIFI_DEBUGFS instead of CONFIG_IWLWIFI_DEBUG in
-the private structure definition.  Without this patch, it is possible
-to get this:
+On Mon, Jun 07, 2010 at 11:49:45AM -0700, Joe Perches wrote:
+> Signed-off-by: Joe Perches <joe@perches.com>
+> ---
+>  MAINTAINERS |    5 +++++
+>  1 files changed, 5 insertions(+), 0 deletions(-)
+> 
+> diff --git a/MAINTAINERS b/MAINTAINERS
+> index 06eed7b..4494736 100644
+> --- a/MAINTAINERS
+> +++ b/MAINTAINERS
+> @@ -5507,6 +5507,11 @@ M:	Ossama Othman <ossama.othman@intel.com>
+>  S:	Odd Fixes
+>  F:	drivers/staging/memrar/
+>  
+> +STAGING - OTUS 802.11n USB WIRELESS DRIVER
+> +M:	Luis Rodriguez <Luis.Rodriguez@Atheros.com>
+> +S:	Odd Fixes
+> +F:	drivers/staging/otus/
+> +
+>  STARFIRE/DURALAN NETWORK DRIVER
+>  M:	Ion Badulescu <ionut@badula.org>
+>  S:	Odd Fixes
 
-drivers/net/wireless/iwlwifi/iwl-rx.c: In function 'iwl_accumulative_statistics':
-drivers/net/wireless/iwlwifi/iwl-rx.c:304: error: 'struct iwl_priv' has no member named 'accum_statistics'
-drivers/net/wireless/iwlwifi/iwl-rx.c:305: error: 'struct iwl_priv' has no member named 'delta_statistics'
-drivers/net/wireless/iwlwifi/iwl-rx.c:306: error: 'struct iwl_priv' has no member named 'max_delta'
-drivers/net/wireless/iwlwifi/iwl-rx.c:321: error: 'struct iwl_priv' has no member named 'accum_statistics'
-drivers/net/wireless/iwlwifi/iwl-rx.c:323: error: 'struct iwl_priv' has no member named 'accum_statistics'
-drivers/net/wireless/iwlwifi/iwl-rx.c:325: error: 'struct iwl_priv' has no member named 'accum_statistics'
-drivers/net/wireless/iwlwifi/iwl-rx.c:327: error: 'struct iwl_priv' has no member named 'accum_statistics'
-drivers/net/wireless/iwlwifi/iwl-rx.c:329: error: 'struct iwl_priv' has no member named 'accum_statistics'
-drivers/net/wireless/iwlwifi/iwl-rx.c:331: error: 'struct iwl_priv' has no member named 'accum_statistics'
-drivers/net/wireless/iwlwifi/iwl-rx.c: In function 'iwl_reply_statistics':
-drivers/net/wireless/iwlwifi/iwl-rx.c:484: error: 'struct iwl_priv' has no member named 'accum_statistics'
-drivers/net/wireless/iwlwifi/iwl-rx.c:486: error: 'struct iwl_priv' has no member named 'delta_statistics'
-drivers/net/wireless/iwlwifi/iwl-rx.c:488: error: 'struct iwl_priv' has no member named 'max_delta'
+Nack, this driver is unmaintained and its only purpose is as a
+source of documentation for developers working on ar9170 and carl9170.
+Once carl9170 gets 11n support and merged upstream then this driver
+can be removed.
 
-Reported-by: Randy Dunlap <randy.dunlap@oracle.com>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
----
- drivers/net/wireless/iwlwifi/iwl-dev.h |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/drivers/net/wireless/iwlwifi/iwl-dev.h b/drivers/net/wireless/iwlwifi/iwl-dev.h
-index f359d9f..a00248c 100644
---- a/drivers/net/wireless/iwlwifi/iwl-dev.h
-+++ b/drivers/net/wireless/iwlwifi/iwl-dev.h
-@@ -1208,7 +1208,7 @@ struct iwl_priv {
- 	struct iwl_tt_mgmt thermal_throttle;
- 
- 	struct iwl_notif_statistics statistics;
--#ifdef CONFIG_IWLWIFI_DEBUG
-+#ifdef CONFIG_IWLWIFI_DEBUGFS
- 	struct iwl_notif_statistics accum_statistics;
- 	struct iwl_notif_statistics delta_statistics;
- 	struct iwl_notif_statistics max_delta;
--- 
-1.6.6.1
-
+  Luis
