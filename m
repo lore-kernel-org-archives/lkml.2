@@ -1,172 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752009Ab0FGPHT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jun 2010 11:07:19 -0400
-Received: from e8.ny.us.ibm.com ([32.97.182.138]:33742 "EHLO e8.ny.us.ibm.com"
+	id S1752083Ab0FGPHZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jun 2010 11:07:25 -0400
+Received: from www.tglx.de ([62.245.132.106]:48836 "EHLO www.tglx.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750881Ab0FGPHR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jun 2010 11:07:17 -0400
-Date: Mon, 7 Jun 2010 20:36:51 +0530
-From: Srivatsa Vaddagiri <vatsa@in.ibm.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Michael Neuling <mikey@neuling.org>,
-       Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-       linuxppc-dev@ozlabs.org, linux-kernel@vger.kernel.org,
-       Ingo Molnar <mingo@elte.hu>, Suresh Siddha <suresh.b.siddha@intel.com>,
-       Gautham R Shenoy <ego@in.ibm.com>
-Subject: Re: [PATCH 1/5] sched: fix capacity calculations for SMT4
-Message-ID: <20100607150651.GA13993@linux.vnet.ibm.com>
-Reply-To: vatsa@in.ibm.com
-References: <20100409062118.D4096CBB6C@localhost.localdomain>
- <1271161766.4807.1280.camel@twins>
- <2906.1271219317@neuling.org>
- <1271426308.1674.429.camel@laptop>
- <1275294796.27810.21554.camel@twins>
+	id S1750881Ab0FGPHV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Jun 2010 11:07:21 -0400
+Date: Mon, 7 Jun 2010 17:06:41 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Esben Haabendal <eha@doredevelopment.dk>
+cc: linuxppc-dev@ozlabs.org, Esben Haabendal <esbenhaabendal@gmail.com>,
+       Marc Zyngier <maz@misterjones.org>, LKML <linux-kernel@vger.kernel.org>,
+       Ingo Molnar <mingo@elte.hu>, joachim.eastwood@jotron.com,
+       Peter Zijlstra <peterz@infradead.org>,
+       David Miller <davem@davemloft.net>
+Subject: Re: [RFC][PATCH] irq: support IRQ_NESTED_THREAD with non-threaded
+ interrupt handlers
+In-Reply-To: <1275914058.2818.8.camel@eha.doredevelopment.dk>
+Message-ID: <alpine.LFD.2.00.1006071440520.2933@localhost.localdomain>
+References: <1275686352.2970.2.camel@eha.doredevelopment.dk>  <alpine.LFD.2.00.1006042343150.2933@localhost.localdomain>  <AANLkTilb7---Qg1oLwzanKP1RGe04fkAXDtZzz0w9MGz@mail.gmail.com>  <20100605151031.2d562268@hina.wild-wind.fr.eu.org> 
+ <alpine.LFD.2.00.1006051732270.2933@localhost.localdomain>  <AANLkTimlSBEhl58CNuScKjxbqdTwTYgqo7vrHTcd1x9G@mail.gmail.com>  <alpine.LFD.2.00.1006051915290.2933@localhost.localdomain>  <AANLkTimcB9vRqnNYyBh6hjHXZHcmFvw72MZUEIGfeexq@mail.gmail.com> 
+ <alpine.LFD.2.00.1006052155100.2933@localhost.localdomain>  <AANLkTik2so7osQJFq6NRaIFK2GVLURVozOqSsejd1K0F@mail.gmail.com>  <alpine.LFD.2.00.1006062228120.2933@localhost.localdomain> <1275914058.2818.8.camel@eha.doredevelopment.dk>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1275294796.27810.21554.camel@twins>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 31, 2010 at 10:33:16AM +0200, Peter Zijlstra wrote:
-> On Fri, 2010-04-16 at 15:58 +0200, Peter Zijlstra wrote:
-> > 
-> > 
-> > Hrmm, my brain seems muddled but I might have another solution, let me
-> > ponder this for a bit..
-> > 
+On Mon, 7 Jun 2010, Esben Haabendal wrote:
+> On Mon, 2010-06-07 at 00:08 +0200, Thomas Gleixner wrote:
 > 
-> Right, so the thing I was thinking about is taking the group capacity
-> into account when determining the capacity for a single cpu.
+> > > The only reason for the buslock in the pca9535 driver is to set the
+> > > direction (ie. input) for interrupt pins.  On powerpc, I do this in the map()
+> > > irq_chip function. So I don't see the need for buslock on powerpc.
+> > 
+> > What's so magic about powerpc. Does it magically serialize stuff ?
+> > 
+> > The buslock is there for a reason:
+> > 
+> >   The generic irq code calls irq_chip functions with irq_desc->lock
+> >   held and interrupts disabled. So the driver _CANNOT_ access the I2C
+> >   bus because that's blocking.
+> 
+> Which I don't see a need for. As I mentioned, the only I2C access done
+> at this point is the write to direction register, in case new irq's
+> requires switching a pin from output to input.
+> 
+> This can be done on irq_chip->map() on powerpc, without requiring
+> other drivers to know about it.
+> 
+> > So the irq_chip functions modify driver local state, which might be
+> >   modified by non irq related code as well.
+> 
+> Which is not done here.
+> The irq_chip functions modify the following driver local state
+> variables:
+>   irq_mask (mask/unmask)
+>   irq_trig_fall (set_type)
+>   irq_trig_raise (set_type)
+> 
+> They are not (to be) modified by other functions.
 
-Peter,
-	We are exploring an alternate solution which seems to be working as
-expected. Basically allow capacity of 1 for SMT threads provided there is
-no significant influence by RT tasks or freq scaling. Note that at core level,
-capacity is unchanged and hence this affects only how tasks are distributed
-within a core.
+That does not matter. You remove even the serialization of these
+functions and the guarantee of higher level functions, that the
+changed state has hit the hardware _BEFORE_ something else can change
+it.
 
-Mike Neuling should post an updated patchset containing this patch
-(with more comments added ofcourse!).
+Thats what the buslock/unlock mechanism protects, and it _IS_ not
+going to change, even if it could work on some UP configurations for
+whatever reason. Neither is the sanity check for nested handlers going
+away.
 
+Can we please stop it here and solve the problem where it needs to be
+solved? See below.
 
-Signed-off-by: Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>
+> The handler is implemented in drivers/net/phy/phy.c and is used by all
+> phy drivers in drivers/net/phy/
+> 
+> > Calling irq_disable_nosync() from the irq handler needs a damned good
+> > reason and in most cases it pops up the red "Hack Alert" sign.
+> 
+> Hehe, ok :-D
+> 
+> It might be the root to all my trouble here, so I would be very happy to
+> find a solution for it.
+> 
+> The problem is that MDIO communication is often just as painstakingly
 
----
- include/linux/sched.h |    2 +-
- kernel/sched_fair.c   |   30 +++++++++++++++++++++++-------
- 2 files changed, 24 insertions(+), 8 deletions(-)
+It's not about slow. MDIO access needs thread context.
 
-Index: linux-2.6-ozlabs/include/linux/sched.h
-===================================================================
---- linux-2.6-ozlabs.orig/include/linux/sched.h
-+++ linux-2.6-ozlabs/include/linux/sched.h
-@@ -860,7 +860,7 @@ struct sched_group {
- 	 * CPU power of this group, SCHED_LOAD_SCALE being max power for a
- 	 * single CPU.
- 	 */
--	unsigned int cpu_power;
-+	unsigned int cpu_power, cpu_power_orig;
- 
- 	/*
- 	 * The CPUs this group covers.
-Index: linux-2.6-ozlabs/kernel/sched_fair.c
-===================================================================
---- linux-2.6-ozlabs.orig/kernel/sched_fair.c
-+++ linux-2.6-ozlabs/kernel/sched_fair.c
-@@ -2285,13 +2285,6 @@ static void update_cpu_power(struct sche
- 	unsigned long power = SCHED_LOAD_SCALE;
- 	struct sched_group *sdg = sd->groups;
- 
--	if (sched_feat(ARCH_POWER))
--		power *= arch_scale_freq_power(sd, cpu);
--	else
--		power *= default_scale_freq_power(sd, cpu);
--
--	power >>= SCHED_LOAD_SHIFT;
--
- 	if ((sd->flags & SD_SHARE_CPUPOWER) && weight > 1) {
- 		if (sched_feat(ARCH_POWER))
- 			power *= arch_scale_smt_power(sd, cpu);
-@@ -2301,6 +2294,15 @@ static void update_cpu_power(struct sche
- 		power >>= SCHED_LOAD_SHIFT;
- 	}
- 
-+	sdg->cpu_power_orig = power;
-+
-+	if (sched_feat(ARCH_POWER))
-+		power *= arch_scale_freq_power(sd, cpu);
-+	else
-+		power *= default_scale_freq_power(sd, cpu);
-+
-+	power >>= SCHED_LOAD_SHIFT;
-+
- 	power *= scale_rt_power(cpu);
- 	power >>= SCHED_LOAD_SHIFT;
- 
-@@ -2333,6 +2335,22 @@ static void update_group_power(struct sc
- 	sdg->cpu_power = power;
- }
- 
-+static inline int
-+rt_freq_influence(struct sched_group *group, struct sched_domain *sd)
-+{
-+	if (sd->child)
-+		return 1;
-+
-+	/*
-+	 * Check to see if the final cpu power was reduced by more
-+	 * than 10% by frequency or rt tasks
-+	 */
-+	if (group->cpu_power * 100 < group->cpu_power_orig * 90)
-+		return 1;
-+
-+	return 0;
-+}
-+
- /**
-  * update_sg_lb_stats - Update sched_group's statistics for load balancing.
-  * @sd: The sched_domain whose statistics are to be updated.
-@@ -2426,6 +2444,8 @@ static inline void update_sg_lb_stats(st
- 
- 	sgs->group_capacity =
- 		DIV_ROUND_CLOSEST(group->cpu_power, SCHED_LOAD_SCALE);
-+	if (!sgs->group_capacity && !rt_freq_influence(group, sd))
-+		sgs->group_capacity = 1;
- }
- 
- /**
-@@ -2725,7 +2745,8 @@ ret:
-  */
- static struct rq *
- find_busiest_queue(struct sched_group *group, enum cpu_idle_type idle,
--		   unsigned long imbalance, const struct cpumask *cpus)
-+		   unsigned long imbalance, const struct cpumask *cpus,
-+		   struct sched_domain *sd)
- {
- 	struct rq *busiest = NULL, *rq;
- 	unsigned long max_load = 0;
-@@ -2736,6 +2757,9 @@ find_busiest_queue(struct sched_group *g
- 		unsigned long capacity = DIV_ROUND_CLOSEST(power, SCHED_LOAD_SCALE);
- 		unsigned long wl;
- 
-+		if (!capacity && !rt_freq_influence(group, sd))
-+			capacity = 1;
-+
- 		if (!cpumask_test_cpu(i, cpus))
- 			continue;
- 
-@@ -2852,7 +2876,7 @@ redo:
- 		goto out_balanced;
- 	}
- 
--	busiest = find_busiest_queue(group, idle, imbalance, cpus);
-+	busiest = find_busiest_queue(group, idle, imbalance, cpus, sd);
- 	if (!busiest) {
- 		schedstat_inc(sd, lb_nobusyq[idle]);
- 		goto out_balanced;
+> slow as I2C, so the phy irq handler disables the irq and schedules a
+> work, which then will do the MDIO communication, and thus ack the irq,
+> and finally re-enable the irq.
+> 
+> Hints on how to fix that would be appreciated.
 
+Yes, the driver should be converted to threaded interrupts as MDIO
+access needs thread context, but when the driver was written, there
+were no threaded handlers available.
 
+So it does nothing in the interrupt than disabling the irq line and
+scheduling work. The real functions are done in thread context and
+that's why it needs to disable the irq line.
+
+That's where threaded interrupt comes handy, because threaded
+interrupts do that already with the IRQF_ONESHOT flag set for direct
+called irqs and in case of nested threaded interrupts, there is no
+need at all, because the demux handler serializes interrupts already.
+
+The only problem in the non nested case is, that we currently do not
+allow ONESHOT for shared interrupts as this might hold off the other
+device on that IRQ line for too long, but looking at this driver it
+must be done anyway via the disable_irq_nosync() call in the interrupt
+handler. And it needs careful synchronization across the shared
+interrupts.
+
+We can remove that restriction with an IRQF_FORCE_ONESHOT flag, which
+annotates such usecases and is easy to grep for (ab)users. We have
+patches in -rt already to handle that for shared interrupts, I just
+need to polish them a bit.
+
+That would remove a lot of ugly code in such drivers which is
+necessary: the disable_irq_nosync() call, synchronizing with
+workqueues etc.
+
+And in your case it would remove _TWO_ I2C transfers, which is
+definitely a huge performance win.
+
+You don't have to wait for the genirq changes as in your case you can
+remove the IRQF_SHARED flag until the genirq changes are available.
+
+Maybe you understand now, why I was pretty sure upfront, that your
+approach was wrong even without knowing all the gory details ? :)
+
+Thanks,
+
+	tglx
