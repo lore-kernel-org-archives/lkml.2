@@ -1,149 +1,184 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754168Ab0FGBAJ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Jun 2010 21:00:09 -0400
-Received: from mail-yw0-f187.google.com ([209.85.211.187]:34449 "EHLO
-	mail-yw0-f187.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752066Ab0FGBAG (ORCPT
+	id S1754531Ab0FGBAe (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Jun 2010 21:00:34 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:46754 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754253Ab0FGBAM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Jun 2010 21:00:06 -0400
+	Sun, 6 Jun 2010 21:00:12 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :content-type:content-transfer-encoding;
-        b=cUQuQo9XcGStBUkGsGhVy8S6vrRyzgkH+Jk4D+TeVoZAQk321FpFoOamP9Gs5jOXBq
-         gQvwk5CFCcqckH2G1rtnEjQAcd3CrjIu8JQ+kGQRELU8rTagm0xjz4iWLofyJiZQHc7z
-         0+L+WthwiLKWg6J3c7SQ6vui+tcNgdI+FyO20=
-Message-ID: <4C0C4491.80708@gmail.com>
-Date: Sun, 06 Jun 2010 21:00:01 -0400
-From: Siarhei Liakh <sliakh.lkml@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100423 Thunderbird/3.0.4
-MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
-       linux-next@vger.kernel.org
-CC: Arjan van de Ven <arjan@infradead.org>, James Morris <jmorris@namei.org>,
-       Andrew Morton <akpm@linux-foundation.org>, Andi Kleen <ak@muc.de>,
-       Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
-       Ingo Molnar <mingo@elte.hu>, Rusty Russell <rusty@rustcorp.com.au>,
-       Stephen Rothwell <sfr@canb.auug.org.au>, Dave Jones <davej@redhat.com>
-Subject: [PATCH 1/4 V2] [tip:x86/mm] Correcting improper large page preservation
-Content-Type: text/plain; charset=ISO-8859-1
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=VSeTtMVHePbQxem6PMUO6aPtZDpjpdNfc3rj52eYAo3/6hslxTaoQFf9P0RpLMLYjq
+         RnIQC+jluNL17zDU1YEdtPKM8IAOcEPDocE3bYmMKp6q12vt0WV6Z4HwXjKRLYRxapYC
+         IhapMCsK5wYdjtOPg0D90ryTc5wOZkZaU8vPg=
+Subject: Re: [PATCH 1/2] mmc: make sdhci work with ricoh mmc controller
+From: Maxim Levitsky <maximlevitsky@gmail.com>
+To: Philip Langdale <philipl@overt.org>
+Cc: linux-mmc@vger.kernel.org, linux-kernel <linux-kernel@vger.kernel.org>,
+       Andrew de Quincey <adq_dvb@lidskialf.net>
+In-Reply-To: <b99ba230e4a7f8b2174d7f52f1e7324c@localhost>
+References: <1275859475.3151.4.camel@maxim-laptop>
+	 <1275859731-2898-1-git-send-email-maximlevitsky@gmail.com>
+	 <b99ba230e4a7f8b2174d7f52f1e7324c@localhost>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 07 Jun 2010 03:37:32 +0300
+Message-ID: <1275871052.24091.7.camel@maxim-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch fixes a bug in try_preserve_large_page() which may result
-in improper large page preservation and improper application of page
-attributes to the memory area outside of the original change request.
-More specifically, the problem manifests itself when set_memory_*() is
-called for several pages at the beginning of the large page and
-try_preserve_large_page() erroneously concludes that the change can be
-applied to whole large page.
-The fix consists of 3 parts:
-1. addition of "required" protection attributes in
-static_protections(), so .data and .bss can be guaranteed to stay "RW"
-2. static_protections() is now called for every small page within
-large page to determine compatibility of new protection attributes
-(instead of just small pages within the requested range).
-3. large page can be preserved only if attribute change is
-large-page-aligned and covers whole large page.
+On Sun, 2010-06-06 at 19:11 -0400, Philip Langdale wrote: 
+> On Mon,  7 Jun 2010 00:28:50 +0300, Maxim Levitsky
+> <maximlevitsky@gmail.com> wrote:
+> > The current way of disabling it is not well tested by vendor
+> > and has all kinds of bugs that show up on resume from ram/disk.
+> > 
+> > Old way of disabling is still supported by
+> > continuing to use CONFIG_MMC_RICOH_MMC.
+> > 
+> > Based on
+> > 'http://list.drzeus.cx/pipermail/sdhci-devel/2007-December/002085.html'
+> > Most of the credit for this goes to Andrew de Quincey
+> > 
+> > 
+> > Signed-off-by: Maxim Levitsky <maximlevitsky@gmail.com>
+> > CC: Andrew de Quincey <adq_dvb@lidskialf.net>
+> > CC: linux-mmc@vger.kernel.org <linux-mmc@vger.kernel.org>
+> 
+> ACK with one change to add a #define for the device ID.
+I am not sure about this.
+When I submitted a driver for xD part I was told that unless device is
+shared by several pieces of code, its not ok to add it to pci_ids.c.
+The device is I was told can be hardcoded in the driver.
+Nothing against changing it. 
+> 
+> > ---
+> >  drivers/mmc/host/sdhci-pci.c |   31 +++++++++++++++++++++++++++++++
+> >  drivers/mmc/host/sdhci.c     |    3 ++-
+> >  drivers/mmc/host/sdhci.h     |    4 ++++
+> >  3 files changed, 37 insertions(+), 1 deletions(-)
+> > 
+> > diff --git a/drivers/mmc/host/sdhci-pci.c b/drivers/mmc/host/sdhci-pci.c
+> > index 65483fd..c4bcaeb 100644
+> > --- a/drivers/mmc/host/sdhci-pci.c
+> > +++ b/drivers/mmc/host/sdhci-pci.c
+> > @@ -17,6 +17,7 @@
+> >  #include <linux/pci.h>
+> >  #include <linux/dma-mapping.h>
+> >  #include <linux/slab.h>
+> > +#include <linux/device.h>
+> >  
+> >  #include <linux/mmc/host.h>
+> >  
+> > @@ -84,7 +85,21 @@ static int ricoh_probe(struct sdhci_pci_chip *chip)
+> >  	if (chip->pdev->subsystem_vendor == PCI_VENDOR_ID_SAMSUNG ||
+> >  	    chip->pdev->subsystem_vendor == PCI_VENDOR_ID_SONY)
+> >  		chip->quirks |= SDHCI_QUIRK_NO_CARD_NO_RESET;
+> > +	return 0;
+> > +}
+> > +
+> > +static int ricoh_mmc_probe_slot(struct sdhci_pci_slot *slot)
+> > +{
+> > +	slot->host->caps =
+> > +		((0x21 << SDHCI_TIMEOUT_CLK_SHIFT)
+> > +			& SDHCI_TIMEOUT_CLK_MASK) |
+> >  
+> > +		((0x21 << SDHCI_CLOCK_BASE_SHIFT)
+> > +			& SDHCI_CLOCK_BASE_MASK) |
+> > +
+> > +		SDHCI_TIMEOUT_CLK_UNIT |
+> > +		SDHCI_CAN_VDD_330 |
+> > +		SDHCI_CAN_DO_SDMA;
+> >  	return 0;
+> >  }
+> 
+> As we discussed, highspeed works. Of course, sdhci never sets the MMC
+> highspeed flag so the cap is irrelevant. We'd need another quirk to
+> indicate highspeed MMC is supported.
+> 
+> This can be done in a separate patch.
+Sure, but maybe we can enable this for SD/SDHC too?
 
-V1:  try_preserve_large_page() patch for Linux 2.6.34-rc2
-V2:  replaced pfn check with address check for kernel rw-data
+> 
+> > @@ -95,6 +110,14 @@ static const struct sdhci_pci_fixes sdhci_ricoh = {
+> >  			  SDHCI_QUIRK_CLOCK_BEFORE_RESET,
+> >  };
+> >  
+> > +static const struct sdhci_pci_fixes sdhci_ricoh_mmc = {
+> > +	.probe_slot	= ricoh_mmc_probe_slot,
+> > +	.quirks		= SDHCI_QUIRK_32BIT_DMA_ADDR |
+> > +			  SDHCI_QUIRK_CLOCK_BEFORE_RESET |
+> > +			  SDHCI_QUIRK_NO_CARD_NO_RESET |
+> > +			  SDHCI_QUIRK_MISSING_CAPS
+> > +};
+> > +
+> >  static const struct sdhci_pci_fixes sdhci_ene_712 = {
+> >  	.quirks		= SDHCI_QUIRK_SINGLE_POWER_WRITE |
+> >  			  SDHCI_QUIRK_BROKEN_DMA,
+> > @@ -374,6 +397,14 @@ static const struct pci_device_id pci_ids[]
+> > __devinitdata = {
+> >  	},
+> >  
+> >  	{
+> > +		.vendor         = PCI_VENDOR_ID_RICOH,
+> > +		.device         = 0x843,
+> > +		.subvendor      = PCI_ANY_ID,
+> > +		.subdevice      = PCI_ANY_ID,
+> > +		.driver_data    = (kernel_ulong_t)&sdhci_ricoh_mmc,
+> > +	},
+> > +
+> > +	{
+> 
+> It seems we generally want to add a #define for the device ID.
+> The ENE device below has one.
+> 
+> >  		.vendor		= PCI_VENDOR_ID_ENE,
+> >  		.device		= PCI_DEVICE_ID_ENE_CB712_SD,
+> >  		.subvendor	= PCI_ANY_ID,
+> > diff --git a/drivers/mmc/host/sdhci.c b/drivers/mmc/host/sdhci.c
+> > index c6d1bd8..483b78e 100644
+> > --- a/drivers/mmc/host/sdhci.c
+> > +++ b/drivers/mmc/host/sdhci.c
+> > @@ -1687,7 +1687,8 @@ int sdhci_add_host(struct sdhci_host *host)
+> >  			host->version);
+> >  	}
+> >  
+> > -	caps = sdhci_readl(host, SDHCI_CAPABILITIES);
+> > +	caps = (host->quirks & SDHCI_QUIRK_MISSING_CAPS) ? host->caps :
+> > +		sdhci_readl(host, SDHCI_CAPABILITIES);
+> >  
+> >  	if (host->quirks & SDHCI_QUIRK_FORCE_DMA)
+> >  		host->flags |= SDHCI_USE_SDMA;
+> > diff --git a/drivers/mmc/host/sdhci.h b/drivers/mmc/host/sdhci.h
+> > index c846813..b1839a3 100644
+> > --- a/drivers/mmc/host/sdhci.h
+> > +++ b/drivers/mmc/host/sdhci.h
+> > @@ -240,6 +240,8 @@ struct sdhci_host {
+> >  #define SDHCI_QUIRK_CAP_CLOCK_BASE_BROKEN		(1<<25)
+> >  /* Controller cannot support End Attribute in NOP ADMA descriptor */
+> >  #define SDHCI_QUIRK_NO_ENDATTR_IN_NOPDESC		(1<<26)
+> > +/* Controller is missing device caps. Use caps provided by host */
+> > +#define SDHCI_QUIRK_MISSING_CAPS			(1<<27)
+> >  
+> >  	int			irq;		/* Device IRQ */
+> >  	void __iomem *		ioaddr;		/* Mapped address */
+> > @@ -292,6 +294,8 @@ struct sdhci_host {
+> >  
+> >  	struct timer_list	timer;		/* Timer for timeouts */
+> >  
+> > +	unsigned int		caps;		/* Alternative capabilities */
+> > +
+> >  	unsigned long		private[0] ____cacheline_aligned;
+> >  };
+> 
+> --phil
 
-Signed-off-by: Siarhei Liakh <sliakh.lkml@gmail.com>
-Signed-off-by: Xuxian Jiang <jiang@cs.ncsu.edu>
-Reviewed-by: Suresh Siddha <suresh.b.siddha@intel.com>
----
+Best regards,
+Maxim Levitsky
 
-diff --git a/arch/x86/mm/pageattr.c b/arch/x86/mm/pageattr.c
-index cf07c26..f4ed8eb 100644
---- a/arch/x86/mm/pageattr.c
-+++ b/arch/x86/mm/pageattr.c
-@@ -255,6 +255,7 @@ static inline pgprot_t static_protections(pgprot_t prot, unsigned long address,
- 				   unsigned long pfn)
- {
- 	pgprot_t forbidden = __pgprot(0);
-+	pgprot_t required = __pgprot(0);
- 
- 	/*
- 	 * The BIOS area between 640k and 1Mb needs to be executable for
-@@ -278,6 +279,13 @@ static inline pgprot_t static_protections(pgprot_t prot, unsigned long address,
- 	if (within(pfn, __pa((unsigned long)__start_rodata) >> PAGE_SHIFT,
- 		   __pa((unsigned long)__end_rodata) >> PAGE_SHIFT))
- 		pgprot_val(forbidden) |= _PAGE_RW;
-+	/*
-+	 * .data and .bss should always be writable.
-+	 */
-+	if (within(address, (unsigned long)_sdata, (unsigned long)_edata) ||
-+	    within(address, (unsigned long)__bss_start,
-+			(unsigned long)__bss_stop))
-+		pgprot_val(required) |= _PAGE_RW;
- 
- #if defined(CONFIG_X86_64) && defined(CONFIG_DEBUG_RODATA)
- 	/*
-@@ -317,6 +325,7 @@ static inline pgprot_t static_protections(pgprot_t prot, unsigned long address,
- #endif
- 
- 	prot = __pgprot(pgprot_val(prot) & ~pgprot_val(forbidden));
-+	prot = __pgprot(pgprot_val(prot) | pgprot_val(required));
- 
- 	return prot;
- }
-@@ -393,7 +402,7 @@ try_preserve_large_page(pte_t *kpte, unsigned long address,
- {
- 	unsigned long nextpage_addr, numpages, pmask, psize, flags, addr, pfn;
- 	pte_t new_pte, old_pte, *tmp;
--	pgprot_t old_prot, new_prot;
-+	pgprot_t old_prot, new_prot, req_prot;
- 	int i, do_split = 1;
- 	unsigned int level;
- 
-@@ -438,10 +447,10 @@ try_preserve_large_page(pte_t *kpte, unsigned long address,
- 	 * We are safe now. Check whether the new pgprot is the same:
- 	 */
- 	old_pte = *kpte;
--	old_prot = new_prot = pte_pgprot(old_pte);
-+	old_prot = new_prot = req_prot = pte_pgprot(old_pte);
- 
--	pgprot_val(new_prot) &= ~pgprot_val(cpa->mask_clr);
--	pgprot_val(new_prot) |= pgprot_val(cpa->mask_set);
-+	pgprot_val(req_prot) &= ~pgprot_val(cpa->mask_clr);
-+	pgprot_val(req_prot) |= pgprot_val(cpa->mask_set);
- 
- 	/*
- 	 * old_pte points to the large page base address. So we need
-@@ -450,17 +459,17 @@ try_preserve_large_page(pte_t *kpte, unsigned long address,
- 	pfn = pte_pfn(old_pte) + ((address & (psize - 1)) >> PAGE_SHIFT);
- 	cpa->pfn = pfn;
- 
--	new_prot = static_protections(new_prot, address, pfn);
-+	new_prot = static_protections(req_prot, address, pfn);
- 
- 	/*
- 	 * We need to check the full range, whether
- 	 * static_protection() requires a different pgprot for one of
- 	 * the pages in the range we try to preserve:
- 	 */
--	addr = address + PAGE_SIZE;
--	pfn++;
--	for (i = 1; i < cpa->numpages; i++, addr += PAGE_SIZE, pfn++) {
--		pgprot_t chk_prot = static_protections(new_prot, addr, pfn);
-+	addr = address & pmask;
-+	pfn = pte_pfn(old_pte);
-+	for (i = 0; i < (psize >> PAGE_SHIFT); i++, addr += PAGE_SIZE, pfn++) {
-+		pgprot_t chk_prot = static_protections(req_prot, addr, pfn);
- 
- 		if (pgprot_val(chk_prot) != pgprot_val(new_prot))
- 			goto out_unlock;
-@@ -483,7 +492,8 @@ try_preserve_large_page(pte_t *kpte, unsigned long address,
- 	 * that we limited the number of possible pages already to
- 	 * the number of pages in the large page.
- 	 */
--	if (address == (nextpage_addr - psize) && cpa->numpages == numpages) {
-+	if (address == (address & pmask) &&
-+		cpa->numpages == (psize >> PAGE_SHIFT)) {
- 		/*
- 		 * The address is aligned and the number of pages
- 		 * covers the full page.
