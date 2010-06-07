@@ -1,62 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754157Ab0FGJ2S (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jun 2010 05:28:18 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:60287 "EHLO ogre.sisk.pl"
+	id S1752543Ab0FGJfv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jun 2010 05:35:51 -0400
+Received: from sh.osrg.net ([192.16.179.4]:40690 "EHLO sh.osrg.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752157Ab0FGJ2Q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jun 2010 05:28:16 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Alex Deucher <alexdeucher@gmail.com>
-Subject: [Regression, post-rc1] Multiple issues after enabling SetVoltage on rs780m
-Date: Mon, 7 Jun 2010 11:29:32 +0200
-User-Agent: KMail/1.12.4 (Linux/2.6.35-rc1-rjw; KDE/4.3.5; x86_64; ; )
-Cc: Dave Airlie <airlied@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       dri-devel@lists.sourceforge.net
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="us-ascii"
+	id S1751199Ab0FGJft (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Jun 2010 05:35:49 -0400
+Date: Mon, 7 Jun 2010 18:35:21 +0900
+To: nab@linux-iscsi.org
+Cc: fujita.tomonori@lab.ntt.co.jp, stgt@vger.kernel.org,
+       linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
+       michaelc@cs.wisc.edu, bharrosh@panasas.com, James.Bottomley@suse.de,
+       dgilbert@interlog.com
+Subject: Re: [PATCH 0/3] Add proper STGT <-> bs_sg passthrough v3
+From: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+In-Reply-To: <1275901629.26888.62.camel@haakon2.linux-iscsi.org>
+References: <1275899236.26888.40.camel@haakon2.linux-iscsi.org>
+	<20100607175535Q.fujita.tomonori@lab.ntt.co.jp>
+	<1275901629.26888.62.camel@haakon2.linux-iscsi.org>
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
-Message-Id: <201006071129.32159.rjw@sisk.pl>
+Message-Id: <20100607183438Y.fujita.tomonori@lab.ntt.co.jp>
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-3.0 (sh.osrg.net [192.16.179.4]); Mon, 07 Jun 2010 18:35:22 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Alex,
+On Mon, 07 Jun 2010 02:07:09 -0700
+"Nicholas A. Bellinger" <nab@linux-iscsi.org> wrote:
 
-Your commit 9349d5cc920c10845693f906ebd67f394f1d0d04
-(drm/radeon/kms/pm: enable SetVoltage on r7xx/evergreen) has caused my test-bed
-Acer Ferrari One to behave quite unreliably.  The symptoms are:
+> On Mon, 2010-06-07 at 17:56 +0900, FUJITA Tomonori wrote:
+> > On Mon, 07 Jun 2010 01:27:16 -0700
+> > "Nicholas A. Bellinger" <nab@linux-iscsi.org> wrote:
+> > 
+> > > Ok, I just fixed some minor breakage and applied patch 3 on top of
+> > > tgt.git/pass in my local tree and everything appears to work with
+> > > '-E bsg -Y pt'.
+> > > 
+> > > Please let me know if you have any other comments on the BSG bits or if
+> > > you would like me to send along a updated patch 3 seperately.
+> > 
+> > Please send patches except for bsg first.
+> > 
+> > About bsg support, we need both sg and bsg? Just bsg is not enough?
+> 
+> I figured you would still like legacy support w/o bsg for the forseeable
+> future with older production kernels.  I don't recall which kernel BSG
+> support was added or if this code has already been backported to the
+> various distro kernels.
 
-- the system hangs hard (~ 50% of the time) when starting Xorg
-- the system hangs hard (~ 50% of the time) when stopping Xorg during system
-  reboot
-- the system sometimes hangs hard during suspend to RAM
-
-These problems are not reproducible with the commit above reverted.
-
-Below is the information about the graphics adapter from lspci.
-
-Rafael
+I prefer to support only bsg (until someone tells me to support sg).
 
 
+btw, if you look for a tool to generate a bidi command, my sgv4-tools
+might work for you.
 
-01:05.0 VGA compatible controller: ATI Technologies Inc RS780M/RS780MN [Radeon HD 3200 Graphics] (prog-if 00 [VGA controller])
-	Subsystem: Acer Incorporated [ALI] Device 029e
-	Control: I/O+ Mem+ BusMaster+ SpecCycle- MemWINV- VGASnoop- ParErr- Stepping- SERR- FastB2B- DisINTx-
-	Status: Cap+ 66MHz- UDF- FastB2B- ParErr- DEVSEL=fast >TAbort- <TAbort- <MAbort- >SERR- <PERR- INTx-
-	Latency: 0, Cache Line Size: 32 bytes
-	Interrupt: pin A routed to IRQ 18
-	Region 0: Memory at a0000000 (32-bit, prefetchable) [size=256M]
-	Region 1: I/O ports at 9000 [size=256]
-	Region 2: Memory at 9fdf0000 (32-bit, non-prefetchable) [size=64K]
-	Region 5: Memory at 9fe00000 (32-bit, non-prefetchable) [size=1M]
-	Expansion ROM at <unassigned> [disabled]
-	Capabilities: [50] Power Management version 3
-		Flags: PMEClk- DSI- D1+ D2+ AuxCurrent=0mA PME(D0-,D1-,D2-,D3hot-,D3cold-)
-		Status: D0 NoSoftRst- PME-Enable- DSel=0 DScale=0 PME-
-	Capabilities: [a0] MSI: Enable- Count=1/1 Maskable- 64bit+
-		Address: 0000000000000000  Data: 0000
-	Kernel driver in use: radeon
+git://git.kernel.org/pub/scm/linux/kernel/git/tomo/sgv4-tools.git
+
+try sgv4_xdwriteread (note that it's not useful at all except for
+generating bidi).
