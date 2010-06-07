@@ -1,53 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752429Ab0FGP40 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jun 2010 11:56:26 -0400
-Received: from ist.d-labs.de ([213.239.218.44]:45384 "EHLO mx01.d-labs.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752303Ab0FGP4Y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jun 2010 11:56:24 -0400
-Date: Mon, 7 Jun 2010 17:56:04 +0200
-From: Florian Mickler <florian@mickler.org>
-To: Alan Stern <stern@rowland.harvard.edu>
-Cc: Matthew Garrett <mjg59@srcf.ucam.org>, Vitaly Wool <vitalywool@gmail.com>,
-       Neil Brown <neilb@suse.de>, <tytso@mit.edu>,
-       Peter Zijlstra <peterz@infradead.org>,
-       Brian Swetland <swetland@google.com>,
-       Felipe Balbi <felipe.balbi@nokia.com>,
-       LKML <linux-kernel@vger.kernel.org>,
-       James Bottomley <James.Bottomley@suse.de>,
-       Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
-       Linux PM <linux-pm@lists.linux-foundation.org>,
-       Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       Ingo Molnar <mingo@elte.hu>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
-       Arjan van de Ven <arjan@infradead.org>
-Subject: Re: [linux-pm] suspend blockers & Android integration
-Message-ID: <20100607175604.4c8f1fa4@schatten.dmk.lab>
-In-Reply-To: <Pine.LNX.4.44L0.1006061956510.4894-100000@netrider.rowland.org>
-References: <20100606152946.GA11351@srcf.ucam.org>
-	<Pine.LNX.4.44L0.1006061956510.4894-100000@netrider.rowland.org>
-X-Mailer: Claws Mail 3.7.5 (GTK+ 2.18.9; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1752371Ab0FGP7M (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jun 2010 11:59:12 -0400
+Received: from mailrelay007.isp.belgacom.be ([195.238.6.173]:38236 "EHLO
+	mailrelay007.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752134Ab0FGP7K (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Jun 2010 11:59:10 -0400
+X-Belgacom-Dynamic: yes
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AvsEAC20DExR9cCT/2dsb2JhbACeR3K/LA6FCQSLMw
+Date: Mon, 7 Jun 2010 17:58:57 +0200
+From: Wim Van Sebroeck <wim@iguana.be>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+       LKML <linux-kernel@vger.kernel.org>, Julia Lawall <julia@diku.dk>,
+       Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: [WATCHDOG] v2.6.35-rc3 patches
+Message-ID: <20100607155857.GB3788@infomag.iguana.be>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 6 Jun 2010 20:01:56 -0400 (EDT)
-Alan Stern <stern@rowland.harvard.edu> wrote:
+Hi Linus,
 
-> And since Android can reach essentially the same low-power
-> state from idle as from suspend, it appears that they really don't need
-> any kernel changes at all.
+Please pull from 'master' branch of
+	git://git.kernel.org/pub/scm/linux/kernel/git/wim/linux-2.6-watchdog.git
+or if master.kernel.org hasn't synced up yet:
+	master.kernel.org:/pub/scm/linux/kernel/git/wim/linux-2.6-watchdog.git
 
-Well, perhaps a hint to the scheduler to fall through as fast as
-possible into deepest idle?
+This will update the following files:
 
-> 
-> Alan Stern
-> 
+ drivers/watchdog/wm8350_wdt.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
 
-Cheers,
-Flo
+with these Changes:
+
+Author: Julia Lawall <julia@diku.dk>
+Date:   Thu May 27 14:32:24 2010 +0200
+
+    [PATCH 2/11] drivers/watchdog: Eliminate a NULL pointer dereference
+    
+    At the point of the call to dev_err, wm8350 is NULL.
+    
+    A simplified version of the semantic match that finds this problem is as
+    follows: (http://coccinelle.lip6.fr/)
+    
+    // <smpl>
+    @r exists@
+    expression E,E1;
+    identifier f;
+    statement S1,S2,S3;
+    @@
+    
+    if ((E == NULL && ...) || ...)
+    {
+      ... when != if (...) S1 else S2
+          when != E = E1
+    * E->f
+      ... when any
+      return ...;
+    }
+    else S3
+    // </smpl>
+    
+    Signed-off-by: Julia Lawall <julia@diku.dk>
+    Acked-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+    Signed-off-by: Wim Van Sebroeck <wim@iguana.be>
+
+The Changes can also be looked at on:
+	http://www.kernel.org/git/?p=linux/kernel/git/wim/linux-2.6-watchdog.git;a=summary
+
+For completeness, I added the overal diff below.
+
+Greetings,
+Wim.
+
+================================================================================
+diff --git a/drivers/watchdog/wm8350_wdt.c b/drivers/watchdog/wm8350_wdt.c
+index 89dd7b0..b68d928 100644
+--- a/drivers/watchdog/wm8350_wdt.c
++++ b/drivers/watchdog/wm8350_wdt.c
+@@ -284,7 +284,7 @@ static int __devinit wm8350_wdt_probe(struct platform_device *pdev)
+ 	struct wm8350 *wm8350 = platform_get_drvdata(pdev);
+ 
+ 	if (!wm8350) {
+-		dev_err(wm8350->dev, "No driver data supplied\n");
++		pr_err("No driver data supplied\n");
+ 		return -ENODEV;
+ 	}
+ 
