@@ -1,54 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752891Ab0FGVdQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jun 2010 17:33:16 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:57364 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752077Ab0FGVdP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jun 2010 17:33:15 -0400
-Date: Mon, 7 Jun 2010 22:33:10 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: David Woodhouse <dwmw2@infradead.org>, Dave Airlie <airlied@linux.ie>,
-       dri-devel@lists.freedesktop.org,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [git pull] drm fixes
-Message-ID: <20100607213310.GO31073@ZenIV.linux.org.uk>
-References: <alpine.DEB.2.00.1006070404510.29029@skynet.skynet.ie>
- <alpine.LFD.2.00.1006071057300.3515@i5.linux-foundation.org>
- <20100607182640.GL31073@ZenIV.linux.org.uk>
- <alpine.LFD.2.00.1006071146451.3515@i5.linux-foundation.org>
- <1275939165.17903.5100.camel@macbook.infradead.org>
- <alpine.LFD.2.00.1006071409320.4506@i5.linux-foundation.org>
+	id S1753158Ab0FGVfz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jun 2010 17:35:55 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:35464 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752367Ab0FGVfy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Jun 2010 17:35:54 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Alex Deucher <alexdeucher@gmail.com>
+Subject: Re: [Regression, post-rc1] Multiple issues after enabling SetVoltage on rs780m
+Date: Mon, 7 Jun 2010 23:37:17 +0200
+User-Agent: KMail/1.12.4 (Linux/2.6.35-rc1-rjw; KDE/4.3.5; x86_64; ; )
+Cc: Dave Airlie <airlied@gmail.com>, Dave Airlie <airlied@redhat.com>,
+       LKML <linux-kernel@vger.kernel.org>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       dri-devel@lists.sourceforge.net
+References: <201006071129.32159.rjw@sisk.pl> <AANLkTinx-5-jjtnYnUAsl-DvFtbL6wtyPnALdri0d-d2@mail.gmail.com> <AANLkTilerIhYtHlX0vNAg_pfG_1100OymKV4aaGv-VSE@mail.gmail.com>
+In-Reply-To: <AANLkTilerIhYtHlX0vNAg_pfG_1100OymKV4aaGv-VSE@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LFD.2.00.1006071409320.4506@i5.linux-foundation.org>
-User-Agent: Mutt/1.5.20 (2009-08-17)
+Content-Type: Text/Plain;
+  charset="iso-8859-2"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201006072337.17778.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 07, 2010 at 02:17:23PM -0700, Linus Torvalds wrote:
-> 	jffs2_clear_inode(inode);
+On Monday 07 June 2010, Alex Deucher wrote:
+> On Mon, Jun 7, 2010 at 6:15 AM, Dave Airlie <airlied@gmail.com> wrote:
+> > On Mon, Jun 7, 2010 at 7:29 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> >> Hi Alex,
+> >>
+> >> Your commit 9349d5cc920c10845693f906ebd67f394f1d0d04
+> >> (drm/radeon/kms/pm: enable SetVoltage on r7xx/evergreen) has caused my test-bed
+> >> Acer Ferrari One to behave quite unreliably.  The symptoms are:
+> >>
+> >> - the system hangs hard (~ 50% of the time) when starting Xorg
+> >> - the system hangs hard (~ 50% of the time) when stopping Xorg during system
+> >>  reboot
+> >> - the system sometimes hangs hard during suspend to RAM
+> >>
+> >> These problems are not reproducible with the commit above reverted.
+> >>
+> >> Below is the information about the graphics adapter from lspci.
+> >
+> > Reverting that commit on master fixes it?
+> >
+> > that commit touches code paths in rv770 and evergreen that in no way
+> > should affect that chipset which is an rs780, so takes the r600 paths.
+> >
+> > are you sure its not 7ac9aa5a1f1b87adb69bcbec2b89e228f074103a?
 > 
-> into
-> 
-> 	make_bad_inode(inode);
-> 	iput(inode);
-> 
-> and that changelog doesn't really explain it either ("fix leak"? Ok, I can 
-> see the iput() fixing the leak - but you also did that jffs2_clear_inode() 
-> change, and that has no explanation what-so-ever.
+> It should be that commit if it is indeed the voltage adjust.  That
+> said, I just took a closer look at the voltage adjust on newer IGPs
+> and unfortunately, it doesn't work the same as the discrete cards, so
+> for now we should disable it.  The attached patch should do the trick.
+>  There weren't any problems on my IGP chips, but they don't have a
+> SetVoltage table, so nothing is touching the hw.
 
-The final iput() calls ->clear_inode() (jffs2_clear_inode in case of jffs2)
-and the inode has just been created, with no other in-core references
-existing.  Basically, that call was the only part of (required) iput() that
-_was_ done there ;-)
+I'm not sure if the adapter is a discrete one.
 
-FWIW, what's happening around ->clear_inode()/->delete_inode()/->drop_inode()
-is a mess.  This leak got found when I'd been looking through that crap;
-results of sanitizing are in #evict_inode (vfs-2.6.git).  I'm going to shift
-that into for-next tomorrow, assuming it survives local beating.  For now
-I've just pulled jffs2-fixes in it...
+Anyway, my testing was done before commit
+386f40c86d6c8d5b717ef20620af1a750d0dacb4 and I'm unable to reproduce the
+problems with current -git, so they might be a fallout of the bug fixed by that
+commit.
+
+Thanks,
+Rafael
