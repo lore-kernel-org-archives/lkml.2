@@ -1,119 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751517Ab0FGEet (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jun 2010 00:34:49 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:56210 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750717Ab0FGEer convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jun 2010 00:34:47 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=V7AP3Xb+eKQBNkVLd0h3aM9biUL6ETA6qcncWd7RZImIJo0zA+8KpG0DL1X7TB+Pch
-         eejuXlw13JWZ+K3C4QSqdqr2dT9dvZGizNc1S6eWUqcmzgNNTejyFB1SAuELxWlds2j0
-         ZnwWJ9Rb9/vm1hkmWIHe1dcoXWNHrCymCWCSw=
+	id S1751736Ab0FGEpy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jun 2010 00:45:54 -0400
+Received: from mail.issp.bas.bg ([195.96.236.10]:45296 "EHLO mail.issp.bas.bg"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750781Ab0FGEpx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Jun 2010 00:45:53 -0400
+From: Marin Mitov <mitov@issp.bas.bg>
+Organization: Institute of Solid State Physics
+To: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+Subject: Re: [BUG][PATCH]dma-coherent.c: error path bug
+Date: Mon, 7 Jun 2010 07:43:19 +0300
+User-Agent: KMail/1.13.3 (Linux/2.6.34-rc7; KDE/4.4.3; x86_64; ; )
+Cc: linux-kernel@vger.kernel.org
+References: <201006061353.05310.mitov@issp.bas.bg> <201006070708.57453.mitov@issp.bas.bg> <20100607132631W.fujita.tomonori@lab.ntt.co.jp>
+In-Reply-To: <20100607132631W.fujita.tomonori@lab.ntt.co.jp>
 MIME-Version: 1.0
-In-Reply-To: <AANLkTinZ7d3WWyO3m9A7GVnaTuSbn1G33ADFW6ixywcT@mail.gmail.com>
-References: <AANLkTiktNufXK_pn6mP2-zyowAIbHlUy5TGu3AtpALv-@mail.gmail.com>
-	<20100603020006.GB19123@srcf.ucam.org>
-	<AANLkTikpv86r5BBPCEOHujpm8uCgY0DxghSKjBufBWiM@mail.gmail.com>
-	<4C08760B.8050002@gmail.com>
-	<AANLkTimFY5YQv8DC-zTQ1RF84rno6svvcyLzHGWL6HOk@mail.gmail.com>
-	<AANLkTimXcF1pafrSt8dMbUs59AjnqaRwpzDnPIPjdjsn@mail.gmail.com>
-	<AANLkTinZ7d3WWyO3m9A7GVnaTuSbn1G33ADFW6ixywcT@mail.gmail.com>
-Date: Sun, 6 Jun 2010 22:34:45 -0600
-Message-ID: <AANLkTinIM8swHZTide7MAQsaYbWcFD90FrKUXE9NFG-5@mail.gmail.com>
-Subject: Re: Hang during boot, bisected to commit 96d60303fd
-From: Robert Hancock <hancockrwd@gmail.com>
-To: Marc Dionne <marc.c.dionne@gmail.com>
-Cc: Matthew Garrett <mjg59@srcf.ucam.org>,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       linux-ide@vger.kernel.org, garzik@redhat.com, Tejun Heo <tj@kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201006070743.20226.mitov@issp.bas.bg>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 4, 2010 at 8:01 PM, Marc Dionne <marc.c.dionne@gmail.com> wrote:
-> On Fri, Jun 4, 2010 at 9:37 PM, Robert Hancock <hancockrwd@gmail.com> wrote:
->> Is that the right dmesg? I didn't see where the extra output was. It
->> might be useful to put a WARN_ON(1); inside ahci_start_engine to see
->> the two code paths where it's being called..
->
-> The first series of calls to ahci_start_engine have a stack trace that
-> looks like this:
->
-> Call Trace:
->  [<ffffffff81077002>] warn_slowpath_common+0x85/0x9d
->  [<ffffffff81077034>] warn_slowpath_null+0x1a/0x1c
->  [<ffffffff813572dd>] ahci_start_engine+0x92/0xa4
->  [<ffffffff8135736a>] ahci_start_port+0x7b/0x16c
->  [<ffffffff81357792>] ahci_port_resume+0x52/0x73
->  [<ffffffff81357901>] ahci_port_start+0x14e/0x164
->  [<ffffffff81341dc5>] ata_host_start+0xdf/0x184
->  [<ffffffff81357b35>] ? ahci_interrupt+0x0/0x5f3
->  [<ffffffff8134266f>] ata_host_activate+0x2a/0xdc
->  [<ffffffff81355aab>] ahci_init_one+0x9dd/0x9fe
->  [<ffffffff81170a9c>] ? __sysfs_add_one+0x38/0x9a
->  [<ffffffff812519bd>] ? kobject_get+0x1a/0x22
->  [<ffffffff81269891>] local_pci_probe+0x17/0x1b
->  [<ffffffff8126a63f>] pci_device_probe+0xca/0xfa
->  [<ffffffff81308fbe>] ? driver_sysfs_add+0x4c/0x71
->  [<ffffffff81309110>] driver_probe_device+0xac/0x13b
->  [<ffffffff813091fc>] __driver_attach+0x5d/0x81
->  [<ffffffff8130919f>] ? __driver_attach+0x0/0x81
->  [<ffffffff81308714>] bus_for_each_dev+0x53/0x88
->  [<ffffffff81308f70>] driver_attach+0x1e/0x20
->  [<ffffffff81308bc3>] bus_add_driver+0xb6/0x203
->  [<ffffffff813094ed>] driver_register+0x9e/0x10f
->  [<ffffffff8126a869>] __pci_register_driver+0x58/0xc8
->  [<ffffffff81b6582c>] ? ahci_init+0x0/0x1b
->  [<ffffffff81b65845>] ahci_init+0x19/0x1b
->  [<ffffffff81002069>] do_one_initcall+0x5e/0x159
->  [<ffffffff81b33713>] kernel_init+0x183/0x211
->  [<ffffffff810319a4>] kernel_thread_helper+0x4/0x10
->  [<ffffffff81b33590>] ? kernel_init+0x0/0x211
->  [<ffffffff810319a0>] ? kernel_thread_helper+0x0/0x10
->
-> The later calls:
->
-> Call Trace:
->  [<ffffffff81077002>] warn_slowpath_common+0x85/0x9d
->  [<ffffffff81077034>] warn_slowpath_null+0x1a/0x1c
->  [<ffffffff813572dd>] ahci_start_engine+0x92/0xa4
->  [<ffffffff81357a0d>] ahci_hardreset+0xc6/0x124
->  [<ffffffff81357947>] ? ahci_hardreset+0x0/0x124
->  [<ffffffff81342e08>] ? ata_std_prereset+0x0/0xb7
->  [<ffffffff8134aeca>] ata_do_reset+0x59/0x62
->  [<ffffffff8134c3fa>] ata_eh_reset+0x512/0xc99
->  [<ffffffff81356baa>] ? ahci_postreset+0x0/0x5d
->  [<ffffffff81357947>] ? ahci_hardreset+0x0/0x124
->  [<ffffffff81358498>] ? ahci_softreset+0x0/0x44
->  [<ffffffff81357947>] ? ahci_hardreset+0x0/0x124
->  [<ffffffff8134d9a1>] ? ata_eh_schedule_probe+0xc5/0xf3
->  [<ffffffff8134dca7>] ata_eh_recover+0x2d8/0xd6d
->  [<ffffffff81356baa>] ? ahci_postreset+0x0/0x5d
->  [<ffffffff81357947>] ? ahci_hardreset+0x0/0x124
->  [<ffffffff81358498>] ? ahci_softreset+0x0/0x44
->  [<ffffffff81342e08>] ? ata_std_prereset+0x0/0xb7
->  [<ffffffff81352ec9>] sata_pmp_error_handler+0xd3/0xa0a
->  [<ffffffff81067f73>] ? dequeue_entity+0x4a/0x183
->  [<ffffffff8108c1ae>] ? __cancel_work_timer+0xad/0x193
->  [<ffffffff8108395e>] ? lock_timer_base+0x2c/0x52
->  [<ffffffff810839ff>] ? try_to_del_timer_sync+0x7b/0x89
->  [<ffffffff81357943>] ahci_error_handler+0x2c/0x30
->  [<ffffffff8134f2c7>] ata_scsi_error+0x33d/0x697
->  [<ffffffff8131bc10>] scsi_error_handler+0xc2/0x3c5
->  [<ffffffff8131bb4e>] ? scsi_error_handler+0x0/0x3c5
->  [<ffffffff8108f451>] kthread+0x7f/0x87
->  [<ffffffff810319a4>] kernel_thread_helper+0x4/0x10
->  [<ffffffff8108f3d2>] ? kthread+0x0/0x87
->  [<ffffffff810319a0>] ? kernel_thread_helper+0x0/0x10
+On Monday, June 07, 2010 07:27:49 am FUJITA Tomonori wrote:
+> On Mon, 7 Jun 2010 07:08:56 +0300
+> Marin Mitov <mitov@issp.bas.bg> wrote:
+> 
+> > On Monday, June 07, 2010 05:30:48 am FUJITA Tomonori wrote:
+> > > On Sun, 6 Jun 2010 13:53:04 +0300
+> > > Marin Mitov <mitov@issp.bas.bg> wrote:
+> > > 
+> > > > Hi all,
+> > > > 
+> > > > The error path in dma_declare_coherent_memory() leaves 
+> > > > the pointer dev->dma_mem non completely initialized.
+> > > > 
+> > > > If allocation of dev->dma_mem succeeds, 
+> > > > but allocation of dev->dma_mem->bitmap fails
+> > > > dev->dma_mem is freed, but left non NULL
+> > > > and non completely initialized.
+> > > > 
+> > > > Either zero it after being freed (one liner patch), or assign to 
+> > > > dev->dma_mem only completely initialized structure (patch included).
+> > > > 
+> > > > Comments welcome.
+> > > > 
+> > > > Marin Mitov
+> > > > 
+> > > > Signed-off-by: Marin Mitov <mitov@issp.bas.bg>
+> > > 
+> > > Hmm, if dma_declare_coherent_memory() fails, the driver doesn't use
+> > > dev->dma_mem. So even if dev->dma_mem points to a freed memory, I'm
+> > > not sure that it causes a real problem. We could call this patch a
+> > > cleanup though.
+> > > 
+> > My understanding of dma_alloc_coherent() is that  we first try to allocate from 
+> > per-device coherent memory and we do it using dma_alloc_from_coherent()
+> > (in drivers/base/dma-coherent.c) if dev->dma_mem is not NULL (and we have 
+> > left it not NULL, here is the problem). If allocation of dev->dma_mem->bitmap 
+> > fails dev->dma_mem must be NULL.
+> 
+> But are there any driver that can continue when dma_declare_coherent_memory() fails?
+> 
+I do not know if such a real driver exists.
 
-I'm thinking that the hardreset and device classification makes more
-sense as a place to do this anyways, since that's the point where we
-really know if there's a device connected or not.. Tejun, any
-thoughts?
+My understanding of drivers' use of dma_declare_coherent_memory() is to
+declare some (may be on board) memory as coherent, so when they call 
+dma_alloc_coherent() the request is satisfied first from this area and when 
+it is exhausted fall back to other pools of coherent memory. As far as a fall back
+exists the driver may continue even if dma_declare_coherent_memory() fails.
+
+Marin Mitov
