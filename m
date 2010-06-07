@@ -1,69 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756357Ab0FGIrj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jun 2010 04:47:39 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:60010 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753917Ab0FGIrh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jun 2010 04:47:37 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Nigel Cunningham <ncunningham@crca.org.au>
-Subject: Re: [linux-pm] [SUSPECTED SPAM] Re: Proposal for a new algorithm for reading & writing a hibernation image.
-Date: Mon, 7 Jun 2010 10:49:09 +0200
-User-Agent: KMail/1.12.4 (Linux/2.6.35-rc1-rjw; KDE/4.3.5; x86_64; ; )
-Cc: Maxim Levitsky <maximlevitsky@gmail.com>,
-       "TuxOnIce-devel" <tuxonice-devel@tuxonice.net>,
-       pm list <linux-pm@lists.linux-foundation.org>,
-       LKML <linux-kernel@vger.kernel.org>
-References: <9rpccea67yy402c975fqru8r.1275576653521@email.android.com> <201006062104.55869.rjw@sisk.pl> <4C0C843D.6030008@crca.org.au>
-In-Reply-To: <4C0C843D.6030008@crca.org.au>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201006071049.09466.rjw@sisk.pl>
+	id S1756560Ab0FGItU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jun 2010 04:49:20 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:57724 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753363Ab0FGItS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Jun 2010 04:49:18 -0400
+From: rrs@debian.org
+To: jesper.juhl@gmail.com, rml@novell.com
+Cc: linux-kernel@vger.kernel.org, Ritesh Raj Sarraf <rrs@researchut.com>,
+       Ritesh Raj Sarraf <rrs@debian.org>
+Subject: [PATCH 0001] Add Lenovo Thinkpad T400 to the whitelist
+Date: Mon,  7 Jun 2010 14:18:41 +0530
+Message-Id: <1275900521-754-1-git-send-email-rrs@debian.org>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 07 June 2010, Nigel Cunningham wrote:
-> Hi.
-> 
-> On 07/06/10 05:04, Rafael J. Wysocki wrote:
-> > On Sunday 06 June 2010, Maxim Levitsky wrote:
-> >> On Sun, 2010-06-06 at 15:57 +0200, Rafael J. Wysocki wrote:
-> >>> On Sunday 06 June 2010, Maxim Levitsky wrote:
-> > ...
-> >>> So how TuxOnIce helps here?
-> >> Very simple.
-> >>
-> >> With swsusp, I can save 750MB (memory) + 250 Vram (vram)
-> >> With full memory save I can save (1750 MB of memory) + 250 MB of
-> >> vram....
-> >
-> > So what about being able to save 1600 MB total instead of the 2 GB
-> > (which is what we're talking about in case that's not clear)?  Would it
-> > be _that_ _much_ worse?
-> 
-> That all depends on what is in the 400MB you discard.
+From: Ritesh Raj Sarraf <rrs@researchut.com>
 
-Well, they are discarded following the LRU algorithm and it's very much
-like loading a program that takes 20% of your memory upfront.
+Adding Lenovo Thinkpad T400, I have done the testing on my laptop.
+The hdaps module detect the device and the hdapds daemon is able to
+[un]park the disk.
 
-> The difference is "Just as if you'd never hibernated" vs something 
-> closer to "Just as if you'd only just started up". We can't make 
-> categorical statements because it really does depend upon what you 
-> discard and what you want to do post-resume - that is, how useful the 
-> memory you discard would have been. That's always going to vary from 
-> case to case.
+Signed-off-by: Ritesh Raj Sarraf <rrs@debian.org>
+---
+ drivers/hwmon/hdaps.c |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
 
-Not so much.
+diff --git a/drivers/hwmon/hdaps.c b/drivers/hwmon/hdaps.c
+index be2d131..bfd42f1 100644
+--- a/drivers/hwmon/hdaps.c
++++ b/drivers/hwmon/hdaps.c
+@@ -522,6 +522,7 @@ static struct dmi_system_id __initdata hdaps_whitelist[] = {
+ 	HDAPS_DMI_MATCH_INVERT("IBM", "ThinkPad T42p", HDAPS_BOTH_AXES),
+ 	HDAPS_DMI_MATCH_NORMAL("IBM", "ThinkPad T42"),
+ 	HDAPS_DMI_MATCH_NORMAL("IBM", "ThinkPad T43"),
++	HDAPS_DMI_MATCH_INVERT("LENOVO", "ThinkPad T400", HDAPS_BOTH_AXES),
+ 	HDAPS_DMI_MATCH_INVERT("LENOVO", "ThinkPad T60", HDAPS_BOTH_AXES),
+ 	HDAPS_DMI_MATCH_INVERT("LENOVO", "ThinkPad T61p", HDAPS_BOTH_AXES),
+ 	HDAPS_DMI_MATCH_INVERT("LENOVO", "ThinkPad T61", HDAPS_BOTH_AXES),
+-- 
+1.7.1
 
-Besides, it doesn't matter too much.
-
-Let me reiterate, please.  Doing serious memory management behind the back
-of the mm subsystem (and trying to do that so it doesn't notice) is wrong and
-the reason it works is by accident.  As long as you do that, I have a problem
-with TuxOnIce.
-
-Rafael
