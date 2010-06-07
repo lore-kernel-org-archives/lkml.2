@@ -1,85 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932211Ab0FGHsS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jun 2010 03:48:18 -0400
-Received: from smtp.nokia.com ([192.100.122.230]:61960 "EHLO
-	mgw-mx03.nokia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756347Ab0FGHsQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jun 2010 03:48:16 -0400
-Subject: Re: OMAP video compile error; regression from 2.6.33-rc4 onward
- (including current master)
-From: Tomi Valkeinen <tomi.valkeinen@nokia.com>
-To: ext Luke-Jr <luke@dashjr.org>
-Cc: "slapin@ossfans.org" <slapin@ossfans.org>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>
-In-Reply-To: <201006061652.39248.luke@dashjr.org>
-References: <201006061652.39248.luke@dashjr.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 07 Jun 2010 10:47:34 +0300
-Message-ID: <1275896854.2549.14.camel@tubuntu.research.nokia.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	id S932300Ab0FGHuG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jun 2010 03:50:06 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:63341 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1756368Ab0FGHuF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Jun 2010 03:50:05 -0400
+Message-ID: <4C0CA4BE.9000703@cn.fujitsu.com>
+Date: Mon, 07 Jun 2010 15:50:22 +0800
+From: Lai Jiangshan <laijs@cn.fujitsu.com>
+User-Agent: Thunderbird 2.0.0.6 (Windows/20070728)
+MIME-Version: 1.0
+To: Theodore Tso <tedtso@gmail.com>, Theodore Tso <tytso@mit.edu>
+CC: rostedt@goodmis.org, linux-kernel@vger.kernel.org,
+       Ingo Molnar <mingo@elte.hu>, Frederic Weisbecker <fweisbec@gmail.com>
+Subject: Re: [PATCH] tracing: reduce latency and remove percpu trace_seq
+References: <4C078350.7090106@cn.fujitsu.com>	 <1275572170.15884.30.camel@gandalf.stny.rr.com>	 <4C0863BD.6000307@cn.fujitsu.com> <1275620590.15884.70.camel@gandalf.stny.rr.com>
+In-Reply-To: <1275620590.15884.70.camel@gandalf.stny.rr.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 07 Jun 2010 07:47:40.0660 (UTC) FILETIME=[B4BDAB40:01CB0615]
-X-Nokia-AV: Clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2010-06-06 at 23:52 +0200, ext Luke-Jr wrote:
-> This doesn't even build, so I don't know how it was tested... Reverting the 
-> offending commit (simple, but does require conflict resolution) at least lets 
-> it compile, but I haven't tested whether it alone is enough to work in 
-> practise yet... hoping Tomi might provide a real fix. Maybe even in time for 
-> 2.6.35 final? :)
+Steven Rostedt wrote:
+> On Fri, 2010-06-04 at 10:23 +0800, Lai Jiangshan wrote:
+>> Steven Rostedt wrote:
+>>
+>>> The "print" in the trace_seq_printf() is the TP_printk() field of the
+>>> TRACE_EVENT. I believe that there were some events (ext4?) that did
+>>> things that required preemption disabled.
+>>>
+>> It seems that ext4 has no such events.
+>> I find jbd2_dev_to_name() in the TP_printk() field of ext4's tracepoints.
+>> And it seems that jbd2_dev_to_name() requires preemption enabled and sleepable.
+>>
+>> Maybe there were some events did things that required preemption disabled.
+>> But No document ensure TP_printk() preemption disabled, such events should
+>> be fixed, I think.
 > 
-> https://bugzilla.kernel.org/show_bug.cgi?id=16144
+> Well, I had a private email conversation with Ted last year where IIRC,
+> adding the preempt disable would fix things.
 > 
-> CC      drivers/video/omap/rfbi.o                                               
-> drivers/video/omap/rfbi.c: In function 'rfbi_get_clocks':                       
-> drivers/video/omap/rfbi.c:86: error: 'dispc' undeclared (first use in this
-> function)
-> drivers/video/omap/rfbi.c:86: error: (Each undeclared identifier is reported
-> only once
-> drivers/video/omap/rfbi.c:86: error: for each function it appears in.)          
-> make[1]: *** [drivers/video/omap/rfbi.o] Error 1                                
-> make: *** [drivers/video/omap/rfbi.o] Error 2                                   
+> I'd like to make sure Ted is OK with removing that before we do so.
 > 
-> The 'dispc' referred to herein is and has always been defined in
-> drivers/video/omap/dispc.c as an anonymous struct.
+> Ted?
+> 
 
-I don't have any device that uses RFBI so I can't test it, but how about
-this patch:
+Hi, Ted
 
-diff --git a/drivers/video/omap/rfbi.c b/drivers/video/omap/rfbi.c
-index 1162603..eada9f1 100644
---- a/drivers/video/omap/rfbi.c
-+++ b/drivers/video/omap/rfbi.c
-@@ -26,6 +26,7 @@
- #include <linux/interrupt.h>
- #include <linux/clk.h>
- #include <linux/io.h>
-+#include <linux/platform_device.h>
- 
- #include "omapfb.h"
- #include "dispc.h"
-@@ -83,13 +84,13 @@ static inline u32 rfbi_read_reg(int idx)
- 
- static int rfbi_get_clocks(void)
- {
--       rfbi.dss_ick = clk_get(&dispc.fbdev->dssdev->dev, "ick");
-+       rfbi.dss_ick = clk_get(&rfbi.fbdev->dssdev->dev, "ick");
-        if (IS_ERR(rfbi.dss_ick)) {
-                dev_err(rfbi.fbdev->dev, "can't get ick\n");
-                return PTR_ERR(rfbi.dss_ick);
-        }
- 
--       rfbi.dss1_fck = clk_get(&dispc.fbdev->dssdev->dev, "dss1_fck");
-+       rfbi.dss1_fck = clk_get(&rfbi.fbdev->dssdev->dev, "dss1_fck");
-        if (IS_ERR(rfbi.dss1_fck)) {
-                dev_err(rfbi.fbdev->dev, "can't get dss1_fck\n");
-                clk_put(rfbi.dss_ick);
+Could you give some comments?
+I'm waiting and will appreciate your help.
 
-
+Thanx, Lai
