@@ -1,79 +1,167 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753255Ab0FGJk5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jun 2010 05:40:57 -0400
-Received: from smtp125.sbc.mail.sp1.yahoo.com ([69.147.65.184]:32331 "HELO
-	smtp125.sbc.mail.sp1.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1751424Ab0FGJkz (ORCPT
+	id S1753531Ab0FGJlD (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jun 2010 05:41:03 -0400
+Received: from eu1sys200aog111.obsmtp.com ([207.126.144.131]:44523 "EHLO
+	eu1sys200aog111.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752488Ab0FGJk5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jun 2010 05:40:55 -0400
-X-Yahoo-SMTP: fzDSGlOswBCWnIOrNw7KwwK1j9PqyNbe5PtLKiS4dDU.UNl_t6bdEZu9tTLW
-X-YMail-OSG: JH9npwMVM1nua8kbKyIhx_GjQknT0ksgjBSAgAaXG4S1PpkPNZP4MABoBXt6x2k8ifTwU.kkBVcj8.Ub8ToKYcFlWsdf3uXJKQrf8i.YIMq26Ep64siUB.WW72YdAPWiuvNpjbHD9p30t1HBivZ8KPNA.eViK1_dR3CuCU.yablHkXNviHDJOYhFO.5ZBmCm135nGBTVxme_.IjtxGw20sJJjxY4vVQaTyN23P.6TSqrJhwP00Umq.I4HglTEMX403Zdr1ekmBrBEGnyzWViLK4uwDa6PkGO6ySqk4DL3zkWKMsiweWzdPU9mBBXDpPfSSrC9X3OoQXG8Nrnp1uT1zcR
-X-Yahoo-Newman-Property: ymail-3
-Subject: Re: [PATCH 0/3] Add proper STGT <-> bs_sg passthrough v3
-From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-To: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
-Cc: stgt@vger.kernel.org, linux-scsi@vger.kernel.org,
-       linux-kernel@vger.kernel.org, michaelc@cs.wisc.edu,
-       bharrosh@panasas.com, James.Bottomley@suse.de, dgilbert@interlog.com
-In-Reply-To: <20100607183438Y.fujita.tomonori@lab.ntt.co.jp>
-References: <1275899236.26888.40.camel@haakon2.linux-iscsi.org>
-	 <20100607175535Q.fujita.tomonori@lab.ntt.co.jp>
-	 <1275901629.26888.62.camel@haakon2.linux-iscsi.org>
-	 <20100607183438Y.fujita.tomonori@lab.ntt.co.jp>
+	Mon, 7 Jun 2010 05:40:57 -0400
+From: Linus Walleij <linus.walleij@stericsson.com>
+To: Dan Williams <dan.j.williams@intel.com>
+Cc: <linux-kernel@vger.kernel.org>,
+       Linus Walleij <linus.walleij@stericsson.com>
+Subject: [PATCH] DMAENGINE: ste_dma40: support older silicon
+Date: Mon, 7 Jun 2010 11:40:47 +0200
+Message-ID: <1275903647-23267-1-git-send-email-linus.walleij@stericsson.com>
+X-Mailer: git-send-email 1.6.3.3
+MIME-Version: 1.0
 Content-Type: text/plain
-Date: Mon, 07 Jun 2010 02:40:52 -0700
-Message-Id: <1275903652.26888.73.camel@haakon2.linux-iscsi.org>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.22.3.1 
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-06-07 at 18:35 +0900, FUJITA Tomonori wrote:
-> On Mon, 07 Jun 2010 02:07:09 -0700
-> "Nicholas A. Bellinger" <nab@linux-iscsi.org> wrote:
-> 
-> > On Mon, 2010-06-07 at 17:56 +0900, FUJITA Tomonori wrote:
-> > > On Mon, 07 Jun 2010 01:27:16 -0700
-> > > "Nicholas A. Bellinger" <nab@linux-iscsi.org> wrote:
-> > > 
-> > > > Ok, I just fixed some minor breakage and applied patch 3 on top of
-> > > > tgt.git/pass in my local tree and everything appears to work with
-> > > > '-E bsg -Y pt'.
-> > > > 
-> > > > Please let me know if you have any other comments on the BSG bits or if
-> > > > you would like me to send along a updated patch 3 seperately.
-> > > 
-> > > Please send patches except for bsg first.
-> > > 
-> > > About bsg support, we need both sg and bsg? Just bsg is not enough?
-> > 
-> > I figured you would still like legacy support w/o bsg for the forseeable
-> > future with older production kernels.  I don't recall which kernel BSG
-> > support was added or if this code has already been backported to the
-> > various distro kernels.
-> 
-> I prefer to support only bsg (until someone tells me to support sg).
-> 
+This makes sure the DMA40 driver will also work on the oldest
+silicon revisions that have the on-chip memory on another location
+in the DB8500 and also requires explicit suspend before starting
+or resuming a logical channel.
 
-Ok, if that is the case I will respin a patch on top of tgt.git/pass to
-remove SG and use BSG exclusively.  Please let me know if you have any
-more recommendations in this area.
+Signed-off-by: Linus Walleij <linus.walleij@stericsson.com>
+---
+Dan: this patch applies on top of the previous 18 patches, sorry
+for the spamming but they are atleaset quite clearly cut and broken
+down.
+---
+ arch/arm/mach-ux500/devices-db8500.c           |    2 +
+ arch/arm/mach-ux500/include/mach/db8500-regs.h |    1 +
+ drivers/dma/ste_dma40.c                        |   32 +++++++++++++++++++++---
+ 3 files changed, 31 insertions(+), 4 deletions(-)
 
-> 
-> btw, if you look for a tool to generate a bidi command, my sgv4-tools
-> might work for you.
-> 
-> git://git.kernel.org/pub/scm/linux/kernel/git/tomo/sgv4-tools.git
-> 
-> try sgv4_xdwriteread (note that it's not useful at all except for
-> generating bidi).
-
-Ah perfect, this is exactly what I am looking for.  Many thanks.
-
-Best,
-
---nab
+diff --git a/arch/arm/mach-ux500/devices-db8500.c b/arch/arm/mach-ux500/devices-db8500.c
+index e2b7c31..c62cdbe 100644
+--- a/arch/arm/mach-ux500/devices-db8500.c
++++ b/arch/arm/mach-ux500/devices-db8500.c
+@@ -213,4 +213,6 @@ void dma40_u8500ed_fixup(void)
+ 	dma40_plat_data.memcpy_len = 0;
+ 	dma40_resources[0].start = U8500_DMA_BASE_ED;
+ 	dma40_resources[0].end = U8500_DMA_BASE_ED + SZ_4K - 1;
++	dma40_resources[1].start = U8500_DMA_LCPA_BASE_ED;
++	dma40_resources[1].end = U8500_DMA_LCPA_BASE_ED + 2 * SZ_1K - 1;
+ }
+diff --git a/arch/arm/mach-ux500/include/mach/db8500-regs.h b/arch/arm/mach-ux500/include/mach/db8500-regs.h
+index 897fa35..8a8646b 100644
+--- a/arch/arm/mach-ux500/include/mach/db8500-regs.h
++++ b/arch/arm/mach-ux500/include/mach/db8500-regs.h
+@@ -17,6 +17,7 @@
+ #define U8500_ESRAM_BANK4	(U8500_ESRAM_BANK3 + U8500_ESRAM_BANK_SIZE)
+ /* Use bank 4 for DMA LCPA */
+ #define U8500_DMA_LCPA_BASE	U8500_ESRAM_BANK4
++#define U8500_DMA_LCPA_BASE_ED	U8500_ESRAM_BANK4 + 0x4000
+ 
+ #define U8500_PER3_BASE		0x80000000
+ #define U8500_STM_BASE		0x80100000
+diff --git a/drivers/dma/ste_dma40.c b/drivers/dma/ste_dma40.c
+index 0829ddb..4ab86b0 100644
+--- a/drivers/dma/ste_dma40.c
++++ b/drivers/dma/ste_dma40.c
+@@ -218,6 +218,7 @@ struct d40_chan {
+  * the same physical register.
+  * @dev: The device structure.
+  * @virtbase: The virtual base address of the DMA's register.
++ * @rev: silicon revision detected.
+  * @clk: Pointer to the DMA clock structure.
+  * @phy_start: Physical memory start of the DMA registers.
+  * @phy_size: Size of the DMA register map.
+@@ -250,6 +251,7 @@ struct d40_base {
+ 	spinlock_t			 execmd_lock;
+ 	struct device			 *dev;
+ 	void __iomem			 *virtbase;
++	u8				  rev:4;
+ 	struct clk			 *clk;
+ 	phys_addr_t			  phy_start;
+ 	resource_size_t			  phy_size;
+@@ -757,6 +759,17 @@ static dma_cookie_t d40_tx_submit(struct dma_async_tx_descriptor *tx)
+ 
+ static int d40_start(struct d40_chan *d40c)
+ {
++	if (d40c->base->rev == 0) {
++		int err;
++
++		if (d40c->log_num != D40_PHY_CHAN) {
++			err = d40_channel_execute_command(d40c,
++							  D40_DMA_SUSPEND_REQ);
++			if (err)
++				return err;
++		}
++	}
++
+ 	if (d40c->log_num != D40_PHY_CHAN)
+ 		d40_config_set_event(d40c, true);
+ 
+@@ -1456,6 +1469,13 @@ static int d40_resume(struct dma_chan *chan)
+ 
+ 	spin_lock_irqsave(&d40c->lock, flags);
+ 
++	if (d40c->base->rev == 0)
++		if (d40c->log_num != D40_PHY_CHAN) {
++			res = d40_channel_execute_command(d40c,
++							  D40_DMA_SUSPEND_REQ);
++			goto no_suspend;
++		}
++
+ 	/* If bytes left to transfer or linked tx resume job */
+ 	if (d40_residue(d40c) || d40_tx_is_linked(d40c)) {
+ 		if (d40c->log_num != D40_PHY_CHAN)
+@@ -1463,6 +1483,7 @@ static int d40_resume(struct dma_chan *chan)
+ 		res = d40_channel_execute_command(d40c, D40_DMA_RUN);
+ 	}
+ 
++no_suspend:
+ 	spin_unlock_irqrestore(&d40c->lock, flags);
+ 	return res;
+ }
+@@ -2292,6 +2313,7 @@ static struct d40_base * __init d40_hw_detect_init(struct platform_device *pdev)
+ 	int num_log_chans = 0;
+ 	int num_phy_chans;
+ 	int i;
++	u32 val;
+ 
+ 	clk = clk_get(&pdev->dev, NULL);
+ 
+@@ -2330,12 +2352,13 @@ static struct d40_base * __init d40_hw_detect_init(struct platform_device *pdev)
+ 		}
+ 	}
+ 
+-	i = readl(virtbase + D40_DREG_PERIPHID2);
++	/* Get silicon revision */
++	val = readl(virtbase + D40_DREG_PERIPHID2);
+ 
+-	if ((i & 0xf) != D40_PERIPHID2_DESIGNER) {
++	if ((val & 0xf) != D40_PERIPHID2_DESIGNER) {
+ 		dev_err(&pdev->dev,
+ 			"[%s] Unknown designer! Got %x wanted %x\n",
+-			__func__, i & 0xf, D40_PERIPHID2_DESIGNER);
++			__func__, val & 0xf, D40_PERIPHID2_DESIGNER);
+ 		goto failure;
+ 	}
+ 
+@@ -2343,7 +2366,7 @@ static struct d40_base * __init d40_hw_detect_init(struct platform_device *pdev)
+ 	num_phy_chans = 4 * (readl(virtbase + D40_DREG_ICFG) & 0x7) + 4;
+ 
+ 	dev_info(&pdev->dev, "hardware revision: %d @ 0x%x\n",
+-		 (i >> 4) & 0xf, res->start);
++		 (val >> 4) & 0xf, res->start);
+ 
+ 	plat_data = pdev->dev.platform_data;
+ 
+@@ -2365,6 +2388,7 @@ static struct d40_base * __init d40_hw_detect_init(struct platform_device *pdev)
+ 		goto failure;
+ 	}
+ 
++	base->rev = (val >> 4) & 0xf;
+ 	base->clk = clk;
+ 	base->num_phy_chans = num_phy_chans;
+ 	base->num_log_chans = num_log_chans;
+-- 
+1.6.3.3
 
