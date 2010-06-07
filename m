@@ -1,60 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753042Ab0FGV3M (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jun 2010 17:29:12 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:52502 "EHLO mx2.suse.de"
+	id S1752925Ab0FGVbO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jun 2010 17:31:14 -0400
+Received: from crca.org.au ([74.207.252.120]:51609 "EHLO crca.org.au"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751670Ab0FGV3K (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jun 2010 17:29:10 -0400
-Message-ID: <4C0D64A2.9020701@suse.cz>
-Date: Mon, 07 Jun 2010 23:29:06 +0200
-From: Michal Marek <mmarek@suse.cz>
-User-Agent: Thunderbird 2.0.0.24 (X11/20100302)
+	id S1751670Ab0FGVbN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Jun 2010 17:31:13 -0400
+X-Bogosity: Ham, spamicity=0.000000
+Message-ID: <4C0D6518.7000603@crca.org.au>
+Date: Tue, 08 Jun 2010 07:31:04 +1000
+From: Nigel Cunningham <ncunningham@crca.org.au>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.9) Gecko/20100423 Thunderbird/3.0.4
 MIME-Version: 1.0
-To: Alexander Stein <alexander.stein@informatik.tu-chemnitz.de>
-Cc: Roman Zippel <zippel@linux-m68k.org>, linux-kbuild@vger.kernel.org,
-       lkml <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] kconfig qconf: port to QT4
-References: <1275846668-17863-1-git-send-email-alexander.stein@informatik.tu-chemnitz.de> <4C0CE9FC.60905@suse.cz> <201006071912.54313.alexander.stein@informatik.tu-chemnitz.de>
-In-Reply-To: <201006071912.54313.alexander.stein@informatik.tu-chemnitz.de>
-Content-Type: text/plain; charset=ISO-8859-2
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+CC: Martin Steigerwald <Martin@lichtvoll.de>, tuxonice-devel@tuxonice.net,
+       LKML <linux-kernel@vger.kernel.org>,
+       pm list <linux-pm@lists.linux-foundation.org>,
+       Maxim Levitsky <maximlevitsky@gmail.com>,
+       TuxOnIce-devel <tuxonice-devel@tuxonice.net>
+Subject: Re: [TuxOnIce-devel] [linux-pm] [SUSPECTED SPAM] Re: Proposal for
+ a new algorithm for reading & writing a hibernation image.
+References: <9rpccea67yy402c975fqru8r.1275576653521@email.android.com> <4C0C843D.6030008@crca.org.au> <201006071507.56259.Martin@lichtvoll.de> <201006072328.21878.rjw@sisk.pl>
+In-Reply-To: <201006072328.21878.rjw@sisk.pl>
+Content-Type: text/plain; charset=ISO-8859-2; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 7.6.2010 19:12, Alexander Stein wrote:
-> Hello Michal,
-> 
-> Am Montag 07 Juni 2010, 14:45:48 schrieb Michal Marek:
->> I've only very little experience with Qt 3 or 4. The patch basically
->> changes most QSomeClass to Q3SomeClass, which is the Qt3-compatible
->> wrapper around QSomeClass. Now is it possible to still support Qt3? E.g.
->> have a header file that #defines Q3SomeClass back to QSomeClass and does
->> similar with the Qt headers, would that be possible? I know that Qt4 has
->> be there for five years already, but if the cost of keeping support for
->> old userspace is not too hight, I would try it.
-> 
-> I never thought about qt3 compatibility but It seems to me that renaming the 
-> qt3 compat classes and revert the header file name changes should suffice to 
-> compile against qt3 again. But then somebody else has to do the makefile magic 
-> to support both versions. Also which version should be prefered if both are 
-> available?
+Hi.
 
-I'd say the Qt4 version, leaving the qt3 for those who have no other
-option (and then letting it bitrot once the last user installs Qt4 :-)).
+On 08/06/10 07:28, Rafael J. Wysocki wrote:
+> On Monday 07 June 2010, Martin Steigerwald wrote:
+>> Am Montag 07 Juni 2010 schrieb Nigel Cunningham:
+>>> Hi.
+>>
+>> Hi Nigel and Rafael, hi everyone else involved,
+>>
+>>> On 07/06/10 05:04, Rafael J. Wysocki wrote:
+>>>> On Sunday 06 June 2010, Maxim Levitsky wrote:
+>>>>> On Sun, 2010-06-06 at 15:57 +0200, Rafael J. Wysocki wrote:
+>>>>>> On Sunday 06 June 2010, Maxim Levitsky wrote:
+>>>> ...
+>>>>
+>>>>>> So how TuxOnIce helps here?
+>>>>>
+>>>>> Very simple.
+>>>>>
+>>>>> With swsusp, I can save 750MB (memory) + 250 Vram (vram)
+>>>>> With full memory save I can save (1750 MB of memory) + 250 MB of
+>>>>> vram....
+>>>>
+>>>> So what about being able to save 1600 MB total instead of the 2 GB
+>>>> (which is what we're talking about in case that's not clear)?  Would
+>>>> it be _that_ _much_ worse?
+>>>
+>>> That all depends on what is in the 400MB you discard.
+>>>
+>>> The difference is "Just as if you'd never hibernated" vs something
+>>> closer to "Just as if you'd only just started up". We can't make
+>>> categorical statements because it really does depend upon what you
+>>> discard and what you want to do post-resume - that is, how useful the
+>>> memory you discard would have been. That's always going to vary from
+>>> case to case.
+>>
+>> Nigel and Rafael, how about just testing it?
+>
+> ISTR that can be done to some extent using TuxOnIce as is, becuase there is a
+> knob that you can use to limit the image size.
 
+Yes.
 
->> BTW, after applying your patch, make xconfig starts ok, but clicking in
->> the main menu does nothing, and if I close the close button, it does not
->> exit, but stops reacting to any input (but it still handles window
->> resize). The qt3 version would display the "Save changes?" dialog here.
-> 
-> I can click in the window around and closing the window using the X button 
-> asks me about saving the changes. Which QT version do you use actually?
+>> Whats needed to have 80% of the memory saved instead of 50%?
+>>
+>> I think its important to go the next steps towards a better snapshot in
+>> mainline kernel even when you do not agree on the complete end result yet.
+>>
+>> What about
+>>
+>> - Rafael, you review the async write patches of Nigel. If they are good,
+>> IMHO they should go in as soon as possible.
+>
+> Yes, I'm going to do that.
 
+Great.
 
-Strange, now it works fine. I'll play with it a bit more and then I'll
-tell you for sure.
+>> - Nigel and/or Rafael, you look at whats needed to save 80% instead of 50%
+>> of the memory and develop a patch for it
+>
+> That would be my suggestion as well.
 
-Michal
+It would be no problem to merge most of the TuxOnIce code without even 
+thinking further about this two-part image issue, because TuxOnIce also 
+has a tuneable to disable the second part of the image. We could even 
+merge the two part stuff and make it off by default, but I'm not sure 
+Rafael would accept that option.
+
+Regards,
+
+Nigel
