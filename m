@@ -1,68 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752707Ab0FGS7M (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jun 2010 14:59:12 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:54970 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752472Ab0FGS7K (ORCPT
+	id S1753518Ab0FGTAO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jun 2010 15:00:14 -0400
+Received: from charlotte.tuxdriver.com ([70.61.120.58]:35867 "EHLO
+	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752368Ab0FGTAM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jun 2010 14:59:10 -0400
-Date: Mon, 7 Jun 2010 11:53:28 -0700 (PDT)
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Al Viro <viro@ZenIV.linux.org.uk>, David Woodhouse <dwmw2@infradead.org>
-cc: Dave Airlie <airlied@linux.ie>, dri-devel@lists.freedesktop.org,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [git pull] drm fixes
-In-Reply-To: <20100607182640.GL31073@ZenIV.linux.org.uk>
-Message-ID: <alpine.LFD.2.00.1006071146451.3515@i5.linux-foundation.org>
-References: <alpine.DEB.2.00.1006070404510.29029@skynet.skynet.ie> <alpine.LFD.2.00.1006071057300.3515@i5.linux-foundation.org> <20100607182640.GL31073@ZenIV.linux.org.uk>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Mon, 7 Jun 2010 15:00:12 -0400
+From: "John W. Linville" <linville@tuxdriver.com>
+To: linux-wireless@vger.kernel.org
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+       linux-kernel@vger.kernel.org, Randy Dunlap <randy.dunlap@oracle.com>,
+       "John W. Linville" <linville@tuxdriver.com>
+Subject: [PATCH] iwlwifi: fix-up botched revert
+Date: Mon,  7 Jun 2010 14:49:36 -0400
+Message-Id: <1275936576-15590-1-git-send-email-linville@tuxdriver.com>
+X-Mailer: git-send-email 1.6.6.1
+In-Reply-To: <20100607090230.deed8bd1.randy.dunlap@oracle.com>
+References: <20100607090230.deed8bd1.randy.dunlap@oracle.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+In the revert of "iwlwifi: move _agn statistics related structure", I
+need to use CONFIG_IWLWIFI_DEBUGFS instead of CONFIG_IWLWIFI_DEBUG in
+the private structure definition.  Without this patch, it is possible
+to get this:
 
+drivers/net/wireless/iwlwifi/iwl-rx.c: In function 'iwl_accumulative_statistics':
+drivers/net/wireless/iwlwifi/iwl-rx.c:304: error: 'struct iwl_priv' has no member named 'accum_statistics'
+drivers/net/wireless/iwlwifi/iwl-rx.c:305: error: 'struct iwl_priv' has no member named 'delta_statistics'
+drivers/net/wireless/iwlwifi/iwl-rx.c:306: error: 'struct iwl_priv' has no member named 'max_delta'
+drivers/net/wireless/iwlwifi/iwl-rx.c:321: error: 'struct iwl_priv' has no member named 'accum_statistics'
+drivers/net/wireless/iwlwifi/iwl-rx.c:323: error: 'struct iwl_priv' has no member named 'accum_statistics'
+drivers/net/wireless/iwlwifi/iwl-rx.c:325: error: 'struct iwl_priv' has no member named 'accum_statistics'
+drivers/net/wireless/iwlwifi/iwl-rx.c:327: error: 'struct iwl_priv' has no member named 'accum_statistics'
+drivers/net/wireless/iwlwifi/iwl-rx.c:329: error: 'struct iwl_priv' has no member named 'accum_statistics'
+drivers/net/wireless/iwlwifi/iwl-rx.c:331: error: 'struct iwl_priv' has no member named 'accum_statistics'
+drivers/net/wireless/iwlwifi/iwl-rx.c: In function 'iwl_reply_statistics':
+drivers/net/wireless/iwlwifi/iwl-rx.c:484: error: 'struct iwl_priv' has no member named 'accum_statistics'
+drivers/net/wireless/iwlwifi/iwl-rx.c:486: error: 'struct iwl_priv' has no member named 'delta_statistics'
+drivers/net/wireless/iwlwifi/iwl-rx.c:488: error: 'struct iwl_priv' has no member named 'max_delta'
 
-On Mon, 7 Jun 2010, Al Viro wrote:
-> 
-> Ho-hum...  Speaking of which, what about leak fixes?  There's a long-standing
-> in-core inode leak in jffs2; basically, if you fail directory modification
-> in symlink() et.al., you get a leaked inode and whinge at umount.  Found
-> after -rc1, had been there since all the way back (similar bug in creat()
-> had been fixed in 2003, mkdir()/mknod()/symlink() were not).  Fix sits in
-> jffs2-fixes now...
+Reported-by: Randy Dunlap <randy.dunlap@oracle.com>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
+---
+ drivers/net/wireless/iwlwifi/iwl-dev.h |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-I think a leak that is trivial easily falls under "security issue" as a 
-potential DoS issue.
+diff --git a/drivers/net/wireless/iwlwifi/iwl-dev.h b/drivers/net/wireless/iwlwifi/iwl-dev.h
+index f359d9f..a00248c 100644
+--- a/drivers/net/wireless/iwlwifi/iwl-dev.h
++++ b/drivers/net/wireless/iwlwifi/iwl-dev.h
+@@ -1208,7 +1208,7 @@ struct iwl_priv {
+ 	struct iwl_tt_mgmt thermal_throttle;
+ 
+ 	struct iwl_notif_statistics statistics;
+-#ifdef CONFIG_IWLWIFI_DEBUG
++#ifdef CONFIG_IWLWIFI_DEBUGFS
+ 	struct iwl_notif_statistics accum_statistics;
+ 	struct iwl_notif_statistics delta_statistics;
+ 	struct iwl_notif_statistics max_delta;
+-- 
+1.6.6.1
 
-On the other hand, if it's not trivially fixed (say it needs big 
-re-organizing of some locking or refcounting or whatever), and it's a 
-really slow leak of a pretty small data structure, and is not triggered by 
-normal users (say, you need to mount a filesystem or it needs some very 
-specific timing), I think it falls under "we haven't seen in the previous 
-five years, we might as well make sure the fix is tested in the next merge 
-window".
-
-So I think it's a judgement call.
-
-> I can simply pull jffs2-fixes into vfs for-next (I need it in there for
-> ->evict_inode() series), but I'd obviously prefer to just rebase it after
-> it gets into mainline.
-
-I seem to have a jffs2 pull request that I haven't yet processed, exactly 
-because it wasn't clear. It's much bigger than I would have wished for, 
-and it's not clear it's all regressions at all.
-
-DavidW? It's
-
-	 7 files changed, 107 insertions(+), 91 deletions(-)
-
-and while that's in the size range that I didn't just reject it like the 
-drm pull, I still do want to know if that's really just true major 
-bugfixes and regressions. We already had a really bad -rc2 release due to 
-a tiny and innocent-looking bugfix that turned out to be anything but. I 
-do _not_ want to repeat that with -rc3, since I'll be gone.
-
-			Linus
