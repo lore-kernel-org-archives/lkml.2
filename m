@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932441Ab0FGLVi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jun 2010 07:21:38 -0400
-Received: from [18.85.46.34] ([18.85.46.34]:37753 "EHLO bombadil.infradead.org"
+	id S1756822Ab0FGLU2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jun 2010 07:20:28 -0400
+Received: from [18.85.46.34] ([18.85.46.34]:37716 "EHLO bombadil.infradead.org"
 	rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S932212Ab0FGLUi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jun 2010 07:20:38 -0400
-Message-Id: <20100607111408.320302531@chello.nl>
+	id S1756465Ab0FGLUW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Jun 2010 07:20:22 -0400
+Message-Id: <20100607111408.592556738@chello.nl>
 User-Agent: quilt/0.48-1
-Date: Mon, 07 Jun 2010 13:07:15 +0200
+Date: Mon, 07 Jun 2010 13:07:18 +0200
 From: Peter Zijlstra <a.p.zijlstra@chello.nl>
 To: Andrea Arcangeli <aarcange@redhat.com>, Avi Kivity <avi@redhat.com>,
        Thomas Gleixner <tglx@linutronix.de>, Rik van Riel <riel@redhat.com>,
@@ -20,80 +20,160 @@ Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
        Hugh Dickins <hugh.dickins@tiscali.co.uk>, Mel Gorman <mel@csn.ul.ie>,
        Nick Piggin <npiggin@suse.de>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: [PATCH 21/28] sparc64: Use RCU page table freeing.
+Subject: [PATCH 24/28] lockdep, mutex: Provide mutex_lock_nest_lock
 References: <20100607110654.606530953@chello.nl>
-Content-Disposition: inline; filename=davem-sparc64-Use_RCU_page_table_freeing.patch
+Content-Disposition: inline; filename=mutex_lock_nest_lock.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: David S. Miller <davem@davemloft.net>
+Provide the mutex_lock_nest_lock() annotation.
 
-Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-LKML-Reference: <20100408.180008.180206930.davem@davemloft.net>
 ---
- arch/sparc/include/asm/pgalloc_64.h |   49 ++++++++++++++++++++++++++++++++++--
- 1 file changed, 47 insertions(+), 2 deletions(-)
+ include/linux/lockdep.h |    3 +++
+ include/linux/mutex.h   |    9 +++++++++
+ kernel/mutex.c          |   25 +++++++++++++++++--------
+ 3 files changed, 29 insertions(+), 8 deletions(-)
 
-Index: linux-2.6/arch/sparc/include/asm/pgalloc_64.h
+Index: linux-2.6/include/linux/lockdep.h
 ===================================================================
---- linux-2.6.orig/arch/sparc/include/asm/pgalloc_64.h
-+++ linux-2.6/arch/sparc/include/asm/pgalloc_64.h
-@@ -76,7 +76,52 @@ static inline void pte_free(struct mm_st
+--- linux-2.6.orig/include/linux/lockdep.h
++++ linux-2.6/include/linux/lockdep.h
+@@ -484,12 +484,15 @@ static inline void print_irqtrace_events
+ #ifdef CONFIG_DEBUG_LOCK_ALLOC
+ # ifdef CONFIG_PROVE_LOCKING
+ #  define mutex_acquire(l, s, t, i)		lock_acquire(l, s, t, 0, 2, NULL, i)
++#  define mutex_acquire_nest(l, s, t, n, i)	lock_acquire(l, s, t, 0, 2, n, i)
+ # else
+ #  define mutex_acquire(l, s, t, i)		lock_acquire(l, s, t, 0, 1, NULL, i)
++#  define mutex_acquire_nest(l, s, t, n, i)	lock_acquire(l, s, t, 0, 1, n, i)
+ # endif
+ # define mutex_release(l, n, i)			lock_release(l, n, i)
+ #else
+ # define mutex_acquire(l, s, t, i)		do { } while (0)
++# define mutex_acquire_nest(l, s, t, n, i)	do { } while (0)
+ # define mutex_release(l, n, i)			do { } while (0)
+ #endif
  
- #define check_pgt_cache()	do { } while (0)
+Index: linux-2.6/include/linux/mutex.h
+===================================================================
+--- linux-2.6.orig/include/linux/mutex.h
++++ linux-2.6/include/linux/mutex.h
+@@ -124,6 +124,7 @@ static inline int mutex_is_locked(struct
+  */
+ #ifdef CONFIG_DEBUG_LOCK_ALLOC
+ extern void mutex_lock_nested(struct mutex *lock, unsigned int subclass);
++extern void _mutex_lock_nest_lock(struct mutex *lock, struct lockdep_map *nest_lock);
+ extern int __must_check mutex_lock_interruptible_nested(struct mutex *lock,
+ 					unsigned int subclass);
+ extern int __must_check mutex_lock_killable_nested(struct mutex *lock,
+@@ -132,6 +133,13 @@ extern int __must_check mutex_lock_killa
+ #define mutex_lock(lock) mutex_lock_nested(lock, 0)
+ #define mutex_lock_interruptible(lock) mutex_lock_interruptible_nested(lock, 0)
+ #define mutex_lock_killable(lock) mutex_lock_killable_nested(lock, 0)
++
++#define mutex_lock_nest_lock(lock, nest_lock)				\
++do {									\
++	typecheck(struct lockdep_map *, &(nest_lock)->dep_map);		\
++	_mutex_lock_nest_lock(lock, &(nest_lock)->dep_map);		\
++} while (0)
++
+ #else
+ extern void mutex_lock(struct mutex *lock);
+ extern int __must_check mutex_lock_interruptible(struct mutex *lock);
+@@ -140,6 +148,7 @@ extern int __must_check mutex_lock_killa
+ # define mutex_lock_nested(lock, subclass) mutex_lock(lock)
+ # define mutex_lock_interruptible_nested(lock, subclass) mutex_lock_interruptible(lock)
+ # define mutex_lock_killable_nested(lock, subclass) mutex_lock_killable(lock)
++# define mutex_lock_nest_lock(lock, nest_lock) mutex_lock(lock)
+ #endif
  
--#define __pte_free_tlb(tlb, pte, addr)	pte_free((tlb)->mm, pte)
--#define __pmd_free_tlb(tlb, pmd, addr)	pmd_free((tlb)->mm, pmd)
-+static inline void pgtable_free(void *table, bool is_page)
-+{
-+	if (is_page)
-+		free_page((unsigned long)table);
-+	else
-+		kmem_cache_free(pgtable_cache, table);
-+}
-+
-+#ifdef CONFIG_SMP
-+#define HAVE_ARCH_RCU_TABLE_FREE
-+
-+struct mmu_gather;
-+extern void tlb_remove_table(struct mmu_gather *, void *);
-+
-+static inline void pgtable_free_tlb(struct mmu_gather *tlb, void *table, bool is_page)
-+{
-+	unsigned long pgf = (unsigned long)table;
-+	if (is_page)
-+		pgf |= 0x1UL;
-+	tlb_remove_table(tlb, (void *)pgf);
-+}
-+
-+static inline void __tlb_remove_table(void *_table)
-+{
-+	void *table = (void *)((unsigned long)_table & ~0x1UL);
-+	bool is_page = false;
-+
-+	if ((unsigned long)_table & 0x1UL)
-+		is_page = true;
-+	pgtable_free(table, is_page);
-+}
-+#else /* CONFIG_SMP */
-+static inline void pgtable_free_tlb(struct mmu_gather *tlb, void *table, bool is_page)
-+{
-+	pgtable_free(table, is_page);
-+}
-+#endif /* !CONFIG_SMP */
-+
-+static inline void __pte_free_tlb(struct mmu_gather *tlb, struct page *ptepage,
-+				  unsigned long address)
-+{
-+	pgtable_page_dtor(ptepage);
-+	pgtable_free_tlb(tlb, page_address(ptepage), true);
-+}
-+
-+#define __pmd_free_tlb(tlb, pmd, addr)		      \
-+	pgtable_free_tlb(tlb, pmd, false)
+ /*
+Index: linux-2.6/kernel/mutex.c
+===================================================================
+--- linux-2.6.orig/kernel/mutex.c
++++ linux-2.6/kernel/mutex.c
+@@ -140,14 +140,14 @@ EXPORT_SYMBOL(mutex_unlock);
+  */
+ static inline int __sched
+ __mutex_lock_common(struct mutex *lock, long state, unsigned int subclass,
+-	       	unsigned long ip)
++		    struct lockdep_map *nest_lock, unsigned long ip)
+ {
+ 	struct task_struct *task = current;
+ 	struct mutex_waiter waiter;
+ 	unsigned long flags;
  
- #endif /* _SPARC64_PGALLOC_H */
+ 	preempt_disable();
+-	mutex_acquire(&lock->dep_map, subclass, 0, ip);
++	mutex_acquire_nest(&lock->dep_map, subclass, 0, nest_lock, ip);
+ 
+ #ifdef CONFIG_MUTEX_SPIN_ON_OWNER
+ 	/*
+@@ -278,16 +278,25 @@ void __sched
+ mutex_lock_nested(struct mutex *lock, unsigned int subclass)
+ {
+ 	might_sleep();
+-	__mutex_lock_common(lock, TASK_UNINTERRUPTIBLE, subclass, _RET_IP_);
++	__mutex_lock_common(lock, TASK_UNINTERRUPTIBLE, subclass, NULL, _RET_IP_);
+ }
+ 
+ EXPORT_SYMBOL_GPL(mutex_lock_nested);
+ 
++void __sched
++_mutex_lock_nest_lock(struct mutex *lock, struct lockdep_map *nest)
++{
++	might_sleep();
++	__mutex_lock_common(lock, TASK_UNINTERRUPTIBLE, 0, nest, _RET_IP_);
++}
++
++EXPORT_SYMBOL_GPL(_mutex_lock_nest_lock);
++
+ int __sched
+ mutex_lock_killable_nested(struct mutex *lock, unsigned int subclass)
+ {
+ 	might_sleep();
+-	return __mutex_lock_common(lock, TASK_KILLABLE, subclass, _RET_IP_);
++	return __mutex_lock_common(lock, TASK_KILLABLE, subclass, NULL, _RET_IP_);
+ }
+ EXPORT_SYMBOL_GPL(mutex_lock_killable_nested);
+ 
+@@ -296,7 +305,7 @@ mutex_lock_interruptible_nested(struct m
+ {
+ 	might_sleep();
+ 	return __mutex_lock_common(lock, TASK_INTERRUPTIBLE,
+-				   subclass, _RET_IP_);
++				   subclass, NULL, _RET_IP_);
+ }
+ 
+ EXPORT_SYMBOL_GPL(mutex_lock_interruptible_nested);
+@@ -402,7 +411,7 @@ __mutex_lock_slowpath(atomic_t *lock_cou
+ {
+ 	struct mutex *lock = container_of(lock_count, struct mutex, count);
+ 
+-	__mutex_lock_common(lock, TASK_UNINTERRUPTIBLE, 0, _RET_IP_);
++	__mutex_lock_common(lock, TASK_UNINTERRUPTIBLE, 0, NULL, _RET_IP_);
+ }
+ 
+ static noinline int __sched
+@@ -410,7 +419,7 @@ __mutex_lock_killable_slowpath(atomic_t 
+ {
+ 	struct mutex *lock = container_of(lock_count, struct mutex, count);
+ 
+-	return __mutex_lock_common(lock, TASK_KILLABLE, 0, _RET_IP_);
++	return __mutex_lock_common(lock, TASK_KILLABLE, 0, NULL, _RET_IP_);
+ }
+ 
+ static noinline int __sched
+@@ -418,7 +427,7 @@ __mutex_lock_interruptible_slowpath(atom
+ {
+ 	struct mutex *lock = container_of(lock_count, struct mutex, count);
+ 
+-	return __mutex_lock_common(lock, TASK_INTERRUPTIBLE, 0, _RET_IP_);
++	return __mutex_lock_common(lock, TASK_INTERRUPTIBLE, 0, NULL, _RET_IP_);
+ }
+ #endif
+ 
 
 
