@@ -1,55 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932300Ab0FGHuG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jun 2010 03:50:06 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:63341 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1756368Ab0FGHuF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jun 2010 03:50:05 -0400
-Message-ID: <4C0CA4BE.9000703@cn.fujitsu.com>
-Date: Mon, 07 Jun 2010 15:50:22 +0800
-From: Lai Jiangshan <laijs@cn.fujitsu.com>
-User-Agent: Thunderbird 2.0.0.6 (Windows/20070728)
+	id S1756473Ab0FGHvU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jun 2010 03:51:20 -0400
+Received: from one.firstfloor.org ([213.235.205.2]:56865 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754167Ab0FGHvS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Jun 2010 03:51:18 -0400
+To: Stephen Hemminger <shemminger@vyatta.com>
+Cc: xiaohui.xin@intel.com, netdev@vger.kernel.org, kvm@vger.kernel.org,
+       linux-kernel@vger.kernel.org, mst@redhat.com, mingo@elte.hu,
+       davem@davemloft.net, herbert@gondor.hengli.com.au,
+       jdike@linux.intel.com
+Subject: Re: [RFC PATCH v7 01/19] Add a new structure for skb buffer from external.
+From: Andi Kleen <andi@firstfloor.org>
+References: <1275732899-5423-1-git-send-email-xiaohui.xin@intel.com>
+	<20100606161348.427822fb@nehalam>
+Date: Mon, 07 Jun 2010 09:51:11 +0200
+In-Reply-To: <20100606161348.427822fb@nehalam> (Stephen Hemminger's message of "Sun\, 6 Jun 2010 16\:13\:48 -0700")
+Message-ID: <87pr03gu1c.fsf@basil.nowhere.org>
+User-Agent: Gnus/5.11 (Gnus v5.11) Emacs/22.3 (gnu/linux)
 MIME-Version: 1.0
-To: Theodore Tso <tedtso@gmail.com>, Theodore Tso <tytso@mit.edu>
-CC: rostedt@goodmis.org, linux-kernel@vger.kernel.org,
-       Ingo Molnar <mingo@elte.hu>, Frederic Weisbecker <fweisbec@gmail.com>
-Subject: Re: [PATCH] tracing: reduce latency and remove percpu trace_seq
-References: <4C078350.7090106@cn.fujitsu.com>	 <1275572170.15884.30.camel@gandalf.stny.rr.com>	 <4C0863BD.6000307@cn.fujitsu.com> <1275620590.15884.70.camel@gandalf.stny.rr.com>
-In-Reply-To: <1275620590.15884.70.camel@gandalf.stny.rr.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Steven Rostedt wrote:
-> On Fri, 2010-06-04 at 10:23 +0800, Lai Jiangshan wrote:
->> Steven Rostedt wrote:
->>
->>> The "print" in the trace_seq_printf() is the TP_printk() field of the
->>> TRACE_EVENT. I believe that there were some events (ext4?) that did
->>> things that required preemption disabled.
->>>
->> It seems that ext4 has no such events.
->> I find jbd2_dev_to_name() in the TP_printk() field of ext4's tracepoints.
->> And it seems that jbd2_dev_to_name() requires preemption enabled and sleepable.
->>
->> Maybe there were some events did things that required preemption disabled.
->> But No document ensure TP_printk() preemption disabled, such events should
->> be fixed, I think.
-> 
-> Well, I had a private email conversation with Ted last year where IIRC,
-> adding the preempt disable would fix things.
-> 
-> I'd like to make sure Ted is OK with removing that before we do so.
-> 
-> Ted?
-> 
+Stephen Hemminger <shemminger@vyatta.com> writes:
 
-Hi, Ted
+> Still not sure this is a good idea for a couple of reasons:
+>
+> 1. We already have lots of special cases with skb's (frags and fraglist),
+>    and skb's travel through a lot of different parts of the kernel.  So any
+>    new change like this creates lots of exposed points for new bugs. Look
+>    at cases like MD5 TCP and netfilter, and forwarding these SKB's to ipsec
+>    and ppp and ...
+>
+> 2. SKB's can have infinite lifetime in the kernel. If these buffers come from
+>    a fixed size pool in an external device, they can easily all get tied up
+>    if you have a slow listener. What happens then?
 
-Could you give some comments?
-I'm waiting and will appreciate your help.
+3. If they come from an internal pool what happens when the kernel runs 
+low on memory? How is that pool balanced against other kernel
+memory users?
 
-Thanx, Lai
+-Andi
+
+-- 
+ak@linux.intel.com -- Speaking for myself only.
