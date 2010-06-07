@@ -1,91 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753329Ab0FGVgs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jun 2010 17:36:48 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:32999 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752409Ab0FGVgq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jun 2010 17:36:46 -0400
-Date: Mon, 7 Jun 2010 17:36:31 -0400
-From: Josef Bacik <josef@redhat.com>
-To: Dave Chinner <david@fromorbit.com>
-Cc: Jeffrey Merkey <jeffmerkey@gmail.com>, linux-kernel@vger.kernel.org,
-       linux-fsdevel@vger.kernel.org, josef@redhat.com,
-       viro@zeniv.linux.org.uk
-Subject: Re: 2.6.34 echo j > /proc/sysrq-trigger causes inifnite
-	unfreeze/Thaw event
-Message-ID: <20100607213631.GE2336@localhost.localdomain>
-References: <AANLkTim74SREZDq7VQhq6Z1hKXZLINoq0t8rkyQecmM1@mail.gmail.com> <20100607010542.GB27325@dastard>
+	id S1753481Ab0FGVhm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jun 2010 17:37:42 -0400
+Received: from na3sys009aog103.obsmtp.com ([74.125.149.71]:40917 "EHLO
+	na3sys009aog103.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752409Ab0FGVhk convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Jun 2010 17:37:40 -0400
+From: "Yang, Bo" <Bo.Yang@lsi.com>
+To: Clemens Ladisch <clemens@ladisch.de>,
+       DL-MegaRAID Linux <megaraidlinux@lsi.com>
+CC: "linux-scsi@vger.kernel.org" <linux-scsi@vger.kernel.org>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Mon, 7 Jun 2010 15:37:32 -0600
+Subject: RE: [PATCH] megaraid_sas: enable message-signaled interrupts
+Thread-Topic: [PATCH] megaraid_sas: enable message-signaled interrupts
+Thread-Index: AcsGFCA3t60rM1CeRzGrqmB3fR6tKwAdW0gg
+Message-ID: <4B6A08C587958942AA3002690DD4F8C3D0803AAB@cosmail02.lsi.com>
+References: <4C0CA170.70003@ladisch.de>
+In-Reply-To: <4C0CA170.70003@ladisch.de>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100607010542.GB27325@dastard>
-User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 07, 2010 at 11:05:42AM +1000, Dave Chinner wrote:
-> On Thu, Jun 03, 2010 at 11:30:30PM -0600, Jeffrey Merkey wrote:
-> > causes the FS Thaw stuff in fs/buffer.c to enter an infinite loop
-> > filling the /var/log/messages with junk and causing the hard drive to
-> > crank away endlessly.
-> 
-> Hmmm, looks pretty obvious what the 2.6.34 bug is:
-> 
->         while (sb->s_bdev && !thaw_bdev(sb->s_bdev, sb))
->                 printk(KERN_WARNING "Emergency Thaw on %s\n",
->                        bdevname(sb->s_bdev, b));
-> 
-> thaw_bdev() returns 0 on success or not frozen, and returns non-zero
-> only if the unfreeze failed. Looks like it was broken from the start
-> to me.
-> 
-> Fixing that endless loop shows some other problems on 2.6.35,
-> though: the emergency unfreeze is not unfreezing frozen XFS
-> filesystems.  This appears to be caused by
-> 18e9e5104fcd9a973ffe3eed3816c87f2a1b6cd2 ("Introduce freeze_super
-> and thaw_super for the fsfreeze ioctl").
-> 
-> It appears that this introduces a significant mismatch between the
-> bdev freeze/thaw and the super freze/thaw. That is, if you freeze
-> with the sb method, you can only unfreeze via the sb method.
-> however, if you freeze via the bdev method, you can unfreeze by
-> either the bdev or sb method.  This breaks the nesting of the
-> freeze/thaw operations between dm and userspace, which can lead to
-> premature thawing of the filesystem.
-> 
-> Then there is this deadlock:
-> 
-> iterate_supers(do_thaw_one) does:
-> 
-> 	down_read(&sb->s_umount);
-> 	do_thaw_one(sb)
-> 	  thaw_bdev(sb->s_bdev, sb))
-> 	    thaw_super(sb)
-> 	      down_write(&sb->s_umount);
-> 
-> Which is an instant deadlock.
-> 
-> These problems were hidden by the fact that the emergency thaw code
-> was not getting past the thaw_bdev guards and so not triggering
-> this deadlock.
-> 
-> Al, Josef, what's the best way to fix this mess?
-> 
+NACK.  The MSI will be turn on until driver fully support it.
 
-Well we can do something like the following
 
-1) Make a __thaw_super() that just does all the work currently in thaw_super(),
-just without taking the s_umount semaphore.
-2) Make an thaw_bdev_force or something like that that just sets
-bd_fsfreeze_count to 0 and calls __thaw_super().  The original intent was to
-make us call thaw until the thaw actually occured, so might as well just make it
-quick and painless.
-3) Make do_thaw_one() call __thaw_super if sb->s_bdev doesn't exist.  I'm not
-sure if this happens currently, but it's nice just in case.
+-----Original Message-----
+From: Clemens Ladisch [mailto:clemens@ladisch.de] 
+Sent: Monday, June 07, 2010 3:36 AM
+To: DL-MegaRAID Linux
+Cc: linux-scsi@vger.kernel.org; linux-kernel@vger.kernel.org
+Subject: [PATCH] megaraid_sas: enable message-signaled interrupts
 
-This takes care of the s_umount problem and makes sure that do_thaw_one does
-actually thaw the device.  Does this sound kosher to everybody?  Thanks,
+To avoid sharing interrupts, enable message-signaled interrupts, if
+possible.
 
-Josef
+Tested with LSI 9260-8i/8e, where sharing the interrupt with the nvidia
+driver would reduce the RAID performance.
+
+Signed-off-by: Clemens Ladisch <clemens@ladisch.de>
+Tested-by: Bert dd <bert.ddecker@gmail.com>
+---
+ drivers/scsi/megaraid/megaraid_sas.c |   17 +++++++++++++++--
+ 1 file changed, 15 insertions(+), 2 deletions(-)
+
+--- a/drivers/scsi/megaraid/megaraid_sas.c
++++ b/drivers/scsi/megaraid/megaraid_sas.c
+@@ -3169,10 +3169,14 @@ megasas_probe_one(struct pci_dev *pdev,
+ 	if (megasas_init_mfi(instance))
+ 		goto fail_init_mfi;
+ 
++	pci_enable_msi(pdev);
++
+ 	/*
+ 	 * Register IRQ
+ 	 */
+-	if (request_irq(pdev->irq, megasas_isr, IRQF_SHARED, "megasas", instance)) {
++	if (request_irq(pdev->irq, megasas_isr,
++		pci_dev_msi_enabled(pdev) ? 0 : IRQF_SHARED,
++		"megasas", instance)) {
+ 		printk(KERN_DEBUG "megasas: Failed to register IRQ\n");
+ 		goto fail_irq;
+ 	}
+@@ -3222,6 +3226,8 @@ megasas_probe_one(struct pci_dev *pdev,
+ 	megasas_release_mfi(instance);
+ 
+       fail_irq:
++	pci_disable_msi(pdev);
++
+       fail_init_mfi:
+       fail_alloc_dma_buf:
+ 	if (instance->evt_detail)
+@@ -3354,6 +3360,7 @@ megasas_suspend(struct pci_dev *pdev, pm
+ 	pci_set_drvdata(instance->pdev, instance);
+ 	instance->instancet->disable_intr(instance->reg_set);
+ 	free_irq(instance->pdev->irq, instance);
++	pci_disable_msi(pdev);
+ 
+ 	pci_save_state(pdev);
+ 	pci_disable_device(pdev);
+@@ -3416,10 +3423,13 @@ megasas_resume(struct pci_dev *pdev)
+ 	tasklet_init(&instance->isr_tasklet, megasas_complete_cmd_dpc,
+ 			(unsigned long)instance);
+ 
++	pci_enable_msi(pdev);
++
+ 	/*
+ 	 * Register IRQ
+ 	 */
+-	if (request_irq(pdev->irq, megasas_isr, IRQF_SHARED,
++	if (request_irq(pdev->irq, megasas_isr,
++		pci_dev_msi_enabled(pdev) ? 0 : IRQF_SHARED,
+ 		"megasas", instance)) {
+ 		printk(KERN_ERR "megasas: Failed to register IRQ\n");
+ 		goto fail_irq;
+@@ -3443,6 +3453,8 @@ megasas_resume(struct pci_dev *pdev)
+ 	return 0;
+ 
+ fail_irq:
++	pci_disable_msi(pdev);
++
+ fail_init_mfi:
+ 	if (instance->evt_detail)
+ 		pci_free_consistent(pdev, sizeof(struct megasas_evt_detail),
+@@ -3519,6 +3531,7 @@ static void __devexit megasas_detach_one
+ 	instance->instancet->disable_intr(instance->reg_set);
+ 
+ 	free_irq(instance->pdev->irq, instance);
++	pci_disable_msi(pdev);
+ 
+ 	megasas_release_mfi(instance);
+ 
