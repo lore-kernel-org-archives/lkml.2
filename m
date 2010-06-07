@@ -1,41 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751865Ab0FGJJM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jun 2010 05:09:12 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:60122 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750737Ab0FGJJK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jun 2010 05:09:10 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Michal Marek <mmarek@suse.cz>
-Subject: [kbuild regression, post-rc1] Remote installation over read-only NFS broken
-Date: Mon, 7 Jun 2010 11:10:26 +0200
-User-Agent: KMail/1.12.4 (Linux/2.6.35-rc1-rjw; KDE/4.3.5; x86_64; ; )
-Cc: LKML <linux-kernel@vger.kernel.org>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       Andrew Morton <akpm@linux-foundation.org>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="us-ascii"
+	id S1754331Ab0FGJUO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jun 2010 05:20:14 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:36361 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751733Ab0FGJUM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Jun 2010 05:20:12 -0400
+Subject: Re: mmotm 2010-06-03-16-36 lots of suspected kmemleak
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Dave Young <hidave.darkstar@gmail.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       linux-mm@kvack.org
+In-Reply-To: <AANLkTikXdy6GOQ2EzDt-yrcJ_jMIPvLsH3neWBozpVCK@mail.gmail.com>
+References: <AANLkTikXdy6GOQ2EzDt-yrcJ_jMIPvLsH3neWBozpVCK@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Organization: ARM Ltd
+Date: Mon, 07 Jun 2010 10:19:55 +0100
+Message-ID: <1275902395.7258.9.camel@toshiba-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
-Message-Id: <201006071110.26245.rjw@sisk.pl>
+X-OriginalArrivalTime: 07 Jun 2010 09:19:56.0722 (UTC) FILETIME=[987DB120:01CB0622]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Michal,
+On Mon, 2010-06-07 at 06:20 +0100, Dave Young wrote:
+> On Fri, Jun 4, 2010 at 9:55 PM, Dave Young <hidave.darkstar@gmail.com> wrote:
+> > On Fri, Jun 4, 2010 at 6:50 PM, Catalin Marinas <catalin.marinas@arm.com> wrote:
+> >> Dave Young <hidave.darkstar@gmail.com> wrote:
+> >>> With mmotm 2010-06-03-16-36, I gots tuns of kmemleaks
+> >>
+> >> Do you have CONFIG_NO_BOOTMEM enabled? I posted a patch for this but
+> >> hasn't been reviewed yet (I'll probably need to repost, so if it fixes
+> >> the problem for you a Tested-by would be nice):
+> >>
+> >> http://lkml.org/lkml/2010/5/4/175
+> >
+> >
+> > I'd like to test, but I can not access the test pc during weekend. So
+> > I will test it next monday.
+> 
+> Bad news, the patch does not fix this issue.
 
-Unfortunately, your commit 73d1393eb8507ed5fd7f8e696f6b1ecc18035ebe
-(kbuild: Generate modules.builtin in make modules_install) broke my testing
-environment that had always worked before.
+Thanks for trying. Could you please just disable CONFIG_NO_BOOTMEM and
+post the kmemleak reported leaks again?
 
-Namely, I build kernels on a central machine and export the build directory
-along with the kernel sources over read-only NFS to test boxes.  Then, on the
-test boxes I run "make modules_install", copy the kernel to /boot, run mkinitrd
-and so on.  Now, after your commit above the "make modules_install" command on
-the test boxes doesn't work any more, because it tries to write to the build
-directory, which is mounted read-only.
+Thanks.
 
-Please fix or revert.
+-- 
+Catalin
 
-Rafael
