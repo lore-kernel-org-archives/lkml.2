@@ -1,61 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752442Ab0FGPve (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jun 2010 11:51:34 -0400
-Received: from www.tglx.de ([62.245.132.106]:58309 "EHLO www.tglx.de"
+	id S1752429Ab0FGP40 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jun 2010 11:56:26 -0400
+Received: from ist.d-labs.de ([213.239.218.44]:45384 "EHLO mx01.d-labs.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752104Ab0FGPvb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jun 2010 11:51:31 -0400
-Date: Mon, 7 Jun 2010 17:49:44 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
+	id S1752303Ab0FGP4Y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Jun 2010 11:56:24 -0400
+Date: Mon, 7 Jun 2010 17:56:04 +0200
+From: Florian Mickler <florian@mickler.org>
 To: Alan Stern <stern@rowland.harvard.edu>
-cc: Matthew Garrett <mjg59@srcf.ucam.org>, Vitaly Wool <vitalywool@gmail.com>,
-       Neil Brown <neilb@suse.de>, tytso@mit.edu,
+Cc: Matthew Garrett <mjg59@srcf.ucam.org>, Vitaly Wool <vitalywool@gmail.com>,
+       Neil Brown <neilb@suse.de>, <tytso@mit.edu>,
        Peter Zijlstra <peterz@infradead.org>,
-       =?ISO-8859-1?Q?Arve_Hj=EF=BF=BDnev=EF=BF=BD?= <arve@android.com>,
        Brian Swetland <swetland@google.com>,
        Felipe Balbi <felipe.balbi@nokia.com>,
        LKML <linux-kernel@vger.kernel.org>,
-       Florian Mickler <florian@mickler.org>,
        James Bottomley <James.Bottomley@suse.de>,
-       "H. Peter Anvin" <hpa@zytor.com>,
+       Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
        Linux PM <linux-pm@lists.linux-foundation.org>,
        Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
        Linus Torvalds <torvalds@linux-foundation.org>,
        Ingo Molnar <mingo@elte.hu>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
        Arjan van de Ven <arjan@infradead.org>
-Subject: Re: [linux-pm] suspend blockers & Android integrationy
-In-Reply-To: <Pine.LNX.4.44L0.1006071010001.1398-100000@iolanthe.rowland.org>
-Message-ID: <alpine.LFD.2.00.1006071748270.2933@localhost.localdomain>
-References: <Pine.LNX.4.44L0.1006071010001.1398-100000@iolanthe.rowland.org>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Subject: Re: [linux-pm] suspend blockers & Android integration
+Message-ID: <20100607175604.4c8f1fa4@schatten.dmk.lab>
+In-Reply-To: <Pine.LNX.4.44L0.1006061956510.4894-100000@netrider.rowland.org>
+References: <20100606152946.GA11351@srcf.ucam.org>
+	<Pine.LNX.4.44L0.1006061956510.4894-100000@netrider.rowland.org>
+X-Mailer: Claws Mail 3.7.5 (GTK+ 2.18.9; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Alan,
+On Sun, 6 Jun 2010 20:01:56 -0400 (EDT)
+Alan Stern <stern@rowland.harvard.edu> wrote:
 
-On Mon, 7 Jun 2010, Alan Stern wrote:
-> On Mon, 7 Jun 2010, Thomas Gleixner wrote:
-> > #2 is a tad harder, as it requires to fix the trusted apps not to fire
-> >    timers when there is nothing to do.
-> 
-> No; all you have to do is handle the trusted apps as though they were 
-> untrusted -- just as in the original wakelock approach.
-> 
-> >    Though you can solve it with cgroups as well. The unfreeze problem
-> >    for real wakeups can be solved as mhelsley pointed out somewhere
-> >    else in this thread.
-> > 
-> > But that depends on user space changes ....
-> 
-> If you handle all the apps uniformly, very few userspace changes are
-> needed.
+> And since Android can reach essentially the same low-power
+> state from idle as from suspend, it appears that they really don't need
+> any kernel changes at all.
 
-Oh, I see. I misunderstood you. -ENOTENOUGHSLEEP
- 
-Thanks,
+Well, perhaps a hint to the scheduler to fall through as fast as
+possible into deepest idle?
 
-	Thomas
+> 
+> Alan Stern
+> 
+
+Cheers,
+Flo
