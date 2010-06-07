@@ -1,69 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751591Ab0FGEXk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jun 2010 00:23:40 -0400
-Received: from 64-131-60-146.usfamily.net ([64.131.60.146]:42343 "EHLO
-	mail.sandeen.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750717Ab0FGEXj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jun 2010 00:23:39 -0400
-Message-ID: <4C0C7448.7040409@sandeen.net>
-Date: Sun, 06 Jun 2010 23:23:36 -0500
-From: Eric Sandeen <sandeen@sandeen.net>
-User-Agent: Thunderbird 2.0.0.24 (Macintosh/20100228)
-MIME-Version: 1.0
-To: Dave Chinner <david@fromorbit.com>
-CC: Jeffrey Merkey <jeffmerkey@gmail.com>, linux-kernel@vger.kernel.org,
-       linux-fsdevel@vger.kernel.org, josef@redhat.com,
-       viro@zeniv.linux.org.uk
-Subject: Re: 2.6.34 echo j > /proc/sysrq-trigger causes inifnite unfreeze/Thaw
- event
-References: <AANLkTim74SREZDq7VQhq6Z1hKXZLINoq0t8rkyQecmM1@mail.gmail.com> <20100607010542.GB27325@dastard>
-In-Reply-To: <20100607010542.GB27325@dastard>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1751885Ab0FGE2G (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jun 2010 00:28:06 -0400
+Received: from sh.osrg.net ([192.16.179.4]:36842 "EHLO sh.osrg.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750781Ab0FGE2E (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Jun 2010 00:28:04 -0400
+Date: Mon, 7 Jun 2010 13:27:49 +0900
+To: mitov@issp.bas.bg
+Cc: fujita.tomonori@lab.ntt.co.jp, linux-kernel@vger.kernel.org
+Subject: Re: [BUG][PATCH]dma-coherent.c: error path bug
+From: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+In-Reply-To: <201006070708.57453.mitov@issp.bas.bg>
+References: <201006061353.05310.mitov@issp.bas.bg>
+	<20100607113001S.fujita.tomonori@lab.ntt.co.jp>
+	<201006070708.57453.mitov@issp.bas.bg>
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
+Message-Id: <20100607132631W.fujita.tomonori@lab.ntt.co.jp>
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-3.0 (sh.osrg.net [192.16.179.4]); Mon, 07 Jun 2010 13:27:49 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dave Chinner wrote:
-> On Thu, Jun 03, 2010 at 11:30:30PM -0600, Jeffrey Merkey wrote:
->> causes the FS Thaw stuff in fs/buffer.c to enter an infinite loop
->> filling the /var/log/messages with junk and causing the hard drive to
->> crank away endlessly.
-> 
-> Hmmm, looks pretty obvious what the 2.6.34 bug is:
-> 
->         while (sb->s_bdev && !thaw_bdev(sb->s_bdev, sb))
->                 printk(KERN_WARNING "Emergency Thaw on %s\n",
->                        bdevname(sb->s_bdev, b));
-> 
-> thaw_bdev() returns 0 on success or not frozen, and returns non-zero
-> only if the unfreeze failed. Looks like it was broken from the start
-> to me.
+On Mon, 7 Jun 2010 07:08:56 +0300
+Marin Mitov <mitov@issp.bas.bg> wrote:
 
-thaw_bdev() used to return -EINVAL for not-frozen, but it no longer
-does.  Seems commit 4504230a dropped this:
+> On Monday, June 07, 2010 05:30:48 am FUJITA Tomonori wrote:
+> > On Sun, 6 Jun 2010 13:53:04 +0300
+> > Marin Mitov <mitov@issp.bas.bg> wrote:
+> > 
+> > > Hi all,
+> > > 
+> > > The error path in dma_declare_coherent_memory() leaves 
+> > > the pointer dev->dma_mem non completely initialized.
+> > > 
+> > > If allocation of dev->dma_mem succeeds, 
+> > > but allocation of dev->dma_mem->bitmap fails
+> > > dev->dma_mem is freed, but left non NULL
+> > > and non completely initialized.
+> > > 
+> > > Either zero it after being freed (one liner patch), or assign to 
+> > > dev->dma_mem only completely initialized structure (patch included).
+> > > 
+> > > Comments welcome.
+> > > 
+> > > Marin Mitov
+> > > 
+> > > Signed-off-by: Marin Mitov <mitov@issp.bas.bg>
+> > 
+> > Hmm, if dma_declare_coherent_memory() fails, the driver doesn't use
+> > dev->dma_mem. So even if dev->dma_mem points to a freed memory, I'm
+> > not sure that it causes a real problem. We could call this patch a
+> > cleanup though.
+> > 
+> My understanding of dma_alloc_coherent() is that  we first try to allocate from 
+> per-device coherent memory and we do it using dma_alloc_from_coherent()
+> (in drivers/base/dma-coherent.c) if dev->dma_mem is not NULL (and we have 
+> left it not NULL, here is the problem). If allocation of dev->dma_mem->bitmap 
+> fails dev->dma_mem must be NULL.
 
--       if (!bdev->bd_fsfreeze_count) {
--               mutex_unlock(&bdev->bd_fsfreeze_mutex);
--               return -EINVAL;
--       }
-
-in favor of this:
-
-+       int error = -EINVAL;
-...
-+       if (!bdev->bd_fsfreeze_count)
-+               goto out_unlock;
-...
-+out_unlock:
-        mutex_unlock(&bdev->bd_fsfreeze_mutex);
-        return 0;
-
-and now we return 0 for a thaw of a non-frozen bdev ....
-this breaks the loop in the emergency thaw-er (which was
-just supposed to work its way through nested freezes,
-when I wrote it)
-
--Eric
+But are there any driver that can continue when dma_declare_coherent_memory() fails?
