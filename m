@@ -1,104 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755749Ab0FGJ1n (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jun 2010 05:27:43 -0400
-Received: from daytona.panasas.com ([67.152.220.89]:26565 "EHLO
-	daytona.int.panasas.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752015Ab0FGJ1l (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jun 2010 05:27:41 -0400
-Message-ID: <4C0CBB89.9000209@panasas.com>
-Date: Mon, 07 Jun 2010 12:27:37 +0300
-From: Boaz Harrosh <bharrosh@panasas.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-2.fc12 Thunderbird/3.0.4
+	id S1754157Ab0FGJ2S (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jun 2010 05:28:18 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:60287 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752157Ab0FGJ2Q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Jun 2010 05:28:16 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Alex Deucher <alexdeucher@gmail.com>
+Subject: [Regression, post-rc1] Multiple issues after enabling SetVoltage on rs780m
+Date: Mon, 7 Jun 2010 11:29:32 +0200
+User-Agent: KMail/1.12.4 (Linux/2.6.35-rc1-rjw; KDE/4.3.5; x86_64; ; )
+Cc: Dave Airlie <airlied@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       dri-devel@lists.sourceforge.net
 MIME-Version: 1.0
-To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-CC: stgt-devel <stgt@vger.kernel.org>, linux-scsi <linux-scsi@vger.kernel.org>,
-       linux-kernel <linux-kernel@vger.kernel.org>,
-       FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-       Mike Christie <michaelc@cs.wisc.edu>,
-       James Bottomley <James.Bottomley@suse.de>,
-       Douglas Gilbert <dgilbert@interlog.com>
-Subject: Re: [PATCH 3/3] [tgt]: Add BSG v4 backstore support to usr/bs_sg.c
-References: <1275882640-5418-1-git-send-email-nab@linux-iscsi.org>	 <4C0CB071.8040805@panasas.com> <1275901324.26888.56.camel@haakon2.linux-iscsi.org>
-In-Reply-To: <1275901324.26888.56.camel@haakon2.linux-iscsi.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: Text/Plain;
+  charset="us-ascii"
 Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 07 Jun 2010 09:27:40.0262 (UTC) FILETIME=[ACC84860:01CB0623]
+Message-Id: <201006071129.32159.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/07/2010 12:02 PM, Nicholas A. Bellinger wrote:
-> On Mon, 2010-06-07 at 11:40 +0300, Boaz Harrosh wrote:
->> On 06/07/2010 06:50 AM, Nicholas A. Bellinger wrote:
->>> From: Nicholas Bellinger <nab@linux-iscsi.org>
->>>
->>> This patch adds initial support for the block layer implementation of the sg v4 interface
->>> (BSG) -> STGT with a new struct backingstore_template bsg_bst sharing code with the
->>> original sg_bst.  It adds for new function bs_bsg_cmd_submit() for incoming write I/O
->>> and bs_bsg_cmd_complete() for polling read I/O using include/linux/bsg.h:struct sg_io_v4.
->>>
->>> This patch also splits up bs_sg_open() to support both BSG and SG looking for the
->>> path "/dev/bsg" in bs_sg_open(), and getting max_queue using SG_GET_COMMAND_Q and
->>> calling SG_SET_RESERVED_SIZE (following the original bs_sg code in init_sg_device)
->>>
->>> Also chk_bsg_device() currently using a hardcoded 254 major as def for BSG does not
->>> appear in include/linux/major.h just yet..
->>>
->>> So far this has been tested with STGT/iSCSI <-> BSG <-> TCM_Loop SPC-4 iSCSI Target
->>> Port emulation and is able to mkfs, fsck and mount a filesystem from a TCM/IBLOCK
->>> Linux LVM kernel level backstore
->>>
->>> Signed-off-by: Nicholas A. Bellinger <nab@linux-iscsi.org>
->>> ---
->>>  usr/bs_sg.c     |  178 +++++++++++++++++++++++++++++++++++++++++++++++++++---
->>>  usr/scsi_cmnd.h |    7 ++
->>>  2 files changed, 175 insertions(+), 10 deletions(-)
->>>
->>> diff --git a/usr/bs_sg.c b/usr/bs_sg.c
->>> index 23676ef..d071714 100644
->>> --- a/usr/bs_sg.c
->>> +++ b/usr/bs_sg.c
-> 
-> <SNIP>
-> 
->>> +
->>> +static int bs_bsg_cmd_submit(struct scsi_cmd *cmd)
->>> +{
->>> +	struct scsi_lu *dev = cmd->dev;
->>> +	int fd = dev->fd;
->>> +	struct sg_io_v4 *io_hdr = &cmd->cmd_bsg_hdr;
->>> +	int err = 0;
->>> +	/*
->>> +	 * Following linux/include/linux/bsg.h
->>> +	 */
->>> +	/* [i] 'Q' to differentiate from v3 */
->>> +	io_hdr->guard = 'Q';
->>> +	io_hdr->protocol = BSG_PROTOCOL_SCSI;
->>> +	io_hdr->subprotocol = BSG_SUB_PROTOCOL_SCSI_CMD;
->>> +	io_hdr->request_len = cmd->scb_len;
->>> +	io_hdr->request = (unsigned long )cmd->scb;
->>> +
->>> +	if (scsi_get_data_dir(cmd) == DATA_WRITE) {
->>
->> Why the if? both sides are fully bidi just remove the ifs
->> and: OUT <= OUT, IN <= IN
->>
-> 
-> Whoops, thanks for pointing this one out (again).  Tested with
-> unidirection commands and included into my local tgt.git/pass that I
-> will send along to Tomo-san..
-> 
-> Btw, I still need to sort out BIDI support for TCM_Loop at some point in
-> the not too distant future.  What would be a good way to generate BIDI
-> traffic into STGT or a local SCSI LLD..?
-> 
-> Best,
-> 
-> --nab
-> 
+Hi Alex,
 
-scsi_debug has some emulation for XOR commands, does that help?
+Your commit 9349d5cc920c10845693f906ebd67f394f1d0d04
+(drm/radeon/kms/pm: enable SetVoltage on r7xx/evergreen) has caused my test-bed
+Acer Ferrari One to behave quite unreliably.  The symptoms are:
 
-Boaz
+- the system hangs hard (~ 50% of the time) when starting Xorg
+- the system hangs hard (~ 50% of the time) when stopping Xorg during system
+  reboot
+- the system sometimes hangs hard during suspend to RAM
+
+These problems are not reproducible with the commit above reverted.
+
+Below is the information about the graphics adapter from lspci.
+
+Rafael
+
+
+
+01:05.0 VGA compatible controller: ATI Technologies Inc RS780M/RS780MN [Radeon HD 3200 Graphics] (prog-if 00 [VGA controller])
+	Subsystem: Acer Incorporated [ALI] Device 029e
+	Control: I/O+ Mem+ BusMaster+ SpecCycle- MemWINV- VGASnoop- ParErr- Stepping- SERR- FastB2B- DisINTx-
+	Status: Cap+ 66MHz- UDF- FastB2B- ParErr- DEVSEL=fast >TAbort- <TAbort- <MAbort- >SERR- <PERR- INTx-
+	Latency: 0, Cache Line Size: 32 bytes
+	Interrupt: pin A routed to IRQ 18
+	Region 0: Memory at a0000000 (32-bit, prefetchable) [size=256M]
+	Region 1: I/O ports at 9000 [size=256]
+	Region 2: Memory at 9fdf0000 (32-bit, non-prefetchable) [size=64K]
+	Region 5: Memory at 9fe00000 (32-bit, non-prefetchable) [size=1M]
+	Expansion ROM at <unassigned> [disabled]
+	Capabilities: [50] Power Management version 3
+		Flags: PMEClk- DSI- D1+ D2+ AuxCurrent=0mA PME(D0-,D1-,D2-,D3hot-,D3cold-)
+		Status: D0 NoSoftRst- PME-Enable- DSel=0 DScale=0 PME-
+	Capabilities: [a0] MSI: Enable- Count=1/1 Maskable- 64bit+
+		Address: 0000000000000000  Data: 0000
+	Kernel driver in use: radeon
