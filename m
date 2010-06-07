@@ -1,25 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753119Ab0FGMld (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jun 2010 08:41:33 -0400
+	id S1753400Ab0FGMlq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jun 2010 08:41:46 -0400
 Received: from mailout3.w1.samsung.com ([210.118.77.13]:56223 "EHLO
 	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752006Ab0FGMj3 (ORCPT
+	with ESMTP id S1751210Ab0FGMj2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jun 2010 08:39:29 -0400
+	Mon, 7 Jun 2010 08:39:28 -0400
 MIME-version: 1.0
 Content-transfer-encoding: 7BIT
 Content-type: TEXT/PLAIN
-Date: Mon, 07 Jun 2010 14:39:59 +0200
+Date: Mon, 07 Jun 2010 14:39:55 +0200
 From: Michal Nazarewicz <m.nazarewicz@samsung.com>
-Subject: [PATCHv4 12/13] USB: gadget: f_mass_storage: added eject callback
-In-reply-to: <6999e11de09e1f7f1091ee43882a8fc75bf2aab3.1275906835.git.m.nazarewicz@samsung.com>
+Subject: [PATCHv4 08/13] USB: gadget: g_serial: INF file updated
+In-reply-to: <9e21e4f5440d2a2fcfa11bca18e62c713317b330.1275906835.git.m.nazarewicz@samsung.com>
 To: linux-usb@vger.kernel.org, linux-usb@vger.kernel.org
 Cc: David Brownell <dbrownell@users.sourceforge.net>,
+       Xiaofan Chen <xiaofanc@gmail.com>,
        Kyungmin Park <kyungmin.park@samsung.com>,
        Marek Szyprowski <m.szyprowski@samsung.com>,
        linux-kernel@vger.kernel.org
-Message-id: <f349d63e32bbd7641035db658605961af9318cb3.1275906835.git.m.nazarewicz@samsung.com>
+Message-id: <61c7dcd3597ed56ec1caa5bcb66bf9bc1b09fb66.1275906835.git.m.nazarewicz@samsung.com>
 X-Mailer: git-send-email 1.7.1
 References: <cover.1275906835.git.m.nazarewicz@samsung.com>
  <72866638a69b660e3eb534330937955d15dde4de.1275906835.git.m.nazarewicz@samsung.com>
@@ -29,234 +30,242 @@ References: <cover.1275906835.git.m.nazarewicz@samsung.com>
  <7781ec0d22fa9dde7afbd3bf915af1a592780938.1275906835.git.m.nazarewicz@samsung.com>
  <871680934027e59f08ad63399a5923960147d313.1275906835.git.m.nazarewicz@samsung.com>
  <9e21e4f5440d2a2fcfa11bca18e62c713317b330.1275906835.git.m.nazarewicz@samsung.com>
- <61c7dcd3597ed56ec1caa5bcb66bf9bc1b09fb66.1275906835.git.m.nazarewicz@samsung.com>
- <9fe3db6d72e8376ece39bbe4f5ac9c8cd863af4c.1275906835.git.m.nazarewicz@samsung.com>
- <b2b534da1e741bd0438e5e13df65aa7e2be72a7c.1275906835.git.m.nazarewicz@samsung.com>
- <6999e11de09e1f7f1091ee43882a8fc75bf2aab3.1275906835.git.m.nazarewicz@samsung.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Added pre_eject() and post_eject() callbacks which are
-called befor and after removable logical unit is ejected.
-The first can prevent logical unit from being ejected.
-
-This commit also changes the way callbacks are passed to
-the function from gadget.  A fsg_operations structure has
-been created which lists all callbacks -- this is passed
-to the fsg_config.
-
-This is important because it changes the way thread_exits()
-callback is passed.
+Updated the INF file for g_serial gadget.  It should work with
+most recent Windows systems now.
 
 Signed-off-by: Michal Nazarewicz <m.nazarewicz@samsung.com>
 Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
 ---
- drivers/usb/gadget/f_mass_storage.c |  109 ++++++++++++++++++++++------------
- drivers/usb/gadget/mass_storage.c   |    4 +-
- 2 files changed, 73 insertions(+), 40 deletions(-)
+ Documentation/usb/gadget_serial.txt |   87 +++-------------------------
+ Documentation/usb/linux-cdc-acm.inf |  106 +++++++++++++++++++++++++++++++++++
+ 2 files changed, 116 insertions(+), 77 deletions(-)
+ create mode 100644 Documentation/usb/linux-cdc-acm.inf
 
-diff --git a/drivers/usb/gadget/f_mass_storage.c b/drivers/usb/gadget/f_mass_storage.c
-index 072cbf9..e9e45ba 100644
---- a/drivers/usb/gadget/f_mass_storage.c
-+++ b/drivers/usb/gadget/f_mass_storage.c
-@@ -316,6 +316,27 @@ static const char fsg_string_interface[] = "Mass Storage";
- /*-------------------------------------------------------------------------*/
+diff --git a/Documentation/usb/gadget_serial.txt b/Documentation/usb/gadget_serial.txt
+index eac7df9..61e67f6 100644
+--- a/Documentation/usb/gadget_serial.txt
++++ b/Documentation/usb/gadget_serial.txt
+@@ -151,88 +151,23 @@ instructions below to install the host side driver.
  
- struct fsg_dev;
-+struct fsg_common;
-+
-+/* FSF callback functions */
-+struct fsg_operations {
-+	/* Callback function to call when thread exits.  If no
-+	 * callback is set or it returns value lower then zero MSF
-+	 * will force eject all LUNs it operates on (including those
-+	 * marked as non-removable or with prevent_medium_removal flag
-+	 * set). */
-+	int (*thread_exits)(struct fsg_common *common);
-+
-+	/* Called prior to ejection.  Negative return means error,
-+	 * zero means to continue with ejection, positive means not to
-+	 * eject. */
-+	int (*pre_eject)(struct fsg_common *common,
-+			 struct fsg_lun *lun, int num);
-+	/* Called after ejection.  Negative return means error, zero
-+	 * or positive is just a success. */
-+	int (*post_eject)(struct fsg_common *common,
-+			  struct fsg_lun *lun, int num);
-+};
- 
- 
- /* Data shared by all the FSG instances. */
-@@ -370,8 +391,8 @@ struct fsg_common {
- 	struct completion	thread_notifier;
- 	struct task_struct	*thread_task;
- 
--	/* Callback function to call when thread exits. */
--	int			(*thread_exits)(struct fsg_common *common);
-+	/* Callback functions. */
-+	const struct fsg_operations	*ops;
- 	/* Gadget's private data. */
- 	void			*private_data;
- 
-@@ -395,12 +416,8 @@ struct fsg_config {
- 	const char		*lun_name_format;
- 	const char		*thread_name;
- 
--	/* Callback function to call when thread exits.  If no
--	 * callback is set or it returns value lower then zero MSF
--	 * will force eject all LUNs it operates on (including those
--	 * marked as non-removable or with prevent_medium_removal flag
--	 * set). */
--	int			(*thread_exits)(struct fsg_common *common);
-+	/* Callback functions. */
-+	const struct fsg_operations	*ops;
- 	/* Gadget's private data. */
- 	void			*private_data;
- 
-@@ -436,6 +453,7 @@ static inline int __fsg_is_set(struct fsg_common *common,
- 	if (common->fsg)
- 		return 1;
- 	ERROR(common, "common->fsg is NULL in %s at %u\n", func, line);
-+	WARN_ON(1);
- 	return 0;
- }
- 
-@@ -1396,43 +1414,55 @@ static int do_start_stop(struct fsg_common *common)
- 	} else if (!curlun->removable) {
- 		curlun->sense_data = SS_INVALID_COMMAND;
- 		return -EINVAL;
--	}
+ Installing the Windows Host ACM Driver
+ --------------------------------------
+-To use the Windows ACM driver you must have the files "gserial.inf"
+-and "usbser.sys" together in a folder on the Windows machine.
 -
--	loej = common->cmnd[4] & 0x02;
--	start = common->cmnd[4] & 0x01;
+-The "gserial.inf" file is given here.
 -
--	/* eject code from file_storage.c:do_start_stop() */
+--------------------- CUT HERE --------------------
+-[Version]
+-Signature="$Windows NT$"
+-Class=Ports
+-ClassGuid={4D36E978-E325-11CE-BFC1-08002BE10318}
+-Provider=%LINUX%
+-DriverVer=08/17/2004,0.0.2.0
+-; Copyright (C) 2004 Al Borchers (alborchers@steinerpoint.com)
 -
--	if ((common->cmnd[1] & ~0x01) != 0 ||	  /* Mask away Immed */
--		(common->cmnd[4] & ~0x03) != 0) { /* Mask LoEj, Start */
-+	} else if ((common->cmnd[1] & ~0x01) != 0 || /* Mask away Immed */
-+		   (common->cmnd[4] & ~0x03) != 0) { /* Mask LoEj, Start */
- 		curlun->sense_data = SS_INVALID_FIELD_IN_CDB;
- 		return -EINVAL;
- 	}
+-[Manufacturer]
+-%LINUX%=GSerialDeviceList
+-
+-[GSerialDeviceList]
+-%GSERIAL%=GSerialInstall, USB\VID_0525&PID_A4A7
+-
+-[DestinationDirs]
+-DefaultDestDir=10,System32\Drivers
+-
+-[GSerialInstall]
+-CopyFiles=GSerialCopyFiles
+-AddReg=GSerialAddReg
+-
+-[GSerialCopyFiles]
+-usbser.sys
+-
+-[GSerialAddReg]
+-HKR,,DevLoader,,*ntkern
+-HKR,,NTMPDriver,,usbser.sys
+-HKR,,EnumPropPages32,,"MsPorts.dll,SerialPortPropPageProvider"
+-
+-[GSerialInstall.Services]
+-AddService = usbser,0x0002,GSerialService
+-
+-[GSerialService]
+-DisplayName = %GSERIAL_DISPLAY_NAME%
+-ServiceType = 1                  ; SERVICE_KERNEL_DRIVER
+-StartType = 3                    ; SERVICE_DEMAND_START
+-ErrorControl = 1                 ; SERVICE_ERROR_NORMAL
+-ServiceBinary = %10%\System32\Drivers\usbser.sys
+-LoadOrderGroup = Base
+-
+-[Strings]
+-LINUX = "Linux"
+-GSERIAL = "Gadget Serial"
+-GSERIAL_DISPLAY_NAME = "USB Gadget Serial Driver"
+--------------------- CUT HERE --------------------
+-
+-The "usbser.sys" file comes with various versions of Windows.
+-For example, it can be found on Windows XP typically in
+-
+-  C:\WINDOWS\Driver Cache\i386\driver.cab
+-
+-Or it can be found on the Windows 98SE CD in the "win98" folder
+-in the "DRIVER11.CAB" through "DRIVER20.CAB" cab files.  You will
+-need the DOS "expand" program, the Cygwin "cabextract" program, or
+-a similar program to unpack these cab files and extract "usbser.sys".
+-
+-For example, to extract "usbser.sys" into the current directory
+-on Windows XP, open a DOS window and run a command like
+-
+-  expand C:\WINDOWS\Driver~1\i386\driver.cab -F:usbser.sys .
+-
+-(Thanks to Nishant Kamat for pointing out this DOS command.)
++To use the Windows ACM driver you must have the "linux-cdc-acm.inf"
++file (provided along this document) which supports all recent versions
++of Windows.
  
--	if (!start) {
--		/* Are we allowed to unload the media? */
--		if (curlun->prevent_medium_removal) {
--			LDBG(curlun, "unload attempt prevented\n");
--			curlun->sense_data = SS_MEDIUM_REMOVAL_PREVENTED;
--			return -EINVAL;
--		}
--		if (loej) {	/* Simulate an unload/eject */
--			up_read(&common->filesem);
--			down_write(&common->filesem);
--			fsg_lun_close(curlun);
--			up_write(&common->filesem);
--			down_read(&common->filesem);
--		}
--	} else {
-+	loej  = common->cmnd[4] & 0x02;
-+	start = common->cmnd[4] & 0x01;
+ When the gadget serial driver is loaded and the USB device connected
+ to the Windows host with a USB cable, Windows should recognize the
+ gadget serial device and ask for a driver.  Tell Windows to find the
+-driver in the folder that contains "gserial.inf" and "usbser.sys".
++driver in the folder that contains the "linux-cdc-acm.inf" file.
  
--		/* Our emulation doesn't support mounting; the medium is
--		 * available for use as soon as it is loaded. */
-+	/* Our emulation doesn't support mounting; the medium is
-+	 * available for use as soon as it is loaded. */
-+	if (start) {
- 		if (!fsg_lun_is_open(curlun)) {
- 			curlun->sense_data = SS_MEDIUM_NOT_PRESENT;
- 			return -EINVAL;
- 		}
-+		return 0;
- 	}
--	return 0;
+ For example, on Windows XP, when the gadget serial device is first
+ plugged in, the "Found New Hardware Wizard" starts up.  Select
+-"Install from a list or specific location (Advanced)", then on
+-the next screen select "Include this location in the search" and
+-enter the path or browse to the folder containing "gserial.inf" and
+-"usbser.sys".  Windows will complain that the Gadget Serial driver
+-has not passed Windows Logo testing, but select "Continue anyway"
+-and finish the driver installation.
++"Install from a list or specific location (Advanced)", then on the
++next screen select "Include this location in the search" and enter the
++path or browse to the folder containing the "linux-cdc-acm.inf" file.
++Windows will complain that the Gadget Serial driver has not passed
++Windows Logo testing, but select "Continue anyway" and finish the
++driver installation.
+ 
+ On Windows XP, in the "Device Manager" (under "Control Panel",
+ "System", "Hardware") expand the "Ports (COM & LPT)" entry and you
+@@ -345,5 +280,3 @@ you should be able to send data back and forth between the gadget
+ side and host side systems.  Anything you type on the terminal
+ window on the gadget side should appear in the terminal window on
+ the host side and vice versa.
+-
+-
+diff --git a/Documentation/usb/linux-cdc-acm.inf b/Documentation/usb/linux-cdc-acm.inf
+new file mode 100644
+index 0000000..0e338e5
+--- /dev/null
++++ b/Documentation/usb/linux-cdc-acm.inf
+@@ -0,0 +1,106 @@
++; Windows USB CDC ACM Setup File
++; Copyright (c) 2000 Microsoft Corporation
++; Copyright (C) 2007 Microchip Technology Inc.
 +
-+	/* Are we allowed to unload the media? */
-+	if (curlun->prevent_medium_removal) {
-+		LDBG(curlun, "unload attempt prevented\n");
-+		curlun->sense_data = SS_MEDIUM_REMOVAL_PREVENTED;
-+		return -EINVAL;
-+	}
++; Hacked for Linux by Michal Nazarewicz <mina86@mina86.com>
++; No, I do not understand this file, don't blame me if it does not
++; work...  Thanks to Xiaofan Chen for pointing to this file.
 +
-+	if (!loej)
-+		return 0;
++[Version]
++Signature="$Windows NT$"
++Class=Ports
++ClassGuid={4D36E978-E325-11CE-BFC1-08002BE10318}
++Provider=%Linux%
++DriverVer=11/15/2007,5.1.2600.0
 +
-+	/* Simulate an unload/eject */
-+	if (common->ops && common->ops->pre_eject) {
-+		int r = common->ops->pre_eject(common, curlun,
-+					       curlun - common->luns);
-+		if (unlikely(r < 0))
-+			return r;
-+		else if (r)
-+			return 0;
-+	}
++[Manufacturer]
++%Linux%=DeviceList, NTamd64
 +
-+	up_read(&common->filesem);
-+	down_write(&common->filesem);
-+	fsg_lun_close(curlun);
-+	up_write(&common->filesem);
-+	down_read(&common->filesem);
++[DestinationDirs]
++DefaultDestDir=12
 +
-+	return common->ops && common->ops->post_eject
-+		? min(0, common->ops->post_eject(common, curlun,
-+						 curlun - common->luns))
-+		: 0;
- }
- 
- 
-@@ -2657,7 +2687,8 @@ static int fsg_main_thread(void *common_)
- 	common->thread_task = NULL;
- 	spin_unlock_irq(&common->lock);
- 
--	if (!common->thread_exits || common->thread_exits(common) < 0) {
-+	if (!common->ops || !common->ops->thread_exits
-+	 || common->ops->thread_exits(common) < 0) {
- 		struct fsg_lun *curlun = common->luns;
- 		unsigned i = common->nluns;
- 
-@@ -2733,6 +2764,7 @@ static struct fsg_common *fsg_common_init(struct fsg_common *common,
- 		common->free_storage_on_release = 0;
- 	}
- 
-+	common->ops = cfg->ops;
- 	common->private_data = cfg->private_data;
- 
- 	common->gadget = gadget;
-@@ -2854,7 +2886,6 @@ buffhds_first_it:
- 
- 
- 	/* Tell the thread to start working */
--	common->thread_exits = cfg->thread_exits;
- 	common->thread_task =
- 		kthread_create(fsg_main_thread, common,
- 			       OR(cfg->thread_name, "file-storage"));
-@@ -3151,8 +3182,8 @@ fsg_config_from_params(struct fsg_config *cfg,
- 	cfg->product_name = 0;
- 	cfg->release = 0xffff;
- 
--	cfg->thread_exits = 0;
--	cfg->private_data = 0;
-+	cfg->ops = NULL;
-+	cfg->private_data = NULL;
- 
- 	/* Finalise */
- 	cfg->can_stall = params->stall;
-diff --git a/drivers/usb/gadget/mass_storage.c b/drivers/usb/gadget/mass_storage.c
-index d6975f4..cd94703 100644
---- a/drivers/usb/gadget/mass_storage.c
-+++ b/drivers/usb/gadget/mass_storage.c
-@@ -153,7 +153,9 @@ static int __init msg_do_config(struct usb_configuration *c)
- 	}
- 
- 	fsg_config_from_params(&config, &mod_data);
--	config.thread_exits = msg_thread_exits;
-+	config.ops = &(const struct fsg_operations){
-+		.thread_exits = msg_thread_exits,
-+	};
- 
- 	retp = fsg_common_init(&common, c->cdev, &config);
- 	if (IS_ERR(retp))
++
++;------------------------------------------------------------------------------
++;  Windows 2000/XP/Vista-32bit Sections
++;------------------------------------------------------------------------------
++
++[DriverInstall.nt]
++include=mdmcpq.inf
++CopyFiles=DriverCopyFiles.nt
++AddReg=DriverInstall.nt.AddReg
++
++[DriverCopyFiles.nt]
++usbser.sys,,,0x20
++
++[DriverInstall.nt.AddReg]
++HKR,,DevLoader,,*ntkern
++HKR,,NTMPDriver,,USBSER.sys
++HKR,,EnumPropPages32,,"MsPorts.dll,SerialPortPropPageProvider"
++
++[DriverInstall.nt.Services]
++AddService=usbser, 0x00000002, DriverService.nt
++
++[DriverService.nt]
++DisplayName=%SERVICE%
++ServiceType=1
++StartType=3
++ErrorControl=1
++ServiceBinary=%12%\USBSER.sys
++
++;------------------------------------------------------------------------------
++;  Vista-64bit Sections
++;------------------------------------------------------------------------------
++
++[DriverInstall.NTamd64]
++include=mdmcpq.inf
++CopyFiles=DriverCopyFiles.NTamd64
++AddReg=DriverInstall.NTamd64.AddReg
++
++[DriverCopyFiles.NTamd64]
++USBSER.sys,,,0x20
++
++[DriverInstall.NTamd64.AddReg]
++HKR,,DevLoader,,*ntkern
++HKR,,NTMPDriver,,USBSER.sys
++HKR,,EnumPropPages32,,"MsPorts.dll,SerialPortPropPageProvider"
++
++[DriverInstall.NTamd64.Services]
++AddService=usbser, 0x00000002, DriverService.NTamd64
++
++[DriverService.NTamd64]
++DisplayName=%SERVICE%
++ServiceType=1
++StartType=3
++ErrorControl=1
++ServiceBinary=%12%\USBSER.sys
++
++
++;------------------------------------------------------------------------------
++;  Vendor and Product ID Definitions
++;------------------------------------------------------------------------------
++; When developing your USB device, the VID and PID used in the PC side
++; application program and the firmware on the microcontroller must match.
++; Modify the below line to use your VID and PID.  Use the format as shown below.
++; Note: One INF file can be used for multiple devices with different
++VID and PIDs.
++; For each supported device, append ",USB\VID_xxxx&PID_yyyy" to the
++end of the line.
++;------------------------------------------------------------------------------
++[SourceDisksFiles]
++[SourceDisksNames]
++[DeviceList]
++%DESCRIPTION%=DriverInstall, USB\VID_0525&PID_A4A7
++
++[DeviceList.NTamd64]
++%DESCRIPTION%=DriverInstall, USB\VID_0525&PID_A4A7
++
++
++;------------------------------------------------------------------------------
++;  String Definitions
++;------------------------------------------------------------------------------
++;Modify these strings to customize your device
++;------------------------------------------------------------------------------
++[Strings]
++Linux               = "Linux Developer Community"
++DESCRIPTION         = "Gadget Serial"
++SERVICE             = "USB RS-232 Emulation Driver"
 -- 
 1.7.1
 
