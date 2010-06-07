@@ -1,81 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753968Ab0FGSv0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jun 2010 14:51:26 -0400
-Received: from cantor.suse.de ([195.135.220.2]:50303 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753521Ab0FGSvW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jun 2010 14:51:22 -0400
-Date: Mon, 7 Jun 2010 11:49:42 -0700
-From: Greg KH <gregkh@suse.de>
-To: Randy Dunlap <randy.dunlap@oracle.com>
-Cc: Ian Abbott <abbotti@mev.co.uk>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Support kernel/hotplug sysctl variable when !CONFIG_NET
-Message-ID: <20100607184942.GA11105@suse.de>
-References: <1275911832-11667-1-git-send-email-abbotti@mev.co.uk>
- <20100607174350.GA7807@suse.de>
- <20100607111145.1b98fdb4.randy.dunlap@oracle.com>
- <20100607181651.GA9999@suse.de>
- <4C0D39F2.7090806@oracle.com>
+	id S1753589Ab0FGSvl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jun 2010 14:51:41 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:51751 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751685Ab0FGSvh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Jun 2010 14:51:37 -0400
+Date: Mon, 7 Jun 2010 11:45:46 -0700 (PDT)
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       pjones@redhat.com, mchristie@redhat.com
+Subject: Re: Linux 2.6.35-rc2
+In-Reply-To: <20100607181455.GB16928@phenom.dumpdata.com>
+Message-ID: <alpine.LFD.2.00.1006071121450.3515@i5.linux-foundation.org>
+References: <alpine.LFD.2.00.1006052050100.3515@i5.linux-foundation.org> <20100607163746.GB13468@phenom.dumpdata.com> <alpine.LFD.2.00.1006070939210.3515@i5.linux-foundation.org> <20100607181455.GB16928@phenom.dumpdata.com>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4C0D39F2.7090806@oracle.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 07, 2010 at 11:26:58AM -0700, Randy Dunlap wrote:
-> On 06/07/10 11:16, Greg KH wrote:
-> > On Mon, Jun 07, 2010 at 11:11:45AM -0700, Randy Dunlap wrote:
-> >> On Mon, 7 Jun 2010 10:43:50 -0700 Greg KH wrote:
-> >>
-> >>> On Mon, Jun 07, 2010 at 12:57:12PM +0100, Ian Abbott wrote:
-> >>>> From: Ian Abbott <abbotti@mev.co.uk>
-> >>>>
-> >>>> The kernel/hotplug sysctl variable (/proc/sys/kernel/hotplug file) was
-> >>>> made conditional on CONFIG_NET by commit
-> >>>> f743ca5e10f4145e0b3e6d11b9b46171e16af7ce (applied in 2.6.18) to fix
-> >>>> problems with undefined references in 2.6.16 when CONFIG_HOTPLUG=y &&
-> >>>> !CONFIG_NET, but this restriction is no longer needed.
-> >>
-> >> Ack, builds for me on x86_64 when CONFIG_NET is not enabled.
-> >>
-> >>> Why is this restriction no longer needed?  What changed?
-> >>
-> >>
-> >> commit cd3772e6898c6386f21d2958346d6dd57d4204f5
-> >> Author: Ming Lei <tom.leiming@gmail.com>
-> >> Date:   Sun Nov 16 18:22:09 2008 +0800
-> >>
-> >>     kernel/ksysfs.c:fix dependence on CONFIG_NET
-> >>     
-> >>     Access to uevent_seqnum and uevent_helper does not need to
-> >>     depend on CONFIG_NET, so remove it.
-> >>     
-> >>     Signed-off-by: Ming Lei <tom.leiming@gmail.com>
-> >>     Cc: Kay Sievers <kay.sievers@vrfy.org>
-> >>     Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-> > 
-> > So something back in 2008 changed which requires a change now?
+
+
+On Mon, 7 Jun 2010, Konrad Rzeszutek Wilk wrote:
 > 
-> "requires" is too strong of a word to use here.  "allows" a change.
+> Ah, <sigh> I seem to have a knack for continously missing the merge
+> windows. Is it fair to state that:
 > 
-> > I'm still confused, what use case calls for the original patch here
-> > being made?  Who wants to modify this option with CONFIG_NET disabled on
-> > their machine?
-> 
-> 
-> Are you trying to slow down on kernel patches for some reason?
+>  1). Once you send an email saying that Linux 2.6.35 is released, the
+>      merge window has opened.
+>  2). Then the the maintainers have two weeks to send you git pull
+>      request for new features.
+>  3). After the two weeks, it is rc1, and only bug-fixes are accepted?
 
-Heh, no, I'm trying to see where to put this, in my "for .35" queue, or
-my "for .36" queue.
+That's the rough outline yes. I say "rough", because:
 
-> Using CONFIG_NET is more restrictive than is needed here, so remove it.
+ - You should have had the stuff ready _before_ I even opened the merge 
+   window. So the "two weeks" is literally the time for you to send the 
+   email, not the time for you to do the development work.
 
-Fair enough, I'll queue it up.
+   (That sounds crazy, and reality is a bit more complicated: there are 
+   people who know they have conflicts from sitting in -next, so strictly 
+   speaking, the two weeks is so that we can sort things like that out, 
+   and also so that I can stagger out the pulls a bit so that we have 
+   nightly snapshots with testing etc that doesn't contain _everything_ in 
+   one big lump etc etc).
 
-thanks,
+ - You can (and some people do) anticipate the merge window, and even send 
+   the pull request to me before it opens. HOWEVER, I would suggest you do 
+   this only if you know you're going to be on vacation during the merge 
+   window or something like that, and perhaps ask somebody else to remind 
+   me once the merge window opened, because I get too much email, so while 
+   I try to make sure to process pull requests that happened before, I'm 
+   also not organized enough to at all guarantee it.
 
-greg k-h
+ - I tend to be lenient. In fact, I tend to be _too_ lenient and end up 
+   pulling, even if I may curse at developers when they send me pull 
+   requests (I really am not very polite even at the best of times). This 
+   release around I'm a bit more hard-nosed about the rules than I usually 
+   am, so now I still curse, but then I actually say "no, I won't pull, 
+   because I'm holding you to the rules".
+
+   Normally, I do not believe in black-and-white rules, and many things 
+   are meant to be "those are the rules, but we'll all use our own brains 
+   and judgement". And that's still true, but my judgement this release 
+   around is a lot stricter, just because I'll be off on vacation in the 
+   middle of the release window and thus needed to be stricter.
+
+So the process I generally encourage sub-maintainers to have is roughly
+
+ - if you are a git maintainer, use two brances: one called "stable", one 
+   called "devel" (and no, I don't care about the names. Think of them as 
+   just illustrations)
+
+ - never _ever_ ask me to pull from the "devel" branch.
+
+ - when you see my release announcements (or you just predict it, because 
+   they are pretty predictable: I tend to start saying at around -rc6/7 
+   whether I think that's the last -rc or not etc), you make sure I've 
+   pulled your old "stable" branch (ie that all the bug-fixes from it are 
+   in the mainline tree), and then you delete it and rename your "devel" 
+   tree (if you think it's ready to be merged) to be "stable".
+
+ - You are now ready to ask me to pull your new "stable" branch. 
+   Obviously, it should be in a good enough shape that you really think 
+   the name "stable" is ok. If that's not the case, you shouldn't have 
+   done the renaming, and you shouldn't plan on getting it merged.
+
+   (Yes, the post-merge-window -rc phase is for "fix up problems", but it 
+   should be to fix up problems that _other_ people notice, not problems 
+   that you already knew about when you asked me to pull. See? If you know 
+   about problems, you're not ready for that merge window)
+
+ - Once you've renamed your "devel" tree as "stable", you can start a 
+   _new_ "devel" branch. So you can still continue to develop during the 
+   merge window, but you do it in the branch that you know you won't ask 
+   me to pull (until the next merge window, when the next big renaming 
+   comes along)
+
+ - fixes obviously go into the "stable" branch, and you can ask me to pull 
+   those at any time (although I generally frown on daily pull requests).
+
+Now, the above is just a suggestion. Use it as a template for whatever 
+workflow works for you. Non-git users can also use it as a template for 
+how they should work, even if the details of exactly how they handle the 
+stable/devel branches would be different.
+
+And git users may well have different flows. Some people (and I really 
+appreciate it, btw) have _way_ more than one "devel" branch. They name it 
+by the actual _feature_ they are developing, and then when they ask me to 
+pull they will have merged all their feature branches together (or, if 
+they are big features and you're not sure about them all, you can 
+certainly ask me to pull them one by one too!).
+
+So really, take all of the above as a "this is a guideline". It's not set 
+in stone, it's not how you _must_ work, it's not a requirement. But it is 
+an example of how things can be done, and it's an example of how you can 
+do development all the time (so you don't have to think of the "merge 
+window" as some big break in development at all!).
+
+So you absolutely can make whatever changes to the flow that suit the way 
+you work, or that just make more sense for your subsystem. Part of the 
+Linux kernel development process is very much a certain amount of 
+flexibility - with a pretty rough framework to make it possible at all to 
+make sane releases.
+
+				Linus
