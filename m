@@ -1,92 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756736Ab0FGJW7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jun 2010 05:22:59 -0400
-Received: from hera.kernel.org ([140.211.167.34]:44631 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752186Ab0FGJW6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jun 2010 05:22:58 -0400
-Message-ID: <4C0CBA5D.5000900@kernel.org>
-Date: Mon, 07 Jun 2010 11:22:37 +0200
-From: Tejun Heo <tj@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.1.9) Gecko/20100317 Thunderbird/3.0.4
+	id S1755749Ab0FGJ1n (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jun 2010 05:27:43 -0400
+Received: from daytona.panasas.com ([67.152.220.89]:26565 "EHLO
+	daytona.int.panasas.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752015Ab0FGJ1l (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Jun 2010 05:27:41 -0400
+Message-ID: <4C0CBB89.9000209@panasas.com>
+Date: Mon, 07 Jun 2010 12:27:37 +0300
+From: Boaz Harrosh <bharrosh@panasas.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-2.fc12 Thunderbird/3.0.4
 MIME-Version: 1.0
-To: Robert Hancock <hancockrwd@gmail.com>
-CC: Marc Dionne <marc.c.dionne@gmail.com>,
-       Matthew Garrett <mjg59@srcf.ucam.org>,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       linux-ide@vger.kernel.org, garzik@redhat.com
-Subject: Re: Hang during boot, bisected to commit 96d60303fd
-References: <AANLkTiktNufXK_pn6mP2-zyowAIbHlUy5TGu3AtpALv-@mail.gmail.com>	<20100603020006.GB19123@srcf.ucam.org>	<AANLkTikpv86r5BBPCEOHujpm8uCgY0DxghSKjBufBWiM@mail.gmail.com>	<4C08760B.8050002@gmail.com>	<AANLkTimFY5YQv8DC-zTQ1RF84rno6svvcyLzHGWL6HOk@mail.gmail.com>	<AANLkTimXcF1pafrSt8dMbUs59AjnqaRwpzDnPIPjdjsn@mail.gmail.com>	<AANLkTinZ7d3WWyO3m9A7GVnaTuSbn1G33ADFW6ixywcT@mail.gmail.com> <AANLkTinIM8swHZTide7MAQsaYbWcFD90FrKUXE9NFG-5@mail.gmail.com>
-In-Reply-To: <AANLkTinIM8swHZTide7MAQsaYbWcFD90FrKUXE9NFG-5@mail.gmail.com>
-X-Enigmail-Version: 1.0.1
-Content-Type: text/plain; charset=ISO-8859-1
+To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+CC: stgt-devel <stgt@vger.kernel.org>, linux-scsi <linux-scsi@vger.kernel.org>,
+       linux-kernel <linux-kernel@vger.kernel.org>,
+       FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
+       Mike Christie <michaelc@cs.wisc.edu>,
+       James Bottomley <James.Bottomley@suse.de>,
+       Douglas Gilbert <dgilbert@interlog.com>
+Subject: Re: [PATCH 3/3] [tgt]: Add BSG v4 backstore support to usr/bs_sg.c
+References: <1275882640-5418-1-git-send-email-nab@linux-iscsi.org>	 <4C0CB071.8040805@panasas.com> <1275901324.26888.56.camel@haakon2.linux-iscsi.org>
+In-Reply-To: <1275901324.26888.56.camel@haakon2.linux-iscsi.org>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Mon, 07 Jun 2010 09:22:40 +0000 (UTC)
+X-OriginalArrivalTime: 07 Jun 2010 09:27:40.0262 (UTC) FILETIME=[ACC84860:01CB0623]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On 06/07/2010 12:02 PM, Nicholas A. Bellinger wrote:
+> On Mon, 2010-06-07 at 11:40 +0300, Boaz Harrosh wrote:
+>> On 06/07/2010 06:50 AM, Nicholas A. Bellinger wrote:
+>>> From: Nicholas Bellinger <nab@linux-iscsi.org>
+>>>
+>>> This patch adds initial support for the block layer implementation of the sg v4 interface
+>>> (BSG) -> STGT with a new struct backingstore_template bsg_bst sharing code with the
+>>> original sg_bst.  It adds for new function bs_bsg_cmd_submit() for incoming write I/O
+>>> and bs_bsg_cmd_complete() for polling read I/O using include/linux/bsg.h:struct sg_io_v4.
+>>>
+>>> This patch also splits up bs_sg_open() to support both BSG and SG looking for the
+>>> path "/dev/bsg" in bs_sg_open(), and getting max_queue using SG_GET_COMMAND_Q and
+>>> calling SG_SET_RESERVED_SIZE (following the original bs_sg code in init_sg_device)
+>>>
+>>> Also chk_bsg_device() currently using a hardcoded 254 major as def for BSG does not
+>>> appear in include/linux/major.h just yet..
+>>>
+>>> So far this has been tested with STGT/iSCSI <-> BSG <-> TCM_Loop SPC-4 iSCSI Target
+>>> Port emulation and is able to mkfs, fsck and mount a filesystem from a TCM/IBLOCK
+>>> Linux LVM kernel level backstore
+>>>
+>>> Signed-off-by: Nicholas A. Bellinger <nab@linux-iscsi.org>
+>>> ---
+>>>  usr/bs_sg.c     |  178 +++++++++++++++++++++++++++++++++++++++++++++++++++---
+>>>  usr/scsi_cmnd.h |    7 ++
+>>>  2 files changed, 175 insertions(+), 10 deletions(-)
+>>>
+>>> diff --git a/usr/bs_sg.c b/usr/bs_sg.c
+>>> index 23676ef..d071714 100644
+>>> --- a/usr/bs_sg.c
+>>> +++ b/usr/bs_sg.c
+> 
+> <SNIP>
+> 
+>>> +
+>>> +static int bs_bsg_cmd_submit(struct scsi_cmd *cmd)
+>>> +{
+>>> +	struct scsi_lu *dev = cmd->dev;
+>>> +	int fd = dev->fd;
+>>> +	struct sg_io_v4 *io_hdr = &cmd->cmd_bsg_hdr;
+>>> +	int err = 0;
+>>> +	/*
+>>> +	 * Following linux/include/linux/bsg.h
+>>> +	 */
+>>> +	/* [i] 'Q' to differentiate from v3 */
+>>> +	io_hdr->guard = 'Q';
+>>> +	io_hdr->protocol = BSG_PROTOCOL_SCSI;
+>>> +	io_hdr->subprotocol = BSG_SUB_PROTOCOL_SCSI_CMD;
+>>> +	io_hdr->request_len = cmd->scb_len;
+>>> +	io_hdr->request = (unsigned long )cmd->scb;
+>>> +
+>>> +	if (scsi_get_data_dir(cmd) == DATA_WRITE) {
+>>
+>> Why the if? both sides are fully bidi just remove the ifs
+>> and: OUT <= OUT, IN <= IN
+>>
+> 
+> Whoops, thanks for pointing this one out (again).  Tested with
+> unidirection commands and included into my local tgt.git/pass that I
+> will send along to Tomo-san..
+> 
+> Btw, I still need to sort out BIDI support for TCM_Loop at some point in
+> the not too distant future.  What would be a good way to generate BIDI
+> traffic into STGT or a local SCSI LLD..?
+> 
+> Best,
+> 
+> --nab
+> 
 
-On 06/07/2010 06:34 AM, Robert Hancock wrote:
-> I'm thinking that the hardreset and device classification makes more
-> sense as a place to do this anyways, since that's the point where we
-> really know if there's a device connected or not.. Tejun, any
-> thoughts?
+scsi_debug has some emulation for XOR commands, does that help?
 
-Heh, of course it doesn't work.  Device presence can't be reliably
-determined by sampling status once like that.  We don't have all the
-crap in libata-eh for nothing.  :-)
-
-Marc, can you please try the following patch?
-
-Thanks.
-
-diff --git a/drivers/ata/libahci.c b/drivers/ata/libahci.c
-index 1984a6e..261f86d 100644
---- a/drivers/ata/libahci.c
-+++ b/drivers/ata/libahci.c
-@@ -541,29 +541,11 @@ static int ahci_scr_write(struct ata_link *link, unsigned int sc_reg, u32 val)
- 	return -EINVAL;
- }
-
--static int ahci_is_device_present(void __iomem *port_mmio)
--{
--	u8 status = readl(port_mmio + PORT_TFDATA) & 0xff;
--
--	/* Make sure PxTFD.STS.BSY and PxTFD.STS.DRQ are 0 */
--	if (status & (ATA_BUSY | ATA_DRQ))
--		return 0;
--
--	/* Make sure PxSSTS.DET is 3h */
--	status = readl(port_mmio + PORT_SCR_STAT) & 0xf;
--	if (status != 3)
--		return 0;
--	return 1;
--}
--
- void ahci_start_engine(struct ata_port *ap)
- {
- 	void __iomem *port_mmio = ahci_port_base(ap);
- 	u32 tmp;
-
--	if (!ahci_is_device_present(port_mmio))
--		return;
--
- 	/* start DMA */
- 	tmp = readl(port_mmio + PORT_CMD);
- 	tmp |= PORT_CMD_START;
-@@ -1892,6 +1874,9 @@ static void ahci_error_handler(struct ata_port *ap)
- 	}
-
- 	sata_pmp_error_handler(ap);
-+
-+	if (!ata_dev_enabled(ap->link.device))
-+		ahci_stop_engine(ap);
- }
-
- static void ahci_post_internal_cmd(struct ata_queued_cmd *qc)
-
--- 
-tejun
+Boaz
