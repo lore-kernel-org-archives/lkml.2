@@ -1,244 +1,236 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750897Ab0FGMe3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jun 2010 08:34:29 -0400
-Received: from zmta01.cabocomm.dk ([193.200.44.52]:46401 "EHLO zmta01.irigo.dk"
+	id S1751272Ab0FGMf4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jun 2010 08:35:56 -0400
+Received: from mgw2.diku.dk ([130.225.96.92]:54016 "EHLO mgw2.diku.dk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750709Ab0FGMe2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jun 2010 08:34:28 -0400
-Subject: Re: [RFC][PATCH] irq: support IRQ_NESTED_THREAD with non-threaded
- interrupt handlers
-From: Esben Haabendal <eha@doredevelopment.dk>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: linuxppc-dev@ozlabs.org, Esben Haabendal <esbenhaabendal@gmail.com>,
-       Marc Zyngier <maz@misterjones.org>, linux-kernel@vger.kernel.org,
-       mingo@elte.hu, joachim.eastwood@jotron.com
-In-Reply-To: <alpine.LFD.2.00.1006062228120.2933@localhost.localdomain>
-References: <1275686352.2970.2.camel@eha.doredevelopment.dk>
-	 <alpine.LFD.2.00.1006042343150.2933@localhost.localdomain>
-	 <AANLkTilb7---Qg1oLwzanKP1RGe04fkAXDtZzz0w9MGz@mail.gmail.com>
-	 <20100605151031.2d562268@hina.wild-wind.fr.eu.org>
-	 <alpine.LFD.2.00.1006051732270.2933@localhost.localdomain>
-	 <AANLkTimlSBEhl58CNuScKjxbqdTwTYgqo7vrHTcd1x9G@mail.gmail.com>
-	 <alpine.LFD.2.00.1006051915290.2933@localhost.localdomain>
-	 <AANLkTimcB9vRqnNYyBh6hjHXZHcmFvw72MZUEIGfeexq@mail.gmail.com>
-	 <alpine.LFD.2.00.1006052155100.2933@localhost.localdomain>
-	 <AANLkTik2so7osQJFq6NRaIFK2GVLURVozOqSsejd1K0F@mail.gmail.com>
-	 <alpine.LFD.2.00.1006062228120.2933@localhost.localdomain>
-Content-Type: text/plain; charset="UTF-8"
-Organization: =?ISO-8859-1?Q?Dor=E9Development?= ApS
-Date: Mon, 07 Jun 2010 14:34:18 +0200
-Message-ID: <1275914058.2818.8.camel@eha.doredevelopment.dk>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.1 
-Content-Transfer-Encoding: 7bit
+	id S1750762Ab0FGMfx convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Jun 2010 08:35:53 -0400
+From: Nicolas Palix <npalix@diku.dk>
+To: Sam Ravnborg <sam@ravnborg.org>
+Subject: Re: [PATCH 1/7] Add a target to use the Coccinelle checker
+Date: Mon, 7 Jun 2010 14:35:45 +0200
+User-Agent: KMail/1.13.2 (Linux/2.6.32-22-generic; KDE/4.4.2; i686; ; )
+Cc: Randy Dunlap <rdunlap@xenotime.net>, Roland Dreier <rdreier@cisco.com>,
+       Joe Perches <joe@perches.com>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       "David S. Miller" <davem@davemloft.net>, Michal Marek <mmarek@suse.cz>,
+       Julia Lawall <julia@diku.dk>, Gilles Muller <Gilles.Muller@lip6.fr>,
+       linux-kernel@vger.kernel.org, linux-kbuild@vger.kernel.org,
+       cocci@diku.dk, Wolfram Sang <w.sang@pengutronix.de>,
+       Kernel Janitors <kernel-janitors@vger.kernel.org>,
+       "Am?rico Wang" <xiyou.wangcong@gmail.com>,
+       Andy Isaacson <adi@hexapodia.org>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       Pekka Enberg <penberg@cs.helsinki.fi>, walter harms <wharms@bfs.de>,
+       Joerg Roedel <joro@8bytes.org>, Jan Engelhardt <jengelh@medozas.de>
+References: <1275837307-4283-1-git-send-email-npalix@diku.dk> <1275837307-4283-2-git-send-email-npalix@diku.dk> <20100606181607.GA15535@merkur.ravnborg.org>
+In-Reply-To: <20100606181607.GA15535@merkur.ravnborg.org>
+MIME-Version: 1.0
+Content-Type: Text/Plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+Message-Id: <201006071435.46175.npalix@diku.dk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-06-07 at 00:08 +0200, Thomas Gleixner wrote:
+>From 3765ca033cd6ffe8a1044bc5bbcb9264de042f57 Mon Sep 17 00:00:00 2001
+From: Nicolas Palix <npalix@diku.dk>
+Date: Mon, 7 Jun 2010 14:28:41 +0200
+Subject: [PATCH 1/7] Add a target to use the Coccinelle checker
 
-> > The only reason for the buslock in the pca9535 driver is to set the
-> > direction (ie. input) for interrupt pins.  On powerpc, I do this in the map()
-> > irq_chip function. So I don't see the need for buslock on powerpc.
-> 
-> What's so magic about powerpc. Does it magically serialize stuff ?
-> 
-> The buslock is there for a reason:
-> 
->   The generic irq code calls irq_chip functions with irq_desc->lock
->   held and interrupts disabled. So the driver _CANNOT_ access the I2C
->   bus because that's blocking.
+A 'coccicheck' target is added. It can be called with four different
+modes. Each one generates a different kind of output, i.e. context,
+patch, org, report, according to the corresponding mode to be
+activated.
 
-Which I don't see a need for. As I mentioned, the only I2C access done
-at this point is the write to direction register, in case new irq's
-requires switching a pin from output to input.
+The new target calls the 'coccicheck' front-end in the 'scripts'
+directory with the MODE argument. Every SmPL file in the
+subdirectories of 'scripts/coccinelle' is then given to the front-end
+and applied to the entire source tree.
 
-This can be done on irq_chip->map() on powerpc, without requiring
-other drivers to know about it.
+The four modes behave as follows:
 
-> So the irq_chip functions modify driver local state, which might be
->   modified by non irq related code as well.
+'report' generates a list in the following format:
+  file:line:column-column: message
 
-Which is not done here.
-The irq_chip functions modify the following driver local state
-variables:
-  irq_mask (mask/unmask)
-  irq_trig_fall (set_type)
-  irq_trig_raise (set_type)
+'patch' proposes a fix, when possible.
 
-They are not (to be) modified by other functions.
+'context' highlights lines of interest and their context in a
+diff-like style. Lines of interest are indicated with '-'.
 
-> After releasing desc->lock the genirq code calls the bus unlock
->   function which does the I2C work and releases the buslock after it's
->   done.
+'org' generates a report in the Org mode format of Emacs.
 
-See above. No I2C work is needed.
+Signed-off-by: Nicolas Palix <npalix@diku.dk>
+Signed-off-by: Julia Lawall <julia@diku.dk>
+---
 
-> Therefor we take the buslock before we take desc->lock and release
->   it after unlocking desc->lock.
-> 
-> So your removal of buslock removes the protection of the genirq
-> operation, which is guaranteed to be serialized against other
-> callers. The driver local state is not longer protected.
+I figure out that the support for "C=1" and "C=2" was missing
+in the previous patch. This new version adds it.
 
-But I don't see what I need to protect against. No other
-code is touching driver local state that is also touched by
-the genirq operations.  Or what am I overseeing here?
-
-> That's totally unrelated to powerpc and UP, it's simply plain
-> wrong. And that's why I knew w/o looking at your patch. :)
-
-Well, it seems to me that you have a few wrong assumptions about
-what the genirq operations in the patched pca953x driver is
-doing, which might warrant a second look at my patch ;-)
-
-> You can argue to me in circles, that it is not a problem on your
-> particular system. I don't care at all. It does not matter as it
-> violates the semantics and might blow up in other usage scenarios
-> badly. Hint: think SMP
-> 
-> And that's why we have request_any_context_irq() in the first place
-> and want people to realize that the driver which ends up on a I2C irq
-> controller (which is one of the most braindead ideas hardware folks
-> came up with ever) needs to be audited and probably modified.
-
-I totally agree with the last part. I have asked (and convinced) the
-hardware people to change that for next revision :-)
-
-> > > Just because you have not hit the problem yet does not make it non
-> > > existant.
-> > 
-> > Which particular problem should I be on the lookout for in pca953x
-> > driver?
-> 
-> See above.
-
-Ok, but I believe that these issues have been dealt with by removing the
-need to do I2C work in the irq_chip functions, and by restricting the
-driver local state to be only touched by irq_chip functions.  Unless I
-am overlooking something more, I fail to see the need for the buslock
-in this case (not the general case). 
-
-> > > Yeah, and at the same time you rip out the buslock. Why are you not
-> > > sending this patch as well ? Simply because you know that it is
-> > > utterly wrong and a horrible hack.
-> > 
-> > No, it was send at the same time, but to the linuxppc-dev.  I do not
-> 
-> You should have CC'ed me as well on that to give me the full context,
-> so I would have told you in the first reply why it is [pick your
-> favourite out of my arsenal of swear word combos] but in a more
-> moderate way as I would have noticed right away that you did not
-> realize the implications and semantics of buslock and the reasons why
-> you need to look at the innocent PHY driver.
-
-Sorry about that.
-
-But your explanations of the buslock in this thread
-fits very well with my understanding prior to posting here, so I might
-not be as mis-guided in my attempt.
-
-> > see it as utterly wrong, and I hope you will give it a look with an open
-> > mind, not just assuming that it is shitty crap, utterly wrong or horrible
-> > hack even before reading it, thanks ;-)
-> > 
-> > http://patchwork.ozlabs.org/patch/54717/
-> > 
-> > It is a longer patch, and I expect that it could be improved quite a
-> > bit, but I really don't see it as a fundanmentally shitty.
-> 
-> I do (even before looking at it). Simply because it breaks the
-> driver. See above.
-
-Well, I would be very interested in finding out in more detail where it
-is broken, as I have replied above to the concerns for I2C work and
-driver local state race conditions.  I am very open about having
-overlooked something, but I would prefer to know exactly what is wrong.
-If nothing else, just to be a bit better of next time I enter this
-area :-)
-
-> > > But at the same time you want to sell me a patch which rips out the
-> > > prevention mechanism for your hack.
-> > 
-> > Which patch are you refering to?
-> > 
-> > The patch we are discussing here does not rip out any thing,
-> >
-> > It simply adds support for using existing dirvers together
-> > with handle_nested_irq().
-> 
-> It's ripping out the prevention of what you are trying to do.
-
-Still, the patch handle_nested_thread() does not rip anything out.
-The pca953x.c patch does, but I see it as two different things.
-
-Am I right that you are NAK'ing this patch due to your concerns about
-the pca953x.c patch?  If so and if I can convince you that the pca953x.c
-patch actually might be heading in a sane direction, you will be
-willing to look at this patch again?
-
-Of-course, if anyone implemented an interrupt controller in a thread_fn,
-but without I2C or any other need for buslock, the patch proposed here
-could make sense.  I don't know about any such driver though... 
-
-> > So maybe you can help me out here, is disable_irq_nosync()
-> > to be improved here?  It does not seem to be fair to
-> > document that it can be called in IRQ context, and then
-> > have it designed to blow up if done so in combination
-> > with a genirq buslock driver.
-> 
-> The documentation says: It may be called from irq context.
-> 
-> That means it's safe to call it from the irq handler itself, contrary
-> to disable_irq() which would deadlock. When your handler is running in
-> thread context then this applies as well.
-> 
-> Maybe the documentation is a bit unclear about that. I'm happy to
-> accept a patch which improves it !
-
-But when does it make sense to call functions which are not valid in irq
-context from a function which are allowed to be called from irq context?
-At least, the principles of least surprise is violated.
-
-Should the documentation be amended with a not on disable_irq(_nosync),
-that it must not be called from irq context on interrupts which are
-handled by genirq buslock enabled drivers? 
-
-> > > The buslock is there for a reason and if you can't use the code with
-> > > the disable/enable_irq() in the atomic context, then this needs to be
-> > > fixed there if you need to run the irq handler in thread context.
-> > 
-> > How can I disable_irq in interrupt context, with the interrupt handled
-> > by a genirq buslock driver?
-> 
-> See above.
-
-Where above?  You mean that I can call disable_irq_nosync() from irq
-context?  But it calls chip_bus_lock() which calls mutex_lock().  How
-is that going to work?
-
-> Btw, which phy driver are you talking about ? 
-
-The handler is implemented in drivers/net/phy/phy.c and is used by all
-phy drivers in drivers/net/phy/
-
-> Calling irq_disable_nosync() from the irq handler needs a damned good
-> reason and in most cases it pops up the red "Hack Alert" sign.
-
-Hehe, ok :-D
-
-It might be the root to all my trouble here, so I would be very happy to
-find a solution for it.
-
-The problem is that MDIO communication is often just as painstakingly
-slow as I2C, so the phy irq handler disables the irq and schedules a
-work, which then will do the MDIO communication, and thus ack the irq,
-and finally re-enable the irq.
-
-Hints on how to fix that would be appreciated.
-
-/Esben
+Sorry, for the inconvenience.
 
 
+ MAINTAINERS           |   10 ++++++
+ Makefile              |   10 ++++--
+ scripts/Makefile.help |    3 ++
+ scripts/coccicheck    |   80 +++++++++++++++++++++++++++++++++++++++++++++++++
+ 4 files changed, 100 insertions(+), 3 deletions(-)
+ create mode 100644 scripts/Makefile.help
+ create mode 100755 scripts/coccicheck
+
+diff --git a/MAINTAINERS b/MAINTAINERS
+index 67accd7..5b3c95e 100644
+--- a/MAINTAINERS
++++ b/MAINTAINERS
+@@ -1569,6 +1569,16 @@ L:	platform-driver-x86@vger.kernel.org
+ S:	Supported
+ F:	drivers/platform/x86/classmate-laptop.c
+ 
++COCCINELLE/Semantic Patches (SmPL)
++M:	Julia Lawall <julia@diku.dk>
++M:	Gilles Muller <Gilles.Muller@lip6.fr>
++M:	Nicolas Palix <npalix@diku.dk>
++L:	cocci@diku.dk (moderated for non-subscribers)
++W:	http://coccinelle.lip6.fr/
++S:	Supported
++F:	scripts/coccinelle/
++F:	scripts/coccicheck
++
+ CODA FILE SYSTEM
+ M:	Jan Harkes <jaharkes@cs.cmu.edu>
+ M:	coda@cs.cmu.edu
+diff --git a/Makefile b/Makefile
+index 654c31a..09d9d08 100644
+--- a/Makefile
++++ b/Makefile
+@@ -412,7 +412,7 @@ endif
+ # of make so .config is not included in this case either (for *config).
+ 
+ no-dot-config-targets := clean mrproper distclean \
+-			 cscope TAGS tags help %docs check% \
++			 cscope TAGS tags help %docs check% coccicheck \
+ 			 include/linux/version.h headers_% \
+ 			 kernelrelease kernelversion
+ 
+@@ -1279,8 +1279,9 @@ help:
+ 	@echo  '  includecheck    - Check for duplicate included header files'
+ 	@echo  '  export_report   - List the usages of all exported symbols'
+ 	@echo  '  headers_check   - Sanity check on exported headers'
+-	@echo  '  headerdep       - Detect inclusion cycles in headers'; \
+-	 echo  ''
++	@echo  '  headerdep       - Detect inclusion cycles in headers'
++	@$(MAKE) -f $(srctree)/scripts/Makefile.help checker-help
++	@echo  ''
+ 	@echo  'Kernel packaging:'
+ 	@$(MAKE) $(build)=$(package-dir) help
+ 	@echo  ''
+@@ -1439,6 +1440,9 @@ versioncheck:
+ 		-name '*.[hcS]' -type f -print | sort \
+ 		| xargs $(PERL) -w $(srctree)/scripts/checkversion.pl
+ 
++coccicheck:
++	$(Q)$(CONFIG_SHELL) $(srctree)/scripts/$@
++
+ namespacecheck:
+ 	$(PERL) $(srctree)/scripts/namespace.pl
+ 
+diff --git a/scripts/Makefile.help b/scripts/Makefile.help
+new file mode 100644
+index 0000000..d03608f
+--- /dev/null
++++ b/scripts/Makefile.help
+@@ -0,0 +1,3 @@
++
++checker-help:
++	@echo  '  coccicheck      - Check with Coccinelle.'
+diff --git a/scripts/coccicheck b/scripts/coccicheck
+new file mode 100755
+index 0000000..0d83b6f
+--- /dev/null
++++ b/scripts/coccicheck
+@@ -0,0 +1,80 @@
++#!/bin/sh
++
++SPATCH="`which ${SPATCH:=spatch}`"
++
++if [ "$C" = "1" -o "$C" = "2" ]; then
++    ONLINE=1
++
++# This requires Coccinelle >= 0.2.3
++#    FLAGS="-ignore_unknown_options -very_quiet"
++#    OPTIONS=$*
++
++# Workaround for Coccinelle < 0.2.3
++    FLAGS="-I $srctree/include -very_quiet"
++    shift $(( $# - 1 ))
++    OPTIONS=$1
++else
++    ONLINE=0
++    FLAGS="-very_quiet"
++fi
++
++if [ ! -x "$SPATCH" ]; then
++    echo 'spatch is part of the Coccinelle project and is available at http://coccinelle.lip6.fr/'
++    exit 1
++fi
++
++if [ "$MODE" = "" ] ; then
++    if [ "$ONLINE" = "0" ] ; then
++	echo 'You have not explicitly specify the mode to use. Fallback to "report".'
++	echo 'You can specify the mode with "make coccicheck MODE=<mode>"'
++	echo 'Available modes are: report, patch, context, org'
++    fi
++    MODE="report"
++fi
++
++if [ "$ONLINE" = "0" ] ; then
++    echo ''
++    echo 'Please check for false positives in the output before submitting a patch.'
++    echo 'When using "patch" mode, carefully review the patch before submitting it.'
++    echo ''
++fi
++
++coccinelle () {
++    COCCI="$1"
++
++    OPT=`grep "Option" $COCCI | cut -d':' -f2`
++
++#   The option '-parse_cocci' can be used to syntaxically check the SmPL files.
++#
++#    $SPATCH -D $MODE $FLAGS -parse_cocci $COCCI $OPT > /dev/null
++
++    if [ "$ONLINE" = "0" ] ; then
++
++	FILE=`echo $COCCI | sed "s|$DIR/||"`
++
++	echo "Processing `basename $COCCI` with option(s) \"$OPT\""
++	echo 'Message example to submit a patch:'
++
++	sed -e '/\/\/\//!d' -e 's|^///||' $COCCI
++
++	echo ' The semantic patch that makes this change is available'
++	echo " in $FILE."
++	echo ''
++	echo ' More information about semantic patching is available at'
++	echo ' http://coccinelle.lip6.fr/'
++	echo ''
++
++	$SPATCH -D $MODE $FLAGS -sp_file $COCCI $OPT -dir $srctree || exit 1
++    else
++	$SPATCH -D $MODE $FLAGS -sp_file $COCCI $OPT $OPTIONS || exit 1
++    fi
++
++}
++
++if [ "$COCCI" = "" ] ; then
++    for f in `find $srctree/scripts/coccinelle/ -name '*.cocci' -type f | sort`; do
++	coccinelle $f
++    done
++else
++    coccinelle $COCCI
++fi
+-- 
+1.7.0.4
 
