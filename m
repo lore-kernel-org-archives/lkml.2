@@ -1,55 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754205Ab0FGTux (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jun 2010 15:50:53 -0400
-Received: from waste.org ([173.11.57.241]:49473 "EHLO waste.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751512Ab0FGTuw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jun 2010 15:50:52 -0400
-Subject: Re: [PATCH] netconsole: queue console messages to send later
-From: Matt Mackall <mpm@selenic.com>
-To: Flavio Leitner <fleitner@redhat.com>
-Cc: netdev@vger.kernel.org, David Miller <davem@davemloft.net>,
-       Cong Wang <amwang@redhat.com>, Jay Vosburgh <fubar@us.ibm.com>,
-       Flavio Leitner <fbl@sysclose.org>, Andy Gospodarek <gospo@redhat.com>,
-       Neil Horman <nhorman@tuxdriver.com>, Jeff Moyer <jmoyer@redhat.com>,
-       Stephen Hemminger <shemminger@linux-foundation.org>,
-       lkml <linux-kernel@vger.kernel.org>, bridge@lists.linux-foundation.org,
-       bonding-devel@lists.sourceforge.net
-In-Reply-To: <1275938692-26997-1-git-send-email-fleitner@redhat.com>
-References: <24059.1275417767@death.nxdomain.ibm.com>
-	 <1275938692-26997-1-git-send-email-fleitner@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 07 Jun 2010 14:50:48 -0500
-Message-ID: <1275940248.26597.70.camel@calx>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.1 
-Content-Transfer-Encoding: 7bit
+	id S1754262Ab0FGTzV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jun 2010 15:55:21 -0400
+Received: from ppsw-33.csi.cam.ac.uk ([131.111.8.133]:49737 "EHLO
+	ppsw-33.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753715Ab0FGTzU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Jun 2010 15:55:20 -0400
+X-Cam-AntiVirus: no malware found
+X-Cam-SpamDetails: not scanned
+X-Cam-ScannerInfo: http://www.cam.ac.uk/cs/email/scanner/
+Message-ID: <4C0D4E91.9040407@jic23.retrosnub.co.uk>
+Date: Mon, 07 Jun 2010 20:54:57 +0100
+From: Jonathan Cameron <kernel@jic23.retrosnub.co.uk>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100426 Thunderbird/3.0.4
+MIME-Version: 1.0
+To: =?ISO-8859-1?Q?Charles_Cl=E9ment?= <caratorn@gmail.com>
+CC: Jonathan Cameron <jic23@cam.ac.uk>, Joe Perches <joe@perches.com>,
+       devel@driverdev.osuosl.org, Andrew Morton <akpm@linux-foundation.org>,
+       linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 09/17] MAINTAINERS: Add STAGING - INDUSTRIAL IO
+References: <cover.1275935090.git.joe@perches.com> <81391f52a009e825f5a3bfd73a71ba24190d6f3b.1275935091.git.joe@perches.com> <4C0D3FFB.7040704@cam.ac.uk> <20100607192158.GA10882@fujitsu>
+In-Reply-To: <20100607192158.GA10882@fujitsu>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-06-07 at 16:24 -0300, Flavio Leitner wrote:
-> There are some networking drivers that hold a lock in the
-> transmit path. Therefore, if a console message is printed
-> after that, netconsole will push it through the transmit path,
-> resulting in a deadlock.
+On 06/07/10 20:21, Charles Clément wrote:
+> On Mon, Jun 07, 2010 at 07:52:43PM +0100, Jonathan Cameron wrote:
+>> On 06/07/10 19:49, Joe Perches wrote:
+>>
+>> Good idea.  Could we have the mailing list as well.
+>> L: linux-iio@vger.kernel.org
+> 
+> Maybe the mailing list could be added to the TODO file too, it only
+> mentions the LKML.
+Good idea. I've just sent Greg KH a patch to do just that.
 
-This is an ongoing pain we've known about since before introducing the
-netpoll code to the tree.
+Thanks,
 
-My take has always been that any form of queueing is contrary to the
-goal of netpoll: timely delivery of messages even during machine-killing
-situations like oopses. There may never be a second chance to deliver
-the message as the machine may be locked solid. And there may be no
-other way to get the message out of the box in such situations. Adding
-queueing is a throwing-the-baby-out-with-the-bathwater fix.
-
-I think Dave agrees with me here, and I believe he's said in the past
-that drivers trying to print messages in such contexts should be
-considered buggy.
-
--- 
-Mathematics is the supreme nostalgia of our time.
-
-
+Jonathan
