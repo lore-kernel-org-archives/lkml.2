@@ -1,15 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756213Ab0FGD4F (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Jun 2010 23:56:05 -0400
-Received: from smtp107.sbc.mail.gq1.yahoo.com ([67.195.14.110]:20263 "HELO
-	smtp107.sbc.mail.gq1.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1756053Ab0FGD4D (ORCPT
+	id S1756382Ab0FGD4Z (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Jun 2010 23:56:25 -0400
+Received: from smtp109.sbc.mail.gq1.yahoo.com ([67.195.14.39]:21246 "HELO
+	smtp109.sbc.mail.gq1.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1756258Ab0FGD4O (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Jun 2010 23:56:03 -0400
-X-Greylist: delayed 400 seconds by postgrey-1.27 at vger.kernel.org; Sun, 06 Jun 2010 23:56:03 EDT
+	Sun, 6 Jun 2010 23:56:14 -0400
 X-Yahoo-SMTP: fzDSGlOswBCWnIOrNw7KwwK1j9PqyNbe5PtLKiS4dDU.UNl_t6bdEZu9tTLW
-X-YMail-OSG: Fb_oyrUVM1mM0Et2HSx7im30VuqlQjhnGMi4RpaEA8UVSr1JfL78MNbAxVQlr5b2AMx5JPQRhiBKOh89l1TVJ6r04yV7fiDRXC6GP6sCSuxNdvDI387e1YrOmFLa_9mQ0mxjtUoDOxO7WDaP8axtDG9Bqww9NDg4kLtSbxCTB_1zrbdFdwWGxYb_mJf8SU8e7ucfzVsYJyYpKTjnjA1VeJfa3ExauFGquslUtAranRfUTnjACn8.3lHgEZq2gRwltAroSyybAA07wKyUy8g1kiSavtMSuMTONzxJUPW9rGVEq2IgQhBx8fzflVzamtXy4Bo58JHheXtp2TGL_WiQCCXp3pJ7zHuzYFjQ5gaiMm4scw--
+X-YMail-OSG: lzUvs7wVM1mQRkzY.keaJpvB60yqtqjUZ6EFPlvSVo_6N3lMxbylx7A.x1iu5dji9kLseWZ_5FRovl_bG8wakUS8_PobMyM55Q6XQWem_3fRSWEUet3XIii8PDA_Kvkt5f2nPOv3Gw0hh3N7FFx2MifNxk4DvWE8rNfuxktYTybUUnRQwvGJBLi7dEBckI1O1NLYhj3cJ1OOafltTLN_nEYpoR8W0GzxdsOcx4d4ISZP76y4vVf0xSymABjO3.FbepTB.kyOMUekBtZlqWVEgbk5nMjBR1C1IHGjfVueCWsaz81ExwznEoEcXttDSYpC29ompo7WcAjrtFmdVAEEZTFu
 X-Yahoo-Newman-Property: ymail-3
 From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
 To: stgt-devel <stgt@vger.kernel.org>, linux-scsi <linux-scsi@vger.kernel.org>,
@@ -20,9 +19,9 @@ To: stgt-devel <stgt@vger.kernel.org>, linux-scsi <linux-scsi@vger.kernel.org>,
 Cc: James Bottomley <James.Bottomley@suse.de>,
        Douglas Gilbert <dgilbert@interlog.com>,
        Nicholas Bellinger <nab@linux-iscsi.org>
-Subject: [PATCH 1/3] [tgt]: Add proper STGT LUN backstore passthrough support (rev 3)
-Date: Sun,  6 Jun 2010 20:50:25 -0700
-Message-Id: <1275882625-5376-1-git-send-email-nab@linux-iscsi.org>
+Subject: [PATCH 3/3] [tgt]: Add BSG v4 backstore support to usr/bs_sg.c
+Date: Sun,  6 Jun 2010 20:50:40 -0700
+Message-Id: <1275882640-5418-1-git-send-email-nab@linux-iscsi.org>
 X-Mailer: git-send-email 1.5.6.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -30,302 +29,338 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Nicholas Bellinger <nab@linux-iscsi.org>
 
-This patch adds two new queueing and completion function pointers to struct scsi_lu called ->cmd_perform()
-and ->cmd_done() for handling existing internal STGT port emulation and the struct scsi_cmd
-passthrough with bs_sg.c.  It retains the struct device_type_template->cmd_passthrough()
-from the original patches, which still appears to be necessary for a device type to perform passthrough.
-Also as before we modify the struct device_type_template sbc_template->cmd_passthrough() for sbc.c /
-TYPE_DISK that we want to use passthrough for bs_sg LUNs.
+This patch adds initial support for the block layer implementation of the sg v4 interface
+(BSG) -> STGT with a new struct backingstore_template bsg_bst sharing code with the
+original sg_bst.  It adds for new function bs_bsg_cmd_submit() for incoming write I/O
+and bs_bsg_cmd_complete() for polling read I/O using include/linux/bsg.h:struct sg_io_v4.
 
-For the setup path, we update tgt_device_create() to check if lu->cmd_perform() and lu->cmd_done()
-have been set by struct backingstore_template->bs_init().  We expect bs_sg to setup these
-pointers for us using the new target_cmd_perform_passthrough() and __cmd_done_passthrough() (see below).
-Otherwise we setup the pointers following existing logic with target_cmd_perform() (also below) and
-__cmd_done() for the non bs_sg case.
+This patch also splits up bs_sg_open() to support both BSG and SG looking for the
+path "/dev/bsg" in bs_sg_open(), and getting max_queue using SG_GET_COMMAND_Q and
+calling SG_SET_RESERVED_SIZE (following the original bs_sg code in init_sg_device)
 
-For the queue path and struct scsi_lu->cmd_perform() it made sense to split up target_cmd_queue()
-into two functions, the original code at the tail of target_cmd_queue() now becomes
-target_cmd_perform() and calls existing STGT port emulation code via cmd_enabled() -> scsi_cmd_perform().
-A new function for passthrough has been added called target_cmd_perform_passthrough() that will do
-struct scsi_lu->dev_type_template.cmd_passthrough() into the device type for bs_sg LUNs.
+Also chk_bsg_device() currently using a hardcoded 254 major as def for BSG does not
+appear in include/linux/major.h just yet..
 
-For the completion path and struct scsi_lu->cmd_done(), a new __cmd_done_passthrough()
-has been added minus the original cmd_hlist_remove() and SCSI TASK attr checking in
-__cmd_done().  __cmd_done() is used for the existing port emulation case, and modify the
-two original users target_cmd_lookup() and abort_cmd() to call cmd->dev->cmd_done() instead.
-
-Finally, it adds the passthrough case to tgt_device_create() in order to locate the
-struct device_type_template * using device_type_passthrough().
-
-This patch has been tested with STGT/iSCSI and TCM_Loop SPC-4 iSCSI Target Port emulation.
+So far this has been tested with STGT/iSCSI <-> BSG <-> TCM_Loop SPC-4 iSCSI Target
+Port emulation and is able to mkfs, fsck and mount a filesystem from a TCM/IBLOCK
+Linux LVM kernel level backstore
 
 Signed-off-by: Nicholas A. Bellinger <nab@linux-iscsi.org>
 ---
- usr/target.c |  113 ++++++++++++++++++++++++++++++++++++++++++++++++++++------
- usr/tgtd.h   |   16 ++++++++
- 2 files changed, 118 insertions(+), 11 deletions(-)
+ usr/bs_sg.c     |  178 +++++++++++++++++++++++++++++++++++++++++++++++++++---
+ usr/scsi_cmnd.h |    7 ++
+ 2 files changed, 175 insertions(+), 10 deletions(-)
 
-diff --git a/usr/target.c b/usr/target.c
-index c848757..3e2aa2b 100644
---- a/usr/target.c
-+++ b/usr/target.c
-@@ -48,11 +48,27 @@ int device_type_register(struct device_type_template *t)
- 	return 0;
+diff --git a/usr/bs_sg.c b/usr/bs_sg.c
+index 23676ef..d071714 100644
+--- a/usr/bs_sg.c
++++ b/usr/bs_sg.c
+@@ -3,6 +3,9 @@
+  *
+  * Copyright (C) 2008 Alexander Nezhinsky <nezhinsky@gmail.com>
+  *
++ * Added linux/block/bsg.c support using struct sg_io_v4.
++ * Copyright (C) 2010 Nicholas A. Bellinger <nab@linux-iscsi.org>
++ *
+  * This program is free software; you can redistribute it and/or
+  * modify it under the terms of the GNU General Public License as
+  * published by the Free Software Foundation, version 2 of the
+@@ -33,6 +36,7 @@
+ #include <sys/stat.h>
+ #include <sys/epoll.h>
+ #include <scsi/sg.h>
++#include <linux/bsg.h>
+ 
+ #include "list.h"
+ #include "util.h"
+@@ -45,6 +49,14 @@
+ #define BS_SG_TIMEOUT	2000
+ #define BS_SG_SHIFT	9
+ 
++//#define BSG_DEBUG_IO
++
++#ifdef BSG_DEBUG_IO
++#define BSG_IO(x...) eprintf(x)
++#else
++#define BSG_IO(x...)
++#endif
++
+ static int graceful_read(int fd, void *p_read, int to_read)
+ {
+ 	int err;
+@@ -111,7 +123,7 @@ static int bs_sg_rw(int host_no, struct scsi_cmd *cmd)
+ 	return SAM_STAT_CHECK_CONDITION;
  }
  
--static struct device_type_template *device_type_lookup(int type)
-+static struct device_type_template *device_type_passthrough(void)
+-static void set_cmd_failed(struct scsi_cmd *cmd)
++static int set_cmd_failed(struct scsi_cmd *cmd)
  {
- 	struct device_type_template *t;
+ 	int result = SAM_STAT_CHECK_CONDITION;
+ 	uint16_t asc = ASC_READ_ERROR;
+@@ -119,6 +131,54 @@ static void set_cmd_failed(struct scsi_cmd *cmd)
  
- 	list_for_each_entry(t, &device_type_list, device_type_siblings) {
-+		if (t->cmd_passthrough != NULL)
-+			return t;
-+	}
-+	return NULL;
+ 	scsi_set_result(cmd, result);
+ 	sense_data_build(cmd, key, asc);
++
++	return result;
 +}
 +
-+static struct device_type_template *device_type_lookup(int type, int passthrough)
++static int bs_bsg_cmd_submit(struct scsi_cmd *cmd)
 +{
-+	struct device_type_template *t;
-+
-+	if (passthrough)
-+		return device_type_passthrough();
-+
-+	list_for_each_entry(t, &device_type_list, device_type_siblings) {
-+		if (t->cmd_passthrough != NULL)
-+			continue;
- 		if (t->type == type)
- 			return t;
- 	}
-@@ -425,11 +441,13 @@ static match_table_t device_tokens = {
- 	{Opt_err, NULL},
- };
- 
-+static void __cmd_done(struct target *, struct scsi_cmd *);
-+
- int tgt_device_create(int tid, int dev_type, uint64_t lun, char *params,
- 		      int backing)
- {
- 	char *p, *path = NULL, *bstype = NULL;
--	int ret = 0;
-+	int ret = 0, passthrough = 0;
- 	struct target *target;
- 	struct scsi_lu *lu, *pos;
- 	struct device_type_template *t;
-@@ -479,10 +497,11 @@ int tgt_device_create(int tid, int dev_type, uint64_t lun, char *params,
- 				ret = TGTADM_INVALID_REQUEST;
- 				goto out;
- 			}
-+			passthrough = bst->bs_passthrough;
- 		}
- 	}
- 
--	t = device_type_lookup(dev_type);
-+	t = device_type_lookup(dev_type, passthrough);
- 	if (!t) {
- 		eprintf("Unknown device type %d\n", dev_type);
- 		ret = TGTADM_INVALID_REQUEST;
-@@ -515,6 +534,26 @@ int tgt_device_create(int tid, int dev_type, uint64_t lun, char *params,
- 		if (ret)
- 			goto fail_lu_init;
- 	}
++	struct scsi_lu *dev = cmd->dev;
++	int fd = dev->fd;
++	struct sg_io_v4 *io_hdr = &cmd->cmd_bsg_hdr;
++	int err = 0;
 +	/*
-+	 * Check if struct scsi_lu->cmd_perform() has been filled in
-+	 * by the SG_IO backstore for passthrough (SG_IO) in ->bs_init() call.
-+	 * If the function pointer does not exist, use the default internal
-+	 * target_cmd_perform() and __cmd_done() calls.
++	 * Following linux/include/linux/bsg.h
 +	 */
-+	if (!(lu->cmd_perform)) {
-+		lu->cmd_perform = &target_cmd_perform;
-+		lu->cmd_done = &__cmd_done;
-+	} else if (!(lu->cmd_done)) {
-+		eprintf("Unable to locate struct scsi_lu->cmd_done() with"
-+				" valid ->cmd_perform()\n");
-+		ret = TGTADM_INVALID_REQUEST;
-+		goto fail_bs_init;
-+	} else if (!(lu->dev_type_template.cmd_passthrough)) {
-+		eprintf("Unable to locate ->cmd_passthrough() handler"
-+				" for device type template\n");
-+		ret = TGTADM_INVALID_REQUEST;
-+		goto fail_bs_init;
++	/* [i] 'Q' to differentiate from v3 */
++	io_hdr->guard = 'Q';
++	io_hdr->protocol = BSG_PROTOCOL_SCSI;
++	io_hdr->subprotocol = BSG_SUB_PROTOCOL_SCSI_CMD;
++	io_hdr->request_len = cmd->scb_len;
++	io_hdr->request = (unsigned long )cmd->scb;
++
++	if (scsi_get_data_dir(cmd) == DATA_WRITE) {
++		io_hdr->dout_xfer_len = scsi_get_out_length(cmd);
++		io_hdr->dout_xferp = (unsigned long)scsi_get_out_buffer(cmd);
++	} else {
++		io_hdr->din_xfer_len = scsi_get_in_length(cmd);
++		io_hdr->din_xferp = (unsigned long)scsi_get_in_buffer(cmd);
 +	}
- 
- 	if (backing && !path && !lu->attrs.removable) {
- 		ret = TGTADM_INVALID_REQUEST;
-@@ -828,9 +867,7 @@ static struct it_nexus_lu_info *it_nexus_lu_info_lookup(struct it_nexus *itn,
- int target_cmd_queue(int tid, struct scsi_cmd *cmd)
- {
- 	struct target *target;
--	struct tgt_cmd_queue *q;
- 	struct it_nexus *itn;
--	int result, enabled = 0;
- 	uint64_t dev_id, itn_id = cmd->cmd_itn_id;
- 
- 	itn = it_nexus_lookup(tid, itn_id);
-@@ -857,16 +894,28 @@ int target_cmd_queue(int tid, struct scsi_cmd *cmd)
- 	/* service delivery or target failure */
- 	if (target->target_state != SCSI_TARGET_READY)
- 		return -EBUSY;
-+	/*
-+	 * Call struct scsi_lu->cmd_perform() that will either be setup for
-+	 * internal or passthrough CDB processing using 2 functions below.
-+	 */
-+	return cmd->dev->cmd_perform(tid, cmd);
-+}
- 
--	cmd_hlist_insert(itn, cmd);
-+/*
-+ * Used by all non bs_sg backstores for internal STGT port emulation
-+ */
-+int target_cmd_perform(int tid, struct scsi_cmd *cmd)
-+{
-+	struct tgt_cmd_queue *q = &cmd->dev->cmd_queue;
-+	int result, enabled = 0;
- 
--	q = &cmd->dev->cmd_queue;
-+	cmd_hlist_insert(cmd->it_nexus, cmd);
- 
- 	enabled = cmd_enabled(q, cmd);
--	dprintf("%p %x %" PRIx64 " %d\n", cmd, cmd->scb[0], dev_id, enabled);
-+	dprintf("%p %x %" PRIx64 " %d\n", cmd, cmd->scb[0], cmd->dev_id, enabled);
- 
- 	if (enabled) {
--		result = scsi_cmd_perform(itn->host_no, cmd);
-+		result = scsi_cmd_perform(cmd->it_nexus->host_no, cmd);
- 
- 		cmd_post_perform(q, cmd);
- 
-@@ -890,6 +939,30 @@ int target_cmd_queue(int tid, struct scsi_cmd *cmd)
- 	return 0;
- }
- 
-+/*
-+ * Used by bs_sg for CDB passthrough to STGT LUNs
-+ */
-+int target_cmd_perform_passthrough(int tid, struct scsi_cmd *cmd)
-+{
-+	int result;
++	io_hdr->max_response_len = sizeof(cmd->sense_buffer);
++	/* SCSI: (auto)sense data */
++	io_hdr->response = (unsigned long)cmd->sense_buffer;
++	/* Using the same 2000 millisecond timeout.. */
++	io_hdr->timeout = BS_SG_TIMEOUT;
++	/* [i->o] unused internally */
++	io_hdr->usr_ptr = (unsigned long)cmd;
++	BSG_IO("[%d] Set io_hdr->usr_ptr from cmd: %p\n", getpid(), cmd);
++	/* Bsg does Q_AT_HEAD by default */
++	io_hdr->flags |= BSG_FLAG_Q_AT_TAIL;
 +
-+	dprintf("%p %x %" PRIx64 " PT \n", cmd, cmd->scb[0], cmd->dev_id);
-+
-+	result = cmd->dev->dev_type_template.cmd_passthrough(tid, cmd);
-+
-+	dprintf("%" PRIx64 " %x %p %p %" PRIu64 " %u %u %d %d\n",
-+		cmd->tag, cmd->scb[0], scsi_get_out_buffer(cmd),
-+		scsi_get_in_buffer(cmd), cmd->offset,
-+		scsi_get_out_length(cmd), scsi_get_in_length(cmd),
-+		result, cmd_async(cmd));
-+
-+	set_cmd_processed(cmd);
-+	if (!cmd_async(cmd))
-+		target_cmd_io_done(cmd, result);
++	BSG_IO("[%d] Calling graceful_write for CDB: 0x%02x\n", getpid(), cmd->scb[0]);
++	err = graceful_write(fd, &cmd->cmd_bsg_hdr, sizeof(struct sg_io_v4));
++	if (!err)
++		set_cmd_async(cmd);
++	else {
++		eprintf("failed to start cmd 0x%p\n", cmd);
++		return set_cmd_failed(cmd);
++	}
 +
 +	return 0;
-+}
-+
- void target_cmd_io_done(struct scsi_cmd *cmd, int result)
- {
- 	scsi_set_result(cmd, result);
-@@ -924,6 +997,10 @@ static void post_cmd_done(struct tgt_cmd_queue *q)
+ }
+ 
+ static int bs_sg_cmd_submit(struct scsi_cmd *cmd)
+@@ -136,11 +196,13 @@ static int bs_sg_cmd_submit(struct scsi_cmd *cmd)
+ 	if (scsi_get_data_dir(cmd) == DATA_WRITE) {
+ 		io_hdr.dxfer_direction = SG_DXFER_TO_DEV;
+ 		io_hdr.dxfer_len = scsi_get_out_length(cmd);
+-		io_hdr.dxferp = (void *)scsi_get_out_buffer(cmd);
++		cmd->cmd_sg_iovec.iov_base = scsi_get_out_buffer(cmd);
++		io_hdr.iovec_count = 1;
+ 	} else {
+ 		io_hdr.dxfer_direction = SG_DXFER_FROM_DEV;
+ 		io_hdr.dxfer_len = scsi_get_in_length(cmd);
+-		io_hdr.dxferp = (void *)scsi_get_in_buffer(cmd);
++		cmd->cmd_sg_iovec.iov_base = scsi_get_in_buffer(cmd);
++		io_hdr.iovec_count = 1;
  	}
+ 	io_hdr.mx_sb_len = sizeof(cmd->sense_buffer);
+ 	io_hdr.sbp = cmd->sense_buffer;
+@@ -154,11 +216,47 @@ static int bs_sg_cmd_submit(struct scsi_cmd *cmd)
+ 		set_cmd_async(cmd);
+ 	else {
+ 		eprintf("failed to start cmd 0x%p\n", cmd);
+-		set_cmd_failed(cmd);
++		return set_cmd_failed(cmd);
+ 	}
+ 	return 0;
  }
  
-+/*
-+ * Used by struct scsi_lu->cmd_done() for normal internal completion
-+ * (non passthrough)
-+ */
- static void __cmd_done(struct target *target, struct scsi_cmd *cmd)
- {
- 	struct tgt_cmd_queue *q;
-@@ -949,6 +1026,20 @@ static void __cmd_done(struct target *target, struct scsi_cmd *cmd)
- 	post_cmd_done(q);
- }
- 
-+/*
-+ * Used by struct scsi_lu->cmd_done() for bs_sg (passthrough) completion
-+ */
-+void __cmd_done_passthrough(struct target *target, struct scsi_cmd *cmd)
++static void bs_bsg_cmd_complete(int fd, int events, void *data)
 +{
++	struct sg_io_v4 io_hdr;
++	struct scsi_cmd *cmd;
 +	int err;
 +
-+	err = target->bst->bs_cmd_done(cmd);
++	BSG_IO("[%d] bs_bsg_cmd_complete() called!\n", getpid());
++	memset(&io_hdr, 0, sizeof(io_hdr));
++	/* [i] 'Q' to differentiate from v3 */
++	io_hdr.guard = 'Q';
 +
-+	dprintf("%d %p %p %u %u %d\n", cmd_mmapio(cmd), scsi_get_out_buffer(cmd),
-+		scsi_get_in_buffer(cmd), scsi_get_out_length(cmd),
-+		scsi_get_in_length(cmd), err);
++	err = graceful_read(fd, &io_hdr, sizeof(io_hdr));
++	if (err)
++		return;
++
++	cmd = (struct scsi_cmd *)(unsigned long)io_hdr.usr_ptr;
++	BSG_IO("BSG Using cmd: %p for io_hdr.usr_ptr\n", cmd);
++	/*
++	 * Check SCSI: command completion status
++	 * */
++	if (!io_hdr.device_status) {
++		scsi_set_out_resid(cmd, io_hdr.dout_resid);
++		scsi_set_in_resid(cmd, io_hdr.din_resid);
++	} else {
++		/*
++		 * NAB: Used by linux/block/bsg.c:bsg_ioctl(), is this
++		 * right..?
++		 */
++		cmd->sense_len = SCSI_SENSE_BUFFERSIZE;
++		scsi_set_out_resid_by_actual(cmd, 0);
++		scsi_set_in_resid_by_actual(cmd, 0);
++	}
++	BSG_IO("[%d] BSG() Calling cmd->scsi_cmd_done()\n", getpid());
++	cmd->scsi_cmd_done(cmd, io_hdr.device_status);
 +}
 +
- struct scsi_cmd *target_cmd_lookup(int tid, uint64_t itn_id, uint64_t tag)
+ static void bs_sg_cmd_complete(int fd, int events, void *data)
  {
- 	struct scsi_cmd *cmd;
-@@ -973,7 +1064,7 @@ void target_cmd_done(struct scsi_cmd *cmd)
- 		free(mreq);
- 	}
- 
--	__cmd_done(cmd->c_target, cmd);
-+	cmd->dev->cmd_done(cmd->c_target, cmd);
+ 	struct sg_io_hdr io_hdr;
+@@ -186,6 +284,22 @@ static void bs_sg_cmd_complete(int fd, int events, void *data)
+ 	cmd->scsi_cmd_done(cmd, io_hdr.status);
  }
  
- static int abort_cmd(struct target* target, struct mgmt_req *mreq,
-@@ -992,7 +1083,7 @@ static int abort_cmd(struct target* target, struct mgmt_req *mreq,
- 		cmd->mreq = mreq;
- 		err = -EBUSY;
- 	} else {
--		__cmd_done(target, cmd);
-+		cmd->dev->cmd_done(target, cmd);
- 		target_cmd_io_done(cmd, TASK_ABORTED);
++static int chk_bsg_device(char *path)
++{
++	struct stat st;
++
++	if (stat(path, &st) < 0) {
++		eprintf("stat() failed errno: %d\n", errno);
++		return -1;
++	}
++
++	/* This is not yet defined in include/linux/major.h.. */
++	if (S_ISCHR(st.st_mode) && major(st.st_rdev) == 254)
++		return 0;
++
++	return -1;
++}
++
+ static int chk_sg_device(char *path)
+ {
+ 	struct stat st;
+@@ -197,8 +311,29 @@ static int chk_sg_device(char *path)
+ 
+ 	if (S_ISCHR(st.st_mode) && major(st.st_rdev) == SCSI_GENERIC_MAJOR)
+ 		return 0;
+-	else
++
++	return -1;
++}
++
++static int init_bsg_device(int fd)
++{
++	int t, err;
++
++	err = ioctl(fd, SG_GET_COMMAND_Q, &t);
++	if (err < 0) {
++		eprintf("SG_GET_COMMAND_Q for bsd failed: %d\n", err);
++		return -1;
++	}
++	eprintf("bsg: Using max_queue: %d\n", t);
++
++	t = BS_SG_RESVD_SZ;
++	err = ioctl(fd, SG_SET_RESERVED_SIZE, &t);
++	if (err < 0) {
++		eprintf("SG_SET_RESERVED_SIZE errno: %d\n", errno);
+ 		return -1;
++	}
++
++	return 0;
+ }
+ 
+ static int init_sg_device(int fd)
+@@ -242,9 +377,14 @@ static int bs_sg_init(struct scsi_lu *lu)
+ 
+ static int bs_sg_open(struct scsi_lu *lu, char *path, int *fd, uint64_t *size)
+ {
+-	int sg_fd, err;
+-
+-	err = chk_sg_device(path);
++	void (*cmd_complete)(int, int, void *) = NULL;
++	int sg_fd, err, bsg = 0;
++
++	if ((strstr(path, "/dev/bsg/") != NULL)) {
++		bsg = 1;
++		err = chk_bsg_device(path);
++	} else
++		err = chk_sg_device(path);
+ 	if (err) {
+ 		eprintf("Not recognized %s as an SG device\n", path);
+ 		return -EINVAL;
+@@ -256,13 +396,19 @@ static int bs_sg_open(struct scsi_lu *lu, char *path, int *fd, uint64_t *size)
+ 		return sg_fd;
  	}
- 	return err;
-diff --git a/usr/tgtd.h b/usr/tgtd.h
-index 3323a9b..f17fa15 100644
---- a/usr/tgtd.h
-+++ b/usr/tgtd.h
-@@ -108,6 +108,7 @@ struct device_type_template {
- 	int (*lu_config)(struct scsi_lu *lu, char *args);
- 	int (*lu_online)(struct scsi_lu *lu);
- 	int (*lu_offline)(struct scsi_lu *lu);
-+	int (*cmd_passthrough)(int, struct scsi_cmd *);
  
- 	struct device_type_operations ops[256];
+-	err = init_sg_device(sg_fd);
++	if (bsg) {
++		cmd_complete = &bs_bsg_cmd_complete;
++		err = init_bsg_device(sg_fd);
++	} else {
++		cmd_complete = bs_sg_cmd_complete;
++		err = init_sg_device(sg_fd);
++	}
+ 	if (err) {
+ 		eprintf("Failed to initialize sg device %s\n", path);
+ 		return err;
+ 	}
  
-@@ -117,6 +118,7 @@ struct device_type_template {
- struct backingstore_template {
- 	const char *bs_name;
- 	int bs_datasize;
-+	int bs_passthrough;
- 	int (*bs_open)(struct scsi_lu *dev, char *path, int *fd, uint64_t *size);
- 	void (*bs_close)(struct scsi_lu *dev);
- 	int (*bs_init)(struct scsi_lu *dev);
-@@ -178,6 +180,17 @@ struct scsi_lu {
- 	 * Currently used by ssc, smc and mmc modules.
- 	 */
- 	void *xxc_p;
-+	/*
-+	 * Used internally for usr/target.c:target_cmd_perform() and with
-+	 * passthrough CMD processing with
-+	 * struct device_type_template->cmd_passthrough().
-+	 */
-+	int (*cmd_perform)(int, struct scsi_cmd *);
-+	/*
-+	 * Used internally for usr/target.c:__cmd_done() and with
-+	 * passthrough CMD processing with __cmd_done_passthrough()
-+	 */
-+	void (*cmd_done)(struct target *, struct scsi_cmd *);
+-	err = tgt_event_add(sg_fd, EPOLLIN, bs_sg_cmd_complete, NULL);
++	err = tgt_event_add(sg_fd, EPOLLIN, cmd_complete, NULL);
+ 	if (err) {
+ 		eprintf("Failed to add sg device event %s\n", path);
+ 		return err;
+@@ -302,6 +448,17 @@ static struct backingstore_template sg_bst = {
+ 	.bs_cmd_done		= bs_sg_cmd_done,
  };
  
- struct mgmt_req {
-@@ -250,7 +263,10 @@ extern void tgt_remove_sched_event(struct event_data *evt);
++static struct backingstore_template bsg_bst = {
++	.bs_name		= "bsg",
++	.bs_datasize		= 0,
++	.bs_passthrough		= 1,
++	.bs_init		= bs_sg_init,
++	.bs_open		= bs_sg_open,
++	.bs_close		= bs_sg_close,
++	.bs_cmd_submit		= bs_bsg_cmd_submit,
++	.bs_cmd_done		= bs_sg_cmd_done,
++};
++
+ static struct device_type_template sg_template = {
+ 	.type			= 0,
+ 	.lu_init		= bs_sg_lu_init,
+@@ -315,5 +472,6 @@ static struct device_type_template sg_template = {
+ __attribute__((constructor)) static void bs_sg_constructor(void)
+ {
+ 	register_backingstore_template(&sg_bst);
++	register_backingstore_template(&bsg_bst);
+ 	device_type_register(&sg_template);
+ }
+diff --git a/usr/scsi_cmnd.h b/usr/scsi_cmnd.h
+index 011f3e6..67a46c3 100644
+--- a/usr/scsi_cmnd.h
++++ b/usr/scsi_cmnd.h
+@@ -17,6 +17,9 @@ struct scsi_data_buffer {
+ 	uint64_t buffer;
+ };
  
- extern int tgt_event_modify(int fd, int events);
- extern int target_cmd_queue(int tid, struct scsi_cmd *cmd);
-+extern int target_cmd_perform(int tid, struct scsi_cmd *cmd);
-+extern int target_cmd_perform_passthrough(int tid, struct scsi_cmd *cmd);
- extern void target_cmd_done(struct scsi_cmd *cmd);
-+extern void __cmd_done_passthrough(struct target *target, struct scsi_cmd *cmd);
- struct scsi_cmd *target_cmd_lookup(int tid, uint64_t itn_id, uint64_t tag);
++#include <scsi/sg.h>
++#include <linux/bsg.h>
++
+ struct scsi_cmd {
+ 	struct target *c_target;
+ 	/* linked it_nexus->cmd_hash_list */
+@@ -31,6 +34,10 @@ struct scsi_cmd {
+ 	enum data_direction data_dir;
+ 	struct scsi_data_buffer in_sdb;
+ 	struct scsi_data_buffer out_sdb;
++	/* Used for bs_sg.c:bs_bs_cmd_submit() */
++	struct sg_iovec cmd_sg_iovec;
++	/* used for bs_sg.c:bs_bsg_cmd_submit() */
++	struct sg_io_v4 cmd_bsg_hdr;
  
- extern enum mgmt_req_result target_mgmt_request(int tid, uint64_t itn_id,
+ 	uint64_t cmd_itn_id;
+ 	uint64_t offset;
 -- 
 1.5.6.5
 
