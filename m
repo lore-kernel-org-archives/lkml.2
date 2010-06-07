@@ -1,118 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756255Ab0FGMVq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jun 2010 08:21:46 -0400
-Received: from mail-ew0-f223.google.com ([209.85.219.223]:47837 "EHLO
-	mail-ew0-f223.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751983Ab0FGMVo convert rfc822-to-8bit (ORCPT
+	id S1755399Ab0FGMWM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jun 2010 08:22:12 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:42334 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751983Ab0FGMWJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jun 2010 08:21:44 -0400
+	Mon, 7 Jun 2010 08:22:09 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=tj6rE2UcceijrHQIuW2piWlK4FCXInCGVLf0vpLJUn5IsJBRvJozt8XBoTqsCjEtdR
-         Z4b+IXDYaQr3BEg9VJrBzz8fVBscfOfZIBNpxP0Q7E6B1Yh3JB3TGyJI/yIKaszpl8sf
-         SGUUj4VALsTP6VjochS2OeuWFKvkBpenidC1w=
-MIME-Version: 1.0
-In-Reply-To: <4C0CBA5D.5000900@kernel.org>
-References: <AANLkTiktNufXK_pn6mP2-zyowAIbHlUy5TGu3AtpALv-@mail.gmail.com>
-	<20100603020006.GB19123@srcf.ucam.org>
-	<AANLkTikpv86r5BBPCEOHujpm8uCgY0DxghSKjBufBWiM@mail.gmail.com>
-	<4C08760B.8050002@gmail.com>
-	<AANLkTimFY5YQv8DC-zTQ1RF84rno6svvcyLzHGWL6HOk@mail.gmail.com>
-	<AANLkTimXcF1pafrSt8dMbUs59AjnqaRwpzDnPIPjdjsn@mail.gmail.com>
-	<AANLkTinZ7d3WWyO3m9A7GVnaTuSbn1G33ADFW6ixywcT@mail.gmail.com>
-	<AANLkTinIM8swHZTide7MAQsaYbWcFD90FrKUXE9NFG-5@mail.gmail.com>
-	<4C0CBA5D.5000900@kernel.org>
-Date: Mon, 7 Jun 2010 08:21:42 -0400
-Message-ID: <AANLkTilwtazg_T4cX2EMb2xterwV1lhXdqUe3Q1UcsDN@mail.gmail.com>
-Subject: Re: Hang during boot, bisected to commit 96d60303fd
-From: Marc Dionne <marc.c.dionne@gmail.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: Robert Hancock <hancockrwd@gmail.com>,
-       Matthew Garrett <mjg59@srcf.ucam.org>,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       linux-ide@vger.kernel.org, garzik@redhat.com
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=MsIURK2XgZ3oNVMrj2ncxXh4oDqaKyYWAWRG44wkyapDWpo1Qz1/CXIwZ6A0dyqTdL
+         amIAuT0esHizf+nAZWuc3ZCaSyP3fS9ircpWIbM+3ppbc6xepjy0z/nT6/KFmYRBcjGj
+         5JIjhCxHqz7GXjgJMNadfsmNIukg8ma3EUb40=
+Subject: Re: Virtual device and ARP table
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Christophe Jelger <Christophe.Jelger@unibas.ch>
+Cc: linux-kernel@vger.kernel.org, netdev <netdev@vger.kernel.org>
+In-Reply-To: <4C0CC810.7030501@unibas.ch>
+References: <4C0CC810.7030501@unibas.ch>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 07 Jun 2010 14:22:00 +0200
+Message-ID: <1275913320.2545.53.camel@edumazet-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 7, 2010 at 5:22 AM, Tejun Heo <tj@kernel.org> wrote:
+Le lundi 07 juin 2010 Ã  12:21 +0200, Christophe Jelger a Ã©crit :
 > Hello,
->
-> On 06/07/2010 06:34 AM, Robert Hancock wrote:
->> I'm thinking that the hardreset and device classification makes more
->> sense as a place to do this anyways, since that's the point where we
->> really know if there's a device connected or not.. Tejun, any
->> thoughts?
->
-> Heh, of course it doesn't work.  Device presence can't be reliably
-> determined by sampling status once like that.  We don't have all the
-> crap in libata-eh for nothing.  :-)
->
-> Marc, can you please try the following patch?
->
-> Thanks.
->
-> diff --git a/drivers/ata/libahci.c b/drivers/ata/libahci.c
-> index 1984a6e..261f86d 100644
-> --- a/drivers/ata/libahci.c
-> +++ b/drivers/ata/libahci.c
-> @@ -541,29 +541,11 @@ static int ahci_scr_write(struct ata_link *link, unsigned int sc_reg, u32 val)
->        return -EINVAL;
->  }
->
-> -static int ahci_is_device_present(void __iomem *port_mmio)
-> -{
-> -       u8 status = readl(port_mmio + PORT_TFDATA) & 0xff;
-> -
-> -       /* Make sure PxTFD.STS.BSY and PxTFD.STS.DRQ are 0 */
-> -       if (status & (ATA_BUSY | ATA_DRQ))
-> -               return 0;
-> -
-> -       /* Make sure PxSSTS.DET is 3h */
-> -       status = readl(port_mmio + PORT_SCR_STAT) & 0xf;
-> -       if (status != 3)
-> -               return 0;
-> -       return 1;
-> -}
-> -
->  void ahci_start_engine(struct ata_port *ap)
->  {
->        void __iomem *port_mmio = ahci_port_base(ap);
->        u32 tmp;
->
-> -       if (!ahci_is_device_present(port_mmio))
-> -               return;
-> -
->        /* start DMA */
->        tmp = readl(port_mmio + PORT_CMD);
->        tmp |= PORT_CMD_START;
-> @@ -1892,6 +1874,9 @@ static void ahci_error_handler(struct ata_port *ap)
->        }
->
->        sata_pmp_error_handler(ap);
-> +
-> +       if (!ata_dev_enabled(ap->link.device))
-> +               ahci_stop_engine(ap);
->  }
->
->  static void ahci_post_internal_cmd(struct ata_queued_cmd *qc)
->
+> 
+> I am currently "resurrecting" a Linux module (called LUNAR) which I 
+> co-developed in 2007 and I'm having a weird kernel crash. This code 
+> basically used to work fine up to 2.6.18 which was the latest version 
+> before we stopped our development. I quickly ported it to 2.6.{31,32}: 
+> it compiles fine and loads fine, but it crashes/hangs the kernel when 
+> it's really being used.
+> 
+> The module is a virtual device used for MANET routing: with the current 
+> version, it basically "captures" DNS requests sent to the virtual 
+> interface --> this triggers the sending of a fake DNS reply (see below) 
+> and the creation of an ARP table entry for the destination (the MANET 
+> route is built at the same time). Packets can then be sent to the 
+> destination.
+> 
+> The problem I'm having is that the kernel quickly hangs after I create a 
+> new ARP entry (actually only if it's being used). If the entry I create 
+> is set to NUD_PERMANENT, then everything works fine! I use 
+> __neigh_lookup_errno to lookup/create the entry and neigh_lookup to 
+> set/update the MAC address. Note that the ARP entry is created without 
+> problem, but typically even just doing a userspace "arp -a" command can 
+> crash the kernel (it also hangs the userspace command!). Doing "arp -na" 
+> usually does NOT crash the kernel!
+> 
+> I guess the problem comes from a combination of ARP + DNS 
+> lookups/replies. Note that my kernel module has its own internal fake 
+> DNS server which captures lookups and sends replies directly back to the 
+> stack. What is amazing: if the ARP entry I create is set to 
+> NUD_PERMANENT, then I don't get any crash (however I cannot develop my 
+> module with permanent ARP entries).
+> 
+> I'm wondering if there were any major changes to the neighbor and arp 
+> code (between 2.6.18 and 2.6.31) that are somehow causing this problem ?...
+> 
+> Any hint is very welcome.
+> 
+> thanks in advance,
+> Christophe
+> 
+> PS: I can easily reproduce the problem, and was trying to debug with 
+> qemu and gdb server but so fra no success to clearly identify the 
+> problem. Last point: it seems the kernel does not really "crash" but 
+> rather ends up in some unstable state and maybe in a loop.
 > --
-> tejun
 
-Hi Tejun,
+Hi Christophe
 
-With that patch the system boots normally.  Out of curiosity I also
-instrumented ahci_error_handler a bit, and the stop_engine case
-triggers once for the 6 unused ports, but doesn't trigger for the 2
-ports with devices (SSD and DVD), as expected.
+You should ask these kind of questions on netdev instead of lkml.
 
-Feel free to add a Tested-by if you submit it.
+And of course, post your patch, or send us a crystal ball ;)
 
-Thanks,
-Marc
+Yes, many things changed between 2.6.18 and 2.6.34
+
+
