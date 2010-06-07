@@ -1,66 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753160Ab0FGSV5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jun 2010 14:21:57 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:62022 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752863Ab0FGSV4 (ORCPT
+	id S1753015Ab0FGSXV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jun 2010 14:23:21 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:47664 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751389Ab0FGSXT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jun 2010 14:21:56 -0400
-Message-ID: <4C0D3853.60000@petalogix.com>
-Date: Mon, 07 Jun 2010 20:20:03 +0200
-From: Michal Simek <michal.simek@petalogix.com>
-Reply-To: michal.simek@petalogix.com
-User-Agent: Thunderbird 2.0.0.22 (X11/20090625)
+	Mon, 7 Jun 2010 14:23:19 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:date:message-id:subject:from:to:cc:content-type;
+        b=XwGAIuSwf+lYWfF5rsSdtUd2KXn8L8Way2rHzR2wwl3oYjoJgk8pngzag/vdi27Lvb
+         EVnTLFhzSYizDudqyBMKQSYlAmh/6/1oE9DIvbtrbvdZsEkoir0AG+jxfXeE1UthuvQC
+         m1Y1VHenwk0+xmNSrQNYDvv0n3gNGw9uoGqTA=
 MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: LKML <linux-kernel@vger.kernel.org>
-Subject: [GIT PULL] arch/microblaze fixes for 2.6.35-rc3 v2
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Date: Mon, 7 Jun 2010 14:23:17 -0400
+Message-ID: <AANLkTim06fRB-Kvm12v2umq8MxRxbcl3gdbNsiRTDmia@mail.gmail.com>
+Subject: 2.6.35-rc2-git1 - lib/idr.c:605 invoked rcu_dereference_check() 
+	without protection!
+From: Miles Lane <miles.lane@gmail.com>
+To: paulmck@linux.vnet.ibm.com
+Cc: Vivek Goyal <vgoyal@redhat.com>, Eric Paris <eparis@redhat.com>,
+       David Woodhouse <dwmw2@infradead.org>,
+       Lai Jiangshan <laijs@cn.fujitsu.com>, Ingo Molnar <mingo@elte.hu>,
+       Peter Zijlstra <peterz@infradead.org>,
+       LKML <linux-kernel@vger.kernel.org>, nauman@google.com,
+       eric.dumazet@gmail.com, netdev@vger.kernel.org,
+       Jens Axboe <axboe@kernel.dk>, Gui Jianfeng <guijianfeng@cn.fujitsu.com>,
+       Li Zefan <lizf@cn.fujitsu.com>,
+       Johannes Berg <johannes@sipsolutions.net>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
-
-here are only fixes for Microblaze. There is no any new features. 
-(flush_dcache_page patch fix problem on WB system)
-Just note: Some new patches broke Microblaze arch that's why I would 
-like to add at least these patches to your tree.
-
-Thanks,
-Michal
-
-
-The following changes since commit 386f40c86d6c8d5b717ef20620af1a750d0dacb4:
-   Linus Torvalds (1):
-         Revert "tty: fix a little bug in scrup, vt.c"
-
-are available in the git repository at:
-
-   git://git.monstr.eu/linux-2.6-microblaze.git next
-
-Michal Simek (7):
-       microblaze: Fix __copy_to/from_user_inatomic macros
-       microblaze: Sync noMMU and MMU setup_memory
-       microblaze: Fix comment for TLB
-       microblaze: Implement flush_dcache_page macro
-       microblaze: Enable NEED_SG_DMA_LENGTH
-       microblaze: Remove unused label
-       microblaze: Define ARCH_SLAB_MINALIGN
-
-  arch/microblaze/Kconfig                  |    3 +++
-  arch/microblaze/include/asm/cacheflush.h |   13 +++++++++----
-  arch/microblaze/include/asm/page.h       |    2 ++
-  arch/microblaze/include/asm/uaccess.h    |    4 ++--
-  arch/microblaze/kernel/misc.S            |    2 +-
-  arch/microblaze/mm/fault.c               |    1 -
-  arch/microblaze/mm/init.c                |    7 +------
-  7 files changed, 18 insertions(+), 14 deletions(-)
-
-
--- 
-Michal Simek, Ing. (M.Eng)
-PetaLogix - Linux Solutions for a Reconfigurable World
-w: www.petalogix.com p: +61-7-30090663,+42-0-721842854 f: +61-7-30090663
+[    2.677955] [ INFO: suspicious rcu_dereference_check() usage. ]
+[    2.679089] ---------------------------------------------------
+[    2.680276] lib/idr.c:605 invoked rcu_dereference_check() without protection!
+[    2.681499]
+[    2.681500] other info that might help us debug this:
+[    2.681501]
+[    2.685509]
+[    2.685510] rcu_scheduler_active = 1, debug_locks = 1
+[    2.688221] 1 lock held by swapper/1:
+[    2.689587]  #0:  (mtd_table_mutex){+.+...}, at:
+[<ffffffff812bea45>] register_mtd_user+0x1a/0x69
+[    2.691096]
+[    2.691098] stack backtrace:
+[    2.694059] Pid: 1, comm: swapper Not tainted 2.6.35-rc2-git1 #8
+[    2.695601] Call Trace:
+[    2.697243]  [<ffffffff81064e9c>] lockdep_rcu_dereference+0x9d/0xa5
+[    2.698868]  [<ffffffff811b9c86>] idr_get_next+0x60/0x124
+[    2.700556]  [<ffffffff812be779>] __mtd_next_device+0x1b/0x1d
+[    2.702238]  [<ffffffff812bea7c>] register_mtd_user+0x51/0x69
+[    2.703964]  [<ffffffff816cca45>] init_mtdchar+0xb3/0xd3
+[    2.705686]  [<ffffffff816cc992>] ? init_mtdchar+0x0/0xd3
+[    2.707470]  [<ffffffff810001ef>] do_one_initcall+0x59/0x14e
+[    2.709255]  [<ffffffff816a768a>] kernel_init+0x144/0x1ce
+[    2.711082]  [<ffffffff81003054>] kernel_thread_helper+0x4/0x10
+[    2.712862]  [<ffffffff813ca480>] ? restore_args+0x0/0x30
+[    2.714647]  [<ffffffff816a7546>] ? kernel_init+0x0/0x1ce
+[    2.716415]  [<ffffffff81003050>] ? kernel_thread_helper+0x0/0x10
