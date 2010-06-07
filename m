@@ -1,48 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752518Ab0FGQCf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jun 2010 12:02:35 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:20248 "EHLO
+	id S1752573Ab0FGQDX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jun 2010 12:03:23 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:21143 "EHLO
 	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751984Ab0FGQCe (ORCPT
-	<rfc822;<linux-kernel@vger.kernel.org>>);
-	Mon, 7 Jun 2010 12:02:34 -0400
-Date: Mon, 7 Jun 2010 12:01:33 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Andrew Morton <akpm@linux-foundation.org>, albert_herranz@yahoo.es,
-       fujita.tomonori@lab.ntt.co.jp, linux-kernel@vger.kernel.org,
-       jeremy@goop.org, iommu@lists.linux-foundation.org,
-       linux@arm.linux.org.uk, dwmw2@infradead.org, chrisw@sous-sol.org,
-       Ian.Campbell@eu.citrix.com
-Subject: Re: [PATCH] swiotlb-0.8.2^H3: seperation of physical/virtual
-	address translation and core memory allocation.
-Message-ID: <20100607160133.GE8487@phenom.dumpdata.com>
-References: <1275673955-30267-1-git-send-email-konrad.wilk@oracle.com> <20100604114250.b28f288a.akpm@linux-foundation.org> <20100604200604.GA17645@phenom.dumpdata.com> <20100605220727.4138e85f.sfr@canb.auug.org.au>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100605220727.4138e85f.sfr@canb.auug.org.au>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+	with ESMTP id S1752273Ab0FGQDV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Jun 2010 12:03:21 -0400
+Date: Mon, 7 Jun 2010 09:02:30 -0700
+From: Randy Dunlap <randy.dunlap@oracle.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>, linux-wireless@vger.kernel.org
+Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: linux-next: Tree for June 7 (iwlwifi)
+Message-Id: <20100607090230.deed8bd1.randy.dunlap@oracle.com>
+In-Reply-To: <20100607142034.c96c2509.sfr@canb.auug.org.au>
+References: <20100607142034.c96c2509.sfr@canb.auug.org.au>
+Organization: Oracle Linux Eng.
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 X-Auth-Type: Internal IP
 X-Source-IP: acsinet15.oracle.com [141.146.126.227]
-X-CT-RefId: str=0001.0A090201.4C0D17ED.0124:SCFMA922111,ss=1,fgs=0
+X-CT-RefId: str=0001.0A090208.4C0D1845.01CE:SCFMA922111,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > git://git.kernel.org/pub/scm/linux/kernel/git/konrad/swiotlb-2.6.git
-> > 
-> > The patches are in the MAIN branch (and also in swiotlb-0.8.3).
-> 
-> OK, I have added the master branch of that tree.  It will appear in
-> linux-next from Monday.
+On Mon, 7 Jun 2010 14:20:34 +1000 Stephen Rothwell wrote:
 
-Excellent. Thank you.
+> Hi all,
 > 
-> > They have the Tested-by, Signed-off-by, and Acked-by signatures.
-> 
-> Could you move the Signed-off-by etc lines to the bottom of the commit
-> message if that first commit, please?
+> Changes since 20100604:
 
-Done.
+
+2 different builds:
+
+drivers/net/wireless/iwlwifi/iwl-rx.c: In function 'iwl_accumulative_statistics':
+drivers/net/wireless/iwlwifi/iwl-rx.c:304: error: 'struct iwl_priv' has no member named 'accum_statistics'
+drivers/net/wireless/iwlwifi/iwl-rx.c:305: error: 'struct iwl_priv' has no member named 'delta_statistics'
+drivers/net/wireless/iwlwifi/iwl-rx.c:306: error: 'struct iwl_priv' has no member named 'max_delta'
+drivers/net/wireless/iwlwifi/iwl-rx.c:321: error: 'struct iwl_priv' has no member named 'accum_statistics'
+drivers/net/wireless/iwlwifi/iwl-rx.c:323: error: 'struct iwl_priv' has no member named 'accum_statistics'
+drivers/net/wireless/iwlwifi/iwl-rx.c:325: error: 'struct iwl_priv' has no member named 'accum_statistics'
+drivers/net/wireless/iwlwifi/iwl-rx.c:327: error: 'struct iwl_priv' has no member named 'accum_statistics'
+drivers/net/wireless/iwlwifi/iwl-rx.c:329: error: 'struct iwl_priv' has no member named 'accum_statistics'
+drivers/net/wireless/iwlwifi/iwl-rx.c:331: error: 'struct iwl_priv' has no member named 'accum_statistics'
+drivers/net/wireless/iwlwifi/iwl-rx.c: In function 'iwl_reply_statistics':
+drivers/net/wireless/iwlwifi/iwl-rx.c:484: error: 'struct iwl_priv' has no member named 'accum_statistics'
+drivers/net/wireless/iwlwifi/iwl-rx.c:486: error: 'struct iwl_priv' has no member named 'delta_statistics'
+drivers/net/wireless/iwlwifi/iwl-rx.c:488: error: 'struct iwl_priv' has no member named 'max_delta'
+
+
+--and--
+
+drivers/net/wireless/iwlwifi/iwl-agn-debugfs.c: In function 'iwl_ucode_rx_stats_read':
+drivers/net/wireless/iwlwifi/iwl-agn-debugfs.c:86: error: 'struct iwl_priv' has no member named 'accum_statistics'
+drivers/net/wireless/iwlwifi/iwl-agn-debugfs.c:87: error: 'struct iwl_priv' has no member named 'accum_statistics'
+drivers/net/wireless/iwlwifi/iwl-agn-debugfs.c:88: error: 'struct iwl_priv' has no member named 'accum_statistics'
+drivers/net/wireless/iwlwifi/iwl-agn-debugfs.c:89: error: 'struct iwl_priv' has no member named 'accum_statistics'
+drivers/net/wireless/iwlwifi/iwl-agn-debugfs.c:90: error: 'struct iwl_priv' has no member named 'delta_statistics'
+drivers/net/wireless/iwlwifi/iwl-agn-debugfs.c:91: error: 'struct iwl_priv' has no member named 'delta_statistics'
+drivers/net/wireless/iwlwifi/iwl-agn-debugfs.c:92: error: 'struct iwl_priv' has no member named 'delta_statistics'
+drivers/net/wireless/iwlwifi/iwl-agn-debugfs.c:93: error: 'struct iwl_priv' has no member named 'delta_statistics'
+drivers/net/wireless/iwlwifi/iwl-agn-debugfs.c:94: error: 'struct iwl_priv' has no member named 'max_delta'
+drivers/net/wireless/iwlwifi/iwl-agn-debugfs.c:95: error: 'struct iwl_priv' has no member named 'max_delta'
+drivers/net/wireless/iwlwifi/iwl-agn-debugfs.c:96: error: 'struct iwl_priv' has no member named 'max_delta'
+drivers/net/wireless/iwlwifi/iwl-agn-debugfs.c:97: error: 'struct iwl_priv' has no member named 'max_delta'
+drivers/net/wireless/iwlwifi/iwl-agn-debugfs.c: In function 'iwl_ucode_tx_stats_read':
+drivers/net/wireless/iwlwifi/iwl-agn-debugfs.c:564: error: 'struct iwl_priv' has no member named 'accum_statistics'
+drivers/net/wireless/iwlwifi/iwl-agn-debugfs.c:565: error: 'struct iwl_priv' has no member named 'delta_statistics'
+drivers/net/wireless/iwlwifi/iwl-agn-debugfs.c:566: error: 'struct iwl_priv' has no member named 'max_delta'
+drivers/net/wireless/iwlwifi/iwl-agn-debugfs.c: In function 'iwl_ucode_general_stats_read':
+drivers/net/wireless/iwlwifi/iwl-agn-debugfs.c:783: error: 'struct iwl_priv' has no member named 'accum_statistics'
+drivers/net/wireless/iwlwifi/iwl-agn-debugfs.c:784: error: 'struct iwl_priv' has no member named 'delta_statistics'
+drivers/net/wireless/iwlwifi/iwl-agn-debugfs.c:785: error: 'struct iwl_priv' has no member named 'max_delta'
+drivers/net/wireless/iwlwifi/iwl-agn-debugfs.c:786: error: 'struct iwl_priv' has no member named 'accum_statistics'
+drivers/net/wireless/iwlwifi/iwl-agn-debugfs.c:787: error: 'struct iwl_priv' has no member named 'delta_statistics'
+drivers/net/wireless/iwlwifi/iwl-agn-debugfs.c:788: error: 'struct iwl_priv' has no member named 'max_delta'
+drivers/net/wireless/iwlwifi/iwl-agn-debugfs.c:789: error: 'struct iwl_priv' has no member named 'accum_statistics'
+drivers/net/wireless/iwlwifi/iwl-agn-debugfs.c:790: error: 'struct iwl_priv' has no member named 'delta_statistics'
+drivers/net/wireless/iwlwifi/iwl-agn-debugfs.c:791: error: 'struct iwl_priv' has no member named 'max_delta'
+
+
+config files available if needed.
+
+---
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
