@@ -1,52 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756136Ab0FGDno (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Jun 2010 23:43:44 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:46777 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755399Ab0FGDnn (ORCPT
+	id S1756227Ab0FGDtR (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Jun 2010 23:49:17 -0400
+Received: from smtp103.sbc.mail.gq1.yahoo.com ([67.195.15.62]:39994 "HELO
+	smtp103.sbc.mail.gq1.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1756053Ab0FGDtP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Jun 2010 23:43:43 -0400
-Date: Sun, 6 Jun 2010 20:38:17 -0700 (PDT)
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Markus Trippelsdorf <markus@trippelsdorf.de>
-cc: Theodore Tso <tytso@MIT.EDU>, linux-kernel@vger.kernel.org,
-       linux-ext4@vger.kernel.org
-Subject: Re: ext4 2.6.35-rc2 regression (ext4: Make sure the MOVE_EXT ioctl
- can't overwrite append-only files)
-In-Reply-To: <20100606172339.GA1778@arch.tripp.de>
-Message-ID: <alpine.LFD.2.00.1006062036240.3515@i5.linux-foundation.org>
-References: <20100606081601.GA1807@arch.tripp.de> <DB34C7CA-53EC-47B0-AD31-4C729B983C11@mit.edu> <20100606115947.GA1783@arch.tripp.de> <20100606172339.GA1778@arch.tripp.de>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Sun, 6 Jun 2010 23:49:15 -0400
+X-Yahoo-SMTP: fzDSGlOswBCWnIOrNw7KwwK1j9PqyNbe5PtLKiS4dDU.UNl_t6bdEZu9tTLW
+X-YMail-OSG: ZzwuY1oVM1n6XYKF5WcTO1WnxoF5oLPdPRTv2xv9hY.E.7X7mNCa8MTp.5Jhnu7NnX6ofRcmE9yyHDY84bSxuov9q1IzapjlQUCTMKAYQam7huabkeapT7yoAacAPltC3jheliX7W3QgyHPN58.jGReByifY0k6NjlwcAyI6eVVxO_cfzNcmoFAkR43uK31ivsTyB74IQwADiRexj8txIb0Vlj_a1Qp82EzE3Ey6fH9S3jgLMYRHDtMK_.MYVe1ztWMZVd.gI1EX4iULdm3ErX4T8Ff8.AHr9CFJfHtWDLbNmWmP35zP3c6PwXakb7rQ.9HAGpopwIeDfdc6SwonKliI_BTxRX0o6TUfNx86foFWZg--
+X-Yahoo-Newman-Property: ymail-3
+From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+To: stgt-devel <stgt@vger.kernel.org>, linux-scsi <linux-scsi@vger.kernel.org>,
+       linux-kernel <linux-kernel@vger.kernel.org>,
+       FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
+       Mike Christie <michaelc@cs.wisc.edu>,
+       Boaz Harrosh <bharrosh@panasas.com>
+Cc: James Bottomley <James.Bottomley@suse.de>,
+       Douglas Gilbert <dgilbert@interlog.com>,
+       Nicholas Bellinger <nab@linux-iscsi.org>
+Subject: [PATCH 0/3] Add proper STGT <-> bs_sg passthrough v3
+Date: Sun,  6 Jun 2010 20:50:15 -0700
+Message-Id: <1275882615-5354-1-git-send-email-nab@linux-iscsi.org>
+X-Mailer: git-send-email 1.5.6.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Nicholas Bellinger <nab@linux-iscsi.org>
 
+Greeting STGT folks,
 
-On Sun, 6 Jun 2010, Markus Trippelsdorf wrote:
+This is the third round of patches for adding proper LUN passthrough support into STGT
+using struct scsi_lu->cmd_perform() and struct scsi_lu->cmd_done() callers with existing
+SG_IO and the new BSG v4 backstores.
 
-> On Sun, Jun 06, 2010 at 01:59:47PM +0200, Markus Trippelsdorf wrote:
-> > On Sun, Jun 06, 2010 at 07:45:48AM -0400, Theodore Tso wrote:
-> > > 
-> > > On Jun 6, 2010, at 4:16 AM, Markus Trippelsdorf wrote:
-> > > 
-> > > > Commit 1f5a81e41f8b1a782c68d3843e9ec1bfaadf7d72
-> > > > "ext4: Make sure the MOVE_EXT ioctl can't overwrite append-only files"
-> > > > causes the following kernel BUG on my machine (x86_64):
-> > > > 
-> > > > BUG: Bad page map in process mpd  pte:720072000000000 pmd:11d2f7067
+Following Tomo-san's input, the changelog between v2 -> v3 is as follows:
 
-This is the same "VGA pattern": 07200720 is two spaces. 
+1) Add struct device_type_template sg_template for SG_IO and BSG in usr/bs_sg.c instead
+   of making changes to usr/sbc.c
 
-It causes lots of trouble, too bad it made it into -rc2. It has nothing to 
-do with ext4.
+2) Add struct backingstore_template->bs_passthrough member of type int for SG_IO and BSG.
 
-And I bet it gets fix by the same vt.c patch that apparently fixed some 
-KMS issues. Look on lkml for a "poison overwritten" subject line.
+3) In usr/target.c:tgt_device_create() pass bst->bs_passthrough into device_type_lookup()
+   and for passthrough case use the new device_type_passthrough() to locate
+   struct device_type_template sg_template.
 
-Or just revert 962400e8fd29981a7b166e463dd143b6ac6a3e76.
+4) Remove unnecessary post_cmd_done() from usr/target.c:__cmd_done_passthrough()
 
-		Linus
+This patch series has been tested with STGT/iSCSI using 'sg'+'bsg' and 'rdwr' for non
+passthrough mode backstores into TCM_Loop LLD emulated iSCSI target ports.
+
+Best,
+
+Signed-off-by: Nicholas A. Bellinger <nab@linux-iscsi.org
+
+Nicholas Bellinger (3):
+  [tgt]: Add proper STGT LUN backstore passthrough support (rev 3)
+  [tgt]: Add bs_sg struct device_type_template sg_template and struct
+    backingstore_template->bs_init()
+  [tgt]: Add BSG v4 backstore support to usr/bs_sg.c
+
+ usr/bs_sg.c     |  247 ++++++++++++++++++++++++++++++++++++++++++++++++++++--
+ usr/scsi_cmnd.h |    7 ++
+ usr/target.c    |  113 +++++++++++++++++++++++---
+ usr/tgtd.h      |   16 ++++
+ 4 files changed, 362 insertions(+), 21 deletions(-)
+
