@@ -1,61 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753518Ab0FGVJW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jun 2010 17:09:22 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:54046 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752871Ab0FGVJV (ORCPT
+	id S1753695Ab0FGVJb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jun 2010 17:09:31 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:53366 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753117Ab0FGVJW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jun 2010 17:09:21 -0400
-Date: Mon, 7 Jun 2010 14:03:46 -0700 (PDT)
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Dave Airlie <airlied@gmail.com>
-cc: Dave Airlie <airlied@linux.ie>, dri-devel@lists.freedesktop.org,
-       linux-kernel@vger.kernel.org
-Subject: Re: [git pull] drm fixes
-In-Reply-To: <AANLkTinDSMqlwOsNfX-K2vDN9HeQL19mtXEDAp8mqVjz@mail.gmail.com>
-Message-ID: <alpine.LFD.2.00.1006071352510.4506@i5.linux-foundation.org>
-References: <alpine.DEB.2.00.1006070404510.29029@skynet.skynet.ie> <alpine.LFD.2.00.1006071057300.3515@i5.linux-foundation.org> <AANLkTimSFtaDzUPDEq4Z2J4O5sFG4vDkFHqs1eA1wG44@mail.gmail.com> <AANLkTinDSMqlwOsNfX-K2vDN9HeQL19mtXEDAp8mqVjz@mail.gmail.com>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	Mon, 7 Jun 2010 17:09:22 -0400
+Date: Mon, 7 Jun 2010 17:09:21 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+cc: "H. Peter Anvin" <hpa@zytor.com>, Ondrej Zary <linux@rainbow-software.org>,
+       Linux-pm mailing list <linux-pm@lists.linux-foundation.org>,
+       Kernel development list <linux-kernel@vger.kernel.org>,
+       Len Brown <len.brown@intel.com>, Pavel Machek <pavel@ucw.cz>
+Subject: Re: [PATCH] [RFC] Save/restore MISC_ENABLE register
+In-Reply-To: <201006072305.54829.rjw@sisk.pl>
+Message-ID: <Pine.LNX.4.44L0.1006071708040.18836-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, 7 Jun 2010, Rafael J. Wysocki wrote:
 
-
-On Tue, 8 Jun 2010, Dave Airlie wrote:
+> On Monday 07 June 2010, H. Peter Anvin wrote:
+> > On 06/07/2010 11:51 AM, Ondrej Zary wrote:
+> > > 
+> > > Something like this?
+> > > 
+> > > Save/restore MISC_ENABLE register on suspend/resume.
+> > > This fixes OOPS (invalid opcode) on resume from STR on Asus P4P800-VM, which
+> > > wakes up with MWAIT disabled.
+> > > 
+> > > Signed-off-by: Ondrej Zary <linux@rainbow-software.org>
+> > > 
+> > 
+> > Yes, that's a lot better.
+> > 
+> > I presume you have tested it.  Rafael, do you want to take this or should I?
 > 
-> Oh the one where I said to the reporter, I've reproduced this, and
-> will fix it tomorrow when I have proper time and access to my test
-> machine?
-> 
-> I didn't think writing a fix in the 5 mins before I left the test
-> machine and sending it you was acceptable, again can you maintain some
-> semblance of consistency across maintainers/releases?
+> I can take it.  Is it OK to add your ACK?
 
-No, no. I really didn't imply that you should hurry and not be careful. I 
-was just unhappy about the mixing of non-regression fixes with the 
-regression fixes.
+You might in addition want to note that this patch fixes Bugzilla 
+#15385.
 
-> Like I'm happy if you really enforce this no features idea, I'd be
-> really happy if you did it every release since it makes it a lot
-> easier to push back to submaintainers if you can point at Linus not
-> pulling features from people.
+Alan Stern
 
-I already had another person state their happiness with me pushing back, 
-and while I had my reasons for doing it this particular release, I do know 
-that I've been letting things slide wrt the merge window a bit too much.
-
-So let's see how the 2.6.35 release cycle ends up looking when all is said 
-and done. If pushing back harder ends up actually making things easier and 
-the release cycle ends up working better as a result, I'm certainly very 
-open to just being hardnosed in general.
-
-I suspect it won't even be very painful if people just get used to it. And 
-if it ends up really helping sub-maintainers ("I can't do that, because 
-Linus wouldn't pull the result anyway"), then that would be a really good 
-reason for me to be rather stricter about the rules.
-
-			Linus
