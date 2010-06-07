@@ -1,81 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932600Ab0FGIRL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jun 2010 04:17:11 -0400
-Received: from elasmtp-dupuy.atl.sa.earthlink.net ([209.86.89.62]:56871 "EHLO
-	elasmtp-dupuy.atl.sa.earthlink.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932445Ab0FGIRJ convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jun 2010 04:17:09 -0400
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=dk20050327; d=earthlink.net;
-  b=USCg2Bhjk52PspP2xZ2Hv9Cq6SJmA0aZWYN0/D0rqXbVOFZCiP+Z5asHfrbMrpEO;
-  h=Received:Subject:Mime-Version:Content-Type:From:In-Reply-To:Date:Cc:Content-Transfer-Encoding:Message-Id:References:To:X-Mailer:X-ELNK-Trace:X-Originating-IP;
-Subject: Re: [RFC PATCH v7 01/19] Add a new structure for skb buffer from external.
-Mime-Version: 1.0 (Apple Message framework v1078)
-Content-Type: text/plain; charset=us-ascii
-From: Mitchell Erblich <erblichs@earthlink.net>
-In-Reply-To: <87pr03gu1c.fsf@basil.nowhere.org>
-Date: Mon, 7 Jun 2010 01:17:02 -0700
-Cc: Stephen Hemminger <shemminger@vyatta.com>, xiaohui.xin@intel.com,
-       netdev@vger.kernel.org, kvm@vger.kernel.org,
-       linux-kernel@vger.kernel.org, mst@redhat.com, mingo@elte.hu,
-       davem@davemloft.net, herbert@gondor.hengli.com.au,
-       jdike@linux.intel.com
-Content-Transfer-Encoding: 8BIT
-Message-Id: <40119F5E-A745-4C50-8053-D5A701266AD5@earthlink.net>
-References: <1275732899-5423-1-git-send-email-xiaohui.xin@intel.com> <20100606161348.427822fb@nehalam> <87pr03gu1c.fsf@basil.nowhere.org>
-To: Andi Kleen <andi@firstfloor.org>
-X-Mailer: Apple Mail (2.1078)
-X-ELNK-Trace: 074f60c55517ea841aa676d7e74259b7b3291a7d08dfec791667d7d306784d9e723f07d9cd48c714350badd9bab72f9c350badd9bab72f9c350badd9bab72f9c
-X-Originating-IP: 71.202.111.27
+	id S932596Ab0FGI1Z (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jun 2010 04:27:25 -0400
+Received: from smtp127.sbc.mail.sp1.yahoo.com ([69.147.65.186]:26322 "HELO
+	smtp127.sbc.mail.sp1.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1756462Ab0FGI1Y (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Jun 2010 04:27:24 -0400
+X-Yahoo-SMTP: fzDSGlOswBCWnIOrNw7KwwK1j9PqyNbe5PtLKiS4dDU.UNl_t6bdEZu9tTLW
+X-YMail-OSG: AY5eGlIVM1mjzDGYJDz6tlxPjBYW3OyR3WjH4Z_5Edfe0T4y44tveIDS.SNNwzt.eEzyL0i_88AIsNTyJkiP56qIiesjRrj6q3elGaVGo6Ll4.CgwWL3A6NFlrBvGPodVSPWen9g8pnmoCe0xVEuuUa0OpWb45s3sM6bY02KfGwxJFkuHM45gi8xbfb4jBQOO_zf63OdiU0PIJLp2UhRXeRey4Nh3e6JnECzKFbxH1_7lWos8XMrmBG0Tpbx6mEwWRhsOpWo0nA3G5n9TkW6OaSqH2Qnjs9TEDsHA3C_A4j1wpISPhXF3ldEcFYX42xrZSszoFvSyi5mRUyc6S3reKkP
+X-Yahoo-Newman-Property: ymail-3
+Subject: Re: [PATCH 0/3] Add proper STGT <-> bs_sg passthrough v3
+From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+To: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+Cc: stgt@vger.kernel.org, linux-scsi@vger.kernel.org,
+       linux-kernel@vger.kernel.org, michaelc@cs.wisc.edu,
+       bharrosh@panasas.com, James.Bottomley@suse.de, dgilbert@interlog.com
+In-Reply-To: <20100607154432Y.fujita.tomonori@lab.ntt.co.jp>
+References: <1275882615-5354-1-git-send-email-nab@linux-iscsi.org>
+	 <20100607154432Y.fujita.tomonori@lab.ntt.co.jp>
+Content-Type: text/plain
+Date: Mon, 07 Jun 2010 01:27:16 -0700
+Message-Id: <1275899236.26888.40.camel@haakon2.linux-iscsi.org>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.22.3.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-On Jun 7, 2010, at 12:51 AM, Andi Kleen wrote:
-
-> Stephen Hemminger <shemminger@vyatta.com> writes:
+On Mon, 2010-06-07 at 15:45 +0900, FUJITA Tomonori wrote:
+> On Sun,  6 Jun 2010 20:50:15 -0700
+> "Nicholas A. Bellinger" <nab@linux-iscsi.org> wrote:
 > 
->> Still not sure this is a good idea for a couple of reasons:
->> 
->> 1. We already have lots of special cases with skb's (frags and fraglist),
->>   and skb's travel through a lot of different parts of the kernel.  So any
->>   new change like this creates lots of exposed points for new bugs. Look
->>   at cases like MD5 TCP and netfilter, and forwarding these SKB's to ipsec
->>   and ppp and ...
->> 
->> 2. SKB's can have infinite lifetime in the kernel. If these buffers come from
->>   a fixed size pool in an external device, they can easily all get tied up
->>   if you have a slow listener. What happens then?
+> > From: Nicholas Bellinger <nab@linux-iscsi.org>
+> > 
+> > Greeting STGT folks,
+> > 
+> > This is the third round of patches for adding proper LUN passthrough support into STGT
+> > using struct scsi_lu->cmd_perform() and struct scsi_lu->cmd_done() callers with existing
+> > SG_IO and the new BSG v4 backstores.
+> > 
+> > Following Tomo-san's input, the changelog between v2 -> v3 is as follows:
+> > 
+> > 1) Add struct device_type_template sg_template for SG_IO and BSG in usr/bs_sg.c instead
+> >    of making changes to usr/sbc.c
+> > 
+> > 2) Add struct backingstore_template->bs_passthrough member of type int for SG_IO and BSG.
+> > 
+> > 3) In usr/target.c:tgt_device_create() pass bst->bs_passthrough into device_type_lookup()
+> >    and for passthrough case use the new device_type_passthrough() to locate
+> >    struct device_type_template sg_template.
+> > 
+> > 4) Remove unnecessary post_cmd_done() from usr/target.c:__cmd_done_passthrough()
+> > 
+> > This patch series has been tested with STGT/iSCSI using 'sg'+'bsg' and 'rdwr' for non
+> > passthrough mode backstores into TCM_Loop LLD emulated iSCSI target ports.
+> > 
+> > Best,
+> > 
+> > Signed-off-by: Nicholas A. Bellinger <nab@linux-iscsi.org
+> > 
+> > Nicholas Bellinger (3):
+> >   [tgt]: Add proper STGT LUN backstore passthrough support (rev 3)
+> >   [tgt]: Add bs_sg struct device_type_template sg_template and struct
+> >     backingstore_template->bs_init()
+> >   [tgt]: Add BSG v4 backstore support to usr/bs_sg.c
+> > 
+> >  usr/bs_sg.c     |  247 ++++++++++++++++++++++++++++++++++++++++++++++++++++--
+> >  usr/scsi_cmnd.h |    7 ++
+> >  usr/target.c    |  113 +++++++++++++++++++++++---
+> >  usr/tgtd.h      |   16 ++++
+> >  4 files changed, 362 insertions(+), 21 deletions(-)
 > 
-> 3. If they come from an internal pool what happens when the kernel runs 
-> low on memory? How is that pool balanced against other kernel
-> memory users?
+> The first and second patches Look fine overall. I have some comments
+> and wrote some cleanup patches.
 > 
-> -Andi
+> I've put the first two patches with my cleanups:
 > 
-> -- 
-> ak@linux.intel.com -- Speaking for myself only.
+> git://git.kernel.org/pub/scm/linux/kernel/git/tomo/tgt.git pass
+> 
+> Can you confirm that it works for you? Then I can merge them into
+> master.
 
-In general,
+The pass branch works fine using '-E sg -Y pt' for SG_IO backstore <->
+fabric LUN assocation with TCM_Loop LLD Target Ports.  Thanks for
+cleaning things up to use TYPE_PT btw, I should have asked about that
+earlier. ;)
 
-When an internal pool is created/used, their SHOULD be a reason.
-Maybe, to keep allocation latency to a min, OR ...
+> 
+> Let's leave bsg support alone and focus on the sg support for now.
+> --
 
-Now IMO, 
+Ok, I just fixed some minor breakage and applied patch 3 on top of
+tgt.git/pass in my local tree and everything appears to work with
+'-E bsg -Y pt'.
 
-internal pool objects should have a ref count and
-if that count is 0, then under memory pressure and/or num 
-of objects are above a high water mark, then they are freed,
+Please let me know if you have any other comments on the BSG bits or if
+you would like me to send along a updated patch 3 seperately.
 
-OR if there is a last reference age field, then the object is to be 
-cleaned if dirty, then freed,  
+Thanks Tomo!
 
-Else, the pool is allowed to grow if the number of objects in the
-pool is below a set max (max COULD equal Infinity).
-
+--nab
 
 
-Mitchell Erblich
