@@ -1,62 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932501Ab0FGLiU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jun 2010 07:38:20 -0400
-Received: from smtp.ispras.ru ([83.149.198.201]:42196 "EHLO smtp.ispras.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756453Ab0FGLiS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jun 2010 07:38:18 -0400
-X-Greylist: delayed 1576 seconds by postgrey-1.27 at vger.kernel.org; Mon, 07 Jun 2010 07:38:18 EDT
-From: Alexander Strakh <strakh@ispras.ru>
-Organization: ISP RAS
-To: Philip Blundell <philb@gnu.org>
-Subject: BUG: double spinlock in "drivers/net/3c505.c"
-Date: Mon, 7 Jun 2010 15:17:28 +0400
-User-Agent: KMail/1.12.2 (Linux/2.6.31.5-0.1-desktop; KDE/4.3.1; x86_64; ; )
-Cc: Craig Southeren <craigs@ineluki.apana.org.au>,
-       Andrew Tridgell <tridge@web.rsise.anu.edu.au>,
-       Alan Cox <Alan.Cox@linux.org>, netdev@vger.kernel.org,
-       linux-kernel@vger.kernel.org
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="us-ascii"
+	id S932723Ab0FGLit (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jun 2010 07:38:49 -0400
+Received: from [18.85.46.34] ([18.85.46.34]:45169 "EHLO bombadil.infradead.org"
+	rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S932274Ab0FGLis (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Jun 2010 07:38:48 -0400
+Subject: Re: [PATCH 16/28] sh: Preemptible mmu_gather
+From: Peter Zijlstra <peterz@infradead.org>
+To: Andrea Arcangeli <aarcange@redhat.com>
+Cc: Avi Kivity <avi@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+       Rik van Riel <riel@redhat.com>, Ingo Molnar <mingo@elte.hu>,
+       akpm@linux-foundation.org,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
+       Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+       David Miller <davem@davemloft.net>,
+       Hugh Dickins <hugh.dickins@tiscali.co.uk>, Mel Gorman <mel@csn.ul.ie>,
+       Nick Piggin <npiggin@suse.de>,
+       "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+       Paul Mundt <lethal@linux-sh.org>
+In-Reply-To: <20100607111407.860340332@chello.nl>
+References: <20100607110654.606530953@chello.nl>
+	 <20100607111407.860340332@chello.nl>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 07 Jun 2010 13:38:39 +0200
+Message-ID: <1275910719.1645.560.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
-Message-Id: <201006071517.28744.strakh@ispras.ru>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-	KERNEL_VERSION: 2.6.35-rc1
-        SUBJECT: duble spinlock  in function elp_start_xmit
-        SUBSCRIBE:
-        In driver drivers/net/3c505.c in function elp_start_xmit:
+On Mon, 2010-06-07 at 13:07 +0200, Peter Zijlstra wrote:
+> Fix up the arm mmu_gahter code to conform to the new API.
+> 
+urhm,. copy/paste gone wild, clearly that's the SH code for this
+patch ;-)
 
-1. In line 1075 we have first spinlock. In the next line we called 
-check_3c505_dma:
-
-1070 static netdev_tx_t elp_start_xmit(struct sk_buff *skb, struct net_device 
-*dev)
-1071 {
-1072         unsigned long flags;
-1073         elp_device *adapter = netdev_priv(dev);
-1074
-1075         spin_lock_irqsave(&adapter->lock, flags);
-1076         check_3c505_dma(dev);
-
-2. In function check_3c505_dma we have second spinloock at line 301.
-
- 293 static inline void check_3c505_dma(struct net_device *dev)
- 294 {
- 295         elp_device *adapter = netdev_priv(dev);
- 296         if (adapter->dmaing && time_after(jiffies, adapter-
->current_dma.start_time + 10)) {
- 297                 unsigned long flags, f;
- 298                 pr_err("%s: DMA %s timed out, %d bytes left\n", dev-
->name,
- 299                         adapter->current_dma.direction ? "download" : 
-"upload",
- 300                         get_dma_residue(dev->dma));
- 301                 spin_lock_irqsave(&adapter->lock, flags);
-
-
-Found by Linux Device Drivers Verification Project (Svace Detector)
