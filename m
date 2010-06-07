@@ -1,54 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755305Ab0FGM2q (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jun 2010 08:28:46 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:32988 "EHLO
-	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751699Ab0FGM2p (ORCPT
+	id S1751400Ab0FGMbk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jun 2010 08:31:40 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:60388 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750709Ab0FGMbj convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jun 2010 08:28:45 -0400
-Date: Mon, 7 Jun 2010 13:28:41 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: sonic zhang <sonic.adi@gmail.com>
-Cc: Liam Girdwood <lrg@slimlogic.co.uk>,
-       Linux Kernel <linux-kernel@vger.kernel.org>,
-       uclinux-dist-devel <uclinux-dist-devel@blackfin.uclinux.org>
-Subject: Re: [PATCH v6] regulator: new drivers for AD5398 and AD5821
-Message-ID: <20100607122840.GA13287@rakim.wolfsonmicro.main>
-References: <1275626446.1515.5.camel@eight.analog.com>
+	Mon, 7 Jun 2010 08:31:39 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:subject:date:user-agent:cc:references:in-reply-to
+         :mime-version:content-type:content-transfer-encoding:message-id;
+        b=rgCkVGMItxAnlFYaQooVi8i/Ldvx7EFTDoHa4W7LKIJqv/PvQ9ky6y7zpY/HErVBJ0
+         vfTleT1SI/7cETd0lEsoipuoDWYcV6osrDaLZQb8nANEn7Bxz2qhs73NXAQBMAO0Hctq
+         zH3QNhFFVlj+na+NtJCScj+Yyz583M0O2545o=
+From: Eric Lacombe <goretux@gmail.com>
+To: Zhenyu Wang <zhenyuw@linux.intel.com>, Len Brown <lenb@kernel.org>,
+       Dave Airlie <airlied@linux.ie>
+Subject: Re: [BUG] ACPI/dynamic-hybrid-graphics (?) on Vaio VPCZ11 - screen does not light up on resume [was: Re: Intel Arrandale IGP - screen does not light up on resume]
+Date: Mon, 7 Jun 2010 14:31:33 +0200
+User-Agent: KMail/1.13.3 (Linux/2.6.32-22-generic; KDE/4.4.4; x86_64; ; )
+Cc: linux-kernel@vger.kernel.org
+References: <201005310142.40209.goretux@gmail.com> <201006050013.17653.goretux@gmail.com>
+In-Reply-To: <201006050013.17653.goretux@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1275626446.1515.5.camel@eight.analog.com>
-X-Cookie: Warp 7 -- It's a law we can live with.
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 8BIT
+Message-Id: <201006071431.33789.goretux@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 04, 2010 at 12:40:46PM +0800, sonic zhang wrote:
+I find a way to light up the screen of my laptop after resume (but the solution 
+is not really satisfactory) :
+When the resume step seems complete, I plug an auxiliary monitor through the 
+VGA connector, and the laptop screen light up immediately.
 
-> The AD5398 and AD5821 are single 10-bit DAC with 120 mA output current
-> sink capability. They feature an internal reference and operates from
-> a single 2.7 V to 5.5 V supply.
+Any idea on the source of this problem ? and how to resolve it ?
 
-> This driver supports both the AD5398 and the AD5821.  It adapts into the
-> voltage and current framework.
+Thanks in advance for your response.
 
-> Signed-off-by: Sonic Zhang <sonic.zhang@analog.com>
-> Signed-off-by: Mike Frysinger <vapier@gentoo.org>
+	Eric
 
-Acked-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
-
-but
-
-> +static int __init ad5398_init(void)
-> +{
-> +	return i2c_add_driver(&ad5398_driver);
-> +}
-> +module_init(ad5398_init);
-
-at least some systems are likely to want this to be subsys_initcall() to
-make sure the regulator is available prior to the consumers.  Please
-send an incremental change for this rather than repostnig the full
-thing.
+Le samedi 5 juin 2010 00:13:17 Eric Lacombe, vous avez écrit :
+> Hi, (the introduction is at the end of this one, it comes from a previous
+> mail sent to Zhenyu Wang)
+> 
+> I was thinking that it could come from bogus ACPI tables.
+> 
+> Someone said to me (from sony-vaio-z-series@lists.launchpad.net) that with
+> a patched BIOS (that someone does and that I don't really want to test)
+> that allows to access a more advanced menu from my laptop, it will allows
+> to have the switch button (that switches between nvidia chipset and Intel
+> IGP) behave statically and not dynamically as it does now.
+> And it seems that with its laptop he was able to resume correctly from the
+> nvidia chipset.
+> 
+> I added Dave Airlie, as I know he played with hybrid-graphics (by the way
+> switcheroo make crashed my laptop)
+> 
+> I could send to you my DSDT if it could give you some clues on what screwed
+> things up. Just ask to me.
+> 
+> If someone has any idea, I could do some tests, try some patchs ?
+> And as always feel free to ask me more information if you need.
+> 
+> Best regards,
+> 
+> 	Eric
+> 
+> Le lundi 31 mai 2010 01:42:39, Eric Lacombe a écrit :
+> > Hi,
+> > 
+> > I've got a problem with my laptop (powered by i7 Arrandale, it's a Sony
+> > Vaio Z11Z9E), when I resume from "suspend to ram" my screen does not
+> > light up. X uses the Intel IGP.
+> > Maybe it is an issue with the driver of the IGP of the Core i7 Arrandale?
+> > 
+> > I currently use Linux 2.6.34, and have tested 2.6.33 and 2.6.32 (I see on
+> > google that there were some problems about Intel IGP and blackscreen. I
+> > was hit by them too at that time)
+> > 
+> > If you have any suggestions or if you want me to test any patch, I would
+> > be glad to do so.
+> > Feel free to ask me any information I could provide to you about this
+> > problem.
+> > 
+> > Best regards,
+> > 
+> > 	Eric
