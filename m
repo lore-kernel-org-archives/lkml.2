@@ -1,97 +1,194 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754650Ab0FGBi6 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Jun 2010 21:38:58 -0400
-Received: from mail-ww0-f46.google.com ([74.125.82.46]:64473 "EHLO
-	mail-ww0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752354Ab0FGBi5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Jun 2010 21:38:57 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=ldmfEBT8fb43WnhcvJJYkh/sS4z7yty8p9oZ2C07bIS34JjJCdU2TgMAMKNZIZ59n4
-         55rBZlS5qg76cnXoGBBe1kWccHEdNIuXqEkCP2sBIyLVJzdS6ddEW7A8/hog9p5ym1R1
-         9w6zhHqw1E+F773oXVHH7c0Cb1cXYMY6UjWA0=
-Date: Mon, 7 Jun 2010 03:38:51 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>
-Cc: Paul Mackerras <paulus@samba.org>, LKML <linux-kernel@vger.kernel.org>,
-       Arnaldo Carvalho de Melo <acme@redhat.com>,
-       Stephane Eranian <eranian@google.com>
-Subject: Re: [PATCH 2/4] perf: Add exclude_task perf event attribute
-Message-ID: <20100607013848.GA11837@nowhere>
-References: <1274450715-23955-1-git-send-regression-fweisbec@gmail.com> <1274450715-23955-3-git-send-regression-fweisbec@gmail.com> <20100525014323.GC30395@drongo> <1274770688.5882.168.camel@twins>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1274770688.5882.168.camel@twins>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1755088Ab0FGBlp (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Jun 2010 21:41:45 -0400
+Received: from usul.saidi.cx ([204.11.33.34]:54043 "EHLO usul.overt.org"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1754084Ab0FGBln (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 6 Jun 2010 21:41:43 -0400
+Date: Sun, 6 Jun 2010 18:41:39 -0700
+From: Philip Langdale <philipl@overt.org>
+To: Maxim Levitsky <maximlevitsky@gmail.com>
+Cc: linux-mmc@vger.kernel.org, linux-kernel <linux-kernel@vger.kernel.org>,
+       Andrew de Quincey <adq_dvb@lidskialf.net>
+Subject: Re: [PATCH 1/2] mmc: make sdhci work with ricoh mmc controller
+Message-ID: <20100606184139.5505d2a5@fido5>
+In-Reply-To: <1275871052.24091.7.camel@maxim-laptop>
+References: <1275859475.3151.4.camel@maxim-laptop>
+	<1275859731-2898-1-git-send-email-maximlevitsky@gmail.com>
+	<b99ba230e4a7f8b2174d7f52f1e7324c@localhost>
+	<1275871052.24091.7.camel@maxim-laptop>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-SA-Do-Not-RunX1: Yes
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 25, 2010 at 08:58:08AM +0200, Peter Zijlstra wrote:
-> On Tue, 2010-05-25 at 11:43 +1000, Paul Mackerras wrote:
-> > On Fri, May 21, 2010 at 04:05:13PM +0200, Frederic Weisbecker wrote:
-> > 
-> > > Excluding is useful when you want to trace only hard and softirqs.
+On Mon, 07 Jun 2010 03:37:32 +0300
+Maxim Levitsky <maximlevitsky@gmail.com> wrote:
+
+> On Sun, 2010-06-06 at 19:11 -0400, Philip Langdale wrote: 
+> > On Mon,  7 Jun 2010 00:28:50 +0300, Maxim Levitsky
+> > <maximlevitsky@gmail.com> wrote:
+> > > The current way of disabling it is not well tested by vendor
+> > > and has all kinds of bugs that show up on resume from ram/disk.
 > > > 
-> > > For this we use a new generic perf_exclude_event() (the previous
-> > > one beeing turned into perf_exclude_swevent) to which you can pass
-> > > the preemption offset to which your events trigger.
+> > > Old way of disabling is still supported by
+> > > continuing to use CONFIG_MMC_RICOH_MMC.
 > > > 
-> > > Computing preempt_count() - offset gives us the preempt_count() of
-> > > the context that the event has interrupted, on top of which we
-> > > can filter the non-irq contexts.
+> > > Based on
+> > > 'http://list.drzeus.cx/pipermail/sdhci-devel/2007-December/002085.html'
+> > > Most of the credit for this goes to Andrew de Quincey
+> > > 
+> > > 
+> > > Signed-off-by: Maxim Levitsky <maximlevitsky@gmail.com>
+> > > CC: Andrew de Quincey <adq_dvb@lidskialf.net>
+> > > CC: linux-mmc@vger.kernel.org <linux-mmc@vger.kernel.org>
 > > 
-> > How does this work for hardware events when we are sampling and
-> > getting an interrupt every N events?  It seems like the hardware is
-> > still counting all events and interrupting every N events, but we are
-> > only recording a sample if the interrupt occurred in the context we
-> > want.  In other words the context of the Nth event is considered to be
-> > the context for the N-1 events preceding that, which seems a pretty
-> > poor approximation.
+> > ACK with one change to add a #define for the device ID.
+> I am not sure about this.
+> When I submitted a driver for xD part I was told that unless device is
+> shared by several pieces of code, its not ok to add it to pci_ids.c.
+> The device is I was told can be hardcoded in the driver.
+> Nothing against changing it. 
+
+Ok, then leave it as is:
+
+Acked-by: Philip Langdale <philipl@overt.org>
+
+> > > ---
+> > >  drivers/mmc/host/sdhci-pci.c |   31
+> > > +++++++++++++++++++++++++++++++ drivers/mmc/host/sdhci.c     |
+> > > 3 ++- drivers/mmc/host/sdhci.h     |    4 ++++
+> > >  3 files changed, 37 insertions(+), 1 deletions(-)
+> > > 
+> > > diff --git a/drivers/mmc/host/sdhci-pci.c
+> > > b/drivers/mmc/host/sdhci-pci.c index 65483fd..c4bcaeb 100644
+> > > --- a/drivers/mmc/host/sdhci-pci.c
+> > > +++ b/drivers/mmc/host/sdhci-pci.c
+> > > @@ -17,6 +17,7 @@
+> > >  #include <linux/pci.h>
+> > >  #include <linux/dma-mapping.h>
+> > >  #include <linux/slab.h>
+> > > +#include <linux/device.h>
+> > >  
+> > >  #include <linux/mmc/host.h>
+> > >  
+> > > @@ -84,7 +85,21 @@ static int ricoh_probe(struct sdhci_pci_chip
+> > > *chip) if (chip->pdev->subsystem_vendor == PCI_VENDOR_ID_SAMSUNG
+> > > || chip->pdev->subsystem_vendor == PCI_VENDOR_ID_SONY)
+> > >  		chip->quirks |= SDHCI_QUIRK_NO_CARD_NO_RESET;
+> > > +	return 0;
+> > > +}
+> > > +
+> > > +static int ricoh_mmc_probe_slot(struct sdhci_pci_slot *slot)
+> > > +{
+> > > +	slot->host->caps =
+> > > +		((0x21 << SDHCI_TIMEOUT_CLK_SHIFT)
+> > > +			& SDHCI_TIMEOUT_CLK_MASK) |
+> > >  
+> > > +		((0x21 << SDHCI_CLOCK_BASE_SHIFT)
+> > > +			& SDHCI_CLOCK_BASE_MASK) |
+> > > +
+> > > +		SDHCI_TIMEOUT_CLK_UNIT |
+> > > +		SDHCI_CAN_VDD_330 |
+> > > +		SDHCI_CAN_DO_SDMA;
+> > >  	return 0;
+> > >  }
 > > 
-> > Also, for hardware events, if we are counting rather than sampling,
-> > the exclude_task bit will have no effect.  So perhaps in that case the
-> > perf_event_open should fail rather than appear to succeed but give
-> > wrong data.
+> > As we discussed, highspeed works. Of course, sdhci never sets the
+> > MMC highspeed flag so the cap is irrelevant. We'd need another
+> > quirk to indicate highspeed MMC is supported.
+> > 
+> > This can be done in a separate patch.
+> Sure, but maybe we can enable this for SD/SDHC too?
+
+Not sure what you mean. The proper SD interface reports the HISPD
+cap already. Do you mean enabling high-speed MMC on a 'proper'
+SDHCI controller. That's what Pierre didn't want to do blindly.
+
+> > 
+> > > @@ -95,6 +110,14 @@ static const struct sdhci_pci_fixes
+> > > sdhci_ricoh = { SDHCI_QUIRK_CLOCK_BEFORE_RESET,
+> > >  };
+> > >  
+> > > +static const struct sdhci_pci_fixes sdhci_ricoh_mmc = {
+> > > +	.probe_slot	= ricoh_mmc_probe_slot,
+> > > +	.quirks		= SDHCI_QUIRK_32BIT_DMA_ADDR |
+> > > +			  SDHCI_QUIRK_CLOCK_BEFORE_RESET |
+> > > +			  SDHCI_QUIRK_NO_CARD_NO_RESET |
+> > > +			  SDHCI_QUIRK_MISSING_CAPS
+> > > +};
+> > > +
+> > >  static const struct sdhci_pci_fixes sdhci_ene_712 = {
+> > >  	.quirks		= SDHCI_QUIRK_SINGLE_POWER_WRITE |
+> > >  			  SDHCI_QUIRK_BROKEN_DMA,
+> > > @@ -374,6 +397,14 @@ static const struct pci_device_id pci_ids[]
+> > > __devinitdata = {
+> > >  	},
+> > >  
+> > >  	{
+> > > +		.vendor         = PCI_VENDOR_ID_RICOH,
+> > > +		.device         = 0x843,
+> > > +		.subvendor      = PCI_ANY_ID,
+> > > +		.subdevice      = PCI_ANY_ID,
+> > > +		.driver_data    =
+> > > (kernel_ulong_t)&sdhci_ricoh_mmc,
+> > > +	},
+> > > +
+> > > +	{
+> > 
+> > It seems we generally want to add a #define for the device ID.
+> > The ENE device below has one.
+> > 
+> > >  		.vendor		= PCI_VENDOR_ID_ENE,
+> > >  		.device		=
+> > > PCI_DEVICE_ID_ENE_CB712_SD, .subvendor	= PCI_ANY_ID,
+> > > diff --git a/drivers/mmc/host/sdhci.c b/drivers/mmc/host/sdhci.c
+> > > index c6d1bd8..483b78e 100644
+> > > --- a/drivers/mmc/host/sdhci.c
+> > > +++ b/drivers/mmc/host/sdhci.c
+> > > @@ -1687,7 +1687,8 @@ int sdhci_add_host(struct sdhci_host *host)
+> > >  			host->version);
+> > >  	}
+> > >  
+> > > -	caps = sdhci_readl(host, SDHCI_CAPABILITIES);
+> > > +	caps = (host->quirks & SDHCI_QUIRK_MISSING_CAPS) ?
+> > > host->caps :
+> > > +		sdhci_readl(host, SDHCI_CAPABILITIES);
+> > >  
+> > >  	if (host->quirks & SDHCI_QUIRK_FORCE_DMA)
+> > >  		host->flags |= SDHCI_USE_SDMA;
+> > > diff --git a/drivers/mmc/host/sdhci.h b/drivers/mmc/host/sdhci.h
+> > > index c846813..b1839a3 100644
+> > > --- a/drivers/mmc/host/sdhci.h
+> > > +++ b/drivers/mmc/host/sdhci.h
+> > > @@ -240,6 +240,8 @@ struct sdhci_host {
+> > >  #define SDHCI_QUIRK_CAP_CLOCK_BASE_BROKEN		(1<<25)
+> > >  /* Controller cannot support End Attribute in NOP ADMA
+> > > descriptor */ #define
+> > > SDHCI_QUIRK_NO_ENDATTR_IN_NOPDESC		(1<<26) +/*
+> > > Controller is missing device caps. Use caps provided by host */
+> > > +#define SDHCI_QUIRK_MISSING_CAPS			(1<<27) 
+> > >  	int			irq;		/* Device
+> > > IRQ */ void __iomem *		ioaddr;		/*
+> > > Mapped address */ @@ -292,6 +294,8 @@ struct sdhci_host {
+> > >  
+> > >  	struct timer_list	timer;		/* Timer
+> > > for timeouts */ 
+> > > +	unsigned int		caps;		/*
+> > > Alternative capabilities */ +
+> > >  	unsigned long		private[0]
+> > > ____cacheline_aligned; };
+> > 
+> > --phil
 > 
-> Right, so for hardware event we'd need to go with those irq_{enter,exit}
-> hooks and either fully disable the call, or do as Ingo suggested, read
-> the count delta and add that to period_left, so that we'll delay the
-> sample (and subtract from ->count, which is I think the trickiest bit as
-> it'll generate a non-monotonic ->count).
+> Best regards,
+> Maxim Levitsky
 > 
-> So I prefer the disable/enable from irq_enter/exit, however I also
-> suspect that that is by far the most expensive option.
+> 
 
-
-Playing with that, it's easy to contain the counting on the filtered
-contexts: I can just flush (event->read()) when we enter/exit a context
-but filter the update of event->count depending on exclude_* things.
-
-There are several problems with that though:
-
-- overflow interrupts continue, we can block them, but still...
-- periods become randomly async as the interrupts happen. We
-  could save the period_left on context enter to solve this
-
-
-It would be certainly easier and clearer to use stop/start things on context
-enter/exit.
-
-And the only thing that seem to happen in these paths is a write
-to the event config register.
-Is it what is going to be too slow?
-If you compare that to all the reads on the counter,
-the interrupts that still need to be serviced and filtered with the
-other solution, may be the stop/start solution is eventually better
-in contrast.
-
-How much time approximately does it take to write in this config register?
-
-Thanks.
-
+--phil
