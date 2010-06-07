@@ -1,269 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754168Ab0FGKAP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jun 2010 06:00:15 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:38280 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751588Ab0FGKAL (ORCPT
+	id S1754711Ab0FGKA7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jun 2010 06:00:59 -0400
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:42163
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751588Ab0FGKA6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jun 2010 06:00:11 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=fwcVcC9g3Eb5T8vyQOhlyyEyvJGsFSeYinP3HN3hKkwqI3jFmfzH5jXzvZyZ+ZeFnS
-         osV2cnjvjeY4SZL5HH8BgQsht4CZUXTY+dTuGPL730RHi+Q13Dmg5yLg2GKopL7DRMjp
-         YB6E5Jwu/bWqvs7DvvKh4g1E3T2c7cd7wDJvg=
-MIME-Version: 1.0
-In-Reply-To: <1275902395.7258.9.camel@toshiba-laptop>
-References: <AANLkTikXdy6GOQ2EzDt-yrcJ_jMIPvLsH3neWBozpVCK@mail.gmail.com>
-	<1275902395.7258.9.camel@toshiba-laptop>
-Date: Mon, 7 Jun 2010 18:00:10 +0800
-Message-ID: <AANLkTin1OS3LohKBvWyS81BoAk15Y-riCiEdcevSA7ye@mail.gmail.com>
-Subject: Re: mmotm 2010-06-03-16-36 lots of suspected kmemleak
-From: Dave Young <hidave.darkstar@gmail.com>
-To: Catalin Marinas <catalin.marinas@arm.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       linux-mm@kvack.org
-Content-Type: text/plain; charset=UTF-8
+	Mon, 7 Jun 2010 06:00:58 -0400
+Date: Mon, 07 Jun 2010 03:01:08 -0700 (PDT)
+Message-Id: <20100607.030108.235696592.davem@davemloft.net>
+To: amwang@redhat.com
+Cc: andy@greyhouse.net, fubar@us.ibm.com, fbl@sysclose.org,
+       linux-kernel@vger.kernel.org, mpm@selenic.com, netdev@vger.kernel.org,
+       bridge@lists.linux-foundation.org, gospo@redhat.com,
+       nhorman@tuxdriver.com, jmoyer@redhat.com,
+       shemminger@linux-foundation.org, bonding-devel@lists.sourceforge.net
+Subject: Re: [v5 Patch 1/3] netpoll: add generic support for bridge and
+ bonding devices
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <4C0CC29D.9070507@redhat.com>
+References: <4C062CBD.7090906@redhat.com>
+	<20100604191841.GM7497@gospo.rdu.redhat.com>
+	<4C0CC29D.9070507@redhat.com>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 7, 2010 at 5:19 PM, Catalin Marinas <catalin.marinas@arm.com> wrote:
-> On Mon, 2010-06-07 at 06:20 +0100, Dave Young wrote:
->> On Fri, Jun 4, 2010 at 9:55 PM, Dave Young <hidave.darkstar@gmail.com> wrote:
->> > On Fri, Jun 4, 2010 at 6:50 PM, Catalin Marinas <catalin.marinas@arm.com> wrote:
->> >> Dave Young <hidave.darkstar@gmail.com> wrote:
->> >>> With mmotm 2010-06-03-16-36, I gots tuns of kmemleaks
->> >>
->> >> Do you have CONFIG_NO_BOOTMEM enabled? I posted a patch for this but
->> >> hasn't been reviewed yet (I'll probably need to repost, so if it fixes
->> >> the problem for you a Tested-by would be nice):
->> >>
->> >> http://lkml.org/lkml/2010/5/4/175
->> >
->> >
->> > I'd like to test, but I can not access the test pc during weekend. So
->> > I will test it next monday.
->>
->> Bad news, the patch does not fix this issue.
->
-> Thanks for trying. Could you please just disable CONFIG_NO_BOOTMEM and
-> post the kmemleak reported leaks again?
->
+From: Cong Wang <amwang@redhat.com>
+Date: Mon, 07 Jun 2010 17:57:49 +0800
 
-Still too many suspected leaks, results similar with
-(CONFIG_NO_BOOTMEM = y && apply your patch), looks like a little
-different from original ones? I just copy some of them here:
+> Hmm, I still feel like this way is ugly, although it may work.
+> I guess David doesn't like it either.
 
-unreferenced object 0xde3c7420 (size 44):
-  comm "bash", pid 1631, jiffies 4294897023 (age 223.573s)
-  hex dump (first 32 bytes):
-    05 05 00 00 ad 4e ad de ff ff ff ff ff ff ff ff  .....N..........
-    98 42 d9 c1 00 00 00 00 50 fe 63 c1 10 32 8f dd  .B......P.c..2..
-  backtrace:
-    [<c1498ad2>] kmemleak_alloc+0x4a/0x83
-    [<c10c1ace>] kmem_cache_alloc+0xde/0x12a
-    [<c10b421b>] anon_vma_fork+0x31/0x88
-    [<c102c71d>] dup_mm+0x1d3/0x38f
-    [<c102d20d>] copy_process+0x8ce/0xf39
-    [<c102d990>] do_fork+0x118/0x295
-    [<c1007fe0>] sys_clone+0x1f/0x24
-    [<c10029b1>] ptregs_clone+0x15/0x24
-    [<ffffffff>] 0xffffffff
-unreferenced object 0xde3c73f0 (size 44):
-  comm "bash", pid 1631, jiffies 4294897023 (age 223.573s)
-  hex dump (first 32 bytes):
-    02 02 00 00 ad 4e ad de ff ff ff ff ff ff ff ff  .....N..........
-    98 42 d9 c1 00 00 00 00 50 fe 63 c1 10 32 8f dd  .B......P.c..2..
-  backtrace:
-    [<c1498ad2>] kmemleak_alloc+0x4a/0x83
-    [<c10c1ace>] kmem_cache_alloc+0xde/0x12a
-    [<c10b421b>] anon_vma_fork+0x31/0x88
-    [<c102c71d>] dup_mm+0x1d3/0x38f
-    [<c102d20d>] copy_process+0x8ce/0xf39
-    [<c102d990>] do_fork+0x118/0x295
-    [<c1007fe0>] sys_clone+0x1f/0x24
-    [<c10029b1>] ptregs_clone+0x15/0x24
-    [<ffffffff>] 0xffffffff
-unreferenced object 0xde3c73c0 (size 44):
-  comm "bash", pid 1631, jiffies 4294897023 (age 223.573s)
-  hex dump (first 32 bytes):
-    02 02 00 00 ad 4e ad de ff ff ff ff ff ff ff ff  .....N..........
-    98 42 d9 c1 00 00 00 00 50 fe 63 c1 e0 31 8f dd  .B......P.c..1..
-  backtrace:
-    [<c1498ad2>] kmemleak_alloc+0x4a/0x83
-    [<c10c1ace>] kmem_cache_alloc+0xde/0x12a
-    [<c10b421b>] anon_vma_fork+0x31/0x88
-    [<c102c71d>] dup_mm+0x1d3/0x38f
-    [<c102d20d>] copy_process+0x8ce/0xf39
-    [<c102d990>] do_fork+0x118/0x295
-    [<c1007fe0>] sys_clone+0x1f/0x24
-    [<c10029b1>] ptregs_clone+0x15/0x24
-    [<ffffffff>] 0xffffffff
-unreferenced object 0xde3c7570 (size 44):
-  comm "bash", pid 1631, jiffies 4294897023 (age 223.573s)
-  hex dump (first 32 bytes):
-    02 02 00 00 ad 4e ad de ff ff ff ff ff ff ff ff  .....N..........
-    98 42 d9 c1 00 00 00 00 50 fe 63 c1 e0 31 8f dd  .B......P.c..1..
-  backtrace:
-    [<c1498ad2>] kmemleak_alloc+0x4a/0x83
-    [<c10c1ace>] kmem_cache_alloc+0xde/0x12a
-    [<c10b421b>] anon_vma_fork+0x31/0x88
-    [<c102c71d>] dup_mm+0x1d3/0x38f
-    [<c102d20d>] copy_process+0x8ce/0xf39
-    [<c102d990>] do_fork+0x118/0x295
-    [<c1007fe0>] sys_clone+0x1f/0x24
-    [<c10029b1>] ptregs_clone+0x15/0x24
-    [<ffffffff>] 0xffffffff
-unreferenced object 0xde3c7390 (size 44):
-  comm "bash", pid 1631, jiffies 4294897023 (age 223.573s)
-  hex dump (first 32 bytes):
-    05 05 00 00 ad 4e ad de ff ff ff ff ff ff ff ff  .....N..........
-    98 42 d9 c1 00 00 00 00 50 fe 63 c1 b0 31 8f dd  .B......P.c..1..
-  backtrace:
-    [<c1498ad2>] kmemleak_alloc+0x4a/0x83
-    [<c10c1ace>] kmem_cache_alloc+0xde/0x12a
-    [<c10b421b>] anon_vma_fork+0x31/0x88
-    [<c102c71d>] dup_mm+0x1d3/0x38f
-    [<c102d20d>] copy_process+0x8ce/0xf39
-    [<c102d990>] do_fork+0x118/0x295
-    [<c1007fe0>] sys_clone+0x1f/0x24
-    [<c10029b1>] ptregs_clone+0x15/0x24
-    [<ffffffff>] 0xffffffff
-unreferenced object 0xde3c7540 (size 44):
-  comm "bash", pid 1631, jiffies 4294897023 (age 223.576s)
-  hex dump (first 32 bytes):
-    02 02 00 00 ad 4e ad de ff ff ff ff ff ff ff ff  .....N..........
-    98 42 d9 c1 00 00 00 00 50 fe 63 c1 b0 31 8f dd  .B......P.c..1..
-  backtrace:
-    [<c1498ad2>] kmemleak_alloc+0x4a/0x83
-    [<c10c1ace>] kmem_cache_alloc+0xde/0x12a
-    [<c10b421b>] anon_vma_fork+0x31/0x88
-    [<c102c71d>] dup_mm+0x1d3/0x38f
-    [<c102d20d>] copy_process+0x8ce/0xf39
-    [<c102d990>] do_fork+0x118/0x295
-    [<c1007fe0>] sys_clone+0x1f/0x24
-    [<c10029b1>] ptregs_clone+0x15/0x24
-    [<ffffffff>] 0xffffffff
-unreferenced object 0xde3c7360 (size 44):
-  comm "bash", pid 1631, jiffies 4294897023 (age 223.576s)
-  hex dump (first 32 bytes):
-    05 05 00 00 ad 4e ad de ff ff ff ff ff ff ff ff  .....N..........
-    98 42 d9 c1 00 00 00 00 50 fe 63 c1 40 32 8f dd  .B......P.c.@2..
-  backtrace:
-    [<c1498ad2>] kmemleak_alloc+0x4a/0x83
-    [<c10c1ace>] kmem_cache_alloc+0xde/0x12a
-    [<c10b421b>] anon_vma_fork+0x31/0x88
-    [<c102c71d>] dup_mm+0x1d3/0x38f
-    [<c102d20d>] copy_process+0x8ce/0xf39
-    [<c102d990>] do_fork+0x118/0x295
-    [<c1007fe0>] sys_clone+0x1f/0x24
-    [<c10029b1>] ptregs_clone+0x15/0x24
-    [<ffffffff>] 0xffffffff
-unreferenced object 0xde3c7330 (size 44):
-  comm "bash", pid 1631, jiffies 4294897023 (age 223.576s)
-  hex dump (first 32 bytes):
-    02 02 00 00 ad 4e ad de ff ff ff ff ff ff ff ff  .....N..........
-    98 42 d9 c1 00 00 00 00 50 fe 63 c1 40 32 8f dd  .B......P.c.@2..
-  backtrace:
-    [<c1498ad2>] kmemleak_alloc+0x4a/0x83
-    [<c10c1ace>] kmem_cache_alloc+0xde/0x12a
-    [<c10b421b>] anon_vma_fork+0x31/0x88
-    [<c102c71d>] dup_mm+0x1d3/0x38f
-    [<c102d20d>] copy_process+0x8ce/0xf39
-    [<c102d990>] do_fork+0x118/0x295
-    [<c1007fe0>] sys_clone+0x1f/0x24
-    [<c10029b1>] ptregs_clone+0x15/0x24
-    [<ffffffff>] 0xffffffff
-unreferenced object 0xde3c7510 (size 44):
-  comm "bash", pid 1631, jiffies 4294897023 (age 223.576s)
-  hex dump (first 32 bytes):
-    03 03 00 00 ad 4e ad de ff ff ff ff ff ff ff ff  .....N..........
-    98 42 d9 c1 00 00 00 00 50 fe 63 c1 90 30 8f dd  .B......P.c..0..
-  backtrace:
-    [<c1498ad2>] kmemleak_alloc+0x4a/0x83
-    [<c10c1ace>] kmem_cache_alloc+0xde/0x12a
-    [<c10b421b>] anon_vma_fork+0x31/0x88
-    [<c102c71d>] dup_mm+0x1d3/0x38f
-    [<c102d20d>] copy_process+0x8ce/0xf39
-    [<c102d990>] do_fork+0x118/0x295
-    [<c1007fe0>] sys_clone+0x1f/0x24
-    [<c10029b1>] ptregs_clone+0x15/0x24
-    [<ffffffff>] 0xffffffff
-unreferenced object 0xde3c75a0 (size 44):
-  comm "bash", pid 1631, jiffies 4294897023 (age 223.576s)
-  hex dump (first 32 bytes):
-    02 02 00 00 ad 4e ad de ff ff ff ff ff ff ff ff  .....N..........
-    98 42 d9 c1 00 00 00 00 50 fe 63 c1 60 30 8f dd  .B......P.c.`0..
-  backtrace:
-    [<c1498ad2>] kmemleak_alloc+0x4a/0x83
-    [<c10c1ace>] kmem_cache_alloc+0xde/0x12a
-    [<c10b421b>] anon_vma_fork+0x31/0x88
-    [<c102c71d>] dup_mm+0x1d3/0x38f
-    [<c102d20d>] copy_process+0x8ce/0xf39
-    [<c102d990>] do_fork+0x118/0x295
-    [<c1007fe0>] sys_clone+0x1f/0x24
-    [<c10029b1>] ptregs_clone+0x15/0x24
-    [<ffffffff>] 0xffffffff
-unreferenced object 0xde3c74b0 (size 44):
-  comm "bash", pid 1631, jiffies 4294897023 (age 223.576s)
-  hex dump (first 32 bytes):
-    02 02 00 00 ad 4e ad de ff ff ff ff ff ff ff ff  .....N..........
-    98 42 d9 c1 00 00 00 00 50 fe 63 c1 60 30 8f dd  .B......P.c.`0..
-  backtrace:
-    [<c1498ad2>] kmemleak_alloc+0x4a/0x83
-    [<c10c1ace>] kmem_cache_alloc+0xde/0x12a
-    [<c10b421b>] anon_vma_fork+0x31/0x88
-    [<c102c71d>] dup_mm+0x1d3/0x38f
-    [<c102d20d>] copy_process+0x8ce/0xf39
-    [<c102d990>] do_fork+0x118/0x295
-    [<c1007fe0>] sys_clone+0x1f/0x24
-    [<c10029b1>] ptregs_clone+0x15/0x24
-    [<ffffffff>] 0xffffffff
-unreferenced object 0xde3c7b70 (size 44):
-  comm "ps", pid 1666, jiffies 4294897029 (age 223.560s)
-  hex dump (first 32 bytes):
-    04 04 00 00 ad 4e ad de ff ff ff ff ff ff ff ff  .....N..........
-    98 42 d9 c1 00 00 00 00 50 fe 63 c1 70 7b 3c de  .B......P.c.p{<.
-  backtrace:
-    [<c1498ad2>] kmemleak_alloc+0x4a/0x83
-    [<c10c1ace>] kmem_cache_alloc+0xde/0x12a
-    [<c10b42e4>] anon_vma_prepare+0x72/0x12e
-    [<c10ad3e5>] handle_mm_fault+0x153/0x60d
-    [<c14b5d3e>] do_page_fault+0x2ee/0x304
-    [<c14b3a47>] error_code+0x6b/0x70
-    [<ffffffff>] 0xffffffff
-unreferenced object 0xde3c7b40 (size 44):
-  comm "ps", pid 1666, jiffies 4294897029 (age 223.560s)
-  hex dump (first 32 bytes):
-    04 04 00 00 ad 4e ad de ff ff ff ff ff ff ff ff  .....N..........
-    98 42 d9 c1 00 00 00 00 50 fe 63 c1 40 7b 3c de  .B......P.c.@{<.
-  backtrace:
-    [<c1498ad2>] kmemleak_alloc+0x4a/0x83
-    [<c10c1ace>] kmem_cache_alloc+0xde/0x12a
-    [<c10b42e4>] anon_vma_prepare+0x72/0x12e
-    [<c10ad3e5>] handle_mm_fault+0x153/0x60d
-    [<c14b5d3e>] do_page_fault+0x2ee/0x304
-    [<c14b3a47>] error_code+0x6b/0x70
-    [<c109b3ff>] generic_file_aio_read+0x398/0x5ce
-    [<c10c85e5>] do_sync_read+0x8c/0xca
-    [<c10c8fa3>] vfs_read+0x81/0xdb
-    [<c10c9096>] sys_read+0x3b/0x60
-    [<c14b340d>] syscall_call+0x7/0xb
-    [<ffffffff>] 0xffffffff
+Of course I don't like it. :-)
 
-> Thanks.
->
-> --
-> Catalin
->
->
+I suspect the locking scheme will need to be changed.
 
+Besides, if we're going to hack this up and do write lock attempts in
+the read locking paths, there is no point in using a rwlock any more.
+And I'm personally in disfavor of all rwlock usage anyways (it dirties
+the cacheline for readers just as equally for writers, and if the
+critically protected code path is short enough, that shared cache
+line atomic operation will be the predominant cost).
 
+So I'd say, 1) make this a spinlock and 2) try to use RCU for the
+read path.
 
--- 
-Regards
-dave
+That would fix everything.
