@@ -1,182 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754222Ab0FGNH0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jun 2010 09:07:26 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:57509 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751924Ab0FGNHZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jun 2010 09:07:25 -0400
-Date: Mon, 7 Jun 2010 09:07:23 -0400 (EDT)
-From: Mikulas Patocka <mpatocka@redhat.com>
-X-X-Sender: mpatocka@hs20-bc2-1.build.redhat.com
-To: linux-kernel@vger.kernel.org
-Subject: Re: lockup when disabling CPUs
-In-Reply-To: <Pine.LNX.4.64.1006070853130.8695@hs20-bc2-1.build.redhat.com>
-Message-ID: <Pine.LNX.4.64.1006070906250.8695@hs20-bc2-1.build.redhat.com>
-References: <Pine.LNX.4.64.1006070853130.8695@hs20-bc2-1.build.redhat.com>
+	id S1754484Ab0FGNIA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jun 2010 09:08:00 -0400
+Received: from mondschein.lichtvoll.de ([194.150.191.11]:37327 "EHLO
+	mail.lichtvoll.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752964Ab0FGNH7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Jun 2010 09:07:59 -0400
+From: Martin Steigerwald <Martin@lichtvoll.de>
+To: tuxonice-devel@tuxonice.net
+Subject: Re: [TuxOnIce-devel] [linux-pm] [SUSPECTED SPAM] Re: Proposal for a new algorithm for reading & writing a hibernation image.
+Date: Mon, 7 Jun 2010 15:07:49 +0200
+User-Agent: KMail/1.13.3 (Linux/2.6.33.2-tp42-toi-3.1-lowmem-free-991-992-04964-gf00c7ec-dirty; KDE/4.4.4; i686; ; )
+Cc: Nigel Cunningham <ncunningham@crca.org.au>,
+       "Rafael J. Wysocki" <rjw@sisk.pl>, LKML <linux-kernel@vger.kernel.org>,
+       pm list <linux-pm@lists.linux-foundation.org>,
+       Maxim Levitsky <maximlevitsky@gmail.com>,
+       "TuxOnIce-devel" <tuxonice-devel@tuxonice.net>
+References: <9rpccea67yy402c975fqru8r.1275576653521@email.android.com> <201006062104.55869.rjw@sisk.pl> <4C0C843D.6030008@crca.org.au> (sfid-20100607_101218_800330_88257A1C)
+In-Reply-To: <4C0C843D.6030008@crca.org.au>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: multipart/signed;
+  boundary="nextPart1336033.bEN4aNCQnZ";
+  protocol="application/pgp-signature";
+  micalg=pgp-sha1
+Content-Transfer-Encoding: 7bit
+Message-Id: <201006071507.56259.Martin@lichtvoll.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+--nextPart1336033.bEN4aNCQnZ
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: quoted-printable
+
+Am Montag 07 Juni 2010 schrieb Nigel Cunningham:
+> Hi.
+
+Hi Nigel and Rafael, hi everyone else involved,
+
+> On 07/06/10 05:04, Rafael J. Wysocki wrote:
+> > On Sunday 06 June 2010, Maxim Levitsky wrote:
+> >> On Sun, 2010-06-06 at 15:57 +0200, Rafael J. Wysocki wrote:
+> >>> On Sunday 06 June 2010, Maxim Levitsky wrote:
+> > ...
+> >=20
+> >>> So how TuxOnIce helps here?
+> >>=20
+> >> Very simple.
+> >>=20
+> >> With swsusp, I can save 750MB (memory) + 250 Vram (vram)
+> >> With full memory save I can save (1750 MB of memory) + 250 MB of
+> >> vram....
+> >=20
+> > So what about being able to save 1600 MB total instead of the 2 GB
+> > (which is what we're talking about in case that's not clear)?  Would
+> > it be _that_ _much_ worse?
+>=20
+> That all depends on what is in the 400MB you discard.
+>=20
+> The difference is "Just as if you'd never hibernated" vs something
+> closer to "Just as if you'd only just started up". We can't make
+> categorical statements because it really does depend upon what you
+> discard and what you want to do post-resume - that is, how useful the
+> memory you discard would have been. That's always going to vary from
+> case to case.
+
+Nigel and Rafael, how about just testing it?
+
+Whats needed to have 80% of the memory saved instead of 50%?
+
+I think its important to go the next steps towards a better snapshot in=20
+mainline kernel even when you do not agree on the complete end result yet.
+
+What about
+
+=2D Rafael, you review the async write patches of Nigel. If they are good,=
+=20
+IMHO they should go in as soon as possible.
+
+=2D Nigel and/or Rafael, you look at whats needed to save 80% instead of 50=
+%=20
+of the memory and develop a patch for it
 
 
-On Mon, 7 Jun 2010, Mikulas Patocka wrote:
+?
 
-> Hi
-> 
-> On a computer with 2 quad-core Barcelona Opterons, I experienced a lockup 
-> in sync_page after disabling 7 cores in 
-> /sys/devices/system/cpu/cpu$i/online . Reenabling the cores didn't resolve 
-> it. The lockup resolved automatically after several minutes and the 
-> machine continues to run.
-> 
-> The kernel is 2.6.34. I use ext2 filesystem on a SCSI disk on Fusion MPT 
-> SCSI controller (there is also md-raid0 loaded, but it wasn't mounted at 
-> the time of the lockup).
-> 
-> Mikulas
-> 
-> CPU 1 is now offline
-> CPU 2 is now offline
-> CPU 3 is now offline
-> CPU 4 is now offline
-> CPU 5 is now offline
-> CPU 6 is now offline
-> CPU 7 is now offline
-> SMP alternatives: switching to UP code
-> SysRq : Show Blocked State
->   task                        PC stack   pid father
-> flush-8:0     D 0000000000000000     0  3492      2 0x00000000
->  ffff88023f0d78a0 0000000000000046 ffff88023f0d6000 ffff88023f0d7fd8
->  ffff88023f0d6000 ffff88023f0d7fd8 ffff88023f0d6000 ffff88023f0d7fd8
->  ffff88023f0d6000 ffff88023e67a050 0000000000012dc0 ffff88023f0d7fd8
-> Call Trace:
->  [<ffffffff81173f61>] ? cfq_may_queue+0x51/0xe0
->  [<ffffffff812e74fd>] ? io_schedule+0x4d/0x70
->  [<ffffffff81166b62>] ? get_request_wait+0x132/0x1d0
->  [<ffffffff8105eca0>] ? autoremove_wake_function+0x0/0x30
->  [<ffffffff81166c94>] ? __make_request+0x94/0x4d0
->  [<ffffffff81164c31>] ? generic_make_request+0x351/0x4b0
->  [<ffffffff810a4a12>] ? mempool_alloc+0x62/0x140
->  [<ffffffff81164de0>] ? submit_bio+0x50/0xc0
->  [<ffffffff8110dff9>] ? submit_bh+0x109/0x150
->  [<ffffffff8110fd9f>] ? __block_write_full_page+0x1cf/0x390
->  [<ffffffff810a4094>] ? find_get_pages_tag+0x54/0x160
->  [<ffffffff81110310>] ? end_buffer_async_write+0x0/0x200
->  [<ffffffff81114220>] ? blkdev_get_block+0x0/0x70
->  [<ffffffff810aa35a>] ? __writepage+0xa/0x40
->  [<ffffffff810aa879>] ? write_cache_pages+0x1a9/0x370
->  [<ffffffff810aa350>] ? __writepage+0x0/0x40
->  [<ffffffff81107b57>] ? writeback_single_inode+0xf7/0x380
->  [<ffffffff81108968>] ? writeback_inodes_wb+0x3b8/0x600
->  [<ffffffff81108cd6>] ? wb_writeback+0x126/0x200
->  [<ffffffff81109061>] ? wb_do_writeback+0x1e1/0x1f0
->  [<ffffffff811090d2>] ? bdi_writeback_task+0x62/0xa0
->  [<ffffffff810ba9c0>] ? bdi_start_fn+0x0/0xf0
->  [<ffffffff810baa3e>] ? bdi_start_fn+0x7e/0xf0
->  [<ffffffff810ba9c0>] ? bdi_start_fn+0x0/0xf0
->  [<ffffffff8105e716>] ? kthread+0x96/0xb0
->  [<ffffffff810032d4>] ? kernel_thread_helper+0x4/0x10
->  [<ffffffff8105e680>] ? kthread+0x0/0xb0
->  [<ffffffff810032d0>] ? kernel_thread_helper+0x0/0x10
-> aptitude      D 0000000000000000     0  3497   3493 0x00000000
->  ffff88023f163d08 0000000000000082 ffff88023f162000 ffff88023f163fd8
->  ffff88023f162000 ffff88023f163fd8 ffff88023f162000 ffff88023f163fd8
->  ffff88023f162000 ffff88023f28e050 0000000000012dc0 ffff88023f163fd8
-> Call Trace:
->  [<ffffffff810a2340>] ? sync_page+0x0/0x70
->  [<ffffffff812e74fd>] ? io_schedule+0x4d/0x70
->  [<ffffffff810a2375>] ? sync_page+0x35/0x70
->  [<ffffffff812e7bb0>] ? __wait_on_bit+0x50/0x80
->  [<ffffffff810a251c>] ? wait_on_page_bit+0x6c/0x80
->  [<ffffffff8105ecd0>] ? wake_bit_function+0x0/0x30
->  [<ffffffff810ac5da>] ? pagevec_lookup_tag+0x1a/0x30
->  [<ffffffff810a2813>] ? filemap_fdatawait_range+0xd3/0x150
->  [<ffffffff810a2977>] ? filemap_write_and_wait_range+0x67/0x70
->  [<ffffffff8110c8cb>] ? vfs_fsync_range+0x8b/0xe0
->  [<ffffffff810c7d6e>] ? sys_msync+0x16e/0x1f0
->  [<ffffffff810025ab>] ? system_call_fastpath+0x16/0x1b
-> 
-> Module                  Size  Used by
-> powernow_k8            11650  1
-> cpufreq_userspace       1992  0
-> cpufreq_stats           3881  0
-> cpufreq_powersave        902  0
-> cpufreq_ondemand        8021  0
-> freq_table              2427  3 powernow_k8,cpufreq_stats,cpufreq_ondemand
-> cpufreq_conservative     9196  0
-> raid0                   6141  2
-> md_mod                 90752  1 raid0
-> lm85                   20425  0
-> hwmon_vid               2628  1 lm85
-> ide_cd_mod             26768  0
-> cdrom                  34286  1 ide_cd_mod
-> ehci_hcd               36915  0
-> ohci_hcd               21868  0
-> serverworks             4132  0
-> i2c_piix4               8520  0
-> sata_svw                4430  0
-> k10temp                 2795  0
-> hwmon                   1385  2 lm85,k10temp
-> ide_core               88296  2 ide_cd_mod,serverworks
-> i2c_core               17422  2 lm85,i2c_piix4
-> libata                154751  1 sata_svw
-> rtc_cmos                8766  0
-> rtc_core               13548  1 rtc_cmos
-> usbcore               138235  3 ehci_hcd,ohci_hcd
-> floppy                 55194  0
-> nls_base                6777  1 usbcore
-> rtc_lib                 1881  1 rtc_core
-> thermal                11930  0
-> button                  4778  0
-> processor              28143  1 powernow_k8
-> unix                   23684  30
+Then this goes into one stable kernel series and be tested in the wild.=20
+And if that approach does not suffice to give a similar experience than wit=
+h=20
+TuxOnIce one could still look further. In that case I ask you Rafael, to=20
+at least listen open-mindedly to practical experiences being told and to=20
+ideas to improve the situation.
 
-BTW. this was /proc/meminfo at the time of the lockup:
+I really want to see this make some progress instead of getting stuck in=20
+discussion loops again. No offence meant - you do the all the development=20
+work! - but the time spent here IMHO is better spent on reviewing and=20
+furtherly refining the existing patches by Nigel and Jiri and developing a=
+=20
+patchset for the 80% solution which should already help a lot.
 
-MemTotal:       16541016 kB
-MemFree:        16341140 kB
-Buffers:            2512 kB
-Cached:            97188 kB
-SwapCached:            0 kB
-Active:            57452 kB
-Inactive:          76564 kB
-Active(anon):      36912 kB
-Inactive(anon):        0 kB
-Active(file):      20540 kB
-Inactive(file):    76564 kB
-Unevictable:           0 kB
-Mlocked:               0 kB
-SwapTotal:             0 kB
-SwapFree:              0 kB
-Dirty:               688 kB
-Writeback:          1180 kB
-AnonPages:         34316 kB
-Mapped:            19016 kB
-Shmem:              2596 kB
-Slab:              20228 kB
-SReclaimable:       7620 kB
-SUnreclaim:        12608 kB
-KernelStack:         576 kB
-PageTables:         2056 kB
-NFS_Unstable:          0 kB
-Bounce:                0 kB
-WritebackTmp:          0 kB
-CommitLimit:     8270508 kB
-Committed_AS:     121520 kB
-VmallocTotal:   34359738367 kB
-VmallocUsed:      301096 kB
-VmallocChunk:   34359435251 kB
-HardwareCorrupted:     0 kB
-HugePages_Total:       0
-HugePages_Free:        0
-HugePages_Rsvd:        0
-HugePages_Surp:        0
-Hugepagesize:       2048 kB
-DirectMap4k:        6080 kB
-DirectMap2M:     3270656 kB
-DirectMap1G:    13631488 kB
+Does that incremental approach sound acceptable for the time being?
 
-Mikulas
+IMHO *any* step forward helps!
+
+Ciao,
+=2D-=20
+Martin 'Helios' Steigerwald - http://www.Lichtvoll.de
+GPG: 03B0 0D6C 0040 0710 4AFA  B82F 991B EAAC A599 84C7
+
+--nextPart1336033.bEN4aNCQnZ
+Content-Type: application/pgp-signature; name=signature.asc 
+Content-Description: This is a digitally signed message part.
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iEYEABECAAYFAkwM7yUACgkQmRvqrKWZhMdjuACeNw2R/TdbnUykRgEo9JSRN/CZ
+hHEAn1qBq0Pe0MX5cZ4KZZUjpGhw2ZVy
+=D/Wr
+-----END PGP SIGNATURE-----
+
+--nextPart1336033.bEN4aNCQnZ--
