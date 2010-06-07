@@ -1,40 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756801Ab0FGJDI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jun 2010 05:03:08 -0400
-Received: from asmtpout015.mac.com ([17.148.16.90]:38624 "EHLO
-	asmtpout015.mac.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752785Ab0FGJDG (ORCPT
+	id S932666Ab0FGJHN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jun 2010 05:07:13 -0400
+Received: from smtp127.sbc.mail.sp1.yahoo.com ([69.147.65.186]:31998 "HELO
+	smtp127.sbc.mail.sp1.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1756686Ab0FGJHL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jun 2010 05:03:06 -0400
-X-Greylist: delayed 3601 seconds by postgrey-1.27 at vger.kernel.org; Mon, 07 Jun 2010 05:03:06 EDT
-MIME-version: 1.0
-Content-transfer-encoding: 7BIT
-Content-type: text/plain; charset=ISO-8859-1
-X-Proofpoint-Spam-Details: rule=notspam policy=default score=1 spamscore=1
- ipscore=0 phishscore=0 bulkscore=0 adultscore=0 classifier=spam adjust=0
- reason=mlx engine=6.0.2-1004200000 definitions=main-1006070008
-X-Proofpoint-Virus-Version: vendor=fsecure
- engine=1.12.8161:2.4.5,1.2.40,4.0.166
- definitions=2010-06-07_02:2010-02-06,2010-06-07,2010-06-07 signatures=0
-X-Proofpoint-Spam-Details: rule=notspam policy=default score=8 spamscore=8
- ipscore=0 phishscore=17 bulkscore=0 adultscore=0 classifier=spam adjust=0
- reason=mlx engine=6.0.2-1004200000 definitions=main-1006070008
-X-Proofpoint-Virus-Version: vendor=fsecure
- engine=1.12.8161:2.4.5,1.2.40,4.0.166
- definitions=2010-06-07_02:2010-02-06,2010-06-07,2010-06-07 signatures=0
-Date: Mon, 07 Jun 2010 01:02:47 -0700
-From: Phillip Malema <nhy05@me.com>
-Message-id: <90872807767703429604066953422431680719-Webmail@me.com>
-Subject: Thank You
-X-Originating-IP: 41.208.204.100
-To: Undisclosed recipients:;
+	Mon, 7 Jun 2010 05:07:11 -0400
+X-Yahoo-SMTP: fzDSGlOswBCWnIOrNw7KwwK1j9PqyNbe5PtLKiS4dDU.UNl_t6bdEZu9tTLW
+X-YMail-OSG: EVj9NFoVM1kRkc3JTan5Q2a_YWQbisWcn7vZNCC2.24_Hg1Ly2r4txttWHau40d5F3rz4FiqHOL.AEee0ClwIu3XtYXCR.Ch9XWxgtrSAQ8o5szbq8uUuP7L5KNTUPUmRIAsL_Al0g254wrTGjWyydHvQ1k62B_tj230cH71sRo8PPi0yI8oAXZ4iP9mw7j3odO0n_0JpH10I7I8S6Sh8uAPy8Eql.yAx7E3IyZ84MNBgsSejiiwIB4yO.u.EGucgoKOHvNY1V85_f0JMwM.VJApFYlXN2b1OqGl.k9VFq1bXhgoEchXiS6hLdaaLYpOkl8u9ogfsiM31UxTdJ_yjahmx1r9Dof1BE2pKCr0qMKPEg--
+X-Yahoo-Newman-Property: ymail-3
+Subject: Re: [PATCH 0/3] Add proper STGT <-> bs_sg passthrough v3
+From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+To: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+Cc: stgt@vger.kernel.org, linux-scsi@vger.kernel.org,
+       linux-kernel@vger.kernel.org, michaelc@cs.wisc.edu,
+       bharrosh@panasas.com, James.Bottomley@suse.de, dgilbert@interlog.com
+In-Reply-To: <20100607175535Q.fujita.tomonori@lab.ntt.co.jp>
+References: <1275882615-5354-1-git-send-email-nab@linux-iscsi.org>
+	 <20100607154432Y.fujita.tomonori@lab.ntt.co.jp>
+	 <1275899236.26888.40.camel@haakon2.linux-iscsi.org>
+	 <20100607175535Q.fujita.tomonori@lab.ntt.co.jp>
+Content-Type: text/plain
+Date: Mon, 07 Jun 2010 02:07:09 -0700
+Message-Id: <1275901629.26888.62.camel@haakon2.linux-iscsi.org>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.22.3.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I work in the audit section of a bank where I discovered $14.5M left in an account by a demised client.The funds have never been applied for since the death of the client because they are lodged in an investment account.This is an opportunity to grab. Can we work together? I need you to get back to me.
+On Mon, 2010-06-07 at 17:56 +0900, FUJITA Tomonori wrote:
+> On Mon, 07 Jun 2010 01:27:16 -0700
+> "Nicholas A. Bellinger" <nab@linux-iscsi.org> wrote:
+> 
+> > Ok, I just fixed some minor breakage and applied patch 3 on top of
+> > tgt.git/pass in my local tree and everything appears to work with
+> > '-E bsg -Y pt'.
+> > 
+> > Please let me know if you have any other comments on the BSG bits or if
+> > you would like me to send along a updated patch 3 seperately.
+> 
+> Please send patches except for bsg first.
+> 
+> About bsg support, we need both sg and bsg? Just bsg is not enough?
 
-Phillip Malema.
+I figured you would still like legacy support w/o bsg for the forseeable
+future with older production kernels.  I don't recall which kernel BSG
+support was added or if this code has already been backported to the
+various distro kernels.
+
+Best,
+
+--nab
 
 
