@@ -1,98 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751435Ab0FGXqF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jun 2010 19:46:05 -0400
-Received: from sh.osrg.net ([192.16.179.4]:54544 "EHLO sh.osrg.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750832Ab0FGXqC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jun 2010 19:46:02 -0400
-Date: Tue, 8 Jun 2010 08:45:39 +0900
-To: nab@linux-iscsi.org
-Cc: fujita.tomonori@lab.ntt.co.jp, stgt@vger.kernel.org,
-       linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
-       michaelc@cs.wisc.edu, bharrosh@panasas.com, James.Bottomley@suse.de,
-       dgilbert@interlog.com
-Subject: Re: [PATCH 0/3] Add proper STGT <-> bs_sg passthrough v3
-From: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
-In-Reply-To: <1275899236.26888.40.camel@haakon2.linux-iscsi.org>
-References: <1275882615-5354-1-git-send-email-nab@linux-iscsi.org>
-	<20100607154432Y.fujita.tomonori@lab.ntt.co.jp>
-	<1275899236.26888.40.camel@haakon2.linux-iscsi.org>
+	id S1751517Ab0FGXuQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jun 2010 19:50:16 -0400
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:45713
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750834Ab0FGXuO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Jun 2010 19:50:14 -0400
+Date: Mon, 07 Jun 2010 16:50:24 -0700 (PDT)
+Message-Id: <20100607.165024.135517125.davem@davemloft.net>
+To: fleitner@redhat.com
+Cc: netdev@vger.kernel.org, amwang@redhat.com, fubar@us.ibm.com,
+       fbl@sysclose.org, mpm@selenic.com, gospo@redhat.com,
+       nhorman@tuxdriver.com, jmoyer@redhat.com,
+       shemminger@linux-foundation.org, linux-kernel@vger.kernel.org,
+       bridge@lists.linux-foundation.org, bonding-devel@lists.sourceforge.net
+Subject: Re: [PATCH] netconsole: queue console messages to send later
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1275938692-26997-1-git-send-email-fleitner@redhat.com>
+References: <24059.1275417767@death.nxdomain.ibm.com>
+	<1275938692-26997-1-git-send-email-fleitner@redhat.com>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
 Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
-Message-Id: <20100608084443C.fujita.tomonori@lab.ntt.co.jp>
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-3.0 (sh.osrg.net [192.16.179.4]); Tue, 08 Jun 2010 08:45:41 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 07 Jun 2010 01:27:16 -0700
-"Nicholas A. Bellinger" <nab@linux-iscsi.org> wrote:
+From: Flavio Leitner <fleitner@redhat.com>
+Date: Mon,  7 Jun 2010 16:24:52 -0300
 
-> On Mon, 2010-06-07 at 15:45 +0900, FUJITA Tomonori wrote:
-> > On Sun,  6 Jun 2010 20:50:15 -0700
-> > "Nicholas A. Bellinger" <nab@linux-iscsi.org> wrote:
-> > 
-> > > From: Nicholas Bellinger <nab@linux-iscsi.org>
-> > > 
-> > > Greeting STGT folks,
-> > > 
-> > > This is the third round of patches for adding proper LUN passthrough support into STGT
-> > > using struct scsi_lu->cmd_perform() and struct scsi_lu->cmd_done() callers with existing
-> > > SG_IO and the new BSG v4 backstores.
-> > > 
-> > > Following Tomo-san's input, the changelog between v2 -> v3 is as follows:
-> > > 
-> > > 1) Add struct device_type_template sg_template for SG_IO and BSG in usr/bs_sg.c instead
-> > >    of making changes to usr/sbc.c
-> > > 
-> > > 2) Add struct backingstore_template->bs_passthrough member of type int for SG_IO and BSG.
-> > > 
-> > > 3) In usr/target.c:tgt_device_create() pass bst->bs_passthrough into device_type_lookup()
-> > >    and for passthrough case use the new device_type_passthrough() to locate
-> > >    struct device_type_template sg_template.
-> > > 
-> > > 4) Remove unnecessary post_cmd_done() from usr/target.c:__cmd_done_passthrough()
-> > > 
-> > > This patch series has been tested with STGT/iSCSI using 'sg'+'bsg' and 'rdwr' for non
-> > > passthrough mode backstores into TCM_Loop LLD emulated iSCSI target ports.
-> > > 
-> > > Best,
-> > > 
-> > > Signed-off-by: Nicholas A. Bellinger <nab@linux-iscsi.org
-> > > 
-> > > Nicholas Bellinger (3):
-> > >   [tgt]: Add proper STGT LUN backstore passthrough support (rev 3)
-> > >   [tgt]: Add bs_sg struct device_type_template sg_template and struct
-> > >     backingstore_template->bs_init()
-> > >   [tgt]: Add BSG v4 backstore support to usr/bs_sg.c
-> > > 
-> > >  usr/bs_sg.c     |  247 ++++++++++++++++++++++++++++++++++++++++++++++++++++--
-> > >  usr/scsi_cmnd.h |    7 ++
-> > >  usr/target.c    |  113 +++++++++++++++++++++++---
-> > >  usr/tgtd.h      |   16 ++++
-> > >  4 files changed, 362 insertions(+), 21 deletions(-)
-> > 
-> > The first and second patches Look fine overall. I have some comments
-> > and wrote some cleanup patches.
-> > 
-> > I've put the first two patches with my cleanups:
-> > 
-> > git://git.kernel.org/pub/scm/linux/kernel/git/tomo/tgt.git pass
-> > 
-> > Can you confirm that it works for you? Then I can merge them into
-> > master.
+> There are some networking drivers that hold a lock in the
+> transmit path. Therefore, if a console message is printed
+> after that, netconsole will push it through the transmit path,
+> resulting in a deadlock.
 > 
-> The pass branch works fine using '-E sg -Y pt' for SG_IO backstore <->
-> fabric LUN assocation with TCM_Loop LLD Target Ports.  Thanks for
-> cleaning things up to use TYPE_PT btw, I should have asked about that
-> earlier. ;)
+> This patch fixes the re-injection problem by queuing the console
+> messages in a preallocated circular buffer and then scheduling a
+> workqueue to send them later with another context.
+> 
+> Signed-off-by: Flavio Leitner <fleitner@redhat.com>
 
-Thanks for the confirmation. I've merged these patches into master.
+You absolutely and positively MUST NOT do this.  Otherwise netconsole
+becomes completely useless.  Your idea has been proposed several times
+as far back as 6 years ago, it was unacceptable then and it's
+unacceptable now.
 
-I'll merge your bsg patch if nobody complains about dropping sg
-support in a few days.
+The whole point of netconsole is that we may be deep in an interrupt
+or other atomic context, the machine is about to hard hang, and it's
+absolutely essential that we get out any and all kernel logging
+messages that we can, immediately.
 
+There may not be another timer or workqueue able to execute after the
+printk() we're trying to emit.  We may never get to that point.
 
-Thanks,
+So if we defer messages, that means we won't get the message and we
+won't be able to debug the problem.
+
+Fix the locking in the drivers or layers that cause the issue instead
+of breaking netconsole.
