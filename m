@@ -1,145 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753963Ab0FGXRS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jun 2010 19:17:18 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:47762 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752972Ab0FGXRQ convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jun 2010 19:17:16 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=v4amO9rlaq4+/vaDJ0nyAbvL4lEPMuLaVWccgnbIKHyxnEkBCNMiCVg0pb0rGOHW7/
-         fnS/rcfTAtnr5frJKWVX/TFnDV6dOs3B/qN4D/kHNBg2QxcPwMxaF8vToPGroQF10UHU
-         9rjorrLtzGio/mwXKVS4+cF5dl9r3gIn+PfIQ=
+	id S1754025Ab0FGXSn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jun 2010 19:18:43 -0400
+Received: from www.tglx.de ([62.245.132.106]:60047 "EHLO www.tglx.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752772Ab0FGXSm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Jun 2010 19:18:42 -0400
+Date: Tue, 8 Jun 2010 01:18:09 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Esben Haabendal <esbenhaabendal@gmail.com>
+cc: Esben Haabendal <eha@doredevelopment.dk>, linuxppc-dev@ozlabs.org,
+       Marc Zyngier <maz@misterjones.org>, LKML <linux-kernel@vger.kernel.org>,
+       Ingo Molnar <mingo@elte.hu>, joachim.eastwood@jotron.com,
+       Peter Zijlstra <peterz@infradead.org>,
+       David Miller <davem@davemloft.net>
+Subject: Re: [RFC][PATCH] irq: support IRQ_NESTED_THREAD with non-threaded
+ interrupt handlers
+In-Reply-To: <AANLkTilPhof5cnhBCXSzKJSnWl6Vuu2fRts2pBBBNl6K@mail.gmail.com>
+Message-ID: <alpine.LFD.2.00.1006080015570.2933@localhost.localdomain>
+References: <1275686352.2970.2.camel@eha.doredevelopment.dk> <alpine.LFD.2.00.1006042343150.2933@localhost.localdomain> <AANLkTilb7---Qg1oLwzanKP1RGe04fkAXDtZzz0w9MGz@mail.gmail.com> <20100605151031.2d562268@hina.wild-wind.fr.eu.org>
+ <alpine.LFD.2.00.1006051732270.2933@localhost.localdomain> <AANLkTimlSBEhl58CNuScKjxbqdTwTYgqo7vrHTcd1x9G@mail.gmail.com> <alpine.LFD.2.00.1006051915290.2933@localhost.localdomain> <AANLkTimcB9vRqnNYyBh6hjHXZHcmFvw72MZUEIGfeexq@mail.gmail.com>
+ <alpine.LFD.2.00.1006052155100.2933@localhost.localdomain> <AANLkTik2so7osQJFq6NRaIFK2GVLURVozOqSsejd1K0F@mail.gmail.com> <alpine.LFD.2.00.1006062228120.2933@localhost.localdomain> <1275914058.2818.8.camel@eha.doredevelopment.dk>
+ <alpine.LFD.2.00.1006071440520.2933@localhost.localdomain> <AANLkTilPhof5cnhBCXSzKJSnWl6Vuu2fRts2pBBBNl6K@mail.gmail.com>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-In-Reply-To: <1275916830.1645.566.camel@laptop>
-References: <1275834706.7227.545.camel@mulgrave.site>
-	<alpine.LFD.2.00.1006061725000.2933@localhost.localdomain>
-	<1275844114.7227.552.camel@mulgrave.site>
-	<20100606190525.GA20517@infradead.org>
-	<AANLkTikKx-gXCGtNo3woHLCpBoEQ7hG9Jbiq3hwUTW_w@mail.gmail.com>
-	<20100606192405.GA7559@infradead.org>
-	<AANLkTikA0ihlbehyyN-zQ3mN4WmlZJYBSRTYV8SbDhSr@mail.gmail.com>
-	<1275916830.1645.566.camel@laptop>
-Date: Tue, 8 Jun 2010 01:17:13 +0200
-Message-ID: <AANLkTik-0JRJTEbVkr4LUsnELRuqpmGYrRsMxVZDpz8C@mail.gmail.com>
-Subject: Re: [linux-pm] suspend blockers & Android integration
-From: Linus Walleij <linus.ml.walleij@gmail.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Brian Swetland <swetland@google.com>,
-       Christoph Hellwig <hch@infradead.org>,
-       James Bottomley <James.Bottomley@suse.de>,
-       Thomas Gleixner <tglx@linutronix.de>,
-       Alan Cox <alan@lxorguk.ukuu.org.uk>,
-       Florian Mickler <florian@mickler.org>,
-       Vitaly Wool <vitalywool@gmail.com>, "Arve Hj?nnev?g" <arve@android.com>,
-       Arjan van de Ven <arjan@infradead.org>, tytso@mit.edu,
-       "H. Peter Anvin" <hpa@zytor.com>, LKML <linux-kernel@vger.kernel.org>,
-       Neil Brown <neilb@suse.de>,
-       Linux PM <linux-pm@lists.linux-foundation.org>,
-       Ingo Molnar <mingo@elte.hu>,
-       Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       Felipe Balbi <felipe.balbi@nokia.com>, hackbod@android.com
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2010/6/7 Peter Zijlstra <peterz@infradead.org>:
-> On Sun, 2010-06-06 at 12:58 -0700, Brian Swetland wrote:
->> Somebody will have to broker a deal with the frameworks/apps folks to
->> get rid of the binder.  They like it a lot.  Of course if somebody
->> built a drop-in replacement for the userspace side that didn't require
->> a kernel driver, had the same performance characteristics, solved the
->> same problems, etc, they could probably make an argument for it (or
->> just provide it as a drop-in replacement for people who want a more
->> "pure" linux underneath Android, even if we didn't pick it up).
->
-> So what's up with this Binder stuff, from what I can see its just
-> yet-another-CORBA. Why does it need a kernel part at all, can't you
-> simply run with a user-space ORB instead?
->
-> I really don't get why people keep re-inventing CORBA, there's some
-> really nice (free) ORBs out there, like:
->
->  http://www.cs.wustl.edu/~schmidt/TAO.html
+On Mon, 7 Jun 2010, Esben Haabendal wrote:
+> On Mon, Jun 7, 2010 at 5:06 PM, Thomas Gleixner <tglx@linutronix.de> wrote:
+> 
+> > Maybe you understand now, why I was pretty sure upfront, that your
+> > approach was wrong even without knowing all the gory details ? :)
+> 
+> I understand.  There is a better solution, which is to use threaded
+> interrupts where needed.
+> 
+> But I must confess that I am disappointed that you still fail to see
+> how the pca953x
+> patch actually eliminates the need for serialization. But I don't
+> think there is much
+> point in going on about that.
 
-There was a mailthread on LKML a while back where binder was
-discussed, where Dianne Hackborn explained in detail how Android
-uses binder. At the time it was contrasted with D-Bus (the IPC
-mechanism that has largely replaced DCOP (KDE) and Bonobo
-(GNOME), the latter was actually CORBA-based).
+I return the favour of being disappointed that you are still failing
+to accept that there is a fundamental difference between "it works in
+a particular case" and semantical correctness under all
+circumstances.
 
-I don't think there was any conclusion, but it was pretty clear that
-binder is an Android key asset, actually the key component that
-the Android people have brought with them from BeOS to
-Palmsource to Android to Google, and they really really like to use
-that thing.
+There is no place for "it works in a particular case" in a kernel
+which runs on a gazillion of different devices unless you want to
+create a complete unmaintainable mess. The only way to avoid this is
+to be strict about semantics even if it seems unsensible for a
+particular case.
 
-It's built into the entire Android userspace for all IPC, except the
-stuff that's handled by D-Bus instead (yes they have
-both for some cases).
+Also I explained it to you in great length, that your patch violates
+the semantical guarantees of existing functions, but you ignore that
+completely.
 
-What sets binder aside from the others is that it's kernel-based;
-things like low-latency and large buffer-passing have been mentioned
-as key features of the kernel driver.
+It's Open Source, go wild and change it for your particular case - but
+don't expect that I accept patches to the generic irq code which will
+cause _me_ predictable trouble as I have to deal with the
+fallout. Neither expect, that I ack patches to users of that code
+which are semantically wrong.
 
-Solving binder one way is to just include it and say it's needed
-to run Android, the other is to define the technical issue at hand,
-which is: "can the kernel support high-speed, low-latency,
-partly marshalled, large-buffer IPC?"
+Just for the record, the pca953x driver is broken vs. the local state
+protection anyway as the GPIO functions are not serialized against the
+interrupt controller functions. There is no magic which prevents that,
+neither on your system nor on any other. The GPIO function should take
+buslock when modifying local state and that's one of the reasons why
+buslock it is there and cannot go away.
 
-D-Bus (on a local machine, mind you, it can use TCP also) will use
-a simple unix domain socket by:
+I'm anticipating that you are going to tell me that it does not matter
+on your particular powerpc combined with your usage pattern (i.e no
+GPIO users). And I tell you right away, that I'm not interested in
+this answer for well explained reasons.
 
-socket(PF_UNIX, SOCK_STREAM | SOCK_CLOEXEC, 0)
-as can be seen here:
-http://cgit.freedesktop.org/dbus/dbus/tree/dbus/dbus-sysdeps-unix.c
+> Oh, I still think that the disable_irq_nosync documentaiton is misleading.
+> Functions that are allowed in a particular context should not call functions
+> that are not allowed to be called in that context. But now I know :-)
 
-ACE/TAO as referenced seems to use only TCP sockets actually:
-https://svn.dre.vanderbilt.edu/viewvc/Middleware/trunk/ACE/ace/Sock_Connect.cpp?view=co
-Perhaps it simply uses 127.0.0.1 for local IPC. (The source is
-voluminous and hard for me to navigate, perhaps someone
-familiar with it can add something here.)
+As I said before: I agree and I'm happy to accept a patch to fix that
+documentation problem.
 
-Then either D-Bus or TAO builds a complete marshalling stack on
-top of these sockets, it's all fully abstract, fully userspace. Several
-processes and dbus daemons push/pull bytes into these sockets.
-I think DCOP and Bonobo basically do the same thing, by
-the way.
+Thanks,
 
-Binder on the other hand is a large kernel module:
-http://android.git.kernel.org/?p=kernel/experimental.git;a=blob;f=drivers/staging/android/binder.c;h=e13b4c4834076eb64680457049832af0b92d88b9;hb=android-2.6.34-test2
-
-It will do some serious reference counting, handshaking back-and-forth
-and so on. Basically a lot of the stuff that other IPC mechanisms
-also does, but in kernelspace. (OK I'm oversimplifying, binder
-is far more lightweight for one.)
-
-The bigger question behind it all is this:
-
-Does the kernel provide the proper support for local IPC
-transport, or is there more it could do in terms of interface, latency,
-throughput?
-
-A domain socket bitsink should be enough for everybody?
-
-So I would really like to know from the Android people why the
-binder is in the kernel, after all. Could it *theoretically* be in
-userspace, on top of some unix domain sockets, running as a
-real-time scheduled daemon or whatever, still yielding the same
-performance? Or is there some discovered limitation with current
-interfaces, that everybody ought to know? Especially authors of
-D-Bus and TAO etc would be very interested in this I believe.
-
-It's not like I don't understand that it would be hard to move this
-thing to userspace, it's more that I'd like to know how you think it
-would be impacted by that.
-
-Yours,
-Linus Walleij
+	tglx
