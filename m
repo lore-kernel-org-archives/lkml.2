@@ -1,46 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753859Ab0FGSvS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jun 2010 14:51:18 -0400
-Received: from mail.perches.com ([173.55.12.10]:2725 "EHLO mail.perches.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753480Ab0FGSuI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jun 2010 14:50:08 -0400
-From: Joe Perches <joe@perches.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org,
-       Teddy Wang <teddy.wang@siliconmotion.com.cn>
-Subject: [PATCH 13/17] MAINTAINERS: Add STAGING - SILICON MOTION SM7XX FRAME BUFFER DRIVER
-Date: Mon,  7 Jun 2010 11:49:47 -0700
-Message-Id: <731775bff4188da59b7217d785d81e57cc910b22.1275935091.git.joe@perches.com>
-X-Mailer: git-send-email 1.7.1.244.gbdc4
-In-Reply-To: <cover.1275935090.git.joe@perches.com>
-References: <cover.1275935090.git.joe@perches.com>
+	id S1753935Ab0FGSvY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jun 2010 14:51:24 -0400
+Received: from mail1-out1.atlantis.sk ([80.94.52.55]:40913 "EHLO
+	mail.atlantis.sk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753480Ab0FGSvW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Jun 2010 14:51:22 -0400
+From: Ondrej Zary <linux@rainbow-software.org>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Subject: Re: [PATCH] [RFC] Save/restore MISC_ENABLE register
+Date: Mon, 7 Jun 2010 20:51:07 +0200
+User-Agent: KMail/1.9.10
+Cc: "Linux-pm mailing list" <linux-pm@lists.linux-foundation.org>,
+       Kernel development list <linux-kernel@vger.kernel.org>,
+       Alan Stern <stern@rowland.harvard.edu>, Len Brown <len.brown@intel.com>,
+       Pavel Machek <pavel@ucw.cz>, "Rafael J. Wysocki" <rjw@sisk.pl>
+References: <201006071814.53583.linux@rainbow-software.org> <4C0D2BFB.2090200@zytor.com>
+In-Reply-To: <4C0D2BFB.2090200@zytor.com>
+MIME-Version: 1.0
+Content-Type: text/plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+Message-Id: <201006072051.10421.linux@rainbow-software.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Joe Perches <joe@perches.com>
----
- MAINTAINERS |    5 +++++
- 1 files changed, 5 insertions(+), 0 deletions(-)
+On Monday 07 June 2010 19:27:23 H. Peter Anvin wrote:
+> On 06/07/2010 09:14 AM, Ondrej Zary wrote:
+> > Save/restore MISC_ENABLE register on suspend/resume.
+> > This fixes OOPS (invalid opcode) on resume from STR on Asus P4P800-VM,
+> > which wakes up with MWAIT disabled.
+> >
+> > Is this a correct thing to do? Is it OK on x86_64?
+>
+> This MSR isn't available on all processors, and thus cannot be saved and
+> restored unconditionally like this.  On the save path, one can use
+> rdmsr_safe(); on the wakeup path it's not clear to me it is safe to do
+> so, so it would be better to save a presence flag on the save path and
+> conditionalize the write.
 
-diff --git a/MAINTAINERS b/MAINTAINERS
-index 33679ab..ada25ae 100644
---- a/MAINTAINERS
-+++ b/MAINTAINERS
-@@ -5517,6 +5517,11 @@ M:	Willy Tarreau <willy@meta-x.org>
- S:	Odd Fixes
- F:	drivers/staging/panel/
+Something like this?
+
+Save/restore MISC_ENABLE register on suspend/resume.
+This fixes OOPS (invalid opcode) on resume from STR on Asus P4P800-VM, which
+wakes up with MWAIT disabled.
+
+Signed-off-by: Ondrej Zary <linux@rainbow-software.org>
+
+diff -urp linux-2.6.35-rc1-git2-orig/arch/x86//include/asm/suspend_32.h linux-2.6.35-rc1-git2/arch/x86//include/asm/suspend_32.h
+--- linux-2.6.35-rc1-git2-orig/arch/x86//include/asm/suspend_32.h	2010-05-30 22:21:02.000000000 +0200
++++ linux-2.6.35-rc1-git2/arch/x86//include/asm/suspend_32.h	2010-06-07 20:41:44.000000000 +0200
+@@ -15,6 +15,8 @@ static inline int arch_prepare_suspend(v
+ struct saved_context {
+ 	u16 es, fs, gs, ss;
+ 	unsigned long cr0, cr2, cr3, cr4;
++	u64 misc_enable;
++	bool misc_enable_saved;
+ 	struct desc_ptr gdt;
+ 	struct desc_ptr idt;
+ 	u16 ldt;
+diff -urp linux-2.6.35-rc1-git2-orig/arch/x86//include/asm/suspend_64.h linux-2.6.35-rc1-git2/arch/x86//include/asm/suspend_64.h
+--- linux-2.6.35-rc1-git2-orig/arch/x86//include/asm/suspend_64.h	2010-05-30 22:21:02.000000000 +0200
++++ linux-2.6.35-rc1-git2/arch/x86//include/asm/suspend_64.h	2010-06-07 20:38:42.000000000 +0200
+@@ -27,6 +27,8 @@ struct saved_context {
+ 	u16 ds, es, fs, gs, ss;
+ 	unsigned long gs_base, gs_kernel_base, fs_base;
+ 	unsigned long cr0, cr2, cr3, cr4, cr8;
++	u64 misc_enable;
++	bool misc_enable_saved;
+ 	unsigned long efer;
+ 	u16 gdt_pad;
+ 	u16 gdt_limit;
+diff -urp linux-2.6.35-rc1-git2-orig/arch/x86//power/cpu.c linux-2.6.35-rc1-git2/arch/x86//power/cpu.c
+--- linux-2.6.35-rc1-git2-orig/arch/x86//power/cpu.c	2010-05-30 22:21:02.000000000 +0200
++++ linux-2.6.35-rc1-git2/arch/x86//power/cpu.c	2010-06-07 20:41:13.000000000 +0200
+@@ -105,6 +105,8 @@ static void __save_processor_state(struc
+ 	ctxt->cr4 = read_cr4();
+ 	ctxt->cr8 = read_cr8();
+ #endif
++	ctxt->misc_enable_saved = !rdmsrl_safe(MSR_IA32_MISC_ENABLE,
++					       &ctxt->misc_enable);
+ }
  
-+STAGING - SILICON MOTION SM7XX FRAME BUFFER DRIVER
-+M:	Teddy Wang <teddy.wang@siliconmotion.com.cn>
-+S:	Odd Fixes
-+F:	drivers/staging/sm7xx/
-+
- STARFIRE/DURALAN NETWORK DRIVER
- M:	Ion Badulescu <ionut@badula.org>
- S:	Odd Fixes
--- 
-1.7.1.244.gbdc4
+ /* Needed by apm.c */
+@@ -152,6 +154,8 @@ static void fix_processor_context(void)
+  */
+ static void __restore_processor_state(struct saved_context *ctxt)
+ {
++	if (ctxt->misc_enable_saved)
++		wrmsrl(MSR_IA32_MISC_ENABLE, ctxt->misc_enable);
+ 	/*
+ 	 * control registers
+ 	 */
 
+
+
+-- 
+Ondrej Zary
