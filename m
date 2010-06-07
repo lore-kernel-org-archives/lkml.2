@@ -1,101 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752925Ab0FGVbO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jun 2010 17:31:14 -0400
-Received: from crca.org.au ([74.207.252.120]:51609 "EHLO crca.org.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751670Ab0FGVbN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jun 2010 17:31:13 -0400
-X-Bogosity: Ham, spamicity=0.000000
-Message-ID: <4C0D6518.7000603@crca.org.au>
-Date: Tue, 08 Jun 2010 07:31:04 +1000
-From: Nigel Cunningham <ncunningham@crca.org.au>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.9) Gecko/20100423 Thunderbird/3.0.4
+	id S1752891Ab0FGVdQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jun 2010 17:33:16 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:57364 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752077Ab0FGVdP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Jun 2010 17:33:15 -0400
+Date: Mon, 7 Jun 2010 22:33:10 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: David Woodhouse <dwmw2@infradead.org>, Dave Airlie <airlied@linux.ie>,
+       dri-devel@lists.freedesktop.org,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [git pull] drm fixes
+Message-ID: <20100607213310.GO31073@ZenIV.linux.org.uk>
+References: <alpine.DEB.2.00.1006070404510.29029@skynet.skynet.ie>
+ <alpine.LFD.2.00.1006071057300.3515@i5.linux-foundation.org>
+ <20100607182640.GL31073@ZenIV.linux.org.uk>
+ <alpine.LFD.2.00.1006071146451.3515@i5.linux-foundation.org>
+ <1275939165.17903.5100.camel@macbook.infradead.org>
+ <alpine.LFD.2.00.1006071409320.4506@i5.linux-foundation.org>
 MIME-Version: 1.0
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-CC: Martin Steigerwald <Martin@lichtvoll.de>, tuxonice-devel@tuxonice.net,
-       LKML <linux-kernel@vger.kernel.org>,
-       pm list <linux-pm@lists.linux-foundation.org>,
-       Maxim Levitsky <maximlevitsky@gmail.com>,
-       TuxOnIce-devel <tuxonice-devel@tuxonice.net>
-Subject: Re: [TuxOnIce-devel] [linux-pm] [SUSPECTED SPAM] Re: Proposal for
- a new algorithm for reading & writing a hibernation image.
-References: <9rpccea67yy402c975fqru8r.1275576653521@email.android.com> <4C0C843D.6030008@crca.org.au> <201006071507.56259.Martin@lichtvoll.de> <201006072328.21878.rjw@sisk.pl>
-In-Reply-To: <201006072328.21878.rjw@sisk.pl>
-Content-Type: text/plain; charset=ISO-8859-2; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LFD.2.00.1006071409320.4506@i5.linux-foundation.org>
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi.
+On Mon, Jun 07, 2010 at 02:17:23PM -0700, Linus Torvalds wrote:
+> 	jffs2_clear_inode(inode);
+> 
+> into
+> 
+> 	make_bad_inode(inode);
+> 	iput(inode);
+> 
+> and that changelog doesn't really explain it either ("fix leak"? Ok, I can 
+> see the iput() fixing the leak - but you also did that jffs2_clear_inode() 
+> change, and that has no explanation what-so-ever.
 
-On 08/06/10 07:28, Rafael J. Wysocki wrote:
-> On Monday 07 June 2010, Martin Steigerwald wrote:
->> Am Montag 07 Juni 2010 schrieb Nigel Cunningham:
->>> Hi.
->>
->> Hi Nigel and Rafael, hi everyone else involved,
->>
->>> On 07/06/10 05:04, Rafael J. Wysocki wrote:
->>>> On Sunday 06 June 2010, Maxim Levitsky wrote:
->>>>> On Sun, 2010-06-06 at 15:57 +0200, Rafael J. Wysocki wrote:
->>>>>> On Sunday 06 June 2010, Maxim Levitsky wrote:
->>>> ...
->>>>
->>>>>> So how TuxOnIce helps here?
->>>>>
->>>>> Very simple.
->>>>>
->>>>> With swsusp, I can save 750MB (memory) + 250 Vram (vram)
->>>>> With full memory save I can save (1750 MB of memory) + 250 MB of
->>>>> vram....
->>>>
->>>> So what about being able to save 1600 MB total instead of the 2 GB
->>>> (which is what we're talking about in case that's not clear)?  Would
->>>> it be _that_ _much_ worse?
->>>
->>> That all depends on what is in the 400MB you discard.
->>>
->>> The difference is "Just as if you'd never hibernated" vs something
->>> closer to "Just as if you'd only just started up". We can't make
->>> categorical statements because it really does depend upon what you
->>> discard and what you want to do post-resume - that is, how useful the
->>> memory you discard would have been. That's always going to vary from
->>> case to case.
->>
->> Nigel and Rafael, how about just testing it?
->
-> ISTR that can be done to some extent using TuxOnIce as is, becuase there is a
-> knob that you can use to limit the image size.
+The final iput() calls ->clear_inode() (jffs2_clear_inode in case of jffs2)
+and the inode has just been created, with no other in-core references
+existing.  Basically, that call was the only part of (required) iput() that
+_was_ done there ;-)
 
-Yes.
-
->> Whats needed to have 80% of the memory saved instead of 50%?
->>
->> I think its important to go the next steps towards a better snapshot in
->> mainline kernel even when you do not agree on the complete end result yet.
->>
->> What about
->>
->> - Rafael, you review the async write patches of Nigel. If they are good,
->> IMHO they should go in as soon as possible.
->
-> Yes, I'm going to do that.
-
-Great.
-
->> - Nigel and/or Rafael, you look at whats needed to save 80% instead of 50%
->> of the memory and develop a patch for it
->
-> That would be my suggestion as well.
-
-It would be no problem to merge most of the TuxOnIce code without even 
-thinking further about this two-part image issue, because TuxOnIce also 
-has a tuneable to disable the second part of the image. We could even 
-merge the two part stuff and make it off by default, but I'm not sure 
-Rafael would accept that option.
-
-Regards,
-
-Nigel
+FWIW, what's happening around ->clear_inode()/->delete_inode()/->drop_inode()
+is a mess.  This leak got found when I'd been looking through that crap;
+results of sanitizing are in #evict_inode (vfs-2.6.git).  I'm going to shift
+that into for-next tomorrow, assuming it survives local beating.  For now
+I've just pulled jffs2-fixes in it...
