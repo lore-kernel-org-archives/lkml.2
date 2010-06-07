@@ -1,102 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751767Ab0FGXed (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jun 2010 19:34:33 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:56763 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750834Ab0FGXeb convert rfc822-to-8bit (ORCPT
+	id S1751872Ab0FGXfd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jun 2010 19:35:33 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:36735 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750834Ab0FGXfc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jun 2010 19:34:31 -0400
+	Mon, 7 Jun 2010 19:35:32 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=DIhL7TsTRBjRxpPEAD52muMMYwfSDKLDqtMBOyymCtaQpIXifP2WyQBVWGADUuRT1T
+         wtz7uxONlIFcvjZA9G0kDQvV7V7ouLgcdm1inXNcyQdsKJyJ8WkSxcKE9XBxahTFzH5W
+         33J60OnWBoXfZtYY7t9c3UnU9eMsHJMxm3HC8=
+Message-ID: <4C0D823F.9070300@gmail.com>
+Date: Mon, 07 Jun 2010 17:35:27 -0600
+From: Robert Hancock <hancockrwd@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-3.fc13 Thunderbird/3.0.4
 MIME-Version: 1.0
-In-Reply-To: <alpine.LFD.2.00.1006061202351.2933@localhost.localdomain>
-References: <20100603193045.GA7188@elte.hu>
-	<20100603232302.GA16184@elte.hu>
-	<1275644619.27810.39462.camel@twins>
-	<201006050138.30859.rjw@sisk.pl>
-	<alpine.LFD.2.00.1006050148080.2933@localhost.localdomain>
-	<AANLkTikGDSzaENwg_0BAtsYf3ulGd_6sGPR30WsvUxMi@mail.gmail.com>
-	<alpine.LFD.2.00.1006050246350.2933@localhost.localdomain>
-	<AANLkTikU21xF49Z-_Lnrq7U7buNmqw_gyEEST8LuN24z@mail.gmail.com>
-	<alpine.LFD.2.00.1006051736040.2933@localhost.localdomain>
-	<AANLkTinD39rI47innPbGz1Gi8PsXV5HqkmaQuJ70oQ63@mail.gmail.com>
-	<alpine.LFD.2.00.1006052348200.2933@localhost.localdomain>
-	<AANLkTikmWDHYJ8wWF2cZapbkHHjV09R39I37yvQXFmor@mail.gmail.com>
-	<alpine.LFD.2.00.1006060148470.2933@localhost.localdomain>
-	<AANLkTikdM79nmARagK9gLveMWEiT6rlk44UELes1k8Ch@mail.gmail.com>
-	<alpine.LFD.2.00.1006061202351.2933@localhost.localdomain>
-Date: Mon, 7 Jun 2010 16:34:29 -0700
-Message-ID: <AANLkTilKcGdOgi3HdLq_UrqI-VthqC50QnM5WOvCg_rQ@mail.gmail.com>
-Subject: Re: suspend blockers & Android integration
-From: =?ISO-8859-1?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, Peter Zijlstra <peterz@infradead.org>,
-       Ingo Molnar <mingo@elte.hu>, tytso@mit.edu,
-       Brian Swetland <swetland@google.com>, Neil Brown <neilb@suse.de>,
-       Alan Stern <stern@rowland.harvard.edu>,
-       Felipe Balbi <felipe.balbi@nokia.com>,
-       LKML <linux-kernel@vger.kernel.org>,
-       Florian Mickler <florian@mickler.org>,
-       Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
-       Linux PM <linux-pm@lists.linux-foundation.org>,
-       Alan Cox <alan@lxorguk.ukuu.org.uk>,
-       James Bottomley <James.Bottomley@suse.de>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       Kevin Hilman <khilman@deeprootsystems.com>,
-       "H. Peter Anvin" <hpa@zytor.com>,
-       Arjan van de Ven <arjan@infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: DanVolkman <danvolkman@gmail.com>
+CC: linux-kernel@vger.kernel.org, ariveira@gmail.com
+Subject: Re: Kernel 2.6.32-22-generic sata problems
+References: <4C0A6326.1090100@gmail.com> <4C0B5307.1020206@gmail.com> <4C0D3BBE.9020601@gmail.com>
+In-Reply-To: <4C0D3BBE.9020601@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2010/6/6 Thomas Gleixner <tglx@linutronix.de>:
-> On Sat, 5 Jun 2010, Arve Hjønnevåg wrote:
->> 2010/6/5 Thomas Gleixner <tglx@linutronix.de>:
->> > On Sat, 5 Jun 2010, Arve Hjønnevåg wrote:
->> >> 2010/6/5 Thomas Gleixner <tglx@linutronix.de>:
->> >> > On Sat, 5 Jun 2010, Arve Hjønnevåg wrote:
->> >> >> >> > That download might take a minute or two, but that's not an
->> >> >> >> > justification for the crapplication to run unconfined and prevent
->> >> >> >> > lower power states.
->> >> >> >> >
->> >> >> >>
->> >> >> >> I agree, but this is not a simple problem to solve.
->> >> >> >
->> >> >> > Not with suspend blockers, but with cgroup confinement of crap, it's
->> >> >> > straight forward.
->> >> >> >
->> >> >>
->> >> >> I don't think is is straight forward. If the a process in the frozen
->> >> >> group holds a resource that a process in the unfrozen group needs, how
->> >> >> do deal with that?
->> >> >
->> >> > I'm going to fix the framework which puts the group into freeze state
->> >> > w/o making sure that there is no held shared resource. Come on it's
->> >> > not rocket science.
->> >> >
->> >>
->> >> I'm not sure which framework you are talking about here, but I don't
->> >> think there is a single framework that knows about all shared
->> >> resources.
->> >
->> > Damn, it's not me talking about "our framework", you are mentioning
->> > when it fits your needs.
+On 06/07/2010 12:34 PM, DanVolkman wrote:
+>
+> Thank you guys for responding to me email.
+>
+> I did what you asked and it was nice to be able to see what messages
+> were being generated. In my debugging efforts I made one mistake, I
+> replaced the motherboard with the exact same brand/model motherboard
+> (different firmware though), I wish I would have had a different one
+> around the house. Anyway, it appears that the one month old drive I had
+> mounted failed and happened to coincide with the OS upgrade. I was not
+> using that drive and something seems suspicious because this is the
+> second new drive that has failed and these are drives from a reputable
+> company. With the changes in place you recommended I saw:
+>
+> ata3.01: status: { DRDY ERR }
+> ata3.01: error: { UNC }
+> ata3.01: configured for UDMA/133
+> ata3: EH complete
+>
+> This code would loop with occasional other messages. I unhooked my good
+> drive and used the Ubuntu distribution CD and booted up into "try
+> Ubuntu" mode and used the disk utility and it said the drive was bad. I
+> am not sure if this is a drive problem or a motherboard problem, maybe I
+> will replace both. Yes, I did try different SATA cables and sockets.
+
+Probably not a motherboard problem, but could be a power supply issue - 
+or maybe the drive is overheating causing premature failure.
+
+>
+> Anyway, sorry to bother you guys but you did help me identify the problem.
+>
+> Dan
+> DanVolkman@gmail.com
+>
+>
+> On 10-06-06 12:49 AM, Robert Hancock wrote:
+>> On 06/05/2010 08:45 AM, DanVolkman wrote:
+>>> SYNOPSES
+>>> ==========
+>>> Kernel fails to boot when multiple SATA drives are connected. After a
+>>> day of working on the problem (changing cables, sata positions,
+>>> motherboards, CPUs, power supplies, etc.) I discovered that with only
+>>> the boot drive connected everything worked fine.
+>>>
+>>> BACKGROUND
+>>> =============
+>>> I had a career in UNIX so it is common for me to use cpio(1), tar(1),
+>>> dump(1), and dd(1) to replicate disks but have not been able to do so
+>>> with two SATA disks connected using older kernels but with this new
+>>> kernel I could not even have the second disk connected.
+>>>
+>>> PROBLEM APPEARED WHEN
+>>> ======================
+>>> An Ubuntu kernel update stopped my computer from booting. I have no
+>>> backup computer so my description is sketchy because I was not willing
+>>> to use a pencil and write the lengthy terse information. Boot error
+>>> message was something like:
+>>>
+>>> Gave up waiting for root device. Common problems:0f106d71e58
+>>> ...
+>>> ALERT! /dev/disk/by-uuid/..... does not exist. Dropping to a shell!
 >>
->> You said you were going to fix the framework. I did know if you were
->> talking about the cgroup framework, or the android user-space
->> frameworks. I don't think either has knowledge about all shared
->> resources.
->
-> The cgroup freezer makes sure that there are no in kernel resources
-> blocked. Of course the user space side has to do the same and it's not
-> rocket science.
+>> Can you get any of the libata messages showing up on the console? You
+>> might need to change grub options to boot with more debug displayed
+>> (don't know how to do that offhand on Ubuntu).
+>>
 >
 
-It is much easier to make sure there are no kernel resources held than
-that there are no resources held in user-space. The kernel threads
-have to return to a safe location before they get frozen, where user
-threads are just frozen wherever they are.
-
--- 
-Arve Hjønnevåg
