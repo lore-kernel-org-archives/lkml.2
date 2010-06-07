@@ -1,72 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751454Ab0FGEBw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jun 2010 00:01:52 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:51337 "EHLO smtps.tip.net.au"
+	id S1751723Ab0FGELt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jun 2010 00:11:49 -0400
+Received: from mail.issp.bas.bg ([195.96.236.10]:58551 "EHLO mail.issp.bas.bg"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751077Ab0FGEBu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jun 2010 00:01:50 -0400
-Date: Mon, 7 Jun 2010 14:01:40 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Chris Metcalf <cmetcalf@tilera.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-       "David S. Miller" <davem@davemloft.net>, Arnd Bergmann <arnd@arndb.de>
-Subject: linux-next: build failure after merge of the final tree (tile tree
- related)
-Message-Id: <20100607140140.870c0fb5.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1751495Ab0FGELs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Jun 2010 00:11:48 -0400
+From: Marin Mitov <mitov@issp.bas.bg>
+Organization: Institute of Solid State Physics
+To: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+Subject: Re: [BUG][PATCH]dma-coherent.c: error path bug
+Date: Mon, 7 Jun 2010 07:08:56 +0300
+User-Agent: KMail/1.13.3 (Linux/2.6.34-rc7; KDE/4.4.3; x86_64; ; )
+Cc: linux-kernel@vger.kernel.org
+References: <201006061353.05310.mitov@issp.bas.bg> <20100607113001S.fujita.tomonori@lab.ntt.co.jp>
+In-Reply-To: <20100607113001S.fujita.tomonori@lab.ntt.co.jp>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201006070708.57453.mitov@issp.bas.bg>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Chris,
+On Monday, June 07, 2010 05:30:48 am FUJITA Tomonori wrote:
+> On Sun, 6 Jun 2010 13:53:04 +0300
+> Marin Mitov <mitov@issp.bas.bg> wrote:
+> 
+> > Hi all,
+> > 
+> > The error path in dma_declare_coherent_memory() leaves 
+> > the pointer dev->dma_mem non completely initialized.
+> > 
+> > If allocation of dev->dma_mem succeeds, 
+> > but allocation of dev->dma_mem->bitmap fails
+> > dev->dma_mem is freed, but left non NULL
+> > and non completely initialized.
+> > 
+> > Either zero it after being freed (one liner patch), or assign to 
+> > dev->dma_mem only completely initialized structure (patch included).
+> > 
+> > Comments welcome.
+> > 
+> > Marin Mitov
+> > 
+> > Signed-off-by: Marin Mitov <mitov@issp.bas.bg>
+> 
+> Hmm, if dma_declare_coherent_memory() fails, the driver doesn't use
+> dev->dma_mem. So even if dev->dma_mem points to a freed memory, I'm
+> not sure that it causes a real problem. We could call this patch a
+> cleanup though.
+> 
+My understanding of dma_alloc_coherent() is that  we first try to allocate from 
+per-device coherent memory and we do it using dma_alloc_from_coherent()
+(in drivers/base/dma-coherent.c) if dev->dma_mem is not NULL (and we have 
+left it not NULL, here is the problem). If allocation of dev->dma_mem->bitmap 
+fails dev->dma_mem must be NULL.
 
-After merging the final tree, today's linux-next build (sparc32 defconfig)
-failed like this:
+Marin Mitov
 
-arch/sparc/kernel/sys_sparc_32.c:229: error: conflicting types for 'sys_rt_sigaction'
-include/linux/syscalls.h:367: note: previous declaration of 'sys_rt_sigaction' was here
-
-Caused by commit 5360bd776f73d0a7da571d72a09a03f237e99900 ("Fix up the
-"generic" unistd.h ABI to be more useful") from the tile tree.  Sparc's
-sys_rt_sigaction has an extra argument.
-
-I applied this patch for today.  Something better could probably be
-done.  I note that there is already a declaration of sys_rt_sigaction in
-include/asm-generic/syscalls.h ...
-
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-Date: Mon, 7 Jun 2010 13:49:46 +1000
-Subject: [PATCH] Only declare sys_rt_sigaction if it is wanted.
-
-Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
----
- include/linux/syscalls.h |    2 ++
- 1 files changed, 2 insertions(+), 0 deletions(-)
-
-diff --git a/include/linux/syscalls.h b/include/linux/syscalls.h
-index 61663cb..4193907 100644
---- a/include/linux/syscalls.h
-+++ b/include/linux/syscalls.h
-@@ -364,9 +364,11 @@ asmlinkage long sys_init_module(void __user *umod, unsigned long len,
- asmlinkage long sys_delete_module(const char __user *name_user,
- 				unsigned int flags);
- 
-+#ifdef __ARCH_WANT_SYS_RT_SIGACTION
- asmlinkage long sys_rt_sigaction(int sig, const struct sigaction __user *act,
- 				 struct sigaction __user *oact,
- 				 size_t sigsetsize);
-+#endif
- asmlinkage long sys_rt_sigprocmask(int how, sigset_t __user *set,
- 				sigset_t __user *oset, size_t sigsetsize);
- asmlinkage long sys_rt_sigpending(sigset_t __user *set, size_t sigsetsize);
--- 
-1.7.1
-
--- 
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
