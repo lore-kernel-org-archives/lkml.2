@@ -1,91 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753624Ab0FGWjK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jun 2010 18:39:10 -0400
-Received: from nlpi129.sbcis.sbc.com ([207.115.36.143]:36832 "EHLO
-	nlpi129.prodigy.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752797Ab0FGWjI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jun 2010 18:39:08 -0400
-Date: Mon, 7 Jun 2010 17:35:27 -0500 (CDT)
-From: Christoph Lameter <cl@linux-foundation.org>
-X-X-Sender: cl@router.home
-To: Giangiacomo Mariotti <gg.mariotti@gmail.com>
-cc: Pekka Enberg <penberg@cs.helsinki.fi>, Randy Dunlap <rdunlap@xenotime.net>,
-       Bill Davidsen <davidsen@tmr.com>, linux-kernel@vger.kernel.org,
-       linux-mm@kvack.org, x86 maintainers <x86@kernel.org>,
-       Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>
-Subject: Re: Possible bug in 2.6.34 slub
-In-Reply-To: <AANLkTimXxhVCu50GweoC7iF9tFEoSrWAbqQEXRroGnBk@mail.gmail.com>
-Message-ID: <alpine.DEB.2.00.1006071730460.12520@router.home>
-References: <AANLkTimEFy6VM3InWlqhVooQjKGSD3yBxlgeRbQC2r1L@mail.gmail.com> <20100531165528.35a323fb.rdunlap@xenotime.net> <4C047CF9.9000804@tmr.com> <AANLkTilLq-hn59CBcLnOsnT37ZizQR6MrZX6btKPhfpb@mail.gmail.com> <20100601123959.747228c6.rdunlap@xenotime.net>
- <alpine.DEB.2.00.1006011445100.9438@router.home> <AANLkTinxOJShwd7xUornVI89BmJnbX9-a7LVWaciNdr5@mail.gmail.com> <alpine.DEB.2.00.1006030833070.24954@router.home> <AANLkTimXxhVCu50GweoC7iF9tFEoSrWAbqQEXRroGnBk@mail.gmail.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1753602Ab0FGWmV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jun 2010 18:42:21 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:30592 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753245Ab0FGWmU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Jun 2010 18:42:20 -0400
+Subject: Re: [Regression, post-rc1] Multiple issues after enabling
+ SetVoltage on rs780m
+From: Dave Airlie <airlied@redhat.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Alex Deucher <alexdeucher@gmail.com>, Dave Airlie <airlied@gmail.com>,
+       LKML <linux-kernel@vger.kernel.org>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       dri-devel@lists.sourceforge.net
+In-Reply-To: <201006072337.17778.rjw@sisk.pl>
+References: <201006071129.32159.rjw@sisk.pl>
+	 <AANLkTinx-5-jjtnYnUAsl-DvFtbL6wtyPnALdri0d-d2@mail.gmail.com>
+	 <AANLkTilerIhYtHlX0vNAg_pfG_1100OymKV4aaGv-VSE@mail.gmail.com>
+	 <201006072337.17778.rjw@sisk.pl>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 08 Jun 2010 08:37:18 +1000
+Message-ID: <1275950238.3125.0.camel@clockmaker-el6>
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 4 Jun 2010, Giangiacomo Mariotti wrote:
+On Mon, 2010-06-07 at 23:37 +0200, Rafael J. Wysocki wrote:
+> On Monday 07 June 2010, Alex Deucher wrote:
+> > On Mon, Jun 7, 2010 at 6:15 AM, Dave Airlie <airlied@gmail.com> wrote:
+> > > On Mon, Jun 7, 2010 at 7:29 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> > >> Hi Alex,
+> > >>
+> > >> Your commit 9349d5cc920c10845693f906ebd67f394f1d0d04
+> > >> (drm/radeon/kms/pm: enable SetVoltage on r7xx/evergreen) has caused my test-bed
+> > >> Acer Ferrari One to behave quite unreliably.  The symptoms are:
+> > >>
+> > >> - the system hangs hard (~ 50% of the time) when starting Xorg
+> > >> - the system hangs hard (~ 50% of the time) when stopping Xorg during system
+> > >>  reboot
+> > >> - the system sometimes hangs hard during suspend to RAM
+> > >>
+> > >> These problems are not reproducible with the commit above reverted.
+> > >>
+> > >> Below is the information about the graphics adapter from lspci.
+> > >
+> > > Reverting that commit on master fixes it?
+> > >
+> > > that commit touches code paths in rv770 and evergreen that in no way
+> > > should affect that chipset which is an rs780, so takes the r600 paths.
+> > >
+> > > are you sure its not 7ac9aa5a1f1b87adb69bcbec2b89e228f074103a?
+> > 
+> > It should be that commit if it is indeed the voltage adjust.  That
+> > said, I just took a closer look at the voltage adjust on newer IGPs
+> > and unfortunately, it doesn't work the same as the discrete cards, so
+> > for now we should disable it.  The attached patch should do the trick.
+> >  There weren't any problems on my IGP chips, but they don't have a
+> > SetVoltage table, so nothing is touching the hw.
+> 
+> I'm not sure if the adapter is a discrete one.
+> 
+> Anyway, my testing was done before commit
+> 386f40c86d6c8d5b717ef20620af1a750d0dacb4 and I'm unable to reproduce the
+> problems with current -git, so they might be a fallout of the bug fixed by that
+> commit.
+> 
 
-> [    0.000000] found SMP MP-table at [ffff8800000f5ed0] f5ed0
+Yeah the sounded a lot more like the vt.c crapfest, since it was when
+starting/stopping X.
 
-SMP table is important.
+Dave.
 
-> [    0.000000] ACPI: LAPIC (acpi_id[0x00] lapic_id[0x00] enabled)
-> [    0.000000] ACPI: LAPIC (acpi_id[0x01] lapic_id[0x02] enabled)
-> [    0.000000] ACPI: LAPIC (acpi_id[0x02] lapic_id[0x04] enabled)
-> [    0.000000] ACPI: LAPIC (acpi_id[0x03] lapic_id[0x06] enabled)
-> [    0.000000] ACPI: LAPIC (acpi_id[0x04] lapic_id[0x01] enabled)
-> [    0.000000] ACPI: LAPIC (acpi_id[0x05] lapic_id[0x03] enabled)
-> [    0.000000] ACPI: LAPIC (acpi_id[0x06] lapic_id[0x05] enabled)
-> [    0.000000] ACPI: LAPIC (acpi_id[0x07] lapic_id[0x07] enabled)
-> [    0.000000] ACPI: LAPIC (acpi_id[0x08] lapic_id[0x08] disabled)
-> [    0.000000] ACPI: LAPIC (acpi_id[0x09] lapic_id[0x09] disabled)
-> [    0.000000] ACPI: LAPIC (acpi_id[0x0a] lapic_id[0x0a] disabled)
-> [    0.000000] ACPI: LAPIC (acpi_id[0x0b] lapic_id[0x0b] disabled)
-> [    0.000000] ACPI: LAPIC (acpi_id[0x0c] lapic_id[0x0c] disabled)
-> [    0.000000] ACPI: LAPIC (acpi_id[0x0d] lapic_id[0x0d] disabled)
-> [    0.000000] ACPI: LAPIC (acpi_id[0x0e] lapic_id[0x0e] disabled)
-> [    0.000000] ACPI: LAPIC (acpi_id[0x0f] lapic_id[0x0f] disabled)
-> [    0.000000] ACPI: LAPIC_NMI (acpi_id[0x00] dfl dfl lint[0x1])
-> [    0.000000] ACPI: LAPIC_NMI (acpi_id[0x01] dfl dfl lint[0x1])
-> [    0.000000] ACPI: LAPIC_NMI (acpi_id[0x02] dfl dfl lint[0x1])
-> [    0.000000] ACPI: LAPIC_NMI (acpi_id[0x03] dfl dfl lint[0x1])
-> [    0.000000] ACPI: LAPIC_NMI (acpi_id[0x04] dfl dfl lint[0x1])
-> [    0.000000] ACPI: LAPIC_NMI (acpi_id[0x05] dfl dfl lint[0x1])
-> [    0.000000] ACPI: LAPIC_NMI (acpi_id[0x06] dfl dfl lint[0x1])
-> [    0.000000] ACPI: LAPIC_NMI (acpi_id[0x07] dfl dfl lint[0x1])
-> [    0.000000] ACPI: LAPIC_NMI (acpi_id[0x08] dfl dfl lint[0x1])
-> [    0.000000] ACPI: LAPIC_NMI (acpi_id[0x09] dfl dfl lint[0x1])
-> [    0.000000] ACPI: LAPIC_NMI (acpi_id[0x0a] dfl dfl lint[0x1])
-> [    0.000000] ACPI: LAPIC_NMI (acpi_id[0x0b] dfl dfl lint[0x1])
-> [    0.000000] ACPI: LAPIC_NMI (acpi_id[0x0c] dfl dfl lint[0x1])
-> [    0.000000] ACPI: LAPIC_NMI (acpi_id[0x0d] dfl dfl lint[0x1])
-> [    0.000000] ACPI: LAPIC_NMI (acpi_id[0x0e] dfl dfl lint[0x1])
-> [    0.000000] ACPI: LAPIC_NMI (acpi_id[0x0f] dfl dfl lint[0x1])
-> [    0.000000] ACPI: IOAPIC (id[0x02] address[0xfec00000] gsi_base[0])
-> [    0.000000] IOAPIC[0]: apic_id 2, version 32, address 0xfec00000, GSI 0-23
-> [    0.000000] ACPI: INT_SRC_OVR (bus 0 bus_irq 0 global_irq 2 dfl dfl)
-> [    0.000000] ACPI: INT_SRC_OVR (bus 0 bus_irq 9 global_irq 9 high level)
-> [    0.000000] ACPI: IRQ0 used by override.
-> [    0.000000] ACPI: IRQ2 used by override.
-> [    0.000000] ACPI: IRQ9 used by override.
-> [    0.000000] Using ACPI (MADT) for SMP configuration information
-> [    0.000000] ACPI: HPET id: 0x8086a201 base: 0xfed00000
-> [    0.000000] SMP: Allowing 16 CPUs, 8 hotplug CPUs
-
-ok so 24 cpus. 8 hotplug which should not work.
-
-> dff00000:14100000)
-> [    0.000000] setup_percpu: NR_CPUS:512 nr_cpumask_bits:512
-> nr_cpu_ids:16 nr_node_ids:1
-
-And it only has 16 now.
-
-> [    0.000000] SLUB: Genslabs=14, HWalign=64, Order=0-3, MinObjects=0,
-> CPUs=16, Nodes=1
-
-And slub displays nr_cpu_ids again.
 
