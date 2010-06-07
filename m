@@ -1,75 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751736Ab0FGEpy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jun 2010 00:45:54 -0400
-Received: from mail.issp.bas.bg ([195.96.236.10]:45296 "EHLO mail.issp.bas.bg"
+	id S1751996Ab0FGEy3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jun 2010 00:54:29 -0400
+Received: from tango.tkos.co.il ([62.219.50.35]:51826 "EHLO tango.tkos.co.il"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750781Ab0FGEpx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jun 2010 00:45:53 -0400
-From: Marin Mitov <mitov@issp.bas.bg>
-Organization: Institute of Solid State Physics
-To: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
-Subject: Re: [BUG][PATCH]dma-coherent.c: error path bug
-Date: Mon, 7 Jun 2010 07:43:19 +0300
-User-Agent: KMail/1.13.3 (Linux/2.6.34-rc7; KDE/4.4.3; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org
-References: <201006061353.05310.mitov@issp.bas.bg> <201006070708.57453.mitov@issp.bas.bg> <20100607132631W.fujita.tomonori@lab.ntt.co.jp>
-In-Reply-To: <20100607132631W.fujita.tomonori@lab.ntt.co.jp>
+	id S1751292Ab0FGEy2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Jun 2010 00:54:28 -0400
+Date: Mon, 7 Jun 2010 07:53:59 +0300
+From: Baruch Siach <baruch@tkos.co.il>
+To: Wan ZongShun <mcuos.com@gmail.com>
+Cc: rtc-linux@googlegroups.com, linux-kernel@vger.kernel.org,
+       Alessandro Zummo <a.zummo@towertech.it>
+Subject: Re: [rtc-linux] [PATCH] rtc: driver for the DryIce block found in
+ i.MX25 chips
+Message-ID: <20100607045359.GE14583@jasper.tkos.co.il>
+References: <0173f18c60cb4d1f8a0d123da6cd3cfca0224788.1275456869.git.baruch@tkos.co.il>
+ <AANLkTimzq5zBEqrxzkm_D7trn7ikJX8yqny_6SogdIO6@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201006070743.20226.mitov@issp.bas.bg>
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <AANLkTimzq5zBEqrxzkm_D7trn7ikJX8yqny_6SogdIO6@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, June 07, 2010 07:27:49 am FUJITA Tomonori wrote:
-> On Mon, 7 Jun 2010 07:08:56 +0300
-> Marin Mitov <mitov@issp.bas.bg> wrote:
-> 
-> > On Monday, June 07, 2010 05:30:48 am FUJITA Tomonori wrote:
-> > > On Sun, 6 Jun 2010 13:53:04 +0300
-> > > Marin Mitov <mitov@issp.bas.bg> wrote:
-> > > 
-> > > > Hi all,
-> > > > 
-> > > > The error path in dma_declare_coherent_memory() leaves 
-> > > > the pointer dev->dma_mem non completely initialized.
-> > > > 
-> > > > If allocation of dev->dma_mem succeeds, 
-> > > > but allocation of dev->dma_mem->bitmap fails
-> > > > dev->dma_mem is freed, but left non NULL
-> > > > and non completely initialized.
-> > > > 
-> > > > Either zero it after being freed (one liner patch), or assign to 
-> > > > dev->dma_mem only completely initialized structure (patch included).
-> > > > 
-> > > > Comments welcome.
-> > > > 
-> > > > Marin Mitov
-> > > > 
-> > > > Signed-off-by: Marin Mitov <mitov@issp.bas.bg>
-> > > 
-> > > Hmm, if dma_declare_coherent_memory() fails, the driver doesn't use
-> > > dev->dma_mem. So even if dev->dma_mem points to a freed memory, I'm
-> > > not sure that it causes a real problem. We could call this patch a
-> > > cleanup though.
-> > > 
-> > My understanding of dma_alloc_coherent() is that  we first try to allocate from 
-> > per-device coherent memory and we do it using dma_alloc_from_coherent()
-> > (in drivers/base/dma-coherent.c) if dev->dma_mem is not NULL (and we have 
-> > left it not NULL, here is the problem). If allocation of dev->dma_mem->bitmap 
-> > fails dev->dma_mem must be NULL.
-> 
-> But are there any driver that can continue when dma_declare_coherent_memory() fails?
-> 
-I do not know if such a real driver exists.
+Hi Wan,
 
-My understanding of drivers' use of dma_declare_coherent_memory() is to
-declare some (may be on board) memory as coherent, so when they call 
-dma_alloc_coherent() the request is satisfied first from this area and when 
-it is exhausted fall back to other pools of coherent memory. As far as a fall back
-exists the driver may continue even if dma_declare_coherent_memory() fails.
+On Sat, Jun 05, 2010 at 11:08:46PM +0800, Wan ZongShun wrote:
+> Some minor comments below:
 
-Marin Mitov
+Thank you very much for you review and comments. I'll address your comments 
+(and Andrew's), and send an update shortly.
+
+> Are local_irq_disable() and al_irq_enable() necessary?
+> 
+> RTC ‘rtc_update_irq’ seem to have called 'spin_lock_irqsave' , where
+> local irq will be disable.
+
+You're right. Since commit e6229bec25be4ba00f31dd26e25721cc96c22262 
+rtc_update_irq can be called with irqs enabled.
+
+baruch
+
+-- 
+                                                     ~. .~   Tk Open Systems
+=}------------------------------------------------ooO--U--Ooo------------{=
+   - baruch@tkos.co.il - tel: +972.2.679.5364, http://www.tkos.co.il -
