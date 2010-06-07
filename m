@@ -1,61 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753416Ab0FGVAA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jun 2010 17:00:00 -0400
-Received: from 64-131-60-146.usfamily.net ([64.131.60.146]:43927 "EHLO
-	mail.sandeen.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752289Ab0FGU77 (ORCPT
+	id S1753925Ab0FGVAm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jun 2010 17:00:42 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:55437 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752289Ab0FGVAl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jun 2010 16:59:59 -0400
-Message-ID: <4C0D5DCD.5010201@sandeen.net>
-Date: Mon, 07 Jun 2010 15:59:57 -0500
-From: Eric Sandeen <sandeen@sandeen.net>
-User-Agent: Thunderbird 2.0.0.24 (Macintosh/20100228)
-MIME-Version: 1.0
-To: Jeffrey Merkey <jeffmerkey@gmail.com>
-CC: linux-kernel@vger.kernel.org
-Subject: Re: EXT3 File System Corruption 2.6.34
-References: <AANLkTinQatQEYahpkN3bT-S5C41HqRoH--gTrvIbGs_c@mail.gmail.com>
-In-Reply-To: <AANLkTinQatQEYahpkN3bT-S5C41HqRoH--gTrvIbGs_c@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 7 Jun 2010 17:00:41 -0400
+X-Authority-Analysis: v=1.1 cv=xm0otvE9/LjRWYlyDrHfx7zP0/MGCmNk7gQgTP1ehto= c=1 sm=0 a=M9mPRY19pikA:10 a=yQWWgrYGNuUA:10 a=7U3hwN5JcxgA:10 a=Q9fys5e9bTEA:10 a=gMqfjgEr1zLu/65IO0LwxA==:17 a=omOdbC7AAAAA:8 a=yPCof4ZbAAAA:8 a=meVymXHHAAAA:8 a=rie4t3upTMFJl9bqew4A:9 a=m9XH2F1fnB8IUO4CFVS9UvrZfK4A:4 a=PUjeQqilurYA:10 a=7DSvI1NPTFQA:10 a=0kPLrQdw3YYA:10 a=jeBq3FmKZ4MA:10 a=gMqfjgEr1zLu/65IO0LwxA==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.89.75
+Subject: Re: [PATCH v2][GIT PULL][v2.6.35] tracing/events: Convert format
+ output to seq_file
+From: Steven Rostedt <rostedt@goodmis.org>
+Reply-To: rostedt@goodmis.org
+To: Kei Tokunaga <tokunaga.keiich@jp.fujitsu.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
+       Frederic Weisbecker <fweisbec@gmail.com>,
+       "Martin K. Petersen" <martin.petersen@oracle.com>,
+       James Bottomley <James.Bottomley@suse.de>,
+       Tomohiro Kusumi <kusumi.tomohiro@jp.fujitsu.com>,
+       Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>,
+       Li Zefan <lizf@cn.fujitsu.com>
+In-Reply-To: <4C0CA681.5000100@jp.fujitsu.com>
+References: <1275594103.15884.35.camel@gandalf.stny.rr.com>
+	 <1275622026.15884.72.camel@gandalf.stny.rr.com>
+	 <4C0CA681.5000100@jp.fujitsu.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+Organization: Kihon Technologies Inc.
+Date: Mon, 07 Jun 2010 17:00:38 -0400
+Message-ID: <1275944438.15884.92.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Jeffrey Merkey wrote:
-> Still seeing file system corruption after journal recovery in EXT3.
-> It's easy to reproduce, though the symptoms vary.  One way is to
-> rebuild a program and while the program is being compiled just shut
-> off power to the system by pulling the plug.  I am seeing the
-> /root/.viminfo file trashed after recovery if Vim was active during
-> poweroff.  I am also seeing object modules getting built which the LD
-> linker claims are "invalid" following a recovery event.  I suspect a
-> bug in the buffer cache since deleting the file still causes the old
-> data to be returned from buffer cache even when the sectors are
-> overwritten, but both are interrelated.  Seems in some way related to
-> EXT3 recovery which results in the buffer cache returning old sectors
-> and junk.
+On Mon, 2010-06-07 at 16:57 +0900, Kei Tokunaga wrote:
+
+> There's been an oversight...  Thanks a lot for finding and fixing
+> this!  I built a kernel with the patch applied and confirmed the
+> issue is fixed on my box.
 > 
-> Not hard to reproduce, but the symptoms are always a little different
-> but the /root/.viminfo file getting nuked seems a common affect of
-> this bug.
+> Tested-by: Kei Tokunaga <tokunaga.keiich@jp.fujitsu.com>
 
-"file system corruption" usually means corrupted metadata, but I guess
-here you mean file corruption, i.e. corrupted data.
+Thanks Kei!
 
-If you have buffered data in the cache, it will be lost when you pull
-the plug.  If your userspace doesn't sync it, this is expected.  But it's
-not clear to me what you're seeing.
+> 
+> >     Reviewed-by: Li Zefan <lizf@cn.fujitsu.com>
+> >     Cc: Martin K. Petersen <martin.petersen@oracle.com>
+> >     Cc: Kei Tokunaga <tokunaga.keiich@jp.fujitsu.com>
+> >     Cc: James Bottomley <James.Bottomley@suse.de>
+> >     Cc: Tomohiro Kusumi <kusumi.tomohiro@jp.fujitsu.com>
+> >     Cc: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+> >     Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+> > 
+> >
 
-I'm also not clear on what you mean about deleting the file and having old
-data returned.  Maybe a little cut and paste from the screen would help
-explain what you see.
+Ingo,
 
-I'd also check CONFIG_EXT3_DEFAULTS_TO_ORDERED and be sure you're
-using data=ordered mode by default.
+Can we get this into 35? Without this patch, the two new SCSI
+tracepoints are useless for tracing (this includes perf trace).
+Actually, the in kernel pretty-printing will still work fine without
+this patch.
 
--Eric
+If you want, you can pull this patch in from email, and add Kei's
+Tested-by tag too.
 
-> Jeff
+Thanks,
+
+-- Steve
+
 
