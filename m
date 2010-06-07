@@ -1,89 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754025Ab0FGXSn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jun 2010 19:18:43 -0400
-Received: from www.tglx.de ([62.245.132.106]:60047 "EHLO www.tglx.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752772Ab0FGXSm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jun 2010 19:18:42 -0400
-Date: Tue, 8 Jun 2010 01:18:09 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Esben Haabendal <esbenhaabendal@gmail.com>
-cc: Esben Haabendal <eha@doredevelopment.dk>, linuxppc-dev@ozlabs.org,
-       Marc Zyngier <maz@misterjones.org>, LKML <linux-kernel@vger.kernel.org>,
-       Ingo Molnar <mingo@elte.hu>, joachim.eastwood@jotron.com,
-       Peter Zijlstra <peterz@infradead.org>,
-       David Miller <davem@davemloft.net>
-Subject: Re: [RFC][PATCH] irq: support IRQ_NESTED_THREAD with non-threaded
- interrupt handlers
-In-Reply-To: <AANLkTilPhof5cnhBCXSzKJSnWl6Vuu2fRts2pBBBNl6K@mail.gmail.com>
-Message-ID: <alpine.LFD.2.00.1006080015570.2933@localhost.localdomain>
-References: <1275686352.2970.2.camel@eha.doredevelopment.dk> <alpine.LFD.2.00.1006042343150.2933@localhost.localdomain> <AANLkTilb7---Qg1oLwzanKP1RGe04fkAXDtZzz0w9MGz@mail.gmail.com> <20100605151031.2d562268@hina.wild-wind.fr.eu.org>
- <alpine.LFD.2.00.1006051732270.2933@localhost.localdomain> <AANLkTimlSBEhl58CNuScKjxbqdTwTYgqo7vrHTcd1x9G@mail.gmail.com> <alpine.LFD.2.00.1006051915290.2933@localhost.localdomain> <AANLkTimcB9vRqnNYyBh6hjHXZHcmFvw72MZUEIGfeexq@mail.gmail.com>
- <alpine.LFD.2.00.1006052155100.2933@localhost.localdomain> <AANLkTik2so7osQJFq6NRaIFK2GVLURVozOqSsejd1K0F@mail.gmail.com> <alpine.LFD.2.00.1006062228120.2933@localhost.localdomain> <1275914058.2818.8.camel@eha.doredevelopment.dk>
- <alpine.LFD.2.00.1006071440520.2933@localhost.localdomain> <AANLkTilPhof5cnhBCXSzKJSnWl6Vuu2fRts2pBBBNl6K@mail.gmail.com>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S1753883Ab0FGXYM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jun 2010 19:24:12 -0400
+Received: from bld-mail14.adl6.internode.on.net ([150.101.137.99]:51138 "EHLO
+	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752772Ab0FGXYK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Jun 2010 19:24:10 -0400
+Date: Tue, 8 Jun 2010 09:23:50 +1000
+From: Dave Chinner <david@fromorbit.com>
+To: Josef Bacik <josef@redhat.com>
+Cc: Jeffrey Merkey <jeffmerkey@gmail.com>, linux-kernel@vger.kernel.org,
+       linux-fsdevel@vger.kernel.org, viro@zeniv.linux.org.uk
+Subject: Re: 2.6.34 echo j > /proc/sysrq-trigger causes inifnite
+ unfreeze/Thaw event
+Message-ID: <20100607232350.GA6965@dastard>
+References: <AANLkTim74SREZDq7VQhq6Z1hKXZLINoq0t8rkyQecmM1@mail.gmail.com>
+ <20100607010542.GB27325@dastard>
+ <20100607213631.GE2336@localhost.localdomain>
+ <20100607215925.GF2336@localhost.localdomain>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100607215925.GF2336@localhost.localdomain>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 7 Jun 2010, Esben Haabendal wrote:
-> On Mon, Jun 7, 2010 at 5:06 PM, Thomas Gleixner <tglx@linutronix.de> wrote:
-> 
-> > Maybe you understand now, why I was pretty sure upfront, that your
-> > approach was wrong even without knowing all the gory details ? :)
-> 
-> I understand.  There is a better solution, which is to use threaded
-> interrupts where needed.
-> 
-> But I must confess that I am disappointed that you still fail to see
-> how the pca953x
-> patch actually eliminates the need for serialization. But I don't
-> think there is much
-> point in going on about that.
+On Mon, Jun 07, 2010 at 05:59:25PM -0400, Josef Bacik wrote:
+> On Mon, Jun 07, 2010 at 05:36:31PM -0400, Josef Bacik wrote:
+> > On Mon, Jun 07, 2010 at 11:05:42AM +1000, Dave Chinner wrote:
+> > > On Thu, Jun 03, 2010 at 11:30:30PM -0600, Jeffrey Merkey wrote:
+> > > > causes the FS Thaw stuff in fs/buffer.c to enter an infinite loop
+> > > > filling the /var/log/messages with junk and causing the hard drive to
+> > > > crank away endlessly.
+> > > 
+> > > Hmmm, looks pretty obvious what the 2.6.34 bug is:
+> > > 
+> > >         while (sb->s_bdev && !thaw_bdev(sb->s_bdev, sb))
+> > >                 printk(KERN_WARNING "Emergency Thaw on %s\n",
+> > >                        bdevname(sb->s_bdev, b));
+> > > 
+> > > thaw_bdev() returns 0 on success or not frozen, and returns non-zero
+> > > only if the unfreeze failed. Looks like it was broken from the start
+> > > to me.
+> > > 
+> > > Fixing that endless loop shows some other problems on 2.6.35,
+> > > though: the emergency unfreeze is not unfreezing frozen XFS
+> > > filesystems.  This appears to be caused by
+> > > 18e9e5104fcd9a973ffe3eed3816c87f2a1b6cd2 ("Introduce freeze_super
+> > > and thaw_super for the fsfreeze ioctl").
+> > > 
+> > > It appears that this introduces a significant mismatch between the
+> > > bdev freeze/thaw and the super freze/thaw. That is, if you freeze
+> > > with the sb method, you can only unfreeze via the sb method.
+> > > however, if you freeze via the bdev method, you can unfreeze by
+> > > either the bdev or sb method.  This breaks the nesting of the
+> > > freeze/thaw operations between dm and userspace, which can lead to
+> > > premature thawing of the filesystem.
+> > > 
+> > > Then there is this deadlock:
+> > > 
+> > > iterate_supers(do_thaw_one) does:
+> > > 
+> > > 	down_read(&sb->s_umount);
+> > > 	do_thaw_one(sb)
+> > > 	  thaw_bdev(sb->s_bdev, sb))
+> > > 	    thaw_super(sb)
+> > > 	      down_write(&sb->s_umount);
+> > > 
+> > > Which is an instant deadlock.
+> > > 
+> > > These problems were hidden by the fact that the emergency thaw code
+> > > was not getting past the thaw_bdev guards and so not triggering
+> > > this deadlock.
+> > > 
+> > > Al, Josef, what's the best way to fix this mess?
+> > > 
+> > 
+> > Well we can do something like the following
+> > 
+> > 1) Make a __thaw_super() that just does all the work currently in thaw_super(),
+> > just without taking the s_umount semaphore.
+> > 2) Make an thaw_bdev_force or something like that that just sets
+> > bd_fsfreeze_count to 0 and calls __thaw_super().  The original intent was to
+> > make us call thaw until the thaw actually occured, so might as well just make it
+> > quick and painless.
 
-I return the favour of being disappointed that you are still failing
-to accept that there is a fundamental difference between "it works in
-a particular case" and semantical correctness under all
-circumstances.
+Makes sense.  Only problem I can see for emergency thaws is that
+we'd call __thaw_super() under a down_read(&sb->s_umount) instead of
+the down_write(&sb->s_umount) lock we are currently supposed to hold
+for it. I don't think this is a problem because thaw_bdev is
+serialised by the bd_fsfreeze_mutex and it would still lock out new
+cals to freeze_super.
 
-There is no place for "it works in a particular case" in a kernel
-which runs on a gazillion of different devices unless you want to
-create a complete unmaintainable mess. The only way to avoid this is
-to be strict about semantics even if it seems unsensible for a
-particular case.
+> > 3) Make do_thaw_one() call __thaw_super if sb->s_bdev doesn't exist.  I'm not
+> > sure if this happens currently, but it's nice just in case.
 
-Also I explained it to you in great length, that your patch violates
-the semantical guarantees of existing functions, but you ignore that
-completely.
+It doesn't happen currently, not sure what sort of kaboom might
+occur if we do :/
 
-It's Open Source, go wild and change it for your particular case - but
-don't expect that I accept patches to the generic irq code which will
-cause _me_ predictable trouble as I have to deal with the
-fallout. Neither expect, that I ack patches to users of that code
-which are semantically wrong.
+What about btrfs - wasn't freeze/thaw_super added so it could
+avoid the bdev interfaces as s_bdev is not reliable? Doesn't that
+mean we need to call thaw_super() in that case, even though we have
+a non-null sb->s_bdev?
 
-Just for the record, the pca953x driver is broken vs. the local state
-protection anyway as the GPIO functions are not serialized against the
-interrupt controller functions. There is no magic which prevents that,
-neither on your system nor on any other. The GPIO function should take
-buslock when modifying local state and that's one of the reasons why
-buslock it is there and cannot go away.
+> > This takes care of the s_umount problem and makes sure that do_thaw_one does
+> > actually thaw the device.  Does this sound kosher to everybody?  Thanks,
 
-I'm anticipating that you are going to tell me that it does not matter
-on your particular powerpc combined with your usage pattern (i.e no
-GPIO users). And I tell you right away, that I'm not interested in
-this answer for well explained reasons.
+It will fix the emergency thaw problems, I think, but it doesn't
+solve the nesting problem. i.e.  freeze_bdev, followed by
+ioctl_fsfreeze(), followed by ioctl_fsthaw() will result in the
+filesystem being unfrozen while the caller for freeze_bdev (e.g.
+dm-snapshot) still needs the filesystem to be frozen.
 
-> Oh, I still think that the disable_irq_nosync documentaiton is misleading.
-> Functions that are allowed in a particular context should not call functions
-> that are not allowed to be called in that context. But now I know :-)
+Basically the change to the ioctls to call freeze/thaw_super() is
+the problem here - to work with dm-snapshot corectly they need to
+call freeze/thaw_bdev.  Perhaps we need some other way of signalling
+whether to use the bdev or sb level freeze/thaw interface as I think
+it needs to be consistent across a given superblock (dm, ioctl, fs
+and emergency thaw), not a mix of both...
 
-As I said before: I agree and I'm happy to accept a patch to fix that
-documentation problem.
+Cheers,
 
-Thanks,
-
-	tglx
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
