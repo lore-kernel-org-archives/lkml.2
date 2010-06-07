@@ -1,77 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753737Ab0FGUVh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jun 2010 16:21:37 -0400
-Received: from waste.org ([173.11.57.241]:51420 "EHLO waste.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751406Ab0FGUVg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jun 2010 16:21:36 -0400
-Subject: Re: [PATCH] netconsole: queue console messages to send later
-From: Matt Mackall <mpm@selenic.com>
-To: Stephen Hemminger <shemminger@linux-foundation.org>
-Cc: Flavio Leitner <fleitner@redhat.com>, netdev@vger.kernel.org,
-       David Miller <davem@davemloft.net>, Cong Wang <amwang@redhat.com>,
-       Jay Vosburgh <fubar@us.ibm.com>, Flavio Leitner <fbl@sysclose.org>,
-       Andy Gospodarek <gospo@redhat.com>, Neil Horman <nhorman@tuxdriver.com>,
-       Jeff Moyer <jmoyer@redhat.com>, lkml <linux-kernel@vger.kernel.org>,
-       bridge@lists.linux-foundation.org, bonding-devel@lists.sourceforge.net
-In-Reply-To: <20100607130015.15555744@nehalam>
-References: <24059.1275417767@death.nxdomain.ibm.com>
-	 <1275938692-26997-1-git-send-email-fleitner@redhat.com>
-	 <1275940248.26597.70.camel@calx>  <20100607130015.15555744@nehalam>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 07 Jun 2010 15:21:31 -0500
-Message-ID: <1275942091.26597.85.camel@calx>
+	id S1754065Ab0FGUZJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jun 2010 16:25:09 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:52054 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751406Ab0FGUZG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Jun 2010 16:25:06 -0400
+Date: Mon, 7 Jun 2010 13:24:00 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Greg Thelen <gthelen@google.com>
+Cc: Richard Kennedy <richard@rsk.demon.co.uk>,
+       Alexander Viro <viro@zeniv.linux.org.uk>,
+       Jens Axboe <jens.axboe@oracle.com>, lkml <linux-kernel@vger.kernel.org>,
+       Nick Piggin <npiggin@suse.de>, Jeff Mahoney <jeffm@suse.com>,
+       reiserfs-devel@vger.kernel.org
+Subject: Re: [PATCH RFC]  buffer_head: remove redundant test from
+ wait_on_buffer
+Message-Id: <20100607132400.492613f1.akpm@linux-foundation.org>
+In-Reply-To: <xr93ljbbw3u8.fsf@ninji.mtv.corp.google.com>
+References: <1271415499.2075.19.camel@localhost>
+	<20100416145123.283f216c.akpm@linux-foundation.org>
+	<xr93ljbbw3u8.fsf@ninji.mtv.corp.google.com>
+X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.28.1 
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-06-07 at 13:00 -0700, Stephen Hemminger wrote:
-> On Mon, 07 Jun 2010 14:50:48 -0500
-> Matt Mackall <mpm@selenic.com> wrote:
+On Sat, 22 May 2010 23:05:03 -0700
+Greg Thelen <gthelen@google.com> wrote:
+
+> > --- a/fs/buffer.c~buffer_head-remove-redundant-test-from-wait_on_buffer-fix
+> > +++ a/fs/buffer.c
+> > @@ -90,6 +90,12 @@ EXPORT_SYMBOL(unlock_buffer);
+> >   */
+> >  void __wait_on_buffer(struct buffer_head * bh)
+> >  {
+> > +	/*
+> > +	 * Calling wait_on_buffer() against a zero-ref buffer is a nasty bug
+> > +	 * because it will almost always "work".  However this buffer can be
+> > +	 * reclaimed at any time.  So check for it.
+> > +	 */
+> > +	VM_BUG_ON(atomic_read(&bh->b_count) == 0);
 > 
-> > On Mon, 2010-06-07 at 16:24 -0300, Flavio Leitner wrote:
-> > > There are some networking drivers that hold a lock in the
-> > > transmit path. Therefore, if a console message is printed
-> > > after that, netconsole will push it through the transmit path,
-> > > resulting in a deadlock.
-> > 
-> > This is an ongoing pain we've known about since before introducing the
-> > netpoll code to the tree.
-> > 
-> > My take has always been that any form of queueing is contrary to the
-> > goal of netpoll: timely delivery of messages even during machine-killing
-> > situations like oopses. There may never be a second chance to deliver
-> > the message as the machine may be locked solid. And there may be no
-> > other way to get the message out of the box in such situations. Adding
-> > queueing is a throwing-the-baby-out-with-the-bathwater fix.
-> > 
-> > I think Dave agrees with me here, and I believe he's said in the past
-> > that drivers trying to print messages in such contexts should be
-> > considered buggy.
-> > 
-> 
-> Because it to hard to fix all possible device configurations.
-> There should be any way to detect recursion and just drop the message to
-> avoid deadlock.
+> My system is failing this VM_BUG_ON() occasionally.  I think this is due to
+> wait_on_buffer() calls with b_count=0 from locations within fs/buffer.c.
 
-Open to suggestions. The locks in question are driver-internal. There
-also may not be any actual recursion taking place:
+Thanks.
 
-driver path a takes private lock x
-driver path a attempts printk
-printk calls into netconsole
-netconsole calls into driver path b
-driver path b attempts to take lock x -> deadlock
+Yup, the buffers are protected by lock_page().
 
-So we can't even try to walk back the stack looking for such nonsense.
-Though we could perhaps force queuing of all messages -from- the driver
-bound to netconsole. Tricky, and not quite foolproof.
+> These
+> occasional b_count=0 callers are caused by buf reads that complete quickly -
+> after the I/O is issued but before it is waited upon.  Such fs/buffer.c callers
+> need to either bypass this assertion or increment b_count.  I don't think they
+> need to grab an b_count reference.  I suggest a bypass routine in the patch
+> below.  Does this look good?
 
--- 
-Mathematics is the supreme nostalgia of our time.
-
+I think I'll just drop
+buffer_head-remove-redundant-test-from-wait_on_buffer-fix.patch and
+wait_on_buffer-remove-the-buffer_locked-test.patch.
 
