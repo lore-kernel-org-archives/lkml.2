@@ -1,50 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756473Ab0FGHvU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jun 2010 03:51:20 -0400
-Received: from one.firstfloor.org ([213.235.205.2]:56865 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754167Ab0FGHvS (ORCPT
+	id S1756522Ab0FGHyI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jun 2010 03:54:08 -0400
+Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:33298 "EHLO
+	sm-d311v.smileserver.ne.jp" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752818Ab0FGHyG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jun 2010 03:51:18 -0400
-To: Stephen Hemminger <shemminger@vyatta.com>
-Cc: xiaohui.xin@intel.com, netdev@vger.kernel.org, kvm@vger.kernel.org,
-       linux-kernel@vger.kernel.org, mst@redhat.com, mingo@elte.hu,
-       davem@davemloft.net, herbert@gondor.hengli.com.au,
-       jdike@linux.intel.com
-Subject: Re: [RFC PATCH v7 01/19] Add a new structure for skb buffer from external.
-From: Andi Kleen <andi@firstfloor.org>
-References: <1275732899-5423-1-git-send-email-xiaohui.xin@intel.com>
-	<20100606161348.427822fb@nehalam>
-Date: Mon, 07 Jun 2010 09:51:11 +0200
-In-Reply-To: <20100606161348.427822fb@nehalam> (Stephen Hemminger's message of "Sun\, 6 Jun 2010 16\:13\:48 -0700")
-Message-ID: <87pr03gu1c.fsf@basil.nowhere.org>
-User-Agent: Gnus/5.11 (Gnus v5.11) Emacs/22.3 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	Mon, 7 Jun 2010 03:54:06 -0400
+Message-ID: <000d01cb0616$99f3a5c0$66f8800a@maildom.okisemi.com>
+From: "Masayuki Ohtake" <masa-korg@dsn.okisemi.com>
+To: "Alan Cox" <alan@lxorguk.ukuu.org.uk>
+Cc: "LKML" <linux-kernel@vger.kernel.org>,
+       "Andrew" <andrew.chih.howe.khor@intel.com>,
+       "Intel OTC" <joel.clark@intel.com>, "Wang, Qi" <qi.wang@intel.com>,
+       "Wang, Yong Y" <yong.y.wang@intel.com>
+References: <4C08D268.6000404@dsn.okisemi.com> <20100604130050.2b555944@lxorguk.ukuu.org.uk>
+Subject: Re: [PATCH] Topcliff PHUB: Generate PacketHub driver
+Date: Mon, 7 Jun 2010 16:53:59 +0900
+X-Priority: 3
+X-MSMail-Priority: Normal
+X-Mailer: Microsoft Outlook Express 6.00.2800.1983
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2800.1983
+X-Hosting-Pf: 0
+X-NAI-Spam-Score: 1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Stephen Hemminger <shemminger@vyatta.com> writes:
+Hi Alan
 
-> Still not sure this is a good idea for a couple of reasons:
+Thank you for your comment.
+We are now modifying.
+We will resubmit as soon as we can possible.
+
+Thanks.
+----- Original Message ----- 
+From: "Alan Cox" <alan@lxorguk.ukuu.org.uk>
+To: "Masayuki Ohtake" <masa-korg@dsn.okisemi.com>
+Cc: "LKML" <linux-kernel@vger.kernel.org>; "Andrew" <andrew.chih.howe.khor@intel.com>; "Intel OTC"
+<joel.clark@intel.com>; "Wang, Qi" <qi.wang@intel.com>; "Wang, Yong Y" <yong.y.wang@intel.com>
+Sent: Friday, June 04, 2010 9:00 PM
+Subject: Re: [PATCH] Topcliff PHUB: Generate PacketHub driver
+
+
+> > +/*!
+> > + * @ingroup PHUB_PCILayerAPI
+> > + * @fn static void __exit pch_phub_pci_exit(void)
+> > + * @brief Provides the functionality of exiting the module
+> > + * */
 >
-> 1. We already have lots of special cases with skb's (frags and fraglist),
->    and skb's travel through a lot of different parts of the kernel.  So any
->    new change like this creates lots of exposed points for new bugs. Look
->    at cases like MD5 TCP and netfilter, and forwarding these SKB's to ipsec
->    and ppp and ...
+> Can we please do something about all this stuff first so the code is
+> easier to review by those not familiar with the kernel format.
 >
-> 2. SKB's can have infinite lifetime in the kernel. If these buffers come from
->    a fixed size pool in an external device, they can easily all get tied up
->    if you have a slow listener. What happens then?
+> I sent a bit of code out last time that did most of the work
+>
+> Alan
+>
 
-3. If they come from an internal pool what happens when the kernel runs 
-low on memory? How is that pool balanced against other kernel
-memory users?
 
--Andi
 
--- 
-ak@linux.intel.com -- Speaking for myself only.
