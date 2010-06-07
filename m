@@ -1,88 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755399Ab0FGMWM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jun 2010 08:22:12 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:42334 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751983Ab0FGMWJ (ORCPT
+	id S1755305Ab0FGM2q (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jun 2010 08:28:46 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:32988 "EHLO
+	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751699Ab0FGM2p (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jun 2010 08:22:09 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=MsIURK2XgZ3oNVMrj2ncxXh4oDqaKyYWAWRG44wkyapDWpo1Qz1/CXIwZ6A0dyqTdL
-         amIAuT0esHizf+nAZWuc3ZCaSyP3fS9ircpWIbM+3ppbc6xepjy0z/nT6/KFmYRBcjGj
-         5JIjhCxHqz7GXjgJMNadfsmNIukg8ma3EUb40=
-Subject: Re: Virtual device and ARP table
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Christophe Jelger <Christophe.Jelger@unibas.ch>
-Cc: linux-kernel@vger.kernel.org, netdev <netdev@vger.kernel.org>
-In-Reply-To: <4C0CC810.7030501@unibas.ch>
-References: <4C0CC810.7030501@unibas.ch>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 07 Jun 2010 14:22:00 +0200
-Message-ID: <1275913320.2545.53.camel@edumazet-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 8bit
+	Mon, 7 Jun 2010 08:28:45 -0400
+Date: Mon, 7 Jun 2010 13:28:41 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: sonic zhang <sonic.adi@gmail.com>
+Cc: Liam Girdwood <lrg@slimlogic.co.uk>,
+       Linux Kernel <linux-kernel@vger.kernel.org>,
+       uclinux-dist-devel <uclinux-dist-devel@blackfin.uclinux.org>
+Subject: Re: [PATCH v6] regulator: new drivers for AD5398 and AD5821
+Message-ID: <20100607122840.GA13287@rakim.wolfsonmicro.main>
+References: <1275626446.1515.5.camel@eight.analog.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1275626446.1515.5.camel@eight.analog.com>
+X-Cookie: Warp 7 -- It's a law we can live with.
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le lundi 07 juin 2010 à 12:21 +0200, Christophe Jelger a écrit :
-> Hello,
-> 
-> I am currently "resurrecting" a Linux module (called LUNAR) which I 
-> co-developed in 2007 and I'm having a weird kernel crash. This code 
-> basically used to work fine up to 2.6.18 which was the latest version 
-> before we stopped our development. I quickly ported it to 2.6.{31,32}: 
-> it compiles fine and loads fine, but it crashes/hangs the kernel when 
-> it's really being used.
-> 
-> The module is a virtual device used for MANET routing: with the current 
-> version, it basically "captures" DNS requests sent to the virtual 
-> interface --> this triggers the sending of a fake DNS reply (see below) 
-> and the creation of an ARP table entry for the destination (the MANET 
-> route is built at the same time). Packets can then be sent to the 
-> destination.
-> 
-> The problem I'm having is that the kernel quickly hangs after I create a 
-> new ARP entry (actually only if it's being used). If the entry I create 
-> is set to NUD_PERMANENT, then everything works fine! I use 
-> __neigh_lookup_errno to lookup/create the entry and neigh_lookup to 
-> set/update the MAC address. Note that the ARP entry is created without 
-> problem, but typically even just doing a userspace "arp -a" command can 
-> crash the kernel (it also hangs the userspace command!). Doing "arp -na" 
-> usually does NOT crash the kernel!
-> 
-> I guess the problem comes from a combination of ARP + DNS 
-> lookups/replies. Note that my kernel module has its own internal fake 
-> DNS server which captures lookups and sends replies directly back to the 
-> stack. What is amazing: if the ARP entry I create is set to 
-> NUD_PERMANENT, then I don't get any crash (however I cannot develop my 
-> module with permanent ARP entries).
-> 
-> I'm wondering if there were any major changes to the neighbor and arp 
-> code (between 2.6.18 and 2.6.31) that are somehow causing this problem ?...
-> 
-> Any hint is very welcome.
-> 
-> thanks in advance,
-> Christophe
-> 
-> PS: I can easily reproduce the problem, and was trying to debug with 
-> qemu and gdb server but so fra no success to clearly identify the 
-> problem. Last point: it seems the kernel does not really "crash" but 
-> rather ends up in some unstable state and maybe in a loop.
-> --
+On Fri, Jun 04, 2010 at 12:40:46PM +0800, sonic zhang wrote:
 
-Hi Christophe
+> The AD5398 and AD5821 are single 10-bit DAC with 120 mA output current
+> sink capability. They feature an internal reference and operates from
+> a single 2.7 V to 5.5 V supply.
 
-You should ask these kind of questions on netdev instead of lkml.
+> This driver supports both the AD5398 and the AD5821.  It adapts into the
+> voltage and current framework.
 
-And of course, post your patch, or send us a crystal ball ;)
+> Signed-off-by: Sonic Zhang <sonic.zhang@analog.com>
+> Signed-off-by: Mike Frysinger <vapier@gentoo.org>
 
-Yes, many things changed between 2.6.18 and 2.6.34
+Acked-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
 
+but
 
+> +static int __init ad5398_init(void)
+> +{
+> +	return i2c_add_driver(&ad5398_driver);
+> +}
+> +module_init(ad5398_init);
+
+at least some systems are likely to want this to be subsys_initcall() to
+make sure the regulator is available prior to the consumers.  Please
+send an incremental change for this rather than repostnig the full
+thing.
