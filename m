@@ -1,165 +1,287 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756836Ab0FGLY4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jun 2010 07:24:56 -0400
-Received: from daytona.panasas.com ([67.152.220.89]:19682 "EHLO
-	daytona.int.panasas.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1756579Ab0FGLYx (ORCPT
+	id S1755446Ab0FGLUL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jun 2010 07:20:11 -0400
+Received: from casper.infradead.org ([85.118.1.10]:41217 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752375Ab0FGLUG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jun 2010 07:24:53 -0400
-Message-ID: <4C0CD700.10906@panasas.com>
-Date: Mon, 07 Jun 2010 14:24:48 +0300
-From: Boaz Harrosh <bharrosh@panasas.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-2.fc12 Thunderbird/3.0.4
-MIME-Version: 1.0
-To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-CC: stgt-devel <stgt@vger.kernel.org>, linux-scsi <linux-scsi@vger.kernel.org>,
-       linux-kernel <linux-kernel@vger.kernel.org>,
-       FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-       Mike Christie <michaelc@cs.wisc.edu>,
-       James Bottomley <James.Bottomley@suse.de>,
-       Douglas Gilbert <dgilbert@interlog.com>
-Subject: Re: [PATCH 3/3] [tgt]: Add BSG v4 backstore support to usr/bs_sg.c
-References: <1275882640-5418-1-git-send-email-nab@linux-iscsi.org>	 <4C0CB071.8040805@panasas.com>	 <1275901324.26888.56.camel@haakon2.linux-iscsi.org>	 <4C0CBB89.9000209@panasas.com>	 <1275903449.26888.69.camel@haakon2.linux-iscsi.org>	 <4C0CCB69.6020506@panasas.com> <1275908828.26888.90.camel@haakon2.linux-iscsi.org>
-In-Reply-To: <1275908828.26888.90.camel@haakon2.linux-iscsi.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 07 Jun 2010 11:24:51.0713 (UTC) FILETIME=[0BDA8F10:01CB0634]
+	Mon, 7 Jun 2010 07:20:06 -0400
+Message-Id: <20100607111407.492512670@chello.nl>
+User-Agent: quilt/0.48-1
+Date: Mon, 07 Jun 2010 13:07:06 +0200
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Andrea Arcangeli <aarcange@redhat.com>, Avi Kivity <avi@redhat.com>,
+       Thomas Gleixner <tglx@linutronix.de>, Rik van Riel <riel@redhat.com>,
+       Ingo Molnar <mingo@elte.hu>, akpm@linux-foundation.org,
+       Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
+       Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+       David Miller <davem@davemloft.net>,
+       Hugh Dickins <hugh.dickins@tiscali.co.uk>, Mel Gorman <mel@csn.ul.ie>,
+       Nick Piggin <npiggin@suse.de>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+       "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: [PATCH 12/28] powerpc: Preemptible mmu_gather
+References: <20100607110654.606530953@chello.nl>
+Content-Disposition: inline; filename=mm-preempt-tlb-gather-power.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/07/2010 02:07 PM, Nicholas A. Bellinger wrote:
-> On Mon, 2010-06-07 at 13:35 +0300, Boaz Harrosh wrote:
->> On 06/07/2010 12:37 PM, Nicholas A. Bellinger wrote:
->>> On Mon, 2010-06-07 at 12:27 +0300, Boaz Harrosh wrote:
->>>> On 06/07/2010 12:02 PM, Nicholas A. Bellinger wrote:
->>>>> On Mon, 2010-06-07 at 11:40 +0300, Boaz Harrosh wrote:
->>>>>> On 06/07/2010 06:50 AM, Nicholas A. Bellinger wrote:
->>>>>>> From: Nicholas Bellinger <nab@linux-iscsi.org>
->>>>>>>
->>>>>>> This patch adds initial support for the block layer implementation of the sg v4 interface
->>>>>>> (BSG) -> STGT with a new struct backingstore_template bsg_bst sharing code with the
->>>>>>> original sg_bst.  It adds for new function bs_bsg_cmd_submit() for incoming write I/O
->>>>>>> and bs_bsg_cmd_complete() for polling read I/O using include/linux/bsg.h:struct sg_io_v4.
->>>>>>>
->>>>>>> This patch also splits up bs_sg_open() to support both BSG and SG looking for the
->>>>>>> path "/dev/bsg" in bs_sg_open(), and getting max_queue using SG_GET_COMMAND_Q and
->>>>>>> calling SG_SET_RESERVED_SIZE (following the original bs_sg code in init_sg_device)
->>>>>>>
->>>>>>> Also chk_bsg_device() currently using a hardcoded 254 major as def for BSG does not
->>>>>>> appear in include/linux/major.h just yet..
->>>>>>>
->>>>>>> So far this has been tested with STGT/iSCSI <-> BSG <-> TCM_Loop SPC-4 iSCSI Target
->>>>>>> Port emulation and is able to mkfs, fsck and mount a filesystem from a TCM/IBLOCK
->>>>>>> Linux LVM kernel level backstore
->>>>>>>
->>>>>>> Signed-off-by: Nicholas A. Bellinger <nab@linux-iscsi.org>
->>>>>>> ---
->>>>>>>  usr/bs_sg.c     |  178 +++++++++++++++++++++++++++++++++++++++++++++++++++---
->>>>>>>  usr/scsi_cmnd.h |    7 ++
->>>>>>>  2 files changed, 175 insertions(+), 10 deletions(-)
->>>>>>>
->>>>>>> diff --git a/usr/bs_sg.c b/usr/bs_sg.c
->>>>>>> index 23676ef..d071714 100644
->>>>>>> --- a/usr/bs_sg.c
->>>>>>> +++ b/usr/bs_sg.c
->>>>>
->>>>> <SNIP>
->>>>>
->>>>>>> +
->>>>>>> +static int bs_bsg_cmd_submit(struct scsi_cmd *cmd)
->>>>>>> +{
->>>>>>> +	struct scsi_lu *dev = cmd->dev;
->>>>>>> +	int fd = dev->fd;
->>>>>>> +	struct sg_io_v4 *io_hdr = &cmd->cmd_bsg_hdr;
->>>>>>> +	int err = 0;
->>>>>>> +	/*
->>>>>>> +	 * Following linux/include/linux/bsg.h
->>>>>>> +	 */
->>>>>>> +	/* [i] 'Q' to differentiate from v3 */
->>>>>>> +	io_hdr->guard = 'Q';
->>>>>>> +	io_hdr->protocol = BSG_PROTOCOL_SCSI;
->>>>>>> +	io_hdr->subprotocol = BSG_SUB_PROTOCOL_SCSI_CMD;
->>>>>>> +	io_hdr->request_len = cmd->scb_len;
->>>>>>> +	io_hdr->request = (unsigned long )cmd->scb;
->>>>>>> +
->>>>>>> +	if (scsi_get_data_dir(cmd) == DATA_WRITE) {
->>>>>>
->>>>>> Why the if? both sides are fully bidi just remove the ifs
->>>>>> and: OUT <= OUT, IN <= IN
->>>>>>
->>>>>
->>>>> Whoops, thanks for pointing this one out (again).  Tested with
->>>>> unidirection commands and included into my local tgt.git/pass that I
->>>>> will send along to Tomo-san..
->>>>>
->>>>> Btw, I still need to sort out BIDI support for TCM_Loop at some point in
->>>>> the not too distant future.  What would be a good way to generate BIDI
->>>>> traffic into STGT or a local SCSI LLD..?
->>>>
->>>> scsi_debug has some emulation for XOR commands, does that help?
->>>>
->>>
->>> Great, thanks for the pointer on the LLD side.  Is there any userspace
->>> code around that will generate XDWRITEREAD_* CDBs for bulk I/O or do I
->>> need to code this part myself..?
->>>
->>> Best,
->>>
->>> --nab
->>>
->>
->> You could use iscsi as LLD and generate OSD heavy traffic. (With a real osd_tgtd
->> on the end side). But that will need more work, right?
-> 
-> Hmmm, suppose I need to read up a bit on how to generate osd_tgtd
-> traffic..
-> 
+Fix up powerpc to the new mmu_gather stuffs.
 
-Generating is easy, there is the exofs filke system that given an osd
-will export a VFS filesystem over it. but...
+PPC has an extra batching queue to RCU free the actual pagetable
+allocations, use the ARCH extentions for that for now.
 
->>  what does the TCM_Loop
->> do exactly. Please forgive my laziness, I never took the time to find out.
->>
-> 
-> TCM_Loop is a TCM fabric module that appears under /sys/kernel/config/target/loopback/
-> that emulates SAS, FC and iSCSI WWPN Ports and their assocated I_T Nexus
-> for SPC-4 PR and ALUA operations.  TCM_Loop registers as a Linux/SCSI
-> LLD (a la scsi_debug) that presents TCM backstores (IBLOCK, FILEIO,
-> RAMDISK) as a local struct scsi_device with a complete set of WWN port
-> naming identifiers (sg_inq -i) and TransportIDs (for PR).
-> 
-> With TCM v4 code in lio-core-2.6.git/lio-4.0, TCM_Loop has been
-> converted along with the rest of the v4.x fabric modules to use a
-> generic set of struct config_group logic from
-> drivers/target/target_core_fabric_configfs.c.  There is a bit of
-> information on the wiki at:
-> 
-> http://linux-iscsi.org/index.php/TCM_loop
-> 
-> but as you will notice the screenshots are still referencing the
-> original tests from last year with VMware Workstation.  Things have
-> changed quite a bit since then as TCM_Loop has gone from using internal
-> SAS WWPN+Nexus emulation to providing multi-protocol support based on
-> configfs provided WWPNs using the new generic naming handers from
-> drivers/target/target_core_fabric_lib.c
-> 
+For the ppc64_tlb_batch, which tracks the vaddrs to unhash from the
+hardware hash-table, keep using per-cpu arrays but flush on context
+switch and use a TLF bit to track the laxy_mmu state.
 
-OK, so from what I understand, from a SCSI stack perspective it is the lowest
-end target, using the local machine's backing store.
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+---
+ arch/powerpc/include/asm/pgalloc.h     |    4 ++--
+ arch/powerpc/include/asm/thread_info.h |    2 ++
+ arch/powerpc/include/asm/tlb.h         |   10 ++++++++++
+ arch/powerpc/kernel/process.c          |   19 +++++++++++++++++++
+ arch/powerpc/mm/pgtable.c              |   14 ++++----------
+ arch/powerpc/mm/tlb_hash32.c           |    2 +-
+ arch/powerpc/mm/tlb_hash64.c           |   12 +++++++-----
+ arch/powerpc/mm/tlb_nohash.c           |    2 +-
+ 8 files changed, 46 insertions(+), 19 deletions(-)
 
-That will not help at all with OSD. With osd_tgtd (In user mode) we use the iscsi
-protocol driver, but define a new disk-type, "osd" and a new backing-store "osdemu"
-which does a complete OSD-CDB decoding and implementation. Current code is not good
-for you because it's heavily user-mode dependent including an sqlite3 DB for storing
-attributes.
+Index: linux-2.6/arch/powerpc/include/asm/tlb.h
+===================================================================
+--- linux-2.6.orig/arch/powerpc/include/asm/tlb.h
++++ linux-2.6/arch/powerpc/include/asm/tlb.h
+@@ -28,6 +28,16 @@
+ #define tlb_start_vma(tlb, vma)	do { } while (0)
+ #define tlb_end_vma(tlb, vma)	do { } while (0)
+ 
++#define HAVE_ARCH_MMU_GATHER 1
++
++struct pte_freelist_batch;
++
++struct arch_mmu_gather {
++	struct pte_freelist_batch *batch;
++};
++
++#define ARCH_MMU_GATHER_INIT (struct arch_mmu_gather){ .batch = NULL, }
++
+ extern void tlb_flush(struct mmu_gather *tlb);
+ 
+ /* Get the generic bits... */
+Index: linux-2.6/arch/powerpc/kernel/process.c
+===================================================================
+--- linux-2.6.orig/arch/powerpc/kernel/process.c
++++ linux-2.6/arch/powerpc/kernel/process.c
+@@ -392,6 +392,9 @@ struct task_struct *__switch_to(struct t
+ 	struct thread_struct *new_thread, *old_thread;
+ 	unsigned long flags;
+ 	struct task_struct *last;
++#ifdef CONFIG_PPC64
++	struct ppc64_tlb_batch *batch;
++#endif
+ 
+ #ifdef CONFIG_SMP
+ 	/* avoid complexity of lazy save/restore of fpu
+@@ -482,6 +485,14 @@ struct task_struct *__switch_to(struct t
+ 		old_thread->accum_tb += (current_tb - start_tb);
+ 		new_thread->start_tb = current_tb;
+ 	}
++
++	batch = &__get_cpu_var(ppc64_tlb_batch);
++	if (batch->active) {
++		task_thread_info(prev)->local_flags |= _TLF_LAZY_MMU;
++		if (batch->index)
++			__flush_tlb_pending(batch);
++		batch->active = 0;
++	}
+ #endif
+ 
+ 	local_irq_save(flags);
+@@ -498,6 +509,14 @@ struct task_struct *__switch_to(struct t
+ 	hard_irq_disable();
+ 	last = _switch(old_thread, new_thread);
+ 
++#ifdef CONFIG_PPC64
++	if (task_thread_info(new)->local_flags & _TLF_LAZY_MMU) {
++		task_thread_info(new)->local_flags &= ~_TLF_LAZY_MMU;
++		batch = &__get_cpu_var(ppc64_tlb_batch);
++		batch->active = 1;
++	}
++#endif
++
+ 	local_irq_restore(flags);
+ 
+ 	return last;
+Index: linux-2.6/arch/powerpc/mm/pgtable.c
+===================================================================
+--- linux-2.6.orig/arch/powerpc/mm/pgtable.c
++++ linux-2.6/arch/powerpc/mm/pgtable.c
+@@ -33,8 +33,6 @@
+ 
+ #include "mmu_decl.h"
+ 
+-DEFINE_PER_CPU(struct mmu_gather, mmu_gathers);
+-
+ #ifdef CONFIG_SMP
+ 
+ /*
+@@ -43,7 +41,6 @@ DEFINE_PER_CPU(struct mmu_gather, mmu_ga
+  * freeing a page table page that is being walked without locks
+  */
+ 
+-static DEFINE_PER_CPU(struct pte_freelist_batch *, pte_freelist_cur);
+ static unsigned long pte_freelist_forced_free;
+ 
+ struct pte_freelist_batch
+@@ -98,12 +95,10 @@ static void pte_free_submit(struct pte_f
+ 
+ void pgtable_free_tlb(struct mmu_gather *tlb, void *table, unsigned shift)
+ {
+-	/* This is safe since tlb_gather_mmu has disabled preemption */
+-	struct pte_freelist_batch **batchp = &__get_cpu_var(pte_freelist_cur);
++	struct pte_freelist_batch **batchp = &tlb->arch.batch;
+ 	unsigned long pgf;
+ 
+-	if (atomic_read(&tlb->mm->mm_users) < 2 ||
+-	    cpumask_equal(mm_cpumask(tlb->mm), cpumask_of(smp_processor_id()))){
++	if (atomic_read(&tlb->mm->mm_users) < 2) {
+ 		pgtable_free(table, shift);
+ 		return;
+ 	}
+@@ -125,10 +120,9 @@ void pgtable_free_tlb(struct mmu_gather 
+ 	}
+ }
+ 
+-void pte_free_finish(void)
++void pte_free_finish(struct mmu_gather *tlb)
+ {
+-	/* This is safe since tlb_gather_mmu has disabled preemption */
+-	struct pte_freelist_batch **batchp = &__get_cpu_var(pte_freelist_cur);
++	struct pte_freelist_batch **batchp = &tlb->arch.batch;
+ 
+ 	if (*batchp == NULL)
+ 		return;
+Index: linux-2.6/arch/powerpc/mm/tlb_hash64.c
+===================================================================
+--- linux-2.6.orig/arch/powerpc/mm/tlb_hash64.c
++++ linux-2.6/arch/powerpc/mm/tlb_hash64.c
+@@ -38,13 +38,11 @@ DEFINE_PER_CPU(struct ppc64_tlb_batch, p
+  * neesd to be flushed. This function will either perform the flush
+  * immediately or will batch it up if the current CPU has an active
+  * batch on it.
+- *
+- * Must be called from within some kind of spinlock/non-preempt region...
+  */
+ void hpte_need_flush(struct mm_struct *mm, unsigned long addr,
+ 		     pte_t *ptep, unsigned long pte, int huge)
+ {
+-	struct ppc64_tlb_batch *batch = &__get_cpu_var(ppc64_tlb_batch);
++	struct ppc64_tlb_batch *batch = &get_cpu_var(ppc64_tlb_batch);
+ 	unsigned long vsid, vaddr;
+ 	unsigned int psize;
+ 	int ssize;
+@@ -99,6 +97,7 @@ void hpte_need_flush(struct mm_struct *m
+ 	 */
+ 	if (!batch->active) {
+ 		flush_hash_page(vaddr, rpte, psize, ssize, 0);
++		put_cpu_var(ppc64_tlb_batch);
+ 		return;
+ 	}
+ 
+@@ -127,6 +126,7 @@ void hpte_need_flush(struct mm_struct *m
+ 	batch->index = ++i;
+ 	if (i >= PPC64_TLB_BATCH_NR)
+ 		__flush_tlb_pending(batch);
++	put_cpu_var(ppc64_tlb_batch);
+ }
+ 
+ /*
+@@ -155,7 +155,7 @@ void __flush_tlb_pending(struct ppc64_tl
+ 
+ void tlb_flush(struct mmu_gather *tlb)
+ {
+-	struct ppc64_tlb_batch *tlbbatch = &__get_cpu_var(ppc64_tlb_batch);
++	struct ppc64_tlb_batch *tlbbatch = &get_cpu_var(ppc64_tlb_batch);
+ 
+ 	/* If there's a TLB batch pending, then we must flush it because the
+ 	 * pages are going to be freed and we really don't want to have a CPU
+@@ -164,8 +164,10 @@ void tlb_flush(struct mmu_gather *tlb)
+ 	if (tlbbatch->index)
+ 		__flush_tlb_pending(tlbbatch);
+ 
++	put_cpu_var(ppc64_tlb_batch);
++
+ 	/* Push out batch of freed page tables */
+-	pte_free_finish();
++	pte_free_finish(tlb);
+ }
+ 
+ /**
+Index: linux-2.6/arch/powerpc/include/asm/thread_info.h
+===================================================================
+--- linux-2.6.orig/arch/powerpc/include/asm/thread_info.h
++++ linux-2.6/arch/powerpc/include/asm/thread_info.h
+@@ -139,10 +139,12 @@ static inline struct thread_info *curren
+ #define TLF_NAPPING		0	/* idle thread enabled NAP mode */
+ #define TLF_SLEEPING		1	/* suspend code enabled SLEEP mode */
+ #define TLF_RESTORE_SIGMASK	2	/* Restore signal mask in do_signal */
++#define TLF_LAZY_MMU		3	/* tlb_batch is active */
+ 
+ #define _TLF_NAPPING		(1 << TLF_NAPPING)
+ #define _TLF_SLEEPING		(1 << TLF_SLEEPING)
+ #define _TLF_RESTORE_SIGMASK	(1 << TLF_RESTORE_SIGMASK)
++#define _TLF_LAZY_MMU		(1 << TLF_LAZY_MMU)
+ 
+ #ifndef __ASSEMBLY__
+ #define HAVE_SET_RESTORE_SIGMASK	1
+Index: linux-2.6/arch/powerpc/include/asm/pgalloc.h
+===================================================================
+--- linux-2.6.orig/arch/powerpc/include/asm/pgalloc.h
++++ linux-2.6/arch/powerpc/include/asm/pgalloc.h
+@@ -32,13 +32,13 @@ static inline void pte_free(struct mm_st
+ 
+ #ifdef CONFIG_SMP
+ extern void pgtable_free_tlb(struct mmu_gather *tlb, void *table, unsigned shift);
+-extern void pte_free_finish(void);
++extern void pte_free_finish(struct mmu_gather *tlb);
+ #else /* CONFIG_SMP */
+ static inline void pgtable_free_tlb(struct mmu_gather *tlb, void *table, unsigned shift)
+ {
+ 	pgtable_free(table, shift);
+ }
+-static inline void pte_free_finish(void) { }
++static inline void pte_free_finish(struct mmu_gather *tlb) { }
+ #endif /* !CONFIG_SMP */
+ 
+ static inline void __pte_free_tlb(struct mmu_gather *tlb, struct page *ptepage,
+Index: linux-2.6/arch/powerpc/mm/tlb_hash32.c
+===================================================================
+--- linux-2.6.orig/arch/powerpc/mm/tlb_hash32.c
++++ linux-2.6/arch/powerpc/mm/tlb_hash32.c
+@@ -73,7 +73,7 @@ void tlb_flush(struct mmu_gather *tlb)
+ 	}
+ 
+ 	/* Push out batch of freed page tables */
+-	pte_free_finish();
++	pte_free_finish(tlb);
+ }
+ 
+ /*
+Index: linux-2.6/arch/powerpc/mm/tlb_nohash.c
+===================================================================
+--- linux-2.6.orig/arch/powerpc/mm/tlb_nohash.c
++++ linux-2.6/arch/powerpc/mm/tlb_nohash.c
+@@ -298,7 +298,7 @@ void tlb_flush(struct mmu_gather *tlb)
+ 	flush_tlb_mm(tlb->mm);
+ 
+ 	/* Push out batch of freed page tables */
+-	pte_free_finish();
++	pte_free_finish(tlb);
+ }
+ 
+ /*
 
-Cheers
-Boaz
 
-> Best,
-> 
-> --nab
-> 
