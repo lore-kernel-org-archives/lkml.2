@@ -1,53 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754840Ab0FGBNS (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Jun 2010 21:13:18 -0400
-Received: from mx6.orcon.net.nz ([219.88.242.56]:32786 "EHLO mx6.orcon.net.nz"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751639Ab0FGBNP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Jun 2010 21:13:15 -0400
-Message-ID: <4C0C47A8.1000800@orcon.net.nz>
-Date: Mon, 07 Jun 2010 13:13:12 +1200
-From: Michael Cree <mcree@orcon.net.nz>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100411 Icedove/3.0.4
+	id S1754510Ab0FGBSs (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Jun 2010 21:18:48 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:62890 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751735Ab0FGBSr convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 6 Jun 2010 21:18:47 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=NV4PncsejXT7JbGGVO0blIIGHX4/Dzrg3SvEy6b2CosXIJd2hfqRawjoMvXovTicCL
+         LzDHAUwDK/5ux1kLS4vjrE3+zNJOTMWDLNtW3JMzsI6CpjmcFhbNBG/nduW26KZI7JhH
+         1qcF8znKrJ8mqF0URlXeXW9qI7slOpLmjjQlg=
 MIME-Version: 1.0
-To: Matt Turner <mattst88@gmail.com>
-CC: linux-kernel@vger.kernel.org, Borislav Petkov <borislav.petkov@amd.com>,
-       "H. Peter Anvin" <hpa@zytor.com>, linux-alpha@vger.kernel.org
-Subject: Re: 2.6.35-rc2 compilation error on Alpha
-References: <4C0C22C4.3010705@orcon.net.nz> <AANLkTim9aWVzb7v5fnS6x3ghMU2_tpaLlbZu3SKXV_0R@mail.gmail.com>
-In-Reply-To: <AANLkTim9aWVzb7v5fnS6x3ghMU2_tpaLlbZu3SKXV_0R@mail.gmail.com>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 8bit
-X-DSPAM-Check: by mx6.orcon.net.nz on Mon, 07 Jun 2010 13:13:13 +1200
-X-DSPAM-Result: Innocent
-X-DSPAM-Processed: Mon Jun  7 13:13:13 2010
-X-DSPAM-Confidence: 0.6528
-X-DSPAM-Probability: 0.0000
+In-Reply-To: <bb57bd68cf450bc3430bc072269041355d798b7f.1275739617.git.imre.deak@nokia.com>
+References: <bb57bd68cf450bc3430bc072269041355d798b7f.1275739617.git.imre.deak@nokia.com>
+Date: Mon, 7 Jun 2010 10:18:45 +0900
+Message-ID: <AANLkTineBWUQST53I9xuBNbBnCcHUQghCbr8X16WOHgT@mail.gmail.com>
+Subject: Re: [PATCH] genalloc: fix allocation from end of pool
+From: Akinobu Mita <akinobu.mita@gmail.com>
+To: imre.deak@nokia.com
+Cc: LKML <linux-kernel@vger.kernel.org>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Zygo Blaxell <zygo.blaxell@xandros.com>, Tejun Heo <tj@kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/06/10 12:08, Matt Turner wrote:
-> On Sun, Jun 6, 2010 at 6:35 PM, Michael Cree<mcree@orcon.net.nz>  wrote:
->> When compiling 2.6.35-rc2 for Alpha architecture the following compiler
->> error is seen:
->>
->>   CC      arch/alpha/kernel/asm-offsets.s
->> In file included from include/linux/kernel.h:17,
->>                  from include/linux/sched.h:54,
->>                  from arch/alpha/kernel/asm-offsets.c:9:
->> include/linux/bitops.h: In function ‘hweight_long’:
->> include/linux/bitops.h:49: error: implicit declaration of function
->> ‘__arch_hweight32’
+2010/6/5  <imre.deak@nokia.com>:
+> From: Imre Deak <imre.deak@nokia.com>
 >
-> Yeah, it was a stupid typo in
-> 1527bc8b928dd1399c3d3467dd47d9ede210978a. I've fixed it and put the
-> patch in my tree for Linus.
+> bitmap_find_next_zero_area requires the size of the bitmap, we instead
+> passed the last suitable position. This made it impossible to allocate
+> from the end of the pool.
 
-Ah, now the offending commit is pointed out to me I can see the trivial 
-fix.  With that, as you say, compilation now bombs out in the pci-sysfs 
-stuff.  Since you claim to have that in hand I'll await your solution.
+Looks good to me.
+This bug was introduced by commit 243797f59b748f679ab88d456fcc4f92236d724b
+("genalloc: use bitmap_find_next_zero_area")
 
-Cheers
-Michael.
+> Signed-off-by: Imre Deak <imre.deak@nokia.com>
+> CC: Andrew Morton <akpm@linux-foundation.org>
+> CC: Zygo Blaxell <zygo.blaxell@xandros.com>
+> CC: Tejun Heo <tj@kernel.org>
+> CC: Akinobu Mita <akinobu.mita@gmail.com>
+>
+> ---
+>  lib/genalloc.c |    1 -
+>  1 files changed, 0 insertions(+), 1 deletions(-)
+>
+> diff --git a/lib/genalloc.c b/lib/genalloc.c
+> index 736c3b0..1923f14 100644
+> --- a/lib/genalloc.c
+> +++ b/lib/genalloc.c
+> @@ -128,7 +128,6 @@ unsigned long gen_pool_alloc(struct gen_pool *pool, size_t size)
+>                chunk = list_entry(_chunk, struct gen_pool_chunk, next_chunk);
+>
+>                end_bit = (chunk->end_addr - chunk->start_addr) >> order;
+> -               end_bit -= nbits + 1;
+>
+>                spin_lock_irqsave(&chunk->lock, flags);
+>                start_bit = bitmap_find_next_zero_area(chunk->bits, end_bit, 0,
+> --
+> 1.7.1
+>
+>
