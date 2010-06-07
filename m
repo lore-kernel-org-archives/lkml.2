@@ -1,58 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753694Ab0FGAXa (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Jun 2010 20:23:30 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:37092 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751482Ab0FGAX2 (ORCPT
+	id S1753962Ab0FGAdW (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Jun 2010 20:33:22 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:36521 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753243Ab0FGAdU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Jun 2010 20:23:28 -0400
+	Sun, 6 Jun 2010 20:33:20 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:date:message-id:subject:from:to:content-type;
-        b=WeFkEW1r1+0rKCNa4HXJLXuLhH6rwf39/qeSGUZ2XmhratDLi/104ovjhAGTTTDS8I
-         r4+tD8oYPK3VjtCI/QzXTiIOy4aTi2OOiUsQO3MDCp5rStNeXrG3thO8gBUyoB0PFvoj
-         w6PvblJ4ObgS1KkRW20DO7+i2VJestEJU/whQ=
-MIME-Version: 1.0
-Date: Sun, 6 Jun 2010 20:23:27 -0400
-Message-ID: <AANLkTincwMZPnYW3S4uz4k2GOn52RpgBIBRfzyD010Yo@mail.gmail.com>
-Subject: [BUG on 2.6.35-rc2] sysfs: cannot create duplicate filename 
-	'/devices/pci0000:00/0000:00:11.0/0000:02:03.0/slot'
-From: Ryan Wang <openspace.wang@gmail.com>
-To: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=csYEcRvRxSzPFTmWKUkd9ATSRt4Py89rFL+Vyzm/LM0Vqm/gWKMZCwfg+XuCub2g8n
+         Ro2Wnb7QPb0KPyqznzhCADgbgxdVeIPVtZuVqDF+sdo8pbBs2uwItv9evJafddz/25G5
+         PAZF3JTptfiKXaN/TnXL6Wd1xiDVbQDGTXH1M=
+Subject: Re: [PATCH 2/2] mmc: fix mmc card disappearence on resume on ricoh
+ mmc controllers
+From: Maxim Levitsky <maximlevitsky@gmail.com>
+To: Chris Ball <cjb@laptop.org>
+Cc: "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
+       Philip Langdale <philipl@overt.org>,
+       linux-kernel <linux-kernel@vger.kernel.org>
+In-Reply-To: <20100606232313.GA5444@void.printf.net>
+References: <1275859475.3151.4.camel@maxim-laptop>
+	 <1275859731-2898-2-git-send-email-maximlevitsky@gmail.com>
+	 <20100606232313.GA5444@void.printf.net>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 07 Jun 2010 03:33:15 +0300
+Message-ID: <1275870795.24091.4.camel@maxim-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Mon, 2010-06-07 at 00:23 +0100, Chris Ball wrote: 
+> Hi,
+> 
+> On Mon, Jun 07, 2010 at 12:28:51AM +0300, Maxim Levitsky wrote:
+> > +	/* Some controllers (especialy the ricoh mmc controller) delay
+> > +		card detection on resume (probably since the controller
+> > +		has to poke the card to determine if its MMC or not */
+> > +
+> > +	if (host->mmc->bus_ops && (host->quirks &
+> > +			SDHCI_QUIRK_WAIT_CARD_ON_RESUME)) {
+> > +
+> > +		unsigned long timeout = jiffies + msecs_to_jiffies(2000);
+> > +
+> > +		while (!time_after(jiffies, timeout))
+> > +			if (sdhci_readl(host, SDHCI_PRESENT_STATE)
+> > +							& SDHCI_CARD_PRESENT) {
+> > +				break;
+> 
+> It looks like your editor is set to four-space instead of eight-space
+> tab characters, else you wouldn't be using so many tabs here. 
+Nope, I think indention is right here.
 
-   I have just compiled 2.6.35-rc2 on my VMWare Player box, and
-got the warning info after boot up from dmesg.
+the break is inside 'if' condition.
 
-------------[ cut here ]------------
-WARNING: at /home/crossover/kernel-dev/src/linux-2.6.35-rc2/fs/sysfs/dir.c:451
-sysfs_add_one+0xa1/0x110()
-Hardware name: VMware Virtual Platform
-sysfs: cannot create duplicate filename
-'/devices/pci0000:00/0000:00:11.0/0000:02:02.0/slot'
-Modules linked in:
-Pid: 1, comm: swapper Tainted: G        W   2.6.35-rc2 #1
-Call Trace:
- [<c0444402>] warn_slowpath_common+0x72/0xa0
- [<c054ed81>] ? sysfs_add_one+0xa1/0x110
- [<c054ed81>] ? sysfs_add_one+0xa1/0x110
- [<c04444d3>] warn_slowpath_fmt+0x33/0x40
- [<c054ed81>] sysfs_add_one+0xa1/0x110
- [<c054f415>] sysfs_do_create_link+0xa5/0x150
- [<c054fdc1>] ? sysfs_create_bin_file+0x21/0x30
- [<c054f4f7>] sysfs_create_link+0x17/0x20
- [<c060c976>] pci_create_sysfs_dev_files+0x356/0x4d0
- [<c060b186>] ? pci_get_subsys+0x76/0xa0
- [<c0aa6fc1>] pci_sysfs_init+0x1a/0x44
- [<c0401132>] do_one_initcall+0x32/0x1d0
- [<c0aa6fa7>] ? pci_sysfs_init+0x0/0x44
- [<c0a823b7>] kernel_init+0x13e/0x1d9
- [<c0a82279>] ? kernel_init+0x0/0x1d9
- [<c04035c2>] kernel_thread_helper+0x6/0x10
----[ end trace f545de55182313ba ]---
+Best regards
+Maxim Levitsky
+
