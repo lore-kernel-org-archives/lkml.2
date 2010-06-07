@@ -1,62 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754646Ab0FGGcv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jun 2010 02:32:51 -0400
-Received: from smtp-out-195.synserver.de ([212.40.180.195]:1052 "HELO
-	smtp-out-195.synserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753876Ab0FGGct (ORCPT
+	id S1755114Ab0FGGdB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jun 2010 02:33:01 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:65113 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753926Ab0FGGcu convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jun 2010 02:32:49 -0400
-X-SynServer-TrustedSrc: 1
-X-SynServer-AuthUser: markus@trippelsdorf.de
-X-SynServer-PPID: 9281
-Date: Mon, 7 Jun 2010 08:32:46 +0200
-From: Markus Trippelsdorf <markus@trippelsdorf.de>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Theodore Tso <tytso@MIT.EDU>, linux-kernel@vger.kernel.org,
-       linux-ext4@vger.kernel.org
-Subject: Re: 2.6.35-rc2 regression
-Message-ID: <20100607063246.GA1829@arch.tripp.de>
-References: <20100606081601.GA1807@arch.tripp.de>
- <DB34C7CA-53EC-47B0-AD31-4C729B983C11@mit.edu>
- <20100606115947.GA1783@arch.tripp.de>
- <20100606172339.GA1778@arch.tripp.de>
- <alpine.LFD.2.00.1006062036240.3515@i5.linux-foundation.org>
+	Mon, 7 Jun 2010 02:32:50 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=YqpD9V6ETQSNuik+Dk2qDLbt+QKVupoTc+j0K3mlt22xPUbwBvQIhwSRTKmoY7AgFx
+         zLzCJ3wB8WPJGwacySFBVdQRIYnGgliexPzgaWit3f4MXiGXUXbIvfvhc+x7KbMt5N+b
+         1MoF49A25tLxaWcqamCHQWhLqUK42N3ccx5a4=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LFD.2.00.1006062036240.3515@i5.linux-foundation.org>
+In-Reply-To: <AANLkTimjxjINEtM3rIHVk_prI-_UTgkpIVhgbQ0V6rG4@mail.gmail.com>
+References: <alpine.LFD.2.00.1006052050100.3515@i5.linux-foundation.org>
+	<AANLkTinpHAK3-qj26KSLLhMB5UUDT5I9aSkrxJeRRsSl@mail.gmail.com>
+	<alpine.LFD.2.00.1006060710570.3515@i5.linux-foundation.org>
+	<AANLkTilD2n0QQrdN814XKAjDl5a_AbaRIZ0LUAOhKksL@mail.gmail.com>
+	<AANLkTimdQJGXt3_7B47FNB3_1cTq9NazWZxR4HdShogj@mail.gmail.com>
+	<AANLkTil-1OgnnzgL7U0PNQi4G8B2QFDa6BEH4mWqdkhL@mail.gmail.com>
+	<AANLkTimjxjINEtM3rIHVk_prI-_UTgkpIVhgbQ0V6rG4@mail.gmail.com>
+Date: Mon, 7 Jun 2010 02:32:48 -0400
+Message-ID: <AANLkTilJYxYHc7yBsCATQviYmfeAkmEk4LK-ZGJHpMsx@mail.gmail.com>
+Subject: Re: Linux 2.6.35-rc2
+From: Alex Deucher <alexdeucher@gmail.com>
+To: Dave Airlie <airlied@gmail.com>
+Cc: Torsten Kaiser <just.for.lkml@googlemail.com>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jun 06, 2010 at 08:38:17PM -0700, Linus Torvalds wrote:
-> 
-> 
-> On Sun, 6 Jun 2010, Markus Trippelsdorf wrote:
-> 
-> > On Sun, Jun 06, 2010 at 01:59:47PM +0200, Markus Trippelsdorf wrote:
-> > > On Sun, Jun 06, 2010 at 07:45:48AM -0400, Theodore Tso wrote:
-> > > > 
-> > > > On Jun 6, 2010, at 4:16 AM, Markus Trippelsdorf wrote:
-> > > > 
-> > > > > Commit 1f5a81e41f8b1a782c68d3843e9ec1bfaadf7d72
-> > > > > "ext4: Make sure the MOVE_EXT ioctl can't overwrite append-only files"
-> > > > > causes the following kernel BUG on my machine (x86_64):
-> > > > > 
-> > > > > BUG: Bad page map in process mpd  pte:720072000000000 pmd:11d2f7067
-> 
-> This is the same "VGA pattern": 07200720 is two spaces. 
-> 
-> It causes lots of trouble, too bad it made it into -rc2. It has nothing to 
-> do with ext4.
-> 
-> And I bet it gets fix by the same vt.c patch that apparently fixed some 
-> KMS issues. Look on lkml for a "poison overwritten" subject line.
-> 
-> Or just revert 962400e8fd29981a7b166e463dd143b6ac6a3e76.
+On Mon, Jun 7, 2010 at 2:22 AM, Dave Airlie <airlied@gmail.com> wrote:
+> On Mon, Jun 7, 2010 at 4:09 PM, Torsten Kaiser
+> <just.for.lkml@googlemail.com> wrote:
+>> On Mon, Jun 7, 2010 at 7:58 AM, Alex Deucher <alexdeucher@gmail.com> wrote:
+>>> On Sun, Jun 6, 2010 at 11:04 AM, Torsten Kaiser
+>>> <just.for.lkml@googlemail.com> wrote:
+>>>> [CC:Jeff+Tejun not removed, because you might want to look at the
+>>>> attached dmesgs]
+>>>>
+>>>> On Sun, Jun 6, 2010 at 4:19 PM, Linus Torvalds
+>>>> <torvalds@linux-foundation.org> wrote:
+>>>>> On Sun, 6 Jun 2010, Torsten Kaiser wrote:
+>>>>>>
+>>>>>> The first problem that shows up is, that after the KMS switches to the
+>>>>>> correct video mode (1280x1024 for an DVI attached LCD), the display
+>>>>>> begins to flicker. Every 1..2 seconds (guesstimated) the display turns
+>>>>>> off and on again. Something in the new powersaving?
+>>>>>
+>>>>> Or maybe a borderline display timing that the display has trouble syncing
+>>>>> up with?
+>>>>
+>>>> With 2.6.34 and any previous KMS kernels the output was always stable.
+>>>> (I think, I switch to the radeon KMS on 2.6.32)
+>>>> The onscreen menu of the monitor showed 1280x1024@60.2Hz for
+>>>> 2.6.35-rc2, if I recall correctly.
+>>>> Now back on 2.6.34 its 1280x1024@59.9Hz.
+>>>
+>>> The pm code shouldn't have any affect as your system only has one
+>>> power state, so it never kicks in.  It sounds like a display pll
+>>> problem, but there haven't been any changes to that code since 2.6.34.
+>>>  Any chance you could bisect it?
+>>
+>> Not really. -rc1 did not boot for me (although if I disable v4l that
+>> might work), and there is this memory corruption error.
+>>
+>> Regarding the PLLs, did you see this mail? It contains the
+>> drm.debug=15 output from 2.6.34 and 2.6.35-rc2.
+>> http://lkml.org/lkml/2010/6/6/126
+>>
+>> The debug output from radeon_set_pll looks identical. But in 2.6.35 a
+>> call to [drm:radeon_legacy_tmds_int_dpms], seems new.
+>>
+>> The switchoff intervall is ~10 seconds, not 1..2 as I guessed in the first mail.
+>> Any idea if there is something in the KMS code that triggers at this intervall?
+>
+> The new mode probing code happens every 10 seconds, though we
+> shouldn't be turning anything on or off with it.
+>
+> So I suspect the DAC detection table might be doing bad things on your
+> hardware, we have had a problem where the dac detect table on one DAC
+> would turn the other one off which clearly wasn't what we wanted to
+> see.
+> ,
 
-Yes, I applied the patch early this morning and had no issues thus far.
+The x300 is a non-atom card, so it uses the legacy load detection
+routines which do mess with some of the crtc regs.
 
--- 
-Markus
+Alex
+
+> can you file a bug at kernel.org? full dmesg (need all the radeon bits
+> where it finds the card).
+>
+> Dave.
+>
