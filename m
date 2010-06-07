@@ -1,20 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753388Ab0FGSuF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jun 2010 14:50:05 -0400
-Received: from mail.perches.com ([173.55.12.10]:2680 "EHLO mail.perches.com"
+	id S1753684Ab0FGSxl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jun 2010 14:53:41 -0400
+Received: from mail.perches.com ([173.55.12.10]:2696 "EHLO mail.perches.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753325Ab0FGSuA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jun 2010 14:50:00 -0400
+	id S1753342Ab0FGSuC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Jun 2010 14:50:02 -0400
 From: Joe Perches <joe@perches.com>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org,
-       Marek Lindner <lindner_marek@yahoo.de>,
-       Simon Wunderlich <siwu@hrz.tu-chemnitz.de>,
-       Andrew Lunn <andrew@lunn.ch>
-Subject: [PATCH 02/17] MAINTAINERS: Add STAGING - B.A.T.M.A.N.
-Date: Mon,  7 Jun 2010 11:49:36 -0700
-Message-Id: <06f9a3670042abc6d50992e28227a4cb577a7702.1275935090.git.joe@perches.com>
+       Naren Sankar <nsankar@broadcom.com>, Jarod Wilson <jarod@wilsonet.com>,
+       Scott Davilla <davilla@4pi.com>, Manu Abraham <abraham.manu@gmail.com>
+Subject: [PATCH 04/17] MAINTAINERS: Add STAGING - CRYSTAL HD VIDEO DECODER
+Date: Mon,  7 Jun 2010 11:49:38 -0700
+Message-Id: <bd85c049121e9aac042b0dd3637a2db1c28fa5a1.1275935090.git.joe@perches.com>
 X-Mailer: git-send-email 1.7.1.244.gbdc4
 In-Reply-To: <cover.1275935090.git.joe@perches.com>
 References: <cover.1275935090.git.joe@perches.com>
@@ -28,20 +27,20 @@ Signed-off-by: Joe Perches <joe@perches.com>
  1 files changed, 8 insertions(+), 0 deletions(-)
 
 diff --git a/MAINTAINERS b/MAINTAINERS
-index 004c343..c4de33b 100644
+index b175605..c277684 100644
 --- a/MAINTAINERS
 +++ b/MAINTAINERS
-@@ -5453,6 +5453,14 @@ M:	Jakub Schmidtke <sjakub@gmail.com>
+@@ -5467,6 +5467,14 @@ M:	Mori Hess <fmhess@users.sourceforge.net>
  S:	Odd Fixes
- F:	drivers/staging/asus_oled/
+ F:	drivers/staging/comedi/
  
-+STAGING - B.A.T.M.A.N.
-+M:	Marek Lindner <lindner_marek@yahoo.de>
-+M:	Simon Wunderlich <siwu@hrz.tu-chemnitz.de>
-+M:	Andrew Lunn <andrew@lunn.ch>
-+L:	b.a.t.m.a.n@lists.open-mesh.net
-+S:	Maintained
-+F:	drivers/staging/batman-adv/
++STAGING - CRYSTAL HD VIDEO DECODER
++M:	Naren Sankar <nsankar@broadcom.com>
++M:	Jarod Wilson <jarod@wilsonet.com>
++M:	Scott Davilla <davilla@4pi.com>
++M:	Manu Abraham <abraham.manu@gmail.com>
++S:	Odd Fixes
++F:	drivers/staging/crystalhd/
 +
  STARFIRE/DURALAN NETWORK DRIVER
  M:	Ion Badulescu <ionut@badula.org>
