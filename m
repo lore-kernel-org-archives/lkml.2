@@ -1,258 +1,181 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751440Ab0FGObp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jun 2010 10:31:45 -0400
-Received: from e24smtp05.br.ibm.com ([32.104.18.26]:59120 "EHLO
-	e24smtp05.br.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751046Ab0FGObo (ORCPT
+	id S1751517Ab0FGOjk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jun 2010 10:39:40 -0400
+Received: from smtp.ctxuk.citrix.com ([62.200.22.115]:38239 "EHLO
+	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750788Ab0FGOjj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jun 2010 10:31:44 -0400
-Message-ID: <4C0D02BC.4080504@linux.vnet.ibm.com>
-Date: Mon, 07 Jun 2010 11:31:24 -0300
-From: Breno Leitao <leitao@linux.vnet.ibm.com>
-User-Agent: Thunderbird 2.0.0.24 (X11/20100317)
+	Mon, 7 Jun 2010 10:39:39 -0400
+X-IronPort-AV: E=Sophos;i="4.53,378,1272844800"; 
+   d="scan'208";a="278804"
+Date: Mon, 7 Jun 2010 15:38:49 +0100
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball-desktop
+To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+CC: Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       "jeremy@goop.org" <jeremy@goop.org>,
+       "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+       "Yaozu (Eddie) Dong" <eddie.dong@intel.com>,
+       "ddutile@redhat.com" <ddutile@redhat.com>,
+       "sheng@linux.intel.com" <sheng@linux.intel.com>
+Subject: Re: [Xen-devel] [PATCH 02/12] early PV on HVM
+In-Reply-To: <20100604202008.GB17645@phenom.dumpdata.com>
+Message-ID: <alpine.DEB.2.00.1006071518050.3401@kaball-desktop>
+References: <1275570645-27189-1-git-send-email-stefano.stabellini@eu.citrix.com> <1275570645-27189-2-git-send-email-stefano.stabellini@eu.citrix.com> <20100604202008.GB17645@phenom.dumpdata.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-To: Ryan Wang <openspace.wang@gmail.com>
-CC: linux-kernel@vger.kernel.org
-Subject: Re: [BUG on 2.6.35-rc2] sysfs: cannot create duplicate filename '/devices/pci0000:00/0000:00:11.0/0000:02:03.0/slot'
-References: <AANLkTincwMZPnYW3S4uz4k2GOn52RpgBIBRfzyD010Yo@mail.gmail.com>
-In-Reply-To: <AANLkTincwMZPnYW3S4uz4k2GOn52RpgBIBRfzyD010Yo@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="US-ASCII"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ryan Wang wrote:
-> Hi,
+On Fri, 4 Jun 2010, Konrad Rzeszutek Wilk wrote:
+> On Thu, Jun 03, 2010 at 02:10:35PM +0100, stefano.stabellini@eu.citrix.com wrote:
+> > From: Sheng Yang <sheng@linux.intel.com>
+> > 
+> > Initialize basic pv on hvm features in xen_guest_init.
+> > 
+> > The hook in arch/x86/kernel/setup.c can easily be removed using the new
+> > generic hypervisor independent initialization infrastructure present in
+> > the linux-2.6-tip tree.
+> > 
+> > Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+> > Signed-off-by: Sheng Yang <sheng@linux.intel.com>
+> > Signed-off-by: Yaozu (Eddie) Dong <eddie.dong@intel.com>
+> > ---
+> >  arch/x86/kernel/setup.c           |    2 +
+> >  arch/x86/xen/enlighten.c          |   86 +++++++++++++++++++++++++++++++++++++
+> >  drivers/input/xen-kbdfront.c      |    2 +-
+> >  drivers/video/xen-fbfront.c       |    2 +-
+> >  drivers/xen/xenbus/xenbus_probe.c |   21 ++++++++-
+> >  include/xen/xen.h                 |    2 +
+> >  6 files changed, 110 insertions(+), 5 deletions(-)
+> > 
+> > diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
+> > index c4851ef..ae9b6cb 100644
+> > --- a/arch/x86/kernel/setup.c
+> > +++ b/arch/x86/kernel/setup.c
+> > @@ -69,6 +69,7 @@
+> >  #include <linux/tboot.h>
+> >  
+> >  #include <video/edid.h>
+> > +#include <xen/xen.h>
+> >  
+> >  #include <asm/mtrr.h>
+> >  #include <asm/apic.h>
+> > @@ -1032,6 +1033,7 @@ void __init setup_arch(char **cmdline_p)
+> >  	probe_nr_irqs_gsi();
+> >  
+> >  	kvm_guest_init();
+> > +	xen_guest_init();
+> >  
+> >  	e820_reserve_resources();
+> >  	e820_mark_nosave_regions(max_low_pfn);
+> > diff --git a/arch/x86/xen/enlighten.c b/arch/x86/xen/enlighten.c
+> > index 65d8d79..c1f6545 100644
+> > --- a/arch/x86/xen/enlighten.c
+> > +++ b/arch/x86/xen/enlighten.c
+> > @@ -35,6 +35,7 @@
+> >  #include <xen/interface/version.h>
+> >  #include <xen/interface/physdev.h>
+> >  #include <xen/interface/vcpu.h>
+> > +#include <xen/interface/memory.h>
+> >  #include <xen/features.h>
+> >  #include <xen/page.h>
+> >  #include <xen/hvc-console.h>
+> > @@ -56,6 +57,7 @@
+> >  #include <asm/tlbflush.h>
+> >  #include <asm/reboot.h>
+> >  #include <asm/stackprotector.h>
+> > +#include <asm/hypervisor.h>
+> >  
+> >  #include "xen-ops.h"
+> >  #include "mmu.h"
+> > @@ -1206,3 +1208,87 @@ asmlinkage void __init xen_start_kernel(void)
+> >  	x86_64_start_reservations((char *)__pa_symbol(&boot_params));
+> >  #endif
+> >  }
+> > +
+> > +static uint32_t xen_cpuid_base(void)
+> > +{
+> > +	uint32_t base, eax, ebx, ecx, edx;
+> > +	char signature[13];
+> > +
+> > +	for (base = 0x40000000; base < 0x40010000; base += 0x100) {
+> > +		cpuid(base, &eax, &ebx, &ecx, &edx);
+> > +		*(uint32_t*)(signature + 0) = ebx;
+> > +		*(uint32_t*)(signature + 4) = ecx;
+> > +		*(uint32_t*)(signature + 8) = edx;
+> > +		signature[12] = 0;
+> > +
+> > +		if (!strcmp("XenVMMXenVMM", signature) && ((eax - base) >= 2))
+> > +			return base;
+> > +	}
+> > +
+> > +	return 0;
+> > +}
+> > +
+> > +static int init_hvm_pv_info(int *major, int *minor)
+> > +{
+> > +	uint32_t eax, ebx, ecx, edx, pages, msr, base;
+> > +	u64 pfn;
+> > +
+> > +	base = xen_cpuid_base();
+> > +	if (!base)
+> > +		return -EINVAL;
+> > +
+> > +	cpuid(base + 1, &eax, &ebx, &ecx, &edx);
+> > +
+> > +	*major = eax >> 16;
+> > +	*minor = eax & 0xffff;
+> > +	printk(KERN_INFO "Xen version %d.%d.\n", *major, *minor);
+> > +
+> > +	cpuid(base + 2, &pages, &msr, &ecx, &edx);
+> > +
+> > +	pfn = __pa(hypercall_page);
+> > +	wrmsr_safe(msr, (u32)pfn, (u32)(pfn >> 32));
+> > +
+> > +	xen_setup_features();
+> > +
+> > +	pv_info = xen_info;
+> > +	pv_info.kernel_rpl = 0;
+> > +
+> > +	xen_domain_type = XEN_HVM_DOMAIN;
+> > +
+> > +	return 0;
+> > +}
+> > +
+> > +static void __init init_shared_info(void)
+> > +{
+> > +	struct xen_add_to_physmap xatp;
+> > +	struct shared_info *shared_info_page;
+> > +
+> > +	shared_info_page = (struct shared_info *) alloc_bootmem_pages(PAGE_SIZE);
+> > +	xatp.domid = DOMID_SELF;
+> > +	xatp.idx = 0;
+> > +	xatp.space = XENMAPSPACE_shared_info;
+> > +	xatp.gpfn = __pa(shared_info_page) >> PAGE_SHIFT;
+> > +	if (HYPERVISOR_memory_op(XENMEM_add_to_physmap, &xatp))
+> > +		BUG();
+> > +
+> > +	HYPERVISOR_shared_info = (struct shared_info *)shared_info_page;
+> > +
+> > +	/* Don't do the full vcpu_info placement stuff until we have a
+> > +	   possible map and a non-dummy shared_info. */
 > 
->    I have just compiled 2.6.35-rc2 on my VMWare Player box, and
-> got the warning info after boot up from dmesg.
-> 
-I also found the same problem on PPC64
+> Might want to mention where the full vpcu placement is done.
 
-sysfs: cannot create duplicate filename '/devices/pci0002:00/0002:00:01.0/slot'
-------------[ cut here ]------------
-Badness at fs/sysfs/dir.c:451
-NIP: c00000000022b1fc LR: c00000000022b1f8 CTR: 0000000000000001
-REGS: c00000097c1238e0 TRAP: 0700   Not tainted  (2.6.35-rc2+)
-MSR: 8000000000029032 <EE,ME,CE,IR,DR>  CR: 28008084  XER: 20000000
-TASK = c00000078c8d0090[1] 'swapper' THREAD: c00000097c120000 CPU: 0
-GPR00: c00000000022b1f8 c00000097c123b60 c000000000fc1950 0000000000000056 
-GPR04: 0000000000000000 ffffffffffffffff 0000000000000007 0000000000020000 
-GPR08: 00000000000035fc 0000000000000000 00000000000035ae 000000000000000a 
-GPR12: 0000000028008082 c00000000ed70000 0000000001adfa78 0000000000f86800 
-GPR16: 0000000003400000 000000000021e1af 0000000000c89468 0000000002a5a970 
-GPR20: 0000000000000000 0000000002a5a4f0 0000000000000040 c0000000002ddbd8 
-GPR24: c00000000022b17c 0000000000001000 c00000078ce97580 c0000003ae040180 
-GPR28: c00000097c123c80 c0000003a9313b40 c000000000f61558 ffffffffffffffef 
-NIP [c00000000022b1fc] .sysfs_add_one+0xfc/0x170
-LR [c00000000022b1f8] .sysfs_add_one+0xf8/0x170
-Call Trace:
-[c00000097c123b60] [c00000000022b1f8] .sysfs_add_one+0xf8/0x170 (unreliable)
-[c00000097c123c10] [c00000000022cbb8] .sysfs_do_create_link+0x118/0x250
-[c00000097c123cd0] [c0000000002ddb14] .pci_create_sysfs_dev_files+0x414/0x640
-[c00000097c123da0] [c000000000943dc0] .pci_sysfs_init+0x34/0x90
-[c00000097c123e30] [c00000000000972c] .do_one_initcall+0x5c/0x200
-[c00000097c123ee0] [c0000000009104e0] .kernel_init+0x270/0x32c
-[c00000097c123f90] [c000000000030f54] .kernel_thread+0x54/0x70
-Instruction dump:
-7f44d378 4bfffec1 e89e8030 4be1eb05 60000000 e89d0018 4be1eaf9 60000000 
-7c641b78 e87e8038 48369195 60000000 <0fe00000> 7f43d378 4bf5e1bd 60000000 
-sysfs: cannot create duplicate filename '/devices/pci0002:00/0002:00:01.1/slot'
-------------[ cut here ]------------
-Badness at fs/sysfs/dir.c:451
-NIP: c00000000022b1fc LR: c00000000022b1f8 CTR: 0000000000000001
-REGS: c00000097c1238e0 TRAP: 0700   Tainted: G        W    (2.6.35-rc2+)
-MSR: 8000000000029032 <EE,ME,CE,IR,DR>  CR: 28008084  XER: 20000000
-TASK = c00000078c8d0090[1] 'swapper' THREAD: c00000097c120000 CPU: 0
-GPR00: c00000000022b1f8 c00000097c123b60 c000000000fc1950 0000000000000056 
-GPR04: 0000000000000000 ffffffffffffffff 0000000000000007 0000000000020000 
-GPR08: 0000000000003d42 0000000000000000 0000000000003cf4 000000000000000a 
-GPR12: 0000000028008082 c00000000ed70000 0000000001adfa78 0000000000f86800 
-GPR16: 0000000003400000 000000000021e1af 0000000000c89468 0000000002a5a970 
-GPR20: 0000000000000000 0000000002a5a4f0 0000000000000040 c0000000002ddbd8 
-GPR24: c00000000022b17c 0000000000001000 c00000097c680500 c0000003ae040180 
-GPR28: c00000097c123c80 c0000007893591d0 c000000000f61558 ffffffffffffffef 
-NIP [c00000000022b1fc] .sysfs_add_one+0xfc/0x170
-LR [c00000000022b1f8] .sysfs_add_one+0xf8/0x170
-Call Trace:
-[c00000097c123b60] [c00000000022b1f8] .sysfs_add_one+0xf8/0x170 (unreliable)
-[c00000097c123c10] [c00000000022cbb8] .sysfs_do_create_link+0x118/0x250
-[c00000097c123cd0] [c0000000002ddb14] .pci_create_sysfs_dev_files+0x414/0x640
-[c00000097c123da0] [c000000000943dc0] .pci_sysfs_init+0x34/0x90
-[c00000097c123e30] [c00000000000972c] .do_one_initcall+0x5c/0x200
-[c00000097c123ee0] [c0000000009104e0] .kernel_init+0x270/0x32c
-[c00000097c123f90] [c000000000030f54] .kernel_thread+0x54/0x70
-Instruction dump:
-7f44d378 4bfffec1 e89e8030 4be1eb05 60000000 e89d0018 4be1eaf9 60000000 
-7c641b78 e87e8038 48369195 60000000 <0fe00000> 7f43d378 4bf5e1bd 60000000 
-sysfs: cannot create duplicate filename '/devices/pci0003:00/0003:00:01.0/slot'
-------------[ cut here ]------------
-Badness at fs/sysfs/dir.c:451
-NIP: c00000000022b1fc LR: c00000000022b1f8 CTR: 0000000000000001
-REGS: c00000097c1238e0 TRAP: 0700   Tainted: G        W    (2.6.35-rc2+)
-MSR: 8000000000029032 <EE,ME,CE,IR,DR>  CR: 28008084  XER: 20000000
-TASK = c00000078c8d0090[1] 'swapper' THREAD: c00000097c120000 CPU: 0
-GPR00: c00000000022b1f8 c00000097c123b60 c000000000fc1950 0000000000000056 
-GPR04: 0000000000000000 ffffffffffffffff 0000000000000007 0000000000020000 
-GPR08: 0000000000004492 0000000000000000 0000000000004444 000000000000000a 
-GPR12: 0000000028008082 c00000000ed70000 0000000001adfa78 0000000000f86800 
-GPR16: 0000000003400000 000000000021e1af 0000000000c89468 0000000002a5a970 
-GPR20: 0000000000000000 0000000002a5a4f0 0000000000000040 c0000000002ddbd8 
-GPR24: c00000000022b17c 0000000000001000 c000000b7c6ce580 c0000003ae040180 
-GPR28: c00000097c123c80 c00000097ac45260 c000000000f61558 ffffffffffffffef 
-NIP [c00000000022b1fc] .sysfs_add_one+0xfc/0x170
-LR [c00000000022b1f8] .sysfs_add_one+0xf8/0x170
-Call Trace:
-[c00000097c123b60] [c00000000022b1f8] .sysfs_add_one+0xf8/0x170 (unreliable)
-[c00000097c123c10] [c00000000022cbb8] .sysfs_do_create_link+0x118/0x250
-[c00000097c123cd0] [c0000000002ddb14] .pci_create_sysfs_dev_files+0x414/0x640
-[c00000097c123da0] [c000000000943dc0] .pci_sysfs_init+0x34/0x90
-[c00000097c123e30] [c00000000000972c] .do_one_initcall+0x5c/0x200
-[c00000097c123ee0] [c0000000009104e0] .kernel_init+0x270/0x32c
-[c00000097c123f90] [c000000000030f54] .kernel_thread+0x54/0x70
-Instruction dump:
-7f44d378 4bfffec1 e89e8030 4be1eb05 60000000 e89d0018 4be1eaf9 60000000 
-7c641b78 e87e8038 48369195 60000000 <0fe00000> 7f43d378 4bf5e1bd 60000000 
-sysfs: cannot create duplicate filename '/devices/pci0003:00/0003:00:01.1/slot'
-------------[ cut here ]------------
-Badness at fs/sysfs/dir.c:451
-NIP: c00000000022b1fc LR: c00000000022b1f8 CTR: 0000000000000001
-REGS: c00000097c1238e0 TRAP: 0700   Tainted: G        W    (2.6.35-rc2+)
-MSR: 8000000000029032 <EE,ME,CE,IR,DR>  CR: 28008084  XER: 20000000
-TASK = c00000078c8d0090[1] 'swapper' THREAD: c00000097c120000 CPU: 0
-GPR00: c00000000022b1f8 c00000097c123b60 c000000000fc1950 0000000000000056 
-GPR04: 0000000000000000 ffffffffffffffff 0000000000000007 0000000000020000 
-GPR08: 0000000000004be2 0000000000000000 0000000000004b94 000000000000000a 
-GPR12: 0000000028008082 c00000000ed70000 0000000001adfa78 0000000000f86800 
-GPR16: 0000000003400000 000000000021e1af 0000000000c89468 0000000002a5a970 
-GPR20: 0000000000000000 0000000002a5a4f0 0000000000000040 c0000000002ddbd8 
-GPR24: c00000000022b17c 0000000000001000 c0000003a91f0280 c0000003ae040180 
-GPR28: c00000097c123c80 c000000b7aaa99a0 c000000000f61558 ffffffffffffffef 
-NIP [c00000000022b1fc] .sysfs_add_one+0xfc/0x170
-LR [c00000000022b1f8] .sysfs_add_one+0xf8/0x170
-Call Trace:
-[c00000097c123b60] [c00000000022b1f8] .sysfs_add_one+0xf8/0x170 (unreliable)
-[c00000097c123c10] [c00000000022cbb8] .sysfs_do_create_link+0x118/0x250
-[c00000097c123cd0] [c0000000002ddb14] .pci_create_sysfs_dev_files+0x414/0x640
-[c00000097c123da0] [c000000000943dc0] .pci_sysfs_init+0x34/0x90
-[c00000097c123e30] [c00000000000972c] .do_one_initcall+0x5c/0x200
-[c00000097c123ee0] [c0000000009104e0] .kernel_init+0x270/0x32c
-[c00000097c123f90] [c000000000030f54] .kernel_thread+0x54/0x70
-Instruction dump:
-7f44d378 4bfffec1 e89e8030 4be1eb05 60000000 e89d0018 4be1eaf9 60000000 
-7c641b78 e87e8038 48369195 60000000 <0fe00000> 7f43d378 4bf5e1bd 60000000 
-sysfs: cannot create duplicate filename '/devices/pci0005:01/0005:01:00.0/slot'
-------------[ cut here ]------------
-Badness at fs/sysfs/dir.c:451
-NIP: c00000000022b1fc LR: c00000000022b1f8 CTR: 0000000000000001
-REGS: c00000097c1238e0 TRAP: 0700   Tainted: G        W    (2.6.35-rc2+)
-MSR: 8000000000029032 <EE,ME,CE,IR,DR>  CR: 28008084  XER: 20000000
-TASK = c00000078c8d0090[1] 'swapper' THREAD: c00000097c120000 CPU: 0
-GPR00: c00000000022b1f8 c00000097c123b60 c000000000fc1950 0000000000000056 
-GPR04: 0000000000000000 ffffffffffffffff 0000000000000007 0000000000020000 
-GPR08: 0000000000005332 0000000000000000 00000000000052e4 000000000000000a 
-GPR12: 0000000028008082 c00000000ed70000 0000000001adfa78 0000000000f86800 
-GPR16: 0000000003400000 000000000021e1af 0000000000c89468 0000000002a5a970 
-GPR20: 0000000000000000 0000000002a5a4f0 0000000000000040 c0000000002ddbd8 
-GPR24: c00000000022b17c 0000000000001000 c00000078ce95580 c0000003ae040180 
-GPR28: c00000097c123c80 c0000003a93138c0 c000000000f61558 ffffffffffffffef 
-NIP [c00000000022b1fc] .sysfs_add_one+0xfc/0x170
-LR [c00000000022b1f8] .sysfs_add_one+0xf8/0x170
-Call Trace:
-[c00000097c123b60] [c00000000022b1f8] .sysfs_add_one+0xf8/0x170 (unreliable)
-[c00000097c123c10] [c00000000022cbb8] .sysfs_do_create_link+0x118/0x250
-[c00000097c123cd0] [c0000000002ddb14] .pci_create_sysfs_dev_files+0x414/0x640
-[c00000097c123da0] [c000000000943dc0] .pci_sysfs_init+0x34/0x90
-[c00000097c123e30] [c00000000000972c] .do_one_initcall+0x5c/0x200
-[c00000097c123ee0] [c0000000009104e0] .kernel_init+0x270/0x32c
-[c00000097c123f90] [c000000000030f54] .kernel_thread+0x54/0x70
-Instruction dump:
-7f44d378 4bfffec1 e89e8030 4be1eb05 60000000 e89d0018 4be1eaf9 60000000 
-7c641b78 e87e8038 48369195 60000000 <0fe00000> 7f43d378 4bf5e1bd 60000000 
-sysfs: cannot create duplicate filename '/devices/pci0005:01/0005:01:00.1/slot'
-------------[ cut here ]------------
-Badness at fs/sysfs/dir.c:451
-NIP: c00000000022b1fc LR: c00000000022b1f8 CTR: 0000000000000001
-REGS: c00000097c1238e0 TRAP: 0700   Tainted: G        W    (2.6.35-rc2+)
-MSR: 8000000000029032 <EE,ME,CE,IR,DR>  CR: 28008084  XER: 20000000
-TASK = c00000078c8d0090[1] 'swapper' THREAD: c00000097c120000 CPU: 0
-GPR00: c00000000022b1f8 c00000097c123b60 c000000000fc1950 0000000000000056 
-GPR04: 0000000000000000 ffffffffffffffff 0000000000000007 0000000000020000 
-GPR08: 0000000000005a82 0000000000000000 0000000000005a34 000000000000000a 
-GPR12: 0000000028008082 c00000000ed70000 0000000001adfa78 0000000000f86800 
-GPR16: 0000000003400000 000000000021e1af 0000000000c89468 0000000002a5a970 
-GPR20: 0000000000000000 0000000002a5a4f0 0000000000000040 c0000000002ddbd8 
-GPR24: c00000000022b17c 0000000000001000 c00000097c3d9480 c0000003ae040180 
-GPR28: c00000097c123c80 c0000007893594a0 c000000000f61558 ffffffffffffffef 
-NIP [c00000000022b1fc] .sysfs_add_one+0xfc/0x170
-LR [c00000000022b1f8] .sysfs_add_one+0xf8/0x170
-Call Trace:
-[c00000097c123b60] [c00000000022b1f8] .sysfs_add_one+0xf8/0x170 (unreliable)
-[c00000097c123c10] [c00000000022cbb8] .sysfs_do_create_link+0x118/0x250
-[c00000097c123cd0] [c0000000002ddb14] .pci_create_sysfs_dev_files+0x414/0x640
-[c00000097c123da0] [c000000000943dc0] .pci_sysfs_init+0x34/0x90
-[c00000097c123e30] [c00000000000972c] .do_one_initcall+0x5c/0x200
-[c00000097c123ee0] [c0000000009104e0] .kernel_init+0x270/0x32c
-[c00000097c123f90] [c000000000030f54] .kernel_thread+0x54/0x70
-Instruction dump:
-7f44d378 4bfffec1 e89e8030 4be1eb05 60000000 e89d0018 4be1eaf9 60000000 
-7c641b78 e87e8038 48369195 60000000 <0fe00000> 7f43d378 4bf5e1bd 60000000 
-sysfs: cannot create duplicate filename '/devices/pci0005:01/0005:01:00.2/slot'
-------------[ cut here ]------------
-Badness at fs/sysfs/dir.c:451
-NIP: c00000000022b1fc LR: c00000000022b1f8 CTR: 0000000000000001
-REGS: c00000097c1238e0 TRAP: 0700   Tainted: G        W    (2.6.35-rc2+)
-MSR: 8000000000029032 <EE,ME,CE,IR,DR>  CR: 28008084  XER: 20000000
-TASK = c00000078c8d0090[1] 'swapper' THREAD: c00000097c120000 CPU: 0
-GPR00: c00000000022b1f8 c00000097c123b60 c000000000fc1950 0000000000000056 
-GPR04: 0000000000000000 ffffffffffffffff 0000000000000007 0000000000020000 
-GPR08: 00000000000061d2 0000000000000000 0000000000006184 000000000000000a 
-GPR12: 0000000028008082 c00000000ed70000 0000000001adfa78 0000000000f86800 
-GPR16: 0000000003400000 000000000021e1af 0000000000c89468 0000000002a5a970 
-GPR20: 0000000000000000 0000000002a5a4f0 0000000000000040 c0000000002ddbd8 
-GPR24: c00000000022b17c 0000000000001000 c000000b7c6cd580 c0000003ae040180 
-GPR28: c00000097c123c80 c00000097ac45530 c000000000f61558 ffffffffffffffef 
-NIP [c00000000022b1fc] .sysfs_add_one+0xfc/0x170
-LR [c00000000022b1f8] .sysfs_add_one+0xf8/0x170
-Call Trace:
-[c00000097c123b60] [c00000000022b1f8] .sysfs_add_one+0xf8/0x170 (unreliable)
-[c00000097c123c10] [c00000000022cbb8] .sysfs_do_create_link+0x118/0x250
-[c00000097c123cd0] [c0000000002ddb14] .pci_create_sysfs_dev_files+0x414/0x640
-[c00000097c123da0] [c000000000943dc0] .pci_sysfs_init+0x34/0x90
-[c00000097c123e30] [c00000000000972c] .do_one_initcall+0x5c/0x200
-[c00000097c123ee0] [c0000000009104e0] .kernel_init+0x270/0x32c
-[c00000097c123f90] [c000000000030f54] .kernel_thread+0x54/0x70
-Instruction dump:
-7f44d378 4bfffec1 e89e8030 4be1eb05 60000000 e89d0018 4be1eaf9 60000000 
-7c641b78 e87e8038 48369195 60000000 <0fe00000> 7f43d378 4bf5e1bd 60000000 
-sysfs: cannot create duplicate filename '/devices/pci0005:01/0005:01:00.3/slot'
-------------[ cut here ]------------
-Badness at fs/sysfs/dir.c:451
-NIP: c00000000022b1fc LR: c00000000022b1f8 CTR: 0000000000000001
-REGS: c00000097c1238e0 TRAP: 0700   Tainted: G        W    (2.6.35-rc2+)
-MSR: 8000000000029032 <EE,ME,CE,IR,DR>  CR: 28008084  XER: 20000000
-TASK = c00000078c8d0090[1] 'swapper' THREAD: c00000097c120000 CPU: 0
-GPR00: c00000000022b1f8 c00000097c123b60 c000000000fc1950 0000000000000056 
-GPR04: 0000000000000000 ffffffffffffffff 0000000000000007 0000000000020000 
-GPR08: 0000000000006922 0000000000000000 00000000000068d4 000000000000000a 
-GPR12: 0000000028008082 c00000000ed70000 0000000001adfa78 0000000000f86800 
-GPR16: 0000000003400000 000000000021e1af 0000000000c89468 0000000002a5a970 
-GPR20: 0000000000000000 0000000002a5a4f0 0000000000000040 c0000000002ddbd8 
-GPR24: c00000000022b17c 0000000000001000 c0000003a91f0280 c0000003ae040180 
-GPR28: c00000097c123c80 c000000b7aaa9c70 c000000000f61558 ffffffffffffffef 
-NIP [c00000000022b1fc] .sysfs_add_one+0xfc/0x170
-LR [c00000000022b1f8] .sysfs_add_one+0xf8/0x170
-Call Trace:
-[c00000097c123b60] [c00000000022b1f8] .sysfs_add_one+0xf8/0x170 (unreliable)
-[c00000097c123c10] [c00000000022cbb8] .sysfs_do_create_link+0x118/0x250
-[c00000097c123cd0] [c0000000002ddb14] .pci_create_sysfs_dev_files+0x414/0x640
-[c00000097c123da0] [c000000000943dc0] .pci_sysfs_init+0x34/0x90
-[c00000097c123e30] [c00000000000972c] .do_one_initcall+0x5c/0x200
-[c00000097c123ee0] [c0000000009104e0] .kernel_init+0x270/0x32c
-[c00000097c123f90] [c000000000030f54] .kernel_thread+0x54/0x70
-Instruction dump:
-7f44d378 4bfffec1 e89e8030 4be1eb05 60000000 e89d0018 4be1eaf9 60000000 
-7c641b78 e87e8038 48369195 60000000 <0fe00000> 7f43d378 4bf5e1bd 60000000 
-rtc-generic rtc-generic: setting system clock to 2010-06-07 14:08:21 UTC (1275919701)
+The comment is not accurate, we actually don't do any vcpu_info
+placement on hvm because it is not very useful there.
+Better just to remove the comment (I have done so in my tree).
+
+> > +	per_cpu(xen_vcpu, 0) = &HYPERVISOR_shared_info->vcpu_info[0];
+> 
+> Otherwise looks good to me. In other words, Reviewed-by: Konrad
+> Rzeszutek Wilk <konrad.wilk@oracle.com>
+> 
+
+thanks!
+
