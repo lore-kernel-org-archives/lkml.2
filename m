@@ -1,55 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754331Ab0FGJUO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jun 2010 05:20:14 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:36361 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751733Ab0FGJUM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jun 2010 05:20:12 -0400
-Subject: Re: mmotm 2010-06-03-16-36 lots of suspected kmemleak
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Dave Young <hidave.darkstar@gmail.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       linux-mm@kvack.org
-In-Reply-To: <AANLkTikXdy6GOQ2EzDt-yrcJ_jMIPvLsH3neWBozpVCK@mail.gmail.com>
-References: <AANLkTikXdy6GOQ2EzDt-yrcJ_jMIPvLsH3neWBozpVCK@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Organization: ARM Ltd
-Date: Mon, 07 Jun 2010 10:19:55 +0100
-Message-ID: <1275902395.7258.9.camel@toshiba-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 07 Jun 2010 09:19:56.0722 (UTC) FILETIME=[987DB120:01CB0622]
+	id S1756606Ab0FGJW0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jun 2010 05:22:26 -0400
+Received: from mail.gmx.net ([213.165.64.20]:35592 "HELO mail.gmx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1752293Ab0FGJWY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Jun 2010 05:22:24 -0400
+X-Authenticated: #5108953
+X-Provags-ID: V01U2FsdGVkX1/rDDoIBSnrvGYK67zD5tJwsDGUBwD0VhEA/j5KD6
+	WkiyknaPKi+KE5
+From: Toralf =?iso-8859-15?q?F=F6rster?= <toralf.foerster@gmx.de>
+To: ibm-acpi-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org
+Subject: ThinkPad T400 : should kernel option "reboot=pci" be hard coded ?
+Date: Mon, 7 Jun 2010 11:22:21 +0200
+User-Agent: KMail/1.13.3 (Linux/2.6.34; KDE/4.4.4; i686; ; )
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 8bit
+Message-Id: <201006071122.21925.toralf.foerster@gmx.de>
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-06-07 at 06:20 +0100, Dave Young wrote:
-> On Fri, Jun 4, 2010 at 9:55 PM, Dave Young <hidave.darkstar@gmail.com> wrote:
-> > On Fri, Jun 4, 2010 at 6:50 PM, Catalin Marinas <catalin.marinas@arm.com> wrote:
-> >> Dave Young <hidave.darkstar@gmail.com> wrote:
-> >>> With mmotm 2010-06-03-16-36, I gots tuns of kmemleaks
-> >>
-> >> Do you have CONFIG_NO_BOOTMEM enabled? I posted a patch for this but
-> >> hasn't been reviewed yet (I'll probably need to repost, so if it fixes
-> >> the problem for you a Tested-by would be nice):
-> >>
-> >> http://lkml.org/lkml/2010/5/4/175
-> >
-> >
-> > I'd like to test, but I can not access the test pc during weekend. So
-> > I will test it next monday.
-> 
-> Bad news, the patch does not fix this issue.
+Since some kernel version (IIRC since 2.6.31) it is necessary to boot the 
+linux kernel with that option to prevent an extra 9 seconds delay during 
+reboot.
+I found this tip on the LKML -and now I'm wondering whether this option should 
+be hard coded in the kernel sources b/c it seems to be necessary for current 
+kernels too.
 
-Thanks for trying. Could you please just disable CONFIG_NO_BOOTMEM and
-post the kmemleak reported leaks again?
-
-Thanks.
 
 -- 
-Catalin
+MfG/Sincerely
+Toralf Förster
+
+pgp finger print: 7B1A 07F4 EC82 0F90 D4C2 8936 872A E508 7DB6 9DA3
 
