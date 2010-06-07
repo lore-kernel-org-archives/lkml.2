@@ -1,130 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753883Ab0FGXYM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jun 2010 19:24:12 -0400
-Received: from bld-mail14.adl6.internode.on.net ([150.101.137.99]:51138 "EHLO
-	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752772Ab0FGXYK (ORCPT
+	id S1751302Ab0FGX15 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jun 2010 19:27:57 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:35736 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750897Ab0FGX1z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jun 2010 19:24:10 -0400
-Date: Tue, 8 Jun 2010 09:23:50 +1000
-From: Dave Chinner <david@fromorbit.com>
-To: Josef Bacik <josef@redhat.com>
-Cc: Jeffrey Merkey <jeffmerkey@gmail.com>, linux-kernel@vger.kernel.org,
-       linux-fsdevel@vger.kernel.org, viro@zeniv.linux.org.uk
-Subject: Re: 2.6.34 echo j > /proc/sysrq-trigger causes inifnite
- unfreeze/Thaw event
-Message-ID: <20100607232350.GA6965@dastard>
-References: <AANLkTim74SREZDq7VQhq6Z1hKXZLINoq0t8rkyQecmM1@mail.gmail.com>
- <20100607010542.GB27325@dastard>
- <20100607213631.GE2336@localhost.localdomain>
- <20100607215925.GF2336@localhost.localdomain>
+	Mon, 7 Jun 2010 19:27:55 -0400
+Date: Mon, 7 Jun 2010 19:27:51 -0400 (EDT)
+From: Tim Abbott <tabbott@ksplice.com>
+X-X-Sender: tabbott@dr-wily.mit.edu
+To: Mike Frysinger <vapier@gentoo.org>
+cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] vmlinux.lds.h: allow people to set a smaller rootfs
+ alignment
+In-Reply-To: <1275761686-4996-1-git-send-email-vapier@gentoo.org>
+Message-ID: <alpine.DEB.1.10.1006071920260.30720@dr-wily.mit.edu>
+References: <1275761686-4996-1-git-send-email-vapier@gentoo.org>
+User-Agent: Alpine 1.10 (DEB 962 2008-03-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100607215925.GF2336@localhost.localdomain>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 07, 2010 at 05:59:25PM -0400, Josef Bacik wrote:
-> On Mon, Jun 07, 2010 at 05:36:31PM -0400, Josef Bacik wrote:
-> > On Mon, Jun 07, 2010 at 11:05:42AM +1000, Dave Chinner wrote:
-> > > On Thu, Jun 03, 2010 at 11:30:30PM -0600, Jeffrey Merkey wrote:
-> > > > causes the FS Thaw stuff in fs/buffer.c to enter an infinite loop
-> > > > filling the /var/log/messages with junk and causing the hard drive to
-> > > > crank away endlessly.
-> > > 
-> > > Hmmm, looks pretty obvious what the 2.6.34 bug is:
-> > > 
-> > >         while (sb->s_bdev && !thaw_bdev(sb->s_bdev, sb))
-> > >                 printk(KERN_WARNING "Emergency Thaw on %s\n",
-> > >                        bdevname(sb->s_bdev, b));
-> > > 
-> > > thaw_bdev() returns 0 on success or not frozen, and returns non-zero
-> > > only if the unfreeze failed. Looks like it was broken from the start
-> > > to me.
-> > > 
-> > > Fixing that endless loop shows some other problems on 2.6.35,
-> > > though: the emergency unfreeze is not unfreezing frozen XFS
-> > > filesystems.  This appears to be caused by
-> > > 18e9e5104fcd9a973ffe3eed3816c87f2a1b6cd2 ("Introduce freeze_super
-> > > and thaw_super for the fsfreeze ioctl").
-> > > 
-> > > It appears that this introduces a significant mismatch between the
-> > > bdev freeze/thaw and the super freze/thaw. That is, if you freeze
-> > > with the sb method, you can only unfreeze via the sb method.
-> > > however, if you freeze via the bdev method, you can unfreeze by
-> > > either the bdev or sb method.  This breaks the nesting of the
-> > > freeze/thaw operations between dm and userspace, which can lead to
-> > > premature thawing of the filesystem.
-> > > 
-> > > Then there is this deadlock:
-> > > 
-> > > iterate_supers(do_thaw_one) does:
-> > > 
-> > > 	down_read(&sb->s_umount);
-> > > 	do_thaw_one(sb)
-> > > 	  thaw_bdev(sb->s_bdev, sb))
-> > > 	    thaw_super(sb)
-> > > 	      down_write(&sb->s_umount);
-> > > 
-> > > Which is an instant deadlock.
-> > > 
-> > > These problems were hidden by the fact that the emergency thaw code
-> > > was not getting past the thaw_bdev guards and so not triggering
-> > > this deadlock.
-> > > 
-> > > Al, Josef, what's the best way to fix this mess?
-> > > 
-> > 
-> > Well we can do something like the following
-> > 
-> > 1) Make a __thaw_super() that just does all the work currently in thaw_super(),
-> > just without taking the s_umount semaphore.
-> > 2) Make an thaw_bdev_force or something like that that just sets
-> > bd_fsfreeze_count to 0 and calls __thaw_super().  The original intent was to
-> > make us call thaw until the thaw actually occured, so might as well just make it
-> > quick and painless.
+Hi Mike,
 
-Makes sense.  Only problem I can see for emergency thaws is that
-we'd call __thaw_super() under a down_read(&sb->s_umount) instead of
-the down_write(&sb->s_umount) lock we are currently supposed to hold
-for it. I don't think this is a problem because thaw_bdev is
-serialised by the bd_fsfreeze_mutex and it would still lock out new
-cals to freeze_super.
+Both patches look good.  Please consider them:
 
-> > 3) Make do_thaw_one() call __thaw_super if sb->s_bdev doesn't exist.  I'm not
-> > sure if this happens currently, but it's nice just in case.
+Acked-by: Tim Abbott <tabbott@ksplice.com>
 
-It doesn't happen currently, not sure what sort of kaboom might
-occur if we do :/
+	-Tim Abbott
 
-What about btrfs - wasn't freeze/thaw_super added so it could
-avoid the bdev interfaces as s_bdev is not reliable? Doesn't that
-mean we need to call thaw_super() in that case, even though we have
-a non-null sb->s_bdev?
+On Sat, 5 Jun 2010, Mike Frysinger wrote:
 
-> > This takes care of the s_umount problem and makes sure that do_thaw_one does
-> > actually thaw the device.  Does this sound kosher to everybody?  Thanks,
-
-It will fix the emergency thaw problems, I think, but it doesn't
-solve the nesting problem. i.e.  freeze_bdev, followed by
-ioctl_fsfreeze(), followed by ioctl_fsthaw() will result in the
-filesystem being unfrozen while the caller for freeze_bdev (e.g.
-dm-snapshot) still needs the filesystem to be frozen.
-
-Basically the change to the ioctls to call freeze/thaw_super() is
-the problem here - to work with dm-snapshot corectly they need to
-call freeze/thaw_bdev.  Perhaps we need some other way of signalling
-whether to use the bdev or sb level freeze/thaw interface as I think
-it needs to be consistent across a given superblock (dm, ioctl, fs
-and emergency thaw), not a mix of both...
-
-Cheers,
-
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
+> Add a new INIT_RAMFS() define to compliment the existing INIT_RAM_FS, but
+> this one lets people control the alignment.
+> 
+> Signed-off-by: Mike Frysinger <vapier@gentoo.org>
+> ---
+>  include/asm-generic/vmlinux.lds.h |    7 ++++---
+>  1 files changed, 4 insertions(+), 3 deletions(-)
+> 
+> diff --git a/include/asm-generic/vmlinux.lds.h b/include/asm-generic/vmlinux.lds.h
+> index 48c5299..9ca268f 100644
+> --- a/include/asm-generic/vmlinux.lds.h
+> +++ b/include/asm-generic/vmlinux.lds.h
+> @@ -619,14 +619,15 @@
+>  		VMLINUX_SYMBOL(__security_initcall_end) = .;
+>  
+>  #ifdef CONFIG_BLK_DEV_INITRD
+> -#define INIT_RAM_FS							\
+> -	. = ALIGN(PAGE_SIZE);						\
+> +#define INIT_RAMFS(align)						\
+> +	. = ALIGN(align);						\
+>  	VMLINUX_SYMBOL(__initramfs_start) = .;				\
+>  	*(.init.ramfs)							\
+>  	VMLINUX_SYMBOL(__initramfs_end) = .;
+>  #else
+> -#define INIT_RAM_FS
+> +#define INIT_RAMFS(align)
+>  #endif
+> +#define INIT_RAM_FS INIT_RAMFS(PAGE_SIZE)
+>  
+>  /*
+>   * Default discarded sections.
+> -- 
+> 1.7.1
+> 
+> 
