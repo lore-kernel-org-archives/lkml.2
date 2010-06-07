@@ -1,69 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754195Ab0FGG2H (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jun 2010 02:28:07 -0400
-Received: from 124x34x33x190.ap124.ftth.ucom.ne.jp ([124.34.33.190]:40274 "EHLO
-	master.linux-sh.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751737Ab0FGG2F (ORCPT
+	id S1754646Ab0FGGcv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jun 2010 02:32:51 -0400
+Received: from smtp-out-195.synserver.de ([212.40.180.195]:1052 "HELO
+	smtp-out-195.synserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753876Ab0FGGct (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jun 2010 02:28:05 -0400
-Date: Mon, 7 Jun 2010 15:27:30 +0900
-From: Paul Mundt <lethal@linux-sh.org>
-To: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
-Cc: mitov@issp.bas.bg, linux-kernel@vger.kernel.org
-Subject: Re: [BUG][PATCH]dma-coherent.c: error path bug
-Message-ID: <20100607062729.GA5135@linux-sh.org>
-References: <201006070708.57453.mitov@issp.bas.bg> <20100607132631W.fujita.tomonori@lab.ntt.co.jp> <201006070743.20226.mitov@issp.bas.bg> <20100607135845B.fujita.tomonori@lab.ntt.co.jp>
+	Mon, 7 Jun 2010 02:32:49 -0400
+X-SynServer-TrustedSrc: 1
+X-SynServer-AuthUser: markus@trippelsdorf.de
+X-SynServer-PPID: 9281
+Date: Mon, 7 Jun 2010 08:32:46 +0200
+From: Markus Trippelsdorf <markus@trippelsdorf.de>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Theodore Tso <tytso@MIT.EDU>, linux-kernel@vger.kernel.org,
+       linux-ext4@vger.kernel.org
+Subject: Re: 2.6.35-rc2 regression
+Message-ID: <20100607063246.GA1829@arch.tripp.de>
+References: <20100606081601.GA1807@arch.tripp.de>
+ <DB34C7CA-53EC-47B0-AD31-4C729B983C11@mit.edu>
+ <20100606115947.GA1783@arch.tripp.de>
+ <20100606172339.GA1778@arch.tripp.de>
+ <alpine.LFD.2.00.1006062036240.3515@i5.linux-foundation.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100607135845B.fujita.tomonori@lab.ntt.co.jp>
-User-Agent: Mutt/1.5.13 (2006-08-11)
+In-Reply-To: <alpine.LFD.2.00.1006062036240.3515@i5.linux-foundation.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 07, 2010 at 01:59:48PM +0900, FUJITA Tomonori wrote:
-> On Mon, 7 Jun 2010 07:43:19 +0300
-> Marin Mitov <mitov@issp.bas.bg> wrote:
-> > On Monday, June 07, 2010 07:27:49 am FUJITA Tomonori wrote:
-> > > On Mon, 7 Jun 2010 07:08:56 +0300
-> > > Marin Mitov <mitov@issp.bas.bg> wrote:
-> > > > On Monday, June 07, 2010 05:30:48 am FUJITA Tomonori wrote:
-> > > > > Hmm, if dma_declare_coherent_memory() fails, the driver doesn't use
-> > > > > dev->dma_mem. So even if dev->dma_mem points to a freed memory, I'm
-> > > > > not sure that it causes a real problem. We could call this patch a
-> > > > > cleanup though.
+On Sun, Jun 06, 2010 at 08:38:17PM -0700, Linus Torvalds wrote:
+> 
+> 
+> On Sun, 6 Jun 2010, Markus Trippelsdorf wrote:
+> 
+> > On Sun, Jun 06, 2010 at 01:59:47PM +0200, Markus Trippelsdorf wrote:
+> > > On Sun, Jun 06, 2010 at 07:45:48AM -0400, Theodore Tso wrote:
+> > > > 
+> > > > On Jun 6, 2010, at 4:16 AM, Markus Trippelsdorf wrote:
+> > > > 
+> > > > > Commit 1f5a81e41f8b1a782c68d3843e9ec1bfaadf7d72
+> > > > > "ext4: Make sure the MOVE_EXT ioctl can't overwrite append-only files"
+> > > > > causes the following kernel BUG on my machine (x86_64):
 > > > > > 
-> > > > My understanding of dma_alloc_coherent() is that  we first try to allocate from 
-> > > > per-device coherent memory and we do it using dma_alloc_from_coherent()
-> > > > (in drivers/base/dma-coherent.c) if dev->dma_mem is not NULL (and we have 
-> > > > left it not NULL, here is the problem). If allocation of dev->dma_mem->bitmap 
-> > > > fails dev->dma_mem must be NULL.
-> > > 
-> > > But are there any driver that can continue when dma_declare_coherent_memory() fails?
-> > > 
-> > I do not know if such a real driver exists.
+> > > > > BUG: Bad page map in process mpd  pte:720072000000000 pmd:11d2f7067
 > 
-> From a quick look, seems no. There is no fallback for such hardware,
-> it's safe assumption, I guess.
+> This is the same "VGA pattern": 07200720 is two spaces. 
 > 
-Most of the devices using dma_declare_coherent_memory() today do so out
-of necessity, usually due to addressing limitations and needing to have
-DMA buffers allocated from device memory. This doesn't apply to all
-devices though, and indeed didn't apply at all when the interface was
-used initially (presently this functionality is pushed down to the DMA
-flags, anything that needs to be fixed to the device-specific coherent
-region uses DMA_MEMORY_EXCLUSIVE).
+> It causes lots of trouble, too bad it made it into -rc2. It has nothing to 
+> do with ext4.
+> 
+> And I bet it gets fix by the same vt.c patch that apparently fixed some 
+> KMS issues. Look on lkml for a "poison overwritten" subject line.
+> 
+> Or just revert 962400e8fd29981a7b166e463dd143b6ac6a3e76.
 
-drivers/scsi/NCR_Q720.c (which was the only in-tree user for the declare
-coherent API before we started using it on SH) is an example of one that
-supports fallback to non-exclusive memory, and we've largely managed to
-avoid usage clashes with the exception of the following:
+Yes, I applied the patch early this morning and had no issues thus far.
 
-	0609697eab9775564845d4c94f9e3780fb791ffd
-	cdf57cab27aef72f13a19c86858c6cac9951dc24
-	58c6d3dfe436eb8cfb451981d8fdc9044eaf42da
-
-I suspect the generic memory fallback path gets a lot less testing than
-the exclusive memory one at least.
+-- 
+Markus
