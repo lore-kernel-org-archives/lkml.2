@@ -1,42 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752472Ab0FGN6A (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jun 2010 09:58:00 -0400
-Received: from pfepa.post.tele.dk ([195.41.46.235]:59583 "EHLO
-	pfepa.post.tele.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751695Ab0FGN57 (ORCPT
+	id S1751329Ab0FGOLK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jun 2010 10:11:10 -0400
+Received: from cavan.codon.org.uk ([93.93.128.6]:40326 "EHLO
+	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751049Ab0FGOLI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jun 2010 09:57:59 -0400
-Date: Mon, 7 Jun 2010 15:57:53 +0200
-From: Sam Ravnborg <sam@ravnborg.org>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Andrea Arcangeli <aarcange@redhat.com>, Avi Kivity <avi@redhat.com>,
-       Thomas Gleixner <tglx@linutronix.de>, Rik van Riel <riel@redhat.com>,
-       Ingo Molnar <mingo@elte.hu>, akpm@linux-foundation.org,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
-       Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-       David Miller <davem@davemloft.net>,
-       Hugh Dickins <hugh.dickins@tiscali.co.uk>, Mel Gorman <mel@csn.ul.ie>,
-       Nick Piggin <npiggin@suse.de>,
-       "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: Re: [PATCH 00/28] mm: preemptibility -v3
-Message-ID: <20100607135753.GA16657@merkur.ravnborg.org>
-References: <20100607110654.606530953@chello.nl>
+	Mon, 7 Jun 2010 10:11:08 -0400
+Date: Mon, 7 Jun 2010 15:11:03 +0100
+From: Matthew Garrett <mjg59@srcf.ucam.org>
+To: Toralf =?iso-8859-1?Q?F=F6rster?= <toralf.foerster@gmx.de>
+Cc: ibm-acpi-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org
+Subject: Re: ThinkPad T400 : should kernel option "reboot=pci" be hard
+	coded ?
+Message-ID: <20100607141103.GA9477@srcf.ucam.org>
+References: <201006071122.21925.toralf.foerster@gmx.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <20100607110654.606530953@chello.nl>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <201006071122.21925.toralf.foerster@gmx.de>
 User-Agent: Mutt/1.5.18 (2008-05-17)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> 
-> There are no known architectures left unconverted, although some arch code
-> never did see a compiler (superh and um come to mind).
+On Mon, Jun 07, 2010 at 11:22:21AM +0200, Toralf Förster wrote:
+> Since some kernel version (IIRC since 2.6.31) it is necessary to boot the 
+> linux kernel with that option to prevent an extra 9 seconds delay during 
+> reboot.
+> I found this tip on the LKML -and now I'm wondering whether this option should 
+> be hard coded in the kernel sources b/c it seems to be necessary for current 
+> kernels too.
 
-um is easy.
-On your x86 box you just do "make ARCH=um"
+No, the best thing to do would be to figure out what changed to require 
+the extra 9 seconds. Are you able to work out which the last kernel 
+release without this timeout was?
 
-	Sam
+-- 
+Matthew Garrett | mjg59@srcf.ucam.org
