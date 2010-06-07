@@ -1,14 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756857Ab0FGLUa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jun 2010 07:20:30 -0400
-Received: from [18.85.46.34] ([18.85.46.34]:37727 "EHLO bombadil.infradead.org"
-	rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1756459Ab0FGLUZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jun 2010 07:20:25 -0400
-Message-Id: <20100607111406.477271904@chello.nl>
+	id S932235Ab0FGLUi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jun 2010 07:20:38 -0400
+Received: from casper.infradead.org ([85.118.1.10]:41275 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756463Ab0FGLUf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Jun 2010 07:20:35 -0400
+Message-Id: <20100607111408.226561993@chello.nl>
 User-Agent: quilt/0.48-1
-Date: Mon, 07 Jun 2010 13:06:55 +0200
+Date: Mon, 07 Jun 2010 13:07:14 +0200
 From: Peter Zijlstra <a.p.zijlstra@chello.nl>
 To: Andrea Arcangeli <aarcange@redhat.com>, Avi Kivity <avi@redhat.com>,
        Thomas Gleixner <tglx@linutronix.de>, Rik van Riel <riel@redhat.com>,
@@ -20,36 +21,173 @@ Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
        Hugh Dickins <hugh.dickins@tiscali.co.uk>, Mel Gorman <mel@csn.ul.ie>,
        Nick Piggin <npiggin@suse.de>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: [PATCH 01/28] powerpc: Use call_rcu_sched() for pagetables
+Subject: [PATCH 20/28] sparc64: Kill page table quicklists.
 References: <20100607110654.606530953@chello.nl>
-Content-Disposition: inline; filename=powerpc-pgtable-call_rcu_sched.patch
+Content-Disposition: inline; filename=davem-sparc64-Kill_page_table_quicklists.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-PowerPC relies on IRQ-disable to guard against RCU quiecent states,
-use the appropriate RCU call version.
+From: David S. Miller <davem@davemloft.net>
 
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: Nick Piggin <npiggin@suse.de>
-Cc: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+They are pointless and make it harder to use RCU page
+table freeing and share code with other architectures.
+
+BTW, this is the second time this has happened, see
+commit 3c936465249f863f322154ff1aaa628b84ee5750
+("[SPARC64]: Kill pgtable quicklists and use SLAB.")
+
+:-)
+
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+LKML-Reference: <20100408.180005.76674367.davem@davemloft.net>
 ---
- arch/powerpc/mm/pgtable.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/sparc/Kconfig                  |    4 ----
+ arch/sparc/include/asm/pgalloc_64.h |   32 +++++++++++++++-----------------
+ arch/sparc/mm/tsb.c                 |   11 +++++++++++
+ 3 files changed, 26 insertions(+), 21 deletions(-)
 
-Index: linux-2.6/arch/powerpc/mm/pgtable.c
+Index: linux-2.6/arch/sparc/Kconfig
 ===================================================================
---- linux-2.6.orig/arch/powerpc/mm/pgtable.c
-+++ linux-2.6/arch/powerpc/mm/pgtable.c
-@@ -93,7 +93,7 @@ static void pte_free_rcu_callback(struct
- static void pte_free_submit(struct pte_freelist_batch *batch)
+--- linux-2.6.orig/arch/sparc/Kconfig
++++ linux-2.6/arch/sparc/Kconfig
+@@ -82,10 +82,6 @@ config IOMMU_HELPER
+ 	bool
+ 	default y if SPARC64
+ 
+-config QUICKLIST
+-	bool
+-	default y if SPARC64
+-
+ config STACKTRACE_SUPPORT
+ 	bool
+ 	default y if SPARC64
+Index: linux-2.6/arch/sparc/include/asm/pgalloc_64.h
+===================================================================
+--- linux-2.6.orig/arch/sparc/include/asm/pgalloc_64.h
++++ linux-2.6/arch/sparc/include/asm/pgalloc_64.h
+@@ -5,7 +5,6 @@
+ #include <linux/sched.h>
+ #include <linux/mm.h>
+ #include <linux/slab.h>
+-#include <linux/quicklist.h>
+ 
+ #include <asm/spitfire.h>
+ #include <asm/cpudata.h>
+@@ -14,69 +13,68 @@
+ 
+ /* Page table allocation/freeing. */
+ 
++extern struct kmem_cache *pgtable_cache;
++
+ static inline pgd_t *pgd_alloc(struct mm_struct *mm)
  {
- 	INIT_RCU_HEAD(&batch->rcu);
--	call_rcu(&batch->rcu, pte_free_rcu_callback);
-+	call_rcu_sched(&batch->rcu, pte_free_rcu_callback);
+-	return quicklist_alloc(0, GFP_KERNEL, NULL);
++	return kmem_cache_alloc(pgtable_cache, GFP_KERNEL);
  }
  
- void pgtable_free_tlb(struct mmu_gather *tlb, void *table, unsigned shift)
+ static inline void pgd_free(struct mm_struct *mm, pgd_t *pgd)
+ {
+-	quicklist_free(0, NULL, pgd);
++	kmem_cache_free(pgtable_cache, pgd);
+ }
+ 
+ #define pud_populate(MM, PUD, PMD)	pud_set(PUD, PMD)
+ 
+ static inline pmd_t *pmd_alloc_one(struct mm_struct *mm, unsigned long addr)
+ {
+-	return quicklist_alloc(0, GFP_KERNEL, NULL);
++	return kmem_cache_alloc(pgtable_cache,
++				GFP_KERNEL|__GFP_REPEAT);
+ }
+ 
+ static inline void pmd_free(struct mm_struct *mm, pmd_t *pmd)
+ {
+-	quicklist_free(0, NULL, pmd);
++	kmem_cache_free(pgtable_cache, pmd);
+ }
+ 
+ static inline pte_t *pte_alloc_one_kernel(struct mm_struct *mm,
+ 					  unsigned long address)
+ {
+-	return quicklist_alloc(0, GFP_KERNEL, NULL);
++	return (pte_t *)__get_free_page(GFP_KERNEL | __GFP_REPEAT | __GFP_ZERO);
+ }
+ 
+ static inline pgtable_t pte_alloc_one(struct mm_struct *mm,
+ 					unsigned long address)
+ {
+ 	struct page *page;
+-	void *pg;
++	pte_t *pte;
+ 
+-	pg = quicklist_alloc(0, GFP_KERNEL, NULL);
+-	if (!pg)
++	pte = pte_alloc_one_kernel(mm, address);
++	if (!pte)
+ 		return NULL;
+-	page = virt_to_page(pg);
++	page = virt_to_page(pte);
+ 	pgtable_page_ctor(page);
+ 	return page;
+ }
+ 
+ static inline void pte_free_kernel(struct mm_struct *mm, pte_t *pte)
+ {
+-	quicklist_free(0, NULL, pte);
++	free_page((unsigned long)pte);
+ }
+ 
+ static inline void pte_free(struct mm_struct *mm, pgtable_t ptepage)
+ {
+ 	pgtable_page_dtor(ptepage);
+-	quicklist_free_page(0, NULL, ptepage);
++	__free_page(ptepage);
+ }
+ 
+-
+ #define pmd_populate_kernel(MM, PMD, PTE)	pmd_set(PMD, PTE)
+ #define pmd_populate(MM,PMD,PTE_PAGE)		\
+ 	pmd_populate_kernel(MM,PMD,page_address(PTE_PAGE))
+ #define pmd_pgtable(pmd) pmd_page(pmd)
+ 
+-static inline void check_pgt_cache(void)
+-{
+-	quicklist_trim(0, NULL, 25, 16);
+-}
++#define check_pgt_cache()	do { } while (0)
+ 
+ #define __pte_free_tlb(tlb, pte, addr)	pte_free((tlb)->mm, pte)
+ #define __pmd_free_tlb(tlb, pmd, addr)	pmd_free((tlb)->mm, pmd)
+Index: linux-2.6/arch/sparc/mm/tsb.c
+===================================================================
+--- linux-2.6.orig/arch/sparc/mm/tsb.c
++++ linux-2.6/arch/sparc/mm/tsb.c
+@@ -236,6 +236,8 @@ static void setup_tsb_params(struct mm_s
+ 	}
+ }
+ 
++struct kmem_cache *pgtable_cache __read_mostly;
++
+ static struct kmem_cache *tsb_caches[8] __read_mostly;
+ 
+ static const char *tsb_cache_names[8] = {
+@@ -253,6 +255,15 @@ void __init pgtable_cache_init(void)
+ {
+ 	unsigned long i;
+ 
++	pgtable_cache = kmem_cache_create("pgtable_cache",
++					  PAGE_SIZE, PAGE_SIZE,
++					  0,
++					  _clear_page);
++	if (!pgtable_cache) {
++		prom_printf("pgtable_cache_init(): Could not create!\n");
++		prom_halt();
++	}
++
+ 	for (i = 0; i < 8; i++) {
+ 		unsigned long size = 8192 << i;
+ 		const char *name = tsb_cache_names[i];
 
 
