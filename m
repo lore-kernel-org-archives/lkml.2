@@ -1,160 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753520Ab0FGAWV (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Jun 2010 20:22:21 -0400
-Received: from adelie.canonical.com ([91.189.90.139]:49459 "EHLO
-	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753021Ab0FGAWU (ORCPT
+	id S1753694Ab0FGAXa (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Jun 2010 20:23:30 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:37092 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751482Ab0FGAX2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Jun 2010 20:22:20 -0400
-From: Chase Douglas <chase.douglas@canonical.com>
-To: Arnaldo Carvalho de Melo <acme@redhat.com>,
-       Peter Zijlstra <a.p.zijlstra@chello.nl>,
-       Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@elte.hu>
-Cc: Masami Hiramatsu <mhiramat@redhat.com>, linux-kernel@vger.kernel.org
-Subject: [PATCH] perf probe: add kernel source path option
-Date: Sun,  6 Jun 2010 20:22:05 -0400
-Message-Id: <1275870125-25666-1-git-send-email-chase.douglas@canonical.com>
-X-Mailer: git-send-email 1.7.0.4
+	Sun, 6 Jun 2010 20:23:28 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:date:message-id:subject:from:to:content-type;
+        b=WeFkEW1r1+0rKCNa4HXJLXuLhH6rwf39/qeSGUZ2XmhratDLi/104ovjhAGTTTDS8I
+         r4+tD8oYPK3VjtCI/QzXTiIOy4aTi2OOiUsQO3MDCp5rStNeXrG3thO8gBUyoB0PFvoj
+         w6PvblJ4ObgS1KkRW20DO7+i2VJestEJU/whQ=
+MIME-Version: 1.0
+Date: Sun, 6 Jun 2010 20:23:27 -0400
+Message-ID: <AANLkTincwMZPnYW3S4uz4k2GOn52RpgBIBRfzyD010Yo@mail.gmail.com>
+Subject: [BUG on 2.6.35-rc2] sysfs: cannot create duplicate filename 
+	'/devices/pci0000:00/0000:00:11.0/0000:02:03.0/slot'
+From: Ryan Wang <openspace.wang@gmail.com>
+To: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The probe plugin requires access to the source code for some operations.
-The source code must be in the exact same location as specified by the
-DWARF tags, but sometimes the location is an absolute path that cannot
-be replicated by a normal user. This change adds the -s|--source option
-to allow the user to specify the root of the kernel source tree.
+Hi,
 
-Signed-off-by: Chase Douglas <chase.douglas@canonical.com>
----
- tools/perf/Documentation/perf-probe.txt |    4 ++
- tools/perf/builtin-probe.c              |    2 +
- tools/perf/util/probe-finder.c          |   56 +++++++++++++++++++++++++++++-
- tools/perf/util/symbol.h                |    1 +
- 4 files changed, 61 insertions(+), 2 deletions(-)
+   I have just compiled 2.6.35-rc2 on my VMWare Player box, and
+got the warning info after boot up from dmesg.
 
-diff --git a/tools/perf/Documentation/perf-probe.txt b/tools/perf/Documentation/perf-probe.txt
-index 34202b1..d387d8b 100644
---- a/tools/perf/Documentation/perf-probe.txt
-+++ b/tools/perf/Documentation/perf-probe.txt
-@@ -31,6 +31,10 @@ OPTIONS
- --vmlinux=PATH::
- 	Specify vmlinux path which has debuginfo (Dwarf binary).
- 
-+-s::
-+--source=PATH::
-+	Specify path to kernel source.
-+
- -v::
- --verbose::
-         Be more verbose (show parsed arguments, etc).
-diff --git a/tools/perf/builtin-probe.c b/tools/perf/builtin-probe.c
-index 152d6c9..ae7ba65 100644
---- a/tools/perf/builtin-probe.c
-+++ b/tools/perf/builtin-probe.c
-@@ -167,6 +167,8 @@ static const struct option options[] = {
- #ifndef NO_DWARF_SUPPORT
- 	OPT_STRING('k', "vmlinux", &symbol_conf.vmlinux_name,
- 		   "file", "vmlinux pathname"),
-+	OPT_STRING('s', "source", &symbol_conf.source_prefix,
-+		   "directory", "path to kernel source"),
- #endif
- 	OPT_BOOLEAN('l', "list", &session.list_events,
- 		    "list up current probe events"),
-diff --git a/tools/perf/util/probe-finder.c b/tools/perf/util/probe-finder.c
-index c171a24..e1a88f1 100644
---- a/tools/perf/util/probe-finder.c
-+++ b/tools/perf/util/probe-finder.c
-@@ -36,6 +36,7 @@
- #include "event.h"
- #include "debug.h"
- #include "util.h"
-+#include "symbol.h"
- #include "probe-finder.h"
- 
- 
-@@ -105,6 +106,55 @@ static int strtailcmp(const char *s1, const char *s2)
- 	return 0;
- }
- 
-+/*
-+ * Find a src file from a DWARF tag path. Prepend optional source path prefix
-+ * and chop off leading directories that do not exist. Result is passed back as
-+ * a newly allocated path on success.
-+ * Return 0 if file was found and readable, -1 otherwise.
-+ */
-+static int get_real_src(const char *raw_path, char **new_path)
-+{
-+	if (!symbol_conf.source_prefix) {
-+		if (access(raw_path, R_OK) == 0) {
-+			*new_path = strdup(raw_path);
-+			return 0;
-+		} else
-+			return -1;
-+	}
-+
-+	*new_path = malloc(strlen(symbol_conf.source_prefix)
-+			   + strlen(raw_path) + 2);
-+	if (!*new_path)
-+		return -1;
-+
-+	for (;;) {
-+		sprintf(*new_path, "%s/%s", symbol_conf.source_prefix,
-+			raw_path);
-+
-+		if (access(*new_path, R_OK) == 0)
-+			return 0;
-+
-+		switch (errno) {
-+		case ENAMETOOLONG:
-+		case ENOENT:
-+		case EROFS:
-+		case EFAULT:
-+			raw_path = strchr(++raw_path, '/');
-+			if (!raw_path) {
-+				free(*new_path);
-+				*new_path = NULL;
-+				return -1;
-+			}
-+			continue;
-+
-+		default:
-+			free(*new_path);
-+			*new_path = NULL;
-+			return -1;
-+		}
-+	}
-+}
-+
- /* Line number list operations */
- 
- /* Add a line to line number list */
-@@ -726,8 +776,10 @@ static void find_line_range_by_line(Dwarf_Die *sp_die, struct line_finder *lf)
- 			continue;
- 
- 		/* Copy real path */
--		if (!lf->lr->path)
--			lf->lr->path = strdup(src);
-+		if (!lf->lr->path && get_real_src(src, &lf->lr->path) != 0) {
-+			perror("Could not find path to source");
-+			break;
-+		}
- 		line_list__add_line(&lf->lr->line_list, (unsigned int)lineno);
- 	}
- 	/* Update status */
-diff --git a/tools/perf/util/symbol.h b/tools/perf/util/symbol.h
-index f30a374..fdec2eb 100644
---- a/tools/perf/util/symbol.h
-+++ b/tools/perf/util/symbol.h
-@@ -65,6 +65,7 @@ struct symbol_conf {
- 			exclude_other,
- 			full_paths;
- 	const char	*vmlinux_name,
-+			*source_prefix,
- 			*field_sep;
- 	char            *dso_list_str,
- 			*comm_list_str,
--- 
-1.7.0.4
-
+------------[ cut here ]------------
+WARNING: at /home/crossover/kernel-dev/src/linux-2.6.35-rc2/fs/sysfs/dir.c:451
+sysfs_add_one+0xa1/0x110()
+Hardware name: VMware Virtual Platform
+sysfs: cannot create duplicate filename
+'/devices/pci0000:00/0000:00:11.0/0000:02:02.0/slot'
+Modules linked in:
+Pid: 1, comm: swapper Tainted: G        W   2.6.35-rc2 #1
+Call Trace:
+ [<c0444402>] warn_slowpath_common+0x72/0xa0
+ [<c054ed81>] ? sysfs_add_one+0xa1/0x110
+ [<c054ed81>] ? sysfs_add_one+0xa1/0x110
+ [<c04444d3>] warn_slowpath_fmt+0x33/0x40
+ [<c054ed81>] sysfs_add_one+0xa1/0x110
+ [<c054f415>] sysfs_do_create_link+0xa5/0x150
+ [<c054fdc1>] ? sysfs_create_bin_file+0x21/0x30
+ [<c054f4f7>] sysfs_create_link+0x17/0x20
+ [<c060c976>] pci_create_sysfs_dev_files+0x356/0x4d0
+ [<c060b186>] ? pci_get_subsys+0x76/0xa0
+ [<c0aa6fc1>] pci_sysfs_init+0x1a/0x44
+ [<c0401132>] do_one_initcall+0x32/0x1d0
+ [<c0aa6fa7>] ? pci_sysfs_init+0x0/0x44
+ [<c0a823b7>] kernel_init+0x13e/0x1d9
+ [<c0a82279>] ? kernel_init+0x0/0x1d9
+ [<c04035c2>] kernel_thread_helper+0x6/0x10
+---[ end trace f545de55182313ba ]---
