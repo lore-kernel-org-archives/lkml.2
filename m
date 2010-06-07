@@ -1,86 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752431Ab0FGV1K (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jun 2010 17:27:10 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:35434 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751218Ab0FGV1H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jun 2010 17:27:07 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Martin Steigerwald <Martin@lichtvoll.de>
-Subject: Re: [TuxOnIce-devel] [linux-pm] [SUSPECTED SPAM] Re: Proposal for a new algorithm for reading & writing a hibernation image.
-Date: Mon, 7 Jun 2010 23:28:21 +0200
-User-Agent: KMail/1.12.4 (Linux/2.6.35-rc1-rjw; KDE/4.3.5; x86_64; ; )
-Cc: tuxonice-devel@tuxonice.net, Nigel Cunningham <ncunningham@crca.org.au>,
-       LKML <linux-kernel@vger.kernel.org>,
-       pm list <linux-pm@lists.linux-foundation.org>,
-       Maxim Levitsky <maximlevitsky@gmail.com>,
-       "TuxOnIce-devel" <tuxonice-devel@tuxonice.net>
-References: <9rpccea67yy402c975fqru8r.1275576653521@email.android.com> <4C0C843D.6030008@crca.org.au> <201006071507.56259.Martin@lichtvoll.de>
-In-Reply-To: <201006071507.56259.Martin@lichtvoll.de>
+	id S1752664Ab0FGV22 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jun 2010 17:28:28 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:56606 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751670Ab0FGV21 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Jun 2010 17:28:27 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=cDKMo6pifomMpXUY49V1kvMIMDbk0a6pRfIwTUPIn+MF7EYxKpUVJAwYYy8OLdnqDm
+         SCmIYchHumharhftSQtfPGi36pBalL1BKWnA6pM4K8yVxkDgRq6Aw9Blv9zENzVcZR0U
+         jQQ0T+JweUosscgdUn6SaVHuZUGykaFDfIBZg=
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-2"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201006072328.21878.rjw@sisk.pl>
+In-Reply-To: <alpine.LFD.2.00.1006071440520.2933@localhost.localdomain>
+References: <1275686352.2970.2.camel@eha.doredevelopment.dk>
+	<alpine.LFD.2.00.1006042343150.2933@localhost.localdomain>
+	<AANLkTilb7---Qg1oLwzanKP1RGe04fkAXDtZzz0w9MGz@mail.gmail.com>
+	<20100605151031.2d562268@hina.wild-wind.fr.eu.org>
+	<alpine.LFD.2.00.1006051732270.2933@localhost.localdomain>
+	<AANLkTimlSBEhl58CNuScKjxbqdTwTYgqo7vrHTcd1x9G@mail.gmail.com>
+	<alpine.LFD.2.00.1006051915290.2933@localhost.localdomain>
+	<AANLkTimcB9vRqnNYyBh6hjHXZHcmFvw72MZUEIGfeexq@mail.gmail.com>
+	<alpine.LFD.2.00.1006052155100.2933@localhost.localdomain>
+	<AANLkTik2so7osQJFq6NRaIFK2GVLURVozOqSsejd1K0F@mail.gmail.com>
+	<alpine.LFD.2.00.1006062228120.2933@localhost.localdomain>
+	<1275914058.2818.8.camel@eha.doredevelopment.dk>
+	<alpine.LFD.2.00.1006071440520.2933@localhost.localdomain>
+Date: Mon, 7 Jun 2010 23:28:23 +0200
+Message-ID: <AANLkTilPhof5cnhBCXSzKJSnWl6Vuu2fRts2pBBBNl6K@mail.gmail.com>
+Subject: Re: [RFC][PATCH] irq: support IRQ_NESTED_THREAD with non-threaded 
+	interrupt handlers
+From: Esben Haabendal <esbenhaabendal@gmail.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Esben Haabendal <eha@doredevelopment.dk>, linuxppc-dev@ozlabs.org,
+       Marc Zyngier <maz@misterjones.org>, LKML <linux-kernel@vger.kernel.org>,
+       Ingo Molnar <mingo@elte.hu>, joachim.eastwood@jotron.com,
+       Peter Zijlstra <peterz@infradead.org>,
+       David Miller <davem@davemloft.net>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 07 June 2010, Martin Steigerwald wrote:
-> Am Montag 07 Juni 2010 schrieb Nigel Cunningham:
-> > Hi.
-> 
-> Hi Nigel and Rafael, hi everyone else involved,
-> 
-> > On 07/06/10 05:04, Rafael J. Wysocki wrote:
-> > > On Sunday 06 June 2010, Maxim Levitsky wrote:
-> > >> On Sun, 2010-06-06 at 15:57 +0200, Rafael J. Wysocki wrote:
-> > >>> On Sunday 06 June 2010, Maxim Levitsky wrote:
-> > > ...
-> > > 
-> > >>> So how TuxOnIce helps here?
-> > >> 
-> > >> Very simple.
-> > >> 
-> > >> With swsusp, I can save 750MB (memory) + 250 Vram (vram)
-> > >> With full memory save I can save (1750 MB of memory) + 250 MB of
-> > >> vram....
-> > > 
-> > > So what about being able to save 1600 MB total instead of the 2 GB
-> > > (which is what we're talking about in case that's not clear)?  Would
-> > > it be _that_ _much_ worse?
-> > 
-> > That all depends on what is in the 400MB you discard.
-> > 
-> > The difference is "Just as if you'd never hibernated" vs something
-> > closer to "Just as if you'd only just started up". We can't make
-> > categorical statements because it really does depend upon what you
-> > discard and what you want to do post-resume - that is, how useful the
-> > memory you discard would have been. That's always going to vary from
-> > case to case.
-> 
-> Nigel and Rafael, how about just testing it?
+On Mon, Jun 7, 2010 at 5:06 PM, Thomas Gleixner <tglx@linutronix.de> wrote:
 
-ISTR that can be done to some extent using TuxOnIce as is, becuase there is a
-knob that you can use to limit the image size.
- 
-> Whats needed to have 80% of the memory saved instead of 50%?
->
-> I think its important to go the next steps towards a better snapshot in 
-> mainline kernel even when you do not agree on the complete end result yet.
-> 
-> What about
-> 
-> - Rafael, you review the async write patches of Nigel. If they are good, 
-> IMHO they should go in as soon as possible.
+> Maybe you understand now, why I was pretty sure upfront, that your
+> approach was wrong even without knowing all the gory details ? :)
 
-Yes, I'm going to do that.
+I understand.  There is a better solution, which is to use threaded
+interrupts where needed.
 
-> - Nigel and/or Rafael, you look at whats needed to save 80% instead of 50% 
-> of the memory and develop a patch for it
+But I must confess that I am disappointed that you still fail to see
+how the pca953x
+patch actually eliminates the need for serialization. But I don't
+think there is much
+point in going on about that.
 
-That would be my suggestion as well.
+The phy driver should be rewritten to use a threaded handler, it will
+solve my particular problem.
+And in the meantime, I have been promised to get the phy interrupts ofloaded
+to real CPU interrupt lines :-)
 
-Thanks,
-Rafael
+Oh, I still think that the disable_irq_nosync documentaiton is misleading.
+Functions that are allowed in a particular context should not call functions
+that are not allowed to be called in that context. But now I know :-)
+
+/Esben
+-- 
+Esben Haabendal, Senior Software Consultant
+DoréDevelopment ApS, Ved Stranden 1, 9560 Hadsund, DK-Denmark
+Phone: +45 51 92 53 93, E-mail: eha@doredevelopment.dk
+WWW: http://www.doredevelopment.dk
