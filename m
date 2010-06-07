@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932375Ab0FGLVf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jun 2010 07:21:35 -0400
-Received: from [18.85.46.34] ([18.85.46.34]:37754 "EHLO bombadil.infradead.org"
+	id S932441Ab0FGLVi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jun 2010 07:21:38 -0400
+Received: from [18.85.46.34] ([18.85.46.34]:37753 "EHLO bombadil.infradead.org"
 	rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S932227Ab0FGLUi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S932212Ab0FGLUi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 7 Jun 2010 07:20:38 -0400
-Message-Id: <20100607110654.606530953@chello.nl>
+Message-Id: <20100607111408.320302531@chello.nl>
 User-Agent: quilt/0.48-1
-Date: Mon, 07 Jun 2010 13:06:54 +0200
+Date: Mon, 07 Jun 2010 13:07:15 +0200
 From: Peter Zijlstra <a.p.zijlstra@chello.nl>
 To: Andrea Arcangeli <aarcange@redhat.com>, Avi Kivity <avi@redhat.com>,
        Thomas Gleixner <tglx@linutronix.de>, Rik van Riel <riel@redhat.com>,
@@ -20,35 +20,80 @@ Cc: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
        Hugh Dickins <hugh.dickins@tiscali.co.uk>, Mel Gorman <mel@csn.ul.ie>,
        Nick Piggin <npiggin@suse.de>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: [PATCH 00/28] mm: preemptibility -v3
+Subject: [PATCH 21/28] sparc64: Use RCU page table freeing.
+References: <20100607110654.606530953@chello.nl>
+Content-Disposition: inline; filename=davem-sparc64-Use_RCU_page_table_freeing.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch-set makes part of the mm a lot more preemptible. It converts
-i_mmap_lock and anon_vma->lock to mutexes and makes mmu_gather fully
-preemptible.
+From: David S. Miller <davem@davemloft.net>
 
-The main motivation was making mm_take_all_locks() preemptible, since it
-appears people are nesting hundreds of spinlocks there.
+Signed-off-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+LKML-Reference: <20100408.180008.180206930.davem@davemloft.net>
+---
+ arch/sparc/include/asm/pgalloc_64.h |   49 ++++++++++++++++++++++++++++++++++--
+ 1 file changed, 47 insertions(+), 2 deletions(-)
 
-The side-effects are that can finally make mmu_gather preemptible,
-something which lots of people have wanted to do for a long time.
-
-It also gets us anon_vma refcounting, which seems to result in a nice
-cleanup of the anon_vma lifetime rules wrt KSM and compaction.
-
-This patch-set it build and boot-tested on x86_64 (a previous version was
-also tested on Dave's Niagra2 machines, and I suppose s390 did too when
-Martin provided the conversion patch for his arch).
-
-There are no known architectures left unconverted, although some arch code
-never did see a compiler (superh and um come to mind).
-
-Can we move this work forwards, or is there anything people would want to
-see done?
-
-[ The series includes Rik's latest patches to the same area for
-convenience ]
+Index: linux-2.6/arch/sparc/include/asm/pgalloc_64.h
+===================================================================
+--- linux-2.6.orig/arch/sparc/include/asm/pgalloc_64.h
++++ linux-2.6/arch/sparc/include/asm/pgalloc_64.h
+@@ -76,7 +76,52 @@ static inline void pte_free(struct mm_st
+ 
+ #define check_pgt_cache()	do { } while (0)
+ 
+-#define __pte_free_tlb(tlb, pte, addr)	pte_free((tlb)->mm, pte)
+-#define __pmd_free_tlb(tlb, pmd, addr)	pmd_free((tlb)->mm, pmd)
++static inline void pgtable_free(void *table, bool is_page)
++{
++	if (is_page)
++		free_page((unsigned long)table);
++	else
++		kmem_cache_free(pgtable_cache, table);
++}
++
++#ifdef CONFIG_SMP
++#define HAVE_ARCH_RCU_TABLE_FREE
++
++struct mmu_gather;
++extern void tlb_remove_table(struct mmu_gather *, void *);
++
++static inline void pgtable_free_tlb(struct mmu_gather *tlb, void *table, bool is_page)
++{
++	unsigned long pgf = (unsigned long)table;
++	if (is_page)
++		pgf |= 0x1UL;
++	tlb_remove_table(tlb, (void *)pgf);
++}
++
++static inline void __tlb_remove_table(void *_table)
++{
++	void *table = (void *)((unsigned long)_table & ~0x1UL);
++	bool is_page = false;
++
++	if ((unsigned long)_table & 0x1UL)
++		is_page = true;
++	pgtable_free(table, is_page);
++}
++#else /* CONFIG_SMP */
++static inline void pgtable_free_tlb(struct mmu_gather *tlb, void *table, bool is_page)
++{
++	pgtable_free(table, is_page);
++}
++#endif /* !CONFIG_SMP */
++
++static inline void __pte_free_tlb(struct mmu_gather *tlb, struct page *ptepage,
++				  unsigned long address)
++{
++	pgtable_page_dtor(ptepage);
++	pgtable_free_tlb(tlb, page_address(ptepage), true);
++}
++
++#define __pmd_free_tlb(tlb, pmd, addr)		      \
++	pgtable_free_tlb(tlb, pmd, false)
+ 
+ #endif /* _SPARC64_PGALLOC_H */
 
 
