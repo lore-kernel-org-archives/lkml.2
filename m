@@ -1,48 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753959Ab0FGSxn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jun 2010 14:53:43 -0400
-Received: from mail.perches.com ([173.55.12.10]:2680 "EHLO mail.perches.com"
+	id S1753883Ab0FGSyQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jun 2010 14:54:16 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:44966 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753349Ab0FGSuC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jun 2010 14:50:02 -0400
-From: Joe Perches <joe@perches.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org,
-       Ian Abbott <abbotti@mev.co.uk>,
-       Mori Hess <fmhess@users.sourceforge.net>
-Subject: [PATCH 03/17] MAINTAINERS: Add STAGING - COMEDI
-Date: Mon,  7 Jun 2010 11:49:37 -0700
-Message-Id: <62375afe6c747a8d91fb08ed788eba27b2730dba.1275935090.git.joe@perches.com>
-X-Mailer: git-send-email 1.7.1.244.gbdc4
-In-Reply-To: <cover.1275935090.git.joe@perches.com>
-References: <cover.1275935090.git.joe@perches.com>
+	id S1751675Ab0FGSyO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Jun 2010 14:54:14 -0400
+Message-ID: <4C0D4032.6020907@zytor.com>
+Date: Mon, 07 Jun 2010 11:53:38 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-3.fc13 Thunderbird/3.0.4
+MIME-Version: 1.0
+To: Ondrej Zary <linux@rainbow-software.org>
+CC: Linux-pm mailing list <linux-pm@lists.linux-foundation.org>,
+       Kernel development list <linux-kernel@vger.kernel.org>,
+       Alan Stern <stern@rowland.harvard.edu>, Len Brown <len.brown@intel.com>,
+       Pavel Machek <pavel@ucw.cz>, "Rafael J. Wysocki" <rjw@sisk.pl>
+Subject: Re: [PATCH] [RFC] Save/restore MISC_ENABLE register
+References: <201006071814.53583.linux@rainbow-software.org> <4C0D2BFB.2090200@zytor.com> <201006072051.10421.linux@rainbow-software.org>
+In-Reply-To: <201006072051.10421.linux@rainbow-software.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Joe Perches <joe@perches.com>
----
- MAINTAINERS |    6 ++++++
- 1 files changed, 6 insertions(+), 0 deletions(-)
+On 06/07/2010 11:51 AM, Ondrej Zary wrote:
+> 
+> Something like this?
+> 
+> Save/restore MISC_ENABLE register on suspend/resume.
+> This fixes OOPS (invalid opcode) on resume from STR on Asus P4P800-VM, which
+> wakes up with MWAIT disabled.
+> 
+> Signed-off-by: Ondrej Zary <linux@rainbow-software.org>
+> 
 
-diff --git a/MAINTAINERS b/MAINTAINERS
-index c4de33b..b175605 100644
---- a/MAINTAINERS
-+++ b/MAINTAINERS
-@@ -5461,6 +5461,12 @@ L:	b.a.t.m.a.n@lists.open-mesh.net
- S:	Maintained
- F:	drivers/staging/batman-adv/
- 
-+STAGING - COMEDI
-+M:	Ian Abbott <abbotti@mev.co.uk>
-+M:	Mori Hess <fmhess@users.sourceforge.net>
-+S:	Odd Fixes
-+F:	drivers/staging/comedi/
-+
- STARFIRE/DURALAN NETWORK DRIVER
- M:	Ion Badulescu <ionut@badula.org>
- S:	Odd Fixes
--- 
-1.7.1.244.gbdc4
+Yes, that's a lot better.
 
+I presume you have tested it.  Rafael, do you want to take this or should I?
+
+	-hpa
