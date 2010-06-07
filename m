@@ -1,66 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754065Ab0FGUZJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jun 2010 16:25:09 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:52054 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751406Ab0FGUZG (ORCPT
+	id S1754045Ab0FGU0Z (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jun 2010 16:26:25 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:46082 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751406Ab0FGU0Y convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jun 2010 16:25:06 -0400
-Date: Mon, 7 Jun 2010 13:24:00 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Greg Thelen <gthelen@google.com>
-Cc: Richard Kennedy <richard@rsk.demon.co.uk>,
-       Alexander Viro <viro@zeniv.linux.org.uk>,
-       Jens Axboe <jens.axboe@oracle.com>, lkml <linux-kernel@vger.kernel.org>,
-       Nick Piggin <npiggin@suse.de>, Jeff Mahoney <jeffm@suse.com>,
-       reiserfs-devel@vger.kernel.org
-Subject: Re: [PATCH RFC]  buffer_head: remove redundant test from
- wait_on_buffer
-Message-Id: <20100607132400.492613f1.akpm@linux-foundation.org>
-In-Reply-To: <xr93ljbbw3u8.fsf@ninji.mtv.corp.google.com>
-References: <1271415499.2075.19.camel@localhost>
-	<20100416145123.283f216c.akpm@linux-foundation.org>
-	<xr93ljbbw3u8.fsf@ninji.mtv.corp.google.com>
-X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Mon, 7 Jun 2010 16:26:24 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=HpUv7taC3gKHB4CQCUlZEeLM8+2/79OzgD9J8FLts18i0xAVtcHvmNlupXKi+zce/k
+         3/2fEeqhB4CQlQY9jeDfBQSNK0MexmGpz4XtE2efUhGIvnz7cuVfKPZ/vXJjnxjwxcph
+         4yTtgMaAS3Cd8RMVvSQdKiGUW0knZmKKTCfng=
+MIME-Version: 1.0
+In-Reply-To: <alpine.LFD.2.00.1006071057300.3515@i5.linux-foundation.org>
+References: <alpine.DEB.2.00.1006070404510.29029@skynet.skynet.ie>
+	<alpine.LFD.2.00.1006071057300.3515@i5.linux-foundation.org>
+Date: Tue, 8 Jun 2010 06:26:20 +1000
+Message-ID: <AANLkTimSFtaDzUPDEq4Z2J4O5sFG4vDkFHqs1eA1wG44@mail.gmail.com>
+Subject: Re: [git pull] drm fixes
+From: Dave Airlie <airlied@gmail.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Dave Airlie <airlied@linux.ie>, dri-devel@lists.freedesktop.org,
+       linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 22 May 2010 23:05:03 -0700
-Greg Thelen <gthelen@google.com> wrote:
+On Tue, Jun 8, 2010 at 4:00 AM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
+>
+>
+> On Mon, 7 Jun 2010, Dave Airlie wrote:
+>>
+>> 3 regressions fixes, one radeon loading on IGP, one i865 loading, one and
+>> an evergreen userspace interaction workaround.
+>
+> This is:
+>
+>         26 files changed, 372 insertions(+), 66 deletions(-)
+>
+> and there are apparently several reports of known problems (the problem
+> with modesetting) that isn't even addressed.
 
-> > --- a/fs/buffer.c~buffer_head-remove-redundant-test-from-wait_on_buffer-fix
-> > +++ a/fs/buffer.c
-> > @@ -90,6 +90,12 @@ EXPORT_SYMBOL(unlock_buffer);
-> >   */
-> >  void __wait_on_buffer(struct buffer_head * bh)
-> >  {
-> > +	/*
-> > +	 * Calling wait_on_buffer() against a zero-ref buffer is a nasty bug
-> > +	 * because it will almost always "work".  However this buffer can be
-> > +	 * reclaimed at any time.  So check for it.
-> > +	 */
-> > +	VM_BUG_ON(atomic_read(&bh->b_count) == 0);
-> 
-> My system is failing this VM_BUG_ON() occasionally.  I think this is due to
-> wait_on_buffer() calls with b_count=0 from locations within fs/buffer.c.
+Okay, not sure what the addressed regression you are talking about, do
+you want  regression fixes early like you always say or do you want to
+wait until I have every regression reported fixes before I send a pull
+request?
 
-Thanks.
+I'll rebase the tree today (which means it will be tested less than
+what I originally sent you, inconsistent messages much?)..
 
-Yup, the buffers are protected by lock_page().
+> So please. Just make me a tree that has regression fixes _only_. I'm not
+> AT ALL interested in "it is useful to report the gpu temp". If it was so
+> useful, and if it was ready before the merge window, it should hav gone in
+> then. That clearly wasn't the case, so it's not going in now either.
 
-> These
-> occasional b_count=0 callers are caused by buf reads that complete quickly -
-> after the I/O is issued but before it is waited upon.  Such fs/buffer.c callers
-> need to either bypass this assertion or increment b_count.  I don't think they
-> need to grab an b_count reference.  I suggest a bypass routine in the patch
-> below.  Does this look good?
+I really hope you do this, if I find one thing going into your tree
+after today that isn't a regression fix I'll send revert patches if
+that'll help.
 
-I think I'll just drop
-buffer_head-remove-redundant-test-from-wait_on_buffer-fix.patch and
-wait_on_buffer-remove-the-buffer_locked-test.patch.
-
+Dave.
