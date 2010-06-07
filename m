@@ -1,84 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754818Ab0FGBYJ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Jun 2010 21:24:09 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:50752 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754073Ab0FGBYG convert rfc822-to-8bit (ORCPT
+	id S1754650Ab0FGBi6 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Jun 2010 21:38:58 -0400
+Received: from mail-ww0-f46.google.com ([74.125.82.46]:64473 "EHLO
+	mail-ww0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752354Ab0FGBi5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Jun 2010 21:24:06 -0400
+	Sun, 6 Jun 2010 21:38:57 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=C4dOr66kTwhrG2MSEH/GZ1wQ1QvsiByN0ICLn2DfuX97eV5AnDmLSNzzZViE9hGuLB
-         mLvb3JD1jQJdR53RxGOJ24/fTtY5ariBtiO4138euWfPNFL/0Hfo6w3iKHJfC9rZoqUn
-         IzAVoXJurfpeJ0rb7RF8PuJkSP4Mj7WugFC8U=
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=ldmfEBT8fb43WnhcvJJYkh/sS4z7yty8p9oZ2C07bIS34JjJCdU2TgMAMKNZIZ59n4
+         55rBZlS5qg76cnXoGBBe1kWccHEdNIuXqEkCP2sBIyLVJzdS6ddEW7A8/hog9p5ym1R1
+         9w6zhHqw1E+F773oXVHH7c0Cb1cXYMY6UjWA0=
+Date: Mon, 7 Jun 2010 03:38:51 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>
+Cc: Paul Mackerras <paulus@samba.org>, LKML <linux-kernel@vger.kernel.org>,
+       Arnaldo Carvalho de Melo <acme@redhat.com>,
+       Stephane Eranian <eranian@google.com>
+Subject: Re: [PATCH 2/4] perf: Add exclude_task perf event attribute
+Message-ID: <20100607013848.GA11837@nowhere>
+References: <1274450715-23955-1-git-send-regression-fweisbec@gmail.com> <1274450715-23955-3-git-send-regression-fweisbec@gmail.com> <20100525014323.GC30395@drongo> <1274770688.5882.168.camel@twins>
 MIME-Version: 1.0
-In-Reply-To: <4C0C47A8.1000800@orcon.net.nz>
-References: <4C0C22C4.3010705@orcon.net.nz>
-	<AANLkTim9aWVzb7v5fnS6x3ghMU2_tpaLlbZu3SKXV_0R@mail.gmail.com>
-	<4C0C47A8.1000800@orcon.net.nz>
-Date: Sun, 6 Jun 2010 21:24:03 -0400
-Message-ID: <AANLkTinnprvU7bbe28emifv766_tWKjaSfW0ch2PQY23@mail.gmail.com>
-Subject: Re: 2.6.35-rc2 compilation error on Alpha
-From: Matt Turner <mattst88@gmail.com>
-To: Michael Cree <mcree@orcon.net.nz>
-Cc: linux-kernel@vger.kernel.org, Borislav Petkov <borislav.petkov@amd.com>,
-       "H. Peter Anvin" <hpa@zytor.com>, linux-alpha@vger.kernel.org,
-       Chris Wright <chrisw@sous-sol.org>, Greg Kroah-Hartman <gregkh@suse.de>,
-       Peter Zijlstra <a.p.zijlstra@chello.nl>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1274770688.5882.168.camel@twins>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jun 6, 2010 at 9:13 PM, Michael Cree <mcree@orcon.net.nz> wrote:
-> On 07/06/10 12:08, Matt Turner wrote:
->>
->> On Sun, Jun 6, 2010 at 6:35 PM, Michael Cree<mcree@orcon.net.nz>  wrote:
->>>
->>> When compiling 2.6.35-rc2 for Alpha architecture the following compiler
->>> error is seen:
->>>
->>>  CC      arch/alpha/kernel/asm-offsets.s
->>> In file included from include/linux/kernel.h:17,
->>>                 from include/linux/sched.h:54,
->>>                 from arch/alpha/kernel/asm-offsets.c:9:
->>> include/linux/bitops.h: In function ‘hweight_long’:
->>> include/linux/bitops.h:49: error: implicit declaration of function
->>> ‘__arch_hweight32’
->>
->> Yeah, it was a stupid typo in
->> 1527bc8b928dd1399c3d3467dd47d9ede210978a. I've fixed it and put the
->> patch in my tree for Linus.
->
-> Ah, now the offending commit is pointed out to me I can see the trivial fix.
->  With that, as you say, compilation now bombs out in the pci-sysfs stuff.
->  Since you claim to have that in hand I'll await your solution.
->
-> Cheers
-> Michael.
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-alpha" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->
+On Tue, May 25, 2010 at 08:58:08AM +0200, Peter Zijlstra wrote:
+> On Tue, 2010-05-25 at 11:43 +1000, Paul Mackerras wrote:
+> > On Fri, May 21, 2010 at 04:05:13PM +0200, Frederic Weisbecker wrote:
+> > 
+> > > Excluding is useful when you want to trace only hard and softirqs.
+> > > 
+> > > For this we use a new generic perf_exclude_event() (the previous
+> > > one beeing turned into perf_exclude_swevent) to which you can pass
+> > > the preemption offset to which your events trigger.
+> > > 
+> > > Computing preempt_count() - offset gives us the preempt_count() of
+> > > the context that the event has interrupted, on top of which we
+> > > can filter the non-irq contexts.
+> > 
+> > How does this work for hardware events when we are sampling and
+> > getting an interrupt every N events?  It seems like the hardware is
+> > still counting all events and interrupting every N events, but we are
+> > only recording a sample if the interrupt occurred in the context we
+> > want.  In other words the context of the Nth event is considered to be
+> > the context for the N-1 events preceding that, which seems a pretty
+> > poor approximation.
+> > 
+> > Also, for hardware events, if we are counting rather than sampling,
+> > the exclude_task bit will have no effect.  So perhaps in that case the
+> > perf_event_open should fail rather than appear to succeed but give
+> > wrong data.
+> 
+> Right, so for hardware event we'd need to go with those irq_{enter,exit}
+> hooks and either fully disable the call, or do as Ingo suggested, read
+> the count delta and add that to period_left, so that we'll delay the
+> sample (and subtract from ->count, which is I think the trickiest bit as
+> it'll generate a non-monotonic ->count).
+> 
+> So I prefer the disable/enable from irq_enter/exit, however I also
+> suspect that that is by far the most expensive option.
 
-Fixes for both breaks are in:
-   git://git.kernel.org/pub/scm/linux/kernel/git/mattst88/alpha-2.6.git
-for-linus
 
-I know alpha hardware isn't easy to get your hands on to compile test
-these changes, but guys, please just send linux-alpha@ the patch and
-_I'll_ do it. Both these breaks were not even compile tested.
+Playing with that, it's easy to contain the counting on the filtered
+contexts: I can just flush (event->read()) when we enter/exit a context
+but filter the update of event->count depending on exclude_* things.
 
-pci break: 2c3c8bea608866d8bd9dcf92657d57fdcac011c5
-hweight break: 1527bc8b928dd1399c3d3467dd47d9ede210978a
+There are several problems with that though:
 
-Greg, I haven't checked, but if either of these commits are in .34 or
-older, then my fixes need to go into -stable.
+- overflow interrupts continue, we can block them, but still...
+- periods become randomly async as the interrupts happen. We
+  could save the period_left on context enter to solve this
 
-Thanks,
-Matt
+
+It would be certainly easier and clearer to use stop/start things on context
+enter/exit.
+
+And the only thing that seem to happen in these paths is a write
+to the event config register.
+Is it what is going to be too slow?
+If you compare that to all the reads on the counter,
+the interrupts that still need to be serviced and filtered with the
+other solution, may be the stop/start solution is eventually better
+in contrast.
+
+How much time approximately does it take to write in this config register?
+
+Thanks.
+
