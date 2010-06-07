@@ -1,72 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752506Ab0FGFUp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jun 2010 01:20:45 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:62019 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752252Ab0FGFUn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jun 2010 01:20:43 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=KYqUZfCOWyJuzrbLX6cqDkdrq2W2tuE8rSs3haPjBhVl4F4yTbveIuOPVv/Bovt98d
-         p76wPBX2Be/3wPDz5I8kBXAIG2klvFLVMFTbiZT9psYsvUdB9vo6bdi1txdO7Ue9XY6S
-         E+VsQWVgC8v7s593F5pEiqHnHqTziD3zN8Cjs=
+	id S1752733Ab0FGFVJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jun 2010 01:21:09 -0400
+Received: from tango.tkos.co.il ([62.219.50.35]:52105 "EHLO tango.tkos.co.il"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752326Ab0FGFVH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Jun 2010 01:21:07 -0400
+Date: Mon, 7 Jun 2010 08:20:28 +0300
+From: Baruch Siach <baruch@tkos.co.il>
+To: Wan ZongShun <mcuos.com@gmail.com>
+Cc: rtc-linux@googlegroups.com, linux-kernel@vger.kernel.org,
+       Alessandro Zummo <a.zummo@towertech.it>
+Subject: Re: [rtc-linux] [PATCH] rtc: driver for the DryIce block found in
+ i.MX25 chips
+Message-ID: <20100607052027.GG14583@jasper.tkos.co.il>
+References: <0173f18c60cb4d1f8a0d123da6cd3cfca0224788.1275456869.git.baruch@tkos.co.il>
+ <AANLkTimzq5zBEqrxzkm_D7trn7ikJX8yqny_6SogdIO6@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <AANLkTillFhDzhz06IXArHKbZCy9zBI5Isl4c2DiROXlz@mail.gmail.com>
-References: <AANLkTilb4QNYznFeJVfMmvPAlBY-B02EY0i0d7NK9X7O@mail.gmail.com>
-	<tnxvd9zcbr9.fsf@e102109-lin.cambridge.arm.com>
-	<AANLkTillFhDzhz06IXArHKbZCy9zBI5Isl4c2DiROXlz@mail.gmail.com>
-Date: Mon, 7 Jun 2010 13:20:42 +0800
-Message-ID: <AANLkTikXdy6GOQ2EzDt-yrcJ_jMIPvLsH3neWBozpVCK@mail.gmail.com>
-Subject: Re: mmotm 2010-06-03-16-36 lots of suspected kmemleak
-From: Dave Young <hidave.darkstar@gmail.com>
-To: Catalin Marinas <catalin.marinas@arm.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       linux-mm@kvack.org
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <AANLkTimzq5zBEqrxzkm_D7trn7ikJX8yqny_6SogdIO6@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 4, 2010 at 9:55 PM, Dave Young <hidave.darkstar@gmail.com> wrote:
-> On Fri, Jun 4, 2010 at 6:50 PM, Catalin Marinas <catalin.marinas@arm.com> wrote:
->> Dave Young <hidave.darkstar@gmail.com> wrote:
->>> With mmotm 2010-06-03-16-36, I gots tuns of kmemleaks
->>
->> Do you have CONFIG_NO_BOOTMEM enabled? I posted a patch for this but
->> hasn't been reviewed yet (I'll probably need to repost, so if it fixes
->> the problem for you a Tested-by would be nice):
->>
->> http://lkml.org/lkml/2010/5/4/175
->
->
-> I'd like to test, but I can not access the test pc during weekend. So
-> I will test it next monday.
+Hi Wan,
 
-Bad news, the patch does not fix this issue.
+On Sat, Jun 05, 2010 at 11:08:46PM +0800, Wan ZongShun wrote:
+> Some minor comments below:
 
->
-> For CONFIG_NO_BOOTMEM, I don't remember. I guess set as 'y'
+One question though.
 
-Confirmed, CONFIG_NO_BOOTMEM=y
->>
->> Thanks.
->>
->> --
->> Catalin
->>
->
-> --
-> Regards
-> dave
->
+> > +/*
+> > + * read the seconds portion of the current time from the dryice time counter
+> > + */
+> > +static int dryice_rtc_read_time(struct device *dev, struct rtc_time *tm)
+> > +{
+> > +       struct imxdi_dev *imxdi = dev_get_drvdata(dev);
+> > +       unsigned long now;
+> > +
+> > +       now = __raw_readl(imxdi->ioaddr + DTCMR);
+> > +       rtc_time_to_tm(now, tm);
+> > +
+> 
+> When we want to return a tm value, call rtc_valid_tm() to check the tm
+> that is a good habit.
 
+Isn't rtc_time_to_tm() guaranteed to produce a valid tm value?
 
+> 
+> > +       return 0;
+> > +}
+
+baruch
 
 -- 
-Regards
-dave
+                                                     ~. .~   Tk Open Systems
+=}------------------------------------------------ooO--U--Ooo------------{=
+   - baruch@tkos.co.il - tel: +972.2.679.5364, http://www.tkos.co.il -
