@@ -1,194 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755088Ab0FGBlp (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 6 Jun 2010 21:41:45 -0400
-Received: from usul.saidi.cx ([204.11.33.34]:54043 "EHLO usul.overt.org"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1754084Ab0FGBln (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 6 Jun 2010 21:41:43 -0400
-Date: Sun, 6 Jun 2010 18:41:39 -0700
-From: Philip Langdale <philipl@overt.org>
-To: Maxim Levitsky <maximlevitsky@gmail.com>
-Cc: linux-mmc@vger.kernel.org, linux-kernel <linux-kernel@vger.kernel.org>,
-       Andrew de Quincey <adq_dvb@lidskialf.net>
-Subject: Re: [PATCH 1/2] mmc: make sdhci work with ricoh mmc controller
-Message-ID: <20100606184139.5505d2a5@fido5>
-In-Reply-To: <1275871052.24091.7.camel@maxim-laptop>
-References: <1275859475.3151.4.camel@maxim-laptop>
-	<1275859731-2898-1-git-send-email-maximlevitsky@gmail.com>
-	<b99ba230e4a7f8b2174d7f52f1e7324c@localhost>
-	<1275871052.24091.7.camel@maxim-laptop>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-SA-Do-Not-RunX1: Yes
+	id S1755242Ab0FGCRH (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 6 Jun 2010 22:17:07 -0400
+Received: from mail-px0-f174.google.com ([209.85.212.174]:45853 "EHLO
+	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755037Ab0FGCRF convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 6 Jun 2010 22:17:05 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type:content-transfer-encoding;
+        b=JGsJVGV0o9IHhsrqGEXMtzf/zf4974B/xv4mPy8lXGhKSEHcnel3sVwxVds/7LWV5C
+         Lm90LRc/zRmsG2R6R9G0CDC4xFBiXv0zKZRBKjsFjtomEPb/dtvoK5pNGjoMYjw9Y7yf
+         cwC6lZS/qDMsSuDvmPDzt7DlCjvXsyB1rszT0=
+MIME-Version: 1.0
+In-Reply-To: <1275860015-6643-1-git-send-email-jslaby@suse.cz>
+References: <4C0C0DD8.5030106@gmail.com> <1275860015-6643-1-git-send-email-jslaby@suse.cz>
+From: Frank Pan <frankpzh@gmail.com>
+Date: Mon, 7 Jun 2010 10:16:44 +0800
+Message-ID: <AANLkTim2CS71Kaoviwv5TFS_lLws__fYaK-HzNOytlML@mail.gmail.com>
+Subject: Re: BUG kmalloc-4096: Poison overwritten (2.6.35-rc2)
+To: Jiri Slaby <jslaby@suse.cz>
+Cc: "Justin P. Mattock" <justinmattock@gmail.com>, Greg KH <gregkh@suse.de>,
+       =?ISO-8859-1?Q?Ortwin_Gl=FCck?= <odi@odi.ch>,
+       linux-kernel@vger.kernel.org, jirislaby@gmail.com
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 07 Jun 2010 03:37:32 +0300
-Maxim Levitsky <maximlevitsky@gmail.com> wrote:
+>
+> Does the patch below help?
+>
+> ---
+>  drivers/char/vt.c |    4 ++--
+>  1 files changed, 2 insertions(+), 2 deletions(-)
+>
+> diff --git a/drivers/char/vt.c b/drivers/char/vt.c
+> index 1296c42..e123958 100644
+> --- a/drivers/char/vt.c
+> +++ b/drivers/char/vt.c
+> @@ -304,8 +304,8 @@ static void scrup(struct vc_data *vc, unsigned int t, unsigned int b, int nr)
+>        d = (unsigned short *)(vc->vc_origin + vc->vc_size_row * t);
+>        s = (unsigned short *)(vc->vc_origin + vc->vc_size_row * (t + nr));
+>        scr_memmovew(d, s, (b - t - nr) * vc->vc_size_row);
+> -       scr_memsetw(d + (b - t - nr) * vc->vc_size_row, vc->vc_video_erase_char,
+> -                   vc->vc_size_row * nr);
+> +       scr_memsetw((void *)d + (b - t - nr) * vc->vc_size_row,
+> +                       vc->vc_video_erase_char, vc->vc_size_row * nr);
+>  }
+>
+>  static void scrdown(struct vc_data *vc, unsigned int t, unsigned int b, int nr)
+> --
+> 1.7.1
+>
+>
+>
 
-> On Sun, 2010-06-06 at 19:11 -0400, Philip Langdale wrote: 
-> > On Mon,  7 Jun 2010 00:28:50 +0300, Maxim Levitsky
-> > <maximlevitsky@gmail.com> wrote:
-> > > The current way of disabling it is not well tested by vendor
-> > > and has all kinds of bugs that show up on resume from ram/disk.
-> > > 
-> > > Old way of disabling is still supported by
-> > > continuing to use CONFIG_MMC_RICOH_MMC.
-> > > 
-> > > Based on
-> > > 'http://list.drzeus.cx/pipermail/sdhci-devel/2007-December/002085.html'
-> > > Most of the credit for this goes to Andrew de Quincey
-> > > 
-> > > 
-> > > Signed-off-by: Maxim Levitsky <maximlevitsky@gmail.com>
-> > > CC: Andrew de Quincey <adq_dvb@lidskialf.net>
-> > > CC: linux-mmc@vger.kernel.org <linux-mmc@vger.kernel.org>
-> > 
-> > ACK with one change to add a #define for the device ID.
-> I am not sure about this.
-> When I submitted a driver for xD part I was told that unless device is
-> shared by several pieces of code, its not ok to add it to pci_ids.c.
-> The device is I was told can be hardcoded in the driver.
-> Nothing against changing it. 
+This patch fixed the issue. That's my mistake, forgot d's type. Sorry for that.
 
-Ok, then leave it as is:
+-- 
+Frank Pan
 
-Acked-by: Philip Langdale <philipl@overt.org>
-
-> > > ---
-> > >  drivers/mmc/host/sdhci-pci.c |   31
-> > > +++++++++++++++++++++++++++++++ drivers/mmc/host/sdhci.c     |
-> > > 3 ++- drivers/mmc/host/sdhci.h     |    4 ++++
-> > >  3 files changed, 37 insertions(+), 1 deletions(-)
-> > > 
-> > > diff --git a/drivers/mmc/host/sdhci-pci.c
-> > > b/drivers/mmc/host/sdhci-pci.c index 65483fd..c4bcaeb 100644
-> > > --- a/drivers/mmc/host/sdhci-pci.c
-> > > +++ b/drivers/mmc/host/sdhci-pci.c
-> > > @@ -17,6 +17,7 @@
-> > >  #include <linux/pci.h>
-> > >  #include <linux/dma-mapping.h>
-> > >  #include <linux/slab.h>
-> > > +#include <linux/device.h>
-> > >  
-> > >  #include <linux/mmc/host.h>
-> > >  
-> > > @@ -84,7 +85,21 @@ static int ricoh_probe(struct sdhci_pci_chip
-> > > *chip) if (chip->pdev->subsystem_vendor == PCI_VENDOR_ID_SAMSUNG
-> > > || chip->pdev->subsystem_vendor == PCI_VENDOR_ID_SONY)
-> > >  		chip->quirks |= SDHCI_QUIRK_NO_CARD_NO_RESET;
-> > > +	return 0;
-> > > +}
-> > > +
-> > > +static int ricoh_mmc_probe_slot(struct sdhci_pci_slot *slot)
-> > > +{
-> > > +	slot->host->caps =
-> > > +		((0x21 << SDHCI_TIMEOUT_CLK_SHIFT)
-> > > +			& SDHCI_TIMEOUT_CLK_MASK) |
-> > >  
-> > > +		((0x21 << SDHCI_CLOCK_BASE_SHIFT)
-> > > +			& SDHCI_CLOCK_BASE_MASK) |
-> > > +
-> > > +		SDHCI_TIMEOUT_CLK_UNIT |
-> > > +		SDHCI_CAN_VDD_330 |
-> > > +		SDHCI_CAN_DO_SDMA;
-> > >  	return 0;
-> > >  }
-> > 
-> > As we discussed, highspeed works. Of course, sdhci never sets the
-> > MMC highspeed flag so the cap is irrelevant. We'd need another
-> > quirk to indicate highspeed MMC is supported.
-> > 
-> > This can be done in a separate patch.
-> Sure, but maybe we can enable this for SD/SDHC too?
-
-Not sure what you mean. The proper SD interface reports the HISPD
-cap already. Do you mean enabling high-speed MMC on a 'proper'
-SDHCI controller. That's what Pierre didn't want to do blindly.
-
-> > 
-> > > @@ -95,6 +110,14 @@ static const struct sdhci_pci_fixes
-> > > sdhci_ricoh = { SDHCI_QUIRK_CLOCK_BEFORE_RESET,
-> > >  };
-> > >  
-> > > +static const struct sdhci_pci_fixes sdhci_ricoh_mmc = {
-> > > +	.probe_slot	= ricoh_mmc_probe_slot,
-> > > +	.quirks		= SDHCI_QUIRK_32BIT_DMA_ADDR |
-> > > +			  SDHCI_QUIRK_CLOCK_BEFORE_RESET |
-> > > +			  SDHCI_QUIRK_NO_CARD_NO_RESET |
-> > > +			  SDHCI_QUIRK_MISSING_CAPS
-> > > +};
-> > > +
-> > >  static const struct sdhci_pci_fixes sdhci_ene_712 = {
-> > >  	.quirks		= SDHCI_QUIRK_SINGLE_POWER_WRITE |
-> > >  			  SDHCI_QUIRK_BROKEN_DMA,
-> > > @@ -374,6 +397,14 @@ static const struct pci_device_id pci_ids[]
-> > > __devinitdata = {
-> > >  	},
-> > >  
-> > >  	{
-> > > +		.vendor         = PCI_VENDOR_ID_RICOH,
-> > > +		.device         = 0x843,
-> > > +		.subvendor      = PCI_ANY_ID,
-> > > +		.subdevice      = PCI_ANY_ID,
-> > > +		.driver_data    =
-> > > (kernel_ulong_t)&sdhci_ricoh_mmc,
-> > > +	},
-> > > +
-> > > +	{
-> > 
-> > It seems we generally want to add a #define for the device ID.
-> > The ENE device below has one.
-> > 
-> > >  		.vendor		= PCI_VENDOR_ID_ENE,
-> > >  		.device		=
-> > > PCI_DEVICE_ID_ENE_CB712_SD, .subvendor	= PCI_ANY_ID,
-> > > diff --git a/drivers/mmc/host/sdhci.c b/drivers/mmc/host/sdhci.c
-> > > index c6d1bd8..483b78e 100644
-> > > --- a/drivers/mmc/host/sdhci.c
-> > > +++ b/drivers/mmc/host/sdhci.c
-> > > @@ -1687,7 +1687,8 @@ int sdhci_add_host(struct sdhci_host *host)
-> > >  			host->version);
-> > >  	}
-> > >  
-> > > -	caps = sdhci_readl(host, SDHCI_CAPABILITIES);
-> > > +	caps = (host->quirks & SDHCI_QUIRK_MISSING_CAPS) ?
-> > > host->caps :
-> > > +		sdhci_readl(host, SDHCI_CAPABILITIES);
-> > >  
-> > >  	if (host->quirks & SDHCI_QUIRK_FORCE_DMA)
-> > >  		host->flags |= SDHCI_USE_SDMA;
-> > > diff --git a/drivers/mmc/host/sdhci.h b/drivers/mmc/host/sdhci.h
-> > > index c846813..b1839a3 100644
-> > > --- a/drivers/mmc/host/sdhci.h
-> > > +++ b/drivers/mmc/host/sdhci.h
-> > > @@ -240,6 +240,8 @@ struct sdhci_host {
-> > >  #define SDHCI_QUIRK_CAP_CLOCK_BASE_BROKEN		(1<<25)
-> > >  /* Controller cannot support End Attribute in NOP ADMA
-> > > descriptor */ #define
-> > > SDHCI_QUIRK_NO_ENDATTR_IN_NOPDESC		(1<<26) +/*
-> > > Controller is missing device caps. Use caps provided by host */
-> > > +#define SDHCI_QUIRK_MISSING_CAPS			(1<<27) 
-> > >  	int			irq;		/* Device
-> > > IRQ */ void __iomem *		ioaddr;		/*
-> > > Mapped address */ @@ -292,6 +294,8 @@ struct sdhci_host {
-> > >  
-> > >  	struct timer_list	timer;		/* Timer
-> > > for timeouts */ 
-> > > +	unsigned int		caps;		/*
-> > > Alternative capabilities */ +
-> > >  	unsigned long		private[0]
-> > > ____cacheline_aligned; };
-> > 
-> > --phil
-> 
-> Best regards,
-> Maxim Levitsky
-> 
-> 
-
---phil
+Computer Science and Technology
+Tsinghua University
