@@ -1,67 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753117Ab0FGSZs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jun 2010 14:25:48 -0400
-Received: from mail-ww0-f46.google.com ([74.125.82.46]:55115 "EHLO
-	mail-ww0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751611Ab0FGSZq (ORCPT
+	id S1753195Ab0FGS0e (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jun 2010 14:26:34 -0400
+Received: from p01c11o143.mxlogic.net ([208.65.144.66]:44228 "EHLO
+	p01c11o143.mxlogic.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751968Ab0FGS0c (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jun 2010 14:25:46 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:date:message-id:subject:from:to:cc:content-type;
-        b=c/sPY5xYoaD1xF8wWxG+NDBcoxLmxCxjuFWAzVRXEkqkYAR4sTwzA316yEoHhnkk3D
-         fSf+nq1oI6be1A+i2K5yTvpb49Ha01kuR10sVN6Q8TlkQGCElOVjId4ZBfuhdgUK41vi
-         ofgGPXHbSH1pTPNQEjw5dcCY4Y2JwCLNaUOvI=
+	Mon, 7 Jun 2010 14:26:32 -0400
+X-MXL-Hash: 4c0d39d8637e72cd-7489493412a986676fa291059d377148a870431f
+From: H Hartley Sweeten <hartleys@visionengravers.com>
+To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>
+CC: Greg KH <gregkh@suse.de>
+Date: Mon, 7 Jun 2010 13:25:37 -0500
+Subject: [PATCH] Staging: dt3155: fix different address spaces noise in
+ dt3155_drv.c
+Thread-Topic: [PATCH] Staging: dt3155: fix different address spaces noise in
+ dt3155_drv.c
+Thread-Index: AcsGbtM5SEm1hoYJRbei242pYAKQ9g==
+Message-ID: <0D753D10438DA54287A00B0270842697636F83AE81@AUSP01VMBX24.collaborationhost.net>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Date: Mon, 7 Jun 2010 14:25:44 -0400
-Message-ID: <AANLkTintKf_9C1sBsUac6Prvb1nWn7nWszatJ8yUb-VM@mail.gmail.com>
-Subject: 2.6.35-rc2-git1 - net/mac80211/sta_info.c:125 invoked 
-	rcu_dereference_check() without protection!
-From: Miles Lane <miles.lane@gmail.com>
-To: paulmck@linux.vnet.ibm.com
-Cc: Vivek Goyal <vgoyal@redhat.com>, Eric Paris <eparis@redhat.com>,
-       Lai Jiangshan <laijs@cn.fujitsu.com>, Ingo Molnar <mingo@elte.hu>,
-       Peter Zijlstra <peterz@infradead.org>,
-       LKML <linux-kernel@vger.kernel.org>, nauman@google.com,
-       eric.dumazet@gmail.com, netdev@vger.kernel.org,
-       Jens Axboe <jens.axboe@oracle.com>,
-       Gui Jianfeng <guijianfeng@cn.fujitsu.com>,
-       Li Zefan <lizf@cn.fujitsu.com>,
-       Johannes Berg <johannes@sipsolutions.net>
-Content-Type: text/plain; charset=ISO-8859-1
+X-Spam: [F=0.2000000000; CM=0.500; S=0.200(2010052801)]
+X-MAIL-FROM: <hartleys@visionengravers.com>
+X-SOURCE-IP: [(unknown)]
+X-AnalysisOut: [v=1.0 c=1 a=KEiZf0DKLZkA:10 a=yQWWgrYGNuUA:10 a=VphdPIyG4k]
+X-AnalysisOut: [EA:10 a=IkcTkHD0fZMA:10 a=MfCJKx98tC58LqYwCYfhJw==:17 a=i0]
+X-AnalysisOut: [0gxMtYAAAA:8 a=5FfMgeX54Kp29W8Kf2EA:9 a=JuO63lYOeBiWWo1fma]
+X-AnalysisOut: [YA:7 a=KLYwbPu5UoHbn3Gvq2ha_2RZIb0A:4 a=QEXdDO2ut3YA:10 a=]
+X-AnalysisOut: [x1WnkoZAwusA:10 a=0kPLrQdw3YYA:10]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by alpha.home.local id o57IQhim028383
 
-[   43.478812] [ INFO: suspicious rcu_dereference_check() usage. ]
-[   43.478815] ---------------------------------------------------
-[   43.478820] net/mac80211/sta_info.c:125 invoked
-rcu_dereference_check() without protection!
-[   43.478824]
-[   43.478824] other info that might help us debug this:
-[   43.478826]
-[   43.478829]
-[   43.478830] rcu_scheduler_active = 1, debug_locks = 1
-[   43.478834] no locks held by NetworkManager/4017.
-[   43.478836]
-[   43.478837] stack backtrace:
-[   43.478842] Pid: 4017, comm: NetworkManager Not tainted 2.6.35-rc2-git1 #8
-[   43.478846] Call Trace:
-[   43.478849]  <IRQ>  [<ffffffff81064e9c>] lockdep_rcu_dereference+0x9d/0xa5
-[   43.478876]  [<ffffffffa010cb3c>] sta_info_get_bss+0x71/0x12d [mac80211]
-[   43.478889]  [<ffffffffa010cc0d>] ieee80211_find_sta+0x15/0x2f [mac80211]
-[   43.478902]  [<ffffffffa019ae16>] iwlagn_tx_queue_reclaim+0xe7/0x1bb [iwlagn]
-[   43.478909]  [<ffffffff8106530b>] ? mark_lock+0x2d/0x262
-[   43.478920]  [<ffffffffa019e270>] iwlagn_rx_reply_tx+0x4cd/0x58a [iwlagn]
-[   43.478928]  [<ffffffff811ca313>] ? is_swiotlb_buffer+0x2e/0x3b
-[   43.478937]  [<ffffffffa0192ec2>] iwl_rx_handle+0x161/0x2bf [iwlagn]
-[   43.478946]  [<ffffffffa019370a>] iwl_irq_tasklet+0x2eb/0x408 [iwlagn]
-[   43.478953]  [<ffffffff8103f892>] tasklet_action+0xa7/0x10f
-[   43.478960]  [<ffffffff810404cf>] __do_softirq+0x148/0x25a
-[   43.478966]  [<ffffffff8100314c>] call_softirq+0x1c/0x28
-[   43.478972]  [<ffffffff81004d20>] do_softirq+0x38/0x80
-[   43.478977]  [<ffffffff8103ffd0>] irq_exit+0x45/0x94
-[   43.478983]  [<ffffffff81004465>] do_IRQ+0xad/0xc4
-[   43.478989]  [<ffffffff813ca3d3>] ret_from_intr+0x0/0xf
-[   43.478993]  <EOI>
+This fixes the different address spaces noise when copying data to/from
+user space to kernel space.
+
+Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
+Cc: Greg Kroah-Hartman <gregkh@suse.de>
+
+---
+
+diff --git a/drivers/staging/dt3155/dt3155_drv.c b/drivers/staging/dt3155/dt3155_drv.c
+index 40ef97f..3024d35 100644
+--- a/drivers/staging/dt3155/dt3155_drv.c
++++ b/drivers/staging/dt3155/dt3155_drv.c
+@@ -521,6 +521,7 @@ static int dt3155_ioctl(struct inode *inode,
+ 			unsigned long arg)
+ {
+   int minor = MINOR(inode->i_rdev); /* What device are we ioctl()'ing? */
++  void __user *up = (void __user *)arg;
+ 
+   if (minor >= MAXBOARDS || minor < 0)
+     return -ENODEV;
+@@ -547,7 +548,7 @@ static int dt3155_ioctl(struct inode *inode,
+ 
+ 	{
+ 	  struct dt3155_config tmp;
+-	  if (copy_from_user((void *)&tmp, (void *) arg, sizeof(tmp)))
++	  if (copy_from_user(&tmp, up, sizeof(tmp)))
+ 	      return -EFAULT;
+ 	  /* check for valid settings */
+ 	  if (tmp.rows > DT3155_MAX_ROWS ||
+@@ -565,7 +566,7 @@ static int dt3155_ioctl(struct inode *inode,
+       }
+     case DT3155_GET_CONFIG:
+       {
+-	if (copy_to_user((void *) arg, (void *) &dt3155_status[minor],
++	if (copy_to_user(up, &dt3155_status[minor],
+ 		     sizeof(struct dt3155_status)))
+ 	    return -EFAULT;
+ 	return 0;
+@@ -586,7 +587,7 @@ static int dt3155_ioctl(struct inode *inode,
+ 	  return 0;
+ 
+ 	quick_stop(minor);
+-	if (copy_to_user((void *) arg, (void *) &dt3155_status[minor],
++	if (copy_to_user(up, &dt3155_status[minor],
+ 		     sizeof(struct dt3155_status)))
+ 	    return -EFAULT;
+ 	return 0;
+@@ -610,7 +611,7 @@ static int dt3155_ioctl(struct inode *inode,
+ 	  }
+ 
+ 	dt3155_init_isr(minor);
+-	if (copy_to_user((void *) arg, (void *) &dt3155_status[minor],
++	if (copy_to_user(up, &dt3155_status[minor],
+ 		      sizeof(struct dt3155_status)))
+ 	    return -EFAULT;
+ 	return 0;
+@@ -812,11 +813,11 @@ static ssize_t dt3155_read(struct file *filep, char __user *buf,
+   /* make this an offset */
+   offset = frame_info->addr - dt3155_status[minor].mem_addr;
+ 
+-  put_user(offset, (unsigned int *) buf);
++  put_user(offset, (unsigned int __user *)buf);
+   buf += sizeof(u32);
+-  put_user(dt3155_status[minor].fbuffer.frame_count, (unsigned int *) buf);
++  put_user(dt3155_status[minor].fbuffer.frame_count, (unsigned int __user *)buf);
+   buf += sizeof(u32);
+-  put_user(dt3155_status[minor].state, (unsigned int *) buf);
++  put_user(dt3155_status[minor].state, (unsigned int __user *)buf);
+   buf += sizeof(u32);
+   if (copy_to_user(buf, frame_info, sizeof(*frame_info)))
+       return -EFAULT;
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
