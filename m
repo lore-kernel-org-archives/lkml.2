@@ -1,42 +1,34 @@
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932286Ab0FGL6H (ORCPT <rfc822;list-kernel77@spinics.net>);
-	Mon, 7 Jun 2010 07:58:07 -0400
-Received: from webmail.tdm.co.mz ([41.220.162.42]:56458 "EHLO pop.tdm.co.mz"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753100Ab0FGL6E (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jun 2010 07:58:04 -0400
-Message-ID: <3937b31d18507e93388ddf772700ba3c.squirrel@webmail.tdm.co.mz>
-Date: Mon, 7 Jun 2010 12:55:46 +0100 (BST)
-Subject: Dear Webmail/E-mail User
-From: "2010 Account Upgrade" <info@upgrade.co.uk>
-Reply-To: sbc.upgrade@onfruit.cn
-User-Agent: SquirrelMail/1.4.16
+	id S1759023Ab0FJNmp (ORCPT <rfc822;list-kernel77@spinics.net>);
+	Thu, 10 Jun 2010 09:42:45 -0400
+Received: from paris.inra.fr ([138.102.122.218]:43885 "EHLO
+	pimap.paris.inra.fr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753521Ab0FJNmn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 10 Jun 2010 09:42:43 -0400
+X-Greylist: delayed 1914 seconds by postgrey-1.27 at vger.kernel.org; Thu, 10 Jun 2010 09:42:43 EDT
+Message-ID: <1275941081.4c0d50d9a2f7d@min.paris.inra.fr>
+Date: Mon, 07 Jun 2010 22:04:41 +0200
+From: Christine.Prokocimer@paris.inra.fr
+Reply-to: rebecaloaninvestment@hotmail.co.uk
+Subject: REBECCA LOAN INVESTMENTS
 MIME-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7BIT
-X-Priority: 3 (Normal)
-Importance: Normal
+User-Agent: Internet Messaging Program (IMP) 3.2.8
+X-Miltered: at pimap with ID 4C0D5112.004 by Joe's j-chkmail (http : // j-chkmail dot ensmp dot fr)!
+X-j-chkmail-Enveloppe: 4C0D5112.004/138.102.122.124/min.paris.inra.fr/min.paris.inra.fr/<Christine.Prokocimer@paris.inra.fr>
+X-j-chkmail-Score: MSGID : 4C0D5112.004 on pimap : j-chkmail score : X : R=. U=. O=## B=0.000 -> S=0.166
+X-j-chkmail-Status: Ham
 To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear Webmail/E-mail user,
+REBECCA LOAN INVESTMENTS & CREDIT SOLUTION Offers all kinds of loan
+at 3% interest rate to all interested loan seekers should contact
+via email:rebecaloaninvestment@hotmail.co.uk
 
-This message is from our Webmail Messaging Center to all our account
-owners.We are currently upgrading our database and e-mail center. We are
-deleting all unused webmail account to create more space for new accounts.
-To ensure that you do not experience service interruption during this
-period; you will need to  verify your webmail account details through the
-following:
 
-1.Username :....................................
-2.Password :...................................
-3.Date of Birth :...............................
 
-You will be sent a new confirmation alphanumerical password that will only
-be valid during this period, and may be altered by this process. We very
-much regret any inconvenience this may cost you.Please reply to this
-message to enable us to give you better online services with our new
-improved webmail functionality and improvements.
 
