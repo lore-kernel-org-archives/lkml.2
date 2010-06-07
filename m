@@ -1,81 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755506Ab0FGGqt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jun 2010 02:46:49 -0400
-Received: from sh.osrg.net ([192.16.179.4]:58282 "EHLO sh.osrg.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755019Ab0FGGqr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jun 2010 02:46:47 -0400
-Date: Mon, 7 Jun 2010 15:45:27 +0900
-To: nab@linux-iscsi.org
-Cc: stgt@vger.kernel.org, linux-scsi@vger.kernel.org,
-       linux-kernel@vger.kernel.org, fujita.tomonori@lab.ntt.co.jp,
-       michaelc@cs.wisc.edu, bharrosh@panasas.com, James.Bottomley@suse.de,
-       dgilbert@interlog.com
-Subject: Re: [PATCH 0/3] Add proper STGT <-> bs_sg passthrough v3
-From: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
-In-Reply-To: <1275882615-5354-1-git-send-email-nab@linux-iscsi.org>
-References: <1275882615-5354-1-git-send-email-nab@linux-iscsi.org>
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-Message-Id: <20100607154432Y.fujita.tomonori@lab.ntt.co.jp>
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-3.0 (sh.osrg.net [192.16.179.4]); Mon, 07 Jun 2010 15:45:27 +0900 (JST)
+	id S1755399Ab0FGGwY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jun 2010 02:52:24 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:51668 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753370Ab0FGGwW convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Jun 2010 02:52:22 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=VbC6O0TLTd3LhEclFjVyTRnxN8lwfpQPzLdw3TVCcGxQ4KL0MHqSMoGW3YdQDWkjPs
+         ap9icD9Tko+gbmoS5HyD+/I7bYu7RR23MsW0yZ96UA+aDQkRQaw/WCw6EoOF5BsYH+IB
+         D6XdPUE0ELuqrlGkTPU6P8HUsAnFQNe+Lg5Fc=
+MIME-Version: 1.0
+In-Reply-To: <AANLkTilJYxYHc7yBsCATQviYmfeAkmEk4LK-ZGJHpMsx@mail.gmail.com>
+References: <alpine.LFD.2.00.1006052050100.3515@i5.linux-foundation.org>
+	<AANLkTinpHAK3-qj26KSLLhMB5UUDT5I9aSkrxJeRRsSl@mail.gmail.com>
+	<alpine.LFD.2.00.1006060710570.3515@i5.linux-foundation.org>
+	<AANLkTilD2n0QQrdN814XKAjDl5a_AbaRIZ0LUAOhKksL@mail.gmail.com>
+	<AANLkTimdQJGXt3_7B47FNB3_1cTq9NazWZxR4HdShogj@mail.gmail.com>
+	<AANLkTil-1OgnnzgL7U0PNQi4G8B2QFDa6BEH4mWqdkhL@mail.gmail.com>
+	<AANLkTimjxjINEtM3rIHVk_prI-_UTgkpIVhgbQ0V6rG4@mail.gmail.com>
+	<AANLkTilJYxYHc7yBsCATQviYmfeAkmEk4LK-ZGJHpMsx@mail.gmail.com>
+Date: Mon, 7 Jun 2010 16:52:21 +1000
+Message-ID: <AANLkTimbsgJ4BKIiwE-D1McBOIuxyQ14Qq-IUZR6aTmv@mail.gmail.com>
+Subject: Re: Linux 2.6.35-rc2
+From: Dave Airlie <airlied@gmail.com>
+To: Alex Deucher <alexdeucher@gmail.com>
+Cc: Torsten Kaiser <just.for.lkml@googlemail.com>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun,  6 Jun 2010 20:50:15 -0700
-"Nicholas A. Bellinger" <nab@linux-iscsi.org> wrote:
+On Mon, Jun 7, 2010 at 4:32 PM, Alex Deucher <alexdeucher@gmail.com> wrote:
+> On Mon, Jun 7, 2010 at 2:22 AM, Dave Airlie <airlied@gmail.com> wrote:
+>> On Mon, Jun 7, 2010 at 4:09 PM, Torsten Kaiser
+>> <just.for.lkml@googlemail.com> wrote:
+>>> On Mon, Jun 7, 2010 at 7:58 AM, Alex Deucher <alexdeucher@gmail.com> wrote:
+>>>> On Sun, Jun 6, 2010 at 11:04 AM, Torsten Kaiser
+>>>> <just.for.lkml@googlemail.com> wrote:
+>>>>> [CC:Jeff+Tejun not removed, because you might want to look at the
+>>>>> attached dmesgs]
+>>>>>
+>>>>> On Sun, Jun 6, 2010 at 4:19 PM, Linus Torvalds
+>>>>> <torvalds@linux-foundation.org> wrote:
+>>>>>> On Sun, 6 Jun 2010, Torsten Kaiser wrote:
+>>>>>>>
+>>>>>>> The first problem that shows up is, that after the KMS switches to the
+>>>>>>> correct video mode (1280x1024 for an DVI attached LCD), the display
+>>>>>>> begins to flicker. Every 1..2 seconds (guesstimated) the display turns
+>>>>>>> off and on again. Something in the new powersaving?
+>>>>>>
+>>>>>> Or maybe a borderline display timing that the display has trouble syncing
+>>>>>> up with?
+>>>>>
+>>>>> With 2.6.34 and any previous KMS kernels the output was always stable.
+>>>>> (I think, I switch to the radeon KMS on 2.6.32)
+>>>>> The onscreen menu of the monitor showed 1280x1024@60.2Hz for
+>>>>> 2.6.35-rc2, if I recall correctly.
+>>>>> Now back on 2.6.34 its 1280x1024@59.9Hz.
+>>>>
+>>>> The pm code shouldn't have any affect as your system only has one
+>>>> power state, so it never kicks in.  It sounds like a display pll
+>>>> problem, but there haven't been any changes to that code since 2.6.34.
+>>>>  Any chance you could bisect it?
+>>>
+>>> Not really. -rc1 did not boot for me (although if I disable v4l that
+>>> might work), and there is this memory corruption error.
+>>>
+>>> Regarding the PLLs, did you see this mail? It contains the
+>>> drm.debug=15 output from 2.6.34 and 2.6.35-rc2.
+>>> http://lkml.org/lkml/2010/6/6/126
+>>>
+>>> The debug output from radeon_set_pll looks identical. But in 2.6.35 a
+>>> call to [drm:radeon_legacy_tmds_int_dpms], seems new.
+>>>
+>>> The switchoff intervall is ~10 seconds, not 1..2 as I guessed in the first mail.
+>>> Any idea if there is something in the KMS code that triggers at this intervall?
+>>
+>> The new mode probing code happens every 10 seconds, though we
+>> shouldn't be turning anything on or off with it.
+>>
+>> So I suspect the DAC detection table might be doing bad things on your
+>> hardware, we have had a problem where the dac detect table on one DAC
+>> would turn the other one off which clearly wasn't what we wanted to
+>> see.
+>> ,
+>
+> The x300 is a non-atom card, so it uses the legacy load detection
+> routines which do mess with some of the crtc regs.
+>
 
-> From: Nicholas Bellinger <nab@linux-iscsi.org>
-> 
-> Greeting STGT folks,
-> 
-> This is the third round of patches for adding proper LUN passthrough support into STGT
-> using struct scsi_lu->cmd_perform() and struct scsi_lu->cmd_done() callers with existing
-> SG_IO and the new BSG v4 backstores.
-> 
-> Following Tomo-san's input, the changelog between v2 -> v3 is as follows:
-> 
-> 1) Add struct device_type_template sg_template for SG_IO and BSG in usr/bs_sg.c instead
->    of making changes to usr/sbc.c
-> 
-> 2) Add struct backingstore_template->bs_passthrough member of type int for SG_IO and BSG.
-> 
-> 3) In usr/target.c:tgt_device_create() pass bst->bs_passthrough into device_type_lookup()
->    and for passthrough case use the new device_type_passthrough() to locate
->    struct device_type_template sg_template.
-> 
-> 4) Remove unnecessary post_cmd_done() from usr/target.c:__cmd_done_passthrough()
-> 
-> This patch series has been tested with STGT/iSCSI using 'sg'+'bsg' and 'rdwr' for non
-> passthrough mode backstores into TCM_Loop LLD emulated iSCSI target ports.
-> 
-> Best,
-> 
-> Signed-off-by: Nicholas A. Bellinger <nab@linux-iscsi.org
-> 
-> Nicholas Bellinger (3):
->   [tgt]: Add proper STGT LUN backstore passthrough support (rev 3)
->   [tgt]: Add bs_sg struct device_type_template sg_template and struct
->     backingstore_template->bs_init()
->   [tgt]: Add BSG v4 backstore support to usr/bs_sg.c
-> 
->  usr/bs_sg.c     |  247 ++++++++++++++++++++++++++++++++++++++++++++++++++++--
->  usr/scsi_cmnd.h |    7 ++
->  usr/target.c    |  113 +++++++++++++++++++++++---
->  usr/tgtd.h      |   16 ++++
->  4 files changed, 362 insertions(+), 21 deletions(-)
+Okay I see it now, I'm amazed that I was seeing this issue last week
+and blaming it on something complete different and only seeing it on
+one card.
 
-The first and second patches Look fine overall. I have some comments
-and wrote some cleanup patches.
+I expect its the same problem I'll try and track down a proper fix for
+it tomorrow.
 
-I've put the first two patches with my cleanups:
-
-git://git.kernel.org/pub/scm/linux/kernel/git/tomo/tgt.git pass
-
-Can you confirm that it works for you? Then I can merge them into
-master.
-
-Let's leave bsg support alone and focus on the sg support for now.
+Dave.
