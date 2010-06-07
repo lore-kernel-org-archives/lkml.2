@@ -1,70 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753158Ab0FGVfz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jun 2010 17:35:55 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:35464 "EHLO ogre.sisk.pl"
+	id S1753329Ab0FGVgs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jun 2010 17:36:48 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:32999 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752367Ab0FGVfy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jun 2010 17:35:54 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Alex Deucher <alexdeucher@gmail.com>
-Subject: Re: [Regression, post-rc1] Multiple issues after enabling SetVoltage on rs780m
-Date: Mon, 7 Jun 2010 23:37:17 +0200
-User-Agent: KMail/1.12.4 (Linux/2.6.35-rc1-rjw; KDE/4.3.5; x86_64; ; )
-Cc: Dave Airlie <airlied@gmail.com>, Dave Airlie <airlied@redhat.com>,
-       LKML <linux-kernel@vger.kernel.org>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       dri-devel@lists.sourceforge.net
-References: <201006071129.32159.rjw@sisk.pl> <AANLkTinx-5-jjtnYnUAsl-DvFtbL6wtyPnALdri0d-d2@mail.gmail.com> <AANLkTilerIhYtHlX0vNAg_pfG_1100OymKV4aaGv-VSE@mail.gmail.com>
-In-Reply-To: <AANLkTilerIhYtHlX0vNAg_pfG_1100OymKV4aaGv-VSE@mail.gmail.com>
+	id S1752409Ab0FGVgq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Jun 2010 17:36:46 -0400
+Date: Mon, 7 Jun 2010 17:36:31 -0400
+From: Josef Bacik <josef@redhat.com>
+To: Dave Chinner <david@fromorbit.com>
+Cc: Jeffrey Merkey <jeffmerkey@gmail.com>, linux-kernel@vger.kernel.org,
+       linux-fsdevel@vger.kernel.org, josef@redhat.com,
+       viro@zeniv.linux.org.uk
+Subject: Re: 2.6.34 echo j > /proc/sysrq-trigger causes inifnite
+	unfreeze/Thaw event
+Message-ID: <20100607213631.GE2336@localhost.localdomain>
+References: <AANLkTim74SREZDq7VQhq6Z1hKXZLINoq0t8rkyQecmM1@mail.gmail.com> <20100607010542.GB27325@dastard>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-2"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201006072337.17778.rjw@sisk.pl>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100607010542.GB27325@dastard>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 07 June 2010, Alex Deucher wrote:
-> On Mon, Jun 7, 2010 at 6:15 AM, Dave Airlie <airlied@gmail.com> wrote:
-> > On Mon, Jun 7, 2010 at 7:29 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> >> Hi Alex,
-> >>
-> >> Your commit 9349d5cc920c10845693f906ebd67f394f1d0d04
-> >> (drm/radeon/kms/pm: enable SetVoltage on r7xx/evergreen) has caused my test-bed
-> >> Acer Ferrari One to behave quite unreliably.  The symptoms are:
-> >>
-> >> - the system hangs hard (~ 50% of the time) when starting Xorg
-> >> - the system hangs hard (~ 50% of the time) when stopping Xorg during system
-> >>  reboot
-> >> - the system sometimes hangs hard during suspend to RAM
-> >>
-> >> These problems are not reproducible with the commit above reverted.
-> >>
-> >> Below is the information about the graphics adapter from lspci.
-> >
-> > Reverting that commit on master fixes it?
-> >
-> > that commit touches code paths in rv770 and evergreen that in no way
-> > should affect that chipset which is an rs780, so takes the r600 paths.
-> >
-> > are you sure its not 7ac9aa5a1f1b87adb69bcbec2b89e228f074103a?
+On Mon, Jun 07, 2010 at 11:05:42AM +1000, Dave Chinner wrote:
+> On Thu, Jun 03, 2010 at 11:30:30PM -0600, Jeffrey Merkey wrote:
+> > causes the FS Thaw stuff in fs/buffer.c to enter an infinite loop
+> > filling the /var/log/messages with junk and causing the hard drive to
+> > crank away endlessly.
 > 
-> It should be that commit if it is indeed the voltage adjust.  That
-> said, I just took a closer look at the voltage adjust on newer IGPs
-> and unfortunately, it doesn't work the same as the discrete cards, so
-> for now we should disable it.  The attached patch should do the trick.
->  There weren't any problems on my IGP chips, but they don't have a
-> SetVoltage table, so nothing is touching the hw.
+> Hmmm, looks pretty obvious what the 2.6.34 bug is:
+> 
+>         while (sb->s_bdev && !thaw_bdev(sb->s_bdev, sb))
+>                 printk(KERN_WARNING "Emergency Thaw on %s\n",
+>                        bdevname(sb->s_bdev, b));
+> 
+> thaw_bdev() returns 0 on success or not frozen, and returns non-zero
+> only if the unfreeze failed. Looks like it was broken from the start
+> to me.
+> 
+> Fixing that endless loop shows some other problems on 2.6.35,
+> though: the emergency unfreeze is not unfreezing frozen XFS
+> filesystems.  This appears to be caused by
+> 18e9e5104fcd9a973ffe3eed3816c87f2a1b6cd2 ("Introduce freeze_super
+> and thaw_super for the fsfreeze ioctl").
+> 
+> It appears that this introduces a significant mismatch between the
+> bdev freeze/thaw and the super freze/thaw. That is, if you freeze
+> with the sb method, you can only unfreeze via the sb method.
+> however, if you freeze via the bdev method, you can unfreeze by
+> either the bdev or sb method.  This breaks the nesting of the
+> freeze/thaw operations between dm and userspace, which can lead to
+> premature thawing of the filesystem.
+> 
+> Then there is this deadlock:
+> 
+> iterate_supers(do_thaw_one) does:
+> 
+> 	down_read(&sb->s_umount);
+> 	do_thaw_one(sb)
+> 	  thaw_bdev(sb->s_bdev, sb))
+> 	    thaw_super(sb)
+> 	      down_write(&sb->s_umount);
+> 
+> Which is an instant deadlock.
+> 
+> These problems were hidden by the fact that the emergency thaw code
+> was not getting past the thaw_bdev guards and so not triggering
+> this deadlock.
+> 
+> Al, Josef, what's the best way to fix this mess?
+> 
 
-I'm not sure if the adapter is a discrete one.
+Well we can do something like the following
 
-Anyway, my testing was done before commit
-386f40c86d6c8d5b717ef20620af1a750d0dacb4 and I'm unable to reproduce the
-problems with current -git, so they might be a fallout of the bug fixed by that
-commit.
+1) Make a __thaw_super() that just does all the work currently in thaw_super(),
+just without taking the s_umount semaphore.
+2) Make an thaw_bdev_force or something like that that just sets
+bd_fsfreeze_count to 0 and calls __thaw_super().  The original intent was to
+make us call thaw until the thaw actually occured, so might as well just make it
+quick and painless.
+3) Make do_thaw_one() call __thaw_super if sb->s_bdev doesn't exist.  I'm not
+sure if this happens currently, but it's nice just in case.
 
-Thanks,
-Rafael
+This takes care of the s_umount problem and makes sure that do_thaw_one does
+actually thaw the device.  Does this sound kosher to everybody?  Thanks,
+
+Josef
