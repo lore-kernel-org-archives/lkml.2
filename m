@@ -1,58 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752480Ab0FGTGT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jun 2010 15:06:19 -0400
-Received: from mail-ww0-f46.google.com ([74.125.82.46]:35389 "EHLO
-	mail-ww0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751227Ab0FGTGS (ORCPT
+	id S1752289Ab0FGTIn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jun 2010 15:08:43 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:59153 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751422Ab0FGTIm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jun 2010 15:06:18 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:date:message-id:subject:from:to:content-type;
-        b=e1e6SnpGz5T4+pOesHn57xCtderXA428tKlawhJUvutqOoIk5xBUFCIwwtz92M8Bjq
-         r/HNGRxN30SM7KkPB1/ArT1UR04YM3H7RXp+KFSlg6jveKdYVUjb9W33JTW2ZEMzw1ZY
-         FXRZwdfldNKNZL08RUSlxFt7yV07FFqYvAXt4=
+	Mon, 7 Jun 2010 15:08:42 -0400
+Date: Mon, 7 Jun 2010 20:08:37 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: David Woodhouse <dwmw2@infradead.org>, Dave Airlie <airlied@linux.ie>,
+       dri-devel@lists.freedesktop.org,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [git pull] drm fixes
+Message-ID: <20100607190837.GM31073@ZenIV.linux.org.uk>
+References: <alpine.DEB.2.00.1006070404510.29029@skynet.skynet.ie>
+ <alpine.LFD.2.00.1006071057300.3515@i5.linux-foundation.org>
+ <20100607182640.GL31073@ZenIV.linux.org.uk>
+ <alpine.LFD.2.00.1006071146451.3515@i5.linux-foundation.org>
 MIME-Version: 1.0
-Date: Mon, 7 Jun 2010 15:06:15 -0400
-Message-ID: <AANLkTinmZh9GnrZLzOGi5Q_xHbky8cKdHAkOnsIA6_dZ@mail.gmail.com>
-Subject: 2.6.35-rc2-git1 - WARNING: at net/wireless/mlme.c:341 
-	cfg80211_send_assoc_timeout+0x107/0x11e [cfg80211]()
-From: Miles Lane <miles.lane@gmail.com>
-To: Johannes Berg <johannes@sipsolutions.net>,
-       LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LFD.2.00.1006071146451.3515@i5.linux-foundation.org>
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[   44.090157] WARNING: at net/wireless/mlme.c:341
-cfg80211_send_assoc_timeout+0x107/0x11e [cfg80211]()
-[   44.090162] Hardware name: UL50VT
-[   44.090165] Modules linked in: ipv6 snd_hda_codec_nvhdmi
-snd_seq_dummy snd_seq_oss snd_seq_midi snd_hda_codec_realtek
-snd_rawmidi snd_seq_midi_event snd_hda_intel iwlagn snd_hda_codec
-snd_hwdep snd_seq snd_pcm_oss snd_mixer_oss iwlcore snd_pcm mac80211
-snd_seq_device snd_timer uvcvideo rtc_cmos videodev rtc_core
-v4l1_compat v4l2_compat_ioctl32 snd psmouse cfg80211 rtc_lib atl1c
-snd_page_alloc asus_laptop battery sparse_keymap rfkill ac led_class
-sg sr_mod cdrom sd_mod ehci_hcd uhci_hcd
-[   44.090239] Pid: 3915, comm: phy0 Not tainted 2.6.35-rc2-git1 #8
-[   44.090242] Call Trace:
-[   44.090254]  [<ffffffff8103a482>] warn_slowpath_common+0x80/0x98
-[   44.090261]  [<ffffffff8103a4af>] warn_slowpath_null+0x15/0x17
-[   44.090276]  [<ffffffffa009b583>]
-cfg80211_send_assoc_timeout+0x107/0x11e [cfg80211]
-[   44.090296]  [<ffffffffa0115427>] ieee80211_assoc_done+0x71/0xa6 [mac80211]
-[   44.090312]  [<ffffffffa0117ad4>] ieee80211_work_work+0xdfa/0xe38 [mac80211]
-[   44.090319]  [<ffffffff81050a9a>] ? worker_thread+0x250/0x3a7
-[   44.090326]  [<ffffffff81050af1>] worker_thread+0x2a7/0x3a7
-[   44.090331]  [<ffffffff81050a9a>] ? worker_thread+0x250/0x3a7
-[   44.090347]  [<ffffffffa0116cda>] ? ieee80211_work_work+0x0/0xe38 [mac80211]
-[   44.090354]  [<ffffffff81054fc5>] ? autoremove_wake_function+0x0/0x34
-[   44.090361]  [<ffffffff8105084a>] ? worker_thread+0x0/0x3a7
-[   44.090367]  [<ffffffff81054a82>] kthread+0x89/0x91
-[   44.090375]  [<ffffffff81003054>] kernel_thread_helper+0x4/0x10
-[   44.090382]  [<ffffffff813ca480>] ? restore_args+0x0/0x30
-[   44.090388]  [<ffffffff810549f9>] ? kthread+0x0/0x91
-[   44.090394]  [<ffffffff81003050>] ? kernel_thread_helper+0x0/0x10
+On Mon, Jun 07, 2010 at 11:53:28AM -0700, Linus Torvalds wrote:
+> 
+> 
+> On Mon, 7 Jun 2010, Al Viro wrote:
+> > 
+> > Ho-hum...  Speaking of which, what about leak fixes?  There's a long-standing
+> > in-core inode leak in jffs2; basically, if you fail directory modification
+> > in symlink() et.al., you get a leaked inode and whinge at umount.  Found
+> > after -rc1, had been there since all the way back (similar bug in creat()
+> > had been fixed in 2003, mkdir()/mknod()/symlink() were not).  Fix sits in
+> > jffs2-fixes now...
+> 
+> I think a leak that is trivial easily falls under "security issue" as a 
+> potential DoS issue.
+> 
+> On the other hand, if it's not trivially fixed (say it needs big 
+> re-organizing of some locking or refcounting or whatever), and it's a 
+> really slow leak of a pretty small data structure, and is not triggered by 
+> normal users (say, you need to mount a filesystem or it needs some very 
+> specific timing), I think it falls under "we haven't seen in the previous 
+> five years, we might as well make sure the fix is tested in the next merge 
+> window".
+
+You need something like IO errors or device being full to trigger it.
+As for the fix, it's basically a matter of "set i_nlink to 0 and iput()
+instead of manual jffs2_clear_inode(); sure, you want to kill the on-disk
+inode, but you want in-core one gone too".
+
+Basically, that's what all local filesystems are doing to clean up after
+such error and that's what jffs2 is doing for ->create().
+
+As for the other stuff in that tree...  There's a fix for nfsd/create race
+(rather narrow and not trivial to hit, but capable of fs corruption) and
+there's mtd stuff I've no fscking clue about.
+
+If not for the mtd part I'd simply pulled it in my tree.  As it is...  I
+still can do that (done that for current semi-private branch), but I'd
+prefer to avoid feeding mtd stuff through vfs tree, for all the obvious
+reasons.
