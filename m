@@ -1,25 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753815Ab0FGGES (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jun 2010 02:04:18 -0400
-Received: from TYO201.gate.nec.co.jp ([202.32.8.193]:48105 "EHLO
-	tyo201.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751994Ab0FGGER (ORCPT
+	id S1753657Ab0FGGGn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jun 2010 02:06:43 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:47550 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752539Ab0FGGGm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jun 2010 02:04:17 -0400
-Date: Mon, 7 Jun 2010 14:53:37 +0900
-From: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Balbir Singh <balbir@linux.vnet.ibm.com>,
-       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-       LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
-       Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
-Subject: [cleanup][PATCH -mmotm 2/2] memcg: remove mem from arg of
- charge_common
-Message-Id: <20100607145337.c0b5ad79.nishimura@mxp.nes.nec.co.jp>
+	Mon, 7 Jun 2010 02:06:42 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Mon, 7 Jun 2010 15:02:07 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+       Balbir Singh <balbir@linux.vnet.ibm.com>,
+       LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>
+Subject: Re: [cleanup][PATCH -mmotm 1/2] memcg: remove redundant codes
+Message-Id: <20100607150207.6971b8b9.kamezawa.hiroyu@jp.fujitsu.com>
 In-Reply-To: <20100607145239.cb5cb917.nishimura@mxp.nes.nec.co.jp>
 References: <20100607145239.cb5cb917.nishimura@mxp.nes.nec.co.jp>
-Organization: NEC Soft, Ltd.
+Organization: FUJITSU Co. LTD.
 X-Mailer: Sylpheed 3.0.2 (GTK+ 2.10.14; i686-pc-mingw32)
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
@@ -28,86 +27,24 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
+On Mon, 7 Jun 2010 14:52:39 +0900
+Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp> wrote:
 
-mem_cgroup_charge_common() is always called with @mem = NULL, so it's
-meaningless. This patch removes it.
+> These patches are based on mmotm-2010-06-03-16-36 + some already merged patches
+> for memcg.
+> 
+> ===
+> From: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
+> 
+> - try_get_mem_cgroup_from_mm() calls rcu_read_lock/unlock by itself, so we
+>   don't have to call them in task_in_mem_cgroup().
+> - *mz is not used in __mem_cgroup_uncharge_common().
+> - we don't have to call lookup_page_cgroup() in mem_cgroup_end_migration()
+>   after we've cleared PCG_MIGRATION of @oldpage.
+> - remove empty comment.
+> - remove redundant empty line in mem_cgroup_cache_charge().
+> 
+> Signed-off-by: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
+Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 
-Signed-off-by: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
----
- mm/memcontrol.c |   17 ++++++++---------
- 1 files changed, 8 insertions(+), 9 deletions(-)
-
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index 7146055..8f57ec2 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -2025,10 +2025,9 @@ out:
-  * < 0 if the cgroup is over its limit
-  */
- static int mem_cgroup_charge_common(struct page *page, struct mm_struct *mm,
--				gfp_t gfp_mask, enum charge_type ctype,
--				struct mem_cgroup *memcg)
-+				gfp_t gfp_mask, enum charge_type ctype)
- {
--	struct mem_cgroup *mem;
-+	struct mem_cgroup *mem = NULL;
- 	struct page_cgroup *pc;
- 	int ret;
- 
-@@ -2038,7 +2037,6 @@ static int mem_cgroup_charge_common(struct page *page, struct mm_struct *mm,
- 		return 0;
- 	prefetchw(pc);
- 
--	mem = memcg;
- 	ret = __mem_cgroup_try_charge(mm, gfp_mask, &mem, true);
- 	if (ret || !mem)
- 		return ret;
-@@ -2066,7 +2064,7 @@ int mem_cgroup_newpage_charge(struct page *page,
- 	if (unlikely(!mm))
- 		mm = &init_mm;
- 	return mem_cgroup_charge_common(page, mm, gfp_mask,
--				MEM_CGROUP_CHARGE_TYPE_MAPPED, NULL);
-+				MEM_CGROUP_CHARGE_TYPE_MAPPED);
- }
- 
- static void
-@@ -2076,7 +2074,6 @@ __mem_cgroup_commit_charge_swapin(struct page *page, struct mem_cgroup *ptr,
- int mem_cgroup_cache_charge(struct page *page, struct mm_struct *mm,
- 				gfp_t gfp_mask)
- {
--	struct mem_cgroup *mem = NULL;
- 	int ret;
- 
- 	if (mem_cgroup_disabled())
-@@ -2108,22 +2105,24 @@ int mem_cgroup_cache_charge(struct page *page, struct mm_struct *mm,
- 		unlock_page_cgroup(pc);
- 	}
- 
--	if (unlikely(!mm && !mem))
-+	if (unlikely(!mm))
- 		mm = &init_mm;
- 
- 	if (page_is_file_cache(page))
- 		return mem_cgroup_charge_common(page, mm, gfp_mask,
--				MEM_CGROUP_CHARGE_TYPE_CACHE, NULL);
-+				MEM_CGROUP_CHARGE_TYPE_CACHE);
- 
- 	/* shmem */
- 	if (PageSwapCache(page)) {
-+		struct mem_cgroup *mem = NULL;
-+
- 		ret = mem_cgroup_try_charge_swapin(mm, page, gfp_mask, &mem);
- 		if (!ret)
- 			__mem_cgroup_commit_charge_swapin(page, mem,
- 					MEM_CGROUP_CHARGE_TYPE_SHMEM);
- 	} else
- 		ret = mem_cgroup_charge_common(page, mm, gfp_mask,
--					MEM_CGROUP_CHARGE_TYPE_SHMEM, mem);
-+					MEM_CGROUP_CHARGE_TYPE_SHMEM);
- 
- 	return ret;
- }
--- 
-1.6.5.2
 
