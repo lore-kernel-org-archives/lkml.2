@@ -1,50 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752495Ab0FGRT3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jun 2010 13:19:29 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:59781 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751146Ab0FGRT2 convert rfc822-to-8bit (ORCPT
+	id S1752367Ab0FGRWe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jun 2010 13:22:34 -0400
+Received: from daytona.panasas.com ([67.152.220.89]:4556 "EHLO
+	daytona.int.panasas.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751146Ab0FGRWd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jun 2010 13:19:28 -0400
+	Mon, 7 Jun 2010 13:22:33 -0400
+Message-ID: <4C0D2AD4.2020303@panasas.com>
+Date: Mon, 07 Jun 2010 20:22:28 +0300
+From: Boaz Harrosh <bharrosh@panasas.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-2.fc12 Thunderbird/3.0.4
 MIME-Version: 1.0
-X-Originating-IP: [174.31.27.127]
-In-Reply-To: <20100607162817.GA13468@phenom.dumpdata.com>
-References: <AANLkTilOTKdY_2rQ6byxDIer_Ns-Ny0V0sM0rV9AuEkB@mail.gmail.com>
-	<20100607162817.GA13468@phenom.dumpdata.com>
-Date: Mon, 7 Jun 2010 10:19:27 -0700
-Message-ID: <AANLkTim1KloQ4qZTsqHmt2U33dUjM-DDr9-dpooXTx52@mail.gmail.com>
-Subject: Re: broadsheetfb and fbcon
-From: Robert Emanuele <rob@emanuele.us>
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: linux-kernel@vger.kernel.org, jayakumar.lkml@gmail.com
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: "Martin K. Petersen" <martin.petersen@oracle.com>
+CC: Dave Chinner <david@fromorbit.com>,
+       Christof Schmitt <christof.schmitt@de.ibm.com>,
+       linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
+       linux-fsdevel@vger.kernel.org
+Subject: Re: Wrong DIF guard tag on ext2 write
+References: <20100531112817.GA16260@schmichrtp.mainz.de.ibm.com>	<yq1iq64kv9f.fsf@sermon.lab.mkp.net>	<20100531144648.GA19068@schmichrtp.mainz.de.ibm.com>	<yq11vcqlwp8.fsf@sermon.lab.mkp.net>	<20100602133748.GA11196@schmichrtp.mainz.de.ibm.com>	<20100602232039.GA8287@dastard> <yq139x3y411.fsf@sermon.lab.mkp.net>	<20100604023253.GF19651@dastard> <yq1zkz6vmpu.fsf@sermon.lab.mkp.net>
+In-Reply-To: <yq1zkz6vmpu.fsf@sermon.lab.mkp.net>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 07 Jun 2010 17:22:32.0686 (UTC) FILETIME=[039728E0:01CB0666]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There are no module parameters for fbcon or broadsheetfb.
+On 06/07/2010 07:20 PM, Martin K. Petersen wrote:
+>>>>>> "Dave" == Dave Chinner <david@fromorbit.com> writes:
+> 
+>>> Didn't you use to wait_on_page_writeback() in page_mkwrite()?
+> 
+> Dave> The generic implementation of ->page_mkwrite
+> Dave> (block_page_mkwrite()) which XFS uses has never had a
+> Dave> wait_on_page_writeback() call in it.  There's no call in the
+> Dave> generic write paths, either, hence my comment that only direct IO
+> Dave> on XFS will work.
+> 
+> I guess that wait_on_page_writeback() was something I added when I used
+> XFS for DIF testing.
+> 
 
-On Mon, Jun 7, 2010 at 9:28 AM, Konrad Rzeszutek Wilk
-<konrad.wilk@oracle.com> wrote:
-> On Sat, Jun 05, 2010 at 04:21:08PM -0700, Robert Emanuele wrote:
->> Greetings lkml and Jaya,
->>
->> I've been using the broadsheetfb graphics driver for a while now.
->> I've been trying to get it working with the fbcon console driver.  Has
->> anyone had any success with that?
->>
->> While it "works", its performance is unusable as a console.  It
->> redraws the whole screen every new line, which may be acceptable.  A
->> real issue is when it tries to scroll the screen, it redraws each line
->> partially and then does a full screen update with each partial line.
->> It seems the driver is capable from Jaya's video at
->> http://www.youtube.com/watch?v=0Bny6qyRDWw
->>
->> Are those kind of updates a limit of the broadsheet driver or fbcon?
->
-> I thought there was an update value on how often it should redraw. Did
-> you do a modinfo on the driver?
->> Or more hopefully, is there a configuration change to improve this?
->
+Do you remember some performance numbers that show degradation / sameness?
+
+What type of work loads?
+
+Thanks
+Boaz
