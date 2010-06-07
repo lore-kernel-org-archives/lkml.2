@@ -1,102 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753935Ab0FGSvY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jun 2010 14:51:24 -0400
-Received: from mail1-out1.atlantis.sk ([80.94.52.55]:40913 "EHLO
-	mail.atlantis.sk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753480Ab0FGSvW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1753968Ab0FGSv0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jun 2010 14:51:26 -0400
+Received: from cantor.suse.de ([195.135.220.2]:50303 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753521Ab0FGSvW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 7 Jun 2010 14:51:22 -0400
-From: Ondrej Zary <linux@rainbow-software.org>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Subject: Re: [PATCH] [RFC] Save/restore MISC_ENABLE register
-Date: Mon, 7 Jun 2010 20:51:07 +0200
-User-Agent: KMail/1.9.10
-Cc: "Linux-pm mailing list" <linux-pm@lists.linux-foundation.org>,
-       Kernel development list <linux-kernel@vger.kernel.org>,
-       Alan Stern <stern@rowland.harvard.edu>, Len Brown <len.brown@intel.com>,
-       Pavel Machek <pavel@ucw.cz>, "Rafael J. Wysocki" <rjw@sisk.pl>
-References: <201006071814.53583.linux@rainbow-software.org> <4C0D2BFB.2090200@zytor.com>
-In-Reply-To: <4C0D2BFB.2090200@zytor.com>
+Date: Mon, 7 Jun 2010 11:49:42 -0700
+From: Greg KH <gregkh@suse.de>
+To: Randy Dunlap <randy.dunlap@oracle.com>
+Cc: Ian Abbott <abbotti@mev.co.uk>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Support kernel/hotplug sysctl variable when !CONFIG_NET
+Message-ID: <20100607184942.GA11105@suse.de>
+References: <1275911832-11667-1-git-send-email-abbotti@mev.co.uk>
+ <20100607174350.GA7807@suse.de>
+ <20100607111145.1b98fdb4.randy.dunlap@oracle.com>
+ <20100607181651.GA9999@suse.de>
+ <4C0D39F2.7090806@oracle.com>
 MIME-Version: 1.0
-Content-Type: text/plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Message-Id: <201006072051.10421.linux@rainbow-software.org>
+In-Reply-To: <4C0D39F2.7090806@oracle.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 07 June 2010 19:27:23 H. Peter Anvin wrote:
-> On 06/07/2010 09:14 AM, Ondrej Zary wrote:
-> > Save/restore MISC_ENABLE register on suspend/resume.
-> > This fixes OOPS (invalid opcode) on resume from STR on Asus P4P800-VM,
-> > which wakes up with MWAIT disabled.
-> >
-> > Is this a correct thing to do? Is it OK on x86_64?
->
-> This MSR isn't available on all processors, and thus cannot be saved and
-> restored unconditionally like this.  On the save path, one can use
-> rdmsr_safe(); on the wakeup path it's not clear to me it is safe to do
-> so, so it would be better to save a presence flag on the save path and
-> conditionalize the write.
+On Mon, Jun 07, 2010 at 11:26:58AM -0700, Randy Dunlap wrote:
+> On 06/07/10 11:16, Greg KH wrote:
+> > On Mon, Jun 07, 2010 at 11:11:45AM -0700, Randy Dunlap wrote:
+> >> On Mon, 7 Jun 2010 10:43:50 -0700 Greg KH wrote:
+> >>
+> >>> On Mon, Jun 07, 2010 at 12:57:12PM +0100, Ian Abbott wrote:
+> >>>> From: Ian Abbott <abbotti@mev.co.uk>
+> >>>>
+> >>>> The kernel/hotplug sysctl variable (/proc/sys/kernel/hotplug file) was
+> >>>> made conditional on CONFIG_NET by commit
+> >>>> f743ca5e10f4145e0b3e6d11b9b46171e16af7ce (applied in 2.6.18) to fix
+> >>>> problems with undefined references in 2.6.16 when CONFIG_HOTPLUG=y &&
+> >>>> !CONFIG_NET, but this restriction is no longer needed.
+> >>
+> >> Ack, builds for me on x86_64 when CONFIG_NET is not enabled.
+> >>
+> >>> Why is this restriction no longer needed?  What changed?
+> >>
+> >>
+> >> commit cd3772e6898c6386f21d2958346d6dd57d4204f5
+> >> Author: Ming Lei <tom.leiming@gmail.com>
+> >> Date:   Sun Nov 16 18:22:09 2008 +0800
+> >>
+> >>     kernel/ksysfs.c:fix dependence on CONFIG_NET
+> >>     
+> >>     Access to uevent_seqnum and uevent_helper does not need to
+> >>     depend on CONFIG_NET, so remove it.
+> >>     
+> >>     Signed-off-by: Ming Lei <tom.leiming@gmail.com>
+> >>     Cc: Kay Sievers <kay.sievers@vrfy.org>
+> >>     Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+> > 
+> > So something back in 2008 changed which requires a change now?
+> 
+> "requires" is too strong of a word to use here.  "allows" a change.
+> 
+> > I'm still confused, what use case calls for the original patch here
+> > being made?  Who wants to modify this option with CONFIG_NET disabled on
+> > their machine?
+> 
+> 
+> Are you trying to slow down on kernel patches for some reason?
 
-Something like this?
+Heh, no, I'm trying to see where to put this, in my "for .35" queue, or
+my "for .36" queue.
 
-Save/restore MISC_ENABLE register on suspend/resume.
-This fixes OOPS (invalid opcode) on resume from STR on Asus P4P800-VM, which
-wakes up with MWAIT disabled.
+> Using CONFIG_NET is more restrictive than is needed here, so remove it.
 
-Signed-off-by: Ondrej Zary <linux@rainbow-software.org>
+Fair enough, I'll queue it up.
 
-diff -urp linux-2.6.35-rc1-git2-orig/arch/x86//include/asm/suspend_32.h linux-2.6.35-rc1-git2/arch/x86//include/asm/suspend_32.h
---- linux-2.6.35-rc1-git2-orig/arch/x86//include/asm/suspend_32.h	2010-05-30 22:21:02.000000000 +0200
-+++ linux-2.6.35-rc1-git2/arch/x86//include/asm/suspend_32.h	2010-06-07 20:41:44.000000000 +0200
-@@ -15,6 +15,8 @@ static inline int arch_prepare_suspend(v
- struct saved_context {
- 	u16 es, fs, gs, ss;
- 	unsigned long cr0, cr2, cr3, cr4;
-+	u64 misc_enable;
-+	bool misc_enable_saved;
- 	struct desc_ptr gdt;
- 	struct desc_ptr idt;
- 	u16 ldt;
-diff -urp linux-2.6.35-rc1-git2-orig/arch/x86//include/asm/suspend_64.h linux-2.6.35-rc1-git2/arch/x86//include/asm/suspend_64.h
---- linux-2.6.35-rc1-git2-orig/arch/x86//include/asm/suspend_64.h	2010-05-30 22:21:02.000000000 +0200
-+++ linux-2.6.35-rc1-git2/arch/x86//include/asm/suspend_64.h	2010-06-07 20:38:42.000000000 +0200
-@@ -27,6 +27,8 @@ struct saved_context {
- 	u16 ds, es, fs, gs, ss;
- 	unsigned long gs_base, gs_kernel_base, fs_base;
- 	unsigned long cr0, cr2, cr3, cr4, cr8;
-+	u64 misc_enable;
-+	bool misc_enable_saved;
- 	unsigned long efer;
- 	u16 gdt_pad;
- 	u16 gdt_limit;
-diff -urp linux-2.6.35-rc1-git2-orig/arch/x86//power/cpu.c linux-2.6.35-rc1-git2/arch/x86//power/cpu.c
---- linux-2.6.35-rc1-git2-orig/arch/x86//power/cpu.c	2010-05-30 22:21:02.000000000 +0200
-+++ linux-2.6.35-rc1-git2/arch/x86//power/cpu.c	2010-06-07 20:41:13.000000000 +0200
-@@ -105,6 +105,8 @@ static void __save_processor_state(struc
- 	ctxt->cr4 = read_cr4();
- 	ctxt->cr8 = read_cr8();
- #endif
-+	ctxt->misc_enable_saved = !rdmsrl_safe(MSR_IA32_MISC_ENABLE,
-+					       &ctxt->misc_enable);
- }
- 
- /* Needed by apm.c */
-@@ -152,6 +154,8 @@ static void fix_processor_context(void)
-  */
- static void __restore_processor_state(struct saved_context *ctxt)
- {
-+	if (ctxt->misc_enable_saved)
-+		wrmsrl(MSR_IA32_MISC_ENABLE, ctxt->misc_enable);
- 	/*
- 	 * control registers
- 	 */
+thanks,
 
-
-
--- 
-Ondrej Zary
+greg k-h
