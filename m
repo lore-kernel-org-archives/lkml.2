@@ -1,119 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754083Ab0FGM5w (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jun 2010 08:57:52 -0400
-Received: from mail-ww0-f46.google.com ([74.125.82.46]:50615 "EHLO
+	id S1753954Ab0FGM7x (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jun 2010 08:59:53 -0400
+Received: from mail-ww0-f46.google.com ([74.125.82.46]:44959 "EHLO
 	mail-ww0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752006Ab0FGM5u (ORCPT
+	with ESMTP id S1751343Ab0FGM7w (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jun 2010 08:57:50 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=googlemail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=i/it+O45Jgp2AcizCsr9ZXnyJr3f55elP0zhtSk5QcGaLsPCd01peilBV55Ziz3TB2
-         ZpRXlZ5JQZ0hVkNgPr0pi9MC15tbhVz5gsBjwi2jYihddoceeP4L/gtL2y0QyLg4a1zo
-         FAazsNj8tzxxyJUx0FmT27MdXbU3HpdIX7Usc=
-Date: Mon, 7 Jun 2010 15:00:48 +0200
-From: Richard Zidlicky <rz@linux-m68k.org>
-To: Jiri Slaby <jirislaby@gmail.com>
-Cc: linux-kernel@vger.kernel.org, linux-media@vger.kernel.org
-Subject: Re: [PATCH 2.6.34] schedule inside spin_lock_irqsave
-Message-ID: <20100607130048.GA6857@linux-m68k.org>
-References: <20100530145240.GA21559@linux-m68k.org> <4C028336.8030704@gmail.com> <20100606124302.GA10119@linux-m68k.org> <4C0BE03C.8000709@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4C0BE03C.8000709@gmail.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	Mon, 7 Jun 2010 08:59:52 -0400
+Subject: Re: [PATCH v6] regulator: new drivers for AD5398 and AD5821
+From: Liam Girdwood <lrg@slimlogic.co.uk>
+To: sonic zhang <sonic.adi@gmail.com>
+Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
+       Linux Kernel <linux-kernel@vger.kernel.org>,
+       uclinux-dist-devel <uclinux-dist-devel@blackfin.uclinux.org>
+In-Reply-To: <1275626446.1515.5.camel@eight.analog.com>
+References: <1275626446.1515.5.camel@eight.analog.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 07 Jun 2010 13:59:48 +0100
+Message-ID: <1275915588.3045.108.camel@odin>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jun 06, 2010 at 07:51:56PM +0200, Jiri Slaby wrote:
-> On 06/06/2010 02:43 PM, Richard Zidlicky wrote:
-> > Hi,
-> > 
-> > I have done a minimaly invasive patch for the stable 2.6.34 kernel and stress-tested 
-> > it for many hours, definitely seems to improve the behaviour.
-> > 
-> > I have left out your beautification suggestion for now, want to do more playing with
-> > other aspects of the driver. There still seem to be issues when the device is unplugged 
-> > while in use and such.
-> > 
-> > --- linux-2.6.34/drivers/media/dvb/siano/smscoreapi.c.rz	2010-06-03 21:58:11.000000000 +0200
-> > +++ linux-2.6.34/drivers/media/dvb/siano/smscoreapi.c	2010-06-04 23:00:35.000000000 +0200
-> > @@ -1100,31 +1100,26 @@
-> >   *
-> >   * @return pointer to descriptor on success, NULL on error.
-> >   */
-> > -struct smscore_buffer_t *smscore_getbuffer(struct smscore_device_t *coredev)
-> > +
-> > +struct smscore_buffer_t *get_entry(void)
-> >  {
-> >  	struct smscore_buffer_t *cb = NULL;
-> >  	unsigned long flags;
-> >  
-> > -	DEFINE_WAIT(wait);
-> > -
-> >  	spin_lock_irqsave(&coredev->bufferslock, flags);
+On Fri, 2010-06-04 at 12:40 +0800, sonic zhang wrote:
+> >From 32646efc2e7fb19945a10ad3f1172d6f751186b8 Mon Sep 17 00:00:00 2001
+> From: Sonic Zhang <sonic.zhang@analog.com>
+> Date: Fri, 4 Jun 2010 11:46:04 +0800
+> Subject: [PATCH v6] regulator: new drivers for AD5398 and AD5821
 > 
-> Sorry, maybe I'm just blind, but where is 'coredev' defined in this
-> scope? You probably forgot to pass it to get_entry?
+> The AD5398 and AD5821 are single 10-bit DAC with 120 mA output current
+> sink capability. They feature an internal reference and operates from
+> a single 2.7 V to 5.5 V supply.
 > 
-> How could this be compiled? Is there coredev defined globally?
+> This driver supports both the AD5398 and the AD5821.  It adapts into the
+> voltage and current framework.
+> 
+> Signed-off-by: Sonic Zhang <sonic.zhang@analog.com>
+> Signed-off-by: Mike Frysinger <vapier@gentoo.org>
+> ---
+>  drivers/regulator/Kconfig  |    6 +
+>  drivers/regulator/Makefile |    1 +
+>  drivers/regulator/ad5398.c |  288 ++++++++++++++++++++++++++++++++++++++++++++
+>  3 files changed, 295 insertions(+), 0 deletions(-)
+>  create mode 100644 drivers/regulator/ad5398.c
+> 
 
-good catch. I think it failed and despite a different kernel id the old module was
-loaded.
+Applied.
 
-Here is the new version, this time lightly tested
+Thanks
 
---- linux-2.6.34/drivers/media/dvb/siano/smscoreapi.c.rz	2010-06-03 21:58:11.000000000 +0200
-+++ linux-2.6.34/drivers/media/dvb/siano/smscoreapi.c	2010-06-07 14:32:06.000000000 +0200
-@@ -1100,31 +1100,26 @@
-  *
-  * @return pointer to descriptor on success, NULL on error.
-  */
--struct smscore_buffer_t *smscore_getbuffer(struct smscore_device_t *coredev)
-+
-+struct smscore_buffer_t *get_entry(struct smscore_device_t *coredev)
- {
- 	struct smscore_buffer_t *cb = NULL;
- 	unsigned long flags;
- 
--	DEFINE_WAIT(wait);
--
- 	spin_lock_irqsave(&coredev->bufferslock, flags);
--
--	/* This function must return a valid buffer, since the buffer list is
--	 * finite, we check that there is an available buffer, if not, we wait
--	 * until such buffer become available.
--	 */
--
--	prepare_to_wait(&coredev->buffer_mng_waitq, &wait, TASK_INTERRUPTIBLE);
--
--	if (list_empty(&coredev->buffers))
--		schedule();
--
--	finish_wait(&coredev->buffer_mng_waitq, &wait);
--
-+	if (!list_empty(&coredev->buffers)) {
- 	cb = (struct smscore_buffer_t *) coredev->buffers.next;
- 	list_del(&cb->entry);
--
-+	}
- 	spin_unlock_irqrestore(&coredev->bufferslock, flags);
-+	return cb;
-+}
-+
-+struct smscore_buffer_t *smscore_getbuffer(struct smscore_device_t *coredev)
-+{
-+	struct smscore_buffer_t *cb = NULL;
-+
-+	wait_event(coredev->buffer_mng_waitq, (cb = get_entry(coredev)));
- 
- 	return cb;
- }
+Liam
+-- 
+Freelance Developer, SlimLogic Ltd
+ASoC and Voltage Regulator Maintainer.
+http://www.slimlogic.co.uk
 
-
-Richard
