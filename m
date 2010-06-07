@@ -1,59 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753582Ab0FGTCj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jun 2010 15:02:39 -0400
-Received: from mail.atheros.com ([12.36.123.2]:12298 "EHLO mail.atheros.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752390Ab0FGTCi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jun 2010 15:02:38 -0400
-Date: Mon, 7 Jun 2010 12:02:36 -0700
-From: "Luis R. Rodriguez" <lrodriguez@atheros.com>
-To: Joe Perches <joe@perches.com>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>,
-       linux-wireless <linux-wireless@vger.kernel.org>,
-       Luis Rodriguez <Luis.Rodriguez@atheros.com>
-Subject: Re: [PATCH 11/17] MAINTAINERS: Add STAGING - OTUS 802.11n USB
- WIRELESS DRIVER
-Message-ID: <20100607190236.GD29505@tux>
-References: <cover.1275935090.git.joe@perches.com>
- <de848b7990a8a691068c8761543a321f4df3f759.1275935091.git.joe@perches.com>
+	id S1753954Ab0FGTCy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jun 2010 15:02:54 -0400
+Received: from mail1-out1.atlantis.sk ([80.94.52.55]:50812 "EHLO
+	mail.atlantis.sk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752555Ab0FGTCx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Jun 2010 15:02:53 -0400
+From: Ondrej Zary <linux@rainbow-software.org>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Subject: Re: [PATCH] [RFC] Save/restore MISC_ENABLE register
+Date: Mon, 7 Jun 2010 21:02:43 +0200
+User-Agent: KMail/1.9.10
+Cc: "Linux-pm mailing list" <linux-pm@lists.linux-foundation.org>,
+       Kernel development list <linux-kernel@vger.kernel.org>,
+       Alan Stern <stern@rowland.harvard.edu>, Len Brown <len.brown@intel.com>,
+       Pavel Machek <pavel@ucw.cz>, "Rafael J. Wysocki" <rjw@sisk.pl>
+References: <201006071814.53583.linux@rainbow-software.org> <201006072051.10421.linux@rainbow-software.org> <4C0D4032.6020907@zytor.com>
+In-Reply-To: <4C0D4032.6020907@zytor.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
 Content-Disposition: inline
-In-Reply-To: <de848b7990a8a691068c8761543a321f4df3f759.1275935091.git.joe@perches.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Message-Id: <201006072102.46728.linux@rainbow-software.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 07, 2010 at 11:49:45AM -0700, Joe Perches wrote:
-> Signed-off-by: Joe Perches <joe@perches.com>
-> ---
->  MAINTAINERS |    5 +++++
->  1 files changed, 5 insertions(+), 0 deletions(-)
-> 
-> diff --git a/MAINTAINERS b/MAINTAINERS
-> index 06eed7b..4494736 100644
-> --- a/MAINTAINERS
-> +++ b/MAINTAINERS
-> @@ -5507,6 +5507,11 @@ M:	Ossama Othman <ossama.othman@intel.com>
->  S:	Odd Fixes
->  F:	drivers/staging/memrar/
->  
-> +STAGING - OTUS 802.11n USB WIRELESS DRIVER
-> +M:	Luis Rodriguez <Luis.Rodriguez@Atheros.com>
-> +S:	Odd Fixes
-> +F:	drivers/staging/otus/
-> +
->  STARFIRE/DURALAN NETWORK DRIVER
->  M:	Ion Badulescu <ionut@badula.org>
->  S:	Odd Fixes
+On Monday 07 June 2010 20:53:38 H. Peter Anvin wrote:
+> On 06/07/2010 11:51 AM, Ondrej Zary wrote:
+> > Something like this?
+> >
+> > Save/restore MISC_ENABLE register on suspend/resume.
+> > This fixes OOPS (invalid opcode) on resume from STR on Asus P4P800-VM,
+> > which wakes up with MWAIT disabled.
+> >
+> > Signed-off-by: Ondrej Zary <linux@rainbow-software.org>
+>
+> Yes, that's a lot better.
+>
+> I presume you have tested it.  Rafael, do you want to take this or should
+> I?
 
-Nack, this driver is unmaintained and its only purpose is as a
-source of documentation for developers working on ar9170 and carl9170.
-Once carl9170 gets 11n support and merged upstream then this driver
-can be removed.
+Yes, it works on the P4P800-VM. Don't have any x86_64 machine to test.
 
-  Luis
+-- 
+Ondrej Zary
