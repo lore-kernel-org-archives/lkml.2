@@ -1,71 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753395Ab0FGMtT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jun 2010 08:49:19 -0400
-Received: from borg.medozas.de ([188.40.89.202]:41265 "EHLO borg.medozas.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751537Ab0FGMtS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jun 2010 08:49:18 -0400
-Date: Mon, 7 Jun 2010 14:49:16 +0200 (CEST)
-From: Jan Engelhardt <jengelh@medozas.de>
-To: Clemens Ladisch <clemens@ladisch.de>
-cc: Takashi Iwai <tiwai@suse.de>, alsa-devel@alsa-project.org,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       Dave Airlie <airlied@redhat.com>, dri-devel@lists.freedesktop.org
-Subject: Re: [alsa-devel] No mixers on ATI RS780 Azalia
-In-Reply-To: <4BFE66CA.5070400@ladisch.de>
-Message-ID: <alpine.LSU.2.01.1006071404210.11780@obet.zrqbmnf.qr>
-References: <alpine.LSU.2.01.1005261303170.19406@obet.zrqbmnf.qr> <s5hmxvmzwwd.wl%tiwai@suse.de> <alpine.LSU.2.01.1005261413040.23865@obet.zrqbmnf.qr> <4BFD2901.20800@ladisch.de> <alpine.LSU.2.01.1005271230340.18087@obet.zrqbmnf.qr> <4BFE5AA1.7070103@ladisch.de>
- <4BFE66CA.5070400@ladisch.de>
-User-Agent: Alpine 2.01 (LSU 1266 2009-07-14)
+	id S1752315Ab0FGMve (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jun 2010 08:51:34 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:58677 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750834Ab0FGMvc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Jun 2010 08:51:32 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:date:message-id:subject:from:to:content-type;
+        b=h2rr2uphK7q09Kuh9P7XxzoNPkPr7RgBDR1saLK+sYluHNz1lS9oxCbuvvU4UKmiQZ
+         dKWhFLebKTzqvMf9f9YEWFyjv01hKF0c0v//FMnZ5iTBhGfmqIld5XHq7Cip7C2jsleV
+         Xwf7ZADGUtSkd7+J5TbBTBXFTI3FC3sUTDAFo=
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Date: Mon, 7 Jun 2010 14:51:30 +0200
+Message-ID: <AANLkTikNcCtUn9SQwKu2b3IE6NiAwAhciHsm1HVH4EJh@mail.gmail.com>
+Subject: [PATCH] DVB flexcop-pci: sanitize driver name to avoid warning on 
+	load
+From: =?ISO-8859-2?Q?Jind=F8ich_Makovi=E8ka?= <makovick@gmail.com>
+To: mchehab@infradead.org, patrick.boettcher@desy.de,
+       linux-kernel@vger.kernel.org, video4linux-list@redhat.com
+Content-Type: multipart/mixed; boundary=001485f90eecbf14660488702126
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 2010-05-27 14:34, Clemens Ladisch wrote:
->Clemens Ladisch wrote:
->> Please do not assume that the "HDMI" device is the right one, since you
->> never got either one to work in Linux.
->
->Hmm, that computer is separate from the actual LCD, which has an HDMI
->input, so it's possible that the HDMI output would be correct.
->
->In that case, it's likely that you've run into this bug:
->https://bugs.freedesktop.org/show_bug.cgi?id=28030
->
->You might try the patch mentioned there, or radeonhd, or fglrx.
+--001485f90eecbf14660488702126
+Content-Type: text/plain; charset=ISO-8859-1
 
-Cc'ing drm.
+Hi,
 
-I conclude further tests.
+DVB driver for Flexcop/Technisat receiver currently calls request_irq()
+with a long driver name containing slashes. This triggers a warning
+when kernel tries to create /proc/irq/[NN]/[driver name] directory
+(attached to avoid mangling).
 
-* Linux 2.6.35-rc2
-- fbcon:radeondrmfb using "modprobe radeon modeset=1"
-  - sound ok
-- Xorg (7.4) with 'radeonhd'
-  - fbcon ok, no sound in Xorg - I figure radeonhd is obsolete
-- Xorg with 'radeon'
-  - fbcon ok, xorg ok.
-    There is a small breakdown when switching between fbcon and xorg
+The patch in attachment changes the driver name used in
+pci_request_regions() and request_irq() to a shorter version without
+slashes.
 
-* Linux 2.6.33.5
-- like 2.6.35-rc2, but had a bug that prevented radeon.ko to go into 
-  graphics mode when initially loaded; workaround: modprobe fglrx;
-  rmmod fglrx; modprobe radeon modeset=1
-- or fglrx, also makes sound work
+Signed-off-by: Jindrich Makovicka <makovick@gmail.com>
 
-- fglrx bug aside: switching from Xorg to console (either 80x25 or
-  radeondrmfb) makes a fugly "pop" noise, and if the target is
-  radeomdrmfb, display is garbled.
+-- 
+Jindrich Makovicka
 
+--001485f90eecbf14660488702126
+Content-Type: text/plain; charset=US-ASCII; name="warn.txt"
+Content-Disposition: attachment; filename="warn.txt"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_ga5aubst0
 
-So I'm happy.
-Conclusive questions however:
+SnVuICAxIDExOjUzOjMwIGhvbGx5IGtlcm5lbDogZmxleGNvcC1wY2k6IHdpbGwgdXNlIHRoZSBI
+VyBQSUQgZmlsdGVyLgpKdW4gIDEgMTE6NTM6MzAgaG9sbHkga2VybmVsOiBmbGV4Y29wLXBjaTog
+Y2FyZCByZXZpc2lvbiAyCkp1biAgMSAxMTo1MzozMCBob2xseSBrZXJuZWw6IGIyYzJfZmxleGNv
+cF9wY2kgMDAwMDowNTowMS4wOiBQQ0kgSU5UIEEgLT4gR1NJIDE5IChsZXZlbCwgbG93KSAtPiBJ
+UlEgMTkKSnVuICAxIDExOjUzOjMwIGhvbGx5IGtlcm5lbDogLS0tLS0tLS0tLS0tWyBjdXQgaGVy
+ZSBdLS0tLS0tLS0tLS0tCkp1biAgMSAxMTo1MzozMCBob2xseSBrZXJuZWw6IFdBUk5JTkc6IGF0
+IGZzL3Byb2MvZ2VuZXJpYy5jOjMxNyBfX3hsYXRlX3Byb2NfbmFtZSsweGI1LzB4ZDAoKQpKdW4g
+IDEgMTE6NTM6MzAgaG9sbHkga2VybmVsOiBIYXJkd2FyZSBuYW1lOiBQNTVNLVVENApKdW4gIDEg
+MTE6NTM6MzAgaG9sbHkga2VybmVsOiBuYW1lICdUZWNobmlzYXQvQjJDMiBGbGV4Q29wIElJL0lJ
+Yi9JSUkgRGlnaXRhbCBUViBQQ0kgRHJpdmVyJwpKdW4gIDEgMTE6NTM6MzAgaG9sbHkga2VybmVs
+OiBNb2R1bGVzIGxpbmtlZCBpbjogYjJjMl9mbGV4Y29wX3BjaSgrKSBidHVzYiBiMmMyX2ZsZXhj
+b3AgdmlkZW9kZXYgc25kX3RpbWVyIHNuZF9zZXFfZGV2aWNlIHVzYmhpZCgrKSBibHVldG9vdGgg
+c25kIHY0bDJfY29tcGF0X2lvY3RsMzIgYmxhY2ttYWdpYyhQKykgdXNiX3N0b3JhZ2UgaTJjX2k4
+MDEgZHZiX2NvcmUgc25kX3BhZ2VfYWxsb2MgbnZpZGlhKFApIGkyY19jb3JlIGxpcmNfbWNldXNi
+MiBsaXJjX2RldiB1aGNpX2hjZCBlaGNpX2hjZCBmaXJld2lyZV9vaGNpIGZpcmV3aXJlX2NvcmUg
+cjgxNjkgbWlpIHVzYmNvcmUgW2xhc3QgdW5sb2FkZWQ6IHNjc2lfd2FpdF9zY2FuXQpKdW4gIDEg
+MTE6NTM6MzAgaG9sbHkga2VybmVsOiBQaWQ6IDEzNjMsIGNvbW06IG1vZHByb2JlIFRhaW50ZWQ6
+IFAgICAgICAgICAgICAyLjYuMzUtcmMxICMyCkp1biAgMSAxMTo1MzozMCBob2xseSBrZXJuZWw6
+IENhbGwgVHJhY2U6Ckp1biAgMSAxMTo1MzozMCBob2xseSBrZXJuZWw6ICBbPGZmZmZmZmZmODEw
+M2Y1OGI+XSA/IHdhcm5fc2xvd3BhdGhfY29tbW9uKzB4N2IvMHhjMApKdW4gIDEgMTE6NTM6MzAg
+aG9sbHkga2VybmVsOiAgWzxmZmZmZmZmZjgxMDNmNjg1Pl0gPyB3YXJuX3Nsb3dwYXRoX2ZtdCsw
+eDQ1LzB4NTAKSnVuICAxIDExOjUzOjMwIGhvbGx5IGtlcm5lbDogIFs8ZmZmZmZmZmY4MTExMDJj
+NT5dID8gX194bGF0ZV9wcm9jX25hbWUrMHhiNS8weGQwCkp1biAgMSAxMTo1MzozMCBob2xseSBr
+ZXJuZWw6ICBbPGZmZmZmZmZmODExMTA4OWU+XSA/IF9fcHJvY19jcmVhdGUrMHg3ZS8weDE1MApK
+dW4gIDEgMTE6NTM6MzAgaG9sbHkga2VybmVsOiAgWzxmZmZmZmZmZjgxMTExMjQ3Pl0gPyBwcm9j
+X21rZGlyX21vZGUrMHgyNy8weDYwCkp1biAgMSAxMTo1MzozMCBob2xseSBrZXJuZWw6ICBbPGZm
+ZmZmZmZmODEwNzhiMTU+XSA/IHJlZ2lzdGVyX2hhbmRsZXJfcHJvYysweDExNS8weDEzMApKdW4g
+IDEgMTE6NTM6MzAgaG9sbHkga2VybmVsOiAgWzxmZmZmZmZmZjgxMDc2MjkxPl0gPyBfX3NldHVw
+X2lycSsweDFkMS8weDMyMApKdW4gIDEgMTE6NTM6MzAgaG9sbHkga2VybmVsOiAgWzxmZmZmZmZm
+ZmEwMDQ4MTYwPl0gPyBmbGV4Y29wX3BjaV9pc3IrMHgwLzB4MTkwIFtiMmMyX2ZsZXhjb3BfcGNp
+XQpKdW4gIDEgMTE6NTM6MzAgaG9sbHkga2VybmVsOiAgWzxmZmZmZmZmZjgxMDc2NGUzPl0gPyBy
+ZXF1ZXN0X3RocmVhZGVkX2lycSsweDEwMy8weDE2MApKdW4gIDEgMTE6NTM6MzAgaG9sbHkga2Vy
+bmVsOiAgWzxmZmZmZmZmZmEwMDQ4NDk1Pl0gPyBmbGV4Y29wX3BjaV9wcm9iZSsweDFhNS8weDMz
+MCBbYjJjMl9mbGV4Y29wX3BjaV0KSnVuICAxIDExOjUzOjMwIGhvbGx5IGtlcm5lbDogIFs8ZmZm
+ZmZmZmY4MTIzODIwMj5dID8gbG9jYWxfcGNpX3Byb2JlKzB4MTIvMHgyMApKdW4gIDEgMTE6NTM6
+MzAgaG9sbHkga2VybmVsOiAgWzxmZmZmZmZmZjgxMjM4YmJjPl0gPyBwY2lfZGV2aWNlX3Byb2Jl
+KzB4OGMvMHhjMApKdW4gIDEgMTE6NTM6MzAgaG9sbHkga2VybmVsOiAgWzxmZmZmZmZmZjgxMmJj
+YWNhPl0gPyBkcml2ZXJfc3lzZnNfYWRkKzB4NWEvMHg4MApKdW4gIDEgMTE6NTM6MzAgaG9sbHkg
+a2VybmVsOiAgWzxmZmZmZmZmZjgxMmJjYmY3Pl0gPyBkcml2ZXJfcHJvYmVfZGV2aWNlKzB4ODcv
+MHgxYTAKSnVuICAxIDExOjUzOjMwIGhvbGx5IGtlcm5lbDogIFs8ZmZmZmZmZmY4MTJiY2RhMz5d
+ID8gX19kcml2ZXJfYXR0YWNoKzB4OTMvMHhhMApKdW4gIDEgMTE6NTM6MzAgaG9sbHkga2VybmVs
+OiAgWzxmZmZmZmZmZjgxMmJjZDEwPl0gPyBfX2RyaXZlcl9hdHRhY2grMHgwLzB4YTAKSnVuICAx
+IDExOjUzOjMwIGhvbGx5IGtlcm5lbDogIFs8ZmZmZmZmZmY4MTJiYzMyOD5dID8gYnVzX2Zvcl9l
+YWNoX2RldisweDU4LzB4ODAKSnVuICAxIDExOjUzOjMwIGhvbGx5IGtlcm5lbDogIFs8ZmZmZmZm
+ZmY4MTJiYmIwMD5dID8gYnVzX2FkZF9kcml2ZXIrMHhiMC8weDI1MApKdW4gIDEgMTE6NTM6MzAg
+aG9sbHkga2VybmVsOiAgWzxmZmZmZmZmZjgxMmJkMDkwPl0gPyBkcml2ZXJfcmVnaXN0ZXIrMHg3
+MC8weDEzMApKdW4gIDEgMTE6NTM6MzAgaG9sbHkga2VybmVsOiAgWzxmZmZmZmZmZjgxMjM4ZTZj
+Pl0gPyBfX3BjaV9yZWdpc3Rlcl9kcml2ZXIrMHg0Yy8weGMwCkp1biAgMSAxMTo1MzozMCBob2xs
+eSBrZXJuZWw6ICBbPGZmZmZmZmZmYTAwNWIwMDA+XSA/IGZsZXhjb3BfcGNpX21vZHVsZV9pbml0
+KzB4MC8weDIwIFtiMmMyX2ZsZXhjb3BfcGNpXQpKdW4gIDEgMTE6NTM6MzAgaG9sbHkga2VybmVs
+OiAgWzxmZmZmZmZmZjgxMDAwMWQ0Pl0gPyBkb19vbmVfaW5pdGNhbGwrMHgzNC8weDFhMApKdW4g
+IDEgMTE6NTM6MzAgaG9sbHkga2VybmVsOiAgWzxmZmZmZmZmZjgxMDZmYzRlPl0gPyBzeXNfaW5p
+dF9tb2R1bGUrMHhkZS8weDI2MApKdW4gIDEgMTE6NTM6MzAgaG9sbHkga2VybmVsOiAgWzxmZmZm
+ZmZmZjgxMDAyNDZiPl0gPyBzeXN0ZW1fY2FsbF9mYXN0cGF0aCsweDE2LzB4MWIKSnVuICAxIDEx
+OjUzOjMwIGhvbGx5IGtlcm5lbDogLS0tWyBlbmQgdHJhY2UgMTRiOTRhZjA2ZjYwYjhkZSBdLS0t
+Ckp1biAgMSAxMTo1MzozMCBob2xseSBrZXJuZWw6IERWQjogcmVnaXN0ZXJpbmcgbmV3IGFkYXB0
+ZXIgKEZsZXhDb3AgRGlnaXRhbCBUViBkZXZpY2UpCkp1biAgMSAxMTo1MzozMCBob2xseSBrZXJu
+ZWw6IGIyYzItZmxleGNvcDogTUFDIGFkZHJlc3MgPSAwMDpkMDpkNzowYzplYTo1MQo=
+--001485f90eecbf14660488702126
+Content-Type: text/x-patch; charset=US-ASCII; name="b2c2.diff"
+Content-Disposition: attachment; filename="b2c2.diff"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_ga5auhj11
 
-* Why is it that I am only allowed to have sound in graphics mode?
-
-* The radeon.ko module does not have any PCI IDs defined, thus does not 
-get autoloaded like i915.ko. Is this intentional? It also seems
-to default to modeset=0.
+LS0tIGZsZXhjb3AtcGNpLmN+CTIwMTAtMDUtMTYgMjM6MTc6MzYuMDAwMDAwMDAwICswMjAwCisr
+KyBmbGV4Y29wLXBjaS5jCTIwMTAtMDYtMDEgMTI6MTA6MDUuOTgyNzc2ODM2ICswMjAwCkBAIC0z
+OCw3ICszOCw3IEBACiAJREVCU1RBVFVTKTsKIAogI2RlZmluZSBEUklWRVJfVkVSU0lPTiAiMC4x
+IgotI2RlZmluZSBEUklWRVJfTkFNRSAiVGVjaG5pc2F0L0IyQzIgRmxleENvcCBJSS9JSWIvSUlJ
+IERpZ2l0YWwgVFYgUENJIERyaXZlciIKKyNkZWZpbmUgRFJJVkVSX05BTUUgImIyYzJfZmxleGNv
+cF9wY2kiCiAjZGVmaW5lIERSSVZFUl9BVVRIT1IgIlBhdHJpY2sgQm9ldHRjaGVyIDxwYXRyaWNr
+LmJvZXR0Y2hlckBkZXN5LmRlPiIKIAogc3RydWN0IGZsZXhjb3BfcGNpIHsKQEAgLTQ0OCw1ICs0
+NDgsNSBAQAogbW9kdWxlX2V4aXQoZmxleGNvcF9wY2lfbW9kdWxlX2V4aXQpOwogCiBNT0RVTEVf
+QVVUSE9SKERSSVZFUl9BVVRIT1IpOwotTU9EVUxFX0RFU0NSSVBUSU9OKERSSVZFUl9OQU1FKTsK
+K01PRFVMRV9ERVNDUklQVElPTigiVGVjaG5pc2F0L0IyQzIgRmxleENvcCBJSS9JSWIvSUlJIERp
+Z2l0YWwgVFYgUENJIERyaXZlciIpOwogTU9EVUxFX0xJQ0VOU0UoIkdQTCIpOwoK
+--001485f90eecbf14660488702126--
