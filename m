@@ -1,127 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756439Ab0FGHj1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jun 2010 03:39:27 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:45537 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755444Ab0FGHjZ convert rfc822-to-8bit (ORCPT
+	id S932478Ab0FGHkB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jun 2010 03:40:01 -0400
+Received: from smtp.nokia.com ([192.100.122.233]:50025 "EHLO
+	mgw-mx06.nokia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932202Ab0FGHj7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jun 2010 03:39:25 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:from:date
-         :x-google-sender-auth:message-id:subject:to:cc:content-type
-         :content-transfer-encoding;
-        b=wwLJUFFc4SRmjRXahHatEGARmVcq+huyvigf+g8VTQmvVI/ib92lpClBpHaoyXOP6p
-         09I2FaE86vNHvMVJ4AOhnThIYgz3wnZxFjK0TG7ZWzNz7m23biDZvHuKym1V2ictRSmj
-         4g3tq+9Tnc4wKVlwwd/JJ8O9/rZjxx8WwtDBE=
-MIME-Version: 1.0
-In-Reply-To: <1275668535.17251.20.camel@mj>
-References: <4c0902ef.0a41df0a.6c86.2df0@mx.google.com> <1275668535.17251.20.camel@mj>
-From: Dmytro Milinevskyy <milinevskyy@gmail.com>
-Date: Mon, 7 Jun 2010 10:39:03 +0300
-X-Google-Sender-Auth: v7VwAbS9n79zjEkHIy3DDnr8fl8
-Message-ID: <AANLkTilPVWvsgXkriz68lLl6e8Qslm_wMkHpkhEdWC3_@mail.gmail.com>
-Subject: Re: [PATCH] [ath5k][leds] Ability to disable leds support. If leds 
-	support enabled do not force mac802.11 leds layer selection.
-To: Pavel Roskin <proski@gnu.org>
-Cc: ath5k-devel@venema.h4ckr.net, Jiri Slaby <jirislaby@gmail.com>,
-       Nick Kossifidis <mickflemm@gmail.com>,
-       "Luis R. Rodriguez" <lrodriguez@atheros.com>,
-       Bob Copeland <me@bobcopeland.com>,
-       "John W. Linville" <linville@tuxdriver.com>,
-       GeunSik Lim <geunsik.lim@samsung.com>,
-       Greg Kroah-Hartman <gregkh@suse.de>, Lukas Turek <8an@praha12.net>,
-       Mark Hindley <mark@hindley.org.uk>,
-       Johannes Berg <johannes@sipsolutions.net>,
-       Jiri Kosina <jkosina@suse.cz>, Kalle Valo <kalle.valo@iki.fi>,
-       Keng-Yu Lin <keng-yu.lin@canonical.com>,
-       Luca Verdesca <magooz@salug.it>, Shahar Or <shahar@shahar-or.co.il>,
-       linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
-       linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Mon, 7 Jun 2010 03:39:59 -0400
+Subject: Re: OMAP video compile error; regression from 2.6.33-rc4 onward
+ (including current master)
+From: Tomi Valkeinen <tomi.valkeinen@nokia.com>
+To: ext Luke-Jr <luke@dashjr.org>
+Cc: "slapin@ossfans.org" <slapin@ossfans.org>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>
+In-Reply-To: <201006061652.39248.luke@dashjr.org>
+References: <201006061652.39248.luke@dashjr.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 07 Jun 2010 10:39:01 +0300
+Message-ID: <1275896341.2549.11.camel@tubuntu.research.nokia.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 07 Jun 2010 07:39:10.0069 (UTC) FILETIME=[8467AA50:01CB0614]
+X-Nokia-AV: Clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Pavel, thank you for the response here.
+On Sun, 2010-06-06 at 23:52 +0200, ext Luke-Jr wrote:
+> This doesn't even build, so I don't know how it was tested... Reverting the 
+> offending commit (simple, but does require conflict resolution) at least lets 
+> it compile, but I haven't tested whether it alone is enough to work in 
+> practise yet... hoping Tomi might provide a real fix. Maybe even in time for 
+> 2.6.35 final? :)
+> 
+> https://bugzilla.kernel.org/show_bug.cgi?id=16144
+> 
+> CC      drivers/video/omap/rfbi.o                                               
+> drivers/video/omap/rfbi.c: In function 'rfbi_get_clocks':                       
+> drivers/video/omap/rfbi.c:86: error: 'dispc' undeclared (first use in this
+> function)
+> drivers/video/omap/rfbi.c:86: error: (Each undeclared identifier is reported
+> only once
+> drivers/video/omap/rfbi.c:86: error: for each function it appears in.)          
+> make[1]: *** [drivers/video/omap/rfbi.o] Error 1                                
+> make: *** [drivers/video/omap/rfbi.o] Error 2                                   
+> 
+> The 'dispc' referred to herein is and has always been defined in
+> drivers/video/omap/dispc.c as an anonymous struct.
 
-I agree with all your comments and will adjust the patch according to them.
+Hmm yes, looks rather broken. I don't know how that has gotten through
+=). Reverting the patch makes it compile, but RFBI won't work.
 
-I'm new to the submitting patches into the community and I appreciate
-telling criticism so that in future I will not cause that much
-troubles.
+ Tomi
 
-Regards,
 
--- Dima
-
-On Fri, Jun 4, 2010 at 7:22 PM, Pavel Roskin <proski@gnu.org> wrote:
-> On Fri, 2010-06-04 at 16:43 +0300, Dmytro Milinevskyy wrote:
->> Hi!
->>
->> Here is the patch to disable ath5k leds support on build stage.
->> However if the leds support was enabled do not force selection of 802.11 leds layer.
->> Depency on LEDS_CLASS is kept.
->>
->> Suggestion given by Pavel Roskin and Bob Copeland applied.
->
-> It's great that you did it.  The patch is much clearer now.  That makes
-> smaller issues visible.  Please don't be discouraged by the criticism,
-> you are on the right track.
->
-> First of all, your patch doesn't apply cleanly to the current
-> wireless-testing because of formatting changes in Makefile.  Please
-> update.
->
->> +config ATH5K_LEDS
->> +       tristate "Atheros 5xxx wireless cards LEDs support"
->> +       depends on ATH5K
->> +       select NEW_LEDS
->> +       select LEDS_CLASS
->> +       ---help---
->> +         Atheros 5xxx LED support.
->
-> "tristate" is wrong here.  "tristate" would allow users select "m",
-> which is wrong, since LED support is not a separate module.  I think you
-> want "bool" here.
->
->> +#ifdef CONFIG_ATH5K_LEDS
->>  /*
->>   * State for LED triggers
->>   */
->> @@ -95,6 +96,7 @@ struct ath5k_led
->>       struct ath5k_softc *sc;                 /* driver state */
->>       struct led_classdev led_dev;            /* led classdev */
->>  };
->> +#endif
->
-> This shouldn't be needed.  I'll rather see a structure that is not used
-> in some cases than an extra pair of preprocessor conditionals.
->
->> diff --git a/drivers/net/wireless/ath/ath5k/gpio.c b/drivers/net/wireless/ath/ath5k/gpio.c
->> index 64a27e7..9e757b3 100644
->> --- a/drivers/net/wireless/ath/ath5k/gpio.c
->> +++ b/drivers/net/wireless/ath/ath5k/gpio.c
->> @@ -25,6 +25,7 @@
->>  #include "debug.h"
->>  #include "base.h"
->>
->> +#ifdef CONFIG_ATH5K_LEDS
->>  /*
->>   * Set led state
->>   */
->> @@ -76,6 +77,7 @@ void ath5k_hw_set_ledstate(struct ath5k_hw *ah, unsigned int state)
->>       else
->>               AR5K_REG_ENABLE_BITS(ah, AR5K_PCICFG, led_5210);
->>  }
->> +#endif
->
-> I would just move that function to led.c (and don't forget to include
-> reg.h).  The Makefile should take care of the rest.
->
-> --
-> Regards,
-> Pavel Roskin
->
