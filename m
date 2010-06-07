@@ -1,45 +1,159 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755168Ab0FGGoR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jun 2010 02:44:17 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:55394 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754466Ab0FGGoQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jun 2010 02:44:16 -0400
-Date: Mon, 7 Jun 2010 07:44:12 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Jari Ruusu <jariruusu@users.sourceforge.net>
-Cc: linux-kernel@vger.kernel.org, Rusty Russell <rusty@rustcorp.com.au>,
-       Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: 2.6.35-rc2 module reference counting broken
-Message-ID: <20100607064412.GK31073@ZenIV.linux.org.uk>
-References: <4C0C819E.EA5D6A18@users.sourceforge.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4C0C819E.EA5D6A18@users.sourceforge.net>
-User-Agent: Mutt/1.5.20 (2009-08-17)
+	id S932101Ab0FGGpz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jun 2010 02:45:55 -0400
+Received: from sh.osrg.net ([192.16.179.4]:55644 "EHLO sh.osrg.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755019Ab0FGGpw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Jun 2010 02:45:52 -0400
+Date: Mon, 7 Jun 2010 15:45:24 +0900
+To: nab@linux-iscsi.org
+Cc: stgt@vger.kernel.org, linux-scsi@vger.kernel.org,
+       linux-kernel@vger.kernel.org, fujita.tomonori@lab.ntt.co.jp,
+       michaelc@cs.wisc.edu, bharrosh@panasas.com, James.Bottomley@suse.de,
+       dgilbert@interlog.com
+Subject: Re: [PATCH 2/3] [tgt]: Add bs_sg struct device_type_template
+ sg_template and struct backingstore_template->bs_init()
+From: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+In-Reply-To: <1275882632-5397-1-git-send-email-nab@linux-iscsi.org>
+References: <1275882632-5397-1-git-send-email-nab@linux-iscsi.org>
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+Message-Id: <20100607153652C.fujita.tomonori@lab.ntt.co.jp>
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-3.0 (sh.osrg.net [192.16.179.4]); Mon, 07 Jun 2010 15:45:26 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 07, 2010 at 08:20:30AM +0300, Jari Ruusu wrote:
-> Someone broke block device module reference counting. Problem occours when a
-> modular block device is mounted and unmounted. Not when it is directly read.
-> 2.6.34 kernel works OK, but 2.6.35-rc2 kernel seems to increase usage count
-> by one for each mount + umount pair.
+On Sun,  6 Jun 2010 20:50:32 -0700
+"Nicholas A. Bellinger" <nab@linux-iscsi.org> wrote:
 
-Very interesting...  Looks like mount() bumps refcount by 2.  umount() after
-that drops refcount by 1, so it's not leaking superblocks.
+> From: Nicholas Bellinger <nab@linux-iscsi.org>
+> 
+> This patch adds struct device_type_template sg_template to usr/bs_sg.c used for STGT LUN
+> passthrough with the new bs_sg_lu_init() and bs_sg_rw() functions following usr/sbc.c code
+> for TYPE_DISK, but should work for any device type.
+> 
+> It also adds struct bs_sg_init() that is called from existing usr/target.c:tgt_device_create()
+> code via struct backingstore_template->bs_init() in order to setup the passthrough specific
+> queue and completion handlers for struct scsi_lu->cmd_perform() and ->cmd_done().
+> 
+> Signed-off-by: Nicholas A. Bellinger <nab@linux-iscsi.org>
+> ---
+>  usr/bs_sg.c |   69 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+>  1 files changed, 69 insertions(+), 0 deletions(-)
+> 
+> diff --git a/usr/bs_sg.c b/usr/bs_sg.c
+> index 8baa480..23676ef 100644
+> --- a/usr/bs_sg.c
+> +++ b/usr/bs_sg.c
+> @@ -38,9 +38,12 @@
+>  #include "util.h"
+>  #include "tgtd.h"
+>  #include "scsi.h"
+> +#include "spc.h"
+> +#include "tgtadm_error.h"
+>  
+>  #define BS_SG_RESVD_SZ  (512 * 1024)
+>  #define BS_SG_TIMEOUT	2000
+> +#define BS_SG_SHIFT	9
+>  
+>  static int graceful_read(int fd, void *p_read, int to_read)
+>  {
+> @@ -82,6 +85,32 @@ static int graceful_write(int fd, void *p_write, int to_write)
+>  	return 0;
+>  }
+>  
+> +static int bs_sg_rw(int host_no, struct scsi_cmd *cmd)
+> +{
+> +	int ret;
+> +	unsigned char key = ILLEGAL_REQUEST;
+> +	uint16_t asc = ASC_LUN_NOT_SUPPORTED;
+> +
+> +	cmd->scsi_cmd_done = target_cmd_io_done;
+> +
+> +	cmd->offset = (scsi_rw_offset(cmd->scb) << BS_SG_SHIFT);
 
-Which probably means that open_bdev_exclusive() is fscked.  Interesting...
-FWIW, quick look through the history seems to point to this:
-commit 6b4517a7913a09d3259bb1d21c9cb300f12294bd
-Author: Tejun Heo <tj@kernel.org>
-Date:   Wed Apr 7 18:53:59 2010 +0900
+No need for passthough, I think.
 
-    block: implement bd_claiming and claiming block
 
-I'm far too sleepy right now, but I'd start with reviewing what that
-thing is doing to module refcounting...
+> +	ret = cmd->dev->bst->bs_cmd_submit(cmd);
+> +	if (ret) {
+> +		key = HARDWARE_ERROR;
+> +		asc = ASC_INTERNAL_TGT_FAILURE;
+> +	} else {
+> +		set_cmd_mmapio(cmd);
+
+This is wrong since this code doesn't mmap io. We can just remove
+this.
+
+
+> +		return SAM_STAT_GOOD;
+> +	}
+> +
+> +	cmd->offset = 0;
+> +	scsi_set_in_resid_by_actual(cmd, 0);
+> +	scsi_set_out_resid_by_actual(cmd, 0);
+> +
+> +	sense_data_build(cmd, key, asc);
+> +	return SAM_STAT_CHECK_CONDITION;
+> +}
+> +
+>  static void set_cmd_failed(struct scsi_cmd *cmd)
+>  {
+>  	int result = SAM_STAT_CHECK_CONDITION;
+> @@ -192,6 +221,25 @@ static int init_sg_device(int fd)
+>  	return 0;
+>  }
+>  
+> +static int bs_sg_init(struct scsi_lu *lu)
+> +{
+> +	/*
+> +	 * Setup struct scsi_lu->cmd_perform() passthrough pointer
+> +	 * (if available) for the underlying device type.
+> +	 */
+> +	lu->cmd_perform = &target_cmd_perform_passthrough;
+> +	if (!(lu->cmd_perform)) {
+> +		eprintf("Unable to locate lu->cmd_perform() for bs_sg\n");
+> +		return -1;
+> +	}
+> +	/*
+> +	 * Setup struct scsi_lu->cmd_done() passthrough pointer using
+> +	 * usr/target.c:__cmd_done_passthrough().
+> +	 */
+> +	lu->cmd_done = &__cmd_done_passthrough;
+> +	return 0;
+> +}
+> +
+>  static int bs_sg_open(struct scsi_lu *lu, char *path, int *fd, uint64_t *size)
+>  {
+>  	int sg_fd, err;
+> @@ -235,16 +283,37 @@ static int bs_sg_cmd_done(struct scsi_cmd *cmd)
+>  	return 0;
+>  }
+>  
+> +static int bs_sg_lu_init(struct scsi_lu *lu)
+> +{
+> +	if (spc_lu_init(lu))
+> +		return TGTADM_NOMEM;
+> +
+> +	return 0;
+> +}
+> +
+>  static struct backingstore_template sg_bst = {
+>  	.bs_name		= "sg",
+>  	.bs_datasize		= 0,
+> +	.bs_passthrough		= 1,
+> +	.bs_init		= bs_sg_init,
+>  	.bs_open		= bs_sg_open,
+>  	.bs_close		= bs_sg_close,
+>  	.bs_cmd_submit		= bs_sg_cmd_submit,
+>  	.bs_cmd_done		= bs_sg_cmd_done,
+>  };
+>  
+> +static struct device_type_template sg_template = {
+> +	.type			= 0,
+
+Let's create a new type to simplify things (e.g. we can avoid adding
+sg_bst->bs_passthrough).
