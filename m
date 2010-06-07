@@ -1,94 +1,172 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751984Ab0FGPD7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jun 2010 11:03:59 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:36661 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750897Ab0FGPD6 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jun 2010 11:03:58 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=u4hvpTMOapFGYSgHBcfYdsas60FDeUkMZdSyLDVzJiv847XCgbolmZXY2v4EcFORrv
-         7+rpOWAPhu6ZWeq1gkG9jAJegTrFK9vpmYpPT5VJck8RPTv4lhFywsHNdxtjC9x4cUkE
-         b/YLdPn2KOxY0GmA8uxzubmFxAzQK4lMeuBx0=
+	id S1752009Ab0FGPHT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jun 2010 11:07:19 -0400
+Received: from e8.ny.us.ibm.com ([32.97.182.138]:33742 "EHLO e8.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750881Ab0FGPHR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Jun 2010 11:07:17 -0400
+Date: Mon, 7 Jun 2010 20:36:51 +0530
+From: Srivatsa Vaddagiri <vatsa@in.ibm.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Michael Neuling <mikey@neuling.org>,
+       Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+       linuxppc-dev@ozlabs.org, linux-kernel@vger.kernel.org,
+       Ingo Molnar <mingo@elte.hu>, Suresh Siddha <suresh.b.siddha@intel.com>,
+       Gautham R Shenoy <ego@in.ibm.com>
+Subject: Re: [PATCH 1/5] sched: fix capacity calculations for SMT4
+Message-ID: <20100607150651.GA13993@linux.vnet.ibm.com>
+Reply-To: vatsa@in.ibm.com
+References: <20100409062118.D4096CBB6C@localhost.localdomain>
+ <1271161766.4807.1280.camel@twins>
+ <2906.1271219317@neuling.org>
+ <1271426308.1674.429.camel@laptop>
+ <1275294796.27810.21554.camel@twins>
 MIME-Version: 1.0
-In-Reply-To: <alpine.LSU.2.01.1006071404210.11780@obet.zrqbmnf.qr>
-References: <alpine.LSU.2.01.1005261303170.19406@obet.zrqbmnf.qr>
-	<s5hmxvmzwwd.wl%tiwai@suse.de>
-	<alpine.LSU.2.01.1005261413040.23865@obet.zrqbmnf.qr>
-	<4BFD2901.20800@ladisch.de>
-	<alpine.LSU.2.01.1005271230340.18087@obet.zrqbmnf.qr>
-	<4BFE5AA1.7070103@ladisch.de>
-	<4BFE66CA.5070400@ladisch.de>
-	<alpine.LSU.2.01.1006071404210.11780@obet.zrqbmnf.qr>
-Date: Mon, 7 Jun 2010 11:03:56 -0400
-Message-ID: <AANLkTilqmEK7R26DmLg0_LZ4al4F0_bX4asCl1DVA6GH@mail.gmail.com>
-Subject: Re: [alsa-devel] No mixers on ATI RS780 Azalia
-From: Alex Deucher <alexdeucher@gmail.com>
-To: Jan Engelhardt <jengelh@medozas.de>
-Cc: Clemens Ladisch <clemens@ladisch.de>, Takashi Iwai <tiwai@suse.de>,
-       Dave Airlie <airlied@redhat.com>, alsa-devel@alsa-project.org,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       dri-devel@lists.freedesktop.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1275294796.27810.21554.camel@twins>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 7, 2010 at 8:49 AM, Jan Engelhardt <jengelh@medozas.de> wrote:
-> On Thursday 2010-05-27 14:34, Clemens Ladisch wrote:
->>Clemens Ladisch wrote:
->>> Please do not assume that the "HDMI" device is the right one, since you
->>> never got either one to work in Linux.
->>
->>Hmm, that computer is separate from the actual LCD, which has an HDMI
->>input, so it's possible that the HDMI output would be correct.
->>
->>In that case, it's likely that you've run into this bug:
->>https://bugs.freedesktop.org/show_bug.cgi?id=28030
->>
->>You might try the patch mentioned there, or radeonhd, or fglrx.
->
-> Cc'ing drm.
->
-> I conclude further tests.
->
-> * Linux 2.6.35-rc2
-> - fbcon:radeondrmfb using "modprobe radeon modeset=1"
->  - sound ok
-> - Xorg (7.4) with 'radeonhd'
->  - fbcon ok, no sound in Xorg - I figure radeonhd is obsolete
-> - Xorg with 'radeon'
->  - fbcon ok, xorg ok.
->    There is a small breakdown when switching between fbcon and xorg
->
-> * Linux 2.6.33.5
-> - like 2.6.35-rc2, but had a bug that prevented radeon.ko to go into
->  graphics mode when initially loaded; workaround: modprobe fglrx;
->  rmmod fglrx; modprobe radeon modeset=1
-> - or fglrx, also makes sound work
->
-> - fglrx bug aside: switching from Xorg to console (either 80x25 or
->  radeondrmfb) makes a fugly "pop" noise, and if the target is
->  radeomdrmfb, display is garbled.
->
->
-> So I'm happy.
-> Conclusive questions however:
->
-> * Why is it that I am only allowed to have sound in graphics mode?
+On Mon, May 31, 2010 at 10:33:16AM +0200, Peter Zijlstra wrote:
+> On Fri, 2010-04-16 at 15:58 +0200, Peter Zijlstra wrote:
+> > 
+> > 
+> > Hrmm, my brain seems muddled but I might have another solution, let me
+> > ponder this for a bit..
+> > 
+> 
+> Right, so the thing I was thinking about is taking the group capacity
+> into account when determining the capacity for a single cpu.
 
-HDMI audio is only enabled on active outputs during modeset.
+Peter,
+	We are exploring an alternate solution which seems to be working as
+expected. Basically allow capacity of 1 for SMT threads provided there is
+no significant influence by RT tasks or freq scaling. Note that at core level,
+capacity is unchanged and hence this affects only how tasks are distributed
+within a core.
 
->
-> * The radeon.ko module does not have any PCI IDs defined, thus does not
-> get autoloaded like i915.ko. Is this intentional? It also seems
-> to default to modeset=0.
+Mike Neuling should post an updated patchset containing this patch
+(with more comments added ofcourse!).
 
-What kernel are you using?  It definitely has pci ids and autoloads just fine.
 
-Alex
+Signed-off-by: Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>
+
+---
+ include/linux/sched.h |    2 +-
+ kernel/sched_fair.c   |   30 +++++++++++++++++++++++-------
+ 2 files changed, 24 insertions(+), 8 deletions(-)
+
+Index: linux-2.6-ozlabs/include/linux/sched.h
+===================================================================
+--- linux-2.6-ozlabs.orig/include/linux/sched.h
++++ linux-2.6-ozlabs/include/linux/sched.h
+@@ -860,7 +860,7 @@ struct sched_group {
+ 	 * CPU power of this group, SCHED_LOAD_SCALE being max power for a
+ 	 * single CPU.
+ 	 */
+-	unsigned int cpu_power;
++	unsigned int cpu_power, cpu_power_orig;
+ 
+ 	/*
+ 	 * The CPUs this group covers.
+Index: linux-2.6-ozlabs/kernel/sched_fair.c
+===================================================================
+--- linux-2.6-ozlabs.orig/kernel/sched_fair.c
++++ linux-2.6-ozlabs/kernel/sched_fair.c
+@@ -2285,13 +2285,6 @@ static void update_cpu_power(struct sche
+ 	unsigned long power = SCHED_LOAD_SCALE;
+ 	struct sched_group *sdg = sd->groups;
+ 
+-	if (sched_feat(ARCH_POWER))
+-		power *= arch_scale_freq_power(sd, cpu);
+-	else
+-		power *= default_scale_freq_power(sd, cpu);
+-
+-	power >>= SCHED_LOAD_SHIFT;
+-
+ 	if ((sd->flags & SD_SHARE_CPUPOWER) && weight > 1) {
+ 		if (sched_feat(ARCH_POWER))
+ 			power *= arch_scale_smt_power(sd, cpu);
+@@ -2301,6 +2294,15 @@ static void update_cpu_power(struct sche
+ 		power >>= SCHED_LOAD_SHIFT;
+ 	}
+ 
++	sdg->cpu_power_orig = power;
++
++	if (sched_feat(ARCH_POWER))
++		power *= arch_scale_freq_power(sd, cpu);
++	else
++		power *= default_scale_freq_power(sd, cpu);
++
++	power >>= SCHED_LOAD_SHIFT;
++
+ 	power *= scale_rt_power(cpu);
+ 	power >>= SCHED_LOAD_SHIFT;
+ 
+@@ -2333,6 +2335,22 @@ static void update_group_power(struct sc
+ 	sdg->cpu_power = power;
+ }
+ 
++static inline int
++rt_freq_influence(struct sched_group *group, struct sched_domain *sd)
++{
++	if (sd->child)
++		return 1;
++
++	/*
++	 * Check to see if the final cpu power was reduced by more
++	 * than 10% by frequency or rt tasks
++	 */
++	if (group->cpu_power * 100 < group->cpu_power_orig * 90)
++		return 1;
++
++	return 0;
++}
++
+ /**
+  * update_sg_lb_stats - Update sched_group's statistics for load balancing.
+  * @sd: The sched_domain whose statistics are to be updated.
+@@ -2426,6 +2444,8 @@ static inline void update_sg_lb_stats(st
+ 
+ 	sgs->group_capacity =
+ 		DIV_ROUND_CLOSEST(group->cpu_power, SCHED_LOAD_SCALE);
++	if (!sgs->group_capacity && !rt_freq_influence(group, sd))
++		sgs->group_capacity = 1;
+ }
+ 
+ /**
+@@ -2725,7 +2745,8 @@ ret:
+  */
+ static struct rq *
+ find_busiest_queue(struct sched_group *group, enum cpu_idle_type idle,
+-		   unsigned long imbalance, const struct cpumask *cpus)
++		   unsigned long imbalance, const struct cpumask *cpus,
++		   struct sched_domain *sd)
+ {
+ 	struct rq *busiest = NULL, *rq;
+ 	unsigned long max_load = 0;
+@@ -2736,6 +2757,9 @@ find_busiest_queue(struct sched_group *g
+ 		unsigned long capacity = DIV_ROUND_CLOSEST(power, SCHED_LOAD_SCALE);
+ 		unsigned long wl;
+ 
++		if (!capacity && !rt_freq_influence(group, sd))
++			capacity = 1;
++
+ 		if (!cpumask_test_cpu(i, cpus))
+ 			continue;
+ 
+@@ -2852,7 +2876,7 @@ redo:
+ 		goto out_balanced;
+ 	}
+ 
+-	busiest = find_busiest_queue(group, idle, imbalance, cpus);
++	busiest = find_busiest_queue(group, idle, imbalance, cpus, sd);
+ 	if (!busiest) {
+ 		schedstat_inc(sd, lb_nobusyq[idle]);
+ 		goto out_balanced;
+
+
