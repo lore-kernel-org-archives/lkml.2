@@ -1,159 +1,262 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753300Ab0FGMlO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jun 2010 08:41:14 -0400
-Received: from mailout4.w1.samsung.com ([210.118.77.14]:14933 "EHLO
-	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752046Ab0FGMj3 (ORCPT
+	id S1753119Ab0FGMld (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jun 2010 08:41:33 -0400
+Received: from mailout3.w1.samsung.com ([210.118.77.13]:56223 "EHLO
+	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752006Ab0FGMj3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 7 Jun 2010 08:39:29 -0400
 MIME-version: 1.0
 Content-transfer-encoding: 7BIT
 Content-type: TEXT/PLAIN
-Date: Mon, 07 Jun 2010 14:39:51 +0200
+Date: Mon, 07 Jun 2010 14:39:59 +0200
 From: Michal Nazarewicz <m.nazarewicz@samsung.com>
-Subject: [PATCHv4 04/13] USB: gadget: composite: usb_string_ids_*() functions
- added
-In-reply-to: <897d8ae37d4fa2fdb7dad8787add81c720581313.1275906835.git.m.nazarewicz@samsung.com>
+Subject: [PATCHv4 12/13] USB: gadget: f_mass_storage: added eject callback
+In-reply-to: <6999e11de09e1f7f1091ee43882a8fc75bf2aab3.1275906835.git.m.nazarewicz@samsung.com>
 To: linux-usb@vger.kernel.org, linux-usb@vger.kernel.org
 Cc: David Brownell <dbrownell@users.sourceforge.net>,
        Kyungmin Park <kyungmin.park@samsung.com>,
        Marek Szyprowski <m.szyprowski@samsung.com>,
        linux-kernel@vger.kernel.org
-Message-id: <b34cbaab37bf0590cb254a03478c5297bc4a1723.1275906835.git.m.nazarewicz@samsung.com>
+Message-id: <f349d63e32bbd7641035db658605961af9318cb3.1275906835.git.m.nazarewicz@samsung.com>
 X-Mailer: git-send-email 1.7.1
 References: <cover.1275906835.git.m.nazarewicz@samsung.com>
  <72866638a69b660e3eb534330937955d15dde4de.1275906835.git.m.nazarewicz@samsung.com>
  <df04b95ee38845c46fa735c3e53768f57f94f748.1275906835.git.m.nazarewicz@samsung.com>
  <897d8ae37d4fa2fdb7dad8787add81c720581313.1275906835.git.m.nazarewicz@samsung.com>
+ <b34cbaab37bf0590cb254a03478c5297bc4a1723.1275906835.git.m.nazarewicz@samsung.com>
+ <7781ec0d22fa9dde7afbd3bf915af1a592780938.1275906835.git.m.nazarewicz@samsung.com>
+ <871680934027e59f08ad63399a5923960147d313.1275906835.git.m.nazarewicz@samsung.com>
+ <9e21e4f5440d2a2fcfa11bca18e62c713317b330.1275906835.git.m.nazarewicz@samsung.com>
+ <61c7dcd3597ed56ec1caa5bcb66bf9bc1b09fb66.1275906835.git.m.nazarewicz@samsung.com>
+ <9fe3db6d72e8376ece39bbe4f5ac9c8cd863af4c.1275906835.git.m.nazarewicz@samsung.com>
+ <b2b534da1e741bd0438e5e13df65aa7e2be72a7c.1275906835.git.m.nazarewicz@samsung.com>
+ <6999e11de09e1f7f1091ee43882a8fc75bf2aab3.1275906835.git.m.nazarewicz@samsung.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-usb_string_ids_tab() and usb_string_ids_n() functions added to
-the composite framework.  The first accepts an array of
-usb_string object and for each registeres a string id and the
-second registeres a given number of ids and returns the first.
+Added pre_eject() and post_eject() callbacks which are
+called befor and after removable logical unit is ejected.
+The first can prevent logical unit from being ejected.
 
-This may simplify string ids registration since gadgets and
-composite functions won't have to call usb_string_id() several
-times and each time check for errer status -- all this will be
-done with a single call.
+This commit also changes the way callbacks are passed to
+the function from gadget.  A fsg_operations structure has
+been created which lists all callbacks -- this is passed
+to the fsg_config.
+
+This is important because it changes the way thread_exits()
+callback is passed.
 
 Signed-off-by: Michal Nazarewicz <m.nazarewicz@samsung.com>
 Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
 ---
- drivers/usb/gadget/composite.c |   71 +++++++++++++++++++++++++++++++++++++--
- include/linux/usb/composite.h  |    4 ++
- 2 files changed, 71 insertions(+), 4 deletions(-)
+ drivers/usb/gadget/f_mass_storage.c |  109 ++++++++++++++++++++++------------
+ drivers/usb/gadget/mass_storage.c   |    4 +-
+ 2 files changed, 73 insertions(+), 40 deletions(-)
 
-diff --git a/drivers/usb/gadget/composite.c b/drivers/usb/gadget/composite.c
-index 391d169..125167e 100644
---- a/drivers/usb/gadget/composite.c
-+++ b/drivers/usb/gadget/composite.c
-@@ -673,20 +673,83 @@ static int get_string(struct usb_composite_dev *cdev,
-  * string IDs.  Drivers for functions, configurations, or gadgets will
-  * then store that ID in the appropriate descriptors and string table.
-  *
-- * All string identifier should be allocated using this routine, to
-- * ensure that for example different functions don't wrongly assign
-- * different meanings to the same identifier.
-+ * All string identifier should be allocated using this,
-+ * @usb_string_ids_tab() or @usb_string_ids_n() routine, to ensure
-+ * that for example different functions don't wrongly assign different
-+ * meanings to the same identifier.
-  */
- int usb_string_id(struct usb_composite_dev *cdev)
- {
- 	if (cdev->next_string_id < 254) {
--		/* string id 0 is reserved */
-+		/* string id 0 is reserved by USB spec for list of
-+		 * supported languages */
-+		/* 255 reserved as well? -- mina86 */
- 		cdev->next_string_id++;
- 		return cdev->next_string_id;
- 	}
- 	return -ENODEV;
- }
- 
-+/**
-+ * usb_string_ids() - allocate unused string IDs in batch
-+ * @cdev: the device whose string descriptor IDs are being allocated
-+ * @str: an array of usb_string objects to assign numbers to
-+ * Context: single threaded during gadget setup
-+ *
-+ * @usb_string_ids() is called from bind() callbacks to allocate
-+ * string IDs.  Drivers for functions, configurations, or gadgets will
-+ * then copy IDs from the string table to the appropriate descriptors
-+ * and string table for other languages.
-+ *
-+ * All string identifier should be allocated using this,
-+ * @usb_string_id() or @usb_string_ids_n() routine, to ensure that for
-+ * example different functions don't wrongly assign different meanings
-+ * to the same identifier.
-+ */
-+int usb_string_ids_tab(struct usb_composite_dev *cdev, struct usb_string *str)
-+{
-+	int next = cdev->next_string_id;
-+
-+	for (; str->s; ++str) {
-+		if (unlikely(next >= 254))
-+			return -ENODEV;
-+		str->id = ++next;
-+	}
-+
-+	cdev->next_string_id = next;
-+
-+	return 0;
-+}
-+
-+/**
-+ * usb_string_ids_n() - allocate unused string IDs in batch
-+ * @cdev: the device whose string descriptor IDs are being allocated
-+ * @n: number of string IDs to allocate
-+ * Context: single threaded during gadget setup
-+ *
-+ * Returns the first requested ID.  This ID and next @n-1 IDs are now
-+ * valid IDs.  At least providind that @n is non zore because if it
-+ * is, returns last requested ID which is now very useful information.
-+ *
-+ * @usb_string_ids_n() is called from bind() callbacks to allocate
-+ * string IDs.  Drivers for functions, configurations, or gadgets will
-+ * then store that ID in the appropriate descriptors and string table.
-+ *
-+ * All string identifier should be allocated using this,
-+ * @usb_string_id() or @usb_string_ids_n() routine, to ensure that for
-+ * example different functions don't wrongly assign different meanings
-+ * to the same identifier.
-+ */
-+int usb_string_ids_n(struct usb_composite_dev *c, unsigned n)
-+{
-+	unsigned next = c->next_string_id;
-+	if (unlikely(n > 254 || (unsigned)next + n > 254))
-+		return -ENODEV;
-+	c->next_string_id += n;
-+	return next + 1;
-+}
-+
-+
+diff --git a/drivers/usb/gadget/f_mass_storage.c b/drivers/usb/gadget/f_mass_storage.c
+index 072cbf9..e9e45ba 100644
+--- a/drivers/usb/gadget/f_mass_storage.c
++++ b/drivers/usb/gadget/f_mass_storage.c
+@@ -316,6 +316,27 @@ static const char fsg_string_interface[] = "Mass Storage";
  /*-------------------------------------------------------------------------*/
  
- static void composite_setup_complete(struct usb_ep *ep, struct usb_request *req)
-diff --git a/include/linux/usb/composite.h b/include/linux/usb/composite.h
-index 139353e..f378075 100644
---- a/include/linux/usb/composite.h
-+++ b/include/linux/usb/composite.h
-@@ -342,6 +342,10 @@ struct usb_composite_dev {
- };
- 
- extern int usb_string_id(struct usb_composite_dev *c);
-+extern int usb_string_ids_tab(struct usb_composite_dev *c,
-+			      struct usb_string *str);
-+extern int usb_string_ids_n(struct usb_composite_dev *c, unsigned n);
+ struct fsg_dev;
++struct fsg_common;
 +
++/* FSF callback functions */
++struct fsg_operations {
++	/* Callback function to call when thread exits.  If no
++	 * callback is set or it returns value lower then zero MSF
++	 * will force eject all LUNs it operates on (including those
++	 * marked as non-removable or with prevent_medium_removal flag
++	 * set). */
++	int (*thread_exits)(struct fsg_common *common);
++
++	/* Called prior to ejection.  Negative return means error,
++	 * zero means to continue with ejection, positive means not to
++	 * eject. */
++	int (*pre_eject)(struct fsg_common *common,
++			 struct fsg_lun *lun, int num);
++	/* Called after ejection.  Negative return means error, zero
++	 * or positive is just a success. */
++	int (*post_eject)(struct fsg_common *common,
++			  struct fsg_lun *lun, int num);
++};
  
- /* messaging utils */
- #define DBG(d, fmt, args...) \
+ 
+ /* Data shared by all the FSG instances. */
+@@ -370,8 +391,8 @@ struct fsg_common {
+ 	struct completion	thread_notifier;
+ 	struct task_struct	*thread_task;
+ 
+-	/* Callback function to call when thread exits. */
+-	int			(*thread_exits)(struct fsg_common *common);
++	/* Callback functions. */
++	const struct fsg_operations	*ops;
+ 	/* Gadget's private data. */
+ 	void			*private_data;
+ 
+@@ -395,12 +416,8 @@ struct fsg_config {
+ 	const char		*lun_name_format;
+ 	const char		*thread_name;
+ 
+-	/* Callback function to call when thread exits.  If no
+-	 * callback is set or it returns value lower then zero MSF
+-	 * will force eject all LUNs it operates on (including those
+-	 * marked as non-removable or with prevent_medium_removal flag
+-	 * set). */
+-	int			(*thread_exits)(struct fsg_common *common);
++	/* Callback functions. */
++	const struct fsg_operations	*ops;
+ 	/* Gadget's private data. */
+ 	void			*private_data;
+ 
+@@ -436,6 +453,7 @@ static inline int __fsg_is_set(struct fsg_common *common,
+ 	if (common->fsg)
+ 		return 1;
+ 	ERROR(common, "common->fsg is NULL in %s at %u\n", func, line);
++	WARN_ON(1);
+ 	return 0;
+ }
+ 
+@@ -1396,43 +1414,55 @@ static int do_start_stop(struct fsg_common *common)
+ 	} else if (!curlun->removable) {
+ 		curlun->sense_data = SS_INVALID_COMMAND;
+ 		return -EINVAL;
+-	}
+-
+-	loej = common->cmnd[4] & 0x02;
+-	start = common->cmnd[4] & 0x01;
+-
+-	/* eject code from file_storage.c:do_start_stop() */
+-
+-	if ((common->cmnd[1] & ~0x01) != 0 ||	  /* Mask away Immed */
+-		(common->cmnd[4] & ~0x03) != 0) { /* Mask LoEj, Start */
++	} else if ((common->cmnd[1] & ~0x01) != 0 || /* Mask away Immed */
++		   (common->cmnd[4] & ~0x03) != 0) { /* Mask LoEj, Start */
+ 		curlun->sense_data = SS_INVALID_FIELD_IN_CDB;
+ 		return -EINVAL;
+ 	}
+ 
+-	if (!start) {
+-		/* Are we allowed to unload the media? */
+-		if (curlun->prevent_medium_removal) {
+-			LDBG(curlun, "unload attempt prevented\n");
+-			curlun->sense_data = SS_MEDIUM_REMOVAL_PREVENTED;
+-			return -EINVAL;
+-		}
+-		if (loej) {	/* Simulate an unload/eject */
+-			up_read(&common->filesem);
+-			down_write(&common->filesem);
+-			fsg_lun_close(curlun);
+-			up_write(&common->filesem);
+-			down_read(&common->filesem);
+-		}
+-	} else {
++	loej  = common->cmnd[4] & 0x02;
++	start = common->cmnd[4] & 0x01;
+ 
+-		/* Our emulation doesn't support mounting; the medium is
+-		 * available for use as soon as it is loaded. */
++	/* Our emulation doesn't support mounting; the medium is
++	 * available for use as soon as it is loaded. */
++	if (start) {
+ 		if (!fsg_lun_is_open(curlun)) {
+ 			curlun->sense_data = SS_MEDIUM_NOT_PRESENT;
+ 			return -EINVAL;
+ 		}
++		return 0;
+ 	}
+-	return 0;
++
++	/* Are we allowed to unload the media? */
++	if (curlun->prevent_medium_removal) {
++		LDBG(curlun, "unload attempt prevented\n");
++		curlun->sense_data = SS_MEDIUM_REMOVAL_PREVENTED;
++		return -EINVAL;
++	}
++
++	if (!loej)
++		return 0;
++
++	/* Simulate an unload/eject */
++	if (common->ops && common->ops->pre_eject) {
++		int r = common->ops->pre_eject(common, curlun,
++					       curlun - common->luns);
++		if (unlikely(r < 0))
++			return r;
++		else if (r)
++			return 0;
++	}
++
++	up_read(&common->filesem);
++	down_write(&common->filesem);
++	fsg_lun_close(curlun);
++	up_write(&common->filesem);
++	down_read(&common->filesem);
++
++	return common->ops && common->ops->post_eject
++		? min(0, common->ops->post_eject(common, curlun,
++						 curlun - common->luns))
++		: 0;
+ }
+ 
+ 
+@@ -2657,7 +2687,8 @@ static int fsg_main_thread(void *common_)
+ 	common->thread_task = NULL;
+ 	spin_unlock_irq(&common->lock);
+ 
+-	if (!common->thread_exits || common->thread_exits(common) < 0) {
++	if (!common->ops || !common->ops->thread_exits
++	 || common->ops->thread_exits(common) < 0) {
+ 		struct fsg_lun *curlun = common->luns;
+ 		unsigned i = common->nluns;
+ 
+@@ -2733,6 +2764,7 @@ static struct fsg_common *fsg_common_init(struct fsg_common *common,
+ 		common->free_storage_on_release = 0;
+ 	}
+ 
++	common->ops = cfg->ops;
+ 	common->private_data = cfg->private_data;
+ 
+ 	common->gadget = gadget;
+@@ -2854,7 +2886,6 @@ buffhds_first_it:
+ 
+ 
+ 	/* Tell the thread to start working */
+-	common->thread_exits = cfg->thread_exits;
+ 	common->thread_task =
+ 		kthread_create(fsg_main_thread, common,
+ 			       OR(cfg->thread_name, "file-storage"));
+@@ -3151,8 +3182,8 @@ fsg_config_from_params(struct fsg_config *cfg,
+ 	cfg->product_name = 0;
+ 	cfg->release = 0xffff;
+ 
+-	cfg->thread_exits = 0;
+-	cfg->private_data = 0;
++	cfg->ops = NULL;
++	cfg->private_data = NULL;
+ 
+ 	/* Finalise */
+ 	cfg->can_stall = params->stall;
+diff --git a/drivers/usb/gadget/mass_storage.c b/drivers/usb/gadget/mass_storage.c
+index d6975f4..cd94703 100644
+--- a/drivers/usb/gadget/mass_storage.c
++++ b/drivers/usb/gadget/mass_storage.c
+@@ -153,7 +153,9 @@ static int __init msg_do_config(struct usb_configuration *c)
+ 	}
+ 
+ 	fsg_config_from_params(&config, &mod_data);
+-	config.thread_exits = msg_thread_exits;
++	config.ops = &(const struct fsg_operations){
++		.thread_exits = msg_thread_exits,
++	};
+ 
+ 	retp = fsg_common_init(&common, c->cdev, &config);
+ 	if (IS_ERR(retp))
 -- 
 1.7.1
 
