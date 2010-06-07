@@ -1,44 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754262Ab0FGTzV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jun 2010 15:55:21 -0400
-Received: from ppsw-33.csi.cam.ac.uk ([131.111.8.133]:49737 "EHLO
-	ppsw-33.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753715Ab0FGTzU (ORCPT
+	id S1754329Ab0FGUBL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jun 2010 16:01:11 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:60619 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753785Ab0FGUBI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jun 2010 15:55:20 -0400
-X-Cam-AntiVirus: no malware found
-X-Cam-SpamDetails: not scanned
-X-Cam-ScannerInfo: http://www.cam.ac.uk/cs/email/scanner/
-Message-ID: <4C0D4E91.9040407@jic23.retrosnub.co.uk>
-Date: Mon, 07 Jun 2010 20:54:57 +0100
-From: Jonathan Cameron <kernel@jic23.retrosnub.co.uk>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100426 Thunderbird/3.0.4
-MIME-Version: 1.0
-To: =?ISO-8859-1?Q?Charles_Cl=E9ment?= <caratorn@gmail.com>
-CC: Jonathan Cameron <jic23@cam.ac.uk>, Joe Perches <joe@perches.com>,
-       devel@driverdev.osuosl.org, Andrew Morton <akpm@linux-foundation.org>,
-       linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 09/17] MAINTAINERS: Add STAGING - INDUSTRIAL IO
-References: <cover.1275935090.git.joe@perches.com> <81391f52a009e825f5a3bfd73a71ba24190d6f3b.1275935091.git.joe@perches.com> <4C0D3FFB.7040704@cam.ac.uk> <20100607192158.GA10882@fujitsu>
-In-Reply-To: <20100607192158.GA10882@fujitsu>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8bit
+	Mon, 7 Jun 2010 16:01:08 -0400
+Date: Mon, 7 Jun 2010 13:00:15 -0700
+From: Stephen Hemminger <shemminger@linux-foundation.org>
+To: Matt Mackall <mpm@selenic.com>
+Cc: Flavio Leitner <fleitner@redhat.com>, netdev@vger.kernel.org,
+       David Miller <davem@davemloft.net>, Cong Wang <amwang@redhat.com>,
+       Jay Vosburgh <fubar@us.ibm.com>, Flavio Leitner <fbl@sysclose.org>,
+       Andy Gospodarek <gospo@redhat.com>, Neil Horman <nhorman@tuxdriver.com>,
+       Jeff Moyer <jmoyer@redhat.com>, lkml <linux-kernel@vger.kernel.org>,
+       bridge@lists.linux-foundation.org, bonding-devel@lists.sourceforge.net
+Subject: Re: [PATCH] netconsole: queue console messages to send later
+Message-ID: <20100607130015.15555744@nehalam>
+In-Reply-To: <1275940248.26597.70.camel@calx>
+References: <24059.1275417767@death.nxdomain.ibm.com>
+	<1275938692-26997-1-git-send-email-fleitner@redhat.com>
+	<1275940248.26597.70.camel@calx>
+Organization: Linux Foundation
+X-Mailer: Claws Mail 3.7.5 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/07/10 20:21, Charles Clément wrote:
-> On Mon, Jun 07, 2010 at 07:52:43PM +0100, Jonathan Cameron wrote:
->> On 06/07/10 19:49, Joe Perches wrote:
->>
->> Good idea.  Could we have the mailing list as well.
->> L: linux-iio@vger.kernel.org
+On Mon, 07 Jun 2010 14:50:48 -0500
+Matt Mackall <mpm@selenic.com> wrote:
+
+> On Mon, 2010-06-07 at 16:24 -0300, Flavio Leitner wrote:
+> > There are some networking drivers that hold a lock in the
+> > transmit path. Therefore, if a console message is printed
+> > after that, netconsole will push it through the transmit path,
+> > resulting in a deadlock.
 > 
-> Maybe the mailing list could be added to the TODO file too, it only
-> mentions the LKML.
-Good idea. I've just sent Greg KH a patch to do just that.
+> This is an ongoing pain we've known about since before introducing the
+> netpoll code to the tree.
+> 
+> My take has always been that any form of queueing is contrary to the
+> goal of netpoll: timely delivery of messages even during machine-killing
+> situations like oopses. There may never be a second chance to deliver
+> the message as the machine may be locked solid. And there may be no
+> other way to get the message out of the box in such situations. Adding
+> queueing is a throwing-the-baby-out-with-the-bathwater fix.
+> 
+> I think Dave agrees with me here, and I believe he's said in the past
+> that drivers trying to print messages in such contexts should be
+> considered buggy.
+> 
 
-Thanks,
+Because it to hard to fix all possible device configurations.
+There should be any way to detect recursion and just drop the message to
+avoid deadlock.
 
-Jonathan
+-- 
