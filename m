@@ -1,245 +1,585 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752809Ab0FHE53 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jun 2010 00:57:29 -0400
-Received: from ozlabs.org ([203.10.76.45]:55341 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751843Ab0FHE5F (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jun 2010 00:57:05 -0400
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-       Peter Zijlstra <peterz@infradead.org>
-From: Michael Neuling <mikey@neuling.org>
-Date: Tue, 08 Jun 2010 14:57:02 +1000
-Subject: [PATCH 2/3] sched: add asymmetric group packing option for sibling domain
-In-Reply-To: <1275973022.91203.586435002889.qpush@pale>
-CC: <linux-kernel@vger.kernel.org>, <linuxppc-dev@ozlabs.org>,
-       Srivatsa Vaddagiri <vatsa@in.ibm.com>,
-       Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>
-Message-Id: <20100608045702.2936CCC897@localhost.localdomain>
+	id S1752075Ab0FHFBE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jun 2010 01:01:04 -0400
+Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:28501 "EHLO
+	sm-d311v.smileserver.ne.jp" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751716Ab0FHFBB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Jun 2010 01:01:01 -0400
+Message-ID: <4C0DCE87.1090802@dsn.okisemi.com>
+Date: Tue, 08 Jun 2010 14:00:55 +0900
+From: Masayuki Ohtak <masa-korg@dsn.okisemi.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; ja; rv:1.9.1.9) Gecko/20100317 Thunderbird/3.0.4
+MIME-Version: 1.0
+To: "Alan Cox" <alan@lxorguk.ukuu.org.uk>
+CC: "LKML" <linux-kernel@vger.kernel.org>,
+       "Andrew" <andrew.chih.howe.khor@intel.com>,
+       "Intel OTC" <joel.clark@intel.com>, "Wang, Qi" <qi.wang@intel.com>,
+       "Wang, Yong Y" <yong.y.wang@intel.com>,
+       "Masayuki Ohtak" <masa-korg@dsn.okisemi.com>
+Subject: Re: [PATCH] Topcliff PHUB: Generate PacketHub driver
+Content-Type: text/plain; charset=ISO-2022-JP
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Check to see if the group is packed in a sched doman.
+Hi Alan
 
-This is primarily intended to used at the sibling level.  Some cores
-like POWER7 prefer to use lower numbered SMT threads.  In the case of
-POWER7, it can move to lower SMT modes only when higher threads are
-idle.  When in lower SMT modes, the threads will perform better since
-they share less core resources.  Hence when we have idle threads, we
-want them to be the higher ones.
+We are now updating our Phub driver.
 
-This adds a hook into f_b_g() called check_asym_packing() to check the
-packing.  This packing function is run on idle threads.  It checks to
-see if the busiest CPU in this domain (core in the P7 case) has a
-higher CPU number than what where the packing function is being run
-on.  If it is, calculate the imbalance and return the higher busier
-thread as the busiest group to f_b_g().  Here we are assuming a lower
-CPU number will be equivalent to a lower SMT thread number.
+I have a questions for your comment.
 
-It also creates a new SD_ASYM_PACKING flag to enable this feature at
-any scheduler domain level.
+(1)
+>> +#ifdef PCH_CAN_PCLK_50MHZ
+>> + /* save clk cfg register */
+>> + g_pch_phub_reg.clkcfg_reg = PCH_READ_REG(CLKCFG_REG_OFFSET);
+>> +#endif
+> 
+> This makes it hard to build one kernel for everything
+We couldn't understand your intention.
+Does the above mean we must not use "#ifdef PCH_CAN_PCLK_50MHZ"	in source code ?
 
-It also creates an arch hook to enable this feature at the sibling
-level.  The default function doesn't enable this feature.
 
-Based heavily on patch from Peter Zijlstra.  
-Fixes from Srivatsa Vaddagiri.
+BTW, We show our modification policy the following email with inline.
+Please confirm it.
+If there is any mistake, please inform us.
 
-Signed-off-by: Michael Neuling <mikey@neuling.org>
-Signed-off-by: Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>
-Signed-off-by: Peter Zijlstra <peterz@infradead.org>
 
----
+Thanks.  
 
- include/linux/sched.h    |    4 +
- include/linux/topology.h |    1 
- kernel/sched_fair.c      |  104 +++++++++++++++++++++++++++++++++++++++++++++--
- 3 files changed, 104 insertions(+), 5 deletions(-)
+Ohtake.
 
-Index: linux-2.6-ozlabs/include/linux/sched.h
-===================================================================
---- linux-2.6-ozlabs.orig/include/linux/sched.h
-+++ linux-2.6-ozlabs/include/linux/sched.h
-@@ -804,7 +804,7 @@ enum cpu_idle_type {
- #define SD_POWERSAVINGS_BALANCE	0x0100	/* Balance for power savings */
- #define SD_SHARE_PKG_RESOURCES	0x0200	/* Domain members share cpu pkg resources */
- #define SD_SERIALIZE		0x0400	/* Only a single load balancing instance */
--
-+#define SD_ASYM_PACKING		0x0800  /* Place busy groups earlier in the domain */
- #define SD_PREFER_SIBLING	0x1000	/* Prefer to place tasks in a sibling domain */
- 
- enum powersavings_balance_level {
-@@ -839,6 +839,8 @@ static inline int sd_balance_for_package
- 	return SD_PREFER_SIBLING;
- }
- 
-+extern int __weak arch_sd_sibiling_asym_packing(void);
-+
- /*
-  * Optimise SD flags for power savings:
-  * SD_BALANCE_NEWIDLE helps agressive task consolidation and power savings.
-Index: linux-2.6-ozlabs/include/linux/topology.h
-===================================================================
---- linux-2.6-ozlabs.orig/include/linux/topology.h
-+++ linux-2.6-ozlabs/include/linux/topology.h
-@@ -103,6 +103,7 @@ int arch_update_cpu_topology(void);
- 				| 1*SD_SHARE_PKG_RESOURCES		\
- 				| 0*SD_SERIALIZE			\
- 				| 0*SD_PREFER_SIBLING			\
-+				| arch_sd_sibiling_asym_packing()	\
- 				,					\
- 	.last_balance		= jiffies,				\
- 	.balance_interval	= 1,					\
-Index: linux-2.6-ozlabs/kernel/sched_fair.c
-===================================================================
---- linux-2.6-ozlabs.orig/kernel/sched_fair.c
-+++ linux-2.6-ozlabs/kernel/sched_fair.c
-@@ -2463,6 +2463,41 @@ static inline void update_sg_lb_stats(st
- }
- 
- /**
-+ * update_sd_pick_busiest - return 1 on busiest group
-+ * @sd: sched_domain whose statistics are to be checked
-+ * @sds: sched_domain statistics
-+ * @sg: sched_group candidate to be checked for being the busiest
-+ * @sds: sched_group statistics
-+ *
-+ * This returns 1 for the busiest group. If asymmetric packing is
-+ * enabled and we already have a busiest, but this candidate group has
-+ * a higher cpu number than the current busiest, pick this sg.
-+ */
-+static int update_sd_pick_busiest(struct sched_domain *sd,
-+				  struct sd_lb_stats *sds,
-+				  struct sched_group *sg,
-+				  struct sg_lb_stats *sgs,
-+				  int this_cpu)
-+{
-+	if (sgs->sum_nr_running > sgs->group_capacity)
-+		return 1;
-+
-+	if (sgs->group_imb)
-+		return 1;
-+
-+	if ((sd->flags & SD_ASYM_PACKING) && sgs->sum_nr_running &&
-+	    this_cpu < group_first_cpu(sg)) {
-+		if (!sds->busiest)
-+			return 1;
-+
-+		if (group_first_cpu(sds->busiest) > group_first_cpu(sg))
-+			return 1;
-+	}
-+
-+	return 0;
-+}
-+
-+/**
-  * update_sd_lb_stats - Update sched_group's statistics for load balancing.
-  * @sd: sched_domain whose statistics are to be updated.
-  * @this_cpu: Cpu for which load balance is currently performed.
-@@ -2517,8 +2552,8 @@ static inline void update_sd_lb_stats(st
- 			sds->this_nr_running = sgs.sum_nr_running;
- 			sds->this_load_per_task = sgs.sum_weighted_load;
- 		} else if (sgs.avg_load > sds->max_load &&
--			   (sgs.sum_nr_running > sgs.group_capacity ||
--				sgs.group_imb)) {
-+			   update_sd_pick_busiest(sd, sds, group, &sgs,
-+						  this_cpu)) {
- 			sds->max_load = sgs.avg_load;
- 			sds->busiest = group;
- 			sds->busiest_nr_running = sgs.sum_nr_running;
-@@ -2532,6 +2567,57 @@ static inline void update_sd_lb_stats(st
- 	} while (group != sd->groups);
- }
- 
-+int __weak arch_sd_sibiling_asym_packing(void)
-+{
-+       return 0*SD_ASYM_PACKING;
-+}
-+
-+/**
-+ * check_asym_packing - Check to see if the group is packed into the
-+ *			sched doman.
-+ *
-+ * This is primarily intended to used at the sibling level.  Some
-+ * cores like POWER7 prefer to use lower numbered SMT threads.  In the
-+ * case of POWER7, it can move to lower SMT modes only when higher
-+ * threads are idle.  When in lower SMT modes, the threads will
-+ * perform better since they share less core resources.  Hence when we
-+ * have idle threads, we want them to be the higher ones.
-+ *
-+ * This packing function is run on idle threads.  It checks to see if
-+ * the busiest CPU in this domain (core in the P7 case) has a higher
-+ * CPU number than the packing function is being run on.  Here we are
-+ * assuming lower CPU number will be equivalent to lower a SMT thread
-+ * number.
-+ *
-+ * @sd: The sched_domain whose packing is to be checked.
-+ * @sds: Statistics of the sched_domain which is to be packed
-+ * @this_cpu: The cpu at whose sched_domain we're performing load-balance.
-+ * @imbalance: returns amount of imbalanced due to packing.
-+ *
-+ * Returns 1 when packing is required and a task should be moved to
-+ * this CPU.  The amount of the imbalance is returned in *imbalance.
-+ */
-+static int check_asym_packing(struct sched_domain *sd,
-+			      struct sd_lb_stats *sds,
-+			      int this_cpu, unsigned long *imbalance)
-+{
-+	int busiest_cpu;
-+
-+	if (!(sd->flags & SD_ASYM_PACKING))
-+		return 0;
-+
-+	if (!sds->busiest)
-+		return 0;
-+
-+	busiest_cpu = group_first_cpu(sds->busiest);
-+	if (this_cpu > busiest_cpu)
-+		return 0;
-+
-+	*imbalance = DIV_ROUND_CLOSEST(sds->max_load * sds->busiest->cpu_power,
-+				       SCHED_LOAD_SCALE);
-+	return 1;
-+}
-+
- /**
-  * fix_small_imbalance - Calculate the minor imbalance that exists
-  *			amongst the groups of a sched_domain, during
-@@ -2724,6 +2810,10 @@ find_busiest_group(struct sched_domain *
- 	if (!(*balance))
- 		goto ret;
- 
-+	if ((idle == CPU_IDLE || idle == CPU_NEWLY_IDLE) &&
-+	    check_asym_packing(sd, &sds, this_cpu, imbalance))
-+		return sds.busiest;
-+
- 	if (!sds.busiest || sds.busiest_nr_running == 0)
- 		goto out_balanced;
- 
-@@ -2813,9 +2903,14 @@ find_busiest_queue(struct sched_group *g
- /* Working cpumask for load_balance and load_balance_newidle. */
- static DEFINE_PER_CPU(cpumask_var_t, load_balance_tmpmask);
- 
--static int need_active_balance(struct sched_domain *sd, int sd_idle, int idle)
-+static int need_active_balance(struct sched_domain *sd, int sd_idle, int idle,
-+			       int busiest_cpu, int this_cpu)
- {
- 	if (idle == CPU_NEWLY_IDLE) {
-+
-+		if (sd->flags & SD_ASYM_PACKING && busiest_cpu > this_cpu)
-+			return 1;
-+
- 		/*
- 		 * The only task running in a non-idle cpu can be moved to this
- 		 * cpu in an attempt to completely freeup the other CPU
-@@ -2934,7 +3029,8 @@ redo:
- 		schedstat_inc(sd, lb_failed[idle]);
- 		sd->nr_balance_failed++;
- 
--		if (need_active_balance(sd, sd_idle, idle)) {
-+		if (need_active_balance(sd, sd_idle, idle, cpu_of(busiest),
-+					this_cpu)) {
- 			raw_spin_lock_irqsave(&busiest->lock, flags);
- 
- 			/* don't kick the active_load_balance_cpu_stop,
+
+----- Original Message ----- 
+
+From: "Alan Cox" <alan@lxorguk.ukuu.org.uk>
+
+To: "Masayuki Ohtak" <masa-korg@dsn.okisemi.com>
+
+Cc: "LKML" <linux-kernel@vger.kernel.org>; "Andrew" <andrew.chih.howe.khor@intel.com>; "Intel OTC" <joel.clark@intel.com>; "Wang, Qi" <qi.wang@intel.com>; "Wang, Yong Y" <yong.y.wang@intel.com>
+
+Sent: Tuesday, June 08, 2010 12:05 AM
+
+Subject: Re: [PATCH] Topcliff PHUB: Generate PacketHub driver
+
+
+
+
+
+>O> +/* Status Register offset */
+
+>> +#define PHUB_STATUS (0x00)
+
+>> +/* Control Register offset */
+
+>> +#define PHUB_CONTROL (0x04)
+
+>> +/* Time out value for Status Register */
+
+>> +#define PHUB_TIMEOUT (0x05)
+
+>> +/* Enabling for writing ROM */
+
+>> +#define PCH_PHUB_ROM_WRITE_ENABLE (0x01)
+
+>> +/* Disabling for writing ROM */
+
+>> +#define PCH_PHUB_ROM_WRITE_DISABLE (0x00)
+
+>> +/* ROM data area start address offset */
+
+>> +#define PCH_PHUB_ROM_START_ADDR (0x14)
+
+>> +/* MAX number of INT_REDUCE_CONTROL registers */
+
+>> +#define MAX_NUM_INT_REDUCE_CONTROL_REG (128)
+
+>> +
+
+>> +#define PCI_DEVICE_ID_PCH1_PHUB (0x8801)
+
+>> +
+
+>> +#define PCH_MINOR_NOS (1)
+
+>> +#define CLKCFG_CAN_50MHZ (0x12000000)
+
+>> +#define CLKCFG_CANCLK_MASK (0xFF000000)
+
+> 
+
+> Style: constants don't need brackets - might also look more Linux like
+
+> tabbed out a bit
+
+The above brackets are deleted
+
+
+
+> 
+
+>> +#define PCH_READ_REG(a) ioread32((pch_phub_base_address + a))
+
+>> +
+
+>> +#define PCH_WRITE_REG(a, b) iowrite32(a, (pch_phub_base_address + b))
+
+> 
+
+> These on the other hand do - but not where they are now
+
+> 
+
+> iowrite32((a), pcb_phub_base_address + (b))
+
+> 
+
+> (so that if a or b are expressions they are evaluated first)
+
+Modify like below.
+
+#define PCH_READ_REG(a) ioread32(pch_phub_base_address + (a))
+
+#define PCH_WRITE_REG(a, b) iowrite32(a, pch_phub_base_address + (b))
+
+
+
+> 
+
+> 
+
+>> +struct pch_phub_reg {
+
+>> + u32 phub_id_reg; /* PHUB_ID register val */
+
+>> + u32 q_pri_val_reg; /* QUEUE_PRI_VAL register val */
+
+>> + u32 rc_q_maxsize_reg; /* RC_QUEUE_MAXSIZE register val */
+
+>> + u32 bri_q_maxsize_reg; /* BRI_QUEUE_MAXSIZE register val */
+
+>> + u32 comp_resp_timeout_reg; /* COMP_RESP_TIMEOUT register val */
+
+>> + u32 bus_slave_control_reg; /* BUS_SLAVE_CONTROL_REG register val */
+
+>> + u32 deadlock_avoid_type_reg; /* DEADLOCK_AVOID_TYPE register val */
+
+>> + u32 intpin_reg_wpermit_reg0; /* INTPIN_REG_WPERMIT register 0 val */
+
+>> + u32 intpin_reg_wpermit_reg1; /* INTPIN_REG_WPERMIT register 1 val */
+
+>> + u32 intpin_reg_wpermit_reg2; /* INTPIN_REG_WPERMIT register 2 val */
+
+>> + u32 intpin_reg_wpermit_reg3; /* INTPIN_REG_WPERMIT register 3 val */
+
+>> + /* INT_REDUCE_CONTROL registers val */
+
+>> + u32 int_reduce_control_reg[MAX_NUM_INT_REDUCE_CONTROL_REG];
+
+>> +#ifdef PCH_CAN_PCLK_50MHZ
+
+>> + u32 clkcfg_reg; /* CLK CFG register val */
+
+>> +#endif
+
+>> +} g_pch_phub_reg;
+
+> 
+
+> Stylewise the kernel doesn't use the g_ convention that many Windows
+
+> people do, so lose the g_
+
+Delete prefix 'g_'.
+
+
+
+
+
+> 
+
+>> +s32 pch_phub_opencount; /* check whether opened or not */
+
+>> +u32 pch_phub_base_address;
+
+>> +u32 pch_phub_extrom_base_address;
+
+>> +s32 pch_phub_suspended;
+
+> 
+
+> Any reason these can't be in the struct ?
+
+Move the above 4 variables into 'struct pch_phub_reg_t'.
+
+
+
+>> +
+
+>> +struct device *dev_dbg;
+
+> 
+
+> Not a good name for a global variable as it will clash with others 
+
+Modify to phub_dev_dbg.
+
+
+
+> 
+
+>> +DEFINE_SPINLOCK(pch_phub_lock); /* for spin lock */
+
+> 
+
+> Can this be static or in the struct ?
+
+Modify lile below.
+
+static DEFINE_SPINLOCK(pch_phub_lock); /* for spin lock */
+
+
+
+
+
+> 
+
+>> +
+
+>> +/**
+
+>> + * file_operations structure initialization
+
+>> + */
+
+>> +const struct file_operations pch_phub_fops = {
+
+>> + .owner = THIS_MODULE,
+
+>> + .open = pch_phub_open,
+
+>> + .release = pch_phub_release,
+
+>> + .ioctl = pch_phub_ioctl,
+
+>> +};
+
+> 
+
+> static const ?
+
+> 
+
+Modify to 'static const'.
+
+
+
+
+
+>> +/*--------------------------------------------
+
+>> + exported function prototypes
+
+>> +--------------------------------------------*/
+
+> 
+
+> They start 'static' I don't think they are exportdd !
+
+Modify comment to 'Internal function prototypes'
+
+
+
+> 
+
+>> +static int __devinit pch_phub_probe(struct pci_dev *pdev, const
+
+>> +        struct pci_device_id *id);
+
+>> +static void __devexit pch_phub_remove(struct pci_dev *pdev);
+
+>> +static int pch_phub_suspend(struct pci_dev *pdev, pm_message_t state);
+
+>> +static int pch_phub_resume(struct pci_dev *pdev);
+
+> 
+
+>> +static struct pci_driver pch_phub_driver = {
+
+>> + .name = "pch_phub",
+
+>> + .id_table = pch_phub_pcidev_id,
+
+>> + .probe = pch_phub_probe,
+
+>> + .remove = __devexit_p(pch_phub_remove),
+
+>> +#ifdef CONFIG_PM
+
+>> + .suspend = pch_phub_suspend,
+
+>> + .resume = pch_phub_resume
+
+>> +#endif
+
+>> +};
+
+>> +
+
+>> +static int __init pch_phub_pci_init(void);
+
+>> +static void __exit pch_phub_pci_exit(void);
+
+>> +
+
+>> +MODULE_DESCRIPTION("PCH PACKET HUB PCI Driver");
+
+>> +MODULE_LICENSE("GPL");
+
+>> +module_init(pch_phub_pci_init);
+
+>> +module_exit(pch_phub_pci_exit);
+
+>> +module_param(pch_phub_major_no, int, S_IRUSR | S_IWUSR);
+
+> 
+
+> If you migrated the module registration/PCI registration to the bottom of
+
+> the file you could avoid the forward declations and make the code easier
+
+> to follow ?
+
+Move the PCI registration code to the bottom of the file.
+
+
+
+> 
+
+>> +void pch_phub_read_modify_write_reg(unsigned long reg_addr_offset,
+
+>> +        unsigned long data, unsigned long mask)
+
+>> +{
+
+>> + unsigned long reg_addr = pch_phub_base_address + reg_addr_offset;
+
+>> + iowrite32(((ioread32((void __iomem *)reg_addr) & ~mask)) | data,
+
+>> + (void __iomem *)reg_addr);
+
+> 
+
+> When you have that many casts in a line it's perhaps a hint you have the
+
+> types wrong initially. At the very least reg_addr should be void __iomem,
+
+> and probably pch_phub_base_address should be 
+
+> 
+
+> It would probably make sense to pass a pointer to your struct pch_hub_reg
+
+> and use that to hold the base address. Then if you ever get a box with
+
+> two in some future design it won't be a disaster
+
+> 
+
+>> +void pch_phub_save_reg_conf(void)
+
+> 
+
+> Ditto 
+
+ reg_addr/pch_phub_base_address  are defined as 'void __iomem',
+
+
+
+> 
+
+>> +#ifdef PCH_CAN_PCLK_50MHZ
+
+>> + /* save clk cfg register */
+
+>> + g_pch_phub_reg.clkcfg_reg = PCH_READ_REG(CLKCFG_REG_OFFSET);
+
+>> +#endif
+
+> 
+
+> This makes it hard to build one kernel for everything
+
+???
+
+
+
+> 
+
+>> + return;
+
+>> +}
+
+> 
+
+>> +void pch_phub_restore_reg_conf(void)
+
+>> +{
+
+>> + u32 i = 0;
+
+> 
+
+> Why = 0, if you do that here you may hide initialisation errors from
+
+> future changes ?
+
+Delete '=0'
+
+
+
+
+
+> 
+
+>> +/** pch_phub_read_serial_rom - Implements the functionality of reading Serial
+
+>> + *  ROM.
+
+>> + *  @offset_address: Contains the Serial ROM address offset value
+
+>> + *  @data: Contains the Serial ROM value
+
+>> + */
+
+>> +int pch_phub_read_serial_rom(unsigned long offset_address, unsigned char *data)
+
+>> +{
+
+>> + unsigned long mem_addr = pch_phub_extrom_base_address + offset_address;
+
+>> +
+
+>> + dev_dbg(dev_dbg,
+
+>> + "pch_phub_read_serial_rom:mem_addr=0x%08x\n", (u32)mem_addr);
+
+>> + *data = ioread8((void __iomem *)mem_addr);
+
+> 
+
+> Same comments about casts
+
+Please refer the above.(defined as 'void __iomem',)
+
+
+
+> 
+
+> 
+
+> 
+
+>> +int pch_phub_ioctl(struct inode *inode, struct file *file,
+
+>> + unsigned int cmd, unsigned long arg)
+
+>> +{
+
+>> + int ret_value = 0;
+
+>> + struct pch_phub_reqt *p_pch_phub_reqt;
+
+>> + unsigned long addr_offset;
+
+> 
+
+> This will change size on 32/64bit boxes makign your copy a bit
+
+> problematic 
+
+Modify like belwo,
+
+u64 addr_offset;
+
+
+
+
+
+> 
+
+>> + p_pch_phub_reqt = (struct pch_phub_reqt *)arg;
+
+>> + ret_value = copy_from_user((void *)&addr_offset,
+
+>> + (void *)&p_pch_phub_reqt->addr_offset,
+
+>> + sizeof(addr_offset));
+
+>> + if (ret_value) {
+
+> 
+
+>> + /* End of Access area check */
+
+> 
+
+> Remember here ioctl isn't single threaded so you may want to double check
+
+> some of these
+
+The above copy_from_user is Copy global variable to local variable.
+Thus, We think this code has re-entrant.
+
+
+> 
+
+>> +struct pch_phub_reqt {
+
+>> + unsigned long addr_offset; /*specifies the register address
+
+>> + offset */
+
+>> + unsigned long data; /*specifies the data */
+
+>> + unsigned long mask; /*specifies the mask */
+
+> 
+
+> If they may need to be long make them u64. That way 32 and 64bit systems
+
+> get the same ioctl structure and life is good.
+
+Modify type of addr_offset to u64
+
+
+
+> 
+
+>> +};
+
+>> +
+
+>> +/* exported function prototypes */
+
+>> +int pch_phub_open(struct inode *inode, struct file *file);
+
+>> +int pch_phub_release(struct inode *inode, struct file *file);
+
+>> +int pch_phub_ioctl(struct inode *inode, struct file *file, unsigned int cmd,
+
+>> +       unsigned long arg);
+
+> 
+
+> You have various other functions that are not static - if they should be
+
+> then make them static
+
+Add static description for all of internal functions.
+
+
+
+
