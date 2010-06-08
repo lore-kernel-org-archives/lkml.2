@@ -1,116 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752370Ab0FHArO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jun 2010 20:47:14 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:41887 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751210Ab0FHArN (ORCPT
+	id S1752315Ab0FHAt0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jun 2010 20:49:26 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:48163 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751503Ab0FHAtZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jun 2010 20:47:13 -0400
-Message-ID: <4C0D9278.60907@oracle.com>
-Date: Mon, 07 Jun 2010 17:44:40 -0700
-From: Yinghai Lu <yinghai.lu@oracle.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100317 SUSE/3.0.4-1.1.1 Thunderbird/3.0.4
+	Mon, 7 Jun 2010 20:49:25 -0400
+Date: Mon, 7 Jun 2010 17:48:54 -0700 (PDT)
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Al Viro <viro@ZenIV.linux.org.uk>
+cc: Eric Van Hensbergen <ericvh@gmail.com>,
+       V9FS Developers <v9fs-developer@lists.sourceforge.net>,
+       linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [GIT PULL] 9p file system bug fixes for 2.6.35-rc2
+In-Reply-To: <20100608004102.GQ31073@ZenIV.linux.org.uk>
+Message-ID: <alpine.LFD.2.00.1006071746150.4506@i5.linux-foundation.org>
+References: <AANLkTik3ax1SlAKRo6laMfACdzh6IUKLGSvMK4Gp9GY9@mail.gmail.com> <alpine.LFD.2.00.1006071654290.4506@i5.linux-foundation.org> <20100608004102.GQ31073@ZenIV.linux.org.uk>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: Geert Uytterhoeven <geert@linux-m68k.org>,
-       Linux Kernel Development <linux-kernel@vger.kernel.org>,
-       "H. Peter Anvin" <hpa@zytor.com>
-Subject: Re: [PATCH] kernel/range: Remove unused definition of ARRAY_SIZE()
-References: <alpine.DEB.2.00.1006052131230.15241@ayla.of.borg> <20100607154909.8581d654.akpm@linux-foundation.org>
-In-Reply-To: <20100607154909.8581d654.akpm@linux-foundation.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Auth-Type: Internal IP
-X-Source-IP: rcsinet13.oracle.com [148.87.113.125]
-X-CT-RefId: str=0001.0A090207.4C0D92C5.00CD:SCFMA4539811,ss=1,fgs=0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/07/2010 03:49 PM, Andrew Morton wrote:
-> On Sat, 5 Jun 2010 21:32:15 +0200 (CEST)
-> Geert Uytterhoeven <geert@linux-m68k.org> wrote:
-> 
->> Remove duplicate definition of ARRAY_SIZE(), which was never used anyway.
->>
->> Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
->> ---
->>  kernel/range.c |    4 ----
->>  1 files changed, 0 insertions(+), 4 deletions(-)
->>
->> diff --git a/kernel/range.c b/kernel/range.c
->> index 74e2e61..471b66a 100644
->> --- a/kernel/range.c
->> +++ b/kernel/range.c
->> @@ -7,10 +7,6 @@
->>  
->>  #include <linux/range.h>
->>  
->> -#ifndef ARRAY_SIZE
->> -#define ARRAY_SIZE(x) (sizeof(x) / sizeof((x)[0]))
->> -#endif
->> -
->>  int add_range(struct range *range, int az, int nr_range, u64 start, u64 end)
->>  {
->>  	if (start >= end)
-> 
-> <discovers range.c>
-> 
-> That's not terribly great code, sorry.
-> 
-> - The names are all wrong.  Should be range_add(),
->   range_add_with_merge(), range_subtract(), etc.
-> 
-> - It's completely undocumented!
-> 
-> - It's linked into every vmlinux in the world, many of which won't use it
->   afacit.
-> 
-> - The return value from add_range() is a bit odd.  I guess callers must do
-> 
-> 	if (add_range(..., ..., nr_range, ..., ...) == nr_range)
-> 		error()
-> 
-> - What does the identifier "az" mean?
-> 
-> - `az' and `nr_range' should be unsigned types.  That would make the
->   "Out of slots:" check non-buggy.
-> 
-> - The return value from add_range_with_merge() is unusable!  If it
->   did a merge into the final range it will return the caller's
->   nr_range.  If it failed to merge it will call add_range() and then
->   will return the caller's nr_range if it ran out of space.
-> 
->   So the caller cannot determine from the return value whether or not
->   the range was added.
-> 
->   Or something.  This is an advantage of actually documenting code -
->   it makes people think about such things.
-> 
-> - The main structure seems just wrong, or at least inappropriate.  Should be
-> 
-> 	struct range {
-> 		/* Number of ranges presently at *ranges */
-> 		unsigned nr_ranges;
-> 		/* Maximum number of ranges storable at *ranges */
-> 		unsigned max_ranges;
-> 		struct {
-> 			u64 start;
-> 			u64 end;
-> 		} *ranges;
-> 	};
-> 
->   Or similar.
-> 
-> - I can't be bothered working out what subtract_range() and
->   clean_sort_range() are supposed to be doing, so I didn't look at
->   them.
-> 
-> c'mon guys, we can do better than this.
 
-will work on using lmb to replace range.c later after lmb for x86 is in tip and linux-next.
 
-Thanks
+On Tue, 8 Jun 2010, Al Viro wrote:
 
-Yinghai
+> On Mon, Jun 07, 2010 at 05:08:19PM -0700, Linus Torvalds wrote:
+> 
+> > In fact, the other thing that I find doing that whole "dentry->d_parent" 
+> > thing seems to literally be broken. If you look at v9fs_fid_lookup(), 
+> > you'll notice how it walks up the d_parent chain, and at that point you do 
+> > NOT own the directory i_mutex, so at that point d_parent really _can_ be 
+> > changing wildly due to concurrent renames or whatever.
+> 
+> Eh...  It's bogus, all right, but i_mutex is not the correct solution.
+
+Oh, no, I didn't imply it was. But the other sites that I saw doing 
+the dentry->d_parent access already _had_ the i_mutex thing, so I was 
+pointing out how this one does not (and indeed _cannot_ do that).
+
+So I'm just saying that pretty much _all_ the dentry->d_parent use in 9p 
+seems very suspect. The cases where we hold i_mutex (because the caller 
+already took it) shouldn't do that whole d_parent dance, because they get 
+the directory inode passed into them directly.
+
+And the other places are just buggy.
+
+So from a quick look, the use of d_parent in 9p is simply not a good idea. 
+
+			Linus
