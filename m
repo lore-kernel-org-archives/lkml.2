@@ -1,134 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753454Ab0FIFfI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jun 2010 01:35:08 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:46801 "EHLO mx3.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752045Ab0FIFfF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jun 2010 01:35:05 -0400
-Date: Wed, 9 Jun 2010 07:34:27 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-       Jens Axboe <axboe@kernel.dk>, Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, Carl Worth <cworth@cworth.org>,
-       Eric Anholt <eric@anholt.net>, Venkatesh Pallipadi <venki@google.com>,
-       Jens Axboe <jaxboe@fusionio.com>, Dave Airlie <airlied@gmail.com>,
-       Jesse Barnes <jbarnes@virtuousgeek.org>,
-       David H?rdeman <david@hardeman.nu>,
-       Mauro Carvalho Chehab <mchehab@redhat.com>,
-       Eric Dumazet <eric.dumazet@gmail.com>,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       Maciej Rutecki <maciej.rutecki@gmail.com>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Kernel Testers List <kernel-testers@vger.kernel.org>,
-       Network Development <netdev@vger.kernel.org>,
-       Linux ACPI <linux-acpi@vger.kernel.org>,
-       Linux PM List <linux-pm@lists.linux-foundation.org>,
-       Linux SCSI List <linux-scsi@vger.kernel.org>,
-       Linux Wireless List <linux-wireless@vger.kernel.org>,
-       DRI <dri-devel@lists.sourceforge.net>
-Subject: Re: 2.6.35-rc2-git2: Reported regressions from 2.6.34
-Message-ID: <20100609053427.GA14857@elte.hu>
-References: <Rlf_Qjov7bG.A.a8F.I8rDMB@chimera>
- <alpine.LFD.2.00.1006081814240.4506@i5.linux-foundation.org>
+	id S1756197Ab0FHXSy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jun 2010 19:18:54 -0400
+Received: from bld-mail13.adl6.internode.on.net ([150.101.137.98]:55543 "EHLO
+	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1755024Ab0FHXSx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Jun 2010 19:18:53 -0400
+Date: Wed, 9 Jun 2010 09:18:45 +1000
+From: Dave Chinner <david@fromorbit.com>
+To: Michael Tokarev <mjt@tls.msk.ru>
+Cc: Linux-kernel <linux-kernel@vger.kernel.org>, xfs@oss.sgi.com
+Subject: Re: xfs, 2.6.27=>.32 sync write 10 times slowdown [was: xfs,
+ aacraid 2.6.27 => 2.6.32 results in 6 times slowdown]
+Message-ID: <20100608231845.GG7869@dastard>
+References: <4C0E13A7.20402@msgid.tls.msk.ru>
+ <20100608122919.GC7869@dastard>
+ <4C0EA938.9000104@msgid.tls.msk.ru>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.LFD.2.00.1006081814240.4506@i5.linux-foundation.org>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
-	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
-	[score: 0.0000]
+In-Reply-To: <4C0EA938.9000104@msgid.tls.msk.ru>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Linus Torvalds <torvalds@linux-foundation.org> wrote:
-
-> > Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=16129
-> > Subject	: BUG: using smp_processor_id() in preemptible [00000000] code: jbd2/sda2
-> > Submitter	: Jan Kreuzer <kontrollator@gmx.de>
-> > Date		: 2010-06-05 06:15 (4 days old)
+On Wed, Jun 09, 2010 at 12:34:00AM +0400, Michael Tokarev wrote:
+> 08.06.2010 16:29, Dave Chinner wrote:
+> >On Tue, Jun 08, 2010 at 01:55:51PM +0400, Michael Tokarev wrote:
+> >>Hello.
+> >>
+> >>I've got a.. difficult issue here, and am asking if anyone else
+> >>has some expirence or information about it.
+> >>
+> >>Production environment (database).  Machine with an Adaptec
+> >>RAID SCSI controller, 6 drives in raid10 array, XFS filesystem
+> >>and Oracle database on top of it (with - hopefully - proper
+> >>sunit/swidth).
+> >>
+> >>Upgrading kernel from 2.6.27 to 2.6.32, and users starts screaming
+> >>about very bad performance.  Iostat reports increased I/O latencies,
+> >>I/O time increases from ~5ms to ~30ms.  Switching back to 2.6.27,
+> >>and everything is back to normal (or, rather, usual).
+....
+> >>The most problematic issue here is that this is only one machine that
+> >>behaves like this, and it is a production server, so I've very little
+> >>chances to experiment with it.
+> >>
+> >>So before the next try, I'd love to have some suggestions about what
+> >>to look for.   In particular, I think it's worth the effort to look
+> >>at write barriers, but again, I don't know how to check if they're
+> >>actually being used.
+> >>
+> >>Anyone have suggestions for me to collect and to look at?
+> >
+> >http://xfs.org/index.php/XFS_FAQ#Q._Should_barriers_be_enabled_with_storage_which_has_a_persistent_write_cache.3F
 > 
-> This seems to have been introduced by
+> Yes, I've seen this.  We use xfs for quite long time.  The on-board
+> controller does not have battery unit, so it should be no different
+> than a software raid array or single drive.
 > 
-> 	commit 7cbaef9c83e58bbd4bdd534b09052b6c5ec457d5
-> 	Author: Ingo Molnar <mingo@elte.hu>
-> 	Date:   Sat Nov 8 17:05:38 2008 +0100
+> But I traced the issue to a particular workload -- see $subject.
 > 
-> 	    sched: optimize sched_clock() a bit
->     
-> 	    sched_clock() uses cycles_2_ns() needlessly - which is an irq-disabling
-> 	    variant of __cycles_2_ns().
->     
-> 	    Most of the time sched_clock() is called with irqs disabled already.
-> 	    The few places that call it with irqs enabled need to be updated.
->     
-> 	    Signed-off-by: Ingo Molnar <mingo@elte.hu>
+> Simple test doing random reads or writes of 4k blocks in a 1Gb
+> file located on an xfs filesystem, Mb/sec:
 > 
-> and this seems to be one of those calling cases that need to be updated.
-
-That's a commit from 2008.
-
-> Ingo? The call trace is:
+>                      sync  direct
+>              read   write   write
+> 2.6.27 xfs   1.17    3.69    3.80
+> 2.6.32 xfs   1.26    0.52    5.10
+>                      ^^^^
+> 2.6.32 ext3  1.19    4.91    5.02
 > 
-> 	BUG: using smp_processor_id() in preemptible [00000000] code: jbd2/sda2-8/337
-> 	caller is native_sched_clock+0x3c/0x68
-> 	Pid: 337, comm: jbd2/sda2-8 Not tainted 2.6.35-rc1jan+ #4
-> 	Call Trace:
-> 	[<ffffffff812362c5>] debug_smp_processor_id+0xc9/0xe4
-> 	[<ffffffff8101059d>] native_sched_clock+0x3c/0x68
-> 	[<ffffffff8101043d>] sched_clock+0x9/0xd
-> 	[<ffffffff81212d7a>] blk_rq_init+0x97/0xa3
-> 	[<ffffffff81214d71>] get_request+0x1c4/0x2d0
-> 	[<ffffffff81214ea6>] get_request_wait+0x29/0x1a6
-> 	[<ffffffff81215537>] __make_request+0x338/0x45b
-> 	[<ffffffff812147c2>] generic_make_request+0x2bb/0x330
-> 	[<ffffffff81214909>] submit_bio+0xd2/0xef
-> 	[<ffffffff811413cb>] submit_bh+0xf4/0x116
-> 	[<ffffffff81144853>] block_write_full_page_endio+0x89/0x96
-> 	[<ffffffff81144875>] block_write_full_page+0x15/0x17
-> 	[<ffffffff8119b00a>] ext4_writepage+0x356/0x36b
-> 	[<ffffffff810e1f91>] __writepage+0x1a/0x39
-> 	[<ffffffff810e32a6>] write_cache_pages+0x20d/0x346
-> 	[<ffffffff810e3406>] generic_writepages+0x27/0x29
-> 	[<ffffffff811ca279>] journal_submit_data_buffers+0x110/0x17d
-> 	[<ffffffff811ca986>] jbd2_journal_commit_transaction+0x4cb/0x156d
-> 	[<ffffffff811d0cba>] kjournald2+0x147/0x37a
-> 
-> (from the bugzilla thing)
+> Note the 10 times difference between O_SYNC and O_DIRECT writes
+> in 2.6.32.  This is, well, huge difference, and this is where
+> the original slowdown comes from, apparently. 
 
-The warning was introduced by this fresh commit (and a followup commit) merged 
-in the .35 merge window:
+Are you running on the raw block device, or on top of LVM/DM/MD to
+split up the space on the RAID drive? DM+MD have grown barrier
+support since 2.6.27, so it may be that barriers are now being
+passed down to the raid hardware on 2.6.32 and they never were on
+2.6.27. Can you paste the output of dmesg when the XFS filesystem in
+question is mounted on both 2.6.27 and 2.6.32 so we can see if
+there is a difference in the use of barriers?
 
- | commit 9195291e5f05e01d67f9a09c756b8aca8f009089
- | Author: Divyesh Shah <dpshah@google.com>
- | Date:   Thu Apr 1 15:01:41 2010 -0700
- | 
- |     blkio: Increment the blkio cgroup stats for real now
+Also, remember that O_DIRECT does not imply O_SYNC. O_DIRECT writes
+only write data, while O_SYNC will also write metadata and/or the
+log.
 
-IIRC Jens posted a fix for the regression. Jens, what's the status of that?
+Cheers,
 
-As the code there started using a raw sched_clock() call for block statistics 
-purposes, which was a poorly thought out (and buggy) approach:
-
- - it takes timestamps on different cpus and then compares then, but doesnt 
-   consider that sched_clock() is not comparable between CPUs without extra 
-   care
-
- - it doesnt consider the possibility for the sched_clock() result going
-   backwards on certain platforms (such as x86)
-
- - it doesnt consider preemptability
-
-(There's work ongoing to add a clock variant that can be used for such 
-purposes, but that's .36 fodder.)
-
-Thanks,
-
-	Ingo
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
