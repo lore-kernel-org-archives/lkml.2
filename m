@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752794Ab0FHAjR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jun 2010 20:39:17 -0400
-Received: from bld-mail19.adl2.internode.on.net ([150.101.137.104]:38723 "EHLO
+	id S1752891Ab0FHAjU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jun 2010 20:39:20 -0400
+Received: from bld-mail12.adl6.internode.on.net ([150.101.137.97]:49696 "EHLO
 	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752077Ab0FHAjN (ORCPT
+	with ESMTP id S1751670Ab0FHAjN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 7 Jun 2010 20:39:13 -0400
 From: Dave Chinner <david@fromorbit.com>
 To: torvalds@linux-foundation.org
 Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
        xfs@oss.sgi.com, akpm@linux-foundation.org
-Subject: [PATCH 6/6] writeback: limit write_cache_pages integrity scanning to current EOF
-Date: Tue,  8 Jun 2010 10:38:07 +1000
-Message-Id: <1275957487-23633-7-git-send-email-david@fromorbit.com>
+Subject: [PATCH 4/6] writeback: pay attention to wbc->nr_to_write in write_cache_pages
+Date: Tue,  8 Jun 2010 10:38:05 +1000
+Message-Id: <1275957487-23633-5-git-send-email-david@fromorbit.com>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1275957487-23633-1-git-send-email-david@fromorbit.com>
 References: <1275957487-23633-1-git-send-email-david@fromorbit.com>
@@ -23,61 +23,125 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Dave Chinner <dchinner@redhat.com>
 
-sync can currently take a really long time if a concurrent writer is
-extending a file. The problem is that the dirty pages on the address
-space grow in the same direction as write_cache_pages scans, so if
-the writer keeps ahead of writeback, the writeback will not
-terminate until the writer stops adding dirty pages.
+If a filesystem writes more than one page in ->writepage, write_cache_pages
+fails to notice this and continues to attempt writeback when wbc->nr_to_write
+has gone negative - this trace was captured from XFS:
 
-For a data integrity sync, we only need to write the pages dirty at
-the time we start the writeback, so we can stop scanning once we get
-to the page that was at the end of the file at the time the scan
-started.
 
-This will prevent operations like copying a large file preventing
-sync from completing as it will not write back pages that were
-dirtied after the sync was started. This does not impact the
-existing integrity guarantees, as any dirty page (old or new)
-within the EOF range at the start of the scan will still be
-captured.
+    wbc_writeback_start: towrt=1024
+    wbc_writepage: towrt=1024
+    wbc_writepage: towrt=0
+    wbc_writepage: towrt=-1
+    wbc_writepage: towrt=-5
+    wbc_writepage: towrt=-21
+    wbc_writepage: towrt=-85
 
-This patch will not prevent sync from blocking on large writes into
-holes. That requires more complex intervention while this patch only
-addresses the common append-case of this sync holdoff.
+This has adverse effects on filesystem writeback behaviour. write_cache_pages()
+needs to terminate after a certain number of pages are written, not after a
+certain number of calls to ->writepage are made.  This is a regression
+introduced by 17bc6c30cf6bfffd816bdc53682dd46fc34a2cf4 ("vfs: Add
+no_nrwrite_index_update writeback control flag"), but cannot be reverted
+directly due to subsequent bug fixes that have gone in on top of it.
 
 Signed-off-by: Dave Chinner <dchinner@redhat.com>
 Reviewed-by: Christoph Hellwig <hch@lst.de>
 ---
- mm/page-writeback.c |   15 +++++++++++++++
- 1 files changed, 15 insertions(+), 0 deletions(-)
+ include/linux/writeback.h   |    9 ---------
+ include/trace/events/ext4.h |    5 +----
+ mm/page-writeback.c         |   15 +++++----------
+ 3 files changed, 6 insertions(+), 23 deletions(-)
 
+diff --git a/include/linux/writeback.h b/include/linux/writeback.h
+index f641346..d63ef8f 100644
+--- a/include/linux/writeback.h
++++ b/include/linux/writeback.h
+@@ -56,15 +56,6 @@ struct writeback_control {
+ 	unsigned for_reclaim:1;		/* Invoked from the page allocator */
+ 	unsigned range_cyclic:1;	/* range_start is cyclic */
+ 	unsigned more_io:1;		/* more io to be dispatched */
+-	/*
+-	 * write_cache_pages() won't update wbc->nr_to_write and
+-	 * mapping->writeback_index if no_nrwrite_index_update
+-	 * is set.  write_cache_pages() may write more than we
+-	 * requested and we want to make sure nr_to_write and
+-	 * writeback_index are updated in a consistent manner
+-	 * so we use a single control to update them
+-	 */
+-	unsigned no_nrwrite_index_update:1;
+ };
+ 
+ /*
+diff --git a/include/trace/events/ext4.h b/include/trace/events/ext4.h
+index f5b1ba9..f3865c7 100644
+--- a/include/trace/events/ext4.h
++++ b/include/trace/events/ext4.h
+@@ -306,7 +306,6 @@ TRACE_EVENT(ext4_da_writepages_result,
+ 		__field(	int,	pages_written		)
+ 		__field(	long,	pages_skipped		)
+ 		__field(	char,	more_io			)	
+-		__field(	char,	no_nrwrite_index_update )
+ 		__field(       pgoff_t,	writeback_index		)
+ 	),
+ 
+@@ -317,16 +316,14 @@ TRACE_EVENT(ext4_da_writepages_result,
+ 		__entry->pages_written	= pages_written;
+ 		__entry->pages_skipped	= wbc->pages_skipped;
+ 		__entry->more_io	= wbc->more_io;
+-		__entry->no_nrwrite_index_update = wbc->no_nrwrite_index_update;
+ 		__entry->writeback_index = inode->i_mapping->writeback_index;
+ 	),
+ 
+-	TP_printk("dev %s ino %lu ret %d pages_written %d pages_skipped %ld more_io %d no_nrwrite_index_update %d writeback_index %lu",
++	TP_printk("dev %s ino %lu ret %d pages_written %d pages_skipped %ld more_io %d writeback_index %lu",
+ 		  jbd2_dev_to_name(__entry->dev),
+ 		  (unsigned long) __entry->ino, __entry->ret,
+ 		  __entry->pages_written, __entry->pages_skipped,
+ 		  __entry->more_io,
+-		  __entry->no_nrwrite_index_update,
+ 		  (unsigned long) __entry->writeback_index)
+ );
+ 
 diff --git a/mm/page-writeback.c b/mm/page-writeback.c
-index 0acadee..1a361f0 100644
+index 7ac39c5..0acadee 100644
 --- a/mm/page-writeback.c
 +++ b/mm/page-writeback.c
-@@ -855,7 +855,22 @@ int write_cache_pages(struct address_space *mapping,
- 		if (wbc->range_start == 0 && wbc->range_end == LLONG_MAX)
- 			range_whole = 1;
- 		cycled = 1; /* ignore range_cyclic tests */
-+
-+		/*
-+		 * If this is a data integrity sync, cap the writeback to the
-+		 * current end of file. Any extension to the file that occurs
-+		 * after this is a new write and we don't need to write those
-+		 * pages out to fulfil our data integrity requirements. If we
-+		 * try to write them out, we can get stuck in this scan until
-+		 * the concurrent writer stops adding dirty pages and extending
-+		 * EOF.
-+		 */
-+		if (wbc->sync_mode == WB_SYNC_ALL &&
-+		    wbc->range_end == LLONG_MAX) {
-+			end = i_size_read(mapping->host) >> PAGE_CACHE_SHIFT;
-+		}
+@@ -839,7 +839,6 @@ int write_cache_pages(struct address_space *mapping,
+ 	pgoff_t done_index;
+ 	int cycled;
+ 	int range_whole = 0;
+-	long nr_to_write = wbc->nr_to_write;
+ 
+ 	pagevec_init(&pvec, 0);
+ 	if (wbc->range_cyclic) {
+@@ -940,11 +939,10 @@ continue_unlock:
+ 					done = 1;
+ 					break;
+ 				}
+- 			}
++			}
+ 
+-			if (nr_to_write > 0) {
+-				nr_to_write--;
+-				if (nr_to_write == 0 &&
++			if (wbc->nr_to_write > 0) {
++				if (--wbc->nr_to_write == 0 &&
+ 				    wbc->sync_mode == WB_SYNC_NONE) {
+ 					/*
+ 					 * We stop writing back only if we are
+@@ -975,11 +973,8 @@ continue_unlock:
+ 		end = writeback_index - 1;
+ 		goto retry;
  	}
-+
- retry:
- 	done_index = index;
- 	while (!done && (index <= end)) {
+-	if (!wbc->no_nrwrite_index_update) {
+-		if (wbc->range_cyclic || (range_whole && nr_to_write > 0))
+-			mapping->writeback_index = done_index;
+-		wbc->nr_to_write = nr_to_write;
+-	}
++	if (wbc->range_cyclic || (range_whole && wbc->nr_to_write > 0))
++		mapping->writeback_index = done_index;
+ 
+ 	return ret;
+ }
 -- 
 1.7.1
 
