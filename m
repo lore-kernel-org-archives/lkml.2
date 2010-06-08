@@ -1,58 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756678Ab0FHViq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jun 2010 17:38:46 -0400
-Received: from cpoproxy1-pub.bluehost.com ([69.89.21.11]:41196 "HELO
-	cpoproxy1-pub.bluehost.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1756484Ab0FHVio (ORCPT
+	id S1756615Ab0FHVmd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jun 2010 17:42:33 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:43039 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751507Ab0FHVmc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jun 2010 17:38:44 -0400
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=virtuousgeek.org;
-	h=Received:Date:From:To:Cc:Subject:Message-ID:In-Reply-To:References:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
-	b=EyTvcG/EPZloKTfG5p32NvxTw90Tv9mtDDzbHKSZhEKNCjpmYj40XCEvIailb3LZ7WE/M5Glvq57TASWi6gR3w52Zu4UEMsuljCdVInjmeIuL0iNxNKKuCSMKbYTOxyo;
-Date: Tue, 8 Jun 2010 14:37:39 -0700
-From: Jesse Barnes <jbarnes@virtuousgeek.org>
-To: Jiri Slaby <jslaby@suse.cz>
-Cc: linux-pci@vger.kernel.org,
-       Linux kernel mailing list <linux-kernel@vger.kernel.org>,
-       Jiri Slaby <jirislaby@gmail.com>, achiang@hp.com
-Subject: Re: cpqphp: NULL ptr deref in cpqhpc_probe
-Message-ID: <20100608143739.192a94cd@virtuousgeek.org>
-In-Reply-To: <4C0774C6.4090000@suse.cz>
-References: <4C0774C6.4090000@suse.cz>
-X-Mailer: Claws Mail 3.7.5 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+	Tue, 8 Jun 2010 17:42:32 -0400
+Date: Tue, 8 Jun 2010 14:41:53 -0700
+From: Randy Dunlap <randy.dunlap@oracle.com>
+To: "Tom Lyon" <pugs@cisco.com>
+Cc: linux-kernel@vger.kernel.org, kvm@vger.kernel.org, chrisw@sous-sol.org,
+       joro@8bytes.org, hjk@linutronix.de, mst@redhat.com, avi@redhat.com,
+       gregkh@suse.de, aafabbri@cisco.com, scofeldm@cisco.com
+Subject: Re: [PATCH V2] VFIO driver: Non-privileged user level PCI drivers
+Message-Id: <20100608144153.28d2abff.randy.dunlap@oracle.com>
+In-Reply-To: <4c0eb470.1HMjondO00NIvFM6%pugs@cisco.com>
+References: <4c0eb470.1HMjondO00NIvFM6%pugs@cisco.com>
+Organization: Oracle Linux Eng.
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 75.110.194.140 authed with jbarnes@virtuousgeek.org}
+X-Auth-Type: Internal IP
+X-Source-IP: acsinet15.oracle.com [141.146.126.227]
+X-CT-RefId: str=0001.0A090208.4C0EB930.003D:SCFMA922111,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 03 Jun 2010 11:24:22 +0200
-Jiri Slaby <jslaby@suse.cz> wrote:
+On Tue, 08 Jun 2010 14:21:52 -0700 Tom Lyon wrote:
 
-> Hi,
-> 
-> we have a system where there is a pci hotplug class device to be handled
-> by cpqphp, but it is not a bridge. But in cpqhpc_probe there is:
-> struct pci_bus *bus;
-> ...
-> bus = pdev->subordinate;
-> ...
-> bus->max_bus_speed = PCI_SPEED_66MHz_PCIX;
-> 
-> But as it is not a bridge, subordinate is NULL and the kernel crashes.
-> 
-> Any idea what would be a correct fix here?
-> 
-> The bugzilla entry is at:
-> https://bugzilla.novell.com/show_bug.cgi?id=609338
+one missing piece (again):
 
-I don't think we have anyone actively working on CPQHPC these days.
-Seems like the simple patch would be to check whether pdev->subordinate
-or bus exists before using it...  Have you poked around for specs on
-this at all?
+ Documentation/ioctl/ioctl-number.txt |    1 
+ Documentation/vfio.txt               |  177 +++++++
+ MAINTAINERS                          |    7 
+ drivers/Kconfig                      |    2 
+ drivers/Makefile                     |    1 
+ drivers/vfio/Kconfig                 |   18 
+ drivers/vfio/Makefile                |    6 
+ drivers/vfio/uiommu.c                |  126 +++++
+ drivers/vfio/vfio_dma.c              |  324 ++++++++++++
+ drivers/vfio/vfio_intrs.c            |  191 +++++++
+ drivers/vfio/vfio_main.c             |  624 +++++++++++++++++++++++++
+ drivers/vfio/vfio_pci_config.c       |  554 ++++++++++++++++++++++
+ drivers/vfio/vfio_rdwr.c             |  147 +++++
+ drivers/vfio/vfio_sysfs.c            |  153 ++++++
+ include/linux/uiommu.h               |   62 ++
+ include/linux/vfio.h                 |  200 ++++++++
+ 16 files changed, 2593 insertions(+)
 
--- 
-Jesse Barnes, Intel Open Source Technology Center
+
+> diff -uprN linux-2.6.34/drivers/vfio/Kconfig vfio-linux-2.6.34/drivers/vfio/Kconfig
+> --- linux-2.6.34/drivers/vfio/Kconfig	1969-12-31 16:00:00.000000000 -0800
+> +++ vfio-linux-2.6.34/drivers/vfio/Kconfig	2010-06-07 15:28:14.000000000 -0700
+> @@ -0,0 +1,18 @@
+> +menuconfig VFIO
+> +	tristate "Non-Priv User Space PCI drivers"
+
+	          Non-privileged
+(again)
+
+> +	depends on UIOMMU && PCI && IOMMU_API
+> +	help
+> +	  Driver to allow advanced user space drivers for PCI, PCI-X,
+> +	  and PCIe devices.  Requires IOMMU to allow non-privilged
+
+	                                             non-privileged
+(again)  :(
+
+> +	  processes to directly control the PCI devices.
+> +
+> +	  If you don't know what to do here, say N.
+> +
+> +menuconfig UIOMMU
+> +	tristate "User level manipulation of IOMMU"
+> +	help
+> +	  Device driver to allow user level programs to
+> +	  manipulate IOMMU domains
+
+	                   domains.
+
+> +
+> +	  If you don't know what to do here, say N.
+> +
+
+
+---
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
