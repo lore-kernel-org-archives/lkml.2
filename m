@@ -1,115 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756864Ab0FICoN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jun 2010 22:44:13 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:48274 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752457Ab0FICoM convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jun 2010 22:44:12 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=o3OhFmJQRm0saJzi3JK7PPn2jdOutkjQvuNKLqnDwCqw4HAFPkErzisBrvTpxP6y0G
-         /T5/GR7zVjOldXAhDZEFUHb8DXdWIP8Sfz/xdPR1vTJVGS7mK/mk8CU8xHvvW/1KjawM
-         6TI0AUGSj2I/RU0lUXIudf37e/oKNl9A0gDoY=
+	id S1756553Ab0FHWq0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jun 2010 18:46:26 -0400
+Received: from mx3.mail.elte.hu ([157.181.1.138]:55282 "EHLO mx3.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753477Ab0FHWqZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Jun 2010 18:46:25 -0400
+Date: Wed, 9 Jun 2010 00:45:22 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Oleg Nesterov <oleg@redhat.com>,
+       Roland McGrath <roland@redhat.com>,
+       Steven Rostedt <rostedt@goodmis.org>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Jason Baron <jbaron@redhat.com>, Masami Hiramatsu <mhiramat@redhat.com>,
+       "2 . 6 . 33 . x-2 . 6 . 34 . x" <stable@kernel.org>
+Subject: Re: [GIT PULL] tracing fix
+Message-ID: <20100608224522.GA10006@elte.hu>
+References: <1276036189-10354-1-git-send-regression-fweisbec@gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <AANLkTilsCkBiGtfEKkNXYclsRKhfuq4yI_1mrxMa8yJG@mail.gmail.com>
-References: <AANLkTin1OS3LohKBvWyS81BoAk15Y-riCiEdcevSA7ye@mail.gmail.com>
-	<1275929000.3021.56.camel@e102109-lin.cambridge.arm.com>
-	<AANLkTilsCkBiGtfEKkNXYclsRKhfuq4yI_1mrxMa8yJG@mail.gmail.com>
-Date: Wed, 9 Jun 2010 10:44:10 +0800
-Message-ID: <AANLkTilbhdPy8tq-brAotFDlOkyZxB3uEXSD-PQJLpBL@mail.gmail.com>
-Subject: Re: mmotm 2010-06-03-16-36 lots of suspected kmemleak
-From: Dave Young <hidave.darkstar@gmail.com>
-To: Catalin Marinas <catalin.marinas@arm.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       linux-mm@kvack.org, riel@redhat.com
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1276036189-10354-1-git-send-regression-fweisbec@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -1.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-1.0 required=5.9 tests=BAYES_20 autolearn=no SpamAssassin version=3.2.5
+	-1.0 BAYES_20               BODY: Bayesian spam probability is 5 to 20%
+	[score: 0.0558]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 9, 2010 at 10:37 AM, Dave Young <hidave.darkstar@gmail.com> wrote:
-> On Tue, Jun 8, 2010 at 12:43 AM, Catalin Marinas
-> <catalin.marinas@arm.com> wrote:
->> On Mon, 2010-06-07 at 11:00 +0100, Dave Young wrote:
->>> On Mon, Jun 7, 2010 at 5:19 PM, Catalin Marinas <catalin.marinas@arm.com> wrote:
->>> > On Mon, 2010-06-07 at 06:20 +0100, Dave Young wrote:
->>> >> On Fri, Jun 4, 2010 at 9:55 PM, Dave Young <hidave.darkstar@gmail.com> wrote:
->>> >> > On Fri, Jun 4, 2010 at 6:50 PM, Catalin Marinas <catalin.marinas@arm.com> wrote:
->>> >> >> Dave Young <hidave.darkstar@gmail.com> wrote:
->>> >> >>> With mmotm 2010-06-03-16-36, I gots tuns of kmemleaks
->>> >> >>
->>> >> >> Do you have CONFIG_NO_BOOTMEM enabled? I posted a patch for this but
->>> >> >> hasn't been reviewed yet (I'll probably need to repost, so if it fixes
->>> >> >> the problem for you a Tested-by would be nice):
->>> >> >>
->>> >> >> http://lkml.org/lkml/2010/5/4/175
->>> >> >
->>> >> >
->>> >> > I'd like to test, but I can not access the test pc during weekend. So
->>> >> > I will test it next monday.
->>> >>
->>> >> Bad news, the patch does not fix this issue.
->>> >
->>> > Thanks for trying. Could you please just disable CONFIG_NO_BOOTMEM and
->>> > post the kmemleak reported leaks again?
->>>
->>> Still too many suspected leaks, results similar with
->>> (CONFIG_NO_BOOTMEM = y && apply your patch), looks like a little
->>> different from original ones? I just copy some of them here:
->>>
->>> unreferenced object 0xde3c7420 (size 44):
->>>   comm "bash", pid 1631, jiffies 4294897023 (age 223.573s)
->>>   hex dump (first 32 bytes):
->>>     05 05 00 00 ad 4e ad de ff ff ff ff ff ff ff ff  .....N..........
->>>     98 42 d9 c1 00 00 00 00 50 fe 63 c1 10 32 8f dd  .B......P.c..2..
->>>   backtrace:
->>>     [<c1498ad2>] kmemleak_alloc+0x4a/0x83
->>>     [<c10c1ace>] kmem_cache_alloc+0xde/0x12a
->>>     [<c10b421b>] anon_vma_fork+0x31/0x88
->>>     [<c102c71d>] dup_mm+0x1d3/0x38f
->>>     [<c102d20d>] copy_process+0x8ce/0xf39
->>>     [<c102d990>] do_fork+0x118/0x295
->>>     [<c1007fe0>] sys_clone+0x1f/0x24
->>>     [<c10029b1>] ptregs_clone+0x15/0x24
->>>     [<ffffffff>] 0xffffffff
->>
->> I'll try to test the mmotm kernel as well. I don't get any kmemleak
->> reports with the 2.6.35-rc1 kernel.
 
-maybe you do not set CONFIG_KSM?
+* Frederic Weisbecker <fweisbec@gmail.com> wrote:
 
->
-> Manually bisected mm patches, the memleak caused by following patch:
->
-> mm-extend-ksm-refcounts-to-the-anon_vma-root.patch
->
-> cc Rik van Riel
->
->>
->> Can you send me your .config file? Do you have CONFIG_HUGETLBFS enabled?
->>
->> Thanks.
->>
->> --
->> Catalin
->>
->>
->
->
->
-> --
-> Regards
-> dave
->
+> Ingo,
+> 
+> Please pull the perf/urgent branch that can be found at:
+> 
+> git://git.kernel.org/pub/scm/linux/kernel/git/frederic/random-tracing.git
+> 	perf/urgent
+> 
+> Thanks,
+> 	Frederic
+> ---
+> 
+> Oleg Nesterov (1):
+>       tracing: Fix null pointer deref with SEND_SIG_FORCED
+> 
+> 
+>  include/trace/events/signal.h |    3 ++-
+>  1 files changed, 2 insertions(+), 1 deletions(-)
 
+Pulled, thanks Frederic!
 
-
--- 
-Regards
-dave
+	Ingo
