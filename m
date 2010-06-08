@@ -1,73 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754298Ab0FHHVm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jun 2010 03:21:42 -0400
-Received: from 124x34x33x190.ap124.ftth.ucom.ne.jp ([124.34.33.190]:39035 "EHLO
-	master.linux-sh.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752935Ab0FHHVl (ORCPT
+	id S1754370Ab0FHHV7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jun 2010 03:21:59 -0400
+Received: from daytona.panasas.com ([67.152.220.89]:55182 "EHLO
+	daytona.int.panasas.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754076Ab0FHHV6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jun 2010 03:21:41 -0400
-Date: Tue, 8 Jun 2010 16:21:08 +0900
-From: Paul Mundt <lethal@linux-sh.org>
-To: Boaz Harrosh <bharrosh@panasas.com>
-Cc: David Rientjes <rientjes@google.com>, Ingo Molnar <mingo@elte.hu>,
+	Tue, 8 Jun 2010 03:21:58 -0400
+Message-ID: <4C0DEF92.5000601@panasas.com>
+Date: Tue, 08 Jun 2010 10:21:54 +0300
+From: Boaz Harrosh <bharrosh@panasas.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-2.fc12 Thunderbird/3.0.4
+MIME-Version: 1.0
+To: Paul Mundt <lethal@linux-sh.org>
+CC: David Rientjes <rientjes@google.com>, Ingo Molnar <mingo@elte.hu>,
        Linus Torvalds <torvalds@linux-foundation.org>,
        Frans Pop <elendil@planet.nl>, Dirk Hohndel <hohndel@infradead.org>,
        Len Brown <lenb@kernel.org>,
        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH, v2] kbuild: Improve version string logic - two for the price of one - No thanks
-Message-ID: <20100608072108.GA13191@linux-sh.org>
-References: <alpine.LFD.2.01.0910060925490.3432@localhost.localdomain> <20091006173508.GA4786@elte.hu> <20091012195733.GA7351@elte.hu> <4C0D29DE.6050602@panasas.com> <alpine.DEB.2.00.1006071242510.30389@chino.kir.corp.google.com> <4C0DDAA6.8080002@panasas.com> <alpine.DEB.2.00.1006072311170.31780@chino.kir.corp.google.com> <20100608063419.GF6376@linux-sh.org> <4C0DE5AC.1090204@panasas.com> <4C0DEE57.1070505@panasas.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Subject: Re: [PATCH, v2] kbuild: Improve version string logic - two for the
+ price of one - No thanks
+References: <alpine.LFD.2.01.0910060815320.3432@localhost.localdomain> <20091006153632.GA29795@elte.hu> <alpine.LFD.2.01.0910060843560.3432@localhost.localdomain> <alpine.LFD.2.01.0910060925490.3432@localhost.localdomain> <20091006173508.GA4786@elte.hu> <20091012195733.GA7351@elte.hu> <4C0D29DE.6050602@panasas.com> <alpine.DEB.2.00.1006071242510.30389@chino.kir.corp.google.com> <4C0DDAA6.8080002@panasas.com> <alpine.DEB.2.00.1006072311170.31780@chino.kir.corp.google.com> <20100608063419.GF6376@linux-sh.org> <4C0DE5AC.1090204@panasas.com> <4C0DEE57.1070505@panasas.com>
 In-Reply-To: <4C0DEE57.1070505@panasas.com>
-User-Agent: Mutt/1.5.13 (2006-08-11)
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 08 Jun 2010 07:21:57.0397 (UTC) FILETIME=[474C2C50:01CB06DB]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 08, 2010 at 10:16:39AM +0300, Boaz Harrosh wrote:
+On 06/08/2010 10:16 AM, Boaz Harrosh wrote:
 > On 06/08/2010 09:39 AM, Boaz Harrosh wrote:
-> > On 06/08/2010 09:34 AM, Paul Mundt wrote:
-> >> On Mon, Jun 07, 2010 at 11:18:42PM -0700, David Rientjes wrote:
-> >>> On Tue, 8 Jun 2010, Boaz Harrosh wrote:
-> >>>
-> >>>>>> I already have my:
-> >>>>>>  VERSION = 2
-> >>>>>>  PATCHLEVEL = 6
-> >>>>>>  SUBLEVEL = 35
-> >>>>>> -EXTRAVERSION = -rc2
-> >>>>>> +EXTRAVERSION = -rc2-my_tree
-> >>>>>>
-> >>>>>
-> >>>>> You shouldn't be using EXTRAVERSION for this purpose, you should be 
-> >>>>> passing LOCALVERSION=my_tree to make.
-> >>>>>
-> >>>>
-> >>>> That will not work because the way I run make is out of my control. Every
-> >>>> one in the working group has his system. The Makefile is part of the
-> >>>> public git tree, so every one will get the same identification without
-> >>>> any confusion with Vanilla kernel, or what was compiled.
-> >>>>
-> >>>
-> >>> If everyone using that tree wants the same version string for that kernel, 
-> >>> use CONFIG_LOCALVERSION="-my_tree" in your .config and use "make 
-> >>> LOCALVERSION=".
-> >>>
-> >> Or just distribute a localversion-my_tree file in the top-level directory
-> >> like other trees do. This doesn't strike me as a particularly significant
-> >> problem.
-> > 
+>> On 06/08/2010 09:34 AM, Paul Mundt wrote:
+>>> On Mon, Jun 07, 2010 at 11:18:42PM -0700, David Rientjes wrote:
+>>>> On Tue, 8 Jun 2010, Boaz Harrosh wrote:
+>>>>
+>>>>>>> I already have my:
+>>>>>>>  VERSION = 2
+>>>>>>>  PATCHLEVEL = 6
+>>>>>>>  SUBLEVEL = 35
+>>>>>>> -EXTRAVERSION = -rc2
+>>>>>>> +EXTRAVERSION = -rc2-my_tree
+>>>>>>>
+>>>>>>
+>>>>>> You shouldn't be using EXTRAVERSION for this purpose, you should be 
+>>>>>> passing LOCALVERSION=my_tree to make.
+>>>>>>
+>>>>>
+>>>>> That will not work because the way I run make is out of my control. Every
+>>>>> one in the working group has his system. The Makefile is part of the
+>>>>> public git tree, so every one will get the same identification without
+>>>>> any confusion with Vanilla kernel, or what was compiled.
+>>>>>
+>>>>
+>>>> If everyone using that tree wants the same version string for that kernel, 
+>>>> use CONFIG_LOCALVERSION="-my_tree" in your .config and use "make 
+>>>> LOCALVERSION=".
+>>>>
+>>> Or just distribute a localversion-my_tree file in the top-level directory
+>>> like other trees do. This doesn't strike me as a particularly significant
+>>> problem.
+>>
 > 
 > 
 > I can't manage to work this out. Here is what I did please, what did I do wrong:
 > [my-tree] $ git checkout v2.6.35-rc2
 > [my-tree] $ touch localversion-my_tree
 
-It's not frightfully intuitive, you have to have the string in the file.
-So simply doing:
+OK I get it above should be:
+[my-tree] $ echo "-my_tree" > localversion-my_tree
 
-$ echo "-my_tree" > localversion-my_tree
+But now I get DEPMOD 2.6.35-rc2-my_tree+
 
-ought to work fine for your case.
+Please fix it so if localversion* is present then the plus is
+removed. And the git is not inspected
+
+Boaz
+
+> [my-tree] $ git add localversion-my_tree; git commit; # ...
+> [my-tree] $ make oldconfig
+> [my-tree] $ make
+> 
+> At my make install I still get DEPMOD 2.6.35-rc2+
+> 
+> What else to do?
+> 
+> Thanks
+> Boaz
+> 
+>> OK That one is actually a solution. I'll try that ASAP. If it works as expected
+>> it's perfect. Even better than before
+>>
+>> Thanks
+>> Boaz
+> 
+
