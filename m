@@ -1,15 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754419Ab0FHJAl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jun 2010 05:00:41 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:37152 "EHLO ogre.sisk.pl"
+	id S1754333Ab0FHJAj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jun 2010 05:00:39 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:37148 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752206Ab0FHJAg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1754216Ab0FHJAg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 8 Jun 2010 05:00:36 -0400
 From: "Rafael J. Wysocki" <rjw@sisk.pl>
 To: Len Brown <lenb@kernel.org>
-Subject: [PATCH 3/5] ACPI / ACPICA: Avoid writing full enable masks to GPE registers
-Date: Tue, 8 Jun 2010 10:49:45 +0200
+Subject: [PATCH 1/5] ACPI / ACPICA: Use helper function for computing GPE masks
+Date: Tue, 8 Jun 2010 10:48:26 +0200
 User-Agent: KMail/1.12.4 (Linux/2.6.35-rc1-rjw; KDE/4.3.5; x86_64; ; )
 Cc: Matthew Garrett <mjg59@srcf.ucam.org>,
        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
@@ -23,82 +23,171 @@ MIME-Version: 1.0
 Content-Type: Text/Plain;
   charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201006081049.45342.rjw@sisk.pl>
+Message-Id: <201006081048.26092.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Rafael J. Wysocki <rjw@sisk.pl>
 
-ACPICA uses acpi_hw_write_gpe_enable_reg() to re-enable a GPE after
-an event signaled by it has been handled.  However, this function
-writes the entire GPE enable mask to the GPE's enable register which
-may not be correct.  Namely, if one of the other GPEs in the same
-register was previously enabled by acpi_enable_gpe() and subsequently
-disabled using acpi_set_gpe(), acpi_hw_write_gpe_enable_reg() will
-re-enable it along with the target GPE.
-
-To fix this issue rework acpi_hw_write_gpe_enable_reg() so that it
-calls acpi_hw_low_set_gpe() with a special action value,
-ACPI_GPE_COND_ENABLE, that will make it only enable the GPE if the
-corresponding bit in its register's enable_for_run mask is set.
+In quite a few places ACPICA needs to compute a GPE enable mask with
+only one bit, corresponding to a given GPE, set.  Currently, that
+computation is always open coded which leads to unnecessary code
+duplication.  Fix this by introducing a helper function for computing
+one-bit GPE enable masks and using it where appropriate.
 
 Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
 ---
- drivers/acpi/acpica/hwgpe.c |   18 +++++-------------
- include/acpi/actypes.h      |    1 +
- 2 files changed, 6 insertions(+), 13 deletions(-)
+ drivers/acpi/acpica/achware.h |    3 ++
+ drivers/acpi/acpica/evgpe.c   |    7 ++---
+ drivers/acpi/acpica/hwgpe.c   |   52 ++++++++++++++++++++++++++++++++----------
+ 3 files changed, 46 insertions(+), 16 deletions(-)
 
+Index: linux-2.6/drivers/acpi/acpica/achware.h
+===================================================================
+--- linux-2.6.orig/drivers/acpi/acpica/achware.h
++++ linux-2.6/drivers/acpi/acpica/achware.h
+@@ -90,6 +90,9 @@ acpi_status acpi_hw_write_port(acpi_io_a
+ /*
+  * hwgpe - GPE support
+  */
++u32 acpi_hw_gpe_register_bit(struct acpi_gpe_event_info *gpe_event_info,
++			     struct acpi_gpe_register_info *gpe_register_info);
++
+ acpi_status acpi_hw_low_disable_gpe(struct acpi_gpe_event_info *gpe_event_info);
+ 
+ acpi_status
 Index: linux-2.6/drivers/acpi/acpica/hwgpe.c
 ===================================================================
 --- linux-2.6.orig/drivers/acpi/acpica/hwgpe.c
 +++ linux-2.6/drivers/acpi/acpica/hwgpe.c
-@@ -118,6 +118,10 @@ acpi_hw_low_set_gpe(struct acpi_gpe_even
- 	register_bit = acpi_hw_gpe_register_bit(gpe_event_info,
- 						gpe_register_info);
- 	switch (action) {
-+	case ACPI_GPE_COND_ENABLE:
-+		if (!(register_bit & gpe_register_info->enable_for_run))
-+			return (AE_BAD_PARAMETER);
+@@ -57,6 +57,27 @@ acpi_hw_enable_wakeup_gpe_block(struct a
+ 
+ /******************************************************************************
+  *
++ * FUNCTION:	acpi_hw_gpe_register_bit
++ *
++ * PARAMETERS:	gpe_event_info	    - Info block for the GPE
++ *		gpe_register_info   - Info block for the GPE register
++ *
++ * RETURN:	Status
++ *
++ * DESCRIPTION:	Compute GPE enable mask with one bit corresponding to the given
++ *		GPE set.
++ *
++ ******************************************************************************/
 +
- 	case ACPI_GPE_ENABLE:
- 		ACPI_SET_BIT(enable_mask, register_bit);
- 		break;
-@@ -154,23 +158,11 @@ acpi_hw_low_set_gpe(struct acpi_gpe_even
- acpi_status
- acpi_hw_write_gpe_enable_reg(struct acpi_gpe_event_info * gpe_event_info)
- {
--	struct acpi_gpe_register_info *gpe_register_info;
++u32 acpi_hw_gpe_register_bit(struct acpi_gpe_event_info *gpe_event_info,
++			     struct acpi_gpe_register_info *gpe_register_info)
++{
++	return (u32)1 << (gpe_event_info->gpe_number -
++				gpe_register_info->base_gpe_number);
++}
++
++/******************************************************************************
++ *
+  * FUNCTION:	acpi_hw_low_disable_gpe
+  *
+  * PARAMETERS:	gpe_event_info	    - Info block for the GPE to be disabled
+@@ -72,6 +93,7 @@ acpi_status acpi_hw_low_disable_gpe(stru
+ 	struct acpi_gpe_register_info *gpe_register_info;
  	acpi_status status;
+ 	u32 enable_mask;
++	u32 register_bit;
+ 
+ 	/* Get the info block for the entire GPE register */
+ 
+@@ -89,9 +111,9 @@ acpi_status acpi_hw_low_disable_gpe(stru
+ 
+ 	/* Clear just the bit that corresponds to this GPE */
+ 
+-	ACPI_CLEAR_BIT(enable_mask, ((u32)1 <<
+-				     (gpe_event_info->gpe_number -
+-				      gpe_register_info->base_gpe_number)));
++	register_bit = acpi_hw_gpe_register_bit(gpe_event_info,
++						gpe_register_info);
++	ACPI_CLEAR_BIT(enable_mask, register_bit);
+ 
+ 	/* Write the updated enable mask */
+ 
+@@ -150,21 +172,28 @@ acpi_hw_write_gpe_enable_reg(struct acpi
+ 
+ acpi_status acpi_hw_clear_gpe(struct acpi_gpe_event_info * gpe_event_info)
+ {
++	struct acpi_gpe_register_info *gpe_register_info;
+ 	acpi_status status;
+-	u8 register_bit;
++	u32 register_bit;
  
  	ACPI_FUNCTION_ENTRY();
  
--	/* Get the info block for the entire GPE register */
--
--	gpe_register_info = gpe_event_info->register_info;
--	if (!gpe_register_info) {
--		return (AE_NOT_EXIST);
--	}
--
--	/* Write the entire GPE (runtime) enable register */
--
--	status = acpi_hw_write(gpe_register_info->enable_for_run,
--			       &gpe_register_info->enable_address);
--
-+	status = acpi_hw_low_set_gpe(gpe_event_info, ACPI_GPE_COND_ENABLE);
+-	register_bit = (u8)(1 <<
+-			    (gpe_event_info->gpe_number -
+-			     gpe_event_info->register_info->base_gpe_number));
++	/* Get the info block for the entire GPE register */
++
++	gpe_register_info = gpe_event_info->register_info;
++	if (!gpe_register_info) {
++		return (AE_NOT_EXIST);
++	}
++
++	register_bit = acpi_hw_gpe_register_bit(gpe_event_info,
++						gpe_register_info);
+ 
+ 	/*
+ 	 * Write a one to the appropriate bit in the status register to
+ 	 * clear this GPE.
+ 	 */
+ 	status = acpi_hw_write(register_bit,
+-			       &gpe_event_info->register_info->status_address);
++			       &gpe_register_info->status_address);
+ 
  	return (status);
  }
+@@ -187,7 +216,7 @@ acpi_hw_get_gpe_status(struct acpi_gpe_e
+ 		       acpi_event_status * event_status)
+ {
+ 	u32 in_byte;
+-	u8 register_bit;
++	u32 register_bit;
+ 	struct acpi_gpe_register_info *gpe_register_info;
+ 	acpi_status status;
+ 	acpi_event_status local_event_status = 0;
+@@ -204,9 +233,8 @@ acpi_hw_get_gpe_status(struct acpi_gpe_e
  
-Index: linux-2.6/include/acpi/actypes.h
+ 	/* Get the register bitmask for this GPE */
+ 
+-	register_bit = (u8)(1 <<
+-			    (gpe_event_info->gpe_number -
+-			     gpe_event_info->register_info->base_gpe_number));
++	register_bit = acpi_hw_gpe_register_bit(gpe_event_info,
++						gpe_register_info);
+ 
+ 	/* GPE currently enabled? (enabled for runtime?) */
+ 
+Index: linux-2.6/drivers/acpi/acpica/evgpe.c
 ===================================================================
---- linux-2.6.orig/include/acpi/actypes.h
-+++ linux-2.6/include/acpi/actypes.h
-@@ -667,6 +667,7 @@ typedef u32 acpi_event_status;
+--- linux-2.6.orig/drivers/acpi/acpica/evgpe.c
++++ linux-2.6/drivers/acpi/acpica/evgpe.c
+@@ -69,7 +69,7 @@ acpi_status
+ acpi_ev_update_gpe_enable_masks(struct acpi_gpe_event_info *gpe_event_info)
+ {
+ 	struct acpi_gpe_register_info *gpe_register_info;
+-	u8 register_bit;
++	u32 register_bit;
  
- #define ACPI_GPE_ENABLE                 0
- #define ACPI_GPE_DISABLE                1
-+#define ACPI_GPE_COND_ENABLE            2
+ 	ACPI_FUNCTION_TRACE(ev_update_gpe_enable_masks);
  
- /* gpe_types for acpi_enable_gpe and acpi_disable_gpe */
+@@ -78,9 +78,8 @@ acpi_ev_update_gpe_enable_masks(struct a
+ 		return_ACPI_STATUS(AE_NOT_EXIST);
+ 	}
+ 
+-	register_bit = (u8)
+-	    (1 <<
+-	     (gpe_event_info->gpe_number - gpe_register_info->base_gpe_number));
++	register_bit = acpi_hw_gpe_register_bit(gpe_event_info,
++						gpe_register_info);
+ 
+ 	/* Clear the wake/run bits up front */
  
 
