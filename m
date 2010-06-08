@@ -1,116 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756348Ab0FHUeG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jun 2010 16:34:06 -0400
-Received: from isrv.corpit.ru ([81.13.33.159]:49930 "EHLO isrv.corpit.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755691Ab0FHUeD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jun 2010 16:34:03 -0400
-Message-ID: <4C0EA938.9000104@msgid.tls.msk.ru>
-Date: Wed, 09 Jun 2010 00:34:00 +0400
-From: Michael Tokarev <mjt@tls.msk.ru>
-Organization: Telecom Service, JSC
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.1.9) Gecko/20100411 Icedove/3.0.4
+	id S1756381Ab0FHUgX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jun 2010 16:36:23 -0400
+Received: from mail-ww0-f46.google.com ([74.125.82.46]:58111 "EHLO
+	mail-ww0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755179Ab0FHUgW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Jun 2010 16:36:22 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
+        b=VpNMryldYLeTf8I+IhlgkUzQqu+MkR+/Ek66ho/7y7PSA5atRh8N8eCxvau3l/WqMW
+         wpVWEnduhbIkeBxTec9k23e2ioAbxBYbMYorGrP/A6P9Kqcg191vfZWjfM+zTuV9D+z5
+         R+aj6CogS4cUPZYoVbuaMGcDOnUfwf3L2tKTs=
 MIME-Version: 1.0
-To: Dave Chinner <david@fromorbit.com>
-CC: Linux-kernel <linux-kernel@vger.kernel.org>, xfs@oss.sgi.com
-Subject: xfs, 2.6.27=>.32 sync write 10 times slowdown [was: xfs, aacraid
- 2.6.27 => 2.6.32 results in 6 times slowdown]
-References: <4C0E13A7.20402@msgid.tls.msk.ru> <20100608122919.GC7869@dastard>
-In-Reply-To: <20100608122919.GC7869@dastard>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <alpine.LFD.2.00.1006081313080.4506@i5.linux-foundation.org>
+References: <4C0D3853.60000@petalogix.com>
+	<alpine.LFD.2.00.1006081313080.4506@i5.linux-foundation.org>
+Date: Tue, 8 Jun 2010 22:36:19 +0200
+X-Google-Sender-Auth: S5kbZFm7h4Rn50ZtjY3-KJeXHRc
+Message-ID: <AANLkTikeD21EtwtASzj8RksDqZyEof_kmUTnNr2HwwU2@mail.gmail.com>
+Subject: Re: [GIT PULL] arch/microblaze fixes for 2.6.35-rc3 v2
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Michal Simek <michal.simek@petalogix.com>,
+       LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-08.06.2010 16:29, Dave Chinner wrote:
-> On Tue, Jun 08, 2010 at 01:55:51PM +0400, Michael Tokarev wrote:
->> Hello.
->>
->> I've got a.. difficult issue here, and am asking if anyone else
->> has some expirence or information about it.
->>
->> Production environment (database).  Machine with an Adaptec
->> RAID SCSI controller, 6 drives in raid10 array, XFS filesystem
->> and Oracle database on top of it (with - hopefully - proper
->> sunit/swidth).
->>
->> Upgrading kernel from 2.6.27 to 2.6.32, and users starts screaming
->> about very bad performance.  Iostat reports increased I/O latencies,
->> I/O time increases from ~5ms to ~30ms.  Switching back to 2.6.27,
->> and everything is back to normal (or, rather, usual).
->>
->> I tried testing I/O with a sample program which performs direct random
->> I/O on a given device, and all speeds are actually better in .32
->> compared with .27, except of random concurrent r+w test, where .27
->> gives a bit more chances to reads than .32.  Looking at the synthetic
->> tests I'd expect .32 to be faster, but apparently it is not.
->>
->> This is only one machine here which is still running 2.6.27, all the
->> rest are upgraded to 2.6.32, and I see good performance of .32 there.
->> But this is also the only machine with hardware raid controller, which
->> is onboard and hence not easy to get rid of, so I'm sorta forced to
->> use it (I prefer software raid solution because of numerous reasons).
->>
->> One possible cause of this that comes to mind is block device write
->> barriers.  But I can't find when they're actually implemented.
->>
->> The most problematic issue here is that this is only one machine that
->> behaves like this, and it is a production server, so I've very little
->> chances to experiment with it.
->>
->> So before the next try, I'd love to have some suggestions about what
->> to look for.   In particular, I think it's worth the effort to look
->> at write barriers, but again, I don't know how to check if they're
->> actually being used.
->>
->> Anyone have suggestions for me to collect and to look at?
+On Tue, Jun 8, 2010 at 22:14, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
+> On Mon, 7 Jun 2010, Michal Simek wrote:
+>> here are only fixes for Microblaze. There is no any new features.
+>> (flush_dcache_page patch fix problem on WB system)
+>> Just note: Some new patches broke Microblaze arch that's why I would like to
+>> add at least these patches to your tree.
 >
-> http://xfs.org/index.php/XFS_FAQ#Q._Should_barriers_be_enabled_with_storage_which_has_a_persistent_write_cache.3F
+> This _still_ doesn't seem to be "just regressions and major bugfixes for
+> things like oopses and security issues".
+>
+> Why do I even have to send this email?
 
-Yes, I've seen this.  We use xfs for quite long time.  The on-board
-controller does not have battery unit, so it should be no different
-than a software raid array or single drive.
+Seems like you will have written more angry emails than there will be
+new commits in 2.6.35-rc3 ;-)
 
-But I traced the issue to a particular workload -- see $subject.
+Gr{oetje,eeting}s,
 
-Simple test doing random reads or writes of 4k blocks in a 1Gb
-file located on an xfs filesystem, Mb/sec:
+						Geert
 
-                      sync  direct
-              read   write   write
-2.6.27 xfs   1.17    3.69    3.80
-2.6.32 xfs   1.26    0.52    5.10
-                      ^^^^
-2.6.32 ext3  1.19    4.91    5.02
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
 
-Note the 10 times difference between O_SYNC and O_DIRECT writes
-in 2.6.32.  This is, well, huge difference, and this is where
-the original slowdown comes from, apparently.  In 2.6.27 both
-sync and direct writes are on-par with each other, in .32
-direct write has improved, but sync write is just pathetic now.
-And compared with previous o_sync, that's about 6 times the
-difference which I reported previously.
-
-We're running a legacy oracle application here, on Oracle8,
-which does not support O_DIRECT and uses O_SYNC.  So it gets
-hit by this issue quite badly - no doubt users start screaming
-after switching to .32.
-
-I also tested ext3fs, for comparison.  This one does not have
-that problem and works just fine in both .32 and .27.  I also
-tried disabling barriers for xfs, which made no difference
-whatsoever.
-
-So it's O_SYNC writes on XFS which are problematic.  Together
-with hw raid apparently, since no one noticed when I switched
-other machines (with sw raid) from .27 to .32.
-
-I'll _try_ to find when the problem first appeared, but it is
-not that simple since I've only very small time window for
-testing.
-
-Thanks!
-
-/mjt
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+							    -- Linus Torvalds
