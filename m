@@ -1,51 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755055Ab0FHMKe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jun 2010 08:10:34 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:60782 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1754671Ab0FHMKd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jun 2010 08:10:33 -0400
-Message-ID: <4C0E3265.4020601@cn.fujitsu.com>
-Date: Tue, 08 Jun 2010 20:07:01 +0800
-From: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
-User-Agent: Thunderbird 2.0.0.24 (Windows/20100228)
+	id S1755112Ab0FHMP7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jun 2010 08:15:59 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:60907 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754891Ab0FHMP5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Jun 2010 08:15:57 -0400
+Date: Tue, 8 Jun 2010 14:15:43 +0200
+From: Karel Zak <kzak@redhat.com>
+To: Miklos Szeredi <miklos@szeredi.hu>
+Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+       util-linux-ng@vger.kernel.org
+Subject: Re: [ANNOUNCE] util-linux-ng v2.18-rc1
+Message-ID: <20100608121542.GA2200@nb.net.home>
+References: <20100608104618.GA18342@nb.net.home> <E1OLwWP-0003Wp-ST@pomaz-ex.szeredi.hu>
 MIME-Version: 1.0
-To: Avi Kivity <avi@redhat.com>
-CC: Marcelo Tosatti <mtosatti@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-       KVM list <kvm@vger.kernel.org>
-Subject: [PATCH 3/3] KVM: MMU: delay local tlb flush
-References: <4C0E31F1.70803@cn.fujitsu.com>
-In-Reply-To: <4C0E31F1.70803@cn.fujitsu.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <E1OLwWP-0003Wp-ST@pomaz-ex.szeredi.hu>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-delay local tlb flush until enter guest moden, it can reduce vpid flush
-frequency and reduce remote tlb flush IPI(if KVM_REQ_TLB_FLUSH bit is
-already set, IPI is not sent)
+On Tue, Jun 08, 2010 at 12:59:05PM +0200, Miklos Szeredi wrote:
+> On Tue, 8 Jun 2010, Karel Zak wrote:
+> > umount(8):
+> >   - supports new command line option "-f/--fake" to avoid umount(2) syscall
+> 
+> I think you just mean "--fake",  -f is --force.
 
-Signed-off-by: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
----
- arch/x86/kvm/mmu.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ Yes. Fixed in ReleaseNotes, thanks.
 
-diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
-index 7319098..75ddaa1 100644
---- a/arch/x86/kvm/mmu.c
-+++ b/arch/x86/kvm/mmu.c
-@@ -2362,7 +2362,7 @@ static int nonpaging_init_context(struct kvm_vcpu *vcpu)
- void kvm_mmu_flush_tlb(struct kvm_vcpu *vcpu)
- {
- 	++vcpu->stat.tlb_flush;
--	kvm_x86_ops->tlb_flush(vcpu);
-+	set_bit(KVM_REQ_TLB_FLUSH, &vcpu->requests);
- }
- 
- static void paging_new_cr3(struct kvm_vcpu *vcpu)
+    Karel
+
 -- 
-1.6.1.2
-
-
+ Karel Zak  <kzak@redhat.com>
+ http://karelzak.blogspot.com
