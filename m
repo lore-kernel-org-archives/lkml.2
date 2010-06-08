@@ -1,87 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753847Ab0FHIhJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jun 2010 04:37:09 -0400
-Received: from mail-gw0-f46.google.com ([74.125.83.46]:39935 "EHLO
-	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752849Ab0FHIhG (ORCPT
+	id S1754076Ab0FHIiV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jun 2010 04:38:21 -0400
+Received: from smtp.nokia.com ([192.100.105.134]:24717 "EHLO
+	mgw-mx09.nokia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753438Ab0FHIiU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jun 2010 04:37:06 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:date:message-id:subject:from:to:content-type;
-        b=Bwi1jGEXi58239IffvSSsPVuSUIg3stYitSXboWquaB/sJ8bOkdYx3sKwZbRBEfnSd
-         HKm3k/nxbiR7sUad+HiB9oRUpNfsNHxJyXyNApyNKSOcfGmuIvyCAgKmeDCS/f3uRrS4
-         N9K0DWpqQDBs6ai7lhiFYKBDECqQsVlzpLzww=
-MIME-Version: 1.0
-Date: Tue, 8 Jun 2010 16:37:04 +0800
-Message-ID: <AANLkTik9UM9ta3r7ZNt8Z-CNS6Vz-aIWb_qewgECFfoe@mail.gmail.com>
-Subject: [PATCH] Documentation/filesystems/xip.txt: clarify the statement: The 
-	block device option is mandatory for execute-in-place
-From: shenghui <crosslonelyover@gmail.com>
-To: linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org,
-       linux-ext4@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+	Tue, 8 Jun 2010 04:38:20 -0400
+Subject: Re: OMAP video compile error; regression from 2.6.33-rc4 onward
+ (including current master)
+From: Tomi Valkeinen <tomi.valkeinen@nokia.com>
+To: ext Luke-Jr <luke@dashjr.org>
+Cc: "slapin@ossfans.org" <slapin@ossfans.org>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>
+In-Reply-To: <201006071117.22645.luke@dashjr.org>
+References: <201006061652.39248.luke@dashjr.org>
+	 <1275896854.2549.14.camel@tubuntu.research.nokia.com>
+	 <201006071117.22645.luke@dashjr.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 08 Jun 2010 11:36:52 +0300
+Message-ID: <1275986212.2549.41.camel@tubuntu.research.nokia.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 08 Jun 2010 08:37:21.0709 (UTC) FILETIME=[CFFF65D0:01CB06E5]
+X-Nokia-AV: Clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
+On Mon, 2010-06-07 at 18:17 +0200, ext Luke-Jr wrote:
+> On Monday 07 June 2010 02:47:34 am Tomi Valkeinen wrote:
+> > I don't have any device that uses RFBI so I can't test it, but how about
+> > this patch:
+> 
+> Unfortunately, I can't test it either since N8x0 has no mainline support for 
+> video output, nor can until CBus is merged. :(
 
-      The origin text in xip.txt said:
-" The block device operation is optional, these block devices support it as of
-  today:
-  - dcssblk: s390 dcss block device driver
-"
+Okay. I'll put it in, then, as it at least compiles.
 
-      While in fs/ext2/xip.c, we can get the following code:
-  65void ext2_xip_verify_sb(struct super_block *sb)
-  66{
-  67        struct ext2_sb_info *sbi = EXT2_SB(sb);
-  68
-  69        if ((sbi->s_mount_opt & EXT2_MOUNT_XIP) &&
-  70            !sb->s_bdev->bd_disk->fops->direct_access) {
-  71                sbi->s_mount_opt &= (~EXT2_MOUNT_XIP);
-  72                ext2_msg(sb, KERN_WARNING,
-  73                             "warning: ignoring xip option - "
-  74                             "not supported by bdev");
-  75        }
-  76}
-
-        While the statement in the origin text may be against other
-block devices, I get confused at first, so I modify the statement
-to make it more clear.
+ Tomi
 
 
-Signed-off-by: Wang Sheng-Hui <crosslonelyover@gmail.com>
-
----
- Documentation/filesystems/xip.txt |    3 +--
- 1 files changed, 1 insertions(+), 2 deletions(-)
-
-diff --git a/Documentation/filesystems/xip.txt
-b/Documentation/filesystems/xip.txt
-index 0466ee5..bef4120 100644
---- a/Documentation/filesystems/xip.txt
-+++ b/Documentation/filesystems/xip.txt
-@@ -35,8 +35,7 @@ is performed. A struct block_device reference is
-used to address the device,
- and a sector_t argument is used to identify the individual block. As an
- alternative, memory technology devices can be used for this.
-
--The block device operation is optional, these block devices support it as of
--today:
-+The block device operation is mandatory for execute-in-place, these
-block devices support it as of today:
- - dcssblk: s390 dcss block device driver
-
- An address space operation named get_xip_mem is used to retrieve references
--- 
-1.7.0.1
-
-
--- 
-
-
-Thanks and Best Regards,
-shenghui
