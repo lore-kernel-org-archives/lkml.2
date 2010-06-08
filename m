@@ -1,31 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752687Ab0FHK7N (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jun 2010 06:59:13 -0400
-Received: from fxip-0047f.externet.hu ([88.209.222.127]:57754 "EHLO
-	pomaz-ex.szeredi.hu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751716Ab0FHK7L (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jun 2010 06:59:11 -0400
-To: Karel Zak <kzak@redhat.com>
-CC: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-       util-linux-ng@vger.kernel.org
-In-reply-to: <20100608104618.GA18342@nb.net.home> (message from Karel Zak on
-	Tue, 8 Jun 2010 12:46:18 +0200)
-Subject: Re: [ANNOUNCE] util-linux-ng v2.18-rc1
-References: <20100608104618.GA18342@nb.net.home>
-Message-Id: <E1OLwWP-0003Wp-ST@pomaz-ex.szeredi.hu>
-From: Miklos Szeredi <miklos@szeredi.hu>
-Date: Tue, 08 Jun 2010 12:59:05 +0200
+	id S1752899Ab0FHLDV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jun 2010 07:03:21 -0400
+Received: from sh.osrg.net ([192.16.179.4]:51283 "EHLO sh.osrg.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752007Ab0FHLDU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Jun 2010 07:03:20 -0400
+Date: Tue, 8 Jun 2010 20:03:15 +0900
+To: michal.simek@petalogix.com
+Cc: fujita.tomonori@lab.ntt.co.jp, linux-kernel@vger.kernel.org
+Subject: Re: [GIT PULL] arch/microblaze fixes for 2.6.35-rc3 v2
+From: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+In-Reply-To: <4C0E1B65.9000603@petalogix.com>
+References: <4C0D3853.60000@petalogix.com>
+	<20100608083015L.fujita.tomonori@lab.ntt.co.jp>
+	<4C0E1B65.9000603@petalogix.com>
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+Message-Id: <20100608200201I.fujita.tomonori@lab.ntt.co.jp>
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-3.0 (sh.osrg.net [192.16.179.4]); Tue, 08 Jun 2010 20:03:15 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 8 Jun 2010, Karel Zak wrote:
-> umount(8):
->   - supports new command line option "-f/--fake" to avoid umount(2) syscall
+On Tue, 08 Jun 2010 12:28:53 +0200
+Michal Simek <michal.simek@petalogix.com> wrote:
 
-I think you just mean "--fake",  -f is --force.
+> FUJITA Tomonori wrote:
+> > On Mon, 07 Jun 2010 20:20:03 +0200
+> > Michal Simek <michal.simek@petalogix.com> wrote:
+> > 
+> >> Hi Linus,
+> >>
+> >> here are only fixes for Microblaze. There is no any new features. 
+> >> (flush_dcache_page patch fix problem on WB system)
+> >> Just note: Some new patches broke Microblaze arch that's why I would 
+> >> like to add at least these patches to your tree.
+> >>
+> >> Thanks,
+> >> Michal
+> >>
+> >>
+> >> The following changes since commit 386f40c86d6c8d5b717ef20620af1a750d0dacb4:
+> >>    Linus Torvalds (1):
+> >>          Revert "tty: fix a little bug in scrup, vt.c"
+> >>
+> >> are available in the git repository at:
+> >>
+> >>    git://git.monstr.eu/linux-2.6-microblaze.git next
+> >>
+> >> Michal Simek (7):
+> >>        microblaze: Fix __copy_to/from_user_inatomic macros
+> >>        microblaze: Sync noMMU and MMU setup_memory
+> >>        microblaze: Fix comment for TLB
+> >>        microblaze: Implement flush_dcache_page macro
+> >>        microblaze: Enable NEED_SG_DMA_LENGTH
+> > 
+> > Sorry, my scatterlist patchset breaks microblaze?
+> 
+> yes, it does.
+> http://www.monstr.eu/wiki/doku.php?id=log:2010-06-07_12_23_12#folded_17
 
-Thanks,
-Miklos
+Sorry about that.
+
+
+> > Seems that microblaze can simply remove sg->dma_length instead of
+> > enabling NEED_SG_DMA_LENGTH. If sg->dma_length is always equal to
+> > sg->length on your architecture, you don't need to waste memory for
+> > sg->dma_length.
+> 
+> Please correct me if I am wrong. dma_length is used for 64bit machines.
+
+dma_length is used for 32bit machines too.
+
+dma_length is necessary if sg->dma_length can be different to
+sg->length, that is, some IOMMU implementations merge several sg
+entries to one sg entry.
+
+There are not many 32bit architectures that support an IOMMU so
+NEED_SG_DMA_LENGTH is usually used on 64bit archs though.
+
+
+> Microblaze is "only" 32bit.
+> 
+> Can you please generate proper patch?
+
+Sure. With this patch, you don't need to enable NEED_SG_DMA_LENGTH.
+
+=
+From: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+Subject: [PATCH] microblaze: fix sg_dma_len() regression
+
+The commit 8e98307de0d746cb0845ebf66535ce2184c25a2 broke microblaze.
+
+dma_direct_map_sg() sets sg->dma_length, however microblaze doesn't
+set NEED_SG_DMA_LENGTH so scatterlist strcutres doesn't include
+dma_length.
+
+sg->dma_length is always equal to sg->length on microblaze. So we
+don't need to set set dma_length, that is, microblaze can simply use
+sg->length.
+
+Signed-off-by: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+---
+ arch/microblaze/kernel/dma.c |    1 -
+ 1 files changed, 0 insertions(+), 1 deletions(-)
+
+diff --git a/arch/microblaze/kernel/dma.c b/arch/microblaze/kernel/dma.c
+index 9dcd90b..79c7465 100644
+--- a/arch/microblaze/kernel/dma.c
++++ b/arch/microblaze/kernel/dma.c
+@@ -90,7 +90,6 @@ static int dma_direct_map_sg(struct device *dev, struct scatterlist *sgl,
+ 	/* FIXME this part of code is untested */
+ 	for_each_sg(sgl, sg, nents, i) {
+ 		sg->dma_address = sg_phys(sg) + get_dma_direct_offset(dev);
+-		sg->dma_length = sg->length;
+ 		__dma_sync_page(page_to_phys(sg_page(sg)), sg->offset,
+ 							sg->length, direction);
+ 	}
+-- 
+1.6.5
+
