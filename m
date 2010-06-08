@@ -1,94 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752377Ab0FHCHU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jun 2010 22:07:20 -0400
-Received: from crca.org.au ([74.207.252.120]:35067 "EHLO crca.org.au"
+	id S1752624Ab0FHCIE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jun 2010 22:08:04 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:60286 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751426Ab0FHCHT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jun 2010 22:07:19 -0400
-X-Bogosity: Ham, spamicity=0.000000
-Message-ID: <4C0DA5D1.3090805@crca.org.au>
-Date: Tue, 08 Jun 2010 12:07:13 +1000
-From: Nigel Cunningham <ncunningham@crca.org.au>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.9) Gecko/20100423 Thunderbird/3.0.4
+	id S1750897Ab0FHCIB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Jun 2010 22:08:01 -0400
+Date: Mon, 7 Jun 2010 22:07:41 -0400
+From: Josef Bacik <josef@redhat.com>
+To: Dave Chinner <david@fromorbit.com>
+Cc: Josef Bacik <josef@redhat.com>, Jeffrey Merkey <jeffmerkey@gmail.com>,
+       linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+       viro@zeniv.linux.org.uk
+Subject: Re: 2.6.34 echo j > /proc/sysrq-trigger causes inifnite
+	unfreeze/Thaw event
+Message-ID: <20100608020741.GG2336@localhost.localdomain>
+References: <AANLkTim74SREZDq7VQhq6Z1hKXZLINoq0t8rkyQecmM1@mail.gmail.com> <20100607010542.GB27325@dastard> <20100607213631.GE2336@localhost.localdomain> <20100607215925.GF2336@localhost.localdomain> <20100607232350.GA6965@dastard>
 MIME-Version: 1.0
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-CC: LKML <linux-kernel@vger.kernel.org>,
-       pm list <linux-pm@lists.linux-foundation.org>,
-       TuxOnIce-devel <tuxonice-devel@tuxonice.net>
-Subject: Re: [linux-pm] [SUSPECTED SPAM] Re: Proposal for a new algorithm
- for reading & writing a hibernation image.
-References: <9rpccea67yy402c975fqru8r.1275576653521@email.android.com>	<201006062104.55869.rjw@sisk.pl> <4C0C843D.6030008@crca.org.au> <201006071049.09466.rjw@sisk.pl>
-In-Reply-To: <201006071049.09466.rjw@sisk.pl>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100607232350.GA6965@dastard>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Rafael.
+On Tue, Jun 08, 2010 at 09:23:50AM +1000, Dave Chinner wrote:
+> On Mon, Jun 07, 2010 at 05:59:25PM -0400, Josef Bacik wrote:
+> > On Mon, Jun 07, 2010 at 05:36:31PM -0400, Josef Bacik wrote:
+> > > On Mon, Jun 07, 2010 at 11:05:42AM +1000, Dave Chinner wrote:
+> > > > On Thu, Jun 03, 2010 at 11:30:30PM -0600, Jeffrey Merkey wrote:
+> > > > > causes the FS Thaw stuff in fs/buffer.c to enter an infinite loop
+> > > > > filling the /var/log/messages with junk and causing the hard drive to
+> > > > > crank away endlessly.
+> > > > 
+> > > > Hmmm, looks pretty obvious what the 2.6.34 bug is:
+> > > > 
+> > > >         while (sb->s_bdev && !thaw_bdev(sb->s_bdev, sb))
+> > > >                 printk(KERN_WARNING "Emergency Thaw on %s\n",
+> > > >                        bdevname(sb->s_bdev, b));
+> > > > 
+> > > > thaw_bdev() returns 0 on success or not frozen, and returns non-zero
+> > > > only if the unfreeze failed. Looks like it was broken from the start
+> > > > to me.
+> > > > 
+> > > > Fixing that endless loop shows some other problems on 2.6.35,
+> > > > though: the emergency unfreeze is not unfreezing frozen XFS
+> > > > filesystems.  This appears to be caused by
+> > > > 18e9e5104fcd9a973ffe3eed3816c87f2a1b6cd2 ("Introduce freeze_super
+> > > > and thaw_super for the fsfreeze ioctl").
+> > > > 
+> > > > It appears that this introduces a significant mismatch between the
+> > > > bdev freeze/thaw and the super freze/thaw. That is, if you freeze
+> > > > with the sb method, you can only unfreeze via the sb method.
+> > > > however, if you freeze via the bdev method, you can unfreeze by
+> > > > either the bdev or sb method.  This breaks the nesting of the
+> > > > freeze/thaw operations between dm and userspace, which can lead to
+> > > > premature thawing of the filesystem.
+> > > > 
+> > > > Then there is this deadlock:
+> > > > 
+> > > > iterate_supers(do_thaw_one) does:
+> > > > 
+> > > > 	down_read(&sb->s_umount);
+> > > > 	do_thaw_one(sb)
+> > > > 	  thaw_bdev(sb->s_bdev, sb))
+> > > > 	    thaw_super(sb)
+> > > > 	      down_write(&sb->s_umount);
+> > > > 
+> > > > Which is an instant deadlock.
+> > > > 
+> > > > These problems were hidden by the fact that the emergency thaw code
+> > > > was not getting past the thaw_bdev guards and so not triggering
+> > > > this deadlock.
+> > > > 
+> > > > Al, Josef, what's the best way to fix this mess?
+> > > > 
+> > > 
+> > > Well we can do something like the following
+> > > 
+> > > 1) Make a __thaw_super() that just does all the work currently in thaw_super(),
+> > > just without taking the s_umount semaphore.
+> > > 2) Make an thaw_bdev_force or something like that that just sets
+> > > bd_fsfreeze_count to 0 and calls __thaw_super().  The original intent was to
+> > > make us call thaw until the thaw actually occured, so might as well just make it
+> > > quick and painless.
+> 
+> Makes sense.  Only problem I can see for emergency thaws is that
+> we'd call __thaw_super() under a down_read(&sb->s_umount) instead of
+> the down_write(&sb->s_umount) lock we are currently supposed to hold
+> for it. I don't think this is a problem because thaw_bdev is
+> serialised by the bd_fsfreeze_mutex and it would still lock out new
+> cals to freeze_super.
+> 
 
-On 07/06/10 18:49, Rafael J. Wysocki wrote:
-> On Monday 07 June 2010, Nigel Cunningham wrote:
->> On 07/06/10 05:04, Rafael J. Wysocki wrote:
->>> On Sunday 06 June 2010, Maxim Levitsky wrote:
->>>> On Sun, 2010-06-06 at 15:57 +0200, Rafael J. Wysocki wrote:
->>>>> On Sunday 06 June 2010, Maxim Levitsky wrote:
->>>>> So how TuxOnIce helps here?
->>>> Very simple.
->>>>
->>>> With swsusp, I can save 750MB (memory) + 250 Vram (vram)
->>>> With full memory save I can save (1750 MB of memory) + 250 MB of
->>>> vram....
->>>
->>> So what about being able to save 1600 MB total instead of the 2 GB
->>> (which is what we're talking about in case that's not clear)?  Would it
->>> be _that_ _much_ worse?
->>
->> That all depends on what is in the 400MB you discard.
->
-> Well, they are discarded following the LRU algorithm and it's very much
-> like loading a program that takes 20% of your memory upfront.
->
->> The difference is "Just as if you'd never hibernated" vs something
->> closer to "Just as if you'd only just started up". We can't make
->> categorical statements because it really does depend upon what you
->> discard and what you want to do post-resume - that is, how useful the
->> memory you discard would have been. That's always going to vary from
->> case to case.
->
-> Not so much.
->
-> Besides, it doesn't matter too much.
->
-> Let me reiterate, please.  Doing serious memory management behind the back
-> of the mm subsystem (and trying to do that so it doesn't notice) is wrong and
-> the reason it works is by accident.  As long as you do that, I have a problem
-> with TuxOnIce.
+Urgh yeah you're right.
 
-I know we're at a point where it doesn't matter what I say - you've made 
-up you're mind and are not going to be persuaded by anything I say. 
-We're degenerating from a technical discussion into emotive language.
+> > > 3) Make do_thaw_one() call __thaw_super if sb->s_bdev doesn't exist.  I'm not
+> > > sure if this happens currently, but it's nice just in case.
+> 
+> It doesn't happen currently, not sure what sort of kaboom might
+> occur if we do :/
+> 
+> What about btrfs - wasn't freeze/thaw_super added so it could
+> avoid the bdev interfaces as s_bdev is not reliable? Doesn't that
+> mean we need to call thaw_super() in that case, even though we have
+> a non-null sb->s_bdev?
+> 
 
-This is why I object to the way you're picturing things. TuxOnIce isn't 
-doing "serious memory management behind the back of the mm subsystem" or 
-working "by accident". It's an algorithm that has been designed to rely 
-on and use both the freezer and the existing mm subsystem to provide a 
-means wherein we can get more reliable hibernation and a fuller image of 
-memory.
+Yeah, thats why I made it unconditionally call thaw_super(), it should work out
+fine for btrfs.
 
-May I suggest that we seek to get away from this point and focus on what 
-we can agree on. Do you have any object to my work in the areas of:
+> > > This takes care of the s_umount problem and makes sure that do_thaw_one does
+> > > actually thaw the device.  Does this sound kosher to everybody?  Thanks,
+> 
+> It will fix the emergency thaw problems, I think, but it doesn't
+> solve the nesting problem. i.e.  freeze_bdev, followed by
+> ioctl_fsfreeze(), followed by ioctl_fsthaw() will result in the
+> filesystem being unfrozen while the caller for freeze_bdev (e.g.
+> dm-snapshot) still needs the filesystem to be frozen.
+> 
+> Basically the change to the ioctls to call freeze/thaw_super() is
+> the problem here - to work with dm-snapshot corectly they need to
+> call freeze/thaw_bdev.  Perhaps we need some other way of signalling
+> whether to use the bdev or sb level freeze/thaw interface as I think
+> it needs to be consistent across a given superblock (dm, ioctl, fs
+> and emergency thaw), not a mix of both...
+> 
 
-- speed (async I/O, multithreaded I/O)
-- flexibility (support for multiple swap devices, support for non swap, 
-UUID support)
-- tuneability (sysfs interface)
-- anything else I might have forgotten to mention
+Well damnit.  I guess what we need to do is get rid of the freeze_bdev/thaw_bdev
+interface altogether, and move the count stuff down to the super.  Anybody who
+calls freeze_bdev/thaw_bdev knows the sb anyway, so if we get rid of
+bd_fsfreeze_count and move it to sb->s_fsfreeze_count and do the same with
+bd_fsfreeze_mutex then we could solve this altogether and simplify the
+interface.  It grows the sb struct, but hey it shrinks the bdev struct :).  How
+horrible of an idea is that?  Thanks,
 
-If so, perhaps we can deal with those issues before I get too carried 
-away preparing patches to get them merged.
-
-Regards,
-
-Nigel
+Josef
