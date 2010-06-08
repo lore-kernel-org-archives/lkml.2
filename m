@@ -1,50 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755530Ab0FHXKh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jun 2010 19:10:37 -0400
-Received: from fieldses.org ([174.143.236.118]:55128 "EHLO fieldses.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751961Ab0FHXKg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jun 2010 19:10:36 -0400
-Date: Tue, 8 Jun 2010 19:10:24 -0400
-From: "J. Bruce Fields" <bfields@fieldses.org>
-To: "David P. Quigley" <dpquigl@tycho.nsa.gov>
-Cc: hch@infradead.org, viro@zeniv.linux.org.uk, casey@schaufler-ca.com,
-       sds@tycho.nsa.gov, matthew.dodd@sparta.com, trond.myklebust@fys.uio.no,
-       linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-       linux-security-module@vger.kernel.org, selinux@tycho.nsa.gov,
-       labeled-nfs@linux-nfs.org
-Subject: Re: Labeled-NFS: Security Label support in NFSv4
-Message-ID: <20100608231024.GC26435@fieldses.org>
-References: <1276014176-20315-1-git-send-email-dpquigl@tycho.nsa.gov>
+	id S1756761Ab0FHWtb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jun 2010 18:49:31 -0400
+Received: from g1t0026.austin.hp.com ([15.216.28.33]:39239 "EHLO
+	g1t0026.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754344Ab0FHWt3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Jun 2010 18:49:29 -0400
+From: Bjorn Helgaas <bjorn.helgaas@hp.com>
+To: Jesse Barnes <jbarnes@virtuousgeek.org>
+Subject: Re: [PATCH -v2] pci: clear bridge resource size if BIOS assign bad one
+Date: Tue, 8 Jun 2010 16:48:58 -0600
+User-Agent: KMail/1.13.2 (Linux/2.6.32-22-generic; KDE/4.4.2; x86_64; ; )
+Cc: Yinghai Lu <yinghai.lu@oracle.com>,
+       Yannick Roehlly <yannick.roehlly@free.fr>,
+       "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+References: <bug-16009-13546@https.bugzilla.kernel.org/> <4C0813D7.7080900@oracle.com> <20100608144350.366071fd@virtuousgeek.org>
+In-Reply-To: <20100608144350.366071fd@virtuousgeek.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1276014176-20315-1-git-send-email-dpquigl@tycho.nsa.gov>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201006081649.00332.bjorn.helgaas@hp.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 08, 2010 at 12:22:46PM -0400, David P. Quigley wrote:
-> It has been quite a while since the last time we submitted a patch set to the
-> mailing list for review. I met with Trond at the last IETF meeting and he
-> suggested that we resubmit the patches for review since the IETF process has
-> moved along since the last posting. When reviewing the code please be critical
-> of it. If you want a tree with the patches already applied we have posted a
-> public git tree that is ready for cloning and use. This tree can be found at
-> http://git.selinuxproject.org/git and can be cloned with the command below. You
-> can also find information on how to setup a labeled nfs mount at
-> http://www.selinuxproject.org/page/Labeled_NFS however the putclientlabel mount
-> option specified in the setup document is no longer supported.
+On Tuesday, June 08, 2010 03:43:50 pm Jesse Barnes wrote:
+> On Thu, 03 Jun 2010 13:43:03 -0700
+> Yinghai Lu <yinghai.lu@oracle.com> wrote:
 > 
-> git-clone git://git.selinuxproject.org/~dpquigl/lnfs.git
+> > 
+> > Make sure We can reject wrong size from BIOS.
+> > 
+> > https://bugzilla.kernel.org/show_bug.cgi?id=16009
+> > Yannick found that video does not work with 2.6.34
+> > 
+> > the root cause:
+> > BIOS assigned wrong range to pci bridge.  and before 2.6.34 kernel will
+> > just get range that is needed.
+> > for 2.6.34.
+> > |	d65245c PCI: don't shrink bridge resources
+> > will try to range size is bigger than old one.
+> > (used by boot stage multi-try to get big BAR size for pci bridge,
+> >  and pcie hotplug to get big range)
+> > 
+> > So try to 0 for old size for pci bridge in this boot stage case.
+> > 
+> > Reported-by: Yannick <yannick.roehlly@free.fr>
+> > Analyzed-by: Bjorn Helgaas <bjorn.helgaas@hp.com>
+> > Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+> > 
 > 
-> 
+> Bjorn, are you ok with this version?  It would probably help to have
+> some comments here too (I can add them), indicating that we'll try to
+> reassign the resource later, rather than just ignoring it as the
+> existing comment implies.
 
-Note the bakeathon's next week.  I'm hosting (and going a little crazy
-trying to do the setup), and I think Trond's travelling on vacation this
-week.  Hopefully others will have comments, but if you want anything
-from either of us you may want to try again in a couple weeks.
+I guess I'm ok with it.  I can't make much sense out of the changelog,
+and I don't really understand how the reallocation stuff works.
 
---b.
+In this case, the aperture *size* from the BIOS is actually OK, but
+the beginning of the aperture overlaps system memory.  With Yinghai's
+patch, we reduce the size and move the start.  Windows was able to
+just move the start of the aperture and preserve the original
+0x20000000 size (but I think it had to move something else out of
+the way).
+
+Bjorn
