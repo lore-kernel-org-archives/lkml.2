@@ -1,60 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756369Ab0FHUlY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jun 2010 16:41:24 -0400
-Received: from mga01.intel.com ([192.55.52.88]:45357 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754767Ab0FHUlX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jun 2010 16:41:23 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.53,386,1272870000"; 
-   d="scan'208";a="805989946"
-Date: Tue, 8 Jun 2010 13:41:23 -0700
-From: jacob pan <jacob.jun.pan@linux.intel.com>
-To: ebiederm@xmission.com (Eric W. Biederman)
-Cc: Alan Cox <alan@linux.intel.com>, Arjan van de Ven <arjan@linux.intel.com>,
-       LKML <linux-kernel@vger.kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
-       Ingo Molnar <mingo@elte.hu>, Feng Tang <feng.tang@intel.com>,
-       Len Brown <len.brown@intel.com>
-Subject: Re: [PATCH] x86/sfi: fix ioapic gsi range
-Message-ID: <20100608134123.6d9a6fb6@jacob-laptop>
-In-Reply-To: <m1631tfh1i.fsf@fess.ebiederm.org>
-References: <1275952044-27996-1-git-send-email-jacob.jun.pan@linux.intel.com>
-	<m1631ue5ho.fsf@fess.ebiederm.org>
-	<20100607225010.342e2fab@jacob-laptop>
-	<m1631tfh1i.fsf@fess.ebiederm.org>
-Organization: OTC
-X-Mailer: Claws Mail 3.7.4 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
+	id S1756430Ab0FHUte (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jun 2010 16:49:34 -0400
+Received: from snt0-omc2-s34.snt0.hotmail.com ([65.55.90.109]:27830 "EHLO
+	snt0-omc2-s34.snt0.hotmail.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755392Ab0FHUtd convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Jun 2010 16:49:33 -0400
+Message-ID: <SNT125-W5945752E67E4FDA7E5D813C3D60@phx.gbl>
+X-Originating-IP: [164.116.126.146]
+From: Yuhong Bao <yuhongbao_386@hotmail.com>
+To: <hpa@zytor.com>, <linux@rainbow-software.org>
+CC: <mingo@elte.hu>, <linux-kernel@vger.kernel.org>, <gregkh@suse.de>
+Subject: RE: Windows side agrees that lowmem corruption is a problem too
+Date: Tue, 8 Jun 2010 13:49:32 -0700
+Importance: Normal
+In-Reply-To: <4C0EA8A1.4020801@zytor.com>
+References: <SNT125-W34B02C6BF1C272DC47AF7DC3D60@phx.gbl>
+ <4C0E949D.6090002@zytor.com> <20100608190848.GD25985@elte.hu>
+ <201006082122.25089.linux@rainbow-software.org>,<4C0EA8A1.4020801@zytor.com>
 Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 7BIT
+MIME-Version: 1.0
+X-OriginalArrivalTime: 08 Jun 2010 20:49:32.0981 (UTC) FILETIME=[19138650:01CB074C]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 08 Jun 2010 12:41:45 -0700
-ebiederm@xmission.com (Eric W. Biederman) wrote:
 
-
-> Even if sfi is never implemented on a platform where that kind of
-> hardware exists, the current sfi code is setup to coexist
-> simultaneously in the kernel with all of the infrastructure of other
-> platforms where those kinds of devices exist.  Which means there can
-> be drivers compiled into your kernel that make assumptions about
-> special properties of the irqs 0-15.
-> 
-SFI code can be compiled in with ACPI at the same time but at runtime
-there is only one used, ACPI take precedence. So there wouldn't be any
-additional conflict caused by SFI added APIC tables.
-
-> As for the question about using legacy_pic to detect the absence of
-> an irq controller that Peter raised.  We can't do that because it
-> should be possible for an acpi system with all of the legacy hardware
-> to exist without needing to implement an i8259, or ever run in the
-> historical interrupt delivery mode of pcs.
-In your case, I don't understand how would it change the calculation of
-irq mapping. Even if you don't use i8259 on a x86 PC platform, you
-still have NR_LEGACY_IRQS=legacy_pic->nr_legacy_irqs.
-
-On the other side, use NR_LEGACY_IRQS breaks the existing code for
-Moorestown in terms of irq-gsi lookup and nr_irqs_gsi.
+> Disusing 64K is something we can do unconditionally (especially since
+> we're only talking about 60K -- 15 pages -- of actually usable memory
+> anyway.)
+Unless you really have no extended memory, agreed.
+> Dropping all the low 0.6 MB (which is what it really is) is probably
+> unacceptable by default, but perhaps it makes sense to use it only for
+> ZONE_DMA or something.
+For example, for really old 8-bit ISA devices that can only address 20-bit of address space and do not use the system 8237 DMA controller.
+Yuhong Bao 		 	   		  
+_________________________________________________________________
+The New Busy think 9 to 5 is a cute idea. Combine multiple calendars with Hotmail. 
+http://www.windowslive.com/campaign/thenewbusy?tile=multicalendar&ocid=PID28326::T:WLMTAGL:ON:WL:en-US:WM_HMP:042010_5
