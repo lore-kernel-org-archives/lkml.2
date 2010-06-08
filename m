@@ -1,45 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752936Ab0FHIDf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jun 2010 04:03:35 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:52312 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751503Ab0FHIDd (ORCPT
+	id S1752816Ab0FHIJy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jun 2010 04:09:54 -0400
+Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:35396 "EHLO
+	sm-d311v.smileserver.ne.jp" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750758Ab0FHIJv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jun 2010 04:03:33 -0400
-Date: Tue, 8 Jun 2010 04:03:25 -0400
-From: Christoph Hellwig <hch@infradead.org>
-To: Dave Chinner <david@fromorbit.com>
-Cc: Christoph Hellwig <hch@infradead.org>, linux-fsdevel@vger.kernel.org,
-       linux-kernel@vger.kernel.org, xfs@oss.sgi.com,
-       akpm@linux-foundation.org
-Subject: Re: [PATCH 0/6] writeback: tracing and fixes V3.
-Message-ID: <20100608080324.GA3119@infradead.org>
-References: <1275609328-12514-1-git-send-email-david@fromorbit.com>
- <20100604074938.GB4448@infradead.org>
- <20100608001115.GB6965@dastard>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100608001115.GB6965@dastard>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+	Tue, 8 Jun 2010 04:09:51 -0400
+Message-ID: <002401cb06e1$f7b58db0$66f8800a@maildom.okisemi.com>
+From: "Masayuki Ohtake" <masa-korg@dsn.okisemi.com>
+To: "Yong Wang" <yong.y.wang@linux.intel.com>
+Cc: "Alan Cox" <alan@lxorguk.ukuu.org.uk>,
+       "LKML" <linux-kernel@vger.kernel.org>,
+       "Andrew" <andrew.chih.howe.khor@intel.com>,
+       "Intel OTC" <joel.clark@intel.com>, "Wang, Qi" <qi.wang@intel.com>,
+       "Wang, Yong Y" <yong.y.wang@intel.com>
+References: <4C0DCE87.1090802@dsn.okisemi.com> <20100608072049.GA12940@ywang-moblin2.bj.intel.com>
+Subject: Re: [PATCH] Topcliff PHUB: Generate PacketHub driver
+Date: Tue, 8 Jun 2010 17:09:43 +0900
+X-Priority: 3
+X-MSMail-Priority: Normal
+X-Mailer: Microsoft Outlook Express 6.00.2800.1983
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2800.1983
+X-Hosting-Pf: 0
+X-NAI-Spam-Score: 1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 08, 2010 at 10:11:15AM +1000, Dave Chinner wrote:
-> On Fri, Jun 04, 2010 at 03:49:38AM -0400, Christoph Hellwig wrote:
-> > 
-> > Not sure what the rules for new tracepoints are, but in addition to the
-> > fixes I'd really love to see the tracepoints in 2.6.35.
-> 
-> Personally I think they are just as important (or even more
-> important) than the bug fixes because we seem to break this code
-> regularly because nobody can clearly see what the internals are
-> doing to verify their change is working correctly.
+Hi Yong Wang
 
-Given that Linus is pretty strict about only taking regression fixes
-I'd rather get the regression fix in and miss out on the tracing until
-the next merge window then missing out on everything.
+Thank you for your comment.
+
+> Why is 50MHz so special, btw?
+This code is work around for previous HW bug.
+(CAN worked only 50MHz with previous HW)
+
+Since the HW bug has been already fixed for the latest HW,
+this code is unnecessary for the latest HW.
+
+> Note that 'a' is supposed to be surrounded by brackets, too.
+>
+> #define PCH_WRITE_REG(a, b) iowrite32((a), pcb_phub_base_address + (b))
+Thank you for your indication. We have updated.
+
+Best Regards,
+----- Original Message ----- 
+From: "Yong Wang" <yong.y.wang@linux.intel.com>
+To: "Masayuki Ohtak" <masa-korg@dsn.okisemi.com>
+Cc: "Alan Cox" <alan@lxorguk.ukuu.org.uk>; "LKML" <linux-kernel@vger.kernel.org>; "Andrew"
+<andrew.chih.howe.khor@intel.com>; "Intel OTC" <joel.clark@intel.com>; "Wang, Qi" <qi.wang@intel.com>; "Wang, Yong Y"
+<yong.y.wang@intel.com>
+Sent: Tuesday, June 08, 2010 4:20 PM
+Subject: Re: [PATCH] Topcliff PHUB: Generate PacketHub driver
+
+
+> On Tue, Jun 08, 2010 at 02:00:55PM +0900, Masayuki Ohtak wrote:
+> > Hi Alan
+> >
+> > We are now updating our Phub driver.
+> >
+> > I have a questions for your comment.
+> >
+> > (1)
+> > >> +#ifdef PCH_CAN_PCLK_50MHZ
+> > >> + /* save clk cfg register */
+> > >> + g_pch_phub_reg.clkcfg_reg = PCH_READ_REG(CLKCFG_REG_OFFSET);
+> > >> +#endif
+> > >
+> > > This makes it hard to build one kernel for everything
+> > We couldn't understand your intention.
+> > Does the above mean we must not use "#ifdef PCH_CAN_PCLK_50MHZ" in source code ?
+> >
+>
+> I think what Alan means is that you will have to build two kernel images
+> for two possible configurations of how your hardware is going to be used
+> if you write code this way. One is the case when CAN clock runs at 50MHz
+> and you will build a kernel image with PCH_CAN_PCLK_50MHZ defined. The
+> other is when CAN clock runs at other speed and you need to build
+> another kernel image with PCH_CAN_PCLK_50MHZ undefined. It would be much
+> better if one kernel image could run on all configurations.
+>
+> Why is 50MHz so special, btw? Don't you need to save and restore the
+> clock config register when CAN clock runs at other speed?
+>
+> >
+> > >> +#define PCH_READ_REG(a) ioread32((pch_phub_base_address + a))
+> >
+> > >> +
+> >
+> > >> +#define PCH_WRITE_REG(a, b) iowrite32(a, (pch_phub_base_address + b))
+> >
+> > >
+> >
+> > > These on the other hand do - but not where they are now
+> >
+> > >
+> >
+> > > iowrite32((a), pcb_phub_base_address + (b))
+> >
+> > >
+> >
+> > > (so that if a or b are expressions they are evaluated first)
+> >
+> > Modify like below.
+> >
+> > #define PCH_READ_REG(a) ioread32(pch_phub_base_address + (a))
+> >
+> > #define PCH_WRITE_REG(a, b) iowrite32(a, pch_phub_base_address + (b))
+> >
+>
+> Note that 'a' is supposed to be surrounded by brackets, too.
+>
+> #define PCH_WRITE_REG(a, b) iowrite32((a), pcb_phub_base_address + (b))
+>
+> Thanks
+> -Yong
+>
+
+
