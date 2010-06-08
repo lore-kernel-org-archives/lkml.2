@@ -1,50 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752510Ab0FHPIV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jun 2010 11:08:21 -0400
-Received: from astoria.ccjclearline.com ([64.235.106.9]:45049 "EHLO
-	astoria.ccjclearline.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751385Ab0FHPIT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jun 2010 11:08:19 -0400
-X-Greylist: delayed 10243 seconds by postgrey-1.27 at vger.kernel.org; Tue, 08 Jun 2010 11:08:19 EDT
-Date: Tue, 8 Jun 2010 08:17:30 -0400 (EDT)
-From: "Robert P. J. Day" <rpjday@crashcourse.ca>
-X-X-Sender: rpjday@lynx
-To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: online beginner's kernel programming course.  $39 (CAD).  really
-Message-ID: <alpine.DEB.2.00.1006080816320.3740@lynx>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S1752936Ab0FHPLF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jun 2010 11:11:05 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:54821 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752258Ab0FHPLC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Jun 2010 11:11:02 -0400
+Date: Tue, 8 Jun 2010 08:03:10 -0700
+From: Greg KH <gregkh@suse.de>
+To: naveen_jain@ti.com
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+       pavan_savoy@ti.com
+Subject: Re: [PATCH] drivers:staging: ti-st: add version info to sysfs
+Message-ID: <20100608150310.GA29618@suse.de>
+References: <1276008885-30282-1-git-send-email-naveen_jain@ti.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - astoria.ccjclearline.com
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - crashcourse.ca
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1276008885-30282-1-git-send-email-naveen_jain@ti.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Jun 08, 2010 at 09:54:45AM -0500, naveen_jain@ti.com wrote:
+> From: Naveen Jain <naveen_jain@ti.com>
+> 
+> Cleanup sysfs code, so that all the required sysfs entries
+> are created under /sys/bus/platform/drivers/kim now.
 
-  it's all explained here:
+Where were they ending up?
 
-http://www.crashcourse.ca/wiki/index.php/Online_beginner%27s_kernel_programming_course
+> Add version information to be available under the sysfs group
+> for kim.
 
-if you think it's worth it, tell your friends.
+How about splitting this into two different patches, as they do
+different things?
 
-rday
+thanks,
 
--- 
-
-========================================================================
-Robert P. J. Day                               Waterloo, Ontario, CANADA
-
-            Linux Consulting, Training and Kernel Pedantry.
-
-Web page:                                          http://crashcourse.ca
-Twitter:                                       http://twitter.com/rpjday
-========================================================================
+greg k-h
