@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754671Ab0FHJCe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jun 2010 05:02:34 -0400
-Received: from gir.skynet.ie ([193.1.99.77]:54874 "EHLO gir.skynet.ie"
+	id S1754581Ab0FHJCc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jun 2010 05:02:32 -0400
+Received: from gir.skynet.ie ([193.1.99.77]:54892 "EHLO gir.skynet.ie"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754513Ab0FHJC2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1754526Ab0FHJC2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 8 Jun 2010 05:02:28 -0400
 From: Mel Gorman <mel@csn.ul.ie>
 To: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
@@ -12,73 +12,121 @@ To: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
 Cc: Dave Chinner <david@fromorbit.com>, Chris Mason <chris.mason@oracle.com>,
        Nick Piggin <npiggin@suse.de>, Rik van Riel <riel@redhat.com>,
        Mel Gorman <mel@csn.ul.ie>
-Subject: [RFC PATCH 0/6] Do not call ->writepage[s] from direct reclaim and use a_ops->writepages() where possible
-Date: Tue,  8 Jun 2010 10:02:19 +0100
-Message-Id: <1275987745-21708-1-git-send-email-mel@csn.ul.ie>
+Subject: [PATCH 2/6] tracing, vmscan: Add trace events for LRU page isolation
+Date: Tue,  8 Jun 2010 10:02:21 +0100
+Message-Id: <1275987745-21708-3-git-send-email-mel@csn.ul.ie>
 X-Mailer: git-send-email 1.7.1
+In-Reply-To: <1275987745-21708-1-git-send-email-mel@csn.ul.ie>
+References: <1275987745-21708-1-git-send-email-mel@csn.ul.ie>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I finally got a chance last week to visit the topic of direct reclaim
-avoiding the writing out pages. As it came up during discussions the last
-time, I also had a stab at making the VM writing ranges of pages instead
-of individual pages. I am not proposing for merging yet until I want to see
-what people think of this general direction and if we can agree on if this
-is the right one or not.
+This patch adds an event for when pages are isolated en-masse from the
+LRU lists. This event augments the information available on LRU traffic
+and can be used to evaluate lumpy reclaim.
 
-To summarise, there are two big problems with page reclaim right now. The
-first is that page reclaim uses a_op->writepage to write a back back
-under the page lock which is inefficient from an IO perspective due to
-seeky patterns.  The second is that direct reclaim calling the filesystem
-splices two potentially deep call paths together and potentially overflows
-the stack on complex storage or filesystems. This series is an early draft
-at tackling both of these problems and is in three stages.
+Signed-off-by: Mel Gorman <mel@csn.ul.ie>
+---
+ include/trace/events/vmscan.h |   46 +++++++++++++++++++++++++++++++++++++++++
+ mm/vmscan.c                   |   14 ++++++++++++
+ 2 files changed, 60 insertions(+), 0 deletions(-)
 
-The first 4 patches are a forward-port of trace points that are partly
-based on trace points defined by Larry Woodman but never merged. They trace
-parts of kswapd, direct reclaim, LRU page isolation and page writeback. The
-tracepoints can be used to evaluate what is happening within reclaim and
-whether things are getting better or worse. They do not have to be part of
-the final series but might be useful during discussion.
-
-Patch 5 writes out contiguous ranges of pages where possible using
-a_ops->writepages. When writing a range, the inode is pinned and the page
-lock released before submitting to writepages(). This potentially generates
-a better IO pattern and it should avoid a lock inversion problem within the
-filesystem that wants the same page lock held by the VM. The downside with
-writing ranges is that the VM may not be generating more IO than necessary.
-
-Patch 6 prevents direct reclaim writing out pages at all and instead dirty
-pages are put back on the LRU. For lumpy reclaim, the caller will briefly
-wait on dirty pages to be written out before trying to reclaim the dirty
-pages a second time.
-
-The last patch increases the responsibility of kswapd somewhat because
-it's now cleaning pages on behalf of direct reclaimers but kswapd seemed
-a better fit than background flushers to clean pages as it knows where the
-pages needing cleaning are. As it's async IO, it should not cause kswapd to
-stall (at least until the queue is congested) but the order that pages are
-reclaimed on the LRU is altered. Dirty pages that would have been reclaimed
-by direct reclaimers are getting another lap on the LRU. The dirty pages
-could have been put on a dedicated list but this increased counter overhead
-and the number of lists and it is unclear if it is necessary.
-
-The series has survived performance and stress testing, particularly around
-high-order allocations on X86, X86-64 and PPC64. The results of the tests
-showed that while lumpy reclaim has a slightly lower success rate when
-allocating huge pages but it was still very acceptable rates, reclaim was
-a lot less disruptive and allocation latency was lower.
-
-Comments?
-
- .../trace/postprocess/trace-vmscan-postprocess.pl  |  623 ++++++++++++++++++++
- include/trace/events/gfpflags.h                    |   37 ++
- include/trace/events/kmem.h                        |   38 +--
- include/trace/events/vmscan.h                      |  184 ++++++
- mm/vmscan.c                                        |  299 ++++++++--
- 5 files changed, 1092 insertions(+), 89 deletions(-)
- create mode 100644 Documentation/trace/postprocess/trace-vmscan-postprocess.pl
- create mode 100644 include/trace/events/gfpflags.h
- create mode 100644 include/trace/events/vmscan.h
+diff --git a/include/trace/events/vmscan.h b/include/trace/events/vmscan.h
+index f76521f..a331454 100644
+--- a/include/trace/events/vmscan.h
++++ b/include/trace/events/vmscan.h
+@@ -109,6 +109,52 @@ TRACE_EVENT(mm_vmscan_direct_reclaim_end,
+ 	TP_printk("nr_reclaimed=%lu", __entry->nr_reclaimed)
+ );
+ 
++TRACE_EVENT(mm_vmscan_lru_isolate,
++
++	TP_PROTO(int order,
++		unsigned long nr_requested,
++		unsigned long nr_scanned,
++		unsigned long nr_taken,
++		unsigned long nr_lumpy_taken,
++		unsigned long nr_lumpy_dirty,
++		unsigned long nr_lumpy_failed,
++		int isolate_mode),
++
++	TP_ARGS(order, nr_requested, nr_scanned, nr_taken, nr_lumpy_taken, nr_lumpy_dirty, nr_lumpy_failed, isolate_mode),
++
++	TP_STRUCT__entry(
++		__field(int, order)
++		__field(unsigned long, nr_requested)
++		__field(unsigned long, nr_scanned)
++		__field(unsigned long, nr_taken)
++		__field(unsigned long, nr_lumpy_taken)
++		__field(unsigned long, nr_lumpy_dirty)
++		__field(unsigned long, nr_lumpy_failed)
++		__field(int, isolate_mode)
++	),
++
++	TP_fast_assign(
++		__entry->order = order;
++		__entry->nr_requested = nr_requested;
++		__entry->nr_scanned = nr_scanned;
++		__entry->nr_taken = nr_taken;
++		__entry->nr_lumpy_taken = nr_lumpy_taken;
++		__entry->nr_lumpy_dirty = nr_lumpy_dirty;
++		__entry->nr_lumpy_failed = nr_lumpy_failed;
++		__entry->isolate_mode = isolate_mode;
++	),
++
++	TP_printk("isolate_mode=%d order=%d nr_requested=%lu nr_scanned=%lu nr_taken=%lu contig_taken=%lu contig_dirty=%lu contig_failed=%lu",
++		__entry->isolate_mode,
++		__entry->order,
++		__entry->nr_requested,
++		__entry->nr_scanned,
++		__entry->nr_taken,
++		__entry->nr_lumpy_taken,
++		__entry->nr_lumpy_dirty,
++		__entry->nr_lumpy_failed)
++);
++		
+ #endif /* _TRACE_VMSCAN_H */
+ 
+ /* This part must be outside protection */
+diff --git a/mm/vmscan.c b/mm/vmscan.c
+index 6bfb579..25bf05a 100644
+--- a/mm/vmscan.c
++++ b/mm/vmscan.c
+@@ -917,6 +917,7 @@ static unsigned long isolate_lru_pages(unsigned long nr_to_scan,
+ 		unsigned long *scanned, int order, int mode, int file)
+ {
+ 	unsigned long nr_taken = 0;
++	unsigned long nr_lumpy_taken = 0, nr_lumpy_dirty = 0, nr_lumpy_failed = 0;
+ 	unsigned long scan;
+ 
+ 	for (scan = 0; scan < nr_to_scan && !list_empty(src); scan++) {
+@@ -994,12 +995,25 @@ static unsigned long isolate_lru_pages(unsigned long nr_to_scan,
+ 				list_move(&cursor_page->lru, dst);
+ 				mem_cgroup_del_lru(cursor_page);
+ 				nr_taken++;
++				nr_lumpy_taken++;
++				if (PageDirty(cursor_page))
++					nr_lumpy_dirty++;
+ 				scan++;
++			} else {
++				if (mode == ISOLATE_BOTH &&
++						page_count(cursor_page))
++					nr_lumpy_failed++;
+ 			}
+ 		}
+ 	}
+ 
+ 	*scanned = scan;
++
++	trace_mm_vmscan_lru_isolate(order, 
++			nr_to_scan, scan,
++			nr_taken,
++			nr_lumpy_taken, nr_lumpy_dirty, nr_lumpy_failed,
++			mode);
+ 	return nr_taken;
+ }
+ 
+-- 
+1.7.1
 
