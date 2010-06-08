@@ -1,143 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752269Ab0FHEWe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jun 2010 00:22:34 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:56058 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752128Ab0FHEWc convert rfc822-to-8bit (ORCPT
+	id S1752744Ab0FHE2U (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jun 2010 00:28:20 -0400
+Received: from mail-ww0-f46.google.com ([74.125.82.46]:43087 "EHLO
+	mail-ww0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752352Ab0FHE2S convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jun 2010 00:22:32 -0400
+	Tue, 8 Jun 2010 00:28:18 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=googlemail.com; s=gamma;
+        d=gmail.com; s=gamma;
         h=mime-version:in-reply-to:references:date:message-id:subject:from:to
          :cc:content-type:content-transfer-encoding;
-        b=NznHHYB3LUU+MbEQY9tZUiAbEFIg3xTenVB/qc0yudBWY1P4Ud7ABxkPeWjyx6FSRw
-         dUeS51Ue1KI/ZepR6FVmmkvWb2rI9BvgqfLk58YngPjhmw2KNNMBp9rcSc7ld/AANeA7
-         a1KqKgk/RgYsJHrKjo5O7kEAh5Tf7AevcIPac=
+        b=djRP5uhAsvzf3VmYZcgKoSbuC7NW24xoRpggrOc0m6HqZsKY2fFC0G6D/mWmRPHS+9
+         AyWySy0Cw7ywyixcE+KdlWN5Vb/XaIZttocM8i98Pv0jn09DVIQlCqAywnkhxzDIEXiq
+         XQkzLaOJC5T86dDzvDQrJh/m1yHty1VmsgxxQ=
 MIME-Version: 1.0
-In-Reply-To: <AANLkTinvrzcSrjoGCZHUGLq0-qt-1mDM0494j5mES5tX@mail.gmail.com>
-References: <AANLkTikEGSZUBy8VZOIUhA8iAPa5p7r9vmN47hiEwSB8@mail.gmail.com>
-	<AANLkTinUe_IF7riVYpCFpciM6-ngudDR8UZ6FiaJBkk3@mail.gmail.com>
-	<AANLkTinvrzcSrjoGCZHUGLq0-qt-1mDM0494j5mES5tX@mail.gmail.com>
-Date: Tue, 8 Jun 2010 06:22:30 +0200
-Message-ID: <AANLkTin0xcY9qZ4OdINKdUzo3zPfG9tNxQ3UZtLSDpzi@mail.gmail.com>
-Subject: Re: radeon blink during probe regression (was Re: Linux 2.6.35-rc2)
-From: Torsten Kaiser <just.for.lkml@googlemail.com>
-To: Dave Airlie <airlied@gmail.com>
-Cc: Alex Deucher <alexdeucher@gmail.com>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+In-Reply-To: <20100608001234.GE2387@linux.vnet.ibm.com>
+References: <AANLkTim06fRB-Kvm12v2umq8MxRxbcl3gdbNsiRTDmia@mail.gmail.com>
+	<20100608001234.GE2387@linux.vnet.ibm.com>
+Date: Tue, 8 Jun 2010 00:28:15 -0400
+Message-ID: <AANLkTikPcIzd_gQ3XVT8zdy2Gyxibx3wx_twlaxJA3cz@mail.gmail.com>
+Subject: Re: 2.6.35-rc2-git1 - lib/idr.c:605 invoked rcu_dereference_check() 
+	without protection!
+From: Miles Lane <miles.lane@gmail.com>
+To: paulmck@linux.vnet.ibm.com
+Cc: Vivek Goyal <vgoyal@redhat.com>, Eric Paris <eparis@redhat.com>,
+       David Woodhouse <dwmw2@infradead.org>,
+       Lai Jiangshan <laijs@cn.fujitsu.com>, Ingo Molnar <mingo@elte.hu>,
+       Peter Zijlstra <peterz@infradead.org>,
+       LKML <linux-kernel@vger.kernel.org>, nauman@google.com,
+       eric.dumazet@gmail.com, netdev@vger.kernel.org,
+       Jens Axboe <axboe@kernel.dk>, Gui Jianfeng <guijianfeng@cn.fujitsu.com>,
+       Li Zefan <lizf@cn.fujitsu.com>,
+       Johannes Berg <johannes@sipsolutions.net>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 8, 2010 at 5:09 AM, Dave Airlie <airlied@gmail.com> wrote:
-> On Tue, Jun 8, 2010 at 11:50 AM, Alex Deucher <alexdeucher@gmail.com> wrote:
->> On Mon, Jun 7, 2010 at 8:49 PM, Dave Airlie <airlied@gmail.com> wrote:
->>> (changing subject
->>>
->>> On Tue, Jun 8, 2010 at 3:28 AM, Torsten Kaiser
->>> <just.for.lkml@googlemail.com> wrote:
->>>> On Mon, Jun 7, 2010 at 8:52 AM, Dave Airlie <airlied@gmail.com> wrote:
->>>>> On Mon, Jun 7, 2010 at 4:32 PM, Alex Deucher <alexdeucher@gmail.com> wrote:
->>>>>> On Mon, Jun 7, 2010 at 2:22 AM, Dave Airlie <airlied@gmail.com> wrote:
->>>>>>> On Mon, Jun 7, 2010 at 4:09 PM, Torsten Kaiser
->>>>>>> <just.for.lkml@googlemail.com> wrote:
->>>>>>>> The switchoff intervall is ~10 seconds, not 1..2 as I guessed in the first mail.
->>>>>>>> Any idea if there is something in the KMS code that triggers at this intervall?
->>>>>>>
->>>>>>> The new mode probing code happens every 10 seconds, though we
->>>>>>> shouldn't be turning anything on or off with it.
->>>>>>>
->>>>>>> So I suspect the DAC detection table might be doing bad things on your
->>>>>>> hardware, we have had a problem where the dac detect table on one DAC
->>>>>>> would turn the other one off which clearly wasn't what we wanted to
->>>>>>> see.
->>>>>>> ,
->>>>>>
->>>>>> The x300 is a non-atom card, so it uses the legacy load detection
->>>>>> routines which do mess with some of the crtc regs.
->>>>>>
->>>>>
->>>>> Okay I see it now, I'm amazed that I was seeing this issue last week
->>>>> and blaming it on something complete different and only seeing it on
->>>>> one card.
->>>>>
->>>>> I expect its the same problem I'll try and track down a proper fix for
->>>>> it tomorrow.
->>>>
->>>> It really seems to be this polling code.
->>>> After the fix to drivers/char/vt.c the 2.6.35-rc2 kernel now works for
->>>> me without crashing.
->>>>
->>>> I also changed #define DRM_OUTPUT_POLL_PERIOD (10*HZ) to
->>>> #define DRM_OUTPUT_POLL_PERIOD (3*HZ) and now the flickering before X
->>>> starts is at a three second interval. That should prove, that the
->>>> polling from drm_crtc_helper.c is the cause.
->>>>
->>>> After X starts the LCD is stable, but the secondary CRT still flickers
->>>> every 3 seconds.
->>>>
->>>> My hardware is an X300-PCIe card with a VGA-, a DVI-I- and a video output.
->>>> I have a 1280x1024 LCD attached to the DVI-I and an old CRT to the
->>>> VGA. The video output is unused.
->>>> The CRT is normally switched off, but its still detected correctly.
->>>>
->>>> The kernel output from 2.6.34 and 2.6.35-rc2 is here:
->>>> http://lkml.org/lkml/2010/6/6/126
->>>>
->>>> xrandr says:
->>>> Screen 0: minimum 320 x 200, current 2080 x 1024, maximum 4096 x 4096
->>>> DVI-0 connected 1280x1024+0+0 (normal left inverted right x axis y
->>>> axis) 338mm x 270mm
->>>>   1280x1024      60.0*+   75.0
->>>>   1280x960       60.0
->>>>   1152x864       75.0
->>>>   1024x768       75.1     70.1     60.0
->>>>   832x624        74.6
->>>>   800x600        72.2     75.0     60.3     56.2
->>>>   640x480        72.8     75.0     66.7     60.0
->>>>   720x400        70.1
->>>>   640x400        70.0
->>>> VGA-0 connected 800x600+1280+150 (normal left inverted right x axis y
->>>> axis) 280mm x 210mm
->>>>   800x600        72.2*+   75.0     60.3     56.2
->>>>   1280x1024      60.0
->>>>   1024x768       75.1     70.1     60.0
->>>>   640x480        72.8     75.0     60.0
->>>>   720x400        87.8     70.1
->>>> S-video disconnected (normal left inverted right x axis y axis)
->>>>
->>>> If you have something for me to try, just send it. :-)
->>>>
->>>> Torsten
->>>>
->>>
->>> Okay here is a patch that seems to work on my test system, but I want
->>> to give it a bit more playing around with before I sent it onwards.
->>>
->>> Alex, seem sane to you?
->>
->> Seems sane.
->>
+On Mon, Jun 7, 2010 at 8:12 PM, Paul E. McKenney
+<paulmck@linux.vnet.ibm.com> wrote:
+> On Mon, Jun 07, 2010 at 02:23:17PM -0400, Miles Lane wrote:
+>> [    2.677955] [ INFO: suspicious rcu_dereference_check() usage. ]
+>> [    2.679089] ---------------------------------------------------
+>> [    2.680276] lib/idr.c:605 invoked rcu_dereference_check() without protection!
+>> [    2.681499]
+>> [    2.681500] other info that might help us debug this:
+>> [    2.681501]
+>> [    2.685509]
+>> [    2.685510] rcu_scheduler_active = 1, debug_locks = 1
+>> [    2.688221] 1 lock held by swapper/1:
+>> [    2.689587]  #0:  (mtd_table_mutex){+.+...}, at:
+>> [<ffffffff812bea45>] register_mtd_user+0x1a/0x69
+>> [    2.691096]
+>> [    2.691098] stack backtrace:
+>> [    2.694059] Pid: 1, comm: swapper Not tainted 2.6.35-rc2-git1 #8
+>> [    2.695601] Call Trace:
+>> [    2.697243]  [<ffffffff81064e9c>] lockdep_rcu_dereference+0x9d/0xa5
+>> [    2.698868]  [<ffffffff811b9c86>] idr_get_next+0x60/0x124
+>> [    2.700556]  [<ffffffff812be779>] __mtd_next_device+0x1b/0x1d
+>> [    2.702238]  [<ffffffff812bea7c>] register_mtd_user+0x51/0x69
+>> [    2.703964]  [<ffffffff816cca45>] init_mtdchar+0xb3/0xd3
+>> [    2.705686]  [<ffffffff816cc992>] ? init_mtdchar+0x0/0xd3
+>> [    2.707470]  [<ffffffff810001ef>] do_one_initcall+0x59/0x14e
+>> [    2.709255]  [<ffffffff816a768a>] kernel_init+0x144/0x1ce
+>> [    2.711082]  [<ffffffff81003054>] kernel_thread_helper+0x4/0x10
+>> [    2.712862]  [<ffffffff813ca480>] ? restore_args+0x0/0x30
+>> [    2.714647]  [<ffffffff816a7546>] ? kernel_init+0x0/0x1ce
+>> [    2.716415]  [<ffffffff81003050>] ? kernel_thread_helper+0x0/0x10
 >
-> While discussing this with Alex we realised this code should never
-> have been reached so it showed a bug higher up.
+> This looks like a new one!  Does the following patch take care of it?
 >
-> Looks like we were defining i2c lines for tv-out which doesn't have
-> any, the attached patch makes sure the tv-out on legacy radeon hw
-> doesn't get an i2c line attach so doesn't trigger the polling on it.
+>                                                        Thanx, Paul
 >
-> Torsten can you test this patch instead of the previous one, though I
-> think I'll send both to Linus for safety sakes.
+> ------------------------------------------------------------------------
+>
+> commit 2d54a6c31b72c902b09d365e9c66205a5c07e549
+> Author: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> Date:   Mon Jun 7 17:09:45 2010 -0700
+>
+>    idr: fix RCU lockdep splat in idr_get_next()
+>
+>    Convert to rcu_dereference_raw() given that many callers may have many
+>    different locking models.
+>
+>    Located-by: Miles Lane <miles.lane@gmail.com>
+>    Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+>
+> diff --git a/lib/idr.c b/lib/idr.c
+> index 2eb1dca..f099f25 100644
+> --- a/lib/idr.c
+> +++ b/lib/idr.c
+> @@ -599,7 +599,7 @@ void *idr_get_next(struct idr *idp, int *nextidp)
+>        /* find first ent */
+>        n = idp->layers * IDR_BITS;
+>        max = 1 << n;
+> -       p = rcu_dereference(idp->top);
+> +       p = rcu_dereference_raw(idp->top);
+>        if (!p)
+>                return NULL;
+>
+> @@ -607,7 +607,7 @@ void *idr_get_next(struct idr *idp, int *nextidp)
+>                while (n > 0 && p) {
+>                        n -= IDR_BITS;
+>                        *paa++ = p;
+> -                       p = rcu_dereference(p->ary[(id >> n) & IDR_MASK]);
+> +                       p = rcu_dereference_raw(p->ary[(id >> n) & IDR_MASK]);
+>                }
+>
+>                if (p) {
+>
 
-I just applied it and the card now works fine. No more flickering.
-
-Thanks!
-
-Do you want me to test the other patch
-(0001-drm-radeon-don-t-poll-tv-dac-if-crtc2-is-in-use.patch) too?
-
-Torsten
+Tested.  Looks good!
