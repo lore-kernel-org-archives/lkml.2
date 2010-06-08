@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753396Ab0FHDuv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jun 2010 23:50:51 -0400
-Received: from mail.perches.com ([173.55.12.10]:2762 "EHLO mail.perches.com"
+	id S1753481Ab0FHDuw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jun 2010 23:50:52 -0400
+Received: from mail.perches.com ([173.55.12.10]:2764 "EHLO mail.perches.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753158Ab0FHDus (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1753191Ab0FHDus (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 7 Jun 2010 23:50:48 -0400
 From: Joe Perches <joe@perches.com>
 To: Jiri Kosina <trivial@kernel.org>
 Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH 04/12] drivers/gpu/drm: Remove unnecessary kmalloc casts
-Date: Mon,  7 Jun 2010 20:50:36 -0700
-Message-Id: <40c6764fbc2fc04dcb8847927e4c1795610347c7.1275968594.git.joe@perches.com>
+Subject: [PATCH 05/12] drivers/isdn/capi/capidrv.c: Remove unnecessary kmalloc casts
+Date: Mon,  7 Jun 2010 20:50:37 -0700
+Message-Id: <3af10f48d8b325c51c545615af5a0e030d7d4969.1275968594.git.joe@perches.com>
 X-Mailer: git-send-email 1.7.1.244.gbdc4
 In-Reply-To: <cover.1275968594.git.joe@perches.com>
 References: <cover.1275968594.git.joe@perches.com>
@@ -21,39 +21,23 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Joe Perches <joe@perches.com>
 ---
- drivers/gpu/drm/drm_sman.c      |    4 +---
- drivers/gpu/drm/i915/i915_dma.c |    3 +--
- 2 files changed, 2 insertions(+), 5 deletions(-)
+ drivers/isdn/capi/capidrv.c |    3 +--
+ 1 files changed, 1 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/gpu/drm/drm_sman.c b/drivers/gpu/drm/drm_sman.c
-index 463aed9..3466458 100644
---- a/drivers/gpu/drm/drm_sman.c
-+++ b/drivers/gpu/drm/drm_sman.c
-@@ -59,9 +59,7 @@ drm_sman_init(struct drm_sman * sman, unsigned int num_managers,
+diff --git a/drivers/isdn/capi/capidrv.c b/drivers/isdn/capi/capidrv.c
+index bf55ed5..02e0182 100644
+--- a/drivers/isdn/capi/capidrv.c
++++ b/drivers/isdn/capi/capidrv.c
+@@ -469,8 +469,7 @@ static int capidrv_add_ack(struct capidrv_ncci *nccip,
  {
- 	int ret = 0;
+ 	struct ncci_datahandle_queue *n, **pp;
  
--	sman->mm = (struct drm_sman_mm *) kcalloc(num_managers,
--						  sizeof(*sman->mm),
--						  GFP_KERNEL);
-+	sman->mm = kcalloc(num_managers, sizeof(*sman->mm), GFP_KERNEL);
- 	if (!sman->mm) {
- 		ret = -ENOMEM;
- 		goto out;
-diff --git a/drivers/gpu/drm/i915/i915_dma.c b/drivers/gpu/drm/i915/i915_dma.c
-index b2ebf02..a1744bd 100644
---- a/drivers/gpu/drm/i915/i915_dma.c
-+++ b/drivers/gpu/drm/i915/i915_dma.c
-@@ -2276,8 +2276,7 @@ int i915_driver_open(struct drm_device *dev, struct drm_file *file_priv)
- 	struct drm_i915_file_private *i915_file_priv;
- 
- 	DRM_DEBUG_DRIVER("\n");
--	i915_file_priv = (struct drm_i915_file_private *)
--	    kmalloc(sizeof(*i915_file_priv), GFP_KERNEL);
-+	i915_file_priv = kmalloc(sizeof(*i915_file_priv), GFP_KERNEL);
- 
- 	if (!i915_file_priv)
- 		return -ENOMEM;
+-	n = (struct ncci_datahandle_queue *)
+-		kmalloc(sizeof(struct ncci_datahandle_queue), GFP_ATOMIC);
++	n = kmalloc(sizeof(struct ncci_datahandle_queue), GFP_ATOMIC);
+ 	if (!n) {
+ 	   printk(KERN_ERR "capidrv: kmalloc ncci_datahandle failed\n");
+ 	   return -1;
 -- 
 1.7.1.244.gbdc4
 
