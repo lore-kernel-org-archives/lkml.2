@@ -1,53 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752313Ab0FHAaX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jun 2010 20:30:23 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:36409 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751945Ab0FHAaW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jun 2010 20:30:22 -0400
-Date: Tue, 8 Jun 2010 01:30:15 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: David Woodhouse <dwmw2@infradead.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-       Dave Airlie <airlied@linux.ie>, dri-devel@lists.freedesktop.org,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [git pull] drm fixes
-Message-ID: <20100608003015.GP31073@ZenIV.linux.org.uk>
-References: <alpine.DEB.2.00.1006070404510.29029@skynet.skynet.ie>
- <alpine.LFD.2.00.1006071057300.3515@i5.linux-foundation.org>
- <20100607182640.GL31073@ZenIV.linux.org.uk>
- <alpine.LFD.2.00.1006071146451.3515@i5.linux-foundation.org>
- <1275939165.17903.5100.camel@macbook.infradead.org>
- <alpine.LFD.2.00.1006071409320.4506@i5.linux-foundation.org>
- <1275946768.17903.5126.camel@macbook.infradead.org>
+	id S1752535Ab0FHAbM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jun 2010 20:31:12 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:40627 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752127Ab0FHAbK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Jun 2010 20:31:10 -0400
+Message-ID: <4C0D8F43.4070900@zytor.com>
+Date: Mon, 07 Jun 2010 17:30:59 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-3.fc13 Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1275946768.17903.5126.camel@macbook.infradead.org>
-User-Agent: Mutt/1.5.20 (2009-08-17)
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+CC: Jacob Pan <jacob.jun.pan@linux.intel.com>, Alan Cox <alan@linux.intel.com>,
+       Arjan van de Ven <arjan@linux.intel.com>,
+       LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
+       Feng Tang <feng.tang@intel.com>, Len Brown <len.brown@intel.com>
+Subject: Re: [PATCH] x86/sfi: fix ioapic gsi range
+References: <1275952044-27996-1-git-send-email-jacob.jun.pan@linux.intel.com> <m1631ue5ho.fsf@fess.ebiederm.org>
+In-Reply-To: <m1631ue5ho.fsf@fess.ebiederm.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 07, 2010 at 10:39:28PM +0100, David Woodhouse wrote:
-> On Mon, 2010-06-07 at 14:17 -0700, Linus Torvalds wrote:
-> > and that changelog doesn't really explain it either ("fix leak"? Ok, I can 
-> > see the iput() fixing the leak - but you also did that jffs2_clear_inode() 
-> > change, and that has no explanation what-so-ever.
+On 06/07/2010 05:24 PM, Eric W. Biederman wrote:
+> Jacob Pan <jacob.jun.pan@linux.intel.com> writes:
 > 
-> jffs2_clear_inode() is the file system's ->clear_inode method, so it
-> gets called from the VFS when the inode is destroyed, after iput().
+>> SFI based platforms should have zero based gsi_base for IOAPICs found in SFI
+>> tables. The current code sets gsi_base starting from 1 when registering ioapic.
+>> The result is that Moorestown platform would have wrong mp_gsi_routing for each
+>> ioapic.
 > 
-> I suppose that ought to have been a clue, right from the very beginning,
-> that we should never have been calling it directly on our error paths.
+> Yes starting at 1 is a bug.
+> 
+>> Background:
+>> In Moorestown/Medfield platforms, there is no legacy IRQs, all gsis and irqs
+>> are one to one mapped, including those < 16. Specifically, IRQ0 and IRQ1 are
+>> used for per-cpu timers. So without this patch, IOAPIC pin to IRQ mapping is
+>> off by one.
+> 
+> The patch looks mostly reasonable the comment is wrong.
+> 
+> You may not use a 1-1 mapping if you don't have legacy irqs.  Linux
+> irqs 0-15 are the ISA irqs you may not use those irq numbers for
+> something different on any architecture, but especially not on x86.
+> The gsi numbers are firmware specific and you may treat however you want.
+> 
+> Does the following patch work for you?
+> 
+> It appears I goofed when it was pointed out that gsi_end was inclusive and
+> didn't change the initialize.
+> 
+> diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
+> index 33f3563..5de84e5 100644
+> --- a/arch/x86/kernel/apic/io_apic.c
+> +++ b/arch/x86/kernel/apic/io_apic.c
+> @@ -90,7 +90,7 @@ int nr_ioapics;
+>  struct mp_ioapic_gsi  mp_gsi_routing[MAX_IO_APICS];
+>  
+>  /* The last gsi number used */
+> -u32 gsi_end;
+> +u32 gsi_end = -1; 
+>  
 
-Yep.  The other place that directly called its ->clear_inode() also had
-been bogus, BTW - logfs had been playing rather sick games with special
-inodes and ended up open-coding just about everything on new_inode/iput
-paths for those.  They needed that stuff evicted after all normal inodes,
-but before the second call of invalidate_inodes() would scream about
-surviving busy inodes.  I.e. that should've been happening in ->put_super();
-no need to deal with handcrafted inodes that would sit outside of inode
-list...
+This seems like asking for signedness problems, especially since this is
+used in range compares all the time.  The real problem here is that
+gsi_end is inclusive, which is almost always the wrong thing for the
+endpoint of a range.  Instead we should have the last number used plus
+one; perhaps it should be called gsi_next or gsi_free.
+
+	-hpa
+
