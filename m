@@ -1,88 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754744Ab0FHJSj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jun 2010 05:18:39 -0400
-Received: from gir.skynet.ie ([193.1.99.77]:37656 "EHLO gir.skynet.ie"
+	id S1754796Ab0FHJUW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jun 2010 05:20:22 -0400
+Received: from mga03.intel.com ([143.182.124.21]:47916 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751894Ab0FHJSh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jun 2010 05:18:37 -0400
-Date: Tue, 8 Jun 2010 10:18:18 +0100
-From: Mel Gorman <mel@csn.ul.ie>
-To: Sachin Sant <sachinp@in.ibm.com>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>, linux-mm@kvack.org
-Subject: Re: 2.6.35-rc2: GPF while executing libhugetlbfs tests on x86_64
-Message-ID: <20100608091817.GA27717@csn.ul.ie>
-References: <4C0BC7F0.8030109@in.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <4C0BC7F0.8030109@in.ibm.com>
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+	id S1753796Ab0FHJUV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Jun 2010 05:20:21 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.53,383,1272870000"; 
+   d="scan'208";a="286302325"
+Subject: Re: [PATCH -tip] perf, x86: Make a second write to performance
+ counter if needed
+From: Lin Ming <ming.m.lin@intel.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Cyrill Gorcunov <gorcunov@openvz.org>, Ingo Molnar <mingo@elte.hu>,
+       Robert Richter <robert.richter@amd.com>,
+       LKML <linux-kernel@vger.kernel.org>,
+       Arnaldo Carvalho de Melo <acme@redhat.com>,
+       =?ISO-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>
+In-Reply-To: <1275904085.1645.555.camel@laptop>
+References: <20100602212304.GC5264@lenovo>
+	 <1275904085.1645.555.camel@laptop>
+Content-Type: text/plain
+Date: Tue, 08 Jun 2010 17:18:39 +0800
+Message-Id: <1275988719.17004.110.camel@minggr.sh.intel.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.24.1 (2.24.1-2.fc10) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jun 06, 2010 at 09:38:16PM +0530, Sachin Sant wrote:
-> While executing libhugetlbfs tests against 2.6.35-rc2 on
-> a x86_64 box came across the following GPF
->
-> eneral protection fault: 0000 [#1] SMP
-> last sysfs file: /sys/devices/system/cpu/cpu3/cache/index2/shared_cpu_map
-> CPU 3
-> Modules linked in: ipv6 mperf fuse loop dm_mod sr_mod cdrom usb_storage sg i2c_piix4 rtc_cmos bnx2 k8temp pcspkr serio_raw mptctl i2c_core rtc_core rtc_lib shpchp button pci_hotplug usbhid hid ohci_hcd ehci_hcd sd_mod crc_t10dif usbcore edd ext3 jbd fan thermal processor thermal_sys hwmon mptsas mptscsih mptbase scsi_transport_sas scsi_mod
->
-> Pid: 20232, comm: autotest Not tainted 2.6.35-rc2-autotest #1 Server Blade/BladeCenter LS21 -[79716AA]-
-> RIP: 0010:[<ffffffff813968ca>]  [<ffffffff813968ca>] _raw_spin_lock+0x9/0x20
-> RSP: 0018:ffff880126e43d88  EFLAGS: 00010202
-> RAX: 0000000000010000 RBX: 0720072007200720 RCX: 0000000000000000
-> RDX: 0000000000000011 RSI: ffff8801293a7470 RDI: 0720072007200720
-> RBP: ffff880126e43d88 R08: ffff8801279df270 R09: 09f911029d74e35b
-> R10: 09f911029d74e35b R11: dead000000100100 R12: ffff8801278cae00
-> R13: 0720072007200710 R14: ffff8801297e71f8 R15: 0000000000000000
-> FS:  00007f461d6866f0(0000) GS:ffff880006180000(0000) knlGS:0000000055731b00
-> CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
-> CR2: 00007f461d45a7b8 CR3: 0000000001713000 CR4: 00000000000006e0
-> DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-> DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-> Process autotest (pid: 20232, threadinfo ffff880126e42000, task ffff8801297e4190)
-> Stack:
-> ffff880126e43db8 ffffffff810f6b80 ffff8801297ae858 ffff8801297e7190
-> <0> ffff8801297e7190 00007f461940e000 ffff880126e43e08 ffffffff810f025e
-> <0> 00000000ffffffff 0000000000000000 ffff88000618d690 ffff88000618d690
-> Call Trace:
-> [<ffffffff810f6b80>] unlink_anon_vmas+0x37/0xf2
-> [<ffffffff810f025e>] free_pgtables+0x5f/0xc9
-> [<ffffffff810f1ac1>] exit_mmap+0xe6/0x141
+On Mon, 2010-06-07 at 17:48 +0800, Peter Zijlstra wrote:
+> On Thu, 2010-06-03 at 01:23 +0400, Cyrill Gorcunov wrote:
+> > On Netburst PMU we need a second write to a performance counter
+> > due to cpu erratum.
+> > 
+> > A simple flag test instead of alternative instructions was choosen
+> > because wrmsrl is already a macro and if virtualization is turned
+> > on will need an additional wrapper call which is more expencise.
+> > 
+> > nb: we should propably switch to jump-labels as only this facility
+> > reach the mainline.
+> 
+> OK. Thanks Cyrill.
 
-While at first glance this looks like a general bug, it might still be
-some oddity in hugetlbfs. Sachin, how reproducible is this? I just ran the
-libhugetlbfs tests just fine on x86-64. Can you post your .config please?
 
-> [<ffffffff81064a6d>] mmput+0x39/0xdb
-> [<ffffffff81068b4b>] exit_mm+0x119/0x126
-> [<ffffffff8106a3bb>] do_exit+0x225/0x721
-> [<ffffffff8106a928>] do_group_exit+0x71/0x9a
-> [<ffffffff8106a963>] sys_exit_group+0x12/0x16
-> [<ffffffff8102896b>] system_call_fastpath+0x16/0x1b
-> Code: c2 c1 c0 10 39 c2 8d 90 00 00 01 00 75 04 f0 0f b1 17 0f 94 c2 0f b6 c2 85 c0 c9 0f 95 c0 0f b6 c0 c3 55 b8 00 00 01 00 48 89 e5 <f0> 0f c1 07 0f b7 d0 c1 e8 10 39 c2 74 07 f3 90 0f b7 17 eb f5
-> RIP  [<ffffffff813968ca>] _raw_spin_lock+0x9/0x20
-> RSP <ffff880126e43d88>
-> ---[ end trace 844bcf9372ef8fa1 ]---
-> Clocksource tsc unstable (delta = 4398037966381 ns)
-> Fixing recursive fault but reboot is needed!
->
-> Previous snapshot release (2.6.35-rc1-git5 6c5de280b6..) was good.
-> I am using version 2.8 of libhugetlbfs tests from
-> http://sourceforge.net/projects/libhugetlbfs/files/
->
+I tested this patch and it works well for pre-defined events.
 
-This implies it might not be easily reproducible because no commits
-happened between that window that affected anon_vma locking. I have the
-test running in a loop to see can I reproduce it.
+Lin Ming
 
-Thanks
-
--- 
-Mel Gorman
-Part-time Phd Student                          Linux Technology Center
-University of Limerick                         IBM Dublin Software Lab
