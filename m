@@ -1,59 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754647Ab0FHJEW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jun 2010 05:04:22 -0400
-Received: from n13-vm0.bullet.mail.in.yahoo.com ([202.86.5.183]:24936 "HELO
-	n13-vm0.bullet.mail.in.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1754006Ab0FHJEU convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jun 2010 05:04:20 -0400
-X-Yahoo-Newman-Property: ymail-3
-X-Yahoo-Newman-Id: 928228.39305.bm@omp113.mail.in2.yahoo.com
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=s1024; d=yahoo.com;
-  h=Message-ID:X-YMail-OSG:Received:X-Mailer:Date:From:Subject:To:MIME-Version:Content-Type:Content-Transfer-Encoding;
-  b=wkU7ZWf3TIcegXhyazfC4uVC6JA6mVDlD/7sfaqPXUxBXKG8nc/KJ02oFPCU/6yW97Sy80af/nraR6Cb+Z1m6m9TsKp7txDSdWvE7AAuvlnJrw/geHmxAx/wjFYKGmaZwJR1Rh7AUKb9eDu8zOJ7PpbN0tfssjYFpe9VXL1WkEk=;
-Message-ID: <825203.31628.qm@web95605.mail.in.yahoo.com>
-X-YMail-OSG: H5WMADUVM1nofg1_xEsm98P7CSOvdQ3lgnWVau_IgThEOna
- _J_kOz5Op9OxY..rn0pDmhYK5cmdnUEfcL1ldct2w2bnJ5X01_gBoYcIMEZv
- K_Kib2jux1XmM7.VR4A_1xnVcbky_hwitXKtdWbkEAsHIQpMHW.qf8HumNgb
- 2omHFHI0q61UakQjr1vDxIM7ZIAEHrDhI6ORQ
-X-Mailer: YahooMailRC/397.8 YahooMailWebService/0.8.103.269680
-Date: Tue, 8 Jun 2010 14:34:17 +0530 (IST)
-From: Oza Oza <ozaoza1982@yahoo.com>
-Subject: [PROPOSAL - FIRST POST] NMI & register clash handling infrastructure
-To: linux-kernel@vger.kernel.org
+	id S1754431Ab0FHJIQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jun 2010 05:08:16 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:46466 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754006Ab0FHJIO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Jun 2010 05:08:14 -0400
+Date: Tue, 8 Jun 2010 05:08:11 -0400
+From: Christoph Hellwig <hch@infradead.org>
+To: Mel Gorman <mel@csn.ul.ie>
+Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+       linux-mm@kvack.org, Dave Chinner <david@fromorbit.com>,
+       Chris Mason <chris.mason@oracle.com>, Nick Piggin <npiggin@suse.de>,
+       Rik van Riel <riel@redhat.com>
+Subject: Re: [RFC PATCH 0/6] Do not call ->writepage[s] from direct reclaim
+ and use a_ops->writepages() where possible
+Message-ID: <20100608090811.GA5949@infradead.org>
+References: <1275987745-21708-1-git-send-email-mel@csn.ul.ie>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1275987745-21708-1-git-send-email-mel@csn.ul.ie>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Tue, Jun 08, 2010 at 10:02:19AM +0100, Mel Gorman wrote:
+> seeky patterns.  The second is that direct reclaim calling the filesystem
+> splices two potentially deep call paths together and potentially overflows
+> the stack on complex storage or filesystems. This series is an early draft
+> at tackling both of these problems and is in three stages.
 
+Btw, one more thing came up when I discussed the issue again with Dave
+recently:
 
-
-This is my first post to the group, please excuse me, If I unknowingly miss to follow writing ethics.
-
-Proposal/Need: 
-
-I was working on providing accurate process usage support, and writing a kernel module, 
-I configured cpu-core-unhalted-event and configured LVT (local vector table) with NMI (non-maskable interrupt), and surprisingly Oprofile stopped working, 
-Then I realized, that set_nmi_call back just overwrites nmi_callback function pointer. 
-
-My proposal/idea/thinking is; 
-have a kernel module which accepts NMI registration from any kernel component, and providing support to the the any kernel service which basically need to service NMI.
-It may not only supports this, but also can provide central infrastructure which has capabilities such as granting MSR (model specific register) access to the the modules, which may avoid potential clash of MSRs (e.g. two modules are trying to configure same MSR), control NMI registration-unregisteration events etc..
-
-I am not sure, whether this is a good idea or bad idea, but I thought it adds flexibility and some value addition in kernel, 
-and I find this place precisely right to post this idea. 
-
-Any feedback/suggestions/additions would be appreciated. 
-
-Regards,
-Oza.
-
-
-
+ - we also need to care about ->releasepage.  At least for XFS it
+   can end up in the same deep allocator chain as ->writepage because
+   it does all the extent state conversions, even if it doesn't
+   start I/O.  I haven't managed yet to decode the ext4/btrfs codepaths
+   for ->releasepage yet to figure out how they release a page that
+   covers a delayed allocated or unwritten range.
 
