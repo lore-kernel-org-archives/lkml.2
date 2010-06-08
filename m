@@ -1,450 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752082Ab0FHKqX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jun 2010 06:46:23 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:48291 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751085Ab0FHKqV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jun 2010 06:46:21 -0400
-Date: Tue, 8 Jun 2010 12:46:18 +0200
-From: Karel Zak <kzak@redhat.com>
-To: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-       util-linux-ng@vger.kernel.org
-Subject: [ANNOUNCE] util-linux-ng v2.18-rc1
-Message-ID: <20100608104618.GA18342@nb.net.home>
+	id S1752447Ab0FHK6U (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jun 2010 06:58:20 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:35619 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751716Ab0FHK6S convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Jun 2010 06:58:18 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type:content-transfer-encoding;
+        b=BEphicvA01fDb9Av2EhdYJR3uPWYPMeupechCqKBRYjvW3QYmP8/G9pLCzyL+F3LMm
+         Q1aQodnRYPJZVqNSvJFea8EJP9L7JGG1g9j2+hgNTeu46+RPFTDSiTXm2EkZLAGyUYaO
+         YJhDOT5THWmXLQg4GNUlcDJQDVAhtnLGmDN6o=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <AANLkTimIl6UL0HQT1wxRgXuj_m0O3CwMHQIa1xNE1Ax9@mail.gmail.com>
+References: <AANLkTinG3jv6o8T00mDTEP5uxf4tKqOwSPEDIUcv4kVG@mail.gmail.com> 
+	<20100602213429.GA14866@srcf.ucam.org> <57DF5FDC2DC0634FA2A310BC5B81A68D01DF4CD01E@AUSX7MCPC108.AMER.DELL.COM> 
+	<AANLkTimIl6UL0HQT1wxRgXuj_m0O3CwMHQIa1xNE1Ax9@mail.gmail.com>
+From: Islam Amer <pharon@gmail.com>
+Date: Tue, 8 Jun 2010 13:57:57 +0300
+Message-ID: <AANLkTin0qht1XR2rUgIXMEeJNU_gb3IZWqSBJb7NXD8K@mail.gmail.com>
+Subject: Re: Dell Studio 1555 eject key does not work ( small patch to fix 
+	included )
+To: Rezwanul_Kabir@dell.com
+Cc: mjg59@srcf.ucam.org, linux-kernel@vger.kernel.org,
+       platform-driver-x86@vger.kernel.org, akpm@linux-foundation.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Dear Rezwanul,
 
-The first util-linux-ng 2.18 release candidate is available at
+I have been using this fix for quite some time without any visible ill
+effects on the other keys or the system in general.
+Of course it would be necessary to get feedback from other dell users.
 
-   ftp://ftp.kernel.org/pub/linux/utils/util-linux-ng/v2.18/
+Thanks.
 
-Feedback and bug reports, as always, are welcomed.
-
-	Karel
-
-
-Util-linux-ng 2.18 Release Notes
-================================
-
-The util-linux-ng package does not contain rdev(8), ramsize(8), 
-vidmode(8) and rootflags(8) utils anymore. 
-
-Release highlights
-------------------
-
-libmount:
-  - this NEW LIBRARY is designed to be used in low-level utils like
-    mount(8) and /sbin/mount.<type> helpers as well as in some other
-    projects.
-
-  - the library API is still officially unstable. The library provides
-    fstab, mtab and mountinfo parser, routines for work with parsed 
-    data and mount options, mtab locking, etc. The high-level API for 
-    mount(2) is planned for the next major release. For more details see:
-    http://thread.gmane.org/gmane.linux.utilities.util-linux-ng/3239
-
-  - the utils like mount(8) or umount(8) are not linked with the library
-    yet. This change is planned for util-linux-ng-2.19.
-
-findmnt(8):
-  - this NEW COMMAND is a command line interface to the libmount library 
-    for work with mountinfo, fstab and mtab files
-
-fsfreeze(8):
-   - this NEW COMMAND is very simple wrapper around FIFREEZE/FITHAW ioctls
-
-swaplabel(8):
-   - this NEW COMMAND allows to change swaparea UUID and label
-
-blkid(8):
-  - supports new command line option "-i" to print I/O Limits
-
-  - supports new command line option "-n" to restrict probing functions to 
-    defined list of superblock types (names).
-
-  - returns details from partition table (type, flags, uuid, ...)
-
-chrt(1):
-  - supports new command line option "-R/--reset-on-fork" to enable 
-    SCHED_RESET_ON_FORK flag
-
-fdisk(8):
-  - supports new command line option "-c" to switch off DOS mode
-  - uses 1MiB offset for the first partition
-    (all these changes are already in the release 2.17.2)
-
-hwclock(8):
-  - supports new command line option "--predict" to predict what the RTC will 
-    read at time given by the --date option based on the adjtime file.
-
-ldattach(8):
-  - supports new command line option "-i/--iflag" to sets the specified bits 
-    in the c_iflag word of the serial line.
-
-fallocate(1), losetup(8) and mount(8):
-  - the options --offset, --length or --sizelimit support suffixes
-    (MiB, GiB, ...) and hex numbers
-
-umount(8):
-  - supports new command line option "-f/--fake" to avoid umount(2) syscall
-
-
-Stable maintenance releases between v2.17 and v2.18
----------------------------------------------------
-
-util-linux-ng 2.17.1 [22-Feb-2010]
-
- * ftp://ftp.kernel.org/pub/linux/utils/util-linux-ng/v2.17/v2.17.1-ReleaseNotes
-   ftp://ftp.kernel.org/pub/linux/utils/util-linux-ng/v2.17/v2.17.1-ChangeLog
-
-util-linux-ng 2.17.2 [22-Mar-2010]
-
- * ftp://ftp.kernel.org/pub/linux/utils/util-linux-ng/v2.17/v2.17.2-ReleaseNotes
-   ftp://ftp.kernel.org/pub/linux/utils/util-linux-ng/v2.17/v2.17.2-ChangeLog
-
-
-Changes between v2.17 and v2.18
--------------------------------
-
- For more details see ChangeLog files at:
- ftp://ftp.kernel.org/pub/linux/utils/util-linux-ng/v2.18/
-
-addpart:
-   - use atoll() for parsing command line arguments  [Thomas Fehr]
-blkid:
-   - add \n to the "-o udev" output when probe more devices  [Karel Zak]
-   - add 'export' output format  [Karel Zak]
-   - add -i option to print I/O limits  [Karel Zak]
-   - add -n <list> option  [Karel Zak]
-   - add newline when only one value is printed  [Karel Zak]
-   - cleanup -u <list> parsing  [Karel Zak]
-   - cleanup man page  [Karel Zak]
-   - encode PART_ENTRY_TYPE  [Karel Zak]
-   - export ID_PART_ENTRY_* variables for udev  [Karel Zak]
-   - fix #ifdef HAVE_TERMIO[S]_H  [Karel Zak]
-   - fix blkid_probe_lookup_value() usage  [Karel Zak]
-   - improve RAIDs and tiny devices probing  [Karel Zak]
-   - probe for PT, don't probe for FS on small whole-disks  [Karel Zak]
-   - remove _ENC from ID_PART_ENTRY_{NAME,TYPE} variables  [Karel Zak]
-   - remove duplicate option from man page  [Karel Zak]
-   - report open() errors in low-level probing  [Karel Zak]
-   - support suffixes for -O <offset> and -S <size>  [Karel Zak]
-   - update man page/usage()  [Karel Zak]
-blockdev:
-   - reduce usage text width  [Francesco Cosoleto]
-build-sys:
-   - add missing tests for libuuid and libblkid  [Karel Zak]
-   - improved check for fallocate()  [Yann Droneaud]
-   - remove duplicate #includes  [Karel Zak]
-   - replace ../ with $top_srcdir  [Karel Zak]
-   - update include/Makefile.am  [Karel Zak]
-   - use include/list.h  [Karel Zak]
-cal:
-   - factor out and update multibyte alignment code  [P√°draig Brady]
-   - fix first day of the week calculation on BE systems  [Karel Zak]
-cfdisk:
-   - set '[New]' as default item on menu for non allocated space instead of '[Help]'.  [Francesco Cosoleto]
-   - set '[Quit]' as default menu item on first run instead of '[Bootable]'.  [Francesco Cosoleto]
-   - support non-ascii characters in input  [Karel Zak]
-   - use libblkid  [Matthias K√∂nig]
-chrt:
-   - add --reset-on-fork  [Karel Zak]
-   - add support for SCHED_RESET_ON_FORK  [Adrian Knoth]
-docs:
-   - update AUTHORS file  [Karel Zak]
-   - update TODO file  [Karel Zak]
-   - update tests/README  [Karel Zak]
-fallocate:
-   - check for number of arguments  [Karel Zak]
-   - support suffixes for --offset and --lenght  [Karel Zak]
-fdisk:
-   - add -c option (switch off DOS mode)  [Karel Zak]
-   - cleanup alignment, default to 1MiB offset  [Karel Zak]
-   - cleanup help, add -h option  [Karel Zak]
-   - cleanup warnings  [Karel Zak]
-   - correctly truncate and align translated partition names  [P√°draig Brady]
-   - don't check alignment_offset against geometry  [Karel Zak]
-   - don't include scsi.h  [Karel Zak]
-   - don't use 1MiB grain on small devices  [Karel Zak]
-   - fallback for topology values  [Karel Zak]
-   - fix 'p' output for sun label  [Karel Zak]
-   - fix -b <sectorsize>  [Karel Zak]
-   - fix ALIGN_UP  [Karel Zak]
-   - fix check_alignment()  [Karel Zak]
-   - fix default first sector  [Karel Zak]
-   - improve 'move begin of partition' command  [Karel Zak]
-   - improve add partition dialog  [Karel Zak]
-   - replace bzero with memset  [Jon Ringle]
-   - swap VTOC values for warning messages  [Karel Zak]
-   - use "optimal I/O size" in warnings  [Karel Zak]
-   - use 1MiB offset and grain always when possible  [Karel Zak]
-   - use more elegant way to count and check alignment  [Karel Zak]
-   - use optimal_io_size  [Karel Zak]
-findmnt:
-   - add man page  [Karel Zak]
-   - add new command  [Karel Zak]
-   - add tree support  [Karel Zak]
-   - add {fs,vfs}-options columns  [Karel Zak]
-   - don't swap source and target for tags  [Karel Zak]
-   - minor coding style fixes  [Karel Zak]
-   - move from /sbin to /bin  [Karel Zak]
-   - rewrite to use lib/tt.c  [Karel Zak]
-   - small change in usage()  [Karel Zak]
-fsck/mkfs/mount:
-   - unify default search paths for helpers  [Mike Frysinger]
-fsfreeze:
-   - new command  [Hajime Taira]
-git:
-   - ignore index files generated by ctags and cscope  [Petr Uzel]
-hwclock:
-   - add --predict for predicting RTC reading at a given time  [Timo Juhani Lindfors]
-include:
-   - add min/max macros  [Karel Zak]
-   - move shlibs/.../list.h to the include/ directory  [Karel Zak]
-ionice:
-   - fix typo  [Pierre Hauweele]
-   - non-cryptic error message when ionice can't execvp  [√Üvar Arnfj√∂r√∞ Bjarmason]
-ipcs:
-   - add missing "PIDs" to related shared memory header text  [Francesco Cosoleto]
-   - get rid of colons from header strings for consistency  [Francesco Cosoleto]
-   - reorganize help and usage texts  [Francesco Cosoleto]
-ldattach:
-   - add --iflag command line option  [Tilman Schmidt]
-   - create a generic functions for name=value tables  [Karel Zak]
-   - prints help to stdout  [Karel Zak]
-lib:
-   - add #ifndef around min() max() macros  [Karel Zak]
-   - add fallback for libc (uClibc) without CPU_ALLOC  [Karel Zak]
-   - add mangle.c for mtab (fstab or swaps) encoding  [Karel Zak]
-   - add strtosize() function  [Karel Zak]
-   - add tt.c (Tree and Table output)  [Karel Zak]
-   - avoid compilation failure on rawhide  [Jim Meyering]
-   - fix blkdev_find_size()  [Karel Zak]
-   - remove unwanted debug messages  [Karel Zak]
-   - tt.c  don't print header for empty table  [Karel Zak]
-   - tt.c - fix minimal width of column  [Karel Zak]
-   - use fstat() as fallback in blkdev_get_size()  [Karel Zak]
-libblkid:
-   - Add initial support for BeFS detection  [Jeroen Oortwijn]
-   - Add probing function for BeFS  [Jeroen Oortwijn]
-   - add PART_ENTRY_{SCHEME,NUMBER}  [Karel Zak]
-   - add blkid_openat(), cleanup blkid_fstatat()  [Karel Zak]
-   - add blkid_partition_set_type()  [Karel Zak]
-   - add blkid_partlist_get_table()  [Karel Zak]
-   - add blkid_probe_all_removable()  [Karel Zak]
-   - add blkid_probe_get_{offset,fd} functions  [Karel Zak]
-   - add exFAT file system detection support  [Andrew Nayenko]
-   - add generic functions for sysfs attributes  [Karel Zak]
-   - add microsecond resolution for cache entries  [Karel Zak]
-   - add minimal sizes for OCFS and GFS  [Karel Zak]
-   - add mnt_iter_get_direction()  [Karel Zak]
-   - add partial support for superblock binary API  [Karel Zak]
-   - add paths and tags cache  [Karel Zak]
-   - add sanity checks for FAT to DOS PT parser  [Karel Zak]
-   - add support for PART_ENTRY_* values  [Karel Zak]
-   - add support for partition flags/attributes  [Karel Zak]
-   - add ultrix PT support  [Karel Zak]
-   - avoid probing CDs for RAID  [M.S.Colclough]
-   - call read() per FAT root dir entry  [Karel Zak]
-   - cleanup fstat() usage  [Karel Zak]
-   - cleanup some docs  [Karel Zak]
-   - cleanup superblocks_safeprobe()  [Karel Zak]
-   - cleanup usage of empty topology values  [Karel Zak]
-   - disable read-ahead when probing device files  [Linus Torvalds]
-   - don't call read() per FAT dir-entry on large disks  [Karel Zak]
-   - don't gather PART_ENTRY_* values for binary interface  [Karel Zak]
-   - don't probe for GPT and Unixware PT on floppies  [Karel Zak]
-   - don't probe for nested PT on tiny disks (<=1.44MiB)  [Karel Zak]
-   - don't return error on empty files  [Karel Zak]
-   - don't use fstat() in blkid_get_dev_size()  [Karel Zak]
-   - export functions to get whole-disk devno  [Karel Zak]
-   - fix 'partno' usage  [Karel Zak]
-   - fix LUKS version  [Karel Zak]
-   - fix ZSF detection  [Andreas Dilger]
-   - fix blkid_partlist_devno_to_partition() for extended partitions  [Karel Zak]
-   - fix collision between RAID and PT probing  [Karel Zak]
-   - fix display of device size  [Karel Zak]
-   - fix infinite loop when probe chain bails out early  [Colin Watson]
-   - fix readline usage  [Karel Zak]
-   - fix segfault in drdb  [Matthias K√∂nig]
-   - fix some typos  [Milan Broz]
-   - improbe DDF detection  [Karel Zak]
-   - improve MD 0.90 detection  [Karel Zak]
-   - improve MD 0.90.0 detection (use sb->size)  [Karel Zak]
-   - improve MD 1.0 detection, add UUID_SUB  [Karel Zak]
-   - improve Sun VTOC  [Karel Zak]
-   - improve ZFS detection and add LABEL and UUID extraction  [Andreas Dilger]
-   - minor fixes in befs.c  [Karel Zak]
-   - more robust minix probing  [Karel Zak]
-   - optimize UDF label reading  [Karel Zak]
-   - prevent overflow in BeFS  [Jeroen Oortwijn]
-   - probe for (non-linux) RAIDs on whole devices only  [Karel Zak]
-   - read whole SB buffer (69kB) on large disks  [Karel Zak]
-   - read() optimization for small devices  [Karel Zak]
-   - remove "0x" prefix from DRBD UUID  [Karel Zak]
-   - reset BLKID_TINY_DEV flag in blkid_probe_set_device  [Pascal Terjan]
-   - reset superblocks result after error  [Karel Zak]
-   - restrict RAID/FS proving for small devices (1.4MiB)  [Karel Zak]
-   - rewrite blkid_probe_get_buffer()  [Karel Zak]
-   - set correct offsets for TuxOnIce signature  [Chow Loong Jin]
-   - set minimal size for jfs, reiser, swap and zfs  [Karel Zak]
-   - support alignment_offset=-1  [Karel Zak]
-   - tiny change in debug output  [Karel Zak]
-   - export magic strings from raids  [Karel Zak]
-   - move getsize.c code to lib/  [Karel Zak]
-libmount:
-   - add #warning libmount API is not stable yet!  [Karel Zak]
-   - add basic dirs  [Karel Zak]
-   - add basic utils  [Karel Zak]
-   - add debug support  [Karel Zak]
-   - add docs  [Karel Zak]
-   - add fstab/mtab/mountinfo lookup routines  [Karel Zak]
-   - add fstab/mtab/mountinfo parsing routines  [Karel Zak]
-   - add list routines and generic iterator  [Karel Zak]
-   - add mnt_cache_find_tag_value()  [Karel Zak]
-   - add mnt_entry  [Karel Zak]
-   - add mnt_match_{fstype,options} functions  [Karel Zak]
-   - add mnt_optstr_* functions  [Karel Zak]
-   - add mtab locking code  [Karel Zak]
-   - add new debug messages  [Karel Zak]
-   - add optls (options container)  [Karel Zak]
-   - add support for userdata and work with VFS tree  [Karel Zak]
-   - add test_version  [Karel Zak]
-   - add version.c  [Karel Zak]
-   - another Makefile.am fix  [Karel Zak]
-   - cleanup cache flags and debug messages  [Karel Zak]
-   - cleanup docs  [Karel Zak]
-   - export mnt_init_debug()  [Karel Zak]
-   - fix Makefile.am  [Karel Zak]
-   - fix mnt_fs_match_source()  [Karel Zak]
-   - fix name of mnt_fs_get_*_optstr()  [Karel Zak]
-   - fix some gtkdoc warnings  [Karel Zak]
-   - merge vfs and fs options more carefully  [Karel Zak]
-   - proper tests definition in Makefile.am  [Karel Zak]
-   - read devno, ID and parent ID from /proc/self/mountinfo  [Karel Zak]
-   - remove mnt_open_device()  [Karel Zak]
-   - rename mnt_optls_iterate_options()  [Karel Zak]
-   - update symbols table  [Karel Zak]
-   - use mangle function from lib/  [Karel Zak]
-logger:
-   - add note about 'kern' to the man page  [Karel Zak]
-login:
-   - check that after tty reopen we still work with a terminal  [Karel Zak]
-   - don't link PAMed version with libcrypt  [Karel Zak]
-   - use fd instead of pathname for update tty's owner and permissions  [Yann Droneaud]
-losetup:
-   - support suffixes and hex numbers for --offset and --sizelimit  [Karel Zak]
-lscpu:
-   - cleanup path_scanstr()  [Karel Zak]
-   - cleanup used names  [Karel Zak]
-   - fix cpuid opcode detection  [Henne Vogelsang]
-   - improve --sysroot code  [Karel Zak]
-   - use cpuset masks, read data for all CPUs  [Karel Zak]
-mkswap:
-   - don't call blkdev_find_size()  [Karel Zak]
-   - fixed strtoll() usage  [Yann Droneaud]
-   - more robust strtoull() usage  [Karel Zak]
-   - move write_all() to include/writeall.h  [Karel Zak]
-   - zap bootbits on regular files  [Karel Zak]
-mount:
-   - advise users to use "modprobe", not "insmod"  [Karel Zak]
-   - automatically detect and loop-mount regular files  [Karel Zak]
-   - detect when kernel silently adds MS_RDONLY flag  [Petr Uzel]
-   - fix coding style  [Karel Zak]
-   - fix information about XFS log buffers in mount.8  [Christoph Hellwig]
-   - fix typo in comment  [Petr Uzel]
-   - more explicitly explain fstab usage in mount.8  [Karel Zak]
-   - more robust offset= and sizelimit= parsing  [Karel Zak]
-   - posix option of vfat is obsolete  [Yoshihiro Takahashi]
-   - properly ignore comments in /etc/filesystems  [Mike Frysinger]
-   - report ambivalent FS detection, improve brute force detection  [Karel Zak]
-   - revert ugly ENOMEDIUM support  [Karel Zak]
-   - support suffixes for offset= and sizelimit=  [Karel Zak]
-   - update documentation about barrier mount options  [Jan Kara]
-   - use auto-loopdev for all known filesystems  [Karel Zak]
-   - use unmangle/mangle() from lib  [Karel Zak]
-   - warn users that mtab is read-only  [Karel Zak]
-namei:
-   - fix man page formatting  [Vladimir Brednikov]
-partx:
-   - do not add nonexistent partitions  [Phillip Susi]
-   - fix infinite loop  [Karel Zak]
-po:
-   - merge changes  [Karel Zak]
-   - update cs.po (from translationproject.org)  [Petr Pisar]
-   - update es.po (from translationproject.org)  [Santiago Vila Doncel]
-   - update eu.po (from translationproject.org)  [Mikel Olasagasti Uranga]
-   - update id.po (from translationproject.org)  [Arif E. Nugroho]
-   - update ja.po (from translationproject.org)  [Makoto Kato]
-   - update list of files  [Karel Zak]
-   - update pl.po (from translationproject.org)  [Jakub Bogusz]
-   - update vi.po (from translationproject.org)  [Clytie Siddall]
-rdev:
-   - remove this deprecated command  [Karel Zak]
-rtcwake:
-   - add --dry-run option  [Karel Zak]
-   - add disable action for rtc alarm  [Marek Otahal]
-   - add disable action to rtcwake man page  [Marek Otahal]
-   - does miss the "off" option  [Karel Zak]
-script:
-   - optionally compile with libutempter to update utmp  [Karel Zak]
-   - preserve child exit status  [Karel Zak]
-sfdisk:
-   - make sure writes make it to disk in write_partitions()  [Bryn M. Reeves]
-swaplabel:
-   - fix typo in man page  [Karel Zak]
-   - new command  [Jason Borden]
-swapon:
-   - fix swapsize calculation  [Karel Zak]
-   - move DELETED_SUFFIX to include/pathnames.h  [Karel Zak]
-   - remove " (deleted)" from filenames from /proc/swaps  [Karel Zak]
-   - use unmangle() for filenames from /proc/swaps  [Karel Zak]
-taskset:
-   - add NLS support, use err.h, cleanup  [Karel Zak]
-   - move NR_CPUS determination to lib/cpuset.c  [Karel Zak]
-   - move bitmap routines to lib/cpuset.c  [Karel Zak]
-   - use libc based cpu_set_t  [Karel Zak]
-tests:
-   - add BeFS test image  [Karel Zak]
-   - add blkid test for TuxOnIce  [Karel Zak]
-   - add blkid tests for RAID1  [Karel Zak]
-   - add cpuset regression test  [Karel Zak]
-   - add fdisk alignment tests  [Karel Zak]
-   - add lscpu dump from Dell R710, 8-core Nehalem w/HT (RHEL 5.5)  [Karel Zak]
-   - added tests against strtosize  [Yann Droneaud]
-   - explicitly use --chunk and --metadata in MD test  [Karel Zak]
-   - fix RAIDs tests  [Karel Zak]
-   - fix and update old fdisk tests  [Karel Zak]
-   - fix whitespaces  [Karel Zak]
-   - mount cramfs read-only  [Karel Zak]
-   - update FS test images  [Karel Zak]
-   - update blkid test for raid1  [Karel Zak]
-   - update blkid/md-raid1-* tests  [Karel Zak]
-   - update fdisk tests  [Karel Zak]
-   - update ipcs/headers test  [Francesco Cosoleto]
-   - update lscpu  [Karel Zak]
-   - update lscpu test  [Karel Zak]
-   - use POSIX locale  [Yann Droneaud]
-umount:
-   - add --fake option to umount(8)  [Miklos Szeredi]
-   - do not sync() as the kernel does it by itself  [Petr Uzel]
-unshare:
-   - drop potential euid privileges before exec  [Karel Zak]
-wipefs:
-   - cleanup usage() and man page  [Karel Zak]
-   - fix license (GPL -> GPLv2+)  [Karel Zak]
-   - ignore devices with partition table  [Karel Zak]
-   - print warning is PT detected  [Karel Zak]
-   - support suffixes for --offset  [Karel Zak]
-
--- 
- Karel Zak  <kzak@redhat.com>
- http://karelzak.blogspot.com
+On Thu, Jun 3, 2010 at 11:16 PM, Islam Amer <pharon@gmail.com> wrote:
+> Hello,
+>
+> I suspected the same about dell_new_hk_type, but I am confused that
+> the rest of the fn keys work just fine out of the box. The only button
+> that didn't work was the eject key.
+>
+> Attached is the dmidecode output.
+>
+> Thanks
+>
+> On Thu, Jun 3, 2010 at 5:57 AM, †<Rezwanul_Kabir@dell.com> wrote:
+>>
+>>>Hi Rez,
+>>>
+>>>Any thoughts on this?
+>>>
+>>
+>>
+>> †From the discussion below, it seems that this system does not implement the new
+>> WMI scheme ( which is when dell_new_hk_type=true is set). So, at issue here is the
+>> legacy code. Without knowing exactly why BIOS would behave differently in this particular case,
+>> the fix seems arbitrary. Let me see if I can get hold of the BIOS developer(if possible) and provide feedback in this thread.
+>>
+>> Islam Amer
+>>
+>> † Can you attach dmidecode output from the system here?
+>>
+>> Thanks..
+>> † --rez
+>>
+>>
+>>
+>>
+>>
+>>>On Thu, Jun 03, 2010 at 01:14:09AM +0400, Islam Amer wrote
+>>>> Hello,
+>>>>
+>>>> Pressing the eject key on my Dell Studio 1555 does not work
+>>>and dmesg
+>>>> produces this message :
+>>>> dell-wmi: Unknown key 0 pressed
+>>>>
+>>>> Adding a debugging printk in dell-wmi.c after line 222 like this :
+>>>>
+>>>> printk(KERN_INFO "dell:wmi 0x%x , 0x%x \n", buffer_entry[1],
+>>>> buffer_entry[2]);
+>>>>
+>>>> dmesg now shows :
+>>>>
+>>>> dell:wmi 0x0 , 0xe009
+>>>> dell-wmi: Unknown key 0 pressed
+>>>>
+>>>> So for some reason buffer_entry[1] is used although it is empty.
+>>>>
+>>>> Falling back to buffer_entry[2] in case buffer_entry[1] is 0x0 makes
+>>>> the button work.
+>>>>
+>>>> I suspect it might be better to fix the "dell_new_hk_type" logic
+>>>> though
+>>>>
+>>>> I had submitted this as
+>>>> https://bugzilla.kernel.org/show_bug.cgi?id=16075 but repeating the
+>>>> information and patch here as per Andrew Morton's suggestion.
+>>>>
+>>>>
+>>>> Thanks.
+>>>>
+>>>> ---
+>>>linux-sidux-2.6-2.6.34/drivers/platform/x86/dell-wmi.c.orig
+>>>2010-06-03
+>>>> 01:02:17.418824168 +0400
+>>>> +++ linux-sidux-2.6-2.6.34/drivers/platform/x86/dell-wmi.c
+>>>2010-06-03
+>>>> 01:01:40.641833249 +0400
+>>>> @@ -221,7 +221,7 @@ static void dell_wmi_notify(u32 value, v
+>>>> † † † † † † † † † † †return;
+>>>> † † † † † † †}
+>>>>
+>>>> - † † † † † †if (dell_new_hk_type)
+>>>> + † † † † † †if (dell_new_hk_type || buffer_entry[1] == 0x0)
+>>>> † † † † † † † † † † †reported_key = (int)buffer_entry[2];
+>>>> † † † † † † †else
+>>>> † † † † † † † † † † †reported_key = (int)buffer_entry[1] & 0xffff;
+>>>>
+>>>--
+>>>Matthew Garrett | mjg59@srcf.ucam.org
+>>>
+>
