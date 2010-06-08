@@ -1,114 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754045Ab0FHHJd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jun 2010 03:09:33 -0400
-Received: from relay.atmel.no ([80.232.32.139]:59457 "EHLO relay.atmel.no"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753833Ab0FHHJb convert rfc822-to-8bit (ORCPT
+	id S1754133Ab0FHHPj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jun 2010 03:15:39 -0400
+Received: from mtagate1.de.ibm.com ([195.212.17.161]:35988 "EHLO
+	mtagate1.de.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752979Ab0FHHPh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jun 2010 03:09:31 -0400
-X-Greylist: delayed 1374 seconds by postgrey-1.27 at vger.kernel.org; Tue, 08 Jun 2010 03:09:31 EDT
-Date: Tue, 8 Jun 2010 08:46:28 +0200
-From: Hans-Christian Egtvedt <hans-christian.egtvedt@atmel.com>
-To: Akinobu Mita <akinobu.mita@gmail.com>
-Cc: Wim Van Sebroeck <wim@iguana.be>,
-       Hans-Christian Egtvedt <hcegtvedt@atmel.com>,
-       linux-kernel@vger.kernel.org
-Subject: Re: setting miscdevice.parent after misc_register()
-Message-ID: <20100608084628.282f73ad@hcegtvedt.norway.atmel.com>
-In-Reply-To: <AANLkTilDZdke5V6TYtDheK9rCaxTDHqtoPR7I_tEvFR2@mail.gmail.com>
-References: <AANLkTilDZdke5V6TYtDheK9rCaxTDHqtoPR7I_tEvFR2@mail.gmail.com>
-Organization: Atmel Corporation
-X-Mailer: Claws Mail 3.7.4 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
+	Tue, 8 Jun 2010 03:15:37 -0400
+Date: Tue, 8 Jun 2010 09:15:35 +0200
+From: Christof Schmitt <christof.schmitt@de.ibm.com>
+To: "Martin K. Petersen" <martin.petersen@oracle.com>
+Cc: Boaz Harrosh <bharrosh@panasas.com>, Dave Chinner <david@fromorbit.com>,
+       linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
+       linux-fsdevel@vger.kernel.org
+Subject: Re: Wrong DIF guard tag on ext2 write
+Message-ID: <20100608071534.GA3263@schmichrtp.mainz.de.ibm.com>
+References: <yq1iq64kv9f.fsf@sermon.lab.mkp.net>
+ <20100531144648.GA19068@schmichrtp.mainz.de.ibm.com>
+ <yq11vcqlwp8.fsf@sermon.lab.mkp.net>
+ <20100602133748.GA11196@schmichrtp.mainz.de.ibm.com>
+ <20100602232039.GA8287@dastard>
+ <yq139x3y411.fsf@sermon.lab.mkp.net>
+ <20100604023253.GF19651@dastard>
+ <yq1zkz6vmpu.fsf@sermon.lab.mkp.net>
+ <4C0D2AD4.2020303@panasas.com>
+ <yq1sk4yvj0a.fsf@sermon.lab.mkp.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <yq1sk4yvj0a.fsf@sermon.lab.mkp.net>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 8 Jun 2010 12:11:44 +0900
-Akinobu Mita <akinobu.mita@gmail.com> wrote:
-
-> In drivers/watchdog/at32ap700x_wdt.c, and drivers/watchdog/sch311x_wdt.c
-> miscdevice.parent is set after misc_register().
+On Mon, Jun 07, 2010 at 01:40:21PM -0400, Martin K. Petersen wrote:
+> >>>>> "Boaz" == Boaz Harrosh <bharrosh@panasas.com> writes:
 > 
-> drivers/watchdog/at32ap700x_wdt.c:
+> Boaz> Do you remember some performance numbers that show degradation /
+> Boaz> sameness?
 > 
-> 	ret = misc_register(&wdt->miscdev);
-> 	...
-> 	wdt->miscdev.parent = &pdev->dev;
+> Boaz> What type of work loads?
 > 
-> But it does nothing. (the miscdevice will not be a child of that parent
-> device in sysfs)
+> I haven't been using XFS much for over a year.  I'm using an internal
+> async I/O tool and btrfs for most of my DIX/DIF testing these days.
 > 
-> So should it be set before misc_register() or just keep it as-is?
+> But my original changes were along the lines of what Jan mentioned
+> earlier (hooking into page_mkwrite and waiting for writeback.  I could
+> have sworn that I only did it for ext[23] and that XFS waited out of the
+> box but git proves me wrong).  Anyway, I'll try to get some benchmarking
+> happening later this week.
 
-AFAICT I think it is unsafe to have misc_register() before the last
-parts of the probe function. The misc_register() should be the last
-call in _probe().
+Is there a patch with this change available somewhere? It might be
+useful to patch a kernel with this XFS change for reliable DIF/DIX
+testing.
 
-Something ala the following...
-
->From 8439126716c3cf887c6453c9543cca5b58ac9c81 Mon Sep 17 00:00:00 2001
-From: Hans-Christian Egtvedt <hans-christian.egtvedt@atmel.com>
-Date: Tue, 8 Jun 2010 08:44:32 +0200
-Subject: [PATCH] at32ap700x_wdt: register misc device last in probe() function
-
-This patch reworks the probe() function in the at32ap700x_wdt driver, this to
-make sure the miscdev is properly initialized and the driver is ready to be
-accessed.
-
-Signed-off-by: Hans-Christian Egtvedt <hans-christian.egtvedt@atmel.com>
----
- drivers/watchdog/at32ap700x_wdt.c |   16 ++++++++++------
- 1 files changed, 10 insertions(+), 6 deletions(-)
-
-diff --git a/drivers/watchdog/at32ap700x_wdt.c b/drivers/watchdog/at32ap700x_wdt.c
-index 1cddf92..750bc52 100644
---- a/drivers/watchdog/at32ap700x_wdt.c
-+++ b/drivers/watchdog/at32ap700x_wdt.c
-@@ -346,9 +346,13 @@ static int __init at32_wdt_probe(struct platform_device *pdev)
- 	} else {
- 		wdt->users = 0;
- 	}
--	wdt->miscdev.minor = WATCHDOG_MINOR;
--	wdt->miscdev.name = "watchdog";
--	wdt->miscdev.fops = &at32_wdt_fops;
-+
-+	wdt->miscdev.minor	= WATCHDOG_MINOR;
-+	wdt->miscdev.name	= "watchdog";
-+	wdt->miscdev.fops	= &at32_wdt_fops;
-+	wdt->miscdev.parent	= &pdev->dev;
-+
-+	platform_set_drvdata(pdev, wdt);
- 
- 	if (at32_wdt_settimeout(timeout)) {
- 		at32_wdt_settimeout(TIMEOUT_DEFAULT);
-@@ -360,17 +364,17 @@ static int __init at32_wdt_probe(struct platform_device *pdev)
- 	ret = misc_register(&wdt->miscdev);
- 	if (ret) {
- 		dev_dbg(&pdev->dev, "failed to register wdt miscdev\n");
--		goto err_iounmap;
-+		goto err_register;
- 	}
- 
--	platform_set_drvdata(pdev, wdt);
--	wdt->miscdev.parent = &pdev->dev;
- 	dev_info(&pdev->dev,
- 		"AT32AP700X WDT at 0x%p, timeout %d sec (nowayout=%d)\n",
- 		wdt->regs, wdt->timeout, nowayout);
- 
- 	return 0;
- 
-+err_register:
-+	platform_set_drvdata(pdev, NULL);
- err_iounmap:
- 	iounmap(wdt->regs);
- err_free:
--- 
-1.6.3.3
-
--- 
-Best regards,
-Hans-Christian Egtvedt
+> This won't fix things completely, though.  ext2fs, for instance,
+> frequently changes metadata buffers in flight so it trips the guard
+> check in no time.
+> 
+> -- 
+> Martin K. Petersen	Oracle Linux Engineering
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-scsi" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
