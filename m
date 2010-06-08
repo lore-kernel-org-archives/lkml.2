@@ -1,86 +1,245 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756452Ab0FHUzq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jun 2010 16:55:46 -0400
-Received: from hera.kernel.org ([140.211.167.34]:44985 "EHLO hera.kernel.org"
+	id S1756489Ab0FHU4I (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jun 2010 16:56:08 -0400
+Received: from hera.kernel.org ([140.211.167.34]:39399 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754655Ab0FHUzo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jun 2010 16:55:44 -0400
-Date: Tue, 8 Jun 2010 20:55:13 GMT
+	id S1755538Ab0FHU4F (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Jun 2010 16:56:05 -0400
+Date: Tue, 8 Jun 2010 20:55:32 GMT
 From: tip-bot for Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-       fweisbec@gmail.com, a.p.zijlstra@chello.nl, stable@kernel.org,
-       tglx@linutronix.de, mingo@elte.hu
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-       fweisbec@gmail.com, a.p.zijlstra@chello.nl, stable@kernel.org,
+Cc: linux-kernel@vger.kernel.org, paulmck@linux.vnet.ibm.com, hpa@zytor.com,
+       mingo@redhat.com, a.p.zijlstra@chello.nl, tglx@linutronix.de,
+       mingo@elte.hu
+Reply-To: mingo@redhat.com, hpa@zytor.com, paulmck@linux.vnet.ibm.com,
+       linux-kernel@vger.kernel.org, a.p.zijlstra@chello.nl,
        tglx@linutronix.de, mingo@elte.hu
 In-Reply-To: <new-submission>
 References: <new-submission>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf: Fix signed comparison in perf_adjust_period()
-Message-ID: <tip-f6ab91add6355e231e1c47897027b2a6ee4fa268@git.kernel.org>
-Git-Commit-ID: f6ab91add6355e231e1c47897027b2a6ee4fa268
+Subject: [tip:sched/core] sched: Fix PROVE_RCU vs cpu_cgroup
+Message-ID: <tip-dc61b1d65e353d638b2445f71fb8e5b5630f2415@git.kernel.org>
+Git-Commit-ID: dc61b1d65e353d638b2445f71fb8e5b5630f2415
 X-Mailer: tip-git-log-daemon
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Tue, 08 Jun 2010 20:55:15 +0000 (UTC)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Tue, 08 Jun 2010 20:55:33 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  f6ab91add6355e231e1c47897027b2a6ee4fa268
-Gitweb:     http://git.kernel.org/tip/f6ab91add6355e231e1c47897027b2a6ee4fa268
+Commit-ID:  dc61b1d65e353d638b2445f71fb8e5b5630f2415
+Gitweb:     http://git.kernel.org/tip/dc61b1d65e353d638b2445f71fb8e5b5630f2415
 Author:     Peter Zijlstra <a.p.zijlstra@chello.nl>
-AuthorDate: Fri, 4 Jun 2010 15:18:01 +0200
+AuthorDate: Tue, 8 Jun 2010 11:40:42 +0200
 Committer:  Ingo Molnar <mingo@elte.hu>
-CommitDate: Tue, 8 Jun 2010 18:43:00 +0200
+CommitDate: Tue, 8 Jun 2010 18:44:04 +0200
 
-perf: Fix signed comparison in perf_adjust_period()
+sched: Fix PROVE_RCU vs cpu_cgroup
 
-Frederic reported that frequency driven swevents didn't work properly
-and even caused a division-by-zero error.
+PROVE_RCU has a few issues with the cpu_cgroup because the scheduler
+typically holds rq->lock around the css rcu derefs but the generic
+cgroup code doesn't (and can't) know about that lock.
 
-It turns out there are two bugs, the division-by-zero comes from a
-failure to deal with that in perf_calculate_period().
+Provide means to add extra checks to the css dereference and use that
+in the scheduler to annotate its users.
 
-The other was more interesting and turned out to be a wrong comparison
-in perf_adjust_period(). The comparison was between an s64 and u64 and
-got implicitly converted to an unsigned comparison. The problem is
-that period_left is typically < 0, so it ended up being always true.
+The addition of rq->lock to these checks is correct because the
+cgroup_subsys::attach() method takes the rq->lock for each task it
+moves, therefore by holding that lock, we ensure the task is pinned to
+the current cgroup and the RCU derefence is valid.
 
-Cure this by making the local period variables s64.
+That leaves one genuine race in __sched_setscheduler() where we used
+task_group() without holding any of the required locks and thus raced
+with the cgroup code. Solve this by moving the check under the
+appropriate lock.
 
-Reported-by: Frederic Weisbecker <fweisbec@gmail.com>
-Tested-by: Frederic Weisbecker <fweisbec@gmail.com>
 Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: <stable@kernel.org>
+Cc: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 LKML-Reference: <new-submission>
 Signed-off-by: Ingo Molnar <mingo@elte.hu>
 ---
- kernel/perf_event.c |    5 ++++-
- 1 files changed, 4 insertions(+), 1 deletions(-)
+ include/linux/cgroup.h |   20 ++++++---
+ kernel/sched.c         |  115 ++++++++++++++++++++++++-----------------------
+ 2 files changed, 73 insertions(+), 62 deletions(-)
 
-diff --git a/kernel/perf_event.c b/kernel/perf_event.c
-index 31d6afe..ff86c55 100644
---- a/kernel/perf_event.c
-+++ b/kernel/perf_event.c
-@@ -1507,6 +1507,9 @@ do {					\
- 		divisor = nsec * frequency;
- 	}
- 
-+	if (!divisor)
-+		return dividend;
-+
- 	return div64_u64(dividend, divisor);
+diff --git a/include/linux/cgroup.h b/include/linux/cgroup.h
+index 0c62160..e3d00fd 100644
+--- a/include/linux/cgroup.h
++++ b/include/linux/cgroup.h
+@@ -525,13 +525,21 @@ static inline struct cgroup_subsys_state *cgroup_subsys_state(
+ 	return cgrp->subsys[subsys_id];
  }
  
-@@ -1529,7 +1532,7 @@ static int perf_event_start(struct perf_event *event)
- static void perf_adjust_period(struct perf_event *event, u64 nsec, u64 count)
+-static inline struct cgroup_subsys_state *task_subsys_state(
+-	struct task_struct *task, int subsys_id)
++/*
++ * function to get the cgroup_subsys_state which allows for extra
++ * rcu_dereference_check() conditions, such as locks used during the
++ * cgroup_subsys::attach() methods.
++ */
++#define task_subsys_state_check(task, subsys_id, __c)			\
++	rcu_dereference_check(task->cgroups->subsys[subsys_id],		\
++			      rcu_read_lock_held() ||			\
++			      lockdep_is_held(&task->alloc_lock) ||	\
++			      cgroup_lock_is_held() || (__c))
++
++static inline struct cgroup_subsys_state *
++task_subsys_state(struct task_struct *task, int subsys_id)
  {
- 	struct hw_perf_event *hwc = &event->hw;
--	u64 period, sample_period;
-+	s64 period, sample_period;
- 	s64 delta;
+-	return rcu_dereference_check(task->cgroups->subsys[subsys_id],
+-				     rcu_read_lock_held() ||
+-				     lockdep_is_held(&task->alloc_lock) ||
+-				     cgroup_lock_is_held());
++	return task_subsys_state_check(task, subsys_id, false);
+ }
  
- 	period = perf_calculate_period(event, nsec, count);
+ static inline struct cgroup* task_cgroup(struct task_struct *task,
+diff --git a/kernel/sched.c b/kernel/sched.c
+index f8b8996..2aaceeb 100644
+--- a/kernel/sched.c
++++ b/kernel/sched.c
+@@ -306,52 +306,6 @@ static int init_task_group_load = INIT_TASK_GROUP_LOAD;
+  */
+ struct task_group init_task_group;
+ 
+-/* return group to which a task belongs */
+-static inline struct task_group *task_group(struct task_struct *p)
+-{
+-	struct task_group *tg;
+-
+-#ifdef CONFIG_CGROUP_SCHED
+-	tg = container_of(task_subsys_state(p, cpu_cgroup_subsys_id),
+-				struct task_group, css);
+-#else
+-	tg = &init_task_group;
+-#endif
+-	return tg;
+-}
+-
+-/* Change a task's cfs_rq and parent entity if it moves across CPUs/groups */
+-static inline void set_task_rq(struct task_struct *p, unsigned int cpu)
+-{
+-	/*
+-	 * Strictly speaking this rcu_read_lock() is not needed since the
+-	 * task_group is tied to the cgroup, which in turn can never go away
+-	 * as long as there are tasks attached to it.
+-	 *
+-	 * However since task_group() uses task_subsys_state() which is an
+-	 * rcu_dereference() user, this quiets CONFIG_PROVE_RCU.
+-	 */
+-	rcu_read_lock();
+-#ifdef CONFIG_FAIR_GROUP_SCHED
+-	p->se.cfs_rq = task_group(p)->cfs_rq[cpu];
+-	p->se.parent = task_group(p)->se[cpu];
+-#endif
+-
+-#ifdef CONFIG_RT_GROUP_SCHED
+-	p->rt.rt_rq  = task_group(p)->rt_rq[cpu];
+-	p->rt.parent = task_group(p)->rt_se[cpu];
+-#endif
+-	rcu_read_unlock();
+-}
+-
+-#else
+-
+-static inline void set_task_rq(struct task_struct *p, unsigned int cpu) { }
+-static inline struct task_group *task_group(struct task_struct *p)
+-{
+-	return NULL;
+-}
+-
+ #endif	/* CONFIG_CGROUP_SCHED */
+ 
+ /* CFS-related fields in a runqueue */
+@@ -644,6 +598,49 @@ static inline int cpu_of(struct rq *rq)
+ #define cpu_curr(cpu)		(cpu_rq(cpu)->curr)
+ #define raw_rq()		(&__raw_get_cpu_var(runqueues))
+ 
++#ifdef CONFIG_CGROUP_SCHED
++
++/*
++ * Return the group to which this tasks belongs.
++ *
++ * We use task_subsys_state_check() and extend the RCU verification
++ * with lockdep_is_held(&task_rq(p)->lock) because cpu_cgroup_attach()
++ * holds that lock for each task it moves into the cgroup. Therefore
++ * by holding that lock, we pin the task to the current cgroup.
++ */
++static inline struct task_group *task_group(struct task_struct *p)
++{
++	struct cgroup_subsys_state *css;
++
++	css = task_subsys_state_check(p, cpu_cgroup_subsys_id,
++			lockdep_is_held(&task_rq(p)->lock));
++	return container_of(css, struct task_group, css);
++}
++
++/* Change a task's cfs_rq and parent entity if it moves across CPUs/groups */
++static inline void set_task_rq(struct task_struct *p, unsigned int cpu)
++{
++#ifdef CONFIG_FAIR_GROUP_SCHED
++	p->se.cfs_rq = task_group(p)->cfs_rq[cpu];
++	p->se.parent = task_group(p)->se[cpu];
++#endif
++
++#ifdef CONFIG_RT_GROUP_SCHED
++	p->rt.rt_rq  = task_group(p)->rt_rq[cpu];
++	p->rt.parent = task_group(p)->rt_se[cpu];
++#endif
++}
++
++#else /* CONFIG_CGROUP_SCHED */
++
++static inline void set_task_rq(struct task_struct *p, unsigned int cpu) { }
++static inline struct task_group *task_group(struct task_struct *p)
++{
++	return NULL;
++}
++
++#endif /* CONFIG_CGROUP_SCHED */
++
+ inline void update_rq_clock(struct rq *rq)
+ {
+ 	if (!rq->skip_clock_update)
+@@ -4465,16 +4462,6 @@ recheck:
+ 	}
+ 
+ 	if (user) {
+-#ifdef CONFIG_RT_GROUP_SCHED
+-		/*
+-		 * Do not allow realtime tasks into groups that have no runtime
+-		 * assigned.
+-		 */
+-		if (rt_bandwidth_enabled() && rt_policy(policy) &&
+-				task_group(p)->rt_bandwidth.rt_runtime == 0)
+-			return -EPERM;
+-#endif
+-
+ 		retval = security_task_setscheduler(p, policy, param);
+ 		if (retval)
+ 			return retval;
+@@ -4490,6 +4477,22 @@ recheck:
+ 	 * runqueue lock must be held.
+ 	 */
+ 	rq = __task_rq_lock(p);
++
++#ifdef CONFIG_RT_GROUP_SCHED
++	if (user) {
++		/*
++		 * Do not allow realtime tasks into groups that have no runtime
++		 * assigned.
++		 */
++		if (rt_bandwidth_enabled() && rt_policy(policy) &&
++				task_group(p)->rt_bandwidth.rt_runtime == 0) {
++			__task_rq_unlock(rq);
++			raw_spin_unlock_irqrestore(&p->pi_lock, flags);
++			return -EPERM;
++		}
++	}
++#endif
++
+ 	/* recheck policy now with rq lock held */
+ 	if (unlikely(oldpolicy != -1 && oldpolicy != p->policy)) {
+ 		policy = oldpolicy = -1;
