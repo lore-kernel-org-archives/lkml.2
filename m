@@ -1,137 +1,252 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755377Ab0FHOP7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jun 2010 10:15:59 -0400
-Received: from zmta01.cabocomm.dk ([193.200.44.52]:34428 "EHLO zmta01.irigo.dk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755170Ab0FHOP5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jun 2010 10:15:57 -0400
-Subject: Re: [RFC][PATCH] irq: support IRQ_NESTED_THREAD with non-threaded
- interrupt handlers
-From: Esben Haabendal <eha@doredevelopment.dk>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Esben Haabendal <esbenhaabendal@gmail.com>, linuxppc-dev@ozlabs.org,
-       Marc Zyngier <maz@misterjones.org>, LKML <linux-kernel@vger.kernel.org>,
-       Ingo Molnar <mingo@elte.hu>, joachim.eastwood@jotron.com,
-       Peter Zijlstra <peterz@infradead.org>,
-       David Miller <davem@davemloft.net>
-In-Reply-To: <alpine.LFD.2.00.1006080015570.2933@localhost.localdomain>
-References: <1275686352.2970.2.camel@eha.doredevelopment.dk>
-	 <alpine.LFD.2.00.1006042343150.2933@localhost.localdomain>
-	 <AANLkTilb7---Qg1oLwzanKP1RGe04fkAXDtZzz0w9MGz@mail.gmail.com>
-	 <20100605151031.2d562268@hina.wild-wind.fr.eu.org>
-	 <alpine.LFD.2.00.1006051732270.2933@localhost.localdomain>
-	 <AANLkTimlSBEhl58CNuScKjxbqdTwTYgqo7vrHTcd1x9G@mail.gmail.com>
-	 <alpine.LFD.2.00.1006051915290.2933@localhost.localdomain>
-	 <AANLkTimcB9vRqnNYyBh6hjHXZHcmFvw72MZUEIGfeexq@mail.gmail.com>
-	 <alpine.LFD.2.00.1006052155100.2933@localhost.localdomain>
-	 <AANLkTik2so7osQJFq6NRaIFK2GVLURVozOqSsejd1K0F@mail.gmail.com>
-	 <alpine.LFD.2.00.1006062228120.2933@localhost.localdomain>
-	 <1275914058.2818.8.camel@eha.doredevelopment.dk>
-	 <alpine.LFD.2.00.1006071440520.2933@localhost.localdomain>
-	 <AANLkTilPhof5cnhBCXSzKJSnWl6Vuu2fRts2pBBBNl6K@mail.gmail.com>
-	 <alpine.LFD.2.00.1006080015570.2933@localhost.localdomain>
-Content-Type: text/plain; charset="UTF-8"
-Organization: =?ISO-8859-1?Q?Dor=E9Development?= ApS
-Date: Tue, 08 Jun 2010 16:15:47 +0200
-Message-ID: <1276006547.2870.488.camel@eha.doredevelopment.dk>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.1 
-Content-Transfer-Encoding: 7bit
+	id S1755400Ab0FHOTP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jun 2010 10:19:15 -0400
+Received: from e23smtp03.au.ibm.com ([202.81.31.145]:51946 "EHLO
+	e23smtp03.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755365Ab0FHOTN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Jun 2010 10:19:13 -0400
+From: "Aneesh Kumar K. V" <aneesh.kumar@linux.vnet.ibm.com>
+To: hch@infradead.org, viro@zeniv.linux.org.uk, adilger@sun.com,
+       corbet@lwn.net, serue@us.ibm.com, neilb@suse.de, hooanon05@yahoo.co.jp,
+       bfields@fieldses.org
+Cc: linux-fsdevel@vger.kernel.org, sfrench@us.ibm.com, philippe.deniel@CEA.FR,
+       linux-kernel@vger.kernel.org
+Subject: Re: [PATCH -V13 0/11] Generic name to handle and open by handle syscalls
+In-Reply-To: <1275581657-7232-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+References: <1275581657-7232-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+User-Agent: Notmuch/ (http://notmuchmail.org) Emacs/24.0.50.1 (i686-pc-linux-gnu)
+Date: Tue, 08 Jun 2010 19:48:59 +0530
+Message-ID: <87sk4xehf0.fsf@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-06-08 at 01:18 +0200, Thomas Gleixner wrote: 
-> On Mon, 7 Jun 2010, Esben Haabendal wrote:
-> > On Mon, Jun 7, 2010 at 5:06 PM, Thomas Gleixner <tglx@linutronix.de> wrote:
-> > 
-> > > Maybe you understand now, why I was pretty sure upfront, that your
-> > > approach was wrong even without knowing all the gory details ? :)
-> > 
-> > I understand.  There is a better solution, which is to use threaded
-> > interrupts where needed.
-> > 
-> > But I must confess that I am disappointed that you still fail to see
-> > how the pca953x
-> > patch actually eliminates the need for serialization. But I don't
-> > think there is much
-> > point in going on about that.
+On Thu,  3 Jun 2010 21:44:06 +0530, "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com> wrote:
+> Hi,
 > 
-> I return the favour of being disappointed that you are still failing
-> to accept that there is a fundamental difference between "it works in
-> a particular case" and semantical correctness under all
-> circumstances.
-
-No reason to do that.  I must have misunderstood you then.
-I understand that the general case, I just never got the point
-where you understood what I did that (I believe) makes it
-actually work (not just for now, but really work), in my
-particular case.
-
-> There is no place for "it works in a particular case" in a kernel
-> which runs on a gazillion of different devices unless you want to
-> create a complete unmaintainable mess. The only way to avoid this is
-> to be strict about semantics even if it seems unsensible for a
-> particular case.
-
-I won't argue against.  Not at all.
-
-> Also I explained it to you in great length, that your patch violates
-> the semantical guarantees of existing functions, but you ignore that
-> completely.
-
-And I answered you several times, that I understand your point,
-but 
-
-
-> It's Open Source, go wild and change it for your particular case - but
-> don't expect that I accept patches to the generic irq code which will
-> cause _me_ predictable trouble as I have to deal with the
-> fallout. Neither expect, that I ack patches to users of that code
-> which are semantically wrong.
+> The below set of patches implement open by handle support using exportfs
+> operations. This allows user space application to map a file name to file 
+> handle and later open the file using handle. This should be usable
+> for userspace NFS [1] and 9P server [2]. XFS already support this with the ioctls
+> XFS_IOC_PATH_TO_HANDLE and XFS_IOC_OPEN_BY_HANDLE.
 > 
-> Just for the record, the pca953x driver is broken vs. the local state
-> protection anyway as the GPIO functions are not serialized against the
-> interrupt controller functions. There is no magic which prevents that,
-> neither on your system nor on any other. The GPIO function should take
-> buslock when modifying local state and that's one of the reasons why
-> buslock it is there and cannot go away.
+> [1] http://nfs-ganesha.sourceforge.net/
+> [2] http://thread.gmane.org/gmane.comp.emulators.qemu/68992
+> 
+> Changes from V12:
+> a) Use CAP_DAC_READ_SEARCH instead of CAP_DAC_OVERRIDE in open_by_handle
+> b) Return -ENOTDIR if O_DIRECTORY flag is specified in open_by_handle with
+>    handle for non directory
+> 
+> Changes from V11:
+> a) Add necessary documentation to different functions
+> b) Add null pathname support to faccessat and linkat similar to
+>    readlinkat.
+> c) compile fix on x86_64
+> 
+> Changes from V10:
+> a) Missed an stg refresh before sending out the patchset. Send
+>    updated patchset.
+> 
+> Changes from V9:
+> a) Fix compile errors with CONFIG_EXPORTFS not defined
+> b) Return -EOPNOTSUPP if file system doesn't support fh_to_dentry exportfs callback.
+> 
+> Changes from V8:
+> a)  exportfs_decode_fh now returns -ESTALE if export operations is not defined.
+> b)  drop get_fsid super_operations. Instead use superblock to store uuid.
+> 
+> Changes from V7:
+> a) open_by_handle now use mountdirfd to identify the vfsmount.
+> b) We don't validate the UUID passed as a part of file handle in open_by_handle.
+>    UUID is provided as a part of file handle as an easy way for userspace to
+>    use the kernel returned handle as it is. It also helps in finding the 16 byte
+>    filessytem UUID in userspace without using file system specific libraries to
+>    read file system superblock. If a particular file system doesn't support UUID
+>    or any form of unique id this field in the file handle will be zero filled.
+> c) drop freadlink syscall. Instead use readlinkat with NULL pathname to indicate
+>    read the link target name of the link pointed by fd. This is similar to
+>    sys_utimensat
+> d) Instead of opencoding all the open flag related check use helper functions.
+>    Did finish_open_by_handle similar to finish_open.
+> c) Fix may_open to not return ELOOP for symlink when we are called from handle open.
+>    open(2) still returns error as expected. 
+> 
+> Changes from V6:
+> a) Add uuid to vfsmount lookup and drop uuid to superblock lookup
+> b) Return -EOPNOTSUPP in sys_name_to_handle if the file system returned uuid
+>    doesn't give the same vfsmount on lookup. This ensure that we fail
+>    sys_name_to_handle when we have multiple file system returning same UUID.
+> 
+> Changes from V5:
+> a) added sys_name_to_handle_at syscall which takes AT_SYMLINK_NOFOLLOW flag 
+>    instead of two syscalls sys_name_to_handle and sys_lname_to_handle.
+> b) addressed review comments from Niel Brown
+> c) rebased to b91ce4d14a21fc04d165be30319541e0f9204f15
+> d) Add compat_sys_open_by_handle
+> 
+> Chages from V4:
+> a) Changed the syscal arguments so that we don't need compat syscalls
+>    as suggested by Christoph
+> c) Added two new syscall sys_lname_to_handle and sys_freadlink to work with
+>    symlinks
+> d) Changed open_by_handle to work with all file types
+> e) Add ext3 support
+> 
+> Changes from V3:
+> a) Code cleanup suggested by Andreas
+> b) x86_64 syscall support
+> c) add compat syscall
+> 
+> Chages from V2:
+> a) Support system wide unique handle.
+> 
+> Changes from v1:
+> a) handle size is now specified in bytes
+> b) returns -EOVERFLOW if the handle size is small
+> c) dropped open_handle syscall and added open_by_handle_at syscall
+>    open_by_handle_at takes mount_fd as the directory fd of the mount point
+>    containing the file
+> e) handle will only be unique in a given file system. So for an NFS server
+>    exporting multiple file system, NFS server will have to internally track the
+>    mount point to which a file handle belongs to. We should be able to do it much
+>    easily than expecting kernel to give a system wide unique file handle. System
+>    wide unique file handle would need much larger changes to the exportfs or VFS
+>    interface and I was not sure whether we really need to do that in the kernel or
+>    in the user space
+> f) open_handle_at now only check for DAC_OVERRIDE capability
+> 
+> 
+> Example program: (x86_32). (x86_64 would need a different syscall number)
+> -------
+> cc <source.c> -luuid
+> --------
+> #define _GNU_SOURCE
+> #include <stdio.h>
+> #include <stdlib.h>
+> 
+> #include <fcntl.h>
+> #include <unistd.h>
+> #include <errno.h>
+> #include <sys/types.h>
+> #include <sys/stat.h>
+> #include <string.h>
+> #include <uuid/uuid.h>
+> 
+> struct file_handle {
+>         int handle_size;
+>         int handle_type;
+> 	uuid_t fs_uuid;
+>         unsigned char handle[0];
+> };
+> 
+> #define AT_FDCWD		-100
+> #define AT_SYMLINK_FOLLOW	0x400
+> 
+> static int name_to_handle(const char *name, struct file_handle  *fh)
+> {
+> 	return syscall(338, AT_FDCWD, name, fh, AT_SYMLINK_FOLLOW);
+> }
+> 
+> static int lname_to_handle(const char *name, struct file_handle  *fh)
+> {
+> 	return syscall(338, AT_FDCWD, name, fh, 0);
+> }
+> 
+> static int open_by_handle(int mountfd, struct file_handle *fh,  int flags)
+> {
+> 	return syscall(339, mountfd, fh, flags);
+> }
+> 
+> #define BUFSZ 100
+> int main(int argc, char *argv[])
+> {
+>         int fd;
+>         int ret;
+> 	int mountfd;
+> 	int handle_sz;
+> 	struct stat bufstat;
+>         char buf[BUFSZ];
+> 	char uuid[36];
+>         struct file_handle *fh = NULL;;
+> 	if (argc != 3 ) {
+> 		printf("Usage: %s <filename> <mount-dir-name>\n", argv[0]);
+> 		exit(1);
+> 	}
+> again:
+> 	if (fh && fh->handle_size) {
+> 		handle_sz = fh->handle_size;
+> 		free(fh);
+> 		fh = malloc(sizeof(struct file_handle) + handle_sz);
+> 		fh->handle_size = handle_sz;
+> 	} else {
+> 		fh = malloc(sizeof(struct file_handle));
+> 		fh->handle_size = 0;
+> 	}
+>         errno  = 0;
+>         ret = lname_to_handle(argv[1], fh);
+>         if (ret && errno == EOVERFLOW) {
+> 		printf("Found the handle size needed to be %d\n", fh->handle_size);
+> 		goto again;
+>         } else if (ret) {
+>                 perror("Error:");
+> 		exit(1);
+> 	}
+> 	uuid_unparse(fh->fs_uuid, uuid);
+> 	printf("UUID:%s\n", uuid);
+> 	printf("Waiting for input");
+> 	getchar();
+> 	mountfd = open(argv[2], O_RDONLY | O_DIRECTORY);
+> 	if (mountfd <= 0) {
+>                 perror("Error:");
+>                 exit(1);
+>         }
+>         fd = open_by_handle(mountfd, fh, O_RDONLY);
+>         if (fd <= 0 ) {
+>                 perror("Error:");
+>                 exit(1);
+>         }
+> 	printf("Reading the content now \n");
+> 	fstat(fd, &bufstat);
+> 	ret = S_ISLNK(bufstat.st_mode);
+> 	if (ret) {
+> 		memset(buf, 0 , BUFSZ);
+> 		readlinkat(fd, NULL, buf, BUFSZ);
+> 		printf("%s is a symlink pointing to %s\n", argv[1], buf);
+> 	}
+>         memset(buf, 0 , BUFSZ);
+> 	while (1) {
+> 		ret = read(fd, buf, BUFSZ -1);
+> 		if (ret <= 0)
+> 			break;
+> 		buf[ret] = '\0';
+>                 printf("%s", buf);
+>                 memset(buf, 0 , BUFSZ);
+>         }
+> 	/* Now check for faccess */
+> 	if (faccessat(fd, NULL, W_OK, 0) == 0) {
+> 		printf("Got write permission on the file \n");
+> 	} else
+> 		perror("faccess error");
+> 	/* now try to create a hardlink */
+> 	if (linkat(fd, NULL, AT_FDCWD, "test", 0) == 0){
+> 		printf("created hardlink\n");
+> 	} else
+> 		perror("linkat error");
+>         return 0;
+> }
+> 
+> 
 
-Ok, so the genirq buslock should be held in fx.
-pca953x_gpio_direction_input and pca953x_gpio_direction_output ?
-That makes sense in combination with the currently implemented
-bus_sync_unlock.
+git tree for this patch series is available at
 
-But I still fail to see why it is needed, or even desired, that the
-setting of direction should be related to the genirq code at all.
+http://git.kernel.org/?p=linux/kernel/git/kvaneesh/linux-open-handle.git
 
-I see it as a sane seperation to let the actual gpio code handle
-the direction setting, and the irq code to handle the (in software)
-irq mask.  Driver and/or board code should be sane enough to set
-pca953x gpio's as input if/when interrupts from them are needed.
-And they should do this in advance.  And by doing it this way,
-there should not be any hardware state to serialize, and there
-actually is no pca953x driver local state either, as the pca953x_chip
-members are either exclusively managed by gpio or irq code.
-
-> I'm anticipating that you are going to tell me that it does not matter
-> on your particular powerpc combined with your usage pattern (i.e no
-> GPIO users). And I tell you right away, that I'm not interested in
-> this answer for well explained reasons.
-
-No, I don't tie it to my particular usage pattern. I tell you that
-I don't need it (serialization) on powerpc because my pca953x powerpc
-patch have removed the need for shared local state between gpio and irq
-code.
-
-Of-course, for the pca953x driver to be acceptable, it would
-be nice (or more likely, required) to unify it for other archs
-also, I just don't see how to do that.
-
-That said, I will proceed with the request_any_context_irq() in the phy
-driver instead :-)  Case closed for now.
-
-/Esben
+git://git.kernel.org/pub/scm/linux/kernel/git/kvaneesh/linux-open-handle.git open-by-handle-v13
 
 
+-aneesh
