@@ -1,75 +1,264 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753748Ab0FHPaY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jun 2010 11:30:24 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:65150 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751894Ab0FHPaX (ORCPT
+	id S1753642Ab0FHPdj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jun 2010 11:33:39 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:42720 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752510Ab0FHPdi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jun 2010 11:30:23 -0400
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Daniel Walker <dwalker@codeaurora.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-       Russell King <rmk@arm.linux.org.uk>,
-       Kevin Hilman <khilman@deeprootsystems.com>,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       linux-arm-msm@vger.kernel.org, Vegard Nossum <vegard.nossum@gmail.com>
-Subject: Re: ARM defconfig files
-References: <20100603074548.GA12104@flint.arm.linux.org.uk>
-	<alpine.LFD.2.00.1006030725420.8175@i5.linux-foundation.org>
-	<1275584003.23384.2.camel@c-dwalke-linux.qualcomm.com>
-Date: Tue, 08 Jun 2010 16:30:00 +0100
-In-Reply-To: <1275584003.23384.2.camel@c-dwalke-linux.qualcomm.com> (Daniel
-	Walker's message of "Thu, 03 Jun 2010 09:53:23 -0700")
-Message-ID: <tnxeighczk7.fsf@e102109-lin.cambridge.arm.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-X-OriginalArrivalTime: 08 Jun 2010 15:30:05.0226 (UTC) FILETIME=[783438A0:01CB071F]
+	Tue, 8 Jun 2010 11:33:38 -0400
+X-Authority-Analysis: v=1.1 cv=rR912iD8TqKBQWPhXASLR67rt2rT9ApkpBWj5XB9Duc= c=1 sm=0 a=u44T9-jO5vUA:10 a=yQWWgrYGNuUA:10 a=7U3hwN5JcxgA:10 a=Q9fys5e9bTEA:10 a=gMqfjgEr1zLu/65IO0LwxA==:17 a=20KFwNOVAAAA:8 a=JfrnYn6hAAAA:8 a=meVymXHHAAAA:8 a=2B0-CabF_5L0lusuArYA:9 a=l62KxmDKmUugUVTU2eoA:7 a=8_hTPCJgbNXYjlFSsUXbgodzI8YA:4 a=PUjeQqilurYA:10 a=jEp0ucaQiEUA:10 a=3Rfx1nUSh_UA:10 a=jeBq3FmKZ4MA:10 a=gMqfjgEr1zLu/65IO0LwxA==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.89.75
+Subject: [PATCH][RFC] tracing: Use class->reg() for all registering of
+ events
+From: Steven Rostedt <rostedt@goodmis.org>
+Reply-To: rostedt@goodmis.org
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+       Frederic Weisbecker <fweisbec@gmail.com>,
+       Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+Organization: Kihon Technologies Inc.
+Date: Tue, 08 Jun 2010 11:33:35 -0400
+Message-ID: <1276011215.15884.96.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Daniel Walker <dwalker@codeaurora.org> wrote:
-> Have you noticed this ..
->
-> http://ktrap.org/mailarchive/linux-kernel/2010/5/17/4571130
->
-> I'm not sure of the goals, but it sounds like it might be relevant.
 
-In some cases you don't want to automatically enable features but rather
-fix the Kconfig file. For example, with the select dependencies patch
-(http://lkml.org/lkml/2009/9/16/413) on ARMv7 RealView I get the
-following:
+I'm pushing this as an RFC first. This probably should be something that
+makes it into 2.6.35.
 
-warning: (CPU_V7 && !ARCH_OMAP2 || CPU_MMP2 && ARCH_MMP) selects
-CPU_32v6K which has unmet direct dependencies (CPU_V6)
+Acks and perhaps a little testing from the perf and kprobe angle?
 
-Unless I misunderstand this, a solver may try to select CPU_V6 which I
-don't want to. The solution is to fix Kconfig as below:
+-- Steve
 
 
-Author: Catalin Marinas <catalin.marinas@arm.com>
-Date:   Wed Aug 12 13:50:05 2009 +0100
+Steven Rostedt (1):
+      tracing: Use class->reg() for all registering of events
 
-    Mark CPU_32v6K as depended on CPU_V7
+----
+ include/linux/ftrace_event.h    |    3 ++
+ include/trace/ftrace.h          |    2 +
+ kernel/trace/trace_event_perf.c |   17 ++----------
+ kernel/trace/trace_events.c     |   55 +++++++++++++++++++++++++-------------
+ 4 files changed, 44 insertions(+), 33 deletions(-)
+---------------------------
+commit 0ab320dbe5894d7b4eec7d7da3a270abc68e4992
+Author: Steven Rostedt <srostedt@redhat.com>
+Date:   Tue Jun 8 11:22:06 2010 -0400
+
+    tracing: Use class->reg() for all registering of events
     
-    Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
+    Because kprobes and syscalls need special processing to register
+    events, the class->reg() method was created to handle the differences.
+    
+    But instead of creating a default ->reg for perf and ftrace events,
+    the code was scattered with:
+    
+    	if (class->reg)
+    		class->reg();
+    	else
+    		default_reg();
+    
+    This is messy and can also lead to bugs.
+    
+    This patch cleans up this code and creates a default reg() entry for
+    the events allowing for the code to directly call the class->reg()
+    without the condition.
+    
+    Reported-by: Peter Zijlstra <peterz@infradead.org>
+    Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 
-diff --git a/arch/arm/mm/Kconfig b/arch/arm/mm/Kconfig
-index 9f10a9b..a4909db 100644
---- a/arch/arm/mm/Kconfig
-+++ b/arch/arm/mm/Kconfig
-@@ -398,7 +398,7 @@ config CPU_V6
- # ARMv6k
- config CPU_32v6K
- 	bool "Support ARM V6K processor extensions" if !SMP
--	depends on CPU_V6
-+	depends on CPU_V6 || CPU_V7
- 	default y if SMP && !(ARCH_MX3 || ARCH_OMAP2)
- 	help
- 	  Say Y here if your ARMv6 processor supports the 'K' extension.
+diff --git a/include/linux/ftrace_event.h b/include/linux/ftrace_event.h
+index 3167f2d..a69bd32 100644
+--- a/include/linux/ftrace_event.h
++++ b/include/linux/ftrace_event.h
+@@ -146,6 +146,9 @@ struct ftrace_event_class {
+ 	int			(*raw_init)(struct ftrace_event_call *);
+ };
+ 
++extern int ftrace_event_reg(struct ftrace_event_call *event,
++			    enum trace_reg type);
++
+ enum {
+ 	TRACE_EVENT_FL_ENABLED_BIT,
+ 	TRACE_EVENT_FL_FILTERED_BIT,
+diff --git a/include/trace/ftrace.h b/include/trace/ftrace.h
+index 5a64905..8815e27 100644
+--- a/include/trace/ftrace.h
++++ b/include/trace/ftrace.h
+@@ -439,6 +439,7 @@ static inline notrace int ftrace_get_offsets_##call(			\
+  *	.fields			= LIST_HEAD_INIT(event_class_##call.fields),
+  *	.raw_init		= trace_event_raw_init,
+  *	.probe			= ftrace_raw_event_##call,
++ *	.reg			= ftrace_event_reg,
+  * };
+  *
+  * static struct ftrace_event_call __used
+@@ -567,6 +568,7 @@ static struct ftrace_event_class __used event_class_##call = {		\
+ 	.fields			= LIST_HEAD_INIT(event_class_##call.fields),\
+ 	.raw_init		= trace_event_raw_init,			\
+ 	.probe			= ftrace_raw_event_##call,		\
++	.reg			= ftrace_event_reg,			\
+ 	_TRACE_PERF_INIT(call)						\
+ };
+ 
+diff --git a/kernel/trace/trace_event_perf.c b/kernel/trace/trace_event_perf.c
+index e6f6588..de2f170 100644
+--- a/kernel/trace/trace_event_perf.c
++++ b/kernel/trace/trace_event_perf.c
+@@ -56,13 +56,7 @@ static int perf_trace_event_init(struct ftrace_event_call *tp_event,
+ 		}
+ 	}
+ 
+-	if (tp_event->class->reg)
+-		ret = tp_event->class->reg(tp_event, TRACE_REG_PERF_REGISTER);
+-	else
+-		ret = tracepoint_probe_register(tp_event->name,
+-						tp_event->class->perf_probe,
+-						tp_event);
+-
++	ret = tp_event->class->reg(tp_event, TRACE_REG_PERF_REGISTER);
+ 	if (ret)
+ 		goto fail;
+ 
+@@ -96,7 +90,7 @@ int perf_trace_init(struct perf_event *p_event)
+ 	mutex_lock(&event_mutex);
+ 	list_for_each_entry(tp_event, &ftrace_events, list) {
+ 		if (tp_event->event.type == event_id &&
+-		    tp_event->class && tp_event->class->perf_probe &&
++		    tp_event->class && tp_event->class->reg &&
+ 		    try_module_get(tp_event->mod)) {
+ 			ret = perf_trace_event_init(tp_event, p_event);
+ 			break;
+@@ -136,12 +130,7 @@ void perf_trace_destroy(struct perf_event *p_event)
+ 	if (--tp_event->perf_refcount > 0)
+ 		goto out;
+ 
+-	if (tp_event->class->reg)
+-		tp_event->class->reg(tp_event, TRACE_REG_PERF_UNREGISTER);
+-	else
+-		tracepoint_probe_unregister(tp_event->name,
+-					    tp_event->class->perf_probe,
+-					    tp_event);
++	tp_event->class->reg(tp_event, TRACE_REG_PERF_UNREGISTER);
+ 
+ 	/*
+ 	 * Ensure our callback won't be called anymore. See
+diff --git a/kernel/trace/trace_events.c b/kernel/trace/trace_events.c
+index 45a8968..b353639 100644
+--- a/kernel/trace/trace_events.c
++++ b/kernel/trace/trace_events.c
+@@ -132,6 +132,35 @@ int trace_event_raw_init(struct ftrace_event_call *call)
+ }
+ EXPORT_SYMBOL_GPL(trace_event_raw_init);
+ 
++int ftrace_event_reg(struct ftrace_event_call *call, enum trace_reg type)
++{
++	switch (type) {
++	case TRACE_REG_REGISTER:
++		return tracepoint_probe_register(call->name,
++						 call->class->probe,
++						 call);
++	case TRACE_REG_UNREGISTER:
++		tracepoint_probe_unregister(call->name,
++					    call->class->probe,
++					    call);
++		return 0;
++
++#ifdef CONFIG_PERF_EVENTS
++	case TRACE_REG_PERF_REGISTER:
++		return tracepoint_probe_register(call->name,
++						 call->class->perf_probe,
++						 call);
++	case TRACE_REG_PERF_UNREGISTER:
++		tracepoint_probe_unregister(call->name,
++					    call->class->perf_probe,
++					    call);
++		return 0;
++#endif
++	}
++	return 0;
++}
++EXPORT_SYMBOL_GPL(ftrace_event_reg);
++
+ static int ftrace_event_enable_disable(struct ftrace_event_call *call,
+ 					int enable)
+ {
+@@ -142,23 +171,13 @@ static int ftrace_event_enable_disable(struct ftrace_event_call *call,
+ 		if (call->flags & TRACE_EVENT_FL_ENABLED) {
+ 			call->flags &= ~TRACE_EVENT_FL_ENABLED;
+ 			tracing_stop_cmdline_record();
+-			if (call->class->reg)
+-				call->class->reg(call, TRACE_REG_UNREGISTER);
+-			else
+-				tracepoint_probe_unregister(call->name,
+-							    call->class->probe,
+-							    call);
++			call->class->reg(call, TRACE_REG_UNREGISTER);
+ 		}
+ 		break;
+ 	case 1:
+ 		if (!(call->flags & TRACE_EVENT_FL_ENABLED)) {
+ 			tracing_start_cmdline_record();
+-			if (call->class->reg)
+-				ret = call->class->reg(call, TRACE_REG_REGISTER);
+-			else
+-				ret = tracepoint_probe_register(call->name,
+-								call->class->probe,
+-								call);
++			ret = call->class->reg(call, TRACE_REG_REGISTER);
+ 			if (ret) {
+ 				tracing_stop_cmdline_record();
+ 				pr_info("event trace: Could not enable event "
+@@ -196,8 +215,7 @@ static int __ftrace_set_clr_event(const char *match, const char *sub,
+ 	mutex_lock(&event_mutex);
+ 	list_for_each_entry(call, &ftrace_events, list) {
+ 
+-		if (!call->name || !call->class ||
+-		    (!call->class->probe && !call->class->reg))
++		if (!call->name || !call->class || !call->class->reg)
+ 			continue;
+ 
+ 		if (match &&
+@@ -323,7 +341,7 @@ t_next(struct seq_file *m, void *v, loff_t *pos)
+ 		 * The ftrace subsystem is for showing formats only.
+ 		 * They can not be enabled or disabled via the event files.
+ 		 */
+-		if (call->class && (call->class->probe || call->class->reg))
++		if (call->class && call->class->reg)
+ 			return call;
+ 	}
+ 
+@@ -476,8 +494,7 @@ system_enable_read(struct file *filp, char __user *ubuf, size_t cnt,
+ 
+ 	mutex_lock(&event_mutex);
+ 	list_for_each_entry(call, &ftrace_events, list) {
+-		if (!call->name || !call->class ||
+-		    (!call->class->probe && !call->class->reg))
++		if (!call->name || !call->class || !call->class->reg)
+ 			continue;
+ 
+ 		if (system && strcmp(call->class->system, system) != 0)
+@@ -1037,12 +1054,12 @@ event_create_dir(struct ftrace_event_call *call, struct dentry *d_events,
+ 		return -1;
+ 	}
+ 
+-	if (call->class->probe || call->class->reg)
++	if (call->class->reg)
+ 		trace_create_file("enable", 0644, call->dir, call,
+ 				  enable);
+ 
+ #ifdef CONFIG_PERF_EVENTS
+-	if (call->event.type && (call->class->perf_probe || call->class->reg))
++	if (call->event.type && call->class->reg)
+ 		trace_create_file("id", 0444, call->dir, call,
+ 		 		  id);
+ #endif
 
 
--- 
-Catalin
