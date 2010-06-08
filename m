@@ -1,107 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756215Ab0FHUMj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jun 2010 16:12:39 -0400
-Received: from gerard.telenet-ops.be ([195.130.132.48]:52873 "EHLO
-	gerard.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755723Ab0FHUMi (ORCPT
+	id S1756234Ab0FHUOM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jun 2010 16:14:12 -0400
+Received: from mail-ww0-f46.google.com ([74.125.82.46]:53323 "EHLO
+	mail-ww0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755510Ab0FHUOK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jun 2010 16:12:38 -0400
-Date: Tue, 8 Jun 2010 22:12:35 +0200 (CEST)
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Linux Kernel Development <linux-kernel@vger.kernel.org>
-cc: Arnd Bergmann <arnd@arndb.de>, Andrew Morton <akpm@linux-foundation.org>
-Subject: [PATCH] alpha/h8300/m68k: Remove obsolete <asm/md.h> files
-Message-ID: <alpine.DEB.2.00.1006082208410.23689@ayla.of.borg>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Tue, 8 Jun 2010 16:14:10 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer:x-mailer-version;
+        b=dwgxhdXojwkSci4IHBllqGZGK0V6vlXUy7BtIIvFDZhnzHHa5bTzawtl0S2DrXEw33
+         n8trb0WZe9Qj/NVTRehkRibHcaBIKpOarfXFc4ehyg+0xymu0Eh+b76oVhCEAU+5UAQx
+         5rS295dc7JKfD5p+9t8UvBaPZ60sdxoHQZWP4=
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+       Frederic Weisbecker <fweisbec@gmail.com>,
+       Steven Rostedt <rostedt@goodmis.org>,
+       Peter Zijlstra <a.p.zijlstra@chello.nl>,
+       Paul Mackerras <paulus@samba.org>,
+       Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: [GIT PULL] perf updates
+Date: Tue,  8 Jun 2010 22:13:41 +0200
+Message-Id: <1276028023-23122-1-git-send-regression-fweisbec@gmail.com>
+X-Mailer: git-send-regression
+X-Mailer-version: 0.1, "The maintainer couldn't reproduce after one week full time debugging" special version.
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Removal of these started in 2.3.43pre3, ca. 10 years ago.
+Ingo,
 
-Reported-by: Arnd Bergmann <arnd@arndb.de>
-Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
+Please pull the perf/core branch that can be found at:
+
+git://git.kernel.org/pub/scm/linux/kernel/git/frederic/random-tracing.git
+	perf/core
+
+I'm only posting Oleg's patches as only those are new in my queues.
+
+Thanks,
+	Frederic
 ---
-Arnd: Took me 9 months, but here it is ;-)
 
- arch/alpha/include/asm/md.h |   13 -------------
- arch/h8300/include/asm/md.h |   13 -------------
- arch/m68k/include/asm/md.h  |   13 -------------
- 3 files changed, 0 insertions(+), 39 deletions(-)
- delete mode 100644 arch/alpha/include/asm/md.h
- delete mode 100644 arch/h8300/include/asm/md.h
- delete mode 100644 arch/m68k/include/asm/md.h
+Frederic Weisbecker (2):
+      x86: Unify dumpstack.h and stacktrace.h
+      perf: Drop the skip argument from perf_arch_fetch_regs_caller
 
-diff --git a/arch/alpha/include/asm/md.h b/arch/alpha/include/asm/md.h
-deleted file mode 100644
-index 6c9b822..0000000
---- a/arch/alpha/include/asm/md.h
-+++ /dev/null
-@@ -1,13 +0,0 @@
--/* $Id: md.h,v 1.1 1997/12/15 15:11:48 jj Exp $
-- * md.h: High speed xor_block operation for RAID4/5 
-- *
-- */
-- 
--#ifndef __ASM_MD_H
--#define __ASM_MD_H
--
--/* #define HAVE_ARCH_XORBLOCK */
--
--#define MD_XORBLOCK_ALIGNMENT	sizeof(long)
--
--#endif /* __ASM_MD_H */
-diff --git a/arch/h8300/include/asm/md.h b/arch/h8300/include/asm/md.h
-deleted file mode 100644
-index 1b7300e..0000000
---- a/arch/h8300/include/asm/md.h
-+++ /dev/null
-@@ -1,13 +0,0 @@
--/*
-- * md.h: High speed xor_block operation for RAID4/5 
-- *
-- */
-- 
--#ifndef __ASM_MD_H
--#define __ASM_MD_H
--
--/* #define HAVE_ARCH_XORBLOCK */
--
--#define MD_XORBLOCK_ALIGNMENT	sizeof(long)
--
--#endif /* __ASM_MD_H */
-diff --git a/arch/m68k/include/asm/md.h b/arch/m68k/include/asm/md.h
-deleted file mode 100644
-index d2f78f2..0000000
---- a/arch/m68k/include/asm/md.h
-+++ /dev/null
-@@ -1,13 +0,0 @@
--/*
-- * md.h: High speed xor_block operation for RAID4/5
-- *
-- */
--
--#ifndef __ASM_MD_H
--#define __ASM_MD_H
--
--/* #define HAVE_ARCH_XORBLOCK */
--
--#define MD_XORBLOCK_ALIGNMENT	sizeof(long)
--
--#endif /* __ASM_MD_H */
--- 
-1.7.0.4
+Oleg Nesterov (2):
+      x86: Make save_stack_address() !CONFIG_FRAME_POINTER friendly
+      x86: Unify save_stack_address() and save_stack_address_nosched()
 
-Gr{oetje,eeting}s,
+Américo Wang (1):
+      tracing: Remove boot tracer
 
-						Geert
+Li Zefan (1):
+      tracing: Remove kmemtrace ftrace plugin
 
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
 
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-							    -- Linus Torvalds
+ Documentation/ABI/testing/debugfs-kmemtrace |   71 ----
+ Documentation/trace/kmemtrace.txt           |  126 -------
+ MAINTAINERS                                 |    7 -
+ arch/powerpc/include/asm/perf_event.h       |   12 +
+ arch/powerpc/kernel/misc.S                  |   26 --
+ arch/sparc/include/asm/perf_event.h         |    8 +
+ arch/sparc/kernel/helpers.S                 |    6 +-
+ arch/x86/include/asm/perf_event.h           |   13 +
+ arch/x86/include/asm/stacktrace.h           |   49 +++
+ arch/x86/kernel/cpu/perf_event.c            |   18 -
+ arch/x86/kernel/dumpstack.c                 |    1 -
+ arch/x86/kernel/dumpstack.h                 |   56 ---
+ arch/x86/kernel/dumpstack_32.c              |    2 -
+ arch/x86/kernel/dumpstack_64.c              |    1 -
+ arch/x86/kernel/stacktrace.c                |   31 +-
+ include/linux/kmemtrace.h                   |   25 --
+ include/linux/perf_event.h                  |   32 +--
+ include/linux/slab_def.h                    |    3 +-
+ include/linux/slub_def.h                    |    3 +-
+ include/trace/boot.h                        |   60 ---
+ include/trace/ftrace.h                      |    2 +-
+ init/main.c                                 |   29 +-
+ kernel/perf_event.c                         |    5 -
+ kernel/trace/Kconfig                        |   37 --
+ kernel/trace/Makefile                       |    2 -
+ kernel/trace/kmemtrace.c                    |  529 ---------------------------
+ kernel/trace/trace.c                        |    3 -
+ kernel/trace/trace.h                        |   20 -
+ kernel/trace/trace_boot.c                   |  185 ----------
+ kernel/trace/trace_entries.h                |   62 ----
+ kernel/trace/trace_event_perf.c             |    2 -
+ mm/slab.c                                   |    1 -
+ mm/slub.c                                   |    1 -
+ 33 files changed, 123 insertions(+), 1305 deletions(-)
