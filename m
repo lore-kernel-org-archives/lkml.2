@@ -1,76 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755067Ab0FHRgY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jun 2010 13:36:24 -0400
-Received: from e28smtp08.in.ibm.com ([122.248.162.8]:54810 "EHLO
-	e28smtp08.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752971Ab0FHRgX (ORCPT
+	id S1755295Ab0FHRhQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jun 2010 13:37:16 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:16495 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753848Ab0FHRhO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jun 2010 13:36:23 -0400
-Date: Tue, 8 Jun 2010 23:05:59 +0530
-From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-To: Peter Zijlstra <peterz@infradead.org>, rostedt@goodmis.org
-Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
-       Frederic Weisbecker <fweisbec@gmail.com>,
-       Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-       Ananth N Mavinakayanahalli <ananth@in.ibm.com>
-Subject: Re: [PATCH][RFC] tracing: Use class->reg() for all registering of
- events
-Message-ID: <20100608173559.GE2800@linux.vnet.ibm.com>
-Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-References: <1276011215.15884.96.camel@gandalf.stny.rr.com>
- <1276012661.2046.120.camel@twins>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-In-Reply-To: <1276012661.2046.120.camel@twins>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Tue, 8 Jun 2010 13:37:14 -0400
+Date: Tue, 8 Jun 2010 10:35:17 -0700
+From: Randy Dunlap <randy.dunlap@oracle.com>
+To: Chase Douglas <chase.douglas@canonical.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>,
+       Prasad <prasad@linux.vnet.ibm.com>,
+       Pekka Enberg <penberg@cs.helsinki.fi>,
+       Eduard - Gabriel Munteanu <eduard.munteanu@linux360.ro>,
+       Soeren Sandmann <sandmann@daimi.au.dk>,
+       Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@redhat.com>,
+       linux-kernel@vger.kernel.org, kernel-team@lists.ubuntu.com
+Subject: Re: Tracing configuration review
+Message-Id: <20100608103517.ac380ad4.randy.dunlap@oracle.com>
+In-Reply-To: <1274821799.9346.17.camel@cndougla-ubuntu>
+References: <1274815906.9757.83.camel@cndougla-ubuntu>
+	<20100525201259.GA5370@nowhere>
+	<1274821799.9346.17.camel@cndougla-ubuntu>
+Organization: Oracle Linux Eng.
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-Auth-Type: Internal IP
+X-Source-IP: rcsinet13.oracle.com [148.87.113.125]
+X-CT-RefId: str=0001.0A090203.4C0E7F85.00F0:SCFMA4539811,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> On Tue, 2010-06-08 at 11:33 -0400, Steven Rostedt wrote:
-> > I'm pushing this as an RFC first. This probably should be something that
-> > makes it into 2.6.35.
-> > 
-> > Acks and perhaps a little testing from the perf and kprobe angle?
+On Tue, 25 May 2010 17:09:59 -0400 Chase Douglas wrote:
+
+> On Tue, 2010-05-25 at 22:13 +0200, Frederic Weisbecker wrote:
+> > On Tue, May 25, 2010 at 03:31:46PM -0400, Chase Douglas wrote:
+> > > The following options are what I am looking to set for our x86
+> > > configurations. I've only included those that I am not 100% sure of.
+> > > Comments are what I could gather from documentation and Kconfig, but
+> > > they may not be accurate:
 > 
-> I'll have a look soon, but lets add Srikar to CC, he actually reported
-> the problem :-)
+> <snip>
 > 
-> > Steven Rostedt (1):
-> >       tracing: Use class->reg() for all registering of evints
+> > > # CONFIG_SCHED_TRACER is not set (headed for deprecation?)
 > > 
-
-I tested the patch and it fixed the regression where
-perf record -e probe:do_fork -aR sleep 1 would fail. 
-
-Now with this patch, it records the events. However perf record
-encounters a floating point exception .. (Peter said he was aware and had a
-fix for the floating point exception problem)
-
-
-However I still see another minor regression (atleast on the tip tree)
-This regression was present even before this patch.
-The first time I run a perf probe command, it fails, subsequent runs
-pass. 
-
-i.e 
-
-411 [srikar@llm69 ]$  sudo perf probe do_fork 
-kprobe_events file does not exist - please rebuild kernel with CONFIG_KPROBE_EVENT.
-  Error: Failed to add events. (-1)
-411 [srikar@llm69 ]$  sudo perf probe do_fork 
-Add new event:
-  probe:do_fork        (on do_fork)
-
-You can now use it on all perf tools, such as:
-
-        perf record -e probe:do_fork -aR sleep 1
-
-411 [srikar@llm69 ]$ 
+> > 
+> > We want to deprecate it in the long term, but for now we
+> > don't have any replacement. Cool for RT latency tracing.
+> 
+> I thought that the functionality is the same as what you get by:
+> 
+> echo 1 > (debufs)/tracing/events/sched/enable
+> 
+> > > CONFIG_KSYM_TRACER=y (no performance impact by default)
+> > 
+> > 
+> > IMO, it is deprecated. The perf interface is much more powerful and flexible.
+> > Prasad, do you agree if I remove this ftrace plugin?
+> 
+> If there isn't any use in enabling it due to perf's features, then we
+> can turn it off. However, if there's any use to be gained by this over
+> perf's features, then I'd prefer to leave it on. Thoughts?
+> 
+> 
+> > > CONFIG_WORKQUEUE_TRACER=y (no performance impact by default)
+> > 
+> > 
+> > In the way for deprecation.
+> 
+> Is this like the KMEM_TRACER where trace events have superseded it?
 
 
---
-Thanks and Regards
-Srikar
+Hi Chase,
+
+Would you mind sharing your final tracing config options?
+
+thanks,
+---
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
