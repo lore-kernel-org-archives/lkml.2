@@ -1,74 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751670Ab0FGX7r (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jun 2010 19:59:47 -0400
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:58504 "EHLO e9.ny.us.ibm.com"
+	id S1751848Ab0FHAAb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jun 2010 20:00:31 -0400
+Received: from mga01.intel.com ([192.55.52.88]:50582 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750834Ab0FGX7p (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jun 2010 19:59:45 -0400
-Date: Mon, 7 Jun 2010 16:59:42 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Miles Lane <miles.lane@gmail.com>
-Cc: Vivek Goyal <vgoyal@redhat.com>, Eric Paris <eparis@redhat.com>,
-       Lai Jiangshan <laijs@cn.fujitsu.com>, Ingo Molnar <mingo@elte.hu>,
-       Peter Zijlstra <peterz@infradead.org>,
-       LKML <linux-kernel@vger.kernel.org>, nauman@google.com,
-       eric.dumazet@gmail.com, netdev@vger.kernel.org,
-       Jens Axboe <jens.axboe@oracle.com>,
-       Gui Jianfeng <guijianfeng@cn.fujitsu.com>,
-       Li Zefan <lizf@cn.fujitsu.com>,
-       Johannes Berg <johannes@sipsolutions.net>
-Subject: Re: 2.6.35-rc2-git1 - net/mac80211/sta_info.c:125 invoked
- rcu_dereference_check() without protection!
-Message-ID: <20100607235941.GD2387@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <AANLkTintKf_9C1sBsUac6Prvb1nWn7nWszatJ8yUb-VM@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTintKf_9C1sBsUac6Prvb1nWn7nWszatJ8yUb-VM@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1750834Ab0FHAAa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Jun 2010 20:00:30 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.53,380,1272870000"; 
+   d="scan'208";a="574191258"
+Date: Mon, 7 Jun 2010 17:01:15 -0700
+From: jacob pan <jacob.jun.pan@linux.intel.com>
+To: Jacob Pan <jacob.jun.pan@linux.intel.com>
+Cc: Alan Cox <alan@linux.intel.com>, Arjan van de Ven <arjan@linux.intel.com>,
+       LKML <linux-kernel@vger.kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
+       Ingo Molnar <mingo@elte.hu>, Feng Tang <feng.tang@intel.com>,
+       Len Brown <len.brown@intel.com>,
+       "Eric W. Biederman" <ebiederm@xmission.com>
+Subject: Re: [PATCH] x86/sfi: fix ioapic gsi range
+Message-ID: <20100607170115.00004c4c@unknown>
+In-Reply-To: <1275952044-27996-1-git-send-email-jacob.jun.pan@linux.intel.com>
+References: <1275952044-27996-1-git-send-email-jacob.jun.pan@linux.intel.com>
+Organization: Intel OTC
+X-Mailer: Claws Mail 3.7.4cvs1 (GTK+ 2.16.0; i586-pc-mingw32msvc)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 07, 2010 at 02:25:44PM -0400, Miles Lane wrote:
-> [   43.478812] [ INFO: suspicious rcu_dereference_check() usage. ]
-> [   43.478815] ---------------------------------------------------
-> [   43.478820] net/mac80211/sta_info.c:125 invoked
-> rcu_dereference_check() without protection!
-> [   43.478824]
-> [   43.478824] other info that might help us debug this:
-> [   43.478826]
-> [   43.478829]
-> [   43.478830] rcu_scheduler_active = 1, debug_locks = 1
-> [   43.478834] no locks held by NetworkManager/4017.
-
-Hmmm...  Johannes's update has been merged, and it requires that callers
-either be in an RCU read-side critical section or hold either the
-->sta_lock or the ->sta_mtx, and this thread does none of this.
-
-Johannes, any thoughts?
-
-							Thanx, Paul
-
-> [   43.478837] stack backtrace:
-> [   43.478842] Pid: 4017, comm: NetworkManager Not tainted 2.6.35-rc2-git1 #8
-> [   43.478846] Call Trace:
-> [   43.478849]  <IRQ>  [<ffffffff81064e9c>] lockdep_rcu_dereference+0x9d/0xa5
-> [   43.478876]  [<ffffffffa010cb3c>] sta_info_get_bss+0x71/0x12d [mac80211]
-> [   43.478889]  [<ffffffffa010cc0d>] ieee80211_find_sta+0x15/0x2f [mac80211]
-> [   43.478902]  [<ffffffffa019ae16>] iwlagn_tx_queue_reclaim+0xe7/0x1bb [iwlagn]
-> [   43.478909]  [<ffffffff8106530b>] ? mark_lock+0x2d/0x262
-> [   43.478920]  [<ffffffffa019e270>] iwlagn_rx_reply_tx+0x4cd/0x58a [iwlagn]
-> [   43.478928]  [<ffffffff811ca313>] ? is_swiotlb_buffer+0x2e/0x3b
-> [   43.478937]  [<ffffffffa0192ec2>] iwl_rx_handle+0x161/0x2bf [iwlagn]
-> [   43.478946]  [<ffffffffa019370a>] iwl_irq_tasklet+0x2eb/0x408 [iwlagn]
-> [   43.478953]  [<ffffffff8103f892>] tasklet_action+0xa7/0x10f
-> [   43.478960]  [<ffffffff810404cf>] __do_softirq+0x148/0x25a
-> [   43.478966]  [<ffffffff8100314c>] call_softirq+0x1c/0x28
-> [   43.478972]  [<ffffffff81004d20>] do_softirq+0x38/0x80
-> [   43.478977]  [<ffffffff8103ffd0>] irq_exit+0x45/0x94
-> [   43.478983]  [<ffffffff81004465>] do_IRQ+0xad/0xc4
-> [   43.478989]  [<ffffffff813ca3d3>] ret_from_intr+0x0/0xf
-> [   43.478993]  <EOI>
+Jacob Pan Mon,  7 Jun 2010 16:07:24 -0700
+>SFI based platforms should have zero based gsi_base for IOAPICs found in SFI
+>tables. The current code sets gsi_base starting from 1 when registering ioapic.
+>The result is that Moorestown platform would have wrong mp_gsi_routing for each
+>ioapic.
+>
+>Background:
+>In Moorestown/Medfield platforms, there is no legacy IRQs, all gsis and irqs
+>are one to one mapped, including those < 16. Specifically, IRQ0 and IRQ1 are
+>used for per-cpu timers. So without this patch, IOAPIC pin to IRQ mapping is
+>off by one.
+>
+Clarifiction/correction about IRQ0,1. I refer to IOAPIC IRQ #, which is the
+IOAPIC RTE entry #. Not in the sense of kernel IRQ# which can be assigned
+differently on Moorestown.
