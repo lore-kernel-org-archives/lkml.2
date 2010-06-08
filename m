@@ -1,38 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755276Ab0FHNqg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jun 2010 09:46:36 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:36213 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755138Ab0FHNqe convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jun 2010 09:46:34 -0400
-Subject: Re: [PROPOSAL - FIRST POST] NMI & register clash handling
- infrastructure
-From: Peter Zijlstra <peterz@infradead.org>
-To: Oza Oza <ozaoza1982@yahoo.com>
-Cc: linux-kernel@vger.kernel.org
-In-Reply-To: <825203.31628.qm@web95605.mail.in.yahoo.com>
-References: <825203.31628.qm@web95605.mail.in.yahoo.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Tue, 08 Jun 2010 15:46:32 +0200
-Message-ID: <1276004792.2987.225.camel@twins>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	id S1755308Ab0FHNrM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jun 2010 09:47:12 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:65256 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755138Ab0FHNrK (ORCPT
+	<rfc822;<linux-kernel@vger.kernel.org>>);
+	Tue, 8 Jun 2010 09:47:10 -0400
+Date: Tue, 8 Jun 2010 09:46:37 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       "jeremy@goop.org" <jeremy@goop.org>,
+       "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+       "Yaozu (Eddie) Dong" <eddie.dong@intel.com>,
+       "ddutile@redhat.com" <ddutile@redhat.com>,
+       "sheng@linux.intel.com" <sheng@linux.intel.com>
+Subject: Re: [Xen-devel] [PATCH 02/12] early PV on HVM
+Message-ID: <20100608134637.GA5998@phenom.dumpdata.com>
+References: <1275570645-27189-1-git-send-email-stefano.stabellini@eu.citrix.com> <1275570645-27189-2-git-send-email-stefano.stabellini@eu.citrix.com> <20100604202008.GB17645@phenom.dumpdata.com> <alpine.DEB.2.00.1006071518050.3401@kaball-desktop>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.00.1006071518050.3401@kaball-desktop>
+User-Agent: Mutt/1.5.19 (2009-01-05)
+X-Auth-Type: Internal IP
+X-Source-IP: acsinet15.oracle.com [141.146.126.227]
+X-CT-RefId: str=0001.0A090202.4C0E49CD.0043:SCFMA922111,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-06-08 at 14:34 +0530, Oza Oza wrote:
-
-
-> My proposal/idea/thinking is; 
-> have a kernel module which accepts NMI registration from any kernel component, and providing support to the the any kernel service which basically need to service NMI.
-> It may not only supports this, but also can provide central infrastructure which has capabilities such as granting MSR (model specific register) access to the the modules, which may avoid potential clash of MSRs (e.g. two modules are trying to configure same MSR), control NMI registration-unregisteration events etc..
-
-We have such a thing, look at register_die_notifier() users, you want to
-register for the DIE_NMI notifier.
-
-In fact, if you'd have read the oprofile code, you'd have encountered
-these.
+> > > +	HYPERVISOR_shared_info = (struct shared_info *)shared_info_page;
+> > > +
+> > > +	/* Don't do the full vcpu_info placement stuff until we have a
+> > > +	   possible map and a non-dummy shared_info. */
+> > 
+> > Might want to mention where the full vpcu placement is done.
+> 
+> The comment is not accurate, we actually don't do any vcpu_info
+> placement on hvm because it is not very useful there.
+> Better just to remove the comment (I have done so in my tree).
+> 
+> > > +	per_cpu(xen_vcpu, 0) = &HYPERVISOR_shared_info->vcpu_info[0];
+> > 
+So.. what is the purpose of the per_cpu(xen_vcpu, 0) then?
