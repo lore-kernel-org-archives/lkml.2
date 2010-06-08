@@ -1,81 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755080Ab0FHS4P (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jun 2010 14:56:15 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:22652 "EHLO mx1.redhat.com"
+	id S1755259Ab0FHS71 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jun 2010 14:59:27 -0400
+Received: from mx3.mail.elte.hu ([157.181.1.138]:53613 "EHLO mx3.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753477Ab0FHS4O (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jun 2010 14:56:14 -0400
-Subject: Re: RFC: dirty_ratio back to 40%
-From: Larry Woodman <lwoodman@redhat.com>
-To: Christoph Hellwig <hch@infradead.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>
-In-Reply-To: <20100608184913.GA12154@infradead.org>
-References: <4BF51B0A.1050901@redhat.com>
-	 <20100608184913.GA12154@infradead.org>
-Content-Type: text/plain
-Date: Tue, 08 Jun 2010 15:01:24 -0400
-Message-Id: <1276023684.8736.51.camel@dhcp-100-19-198.bos.redhat.com>
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1754320Ab0FHS70 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Jun 2010 14:59:26 -0400
+Date: Tue, 8 Jun 2010 20:59:17 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, Paul Mackerras <paulus@samba.org>,
+       LKML <linux-kernel@vger.kernel.org>,
+       Arnaldo Carvalho de Melo <acme@redhat.com>,
+       Stephane Eranian <eranian@google.com>
+Subject: Re: [PATCH 2/4] perf: Add exclude_task perf event attribute
+Message-ID: <20100608185917.GP11585@elte.hu>
+References: <1274450715-23955-1-git-send-regression-fweisbec@gmail.com>
+ <1274450715-23955-3-git-send-regression-fweisbec@gmail.com>
+ <20100525014323.GC30395@drongo>
+ <1274770688.5882.168.camel@twins>
+ <20100607013848.GA11837@nowhere>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100607013848.GA11837@nowhere>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
+	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-06-08 at 14:49 -0400, Christoph Hellwig wrote:
-> Did this patch get merged somewhere?
 
-I dont think it ever did, about 1/2 of responses were for it and the
-other 1/2 against it.
+* Frederic Weisbecker <fweisbec@gmail.com> wrote:
 
-Larry
-
+> On Tue, May 25, 2010 at 08:58:08AM +0200, Peter Zijlstra wrote:
+> > On Tue, 2010-05-25 at 11:43 +1000, Paul Mackerras wrote:
+> > > On Fri, May 21, 2010 at 04:05:13PM +0200, Frederic Weisbecker wrote:
+> > > 
+> > > > Excluding is useful when you want to trace only hard and softirqs.
+> > > > 
+> > > > For this we use a new generic perf_exclude_event() (the previous
+> > > > one beeing turned into perf_exclude_swevent) to which you can pass
+> > > > the preemption offset to which your events trigger.
+> > > > 
+> > > > Computing preempt_count() - offset gives us the preempt_count() of
+> > > > the context that the event has interrupted, on top of which we
+> > > > can filter the non-irq contexts.
+> > > 
+> > > How does this work for hardware events when we are sampling and
+> > > getting an interrupt every N events?  It seems like the hardware is
+> > > still counting all events and interrupting every N events, but we are
+> > > only recording a sample if the interrupt occurred in the context we
+> > > want.  In other words the context of the Nth event is considered to be
+> > > the context for the N-1 events preceding that, which seems a pretty
+> > > poor approximation.
+> > > 
+> > > Also, for hardware events, if we are counting rather than sampling,
+> > > the exclude_task bit will have no effect.  So perhaps in that case the
+> > > perf_event_open should fail rather than appear to succeed but give
+> > > wrong data.
+> > 
+> > Right, so for hardware event we'd need to go with those irq_{enter,exit}
+> > hooks and either fully disable the call, or do as Ingo suggested, read
+> > the count delta and add that to period_left, so that we'll delay the
+> > sample (and subtract from ->count, which is I think the trickiest bit as
+> > it'll generate a non-monotonic ->count).
+> > 
+> > So I prefer the disable/enable from irq_enter/exit, however I also
+> > suspect that that is by far the most expensive option.
 > 
-> On Thu, May 20, 2010 at 07:20:42AM -0400, Larry Woodman wrote:
-> > We've seen multiple performance regressions linked to the lower(20%)
-> > dirty_ratio.  When performing enough IO to overwhelm the background
-> > flush daemons the percent of dirty pagecache memory quickly climbs
-> > to the new/lower dirty_ratio value of 20%.  At that point all
-> > writing processes are forced to stop and write dirty pagecache pages
-> > back to disk.  This causes performance regressions in several
-> > benchmarks as well as causing
-> > a noticeable overall sluggishness.  We all know that the dirty_ratio is
-> > an integrity vs performance trade-off but the file system journaling
-> > will cover any devastating effects in the event of a system crash.
-> > 
-> > Increasing the dirty_ratio to 40% will regain the performance loss seen
-> > in several benchmarks.  Whats everyone think about this???
-> > 
-> > 
-> > 
-> > 
-> > 
-> > ------------------------------------------------------------------------
-> > 
-> > diff --git a/mm/page-writeback.c b/mm/page-writeback.c
-> > index ef27e73..645a462 100644
-> > --- a/mm/page-writeback.c
-> > +++ b/mm/page-writeback.c
-> > @@ -78,7 +78,7 @@ int vm_highmem_is_dirtyable;
-> > /*
-> >  * The generator of dirty data starts writeback at this percentage
-> >  */
-> > -int vm_dirty_ratio = 20;
-> > +int vm_dirty_ratio = 40;
-> > 
-> > /*
-> >  * vm_dirty_bytes starts at 0 (disabled) so that it is a function of
-> > 
-> > --
-> > To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> > the body to majordomo@kvack.org.  For more info on Linux MM,
-> > see: http://www.linux-mm.org/ .
-> > Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
-> ---end quoted text---
 > 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+> Playing with that, it's easy to contain the counting on the filtered
+> contexts: I can just flush (event->read()) when we enter/exit a context
+> but filter the update of event->count depending on exclude_* things.
+> 
+> There are several problems with that though:
+> 
+> - overflow interrupts continue, we can block them, but still...
+> - periods become randomly async as the interrupts happen. We
+>   could save the period_left on context enter to solve this
+> 
+> 
+> It would be certainly easier and clearer to use stop/start things on context
+> enter/exit.
+> 
+> And the only thing that seem to happen in these paths is a write
+> to the event config register.
+> Is it what is going to be too slow?
+> If you compare that to all the reads on the counter,
+> the interrupts that still need to be serviced and filtered with the
+> other solution, may be the stop/start solution is eventually better
+> in contrast.
+> 
+> How much time approximately does it take to write in this config register?
 
+it should be fast enough. I think we should first go for a good, high-quality 
+implementation that has a correct model for collecting information - and then, 
+if in practice there's any significant slowdown, we could perhaps add a 
+speedup that cuts corners.
+
+If we first cut corners we'll never be able to fully trust the info, and we'll 
+never know how it would all have played out via the disable/enable method.
+
+Thanks,
+
+	Ingo
