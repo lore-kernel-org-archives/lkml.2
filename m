@@ -1,182 +1,285 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752624Ab0FHDJo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jun 2010 23:09:44 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:53066 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751758Ab0FHDJm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jun 2010 23:09:42 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=l7bI41EfWypsBMWxfJUTHZb2hLY6V6FquKol1pnFND2SPX68USjzDrxoMs2tlpb2Jo
-         ApJl+6bfOqECu15l/3h1rs5qsksyaMfXN4N1m2BRlrciCX/kOMQHzk0iUbZnACeItlZ7
-         4pfodo7mYEzUm1YWHye0RZN6nrFRYby38RjAY=
-MIME-Version: 1.0
-In-Reply-To: <AANLkTinUe_IF7riVYpCFpciM6-ngudDR8UZ6FiaJBkk3@mail.gmail.com>
-References: <AANLkTikEGSZUBy8VZOIUhA8iAPa5p7r9vmN47hiEwSB8@mail.gmail.com>
-	<AANLkTinUe_IF7riVYpCFpciM6-ngudDR8UZ6FiaJBkk3@mail.gmail.com>
-Date: Tue, 8 Jun 2010 13:09:41 +1000
-Message-ID: <AANLkTinvrzcSrjoGCZHUGLq0-qt-1mDM0494j5mES5tX@mail.gmail.com>
-Subject: Re: radeon blink during probe regression (was Re: Linux 2.6.35-rc2)
-From: Dave Airlie <airlied@gmail.com>
-To: Alex Deucher <alexdeucher@gmail.com>
-Cc: Torsten Kaiser <just.for.lkml@googlemail.com>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: multipart/mixed; boundary=0016368e30e5d145e104887c1eff
+	id S1752925Ab0FHDJw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jun 2010 23:09:52 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:43803 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751543Ab0FHDJt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Jun 2010 23:09:49 -0400
+Date: Tue, 8 Jun 2010 13:09:40 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: linux-next@vger.kernel.org
+Cc: LKML <linux-kernel@vger.kernel.org>
+Subject: linux-next: Tree for June 8
+Message-Id: <20100608130940.77af8846.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Tue__8_Jun_2010_13_09_40_+1000_OscR/T2uUECh.yk+"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---0016368e30e5d145e104887c1eff
-Content-Type: text/plain; charset=ISO-8859-1
+--Signature=_Tue__8_Jun_2010_13_09_40_+1000_OscR/T2uUECh.yk+
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
 
-On Tue, Jun 8, 2010 at 11:50 AM, Alex Deucher <alexdeucher@gmail.com> wrote=
-:
-> On Mon, Jun 7, 2010 at 8:49 PM, Dave Airlie <airlied@gmail.com> wrote:
->> (changing subject
->>
->> On Tue, Jun 8, 2010 at 3:28 AM, Torsten Kaiser
->> <just.for.lkml@googlemail.com> wrote:
->>> On Mon, Jun 7, 2010 at 8:52 AM, Dave Airlie <airlied@gmail.com> wrote:
->>>> On Mon, Jun 7, 2010 at 4:32 PM, Alex Deucher <alexdeucher@gmail.com> w=
-rote:
->>>>> On Mon, Jun 7, 2010 at 2:22 AM, Dave Airlie <airlied@gmail.com> wrote=
-:
->>>>>> On Mon, Jun 7, 2010 at 4:09 PM, Torsten Kaiser
->>>>>> <just.for.lkml@googlemail.com> wrote:
->>>>>>> The switchoff intervall is ~10 seconds, not 1..2 as I guessed in th=
-e first mail.
->>>>>>> Any idea if there is something in the KMS code that triggers at thi=
-s intervall?
->>>>>>
->>>>>> The new mode probing code happens every 10 seconds, though we
->>>>>> shouldn't be turning anything on or off with it.
->>>>>>
->>>>>> So I suspect the DAC detection table might be doing bad things on yo=
-ur
->>>>>> hardware, we have had a problem where the dac detect table on one DA=
-C
->>>>>> would turn the other one off which clearly wasn't what we wanted to
->>>>>> see.
->>>>>> ,
->>>>>
->>>>> The x300 is a non-atom card, so it uses the legacy load detection
->>>>> routines which do mess with some of the crtc regs.
->>>>>
->>>>
->>>> Okay I see it now, I'm amazed that I was seeing this issue last week
->>>> and blaming it on something complete different and only seeing it on
->>>> one card.
->>>>
->>>> I expect its the same problem I'll try and track down a proper fix for
->>>> it tomorrow.
->>>
->>> It really seems to be this polling code.
->>> After the fix to drivers/char/vt.c the 2.6.35-rc2 kernel now works for
->>> me without crashing.
->>>
->>> I also changed #define DRM_OUTPUT_POLL_PERIOD (10*HZ) to
->>> #define DRM_OUTPUT_POLL_PERIOD (3*HZ) and now the flickering before X
->>> starts is at a three second interval. That should prove, that the
->>> polling from drm_crtc_helper.c is the cause.
->>>
->>> After X starts the LCD is stable, but the secondary CRT still flickers
->>> every 3 seconds.
->>>
->>> My hardware is an X300-PCIe card with a VGA-, a DVI-I- and a video outp=
-ut.
->>> I have a 1280x1024 LCD attached to the DVI-I and an old CRT to the
->>> VGA. The video output is unused.
->>> The CRT is normally switched off, but its still detected correctly.
->>>
->>> The kernel output from 2.6.34 and 2.6.35-rc2 is here:
->>> http://lkml.org/lkml/2010/6/6/126
->>>
->>> xrandr says:
->>> Screen 0: minimum 320 x 200, current 2080 x 1024, maximum 4096 x 4096
->>> DVI-0 connected 1280x1024+0+0 (normal left inverted right x axis y
->>> axis) 338mm x 270mm
->>> =A0 1280x1024 =A0 =A0 =A060.0*+ =A0 75.0
->>> =A0 1280x960 =A0 =A0 =A0 60.0
->>> =A0 1152x864 =A0 =A0 =A0 75.0
->>> =A0 1024x768 =A0 =A0 =A0 75.1 =A0 =A0 70.1 =A0 =A0 60.0
->>> =A0 832x624 =A0 =A0 =A0 =A074.6
->>> =A0 800x600 =A0 =A0 =A0 =A072.2 =A0 =A0 75.0 =A0 =A0 60.3 =A0 =A0 56.2
->>> =A0 640x480 =A0 =A0 =A0 =A072.8 =A0 =A0 75.0 =A0 =A0 66.7 =A0 =A0 60.0
->>> =A0 720x400 =A0 =A0 =A0 =A070.1
->>> =A0 640x400 =A0 =A0 =A0 =A070.0
->>> VGA-0 connected 800x600+1280+150 (normal left inverted right x axis y
->>> axis) 280mm x 210mm
->>> =A0 800x600 =A0 =A0 =A0 =A072.2*+ =A0 75.0 =A0 =A0 60.3 =A0 =A0 56.2
->>> =A0 1280x1024 =A0 =A0 =A060.0
->>> =A0 1024x768 =A0 =A0 =A0 75.1 =A0 =A0 70.1 =A0 =A0 60.0
->>> =A0 640x480 =A0 =A0 =A0 =A072.8 =A0 =A0 75.0 =A0 =A0 60.0
->>> =A0 720x400 =A0 =A0 =A0 =A087.8 =A0 =A0 70.1
->>> S-video disconnected (normal left inverted right x axis y axis)
->>>
->>> If you have something for me to try, just send it. :-)
->>>
->>> Torsten
->>>
->>
->> Okay here is a patch that seems to work on my test system, but I want
->> to give it a bit more playing around with before I sent it onwards.
->>
->> Alex, seem sane to you?
->
-> Seems sane.
->
+Hi all,
 
-While discussing this with Alex we realised this code should never
-have been reached so it showed a bug higher up.
+Changes since 20100607:
 
-Looks like we were defining i2c lines for tv-out which doesn't have
-any, the attached patch makes sure the tv-out on legacy radeon hw
-doesn't get an i2c line attach so doesn't trigger the polling on it.
+My fixes tree contains:
+      v4l-dvb: update gfp/slab.h includes
+      arm: update gfp/slab.h includes
+      davinci: update gfp/slab.h includes
+      ocfs2: update gfp/slab.h includes
+      acpi: update gfp/slab.h includes
 
-Torsten can you test this patch instead of the previous one, though I
-think I'll send both to Linus for safety sakes.
+The tile tree lost its build failure.
 
-Dave.
+The net tree lost its conflicts.
 
---0016368e30e5d145e104887c1eff
-Content-Type: application/mbox; 
-	name="0001-drm-radeon-reset-i2c-valid-to-avoid-incorrect-tv-out.patch"
-Content-Disposition: attachment; 
-	filename="0001-drm-radeon-reset-i2c-valid-to-avoid-incorrect-tv-out.patch"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_ga65d37c0
+The devicetree tree lost its conflict.
 
-RnJvbSBkZTY3MDYyYjdlZDg4NzY2YzJmMTQxZWNkMTNjYmM1NTAzMWNjMGQ3IE1vbiBTZXAgMTcg
-MDA6MDA6MDAgMjAwMQpGcm9tOiBEYXZlIEFpcmxpZSA8YWlybGllZEByZWRoYXQuY29tPgpEYXRl
-OiBUdWUsIDggSnVuIDIwMTAgMTM6MDQ6NTAgKzEwMDAKU3ViamVjdDogW1BBVENIXSBkcm0vcmFk
-ZW9uOiByZXNldCBpMmMgdmFsaWQgdG8gYXZvaWQgaW5jb3JyZWN0IHR2LW91dCBwb2xsaW5nLgoK
-V2UgcmVhbGx5IGRvbid0IHdhbnQgdG8gYmUgcG9sbGluZyB0di1vdXQgYnV0IHNpbmNlIHdlIHdl
-cmVuJ3QgZm9yY2luZyB0aGUKaTJjIGxpbmVzIHRvIGludmFsaWQgKHR2LW91dCBoYXMgbm8gRERD
-KSwgd2Ugd2VyZSBhZGRpbmcgdHYgY29ubmVjdG9ycyB0byB0aGUKcG9sbGluZyBzZXR1cCBhbmQg
-dGhpcyB3YXMgY2F1c2luZyBibGlua2luZyBvbiBzZWNvbmRhcnkgZGlzcGxheXMuCgpUaGlzIG1h
-eSBhbHNvIGZpeCB0aGUgcmVncmVzc2lvbiBUb3JzdGVuIHJlcG9ydGVkLgoKUmVwb3J0ZWQtYnk6
-IFRvcnN0ZW4gS2Fpc2VyIDxqdXN0LmZvci5sa21sQGdvb2dsZW1haWwuY29tPgpTaWduZWQtb2Zm
-LWJ5OiBEYXZlIEFpcmxpZSA8YWlybGllZEByZWRoYXQuY29tPgotLS0KIGRyaXZlcnMvZ3B1L2Ry
-bS9yYWRlb24vcmFkZW9uX2NvbWJpb3MuYyB8ICAgIDIgKysKIDEgZmlsZXMgY2hhbmdlZCwgMiBp
-bnNlcnRpb25zKCspLCAwIGRlbGV0aW9ucygtKQoKZGlmZiAtLWdpdCBhL2RyaXZlcnMvZ3B1L2Ry
-bS9yYWRlb24vcmFkZW9uX2NvbWJpb3MuYyBiL2RyaXZlcnMvZ3B1L2RybS9yYWRlb24vcmFkZW9u
-X2NvbWJpb3MuYwppbmRleCBmNmY5MDdlLi4xYmVlMmY5IDEwMDY0NAotLS0gYS9kcml2ZXJzL2dw
-dS9kcm0vcmFkZW9uL3JhZGVvbl9jb21iaW9zLmMKKysrIGIvZHJpdmVycy9ncHUvZHJtL3JhZGVv
-bi9yYWRlb25fY29tYmlvcy5jCkBAIC0yMDI2LDYgKzIwMjYsNyBAQCBib29sIHJhZGVvbl9nZXRf
-bGVnYWN5X2Nvbm5lY3Rvcl9pbmZvX2Zyb21fYmlvcyhzdHJ1Y3QgZHJtX2RldmljZSAqZGV2KQog
-CQkJCQljb21iaW9zX3NldHVwX2kyY19idXMocmRldiwgUkFERU9OX0dQSU9fQ1JUMl9EREMpOwog
-CQkJCWJyZWFrOwogCQkJZGVmYXVsdDoKKwkJCQlkZGNfaTJjLnZhbGlkID0gZmFsc2U7CiAJCQkJ
-YnJlYWs7CiAJCQl9CiAKQEAgLTIzMzksNiArMjM0MCw3IEBAIGJvb2wgcmFkZW9uX2dldF9sZWdh
-Y3lfY29ubmVjdG9yX2luZm9fZnJvbV9iaW9zKHN0cnVjdCBkcm1fZGV2aWNlICpkZXYpCiAJCQlp
-ZiAoUkJJT1M4KHR2X2luZm8gKyA2KSA9PSAnVCcpIHsKIAkJCQlpZiAocmFkZW9uX2FwcGx5X2xl
-Z2FjeV90dl9xdWlya3MoZGV2KSkgewogCQkJCQlocGQuaHBkID0gUkFERU9OX0hQRF9OT05FOwor
-CQkJCQlkZGNfaTJjLnZhbGlkID0gZmFsc2U7CiAJCQkJCXJhZGVvbl9hZGRfbGVnYWN5X2VuY29k
-ZXIoZGV2LAogCQkJCQkJCQkgIHJhZGVvbl9nZXRfZW5jb2Rlcl9pZAogCQkJCQkJCQkgIChkZXYs
-Ci0tIAoxLjcuMC4xCgo=
---0016368e30e5d145e104887c1eff--
+----------------------------------------------------------------------------
+
+I have created today's linux-next tree at
+git://git.kernel.org/pub/scm/linux/kernel/git/next/linux-next.git
+(patches at http://www.kernel.org/pub/linux/kernel/v2.6/next/ ).  If you
+are tracking the linux-next tree using git, you should not use "git pull"
+to do so as that will try to merge the new linux-next release with the
+old one.  You should use "git fetch" as mentioned in the FAQ on the wiki
+(see below).
+
+You can see which trees have been included by looking in the Next/Trees
+file in the source.  There are also quilt-import.log and merge.log files
+in the Next directory.  Between each merge, the tree was built with
+a ppc64_defconfig for powerpc and an allmodconfig for x86_64. After the
+final fixups (if any), it is also built with powerpc allnoconfig (32 and
+64 bit), ppc44x_defconfig and allyesconfig (minus
+CONFIG_PROFILE_ALL_BRANCHES - this fails its final link) and i386, sparc
+and sparc64 defconfig. These builds also have
+CONFIG_ENABLE_WARN_DEPRECATED, CONFIG_ENABLE_MUST_CHECK and
+CONFIG_DEBUG_INFO disabled when necessary.
+
+Below is a summary of the state of the merge.
+
+We are up to 164 trees (counting Linus' and 22 trees of patches pending
+for Linus' tree), more are welcome (even if they are currently empty).
+Thanks to those who have contributed, and to those who haven't, please do.
+
+Status of my local build tests will be at
+http://kisskb.ellerman.id.au/linux-next .  If maintainers want to give
+advice about cross compilers/configs that work, we are always open to add
+more builds.
+
+Thanks to Jan Dittmer for adding the linux-next tree to his build tests
+at http://l4x.org/k/ , the guys at http://test.kernel.org/ and Randy
+Dunlap for doing many randconfig builds.
+
+There is a wiki covering stuff to do with linux-next at
+http://linux.f-seidel.de/linux-next/pmwiki/ .  Thanks to Frank Seidel.
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+$ git checkout master
+$ git reset --hard stable
+Merging origin/master
+Merging fixes/fixes
+Merging arm-current/master
+Merging m68k-current/for-linus
+Merging powerpc-merge/merge
+Merging sparc-current/master
+Merging scsi-rc-fixes/master
+Merging net-current/master
+Merging sound-current/for-linus
+Merging pci-current/for-linus
+Merging wireless-current/master
+Merging kbuild-current/for-linus
+Merging quilt/driver-core.current
+Merging quilt/tty.current
+Merging quilt/usb.current
+Merging quilt/staging.current
+Merging cpufreq-current/fixes
+Merging input-current/for-linus
+Merging md-current/for-linus
+Merging audit-current/for-linus
+Merging crypto-current/master
+Merging ide-curent/master
+Merging dwmw2/master
+Merging gcl-current/merge
+Merging arm/devel
+Merging davinci/davinci-next
+Merging i.MX/for-next
+Merging msm/for-next
+Merging omap/for-next
+Merging pxa/for-next
+Merging samsung/next-samsung
+Merging avr32/avr32-arch
+Merging blackfin/for-linus
+Merging cris/for-next
+Merging ia64/test
+Merging m68k/for-next
+Merging m68knommu/for-next
+Merging microblaze/next
+Merging mips/mips-for-linux-next
+Merging parisc/next
+Merging powerpc/next
+Merging 4xx/next
+Merging 52xx-and-virtex/next
+CONFLICT (content): Merge conflict in drivers/serial/mpc52xx_uart.c
+Merging galak/next
+Merging s390/features
+Merging sh/master
+Merging genesis/master
+CONFLICT (content): Merge conflict in include/linux/serial_sci.h
+Merging sparc/master
+Merging tile/master
+Merging xtensa/master
+Merging ceph/for-next
+Merging cifs/master
+Merging configfs/linux-next
+Merging ecryptfs/next
+CONFLICT (content): Merge conflict in fs/ecryptfs/main.c
+Merging ext3/for_next
+Merging ext4/next
+Merging fatfs/master
+Merging fuse/for-next
+Merging gfs2/master
+Merging jfs/next
+Merging logfs/master
+CONFLICT (content): Merge conflict in fs/logfs/logfs.h
+Merging nfs/linux-next
+Merging nfsd/nfsd-next
+Merging nilfs2/for-next
+Merging ocfs2/linux-next
+Merging squashfs/master
+Merging udf/for_next
+Merging v9fs/for-next
+Merging ubifs/linux-next
+Merging xfs/master
+Merging vfs/for-next
+Merging pci/linux-next
+Merging hid/for-next
+Merging quilt/i2c
+Merging bjdooks-i2c/next-i2c
+CONFLICT (content): Merge conflict in arch/arm/plat-omap/i2c.c
+CONFLICT (content): Merge conflict in drivers/i2c/busses/i2c-cpm.c
+CONFLICT (content): Merge conflict in drivers/i2c/busses/i2c-mpc.c
+Merging quilt/jdelvare-hwmon
+Merging quilt/kernel-doc
+Merging v4l-dvb/master
+Merging kbuild/for-next
+Merging kconfig/for-next
+Merging ide/master
+Merging libata/NEXT
+Merging infiniband/for-next
+Merging acpi/test
+Merging idle-test/idle-test
+Merging ieee1394/for-next
+Merging ubi/linux-next
+Merging kvm/linux-next
+Merging dlm/next
+Merging ibft/master
+Merging swiotlb/master
+Merging scsi/master
+Merging async_tx/next
+Merging net/master
+Merging wireless/master
+CONFLICT (content): Merge conflict in drivers/net/wireless/wl12xx/wl1271.h
+CONFLICT (content): Merge conflict in drivers/net/wireless/wl12xx/wl1271_cm=
+d.h
+Merging mtd/master
+Merging crypto/master
+Merging sound/for-next
+Merging cpufreq/next
+Merging quilt/rr
+CONFLICT (content): Merge conflict in kernel/module.c
+Merging mmc/next
+Merging input/next
+Merging lsm/for-next
+Merging block/for-next
+Merging quilt/device-mapper
+Merging embedded/master
+Merging firmware/master
+Merging pcmcia/master
+Merging battery/master
+Merging leds/for-mm
+Merging backlight/for-mm
+Merging kgdb/kgdb-next
+Merging slab/for-next
+Merging uclinux/for-next
+Merging md/for-next
+Merging mfd/for-next
+Merging hdlc/hdlc-next
+Merging drm/drm-next
+Merging viafb/viafb-next
+Merging voltage/for-next
+Merging security-testing/next
+Merging lblnet/master
+Merging agp/agp-next
+Merging uwb/for-upstream
+Merging watchdog/master
+Merging bdev/master
+Merging dwmw2-iommu/master
+Merging cputime/cputime
+Merging osd/linux-next
+Merging jc_docs/docs-next
+Merging nommu/master
+Merging trivial/for-next
+Merging audit/for-next
+Merging quilt/aoe
+Merging suspend/linux-next
+Merging bluetooth/master
+Merging fsnotify/for-next
+CONFLICT (delete/modify): fs/notify/inotify/inotify.c deleted in fsnotify/f=
+or-next and modified in HEAD. Version HEAD of fs/notify/inotify/inotify.c l=
+eft in tree.
+$ git rm -f fs/notify/inotify/inotify.c
+Applying: fsnotify: update gfp/slab.h includes
+Merging irda/for-next
+CONFLICT (content): Merge conflict in drivers/net/irda/irda-usb.c
+Merging drbd/for-jens
+CONFLICT (content): Merge conflict in fs/fs-writeback.c
+Merging catalin/for-next
+Merging alacrity/linux-next
+Merging i7core_edac/linux_next
+Merging devicetree/next-devicetree
+Merging spi/next-spi
+Merging omap_dss2/for-next
+Merging tip/auto-latest
+Merging edac-amd/for-next
+Merging oprofile/for-next
+Merging percpu/for-next
+Merging workqueues/for-next
+Merging sfi/sfi-test
+Merging asm-generic/next
+Merging drivers-x86/linux-next
+Merging hwpoison/hwpoison
+Merging sysctl/master
+Merging bkl-core/bkl/core
+Merging bkl-procfs/bkl/procfs
+Merging bkl-ioctl/bkl/ioctl
+Merging quilt/driver-core
+Merging quilt/tty
+Merging quilt/usb
+Merging staging-next/staging-next
+Merging slabh/slabh
+Merging scsi-post-merge/master
+
+--Signature=_Tue__8_Jun_2010_13_09_40_+1000_OscR/T2uUECh.yk+
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iEYEARECAAYFAkwNtHQACgkQjjKRsyhoI8wROgCeI47Y6L+M1VxQvcac6pt0y2hH
+5zEAn0vdq+9O3BsLP7teXPKir2Igrxsp
+=LInl
+-----END PGP SIGNATURE-----
+
+--Signature=_Tue__8_Jun_2010_13_09_40_+1000_OscR/T2uUECh.yk+--
