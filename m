@@ -1,61 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753381Ab0FHFuP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jun 2010 01:50:15 -0400
-Received: from mga09.intel.com ([134.134.136.24]:49089 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752428Ab0FHFuO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jun 2010 01:50:14 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.53,383,1272870000"; 
-   d="scan'208";a="524883383"
-Date: Mon, 7 Jun 2010 22:50:10 -0700
-From: jacob pan <jacob.jun.pan@linux.intel.com>
-To: ebiederm@xmission.com (Eric W. Biederman)
-Cc: Alan Cox <alan@linux.intel.com>, Arjan van de Ven <arjan@linux.intel.com>,
-       LKML <linux-kernel@vger.kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
-       Ingo Molnar <mingo@elte.hu>, Feng Tang <feng.tang@intel.com>,
-       Len Brown <len.brown@intel.com>
-Subject: Re: [PATCH] x86/sfi: fix ioapic gsi range
-Message-ID: <20100607225010.342e2fab@jacob-laptop>
-In-Reply-To: <m1631ue5ho.fsf@fess.ebiederm.org>
-References: <1275952044-27996-1-git-send-email-jacob.jun.pan@linux.intel.com>
-	<m1631ue5ho.fsf@fess.ebiederm.org>
-Organization: OTC
-X-Mailer: Claws Mail 3.7.4 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1753216Ab0FHFwm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jun 2010 01:52:42 -0400
+Received: from daytona.panasas.com ([67.152.220.89]:34986 "EHLO
+	daytona.int.panasas.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751571Ab0FHFwl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Jun 2010 01:52:41 -0400
+Message-ID: <4C0DDAA6.8080002@panasas.com>
+Date: Tue, 08 Jun 2010 08:52:38 +0300
+From: Boaz Harrosh <bharrosh@panasas.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-2.fc12 Thunderbird/3.0.4
+MIME-Version: 1.0
+To: David Rientjes <rientjes@google.com>
+CC: Ingo Molnar <mingo@elte.hu>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       Frans Pop <elendil@planet.nl>, Dirk Hohndel <hohndel@infradead.org>,
+       Len Brown <lenb@kernel.org>,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH, v2] kbuild: Improve version string logic - two for the
+ price of one - No thanks
+References: <alpine.LFD.2.01.0910041727310.3432@localhost.localdomain> <alpine.LFD.2.00.0910052140100.309@localhost.localdomain> <1254797502.14122.146.camel@dhohndel-mobl.amr.corp.intel.com> <alpine.LFD.2.01.0910060705240.3432@localhost.localdomain> <20091006144449.GA23078@elte.hu> <alpine.LFD.2.01.0910060815320.3432@localhost.localdomain> <20091006153632.GA29795@elte.hu> <alpine.LFD.2.01.0910060843560.3432@localhost.localdomain> <alpine.LFD.2.01.0910060925490.3432@localhost.localdomain> <20091006173508.GA4786@elte.hu> <20091012195733.GA7351@elte.hu> <4C0D29DE.6050602@panasas.com> <alpine.DEB.2.00.1006071242510.30389@chino.kir.corp.google.com>
+In-Reply-To: <alpine.DEB.2.00.1006071242510.30389@chino.kir.corp.google.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 08 Jun 2010 05:52:40.0612 (UTC) FILETIME=[CE67A640:01CB06CE]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-> > Background:
-> > In Moorestown/Medfield platforms, there is no legacy IRQs, all gsis
-> > and irqs are one to one mapped, including those < 16. Specifically,
-> > IRQ0 and IRQ1 are used for per-cpu timers. So without this patch,
-> > IOAPIC pin to IRQ mapping is off by one.
+On 06/07/2010 10:45 PM, David Rientjes wrote:
+> On Mon, 7 Jun 2010, Boaz Harrosh wrote:
 > 
-> The patch looks mostly reasonable the comment is wrong.
+>> Rrrr. If I wanted CONFIG_LOCALVERSION_AUTO, I would use that one. At least
+>> it is actually useful and informative.
+>>
+>> I already have my:
+>>  VERSION = 2
+>>  PATCHLEVEL = 6
+>>  SUBLEVEL = 35
+>> -EXTRAVERSION = -rc2
+>> +EXTRAVERSION = -rc2-my_tree
+>>
 > 
-> You may not use a 1-1 mapping if you don't have legacy irqs.  Linux
-> irqs 0-15 are the ISA irqs you may not use those irq numbers for
-> something different on any architecture, but especially not on x86.
-> The gsi numbers are firmware specific and you may treat however you
-> want.
+> You shouldn't be using EXTRAVERSION for this purpose, you should be 
+> passing LOCALVERSION=my_tree to make.
+> 
 
-[jacob pan] If we don't have ISA irqs, why can't we have gsi# = irq#
-for the legacy IRQ range? On Moorestown, we are re-using legacy irqs.
-e.g. 
-sh-4.0# cat /proc/interrupts
-          CPU0       CPU1
-  0:       1512          0   IO-APIC-edge      apbt0
-  1:          0       1482   IO-APIC-edge      apbt1
-  9:          0          0   IO-APIC-fasteoi   dw_spi
- 10:          0          0   IO-APIC-fasteoi   mrst_i2c
- 11:          0          0   IO-APIC-fasteoi   mrst_i2c
- 12:          0          0   IO-APIC-fasteoi   mrst_i2c
- 23:          0          0   IO-APIC-fasteoi   intel_scu_ipc
- 27:         21          0   IO-APIC-fasteoi
+That will not work because the way I run make is out of my control. Every
+one in the working group has his system. The Makefile is part of the
+public git tree, so every one will get the same identification without
+any confusion with Vanilla kernel, or what was compiled.
 
+>> Which is managed by a git tree (for everybody based on my tree)
+>>
+>> At least give us a way out with:
+>> CONFIG_LOCALVERSION_NO_AUTO_IM_REALLY_STUPID=y way out.
+>>
+>> or EXTRAVERSION != $(git version)
+>>
+>> But don't leave us cold in the woods like that. (What if I remove the git tree altogether, move to svn)
+>>
+>> If I can shoot my self in the foot, it does not mean Government should not issue any more
+>> gun licenses.
+>>
+>> I already have my outer Makefile system that makes sure I don't forget to compile, or
+>> "did I install this Kernel or not". Please let us have a way out?
+>>
+> 
+> Unless it's a vanilla 2.6.35-rc2 kernel, it's inaccurate to persent it as 
+> 2.6.35-rc2; you'll need to pass LOCALVERSION to make to identify this as a 
+> non-vanilla kernel.
+
+What are we lawyers? come on. And I do not have that problem! The output will
+not be 2.6.35-rc2 as you fear. It will be 2.6.35-rc2-my-tree-my-version.
+A person is checking out my tree will get my version string and the output
+name is well defined, and separate from Vanilla Kernel. So even the layers are
+happy. (That said, insert the: "I have a right to be stupid ..." mantra)
+
+I don't get it. What is that CONFIG_LOCALVERSION_AUTO. It has become a *no-choice*
+option. The system now tells me: "I will poke in your system, if I find it under git,
+I slave it. Your choice is to have an ugly "+" sign or a more informative name based
+on actual commit number". But that is no-choice don't you see?
+
+Please stop this *none-sense* this is not your place to mandate my Kernel name. If
+I'm forced to have an external Makefile I can just "mv" what ever name I choose.
+The Kernel name is an ABI you have just broken that, You must revert it ASAP.
+
+Boaz !
