@@ -1,48 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752204Ab0FHFW6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jun 2010 01:22:58 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:34931 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750959Ab0FHFW4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jun 2010 01:22:56 -0400
-Date: Tue, 8 Jun 2010 15:22:52 +1000
-From: Nick Piggin <npiggin@suse.de>
-To: Christoph Hellwig <hch@infradead.org>
-Cc: Al Viro <viro@ZenIV.linux.org.uk>, linux-kernel@vger.kernel.org,
-       linux-fsdevel@vger.kernel.org, Alan Cox <alan@lxorguk.ukuu.org.uk>
-Subject: Re: [PATCH, RFC] tty: stop abusing file->f_u.fu_list
-Message-ID: <20100608052252.GO26335@laptop>
-References: <20100604064307.737085373@suse.de>
- <20100604072618.227745945@suse.de>
- <20100604183934.GA2309@infradead.org>
+	id S1752920Ab0FHF16 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jun 2010 01:27:58 -0400
+Received: from ringil.hengli.com.au ([216.59.3.182]:41090 "EHLO
+	arnor.apana.org.au" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751918Ab0FHF14 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Jun 2010 01:27:56 -0400
+Date: Tue, 8 Jun 2010 15:27:44 +1000
+From: Herbert Xu <herbert@gondor.hengli.com.au>
+To: Stephen Hemminger <shemminger@vyatta.com>
+Cc: xiaohui.xin@intel.com, netdev@vger.kernel.org, kvm@vger.kernel.org,
+       linux-kernel@vger.kernel.org, mst@redhat.com, mingo@elte.hu,
+       davem@davemloft.net, jdike@linux.intel.com
+Subject: Re: [RFC PATCH v7 01/19] Add a new structure for skb buffer from
+	external.
+Message-ID: <20100608052744.GA21547@gondor.apana.org.au>
+References: <1275732899-5423-1-git-send-email-xiaohui.xin@intel.com> <20100606161348.427822fb@nehalam>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100604183934.GA2309@infradead.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20100606161348.427822fb@nehalam>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 04, 2010 at 02:39:34PM -0400, Christoph Hellwig wrote:
-> The ttry code currently abuses the file anchor for the per-sb file list
-> to track instances of a given tty.  But there's no good reason for
-> that, we can just install a proxy object in file->private that gets
-> added to the list and points to the tty and keep the list away from
-> VFS internals.
+On Sun, Jun 06, 2010 at 04:13:48PM -0700, Stephen Hemminger wrote:
+> Still not sure this is a good idea for a couple of reasons:
+> 
+> 1. We already have lots of special cases with skb's (frags and fraglist),
+>    and skb's travel through a lot of different parts of the kernel.  So any
+>    new change like this creates lots of exposed points for new bugs. Look
+>    at cases like MD5 TCP and netfilter, and forwarding these SKB's to ipsec
+>    and ppp and ...
+> 
+> 2. SKB's can have infinite lifetime in the kernel. If these buffers come from
+>    a fixed size pool in an external device, they can easily all get tied up
+>    if you have a slow listener. What happens then?
 
-Well this code looks like the error handling is broken and it's pretty
-convoluted to fix (eg. tty_release requires tty from filp but is called
-to clean up code from before tty file private structure is allocated).
+I agree with Stephen on this.
 
-So I really prefer to put my original patch first. I really don't see
-how it makes the tty code more of a special case. In both cases, it
-must know that the vfs does not require the file's presence on the
-s_files list so it can be reused for tty code. After my patch, it no
-longer knows any details about how the vfs does locking for the list.
+FWIW I don't think we even need the external pages concept in
+order to implement zero-copy receive (which I gather is the intent
+here).
 
-Possibly a lighter way to do what you want is to have the vfs not use
-fu_list for device inodes and define drivers to be allowed to use it for
-their own purpose. But that is easily possible after my patch.
+Here is one way to do it, simply construct a completely non-linear
+packet in the driver, as you would if you were using the GRO frags
+interface (grep for napi_gro_frags under drivers/net for examples).
 
+This way you can transfer the entire contents of the packet without
+copying through to the other side, provided that the host stack does
+not modify the packet.
+
+If the host side did modify the packet then we have to incur the
+memory cost anyway.
+
+IOW I think the only feature provided by the external pages
+construct is allowing the skb->head area to be shared without
+copying.  I'm claiming that this can be done by simply making
+skb->head empty.
+
+Cheers,
+-- 
+Visit Openswan at http://www.openswan.org/
+Email: Herbert Xu ~{PmV>HI~} <herbert@gondor.apana.org.au>
+Home Page: http://gondor.apana.org.au/~herbert/
+PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
