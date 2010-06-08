@@ -1,69 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752920Ab0FHF16 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jun 2010 01:27:58 -0400
-Received: from ringil.hengli.com.au ([216.59.3.182]:41090 "EHLO
-	arnor.apana.org.au" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751918Ab0FHF14 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jun 2010 01:27:56 -0400
-Date: Tue, 8 Jun 2010 15:27:44 +1000
-From: Herbert Xu <herbert@gondor.hengli.com.au>
-To: Stephen Hemminger <shemminger@vyatta.com>
-Cc: xiaohui.xin@intel.com, netdev@vger.kernel.org, kvm@vger.kernel.org,
-       linux-kernel@vger.kernel.org, mst@redhat.com, mingo@elte.hu,
-       davem@davemloft.net, jdike@linux.intel.com
-Subject: Re: [RFC PATCH v7 01/19] Add a new structure for skb buffer from
-	external.
-Message-ID: <20100608052744.GA21547@gondor.apana.org.au>
-References: <1275732899-5423-1-git-send-email-xiaohui.xin@intel.com> <20100606161348.427822fb@nehalam>
+	id S1753148Ab0FHFig (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jun 2010 01:38:36 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:35157 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751948Ab0FHFie (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Jun 2010 01:38:34 -0400
+Date: Tue, 8 Jun 2010 15:38:31 +1000
+From: Nick Piggin <npiggin@suse.de>
+To: Dave Chinner <david@fromorbit.com>
+Cc: torvalds@linux-foundation.org, linux-fsdevel@vger.kernel.org,
+       linux-kernel@vger.kernel.org, xfs@oss.sgi.com,
+       akpm@linux-foundation.org
+Subject: Re: [PATCH 6/6] writeback: limit write_cache_pages integrity
+ scanning to current EOF
+Message-ID: <20100608053831.GR26335@laptop>
+References: <1275957487-23633-1-git-send-email-david@fromorbit.com>
+ <1275957487-23633-7-git-send-email-david@fromorbit.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100606161348.427822fb@nehalam>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <1275957487-23633-7-git-send-email-david@fromorbit.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jun 06, 2010 at 04:13:48PM -0700, Stephen Hemminger wrote:
-> Still not sure this is a good idea for a couple of reasons:
+On Tue, Jun 08, 2010 at 10:38:07AM +1000, Dave Chinner wrote:
+> From: Dave Chinner <dchinner@redhat.com>
 > 
-> 1. We already have lots of special cases with skb's (frags and fraglist),
->    and skb's travel through a lot of different parts of the kernel.  So any
->    new change like this creates lots of exposed points for new bugs. Look
->    at cases like MD5 TCP and netfilter, and forwarding these SKB's to ipsec
->    and ppp and ...
+> sync can currently take a really long time if a concurrent writer is
+> extending a file. The problem is that the dirty pages on the address
+> space grow in the same direction as write_cache_pages scans, so if
+> the writer keeps ahead of writeback, the writeback will not
+> terminate until the writer stops adding dirty pages.
 > 
-> 2. SKB's can have infinite lifetime in the kernel. If these buffers come from
->    a fixed size pool in an external device, they can easily all get tied up
->    if you have a slow listener. What happens then?
+> For a data integrity sync, we only need to write the pages dirty at
+> the time we start the writeback, so we can stop scanning once we get
+> to the page that was at the end of the file at the time the scan
+> started.
+> 
+> This will prevent operations like copying a large file preventing
+> sync from completing as it will not write back pages that were
+> dirtied after the sync was started. This does not impact the
+> existing integrity guarantees, as any dirty page (old or new)
+> within the EOF range at the start of the scan will still be
+> captured.
+> 
+> This patch will not prevent sync from blocking on large writes into
+> holes.
 
-I agree with Stephen on this.
+The writes don't have to be into holes to cause this starvation
+problem, do they?
 
-FWIW I don't think we even need the external pages concept in
-order to implement zero-copy receive (which I gather is the intent
-here).
 
-Here is one way to do it, simply construct a completely non-linear
-packet in the driver, as you would if you were using the GRO frags
-interface (grep for napi_gro_frags under drivers/net for examples).
+> That requires more complex intervention while this patch only
+> addresses the common append-case of this sync holdoff.
 
-This way you can transfer the entire contents of the packet without
-copying through to the other side, provided that the host stack does
-not modify the packet.
+Jan's tagging patch looks pretty good to me and isn't so complex.
+I think we should just take that.
 
-If the host side did modify the packet then we have to incur the
-memory cost anyway.
-
-IOW I think the only feature provided by the external pages
-construct is allowing the skb->head area to be shared without
-copying.  I'm claiming that this can be done by simply making
-skb->head empty.
-
-Cheers,
--- 
-Visit Openswan at http://www.openswan.org/
-Email: Herbert Xu ~{PmV>HI~} <herbert@gondor.apana.org.au>
-Home Page: http://gondor.apana.org.au/~herbert/
-PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
