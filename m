@@ -1,263 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752148Ab0FHATw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jun 2010 20:19:52 -0400
-Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:37303 "EHLO
-	sm-d311v.smileserver.ne.jp" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751302Ab0FHAT3 (ORCPT
+	id S1752253Ab0FHAUB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jun 2010 20:20:01 -0400
+Received: from smtp125.sbc.mail.sp1.yahoo.com ([69.147.65.184]:30791 "HELO
+	smtp125.sbc.mail.sp1.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1751400Ab0FHAT5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jun 2010 20:19:29 -0400
-Message-ID: <000e01cb06a0$423a1d70$66f8800a@maildom.okisemi.com>
-From: "Masayuki Ohtake" <masa-korg@dsn.okisemi.com>
-To: "Alan Cox" <alan@lxorguk.ukuu.org.uk>
-Cc: "LKML" <linux-kernel@vger.kernel.org>,
-       "Andrew" <andrew.chih.howe.khor@intel.com>,
-       "Intel OTC" <joel.clark@intel.com>, "Wang, Qi" <qi.wang@intel.com>,
-       "Wang, Yong Y" <yong.y.wang@intel.com>
-References: <4C0CE88C.9050708@dsn.okisemi.com> <20100607160515.5cb00150@lxorguk.ukuu.org.uk>
-Subject: Re: [PATCH] Topcliff PHUB: Generate PacketHub driver
-Date: Tue, 8 Jun 2010 09:19:23 +0900
-X-Priority: 3
-X-MSMail-Priority: Normal
-X-Mailer: Microsoft Outlook Express 6.00.2800.1983
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2800.1983
-X-Hosting-Pf: 0
-X-NAI-Spam-Score: 1
+	Mon, 7 Jun 2010 20:19:57 -0400
+X-Yahoo-SMTP: fzDSGlOswBCWnIOrNw7KwwK1j9PqyNbe5PtLKiS4dDU.UNl_t6bdEZu9tTLW
+X-YMail-OSG: _3NtK3AVM1maqh8rjGxCoTV1Izoa16uhFArwy0IKol4IUkEMnrwSDHmdX3BA40F1PPVbCtq4aY6uNQJ6s797Wv3rmgLrUF2.mDDvc5qnumjupPIUWHcWzaQB7XcTDFaQOu1_oBCK.H4DJ1l_Xkex0GGFMQqG0mZv6ufuvnAr7xENh.0ewj.zce0aUXzosjlH7hsxA1N9XA12oArxxs3dehGHw_scYf0gSk3ipMlRe7mx4SP0gt.T2W.VkAJ7eZDM_x1BG5K39GUCtROZWdUkF0MLrmvocH1ufc9UAYjdMSRQrqXI5hujNkqfqI_VU_sHoWj0AXiOem.X2FCNMLNOBUNo
+X-Yahoo-Newman-Property: ymail-3
+Subject: Re: [PATCH 0/3] Add proper STGT <-> bs_sg passthrough v3
+From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+To: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+Cc: stgt@vger.kernel.org, linux-scsi@vger.kernel.org,
+       linux-kernel@vger.kernel.org, michaelc@cs.wisc.edu,
+       bharrosh@panasas.com, James.Bottomley@suse.de, dgilbert@interlog.com
+In-Reply-To: <20100608084443C.fujita.tomonori@lab.ntt.co.jp>
+References: <1275882615-5354-1-git-send-email-nab@linux-iscsi.org>
+	 <20100607154432Y.fujita.tomonori@lab.ntt.co.jp>
+	 <1275899236.26888.40.camel@haakon2.linux-iscsi.org>
+	 <20100608084443C.fujita.tomonori@lab.ntt.co.jp>
+Content-Type: text/plain
+Date: Mon, 07 Jun 2010 17:19:48 -0700
+Message-Id: <1275956389.6498.8.camel@haakon2.linux-iscsi.org>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.22.3.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Alan,
+On Tue, 2010-06-08 at 08:45 +0900, FUJITA Tomonori wrote:
+> On Mon, 07 Jun 2010 01:27:16 -0700
+> "Nicholas A. Bellinger" <nab@linux-iscsi.org> wrote:
+> 
+> > On Mon, 2010-06-07 at 15:45 +0900, FUJITA Tomonori wrote:
+> > > On Sun,  6 Jun 2010 20:50:15 -0700
+> > > "Nicholas A. Bellinger" <nab@linux-iscsi.org> wrote:
+> > > 
+> > > > From: Nicholas Bellinger <nab@linux-iscsi.org>
+> > > > 
+> > > > Greeting STGT folks,
+> > > > 
+> > > > This is the third round of patches for adding proper LUN passthrough support into STGT
+> > > > using struct scsi_lu->cmd_perform() and struct scsi_lu->cmd_done() callers with existing
+> > > > SG_IO and the new BSG v4 backstores.
+> > > > 
+> > > > Following Tomo-san's input, the changelog between v2 -> v3 is as follows:
+> > > > 
+> > > > 1) Add struct device_type_template sg_template for SG_IO and BSG in usr/bs_sg.c instead
+> > > >    of making changes to usr/sbc.c
+> > > > 
+> > > > 2) Add struct backingstore_template->bs_passthrough member of type int for SG_IO and BSG.
+> > > > 
+> > > > 3) In usr/target.c:tgt_device_create() pass bst->bs_passthrough into device_type_lookup()
+> > > >    and for passthrough case use the new device_type_passthrough() to locate
+> > > >    struct device_type_template sg_template.
+> > > > 
+> > > > 4) Remove unnecessary post_cmd_done() from usr/target.c:__cmd_done_passthrough()
+> > > > 
+> > > > This patch series has been tested with STGT/iSCSI using 'sg'+'bsg' and 'rdwr' for non
+> > > > passthrough mode backstores into TCM_Loop LLD emulated iSCSI target ports.
+> > > > 
+> > > > Best,
+> > > > 
+> > > > Signed-off-by: Nicholas A. Bellinger <nab@linux-iscsi.org
+> > > > 
+> > > > Nicholas Bellinger (3):
+> > > >   [tgt]: Add proper STGT LUN backstore passthrough support (rev 3)
+> > > >   [tgt]: Add bs_sg struct device_type_template sg_template and struct
+> > > >     backingstore_template->bs_init()
+> > > >   [tgt]: Add BSG v4 backstore support to usr/bs_sg.c
+> > > > 
+> > > >  usr/bs_sg.c     |  247 ++++++++++++++++++++++++++++++++++++++++++++++++++++--
+> > > >  usr/scsi_cmnd.h |    7 ++
+> > > >  usr/target.c    |  113 +++++++++++++++++++++++---
+> > > >  usr/tgtd.h      |   16 ++++
+> > > >  4 files changed, 362 insertions(+), 21 deletions(-)
+> > > 
+> > > The first and second patches Look fine overall. I have some comments
+> > > and wrote some cleanup patches.
+> > > 
+> > > I've put the first two patches with my cleanups:
+> > > 
+> > > git://git.kernel.org/pub/scm/linux/kernel/git/tomo/tgt.git pass
+> > > 
+> > > Can you confirm that it works for you? Then I can merge them into
+> > > master.
+> > 
+> > The pass branch works fine using '-E sg -Y pt' for SG_IO backstore <->
+> > fabric LUN assocation with TCM_Loop LLD Target Ports.  Thanks for
+> > cleaning things up to use TYPE_PT btw, I should have asked about that
+> > earlier. ;)
+> 
+> Thanks for the confirmation. I've merged these patches into master.
+> 
+> I'll merge your bsg patch if nobody complains about dropping sg
+> support in a few days.
+> 
 
-Thank you for your comments.
-We will integrate your comments to our PHUB by today or tomorrow at the latest.
+Perfect, thank you Tomo-san.
 
-Ohtake.
------ Original Message ----- 
-From: "Alan Cox" <alan@lxorguk.ukuu.org.uk>
-To: "Masayuki Ohtak" <masa-korg@dsn.okisemi.com>
-Cc: "LKML" <linux-kernel@vger.kernel.org>; "Andrew" <andrew.chih.howe.khor@intel.com>; "Intel OTC"
-<joel.clark@intel.com>; "Wang, Qi" <qi.wang@intel.com>; "Wang, Yong Y" <yong.y.wang@intel.com>
-Sent: Tuesday, June 08, 2010 12:05 AM
-Subject: Re: [PATCH] Topcliff PHUB: Generate PacketHub driver
+Best,
 
-
-> O> +/* Status Register offset */
-> > +#define PHUB_STATUS (0x00)
-> > +/* Control Register offset */
-> > +#define PHUB_CONTROL (0x04)
-> > +/* Time out value for Status Register */
-> > +#define PHUB_TIMEOUT (0x05)
-> > +/* Enabling for writing ROM */
-> > +#define PCH_PHUB_ROM_WRITE_ENABLE (0x01)
-> > +/* Disabling for writing ROM */
-> > +#define PCH_PHUB_ROM_WRITE_DISABLE (0x00)
-> > +/* ROM data area start address offset */
-> > +#define PCH_PHUB_ROM_START_ADDR (0x14)
-> > +/* MAX number of INT_REDUCE_CONTROL registers */
-> > +#define MAX_NUM_INT_REDUCE_CONTROL_REG (128)
-> > +
-> > +#define PCI_DEVICE_ID_PCH1_PHUB (0x8801)
-> > +
-> > +#define PCH_MINOR_NOS (1)
-> > +#define CLKCFG_CAN_50MHZ (0x12000000)
-> > +#define CLKCFG_CANCLK_MASK (0xFF000000)
->
-> Style: constants don't need brackets - might also look more Linux like
-> tabbed out a bit
->
-> > +#define PCH_READ_REG(a) ioread32((pch_phub_base_address + a))
-> > +
-> > +#define PCH_WRITE_REG(a, b) iowrite32(a, (pch_phub_base_address + b))
->
-> These on the other hand do - but not where they are now
->
-> iowrite32((a), pcb_phub_base_address + (b))
->
-> (so that if a or b are expressions they are evaluated first)
->
->
-> > +struct pch_phub_reg {
-> > + u32 phub_id_reg; /* PHUB_ID register val */
-> > + u32 q_pri_val_reg; /* QUEUE_PRI_VAL register val */
-> > + u32 rc_q_maxsize_reg; /* RC_QUEUE_MAXSIZE register val */
-> > + u32 bri_q_maxsize_reg; /* BRI_QUEUE_MAXSIZE register val */
-> > + u32 comp_resp_timeout_reg; /* COMP_RESP_TIMEOUT register val */
-> > + u32 bus_slave_control_reg; /* BUS_SLAVE_CONTROL_REG register val */
-> > + u32 deadlock_avoid_type_reg; /* DEADLOCK_AVOID_TYPE register val */
-> > + u32 intpin_reg_wpermit_reg0; /* INTPIN_REG_WPERMIT register 0 val */
-> > + u32 intpin_reg_wpermit_reg1; /* INTPIN_REG_WPERMIT register 1 val */
-> > + u32 intpin_reg_wpermit_reg2; /* INTPIN_REG_WPERMIT register 2 val */
-> > + u32 intpin_reg_wpermit_reg3; /* INTPIN_REG_WPERMIT register 3 val */
-> > + /* INT_REDUCE_CONTROL registers val */
-> > + u32 int_reduce_control_reg[MAX_NUM_INT_REDUCE_CONTROL_REG];
-> > +#ifdef PCH_CAN_PCLK_50MHZ
-> > + u32 clkcfg_reg; /* CLK CFG register val */
-> > +#endif
-> > +} g_pch_phub_reg;
->
-> Stylewise the kernel doesn't use the g_ convention that many Windows
-> people do, so lose the g_
->
-> > +s32 pch_phub_opencount; /* check whether opened or not */
-> > +u32 pch_phub_base_address;
-> > +u32 pch_phub_extrom_base_address;
-> > +s32 pch_phub_suspended;
->
-> Any reason these can't be in the struct ?
-> > +
-> > +struct device *dev_dbg;
->
-> Not a good name for a global variable as it will clash with others
->
-> > +DEFINE_SPINLOCK(pch_phub_lock); /* for spin lock */
->
-> Can this be static or in the struct ?
->
-> > +
-> > +/**
-> > + * file_operations structure initialization
-> > + */
-> > +const struct file_operations pch_phub_fops = {
-> > + .owner = THIS_MODULE,
-> > + .open = pch_phub_open,
-> > + .release = pch_phub_release,
-> > + .ioctl = pch_phub_ioctl,
-> > +};
->
-> static const ?
->
-> > +/*--------------------------------------------
-> > + exported function prototypes
-> > +--------------------------------------------*/
->
-> They start 'static' I don't think they are exportdd !
->
-> > +static int __devinit pch_phub_probe(struct pci_dev *pdev, const
-> > +        struct pci_device_id *id);
-> > +static void __devexit pch_phub_remove(struct pci_dev *pdev);
-> > +static int pch_phub_suspend(struct pci_dev *pdev, pm_message_t state);
-> > +static int pch_phub_resume(struct pci_dev *pdev);
->
-> > +static struct pci_driver pch_phub_driver = {
-> > + .name = "pch_phub",
-> > + .id_table = pch_phub_pcidev_id,
-> > + .probe = pch_phub_probe,
-> > + .remove = __devexit_p(pch_phub_remove),
-> > +#ifdef CONFIG_PM
-> > + .suspend = pch_phub_suspend,
-> > + .resume = pch_phub_resume
-> > +#endif
-> > +};
-> > +
-> > +static int __init pch_phub_pci_init(void);
-> > +static void __exit pch_phub_pci_exit(void);
-> > +
-> > +MODULE_DESCRIPTION("PCH PACKET HUB PCI Driver");
-> > +MODULE_LICENSE("GPL");
-> > +module_init(pch_phub_pci_init);
-> > +module_exit(pch_phub_pci_exit);
-> > +module_param(pch_phub_major_no, int, S_IRUSR | S_IWUSR);
->
-> If you migrated the module registration/PCI registration to the bottom of
-> the file you could avoid the forward declations and make the code easier
-> to follow ?
->
-> > +void pch_phub_read_modify_write_reg(unsigned long reg_addr_offset,
-> > +        unsigned long data, unsigned long mask)
-> > +{
-> > + unsigned long reg_addr = pch_phub_base_address + reg_addr_offset;
-> > + iowrite32(((ioread32((void __iomem *)reg_addr) & ~mask)) | data,
-> > + (void __iomem *)reg_addr);
->
-> When you have that many casts in a line it's perhaps a hint you have the
-> types wrong initially. At the very least reg_addr should be void __iomem,
-> and probably pch_phub_base_address should be
->
-> It would probably make sense to pass a pointer to your struct pch_hub_reg
-> and use that to hold the base address. Then if you ever get a box with
-> two in some future design it won't be a disaster
->
-> > +void pch_phub_save_reg_conf(void)
->
-> Ditto
->
-> > +#ifdef PCH_CAN_PCLK_50MHZ
-> > + /* save clk cfg register */
-> > + g_pch_phub_reg.clkcfg_reg = PCH_READ_REG(CLKCFG_REG_OFFSET);
-> > +#endif
->
-> This makes it hard to build one kernel for everything
->
-> > + return;
-> > +}
->
-> > +void pch_phub_restore_reg_conf(void)
-> > +{
-> > + u32 i = 0;
->
-> Why = 0, if you do that here you may hide initialisation errors from
-> future changes ?
->
-> > +/** pch_phub_read_serial_rom - Implements the functionality of reading Serial
-> > + *  ROM.
-> > + *  @offset_address: Contains the Serial ROM address offset value
-> > + *  @data: Contains the Serial ROM value
-> > + */
-> > +int pch_phub_read_serial_rom(unsigned long offset_address, unsigned char *data)
-> > +{
-> > + unsigned long mem_addr = pch_phub_extrom_base_address + offset_address;
-> > +
-> > + dev_dbg(dev_dbg,
-> > + "pch_phub_read_serial_rom:mem_addr=0x%08x\n", (u32)mem_addr);
-> > + *data = ioread8((void __iomem *)mem_addr);
->
-> Same comments about casts
->
->
->
-> > +int pch_phub_ioctl(struct inode *inode, struct file *file,
-> > + unsigned int cmd, unsigned long arg)
-> > +{
-> > + int ret_value = 0;
-> > + struct pch_phub_reqt *p_pch_phub_reqt;
-> > + unsigned long addr_offset;
->
-> This will change size on 32/64bit boxes makign your copy a bit
-> problematic
->
-> > + p_pch_phub_reqt = (struct pch_phub_reqt *)arg;
-> > + ret_value = copy_from_user((void *)&addr_offset,
-> > + (void *)&p_pch_phub_reqt->addr_offset,
-> > + sizeof(addr_offset));
-> > + if (ret_value) {
->
-> > + /* End of Access area check */
->
-> Remember here ioctl isn't single threaded so you may want to double check
-> some of these
->
-> > +struct pch_phub_reqt {
-> > + unsigned long addr_offset; /*specifies the register address
-> > + offset */
-> > + unsigned long data; /*specifies the data */
-> > + unsigned long mask; /*specifies the mask */
->
-> If they may need to be long make them u64. That way 32 and 64bit systems
-> get the same ioctl structure and life is good.
->
-> > +};
-> > +
-> > +/* exported function prototypes */
-> > +int pch_phub_open(struct inode *inode, struct file *file);
-> > +int pch_phub_release(struct inode *inode, struct file *file);
-> > +int pch_phub_ioctl(struct inode *inode, struct file *file, unsigned int cmd,
-> > +       unsigned long arg);
->
-> You have various other functions that are not static - if they should be
-> then make them static
->
-> Alan
->
-
+--nab
 
