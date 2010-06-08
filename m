@@ -1,166 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752237Ab0FHE5H (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jun 2010 00:57:07 -0400
-Received: from ozlabs.org ([203.10.76.45]:55334 "EHLO ozlabs.org"
+	id S1752544Ab0FHE51 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jun 2010 00:57:27 -0400
+Received: from ozlabs.org ([203.10.76.45]:55344 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751716Ab0FHE5D (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jun 2010 00:57:03 -0400
+	id S1751844Ab0FHE5F (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Jun 2010 00:57:05 -0400
 To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
        Peter Zijlstra <peterz@infradead.org>
 From: Michael Neuling <mikey@neuling.org>
 Date: Tue, 08 Jun 2010 14:57:02 +1000
-Subject: [PATCH 1/3] sched: fix capacity calculations for SMT4
+Subject: [PATCH 3/3] powerpc: enabled asymmetric SMT scheduling on POWER7
 In-Reply-To: <1275973022.91203.586435002889.qpush@pale>
 CC: <linux-kernel@vger.kernel.org>, <linuxppc-dev@ozlabs.org>,
        Srivatsa Vaddagiri <vatsa@in.ibm.com>,
        Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>
-Message-Id: <20100608045702.21D03CC895@localhost.localdomain>
+Message-Id: <20100608045702.31FB5CC8C7@localhost.localdomain>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>
+The POWER7 core has dynamic SMT mode switching which is controlled by
+the hypervisor.  There are 3 SMT modes:
+	SMT1 uses thread  0
+	SMT2 uses threads 0 & 1
+	SMT4 uses threads 0, 1, 2 & 3
+When in any particular SMT mode, all threads have the same performance
+as each other (ie. at any moment in time, all threads perform the same).  
 
-Handle cpu capacity being reported as 0 on cores with more number of
-hardware threads. For example on a Power7 core with 4 hardware
-threads, core power is 1177 and thus power of each hardware thread is
-1177/4 = 294. This low power can lead to capacity for each hardware
-thread being calculated as 0, which leads to tasks bouncing within the
-core madly! 
+The SMT mode switching works such that when linux has threads 2 & 3 idle
+and 0 & 1 active, it will cede (H_CEDE hypercall) threads 2 and 3 in the
+idle loop and the hypervisor will automatically switch to SMT2 for that
+core (independent of other cores).  The opposite is not true, so if
+threads 0 & 1 are idle and 2 & 3 are active, we will stay in SMT4 mode.
 
-Fix this by reporting capacity for hardware threads as 1, provided
-their power is not scaled down significantly because of frequency
-scaling or real-time tasks usage of cpu.
+Similarly if thread 0 is active and threads 1, 2 & 3 are idle, we'll go
+into SMT1 mode.  
 
-Signed-off-by: Srivatsa Vaddagiri <vatsa@linux.vnet.ibm.com>
+If we can get the core into a lower SMT mode (SMT1 is best), the threads
+will perform better (since they share less core resources).  Hence when
+we have idle threads, we want them to be the higher ones.
+
+This adds a feature bit for asymmetric packing to powerpc and then
+enables it on POWER7. 
+
 Signed-off-by: Michael Neuling <mikey@neuling.org>
 
 ---
 
- include/linux/sched.h |    2 -
- kernel/sched_fair.c   |   56 +++++++++++++++++++++++++++++++++++++++++---------
- 2 files changed, 48 insertions(+), 10 deletions(-)
+ arch/powerpc/include/asm/cputable.h |    3 ++-
+ arch/powerpc/kernel/process.c       |    9 +++++++++
+ 2 files changed, 11 insertions(+), 1 deletion(-)
 
-Index: linux-2.6/include/linux/sched.h
+Index: linux-2.6-ozlabs/arch/powerpc/include/asm/cputable.h
 ===================================================================
---- linux-2.6.orig/include/linux/sched.h
-+++ linux-2.6/include/linux/sched.h
-@@ -860,7 +860,7 @@ struct sched_group {
- 	 * CPU power of this group, SCHED_LOAD_SCALE being max power for a
- 	 * single CPU.
- 	 */
--	unsigned int cpu_power;
-+	unsigned int cpu_power, cpu_power_orig;
+--- linux-2.6-ozlabs.orig/arch/powerpc/include/asm/cputable.h
++++ linux-2.6-ozlabs/arch/powerpc/include/asm/cputable.h
+@@ -195,6 +195,7 @@ extern const char *powerpc_base_platform
+ #define CPU_FTR_SAO			LONG_ASM_CONST(0x0020000000000000)
+ #define CPU_FTR_CP_USE_DCBTZ		LONG_ASM_CONST(0x0040000000000000)
+ #define CPU_FTR_UNALIGNED_LD_STD	LONG_ASM_CONST(0x0080000000000000)
++#define CPU_FTR_ASYM_SMT		LONG_ASM_CONST(0x0100000000000000)
  
- 	/*
- 	 * The CPUs this group covers.
-Index: linux-2.6/kernel/sched_fair.c
+ #ifndef __ASSEMBLY__
+ 
+@@ -409,7 +410,7 @@ extern const char *powerpc_base_platform
+ 	    CPU_FTR_MMCRA | CPU_FTR_SMT | \
+ 	    CPU_FTR_COHERENT_ICACHE | CPU_FTR_LOCKLESS_TLBIE | \
+ 	    CPU_FTR_PURR | CPU_FTR_SPURR | CPU_FTR_REAL_LE | \
+-	    CPU_FTR_DSCR | CPU_FTR_SAO)
++	    CPU_FTR_DSCR | CPU_FTR_SAO  | CPU_FTR_ASYM_SMT)
+ #define CPU_FTRS_CELL	(CPU_FTR_USE_TB | CPU_FTR_LWSYNC | \
+ 	    CPU_FTR_PPCAS_ARCH_V2 | CPU_FTR_CTRL | \
+ 	    CPU_FTR_ALTIVEC_COMP | CPU_FTR_MMCRA | CPU_FTR_SMT | \
+Index: linux-2.6-ozlabs/arch/powerpc/kernel/process.c
 ===================================================================
---- linux-2.6.orig/kernel/sched_fair.c
-+++ linux-2.6/kernel/sched_fair.c
-@@ -2285,13 +2285,6 @@ static void update_cpu_power(struct sche
- 	unsigned long power = SCHED_LOAD_SCALE;
- 	struct sched_group *sdg = sd->groups;
+--- linux-2.6-ozlabs.orig/arch/powerpc/kernel/process.c
++++ linux-2.6-ozlabs/arch/powerpc/kernel/process.c
+@@ -1265,3 +1265,12 @@ unsigned long randomize_et_dyn(unsigned 
  
--	if (sched_feat(ARCH_POWER))
--		power *= arch_scale_freq_power(sd, cpu);
--	else
--		power *= default_scale_freq_power(sd, cpu);
--
--	power >>= SCHED_LOAD_SHIFT;
--
- 	if ((sd->flags & SD_SHARE_CPUPOWER) && weight > 1) {
- 		if (sched_feat(ARCH_POWER))
- 			power *= arch_scale_smt_power(sd, cpu);
-@@ -2301,6 +2294,15 @@ static void update_cpu_power(struct sche
- 		power >>= SCHED_LOAD_SHIFT;
- 	}
- 
-+	sdg->cpu_power_orig = power;
-+
-+	if (sched_feat(ARCH_POWER))
-+		power *= arch_scale_freq_power(sd, cpu);
-+	else
-+		power *= default_scale_freq_power(sd, cpu);
-+
-+	power >>= SCHED_LOAD_SHIFT;
-+
- 	power *= scale_rt_power(cpu);
- 	power >>= SCHED_LOAD_SHIFT;
- 
-@@ -2333,6 +2335,36 @@ static void update_group_power(struct sc
- 	sdg->cpu_power = power;
+ 	return ret;
  }
- 
-+/*
-+ * What's the influence of freq. scaling or real-time tasks on a cpu's power?
-+ *
-+ * Return 1 (influence exists) if power was scaled by more than 10% due to
-+ * either factor, else return 0 (i.e no influence exists).
-+ *
-+ * This is specifically needed to handle capacity being reported as 0 for
-+ * hardware threads within a Power7-like core (that have 4 or more hardware
-+ * threads/core).
-+ */
-+static inline int
-+rt_freq_influence(struct sched_group *group, struct sched_domain *sd)
++
++int arch_sd_sibiling_asym_packing(void)
 +{
-+	/* We need this test only at SMT domain level */
-+	if (sd->child)
-+		return 1;
-+
-+	/*
-+	 * Check to see if the final cpu power was reduced by more than 10% due
-+	 * to frequency scaling or real-time task's cpu usage. Note that
-+	 * cpu_power could be different from cpu_power_orig even in the absence
-+	 * of either factors - this is due to rounding issues in
-+	 * update_cpu_power()
-+	 */
-+	if (group->cpu_power * 100 < group->cpu_power_orig * 90)
-+		return 1;
-+
++	if (cpu_has_feature(CPU_FTR_ASYM_SMT)){
++		printk_once(KERN_INFO "Enabling Asymmetric SMT scheduling\n");
++		return SD_ASYM_PACKING;
++	}
 +	return 0;
 +}
-+
- /**
-  * update_sg_lb_stats - Update sched_group's statistics for load balancing.
-  * @sd: The sched_domain whose statistics are to be updated.
-@@ -2426,6 +2458,8 @@ static inline void update_sg_lb_stats(st
- 
- 	sgs->group_capacity =
- 		DIV_ROUND_CLOSEST(group->cpu_power, SCHED_LOAD_SCALE);
-+	if (!sgs->group_capacity && !rt_freq_influence(group, sd))
-+		sgs->group_capacity = 1;
- }
- 
- /**
-@@ -2725,7 +2759,8 @@ ret:
-  */
- static struct rq *
- find_busiest_queue(struct sched_group *group, enum cpu_idle_type idle,
--		   unsigned long imbalance, const struct cpumask *cpus)
-+		   unsigned long imbalance, const struct cpumask *cpus,
-+		   struct sched_domain *sd)
- {
- 	struct rq *busiest = NULL, *rq;
- 	unsigned long max_load = 0;
-@@ -2736,6 +2771,9 @@ find_busiest_queue(struct sched_group *g
- 		unsigned long capacity = DIV_ROUND_CLOSEST(power, SCHED_LOAD_SCALE);
- 		unsigned long wl;
- 
-+		if (!capacity && !rt_freq_influence(group, sd))
-+			capacity = 1;
-+
- 		if (!cpumask_test_cpu(i, cpus))
- 			continue;
- 
-@@ -2852,7 +2890,7 @@ redo:
- 		goto out_balanced;
- 	}
- 
--	busiest = find_busiest_queue(group, idle, imbalance, cpus);
-+	busiest = find_busiest_queue(group, idle, imbalance, cpus, sd);
- 	if (!busiest) {
- 		schedstat_inc(sd, lb_nobusyq[idle]);
- 		goto out_balanced;
