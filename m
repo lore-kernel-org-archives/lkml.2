@@ -1,264 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753642Ab0FHPdj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jun 2010 11:33:39 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:42720 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752510Ab0FHPdi (ORCPT
+	id S1754073Ab0FHPiM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jun 2010 11:38:12 -0400
+Received: from p01c12o142.mxlogic.net ([208.65.145.65]:33662 "EHLO
+	p01c12o142.mxlogic.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752510Ab0FHPiK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jun 2010 11:33:38 -0400
-X-Authority-Analysis: v=1.1 cv=rR912iD8TqKBQWPhXASLR67rt2rT9ApkpBWj5XB9Duc= c=1 sm=0 a=u44T9-jO5vUA:10 a=yQWWgrYGNuUA:10 a=7U3hwN5JcxgA:10 a=Q9fys5e9bTEA:10 a=gMqfjgEr1zLu/65IO0LwxA==:17 a=20KFwNOVAAAA:8 a=JfrnYn6hAAAA:8 a=meVymXHHAAAA:8 a=2B0-CabF_5L0lusuArYA:9 a=l62KxmDKmUugUVTU2eoA:7 a=8_hTPCJgbNXYjlFSsUXbgodzI8YA:4 a=PUjeQqilurYA:10 a=jEp0ucaQiEUA:10 a=3Rfx1nUSh_UA:10 a=jeBq3FmKZ4MA:10 a=gMqfjgEr1zLu/65IO0LwxA==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.89.75
-Subject: [PATCH][RFC] tracing: Use class->reg() for all registering of
- events
-From: Steven Rostedt <rostedt@goodmis.org>
-Reply-To: rostedt@goodmis.org
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-       Frederic Weisbecker <fweisbec@gmail.com>,
-       Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-Organization: Kihon Technologies Inc.
-Date: Tue, 08 Jun 2010 11:33:35 -0400
-Message-ID: <1276011215.15884.96.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	Tue, 8 Jun 2010 11:38:10 -0400
+X-MXL-Hash: 4c0e63e24af7941f-9250d239689a57252d69cf7f06ee39dc1fb7addb
+From: H Hartley Sweeten <hartleys@visionengravers.com>
+To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       "devel@driverdev.osuosl.org" <devel@driverdev.osuosl.org>
+CC: Greg KH <gregkh@suse.de>, "ss@aao.gov.au" <ss@aao.gov.au>
+Date: Tue, 8 Jun 2010 10:36:57 -0500
+Subject: [PATCH] Staging: dt3155: remove DT_3155_* errno defines
+Thread-Topic: [PATCH] Staging: dt3155: remove DT_3155_* errno defines
+Thread-Index: AcsHIG4oLqsD+ETkRBiXngi/SzrGYA==
+Message-ID: <0D753D10438DA54287A00B027084269763708AFE4C@AUSP01VMBX24.collaborationhost.net>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="utf-8"
+MIME-Version: 1.0
+X-Spam: [F=0.2000000000; CM=0.500; S=0.200(2010052801)]
+X-MAIL-FROM: <hartleys@visionengravers.com>
+X-SOURCE-IP: [(unknown)]
+X-AnalysisOut: [v=1.0 c=1 a=0vg5piGxXicA:10 a=hO-oPbc3tlwA:10 a=VphdPIyG4k]
+X-AnalysisOut: [EA:10 a=IkcTkHD0fZMA:10 a=qS3xps/WtSuafY8lc/WARg==:17 a=i0]
+X-AnalysisOut: [0gxMtYAAAA:8 a=c5nlV6Vr_ayBDvffL6UA:9 a=0eKx0zlqyjadYEMh6E]
+X-AnalysisOut: [yaOe4sdKsA:4 a=QEXdDO2ut3YA:10 a=x1WnkoZAwusA:10 a=0kPLrQd]
+X-AnalysisOut: [w3YYA:10]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by alpha.home.local id o58FcQim005889
 
+Remove the DT_3155_{SUCCESS/FAILURE} errno defines and use the
+kernel provided ones.
 
-I'm pushing this as an RFC first. This probably should be something that
-makes it into 2.6.35.
+Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
+Cc: Greg Kroah-Hartman <gregkh@suse.de>
+Cc: Scott Smedley <ss@aao.gov.au>
 
-Acks and perhaps a little testing from the perf and kprobe angle?
+---
 
--- Steve
-
-
-Steven Rostedt (1):
-      tracing: Use class->reg() for all registering of events
-
-----
- include/linux/ftrace_event.h    |    3 ++
- include/trace/ftrace.h          |    2 +
- kernel/trace/trace_event_perf.c |   17 ++----------
- kernel/trace/trace_events.c     |   55 +++++++++++++++++++++++++-------------
- 4 files changed, 44 insertions(+), 33 deletions(-)
----------------------------
-commit 0ab320dbe5894d7b4eec7d7da3a270abc68e4992
-Author: Steven Rostedt <srostedt@redhat.com>
-Date:   Tue Jun 8 11:22:06 2010 -0400
-
-    tracing: Use class->reg() for all registering of events
-    
-    Because kprobes and syscalls need special processing to register
-    events, the class->reg() method was created to handle the differences.
-    
-    But instead of creating a default ->reg for perf and ftrace events,
-    the code was scattered with:
-    
-    	if (class->reg)
-    		class->reg();
-    	else
-    		default_reg();
-    
-    This is messy and can also lead to bugs.
-    
-    This patch cleans up this code and creates a default reg() entry for
-    the events allowing for the code to directly call the class->reg()
-    without the condition.
-    
-    Reported-by: Peter Zijlstra <peterz@infradead.org>
-    Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
-
-diff --git a/include/linux/ftrace_event.h b/include/linux/ftrace_event.h
-index 3167f2d..a69bd32 100644
---- a/include/linux/ftrace_event.h
-+++ b/include/linux/ftrace_event.h
-@@ -146,6 +146,9 @@ struct ftrace_event_class {
- 	int			(*raw_init)(struct ftrace_event_call *);
- };
+diff --git a/drivers/staging/dt3155/dt3155_drv.c b/drivers/staging/dt3155/dt3155_drv.c
+index 40ef97f..35c1111 100644
+--- a/drivers/staging/dt3155/dt3155_drv.c
++++ b/drivers/staging/dt3155/dt3155_drv.c
+@@ -97,9 +97,6 @@ int dt3155_errno = 0;
+ /* wait queue for interrupts */
+ wait_queue_head_t dt3155_read_wait_queue[MAXBOARDS];
  
-+extern int ftrace_event_reg(struct ftrace_event_call *event,
-+			    enum trace_reg type);
-+
- enum {
- 	TRACE_EVENT_FL_ENABLED_BIT,
- 	TRACE_EVENT_FL_FILTERED_BIT,
-diff --git a/include/trace/ftrace.h b/include/trace/ftrace.h
-index 5a64905..8815e27 100644
---- a/include/trace/ftrace.h
-+++ b/include/trace/ftrace.h
-@@ -439,6 +439,7 @@ static inline notrace int ftrace_get_offsets_##call(			\
-  *	.fields			= LIST_HEAD_INIT(event_class_##call.fields),
-  *	.raw_init		= trace_event_raw_init,
-  *	.probe			= ftrace_raw_event_##call,
-+ *	.reg			= ftrace_event_reg,
-  * };
-  *
-  * static struct ftrace_event_call __used
-@@ -567,6 +568,7 @@ static struct ftrace_event_class __used event_class_##call = {		\
- 	.fields			= LIST_HEAD_INIT(event_class_##call.fields),\
- 	.raw_init		= trace_event_raw_init,			\
- 	.probe			= ftrace_raw_event_##call,		\
-+	.reg			= ftrace_event_reg,			\
- 	_TRACE_PERF_INIT(call)						\
- };
- 
-diff --git a/kernel/trace/trace_event_perf.c b/kernel/trace/trace_event_perf.c
-index e6f6588..de2f170 100644
---- a/kernel/trace/trace_event_perf.c
-+++ b/kernel/trace/trace_event_perf.c
-@@ -56,13 +56,7 @@ static int perf_trace_event_init(struct ftrace_event_call *tp_event,
- 		}
- 	}
- 
--	if (tp_event->class->reg)
--		ret = tp_event->class->reg(tp_event, TRACE_REG_PERF_REGISTER);
--	else
--		ret = tracepoint_probe_register(tp_event->name,
--						tp_event->class->perf_probe,
--						tp_event);
+-#define DT_3155_SUCCESS 0
+-#define DT_3155_FAILURE -EIO
 -
-+	ret = tp_event->class->reg(tp_event, TRACE_REG_PERF_REGISTER);
- 	if (ret)
- 		goto fail;
+ /* set to dynamicaly allocate, but it is tunable: */
+ /* insmod DT_3155 dt3155 dt3155_major=XX */
+ int dt3155_major = 0;
+@@ -941,11 +938,11 @@ static int find_PCI (void)
+     }
+   ndevices = pci_index;
  
-@@ -96,7 +90,7 @@ int perf_trace_init(struct perf_event *p_event)
- 	mutex_lock(&event_mutex);
- 	list_for_each_entry(tp_event, &ftrace_events, list) {
- 		if (tp_event->event.type == event_id &&
--		    tp_event->class && tp_event->class->perf_probe &&
-+		    tp_event->class && tp_event->class->reg &&
- 		    try_module_get(tp_event->mod)) {
- 			ret = perf_trace_event_init(tp_event, p_event);
- 			break;
-@@ -136,12 +130,7 @@ void perf_trace_destroy(struct perf_event *p_event)
- 	if (--tp_event->perf_refcount > 0)
- 		goto out;
+-  return DT_3155_SUCCESS;
++  return 0;
  
--	if (tp_event->class->reg)
--		tp_event->class->reg(tp_event, TRACE_REG_PERF_UNREGISTER);
--	else
--		tracepoint_probe_unregister(tp_event->name,
--					    tp_event->class->perf_probe,
--					    tp_event);
-+	tp_event->class->reg(tp_event, TRACE_REG_PERF_UNREGISTER);
- 
- 	/*
- 	 * Ensure our callback won't be called anymore. See
-diff --git a/kernel/trace/trace_events.c b/kernel/trace/trace_events.c
-index 45a8968..b353639 100644
---- a/kernel/trace/trace_events.c
-+++ b/kernel/trace/trace_events.c
-@@ -132,6 +132,35 @@ int trace_event_raw_init(struct ftrace_event_call *call)
+ err:
+   pci_dev_put(pci_dev);
+-  return DT_3155_FAILURE;
++  return -EIO;
  }
- EXPORT_SYMBOL_GPL(trace_event_raw_init);
  
-+int ftrace_event_reg(struct ftrace_event_call *call, enum trace_reg type)
-+{
-+	switch (type) {
-+	case TRACE_REG_REGISTER:
-+		return tracepoint_probe_register(call->name,
-+						 call->class->probe,
-+						 call);
-+	case TRACE_REG_UNREGISTER:
-+		tracepoint_probe_unregister(call->name,
-+					    call->class->probe,
-+					    call);
-+		return 0;
-+
-+#ifdef CONFIG_PERF_EVENTS
-+	case TRACE_REG_PERF_REGISTER:
-+		return tracepoint_probe_register(call->name,
-+						 call->class->perf_probe,
-+						 call);
-+	case TRACE_REG_PERF_UNREGISTER:
-+		tracepoint_probe_unregister(call->name,
-+					    call->class->perf_probe,
-+					    call);
-+		return 0;
-+#endif
-+	}
-+	return 0;
-+}
-+EXPORT_SYMBOL_GPL(ftrace_event_reg);
-+
- static int ftrace_event_enable_disable(struct ftrace_event_call *call,
- 					int enable)
- {
-@@ -142,23 +171,13 @@ static int ftrace_event_enable_disable(struct ftrace_event_call *call,
- 		if (call->flags & TRACE_EVENT_FL_ENABLED) {
- 			call->flags &= ~TRACE_EVENT_FL_ENABLED;
- 			tracing_stop_cmdline_record();
--			if (call->class->reg)
--				call->class->reg(call, TRACE_REG_UNREGISTER);
--			else
--				tracepoint_probe_unregister(call->name,
--							    call->class->probe,
--							    call);
-+			call->class->reg(call, TRACE_REG_UNREGISTER);
- 		}
- 		break;
- 	case 1:
- 		if (!(call->flags & TRACE_EVENT_FL_ENABLED)) {
- 			tracing_start_cmdline_record();
--			if (call->class->reg)
--				ret = call->class->reg(call, TRACE_REG_REGISTER);
--			else
--				ret = tracepoint_probe_register(call->name,
--								call->class->probe,
--								call);
-+			ret = call->class->reg(call, TRACE_REG_REGISTER);
- 			if (ret) {
- 				tracing_stop_cmdline_record();
- 				pr_info("event trace: Could not enable event "
-@@ -196,8 +215,7 @@ static int __ftrace_set_clr_event(const char *match, const char *sub,
- 	mutex_lock(&event_mutex);
- 	list_for_each_entry(call, &ftrace_events, list) {
- 
--		if (!call->name || !call->class ||
--		    (!call->class->probe && !call->class->reg))
-+		if (!call->name || !call->class || !call->class->reg)
- 			continue;
- 
- 		if (match &&
-@@ -323,7 +341,7 @@ t_next(struct seq_file *m, void *v, loff_t *pos)
- 		 * The ftrace subsystem is for showing formats only.
- 		 * They can not be enabled or disabled via the event files.
- 		 */
--		if (call->class && (call->class->probe || call->class->reg))
-+		if (call->class && call->class->reg)
- 			return call;
- 	}
- 
-@@ -476,8 +494,7 @@ system_enable_read(struct file *filp, char __user *ubuf, size_t cnt,
- 
- 	mutex_lock(&event_mutex);
- 	list_for_each_entry(call, &ftrace_events, list) {
--		if (!call->name || !call->class ||
--		    (!call->class->probe && !call->class->reg))
-+		if (!call->name || !call->class || !call->class->reg)
- 			continue;
- 
- 		if (system && strcmp(call->class->system, system) != 0)
-@@ -1037,12 +1054,12 @@ event_create_dir(struct ftrace_event_call *call, struct dentry *d_events,
- 		return -1;
- 	}
- 
--	if (call->class->probe || call->class->reg)
-+	if (call->class->reg)
- 		trace_create_file("enable", 0644, call->dir, call,
- 				  enable);
- 
- #ifdef CONFIG_PERF_EVENTS
--	if (call->event.type && (call->class->perf_probe || call->class->reg))
-+	if (call->event.type && call->class->reg)
- 		trace_create_file("id", 0444, call->dir, call,
- 		 		  id);
- #endif
-
-
+ u32 allocatorAddr = 0;
+@@ -999,7 +996,7 @@ int init_module(void)
+   /* Now let's find the hardware.  find_PCI() will set ndevices to the
+    * number of cards found in this machine. */
+     {
+-      if ((rcode = find_PCI()) !=  DT_3155_SUCCESS)
++      if ((rcode = find_PCI()) != 0)
+ 	{
+ 	  printk("DT3155 error: find_PCI() failed to find dt3155 board(s)\n");
+ 	  unregister_chrdev(dt3155_major, "dt3155");
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
