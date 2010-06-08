@@ -1,76 +1,179 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756521Ab0FHU4Z (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jun 2010 16:56:25 -0400
-Received: from hera.kernel.org ([140.211.167.34]:39414 "EHLO hera.kernel.org"
+	id S1756527Ab0FHU4m (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jun 2010 16:56:42 -0400
+Received: from hera.kernel.org ([140.211.167.34]:39433 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756425Ab0FHU4X (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jun 2010 16:56:23 -0400
-Date: Tue, 8 Jun 2010 20:55:50 GMT
-From: tip-bot for Livio Soares <livio@eecg.toronto.edu>
-Cc: linux-kernel@vger.kernel.org, acme@redhat.com, hpa@zytor.com,
-       mingo@redhat.com, arjan@linux.intel.com, a.p.zijlstra@chello.nl,
-       livio@eecg.toronto.edu, tglx@linutronix.de, mingo@elte.hu
-Reply-To: mingo@redhat.com, hpa@zytor.com, acme@redhat.com,
-       linux-kernel@vger.kernel.org, livio@eecg.toronto.edu,
-       a.p.zijlstra@chello.nl, arjan@linux.intel.com, tglx@linutronix.de,
-       mingo@elte.hu
-In-Reply-To: <new-submission>
-References: <new-submission>
+	id S1755538Ab0FHU4k (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Jun 2010 16:56:40 -0400
+Date: Tue, 8 Jun 2010 20:56:10 GMT
+From: tip-bot for Cliff Wickman <cpw@sgi.com>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com, cpw@sgi.com,
+       tglx@linutronix.de, mingo@elte.hu
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+       cpw@sgi.com, tglx@linutronix.de, mingo@elte.hu
+In-Reply-To: <E1OJvNx-0004Zq-RK@eag09.americas.sgi.com>
+References: <E1OJvNx-0004Zq-RK@eag09.americas.sgi.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf, x86: Small fix to cpuid10_edx
-Message-ID: <tip-e768aee89c687a50e6a2110e30c5cae1fbf0d2da@git.kernel.org>
-Git-Commit-ID: e768aee89c687a50e6a2110e30c5cae1fbf0d2da
+Subject: [tip:x86/uv] x86, UV: Calculate BAU destination timeout
+Message-ID: <tip-12a6611fa16e9c6d2f844fe2175d219c6e9bd95d@git.kernel.org>
+Git-Commit-ID: 12a6611fa16e9c6d2f844fe2175d219c6e9bd95d
 X-Mailer: tip-git-log-daemon
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Tue, 08 Jun 2010 20:55:52 +0000 (UTC)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Tue, 08 Jun 2010 20:56:10 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  e768aee89c687a50e6a2110e30c5cae1fbf0d2da
-Gitweb:     http://git.kernel.org/tip/e768aee89c687a50e6a2110e30c5cae1fbf0d2da
-Author:     Livio Soares <livio@eecg.toronto.edu>
-AuthorDate: Thu, 3 Jun 2010 15:00:31 -0400
+Commit-ID:  12a6611fa16e9c6d2f844fe2175d219c6e9bd95d
+Gitweb:     http://git.kernel.org/tip/12a6611fa16e9c6d2f844fe2175d219c6e9bd95d
+Author:     Cliff Wickman <cpw@sgi.com>
+AuthorDate: Wed, 2 Jun 2010 16:22:01 -0500
 Committer:  Ingo Molnar <mingo@elte.hu>
-CommitDate: Tue, 8 Jun 2010 20:27:04 +0200
+CommitDate: Tue, 8 Jun 2010 21:13:44 +0200
 
-perf, x86: Small fix to cpuid10_edx
+x86, UV: Calculate BAU destination timeout
 
-Fixes to 'cpuid10_edx' to comply with Intel documentation.
-According to the Intel Manual, Volume 2A, Table 3-12, the cpuid for
-architecture performance monitoring returns, in EDX, two pieces of
-information:
+Calculate the Broadcast Assist Unit's destination timeout period from the
+values in the relevant MMR's.
 
-  1) Number of fixed-function counters (5 bits, not 4)
-  2) Width of fixed-function counters (8 bits)
+Store it in each cpu's per-cpu BAU structure so that a destination
+timeout can be differentiated from a 'plugged' situation in which all
+software ack resources are already allocated and a timeout is pending.
+That case returns an immediate destination error.
 
-Signed-off-by: Livio Soares <livio@eecg.toronto.edu>
-Acked-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
-Cc: Arjan van de Ven <arjan@linux.intel.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>
-LKML-Reference: <new-submission>
+Signed-off-by: Cliff Wickman <cpw@sgi.com>
+Cc: gregkh@suse.de
+LKML-Reference: <E1OJvNx-0004Zq-RK@eag09.americas.sgi.com>
 Signed-off-by: Ingo Molnar <mingo@elte.hu>
 ---
- arch/x86/include/asm/perf_event.h |    5 +++--
- 1 files changed, 3 insertions(+), 2 deletions(-)
+ arch/x86/include/asm/uv/uv_bau.h |   12 +++++++++
+ arch/x86/kernel/tlb_uv.c         |   51 +++++++++++++++++++++++++++++++++++---
+ 2 files changed, 59 insertions(+), 4 deletions(-)
 
-diff --git a/arch/x86/include/asm/perf_event.h b/arch/x86/include/asm/perf_event.h
-index 254883d..6ed3ae4 100644
---- a/arch/x86/include/asm/perf_event.h
-+++ b/arch/x86/include/asm/perf_event.h
-@@ -68,8 +68,9 @@ union cpuid10_eax {
+diff --git a/arch/x86/include/asm/uv/uv_bau.h b/arch/x86/include/asm/uv/uv_bau.h
+index aa558ac..458e04c 100644
+--- a/arch/x86/include/asm/uv/uv_bau.h
++++ b/arch/x86/include/asm/uv/uv_bau.h
+@@ -49,6 +49,18 @@
+ #define UV_ENABLE_INTD_SOFT_ACK_MODE_SHIFT 15
+ #define UV_INTD_SOFT_ACK_TIMEOUT_PERIOD_SHIFT 16
+ #define UV_INTD_SOFT_ACK_TIMEOUT_PERIOD 0x000000000bUL
++/* [19:16] SOFT_ACK timeout period  19: 1 is urgency 7  17:16 1 is multiplier */
++#define BAU_MISC_CONTROL_MULT_MASK 3
++
++#define UVH_AGING_PRESCALE_SEL 0x000000b000UL
++/* [30:28] URGENCY_7  an index into a table of times */
++#define BAU_URGENCY_7_SHIFT 28
++#define BAU_URGENCY_7_MASK 7
++
++#define UVH_TRANSACTION_TIMEOUT 0x000000b200UL
++/* [45:40] BAU - BAU transaction timeout select - a multiplier */
++#define BAU_TRANS_SHIFT 40
++#define BAU_TRANS_MASK 0x3f
  
- union cpuid10_edx {
- 	struct {
--		unsigned int num_counters_fixed:4;
--		unsigned int reserved:28;
-+		unsigned int num_counters_fixed:5;
-+		unsigned int bit_width_fixed:8;
-+		unsigned int reserved:19;
- 	} split;
- 	unsigned int full;
+ /*
+  * bits in UVH_LB_BAU_SB_ACTIVATION_STATUS_0/1
+diff --git a/arch/x86/kernel/tlb_uv.c b/arch/x86/kernel/tlb_uv.c
+index 7fea555..5506836 100644
+--- a/arch/x86/kernel/tlb_uv.c
++++ b/arch/x86/kernel/tlb_uv.c
+@@ -30,6 +30,19 @@ struct msg_desc {
+ 	struct bau_payload_queue_entry *va_queue_last;
  };
+ 
++/* timeouts in nanoseconds (indexed by UVH_AGING_PRESCALE_SEL urgency7 30:28) */
++static int timeout_base_ns[] = {
++		20,
++		160,
++		1280,
++		10240,
++		81920,
++		655360,
++		5242880,
++		167772160
++};
++static int timeout_us;
++
+ #define UV_INTD_SOFT_ACK_TIMEOUT_PERIOD	0x000000000bUL
+ 
+ static int uv_bau_max_concurrent __read_mostly;
+@@ -423,7 +436,8 @@ static int uv_wait_completion(struct bau_desc *bau_desc,
+ 			 * pending.  In that case hardware returns the
+ 			 * ERROR that looks like a destination timeout.
+ 			 */
+-			if (cycles_2_us(ttime - bcp->send_message) < BIOS_TO) {
++			if (cycles_2_us(ttime - bcp->send_message) <
++							timeout_us) {
+ 				bcp->conseccompletes = 0;
+ 				return FLUSH_RETRY_PLUGGED;
+ 			}
+@@ -908,12 +922,12 @@ static void uv_ptc_seq_stop(struct seq_file *file, void *data)
+ }
+ 
+ static inline unsigned long long
+-millisec_2_cycles(unsigned long millisec)
++microsec_2_cycles(unsigned long microsec)
+ {
+ 	unsigned long ns;
+ 	unsigned long long cyc;
+ 
+-	ns = millisec * 1000;
++	ns = microsec * 1000;
+ 	cyc = (ns << CYC2NS_SCALE_FACTOR)/(per_cpu(cyc2ns, smp_processor_id()));
+ 	return cyc;
+ }
+@@ -1259,6 +1273,33 @@ static void __init uv_init_uvhub(int uvhub, int vector)
+ }
+ 
+ /*
++ * We will set BAU_MISC_CONTROL with a timeout period.
++ * But the BIOS has set UVH_AGING_PRESCALE_SEL and UVH_TRANSACTION_TIMEOUT.
++ * So the destination timeout period has be be calculated from them.
++ */
++static int
++calculate_destination_timeout(void)
++{
++	unsigned long mmr_image;
++	int mult1;
++	int mult2;
++	int index;
++	int base;
++	int ret;
++	unsigned long ts_ns;
++
++	mult1 = UV_INTD_SOFT_ACK_TIMEOUT_PERIOD & BAU_MISC_CONTROL_MULT_MASK;
++	mmr_image = uv_read_local_mmr(UVH_AGING_PRESCALE_SEL);
++	index = (mmr_image >> BAU_URGENCY_7_SHIFT) & BAU_URGENCY_7_MASK;
++	mmr_image = uv_read_local_mmr(UVH_TRANSACTION_TIMEOUT);
++	mult2 = (mmr_image >> BAU_TRANS_SHIFT) & BAU_TRANS_MASK;
++	base = timeout_base_ns[index];
++	ts_ns = base * mult1 * mult2;
++	ret = ts_ns / 1000;
++	return ret;
++}
++
++/*
+  * initialize the bau_control structure for each cpu
+  */
+ static void uv_init_per_cpu(int nuvhubs)
+@@ -1286,6 +1327,8 @@ static void uv_init_per_cpu(int nuvhubs)
+ 	};
+ 	struct uvhub_desc *uvhub_descs;
+ 
++	timeout_us = calculate_destination_timeout();
++
+ 	uvhub_descs = (struct uvhub_desc *)
+ 		kmalloc(nuvhubs * sizeof(struct uvhub_desc), GFP_KERNEL);
+ 	memset(uvhub_descs, 0, nuvhubs * sizeof(struct uvhub_desc));
+@@ -1301,7 +1344,7 @@ static void uv_init_per_cpu(int nuvhubs)
+ 		bdp->uvhub = uvhub;
+ 		bdp->pnode = pnode;
+ 		/* time interval to catch a hardware stay-busy bug */
+-		bcp->timeout_interval = millisec_2_cycles(3);
++		bcp->timeout_interval = microsec_2_cycles(2*timeout_us);
+ 		/* kludge: assume uv_hub.h is constant */
+ 		socket = (cpu_physical_id(cpu)>>5)&1;
+ 		if (socket >= bdp->num_sockets)
