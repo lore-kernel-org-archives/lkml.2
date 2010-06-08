@@ -1,42 +1,172 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755866Ab0FHRnh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jun 2010 13:43:37 -0400
-Received: from casper.infradead.org ([85.118.1.10]:55568 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755832Ab0FHRnf (ORCPT
+	id S1755906Ab0FHRno (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jun 2010 13:43:44 -0400
+Received: from msux-gh1-uea01.nsa.gov ([63.239.65.39]:49901 "EHLO
+	msux-gh1-uea01.nsa.gov" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755838Ab0FHRnh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jun 2010 13:43:35 -0400
-Subject: [STAGING] Spectra Flash Translation Layer
-From: David Woodhouse <dwmw2@infradead.org>
-To: Greg KH <greg@kroah.com>
-Cc: alan@lxorguk.ukuu.org.uk, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 08 Jun 2010 18:43:30 +0100
-Message-ID: <1276019010.22896.13.camel@macbook.infradead.org>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.1.2 (2.30.1.2-6.fc13) 
-Content-Transfer-Encoding: 7bit
-X-SRS-Rewrite: SMTP reverse-path rewritten from <dwmw2@infradead.org> by casper.infradead.org
-	See http://www.infradead.org/rpr.html
+	Tue, 8 Jun 2010 13:43:37 -0400
+From: "David P. Quigley" <dpquigl@tycho.nsa.gov>
+To: hch@infradead.org, viro@zeniv.linux.org.uk, casey@schaufler-ca.com,
+       sds@tycho.nsa.gov, matthew.dodd@sparta.com, trond.myklebust@fys.uio.no,
+       bfields@fieldses.org
+Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+       linux-security-module@vger.kernel.org, selinux@tycho.nsa.gov,
+       labeled-nfs@linux-nfs.org, "David P. Quigley" <dpquigl@tycho.nsa.gov>,
+       "Matthew N. Dodd" <Matthew.Dodd@sparta.com>
+Subject: [PATCH 04/10] SELinux: Add new labeling type native labels
+Date: Tue,  8 Jun 2010 12:22:50 -0400
+Message-Id: <1276014176-20315-5-git-send-email-dpquigl@tycho.nsa.gov>
+X-Mailer: git-send-email 1.6.2.5
+In-Reply-To: <1276014176-20315-1-git-send-email-dpquigl@tycho.nsa.gov>
+References: <1276014176-20315-1-git-send-email-dpquigl@tycho.nsa.gov>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Greg, please pull from
-	git://git.infradead.org/users/dwmw2/spectra-2.6.git
+There currently doesn't exist a labeling type that is adequate for use with
+labeled NFS. Since NFS doesn't really support xattrs we can't use the use xattr
+labeling behavior. For this we developed a new labeling type. The native
+labeling type is used solely by NFS to ensure NFS inodes are labeled at runtime
+by the NFS code instead of relying on the SELinux security server on the client
+end.
 
-This was previously known as the 'Moorestown NAND flash driver'.
+Signed-off-by: Matthew N. Dodd <Matthew.Dodd@sparta.com>
+Signed-off-by: David P. Quigley <dpquigl@tycho.nsa.gov>
+---
+ include/linux/security.h            |    3 +++
+ security/selinux/hooks.c            |   30 +++++++++++++++++++++---------
+ security/selinux/include/security.h |    2 ++
+ security/selinux/ss/policydb.c      |    5 ++++-
+ 4 files changed, 30 insertions(+), 10 deletions(-)
 
-In fact, we have a proper MTD driver for that hardware now, and the only
-part we want is the FTL -- the pseudo-filesystem which pretends to be a
-disk drive.
-
-It's a silly approach to using flash; we ought to be using proper flash
-file systems on it instead. But we need this on at least part of the
-flash for compatibility with legacy firmware.
-
+diff --git a/include/linux/security.h b/include/linux/security.h
+index 4bb5db7..d67c5d6 100644
+--- a/include/linux/security.h
++++ b/include/linux/security.h
+@@ -43,6 +43,9 @@
+ #define SECURITY_CAP_NOAUDIT 0
+ #define SECURITY_CAP_AUDIT 1
+ 
++/* LSM Agnostic defines for sb_set_mnt_opts */
++#define SECURITY_LSM_NATIVE_LABELS	1
++
+ struct ctl_table;
+ struct audit_krule;
+ 
+diff --git a/security/selinux/hooks.c b/security/selinux/hooks.c
+index d150fb4..01edf80 100644
+--- a/security/selinux/hooks.c
++++ b/security/selinux/hooks.c
+@@ -77,6 +77,7 @@
+ #include <linux/mutex.h>
+ #include <linux/posix-timers.h>
+ #include <linux/syslog.h>
++#include <linux/security.h>
+ 
+ #include "avc.h"
+ #include "objsec.h"
+@@ -323,13 +324,14 @@ extern int ss_initialized;
+ 
+ /* The file system's label must be initialized prior to use. */
+ 
+-static char *labeling_behaviors[6] = {
++static char *labeling_behaviors[7] = {
+ 	"uses xattr",
+ 	"uses transition SIDs",
+ 	"uses task SIDs",
+ 	"uses genfs_contexts",
+ 	"not configured for labeling",
+ 	"uses mountpoint labeling",
++	"uses native labeling",
+ };
+ 
+ static int inode_doinit_with_dentry(struct inode *inode, struct dentry *opt_dentry);
+@@ -721,14 +723,16 @@ static int selinux_set_mnt_opts(struct super_block *sb,
+ 	if (strcmp(sb->s_type->name, "proc") == 0)
+ 		sbsec->flags |= SE_SBPROC;
+ 
+-	/* Determine the labeling behavior to use for this filesystem type. */
+-	rc = security_fs_use((sbsec->flags & SE_SBPROC) ? "proc" : sb->s_type->name, &sbsec->behavior, &sbsec->sid);
+-	if (rc) {
+-		printk(KERN_WARNING "%s: security_fs_use(%s) returned %d\n",
+-		       __func__, sb->s_type->name, rc);
+-		goto out;
++	if (!sbsec->behavior) {
++		/* Determine the labeling behavior to use for this filesystem type. */
++		rc = security_fs_use((sbsec->flags & SE_SBPROC) ? "proc" : sb->s_type->name, 
++					&sbsec->behavior, &sbsec->sid);
++		if (rc) {
++			printk(KERN_WARNING "%s: security_fs_use(%s) returned %d\n",
++					__func__, sb->s_type->name, rc);
++			goto out;
++		}
+ 	}
+-
+ 	/* sets the context of the superblock for the fs being mounted. */
+ 	if (fscontext_sid) {
+ 		rc = may_context_mount_sb_relabel(fscontext_sid, sbsec, cred);
+@@ -743,6 +747,11 @@ static int selinux_set_mnt_opts(struct super_block *sb,
+ 	 * sets the label used on all file below the mountpoint, and will set
+ 	 * the superblock context if not already set.
+ 	 */
++	if (kern_flags & SECURITY_LSM_NATIVE_LABELS && !context_sid) {
++		sbsec->behavior = SECURITY_FS_USE_NATIVE;
++		*set_kern_flags |= SECURITY_LSM_NATIVE_LABELS;
++	}
++
+ 	if (context_sid) {
+ 		if (!fscontext_sid) {
+ 			rc = may_context_mount_sb_relabel(context_sid, sbsec,
+@@ -774,7 +783,8 @@ static int selinux_set_mnt_opts(struct super_block *sb,
+ 	}
+ 
+ 	if (defcontext_sid) {
+-		if (sbsec->behavior != SECURITY_FS_USE_XATTR) {
++		if (sbsec->behavior != SECURITY_FS_USE_XATTR &&
++			sbsec->behavior != SECURITY_FS_USE_NATIVE) {
+ 			rc = -EINVAL;
+ 			printk(KERN_WARNING "SELinux: defcontext option is "
+ 			       "invalid for this filesystem type\n");
+@@ -1251,6 +1261,8 @@ static int inode_doinit_with_dentry(struct inode *inode, struct dentry *opt_dent
+ 	}
+ 
+ 	switch (sbsec->behavior) {
++	case SECURITY_FS_USE_NATIVE:
++		break;
+ 	case SECURITY_FS_USE_XATTR:
+ 		if (!inode->i_op->getxattr) {
+ 			isec->sid = sbsec->def_sid;
+diff --git a/security/selinux/include/security.h b/security/selinux/include/security.h
+index 1f7c249..e4c5bd0 100644
+--- a/security/selinux/include/security.h
++++ b/security/selinux/include/security.h
+@@ -161,6 +161,8 @@ int security_get_allow_unknown(void);
+ #define SECURITY_FS_USE_GENFS		4 /* use the genfs support */
+ #define SECURITY_FS_USE_NONE		5 /* no labeling support */
+ #define SECURITY_FS_USE_MNTPOINT	6 /* use mountpoint labeling */
++#define SECURITY_FS_USE_NATIVE		7 /* use native label support */
++#define SECURITY_FS_USE_MAX		7 /* Highest SECURITY_FS_USE_XXX */
+ 
+ int security_fs_use(const char *fstype, unsigned int *behavior,
+ 	u32 *sid);
+diff --git a/security/selinux/ss/policydb.c b/security/selinux/ss/policydb.c
+index 23c6e53..35e2b47 100644
+--- a/security/selinux/ss/policydb.c
++++ b/security/selinux/ss/policydb.c
+@@ -1996,7 +1996,10 @@ int policydb_read(struct policydb *p, void *fp)
+ 				if (rc < 0)
+ 					goto bad;
+ 				c->v.behavior = le32_to_cpu(buf[0]);
+-				if (c->v.behavior > SECURITY_FS_USE_NONE)
++				/* Determined at runtime, not in policy DB. */
++				if (c->v.behavior == SECURITY_FS_USE_MNTPOINT)
++					goto bad;
++				if (c->v.behavior > SECURITY_FS_USE_MAX)
+ 					goto bad;
+ 				len = le32_to_cpu(buf[1]);
+ 				c->u.name = kmalloc(len + 1, GFP_KERNEL);
 -- 
-David Woodhouse                            Open Source Technology Centre
-David.Woodhouse@intel.com                              Intel Corporation
+1.6.2.5
 
