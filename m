@@ -1,193 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754333Ab0FHJAj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jun 2010 05:00:39 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:37148 "EHLO ogre.sisk.pl"
+	id S1754556Ab0FHJA6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jun 2010 05:00:58 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:37160 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754216Ab0FHJAg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jun 2010 05:00:36 -0400
+	id S1754302Ab0FHJAi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Jun 2010 05:00:38 -0400
 From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Len Brown <lenb@kernel.org>
-Subject: [PATCH 1/5] ACPI / ACPICA: Use helper function for computing GPE masks
-Date: Tue, 8 Jun 2010 10:48:26 +0200
+To: Nigel Cunningham <ncunningham@crca.org.au>
+Subject: Re: [linux-pm] [SUSPECTED SPAM] Re: Proposal for a new algorithm for reading & writing a hibernation image.
+Date: Tue, 8 Jun 2010 11:01:30 +0200
 User-Agent: KMail/1.12.4 (Linux/2.6.35-rc1-rjw; KDE/4.3.5; x86_64; ; )
-Cc: Matthew Garrett <mjg59@srcf.ucam.org>,
-       ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-       LKML <linux-kernel@vger.kernel.org>,
+Cc: LKML <linux-kernel@vger.kernel.org>,
        pm list <linux-pm@lists.linux-foundation.org>,
-       "Moore, Robert" <robert.moore@intel.com>,
-       Len Brown <len.brown@intel.com>, Zhang Rui <rui.zhang@intel.com>
-References: <201006080024.46142.rjw@sisk.pl> <201006081046.48488.rjw@sisk.pl>
-In-Reply-To: <201006081046.48488.rjw@sisk.pl>
+       "TuxOnIce-devel" <tuxonice-devel@tuxonice.net>
+References: <9rpccea67yy402c975fqru8r.1275576653521@email.android.com> <201006071049.09466.rjw@sisk.pl> <4C0DA5D1.3090805@crca.org.au>
+In-Reply-To: <4C0DA5D1.3090805@crca.org.au>
 MIME-Version: 1.0
 Content-Type: Text/Plain;
   charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201006081048.26092.rjw@sisk.pl>
+Message-Id: <201006081101.30993.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Rafael J. Wysocki <rjw@sisk.pl>
+On Tuesday 08 June 2010, Nigel Cunningham wrote:
+> Hi Rafael.
+> 
+> On 07/06/10 18:49, Rafael J. Wysocki wrote:
+> > On Monday 07 June 2010, Nigel Cunningham wrote:
+> >> On 07/06/10 05:04, Rafael J. Wysocki wrote:
+> >>> On Sunday 06 June 2010, Maxim Levitsky wrote:
+> >>>> On Sun, 2010-06-06 at 15:57 +0200, Rafael J. Wysocki wrote:
+> >>>>> On Sunday 06 June 2010, Maxim Levitsky wrote:
+> >>>>> So how TuxOnIce helps here?
+> >>>> Very simple.
+> >>>>
+> >>>> With swsusp, I can save 750MB (memory) + 250 Vram (vram)
+> >>>> With full memory save I can save (1750 MB of memory) + 250 MB of
+> >>>> vram....
+> >>>
+> >>> So what about being able to save 1600 MB total instead of the 2 GB
+> >>> (which is what we're talking about in case that's not clear)?  Would it
+> >>> be _that_ _much_ worse?
+> >>
+> >> That all depends on what is in the 400MB you discard.
+> >
+> > Well, they are discarded following the LRU algorithm and it's very much
+> > like loading a program that takes 20% of your memory upfront.
+> >
+> >> The difference is "Just as if you'd never hibernated" vs something
+> >> closer to "Just as if you'd only just started up". We can't make
+> >> categorical statements because it really does depend upon what you
+> >> discard and what you want to do post-resume - that is, how useful the
+> >> memory you discard would have been. That's always going to vary from
+> >> case to case.
+> >
+> > Not so much.
+> >
+> > Besides, it doesn't matter too much.
+> >
+> > Let me reiterate, please.  Doing serious memory management behind the back
+> > of the mm subsystem (and trying to do that so it doesn't notice) is wrong and
+> > the reason it works is by accident.  As long as you do that, I have a problem
+> > with TuxOnIce.
+> 
+> I know we're at a point where it doesn't matter what I say - you've made 
+> up you're mind and are not going to be persuaded by anything I say. 
+> We're degenerating from a technical discussion into emotive language.
+> 
+> This is why I object to the way you're picturing things. TuxOnIce isn't 
+> doing "serious memory management behind the back of the mm subsystem" or 
+> working "by accident". It's an algorithm that has been designed to rely 
+> on and use both the freezer and the existing mm subsystem to provide a 
+> means wherein we can get more reliable hibernation and a fuller image of 
+> memory.
+> 
+> May I suggest that we seek to get away from this point and focus on what 
+> we can agree on.
 
-In quite a few places ACPICA needs to compute a GPE enable mask with
-only one bit, corresponding to a given GPE, set.  Currently, that
-computation is always open coded which leads to unnecessary code
-duplication.  Fix this by introducing a helper function for computing
-one-bit GPE enable masks and using it where appropriate.
+Sure.
 
-Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
----
- drivers/acpi/acpica/achware.h |    3 ++
- drivers/acpi/acpica/evgpe.c   |    7 ++---
- drivers/acpi/acpica/hwgpe.c   |   52 ++++++++++++++++++++++++++++++++----------
- 3 files changed, 46 insertions(+), 16 deletions(-)
+> Do you have any object to my work in the areas of:
+> 
+> - speed (async I/O, multithreaded I/O)
+> - flexibility (support for multiple swap devices, support for non swap, 
+> UUID support)
+> - tuneability (sysfs interface)
+> - anything else I might have forgotten to mention
 
-Index: linux-2.6/drivers/acpi/acpica/achware.h
-===================================================================
---- linux-2.6.orig/drivers/acpi/acpica/achware.h
-+++ linux-2.6/drivers/acpi/acpica/achware.h
-@@ -90,6 +90,9 @@ acpi_status acpi_hw_write_port(acpi_io_a
- /*
-  * hwgpe - GPE support
-  */
-+u32 acpi_hw_gpe_register_bit(struct acpi_gpe_event_info *gpe_event_info,
-+			     struct acpi_gpe_register_info *gpe_register_info);
-+
- acpi_status acpi_hw_low_disable_gpe(struct acpi_gpe_event_info *gpe_event_info);
- 
- acpi_status
-Index: linux-2.6/drivers/acpi/acpica/hwgpe.c
-===================================================================
---- linux-2.6.orig/drivers/acpi/acpica/hwgpe.c
-+++ linux-2.6/drivers/acpi/acpica/hwgpe.c
-@@ -57,6 +57,27 @@ acpi_hw_enable_wakeup_gpe_block(struct a
- 
- /******************************************************************************
-  *
-+ * FUNCTION:	acpi_hw_gpe_register_bit
-+ *
-+ * PARAMETERS:	gpe_event_info	    - Info block for the GPE
-+ *		gpe_register_info   - Info block for the GPE register
-+ *
-+ * RETURN:	Status
-+ *
-+ * DESCRIPTION:	Compute GPE enable mask with one bit corresponding to the given
-+ *		GPE set.
-+ *
-+ ******************************************************************************/
-+
-+u32 acpi_hw_gpe_register_bit(struct acpi_gpe_event_info *gpe_event_info,
-+			     struct acpi_gpe_register_info *gpe_register_info)
-+{
-+	return (u32)1 << (gpe_event_info->gpe_number -
-+				gpe_register_info->base_gpe_number);
-+}
-+
-+/******************************************************************************
-+ *
-  * FUNCTION:	acpi_hw_low_disable_gpe
-  *
-  * PARAMETERS:	gpe_event_info	    - Info block for the GPE to be disabled
-@@ -72,6 +93,7 @@ acpi_status acpi_hw_low_disable_gpe(stru
- 	struct acpi_gpe_register_info *gpe_register_info;
- 	acpi_status status;
- 	u32 enable_mask;
-+	u32 register_bit;
- 
- 	/* Get the info block for the entire GPE register */
- 
-@@ -89,9 +111,9 @@ acpi_status acpi_hw_low_disable_gpe(stru
- 
- 	/* Clear just the bit that corresponds to this GPE */
- 
--	ACPI_CLEAR_BIT(enable_mask, ((u32)1 <<
--				     (gpe_event_info->gpe_number -
--				      gpe_register_info->base_gpe_number)));
-+	register_bit = acpi_hw_gpe_register_bit(gpe_event_info,
-+						gpe_register_info);
-+	ACPI_CLEAR_BIT(enable_mask, register_bit);
- 
- 	/* Write the updated enable mask */
- 
-@@ -150,21 +172,28 @@ acpi_hw_write_gpe_enable_reg(struct acpi
- 
- acpi_status acpi_hw_clear_gpe(struct acpi_gpe_event_info * gpe_event_info)
- {
-+	struct acpi_gpe_register_info *gpe_register_info;
- 	acpi_status status;
--	u8 register_bit;
-+	u32 register_bit;
- 
- 	ACPI_FUNCTION_ENTRY();
- 
--	register_bit = (u8)(1 <<
--			    (gpe_event_info->gpe_number -
--			     gpe_event_info->register_info->base_gpe_number));
-+	/* Get the info block for the entire GPE register */
-+
-+	gpe_register_info = gpe_event_info->register_info;
-+	if (!gpe_register_info) {
-+		return (AE_NOT_EXIST);
-+	}
-+
-+	register_bit = acpi_hw_gpe_register_bit(gpe_event_info,
-+						gpe_register_info);
- 
- 	/*
- 	 * Write a one to the appropriate bit in the status register to
- 	 * clear this GPE.
- 	 */
- 	status = acpi_hw_write(register_bit,
--			       &gpe_event_info->register_info->status_address);
-+			       &gpe_register_info->status_address);
- 
- 	return (status);
- }
-@@ -187,7 +216,7 @@ acpi_hw_get_gpe_status(struct acpi_gpe_e
- 		       acpi_event_status * event_status)
- {
- 	u32 in_byte;
--	u8 register_bit;
-+	u32 register_bit;
- 	struct acpi_gpe_register_info *gpe_register_info;
- 	acpi_status status;
- 	acpi_event_status local_event_status = 0;
-@@ -204,9 +233,8 @@ acpi_hw_get_gpe_status(struct acpi_gpe_e
- 
- 	/* Get the register bitmask for this GPE */
- 
--	register_bit = (u8)(1 <<
--			    (gpe_event_info->gpe_number -
--			     gpe_event_info->register_info->base_gpe_number));
-+	register_bit = acpi_hw_gpe_register_bit(gpe_event_info,
-+						gpe_register_info);
- 
- 	/* GPE currently enabled? (enabled for runtime?) */
- 
-Index: linux-2.6/drivers/acpi/acpica/evgpe.c
-===================================================================
---- linux-2.6.orig/drivers/acpi/acpica/evgpe.c
-+++ linux-2.6/drivers/acpi/acpica/evgpe.c
-@@ -69,7 +69,7 @@ acpi_status
- acpi_ev_update_gpe_enable_masks(struct acpi_gpe_event_info *gpe_event_info)
- {
- 	struct acpi_gpe_register_info *gpe_register_info;
--	u8 register_bit;
-+	u32 register_bit;
- 
- 	ACPI_FUNCTION_TRACE(ev_update_gpe_enable_masks);
- 
-@@ -78,9 +78,8 @@ acpi_ev_update_gpe_enable_masks(struct a
- 		return_ACPI_STATUS(AE_NOT_EXIST);
- 	}
- 
--	register_bit = (u8)
--	    (1 <<
--	     (gpe_event_info->gpe_number - gpe_register_info->base_gpe_number));
-+	register_bit = acpi_hw_gpe_register_bit(gpe_event_info,
-+						gpe_register_info);
- 
- 	/* Clear the wake/run bits up front */
- 
+No, that's all fine, perhaps up to some details, but fundamentally I don't
+have a problem with that.
 
+Rafael
