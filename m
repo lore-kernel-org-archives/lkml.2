@@ -1,133 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754847Ab0FHR0y (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jun 2010 13:26:54 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:51756 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753169Ab0FHR0x (ORCPT
+	id S1754556Ab0FHReu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jun 2010 13:34:50 -0400
+Received: from msux-gh1-uea02.nsa.gov ([63.239.65.40]:46460 "EHLO
+	msux-gh1-uea02.nsa.gov" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752914Ab0FHRes (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jun 2010 13:26:53 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:subject:to:cc;
-        b=QBN46Gzf7cd5mEhb6IM5HWONt4xoNDZpeUHsMyk2WUdIS7DVdT1pGdrJqzbDuRU4pE
-         sTVrJ5WirVzZ2bY/lKp+V0IjWxsbsuFXnhsuCvjCAjfu9hRSWeXpZ0gqbD2Tc1ywr0qL
-         BoTaEFUR/q+6JGe+1dAYHj0/X9h4hwqgWtYok=
-Message-ID: <4c0e7d5a.0c3ddf0a.2771.ffffd485@mx.google.com>
-Date: Tue, 08 Jun 2010 20:24:40 +0300
-From: Dmytro Milinevskyy <milinevskyy@gmail.com>
-Subject: [PATCH] Marvell OpenRD-Ultimate machine support
-To: linux-arm-kernel@lists.infradead.org,
-       Russell King <linux@arm.linux.org.uk>
-Cc: Dhaval Vasa <dhaval.vasa@einfochips.com>,
-       Lennert Buytenhek <kernel@wantstofly.org>,
-       Nicolas Pitre <nico@fluxnic.net>, Simon Guinot <sguinot@lacie.com>,
-       Martin Michlmayr <tbm@cyrius.com>,
-       Alexander Clouter <alex@digriz.org.uk>,
-       Simon Kagstrom <simon.kagstrom@netinsight.net>,
-       linux-kernel@vger.kernel.org
+	Tue, 8 Jun 2010 13:34:48 -0400
+X-Greylist: delayed 2178 seconds by postgrey-1.27 at vger.kernel.org; Tue, 08 Jun 2010 13:34:48 EDT
+From: "David P. Quigley" <dpquigl@tycho.nsa.gov>
+To: hch@infradead.org, viro@zeniv.linux.org.uk, casey@schaufler-ca.com,
+       sds@tycho.nsa.gov, matthew.dodd@sparta.com, trond.myklebust@fys.uio.no,
+       bfields@fieldses.org
+Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+       linux-security-module@vger.kernel.org, selinux@tycho.nsa.gov,
+       labeled-nfs@linux-nfs.org
+Subject: Labeled-NFS: Security Label support in NFSv4 
+Date: Tue,  8 Jun 2010 12:22:46 -0400
+Message-Id: <1276014176-20315-1-git-send-email-dpquigl@tycho.nsa.gov>
+X-Mailer: git-send-email 1.6.2.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello!
-This patch adds support for the OpenRD Ultimate machine(could be found at http://www.arm.linux.org.uk/developer/machines/list.php?id=2884)
+It has been quite a while since the last time we submitted a patch set to the
+mailing list for review. I met with Trond at the last IETF meeting and he
+suggested that we resubmit the patches for review since the IETF process has
+moved along since the last posting. When reviewing the code please be critical
+of it. If you want a tree with the patches already applied we have posted a
+public git tree that is ready for cloning and use. This tree can be found at
+http://git.selinuxproject.org/git and can be cloned with the command below. You
+can also find information on how to setup a labeled nfs mount at
+http://www.selinuxproject.org/page/Labeled_NFS however the putclientlabel mount
+option specified in the setup document is no longer supported.
 
-It slightly differs from Client version.
+git-clone git://git.selinuxproject.org/~dpquigl/lnfs.git
 
-Also this patch adds correction for PHY address for Ultimate version.
-
-Regards,
-
--- Dmytro Milinevskyy
-
-Signed-off-by: Dmytro Milinevskyy <milinevskyy@gmail.com>
----
- arch/arm/mach-kirkwood/Kconfig        |    7 ++++++
- arch/arm/mach-kirkwood/openrd-setup.c |   34 +++++++++++++++++++++++++++++---
- 2 files changed, 37 insertions(+), 4 deletions(-)
-
-diff --git a/arch/arm/mach-kirkwood/Kconfig b/arch/arm/mach-kirkwood/Kconfig
-index 29b2163..110a3b8 100644
---- a/arch/arm/mach-kirkwood/Kconfig
-+++ b/arch/arm/mach-kirkwood/Kconfig
-@@ -75,6 +75,13 @@ config MACH_OPENRD_CLIENT
- 	  Say 'Y' here if you want your kernel to support the
- 	  Marvell OpenRD Client Board.
- 
-+config MACH_OPENRD_ULTIMATE
-+	bool "Marvell OpenRD Ultimate Board"
-+	select MACH_OPENRD
-+	help
-+	  Say 'Y' here if you want your kernel to support the
-+	  Marvell OpenRD Ultimate Board.
-+
- config MACH_NETSPACE_V2
- 	bool "LaCie Network Space v2 NAS Board"
- 	help
-diff --git a/arch/arm/mach-kirkwood/openrd-setup.c b/arch/arm/mach-kirkwood/openrd-setup.c
-index ad3f1ec..5d6797a 100644
---- a/arch/arm/mach-kirkwood/openrd-setup.c
-+++ b/arch/arm/mach-kirkwood/openrd-setup.c
-@@ -47,6 +47,14 @@ static struct mv643xx_eth_platform_data openrd_ge01_data = {
- 	.phy_addr	= MV643XX_ETH_PHY_ADDR(24),
- };
- 
-+static struct mv643xx_eth_platform_data openrd_ultimate_ge00_data = {
-+	.phy_addr	= MV643XX_ETH_PHY_ADDR(0),
-+};
-+
-+static struct mv643xx_eth_platform_data openrd_ultimate_ge01_data = {
-+	.phy_addr	= MV643XX_ETH_PHY_ADDR(1),
-+};
-+
- static struct mv_sata_platform_data openrd_sata_data = {
- 	.n_ports	= 2,
- };
-@@ -73,9 +81,14 @@ static void __init openrd_init(void)
- 
- 	kirkwood_ehci_init();
- 
--	kirkwood_ge00_init(&openrd_ge00_data);
--	if (machine_is_openrd_client())
--		kirkwood_ge01_init(&openrd_ge01_data);
-+	if (machine_is_openrd_ultimate()) {
-+		kirkwood_ge00_init(&openrd_ultimate_ge00_data);
-+		kirkwood_ge01_init(&openrd_ultimate_ge01_data);
-+	} else {
-+		kirkwood_ge00_init(&openrd_ge00_data);
-+		if (machine_is_openrd_client())
-+			kirkwood_ge01_init(&openrd_ge01_data);
-+	}
- 	kirkwood_sata_init(&openrd_sata_data);
- 	kirkwood_sdio_init(&openrd_mvsdio_data);
- 
-@@ -84,7 +97,7 @@ static void __init openrd_init(void)
- 
- static int __init openrd_pci_init(void)
- {
--	if (machine_is_openrd_base() || machine_is_openrd_client())
-+	if (machine_is_openrd_base() || machine_is_openrd_client() || machine_is_openrd_ultimate())
- 		kirkwood_pcie_init();
- 
- 	return 0;
-@@ -116,3 +129,16 @@ MACHINE_START(OPENRD_CLIENT, "Marvell OpenRD Client Board")
- 	.timer		= &kirkwood_timer,
- MACHINE_END
- #endif
-+
-+#ifdef CONFIG_MACH_OPENRD_ULTIMATE
-+MACHINE_START(OPENRD_ULTIMATE, "Marvell OpenRD Ultimate Board")
-+	/* Maintainer: Dhaval Vasa <dhaval.vasa@einfochips.com> */
-+	.phys_io	= KIRKWOOD_REGS_PHYS_BASE,
-+	.io_pg_offst	= ((KIRKWOOD_REGS_VIRT_BASE) >> 18) & 0xfffc,
-+	.boot_params	= 0x00000100,
-+	.init_machine	= openrd_init,
-+	.map_io		= kirkwood_map_io,
-+	.init_irq	= kirkwood_init_irq,
-+	.timer		= &kirkwood_timer,
-+MACHINE_END
-+#endif
--- 
-1.7.1
 
