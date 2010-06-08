@@ -1,198 +1,211 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755521Ab0FHOvA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jun 2010 10:51:00 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:37667 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1755361Ab0FHOu6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jun 2010 10:50:58 -0400
-Date: Tue, 8 Jun 2010 10:50:57 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: =?ISO-8859-1?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>
-cc: tytso@mit.edu, Alan Cox <alan@lxorguk.ukuu.org.uk>,
-       Florian Mickler <florian@mickler.org>,
-       Peter Zijlstra <peterz@infradead.org>,
-       Brian Swetland <swetland@google.com>, "H. Peter Anvin" <hpa@zytor.com>,
-       LKML <linux-kernel@vger.kernel.org>, Neil Brown <neilb@suse.de>,
-       James Bottomley <James.Bottomley@suse.de>,
-       Linux PM <linux-pm@lists.linux-foundation.org>,
-       Thomas Gleixner <tglx@linutronix.de>,
-       Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       Ingo Molnar <mingo@elte.hu>, Felipe Balbi <felipe.balbi@nokia.com>,
-       Arjan van de Ven <arjan@infradead.org>
-Subject: Re: [linux-pm] suspend blockers & Android integration
-In-Reply-To: <AANLkTimcDzHBmgqPkCHB6pW2RZivFhmb_zk68T0I3NJY@mail.gmail.com>
-Message-ID: <Pine.LNX.4.44L0.1006080947050.1625-100000@iolanthe.rowland.org>
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1755479Ab0FHOyz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jun 2010 10:54:55 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:55198 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754993Ab0FHOyy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Jun 2010 10:54:54 -0400
+From: naveen_jain@ti.com
+To: gregkh@suse.de
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+       pavan_savoy@ti.com, Naveen Jain <naveen_jain@ti.com>
+Subject: [PATCH] drivers:staging: ti-st: add version info to sysfs
+Date: Tue,  8 Jun 2010 09:54:45 -0500
+Message-Id: <1276008885-30282-1-git-send-email-naveen_jain@ti.com>
+X-Mailer: git-send-email 1.5.6.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 7 Jun 2010, Arve Hjønnevåg wrote:
+From: Naveen Jain <naveen_jain@ti.com>
 
-> The patch that modifies evdev (posted in this patchset) uses an ioctl
-> to enable the suspend blocker. Not all input devices are used for
-> wakeup events and those don't need to block suspend.
+Cleanup sysfs code, so that all the required sysfs entries
+are created under /sys/bus/platform/drivers/kim now.
+Add version information to be available under the sysfs group
+for kim.
 
-But you do have a 1-1 correspondence, right?  That is, the input 
-devices that are used for wakeup events are exactly the ones that block 
-suspend?
+TODO: Cleanup un-compiled code related to creation of kobject
 
+Signed-off-by: Naveen Jain <naveen_jain@ti.com>
+---
+ drivers/staging/ti-st/st_kim.c |   51 ++++++++++++++++++++++++++++-----------
+ drivers/staging/ti-st/st_kim.h |   12 +++++++++
+ 2 files changed, 48 insertions(+), 15 deletions(-)
 
-> If you read an event that occurred after you blocked the task
-> freezing, then tasks will never get frozen again (until more events
-> occur). I think my original description was less confusing, but it
-> seems you got completely distracted by my use of block and unblock
-> suspend when referring to the user space api.
-
-I still find your wording a little confusing.  Task freezing can be 
-prevented (a more accurate term than "blocked") by two kinds of things: 
-a suspend blocker or an "active" wakeup source.  I'm not sure which 
-kind you mean here.
-
-> It has an indirect connection. You report a wakeup event when it
-> occurs, but clear it when user space calls an api before reading the
-> event. So:
-
-Yes, that's right.
-
-> Wakeup event occurs, and the driver:
-> - report wakeup event type A
-> - queue event for delivery to user-space
-
-That's not really two distinct steps.  Queuing the event for delivery
-to userspace involves waking up any tasks that are waiting to read the
-device file; that action (calling wake_up_all() or whatever the driver 
-does) is how the event gets reported.
-
-> User space wakes up:
-> - Calls api to block task freezing for event type A
-
-Again, that's a confusing way of putting it.  The API you're referring
-to is simply the function that activates a suspend blocker.  It does
-prevent task freezing, but you shouldn't say it prevents freezing for
-event type A.  More like the other way around: In addition to
-preventing freezing, the function tells the power manager that event
-type A should no longer be considered active.  Thus, in a sense it
-_stops_ event type A from preventing freezing.
-
-> Another wakeup event occurs, and the driver:
-> - report wakeup event type A
-> - queue event for delivery to user-space
-
-Same as above.
-
-> User space continues:
-> - Read events
-> - Wait for more events
-> 
-> Result: Task are not frozen again.
-
-Because the suspend blocker was never deactivated.  The same thing 
-happens with wakelocks: If a task activates a wakelock and never 
-deactivates it, the system won't go into opportunistic suspend again.
-
-Here's how my scheme is meant to work:
-
-	Wakeup event for input device A occurs.
-
-	A's driver adds an entry to the input device queue and
-	(if the queue was empty) does wake_up_all() on the device
-	file's wait_queue.
-
-	The PM process returns from poll() and sees that device
-	file A is now readable, so it adds A to its list of active 
-	sources and unfreezes userspace.
-
-	Some other process sees that device file A is now readable,
-	so it activates a suspend blocker and reads events from A.
-
-	When the PM process receives the request to activate the
-	suspend blocker, it removes A from its list of active
-	sources.  But it doesn't freeze userspace yet, because now
-	a suspend blocker is active.
-
-	The other process consumes events from A and does other
-	stuff.  Maybe more input data arrives while this is happening
-	and the process reads it.  Eventually the process decides to
-	deactivate the suspend blocker, perhaps when no more data
-	is available from the device file, perhaps not.
-
-	When the PM process receives the request to deactivate the
-	suspend blocker, it sees that now there are no active
-	sources and no active suspend blockers.  Therefore it
-	freezes userspace and does a big poll() on all possible
-	sources.  (If there are still events on the input device
-	queue, the poll() returns immediately.)
-
-	Rinse and repeat.
-
-I don't see any dangerous races there.  The scheme can be made a little
-more efficient by having the PM process do another poll() (with 0
-timeout) just before freezing userspace; if the result indicates that a
-source is active then the freezing and unfreezing can be skipped.
-
-The big assumption here is that a user process never consumes wakeup 
-events without first activating a suspend blocker.  This seems like a 
-reasonable assumption, but we can work around it if necessary.
-
-> >> It seems you would need a way to pass the wakeup source id to use from
-> >> user space to the driver and for this to work
-> >
-> > No, nothing needs to be passed from userspace to the kernel.  However
-> > the source ID (or a set of source IDs) does need to be passed to the
-> > power manager process, probably when the suspend blocker is created.
-> >
-> 
-> Then the source id need to be passed from the kernel to user-space.
-
-A source ID is a file descriptor.  File descriptors are passed from the
-kernel to userspace whenever a file is opened; I can't deny it.  And
-they are passed back to the kernel as part of the read() and poll()  
-system calls.  Is that what you mean?
-
-> No, that is not the unclear part. What is unclear to me is where the
-> source IDs come from. Are they static and hardcoded in the driver and
-> user-space, or are they passed between the driver and user-space
-> client?
-
-They are not static; they are file descriptors.  I guess this should 
-have been made more clear originally, but this is still pretty new to 
-me too.
-
-> I don't understand how you are planning to ensure that the driver and
-> user-space code that consumes the real event use the same source id.
-
-How can it be otherwise?  The userspace code consumes the event by
-reading from the device file.  In order to do so, it has to use the
-same file descriptor it received when it opened the device file
-originally.
-
-> The biggest problem I have with it though is that you have created a
-> new race condition between reporting that a wakeup event has occurred
-> and processing of the real event.
-
-There is no race.  The driver reports an event has occurred by making
-the data available to be read from the device file, and the event is
-processed by reading it from the device file (or at least, that's the
-first step in processing the event).
-
-
-There's one other thing worth mentioning.  All along I've been talking
-about a power manager process that coordinates all these activities.  
-In theory there's no reason that process couldn't be implemented as a
-kernel thread.  This would improve efficiency by reducing the number of
-context switches, and it would change IPC calls into plain system
-calls.
-
-If you did implement it that way, it could be done as a standalone 
-kernel module, totally noninvasive.  It would not need to be part of 
-the vanilla kernel and nobody would object to it.
-
-Alan Stern
+diff --git a/drivers/staging/ti-st/st_kim.c b/drivers/staging/ti-st/st_kim.c
+index 98cbabb..ca986d6 100644
+--- a/drivers/staging/ti-st/st_kim.c
++++ b/drivers/staging/ti-st/st_kim.c
+@@ -55,14 +55,14 @@ static struct platform_driver kim_platform_driver = {
+ 		   },
+ };
+ 
+-#ifndef LEGACY_RFKILL_SUPPORT
+ static ssize_t show_pid(struct device *dev, struct device_attribute
+-			*attr, char *buf);
++		*attr, char *buf);
+ static ssize_t store_pid(struct device *dev, struct device_attribute
+-			 *devattr, char *buf, size_t count);
++		*devattr, char *buf, size_t count);
+ static ssize_t show_list(struct device *dev, struct device_attribute
+-			 *attr, char *buf);
+-
++		*attr, char *buf);
++static ssize_t show_version(struct device *dev, struct device_attribute
++		*attr, char *buf);
+ /* structures specific for sysfs entries */
+ static struct kobj_attribute pid_attr =
+ __ATTR(pid, 0644, (void *)show_pid, (void *)store_pid);
+@@ -70,22 +70,25 @@ __ATTR(pid, 0644, (void *)show_pid, (void *)store_pid);
+ static struct kobj_attribute list_protocols =
+ __ATTR(protocols, 0444, (void *)show_list, NULL);
+ 
++static struct kobj_attribute chip_version =
++__ATTR(version, 0444, (void *)show_version, NULL);
++
+ static struct attribute *uim_attrs[] = {
+ 	&pid_attr.attr,
+ 	/* add more debug sysfs entries */
+ 	&list_protocols.attr,
++	&chip_version.attr,
+ 	NULL,
+ };
+ 
+ static struct attribute_group uim_attr_grp = {
+ 	.attrs = uim_attrs,
+ };
+-#else
++
+ static int kim_toggle_radio(void*, bool);
+ static const struct rfkill_ops kim_rfkill_ops = {
+ 	.set_block = kim_toggle_radio,
+ };
+-#endif	/* LEGACY_RFKILL_SUPPORT */
+ 
+ /* strings to be used for rfkill entries and by
+  * ST Core to be used for sysfs debug entry
+@@ -253,7 +256,8 @@ static long read_local_version(char *bts_scr_name)
+ 	}
+ 
+ 	version =
+-	    MAKEWORD(kim_gdata->resp_buffer[13], kim_gdata->resp_buffer[14]);
++		MAKEWORD(kim_gdata->resp_buffer[13],
++			kim_gdata->resp_buffer[14]);
+ 	chip = (version & 0x7C00) >> 10;
+ 	min_ver = (version & 0x007F);
+ 	maj_ver = (version & 0x0380) >> 7;
+@@ -262,6 +266,13 @@ static long read_local_version(char *bts_scr_name)
+ 		maj_ver |= 0x0008;
+ 
+ 	sprintf(bts_scr_name, "TIInit_%d.%d.%d.bts", chip, maj_ver, min_ver);
++
++	/* to be accessed later via sysfs entry */
++	kim_gdata->version.full = version;
++	kim_gdata->version.chip = chip;
++	kim_gdata->version.maj_ver = maj_ver;
++	kim_gdata->version.min_ver = min_ver;
++
+ 	pr_info("%s", bts_scr_name);
+ 	return ST_SUCCESS;
+ }
+@@ -522,8 +533,16 @@ long st_kim_stop(void)
+ 
+ /**********************************************************************/
+ /* functions called from subsystems */
++/* called when sysfs entry is read from */
++static ssize_t show_version(struct device *dev, struct device_attribute
++		*attr, char *buf)
++{
++	sprintf(buf, "%04X %d.%d.%d", kim_gdata->version.full,
++			kim_gdata->version.chip, kim_gdata->version.maj_ver,
++			kim_gdata->version.min_ver);
++	return strlen(buf);
++}
+ 
+-#ifndef LEGACY_RFKILL_SUPPORT
+ /* called when sysfs entry is written to */
+ static ssize_t store_pid(struct device *dev, struct device_attribute
+ 			 *devattr, char *buf, size_t count)
+@@ -551,8 +570,6 @@ static ssize_t show_list(struct device *dev, struct device_attribute
+ 	return strlen(buf);
+ }
+ 
+-#else /* LEGACY_RFKILL_SUPPORT */
+-
+ /* function called from rfkill subsystem, when someone from
+  * user space would write 0/1 on the sysfs entry
+  * /sys/class/rfkill/rfkill0,1,3/state
+@@ -580,8 +597,6 @@ static int kim_toggle_radio(void *data, bool blocked)
+ 	return ST_SUCCESS;
+ }
+ 
+-#endif	/* LEGACY_RFKILL_SUPPORT */
+-
+ void st_kim_ref(struct st_data_s **core_data)
+ {
+ 	*core_data = kim_gdata->core_data;
+@@ -656,14 +671,20 @@ static int kim_probe(struct platform_device *pdev)
+ 		return -1;	/* fail insmod */
+ 	}
+ 	pr_info(" sysfs entry created ");
+-#endif
++#else
+ 	/* get reference of pdev for request_firmware
+ 	 */
+ 	kim_gdata->kim_pdev = pdev;
+ 	init_completion(&kim_gdata->kim_rcvd);
+ 	init_completion(&kim_gdata->ldisc_installed);
++	if (sysfs_create_group(&pdev->dev.kobj, &uim_attr_grp)) {
++		pr_err(" sysfs entry creation failed");
++		return -1;
++	}
++	pr_info(" sysfs entry created ");
++#endif
+ #ifdef LEGACY_RFKILL_SUPPORT
+-	for (proto = 0; (proto < ST_MAX) && (gpios[proto] != -1); proto++) {
++	for (proto = ST_BT; (proto < ST_MAX) && (gpios[proto] != -1); proto++) {
+ 		/* TODO: should all types be rfkill_type_bt ? */
+ 		kim_gdata->rf_protos[proto] = proto;
+ 		kim_gdata->rfkill[proto] = rfkill_alloc(protocol_names[proto],
+diff --git a/drivers/staging/ti-st/st_kim.h b/drivers/staging/ti-st/st_kim.h
+index ff3270e..f18affe 100644
+--- a/drivers/staging/ti-st/st_kim.h
++++ b/drivers/staging/ti-st/st_kim.h
+@@ -35,6 +35,15 @@
+ #define MAKEWORD(a, b)  ((unsigned short)(((unsigned char)(a)) \
+ 	| ((unsigned short)((unsigned char)(b))) << 8))
+ 
++/* chip version storage
++ */
++struct chip_version {
++	unsigned short full;
++	unsigned short chip;
++	unsigned short min_ver;
++	unsigned short maj_ver;
++};
++
+ #define GPIO_HIGH 1
+ #define GPIO_LOW  0
+ 
+@@ -60,7 +69,9 @@ struct kim_data_s {
+ 	char resp_buffer[30];
+ 	const struct firmware *fw_entry;
+ 	long gpios[ST_MAX];
++#ifndef LEGACY_RFKILL_SUPPORT
+ 	struct kobject *kim_kobj;
++#endif
+ /* used by kim_int_recv to validate fw response */
+ 	unsigned long rx_state;
+ 	unsigned long rx_count;
+@@ -70,6 +81,7 @@ struct kim_data_s {
+ 	enum proto_type rf_protos[ST_MAX];
+ #endif
+ 	struct st_data_s *core_data;
++	struct chip_version version;
+ };
+ 
+ long st_kim_start(void);
+-- 
+1.5.6.3
 
