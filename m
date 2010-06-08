@@ -1,59 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753545Ab0FHIci (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jun 2010 04:32:38 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:34447 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751533Ab0FHIcf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jun 2010 04:32:35 -0400
-Message-ID: <4C0E00F6.8020409@redhat.com>
-Date: Tue, 08 Jun 2010 16:36:06 +0800
-From: Cong Wang <amwang@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100330 Shredder/3.0.4
+	id S1753706Ab0FHIdI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jun 2010 04:33:08 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:50273 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752849Ab0FHIdG convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Jun 2010 04:33:06 -0400
 MIME-Version: 1.0
-To: David Miller <davem@davemloft.net>
-CC: andy@greyhouse.net, fubar@us.ibm.com, fbl@sysclose.org,
-       linux-kernel@vger.kernel.org, mpm@selenic.com, netdev@vger.kernel.org,
-       bridge@lists.linux-foundation.org, gospo@redhat.com,
-       nhorman@tuxdriver.com, jmoyer@redhat.com,
-       shemminger@linux-foundation.org, bonding-devel@lists.sourceforge.net
-Subject: Re: [v5 Patch 1/3] netpoll: add generic support for bridge and bonding
- devices
-References: <4C062CBD.7090906@redhat.com>	<20100604191841.GM7497@gospo.rdu.redhat.com>	<4C0CC29D.9070507@redhat.com> <20100607.030108.235696592.davem@davemloft.net>
-In-Reply-To: <20100607.030108.235696592.davem@davemloft.net>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+X-Originating-IP: [134.134.137.73]
+In-Reply-To: <Pine.LNX.4.63.1006081302110.12495@eng1.gmrt.ncra.tifr.res.in>
+References: <Pine.LNX.4.63.1006081302110.12495@eng1.gmrt.ncra.tifr.res.in>
+Date: Tue, 8 Jun 2010 16:33:03 +0800
+Message-ID: <AANLkTikAAzrsSnQwtUqU-SpVwgdwfdgUWdEjtFiY1wbC@mail.gmail.com>
+Subject: Re: requires info abt scheduling algo
+From: Lin Ming <lin@ming.vg>
+To: Raju Rameshwar Uprade <rajsingh@gmrt.ncra.tifr.res.in>
+Cc: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/07/10 18:01, David Miller wrote:
-> From: Cong Wang<amwang@redhat.com>
-> Date: Mon, 07 Jun 2010 17:57:49 +0800
->
->> Hmm, I still feel like this way is ugly, although it may work.
->> I guess David doesn't like it either.
->
-> Of course I don't like it. :-)
->
-> I suspect the locking scheme will need to be changed.
->
-> Besides, if we're going to hack this up and do write lock attempts in
-> the read locking paths, there is no point in using a rwlock any more.
-> And I'm personally in disfavor of all rwlock usage anyways (it dirties
-> the cacheline for readers just as equally for writers, and if the
-> critically protected code path is short enough, that shared cache
-> line atomic operation will be the predominant cost).
->
-> So I'd say, 1) make this a spinlock and 2) try to use RCU for the
-> read path.
->
-> That would fix everything.
+On Tue, Jun 8, 2010 at 3:33 PM, Raju Rameshwar Uprade
+<rajsingh@gmrt.ncra.tifr.res.in> wrote:
+> Hi,
+>      can anyone tell me..which scheduling algo is used in current linux
+> kernel and how it works...
 
-Yeah, agreed. Even not talking about netconsole, bonding code
-does have locking problems, netconsole just makes this problem
-clear.
+CFS (Completely Fair Scheduler),
 
-I will try your suggestions above.
+Some info under linux-2.6/Documentation/scheduler
 
-Thanks!
+Lin Ming
+
+>
+>
+>
+> Thanks,
+>  Raj singh
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+>
