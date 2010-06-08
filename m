@@ -1,59 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755757Ab0FHQhz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jun 2010 12:37:55 -0400
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:62387 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755723Ab0FHQhx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jun 2010 12:37:53 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6007"; a="43782266"
-Subject: Re: ARM defconfig files
-From: Daniel Walker <dwalker@codeaurora.org>
-To: Catalin Marinas <catalin.marinas@arm.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-       Russell King <rmk@arm.linux.org.uk>,
-       Kevin Hilman <khilman@deeprootsystems.com>,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       linux-arm-msm@vger.kernel.org, Vegard Nossum <vegard.nossum@gmail.com>
-In-Reply-To: <tnxeighczk7.fsf@e102109-lin.cambridge.arm.com>
-References: <20100603074548.GA12104@flint.arm.linux.org.uk>
-	 <alpine.LFD.2.00.1006030725420.8175@i5.linux-foundation.org>
-	 <1275584003.23384.2.camel@c-dwalke-linux.qualcomm.com>
-	 <tnxeighczk7.fsf@e102109-lin.cambridge.arm.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 08 Jun 2010 09:37:37 -0700
-Message-ID: <1276015057.14529.7.camel@c-dwalke-linux.qualcomm.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	id S1754556Ab0FHRZO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jun 2010 13:25:14 -0400
+Received: from sous-sol.org ([216.99.217.87]:36117 "EHLO sequoia.sous-sol.org"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752800Ab0FHRZM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Jun 2010 13:25:12 -0400
+Date: Tue, 8 Jun 2010 10:24:34 -0700
+From: Chris Wright <chrisw@sous-sol.org>
+To: Matt Turner <mattst88@gmail.com>
+Cc: Michael Cree <mcree@orcon.net.nz>, linux-kernel@vger.kernel.org,
+       Borislav Petkov <borislav.petkov@amd.com>,
+       "H. Peter Anvin" <hpa@zytor.com>, linux-alpha@vger.kernel.org,
+       Chris Wright <chrisw@sous-sol.org>, Greg Kroah-Hartman <gregkh@suse.de>,
+       Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: 2.6.35-rc2 compilation error on Alpha
+Message-ID: <20100608172434.GK8301@sequoia.sous-sol.org>
+References: <4C0C22C4.3010705@orcon.net.nz>
+ <AANLkTim9aWVzb7v5fnS6x3ghMU2_tpaLlbZu3SKXV_0R@mail.gmail.com>
+ <4C0C47A8.1000800@orcon.net.nz>
+ <AANLkTinnprvU7bbe28emifv766_tWKjaSfW0ch2PQY23@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <AANLkTinnprvU7bbe28emifv766_tWKjaSfW0ch2PQY23@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-06-08 at 16:30 +0100, Catalin Marinas wrote:
-> Daniel Walker <dwalker@codeaurora.org> wrote:
-> > Have you noticed this ..
-> >
-> > http://ktrap.org/mailarchive/linux-kernel/2010/5/17/4571130
-> >
-> > I'm not sure of the goals, but it sounds like it might be relevant.
-> 
-> In some cases you don't want to automatically enable features but rather
-> fix the Kconfig file. For example, with the select dependencies patch
-> (http://lkml.org/lkml/2009/9/16/413) on ARMv7 RealView I get the
-> following:
-> 
-> warning: (CPU_V7 && !ARCH_OMAP2 || CPU_MMP2 && ARCH_MMP) selects
-> CPU_32v6K which has unmet direct dependencies (CPU_V6)
-> 
-> Unless I misunderstand this, a solver may try to select CPU_V6 which I
-> don't want to. The solution is to fix Kconfig as below:
+* Matt Turner (mattst88@gmail.com) wrote:
+> Fixes for both breaks are in:
+>    git://git.kernel.org/pub/scm/linux/kernel/git/mattst88/alpha-2.6.git
+> for-linus
 
-It seems like those are something the solver would likely find, or have
-problems with. Since we technically don't have a solver yet it's hard to
-say what the end result would be. None the less it's sucks we have
-things getting selected without their depends be met or correct..
+Your 83926ce2dd37e4337ecf53b1e435d08e70b5871b will work, but you can
+also simply drop the filp from pci_mmap_resource().  That's an internal
+helper (local to alpha/kernel/pci-sysfs.c) and doesn't require the filp.
+Sorry, that was my fault, and should be localized to 2.6.35-rc.
 
-Daniel
+> I know alpha hardware isn't easy to get your hands on to compile test
+> these changes, but guys, please just send linux-alpha@ the patch and
+> _I'll_ do it. Both these breaks were not even compile tested.
+> 
+> pci break: 2c3c8bea608866d8bd9dcf92657d57fdcac011c5
 
+$ git describe --contains 2c3c8bea608866d8bd9dcf92657d57fdcac011c5
+v2.6.35-rc1~459^2~9
+
+> hweight break: 1527bc8b928dd1399c3d3467dd47d9ede210978a
+> 
+> Greg, I haven't checked, but if either of these commits are in .34 or
+> older, then my fixes need to go into -stable.
