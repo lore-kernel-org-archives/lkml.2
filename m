@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754233Ab0FHDw4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jun 2010 23:52:56 -0400
-Received: from mail.perches.com ([173.55.12.10]:2760 "EHLO mail.perches.com"
+	id S1753351Ab0FHDxM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jun 2010 23:53:12 -0400
+Received: from mail.perches.com ([173.55.12.10]:2759 "EHLO mail.perches.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752082Ab0FHDus (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jun 2010 23:50:48 -0400
+	id S1753034Ab0FHDur (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Jun 2010 23:50:47 -0400
 From: Joe Perches <joe@perches.com>
 To: Jiri Kosina <trivial@kernel.org>
 Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH 03/12] arch/x86/kernel/tlb_uv.c: Remove unnecessary kmalloc casts
-Date: Mon,  7 Jun 2010 20:50:35 -0700
-Message-Id: <3549b4f4015c1ffee1a7bed7288ce918e98c6697.1275968594.git.joe@perches.com>
+Subject: [PATCH 02/12] arch/powerpc: Remove unnecessary kmalloc casts
+Date: Mon,  7 Jun 2010 20:50:34 -0700
+Message-Id: <96933b66aa5f995746a34410ca63e5e8b84593cb.1275968594.git.joe@perches.com>
 X-Mailer: git-send-email 1.7.1.244.gbdc4
 In-Reply-To: <cover.1275968594.git.joe@perches.com>
 References: <cover.1275968594.git.joe@perches.com>
@@ -19,53 +19,41 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-And convert a kmalloc/memset to kzalloc
-
 Signed-off-by: Joe Perches <joe@perches.com>
 ---
- arch/x86/kernel/tlb_uv.c |   15 +++++++--------
- 1 files changed, 7 insertions(+), 8 deletions(-)
+ arch/powerpc/kernel/nvram_64.c |    3 +--
+ arch/powerpc/kvm/book3s.c      |    4 ++--
+ 2 files changed, 3 insertions(+), 4 deletions(-)
 
-diff --git a/arch/x86/kernel/tlb_uv.c b/arch/x86/kernel/tlb_uv.c
-index 7fea555..4c0a5e8 100644
---- a/arch/x86/kernel/tlb_uv.c
-+++ b/arch/x86/kernel/tlb_uv.c
-@@ -1141,8 +1141,9 @@ uv_activation_descriptor_init(int node, int pnode)
- 	 * each bau_desc is 64 bytes; there are 8 (UV_ITEMS_PER_DESCRIPTOR)
- 	 * per cpu; and up to 32 (UV_ADP_SIZE) cpu's per uvhub
- 	 */
--	bau_desc = (struct bau_desc *)kmalloc_node(sizeof(struct bau_desc)*
--		UV_ADP_SIZE*UV_ITEMS_PER_DESCRIPTOR, GFP_KERNEL, node);
-+	bau_desc = kmalloc_node(sizeof(struct bau_desc) *
-+				UV_ADP_SIZE * UV_ITEMS_PER_DESCRIPTOR,
-+				GFP_KERNEL, node);
- 	BUG_ON(!bau_desc);
+diff --git a/arch/powerpc/kernel/nvram_64.c b/arch/powerpc/kernel/nvram_64.c
+index 9cf197f..99c6dab 100644
+--- a/arch/powerpc/kernel/nvram_64.c
++++ b/arch/powerpc/kernel/nvram_64.c
+@@ -502,8 +502,7 @@ static int __init nvram_scan_partitions(void)
+ 			       "detected: 0-length partition\n");
+ 			goto out;
+ 		}
+-		tmp_part = (struct nvram_partition *)
+-			kmalloc(sizeof(struct nvram_partition), GFP_KERNEL);
++		tmp_part = kmalloc(sizeof(struct nvram_partition), GFP_KERNEL);
+ 		err = -ENOMEM;
+ 		if (!tmp_part) {
+ 			printk(KERN_ERR "nvram_scan_partitions: kmalloc failed\n");
+diff --git a/arch/powerpc/kvm/book3s.c b/arch/powerpc/kvm/book3s.c
+index b998abf..2a8b9b6 100644
+--- a/arch/powerpc/kvm/book3s.c
++++ b/arch/powerpc/kvm/book3s.c
+@@ -1248,8 +1248,8 @@ struct kvm_vcpu *kvmppc_core_vcpu_create(struct kvm *kvm, unsigned int id)
  
- 	pa = uv_gpa(bau_desc); /* need the real nasid*/
-@@ -1200,9 +1201,9 @@ uv_payload_queue_init(int node, int pnode)
- 	struct bau_payload_queue_entry *pqp_malloc;
- 	struct bau_control *bcp;
+ 	memset(vcpu_book3s, 0, sizeof(struct kvmppc_vcpu_book3s));
  
--	pqp = (struct bau_payload_queue_entry *) kmalloc_node(
--		(DEST_Q_SIZE + 1) * sizeof(struct bau_payload_queue_entry),
--		GFP_KERNEL, node);
-+	pqp = kmalloc_node((DEST_Q_SIZE + 1) *
-+			   sizeof(struct bau_payload_queue_entry),
-+			   GFP_KERNEL, node);
- 	BUG_ON(!pqp);
- 	pqp_malloc = pqp;
+-	vcpu_book3s->shadow_vcpu = (struct kvmppc_book3s_shadow_vcpu *)
+-		kzalloc(sizeof(*vcpu_book3s->shadow_vcpu), GFP_KERNEL);
++	vcpu_book3s->shadow_vcpu = kzalloc(sizeof(*vcpu_book3s->shadow_vcpu),
++					   GFP_KERNEL);
+ 	if (!vcpu_book3s->shadow_vcpu)
+ 		goto free_vcpu;
  
-@@ -1286,9 +1287,7 @@ static void uv_init_per_cpu(int nuvhubs)
- 	};
- 	struct uvhub_desc *uvhub_descs;
- 
--	uvhub_descs = (struct uvhub_desc *)
--		kmalloc(nuvhubs * sizeof(struct uvhub_desc), GFP_KERNEL);
--	memset(uvhub_descs, 0, nuvhubs * sizeof(struct uvhub_desc));
-+	uvhub_descs = kzalloc(nuvhubs * sizeof(struct uvhub_desc), GFP_KERNEL);
- 	for_each_present_cpu(cpu) {
- 		bcp = &per_cpu(bau_control, cpu);
- 		memset(bcp, 0, sizeof(struct bau_control));
 -- 
 1.7.1.244.gbdc4
 
