@@ -1,69 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753745Ab0FHIrZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jun 2010 04:47:25 -0400
-Received: from bld-mail14.adl6.internode.on.net ([150.101.137.99]:57252 "EHLO
-	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753438Ab0FHIrX (ORCPT
+	id S1753963Ab0FHIsv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jun 2010 04:48:51 -0400
+Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:16317 "EHLO
+	sm-d311v.smileserver.ne.jp" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753482Ab0FHIst (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jun 2010 04:47:23 -0400
-Date: Tue, 8 Jun 2010 18:47:18 +1000
-From: Dave Chinner <david@fromorbit.com>
-To: Christof Schmitt <christof.schmitt@de.ibm.com>
-Cc: "Martin K. Petersen" <martin.petersen@oracle.com>,
-       Boaz Harrosh <bharrosh@panasas.com>, linux-scsi@vger.kernel.org,
-       linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
-Subject: Re: Wrong DIF guard tag on ext2 write
-Message-ID: <20100608084718.GB7869@dastard>
-References: <20100531144648.GA19068@schmichrtp.mainz.de.ibm.com>
- <yq11vcqlwp8.fsf@sermon.lab.mkp.net>
- <20100602133748.GA11196@schmichrtp.mainz.de.ibm.com>
- <20100602232039.GA8287@dastard>
- <yq139x3y411.fsf@sermon.lab.mkp.net>
- <20100604023253.GF19651@dastard>
- <yq1zkz6vmpu.fsf@sermon.lab.mkp.net>
- <4C0D2AD4.2020303@panasas.com>
- <yq1sk4yvj0a.fsf@sermon.lab.mkp.net>
- <20100608071534.GA3263@schmichrtp.mainz.de.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100608071534.GA3263@schmichrtp.mainz.de.ibm.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Tue, 8 Jun 2010 04:48:49 -0400
+Message-ID: <002e01cb06e7$69846f10$66f8800a@maildom.okisemi.com>
+From: "Masayuki Ohtake" <masa-korg@dsn.okisemi.com>
+To: "Arnd Bergmann" <arnd@arndb.de>
+Cc: "LKML" <linux-kernel@vger.kernel.org>,
+       "Andrew" <andrew.chih.howe.khor@intel.com>,
+       "Intel OTC" <joel.clark@intel.com>, "Wang, Qi" <qi.wang@intel.com>,
+       "Wang, Yong Y" <yong.y.wang@intel.com>
+References: <4C08D268.6000404@dsn.okisemi.com> <201006071537.27140.arnd@arndb.de>
+Subject: Re: [PATCH] Topcliff PHUB: Generate PacketHub driver
+Date: Tue, 8 Jun 2010 17:48:40 +0900
+X-Priority: 3
+X-MSMail-Priority: Normal
+X-Mailer: Microsoft Outlook Express 6.00.2800.1983
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2800.1983
+X-Hosting-Pf: 0
+X-NAI-Spam-Score: 1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 08, 2010 at 09:15:35AM +0200, Christof Schmitt wrote:
-> On Mon, Jun 07, 2010 at 01:40:21PM -0400, Martin K. Petersen wrote:
-> > >>>>> "Boaz" == Boaz Harrosh <bharrosh@panasas.com> writes:
-> > 
-> > Boaz> Do you remember some performance numbers that show degradation /
-> > Boaz> sameness?
-> > 
-> > Boaz> What type of work loads?
-> > 
-> > I haven't been using XFS much for over a year.  I'm using an internal
-> > async I/O tool and btrfs for most of my DIX/DIF testing these days.
-> > 
-> > But my original changes were along the lines of what Jan mentioned
-> > earlier (hooking into page_mkwrite and waiting for writeback.  I could
-> > have sworn that I only did it for ext[23] and that XFS waited out of the
-> > box but git proves me wrong).  Anyway, I'll try to get some benchmarking
-> > happening later this week.
-> 
-> Is there a patch with this change available somewhere? It might be
-> useful to patch a kernel with this XFS change for reliable DIF/DIX
-> testing.
+Hi Arnd
 
-Adding a wait_on_page_writeback() call to page_mkwrite() won't help
-by itself - you need to unmap the pages after transitioning them
-from dirty to writeback but before the hardware starts processing
-the IO if you want to lock out mmap writes this way....
+We are studying your indication.
+> My feeling is that this ioctl interface is too
+> low-level in general. You only export access to specific
+> registers, not to functionality exposed by them.
+> The best kernel interfaces are defined in a way that
+> is independent of the underlying hardware and
+> convert generic commands into device specific commands.
 
-Cheers,
+I have a question.
+We don't know 'generic commands' concretely.
+Let me know 'generic commands' in detail.
 
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
+Thanks. Ohtake.
+
+----- Original Message ----- 
+From: "Arnd Bergmann" <arnd@arndb.de>
+To: "Masayuki Ohtake" <masa-korg@dsn.okisemi.com>
+Cc: "LKML" <linux-kernel@vger.kernel.org>; "Andrew" <andrew.chih.howe.khor@intel.com>; "Intel OTC"
+<joel.clark@intel.com>; "Wang, Qi" <qi.wang@intel.com>; "Wang, Yong Y" <yong.y.wang@intel.com>
+Sent: Monday, June 07, 2010 10:37 PM
+Subject: Re: [PATCH] Topcliff PHUB: Generate PacketHub driver
+
+
+> On Friday 04 June 2010, Masayuki Ohtake wrote:
+> > From: Masayuki Ohtake <masa-korg@dsn.okisemi.com>
+> >
+> > This patch adds the Packet Hub driver for Topcliff.
+> > Patch created against 2.6.33.1
+> >
+> > Signed-off-by: Masayuki Ohtake <masa-korg@dsn.okisemi.com>
+>
+> Most of the comments from my first review still apply to
+> this version, please have another look at what I wrote
+> back in april, see http://article.gmane.org/gmane.linux.network/158879
+>
+> Note also that patch submissions should be against the latest
+> development kernel, in this case 2.6.35-rc2, not against stable
+> kernel releases like 2.6.33.1.
+>
+> Arnd
+>
+
+
