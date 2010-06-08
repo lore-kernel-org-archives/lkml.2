@@ -1,61 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752313Ab0FHBBZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jun 2010 21:01:25 -0400
-Received: from hera.kernel.org ([140.211.167.34]:37444 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752051Ab0FHBBX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jun 2010 21:01:23 -0400
-Date: Tue, 8 Jun 2010 01:01:00 GMT
-From: tip-bot for Andres Salomon <dilinger@queued.net>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-       dilinger@queued.net, tglx@linutronix.de, hpa@linux.intel.com
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-       dilinger@queued.net, tglx@linutronix.de, hpa@linux.intel.com
-In-Reply-To: <20100605114042.35ac69c1@dev.queued.net>
-References: <20100605114042.35ac69c1@dev.queued.net>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/urgent] x86: use __ASSEMBLY__ rather than __ASSEMBLER__
-Message-ID: <tip-fc4ac7a5f5996712d9123ae4850948c640edb315@git.kernel.org>
-Git-Commit-ID: fc4ac7a5f5996712d9123ae4850948c640edb315
-X-Mailer: tip-git-log-daemon
+	id S1752128Ab0FHBJv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jun 2010 21:09:51 -0400
+Received: from netrider.rowland.org ([192.131.102.5]:60820 "HELO
+	netrider.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751616Ab0FHBJt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Jun 2010 21:09:49 -0400
+Date: Mon, 7 Jun 2010 21:09:46 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@netrider.rowland.org
+To: =?ISO-8859-1?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>
+cc: tytso@mit.edu, Alan Cox <alan@lxorguk.ukuu.org.uk>,
+       Florian Mickler <florian@mickler.org>,
+       Peter Zijlstra <peterz@infradead.org>,
+       Brian Swetland <swetland@google.com>, "H. Peter Anvin" <hpa@zytor.com>,
+       LKML <linux-kernel@vger.kernel.org>, Neil Brown <neilb@suse.de>,
+       James Bottomley <James.Bottomley@suse.de>,
+       Linux PM <linux-pm@lists.linux-foundation.org>,
+       Thomas Gleixner <tglx@linutronix.de>,
+       Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       Ingo Molnar <mingo@elte.hu>, Felipe Balbi <felipe.balbi@nokia.com>,
+       Arjan van de Ven <arjan@infradead.org>
+Subject: Re: [linux-pm] suspend blockers & Android integration
+In-Reply-To: <AANLkTiny-hiPoKKKolNAhpvFUS-GaArBO8bwYBUg5glx@mail.gmail.com>
+Message-ID: <Pine.LNX.4.44L0.1006072030420.26784-100000@netrider.rowland.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Tue, 08 Jun 2010 01:01:02 +0000 (UTC)
+Content-Type: TEXT/PLAIN; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  fc4ac7a5f5996712d9123ae4850948c640edb315
-Gitweb:     http://git.kernel.org/tip/fc4ac7a5f5996712d9123ae4850948c640edb315
-Author:     Andres Salomon <dilinger@queued.net>
-AuthorDate: Sat, 5 Jun 2010 11:40:42 -0400
-Committer:  H. Peter Anvin <hpa@linux.intel.com>
-CommitDate: Mon, 7 Jun 2010 17:27:11 -0700
+On Mon, 7 Jun 2010, Arve Hjønnevåg wrote:
 
-x86: use __ASSEMBLY__ rather than __ASSEMBLER__
+> > In fact it's possible to do this with only minimal changes to the
+> > userspace, providing you can specify all your possible hardware wakeup
+> > sources.  (On the Android this list probably isn't very large -- I
+> > imagine it includes the keypad, the radio link(s), the RTC, and maybe
+> > a few switches, buttons, or other things.)
+> >
+> > Here's how you can do it.  Extend the userspace suspend-blocker API, so
+> > that each suspend blocker can optionally have an associated wakeup
+> > source.
+> >
+> > The power-manager process should keep a list of "active" wakeup
+> > sources.  A source gets removed from the list when an associated
+> > suspend blocker is activated.
+> >
+> 
+> How do you do this safely? If you remove the active wakeup only when
 
-As Ingo pointed out in a separate patch, we should be using __ASSEMBLY__.
-Make that the case in pgtable headers.
+"remove the active wakeup" isn't a good way of expressing this.  You 
+remove the wakeup source from the power manager's list of active 
+sources.  This is just manipulation of a data structure internal to the 
+power manager; it doesn't affect the actual source.
 
-Signed-off-by: Andres Salomon <dilinger@queued.net>
-LKML-Reference: <20100605114042.35ac69c1@dev.queued.net>
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
----
- arch/x86/include/asm/pgtable_32_types.h |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+> activating the suspend blocker, you will never unblock suspend if
+> another wakeup event happens after user-space blocked suspend but
+> before user-space read the events.
 
-diff --git a/arch/x86/include/asm/pgtable_32_types.h b/arch/x86/include/asm/pgtable_32_types.h
-index 5e67c15..ed5903b 100644
---- a/arch/x86/include/asm/pgtable_32_types.h
-+++ b/arch/x86/include/asm/pgtable_32_types.h
-@@ -26,7 +26,7 @@
-  */
- #define VMALLOC_OFFSET	(8 * 1024 * 1024)
- 
--#ifndef __ASSEMBLER__
-+#ifndef __ASSEMBLY__
- extern bool __vmalloc_start_set; /* set once high_memory is set */
- #endif
- 
+I'm not sure what you mean.  In this scheme userspace doesn't ever 
+block suspends.  Instead the power manager freezes and unfreezes all 
+the other processes.  And the system never suspends, it simply goes 
+idle for prolonged periods of time... with all processes frozen except 
+the power manager, and it sitting inside a poll() system call.
+
+It's true that under some exceptional circumstances the system would 
+never remove a wakeup source from the "active" list and then would 
+never go idle.  But exactly the same problem exists with wakelocks, if 
+the kernel activates a wakelock and there's no user process reading the 
+corresponding event queue.
+
+> Also, I'm not sure we can easily associate a wakeup event with a user
+> space suspend blocker. For instance when an alarm triggers it is
+> sometimes because of a user-space alarm and sometimes because an
+> in-kernel alarm.
+
+That's okay.  The association is optional, and not all suspend blockers
+will have an associated wakeup source.  (However, each wakeup source
+that needs to percolate up into userspace -- i.e., that isn't handled
+internally by the kernel -- should have at least one associated suspend
+blocker.)  The purpose of these associations is to make explicit the
+"handoff" in your original scheme, whereby a source would cause the
+kernel to activate a wakelock until some user process activated its own
+and then cleared the kernel's wakelock.  In your scheme, the connection
+between the userspace wakelock and the wakeup source is implicit; in
+my scheme it is explicit.
+
+For example, a process that uses a suspend blocker in order to read
+keystrokes would obviously associate its suspend blocker with the
+keypad-matrix wakeup source.
+
+Or take your example of an alarm.  To make it work in my scheme, each
+user alarm would have to be implemented as a poll-able file descriptor.  
+Processes reading the descriptor would block until the alarm expires.  
+(I don't know of any driver that provides this sort of timer interface,
+but it would be easy to write one.  You could think of it as applying
+Unix's "Everything is a file" philosophy to alarms.)  Each of these
+descriptors would then be a wakeup source, included among the sources
+that the power manager polls for, and a suspend blocker could be
+associated with it.
+
+Alan Stern
+
