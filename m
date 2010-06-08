@@ -1,78 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755545Ab0FHQ0K (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jun 2010 12:26:10 -0400
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:37177 "EHLO e9.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755492Ab0FHQ0H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jun 2010 12:26:07 -0400
-Date: Tue, 8 Jun 2010 09:26:01 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Miles Lane <miles.lane@gmail.com>
-Cc: Johannes Berg <johannes@sipsolutions.net>, Vivek Goyal <vgoyal@redhat.com>,
-       Eric Paris <eparis@redhat.com>, Lai Jiangshan <laijs@cn.fujitsu.com>,
-       Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
-       LKML <linux-kernel@vger.kernel.org>, nauman@google.com,
-       eric.dumazet@gmail.com, netdev@vger.kernel.org,
-       Jens Axboe <jens.axboe@oracle.com>,
-       Gui Jianfeng <guijianfeng@cn.fujitsu.com>,
-       Li Zefan <lizf@cn.fujitsu.com>
-Subject: Re: 2.6.35-rc2-git1 - net/mac80211/sta_info.c:125 invoked
- rcu_dereference_check() without protection!
-Message-ID: <20100608162601.GC2397@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <AANLkTintKf_9C1sBsUac6Prvb1nWn7nWszatJ8yUb-VM@mail.gmail.com>
- <20100607235941.GD2387@linux.vnet.ibm.com>
- <1275981969.3706.1.camel@jlt3.sipsolutions.net>
- <AANLkTillxWXGO4nIqb6hdbaw4P40WLHEPpy_GiM_hSW-@mail.gmail.com>
+	id S1755772Ab0FHQ0w (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jun 2010 12:26:52 -0400
+Received: from smtp.eu.citrix.com ([62.200.22.115]:26413 "EHLO
+	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755698Ab0FHQ0u (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Jun 2010 12:26:50 -0400
+X-IronPort-AV: E=Sophos;i="4.53,385,1272844800"; 
+   d="scan'208";a="302791"
+Date: Tue, 8 Jun 2010 17:25:52 +0100
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball-desktop
+To: Konrad Rzeszutek Wilk <konrad.wilk@Oracle.com>
+CC: Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
+       "jeremy@goop.org" <jeremy@goop.org>,
+       "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+       "Yaozu (Eddie) Dong" <eddie.dong@intel.com>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       "ddutile@redhat.com" <ddutile@redhat.com>,
+       "sheng@linux.intel.com" <sheng@linux.intel.com>
+Subject: Re: [Xen-devel] [PATCH 02/12] early PV on HVM
+In-Reply-To: <20100608161233.GA4900@phenom.dumpdata.com>
+Message-ID: <alpine.DEB.2.00.1006081714460.3401@kaball-desktop>
+References: <1275570645-27189-1-git-send-email-stefano.stabellini@eu.citrix.com> <1275570645-27189-2-git-send-email-stefano.stabellini@eu.citrix.com> <20100604202008.GB17645@phenom.dumpdata.com> <alpine.DEB.2.00.1006071518050.3401@kaball-desktop>
+ <20100608134637.GA5998@phenom.dumpdata.com> <alpine.DEB.2.00.1006081643280.3401@kaball-desktop> <20100608161233.GA4900@phenom.dumpdata.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <AANLkTillxWXGO4nIqb6hdbaw4P40WLHEPpy_GiM_hSW-@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain; charset="US-ASCII"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 08, 2010 at 07:29:48AM -0400, Miles Lane wrote:
-> On Tue, Jun 8, 2010 at 3:26 AM, Johannes Berg <johannes@sipsolutions.net> wrote:
-> > On Mon, 2010-06-07 at 16:59 -0700, Paul E. McKenney wrote:
-> >> On Mon, Jun 07, 2010 at 02:25:44PM -0400, Miles Lane wrote:
-> >> > [   43.478812] [ INFO: suspicious rcu_dereference_check() usage. ]
-> >> > [   43.478815] ---------------------------------------------------
-> >> > [   43.478820] net/mac80211/sta_info.c:125 invoked
-> >> > rcu_dereference_check() without protection!
-> >> > [   43.478824]
-> >> > [   43.478824] other info that might help us debug this:
-> >> > [   43.478826]
-> >> > [   43.478829]
-> >> > [   43.478830] rcu_scheduler_active = 1, debug_locks = 1
-> >> > [   43.478834] no locks held by NetworkManager/4017.
-> >>
-> >> Hmmm...  Johannes's update has been merged, and it requires that callers
-> >> either be in an RCU read-side critical section or hold either the
-> >> ->sta_lock or the ->sta_mtx, and this thread does none of this.
-> >>
-> >> Johannes, any thoughts?
-> >>
-> >>                                                       Thanx, Paul
-> >>
-> >> > [   43.478837] stack backtrace:
-> >> > [   43.478842] Pid: 4017, comm: NetworkManager Not tainted 2.6.35-rc2-git1 #8
-> >> > [   43.478846] Call Trace:
-> >> > [   43.478849]  <IRQ>  [<ffffffff81064e9c>] lockdep_rcu_dereference+0x9d/0xa5
-> >> > [   43.478876]  [<ffffffffa010cb3c>] sta_info_get_bss+0x71/0x12d [mac80211]
-> >> > [   43.478889]  [<ffffffffa010cc0d>] ieee80211_find_sta+0x15/0x2f [mac80211]
-> >> > [   43.478902]  [<ffffffffa019ae16>] iwlagn_tx_queue_reclaim+0xe7/0x1bb [iwlagn]
-> >
-> > iwlwifi wasn't using rcu protection here -- already sent a patch fixing
-> > it. My mistake, I  think. Thanks for checking :)
-> >
-> > johannes
+On Tue, 8 Jun 2010, Konrad Rzeszutek Wilk wrote:
+> On Tue, Jun 08, 2010 at 04:55:33PM +0100, Stefano Stabellini wrote:
+> > On Tue, 8 Jun 2010, Konrad Rzeszutek Wilk wrote:
+> > > > > > +	HYPERVISOR_shared_info = (struct shared_info *)shared_info_page;
+> > > > > > +
+> > > > > > +	/* Don't do the full vcpu_info placement stuff until we have a
+> > > > > > +	   possible map and a non-dummy shared_info. */
+> > > > > 
+> > > > > Might want to mention where the full vpcu placement is done.
+> > > > 
+> > > > The comment is not accurate, we actually don't do any vcpu_info
+> > > > placement on hvm because it is not very useful there.
+> > > > Better just to remove the comment (I have done so in my tree).
+> > > > 
+> > > > > > +	per_cpu(xen_vcpu, 0) = &HYPERVISOR_shared_info->vcpu_info[0];
+> > > > > 
+> > > So.. what is the purpose of the per_cpu(xen_vcpu, 0) then?
+> > > 
+> > 
+> > the vcpu info placement memory area is stored in per_cpu(xen_vcpu_info, cpu);
+> > per_cpu(xen_vcpu, cpu) is just a pointer to that area if it is
+> > available, otherwise it points to the vcpu_info struct in the shared
+> > info page.
 > 
-> Yes, your patch works for me.
+> I was just wondering why are we doing this when you say:
+> " don't do any vcpu_info placement on hvm because it is not very useful there."
+> 
+> So if it is not useful, why do it?
+> 
 
-Thank you both!!!
+I think Jeremy replied to your question better than me: we still need
+the vcpu_info stuff for the timer and event channels, but we don't need
+it to be at a specific address in kernel memory.
+That is useful only for the following pvops operations:
 
-							Thanx, Paul
+pv_irq_ops.save_fl = __PV_IS_CALLEE_SAVE(xen_save_fl_direct);
+pv_irq_ops.restore_fl = __PV_IS_CALLEE_SAVE(xen_restore_fl_direct);
+pv_irq_ops.irq_disable = __PV_IS_CALLEE_SAVE(xen_irq_disable_direct);
+pv_irq_ops.irq_enable = __PV_IS_CALLEE_SAVE(xen_irq_enable_direct);
+pv_mmu_ops.read_cr2 = xen_read_cr2_direct;
+
+none of which are used in the hvm case.
