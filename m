@@ -1,139 +1,191 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752624Ab0FHCIE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jun 2010 22:08:04 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:60286 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750897Ab0FHCIB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jun 2010 22:08:01 -0400
-Date: Mon, 7 Jun 2010 22:07:41 -0400
-From: Josef Bacik <josef@redhat.com>
-To: Dave Chinner <david@fromorbit.com>
-Cc: Josef Bacik <josef@redhat.com>, Jeffrey Merkey <jeffmerkey@gmail.com>,
-       linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-       viro@zeniv.linux.org.uk
-Subject: Re: 2.6.34 echo j > /proc/sysrq-trigger causes inifnite
-	unfreeze/Thaw event
-Message-ID: <20100608020741.GG2336@localhost.localdomain>
-References: <AANLkTim74SREZDq7VQhq6Z1hKXZLINoq0t8rkyQecmM1@mail.gmail.com> <20100607010542.GB27325@dastard> <20100607213631.GE2336@localhost.localdomain> <20100607215925.GF2336@localhost.localdomain> <20100607232350.GA6965@dastard>
+	id S1752315Ab0FHCOK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jun 2010 22:14:10 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:60393 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751517Ab0FHCOI convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Jun 2010 22:14:08 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :content-type:content-transfer-encoding;
+        b=ap9q1hvLvTzF4TB3/CiY6L9Sj6e5xvnPjH7NGJLKfTUe47fXojXnHwbN8F3WOlZyJP
+         NyE8p2sNyxwhtB0ekDgWUHhb5wxYZcGsARgZuqXIlrKtUqoDuJ4wCrAzKDRvl1bhm26w
+         CeocQpGaleuYAbQ+wvdDDlgvHvuTsPqXG1twQ=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100607232350.GA6965@dastard>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <AANLkTinzZkN9agekI5eqzA9hERsghI7yDJyAy1O755dr@mail.gmail.com>
+References: <AANLkTinQatQEYahpkN3bT-S5C41HqRoH--gTrvIbGs_c@mail.gmail.com>
+	<4C0D5DCD.5010201@sandeen.net>
+	<AANLkTik1T2nJxsoK9UGIVy6q6pfSxniFfJXJY0InmuUh@mail.gmail.com>
+	<AANLkTil4FMnGl7llR4N0PkXuNyEClQmTspNK6PT62PAi@mail.gmail.com>
+	<889B6B31-A1F0-438D-B782-DBB855912854@sandeen.net>
+	<AANLkTilrmEnLrxRSYNnwr8vFaZi7R9U5vY39NmBWUEMy@mail.gmail.com>
+	<C4177A0B-9A74-40E6-9A58-64418034232C@sandeen.net>
+	<AANLkTinzZkN9agekI5eqzA9hERsghI7yDJyAy1O755dr@mail.gmail.com>
+Date: Mon, 7 Jun 2010 20:14:06 -0600
+Message-ID: <AANLkTik4BmOSZ9xqsMcMVN_fkB79ySGQVVK56i1xUmFt@mail.gmail.com>
+Subject: Fwd: EXT3 File System Corruption 2.6.34
+From: Jeffrey Merkey <jeffmerkey@gmail.com>
+To: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 08, 2010 at 09:23:50AM +1000, Dave Chinner wrote:
-> On Mon, Jun 07, 2010 at 05:59:25PM -0400, Josef Bacik wrote:
-> > On Mon, Jun 07, 2010 at 05:36:31PM -0400, Josef Bacik wrote:
-> > > On Mon, Jun 07, 2010 at 11:05:42AM +1000, Dave Chinner wrote:
-> > > > On Thu, Jun 03, 2010 at 11:30:30PM -0600, Jeffrey Merkey wrote:
-> > > > > causes the FS Thaw stuff in fs/buffer.c to enter an infinite loop
-> > > > > filling the /var/log/messages with junk and causing the hard drive to
-> > > > > crank away endlessly.
-> > > > 
-> > > > Hmmm, looks pretty obvious what the 2.6.34 bug is:
-> > > > 
-> > > >         while (sb->s_bdev && !thaw_bdev(sb->s_bdev, sb))
-> > > >                 printk(KERN_WARNING "Emergency Thaw on %s\n",
-> > > >                        bdevname(sb->s_bdev, b));
-> > > > 
-> > > > thaw_bdev() returns 0 on success or not frozen, and returns non-zero
-> > > > only if the unfreeze failed. Looks like it was broken from the start
-> > > > to me.
-> > > > 
-> > > > Fixing that endless loop shows some other problems on 2.6.35,
-> > > > though: the emergency unfreeze is not unfreezing frozen XFS
-> > > > filesystems.  This appears to be caused by
-> > > > 18e9e5104fcd9a973ffe3eed3816c87f2a1b6cd2 ("Introduce freeze_super
-> > > > and thaw_super for the fsfreeze ioctl").
-> > > > 
-> > > > It appears that this introduces a significant mismatch between the
-> > > > bdev freeze/thaw and the super freze/thaw. That is, if you freeze
-> > > > with the sb method, you can only unfreeze via the sb method.
-> > > > however, if you freeze via the bdev method, you can unfreeze by
-> > > > either the bdev or sb method.  This breaks the nesting of the
-> > > > freeze/thaw operations between dm and userspace, which can lead to
-> > > > premature thawing of the filesystem.
-> > > > 
-> > > > Then there is this deadlock:
-> > > > 
-> > > > iterate_supers(do_thaw_one) does:
-> > > > 
-> > > > 	down_read(&sb->s_umount);
-> > > > 	do_thaw_one(sb)
-> > > > 	  thaw_bdev(sb->s_bdev, sb))
-> > > > 	    thaw_super(sb)
-> > > > 	      down_write(&sb->s_umount);
-> > > > 
-> > > > Which is an instant deadlock.
-> > > > 
-> > > > These problems were hidden by the fact that the emergency thaw code
-> > > > was not getting past the thaw_bdev guards and so not triggering
-> > > > this deadlock.
-> > > > 
-> > > > Al, Josef, what's the best way to fix this mess?
-> > > > 
-> > > 
-> > > Well we can do something like the following
-> > > 
-> > > 1) Make a __thaw_super() that just does all the work currently in thaw_super(),
-> > > just without taking the s_umount semaphore.
-> > > 2) Make an thaw_bdev_force or something like that that just sets
-> > > bd_fsfreeze_count to 0 and calls __thaw_super().  The original intent was to
-> > > make us call thaw until the thaw actually occured, so might as well just make it
-> > > quick and painless.
-> 
-> Makes sense.  Only problem I can see for emergency thaws is that
-> we'd call __thaw_super() under a down_read(&sb->s_umount) instead of
-> the down_write(&sb->s_umount) lock we are currently supposed to hold
-> for it. I don't think this is a problem because thaw_bdev is
-> serialised by the bd_fsfreeze_mutex and it would still lock out new
-> cals to freeze_super.
-> 
+---------- Forwarded message ----------
+From: Jeffrey Merkey <jeffmerkey@gmail.com>
+Date: Mon, Jun 7, 2010 at 8:13 PM
+Subject: Re: EXT3 File System Corruption 2.6.34
+To: Eric Sandeen <sandeen@sandeen.net>
 
-Urgh yeah you're right.
 
-> > > 3) Make do_thaw_one() call __thaw_super if sb->s_bdev doesn't exist.  I'm not
-> > > sure if this happens currently, but it's nice just in case.
-> 
-> It doesn't happen currently, not sure what sort of kaboom might
-> occur if we do :/
-> 
-> What about btrfs - wasn't freeze/thaw_super added so it could
-> avoid the bdev interfaces as s_bdev is not reliable? Doesn't that
-> mean we need to call thaw_super() in that case, even though we have
-> a non-null sb->s_bdev?
-> 
+Well, I will set this as default from now on.  Tell Evil Emperor Linus
+to put the fucking thing back the way it was so default kernel builds
+are not fucked up.
 
-Yeah, thats why I made it unconditionally call thaw_super(), it should work out
-fine for btrfs.
+Jeff
 
-> > > This takes care of the s_umount problem and makes sure that do_thaw_one does
-> > > actually thaw the device.  Does this sound kosher to everybody?  Thanks,
-> 
-> It will fix the emergency thaw problems, I think, but it doesn't
-> solve the nesting problem. i.e.  freeze_bdev, followed by
-> ioctl_fsfreeze(), followed by ioctl_fsthaw() will result in the
-> filesystem being unfrozen while the caller for freeze_bdev (e.g.
-> dm-snapshot) still needs the filesystem to be frozen.
-> 
-> Basically the change to the ioctls to call freeze/thaw_super() is
-> the problem here - to work with dm-snapshot corectly they need to
-> call freeze/thaw_bdev.  Perhaps we need some other way of signalling
-> whether to use the bdev or sb level freeze/thaw interface as I think
-> it needs to be consistent across a given superblock (dm, ioctl, fs
-> and emergency thaw), not a mix of both...
-> 
+here is the source to the xdump.c file.  may be useful in the future
+to someone who needs a tool to dump files to post to the list.  Anyway
+-- easier to use than that fucking hexedit program.
 
-Well damnit.  I guess what we need to do is get rid of the freeze_bdev/thaw_bdev
-interface altogether, and move the count stuff down to the super.  Anybody who
-calls freeze_bdev/thaw_bdev knows the sb anyway, so if we get rid of
-bd_fsfreeze_count and move it to sb->s_fsfreeze_count and do the same with
-bd_fsfreeze_mutex then we could solve this altogether and simplify the
-interface.  It grows the sb struct, but hey it shrinks the bdev struct :).  How
-horrible of an idea is that?  Thanks,
+:-)
 
-Josef
+// Released under GPLv2 or whatever fucking version you like
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <fcntl.h>
+
+unsigned char *dumpAsBytes(unsigned char *p, unsigned long size,
+unsigned long base)
+{
+  register unsigned long i, r, total, count;
+  register unsigned char *op = p;
+
+  count = size / 16;
+
+  printf("           0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F\n");
+
+  for (r=0; r < count; r++)
+  {
+     printf("%08X ", (p - op) + base);
+     for (total = 0, i=0; i < 16; i++, total++)
+     {
+        printf(" %02X", (unsigned char) p[i]);
+     }
+     printf("  ");
+     for (i=0; i < total; i++)
+     {
+        if (p[i] < 32 || p[i] > 126)
+           printf(".");
+        else printf("%c", p[i]);
+     }
+     printf("\n");
+
+     p = (void *)((unsigned long) p + (unsigned long) total);
+  }
+  return p;
+
+}
+
+unsigned char *dumpAsLong(unsigned char *p, unsigned long size,
+unsigned long base)
+{
+  register int i, r, count;
+  register unsigned char *op = p;
+  unsigned long *lp;
+
+  count = size / 16;
+
+  lp = (unsigned long *) p;
+
+  for (r=0; r < count; r++)
+  {
+     printf("%08X ", (p - op) + base);
+     for (i=0; i < (16 / 4); i++)
+     {
+        printf(" %08X", (unsigned long) lp[i]);
+     }
+     printf("  ");
+     for (i=0; i < 16; i++)
+     {
+        if (p[i] < 32 || p[i] > 126) printf(".");
+        else printf("%c", p[i]);
+     }
+     printf("\n");
+
+     p = (void *)((unsigned long) p + (unsigned long) 16);
+     lp = (unsigned long *) p;
+  }
+  return p;
+
+}
+
+int getch(void)
+{
+  return getc(stdin);
+}
+
+unsigned long pause(void)
+{
+  extern int getch(void);
+  register unsigned long key;
+
+  printf(" --- More --- ");
+  key = getch();
+  printf("%c              %c", '\r', '\r');
+  if (key == 0x1B) // ESCAPE
+     return 1;
+  else
+     return 0;
+
+}
+unsigned char buffer[512];
+
+
+int main(int argc, char *argv[])
+{
+   unsigned long rc, total = 0, offset = 0;
+   register int fp;
+
+   if (argc < 2)
+   {
+      printf("USAGE:  dump <filename.ext> <offset>\n");
+      return 1;
+   }
+
+   if (argc == 3)
+      offset = atol(argv[2]);
+
+
+   fp = open(argv[1], O_RDWR);
+   if (fp < 0)
+   {
+      printf("error opening file [%s]\n", argv[1]);
+      return 1;
+   }
+
+   rc = lseek(fp, offset, SEEK_SET);
+   if (rc == -1)
+   {
+      printf("error seeking file offset %d\n", offset);
+      return 1;
+   }
+
+   total = offset;
+   while (rc = read(fp, buffer, 256))
+   {
+      dumpAsBytes(buffer, rc, total);
+      total += rc;
+
+      if (pause())
+         break;
+   }
+
+   close(fp);
+   return 0;
+}
