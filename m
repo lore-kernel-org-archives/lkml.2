@@ -1,67 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754133Ab0FHHPj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jun 2010 03:15:39 -0400
-Received: from mtagate1.de.ibm.com ([195.212.17.161]:35988 "EHLO
-	mtagate1.de.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752979Ab0FHHPh (ORCPT
+	id S1754198Ab0FHHQq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jun 2010 03:16:46 -0400
+Received: from daytona.panasas.com ([67.152.220.89]:37265 "EHLO
+	daytona.int.panasas.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752979Ab0FHHQn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jun 2010 03:15:37 -0400
-Date: Tue, 8 Jun 2010 09:15:35 +0200
-From: Christof Schmitt <christof.schmitt@de.ibm.com>
-To: "Martin K. Petersen" <martin.petersen@oracle.com>
-Cc: Boaz Harrosh <bharrosh@panasas.com>, Dave Chinner <david@fromorbit.com>,
-       linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
-       linux-fsdevel@vger.kernel.org
-Subject: Re: Wrong DIF guard tag on ext2 write
-Message-ID: <20100608071534.GA3263@schmichrtp.mainz.de.ibm.com>
-References: <yq1iq64kv9f.fsf@sermon.lab.mkp.net>
- <20100531144648.GA19068@schmichrtp.mainz.de.ibm.com>
- <yq11vcqlwp8.fsf@sermon.lab.mkp.net>
- <20100602133748.GA11196@schmichrtp.mainz.de.ibm.com>
- <20100602232039.GA8287@dastard>
- <yq139x3y411.fsf@sermon.lab.mkp.net>
- <20100604023253.GF19651@dastard>
- <yq1zkz6vmpu.fsf@sermon.lab.mkp.net>
- <4C0D2AD4.2020303@panasas.com>
- <yq1sk4yvj0a.fsf@sermon.lab.mkp.net>
+	Tue, 8 Jun 2010 03:16:43 -0400
+Message-ID: <4C0DEE57.1070505@panasas.com>
+Date: Tue, 08 Jun 2010 10:16:39 +0300
+From: Boaz Harrosh <bharrosh@panasas.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-2.fc12 Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <yq1sk4yvj0a.fsf@sermon.lab.mkp.net>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+To: Paul Mundt <lethal@linux-sh.org>
+CC: David Rientjes <rientjes@google.com>, Ingo Molnar <mingo@elte.hu>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       Frans Pop <elendil@planet.nl>, Dirk Hohndel <hohndel@infradead.org>,
+       Len Brown <lenb@kernel.org>,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH, v2] kbuild: Improve version string logic - two for the
+ price of one - No thanks
+References: <alpine.LFD.2.01.0910060815320.3432@localhost.localdomain> <20091006153632.GA29795@elte.hu> <alpine.LFD.2.01.0910060843560.3432@localhost.localdomain> <alpine.LFD.2.01.0910060925490.3432@localhost.localdomain> <20091006173508.GA4786@elte.hu> <20091012195733.GA7351@elte.hu> <4C0D29DE.6050602@panasas.com> <alpine.DEB.2.00.1006071242510.30389@chino.kir.corp.google.com> <4C0DDAA6.8080002@panasas.com> <alpine.DEB.2.00.1006072311170.31780@chino.kir.corp.google.com> <20100608063419.GF6376@linux-sh.org> <4C0DE5AC.1090204@panasas.com>
+In-Reply-To: <4C0DE5AC.1090204@panasas.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 08 Jun 2010 07:16:42.0582 (UTC) FILETIME=[8BA73760:01CB06DA]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 07, 2010 at 01:40:21PM -0400, Martin K. Petersen wrote:
-> >>>>> "Boaz" == Boaz Harrosh <bharrosh@panasas.com> writes:
+On 06/08/2010 09:39 AM, Boaz Harrosh wrote:
+> On 06/08/2010 09:34 AM, Paul Mundt wrote:
+>> On Mon, Jun 07, 2010 at 11:18:42PM -0700, David Rientjes wrote:
+>>> On Tue, 8 Jun 2010, Boaz Harrosh wrote:
+>>>
+>>>>>> I already have my:
+>>>>>>  VERSION = 2
+>>>>>>  PATCHLEVEL = 6
+>>>>>>  SUBLEVEL = 35
+>>>>>> -EXTRAVERSION = -rc2
+>>>>>> +EXTRAVERSION = -rc2-my_tree
+>>>>>>
+>>>>>
+>>>>> You shouldn't be using EXTRAVERSION for this purpose, you should be 
+>>>>> passing LOCALVERSION=my_tree to make.
+>>>>>
+>>>>
+>>>> That will not work because the way I run make is out of my control. Every
+>>>> one in the working group has his system. The Makefile is part of the
+>>>> public git tree, so every one will get the same identification without
+>>>> any confusion with Vanilla kernel, or what was compiled.
+>>>>
+>>>
+>>> If everyone using that tree wants the same version string for that kernel, 
+>>> use CONFIG_LOCALVERSION="-my_tree" in your .config and use "make 
+>>> LOCALVERSION=".
+>>>
+>> Or just distribute a localversion-my_tree file in the top-level directory
+>> like other trees do. This doesn't strike me as a particularly significant
+>> problem.
 > 
-> Boaz> Do you remember some performance numbers that show degradation /
-> Boaz> sameness?
-> 
-> Boaz> What type of work loads?
-> 
-> I haven't been using XFS much for over a year.  I'm using an internal
-> async I/O tool and btrfs for most of my DIX/DIF testing these days.
-> 
-> But my original changes were along the lines of what Jan mentioned
-> earlier (hooking into page_mkwrite and waiting for writeback.  I could
-> have sworn that I only did it for ext[23] and that XFS waited out of the
-> box but git proves me wrong).  Anyway, I'll try to get some benchmarking
-> happening later this week.
 
-Is there a patch with this change available somewhere? It might be
-useful to patch a kernel with this XFS change for reliable DIF/DIX
-testing.
 
-> This won't fix things completely, though.  ext2fs, for instance,
-> frequently changes metadata buffers in flight so it trips the guard
-> check in no time.
+I can't manage to work this out. Here is what I did please, what did I do wrong:
+[my-tree] $ git checkout v2.6.35-rc2
+[my-tree] $ touch localversion-my_tree
+[my-tree] $ git add localversion-my_tree; git commit; # ...
+[my-tree] $ make oldconfig
+[my-tree] $ make
+
+At my make install I still get DEPMOD 2.6.35-rc2+
+
+What else to do?
+
+Thanks
+Boaz
+
+> OK That one is actually a solution. I'll try that ASAP. If it works as expected
+> it's perfect. Even better than before
 > 
-> -- 
-> Martin K. Petersen	Oracle Linux Engineering
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-scsi" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Thanks
+> Boaz
+
