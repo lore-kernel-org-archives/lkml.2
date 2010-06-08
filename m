@@ -1,56 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753913Ab0FHG7Q (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jun 2010 02:59:16 -0400
-Received: from www.tglx.de ([62.245.132.106]:52592 "EHLO www.tglx.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753169Ab0FHG7P (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jun 2010 02:59:15 -0400
-Date: Tue, 8 Jun 2010 08:58:41 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Esben Haabendal <esbenhaabendal@gmail.com>
-cc: Esben Haabendal <eha@doredevelopment.dk>, linuxppc-dev@ozlabs.org,
-       Marc Zyngier <maz@misterjones.org>, LKML <linux-kernel@vger.kernel.org>,
-       Ingo Molnar <mingo@elte.hu>, joachim.eastwood@jotron.com,
-       Peter Zijlstra <peterz@infradead.org>,
-       David Miller <davem@davemloft.net>
-Subject: Re: [RFC][PATCH] irq: support IRQ_NESTED_THREAD with non-threaded
- interrupt handlers
-In-Reply-To: <AANLkTilPhof5cnhBCXSzKJSnWl6Vuu2fRts2pBBBNl6K@mail.gmail.com>
-Message-ID: <alpine.LFD.2.00.1006080853220.2933@localhost.localdomain>
-References: <1275686352.2970.2.camel@eha.doredevelopment.dk> <alpine.LFD.2.00.1006042343150.2933@localhost.localdomain> <AANLkTilb7---Qg1oLwzanKP1RGe04fkAXDtZzz0w9MGz@mail.gmail.com> <20100605151031.2d562268@hina.wild-wind.fr.eu.org>
- <alpine.LFD.2.00.1006051732270.2933@localhost.localdomain> <AANLkTimlSBEhl58CNuScKjxbqdTwTYgqo7vrHTcd1x9G@mail.gmail.com> <alpine.LFD.2.00.1006051915290.2933@localhost.localdomain> <AANLkTimcB9vRqnNYyBh6hjHXZHcmFvw72MZUEIGfeexq@mail.gmail.com>
- <alpine.LFD.2.00.1006052155100.2933@localhost.localdomain> <AANLkTik2so7osQJFq6NRaIFK2GVLURVozOqSsejd1K0F@mail.gmail.com> <alpine.LFD.2.00.1006062228120.2933@localhost.localdomain> <1275914058.2818.8.camel@eha.doredevelopment.dk>
- <alpine.LFD.2.00.1006071440520.2933@localhost.localdomain> <AANLkTilPhof5cnhBCXSzKJSnWl6Vuu2fRts2pBBBNl6K@mail.gmail.com>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S1754024Ab0FHG7i (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jun 2010 02:59:38 -0400
+Received: from bld-mail17.adl2.internode.on.net ([150.101.137.102]:37965 "EHLO
+	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753327Ab0FHG7g (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Jun 2010 02:59:36 -0400
+Date: Tue, 8 Jun 2010 16:59:22 +1000
+From: Dave Chinner <david@fromorbit.com>
+To: Nick Piggin <npiggin@suse.de>
+Cc: torvalds@linux-foundation.org, linux-fsdevel@vger.kernel.org,
+       linux-kernel@vger.kernel.org, xfs@oss.sgi.com,
+       akpm@linux-foundation.org
+Subject: Re: [PATCH 6/6] writeback: limit write_cache_pages integrity
+ scanning to current EOF
+Message-ID: <20100608065922.GA7869@dastard>
+References: <1275957487-23633-1-git-send-email-david@fromorbit.com>
+ <1275957487-23633-7-git-send-email-david@fromorbit.com>
+ <20100608053831.GR26335@laptop>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100608053831.GR26335@laptop>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 7 Jun 2010, Esben Haabendal wrote:
-
-> On Mon, Jun 7, 2010 at 5:06 PM, Thomas Gleixner <tglx@linutronix.de> wrote:
+On Tue, Jun 08, 2010 at 03:38:31PM +1000, Nick Piggin wrote:
+> On Tue, Jun 08, 2010 at 10:38:07AM +1000, Dave Chinner wrote:
+> > From: Dave Chinner <dchinner@redhat.com>
+> > 
+> > sync can currently take a really long time if a concurrent writer is
+> > extending a file. The problem is that the dirty pages on the address
+> > space grow in the same direction as write_cache_pages scans, so if
+> > the writer keeps ahead of writeback, the writeback will not
+> > terminate until the writer stops adding dirty pages.
+> > 
+> > For a data integrity sync, we only need to write the pages dirty at
+> > the time we start the writeback, so we can stop scanning once we get
+> > to the page that was at the end of the file at the time the scan
+> > started.
+> > 
+> > This will prevent operations like copying a large file preventing
+> > sync from completing as it will not write back pages that were
+> > dirtied after the sync was started. This does not impact the
+> > existing integrity guarantees, as any dirty page (old or new)
+> > within the EOF range at the start of the scan will still be
+> > captured.
+> > 
+> > This patch will not prevent sync from blocking on large writes into
+> > holes.
 > 
-> > Maybe you understand now, why I was pretty sure upfront, that your
-> > approach was wrong even without knowing all the gory details ? :)
+> The writes don't have to be into holes to cause this starvation
+> problem, do they?
+
+No, they don't.
+
+> > That requires more complex intervention while this patch only
+> > addresses the common append-case of this sync holdoff.
 > 
-> I understand.  There is a better solution, which is to use threaded
-> interrupts where needed.
+> Jan's tagging patch looks pretty good to me and isn't so complex.
+> I think we should just take that.
 
-FWIW, it just occured to me, that the only reason why the
-disable_irq_nosysnc() trips up on the in_atomic() check is your
-fiddling with the nested irq dispatcher. 
+I don't care which one we take as long as it is actually tested by
+more than the submitter and we get everything in for 2.6.35...
 
-If you just would have changed the phy driver to
-request_irq_any_context() it would have simply worked out of the box,
-without any need to remove buslock and changing genirq code at all.
+Cheers,
 
-That would not give you the advantage of getting rid of the two
-additional I2C transfers, but that's nn optimzation not a functional
-requirement.
-
-Thanks,
-
-	tglx
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
