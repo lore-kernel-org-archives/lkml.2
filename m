@@ -1,191 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752315Ab0FHCOK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jun 2010 22:14:10 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:60393 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751517Ab0FHCOI convert rfc822-to-8bit (ORCPT
+	id S1752204Ab0FHCRG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jun 2010 22:17:06 -0400
+Received: from lennier.cc.vt.edu ([198.82.162.213]:38685 "EHLO
+	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750897Ab0FHCRE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jun 2010 22:14:08 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :content-type:content-transfer-encoding;
-        b=ap9q1hvLvTzF4TB3/CiY6L9Sj6e5xvnPjH7NGJLKfTUe47fXojXnHwbN8F3WOlZyJP
-         NyE8p2sNyxwhtB0ekDgWUHhb5wxYZcGsARgZuqXIlrKtUqoDuJ4wCrAzKDRvl1bhm26w
-         CeocQpGaleuYAbQ+wvdDDlgvHvuTsPqXG1twQ=
-MIME-Version: 1.0
-In-Reply-To: <AANLkTinzZkN9agekI5eqzA9hERsghI7yDJyAy1O755dr@mail.gmail.com>
-References: <AANLkTinQatQEYahpkN3bT-S5C41HqRoH--gTrvIbGs_c@mail.gmail.com>
-	<4C0D5DCD.5010201@sandeen.net>
-	<AANLkTik1T2nJxsoK9UGIVy6q6pfSxniFfJXJY0InmuUh@mail.gmail.com>
-	<AANLkTil4FMnGl7llR4N0PkXuNyEClQmTspNK6PT62PAi@mail.gmail.com>
-	<889B6B31-A1F0-438D-B782-DBB855912854@sandeen.net>
-	<AANLkTilrmEnLrxRSYNnwr8vFaZi7R9U5vY39NmBWUEMy@mail.gmail.com>
-	<C4177A0B-9A74-40E6-9A58-64418034232C@sandeen.net>
-	<AANLkTinzZkN9agekI5eqzA9hERsghI7yDJyAy1O755dr@mail.gmail.com>
-Date: Mon, 7 Jun 2010 20:14:06 -0600
-Message-ID: <AANLkTik4BmOSZ9xqsMcMVN_fkB79ySGQVVK56i1xUmFt@mail.gmail.com>
-Subject: Fwd: EXT3 File System Corruption 2.6.34
-From: Jeffrey Merkey <jeffmerkey@gmail.com>
-To: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Mon, 7 Jun 2010 22:17:04 -0400
+X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.2
+To: Linus Walleij <linus.ml.walleij@gmail.com>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+       Brian Swetland <swetland@google.com>,
+       Christoph Hellwig <hch@infradead.org>,
+       James Bottomley <James.Bottomley@suse.de>,
+       Thomas Gleixner <tglx@linutronix.de>,
+       Alan Cox <alan@lxorguk.ukuu.org.uk>,
+       Florian Mickler <florian@mickler.org>,
+       Vitaly Wool <vitalywool@gmail.com>, Arve Hj?nnev?g <arve@android.com>,
+       Arjan van de Ven <arjan@infradead.org>, tytso@mit.edu,
+       "H. Peter Anvin" <hpa@zytor.com>, LKML <linux-kernel@vger.kernel.org>,
+       Neil Brown <neilb@suse.de>,
+       Linux PM <linux-pm@lists.linux-foundation.org>,
+       Ingo Molnar <mingo@elte.hu>,
+       Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       Felipe Balbi <felipe.balbi@nokia.com>, hackbod@android.com
+Subject: Re: [linux-pm] suspend blockers & Android integration
+In-Reply-To: Your message of "Tue, 08 Jun 2010 01:17:13 +0200."
+             <AANLkTik-0JRJTEbVkr4LUsnELRuqpmGYrRsMxVZDpz8C@mail.gmail.com>
+From: Valdis.Kletnieks@vt.edu
+References: <1275834706.7227.545.camel@mulgrave.site> <alpine.LFD.2.00.1006061725000.2933@localhost.localdomain> <1275844114.7227.552.camel@mulgrave.site> <20100606190525.GA20517@infradead.org> <AANLkTikKx-gXCGtNo3woHLCpBoEQ7hG9Jbiq3hwUTW_w@mail.gmail.com> <20100606192405.GA7559@infradead.org> <AANLkTikA0ihlbehyyN-zQ3mN4WmlZJYBSRTYV8SbDhSr@mail.gmail.com> <1275916830.1645.566.camel@laptop>
+            <AANLkTik-0JRJTEbVkr4LUsnELRuqpmGYrRsMxVZDpz8C@mail.gmail.com>
+Mime-Version: 1.0
+Content-Type: multipart/signed; boundary="==_Exmh_1275963300_4518P";
+	 micalg=pgp-sha1; protocol="application/pgp-signature"
+Content-Transfer-Encoding: 7bit
+Date: Mon, 07 Jun 2010 22:15:00 -0400
+Message-ID: <9277.1275963300@localhost>
+X-Mirapoint-Received-SPF: 128.173.34.98 localhost Valdis.Kletnieks@vt.edu 2 pass
+X-Mirapoint-IP-Reputation: reputation=neutral-1,
+	source=Fixed,
+	refid=n/a,
+	actions=MAILHURDLE SPF TAG
+X-Junkmail-Info: (45) HELO_LOCALHOST
+X-Junkmail-Status: score=45/50, host=vivi.cc.vt.edu
+X-Junkmail-SD-Raw: score=unknown,
+	refid=str=0001.0A020201.4C0DA7A6.012F,ss=1,fgs=0,
+	ip=0.0.0.0,
+	so=2009-09-22 00:05:22,
+	dmn=2009-09-10 00:05:08,
+	mode=multiengine
+X-Junkmail-IWF: false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
----------- Forwarded message ----------
-From: Jeffrey Merkey <jeffmerkey@gmail.com>
-Date: Mon, Jun 7, 2010 at 8:13 PM
-Subject: Re: EXT3 File System Corruption 2.6.34
-To: Eric Sandeen <sandeen@sandeen.net>
+--==_Exmh_1275963300_4518P
+Content-Type: text/plain; charset=iso-8859-1
+Content-Transfer-Encoding: quoted-printable
 
+On Tue, 08 Jun 2010 01:17:13 +0200, Linus Walleij said:
 
-Well, I will set this as default from now on.  Tell Evil Emperor Linus
-to put the fucking thing back the way it was so default kernel builds
-are not fucked up.
+> So I would really like to know from the Android people why the
+> binder is in the kernel, after all. Could it *theoretically* be in
+> userspace, on top of some unix domain sockets, running as a
+> real-time scheduled daemon or whatever, still yielding the same
+> performance? Or is there some discovered limitation with current
+> interfaces, that everybody ought to know?
 
-Jeff
+Not an Android person, but...
 
-here is the source to the xdump.c file.  may be useful in the future
-to someone who needs a tool to dump files to post to the list.  Anyway
--- easier to use than that fucking hexedit program.
+How expensive is a userspace->kernel transition on Android-class hardware=
+?
+There's certainly something to be said for short-circuiting the path
+source_process -> kernel -> broker_process -> kernel -> dest_process
+down to the shorter source->kernel->dest
 
-:-)
+--==_Exmh_1275963300_4518P
+Content-Type: application/pgp-signature
 
-// Released under GPLv2 or whatever fucking version you like
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+Comment: Exmh version 2.5 07/13/2001
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <fcntl.h>
+iD8DBQFMDaekcC3lWbTT17ARAt6/AKDbDjjyziWGe4de18hkFdAqzkypvwCghfkj
+Ynyp1vcd2/PGbvCNUFucXqo=
+=gM5X
+-----END PGP SIGNATURE-----
 
-unsigned char *dumpAsBytes(unsigned char *p, unsigned long size,
-unsigned long base)
-{
-  register unsigned long i, r, total, count;
-  register unsigned char *op = p;
+--==_Exmh_1275963300_4518P--
 
-  count = size / 16;
-
-  printf("           0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F\n");
-
-  for (r=0; r < count; r++)
-  {
-     printf("%08X ", (p - op) + base);
-     for (total = 0, i=0; i < 16; i++, total++)
-     {
-        printf(" %02X", (unsigned char) p[i]);
-     }
-     printf("  ");
-     for (i=0; i < total; i++)
-     {
-        if (p[i] < 32 || p[i] > 126)
-           printf(".");
-        else printf("%c", p[i]);
-     }
-     printf("\n");
-
-     p = (void *)((unsigned long) p + (unsigned long) total);
-  }
-  return p;
-
-}
-
-unsigned char *dumpAsLong(unsigned char *p, unsigned long size,
-unsigned long base)
-{
-  register int i, r, count;
-  register unsigned char *op = p;
-  unsigned long *lp;
-
-  count = size / 16;
-
-  lp = (unsigned long *) p;
-
-  for (r=0; r < count; r++)
-  {
-     printf("%08X ", (p - op) + base);
-     for (i=0; i < (16 / 4); i++)
-     {
-        printf(" %08X", (unsigned long) lp[i]);
-     }
-     printf("  ");
-     for (i=0; i < 16; i++)
-     {
-        if (p[i] < 32 || p[i] > 126) printf(".");
-        else printf("%c", p[i]);
-     }
-     printf("\n");
-
-     p = (void *)((unsigned long) p + (unsigned long) 16);
-     lp = (unsigned long *) p;
-  }
-  return p;
-
-}
-
-int getch(void)
-{
-  return getc(stdin);
-}
-
-unsigned long pause(void)
-{
-  extern int getch(void);
-  register unsigned long key;
-
-  printf(" --- More --- ");
-  key = getch();
-  printf("%c              %c", '\r', '\r');
-  if (key == 0x1B) // ESCAPE
-     return 1;
-  else
-     return 0;
-
-}
-unsigned char buffer[512];
-
-
-int main(int argc, char *argv[])
-{
-   unsigned long rc, total = 0, offset = 0;
-   register int fp;
-
-   if (argc < 2)
-   {
-      printf("USAGE:  dump <filename.ext> <offset>\n");
-      return 1;
-   }
-
-   if (argc == 3)
-      offset = atol(argv[2]);
-
-
-   fp = open(argv[1], O_RDWR);
-   if (fp < 0)
-   {
-      printf("error opening file [%s]\n", argv[1]);
-      return 1;
-   }
-
-   rc = lseek(fp, offset, SEEK_SET);
-   if (rc == -1)
-   {
-      printf("error seeking file offset %d\n", offset);
-      return 1;
-   }
-
-   total = offset;
-   while (rc = read(fp, buffer, 256))
-   {
-      dumpAsBytes(buffer, rc, total);
-      total += rc;
-
-      if (pause())
-         break;
-   }
-
-   close(fp);
-   return 0;
-}
