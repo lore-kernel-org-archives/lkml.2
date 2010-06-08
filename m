@@ -1,124 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752899Ab0FHLDV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jun 2010 07:03:21 -0400
-Received: from sh.osrg.net ([192.16.179.4]:51283 "EHLO sh.osrg.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752007Ab0FHLDU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jun 2010 07:03:20 -0400
-Date: Tue, 8 Jun 2010 20:03:15 +0900
-To: michal.simek@petalogix.com
-Cc: fujita.tomonori@lab.ntt.co.jp, linux-kernel@vger.kernel.org
-Subject: Re: [GIT PULL] arch/microblaze fixes for 2.6.35-rc3 v2
-From: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
-In-Reply-To: <4C0E1B65.9000603@petalogix.com>
-References: <4C0D3853.60000@petalogix.com>
-	<20100608083015L.fujita.tomonori@lab.ntt.co.jp>
-	<4C0E1B65.9000603@petalogix.com>
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-Message-Id: <20100608200201I.fujita.tomonori@lab.ntt.co.jp>
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-3.0 (sh.osrg.net [192.16.179.4]); Tue, 08 Jun 2010 20:03:15 +0900 (JST)
+	id S1753009Ab0FHLOG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jun 2010 07:14:06 -0400
+Received: from DMZ-MAILSEC-SCANNER-7.MIT.EDU ([18.7.68.36]:60207 "EHLO
+	dmz-mailsec-scanner-7.mit.edu" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752431Ab0FHLOF convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Jun 2010 07:14:05 -0400
+X-AuditID: 12074424-b7b9dae000002832-ad-4c0e25fa321c
+Subject: Re: EXT3 File System Corruption 2.6.34
+Mime-Version: 1.0 (Apple Message framework v1078)
+Content-Type: text/plain; charset=us-ascii
+From: Theodore Tso <tytso@MIT.EDU>
+In-Reply-To: <AANLkTik4BmOSZ9xqsMcMVN_fkB79ySGQVVK56i1xUmFt@mail.gmail.com>
+Date: Tue, 8 Jun 2010 07:14:03 -0400
+Cc: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8BIT
+Message-Id: <7707881C-9879-4531-8DE9-EEED2F4534E5@mit.edu>
+References: <AANLkTinQatQEYahpkN3bT-S5C41HqRoH--gTrvIbGs_c@mail.gmail.com> <4C0D5DCD.5010201@sandeen.net> <AANLkTik1T2nJxsoK9UGIVy6q6pfSxniFfJXJY0InmuUh@mail.gmail.com> <AANLkTil4FMnGl7llR4N0PkXuNyEClQmTspNK6PT62PAi@mail.gmail.com> <889B6B31-A1F0-438D-B782-DBB855912854@sandeen.net> <AANLkTilrmEnLrxRSYNnwr8vFaZi7R9U5vY39NmBWUEMy@mail.gmail.com> <C4177A0B-9A74-40E6-9A58-64418034232C@sandeen.net> <AANLkTinzZkN9agekI5eqzA9hERsghI7yDJyAy1O755dr@mail.gmail.com> <AANLkTik4BmOSZ9xqsMcMVN_fkB79ySGQVVK56i1xUmFt@mail.gmail.com>
+To: Jeffrey Merkey <jeffmerkey@gmail.com>
+X-Mailer: Apple Mail (2.1078)
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 08 Jun 2010 12:28:53 +0200
-Michal Simek <michal.simek@petalogix.com> wrote:
 
-> FUJITA Tomonori wrote:
-> > On Mon, 07 Jun 2010 20:20:03 +0200
-> > Michal Simek <michal.simek@petalogix.com> wrote:
-> > 
-> >> Hi Linus,
-> >>
-> >> here are only fixes for Microblaze. There is no any new features. 
-> >> (flush_dcache_page patch fix problem on WB system)
-> >> Just note: Some new patches broke Microblaze arch that's why I would 
-> >> like to add at least these patches to your tree.
-> >>
-> >> Thanks,
-> >> Michal
-> >>
-> >>
-> >> The following changes since commit 386f40c86d6c8d5b717ef20620af1a750d0dacb4:
-> >>    Linus Torvalds (1):
-> >>          Revert "tty: fix a little bug in scrup, vt.c"
-> >>
-> >> are available in the git repository at:
-> >>
-> >>    git://git.monstr.eu/linux-2.6-microblaze.git next
-> >>
-> >> Michal Simek (7):
-> >>        microblaze: Fix __copy_to/from_user_inatomic macros
-> >>        microblaze: Sync noMMU and MMU setup_memory
-> >>        microblaze: Fix comment for TLB
-> >>        microblaze: Implement flush_dcache_page macro
-> >>        microblaze: Enable NEED_SG_DMA_LENGTH
-> > 
-> > Sorry, my scatterlist patchset breaks microblaze?
+On Jun 7, 2010, at 10:14 PM, Jeffrey Merkey wrote:
+
+> From: Jeffrey Merkey <jeffmerkey@gmail.com>
+> Date: Mon, Jun 7, 2010 at 8:13 PM
+> Subject: Re: EXT3 File System Corruption 2.6.34
+> To: Eric Sandeen <sandeen@sandeen.net>
 > 
-> yes, it does.
-> http://www.monstr.eu/wiki/doku.php?id=log:2010-06-07_12_23_12#folded_17
-
-Sorry about that.
-
-
-> > Seems that microblaze can simply remove sg->dma_length instead of
-> > enabling NEED_SG_DMA_LENGTH. If sg->dma_length is always equal to
-> > sg->length on your architecture, you don't need to waste memory for
-> > sg->dma_length.
 > 
-> Please correct me if I am wrong. dma_length is used for 64bit machines.
+> Well, I will set this as default from now on.  Tell Evil Emperor Linus
+> to put the fucking thing back the way it was so default kernel builds
+> are not fucked up.
 
-dma_length is used for 32bit machines too.
+If you pull the plug without fsyncing the file, you will end up with a zero-length file -- or possibly no file at all, even with data=ordered.  If you really want to preserve data after pulling the power cord immediately after a write were the application hasn't done an fsync() or a sync() call, you can mount the file system with the mount option -o sync --- but then the performance will be horrible.
 
-dma_length is necessary if sg->dma_length can be different to
-sg->length, that is, some IOMMU implementations merge several sg
-entries to one sg entry.
+It's all a tradeoff of what you think is important....
 
-There are not many 32bit architectures that support an IOMMU so
-NEED_SG_DMA_LENGTH is usually used on 64bit archs though.
-
-
-> Microblaze is "only" 32bit.
-> 
-> Can you please generate proper patch?
-
-Sure. With this patch, you don't need to enable NEED_SG_DMA_LENGTH.
-
-=
-From: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
-Subject: [PATCH] microblaze: fix sg_dma_len() regression
-
-The commit 8e98307de0d746cb0845ebf66535ce2184c25a2 broke microblaze.
-
-dma_direct_map_sg() sets sg->dma_length, however microblaze doesn't
-set NEED_SG_DMA_LENGTH so scatterlist strcutres doesn't include
-dma_length.
-
-sg->dma_length is always equal to sg->length on microblaze. So we
-don't need to set set dma_length, that is, microblaze can simply use
-sg->length.
-
-Signed-off-by: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
----
- arch/microblaze/kernel/dma.c |    1 -
- 1 files changed, 0 insertions(+), 1 deletions(-)
-
-diff --git a/arch/microblaze/kernel/dma.c b/arch/microblaze/kernel/dma.c
-index 9dcd90b..79c7465 100644
---- a/arch/microblaze/kernel/dma.c
-+++ b/arch/microblaze/kernel/dma.c
-@@ -90,7 +90,6 @@ static int dma_direct_map_sg(struct device *dev, struct scatterlist *sgl,
- 	/* FIXME this part of code is untested */
- 	for_each_sg(sgl, sg, nents, i) {
- 		sg->dma_address = sg_phys(sg) + get_dma_direct_offset(dev);
--		sg->dma_length = sg->length;
- 		__dma_sync_page(page_to_phys(sg_page(sg)), sg->offset,
- 							sg->length, direction);
- 	}
--- 
-1.6.5
+-- Ted
 
