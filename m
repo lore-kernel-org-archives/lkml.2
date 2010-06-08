@@ -1,30 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756268Ab0FHUOR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jun 2010 16:14:17 -0400
+	id S1756296Ab0FHUOT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jun 2010 16:14:19 -0400
 Received: from mail-ww0-f46.google.com ([74.125.82.46]:53323 "EHLO
 	mail-ww0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755723Ab0FHUOO (ORCPT
+	with ESMTP id S1756114Ab0FHUOQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jun 2010 16:14:14 -0400
+	Tue, 8 Jun 2010 16:14:16 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=from:to:cc:subject:date:message-id:x-mailer:x-mailer-version
          :in-reply-to:references;
-        b=rUzNVgqIXvybhX1q9xYLyumVrOT2A++d0BuXLfRrnJ0Ew0b/LjIHEGsiLhymxUDYOC
-         jzsXzFWzahKz26u9Or5O0VSGCC95yDkyDIiBW6WTUMGSJW3+3WyNjiE87SwK+Fv3OslO
-         x9pBywsd3SG/rL7WtoWpQ+LF/mAYH9RT4K0XQ=
+        b=xrex0qfKM1VaVBPxTiFLKwavZNbxYWHgaXKNSjRpnoQqaKqhSlItgs4OFOELgVhsTX
+         lHEC1SLk0PY/MS288/Z3uZxpqxNOsx7U60EU6kAD1kYHL+0UxtbAUTSFVBZ/4A9yfA6y
+         iKCetpT4qeCVZM2GGacjD4olhrbxppk43Qt10=
 From: Frederic Weisbecker <fweisbec@gmail.com>
 To: Ingo Molnar <mingo@elte.hu>
 Cc: LKML <linux-kernel@vger.kernel.org>, Oleg Nesterov <oleg@redhat.com>,
        Roland McGrath <roland@redhat.com>,
        Arjan van de Ven <arjan@linux.intel.com>,
        Vegard Nossum <vegard.nossum@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-       Andrew Morton <akpm@linux-foundation.org>,
        Frederic Weisbecker <fweisbec@gmail.com>
-Subject: [PATCH 1/2] x86: Make save_stack_address() !CONFIG_FRAME_POINTER friendly
-Date: Tue,  8 Jun 2010 22:13:42 +0200
-Message-Id: <1276028023-23122-2-git-send-regression-fweisbec@gmail.com>
+Subject: [PATCH 2/2] x86: Unify save_stack_address() and save_stack_address_nosched()
+Date: Tue,  8 Jun 2010 22:13:43 +0200
+Message-Id: <1276028023-23122-3-git-send-regression-fweisbec@gmail.com>
 X-Mailer: git-send-regression
 X-Mailer-version: 0.1, "The maintainer couldn't reproduce after one week full time debugging" special version.
 In-Reply-To: <1276028023-23122-1-git-send-regression-fweisbec@gmail.com>
@@ -35,57 +34,71 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Oleg Nesterov <oleg@redhat.com>
 
-If CONFIG_FRAME_POINTER=n, print_context_stack() shouldn't neglect the
-non-reliable addresses on stack, this is all we have if dump_trace(bp)
-is called with the wrong or zero bp.
-
-For example, /proc/pid/stack doesn't work if CONFIG_FRAME_POINTER=n.
-
-This patch obviously has no effect if CONFIG_FRAME_POINTER=y, otherwise
-it reverts 1650743c "x86: don't save unreliable stack trace entries".
-
-Also, remove the unnecessary type-cast.
+Cleanup. Factor the common code in save_stack_address() and
+save_stack_address_nosched().
 
 Signed-off-by: Oleg Nesterov <oleg@redhat.com>
 Cc: Roland McGrath <roland@redhat.com>
 Cc: Arjan van de Ven <arjan@linux.intel.com>
 Cc: Vegard Nossum <vegard.nossum@gmail.com>
 Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-LKML-Reference: <20100603193239.GA31530@redhat.com>
+LKML-Reference: <20100603193243.GA31534@redhat.com>
 Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
 ---
- arch/x86/kernel/stacktrace.c |    6 +++++-
- 1 files changed, 5 insertions(+), 1 deletions(-)
+ arch/x86/kernel/stacktrace.c |   24 ++++++++++--------------
+ 1 files changed, 10 insertions(+), 14 deletions(-)
 
 diff --git a/arch/x86/kernel/stacktrace.c b/arch/x86/kernel/stacktrace.c
-index ea54d02..abc321d 100644
+index abc321d..b53c525 100644
 --- a/arch/x86/kernel/stacktrace.c
 +++ b/arch/x86/kernel/stacktrace.c
-@@ -26,8 +26,10 @@ static int save_stack_stack(void *data, char *name)
- static void save_stack_address(void *data, unsigned long addr, int reliable)
+@@ -23,13 +23,16 @@ static int save_stack_stack(void *data, char *name)
+ 	return 0;
+ }
+ 
+-static void save_stack_address(void *data, unsigned long addr, int reliable)
++static void
++__save_stack_address(void *data, unsigned long addr, bool reliable, bool nosched)
  {
  	struct stack_trace *trace = data;
-+#ifdef CONFIG_FRAME_POINTER
+ #ifdef CONFIG_FRAME_POINTER
  	if (!reliable)
  		return;
-+#endif
+ #endif
++	if (nosched && in_sched_functions(addr))
++		return;
  	if (trace->skip > 0) {
  		trace->skip--;
  		return;
-@@ -39,9 +41,11 @@ static void save_stack_address(void *data, unsigned long addr, int reliable)
+@@ -38,22 +41,15 @@ static void save_stack_address(void *data, unsigned long addr, int reliable)
+ 		trace->entries[trace->nr_entries++] = addr;
+ }
+ 
++static void save_stack_address(void *data, unsigned long addr, int reliable)
++{
++	return __save_stack_address(data, addr, reliable, false);
++}
++
  static void
  save_stack_address_nosched(void *data, unsigned long addr, int reliable)
  {
--	struct stack_trace *trace = (struct stack_trace *)data;
-+	struct stack_trace *trace = data;
-+#ifdef CONFIG_FRAME_POINTER
- 	if (!reliable)
- 		return;
-+#endif
- 	if (in_sched_functions(addr))
- 		return;
- 	if (trace->skip > 0) {
+-	struct stack_trace *trace = data;
+-#ifdef CONFIG_FRAME_POINTER
+-	if (!reliable)
+-		return;
+-#endif
+-	if (in_sched_functions(addr))
+-		return;
+-	if (trace->skip > 0) {
+-		trace->skip--;
+-		return;
+-	}
+-	if (trace->nr_entries < trace->max_entries)
+-		trace->entries[trace->nr_entries++] = addr;
++	return __save_stack_address(data, addr, reliable, true);
+ }
+ 
+ static const struct stacktrace_ops save_stack_ops = {
 -- 
 1.6.2.3
 
