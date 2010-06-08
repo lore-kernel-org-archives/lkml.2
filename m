@@ -1,165 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756400Ab0FIBQK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jun 2010 21:16:10 -0400
-Received: from mail.lang.hm ([64.81.33.126]:54306 "EHLO bifrost.lang.hm"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751810Ab0FIBQH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jun 2010 21:16:07 -0400
-Date: Tue, 8 Jun 2010 18:14:56 -0700 (PDT)
-From: david@lang.hm
-X-X-Sender: dlang@asgard.lang.hm
-To: Florian Mickler <florian@mickler.org>
-cc: Vitaly Wool <vitalywool@gmail.com>, Brian Swetland <swetland@google.com>,
-       =?ISO-8859-15?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>,
-       Arjan van de Ven <arjan@infradead.org>, tytso@mit.edu,
-       Peter Zijlstra <peterz@infradead.org>, "H. Peter Anvin" <hpa@zytor.com>,
-       LKML <linux-kernel@vger.kernel.org>, Neil Brown <neilb@suse.de>,
-       James Bottomley <James.Bottomley@suse.de>,
-       Alan Cox <alan@lxorguk.ukuu.org.uk>,
-       Linux PM <linux-pm@lists.linux-foundation.org>,
-       Ingo Molnar <mingo@elte.hu>,
-       Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       Thomas Gleixner <tglx@linutronix.de>,
-       Felipe Balbi <felipe.balbi@nokia.com>
-Subject: Re: [linux-pm] suspend blockers & Android integration
-In-Reply-To: <20100607141624.3d004db2@schatten.dmk.lab>
-Message-ID: <alpine.DEB.2.01.1006081759150.17462@asgard.lang.hm>
-References: <20100603193045.GA7188@elte.hu> <20100604083423.GD15181@elte.hu> <AANLkTinQyzzeF-NOAjrAqqQXqKjFJhx85nI4uyBGRtWd@mail.gmail.com> <1275653210.27810.39762.camel@twins> <AANLkTinyjBa0KYfFz3_EFbC65hoQFwFINlTDYjCe-wM3@mail.gmail.com>
- <1275731653.27810.41078.camel@twins> <20100605092851.6ee15f13@infradead.org> <AANLkTimEwznq9c_8lkuBMxEQ-42rdvpZEqA9Y71Cu-qC@mail.gmail.com> <AANLkTimKknOurmCffOpHjc1FjrP2MKf10pBwEEbLJPg_@mail.gmail.com> <AANLkTil1NCX91bWhpXHtC88Opr29mNjdhXD9RXQ6DI0y@mail.gmail.com>
- <AANLkTin1Za3GvfIKbcZdx6TzjIHzCvsg5uaY_Vk4nJIh@mail.gmail.com> <AANLkTilQ1k78dDCYadOa1Wiyjm2nsBcRpxwdpGvYcf8z@mail.gmail.com> <AANLkTin7oM3gVwHbIHWqYV8yeC6bbQ4q2jDDxAgz3DwQ@mail.gmail.com> <alpine.DEB.2.01.1006060305060.17462@asgard.lang.hm>
- <AANLkTinW-X5m85rUcqP-lrEdfBikVclJWgqiWDkpxnAc@mail.gmail.com> <20100606124949.539fa636@schatten.dmk.lab> <alpine.DEB.2.01.1006060410050.17462@asgard.lang.hm> <20100607141624.3d004db2@schatten.dmk.lab>
-User-Agent: Alpine 2.01 (DEB 1266 2009-07-14)
+	id S932340Ab0FHWQz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jun 2010 18:16:55 -0400
+Received: from out02.mta.xmission.com ([166.70.13.232]:43952 "EHLO
+	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932271Ab0FHWQc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Jun 2010 18:16:32 -0400
+To: Yuhong Bao <yuhongbao_386@hotmail.com>
+Cc: <alan@linux.intel.com>, <jacob.jun.pan@linux.intel.com>,
+       <arjan@linux.intel.com>, <linux-kernel@vger.kernel.org>,
+       <hpa@zytor.com>, <mingo@elte.hu>, <feng.tang@intel.com>,
+       <len.brown@intel.com>
+References: <1275952044-27996-1-git-send-email-jacob.jun.pan@linux.intel.com>
+	<m1631ue5ho.fsf@fess.ebiederm.org>
+	<20100607225010.342e2fab@jacob-laptop>
+	<m1631tfh1i.fsf@fess.ebiederm.org>
+	<20100608201258.6c813085@linux.intel.com>
+	<SNT125-W593A227B1D8643303EE24DC3D60@phx.gbl>
+From: ebiederm@xmission.com (Eric W. Biederman)
+Date: Tue, 08 Jun 2010 15:16:27 -0700
+In-Reply-To: <SNT125-W593A227B1D8643303EE24DC3D60@phx.gbl> (Yuhong Bao's message of "Tue\, 8 Jun 2010 13\:56\:46 -0700")
+Message-ID: <m18w6p5fwk.fsf@fess.ebiederm.org>
+User-Agent: Gnus/5.11 (Gnus v5.11) Emacs/22.2 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
+Content-Type: text/plain; charset=us-ascii
+X-XM-SPF: eid=;;;mid=;;;hst=in02.mta.xmission.com;;;ip=67.188.5.249;;;frm=ebiederm@xmission.com;;;spf=neutral
+X-SA-Exim-Connect-IP: 67.188.5.249
+X-SA-Exim-Rcpt-To: yuhongbao_386@hotmail.com, len.brown@intel.com, feng.tang@intel.com, mingo@elte.hu, hpa@zytor.com, linux-kernel@vger.kernel.org, arjan@linux.intel.com, jacob.jun.pan@linux.intel.com, alan@linux.intel.com
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-DCC: XMission; sa03 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: ;Yuhong Bao <yuhongbao_386@hotmail.com>
+X-Spam-Relay-Country: 
+X-Spam-Report: * -1.8 ALL_TRUSTED Passed through trusted hosts only via SMTP
+	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
+	* -3.0 BAYES_00 BODY: Bayesian spam probability is 0 to 1%
+	*      [score: 0.0000]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa03 1397; Body=1 Fuz1=1 Fuz2=1]
+	*  0.5 XM_Body_Dirty_Words Contains a dirty word
+	*  0.0 XM_Sft_Brands_C00 XM_Sft_Brands_C00
+	*  0.0 XM_SPF_Neutral SPF-Neutral
+	*  0.4 UNTRUSTED_Relay Comes from a non-trusted relay
+Subject: Re: [PATCH] x86/sfi: fix ioapic gsi range
+X-SA-Exim-Version: 4.2.1 (built Thu, 25 Oct 2007 00:26:12 +0000)
+X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 7 Jun 2010, Florian Mickler wrote:
+Yuhong Bao <yuhongbao_386@hotmail.com> writes:
 
-> On Sun, 6 Jun 2010 04:14:09 -0700 (PDT)
-> david@lang.hm wrote:
->
->> On Sun, 6 Jun 2010, Florian Mickler wrote:
->>
->>> On Sun, 6 Jun 2010 12:19:08 +0200
->>> Vitaly Wool <vitalywool@gmail.com> wrote:
->>>
->>>> 2010/6/6  <david@lang.hm>:
->>>>
->>>>> as an example (taken from this thread).
->>>>>
->>>>> system A needs to wake up to get a battery reading, store it and go back to
->>>>> sleep, It does so every 10 seconds. But when it does so it only runs the one
->>>>> process and then goes back to sleep.
->>>>>
->>>>> system B has the same need, but wakes up every 10 minutes. but when it does
->>>>> so it fully wakes up and this allows the mail app to power up the radio,
->>>>> connect to the Internet and start checking for new mail before oppurtunistic
->>>>> sleep shuts things down (causing the mail check to fail)
->>>>>
->>>>> System A will last considerably longer on a battery than System B.
->>>>
->>>> Exactly, thanks for pointing out the specific example :)
->>>>
->>>> ~Vitaly
->>>
->>> This does not affect suspend_blockers nor does suspend_blockers
->>> interfere with that.
->>>
->>> Suspend_blockers allow the system to suspend ("mem">/sys/power/state
->>> suspend), when the userspace decides that the device is not in use.
->>>
->>> So implementing suspend_blockers support does not impact any
->>> optimizations done to either system A nor system B.
->>
->> Actually, it does.
->>
->> system A is what's being proposed by kernel developers, where the
->> untrusted stuff is in a different cgroup and what puts the system to sleep
->> is 'normal' power management. It doesn't sleep as long, but when it wakes
->> up the untrusted stuff is still frozen, so it doesn't stay awake long, or
->> do very much.
->>
->> System B is suspend blockers where you are either awake or asleep, and
->> when you wake up you wake up fully, but oppertunistic sleep can interrupt
->> untrusted processes at any time. The system sleeps longer (as fewer things
->> can wake it), but when it wakes up it's fully awake.
->>
->> David Lang
->
-> You say, that coming back from suspend takes the system to full power
-> (and everything runs) before it begins the descend into
-> runtime-low-power?
-> But are you referring to the fact that coming back
-> from suspend starts in the zero-idle-state (i.e. "consumes extra
-> power") or that all processes run when it is not suspended?
+>> IRQ 14/15 is wrong for ATA today as its AHCI based on modern boxes
+> Not to mention even before that there was native mode IDE!In fact, XP SP1 and later support switching to native mode IDE on BIOSes supporting it as described in this document:http://www.microsoft.com/whdc/device/storage/Native-modeATA.mspx
 
-I am referring to the fact that with suspend blockers and opertunistic 
-suspend all processes start running when it's not suspended (because they 
-were all running when it was suspended)
+One of these days we may even get a system where the designers really
+care for being simple and easy to use by software.  Where all devices
+will be discoverable pci devices, and all irqs will be msi or msi-x.  No
+ioapics, no irq routing tables, just nice simple standards conformant
+hardware that we already support.
 
-If instead the system only wakes up the trusted processes to handle 
-whatever woke the system up and is then idle again, it spends less power 
-and time while awake.
+Until then I guess we get things like Moorestown which are effectively
+a reinvention of ISA based systems, with different firmware, and
+different non-standard ISA devices.  It isn't particularly fun to
+smash yet another incompatible idea into the existing infrastructure.
+The cleanups that introduce modularity, flexibility, and
+maintainability for irq handling are barely keeping ahead of new
+poorly integrated features that make the code brittle again.
 
-> Because the latter would of course (theretically) profit from the
-> framework-controlled-cgroup-freeze/thaw (with and without
-> opportunistic suspend) while the former should be a problem that
-> both opportunistic suspend as well as suspend-from-idle have. Or not?
->
-> So, here is the question I'm asking myself: If System A were to be
-> complemented by suspend_blockers, wouldn't it still be better?
-
-not neccessarily.
-
-having suspend blockers inside the kernel adds significant complexity, it's 
-worth it only if the complexity buys you enough. In this case the question 
-is if the suspend blockers would extend the sleep time enough more to 
-matter. As per my other e-mail, this is an area with rapidly diminishing 
-returns as the sleep times get longer.
-
-> With System A you could try to do a really sophisticated
-> power-management scheme and so on... but as soon as you allow 3rd-Party
-> Apps, how do you manage their cross-dependencies? I.e. you can not
-> automatically detect when App1 needs App2 to function.
-> You need to allow all 3rd-Party apps to run as a group.
->
-> So you can perhaps partition your software stack into "untrusted
-> applications" and different groups of software with audited
-> dependencies.
->
-> If one group interacts with another group (as will be the case at least
-> with the "untrusted applications" group) you have to have them both
-> running at the same time.
->
-> This really gets pretty complex. Do you really think something like
-> this is better than a simple suspend? (I.e. suspend blockers or
-> having just one group)
-
-even if all you do is have two groups (trusted and untrusted), all you 
-need to do is to watch for the interaction between these two. Put the 
-third-party apps in the untrusted group.
-
-depending on what security you have available, you may be able to define 
-more, smaller groups after using the security to make sure that there is 
-no overlap between them
-
-> Suppose you implement suspend blockers with a cgroup freeze... how do
-> you implement the freeze/thaw control?
-
-I thought the answer had been provided, one of the trusted apps implements 
-the freeze/thaw, and everything happens in userspace.
-
-> Cheers,
-> Flo
->
-> p.s.: do you see an possibility for any kind of "priority inheritance"
-> in the cgroup scheme? I don't.
-
-is there a need for it?
-
-David Lang
-
+Eric
