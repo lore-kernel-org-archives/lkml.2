@@ -1,115 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752744Ab0FHE2U (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jun 2010 00:28:20 -0400
-Received: from mail-ww0-f46.google.com ([74.125.82.46]:43087 "EHLO
-	mail-ww0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752352Ab0FHE2S convert rfc822-to-8bit (ORCPT
+	id S1751629Ab0FHEpA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jun 2010 00:45:00 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:41589 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750739Ab0FHEo7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jun 2010 00:28:18 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=djRP5uhAsvzf3VmYZcgKoSbuC7NW24xoRpggrOc0m6HqZsKY2fFC0G6D/mWmRPHS+9
-         AyWySy0Cw7ywyixcE+KdlWN5Vb/XaIZttocM8i98Pv0jn09DVIQlCqAywnkhxzDIEXiq
-         XQkzLaOJC5T86dDzvDQrJh/m1yHty1VmsgxxQ=
+	Tue, 8 Jun 2010 00:44:59 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id:
+	references:user-agent:mime-version:content-type;
+	b=rQtuZ7xVrvnyQPXwzw8molJGEedTdzIRLZn3KZCBAKXw0jMO9soJBwxwuGQzgJ+km
+	ebaiImgR3SVybXUXaHvLQ==
+Date: Mon, 7 Jun 2010 21:44:51 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Joe Perches <joe@perches.com>
+cc: Jiri Kosina <trivial@kernel.org>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 01/12] arch/cris: Remove unnecessary kmalloc casts
+In-Reply-To: <d3966486cc145e7eebdb8ee11d10ed928e2203b1.1275968594.git.joe@perches.com>
+Message-ID: <alpine.DEB.2.00.1006072143560.28717@chino.kir.corp.google.com>
+References: <cover.1275968594.git.joe@perches.com> <d3966486cc145e7eebdb8ee11d10ed928e2203b1.1275968594.git.joe@perches.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-In-Reply-To: <20100608001234.GE2387@linux.vnet.ibm.com>
-References: <AANLkTim06fRB-Kvm12v2umq8MxRxbcl3gdbNsiRTDmia@mail.gmail.com>
-	<20100608001234.GE2387@linux.vnet.ibm.com>
-Date: Tue, 8 Jun 2010 00:28:15 -0400
-Message-ID: <AANLkTikPcIzd_gQ3XVT8zdy2Gyxibx3wx_twlaxJA3cz@mail.gmail.com>
-Subject: Re: 2.6.35-rc2-git1 - lib/idr.c:605 invoked rcu_dereference_check() 
-	without protection!
-From: Miles Lane <miles.lane@gmail.com>
-To: paulmck@linux.vnet.ibm.com
-Cc: Vivek Goyal <vgoyal@redhat.com>, Eric Paris <eparis@redhat.com>,
-       David Woodhouse <dwmw2@infradead.org>,
-       Lai Jiangshan <laijs@cn.fujitsu.com>, Ingo Molnar <mingo@elte.hu>,
-       Peter Zijlstra <peterz@infradead.org>,
-       LKML <linux-kernel@vger.kernel.org>, nauman@google.com,
-       eric.dumazet@gmail.com, netdev@vger.kernel.org,
-       Jens Axboe <axboe@kernel.dk>, Gui Jianfeng <guijianfeng@cn.fujitsu.com>,
-       Li Zefan <lizf@cn.fujitsu.com>,
-       Johannes Berg <johannes@sipsolutions.net>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 7, 2010 at 8:12 PM, Paul E. McKenney
-<paulmck@linux.vnet.ibm.com> wrote:
-> On Mon, Jun 07, 2010 at 02:23:17PM -0400, Miles Lane wrote:
->> [    2.677955] [ INFO: suspicious rcu_dereference_check() usage. ]
->> [    2.679089] ---------------------------------------------------
->> [    2.680276] lib/idr.c:605 invoked rcu_dereference_check() without protection!
->> [    2.681499]
->> [    2.681500] other info that might help us debug this:
->> [    2.681501]
->> [    2.685509]
->> [    2.685510] rcu_scheduler_active = 1, debug_locks = 1
->> [    2.688221] 1 lock held by swapper/1:
->> [    2.689587]  #0:  (mtd_table_mutex){+.+...}, at:
->> [<ffffffff812bea45>] register_mtd_user+0x1a/0x69
->> [    2.691096]
->> [    2.691098] stack backtrace:
->> [    2.694059] Pid: 1, comm: swapper Not tainted 2.6.35-rc2-git1 #8
->> [    2.695601] Call Trace:
->> [    2.697243]  [<ffffffff81064e9c>] lockdep_rcu_dereference+0x9d/0xa5
->> [    2.698868]  [<ffffffff811b9c86>] idr_get_next+0x60/0x124
->> [    2.700556]  [<ffffffff812be779>] __mtd_next_device+0x1b/0x1d
->> [    2.702238]  [<ffffffff812bea7c>] register_mtd_user+0x51/0x69
->> [    2.703964]  [<ffffffff816cca45>] init_mtdchar+0xb3/0xd3
->> [    2.705686]  [<ffffffff816cc992>] ? init_mtdchar+0x0/0xd3
->> [    2.707470]  [<ffffffff810001ef>] do_one_initcall+0x59/0x14e
->> [    2.709255]  [<ffffffff816a768a>] kernel_init+0x144/0x1ce
->> [    2.711082]  [<ffffffff81003054>] kernel_thread_helper+0x4/0x10
->> [    2.712862]  [<ffffffff813ca480>] ? restore_args+0x0/0x30
->> [    2.714647]  [<ffffffff816a7546>] ? kernel_init+0x0/0x1ce
->> [    2.716415]  [<ffffffff81003050>] ? kernel_thread_helper+0x0/0x10
->
-> This looks like a new one!  Does the following patch take care of it?
->
->                                                        Thanx, Paul
->
-> ------------------------------------------------------------------------
->
-> commit 2d54a6c31b72c902b09d365e9c66205a5c07e549
-> Author: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-> Date:   Mon Jun 7 17:09:45 2010 -0700
->
->    idr: fix RCU lockdep splat in idr_get_next()
->
->    Convert to rcu_dereference_raw() given that many callers may have many
->    different locking models.
->
->    Located-by: Miles Lane <miles.lane@gmail.com>
->    Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
->
-> diff --git a/lib/idr.c b/lib/idr.c
-> index 2eb1dca..f099f25 100644
-> --- a/lib/idr.c
-> +++ b/lib/idr.c
-> @@ -599,7 +599,7 @@ void *idr_get_next(struct idr *idp, int *nextidp)
->        /* find first ent */
->        n = idp->layers * IDR_BITS;
->        max = 1 << n;
-> -       p = rcu_dereference(idp->top);
-> +       p = rcu_dereference_raw(idp->top);
->        if (!p)
->                return NULL;
->
-> @@ -607,7 +607,7 @@ void *idr_get_next(struct idr *idp, int *nextidp)
->                while (n > 0 && p) {
->                        n -= IDR_BITS;
->                        *paa++ = p;
-> -                       p = rcu_dereference(p->ary[(id >> n) & IDR_MASK]);
-> +                       p = rcu_dereference_raw(p->ary[(id >> n) & IDR_MASK]);
->                }
->
->                if (p) {
->
+On Mon, 7 Jun 2010, Joe Perches wrote:
 
-Tested.  Looks good!
+> And separate declaration from allocation
+> Still no error checking on failure, but it probably doesn't matter.
+> 
+> Signed-off-by: Joe Perches <joe@perches.com>
+> ---
+>  arch/cris/arch-v32/mm/intmem.c |   13 +++++--------
+>  1 files changed, 5 insertions(+), 8 deletions(-)
+> 
+> diff --git a/arch/cris/arch-v32/mm/intmem.c b/arch/cris/arch-v32/mm/intmem.c
+> index 9e8b69c..1b17d92 100644
+> --- a/arch/cris/arch-v32/mm/intmem.c
+> +++ b/arch/cris/arch-v32/mm/intmem.c
+> @@ -33,8 +33,8 @@ static void crisv32_intmem_init(void)
+>  {
+>  	static int initiated = 0;
+>  	if (!initiated) {
+> -		struct intmem_allocation* alloc =
+> -		  (struct intmem_allocation*)kmalloc(sizeof *alloc, GFP_KERNEL);
+> +		struct intmem_allocation* alloc;
+> +		alloc = kmalloc(sizeof *alloc, GFP_KERNEL);
+>  		INIT_LIST_HEAD(&intmem_allocations);
+>  		intmem_virtual = ioremap(MEM_INTMEM_START + RESERVED_SIZE,
+>  					 MEM_INTMEM_SIZE - RESERVED_SIZE);
+> @@ -62,9 +62,8 @@ void* crisv32_intmem_alloc(unsigned size, unsigned align)
+>  		if (allocation->status == STATUS_FREE &&
+>  		    allocation->size >= size + alignment) {
+>  			if (allocation->size > size + alignment) {
+> -				struct intmem_allocation* alloc =
+> -					(struct intmem_allocation*)
+> -					kmalloc(sizeof *alloc, GFP_ATOMIC);
+> +				struct intmem_allocation* alloc;
+> +				alloc = kmalloc(sizeof *alloc, GFP_ATOMIC);
+>  				alloc->status = STATUS_FREE;
+>  				alloc->size = allocation->size - size -
+>  					alignment;
+
+Why not fix the checkpatch failures at the same time?
+
+ERROR: "foo* bar" should be "foo *bar"
+#26: FILE: arch/cris/arch-v32/mm/intmem.c:36:
++		struct intmem_allocation* alloc;
+
+ERROR: "foo* bar" should be "foo *bar"
+#38: FILE: arch/cris/arch-v32/mm/intmem.c:65:
++				struct intmem_allocation* alloc;
