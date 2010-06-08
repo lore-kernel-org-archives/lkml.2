@@ -1,71 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754382Ab0FHJKK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jun 2010 05:10:10 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:37251 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753021Ab0FHJKI convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jun 2010 05:10:08 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Arve =?iso-8859-1?q?Hj=F8nnev=E5g?= <arve@android.com>
-Subject: Re: suspend blockers & Android integration
-Date: Tue, 8 Jun 2010 11:11:39 +0200
-User-Agent: KMail/1.12.4 (Linux/2.6.35-rc1-rjw; KDE/4.3.5; x86_64; ; )
-Cc: Thomas Gleixner <tglx@linutronix.de>,
-       Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-       tytso@mit.edu, Brian Swetland <swetland@google.com>,
-       Neil Brown <neilb@suse.de>, Alan Stern <stern@rowland.harvard.edu>,
-       Felipe Balbi <felipe.balbi@nokia.com>,
-       LKML <linux-kernel@vger.kernel.org>,
-       Florian Mickler <florian@mickler.org>,
-       Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
-       Linux PM <linux-pm@lists.linux-foundation.org>,
-       Alan Cox <alan@lxorguk.ukuu.org.uk>,
-       James Bottomley <James.Bottomley@suse.de>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       Kevin Hilman <khilman@deeprootsystems.com>,
-       "H. Peter Anvin" <hpa@zytor.com>,
-       Arjan van de Ven <arjan@infradead.org>,
-       Andrew Morton <akpm@linux-foundation.org>
-References: <20100603193045.GA7188@elte.hu> <201006061555.38526.rjw@sisk.pl> <AANLkTilwE8-9yi6gTI-Cx8etIX1Q6kzKobiIxtSW2Sb9@mail.gmail.com>
-In-Reply-To: <AANLkTilwE8-9yi6gTI-Cx8etIX1Q6kzKobiIxtSW2Sb9@mail.gmail.com>
+	id S1754617Ab0FHJLZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jun 2010 05:11:25 -0400
+Received: from n10-vm0.bullet.mail.in.yahoo.com ([202.86.4.194]:36871 "HELO
+	n10-vm0.bullet.mail.in.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1753745Ab0FHJLX convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Jun 2010 05:11:23 -0400
+X-Yahoo-Newman-Property: ymail-3
+X-Yahoo-Newman-Id: 751339.95741.bm@omp109.mail.in2.yahoo.com
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
+  s=s1024; d=yahoo.com;
+  h=Message-ID:X-YMail-OSG:Received:X-Mailer:Date:From:Subject:To:MIME-Version:Content-Type:Content-Transfer-Encoding;
+  b=Q4jvTqhcTb8MeILlv0miNtDHWAxPlteTxkA/sLoGSPIwAlAggDiQZmusXO8zjWOUaUeRGr3R20e58e0QGplQW3/peBrGAyrPKBNFgAf1ZjwMc6/QYnaNsjMM9Slg1DHgtuc1qQlRdOQP3Aj0B6D0ninPrPjs3+/2ZwcLNGOTrLE=;
+Message-ID: <72228.30810.qm@web95605.mail.in.yahoo.com>
+X-YMail-OSG: LXl4514VM1lBrEhAz3WWyK_YEqmhEFgxL3Y2Gt1D60ZBvgM
+ mI6rU3UDSCOqrfDQane_9nXMKLzNgssD6Wyo4m4ZbUL4ODGQiLUv0MLTLk4t
+ ddLNCmu4xekNEKbIkPi7Srv7Ve6QGLChwvSTS6vJ5FjJRtNLj6Ukj9jqz5KN
+ g4EhJykh1Kn2mvmUoemz19zbO.WXIZq15jCZY
+X-Mailer: YahooMailRC/397.8 YahooMailWebService/0.8.103.269680
+Date: Tue, 8 Jun 2010 14:34:40 +0530 (IST)
+From: Oza Oza <ozaoza1982@yahoo.com>
+Subject: [PROPOSAL - FIRST POST] NMI & register clash handling infrastructure
+To: linux-kernel@vger.kernel.org
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+Content-Type: text/plain; charset=utf-8
 Content-Transfer-Encoding: 8BIT
-Message-Id: <201006081111.39333.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 08 June 2010, Arve Hjønnevåg wrote:
-> 2010/6/6 Rafael J. Wysocki <rjw@sisk.pl>:
-> > On Sunday 06 June 2010, Arve Hjønnevåg wrote:
-... 
-> If individual processes are frozen, we run into problems that we
-> cannot run into if we freeze and thaw all processes.
+Hi,
 
-Not individual processes, but the processes that don't use wakelocks in the
-Android world all together.  And of course the approach has to be different,
-because it's a different design, but I don't think there are any fundamental
-issues you can't solve within this approach.
 
-> >> The app that reads this event blocks suspend before reading it. If it was
-> >> busy talking to a less trusted app when the event happened it still works
-> >> since all apps are running at this point.
-> >
-> > And how is this different from an approach with cgroup freezing?  Apps that
-> > use wakelock within the current framework would use "freeze locks" to prevent
-> > the "untrusted" part of user space from being frozen or to thaw it.  Where's
-> > the problem, then?
-> >
-> 
-> They will not be able to get wakeup events directly from the kernel.
-> If the kernel does not thaw processes when a wakeup event happens, the
-> app may never get to the point where it grabs its wakelock.
+This is my first post to the group, please excuse me, If I unknowingly miss to follow writing ethics.
 
-The apps that use "freeze locks" (or wakelocks) are never frozen, so I don't
-think this would be a problem.
+Proposal/Need: 
 
-Rafael
+I was working on providing accurate process usage support, and writing a kernel module, 
+I configured cpu-core-unhalted-event and configured LVT (local vector table) with NMI (non-maskable interrupt), and surprisingly Oprofile stopped working, 
+Then I realized, that set_nmi_call back just overwrites nmi_callback function pointer. 
+
+My proposal/idea/thinking is; 
+have a kernel module which accepts NMI registration from any kernel component, and providing support to the the any kernel service which basically need to service NMI.
+It may not only supports this, but also can provide central infrastructure which has capabilities such as granting MSR (model specific register) access to the the modules, which may avoid potential clash of MSRs (e.g. two modules are trying to configure same MSR), control NMI registration-unregisteration events etc..
+
+I am not sure, whether this is a good idea or bad idea, but I thought it adds flexibility and some value addition in kernel, 
+and I find this place precisely right to post this idea. 
+
+Any feedback/suggestions/additions would be appreciated. 
+
+Regards,
+Oza.
+
+
+
