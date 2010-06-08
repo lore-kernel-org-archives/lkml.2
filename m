@@ -1,71 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754182Ab0FHIwm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jun 2010 04:52:42 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:65090 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754045Ab0FHIwk (ORCPT
+	id S1754118Ab0FHIyq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jun 2010 04:54:46 -0400
+Received: from smtp.nokia.com ([192.100.122.230]:23031 "EHLO
+	mgw-mx03.nokia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751699Ab0FHIyp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jun 2010 04:52:40 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=FMa+9S7K3tHReL0aHkYbqwKh9iS2tkK9mQhqJ9FK5X/JgVg2KpNcUgtSsH7xh5m6Z6
-         H+imRuK9if600oPWS9TQK0FnX9YRuv2vrk0iJhCKiHzPDR7aMiXTW+BJ4LNAWitlcPLS
-         TAha754KOL/zJFg8hrru+K324oyJ3pkYWyVNY=
-Subject: Re: [PATCH 2/2] mmc: fix mmc card disappearence on resume on ricoh
-	mmc controllers
-From: Maxim Levitsky <maximlevitsky@gmail.com>
-To: Chris Ball <cjb@laptop.org>
-Cc: "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
-       Philip Langdale <philipl@overt.org>,
-       linux-kernel <linux-kernel@vger.kernel.org>
-In-Reply-To: <m3bpbn1jjf.fsf@pullcord.laptop.org>
-References: <1275859475.3151.4.camel@maxim-laptop>
-	 <1275859731-2898-2-git-send-email-maximlevitsky@gmail.com>
-	 <20100606232313.GA5444@void.printf.net>
-	 <1275870795.24091.4.camel@maxim-laptop>
-	 <m3bpbn1jjf.fsf@pullcord.laptop.org>
-Content-Type: text/plain
-Date: Tue, 08 Jun 2010 11:52:36 +0300
-Message-Id: <1275987156.30596.6.camel@dell16>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.22.3.1 
-Content-Transfer-Encoding: 7bit
+	Tue, 8 Jun 2010 04:54:45 -0400
+From: Artem Bityutskiy <Artem.Bityutskiy@nokia.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Artem Bityutskiy <Artem.Bityutskiy@nokia.com>,
+       linux-kernel@vger.kernel.org
+Date: Tue, 08 Jun 2010 11:47:52 +0300
+Message-Id: <20100608084752.11914.19793.sendpatchset@localhost.localdomain>
+Subject: [GIT PULL] UBI changes for 2.6.35-rc3
+X-OriginalArrivalTime: 08 Jun 2010 08:53:48.0073 (UTC) FILETIME=[1BEA9990:01CB06E8]
+X-Nokia-AV: Clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-06-07 at 01:47 -0400, Chris Ball wrote:
-> Hi Maxim,
-> 
->    >> It looks like your editor is set to four-space instead of
->    >> eight-space tab characters, else you wouldn't be using so
->    >> many tabs here.
-> 
->    > Nope, I think indention is right here.
->    >
->    > the break is inside 'if' condition.
-> 
-> Please look again, I think you're mistaken.  For example, why do you
-> use seven tab characters for the "& SDHCI_CARD_PRESENT" after the if
-> line?  With eight-space tabs, it looks like this (converted to
-> spaces):
-> 
-> +                       if (sdhci_readl(host, SDHCI_PRESENT_STATE)
-> +                                                       & SDHCI_CARD_PRESENT) {
-Ah, this.
+Hi Linus,
 
-I just break the line to avoid hitting the 80 char limit...
+please, pull few UBI changes which fix corrupted empty flash
+handling:
 
-You probably meant I need to write:
+The following changes since commit 67a3e12b05e055c0415c556a315a3d3eb637e29e:
+  Linus Torvalds (1):
+        Linux 2.6.35-rc1
 
-+                       if (sdhci_readl(host, SDHCI_PRESENT_STATE)
-+                                & SDHCI_CARD_PRESENT) {
+are available in the git repository at:
 
-Nothing against it,
+  git://git.infradead.org/ubi-2.6.git linux-next
 
-Best regards,
-	Maxim Levitsky
+Artem Bityutskiy (4):
+      UBI: simplify IO error codes
+      UBI: introduce a new IO return code
+      UBI: introduce eraseblock counter variables
+      UBI: improve corrupted flash handling
 
+ drivers/mtd/ubi/eba.c  |    7 ++-
+ drivers/mtd/ubi/io.c   |   50 ++++++++++---------
+ drivers/mtd/ubi/scan.c |  126 +++++++++++++++++++++++++++++++++++++-----------
+ drivers/mtd/ubi/scan.h |   19 +++++--
+ drivers/mtd/ubi/ubi.h  |   10 ++--
+ 5 files changed, 148 insertions(+), 64 deletions(-)
+
+Thanks,
+Artem.
