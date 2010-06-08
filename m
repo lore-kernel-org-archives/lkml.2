@@ -1,78 +1,263 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752103Ab0FHATi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jun 2010 20:19:38 -0400
-Received: from e8.ny.us.ibm.com ([32.97.182.138]:58029 "EHLO e8.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752002Ab0FHATf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jun 2010 20:19:35 -0400
-Date: Mon, 7 Jun 2010 17:19:29 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Miles Lane <miles.lane@gmail.com>
-Cc: Vivek Goyal <vgoyal@redhat.com>, Eric Paris <eparis@redhat.com>,
-       Lai Jiangshan <laijs@cn.fujitsu.com>, Ingo Molnar <mingo@elte.hu>,
-       Peter Zijlstra <peterz@infradead.org>,
-       LKML <linux-kernel@vger.kernel.org>, nauman@google.com,
-       eric.dumazet@gmail.com, netdev@vger.kernel.org,
-       Jens Axboe <jens.axboe@oracle.com>,
-       Gui Jianfeng <guijianfeng@cn.fujitsu.com>,
-       Li Zefan <lizf@cn.fujitsu.com>,
-       Johannes Berg <johannes@sipsolutions.net>
-Subject: Re: 2.6.35-rc2-git1 - include/linux/cgroup.h:534 invoked
- rcu_dereference_check() without protection!
-Message-ID: <20100608001929.GF2387@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <AANLkTin2pPqOUx--9fIX3BH3e-cU6oCRufijcx_4ozx5@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <AANLkTin2pPqOUx--9fIX3BH3e-cU6oCRufijcx_4ozx5@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1752148Ab0FHATw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jun 2010 20:19:52 -0400
+Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:37303 "EHLO
+	sm-d311v.smileserver.ne.jp" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751302Ab0FHAT3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Jun 2010 20:19:29 -0400
+Message-ID: <000e01cb06a0$423a1d70$66f8800a@maildom.okisemi.com>
+From: "Masayuki Ohtake" <masa-korg@dsn.okisemi.com>
+To: "Alan Cox" <alan@lxorguk.ukuu.org.uk>
+Cc: "LKML" <linux-kernel@vger.kernel.org>,
+       "Andrew" <andrew.chih.howe.khor@intel.com>,
+       "Intel OTC" <joel.clark@intel.com>, "Wang, Qi" <qi.wang@intel.com>,
+       "Wang, Yong Y" <yong.y.wang@intel.com>
+References: <4C0CE88C.9050708@dsn.okisemi.com> <20100607160515.5cb00150@lxorguk.ukuu.org.uk>
+Subject: Re: [PATCH] Topcliff PHUB: Generate PacketHub driver
+Date: Tue, 8 Jun 2010 09:19:23 +0900
+X-Priority: 3
+X-MSMail-Priority: Normal
+X-Mailer: Microsoft Outlook Express 6.00.2800.1983
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2800.1983
+X-Hosting-Pf: 0
+X-NAI-Spam-Score: 1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 07, 2010 at 02:14:25PM -0400, Miles Lane wrote:
-> Hi All,
-> 
-> I just reproduced a warning I reported quite a while ago.  Is a patch
-> for this in the pipeline?
+Hi Alan,
 
-I proposed a patch, thinking that it was a false positive.  Peter Zijlstra
-pointed out that there was a real race, and proposed an alternative patch,
-which may be found at http://lkml.org/lkml/2010/4/22/603.
+Thank you for your comments.
+We will integrate your comments to our PHUB by today or tomorrow at the latest.
 
-Could you please test Peter's patch and let us know if it cures the problem?
+Ohtake.
+----- Original Message ----- 
+From: "Alan Cox" <alan@lxorguk.ukuu.org.uk>
+To: "Masayuki Ohtak" <masa-korg@dsn.okisemi.com>
+Cc: "LKML" <linux-kernel@vger.kernel.org>; "Andrew" <andrew.chih.howe.khor@intel.com>; "Intel OTC"
+<joel.clark@intel.com>; "Wang, Qi" <qi.wang@intel.com>; "Wang, Yong Y" <yong.y.wang@intel.com>
+Sent: Tuesday, June 08, 2010 12:05 AM
+Subject: Re: [PATCH] Topcliff PHUB: Generate PacketHub driver
 
-							Thanx, Paul
 
-> [    0.167267] [ INFO: suspicious rcu_dereference_check() usage. ]
-> [    0.167396] ---------------------------------------------------
-> [    0.167526] include/linux/cgroup.h:534 invoked
-> rcu_dereference_check() without protection!
-> [    0.167728]
-> [    0.167729] other info that might help us debug this:
-> [    0.167731]
-> [    0.168092]
-> [    0.168093] rcu_scheduler_active = 1, debug_locks = 1
-> [    0.168337] no locks held by watchdog/0/5.
-> [    0.168462]
-> [    0.168463] stack backtrace:
-> [    0.168704] Pid: 5, comm: watchdog/0 Not tainted 2.6.35-rc2-git1 #8
-> [    0.168834] Call Trace:
-> [    0.168965]  [<ffffffff81064e9c>] lockdep_rcu_dereference+0x9d/0xa5
-> [    0.169100]  [<ffffffff8102c1ce>] task_subsys_state+0x59/0x70
-> [    0.169232]  [<ffffffff8103189b>] __sched_setscheduler+0x19d/0x2f8
-> [    0.169365]  [<ffffffff8102a5ef>] ? need_resched+0x1e/0x28
-> [    0.169497]  [<ffffffff813c7d01>] ? schedule+0x586/0x619
-> [    0.169628]  [<ffffffff81081c33>] ? watchdog+0x0/0x8c
-> [    0.169758]  [<ffffffff81031a11>] sched_setscheduler+0xe/0x10
-> [    0.169889]  [<ffffffff81081c5d>] watchdog+0x2a/0x8c
-> [    0.170010]  [<ffffffff81081c33>] ? watchdog+0x0/0x8c
-> [    0.170141]  [<ffffffff81054a82>] kthread+0x89/0x91
-> [    0.170274]  [<ffffffff81003054>] kernel_thread_helper+0x4/0x10
-> [    0.170405]  [<ffffffff813ca480>] ? restore_args+0x0/0x30
-> [    0.170536]  [<ffffffff810549f9>] ? kthread+0x0/0x91
-> [    0.170667]  [<ffffffff81003050>] ? kernel_thread_helper+0x0/0x10
-> [    0.176751] lockdep: fixing up alternatives.
+> O> +/* Status Register offset */
+> > +#define PHUB_STATUS (0x00)
+> > +/* Control Register offset */
+> > +#define PHUB_CONTROL (0x04)
+> > +/* Time out value for Status Register */
+> > +#define PHUB_TIMEOUT (0x05)
+> > +/* Enabling for writing ROM */
+> > +#define PCH_PHUB_ROM_WRITE_ENABLE (0x01)
+> > +/* Disabling for writing ROM */
+> > +#define PCH_PHUB_ROM_WRITE_DISABLE (0x00)
+> > +/* ROM data area start address offset */
+> > +#define PCH_PHUB_ROM_START_ADDR (0x14)
+> > +/* MAX number of INT_REDUCE_CONTROL registers */
+> > +#define MAX_NUM_INT_REDUCE_CONTROL_REG (128)
+> > +
+> > +#define PCI_DEVICE_ID_PCH1_PHUB (0x8801)
+> > +
+> > +#define PCH_MINOR_NOS (1)
+> > +#define CLKCFG_CAN_50MHZ (0x12000000)
+> > +#define CLKCFG_CANCLK_MASK (0xFF000000)
+>
+> Style: constants don't need brackets - might also look more Linux like
+> tabbed out a bit
+>
+> > +#define PCH_READ_REG(a) ioread32((pch_phub_base_address + a))
+> > +
+> > +#define PCH_WRITE_REG(a, b) iowrite32(a, (pch_phub_base_address + b))
+>
+> These on the other hand do - but not where they are now
+>
+> iowrite32((a), pcb_phub_base_address + (b))
+>
+> (so that if a or b are expressions they are evaluated first)
+>
+>
+> > +struct pch_phub_reg {
+> > + u32 phub_id_reg; /* PHUB_ID register val */
+> > + u32 q_pri_val_reg; /* QUEUE_PRI_VAL register val */
+> > + u32 rc_q_maxsize_reg; /* RC_QUEUE_MAXSIZE register val */
+> > + u32 bri_q_maxsize_reg; /* BRI_QUEUE_MAXSIZE register val */
+> > + u32 comp_resp_timeout_reg; /* COMP_RESP_TIMEOUT register val */
+> > + u32 bus_slave_control_reg; /* BUS_SLAVE_CONTROL_REG register val */
+> > + u32 deadlock_avoid_type_reg; /* DEADLOCK_AVOID_TYPE register val */
+> > + u32 intpin_reg_wpermit_reg0; /* INTPIN_REG_WPERMIT register 0 val */
+> > + u32 intpin_reg_wpermit_reg1; /* INTPIN_REG_WPERMIT register 1 val */
+> > + u32 intpin_reg_wpermit_reg2; /* INTPIN_REG_WPERMIT register 2 val */
+> > + u32 intpin_reg_wpermit_reg3; /* INTPIN_REG_WPERMIT register 3 val */
+> > + /* INT_REDUCE_CONTROL registers val */
+> > + u32 int_reduce_control_reg[MAX_NUM_INT_REDUCE_CONTROL_REG];
+> > +#ifdef PCH_CAN_PCLK_50MHZ
+> > + u32 clkcfg_reg; /* CLK CFG register val */
+> > +#endif
+> > +} g_pch_phub_reg;
+>
+> Stylewise the kernel doesn't use the g_ convention that many Windows
+> people do, so lose the g_
+>
+> > +s32 pch_phub_opencount; /* check whether opened or not */
+> > +u32 pch_phub_base_address;
+> > +u32 pch_phub_extrom_base_address;
+> > +s32 pch_phub_suspended;
+>
+> Any reason these can't be in the struct ?
+> > +
+> > +struct device *dev_dbg;
+>
+> Not a good name for a global variable as it will clash with others
+>
+> > +DEFINE_SPINLOCK(pch_phub_lock); /* for spin lock */
+>
+> Can this be static or in the struct ?
+>
+> > +
+> > +/**
+> > + * file_operations structure initialization
+> > + */
+> > +const struct file_operations pch_phub_fops = {
+> > + .owner = THIS_MODULE,
+> > + .open = pch_phub_open,
+> > + .release = pch_phub_release,
+> > + .ioctl = pch_phub_ioctl,
+> > +};
+>
+> static const ?
+>
+> > +/*--------------------------------------------
+> > + exported function prototypes
+> > +--------------------------------------------*/
+>
+> They start 'static' I don't think they are exportdd !
+>
+> > +static int __devinit pch_phub_probe(struct pci_dev *pdev, const
+> > +        struct pci_device_id *id);
+> > +static void __devexit pch_phub_remove(struct pci_dev *pdev);
+> > +static int pch_phub_suspend(struct pci_dev *pdev, pm_message_t state);
+> > +static int pch_phub_resume(struct pci_dev *pdev);
+>
+> > +static struct pci_driver pch_phub_driver = {
+> > + .name = "pch_phub",
+> > + .id_table = pch_phub_pcidev_id,
+> > + .probe = pch_phub_probe,
+> > + .remove = __devexit_p(pch_phub_remove),
+> > +#ifdef CONFIG_PM
+> > + .suspend = pch_phub_suspend,
+> > + .resume = pch_phub_resume
+> > +#endif
+> > +};
+> > +
+> > +static int __init pch_phub_pci_init(void);
+> > +static void __exit pch_phub_pci_exit(void);
+> > +
+> > +MODULE_DESCRIPTION("PCH PACKET HUB PCI Driver");
+> > +MODULE_LICENSE("GPL");
+> > +module_init(pch_phub_pci_init);
+> > +module_exit(pch_phub_pci_exit);
+> > +module_param(pch_phub_major_no, int, S_IRUSR | S_IWUSR);
+>
+> If you migrated the module registration/PCI registration to the bottom of
+> the file you could avoid the forward declations and make the code easier
+> to follow ?
+>
+> > +void pch_phub_read_modify_write_reg(unsigned long reg_addr_offset,
+> > +        unsigned long data, unsigned long mask)
+> > +{
+> > + unsigned long reg_addr = pch_phub_base_address + reg_addr_offset;
+> > + iowrite32(((ioread32((void __iomem *)reg_addr) & ~mask)) | data,
+> > + (void __iomem *)reg_addr);
+>
+> When you have that many casts in a line it's perhaps a hint you have the
+> types wrong initially. At the very least reg_addr should be void __iomem,
+> and probably pch_phub_base_address should be
+>
+> It would probably make sense to pass a pointer to your struct pch_hub_reg
+> and use that to hold the base address. Then if you ever get a box with
+> two in some future design it won't be a disaster
+>
+> > +void pch_phub_save_reg_conf(void)
+>
+> Ditto
+>
+> > +#ifdef PCH_CAN_PCLK_50MHZ
+> > + /* save clk cfg register */
+> > + g_pch_phub_reg.clkcfg_reg = PCH_READ_REG(CLKCFG_REG_OFFSET);
+> > +#endif
+>
+> This makes it hard to build one kernel for everything
+>
+> > + return;
+> > +}
+>
+> > +void pch_phub_restore_reg_conf(void)
+> > +{
+> > + u32 i = 0;
+>
+> Why = 0, if you do that here you may hide initialisation errors from
+> future changes ?
+>
+> > +/** pch_phub_read_serial_rom - Implements the functionality of reading Serial
+> > + *  ROM.
+> > + *  @offset_address: Contains the Serial ROM address offset value
+> > + *  @data: Contains the Serial ROM value
+> > + */
+> > +int pch_phub_read_serial_rom(unsigned long offset_address, unsigned char *data)
+> > +{
+> > + unsigned long mem_addr = pch_phub_extrom_base_address + offset_address;
+> > +
+> > + dev_dbg(dev_dbg,
+> > + "pch_phub_read_serial_rom:mem_addr=0x%08x\n", (u32)mem_addr);
+> > + *data = ioread8((void __iomem *)mem_addr);
+>
+> Same comments about casts
+>
+>
+>
+> > +int pch_phub_ioctl(struct inode *inode, struct file *file,
+> > + unsigned int cmd, unsigned long arg)
+> > +{
+> > + int ret_value = 0;
+> > + struct pch_phub_reqt *p_pch_phub_reqt;
+> > + unsigned long addr_offset;
+>
+> This will change size on 32/64bit boxes makign your copy a bit
+> problematic
+>
+> > + p_pch_phub_reqt = (struct pch_phub_reqt *)arg;
+> > + ret_value = copy_from_user((void *)&addr_offset,
+> > + (void *)&p_pch_phub_reqt->addr_offset,
+> > + sizeof(addr_offset));
+> > + if (ret_value) {
+>
+> > + /* End of Access area check */
+>
+> Remember here ioctl isn't single threaded so you may want to double check
+> some of these
+>
+> > +struct pch_phub_reqt {
+> > + unsigned long addr_offset; /*specifies the register address
+> > + offset */
+> > + unsigned long data; /*specifies the data */
+> > + unsigned long mask; /*specifies the mask */
+>
+> If they may need to be long make them u64. That way 32 and 64bit systems
+> get the same ioctl structure and life is good.
+>
+> > +};
+> > +
+> > +/* exported function prototypes */
+> > +int pch_phub_open(struct inode *inode, struct file *file);
+> > +int pch_phub_release(struct inode *inode, struct file *file);
+> > +int pch_phub_ioctl(struct inode *inode, struct file *file, unsigned int cmd,
+> > +       unsigned long arg);
+>
+> You have various other functions that are not static - if they should be
+> then make them static
+>
+> Alan
+>
+
+
