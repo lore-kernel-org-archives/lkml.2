@@ -1,35 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755995Ab0FIBi2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jun 2010 21:38:28 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:54437 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750885Ab0FIBi1 (ORCPT
+	id S932407Ab0FHWRT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jun 2010 18:17:19 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:39706 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932285Ab0FHWRD convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jun 2010 21:38:27 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:date:message-id:subject:from:to:content-type;
-        b=BkJAlQRYitBdkOk9/j8VzbTNBjHXXhAnbyyDw5GHGuVLDi2Tckq31jN3HfCTNGXUR7
-         EDFDeN7NDKpoEEiVCmzHcaoQDG60N46AFP3vsFB3mzTs+2fM5zo/hz4Iz3cxpX+QHLH9
-         ESi+Khmr3o1cqsRiXpLdg+EnUpPyWZT/JfSGA=
+	Tue, 8 Jun 2010 18:17:03 -0400
+Cc: Kernel Testers List <kernel-testers@vger.kernel.org>,
+       Maciej Rutecki <maciej.rutecki@gmail.com>,
+       "Tom Gundersen" <teg@jklm.no>, "Venkatesh Pallipadi" <venki@google.com>
+References: <Rlf_Qjov7bG.A.a8F.I8rDMB@chimera>
+In-Reply-To: <Rlf_Qjov7bG.A.a8F.I8rDMB@chimera>
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
 MIME-Version: 1.0
-Date: Wed, 9 Jun 2010 09:38:25 +0800
-Message-ID: <AANLkTik0UvRGmGeZOMaJVaoHk-lv2V8umAF3EIckh9CT@mail.gmail.com>
-Subject: When and how to use ftrace?
-From: Ryan Wang <openspace.wang@gmail.com>
-To: linux-kernel@vger.kernel.org, kernelnewbies@nl.linux.org,
-       srostedt@redhat.com
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Disposition: inline
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 8BIT
+Message-ID: <C9Q3XEnHPeG.A.kRG.V8rDMB@chimera>
+Subject: [Bug #16145] Unable to boot after "ACPI: Don't let acpi_pad needlessly mark TSC unstable"
+To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Date: Wed,  9 Jun 2010 00:10:19 +0200 (CEST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
+This message has been generated automatically as a part of a summary report
+of recent regressions.
 
-       I'm new to kernel development, and I'm learning
-ftrace recently. I have one question:
-       When to use ftrace, or in which cases ftrace can be
-more efficient?
+The following bug entry is on the current list of known regressions
+from 2.6.34.  Please verify if it still should be listed and let the tracking team
+know (either way).
 
-thanks,
+
+Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=16145
+Subject		: Unable to boot after "ACPI: Don't let acpi_pad needlessly mark TSC unstable"
+Submitter	: Tom Gundersen <teg@jklm.no>
+Date		: 2010-06-07 13:11 (2 days old)
+Handled-By	: Venkatesh Pallipadi <venki@google.com>
+
+
