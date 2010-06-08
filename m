@@ -1,54 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756896Ab0FIDQO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jun 2010 23:16:14 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:43113 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752701Ab0FIDQN (ORCPT
+	id S1754802Ab0FHXsT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jun 2010 19:48:19 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:40399 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751810Ab0FHXsR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jun 2010 23:16:13 -0400
-Date: Tue, 8 Jun 2010 20:16:06 -0700 (PDT)
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Dave Airlie <airlied@linux.ie>
-cc: linux-kernel@vger.kernel.org
-Subject: Re: [git pull] drm fixes
-In-Reply-To: <alpine.DEB.2.00.1006090243360.1269@skynet.skynet.ie>
-Message-ID: <alpine.LFD.2.00.1006081953060.4506@i5.linux-foundation.org>
-References: <alpine.DEB.2.00.1006090243360.1269@skynet.skynet.ie>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	Tue, 8 Jun 2010 19:48:17 -0400
+Date: Wed, 9 Jun 2010 00:48:14 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Tejun Heo <tj@kernel.org>
+Cc: linux-kernel@vger.kernel.org, Rusty Russell <rusty@rustcorp.com.au>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       Jari Ruusu <jariruusu@users.sourceforge.net>
+Subject: Re: 2.6.35-rc2 module reference counting broken
+Message-ID: <20100608234814.GA19826@ZenIV.linux.org.uk>
+References: <4C0C819E.EA5D6A18@users.sourceforge.net>
+ <20100607064412.GK31073@ZenIV.linux.org.uk>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100607064412.GK31073@ZenIV.linux.org.uk>
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-On Wed, 9 Jun 2010, Dave Airlie wrote:
+On Mon, Jun 07, 2010 at 07:44:12AM +0100, Al Viro wrote:
+> On Mon, Jun 07, 2010 at 08:20:30AM +0300, Jari Ruusu wrote:
+> > Someone broke block device module reference counting. Problem occours when a
+> > modular block device is mounted and unmounted. Not when it is directly read.
+> > 2.6.34 kernel works OK, but 2.6.35-rc2 kernel seems to increase usage count
+> > by one for each mount + umount pair.
 > 
-> So this pull does try and fix some problems in a feature we added in -rc1, 
-> radeon power management, its either the voltage fixes in here, or just 
-> remove voltage stuff completely, but since it works in some cases that 
-> would be a regression in itself.
+> Very interesting...  Looks like mount() bumps refcount by 2.  umount() after
+> that drops refcount by 1, so it's not leaking superblocks.
+> 
+> Which probably means that open_bdev_exclusive() is fscked.  Interesting...
+> FWIW, quick look through the history seems to point to this:
+> commit 6b4517a7913a09d3259bb1d21c9cb300f12294bd
+> Author: Tejun Heo <tj@kernel.org>
+> Date:   Wed Apr 7 18:53:59 2010 +0900
+> 
+>     block: implement bd_claiming and claiming block
+> 
+> I'm far too sleepy right now, but I'd start with reviewing what that
+> thing is doing to module refcounting...
 
-I'm going to take this and hope _really_ hard that it works - since the 
-number of current radeon reports seems to mean that I pretty much have to 
-take it.
-
-But I want to protest that "regression in itself" statement. We do _not_ 
-count new code that needs to be undone as a "regression". Otherwise we 
-would be in the situation where "fix one bug, introduce another" could not 
-be reverted, because reverting it would "regress" the bug that got fixed.
-
-And in fact that's exactly _why_ we introduced the strict regression 
-fixing policy, because we used to have these "one step forward, unknown 
-number of steps back" dances especially in power management and ACPI. A 
-patch fixed something, but broke some other machine, and people claimed it 
-fixed more than it broke (which is an impossible statement to really 
-quantify).
-
-So new code simply doesn't matter. Reverting new code is never a 
-regression, even if that new code made something work. It's _old_ working 
-setups that matter from the regression standpoint.
-
-		Linus
+Yeah...  bd_start_claiming() grabs a reference to gendisk and we never
+let it go.  There's your leak...
