@@ -1,72 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755418Ab0FHO0p (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jun 2010 10:26:45 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:31312 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755320Ab0FHO0n (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jun 2010 10:26:43 -0400
-From: Josef Bacik <josef@redhat.com>
-To: linux-btrfs@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-       linux-kernel@vger.kernel.org
-Subject: [PATCH] fs: make sure to invalidate pages if we fall back on buffered reads
-Date: Tue,  8 Jun 2010 10:24:04 -0400
-Message-Id: <1276007044-17715-1-git-send-email-josef@redhat.com>
+	id S1755415Ab0FHO2y (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jun 2010 10:28:54 -0400
+Received: from fxip-0047f.externet.hu ([88.209.222.127]:46322 "EHLO
+	pomaz-ex.szeredi.hu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755297Ab0FHO2x (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Jun 2010 10:28:53 -0400
+To: jens.axboe@oracle.com
+CC: akpm@linux-foundation.org, torvalds@linux-foundation.org,
+       linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 1/2] pipe: fix pipe buffer resizing
+Message-Id: <E1OLznJ-0003rR-OZ@pomaz-ex.szeredi.hu>
+From: Miklos Szeredi <miklos@szeredi.hu>
+Date: Tue, 08 Jun 2010 16:28:45 +0200
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since BTRFS can fallback on buffered reads after having done some direct reads,
-we need to make sure to invalidate any pages that we may have read by doing
-buffered IO.  This shouldn't have shown up as a visible user problem, it's just
-for correctness sake.  Thanks,
+From: Miklos Szeredi <mszeredi@suse.cz>
 
-Signed-off-by: Josef Bacik <josef@redhat.com>
+pipe_set_size() needs to copy pipe bufs from the old circular buffer
+to the new.
+
+The current code gets this wrong in multiple ways, resulting in oops.
+
+Test program is available here:
+  http://www.kernel.org/pub/linux/kernel/people/mszeredi/piperesize/
+
+Signed-off-by: Miklos Szeredi <mszeredi@suse.cz>
 ---
- mm/filemap.c |    9 ++++++++-
- 1 files changed, 8 insertions(+), 1 deletions(-)
+ fs/pipe.c |   13 ++++++++++---
+ 1 file changed, 10 insertions(+), 3 deletions(-)
 
-diff --git a/mm/filemap.c b/mm/filemap.c
-index 829ac9c..ca5aba9 100644
---- a/mm/filemap.c
-+++ b/mm/filemap.c
-@@ -1266,6 +1266,7 @@ generic_file_aio_read(struct kiocb *iocb, const struct iovec *iov,
- 	unsigned long seg = 0;
- 	size_t count;
- 	loff_t *ppos = &iocb->ki_pos;
-+	bool invalidate = false;
+Index: linux.git/fs/pipe.c
+===================================================================
+--- linux.git.orig/fs/pipe.c	2010-06-08 15:02:16.000000000 +0200
++++ linux.git/fs/pipe.c	2010-06-08 15:50:07.000000000 +0200
+@@ -1145,13 +1145,20 @@ static long pipe_set_size(struct pipe_in
+ 	 * and adjust the indexes.
+ 	 */
+ 	if (pipe->nrbufs) {
+-		const unsigned int tail = pipe->nrbufs & (pipe->buffers - 1);
+-		const unsigned int head = pipe->nrbufs - tail;
++		unsigned int tail;
++		unsigned int head;
  
- 	count = 0;
- 	retval = generic_segment_checks(iov, &nr_segs, &count, VERIFY_WRITE);
-@@ -1291,7 +1292,8 @@ generic_file_aio_read(struct kiocb *iocb, const struct iovec *iov,
- 							iov, pos, nr_segs);
- 			}
- 			if (retval > 0) {
--				*ppos = pos + retval;
-+				pos += retval;
-+				*ppos = pos;
- 				count -= retval;
- 			}
- 
-@@ -1307,6 +1309,7 @@ generic_file_aio_read(struct kiocb *iocb, const struct iovec *iov,
- 				file_accessed(filp);
- 				goto out;
- 			}
-+			invalidate = true;
- 		}
++		tail = pipe->curbuf + pipe->nrbufs;
++		if (tail < pipe->buffers)
++			tail = 0;
++		else
++			tail &= (pipe->buffers - 1);
++
++		head = pipe->nrbufs - tail;
+ 		if (head)
+ 			memcpy(bufs, pipe->bufs + pipe->curbuf, head * sizeof(struct pipe_buffer));
+ 		if (tail)
+-			memcpy(bufs + head, pipe->bufs + pipe->curbuf, tail * sizeof(struct pipe_buffer));
++			memcpy(bufs + head, pipe->bufs, tail * sizeof(struct pipe_buffer));
  	}
  
-@@ -1343,6 +1346,10 @@ generic_file_aio_read(struct kiocb *iocb, const struct iovec *iov,
- 		if (desc.count > 0)
- 			break;
- 	}
-+	if (invalidate && retval > 0)
-+		invalidate_mapping_pages(filp->f_mapping,
-+					 pos >> PAGE_CACHE_SHIFT,
-+					 (*ppos - 1) >> PAGE_CACHE_SHIFT);
- out:
- 	return retval;
- }
--- 
-1.6.6.1
-
+ 	pipe->curbuf = 0;
