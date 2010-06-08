@@ -1,52 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756417Ab0FHUvj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jun 2010 16:51:39 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:39450 "EHLO ogre.sisk.pl"
+	id S1756452Ab0FHUzq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jun 2010 16:55:46 -0400
+Received: from hera.kernel.org ([140.211.167.34]:44985 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755791Ab0FHUvh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jun 2010 16:51:37 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Alan Jenkins <alan-jenkins@tuffmail.co.uk>
-Subject: Re: Regression: BUG when battery is removed before resuming from hibernation
-Date: Tue, 8 Jun 2010 22:52:49 +0200
-User-Agent: KMail/1.12.4 (Linux/2.6.35-rc1-rjw; KDE/4.3.5; x86_64; ; )
-Cc: Kernel Testers List <kernel-testers@vger.kernel.org>,
-       linux acpi <linux-acpi@vger.kernel.org>,
-       "linux-kernel" <linux-kernel@vger.kernel.org>
-References: <4C0E40E1.2080108@tuffmail.co.uk>
-In-Reply-To: <4C0E40E1.2080108@tuffmail.co.uk>
+	id S1754655Ab0FHUzo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Jun 2010 16:55:44 -0400
+Date: Tue, 8 Jun 2010 20:55:13 GMT
+From: tip-bot for Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
+       fweisbec@gmail.com, a.p.zijlstra@chello.nl, stable@kernel.org,
+       tglx@linutronix.de, mingo@elte.hu
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+       fweisbec@gmail.com, a.p.zijlstra@chello.nl, stable@kernel.org,
+       tglx@linutronix.de, mingo@elte.hu
+In-Reply-To: <new-submission>
+References: <new-submission>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/core] perf: Fix signed comparison in perf_adjust_period()
+Message-ID: <tip-f6ab91add6355e231e1c47897027b2a6ee4fa268@git.kernel.org>
+Git-Commit-ID: f6ab91add6355e231e1c47897027b2a6ee4fa268
+X-Mailer: tip-git-log-daemon
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201006082252.49452.rjw@sisk.pl>
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Tue, 08 Jun 2010 20:55:15 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 08 June 2010, Alan Jenkins wrote:
-> I found this bug 2.6.34 on my Asus EeePC 701 (x86_32 arch).  It didn't 
-> happen to me before, when I was running nearly-2.6.33 or 2.6.32-release.
-> 
-> I used git-bisect, but unfortunately the result isn't very helpful.  My 
-> next step will be to try to narrowing down the culprits by disabling 
-> individual CONFIG options.  Here are my results so far, in case anyone 
-> is interested.
-> 
-> 
-> == Steps to reproduce ==
-> 
-> I) Boot off mains power, with battery removed.  Login to KDE4 session, 
-> with Konsole as the only running application.
-> II) Run "sudo pm-hibernate"
-> 
-> 1. When the system switches to text mode (a.k.a the console), 
-> immediately insert the battery.
-> 2. Once the system has fully hibernated, remove the battery.
-> 3. Press the power button to resume.  The backtrace below is generated 
-> during resume.
+Commit-ID:  f6ab91add6355e231e1c47897027b2a6ee4fa268
+Gitweb:     http://git.kernel.org/tip/f6ab91add6355e231e1c47897027b2a6ee4fa268
+Author:     Peter Zijlstra <a.p.zijlstra@chello.nl>
+AuthorDate: Fri, 4 Jun 2010 15:18:01 +0200
+Committer:  Ingo Molnar <mingo@elte.hu>
+CommitDate: Tue, 8 Jun 2010 18:43:00 +0200
 
-You're not supposed to be doing that.
+perf: Fix signed comparison in perf_adjust_period()
 
-Rafael
+Frederic reported that frequency driven swevents didn't work properly
+and even caused a division-by-zero error.
+
+It turns out there are two bugs, the division-by-zero comes from a
+failure to deal with that in perf_calculate_period().
+
+The other was more interesting and turned out to be a wrong comparison
+in perf_adjust_period(). The comparison was between an s64 and u64 and
+got implicitly converted to an unsigned comparison. The problem is
+that period_left is typically < 0, so it ended up being always true.
+
+Cure this by making the local period variables s64.
+
+Reported-by: Frederic Weisbecker <fweisbec@gmail.com>
+Tested-by: Frederic Weisbecker <fweisbec@gmail.com>
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: <stable@kernel.org>
+LKML-Reference: <new-submission>
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
+---
+ kernel/perf_event.c |    5 ++++-
+ 1 files changed, 4 insertions(+), 1 deletions(-)
+
+diff --git a/kernel/perf_event.c b/kernel/perf_event.c
+index 31d6afe..ff86c55 100644
+--- a/kernel/perf_event.c
++++ b/kernel/perf_event.c
+@@ -1507,6 +1507,9 @@ do {					\
+ 		divisor = nsec * frequency;
+ 	}
+ 
++	if (!divisor)
++		return dividend;
++
+ 	return div64_u64(dividend, divisor);
+ }
+ 
+@@ -1529,7 +1532,7 @@ static int perf_event_start(struct perf_event *event)
+ static void perf_adjust_period(struct perf_event *event, u64 nsec, u64 count)
+ {
+ 	struct hw_perf_event *hwc = &event->hw;
+-	u64 period, sample_period;
++	s64 period, sample_period;
+ 	s64 delta;
+ 
+ 	period = perf_calculate_period(event, nsec, count);
