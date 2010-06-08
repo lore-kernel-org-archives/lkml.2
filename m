@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755906Ab0FHRno (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jun 2010 13:43:44 -0400
-Received: from msux-gh1-uea01.nsa.gov ([63.239.65.39]:49901 "EHLO
+	id S1755927Ab0FHRoW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jun 2010 13:44:22 -0400
+Received: from msux-gh1-uea01.nsa.gov ([63.239.65.39]:50072 "EHLO
 	msux-gh1-uea01.nsa.gov" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755838Ab0FHRnh (ORCPT
+	with ESMTP id S1755757Ab0FHRoT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jun 2010 13:43:37 -0400
+	Tue, 8 Jun 2010 13:44:19 -0400
 From: "David P. Quigley" <dpquigl@tycho.nsa.gov>
 To: hch@infradead.org, viro@zeniv.linux.org.uk, casey@schaufler-ca.com,
        sds@tycho.nsa.gov, matthew.dodd@sparta.com, trond.myklebust@fys.uio.no,
@@ -15,9 +15,9 @@ Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
        linux-security-module@vger.kernel.org, selinux@tycho.nsa.gov,
        labeled-nfs@linux-nfs.org, "David P. Quigley" <dpquigl@tycho.nsa.gov>,
        "Matthew N. Dodd" <Matthew.Dodd@sparta.com>
-Subject: [PATCH 04/10] SELinux: Add new labeling type native labels
-Date: Tue,  8 Jun 2010 12:22:50 -0400
-Message-Id: <1276014176-20315-5-git-send-email-dpquigl@tycho.nsa.gov>
+Subject: [PATCH 02/10] Security: Add Hook to test if the particular xattr is part of a MAC model.
+Date: Tue,  8 Jun 2010 12:22:48 -0400
+Message-Id: <1276014176-20315-3-git-send-email-dpquigl@tycho.nsa.gov>
 X-Mailer: git-send-email 1.6.2.5
 In-Reply-To: <1276014176-20315-1-git-send-email-dpquigl@tycho.nsa.gov>
 References: <1276014176-20315-1-git-send-email-dpquigl@tycho.nsa.gov>
@@ -25,148 +25,158 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-There currently doesn't exist a labeling type that is adequate for use with
-labeled NFS. Since NFS doesn't really support xattrs we can't use the use xattr
-labeling behavior. For this we developed a new labeling type. The native
-labeling type is used solely by NFS to ensure NFS inodes are labeled at runtime
-by the NFS code instead of relying on the SELinux security server on the client
-end.
+There are areas in the Labeled NFS code where where we need to test if the
+attribute being requested exhibits the semantics of a MAC model. This allows us
+to make sure that we get the desired semantics from the attribute instead of
+something else such as capabilities or a time based LSM.
 
 Signed-off-by: Matthew N. Dodd <Matthew.Dodd@sparta.com>
 Signed-off-by: David P. Quigley <dpquigl@tycho.nsa.gov>
 ---
- include/linux/security.h            |    3 +++
- security/selinux/hooks.c            |   30 +++++++++++++++++++++---------
- security/selinux/include/security.h |    2 ++
- security/selinux/ss/policydb.c      |    5 ++++-
- 4 files changed, 30 insertions(+), 10 deletions(-)
+ include/linux/security.h   |   11 +++++++++++
+ security/capability.c      |    6 ++++++
+ security/security.c        |    6 ++++++
+ security/selinux/hooks.c   |    6 ++++++
+ security/smack/smack_lsm.c |   11 +++++++++++
+ 5 files changed, 40 insertions(+), 0 deletions(-)
 
 diff --git a/include/linux/security.h b/include/linux/security.h
-index 4bb5db7..d67c5d6 100644
+index 4d01784..9597620 100644
 --- a/include/linux/security.h
 +++ b/include/linux/security.h
-@@ -43,6 +43,9 @@
- #define SECURITY_CAP_NOAUDIT 0
- #define SECURITY_CAP_AUDIT 1
+@@ -1373,6 +1373,10 @@ static inline void security_free_mnt_opts(struct security_mnt_opts *opts)
+  *	@pages contains the number of pages.
+  *	Return 0 if permission is granted.
+  *
++ * @ismaclabel:
++ * 	Check if the extended attribute specified by @name represents a MAC label.
++ * 	@name full extended attribute name to check against LSM as a MAC label.
++ *
+  * @secid_to_secctx:
+  *	Convert secid to security context.
+  *	@secid contains the security ID.
+@@ -1664,6 +1668,7 @@ struct security_operations {
  
-+/* LSM Agnostic defines for sb_set_mnt_opts */
-+#define SECURITY_LSM_NATIVE_LABELS	1
+ 	int (*getprocattr) (struct task_struct *p, char *name, char **value);
+ 	int (*setprocattr) (struct task_struct *p, char *name, void *value, size_t size);
++	int (*ismaclabel) (const char * name);
+ 	int (*secid_to_secctx) (u32 secid, char **secdata, u32 *seclen);
+ 	int (*secctx_to_secid) (const char *secdata, u32 seclen, u32 *secid);
+ 	void (*release_secctx) (char *secdata, u32 seclen);
+@@ -1919,6 +1924,7 @@ int security_getprocattr(struct task_struct *p, char *name, char **value);
+ int security_setprocattr(struct task_struct *p, char *name, void *value, size_t size);
+ int security_netlink_send(struct sock *sk, struct sk_buff *skb);
+ int security_netlink_recv(struct sk_buff *skb, int cap);
++int security_ismaclabel(const char *name);
+ int security_secid_to_secctx(u32 secid, char **secdata, u32 *seclen);
+ int security_secctx_to_secid(const char *secdata, u32 seclen, u32 *secid);
+ void security_release_secctx(char *secdata, u32 seclen);
+@@ -2676,6 +2682,11 @@ static inline int security_netlink_recv(struct sk_buff *skb, int cap)
+ 	return cap_netlink_recv(skb, cap);
+ }
+ 
++static inline int security_ismaclabel(const char *name)
++{
++	return 0;
++}
 +
- struct ctl_table;
- struct audit_krule;
+ static inline int security_secid_to_secctx(u32 secid, char **secdata, u32 *seclen)
+ {
+ 	return -EOPNOTSUPP;
+diff --git a/security/capability.c b/security/capability.c
+index 9ce1c2f..0d8f7e9 100644
+--- a/security/capability.c
++++ b/security/capability.c
+@@ -829,6 +829,11 @@ static int cap_setprocattr(struct task_struct *p, char *name, void *value,
+ 	return -EINVAL;
+ }
  
++static int cap_ismaclabel(const char *name)
++{
++	return 0;
++}
++
+ static int cap_secid_to_secctx(u32 secid, char **secdata, u32 *seclen)
+ {
+ 	return -EOPNOTSUPP;
+@@ -1064,6 +1069,7 @@ void security_fixup_ops(struct security_operations *ops)
+ 	set_to_cap_if_null(ops, d_instantiate);
+ 	set_to_cap_if_null(ops, getprocattr);
+ 	set_to_cap_if_null(ops, setprocattr);
++	set_to_cap_if_null(ops, ismaclabel);
+ 	set_to_cap_if_null(ops, secid_to_secctx);
+ 	set_to_cap_if_null(ops, secctx_to_secid);
+ 	set_to_cap_if_null(ops, release_secctx);
+diff --git a/security/security.c b/security/security.c
+index c1b6847..1f0765c 100644
+--- a/security/security.c
++++ b/security/security.c
+@@ -1013,6 +1013,12 @@ int security_netlink_recv(struct sk_buff *skb, int cap)
+ }
+ EXPORT_SYMBOL(security_netlink_recv);
+ 
++int security_ismaclabel(const char *name)
++{
++	return security_ops->ismaclabel(name);
++}
++EXPORT_SYMBOL(security_ismaclabel);
++
+ int security_secid_to_secctx(u32 secid, char **secdata, u32 *seclen)
+ {
+ 	return security_ops->secid_to_secctx(secid, secdata, seclen);
 diff --git a/security/selinux/hooks.c b/security/selinux/hooks.c
-index d150fb4..01edf80 100644
+index 435c51f..8239f5c 100644
 --- a/security/selinux/hooks.c
 +++ b/security/selinux/hooks.c
-@@ -77,6 +77,7 @@
- #include <linux/mutex.h>
- #include <linux/posix-timers.h>
- #include <linux/syslog.h>
-+#include <linux/security.h>
+@@ -5372,6 +5372,11 @@ abort_change:
+ 	return error;
+ }
  
- #include "avc.h"
- #include "objsec.h"
-@@ -323,13 +324,14 @@ extern int ss_initialized;
- 
- /* The file system's label must be initialized prior to use. */
- 
--static char *labeling_behaviors[6] = {
-+static char *labeling_behaviors[7] = {
- 	"uses xattr",
- 	"uses transition SIDs",
- 	"uses task SIDs",
- 	"uses genfs_contexts",
- 	"not configured for labeling",
- 	"uses mountpoint labeling",
-+	"uses native labeling",
- };
- 
- static int inode_doinit_with_dentry(struct inode *inode, struct dentry *opt_dentry);
-@@ -721,14 +723,16 @@ static int selinux_set_mnt_opts(struct super_block *sb,
- 	if (strcmp(sb->s_type->name, "proc") == 0)
- 		sbsec->flags |= SE_SBPROC;
- 
--	/* Determine the labeling behavior to use for this filesystem type. */
--	rc = security_fs_use((sbsec->flags & SE_SBPROC) ? "proc" : sb->s_type->name, &sbsec->behavior, &sbsec->sid);
--	if (rc) {
--		printk(KERN_WARNING "%s: security_fs_use(%s) returned %d\n",
--		       __func__, sb->s_type->name, rc);
--		goto out;
-+	if (!sbsec->behavior) {
-+		/* Determine the labeling behavior to use for this filesystem type. */
-+		rc = security_fs_use((sbsec->flags & SE_SBPROC) ? "proc" : sb->s_type->name, 
-+					&sbsec->behavior, &sbsec->sid);
-+		if (rc) {
-+			printk(KERN_WARNING "%s: security_fs_use(%s) returned %d\n",
-+					__func__, sb->s_type->name, rc);
-+			goto out;
-+		}
- 	}
--
- 	/* sets the context of the superblock for the fs being mounted. */
- 	if (fscontext_sid) {
- 		rc = may_context_mount_sb_relabel(fscontext_sid, sbsec, cred);
-@@ -743,6 +747,11 @@ static int selinux_set_mnt_opts(struct super_block *sb,
- 	 * sets the label used on all file below the mountpoint, and will set
- 	 * the superblock context if not already set.
- 	 */
-+	if (kern_flags & SECURITY_LSM_NATIVE_LABELS && !context_sid) {
-+		sbsec->behavior = SECURITY_FS_USE_NATIVE;
-+		*set_kern_flags |= SECURITY_LSM_NATIVE_LABELS;
-+	}
++static int selinux_ismaclabel(const char *name)
++{
++	return (strcmp(name,XATTR_NAME_SELINUX) == 0);
++}
 +
- 	if (context_sid) {
- 		if (!fscontext_sid) {
- 			rc = may_context_mount_sb_relabel(context_sid, sbsec,
-@@ -774,7 +783,8 @@ static int selinux_set_mnt_opts(struct super_block *sb,
- 	}
+ static int selinux_secid_to_secctx(u32 secid, char **secdata, u32 *seclen)
+ {
+ 	return security_sid_to_context(secid, secdata, seclen);
+@@ -5610,6 +5615,7 @@ static struct security_operations selinux_ops = {
+ 	.getprocattr =			selinux_getprocattr,
+ 	.setprocattr =			selinux_setprocattr,
  
- 	if (defcontext_sid) {
--		if (sbsec->behavior != SECURITY_FS_USE_XATTR) {
-+		if (sbsec->behavior != SECURITY_FS_USE_XATTR &&
-+			sbsec->behavior != SECURITY_FS_USE_NATIVE) {
- 			rc = -EINVAL;
- 			printk(KERN_WARNING "SELinux: defcontext option is "
- 			       "invalid for this filesystem type\n");
-@@ -1251,6 +1261,8 @@ static int inode_doinit_with_dentry(struct inode *inode, struct dentry *opt_dent
- 	}
++	.ismaclabel =			selinux_ismaclabel,
+ 	.secid_to_secctx =		selinux_secid_to_secctx,
+ 	.secctx_to_secid =		selinux_secctx_to_secid,
+ 	.release_secctx =		selinux_release_secctx,
+diff --git a/security/smack/smack_lsm.c b/security/smack/smack_lsm.c
+index fdfeaa2..449e223 100644
+--- a/security/smack/smack_lsm.c
++++ b/security/smack/smack_lsm.c
+@@ -3012,6 +3012,16 @@ static void smack_audit_rule_free(void *vrule)
+ #endif /* CONFIG_AUDIT */
  
- 	switch (sbsec->behavior) {
-+	case SECURITY_FS_USE_NATIVE:
-+		break;
- 	case SECURITY_FS_USE_XATTR:
- 		if (!inode->i_op->getxattr) {
- 			isec->sid = sbsec->def_sid;
-diff --git a/security/selinux/include/security.h b/security/selinux/include/security.h
-index 1f7c249..e4c5bd0 100644
---- a/security/selinux/include/security.h
-+++ b/security/selinux/include/security.h
-@@ -161,6 +161,8 @@ int security_get_allow_unknown(void);
- #define SECURITY_FS_USE_GENFS		4 /* use the genfs support */
- #define SECURITY_FS_USE_NONE		5 /* no labeling support */
- #define SECURITY_FS_USE_MNTPOINT	6 /* use mountpoint labeling */
-+#define SECURITY_FS_USE_NATIVE		7 /* use native label support */
-+#define SECURITY_FS_USE_MAX		7 /* Highest SECURITY_FS_USE_XXX */
+ /**
++ * smack_ismaclabel - check if xattr @name references a smack MAC label
++ * @name: Full xattr name to check.
++ */
++static int smack_ismaclabel(const char *name)
++{
++	return (strcmp(name, XATTR_NAME_SMACK) == 0);
++}
++
++
++/**
+  * smack_secid_to_secctx - return the smack label for a secid
+  * @secid: incoming integer
+  * @secdata: destination
+@@ -3199,6 +3209,7 @@ struct security_operations smack_ops = {
+ 	.audit_rule_free =		smack_audit_rule_free,
+ #endif /* CONFIG_AUDIT */
  
- int security_fs_use(const char *fstype, unsigned int *behavior,
- 	u32 *sid);
-diff --git a/security/selinux/ss/policydb.c b/security/selinux/ss/policydb.c
-index 23c6e53..35e2b47 100644
---- a/security/selinux/ss/policydb.c
-+++ b/security/selinux/ss/policydb.c
-@@ -1996,7 +1996,10 @@ int policydb_read(struct policydb *p, void *fp)
- 				if (rc < 0)
- 					goto bad;
- 				c->v.behavior = le32_to_cpu(buf[0]);
--				if (c->v.behavior > SECURITY_FS_USE_NONE)
-+				/* Determined at runtime, not in policy DB. */
-+				if (c->v.behavior == SECURITY_FS_USE_MNTPOINT)
-+					goto bad;
-+				if (c->v.behavior > SECURITY_FS_USE_MAX)
- 					goto bad;
- 				len = le32_to_cpu(buf[1]);
- 				c->u.name = kmalloc(len + 1, GFP_KERNEL);
++	.ismaclabel =			smack_ismaclabel,
+ 	.secid_to_secctx = 		smack_secid_to_secctx,
+ 	.secctx_to_secid = 		smack_secctx_to_secid,
+ 	.release_secctx = 		smack_release_secctx,
 -- 
 1.6.2.5
 
