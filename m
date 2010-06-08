@@ -1,45 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754076Ab0FHIiV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jun 2010 04:38:21 -0400
-Received: from smtp.nokia.com ([192.100.105.134]:24717 "EHLO
-	mgw-mx09.nokia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753438Ab0FHIiU (ORCPT
+	id S1753745Ab0FHIrZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jun 2010 04:47:25 -0400
+Received: from bld-mail14.adl6.internode.on.net ([150.101.137.99]:57252 "EHLO
+	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753438Ab0FHIrX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jun 2010 04:38:20 -0400
-Subject: Re: OMAP video compile error; regression from 2.6.33-rc4 onward
- (including current master)
-From: Tomi Valkeinen <tomi.valkeinen@nokia.com>
-To: ext Luke-Jr <luke@dashjr.org>
-Cc: "slapin@ossfans.org" <slapin@ossfans.org>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>
-In-Reply-To: <201006071117.22645.luke@dashjr.org>
-References: <201006061652.39248.luke@dashjr.org>
-	 <1275896854.2549.14.camel@tubuntu.research.nokia.com>
-	 <201006071117.22645.luke@dashjr.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 08 Jun 2010 11:36:52 +0300
-Message-ID: <1275986212.2549.41.camel@tubuntu.research.nokia.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 08 Jun 2010 08:37:21.0709 (UTC) FILETIME=[CFFF65D0:01CB06E5]
-X-Nokia-AV: Clean
+	Tue, 8 Jun 2010 04:47:23 -0400
+Date: Tue, 8 Jun 2010 18:47:18 +1000
+From: Dave Chinner <david@fromorbit.com>
+To: Christof Schmitt <christof.schmitt@de.ibm.com>
+Cc: "Martin K. Petersen" <martin.petersen@oracle.com>,
+       Boaz Harrosh <bharrosh@panasas.com>, linux-scsi@vger.kernel.org,
+       linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
+Subject: Re: Wrong DIF guard tag on ext2 write
+Message-ID: <20100608084718.GB7869@dastard>
+References: <20100531144648.GA19068@schmichrtp.mainz.de.ibm.com>
+ <yq11vcqlwp8.fsf@sermon.lab.mkp.net>
+ <20100602133748.GA11196@schmichrtp.mainz.de.ibm.com>
+ <20100602232039.GA8287@dastard>
+ <yq139x3y411.fsf@sermon.lab.mkp.net>
+ <20100604023253.GF19651@dastard>
+ <yq1zkz6vmpu.fsf@sermon.lab.mkp.net>
+ <4C0D2AD4.2020303@panasas.com>
+ <yq1sk4yvj0a.fsf@sermon.lab.mkp.net>
+ <20100608071534.GA3263@schmichrtp.mainz.de.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100608071534.GA3263@schmichrtp.mainz.de.ibm.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-06-07 at 18:17 +0200, ext Luke-Jr wrote:
-> On Monday 07 June 2010 02:47:34 am Tomi Valkeinen wrote:
-> > I don't have any device that uses RFBI so I can't test it, but how about
-> > this patch:
+On Tue, Jun 08, 2010 at 09:15:35AM +0200, Christof Schmitt wrote:
+> On Mon, Jun 07, 2010 at 01:40:21PM -0400, Martin K. Petersen wrote:
+> > >>>>> "Boaz" == Boaz Harrosh <bharrosh@panasas.com> writes:
+> > 
+> > Boaz> Do you remember some performance numbers that show degradation /
+> > Boaz> sameness?
+> > 
+> > Boaz> What type of work loads?
+> > 
+> > I haven't been using XFS much for over a year.  I'm using an internal
+> > async I/O tool and btrfs for most of my DIX/DIF testing these days.
+> > 
+> > But my original changes were along the lines of what Jan mentioned
+> > earlier (hooking into page_mkwrite and waiting for writeback.  I could
+> > have sworn that I only did it for ext[23] and that XFS waited out of the
+> > box but git proves me wrong).  Anyway, I'll try to get some benchmarking
+> > happening later this week.
 > 
-> Unfortunately, I can't test it either since N8x0 has no mainline support for 
-> video output, nor can until CBus is merged. :(
+> Is there a patch with this change available somewhere? It might be
+> useful to patch a kernel with this XFS change for reliable DIF/DIX
+> testing.
 
-Okay. I'll put it in, then, as it at least compiles.
+Adding a wait_on_page_writeback() call to page_mkwrite() won't help
+by itself - you need to unmap the pages after transitioning them
+from dirty to writeback but before the hardware starts processing
+the IO if you want to lock out mmap writes this way....
 
- Tomi
+Cheers,
 
-
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
