@@ -1,68 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752269Ab0FHH0e (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jun 2010 03:26:34 -0400
-Received: from he.sipsolutions.net ([78.46.109.217]:37827 "EHLO
-	sipsolutions.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750743Ab0FHH0c (ORCPT
+	id S1753021Ab0FHH2h (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jun 2010 03:28:37 -0400
+Received: from mail-pz0-f176.google.com ([209.85.222.176]:50295 "EHLO
+	mail-pz0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750743Ab0FHH2g (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jun 2010 03:26:32 -0400
-Subject: Re: 2.6.35-rc2-git1 - net/mac80211/sta_info.c:125 invoked
- rcu_dereference_check() without protection!
-From: Johannes Berg <johannes@sipsolutions.net>
-To: paulmck@linux.vnet.ibm.com
-Cc: Miles Lane <miles.lane@gmail.com>, Vivek Goyal <vgoyal@redhat.com>,
-       Eric Paris <eparis@redhat.com>, Lai Jiangshan <laijs@cn.fujitsu.com>,
-       Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
-       LKML <linux-kernel@vger.kernel.org>, nauman@google.com,
-       eric.dumazet@gmail.com, netdev@vger.kernel.org,
-       Jens Axboe <jens.axboe@oracle.com>,
-       Gui Jianfeng <guijianfeng@cn.fujitsu.com>,
-       Li Zefan <lizf@cn.fujitsu.com>
-In-Reply-To: <20100607235941.GD2387@linux.vnet.ibm.com>
-References: <AANLkTintKf_9C1sBsUac6Prvb1nWn7nWszatJ8yUb-VM@mail.gmail.com>
-	 <20100607235941.GD2387@linux.vnet.ibm.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 08 Jun 2010 09:26:09 +0200
-Message-ID: <1275981969.3706.1.camel@jlt3.sipsolutions.net>
+	Tue, 8 Jun 2010 03:28:36 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:content-type:date:message-id:mime-version
+         :x-mailer:content-transfer-encoding;
+        b=dzuBUuyC2D1kDD8WklKNNoljQw8b8nWpnhffBI4Wgb9Eo9NAmv8fnav0bwcq+HbNDa
+         CXLoMmxoPc3W+1mhbxhjeGb/wPUbhjHMnRFUDemangeMamaYVNbsqVEvkpvTwM5gWhb7
+         OAIQUbPxaXBlAduy4zHetFrgeT/oEVCG3Deq8=
+Subject: [PATCH] qcserial: fix a memory leak in qcprobe error path
+From: Axel Lin <axel.lin@gmail.com>
+To: linux-kernel <linux-kernel@vger.kernel.org>
+Cc: Greg Kroah-Hartman <gregkh@suse.de>, Matthew Garrett <mjg@redhat.com>,
+       Anssi Hannula <anssi.hannula@gmail.com>,
+       Bernhard Rosenkraenzer <bero@arklinux.org>, linux-usb@vger.kernel.org
+Content-Type: text/plain
+Date: Tue, 08 Jun 2010 15:29:23 +0800
+Message-Id: <1275982163.17060.3.camel@mola>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.1.2 
+X-Mailer: Evolution 2.22.3.1 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-06-07 at 16:59 -0700, Paul E. McKenney wrote:
-> On Mon, Jun 07, 2010 at 02:25:44PM -0400, Miles Lane wrote:
-> > [   43.478812] [ INFO: suspicious rcu_dereference_check() usage. ]
-> > [   43.478815] ---------------------------------------------------
-> > [   43.478820] net/mac80211/sta_info.c:125 invoked
-> > rcu_dereference_check() without protection!
-> > [   43.478824]
-> > [   43.478824] other info that might help us debug this:
-> > [   43.478826]
-> > [   43.478829]
-> > [   43.478830] rcu_scheduler_active = 1, debug_locks = 1
-> > [   43.478834] no locks held by NetworkManager/4017.
-> 
-> Hmmm...  Johannes's update has been merged, and it requires that callers
-> either be in an RCU read-side critical section or hold either the
-> ->sta_lock or the ->sta_mtx, and this thread does none of this.
-> 
-> Johannes, any thoughts?
-> 
-> 							Thanx, Paul
-> 
-> > [   43.478837] stack backtrace:
-> > [   43.478842] Pid: 4017, comm: NetworkManager Not tainted 2.6.35-rc2-git1 #8
-> > [   43.478846] Call Trace:
-> > [   43.478849]  <IRQ>  [<ffffffff81064e9c>] lockdep_rcu_dereference+0x9d/0xa5
-> > [   43.478876]  [<ffffffffa010cb3c>] sta_info_get_bss+0x71/0x12d [mac80211]
-> > [   43.478889]  [<ffffffffa010cc0d>] ieee80211_find_sta+0x15/0x2f [mac80211]
-> > [   43.478902]  [<ffffffffa019ae16>] iwlagn_tx_queue_reclaim+0xe7/0x1bb [iwlagn]
+In current implemtation, the "data" is not kfreed in qcprobe error path.
+This patch moves the memory allocation a little bit latter and only
+allocate memory when no error is detected in previous checking.
 
-iwlwifi wasn't using rcu protection here -- already sent a patch fixing
-it. My mistake, I  think. Thanks for checking :)
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+---
+ drivers/usb/serial/qcserial.c |   30 +++++++++++++++++-------------
+ 1 files changed, 17 insertions(+), 13 deletions(-)
 
-johannes
+diff --git a/drivers/usb/serial/qcserial.c b/drivers/usb/serial/qcserial.c
+index 04bb759..d30078c 100644
+--- a/drivers/usb/serial/qcserial.c
++++ b/drivers/usb/serial/qcserial.c
+@@ -109,13 +109,6 @@ static int qcprobe(struct usb_serial *serial, const struct usb_device_id *id)
+ 	ifnum = intf->desc.bInterfaceNumber;
+ 	dbg("This Interface = %d", ifnum);
+ 
+-	data = serial->private = kzalloc(sizeof(struct usb_wwan_intf_private),
+-					 GFP_KERNEL);
+-	if (!data)
+-		return -ENOMEM;
+-
+-	spin_lock_init(&data->susp_lock);
+-
+ 	switch (nintf) {
+ 	case 1:
+ 		/* QDL mode */
+@@ -130,8 +123,10 @@ static int qcprobe(struct usb_serial *serial, const struct usb_device_id *id)
+ 		    usb_endpoint_is_bulk_out(&intf->endpoint[1].desc)) {
+ 			dbg("QDL port found");
+ 
+-			if (serial->interface->num_altsetting == 1)
+-				return 0;
++			if (serial->interface->num_altsetting == 1) {
++				retval = 0;
++				goto out;
++			}
+ 
+ 			retval = usb_set_interface(serial->dev, ifnum, 1);
+ 			if (retval < 0) {
+@@ -140,7 +135,7 @@ static int qcprobe(struct usb_serial *serial, const struct usb_device_id *id)
+ 					retval);
+ 				retval = -ENODEV;
+ 			}
+-			return retval;
++			goto out;
+ 		}
+ 		break;
+ 
+@@ -156,17 +151,26 @@ static int qcprobe(struct usb_serial *serial, const struct usb_device_id *id)
+ 					retval);
+ 				retval = -ENODEV;
+ 			}
+-			return retval;
++			goto out;
+ 		}
+ 		break;
+ 
+ 	default:
+ 		dev_err(&serial->dev->dev,
+ 			"unknown number of interfaces: %d\n", nintf);
+-		return -ENODEV;
+ 	}
+ 
+-	return retval;
++out:
++	if (retval)
++		return retval;
++
++	data = serial->private = kzalloc(sizeof(struct usb_wwan_intf_private),
++					 GFP_KERNEL);
++	if (!data)
++		return -ENOMEM;
++
++	spin_lock_init(&data->susp_lock);
++	return 0;
+ }
+ 
+ static struct usb_serial_driver qcdevice = {
+-- 
+1.5.4.3
+
+
 
