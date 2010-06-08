@@ -1,92 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753522Ab0FHHeO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jun 2010 03:34:14 -0400
-Received: from mga11.intel.com ([192.55.52.93]:5618 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753069Ab0FHHeN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jun 2010 03:34:13 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.53,383,1272870000"; 
-   d="scan'208";a="574285043"
-Date: Tue, 8 Jun 2010 15:20:49 +0800
-From: Yong Wang <yong.y.wang@linux.intel.com>
-To: Masayuki Ohtak <masa-korg@dsn.okisemi.com>
-Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, LKML <linux-kernel@vger.kernel.org>,
-       Andrew <andrew.chih.howe.khor@intel.com>,
-       Intel OTC <joel.clark@intel.com>, "Wang, Qi" <qi.wang@intel.com>,
-       "Wang, Yong Y" <yong.y.wang@intel.com>
-Subject: Re: [PATCH] Topcliff PHUB: Generate PacketHub driver
-Message-ID: <20100608072049.GA12940@ywang-moblin2.bj.intel.com>
-References: <4C0DCE87.1090802@dsn.okisemi.com>
+	id S1751857Ab0FHHwJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jun 2010 03:52:09 -0400
+Received: from daytona.panasas.com ([67.152.220.89]:63373 "EHLO
+	daytona.int.panasas.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1750743Ab0FHHwH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Jun 2010 03:52:07 -0400
+Message-ID: <4C0DF6A2.1050608@panasas.com>
+Date: Tue, 08 Jun 2010 10:52:02 +0300
+From: Boaz Harrosh <bharrosh@panasas.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-2.fc12 Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4C0DCE87.1090802@dsn.okisemi.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: Paul Mundt <lethal@linux-sh.org>
+CC: David Rientjes <rientjes@google.com>, Ingo Molnar <mingo@elte.hu>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       Frans Pop <elendil@planet.nl>, Dirk Hohndel <hohndel@infradead.org>,
+       Len Brown <lenb@kernel.org>,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH, v2] kbuild: Improve version string logic - two for the
+ price of one - No thanks
+References: <20091006173508.GA4786@elte.hu> <20091012195733.GA7351@elte.hu> <4C0D29DE.6050602@panasas.com> <alpine.DEB.2.00.1006071242510.30389@chino.kir.corp.google.com> <4C0DDAA6.8080002@panasas.com> <alpine.DEB.2.00.1006072311170.31780@chino.kir.corp.google.com> <20100608063419.GF6376@linux-sh.org> <4C0DE5AC.1090204@panasas.com> <4C0DEE57.1070505@panasas.com> <4C0DEF92.5000601@panasas.com> <20100608073211.GB13191@linux-sh.org>
+In-Reply-To: <20100608073211.GB13191@linux-sh.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 08 Jun 2010 07:52:04.0814 (UTC) FILETIME=[7C9A1EE0:01CB06DF]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 08, 2010 at 02:00:55PM +0900, Masayuki Ohtak wrote:
-> Hi Alan
-> 
-> We are now updating our Phub driver.
-> 
-> I have a questions for your comment.
-> 
-> (1)
-> >> +#ifdef PCH_CAN_PCLK_50MHZ
-> >> + /* save clk cfg register */
-> >> + g_pch_phub_reg.clkcfg_reg = PCH_READ_REG(CLKCFG_REG_OFFSET);
-> >> +#endif
-> > 
-> > This makes it hard to build one kernel for everything
-> We couldn't understand your intention.
-> Does the above mean we must not use "#ifdef PCH_CAN_PCLK_50MHZ"	in source code ?
-> 
-
-I think what Alan means is that you will have to build two kernel images
-for two possible configurations of how your hardware is going to be used
-if you write code this way. One is the case when CAN clock runs at 50MHz
-and you will build a kernel image with PCH_CAN_PCLK_50MHZ defined. The
-other is when CAN clock runs at other speed and you need to build
-another kernel image with PCH_CAN_PCLK_50MHZ undefined. It would be much
-better if one kernel image could run on all configurations.
-
-Why is 50MHz so special, btw? Don't you need to save and restore the
-clock config register when CAN clock runs at other speed?
-
-> 
-> >> +#define PCH_READ_REG(a) ioread32((pch_phub_base_address + a))
-> 
-> >> +
-> 
-> >> +#define PCH_WRITE_REG(a, b) iowrite32(a, (pch_phub_base_address + b))
-> 
-> > 
-> 
-> > These on the other hand do - but not where they are now
-> 
-> > 
-> 
-> > iowrite32((a), pcb_phub_base_address + (b))
-> 
-> > 
-> 
-> > (so that if a or b are expressions they are evaluated first)
-> 
-> Modify like below.
-> 
-> #define PCH_READ_REG(a) ioread32(pch_phub_base_address + (a))
-> 
-> #define PCH_WRITE_REG(a, b) iowrite32(a, pch_phub_base_address + (b))
+On 06/08/2010 10:32 AM, Paul Mundt wrote:
+> On Tue, Jun 08, 2010 at 10:21:54AM +0300, Boaz Harrosh wrote:
+>> On 06/08/2010 10:16 AM, Boaz Harrosh wrote:
+>> OK I get it above should be:
+>> [my-tree] $ echo "-my_tree" > localversion-my_tree
+>>
+>> But now I get DEPMOD 2.6.35-rc2-my_tree+
+>>
+>> Please fix it so if localversion* is present then the plus is
+>> removed. And the git is not inspected
+>>
+> How is that a 'fix'? If I'm using localversion* and have people sending
+> me bug reports, I still do want to see the git ID. The + thing in this
+> context might not have any meaning since the 2.6.35-rc2 that you've
+> tagged for your tree and the release one could wildly differ, but that's
+> more of an argument against the + thing existing at all than anything
+> else.
 > 
 
-Note that 'a' is supposed to be surrounded by brackets, too.
+You lost me sorry. I don't understand what you are saying ?
 
-#define PCH_WRITE_REG(a, b)	iowrite32((a), pcb_phub_base_address + (b))
+> Whether having LOCALVERSION_AUTO be compulsory is a good idea or not is
+> another matter entirely, the localversion* semantics are pretty
+> clear-cut.
 
-Thanks
--Yong
+the "localversion* semantics" is not the issue here. The issue is the
+CONFIG_LOCALVERSION_AUTO semantics. You have effectively made it compulsory
+but with a choice of a style. "From the frying pan to the fire"
 
+And you have broken the "localversion* semantics". Because my vanilla release
+is 2.6.rc2-my_tree-my_ver as checkedout and delivered from my official tree.
+Now you have added a "+" regardless of if it is an official tagged version or
+not.
+
+I do not expect a complicated "let me be smarter than you" system that
+checks any tags of mine and provides an out-of-tree version system. I just
+want a switch that tells the system. "Let me shoot myself in the leg,
+I know what I want"
+
+"localversion*" should override any automatism as an indication of an
+alternative tagging system. (Or any other switch that can turn this off)
+
+And please stop the politics: "having LOCALVERSION_AUTO be compulsory" is
+Politics not, anything technical: "how to support my needs"
+
+Boaz
