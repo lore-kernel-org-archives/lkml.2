@@ -1,52 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755182Ab0FHNWA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jun 2010 09:22:00 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:17127 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753746Ab0FHNV7 (ORCPT
-	<rfc822;<linux-kernel@vger.kernel.org>>);
-	Tue, 8 Jun 2010 09:21:59 -0400
-Date: Tue, 8 Jun 2010 09:21:44 -0400
-From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-To: Robert Emanuele <rob@emanuele.us>
-Cc: linux-kernel@vger.kernel.org, jayakumar.lkml@gmail.com
-Subject: Re: broadsheetfb and fbcon
-Message-ID: <20100608132144.GA4775@phenom.dumpdata.com>
-References: <AANLkTilOTKdY_2rQ6byxDIer_Ns-Ny0V0sM0rV9AuEkB@mail.gmail.com> <20100607162817.GA13468@phenom.dumpdata.com> <AANLkTim1KloQ4qZTsqHmt2U33dUjM-DDr9-dpooXTx52@mail.gmail.com>
+	id S1755150Ab0FHNY4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jun 2010 09:24:56 -0400
+Received: from mx1.tander.ru ([81.30.112.106]:34099 "EHLO gw.tander.ru"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1754934Ab0FHNYz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Jun 2010 09:24:55 -0400
+Message-ID: <4C0E443F.7070204@gw.tander.ru>
+Date: Tue, 08 Jun 2010 17:23:11 +0400
+From: =?UTF-8?B?0J3QtdCy0LXQvdGH0LDQvdC90YvQuSDQkNC70LXQutGB0LDQvdC00YA=?= 
+	<nevenchannyy@gw.tander.ru>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100523 Lightning/1.0b2pre Thunderbird/3.0.4 ThunderBrowse/3.2.8.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTim1KloQ4qZTsqHmt2U33dUjM-DDr9-dpooXTx52@mail.gmail.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
-X-Auth-Type: Internal IP
-X-Source-IP: acsinet15.oracle.com [141.146.126.227]
-X-CT-RefId: str=0001.0A090207.4C0E43F3.0050:SCFMA922111,ss=1,fgs=0
+To: linux-kernel@vger.kernel.org
+Subject: [PATCH] Cleanup mmzone.h
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 07, 2010 at 10:19:27AM -0700, Robert Emanuele wrote:
-> There are no module parameters for fbcon or broadsheetfb.
-> 
-> On Mon, Jun 7, 2010 at 9:28 AM, Konrad Rzeszutek Wilk
-> >> Are those kind of updates a limit of the broadsheet driver or fbcon?
-> >
-> > I thought there was an update value on how often it should redraw. Did
-> > you do a modinfo on the driver?
+commit 7f4ab448f88ae2d2bcb3d5f00e85300446d6495a
+Author: Alexander Nevenchannyy <a.nevenchannyy@gmail.com>
+Date:   Tue Jun 8 15:45:52 2010 +0400
 
-Please do not post your response on top.
+    [PATCH] Cleanup mmzone.h
+    
+    get_zone_counts() was dropped from kernel tree, see:
+http://www.mail-archive.com/mm-commits@vger.kernel.org/msg07313.html
+    but it's have prototype in header file. So cleanup them.
+    
+    Author:    Alexander Nevenchannyy <a.nevenchannyy@gmail.com>
+        modified:   include/linux/mmzone.h
 
-What I was thinking about is the delay variable:
-
-1056 static struct fb_deferred_io broadsheetfb_defio = {
-1057         .delay          = HZ/4,
-1058         .deferred_io    = broadsheetfb_dpy_deferred_io,
-1059 };
-1060 
-
-
-Try changing that to a higher number and seeing if that fixes your
-problem. If so, you and I can work on a patch that sets a parameter
-for this.
+diff --git a/include/linux/mmzone.h b/include/linux/mmzone.h
+index b4d109e..9ed9c45 100644
+--- a/include/linux/mmzone.h
++++ b/include/linux/mmzone.h
+@@ -651,8 +651,6 @@ typedef struct pglist_data {
+ #include <linux/memory_hotplug.h>
+ 
+ extern struct mutex zonelists_mutex;
+-void get_zone_counts(unsigned long *active, unsigned long *inactive,
+-                       unsigned long *free);
+ void build_all_zonelists(void *data);
+ void wakeup_kswapd(struct zone *zone, int order);
+ int zone_watermark_ok(struct zone *z, int order, unsigned long mark,
 
