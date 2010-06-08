@@ -1,84 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754198Ab0FHHQq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jun 2010 03:16:46 -0400
-Received: from daytona.panasas.com ([67.152.220.89]:37265 "EHLO
-	daytona.int.panasas.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752979Ab0FHHQn (ORCPT
+	id S1754240Ab0FHHSl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jun 2010 03:18:41 -0400
+Received: from mtagate3.uk.ibm.com ([194.196.100.163]:36474 "EHLO
+	mtagate3.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753004Ab0FHHSj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jun 2010 03:16:43 -0400
-Message-ID: <4C0DEE57.1070505@panasas.com>
-Date: Tue, 08 Jun 2010 10:16:39 +0300
-From: Boaz Harrosh <bharrosh@panasas.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-2.fc12 Thunderbird/3.0.4
+	Tue, 8 Jun 2010 03:18:39 -0400
+Date: Tue, 8 Jun 2010 09:18:37 +0200
+From: Christof Schmitt <christof.schmitt@de.ibm.com>
+To: Chris Mason <chris.mason@oracle.com>, Boaz Harrosh <bharrosh@panasas.com>,
+       James Bottomley <James.Bottomley@suse.de>,
+       "Martin K. Petersen" <martin.petersen@oracle.com>,
+       linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
+       linux-fsdevel@vger.kernel.org
+Subject: Re: Wrong DIF guard tag on ext2 write
+Message-ID: <20100608071836.GB3263@schmichrtp.mainz.de.ibm.com>
+References: <20100531112817.GA16260@schmichrtp.mainz.de.ibm.com>
+ <yq1iq64kv9f.fsf@sermon.lab.mkp.net>
+ <1275318102.2823.47.camel@mulgrave.site>
+ <4C03D5FD.3000202@panasas.com>
+ <20100601103041.GA15922@schmichrtp.mainz.de.ibm.com>
+ <20100601130325.GG8980@think>
+ <20100601135059.GA21008@schmichrtp.mainz.de.ibm.com>
+ <20100601135818.GN8980@think>
 MIME-Version: 1.0
-To: Paul Mundt <lethal@linux-sh.org>
-CC: David Rientjes <rientjes@google.com>, Ingo Molnar <mingo@elte.hu>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       Frans Pop <elendil@planet.nl>, Dirk Hohndel <hohndel@infradead.org>,
-       Len Brown <lenb@kernel.org>,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH, v2] kbuild: Improve version string logic - two for the
- price of one - No thanks
-References: <alpine.LFD.2.01.0910060815320.3432@localhost.localdomain> <20091006153632.GA29795@elte.hu> <alpine.LFD.2.01.0910060843560.3432@localhost.localdomain> <alpine.LFD.2.01.0910060925490.3432@localhost.localdomain> <20091006173508.GA4786@elte.hu> <20091012195733.GA7351@elte.hu> <4C0D29DE.6050602@panasas.com> <alpine.DEB.2.00.1006071242510.30389@chino.kir.corp.google.com> <4C0DDAA6.8080002@panasas.com> <alpine.DEB.2.00.1006072311170.31780@chino.kir.corp.google.com> <20100608063419.GF6376@linux-sh.org> <4C0DE5AC.1090204@panasas.com>
-In-Reply-To: <4C0DE5AC.1090204@panasas.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 08 Jun 2010 07:16:42.0582 (UTC) FILETIME=[8BA73760:01CB06DA]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100601135818.GN8980@think>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/08/2010 09:39 AM, Boaz Harrosh wrote:
-> On 06/08/2010 09:34 AM, Paul Mundt wrote:
->> On Mon, Jun 07, 2010 at 11:18:42PM -0700, David Rientjes wrote:
->>> On Tue, 8 Jun 2010, Boaz Harrosh wrote:
->>>
->>>>>> I already have my:
->>>>>>  VERSION = 2
->>>>>>  PATCHLEVEL = 6
->>>>>>  SUBLEVEL = 35
->>>>>> -EXTRAVERSION = -rc2
->>>>>> +EXTRAVERSION = -rc2-my_tree
->>>>>>
->>>>>
->>>>> You shouldn't be using EXTRAVERSION for this purpose, you should be 
->>>>> passing LOCALVERSION=my_tree to make.
->>>>>
->>>>
->>>> That will not work because the way I run make is out of my control. Every
->>>> one in the working group has his system. The Makefile is part of the
->>>> public git tree, so every one will get the same identification without
->>>> any confusion with Vanilla kernel, or what was compiled.
->>>>
->>>
->>> If everyone using that tree wants the same version string for that kernel, 
->>> use CONFIG_LOCALVERSION="-my_tree" in your .config and use "make 
->>> LOCALVERSION=".
->>>
->> Or just distribute a localversion-my_tree file in the top-level directory
->> like other trees do. This doesn't strike me as a particularly significant
->> problem.
+On Tue, Jun 01, 2010 at 09:58:18AM -0400, Chris Mason wrote:
+> On Tue, Jun 01, 2010 at 03:50:59PM +0200, Christof Schmitt wrote:
+> > On Tue, Jun 01, 2010 at 09:03:25AM -0400, Chris Mason wrote:
+> > > On Tue, Jun 01, 2010 at 12:30:42PM +0200, Christof Schmitt wrote:
+> > > > On Mon, May 31, 2010 at 06:30:05PM +0300, Boaz Harrosh wrote:
+> > > > > On 05/31/2010 06:01 PM, James Bottomley wrote:
+> > > > > > On Mon, 2010-05-31 at 10:20 -0400, Martin K. Petersen wrote:
+> > > > > >>>>>>> "Christof" == Christof Schmitt <christof.schmitt@de.ibm.com> writes:
+> > > > > >>
+> > > > > >> Christof> Since the guard tags are created in Linux, it seems that the
+> > > > > >> Christof> data attached to the write request changes between the
+> > > > > >> Christof> generation in bio_integrity_generate and the call to
+> > > > > >> Christof> sd_prep_fn.
+> > > > > >>
+> > > > > >> Yep, known bug.  Page writeback locking is messed up for buffer_head
+> > > > > >> users.  The extNfs folks volunteered to look into this a while back but
+> > > > > >> I don't think they have found the time yet.
+> > > > > >>
+> > > > > >>
+> > > > > >> Christof> Using ext3 or ext4 instead of ext2 does not show the problem.
+> > > > > >>
+> > > > > >> Last I looked there were still code paths in ext3 and ext4 that
+> > > > > >> permitted pages to be changed during flight.  I guess you've just been
+> > > > > >> lucky.
+> > > > > > 
+> > > > > > Pages have always been modifiable in flight.  The OS guarantees they'll
+> > > > > > be rewritten, so the drivers can drop them if it detects the problem.
+> > > > > > This is identical to the iscsi checksum issue (iscsi adds a checksum
+> > > > > > because it doesn't trust TCP/IP and if the checksum is generated in
+> > > > > > software, there's time between generation and page transmission for the
+> > > > > > alteration to occur).  The solution in the iscsi case was not to
+> > > > > > complain if the page is still marked dirty.
+> > > > > > 
+> > > > > 
+> > > > > And also why RAID1 and RAID4/5/6 need the data bounced. I wish VFS
+> > > > > would prevent data writing given a device queue flag that requests
+> > > > > it. So all these devices and modes could just flag the VFS/filesystems
+> > > > > that: "please don't allow concurrent writes, otherwise I need to copy data"
+> > > > > 
+> > > > > From what Chris Mason has said before, all the mechanics are there, and it's
+> > > > > what btrfs is doing. Though I don't know how myself?
+> > > > 
+> > > > I also tested with btrfs and invalid guard tags in writes have been
+> > > > encountered as well (again in 2.6.34). The only difference is that no
+> > > > error was reported to userspace, although this might be a
+> > > > configuration issue.
+> > > 
+> > > This would be a btrfs bug.  We have strict checks in place that are
+> > > supposed to prevent buffers changing while in flight.  What was the
+> > > workload that triggered this problem?
+> > 
+> > I am running an internal test tool that creates files with a known
+> > pattern until the disk is full, reads the data to verify if the
+> > pattern is still intact, removes the files and starts over.
 > 
-
-
-I can't manage to work this out. Here is what I did please, what did I do wrong:
-[my-tree] $ git checkout v2.6.35-rc2
-[my-tree] $ touch localversion-my_tree
-[my-tree] $ git add localversion-my_tree; git commit; # ...
-[my-tree] $ make oldconfig
-[my-tree] $ make
-
-At my make install I still get DEPMOD 2.6.35-rc2+
-
-What else to do?
-
-Thanks
-Boaz
-
-> OK That one is actually a solution. I'll try that ASAP. If it works as expected
-> it's perfect. Even better than before
+> Ok, is the lba in the output the sector offset?  We can map that to a
+> btrfs block and figure out what it was.
 > 
-> Thanks
-> Boaz
+> Btrfs never complains about the IO error?  We really should explode.
 
+Right now, i don't have a system available to continue with this. When
+i have a change to run it again, i can try the latest rc kernel to see
+if there is any difference.
