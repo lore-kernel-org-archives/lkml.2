@@ -1,85 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755295Ab0FHRhQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jun 2010 13:37:16 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:16495 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753848Ab0FHRhO (ORCPT
+	id S1755530Ab0FHRhs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jun 2010 13:37:48 -0400
+Received: from msux-gh1-uea01.nsa.gov ([63.239.65.39]:48351 "EHLO
+	msux-gh1-uea01.nsa.gov" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754210Ab0FHRhq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jun 2010 13:37:14 -0400
-Date: Tue, 8 Jun 2010 10:35:17 -0700
-From: Randy Dunlap <randy.dunlap@oracle.com>
-To: Chase Douglas <chase.douglas@canonical.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>,
-       Prasad <prasad@linux.vnet.ibm.com>,
-       Pekka Enberg <penberg@cs.helsinki.fi>,
-       Eduard - Gabriel Munteanu <eduard.munteanu@linux360.ro>,
-       Soeren Sandmann <sandmann@daimi.au.dk>,
-       Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@redhat.com>,
-       linux-kernel@vger.kernel.org, kernel-team@lists.ubuntu.com
-Subject: Re: Tracing configuration review
-Message-Id: <20100608103517.ac380ad4.randy.dunlap@oracle.com>
-In-Reply-To: <1274821799.9346.17.camel@cndougla-ubuntu>
-References: <1274815906.9757.83.camel@cndougla-ubuntu>
-	<20100525201259.GA5370@nowhere>
-	<1274821799.9346.17.camel@cndougla-ubuntu>
-Organization: Oracle Linux Eng.
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-Auth-Type: Internal IP
-X-Source-IP: rcsinet13.oracle.com [148.87.113.125]
-X-CT-RefId: str=0001.0A090203.4C0E7F85.00F0:SCFMA4539811,ss=1,fgs=0
+	Tue, 8 Jun 2010 13:37:46 -0400
+From: "David P. Quigley" <dpquigl@tycho.nsa.gov>
+To: hch@infradead.org, viro@zeniv.linux.org.uk, casey@schaufler-ca.com,
+       sds@tycho.nsa.gov, matthew.dodd@sparta.com, trond.myklebust@fys.uio.no,
+       bfields@fieldses.org
+Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+       linux-security-module@vger.kernel.org, selinux@tycho.nsa.gov,
+       labeled-nfs@linux-nfs.org, "David P. Quigley" <dpquigl@tycho.nsa.gov>,
+       "Matthew N. Dodd" <Matthew.Dodd@sparta.com>
+Subject: [PATCH 05/10] KConfig: Add KConfig entries for Labeled NFS
+Date: Tue,  8 Jun 2010 12:22:51 -0400
+Message-Id: <1276014176-20315-6-git-send-email-dpquigl@tycho.nsa.gov>
+X-Mailer: git-send-email 1.6.2.5
+In-Reply-To: <1276014176-20315-1-git-send-email-dpquigl@tycho.nsa.gov>
+References: <1276014176-20315-1-git-send-email-dpquigl@tycho.nsa.gov>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 25 May 2010 17:09:59 -0400 Chase Douglas wrote:
+This patch adds two entries into the fs/KConfig file. The first entry
+NFS_V4_SECURITY_LABEL enables security label support for the NFSv4 client while
+the second entry NFSD_V4_SECURITY_LABEL enables security labeling support on
+the server side.
 
-> On Tue, 2010-05-25 at 22:13 +0200, Frederic Weisbecker wrote:
-> > On Tue, May 25, 2010 at 03:31:46PM -0400, Chase Douglas wrote:
-> > > The following options are what I am looking to set for our x86
-> > > configurations. I've only included those that I am not 100% sure of.
-> > > Comments are what I could gather from documentation and Kconfig, but
-> > > they may not be accurate:
-> 
-> <snip>
-> 
-> > > # CONFIG_SCHED_TRACER is not set (headed for deprecation?)
-> > 
-> > 
-> > We want to deprecate it in the long term, but for now we
-> > don't have any replacement. Cool for RT latency tracing.
-> 
-> I thought that the functionality is the same as what you get by:
-> 
-> echo 1 > (debufs)/tracing/events/sched/enable
-> 
-> > > CONFIG_KSYM_TRACER=y (no performance impact by default)
-> > 
-> > 
-> > IMO, it is deprecated. The perf interface is much more powerful and flexible.
-> > Prasad, do you agree if I remove this ftrace plugin?
-> 
-> If there isn't any use in enabling it due to perf's features, then we
-> can turn it off. However, if there's any use to be gained by this over
-> perf's features, then I'd prefer to leave it on. Thoughts?
-> 
-> 
-> > > CONFIG_WORKQUEUE_TRACER=y (no performance impact by default)
-> > 
-> > 
-> > In the way for deprecation.
-> 
-> Is this like the KMEM_TRACER where trace events have superseded it?
-
-
-Hi Chase,
-
-Would you mind sharing your final tracing config options?
-
-thanks,
+Signed-off-by: Matthew N. Dodd <Matthew.Dodd@sparta.com>
+Signed-off-by: David P. Quigley <dpquigl@tycho.nsa.gov>
 ---
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+ fs/nfs/Kconfig  |   16 ++++++++++++++++
+ fs/nfsd/Kconfig |   13 +++++++++++++
+ 2 files changed, 29 insertions(+), 0 deletions(-)
+
+diff --git a/fs/nfs/Kconfig b/fs/nfs/Kconfig
+index a43d07e..67b158c 100644
+--- a/fs/nfs/Kconfig
++++ b/fs/nfs/Kconfig
+@@ -83,6 +83,22 @@ config NFS_V4_1
+ 
+ 	  Unless you're an NFS developer, say N.
+ 
++config NFS_V4_SECURITY_LABEL
++	bool "Provide Security Label support for NFSv4 client"
++	depends on NFS_V4 && SECURITY
++	help
++
++	Say Y here if you want enable fine-grained security label attribute
++	support for NFS version 4.  Security labels allow security modules like
++	SELinux and Smack to label files to facilitate enforcement of their policies.
++	Without this an NFSv4 mount will have the same label on each file.
++
++	If you do not wish to enable fine-grained security labels SELinux or
++	Smack policies on NFSv4 files, say N.
++
++
++	  If unsure, say N.
++
+ config ROOT_NFS
+ 	bool "Root file system on NFS"
+ 	depends on NFS_FS=y && IP_PNP
+diff --git a/fs/nfsd/Kconfig b/fs/nfsd/Kconfig
+index 503b9da..3a282f8 100644
+--- a/fs/nfsd/Kconfig
++++ b/fs/nfsd/Kconfig
+@@ -79,3 +79,16 @@ config NFSD_V4
+ 	  available from http://linux-nfs.org/.
+ 
+ 	  If unsure, say N.
++
++config NFSD_V4_SECURITY_LABEL
++	bool "Provide Security Label support for NFSv4 server"
++	depends on NFSD_V4 && SECURITY
++	help
++
++	Say Y here if you want enable fine-grained security label attribute
++	support for NFS version 4.  Security labels allow security modules like
++	SELinux and Smack to label files to facilitate enforcement of their policies.
++	Without this an NFSv4 mount will have the same label on each file.
++
++	If you do not wish to enable fine-grained security labels SELinux or
++	Smack policies on NFSv4 files, say N.
+-- 
+1.6.2.5
+
