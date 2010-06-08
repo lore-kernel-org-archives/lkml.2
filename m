@@ -1,88 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755216Ab0FHQLQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jun 2010 12:11:16 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:65187 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754320Ab0FHQLO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jun 2010 12:11:14 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=KJisdbhsxgdoREfJuoBiVG1MSN0HaheAy6T08PcjNDkpQdvpVAeoe00Ik8c7WPJJ1X
-         IRr8PFKTAFpLzPiKNirICRCqhGrUesfx2QcSPBhDAKcP9yQnI5sdtC90sD+OxbMVkUod
-         aLua4WuoofBt7kJV44yd6QJzLyrII5hVI0l+U=
-Message-ID: <4C0E6BA1.3080200@gmail.com>
-Date: Tue, 08 Jun 2010 09:11:13 -0700
-From: "Justin P. Mattock" <justinmattock@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.4pre) Gecko/20091114 Lightning/1.0pre Thunderbird/3.0b4
+	id S1755061Ab0FHQN7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jun 2010 12:13:59 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:41717 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754120Ab0FHQN5 (ORCPT
+	<rfc822;<linux-kernel@vger.kernel.org>>);
+	Tue, 8 Jun 2010 12:13:57 -0400
+Date: Tue, 8 Jun 2010 12:12:33 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@Oracle.com>
+To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+Cc: "jeremy@goop.org" <jeremy@goop.org>,
+       "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+       "Yaozu (Eddie) Dong" <eddie.dong@intel.com>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       "ddutile@redhat.com" <ddutile@redhat.com>,
+       "sheng@linux.intel.com" <sheng@linux.intel.com>
+Subject: Re: [Xen-devel] [PATCH 02/12] early PV on HVM
+Message-ID: <20100608161233.GA4900@phenom.dumpdata.com>
+References: <1275570645-27189-1-git-send-email-stefano.stabellini@eu.citrix.com> <1275570645-27189-2-git-send-email-stefano.stabellini@eu.citrix.com> <20100604202008.GB17645@phenom.dumpdata.com> <alpine.DEB.2.00.1006071518050.3401@kaball-desktop> <20100608134637.GA5998@phenom.dumpdata.com> <alpine.DEB.2.00.1006081643280.3401@kaball-desktop>
 MIME-Version: 1.0
-To: Takashi Iwai <tiwai@suse.de>
-CC: alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/5]alsa:patch_realtek.c Add SSID table for MacBookAir2,1
-References: <1275865793-7357-1-git-send-email-justinmattock@gmail.com> <s5h39wxk1p6.wl%tiwai@suse.de>
-In-Reply-To: <s5h39wxk1p6.wl%tiwai@suse.de>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.00.1006081643280.3401@kaball-desktop>
+User-Agent: Mutt/1.5.19 (2009-01-05)
+X-Auth-Type: Internal IP
+X-Source-IP: acsinet15.oracle.com [141.146.126.227]
+X-CT-RefId: str=0001.0A090201.4C0E6C32.0042:SCFMA922111,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/08/2010 08:01 AM, Takashi Iwai wrote:
-> At Sun,  6 Jun 2010 16:09:49 -0700,
-> Justin P. Mattock wrote:
->>
->> This adds the SSID number to snd_pci_quirk for the
->> MacBookAir2,1 taken from codec#0 at:
->> http://launchpadlibrarian.net/49455483/Card0.Codecs.codec.0.txt
->> keep in mind I do not have one of these machines on hand
->> so please if you do have this machine please test for me..
->>
->>   Signed-off-by: Justin P. Mattock<justinmattock@gmail.com>
->
-> I applied this one (after rearranging the quirk list order).
->
-> Also the patch 3 and 5, both one-liner additions of a quirk, are
-> applied, too, since they got tested somehow in bug reports.
->
-> Could you rebase your changes for the proper MBA 1,1 and imac 7,1
-> against the latest sound tree so that anyone can test them?  If they
-> work better, then we can apply later your changes in addition.
->
->
-> Thanks!
->
-> Takashi
->
+On Tue, Jun 08, 2010 at 04:55:33PM +0100, Stefano Stabellini wrote:
+> On Tue, 8 Jun 2010, Konrad Rzeszutek Wilk wrote:
+> > > > > +	HYPERVISOR_shared_info = (struct shared_info *)shared_info_page;
+> > > > > +
+> > > > > +	/* Don't do the full vcpu_info placement stuff until we have a
+> > > > > +	   possible map and a non-dummy shared_info. */
+> > > > 
+> > > > Might want to mention where the full vpcu placement is done.
+> > > 
+> > > The comment is not accurate, we actually don't do any vcpu_info
+> > > placement on hvm because it is not very useful there.
+> > > Better just to remove the comment (I have done so in my tree).
+> > > 
+> > > > > +	per_cpu(xen_vcpu, 0) = &HYPERVISOR_shared_info->vcpu_info[0];
+> > > > 
+> > So.. what is the purpose of the per_cpu(xen_vcpu, 0) then?
+> > 
+> 
+> the vcpu info placement memory area is stored in per_cpu(xen_vcpu_info, cpu);
+> per_cpu(xen_vcpu, cpu) is just a pointer to that area if it is
+> available, otherwise it points to the vcpu_info struct in the shared
+> info page.
 
-o.k. cool..
-I'll rebase those two patches and send them out
-(hopefully people test)..
+I was just wondering why are we doing this when you say:
+" don't do any vcpu_info placement on hvm because it is not very useful there."
 
->> ---
->>   sound/pci/hda/patch_realtek.c |    1 +
->>   1 files changed, 1 insertions(+), 0 deletions(-)
->>
->> diff --git a/sound/pci/hda/patch_realtek.c b/sound/pci/hda/patch_realtek.c
->> index 17d4548..9b82d28 100644
->> --- a/sound/pci/hda/patch_realtek.c
->> +++ b/sound/pci/hda/patch_realtek.c
->> @@ -9487,6 +9487,7 @@ static struct snd_pci_quirk alc882_ssid_cfg_tbl[] = {
->>   	SND_PCI_QUIRK(0x106b, 0x4000, "MacbookPro 5,1", ALC885_MB5),
->>   	SND_PCI_QUIRK(0x106b, 0x4600, "MacbookPro 5,2", ALC885_MB5),
->>   	SND_PCI_QUIRK(0x106b, 0x4100, "Macmini 3,1", ALC885_MACMINI3),
->> +	SND_PCI_QUIRK(0x106b, 0x3500, "MacBookAir 2,1", ALC885_MBA21),
->>   	{} /* terminator */
->>   };
->>
->> --
->> 1.6.5.2.180.gc5b3e
->>
->
-
-
-cheers,
-
-Justin P. Mattock
+So if it is not useful, why do it?
