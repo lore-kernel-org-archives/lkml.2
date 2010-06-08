@@ -1,75 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752535Ab0FHAbM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 7 Jun 2010 20:31:12 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:40627 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752127Ab0FHAbK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 7 Jun 2010 20:31:10 -0400
-Message-ID: <4C0D8F43.4070900@zytor.com>
-Date: Mon, 07 Jun 2010 17:30:59 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-3.fc13 Thunderbird/3.0.4
+	id S1752226Ab0FHAhR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 7 Jun 2010 20:37:17 -0400
+Received: from mailbigip.dreamhost.com ([208.97.132.5]:40311 "EHLO
+	homiemail-a12.g.dreamhost.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751517Ab0FHAhP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 7 Jun 2010 20:37:15 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws; d=sysclose.org; h=date:from:to:cc
+	:subject:message-id:references:mime-version:content-type:
+	in-reply-to; q=dns; s=sysclose.org; b=SVCL3y4AlBRNCpSDddp7jk5L3h
+	Ovy/M2nnw/IZHbt2DXHUEwkMrL6iYVVtN8SY4eRl3GuGYjMkLLesn3Hm+SooVt5f
+	JplCXOumEt+Ose3PCxFja93Iy0Ssv8PSLN00mmpcmM0NddbIHaRDE4v+qQVnB2Wq
+	w+a49h1rKAhcl9rsE=
+Date: Mon, 7 Jun 2010 21:37:07 -0300
+From: Flavio Leitner <fbl@sysclose.org>
+To: David Miller <davem@davemloft.net>
+Cc: netdev@vger.kernel.org, amwang@redhat.com, fubar@us.ibm.com,
+       mpm@selenic.com, gospo@redhat.com, nhorman@tuxdriver.com,
+       jmoyer@redhat.com, shemminger@linux-foundation.org,
+       linux-kernel@vger.kernel.org, bridge@lists.linux-foundation.org,
+       bonding-devel@lists.sourceforge.net
+Subject: Re: [PATCH] netconsole: queue console messages to send later
+Message-ID: <20100608003707.GA30604@sysclose.org>
+References: <24059.1275417767@death.nxdomain.ibm.com>
+ <1275938692-26997-1-git-send-email-fleitner@redhat.com>
+ <20100607.165024.135517125.davem@davemloft.net>
 MIME-Version: 1.0
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-CC: Jacob Pan <jacob.jun.pan@linux.intel.com>, Alan Cox <alan@linux.intel.com>,
-       Arjan van de Ven <arjan@linux.intel.com>,
-       LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
-       Feng Tang <feng.tang@intel.com>, Len Brown <len.brown@intel.com>
-Subject: Re: [PATCH] x86/sfi: fix ioapic gsi range
-References: <1275952044-27996-1-git-send-email-jacob.jun.pan@linux.intel.com> <m1631ue5ho.fsf@fess.ebiederm.org>
-In-Reply-To: <m1631ue5ho.fsf@fess.ebiederm.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100607.165024.135517125.davem@davemloft.net>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/07/2010 05:24 PM, Eric W. Biederman wrote:
-> Jacob Pan <jacob.jun.pan@linux.intel.com> writes:
+On Mon, Jun 07, 2010 at 04:50:24PM -0700, David Miller wrote:
+> From: Flavio Leitner <fleitner@redhat.com>
+> Date: Mon,  7 Jun 2010 16:24:52 -0300
 > 
->> SFI based platforms should have zero based gsi_base for IOAPICs found in SFI
->> tables. The current code sets gsi_base starting from 1 when registering ioapic.
->> The result is that Moorestown platform would have wrong mp_gsi_routing for each
->> ioapic.
+> > There are some networking drivers that hold a lock in the
+> > transmit path. Therefore, if a console message is printed
+> > after that, netconsole will push it through the transmit path,
+> > resulting in a deadlock.
+> > 
+> > This patch fixes the re-injection problem by queuing the console
+> > messages in a preallocated circular buffer and then scheduling a
+> > workqueue to send them later with another context.
+> > 
+> > Signed-off-by: Flavio Leitner <fleitner@redhat.com>
 > 
-> Yes starting at 1 is a bug.
+> You absolutely and positively MUST NOT do this.  Otherwise netconsole
+> becomes completely useless.  Your idea has been proposed several times
+> as far back as 6 years ago, it was unacceptable then and it's
+> unacceptable now.
 > 
->> Background:
->> In Moorestown/Medfield platforms, there is no legacy IRQs, all gsis and irqs
->> are one to one mapped, including those < 16. Specifically, IRQ0 and IRQ1 are
->> used for per-cpu timers. So without this patch, IOAPIC pin to IRQ mapping is
->> off by one.
-> 
-> The patch looks mostly reasonable the comment is wrong.
-> 
-> You may not use a 1-1 mapping if you don't have legacy irqs.  Linux
-> irqs 0-15 are the ISA irqs you may not use those irq numbers for
-> something different on any architecture, but especially not on x86.
-> The gsi numbers are firmware specific and you may treat however you want.
-> 
-> Does the following patch work for you?
-> 
-> It appears I goofed when it was pointed out that gsi_end was inclusive and
-> didn't change the initialize.
-> 
-> diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
-> index 33f3563..5de84e5 100644
-> --- a/arch/x86/kernel/apic/io_apic.c
-> +++ b/arch/x86/kernel/apic/io_apic.c
-> @@ -90,7 +90,7 @@ int nr_ioapics;
->  struct mp_ioapic_gsi  mp_gsi_routing[MAX_IO_APICS];
->  
->  /* The last gsi number used */
-> -u32 gsi_end;
-> +u32 gsi_end = -1; 
->  
+> The whole point of netconsole is that we may be deep in an interrupt
+> or other atomic context, the machine is about to hard hang, and it's
+> absolutely essential that we get out any and all kernel logging
+> messages that we can, immediately.
 
-This seems like asking for signedness problems, especially since this is
-used in range compares all the time.  The real problem here is that
-gsi_end is inclusive, which is almost always the wrong thing for the
-endpoint of a range.  Instead we should have the last number used plus
-one; perhaps it should be called gsi_next or gsi_free.
+Got it. I've never assumed that netconsole would work reliable on 
+such situations, so I thought as we have better ways now it would
+be helpful. See another idea below.
 
-	-hpa
+> There may not be another timer or workqueue able to execute after the
+> printk() we're trying to emit.  We may never get to that point.
 
+What if in the netpoll, before we push the skb to the driver, we check
+for a bit saying that it's already pushing another skb. In this case,
+queue the new skb inside of netpoll and soon as the first call returns
+and try to clear the bit, it will send the next skb?
+
+printk("message 1")
+...
+netconsole called
+netpoll sets the flag bit
+pushes to the bonding driver which does another printk("message 2")
+netconsole called again
+netpoll checks for the flag, queue the message, returns.
+so, bonding can finish up to send the first message
+netpoll is about to return, checks for new queued messages, and pushes them.
+bonding finishes up to send the second message
+....
+
+No deadlocks, skbs are ordered and still under the same opportunity
+to send something. Does it sound acceptable?
+It's off the top of my head, so probably this idea has some problems.
+
+
+> Fix the locking in the drivers or layers that cause the issue instead
+> of breaking netconsole.
+
+Someday, somewhere, I know because I did this before, someone will
+use a debugging printk() and will see the entire box hanging with
+absolutely no message in any console because of this problem. 
+I'm not saying that fixing driver isn't the right way to go but
+it seems not enough to me.
+
+-- 
+Flavio
