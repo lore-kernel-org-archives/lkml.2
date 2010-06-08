@@ -1,75 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754024Ab0FHG7i (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jun 2010 02:59:38 -0400
-Received: from bld-mail17.adl2.internode.on.net ([150.101.137.102]:37965 "EHLO
-	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753327Ab0FHG7g (ORCPT
+	id S1753545Ab0FHHHm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jun 2010 03:07:42 -0400
+Received: from e28smtp08.in.ibm.com ([122.248.162.8]:57939 "EHLO
+	e28smtp08.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751503Ab0FHHHl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jun 2010 02:59:36 -0400
-Date: Tue, 8 Jun 2010 16:59:22 +1000
-From: Dave Chinner <david@fromorbit.com>
-To: Nick Piggin <npiggin@suse.de>
-Cc: torvalds@linux-foundation.org, linux-fsdevel@vger.kernel.org,
-       linux-kernel@vger.kernel.org, xfs@oss.sgi.com,
-       akpm@linux-foundation.org
-Subject: Re: [PATCH 6/6] writeback: limit write_cache_pages integrity
- scanning to current EOF
-Message-ID: <20100608065922.GA7869@dastard>
-References: <1275957487-23633-1-git-send-email-david@fromorbit.com>
- <1275957487-23633-7-git-send-email-david@fromorbit.com>
- <20100608053831.GR26335@laptop>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100608053831.GR26335@laptop>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Tue, 8 Jun 2010 03:07:41 -0400
+Subject: Re: [PATCH] Fix Oops in crash_shrink_memory
+From: Pavan Naregundi <pavan@linux.vnet.ibm.com>
+To: linux-kernel@vger.kernel.org
+Cc: vgoyal@redhat.com, hbabu@us.ibm.com, kexec@lists.infradead.org
+In-Reply-To: <1275895711.4365.18.camel@pavan.naregundi>
+References: <1275895711.4365.18.camel@pavan.naregundi>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 08 Jun 2010 12:37:37 +0530
+Message-ID: <1275980857.2583.15.camel@pavan.naregundi>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 08, 2010 at 03:38:31PM +1000, Nick Piggin wrote:
-> On Tue, Jun 08, 2010 at 10:38:07AM +1000, Dave Chinner wrote:
-> > From: Dave Chinner <dchinner@redhat.com>
-> > 
-> > sync can currently take a really long time if a concurrent writer is
-> > extending a file. The problem is that the dirty pages on the address
-> > space grow in the same direction as write_cache_pages scans, so if
-> > the writer keeps ahead of writeback, the writeback will not
-> > terminate until the writer stops adding dirty pages.
-> > 
-> > For a data integrity sync, we only need to write the pages dirty at
-> > the time we start the writeback, so we can stop scanning once we get
-> > to the page that was at the end of the file at the time the scan
-> > started.
-> > 
-> > This will prevent operations like copying a large file preventing
-> > sync from completing as it will not write back pages that were
-> > dirtied after the sync was started. This does not impact the
-> > existing integrity guarantees, as any dirty page (old or new)
-> > within the EOF range at the start of the scan will still be
-> > captured.
-> > 
-> > This patch will not prevent sync from blocking on large writes into
-> > holes.
+Adding CC's..
+
+
+On Mon, 2010-06-07 at 12:58 +0530, Pavan Naregundi wrote:
+> Hi Everyone,
 > 
-> The writes don't have to be into holes to cause this starvation
-> problem, do they?
-
-No, they don't.
-
-> > That requires more complex intervention while this patch only
-> > addresses the common append-case of this sync holdoff.
+> Please add me to CC in your reply..
 > 
-> Jan's tagging patch looks pretty good to me and isn't so complex.
-> I think we should just take that.
+> When crashkernel is not enabled, "echo 0 > /sys/kernel/kexec_crash_size"
+> will generate OOPS message in the kernel. Below is the OOPS message and
+> other details,
+> 
+> # cat /proc/cmdline 
+> ro  LANG=en_US.UTF-8 SYSFONT=latarcyrheb-sun16 KEYTABLE=us console=hvc0
+> rhgb root=UUID=eafd9874-010c-46f9-a0c6-ea8db7c61ac3
+> # uname -a
+> Linux XXXXXXXX 2.6.35-rc1 #1 SMP Mon Jun 7 18:04:53 IST 2010 ppc64 ppc64
+> ppc64 GNU/Linux
+> # cd /sys/kernel/
+> # ls
+> debug               kexec_loaded  profiling      uevent_seqnum
+> kexec_crash_loaded  mm            security       vmcoreinfo
+> kexec_crash_size    notes         uevent_helper
+> # cat kexec_crash_loaded
+> 0
+> # cat kexec_loaded
+> 0
+> # cat kexec_crash_size
+> 1
+> # echo 0 > kexec_crash_size
+> Unable to handle kernel paging request for data at address 0x00000030
+> Faulting instruction address: 0xc0000000000930b4
+> Oops: Kernel access of bad area, sig: 11 [#1]
+> SMP NR_CPUS=1024 NUMA pSeries
+> last sysfs file: /sys/kernel/kexec_crash_size
+> Modules linked in: sunrpc ipv6 ext3 jbd dm_mirror dm_region_hash dm_log
+> dm_multipath dm_mod uinput sg ehea sr_mod ibmveth cdrom ext4 jbd2
+> mbcache sd_mod crc_t10dif ibmvscsic scsi_transport_srp scsi_tgt [last
+> unloaded: scsi_wait_scan]
+> NIP: c0000000000930b4 LR: c0000000000930ac CTR: c0000000000b7ce0
+> REGS: c0000000b7803750 TRAP: 0300   Not tainted  (2.6.35-rc1)
+> MSR: 8000000000009032 <EE,ME,IR,DR>  CR: 28242482  XER: 20000000
+> DAR: 0000000000000030, DSISR: 0000000040000000
+> TASK = c0000000b9cc3dc0[1381] 'bash' THREAD: c0000000b7800000 CPU: 12
+> GPR00: c0000000000930ac c0000000b78039d0 c000000000e885a8
+> c000000000f42950 
+> GPR04: c0000000b7803af0 0000000000000008 0000000000000002
+> c0000000005c6438 
+> GPR08: 0000000000000000 000000008000000c 0000000000000000
+> 0000000000000000 
+> GPR12: 0000000040242448 c000000007441e00 00000000100f6210
+> 0000000000000000 
+> GPR16: 00000000100f4a38 00000000100cfb98 00000000100f4bdc
+> 00000000100f4b4c 
+> GPR20: 00000000103f4de8 0000000000000000 0000000000000000
+> 00000000100f0000 
+> GPR24: c0000000005c65c0 0000000000000000 c000000000da83e0
+> c0000000bc67f780 
+> GPR28: c0000000bc684ae0 c000000000f42950 c000000000e1e3f8
+> c000000000da8408 
+> NIP [c0000000000930b4] .release_resource+0x34/0xe0
+> LR [c0000000000930ac] .release_resource+0x2c/0xe0
+> Call Trace:
+> [c0000000b78039d0] [c0000000000930ac] .release_resource+0x2c/0xe0
+> (unreliable)
+> [c0000000b7803a60] [c0000000000d4fc8] .crash_shrink_memory+0x1c8/0x1f0
+> [c0000000b7803b30] [c0000000000b7d38] .kexec_crash_size_store+0x58/0x90
+> [c0000000b7803bc0] [c0000000002b0bb4] .kobj_attr_store+0x34/0x50
+> [c0000000b7803c30] [c000000000226d5c] .sysfs_write_file+0xec/0x1f0
+> [c0000000b7803ce0] [c00000000019e0bc] .vfs_write+0xec/0x1f0
+> [c0000000b7803d80] [c00000000019e2e8] .SyS_write+0x58/0xb0
+> [c0000000b7803e30] [c00000000000852c] syscall_exit+0x0/0x40
+> Instruction dump:
+> fba1ffe8 fbc1fff0 fbe1fff8 ebc2b228 7c7f1b78 f8010010 f821ff71 ebbe8000 
+> 7fa3eb78 484e35d9 60000000 e97f0020 <e92b0030> 2fa90000 419e002c
+> 7fbf4800 
+> ---[ end trace afbc780462c9bf4e ]---
+> 
+> When crashkernel is not enabled, crashk_res resource have not been
+> reserved. Hence crashk_res.parent will be NULL.
+> 
+> Attaching a simple patch to this problem. Patch is tested and resolves this bug.
+> 
+> Thanks..
+> Pavan
 
-I don't care which one we take as long as it is actually tested by
-more than the submitter and we get everything in for 2.6.35...
 
-Cheers,
-
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
