@@ -1,64 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753388Ab0FHIcH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jun 2010 04:32:07 -0400
-Received: from daytona.panasas.com ([67.152.220.89]:61185 "EHLO
-	daytona.int.panasas.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751533Ab0FHIcD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jun 2010 04:32:03 -0400
-Message-ID: <4C0DFFFF.1010704@panasas.com>
-Date: Tue, 08 Jun 2010 11:31:59 +0300
-From: Boaz Harrosh <bharrosh@panasas.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-2.fc12 Thunderbird/3.0.4
+	id S1753545Ab0FHIci (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jun 2010 04:32:38 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:34447 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751533Ab0FHIcf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Jun 2010 04:32:35 -0400
+Message-ID: <4C0E00F6.8020409@redhat.com>
+Date: Tue, 08 Jun 2010 16:36:06 +0800
+From: Cong Wang <amwang@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100330 Shredder/3.0.4
 MIME-Version: 1.0
-To: David Rientjes <rientjes@google.com>,
-       Linus Torvalds <torvalds@linux-foundation.org>
-CC: Ingo Molnar <mingo@elte.hu>, Frans Pop <elendil@planet.nl>,
-       Dirk Hohndel <hohndel@infradead.org>, Len Brown <lenb@kernel.org>,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: kbuild: Fix the breakage caused by "improve version string logic"
-References: <alpine.LFD.2.01.0910041727310.3432@localhost.localdomain> <alpine.LFD.2.00.0910052140100.309@localhost.localdomain> <1254797502.14122.146.camel@dhohndel-mobl.amr.corp.intel.com> <alpine.LFD.2.01.0910060705240.3432@localhost.localdomain> <20091006144449.GA23078@elte.hu> <alpine.LFD.2.01.0910060815320.3432@localhost.localdomain> <20091006153632.GA29795@elte.hu> <alpine.LFD.2.01.0910060843560.3432@localhost.localdomain> <alpine.LFD.2.01.0910060925490.3432@localhost.localdomain> <20091006173508.GA4786@elte.hu> <20091012195733.GA7351@elte.hu> <4C0D29DE.6050602@panasas.com> <alpine.DEB.2.00.1006071242510.30389@chino.kir.corp.google.com>
-In-Reply-To: <alpine.DEB.2.00.1006071242510.30389@chino.kir.corp.google.com>
-Content-Type: text/plain; charset=UTF-8
+To: David Miller <davem@davemloft.net>
+CC: andy@greyhouse.net, fubar@us.ibm.com, fbl@sysclose.org,
+       linux-kernel@vger.kernel.org, mpm@selenic.com, netdev@vger.kernel.org,
+       bridge@lists.linux-foundation.org, gospo@redhat.com,
+       nhorman@tuxdriver.com, jmoyer@redhat.com,
+       shemminger@linux-foundation.org, bonding-devel@lists.sourceforge.net
+Subject: Re: [v5 Patch 1/3] netpoll: add generic support for bridge and bonding
+ devices
+References: <4C062CBD.7090906@redhat.com>	<20100604191841.GM7497@gospo.rdu.redhat.com>	<4C0CC29D.9070507@redhat.com> <20100607.030108.235696592.davem@davemloft.net>
+In-Reply-To: <20100607.030108.235696592.davem@davemloft.net>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 08 Jun 2010 08:32:02.0158 (UTC) FILETIME=[1187C8E0:01CB06E5]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 06/07/10 18:01, David Miller wrote:
+> From: Cong Wang<amwang@redhat.com>
+> Date: Mon, 07 Jun 2010 17:57:49 +0800
+>
+>> Hmm, I still feel like this way is ugly, although it may work.
+>> I guess David doesn't like it either.
+>
+> Of course I don't like it. :-)
+>
+> I suspect the locking scheme will need to be changed.
+>
+> Besides, if we're going to hack this up and do write lock attempts in
+> the read locking paths, there is no point in using a rwlock any more.
+> And I'm personally in disfavor of all rwlock usage anyways (it dirties
+> the cacheline for readers just as equally for writers, and if the
+> critically protected code path is short enough, that shared cache
+> line atomic operation will be the predominant cost).
+>
+> So I'd say, 1) make this a spinlock and 2) try to use RCU for the
+> read path.
+>
+> That would fix everything.
 
-The patch: 85a256d8e0116c8f5ad276730830f5d4d473344d
-	Author: David Rientjes <rientjes@google.com>
-	Title: kbuild: improve version string logic
+Yeah, agreed. Even not talking about netconsole, bonding code
+does have locking problems, netconsole just makes this problem
+clear.
 
-Broke none Linus trees that supply their own version string and
-tag system via a presence of a localversion* file at the Kernel's
-root subdirectory.
+I will try your suggestions above.
 
-After This patch. The "+" (plus) is not added if a localversion*
-file is present or a CONFIG_LOCALVERSION is configured.
-
-Signed-off-by: Boaz Harrosh <bharrosh@panasas.com>
----
- Makefile |    4 +++-
- 1 files changed, 3 insertions(+), 1 deletions(-)
-
-diff --git a/Makefile b/Makefile
-index 654c31a..324a413 100644
---- a/Makefile
-+++ b/Makefile
-@@ -945,7 +945,9 @@ ifdef CONFIG_LOCALVERSION_AUTO
- else
- 	ifneq ($(scm-identifier),)
- 		ifeq ($(LOCALVERSION),)
--			localver-extra = +
-+			ifeq ($(localver),)
-+				localver-extra = +
-+			endif
- 		endif
- 	endif
- endif
--- 
-1.6.6.1
-
+Thanks!
