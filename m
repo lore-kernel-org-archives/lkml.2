@@ -1,97 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754370Ab0FHHV7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jun 2010 03:21:59 -0400
-Received: from daytona.panasas.com ([67.152.220.89]:55182 "EHLO
-	daytona.int.panasas.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754076Ab0FHHV6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jun 2010 03:21:58 -0400
-Message-ID: <4C0DEF92.5000601@panasas.com>
-Date: Tue, 08 Jun 2010 10:21:54 +0300
-From: Boaz Harrosh <bharrosh@panasas.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-2.fc12 Thunderbird/3.0.4
-MIME-Version: 1.0
-To: Paul Mundt <lethal@linux-sh.org>
-CC: David Rientjes <rientjes@google.com>, Ingo Molnar <mingo@elte.hu>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       Frans Pop <elendil@planet.nl>, Dirk Hohndel <hohndel@infradead.org>,
-       Len Brown <lenb@kernel.org>,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH, v2] kbuild: Improve version string logic - two for the
- price of one - No thanks
-References: <alpine.LFD.2.01.0910060815320.3432@localhost.localdomain> <20091006153632.GA29795@elte.hu> <alpine.LFD.2.01.0910060843560.3432@localhost.localdomain> <alpine.LFD.2.01.0910060925490.3432@localhost.localdomain> <20091006173508.GA4786@elte.hu> <20091012195733.GA7351@elte.hu> <4C0D29DE.6050602@panasas.com> <alpine.DEB.2.00.1006071242510.30389@chino.kir.corp.google.com> <4C0DDAA6.8080002@panasas.com> <alpine.DEB.2.00.1006072311170.31780@chino.kir.corp.google.com> <20100608063419.GF6376@linux-sh.org> <4C0DE5AC.1090204@panasas.com> <4C0DEE57.1070505@panasas.com>
-In-Reply-To: <4C0DEE57.1070505@panasas.com>
-Content-Type: text/plain; charset=UTF-8
+	id S1754382Ab0FHHXw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jun 2010 03:23:52 -0400
+Received: from zmta01.cabocomm.dk ([193.200.44.52]:59785 "EHLO zmta01.irigo.dk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754083Ab0FHHXu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 8 Jun 2010 03:23:50 -0400
+Subject: Re: [RFC][PATCH] irq: support IRQ_NESTED_THREAD with non-threaded
+ interrupt handlers
+From: Esben Haabendal <eha@doredevelopment.dk>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Esben Haabendal <esbenhaabendal@gmail.com>, linuxppc-dev@ozlabs.org,
+       Marc Zyngier <maz@misterjones.org>, LKML <linux-kernel@vger.kernel.org>,
+       Ingo Molnar <mingo@elte.hu>, joachim.eastwood@jotron.com,
+       Peter Zijlstra <peterz@infradead.org>,
+       David Miller <davem@davemloft.net>
+In-Reply-To: <alpine.LFD.2.00.1006080853220.2933@localhost.localdomain>
+References: <1275686352.2970.2.camel@eha.doredevelopment.dk>
+	 <alpine.LFD.2.00.1006042343150.2933@localhost.localdomain>
+	 <AANLkTilb7---Qg1oLwzanKP1RGe04fkAXDtZzz0w9MGz@mail.gmail.com>
+	 <20100605151031.2d562268@hina.wild-wind.fr.eu.org>
+	 <alpine.LFD.2.00.1006051732270.2933@localhost.localdomain>
+	 <AANLkTimlSBEhl58CNuScKjxbqdTwTYgqo7vrHTcd1x9G@mail.gmail.com>
+	 <alpine.LFD.2.00.1006051915290.2933@localhost.localdomain>
+	 <AANLkTimcB9vRqnNYyBh6hjHXZHcmFvw72MZUEIGfeexq@mail.gmail.com>
+	 <alpine.LFD.2.00.1006052155100.2933@localhost.localdomain>
+	 <AANLkTik2so7osQJFq6NRaIFK2GVLURVozOqSsejd1K0F@mail.gmail.com>
+	 <alpine.LFD.2.00.1006062228120.2933@localhost.localdomain>
+	 <1275914058.2818.8.camel@eha.doredevelopment.dk>
+	 <alpine.LFD.2.00.1006071440520.2933@localhost.localdomain>
+	 <AANLkTilPhof5cnhBCXSzKJSnWl6Vuu2fRts2pBBBNl6K@mail.gmail.com>
+	 <alpine.LFD.2.00.1006080853220.2933@localhost.localdomain>
+Content-Type: text/plain; charset="UTF-8"
+Organization: =?ISO-8859-1?Q?Dor=E9Development?= ApS
+Date: Tue, 08 Jun 2010 09:23:40 +0200
+Message-ID: <1275981820.2870.74.camel@eha.doredevelopment.dk>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.1 
 Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 08 Jun 2010 07:21:57.0397 (UTC) FILETIME=[474C2C50:01CB06DB]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/08/2010 10:16 AM, Boaz Harrosh wrote:
-> On 06/08/2010 09:39 AM, Boaz Harrosh wrote:
->> On 06/08/2010 09:34 AM, Paul Mundt wrote:
->>> On Mon, Jun 07, 2010 at 11:18:42PM -0700, David Rientjes wrote:
->>>> On Tue, 8 Jun 2010, Boaz Harrosh wrote:
->>>>
->>>>>>> I already have my:
->>>>>>>  VERSION = 2
->>>>>>>  PATCHLEVEL = 6
->>>>>>>  SUBLEVEL = 35
->>>>>>> -EXTRAVERSION = -rc2
->>>>>>> +EXTRAVERSION = -rc2-my_tree
->>>>>>>
->>>>>>
->>>>>> You shouldn't be using EXTRAVERSION for this purpose, you should be 
->>>>>> passing LOCALVERSION=my_tree to make.
->>>>>>
->>>>>
->>>>> That will not work because the way I run make is out of my control. Every
->>>>> one in the working group has his system. The Makefile is part of the
->>>>> public git tree, so every one will get the same identification without
->>>>> any confusion with Vanilla kernel, or what was compiled.
->>>>>
->>>>
->>>> If everyone using that tree wants the same version string for that kernel, 
->>>> use CONFIG_LOCALVERSION="-my_tree" in your .config and use "make 
->>>> LOCALVERSION=".
->>>>
->>> Or just distribute a localversion-my_tree file in the top-level directory
->>> like other trees do. This doesn't strike me as a particularly significant
->>> problem.
->>
+On Tue, 2010-06-08 at 08:58 +0200, Thomas Gleixner wrote: 
+> On Mon, 7 Jun 2010, Esben Haabendal wrote:
 > 
+> > On Mon, Jun 7, 2010 at 5:06 PM, Thomas Gleixner <tglx@linutronix.de> wrote:
+> > 
+> > > Maybe you understand now, why I was pretty sure upfront, that your
+> > > approach was wrong even without knowing all the gory details ? :)
+> > 
+> > I understand.  There is a better solution, which is to use threaded
+> > interrupts where needed.
 > 
-> I can't manage to work this out. Here is what I did please, what did I do wrong:
-> [my-tree] $ git checkout v2.6.35-rc2
-> [my-tree] $ touch localversion-my_tree
+> FWIW, it just occured to me, that the only reason why the
+> disable_irq_nosysnc() trips up on the in_atomic() check is your
+> fiddling with the nested irq dispatcher. 
+> 
+> If you just would have changed the phy driver to
+> request_irq_any_context() it would have simply worked out of the box,
+> without any need to remove buslock and changing genirq code at all.
+> 
+> That would not give you the advantage of getting rid of the two
+> additional I2C transfers, but that's nn optimzation not a functional
+> requirement.
 
-OK I get it above should be:
-[my-tree] $ echo "-my_tree" > localversion-my_tree
+Now, that is good news. Thanks!
 
-But now I get DEPMOD 2.6.35-rc2-my_tree+
-
-Please fix it so if localversion* is present then the plus is
-removed. And the git is not inspected
-
-Boaz
-
-> [my-tree] $ git add localversion-my_tree; git commit; # ...
-> [my-tree] $ make oldconfig
-> [my-tree] $ make
-> 
-> At my make install I still get DEPMOD 2.6.35-rc2+
-> 
-> What else to do?
-> 
-> Thanks
-> Boaz
-> 
->> OK That one is actually a solution. I'll try that ASAP. If it works as expected
->> it's perfect. Even better than before
->>
->> Thanks
->> Boaz
-> 
+/Esben
 
