@@ -1,89 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757911Ab0FIQBj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jun 2010 12:01:39 -0400
-Received: from kroah.org ([198.145.64.141]:40750 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757879Ab0FIQBh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jun 2010 12:01:37 -0400
-Date: Wed, 9 Jun 2010 09:01:19 -0700
-From: Greg KH <greg@kroah.com>
-To: Joe Perches <joe@perches.com>
-Cc: Arnd Bergmann <arnd@arndb.de>, Andrew Morton <akpm@linux-foundation.org>,
-       Andrew Lunn <andrew@lunn.ch>, Jarod Wilson <jarod@wilsonet.com>,
-       Jakub Schmidtke <sjakub@gmail.com>, Henk de Groot <pe1dnn@amsat.org>,
-       Naren Sankar <nsankar@broadcom.com>, Jonathan Cameron <jic23@cam.ac.uk>,
-       Pavel Machek <pavel@ucw.cz>,
-       Luis Rodriguez <Luis.Rodriguez@atheros.com>, devel@driverdev.osuosl.org,
-       Mori Hess <fmhess@users.sourceforge.net>,
-       Steve Underwood <steveu@coppice.org>,
-       Simon Wunderlich <siwu@hrz.tu-chemnitz.de>,
-       Arnaud Patard <apatard@mandriva.com>,
-       Marek Lindner <lindner_marek@yahoo.de>,
-       Teddy Wang <teddy.wang@siliconmotion.com.cn>,
-       Ossama Othman <ossama.othman@intel.com>,
-       Haiyang Zhang <haiyangz@microsoft.com>, Ian Abbott <abbotti@mev.co.uk>,
-       Willy Tarreau <willy@meta-x.org>, Scott Davilla <davilla@4pi.com>,
-       Scott Smedley <ss@aao.gov.au>, linux-kernel@vger.kernel.org,
-       Forest Bond <forest@alittletooquiet.net>,
-       David Rowe <david@rowetel.com>
-Subject: Re: [PATCH 00/17] MAINTAINERS: Add drivers/staging entries
-Message-ID: <20100609160119.GA23100@kroah.com>
-References: <cover.1275935090.git.joe@perches.com>
- <1276032382.24044.23.camel@Joe-Laptop.home>
- <20100609000713.GB16160@kroah.com>
- <201006091524.51998.arnd@arndb.de>
- <20100609150833.GD20705@kroah.com>
- <1276098744.1556.50.camel@Joe-Laptop.home>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1276098744.1556.50.camel@Joe-Laptop.home>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1757940Ab0FIQBp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jun 2010 12:01:45 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:55631 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757923Ab0FIQBm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jun 2010 12:01:42 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:from:to:cc:subject:date:message-id:x-mailer:in-reply-to
+         :references;
+        b=POlzxeHEHJhHpynsOEXTX8ACA12V8aGsFeAWjX2LESSuHXE3ANoz9RvRwEtHrwhAui
+         xw6wPZoRxAfB3D7Qj6LBwQTTSbePSjzRQKexfEBHQzsR7ASYeJ5HW4gIgAwZvUB9/Y8I
+         LgljzfbpQ+powsovmzuAPaIVrR7nQOqV/OXMo=
+From: John Kacur <jkacur@redhat.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Darren Hart <dvhltc@us.ibm.com>, lkml <linux-kernel@vger.kernel.org>,
+       John Kacur <jkacur@redhat.com>
+Subject: [PATCH 1/2] trace-cmd: Makefile - EXTRAVERSION should be set without a leading period
+Date: Wed,  9 Jun 2010 18:01:27 +0200
+Message-Id: <1276099288-3029-2-git-send-email-jkacur@redhat.com>
+X-Mailer: git-send-email 1.6.6.1
+In-Reply-To: <1276099288-3029-1-git-send-email-jkacur@redhat.com>
+References: <1276099288-3029-1-git-send-email-jkacur@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 09, 2010 at 08:52:24AM -0700, Joe Perches wrote:
-> On Wed, 2010-06-09 at 08:08 -0700, Greg KH wrote:
-> > On Wed, Jun 09, 2010 at 03:24:51PM +0200, Arnd Bergmann wrote:
-> > > On Wednesday 09 June 2010, Greg KH wrote:
-> > > > > > I also found it a bit odd you didn't send these to the stable subsystem
-> > > > > > maintainer, why?
-> > > > > The MAINTAINERS patches are forward going, not historical.
-> > > > What does that mean?
-> > > I guess you meant to write '... to the /staging/ subsystem maintainer'.
-> > Doh, yes, you are right.
-> > Joe, why didn't you send these to the "STAGING" subsystem maintainer?
-> 
-> Gee, who would that be?  Why be so indirect?
-> (Even though you are both the stable and the staging maintainer)
-> 
-> Why don't you just write "How come I didn't get cc'd?"
+EXTRAVERSION should be set without a leading period, and then add
+the period where necessary in the Makefile
 
-Because I was trying to point out that you are ignoring the maintainer
-of the subsystem for which you are adding entries for.  In fact, going
-against the wishes of that maintainer (i.e. me) at the same time.
+Signed-off-by: John Kacur <jkacur@redhat.com>
+---
+ Makefile |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-> I'm the closest thing there is to a MAINTAINERS maintainer.
-> Andrew has taken all the patches I've posted to it except for
-> the patchset that added file patterns and you're rarely a
-> path to get things into MAINTAINERS.
+diff --git a/Makefile b/Makefile
+index 1f5d855..0ed5685 100644
+--- a/Makefile
++++ b/Makefile
+@@ -1,7 +1,7 @@
+ # trace-cmd version
+ TC_VERSION = 1
+ TC_PATCHLEVEL = 0
+-TC_EXTRAVERSION = .1
++TC_EXTRAVERSION = 1
+ 
+ # Kernel Shark version
+ KS_VERSION = 0
+@@ -307,7 +307,7 @@ define make_version.h
+ 	echo \#define VERSION_CODE $(shell						\
+ 	expr $(VERSION) \* 256 + $(PATCHLEVEL));					\
+ 	echo '#define EXTRAVERSION ' $(EXTRAVERSION);					\
+-	echo '#define VERSION_STRING "'$(VERSION).$(PATCHLEVEL)$(EXTRAVERSION)'"';	\
++	echo '#define VERSION_STRING "'$(VERSION).$(PATCHLEVEL).$(EXTRAVERSION)'"';	\
+ 	echo '#define FILE_VERSION '$(FILE_VERSION);					\
+ 	) > $1
+ endef
+-- 
+1.6.6.1
 
-That's great and wonderful, and you do a great job.  But that has little
-to do with this.
-
-> And you already had written that you wouldn't take a
-> similar individual patch.
-> 
-> http://lkml.org/lkml/2010/6/2/428
-
-Exactly.  For the reasons stated previously.
-
-If you are going to be responsible for keeping these up to date,
-especially when the drivers go away or move, then fine, make these
-changes.
-
-But if not, then don't accept them, as I'm not going to.
-
-greg k-h
