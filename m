@@ -1,38 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756573Ab0FIU0d (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jun 2010 16:26:33 -0400
-Received: from fep14.mx.upcmail.net ([62.179.121.34]:64983 "EHLO
-	fep14.mx.upcmail.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751446Ab0FIU0c (ORCPT
+	id S1756653Ab0FIUbY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jun 2010 16:31:24 -0400
+Received: from mail.pripojeni.net ([217.66.174.14]:40669 "EHLO
+	mail.jetsystems.cz" rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org
+	with ESMTP id S1752326Ab0FIUbW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jun 2010 16:26:32 -0400
-X-SourceIP: 77.57.188.152
-Message-ID: <4C0FF8F2.5070104@odi.ch>
-Date: Wed, 09 Jun 2010 22:26:26 +0200
-From: =?ISO-8859-1?Q?Ortwin_Gl=FCck?= <odi@odi.ch>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.9) Gecko/20100415 Thunderbird/3.0.4
-MIME-Version: 1.0
-To: Matthew Garrett <mjg59@srcf.ucam.org>
-CC: linux-kernel@vger.kernel.org
-Subject: Re: freeze when strace X
-References: <4C0FDF9F.9070000@odi.ch> <20100609195228.GA27088@srcf.ucam.org> <4C0FF34D.6090800@odi.ch> <20100609200610.GA27536@srcf.ucam.org>
-In-Reply-To: <20100609200610.GA27536@srcf.ucam.org>
-X-Enigmail-Version: 1.0.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Cloudmark-Analysis: v=1.1 cv=tsaDvxd5BMYuajhtvJLL+Ppe47iaIgCGP4JcOtoQkcg= c=1 sm=0 a=zNANCjgXmV0A:10 a=8nJEP1OIZ-IA:10 a=ENdvOZnJ4qRVE2Fq6LIA:9 a=AKybijNsLi0pg3IiO9fRLZ6Qk6AA:4 a=wPNLvfGTeEIA:10 a=HpAAvcLHHh0Zw7uRqdWCyQ==:117
+	Wed, 9 Jun 2010 16:31:22 -0400
+From: Jiri Slaby <jslaby@suse.cz>
+To: jbarnes@virtuousgeek.org
+Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
+       jirislaby@gmail.com, Greg KH <greg@kroah.com>
+Subject: [PATCH 1/1] PCI: hotplug/cpqphp, fix NULL dereference
+Date: Wed,  9 Jun 2010 22:31:13 +0200
+Message-Id: <1276115473-2307-1-git-send-email-jslaby@suse.cz>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+There are devices out there which are PCI Hot-plug controllers with
+compaq PCI IDs, but are not bridges, hence have pdev->subordinate
+NULL. But cpqphp expects the pointer to be non-NULL.
 
+Add a check to the probe function to avoid oopses like:
+BUG: unable to handle kernel NULL pointer dereference at 00000050
+IP: [<f82e3c41>] cpqhpc_probe+0x951/0x1120 [cpqphp]
+*pdpt = 0000000033779001 *pde = 0000000000000000
+...
 
-On 09.06.2010 22:06, Matthew Garrett wrote:
-> strace needs to output text via X, which generates output which needs to 
-> be output via X... and you'll tend to deadlock. If X is holding any 
-> interesting kernel locks at that point then it wouldn't surprise me if 
-> the machine ends up dead.
+The device here was:
+00:0b.0 PCI Hot-plug controller [0804]: Compaq Computer Corporation PCI Hotplug Controller [0e11:a0f7] (rev 11)
+	Subsystem: Compaq Computer Corporation Device [0e11:a2f8]
 
-Alright. It *is* a silly thing to do. Sorry.
+Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+Cc: Greg KH <greg@kroah.com>
+Cc: Jesse Barnes <jbarnes@virtuousgeek.org>
+---
+ drivers/pci/hotplug/cpqphp_core.c |    7 +++++++
+ 1 files changed, 7 insertions(+), 0 deletions(-)
+
+diff --git a/drivers/pci/hotplug/cpqphp_core.c b/drivers/pci/hotplug/cpqphp_core.c
+index b3e5580..4952c3b 100644
+--- a/drivers/pci/hotplug/cpqphp_core.c
++++ b/drivers/pci/hotplug/cpqphp_core.c
+@@ -828,7 +828,14 @@ static int cpqhpc_probe(struct pci_dev *pdev, const struct pci_device_id *ent)
+ 			pci_name(pdev), err);
+ 		return err;
+ 	}
++
+ 	bus = pdev->subordinate;
++	if (!bus) {
++		dev_notice(&pdev->dev, "the device is not a bridge, "
++				"skipping\n");
++		rc = -ENODEV;
++		goto err_disable_device;
++	}
+ 
+ 	/* Need to read VID early b/c it's used to differentiate CPQ and INTC
+ 	 * discovery
+-- 
+1.7.1
+
 
