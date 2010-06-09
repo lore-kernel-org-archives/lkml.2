@@ -1,93 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932222Ab0FIKm2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jun 2010 06:42:28 -0400
-Received: from he.sipsolutions.net ([78.46.109.217]:45317 "EHLO
-	sipsolutions.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752080Ab0FIKm0 (ORCPT
+	id S1757508Ab0FIKoX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jun 2010 06:44:23 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:56107 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752080Ab0FIKoV convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jun 2010 06:42:26 -0400
-Subject: Re: [RFC PATCH 1/2] mac80211: make max_network_latency notifier
- atomic safe
-From: Johannes Berg <johannes@sipsolutions.net>
-To: Florian Mickler <florian@mickler.org>
-Cc: pm list <linux-pm@lists.linux-foundation.org>, james.bottomley@suse.de,
-       markgross@thegnar.org, mgross@linux.intel.com,
-       "John W. Linville" <linville@tuxdriver.com>,
-       "David S. Miller" <davem@davemloft.net>,
-       Javier Cardona <javier@cozybit.com>, Jouni Malinen <j@w1.fi>,
-       Rui Paulo <rpaulo@gmail.com>, Kalle Valo <kalle.valo@nokia.com>,
-       linux-wireless@vger.kernel.org, linux-kernel@vger.kernel.org,
-       netdev@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>
-In-Reply-To: <20100609122050.1dd18132@schatten.dmk.lab>
-References: <1276074915-26879-1-git-send-email-florian@mickler.org>
-	 <1276076287.3727.15.camel@jlt3.sipsolutions.net>
-	 <20100609122050.1dd18132@schatten.dmk.lab>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 09 Jun 2010 12:42:08 +0200
-Message-ID: <1276080128.14580.5.camel@jlt3.sipsolutions.net>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.1.2 
-Content-Transfer-Encoding: 7bit
+	Wed, 9 Jun 2010 06:44:21 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=PExvtJr76C2zNn2XgL2bYL55usNrYpISPkNB1/UU9sooBiGC9XjR9m2FfyYamwdANW
+         Xu6C1shtjJ74/A+52Pi5Jmjow8RTOuoH7RVOBHD6/ZFF4noD23cpZSkzHoMvH4QDrh1+
+         WdWpGvEfnmZyKh5WsIuG6NhcibNLjrdsP07go=
+MIME-Version: 1.0
+In-Reply-To: <tip-3af9e859281bda7eb7c20b51879cf43aa788ac2e@git.kernel.org>
+References: <1274193049-25997-1-git-send-email-ebmunson@us.ibm.com>
+	<tip-3af9e859281bda7eb7c20b51879cf43aa788ac2e@git.kernel.org>
+Date: Wed, 9 Jun 2010 13:44:19 +0300
+X-Google-Sender-Auth: Cl3MWCEImMSP_GO5Z6kf1x10cl8
+Message-ID: <AANLkTimsd32TL44V-aXvEoa3SE63X6qaOmMny9Q8uNRi@mail.gmail.com>
+Subject: Re: [tip:perf/core] perf: Add non-exec mmap() tracking
+From: Pekka Enberg <penberg@cs.helsinki.fi>
+To: mingo@redhat.com, hpa@zytor.com, anton@samba.org, acme@redhat.com,
+       paulus@samba.org, linux-kernel@vger.kernel.org, a.p.zijlstra@chello.nl,
+       efault@gmx.de, fweisbec@gmail.com, ebmunson@us.ibm.com,
+       rostedt@goodmis.org, tglx@linutronix.de, mingo@elte.hu
+Cc: linux-tip-commits@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-06-09 at 12:20 +0200, Florian Mickler wrote:
-> On Wed, 09 Jun 2010 11:38:07 +0200
-> Johannes Berg <johannes@sipsolutions.net> wrote:
-> 
-> > On Wed, 2010-06-09 at 11:15 +0200, florian@mickler.org wrote:
-> > > In order to have the pm_qos framework be callable from interrupt
-> > > context, all listeners have to also be callable in that context.
-> > 
-> > That makes no sense at all. Why add work structs _everywhere_ in the
-> > callees and make the API harder to use and easy to get wrong completely,
-> > instead of just adding a single work struct that will be queued from the
-> > caller and dealing with the locking complexity etc. just once.
+H Eric,
 
+On Wed, Jun 9, 2010 at 1:15 PM, tip-bot for Eric B Munson
+<ebmunson@us.ibm.com> wrote:
+> Commit-ID:  3af9e859281bda7eb7c20b51879cf43aa788ac2e
+> Gitweb:     http://git.kernel.org/tip/3af9e859281bda7eb7c20b51879cf43aa788ac2e
+> Author:     Eric B Munson <ebmunson@us.ibm.com>
+> AuthorDate: Tue, 18 May 2010 15:30:49 +0100
+> Committer:  Ingo Molnar <mingo@elte.hu>
+> CommitDate: Wed, 9 Jun 2010 11:12:34 +0200
+>
+> perf: Add non-exec mmap() tracking
+>
+> Add the capacility to track data mmap()s. This can be used together
+> with PERF_SAMPLE_ADDR for data profiling.
+>
+> Signed-off-by: Anton Blanchard <anton@samba.org>
+> [Updated code for stable perf ABI]
+> Signed-off-by: Eric B Munson <ebmunson@us.ibm.com>
+> Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
+> Cc: Frederic Weisbecker <fweisbec@gmail.com>
+> Cc: Paul Mackerras <paulus@samba.org>
+> Cc: Mike Galbraith <efault@gmx.de>
+> Cc: Steven Rostedt <rostedt@goodmis.org>
+> LKML-Reference: <1274193049-25997-1-git-send-email-ebmunson@us.ibm.com>
+> Signed-off-by: Ingo Molnar <mingo@elte.hu>
 
-> There are only two listeners at the moment. I suspect that most future
-> uses of the framework need to be atomic, as the driver that
-> requests a specific quality of service probably doesn't want to get into
-> races with the provider of that service(listener). So i suspected the
-> network listener to be the special case.  
+> @@ -3830,6 +3834,14 @@ static void perf_event_mmap_event(struct perf_mmap_event *mmap_event)
+>                if (!vma->vm_mm) {
+>                        name = strncpy(tmp, "[vdso]", sizeof(tmp));
+>                        goto got_name;
+> +               } else if (vma->vm_start <= vma->vm_mm->start_brk &&
+> +                               vma->vm_end >= vma->vm_mm->brk) {
+> +                       name = strncpy(tmp, "[heap]", sizeof(tmp));
+> +                       goto got_name;
+> +               } else if (vma->vm_start <= vma->vm_mm->start_stack &&
+> +                               vma->vm_end >= vma->vm_mm->start_stack) {
+> +                       name = strncpy(tmp, "[stack]", sizeof(tmp));
+> +                       goto got_name;
+>                }
+>
+>                name = strncpy(tmp, "//anon", sizeof(tmp));
 
-Well even if it doesn't _want_ to race with it, a lot of drivers like
-USB drivers etc. can't really do anything without deferring to a
-workqueue.
+Doesn't this change here break the JIT generated code region detection
+in map__new() of tools/perf/util/map.c? We generate a new
+"/tmp/perf-<pid>.map" filename for anonymous memory regions and check
+for that in dso__load() of tools/perf/util/symbol.c.
 
-And what's the race anyway? You get one update, defer the work, and if
-another update happens inbetween you just read the new value when the
-work finally runs -- and you end up doing it only once instead of twice.
-That doesn't seem like a problem.
-
-> The race between service-provider and qos-requester for non-atomic
-> contextes is already there, isn't it? so, locking complexity shouldn't
-> be worse than before.
-
-I have no idea how it works now? I thought you can't request an update
-from an atomic context.
-
-However, if you request a QoS value, it is fundamentally that -- a
-request. There's no guarantee as to when or how it will be honoured.
-
-> But my first approach to this is seen here:
-> https://lists.linux-foundation.org/pipermail/linux-pm/2010-June/026902.html
-
-Icky too.
-
-> A third possibility would be to make it dependent on the
-> type of the constraint, if blocking notifiers are allowed or not. 
-> But that would sacrifice API consistency (update_request for one
-> constraint is allowed to be called in interrupt context and
-> update_request for another would be not).
-
-I don't see what's wrong with the fourth possibility: Allow calling
-pm_qos_update_request() from atomic context, but change _it_ to schedule
-off a work that calls the blocking notifier chain. That avoids the
-complexity in notify-API users since they have process context, and also
-in request-API users since they can call it from any context.
-
-johannes
-
+                        Pekka
