@@ -1,76 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757943Ab0FIQ2T (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jun 2010 12:28:19 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:43655 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752762Ab0FIQ2R convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jun 2010 12:28:17 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=nR7HKUioOHMOI1E1ESzkK3kioDMYiYULwmURnkiicjkqu34lGPfz+NpDKJo4ECqooH
-         RdsB/xHFZbq7Ngt3kb5rmguA4ATuWWzSTzp9TjUCbfsH0tjkfyzIh7+lKUoogwHiX2+m
-         DUqbiWZ6GbIci/D0NPc1Q54++64sD8sfFG8sM=
-MIME-Version: 1.0
-In-Reply-To: <1276097068.1745.13.camel@laptop>
-References: <AANLkTin2pPqOUx--9fIX3BH3e-cU6oCRufijcx_4ozx5@mail.gmail.com>
-	<20100608001929.GF2387@linux.vnet.ibm.com>
-	<AANLkTikl13cJNuU32JzRarrUnoh5DYHr-Tbnv9B-UjsG@mail.gmail.com>
-	<1275986441.5408.111.camel@twins>
-	<AANLkTimXVlgzHivCQberLdrFP8BH_nJzt8_ozUNHG_aI@mail.gmail.com>
-	<1276004075.2987.208.camel@twins>
-	<AANLkTil6ucLZ0A6tWx-OQt_2EeKnx8nSx6rIg2t1L2t5@mail.gmail.com>
-	<1276097068.1745.13.camel@laptop>
-Date: Wed, 9 Jun 2010 11:29:14 -0400
-Message-ID: <AANLkTinl2JKUX6859Ioa1y0DqHWXH5TrkissQ8BAF4cP@mail.gmail.com>
-Subject: Re: 2.6.35-rc2-git1 - include/linux/cgroup.h:534 invoked 
-	rcu_dereference_check() without protection!
-From: Miles Lane <miles.lane@gmail.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: paulmck@linux.vnet.ibm.com, Vivek Goyal <vgoyal@redhat.com>,
-       Eric Paris <eparis@redhat.com>, Lai Jiangshan <laijs@cn.fujitsu.com>,
-       Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>,
-       nauman@google.com, eric.dumazet@gmail.com, netdev@vger.kernel.org,
-       Jens Axboe <jens.axboe@oracle.com>,
-       Gui Jianfeng <guijianfeng@cn.fujitsu.com>,
-       Li Zefan <lizf@cn.fujitsu.com>,
-       Johannes Berg <johannes@sipsolutions.net>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1757946Ab0FIQcZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jun 2010 12:32:25 -0400
+Received: from ist.d-labs.de ([213.239.218.44]:46614 "EHLO mx01.d-labs.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751446Ab0FIQcY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jun 2010 12:32:24 -0400
+Date: Wed, 9 Jun 2010 18:32:04 +0200
+From: Florian Mickler <florian@mickler.org>
+To: James Bottomley <James.Bottomley@suse.de>
+Cc: pm list <linux-pm@lists.linux-foundation.org>, markgross@thegnar.org,
+       mgross@linux.intel.com, linville@tuxdriver.com,
+       Frederic Weisbecker <fweisbec@gmail.com>,
+       Jonathan Corbet <corbet@lwn.net>, Thomas Gleixner <tglx@linutronix.de>,
+       linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v4] pm_qos: make update_request non blocking
+Message-ID: <20100609183204.1eeca494@schatten.dmk.lab>
+In-Reply-To: <1276099645.4343.257.camel@mulgrave.site>
+References: <1276097381-3982-1-git-send-email-florian@mickler.org>
+	<1276097832.4343.223.camel@mulgrave.site>
+	<20100609180033.39d5b499@schatten.dmk.lab>
+	<1276099645.4343.257.camel@mulgrave.site>
+X-Mailer: Claws Mail 3.7.5 (GTK+ 2.18.9; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jun 9, 2010 at 11:24 AM, Peter Zijlstra <peterz@infradead.org> wrote:
-> On Wed, 2010-06-09 at 11:11 -0400, Miles Lane wrote:
->>
->> Sorry.  I misunderstood this message when I first read it.  I didn't
->> realize this message include a new version of the patch.
->> Anyhow, I just tried to apply the patch to 2.6.35-rc2-git3 and got this:
->>
->> # patch -p1 -l -F 20 --dry-run < ../5.patch
->> patching file include/linux/cgroup.h
->> patching file kernel/sched.c
->> Hunk #1 succeeded at 306 with fuzz 1.
->> Hunk #3 FAILED at 4462.
->> Hunk #4 succeeded at 4487 with fuzz 3.
->> 1 out of 4 hunks FAILED -- saving rejects to file kernel/sched.c.rej
->
-> Weird.. it seems to apply without trouble to Linus' git tree.
->
-> root@twins:/usr/src/linux-2.6# git checkout -f origin/master
-> HEAD is now at 84f7586... Merge branch 'for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/ieee1394/linux1394-2.6
-> root@twins:/usr/src/linux-2.6# quilt push
-> Applying patch patches/sched-rcu-validation.patch
-> patching file include/linux/cgroup.h
-> patching file kernel/sched.c
->
-> Now at patch patches/sched-rcu-validation.patch
-> root@twins:/usr/src/linux-2.6# git describe
-> v2.6.35-rc2-54-g84f7586
+On Wed, 09 Jun 2010 12:07:25 -0400
+James Bottomley <James.Bottomley@suse.de> wrote:
 
-Oh.  Duh. I know what is going on.  I had received another patch to
-sched.c.  They must conflict.  I will test with just your patch now.
+> On Wed, 2010-06-09 at 18:00 +0200, Florian Mickler wrote:
+> > On Wed, 09 Jun 2010 11:37:12 -0400
+> > James Bottomley <James.Bottomley@suse.de> wrote:
+> > 
+> > 
+> > > This still isn't resilient against two successive calls to update.  If
+> > > the second one gets to schedule_work() before the work of the first one
+> > > has finished, you'll corrupt the workqueue.
+> > 
+> > Sorry, I don't see it. Can you elaborate?
+> > 
+> > In "run_workqueue(" we do a list_del_init() which resets the
+> > list-pointers of the workitem and only after that reset the
+> > WORK_STRUCT_PENDING member of said structure. 
+> > 
+> > 
+> > schedule_work does a queue_work_on which does a test_and_set_bit on
+> > the WORK_STRUCT_PENDING member of the work and only queues the work
+> > via list_add_tail in insert_work afterwards.
+> > 
+> > Where is my think'o? Or was this fixed while you didn't look?
+> > 
+> > So what _can_ happen, is that we miss a new notfication while the old
+> > notification is still in the queue. But I don't think this is a problem.
+> 
+> OK, so the expression of the race is that the latest notification gets
+> lost.  If something is tracking values, you'd really like to lose the
+> previous one (which is now irrelevant) not the latest one.  The point is
+> there's still a race.
+> 
+> James
+> 
+
+Yeah, but for blocking notification it is not that bad. 
+
+Doesn't using blocking notifiers mean that you need to always check
+via pm_qos_request() to get the latest value anyways? I.e. the
+notification is just a hint, that something changed so you can act on
+it. But if you act (may it because of notification or because of
+something other) then you have to get the current value anyways.
+
+I think there are 2 schemes of operation. The one which needs
+atomic notifiers and where it would be bad if we lost any notification
+and the other where it is just a way of doing some work in a timely
+fashion but it isn't critical that it is done right away.
+
+pm_qos was the second kind of operation up until now, because the
+notifiers may have got scheduled away while blocked. 
+
+I think we should allow for both kinds of operations simultaneous. But
+as I got that pushback to the change from John Linville as I touched his
+code, I got a bit reluctant and just have done the simple variant. :)
+
+(for example if we want to implement some sort of debugging stats, we
+could use blocking notifications, but if we for example block some
+c-stats due to a latency-requirement we probably need some atomic
+notifications.)
+
+Cheers,
+Flo
