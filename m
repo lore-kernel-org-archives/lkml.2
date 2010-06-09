@@ -1,72 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757522Ab0FIPj4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jun 2010 11:39:56 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:34413 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751131Ab0FIPjz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jun 2010 11:39:55 -0400
-Date: Wed, 9 Jun 2010 08:39:00 -0700 (PDT)
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Ingo Molnar <mingo@elte.hu>
-cc: Salman <sqazi@google.com>, Andrew Morton <akpm@linux-foundation.org>,
-       peterz@infradead.org, akpm@inux-foundation.org,
-       linux-kernel@vger.kernel.org, tytso@google.com,
-       Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [PATCH] Fix a race in pid generation that causes pids to be
- reused immediately.
-In-Reply-To: <20100609094850.GA23292@elte.hu>
-Message-ID: <alpine.LFD.2.00.1006090830560.4506@i5.linux-foundation.org>
-References: <20100609062438.29081.91635.stgit@bumblebee1.mtv.corp.google.com> <20100609094850.GA23292@elte.hu>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S1757592Ab0FIPpa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jun 2010 11:45:30 -0400
+Received: from THUNK.ORG ([69.25.196.29]:39827 "EHLO thunker.thunk.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751470Ab0FIPp0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jun 2010 11:45:26 -0400
+Date: Wed, 9 Jun 2010 11:44:49 -0400
+From: tytso@mit.edu
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Al Viro <viro@ZenIV.linux.org.uk>, Artem Bityutskiy <dedekind1@gmail.com>,
+       LKML <linux-kernel@vger.kernel.org>, Jens Axboe <jens.axboe@oracle.com>,
+       linux-fsdevel@vger.kernel.org, Roman Zippel <zippel@linux-m68k.org>,
+       "Tigran A. Aivazian" <tigran@aivazian.fsnet.co.uk>,
+       Chris Mason <chris.mason@oracle.com>,
+       Boaz Harrosh <bharrosh@panasas.com>, linux-ext4@vger.kernel.org,
+       OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>,
+       David Woodhouse <dwmw2@infradead.org>, reiserfs-devel@vger.kernel.org,
+       Jan Kara <jack@suse.cz>, Evgeniy Dushistov <dushistov@mail.ru>
+Subject: Re: [PATCHv4 01/17] VFS: introduce helpers for the s_dirty flag
+Message-ID: <20100609154448.GC6162@thunk.org>
+Mail-Followup-To: tytso@mit.edu, Andrew Morton <akpm@linux-foundation.org>,
+	Al Viro <viro@ZenIV.linux.org.uk>,
+	Artem Bityutskiy <dedekind1@gmail.com>,
+	LKML <linux-kernel@vger.kernel.org>,
+	Jens Axboe <jens.axboe@oracle.com>, linux-fsdevel@vger.kernel.org,
+	Roman Zippel <zippel@linux-m68k.org>,
+	"Tigran A. Aivazian" <tigran@aivazian.fsnet.co.uk>,
+	Chris Mason <chris.mason@oracle.com>,
+	Boaz Harrosh <bharrosh@panasas.com>, linux-ext4@vger.kernel.org,
+	OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>,
+	David Woodhouse <dwmw2@infradead.org>,
+	reiserfs-devel@vger.kernel.org, Jan Kara <jack@suse.cz>,
+	Evgeniy Dushistov <dushistov@mail.ru>
+References: <1274795352-3551-1-git-send-email-dedekind1@gmail.com>
+ <1274795352-3551-2-git-send-email-dedekind1@gmail.com>
+ <20100528132318.0783675a.akpm@linux-foundation.org>
+ <20100528211432.GM31073@ZenIV.linux.org.uk>
+ <20100528141755.42958d81.akpm@linux-foundation.org>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100528141755.42958d81.akpm@linux-foundation.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on thunker.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-On Wed, 9 Jun 2010, Ingo Molnar wrote:
-
-> 
-> * Salman <sqazi@google.com> wrote:
+On Fri, May 28, 2010 at 02:17:55PM -0700, Andrew Morton wrote:
 > > 
-> > A program that repeatedly forks and waits is susceptible to having the
-> > same pid repeated, especially when it competes with another instance of the
-> > same program.  This is really bad for bash implementation.  Furthermore, many shell
-> > scripts assume that pid numbers will not be used for some length of time.
-> > 
-> > Thanks to Ted Tso for the key ideas of this implementation.
+> > The real issue is that it's almost certainly an overdesign.  Let's
+> > get rid of the bogus uses first and figure out what's happening in
+> > what remains, OK?
 > 
-> Looks rather interesting. (Cleanliness-wise i'd suggest to split out the while 
-> loop into a helper function.)
+> That would be good.
 
-I have to say that usually I can look at a patch and see what it does.
+Can we figure out what the new names will be for these accessor
+functions, and then pursuade Linus to be willing to add patch #1 in
+this series to add these accessor functions (without any users for
+these functions, that would wait until the next merge window) to
+2.6.35-rc3 or -rc4, please?
 
-This time I had absolutely no clue.
+It will make life much easier for fs maintainers to merge the patches,
+especially if they've done some cleanup to reduce the bogus places
+where s_dirt was getting set in the first place.  That way I can apply
+my patch to reduce the use of s_dirt[1], then apply a patch I carry in
+my own tree to convert to the new accessor functions without worrying
+about patch conflicts.
 
-There was a whole big context missing: that original load of "last_pid" 
-into "last" at the top of the function, far outside the patch.  And in 
-this case I don't think splitting out the trivial cmpxchg() loop would 
-help that problem - that would just make the "load original" part of the 
-big picture be even further away from the final "replace if same" part, 
-and I think _that_ is a much more critical part of the subtleties there.
+[1] http://article.gmane.org/gmane.comp.file-systems.ext4/19499
 
-So I had to read the patch _and_ go read the code it patched, in order to 
-at all understand what it did. I think the patch explanation should have 
-done it, and I also think this would need a bit comment at the top.
+Thanks,
 
-[ In fact, I'd argue that the _old_ code would have needed a big comment 
-  at the top about last_pid usage, but i somebody had done that, they'd 
-  probably also have seen the race while explaning how the code worked ;]
-
-So having looked at the patch and the code, I agree with the patch, but 
-I'd like some more explanation to go with it.
-
-[ Or Ted's version: as mentioned, I don't think the complexity is actually 
-  in the final cmpxchg loop itself, but in the bigger picture, so I don't 
-  think the differences between Ted's and Salman's versions are that big ]
-
-			Linus
+						- Ted
