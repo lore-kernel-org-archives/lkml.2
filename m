@@ -1,152 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757577Ab0FILfU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jun 2010 07:35:20 -0400
-Received: from va3ehsobe004.messaging.microsoft.com ([216.32.180.14]:10083
-	"EHLO VA3EHSOBE004.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754475Ab0FILfT convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jun 2010 07:35:19 -0400
-X-SpamScore: -8
-X-BigFish: VPS-8(zz542N1432P1764mzz1202hzzz32i2a8h61h)
-X-Spam-TCS-SCL: 0:0
-From: "Vijay R. Iyengar" <Vijay.Iyengar@kpitcummins.com>
-To: "jic23@hermes.cam.ac.uk" <jic23@hermes.cam.ac.uk>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       "sameo@linux.intel.com" <sameo@linux.intel.com>,
-       David Dajun Chen <Dajun.Chen@diasemi.com>,
-       "Ashish P. Chavan" <Ashish.Chavan@kpitcummins.com>,
-       Nitin Shah <Nitin.Shah@kpitcummins.com>
-Date: Wed, 9 Jun 2010 17:04:09 +0530
-Subject: RE: [PATCH] MFD of DA9052 Linux device drivers (1/9)
-Thread-Topic: [PATCH] MFD of DA9052 Linux device drivers (1/9)
-Thread-Index: Acr3RQBKTizuIaHYSaOHcfDBCBcDIwAAXE3QAAD3OuAEHw2nsA==
-Message-ID: <371569CBCFB2E745B891DBB88B2DFDDD19CAEABB32@KCINPUNHJCMS01.kpit.com>
-In-Reply-To: <F56EA673D3E56E48804FE2B0D23EFD2D217420461E@KCINPUNHJCMS01.kpit.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S932112Ab0FILnz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jun 2010 07:43:55 -0400
+Received: from mail.gmx.net ([213.165.64.20]:42581 "HELO mail.gmx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1754420Ab0FILny (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jun 2010 07:43:54 -0400
+X-Authenticated: #5108953
+X-Provags-ID: V01U2FsdGVkX1/yYrYiAvbyDifD0zhK272/hKwi6VbW7E3HMReNd3
+	ipljLxC8VEnGoU
+From: Toralf =?iso-8859-1?q?F=F6rster?= <toralf.foerster@gmx.de>
+To: Matthew Garrett <mjg59@srcf.ucam.org>
+Subject: Re: ThinkPad T400 : should kernel option "reboot=pci" be hard coded ?
+Date: Wed, 9 Jun 2010 13:43:48 +0200
+User-Agent: KMail/1.13.3 (Linux/2.6.34; KDE/4.4.4; i686; ; )
+Cc: ibm-acpi-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org
+References: <201006071122.21925.toralf.foerster@gmx.de> <20100607141103.GA9477@srcf.ucam.org>
+In-Reply-To: <20100607141103.GA9477@srcf.ucam.org>
 MIME-Version: 1.0
-X-Reverse-DNS: Kcinpunhjhc01.kpit.com
+Message-Id: <201006091343.48924.toralf.foerster@gmx.de>
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 8bit
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
- 
-> -----Original Message-----
-> From: J.I. Cameron [mailto:jic23@hermes.cam.ac.uk] On Behalf 
-> Of Jonathan
-> Cameron
-> Sent: 19 May 2010 12:22
-> To: David Dajun Chen
-> Cc: linux-kernel@vger.kernel.org; sameo@linux.intel.com
-> Subject: Re: [PATCH] MFD of DA9052 Linux device drivers (1/9)
-> 
-> Hi David,
-> 
-> Below is an initial review. Please take a look at more code 
-> for similar
-> drivers
-> in the various subsystems as it will give you an idea how how much of
-> this should
-> be done.
-> 
-> I've run out of time, so I'm afraid I didn't get quite to the 
-> bottom of
-> this patch.
-> Still plenty of stuff still to do in the bit I did look at!
-> 
-> Jonathan
-> > +
-> > +/**
-> > + * da9052_eh_unregister_nb:	Function to de-register 
-> a notifier block
-> > + *
-> > + * Caller must not pass any non-existing notifier block or 
-> notifiler
-> block
-> > + * that has already been de-registered. Its caller's responsibility
-> to 
-> > + * allocate/deallocate memory associated with notifier 
-> block. EH will
-> only 
-> > + * Link/De-Link passed notifier blocks.
-> > + *
-> > + * @param nb	: Notifier block to unregister
-> > + * @return s32	: Status of unregistration
-> > + */
-> > +s32 da9052_eh_unregister_nb(da9052_eh_nb* nb){
-> > +	
-> > +	if(nb == NULL)
-> > +		return (INVALID_NB);
-> > +	
-> > +	DA9052_DEBUG("%s() called for event %d \n", __FUNCTION__,
-> nb->eve_type);
-> > +	
-> > +	/* Acqurie nb array lock */
-> > +	if(down_interruptible(&eh_info.eve_nb_array_lock))
-> > +		return (FAILURE);
-> > +	
-> > +	/* Remove passed NB from list */
-> > +	list_del_init(&(nb->nb_list));
-> > +	
-> > +	/* Release NB array lock */
-> > +	up(&eh_info.eve_nb_array_lock);
-> > +	
-> > +	return (SUCCESS);
-> > +}
-> > +
-> 
-> These are looking pretyt touch screen specific.  What are 
-> they doing in
-> this patch?
+Hi,
 
-We have designed the EH (interrupt handler driver) and the TSI (touch screen driver) in a manner that the EH reads raw co-ordinates from the touch control registers of the DA9052 hardware in response to sampling ready interrupt requests and stores them in a FIFO for TSI further processing.
+Matthew Garrett wrote at 16:11:03
+> On Mon, Jun 07, 2010 at 11:22:21AM +0200, Toralf Förster wrote:
+> > Since some kernel version (IIRC since 2.6.31) it is necessary to boot the
+> > linux kernel with that option to prevent an extra 9 seconds delay during
+> > reboot.
+> > I found this tip on the LKML -and now I'm wondering whether this option
+> > should be hard coded in the kernel sources b/c it seems to be necessary
+> > for current kernels too.
+> 
+> No, the best thing to do would be to figure out what changed to require
+> the extra 9 seconds. Are you able to work out which the last kernel
+> release without this timeout was?
+The delay exists since 2.6.27, versions before them I can't test due to 
+udev-149 which don't work together with version < 2.6.27.
 
-We are implementing a common Event handler module for processing all the interrupt events from the DA9052 devices like battery, regulator, RTC etc. Fetching the TSI samples on touch events by EH rather than notifying the TSI driver through a call-back routine helps us to get a good amount of filtered touch samples from the TSI driver. 
+Since version 2.6.29 that kernel boot parameter avoids the extra delay, 2.6.28 
+needs the 9 sec pause independend from what I specify during boot.
 
-Hence we intend to keep the TSI raw co-ordinate reading in the event handling module, which is a part of the MFD driver.
+-- 
+MfG/Kind regards
+Toralf Förster
 
-> > +/**
-> > + * da9052_tsi_start_sampling:	Called by TSI driver to indicate
-> start of data
-> > + * sampling
-> > + * @param void
-> > + * @return int status
-> > + */
-> > +s32 da9052_tsi_start_sampling(void){
-> > +	
-> > +	/* This request is only valid when we are waiting for one */
-> > +	if(tsi_info.tsi_state == WAIT_FOR_SAMPLING){
-> > +		DA9052_DEBUG("__%s__ \n", __FUNCTION__);
-> > +		tsi_info.tsi_state =  SAMPLING_ACTIVE;
-> > +		return (SUCCESS);
-> > +	}
-> > +	else{
-> > +		DA9052_DEBUG("Invalid request for
-> da9052_tsi_start_sampling() \n");
-> > +		return (FAILURE);
-> > +	}	
-> > +}
-> > +
-> > +/**
-> > + * da9052_tsi_stop_sampling:	Called by TSI driver to 
-> indicate end of
-> data
-> > + * sampling
-> > + * @param void
-> > + * @return int status
-> > + */
-> > +s32 da9052_tsi_stop_sampling(void){
-> > +	
-> > +	/* Irrespective of current state, move to initial state */
-> > +	DA9052_DEBUG("__%s__ \n", __FUNCTION__);
-> > +	tsi_info.tsi_state =  WAIT_FOR_PEN_DOWN;
-> > +
-> > +	return (SUCCESS);
-> > +}
+pgp finger print: 7B1A 07F4 EC82 0F90 D4C2 8936 872A E508 7DB6 9DA3
 
