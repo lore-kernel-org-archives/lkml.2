@@ -1,64 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758279Ab0FIUx4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jun 2010 16:53:56 -0400
-Received: from chipmunk.wormnet.eu ([195.195.131.226]:40640 "EHLO
-	chipmunk.wormnet.eu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755824Ab0FIUxz (ORCPT
+	id S1758304Ab0FIUyJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jun 2010 16:54:09 -0400
+Received: from cavan.codon.org.uk ([93.93.128.6]:44358 "EHLO
+	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756573Ab0FIUx4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jun 2010 16:53:55 -0400
-Date: Wed, 9 Jun 2010 21:39:29 +0100
-From: Alexander Clouter <alex@digriz.org.uk>
-To: Dmytro Milinevskyy <milinevskyy@gmail.com>
-Cc: linux-arm-kernel@lists.infradead.org,
-       Russell King <linux@arm.linux.org.uk>,
-       Dhaval Vasa <dhaval.vasa@einfochips.com>,
-       Lennert Buytenhek <kernel@wantstofly.org>,
-       Nicolas Pitre <nico@fluxnic.net>, Simon Guinot <sguinot@lacie.com>,
-       Martin Michlmayr <tbm@cyrius.com>,
-       Simon Kagstrom <simon.kagstrom@netinsight.net>,
-       linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Marvell OpenRD-Ultimate machine support
-Message-ID: <20100609203929.GL7660@chipmunk>
-References: <4c0ff6b2.0c3ddf0a.2185.2e09@mx.google.com> <20100609203720.GK7660@chipmunk>
+	Wed, 9 Jun 2010 16:53:56 -0400
+Date: Wed, 9 Jun 2010 21:53:50 +0100
+From: Matthew Garrett <mjg59@srcf.ucam.org>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Ortwin =?iso-8859-1?Q?Gl=FCck?= <odi@odi.ch>, linux-kernel@vger.kernel.org
+Subject: Re: freeze when strace X
+Message-ID: <20100609205350.GA28383@srcf.ucam.org>
+References: <4C0FDF9F.9070000@odi.ch> <20100609195228.GA27088@srcf.ucam.org> <4C0FF34D.6090800@odi.ch> <20100609200610.GA27536@srcf.ucam.org> <alpine.LFD.2.00.1006092232180.2933@localhost.localdomain>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100609203720.GK7660@chipmunk>
-Organization: diGriz
-X-URL: http://www.digriz.org.uk/
-X-JabberID: alex@digriz.org.uk
+In-Reply-To: <alpine.LFD.2.00.1006092232180.2933@localhost.localdomain>
 User-Agent: Mutt/1.5.18 (2008-05-17)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-* Alexander Clouter <alex@digriz.org.uk> [2010-06-09 21:37:20+0100]:
->
-> >  	kirkwood_ge00_init(&openrd_ge00_data);
-> > -	if (machine_is_openrd_client())
-> > +	if (machine_is_openrd_client() ||      \__same line
-> > +		machine_is_openrd_ultimate())  /
-> >  		kirkwood_ge01_init(&openrd_ge01_data);
-> > +  <------- REMOVE
-> >  	kirkwood_sata_init(&openrd_sata_data);
-> >  	kirkwood_sdio_init(&openrd_mvsdio_data);
-> >  
-> As that 'if()' clause is still less than 77 chars wide:
-> ----
-> kirkwood_ge00_init(&openrd_ge00_data);
-> if (machine_is_openrd_client() || machine_is_openrd_ultimate())
-> 	kirkwood_ge01_init(&openrd_ge01_data);
-> kirkwood_sata_init(&openrd_sata_data);
-> kirkwood_sdio_init(&openrd_mvsdio_data);
-> ----
+On Wed, Jun 09, 2010 at 10:47:23PM +0200, Thomas Gleixner wrote:
+> On Wed, 9 Jun 2010, Matthew Garrett wrote:
+> > strace needs to output text via X, which generates output which needs to 
+> > be output via X... and you'll tend to deadlock. If X is holding any 
+> > interesting kernel locks at that point then it wouldn't surprise me if 
+> > the machine ends up dead.
 > 
-Better still, just make this 'if(!machine_is_openrd_base())'.
+> Nothing to do with kernel locks. strace hooks into the syscall and
+> intercepts the data, so X is stopped at that point. Now try to send
+> output to a program which you stopped yourself :)
 
-Cheers
+Oh, yeah, and ctrl+alt+fwhatever is handled by X.
 
 -- 
-Alexander Clouter
-.sigmonster says: What this country needs is a good five cent microcomputer.
+Matthew Garrett | mjg59@srcf.ucam.org
