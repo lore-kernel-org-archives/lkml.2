@@ -1,83 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756828Ab0FIAi0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 8 Jun 2010 20:38:26 -0400
-Received: from bld-mail12.adl6.internode.on.net ([150.101.137.97]:36294 "EHLO
-	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1756736Ab0FIAiY (ORCPT
+	id S1754434Ab0FIDww (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 8 Jun 2010 23:52:52 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:58103 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752122Ab0FIDwv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 8 Jun 2010 20:38:24 -0400
-From: Dave Chinner <david@fromorbit.com>
-To: torvalds@linux-foundation.org
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-       xfs@oss.sgi.com, akpm@linux-foundation.org
-Subject: [PATCH 3/3] writeback: limit write_cache_pages integrity scanning to current EOF
-Date: Wed,  9 Jun 2010 10:37:20 +1000
-Message-Id: <1276043840-1946-4-git-send-email-david@fromorbit.com>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1276043840-1946-1-git-send-email-david@fromorbit.com>
-References: <1276043840-1946-1-git-send-email-david@fromorbit.com>
+	Tue, 8 Jun 2010 23:52:51 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:date:message-id:subject:from:to:content-type;
+        b=h40SVtKOdICdQcDqzCvb1ItSbB2VIrrFLo0QUueARrtIAU5KZQoaDL70XQsH5FNoZh
+         rDPHFmMGNL8TPY6FOZgEzMYmygLAznCitNX4x4R44GI1MZPvzhv8rNSoy+84sYijhtfu
+         SbhLfsoiNeurgaWQNOsPebjFCoGGKf9pArNzY=
+MIME-Version: 1.0
+Date: Tue, 8 Jun 2010 21:52:49 -0600
+Message-ID: <AANLkTin5kMu_ScK8qYcm2r3TrwgnQM9EGiOU3vNboQXu@mail.gmail.com>
+Subject: Submitting through GIT
+From: Jeffrey Merkey <jeffmerkey@gmail.com>
+To: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Dave Chinner <dchinner@redhat.com>
+If I wanted to submit MDB through GIT for testing or inclusion, how
+would I do that, or am I even allowed to?  MDB is small and modular
+and I am almost finished with X86_64.  It's also an assembler debugger
+for us old dos heads.  I guess the real question is if it ended up
+there I'd have to be around to support it forever.  No problem.
 
-sync can currently take a really long time if a concurrent writer is
-extending a file. The problem is that the dirty pages on the address
-space grow in the same direction as write_cache_pages scans, so if
-the writer keeps ahead of writeback, the writeback will not
-terminate until the writer stops adding dirty pages.
+I don't want to hear "We have X number of debuggers" because Linux has
+about 30 file systems, most of them useless and not used anymore, so
+that old excuse doesn't fly.  I use it all the time and I know a lot
+of folks would like having a module they could just load and track
+down field problems and unload when not needed without having to
+rumage around for a NULL modem cable in some data center buried deep
+underground.
 
-For a data integrity sync, we only need to write the pages dirty at
-the time we start the writeback, so we can stop scanning once we get
-to the page that was at the end of the file at the time the scan
-started.
+Please Advise.
 
-This will prevent operations like copying a large file preventing
-sync from completing as it will not write back pages that were
-dirtied after the sync was started. This does not impact the
-existing integrity guarantees, as any dirty page (old or new)
-within the EOF range at the start of the scan will still be
-captured.
+Jeff
 
-This patch will not prevent sync from blocking on large writes into
-holes. That requires more complex intervention while this patch only
-addresses the common append-case of this sync holdoff.
-
-Signed-off-by: Dave Chinner <dchinner@redhat.com>
-Reviewed-by: Christoph Hellwig <hch@lst.de>
----
- mm/page-writeback.c |   15 +++++++++++++++
- 1 files changed, 15 insertions(+), 0 deletions(-)
-
-diff --git a/mm/page-writeback.c b/mm/page-writeback.c
-index b3dbb80..bbd396a 100644
---- a/mm/page-writeback.c
-+++ b/mm/page-writeback.c
-@@ -851,7 +851,22 @@ int write_cache_pages(struct address_space *mapping,
- 		if (wbc->range_start == 0 && wbc->range_end == LLONG_MAX)
- 			range_whole = 1;
- 		cycled = 1; /* ignore range_cyclic tests */
-+
-+		/*
-+		 * If this is a data integrity sync, cap the writeback to the
-+		 * current end of file. Any extension to the file that occurs
-+		 * after this is a new write and we don't need to write those
-+		 * pages out to fulfil our data integrity requirements. If we
-+		 * try to write them out, we can get stuck in this scan until
-+		 * the concurrent writer stops adding dirty pages and extending
-+		 * EOF.
-+		 */
-+		if (wbc->sync_mode == WB_SYNC_ALL &&
-+		    wbc->range_end == LLONG_MAX) {
-+			end = i_size_read(mapping->host) >> PAGE_CACHE_SHIFT;
-+		}
- 	}
-+
- retry:
- 	done_index = index;
- 	while (!done && (index <= end)) {
--- 
-1.7.1
-
+OH LINUS KEEPER OF THE CODE SHOW MERCY ON THIS POOR SINNER WHO HAS
+LEARNED FROM HIS ARROGANCE AND MISTAKES.
