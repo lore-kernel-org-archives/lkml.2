@@ -1,88 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756583Ab0FIJFN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jun 2010 05:05:13 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:41313 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753458Ab0FIJFK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jun 2010 05:05:10 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: 2.6.35-rc2-git2: Reported regressions from 2.6.34
-Date: Wed, 9 Jun 2010 11:06:11 +0200
-User-Agent: KMail/1.12.4 (Linux/2.6.35-rc1-rjw; KDE/4.3.5; x86_64; ; )
-Cc: Carl Worth <cworth@cworth.org>, Eric Anholt <eric@anholt.net>,
-       Venkatesh Pallipadi <venki@google.com>,
-       Jens Axboe <jaxboe@fusionio.com>, Dave Airlie <airlied@gmail.com>,
-       Jesse Barnes <jbarnes@virtuousgeek.org>, Ingo Molnar <mingo@elte.hu>,
-       David =?iso-8859-15?q?H=E4rdeman?= <david@hardeman.nu>,
-       Mauro Carvalho Chehab <mchehab@redhat.com>,
-       Eric Dumazet <eric.dumazet@gmail.com>,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       Maciej Rutecki <maciej.rutecki@gmail.com>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Kernel Testers List <kernel-testers@vger.kernel.org>,
-       Network Development <netdev@vger.kernel.org>,
-       Linux ACPI <linux-acpi@vger.kernel.org>,
-       Linux PM List <linux-pm@lists.linux-foundation.org>,
-       Linux SCSI List <linux-scsi@vger.kernel.org>,
-       Linux Wireless List <linux-wireless@vger.kernel.org>,
-       DRI <dri-devel@lists.sourceforge.net>
-References: <Rlf_Qjov7bG.A.a8F.I8rDMB@chimera> <alpine.LFD.2.00.1006081814240.4506@i5.linux-foundation.org>
-In-Reply-To: <alpine.LFD.2.00.1006081814240.4506@i5.linux-foundation.org>
+	id S1756465Ab0FIJHf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jun 2010 05:07:35 -0400
+Received: from mail-ww0-f46.google.com ([74.125.82.46]:47297 "EHLO
+	mail-ww0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753458Ab0FIJHd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jun 2010 05:07:33 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=googlemail.com; s=gamma;
+        h=sender:message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=pqYNBzLZd5YH8wLAimaN295f9BX8oJpExaSn8GUR1wBVZUInDYwdSUchbr9D1v2GPC
+         heEKyuRWLa0SXz4rAnt803ZSh4qdSNXf5+q/WqZOWk03n26zloNswWcJNgyr0DvxZQn2
+         lRmYDLF9pNE078kNniXz1k4zgHdB2XIjP/ZhM=
+Message-ID: <4C0F59C8.8020704@tuffmail.co.uk>
+Date: Wed, 09 Jun 2010 10:07:20 +0100
+From: Alan Jenkins <alan-jenkins@tuffmail.co.uk>
+User-Agent: Thunderbird 2.0.0.24 (X11/20100317)
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+CC: Kernel Testers List <kernel-testers@vger.kernel.org>,
+       linux acpi <linux-acpi@vger.kernel.org>,
+       linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: Regression: BUG when battery is removed before resuming from
+ hibernation
+References: <4C0E40E1.2080108@tuffmail.co.uk> <201006082252.49452.rjw@sisk.pl>
+In-Reply-To: <201006082252.49452.rjw@sisk.pl>
+Content-Type: text/plain; charset=iso-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-Message-Id: <201006091106.11232.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 09 June 2010, Linus Torvalds wrote:
-> 
-> [ Added lots of cc's to direct specific people to look at the regressions 
->   that may or may not be theirs... ]
-> 
-> On Wed, 9 Jun 2010, Rafael J. Wysocki wrote:
-> >
-> >  * Quite a few of the already reported regressions may be related to the bug
-> >    fixed by 386f40c86d6c8d5b717ef20620af1a750d0dacb4 (Revert "tty: fix a little
-> >    bug in scrup, vt.c"), so reporters please retest with this commit applied.]
-> 
-> From a quick look, most of them look unrelated to that unfortunate bug. 
-> It's hard to tell for sure, of course (memory corruption can do pretty 
-> much anything), but I'm not seeing the 07200720.. pattern at least.
-> 
-> And some of them do seem to be bisected to likely culprits and/or have 
-> patches that are claimed to have fixed them.
-> 
-> > Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=16163
-> > Subject	: [2.6.35-rc1 Regression] i915: Commit cfecde causes VGA to stay off
-> > Submitter	: David John <davidjon@xenontk.org>
-> > Date		: 2010-06-02 12:52 (7 days old)
-> > Message-ID	: <4C065423.3000202@xenontk.org>
-> > References	: http://marc.info/?l=linux-kernel&m=127548313828613&w=2
-> 
-> That has a "reverting the commit fixes it", and a confirmation from Nick 
-> Bowler.
-> 
-> Eric, Carl: should I just revert that commit? Or do you have a fix?
+Rafael J. Wysocki wrote:
+> On Tuesday 08 June 2010, Alan Jenkins wrote:
+>   
+>> I found this bug 2.6.34 on my Asus EeePC 701 (x86_32 arch).  It didn't 
+>> happen to me before, when I was running nearly-2.6.33 or 2.6.32-release.
+>>
+>> I used git-bisect, but unfortunately the result isn't very helpful.  My 
+>> next step will be to try to narrowing down the culprits by disabling 
+>> individual CONFIG options.  Here are my results so far, in case anyone 
+>> is interested.
+>>
+>>
+>> == Steps to reproduce ==
+>>
+>> I) Boot off mains power, with battery removed.  Login to KDE4 session, 
+>> with Konsole as the only running application.
+>> II) Run "sudo pm-hibernate"
+>>
+>> 1. When the system switches to text mode (a.k.a the console), 
+>> immediately insert the battery.
+>> 2. Once the system has fully hibernated, remove the battery.
+>> 3. Press the power button to resume.  The backtrace below is generated 
+>> during resume.
+>>     
+>
+> You're not supposed to be doing that.
+>
+> Rafael
+>   
 
-This one is reported to have been fixed already.  Closed now.
+I take it you mean "don't plug devices in during hibernation; you'll run 
+out of memory, Bad Things will happen, and you can expect resume to 
+fail".  Pity.  It wasn't an artificial test case, just an unusual usage 
+pattern of mine[1].
 
-...
-> 
-> > Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=16104
-> > Subject	: Radeon KMS does not start after merge of the new PM-Code
-> > Submitter	: Jan Kreuzer <kontrollator@gmx.de>
-> > Date		: 2010-06-02 07:47 (7 days old)
-> 
-> This one also has a patch in Bugzilla, I think Airlie is just waiting to 
-> calm down his queue and already removed the dependency on the temperature 
-> code. DaveA?
+I guess it wouldn't be guaranteed safe even if I was plugging the device 
+in first.  The battery connection could take a few seconds to stabilize, 
+and there's software equivalents in things like the usb-storage delay.
 
-This should be fixed by commit f8ed8b4c5d30b5214f185997131b06e35f6f7113, so
-closing now.
+I can't complain about safety margins; other people might want to do 
+similar things with an entire docking station...
 
-Rafael
+Any chance of a big screaming warning?  IIRC there's one global flag to 
+fail userspace call-outs while userspace is frozen.  Would it be 
+acceptable to document this in code & behaviour by aborting the 
+hibernation on hot-plug?  (hot-*un*plug would presumably be allowed).
+
+Alan
+
+
+[1] I do this for conservation.  I'm told batteries last longer if I 
+don't use them & let them get warm.  I put the battery in for 
+hibernation so I can remove mains power without waiting.  I start 
+hibernation first, because in practice you have to have the screen 
+closed in order to plug or unplug the battery.
