@@ -1,53 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757162Ab0FIJbf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jun 2010 05:31:35 -0400
-Received: from juliette.telenet-ops.be ([195.130.137.74]:50115 "EHLO
-	juliette.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757071Ab0FIJbd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jun 2010 05:31:33 -0400
-Date: Wed, 9 Jun 2010 11:31:31 +0200 (CEST)
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Linux/m68k <linux-m68k@vger.kernel.org>,
-       Linux Kernel Development <linux-kernel@vger.kernel.org>
-Subject: [PATCH] zorro: Fix reading of proc/bus/zorro/* in small chunks
-Message-ID: <alpine.DEB.2.00.1006091129240.8858@ayla.of.borg>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S1757186Ab0FIJd2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jun 2010 05:33:28 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:49264 "EHLO mx2.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756262Ab0FIJdZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jun 2010 05:33:25 -0400
+Date: Wed, 9 Jun 2010 11:32:49 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Jens Axboe <jaxboe@fusionio.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+       "Rafael J. Wysocki" <rjw@sisk.pl>, Carl Worth <cworth@cworth.org>,
+       Eric Anholt <eric@anholt.net>, Venkatesh Pallipadi <venki@google.com>,
+       Dave Airlie <airlied@gmail.com>,
+       Jesse Barnes <jbarnes@virtuousgeek.org>,
+       David H?rdeman <david@hardeman.nu>,
+       Mauro Carvalho Chehab <mchehab@redhat.com>,
+       Eric Dumazet <eric.dumazet@gmail.com>,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       Maciej Rutecki <maciej.rutecki@gmail.com>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Kernel Testers List <kernel-testers@vger.kernel.org>,
+       Network Development <netdev@vger.kernel.org>,
+       Linux ACPI <linux-acpi@vger.kernel.org>,
+       Linux PM List <linux-pm@lists.linux-foundation.org>,
+       Linux SCSI List <linux-scsi@vger.kernel.org>,
+       Linux Wireless List <linux-wireless@vger.kernel.org>,
+       DRI <dri-devel@lists.sourceforge.net>
+Subject: Re: 2.6.35-rc2-git2: Reported regressions from 2.6.34
+Message-ID: <20100609093249.GA17026@elte.hu>
+References: <Rlf_Qjov7bG.A.a8F.I8rDMB@chimera>
+ <alpine.LFD.2.00.1006081814240.4506@i5.linux-foundation.org>
+ <4C0F4872.7090909@fusionio.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4C0F4872.7090909@fusionio.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
+	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-proc_bus_zorro_read() didn't take into account the current file position,
-hence it always read from the start of the ConfigDev.
 
-Signed-off-by: Geert Uytterhoeven <geert@linux-m68k.org>
+* Jens Axboe <jaxboe@fusionio.com> wrote:
 
-diff --git a/drivers/zorro/proc.c b/drivers/zorro/proc.c
-index aaf8abb..108096f 100644
---- a/drivers/zorro/proc.c
-+++ b/drivers/zorro/proc.c
-@@ -73,7 +73,7 @@ proc_bus_zorro_read(struct file *file, char __user *buf, size_t nbytes, loff_t *
- 	cd.cd_BoardAddr = (void *)zorro_resource_start(z);
- 	cd.cd_BoardSize = zorro_resource_len(z);
- 
--	if (copy_to_user(buf, &cd, nbytes))
-+	if (copy_to_user(buf, (void *)&cd + pos, nbytes))
- 		return -EFAULT;
- 	*ppos += nbytes;
- 
--- 
-1.7.0.4
+> On 2010-06-09 03:53, Linus Torvalds wrote:
+> >> Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=16129
+> >> Subject	: BUG: using smp_processor_id() in preemptible [00000000] code: jbd2/sda2
+> >> Submitter	: Jan Kreuzer <kontrollator@gmx.de>
+> >> Date		: 2010-06-05 06:15 (4 days old)
+> > 
+> > This seems to have been introduced by
+> > 
+> > 	commit 7cbaef9c83e58bbd4bdd534b09052b6c5ec457d5
+> > 	Author: Ingo Molnar <mingo@elte.hu>
+> > 	Date:   Sat Nov 8 17:05:38 2008 +0100
+> > 
+> > 	    sched: optimize sched_clock() a bit
+> >     
+> > 	    sched_clock() uses cycles_2_ns() needlessly - which is an irq-disabling
+> > 	    variant of __cycles_2_ns().
+> >     
+> > 	    Most of the time sched_clock() is called with irqs disabled already.
+> > 	    The few places that call it with irqs enabled need to be updated.
+> >     
+> > 	    Signed-off-by: Ingo Molnar <mingo@elte.hu>
+> > 
+> > and this seems to be one of those calling cases that need to be updated.
+> > 
+> > Ingo? The call trace is:
+> > 
+> > 	BUG: using smp_processor_id() in preemptible [00000000] code: jbd2/sda2-8/337
+> > 	caller is native_sched_clock+0x3c/0x68
+> > 	Pid: 337, comm: jbd2/sda2-8 Not tainted 2.6.35-rc1jan+ #4
+> > 	Call Trace:
+> > 	[<ffffffff812362c5>] debug_smp_processor_id+0xc9/0xe4
+> > 	[<ffffffff8101059d>] native_sched_clock+0x3c/0x68
+> > 	[<ffffffff8101043d>] sched_clock+0x9/0xd
+> > 	[<ffffffff81212d7a>] blk_rq_init+0x97/0xa3
+> > 	[<ffffffff81214d71>] get_request+0x1c4/0x2d0
+> > 	[<ffffffff81214ea6>] get_request_wait+0x29/0x1a6
+> > 	[<ffffffff81215537>] __make_request+0x338/0x45b
+> > 	[<ffffffff812147c2>] generic_make_request+0x2bb/0x330
+> > 	[<ffffffff81214909>] submit_bio+0xd2/0xef
+> > 	[<ffffffff811413cb>] submit_bh+0xf4/0x116
+> > 	[<ffffffff81144853>] block_write_full_page_endio+0x89/0x96
+> > 	[<ffffffff81144875>] block_write_full_page+0x15/0x17
+> > 	[<ffffffff8119b00a>] ext4_writepage+0x356/0x36b
+> > 	[<ffffffff810e1f91>] __writepage+0x1a/0x39
+> > 	[<ffffffff810e32a6>] write_cache_pages+0x20d/0x346
+> > 	[<ffffffff810e3406>] generic_writepages+0x27/0x29
+> > 	[<ffffffff811ca279>] journal_submit_data_buffers+0x110/0x17d
+> > 	[<ffffffff811ca986>] jbd2_journal_commit_transaction+0x4cb/0x156d
+> > 	[<ffffffff811d0cba>] kjournald2+0x147/0x37a
+> > 
+> > (from the bugzilla thing)
+> 
+> This should be fixed by commit 28f4197e which was merged on friday.
 
-Gr{oetje,eeting}s,
+The scheduler commit adding local_clock() (for .36) is:
 
-						Geert
+  c676329: sched_clock: Add local_clock() API and improve documentation
 
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+So once that is upstream the block IO statistics code can use that.
 
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-							    -- Linus Torvalds
+Thanks,
+
+	Ingo
