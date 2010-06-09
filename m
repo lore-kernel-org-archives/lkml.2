@@ -1,364 +1,689 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932179Ab0FIKOR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jun 2010 06:14:17 -0400
-Received: from hera.kernel.org ([140.211.167.34]:41285 "EHLO hera.kernel.org"
+	id S1757444Ab0FIKOv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jun 2010 06:14:51 -0400
+Received: from hera.kernel.org ([140.211.167.34]:41313 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932134Ab0FIKOM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jun 2010 06:14:12 -0400
-Date: Wed, 9 Jun 2010 10:13:02 GMT
-From: tip-bot for Peter Zijlstra <a.p.zijlstra@chello.nl>
+	id S1757108Ab0FIKOq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jun 2010 06:14:46 -0400
+Date: Wed, 9 Jun 2010 10:13:57 GMT
+From: tip-bot for Venkatesh Pallipadi <venki@google.com>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-       torvalds@linux-foundation.org, a.p.zijlstra@chello.nl,
-       akpm@linux-foundation.org, tglx@linutronix.de, jaxboe@fusionio.com,
-       mingo@elte.hu
+       a.p.zijlstra@chello.nl, suresh.b.siddha@intel.com, tglx@linutronix.de,
+       venki@google.com, mingo@elte.hu
 Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-       akpm@linux-foundation.org, a.p.zijlstra@chello.nl,
-       torvalds@linux-foundation.org, tglx@linutronix.de, jaxboe@fusionio.com,
-       mingo@elte.hu
-In-Reply-To: <1275052414.1645.52.camel@laptop>
-References: <1275052414.1645.52.camel@laptop>
+       a.p.zijlstra@chello.nl, suresh.b.siddha@intel.com, tglx@linutronix.de,
+       venki@google.com, mingo@elte.hu
+In-Reply-To: <1274486981.2840.46.camel@sbs-t61.sc.intel.com>
+References: <1274486981.2840.46.camel@sbs-t61.sc.intel.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:sched/core] sched_clock: Add local_clock() API and improve documentation
-Message-ID: <tip-c676329abb2b8359d9a5d734dec0c81779823fd6@git.kernel.org>
-Git-Commit-ID: c676329abb2b8359d9a5d734dec0c81779823fd6
+Subject: [tip:sched/core] sched: Change nohz idle load balancing logic to push model
+Message-ID: <tip-83cd4fe27ad8446619b2e030b171b858501de87d@git.kernel.org>
+Git-Commit-ID: 83cd4fe27ad8446619b2e030b171b858501de87d
 X-Mailer: tip-git-log-daemon
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 09 Jun 2010 10:13:03 +0000 (UTC)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 09 Jun 2010 10:13:58 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  c676329abb2b8359d9a5d734dec0c81779823fd6
-Gitweb:     http://git.kernel.org/tip/c676329abb2b8359d9a5d734dec0c81779823fd6
-Author:     Peter Zijlstra <a.p.zijlstra@chello.nl>
-AuthorDate: Tue, 25 May 2010 10:48:51 +0200
+Commit-ID:  83cd4fe27ad8446619b2e030b171b858501de87d
+Gitweb:     http://git.kernel.org/tip/83cd4fe27ad8446619b2e030b171b858501de87d
+Author:     Venkatesh Pallipadi <venki@google.com>
+AuthorDate: Fri, 21 May 2010 17:09:41 -0700
 Committer:  Ingo Molnar <mingo@elte.hu>
-CommitDate: Wed, 9 Jun 2010 10:34:49 +0200
+CommitDate: Wed, 9 Jun 2010 10:34:52 +0200
 
-sched_clock: Add local_clock() API and improve documentation
+sched: Change nohz idle load balancing logic to push model
 
-For people who otherwise get to write: cpu_clock(smp_processor_id()),
-there is now: local_clock().
+In the new push model, all idle CPUs indeed go into nohz mode. There is
+still the concept of idle load balancer (performing the load balancing
+on behalf of all the idle cpu's in the system). Busy CPU kicks the nohz
+balancer when any of the nohz CPUs need idle load balancing.
+The kickee CPU does the idle load balancing on behalf of all idle CPUs
+instead of the normal idle balance.
 
-Also, as per suggestion from Andrew, provide some documentation on
-the various clock interfaces, and minimize the unsigned long long vs
-u64 mess.
+This addresses the below two problems with the current nohz ilb logic:
+* the idle load balancer continued to have periodic ticks during idle and
+  wokeup frequently, even though it did not have any rebalancing to do on
+  behalf of any of the idle CPUs.
+* On x86 and CPUs that have APIC timer stoppage on idle CPUs, this
+  periodic wakeup can result in a periodic additional interrupt on a CPU
+  doing the timer broadcast.
 
+Also currently we are migrating the unpinned timers from an idle to the cpu
+doing idle load balancing (when all the cpus in the system are idle,
+there is no idle load balancing cpu and timers get added to the same idle cpu
+where the request was made. So the existing optimization works only on semi idle
+system).
+
+And In semi idle system, we no longer have periodic ticks on the idle load
+balancer CPU. Using that cpu will add more delays to the timers than intended
+(as that cpu's timer base may not be uptodate wrt jiffies etc). This was
+causing mysterious slowdowns during boot etc.
+
+For now, in the semi idle case, use the nearest busy cpu for migrating timers
+from an idle cpu.  This is good for power-savings anyway.
+
+Signed-off-by: Venkatesh Pallipadi <venki@google.com>
+Signed-off-by: Suresh Siddha <suresh.b.siddha@intel.com>
 Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Jens Axboe <jaxboe@fusionio.com>
-LKML-Reference: <1275052414.1645.52.camel@laptop>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+LKML-Reference: <1274486981.2840.46.camel@sbs-t61.sc.intel.com>
 Signed-off-by: Ingo Molnar <mingo@elte.hu>
 ---
- arch/parisc/kernel/ftrace.c |    4 +-
- include/linux/sched.h       |   37 +++++++++-------
- kernel/lockdep.c            |    2 +-
- kernel/perf_event.c         |    2 +-
- kernel/rcutorture.c         |    3 +-
- kernel/sched.c              |    2 +-
- kernel/sched_clock.c        |   95 ++++++++++++++++++++++++++++++++++++++-----
- kernel/trace/trace_clock.c  |    2 +-
- 8 files changed, 113 insertions(+), 34 deletions(-)
+ include/linux/sched.h    |    9 +-
+ kernel/hrtimer.c         |    8 +-
+ kernel/sched.c           |   34 +++++-
+ kernel/sched_fair.c      |  329 ++++++++++++++++++++++++++++------------------
+ kernel/time/tick-sched.c |    8 +-
+ kernel/timer.c           |    8 +-
+ 6 files changed, 237 insertions(+), 159 deletions(-)
 
-diff --git a/arch/parisc/kernel/ftrace.c b/arch/parisc/kernel/ftrace.c
-index 9877372..5beb97b 100644
---- a/arch/parisc/kernel/ftrace.c
-+++ b/arch/parisc/kernel/ftrace.c
-@@ -82,7 +82,7 @@ unsigned long ftrace_return_to_handler(unsigned long retval0,
- 	unsigned long ret;
- 
- 	pop_return_trace(&trace, &ret);
--	trace.rettime = cpu_clock(raw_smp_processor_id());
-+	trace.rettime = local_clock();
- 	ftrace_graph_return(&trace);
- 
- 	if (unlikely(!ret)) {
-@@ -126,7 +126,7 @@ void prepare_ftrace_return(unsigned long *parent, unsigned long self_addr)
- 		return;
- 	}
- 
--	calltime = cpu_clock(raw_smp_processor_id());
-+	calltime = local_clock();
- 
- 	if (push_return_trace(old, calltime,
- 				self_addr, &trace.depth) == -EBUSY) {
 diff --git a/include/linux/sched.h b/include/linux/sched.h
-index edc3dd1..c2d4316 100644
+index c2d4316..a3e5b1c 100644
 --- a/include/linux/sched.h
 +++ b/include/linux/sched.h
-@@ -1791,20 +1791,23 @@ static inline int set_cpus_allowed(struct task_struct *p, cpumask_t new_mask)
- #endif
+@@ -271,14 +271,11 @@ extern int runqueue_is_locked(int cpu);
  
- /*
-- * Architectures can set this to 1 if they have specified
-- * CONFIG_HAVE_UNSTABLE_SCHED_CLOCK in their arch Kconfig,
-- * but then during bootup it turns out that sched_clock()
-- * is reliable after all:
-+ * Do not use outside of architecture code which knows its limitations.
-+ *
-+ * sched_clock() has no promise of monotonicity or bounded drift between
-+ * CPUs, use (which you should not) requires disabling IRQs.
-+ *
-+ * Please use one of the three interfaces below.
-  */
--#ifdef CONFIG_HAVE_UNSTABLE_SCHED_CLOCK
--extern int sched_clock_stable;
--#endif
--
--/* ftrace calls sched_clock() directly */
- extern unsigned long long notrace sched_clock(void);
-+/*
-+ * See the comment in kernel/sched_clock.c
-+ */
-+extern u64 cpu_clock(int cpu);
-+extern u64 local_clock(void);
-+extern u64 sched_clock_cpu(int cpu);
-+
- 
- extern void sched_clock_init(void);
--extern u64 sched_clock_cpu(int cpu);
- 
- #ifndef CONFIG_HAVE_UNSTABLE_SCHED_CLOCK
- static inline void sched_clock_tick(void)
-@@ -1819,17 +1822,19 @@ static inline void sched_clock_idle_wakeup_event(u64 delta_ns)
- {
- }
+ extern cpumask_var_t nohz_cpu_mask;
+ #if defined(CONFIG_SMP) && defined(CONFIG_NO_HZ)
+-extern int select_nohz_load_balancer(int cpu);
+-extern int get_nohz_load_balancer(void);
++extern void select_nohz_load_balancer(int stop_tick);
++extern int get_nohz_timer_target(void);
+ extern int nohz_ratelimit(int cpu);
  #else
-+/*
-+ * Architectures can set this to 1 if they have specified
-+ * CONFIG_HAVE_UNSTABLE_SCHED_CLOCK in their arch Kconfig,
-+ * but then during bootup it turns out that sched_clock()
-+ * is reliable after all:
-+ */
-+extern int sched_clock_stable;
-+
- extern void sched_clock_tick(void);
- extern void sched_clock_idle_sleep_event(void);
- extern void sched_clock_idle_wakeup_event(u64 delta_ns);
- #endif
+-static inline int select_nohz_load_balancer(int cpu)
+-{
+-	return 0;
+-}
++static inline void select_nohz_load_balancer(int stop_tick) { }
  
--/*
-- * For kernel-internal use: high-speed (but slightly incorrect) per-cpu
-- * clock constructed from sched_clock():
-- */
--extern unsigned long long cpu_clock(int cpu);
+ static inline int nohz_ratelimit(int cpu)
+ {
+diff --git a/kernel/hrtimer.c b/kernel/hrtimer.c
+index 5c69e99..e934339 100644
+--- a/kernel/hrtimer.c
++++ b/kernel/hrtimer.c
+@@ -144,12 +144,8 @@ struct hrtimer_clock_base *lock_hrtimer_base(const struct hrtimer *timer,
+ static int hrtimer_get_target(int this_cpu, int pinned)
+ {
+ #ifdef CONFIG_NO_HZ
+-	if (!pinned && get_sysctl_timer_migration() && idle_cpu(this_cpu)) {
+-		int preferred_cpu = get_nohz_load_balancer();
 -
- extern unsigned long long
- task_sched_runtime(struct task_struct *task);
- extern unsigned long long thread_group_sched_runtime(struct task_struct *task);
-diff --git a/kernel/lockdep.c b/kernel/lockdep.c
-index 5428679..f2852a5 100644
---- a/kernel/lockdep.c
-+++ b/kernel/lockdep.c
-@@ -146,7 +146,7 @@ static DEFINE_PER_CPU(struct lock_class_stats[MAX_LOCKDEP_KEYS],
- 
- static inline u64 lockstat_clock(void)
- {
--	return cpu_clock(smp_processor_id());
-+	return local_clock();
+-		if (preferred_cpu >= 0)
+-			return preferred_cpu;
+-	}
++	if (!pinned && get_sysctl_timer_migration() && idle_cpu(this_cpu))
++		return get_nohz_timer_target();
+ #endif
+ 	return this_cpu;
  }
- 
- static int lock_point(unsigned long points[], unsigned long ip)
-diff --git a/kernel/perf_event.c b/kernel/perf_event.c
-index 31d6afe..109c5ec 100644
---- a/kernel/perf_event.c
-+++ b/kernel/perf_event.c
-@@ -214,7 +214,7 @@ static void perf_unpin_context(struct perf_event_context *ctx)
- 
- static inline u64 perf_clock(void)
- {
--	return cpu_clock(raw_smp_processor_id());
-+	return local_clock();
- }
- 
- /*
-diff --git a/kernel/rcutorture.c b/kernel/rcutorture.c
-index 6535ac8..2e2726d 100644
---- a/kernel/rcutorture.c
-+++ b/kernel/rcutorture.c
-@@ -239,8 +239,7 @@ static unsigned long
- rcu_random(struct rcu_random_state *rrsp)
- {
- 	if (--rrsp->rrs_count < 0) {
--		rrsp->rrs_state +=
--			(unsigned long)cpu_clock(raw_smp_processor_id());
-+		rrsp->rrs_state += (unsigned long)local_clock();
- 		rrsp->rrs_count = RCU_RANDOM_REFRESH;
- 	}
- 	rrsp->rrs_state = rrsp->rrs_state * RCU_RANDOM_MULT + RCU_RANDOM_ADD;
 diff --git a/kernel/sched.c b/kernel/sched.c
-index 8f351c5..3abd8f7 100644
+index a757f6b..132950b 100644
 --- a/kernel/sched.c
 +++ b/kernel/sched.c
-@@ -1647,7 +1647,7 @@ static void update_shares(struct sched_domain *sd)
- 	if (root_task_group_empty())
- 		return;
+@@ -460,7 +460,7 @@ struct rq {
+ 	unsigned long last_load_update_tick;
+ #ifdef CONFIG_NO_HZ
+ 	u64 nohz_stamp;
+-	unsigned char in_nohz_recently;
++	unsigned char nohz_balance_kick;
+ #endif
+ 	unsigned int skip_clock_update;
  
--	now = cpu_clock(raw_smp_processor_id());
-+	now = local_clock();
- 	elapsed = now - sd->last_update;
+@@ -1195,6 +1195,27 @@ static void resched_cpu(int cpu)
  
- 	if (elapsed >= (s64)(u64)sysctl_sched_shares_ratelimit) {
-diff --git a/kernel/sched_clock.c b/kernel/sched_clock.c
-index 906a0f7..52f1a14 100644
---- a/kernel/sched_clock.c
-+++ b/kernel/sched_clock.c
-@@ -10,19 +10,55 @@
-  *   Ingo Molnar <mingo@redhat.com>
-  *   Guillaume Chazarain <guichaz@gmail.com>
-  *
-- * Create a semi stable clock from a mixture of other events, including:
-- *  - gtod
+ #ifdef CONFIG_NO_HZ
+ /*
++ * In the semi idle case, use the nearest busy cpu for migrating timers
++ * from an idle cpu.  This is good for power-savings.
 + *
-+ * What:
-+ *
-+ * cpu_clock(i) provides a fast (execution time) high resolution
-+ * clock with bounded drift between CPUs. The value of cpu_clock(i)
-+ * is monotonic for constant i. The timestamp returned is in nanoseconds.
-+ *
-+ * ######################### BIG FAT WARNING ##########################
-+ * # when comparing cpu_clock(i) to cpu_clock(j) for i != j, time can #
-+ * # go backwards !!                                                  #
-+ * ####################################################################
-+ *
-+ * There is no strict promise about the base, although it tends to start
-+ * at 0 on boot (but people really shouldn't rely on that).
-+ *
-+ * cpu_clock(i)       -- can be used from any context, including NMI.
-+ * sched_clock_cpu(i) -- must be used with local IRQs disabled (implied by NMI)
-+ * local_clock()      -- is cpu_clock() on the current cpu.
-+ *
-+ * How:
-+ *
-+ * The implementation either uses sched_clock() when
-+ * !CONFIG_HAVE_UNSTABLE_SCHED_CLOCK, which means in that case the
-+ * sched_clock() is assumed to provide these properties (mostly it means
-+ * the architecture provides a globally synchronized highres time source).
-+ *
-+ * Otherwise it tries to create a semi stable clock from a mixture of other
-+ * clocks, including:
-+ *
-+ *  - GTOD (clock monotomic)
-  *  - sched_clock()
-  *  - explicit idle events
-  *
-- * We use gtod as base and the unstable clock deltas. The deltas are filtered,
-- * making it monotonic and keeping it within an expected window.
-+ * We use GTOD as base and use sched_clock() deltas to improve resolution. The
-+ * deltas are filtered to provide monotonicity and keeping it within an
-+ * expected window.
-  *
-  * Furthermore, explicit sleep and wakeup hooks allow us to account for time
-  * that is otherwise invisible (TSC gets stopped).
-  *
-- * The clock: sched_clock_cpu() is monotonic per cpu, and should be somewhat
-- * consistent between cpus (never more than 2 jiffies difference).
-+ *
-+ * Notes:
-+ *
-+ * The !IRQ-safetly of sched_clock() and sched_clock_cpu() comes from things
-+ * like cpufreq interrupts that can change the base clock (TSC) multiplier
-+ * and cause funny jumps in time -- although the filtering provided by
-+ * sched_clock_cpu() should mitigate serious artifacts we cannot rely on it
-+ * in general since for !CONFIG_HAVE_UNSTABLE_SCHED_CLOCK we fully rely on
-+ * sched_clock().
-  */
- #include <linux/spinlock.h>
- #include <linux/hardirq.h>
-@@ -170,6 +206,11 @@ again:
- 	return val;
- }
- 
-+/*
-+ * Similar to cpu_clock(), but requires local IRQs to be disabled.
-+ *
-+ * See cpu_clock().
++ * We don't do similar optimization for completely idle system, as
++ * selecting an idle cpu will add more delays to the timers than intended
++ * (as that cpu's timer base may not be uptodate wrt jiffies etc).
 + */
- u64 sched_clock_cpu(int cpu)
- {
- 	struct sched_clock_data *scd;
-@@ -237,9 +278,19 @@ void sched_clock_idle_wakeup_event(u64 delta_ns)
- }
- EXPORT_SYMBOL_GPL(sched_clock_idle_wakeup_event);
- 
--unsigned long long cpu_clock(int cpu)
-+/*
-+ * As outlined at the top, provides a fast, high resolution, nanosecond
-+ * time source that is monotonic per cpu argument and has bounded drift
-+ * between cpus.
-+ *
-+ * ######################### BIG FAT WARNING ##########################
-+ * # when comparing cpu_clock(i) to cpu_clock(j) for i != j, time can #
-+ * # go backwards !!                                                  #
-+ * ####################################################################
-+ */
-+u64 cpu_clock(int cpu)
- {
--	unsigned long long clock;
-+	u64 clock;
- 	unsigned long flags;
- 
- 	local_irq_save(flags);
-@@ -249,6 +300,25 @@ unsigned long long cpu_clock(int cpu)
- 	return clock;
- }
- 
-+/*
-+ * Similar to cpu_clock() for the current cpu. Time will only be observed
-+ * to be monotonic if care is taken to only compare timestampt taken on the
-+ * same CPU.
-+ *
-+ * See cpu_clock().
-+ */
-+u64 local_clock(void)
++int get_nohz_timer_target(void)
 +{
-+	u64 clock;
-+	unsigned long flags;
++	int cpu = smp_processor_id();
++	int i;
++	struct sched_domain *sd;
 +
-+	local_irq_save(flags);
-+	clock = sched_clock_cpu(smp_processor_id());
-+	local_irq_restore(flags);
++	for_each_domain(cpu, sd) {
++		for_each_cpu(i, sched_domain_span(sd))
++			if (!idle_cpu(i))
++				return i;
++	}
++	return cpu;
++}
++/*
+  * When add_timer_on() enqueues a timer into the timer wheel of an
+  * idle CPU then this timer might expire before the next timer event
+  * which is scheduled to wake up that CPU. In case of a completely
+@@ -7791,6 +7812,10 @@ void __init sched_init(void)
+ 		rq->idle_stamp = 0;
+ 		rq->avg_idle = 2*sysctl_sched_migration_cost;
+ 		rq_attach_root(rq, &def_root_domain);
++#ifdef CONFIG_NO_HZ
++		rq->nohz_balance_kick = 0;
++		init_sched_softirq_csd(&per_cpu(remote_sched_softirq_cb, i));
++#endif
+ #endif
+ 		init_rq_hrtick(rq);
+ 		atomic_set(&rq->nr_iowait, 0);
+@@ -7835,8 +7860,11 @@ void __init sched_init(void)
+ 	zalloc_cpumask_var(&nohz_cpu_mask, GFP_NOWAIT);
+ #ifdef CONFIG_SMP
+ #ifdef CONFIG_NO_HZ
+-	zalloc_cpumask_var(&nohz.cpu_mask, GFP_NOWAIT);
+-	alloc_cpumask_var(&nohz.ilb_grp_nohz_mask, GFP_NOWAIT);
++	zalloc_cpumask_var(&nohz.idle_cpus_mask, GFP_NOWAIT);
++	alloc_cpumask_var(&nohz.grp_idle_mask, GFP_NOWAIT);
++	atomic_set(&nohz.load_balancer, nr_cpu_ids);
++	atomic_set(&nohz.first_pick_cpu, nr_cpu_ids);
++	atomic_set(&nohz.second_pick_cpu, nr_cpu_ids);
+ #endif
+ 	/* May be allocated at isolcpus cmdline parse time */
+ 	if (cpu_isolated_map == NULL)
+diff --git a/kernel/sched_fair.c b/kernel/sched_fair.c
+index 22b8b4f..6ee2e0a 100644
+--- a/kernel/sched_fair.c
++++ b/kernel/sched_fair.c
+@@ -3091,13 +3091,40 @@ out_unlock:
+ }
+ 
+ #ifdef CONFIG_NO_HZ
 +
-+	return clock;
++static DEFINE_PER_CPU(struct call_single_data, remote_sched_softirq_cb);
++
++static void trigger_sched_softirq(void *data)
++{
++	raise_softirq_irqoff(SCHED_SOFTIRQ);
 +}
 +
- #else /* CONFIG_HAVE_UNSTABLE_SCHED_CLOCK */
++static inline void init_sched_softirq_csd(struct call_single_data *csd)
++{
++	csd->func = trigger_sched_softirq;
++	csd->info = NULL;
++	csd->flags = 0;
++	csd->priv = 0;
++}
++
++/*
++ * idle load balancing details
++ * - One of the idle CPUs nominates itself as idle load_balancer, while
++ *   entering idle.
++ * - This idle load balancer CPU will also go into tickless mode when
++ *   it is idle, just like all other idle CPUs
++ * - When one of the busy CPUs notice that there may be an idle rebalancing
++ *   needed, they will kick the idle load balancer, which then does idle
++ *   load balancing for all the idle CPUs.
++ */
+ static struct {
+ 	atomic_t load_balancer;
+-	cpumask_var_t cpu_mask;
+-	cpumask_var_t ilb_grp_nohz_mask;
+-} nohz ____cacheline_aligned = {
+-	.load_balancer = ATOMIC_INIT(-1),
+-};
++	atomic_t first_pick_cpu;
++	atomic_t second_pick_cpu;
++	cpumask_var_t idle_cpus_mask;
++	cpumask_var_t grp_idle_mask;
++	unsigned long next_balance;     /* in jiffy units */
++} nohz ____cacheline_aligned;
  
- void sched_clock_init(void)
-@@ -264,12 +334,17 @@ u64 sched_clock_cpu(int cpu)
- 	return sched_clock();
+ int get_nohz_load_balancer(void)
+ {
+@@ -3151,17 +3178,17 @@ static inline struct sched_domain *lowest_flag_domain(int cpu, int flag)
+  */
+ static inline int is_semi_idle_group(struct sched_group *ilb_group)
+ {
+-	cpumask_and(nohz.ilb_grp_nohz_mask, nohz.cpu_mask,
++	cpumask_and(nohz.grp_idle_mask, nohz.idle_cpus_mask,
+ 					sched_group_cpus(ilb_group));
+ 
+ 	/*
+ 	 * A sched_group is semi-idle when it has atleast one busy cpu
+ 	 * and atleast one idle cpu.
+ 	 */
+-	if (cpumask_empty(nohz.ilb_grp_nohz_mask))
++	if (cpumask_empty(nohz.grp_idle_mask))
+ 		return 0;
+ 
+-	if (cpumask_equal(nohz.ilb_grp_nohz_mask, sched_group_cpus(ilb_group)))
++	if (cpumask_equal(nohz.grp_idle_mask, sched_group_cpus(ilb_group)))
+ 		return 0;
+ 
+ 	return 1;
+@@ -3194,7 +3221,7 @@ static int find_new_ilb(int cpu)
+ 	 * Optimize for the case when we have no idle CPUs or only one
+ 	 * idle CPU. Don't walk the sched_domain hierarchy in such cases
+ 	 */
+-	if (cpumask_weight(nohz.cpu_mask) < 2)
++	if (cpumask_weight(nohz.idle_cpus_mask) < 2)
+ 		goto out_done;
+ 
+ 	for_each_flag_domain(cpu, sd, SD_POWERSAVINGS_BALANCE) {
+@@ -3202,7 +3229,7 @@ static int find_new_ilb(int cpu)
+ 
+ 		do {
+ 			if (is_semi_idle_group(ilb_group))
+-				return cpumask_first(nohz.ilb_grp_nohz_mask);
++				return cpumask_first(nohz.grp_idle_mask);
+ 
+ 			ilb_group = ilb_group->next;
+ 
+@@ -3210,98 +3237,116 @@ static int find_new_ilb(int cpu)
+ 	}
+ 
+ out_done:
+-	return cpumask_first(nohz.cpu_mask);
++	return nr_cpu_ids;
  }
+ #else /*  (CONFIG_SCHED_MC || CONFIG_SCHED_SMT) */
+ static inline int find_new_ilb(int call_cpu)
+ {
+-	return cpumask_first(nohz.cpu_mask);
++	return nr_cpu_ids;
+ }
+ #endif
  
+ /*
++ * Kick a CPU to do the nohz balancing, if it is time for it. We pick the
++ * nohz_load_balancer CPU (if there is one) otherwise fallback to any idle
++ * CPU (if there is one).
++ */
++static void nohz_balancer_kick(int cpu)
++{
++	int ilb_cpu;
++
++	nohz.next_balance++;
++
++	ilb_cpu = get_nohz_load_balancer();
++
++	if (ilb_cpu >= nr_cpu_ids) {
++		ilb_cpu = cpumask_first(nohz.idle_cpus_mask);
++		if (ilb_cpu >= nr_cpu_ids)
++			return;
++	}
++
++	if (!cpu_rq(ilb_cpu)->nohz_balance_kick) {
++		struct call_single_data *cp;
++
++		cpu_rq(ilb_cpu)->nohz_balance_kick = 1;
++		cp = &per_cpu(remote_sched_softirq_cb, cpu);
++		__smp_call_function_single(ilb_cpu, cp, 0);
++	}
++	return;
++}
++
++/*
+  * This routine will try to nominate the ilb (idle load balancing)
+  * owner among the cpus whose ticks are stopped. ilb owner will do the idle
+- * load balancing on behalf of all those cpus. If all the cpus in the system
+- * go into this tickless mode, then there will be no ilb owner (as there is
+- * no need for one) and all the cpus will sleep till the next wakeup event
+- * arrives...
+- *
+- * For the ilb owner, tick is not stopped. And this tick will be used
+- * for idle load balancing. ilb owner will still be part of
+- * nohz.cpu_mask..
++ * load balancing on behalf of all those cpus.
+  *
+- * While stopping the tick, this cpu will become the ilb owner if there
+- * is no other owner. And will be the owner till that cpu becomes busy
+- * or if all cpus in the system stop their ticks at which point
+- * there is no need for ilb owner.
++ * When the ilb owner becomes busy, we will not have new ilb owner until some
++ * idle CPU wakes up and goes back to idle or some busy CPU tries to kick
++ * idle load balancing by kicking one of the idle CPUs.
+  *
+- * When the ilb owner becomes busy, it nominates another owner, during the
+- * next busy scheduler_tick()
++ * Ticks are stopped for the ilb owner as well, with busy CPU kicking this
++ * ilb owner CPU in future (when there is a need for idle load balancing on
++ * behalf of all idle CPUs).
+  */
+-int select_nohz_load_balancer(int stop_tick)
++void select_nohz_load_balancer(int stop_tick)
+ {
+ 	int cpu = smp_processor_id();
+ 
+ 	if (stop_tick) {
+-		cpu_rq(cpu)->in_nohz_recently = 1;
 -
--unsigned long long cpu_clock(int cpu)
-+u64 cpu_clock(int cpu)
- {
- 	return sched_clock_cpu(cpu);
+ 		if (!cpu_active(cpu)) {
+ 			if (atomic_read(&nohz.load_balancer) != cpu)
+-				return 0;
++				return;
+ 
+ 			/*
+ 			 * If we are going offline and still the leader,
+ 			 * give up!
+ 			 */
+-			if (atomic_cmpxchg(&nohz.load_balancer, cpu, -1) != cpu)
++			if (atomic_cmpxchg(&nohz.load_balancer, cpu,
++					   nr_cpu_ids) != cpu)
+ 				BUG();
+ 
+-			return 0;
++			return;
+ 		}
+ 
+-		cpumask_set_cpu(cpu, nohz.cpu_mask);
++		cpumask_set_cpu(cpu, nohz.idle_cpus_mask);
+ 
+-		/* time for ilb owner also to sleep */
+-		if (cpumask_weight(nohz.cpu_mask) == num_active_cpus()) {
+-			if (atomic_read(&nohz.load_balancer) == cpu)
+-				atomic_set(&nohz.load_balancer, -1);
+-			return 0;
+-		}
++		if (atomic_read(&nohz.first_pick_cpu) == cpu)
++			atomic_cmpxchg(&nohz.first_pick_cpu, cpu, nr_cpu_ids);
++		if (atomic_read(&nohz.second_pick_cpu) == cpu)
++			atomic_cmpxchg(&nohz.second_pick_cpu, cpu, nr_cpu_ids);
+ 
+-		if (atomic_read(&nohz.load_balancer) == -1) {
+-			/* make me the ilb owner */
+-			if (atomic_cmpxchg(&nohz.load_balancer, -1, cpu) == -1)
+-				return 1;
+-		} else if (atomic_read(&nohz.load_balancer) == cpu) {
++		if (atomic_read(&nohz.load_balancer) >= nr_cpu_ids) {
+ 			int new_ilb;
+ 
+-			if (!(sched_smt_power_savings ||
+-						sched_mc_power_savings))
+-				return 1;
++			/* make me the ilb owner */
++			if (atomic_cmpxchg(&nohz.load_balancer, nr_cpu_ids,
++					   cpu) != nr_cpu_ids)
++				return;
++
+ 			/*
+ 			 * Check to see if there is a more power-efficient
+ 			 * ilb.
+ 			 */
+ 			new_ilb = find_new_ilb(cpu);
+ 			if (new_ilb < nr_cpu_ids && new_ilb != cpu) {
+-				atomic_set(&nohz.load_balancer, -1);
++				atomic_set(&nohz.load_balancer, nr_cpu_ids);
+ 				resched_cpu(new_ilb);
+-				return 0;
++				return;
+ 			}
+-			return 1;
++			return;
+ 		}
+ 	} else {
+-		if (!cpumask_test_cpu(cpu, nohz.cpu_mask))
+-			return 0;
++		if (!cpumask_test_cpu(cpu, nohz.idle_cpus_mask))
++			return;
+ 
+-		cpumask_clear_cpu(cpu, nohz.cpu_mask);
++		cpumask_clear_cpu(cpu, nohz.idle_cpus_mask);
+ 
+ 		if (atomic_read(&nohz.load_balancer) == cpu)
+-			if (atomic_cmpxchg(&nohz.load_balancer, cpu, -1) != cpu)
++			if (atomic_cmpxchg(&nohz.load_balancer, cpu,
++					   nr_cpu_ids) != cpu)
+ 				BUG();
+ 	}
+-	return 0;
++	return;
+ }
+ #endif
+ 
+@@ -3383,11 +3428,101 @@ out:
+ 		rq->next_balance = next_balance;
  }
  
-+u64 local_clock(void)
++#ifdef CONFIG_NO_HZ
+ /*
+- * run_rebalance_domains is triggered when needed from the scheduler tick.
+- * In CONFIG_NO_HZ case, the idle load balance owner will do the
++ * In CONFIG_NO_HZ case, the idle balance kickee will do the
+  * rebalancing for all the cpus for whom scheduler ticks are stopped.
+  */
++static void nohz_idle_balance(int this_cpu, enum cpu_idle_type idle)
 +{
-+	return sched_clock_cpu(0);
++	struct rq *this_rq = cpu_rq(this_cpu);
++	struct rq *rq;
++	int balance_cpu;
++
++	if (idle != CPU_IDLE || !this_rq->nohz_balance_kick)
++		return;
++
++	for_each_cpu(balance_cpu, nohz.idle_cpus_mask) {
++		if (balance_cpu == this_cpu)
++			continue;
++
++		/*
++		 * If this cpu gets work to do, stop the load balancing
++		 * work being done for other cpus. Next load
++		 * balancing owner will pick it up.
++		 */
++		if (need_resched()) {
++			this_rq->nohz_balance_kick = 0;
++			break;
++		}
++
++		raw_spin_lock_irq(&this_rq->lock);
++		update_cpu_load(this_rq);
++		raw_spin_unlock_irq(&this_rq->lock);
++
++		rebalance_domains(balance_cpu, CPU_IDLE);
++
++		rq = cpu_rq(balance_cpu);
++		if (time_after(this_rq->next_balance, rq->next_balance))
++			this_rq->next_balance = rq->next_balance;
++	}
++	nohz.next_balance = this_rq->next_balance;
++	this_rq->nohz_balance_kick = 0;
 +}
 +
- #endif /* CONFIG_HAVE_UNSTABLE_SCHED_CLOCK */
- 
- EXPORT_SYMBOL_GPL(cpu_clock);
-+EXPORT_SYMBOL_GPL(local_clock);
-diff --git a/kernel/trace/trace_clock.c b/kernel/trace/trace_clock.c
-index 9d589d8..1723e2b 100644
---- a/kernel/trace/trace_clock.c
-+++ b/kernel/trace/trace_clock.c
-@@ -56,7 +56,7 @@ u64 notrace trace_clock_local(void)
-  */
- u64 notrace trace_clock(void)
++/*
++ * Current heuristic for kicking the idle load balancer
++ * - first_pick_cpu is the one of the busy CPUs. It will kick
++ *   idle load balancer when it has more than one process active. This
++ *   eliminates the need for idle load balancing altogether when we have
++ *   only one running process in the system (common case).
++ * - If there are more than one busy CPU, idle load balancer may have
++ *   to run for active_load_balance to happen (i.e., two busy CPUs are
++ *   SMT or core siblings and can run better if they move to different
++ *   physical CPUs). So, second_pick_cpu is the second of the busy CPUs
++ *   which will kick idle load balancer as soon as it has any load.
++ */
++static inline int nohz_kick_needed(struct rq *rq, int cpu)
++{
++	unsigned long now = jiffies;
++	int ret;
++	int first_pick_cpu, second_pick_cpu;
++
++	if (time_before(now, nohz.next_balance))
++		return 0;
++
++	if (!rq->nr_running)
++		return 0;
++
++	first_pick_cpu = atomic_read(&nohz.first_pick_cpu);
++	second_pick_cpu = atomic_read(&nohz.second_pick_cpu);
++
++	if (first_pick_cpu < nr_cpu_ids && first_pick_cpu != cpu &&
++	    second_pick_cpu < nr_cpu_ids && second_pick_cpu != cpu)
++		return 0;
++
++	ret = atomic_cmpxchg(&nohz.first_pick_cpu, nr_cpu_ids, cpu);
++	if (ret == nr_cpu_ids || ret == cpu) {
++		atomic_cmpxchg(&nohz.second_pick_cpu, cpu, nr_cpu_ids);
++		if (rq->nr_running > 1)
++			return 1;
++	} else {
++		ret = atomic_cmpxchg(&nohz.second_pick_cpu, nr_cpu_ids, cpu);
++		if (ret == nr_cpu_ids || ret == cpu) {
++			if (rq->nr_running)
++				return 1;
++		}
++	}
++	return 0;
++}
++#else
++static void nohz_idle_balance(int this_cpu, enum cpu_idle_type idle) { }
++#endif
++
++/*
++ * run_rebalance_domains is triggered when needed from the scheduler tick.
++ * Also triggered for nohz idle balancing (with nohz_balancing_kick set).
++ */
+ static void run_rebalance_domains(struct softirq_action *h)
  {
--	return cpu_clock(raw_smp_processor_id());
-+	return local_clock();
+ 	int this_cpu = smp_processor_id();
+@@ -3397,40 +3532,12 @@ static void run_rebalance_domains(struct softirq_action *h)
+ 
+ 	rebalance_domains(this_cpu, idle);
+ 
+-#ifdef CONFIG_NO_HZ
+ 	/*
+-	 * If this cpu is the owner for idle load balancing, then do the
++	 * If this cpu has a pending nohz_balance_kick, then do the
+ 	 * balancing on behalf of the other idle cpus whose ticks are
+ 	 * stopped.
+ 	 */
+-	if (this_rq->idle_at_tick &&
+-	    atomic_read(&nohz.load_balancer) == this_cpu) {
+-		struct rq *rq;
+-		int balance_cpu;
+-
+-		for_each_cpu(balance_cpu, nohz.cpu_mask) {
+-			if (balance_cpu == this_cpu)
+-				continue;
+-
+-			/*
+-			 * If this cpu gets work to do, stop the load balancing
+-			 * work being done for other cpus. Next load
+-			 * balancing owner will pick it up.
+-			 */
+-			if (need_resched())
+-				break;
+-
+-			rq = cpu_rq(balance_cpu);
+-			raw_spin_lock_irq(&rq->lock);
+-			update_cpu_load(rq);
+-			raw_spin_unlock_irq(&rq->lock);
+-			rebalance_domains(balance_cpu, CPU_IDLE);
+-
+-			if (time_after(this_rq->next_balance, rq->next_balance))
+-				this_rq->next_balance = rq->next_balance;
+-		}
+-	}
+-#endif
++	nohz_idle_balance(this_cpu, idle);
  }
  
+ static inline int on_null_domain(int cpu)
+@@ -3440,57 +3547,17 @@ static inline int on_null_domain(int cpu)
+ 
+ /*
+  * Trigger the SCHED_SOFTIRQ if it is time to do periodic load balancing.
+- *
+- * In case of CONFIG_NO_HZ, this is the place where we nominate a new
+- * idle load balancing owner or decide to stop the periodic load balancing,
+- * if the whole system is idle.
+  */
+ static inline void trigger_load_balance(struct rq *rq, int cpu)
+ {
+-#ifdef CONFIG_NO_HZ
+-	/*
+-	 * If we were in the nohz mode recently and busy at the current
+-	 * scheduler tick, then check if we need to nominate new idle
+-	 * load balancer.
+-	 */
+-	if (rq->in_nohz_recently && !rq->idle_at_tick) {
+-		rq->in_nohz_recently = 0;
+-
+-		if (atomic_read(&nohz.load_balancer) == cpu) {
+-			cpumask_clear_cpu(cpu, nohz.cpu_mask);
+-			atomic_set(&nohz.load_balancer, -1);
+-		}
+-
+-		if (atomic_read(&nohz.load_balancer) == -1) {
+-			int ilb = find_new_ilb(cpu);
+-
+-			if (ilb < nr_cpu_ids)
+-				resched_cpu(ilb);
+-		}
+-	}
+-
+-	/*
+-	 * If this cpu is idle and doing idle load balancing for all the
+-	 * cpus with ticks stopped, is it time for that to stop?
+-	 */
+-	if (rq->idle_at_tick && atomic_read(&nohz.load_balancer) == cpu &&
+-	    cpumask_weight(nohz.cpu_mask) == num_online_cpus()) {
+-		resched_cpu(cpu);
+-		return;
+-	}
+-
+-	/*
+-	 * If this cpu is idle and the idle load balancing is done by
+-	 * someone else, then no need raise the SCHED_SOFTIRQ
+-	 */
+-	if (rq->idle_at_tick && atomic_read(&nohz.load_balancer) != cpu &&
+-	    cpumask_test_cpu(cpu, nohz.cpu_mask))
+-		return;
+-#endif
+ 	/* Don't need to rebalance while attached to NULL domain */
+ 	if (time_after_eq(jiffies, rq->next_balance) &&
+ 	    likely(!on_null_domain(cpu)))
+ 		raise_softirq(SCHED_SOFTIRQ);
++#ifdef CONFIG_NO_HZ
++	else if (nohz_kick_needed(rq, cpu) && likely(!on_null_domain(cpu)))
++		nohz_balancer_kick(cpu);
++#endif
+ }
+ 
+ static void rq_online_fair(struct rq *rq)
+diff --git a/kernel/time/tick-sched.c b/kernel/time/tick-sched.c
+index 1d7b9bc..5f171f0 100644
+--- a/kernel/time/tick-sched.c
++++ b/kernel/time/tick-sched.c
+@@ -408,13 +408,7 @@ void tick_nohz_stop_sched_tick(int inidle)
+ 		 * the scheduler tick in nohz_restart_sched_tick.
+ 		 */
+ 		if (!ts->tick_stopped) {
+-			if (select_nohz_load_balancer(1)) {
+-				/*
+-				 * sched tick not stopped!
+-				 */
+-				cpumask_clear_cpu(cpu, nohz_cpu_mask);
+-				goto out;
+-			}
++			select_nohz_load_balancer(1);
+ 
+ 			ts->idle_tick = hrtimer_get_expires(&ts->sched_timer);
+ 			ts->tick_stopped = 1;
+diff --git a/kernel/timer.c b/kernel/timer.c
+index ee305c8..48d6aec 100644
+--- a/kernel/timer.c
++++ b/kernel/timer.c
+@@ -679,12 +679,8 @@ __mod_timer(struct timer_list *timer, unsigned long expires,
+ 	cpu = smp_processor_id();
+ 
+ #if defined(CONFIG_NO_HZ) && defined(CONFIG_SMP)
+-	if (!pinned && get_sysctl_timer_migration() && idle_cpu(cpu)) {
+-		int preferred_cpu = get_nohz_load_balancer();
+-
+-		if (preferred_cpu >= 0)
+-			cpu = preferred_cpu;
+-	}
++	if (!pinned && get_sysctl_timer_migration() && idle_cpu(cpu))
++		cpu = get_nohz_timer_target();
+ #endif
+ 	new_base = per_cpu(tvec_bases, cpu);
  
