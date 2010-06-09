@@ -1,58 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756699Ab0FIID2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jun 2010 04:03:28 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:34119 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756523Ab0FIIDW (ORCPT
+	id S1756651Ab0FIIEX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jun 2010 04:04:23 -0400
+Received: from daytona.panasas.com ([67.152.220.89]:18099 "EHLO
+	daytona.int.panasas.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1755859Ab0FIIET (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jun 2010 04:03:22 -0400
-Date: Wed, 9 Jun 2010 09:35:25 +0200
-From: Sascha Hauer <s.hauer@pengutronix.de>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: linux-next: unable to fetch i.MX tree
-Message-ID: <20100609073525.GE20799@pengutronix.de>
-References: <20100609100526.913a49bb.sfr@canb.auug.org.au>
+	Wed, 9 Jun 2010 04:04:19 -0400
+Message-ID: <4C0F4B00.4090307@panasas.com>
+Date: Wed, 09 Jun 2010 11:04:16 +0300
+From: Boaz Harrosh <bharrosh@panasas.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-2.fc12 Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100609100526.913a49bb.sfr@canb.auug.org.au>
-X-Sent-From: Pengutronix Hildesheim
-X-URL: http://www.pengutronix.de/
-X-IRC: #ptxdist @freenode
-X-Accept-Language: de,en
-X-Accept-Content-Type: text/plain
-X-Uptime: 09:33:17 up 2 days, 1 min, 33 users,  load average: 0.35, 0.33,
-	0.35
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
-X-SA-Exim-Mail-From: sha@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+To: Borislav Petkov <bp@alien8.de>, "H. Peter Anvin" <hpa@zytor.com>,
+       Geert Uytterhoeven <geert@linux-m68k.org>,
+       =?UTF-8?B?VG9yYWxmIEbDtnJzdGVy?= <toralf.foerster@gmx.de>,
+       uml-devel <user-mode-linux-devel@lists.sourceforge.net>,
+       linux-kernel <linux-kernel@vger.kernel.org>
+Subject: [PATCH resend] um, hweight: Fix UML boot crash
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 09 Jun 2010 08:04:19.0061 (UTC) FILETIME=[5CA91250:01CB07AA]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Stephen,
+From: Borislav Petkov <bp@alien8.de>
 
-On Wed, Jun 09, 2010 at 10:05:26AM +1000, Stephen Rothwell wrote:
-> Hi Sascha,
-> 
-> When I try to fetch the i.MX tree, I get these errors:
-> 
-> git.pengutronix.de[0: 92.198.50.42]: errno=Connection timed out
-> git.pengutronix.de[0: 2001:6f8:1178:4:230:48ff:fe91:5e78]: errno=Network is unreachable
-> fatal: unable to connect a socket (Network is unreachable)
-> 
-> I will use the i.MX tree from next-20100608 for today.
+Obviously UML cannot stomach callee reg-saving trickery
+introduced with d61931d89be506372d01a90d1755f6d0a9fafe2d
+(x86: Add optimized popcnt variants) and oopses during boot:
+http://marc.info/?l=linux-kernel&m=127522065202435&w=2
 
-No problem, we were offline for a day. Should now work again.
+Redirect arch_hweight.h include from the x86 portion to the generic
+arch_hweight.h which is a fallback to the software hweight routines.
 
-Sascha
+LKML-Reference: <201005271944.09541.toralf.foerster@gmx.de>
+Signed-off-by: Borislav Petkov <bp@alien8.de>
+---
+ arch/um/include/asm/arch_hweight.h |    6 ++++++
+ 1 files changed, 6 insertions(+), 0 deletions(-)
+ create mode 100644 arch/um/include/asm/arch_hweight.h
 
--- 
-Pengutronix e.K.                           |                             |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
-Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
+diff --git a/arch/um/include/asm/arch_hweight.h b/arch/um/include/asm/arch_hweight.h
+new file mode 100644
+index 0000000..c656cf4
+--- /dev/null
++++ b/arch/um/include/asm/arch_hweight.h
+@@ -0,0 +1,6 @@
++#ifndef _ASM_UM_HWEIGHT_H
++#define _ASM_UM_HWEIGHT_H
++
++#include <asm-generic/bitops/arch_hweight.h>
++
++#endif
+-- 1.7.1 
