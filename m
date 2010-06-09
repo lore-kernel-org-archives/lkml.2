@@ -1,60 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932277Ab0FIWp0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 9 Jun 2010 18:45:26 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:33549 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932120Ab0FIWpW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 9 Jun 2010 18:45:22 -0400
-Date: Wed, 9 Jun 2010 15:44:05 -0700
-From: Randy Dunlap <randy.dunlap@oracle.com>
-To: David Miller <davem@davemloft.net>,
-       Grant Likely <grant.likely@secretlab.ca>
-Cc: sfr@canb.auug.org.au, netdev@vger.kernel.org, linux-next@vger.kernel.org,
-       linux-kernel@vger.kernel.org
-Subject: [PATCH 1/2 -next] of_device.h: provide struct of_device even when
- not enabled
-Message-Id: <20100609154405.20095178.randy.dunlap@oracle.com>
-In-Reply-To: <20100609.110638.112605100.davem@davemloft.net>
-References: <20100609133443.38f1f957.sfr@canb.auug.org.au>
-	<20100609103657.66252a27.randy.dunlap@oracle.com>
-	<20100609.110638.112605100.davem@davemloft.net>
-Organization: Oracle Linux Eng.
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1758451Ab0FIWxg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 9 Jun 2010 18:53:36 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:58728 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758106Ab0FIWxf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 9 Jun 2010 18:53:35 -0400
+Message-ID: <4C101B58.2090208@zytor.com>
+Date: Wed, 09 Jun 2010 15:53:12 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-3.fc13 Thunderbird/3.0.4
+MIME-Version: 1.0
+To: Borislav Petkov <borislav.petkov@amd.com>
+CC: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+       LKML <linux-kernel@vger.kernel.org>, x86 <x86@kernel.org>
+Subject: Re: [PATCH] x86, AMD: Extend support to future families
+References: <20100602182921.GA21557@aftab>
+In-Reply-To: <20100602182921.GA21557@aftab>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Auth-Type: Internal IP
-X-Source-IP: rcsinet13.oracle.com [148.87.113.125]
-X-CT-RefId: str=0001.0A090204.4C10197D.00BE:SCFMA4539811,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Randy Dunlap <randy.dunlap@oracle.com>
+On 06/02/2010 11:29 AM, Borislav Petkov wrote:
+> Extend support to future families, and in particular:
+> 
+> * extend direct mapping split of Tseg SMM area.
+> * extend K8 flavored alternatives (NOPS).
+> * rep movs* prefix is fast in ucode.
+> 
+> Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
 
-Drivers may use struct of_device (struct platform_device), even when
-CONFIG_OF_DEVICE is not enabled, so minimally provide that struct
-for that kconfig case.
+This doesn't reflect any currently shipping hardware, right?
 
-Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
-Cc:	Grant Likely <grant.likely@secretlab.ca>
-Cc:	Dave Miller <davem@davemloft.net>
----
- include/linux/of_device.h |    4 ++++
- 1 file changed, 4 insertions(+)
-
---- linux-next-20100609.orig/include/linux/of_device.h
-+++ linux-next-20100609/include/linux/of_device.h
-@@ -47,6 +47,10 @@ extern ssize_t of_device_get_modalias(st
- 
- extern int of_device_uevent(struct device *dev, struct kobj_uevent_env *env);
- 
-+#else
-+
-+#include <linux/platform_device.h>
-+#define of_device platform_device
- 
- #endif /* CONFIG_OF_DEVICE */
- 
+	-hpa
